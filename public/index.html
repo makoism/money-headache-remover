@@ -1563,7 +1563,7 @@ body.gw-open, body.co-open.gw-open { overflow: hidden; }
   </div>
 
   <p class="foot" id="footNote">Not financial advice. Sample numbers are invented. Replace them with yours.</p>
-  <p class="foot ver" id="verFoot">Version 27.1, updated Nov 12, 2:05 am</p>
+  <p class="foot ver" id="verFoot">Version 27.2, updated Nov 12, 2:30 am</p>
 </div>
 <div class="tip" id="tip" role="tooltip"></div>
 <div class="tour" id="tour" role="dialog" aria-modal="true" aria-labelledby="tourTitle" hidden>
@@ -1583,7 +1583,7 @@ body.gw-open, body.co-open.gw-open { overflow: hidden; }
     <button type="button" id="helpSetup">Guided setup</button>
     <button type="button" id="helpTour">Tour</button>
     <button type="button" id="helpVideo" hidden>Intro video</button>
-    <p class="help-ver">Version 27.1</p>
+    <p class="help-ver">Version 27.2</p>
   </div>
   <div class="help-row"><button type="button" class="help-btn ask-btn" id="askBtn">Ask</button><button type="button" class="help-btn" id="helpBtn" aria-expanded="false" aria-controls="helpMenu"><span class="q" aria-hidden="true">?</span>Help</button></div>
 </div>
@@ -5762,6 +5762,7 @@ const COACH = {
     ['#hQuick', 'Log spend', 'Enter an amount, pick a category, tap Log. Do it as you spend or weekly.'],
     ['#hGoals', 'Goals', 'Tap a goal to open it. Edit it or set it as main goal.'],
     ['#hBuckets', 'Jars', 'Left to spend in spending jars. Total saved in saving jars.'],
+    ['#askBtn', 'Ask', 'Any money question, any time. It knows your plan and can make changes you approve.'],
   ],
   receipts: [
     ['#scan', 'Scan receipts', 'Claude reads receipt photos and files each one. You review before anything is added.'],
@@ -5839,8 +5840,8 @@ function coShow(dir, first) {
   /* bring the target into view, then follow it while the page scrolls */
   const r = s.el.getBoundingClientRect(), vh = innerHeight, phone = innerWidth < 640;
   const want = r.height > vh * .55 ? 76 : phone ? 84 : Math.max(76, (vh - r.height) / 2);
-  const dy = r.top - want;
-  if (Math.abs(dy) > 4) scrollBy({ top: dy, behavior: coCalm() || first ? 'auto' : 'smooth' });
+  const dy = r.top - want, pinned = (() => { let e = s.el; while (e && e !== document.body) { if (getComputedStyle(e).position === 'fixed') return true; e = e.parentElement; } return false; })();
+  if (!pinned && Math.abs(dy) > 4) scrollBy({ top: dy, behavior: coCalm() || first ? 'auto' : 'smooth' });
   coPlace(); let n = 0; const tick = () => { if (!CO.open || n++ > 40) return; coPlace(); requestAnimationFrame(tick); }; requestAnimationFrame(tick);
   if (first) { const nb = $('#coNext'); setTimeout(() => nb && nb.focus({ preventScroll: true }), 80); } else $('#coNext').focus({ preventScroll: true });
 }

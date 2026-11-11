@@ -9,6 +9,7 @@ const COACH = {
     ['#hQuick', 'Log spend', 'Enter an amount, pick a category, tap Log. Do it as you spend or weekly.'],
     ['#hGoals', 'Goals', 'Tap a goal to open it. Edit it or set it as main goal.'],
     ['#hBuckets', 'Jars', 'Left to spend in spending jars. Total saved in saving jars.'],
+    ['#askBtn', 'Ask', 'Any money question, any time. It knows your plan and can make changes you approve.'],
   ],
   receipts: [
     ['#scan', 'Scan receipts', 'Claude reads receipt photos and files each one. You review before anything is added.'],
@@ -86,8 +87,8 @@ function coShow(dir, first) {
   /* bring the target into view, then follow it while the page scrolls */
   const r = s.el.getBoundingClientRect(), vh = innerHeight, phone = innerWidth < 640;
   const want = r.height > vh * .55 ? 76 : phone ? 84 : Math.max(76, (vh - r.height) / 2);
-  const dy = r.top - want;
-  if (Math.abs(dy) > 4) scrollBy({ top: dy, behavior: coCalm() || first ? 'auto' : 'smooth' });
+  const dy = r.top - want, pinned = (() => { let e = s.el; while (e && e !== document.body) { if (getComputedStyle(e).position === 'fixed') return true; e = e.parentElement; } return false; })();
+  if (!pinned && Math.abs(dy) > 4) scrollBy({ top: dy, behavior: coCalm() || first ? 'auto' : 'smooth' });
   coPlace(); let n = 0; const tick = () => { if (!CO.open || n++ > 40) return; coPlace(); requestAnimationFrame(tick); }; requestAnimationFrame(tick);
   if (first) { const nb = $('#coNext'); setTimeout(() => nb && nb.focus({ preventScroll: true }), 80); } else $('#coNext').focus({ preventScroll: true });
 }
