@@ -130,10 +130,10 @@ const billStep = id => ({ id: 'bill-' + id, part: PART.bills, setup: true, focus
     return `${note ? `<p>${esc(note())}</p>` : ''}
     <div class="tour-fields">${named ? textField('tourLName', 'Name', l.name) : ''}${moneyField('tourAmt', 'Each month', val(S, l.key, START))}</div>${b === 'ins' ? moreBtn('ins') : ''}`;
   },
-  leave: () => {
+  leave: d => {
     const l = lineById(S, id); if (!l) return;
     if (baseOf(id) === 'loan') { loanLeave(l); persist(); return; }
-    if (baseOf(id) === 'card') cardLeave(); /* before the amount is read: a filled calculator with an empty amount box counts */
+    if (baseOf(id) === 'card') cardLeave(d); /* before the amount is read: a filled calculator with an empty amount box counts when the person moves on */
     setVal(S, l.key, START, inum('tourAmt'), 'after');
     const nm = $('#tourLName'); if (nm && nm.value.trim()) updateLine(S, id, { name: nm.value });
     if (baseOf(id) === 'subs') subsLeave();

@@ -15,7 +15,7 @@ safe_once() { node /tmp/v28/safe.js 2>&1 | grep -v "^\[agent\|^- \|^Allowed\|^Fo
 if ! safe_once; then echo "(retrying once)"; sleep 3; safe_once || BAD=1; fi
 step "guard (idle CPU, tab speed, no outside requests, no errors)"; node tests/guard.js 2>&1 | grep -v "^\[agent\|^- \|^Allowed\|^For det" ; [ ${PIPESTATUS[0]} -ne 0 ] && BAD=1
 if [ "$MODE" = "full" ]; then
-  for f in /tmp/team_inter2.js /tmp/team_help.js /tmp/team_cur.js /tmp/team_month.js /tmp/v22/video.js /tmp/v22/home.js /tmp/v22/walk.js /tmp/v22/snd.js /tmp/v22/cal.js /tmp/v22/scan.js; do
+  for f in /tmp/team_inter2.js /tmp/team_help.js /tmp/team_cur.js /tmp/team_month.js /tmp/team_card.js /tmp/v22/video.js /tmp/v22/home.js /tmp/v22/walk.js /tmp/v22/snd.js /tmp/v22/cal.js /tmp/v22/scan.js; do
     step "$f"; timeout 280 node $f 2>&1 | grep -v "^\[agent\|^- \|^Allowed\|^For det" | grep "FAIL\|problems\|errors\|ERRORS\|ALL PASS\|Error" | head -6
   done
   step "number checks (about 6 minutes)"; bash /tmp/v26/num.sh 2>&1 | grep -v "^\[agent\|^- \|^Allowed\|^For det"

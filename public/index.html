@@ -1563,7 +1563,7 @@ body.gw-open, body.co-open.gw-open { overflow: hidden; }
   </div>
 
   <p class="foot" id="footNote">Not financial advice. Sample numbers are invented. Replace them with yours.</p>
-  <p class="foot ver" id="verFoot">Version 27.3, updated Nov 12, 3:20 am</p>
+  <p class="foot ver" id="verFoot">Version 27.4, updated Nov 12, 4:05 am</p>
 </div>
 <div class="tip" id="tip" role="tooltip"></div>
 <div class="tour" id="tour" role="dialog" aria-modal="true" aria-labelledby="tourTitle" hidden>
@@ -1583,7 +1583,7 @@ body.gw-open, body.co-open.gw-open { overflow: hidden; }
     <button type="button" id="helpSetup">Guided setup</button>
     <button type="button" id="helpTour">Tour</button>
     <button type="button" id="helpVideo" hidden>Intro video</button>
-    <p class="help-ver">Version 27.3</p>
+    <p class="help-ver">Version 27.4</p>
   </div>
   <div class="help-row"><button type="button" class="help-btn ask-btn" id="askBtn">Ask</button><button type="button" class="help-btn" id="helpBtn" aria-expanded="false" aria-controls="helpMenu"><span class="q" aria-hidden="true">?</span>Help</button></div>
 </div>
@@ -3304,10 +3304,10 @@ const billStep = id => ({ id: 'bill-' + id, part: PART.bills, setup: true, focus
     return `${note ? `<p>${esc(note())}</p>` : ''}
     <div class="tour-fields">${named ? textField('tourLName', 'Name', l.name) : ''}${moneyField('tourAmt', 'Each month', val(S, l.key, START))}</div>${b === 'ins' ? moreBtn('ins') : ''}`;
   },
-  leave: () => {
+  leave: d => {
     const l = lineById(S, id); if (!l) return;
     if (baseOf(id) === 'loan') { loanLeave(l); persist(); return; }
-    if (baseOf(id) === 'card') cardLeave(); /* before the amount is read: a filled calculator with an empty amount box counts */
+    if (baseOf(id) === 'card') cardLeave(d); /* before the amount is read: a filled calculator with an empty amount box counts when the person moves on */
     setVal(S, l.key, START, inum('tourAmt'), 'after');
     const nm = $('#tourLName'); if (nm && nm.value.trim()) updateLine(S, id, { name: nm.value });
     if (baseOf(id) === 'subs') subsLeave();
@@ -4161,7 +4161,8 @@ function subsLeave() {
 /* ===== the credit card line: what the statement says, minus the bills already counted ===== */
 function cardModel(saved) {
   let t = S.ui.cardT || 0, b = S.ui.cardB || 0;
-  if (Math.abs(saved - Math.max(0, t - b)) >= 0.5) { t = saved; b = 0; }
+  /* the calculator is shown again only while it agrees with the saved amount (or nothing was saved yet) */
+  if (saved > 0 && Math.abs(saved - Math.max(0, t - b)) >= 0.5) { t = saved; b = 0; }
   return { t, b };
 }
 function cardRecalc() {
@@ -4174,9 +4175,10 @@ function cardUse() {
   const am = $('#tourAmt'); if (!am) return;
   const r = cents2(Math.max(0, inum('tourCardT') - inum('tourCardB'))); am.value = r > 0 ? r : ''; tourTouched = true; sfx('tap'); autosave();
 }
-function cardLeave() {
+function cardLeave(d) {
   const t = inum('tourCardT'), b = inum('tourCardB'), am = $('#tourAmt');
-  if (am && am.value === '' && t > 0) { const r = cents2(Math.max(0, t - b)); am.value = r > 0 ? r : ''; }
+  /* only on a real move (Next or Back), never on the autosave while typing: the box must not freeze a half-typed total */
+  if (d && am && am.value === '' && t > 0) { const r = cents2(Math.max(0, t - b)); am.value = r > 0 ? r : ''; }
   if (t > 0) S.ui.cardT = cents2(t); else delete S.ui.cardT;
   if (b > 0) S.ui.cardB = cents2(b); else delete S.ui.cardB;
 }

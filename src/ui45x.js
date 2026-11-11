@@ -325,7 +325,8 @@ function subsLeave() {
 /* ===== the credit card line: what the statement says, minus the bills already counted ===== */
 function cardModel(saved) {
   let t = S.ui.cardT || 0, b = S.ui.cardB || 0;
-  if (Math.abs(saved - Math.max(0, t - b)) >= 0.5) { t = saved; b = 0; }
+  /* the calculator is shown again only while it agrees with the saved amount (or nothing was saved yet) */
+  if (saved > 0 && Math.abs(saved - Math.max(0, t - b)) >= 0.5) { t = saved; b = 0; }
   return { t, b };
 }
 function cardRecalc() {
@@ -338,9 +339,10 @@ function cardUse() {
   const am = $('#tourAmt'); if (!am) return;
   const r = cents2(Math.max(0, inum('tourCardT') - inum('tourCardB'))); am.value = r > 0 ? r : ''; tourTouched = true; sfx('tap'); autosave();
 }
-function cardLeave() {
+function cardLeave(d) {
   const t = inum('tourCardT'), b = inum('tourCardB'), am = $('#tourAmt');
-  if (am && am.value === '' && t > 0) { const r = cents2(Math.max(0, t - b)); am.value = r > 0 ? r : ''; }
+  /* only on a real move (Next or Back), never on the autosave while typing: the box must not freeze a half-typed total */
+  if (d && am && am.value === '' && t > 0) { const r = cents2(Math.max(0, t - b)); am.value = r > 0 ? r : ''; }
   if (t > 0) S.ui.cardT = cents2(t); else delete S.ui.cardT;
   if (b > 0) S.ui.cardB = cents2(b); else delete S.ui.cardB;
 }
