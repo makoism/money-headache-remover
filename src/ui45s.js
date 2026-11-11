@@ -39,7 +39,7 @@ const STEP_PAY = { id: 'pay', part: PART.money, setup: true, focus: '#tourPay', 
     const pay = S.ui.done && S.ui.done.pay ? val(S, 'a', START) : '';
     return `<p>Monthly take-home, after tax. Paid twice a month: add both.</p>
     <div class="tour-fields">${moneyField('tourPay', 'Monthly take-home pay', pay)}</div>
-    <p class="cap">Optional. Add it later under Salary.</p>`;
+    <p class="cap">Not sure yet? Leave it blank. The Salary line on the Plan tab takes it later.</p>`;
   },
   leave: () => {
     const el = $('#tourPay'); if (!el) return;
@@ -69,6 +69,7 @@ const BILL_NOTE = {
   rent: () => 'Full amount. If someone else pays part, add their share as other income.',
   util: () => 'Electricity, gas and water.',
   food: () => 'Groceries and everyday meals. Eating out for fun comes out of play money.',
+  net: () => 'Home internet, or the data plan if that is how you connect.',
   phone: () => 'Your monthly plan, or what you usually spend on top-ups.',
   ins: () => 'Health, life, car or home. Use the monthly amount.' + (S.ui.cur === '₱' ? ' Self-employed? Include your own SSS, PhilHealth and Pag-IBIG.' : ''),
   gas: () => 'Commute, ' + (S.ui.cur === '₱' ? 'Grab' : 'taxis') + ', fuel, parking, tolls.',

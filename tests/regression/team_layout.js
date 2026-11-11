@@ -27,7 +27,7 @@ const ok = (n, c, extra) => { if (c) passes++; else { fails++; console.log('FAIL
       else if (await p.$('#tourAmt')) await p.type('#tourAmt', '300');
       else if (await p.$('#tourGCost')) { await p.type('#tourGName', 'A long goal name to test wrapping'); await p.type('#tourGCost', '9000'); }
       const nx = await p.$eval('#tourNext', e => e.textContent);
-      if (nx === 'View month' || nx === 'Go to bills') break;
+      if (nx === 'View month' || nx === 'Done' || nx === 'Go to bills') break;
       await p.click('#tourNext'); await w(90);
     }
     ok(tag + ': walked the whole setup', seen.length > 20 && seen[seen.length - 1].startsWith('You’re ready'), seen.length + ' screens, last: ' + seen[seen.length - 1]);

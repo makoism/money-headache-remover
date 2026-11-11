@@ -31,7 +31,7 @@ function scanNote(t) { const e = $('#scanMsg'); e.textContent = t || ''; e.hidde
 function paintScan() {
   const off = scanSettled && !askFn && !scanBusy;
   $('#scanDirect').hidden = off;
-  $('#scanSub').textContent = off ? 'Send receipts to an AI app, then paste its reply here. Items are sorted into your categories and listed for review before anything is added.' : 'Take a photo or choose pictures. Claude reads and sorts them into your categories. You review before anything is added.';
+  $('#scanSub').textContent = off ? 'Send receipts to an AI app, then paste its reply here. Items are sorted into your categories and listed for review before anything is added.' : (askDoc ? 'Take a photo, or choose pictures, a bank CSV, Excel or PDF statement. ' : 'Take a photo, or choose pictures or a bank CSV. ') + 'Claude reads and sorts them into your categories. You review before anything is added.';
   const msg = $('#scanOff'); msg.hidden = !off;
   if (off) {
     msg.textContent = askReason === 'no_runtime' ? 'This copy is not running inside Claude and cannot read photos itself. Use an AI app below.'
@@ -56,7 +56,7 @@ function paintScanFiles() {
   scanFiles.forEach((f, i) => {
     const c = document.createElement('span'); c.className = 'sfile';
     if (f.kind === 'image') { const im = document.createElement('img'), u = URL.createObjectURL(f.file); scanUrls.push(u); im.src = u; im.alt = ''; c.append(im); }
-    else { const t = document.createElement('span'); t.className = 'sdoc'; t.textContent = 'CSV'; c.append(t); }
+    else { const t = document.createElement('span'); t.className = 'sdoc'; t.textContent = f.kind === 'pdf' ? 'PDF' : 'CSV'; c.append(t); }
     const b = document.createElement('button'); b.type = 'button'; b.dataset.rm = i; b.setAttribute('aria-label', 'Remove ' + f.file.name); b.textContent = '×'; c.append(b);
     box.append(c);
   });
@@ -73,11 +73,16 @@ async function scanAdd(list) {
   for (const f of Array.from(list || [])) {
     if (isTextFile(f)) {
       if (f.size > 2000000) { notes.push(`${f.name} is too large. Try one month at a time.`); continue; }
-      if (scanFiles.filter(x => x.kind === 'text').length >= ASK_MAX_TEXT) { notes.push(`Maximum ${ASK_MAX_TEXT} CSV files at a time.`); continue; }
+      if (scanFiles.filter(x => x.kind === 'text').length >= ASK_MAX_TEXT) { notes.push(`Maximum ${ASK_MAX_TEXT} CSV or Excel files at a time.`); continue; }
       scanFiles.push({ file: f, kind: 'text' }); continue;
     }
-    if (/\.pdf$/i.test(f.name) || f.type === 'application/pdf') { notes.push(`${f.name}: PDFs cannot be read here. Use a screenshot of each page, or an AI app below.`); continue; }
-    if (!/^image\//.test(f.type) && !/\.(heic|heif|jpe?g|png|webp)$/i.test(f.name || '')) { notes.push(`${f.name}: only photos, screenshots and CSV files can be read.`); continue; }
+    if (isPdfFile(f)) {
+      if (!askDoc) { notes.push(pdfHereNote(f)); continue; }
+      if (f.size > askDoc.maxInputBytes) { notes.push(`${f.name} is too large. Export fewer months, or take screenshots of the pages.`); continue; }
+      if (scanFiles.filter(x => x.kind === 'pdf').length >= askDoc.maxCount) { notes.push(`Maximum ${askDoc.maxCount} PDFs at a time.`); continue; }
+      scanFiles.push({ file: f, kind: 'pdf' }); continue;
+    }
+    if (!/^image\//.test(f.type) && !/\.(heic|heif|jpe?g|png|webp)$/i.test(f.name || '')) { notes.push(oldSheetNote(f) || `${f.name}: only photos, screenshots, CSV and Excel files can be read.`); continue; }
     if (!askImg) { notes.push('Photos cannot be sent from here. Use an AI app below, or a CSV from your bank.'); continue; }
     if (scanFiles.filter(x => x.kind === 'image').length >= maxImg) { notes.push(`Maximum ${maxImg} photos at a time. Read these first, then add the rest.`); continue; }
     const g = await shrinkPhoto(f);

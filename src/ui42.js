@@ -110,10 +110,13 @@ async function vaultRestore(raw, msgEl) {
   } catch (e) { vault = { code: '', rev: 0, on: false }; vaultKeys = null; vaultSaveLocal(); msgEl.textContent = 'That copy could not be opened with this code.'; return false; }
 }
 /* ---------- what Settings shows ---------- */
+const SAVED_LOCAL = 'Data is stored in this browser on this device only. Nothing is sent anywhere. A second copy is kept here in case the first goes missing, and is loaded on its own if so. It does not move to other devices. Clearing site data removes both, so only a backup file survives that. A backup is your own copy of numbers and receipts.';
+const SAVED_CLOUD = 'Data is stored in this browser, with a second copy here in case the first goes missing, and an encrypted cloud copy (Cloud backup below) that follows every save. Clearing site data removes the two copies on this device; the recovery code brings the cloud copy back. A backup file is your own copy of numbers and receipts.';
 function paintVault() {
   const box = $('#vaultBox'); if (!box) return;
   const can = vaultAvailable();
   box.hidden = !can && !vault.on;
+  const cap = $('#savedCap'); if (cap) { const t = vault.on ? SAVED_CLOUD : SAVED_LOCAL; if (cap.textContent !== t) cap.textContent = t; }
   if (box.hidden) return;
   const st = $('#vaultState'), code = $('#vaultCode');
   if (!vault.on) { st.textContent = 'Off. Your numbers live on this device only.'; code.hidden = true; }

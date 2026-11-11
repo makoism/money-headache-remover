@@ -29,6 +29,16 @@ let pass = 0, fail = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL 
   await p.click('#askSend'); await w(3000);
   const card = await p.evaluate(() => { const c = document.querySelector('#askLog .msg.ai.card, #askLog .card'); return c ? c.textContent : (document.querySelector('#askLog .msg.ai:last-child') || {}).textContent; });
   ok(/120/.test(card || '') && /45\.5|45\.50/.test(card || ''), 'review card lists the two receipts from the file: ' + (card || '').replace(/\s+/g, ' ').slice(0, 90));
+  // a PDF statement on the Scan receipts card goes up as a document block and comes back as receipts
+  const pdfPath = '/tmp/v28/card.pdf'; require('fs').writeFileSync(pdfPath, Buffer.from('%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF'));
+  await p.evaluate(() => { document.querySelector('#askClose, .ask-close') && document.querySelector('#askClose, .ask-close').click(); const t = [...document.querySelectorAll('.tabs button, [role=tab]')].find(b => b.textContent.trim() === 'Receipts'); t && t.click(); }); await w(600);
+  await p.evaluate(() => { const c = document.querySelector('#co'); if (c && !c.hidden) { const s = document.querySelector('#coSkip, #coNext'); s && s.click(); } }); await w(300);
+  const accept = await p.$eval('#scanPickIn', e => e.accept); ok(/pdf/.test(accept), 'the scan picker accepts PDFs: ' + accept);
+  const pick = await p.$('#scanPickIn'); await pick.uploadFile(pdfPath); await w(900);
+  ok(await p.evaluate(() => /PDF/.test((document.querySelector('#scanFiles') || {}).textContent || '') && !document.querySelector('#scanGo').hidden), 'the PDF is listed on the scan card with a PDF chip');
+  await p.click('#scanRead'); await w(3500);
+  const scanOut = await p.evaluate(() => (document.querySelector('#scanOut, #scanResult, .scan-out') || document.querySelector('#scan')).textContent);
+  ok(/120/.test(scanOut) && /45\.5|45\.50/.test(scanOut), 'the scan card reviews the receipts read from the PDF: ' + scanOut.replace(/\s+/g, ' ').slice(0, 90));
   ok(errs.length === 0, 'no page errors so far ' + JSON.stringify(errs.slice(0, 3)));
   await b.close();
 

@@ -28,7 +28,7 @@ const puppeteer = require('/home/claude/work/tools/node_modules/puppeteer-core')
       if (texts) texts.push(await tourText());
       if (fill) await fill(t);
       const nx = await q('#tourNext'); await p.click('#tourNext'); await w(200);
-      if (nx === 'View month' || nx === 'Go to bills') break;
+      if (nx === 'View month' || nx === 'Done' || nx === 'Go to bills') break;
     }
     await w(500);
   };

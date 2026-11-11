@@ -162,7 +162,7 @@ b, strong { font-weight: 600; }
 .chgsum b { color: var(--ink); }
 .row-t .dot { flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--c); }
 .row-t .nm { font-size: 17px; font-weight: 500; min-width: 0; text-align: left; }
-.row-h .amt { font-size: 17px; font-weight: 500; font-variant-numeric: tabular-nums lining-nums; }
+.row-h .amt { font-size: 17px; font-weight: 500; font-variant-numeric: tabular-nums lining-nums; white-space: nowrap; flex: none; }
 .row-h .amt.zero { color: var(--ink3); }
 .row-h .chev { width: 18px; height: 18px; color: var(--ink3); transition: transform .2s; }
 .row.open .chev { transform: rotate(180deg); }
@@ -454,6 +454,11 @@ svg.tour-fig text.t { font-family: var(--f); font-size: 11.5px; fill: var(--ink2
 svg.tour-scene { width: 100%; max-width: 440px; height: auto; border-radius: 22px; box-shadow: 0 10px 30px -14px rgba(29, 35, 71, .55); }
 .tour-body p.tour-safe { display: flex; gap: 12px; align-items: flex-start; background: var(--panel); border-radius: 16px; padding: 14px 16px; font-size: 16px; line-height: 1.4; max-width: 460px; }
 .tour-safe svg { flex: 0 0 22px; width: 22px; height: 22px; margin-top: 1px; color: var(--good); }
+.tour-cloud { display: flex; gap: 12px; align-items: flex-start; background: var(--panel); border-radius: 16px; padding: 14px 16px; max-width: 460px; font-size: 16px; line-height: 1.4; }
+.tour-cloud > svg { flex: 0 0 22px; width: 22px; height: 22px; margin-top: 2px; color: var(--good); }
+.tour-cloud > div { min-width: 0; flex: 1 1 auto; } .tour-cloud b { display: block; margin-bottom: 4px; } .tour-cloud .cap { margin: 0 0 10px; } .tour-cloud .row-btns { align-items: center; gap: 10px; } .tour-cloud .row-btns .cap { margin: 0; }
+.tour-vault-code .vault-code { margin: 10px 0 4px -34px; font-size: 16px; letter-spacing: .02em; }
+@media (max-width: 360px) { .tour-vault-code .vault-code { font-size: 14px; } }
 .tour-chips { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; max-width: 460px; }
 .tour-chips.one { grid-template-columns: 1fr; }
 .tour-chips .chip { position: relative; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 2px; min-height: 64px; padding: 10px 14px; border-radius: 16px; background: var(--panel); box-shadow: inset 0 0 0 1px var(--hair); cursor: pointer; color: var(--ink); transition: box-shadow .15s, background .15s; }
@@ -1376,15 +1381,15 @@ body.gw-open, body.co-open.gw-open { overflow: hidden; }
     <section class="card scan" id="scan" aria-labelledby="scanH">
       <div class="head">
         <h2 id="scanH">Scan receipts</h2>
-        <p class="sub2" id="scanSub">Claude reads receipt photos and files each by category. You review before anything is added.</p>
+        <p class="sub2" id="scanSub">Claude reads receipt photos and statements and files each item by category. You review before anything is added.</p>
       </div>
       <div class="scan-direct" id="scanDirect">
         <div class="scan-btns">
           <button type="button" class="btn solid" id="scanCam">Camera</button>
-          <button type="button" class="btn" id="scanPick">Choose photos</button>
+          <button type="button" class="btn" id="scanPick">Choose files</button>
         </div>
         <input type="file" id="scanCamIn" accept="image/*" capture="environment" hidden>
-        <input type="file" id="scanPickIn" accept="image/*,.csv,.tsv,.txt,text/csv,text/plain" multiple hidden>
+        <input type="file" id="scanPickIn" accept="image/*,.csv,.tsv,.txt,.xlsx,.pdf,text/csv,text/plain,application/pdf" multiple hidden>
         <div class="scan-files" id="scanFiles" hidden></div>
         <div class="row-btns scan-go" id="scanGo" hidden>
           <button type="button" class="btn solid" id="scanRead">Read</button>
@@ -1393,7 +1398,7 @@ body.gw-open, body.co-open.gw-open { overflow: hidden; }
         </div>
         <p class="msg" id="scanMsg" role="status" hidden></p>
         <div class="scan-out" id="scanOut" aria-live="polite"></div>
-        <p class="cap">One receipt per photo, flat, well lit. Photos go to your Claude account on Read. This page keeps none.</p>
+        <p class="cap" id="scanCap">One receipt per photo, flat, well lit. A bank CSV, Excel or PDF statement lists a whole month. Files go to Claude on Read; this page keeps none.</p>
       </div>
       <p class="scan-off" id="scanOff" role="status" hidden></p>
       <details class="scan-app" id="scanApp">
@@ -1509,9 +1514,13 @@ body.gw-open, body.co-open.gw-open { overflow: hidden; }
         <textarea id="aiBox" readonly aria-label="Prompt for your own AI" spellcheck="false"></textarea>
         <div class="row-btns"><button type="button" class="btn small solid" id="aiCopy">Copy prompt</button><span class="msg" id="aiMsg" role="status"></span></div>
       </div>
+      <div class="backup" id="installBox" hidden>
+        <h3>On your phone</h3>
+        <p class="cap" id="installCap">Open this address in Safari or Chrome on the phone. iPhone: Share, then Add to Home Screen. Android: the browser menu, then Add to Home screen or Install app. It then opens full screen, like an app, and works without a connection. Same numbers: the icon opens this same browser copy.</p>
+      </div>
       <div class="backup" id="bkArea">
         <h3>Saved data</h3>
-        <p class="cap">Data is stored in this browser on this device only. Nothing is sent anywhere. A second copy is kept here in case the first goes missing, and is loaded on its own if so. It does not move to other devices. Clearing site data removes both, so only a backup file survives that. A backup is your own copy of numbers and receipts.</p>
+        <p class="cap" id="savedCap">Data is stored in this browser on this device only. Nothing is sent anywhere. A second copy is kept here in case the first goes missing, and is loaded on its own if so. It does not move to other devices. Clearing site data removes both, so only a backup file survives that. A backup is your own copy of numbers and receipts.</p>
         <h4>Backup</h4>
         <div class="row-btns">
           <button type="button" class="btn small solid" id="bkSave">Save file</button>
@@ -1553,8 +1562,8 @@ body.gw-open, body.co-open.gw-open { overflow: hidden; }
     </section>
   </div>
 
-  <p class="foot">Template, not financial advice. Sample numbers are invented. Replace them with yours.</p>
-  <p class="foot ver" id="verFoot">Version 26.1, updated Nov 11, 8:55 pm</p>
+  <p class="foot" id="footNote">Not financial advice. Sample numbers are invented. Replace them with yours.</p>
+  <p class="foot ver" id="verFoot">Version 27.0, updated Nov 12, 1:05 am</p>
 </div>
 <div class="tip" id="tip" role="tooltip"></div>
 <div class="tour" id="tour" role="dialog" aria-modal="true" aria-labelledby="tourTitle" hidden>
@@ -1574,7 +1583,7 @@ body.gw-open, body.co-open.gw-open { overflow: hidden; }
     <button type="button" id="helpSetup">Guided setup</button>
     <button type="button" id="helpTour">Tour</button>
     <button type="button" id="helpVideo" hidden>Intro video</button>
-    <p class="help-ver">Version 26.1</p>
+    <p class="help-ver">Version 27.0</p>
   </div>
   <div class="help-row"><button type="button" class="help-btn ask-btn" id="askBtn">Ask</button><button type="button" class="help-btn" id="helpBtn" aria-expanded="false" aria-controls="helpMenu"><span class="q" aria-hidden="true">?</span>Help</button></div>
 </div>
@@ -3204,7 +3213,7 @@ const STEP_PAY = { id: 'pay', part: PART.money, setup: true, focus: '#tourPay', 
     const pay = S.ui.done && S.ui.done.pay ? val(S, 'a', START) : '';
     return `<p>Monthly take-home, after tax. Paid twice a month: add both.</p>
     <div class="tour-fields">${moneyField('tourPay', 'Monthly take-home pay', pay)}</div>
-    <p class="cap">Optional. Add it later under Salary.</p>`;
+    <p class="cap">Not sure yet? Leave it blank. The Salary line on the Plan tab takes it later.</p>`;
   },
   leave: () => {
     const el = $('#tourPay'); if (!el) return;
@@ -3234,6 +3243,7 @@ const BILL_NOTE = {
   rent: () => 'Full amount. If someone else pays part, add their share as other income.',
   util: () => 'Electricity, gas and water.',
   food: () => 'Groceries and everyday meals. Eating out for fun comes out of play money.',
+  net: () => 'Home internet, or the data plan if that is how you connect.',
   phone: () => 'Your monthly plan, or what you usually spend on top-ups.',
   ins: () => 'Health, life, car or home. Use the monthly amount.' + (S.ui.cur === '₱' ? ' Self-employed? Include your own SSS, PhilHealth and Pag-IBIG.' : ''),
   gas: () => 'Commute, ' + (S.ui.cur === '₱' ? 'Grab' : 'taxis') + ', fuel, parking, tolls.',
@@ -3613,7 +3623,7 @@ ${IMP_FORMAT}
 ${importRules(cur)}
 Today is ${todayStr()}.
 
-FILES: ${nImg ? nImg + ' screenshot' + (nImg === 1 ? '' : 's') + ' or photo' + (nImg === 1 ? '' : 's') + ' attached' : 'no images'}${texts.length ? ' and the text files below.' : '.'}
+FILES: ${nImg ? nImg + ' attached file' + (nImg === 1 ? '' : 's') + ' (screenshots, photos or PDF statements)' : 'no images'}${texts.length ? ' and the text files below.' : '.'}
 ${texts.map(t => `\n----- FILE: ${t.name} -----\n${t.text}`).join('\n')}`;
 }
 /* the message for any other AI app: it may ask first, then must end with the JSON block */
@@ -3660,7 +3670,7 @@ async function importRead() {
     if (!askFn) { await connectAsk(); if (!askFn) throw { code: askReason === 'relay_off' ? 'relay_unconfigured' : 'not_granted' }; }
     const texts = [], imgs = []; let budget = ASK_TEXT_BYTES;
     for (const f of impFiles) {
-      if (f.kind === 'image') { imgs.push(f.file); continue; }
+      if (f.kind === 'image' || f.kind === 'pdf') { imgs.push(f.file); continue; }
       let t = await readTextFile(f.file); if (budget < 500) continue;
       if (byteLen(t) > budget) t = clipBytes(t, budget); budget -= byteLen(t); texts.push({ name: f.file.name, text: t });
     }
@@ -3679,8 +3689,10 @@ async function importRead() {
 function importAddFiles(list) {
   const notes = [];
   Array.from(list || []).forEach(f => {
-    const kind = isTextFile(f) ? 'text' : /^image\//.test(f.type) || /\.(heic|heif|jpe?g|png|webp)$/i.test(f.name || '') ? 'image' : '';
-    if (!kind) { notes.push(/\.pdf$/i.test(f.name) || f.type === 'application/pdf' ? `${f.name}: PDFs cannot be read. Take screenshots of the pages, or export a CSV.` : `${f.name}: only CSV files, screenshots and photos.`); return; }
+    const kind = isTextFile(f) ? 'text' : /^image\//.test(f.type) || /\.(heic|heif|jpe?g|png|webp)$/i.test(f.name || '') ? 'image' : askDoc && isPdfFile(f) ? 'pdf' : '';
+    if (!kind) { notes.push(isPdfFile(f) ? (askDoc ? `${f.name}: not a readable PDF.` : pdfHereNote(f)) : oldSheetNote(f) || `${f.name}: only CSV or Excel files, ${askDoc ? 'PDFs, ' : ''}screenshots and photos.`); return; }
+    if (kind === 'pdf' && f.size > askDoc.maxInputBytes) { notes.push(`${f.name} is too large. Export fewer months, or take screenshots of the pages.`); return; }
+    if (kind === 'pdf' && impFiles.filter(x => x.kind === 'pdf').length >= askDoc.maxCount) { notes.push(`${askDoc.maxCount} PDFs at a time.`); return; }
     if (f.size > 20000000) { notes.push(`${f.name} is too large.`); return; }
     if (impFiles.length >= 10) { notes.push('Ten files at a time.'); return; }
     impFiles.push({ file: f, kind });
@@ -3695,7 +3707,8 @@ function paintImport() {
 }
 /* the how-to, kept short: what to look for in a banking app */
 const IMP_HOW = () => `<details class="src-how"><summary>How to get your statements</summary><div class="src-how-in">
-  <p>Any bank or e-wallet app: open the account, find <b>Statements</b>, <b>Transaction history</b> or <b>Export</b>, and choose the last 2 or 3 months. A <b>CSV</b> or <b>Excel</b> file is best. If the app only shows a PDF or a list, take <b>screenshots</b> of each page instead.</p>
+  <p>Any bank or e-wallet app: open the account, find <b>Statements</b>, <b>Transaction history</b> or <b>Export</b>, and choose the last 2 or 3 months. A <b>CSV</b> or <b>Excel</b> export, or a <b>PDF</b> statement, is best. If the app only shows a list, take <b>screenshots</b> of each page instead.</p>
+  <p>A PDF that asks for a password (GCash sends these) has to be opened with the password first, then saved or printed as a new PDF, or screenshotted.</p>
   ${sym() === '₱' ? '<p>GCash: Profile, Transaction History, export by email. Maya: Account, Statements. BPI, BDO, UnionBank, GoTyme: the account page has Download or Export.</p>' : ''}
   ${sym() === '¥' ? '<p>Japanese banks: 入出金明細 then CSVダウンロード. Card apps: 利用明細 then screenshots of each month.</p>' : ''}
   <p>Credit cards: the last statement (CSV or screenshots). Cash spending: add it on the review screen.</p>
@@ -3707,7 +3720,7 @@ const STEP_SOURCE = { id: 'source', part: PART.money, setup: true, title: 'Your 
       <button type="button" class="src-opt" data-src="ai"><b>Use any AI</b><span>Copy a message, paste it with your statements into ChatGPT, Claude or Gemini, paste the answer back.</span></button>
     </div>
     <div class="src-panel" id="srcUploadPanel" hidden>
-      <div class="row-btns"><button type="button" class="btn small solid" id="impPick">Choose files</button><input type="file" id="impFile" multiple accept=".csv,.tsv,.txt,text/csv,text/plain,image/*" hidden><button type="button" class="btn small solid" id="impRead" hidden>Read files</button><button type="button" class="btn small" id="impStop" hidden>Stop</button></div>
+      <div class="row-btns"><button type="button" class="btn small solid" id="impPick">Choose files</button><input type="file" id="impFile" multiple accept=".csv,.tsv,.txt,.xlsx,.pdf,text/csv,text/plain,application/pdf,image/*" hidden><button type="button" class="btn small solid" id="impRead" hidden>Read files</button><button type="button" class="btn small" id="impStop" hidden>Stop</button></div>
       <div class="fchips" id="impFiles" hidden></div><p class="cap" id="impNote" role="status"></p>
       <div class="imp-out" id="impOut"></div>
     </div>
@@ -3726,7 +3739,7 @@ const STEP_SOURCE = { id: 'source', part: PART.money, setup: true, title: 'Your 
     const body = $('#tourBody');
     const show = which => { $('#srcUploadPanel').hidden = which !== 'upload'; $('#srcAiPanel').hidden = which !== 'ai'; $$('.src-opt', body).forEach(b => b.classList.toggle('on', b.dataset.src === which)); };
     $$('.src-opt', body).forEach(b => b.addEventListener('click', () => { show(b.dataset.src); sfx('tap'); if (b.dataset.src === 'upload') { connectAsk().then(paintSrc); $('#impPick').focus(); } else $('#impCopy').focus(); }));
-    const paintSrc = () => { const sub = $('#srcUploadSub'); if (!sub) return; if (askFn) sub.textContent = 'CSV or screenshots. Read in a few seconds.'; else if (askReason === 'relay_off') sub.textContent = 'The AI is not switched on for this page yet. Use any AI instead.'; else if (askReason === 'no_runtime') sub.textContent = 'Not available in this copy of the page. Use any AI instead.'; else if (inArtifact()) sub.textContent = 'Here it needs a Claude sign-in.' + (RELAY_URL ? ' At the app\'s own address it works for everyone.' : ''); };
+    const paintSrc = () => { const sub = $('#srcUploadSub'); if (!sub) return; if (askFn) sub.textContent = (askDoc ? 'CSV, Excel, PDF or screenshots.' : 'CSV, Excel or screenshots.') + ' Read in a few seconds.'; else if (askReason === 'relay_off') sub.textContent = 'The AI is not switched on for this page yet. Use any AI instead.'; else if (askReason === 'no_runtime') sub.textContent = 'Not available in this copy of the page. Use any AI instead.'; else if (inArtifact()) sub.textContent = 'Here it needs a Claude sign-in.' + (RELAY_URL ? ' At the app\'s own address it works for everyone.' : ''); };
     connectAsk().then(paintSrc);
     $('#impPick').addEventListener('click', () => $('#impFile').click());
     $('#impFile').addEventListener('change', e => { importAddFiles(e.target.files); e.target.value = ''; if (impFiles.length) $('#impRead').focus(); });
@@ -4730,7 +4743,7 @@ const TOUR = [
     body: () => `${homeScene()}
       <p>Know where your money stands, and what it is working toward.</p>
       <ul class="tour-get"><li>Your month on one screen.</li><li>Play money you can spend with no guilt.</li><li>Each goal, and the date you reach it.</li></ul>
-      <p class="cap">Setup takes about ten minutes, one question at a time. Stop any time.</p>
+      <p class="cap">Setup takes a few minutes with your statements, about ten by hand. Stop any time.</p>
       <p class="tour-safe">${LOCK}<span>Data stays in this browser. Nobody else can see it.</span></p>
       <p class="cap tour-restore" id="tourRestore" hidden><button type="button" class="link" id="tourRestoreBtn">Used this before on another phone? Enter your recovery code.</button></p>
       <div class="tour-restore-in" id="tourRestoreIn" hidden><div class="row-btns inv-row"><input class="txt" id="tourVaultIn" type="text" autocomplete="off" spellcheck="false" placeholder="MHR-XXXX-XXXX-XXXX-XXXX-XXXX" aria-label="Recovery code" maxlength="40"><button type="button" class="btn small solid" id="tourVaultUse">Load</button></div><p class="cap" id="tourVaultMsg" role="status"></p></div>
@@ -4779,7 +4792,7 @@ const TOUR = [
       <div class="cal-btns" id="tourCal">${calBtnsInner()}</div><p class="cal-msg cap" id="tourCalMsg" role="status"></p>
       <p class="cap">${inArtifact() ? 'Google Calendar repeats it. Outlook, Microsoft 365 and Yahoo open a one-time event: set the repeat there. Apple and others show text to copy.' : 'Google Calendar and the downloaded file repeat it. Outlook, Microsoft 365 and Yahoo open a one-time event: set the repeat there.'} Set for <span id="tourWhen"></span>.</p></div>` },
   { id: 'ready', part: PART.habit, title: () => (firstName() ? `Setup done, ${esc(firstName())}.` : 'Setup done.'), last: true,
-    next: () => (S.ui.setup ? 'View month' : 'Go to bills'),
+    next: () => (S.ui.setup ? 'Done' : 'Go to bills'),
     body: () => {
       if (S.ui.setup) {
         const f = planFacts();
@@ -4790,8 +4803,12 @@ const TOUR = [
         const V = viewOf(S, f.C, nowYm(), ymd(new Date())), r = V.main, mg = r ? goalById(S, r.id) : null;
         const goal = mg ? `Main goal: <b>${esc(mg.name)}</b>. ${r.pct >= 100 ? 'Full.' : r.reached ? (r.months <= 0 ? 'Full <b>this month</b>.' : `<b>${plural(r.months, 'month')}</b> to go. Full ${fullLabel(r.reached)}.`) : 'Not full within ' + SPAN + ' at this pace.'}` : '';
         const ok = f.st === 'even' || f.st === 'spare';
+        /* on the app's own address: one tap keeps an encrypted copy in the cloud, so a lost phone does not mean lost numbers */
+        const cloud = typeof vaultAvailable === 'function' && vaultAvailable() && !(vault && vault.on)
+          ? `<div class="tour-cloud" id="tourCloud">${LOCK}<div><b>Keep a copy in the cloud</b><p class="cap">Your numbers live in this browser. Cloud backup keeps an encrypted copy that only your recovery code can open. New phone, or browser cleared: enter the code and the numbers come back.</p>
+            <div class="row-btns"><button type="button" class="btn small solid" id="tourVaultOn">Turn on cloud backup</button><span class="cap">Later: Settings, Cloud backup.</span></div><div class="tour-vault-code" id="tourVaultCode"></div></div></div>` : '';
         return `${homeScene()}${ok ? `<p class="tour-st"><span class="chip good">${IC.ok}On plan</span></p>` : ''}<p>Your month:</p>${ledgerHTML(f)}<p>${line}</p>${goal ? `<p>${goal}</p>` : ''}
-        <p>Plan: edit any line. Receipts: log what you spend, so this stays true. Help (bottom right) replays this tour and shows each tab.</p>`;
+        <p>Plan: edit any line. Receipts: log what you spend, so this stays true. Help (bottom right) replays this tour and shows each tab.</p>${cloud}`;
       }
       const m = calcAll(S).byYm[sel], pay = m.a + m.b + m.side, L = m.pool.left;
       const zero = S.ui.preset === 'blank' || !!S.ui.cleared;
@@ -4802,6 +4819,15 @@ const TOUR = [
       return `${homeScene()}<p>${msg}</p>
       <p>${zero ? 'Bills and goals are empty. Open Plan, Necessities, and enter what you pay.' : 'Bills and goals are still samples. Open Plan, Necessities, and set each line. Or use <b>Zero all</b> in Settings.'}</p>
       <p>Help (bottom right) replays this tour and the setup.</p>`;
+    },
+    after: () => {
+      const b = $('#tourVaultOn'); if (!b) return;
+      b.addEventListener('click', async () => {
+        b.disabled = true;
+        try { const code = await vaultTurnOn(); b.closest('.row-btns').hidden = true; vaultShowCode($('#tourVaultCode'), code); sfx('next'); } catch (e) { b.disabled = false; return; }
+        /* the code is the last thing on the screen and the footer floats over the end of it: bring it fully into view */
+        const t = $('#tour'); requestAnimationFrame(() => t.scrollTo({ top: t.scrollHeight, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }));
+      });
     } },
 ];
 
@@ -4834,8 +4860,8 @@ function renderTour(dir) {
   const body = $('#tourBody'); body.innerHTML = `<h2 id="tourTitle" tabindex="-1">${title}</h2>${t.body()}`;
   moneyUpAll(body);
   body.classList.remove('in-r', 'in-l'); if (dir) { void body.offsetWidth; body.classList.add(dir > 0 ? 'in-r' : 'in-l'); }
-  const hasSetup = tourMode === 'full' && same.some(x => x.setup);
-  $('#tourSkip').textContent = hasSetup ? 'Finish later' : 'Skip tour'; $('#tourPartSkip').hidden = !hasSetup;
+  const hasSetup = tourMode === 'full' && same.some(x => x.setup), setupRun = tourMode === 'full' && TS.some(x => x.setup);
+  $('#tourSkip').textContent = setupRun ? 'Finish later' : 'Skip tour'; $('#tourSkip').hidden = !!t.last && setupRun; $('#tourPartSkip').hidden = !hasSetup;
   $('#tourBack').hidden = tourN === 0; $('.tour-foot').classList.toggle('last', !!t.last);
   const nx = $('#tourNext'); nx.textContent = (typeof t.next === 'function' ? t.next() : t.next) || 'Next'; $('#tourAlt').hidden = !(t.last && !S.ui.setup);
   paintSnd();
@@ -4902,7 +4928,7 @@ function tourStep(d) {
   let nx = tourN + d;
   if (tourJump) { const j = TS.findIndex(s => s.id === tourJump); tourJump = null; if (j >= 0) nx = j; }
   tourN = Math.max(0, Math.min(TS.length - 1, nx)); renderTour(d); sfx(d > 0 ? 'next' : 'back');
-  if (d > 0 && TS[tourN].id === 'reveal' && havePay()) { celebrate('big', 'Play money, one number.'); sfx('fanfare'); }
+  if (d > 0 && TS[tourN].id === 'reveal' && havePay()) { celebrate('big', 'This is yours to spend.'); sfx('fanfare'); }
 }
 function gotoStep(id) { buildSteps(); const i = TS.findIndex(x => x.id === id); if (i < 0) return; tourN = i; renderTour(1); sfx('next'); }
 /* jump to the first screen of the next part, keeping whatever was typed on this one */
@@ -4971,7 +4997,7 @@ THE PAGE
 - Home: the first screen, kept simple. At the very top, under your name, a status line says where you stand this month: On plan, Tight month or Short, then whether all pay is assigned and where your balance ends. A line under it says whether you have logged receipts this week. While the figures are still the invented sample, it says Sample numbers instead. Top card: the main goal in plain words (for example "Yearly bill covered"), months to go, the date it is full, a progress bar and a status. Tap Forecast under it for details and a graph. Next, Play money: what is left this month, with a weekly amount. Next, Log spend: amount, category and Log. Under Date, note you can set the date and a note, and Scan receipt jumps to the scanner. Then Goals: one row per goal with what it pays for and months to go. Tap a row to open it: amount saved, status, Edit goal, and Set as main goal. Add goal starts a new goal, and See every goal on one graph draws all goals together. Then Jars: the six jars. The jars you spend from (Necessities, Play, Education, Give) show what is left. The two you save in (Long-Term Savings for Spending, Financial Freedom) show what has built up. The folded section Streak, badges, pages holds the weekly streak, badges and the links to other pages.
 - On every page except Home and Settings, a slim bar under the tabs shows the main goal, months to go and play money left. Tap it to go Home. It updates as receipts are logged.
 - The main goal is the nearest goal still being saved for, unless the person picks one with Set as main goal.
-- Receipts: at the top is Scan receipts. When the page runs inside Claude, tap Camera or Choose photos, then Read. Claude sorts the receipts into categories and lists what it found, with a category picker on each line, before anything is added. Tap Add to my page to add them, and Undo is offered afterwards. When the page cannot reach Claude, the card shows Other AI app: tap Copy message, paste it into an AI app with the receipt photos, paste the reply into Reply and tap Check. Below that: the form with Date, Amount, Category, Note and Log receipt, a Month picker with the receipts of that month, plan against spent for each category, and a Reminder card that adds a repeating event to Google, Apple, Outlook.com, Microsoft 365, Yahoo or other calendars, or copies the event text.
+- Receipts: at the top is Scan receipts. When Claude can be reached, tap Camera or Choose files (photos, screenshots, a bank CSV or a PDF statement), then Read. Claude sorts the receipts into categories and lists what it found, with a category picker on each line, before anything is added. Tap Add to my page to add them, and Undo is offered afterwards. When the page cannot reach Claude, the card shows Other AI app: tap Copy message, paste it into an AI app with the receipt photos, paste the reply into Reply and tap Check. Below that: the form with Date, Amount, Category, Note and Log receipt, a Month picker with the receipts of that month, plan against spent for each category, and a Reminder card that adds a repeating event to Google, Apple, Outlook.com, Microsoft 365, Yahoo or other calendars, or copies the event text.
 - Plan, Goals: each goal is a savings bucket with an amount and, optionally, a date. With a date, the page spreads what is missing over the months before it. Without a date it aims to fill the goal in about a year. Edit goal renames, resizes, dates or removes it. Change monthly amount sets the monthly saving. Add goal starts the three-step flow. Forecast shows each goal month by month as a chart, and Table switches to numbers. The emergency fund is the one goal that can be borrowed from in a short month.
 - Plan, Month: the whole plan for one month. A Choose a month list, the big Play money number with a weekly amount, a status chip (On plan, Tight or Short), the pay split by jar as a coloured bar, and Details: Money in (Salary, Second income, Side income), Money out (Necessities, One-time costs, Long-Term Savings for Spending, Play money, Education, Financial Freedom, Give) and Left. Tap an amount to type a new one: it changes that month only, and Keep for later months makes it the new usual. Open a jar and tap Rename, remove or add lines to change its list. Reset month and Undo all revert edits. A Short month offers one-tap fixes: spend less, or borrow from the emergency fund. All months shows a table of every month.
 - Where to put a paycheck: Plan, Month, open Salary under Money in, and type the monthly take-home pay (after tax). If paid twice a month, add both together.
@@ -4980,7 +5006,7 @@ THE PAGE
 - Yen, pesos and euros start with sample numbers made up for one salary (about 200,000 yen, 30,000 pesos or 1,650 euros a month), with every bill and goal worked out from it. Any other currency starts at zero. Samples should be replaced with real numbers. Changing the currency in Settings swaps the sample to match, but only while the numbers are untouched. Once someone has typed their own numbers, only the symbol changes.
 - Filling the page from files: in this chat there is a paperclip button. A person can add photos or screenshots of receipts, credit card statements or bank statements, or a CSV file from their bank (PDFs cannot be read here: use a screenshot of each page, or the CSV). Then they press Send. Claude reads the files and lists what it found: receipts, monthly pay, bill amounts and the money they have today. Nothing on the page changes until the person taps Add to my page, and Undo is offered right after. The files go to the person's own Claude account only when they press Send, and this page does not keep them. Only dates from November 2026 on can be added. Never say you changed anything yourself: changes happen only through that button.
 - The page works in any currency. The currency is chosen in the tour or under Settings.`;
-const ASK_SUGGEST = ['Where is my money going?', 'What can I realistically save each month?', 'Help me plan a trip', 'Cut my play money a little', 'Where do I enter my pay?'];
+const ASK_SUGGEST = ['Where is my money going?', 'What can I realistically save each month?', 'Help me plan a trip', 'Cut my play money a little', 'I spent 300 on lunch today'];
 
 function askNumbers() {
   const c = calcAll(S), m = c.byYm[sel], J = jarsOf(S, m), st = { good: 'On plan', tight: 'Tight', short: 'Short' }[statusOf(S, m)], cur = sym() || 'none';
@@ -5052,7 +5078,7 @@ function wireAskAi() {
 /* ---------- fill the page from photos, screenshots and CSV files ----------
    The files go to the person's own Claude account only when they press Send. Claude answers with data, the page checks every field,
    shows what it found, and changes nothing until the person taps "Add to my page". One tap undoes it. */
-let askFiles = [], askCanAttach = false, askImg = null;
+let askFiles = [], askCanAttach = false, askImg = null, askDoc = null; /* askDoc: PDF limits, only on the relay route */
 const ASK_CAP_OWN = 'Runs on your Claude account; you approve access first. Your numbers go with each question while the box is ticked. Nothing is kept.';
 const ASK_CAP_RELAY = 'Answered by Claude through this page. Your numbers go with each question while the box is ticked. Nothing is kept.';
 const askCap = () => (askFn && askFn.relay ? ASK_CAP_RELAY : ASK_CAP_OWN);
@@ -5060,8 +5086,10 @@ const viaRelay = () => !!(askFn && askFn.relay);
 const ASK_MAX_TEXT = 3, ASK_TEXT_BYTES = 170000, MON3 = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const dayLabel = d => MON3[+d.slice(5, 7) - 1] + ' ' + (+d.slice(8, 10));
 const fromYm = () => { const t = todayStr().slice(0, 7); return MONTHS.indexOf(t) >= 0 ? t : START; };
-const isTextFile = f => /\.(csv|tsv|txt)$/i.test(f.name) || ['text/csv', 'text/plain', 'text/tab-separated-values'].indexOf(f.type) >= 0;
+const isTextFile = f => /\.(csv|tsv|txt)$/i.test(f.name) || ['text/csv', 'text/plain', 'text/tab-separated-values'].indexOf(f.type) >= 0 || (isXlsxFile(f) && xlsxCan());
+const oldSheetNote = f => isXlsFile(f) && !isXlsxFile(f) ? `${f.name}: old Excel format. Open it and save as CSV or .xlsx.` : isXlsxFile(f) && !xlsxCan() ? `${f.name}: this browser cannot open Excel files here. Save it as CSV.` : '';
 const isImageFile = f => !!askImg && askImg.mediaTypes.indexOf(f.type) >= 0;
+const pdfHereNote = f => `${f.name}: PDFs cannot be read here.` + (RELAY_URL && inArtifact() ? ' At the app\'s own address they can.' : '') + ' Use a screenshot of each page, or a CSV from your bank.';
 const sizeLabel = n => (n < 1048576 ? Math.max(1, Math.round(n / 1024)) + ' KB' : (n / 1048576).toFixed(1) + ' MB');
 function askFilesNote(t) { const e = $('#askFilesMsg'); e.textContent = t || ''; e.hidden = !t; }
 function renderAskFiles() {
@@ -5074,11 +5102,13 @@ function renderAskFiles() {
 function askAddFiles(list) {
   const notes = [], maxImg = Math.min(askImg ? askImg.maxCount : 0, 10);
   Array.from(list || []).forEach(f => {
-    const kind = isTextFile(f) ? 'text' : isImageFile(f) ? 'image' : '';
-    if (!kind) { notes.push(/\.pdf$/i.test(f.name) || f.type === 'application/pdf' ? `${f.name}: PDFs cannot be read here. Use a screenshot of each page, or a CSV from your bank.` : `${f.name}: only photos, screenshots and CSV files can be read.`); return; }
+    const kind = isTextFile(f) ? 'text' : isImageFile(f) ? 'image' : askDoc && isPdfFile(f) ? 'pdf' : '';
+    if (!kind) { notes.push(isPdfFile(f) ? pdfHereNote(f) : oldSheetNote(f) || `${f.name}: only photos, screenshots${askDoc ? ', PDFs' : ''}, CSV and Excel files can be read.`); return; }
     if (kind === 'text' && f.size > 2000000) { notes.push(`${f.name} is too large. Try one month at a time.`); return; }
+    if (kind === 'pdf' && f.size > askDoc.maxInputBytes) { notes.push(`${f.name} is too large. Export fewer months, or take screenshots of the pages.`); return; }
+    if (kind === 'pdf' && askFiles.filter(x => x.kind === 'pdf').length >= askDoc.maxCount) { notes.push(`Maximum ${askDoc.maxCount} PDFs at a time.`); return; }
     if (kind === 'image' && askImg && f.size > askImg.maxInputBytes) { notes.push(`${f.name} is too large. Use a screenshot instead of the original photo.`); return; }
-    if (kind === 'text' && askFiles.filter(x => x.kind === 'text').length >= ASK_MAX_TEXT) { notes.push(`Maximum ${ASK_MAX_TEXT} CSV files at a time.`); return; }
+    if (kind === 'text' && askFiles.filter(x => x.kind === 'text').length >= ASK_MAX_TEXT) { notes.push(`Maximum ${ASK_MAX_TEXT} CSV or Excel files at a time.`); return; }
     if (kind === 'image' && askFiles.filter(x => x.kind === 'image').length >= maxImg) { notes.push(`Maximum ${maxImg} photos at a time. Add the rest after these.`); return; }
     askFiles.push({ file: f, kind });
   });
@@ -5086,6 +5116,7 @@ function askAddFiles(list) {
 }
 async function readTextFile(f) {
   const buf = await f.arrayBuffer();
+  if (isXlsxFile(f)) { try { return await xlsxToCsv(buf); } catch (e) { throw { code: 'file_rejected', message: `${f.name} could not be read as a spreadsheet. Save it as CSV and try again.` }; } }
   for (const label of ['utf-8', 'shift_jis', 'windows-1252']) { try { return new TextDecoder(label, { fatal: true }).decode(buf).replace(/^﻿/, ''); } catch (e) { /* try the next one */ } }
   return new TextDecoder('utf-8').decode(buf);
 }
@@ -5119,7 +5150,7 @@ RECEIPTS ALREADY ON THE PAGE (date | amount | note). Do not list these again.
 ${have}
 
 THE PERSON'S NOTE ABOUT THESE FILES: ${note ? JSON.stringify(note.slice(0, 300)) : '(none)'}
-FILES: ${nImg ? nImg + ' photo' + (nImg === 1 ? '' : 's') + ' or screenshot' + (nImg === 1 ? '' : 's') + ' attached to this message' : 'no photos'}${texts.length ? ' and the text files below.' : '.'}
+FILES: ${nImg ? nImg + ' attached file' + (nImg === 1 ? '' : 's') + ' (photos, screenshots or PDF statements)' : 'no photos'}${texts.length ? ' and the text files below.' : '.'}
 ${texts.map(t => `\n----- FILE: ${t.name} -----\n${t.text}`).join('\n')}`;
 }
 /* every field Claude sends back is checked here; anything odd is dropped */
@@ -5235,7 +5266,8 @@ function askFilesFail(e, bot, retry) {
   const copy = code === 'cancelled' ? '' : gone ? 'Reading files needs permission to use your Claude account and is unavailable here.'
     : code === 'images_unavailable' ? 'Photos cannot be sent from here. A CSV from your bank still works.'
     : code === 'image_rejected' ? 'A photo could not be read. Try a clearer one, or a screenshot.'
-    : code === 'prompt_too_large' ? 'Files too long. Add fewer files, or one month at a time.'
+    : code === 'pdf_locked' || code === 'file_rejected' ? ((e && e.message) || 'A file could not be read.') + ' Remove it, then send again.'
+    : code === 'prompt_too_large' ? 'Files too long. Add fewer files, fewer pages, or one month at a time.'
     : code === 'rate_limited' ? 'Too many requests, or your Claude usage limit is reached. Try again later.'
     : code === 'session_expired' ? 'Signed out of Claude. Sign in again, then send the files again.'
     : code === 'invalid_json' || code === 'refused' || code === 'empty_completion' ? 'No entries could be made from those files. Try a clearer photo, or one file at a time.'
@@ -5246,7 +5278,7 @@ function askFilesFail(e, bot, retry) {
 async function extractFromFiles(files, note, signal) {
   const texts = [], imgs = []; let budget = ASK_TEXT_BYTES, clipped = false;
   for (const f of files) {
-    if (f.kind === 'image') { imgs.push(f.file); continue; }
+    if (f.kind === 'image' || f.kind === 'pdf') { imgs.push(f.file); continue; }
     let t = await readTextFile(f.file); if (budget < 500) { clipped = true; continue; }
     if (byteLen(t) > budget) { t = clipBytes(t, budget); clipped = true; }
     budget -= byteLen(t); texts.push({ name: f.file.name, text: t });
@@ -5301,9 +5333,10 @@ async function connectAsk() {
   if (!askFn && !askReason) askReason = 'no_runtime';
   if (!askFn) return;
   askCanAttach = true; askImg = null;
-  if (typeof askFn.limits === 'function') { try { const lim = await askFn.limits(); askImg = lim && lim.images ? lim.images : null; } catch (e) { askImg = null; } }
+  askDoc = null;
+  if (typeof askFn.limits === 'function') { try { const lim = await askFn.limits(); askImg = lim && lim.images ? lim.images : null; askDoc = lim && lim.documents && lim.documents.mediaTypes && lim.documents.mediaTypes.indexOf('application/pdf') >= 0 ? lim.documents : null; } catch (e) { askImg = null; askDoc = null; } }
   $('#askAttach').hidden = false;
-  $('#askFile').accept = (askImg ? askImg.mediaTypes.join(',') + ',' : '') + '.csv,.tsv,.txt,text/csv,text/plain';
+  $('#askFile').accept = (askImg ? askImg.mediaTypes.join(',') + ',' : '') + (askDoc ? '.pdf,application/pdf,' : '') + '.csv,.tsv,.txt,.xlsx,text/csv,text/plain';
   $('#askCap').textContent = askCap();
   buildAskSug();
 }
@@ -5381,7 +5414,8 @@ ACTIONS
 - add_goal {name, target, saved?, due?, monthly?}: a new goal; due is YYYY-MM-DD; monthly is the saving a month (left out: the page spreads it to the date, or over about a year).
 - update_goal {id, name?, target?, saved?, due?}: change a goal. remove_goal {id}. set_goal_saving {id, amount}: the monthly saving for a goal; amount null returns to the page's suggested amount. set_main_goal {id}: the goal Home leads with.
 - set_home {sections}: what Home shows and in what order, from goal, play, log, goals, jars, more. Leave one out to hide it.
-- set_name {name}.`;
+- set_name {name}.
+- log_spend {amount, category?, date?, note?}: log a receipt, money already spent. category is a line key from the picture (left out: the play money line); date is YYYY-MM-DD, left out: today; note is the shop or item in a few words. One action per receipt. Use it when the person tells you they spent something.`;
 const JAR_WORD = { nec: 'Necessities', lts: 'Long-term savings', play: 'Play', edu: 'Education', ffa: 'Financial freedom', give: 'Give' };
 
 /* the picture: everything the assistant may need, read from the same model as the screens, in about 2 KB */
@@ -5392,6 +5426,8 @@ function asstPicture(T) {
   const lines = T.plan.lines.map(l => `  ${l.key} | ${l.name} | ${JAR_WORD[l.jar] || l.jar} | ${n(val(T, l.key, ym))}${l.ends ? ' | last payment ' + l.ends : ''}`).join('\n');
   const goals = V.goals.map(r => `  ${r.id} | ${r.name}${r.emergency ? ' (emergency fund)' : ''} | goal ${n(r.target)} | saved ${n(r.saved)} | ${n(val(T, 'goal:' + r.id, ym))} a month | ${r.due ? 'needed by ' + r.due : 'no date'} | ${r.pct >= 100 ? 'full' : r.reached ? 'full in ' + monthLabel(r.reached) : 'not full within ' + SPAN}${V.main && V.main.id === r.id ? ' | main goal' : ''}`).join('\n') || '  (none)';
   const rs = receiptStats(T, ym), cats = Object.keys(rs.byKey || {}).map(k => [k, rs.byKey[k]]).sort((a, b) => b[1] - a[1]).slice(0, 6);
+  /* the last three months with receipts: what was logged against what was planned, so "what is realistic" has data behind it */
+  const past = MONTHS.filter(x => x < ym).slice(-3).map(x => { const r = receiptStats(T, x), mm = C2.byYm[x]; if (!r.count || !mm) return null; return `${monthLabel(x, true)} ${x.slice(2, 4)}: ${r.count} receipts, ${n(r.total)} logged; play ${n(r.byJar.play || 0)} of ${n(mm.jar.play)} planned, necessities ${n(r.byJar.nec || 0)} of ${n(mm.jar.nec)} planned`; }).filter(Boolean);
   const ahead = MONTHS.filter(x => x > ym).slice(0, 12), shorts = ahead.filter(x => statusOf(T, C2.byYm[x]) === 'short'), tights = ahead.filter(x => statusOf(T, C2.byYm[x]) === 'tight');
   const st = { good: 'On plan', tight: 'Tight', short: 'Short' };
   const home = (Array.isArray(T.ui.home) && T.ui.home.length ? T.ui.home : HOME_SECTIONS).join(', ');
@@ -5407,6 +5443,7 @@ ${lines}
 Goals (id | name | goal | saved | monthly | date | when full):
 ${goals}
 Receipts this month: ${rs.count} logged, ${n(rs.total || 0)} in all${cats.length ? '; biggest: ' + cats.map(c => `${catName(T, { c: c[0] })} ${n(c[1])}`).join(', ') : ''}
+Past months: ${past.length ? past.join(' / ') : 'no receipts logged before this month'}
 Home shows, in order: ${home}
 Setup: ${T.ui.src === 'import' ? 'numbers came from statements' : T.ui.setup ? 'typed in the guided setup' : 'not finished'}${sampleOn() ? '; the figures are still the invented sample' : ''}`;
 }
@@ -5452,6 +5489,12 @@ function asstCheck(raw) {
     else if (d === 'set_main_goal') { const g = goalOf(S, a.id); if (!g) return dropped.push(d); push(`Home leads with ${g.name}`, T => { T.ui.main = g.id; }); }
     else if (d === 'set_home') { const secs = Array.isArray(a.sections) ? a.sections.filter((x, i, arr) => HOME_SECTIONS.indexOf(x) >= 0 && arr.indexOf(x) === i) : []; if (!secs.length) return dropped.push(d); const names = { goal: 'main goal', play: 'play money', log: 'log spend', goals: 'goals', jars: 'jars', more: 'streak and badges' }; push(`Home shows: ${secs.map(x => names[x]).join(', ')}${secs.length < HOME_SECTIONS.length ? ' (the rest hidden)' : ''}`, T => { if (secs.join() === HOME_SECTIONS.join()) delete T.ui.home; else T.ui.home = secs; }); }
     else if (d === 'set_name') { const nm = cleanName(a.name); if (!nm) return dropped.push(d); push(`Name: ${nm}`, T => { T.ui.name = nm; }); }
+    else if (d === 'log_spend') {
+      const l = a.category === undefined || a.category === null || a.category === '' ? lineOf(S, 'envelope') : lineOf(S, a.category), key = l ? l.key : 'other';
+      const date = typeof a.date === 'string' && validDate(a.date) ? a.date : todayStr(), note = typeof a.note === 'string' ? a.note.replace(/\s+/g, ' ').trim().slice(0, 80) : '';
+      if (!(amt > 0)) return dropped.push(d);
+      push(`Log ${f(amt)}, ${l ? l.name : 'Other'}${note ? ', ' + note : ''}${date !== todayStr() ? ', ' + dateLabel(date) : ''}`, T => { if (addReceipt(T, date, amt, key, note)) markDoneOn(T, 'receipts'); });
+    }
     else dropped.push(d || '(no action)');
   });
   return { steps: out, dropped, why: typeof (raw && raw.why) === 'string' ? raw.why.replace(/[\u0000-\u001f<>]/g, ' ').slice(0, 160) : '' };
@@ -5461,9 +5504,10 @@ const runActions = (T, steps) => { steps.forEach(s => { if (s.on) s.run(T); }); 
 /* the numbers that matter, before and after, worked out on a copy */
 function asstDelta(steps) {
   const T = JSON.parse(JSON.stringify(S)); runActions(T, steps);
-  const ym = nowYm(), a = calcAll(S).byYm[ym], b = calcAll(T).byYm[ym], CA = calcAll(S), CB = calcAll(T), st = { good: 'On plan', tight: 'Tight', short: 'Short' };
+  const ym = nowYm(), CA = calcAll(S), CB = calcAll(T), a = CA.byYm[ym], b = CB.byYm[ym], st = { good: 'On plan', tight: 'Tight', short: 'Short' };
+  const today = ymd(new Date()), VA = viewOf(S, CA, ym, today), VB = viewOf(T, CB, ym, today);
   const rows = [
-    ['Play money', fmt(a.jar.play), fmt(b.jar.play)], ['Left over', fmt(a.pool.left), fmt(b.pool.left)],
+    ['Play money', fmt(a.jar.play), fmt(b.jar.play)], ['Play money left', fmt(VA.play.left), fmt(VB.play.left)], ['Left over', fmt(a.pool.left), fmt(b.pool.left)],
     [`Balance, end of ${monthLabel(ym, true)}`, fmt(a.bankEnd), fmt(b.bankEnd)], ['Status', st[statusOf(S, a)], st[statusOf(T, b)]],
   ];
   const gA = goalRows(S, CA, ym), gB = goalRows(T, CB, ym);
@@ -5843,6 +5887,9 @@ function coClose(mark) {
 const RELAY_URL = 'https://money-headache-remover.mako-162.workers.dev'; /* filled by build.sh from the RELAY file; empty until the site has an address */
 const ANON_KEY = 'mhr-anon', INVITE_KEY = 'mhr-invite';
 const IMG_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+/* PDF statements go up as document blocks (the relay only; the viewer's own Claude takes images alone) */
+const DOC_LIMITS = { maxCount: 4, maxInputBytes: 6000000, mediaTypes: ['application/pdf'] };
+const isPdfFile = f => !!f && (f.type === 'application/pdf' || /\.pdf$/i.test(f.name || ''));
 const relayBase = () => { if (inArtifact()) return ''; if (/^https?:$/.test(location.protocol)) return location.origin; return RELAY_URL.replace(/\/$/, ''); };
 function anonId() {
   try {
@@ -5862,13 +5909,25 @@ async function relayHealth(force) {
   catch (e) { relayInfo = false; }
   return relayInfo;
 }
+function bytesToB64(buf) { let s = ''; for (let i = 0; i < buf.length; i += 0x8000) s += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000)); return btoa(s); }
 /* a Blob to the base64 the API wants; photos are shrunk first (same helper as the Scan card) */
 async function toImageBlock(file) {
   const f = await shrinkPhoto(file);
   if (IMG_TYPES.indexOf(f.type) < 0) throw { code: 'image_rejected', message: 'Only JPEG, PNG, WebP or GIF.' };
-  const buf = new Uint8Array(await f.arrayBuffer()); let s = '';
-  for (let i = 0; i < buf.length; i += 0x8000) s += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000));
-  return { type: 'image', source: { type: 'base64', media_type: f.type, data: btoa(s) } };
+  return { type: 'image', source: { type: 'base64', media_type: f.type, data: bytesToB64(new Uint8Array(await f.arrayBuffer())) } };
+}
+/* a password-protected PDF carries /Encrypt in its trailer; Claude cannot open those, so the person is told before anything is sent */
+function pdfLocked(buf) {
+  const tail = buf.length > 2000000 ? buf.subarray(buf.length - 2000000) : buf;
+  return /\/Encrypt\b/.test(new TextDecoder('latin1').decode(tail));
+}
+async function toDocBlock(file) {
+  const name = file.name || 'file';
+  if (file.size > DOC_LIMITS.maxInputBytes) throw { code: 'file_rejected', message: `${name} is too large. Export fewer months, or take screenshots of the pages.` };
+  const buf = new Uint8Array(await file.arrayBuffer());
+  if (buf.length < 8 || String.fromCharCode(buf[0], buf[1], buf[2], buf[3]) !== '%PDF') throw { code: 'file_rejected', message: `${name} is not a PDF.` };
+  if (pdfLocked(buf)) throw { code: 'pdf_locked', message: `${name} asks for a password. Open it with the password, then save or print it as a new PDF, or take screenshots of its pages.` };
+  return { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: bytesToB64(buf) } };
 }
 async function relayMessages(input, images) {
   let msgs;
@@ -5877,7 +5936,7 @@ async function relayMessages(input, images) {
   else throw { code: 'invalid_request', message: 'input must be a prompt or a list of turns.' };
   const list = images ? (images instanceof Blob ? [images] : Array.from(images)) : [];
   if (list.length) {
-    const blocks = []; for (const f of list) blocks.push(await toImageBlock(f));
+    const blocks = []; for (const f of list) blocks.push(isPdfFile(f) ? await toDocBlock(f) : await toImageBlock(f));
     const last = msgs[msgs.length - 1]; last.content = [{ type: 'text', text: String(last.content) }].concat(blocks);
   }
   return msgs;
@@ -5970,7 +6029,7 @@ function relayFn() {
     if (!p.ok || r.truncated) throw { code: 'invalid_json', message: r.truncated ? 'The answer was cut short.' : 'No JSON in the answer.', text: r.text };
     return p.value;
   };
-  fn.limits = async () => ({ maxPromptBytes: 262144, images: { maxCount: 10, maxInputBytes: 20000000, mediaTypes: IMG_TYPES.slice() }, tools: { maxCount: 16 }, modelTiers: ['quick', 'default', 'complex'] });
+  fn.limits = async () => ({ maxPromptBytes: 262144, images: { maxCount: 10, maxInputBytes: 20000000, mediaTypes: IMG_TYPES.slice() }, documents: Object.assign({}, DOC_LIMITS, { mediaTypes: DOC_LIMITS.mediaTypes.slice() }), tools: { maxCount: 16 }, modelTiers: ['quick', 'default', 'complex'] });
   fn.relay = true;
   return fn;
 }
@@ -6007,6 +6066,110 @@ function moveApply() {
   editRow = null; editGoal = null; editRc = null; itemsSig = '';
   if (tourIsOpen) closeTour(false); else { persist(); restructure(); }
   cheer('Your numbers are here.'); sfx('next');
+}
+/* ===== Excel exports (.xlsx) read as text =====
+   Banks hand out .xlsx files. An .xlsx is a zip of XML; this turns the first sheets into CSV text in the browser, with no library:
+   the zip directory is read by hand, each file is inflated with the browser's DecompressionStream, and the cells are read with
+   plain string scanning (shared strings, inline strings, numbers, booleans, and dates when the cell's style is a date format).
+   Old .xls files (binary) are not read; the person is told to save as CSV or .xlsx. Nothing here touches the money model. */
+const isXlsxFile = f => !!f && (/\.xlsx$/i.test(f.name || '') || f.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+const isXlsFile = f => !!f && (/\.xls$/i.test(f.name || '') || f.type === 'application/vnd.ms-excel');
+const xlsxCan = () => typeof DecompressionStream === 'function';
+const XLSX_MAX_ROWS = 20000, XLSX_MAX_SHEETS = 3;
+
+/* --- the zip --- */
+function zipEntries(u8) {
+  const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength), n = u8.length;
+  let eocd = -1;
+  for (let i = n - 22; i >= Math.max(0, n - 70000); i--) { if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; } }
+  if (eocd < 0) throw new Error('not a zip');
+  const count = dv.getUint16(eocd + 10, true), cdOff = dv.getUint32(eocd + 16, true), out = {};
+  let p = cdOff;
+  for (let k = 0; k < count; k++) {
+    if (dv.getUint32(p, true) !== 0x02014b50) break;
+    const method = dv.getUint16(p + 10, true), csize = dv.getUint32(p + 20, true), usize = dv.getUint32(p + 24, true);
+    const nlen = dv.getUint16(p + 28, true), xlen = dv.getUint16(p + 30, true), clen = dv.getUint16(p + 32, true), loff = dv.getUint32(p + 42, true);
+    const name = new TextDecoder().decode(u8.subarray(p + 46, p + 46 + nlen));
+    out[name] = { method, csize, usize, loff };
+    p += 46 + nlen + xlen + clen;
+  }
+  return out;
+}
+async function zipRead(u8, e) {
+  const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
+  if (dv.getUint32(e.loff, true) !== 0x04034b50) throw new Error('bad zip entry');
+  const nlen = dv.getUint16(e.loff + 26, true), xlen = dv.getUint16(e.loff + 28, true), start = e.loff + 30 + nlen + xlen;
+  const raw = u8.subarray(start, start + e.csize);
+  if (e.method === 0) return new TextDecoder().decode(raw);
+  if (e.method !== 8) throw new Error('zip method ' + e.method);
+  const buf = await new Response(new Blob([raw]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer();
+  return new TextDecoder().decode(buf);
+}
+
+/* --- the XML, read with string scanning --- */
+const xmlUn = s => String(s).replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&#x([0-9a-f]+);/gi, (m, h) => String.fromCodePoint(parseInt(h, 16))).replace(/&#(\d+);/g, (m, d) => String.fromCodePoint(+d)).replace(/&amp;/g, '&');
+const xmlAttr = (tag, name) => { const m = tag.match(new RegExp('\\s' + name + '="([^"]*)"')); return m ? m[1] : null; };
+const xmlTexts = frag => (frag.match(/<t(?:\s[^>]*)?>([\s\S]*?)<\/t>/g) || []).map(t => xmlUn(t.replace(/^<t[^>]*>/, '').replace(/<\/t>$/, ''))).join('');
+function xlsxSharedStrings(xml) { return (xml.match(/<si>[\s\S]*?<\/si>/g) || []).map(xmlTexts); }
+/* which cell styles are dates: built-in date formats, or a custom format with day, month or year letters and no fraction or currency marks */
+function xlsxDateStyles(xml) {
+  const custom = {}; (xml.match(/<numFmt\s[^>]*\/>/g) || []).forEach(t => { const id = xmlAttr(t, 'numFmtId'), code = xmlAttr(t, 'formatCode') || ''; if (id) custom[id] = code; });
+  const isDate = id => { const n = +id; if ((n >= 14 && n <= 22) || (n >= 27 && n <= 36) || (n >= 45 && n <= 47) || (n >= 50 && n <= 58)) return true; const c = custom[id]; return !!c && /[dmy]/i.test(c.replace(/\[[^\]]*\]/g, '').replace(/"[^"]*"/g, '')) && !/[#0]\.0|%|\$|¥|₱|€|£/.test(c); };
+  const xfs = xml.match(/<cellXfs[\s\S]*?<\/cellXfs>/); if (!xfs) return [];
+  return (xfs[0].match(/<xf\s[^>]*\/?>/g) || []).map(t => isDate(xmlAttr(t, 'numFmtId') || '0'));
+}
+function xlsxSerialToDate(v) {
+  const n = Math.floor(+v); if (!isFinite(n) || n < 1 || n > 80000) return String(v);
+  const ms = Math.round((n - 25569) * 864e5), d = new Date(ms); if (isNaN(d)) return String(v);
+  const frac = +v - n, hhmm = frac > 0 ? ' ' + String(Math.floor(frac * 24)).padStart(2, '0') + ':' + String(Math.round((frac * 1440) % 60)).padStart(2, '0') : '';
+  return d.toISOString().slice(0, 10) + hhmm;
+}
+const colIndex = ref => { let n = 0; for (const ch of ref.replace(/\d+/g, '')) n = n * 26 + (ch.charCodeAt(0) - 64); return n - 1; };
+function xlsxSheetRows(xml, strings, dateStyles) {
+  const rows = [];
+  const rowRe = /<row\b[^>]*>([\s\S]*?)<\/row>/g; let rm;
+  while ((rm = rowRe.exec(xml)) && rows.length < XLSX_MAX_ROWS) {
+    const cells = [];
+    const cellRe = /<c\b([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g; let cm;
+    while ((cm = cellRe.exec(rm[1]))) {
+      const attrs = cm[1], inner = cm[2] || '', r = xmlAttr(attrs, 'r') || '', t = xmlAttr(attrs, 't') || '', s = xmlAttr(attrs, 's');
+      let v = '';
+      if (t === 'inlineStr') v = xmlTexts(inner);
+      else {
+        const vm = inner.match(/<v>([\s\S]*?)<\/v>/); const raw = vm ? xmlUn(vm[1]) : '';
+        if (t === 's') v = strings[+raw] !== undefined ? strings[+raw] : '';
+        else if (t === 'b') v = raw === '1' ? 'TRUE' : 'FALSE';
+        else if (t === 'str' || t === 'e') v = raw;
+        else if (raw !== '' && s !== null && dateStyles[+s]) v = xlsxSerialToDate(raw);
+        else v = raw;
+      }
+      const ci = r ? colIndex(r) : cells.length; while (cells.length < ci) cells.push(''); cells[ci] = v;
+    }
+    if (cells.some(x => x !== '')) rows.push(cells);
+  }
+  return rows;
+}
+const csvCell = v => (/[",\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v);
+/* the whole file to CSV text: sheet name as a heading when there is more than one sheet */
+async function xlsxToCsv(buf) {
+  const u8 = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
+  const z = zipEntries(u8);
+  const names = Object.keys(z).filter(n => /^xl\/worksheets\/sheet\d+\.xml$/.test(n)).sort((a, b) => +a.match(/(\d+)\.xml$/)[1] - +b.match(/(\d+)\.xml$/)[1]).slice(0, XLSX_MAX_SHEETS);
+  if (!names.length) throw new Error('no sheets');
+  const strings = z['xl/sharedStrings.xml'] ? xlsxSharedStrings(await zipRead(u8, z['xl/sharedStrings.xml'])) : [];
+  const dateStyles = z['xl/styles.xml'] ? xlsxDateStyles(await zipRead(u8, z['xl/styles.xml'])) : [];
+  let titles = [];
+  if (z['xl/workbook.xml']) { const wb = await zipRead(u8, z['xl/workbook.xml']); titles = (wb.match(/<sheet\b[^>]*\/?>/g) || []).map(t => xmlUn(xmlAttr(t, 'name') || '')); }
+  const parts = [];
+  for (let i = 0; i < names.length; i++) {
+    const rows = xlsxSheetRows(await zipRead(u8, z[names[i]]), strings, dateStyles);
+    if (!rows.length) continue;
+    const width = Math.max.apply(null, rows.map(r => r.length));
+    const text = rows.map(r => { const c = r.slice(); while (c.length < width) c.push(''); return c.map(csvCell).join(','); }).join('\n');
+    parts.push((names.length > 1 ? '# Sheet: ' + (titles[i] || names[i]) + '\n' : '') + text);
+  }
+  if (!parts.length) throw new Error('empty');
+  return parts.join('\n\n');
 }
 /* ===== the cloud copy: an encrypted backup on the site's own server =====
    Everything is encrypted in this browser with a key made from a recovery code the person keeps. The server (functions/api/vault)
@@ -6120,10 +6283,13 @@ async function vaultRestore(raw, msgEl) {
   } catch (e) { vault = { code: '', rev: 0, on: false }; vaultKeys = null; vaultSaveLocal(); msgEl.textContent = 'That copy could not be opened with this code.'; return false; }
 }
 /* ---------- what Settings shows ---------- */
+const SAVED_LOCAL = 'Data is stored in this browser on this device only. Nothing is sent anywhere. A second copy is kept here in case the first goes missing, and is loaded on its own if so. It does not move to other devices. Clearing site data removes both, so only a backup file survives that. A backup is your own copy of numbers and receipts.';
+const SAVED_CLOUD = 'Data is stored in this browser, with a second copy here in case the first goes missing, and an encrypted cloud copy (Cloud backup below) that follows every save. Clearing site data removes the two copies on this device; the recovery code brings the cloud copy back. A backup file is your own copy of numbers and receipts.';
 function paintVault() {
   const box = $('#vaultBox'); if (!box) return;
   const can = vaultAvailable();
   box.hidden = !can && !vault.on;
+  const cap = $('#savedCap'); if (cap) { const t = vault.on ? SAVED_CLOUD : SAVED_LOCAL; if (cap.textContent !== t) cap.textContent = t; }
   if (box.hidden) return;
   const st = $('#vaultState'), code = $('#vaultCode');
   if (!vault.on) { st.textContent = 'Off. Your numbers live on this device only.'; code.hidden = true; }
@@ -6190,7 +6356,7 @@ function scanNote(t) { const e = $('#scanMsg'); e.textContent = t || ''; e.hidde
 function paintScan() {
   const off = scanSettled && !askFn && !scanBusy;
   $('#scanDirect').hidden = off;
-  $('#scanSub').textContent = off ? 'Send receipts to an AI app, then paste its reply here. Items are sorted into your categories and listed for review before anything is added.' : 'Take a photo or choose pictures. Claude reads and sorts them into your categories. You review before anything is added.';
+  $('#scanSub').textContent = off ? 'Send receipts to an AI app, then paste its reply here. Items are sorted into your categories and listed for review before anything is added.' : (askDoc ? 'Take a photo, or choose pictures, a bank CSV, Excel or PDF statement. ' : 'Take a photo, or choose pictures or a bank CSV. ') + 'Claude reads and sorts them into your categories. You review before anything is added.';
   const msg = $('#scanOff'); msg.hidden = !off;
   if (off) {
     msg.textContent = askReason === 'no_runtime' ? 'This copy is not running inside Claude and cannot read photos itself. Use an AI app below.'
@@ -6215,7 +6381,7 @@ function paintScanFiles() {
   scanFiles.forEach((f, i) => {
     const c = document.createElement('span'); c.className = 'sfile';
     if (f.kind === 'image') { const im = document.createElement('img'), u = URL.createObjectURL(f.file); scanUrls.push(u); im.src = u; im.alt = ''; c.append(im); }
-    else { const t = document.createElement('span'); t.className = 'sdoc'; t.textContent = 'CSV'; c.append(t); }
+    else { const t = document.createElement('span'); t.className = 'sdoc'; t.textContent = f.kind === 'pdf' ? 'PDF' : 'CSV'; c.append(t); }
     const b = document.createElement('button'); b.type = 'button'; b.dataset.rm = i; b.setAttribute('aria-label', 'Remove ' + f.file.name); b.textContent = '×'; c.append(b);
     box.append(c);
   });
@@ -6232,11 +6398,16 @@ async function scanAdd(list) {
   for (const f of Array.from(list || [])) {
     if (isTextFile(f)) {
       if (f.size > 2000000) { notes.push(`${f.name} is too large. Try one month at a time.`); continue; }
-      if (scanFiles.filter(x => x.kind === 'text').length >= ASK_MAX_TEXT) { notes.push(`Maximum ${ASK_MAX_TEXT} CSV files at a time.`); continue; }
+      if (scanFiles.filter(x => x.kind === 'text').length >= ASK_MAX_TEXT) { notes.push(`Maximum ${ASK_MAX_TEXT} CSV or Excel files at a time.`); continue; }
       scanFiles.push({ file: f, kind: 'text' }); continue;
     }
-    if (/\.pdf$/i.test(f.name) || f.type === 'application/pdf') { notes.push(`${f.name}: PDFs cannot be read here. Use a screenshot of each page, or an AI app below.`); continue; }
-    if (!/^image\//.test(f.type) && !/\.(heic|heif|jpe?g|png|webp)$/i.test(f.name || '')) { notes.push(`${f.name}: only photos, screenshots and CSV files can be read.`); continue; }
+    if (isPdfFile(f)) {
+      if (!askDoc) { notes.push(pdfHereNote(f)); continue; }
+      if (f.size > askDoc.maxInputBytes) { notes.push(`${f.name} is too large. Export fewer months, or take screenshots of the pages.`); continue; }
+      if (scanFiles.filter(x => x.kind === 'pdf').length >= askDoc.maxCount) { notes.push(`Maximum ${askDoc.maxCount} PDFs at a time.`); continue; }
+      scanFiles.push({ file: f, kind: 'pdf' }); continue;
+    }
+    if (!/^image\//.test(f.type) && !/\.(heic|heif|jpe?g|png|webp)$/i.test(f.name || '')) { notes.push(oldSheetNote(f) || `${f.name}: only photos, screenshots, CSV and Excel files can be read.`); continue; }
     if (!askImg) { notes.push('Photos cannot be sent from here. Use an AI app below, or a CSV from your bank.'); continue; }
     if (scanFiles.filter(x => x.kind === 'image').length >= maxImg) { notes.push(`Maximum ${maxImg} photos at a time. Read these first, then add the rest.`); continue; }
     const g = await shrinkPhoto(f);
@@ -6495,7 +6666,14 @@ function renderBackupNudge() {
   }
   el.hidden = !html; if (html) { put(el, html); const w = $('[data-vault-code]', el); if (w && !w.children.length) vaultShowCode(w, vault.code); }
 }
+/* the install hint: only where the page has an address of its own, and not once it already runs as an installed app */
+function paintInstall() {
+  const box = $('#installBox'); if (!box) return;
+  let standalone = false; try { standalone = (matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true; } catch (e) { standalone = false; }
+  box.hidden = !(/^https?:$/.test(location.protocol) && !inArtifact() && !standalone);
+}
 function wireSafe() {
+  paintInstall();
   $('#moveBanner').addEventListener('click', e => { if (e.target.closest('[data-move-hide]')) { S.ui.noMove = true; persist(); renderMoveBanner(); } else if (e.target.closest('#moveGo')) sfx('next'); });
   $('#hBk').addEventListener('click', async e => {
     if (e.target.closest('[data-bk-later]')) { S.ui.bkLater = Date.now(); persist(); renderBackupNudge(); return; }
@@ -6638,17 +6816,25 @@ function renderStatus() {
   put(el, `<span class="chip ${cls}">${cls === 'good' ? IC.ok : cls ? IC.warn : ''}${word}</span><p class="hst-l">${line}</p>${wk}`);
   el.hidden = false;
 }
+/* the first days of a month: last month is only complete once what was spent is in; a statement does it in one go */
+function monthToClose() {
+  const d = S.ui.done || {}; if (!(d.pay && d.bills) || sampleOn()) return null;
+  const today = todayStr(), i = MONTHS.indexOf(today.slice(0, 7)); if (+today.slice(8, 10) > 10 || i < 1) return null;
+  const pm = MONTHS[i - 1]; if (S.ui.mcSeen === pm) return null;
+  const n = receiptsFor(S, pm).length; return n < 4 ? { pm, n } : null;
+}
 function renderNext() {
-  const el = $('#hNext'), d = S.ui.done || {}; let step = null;
+  const el = $('#hNext'), d = S.ui.done || {}; let step = null, month = null;
   if (!S.ui.sampleHidden) {
     if (!d.pay) step = ['Next: enter pay', 'The plan starts from monthly pay.', 'Enter pay', 'data-open="a"'];
     else if (!d.bills) step = ['Next: check bills', 'Set each bill to the real amount.', 'Open bills', 'data-open="nec"'];
     else if (!d.goals) step = ['Next: add a goal', 'Pick something to save for.', 'Add goal', 'data-gw'];
     else if (!(S.receipts || []).length) step = ['Next: log a receipt', 'Enter an amount in Log spend, then tap Log.', 'Log receipt', 'data-focus="hAmt"'];
   }
+  if (!step && (month = monthToClose())) step = [`Next: finish ${monthLabel(month.pm, true)}`, `${month.n ? plural(month.n, 'receipt') + ' logged' : 'Nothing logged'} for ${monthLabel(month.pm)}. Log what you spent, or upload the month's statement under Receipts.`, 'Receipts', 'data-tab-go="receipts"'];
   el.hidden = !step; if (!step) return;
   const left = ['pay', 'bills', 'goals', 'receipts'].filter(k => !d[k]).length;
-  put(el, `<div class="hn-t"><b>${step[0]}</b><span>${step[1]} ${left === 1 ? '1 step left.' : left + ' steps left.'}</span></div><div class="hn-b"><button type="button" class="btn small solid" ${step[3]}>${step[2]}</button><button type="button" class="link" data-hidenext>Hide</button></div>`);
+  put(el, `<div class="hn-t"><b>${step[0]}</b><span>${step[1]}${month ? '' : ' ' + (left === 1 ? '1 step left.' : left + ' steps left.')}</span></div><div class="hn-b"><button type="button" class="btn small solid" ${step[3]}>${step[2]}</button><button type="button" class="link" ${month ? `data-hidemonth="${month.pm}"` : 'data-hidenext'}>Hide</button></div>`);
 }
 function renderStreak() {
   const el = $('#hStreak'), s = streakInfo(), now = new Date(), dow = (now.getDay() + 6) % 7, toSun = 6 - dow;
@@ -6674,7 +6860,7 @@ function renderBadges() {
 let HV = null;
 const homeView = () => (HV = viewOf(S, C, nowYm(), ymd(new Date())));
 /* the sentence under a goal: a line Claude wrote for this exact name, otherwise the built-in wording */
-function purposeFor(g) { const w = S.ui && S.ui.win && S.ui.win[g.id]; return w && w.n === g.name && typeof w.t === 'string' && w.t ? w.t : purposeOf(S, g); }
+function purposeFor(g) { if (!g) return ''; const w = S.ui && S.ui.win && S.ui.win[g.id]; return w && w.n === g.name && typeof w.t === 'string' && w.t ? w.t : purposeOf(S, g); }
 const monthsText = r => r.pct >= 100 ? 'Full' : r.reached ? (r.months <= 0 ? 'Full this month' : plural(r.months, 'month') + ' to go') : 'No date at this pace';
 const monthsShort = r => r.state === 'paid' ? 'Paid' : r.state === 'short' ? 'Short' : r.state === 'unset' ? 'No amount' : r.pct >= 100 ? 'Done' : r.reached ? (r.months <= 0 ? 'This month' : plural(r.months, 'month')) : 'Over ' + SPAN;
 const fracOf = r => (r.target > 0 ? Math.min(1, Math.max(0, r.saved / r.target)) : 0);
@@ -6686,6 +6872,7 @@ function renderHero() {
     return;
   }
   const g = goalById(S, r.id), purpose = purposeFor(g), pct = r.pct, fr = fracOf(r);
+  if (!g) return; /* view and plan out of step for a moment (a goal just removed); the next restructure redraws */
   let chip = '', sub = '', fix = '';
   if (r.pct >= 100 || r.state === 'full') chip = '<span class="chip good">' + IC.ok + 'Full</span>';
   else if (r.state === 'ontrack') { chip = '<span class="chip good">' + IC.ok + 'On track</span>'; sub = `Needed by ${dateLabel(g.due)}. ${r.slack === 0 ? 'On time.' : plural(r.slack, 'month') + ' spare.'}`; }
@@ -6720,6 +6907,7 @@ function renderSpend() {
 const HOPEN = new Set();
 function goalRowHtml(r) {
   const g = goalById(S, r.id), main = HV.main && HV.main.id === r.id;
+  if (!g) return '';
   const st = r.state === 'ontrack' || r.state === 'full' || r.state === 'paid' ? 'good' : r.state === 'behind' || r.state === 'noeta' || r.state === 'short' ? 'warn' : 'plain';
   const stw = { ontrack: 'On track', full: 'Full', paid: 'Paid', short: 'Short', behind: 'Behind', noeta: 'Slow', eta: 'Filling', unset: 'Unset', none: '' }[r.state] || '';
   const eta = r.state === 'paid' ? `Paid ${dateLabel(g.due)}` : r.state === 'short' ? `Had ${fmt(r.had)} of ${fmt(g.target)}` : r.state === 'unset' ? 'No amount' : r.reached ? `Full ${monthLabel(r.reached)}` : `Not full in ${SPAN}`;
@@ -6790,6 +6978,7 @@ function renderBand() {
   const V = HV, r = V && V.main;
   if (!r || tab === 'home' || tab === 'basics') { el.hidden = true; return; }
   const g = goalById(S, r.id), p = V.play, purpose = purposeFor(g), when = r.pct >= 100 ? 'Full' : r.reached ? (r.months <= 0 ? 'This month' : plural(r.months, 'month') + ' to go') : 'Over ' + SPAN;
+  if (!g) { el.hidden = true; return; }
   put(el, `<span class="mg-l" style="--c:var(--c${g.slot})"><i class="dot"></i><b>${esc(purpose)}</b><em>${when}</em></span><span class="mg-bar" aria-hidden="true" style="--c:var(--c${g.slot})"><i style="width:${fracOf(r) * 100}%"></i></span><span class="mg-s">${p.over ? fmt2(Math.abs(p.left)) + ' over play money' : fmt2(p.left) + ' play money left'}, ${monthLabel(V.ym, true)}</span>`);
   el.setAttribute('aria-label', `Main goal: ${purpose}. ${when}. ${p.over ? fmt2(Math.abs(p.left)) + ' over play money' : fmt2(p.left) + ' play money left'}. Tap for Home.`);
   el.hidden = false;
@@ -6839,9 +7028,11 @@ function applyHomeOrder() {
   HOME_SECTIONS.forEach(id => { const el = $('#' + HOME_EL[id]); if (el) el.hidden = order.indexOf(id) < 0; });
   order.forEach(id => { const el = $('#' + HOME_EL[id]); if (el) panel.append(el); });
 }
+const FOOT_SAMPLE = 'Not financial advice. Sample numbers are invented. Replace them with yours.', FOOT_OWN = 'Not financial advice. Your numbers, your call.';
+function paintFoot() { const el = $('#footNote'); if (!el) return; const t = sampleOn() ? FOOT_SAMPLE : FOOT_OWN; if (el.textContent !== t) el.textContent = t; }
 function renderHome() {
   if (!C) return;
-  checkBadges(); paintSnd(); paintBk();
+  checkBadges(); paintSnd(); paintBk(); paintFoot();
   if (tab !== 'home') return;
   applyHomeOrder();
   renderNext(); renderBackupNudge(); renderStatus(); syncQuick(); renderHero(); renderSpend(); renderGoalsHome(); renderBuckets(); renderStreak(); renderBadges();
@@ -6961,7 +7152,7 @@ function gwClick(e) {
 
 /* ---------- wiring ---------- */
 function wireHome() {
-  if ('ResizeObserver' in window) { let last = 0; new ResizeObserver(() => { const w = $('#hHero').clientWidth; if (w && Math.abs(w - last) > 2) { last = w; if (HV && tab === 'home') { renderHero(); renderGoalsHome(); } } }).observe($('#hHero')); }
+  if ('ResizeObserver' in window) { let last = 0; new ResizeObserver(() => { const w = $('#hHero').clientWidth; if (w && Math.abs(w - last) > 2) { last = w; if (HV && C && tab === 'home') { homeView(); renderHero(); renderGoalsHome(); } } }).observe($('#hHero')); }
   $('#hForm').addEventListener('submit', e => {
     e.preventDefault();
     const d = $('#hDate').value || todayStr(), a = +$('#hAmt').value, c = $('#hCat').value, n = $('#hNote').value, msg = $('#hMsg');
@@ -6981,6 +7172,7 @@ function wireHome() {
     if (e.target.closest('[data-gw]')) { openGoalWizard(); return; }
     if (e.target.closest('[data-checkin]')) { const r = markWeek(); persist(); render(); sfx('sparkle'); if (r) celebrate(WK_MILE.indexOf(r.n) >= 0 && r.n > 1 ? 'med' : 'small', r.n > 1 ? `Checked in. Streak: ${r.n} weeks.` : 'Checked in. Streak: week 1.'); return; }
     if (e.target.closest('[data-hidenext]')) { S.ui.sampleHidden = true; persist(); render(); return; }
+    const hm = e.target.closest('[data-hidemonth]'); if (hm) { S.ui.mcSeen = hm.dataset.hidemonth; persist(); render(); return; }
     const f = e.target.closest('[data-focus]'); if (f) { const t = document.getElementById(f.dataset.focus); if (t) { t.scrollIntoView({ behavior: 'smooth', block: 'center' }); t.focus({ preventScroll: true }); } }
   });
   const hero = $('#hHero'), move = e => {

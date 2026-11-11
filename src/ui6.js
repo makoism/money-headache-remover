@@ -124,17 +124,25 @@ function renderStatus() {
   put(el, `<span class="chip ${cls}">${cls === 'good' ? IC.ok : cls ? IC.warn : ''}${word}</span><p class="hst-l">${line}</p>${wk}`);
   el.hidden = false;
 }
+/* the first days of a month: last month is only complete once what was spent is in; a statement does it in one go */
+function monthToClose() {
+  const d = S.ui.done || {}; if (!(d.pay && d.bills) || sampleOn()) return null;
+  const today = todayStr(), i = MONTHS.indexOf(today.slice(0, 7)); if (+today.slice(8, 10) > 10 || i < 1) return null;
+  const pm = MONTHS[i - 1]; if (S.ui.mcSeen === pm) return null;
+  const n = receiptsFor(S, pm).length; return n < 4 ? { pm, n } : null;
+}
 function renderNext() {
-  const el = $('#hNext'), d = S.ui.done || {}; let step = null;
+  const el = $('#hNext'), d = S.ui.done || {}; let step = null, month = null;
   if (!S.ui.sampleHidden) {
     if (!d.pay) step = ['Next: enter pay', 'The plan starts from monthly pay.', 'Enter pay', 'data-open="a"'];
     else if (!d.bills) step = ['Next: check bills', 'Set each bill to the real amount.', 'Open bills', 'data-open="nec"'];
     else if (!d.goals) step = ['Next: add a goal', 'Pick something to save for.', 'Add goal', 'data-gw'];
     else if (!(S.receipts || []).length) step = ['Next: log a receipt', 'Enter an amount in Log spend, then tap Log.', 'Log receipt', 'data-focus="hAmt"'];
   }
+  if (!step && (month = monthToClose())) step = [`Next: finish ${monthLabel(month.pm, true)}`, `${month.n ? plural(month.n, 'receipt') + ' logged' : 'Nothing logged'} for ${monthLabel(month.pm)}. Log what you spent, or upload the month's statement under Receipts.`, 'Receipts', 'data-tab-go="receipts"'];
   el.hidden = !step; if (!step) return;
   const left = ['pay', 'bills', 'goals', 'receipts'].filter(k => !d[k]).length;
-  put(el, `<div class="hn-t"><b>${step[0]}</b><span>${step[1]} ${left === 1 ? '1 step left.' : left + ' steps left.'}</span></div><div class="hn-b"><button type="button" class="btn small solid" ${step[3]}>${step[2]}</button><button type="button" class="link" data-hidenext>Hide</button></div>`);
+  put(el, `<div class="hn-t"><b>${step[0]}</b><span>${step[1]}${month ? '' : ' ' + (left === 1 ? '1 step left.' : left + ' steps left.')}</span></div><div class="hn-b"><button type="button" class="btn small solid" ${step[3]}>${step[2]}</button><button type="button" class="link" ${month ? `data-hidemonth="${month.pm}"` : 'data-hidenext'}>Hide</button></div>`);
 }
 function renderStreak() {
   const el = $('#hStreak'), s = streakInfo(), now = new Date(), dow = (now.getDay() + 6) % 7, toSun = 6 - dow;
@@ -160,7 +168,7 @@ function renderBadges() {
 let HV = null;
 const homeView = () => (HV = viewOf(S, C, nowYm(), ymd(new Date())));
 /* the sentence under a goal: a line Claude wrote for this exact name, otherwise the built-in wording */
-function purposeFor(g) { const w = S.ui && S.ui.win && S.ui.win[g.id]; return w && w.n === g.name && typeof w.t === 'string' && w.t ? w.t : purposeOf(S, g); }
+function purposeFor(g) { if (!g) return ''; const w = S.ui && S.ui.win && S.ui.win[g.id]; return w && w.n === g.name && typeof w.t === 'string' && w.t ? w.t : purposeOf(S, g); }
 const monthsText = r => r.pct >= 100 ? 'Full' : r.reached ? (r.months <= 0 ? 'Full this month' : plural(r.months, 'month') + ' to go') : 'No date at this pace';
 const monthsShort = r => r.state === 'paid' ? 'Paid' : r.state === 'short' ? 'Short' : r.state === 'unset' ? 'No amount' : r.pct >= 100 ? 'Done' : r.reached ? (r.months <= 0 ? 'This month' : plural(r.months, 'month')) : 'Over ' + SPAN;
 const fracOf = r => (r.target > 0 ? Math.min(1, Math.max(0, r.saved / r.target)) : 0);
@@ -172,6 +180,7 @@ function renderHero() {
     return;
   }
   const g = goalById(S, r.id), purpose = purposeFor(g), pct = r.pct, fr = fracOf(r);
+  if (!g) return; /* view and plan out of step for a moment (a goal just removed); the next restructure redraws */
   let chip = '', sub = '', fix = '';
   if (r.pct >= 100 || r.state === 'full') chip = '<span class="chip good">' + IC.ok + 'Full</span>';
   else if (r.state === 'ontrack') { chip = '<span class="chip good">' + IC.ok + 'On track</span>'; sub = `Needed by ${dateLabel(g.due)}. ${r.slack === 0 ? 'On time.' : plural(r.slack, 'month') + ' spare.'}`; }
@@ -206,6 +215,7 @@ function renderSpend() {
 const HOPEN = new Set();
 function goalRowHtml(r) {
   const g = goalById(S, r.id), main = HV.main && HV.main.id === r.id;
+  if (!g) return '';
   const st = r.state === 'ontrack' || r.state === 'full' || r.state === 'paid' ? 'good' : r.state === 'behind' || r.state === 'noeta' || r.state === 'short' ? 'warn' : 'plain';
   const stw = { ontrack: 'On track', full: 'Full', paid: 'Paid', short: 'Short', behind: 'Behind', noeta: 'Slow', eta: 'Filling', unset: 'Unset', none: '' }[r.state] || '';
   const eta = r.state === 'paid' ? `Paid ${dateLabel(g.due)}` : r.state === 'short' ? `Had ${fmt(r.had)} of ${fmt(g.target)}` : r.state === 'unset' ? 'No amount' : r.reached ? `Full ${monthLabel(r.reached)}` : `Not full in ${SPAN}`;
@@ -276,6 +286,7 @@ function renderBand() {
   const V = HV, r = V && V.main;
   if (!r || tab === 'home' || tab === 'basics') { el.hidden = true; return; }
   const g = goalById(S, r.id), p = V.play, purpose = purposeFor(g), when = r.pct >= 100 ? 'Full' : r.reached ? (r.months <= 0 ? 'This month' : plural(r.months, 'month') + ' to go') : 'Over ' + SPAN;
+  if (!g) { el.hidden = true; return; }
   put(el, `<span class="mg-l" style="--c:var(--c${g.slot})"><i class="dot"></i><b>${esc(purpose)}</b><em>${when}</em></span><span class="mg-bar" aria-hidden="true" style="--c:var(--c${g.slot})"><i style="width:${fracOf(r) * 100}%"></i></span><span class="mg-s">${p.over ? fmt2(Math.abs(p.left)) + ' over play money' : fmt2(p.left) + ' play money left'}, ${monthLabel(V.ym, true)}</span>`);
   el.setAttribute('aria-label', `Main goal: ${purpose}. ${when}. ${p.over ? fmt2(Math.abs(p.left)) + ' over play money' : fmt2(p.left) + ' play money left'}. Tap for Home.`);
   el.hidden = false;
@@ -325,9 +336,11 @@ function applyHomeOrder() {
   HOME_SECTIONS.forEach(id => { const el = $('#' + HOME_EL[id]); if (el) el.hidden = order.indexOf(id) < 0; });
   order.forEach(id => { const el = $('#' + HOME_EL[id]); if (el) panel.append(el); });
 }
+const FOOT_SAMPLE = 'Not financial advice. Sample numbers are invented. Replace them with yours.', FOOT_OWN = 'Not financial advice. Your numbers, your call.';
+function paintFoot() { const el = $('#footNote'); if (!el) return; const t = sampleOn() ? FOOT_SAMPLE : FOOT_OWN; if (el.textContent !== t) el.textContent = t; }
 function renderHome() {
   if (!C) return;
-  checkBadges(); paintSnd(); paintBk();
+  checkBadges(); paintSnd(); paintBk(); paintFoot();
   if (tab !== 'home') return;
   applyHomeOrder();
   renderNext(); renderBackupNudge(); renderStatus(); syncQuick(); renderHero(); renderSpend(); renderGoalsHome(); renderBuckets(); renderStreak(); renderBadges();
@@ -447,7 +460,7 @@ function gwClick(e) {
 
 /* ---------- wiring ---------- */
 function wireHome() {
-  if ('ResizeObserver' in window) { let last = 0; new ResizeObserver(() => { const w = $('#hHero').clientWidth; if (w && Math.abs(w - last) > 2) { last = w; if (HV && tab === 'home') { renderHero(); renderGoalsHome(); } } }).observe($('#hHero')); }
+  if ('ResizeObserver' in window) { let last = 0; new ResizeObserver(() => { const w = $('#hHero').clientWidth; if (w && Math.abs(w - last) > 2) { last = w; if (HV && C && tab === 'home') { homeView(); renderHero(); renderGoalsHome(); } } }).observe($('#hHero')); }
   $('#hForm').addEventListener('submit', e => {
     e.preventDefault();
     const d = $('#hDate').value || todayStr(), a = +$('#hAmt').value, c = $('#hCat').value, n = $('#hNote').value, msg = $('#hMsg');
@@ -467,6 +480,7 @@ function wireHome() {
     if (e.target.closest('[data-gw]')) { openGoalWizard(); return; }
     if (e.target.closest('[data-checkin]')) { const r = markWeek(); persist(); render(); sfx('sparkle'); if (r) celebrate(WK_MILE.indexOf(r.n) >= 0 && r.n > 1 ? 'med' : 'small', r.n > 1 ? `Checked in. Streak: ${r.n} weeks.` : 'Checked in. Streak: week 1.'); return; }
     if (e.target.closest('[data-hidenext]')) { S.ui.sampleHidden = true; persist(); render(); return; }
+    const hm = e.target.closest('[data-hidemonth]'); if (hm) { S.ui.mcSeen = hm.dataset.hidemonth; persist(); render(); return; }
     const f = e.target.closest('[data-focus]'); if (f) { const t = document.getElementById(f.dataset.focus); if (t) { t.scrollIntoView({ behavior: 'smooth', block: 'center' }); t.focus({ preventScroll: true }); } }
   });
   const hero = $('#hHero'), move = e => {

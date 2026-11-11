@@ -30,7 +30,8 @@ ACTIONS
 - add_goal {name, target, saved?, due?, monthly?}: a new goal; due is YYYY-MM-DD; monthly is the saving a month (left out: the page spreads it to the date, or over about a year).
 - update_goal {id, name?, target?, saved?, due?}: change a goal. remove_goal {id}. set_goal_saving {id, amount}: the monthly saving for a goal; amount null returns to the page's suggested amount. set_main_goal {id}: the goal Home leads with.
 - set_home {sections}: what Home shows and in what order, from goal, play, log, goals, jars, more. Leave one out to hide it.
-- set_name {name}.`;
+- set_name {name}.
+- log_spend {amount, category?, date?, note?}: log a receipt, money already spent. category is a line key from the picture (left out: the play money line); date is YYYY-MM-DD, left out: today; note is the shop or item in a few words. One action per receipt. Use it when the person tells you they spent something.`;
 const JAR_WORD = { nec: 'Necessities', lts: 'Long-term savings', play: 'Play', edu: 'Education', ffa: 'Financial freedom', give: 'Give' };
 
 /* the picture: everything the assistant may need, read from the same model as the screens, in about 2 KB */
@@ -41,6 +42,8 @@ function asstPicture(T) {
   const lines = T.plan.lines.map(l => `  ${l.key} | ${l.name} | ${JAR_WORD[l.jar] || l.jar} | ${n(val(T, l.key, ym))}${l.ends ? ' | last payment ' + l.ends : ''}`).join('\n');
   const goals = V.goals.map(r => `  ${r.id} | ${r.name}${r.emergency ? ' (emergency fund)' : ''} | goal ${n(r.target)} | saved ${n(r.saved)} | ${n(val(T, 'goal:' + r.id, ym))} a month | ${r.due ? 'needed by ' + r.due : 'no date'} | ${r.pct >= 100 ? 'full' : r.reached ? 'full in ' + monthLabel(r.reached) : 'not full within ' + SPAN}${V.main && V.main.id === r.id ? ' | main goal' : ''}`).join('\n') || '  (none)';
   const rs = receiptStats(T, ym), cats = Object.keys(rs.byKey || {}).map(k => [k, rs.byKey[k]]).sort((a, b) => b[1] - a[1]).slice(0, 6);
+  /* the last three months with receipts: what was logged against what was planned, so "what is realistic" has data behind it */
+  const past = MONTHS.filter(x => x < ym).slice(-3).map(x => { const r = receiptStats(T, x), mm = C2.byYm[x]; if (!r.count || !mm) return null; return `${monthLabel(x, true)} ${x.slice(2, 4)}: ${r.count} receipts, ${n(r.total)} logged; play ${n(r.byJar.play || 0)} of ${n(mm.jar.play)} planned, necessities ${n(r.byJar.nec || 0)} of ${n(mm.jar.nec)} planned`; }).filter(Boolean);
   const ahead = MONTHS.filter(x => x > ym).slice(0, 12), shorts = ahead.filter(x => statusOf(T, C2.byYm[x]) === 'short'), tights = ahead.filter(x => statusOf(T, C2.byYm[x]) === 'tight');
   const st = { good: 'On plan', tight: 'Tight', short: 'Short' };
   const home = (Array.isArray(T.ui.home) && T.ui.home.length ? T.ui.home : HOME_SECTIONS).join(', ');
@@ -56,6 +59,7 @@ ${lines}
 Goals (id | name | goal | saved | monthly | date | when full):
 ${goals}
 Receipts this month: ${rs.count} logged, ${n(rs.total || 0)} in all${cats.length ? '; biggest: ' + cats.map(c => `${catName(T, { c: c[0] })} ${n(c[1])}`).join(', ') : ''}
+Past months: ${past.length ? past.join(' / ') : 'no receipts logged before this month'}
 Home shows, in order: ${home}
 Setup: ${T.ui.src === 'import' ? 'numbers came from statements' : T.ui.setup ? 'typed in the guided setup' : 'not finished'}${sampleOn() ? '; the figures are still the invented sample' : ''}`;
 }
@@ -101,6 +105,12 @@ function asstCheck(raw) {
     else if (d === 'set_main_goal') { const g = goalOf(S, a.id); if (!g) return dropped.push(d); push(`Home leads with ${g.name}`, T => { T.ui.main = g.id; }); }
     else if (d === 'set_home') { const secs = Array.isArray(a.sections) ? a.sections.filter((x, i, arr) => HOME_SECTIONS.indexOf(x) >= 0 && arr.indexOf(x) === i) : []; if (!secs.length) return dropped.push(d); const names = { goal: 'main goal', play: 'play money', log: 'log spend', goals: 'goals', jars: 'jars', more: 'streak and badges' }; push(`Home shows: ${secs.map(x => names[x]).join(', ')}${secs.length < HOME_SECTIONS.length ? ' (the rest hidden)' : ''}`, T => { if (secs.join() === HOME_SECTIONS.join()) delete T.ui.home; else T.ui.home = secs; }); }
     else if (d === 'set_name') { const nm = cleanName(a.name); if (!nm) return dropped.push(d); push(`Name: ${nm}`, T => { T.ui.name = nm; }); }
+    else if (d === 'log_spend') {
+      const l = a.category === undefined || a.category === null || a.category === '' ? lineOf(S, 'envelope') : lineOf(S, a.category), key = l ? l.key : 'other';
+      const date = typeof a.date === 'string' && validDate(a.date) ? a.date : todayStr(), note = typeof a.note === 'string' ? a.note.replace(/\s+/g, ' ').trim().slice(0, 80) : '';
+      if (!(amt > 0)) return dropped.push(d);
+      push(`Log ${f(amt)}, ${l ? l.name : 'Other'}${note ? ', ' + note : ''}${date !== todayStr() ? ', ' + dateLabel(date) : ''}`, T => { if (addReceipt(T, date, amt, key, note)) markDoneOn(T, 'receipts'); });
+    }
     else dropped.push(d || '(no action)');
   });
   return { steps: out, dropped, why: typeof (raw && raw.why) === 'string' ? raw.why.replace(/[\u0000-\u001f<>]/g, ' ').slice(0, 160) : '' };
@@ -110,9 +120,10 @@ const runActions = (T, steps) => { steps.forEach(s => { if (s.on) s.run(T); }); 
 /* the numbers that matter, before and after, worked out on a copy */
 function asstDelta(steps) {
   const T = JSON.parse(JSON.stringify(S)); runActions(T, steps);
-  const ym = nowYm(), a = calcAll(S).byYm[ym], b = calcAll(T).byYm[ym], CA = calcAll(S), CB = calcAll(T), st = { good: 'On plan', tight: 'Tight', short: 'Short' };
+  const ym = nowYm(), CA = calcAll(S), CB = calcAll(T), a = CA.byYm[ym], b = CB.byYm[ym], st = { good: 'On plan', tight: 'Tight', short: 'Short' };
+  const today = ymd(new Date()), VA = viewOf(S, CA, ym, today), VB = viewOf(T, CB, ym, today);
   const rows = [
-    ['Play money', fmt(a.jar.play), fmt(b.jar.play)], ['Left over', fmt(a.pool.left), fmt(b.pool.left)],
+    ['Play money', fmt(a.jar.play), fmt(b.jar.play)], ['Play money left', fmt(VA.play.left), fmt(VB.play.left)], ['Left over', fmt(a.pool.left), fmt(b.pool.left)],
     [`Balance, end of ${monthLabel(ym, true)}`, fmt(a.bankEnd), fmt(b.bankEnd)], ['Status', st[statusOf(S, a)], st[statusOf(T, b)]],
   ];
   const gA = goalRows(S, CA, ym), gB = goalRows(T, CB, ym);

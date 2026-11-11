@@ -33,7 +33,7 @@ ${IMP_FORMAT}
 ${importRules(cur)}
 Today is ${todayStr()}.
 
-FILES: ${nImg ? nImg + ' screenshot' + (nImg === 1 ? '' : 's') + ' or photo' + (nImg === 1 ? '' : 's') + ' attached' : 'no images'}${texts.length ? ' and the text files below.' : '.'}
+FILES: ${nImg ? nImg + ' attached file' + (nImg === 1 ? '' : 's') + ' (screenshots, photos or PDF statements)' : 'no images'}${texts.length ? ' and the text files below.' : '.'}
 ${texts.map(t => `\n----- FILE: ${t.name} -----\n${t.text}`).join('\n')}`;
 }
 /* the message for any other AI app: it may ask first, then must end with the JSON block */
@@ -80,7 +80,7 @@ async function importRead() {
     if (!askFn) { await connectAsk(); if (!askFn) throw { code: askReason === 'relay_off' ? 'relay_unconfigured' : 'not_granted' }; }
     const texts = [], imgs = []; let budget = ASK_TEXT_BYTES;
     for (const f of impFiles) {
-      if (f.kind === 'image') { imgs.push(f.file); continue; }
+      if (f.kind === 'image' || f.kind === 'pdf') { imgs.push(f.file); continue; }
       let t = await readTextFile(f.file); if (budget < 500) continue;
       if (byteLen(t) > budget) t = clipBytes(t, budget); budget -= byteLen(t); texts.push({ name: f.file.name, text: t });
     }
@@ -99,8 +99,10 @@ async function importRead() {
 function importAddFiles(list) {
   const notes = [];
   Array.from(list || []).forEach(f => {
-    const kind = isTextFile(f) ? 'text' : /^image\//.test(f.type) || /\.(heic|heif|jpe?g|png|webp)$/i.test(f.name || '') ? 'image' : '';
-    if (!kind) { notes.push(/\.pdf$/i.test(f.name) || f.type === 'application/pdf' ? `${f.name}: PDFs cannot be read. Take screenshots of the pages, or export a CSV.` : `${f.name}: only CSV files, screenshots and photos.`); return; }
+    const kind = isTextFile(f) ? 'text' : /^image\//.test(f.type) || /\.(heic|heif|jpe?g|png|webp)$/i.test(f.name || '') ? 'image' : askDoc && isPdfFile(f) ? 'pdf' : '';
+    if (!kind) { notes.push(isPdfFile(f) ? (askDoc ? `${f.name}: not a readable PDF.` : pdfHereNote(f)) : oldSheetNote(f) || `${f.name}: only CSV or Excel files, ${askDoc ? 'PDFs, ' : ''}screenshots and photos.`); return; }
+    if (kind === 'pdf' && f.size > askDoc.maxInputBytes) { notes.push(`${f.name} is too large. Export fewer months, or take screenshots of the pages.`); return; }
+    if (kind === 'pdf' && impFiles.filter(x => x.kind === 'pdf').length >= askDoc.maxCount) { notes.push(`${askDoc.maxCount} PDFs at a time.`); return; }
     if (f.size > 20000000) { notes.push(`${f.name} is too large.`); return; }
     if (impFiles.length >= 10) { notes.push('Ten files at a time.'); return; }
     impFiles.push({ file: f, kind });
@@ -115,7 +117,8 @@ function paintImport() {
 }
 /* the how-to, kept short: what to look for in a banking app */
 const IMP_HOW = () => `<details class="src-how"><summary>How to get your statements</summary><div class="src-how-in">
-  <p>Any bank or e-wallet app: open the account, find <b>Statements</b>, <b>Transaction history</b> or <b>Export</b>, and choose the last 2 or 3 months. A <b>CSV</b> or <b>Excel</b> file is best. If the app only shows a PDF or a list, take <b>screenshots</b> of each page instead.</p>
+  <p>Any bank or e-wallet app: open the account, find <b>Statements</b>, <b>Transaction history</b> or <b>Export</b>, and choose the last 2 or 3 months. A <b>CSV</b> or <b>Excel</b> export, or a <b>PDF</b> statement, is best. If the app only shows a list, take <b>screenshots</b> of each page instead.</p>
+  <p>A PDF that asks for a password (GCash sends these) has to be opened with the password first, then saved or printed as a new PDF, or screenshotted.</p>
   ${sym() === '₱' ? '<p>GCash: Profile, Transaction History, export by email. Maya: Account, Statements. BPI, BDO, UnionBank, GoTyme: the account page has Download or Export.</p>' : ''}
   ${sym() === '¥' ? '<p>Japanese banks: 入出金明細 then CSVダウンロード. Card apps: 利用明細 then screenshots of each month.</p>' : ''}
   <p>Credit cards: the last statement (CSV or screenshots). Cash spending: add it on the review screen.</p>
@@ -127,7 +130,7 @@ const STEP_SOURCE = { id: 'source', part: PART.money, setup: true, title: 'Your 
       <button type="button" class="src-opt" data-src="ai"><b>Use any AI</b><span>Copy a message, paste it with your statements into ChatGPT, Claude or Gemini, paste the answer back.</span></button>
     </div>
     <div class="src-panel" id="srcUploadPanel" hidden>
-      <div class="row-btns"><button type="button" class="btn small solid" id="impPick">Choose files</button><input type="file" id="impFile" multiple accept=".csv,.tsv,.txt,text/csv,text/plain,image/*" hidden><button type="button" class="btn small solid" id="impRead" hidden>Read files</button><button type="button" class="btn small" id="impStop" hidden>Stop</button></div>
+      <div class="row-btns"><button type="button" class="btn small solid" id="impPick">Choose files</button><input type="file" id="impFile" multiple accept=".csv,.tsv,.txt,.xlsx,.pdf,text/csv,text/plain,application/pdf,image/*" hidden><button type="button" class="btn small solid" id="impRead" hidden>Read files</button><button type="button" class="btn small" id="impStop" hidden>Stop</button></div>
       <div class="fchips" id="impFiles" hidden></div><p class="cap" id="impNote" role="status"></p>
       <div class="imp-out" id="impOut"></div>
     </div>
@@ -146,7 +149,7 @@ const STEP_SOURCE = { id: 'source', part: PART.money, setup: true, title: 'Your 
     const body = $('#tourBody');
     const show = which => { $('#srcUploadPanel').hidden = which !== 'upload'; $('#srcAiPanel').hidden = which !== 'ai'; $$('.src-opt', body).forEach(b => b.classList.toggle('on', b.dataset.src === which)); };
     $$('.src-opt', body).forEach(b => b.addEventListener('click', () => { show(b.dataset.src); sfx('tap'); if (b.dataset.src === 'upload') { connectAsk().then(paintSrc); $('#impPick').focus(); } else $('#impCopy').focus(); }));
-    const paintSrc = () => { const sub = $('#srcUploadSub'); if (!sub) return; if (askFn) sub.textContent = 'CSV or screenshots. Read in a few seconds.'; else if (askReason === 'relay_off') sub.textContent = 'The AI is not switched on for this page yet. Use any AI instead.'; else if (askReason === 'no_runtime') sub.textContent = 'Not available in this copy of the page. Use any AI instead.'; else if (inArtifact()) sub.textContent = 'Here it needs a Claude sign-in.' + (RELAY_URL ? ' At the app\'s own address it works for everyone.' : ''); };
+    const paintSrc = () => { const sub = $('#srcUploadSub'); if (!sub) return; if (askFn) sub.textContent = (askDoc ? 'CSV, Excel, PDF or screenshots.' : 'CSV, Excel or screenshots.') + ' Read in a few seconds.'; else if (askReason === 'relay_off') sub.textContent = 'The AI is not switched on for this page yet. Use any AI instead.'; else if (askReason === 'no_runtime') sub.textContent = 'Not available in this copy of the page. Use any AI instead.'; else if (inArtifact()) sub.textContent = 'Here it needs a Claude sign-in.' + (RELAY_URL ? ' At the app\'s own address it works for everyone.' : ''); };
     connectAsk().then(paintSrc);
     $('#impPick').addEventListener('click', () => $('#impFile').click());
     $('#impFile').addEventListener('change', e => { importAddFiles(e.target.files); e.target.value = ''; if (impFiles.length) $('#impRead').focus(); });

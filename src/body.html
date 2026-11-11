@@ -162,15 +162,15 @@
     <section class="card scan" id="scan" aria-labelledby="scanH">
       <div class="head">
         <h2 id="scanH">Scan receipts</h2>
-        <p class="sub2" id="scanSub">Claude reads receipt photos and files each by category. You review before anything is added.</p>
+        <p class="sub2" id="scanSub">Claude reads receipt photos and statements and files each item by category. You review before anything is added.</p>
       </div>
       <div class="scan-direct" id="scanDirect">
         <div class="scan-btns">
           <button type="button" class="btn solid" id="scanCam">Camera</button>
-          <button type="button" class="btn" id="scanPick">Choose photos</button>
+          <button type="button" class="btn" id="scanPick">Choose files</button>
         </div>
         <input type="file" id="scanCamIn" accept="image/*" capture="environment" hidden>
-        <input type="file" id="scanPickIn" accept="image/*,.csv,.tsv,.txt,text/csv,text/plain" multiple hidden>
+        <input type="file" id="scanPickIn" accept="image/*,.csv,.tsv,.txt,.xlsx,.pdf,text/csv,text/plain,application/pdf" multiple hidden>
         <div class="scan-files" id="scanFiles" hidden></div>
         <div class="row-btns scan-go" id="scanGo" hidden>
           <button type="button" class="btn solid" id="scanRead">Read</button>
@@ -179,7 +179,7 @@
         </div>
         <p class="msg" id="scanMsg" role="status" hidden></p>
         <div class="scan-out" id="scanOut" aria-live="polite"></div>
-        <p class="cap">One receipt per photo, flat, well lit. Photos go to your Claude account on Read. This page keeps none.</p>
+        <p class="cap" id="scanCap">One receipt per photo, flat, well lit. A bank CSV, Excel or PDF statement lists a whole month. Files go to Claude on Read; this page keeps none.</p>
       </div>
       <p class="scan-off" id="scanOff" role="status" hidden></p>
       <details class="scan-app" id="scanApp">
@@ -295,9 +295,13 @@
         <textarea id="aiBox" readonly aria-label="Prompt for your own AI" spellcheck="false"></textarea>
         <div class="row-btns"><button type="button" class="btn small solid" id="aiCopy">Copy prompt</button><span class="msg" id="aiMsg" role="status"></span></div>
       </div>
+      <div class="backup" id="installBox" hidden>
+        <h3>On your phone</h3>
+        <p class="cap" id="installCap">Open this address in Safari or Chrome on the phone. iPhone: Share, then Add to Home Screen. Android: the browser menu, then Add to Home screen or Install app. It then opens full screen, like an app, and works without a connection. Same numbers: the icon opens this same browser copy.</p>
+      </div>
       <div class="backup" id="bkArea">
         <h3>Saved data</h3>
-        <p class="cap">Data is stored in this browser on this device only. Nothing is sent anywhere. A second copy is kept here in case the first goes missing, and is loaded on its own if so. It does not move to other devices. Clearing site data removes both, so only a backup file survives that. A backup is your own copy of numbers and receipts.</p>
+        <p class="cap" id="savedCap">Data is stored in this browser on this device only. Nothing is sent anywhere. A second copy is kept here in case the first goes missing, and is loaded on its own if so. It does not move to other devices. Clearing site data removes both, so only a backup file survives that. A backup is your own copy of numbers and receipts.</p>
         <h4>Backup</h4>
         <div class="row-btns">
           <button type="button" class="btn small solid" id="bkSave">Save file</button>
@@ -339,7 +343,7 @@
     </section>
   </div>
 
-  <p class="foot">Template, not financial advice. Sample numbers are invented. Replace them with yours.</p>
+  <p class="foot" id="footNote">Not financial advice. Sample numbers are invented. Replace them with yours.</p>
   <p class="foot ver" id="verFoot">Version @@VER@@, updated @@STAMP@@</p>
 </div>
 <div class="tip" id="tip" role="tooltip"></div>

@@ -59,7 +59,7 @@ const puppeteer = require('/home/claude/work/tools/node_modules/puppeteer-core')
     await p.click('#tourNext'); await w(260);
   }
   ok('the last screen greets you by name', (await q('#tourTitle')) === 'Setup done, Mara.');
-  ok('last screen has one way out', ['View month', 'Go to bills'].includes(await q('#tourNext')));
+  ok('last screen has one way out', ['View month', 'Done', 'Go to bills'].includes(await q('#tourNext')));
   await p.click('#tourNext'); await w(600);
   await coach();
   ok('tour closes and the page is showing', await p.$eval('#tour', e => e.hidden));

@@ -11,7 +11,10 @@ const srv = http.createServer((req, res) => {
     if (/MAKECREDIT/.test(lastText)) { res.writeHead(400, { 'content-type': 'application/json' }); return res.end(JSON.stringify({ error: { type: 'invalid_request_error', message: 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.' } })); }
     if (/MAKE500/.test(lastText)) { res.writeHead(500, { 'content-type': 'application/json' }); return res.end(JSON.stringify({ error: { type: 'api_error', message: 'boom' } })); }
     const imgs = j.messages.reduce((n, m) => n + (Array.isArray(m.content) ? m.content.filter(c => c.type === 'image').length : 0), 0);
-    const echo = `ECHO model=${j.model} max=${j.max_tokens} sys=${(j.system || '').length} imgs=${imgs} tools=${(j.tools || []).length} text=${lastText.slice(0, 120)}`;
+    const docList = j.messages.reduce((a, m) => a.concat(Array.isArray(m.content) ? m.content.filter(c => c.type === 'document') : []), []);
+    const badDoc = docList.find(d => !d.source || d.source.type !== 'base64' || d.source.media_type !== 'application/pdf' || !/^JVBERi/.test(d.source.data || ''));
+    if (badDoc) { res.writeHead(400, { 'content-type': 'application/json' }); return res.end(JSON.stringify({ error: { type: 'invalid_request_error', message: 'Could not process PDF' } })); }
+    const echo = `ECHO model=${j.model} max=${j.max_tokens} sys=${(j.system || '').length} imgs=${imgs} docs=${docList.length} tools=${(j.tools || []).length} text=${lastText.slice(0, 120)}`;
     if (j.tools && j.tools.length && !/tool_result/.test(lastText)) {
       /* first round: call the first tool with a fixed input */
       const out = { id: 'msg_1', type: 'message', role: 'assistant', model: j.model, stop_reason: 'tool_use', content: [{ type: 'text', text: 'Let me check.' }, { type: 'tool_use', id: 'tu_1', name: j.tools[0].name, input: { q: 'ping' } }], usage: { input_tokens: 50, output_tokens: 20 } };
@@ -27,6 +30,7 @@ const srv = http.createServer((req, res) => {
       else if (/trip/i.test(q)) text = 'A trip of 30,000 by next June needs about 4,300 a month. That fits.\n```mhr\n{"why":"Add the trip","actions":[{"do":"add_goal","name":"Trip","target":30000,"due":"2027-06-15"}]}\n```';
       else if (/bad action/i.test(q)) text = 'Trying something odd.\n```mhr\n{"why":"odd","actions":[{"do":"explode"},{"do":"set_line","key":"bill:nothing","amount":5},{"do":"set_balance","amount":"12,345"}]}\n```';
       else if (/home/i.test(q)) text = 'Goals first, then play money.\n```mhr\n{"why":"Goals on top","actions":[{"do":"set_home","sections":["goals","goal","play","log"]}]}\n```';
+      else if (/spent/i.test(q)) text = 'Logged as play money, today. PAST=' + ((first.match(/Past months: ([^\n]+)/) || [,'?'])[1]).slice(0, 40) + '\n```mhr\n{"why":"Log the coffee","actions":[{"do":"log_spend","amount":450,"note":"Coffee"}]}\n```';
       else if (/going/i.test(q)) text = picture ? 'Most of it goes to rent and food. PICTURE_SEEN name=' + (first.match(/Name: (\S+)/) || [,'?'])[1] : 'NO_PICTURE';
       else text = 'ECHO ' + q.slice(0, 80);
       if (j.stream) {
@@ -42,7 +46,7 @@ const srv = http.createServer((req, res) => {
     }
     const setup = /work out the monthly numbers/.test(lastText);
     if (setup) {
-      const text = JSON.stringify({ summary: 'Two months of GCash and one card statement.', pay: { amount: 38000, how: 'twice a month, 15th and 30th' }, other_income: 2000, balance: { amount: 12400, date: '2026-11-10' }, bills: [{ id: 'rent', amount: 8000, note: '5th each month' }, { id: 'util', amount: 1800, note: 'Meralco and Maynilad' }, { id: 'food', amount: 6500, note: 'groceries and meals' }, { id: 'net', amount: 1699, note: 'PLDT' }, { id: 'phone', amount: 599, note: 'Globe' }], subscriptions: [{ name: 'Netflix', amount: 279 }, { name: 'Spotify', amount: 169 }], loans: [{ name: 'Home Credit', amount: 2500, ends: '2027-06' }], card_other: 1500, questions: [{ text: 'Is the 8,000 on the 5th your rent?', relates: 'rent' }], skipped: ['One transfer of 5,000 to a savings account was left out.'] });
+      const text = JSON.stringify({ summary: 'Two months of GCash and one card statement.' + (/MERALCO BILL PAYMENT,-2455\.1/.test(lastText) ? ' XLSX_SEEN' : ''), pay: { amount: 38000, how: 'twice a month, 15th and 30th' }, other_income: 2000, balance: { amount: 12400, date: '2026-11-10' }, bills: [{ id: 'rent', amount: 8000, note: '5th each month' }, { id: 'util', amount: 1800, note: 'Meralco and Maynilad' }, { id: 'food', amount: 6500, note: 'groceries and meals' }, { id: 'net', amount: 1699, note: 'PLDT' }, { id: 'phone', amount: 599, note: 'Globe' }], subscriptions: [{ name: 'Netflix', amount: 279 }, { name: 'Spotify', amount: 169 }], loans: [{ name: 'Home Credit', amount: 2500, ends: '2027-06' }], card_other: 1500, questions: [{ text: 'Is the 8,000 on the 5th your rent?', relates: 'rent' }], skipped: ['One transfer of 5,000 to a savings account was left out.'] });
       const out = { id: 'msg_s', type: 'message', role: 'assistant', model: j.model, stop_reason: 'end_turn', content: [{ type: 'text', text }], usage: { input_tokens: 900, output_tokens: 300 } };
       res.writeHead(200, { 'content-type': 'application/json' }); return res.end(JSON.stringify(out));
     }

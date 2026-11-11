@@ -15,7 +15,7 @@ THE PAGE
 - Home: the first screen, kept simple. At the very top, under your name, a status line says where you stand this month: On plan, Tight month or Short, then whether all pay is assigned and where your balance ends. A line under it says whether you have logged receipts this week. While the figures are still the invented sample, it says Sample numbers instead. Top card: the main goal in plain words (for example "Yearly bill covered"), months to go, the date it is full, a progress bar and a status. Tap Forecast under it for details and a graph. Next, Play money: what is left this month, with a weekly amount. Next, Log spend: amount, category and Log. Under Date, note you can set the date and a note, and Scan receipt jumps to the scanner. Then Goals: one row per goal with what it pays for and months to go. Tap a row to open it: amount saved, status, Edit goal, and Set as main goal. Add goal starts a new goal, and See every goal on one graph draws all goals together. Then Jars: the six jars. The jars you spend from (Necessities, Play, Education, Give) show what is left. The two you save in (Long-Term Savings for Spending, Financial Freedom) show what has built up. The folded section Streak, badges, pages holds the weekly streak, badges and the links to other pages.
 - On every page except Home and Settings, a slim bar under the tabs shows the main goal, months to go and play money left. Tap it to go Home. It updates as receipts are logged.
 - The main goal is the nearest goal still being saved for, unless the person picks one with Set as main goal.
-- Receipts: at the top is Scan receipts. When the page runs inside Claude, tap Camera or Choose photos, then Read. Claude sorts the receipts into categories and lists what it found, with a category picker on each line, before anything is added. Tap Add to my page to add them, and Undo is offered afterwards. When the page cannot reach Claude, the card shows Other AI app: tap Copy message, paste it into an AI app with the receipt photos, paste the reply into Reply and tap Check. Below that: the form with Date, Amount, Category, Note and Log receipt, a Month picker with the receipts of that month, plan against spent for each category, and a Reminder card that adds a repeating event to Google, Apple, Outlook.com, Microsoft 365, Yahoo or other calendars, or copies the event text.
+- Receipts: at the top is Scan receipts. When Claude can be reached, tap Camera or Choose files (photos, screenshots, a bank CSV or a PDF statement), then Read. Claude sorts the receipts into categories and lists what it found, with a category picker on each line, before anything is added. Tap Add to my page to add them, and Undo is offered afterwards. When the page cannot reach Claude, the card shows Other AI app: tap Copy message, paste it into an AI app with the receipt photos, paste the reply into Reply and tap Check. Below that: the form with Date, Amount, Category, Note and Log receipt, a Month picker with the receipts of that month, plan against spent for each category, and a Reminder card that adds a repeating event to Google, Apple, Outlook.com, Microsoft 365, Yahoo or other calendars, or copies the event text.
 - Plan, Goals: each goal is a savings bucket with an amount and, optionally, a date. With a date, the page spreads what is missing over the months before it. Without a date it aims to fill the goal in about a year. Edit goal renames, resizes, dates or removes it. Change monthly amount sets the monthly saving. Add goal starts the three-step flow. Forecast shows each goal month by month as a chart, and Table switches to numbers. The emergency fund is the one goal that can be borrowed from in a short month.
 - Plan, Month: the whole plan for one month. A Choose a month list, the big Play money number with a weekly amount, a status chip (On plan, Tight or Short), the pay split by jar as a coloured bar, and Details: Money in (Salary, Second income, Side income), Money out (Necessities, One-time costs, Long-Term Savings for Spending, Play money, Education, Financial Freedom, Give) and Left. Tap an amount to type a new one: it changes that month only, and Keep for later months makes it the new usual. Open a jar and tap Rename, remove or add lines to change its list. Reset month and Undo all revert edits. A Short month offers one-tap fixes: spend less, or borrow from the emergency fund. All months shows a table of every month.
 - Where to put a paycheck: Plan, Month, open Salary under Money in, and type the monthly take-home pay (after tax). If paid twice a month, add both together.
@@ -24,7 +24,7 @@ THE PAGE
 - Yen, pesos and euros start with sample numbers made up for one salary (about 200,000 yen, 30,000 pesos or 1,650 euros a month), with every bill and goal worked out from it. Any other currency starts at zero. Samples should be replaced with real numbers. Changing the currency in Settings swaps the sample to match, but only while the numbers are untouched. Once someone has typed their own numbers, only the symbol changes.
 - Filling the page from files: in this chat there is a paperclip button. A person can add photos or screenshots of receipts, credit card statements or bank statements, or a CSV file from their bank (PDFs cannot be read here: use a screenshot of each page, or the CSV). Then they press Send. Claude reads the files and lists what it found: receipts, monthly pay, bill amounts and the money they have today. Nothing on the page changes until the person taps Add to my page, and Undo is offered right after. The files go to the person's own Claude account only when they press Send, and this page does not keep them. Only dates from November 2026 on can be added. Never say you changed anything yourself: changes happen only through that button.
 - The page works in any currency. The currency is chosen in the tour or under Settings.`;
-const ASK_SUGGEST = ['Where is my money going?', 'What can I realistically save each month?', 'Help me plan a trip', 'Cut my play money a little', 'Where do I enter my pay?'];
+const ASK_SUGGEST = ['Where is my money going?', 'What can I realistically save each month?', 'Help me plan a trip', 'Cut my play money a little', 'I spent 300 on lunch today'];
 
 function askNumbers() {
   const c = calcAll(S), m = c.byYm[sel], J = jarsOf(S, m), st = { good: 'On plan', tight: 'Tight', short: 'Short' }[statusOf(S, m)], cur = sym() || 'none';
@@ -96,7 +96,7 @@ function wireAskAi() {
 /* ---------- fill the page from photos, screenshots and CSV files ----------
    The files go to the person's own Claude account only when they press Send. Claude answers with data, the page checks every field,
    shows what it found, and changes nothing until the person taps "Add to my page". One tap undoes it. */
-let askFiles = [], askCanAttach = false, askImg = null;
+let askFiles = [], askCanAttach = false, askImg = null, askDoc = null; /* askDoc: PDF limits, only on the relay route */
 const ASK_CAP_OWN = 'Runs on your Claude account; you approve access first. Your numbers go with each question while the box is ticked. Nothing is kept.';
 const ASK_CAP_RELAY = 'Answered by Claude through this page. Your numbers go with each question while the box is ticked. Nothing is kept.';
 const askCap = () => (askFn && askFn.relay ? ASK_CAP_RELAY : ASK_CAP_OWN);
@@ -104,8 +104,10 @@ const viaRelay = () => !!(askFn && askFn.relay);
 const ASK_MAX_TEXT = 3, ASK_TEXT_BYTES = 170000, MON3 = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const dayLabel = d => MON3[+d.slice(5, 7) - 1] + ' ' + (+d.slice(8, 10));
 const fromYm = () => { const t = todayStr().slice(0, 7); return MONTHS.indexOf(t) >= 0 ? t : START; };
-const isTextFile = f => /\.(csv|tsv|txt)$/i.test(f.name) || ['text/csv', 'text/plain', 'text/tab-separated-values'].indexOf(f.type) >= 0;
+const isTextFile = f => /\.(csv|tsv|txt)$/i.test(f.name) || ['text/csv', 'text/plain', 'text/tab-separated-values'].indexOf(f.type) >= 0 || (isXlsxFile(f) && xlsxCan());
+const oldSheetNote = f => isXlsFile(f) && !isXlsxFile(f) ? `${f.name}: old Excel format. Open it and save as CSV or .xlsx.` : isXlsxFile(f) && !xlsxCan() ? `${f.name}: this browser cannot open Excel files here. Save it as CSV.` : '';
 const isImageFile = f => !!askImg && askImg.mediaTypes.indexOf(f.type) >= 0;
+const pdfHereNote = f => `${f.name}: PDFs cannot be read here.` + (RELAY_URL && inArtifact() ? ' At the app\'s own address they can.' : '') + ' Use a screenshot of each page, or a CSV from your bank.';
 const sizeLabel = n => (n < 1048576 ? Math.max(1, Math.round(n / 1024)) + ' KB' : (n / 1048576).toFixed(1) + ' MB');
 function askFilesNote(t) { const e = $('#askFilesMsg'); e.textContent = t || ''; e.hidden = !t; }
 function renderAskFiles() {
@@ -118,11 +120,13 @@ function renderAskFiles() {
 function askAddFiles(list) {
   const notes = [], maxImg = Math.min(askImg ? askImg.maxCount : 0, 10);
   Array.from(list || []).forEach(f => {
-    const kind = isTextFile(f) ? 'text' : isImageFile(f) ? 'image' : '';
-    if (!kind) { notes.push(/\.pdf$/i.test(f.name) || f.type === 'application/pdf' ? `${f.name}: PDFs cannot be read here. Use a screenshot of each page, or a CSV from your bank.` : `${f.name}: only photos, screenshots and CSV files can be read.`); return; }
+    const kind = isTextFile(f) ? 'text' : isImageFile(f) ? 'image' : askDoc && isPdfFile(f) ? 'pdf' : '';
+    if (!kind) { notes.push(isPdfFile(f) ? pdfHereNote(f) : oldSheetNote(f) || `${f.name}: only photos, screenshots${askDoc ? ', PDFs' : ''}, CSV and Excel files can be read.`); return; }
     if (kind === 'text' && f.size > 2000000) { notes.push(`${f.name} is too large. Try one month at a time.`); return; }
+    if (kind === 'pdf' && f.size > askDoc.maxInputBytes) { notes.push(`${f.name} is too large. Export fewer months, or take screenshots of the pages.`); return; }
+    if (kind === 'pdf' && askFiles.filter(x => x.kind === 'pdf').length >= askDoc.maxCount) { notes.push(`Maximum ${askDoc.maxCount} PDFs at a time.`); return; }
     if (kind === 'image' && askImg && f.size > askImg.maxInputBytes) { notes.push(`${f.name} is too large. Use a screenshot instead of the original photo.`); return; }
-    if (kind === 'text' && askFiles.filter(x => x.kind === 'text').length >= ASK_MAX_TEXT) { notes.push(`Maximum ${ASK_MAX_TEXT} CSV files at a time.`); return; }
+    if (kind === 'text' && askFiles.filter(x => x.kind === 'text').length >= ASK_MAX_TEXT) { notes.push(`Maximum ${ASK_MAX_TEXT} CSV or Excel files at a time.`); return; }
     if (kind === 'image' && askFiles.filter(x => x.kind === 'image').length >= maxImg) { notes.push(`Maximum ${maxImg} photos at a time. Add the rest after these.`); return; }
     askFiles.push({ file: f, kind });
   });
@@ -130,6 +134,7 @@ function askAddFiles(list) {
 }
 async function readTextFile(f) {
   const buf = await f.arrayBuffer();
+  if (isXlsxFile(f)) { try { return await xlsxToCsv(buf); } catch (e) { throw { code: 'file_rejected', message: `${f.name} could not be read as a spreadsheet. Save it as CSV and try again.` }; } }
   for (const label of ['utf-8', 'shift_jis', 'windows-1252']) { try { return new TextDecoder(label, { fatal: true }).decode(buf).replace(/^﻿/, ''); } catch (e) { /* try the next one */ } }
   return new TextDecoder('utf-8').decode(buf);
 }
@@ -163,7 +168,7 @@ RECEIPTS ALREADY ON THE PAGE (date | amount | note). Do not list these again.
 ${have}
 
 THE PERSON'S NOTE ABOUT THESE FILES: ${note ? JSON.stringify(note.slice(0, 300)) : '(none)'}
-FILES: ${nImg ? nImg + ' photo' + (nImg === 1 ? '' : 's') + ' or screenshot' + (nImg === 1 ? '' : 's') + ' attached to this message' : 'no photos'}${texts.length ? ' and the text files below.' : '.'}
+FILES: ${nImg ? nImg + ' attached file' + (nImg === 1 ? '' : 's') + ' (photos, screenshots or PDF statements)' : 'no photos'}${texts.length ? ' and the text files below.' : '.'}
 ${texts.map(t => `\n----- FILE: ${t.name} -----\n${t.text}`).join('\n')}`;
 }
 /* every field Claude sends back is checked here; anything odd is dropped */
@@ -279,7 +284,8 @@ function askFilesFail(e, bot, retry) {
   const copy = code === 'cancelled' ? '' : gone ? 'Reading files needs permission to use your Claude account and is unavailable here.'
     : code === 'images_unavailable' ? 'Photos cannot be sent from here. A CSV from your bank still works.'
     : code === 'image_rejected' ? 'A photo could not be read. Try a clearer one, or a screenshot.'
-    : code === 'prompt_too_large' ? 'Files too long. Add fewer files, or one month at a time.'
+    : code === 'pdf_locked' || code === 'file_rejected' ? ((e && e.message) || 'A file could not be read.') + ' Remove it, then send again.'
+    : code === 'prompt_too_large' ? 'Files too long. Add fewer files, fewer pages, or one month at a time.'
     : code === 'rate_limited' ? 'Too many requests, or your Claude usage limit is reached. Try again later.'
     : code === 'session_expired' ? 'Signed out of Claude. Sign in again, then send the files again.'
     : code === 'invalid_json' || code === 'refused' || code === 'empty_completion' ? 'No entries could be made from those files. Try a clearer photo, or one file at a time.'
@@ -290,7 +296,7 @@ function askFilesFail(e, bot, retry) {
 async function extractFromFiles(files, note, signal) {
   const texts = [], imgs = []; let budget = ASK_TEXT_BYTES, clipped = false;
   for (const f of files) {
-    if (f.kind === 'image') { imgs.push(f.file); continue; }
+    if (f.kind === 'image' || f.kind === 'pdf') { imgs.push(f.file); continue; }
     let t = await readTextFile(f.file); if (budget < 500) { clipped = true; continue; }
     if (byteLen(t) > budget) { t = clipBytes(t, budget); clipped = true; }
     budget -= byteLen(t); texts.push({ name: f.file.name, text: t });
@@ -345,9 +351,10 @@ async function connectAsk() {
   if (!askFn && !askReason) askReason = 'no_runtime';
   if (!askFn) return;
   askCanAttach = true; askImg = null;
-  if (typeof askFn.limits === 'function') { try { const lim = await askFn.limits(); askImg = lim && lim.images ? lim.images : null; } catch (e) { askImg = null; } }
+  askDoc = null;
+  if (typeof askFn.limits === 'function') { try { const lim = await askFn.limits(); askImg = lim && lim.images ? lim.images : null; askDoc = lim && lim.documents && lim.documents.mediaTypes && lim.documents.mediaTypes.indexOf('application/pdf') >= 0 ? lim.documents : null; } catch (e) { askImg = null; askDoc = null; } }
   $('#askAttach').hidden = false;
-  $('#askFile').accept = (askImg ? askImg.mediaTypes.join(',') + ',' : '') + '.csv,.tsv,.txt,text/csv,text/plain';
+  $('#askFile').accept = (askImg ? askImg.mediaTypes.join(',') + ',' : '') + (askDoc ? '.pdf,application/pdf,' : '') + '.csv,.tsv,.txt,.xlsx,text/csv,text/plain';
   $('#askCap').textContent = askCap();
   buildAskSug();
 }

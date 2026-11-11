@@ -84,7 +84,14 @@ function renderBackupNudge() {
   }
   el.hidden = !html; if (html) { put(el, html); const w = $('[data-vault-code]', el); if (w && !w.children.length) vaultShowCode(w, vault.code); }
 }
+/* the install hint: only where the page has an address of its own, and not once it already runs as an installed app */
+function paintInstall() {
+  const box = $('#installBox'); if (!box) return;
+  let standalone = false; try { standalone = (matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true; } catch (e) { standalone = false; }
+  box.hidden = !(/^https?:$/.test(location.protocol) && !inArtifact() && !standalone);
+}
 function wireSafe() {
+  paintInstall();
   $('#moveBanner').addEventListener('click', e => { if (e.target.closest('[data-move-hide]')) { S.ui.noMove = true; persist(); renderMoveBanner(); } else if (e.target.closest('#moveGo')) sfx('next'); });
   $('#hBk').addEventListener('click', async e => {
     if (e.target.closest('[data-bk-later]')) { S.ui.bkLater = Date.now(); persist(); renderBackupNudge(); return; }

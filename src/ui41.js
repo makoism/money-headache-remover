@@ -9,6 +9,9 @@
 const RELAY_URL = '@@RELAY@@'; /* filled by build.sh from the RELAY file; empty until the site has an address */
 const ANON_KEY = 'mhr-anon', INVITE_KEY = 'mhr-invite';
 const IMG_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+/* PDF statements go up as document blocks (the relay only; the viewer's own Claude takes images alone) */
+const DOC_LIMITS = { maxCount: 4, maxInputBytes: 6000000, mediaTypes: ['application/pdf'] };
+const isPdfFile = f => !!f && (f.type === 'application/pdf' || /\.pdf$/i.test(f.name || ''));
 const relayBase = () => { if (inArtifact()) return ''; if (/^https?:$/.test(location.protocol)) return location.origin; return RELAY_URL.replace(/\/$/, ''); };
 function anonId() {
   try {
@@ -28,13 +31,25 @@ async function relayHealth(force) {
   catch (e) { relayInfo = false; }
   return relayInfo;
 }
+function bytesToB64(buf) { let s = ''; for (let i = 0; i < buf.length; i += 0x8000) s += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000)); return btoa(s); }
 /* a Blob to the base64 the API wants; photos are shrunk first (same helper as the Scan card) */
 async function toImageBlock(file) {
   const f = await shrinkPhoto(file);
   if (IMG_TYPES.indexOf(f.type) < 0) throw { code: 'image_rejected', message: 'Only JPEG, PNG, WebP or GIF.' };
-  const buf = new Uint8Array(await f.arrayBuffer()); let s = '';
-  for (let i = 0; i < buf.length; i += 0x8000) s += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000));
-  return { type: 'image', source: { type: 'base64', media_type: f.type, data: btoa(s) } };
+  return { type: 'image', source: { type: 'base64', media_type: f.type, data: bytesToB64(new Uint8Array(await f.arrayBuffer())) } };
+}
+/* a password-protected PDF carries /Encrypt in its trailer; Claude cannot open those, so the person is told before anything is sent */
+function pdfLocked(buf) {
+  const tail = buf.length > 2000000 ? buf.subarray(buf.length - 2000000) : buf;
+  return /\/Encrypt\b/.test(new TextDecoder('latin1').decode(tail));
+}
+async function toDocBlock(file) {
+  const name = file.name || 'file';
+  if (file.size > DOC_LIMITS.maxInputBytes) throw { code: 'file_rejected', message: `${name} is too large. Export fewer months, or take screenshots of the pages.` };
+  const buf = new Uint8Array(await file.arrayBuffer());
+  if (buf.length < 8 || String.fromCharCode(buf[0], buf[1], buf[2], buf[3]) !== '%PDF') throw { code: 'file_rejected', message: `${name} is not a PDF.` };
+  if (pdfLocked(buf)) throw { code: 'pdf_locked', message: `${name} asks for a password. Open it with the password, then save or print it as a new PDF, or take screenshots of its pages.` };
+  return { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: bytesToB64(buf) } };
 }
 async function relayMessages(input, images) {
   let msgs;
@@ -43,7 +58,7 @@ async function relayMessages(input, images) {
   else throw { code: 'invalid_request', message: 'input must be a prompt or a list of turns.' };
   const list = images ? (images instanceof Blob ? [images] : Array.from(images)) : [];
   if (list.length) {
-    const blocks = []; for (const f of list) blocks.push(await toImageBlock(f));
+    const blocks = []; for (const f of list) blocks.push(isPdfFile(f) ? await toDocBlock(f) : await toImageBlock(f));
     const last = msgs[msgs.length - 1]; last.content = [{ type: 'text', text: String(last.content) }].concat(blocks);
   }
   return msgs;
@@ -136,7 +151,7 @@ function relayFn() {
     if (!p.ok || r.truncated) throw { code: 'invalid_json', message: r.truncated ? 'The answer was cut short.' : 'No JSON in the answer.', text: r.text };
     return p.value;
   };
-  fn.limits = async () => ({ maxPromptBytes: 262144, images: { maxCount: 10, maxInputBytes: 20000000, mediaTypes: IMG_TYPES.slice() }, tools: { maxCount: 16 }, modelTiers: ['quick', 'default', 'complex'] });
+  fn.limits = async () => ({ maxPromptBytes: 262144, images: { maxCount: 10, maxInputBytes: 20000000, mediaTypes: IMG_TYPES.slice() }, documents: Object.assign({}, DOC_LIMITS, { mediaTypes: DOC_LIMITS.mediaTypes.slice() }), tools: { maxCount: 16 }, modelTiers: ['quick', 'default', 'complex'] });
   fn.relay = true;
   return fn;
 }

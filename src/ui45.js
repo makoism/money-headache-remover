@@ -174,7 +174,7 @@ const TOUR = [
     body: () => `${homeScene()}
       <p>Know where your money stands, and what it is working toward.</p>
       <ul class="tour-get"><li>Your month on one screen.</li><li>Play money you can spend with no guilt.</li><li>Each goal, and the date you reach it.</li></ul>
-      <p class="cap">Setup takes about ten minutes, one question at a time. Stop any time.</p>
+      <p class="cap">Setup takes a few minutes with your statements, about ten by hand. Stop any time.</p>
       <p class="tour-safe">${LOCK}<span>Data stays in this browser. Nobody else can see it.</span></p>
       <p class="cap tour-restore" id="tourRestore" hidden><button type="button" class="link" id="tourRestoreBtn">Used this before on another phone? Enter your recovery code.</button></p>
       <div class="tour-restore-in" id="tourRestoreIn" hidden><div class="row-btns inv-row"><input class="txt" id="tourVaultIn" type="text" autocomplete="off" spellcheck="false" placeholder="MHR-XXXX-XXXX-XXXX-XXXX-XXXX" aria-label="Recovery code" maxlength="40"><button type="button" class="btn small solid" id="tourVaultUse">Load</button></div><p class="cap" id="tourVaultMsg" role="status"></p></div>
@@ -223,7 +223,7 @@ const TOUR = [
       <div class="cal-btns" id="tourCal">${calBtnsInner()}</div><p class="cal-msg cap" id="tourCalMsg" role="status"></p>
       <p class="cap">${inArtifact() ? 'Google Calendar repeats it. Outlook, Microsoft 365 and Yahoo open a one-time event: set the repeat there. Apple and others show text to copy.' : 'Google Calendar and the downloaded file repeat it. Outlook, Microsoft 365 and Yahoo open a one-time event: set the repeat there.'} Set for <span id="tourWhen"></span>.</p></div>` },
   { id: 'ready', part: PART.habit, title: () => (firstName() ? `Setup done, ${esc(firstName())}.` : 'Setup done.'), last: true,
-    next: () => (S.ui.setup ? 'View month' : 'Go to bills'),
+    next: () => (S.ui.setup ? 'Done' : 'Go to bills'),
     body: () => {
       if (S.ui.setup) {
         const f = planFacts();
@@ -234,8 +234,12 @@ const TOUR = [
         const V = viewOf(S, f.C, nowYm(), ymd(new Date())), r = V.main, mg = r ? goalById(S, r.id) : null;
         const goal = mg ? `Main goal: <b>${esc(mg.name)}</b>. ${r.pct >= 100 ? 'Full.' : r.reached ? (r.months <= 0 ? 'Full <b>this month</b>.' : `<b>${plural(r.months, 'month')}</b> to go. Full ${fullLabel(r.reached)}.`) : 'Not full within ' + SPAN + ' at this pace.'}` : '';
         const ok = f.st === 'even' || f.st === 'spare';
+        /* on the app's own address: one tap keeps an encrypted copy in the cloud, so a lost phone does not mean lost numbers */
+        const cloud = typeof vaultAvailable === 'function' && vaultAvailable() && !(vault && vault.on)
+          ? `<div class="tour-cloud" id="tourCloud">${LOCK}<div><b>Keep a copy in the cloud</b><p class="cap">Your numbers live in this browser. Cloud backup keeps an encrypted copy that only your recovery code can open. New phone, or browser cleared: enter the code and the numbers come back.</p>
+            <div class="row-btns"><button type="button" class="btn small solid" id="tourVaultOn">Turn on cloud backup</button><span class="cap">Later: Settings, Cloud backup.</span></div><div class="tour-vault-code" id="tourVaultCode"></div></div></div>` : '';
         return `${homeScene()}${ok ? `<p class="tour-st"><span class="chip good">${IC.ok}On plan</span></p>` : ''}<p>Your month:</p>${ledgerHTML(f)}<p>${line}</p>${goal ? `<p>${goal}</p>` : ''}
-        <p>Plan: edit any line. Receipts: log what you spend, so this stays true. Help (bottom right) replays this tour and shows each tab.</p>`;
+        <p>Plan: edit any line. Receipts: log what you spend, so this stays true. Help (bottom right) replays this tour and shows each tab.</p>${cloud}`;
       }
       const m = calcAll(S).byYm[sel], pay = m.a + m.b + m.side, L = m.pool.left;
       const zero = S.ui.preset === 'blank' || !!S.ui.cleared;
@@ -246,6 +250,15 @@ const TOUR = [
       return `${homeScene()}<p>${msg}</p>
       <p>${zero ? 'Bills and goals are empty. Open Plan, Necessities, and enter what you pay.' : 'Bills and goals are still samples. Open Plan, Necessities, and set each line. Or use <b>Zero all</b> in Settings.'}</p>
       <p>Help (bottom right) replays this tour and the setup.</p>`;
+    },
+    after: () => {
+      const b = $('#tourVaultOn'); if (!b) return;
+      b.addEventListener('click', async () => {
+        b.disabled = true;
+        try { const code = await vaultTurnOn(); b.closest('.row-btns').hidden = true; vaultShowCode($('#tourVaultCode'), code); sfx('next'); } catch (e) { b.disabled = false; return; }
+        /* the code is the last thing on the screen and the footer floats over the end of it: bring it fully into view */
+        const t = $('#tour'); requestAnimationFrame(() => t.scrollTo({ top: t.scrollHeight, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }));
+      });
     } },
 ];
 
@@ -278,8 +291,8 @@ function renderTour(dir) {
   const body = $('#tourBody'); body.innerHTML = `<h2 id="tourTitle" tabindex="-1">${title}</h2>${t.body()}`;
   moneyUpAll(body);
   body.classList.remove('in-r', 'in-l'); if (dir) { void body.offsetWidth; body.classList.add(dir > 0 ? 'in-r' : 'in-l'); }
-  const hasSetup = tourMode === 'full' && same.some(x => x.setup);
-  $('#tourSkip').textContent = hasSetup ? 'Finish later' : 'Skip tour'; $('#tourPartSkip').hidden = !hasSetup;
+  const hasSetup = tourMode === 'full' && same.some(x => x.setup), setupRun = tourMode === 'full' && TS.some(x => x.setup);
+  $('#tourSkip').textContent = setupRun ? 'Finish later' : 'Skip tour'; $('#tourSkip').hidden = !!t.last && setupRun; $('#tourPartSkip').hidden = !hasSetup;
   $('#tourBack').hidden = tourN === 0; $('.tour-foot').classList.toggle('last', !!t.last);
   const nx = $('#tourNext'); nx.textContent = (typeof t.next === 'function' ? t.next() : t.next) || 'Next'; $('#tourAlt').hidden = !(t.last && !S.ui.setup);
   paintSnd();
@@ -346,7 +359,7 @@ function tourStep(d) {
   let nx = tourN + d;
   if (tourJump) { const j = TS.findIndex(s => s.id === tourJump); tourJump = null; if (j >= 0) nx = j; }
   tourN = Math.max(0, Math.min(TS.length - 1, nx)); renderTour(d); sfx(d > 0 ? 'next' : 'back');
-  if (d > 0 && TS[tourN].id === 'reveal' && havePay()) { celebrate('big', 'Play money, one number.'); sfx('fanfare'); }
+  if (d > 0 && TS[tourN].id === 'reveal' && havePay()) { celebrate('big', 'This is yours to spend.'); sfx('fanfare'); }
 }
 function gotoStep(id) { buildSteps(); const i = TS.findIndex(x => x.id === id); if (i < 0) return; tourN = i; renderTour(1); sfx('next'); }
 /* jump to the first screen of the next part, keeping whatever was typed on this one */

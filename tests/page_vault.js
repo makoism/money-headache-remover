@@ -75,6 +75,27 @@ const decrypt = async (k, j) => JSON.parse(new TextDecoder().decode(await subtle
   v = await getVault(k); ok(v.status === 404, 'Turn off (two taps) deletes the cloud copy');
   ok(await a.evaluate(() => !localStorage.getItem('mhr-vault')), 'the code is forgotten on this device');
   ok(errsA.length === 0 && errsB.length === 0, 'no page errors ' + JSON.stringify(errsA.concat(errsB).slice(0, 3)));
-  await bA.close(); await bB.close();
+  // the Setup done screen offers the cloud copy in one tap
+  const bC = await puppeteer.launch({ executablePath: '/usr/bin/google-chrome', headless: 'new', args: ['--no-sandbox', '--disable-gpu'] });
+  const { p: c, errs: errsC } = await fresh(bC);
+  await c.goto(BASE + '/?c=1#2026-11', { waitUntil: 'load' }); await w(900);
+  let shownCode = '';
+  await runTour(c, P.a, async () => {
+    const t = await c.$eval('#tourTitle', e => e.textContent); if (!/^Setup done/.test(t) || shownCode) return;
+    ok(await c.evaluate(() => !!document.querySelector('#tourCloud #tourVaultOn')), 'Setup done offers Turn on cloud backup');
+    await c.click('#tourVaultOn'); await w(1500);
+    shownCode = await c.evaluate(() => (document.querySelector('#tourVaultCode .vault-code') || {}).textContent || '');
+    ok(/^MHR-[A-Z0-9]{4}(-[A-Z0-9]{4}){4}$/.test(shownCode), 'one tap turns it on and shows the recovery code: ' + shownCode);
+    const fully = await c.evaluate(() => { const s = document.querySelector('#vaultSaved').getBoundingClientRect(), f = document.querySelector('.tour-foot').getBoundingClientRect(); return s.bottom <= f.top + 1; });
+    ok(fully, 'the screen scrolls so the code and its buttons sit above the footer');
+    await c.click('#tourVaultCode #vaultSaved'); await w(300);
+  });
+  await w(2500); await coach(c);
+  await c.evaluate(() => document.querySelector('[data-tab="basics"]').click()); await w(600); await coach(c);
+  ok(await c.evaluate(() => /^On/.test(document.querySelector('#vaultState').textContent)), 'Settings then shows Cloud backup on: ' + await c.$eval('#vaultState', e => e.textContent));
+  const kc = await keysFor(shownCode.replace(/^MHR-/, '').replace(/-/g, ''));
+  const vc = await getVault(kc); ok(vc.status === 200 && (await decrypt(kc, vc.j)).ui.name === 'Aiko', 'the cloud copy made from the setup screen opens with that code');
+  ok(errsC.length === 0, 'no page errors (setup screen) ' + JSON.stringify(errsC.slice(0, 3)));
+  await bA.close(); await bB.close(); await bC.close();
   console.log(`PAGE VAULT: ${pass} pass, ${fail} fail`); process.exit(fail ? 1 : 0);
 })().catch(e => { console.log('CRASH', e.stack); process.exit(2); });

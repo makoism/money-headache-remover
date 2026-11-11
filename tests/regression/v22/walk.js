@@ -48,7 +48,7 @@ const P = {
     if (ov.sw > ov.iw + 1) probs.push(`h-overflow at step ${i} (${title}): ${ov.sw}>${ov.iw}`);
     await p.screenshot({ path: `${out}/${String(i).padStart(2,'0')}.png` });
     const nx = await p.$eval('#tourNext', e=>e.textContent);
-    if (nx==='View month' || nx==='Go to bills') { await p.click('#tourNext'); await w(900); break; }
+    if (nx==='View month' || nx==='Done' || nx==='Go to bills') { await p.click('#tourNext'); await w(900); break; }
     const dis = await p.$eval('#tourNext', e=>e.disabled);
     if (dis) { probs.push(`Next disabled at step ${i} (${title})`); break; }
     await p.click('#tourNext'); await w(300);

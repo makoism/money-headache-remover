@@ -22,6 +22,14 @@ const msg = (text, extra) => Object.assign({ v: 1, anon, tier: 'quick', messages
   const png = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
   r = await post('/api/ai', { v: 1, anon, messages: [{ role: 'user', content: [{ type: 'text', text: 'read this' }, { type: 'image', source: { type: 'base64', media_type: 'image/png', data: png } }] }] }); j = await r.json();
   ok(r.status === 200 && /imgs=1/.test(j.text), 'image block passes through: ' + (j.text || '').slice(0, 60));
+  // PDF statements: document blocks
+  const pdf = Buffer.from('%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF').toString('base64');
+  const doc = { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: pdf } };
+  r = await post('/api/ai', { v: 1, anon, messages: [{ role: 'user', content: [{ type: 'text', text: 'read this' }, doc] }] }); j = await r.json();
+  ok(r.status === 200 && /docs=1/.test(j.text), 'PDF document block passes through: ' + (j.text || '').slice(0, 70));
+  r = await post('/api/ai', { v: 1, anon, messages: [{ role: 'user', content: [{ type: 'text', text: 'x' }, { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: 'AAAA' } }] }] }); ok(r.status === 400, 'a document that is not a PDF is refused');
+  r = await post('/api/ai', { v: 1, anon, messages: [{ role: 'user', content: [{ type: 'text', text: 'x' }, { type: 'document', source: { type: 'base64', media_type: 'text/plain', data: pdf } }] }] }); ok(r.status === 400, 'a document of another media type is refused');
+  r = await post('/api/ai', { v: 1, anon, messages: [{ role: 'user', content: [{ type: 'text', text: 'x' }, doc, doc, doc, doc, doc] }] }); j = await r.json(); ok(r.status === 400 && /4 PDF/.test(j.error.message), 'five PDFs refused: ' + j.error.message);
   // tools: first round returns tool_use content
   r = await post('/api/ai', msg('use a tool', { tools: [{ name: 'get_plan', description: 'reads the plan', input_schema: { type: 'object', properties: { q: { type: 'string' } } } }] })); j = await r.json();
   ok(r.status === 200 && j.stop_reason === 'tool_use' && j.content.some(b => b.type === 'tool_use' && b.name === 'get_plan'), 'tools: tool_use round comes back whole');

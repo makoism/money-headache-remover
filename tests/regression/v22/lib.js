@@ -52,7 +52,7 @@ exports.runTour = async (p, pr, shot) => {
     if (ov.sw > ov.iw + 1) probs.push(`h-overflow at step ${i} (${title}): ${ov.sw}>${ov.iw}`);
     if (shot) await shot(i);
     const nx = await p.$eval('#tourNext', e=>e.textContent);
-    if (nx==='View month' || nx==='Go to bills') { await p.click('#tourNext'); await w(900); break; }
+    if (nx==='View month' || nx==='Done' || nx==='Go to bills') { await p.click('#tourNext'); await w(900); break; }
     if (await p.$eval('#tourNext', e=>e.disabled)) { probs.push(`Next disabled at step ${i} (${title})`); break; }
     await p.click('#tourNext'); await w(260);
   }

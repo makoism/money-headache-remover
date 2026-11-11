@@ -55,6 +55,9 @@ All `ui*.js` files share one scope (one IIFE) in the order set in `build.sh`. Fu
 | Setup wording | the step definitions in `ui45s.js` and `ui45.js` |
 | A Home card | its `render…` function in `ui6.js`; markup slot in `body.html`; order and visibility via `HOME_SECTIONS` and `ACT.setHome` |
 | What the statement import asks for | `importRules` and `IMP_FORMAT` in `ui45u.js`, with `importClean` updated to match |
+| Which files the AI can read | `IMG_TYPES` and `DOC_LIMITS` in `ui41.js` (PDFs go up as document blocks on the relay route only; `askDoc` in `ui46.js` is null elsewhere), mirrored by `MAX_DOCS` in `../site/functions/api/ai.js` |
+| What the assistant may do | `ASST_GUIDE` (the list Claude reads) and `asstCheck` (the checked actions) in `ui4a.js`; both must agree; `asstPicture` is what it knows |
+| The Home "Next" card and the finish-last-month nudge | `renderNext` and `monthToClose` in `ui6.js` |
 | AI limits, models, the code word | the Cloudflare project's Variables (see `../site/SETUP.md`) |
 | Colours, spacing | variables at the top of `style.css` |
 | Sample numbers per currency | `presetState` in `model.js` |

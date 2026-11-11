@@ -50,6 +50,20 @@ const state = p => p.evaluate(() => JSON.parse(localStorage.getItem('money-map-t
   await ask(p, 'bad action please'); await w(800);
   const c3 = await p.evaluate(() => { const cs = document.querySelectorAll('#askLog .msg.ai.card'); const c = cs[cs.length - 1]; return { txt: c.textContent.replace(/\s+/g, ' '), steps: c.querySelectorAll('.asst-step').length }; });
   ok(c3.steps === 1 && /Money today: .* to ¥12,345/.test(c3.txt) && /Left out \(not understood\): explode, set_line bill:nothing/.test(c3.txt), 'unknown actions are dropped and named; the valid one stays: ' + c3.txt.slice(0, 120));
+  // logging spending from the chat: one receipt, Apply, Undo
+  const nBefore = ((await state(p)).receipts || []).length;
+  await ask(p, 'I spent 450 on coffee'); await w(800);
+  const c4 = await p.evaluate(() => { const cs = document.querySelectorAll('#askLog .msg.ai.card'); const c = cs[cs.length - 1]; return { txt: c.textContent.replace(/\s+/g, ' '), steps: c.querySelectorAll('.asst-step').length }; });
+  ok(c4.steps === 1 && /Log ¥450, Play money, Coffee/.test(c4.txt), 'a spend reads as a receipt line: ' + c4.txt.slice(0, 90));
+  const playRow4 = (await p.evaluate(() => { const cs = document.querySelectorAll('#askLog .msg.ai.card'); const c = cs[cs.length - 1]; return Array.from(c.querySelectorAll('.asst-row')).map(tr => Array.from(tr.children).map(td => td.textContent.trim())); })).find(r => r[0] === 'Play money left');
+  ok(!!(playRow4 && playRow4[1] !== playRow4[2]), 'play money left changes in the Now/After table: ' + JSON.stringify(playRow4));
+  const said4 = await p.evaluate(() => { const l = Array.from(document.querySelectorAll('#askLog .msg.ai:not(.card)')); return l.length ? l[l.length - 1].textContent : ''; });
+  ok(/PAST=no receipts logged before/.test(said4), 'the picture carries the past-months line: ' + said4.slice(0, 80));
+  await p.evaluate(() => { const cs = document.querySelectorAll('#askLog .msg.ai.card'); cs[cs.length - 1].querySelector('.asst-foot .btn').click(); }); await w(800);
+  const rs = (await state(p)).receipts || [];
+  ok(rs.length === nBefore + 1 && rs[rs.length - 1].a === 450 && rs[rs.length - 1].c === 'envelope' && rs[rs.length - 1].n === 'Coffee', 'Apply logs the receipt on the page: ' + JSON.stringify(rs[rs.length - 1]));
+  await p.evaluate(() => { const cs = document.querySelectorAll('#askLog .msg.ai.card'); const u = Array.from(cs[cs.length - 1].querySelectorAll('.asst-foot button')).find(b => /^Undo$/.test(b.textContent.trim())); u && u.click(); }); await w(600);
+  ok(((await state(p)).receipts || []).length === nBefore, 'Undo removes it again');
   await ask(p, 'Change my home screen'); await w(800);
   await p.evaluate(() => { const cs = document.querySelectorAll('#askLog .msg.ai.card'); cs[cs.length - 1].querySelector('.asst-foot .btn').click(); }); await w(800);
   await p.click('#askClose'); await w(300);

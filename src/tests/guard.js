@@ -14,7 +14,9 @@ const PAGE = process.env.PAGE || '/home/claude/work/money-map-team.html';
   await runTour(p, P.a); await w(1500);
   let fail = 0; const check = (ok, msg) => { console.log((ok ? 'PASS ' : 'FAIL ') + msg); if (!ok) fail++; };
   for (const tab of ['home', 'receipts', 'goals', 'month', 'basics']) {
-    await p.evaluate(t => document.querySelector(`[data-tab="${t}"]`).click(), tab); await w(1500);
+    await p.evaluate(t => document.querySelector(`[data-tab="${t}"]`).click(), tab); await w(900);
+    /* the first-open coach marks are a dialog, not the resting state: close them, then measure the page at rest */
+    await p.evaluate(() => { const s = document.querySelector("#coSkip"); if (s && s.offsetParent) s.click(); }); await w(2200);
     const a = await m(); await w(4000); const z = await m(), cpu = (z.TaskDuration - a.TaskDuration) / 4 * 100;
     check(cpu < 1.5, `idle CPU on ${tab}: ${cpu.toFixed(2)}% (limit 1.5%)`);
   }
