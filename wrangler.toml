@@ -7,6 +7,10 @@ main = "worker/index.js"
 compatibility_date = "2026-01-01"
 keep_vars = true
 
+# the version shown by /api/health; build_site.sh copies it from the page's VERSION file
+[vars]
+SITE_VERSION = "26.0"
+
 [assets]
 directory = "./public"
 binding = "ASSETS"

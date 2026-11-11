@@ -11,6 +11,7 @@ cd "$(dirname "$0")"
 rm -rf public && mkdir -p public
 cp -r ../pwa/dist/. public/
 rm -f public/README.md
+VER=$(sed -n 1p ../team/VERSION); sed -i "s|^SITE_VERSION = .*|SITE_VERSION = \"$VER\"|" wrangler.toml
 mkdir -p src pwa tests/regression
 rm -rf src && mkdir -p src && ( cd ../team && tar cf - --exclude node_modules . ) | ( cd src && tar xf - )
 cp ../pwa/make_pwa.py ../pwa/*.png ../pwa/*.svg pwa/ 2>/dev/null || true; cp ../pwa/render_icons.js pwa/ 2>/dev/null || true
