@@ -26,7 +26,7 @@ const KEYS = ['steps', 'once', 'items', 'cfg', 'receipts', 'plan'];
     /* save to file */
     await p.evaluate(() => document.querySelector('#bkSave').click()); await w(300);
     const dl = await p.evaluate(() => window.__dl), txt = await p.evaluate(async () => { const bl = window.__blobs[window.__blobs.length - 1]; return bl ? await bl.text() : null; });
-    ok(cur + ' file name', /^money-headache-remover-\d{4}-\d\d-\d\d\.json$/.test(dl || ''), dl);
+    ok(cur + ' file name', /^mhr2000-\d{4}-\d\d-\d\d\.json$/.test(dl || ''), dl);
     let parsed = null; try { parsed = JSON.parse(txt); } catch (e) { /* */ }
     ok(cur + ' file is valid JSON', !!parsed);
     ok(cur + ' file has the same numbers as the saved copy', parsed && KEYS.every(k => JSON.stringify(parsed[k]) === JSON.stringify(A[k])), parsed ? KEYS.filter(k => JSON.stringify(parsed[k]) !== JSON.stringify(A[k])).join(',') : 'no file');

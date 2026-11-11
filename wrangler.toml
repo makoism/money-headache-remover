@@ -1,10 +1,20 @@
-# Local development only (wrangler pages dev). In production the same values are set in the Cloudflare dashboard:
-# Settings > Bindings (D1 "DB" -> money-vault) and Settings > Variables and Secrets (ANTHROPIC_API_KEY, optional INVITE_CODES).
+# M.H.R.2000 on Cloudflare Workers: the page from ./public, the API from worker/index.js.
+# Cloudflare's Workers Builds runs `npx wrangler deploy` on every push to main.
+# Secrets (ANTHROPIC_API_KEY) and plain variables (INVITE_CODES, caps) are set in the dashboard:
+#   Workers & Pages > money-headache-remover > Settings > Variables and Secrets. keep_vars keeps them across deploys.
 name = "money-headache-remover"
-pages_build_output_dir = "public"
+main = "worker/index.js"
 compatibility_date = "2026-01-01"
+keep_vars = true
 
-[[d1_databases]]
-binding = "DB"
-database_name = "money-vault"
-database_id = "local"
+[assets]
+directory = "./public"
+binding = "ASSETS"
+run_worker_first = ["/api/*"]
+
+# The encrypted cloud copies and the usage counters. Create the database in the dashboard (Storage & Databases > D1 > Create,
+# name money-vault) and put its Database ID here. Without it the page still works; only cloud backup and the per-day caps are off.
+# [[d1_databases]]
+# binding = "DB"
+# database_name = "money-vault"
+# database_id = "PASTE-THE-DATABASE-ID-HERE"

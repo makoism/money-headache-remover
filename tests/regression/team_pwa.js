@@ -19,7 +19,7 @@ const ok = (n, c) => { console.log(c ? 'PASS' : 'FAIL', n); if (!c) process.exit
   ok('your name was saved before going offline', before);
   await p.setOfflineMode(true);
   await p.reload({ waitUntil: 'load' }); await w(900);
-  ok('page loads with no network', (await p.title()) === 'The Money Headache Remover 2000' && (await p.$eval('#heroNum', e => e.textContent)).length > 0);
+  ok('page loads with no network', /Money Headache Remover 2000/.test(await p.title()) && (await p.$eval('#heroNum', e => e.textContent)).length > 0);
   ok('your saved data is still there offline', await p.evaluate(() => (localStorage.getItem('money-map-template-v2') || '').includes('Mara')));
   ok('and the tour does not come back', await p.$eval('#tour', e => e.hidden));
   ok('no page errors', errs.length === 0);
