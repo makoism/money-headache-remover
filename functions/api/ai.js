@@ -65,6 +65,7 @@ export async function onRequestPost({ request, env }) {
     let msg = ''; try { const j = await up.json(); msg = (j && j.error && j.error.message) || ''; } catch (e) { msg = ''; }
     if (up.status === 429) return fail(429, 'rate_limited', 'Claude is busy. Try again in a moment.');
     if (up.status === 400 && /credit balance/i.test(msg)) return fail(503, 'relay_unconfigured', 'The AI has no credit left on this page. The owner needs to top it up.');
+    if (up.status === 400 && /too long|too many pages|exceeds? the (maximum|limit)|too large/i.test(msg)) return fail(413, 'prompt_too_large', 'Too much at once: fewer files, fewer pages, or one month at a time.');
     if (up.status === 400) return fail(400, 'invalid_request', msg.slice(0, 300) || 'Claude rejected the request.');
     if (up.status === 401 || up.status === 403) return fail(503, 'relay_unconfigured', 'The relay key was refused.');
     if (up.status === 413) return fail(413, 'prompt_too_large', 'Too much text, or too many pages or images.');

@@ -30,6 +30,7 @@ const msg = (text, extra) => Object.assign({ v: 1, anon, tier: 'quick', messages
   r = await post('/api/ai', { v: 1, anon, messages: [{ role: 'user', content: [{ type: 'text', text: 'x' }, { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: 'AAAA' } }] }] }); ok(r.status === 400, 'a document that is not a PDF is refused');
   r = await post('/api/ai', { v: 1, anon, messages: [{ role: 'user', content: [{ type: 'text', text: 'x' }, { type: 'document', source: { type: 'base64', media_type: 'text/plain', data: pdf } }] }] }); ok(r.status === 400, 'a document of another media type is refused');
   r = await post('/api/ai', { v: 1, anon, messages: [{ role: 'user', content: [{ type: 'text', text: 'x' }, doc, doc, doc, doc, doc] }] }); j = await r.json(); ok(r.status === 400 && /4 PDF/.test(j.error.message), 'five PDFs refused: ' + j.error.message);
+  r = await post('/api/ai', msg('MAKELONG')); j = await r.json(); ok(r.status === 413 && j.error.code === 'prompt_too_large', 'a prompt-too-long answer from Claude becomes prompt_too_large: ' + j.error.message);
   // tools: first round returns tool_use content
   r = await post('/api/ai', msg('use a tool', { tools: [{ name: 'get_plan', description: 'reads the plan', input_schema: { type: 'object', properties: { q: { type: 'string' } } } }] })); j = await r.json();
   ok(r.status === 200 && j.stop_reason === 'tool_use' && j.content.some(b => b.type === 'tool_use' && b.name === 'get_plan'), 'tools: tool_use round comes back whole');

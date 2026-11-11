@@ -9,6 +9,7 @@ const srv = http.createServer((req, res) => {
     if (req.headers['x-api-key'] !== 'test-key') { res.writeHead(401, { 'content-type': 'application/json' }); return res.end(JSON.stringify({ error: { type: 'authentication_error', message: 'invalid x-api-key' } })); }
     if (/MAKE429/.test(lastText)) { res.writeHead(429, { 'content-type': 'application/json' }); return res.end(JSON.stringify({ error: { type: 'rate_limit_error', message: 'slow down' } })); }
     if (/MAKECREDIT/.test(lastText)) { res.writeHead(400, { 'content-type': 'application/json' }); return res.end(JSON.stringify({ error: { type: 'invalid_request_error', message: 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.' } })); }
+    if (/MAKELONG/.test(lastText)) { res.writeHead(400, { 'content-type': 'application/json' }); return res.end(JSON.stringify({ error: { type: 'invalid_request_error', message: 'prompt is too long: 250000 tokens > 200000 maximum' } })); }
     if (/MAKE500/.test(lastText)) { res.writeHead(500, { 'content-type': 'application/json' }); return res.end(JSON.stringify({ error: { type: 'api_error', message: 'boom' } })); }
     const imgs = j.messages.reduce((n, m) => n + (Array.isArray(m.content) ? m.content.filter(c => c.type === 'image').length : 0), 0);
     const docList = j.messages.reduce((a, m) => a.concat(Array.isArray(m.content) ? m.content.filter(c => c.type === 'document') : []), []);
