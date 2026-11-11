@@ -858,7 +858,15 @@ body.gw-open, body.co-open.gw-open { overflow: hidden; }
 .src-opt b { font-weight: 600; } .src-opt span { color: var(--ink2); font-size: 14px; line-height: 1.35; }
 .src-opt.on { box-shadow: inset 0 0 0 2px var(--accent); }
 .src-opt:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.src-opts, .src-panel, .src-how { max-width: 640px; }
 .src-panel { margin: 0 0 12px; padding: 12px 14px; border-radius: 18px; background: color-mix(in srgb, var(--accent) 6%, var(--panel)); }
+.fchips { display: flex; flex-wrap: wrap; gap: 6px; }
+.src-panel .fchips { margin: 10px 0 2px; }
+.src-panel .cap { margin: 8px 0 0; max-width: none; }
+.src-here { margin: 0 0 12px !important; }
+.note-line { display: block; margin-top: 6px; line-height: 1.4; }
+.note-line:first-child { margin-top: 0; }
+.note-line a { color: var(--accent); }
 .src-panel textarea { width: 100%; min-height: 84px; margin-top: 8px; border: 0; box-shadow: inset 0 0 0 1px var(--hair); border-radius: 14px; background: var(--field); padding: 10px 12px; font-size: 13px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 0; color: inherit; }
 .src-how { margin: 4px 0 10px; } .src-how summary { cursor: pointer; color: var(--accent); font-weight: 500; }
 .src-how-in p { font-size: 14px; color: var(--ink2); margin: 8px 0 0; }
@@ -1563,7 +1571,7 @@ body.gw-open, body.co-open.gw-open { overflow: hidden; }
   </div>
 
   <p class="foot" id="footNote">Not financial advice. Sample numbers are invented. Replace them with yours.</p>
-  <p class="foot ver" id="verFoot">Version 27.5, updated Nov 12, 7:25 am</p>
+  <p class="foot ver" id="verFoot">Version 27.6, updated Nov 12, 7:50 am</p>
 </div>
 <div class="tip" id="tip" role="tooltip"></div>
 <div class="tour" id="tour" role="dialog" aria-modal="true" aria-labelledby="tourTitle" hidden>
@@ -1583,7 +1591,7 @@ body.gw-open, body.co-open.gw-open { overflow: hidden; }
     <button type="button" id="helpSetup">Guided setup</button>
     <button type="button" id="helpTour">Tour</button>
     <button type="button" id="helpVideo" hidden>Intro video</button>
-    <p class="help-ver">Version 27.5</p>
+    <p class="help-ver">Version 27.6</p>
   </div>
   <div class="help-row"><button type="button" class="help-btn ask-btn" id="askBtn">Ask</button><button type="button" class="help-btn" id="helpBtn" aria-expanded="false" aria-controls="helpMenu"><span class="q" aria-hidden="true">?</span>Help</button></div>
 </div>
@@ -3701,7 +3709,7 @@ function importAddFiles(list) {
     if (impFiles.length >= 10) { notes.push('Ten files at a time.'); return; }
     impFiles.push({ file: f, kind });
   });
-  const m = $('#impNote'); if (m) m.textContent = notes.join(' ');
+  renderNotes($('#impNote'), notes);
   paintImport();
 }
 function paintImport() {
@@ -3724,8 +3732,9 @@ const STEP_SOURCE = { id: 'source', part: PART.money, setup: true, title: 'Your 
       <button type="button" class="src-opt" data-src="ai"><b>Use any AI</b><span>Copy a message, paste it with your statements into ChatGPT, Claude or Gemini, paste the answer back.</span></button>
     </div>
     <div class="src-panel" id="srcUploadPanel" hidden>
+      <p class="cap src-here" id="impHere" hidden></p>
       <div class="row-btns"><button type="button" class="btn small solid" id="impPick">Choose files</button><input type="file" id="impFile" multiple accept=".csv,.tsv,.txt,.xlsx,.pdf,text/csv,text/plain,application/pdf,image/*" hidden><button type="button" class="btn small solid" id="impRead" hidden>Read files</button><button type="button" class="btn small" id="impStop" hidden>Stop</button></div>
-      <div class="fchips" id="impFiles" hidden></div><p class="cap" id="impNote" role="status"></p>
+      <div class="fchips" id="impFiles" hidden></div><p class="cap" id="impNote" role="status" hidden></p>
       <div class="imp-out" id="impOut"></div>
     </div>
     <div class="src-panel" id="srcAiPanel" hidden>
@@ -3743,7 +3752,9 @@ const STEP_SOURCE = { id: 'source', part: PART.money, setup: true, title: 'Your 
     const body = $('#tourBody');
     const show = which => { $('#srcUploadPanel').hidden = which !== 'upload'; $('#srcAiPanel').hidden = which !== 'ai'; $$('.src-opt', body).forEach(b => b.classList.toggle('on', b.dataset.src === which)); };
     $$('.src-opt', body).forEach(b => b.addEventListener('click', () => { show(b.dataset.src); sfx('tap'); if (b.dataset.src === 'upload') { connectAsk().then(paintSrc); $('#impPick').focus(); } else $('#impCopy').focus(); }));
-    const paintSrc = () => { const sub = $('#srcUploadSub'); if (!sub) return; if (askFn) sub.textContent = (askDoc ? 'CSV, Excel, PDF or screenshots.' : 'CSV, Excel or screenshots.') + ' Read in a few seconds.'; else if (askReason === 'relay_off') sub.textContent = 'The AI is not switched on for this page yet. Use any AI instead.'; else if (askReason === 'no_runtime') sub.textContent = 'Not available in this copy of the page. Use any AI instead.'; else if (inArtifact()) sub.textContent = 'Here it needs a Claude sign-in.' + (RELAY_URL ? ' At the app\'s own address it works for everyone.' : ''); };
+    const paintSrc = () => { const sub = $('#srcUploadSub'); if (!sub) return; if (askFn) sub.textContent = (askDoc ? 'CSV, Excel, PDF or screenshots.' : 'CSV, Excel or screenshots.') + ' Read in a few seconds.'; else if (askReason === 'relay_off') sub.textContent = 'The AI is not switched on for this page yet. Use any AI instead.'; else if (askReason === 'no_runtime') sub.textContent = 'Not available in this copy of the page. Use any AI instead.'; else if (inArtifact()) sub.textContent = 'Here it needs a Claude sign-in.' + (RELAY_URL ? ' At the app\'s own address it works for everyone.' : '');
+      /* the way out of this copy: a plain link, shown once the door is open and this copy cannot read files for everyone */
+      const here = $('#impHere'); if (here) { const h = !askFn && inArtifact() ? hereLink() : (askFn && !askDoc && inArtifact() ? hereLink().replace(/^Open/, 'PDFs: open') : ''); here.innerHTML = h; here.hidden = !h; } };
     connectAsk().then(paintSrc);
     $('#impPick').addEventListener('click', () => $('#impFile').click());
     $('#impFile').addEventListener('change', e => { importAddFiles(e.target.files); e.target.value = ''; if (impFiles.length) $('#impRead').focus(); });
@@ -5102,9 +5113,20 @@ const fromYm = () => { const t = todayStr().slice(0, 7); return MONTHS.indexOf(t
 const isTextFile = f => /\.(csv|tsv|txt)$/i.test(f.name) || ['text/csv', 'text/plain', 'text/tab-separated-values'].indexOf(f.type) >= 0 || (isXlsxFile(f) && xlsxCan());
 const oldSheetNote = f => isXlsFile(f) && !isXlsxFile(f) ? `${f.name}: old Excel format. Open it and save as CSV or .xlsx.` : isXlsxFile(f) && !xlsxCan() ? `${f.name}: this browser cannot open Excel files here. Save it as CSV.` : '';
 const isImageFile = f => !!askImg && askImg.mediaTypes.indexOf(f.type) >= 0;
-const pdfHereNote = f => `${f.name}: PDFs cannot be read here.` + (RELAY_URL && inArtifact() ? ' At the app\'s own address they can.' : '') + ' Use a screenshot of each page, or a CSV from your bank.';
+/* a rejected PDF where PDFs cannot go up (the viewer's own Claude takes images only): grouped into one line by renderNotes */
+const pdfHereNote = f => ({ pdfHere: f.name });
+const hereLink = () => (RELAY_URL && inArtifact() ? `<a href="${esc(RELAY_URL)}" target="_blank" rel="noopener">Open the app's own address</a>, where PDFs, Excel files and screenshots are read for everyone, no sign-in.` : '');
+/* file notes as short lines: the PDFs that cannot be read here in one line, everything else one line each */
+function renderNotes(el, notes) {
+  if (!el) return; const pdfs = notes.filter(n => n && n.pdfHere).map(n => n.pdfHere), rest = notes.filter(n => typeof n === 'string' && n);
+  const lines = [];
+  const linkShown = !!(el.parentElement && el.parentElement.querySelector('.src-here:not([hidden])'));
+  if (pdfs.length) lines.push(`${pdfs.length === 1 ? 'This PDF cannot' : 'PDFs cannot'} be read here: ${esc(pdfs.join(', '))}. ` + (linkShown ? 'The link above opens the address where they can.' : hereLink() || 'Use a screenshot of each page, or a CSV from your bank.'));
+  rest.forEach(n => lines.push(esc(n)));
+  el.innerHTML = lines.map(l => `<span class="note-line">${l}</span>`).join(''); el.hidden = !lines.length;
+}
 const sizeLabel = n => (n < 1048576 ? Math.max(1, Math.round(n / 1024)) + ' KB' : (n / 1048576).toFixed(1) + ' MB');
-function askFilesNote(t) { const e = $('#askFilesMsg'); e.textContent = t || ''; e.hidden = !t; }
+function askFilesNote(t) { const e = $('#askFilesMsg'); if (Array.isArray(t)) return renderNotes(e, t); e.textContent = t || ''; e.hidden = !t; }
 function renderAskFiles() {
   const box = $('#askFiles'); box.hidden = !askFiles.length;
   box.innerHTML = askFiles.map((f, i) => `<span class="fchip"><span>${esc(f.file.name)} (${sizeLabel(f.file.size)})</span><button type="button" data-rmf="${i}" aria-label="Remove ${esc(f.file.name)}">&times;</button></span>`).join('');
@@ -5125,7 +5147,7 @@ function askAddFiles(list) {
     if (kind === 'image' && askFiles.filter(x => x.kind === 'image').length >= maxImg) { notes.push(`Maximum ${maxImg} photos at a time. Add the rest after these.`); return; }
     askFiles.push({ file: f, kind });
   });
-  renderAskFiles(); askFilesNote(notes.join(' '));
+  renderAskFiles(); askFilesNote(notes);
 }
 async function readTextFile(f) {
   const buf = await f.arrayBuffer();
@@ -6373,7 +6395,7 @@ async function shrinkPhoto(file) {
   } catch (e) { return file; }
 }
 
-function scanNote(t) { const e = $('#scanMsg'); e.textContent = t || ''; e.hidden = !t; }
+function scanNote(t) { const e = $('#scanMsg'); if (Array.isArray(t)) return renderNotes(e, t); e.textContent = t || ''; e.hidden = !t; }
 
 /* decide what the card shows: the camera and file buttons when Claude can be reached, otherwise a short reason and the Claude app steps */
 function paintScan() {
@@ -6438,7 +6460,7 @@ async function scanAdd(list) {
     if (g.size > askImg.maxInputBytes) { notes.push(`${f.name} is too large. Use a screenshot instead of the original photo.`); continue; }
     scanFiles.push({ file: g, kind: 'image' });
   }
-  paintScanFiles(); scanNote(notes.join(' '));
+  paintScanFiles(); scanNote(notes);
 }
 
 /* the card is built by the same code as the chat, with this tab's own buttons */

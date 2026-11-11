@@ -43,7 +43,7 @@ exports.runTour = async (p, pr, shot) => {
       for (const [id,ck] of ids) { const want = pr.goals.includes(id); if (want!==ck) await p.click(`input[name=tourGoalPick][value=${id}]`); }
     }
     else if (await has('#tourGCost')) {
-      const k = title.includes('trip')?'travel':title.includes('move')?'moving':title.includes('purchase')?'buy':null; const g=pr.g[k];
+      const tl = title.toLowerCase(); const k = tl.includes('trip')?'travel':tl.includes('move')?'moving':tl.includes('purchase')?'buy':null; const g=pr.g[k];
       if (g) { await type('#tourGName', g.name); await type('#tourGCost', g.cost); if (await has('#tourGSaved')) await type('#tourGSaved', g.saved); }
     }
     await w(200);

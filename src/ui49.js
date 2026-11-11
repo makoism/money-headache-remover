@@ -25,7 +25,7 @@ async function shrinkPhoto(file) {
   } catch (e) { return file; }
 }
 
-function scanNote(t) { const e = $('#scanMsg'); e.textContent = t || ''; e.hidden = !t; }
+function scanNote(t) { const e = $('#scanMsg'); if (Array.isArray(t)) return renderNotes(e, t); e.textContent = t || ''; e.hidden = !t; }
 
 /* decide what the card shows: the camera and file buttons when Claude can be reached, otherwise a short reason and the Claude app steps */
 function paintScan() {
@@ -90,7 +90,7 @@ async function scanAdd(list) {
     if (g.size > askImg.maxInputBytes) { notes.push(`${f.name} is too large. Use a screenshot instead of the original photo.`); continue; }
     scanFiles.push({ file: g, kind: 'image' });
   }
-  paintScanFiles(); scanNote(notes.join(' '));
+  paintScanFiles(); scanNote(notes);
 }
 
 /* the card is built by the same code as the chat, with this tab's own buttons */

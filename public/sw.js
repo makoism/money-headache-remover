@@ -1,6 +1,6 @@
 /* Offline support. Your numbers are not stored here, they live in the browser's own storage, so updating this file never touches them.
    When you change any file in this folder, the CACHE name changes with every build so everyone gets the new version. */
-const CACHE = 'money-headache-ac2b36560d';
+const CACHE = 'money-headache-64ebfbe85e';
 const FILES = ['./', 'index.html', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/apple-touch-icon.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });

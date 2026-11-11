@@ -851,7 +851,15 @@ body.gw-open, body.co-open.gw-open { overflow: hidden; }
 .src-opt b { font-weight: 600; } .src-opt span { color: var(--ink2); font-size: 14px; line-height: 1.35; }
 .src-opt.on { box-shadow: inset 0 0 0 2px var(--accent); }
 .src-opt:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.src-opts, .src-panel, .src-how { max-width: 640px; }
 .src-panel { margin: 0 0 12px; padding: 12px 14px; border-radius: 18px; background: color-mix(in srgb, var(--accent) 6%, var(--panel)); }
+.fchips { display: flex; flex-wrap: wrap; gap: 6px; }
+.src-panel .fchips { margin: 10px 0 2px; }
+.src-panel .cap { margin: 8px 0 0; max-width: none; }
+.src-here { margin: 0 0 12px !important; }
+.note-line { display: block; margin-top: 6px; line-height: 1.4; }
+.note-line:first-child { margin-top: 0; }
+.note-line a { color: var(--accent); }
 .src-panel textarea { width: 100%; min-height: 84px; margin-top: 8px; border: 0; box-shadow: inset 0 0 0 1px var(--hair); border-radius: 14px; background: var(--field); padding: 10px 12px; font-size: 13px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 0; color: inherit; }
 .src-how { margin: 4px 0 10px; } .src-how summary { cursor: pointer; color: var(--accent); font-weight: 500; }
 .src-how-in p { font-size: 14px; color: var(--ink2); margin: 8px 0 0; }

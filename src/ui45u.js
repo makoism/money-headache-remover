@@ -107,7 +107,7 @@ function importAddFiles(list) {
     if (impFiles.length >= 10) { notes.push('Ten files at a time.'); return; }
     impFiles.push({ file: f, kind });
   });
-  const m = $('#impNote'); if (m) m.textContent = notes.join(' ');
+  renderNotes($('#impNote'), notes);
   paintImport();
 }
 function paintImport() {
@@ -130,8 +130,9 @@ const STEP_SOURCE = { id: 'source', part: PART.money, setup: true, title: 'Your 
       <button type="button" class="src-opt" data-src="ai"><b>Use any AI</b><span>Copy a message, paste it with your statements into ChatGPT, Claude or Gemini, paste the answer back.</span></button>
     </div>
     <div class="src-panel" id="srcUploadPanel" hidden>
+      <p class="cap src-here" id="impHere" hidden></p>
       <div class="row-btns"><button type="button" class="btn small solid" id="impPick">Choose files</button><input type="file" id="impFile" multiple accept=".csv,.tsv,.txt,.xlsx,.pdf,text/csv,text/plain,application/pdf,image/*" hidden><button type="button" class="btn small solid" id="impRead" hidden>Read files</button><button type="button" class="btn small" id="impStop" hidden>Stop</button></div>
-      <div class="fchips" id="impFiles" hidden></div><p class="cap" id="impNote" role="status"></p>
+      <div class="fchips" id="impFiles" hidden></div><p class="cap" id="impNote" role="status" hidden></p>
       <div class="imp-out" id="impOut"></div>
     </div>
     <div class="src-panel" id="srcAiPanel" hidden>
@@ -149,7 +150,9 @@ const STEP_SOURCE = { id: 'source', part: PART.money, setup: true, title: 'Your 
     const body = $('#tourBody');
     const show = which => { $('#srcUploadPanel').hidden = which !== 'upload'; $('#srcAiPanel').hidden = which !== 'ai'; $$('.src-opt', body).forEach(b => b.classList.toggle('on', b.dataset.src === which)); };
     $$('.src-opt', body).forEach(b => b.addEventListener('click', () => { show(b.dataset.src); sfx('tap'); if (b.dataset.src === 'upload') { connectAsk().then(paintSrc); $('#impPick').focus(); } else $('#impCopy').focus(); }));
-    const paintSrc = () => { const sub = $('#srcUploadSub'); if (!sub) return; if (askFn) sub.textContent = (askDoc ? 'CSV, Excel, PDF or screenshots.' : 'CSV, Excel or screenshots.') + ' Read in a few seconds.'; else if (askReason === 'relay_off') sub.textContent = 'The AI is not switched on for this page yet. Use any AI instead.'; else if (askReason === 'no_runtime') sub.textContent = 'Not available in this copy of the page. Use any AI instead.'; else if (inArtifact()) sub.textContent = 'Here it needs a Claude sign-in.' + (RELAY_URL ? ' At the app\'s own address it works for everyone.' : ''); };
+    const paintSrc = () => { const sub = $('#srcUploadSub'); if (!sub) return; if (askFn) sub.textContent = (askDoc ? 'CSV, Excel, PDF or screenshots.' : 'CSV, Excel or screenshots.') + ' Read in a few seconds.'; else if (askReason === 'relay_off') sub.textContent = 'The AI is not switched on for this page yet. Use any AI instead.'; else if (askReason === 'no_runtime') sub.textContent = 'Not available in this copy of the page. Use any AI instead.'; else if (inArtifact()) sub.textContent = 'Here it needs a Claude sign-in.' + (RELAY_URL ? ' At the app\'s own address it works for everyone.' : '');
+      /* the way out of this copy: a plain link, shown once the door is open and this copy cannot read files for everyone */
+      const here = $('#impHere'); if (here) { const h = !askFn && inArtifact() ? hereLink() : (askFn && !askDoc && inArtifact() ? hereLink().replace(/^Open/, 'PDFs: open') : ''); here.innerHTML = h; here.hidden = !h; } };
     connectAsk().then(paintSrc);
     $('#impPick').addEventListener('click', () => $('#impFile').click());
     $('#impFile').addEventListener('change', e => { importAddFiles(e.target.files); e.target.value = ''; if (impFiles.length) $('#impRead').focus(); });

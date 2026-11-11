@@ -107,9 +107,20 @@ const fromYm = () => { const t = todayStr().slice(0, 7); return MONTHS.indexOf(t
 const isTextFile = f => /\.(csv|tsv|txt)$/i.test(f.name) || ['text/csv', 'text/plain', 'text/tab-separated-values'].indexOf(f.type) >= 0 || (isXlsxFile(f) && xlsxCan());
 const oldSheetNote = f => isXlsFile(f) && !isXlsxFile(f) ? `${f.name}: old Excel format. Open it and save as CSV or .xlsx.` : isXlsxFile(f) && !xlsxCan() ? `${f.name}: this browser cannot open Excel files here. Save it as CSV.` : '';
 const isImageFile = f => !!askImg && askImg.mediaTypes.indexOf(f.type) >= 0;
-const pdfHereNote = f => `${f.name}: PDFs cannot be read here.` + (RELAY_URL && inArtifact() ? ' At the app\'s own address they can.' : '') + ' Use a screenshot of each page, or a CSV from your bank.';
+/* a rejected PDF where PDFs cannot go up (the viewer's own Claude takes images only): grouped into one line by renderNotes */
+const pdfHereNote = f => ({ pdfHere: f.name });
+const hereLink = () => (RELAY_URL && inArtifact() ? `<a href="${esc(RELAY_URL)}" target="_blank" rel="noopener">Open the app's own address</a>, where PDFs, Excel files and screenshots are read for everyone, no sign-in.` : '');
+/* file notes as short lines: the PDFs that cannot be read here in one line, everything else one line each */
+function renderNotes(el, notes) {
+  if (!el) return; const pdfs = notes.filter(n => n && n.pdfHere).map(n => n.pdfHere), rest = notes.filter(n => typeof n === 'string' && n);
+  const lines = [];
+  const linkShown = !!(el.parentElement && el.parentElement.querySelector('.src-here:not([hidden])'));
+  if (pdfs.length) lines.push(`${pdfs.length === 1 ? 'This PDF cannot' : 'PDFs cannot'} be read here: ${esc(pdfs.join(', '))}. ` + (linkShown ? 'The link above opens the address where they can.' : hereLink() || 'Use a screenshot of each page, or a CSV from your bank.'));
+  rest.forEach(n => lines.push(esc(n)));
+  el.innerHTML = lines.map(l => `<span class="note-line">${l}</span>`).join(''); el.hidden = !lines.length;
+}
 const sizeLabel = n => (n < 1048576 ? Math.max(1, Math.round(n / 1024)) + ' KB' : (n / 1048576).toFixed(1) + ' MB');
-function askFilesNote(t) { const e = $('#askFilesMsg'); e.textContent = t || ''; e.hidden = !t; }
+function askFilesNote(t) { const e = $('#askFilesMsg'); if (Array.isArray(t)) return renderNotes(e, t); e.textContent = t || ''; e.hidden = !t; }
 function renderAskFiles() {
   const box = $('#askFiles'); box.hidden = !askFiles.length;
   box.innerHTML = askFiles.map((f, i) => `<span class="fchip"><span>${esc(f.file.name)} (${sizeLabel(f.file.size)})</span><button type="button" data-rmf="${i}" aria-label="Remove ${esc(f.file.name)}">&times;</button></span>`).join('');
@@ -130,7 +141,7 @@ function askAddFiles(list) {
     if (kind === 'image' && askFiles.filter(x => x.kind === 'image').length >= maxImg) { notes.push(`Maximum ${maxImg} photos at a time. Add the rest after these.`); return; }
     askFiles.push({ file: f, kind });
   });
-  renderAskFiles(); askFilesNote(notes.join(' '));
+  renderAskFiles(); askFilesNote(notes);
 }
 async function readTextFile(f) {
   const buf = await f.arrayBuffer();
