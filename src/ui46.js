@@ -24,7 +24,7 @@ THE PAGE
 - Yen, pesos and euros start with sample numbers made up for one salary (about 200,000 yen, 30,000 pesos or 1,650 euros a month), with every bill and goal worked out from it. Any other currency starts at zero. Samples should be replaced with real numbers. Changing the currency in Settings swaps the sample to match, but only while the numbers are untouched. Once someone has typed their own numbers, only the symbol changes.
 - Filling the page from files: in this chat there is a paperclip button. A person can add photos or screenshots of receipts, credit card statements or bank statements, or a CSV file from their bank (PDFs cannot be read here: use a screenshot of each page, or the CSV). Then they press Send. Claude reads the files and lists what it found: receipts, monthly pay, bill amounts and the money they have today. Nothing on the page changes until the person taps Add to my page, and Undo is offered right after. The files go to the person's own Claude account only when they press Send, and this page does not keep them. Only dates from November 2026 on can be added. Never say you changed anything yourself: changes happen only through that button.
 - The page works in any currency. The currency is chosen in the tour or under Settings.`;
-const ASK_SUGGEST = ['Where do I enter my pay?', 'How do I add a goal?', 'What is play money?', 'How do receipts work?'];
+const ASK_SUGGEST = ['Where is my money going?', 'What can I realistically save each month?', 'Help me plan a trip', 'Cut my play money a little', 'Where do I enter my pay?'];
 
 function askNumbers() {
   const c = calcAll(S), m = c.byYm[sel], J = jarsOf(S, m), st = { good: 'On plan', tight: 'Tight', short: 'Short' }[statusOf(S, m)], cur = sym() || 'none';
@@ -36,7 +36,7 @@ function askMsg(role, text) {
 }
 function askIntro() {
   $('#askLog').innerHTML = ''; askTurns = [];
-  askMsg('ai', 'Ask how anything on this page works, or where to tap.' + (askCanAttach ? ' The paperclip adds photos or screenshots of receipts and statements, or a CSV from your bank. They are read and listed for you to check before anything is added.' : ''));
+  askMsg('ai', 'Ask anything about your money or this page. I can see your plan and can propose changes; nothing changes until you tap Apply.' + (askCanAttach ? ' The paperclip adds receipts or statements to read.' : ''));
   $('#askSug').hidden = false;
 }
 function askSetBusy(b) { askBusy = b; $('#askSend').hidden = b; $('#askStop').hidden = !b; $('#askIn').disabled = false; }
@@ -75,12 +75,12 @@ async function askSend(q) {
   if (!text) return;
   $('#askIn').value = ''; $('#askSug').hidden = true;
   askMsg('me', text); const bot = askMsg('ai', 'Working…'); bot.classList.add('wait');
-  askTurns.push({ role: 'user', content: text + ($('#askNums').checked ? '\n\n' + askNumbers() : '') });
-  const input = [{ role: 'user', content: ASK_GUIDE + '\n\nThe conversation with the person starts below. Answer only their latest message.' }].concat(askTurns.slice(-8));
+  askTurns.push({ role: 'user', content: text });
+  const input = asstInput();
   askCtl = new AbortController(); askSetBusy(true);
   try {
-    const r = await askFn(input, { cache: false, modelTier: 'quick', signal: askCtl.signal, onText: u => { bot.classList.remove('wait'); bot.textContent = u.text; $('#askLog').scrollTop = $('#askLog').scrollHeight; } });
-    bot.classList.remove('wait'); bot.textContent = r.text + (r.truncated ? '\n\n(Cut short. Ask for less at a time.)' : ''); askTurns.push({ role: 'assistant', content: r.text });
+    const r = await askFn(input, { cache: false, modelTier: 'default', signal: askCtl.signal, onText: u => { bot.classList.remove('wait'); const sp = asstSplit(u.text); bot.textContent = sp.shown || (sp.open ? 'Working out a change…' : ''); $('#askLog').scrollTop = $('#askLog').scrollHeight; } });
+    asstAfter(bot, r.text, r.truncated); askTurns.push({ role: 'assistant', content: r.text });
   } catch (e) { askFail(e, bot, text); }
   askSetBusy(false); $('#askLog').scrollTop = $('#askLog').scrollHeight; if (!$('#ask').hidden && !askGone) $('#askIn').focus();
 }
@@ -97,8 +97,8 @@ function wireAskAi() {
    The files go to the person's own Claude account only when they press Send. Claude answers with data, the page checks every field,
    shows what it found, and changes nothing until the person taps "Add to my page". One tap undoes it. */
 let askFiles = [], askCanAttach = false, askImg = null;
-const ASK_CAP_OWN = 'Runs on your Claude account; you approve access first. Only what you type is sent, plus the numbers if ticked.';
-const ASK_CAP_RELAY = 'Answered by Claude through this page. Only what you type is sent, plus the numbers if ticked. Nothing is kept.';
+const ASK_CAP_OWN = 'Runs on your Claude account; you approve access first. Your numbers go with each question while the box is ticked. Nothing is kept.';
+const ASK_CAP_RELAY = 'Answered by Claude through this page. Your numbers go with each question while the box is ticked. Nothing is kept.';
 const askCap = () => (askFn && askFn.relay ? ASK_CAP_RELAY : ASK_CAP_OWN);
 const viaRelay = () => !!(askFn && askFn.relay);
 const ASK_MAX_TEXT = 3, ASK_TEXT_BYTES = 170000, MON3 = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -352,6 +352,7 @@ async function connectAsk() {
 }
 async function openAsk() {
   setHelpMenu(false); $('#ask').hidden = false;
+  $('#askNums').checked = S.ui.askNums !== false;
   if (!askFn) { askView('wait'); await connectAsk(); }
   askView(askFn ? 'chat' : 'off');
   if (askFn) { if (!$('#askLog').children.length) askIntro(); $('#askIn').focus(); }
@@ -368,7 +369,9 @@ function wireHelp() {
   $('#helpVideo').hidden = !hasHello;
   $('#helpVideo').addEventListener('click', () => { setHelpMenu(false); $('#helpBtn').focus({ preventScroll: true }); openTour('video', 'replay'); });
   $('#helpAsk').addEventListener('click', openAsk);
+  $('#askBtn').addEventListener('click', openAsk);
   $('#askRetry').addEventListener('click', () => { askFn = null; askGone = false; openAsk(); });
+  $('#askNums').addEventListener('change', e => { if (e.target.checked) delete S.ui.askNums; else S.ui.askNums = false; persist(); });
   $('#askClose').addEventListener('click', closeAsk);
   $('#askStop').addEventListener('click', () => { if (askCtl) askCtl.abort(); });
   $('#askForm').addEventListener('submit', e => { e.preventDefault(); askSend(); });

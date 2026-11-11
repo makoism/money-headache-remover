@@ -14,7 +14,7 @@ run_worker_first = ["/api/*"]
 
 # The encrypted cloud copies and the usage counters. Create the database in the dashboard (Storage & Databases > D1 > Create,
 # name money-vault) and put its Database ID here. Without it the page still works; only cloud backup and the per-day caps are off.
-# [[d1_databases]]
-# binding = "DB"
-# database_name = "money-vault"
-# database_id = "PASTE-THE-DATABASE-ID-HERE"
+[[d1_databases]]
+binding = "DB"
+database_name = "money-vault"
+database_id = "a294d637-e2c0-4518-88fc-373234991bff"
