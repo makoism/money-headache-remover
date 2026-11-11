@@ -10,7 +10,7 @@ const RELAY_URL = '@@RELAY@@'; /* filled by build.sh from the RELAY file; empty 
 const ANON_KEY = 'mhr-anon', INVITE_KEY = 'mhr-invite';
 const IMG_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 /* PDF statements go up as document blocks (the relay only; the viewer's own Claude takes images alone) */
-const DOC_LIMITS = { maxCount: 4, maxInputBytes: 6000000, mediaTypes: ['application/pdf'] };
+const DOC_LIMITS = { maxCount: 12, maxInputBytes: 6000000, maxTotalBytes: 20000000, maxPages: 90, mediaTypes: ['application/pdf'] };
 const isPdfFile = f => !!f && (f.type === 'application/pdf' || /\.pdf$/i.test(f.name || ''));
 const relayBase = () => { if (inArtifact()) return ''; if (/^https?:$/.test(location.protocol)) return location.origin; return RELAY_URL.replace(/\/$/, ''); };
 function anonId() {
@@ -43,13 +43,15 @@ function pdfLocked(buf) {
   const tail = buf.length > 2000000 ? buf.subarray(buf.length - 2000000) : buf;
   return /\/Encrypt\b/.test(new TextDecoder('latin1').decode(tail));
 }
+/* a page count good enough for a limit: every page object carries /Type /Page */
+function pdfPages(buf) { const m = new TextDecoder('latin1').decode(buf).match(/\/Type\s*\/Page(?![s\w])/g); return m ? m.length : 1; }
 async function toDocBlock(file) {
   const name = file.name || 'file';
   if (file.size > DOC_LIMITS.maxInputBytes) throw { code: 'file_rejected', message: `${name} is too large. Export fewer months, or take screenshots of the pages.` };
   const buf = new Uint8Array(await file.arrayBuffer());
   if (buf.length < 8 || String.fromCharCode(buf[0], buf[1], buf[2], buf[3]) !== '%PDF') throw { code: 'file_rejected', message: `${name} is not a PDF.` };
   if (pdfLocked(buf)) throw { code: 'pdf_locked', message: `${name} asks for a password. Open it with the password, then save or print it as a new PDF, or take screenshots of its pages.` };
-  return { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: bytesToB64(buf) } };
+  return { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: bytesToB64(buf) }, _pages: pdfPages(buf), _bytes: buf.length };
 }
 async function relayMessages(input, images) {
   let msgs;
@@ -59,6 +61,11 @@ async function relayMessages(input, images) {
   const list = images ? (images instanceof Blob ? [images] : Array.from(images)) : [];
   if (list.length) {
     const blocks = []; for (const f of list) blocks.push(isPdfFile(f) ? await toDocBlock(f) : await toImageBlock(f));
+    /* all the PDFs together have to fit one request: a size cap and a page cap, said plainly before anything is sent */
+    const docs = blocks.filter(b => b.type === 'document'), pages = docs.reduce((n, b) => n + (b._pages || 1), 0), bytes = docs.reduce((n, b) => n + (b._bytes || 0), 0);
+    if (docs.length > DOC_LIMITS.maxCount) throw { code: 'prompt_too_large', message: `Up to ${DOC_LIMITS.maxCount} PDFs at a time. 2 or 3 months of statements is plenty.` };
+    if (pages > DOC_LIMITS.maxPages || bytes > DOC_LIMITS.maxTotalBytes) throw { code: 'prompt_too_large', message: `About ${pages} pages in ${docs.length} PDFs is too much for one read. Pick fewer months: 2 or 3 is plenty.` };
+    docs.forEach(b => { delete b._pages; delete b._bytes; });
     const last = msgs[msgs.length - 1]; last.content = [{ type: 'text', text: String(last.content) }].concat(blocks);
   }
   return msgs;

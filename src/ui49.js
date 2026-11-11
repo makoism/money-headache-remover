@@ -79,7 +79,7 @@ async function scanAdd(list) {
     if (isPdfFile(f)) {
       if (!askDoc) { notes.push(pdfHereNote(f)); continue; }
       if (f.size > askDoc.maxInputBytes) { notes.push(`${f.name} is too large. Export fewer months, or take screenshots of the pages.`); continue; }
-      if (scanFiles.filter(x => x.kind === 'pdf').length >= askDoc.maxCount) { notes.push(`Maximum ${askDoc.maxCount} PDFs at a time.`); continue; }
+      if (scanFiles.filter(x => x.kind === 'pdf').length >= askDoc.maxCount) { notes.push(`Up to ${askDoc.maxCount} PDFs at a time. One month per read keeps the review short.`); continue; }
       scanFiles.push({ file: f, kind: 'pdf' }); continue;
     }
     if (!/^image\//.test(f.type) && !/\.(heic|heif|jpe?g|png|webp)$/i.test(f.name || '')) { notes.push(oldSheetNote(f) || `${f.name}: only photos, screenshots, CSV and Excel files can be read.`); continue; }

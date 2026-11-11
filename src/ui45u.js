@@ -102,7 +102,7 @@ function importAddFiles(list) {
     const kind = isTextFile(f) ? 'text' : /^image\//.test(f.type) || /\.(heic|heif|jpe?g|png|webp)$/i.test(f.name || '') ? 'image' : askDoc && isPdfFile(f) ? 'pdf' : '';
     if (!kind) { notes.push(isPdfFile(f) ? (askDoc ? `${f.name}: not a readable PDF.` : pdfHereNote(f)) : oldSheetNote(f) || `${f.name}: only CSV or Excel files, ${askDoc ? 'PDFs, ' : ''}screenshots and photos.`); return; }
     if (kind === 'pdf' && f.size > askDoc.maxInputBytes) { notes.push(`${f.name} is too large. Export fewer months, or take screenshots of the pages.`); return; }
-    if (kind === 'pdf' && impFiles.filter(x => x.kind === 'pdf').length >= askDoc.maxCount) { notes.push(`${askDoc.maxCount} PDFs at a time.`); return; }
+    if (kind === 'pdf' && impFiles.filter(x => x.kind === 'pdf').length >= askDoc.maxCount) { notes.push(`Up to ${askDoc.maxCount} PDFs at a time. 2 or 3 months of statements is plenty.`); return; }
     if (f.size > 20000000) { notes.push(`${f.name} is too large.`); return; }
     if (impFiles.length >= 10) { notes.push('Ten files at a time.'); return; }
     impFiles.push({ file: f, kind });

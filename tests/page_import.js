@@ -41,6 +41,13 @@ const title = p => p.$eval('#tourTitle', e => e.textContent);
   const lockMsg = await p.$eval('#impOut', e => e.textContent);
   ok((await title(p)) === 'Your numbers' && /asks for a password/.test(lockMsg), 'a password-protected PDF is stopped with a plain note: ' + lockMsg.slice(0, 80));
   await p.click('#impFiles [data-imprm="0"]'); await w(200);
+  /* a batch with too many pages is stopped on the device with a plain note */
+  require('fs').writeFileSync('/tmp/v28/long.pdf', Buffer.from('%PDF-1.4\n' + Array.from({ length: 95 }, (_, i) => `${i + 3} 0 obj<</Type/Page/Parent 2 0 R>>endobj\n`).join('') + 'trailer<</Root 1 0 R>>\n%%EOF'));
+  input = await p.$('#impFile'); await input.uploadFile('/tmp/v28/long.pdf'); await w(400);
+  await p.click('#impRead'); await w(2500);
+  const longMsg = await p.$eval('#impOut', e => e.textContent);
+  ok((await title(p)) === 'Your numbers' && /About 95 pages .* too much for one read/.test(longMsg), 'too many pages in one read is stopped with a plain note: ' + longMsg.slice(0, 90));
+  await p.click('#impFiles [data-imprm="0"]'); await w(200);
   input = await p.$('#impFile'); await input.uploadFile('/tmp/v28/stmt.pdf'); await w(400);
   await p.click('#impRead'); await w(3500);
   ok((await title(p)) === 'Check what was found', 'a PDF statement reaches the review through the relay: ' + await title(p));

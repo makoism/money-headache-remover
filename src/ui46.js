@@ -124,7 +124,7 @@ function askAddFiles(list) {
     if (!kind) { notes.push(isPdfFile(f) ? pdfHereNote(f) : oldSheetNote(f) || `${f.name}: only photos, screenshots${askDoc ? ', PDFs' : ''}, CSV and Excel files can be read.`); return; }
     if (kind === 'text' && f.size > 2000000) { notes.push(`${f.name} is too large. Try one month at a time.`); return; }
     if (kind === 'pdf' && f.size > askDoc.maxInputBytes) { notes.push(`${f.name} is too large. Export fewer months, or take screenshots of the pages.`); return; }
-    if (kind === 'pdf' && askFiles.filter(x => x.kind === 'pdf').length >= askDoc.maxCount) { notes.push(`Maximum ${askDoc.maxCount} PDFs at a time.`); return; }
+    if (kind === 'pdf' && askFiles.filter(x => x.kind === 'pdf').length >= askDoc.maxCount) { notes.push(`Up to ${askDoc.maxCount} PDFs at a time. 2 or 3 months is plenty.`); return; }
     if (kind === 'image' && askImg && f.size > askImg.maxInputBytes) { notes.push(`${f.name} is too large. Use a screenshot instead of the original photo.`); return; }
     if (kind === 'text' && askFiles.filter(x => x.kind === 'text').length >= ASK_MAX_TEXT) { notes.push(`Maximum ${ASK_MAX_TEXT} CSV or Excel files at a time.`); return; }
     if (kind === 'image' && askFiles.filter(x => x.kind === 'image').length >= maxImg) { notes.push(`Maximum ${maxImg} photos at a time. Add the rest after these.`); return; }
@@ -285,7 +285,7 @@ function askFilesFail(e, bot, retry) {
     : code === 'images_unavailable' ? 'Photos cannot be sent from here. A CSV from your bank still works.'
     : code === 'image_rejected' ? 'A photo could not be read. Try a clearer one, or a screenshot.'
     : code === 'pdf_locked' || code === 'file_rejected' ? ((e && e.message) || 'A file could not be read.') + ' Remove it, then send again.'
-    : code === 'prompt_too_large' ? 'Files too long. Add fewer files, fewer pages, or one month at a time.'
+    : code === 'prompt_too_large' ? ((e && e.message && /PDF|pages/.test(e.message)) ? e.message : 'Files too long. Add fewer files, fewer pages, or one month at a time.')
     : code === 'rate_limited' ? 'Too many requests, or your Claude usage limit is reached. Try again later.'
     : code === 'session_expired' ? 'Signed out of Claude. Sign in again, then send the files again.'
     : code === 'invalid_json' || code === 'refused' || code === 'empty_completion' ? 'No entries could be made from those files. Try a clearer photo, or one file at a time.'

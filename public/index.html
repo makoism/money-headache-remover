@@ -1563,7 +1563,7 @@ body.gw-open, body.co-open.gw-open { overflow: hidden; }
   </div>
 
   <p class="foot" id="footNote">Not financial advice. Sample numbers are invented. Replace them with yours.</p>
-  <p class="foot ver" id="verFoot">Version 27.4, updated Nov 12, 4:05 am</p>
+  <p class="foot ver" id="verFoot">Version 27.5, updated Nov 12, 7:25 am</p>
 </div>
 <div class="tip" id="tip" role="tooltip"></div>
 <div class="tour" id="tour" role="dialog" aria-modal="true" aria-labelledby="tourTitle" hidden>
@@ -1583,7 +1583,7 @@ body.gw-open, body.co-open.gw-open { overflow: hidden; }
     <button type="button" id="helpSetup">Guided setup</button>
     <button type="button" id="helpTour">Tour</button>
     <button type="button" id="helpVideo" hidden>Intro video</button>
-    <p class="help-ver">Version 27.4</p>
+    <p class="help-ver">Version 27.5</p>
   </div>
   <div class="help-row"><button type="button" class="help-btn ask-btn" id="askBtn">Ask</button><button type="button" class="help-btn" id="helpBtn" aria-expanded="false" aria-controls="helpMenu"><span class="q" aria-hidden="true">?</span>Help</button></div>
 </div>
@@ -3696,7 +3696,7 @@ function importAddFiles(list) {
     const kind = isTextFile(f) ? 'text' : /^image\//.test(f.type) || /\.(heic|heif|jpe?g|png|webp)$/i.test(f.name || '') ? 'image' : askDoc && isPdfFile(f) ? 'pdf' : '';
     if (!kind) { notes.push(isPdfFile(f) ? (askDoc ? `${f.name}: not a readable PDF.` : pdfHereNote(f)) : oldSheetNote(f) || `${f.name}: only CSV or Excel files, ${askDoc ? 'PDFs, ' : ''}screenshots and photos.`); return; }
     if (kind === 'pdf' && f.size > askDoc.maxInputBytes) { notes.push(`${f.name} is too large. Export fewer months, or take screenshots of the pages.`); return; }
-    if (kind === 'pdf' && impFiles.filter(x => x.kind === 'pdf').length >= askDoc.maxCount) { notes.push(`${askDoc.maxCount} PDFs at a time.`); return; }
+    if (kind === 'pdf' && impFiles.filter(x => x.kind === 'pdf').length >= askDoc.maxCount) { notes.push(`Up to ${askDoc.maxCount} PDFs at a time. 2 or 3 months of statements is plenty.`); return; }
     if (f.size > 20000000) { notes.push(`${f.name} is too large.`); return; }
     if (impFiles.length >= 10) { notes.push('Ten files at a time.'); return; }
     impFiles.push({ file: f, kind });
@@ -5119,7 +5119,7 @@ function askAddFiles(list) {
     if (!kind) { notes.push(isPdfFile(f) ? pdfHereNote(f) : oldSheetNote(f) || `${f.name}: only photos, screenshots${askDoc ? ', PDFs' : ''}, CSV and Excel files can be read.`); return; }
     if (kind === 'text' && f.size > 2000000) { notes.push(`${f.name} is too large. Try one month at a time.`); return; }
     if (kind === 'pdf' && f.size > askDoc.maxInputBytes) { notes.push(`${f.name} is too large. Export fewer months, or take screenshots of the pages.`); return; }
-    if (kind === 'pdf' && askFiles.filter(x => x.kind === 'pdf').length >= askDoc.maxCount) { notes.push(`Maximum ${askDoc.maxCount} PDFs at a time.`); return; }
+    if (kind === 'pdf' && askFiles.filter(x => x.kind === 'pdf').length >= askDoc.maxCount) { notes.push(`Up to ${askDoc.maxCount} PDFs at a time. 2 or 3 months is plenty.`); return; }
     if (kind === 'image' && askImg && f.size > askImg.maxInputBytes) { notes.push(`${f.name} is too large. Use a screenshot instead of the original photo.`); return; }
     if (kind === 'text' && askFiles.filter(x => x.kind === 'text').length >= ASK_MAX_TEXT) { notes.push(`Maximum ${ASK_MAX_TEXT} CSV or Excel files at a time.`); return; }
     if (kind === 'image' && askFiles.filter(x => x.kind === 'image').length >= maxImg) { notes.push(`Maximum ${maxImg} photos at a time. Add the rest after these.`); return; }
@@ -5280,7 +5280,7 @@ function askFilesFail(e, bot, retry) {
     : code === 'images_unavailable' ? 'Photos cannot be sent from here. A CSV from your bank still works.'
     : code === 'image_rejected' ? 'A photo could not be read. Try a clearer one, or a screenshot.'
     : code === 'pdf_locked' || code === 'file_rejected' ? ((e && e.message) || 'A file could not be read.') + ' Remove it, then send again.'
-    : code === 'prompt_too_large' ? 'Files too long. Add fewer files, fewer pages, or one month at a time.'
+    : code === 'prompt_too_large' ? ((e && e.message && /PDF|pages/.test(e.message)) ? e.message : 'Files too long. Add fewer files, fewer pages, or one month at a time.')
     : code === 'rate_limited' ? 'Too many requests, or your Claude usage limit is reached. Try again later.'
     : code === 'session_expired' ? 'Signed out of Claude. Sign in again, then send the files again.'
     : code === 'invalid_json' || code === 'refused' || code === 'empty_completion' ? 'No entries could be made from those files. Try a clearer photo, or one file at a time.'
@@ -5902,7 +5902,7 @@ const RELAY_URL = 'https://money-headache-remover.mako-162.workers.dev'; /* fill
 const ANON_KEY = 'mhr-anon', INVITE_KEY = 'mhr-invite';
 const IMG_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 /* PDF statements go up as document blocks (the relay only; the viewer's own Claude takes images alone) */
-const DOC_LIMITS = { maxCount: 4, maxInputBytes: 6000000, mediaTypes: ['application/pdf'] };
+const DOC_LIMITS = { maxCount: 12, maxInputBytes: 6000000, maxTotalBytes: 20000000, maxPages: 90, mediaTypes: ['application/pdf'] };
 const isPdfFile = f => !!f && (f.type === 'application/pdf' || /\.pdf$/i.test(f.name || ''));
 const relayBase = () => { if (inArtifact()) return ''; if (/^https?:$/.test(location.protocol)) return location.origin; return RELAY_URL.replace(/\/$/, ''); };
 function anonId() {
@@ -5935,13 +5935,15 @@ function pdfLocked(buf) {
   const tail = buf.length > 2000000 ? buf.subarray(buf.length - 2000000) : buf;
   return /\/Encrypt\b/.test(new TextDecoder('latin1').decode(tail));
 }
+/* a page count good enough for a limit: every page object carries /Type /Page */
+function pdfPages(buf) { const m = new TextDecoder('latin1').decode(buf).match(/\/Type\s*\/Page(?![s\w])/g); return m ? m.length : 1; }
 async function toDocBlock(file) {
   const name = file.name || 'file';
   if (file.size > DOC_LIMITS.maxInputBytes) throw { code: 'file_rejected', message: `${name} is too large. Export fewer months, or take screenshots of the pages.` };
   const buf = new Uint8Array(await file.arrayBuffer());
   if (buf.length < 8 || String.fromCharCode(buf[0], buf[1], buf[2], buf[3]) !== '%PDF') throw { code: 'file_rejected', message: `${name} is not a PDF.` };
   if (pdfLocked(buf)) throw { code: 'pdf_locked', message: `${name} asks for a password. Open it with the password, then save or print it as a new PDF, or take screenshots of its pages.` };
-  return { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: bytesToB64(buf) } };
+  return { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: bytesToB64(buf) }, _pages: pdfPages(buf), _bytes: buf.length };
 }
 async function relayMessages(input, images) {
   let msgs;
@@ -5951,6 +5953,11 @@ async function relayMessages(input, images) {
   const list = images ? (images instanceof Blob ? [images] : Array.from(images)) : [];
   if (list.length) {
     const blocks = []; for (const f of list) blocks.push(isPdfFile(f) ? await toDocBlock(f) : await toImageBlock(f));
+    /* all the PDFs together have to fit one request: a size cap and a page cap, said plainly before anything is sent */
+    const docs = blocks.filter(b => b.type === 'document'), pages = docs.reduce((n, b) => n + (b._pages || 1), 0), bytes = docs.reduce((n, b) => n + (b._bytes || 0), 0);
+    if (docs.length > DOC_LIMITS.maxCount) throw { code: 'prompt_too_large', message: `Up to ${DOC_LIMITS.maxCount} PDFs at a time. 2 or 3 months of statements is plenty.` };
+    if (pages > DOC_LIMITS.maxPages || bytes > DOC_LIMITS.maxTotalBytes) throw { code: 'prompt_too_large', message: `About ${pages} pages in ${docs.length} PDFs is too much for one read. Pick fewer months: 2 or 3 is plenty.` };
+    docs.forEach(b => { delete b._pages; delete b._bytes; });
     const last = msgs[msgs.length - 1]; last.content = [{ type: 'text', text: String(last.content) }].concat(blocks);
   }
   return msgs;
@@ -6420,7 +6427,7 @@ async function scanAdd(list) {
     if (isPdfFile(f)) {
       if (!askDoc) { notes.push(pdfHereNote(f)); continue; }
       if (f.size > askDoc.maxInputBytes) { notes.push(`${f.name} is too large. Export fewer months, or take screenshots of the pages.`); continue; }
-      if (scanFiles.filter(x => x.kind === 'pdf').length >= askDoc.maxCount) { notes.push(`Maximum ${askDoc.maxCount} PDFs at a time.`); continue; }
+      if (scanFiles.filter(x => x.kind === 'pdf').length >= askDoc.maxCount) { notes.push(`Up to ${askDoc.maxCount} PDFs at a time. One month per read keeps the review short.`); continue; }
       scanFiles.push({ file: f, kind: 'pdf' }); continue;
     }
     if (!/^image\//.test(f.type) && !/\.(heic|heif|jpe?g|png|webp)$/i.test(f.name || '')) { notes.push(oldSheetNote(f) || `${f.name}: only photos, screenshots, CSV and Excel files can be read.`); continue; }
