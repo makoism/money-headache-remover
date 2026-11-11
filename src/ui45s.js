@@ -98,7 +98,7 @@ const STEP_BILLS = { id: 'bills-pick', part: PART.bills, setup: true, pick: true
     necLines().forEach(l => { if (keep.indexOf(l.id) < 0 || !S.steps[l.key]) setVal(S, l.key, START, 0, 'after'); });
     markDone('bills'); persist();
   } };
-const billStep = id => ({ id: 'bill-' + id, part: PART.bills, setup: true, focus: baseOf(id) === 'subs' ? '' : baseOf(id) === 'card' ? '#tourCardT' : '#tourAmt',
+const billStep = id => ({ id: 'bill-' + id, part: PART.bills, setup: true, focus: baseOf(id) === 'subs' ? '' : '#tourAmt',
   title: () => { const l = lineById(S, id); if (!l) return ''; const mk = moreKind(id); return mk ? MORE_KINDS[mk].title : (BILL_Q[id] || `${esc(l.name)}`); },
   body: () => {
     const l = lineById(S, id); if (!l) return '';
@@ -116,11 +116,15 @@ const billStep = id => ({ id: 'bill-' + id, part: PART.bills, setup: true, focus
       <p class="cap">Typical prices, Nov 2026. Each grey line names its country. Plan and billing change them: use your own bill.</p>`;
     }
     if (b === 'card') {
-      const c = cardModel(val(S, l.key, START));
-      return `<p>Enter your last card statement total, then the bills you already listed that you pay by card (rent, food, subscriptions). Those are taken off, so nothing counts twice.</p>
-      <div class="tour-fields">${moneyField('tourCardT', 'Card statement, each month', c.t)}${moneyField('tourCardB', 'Minus bills you already listed', c.b, 'Optional')}</div>
-      <div class="tour-fields subs-total">${moneyField('tourAmt', 'Counts as card spending', Math.max(0, cents2(c.t - c.b)), '0').replace('<input ', '<input readonly tabindex="-1" ')}</div>
-      <p class="cap" id="cardCap" aria-live="polite"></p>
+      /* one plain question; the statement arithmetic is there for those who only know the statement total */
+      const saved = val(S, l.key, START), c = cardModel(saved), calc = c.b > 0;
+      return `<p>What goes on the card each month apart from the bills you already listed: shopping, eating out, online orders, rides. A rough number is fine.</p>
+      <div class="tour-fields">${moneyField('tourAmt', 'Card spending, each month', saved)}</div>
+      <details class="src-how"${calc ? ' open' : ''}><summary>I only know the statement total</summary><div class="src-how-in">
+        <p class="cap">Enter the statement total, then the part of it that is bills you already listed (rent, food, subscriptions). The rest is card spending.</p>
+        <div class="tour-fields">${moneyField('tourCardT', 'Statement total, each month', calc ? c.t : '')}${moneyField('tourCardB', 'Of that, bills already listed', calc ? c.b : '', 'Optional')}</div>
+        <div class="row-btns"><span class="cap" id="cardCap" aria-live="polite"></span><button type="button" class="btn small solid" id="cardUse" hidden>Use this amount</button></div>
+      </div></details>
       <p class="cap">No credit card: go back and untick it. Paying off an old balance: use loan or debt.</p>`;
     }
     return `${note ? `<p>${esc(note())}</p>` : ''}
@@ -129,10 +133,10 @@ const billStep = id => ({ id: 'bill-' + id, part: PART.bills, setup: true, focus
   leave: () => {
     const l = lineById(S, id); if (!l) return;
     if (baseOf(id) === 'loan') { loanLeave(l); persist(); return; }
+    if (baseOf(id) === 'card') cardLeave(); /* before the amount is read: a filled calculator with an empty amount box counts */
     setVal(S, l.key, START, inum('tourAmt'), 'after');
     const nm = $('#tourLName'); if (nm && nm.value.trim()) updateLine(S, id, { name: nm.value });
     if (baseOf(id) === 'subs') subsLeave();
-    if (baseOf(id) === 'card') cardLeave();
     persist();
   } });
 const moreBtn = kind => `<div class="row-btns"><button type="button" class="btn small more" data-more="${kind}">${MORE_KINDS[kind].add}</button></div>`;

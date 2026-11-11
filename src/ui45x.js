@@ -329,12 +329,18 @@ function cardModel(saved) {
   return { t, b };
 }
 function cardRecalc() {
-  const am = $('#tourAmt'), t = inum('tourCardT'), b = inum('tourCardB'); if (!am) return;
-  const r = cents2(Math.max(0, t - b)); am.value = r > 0 ? r : '';
-  const cap = $('#cardCap'); if (cap) cap.textContent = b > 0 && b >= t && t > 0 ? 'Covers the whole statement. Nothing extra is counted.' : '';
+  const t = inum('tourCardT'), b = inum('tourCardB'), cap = $('#cardCap'), use = $('#cardUse'); if (!cap || !use) return;
+  const r = cents2(Math.max(0, t - b));
+  cap.textContent = t > 0 ? (b >= t ? 'The listed bills cover the whole statement: nothing extra to count.' : `Card spending: ${fmt(r)} a month.`) : '';
+  use.hidden = !(t > 0); use.textContent = r > 0 ? `Use ${fmt(r)}` : 'Use 0';
+}
+function cardUse() {
+  const am = $('#tourAmt'); if (!am) return;
+  const r = cents2(Math.max(0, inum('tourCardT') - inum('tourCardB'))); am.value = r > 0 ? r : ''; tourTouched = true; sfx('tap'); autosave();
 }
 function cardLeave() {
-  const t = inum('tourCardT'), b = inum('tourCardB');
+  const t = inum('tourCardT'), b = inum('tourCardB'), am = $('#tourAmt');
+  if (am && am.value === '' && t > 0) { const r = cents2(Math.max(0, t - b)); am.value = r > 0 ? r : ''; }
   if (t > 0) S.ui.cardT = cents2(t); else delete S.ui.cardT;
   if (b > 0) S.ui.cardB = cents2(b); else delete S.ui.cardB;
 }
@@ -625,6 +631,7 @@ function tourExtraClick(e) {
   if (sw) { loanSetMode(sw.getAttribute('aria-checked') === 'true' ? 'month' : 'total', true); return true; }
   if (lt) { loanSetMode(lt.dataset.lt, true); return true; }
   if (el.closest('#gob')) { gobReact(); return true; }
+  if (el.closest('#cardUse')) { cardUse(); return true; }
   if (el.closest('#subsAddO')) { const arr = subsReadO(); if (arr.length < SUB_MAX_O) { arr.push({ n: '', a: 0 }); sfx('pop'); subsPaintO(arr, true); autosave(); } return true; }
   const sx = el.closest('.so-x');
   if (sx) { const arr = subsReadO(); arr.splice(+sx.dataset.sox, 1); sfx('off'); subsPaintO(arr); const ab = $('#subsAddO'); if (ab && !ab.hidden) ab.focus(); autosave(); return true; }

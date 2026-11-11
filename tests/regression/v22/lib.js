@@ -28,18 +28,17 @@ exports.runTour = async (p, pr, shot) => {
     else if (await has('#tourPay')) await type('#tourPay', pr.pay);
     else if (await has('#tourExtra')) await type('#tourExtra', pr.extra||'');
     else if (await has('#tourBank')) await type('#tourBank', pr.bank);
-    else if (title.startsWith('Which of these')) {
+    else if (title.startsWith('Which of these') || title === 'Monthly bills') {
       const ids = await p.$$eval('input[name=tourBill]', els => els.map(e=>[e.value,e.checked]));
       for (const [id,ck] of ids) { const want = pr.bills.includes(id); if (want!==ck) await p.click(`input[name=tourBill][value=${id}]`); }
     }
-    else if (await has('#tourCardT')) { const a = pr.amt.card; if (a !== undefined) await type('#tourCardT', a); }
     else if (await has('#subsAddO')) { const a = pr.amt.subs; if (a) { if (!(await has('#soN0'))) { await p.click('#subsAddO'); await w(120); } await p.type('#soN0', 'Streaming'); await type('#soA0', a); } }
     else if (await has('#tourAmt')) {
-      const t = title.toLowerCase(); const map={rent:'rent',utilities:'util',food:'food',internet:'net',phone:'phone',insurance:'ins',subscriptions:'subs','getting around':'gas',loan:'loan','credit card':'card'};
+      const t = title.toLowerCase(); const map={rent:'rent',utilities:'util',food:'food',internet:'net',phone:'phone',insurance:'ins',subscriptions:'subs','getting around':'gas',transport:'gas',loan:'loan','credit card':'card'};
       const key = Object.keys(map).find(k=>t.includes(k)); const id=map[key];
       if (id && pr.amt[id]!==undefined) await type('#tourAmt', pr.amt[id]);
     }
-    else if (title.startsWith('What are you saving')) {
+    else if (title.startsWith('What are you saving') || title === 'Goals') {
       const ids = await p.$$eval('input[name=tourGoalPick]', els => els.map(e=>[e.value,e.checked]));
       for (const [id,ck] of ids) { const want = pr.goals.includes(id); if (want!==ck) await p.click(`input[name=tourGoalPick][value=${id}]`); }
     }
