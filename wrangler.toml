@@ -1,0 +1,10 @@
+# Local development only (wrangler pages dev). In production the same values are set in the Cloudflare dashboard:
+# Settings > Bindings (D1 "DB" -> money-vault) and Settings > Variables and Secrets (ANTHROPIC_API_KEY, optional INVITE_CODES).
+name = "money-headache-remover"
+pages_build_output_dir = "public"
+compatibility_date = "2026-01-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "money-vault"
+database_id = "local"

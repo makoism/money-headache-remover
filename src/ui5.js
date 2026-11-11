@@ -1,0 +1,267 @@
+
+/* ---------- wire up events ---------- */
+function wire() {
+  $$('[data-tab]').forEach(b => {
+    b.addEventListener('click', () => switchTab(b.dataset.tab));
+    b.addEventListener('keydown', e => {
+      const bar = TAB_BAR.filter(n => { const x = $('#tab-' + n); return x && !x.hidden; }); /* only the tabs you can see */
+      const i = bar.indexOf(b.dataset.tab); let j = -1;
+      if (e.key === 'ArrowRight') j = (i + 1) % bar.length; else if (e.key === 'ArrowLeft') j = (i + bar.length - 1) % bar.length;
+      if (i >= 0 && j >= 0) { e.preventDefault(); switchTab(bar[j], true); }
+    });
+  });
+  $('#monthSel').addEventListener('change', e => select(e.target.value));
+  $('#prevM').addEventListener('click', () => { const i = MONTHS.indexOf(sel); if (i > 0) select(MONTHS[i - 1]); });
+  $('#nextM').addEventListener('click', () => { const i = MONTHS.indexOf(sel); if (i < MONTHS.length - 1) select(MONTHS[i + 1]); });
+  $('#nameIn').addEventListener('input', e => { S.ui.name = cleanName(e.target.value); if (!S.ui.name) delete S.ui.name; persist(); render(); });
+  $('#curSel').addEventListener('change', e => {
+    const r = changeCurrency(e.target.value), z = presetKey(S) === 'blank';
+    $('#curNote').textContent = r === 'all' ? (z ? 'All amounts zeroed for this currency. Enter your own.' : 'Sample amounts now match this currency.')
+      : r === 'plan' ? (z ? 'Sample bills and goals zeroed for this currency. Pay and balances unchanged.' : 'Sample bills and goals now match this currency. Pay and balances unchanged.')
+      : 'Amounts unchanged. Only the symbol changed.';
+    if (r) restructure(); else render();
+  });
+  $('#hideSample').addEventListener('click', () => { S.ui.sampleHidden = true; persist(); render(); });
+  $('#showStart').addEventListener('click', () => { S.ui.sampleHidden = false; persist(); switchTab('home'); });
+  /* buttons that jump somewhere, wherever they are on the page */
+  document.addEventListener('click', e => {
+    const o = e.target.closest('[data-open]'); if (o) { openRow(o.dataset.open); return; }
+    const t = e.target.closest('[data-tab-go]'); if (t) { switchTab(t.dataset.tabGo); return; }
+    const s = e.target.closest('[data-scroll]'); if (s) { const el = document.getElementById(s.dataset.scroll); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  });
+  $('#monthTable').addEventListener('click', e => { const r = e.target.closest('tr[data-ym]'); if (r) { select(r.dataset.ym); switchTab('month'); } });
+  $('#monthTable').addEventListener('keydown', e => { if (e.key === 'Enter') { const r = e.target.closest('tr[data-ym]'); if (r) { select(r.dataset.ym); switchTab('month'); } } });
+
+  /* the ledger: one handler for every number, and for editing the lines */
+  const led = $('#ledger');
+  led.addEventListener('input', e => {
+    const t = e.target, d = t.dataset || {};
+    if (d.k) onSet(d.k, t.classList.contains('amt-in') ? t.value.replace(/[^\d]/g, '') : t.value);
+    else if (d.lname !== undefined && t.value.trim()) { updateLine(S, d.lname, { name: t.value }); persist(); }
+  });
+  led.addEventListener('focusin', e => { const t = e.target; if (t.classList && t.classList.contains('amt-in')) { t.value = String(val(S, t.dataset.k, sel)); t.select(); } });
+  led.addEventListener('focusout', e => { const t = e.target; if (t.classList && t.classList.contains('amt-in')) render(); });
+  led.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.classList && e.target.classList.contains('amt-in')) e.target.blur(); });
+  led.addEventListener('change', e => {
+    const t = e.target, d = t.dataset || {};
+    if (d.lname !== undefined) { const l = lineById(S, d.lname); updateLine(S, d.lname, { name: t.value }); if (l && l.jar === 'nec') markDone('bills'); persist(); restructure(); }
+    else if (d.lends !== undefined) { updateLine(S, d.lends, { ends: t.value }); persist(); restructure(); }
+    else if (d.lredir !== undefined) { updateLine(S, d.lredir, { redirect: t.checked }); persist(); render(); }
+  });
+  led.addEventListener('click', e => {
+    const ed = e.target.closest('[data-edit]'); if (ed) { editRow = editRow === ed.dataset.edit ? null : ed.dataset.edit; openId = ed.dataset.edit; restructure(); return; }
+    const ld = e.target.closest('[data-ldel]'); if (ld) { confirmClick(ld, 'Tap again to remove', () => { const l = lineById(S, ld.dataset.ldel); if (l && l.jar === 'nec') markDone('bills', true); removeLine(S, ld.dataset.ldel); persist(); restructure(); }); return; }
+    const h = e.target.closest('.row-h'); if (h && !e.target.closest('input')) { const id = h.closest('.row').dataset.id; setOpen(openId === id ? null : id); return; }
+    const kp = e.target.closest('[data-keep]'); if (kp) { const o = S.once[sel]; if (o && o[kp.dataset.keep] !== undefined) setVal(S, kp.dataset.keep, sel, o[kp.dataset.keep], 'after'); persist(); render(); return; }
+    const ua = e.target.closest('#undoAll'); if (ua) { delete S.once[sel]; persist(); render(); return; }
+    const un = e.target.closest('[data-undo]'); if (un) { undoKey(un.dataset.undo); persist(); render(); return; }
+    const del = e.target.closest('[data-del]'); if (del) { S.items[sel] = readItems().filter(i => i.id !== del.dataset.del); itemsSig = ''; persist(); render(); }
+  });
+  led.addEventListener('submit', e => {
+    const f = e.target.closest('[data-addline]'), ai = e.target.closest('#addItem');
+    if (f) {
+      e.preventDefault(); const nm = $('input[type=text]', f), am = $('input[data-mny], input[type=number]', f);
+      if (!nm.value.trim() && !(+am.value > 0)) { nm.focus(); return; }
+      const id = addLine(S, f.dataset.addline, nm.value, +am.value); if (!id) return;
+      if (f.dataset.addline === 'nec') markDone('bills');
+      persist(); restructure(); const ni = $(`[data-lname="${id}"]`); if (ni) ni.focus();
+      celebrate('small', 'Added.', $('button[type=submit]', f));
+    } else if (ai) {
+      e.preventDefault(); const l = $('#addLabel'), a = $('#addAmt'), amt = clampAmt(a.value);
+      if (!amt) { a.focus(); return; }
+      S.items[sel] = readItems().concat([{ id: 'x' + Date.now().toString(36), label: l.value.trim() || 'One-time cost', amount: amt }]);
+      l.value = ''; a.value = ''; itemsSig = ''; persist(); render();
+      celebrate('small', 'Added.', $('#addItem button[type=submit]') || $('#addItem'));
+    }
+  });
+  $('#rowsOut').addEventListener('change', e => { if (e.target.closest('#items')) { S.items[sel] = readItems(); persist(); render(); } });
+  $('#resetMonth').addEventListener('click', () => { resetMonth(S, sel); itemsSig = ''; persist(); render(); });
+  $('#fixBtns').addEventListener('click', e => {
+    const b = e.target.closest('[data-fx]'); if (!b) return; const f = b.dataset.fx, m = C.byYm[sel];
+    if (f === 'trim') trimPlay(S, m, sel, +b.dataset.amt);
+    else if (f === 'borrow') setVal(S, 'draw', sel, m.draw + (+b.dataset.amt), 'once');   /* what is already borrowed this month plus what is still missing */
+    else if (f === 'unborrow') setVal(S, 'draw', sel, 0, 'once');
+    sfx(f === 'unborrow' ? 'back' : 'next');
+    persist(); render();
+  });
+
+  /* goals */
+  const gc = $('#goalCards');
+  gc.addEventListener('click', e => {
+    if (e.target.closest('[data-adjust]')) { openRow('lts'); return; }
+    const ge = e.target.closest('[data-gedit]'); if (ge) { editGoal = editGoal === ge.dataset.gedit ? null : ge.dataset.gedit; buildGoals(); render(); return; }
+    const card = e.target.closest('[data-gid]'); if (!card) return; const id = card.dataset.gid;
+    if (e.target.closest('[data-gdone]')) { editGoal = null; buildGoals(); render(); }
+    else if (e.target.closest('[data-gnodate]')) { updateGoal(S, id, { due: '' }); markDone('goals', true); persist(); buildGoals(); render(); }
+    else if (e.target.closest('[data-gauto]')) { useSuggested(S, id); sfx('next'); persist(); buildGoals(); render(); }
+    else { const gd = e.target.closest('[data-gdel]'); if (gd) confirmClick(gd, 'Tap again to remove', () => { removeGoal(S, id); markDone('goals', true); if (editGoal === id) editGoal = null; persist(); restructure(); }); }
+  });
+  /* every keystroke saves; the page redraws on change so the cursor stays put while typing */
+  const goalEdit = t => {
+    const k = t.dataset && t.dataset.g, card = t.closest('[data-gid]'); if (!k || !card) return null; const id = card.dataset.gid;
+    if (k === 'name') updateGoal(S, id, { name: t.value });
+    else if (k === 'emergency') updateGoal(S, id, { emergency: t.checked });
+    else if (k === 'due') updateGoal(S, id, { due: t.value });
+    else updateGoal(S, id, { [k]: t.value });
+    return k;
+  };
+  gc.addEventListener('input', e => {
+    const t = e.target; if (!t.dataset || !t.dataset.g || t.type === 'checkbox') return;
+    const k = goalEdit(t); if (!k) return; markDone('goals', true); persist();
+    if (k === 'name') { const n = $('#jn-' + t.closest('[data-gid]').dataset.gid); if (n && t.value.trim()) n.textContent = t.value.trim(); }
+    schedule();
+  });
+  gc.addEventListener('change', e => {
+    const k = goalEdit(e.target); if (!k) return;
+    markDone('goals'); persist();
+    if (k === 'name' || k === 'emergency' || k === 'due') restructure(); else render();
+    if (k === 'name') queueWins(true);
+  });
+  $('#addGoalBtn').addEventListener('click', () => openGoalWizard());
+
+  /* the scroll wheel and trackpad scroll the page. They never change a number in a box. */
+  addEventListener('wheel', e => { const t = e.target; if (t && t.tagName === 'INPUT' && (t.type === 'number' || t.type === 'range') && document.activeElement === t) t.blur(); }, { passive: true, capture: true });
+  $('#themeSeg').addEventListener('click', e => { const b = e.target.closest('[data-theme-set]'); if (!b) return; setTheme(b.dataset.themeSet); sfx('tap'); });
+
+  /* basics */
+  SETF.forEach(f => { const go = e => onCfg(f.k, Math.max(0, Math.round(+e.target.value || 0))); $('#st-' + f.k).addEventListener('input', go); $('#st-' + f.k).addEventListener('change', go); });
+  $('#redivide').addEventListener('click', () => { if (typeof openTour === 'function') openTour('jars', 'full'); });
+  const copyBox = async (ta, msg) => {
+    ta.focus(); ta.select();
+    try { await navigator.clipboard.writeText(ta.value); msg.textContent = 'Copied.'; return true; } catch (e) { /* try the older way */ }
+    try { if (document.execCommand('copy')) { msg.textContent = 'Copied.'; return true; } } catch (e) { /* fall through */ }
+    msg.textContent = 'Press Ctrl+C (Cmd+C) to copy the selected text.';
+    return false;
+  };
+  $('#rcCopy').addEventListener('click', () => copyBox($('#rcEventText'), $('#rcCopyMsg')));
+  $('#bkCopy').addEventListener('click', () => { const ta = $('#bk'); ta.value = JSON.stringify(S); copyBox(ta, $('#bkMsg')).then(ok => { if (ok) markBackup(); }); });
+  const loadBackup = () => {
+    const msg = $('#bkMsg');
+    try {
+      const d = JSON.parse($('#bk').value);
+      if (!d || typeof d !== 'object' || !d.steps || !d.once || !d.cfg) throw new Error('bad');
+      const old = S; S = upgradeLegacy(normalize(d)); S.ui = Object.assign({}, old.ui, S.ui, { sampleHidden: true });
+      if (!Array.isArray(d.receipts)) S.receipts = old.receipts;
+      editRow = null; editGoal = null; editRc = null; itemsSig = ''; S.ui.bk = Date.now(); delete S.ui.bkLater; persist(); restructure(); msg.textContent = 'Loaded.'; sfx('next');
+    } catch (e) { msg.textContent = 'Not a valid backup. Use the whole file, or paste all of the copied text.'; }
+  };
+  $('#bkLoad').addEventListener('click', loadBackup);
+  /* a file for the person to keep. In the Claude viewer plain downloads are blocked, so the viewer's own save prompt is used there; elsewhere the browser downloads it. */
+  const saveOut = async (name, text, mime, msg, alt) => {
+    if (inArtifact()) {
+      let dl = null; try { dl = await window.claude.use('downloads'); } catch (e) { dl = null; }
+      if (!dl || typeof dl.save !== 'function') { msg.textContent = 'Downloads are unavailable in this view.' + alt; return false; }
+      try { await dl.save({ filename: name, data: text }); msg.textContent = 'Saved.'; sfx('next'); return true; }
+      catch (e) { msg.textContent = e && e.code === 'declined' ? 'Not saved.' : 'Save failed.' + alt; return false; }
+    }
+    try {
+      const blob = new Blob([text], { type: mime }), url = URL.createObjectURL(blob), a = document.createElement('a');
+      a.href = url; a.download = name; document.body.appendChild(a); a.click();
+      setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1500); msg.textContent = 'Saved to downloads.'; sfx('next'); return true;
+    } catch (e) { msg.textContent = 'File not saved by this browser.' + alt; return false; }
+  };
+  const stamp = () => { const d = new Date(), z = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}`; };
+  /* the file save is shared with the reminder on Home (bkRun, ui43.js); a saved file counts as a backup */
+  bkRun = async () => { const ok = await saveOut(`mhr2000-${stamp()}.json`, JSON.stringify(S), 'application/json', $('#bkMsg'), ' Use Copy text.'); if (ok) markBackup(); return ok; };
+  $('#bkSave').addEventListener('click', () => { bkRun(); });
+  $('#bkCsv').addEventListener('click', () => { let t; try { t = sheetCsv(S, calcAll(S)); } catch (e) { $('#bkMsg').textContent = 'Spreadsheet could not be built.'; return; } saveOut(`mhr2000-plan-${stamp()}.csv`, t, 'text/csv;charset=utf-8', $('#bkMsg'), ''); });
+  $('#bkFileBtn').addEventListener('click', () => $('#bkFile').click());
+  $('#bkFile').addEventListener('change', e => {
+    const f = e.target.files && e.target.files[0], msg = $('#bkMsg'); e.target.value = ''; if (!f) return;
+    if (f.size > 20e6) { msg.textContent = 'File too large for a backup.'; return; }
+    const r = new FileReader(); r.onerror = () => { msg.textContent = 'File unreadable. Try Copy text.'; };
+    r.onload = () => { $('#bk').value = String(r.result || ''); loadBackup(); }; r.readAsText(f);
+  });
+  const twoStep = (b, armedText, run) => {
+    let t = 0; const orig = b.textContent;
+    b.addEventListener('click', () => {
+      if (!t) { t = setTimeout(() => { t = 0; b.textContent = orig; }, 4000); b.textContent = armedText; return; }
+      clearTimeout(t); t = 0; b.textContent = orig; run();
+    });
+  };
+  const blank = () => { S = blankState(S); S.ui.cleared = true; delete S.ui.setup; editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = 'All zero. Start with salary.'; select(START); if (tab !== 'month') switchTab('month'); };
+  twoStep($('#blankBtn'), 'Tap again to zero all', blank);
+  twoStep($('#blankTop'), 'Tap again to zero all', blank);
+  twoStep($('#bkReset'), 'Tap again to restore', () => { const old = S, u = S.ui; S = presetState(u.cur); S.ui = Object.assign({}, u, { preset: S.ui.preset, sampleHidden: false, done: {} }); delete S.ui.cleared; delete S.ui.setup; delete S.ui.gset; delete S.ui.sb; delete S.ui.tourAt; S.receipts = old.receipts; editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = 'Samples restored.'; });
+  $('#aiCopy').addEventListener('click', () => { $('#aiBox').value = aiPrompt(); copyBox($('#aiBox'), $('#aiMsg')); });
+  wireReceipts(); wireTour(); wireHelp(); wireHome(); wireScan(); wireAskAi(); wireSafe(); wireVault();
+
+  /* tooltips */
+  const bar = $('#bar');
+  bar.addEventListener('pointermove', e => { const d = e.target.closest('.seg-b'); if (d && !d.hidden) showTip(d.dataset.tip, e.clientX, e.clientY); else hideTip(); });
+  bar.addEventListener('pointerdown', e => { const d = e.target.closest('.seg-b'); if (d && !d.hidden) showTip(d.dataset.tip, e.clientX, e.clientY); });
+  bar.addEventListener('pointerleave', hideTip);
+  bar.addEventListener('focusin', e => { const d = e.target.closest('.seg-b'); if (d) { const r = d.getBoundingClientRect(); showTip(d.dataset.tip, r.left + r.width / 2, r.bottom); } });
+  bar.addEventListener('focusout', hideTip);
+  const cb = $('#chartbox');
+  cb.addEventListener('pointermove', chartMove); cb.addEventListener('pointerdown', chartMove);
+  cb.addEventListener('pointerleave', () => { hideTip(); const xh = $('#xh'); if (xh) xh.setAttribute('visibility', 'hidden'); });
+  document.addEventListener('pointerdown', e => { if (!e.target.closest('#bar,#chartbox')) hideTip(); });
+  $('#roadToggle').addEventListener('click', e => {
+    const on = e.currentTarget.getAttribute('aria-pressed') !== 'true'; e.currentTarget.setAttribute('aria-pressed', String(on));
+    e.currentTarget.textContent = on ? 'Show as chart' : 'Show as table'; $('#roadTable').hidden = !on; $('#chartbox').hidden = on; $('#roadLegend').hidden = on;
+  });
+  /* mini summary when the hero scrolls out of view */
+  const dock = $('#dock');
+  if ('IntersectionObserver' in window) new IntersectionObserver(es => { const en = es[0]; dock.classList.toggle('on', tab === 'month' && !en.isIntersecting && en.boundingClientRect.top < 0); }).observe($('#hero'));
+  document.addEventListener('visibilitychange', () => { if (document.hidden) flush(); });
+  addEventListener('pagehide', () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* no storage */ } mirrorOut(); clearTimeout(vaultTimer); vaultPush(); });
+  addEventListener('hashchange', () => { const h = location.hash.slice(1); if (MONTHS.includes(h) && h !== sel) select(h); });
+}
+
+/* ---------- a prompt people can paste into their own AI ---------- */
+function snapshot() {
+  const J = JSON.parse(JSON.stringify(S));
+  delete J.receipts;
+  ['a', 'b', 'side'].concat(S.plan.lines.map(l => l.key)).forEach(k => { if (!J.steps[k]) J.steps[k] = [{ from: START, v: val(S, k, START) }]; });
+  J.cfg = { bankStart: cfg(S, 'bankStart'), minBank: cfg(S, 'minBank'), ceiling: cfg(S, 'ceiling') };
+  J.ui = { cur: S.ui.cur }; J.rev = 0; return J;
+}
+function aiPrompt() {
+  const c = calcAll(S), m = c.byYm[START], cur = sym() || '(no symbol)', JS = jarsOf(S, m);
+  const names = { a: 'Salary (take-home, per month)', b: 'Second income', side: 'Side income' };
+  const jarWord = { nec: 'Necessities', play: 'Play', edu: 'Education', ffa: 'Financial Freedom', give: 'Give' };
+  const lines = ['a', 'b', 'side'].map(k => `- ${names[k]}: ${val(S, k, START)}`).concat(S.plan.lines.map(l => `- [${jarWord[l.jar]}] ${l.name} (key ${l.key}): ${val(S, l.key, START)}` + (l.ends ? `, last payment ${l.ends}${l.redirect ? ', then its money goes to the emergency fund' : ''}` : ''))).join('\n');
+  const goals = S.plan.goals.map(g => `- ${g.name} (id ${g.id}): goal ${g.target}, already saved ${g.start}` + (g.due ? `, needed by ${g.due}` : ', no date') + (g.emergency ? `, this is the emergency fund, someday goal ${g.stretch || 0}` : '') + `, monthly saving now ${val(S, 'goal:' + g.id, START)}`).join('\n') || '- (none yet)';
+  const st = { good: 'On plan', tight: 'Tight', short: 'Short' }[statusOf(S, m)];
+  return localize(`I use a one-page budget planner called M.H.R.2000 (The Money Headache Remover 2000). It plans about two years, month by month. Please check my numbers and help me improve my plan.
+
+HOW THE PAGE WORKS
+- The page splits take-home pay into six jars, from T. Harv Eker's jar system. Eker's usual split, as a share of take-home pay: ${JARS.map(j => `${j.name} ${Math.round(j.usual * 100)}%`).join(', ')}. Necessities means bills, food, one-time costs and credit card spending. Long-Term Savings for Spending is the total of my savings goals. Play is my play money. Every bit of pay should have a purpose, so pay that is not in a jar shows as "left over". The usual split is a guide, not a strict rule: if necessities are above 55%, the other jars should still get something, even a small amount.
+- Each month: money in (salary + second income + side income) minus every line in the five line jars, one-time costs and the savings goals = left over. My balance moves by the left over amount every month.
+- A month is "Short" if my balance would end below my minimum, "Tight" if it spends more than it brings in but stays above the minimum, and "On plan" otherwise.
+- Play money is the Play jar: what I can spend freely on eating out, hobbies, treats and fun, with no guilt. Groceries are a bill under Necessities. Play money is the big number on the page.
+- A savings goal with a date splits what is still missing evenly over the months before it, then stops. A goal with no date aims to fill in about a year. Each goal stops when it is full. One goal can be the emergency fund: the usual advice is three to six months of necessities, and it is what I borrow from in a short month. A line with a last payment month can send its money to the emergency fund afterwards.
+- A change typed for one month applies to that month only. "Keep for later months" makes it the plan from that month on.
+
+MY NUMBERS (currency symbol: ${cur}; first month: ${monthLabel(START)}; amounts per month)
+${lines}
+- Money you have today: ${cfg(S, 'bankStart')}; lowest balance I am comfortable with: ${cfg(S, 'minBank')}; most I want to spend a month: ${cfg(S, 'ceiling')}
+MY SAVINGS GOALS
+${goals}
+RESULT FOR ${monthLabel(START).toUpperCase()}: left over ${m.pool.left}, balance ends at ${m.bankEnd}, status ${st}.
+JAR SPLIT FOR ${monthLabel(START).toUpperCase()} (each jar's amount as a share of ${JS.over ? 'what the plan spends, which is more than my pay' : 'take-home pay'}): ${JS.list.map(j => `${j.name} ${j.pct}%`).join(', ')}${JS.rest > 0 ? `, left over ${JS.restPct}% (no purpose yet)` : ''}.
+
+WHAT I WANT
+1. Ask me up to five short questions about my situation (country, how I am paid, debts, goals) before you suggest changes.
+2. Check my numbers against Eker's usual split and for gaps, such as irregular yearly costs I may have forgotten, and tell me what my real play money is.
+3. If I ask for a new setup, give me the updated JSON below in one code block. I will paste it under Settings, Saved data, Restore, with Load text.
+
+SETUP JSON FORMAT
+"plan.lines" lists the lines: {"id":"short-id","jar":"nec|play|edu|ffa|give","name":"text","def":number,"ends":"YYYY-MM" (optional last payment month),"redirect":true (optional)}. Built-in lines keep their ids; a new line needs a new id and its amount is stored under the key "line:<id>". "plan.goals" lists the goals: {"id":"short-id","name":"text","target":number,"start":number,"due":"YYYY-MM-DD" or "","monthly":number (optional, only for a goal with no date),"emergency":true (at most one),"stretch":number (emergency fund only),"slot":1-7}. "steps" sets an amount from a month on: {"key":[{"from":"YYYY-MM","v":number}]}, where key is a, b, side, a line's key (shown above) or "goal:<goal id>". "once" overrides one month: {"YYYY-MM":{"key":number}}. "items" are one-time costs: {"YYYY-MM":[{"id":"x1","label":"name","amount":number}]}. "cfg" holds bankStart, minBank and ceiling. "ui.cur" is the currency symbol. Months run ${START} to ${END}. Keep "v":1 and "rev":0.
+
+CURRENT SETUP JSON
+${JSON.stringify(snapshot())}`);
+}
+
+/* ---------- start ---------- */
+function initialMonth() {
+  const h = location.hash.slice(1); if (MONTHS.includes(h)) return h;
+  const d = new Date(), ym = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+  return ym < START ? START : ym > END ? END : ym;
+}
+loadLocal(); buildStatic(); sel = initialMonth(); wire(); render(); dpWatch(); setSave('device');
+startHelp();
+if (!(S.ui && S.ui.toured)) openTour(S.ui.tourAt, 'full');
+recoverMirror().then(() => vaultCheck()); paintBk();
+})();

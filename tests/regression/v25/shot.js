@@ -1,0 +1,20 @@
+const puppeteer = require('/home/claude/work/tools/node_modules/puppeteer-core');
+const w = ms => new Promise(r => setTimeout(r, ms));
+const [,, vw, vh, scheme, out, tab, sel] = process.argv;
+(async () => {
+  const b = await puppeteer.launch({ executablePath: '/usr/bin/google-chrome', headless: 'new', args: ['--no-sandbox', '--disable-gpu'] });
+  const p = await b.newPage(); await p.setViewport({ width: +vw, height: +vh, deviceScaleFactor: 2 });
+  await p.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: scheme || 'light' }]);
+  const st = { v: 1, rev: 1, steps: {}, once: {}, items: {}, cfg: {}, receipts: [], ui: { cur: '₱', preset: '₱', setup: true, sampleHidden: true, name: 'Mako', done: { pay: true, bills: true, goals: true, receipts: true }, seen: { home: true, month: true, goals: true, receipts: true, basics: true } } };
+  if (!process.env.NOSTATE) await p.evaluateOnNewDocument(s => { if (!sessionStorage.getItem('__s')) { localStorage.setItem('money-map-template-v2', s); sessionStorage.setItem('__s', '1'); } }, JSON.stringify(st));
+  await p.goto('file:///home/claude/work/money-map-team.html#2026-11', { waitUntil: 'load' }); await w(800);
+  await p.evaluate(() => { const t = document.querySelector('#tour'); if (t && !t.hidden) document.querySelector('#tourSkip').click(); }); await w(600);
+  await p.evaluate(() => { const b = document.querySelector('[data-skip-yes],#confirmYes,.dlg button.primary'); });
+  await p.evaluate(() => { const b = document.querySelector('#co:not([hidden]) #coSkip'); if (b) b.click(); });
+  await p.evaluate(t => document.querySelector('#tab-' + t).click(), tab || 'month'); await w(700);
+  await p.evaluate(() => { const b = document.querySelector('#co:not([hidden]) #coSkip'); if (b) b.click(); });
+  if (sel) await p.evaluate(s => { const e = document.querySelector(s); e && e.scrollIntoView({ block: 'start' }); }, sel);
+  await w(500);
+  await p.screenshot({ path: out });
+  await b.close();
+})();

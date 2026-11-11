@@ -1,0 +1,37 @@
+const puppeteer = require('/home/claude/work/tools/node_modules/puppeteer-core');
+(async () => {
+  const b = await puppeteer.launch({ executablePath: '/usr/bin/google-chrome', headless: 'new', args: ['--no-sandbox', '--disable-gpu'] });
+  const p = await b.newPage(); const errs = [];
+  p.on('console', m => { if (['error', 'warning'].includes(m.type())) errs.push(m.type() + ': ' + m.text()); });
+  p.on('pageerror', e => errs.push('PAGEERROR: ' + e.message));
+  await p.setViewport({ width: 1180, height: 900 });
+  await p.goto('file:///home/claude/work/money-map-team.html#2026-11', { waitUntil: 'load' });
+  await p.evaluate(() => (localStorage.clear(), indexedDB.deleteDatabase('money-map-safe'))); await p.reload({ waitUntil: 'load' });
+  const w = ms => new Promise(r => setTimeout(r, ms));
+  const q = async s => p.$eval(s, e => e.textContent.trim()).catch(() => 'MISSING:' + s);
+  await w(500);
+  console.log('banner visible:', await p.$eval('#sample', e => !e.hidden));
+  console.log('hero:', await q('#heroNum'), '|', await q('#heroWk'), '|', await q('#chip'));
+  console.log('verdict:', await q('#verdict'));
+  console.log('where:', await q('#whereTitle'));
+  console.log('legend:', JSON.stringify(await p.$$eval('#legend .lg', e => e.map(x => x.textContent.trim()))));
+  console.log('rows in:', JSON.stringify(await p.$$eval('#rowsIn .row', e => e.map(x => x.innerText.replace(/\n/g, ' ')))));
+  console.log('rows out:', JSON.stringify(await p.$$eval('#rowsOut .row', e => e.map(x => x.querySelector('.row-h').innerText.replace(/\n/g, ' ') + ' ' + (x.querySelector('.amt-in') ? x.querySelector('.amt-in').value : '')))));
+  console.log('totals:', await q('#inTotal'), await q('#outTotal'), await q('#leftTotal'), '|', await q('#bankLine'));
+  await p.click('[data-tab="goals"]'); await w(400);
+  console.log('goals:', JSON.stringify(await p.$$eval('.gcard', e => e.map(x => x.innerText.replace(/\n+/g, ' | ')))));
+  await p.click('[data-tab="months"]'); await w(300);
+  console.log('months rows:', await p.$$eval('#monthTable tbody tr', e => e.length), '| first:', await p.$eval('#monthTable tbody tr', e => e.innerText.replace(/\s+/g, ' ')));
+  await p.click('[data-tab="basics"]'); await w(300);
+  console.log('basics groups:', JSON.stringify(await p.$$eval('#sets h3', e => e.map(x => x.textContent))));
+  console.log('ai prompt chars:', await p.$eval('#aiBox', e => e.value.length));
+  console.log('ERRORS:', JSON.stringify(errs));
+  // personal-data scan over the full rendered text and source
+  const html = require('fs').readFileSync('/home/claude/work/money-map-team.html', 'utf8');
+  const bad = ['Mako', 'Inage', 'Chiba', 'Japan', 'Tokyo', 'NISA', 'Mercari', 'Merpay', 'Rakuten', 'Docomo', 'Resona', 'shaken', 'Shaken', '令和', 'Reiwa', '万', 'OZ ', 'Oz ', '20x', 'Ken ', 'Windy', 'Layla', '138,330', '138330', '156500', '162500', '202500', '42928', '42,928', '178472', '8490', 'Tokio Marine', '全保連', 'housemate', 'Housemate', 'mako@', 'ozmedia', 'Australia', '¥'];
+  const found = bad.filter(t => html.includes(t));
+  console.log('PERSONAL/JAPAN TERMS FOUND IN SOURCE:', JSON.stringify(found));
+  const text = await p.evaluate(() => document.body.innerText);
+  console.log('terms in rendered text:', JSON.stringify(bad.filter(t => text.includes(t))));
+  await b.close();
+})();

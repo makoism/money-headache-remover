@@ -1,0 +1,385 @@
+<div class="dock" id="dock" aria-hidden="true">
+  <div class="dock-in">
+    <div class="dock-row"><b id="dockNum"></b><span id="dockTxt"></span></div>
+    <div class="bar" id="dockBar"></div>
+  </div>
+</div>
+<div class="wrap">
+  <header class="top">
+    <h1>M.H.R.2000<small>The Money Headache Remover 2000</small></h1>
+    <span class="top-r"><span class="save" id="save" role="status"><i></i><span id="saveTxt">Loading</span></span>
+    <button type="button" class="gear" id="gearBtn" aria-label="Settings" data-tab-go="basics"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="3.1"/><circle cx="12" cy="12" r="6.6"/><path d="M12 2.6v2.1M12 19.3v2.1M2.6 12h2.1M19.3 12h2.1M5.35 5.35l1.5 1.5M17.15 17.15l1.5 1.5M5.35 18.65l1.5-1.5M17.15 6.85l1.5-1.5"/></svg></button></span>
+  </header>
+
+  <div class="tabs" role="tablist" aria-label="Pages">
+    <button type="button" role="tab" id="tab-home" aria-controls="p-home" aria-selected="true" data-tab="home">Home</button>
+    <button type="button" role="tab" id="tab-receipts" aria-controls="p-receipts" aria-selected="false" data-tab="receipts" tabindex="-1">Receipts</button>
+    <button type="button" role="tab" id="tab-goals" aria-controls="p-goals" aria-selected="false" data-tab="goals" tabindex="-1" hidden>Goals</button>
+    <button type="button" role="tab" id="tab-month" aria-controls="p-month" aria-selected="false" data-tab="month" tabindex="-1">Plan</button>
+    <button type="button" role="tab" id="tab-basics" aria-controls="p-basics" aria-selected="false" data-tab="basics" tabindex="-1" hidden>Settings</button>
+  </div>
+  <button type="button" class="mgb" id="mgBand" data-tab-go="home" hidden></button>
+
+  <!-- HOME -->
+  <div id="p-home" role="tabpanel" aria-labelledby="tab-home">
+    <p class="hello" id="hello" hidden></p>
+    <section class="hstat" id="hStatus" aria-label="Where you stand" hidden></section>
+    <section class="hnext" id="hNext" aria-label="Next step" hidden></section>
+    <section class="hnext" id="hBk" aria-label="Backup" hidden></section>
+    <section class="card hwin" id="hHero" aria-label="Main goal"></section>
+    <section class="card hspend" id="hSpend" aria-label="Play money"></section>
+    <section class="card hq" id="hQuick" aria-labelledby="hqT">
+      <h2 id="hqT">Log spend</h2>
+      <form class="hform" id="hForm" autocomplete="off" novalidate>
+        <div class="field hamt"><label for="hAmt">Amount</label><div class="inp"><span class="yen cs"></span><input id="hAmt" type="number" inputmode="decimal" min="0" step="any" placeholder="0"></div></div>
+        <div class="field hcat"><label for="hCat">Category</label><div class="selbox"><select id="hCat"></select></div></div>
+        <button class="btn solid hadd" type="submit" id="hSave">Log</button>
+        <details class="hmore"><summary>Date, note</summary>
+          <div class="hmore-in">
+            <div class="field"><label for="hDate">Date</label><input type="date" id="hDate"></div>
+            <div class="field"><label for="hNote">Note</label><input class="txt" id="hNote" type="text" maxlength="80" placeholder="Where or what"></div>
+          </div>
+        </details>
+        <div class="newcat" id="hNew" hidden></div>
+        <p class="msg hmsg" id="hMsg" role="status"></p>
+      </form>
+      <button type="button" class="link hscan" id="hScan">Scan receipt</button>
+    </section>
+    <section class="card hgoals" id="hGoals" aria-label="Goals"></section>
+    <section class="card hbuckets" id="hBuckets" aria-label="Jars"></section>
+    <details class="card hmore2" id="hMore">
+      <summary>Streak, badges, pages</summary>
+      <div class="hmore2-in">
+        <section class="hstreak" id="hStreak" aria-label="Weekly streak"></section>
+        <section class="hbadges" id="hBadges" aria-label="Badges"></section>
+        <section class="hdeep" id="hDeep" aria-label="Other pages">
+          <h2>Pages</h2>
+          <div class="hdeep-l">
+            <button type="button" class="btn" data-tab-go="month">Month plan</button>
+            <button type="button" class="btn" data-tab-go="months">All months</button>
+            <button type="button" class="btn" data-tab-go="goals">Goals</button>
+            <button type="button" class="btn" data-tab-go="basics">Settings</button>
+          </div>
+        </section>
+      </div>
+    </details>
+  </div>
+
+  <!-- THIS MONTH -->
+  <div id="p-month" role="tabpanel" aria-labelledby="tab-month" hidden>
+    <div class="plan-top"><div class="subnav" role="group" aria-label="Plan pages"><button type="button" data-tab-go="month" data-sub="month">Month</button><button type="button" data-tab-go="goals" data-sub="goals">Goals</button><button type="button" data-tab-go="months" data-sub="months">All months</button></div></div>
+    <section class="start" id="start" aria-labelledby="startTitle" hidden>
+      <h2 id="startTitle">Setup: 4 steps</h2>
+      <p class="cap" id="startSub">Sample numbers for one salary. Replace them with yours. Data stays in this browser.</p>
+      <ol class="steps" id="startSteps"></ol>
+      <div class="row-btns"><button type="button" class="btn small" id="blankTop">Clear sample</button><button type="button" class="link" id="tourOpen2">Guided setup</button><button type="button" class="link" id="hideSample">Hide</button></div>
+    </section>
+    <section class="hero" id="hero" aria-label="This month at a glance">
+      <div class="picker">
+        <button type="button" class="arrow" id="prevM" aria-label="Previous month"><svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M12.5 4.5L7 10l5.5 5.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <label class="pick"><span class="sr">Choose a month</span><span class="pick-t" id="monthTxt" aria-hidden="true"></span><select id="monthSel"></select>
+          <svg class="chev" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M5 8l5 5 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></label>
+        <button type="button" class="arrow" id="nextM" aria-label="Next month"><svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M7.5 4.5L13 10l-5.5 5.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      </div>
+      <p class="pay" id="payTxt"></p>
+      <div class="big">
+        <span class="num" id="heroNum"></span>
+        <span class="lbl">play money</span>
+        <span class="wk"><span id="heroWk"></span> <button type="button" class="link" data-open="play">Change</button></span>
+        <span class="wk" id="rcLine"></span>
+      </div>
+      <span class="chip" id="chip"></span>
+      <p class="verdict" id="verdict"></p>
+      <div class="btns" id="fixBtns"></div>
+    </section>
+
+    <section class="card where" id="where" aria-labelledby="whereTitle">
+      <h2 id="whereTitle"></h2>
+      <div class="barbox">
+        <div class="bar" id="bar" role="img"></div>
+        <div class="endline" id="endline" hidden><span>Pay ends</span></div>
+      </div>
+      <div class="legend" id="legend"></div>
+      <p class="cap" id="jarNote"></p>
+    </section>
+
+    <section class="card ledger" id="ledger" aria-labelledby="ledgerTitle">
+      <div class="head">
+        <h2 id="ledgerTitle">Details</h2>
+        <p class="sub2" id="ledgerSub"></p>
+        <p class="chgsum" id="chgSum" hidden><span id="chgTxt"></span> <button type="button" class="link" id="undoAll">Undo all</button></p>
+      </div>
+      <div class="lsec">
+        <div class="lsec-h"><h3>Money in</h3><b id="inTotal"></b></div>
+        <div class="rows rows-in" id="rowsIn"></div>
+      </div>
+      <div class="lsec">
+        <div class="lsec-h"><h3>Money out</h3><b id="outTotal"></b></div>
+        <div class="rows" id="rowsOut"></div>
+      </div>
+      <div class="leftrow"><span>Left</span><b id="leftTotal"></b></div>
+      <p class="cap" id="bankLine"></p>
+      <div class="row-btns"><button type="button" class="btn small" id="resetMonth">Reset month</button></div>
+    </section>
+  </div>
+
+  <!-- ALL MONTHS -->
+  <div id="p-months" role="tabpanel" aria-labelledby="tab-months" hidden>
+    <div class="plan-top"><div class="subnav" role="group" aria-label="Plan pages"><button type="button" data-tab-go="month" data-sub="month">Month</button><button type="button" data-tab-go="goals" data-sub="goals">Goals</button><button type="button" data-tab-go="months" data-sub="months">All months</button></div></div>
+    <section class="card sect">
+      <div class="head">
+        <h2>All months</h2>
+        <p class="sub2">Tap a month to open.</p>
+      </div>
+      <div class="tablewrap" id="monthTable"></div>
+    </section>
+  </div>
+
+  <!-- GOALS -->
+  <div id="p-goals" role="tabpanel" aria-labelledby="tab-goals" hidden>
+    <div class="plan-top"><div class="subnav" role="group" aria-label="Plan pages"><button type="button" data-tab-go="month" data-sub="month">Month</button><button type="button" data-tab-go="goals" data-sub="goals">Goals</button><button type="button" data-tab-go="months" data-sub="months">All months</button></div></div>
+    <section class="card sect">
+      <div class="head">
+        <h2>Goals</h2>
+        <p class="sub2" id="goalsSub"></p>
+        <p class="sub2" id="goalsSub2" hidden></p>
+      </div>
+      <div class="goals" id="goalCards"></div>
+      <div class="row-btns"><button type="button" class="btn small solid" id="addGoalBtn">Add goal</button><span class="msg" id="goalMsg" role="status"></span></div>
+    </section>
+    <section class="card sect" id="secRoad">
+      <div class="head"><h2>Forecast</h2><p class="sub2">Each goal at month end, if the plan holds.</p></div>
+      <div class="row-btns"><button type="button" class="btn small" id="roadToggle" aria-pressed="false">Table</button></div>
+      <div class="legend" id="roadLegend"></div>
+      <div class="chartbox" id="chartbox"></div>
+      <div class="tablewrap" id="roadTable" hidden></div>
+    </section>
+  </div>
+
+  <!-- RECEIPTS -->
+  <div id="p-receipts" role="tabpanel" aria-labelledby="tab-receipts" hidden>
+    <section class="card scan" id="scan" aria-labelledby="scanH">
+      <div class="head">
+        <h2 id="scanH">Scan receipts</h2>
+        <p class="sub2" id="scanSub">Claude reads receipt photos and files each by category. You review before anything is added.</p>
+      </div>
+      <div class="scan-direct" id="scanDirect">
+        <div class="scan-btns">
+          <button type="button" class="btn solid" id="scanCam">Camera</button>
+          <button type="button" class="btn" id="scanPick">Choose photos</button>
+        </div>
+        <input type="file" id="scanCamIn" accept="image/*" capture="environment" hidden>
+        <input type="file" id="scanPickIn" accept="image/*,.csv,.tsv,.txt,text/csv,text/plain" multiple hidden>
+        <div class="scan-files" id="scanFiles" hidden></div>
+        <div class="row-btns scan-go" id="scanGo" hidden>
+          <button type="button" class="btn solid" id="scanRead">Read</button>
+          <button type="button" class="btn" id="scanStop" hidden>Stop</button>
+          <button type="button" class="link" id="scanClear">Clear</button>
+        </div>
+        <p class="msg" id="scanMsg" role="status" hidden></p>
+        <div class="scan-out" id="scanOut" aria-live="polite"></div>
+        <p class="cap">One receipt per photo, flat, well lit. Photos go to your Claude account on Read. This page keeps none.</p>
+      </div>
+      <p class="scan-off" id="scanOff" role="status" hidden></p>
+      <details class="scan-app" id="scanApp">
+        <summary>Other AI app</summary>
+        <ol class="scan-steps">
+          <li>Tap <b>Copy message</b>.</li>
+          <li>Paste it into your AI app, attach the photos, send.</li>
+          <li>Paste the reply below.</li>
+        </ol>
+        <div class="row-btns">
+          <button type="button" class="btn small solid" id="scanCopy">Copy message</button>
+          <span class="msg" id="scanCopyMsg" role="status"></span>
+        </div>
+        <div class="ai-pick" id="scanAis"></div>
+        <p class="cap">Attachments go to that AI company under its own privacy terms. This page never sees them.</p>
+        <div class="field"><label for="scanPaste">Reply</label><textarea id="scanPaste" rows="5" placeholder="Paste reply" spellcheck="false"></textarea></div>
+        <div class="row-btns"><button type="button" class="btn small solid" id="scanCheck">Check</button><span class="msg" id="scanPasteMsg" role="status"></span></div>
+        <div class="scan-out" id="scanOut2" aria-live="polite"></div>
+      </details>
+    </section>
+    <section class="card sect">
+      <div class="head">
+        <h2>Receipts</h2>
+        <p class="sub2">Log as you spend or in a batch. <button type="button" class="link" data-scroll="rcRemind">Set reminder</button></p>
+      </div>
+      <form class="rcform" id="rcForm" autocomplete="off" novalidate>
+        <div class="field"><label for="rcDate">Date</label><input type="date" id="rcDate" required></div>
+        <div class="field"><label for="rcAmt">Amount</label><div class="inp"><span class="yen cs"></span><input id="rcAmt" type="number" inputmode="decimal" min="0" step="any" placeholder="0" required></div></div>
+        <div class="field"><label for="rcCat">Category</label><div class="selbox"><select id="rcCat"></select></div></div>
+        <div class="field"><label for="rcNote">Note</label><input class="txt" id="rcNote" type="text" maxlength="80" placeholder="Where or what"></div>
+        <div class="newcat" id="rcNew" hidden></div>
+        <div class="row-btns rcbtns"><button class="btn solid" type="submit" id="rcSave">Log receipt</button><button type="button" class="link" id="rcCancel" hidden>Cancel</button><span class="msg" id="rcMsg" role="status"></span></div>
+      </form>
+    </section>
+    <section class="card sect" id="rcMonthCard">
+      <div class="head">
+        <div class="rcmonth"><label for="rcMonth" class="sr">Month</label><div class="selbox"><select id="rcMonth"></select></div></div>
+        <h2 id="rcTitle"></h2>
+        <p class="sub2" id="rcSum"></p>
+      </div>
+      <div class="tablewrap" id="rcCats"></div>
+      <div class="rclist" id="rcList"></div>
+    </section>
+    <section class="card sect" id="rcRemind">
+      <div class="head">
+        <h2>Reminder</h2>
+        <p class="sub2">Pick a schedule, then a calendar.</p>
+      </div>
+      <div id="rcFields"></div>
+      <div class="cal-btns" id="rcCal"></div>
+      <p class="cal-msg" role="status"></p>
+      <p class="cap">Set for <b id="rcWhen"></b>. Google Calendar and the file repeat. Outlook, Microsoft 365 and Yahoo open once: set Repeat there.</p>
+      <details class="ctext">
+        <summary>Event text</summary>
+        <textarea id="rcEventText" readonly rows="3" aria-label="Text for your calendar event" spellcheck="false"></textarea>
+        <div class="row-btns"><button type="button" class="btn small solid" id="rcCopy">Copy event text</button><span class="msg" id="rcCopyMsg" role="status"></span></div>
+      </details>
+    </section>
+  </div>
+
+  <!-- BASICS -->
+  <div id="p-basics" role="tabpanel" aria-labelledby="tab-basics" hidden>
+    <div class="plan-top"><button type="button" class="link" data-tab-go="home">&larr; Home</button></div>
+    <section class="card sect">
+      <div class="head">
+        <h2>Settings</h2>
+        <p class="sub2" id="basicsSub">Name, currency, balance, look, saved data.</p>
+      </div>
+      <div class="field">
+        <label for="nameIn">Name</label>
+        <div class="inp"><input id="nameIn" type="text" maxlength="24" autocomplete="given-name" spellcheck="false" placeholder="Name"></div>
+      </div>
+      <div class="field">
+        <label for="curSel">Currency</label>
+        <div class="selbox"><select id="curSel"></select></div>
+        <p class="cap" id="curNote" aria-live="polite"></p>
+      </div>
+      <div class="field sndrow">
+        <span class="lab" id="sndLab">Sound</span>
+        <div class="snd-r"><button type="button" class="sw" id="setSnd" role="switch" aria-labelledby="sndLab" aria-checked="true"><i></i></button><span class="cap" id="sndTxt">On</span></div>
+        <p class="cap">Click and chime feedback. This browser only.</p>
+      </div>
+      <div class="field themerow">
+        <span class="lab" id="themeLab">Look</span>
+        <div class="seg" role="group" aria-labelledby="themeLab" id="themeSeg">
+          <button type="button" data-theme-set="auto" aria-pressed="true">Auto</button>
+          <button type="button" data-theme-set="light" aria-pressed="false">Light</button>
+          <button type="button" data-theme-set="dark" aria-pressed="false">Dark</button>
+        </div>
+        <p class="cap">Auto follows the device. This browser only.</p>
+      </div>
+      <div class="sets" id="sets"></div>
+      <div class="backup" id="jarGuide">
+        <h3>Six jars</h3>
+        <p class="cap">Pay is split into six jars (system from T. Harv Eker, Secrets of the Millionaire Mind). The percents shown are Eker&rsquo;s usual split. Your actual split is on Plan and follows your bills and goals.</p>
+        <div class="jlist" id="jarList"></div>
+        <div class="row-btns"><button type="button" class="btn small" id="redivide">Re-split pay</button></div>
+      </div>
+      <div class="backup">
+        <h3>Reset and setup</h3>
+        <p class="cap" id="makeCap">Amounts are samples for one salary. Start at zero or type over them. Saved in this browser only. Nobody else sees it, including whoever shared this page.</p>
+        <div class="row-btns">
+          <button type="button" class="btn small solid" id="blankBtn">Zero all</button>
+          <button type="button" class="btn small warnbtn" id="bkReset">Restore samples</button>
+          <button type="button" class="btn small" id="showStart">Show first steps</button>
+          <button type="button" class="btn small" id="setupOpen">Guided setup</button>
+          <button type="button" class="btn small" id="tourOpen">Tour</button>
+        </div>
+      </div>
+      <div class="backup">
+        <h3>Other AI</h3>
+        <p class="cap">Copy this prompt into any AI. It explains the page and includes your numbers (not receipts), so the AI can check them and suggest a setup. Paste a new setup under Saved data.</p>
+        <textarea id="aiBox" readonly aria-label="Prompt for your own AI" spellcheck="false"></textarea>
+        <div class="row-btns"><button type="button" class="btn small solid" id="aiCopy">Copy prompt</button><span class="msg" id="aiMsg" role="status"></span></div>
+      </div>
+      <div class="backup" id="bkArea">
+        <h3>Saved data</h3>
+        <p class="cap">Data is stored in this browser on this device only. Nothing is sent anywhere. A second copy is kept here in case the first goes missing, and is loaded on its own if so. It does not move to other devices. Clearing site data removes both, so only a backup file survives that. A backup is your own copy of numbers and receipts.</p>
+        <h4>Backup</h4>
+        <div class="row-btns">
+          <button type="button" class="btn small solid" id="bkSave">Save file</button>
+          <button type="button" class="btn small" id="bkCopy">Copy text</button>
+        </div>
+        <p class="cap" id="bkWhen" role="status"></p>
+        <p class="cap">Back up regularly, and before clearing or resetting. Keep the file somewhere safe or paste the text into a note.</p>
+        <h4>Spreadsheet</h4>
+        <div class="row-btns"><button type="button" class="btn small" id="bkCsv">Export spreadsheet</button></div>
+        <p class="cap">Every plan month as one table: pay, jars, goals, balance. Opens in Sheets or Excel. Read-only: edits there do not change this page.</p>
+        <div id="vaultBox" hidden>
+          <h4>Cloud backup</h4>
+          <p class="cap" id="vaultState" role="status"></p>
+          <div class="row-btns"><button type="button" class="btn small solid" id="vaultOn">Turn on</button><button type="button" class="btn small" id="vaultShow" hidden>Show code</button><button type="button" class="btn small solid" id="vaultLoadNewer" hidden>Load the newer copy</button><button type="button" class="btn small" id="vaultKeepMine" hidden>Keep mine</button><button type="button" class="btn small" id="vaultOff" hidden>Turn off</button></div>
+          <div id="vaultCode" hidden></div>
+          <p class="cap">Encrypted on this device with a recovery code before anything is sent. Nobody else can open it, including the person who shared this page. New phone, or browser cleared: enter the code and the numbers come back.</p>
+          <h4>Use a recovery code</h4>
+          <div class="row-btns inv-row"><input class="txt" id="vaultIn" type="text" autocomplete="off" spellcheck="false" placeholder="MHR-XXXX-XXXX-XXXX-XXXX-XXXX" aria-label="Recovery code" maxlength="40"><button type="button" class="btn small" id="vaultUse">Load</button><span class="msg" id="vaultMsg" role="status"></span></div>
+          <p class="cap">Loading replaces the numbers here with the cloud copy and keeps this device in sync with it.</p>
+        </div>
+        <h4>Move to another device</h4>
+        <ol class="bk-steps">
+          <li>Here: <b>Save file</b> or <b>Copy text</b>.</li>
+          <li>Send it to yourself (email the file or paste the text).</li>
+          <li>On the other device: open this page, go to Settings.</li>
+          <li><b>Choose file</b> below, or paste the text and tap <b>Load text</b>.</li>
+        </ol>
+        <h4>Restore</h4>
+        <textarea id="bk" aria-label="Your saved numbers" spellcheck="false"></textarea>
+        <div class="row-btns">
+          <button type="button" class="btn small" id="bkLoad">Load text</button>
+          <button type="button" class="btn small" id="bkFileBtn">Choose file</button>
+          <input type="file" id="bkFile" accept=".json,application/json,text/plain" hidden>
+          <span class="msg" id="bkMsg" role="status"></span>
+        </div>
+        <p class="cap">Restore replaces the numbers and receipts here with the copy. Back up first to keep what is here. To start from zero use <b>Zero all</b>.</p>
+        <p class="cap">If numbers look empty after clearing the browser or switching devices, restore your latest copy.</p>
+      </div>
+    </section>
+  </div>
+
+  <p class="foot">Template, not financial advice. Sample numbers are invented. Replace them with yours.</p>
+  <p class="foot ver" id="verFoot">Version @@VER@@, updated @@STAMP@@</p>
+</div>
+<div class="tip" id="tip" role="tooltip"></div>
+<div class="tour" id="tour" role="dialog" aria-modal="true" aria-labelledby="tourTitle" hidden>
+  <div class="tour-in">
+    <div class="tour-top"><span class="tour-part" id="tourPart"></span><span class="tour-tools"><button type="button" class="link" id="tourSnd" aria-pressed="false">Sound on</button><button type="button" class="link" id="tourSkip">Skip tour</button></span></div>
+    <div class="tour-dots" id="tourDots" role="img"></div>
+    <div class="tour-body" id="tourBody"></div>
+    <div class="tour-foot"><button type="button" class="btn" id="tourBack">Back</button><span class="tour-gap"></span><button type="button" class="link" id="tourPartSkip" hidden>Skip this part</button><button type="button" class="link" id="tourAlt" hidden>Go to my month</button><button type="button" class="btn solid" id="tourNext">Next</button></div>
+  </div>
+</div>
+<div id="cheer" role="status" aria-live="polite"></div>
+<canvas id="confetti" aria-hidden="true"></canvas>
+<div class="help" id="help">
+  <div class="help-menu" id="helpMenu" hidden>
+    <button type="button" id="helpAsk">Ask Claude</button>
+    <button type="button" id="helpTab">Explain this tab</button>
+    <button type="button" id="helpSetup">Guided setup</button>
+    <button type="button" id="helpTour">Tour</button>
+    <button type="button" id="helpVideo" hidden>Intro video</button>
+    <p class="help-ver">Version @@VER@@</p>
+  </div>
+  <button type="button" class="help-btn" id="helpBtn" aria-expanded="false" aria-controls="helpMenu"><span class="q" aria-hidden="true">?</span>Help</button>
+</div>
+<section class="ask" id="ask" role="dialog" aria-labelledby="askTitle" hidden>
+  <div class="ask-head"><b id="askTitle">Ask Claude</b><span class="grow"></span><button type="button" class="link" id="askClear">New chat</button><button type="button" class="ask-x" id="askClose" aria-label="Close">&times;</button></div>
+  <div class="ask-state" id="askWait" hidden><p>Connecting to Claude&hellip;</p></div>
+  <div class="ask-state" id="askOff" hidden><p id="askOffTxt"></p><div class="row-btns"><a class="btn small solid" href="https://claude.ai/artifact/Ksf1kNTW7KRsd7ZHmiVC1w" target="_blank" rel="noopener noreferrer">Open the page in Claude</a><button type="button" class="btn small" id="askRetry">Try again</button></div></div>
+  <div class="ask-log" id="askLog" role="log" aria-live="polite" hidden></div>
+  <div class="ask-sug" id="askSug"></div>
+  <form class="ask-form" id="askForm" autocomplete="off">
+    <label class="check"><input type="checkbox" id="askNums"><span>Attach this month&rsquo;s numbers</span></label>
+    <div class="ask-files" id="askFiles" hidden></div>
+    <p class="ask-fmsg" id="askFilesMsg" role="status" hidden></p>
+    <div class="ask-row"><button type="button" class="attach" id="askAttach" aria-label="Add photos or files" title="Add photos, screenshots or a CSV file" hidden><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5l-8.6 8.6a5.5 5.5 0 0 1-7.8-7.8l8.6-8.6a3.7 3.7 0 0 1 5.2 5.2l-8.6 8.6a1.8 1.8 0 0 1-2.6-2.6l7.9-7.9"/></svg></button><input type="file" id="askFile" multiple hidden><textarea id="askIn" rows="1" maxlength="600" placeholder="Ask about the page" aria-label="Your question"></textarea><button type="submit" class="btn solid small" id="askSend">Send</button><button type="button" class="btn small" id="askStop" hidden>Stop</button></div>
+    <p class="cap" id="askCap">Runs on your Claude account; you approve access first. Only what you type is sent, plus the numbers if ticked.</p>
+  </form>
+  <details class="ask-ai" id="askAi">
+    <summary>Other AI</summary>
+    <p class="cap">Chat runs on Claude. For another AI, copy your question with a short page guide and paste it there.</p>
+    <div class="row-btns"><button type="button" class="btn small solid" id="askAiCopy">Copy question</button><span class="msg" id="askAiMsg" role="status"></span></div>
+    <div class="ai-pick" id="askAis"></div>
+  </details>
+</section>
