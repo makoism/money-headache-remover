@@ -299,6 +299,8 @@ function askFilesFail(e, bot, retry) {
     : code === 'prompt_too_large' ? ((e && e.message && /PDF|pages/.test(e.message)) ? e.message : 'Files too long. Add fewer files, fewer pages, or one month at a time.')
     : code === 'rate_limited' ? 'Too many requests, or your Claude usage limit is reached. Try again later.'
     : code === 'session_expired' ? 'Signed out of Claude. Sign in again, then send the files again.'
+    : code === 'invalid_json' && e && /cut short/.test(e.message || '') ? 'The answer was cut short: too much for one read. Fewer files at a time (2 or 3 months is plenty).'
+    : code === 'invalid_json' && e && e.text ? `Claude answered in words instead of numbers: "${String(e.text).replace(/\s+/g, ' ').trim().slice(0, 200)}" Try fewer files, or one month at a time.`
     : code === 'invalid_json' || code === 'refused' || code === 'empty_completion' ? 'No entries could be made from those files. Try a clearer photo, or one file at a time.'
     : 'Request failed. Your files are still attached. Try again.';
   if (code === 'cancelled') bot.remove(); else { bot.classList.remove('wait'); bot.classList.add('note'); bot.textContent = copy; }
@@ -313,7 +315,7 @@ async function extractFromFiles(files, note, signal) {
     budget -= byteLen(t); texts.push({ name: f.file.name, text: t });
   }
   if (!askFn || typeof askFn.json !== 'function') throw { code: 'capability_removed' };
-  const raw = await askFn.json(askExtractPrompt(note, texts, imgs.length), Object.assign({ cache: false, modelTier: 'default', signal }, imgs.length ? { images: imgs } : {}));
+  const raw = await askFn.json(askExtractPrompt(note, texts, imgs.length), Object.assign({ cache: false, modelTier: 'default', maxTokens: 8192, signal }, imgs.length ? { images: imgs } : {}));
   return { p: askClean(raw), clipped };
 }
 async function askReadFiles(note) {

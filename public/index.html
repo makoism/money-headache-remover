@@ -1571,7 +1571,7 @@ body.gw-open, body.co-open.gw-open { overflow: hidden; }
   </div>
 
   <p class="foot" id="footNote">Not financial advice. Sample numbers are invented. Replace them with yours.</p>
-  <p class="foot ver" id="verFoot">Version 27.6, updated Nov 12, 7:50 am</p>
+  <p class="foot ver" id="verFoot">Version 27.7, updated Nov 12, 8:05 am</p>
 </div>
 <div class="tip" id="tip" role="tooltip"></div>
 <div class="tour" id="tour" role="dialog" aria-modal="true" aria-labelledby="tourTitle" hidden>
@@ -1591,7 +1591,7 @@ body.gw-open, body.co-open.gw-open { overflow: hidden; }
     <button type="button" id="helpSetup">Guided setup</button>
     <button type="button" id="helpTour">Tour</button>
     <button type="button" id="helpVideo" hidden>Intro video</button>
-    <p class="help-ver">Version 27.6</p>
+    <p class="help-ver">Version 27.7</p>
   </div>
   <div class="help-row"><button type="button" class="help-btn ask-btn" id="askBtn">Ask</button><button type="button" class="help-btn" id="helpBtn" aria-expanded="false" aria-controls="helpMenu"><span class="q" aria-hidden="true">?</span>Help</button></div>
 </div>
@@ -3686,7 +3686,7 @@ async function importRead() {
       let t = await readTextFile(f.file); if (budget < 500) continue;
       if (byteLen(t) > budget) t = clipBytes(t, budget); budget -= byteLen(t); texts.push({ name: f.file.name, text: t });
     }
-    const raw = await askFn.json(importPrompt(texts, imgs.length), Object.assign({ cache: false, modelTier: 'default', signal: impCtl.signal }, imgs.length ? { images: imgs } : {}));
+    const raw = await askFn.json(importPrompt(texts, imgs.length), Object.assign({ cache: false, modelTier: 'default', maxTokens: 8192, signal: impCtl.signal }, imgs.length ? { images: imgs } : {}));
     const d = importClean(raw);
     if (!d.found) { bot.classList.remove('wait'); bot.classList.add('note'); bot.textContent = (d.summary ? d.summary + ' ' : '') + 'No monthly numbers could be read from these files. Try a CSV export, or clearer screenshots of whole pages.'; }
     else { impDraft = d; impAnswers = {}; impFiles = []; bot.remove(); sfx('next'); gotoStep('review'); }
@@ -5305,6 +5305,8 @@ function askFilesFail(e, bot, retry) {
     : code === 'prompt_too_large' ? ((e && e.message && /PDF|pages/.test(e.message)) ? e.message : 'Files too long. Add fewer files, fewer pages, or one month at a time.')
     : code === 'rate_limited' ? 'Too many requests, or your Claude usage limit is reached. Try again later.'
     : code === 'session_expired' ? 'Signed out of Claude. Sign in again, then send the files again.'
+    : code === 'invalid_json' && e && /cut short/.test(e.message || '') ? 'The answer was cut short: too much for one read. Fewer files at a time (2 or 3 months is plenty).'
+    : code === 'invalid_json' && e && e.text ? `Claude answered in words instead of numbers: "${String(e.text).replace(/\s+/g, ' ').trim().slice(0, 200)}" Try fewer files, or one month at a time.`
     : code === 'invalid_json' || code === 'refused' || code === 'empty_completion' ? 'No entries could be made from those files. Try a clearer photo, or one file at a time.'
     : 'Request failed. Your files are still attached. Try again.';
   if (code === 'cancelled') bot.remove(); else { bot.classList.remove('wait'); bot.classList.add('note'); bot.textContent = copy; }
@@ -5319,7 +5321,7 @@ async function extractFromFiles(files, note, signal) {
     budget -= byteLen(t); texts.push({ name: f.file.name, text: t });
   }
   if (!askFn || typeof askFn.json !== 'function') throw { code: 'capability_removed' };
-  const raw = await askFn.json(askExtractPrompt(note, texts, imgs.length), Object.assign({ cache: false, modelTier: 'default', signal }, imgs.length ? { images: imgs } : {}));
+  const raw = await askFn.json(askExtractPrompt(note, texts, imgs.length), Object.assign({ cache: false, modelTier: 'default', maxTokens: 8192, signal }, imgs.length ? { images: imgs } : {}));
   return { p: askClean(raw), clipped };
 }
 async function askReadFiles(note) {
@@ -6015,6 +6017,7 @@ function relayFn() {
     const key = !opts.tools && !hasImages && opts.cache !== false ? JSON.stringify([input, tier, wantJson]) : '';
     if (key && relayCache.has(key)) { const c = relayCache.get(key); if (Date.now() - c.t < 300000) { if (opts.onText) opts.onText({ text: c.text, delta: c.text }); return { text: c.text, truncated: c.truncated, modelTierApplied: tier }; } relayCache.delete(key); }
     const body = { v: 1, anon: anonId(), invite: inviteCode(), tier, json: wantJson };
+    if (opts.maxTokens > 0) body.max_tokens = Math.floor(opts.maxTokens);
     let messages = await relayMessages(input, opts.images);
     if (opts.tools && opts.tools.length) {
       body.tools = opts.tools.map(t => ({ name: t.name, description: t.description, input_schema: t.inputSchema || { type: 'object', properties: {} } }));
@@ -6069,7 +6072,7 @@ function relayFn() {
   fn.json = async (input, opts) => {
     const r = await fn(input, Object.assign({}, opts || {}, { __json: true }));
     const p = parseLoose(r.text);
-    if (!p.ok || r.truncated) throw { code: 'invalid_json', message: r.truncated ? 'The answer was cut short.' : 'No JSON in the answer.', text: r.text };
+    if (!p.ok || r.truncated) { try { console.warn('[mhr] the answer was not usable JSON' + (r.truncated ? ' (cut short)' : '') + ':', String(r.text).slice(0, 3000)); } catch (e) {} throw { code: 'invalid_json', message: r.truncated ? 'The answer was cut short.' : 'No JSON in the answer.', text: r.text }; }
     return p.value;
   };
   fn.limits = async () => ({ maxPromptBytes: 262144, images: { maxCount: 10, maxInputBytes: 20000000, mediaTypes: IMG_TYPES.slice() }, documents: Object.assign({}, DOC_LIMITS, { mediaTypes: DOC_LIMITS.mediaTypes.slice() }), tools: { maxCount: 16 }, modelTiers: ['quick', 'default', 'complex'] });

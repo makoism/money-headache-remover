@@ -84,7 +84,7 @@ async function importRead() {
       let t = await readTextFile(f.file); if (budget < 500) continue;
       if (byteLen(t) > budget) t = clipBytes(t, budget); budget -= byteLen(t); texts.push({ name: f.file.name, text: t });
     }
-    const raw = await askFn.json(importPrompt(texts, imgs.length), Object.assign({ cache: false, modelTier: 'default', signal: impCtl.signal }, imgs.length ? { images: imgs } : {}));
+    const raw = await askFn.json(importPrompt(texts, imgs.length), Object.assign({ cache: false, modelTier: 'default', maxTokens: 8192, signal: impCtl.signal }, imgs.length ? { images: imgs } : {}));
     const d = importClean(raw);
     if (!d.found) { bot.classList.remove('wait'); bot.classList.add('note'); bot.textContent = (d.summary ? d.summary + ' ' : '') + 'No monthly numbers could be read from these files. Try a CSV export, or clearer screenshots of whole pages.'; }
     else { impDraft = d; impAnswers = {}; impFiles = []; bot.remove(); sfx('next'); gotoStep('review'); }

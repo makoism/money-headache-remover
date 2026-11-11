@@ -101,6 +101,7 @@ function relayFn() {
     const key = !opts.tools && !hasImages && opts.cache !== false ? JSON.stringify([input, tier, wantJson]) : '';
     if (key && relayCache.has(key)) { const c = relayCache.get(key); if (Date.now() - c.t < 300000) { if (opts.onText) opts.onText({ text: c.text, delta: c.text }); return { text: c.text, truncated: c.truncated, modelTierApplied: tier }; } relayCache.delete(key); }
     const body = { v: 1, anon: anonId(), invite: inviteCode(), tier, json: wantJson };
+    if (opts.maxTokens > 0) body.max_tokens = Math.floor(opts.maxTokens);
     let messages = await relayMessages(input, opts.images);
     if (opts.tools && opts.tools.length) {
       body.tools = opts.tools.map(t => ({ name: t.name, description: t.description, input_schema: t.inputSchema || { type: 'object', properties: {} } }));
@@ -155,7 +156,7 @@ function relayFn() {
   fn.json = async (input, opts) => {
     const r = await fn(input, Object.assign({}, opts || {}, { __json: true }));
     const p = parseLoose(r.text);
-    if (!p.ok || r.truncated) throw { code: 'invalid_json', message: r.truncated ? 'The answer was cut short.' : 'No JSON in the answer.', text: r.text };
+    if (!p.ok || r.truncated) { try { console.warn('[mhr] the answer was not usable JSON' + (r.truncated ? ' (cut short)' : '') + ':', String(r.text).slice(0, 3000)); } catch (e) {} throw { code: 'invalid_json', message: r.truncated ? 'The answer was cut short.' : 'No JSON in the answer.', text: r.text }; }
     return p.value;
   };
   fn.limits = async () => ({ maxPromptBytes: 262144, images: { maxCount: 10, maxInputBytes: 20000000, mediaTypes: IMG_TYPES.slice() }, documents: Object.assign({}, DOC_LIMITS, { mediaTypes: DOC_LIMITS.mediaTypes.slice() }), tools: { maxCount: 16 }, modelTiers: ['quick', 'default', 'complex'] });
