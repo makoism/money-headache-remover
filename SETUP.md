@@ -16,17 +16,16 @@ Claude pushes code to GitHub; Cloudflare deploys it within a minute.
 2. Plans & Billing → Buy credits. $20 is plenty to start. Leave auto-reload off: then $20 is the hard ceiling.
 3. Settings → API keys → Create Key, name `money-app`. Copy the key (sk-ant-...). Shown once. Never paste it into a chat.
 
-## C. Cloudflare (hosting, relay, backups)
-1. dash.cloudflare.com: create a free account.
-2. Workers & Pages → Create → Pages → Connect to Git → authorize "Cloudflare Workers and Pages" for `money-headache-remover`.
-3. Project name `money-headache-remover` (the address becomes money-headache-remover.pages.dev). Production branch `main`.
-   Framework preset None. Build command empty. Build output directory `public`. Save and Deploy.
-4. Storage & Databases → D1 SQL Database → Create → name `money-vault`.
-5. Workers & Pages → the project → Settings → Bindings → Add → D1 database. Variable name `DB`, database `money-vault`. Save.
-6. Settings → Variables and Secrets → Add. Type Secret. Name `ANTHROPIC_API_KEY`. Value: the key from B3. Save.
-7. Optional gate: another variable, Type Text, Name `INVITE_CODES`, Value: the code word friends type once (several: comma separated).
-8. Deployments → latest → ⋯ → Retry deployment (so the key and the database take effect).
-9. Open the address. /api/health should show `"ai":true,"vault":true`.
+## C. Cloudflare (hosting, relay, backups) as a Worker
+Done on 2026-11-11: the project `money-headache-remover` is a Worker connected to the GitHub repo. Cloudflare runs
+`npx wrangler deploy` on every push to `main`; `wrangler.toml` in the repo names the Worker, the `public` folder and the D1 binding.
+Live address: https://money-headache-remover.mako-162.workers.dev
+1. dash.cloudflare.com → Workers & Pages → Create → Import a repository → `money-headache-remover`. Deploy command `npx wrangler deploy`.
+2. Storage & Databases → D1 SQL Database → Create → name `money-vault`. Copy its Database ID into `wrangler.toml` (done: a294d637-…).
+3. Workers & Pages → the project → Settings → Variables and Secrets → Add. Type Secret. Name `ANTHROPIC_API_KEY`. Value: the key from B3. Save.
+4. Optional gate: another variable, Type Text, Name `INVITE_CODES`, Value: the code word friends type once (several: comma separated).
+5. Open the address: /api/health should show `"ai":true,"vault":true`.
+A failed build that says "error occurred while fetching repository" only means the repo was empty at the time; Retry build after the first push.
 
 ## Optional settings (Variables and Secrets, Type Text)
 | Name | Default | Meaning |
