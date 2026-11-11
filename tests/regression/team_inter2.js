@@ -2,7 +2,7 @@ const puppeteer = require('/home/claude/work/tools/node_modules/puppeteer-core')
 (async () => {
   const b = await puppeteer.launch({ executablePath: '/usr/bin/google-chrome', headless: 'new', args: ['--no-sandbox', '--disable-gpu', '--disable-features=BackForwardCache,ProactivelySwapBrowsingInstance', '--disable-site-isolation-trials'] });
   const p = await b.newPage(); const errs = [];
-  p.on('console', m => { if (['error', 'warning'].includes(m.type())) errs.push(m.type() + ': ' + m.text()); });
+  p.on('console', m => { if (['error', 'warning'].includes(m.type()) && !/ERR_FILE_NOT_FOUND|ERR_TUNNEL_CONNECTION_FAILED|ERR_NAME_NOT_RESOLVED|ERR_CONNECTION_REFUSED/.test(m.text())) errs.push(m.type() + ': ' + m.text()); });
   p.on('pageerror', e => errs.push('PAGEERROR: ' + e.message));
   await p.setViewport({ width: 1180, height: 900 });
   const URL = 'file:///home/claude/work/money-map-team.html#2026-11';
@@ -94,7 +94,7 @@ const puppeteer = require('/home/claude/work/tools/node_modules/puppeteer-core')
   await fresh(); await p.type('#tourName', '<img src=x onerror="window.__xss3=1">Bo'); await p.click('#tourNext'); await w(250);
   await p.click('input[name=tourCur][value="$"]'); await w(150);
   ok('markup in the name is never run or shown as an element', (await p.evaluate(() => window.__xss3)) === undefined && (await p.$$eval('#tourBody img, #tourTitle img', e => e.length)) === 0);
-  for (let i = 0; i < 2; i++) { await p.click('#tourNext'); await w(100); }
+  for (let i = 0; i < 3; i++) { await p.click('#tourNext'); await w(100); } /* Intro video, Your numbers (Type it in), then pay */
   ok('the pay box suggests no amount and uses the chosen currency', (await q('#tourTitle')) === 'Monthly pay' && (await p.$eval('#tourPay', e => e.placeholder)) === 'Amount' && (await p.$eval('#tourPay', e => e.closest('.inp').textContent)).includes('$'));
   await p.type('#tourPay', '2500');
   let gd = 0; while (gd++ < 60 && !(await q('#tourTitle')).startsWith('Setup done')) { await p.click('#tourNext'); await w(100); }

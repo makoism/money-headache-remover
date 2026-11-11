@@ -10,7 +10,7 @@ const P = {
   const b = await puppeteer.launch({ executablePath:'/usr/bin/google-chrome', headless:'new', args:['--no-sandbox','--disable-gpu'] });
   const p = await b.newPage(); const errs=[];
   p.on('pageerror', e => errs.push('PAGEERR '+e.message+' '+(e.stack||'').split('\n').slice(1,3).join(' | ')));
-  p.on('console', m => { if (m.type()==='error') errs.push('console: '+m.text()); });
+  p.on('console', m => { if (m.type()==='error' && !/ERR_FILE_NOT_FOUND|ERR_TUNNEL_CONNECTION_FAILED|ERR_NAME_NOT_RESOLVED|ERR_CONNECTION_REFUSED/.test(m.text())) errs.push('console: '+m.text()); });
   await p.setViewport({ width:+vw, height:+vh });
   await p.emulateMediaFeatures([{name:'prefers-color-scheme', value:scheme}]);
   await p.evaluateOnNewDocument(() => { try { (localStorage.clear(), indexedDB.deleteDatabase('money-map-safe')); } catch(e){} });

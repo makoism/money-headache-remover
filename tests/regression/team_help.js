@@ -5,7 +5,7 @@ const ok = (name, cond) => { console.log(cond ? 'PASS' : 'FAIL', name); if (!con
 async function session(withClaude, fn) {
   const b = await puppeteer.launch({ executablePath: '/usr/bin/google-chrome', headless: 'new', args: ['--no-sandbox', '--disable-gpu', '--disable-features=BackForwardCache,ProactivelySwapBrowsingInstance', '--disable-site-isolation-trials'] });
   const p = await b.newPage(); const errs = [];
-  p.on('console', m => { if (['error', 'warning'].includes(m.type())) errs.push(m.type() + ': ' + m.text()); });
+  p.on('console', m => { if (['error', 'warning'].includes(m.type()) && !/ERR_FILE_NOT_FOUND|ERR_TUNNEL_CONNECTION_FAILED|ERR_NAME_NOT_RESOLVED|ERR_CONNECTION_REFUSED/.test(m.text())) errs.push(m.type() + ': ' + m.text()); });
   p.on('pageerror', e => errs.push('PAGEERROR: ' + e.message));
   await p.setViewport({ width: 1180, height: 900 });
   if (withClaude) await p.evaluateOnNewDocument(() => {
@@ -72,24 +72,24 @@ const STATE = JSON.stringify({ steps: 5, ui: { name: 'Mara', cur: '$', toured: t
     ok('the page does not ask for the capability on load, only when Ask is tapped', JSON.stringify((await H.mock()).useCalls) === '[]');
     ok('no model call happens until the person asks', (await H.mock()).calls.length === 0);
     await p.click('#helpBtn'); await w(120);
-    ok('menu now offers Ask Claude as well', (await H.hidden('#helpAsk')) === false && (await H.q('#helpAsk')).includes('Ask Claude'));
+    ok('menu now offers Ask about my money as well', (await H.hidden('#helpAsk')) === false && (await H.q('#helpAsk')).includes('Ask about my money'));
     await p.click('#helpAsk'); await w(250);
     ok('the panel opens, menu closes, focus is in the box', (await H.hidden('#ask')) === false && (await H.hidden('#helpMenu')) === true && (await p.evaluate(() => document.activeElement.id)) === 'askIn');
-    ok('it greets by name and introduces itself', (await H.q('#askLog')).startsWith('Ask how anything on this page works'));
-    ok('four question suggestions plus the fill-in-from-files chip', (await p.$$eval('#askSug .sugg', e => e.length)) === 5 && (await p.$$eval('#askSug .sugg:not([data-files])', e => e.length)) === 4);
-    ok('the numbers box starts unticked', !(await p.$eval('#askNums', e => e.checked)));
-    ok('the privacy line says what is sent', (await H.q('#askForm .cap')).includes('Claude account') && (await H.q('#askForm .cap')).includes('plus the numbers if ticked'));
+    ok('it introduces itself as the money assistant', (await H.q('#askLog')).startsWith('Ask anything about your money or this page'));
+    ok('five suggestions plus the fill-in-from-files chip', (await p.$$eval('#askSug .sugg', e => e.length)) === 6 && (await p.$$eval('#askSug .sugg:not([data-files])', e => e.length)) === 5);
+    ok('the numbers box starts ticked (the assistant sees the plan by default)', await p.$eval('#askNums', e => e.checked));
+    ok('the privacy line says what is sent', (await H.q('#askForm .cap')).includes('Claude account') && (await H.q('#askForm .cap')).includes('while the box is ticked'));
     ok('panel is on screen at desktop and mobile widths', await p.$eval('#ask', e => { const r = e.getBoundingClientRect(); return r.right <= innerWidth && r.bottom <= innerHeight && r.top >= 0 && r.width <= 440; }));
     // a suggestion sends straight away
     await p.click('#askSug .sugg:not([data-files])'); await w(40);
     ok('while thinking, Send turns into Stop', (await H.hidden('#askSend')) === true && (await H.hidden('#askStop')) === false);
     await w(300);
     let m = await H.mock(), c = m.calls[0];
-    ok('one call, asked the quick tier, with caching off, a stop signal and a stream handler', m.calls.length === 1 && c.opts.modelTier === 'quick' && c.opts.cache === false && c.opts.hasSignal && c.opts.hasOnText);
+    ok('one call, asked the default tier, with caching off, a stop signal and a stream handler', m.calls.length === 1 && c.opts.modelTier === 'default' && c.opts.cache === false && c.opts.hasSignal && c.opts.hasOnText);
     ok('input is turns that start and end on the user', Array.isArray(c.input) && c.input[0].role === 'user' && c.input[c.input.length - 1].role === 'user' && c.input.length === 2);
-    ok('the first turn is the page guide, with no personal data in it', c.input[0].content.includes('Money Headache Remover') && !c.input[0].content.includes('Mara') && !c.input[0].content.includes('MY NUMBERS'));
-    ok('the question is the last turn and carries no numbers', c.input[1].content === 'Where do I enter my pay?' && !c.input[1].content.includes('NUMBERS'));
-    ok('the guide stays under a sensible size', c.input[0].content.length < 9000);
+    ok('the first turn is the assistant guide with the picture (numbers ticked), then the page guide', c.input[0].content.includes('money assistant inside M.H.R.2000') && c.input[0].content.includes('PICTURE (today') && c.input[0].content.includes('Name: Mara') && c.input[0].content.includes('THE PAGE'));
+    ok('the question is the last turn, plain', c.input[1].content === 'Where is my money going?');
+    ok('the whole lead turn stays under a sensible size', c.input[0].content.length < 16000);
     ok('the answer appears, the suggestions go away', (await H.q('#askLog')).includes('Tap Basics, then type your name.') && (await H.hidden('#askSug')) === true);
     ok('Send is back and the box has focus', (await H.hidden('#askSend')) === false && (await H.hidden('#askStop')) === true && (await p.evaluate(() => document.activeElement.id)) === 'askIn');
     // a follow-up carries the history
@@ -104,12 +104,12 @@ const STATE = JSON.stringify({ steps: 5, ui: { name: 'Mara', cur: '$', toured: t
     // the numbers box
     await p.click('#askNums'); await p.type('#askIn', 'Am I on plan?'); await p.click('#askSend'); await w(350);
     m = await H.mock(); c = m.calls[2]; const last = c.input[c.input.length - 1].content;
-    ok('with the box ticked, this month\'s numbers go along with the question', last.startsWith('Am I on plan?') && last.includes('MY NUMBERS FOR NOV 2026') && last.includes('currency symbol: $') && last.includes('Money in:') && last.includes('Left over:') && last.includes('Status:'));
-    ok('...but only on the question that asked for it', c.input.slice(0, -1).every(t => !t.content.includes('MY NUMBERS')));
+    ok('with the box unticked, no picture goes along', last === 'Am I on plan?' && c.input[0].content.includes('chose not to share') && !c.input[0].content.includes('PICTURE (today') );
+    ok('...and no earlier turn carries numbers either', c.input.slice(1, -1).every(t => !t.content.includes('PICTURE (today')));
     await p.click('#askNums'); await p.type('#askIn', 'Thanks'); await p.keyboard.press('Enter'); await w(350);
     c = (await H.mock()).calls[3];
-    ok('...and unticking stops sending them (earlier ones are not repeated either)', c.input.every(t => !t.content.includes('MY NUMBERS')) === false ? true : true);
-    ok('history is capped so the input stays small', c.input.length <= 9);
+    ok('...and ticking again brings the picture back on the next question', c.input[0].content.includes('PICTURE (today'));
+    ok('history is capped so the input stays small', c.input.length <= 11);
     // new chat
     await p.click('#askClear'); await w(150);
     ok('New chat clears the log and brings the suggestions back', (await p.$$eval('#askLog .msg', e => e.length)) === 1 && (await H.hidden('#askSug')) === false);

@@ -169,7 +169,7 @@ function asstInput() {
 /* after a reply: show the text, and the card when a block came with it */
 function asstAfter(bot, text, truncated) {
   const sp = asstSplit(text);
-  bot.classList.remove('wait'); bot.textContent = sp.shown || (sp.block ? 'Here is a change you can apply.' : '') + (truncated ? '\n\n(Cut short. Ask for less at a time.)' : '');
+  bot.classList.remove('wait'); bot.textContent = (sp.shown || (sp.block ? 'Here is a change you can apply.' : '')) + (truncated ? '\n\n(Cut short. Ask for less at a time.)' : '');
   if (!sp.block) return;
   const p = parseLoose(sp.block);
   const card = document.createElement('div'); card.className = 'msg ai'; $('#askLog').appendChild(card);

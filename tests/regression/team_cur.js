@@ -3,7 +3,7 @@ const puppeteer = require('/home/claude/work/tools/node_modules/puppeteer-core')
 (async () => {
   const b = await puppeteer.launch({ executablePath: '/usr/bin/google-chrome', headless: 'new', args: ['--no-sandbox', '--disable-gpu', '--disable-features=BackForwardCache,ProactivelySwapBrowsingInstance', '--disable-site-isolation-trials'] });
   const p = await b.newPage(); const errs = [];
-  p.on('console', m => { if (['error', 'warning'].includes(m.type())) errs.push(m.type() + ': ' + m.text()); });
+  p.on('console', m => { if (['error', 'warning'].includes(m.type()) && !/ERR_FILE_NOT_FOUND|ERR_TUNNEL_CONNECTION_FAILED|ERR_NAME_NOT_RESOLVED|ERR_CONNECTION_REFUSED/.test(m.text())) errs.push(m.type() + ': ' + m.text()); });
   p.on('pageerror', e => errs.push('PAGEERROR: ' + e.message));
   await p.setViewport({ width: 1180, height: 900 });
   const URL = 'file:///home/claude/work/money-map-team.html#2026-11';

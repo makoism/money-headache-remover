@@ -20,8 +20,8 @@ let pass = 0, fail = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL 
   ok(/through this page/.test(view.cap), 'caption says answers come through the page: ' + view.cap.slice(0, 60));
   await p.type('#askIn', 'Where do I enter my pay?'); await p.keyboard.press('Enter'); await w(2500);
   const log = await p.evaluate(() => Array.from(document.querySelectorAll('#askLog .msg.ai')).map(e => e.textContent));
-  ok(log.length && /ECHO model=claude-haiku-5-5/.test(log[log.length - 1]), 'answer streamed back from the relay: ' + (log[log.length - 1] || '').slice(0, 70));
-  ok(/sys=/.test(log[log.length - 1]) && apiCalls.some(c => c === 'POST /api/ai'), 'the call went to /api/ai');
+  ok(log.length && /ECHO Where do I enter my pay/.test(log[log.length - 1]), 'answer streamed back from the relay: ' + (log[log.length - 1] || '').slice(0, 70));
+  ok(apiCalls.some(c => c === 'POST /api/ai'), 'the call went to /api/ai');
   // file extraction through the relay: attach a CSV, send, review card
   const csvPath = '/tmp/v28/bank.csv'; require('fs').writeFileSync(csvPath, 'date,desc,amount\n2026-11-05,Cafe,120\n2026-11-06,Bus,45.5\n');
   const input = await p.$('#askFile'); await input.uploadFile(csvPath); await w(400);

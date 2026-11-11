@@ -62,7 +62,10 @@ function paintBk() {
 function renderBackupNudge() {
   const el = $('#hBk'); if (!el) return; let html = '';
   const cloud = vaultAvailable();
-  if (vaultNote && vaultNote.kind === 'newer') {
+  renderMoveBanner();
+  if (moveIn) {
+    html = `<div class="hn-t"><b>Numbers arrived from the Claude link</b><span>${hasData(S) ? 'This page already has numbers of its own. Replace them with the ones that just arrived?' : 'Load them here?'}</span></div><div class="hn-b"><button type="button" class="btn small solid" data-move-load>${hasData(S) ? 'Replace with the arrived numbers' : 'Load them'}</button><button type="button" class="link" data-move-no>Keep what is here</button></div>`;
+  } else if (vaultNote && vaultNote.kind === 'newer') {
     const when = vaultNote.when ? new Date(vaultNote.when).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
     html = `<div class="hn-t"><b>Newer copy in the cloud</b><span>Saved from another device${when ? ' on ' + when : ''}. Load it here, or keep this device's numbers and overwrite it.</span></div><div class="hn-b"><button type="button" class="btn small solid" data-vault-load>Load it</button><button type="button" class="link" data-vault-keep>Keep mine</button></div>`;
   } else if (vault.on && cloud && !S.ui.vaultSeen && !bkNote) {
@@ -82,9 +85,12 @@ function renderBackupNudge() {
   el.hidden = !html; if (html) { put(el, html); const w = $('[data-vault-code]', el); if (w && !w.children.length) vaultShowCode(w, vault.code); }
 }
 function wireSafe() {
+  $('#moveBanner').addEventListener('click', e => { if (e.target.closest('[data-move-hide]')) { S.ui.noMove = true; persist(); renderMoveBanner(); } else if (e.target.closest('#moveGo')) sfx('next'); });
   $('#hBk').addEventListener('click', async e => {
     if (e.target.closest('[data-bk-later]')) { S.ui.bkLater = Date.now(); persist(); renderBackupNudge(); return; }
     if (e.target.closest('[data-bk-ok]')) { bkNote = null; renderBackupNudge(); return; }
+    if (e.target.closest('[data-move-load]')) { moveApply(); renderBackupNudge(); return; }
+    if (e.target.closest('[data-move-no]')) { moveIn = null; renderBackupNudge(); return; }
     if (e.target.closest('[data-vault-on]')) { await vaultTurnOn(); sfx('next'); renderBackupNudge(); return; }
     if (e.target.closest('[data-vault-load]')) { await vaultLoadNewer(); return; }
     if (e.target.closest('[data-vault-keep]')) { vaultNote = null; vaultPush(true); paintVault(); renderBackupNudge(); return; }

@@ -140,3 +140,37 @@ function relayFn() {
   fn.relay = true;
   return fn;
 }
+
+/* ===== moving between the Claude link and the app's own address =====
+   The Claude page is a mirror. Its banner opens the app at its own address with the numbers carried in the link's hash
+   (the part after #, which never reaches any server). The app reads it once, offers to load it, and clears it. */
+const b64u = s => btoa(unescape(encodeURIComponent(s))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const unb64u = s => decodeURIComponent(escape(atob(s.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((s.length + 3) % 4))));
+const moveLink = () => { try { return RELAY_URL + '/#move=' + b64u(JSON.stringify(S)); } catch (e) { return RELAY_URL; } };
+const showMoveBanner = () => !!RELAY_URL && inArtifact() && !S.ui.noMove;
+function renderMoveBanner() {
+  const el = $('#moveBanner'); if (!el) return;
+  if (!showMoveBanner()) { el.hidden = true; return; }
+  const has = hasData(S);
+  put(el, `<div class="hn-t"><b>The app has its own address</b><span>Works without a Claude account: reading statements, receipts and the assistant are on for everyone there.</span></div><div class="hn-b"><a class="btn small solid" id="moveGo" href="${esc(has ? moveLink() : RELAY_URL)}" target="_blank" rel="noopener noreferrer">${has ? 'Open it and move my numbers' : 'Open it'}</a><button type="button" class="link" data-move-hide>Not now</button></div>`);
+  el.hidden = false;
+}
+/* on the app's own address: numbers arriving in the hash */
+let moveIn = null;
+function moveRead() {
+  try {
+    const m = location.hash.match(/^#move=([A-Za-z0-9_-]+)$/); if (!m) return;
+    history.replaceState(null, '', location.pathname + location.search);
+    const d = JSON.parse(unb64u(m[1]));
+    if (okBackup(d) && hasData(d)) moveIn = d;
+  } catch (e) { moveIn = null; }
+}
+function moveApply() {
+  if (!moveIn) return;
+  const d = moveIn; moveIn = null;
+  const old = S; S = upgradeLegacy(normalize(d)); S.ui = Object.assign({}, S.ui, { sampleHidden: true }); delete S.ui.noMove; if (!Array.isArray(d.receipts)) S.receipts = old.receipts;
+  S.ui.bk = Date.now(); delete S.ui.bkLater;
+  editRow = null; editGoal = null; editRc = null; itemsSig = '';
+  if (tourIsOpen) closeTour(false); else { persist(); restructure(); }
+  cheer('Your numbers are here.'); sfx('next');
+}

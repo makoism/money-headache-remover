@@ -26,6 +26,7 @@
     <section class="hstat" id="hStatus" aria-label="Where you stand" hidden></section>
     <section class="hnext" id="hNext" aria-label="Next step" hidden></section>
     <section class="hnext" id="hBk" aria-label="Backup" hidden></section>
+    <section class="hnext" id="moveBanner" aria-label="New address" hidden></section>
     <section class="card hwin" id="hHero" aria-label="Main goal"></section>
     <section class="card hspend" id="hSpend" aria-label="Play money"></section>
     <section class="card hq" id="hQuick" aria-labelledby="hqT">
@@ -366,7 +367,7 @@
 <section class="ask" id="ask" role="dialog" aria-labelledby="askTitle" hidden>
   <div class="ask-head"><b id="askTitle">Ask</b><span class="grow"></span><button type="button" class="link" id="askClear">New chat</button><button type="button" class="ask-x" id="askClose" aria-label="Close">&times;</button></div>
   <div class="ask-state" id="askWait" hidden><p>Connecting to Claude&hellip;</p></div>
-  <div class="ask-state" id="askOff" hidden><p id="askOffTxt"></p><div class="row-btns"><a class="btn small solid" href="https://claude.ai/artifact/Ksf1kNTW7KRsd7ZHmiVC1w" target="_blank" rel="noopener noreferrer">Open the page in Claude</a><button type="button" class="btn small" id="askRetry">Try again</button></div></div>
+  <div class="ask-state" id="askOff" hidden><p id="askOffTxt"></p><div class="row-btns"><a class="btn small solid" id="askOffLink" href="https://claude.ai/artifact/Ksf1kNTW7KRsd7ZHmiVC1w" target="_blank" rel="noopener noreferrer">Open the page in Claude</a><button type="button" class="btn small" id="askRetry">Try again</button></div></div>
   <div class="ask-log" id="askLog" role="log" aria-live="polite" hidden></div>
   <div class="ask-sug" id="askSug"></div>
   <form class="ask-form" id="askForm" autocomplete="off">

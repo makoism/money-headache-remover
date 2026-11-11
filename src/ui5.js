@@ -206,7 +206,7 @@ function wire() {
   if ('IntersectionObserver' in window) new IntersectionObserver(es => { const en = es[0]; dock.classList.toggle('on', tab === 'month' && !en.isIntersecting && en.boundingClientRect.top < 0); }).observe($('#hero'));
   document.addEventListener('visibilitychange', () => { if (document.hidden) flush(); });
   addEventListener('pagehide', () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* no storage */ } mirrorOut(); clearTimeout(vaultTimer); vaultPush(); });
-  addEventListener('hashchange', () => { const h = location.hash.slice(1); if (MONTHS.includes(h) && h !== sel) select(h); });
+  addEventListener('hashchange', () => { const h = location.hash.slice(1); if (MONTHS.includes(h) && h !== sel) select(h); else if (h.indexOf('move=') === 0) { moveRead(); if (moveIn) { if (!hasData(S)) moveApply(); else { if (tab !== 'home') switchTab('home'); renderBackupNudge(); } } } });
 }
 
 /* ---------- a prompt people can paste into their own AI ---------- */
@@ -260,8 +260,10 @@ function initialMonth() {
   const d = new Date(), ym = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
   return ym < START ? START : ym > END ? END : ym;
 }
-loadLocal(); buildStatic(); sel = initialMonth(); wire(); render(); dpWatch(); setSave('device');
+loadLocal(); moveRead(); if (moveIn && !hasData(S)) { const d = moveIn; moveIn = null; S = upgradeLegacy(normalize(d)); S.ui = Object.assign({}, S.ui, { sampleHidden: true }); delete S.ui.noMove; S.ui.bk = Date.now(); S.ui.movedIn = true; }
+buildStatic(); sel = initialMonth(); wire(); render(); dpWatch(); setSave('device');
 startHelp();
 if (!(S.ui && S.ui.toured)) openTour(S.ui.tourAt, 'full');
+if (S.ui.movedIn) { delete S.ui.movedIn; persist(); cheer('Your numbers are here.'); }
 recoverMirror().then(() => vaultCheck()); paintBk();
 })();

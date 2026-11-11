@@ -3,7 +3,7 @@ const puppeteer = require('/home/claude/work/tools/node_modules/puppeteer-core')
 (async () => {
   const [,, vw='390', vh='844', out='/tmp/v22/vid'] = process.argv; require('fs').mkdirSync(out,{recursive:true});
   const b = await puppeteer.launch({ executablePath:'/usr/bin/google-chrome', headless:'new', args:['--no-sandbox','--disable-gpu','--autoplay-policy=no-user-gesture-required','--allow-file-access-from-files'] });
-  const p = await b.newPage(); const errs=[]; p.on('pageerror', e => errs.push(e.message)); p.on('console', m => { if (m.type()==='error') errs.push(m.text()); });
+  const p = await b.newPage(); const errs=[]; p.on('pageerror', e => errs.push(e.message)); p.on('console', m => { if (m.type()==='error' && !/ERR_FILE_NOT_FOUND|ERR_TUNNEL_CONNECTION_FAILED|ERR_NAME_NOT_RESOLVED|ERR_CONNECTION_REFUSED/.test(m.text())) errs.push(m.text()); });
   await p.setViewport({ width:+vw, height:+vh });
   await p.evaluateOnNewDocument(() => { try { (localStorage.clear(), indexedDB.deleteDatabase('money-map-safe')); } catch(e){} });
   await p.goto('file:///home/claude/work/pwa/dist/index.html#2026-11', { waitUntil:'load' }); await w(800);

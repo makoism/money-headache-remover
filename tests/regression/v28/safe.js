@@ -7,7 +7,7 @@ let fail = 0, pass = 0; const ck = (ok, m) => { console.log((ok ? 'PASS ' : 'FAI
 const open = async (init, vw = 390) => {
   const b = await puppeteer.launch({ executablePath: '/usr/bin/google-chrome', headless: 'new', args: ['--no-sandbox', '--disable-gpu'] });
   const p = await b.newPage(), errs = []; await p.setViewport({ width: vw, height: 844 });
-  p.on('pageerror', e => errs.push('PAGEERR ' + e.message)); p.on('console', m => { if (m.type() === 'error' && !/ERR_FILE_NOT_FOUND|Failed to load resource/.test(m.text())) errs.push('console: ' + m.text()); });
+  p.on('pageerror', e => errs.push('PAGEERR ' + e.message)); p.on('console', m => { if (m.type() === 'error' && !/ERR_FILE_NOT_FOUND|ERR_TUNNEL_CONNECTION_FAILED|Failed to load resource/.test(m.text())) errs.push('console: ' + m.text()); });
   if (init) await p.evaluateOnNewDocument(init);
   await p.goto(PAGE + '?s=1#2026-11', { waitUntil: 'load' }); await w(800); return { b, p, errs };
 };

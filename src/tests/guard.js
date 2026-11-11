@@ -4,7 +4,9 @@ const { w, P, launch, runTour } = require('/tmp/v22/lib.js');
 const PAGE = process.env.PAGE || '/home/claude/work/money-map-team.html';
 (async () => {
   const { b, p, errs } = await launch(390, 844, 'light');
-  const ext = []; p.on('request', r => { const u = r.url(); if (/^https?:/.test(u) && !/claude\.ai/.test(u)) ext.push(u.slice(0, 80)); });
+  /* the app's own relay (RELAY file) is ours, not an outside request */
+  let relayHost = ''; try { relayHost = new URL(require('fs').readFileSync(__dirname + '/../RELAY', 'utf8').trim()).host; } catch (e) { relayHost = ''; }
+  const ext = []; p.on('request', r => { const u = r.url(); if (/^https?:/.test(u) && !/claude\.ai/.test(u) && !(relayHost && new URL(u).host === relayHost)) ext.push(u.slice(0, 80)); });
   await p.evaluateOnNewDocument(() => { window.__lt = []; try { new PerformanceObserver(l => l.getEntries().forEach(e => window.__lt.push(Math.round(e.duration)))).observe({ entryTypes: ['longtask'] }); } catch (e) {} });
   await p.goto('file://' + PAGE + '?guard=1#2026-11', { waitUntil: 'load' }); await w(700);
   const c = await p.target().createCDPSession(); await c.send('Performance.enable');
