@@ -37,6 +37,7 @@ const msg = (text, extra) => Object.assign({ v: 1, anon, tier: 'quick', messages
   ok(done && done.usage && done.usage.input === 40 && done.usage.output === 33 && done.truncated === false, 'stream: final line carries usage');
   // errors from upstream
   r = await post('/api/ai', msg('MAKE429')); j = await r.json(); ok(r.status === 429 && j.error.code === 'rate_limited', 'upstream 429 becomes rate_limited');
+  r = await post('/api/ai', msg('MAKECREDIT')); j = await r.json(); ok(r.status === 503 && j.error.code === 'relay_unconfigured' && /no credit left/.test(j.error.message), 'a credit-balance refusal becomes relay_unconfigured with a plain message');
   r = await post('/api/ai', msg('MAKE500')); j = await r.json(); ok(r.status === 502 && j.error.code === 'upstream_error', 'upstream 500 becomes upstream_error');
   // validation
   r = await post('/api/ai', { v: 1, anon, messages: [] }); j = await r.json(); ok(r.status === 400 && j.error.code === 'invalid_request', 'empty messages refused');

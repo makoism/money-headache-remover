@@ -92,7 +92,7 @@ async function importRead() {
     const code = e && e.code;
     if (code === 'cancelled') bot.remove();
     else if (code === 'invite_required') inviteForm(bot, () => importRead());
-    else { askFilesFail(e, bot); if (['not_granted', 'sampling_disabled', 'relay_unconfigured', 'capability_removed'].indexOf(code) >= 0) bot.textContent = 'Reading files is not available here. Use any AI below, or type the numbers in.'; }
+    else { askFilesFail(e, bot); if (code === 'relay_unconfigured' && e.message) bot.textContent = e.message + ' Use any AI below, or type the numbers in.'; else if (['not_granted', 'sampling_disabled', 'relay_unconfigured', 'capability_removed'].indexOf(code) >= 0) bot.textContent = 'Reading files is not available here. Use any AI below, or type the numbers in.'; }
   }
   impBusy = false; paintImport();
 }

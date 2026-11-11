@@ -54,7 +54,7 @@ function inviteForm(bot, retry) {
 function askFail(e, bot, text) {
   const code = e && e.code, partial = e && e.text;
   if (code === 'invite_required') { askTurns.pop(); if (text) $('#askIn').value = text; inviteForm(bot, () => askSend(text)); return; }
-  if (code === 'relay_unconfigured') { askTurns.pop(); bot.classList.remove('wait'); bot.classList.add('note'); bot.textContent = 'The AI is not switched on for this page yet.'; return; }
+  if (code === 'relay_unconfigured') { askTurns.pop(); if (text) $('#askIn').value = text; bot.classList.remove('wait'); bot.classList.add('note'); bot.textContent = (e && e.message) || 'The AI is not switched on for this page yet.'; return; }
   const gone = ['not_granted', 'sampling_disabled', 'not_declared', 'capability_disabled', 'capability_removed'].indexOf(code) >= 0;
   const copy = code === 'cancelled' ? '' : gone ? 'Ask Claude needs permission to use your Claude account and is unavailable here. The tour is still under Help.'
     : code === 'rate_limited' ? 'Too many requests, or your Claude usage limit is reached. Try again later.'
@@ -274,7 +274,7 @@ function askCard(bot, p, clipped, ctx) {
 function askFilesFail(e, bot, retry) {
   const code = e && e.code;
   if (code === 'invite_required') { inviteForm(bot, retry); return; }
-  if (code === 'relay_unconfigured') { bot.classList.remove('wait'); bot.classList.add('note'); bot.textContent = 'The AI is not switched on for this page yet.'; return; }
+  if (code === 'relay_unconfigured') { bot.classList.remove('wait'); bot.classList.add('note'); bot.textContent = (e && e.message) || 'The AI is not switched on for this page yet.'; return; }
   const gone = ['not_granted', 'sampling_disabled', 'not_declared', 'capability_disabled', 'capability_removed'].indexOf(code) >= 0;
   const copy = code === 'cancelled' ? '' : gone ? 'Reading files needs permission to use your Claude account and is unavailable here.'
     : code === 'images_unavailable' ? 'Photos cannot be sent from here. A CSV from your bank still works.'
