@@ -1554,7 +1554,7 @@ body.gw-open, body.co-open.gw-open { overflow: hidden; }
   </div>
 
   <p class="foot">Template, not financial advice. Sample numbers are invented. Replace them with yours.</p>
-  <p class="foot ver" id="verFoot">Version 26.0, updated Nov 11, 6:50 pm</p>
+  <p class="foot ver" id="verFoot">Version 26.1, updated Nov 11, 8:55 pm</p>
 </div>
 <div class="tip" id="tip" role="tooltip"></div>
 <div class="tour" id="tour" role="dialog" aria-modal="true" aria-labelledby="tourTitle" hidden>
@@ -1574,7 +1574,7 @@ body.gw-open, body.co-open.gw-open { overflow: hidden; }
     <button type="button" id="helpSetup">Guided setup</button>
     <button type="button" id="helpTour">Tour</button>
     <button type="button" id="helpVideo" hidden>Intro video</button>
-    <p class="help-ver">Version 26.0</p>
+    <p class="help-ver">Version 26.1</p>
   </div>
   <div class="help-row"><button type="button" class="help-btn ask-btn" id="askBtn">Ask</button><button type="button" class="help-btn" id="helpBtn" aria-expanded="false" aria-controls="helpMenu"><span class="q" aria-hidden="true">?</span>Help</button></div>
 </div>
@@ -3720,6 +3720,8 @@ const STEP_SOURCE = { id: 'source', part: PART.money, setup: true, title: 'Your 
     </div>
     ${IMP_HOW()}
     <p class="cap">Or tap <b>Type it in</b>: about ten questions, rough numbers are fine.</p>`,
+  /* Type it in after an earlier import: the typed screens come back (they are skipped only while the import stands) */
+  leave: d => { if (d > 0 && !impDraft && importApplied()) { delete S.ui.src; delete S.ui.imp; persist(); } },
   after: () => {
     const body = $('#tourBody');
     const show = which => { $('#srcUploadPanel').hidden = which !== 'upload'; $('#srcAiPanel').hidden = which !== 'ai'; $$('.src-opt', body).forEach(b => b.classList.toggle('on', b.dataset.src === which)); };
@@ -6627,7 +6629,7 @@ function renderStatus() {
   const u = roundUnit(S), mon = monthLabel(V.ym, true), floor = cfg(S, 'minBank');
   let cls, word, line;
   if (!(m.inflow > 0)) { cls = ''; word = 'No plan yet'; line = 'Add your monthly pay to start.'; }
-  else if (sampleOn()) { cls = ''; word = 'Sample numbers'; line = 'Invented figures for now. Finish the step below to make them yours.'; }
+  else if (sampleOn()) { const d = S.ui.done || {}; cls = ''; word = 'Sample numbers'; line = d.pay && d.bills ? 'Pay and bills are yours. The goals are still invented. Add a goal below.' : 'Invented figures for now. Finish the step below to make them yours.'; }
   else if (m.status === 'good') { cls = 'good'; word = 'On plan'; line = `${m.left < u ? 'All pay assigned.' : fmt(m.left) + ' of pay unassigned.'} Balance ends ${mon} at ${fmt(m.bankEnd)}.`; }
   else if (m.status === 'tight') { cls = 'tight'; word = 'Tight month'; line = `Spends ${fmt(-m.left)} more than comes in. Balance covers it and ends ${mon} at ${fmt(m.bankEnd)}.`; }
   else { cls = 'short'; word = 'Short'; line = `Balance would end ${mon} at ${fmt(m.bankEnd)}, under your ${fmt(floor)} minimum. Open Plan to fix it.`; }
@@ -7233,10 +7235,10 @@ function wire() {
       clearTimeout(t); t = 0; b.textContent = orig; run();
     });
   };
-  const blank = () => { S = blankState(S); S.ui.cleared = true; delete S.ui.setup; editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = 'All zero. Start with salary.'; select(START); if (tab !== 'month') switchTab('month'); };
+  const blank = () => { S = blankState(S); S.ui.cleared = true; delete S.ui.setup; delete S.ui.src; delete S.ui.imp; editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = 'All zero. Start with salary.'; select(START); if (tab !== 'month') switchTab('month'); };
   twoStep($('#blankBtn'), 'Tap again to zero all', blank);
   twoStep($('#blankTop'), 'Tap again to zero all', blank);
-  twoStep($('#bkReset'), 'Tap again to restore', () => { const old = S, u = S.ui; S = presetState(u.cur); S.ui = Object.assign({}, u, { preset: S.ui.preset, sampleHidden: false, done: {} }); delete S.ui.cleared; delete S.ui.setup; delete S.ui.gset; delete S.ui.sb; delete S.ui.tourAt; S.receipts = old.receipts; editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = 'Samples restored.'; });
+  twoStep($('#bkReset'), 'Tap again to restore', () => { const old = S, u = S.ui; S = presetState(u.cur); S.ui = Object.assign({}, u, { preset: S.ui.preset, sampleHidden: false, done: {} }); delete S.ui.cleared; delete S.ui.setup; delete S.ui.gset; delete S.ui.sb; delete S.ui.tourAt; delete S.ui.src; delete S.ui.imp; S.receipts = old.receipts; editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = 'Samples restored.'; });
   $('#aiCopy').addEventListener('click', () => { $('#aiBox').value = aiPrompt(); copyBox($('#aiBox'), $('#aiMsg')); });
   wireReceipts(); wireTour(); wireHelp(); wireHome(); wireScan(); wireAskAi(); wireSafe(); wireVault();
 

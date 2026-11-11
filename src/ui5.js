@@ -179,10 +179,10 @@ function wire() {
       clearTimeout(t); t = 0; b.textContent = orig; run();
     });
   };
-  const blank = () => { S = blankState(S); S.ui.cleared = true; delete S.ui.setup; editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = 'All zero. Start with salary.'; select(START); if (tab !== 'month') switchTab('month'); };
+  const blank = () => { S = blankState(S); S.ui.cleared = true; delete S.ui.setup; delete S.ui.src; delete S.ui.imp; editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = 'All zero. Start with salary.'; select(START); if (tab !== 'month') switchTab('month'); };
   twoStep($('#blankBtn'), 'Tap again to zero all', blank);
   twoStep($('#blankTop'), 'Tap again to zero all', blank);
-  twoStep($('#bkReset'), 'Tap again to restore', () => { const old = S, u = S.ui; S = presetState(u.cur); S.ui = Object.assign({}, u, { preset: S.ui.preset, sampleHidden: false, done: {} }); delete S.ui.cleared; delete S.ui.setup; delete S.ui.gset; delete S.ui.sb; delete S.ui.tourAt; S.receipts = old.receipts; editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = 'Samples restored.'; });
+  twoStep($('#bkReset'), 'Tap again to restore', () => { const old = S, u = S.ui; S = presetState(u.cur); S.ui = Object.assign({}, u, { preset: S.ui.preset, sampleHidden: false, done: {} }); delete S.ui.cleared; delete S.ui.setup; delete S.ui.gset; delete S.ui.sb; delete S.ui.tourAt; delete S.ui.src; delete S.ui.imp; S.receipts = old.receipts; editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = 'Samples restored.'; });
   $('#aiCopy').addEventListener('click', () => { $('#aiBox').value = aiPrompt(); copyBox($('#aiBox'), $('#aiMsg')); });
   wireReceipts(); wireTour(); wireHelp(); wireHome(); wireScan(); wireAskAi(); wireSafe(); wireVault();
 

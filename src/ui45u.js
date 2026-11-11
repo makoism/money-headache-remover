@@ -140,6 +140,8 @@ const STEP_SOURCE = { id: 'source', part: PART.money, setup: true, title: 'Your 
     </div>
     ${IMP_HOW()}
     <p class="cap">Or tap <b>Type it in</b>: about ten questions, rough numbers are fine.</p>`,
+  /* Type it in after an earlier import: the typed screens come back (they are skipped only while the import stands) */
+  leave: d => { if (d > 0 && !impDraft && importApplied()) { delete S.ui.src; delete S.ui.imp; persist(); } },
   after: () => {
     const body = $('#tourBody');
     const show = which => { $('#srcUploadPanel').hidden = which !== 'upload'; $('#srcAiPanel').hidden = which !== 'ai'; $$('.src-opt', body).forEach(b => b.classList.toggle('on', b.dataset.src === which)); };

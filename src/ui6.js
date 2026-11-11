@@ -115,7 +115,7 @@ function renderStatus() {
   const u = roundUnit(S), mon = monthLabel(V.ym, true), floor = cfg(S, 'minBank');
   let cls, word, line;
   if (!(m.inflow > 0)) { cls = ''; word = 'No plan yet'; line = 'Add your monthly pay to start.'; }
-  else if (sampleOn()) { cls = ''; word = 'Sample numbers'; line = 'Invented figures for now. Finish the step below to make them yours.'; }
+  else if (sampleOn()) { const d = S.ui.done || {}; cls = ''; word = 'Sample numbers'; line = d.pay && d.bills ? 'Pay and bills are yours. The goals are still invented. Add a goal below.' : 'Invented figures for now. Finish the step below to make them yours.'; }
   else if (m.status === 'good') { cls = 'good'; word = 'On plan'; line = `${m.left < u ? 'All pay assigned.' : fmt(m.left) + ' of pay unassigned.'} Balance ends ${mon} at ${fmt(m.bankEnd)}.`; }
   else if (m.status === 'tight') { cls = 'tight'; word = 'Tight month'; line = `Spends ${fmt(-m.left)} more than comes in. Balance covers it and ends ${mon} at ${fmt(m.bankEnd)}.`; }
   else { cls = 'short'; word = 'Short'; line = `Balance would end ${mon} at ${fmt(m.bankEnd)}, under your ${fmt(floor)} minimum. Open Plan to fix it.`; }
