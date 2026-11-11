@@ -40,7 +40,8 @@ async function zipRead(u8, e) {
 /* --- the XML, read with string scanning --- */
 const xmlUn = s => String(s).replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&#x([0-9a-f]+);/gi, (m, h) => String.fromCodePoint(parseInt(h, 16))).replace(/&#(\d+);/g, (m, d) => String.fromCodePoint(+d)).replace(/&amp;/g, '&');
 const xmlAttr = (tag, name) => { const m = tag.match(new RegExp('\\s' + name + '="([^"]*)"')); return m ? m[1] : null; };
-const xmlTexts = frag => (frag.match(/<t(?:\s[^>]*)?>([\s\S]*?)<\/t>/g) || []).map(t => xmlUn(t.replace(/^<t[^>]*>/, '').replace(/<\/t>$/, ''))).join('');
+/* all the <t> runs of a cell string, without phonetic guides (<rPh>, common in Japanese workbooks) */
+const xmlTexts = frag => (frag.replace(/<rPh\b[\s\S]*?<\/rPh>/g, '').match(/<t(?:\s[^>]*)?>([\s\S]*?)<\/t>/g) || []).map(t => xmlUn(t.replace(/^<t[^>]*>/, '').replace(/<\/t>$/, ''))).join('');
 function xlsxSharedStrings(xml) { return (xml.match(/<si>[\s\S]*?<\/si>/g) || []).map(xmlTexts); }
 /* which cell styles are dates: built-in date formats, or a custom format with day, month or year letters and no fraction or currency marks */
 function xlsxDateStyles(xml) {
@@ -49,14 +50,15 @@ function xlsxDateStyles(xml) {
   const xfs = xml.match(/<cellXfs[\s\S]*?<\/cellXfs>/); if (!xfs) return [];
   return (xfs[0].match(/<xf\s[^>]*\/?>/g) || []).map(t => isDate(xmlAttr(t, 'numFmtId') || '0'));
 }
-function xlsxSerialToDate(v) {
+function xlsxSerialToDate(v, mac) {
+  if (mac) v = +v + 1462; /* the 1904 date system some Mac workbooks use */
   const n = Math.floor(+v); if (!isFinite(n) || n < 1 || n > 80000) return String(v);
   const ms = Math.round((n - 25569) * 864e5), d = new Date(ms); if (isNaN(d)) return String(v);
   const frac = +v - n, hhmm = frac > 0 ? ' ' + String(Math.floor(frac * 24)).padStart(2, '0') + ':' + String(Math.round((frac * 1440) % 60)).padStart(2, '0') : '';
   return d.toISOString().slice(0, 10) + hhmm;
 }
 const colIndex = ref => { let n = 0; for (const ch of ref.replace(/\d+/g, '')) n = n * 26 + (ch.charCodeAt(0) - 64); return n - 1; };
-function xlsxSheetRows(xml, strings, dateStyles) {
+function xlsxSheetRows(xml, strings, dateStyles, mac) {
   const rows = [];
   const rowRe = /<row\b[^>]*>([\s\S]*?)<\/row>/g; let rm;
   while ((rm = rowRe.exec(xml)) && rows.length < XLSX_MAX_ROWS) {
@@ -71,7 +73,7 @@ function xlsxSheetRows(xml, strings, dateStyles) {
         if (t === 's') v = strings[+raw] !== undefined ? strings[+raw] : '';
         else if (t === 'b') v = raw === '1' ? 'TRUE' : 'FALSE';
         else if (t === 'str' || t === 'e') v = raw;
-        else if (raw !== '' && s !== null && dateStyles[+s]) v = xlsxSerialToDate(raw);
+        else if (raw !== '' && s !== null && dateStyles[+s]) v = xlsxSerialToDate(raw, mac);
         else v = raw;
       }
       const ci = r ? colIndex(r) : cells.length; while (cells.length < ci) cells.push(''); cells[ci] = v;
@@ -89,11 +91,11 @@ async function xlsxToCsv(buf) {
   if (!names.length) throw new Error('no sheets');
   const strings = z['xl/sharedStrings.xml'] ? xlsxSharedStrings(await zipRead(u8, z['xl/sharedStrings.xml'])) : [];
   const dateStyles = z['xl/styles.xml'] ? xlsxDateStyles(await zipRead(u8, z['xl/styles.xml'])) : [];
-  let titles = [];
-  if (z['xl/workbook.xml']) { const wb = await zipRead(u8, z['xl/workbook.xml']); titles = (wb.match(/<sheet\b[^>]*\/?>/g) || []).map(t => xmlUn(xmlAttr(t, 'name') || '')); }
+  let titles = [], mac = false;
+  if (z['xl/workbook.xml']) { const wb = await zipRead(u8, z['xl/workbook.xml']); titles = (wb.match(/<sheet\b[^>]*\/?>/g) || []).map(t => xmlUn(xmlAttr(t, 'name') || '')); mac = /<workbookPr\b[^>]*date1904="(1|true)"/.test(wb); }
   const parts = [];
   for (let i = 0; i < names.length; i++) {
-    const rows = xlsxSheetRows(await zipRead(u8, z[names[i]]), strings, dateStyles);
+    const rows = xlsxSheetRows(await zipRead(u8, z[names[i]]), strings, dateStyles, mac);
     if (!rows.length) continue;
     const width = Math.max.apply(null, rows.map(r => r.length));
     const text = rows.map(r => { const c = r.slice(); while (c.length < width) c.push(''); return c.map(csvCell).join(','); }).join('\n');

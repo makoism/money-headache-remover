@@ -139,7 +139,7 @@ function renderNext() {
     else if (!d.goals) step = ['Next: add a goal', 'Pick something to save for.', 'Add goal', 'data-gw'];
     else if (!(S.receipts || []).length) step = ['Next: log a receipt', 'Enter an amount in Log spend, then tap Log.', 'Log receipt', 'data-focus="hAmt"'];
   }
-  if (!step && (month = monthToClose())) step = [`Next: finish ${monthLabel(month.pm, true)}`, `${month.n ? plural(month.n, 'receipt') + ' logged' : 'Nothing logged'} for ${monthLabel(month.pm)}. Log what you spent, or upload the month's statement under Receipts.`, 'Receipts', 'data-tab-go="receipts"'];
+  if (!step && (month = monthToClose())) { const nm = FULL[+month.pm.slice(5) - 1]; step = [`Next: finish ${nm}`, `${month.n ? plural(month.n, 'receipt') + ' logged' : 'Nothing logged'} for ${nm}. Log what you spent, or upload the month's statement under Receipts.`, 'Receipts', 'data-tab-go="receipts"']; }
   el.hidden = !step; if (!step) return;
   const left = ['pay', 'bills', 'goals', 'receipts'].filter(k => !d[k]).length;
   put(el, `<div class="hn-t"><b>${step[0]}</b><span>${step[1]}${month ? '' : ' ' + (left === 1 ? '1 step left.' : left + ' steps left.')}</span></div><div class="hn-b"><button type="button" class="btn small solid" ${step[3]}>${step[2]}</button><button type="button" class="link" ${month ? `data-hidemonth="${month.pm}"` : 'data-hidenext'}>Hide</button></div>`);
@@ -336,7 +336,7 @@ function applyHomeOrder() {
   HOME_SECTIONS.forEach(id => { const el = $('#' + HOME_EL[id]); if (el) el.hidden = order.indexOf(id) < 0; });
   order.forEach(id => { const el = $('#' + HOME_EL[id]); if (el) panel.append(el); });
 }
-const FOOT_SAMPLE = 'Not financial advice. Sample numbers are invented. Replace them with yours.', FOOT_OWN = 'Not financial advice. Your numbers, your call.';
+const FOOT_SAMPLE = 'Not financial advice. Sample numbers are invented. Replace them with yours.', FOOT_OWN = 'Not financial advice.';
 function paintFoot() { const el = $('#footNote'); if (!el) return; const t = sampleOn() ? FOOT_SAMPLE : FOOT_OWN; if (el.textContent !== t) el.textContent = t; }
 function renderHome() {
   if (!C) return;
