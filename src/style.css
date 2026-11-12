@@ -428,8 +428,8 @@ table.plain tbody tr { cursor: default; } table.plain tbody tr:hover td { backgr
 }
 
 /* ---- the first-open tour ---- */
-.tour { position: fixed; inset: 0; z-index: 50; background: var(--aurora), var(--bg); overflow-y: auto; -webkit-overflow-scrolling: touch; }
-.tour-in { max-width: 600px; margin: 0 auto; min-height: 100%; display: flex; flex-direction: column; padding: max(18px, env(safe-area-inset-top)) 24px max(20px, env(safe-area-inset-bottom)); }
+.tour { position: fixed; inset: 0; z-index: 50; background: var(--aurora), var(--bg); overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; }
+.tour-in { max-width: 600px; margin: 0 auto; min-height: 100%; display: flex; flex-direction: column; padding: max(18px, env(safe-area-inset-top)) 24px 0; }
 .tour-top { display: flex; align-items: center; justify-content: flex-end; gap: 16px; }
 .tour-part { font-size: 15px; color: var(--ink2); font-weight: 500; }
 .tour-dots { display: flex; gap: 5px; padding: 14px 0 0; }
@@ -497,7 +497,12 @@ svg.tour-scene { width: 100%; max-width: 440px; height: auto; }
 .tour-more { max-width: 460px; }
 .tour-more label { font-size: 15px; font-weight: 500; color: var(--ink2); }
 .tour-more .selbox select { border: 0; box-shadow: inset 0 0 0 1px var(--hair); background: var(--field); border-radius: 14px; min-height: 52px; padding: 0 16px; font-weight: 500; font-size: 17px; width: 100%; outline: none; }
-.tour-foot { position: sticky; bottom: 0; z-index: 2; background: linear-gradient(to top, var(--bg) 72%, transparent); padding: 18px 0 max(2px, env(safe-area-inset-bottom)); margin-top: auto; }
+/* the footer stays at the bottom while a long screen scrolls. Its floor runs the whole width of the window and fades in at the top,
+   so on a wide screen it reads as the bottom of the page and not as a box the width of the column */
+.tour-foot { position: sticky; bottom: 0; z-index: 2; padding: 18px 0 max(20px, env(safe-area-inset-bottom)); margin-top: auto; }
+.tour-foot::before { content: ''; position: absolute; top: 0; bottom: 0; left: -100vw; right: -100vw; z-index: -1; pointer-events: none;
+  background: linear-gradient(to top, color-mix(in srgb, var(--bg) 96%, transparent) 68%, transparent); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+  -webkit-mask-image: linear-gradient(to top, #000 72%, transparent); mask-image: linear-gradient(to top, #000 72%, transparent); }
 .tour-chips.one .chip { justify-content: flex-start; }
 
 /* celebration */
@@ -889,7 +894,7 @@ body.gw-open, body.co-open.gw-open { overflow: hidden; }
 .drop-sub.cap { margin: 0; font-size: 13px; color: var(--ink3); }
 .drop.has .drop-in { flex-direction: row; min-height: 0; padding: 4px 0 8px; gap: 12px; justify-content: flex-start; text-align: left; flex-wrap: wrap; }
 .drop.has .drop-arrow, .drop.has .drop-t { display: none; } .drop.has .drop-in .btn { min-height: 38px; padding: 0 18px; font-size: 15px; }
-.drop .art-grass { left: 12px; bottom: -3px; width: 132px; opacity: .9; } .drop.has .art-grass { display: none; }
+.drop .art-grass { left: 30px; bottom: -2px; width: 132px; opacity: .9; } .drop.has .art-grass { display: none; }
 .fchips { display: flex; flex-wrap: wrap; gap: 6px; }
 .src-panel .fchips { margin: 10px 0 2px; }
 .src-panel .cap { margin: 8px 0 0; max-width: none; }
