@@ -36,7 +36,8 @@ function pixFit(c, host) {
   let n; while ((n = walk.nextNode())) { if (!n.textContent.trim() || c.contains(n)) continue; rg.selectNodeContents(n); for (const q of rg.getClientRects()) if (near(q, r, 6)) { c.classList.add('off'); return; } }
   for (const el of host.querySelectorAll('button, input, select, a, .chip, .art')) if (!c.contains(el) && near(el.getBoundingClientRect(), r, 6)) { c.classList.add('off'); return; }
 }
-function pixFitAll() { $$('.pixc').forEach(c => pixFit(c, c.parentElement)); }
+/* the same check keeps the line art off the words: every piece in a card (not the hero's vine, not the video garden) */
+function pixFitAll() { $$('.pixc').forEach(c => pixFit(c, c.parentElement)); $$('.wrap .art').forEach(a => { if (!a.closest('.hero, .vgarden')) pixFit(a, a.parentElement); }); }
 function pixQueue() { cancelAnimationFrame(pixFitT); pixFitT = requestAnimationFrame(pixFitAll); }
 function placePix() { PIX_SEATS.forEach(seat => { const host = $(seat[0]); if (!host) return; PIX_DONE.set(host, seat); pixSeat(host, seat); }); pixQueue(); }
 function pixKeep(host) { const seat = PIX_DONE.get(host); if (seat) { pixSeat(host, seat); pixQueue(); } }

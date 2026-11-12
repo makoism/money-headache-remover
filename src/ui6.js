@@ -342,10 +342,11 @@ function renderBand() {
   const el = $('#mgBand'); if (!el) return;
   const V = HV, r = V && V.main;
   if (!r || tab === 'home' || tab === 'basics') { el.hidden = true; return; }
-  const g = goalById(S, r.id), p = V.play, purpose = purposeFor(g), when = r.pct >= 100 ? 'Full' : r.reached ? (r.months <= 0 ? 'This month' : plural(r.months, 'month') + ' to go') : 'Over ' + SPAN;
+  const g = goalById(S, r.id), p = V.play, when = r.pct >= 100 ? 'Full' : r.reached ? (r.months <= 0 ? 'This month' : plural(r.months, 'month') + ' to go') : 'Over ' + SPAN;
   if (!g) { el.hidden = true; return; }
+  const purpose = g.why || g.name;
   put(el, `<span class="mg-l" style="--c:var(--c${g.slot})"><i class="dot"></i><b>${esc(purpose)}</b><em>${when}</em></span><span class="mg-bar" aria-hidden="true" style="--c:var(--c${g.slot})"><i style="width:${fracOf(r) * 100}%"></i></span><span class="mg-s">${p.over ? fmt2(Math.abs(p.left)) + ' over play money' : fmt2(p.left) + ' play money left'}, ${monthLabel(V.ym, true)}</span>`);
-  el.setAttribute('aria-label', `Main goal: ${purpose}. ${when}. ${p.over ? fmt2(Math.abs(p.left)) + ' over play money' : fmt2(p.left) + ' play money left'}. Tap for Home.`);
+  el.setAttribute('aria-label', `Main goal: ${g.name}${g.why ? ', ' + g.why : ''}. ${when}. ${p.over ? fmt2(Math.abs(p.left)) + ' over play money' : fmt2(p.left) + ' play money left'}. Tap for Home.`);
   el.hidden = false;
 }
 /* A custom goal gets a line of its own from Claude ("You can go surfing") when this page is open from its Claude link. Only the goal's name is sent.

@@ -94,10 +94,16 @@ const helloHqOk = () => {
   try { return document.createElement('video').canPlayType(HELLO_HQ_TYPE) !== ''; } catch (e) { return false; }
 };
 const helloSrc = () => (helloHqOk() ? HELLO_FILE_HQ : HELLO_FILE);
-const helloPlayer = () => { const f = helloSrc(), blob = helloBlob(), have = !blob || !!helloUrls[f], src = blob ? helloUrls[f] || '' : f; return `<div class="tour-vframe${have ? '' : ' loading'}" id="tourVF"><video id="tourVid" preload="metadata" playsinline poster="${esc(HELLO_POSTER)}"${src ? ` src="${esc(src)}"` : ''} aria-label="A short hello video"></video><button type="button" class="tour-play" id="tourPlay" aria-label="Play the video"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg></button><div class="tour-load" id="tourLoad" role="status"><span>Getting the video ready <em id="tourLoadPct" aria-hidden="true">0%</em></span><i aria-hidden="true"><b id="tourLoadBar"></b></i></div></div>
+/* the hello video sits in a garden: a vine garland around the frame (one corner piece, turned four ways), Mako's handwritten note with
+   an arrow pointing at it, and a few pixel flowers at its foot */
+const fromMako = () => `<p class="from-mako" aria-label="From Mako"><span>from Mako</span><svg class="fm-arrow" viewBox="0 0 76 46" aria-hidden="true"><path d="M3 9c14-7 30-4 42 7 8 7 13 15 18 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M52 37c4 2 8 3 11 3-1-3-2-7-1-11" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/></svg></p>`;
+const garden = inner => `<div class="vgarden">${['tl', 'tr', 'bl', 'br'].map(k => `<span class="art art-corner vg-${k}" aria-hidden="true">${ART.corner}</span>`).join('')}<span class="vg-pix vg-pix-l" aria-hidden="true">${pix('tulip', 2)}${pix('clover', 2)}</span><span class="vg-pix vg-pix-r" aria-hidden="true">${pix('daisy', 2)}${pix('sprout', 2)}</span>${inner}</div>`;
+/* a plant on every setup screen: a step names its own, or takes its part's; it steps aside when the words reach it (fitTourArt) */
+const ART_BY_PART = { [PART.welcome]: 'vine', [PART.money]: 'twig', [PART.bills]: 'fern', [PART.jars]: 'sprout', [PART.goals]: 'flower', [PART.spend]: 'branch' };
+const helloPlayer = () => { const f = helloSrc(), blob = helloBlob(), have = !blob || !!helloUrls[f], src = blob ? helloUrls[f] || '' : f; return `${fromMako()}${garden(`<div class="tour-vframe${have ? '' : ' loading'}" id="tourVF"><video id="tourVid" preload="metadata" playsinline poster="${esc(HELLO_POSTER)}"${src ? ` src="${esc(src)}"` : ''} aria-label="A short hello video"></video><button type="button" class="tour-play" id="tourPlay" aria-label="Play the video"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg></button><div class="tour-load" id="tourLoad" role="status"><span>Getting the video ready <em id="tourLoadPct" aria-hidden="true">0%</em></span><i aria-hidden="true"><b id="tourLoadBar"></b></i></div></div>`)}
   <div class="tour-speed" id="tourSpeed" role="group" aria-label="Playback speed"><span>Speed</span>${HELLO_RATES.map(r => `<button type="button" data-rate="${r}" aria-pressed="${r === helloRate}">${r}x</button>`).join('')}</div>`; };
 const helloCard = () => helloVideo
-  ? `<div class="row-btns"><a class="tour-video" id="tourVideo" target="_blank" rel="noopener noreferrer" href="${esc(helloVideo.watch)}"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="currentColor" opacity=".18"/><path d="M10 8l6 4-6 4z" fill="currentColor"/></svg><span><b>Watch the video</b><small>Opens in a new tab</small></span></a></div>`
+  ? `${fromMako()}<div class="row-btns"><a class="tour-video" id="tourVideo" target="_blank" rel="noopener noreferrer" href="${esc(helloVideo.watch)}"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="currentColor" opacity=".18"/><path d="M10 8l6 4-6 4z" fill="currentColor"/></svg><span><b>Watch the video</b><small>Opens in a new tab</small></span></a></div>`
   : '<p class="cap">Video did not load. Skip it and continue.</p>';
 function pauseHello() { const v = $('#tourVid'); if (v) try { v.pause(); } catch (e) { /* gone */ } }
 function wireHello() {
@@ -178,7 +184,7 @@ function wireRestore() {
 }
 const TOUR = [
   /* the first screen is the video and nothing else: Mako says what this is and what to do. A copy without the video starts at the next screen. */
-  { id: 'video', part: PART.welcome, title: 'Welcome', next: 'Next', skipIf: () => !hasHello, art: 'vine',
+  { id: 'video', part: PART.welcome, title: 'Welcome', next: 'Next', skipIf: () => !hasHello, art: () => (helloFileOk && !helloFailed ? '' : 'vine'),
     body: () => {
       const player = helloFileOk && !helloFailed;
       return `${player ? helloPlayer() : helloCard()}
@@ -279,7 +285,7 @@ function renderTour(dir) {
   $('#tourDots').setAttribute('aria-label', pend ? `${t.part}, step ${first + 1}` : `${t.part}, step ${first + 1} of ${count}`);
   tourTouched = false;
   const body = $('#tourBody'); body.innerHTML = `<h2 id="tourTitle" tabindex="-1">${title}</h2>${t.body()}`;
-  $('#tourArt').innerHTML = t.art ? art(t.art) : '';
+  const kind = typeof t.art === 'function' ? t.art() : t.art !== undefined ? t.art : ART_BY_PART[t.part]; $('#tourArt').innerHTML = kind ? art(kind) : '';
   moneyUpAll(body); requestAnimationFrame(fitTourArt);
   body.classList.remove('in-r', 'in-l'); if (dir) { void body.offsetWidth; body.classList.add(dir > 0 ? 'in-r' : 'in-l'); }
   const setupRun = tourMode === 'full' && TS.some(x => x.setup);
