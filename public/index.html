@@ -1175,9 +1175,6 @@ body.gw-open, body.co-open.gw-open { overflow: hidden; }
 .hst-w { margin: 12px 0 0; font-size: 15px; line-height: 1.4; color: var(--ink2); }
 .hst-w.on { color: var(--good); }
 .hs-ok { margin: 14px 0 0; font-size: 15px; line-height: 1.4; color: var(--ink2); }
-.tour-get { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 10px; }
-.tour-get li { display: flex; gap: 12px; align-items: baseline; font-size: 17px; line-height: 1.35; color: var(--ink); }
-.tour-get li::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex: none; transform: translateY(-1px); }
 .tx-fold { margin-top: 18px; }
 .tx-fold > summary { cursor: pointer; font-size: 16px; color: var(--link); }
 .tx-fold[open] > summary { margin-bottom: 12px; }
@@ -1192,8 +1189,16 @@ body.gw-open, body.co-open.gw-open { overflow: hidden; }
 .imp-fold { margin: 4px 0 8px; }
 .imp-files { margin: 6px 0 0 18px; padding: 0; font-size: 14px; color: var(--ink2); } .imp-files li { margin: 2px 0; }
 .imp-ms { display: grid; gap: 6px; margin-top: 8px; }
-.imp-m { display: flex; align-items: center; gap: 10px; padding: 6px 10px; border-radius: 12px; background: var(--panel); box-shadow: inset 0 0 0 1px var(--hair); }
-.imp-m-n { flex: 1 1 auto; min-width: 0; display: grid; } .imp-m-n b { font-weight: 600; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .imp-m-n small { color: var(--ink2); font-size: 12.5px; }
+.imp-m { padding: 6px 10px; border-radius: 12px; background: var(--panel); box-shadow: inset 0 0 0 1px var(--hair); }
+.imp-m-row { display: flex; align-items: center; gap: 10px; }
+.imp-m-n { flex: 1 1 auto; min-width: 0; display: grid; text-align: left; border: 0; background: none; padding: 2px 0; font: inherit; color: inherit; cursor: pointer; border-radius: 8px; }
+.imp-m-n:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.imp-m-t { display: flex; align-items: baseline; gap: 6px; min-width: 0; } .imp-m-t i { flex: none; font-style: normal; color: var(--ink2); } .imp-m-t i::before { content: '›'; } .imp-m-n[aria-expanded="true"] .imp-m-t i::before { content: '⌄'; }
+.imp-m select { font-size: 14px; }
+.imp-m-x { padding: 6px 0 4px; }
+.imp-rows { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 13px; color: var(--ink2); }
+.imp-rows li { display: grid; grid-template-columns: 5.6em 6.5em 1fr; gap: 6px 10px; align-items: baseline; }
+.imp-rows .a { color: var(--ink); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; } .imp-rows .t { color: var(--ink); overflow-wrap: anywhere; } .imp-rows .f { grid-column: 3; font-size: 12px; } .imp-m-n b { font-weight: 600; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .imp-m-n small { color: var(--ink2); font-size: 12.5px; }
 .imp-m select { flex: 0 0 150px; min-width: 0; }
 .imp-keep { display: flex; gap: 10px; align-items: flex-start; margin: 8px 0 12px; font-size: 14px; color: var(--ink2); } .imp-keep input { width: 20px; height: 20px; accent-color: var(--accent); flex: none; margin-top: 1px; }
 .note-line.bad { color: var(--bad); }
@@ -1540,7 +1545,7 @@ body.gw-open, body.co-open.gw-open { overflow: hidden; }
   </div>
 
   <p class="foot" id="footNote">Not financial advice. Sample numbers are invented. Replace them with yours.</p>
-  <p class="foot ver" id="verFoot">Version 28.2, updated Nov 12, 11:05 am</p>
+  <p class="foot ver" id="verFoot">Version 28.3, updated Nov 12, 11:35 am</p>
 </div>
 <div class="tip" id="tip" role="tooltip"></div>
 <div class="tour" id="tour" role="dialog" aria-modal="true" aria-labelledby="tourTitle" hidden>
@@ -1559,7 +1564,7 @@ body.gw-open, body.co-open.gw-open { overflow: hidden; }
     <button type="button" id="helpTab">Explain this tab</button>
     <button type="button" id="helpSetup">Guided setup</button>
     <button type="button" id="helpVideo" hidden>Intro video</button>
-    <p class="help-ver">Version 28.2</p>
+    <p class="help-ver">Version 28.3</p>
   </div>
   <div class="help-row"><button type="button" class="help-btn ask-btn" id="askBtn">Ask</button><button type="button" class="help-btn" id="helpBtn" aria-expanded="false" aria-controls="helpMenu"><span class="q" aria-hidden="true">?</span>Help</button></div>
 </div>
@@ -2208,7 +2213,7 @@ function cleanReceipts(raw) {
    Files of one account (monthly PDFs, a CSV plus a PDF) are one account: its months are averaged, never added; accounts are added up. */
 const STMT_CATS = ['pay', 'other_income', 'transfer_in', 'rent', 'util', 'food', 'net', 'phone', 'ins', 'subs', 'gas', 'loan', 'card_payment', 'transfer_out', 'cash', 'play', 'other'];
 const STMT_BILL_CATS = ['rent', 'util', 'food', 'net', 'phone', 'ins', 'gas'];
-const STMT_CAT_LABEL = { pay: 'Pay', other_income: 'Other income', transfer_in: 'Own money in', rent: 'Rent or mortgage', util: 'Utilities', food: 'Food and groceries', net: 'Internet', phone: 'Phone', ins: 'Insurance', subs: 'Subscription', gas: 'Transport', loan: 'Loan', card_payment: 'Card bill payment', transfer_out: 'Transfer out', cash: 'Cash withdrawal', play: 'Play money', other: 'Other spending' };
+const STMT_CAT_LABEL = { pay: 'Pay', other_income: 'Other income', transfer_in: 'Own money in', rent: 'Rent', util: 'Utilities', food: 'Food', net: 'Internet', phone: 'Phone', ins: 'Insurance', subs: 'Subscription', gas: 'Transport', loan: 'Loan', card_payment: 'Card payment', transfer_out: 'Transfer out', cash: 'Cash', play: 'Play money', other: 'Other' };
 const STMT_MAX_ROWS = 600, STMT_MAX_MERCHANTS = 160;
 
 /* the merchant key: letters only, the first few words (or the first twelve characters where there are no spaces) */
@@ -2256,10 +2261,12 @@ function stmtMonths(read) {
   }
   return { full, partial };
 }
-/* the same statement uploaded twice, or a CSV and a PDF of the same month: identical rows are kept once */
+/* the same statement uploaded twice, or a CSV and a PDF of the same month: identical rows of one account are kept once.
+   The same row on two different accounts (two cards charged the same amount the same day) is two transactions. */
 function stmtMerge(reads) {
-  const seen = new Set(), rows = []; let dupes = 0;
-  reads.forEach(r => r.rows.forEach(x => { const key = `${x.d}|${x.a}|${x.dir}|${x.k}`; if (seen.has(key)) { dupes++; return; } seen.add(key); rows.push(x); }));
+  const rows = []; let dupes = 0;
+  stmtGroups(reads).forEach(g => { const seen = new Set(); g.reads.forEach(r => r.rows.forEach(x => { const key = `${x.d}|${x.a}|${x.dir}|${x.k}`; if (seen.has(key)) { dupes++; return; } seen.add(key); rows.push(x); })); });
+  rows.sort((x, y) => x.d < y.d ? -1 : x.d > y.d ? 1 : 0);
   return { rows, dupes };
 }
 /* merchants, for the category job: the rows grouped by key, biggest first */
@@ -2273,18 +2280,48 @@ const stmtTypicalDay = days => { if (!days.length) return 0; return Math.round(s
 const stmtOrd = n => n + (n % 10 === 1 && n !== 11 ? 'st' : n % 10 === 2 && n !== 12 ? 'nd' : n % 10 === 3 && n !== 13 ? 'rd' : 'th');
 const stmtWhole = (x, cents) => cents ? Math.round(x * 100) / 100 : Math.round(x);
 
-/* the reads of one account, together: a bank's monthly PDFs, or its CSV plus a PDF, are one account whose months are averaged,
-   never added. The account name decides (as printed, letters and digits only); a read without a name joins the others of its kind. */
-const stmtAccKey = r => { const a = String(r.account || '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim(); return a ? 'a:' + a : 'k:' + r.kind; };
+/* the reads of one account, together: a card's monthly PDFs, or a bank's CSV plus a PDF, are one account whose months are averaged,
+   never added. The transaction dates decide, not file names: two reads of the same kind are one account when their periods do not
+   overlap (consecutive statements), or when they overlap and are the same statement twice (the same name printed, or half or more
+   of the smaller one's rows repeated). Two different account numbers (four digits or more, as printed) always mean two accounts. */
+const stmtAccNorm = a => String(a || '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+function stmtSameAccount(a, b) {
+  const ka = a.kind === 'unknown' ? b.kind : a.kind, kb = b.kind === 'unknown' ? a.kind : b.kind; if (ka !== kb) return false;
+  const na = stmtAccNorm(a.account), nb = stmtAccNorm(b.account);
+  const da = na.match(/\d{4,}/g) || [], db = nb.match(/\d{4,}/g) || [];
+  if (da.length && db.length) return da.some(d => db.indexOf(d) >= 0);
+  const apart = !a.from || !b.from || !a.to || !b.to || a.to < b.from || b.to < a.from;
+  if (apart) return true;
+  if (na && na === nb) return true;
+  const keys = new Set(a.rows.map(r => `${r.d}|${r.a}|${r.dir}|${r.k}`)), small = Math.min(a.rows.length, b.rows.length) || 1;
+  return b.rows.filter(r => keys.has(`${r.d}|${r.a}|${r.dir}|${r.k}`)).length * 2 >= small;
+}
+/* the months an account covers, from its statements' periods joined end to end: a month inside the joined run is full
+   (statements that close on the 15th still add up to whole months), a month only touched is partial */
+function stmtGroupMonths(reads) {
+  const spans = reads.filter(r => r.from && r.to).map(r => ({ from: r.from, to: r.to })).sort((x, y) => (x.from < y.from ? -1 : x.from > y.from ? 1 : 0));
+  const runs = []; const next = d => { const t = new Date(d + 'T00:00:00Z'); t.setUTCDate(t.getUTCDate() + 1); return t.toISOString().slice(0, 10); };
+  spans.forEach(sp => { const last = runs[runs.length - 1]; if (last && sp.from <= next(last.to)) { if (sp.to > last.to) last.to = sp.to; } else runs.push({ from: sp.from, to: sp.to }); });
+  const full = [], partial = [];
+  runs.forEach(run => { const mo = stmtMonths(run); mo.full.forEach(m => { if (full.indexOf(m) < 0) full.push(m); }); mo.partial.forEach(m => { if (partial.indexOf(m) < 0) partial.push(m); }); });
+  return { full: full.sort(), partial: partial.filter(m => full.indexOf(m) < 0).sort() };
+}
 function stmtGroups(reads) {
-  const g = {};
-  reads.forEach(r => { const k = stmtAccKey(r), x = g[k] || (g[k] = { key: k, kind: r.kind, account: r.account, reads: [], files: {}, full: [], partial: [] }); x.reads.push(r); x.files[r.file] = true; });
-  Object.values(g).forEach(x => {
-    x.reads.forEach(r => { const mo = stmtMonths(r); mo.full.forEach(m => { if (x.full.indexOf(m) < 0) x.full.push(m); }); mo.partial.forEach(m => { if (x.partial.indexOf(m) < 0) x.partial.push(m); }); });
-    x.partial = x.partial.filter(m => x.full.indexOf(m) < 0); x.full.sort(); x.partial.sort();
-    if (x.reads.some(r => r.kind === 'card')) x.kind = 'card';
+  const groups = [];
+  reads.forEach(r => {
+    const hits = groups.filter(g => g.reads.some(x => stmtSameAccount(x, r)));
+    let x = hits[0];
+    if (!x) { x = { reads: [] }; groups.push(x); }
+    else hits.slice(1).forEach(h => { x.reads = x.reads.concat(h.reads); groups.splice(groups.indexOf(h), 1); }); /* a read that bridges two groups makes them one */
+    x.reads.push(r);
   });
-  return Object.values(g);
+  groups.forEach(x => {
+    x.files = {}; x.reads.forEach(r => { x.files[r.file] = true; });
+    const mo = stmtGroupMonths(x.reads); x.full = mo.full; x.partial = mo.partial;
+    x.kind = x.reads.some(r => r.kind === 'card') ? 'card' : (x.reads.map(r => r.kind).find(k => k !== 'unknown') || 'unknown');
+    x.account = x.reads.map(r => r.account).filter(Boolean).sort((p, q) => q.length - p.length)[0] || '';
+  });
+  return groups;
 }
 /* the monthly amount of a category inside one account, over the months it covers in full (or its partial months when it has none):
    spending is the plain average, so a bill paid every other month lands at half; money in counts only when it shows up in most months,
@@ -2334,12 +2371,16 @@ function stmtNumbers(reads, catOf, today) {
   out.questions = out.questions.slice(0, 4);
   /* what was left out, and what each file gave */
   reads.forEach(r => { const mo = stmtMonths(r), g = groups.find(x => x.files[r.file]); out.meta.files.push({ file: r.file, account: r.account, kind: r.kind, rows: r.rows.length, from: r.from, to: r.to, full: mo.full, partial: mo.partial, closing: r.closing }); r.notes.forEach(n => out.skipped.push(`${r.file}: ${n}`)); if (!mo.full.length && r.rows.length && !(g && g.full.length)) out.skipped.push(`${r.file} covers only part of a month (${r.from} to ${r.to}); its numbers come from that part.`); if (!r.rows.length) out.skipped.push(`${r.file}: no transactions could be read.`); });
-  groups.filter(g => g.reads.length > 1).forEach(g => out.skipped.push(`${Object.keys(g.files).length} files are one account (${g.account || g.kind}): their months were put together, ${g.full.length ? g.full.length + (g.full.length === 1 ? ' full month' : ' full months') : 'part of a month'}.`));
+  groups.filter(g => g.reads.length > 1).forEach(g => out.skipped.push(`${Object.keys(g.files).length} files are one account (${g.account || g.kind}): their months were put together, ${g.full.length ? g.full.length + (g.full.length === 1 ? ' full month' : ' full months') : 'part of a month'}, and averaged.`));
   if (merged.dupes) out.skipped.push(`${merged.dupes} repeated ${merged.dupes === 1 ? 'row was' : 'rows were'} counted once.`);
   out.skipped = out.skipped.slice(0, 8);
-  const accs = []; reads.forEach(r => { const nm = r.account || r.file; if (accs.indexOf(nm) < 0) accs.push(nm); });
+  const accs = groups.map(g => g.account || g.kind);
   const first = reads.map(r => r.from).filter(Boolean).sort()[0], last = reads.map(r => r.to).filter(Boolean).sort().pop();
-  out.summary = `${reads.length} ${reads.length === 1 ? 'file' : 'files'} (${accs.slice(0, 3).join(', ')}${accs.length > 3 ? ' and more' : ''})${first && last ? `, ${first} to ${last}` : ''}: ${rows.length} transactions.` + (out.pay !== null ? ` Pay ${out.how}.` : ' No pay was found.');
+  const monthName = ym => ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][+ym.slice(5, 7) - 1] + ' ' + ym.slice(0, 4);
+  const span = g => { const ms = g.full.length ? g.full : g.partial; if (!ms.length) return ''; const n = ms.length; return `${n === 1 ? monthName(ms[0]) : monthName(ms[0]) + ' to ' + monthName(ms[n - 1])} (${g.full.length ? n + (n === 1 ? ' full month' : ' full months') : 'part of ' + (n === 1 ? 'a month' : n + ' months')})`; };
+  const spans = groups.map(span).filter(Boolean), same = spans.every(x => x === spans[0]);
+  out.months = !spans.length ? '' : same ? `Monthly amounts are the average over ${spans[0]}.` : `Monthly amounts are the average over the months each account covers: ${groups.map(g => `${g.account || g.kind} ${span(g)}`).filter(x => !/ $/.test(x)).join('; ')}.`;
+  out.summary = `${groups.length === 1 ? '1 account' : groups.length + ' accounts'}, ${reads.length} ${reads.length === 1 ? 'file' : 'files'} (${accs.slice(0, 3).join(', ')}${accs.length > 3 ? ' and more' : ''})${first && last ? `, ${first} to ${last}` : ''}: ${rows.length} transactions.` + (out.pay !== null ? ` Pay ${out.how}.` : ' No pay was found.') + (out.months ? ' ' + out.months : '');
   out.found = out.pay !== null || out.balance !== null || Object.keys(out.bills).length > 0 || out.subs.length > 0 || out.loans.length > 0 || out.card !== null;
   return out;
 }
@@ -3882,6 +3923,7 @@ const STEP_REVIEW = { id: 'review', part: PART.money, setup: true, when: () => !
   after: () => {
     const body = $('#tourBody'); $$('.cs', body).forEach(e => { e.textContent = sym(); });
     if (body.__impWired) return; body.__impWired = true;
+    body.addEventListener('click', e => { const b = e.target.closest('[data-mx]'); if (b && impDraft && typeof stmtToggleMerchant === 'function') stmtToggleMerchant(b); });
     body.addEventListener('change', e => {
       if (!impDraft) return;
       const cs = e.target.closest('select[data-cat]'); if (cs) { stmtRecat(cs.dataset.cat, cs.value); return; }
@@ -4117,11 +4159,20 @@ function stmtReviewHTML(d) {
   if (!d.reads) return '';
   const files = d.meta.files.map(f => `<li>${esc(f.file)}${f.account ? ` (${esc(f.account)})` : ''}: ${f.rows} rows${f.from && f.to ? `, ${esc(f.from)} to ${esc(f.to)}` : ''}${f.full.length ? `, ${f.full.length} full ${f.full.length === 1 ? 'month' : 'months'}` : ', part of a month'}</li>`).join('');
   const opts = c => STMT_CATS.map(x => `<option value="${x}"${x === c ? ' selected' : ''}>${STMT_CAT_LABEL[x]}</option>`).join('');
-  const merch = d.merchants.slice(0, STMT_MAX_MERCHANTS).map(m => `<div class="imp-m"><span class="imp-m-n"><b>${esc(m.name.slice(0, 28))}</b><small>${m.n}${m.n === 1 ? ' row' : ' rows'}, ${m.inTotal > 0 ? 'in ' + fmt(m.inTotal) : 'out ' + fmt(m.outTotal)}</small></span><select class="inp sm" data-cat="${esc(m.k)}" aria-label="Category for ${esc(m.name.slice(0, 28))}">${opts(d.catMap[m.k])}</select></div>`).join('');
+  const merch = d.merchants.slice(0, STMT_MAX_MERCHANTS).map(m => `<div class="imp-m" data-mk="${esc(m.k)}"><div class="imp-m-row"><button type="button" class="imp-m-n" data-mx="${esc(m.k)}" aria-expanded="false" title="${esc(m.name)}"><span class="imp-m-t"><b>${esc(m.name)}</b><i aria-hidden="true"></i></span><small>${m.n}${m.n === 1 ? ' row' : ' rows'}, ${m.inTotal > 0 ? 'in ' + fmt(m.inTotal) : 'out ' + fmt(m.outTotal)}${m.inTotal > 0 && m.outTotal > 0 ? ', out ' + fmt(m.outTotal) : ''}</small></button><select class="inp sm" data-cat="${esc(m.k)}" aria-label="Category for ${esc(m.name.slice(0, 40))}">${opts(d.catMap[m.k])}</select></div><div class="imp-m-x" hidden></div></div>`).join('');
   const n = d.receipts.length;
   return `<details class="src-how imp-fold"><summary>What was read (${d.meta.rows} rows)</summary><ul class="imp-files">${files}</ul></details>
-    <details class="src-how imp-fold"><summary>Categories (${d.merchants.length}). Fix any that are wrong; the numbers follow.</summary><div class="imp-ms">${merch}</div></details>
+    <details class="src-how imp-fold"><summary>Categories (${d.merchants.length}). Fix any that are wrong; the numbers follow.</summary><p class="cap">Tap a name to see its rows as printed.</p><div class="imp-ms">${merch}</div></details>
     ${n ? `<label class="imp-keep"><input type="checkbox" id="impKeep" checked> Keep the ${n} spending ${n === 1 ? 'row' : 'rows'} as receipts, so Receipts and the assistant know where the money went</label>` : ''}`;
+}
+/* a merchant line opened: every row behind it, as printed, newest first */
+function stmtToggleMerchant(btn) {
+  const box = btn.closest('.imp-m'), x = box && box.querySelector('.imp-m-x'); if (!x || !impDraft || !impDraft.reads) return;
+  const open = x.hidden; btn.setAttribute('aria-expanded', String(open)); x.hidden = !open; sfx('tap');
+  if (!open || x.children.length) return;
+  const key = box.dataset.mk, rows = stmtMerge(impDraft.reads).rows.filter(r => r.k === key).sort((a, b) => (a.d < b.d ? 1 : a.d > b.d ? -1 : 0));
+  const many = rows.length > 12, show = rows.slice(0, 12);
+  x.innerHTML = `<ul class="imp-rows">${show.map(r => `<li><span class="d">${esc(r.d)}</span><span class="a">${r.dir === 'in' ? '+' : ''}${fmt(r.a)}</span><span class="t">${esc(r.t)}</span><span class="f">${esc(r.f)}</span></li>`).join('')}</ul>${many ? `<p class="cap">${rows.length} rows in total; the newest 12 are shown.</p>` : ''}`;
 }
 /* a corrected category: remembered, and the draft rebuilt */
 function stmtRecat(key, cat) {
@@ -4988,9 +5039,8 @@ function wireHello() {
 function txHTML(synced) {
   const tag = synced ? 'button type="button"' : 'p', end = synced ? 'button' : 'p';
   const list = `<div class="tx-list" id="txList">${TRANSCRIPT.map((l, i) => `<${tag} class="tx-l" data-t="${l[0]}" data-i="${i}">${esc(l[1])}</${end}>`).join('')}</div>`;
-  /* with no player the transcript is the whole text on one long screen, so it starts folded */
-  if (!synced) return `<details class="tx-fold"><summary>Read the transcript</summary><section class="tx plain" id="tourTx" aria-label="Transcript"><div class="tx-h"><b>Transcript</b><button type="button" class="link" id="txNow" hidden>Back to now</button></div>${list}</section></details>`;
-  return `<section class="tx" id="tourTx" aria-label="Transcript"><div class="tx-h"><b>Transcript</b><button type="button" class="link" id="txNow" hidden>Back to now</button></div>${list}</section>`;
+  /* the transcript starts folded either way, so the first page is the video; open, it follows the sound when there is a player */
+  return `<details class="tx-fold"><summary>Transcript</summary><section class="tx${synced ? '' : ' plain'}" id="tourTx" aria-label="Transcript"><div class="tx-h"><b>Transcript</b><button type="button" class="link" id="txNow" hidden>Back to now</button></div>${list}</section></details>`;
 }
 function wireTx(v) {
   const list = $('#txList'), now = $('#txNow'); if (!list || !now || !list.querySelector('button.tx-l')) return;
@@ -5025,30 +5075,29 @@ function wireRestore() {
   const u = $('#tourVaultUse'); if (u) { u.addEventListener('click', go); $('#tourVaultIn').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); go(); } }); }
 }
 const TOUR = [
-  /* the first screen is the video: Mako says what this is and what to do. The rest of the screen is the welcome as it was. */
-  { id: 'video', part: PART.welcome, title: 'Welcome', next: 'Next',
+  /* the first screen is the video and nothing else: Mako says what this is and what to do. A copy without the video starts at the next screen. */
+  { id: 'video', part: PART.welcome, title: 'Welcome', next: 'Next', skipIf: () => !hasHello,
     body: () => {
-      const player = hasHello && helloFileOk && !helloFailed;
-      const video = !hasHello ? homeScene() : `${player ? helloPlayer() : helloCard()}
+      const player = helloFileOk && !helloFailed;
+      return `${player ? helloPlayer() : helloCard()}
       <p class="cap">${player
         ? 'Six minutes from Mako, who made this. Also under Help.' + (helloVideo ? ` <a id="tourVideo" target="_blank" rel="noopener noreferrer" href="${esc(helloVideo.watch)}">Not playing? Open on Google Drive.</a>` : '')
         : 'Six minutes from Mako, who made this. Come back here when done, or skip. Also under Help.'}</p>
-      ${txHTML(player)}`;
-      return `${video}
-      <p>Know where your money stands, and what it is working toward.</p>
-      <ul class="tour-get"><li>Your month on one screen.</li><li>Play money you can spend with no guilt.</li><li>Each goal, and the date you reach it.</li></ul>
-      <p class="cap">Data stays in this browser. Nobody else can see it.</p>
-      <div class="tour-fields"><div class="field"><label for="tourName">First name <span class="opt">(optional)</span></label><div class="inp"><input id="tourName" type="text" maxlength="24" autocomplete="given-name" spellcheck="false" placeholder="First name" value="${esc(firstName())}"></div></div></div>
+      ${txHTML(player)}
       ${restoreHTML()}`;
     },
-    after: wireRestore,
-    leave: () => { const el = $('#tourName'); if (el) { const n = cleanName(el.value); if (n) S.ui.name = n; else delete S.ui.name; persist(); } } },
+    after: wireRestore },
   { id: 'currency', part: PART.welcome, title: 'Currency',
     body: () => {
       const cur = (S.ui && S.ui.cur) || '₱', pick = CURS.filter(c => TOUR_CURS.indexOf(c[0]) >= 0).sort((x, y) => TOUR_CURS.indexOf(x[0]) - TOUR_CURS.indexOf(y[0])), rest = CURS.filter(c => TOUR_CURS.indexOf(c[0]) < 0);
-      return `<div class="tour-chips" role="radiogroup" aria-label="Currency">${pick.map(c => chip('tourCur', c[0], c[0], curName(c), c[0] === cur)).join('')}</div>
-      <div class="field tour-more"><label for="tourCurMore">Other currency</label><div class="selbox"><select id="tourCurMore"><option value="">Choose currency</option>${rest.map(c => `<option value="${esc(c[0])}"${c[0] === cur ? ' selected' : ''}>${esc(c[1])}</option>`).join('')}</select></div></div>`;
-    } },
+      return `${hasHello ? '' : homeScene()}<div class="tour-chips" role="radiogroup" aria-label="Currency">${pick.map(c => chip('tourCur', c[0], c[0], curName(c), c[0] === cur)).join('')}</div>
+      <div class="field tour-more"><label for="tourCurMore">Other currency</label><div class="selbox"><select id="tourCurMore"><option value="">Choose currency</option>${rest.map(c => `<option value="${esc(c[0])}"${c[0] === cur ? ' selected' : ''}>${esc(c[1])}</option>`).join('')}</select></div></div>
+      <div class="tour-fields"><div class="field"><label for="tourName">First name <span class="opt">(optional)</span></label><div class="inp"><input id="tourName" type="text" maxlength="24" autocomplete="given-name" spellcheck="false" placeholder="First name" value="${esc(firstName())}"></div></div></div>
+      <p class="cap">Data stays in this browser. Nobody else can see it.</p>
+      ${hasHello ? '' : restoreHTML()}`;
+    },
+    after: () => { if (!hasHello) wireRestore(); },
+    leave: () => { const el = $('#tourName'); if (el) { const n = cleanName(el.value); if (n) S.ui.name = n; else delete S.ui.name; persist(); } } },
   /* the statements are the setup. The typed screens follow only for what the statements did not answer, or when they were skipped. */
   STEP_SOURCE, STEP_REVIEW,
   STEP_MONEY, STEP_BILLS,

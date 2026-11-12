@@ -119,6 +119,11 @@ const coach = async p => { for (let i = 0; i < 12; i++) { const v = await p.eval
   const food2 = +(rows.find(r => r.l === 'Food and groceries') || {}).a;
   ok(Math.abs(before - food2 - (2180.5 + 2410) / 2) < 1, 'moving the supermarket to play takes it out of food: ' + before + ' to ' + food2);
   ok(await p.evaluate(() => document.querySelector('select[data-cat="sm supermarket makati"]').value === 'play'), 'the correction stays selected after the rebuild');
+  await p.click('[data-mx="sm supermarket makati"]'); await w(300);
+  const mx = await p.evaluate(() => { const x = document.querySelector('.imp-m[data-mk="sm supermarket makati"] .imp-m-x'); return { hid: x.hidden, rows: [...x.querySelectorAll('li')].map(li => li.textContent.replace(/\s+/g, ' ')) }; });
+  ok(!mx.hid && mx.rows.length === 2 && /2026-10-02/.test(mx.rows[0]) && /2,410/.test(mx.rows[0]) && /SM SUPERMARKET MAKATI/.test(mx.rows[0]) && /bank\.csv/.test(mx.rows[0]), 'tapping a merchant shows its rows as printed, newest first, with the file: ' + mx.rows.join(' | '));
+  await p.screenshot({ path: '/tmp/v30/review_rows.png' });
+  ok(/Monthly amounts are the average over the months each account covers: .*Test Bank Sep 2026 to Oct 2026 \(2 full months\).*Test Card Oct 2026 \(1 full month\)/.test(body), 'the review says which months each account is averaged over: ' + (body.match(/Monthly amounts[^.]*\./) || [''])[0]);
   ok(await p.$eval('#impKeep', e => e.checked), 'keeping the rows as receipts is ticked by default');
   const keepLabel = await p.$eval('.imp-keep', e => e.textContent);
   ok(/Keep the 27 spending rows as receipts/.test(keepLabel), 'the tick names the count: ' + keepLabel.slice(0, 50));

@@ -184,11 +184,20 @@ function stmtReviewHTML(d) {
   if (!d.reads) return '';
   const files = d.meta.files.map(f => `<li>${esc(f.file)}${f.account ? ` (${esc(f.account)})` : ''}: ${f.rows} rows${f.from && f.to ? `, ${esc(f.from)} to ${esc(f.to)}` : ''}${f.full.length ? `, ${f.full.length} full ${f.full.length === 1 ? 'month' : 'months'}` : ', part of a month'}</li>`).join('');
   const opts = c => STMT_CATS.map(x => `<option value="${x}"${x === c ? ' selected' : ''}>${STMT_CAT_LABEL[x]}</option>`).join('');
-  const merch = d.merchants.slice(0, STMT_MAX_MERCHANTS).map(m => `<div class="imp-m"><span class="imp-m-n"><b>${esc(m.name.slice(0, 28))}</b><small>${m.n}${m.n === 1 ? ' row' : ' rows'}, ${m.inTotal > 0 ? 'in ' + fmt(m.inTotal) : 'out ' + fmt(m.outTotal)}</small></span><select class="inp sm" data-cat="${esc(m.k)}" aria-label="Category for ${esc(m.name.slice(0, 28))}">${opts(d.catMap[m.k])}</select></div>`).join('');
+  const merch = d.merchants.slice(0, STMT_MAX_MERCHANTS).map(m => `<div class="imp-m" data-mk="${esc(m.k)}"><div class="imp-m-row"><button type="button" class="imp-m-n" data-mx="${esc(m.k)}" aria-expanded="false" title="${esc(m.name)}"><span class="imp-m-t"><b>${esc(m.name)}</b><i aria-hidden="true"></i></span><small>${m.n}${m.n === 1 ? ' row' : ' rows'}, ${m.inTotal > 0 ? 'in ' + fmt(m.inTotal) : 'out ' + fmt(m.outTotal)}${m.inTotal > 0 && m.outTotal > 0 ? ', out ' + fmt(m.outTotal) : ''}</small></button><select class="inp sm" data-cat="${esc(m.k)}" aria-label="Category for ${esc(m.name.slice(0, 40))}">${opts(d.catMap[m.k])}</select></div><div class="imp-m-x" hidden></div></div>`).join('');
   const n = d.receipts.length;
   return `<details class="src-how imp-fold"><summary>What was read (${d.meta.rows} rows)</summary><ul class="imp-files">${files}</ul></details>
-    <details class="src-how imp-fold"><summary>Categories (${d.merchants.length}). Fix any that are wrong; the numbers follow.</summary><div class="imp-ms">${merch}</div></details>
+    <details class="src-how imp-fold"><summary>Categories (${d.merchants.length}). Fix any that are wrong; the numbers follow.</summary><p class="cap">Tap a name to see its rows as printed.</p><div class="imp-ms">${merch}</div></details>
     ${n ? `<label class="imp-keep"><input type="checkbox" id="impKeep" checked> Keep the ${n} spending ${n === 1 ? 'row' : 'rows'} as receipts, so Receipts and the assistant know where the money went</label>` : ''}`;
+}
+/* a merchant line opened: every row behind it, as printed, newest first */
+function stmtToggleMerchant(btn) {
+  const box = btn.closest('.imp-m'), x = box && box.querySelector('.imp-m-x'); if (!x || !impDraft || !impDraft.reads) return;
+  const open = x.hidden; btn.setAttribute('aria-expanded', String(open)); x.hidden = !open; sfx('tap');
+  if (!open || x.children.length) return;
+  const key = box.dataset.mk, rows = stmtMerge(impDraft.reads).rows.filter(r => r.k === key).sort((a, b) => (a.d < b.d ? 1 : a.d > b.d ? -1 : 0));
+  const many = rows.length > 12, show = rows.slice(0, 12);
+  x.innerHTML = `<ul class="imp-rows">${show.map(r => `<li><span class="d">${esc(r.d)}</span><span class="a">${r.dir === 'in' ? '+' : ''}${fmt(r.a)}</span><span class="t">${esc(r.t)}</span><span class="f">${esc(r.f)}</span></li>`).join('')}</ul>${many ? `<p class="cap">${rows.length} rows in total; the newest 12 are shown.</p>` : ''}`;
 }
 /* a corrected category: remembered, and the draft rebuilt */
 function stmtRecat(key, cat) {

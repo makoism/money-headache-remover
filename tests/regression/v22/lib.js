@@ -23,8 +23,8 @@ exports.runTour = async (p, pr, shot) => {
   for (let i=0;i<60;i++) {
     const title = await p.$eval('#tourTitle', e=>e.textContent), part = await p.$eval('#tourPart', e=>e.textContent);
     seen.push(i+': '+part+' | '+title);
-    if (title==='Welcome') { if (pr.name) await type('#tourName', pr.name); }
-    else if (title.startsWith('Currency')) { await p.evaluate(c => { const el=[...document.querySelectorAll('input[name=tourCur]')].find(x=>x.value===c); if (el) el.click(); else { const s=document.querySelector('#tourCurMore'); s.value=c; s.dispatchEvent(new Event('change',{bubbles:true})); } }, pr.cur); }
+    if (await has('#tourName')) { if (pr.name) await type('#tourName', pr.name); }
+    if (title.startsWith('Currency')) { await p.evaluate(c => { const el=[...document.querySelectorAll('input[name=tourCur]')].find(x=>x.value===c); if (el) el.click(); else { const s=document.querySelector('#tourCurMore'); s.value=c; s.dispatchEvent(new Event('change',{bubbles:true})); } }, pr.cur); }
     else if (await has('#tourPay')) { await type('#tourPay', pr.pay); if (await has('#tourExtra')) await type('#tourExtra', pr.extra||''); if (await has('#tourBank')) await type('#tourBank', pr.bank); }
     else if (await has('#tourExtra')) await type('#tourExtra', pr.extra||'');
     else if (await has('#tourBank')) await type('#tourBank', pr.bank);

@@ -6,7 +6,7 @@
    Files of one account (monthly PDFs, a CSV plus a PDF) are one account: its months are averaged, never added; accounts are added up. */
 const STMT_CATS = ['pay', 'other_income', 'transfer_in', 'rent', 'util', 'food', 'net', 'phone', 'ins', 'subs', 'gas', 'loan', 'card_payment', 'transfer_out', 'cash', 'play', 'other'];
 const STMT_BILL_CATS = ['rent', 'util', 'food', 'net', 'phone', 'ins', 'gas'];
-const STMT_CAT_LABEL = { pay: 'Pay', other_income: 'Other income', transfer_in: 'Own money in', rent: 'Rent or mortgage', util: 'Utilities', food: 'Food and groceries', net: 'Internet', phone: 'Phone', ins: 'Insurance', subs: 'Subscription', gas: 'Transport', loan: 'Loan', card_payment: 'Card bill payment', transfer_out: 'Transfer out', cash: 'Cash withdrawal', play: 'Play money', other: 'Other spending' };
+const STMT_CAT_LABEL = { pay: 'Pay', other_income: 'Other income', transfer_in: 'Own money in', rent: 'Rent', util: 'Utilities', food: 'Food', net: 'Internet', phone: 'Phone', ins: 'Insurance', subs: 'Subscription', gas: 'Transport', loan: 'Loan', card_payment: 'Card payment', transfer_out: 'Transfer out', cash: 'Cash', play: 'Play money', other: 'Other' };
 const STMT_MAX_ROWS = 600, STMT_MAX_MERCHANTS = 160;
 
 /* the merchant key: letters only, the first few words (or the first twelve characters where there are no spaces) */
@@ -54,10 +54,12 @@ function stmtMonths(read) {
   }
   return { full, partial };
 }
-/* the same statement uploaded twice, or a CSV and a PDF of the same month: identical rows are kept once */
+/* the same statement uploaded twice, or a CSV and a PDF of the same month: identical rows of one account are kept once.
+   The same row on two different accounts (two cards charged the same amount the same day) is two transactions. */
 function stmtMerge(reads) {
-  const seen = new Set(), rows = []; let dupes = 0;
-  reads.forEach(r => r.rows.forEach(x => { const key = `${x.d}|${x.a}|${x.dir}|${x.k}`; if (seen.has(key)) { dupes++; return; } seen.add(key); rows.push(x); }));
+  const rows = []; let dupes = 0;
+  stmtGroups(reads).forEach(g => { const seen = new Set(); g.reads.forEach(r => r.rows.forEach(x => { const key = `${x.d}|${x.a}|${x.dir}|${x.k}`; if (seen.has(key)) { dupes++; return; } seen.add(key); rows.push(x); })); });
+  rows.sort((x, y) => x.d < y.d ? -1 : x.d > y.d ? 1 : 0);
   return { rows, dupes };
 }
 /* merchants, for the category job: the rows grouped by key, biggest first */
@@ -71,18 +73,48 @@ const stmtTypicalDay = days => { if (!days.length) return 0; return Math.round(s
 const stmtOrd = n => n + (n % 10 === 1 && n !== 11 ? 'st' : n % 10 === 2 && n !== 12 ? 'nd' : n % 10 === 3 && n !== 13 ? 'rd' : 'th');
 const stmtWhole = (x, cents) => cents ? Math.round(x * 100) / 100 : Math.round(x);
 
-/* the reads of one account, together: a bank's monthly PDFs, or its CSV plus a PDF, are one account whose months are averaged,
-   never added. The account name decides (as printed, letters and digits only); a read without a name joins the others of its kind. */
-const stmtAccKey = r => { const a = String(r.account || '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim(); return a ? 'a:' + a : 'k:' + r.kind; };
+/* the reads of one account, together: a card's monthly PDFs, or a bank's CSV plus a PDF, are one account whose months are averaged,
+   never added. The transaction dates decide, not file names: two reads of the same kind are one account when their periods do not
+   overlap (consecutive statements), or when they overlap and are the same statement twice (the same name printed, or half or more
+   of the smaller one's rows repeated). Two different account numbers (four digits or more, as printed) always mean two accounts. */
+const stmtAccNorm = a => String(a || '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+function stmtSameAccount(a, b) {
+  const ka = a.kind === 'unknown' ? b.kind : a.kind, kb = b.kind === 'unknown' ? a.kind : b.kind; if (ka !== kb) return false;
+  const na = stmtAccNorm(a.account), nb = stmtAccNorm(b.account);
+  const da = na.match(/\d{4,}/g) || [], db = nb.match(/\d{4,}/g) || [];
+  if (da.length && db.length) return da.some(d => db.indexOf(d) >= 0);
+  const apart = !a.from || !b.from || !a.to || !b.to || a.to < b.from || b.to < a.from;
+  if (apart) return true;
+  if (na && na === nb) return true;
+  const keys = new Set(a.rows.map(r => `${r.d}|${r.a}|${r.dir}|${r.k}`)), small = Math.min(a.rows.length, b.rows.length) || 1;
+  return b.rows.filter(r => keys.has(`${r.d}|${r.a}|${r.dir}|${r.k}`)).length * 2 >= small;
+}
+/* the months an account covers, from its statements' periods joined end to end: a month inside the joined run is full
+   (statements that close on the 15th still add up to whole months), a month only touched is partial */
+function stmtGroupMonths(reads) {
+  const spans = reads.filter(r => r.from && r.to).map(r => ({ from: r.from, to: r.to })).sort((x, y) => (x.from < y.from ? -1 : x.from > y.from ? 1 : 0));
+  const runs = []; const next = d => { const t = new Date(d + 'T00:00:00Z'); t.setUTCDate(t.getUTCDate() + 1); return t.toISOString().slice(0, 10); };
+  spans.forEach(sp => { const last = runs[runs.length - 1]; if (last && sp.from <= next(last.to)) { if (sp.to > last.to) last.to = sp.to; } else runs.push({ from: sp.from, to: sp.to }); });
+  const full = [], partial = [];
+  runs.forEach(run => { const mo = stmtMonths(run); mo.full.forEach(m => { if (full.indexOf(m) < 0) full.push(m); }); mo.partial.forEach(m => { if (partial.indexOf(m) < 0) partial.push(m); }); });
+  return { full: full.sort(), partial: partial.filter(m => full.indexOf(m) < 0).sort() };
+}
 function stmtGroups(reads) {
-  const g = {};
-  reads.forEach(r => { const k = stmtAccKey(r), x = g[k] || (g[k] = { key: k, kind: r.kind, account: r.account, reads: [], files: {}, full: [], partial: [] }); x.reads.push(r); x.files[r.file] = true; });
-  Object.values(g).forEach(x => {
-    x.reads.forEach(r => { const mo = stmtMonths(r); mo.full.forEach(m => { if (x.full.indexOf(m) < 0) x.full.push(m); }); mo.partial.forEach(m => { if (x.partial.indexOf(m) < 0) x.partial.push(m); }); });
-    x.partial = x.partial.filter(m => x.full.indexOf(m) < 0); x.full.sort(); x.partial.sort();
-    if (x.reads.some(r => r.kind === 'card')) x.kind = 'card';
+  const groups = [];
+  reads.forEach(r => {
+    const hits = groups.filter(g => g.reads.some(x => stmtSameAccount(x, r)));
+    let x = hits[0];
+    if (!x) { x = { reads: [] }; groups.push(x); }
+    else hits.slice(1).forEach(h => { x.reads = x.reads.concat(h.reads); groups.splice(groups.indexOf(h), 1); }); /* a read that bridges two groups makes them one */
+    x.reads.push(r);
   });
-  return Object.values(g);
+  groups.forEach(x => {
+    x.files = {}; x.reads.forEach(r => { x.files[r.file] = true; });
+    const mo = stmtGroupMonths(x.reads); x.full = mo.full; x.partial = mo.partial;
+    x.kind = x.reads.some(r => r.kind === 'card') ? 'card' : (x.reads.map(r => r.kind).find(k => k !== 'unknown') || 'unknown');
+    x.account = x.reads.map(r => r.account).filter(Boolean).sort((p, q) => q.length - p.length)[0] || '';
+  });
+  return groups;
 }
 /* the monthly amount of a category inside one account, over the months it covers in full (or its partial months when it has none):
    spending is the plain average, so a bill paid every other month lands at half; money in counts only when it shows up in most months,
@@ -132,12 +164,16 @@ function stmtNumbers(reads, catOf, today) {
   out.questions = out.questions.slice(0, 4);
   /* what was left out, and what each file gave */
   reads.forEach(r => { const mo = stmtMonths(r), g = groups.find(x => x.files[r.file]); out.meta.files.push({ file: r.file, account: r.account, kind: r.kind, rows: r.rows.length, from: r.from, to: r.to, full: mo.full, partial: mo.partial, closing: r.closing }); r.notes.forEach(n => out.skipped.push(`${r.file}: ${n}`)); if (!mo.full.length && r.rows.length && !(g && g.full.length)) out.skipped.push(`${r.file} covers only part of a month (${r.from} to ${r.to}); its numbers come from that part.`); if (!r.rows.length) out.skipped.push(`${r.file}: no transactions could be read.`); });
-  groups.filter(g => g.reads.length > 1).forEach(g => out.skipped.push(`${Object.keys(g.files).length} files are one account (${g.account || g.kind}): their months were put together, ${g.full.length ? g.full.length + (g.full.length === 1 ? ' full month' : ' full months') : 'part of a month'}.`));
+  groups.filter(g => g.reads.length > 1).forEach(g => out.skipped.push(`${Object.keys(g.files).length} files are one account (${g.account || g.kind}): their months were put together, ${g.full.length ? g.full.length + (g.full.length === 1 ? ' full month' : ' full months') : 'part of a month'}, and averaged.`));
   if (merged.dupes) out.skipped.push(`${merged.dupes} repeated ${merged.dupes === 1 ? 'row was' : 'rows were'} counted once.`);
   out.skipped = out.skipped.slice(0, 8);
-  const accs = []; reads.forEach(r => { const nm = r.account || r.file; if (accs.indexOf(nm) < 0) accs.push(nm); });
+  const accs = groups.map(g => g.account || g.kind);
   const first = reads.map(r => r.from).filter(Boolean).sort()[0], last = reads.map(r => r.to).filter(Boolean).sort().pop();
-  out.summary = `${reads.length} ${reads.length === 1 ? 'file' : 'files'} (${accs.slice(0, 3).join(', ')}${accs.length > 3 ? ' and more' : ''})${first && last ? `, ${first} to ${last}` : ''}: ${rows.length} transactions.` + (out.pay !== null ? ` Pay ${out.how}.` : ' No pay was found.');
+  const monthName = ym => ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][+ym.slice(5, 7) - 1] + ' ' + ym.slice(0, 4);
+  const span = g => { const ms = g.full.length ? g.full : g.partial; if (!ms.length) return ''; const n = ms.length; return `${n === 1 ? monthName(ms[0]) : monthName(ms[0]) + ' to ' + monthName(ms[n - 1])} (${g.full.length ? n + (n === 1 ? ' full month' : ' full months') : 'part of ' + (n === 1 ? 'a month' : n + ' months')})`; };
+  const spans = groups.map(span).filter(Boolean), same = spans.every(x => x === spans[0]);
+  out.months = !spans.length ? '' : same ? `Monthly amounts are the average over ${spans[0]}.` : `Monthly amounts are the average over the months each account covers: ${groups.map(g => `${g.account || g.kind} ${span(g)}`).filter(x => !/ $/.test(x)).join('; ')}.`;
+  out.summary = `${groups.length === 1 ? '1 account' : groups.length + ' accounts'}, ${reads.length} ${reads.length === 1 ? 'file' : 'files'} (${accs.slice(0, 3).join(', ')}${accs.length > 3 ? ' and more' : ''})${first && last ? `, ${first} to ${last}` : ''}: ${rows.length} transactions.` + (out.pay !== null ? ` Pay ${out.how}.` : ' No pay was found.') + (out.months ? ' ' + out.months : '');
   out.found = out.pay !== null || out.balance !== null || Object.keys(out.bills).length > 0 || out.subs.length > 0 || out.loans.length > 0 || out.card !== null;
   return out;
 }

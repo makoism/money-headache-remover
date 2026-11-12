@@ -33,12 +33,13 @@ const puppeteer = require('/home/claude/work/tools/node_modules/puppeteer-core')
   ok('page behind the tour is inert', await p.$eval('.wrap', e => e.inert));
   ok('dialog is labelled and modal', await p.$eval('#tour', e => e.getAttribute('role') === 'dialog' && e.getAttribute('aria-modal') === 'true'));
   ok('focus lands on the tour title', await p.evaluate(() => document.activeElement.id === 'tourTitle'));
-  ok('screen 1 is the welcome with the video first', (await q('#tourTitle')) === 'Welcome' && (await q('#tourPart')) === 'Welcome · 1 of 2' && (await p.$$eval('#tourBody .tour-vframe, #tourBody .tour-video, #tourBody svg.tour-scene', e => e.length)) >= 1);
-  ok('...and a promise that it stays private', (await tourText()).includes('stays in this browser') && (await tourText()).includes('Nobody else can see it'));
-  ok('...asking what to call you', (await val('#tourName')) === '' && (await q('#tourNext')) === 'Next');
+  ok('screen 1 is the video and nothing else', (await q('#tourTitle')) === 'Welcome' && (await q('#tourPart')) === 'Welcome · 1 of 2' && (await p.$$eval('#tourBody .tour-vframe, #tourBody .tour-video', e => e.length)) >= 1 && !(await p.$('#tourName')) && (await p.$$eval('#tourBody .tour-fields, #tourBody .tour-get', e => e.length)) === 0);
+  ok('...with one way on', (await q('#tourNext')) === 'Next' && !(await p.$eval('#tourNext', e => e.hidden)));
   ok('no back button on screen 1', await p.$eval('#tourBack', e => e.hidden));
-  await p.type('#tourName', '  Mara '); await p.click('#tourNext'); await w(250);
-  ok('screen 2 asks for the currency', (await q('#tourTitle')) === 'Currency' && (await q('#tourPart')) === 'Welcome · 2 of 2');
+  await p.click('#tourNext'); await w(250);
+  ok('screen 2 asks for the currency and what to call you', (await q('#tourTitle')) === 'Currency' && (await q('#tourPart')) === 'Welcome · 2 of 2' && (await val('#tourName')) === '');
+  ok('...and a promise that it stays private', (await tourText()).includes('stays in this browser') && (await tourText()).includes('Nobody else can see it'));
+  await p.type('#tourName', '  Mara ');
   ok('six currency chips, pesos preselected', (await p.$$eval('input[name=tourCur]', e => e.length)) === 6 && (await p.$eval('input[name=tourCur]:checked', e => e.value)) === '₱');
   await p.click('input[name=tourCur][value="$"]'); await w(150);
   ok('picking a chip selects it', (await p.$eval('input[name=tourCur]:checked', e => e.value)) === '$' && (await p.$eval('input[name=tourCur][value="$"]', e => e.closest('.chip').classList.contains('on'))));
@@ -75,7 +76,7 @@ const puppeteer = require('/home/claude/work/tools/node_modules/puppeteer-core')
   ok('pay survives a reload', (await val('#h-a')) === '₱28,000');
   await p.evaluate(() => document.querySelector('#helpBtn').click()); await w(150);
   await p.click('#helpVideo'); await w(300);
-  ok('the video can be replayed from Help, on the first screen, with the name kept', await p.$eval('#tour', e => !e.hidden) && (await q('#tourTitle')) === 'Welcome' && (await val('#tourName')) === 'Mara');
+  ok('the video can be replayed from Help, on the first screen', await p.$eval('#tour', e => !e.hidden) && (await q('#tourTitle')) === 'Welcome' && (await p.$$eval('#tourBody .tour-vframe, #tourBody .tour-video', e => e.length)) >= 1);
   await p.keyboard.press('Escape'); await w(250);
   ok('Escape closes the tour', await p.$eval('#tour', e => e.hidden));
   await p.evaluate(() => document.querySelector('#helpBtn').click()); await w(150);
@@ -91,7 +92,7 @@ const puppeteer = require('/home/claude/work/tools/node_modules/puppeteer-core')
   await tab('month'); ok('...and the sample pay is still there', (await val('#h-a')) === '₱30,000');
   await reload(); ok('and the tour does not come back', await p.$eval('#tour', e => e.hidden));
   /* a name is text, never markup */
-  await fresh(); await p.type('#tourName', '<img src=x onerror="window.__xss3=1">Bo'); await p.click('#tourNext'); await w(250);
+  await fresh(); await p.click('#tourNext'); await w(250); await p.type('#tourName', '<img src=x onerror="window.__xss3=1">Bo');
   await p.click('input[name=tourCur][value="$"]'); await w(150);
   ok('markup in the name is never run or shown as an element', (await p.evaluate(() => window.__xss3)) === undefined && (await p.$$eval('#tourBody img, #tourTitle img', e => e.length)) === 0);
   for (let i = 0; i < 6 && (await q('#tourTitle')) !== 'Your money'; i++) { if (await p.$eval('#tourNext', e => e.hidden)) await p.click('#srcSkip'); else await p.click('#tourNext'); await w(100); } /* past the statements to the typed money screen */

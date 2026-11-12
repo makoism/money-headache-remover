@@ -170,6 +170,7 @@ const STEP_REVIEW = { id: 'review', part: PART.money, setup: true, when: () => !
   after: () => {
     const body = $('#tourBody'); $$('.cs', body).forEach(e => { e.textContent = sym(); });
     if (body.__impWired) return; body.__impWired = true;
+    body.addEventListener('click', e => { const b = e.target.closest('[data-mx]'); if (b && impDraft && typeof stmtToggleMerchant === 'function') stmtToggleMerchant(b); });
     body.addEventListener('change', e => {
       if (!impDraft) return;
       const cs = e.target.closest('select[data-cat]'); if (cs) { stmtRecat(cs.dataset.cat, cs.value); return; }

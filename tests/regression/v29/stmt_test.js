@@ -45,7 +45,7 @@ ok(d.loans.length === 1 && d.loans[0].a === 1850 && /HOME CREDIT/.test(d.loans[0
 ok(d.card === 6810, 'with no card statement, the bank\'s card payments stand in for card spending: ' + d.card);
 ok(d.questions.length === 2 && /3,000 sent to GCASH/.test(d.questions[0].t) && /4,500 from UPWORK/.test(d.questions[1].t), 'questions about the transfer and the one-off income: ' + JSON.stringify(d.questions.map(q => q.t)));
 ok(/USD/.test(d.skipped[0]) && d.found, 'file notes carried into skipped, and found: ' + d.skipped[0]);
-ok(/^1 file \(BPI Savings 1234\), 2026-09-01 to 2026-11-10: \d+ transactions\. Pay twice/.test(d.summary), 'summary: ' + d.summary);
+ok(/^1 account, 1 file \(BPI Savings 1234\), 2026-09-01 to 2026-11-10: \d+ transactions\. Pay twice a month.*average over Sep 2026 to Oct 2026 \(2 full months\)\.$/.test(d.summary), 'summary: ' + d.summary);
 
 // add a card statement for October: itemised card spending replaces the card payment, bills on the card count
 const card = [];
@@ -98,4 +98,29 @@ ok(both.meta.dupes === bank.filter(r => r.date.slice(0, 7) === '2026-10').length
 const wallet = X.stmtCleanRows({ account: 'GCash', kind: 'ewallet', period: { from: '2026-10-01', to: '2026-10-31' }, closing_balance: 3850, rows: [{ date: '2026-10-03', text: 'GRAB PHILIPPINES', amount: 180, dir: 'out' }, { date: '2026-10-01', text: 'CASH IN VIA BPI ONLINE', amount: 2000, dir: 'in' }], notes: [] }, 'wallet.xlsx', '2026-11-12');
 const two = X.stmtNumbers([monthPdf('2026-10', 'Oct.pdf'), wallet], catOf2, '2026-11-12');
 ok(two.bills.gas === 180 && two.balance === 13850, 'a wallet next to the bank adds its own month and its own balance: ' + JSON.stringify([two.bills.gas, two.balance]));
+// ----- names as the model happens to print them, month by month -----
+const cardMonth = (ym, name, acc, kind) => X.stmtCleanRows({ account: acc, kind: kind || 'card', currency: 'JPY', period: { from: ym + '-01', to: ym + '-' + (ym === '2026-09' ? '30' : '31') }, closing_balance: 15000, rows: [
+  { date: ym + '-03', text: 'AMAZON.CO.JP', amount: 4000, dir: 'out' }, { date: ym + '-12', text: 'RAKUTEN MOBILE', amount: 2160, dir: 'out' }, { date: ym + '-20', text: 'ENEOS', amount: 5000, dir: 'out' }], notes: [] }, name, '2026-11-12');
+const cat3 = k => ({ 'amazon co jp': 'other', 'rakuten mobile': 'phone', eneos: 'gas' })[k] || 'other';
+const varied = [cardMonth('2026-08', 'aug 2026 - card 2.pdf', 'Resona VISA ending 4417'), cardMonth('2026-09', 'sep 2026 - card 2.pdf', 'RESONA VISA CARD 4417'), cardMonth('2026-10', 'oct 2026 - card 2.pdf', 'Resona Visa')];
+let nv = X.stmtNumbers(varied, cat3, '2026-11-12');
+ok(nv.bills.phone === 2160 && nv.bills.gas === 5000 && nv.card === 4000, 'three monthly card PDFs named three ways are one card: phone 2,160 and transport 5,000 a month, card 4,000: ' + JSON.stringify([nv.bills.phone, nv.bills.gas, nv.card]));
+ok(/^1 account, 3 files/.test(nv.summary) && /Aug 2026 to Oct 2026 \(3 full months\)/.test(nv.summary), 'the summary says one account and the months averaged: ' + nv.summary);
+const byFile = [cardMonth('2026-08', 'aug 2026 - card 2.pdf', 'Card statement'), cardMonth('2026-09', 'sep 2026 - card 2.pdf', 'Monthly statement'), cardMonth('2026-10', 'oct 2026 - card 2.pdf', '')];
+ok(X.stmtNumbers(byFile, cat3, '2026-11-12').bills.phone === 2160, 'when the names in the files say nothing, consecutive months of one kind are one account');
+const twoCards = [cardMonth('2026-09', 'visa.pdf', 'Resona VISA 4417'), cardMonth('2026-09', 'mc.pdf', 'Mercari Card 8821')];
+ok(X.stmtNumbers(twoCards, cat3, '2026-11-12').bills.phone === 4320, 'two cards for the same month stay two accounts: phone 4,320');
+const twoNumbers = [cardMonth('2026-09', 'a.pdf', 'Resona VISA 4417'), cardMonth('2026-10', 'b.pdf', 'Resona VISA 9900')];
+ok(X.stmtNumbers(twoNumbers, cat3, '2026-11-12').bills.phone === 4320, 'different account numbers are two accounts even in different months');
+const bankCard = [cardMonth('2026-09', 'bank.pdf', 'Resona Bank 1234567', 'bank'), cardMonth('2026-09', 'visa.pdf', 'Resona VISA 4417', 'card')];
+ok(X.stmtNumbers(bankCard, cat3, '2026-11-12').bills.phone === 4320, 'a bank and a card of the same name are not one account');
+// ----- card statements that close on the 15th: joined end to end they cover whole months -----
+const mid = (from, to, name) => X.stmtCleanRows({ account: 'Mercari Card', kind: 'card', period: { from, to }, closing_balance: 9000, rows: [{ date: from, text: 'AMAZON.CO.JP', amount: 3000, dir: 'out' }, { date: to, text: 'RAKUTEN MOBILE', amount: 2160, dir: 'out' }], notes: [] }, name, '2026-11-12');
+const chained = [mid('2026-07-16', '2026-08-15', 'aug.pdf'), mid('2026-08-16', '2026-09-15', 'sep.pdf'), mid('2026-09-16', '2026-10-15', 'oct.pdf')];
+const nc = X.stmtNumbers(chained, cat3, '2026-11-12');
+ok(nc.meta && /average over Aug 2026 to Sep 2026 \(2 full months\)/.test(nc.months), 'three mid-month statements cover August and September in full: ' + nc.months);
+ok(nc.bills.phone === 2160 && nc.card === 3000, 'phone and card spending averaged over those two months: ' + JSON.stringify([nc.bills.phone, nc.card]));
+const mixed = [X.stmtCleanRows({ account: 'BPI Savings 1234', kind: 'bank', period: { from: '2026-09-01', to: '2026-10-31' }, closing_balance: 5000, rows: [{ date: '2026-09-15', text: 'RENT - APT 4B ORTIGAS', amount: 9000, dir: 'out' }, { date: '2026-10-15', text: 'RENT - APT 4B ORTIGAS', amount: 9000, dir: 'out' }], notes: [] }, 'bank.csv', '2026-11-12')].concat(varied);
+const nm = X.stmtNumbers(mixed, catOf2, '2026-11-12');
+ok(nm.bills.rent === 9000 && /each account covers/.test(nm.months) && /BPI Savings 1234 Sep 2026 to Oct 2026 \(2 full months\)/.test(nm.months) && /Aug 2026 to Oct 2026 \(3 full months\)/.test(nm.months), 'a bank over two months next to a card over three: each averaged over its own months, and the line says so: ' + nm.months);
 console.log(`STMT: ${pass} pass, ${fail} fail`); process.exit(fail ? 1 : 0);

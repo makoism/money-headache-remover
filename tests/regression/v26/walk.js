@@ -25,8 +25,8 @@ const P = {
     const bodyText = await p.$eval('#tourBody', e=>e.innerText.replace(/\n+/g,' / '));
     seen.push(`${i}: [${part}] ${title}\n     ${bodyText.slice(0,420)}`);
     if (!pr.skipAll) {
-      if (title==='Welcome') { if (pr.name) await type('#tourName', pr.name); }
-      else if (title.startsWith('Currency')) { await p.evaluate(c => { const el=[...document.querySelectorAll('input[name=tourCur]')].find(x=>x.value===c); if (el) el.click(); }, pr.cur); }
+      if (await has('#tourName')) { if (pr.name) await type('#tourName', pr.name); }
+      if (title.startsWith('Currency')) { await p.evaluate(c => { const el=[...document.querySelectorAll('input[name=tourCur]')].find(x=>x.value===c); if (el) el.click(); }, pr.cur); }
       else if (await has('#tourPay')) await type('#tourPay', pr.pay);
       else if (await has('#tourExtra')) await type('#tourExtra', pr.extra||'');
       else if (await has('#tourBank')) await type('#tourBank', pr.bank);

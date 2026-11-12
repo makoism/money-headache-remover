@@ -142,9 +142,8 @@ function wireHello() {
 function txHTML(synced) {
   const tag = synced ? 'button type="button"' : 'p', end = synced ? 'button' : 'p';
   const list = `<div class="tx-list" id="txList">${TRANSCRIPT.map((l, i) => `<${tag} class="tx-l" data-t="${l[0]}" data-i="${i}">${esc(l[1])}</${end}>`).join('')}</div>`;
-  /* with no player the transcript is the whole text on one long screen, so it starts folded */
-  if (!synced) return `<details class="tx-fold"><summary>Read the transcript</summary><section class="tx plain" id="tourTx" aria-label="Transcript"><div class="tx-h"><b>Transcript</b><button type="button" class="link" id="txNow" hidden>Back to now</button></div>${list}</section></details>`;
-  return `<section class="tx" id="tourTx" aria-label="Transcript"><div class="tx-h"><b>Transcript</b><button type="button" class="link" id="txNow" hidden>Back to now</button></div>${list}</section>`;
+  /* the transcript starts folded either way, so the first page is the video; open, it follows the sound when there is a player */
+  return `<details class="tx-fold"><summary>Transcript</summary><section class="tx${synced ? '' : ' plain'}" id="tourTx" aria-label="Transcript"><div class="tx-h"><b>Transcript</b><button type="button" class="link" id="txNow" hidden>Back to now</button></div>${list}</section></details>`;
 }
 function wireTx(v) {
   const list = $('#txList'), now = $('#txNow'); if (!list || !now || !list.querySelector('button.tx-l')) return;
@@ -179,30 +178,29 @@ function wireRestore() {
   const u = $('#tourVaultUse'); if (u) { u.addEventListener('click', go); $('#tourVaultIn').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); go(); } }); }
 }
 const TOUR = [
-  /* the first screen is the video: Mako says what this is and what to do. The rest of the screen is the welcome as it was. */
-  { id: 'video', part: PART.welcome, title: 'Welcome', next: 'Next',
+  /* the first screen is the video and nothing else: Mako says what this is and what to do. A copy without the video starts at the next screen. */
+  { id: 'video', part: PART.welcome, title: 'Welcome', next: 'Next', skipIf: () => !hasHello,
     body: () => {
-      const player = hasHello && helloFileOk && !helloFailed;
-      const video = !hasHello ? homeScene() : `${player ? helloPlayer() : helloCard()}
+      const player = helloFileOk && !helloFailed;
+      return `${player ? helloPlayer() : helloCard()}
       <p class="cap">${player
         ? 'Six minutes from Mako, who made this. Also under Help.' + (helloVideo ? ` <a id="tourVideo" target="_blank" rel="noopener noreferrer" href="${esc(helloVideo.watch)}">Not playing? Open on Google Drive.</a>` : '')
         : 'Six minutes from Mako, who made this. Come back here when done, or skip. Also under Help.'}</p>
-      ${txHTML(player)}`;
-      return `${video}
-      <p>Know where your money stands, and what it is working toward.</p>
-      <ul class="tour-get"><li>Your month on one screen.</li><li>Play money you can spend with no guilt.</li><li>Each goal, and the date you reach it.</li></ul>
-      <p class="cap">Data stays in this browser. Nobody else can see it.</p>
-      <div class="tour-fields"><div class="field"><label for="tourName">First name <span class="opt">(optional)</span></label><div class="inp"><input id="tourName" type="text" maxlength="24" autocomplete="given-name" spellcheck="false" placeholder="First name" value="${esc(firstName())}"></div></div></div>
+      ${txHTML(player)}
       ${restoreHTML()}`;
     },
-    after: wireRestore,
-    leave: () => { const el = $('#tourName'); if (el) { const n = cleanName(el.value); if (n) S.ui.name = n; else delete S.ui.name; persist(); } } },
+    after: wireRestore },
   { id: 'currency', part: PART.welcome, title: 'Currency',
     body: () => {
       const cur = (S.ui && S.ui.cur) || '₱', pick = CURS.filter(c => TOUR_CURS.indexOf(c[0]) >= 0).sort((x, y) => TOUR_CURS.indexOf(x[0]) - TOUR_CURS.indexOf(y[0])), rest = CURS.filter(c => TOUR_CURS.indexOf(c[0]) < 0);
-      return `<div class="tour-chips" role="radiogroup" aria-label="Currency">${pick.map(c => chip('tourCur', c[0], c[0], curName(c), c[0] === cur)).join('')}</div>
-      <div class="field tour-more"><label for="tourCurMore">Other currency</label><div class="selbox"><select id="tourCurMore"><option value="">Choose currency</option>${rest.map(c => `<option value="${esc(c[0])}"${c[0] === cur ? ' selected' : ''}>${esc(c[1])}</option>`).join('')}</select></div></div>`;
-    } },
+      return `${hasHello ? '' : homeScene()}<div class="tour-chips" role="radiogroup" aria-label="Currency">${pick.map(c => chip('tourCur', c[0], c[0], curName(c), c[0] === cur)).join('')}</div>
+      <div class="field tour-more"><label for="tourCurMore">Other currency</label><div class="selbox"><select id="tourCurMore"><option value="">Choose currency</option>${rest.map(c => `<option value="${esc(c[0])}"${c[0] === cur ? ' selected' : ''}>${esc(c[1])}</option>`).join('')}</select></div></div>
+      <div class="tour-fields"><div class="field"><label for="tourName">First name <span class="opt">(optional)</span></label><div class="inp"><input id="tourName" type="text" maxlength="24" autocomplete="given-name" spellcheck="false" placeholder="First name" value="${esc(firstName())}"></div></div></div>
+      <p class="cap">Data stays in this browser. Nobody else can see it.</p>
+      ${hasHello ? '' : restoreHTML()}`;
+    },
+    after: () => { if (!hasHello) wireRestore(); },
+    leave: () => { const el = $('#tourName'); if (el) { const n = cleanName(el.value); if (n) S.ui.name = n; else delete S.ui.name; persist(); } } },
   /* the statements are the setup. The typed screens follow only for what the statements did not answer, or when they were skipped. */
   STEP_SOURCE, STEP_REVIEW,
   STEP_MONEY, STEP_BILLS,
