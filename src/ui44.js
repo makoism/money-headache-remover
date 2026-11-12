@@ -18,6 +18,7 @@ function cheer(msg) {
 }
 function celebrate(size, msg, from) {
   cheer(msg);
+  if (size === 'big') peek('axolotl'); else if (size === 'med') peek('ocelot');
   const cv = $('#confetti'); if (!cv || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) return;
   const now = Date.now(); if (size === 'small' && now - CONF.last < 900) return; CONF.last = now;
   const W = innerWidth, H = innerHeight, dpr = Math.min(2, window.devicePixelRatio || 1), cols = leafColors(), r = Math.random;

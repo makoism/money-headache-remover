@@ -25,7 +25,8 @@ ui41/ui42     adapters to the outside: the AI route (relay or viewer's Claude) a
 | `ui0.js` | State `S`, normalising saved data, saving (`persist`, `flush`), small helpers |
 | `actions.js` | `ACT`: transactions with undo (`ACT.tx`, `ACT.undo`), setters for pay, lines, goals, jars, receipts, name, currency, Home layout; `ACT.summary()` reads the key numbers |
 | `ui1.js` to `ui4.js` | The Plan tab (lines, ledger), bar and legend, road chart, tooltips, Receipts |
-| `art.js` | The nature art: `ART` (inline SVG for grass, sprig, vine, sprout, branch, drawn in `--leaf`), `art(kind)`, `placeArt()` (Scan, hero, goals card). Regenerate with `/tmp/v30/mkart.py` |
+| `art.js` | The nature line art: `ART` (inline SVG for grass, sprig, vine, sprout, branch, drawn in `--leaf`), `art(kind)`, `ART_SEATS` (Scan, Month hero, ledger, the backup reminder, All months, the backup area) and `placeArt()`. Regenerate with `/tmp/v30/mkart.py` |
+| `pixel.js` | The pixel art: `PIX` (axolotl, ocelot, tulip, daisy, sunflower, sprout, cactus, mushroom, clover as crisp SVG), `pix(kind, scale)`, `PIX_SEATS` (host, sprites, scale, corner), `placePix()` and `pixFit()` (a sprite hides itself when words or controls reach its corner; `put()` re-seats after a redraw, `pixQueue()` re-checks on resize), `peek(kind)` (the axolotl pops up bottom-left on a big celebration, the ocelot walks in from the right on a medium one, never under reduced motion). Regenerate with `/tmp/v32/mkpix.py` |
 | `ui44.js` | The celebration: falling leaves on the `#confetti` canvas and the one-line cheer toast |
 | `stmt.js` | Statements to numbers, pure: `stmtCleanRows` (one file's rows, checked), `stmtGroups` (files of one account, told apart by the transaction dates and printed periods, never file names; periods joined end to end), `stmtMerge` (duplicates once, within an account), `stmtMerchants`, `stmtNumbers` (pay, balance, bills, subs, loans, card, questions, the months line), `stmtReceipts`. Unit test: `node /tmp/v29/stmt_test.js` (42) |
 | `ui45s.js` | Setup screens (the typed money screen, bills, jars fold and split, goals, reveal), `SUBS` (subscription list and price hints by country) |
@@ -59,7 +60,8 @@ All `ui*.js` files share one scope (one IIFE) in the order set in `build.sh`. Fu
 | The setup music (notes, chords, pace, level) | `music.js`: `DEG` and `CHORDS` (F major pentatonic plus the seventh), `LEVEL`, `PAD`, the timings in `changeChord`, `nextNote`, `step` |
 | The typefaces | `@font-face` at the top of `style.css` (Nunito Sans for reading, Fraunces for titles and big numbers; files in `../fonts`, copied next to the page by `../pwa/make_pwa.py`); `--f` and `--fd` |
 | The look (greens, glass, aurora) | the two palettes at the top of `style.css` (Day = light root, Forest = dark), `--aurora`, the glass rule and `.art-*` placements; the streak colour is `--streak`; PWA colours in `../pwa/make_pwa.py` and the icons |
-| A celebration (leaves, sparks) | `celebrate`, `leafColors`, `leafFrame` in `ui44.js`; `sparkBurst` (small leaves on switches and sliders) in `ui45x.js` |
+| A celebration (leaves, sparks, the peek guys) | `celebrate`, `leafColors`, `leafFrame` in `ui44.js` (it calls `peek('axolotl')` for big and `peek('ocelot')` for medium); `sparkBurst` (small leaves on switches and sliders) in `ui45x.js` |
+| Where a plant sits | line art: `ART_SEATS` in `art.js` and the `.art-*` rules in `style.css`; pixel art: `PIX_SEATS` in `pixel.js` (`tr`, `br`, `bl` corners in `.pixc`). New sprite: a grid in `/tmp/v32/mkpix.py`, then paste the generated `PIX` block |
 | The split sliders (jars, goals) | `moveShare`, `spreadFree` in `ui45s.js` (a slider changes only its own share; the rest is unassigned), `spPaint`, `splitApply`, `splitSpread`, `splitGive` in `ui45x.js` |
 | The statement account boxes | `impAccts`, `acctNew`, `acctHTML`, `paintAccts` in `ui45u.js`; a job carries `acct` and `stmtTagRead` stamps each read; `stmtGroups` groups boxed reads by box; receipts carry the account as `s`; `S.ui.accts` remembers the names |
 | The computer camera | `camOpen`, `camShot`, `camClose` in `ui49.js` (phones keep the native capture input) |
@@ -93,7 +95,7 @@ All `ui*.js` files share one scope (one IIFE) in the order set in `build.sh`. Fu
 ## Checks and release
 ```
 ./check.sh          # about 1 minute: build, syntax, main suite, safety tests, idle and speed guard
-./check.sh full     # adds all regression scripts and the number checks (about 10 minutes)
+./check.sh full     # adds all regression scripts and the number checks (about 15 minutes); a script that cannot start counts as a failure
 cd ../site && ./tests/dev.sh && node tests/relay.test.js && node tests/page_relay.js && node tests/page_vault.js && node tests/page_import.js   # the server and the hosted page
 ```
 Site release: `cd ../site && ./build_site.sh`, copy into the GitHub clone (`/home/claude/money-headache-remover`), commit, push `main`; Cloudflare deploys within a minute; check `/api/health` and the Version stamp on the live address.

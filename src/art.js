@@ -12,9 +12,10 @@ const ART = {
 };
 function art(kind, place) { return ART[kind] ? `<span class="art art-${kind}${place ? ' art-' + place : ''}" aria-hidden="true">${ART[kind]}</span>` : ''; }
 /* the tabs: one drawing each, placed once. Receipts: a sprig by the scan card's title. Plan: a vine up the side of the big number. Goals: a sprout in the corner of the goals card. */
+/* where the drawings live: one per card, chosen for the card (a seat is skipped when the card is missing or already has one) */
+const ART_SEATS = [['#scan', 'sprig'], ['#hero', 'vine'], ['#ledger', 'grass'], ['#rcRemind', 'sprig'], ['#monthTable', 'branch'], ['#bkArea', 'vine']];
 function placeArt() {
-  const scan = $('#scan'), hero = $('#hero'), goals = $('#goalCards') && $('#goalCards').closest('.card');
-  if (scan && !$('.art', scan)) scan.insertAdjacentHTML('beforeend', art('sprig'));
-  if (hero && !$('.art', hero)) hero.insertAdjacentHTML('beforeend', art('vine'));
+  ART_SEATS.forEach(([sel, kind]) => { let host = $(sel); if (!host) return; if (sel === '#monthTable') host = host.closest('.card') || host; if (!$('.art', host)) host.insertAdjacentHTML('beforeend', art(kind)); });
+  const goals = $('#goalCards') && $('#goalCards').closest('.card');
   if (goals && !$('.art', goals)) goals.insertAdjacentHTML('beforeend', art('sprout'));
 }

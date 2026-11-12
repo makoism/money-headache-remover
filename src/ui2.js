@@ -130,7 +130,7 @@ function render() {
   });
   renderItems(m);
 
-  renderMonthTable(); renderGoals(m); renderSettings(); homeView(); renderBand(); renderHome(); queueWins(false);
+  renderMonthTable(); renderGoals(m); renderSettings(); homeView(); renderBand(); renderHome(); queueWins(false); placePix();
   $$('.cs').forEach(e => { e.textContent = sym(); });
   if (tab === 'goals') drawRoad();
   if (tab === 'receipts') renderReceipts();

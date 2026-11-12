@@ -83,7 +83,7 @@ const monthsTo = ym => ymIdx(ym) - ymIdx(nowYm());
 const plural = (n, w) => n + ' ' + w + (n === 1 ? '' : 's');
 let HG = null, HGD = false;
 /* redraw a card only when its markup changed, so animations and hover state survive the many redraws */
-const put = (el, html) => { if (el.__h !== html) { el.innerHTML = html; el.__h = html; } };
+const put = (el, html) => { if (el.__h !== html) { el.innerHTML = html; el.__h = html; pixKeep(el); } };
 /* the graph is drawn at the card's real width so its text stays readable on a phone */
 function heroW() { const el = $('#hHero'); if (!el || !el.clientWidth) return HW || 520; const cs = getComputedStyle(el), pad = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0); return HW = Math.max(260, Math.min(680, Math.round(el.clientWidth - pad))); }
 let HW = 0;
@@ -347,6 +347,7 @@ function renderHome() {
   if (tab !== 'home') return;
   applyHomeOrder();
   renderNext(); renderBackupNudge(); renderStatus(); syncQuick(); renderHero(); renderSpend(); renderGoalsHome(); renderBuckets(); renderStreak(); renderBadges();
+  placePix(); /* the pixel plants, back in their corners after the cards were redrawn */
 }
 
 /* ---------- add a goal: what, how much, by when ---------- */
