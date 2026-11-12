@@ -22,42 +22,74 @@ const SFXD = (() => {
     g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(o.vol || .1, t + (o.atk || .02)); g.gain.exponentialRampToValueAtTime(0.0001, t + o.dur);
     src.connect(f); f.connect(g); g.connect(out); src.start(t); src.stop(t + o.dur + .05);
   };
-  /* ----- the sound design: deep, soft air, like wind going past in the next room. No beeps, no bells. -----
-     Every sound is low-passed noise sweeping up (forward) or down (back), with a very quiet low hum under the bigger ones.
-     The page keeps the whole thing well under a normal system sound. */
+  /* ----- the sound design: a forest, heard from a quiet room. Wind for moving, leaves for small steps,
+     water drops for taps and saves, and once in a while, for the biggest moments, a bird far off. No beeps, no bells.
+     Wind is low-passed noise sweeping up (forward) or down (back) with a very quiet low hum under the bigger ones.
+     Leaves (rustle), drops and the bird are brighter, so they go to the bright output (o.hi, see SFX below). ----- */
   const air = (c, o, t, p) => noise(c, o, { t, dur: p.dur, f0: p.f0, f1: p.f1, ft: 'lowpass', q: p.q || .7, vol: p.vol, atk: p.atk || .1 });
   const hum = (c, o, t, p) => tone(c, o, { t, f: p.f, f2: p.f2, dur: p.dur, vol: p.vol, atk: p.atk || .12 });
-  /* ----- the click family: pressing a button, flipping a switch. Very short, quiet, but clear and snappy:
-     a tiny dry tick (a few thousandths of a second of band-passed noise) with a small knock tone under it.
-     It goes to its own brighter output (see SFX below), because the soft low-pass that suits the whooshes would smear it. ----- */
-  const click = (c, o, t, p) => {
-    noise(c, o, { t, dur: .02, f0: p.f, ft: 'bandpass', q: 1.4, vol: p.vol, atk: .0015 });
-    tone(c, o, { t, f: p.k, f2: p.k2, dur: .055, vol: p.kv, atk: .002 });
+  const hi = o => o.hi || o;
+  /* leaves: noise in short grains of changing loudness (some grains silent), band-passed around 2 kHz, then a soft envelope */
+  const rustle = (c, o, t, p) => {
+    const sr = c.sampleRate, len = Math.max(1, Math.floor(sr * (p.dur + .05))), buf = c.createBuffer(1, len, sr), ch = buf.getChannelData(0);
+    let i = 0; while (i < len) { const n = Math.floor(sr * (.004 + Math.random() * .012)), r = Math.random(), a = r < .3 ? 0 : r * r; for (let k = 0; k < n && i < len; k++, i++) ch[i] = (Math.random() * 2 - 1) * a; }
+    const src = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain();
+    src.buffer = buf; f.type = 'bandpass'; f.Q.value = p.q || .9; f.frequency.setValueAtTime(p.f0 || 2100, t); if (p.f1) f.frequency.exponentialRampToValueAtTime(p.f1, t + p.dur);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(p.vol, t + (p.atk || .06)); g.gain.exponentialRampToValueAtTime(0.0001, t + p.dur);
+    src.connect(f); f.connect(g); g.connect(hi(o)); src.start(t); src.stop(t + p.dur + .05);
   };
-  d.tap = (c, o, t) => click(c, o, t, { f: 2400, k: 820, k2: 560, vol: .42, kv: .1 });
-  d.on = (c, o, t) => click(c, o, t, { f: 3000, k: 700, k2: 1000, vol: .4, kv: .1 });
-  d.off = (c, o, t) => click(c, o, t, { f: 1900, k: 760, k2: 480, vol: .36, kv: .09 });
-  d.next = (c, o, t) => { air(c, o, t, { dur: .46, f0: 240, f1: 760, vol: .32, atk: .14 }); hum(c, o, t, { f: 82, f2: 110, dur: .46, vol: .08 }); };
-  d.back = (c, o, t) => air(c, o, t, { dur: .34, f0: 640, f1: 230, vol: .26, atk: .05 });
+  /* a water drop: a short tone whose pitch rises as it rings, then dies quickly (the way a drop sounds in a bowl) */
+  const drop = (c, o, t, p) => {
+    tone(c, hi(o), { t, f: p.f, f2: p.f * (p.rise || 1.9), dur: p.dur || .07, vol: p.vol, atk: .002 });
+    noise(c, hi(o), { t, dur: .012, f0: p.f * 2, ft: 'bandpass', q: 1.2, vol: p.vol * .5, atk: .001 });
+  };
+  /* a bird far off: two soft falling whistles with a little waver, kept quiet and only on the biggest moments */
+  const bird = (c, o, t, p) => {
+    const note = (t0, f0, f1, dur, vol) => {
+      const osc = c.createOscillator(), g = c.createGain(), lfo = c.createOscillator(), lg = c.createGain();
+      osc.frequency.setValueAtTime(f0, t0); osc.frequency.exponentialRampToValueAtTime(f1, t0 + dur);
+      lfo.frequency.value = 22; lg.gain.value = f0 * .012; lfo.connect(lg); lg.connect(osc.frequency);
+      g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(vol, t0 + .025); g.gain.setValueAtTime(vol, t0 + dur * .6); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      osc.connect(g); g.connect(hi(o)); osc.start(t0); lfo.start(t0); osc.stop(t0 + dur + .03); lfo.stop(t0 + dur + .03);
+    };
+    note(t, 2750, 2150, .16, p.vol); note(t + .21, 3050, 2350, .2, p.vol * .8);
+  };
+  /* ----- taps and switches: one small water drop. Very short and quiet, but clear. ----- */
+  d.tap = (c, o, t) => drop(c, o, t, { f: 1150, rise: 1.8, dur: .06, vol: .2 });
+  d.on = (c, o, t) => drop(c, o, t, { f: 1250, rise: 2.1, dur: .07, vol: .2 });
+  d.off = (c, o, t) => drop(c, o, t, { f: 1100, rise: .62, dur: .07, vol: .18 });
+  /* moving forward: wind rising, with leaves brushed on the way */
+  d.next = (c, o, t) => { air(c, o, t, { dur: .46, f0: 240, f1: 760, vol: .32, atk: .14 }); hum(c, o, t, { f: 82, f2: 110, dur: .46, vol: .08 }); rustle(c, o, t + .04, { dur: .3, f0: 1900, f1: 2600, vol: .07, atk: .08 }); };
+  d.back = (c, o, t) => { air(c, o, t, { dur: .34, f0: 640, f1: 230, vol: .26, atk: .05 }); rustle(c, o, t, { dur: .22, f0: 2400, f1: 1700, vol: .055, atk: .03 }); };
   d.type = (c, o, t) => air(c, o, t, { dur: .05, f0: 700, f1: 500, vol: .14, atk: .008 });
-  d.tick = (c, o, t, v) => air(c, o, t, { dur: .06, f0: 330 + Math.max(0, Math.min(100, +v || 0)) * 3, f1: 280, vol: .19, atk: .012 });
-  d.whoosh = (c, o, t) => { air(c, o, t, { dur: .56, f0: 200, f1: 620, vol: .3, atk: .18 }); hum(c, o, t, { f: 70, f2: 94, dur: .56, vol: .07, atk: .18 }); };
-  /* an entry was saved: one clear forward whoosh with a soft low thump landing under it */
-  d.coin = (c, o, t) => { air(c, o, t, { dur: .5, f0: 260, f1: 820, vol: .24, atk: .15 }); hum(c, o, t + .16, { f: 104, f2: 66, dur: .26, vol: .1, atk: .03 }); };
-  d.pop = (c, o, t) => { air(c, o, t, { dur: .2, f0: 300, f1: 640, vol: .24, atk: .05 }); hum(c, o, t, { f: 130, f2: 180, dur: .2, vol: .04, atk: .05 }); };
-  d.thunk = (c, o, t) => { hum(c, o, t, { f: 120, f2: 64, dur: .24, vol: .22, atk: .012 }); air(c, o, t, { dur: .1, f0: 340, f1: 240, vol: .14, atk: .01 }); };
-  /* a bigger step (a streak, a goal quarter): longer, a little higher, still only air */
-  d.sparkle = (c, o, t) => { air(c, o, t, { dur: .72, f0: 280, f1: 1100, vol: .36, atk: .26 }); hum(c, o, t, { f: 92, f2: 140, dur: .72, vol: .09, atk: .26 }); };
-  /* the biggest moments (setup done, goal funded, a badge): a slow low swell that opens up and settles */
+  /* a slider moving: a breath of air with one grain of leaves, higher as the value rises */
+  d.tick = (c, o, t, v) => { air(c, o, t, { dur: .06, f0: 330 + Math.max(0, Math.min(100, +v || 0)) * 3, f1: 280, vol: .19, atk: .012 }); rustle(c, o, t, { dur: .05, f0: 2000 + Math.max(0, Math.min(100, +v || 0)) * 8, vol: .05, atk: .008 }); };
+  d.whoosh = (c, o, t) => { air(c, o, t, { dur: .56, f0: 200, f1: 620, vol: .3, atk: .18 }); hum(c, o, t, { f: 70, f2: 94, dur: .56, vol: .07, atk: .18 }); rustle(c, o, t + .1, { dur: .36, f0: 1800, f1: 2500, vol: .07, atk: .12 }); };
+  /* an entry was saved: a drop into still water, a low plop under it and a ripple of air */
+  d.coin = (c, o, t) => { drop(c, o, t, { f: 620, rise: 2.2, dur: .1, vol: .42 }); hum(c, o, t + .03, { f: 170, f2: 115, dur: .18, vol: .1, atk: .01 }); air(c, o, t + .05, { dur: .4, f0: 320, f1: 700, vol: .2, atk: .12 }); };
+  /* something added: a bubble */
+  d.pop = (c, o, t) => { drop(c, o, t, { f: 380, rise: 2.4, dur: .06, vol: .2 }); air(c, o, t, { dur: .2, f0: 300, f1: 640, vol: .18, atk: .05 }); };
+  /* a switch: a pebble set down on wood */
+  d.thunk = (c, o, t) => { hum(c, o, t, { f: 120, f2: 64, dur: .24, vol: .22, atk: .012 }); noise(c, hi(o), { t, dur: .05, f0: 880, ft: 'bandpass', q: 5, vol: .12, atk: .002 }); air(c, o, t, { dur: .1, f0: 340, f1: 240, vol: .12, atk: .01 }); };
+  /* a bigger step (a streak, a goal quarter): three drops climbing, wind and leaves under them */
+  d.sparkle = (c, o, t) => {
+    air(c, o, t, { dur: .72, f0: 280, f1: 1100, vol: .3, atk: .26 }); hum(c, o, t, { f: 92, f2: 140, dur: .72, vol: .08, atk: .26 });
+    rustle(c, o, t + .05, { dur: .5, f0: 1800, f1: 2700, vol: .06, atk: .15 });
+    drop(c, o, t + .08, { f: 780, rise: 1.9, dur: .09, vol: .14 }); drop(c, o, t + .24, { f: 980, rise: 1.9, dur: .09, vol: .13 }); drop(c, o, t + .42, { f: 1240, rise: 1.9, dur: .1, vol: .12 });
+  };
+  /* the biggest moments (setup done, goal funded, a badge): a slow swell of wind through the leaves, and one bird far off */
   d.fanfare = (c, o, t) => {
     air(c, o, t, { dur: 1.2, f0: 190, f1: 1000, vol: .5, atk: .5 });
     hum(c, o, t, { f: 62, f2: 92, dur: 1.2, vol: .2, atk: .5 });
     hum(c, o, t + .12, { f: 110, f2: 123, dur: 1.0, vol: .08, atk: .45 });
     hum(c, o, t + .12, { f: 165, f2: 185, dur: 1.0, vol: .045, atk: .45 });
+    rustle(c, o, t + .15, { dur: .9, f0: 1700, f1: 2800, vol: .085, atk: .35 });
+    bird(c, o, t + .5, { vol: .055 });
   };
-  d.soft = (c, o, t) => { air(c, o, t, { dur: .3, f0: 210, f1: 380, vol: .2, atk: .08 }); hum(c, o, t, { f: 116, f2: 134, dur: .3, vol: .035, atk: .08 }); };
-  /* the whoosh family (moving between pages, saving, finishing) is a little quieter than before */
-  const trim = (f, k) => (c, o, t, a) => { const g = c.createGain(); g.gain.value = k; g.connect(o); f(c, g, t, a); };
+  /* a small settle: a leaf coming to rest */
+  d.soft = (c, o, t) => { air(c, o, t, { dur: .3, f0: 210, f1: 380, vol: .2, atk: .08 }); hum(c, o, t, { f: 116, f2: 134, dur: .3, vol: .035, atk: .08 }); rustle(c, o, t, { dur: .18, f0: 2200, f1: 1600, vol: .045, atk: .03 }); };
+  /* the wind family (moving between pages, saving, finishing) is kept a little quieter; trim keeps the bright output alongside */
+  const trim = (f, k) => (c, o, t, a) => { const g = c.createGain(); g.gain.value = k; g.connect(o); if (o.hi) { const h = c.createGain(); h.gain.value = k; h.connect(o.hi); g.hi = h; } f(c, g, t, a); };
   ['next', 'back', 'whoosh', 'coin', 'pop', 'thunk', 'sparkle', 'soft'].forEach(n => { d[n] = trim(d[n], .62); });
   d.fanfare = trim(d.fanfare, .66);
   return d;
@@ -76,6 +108,7 @@ const SFX = (() => {
       bright = ctx.createGain(); bright.gain.value = .4;
       const lp2 = ctx.createBiquadFilter(); lp2.type = 'lowpass'; lp2.frequency.value = 5200; lp2.Q.value = .4;
       bright.connect(lp2); lp2.connect(comp);
+      master.hi = bright; bright.hi = bright; /* recipes send leaves, drops and the bird to the bright output */
     } catch (e) { ctx = null; }
     return ctx;
   };
@@ -86,6 +119,7 @@ const SFX = (() => {
   };
   return {
     muted: () => !!(S.ui && S.ui.mute),
+    ctx: () => get(),   /* the music shares this context (phones allow only a few) */
     play(name, arg) {
       if (S.ui && S.ui.mute) return;
       const now = Date.now(); if (gaps[name] && last[name] && now - last[name] < gaps[name]) return; last[name] = now;

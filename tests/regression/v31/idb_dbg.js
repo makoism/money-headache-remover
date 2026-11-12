@@ -1,0 +1,20 @@
+const puppeteer = require('/home/claude/work/tools/node_modules/puppeteer-core');
+const { w, P, runTour } = require('/tmp/v22/lib.js');
+const PAGE = process.argv[2] || 'file:///home/claude/work/money-map-team.html', KEY = 'money-map-template-v2';
+(async () => {
+  const b = await puppeteer.launch({ executablePath: '/usr/bin/google-chrome', headless: 'new', args: ['--no-sandbox', '--disable-gpu'] });
+  const p = await b.newPage(), errs = []; await p.setViewport({ width: 390, height: 844 });
+  p.on('pageerror', e => errs.push('PAGEERR ' + e.message));
+  await p.evaluateOnNewDocument(() => { try { if (!sessionStorage.getItem('__k')) { localStorage.clear(); indexedDB.deleteDatabase('money-map-safe'); } } catch (e) {} });
+  await p.goto(PAGE + '?s=1&sfxtest#2026-11', { waitUntil: 'load' }); await w(800);
+  await runTour(p, P.a); await w(2000); await p.evaluate(() => sessionStorage.setItem('__k', '1'));
+  const readIdb = () => p.evaluate(() => new Promise(res => { const t0 = performance.now(); const rq = indexedDB.open('money-map-safe', 1); rq.onerror = () => res('open error'); rq.onblocked = () => res('blocked'); rq.onsuccess = () => { try { const g = rq.result.transaction('kv').objectStore('kv').get('state'); g.onsuccess = () => res({ ms: Math.round(performance.now() - t0), json: g.result ? g.result.json.length : null, t: g.result && g.result.t }); g.onerror = () => res('get error'); } catch (e) { res('ERR ' + e.message); } }; }));
+  console.log('idb before reload', await readIdb());
+  await p.evaluate((k) => { const o = Storage.prototype.setItem; Storage.prototype.setItem = function () {}; localStorage.removeItem(k); }, KEY);
+  await p.reload({ waitUntil: 'load' });
+  console.log('idb right after reload', await readIdb());
+  await w(1500);
+  console.log('idb 1.5 s after reload', await readIdb());
+  console.log('tour open', await p.evaluate(() => !document.querySelector('#tour').hidden), 'errors', JSON.stringify(errs));
+  await b.close();
+})();

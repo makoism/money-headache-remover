@@ -32,6 +32,7 @@ ui41/ui42     adapters to the outside: the AI route (relay or viewer's Claude) a
 | `ui45u.js` | Setup from statements: the Your statements screen (upload; the any-AI route where Claude cannot be reached; Type the numbers instead), the review screen, `importApply`. `IMP_FORMAT` + `importClean` are the pasted-answer contract |
 | `ui45v.js` | The statement reader: one fixed-shape job per file (`STMT_ROWS_SCHEMA`; a text file over 120 lines goes in parts that come back as one read), four at a time, then one category job per new merchant (`STMT_CATS_SCHEMA`, `STMT_CAT_GUIDE`); progress lines, `stmtReviewHTML` (what was read, categories with a tap for the rows behind each merchant), `stmtRecat`, `stmtAfterApply` (receipts with `src:'stmt'`, learned categories in `S.ui.cats`). The tool is offered with `tool_choice` auto and asked for in the prompt: Sonnet 5.5 refuses a forced tool |
 | `ui45x.js` | Setup extras (card calculator, subscriptions, goals add-another, `JAR_LINES`), **sound effects** (`SFXD` recipes, levels, routing) |
+| `music.js` | `MUSIC`: the setup's background piece (original, generative: pad, bell melody with echoes, wind, drops), started on the first tap in the setup, quiet while the hello video plays, off with Music off or Sound off, stopped when the setup closes. `MUSIC.render(ctx, out, seconds)` schedules it into an offline context for checks |
 | `ui45t.js` | Hello-video transcript (Mako's words, timed) |
 | `ui45.js` | The tour engine: `TOUR` order (video and welcome, currency, statements, review, typed money, bills, split, goals, play money, done), open, close, next, back, autosave, hello video, the hill scene (`homeScene`, drawn in the look's accent) |
 | `ui46.js` | Help menu, Ask Claude (viewer's own Claude account), copy-for-any-AI route |
@@ -43,7 +44,7 @@ ui41/ui42     adapters to the outside: the AI route (relay or viewer's Claude) a
 | `ui49.js` | Scan receipts card |
 | `ui6.js` | Home: status, next step, hero goal, play money, streak, badges, add-a-goal wizard |
 | `ui5.js` | Wiring all events, Settings backup/restore, startup |
-| `style.css`, `body.html` | Look and static markup. `body.html` has `@@VER@@` and `@@STAMP@@` placeholders |
+| `style.css`, `body.html` | Look and static markup (`@font-face` first, then the two palettes). `body.html` has `@@VER@@` and `@@STAMP@@` placeholders |
 | `VERSION` | Line 1: version number. Line 2: date and time shown at the bottom and in Help. |
 | `RELAY` | One line: the site's address, used only by copies opened as a file. Empty until the site exists. |
 | `test_team.js`, `tests/` | Main suite and guard tests. More regression scripts live in `/tmp/v22`, `/tmp/v25`, `/tmp/v27`. |
@@ -54,7 +55,9 @@ All `ui*.js` files share one scope (one IIFE) in the order set in `build.sh`. Fu
 | Change | Where |
 |---|---|
 | A subscription price or country hint | `SUBS` in `ui45s.js` (`[id, name, US, Japan, Philippines]`) |
-| A sound, its level or character | `SFXD`, `CLICK`, `trim` in `ui45x.js` |
+| A sound, its level or character | `SFXD` in `ui45x.js`: `air` (wind), `rustle` (leaves), `drop` (water), `bird`, `hum`; `trim` sets the family levels; leaves, drops and the bird go to the bright output (`o.hi`) |
+| The setup music (notes, chords, pace, level) | `music.js`: `DEG` and `CHORDS` (F major pentatonic plus the seventh), `LEVEL`, `PAD`, the timings in `changeChord`, `nextNote`, `step` |
+| The typefaces | `@font-face` at the top of `style.css` (Nunito Sans for reading, Fraunces for titles and big numbers; files in `../fonts`, copied next to the page by `../pwa/make_pwa.py`); `--f` and `--fd` |
 | The look (greens, glass, aurora) | the two palettes at the top of `style.css` (Day = light root, Forest = dark), `--aurora`, the glass rule and `.art-*` placements; the streak colour is `--streak`; PWA colours in `../pwa/make_pwa.py` and the icons |
 | A celebration (leaves, sparks) | `celebrate`, `leafColors`, `leafFrame` in `ui44.js`; `sparkBurst` (small leaves on switches and sliders) in `ui45x.js` |
 | Setup wording or order | the step definitions in `ui45s.js`, `ui45u.js` and `ui45.js`; the order is the `TOUR` array in `ui45.js` (`skipIf` drops the typed screens once statements gave the numbers) |

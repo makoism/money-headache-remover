@@ -102,7 +102,8 @@ const strip = j => { const o = JSON.parse(j); return JSON.stringify(canon({ step
   for (let i = 0; i < 12; i++) { if (/today/.test(await p.$eval('#bkWhen', e => e.textContent))) break; await w(250); }
   ck(/Last backup: today/.test(await p.$eval('#bkWhen', e => e.textContent)), 'Save file marks the backup: ' + await p.$eval('#bkWhen', e => e.textContent));
   { const o = JSON.parse(await p.evaluate(k => localStorage.getItem(k), KEY)); o.ui.bk = Date.now() - 30 * 864e5; delete o.ui.bkLater; await lose(p, JSON.stringify(o)); } await reload(p);
-  v = await vis(); ck(!v.hid && /30 days ago/.test(v.t), 'a 30-day-old backup shows the reminder: ' + v.t.slice(0, 50));
+  for (let i = 0; i < 12; i++) { v = await vis(); if (!v.hid) break; await w(250); } /* the Home cards settle after deferred work; wait under load */
+  ck(!v.hid && /30 days ago/.test(v.t), 'a 30-day-old backup shows the reminder: ' + v.t.slice(0, 50));
   await p.click('#hBk [data-bk-now]'); await w(1500);
   v = await vis(); ck(v.hid, 'Save a copy on Home saves and hides the reminder');
   ck(await p.evaluate(() => /Backup saved/.test(document.querySelector('#cheer').textContent)), 'Home shows a confirmation');

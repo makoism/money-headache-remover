@@ -6,6 +6,10 @@
 <title>M.H.R.2000 (The Money Headache Remover 2000)</title>
 <style>
 /* Two greens. Forest (dark) is the default; Day is the pale sage version. Glass panels sit on a soft aurora of moss and mint. */
+@font-face { font-family: "Nunito Sans"; font-style: normal; font-weight: 200 1000; font-display: swap; src: url(fonts/nunito-sans-latin.woff2) format("woff2"); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: "Nunito Sans"; font-style: normal; font-weight: 200 1000; font-display: swap; src: url(fonts/nunito-sans-latin-ext.woff2) format("woff2"); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: "Fraunces"; font-style: normal; font-weight: 100 900; font-display: swap; src: url(fonts/fraunces-latin.woff2) format("woff2"); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: "Fraunces"; font-style: normal; font-weight: 100 900; font-display: swap; src: url(fonts/fraunces-latin-ext.woff2) format("woff2"); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
 :root {
   color-scheme: light;
   --bg: #eef4ef; --panel: rgba(255, 255, 255, .62); --card: rgba(255, 255, 255, .62); --field: #ffffff; --seg-on: #ffffff;
@@ -16,7 +20,10 @@
   --warn-on: #c98500; --bad-on: #e0524b; --ok-dot: #a9bdb2;
   --leaf: rgba(31, 122, 82, .34); --glass-hi: rgba(255, 255, 255, .5);
   --aurora: radial-gradient(60% 45% at 85% -5%, rgba(143, 217, 176, .5) 0%, rgba(143, 217, 176, 0) 70%), radial-gradient(70% 50% at -10% 60%, rgba(95, 185, 138, .22) 0%, rgba(95, 185, 138, 0) 70%), radial-gradient(50% 40% at 60% 110%, rgba(255, 255, 255, .7) 0%, rgba(255, 255, 255, 0) 70%);
-  --f: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", "Helvetica Neue", "Hiragino Sans", "Noto Sans JP", "Segoe UI", Roboto, Arial, sans-serif;
+  /* type: Nunito Sans for reading, Fraunces (a soft serif) for titles and the big numbers. Both are served next to the page (fonts/);
+     a copy opened as a plain file falls back to the device's own fonts */
+  --f: "Nunito Sans", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Helvetica Neue", "Hiragino Sans", "Noto Sans JP", "Segoe UI", Roboto, Arial, sans-serif;
+  --fd: "Fraunces", "New York", "Iowan Old Style", "Palatino", Georgia, "Hiragino Mincho ProN", "Noto Serif JP", serif;
   --gap: 40px;
 }
 @media (prefers-color-scheme: dark) {
@@ -48,10 +55,13 @@
 .card, .start, .tour-fields, .tour-cloud, .split-row, .gw-card, .mgb, .tour-ledger, .why, .sub-o, .newcat, .hnext, .msg.ai, .tour-try, .src-panel, .imp-q { box-shadow: inset 0 0 0 1px var(--hair), inset 0 1px 0 var(--glass-hi); }
 @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) { .card, .gw-card, .hnext, .src-panel { -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); } }
 html { -webkit-text-size-adjust: 100%; }
-body { margin: 0; background: var(--bg); color: var(--ink); position: relative; font-family: var(--f); font-size: 17px; line-height: 1.47; letter-spacing: -.022em; font-weight: 400; -webkit-font-smoothing: antialiased; }
+body { margin: 0; background: var(--bg); color: var(--ink); position: relative; font-family: var(--f); font-size: 17px; line-height: 1.47; letter-spacing: -.008em; font-weight: 400; -webkit-font-smoothing: antialiased; }
 body::before { content: ''; position: fixed; inset: 0; z-index: -1; background: var(--aurora); pointer-events: none; }
 button, input, select, textarea { font: inherit; letter-spacing: inherit; color: inherit; }
 h1, h2, h3, p { margin: 0; }
+/* titles and the big numbers in the serif; weights sit a step lighter than the sans needed, the serif carries its own weight */
+h1, h2, .hs-big, .big .num, .tour-reveal b, .hst-n b { font-family: var(--fd); font-weight: 500; font-optical-sizing: auto; letter-spacing: -.012em; }
+.top h1 small, h2 small, h2 .chip, h2 .cap { font-family: var(--f); }
 b, strong { font-weight: 600; }
 :focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 65%, transparent); outline-offset: 2px; border-radius: 8px; }
 .wrap { max-width: 760px; margin: 0 auto; padding: 0 24px 120px; display: flex; flex-direction: column; }
@@ -64,14 +74,15 @@ b, strong { font-weight: 600; }
 .hero { position: relative; } .hero .art-vine { left: -4px; top: 72px; width: 56px; }
 .card.sect:has(#goalCards) { position: relative; overflow: hidden; } .card:has(#goalCards) .art-sprout { right: 18px; bottom: 14px; width: 54px; }
 .tour-in { position: relative; } .tour #tourArt .art { z-index: 0; }
-.tour .art-vine { width: 72px; right: 14px; bottom: 96px; } .tour .art-sprig { width: 112px; left: 22px; bottom: 100px; }
-.tour .art-sprout { width: 56px; right: 26px; bottom: 104px; } .tour .art-branch { width: 156px; right: 8px; bottom: 100px; }
+.tour .art-vine { width: 72px; right: 14px; bottom: 96px; } .tour .art-sprig { width: 118px; left: 46px; bottom: 100px; }
+.tour .art-sprout { width: 56px; right: 26px; bottom: 104px; } .tour .art-branch { width: 164px; right: 8px; bottom: 100px; }
+.tour .art.aside { visibility: hidden; } /* set by fitTourArt when the screen's words reach down to where the art sits */
 @media (max-height: 700px) { .tour .art { display: none; } }
 
 
 /* top bar and tabs */
 .top { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 22px 0 0; }
-.top h1 { font-size: 21px; font-weight: 600; letter-spacing: -.02em; line-height: 1.2; min-width: 0; }
+.top h1 { font-size: 22px; font-weight: 500; letter-spacing: -.005em; line-height: 1.2; min-width: 0; }
 /* the short name leads; the long name reads underneath, quieter */
 .top h1 small { display: block; font-size: 12px; font-weight: 500; letter-spacing: 0; color: var(--ink2); margin-top: 1px; }
 @media (max-width: 560px) { .top { flex-wrap: wrap; row-gap: 6px; } .top h1 { flex: 1 1 100%; font-size: 19px; } .save { margin-left: 0; } }
@@ -104,7 +115,7 @@ b, strong { font-weight: 600; }
 .pick .chev { position: absolute; right: 8px; top: 50%; margin-top: -11px; pointer-events: none; }
 .pay { color: var(--ink2); font-size: 17px; margin-top: -14px; }
 .big { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-top: 18px; }
-.big .num { font-weight: 600; font-size: min(clamp(64px, 17vw, 120px), calc((100vw - 56px) / (var(--n, 6) * .62))); line-height: 1; letter-spacing: -.045em; font-variant-numeric: lining-nums; }
+.big .num { font-weight: 500; font-size: min(clamp(64px, 17vw, 120px), calc((100vw - 56px) / (var(--n, 6) * .62))); line-height: 1; letter-spacing: -.02em; font-variant-numeric: lining-nums; }
 .big .lbl { font-size: clamp(20px, 3.8vw, 26px); font-weight: 500; letter-spacing: -.02em; }
 .big .wk { color: var(--ink2); font-size: 17px; }
 .link { border: 0; background: none; padding: 0 2px; min-height: 32px; font-size: inherit; color: var(--link); cursor: pointer; border-radius: 6px; }
@@ -160,7 +171,7 @@ b, strong { font-weight: 600; }
 .card { background: var(--panel); border-radius: 30px; padding: clamp(28px, 6vw, 60px); margin-top: 40px; }
 .sect { display: grid; gap: 44px; }
 .head { display: grid; gap: 12px; }
-.card h2 { font-size: clamp(28px, 4.6vw, 38px); line-height: 1.1; font-weight: 600; letter-spacing: -.03em; }
+.card h2 { font-size: clamp(28px, 4.6vw, 38px); line-height: 1.1; font-weight: 500; letter-spacing: -.015em; }
 .sub2 { color: var(--ink2); font-size: 17px; line-height: 1.47; max-width: 46ch; text-wrap: pretty; }
 .cap { color: var(--ink2); font-size: 14px; line-height: 1.45; text-wrap: pretty; }
 .cap b, .nt b { color: var(--ink); font-weight: 600; }
@@ -204,7 +215,7 @@ b, strong { font-weight: 600; }
 .keep .link { font-size: 14px; font-weight: 500; }
 .leftrow { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-top: -24px; padding-top: 4px; }
 .leftrow span { font-size: 21px; font-weight: 600; letter-spacing: -.02em; }
-.leftrow b { font-size: clamp(30px, 6vw, 40px); font-weight: 600; letter-spacing: -.035em; font-variant-numeric: tabular-nums lining-nums; }
+.leftrow b { font-family: var(--fd); font-size: clamp(30px, 6vw, 40px); font-weight: 500; letter-spacing: -.015em; font-optical-sizing: auto; }
 .leftrow b.neg { color: var(--bad); }
 #bankLine { margin-top: -34px; }
 .row-btns { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
@@ -340,7 +351,7 @@ a.btn { display: inline-flex; align-items: center; justify-content: center; text
 
 /* ---- the first-steps card ---- */
 .start { background: var(--panel); border-radius: 26px; padding: clamp(24px, 5vw, 36px); margin-top: 24px; display: grid; gap: 18px; }
-.start h2 { font-size: clamp(22px, 3.6vw, 26px); font-weight: 600; letter-spacing: -.025em; line-height: 1.15; }
+.start h2 { font-size: clamp(22px, 3.6vw, 26px); font-weight: 500; letter-spacing: -.01em; line-height: 1.15; }
 .start .cap { font-size: 15px; max-width: 54ch; }
 .steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 18px; counter-reset: step; }
 .steps li { counter-increment: step; display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 14px; align-items: start; }
@@ -434,7 +445,7 @@ table.plain tbody tr { cursor: default; } table.plain tbody tr:hover td { backgr
 .tour-dots i.on b { background: var(--ink); }
 .tour-links { display: flex; align-items: center; gap: 18px; }
 .tour-body { flex: 1 1 auto; display: flex; flex-direction: column; justify-content: flex-start; gap: 26px; padding: clamp(32px, 9vh, 100px) 0 28px; position: relative; z-index: 1; }
-.tour-body h2 { font-size: clamp(30px, 7vw, 44px); line-height: 1.08; font-weight: 600; letter-spacing: -.035em; text-wrap: balance; outline: none; }
+.tour-body h2 { font-size: clamp(30px, 7vw, 44px); line-height: 1.08; font-weight: 500; letter-spacing: -.018em; text-wrap: balance; outline: none; }
 .tour-body p { font-size: 19px; line-height: 1.45; color: var(--ink2); max-width: 38ch; text-wrap: pretty; letter-spacing: -.015em; }
 .tour-body p b, .tour-body li b { color: var(--ink); font-weight: 600; }
 .tour-body p.cap { font-size: 14px; }
@@ -632,7 +643,7 @@ svg.tour-scene { width: 100%; max-width: 440px; height: auto; }
 .split-row .rng { margin-top: 0; }
 .tour-body .split-s { margin: 0 0 8px; max-width: none; }
 .tour-reveal { display: grid; gap: 4px; }
-.tour-reveal b { font-size: clamp(54px, 16vw, 88px); font-weight: 600; letter-spacing: -.045em; line-height: 1; font-variant-numeric: tabular-nums; }
+.tour-reveal b { font-size: clamp(54px, 16vw, 88px); font-weight: 500; letter-spacing: -.02em; line-height: 1; font-variant-numeric: tabular-nums; }
 .tour-reveal span { font-size: 19px; color: var(--ink2); }
 /* One dropdown arrow everywhere: the browser's own arrow hugged the right edge of the field, so draw it inset and centred instead. */
 .sets select, .selbox select, .rcform .selbox select, .remind-fields .selbox select, .rcmonth select, .tour-more .selbox select, .tour-fields .selbox select, .ed-edit select {
@@ -655,7 +666,7 @@ svg.tour-scene { width: 100%; max-width: 440px; height: auto; }
 @keyframes tabIn { from { opacity: 0; transform: translateY(8px); } }
 .tour-tools { display: inline-flex; align-items: center; gap: 18px; }
 .plan-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-top: 30px; }
-.plan-top h2 { font-size: 26px; font-weight: 600; letter-spacing: -.03em; }
+.plan-top h2 { font-size: 26px; font-weight: 500; letter-spacing: -.012em; }
 #p-month .hero { padding-top: 30px; }
 .ctext summary { cursor: pointer; color: var(--link); font-size: 15px; min-height: 32px; display: inline-flex; align-items: center; }
 .ctext { display: grid; gap: 12px; }
@@ -689,7 +700,7 @@ svg.tour-scene { width: 100%; max-width: 440px; height: auto; }
 .hw-n b { font-size: clamp(66px, 15vw, 100px); line-height: .88; font-weight: 600; letter-spacing: -.055em; font-variant-numeric: tabular-nums; }
 .hw-n b svg { width: 76px; height: 76px; color: var(--good); }
 .hw-n span { font-size: 14px; color: var(--ink2); font-weight: 500; margin-top: 8px; text-align: center; }
-#p-home .hw-t h2 { font-size: clamp(20px, 3.3vw, 26px); line-height: 1.2; letter-spacing: -.025em; text-wrap: balance; }
+#p-home .hw-t h2 { font-size: clamp(20px, 3.3vw, 26px); line-height: 1.2; letter-spacing: -.01em; text-wrap: balance; }
 #p-home .hw-t h2 b { font-weight: 600; }
 .hw-sub { color: var(--ink2); font-size: 16px; margin-top: 6px; text-wrap: pretty; }
 .hw-t .chip { margin-top: 12px; }
@@ -716,7 +727,7 @@ svg.tour-scene { width: 100%; max-width: 440px; height: auto; }
 .hpair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; margin-top: 20px; }
 #p-home .hpair .card { margin-top: 0; }
 @media (max-width: 640px) { .hpair { grid-template-columns: 1fr; } }
-.hs-big { font-size: min(clamp(42px, 8vw, 56px), calc((100vw - 90px) / (var(--n, 6) * .62))); font-weight: 600; letter-spacing: -.045em; line-height: 1; margin-top: 16px; font-variant-numeric: tabular-nums; }
+.hs-big { font-size: min(clamp(42px, 8vw, 56px), calc((100vw - 90px) / (var(--n, 6) * .62))); font-weight: 500; letter-spacing: -.02em; line-height: 1; margin-top: 16px; font-variant-numeric: tabular-nums; }
 .hs-big.neg { color: var(--bad); }
 .hs-lbl { color: var(--ink2); font-size: 15px; margin-top: 6px; }
 .hs-bar { position: relative; height: 10px; border-radius: 5px; background: var(--track2); margin-top: 18px; }
@@ -732,7 +743,7 @@ svg.tour-scene { width: 100%; max-width: 440px; height: auto; }
 .hst-fl.lit { color: var(--streak); animation: sway 2.6s ease-in-out infinite alternate; }
 @keyframes sway { from { transform: rotate(-4deg); } to { transform: scale(1.04) rotate(4deg); } }
 .hst-n { display: flex; align-items: baseline; gap: 8px; }
-.hst-n b { font-size: 58px; line-height: 1; font-weight: 600; letter-spacing: -.045em; font-variant-numeric: tabular-nums; }
+.hst-n b { font-size: 58px; line-height: 1; font-weight: 500; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
 .hst-n span { font-size: 17px; color: var(--ink2); }
 .hst-line { font-size: 15px; color: var(--ink2); margin-top: 10px; line-height: 1.4; }
 .wdots { list-style: none; display: flex; gap: 7px; margin: 16px 0 0; padding: 0; }
@@ -831,7 +842,7 @@ b.dp-t { cursor: default; }
 .gw-dots { display: flex; gap: 6px; list-style: none; margin: 0; padding: 0; }
 .gw-dots li { width: 30px; height: 5px; border-radius: 3px; background: var(--track2); transition: background .25s; }
 .gw-dots li.done, .gw-dots li.on { background: var(--accent); } .gw-dots li.done { opacity: .5; }
-.gw-card h2 { font-size: clamp(26px, 6vw, 32px); line-height: 1.1; font-weight: 600; letter-spacing: -.03em; margin: 20px 0 18px; }
+.gw-card h2 { font-size: clamp(26px, 6vw, 32px); line-height: 1.1; font-weight: 500; letter-spacing: -.012em; margin: 20px 0 18px; }
 .gw-body { display: grid; gap: 18px; }
 .in-r { animation: slideR .26s cubic-bezier(.2, .8, .2, 1); } .in-l { animation: slideL .26s cubic-bezier(.2, .8, .2, 1); }
 @keyframes slideR { from { opacity: 0; transform: translateX(28px); } } @keyframes slideL { from { opacity: 0; transform: translateX(-28px); } }
@@ -862,7 +873,7 @@ body.gw-open, body.co-open.gw-open { overflow: hidden; }
 .co-pop.swap h2, .co-pop.swap #coB, .co-pop.swap .co-n { animation: coFade .24s ease-out; }
 @keyframes coFade { from { opacity: 0; transform: translateY(4px); } }
 .co-n { font-size: 13px; color: var(--ink3); font-weight: 600; }
-.co-pop h2 { font-size: 21px; font-weight: 600; letter-spacing: -.02em; margin: 4px 0 6px; line-height: 1.2; }
+.co-pop h2 { font-size: 21px; font-weight: 500; letter-spacing: -.008em; margin: 4px 0 6px; line-height: 1.2; }
 .co-pop #coB { font-size: 16px; color: var(--ink2); line-height: 1.4; }
 .co-foot { display: flex; align-items: center; gap: 8px; margin-top: 14px; }
 .co-arrow { position: absolute; width: 14px; height: 14px; background: var(--field); transform: rotate(45deg); border-radius: 3px; }
@@ -1232,6 +1243,8 @@ body.gw-open, body.co-open.gw-open { overflow: hidden; }
 <meta name="apple-mobile-web-app-title" content="M.H.R.2000">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="preload" as="font" type="font/woff2" crossorigin href="fonts/nunito-sans-latin.woff2">
+<link rel="preload" as="font" type="font/woff2" crossorigin href="fonts/fraunces-latin.woff2">
 </head>
 <body>
 <div class="dock" id="dock" aria-hidden="true">
@@ -1496,7 +1509,12 @@ body.gw-open, body.co-open.gw-open { overflow: hidden; }
       <div class="field sndrow">
         <span class="lab" id="sndLab">Sound</span>
         <div class="snd-r"><button type="button" class="sw" id="setSnd" role="switch" aria-labelledby="sndLab" aria-checked="true"><i></i></button><span class="cap" id="sndTxt">On</span></div>
-        <p class="cap">Click and chime feedback. This browser only.</p>
+        <p class="cap">Wind, leaves and water drops as feedback. This browser only.</p>
+      </div>
+      <div class="field sndrow">
+        <span class="lab" id="musLab">Music</span>
+        <div class="snd-r"><button type="button" class="sw" id="setMus" role="switch" aria-labelledby="musLab" aria-checked="true"><i></i></button><span class="cap" id="musTxt">On</span></div>
+        <p class="cap">A quiet piece, made in the browser, while the guided setup is open.</p>
       </div>
       <div class="field themerow">
         <span class="lab" id="themeLab">Look</span>
@@ -1566,12 +1584,12 @@ body.gw-open, body.co-open.gw-open { overflow: hidden; }
   </div>
 
   <p class="foot" id="footNote">Not financial advice. Sample numbers are invented. Replace them with yours.</p>
-  <p class="foot ver" id="verFoot">Version 29.0, updated Nov 12, 1:15 pm</p>
+  <p class="foot ver" id="verFoot">Version 30.0, updated Nov 12, 2:30 pm</p>
 </div>
 <div class="tip" id="tip" role="tooltip"></div>
 <div class="tour" id="tour" role="dialog" aria-modal="true" aria-labelledby="tourTitle" hidden>
   <div class="tour-in">
-    <div class="tour-top"><span class="tour-part sr" id="tourPart"></span><span class="tour-tools"><button type="button" class="link" id="tourSnd" aria-pressed="false">Sound on</button><button type="button" class="link" id="tourSkip">Skip tour</button></span></div>
+    <div class="tour-top"><span class="tour-part sr" id="tourPart"></span><span class="tour-tools"><button type="button" class="link" id="tourMus" aria-pressed="true">Music on</button><button type="button" class="link" id="tourSnd" aria-pressed="false">Sound on</button><button type="button" class="link" id="tourSkip">Skip tour</button></span></div>
     <div class="tour-dots" id="tourDots" role="img"></div>
     <div class="tour-body" id="tourBody"></div>
     <span id="tourArt" aria-hidden="true"></span>
@@ -1586,7 +1604,7 @@ body.gw-open, body.co-open.gw-open { overflow: hidden; }
     <button type="button" id="helpTab">Explain this tab</button>
     <button type="button" id="helpSetup">Guided setup</button>
     <button type="button" id="helpVideo" hidden>Intro video</button>
-    <p class="help-ver">Version 29.0</p>
+    <p class="help-ver">Version 30.0</p>
   </div>
   <div class="help-row"><button type="button" class="help-btn ask-btn" id="askBtn">Ask</button><button type="button" class="help-btn" id="helpBtn" aria-expanded="false" aria-controls="helpMenu"><span class="q" aria-hidden="true">?</span>Help</button></div>
 </div>
@@ -2625,11 +2643,11 @@ function confirmClick(btn, text, run) {
    Kinds: grass (a tuft along a bottom edge), sprig (a stem with small leaves), vine (a long climbing stem), sprout (two leaves),
    branch (an arched stem with leaves). Each is a closed little drawing; nothing repeats from screen to screen. */
 const ART = {
-  grass: `<svg viewBox="0 0 132 50" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 48Q4.5 34.9 0 24.2M17 48Q15.1 30.6 9.4 16.4M27 48Q26.6 32.1 25.3 19.1M36 48Q36.3 38.4 37.1 30.6M48 48Q47.9 38.7 47.7 31.1M58 48Q56.2 38.3 50.8 30.3M69 48Q70.9 33.6 76.5 21.8M80 48Q78.9 37.6 75.5 29M90 48Q92.5 30.9 100 16.9M101 48Q100.7 31.6 99.9 18.1M113 48Q111 26.3 104.9 8.6M124 48Q123.2 27.9 120.8 11.4"/></svg>`,
-  sprig: `<svg viewBox="0 0 122 66" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 60C40 56 76 36 116 10"/><path transform="translate(27.8 55.1) rotate(-58.3)" d="M0 0Q12 -7.5 24 0Q12 7.5 0 0ZM3.6 0H17.3"/><path transform="translate(47.5 48.2) rotate(19.5)" d="M0 0Q10.9 -6.8 21.9 0Q10.9 6.8 0 0ZM3.3 0H15.8"/><path transform="translate(66.3 39.4) rotate(-69)" d="M0 0Q9.9 -6.2 19.8 0Q9.9 6.2 0 0ZM3 0H14.3"/><path transform="translate(84.4 29.6) rotate(12)" d="M0 0Q8.9 -5.5 17.7 0Q8.9 5.5 0 0ZM2.7 0H12.7"/><path transform="translate(100.6 19.8) rotate(-73.9)" d="M0 0Q7.8 -4.9 15.6 0Q7.8 4.9 0 0ZM2.3 0H11.2"/><path transform="translate(116 10) rotate(-40)" d="M0 0Q6.5 -4.5 13 0Q6.5 4.5 0 0Z"/></svg>`,
-  vine: `<svg viewBox="0 0 90 232" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M44 228C-30 170 110 90 30 10"/><path transform="translate(25.9 206.2) rotate(-184.6)" d="M0 0Q11 -7 22 0Q11 7 0 0ZM3.3 0H15.8"/><path transform="translate(22.1 178.7) rotate(-13.3)" d="M0 0Q11 -7 22 0Q11 7 0 0ZM3.3 0H15.8"/><path transform="translate(30.1 149.2) rotate(-138.9)" d="M0 0Q11 -7 22 0Q11 7 0 0ZM3.3 0H15.8"/><path transform="translate(43 118.3) rotate(2.1)" d="M0 0Q11 -7 22 0Q11 7 0 0ZM3.3 0H15.8"/><path transform="translate(53.4 86.1) rotate(-148.1)" d="M0 0Q11 -7 22 0Q11 7 0 0ZM3.3 0H15.8"/><path transform="translate(54.3 53.1) rotate(-30.6)" d="M0 0Q11 -7 22 0Q11 7 0 0ZM3.3 0H15.8"/><path transform="translate(30 10) rotate(-135)" d="M0 0Q7 -4.5 14 0Q7 4.5 0 0Z"/></svg>`,
-  sprout: `<svg viewBox="0 0 76 76" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M38 72V38"/><path transform="translate(38 44) rotate(-150)" d="M0 0Q15 -9 30 0Q15 9 0 0ZM4.5 0H21.6"/><path transform="translate(38 40) rotate(-32)" d="M0 0Q15 -9 30 0Q15 9 0 0ZM4.5 0H21.6"/><path d="M38 38c-2-6 0-10 4-12 2 4 1 8-4 12z"/></svg>`,
-  branch: `<svg viewBox="0 0 172 78" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 72C50 40 100 22 168 6"/><path transform="translate(26.4 57.7) rotate(15.7)" d="M0 0Q13 -8 26 0Q13 8 0 0ZM3.9 0H18.7"/><path transform="translate(46.9 46.7) rotate(-72.4)" d="M0 0Q12.1 -7.4 24.2 0Q12.1 7.4 0 0ZM3.6 0H17.4"/><path transform="translate(68.2 36.9) rotate(23.2)" d="M0 0Q11.2 -6.9 22.4 0Q11.2 6.9 0 0ZM3.4 0H16.1"/><path transform="translate(90.8 28.1) rotate(-65.7)" d="M0 0Q10.3 -6.3 20.5 0Q10.3 6.3 0 0ZM3.1 0H14.8"/><path transform="translate(113 20.7) rotate(28.8)" d="M0 0Q9.4 -5.8 18.7 0Q9.4 5.8 0 0ZM2.8 0H13.5"/><path transform="translate(136.7 13.9) rotate(-61.1)" d="M0 0Q8.5 -5.2 16.9 0Q8.5 5.2 0 0ZM2.5 0H12.2"/><path transform="translate(168 6) rotate(-30)" d="M0 0Q7 -5 14 0Q7 5 0 0Z"/></svg>`,
+  grass: `<svg viewBox="-2.2 6.4 128.4 43.8" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 48Q4.5 34.9 0 24.2M17 48Q15.1 30.6 9.4 16.4M27 48Q26.6 32.1 25.3 19.1M36 48Q36.3 38.4 37.1 30.6M48 48Q47.9 38.7 47.7 31.1M58 48Q56.2 38.3 50.8 30.3M69 48Q70.9 33.6 76.5 21.8M80 48Q78.9 37.6 75.5 29M90 48Q92.5 30.9 100 16.9M101 48Q100.7 31.6 99.9 18.1M113 48Q111 26.3 104.9 8.6M124 48Q123.2 27.9 120.8 11.4"/></svg>`,
+  sprig: `<svg viewBox="1.8 -2.3 127.8 64.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 60C40 56 76 36 116 10"/><path transform="translate(27.8 55.1) rotate(-58.3)" d="M0 0Q12 -7.5 24 0Q12 7.5 0 0ZM3.6 0H17.3"/><path transform="translate(47.5 48.2) rotate(19.5)" d="M0 0Q10.9 -6.8 21.9 0Q10.9 6.8 0 0ZM3.3 0H15.8"/><path transform="translate(66.3 39.4) rotate(-69)" d="M0 0Q9.9 -6.2 19.8 0Q9.9 6.2 0 0ZM3 0H14.3"/><path transform="translate(84.4 29.6) rotate(12)" d="M0 0Q8.9 -5.5 17.7 0Q8.9 5.5 0 0ZM2.7 0H12.7"/><path transform="translate(100.6 19.8) rotate(-73.9)" d="M0 0Q7.8 -4.9 15.6 0Q7.8 4.9 0 0ZM2.3 0H11.2"/><path transform="translate(116 10) rotate(-40)" d="M0 0Q6.5 -4.5 13 0Q6.5 4.5 0 0Z"/></svg>`,
+  vine: `<svg viewBox="1.5 -3.7 75.7 233.9" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M44 228C-30 170 110 90 30 10"/><path transform="translate(25.9 206.2) rotate(-184.6)" d="M0 0Q11 -7 22 0Q11 7 0 0ZM3.3 0H15.8"/><path transform="translate(22.1 178.7) rotate(-13.3)" d="M0 0Q11 -7 22 0Q11 7 0 0ZM3.3 0H15.8"/><path transform="translate(30.1 149.2) rotate(-138.9)" d="M0 0Q11 -7 22 0Q11 7 0 0ZM3.3 0H15.8"/><path transform="translate(43 118.3) rotate(2.1)" d="M0 0Q11 -7 22 0Q11 7 0 0ZM3.3 0H15.8"/><path transform="translate(53.4 86.1) rotate(-148.1)" d="M0 0Q11 -7 22 0Q11 7 0 0ZM3.3 0H15.8"/><path transform="translate(54.3 53.1) rotate(-30.6)" d="M0 0Q11 -7 22 0Q11 7 0 0ZM3.3 0H15.8"/><path transform="translate(30 10) rotate(-135)" d="M0 0Q7 -4.5 14 0Q7 4.5 0 0Z"/></svg>`,
+  sprout: `<svg viewBox="7.6 18.1 60.5 56.1" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M38 72V38"/><path transform="translate(38 44) rotate(-150)" d="M0 0Q15 -9 30 0Q15 9 0 0ZM4.5 0H21.6"/><path transform="translate(38 40) rotate(-32)" d="M0 0Q15 -9 30 0Q15 9 0 0ZM4.5 0H21.6"/><path d="M38 38c-2-6 0-10 4-12 2 4 1 8-4 12z"/></svg>`,
+  branch: `<svg viewBox="1.8 -5.4 181.8 79.6" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 72C50 40 100 22 168 6"/><path transform="translate(26.4 57.7) rotate(15.7)" d="M0 0Q13 -8 26 0Q13 8 0 0ZM3.9 0H18.7"/><path transform="translate(46.9 46.7) rotate(-72.4)" d="M0 0Q12.1 -7.4 24.2 0Q12.1 7.4 0 0ZM3.6 0H17.4"/><path transform="translate(68.2 36.9) rotate(23.2)" d="M0 0Q11.2 -6.9 22.4 0Q11.2 6.9 0 0ZM3.4 0H16.1"/><path transform="translate(90.8 28.1) rotate(-65.7)" d="M0 0Q10.3 -6.3 20.5 0Q10.3 6.3 0 0ZM3.1 0H14.8"/><path transform="translate(113 20.7) rotate(28.8)" d="M0 0Q9.4 -5.8 18.7 0Q9.4 5.8 0 0ZM2.8 0H13.5"/><path transform="translate(136.7 13.9) rotate(-61.1)" d="M0 0Q8.5 -5.2 16.9 0Q8.5 5.2 0 0ZM2.5 0H12.2"/><path transform="translate(168 6) rotate(-30)" d="M0 0Q7 -5 14 0Q7 5 0 0Z"/></svg>`,
 };
 function art(kind, place) { return ART[kind] ? `<span class="art art-${kind}${place ? ' art-' + place : ''}" aria-hidden="true">${ART[kind]}</span>` : ''; }
 /* the tabs: one drawing each, placed once. Receipts: a sprig by the scan card's title. Plan: a vine up the side of the big number. Goals: a sprout in the corner of the goals card. */
@@ -4282,42 +4300,74 @@ const SFXD = (() => {
     g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(o.vol || .1, t + (o.atk || .02)); g.gain.exponentialRampToValueAtTime(0.0001, t + o.dur);
     src.connect(f); f.connect(g); g.connect(out); src.start(t); src.stop(t + o.dur + .05);
   };
-  /* ----- the sound design: deep, soft air, like wind going past in the next room. No beeps, no bells. -----
-     Every sound is low-passed noise sweeping up (forward) or down (back), with a very quiet low hum under the bigger ones.
-     The page keeps the whole thing well under a normal system sound. */
+  /* ----- the sound design: a forest, heard from a quiet room. Wind for moving, leaves for small steps,
+     water drops for taps and saves, and once in a while, for the biggest moments, a bird far off. No beeps, no bells.
+     Wind is low-passed noise sweeping up (forward) or down (back) with a very quiet low hum under the bigger ones.
+     Leaves (rustle), drops and the bird are brighter, so they go to the bright output (o.hi, see SFX below). ----- */
   const air = (c, o, t, p) => noise(c, o, { t, dur: p.dur, f0: p.f0, f1: p.f1, ft: 'lowpass', q: p.q || .7, vol: p.vol, atk: p.atk || .1 });
   const hum = (c, o, t, p) => tone(c, o, { t, f: p.f, f2: p.f2, dur: p.dur, vol: p.vol, atk: p.atk || .12 });
-  /* ----- the click family: pressing a button, flipping a switch. Very short, quiet, but clear and snappy:
-     a tiny dry tick (a few thousandths of a second of band-passed noise) with a small knock tone under it.
-     It goes to its own brighter output (see SFX below), because the soft low-pass that suits the whooshes would smear it. ----- */
-  const click = (c, o, t, p) => {
-    noise(c, o, { t, dur: .02, f0: p.f, ft: 'bandpass', q: 1.4, vol: p.vol, atk: .0015 });
-    tone(c, o, { t, f: p.k, f2: p.k2, dur: .055, vol: p.kv, atk: .002 });
+  const hi = o => o.hi || o;
+  /* leaves: noise in short grains of changing loudness (some grains silent), band-passed around 2 kHz, then a soft envelope */
+  const rustle = (c, o, t, p) => {
+    const sr = c.sampleRate, len = Math.max(1, Math.floor(sr * (p.dur + .05))), buf = c.createBuffer(1, len, sr), ch = buf.getChannelData(0);
+    let i = 0; while (i < len) { const n = Math.floor(sr * (.004 + Math.random() * .012)), r = Math.random(), a = r < .3 ? 0 : r * r; for (let k = 0; k < n && i < len; k++, i++) ch[i] = (Math.random() * 2 - 1) * a; }
+    const src = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain();
+    src.buffer = buf; f.type = 'bandpass'; f.Q.value = p.q || .9; f.frequency.setValueAtTime(p.f0 || 2100, t); if (p.f1) f.frequency.exponentialRampToValueAtTime(p.f1, t + p.dur);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(p.vol, t + (p.atk || .06)); g.gain.exponentialRampToValueAtTime(0.0001, t + p.dur);
+    src.connect(f); f.connect(g); g.connect(hi(o)); src.start(t); src.stop(t + p.dur + .05);
   };
-  d.tap = (c, o, t) => click(c, o, t, { f: 2400, k: 820, k2: 560, vol: .42, kv: .1 });
-  d.on = (c, o, t) => click(c, o, t, { f: 3000, k: 700, k2: 1000, vol: .4, kv: .1 });
-  d.off = (c, o, t) => click(c, o, t, { f: 1900, k: 760, k2: 480, vol: .36, kv: .09 });
-  d.next = (c, o, t) => { air(c, o, t, { dur: .46, f0: 240, f1: 760, vol: .32, atk: .14 }); hum(c, o, t, { f: 82, f2: 110, dur: .46, vol: .08 }); };
-  d.back = (c, o, t) => air(c, o, t, { dur: .34, f0: 640, f1: 230, vol: .26, atk: .05 });
+  /* a water drop: a short tone whose pitch rises as it rings, then dies quickly (the way a drop sounds in a bowl) */
+  const drop = (c, o, t, p) => {
+    tone(c, hi(o), { t, f: p.f, f2: p.f * (p.rise || 1.9), dur: p.dur || .07, vol: p.vol, atk: .002 });
+    noise(c, hi(o), { t, dur: .012, f0: p.f * 2, ft: 'bandpass', q: 1.2, vol: p.vol * .5, atk: .001 });
+  };
+  /* a bird far off: two soft falling whistles with a little waver, kept quiet and only on the biggest moments */
+  const bird = (c, o, t, p) => {
+    const note = (t0, f0, f1, dur, vol) => {
+      const osc = c.createOscillator(), g = c.createGain(), lfo = c.createOscillator(), lg = c.createGain();
+      osc.frequency.setValueAtTime(f0, t0); osc.frequency.exponentialRampToValueAtTime(f1, t0 + dur);
+      lfo.frequency.value = 22; lg.gain.value = f0 * .012; lfo.connect(lg); lg.connect(osc.frequency);
+      g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(vol, t0 + .025); g.gain.setValueAtTime(vol, t0 + dur * .6); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      osc.connect(g); g.connect(hi(o)); osc.start(t0); lfo.start(t0); osc.stop(t0 + dur + .03); lfo.stop(t0 + dur + .03);
+    };
+    note(t, 2750, 2150, .16, p.vol); note(t + .21, 3050, 2350, .2, p.vol * .8);
+  };
+  /* ----- taps and switches: one small water drop. Very short and quiet, but clear. ----- */
+  d.tap = (c, o, t) => drop(c, o, t, { f: 1150, rise: 1.8, dur: .06, vol: .2 });
+  d.on = (c, o, t) => drop(c, o, t, { f: 1250, rise: 2.1, dur: .07, vol: .2 });
+  d.off = (c, o, t) => drop(c, o, t, { f: 1100, rise: .62, dur: .07, vol: .18 });
+  /* moving forward: wind rising, with leaves brushed on the way */
+  d.next = (c, o, t) => { air(c, o, t, { dur: .46, f0: 240, f1: 760, vol: .32, atk: .14 }); hum(c, o, t, { f: 82, f2: 110, dur: .46, vol: .08 }); rustle(c, o, t + .04, { dur: .3, f0: 1900, f1: 2600, vol: .07, atk: .08 }); };
+  d.back = (c, o, t) => { air(c, o, t, { dur: .34, f0: 640, f1: 230, vol: .26, atk: .05 }); rustle(c, o, t, { dur: .22, f0: 2400, f1: 1700, vol: .055, atk: .03 }); };
   d.type = (c, o, t) => air(c, o, t, { dur: .05, f0: 700, f1: 500, vol: .14, atk: .008 });
-  d.tick = (c, o, t, v) => air(c, o, t, { dur: .06, f0: 330 + Math.max(0, Math.min(100, +v || 0)) * 3, f1: 280, vol: .19, atk: .012 });
-  d.whoosh = (c, o, t) => { air(c, o, t, { dur: .56, f0: 200, f1: 620, vol: .3, atk: .18 }); hum(c, o, t, { f: 70, f2: 94, dur: .56, vol: .07, atk: .18 }); };
-  /* an entry was saved: one clear forward whoosh with a soft low thump landing under it */
-  d.coin = (c, o, t) => { air(c, o, t, { dur: .5, f0: 260, f1: 820, vol: .24, atk: .15 }); hum(c, o, t + .16, { f: 104, f2: 66, dur: .26, vol: .1, atk: .03 }); };
-  d.pop = (c, o, t) => { air(c, o, t, { dur: .2, f0: 300, f1: 640, vol: .24, atk: .05 }); hum(c, o, t, { f: 130, f2: 180, dur: .2, vol: .04, atk: .05 }); };
-  d.thunk = (c, o, t) => { hum(c, o, t, { f: 120, f2: 64, dur: .24, vol: .22, atk: .012 }); air(c, o, t, { dur: .1, f0: 340, f1: 240, vol: .14, atk: .01 }); };
-  /* a bigger step (a streak, a goal quarter): longer, a little higher, still only air */
-  d.sparkle = (c, o, t) => { air(c, o, t, { dur: .72, f0: 280, f1: 1100, vol: .36, atk: .26 }); hum(c, o, t, { f: 92, f2: 140, dur: .72, vol: .09, atk: .26 }); };
-  /* the biggest moments (setup done, goal funded, a badge): a slow low swell that opens up and settles */
+  /* a slider moving: a breath of air with one grain of leaves, higher as the value rises */
+  d.tick = (c, o, t, v) => { air(c, o, t, { dur: .06, f0: 330 + Math.max(0, Math.min(100, +v || 0)) * 3, f1: 280, vol: .19, atk: .012 }); rustle(c, o, t, { dur: .05, f0: 2000 + Math.max(0, Math.min(100, +v || 0)) * 8, vol: .05, atk: .008 }); };
+  d.whoosh = (c, o, t) => { air(c, o, t, { dur: .56, f0: 200, f1: 620, vol: .3, atk: .18 }); hum(c, o, t, { f: 70, f2: 94, dur: .56, vol: .07, atk: .18 }); rustle(c, o, t + .1, { dur: .36, f0: 1800, f1: 2500, vol: .07, atk: .12 }); };
+  /* an entry was saved: a drop into still water, a low plop under it and a ripple of air */
+  d.coin = (c, o, t) => { drop(c, o, t, { f: 620, rise: 2.2, dur: .1, vol: .42 }); hum(c, o, t + .03, { f: 170, f2: 115, dur: .18, vol: .1, atk: .01 }); air(c, o, t + .05, { dur: .4, f0: 320, f1: 700, vol: .2, atk: .12 }); };
+  /* something added: a bubble */
+  d.pop = (c, o, t) => { drop(c, o, t, { f: 380, rise: 2.4, dur: .06, vol: .2 }); air(c, o, t, { dur: .2, f0: 300, f1: 640, vol: .18, atk: .05 }); };
+  /* a switch: a pebble set down on wood */
+  d.thunk = (c, o, t) => { hum(c, o, t, { f: 120, f2: 64, dur: .24, vol: .22, atk: .012 }); noise(c, hi(o), { t, dur: .05, f0: 880, ft: 'bandpass', q: 5, vol: .12, atk: .002 }); air(c, o, t, { dur: .1, f0: 340, f1: 240, vol: .12, atk: .01 }); };
+  /* a bigger step (a streak, a goal quarter): three drops climbing, wind and leaves under them */
+  d.sparkle = (c, o, t) => {
+    air(c, o, t, { dur: .72, f0: 280, f1: 1100, vol: .3, atk: .26 }); hum(c, o, t, { f: 92, f2: 140, dur: .72, vol: .08, atk: .26 });
+    rustle(c, o, t + .05, { dur: .5, f0: 1800, f1: 2700, vol: .06, atk: .15 });
+    drop(c, o, t + .08, { f: 780, rise: 1.9, dur: .09, vol: .14 }); drop(c, o, t + .24, { f: 980, rise: 1.9, dur: .09, vol: .13 }); drop(c, o, t + .42, { f: 1240, rise: 1.9, dur: .1, vol: .12 });
+  };
+  /* the biggest moments (setup done, goal funded, a badge): a slow swell of wind through the leaves, and one bird far off */
   d.fanfare = (c, o, t) => {
     air(c, o, t, { dur: 1.2, f0: 190, f1: 1000, vol: .5, atk: .5 });
     hum(c, o, t, { f: 62, f2: 92, dur: 1.2, vol: .2, atk: .5 });
     hum(c, o, t + .12, { f: 110, f2: 123, dur: 1.0, vol: .08, atk: .45 });
     hum(c, o, t + .12, { f: 165, f2: 185, dur: 1.0, vol: .045, atk: .45 });
+    rustle(c, o, t + .15, { dur: .9, f0: 1700, f1: 2800, vol: .085, atk: .35 });
+    bird(c, o, t + .5, { vol: .055 });
   };
-  d.soft = (c, o, t) => { air(c, o, t, { dur: .3, f0: 210, f1: 380, vol: .2, atk: .08 }); hum(c, o, t, { f: 116, f2: 134, dur: .3, vol: .035, atk: .08 }); };
-  /* the whoosh family (moving between pages, saving, finishing) is a little quieter than before */
-  const trim = (f, k) => (c, o, t, a) => { const g = c.createGain(); g.gain.value = k; g.connect(o); f(c, g, t, a); };
+  /* a small settle: a leaf coming to rest */
+  d.soft = (c, o, t) => { air(c, o, t, { dur: .3, f0: 210, f1: 380, vol: .2, atk: .08 }); hum(c, o, t, { f: 116, f2: 134, dur: .3, vol: .035, atk: .08 }); rustle(c, o, t, { dur: .18, f0: 2200, f1: 1600, vol: .045, atk: .03 }); };
+  /* the wind family (moving between pages, saving, finishing) is kept a little quieter; trim keeps the bright output alongside */
+  const trim = (f, k) => (c, o, t, a) => { const g = c.createGain(); g.gain.value = k; g.connect(o); if (o.hi) { const h = c.createGain(); h.gain.value = k; h.connect(o.hi); g.hi = h; } f(c, g, t, a); };
   ['next', 'back', 'whoosh', 'coin', 'pop', 'thunk', 'sparkle', 'soft'].forEach(n => { d[n] = trim(d[n], .62); });
   d.fanfare = trim(d.fanfare, .66);
   return d;
@@ -4336,6 +4386,7 @@ const SFX = (() => {
       bright = ctx.createGain(); bright.gain.value = .4;
       const lp2 = ctx.createBiquadFilter(); lp2.type = 'lowpass'; lp2.frequency.value = 5200; lp2.Q.value = .4;
       bright.connect(lp2); lp2.connect(comp);
+      master.hi = bright; bright.hi = bright; /* recipes send leaves, drops and the bird to the bright output */
     } catch (e) { ctx = null; }
     return ctx;
   };
@@ -4346,6 +4397,7 @@ const SFX = (() => {
   };
   return {
     muted: () => !!(S.ui && S.ui.mute),
+    ctx: () => get(),   /* the music shares this context (phones allow only a few) */
     play(name, arg) {
       if (S.ui && S.ui.mute) return;
       const now = Date.now(); if (gaps[name] && last[name] && now - last[name] < gaps[name]) return; last[name] = now;
@@ -4790,6 +4842,148 @@ function tourExtraClick(e) {
   if (el.closest('#splitReset')) { S.plan.goals.forEach(g => forgetKey(S, 'goal:' + g.id)); splitInit(); paintSplit(); sfx('whoosh'); autosave(); return true; }
   return false;
 }
+
+/* ---------- music for the setup ----------
+   A quiet, slow, original piece in the spirit of Japanese environmental music, made in the browser while the guided setup is open:
+   a soft pad that changes chord every so often, a sparse melody of bell-like notes with echoes, wind far off and the odd water drop.
+   Nothing is recorded or downloaded, and no two listens are the same. Browsers allow sound only after a tap, so it starts on the first
+   tap inside the setup, goes quiet while the hello video plays, fades out when the setup closes, and Music on/off (top of the setup,
+   or Settings) switches it off on this device. Sound off silences it too. */
+const MUSIC = (() => {
+  const ROOT = 174.61;                                   /* F3; everything is tuned from here */
+  const DEG = [0, 2, 4, 7, 9, 11];                       /* F G A C D E: the major pentatonic plus the seventh */
+  /* chord voicings in semitones from the root: Fmaj7, Dm7, Cadd9, Bbmaj7, Am7 */
+  const CHORDS = [[0, 4, 7, 11], [-3, 0, 4, 7], [-5, -1, 2, 9], [-7, -3, 0, 4], [-8, -1, 2, 4]];
+  const LEVEL = .45;                                      /* the whole piece sits well under the sound effects */
+  const hz = st => ROOT * Math.pow(2, st / 12);
+  const rnd = (a, b) => a + Math.random() * (b - a);
+  const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+
+  /* the graph: bus (fades) -> gentle low-pass -> out. Melody and drops also feed two echoes that feed back through a low-pass. */
+  function build(c, out) {
+    const bus = c.createGain(); bus.gain.value = 0;
+    const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 3800; lp.Q.value = .3;
+    bus.connect(lp); lp.connect(out);
+    const echo = c.createGain(); echo.gain.value = .55;
+    [[.52, .36], [.79, .27]].forEach(([time, fb]) => {
+      const d = c.createDelay(2), g = c.createGain(), f = c.createBiquadFilter();
+      d.delayTime.value = time; g.gain.value = fb; f.type = 'lowpass'; f.frequency.value = 1700;
+      echo.connect(d); d.connect(f); f.connect(g); g.connect(d); d.connect(bus);
+    });
+    /* wind far off: a loop of noise through a low-pass that drifts, with a slow swell */
+    const len = Math.floor(c.sampleRate * 4), nb = c.createBuffer(1, len, c.sampleRate), ch = nb.getChannelData(0);
+    for (let i = 0; i < len; i++) ch[i] = Math.random() * 2 - 1;
+    const wind = c.createBufferSource(), wf = c.createBiquadFilter(), wg = c.createGain(), lfo = c.createOscillator(), lg = c.createGain(), lfo2 = c.createOscillator(), lg2 = c.createGain();
+    wind.buffer = nb; wind.loop = true; wf.type = 'lowpass'; wf.frequency.value = 380; wf.Q.value = .6; wg.gain.value = .016;
+    lfo.frequency.value = .04; lg.gain.value = 150; lfo.connect(lg); lg.connect(wf.frequency);
+    lfo2.frequency.value = .023; lg2.gain.value = .007; lfo2.connect(lg2); lg2.connect(wg.gain);
+    wind.connect(wf); wf.connect(wg); wg.connect(bus);
+    const nodes = [wind, lfo, lfo2]; nodes.forEach(n => n.start());
+    const st = { c, bus, echo, nodes, pad: [], chord: 0, nextChord: 0, nextNote: 0, nextDrop: 0, idx: 7, on: true };
+    return st;
+  }
+  /* one pad voice: two slightly detuned waves through a soft low-pass, slow in, slow out */
+  const PAD = .011, ATK = 2.8, REL = 4;
+  function padVoice(st, f, t) {
+    const c = st.c, g = c.createGain(), lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 640;
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(PAD, t + ATK);
+    g.connect(lp); lp.connect(st.bus);
+    const oscs = [-5, 5].map(cents => { const o = c.createOscillator(); o.type = 'triangle'; o.frequency.value = f; o.detune.value = cents; o.connect(g); o.start(t); return o; });
+    /* the level at any moment is known from the envelope itself, so a release can start from the right value (also in the offline check) */
+    const at = t2 => (t2 >= t + ATK ? PAD : 0.0001 * Math.pow(PAD / 0.0001, Math.max(0, t2 - t) / ATK));
+    return { g, oscs, release: t2 => { g.gain.cancelScheduledValues(t2); g.gain.setValueAtTime(at(t2), t2); g.gain.exponentialRampToValueAtTime(0.0001, t2 + REL); oscs.forEach(o => o.stop(t2 + REL + .2)); } };
+  }
+  function changeChord(st, t) {
+    let k; do { k = Math.floor(Math.random() * CHORDS.length); } while (k === st.chord && CHORDS.length > 1);
+    st.chord = k; st.pad.forEach(v => v.release(t)); st.pad = CHORDS[k].map(s => padVoice(st, hz(s), t));
+    st.nextChord = t + rnd(9, 15);
+  }
+  /* a bell-like note: a sine with a touch of octave and twelfth that fade sooner, into the room and the echoes */
+  function bell(st, f, t, v) {
+    const c = st.c, parts = [[1, 1, rnd(2.2, 3.6)], [2, .22, .7], [3, .07, .3]];
+    parts.forEach(([m, a, d]) => {
+      const o = c.createOscillator(), g = c.createGain(); o.frequency.value = f * m;
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(v * a, t + .012); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+      o.connect(g); g.connect(st.bus); g.connect(st.echo); o.start(t); o.stop(t + d + .05);
+    });
+  }
+  function drop(st, t) {
+    const c = st.c, o = c.createOscillator(), g = c.createGain(), f0 = rnd(800, 1300);
+    o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f0 * 1.9, t + .07);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(.03, t + .003); g.gain.exponentialRampToValueAtTime(0.0001, t + .08);
+    o.connect(g); g.connect(st.bus); g.connect(st.echo); o.start(t); o.stop(t + .12);
+  }
+  /* the melody walks the scale a step or two at a time and mostly lands on a note of the chord */
+  function nextNote(st, t) {
+    let i = st.idx + pick([-2, -1, -1, 1, 1, 2, 3, -3]);
+    if (i < 2) i = 2 + Math.floor(Math.random() * 3); if (i > 15) i = 15 - Math.floor(Math.random() * 3);
+    const chordPcs = CHORDS[st.chord].map(s => ((s % 12) + 12) % 12);
+    const pc = j => DEG[((j % 6) + 6) % 6];
+    if (Math.random() < .65 && chordPcs.indexOf(pc(i)) < 0) { for (const dlt of [1, -1, 2, -2]) { if (i + dlt >= 2 && i + dlt <= 15 && chordPcs.indexOf(pc(i + dlt)) >= 0) { i += dlt; break; } } }
+    st.idx = i;
+    const f = hz(12 + DEG[i % 6] + 12 * Math.floor(i / 6)), v = rnd(.035, .08);
+    bell(st, f, t, v);
+    if (Math.random() < .2) { const j = Math.max(2, Math.min(15, i + pick([-1, 1, 2]))); bell(st, hz(12 + DEG[j % 6] + 12 * Math.floor(j / 6)), t + rnd(.35, .6), v * .75); }
+    st.nextNote = t + (Math.random() < .3 ? rnd(1.1, 2) : rnd(2.2, 5));
+  }
+  /* schedule everything that falls before `until` */
+  function step(st, until) {
+    if (!st.nextChord) { st.nextChord = st.c.currentTime + .05; st.nextNote = st.nextChord + rnd(1.5, 3); st.nextDrop = st.nextChord + rnd(6, 12); }
+    while (st.nextChord < until) changeChord(st, st.nextChord);
+    while (st.nextNote < until) nextNote(st, st.nextNote);
+    while (st.nextDrop < until) { drop(st, st.nextDrop); st.nextDrop += rnd(8, 18); }
+  }
+  function tearDown(st, t) {
+    st.pad.forEach(v => v.release(t)); st.pad = [];
+    st.nodes.forEach(n => { try { n.stop(t + 4.5); } catch (e) { /* already stopped */ } });
+    setTimeout(() => { try { st.bus.disconnect(); } catch (e) { /* gone */ } }, 5000);
+  }
+
+  /* ----- the live player ----- */
+  let st = null, timer = 0, level = 0;
+  const allowed = () => !!(S && S.ui) && !S.ui.mute && S.ui.music !== false;
+  const videoPlaying = () => { const v = $('#tourVid'); return !!v && !v.paused && !v.ended; };
+  function tick() {
+    if (!st) return;
+    const c = st.c, now = c.currentTime;
+    step(st, now + .6);
+    const want = videoPlaying() ? 0 : 1;
+    if (want !== level) { level = want; st.bus.gain.cancelScheduledValues(now); st.bus.gain.setValueAtTime(st.bus.gain.value, now); st.bus.gain.linearRampToValueAtTime(want * LEVEL, now + (want ? 3 : 1)); }
+  }
+  let waking = false;
+  function start() {
+    if (st || !allowed() || !tourIsOpen) return;
+    const c = SFX.ctx(); if (!c) return;
+    if (c.state !== 'running') {                      /* before the first tap the browser keeps it suspended; resume and come back */
+      if (waking) return; waking = true;
+      try { c.resume().then(() => { waking = false; if (c.state === 'running') start(); }, () => { waking = false; }); } catch (e) { waking = false; }
+      return;
+    }
+    try { st = build(c, c.destination); } catch (e) { st = null; return; }
+    level = 0; tick(); timer = setInterval(tick, 250);
+  }
+  function stop(quick) {
+    if (!st) return;
+    clearInterval(timer); timer = 0;
+    const s = st, now = s.c.currentTime; st = null;
+    s.bus.gain.cancelScheduledValues(now); s.bus.gain.setValueAtTime(s.bus.gain.value, now); s.bus.gain.linearRampToValueAtTime(0, now + (quick ? .4 : 1.6));
+    tearDown(s, now + (quick ? .4 : 1.6));
+  }
+  document.addEventListener('visibilitychange', () => { if (document.hidden) stop(true); else if (tourIsOpen) start(); });
+  return {
+    on: () => !(S && S.ui && S.ui.music === false),
+    playing: () => !!st,
+    level: () => level,                                                /* 1, or 0 while the hello video plays */
+    wake: () => { if (allowed() && tourIsOpen) start(); },            /* called on taps inside the setup */
+    sync: () => { if (!allowed()) stop(); else if (tourIsOpen) start(); },
+    tourClosed: () => stop(),
+    setOn(v) { if (v) delete S.ui.music; else S.ui.music = false; persist(); this.sync(); },
+    /* for the offline check: schedule `seconds` of music into a given context and output */
+    render(c, out, seconds) { const s = build(c, out); s.bus.gain.setValueAtTime(LEVEL, 0); step(s, seconds); return s; },
+  };
+})();
+if (/[?&]sfxtest\b/.test(location.search)) window.__music = MUSIC;
+if (/[?&]sfxtest\b/.test(location.search)) { window.__S = () => S; window.__ls = () => LS_STATE; window.__tour = () => tourIsOpen; }
 /* Transcript of the hello video, as [start second, line]. This is Mako's own transcript text, kept in his words (fillers and all); only typing-tool glitches were fixed (doubled words, two typos). Each line is timed against the audio. */
 const TRANSCRIPT = [[4.0, "At the park. Look at these trees."],
 [10.2, "Um, I'm kind of nervous because I don't usually record myself."],
@@ -5161,7 +5355,7 @@ function renderTour(dir) {
   tourTouched = false;
   const body = $('#tourBody'); body.innerHTML = `<h2 id="tourTitle" tabindex="-1">${title}</h2>${t.body()}`;
   $('#tourArt').innerHTML = t.art ? art(t.art) : '';
-  moneyUpAll(body);
+  moneyUpAll(body); requestAnimationFrame(fitTourArt);
   body.classList.remove('in-r', 'in-l'); if (dir) { void body.offsetWidth; body.classList.add(dir > 0 ? 'in-r' : 'in-l'); }
   const setupRun = tourMode === 'full' && TS.some(x => x.setup);
   $('#tourSkip').textContent = setupRun ? 'Finish later' : 'Skip'; $('#tourSkip').hidden = !!t.last && setupRun;
@@ -5182,17 +5376,35 @@ function paintSnd() {
   if (b) { b.setAttribute('aria-pressed', String(on)); b.setAttribute('aria-label', on ? 'Sound on. Turn off' : 'Sound off. Turn on'); b.classList.toggle('off', !on); b.textContent = on ? 'Sound on' : 'Sound off'; }
   if (sw) { sw.setAttribute('aria-checked', String(on)); const t = $('#sndTxt'); if (t) t.textContent = on ? 'On' : 'Off'; }
 }
-function toggleSnd() { if (S.ui.mute) delete S.ui.mute; else S.ui.mute = true; persist(); paintSnd(); sfx('tap'); }
+function toggleSnd() { if (S.ui.mute) delete S.ui.mute; else S.ui.mute = true; persist(); paintSnd(); MUSIC.sync(); sfx('tap'); }
+/* the setup's art sits above the footer. When a screen's words or fields reach down to where it sits (short windows, long screens),
+   the art steps aside instead of lying over them. Measured with offsets, which ignore the slide-in animation. */
+function fitTourArt() {
+  const a = $('#tourArt .art'); if (!a) return;
+  const body = $('#tourBody'), foot = $('.tour-foot');
+  const ax = a.offsetLeft, ay = a.offsetTop, ax2 = ax + a.offsetWidth, ay2 = ay + a.offsetHeight;
+  const hit = [...body.children].some(el => {
+    const x = body.offsetLeft + el.offsetLeft, y = body.offsetTop + el.offsetTop, x2 = x + el.offsetWidth, y2 = y + el.offsetHeight;
+    return el.offsetWidth > 0 && y2 > ay && y < ay2 && x2 > ax && x < ax2;
+  }) || ay2 > foot.offsetTop + 6;
+  a.classList.toggle('aside', hit);
+}
+function paintMus() {
+  const on = MUSIC.on(), b = $('#tourMus'), sw = $('#setMus');
+  if (b) { b.setAttribute('aria-pressed', String(on)); b.setAttribute('aria-label', on ? 'Music on. Turn off' : 'Music off. Turn on'); b.classList.toggle('off', !on); b.textContent = on ? 'Music on' : 'Music off'; }
+  if (sw) { sw.setAttribute('aria-checked', String(on)); const t = $('#musTxt'); if (t) t.textContent = on ? 'On' : 'Off'; }
+}
+function toggleMus() { MUSIC.setOn(!MUSIC.on()); paintMus(); sfx('tap'); }
 function showTourShell() { $('#tour').hidden = false; $('.wrap').inert = true; $('#dock').inert = true; helpAside(true); }
 /* at: the id of the screen to open on. mode: 'full' asks the questions, 'replay' only shows the screens. */
 function openTour(at, mode) {
   tourMode = mode || (S.ui.setup ? 'replay' : 'full'); tourIsOpen = true; tourReturn = document.activeElement; tourN = 0; TS = []; buildSteps();
   let i = typeof at === 'string' ? TS.findIndex(s => s.id === at) : -1;
   if (i < 0 && tourMode === 'full' && S.ui.toured) { const want = S.ui.tourAt && TS.some(s => s.id === S.ui.tourAt && s.setup) ? S.ui.tourAt : 'source'; i = TS.findIndex(s => s.id === want); }
-  tourN = Math.max(0, i); showTourShell(); renderTour(0); sfx('whoosh');
+  tourN = Math.max(0, i); showTourShell(); renderTour(0); sfx('whoosh'); MUSIC.wake();
 }
 function closeTour(toBills, done) {
-  pauseHello(); helloStop(); tourIsOpen = false; clearTimeout(asT);
+  pauseHello(); helloStop(); tourIsOpen = false; clearTimeout(asT); MUSIC.tourClosed();
   S.ui.toured = true; if (done) delete S.ui.tourAt;
   persist();
   $('#tour').hidden = true; $('.wrap').inert = false; $('#dock').inert = false; helpAside(false);
@@ -5243,6 +5455,10 @@ function wireTour() {
   $('#tourAlt').addEventListener('click', () => closeTour(false, true));
   $('#tourSkip').addEventListener('click', leaveTour);
   $('#tourSnd').addEventListener('click', toggleSnd); $('#setSnd').addEventListener('click', toggleSnd);
+  $('#tourMus').addEventListener('click', toggleMus); $('#setMus').addEventListener('click', toggleMus); paintMus();
+  /* the setup's music may only start after a tap; any tap or key inside the setup counts */
+  $('#tour').addEventListener('pointerdown', () => MUSIC.wake(), { passive: true }); $('#tour').addEventListener('keydown', () => MUSIC.wake());
+  addEventListener('resize', () => { if (tourIsOpen) fitTourArt(); });
   const body = $('#tourBody');
   body.addEventListener('input', e => { tourTouched = true; tourExtraInput(e); autosave(); });
   body.addEventListener('click', e => { if (!tourExtraClick(e) && e.target.closest('button:not(.tx-l), a.btn')) sfx('tap'); });

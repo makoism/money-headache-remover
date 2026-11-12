@@ -75,7 +75,7 @@ const coach = async p => { for (let i = 0; i < 12; i++) { const v = await p.eval
   ok(!(await p.$('#impKeep')), 'a pasted summary has no rows to keep');
   await p.click('#tourBack'); await w(400);
   ok((await title(p)) === 'Your statements', 'Back returns to Your statements');
-  await p.click('#srcSkip'); await w(400);
+  await p.evaluate(() => document.querySelector('#srcSkip').scrollIntoView({ block: 'center' })); await p.click('#srcSkip'); await w(400);
   ok((await title(p)) === 'Your money' && !!(await p.$('#tourPay')) && !!(await p.$('#tourExtra')) && !!(await p.$('#tourBank')), 'Type the numbers instead: pay, other income and balance on one screen');
   ok(errs.length === 0, 'no page errors (any-AI) ' + JSON.stringify(errs.slice(0, 3)));
   await p.close();

@@ -275,7 +275,7 @@ function renderTour(dir) {
   tourTouched = false;
   const body = $('#tourBody'); body.innerHTML = `<h2 id="tourTitle" tabindex="-1">${title}</h2>${t.body()}`;
   $('#tourArt').innerHTML = t.art ? art(t.art) : '';
-  moneyUpAll(body);
+  moneyUpAll(body); requestAnimationFrame(fitTourArt);
   body.classList.remove('in-r', 'in-l'); if (dir) { void body.offsetWidth; body.classList.add(dir > 0 ? 'in-r' : 'in-l'); }
   const setupRun = tourMode === 'full' && TS.some(x => x.setup);
   $('#tourSkip').textContent = setupRun ? 'Finish later' : 'Skip'; $('#tourSkip').hidden = !!t.last && setupRun;
@@ -296,17 +296,35 @@ function paintSnd() {
   if (b) { b.setAttribute('aria-pressed', String(on)); b.setAttribute('aria-label', on ? 'Sound on. Turn off' : 'Sound off. Turn on'); b.classList.toggle('off', !on); b.textContent = on ? 'Sound on' : 'Sound off'; }
   if (sw) { sw.setAttribute('aria-checked', String(on)); const t = $('#sndTxt'); if (t) t.textContent = on ? 'On' : 'Off'; }
 }
-function toggleSnd() { if (S.ui.mute) delete S.ui.mute; else S.ui.mute = true; persist(); paintSnd(); sfx('tap'); }
+function toggleSnd() { if (S.ui.mute) delete S.ui.mute; else S.ui.mute = true; persist(); paintSnd(); MUSIC.sync(); sfx('tap'); }
+/* the setup's art sits above the footer. When a screen's words or fields reach down to where it sits (short windows, long screens),
+   the art steps aside instead of lying over them. Measured with offsets, which ignore the slide-in animation. */
+function fitTourArt() {
+  const a = $('#tourArt .art'); if (!a) return;
+  const body = $('#tourBody'), foot = $('.tour-foot');
+  const ax = a.offsetLeft, ay = a.offsetTop, ax2 = ax + a.offsetWidth, ay2 = ay + a.offsetHeight;
+  const hit = [...body.children].some(el => {
+    const x = body.offsetLeft + el.offsetLeft, y = body.offsetTop + el.offsetTop, x2 = x + el.offsetWidth, y2 = y + el.offsetHeight;
+    return el.offsetWidth > 0 && y2 > ay && y < ay2 && x2 > ax && x < ax2;
+  }) || ay2 > foot.offsetTop + 6;
+  a.classList.toggle('aside', hit);
+}
+function paintMus() {
+  const on = MUSIC.on(), b = $('#tourMus'), sw = $('#setMus');
+  if (b) { b.setAttribute('aria-pressed', String(on)); b.setAttribute('aria-label', on ? 'Music on. Turn off' : 'Music off. Turn on'); b.classList.toggle('off', !on); b.textContent = on ? 'Music on' : 'Music off'; }
+  if (sw) { sw.setAttribute('aria-checked', String(on)); const t = $('#musTxt'); if (t) t.textContent = on ? 'On' : 'Off'; }
+}
+function toggleMus() { MUSIC.setOn(!MUSIC.on()); paintMus(); sfx('tap'); }
 function showTourShell() { $('#tour').hidden = false; $('.wrap').inert = true; $('#dock').inert = true; helpAside(true); }
 /* at: the id of the screen to open on. mode: 'full' asks the questions, 'replay' only shows the screens. */
 function openTour(at, mode) {
   tourMode = mode || (S.ui.setup ? 'replay' : 'full'); tourIsOpen = true; tourReturn = document.activeElement; tourN = 0; TS = []; buildSteps();
   let i = typeof at === 'string' ? TS.findIndex(s => s.id === at) : -1;
   if (i < 0 && tourMode === 'full' && S.ui.toured) { const want = S.ui.tourAt && TS.some(s => s.id === S.ui.tourAt && s.setup) ? S.ui.tourAt : 'source'; i = TS.findIndex(s => s.id === want); }
-  tourN = Math.max(0, i); showTourShell(); renderTour(0); sfx('whoosh');
+  tourN = Math.max(0, i); showTourShell(); renderTour(0); sfx('whoosh'); MUSIC.wake();
 }
 function closeTour(toBills, done) {
-  pauseHello(); helloStop(); tourIsOpen = false; clearTimeout(asT);
+  pauseHello(); helloStop(); tourIsOpen = false; clearTimeout(asT); MUSIC.tourClosed();
   S.ui.toured = true; if (done) delete S.ui.tourAt;
   persist();
   $('#tour').hidden = true; $('.wrap').inert = false; $('#dock').inert = false; helpAside(false);
@@ -357,6 +375,10 @@ function wireTour() {
   $('#tourAlt').addEventListener('click', () => closeTour(false, true));
   $('#tourSkip').addEventListener('click', leaveTour);
   $('#tourSnd').addEventListener('click', toggleSnd); $('#setSnd').addEventListener('click', toggleSnd);
+  $('#tourMus').addEventListener('click', toggleMus); $('#setMus').addEventListener('click', toggleMus); paintMus();
+  /* the setup's music may only start after a tap; any tap or key inside the setup counts */
+  $('#tour').addEventListener('pointerdown', () => MUSIC.wake(), { passive: true }); $('#tour').addEventListener('keydown', () => MUSIC.wake());
+  addEventListener('resize', () => { if (tourIsOpen) fitTourArt(); });
   const body = $('#tourBody');
   body.addEventListener('input', e => { tourTouched = true; tourExtraInput(e); autosave(); });
   body.addEventListener('click', e => { if (!tourExtraClick(e) && e.target.closest('button:not(.tx-l), a.btn')) sfx('tap'); });

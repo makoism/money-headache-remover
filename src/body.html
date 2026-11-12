@@ -260,7 +260,12 @@
       <div class="field sndrow">
         <span class="lab" id="sndLab">Sound</span>
         <div class="snd-r"><button type="button" class="sw" id="setSnd" role="switch" aria-labelledby="sndLab" aria-checked="true"><i></i></button><span class="cap" id="sndTxt">On</span></div>
-        <p class="cap">Click and chime feedback. This browser only.</p>
+        <p class="cap">Wind, leaves and water drops as feedback. This browser only.</p>
+      </div>
+      <div class="field sndrow">
+        <span class="lab" id="musLab">Music</span>
+        <div class="snd-r"><button type="button" class="sw" id="setMus" role="switch" aria-labelledby="musLab" aria-checked="true"><i></i></button><span class="cap" id="musTxt">On</span></div>
+        <p class="cap">A quiet piece, made in the browser, while the guided setup is open.</p>
       </div>
       <div class="field themerow">
         <span class="lab" id="themeLab">Look</span>
@@ -335,7 +340,7 @@
 <div class="tip" id="tip" role="tooltip"></div>
 <div class="tour" id="tour" role="dialog" aria-modal="true" aria-labelledby="tourTitle" hidden>
   <div class="tour-in">
-    <div class="tour-top"><span class="tour-part sr" id="tourPart"></span><span class="tour-tools"><button type="button" class="link" id="tourSnd" aria-pressed="false">Sound on</button><button type="button" class="link" id="tourSkip">Skip tour</button></span></div>
+    <div class="tour-top"><span class="tour-part sr" id="tourPart"></span><span class="tour-tools"><button type="button" class="link" id="tourMus" aria-pressed="true">Music on</button><button type="button" class="link" id="tourSnd" aria-pressed="false">Sound on</button><button type="button" class="link" id="tourSkip">Skip tour</button></span></div>
     <div class="tour-dots" id="tourDots" role="img"></div>
     <div class="tour-body" id="tourBody"></div>
     <span id="tourArt" aria-hidden="true"></span>

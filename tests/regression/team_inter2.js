@@ -49,7 +49,7 @@ const puppeteer = require('/home/claude/work/tools/node_modules/puppeteer-core')
   ok('back to pesos', (await p.$eval('input[name=tourCur]:checked', e => e.value)) === '₱' && (await val('#tourCurMore')) === '');
   await p.click('#tourNext'); await w(250);
   ok('screen 3 is Your statements, with the typed path as a link', (await q('#tourTitle')) === 'Your statements' && (await p.$eval('#tourNext', e => e.hidden)));
-  await p.click('#srcSkip'); await w(250);
+  await p.evaluate(() => document.querySelector('#srcSkip').scrollIntoView({ block: 'center' })); await p.click('#srcSkip'); await w(250);
   const fill = { rent: 9000, utilities: 1500, food: 6000 };
   for (let g = 0; g < 60; g++) {
     const title = await q('#tourTitle'), nx = await q('#tourNext');
@@ -57,7 +57,7 @@ const puppeteer = require('/home/claude/work/tools/node_modules/puppeteer-core')
     else if (await p.$('#tourBank')) await set('#tourBank', 12000);
     else if (await p.$('#tourAmt')) { const k = Object.keys(fill).find(x => title.toLowerCase().includes(x)); if (k) await set('#tourAmt', fill[k]); }
     if (title.startsWith('Setup done')) break;
-    if (await p.$eval('#tourNext', e => e.hidden)) await p.click('#srcSkip'); else await p.click('#tourNext'); await w(260);
+    if (await p.$eval('#tourNext', e => e.hidden)) await p.evaluate(() => document.querySelector('#srcSkip').scrollIntoView({ block: 'center' })); await p.click('#srcSkip'); else await p.click('#tourNext'); await w(260);
   }
   ok('the last screen greets you by name', (await q('#tourTitle')) === 'Setup done, Mara.');
   ok('last screen has one way out', ['View month', 'Done', 'Go to bills'].includes(await q('#tourNext')));
@@ -95,10 +95,10 @@ const puppeteer = require('/home/claude/work/tools/node_modules/puppeteer-core')
   await fresh(); await p.click('#tourNext'); await w(250); await p.type('#tourName', '<img src=x onerror="window.__xss3=1">Bo');
   await p.click('input[name=tourCur][value="$"]'); await w(150);
   ok('markup in the name is never run or shown as an element', (await p.evaluate(() => window.__xss3)) === undefined && (await p.$$eval('#tourBody img, #tourTitle img', e => e.length)) === 0);
-  for (let i = 0; i < 6 && (await q('#tourTitle')) !== 'Your money'; i++) { if (await p.$eval('#tourNext', e => e.hidden)) await p.click('#srcSkip'); else await p.click('#tourNext'); await w(100); } /* past the statements to the typed money screen */
+  for (let i = 0; i < 6 && (await q('#tourTitle')) !== 'Your money'; i++) { if (await p.$eval('#tourNext', e => e.hidden)) await p.evaluate(() => document.querySelector('#srcSkip').scrollIntoView({ block: 'center' })); await p.click('#srcSkip'); else await p.click('#tourNext'); await w(100); } /* past the statements to the typed money screen */
   ok('the pay box suggests no amount and uses the chosen currency', (await q('#tourTitle')) === 'Your money' && (await p.$eval('#tourPay', e => e.placeholder)) === 'Amount' && (await p.$eval('#tourPay', e => e.closest('.inp').textContent)).includes('$'));
   await p.type('#tourPay', '2500');
-  let gd = 0; while (gd++ < 60 && !(await q('#tourTitle')).startsWith('Setup done')) { if (await p.$eval('#tourNext', e => e.hidden)) await p.click('#srcSkip'); else await p.click('#tourNext'); await w(100); }
+  let gd = 0; while (gd++ < 60 && !(await q('#tourTitle')).startsWith('Setup done')) { if (await p.$eval('#tourNext', e => e.hidden)) await p.evaluate(() => document.querySelector('#srcSkip').scrollIntoView({ block: 'center' })); await p.click('#srcSkip'); else await p.click('#tourNext'); await w(100); }
   ok('the ending never mentions pesos for a dollar user', !(await tourText()).toLowerCase().includes('peso'));
   await p.click('#tourNext'); await w(500); await coach();
   ok('the page now speaks dollars', (await q('#hHero')).includes('$') || (await q('#hSpend')).includes('$'));

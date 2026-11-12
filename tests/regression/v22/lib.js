@@ -52,7 +52,7 @@ exports.runTour = async (p, pr, shot) => {
     if (shot) await shot(i);
     const nx = await p.$eval('#tourNext', e=>e.textContent);
     if (nx==='View month' || nx==='Done' || nx==='Go to bills') { await p.click('#tourNext'); await w(900); break; }
-    if (await p.$eval('#tourNext', e=>e.hidden)) { /* the statements screen: the typed path is a link */ if (await has('#srcSkip')) { await p.click('#srcSkip'); await w(260); continue; } probs.push(`Next hidden at step ${i} (${title})`); break; }
+    if (await p.$eval('#tourNext', e=>e.hidden)) { /* the statements screen: the typed path is a link */ if (await has('#srcSkip')) { await p.evaluate(() => document.querySelector('#srcSkip').scrollIntoView({ block: 'center' })); await p.click('#srcSkip'); await w(260); continue; } probs.push(`Next hidden at step ${i} (${title})`); break; }
     if (await p.$eval('#tourNext', e=>e.disabled)) { probs.push(`Next disabled at step ${i} (${title})`); break; }
     await p.click('#tourNext'); await w(260);
   }

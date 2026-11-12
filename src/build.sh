@@ -22,7 +22,7 @@ echo '<script>'
 cat model.js stmt.js
 # the site's address for copies opened as a file (RELAY file, one line, may be empty)
 RELAY=$( [ -f RELAY ] && sed -n 1p RELAY || echo '' )
-cat ui0.js art.js actions.js ui1.js ui2.js ui3.js ui4.js ui44.js ui45s.js ui45u.js ui45v.js ui45x.js ui45t.js ui45.js ui46.js ui4a.js ui47.js ui48.js ui41.js ui4b.js ui42.js ui49.js ui43.js ui6.js ui5.js | sed "s|@@RELAY@@|$RELAY|"
+cat ui0.js art.js actions.js ui1.js ui2.js ui3.js ui4.js ui44.js ui45s.js ui45u.js ui45v.js ui45x.js music.js ui45t.js ui45.js ui46.js ui4a.js ui47.js ui48.js ui41.js ui4b.js ui42.js ui49.js ui43.js ui6.js ui5.js | sed "s|@@RELAY@@|$RELAY|"
 echo '</script>'
 echo '</body>'
 echo '</html>'
