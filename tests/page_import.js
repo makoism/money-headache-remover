@@ -143,12 +143,21 @@ const coach = async p => { for (let i = 0; i < 12; i++) { const v = await p.eval
   await p.click('#hNext [data-exact]'); await w(800);
   ok((await title(p)) === 'Your statements' && (await p.$eval('#srcSkip', e => e.textContent)) === 'Not now', 'Upload opens the tour at Your statements, with Not now as the way out');
   await w(700);
-  await upload(p, ['/tmp/v28/imp/bank.csv']); await p.click('#impRead'); await w(4000);
+  /* a long CSV (three months, 300 rows) is read in parts and comes back as one file */
+  const long = ['Account Statement - BPI Savings 1234-5678-90', 'Date,Description,Debit,Credit,Balance'];
+  let bal = 50000; ['2026-08', '2026-09', '2026-10'].forEach(m => { const lastDay = m === '2026-09' ? 30 : 31; for (let i = 0; i < 100; i++) { const d = `${m}-${String(i === 99 ? lastDay : 1 + (i % 28)).padStart(2, '0')}`; const inn = i % 50 === 10; const amt = inn ? 21000 : 100 + i * 1.5; bal += inn ? amt : -amt; long.push(`${d},${inn ? 'PAYROLL CREDIT VIDEOWORKS INC' : ['SM SUPERMARKET MAKATI', 'GRAB PHILIPPINES', 'MERALCO BILL PAYMENT', 'PUREGOLD QC'][i % 4]},${inn ? '' : amt.toFixed(2)},${inn ? amt.toFixed(2) : ''},${bal.toFixed(2)}`); } });
+  fs.writeFileSync('/tmp/v28/imp/long.csv', long.join('\n') + '\n');
+  let calls = 0; p.on('request', r => { if (r.method() === 'POST' && /\/api\/ai/.test(r.url())) calls++; });
+  await upload(p, ['/tmp/v28/imp/long.csv']); await p.click('#impRead');
+  for (let i = 0; i < 60; i++) { await w(250); if ((await title(p)) === 'Check what was found') break; }
+  ok(calls === 4, 'a 300-row CSV is read in three parts, then one category job: ' + calls + ' requests');
   ok((await title(p)) === 'Check what was found', 'the review opens from Home\'s card too');
+  const body2 = await p.$eval('#tourBody', e => e.textContent.replace(/\s+/g, ' '));
+  ok(/What was read \(300 rows\)/.test(body2) && /long\.csv \(Test Bank\): 300 rows, 2026-08-01 to 2026-10-31, 3 full months/.test(body2), 'the parts come back as one file with every row and its months: ' + (body2.match(/long\.csv[^,]*,[^,]*,[^,]*,[^.]*/) || [''])[0]);
   await p.click('#tourNext'); await w(900);
   ok(await p.evaluate(() => document.getElementById('tour').hidden), 'Use these numbers closes the tour instead of going on to the jars');
   S = await state(p);
-  ok(last('a') === 42000 && (S.receipts || []).filter(r => r.src === 'stmt').length === 22 && (S.receipts || []).some(r => r.a === 120 && r.src !== 'stmt'), 'numbers exact, 22 receipts kept, the one logged by hand still there');
+  ok(last('a') === 42000 && (S.receipts || []).filter(r => r.src === 'stmt').length === 294 && (S.receipts || []).some(r => r.a === 120 && r.src !== 'stmt'), 'numbers exact, 294 receipts kept, the one logged by hand still there: ' + (S.receipts || []).filter(r => r.src === 'stmt').length);
   card = await p.$eval('#hNext', e => ({ hid: e.hidden, t: e.textContent.replace(/\s+/g, ' ') }));
   ok(card.hid || !/Make it exact/.test(card.t), 'the Make it exact card is gone');
   ok(errs.length === 0, 'no page errors (Home card) ' + JSON.stringify(errs.slice(0, 3)));

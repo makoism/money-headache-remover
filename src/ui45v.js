@@ -44,7 +44,9 @@ async function stmtAsk(name, description, schema, prompt, opts) {
   const shape = JSON.stringify(schema.properties, null, 0).slice(0, 2500);
   return askFn.json(prompt + `\n\nReply with ONLY one JSON object with these properties (types as described): ${shape}`, opts);
 }
-/* the jobs: a text file is one job, a PDF is one job, screenshots go four to a job */
+/* the jobs: a text file is one job per STMT_CHUNK_ROWS lines (a ten-month CSV becomes a few quick reads), a PDF is one job,
+   screenshots go four to a job */
+const STMT_CHUNK_ROWS = 120, STMT_HEAD_LINES = 2;
 function stmtJobs(files) {
   const jobs = []; let imgs = [];
   const flush = () => { if (imgs.length) { jobs.push({ name: imgs.length === 1 ? imgs[0].name : `${imgs.length} screenshots`, kind: 'images', files: imgs }); imgs = []; } };
@@ -55,13 +57,44 @@ function stmtJobs(files) {
   flush();
   return jobs.map((j, i) => Object.assign(j, { id: i, status: 'waiting', read: null, error: '' }));
 }
+/* a long text file is split into parts of STMT_CHUNK_ROWS lines, each carrying the file's first lines (the title and the column names) */
+async function stmtSplitText(jobs) {
+  const out = [];
+  for (const job of jobs) {
+    if (job.kind !== 'text') { out.push(job); continue; }
+    let t;
+    try { t = await readTextFile(job.files[0]); } catch (e) { job.status = 'failed'; job.error = stmtErrorText(e, job.name); out.push(job); continue; }
+    if (byteLen(t) > ASK_TEXT_BYTES * 4) t = clipBytes(t, ASK_TEXT_BYTES * 4);
+    const lines = t.split(/\r?\n/).filter(l => l.trim() !== '');
+    if (lines.length <= STMT_CHUNK_ROWS + STMT_HEAD_LINES) { job.text = t; out.push(job); continue; }
+    const head = lines.slice(0, STMT_HEAD_LINES), body = lines.slice(STMT_HEAD_LINES), parts = Math.ceil(body.length / STMT_CHUNK_ROWS);
+    for (let i = 0; i < parts; i++) out.push({ name: `${job.name} (part ${i + 1} of ${parts})`, file: job.name, part: i + 1, parts, kind: 'text', files: job.files, text: head.concat(body.slice(i * STMT_CHUNK_ROWS, (i + 1) * STMT_CHUNK_ROWS)).join('\n'), status: 'waiting', read: null, error: '' });
+  }
+  return out.map((j, i) => Object.assign(j, { id: i }));
+}
 async function stmtRunJob(job, signal) {
-  const what = job.kind === 'pdf' ? 'PDF statement' : job.kind === 'images' ? (job.files.length === 1 ? 'screenshot or photo of a statement' : 'set of screenshots of one statement (pages in order)') : 'statement file';
+  const what = job.kind === 'pdf' ? 'PDF statement' : job.kind === 'images' ? (job.files.length === 1 ? 'screenshot or photo of a statement' : 'set of screenshots of one statement (pages in order)') : job.parts ? `part ${job.part} of ${job.parts} of one statement file (the first lines are the file's title and column names)` : 'statement file';
   let text = null, images = null;
-  if (job.kind === 'text') { let t = await readTextFile(job.files[0]); if (byteLen(t) > ASK_TEXT_BYTES) t = clipBytes(t, ASK_TEXT_BYTES); text = { name: job.name, text: t }; }
+  if (job.kind === 'text') { let t = job.text !== undefined ? job.text : await readTextFile(job.files[0]); if (byteLen(t) > ASK_TEXT_BYTES) t = clipBytes(t, ASK_TEXT_BYTES); text = { name: job.file || job.name, text: t }; }
   else images = job.files;
-  const raw = await stmtAsk('statement_rows', 'The transaction rows of one statement file.', STMT_ROWS_SCHEMA, stmtRowsPrompt(what, job.name, text), Object.assign({ cache: false, modelTier: 'default', maxTokens: 24000, effort: 'low', signal }, images ? { images } : {}));
-  return stmtCleanRows(raw, job.name, todayStr());
+  const raw = await stmtAsk('statement_rows', 'The transaction rows of one statement file.', STMT_ROWS_SCHEMA, stmtRowsPrompt(what, job.file || job.name, text), Object.assign({ cache: false, modelTier: 'default', maxTokens: 24000, effort: 'low', signal }, images ? { images } : {}));
+  return stmtCleanRows(raw, job.file || job.name, todayStr());
+}
+/* the parts of one file become one read: every row, the period from the first to the last, the closing balance of the latest part */
+function stmtJoinParts(jobs) {
+  const reads = [], byFile = {};
+  jobs.forEach(j => { if (!j.read || !j.read.rows.length) return; if (!j.parts) { reads.push(j.read); return; } (byFile[j.file] = byFile[j.file] || []).push(j); });
+  Object.keys(byFile).forEach(f => {
+    const parts = byFile[f].sort((a, b) => a.part - b.part), r0 = parts[0].read;
+    const all = { file: f, account: parts.map(p => p.read.account).find(Boolean) || '', kind: parts.map(p => p.read.kind).find(k => k !== 'unknown') || r0.kind, currency: parts.map(p => p.read.currency).find(Boolean) || '', from: '', to: '', closing: null, rows: [], notes: [] };
+    parts.forEach(p => { all.rows = all.rows.concat(p.read.rows); p.read.notes.forEach(n => { if (all.notes.length < 4 && all.notes.indexOf(n) < 0) all.notes.push(n); }); });
+    all.rows.sort((x, y) => x.d < y.d ? -1 : x.d > y.d ? 1 : 0);
+    all.from = parts.map(p => p.read.from).filter(Boolean).sort()[0] || (all.rows[0] && all.rows[0].d) || '';
+    all.to = parts.map(p => p.read.to).filter(Boolean).sort().pop() || (all.rows.length ? all.rows[all.rows.length - 1].d : '') || '';
+    const last = parts.filter(p => p.read.closing !== null).sort((a, b) => (a.read.to < b.read.to ? 1 : a.read.to > b.read.to ? -1 : 0))[0]; all.closing = last ? last.read.closing : null;
+    reads.push(all);
+  });
+  return reads;
 }
 function stmtErrorText(e, name) {
   const code = e && e.code;
@@ -78,7 +111,7 @@ async function stmtRun(jobs, signal, onProgress) {
   let next = 0;
   const worker = async () => {
     while (next < jobs.length) {
-      const job = jobs[next++]; if (signal.aborted) { job.status = 'failed'; job.error = 'stopped'; continue; }
+      const job = jobs[next++]; if (job.status === 'failed') continue; if (signal.aborted) { job.status = 'failed'; job.error = 'stopped'; continue; }
       job.status = 'reading'; onProgress();
       try { job.read = await stmtRunJob(job, signal); job.status = job.read.rows.length ? 'done' : 'empty'; }
       catch (e) { if (e && e.code === 'invite_required') throw e; job.status = 'failed'; job.error = stmtErrorText(e, job.name); }
@@ -120,12 +153,13 @@ async function importRead() {
   const out = $('#impOut'); out.innerHTML = '';
   const bot = document.createElement('div'); bot.className = 'msg ai wait'; bot.textContent = 'Reading.'; out.append(bot);
   impBusy = true; impCtl = new AbortController(); paintImport();
-  const jobs = stmtJobs(impFiles);
+  let jobs = stmtJobs(impFiles);
   try {
     if (!askFn) { await connectAsk(); if (!askFn) throw { code: askReason === 'relay_off' ? 'relay_unconfigured' : 'not_granted' }; }
     stmtPaintProgress(jobs);
+    jobs = await stmtSplitText(jobs); stmtPaintProgress(jobs);
     await stmtRun(jobs, impCtl.signal, () => stmtPaintProgress(jobs));
-    const reads = jobs.filter(j => j.read && j.read.rows.length).map(j => j.read);
+    const reads = stmtJoinParts(jobs);
     if (!reads.length) {
       const failed = jobs.filter(j => j.status === 'failed').length;
       bot.classList.remove('wait'); bot.classList.add('note');

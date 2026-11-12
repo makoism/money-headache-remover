@@ -73,4 +73,29 @@ ok(rc.every(r => r.c && r.a > 0) && !rc.some(r => /PAYROLL|PAYMENT THANK|CREDIT 
 ok(rc.find(r => /JOLLIBEE/.test(r.n)).c === 'envelope' && rc.find(r => /LAZADA/.test(r.n)).c === 'card' && rc.find(r => /MERALCO/.test(r.n)).c === 'bill:util', 'lines: play to envelope, other to card, bills to their line');
 ok(!rc.some(r => /GCASH TRANSFER/.test(r.n)), 'transfers out are not receipts');
 ok(X.stmtNorm('ＳＭ ＳＵＰＥＲＭＡＲＫＥＴ 1234') === 'ｓｍ ｓｕｐｅｒｍａｒｋｅｔ' && X.stmtNorm('セブンイレブン千葉駅前店') === 'セブンイレブン千葉駅前店' && X.stmtNorm('7-ELEVEN STORE 2231') === 'eleven store', 'merchant keys for wide text, Japanese and digits: ' + [X.stmtNorm('ＳＭ ＳＵＰＥＲＭＡＲＫＥＴ 1234'), X.stmtNorm('セブンイレブン千葉駅前店'), X.stmtNorm('7-ELEVEN STORE 2231')].join(' | '));
+// ----- one account across several files: monthly PDFs are averaged, never added -----
+const catOf2 = k => ({ 'payroll credit videoworks': 'pay', 'rent apt b': 'rent', 'meralco bill payment': 'util', 'sm supermarket makati': 'food', 'netflix com': 'subs', 'cash in via': 'transfer_in', 'grab philippines': 'gas' })[k] || 'other';
+const monthPdf = (ym, name, acc) => X.stmtCleanRows({ account: acc === undefined ? 'BPI Savings 1234-5678-90' : acc, kind: 'bank', currency: 'PHP', period: { from: ym + '-01', to: ym + '-' + (ym === '2026-09' ? '30' : '31') }, closing_balance: 10000, rows: [
+  { date: ym + '-02', text: 'SM SUPERMARKET MAKATI', amount: 2000, dir: 'out' }, { date: ym + '-15', text: 'PAYROLL CREDIT VIDEOWORKS INC', amount: 21000, dir: 'in' }, { date: ym + '-15', text: 'RENT - APT 4B ORTIGAS', amount: 9000, dir: 'out' },
+  { date: ym + '-16', text: 'MERALCO BILL PAYMENT', amount: ym === '2026-10' ? 2600 : 2400, dir: 'out' }, { date: ym + '-30', text: 'PAYROLL CREDIT VIDEOWORKS INC', amount: 21000, dir: 'in' }], notes: [] }, name, '2026-11-12');
+const three = [monthPdf('2026-08', 'Aug.pdf'), monthPdf('2026-09', 'Sep.pdf'), monthPdf('2026-10', 'Oct.pdf')];
+let n3 = X.stmtNumbers(three, catOf2, '2026-11-12');
+ok(n3.pay === 42000 && n3.bills.rent === 9000 && n3.bills.food === 2000 && n3.bills.util === 2467, 'three monthly PDFs of one account: rent stays 9,000, pay 42,000, utilities averaged (whole units, no cents in the files): ' + JSON.stringify([n3.pay, n3.bills.rent, n3.bills.food, n3.bills.util]));
+ok(n3.balance === 10000 && n3.balanceDate === '2026-10-31', 'the balance is the latest statement\'s, once: ' + n3.balance);
+ok(n3.skipped.some(x => /3 files are one account/.test(x) && /3 full months/.test(x)), 'the review says the three files were put together: ' + n3.skipped.join(' | '));
+// the account name as the model happens to print it still groups
+const spelled = [monthPdf('2026-09', 'Sep.pdf', 'BPI SAVINGS 1234-5678-90'), monthPdf('2026-10', 'Oct.pdf', 'bpi savings 1234 5678 90')];
+ok(X.stmtNumbers(spelled, catOf2, '2026-11-12').bills.rent === 9000, 'spelling and punctuation differences in the account name do not split it');
+// no account name: files of the same kind are one account
+const unnamed = [monthPdf('2026-09', 'a.pdf', ''), monthPdf('2026-10', 'b.pdf', '')];
+ok(X.stmtNumbers(unnamed, catOf2, '2026-11-12').bills.rent === 9000, 'unnamed reads of one kind count as one account');
+// a CSV and a PDF of the same account and month: the shared rows count once, the numbers equal the CSV alone
+const csvOnly = X.stmtNumbers([bankRead], catOf2, '2026-11-12');
+const both = X.stmtNumbers([bankRead, X.stmtCleanRows({ account: 'BPI Savings 1234', kind: 'bank', period: { from: '2026-10-01', to: '2026-10-31' }, closing_balance: 32089.7, rows: bank.filter(r => r.date.slice(0, 7) === '2026-10'), notes: [] }, 'Oct.pdf', '2026-11-12')], catOf2, '2026-11-12');
+ok(both.pay === csvOnly.pay && both.bills.rent === csvOnly.bills.rent && both.bills.food === csvOnly.bills.food && both.bills.util === csvOnly.bills.util && both.balance === csvOnly.balance, 'CSV plus a PDF of the same month: nothing is counted twice: ' + JSON.stringify([both.pay, both.bills.food, csvOnly.bills.food]));
+ok(both.meta.dupes === bank.filter(r => r.date.slice(0, 7) === '2026-10').length && !both.skipped.some(x => /covers only part/.test(x)), 'the repeated rows are reported and the part-month note is not raised for a file inside a fully covered account');
+// two accounts still add up
+const wallet = X.stmtCleanRows({ account: 'GCash', kind: 'ewallet', period: { from: '2026-10-01', to: '2026-10-31' }, closing_balance: 3850, rows: [{ date: '2026-10-03', text: 'GRAB PHILIPPINES', amount: 180, dir: 'out' }, { date: '2026-10-01', text: 'CASH IN VIA BPI ONLINE', amount: 2000, dir: 'in' }], notes: [] }, 'wallet.xlsx', '2026-11-12');
+const two = X.stmtNumbers([monthPdf('2026-10', 'Oct.pdf'), wallet], catOf2, '2026-11-12');
+ok(two.bills.gas === 180 && two.balance === 13850, 'a wallet next to the bank adds its own month and its own balance: ' + JSON.stringify([two.bills.gas, two.balance]));
 console.log(`STMT: ${pass} pass, ${fail} fail`); process.exit(fail ? 1 : 0);

@@ -2,7 +2,8 @@
    Pure functions, no DOM. Claude does two small, fixed-shape jobs: each file becomes a table of rows (date, text, amount, in or out),
    and each merchant gets one category word. Everything else is arithmetic here, so the page can show it and a test can check it.
    Vocabulary: pay, other_income, transfer_in (own money arriving), rent, util, food, net, phone, ins, subs, gas (transport), loan,
-   card_payment (the bank paying the card bill: never a bill, the card's own rows carry the spending), transfer_out, cash (ATM), play, other. */
+   card_payment (the bank paying the card bill: never a bill, the card's own rows carry the spending), transfer_out, cash (ATM), play, other.
+   Files of one account (monthly PDFs, a CSV plus a PDF) are one account: its months are averaged, never added; accounts are added up. */
 const STMT_CATS = ['pay', 'other_income', 'transfer_in', 'rent', 'util', 'food', 'net', 'phone', 'ins', 'subs', 'gas', 'loan', 'card_payment', 'transfer_out', 'cash', 'play', 'other'];
 const STMT_BILL_CATS = ['rent', 'util', 'food', 'net', 'phone', 'ins', 'gas'];
 const STMT_CAT_LABEL = { pay: 'Pay', other_income: 'Other income', transfer_in: 'Own money in', rent: 'Rent or mortgage', util: 'Utilities', food: 'Food and groceries', net: 'Internet', phone: 'Phone', ins: 'Insurance', subs: 'Subscription', gas: 'Transport', loan: 'Loan', card_payment: 'Card bill payment', transfer_out: 'Transfer out', cash: 'Cash withdrawal', play: 'Play money', other: 'Other spending' };
@@ -70,13 +71,26 @@ const stmtTypicalDay = days => { if (!days.length) return 0; return Math.round(s
 const stmtOrd = n => n + (n % 10 === 1 && n !== 11 ? 'st' : n % 10 === 2 && n !== 12 ? 'nd' : n % 10 === 3 && n !== 13 ? 'rd' : 'th');
 const stmtWhole = (x, cents) => cents ? Math.round(x * 100) / 100 : Math.round(x);
 
-/* the monthly amount of a category inside one read, over the months the read covers in full (or its partial months when it has none):
+/* the reads of one account, together: a bank's monthly PDFs, or its CSV plus a PDF, are one account whose months are averaged,
+   never added. The account name decides (as printed, letters and digits only); a read without a name joins the others of its kind. */
+const stmtAccKey = r => { const a = String(r.account || '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim(); return a ? 'a:' + a : 'k:' + r.kind; };
+function stmtGroups(reads) {
+  const g = {};
+  reads.forEach(r => { const k = stmtAccKey(r), x = g[k] || (g[k] = { key: k, kind: r.kind, account: r.account, reads: [], files: {}, full: [], partial: [] }); x.reads.push(r); x.files[r.file] = true; });
+  Object.values(g).forEach(x => {
+    x.reads.forEach(r => { const mo = stmtMonths(r); mo.full.forEach(m => { if (x.full.indexOf(m) < 0) x.full.push(m); }); mo.partial.forEach(m => { if (x.partial.indexOf(m) < 0) x.partial.push(m); }); });
+    x.partial = x.partial.filter(m => x.full.indexOf(m) < 0); x.full.sort(); x.partial.sort();
+    if (x.reads.some(r => r.kind === 'card')) x.kind = 'card';
+  });
+  return Object.values(g);
+}
+/* the monthly amount of a category inside one account, over the months it covers in full (or its partial months when it has none):
    spending is the plain average, so a bill paid every other month lands at half; money in counts only when it shows up in most months,
    so a one-off payout is a question, not income */
-function stmtTypical(read, rows, want, pred) {
-  const mo = stmtMonths(read), months = mo.full.length ? mo.full : mo.partial, partial = !mo.full.length;
+function stmtTypical(group, rows, want, pred) {
+  const months = group.full.length ? group.full : group.partial, partial = !group.full.length;
   if (!months.length) return { a: 0, partial: true, months: [] };
-  const per = months.map(ym => rows.filter(r => r.f === read.file && stmtMonthOf(r.d) === ym && pred(r)).reduce((s, r) => s + r.a, 0));
+  const per = months.map(ym => rows.filter(r => group.files[r.f] && stmtMonthOf(r.d) === ym && pred(r)).reduce((s, r) => s + r.a, 0));
   const income = want === 'pay' || want === 'other_income' || want === 'transfer_in';
   if (income) { const seen = per.filter(x => x > 0).length; return { a: seen >= Math.ceil((months.length + 1) / 2) ? stmtMedian(per) : 0, partial, months }; }
   return { a: per.reduce((s, x) => s + x, 0) / per.length, partial, months };
@@ -85,8 +99,8 @@ function stmtTypical(read, rows, want, pred) {
 function stmtNumbers(reads, catOf, today) {
   const merged = stmtMerge(reads), rows = merged.rows, cents = rows.some(r => r.a % 1 !== 0);
   const cat = r => { const c = catOf(r.k); return STMT_CATS.indexOf(c) >= 0 ? c : (r.dir === 'in' ? 'other_income' : 'other'); };
-  const isCard = r => r.kind === 'card', money = reads.filter(r => r.kind !== 'card'), cards = reads.filter(isCard);
-  const sum = (list, want) => list.reduce((s, r) => s + stmtTypical(r, rows, want, x => x.dir === (want === 'pay' || want === 'other_income' || want === 'transfer_in' ? 'in' : 'out') && cat(x) === want).a, 0);
+  const groups = stmtGroups(reads), money = groups.filter(g => g.kind !== 'card'), cards = groups.filter(g => g.kind === 'card');
+  const sum = (list, want) => list.reduce((s, g) => s + stmtTypical(g, rows, want, x => x.dir === (want === 'pay' || want === 'other_income' || want === 'transfer_in' ? 'in' : 'out') && cat(x) === want).a, 0);
   const out = { summary: '', pay: null, how: '', other: null, balance: null, bills: {}, notes: {}, subs: [], loans: [], card: null, questions: [], skipped: [], meta: { files: [], dupes: merged.dupes, rows: rows.length, cents } };
   /* pay and other income: from the accounts money arrives in */
   const pay = sum(money, 'pay'); if (pay > 0) out.pay = stmtWhole(pay, cents);
@@ -99,13 +113,10 @@ function stmtNumbers(reads, catOf, today) {
   }
   const other = sum(money, 'other_income'); if (other > 0) out.other = stmtWhole(other, cents);
   /* balance: the latest closing balance of each account that holds money, added up */
-  const withBal = money.filter(r => r.closing !== null && r.to);
-  if (withBal.length) {
-    const byAcc = {}; withBal.forEach(r => { const key = (r.account || r.file).toLowerCase(); if (!byAcc[key] || byAcc[key].to < r.to) byAcc[key] = r; });
-    const accs = Object.values(byAcc); out.balance = stmtWhole(accs.reduce((s, r) => s + r.closing, 0), cents); out.balanceDate = accs.map(r => r.to).sort().pop();
-  }
+  const latest = money.map(g => g.reads.filter(r => r.closing !== null && r.to).sort((x, y) => (x.to < y.to ? 1 : x.to > y.to ? -1 : 0))[0]).filter(Boolean);
+  if (latest.length) { out.balance = stmtWhole(latest.reduce((s, r) => s + r.closing, 0), cents); out.balanceDate = latest.map(r => r.to).sort().pop(); }
   /* bills: every account's own typical month, added up; the card's own rows carry what the bank only shows as one card payment */
-  STMT_BILL_CATS.forEach(c => { const a = sum(reads, c); if (a > 0) { out.bills[c] = stmtWhole(a, cents); const names = stmtMerchants(rows.filter(r => r.dir === 'out' && cat(r) === c)).slice(0, 2); const day = stmtTypicalDay(rows.filter(r => r.dir === 'out' && cat(r) === c).map(r => +r.d.slice(8, 10))); out.notes[c] = names.map(m => m.name.slice(0, 24)).join(', ') + (names.length === 1 && day ? `, around the ${stmtOrd(day)}` : ''); } });
+  STMT_BILL_CATS.forEach(c => { const a = sum(groups, c); if (a > 0) { out.bills[c] = stmtWhole(a, cents); const names = stmtMerchants(rows.filter(r => r.dir === 'out' && cat(r) === c)).slice(0, 2); const day = stmtTypicalDay(rows.filter(r => r.dir === 'out' && cat(r) === c).map(r => +r.d.slice(8, 10))); out.notes[c] = names.map(m => m.name.slice(0, 24)).join(', ') + (names.length === 1 && day ? `, around the ${stmtOrd(day)}` : ''); } });
   /* subscriptions and loans: one line per merchant */
   const subsM = stmtMerchants(rows.filter(r => r.dir === 'out' && cat(r) === 'subs')), loanM = stmtMerchants(rows.filter(r => r.dir === 'out' && cat(r) === 'loan'));
   const perMerchant = m => { const per = {}; rows.filter(r => r.k === m.k && r.dir === 'out').forEach(r => { per[stmtMonthOf(r.d)] = (per[stmtMonthOf(r.d)] || 0) + r.a; }); return stmtMedian(Object.values(per)); };
@@ -115,12 +126,13 @@ function stmtNumbers(reads, catOf, today) {
   if (cards.length) { const a = sum(cards, 'play') + sum(cards, 'other') + sum(cards, 'cash'); if (a > 0) out.card = stmtWhole(a, cents); }
   else { const a = sum(money, 'card_payment'); if (a > 0) out.card = stmtWhole(a, cents); }
   /* questions: the recurring transfer out, and income seen only once */
-  stmtMerchants(rows.filter(r => r.dir === 'out' && cat(r) === 'transfer_out')).slice(0, 2).forEach(m => { if (m.months.length >= 2 || reads.every(r => stmtMonths(r).full.length <= 1)) { const a = perMerchant(m); if (out.pay === null || a >= out.pay * 0.05) out.questions.push({ t: `Is the ${stmtWhole(a, cents).toLocaleString()} sent to ${m.name.slice(0, 30)} each month something you want counted in your budget?`, r: '' }); } });
-  const fullMonths = Math.max.apply(null, reads.map(r => stmtMonths(r).full.length).concat([0]));
+  stmtMerchants(rows.filter(r => r.dir === 'out' && cat(r) === 'transfer_out')).slice(0, 2).forEach(m => { if (m.months.length >= 2 || groups.every(g => g.full.length <= 1)) { const a = perMerchant(m); if (out.pay === null || a >= out.pay * 0.05) out.questions.push({ t: `Is the ${stmtWhole(a, cents).toLocaleString()} sent to ${m.name.slice(0, 30)} each month something you want counted in your budget?`, r: '' }); } });
+  const fullMonths = Math.max.apply(null, groups.map(g => g.full.length).concat([0]));
   stmtMerchants(rows.filter(r => r.dir === 'in' && cat(r) === 'other_income')).slice(0, 2).forEach(m => { if (m.months.length === 1 && fullMonths >= 2) out.questions.push({ t: `Is the ${stmtWhole(m.inTotal, cents).toLocaleString()} from ${m.name.slice(0, 30)} regular income?`, r: '' }); });
   out.questions = out.questions.slice(0, 4);
   /* what was left out, and what each file gave */
-  reads.forEach(r => { const mo = stmtMonths(r); out.meta.files.push({ file: r.file, account: r.account, kind: r.kind, rows: r.rows.length, from: r.from, to: r.to, full: mo.full, partial: mo.partial, closing: r.closing }); r.notes.forEach(n => out.skipped.push(`${r.file}: ${n}`)); if (!mo.full.length && r.rows.length) out.skipped.push(`${r.file} covers only part of a month (${r.from} to ${r.to}); its numbers come from that part.`); if (!r.rows.length) out.skipped.push(`${r.file}: no transactions could be read.`); });
+  reads.forEach(r => { const mo = stmtMonths(r), g = groups.find(x => x.files[r.file]); out.meta.files.push({ file: r.file, account: r.account, kind: r.kind, rows: r.rows.length, from: r.from, to: r.to, full: mo.full, partial: mo.partial, closing: r.closing }); r.notes.forEach(n => out.skipped.push(`${r.file}: ${n}`)); if (!mo.full.length && r.rows.length && !(g && g.full.length)) out.skipped.push(`${r.file} covers only part of a month (${r.from} to ${r.to}); its numbers come from that part.`); if (!r.rows.length) out.skipped.push(`${r.file}: no transactions could be read.`); });
+  groups.filter(g => g.reads.length > 1).forEach(g => out.skipped.push(`${Object.keys(g.files).length} files are one account (${g.account || g.kind}): their months were put together, ${g.full.length ? g.full.length + (g.full.length === 1 ? ' full month' : ' full months') : 'part of a month'}.`));
   if (merged.dupes) out.skipped.push(`${merged.dupes} repeated ${merged.dupes === 1 ? 'row was' : 'rows were'} counted once.`);
   out.skipped = out.skipped.slice(0, 8);
   const accs = []; reads.forEach(r => { const nm = r.account || r.file; if (accs.indexOf(nm) < 0) accs.push(nm); });
