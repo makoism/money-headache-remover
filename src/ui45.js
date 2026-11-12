@@ -242,7 +242,7 @@ const TOUR = [
         b.disabled = true;
         try { const code = await vaultTurnOn(); b.closest('.row-btns').hidden = true; vaultShowCode($('#tourVaultCode'), code); sfx('next'); } catch (e) { b.disabled = false; return; }
         /* the code is the last thing on the screen and the footer floats over the end of it: bring it fully into view */
-        const t = $('#tour'); requestAnimationFrame(() => t.scrollTo({ top: t.scrollHeight, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }));
+        const t = $('#tourScroll'); requestAnimationFrame(() => t.scrollTo({ top: t.scrollHeight, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }));
       });
     } },
 ];
@@ -289,7 +289,7 @@ function renderTour(dir) {
   if (t.id !== 'reveal') { const ch = $('#cheer'); if (ch && ch.classList.contains('on')) { clearTimeout(CONF.cheerT); ch.classList.remove('on'); } }
   if (tourMode === 'full') { S.ui.tourAt = t.id; persist(); }
   $('#tour').classList.toggle('welcome', t.part === PART.welcome || !!t.last);
-  const f = t.focus ? $(t.focus, $('#tourBody')) : null; (f || $('#tourTitle')).focus({ preventScroll: true }); $('#tour').scrollTop = 0;
+  const f = t.focus ? $(t.focus, $('#tourBody')) : null; (f || $('#tourTitle')).focus({ preventScroll: true }); $('#tourScroll').scrollTop = 0;
 }
 function paintSnd() {
   const on = !(S.ui && S.ui.mute), b = $('#tourSnd'), sw = $('#setSnd');
@@ -297,16 +297,16 @@ function paintSnd() {
   if (sw) { sw.setAttribute('aria-checked', String(on)); const t = $('#sndTxt'); if (t) t.textContent = on ? 'On' : 'Off'; }
 }
 function toggleSnd() { if (S.ui.mute) delete S.ui.mute; else S.ui.mute = true; persist(); paintSnd(); MUSIC.sync(); sfx('tap'); }
-/* the setup's art sits above the footer. When a screen's words or fields reach down to where it sits (short windows, long screens),
+/* the setup's art sits low in the column. When a screen's words or fields reach down to where it sits (short windows, long screens),
    the art steps aside instead of lying over them. Measured with offsets, which ignore the slide-in animation. */
 function fitTourArt() {
   const a = $('#tourArt .art'); if (!a) return;
-  const body = $('#tourBody'), foot = $('.tour-foot');
+  const body = $('#tourBody');
   const ax = a.offsetLeft, ay = a.offsetTop, ax2 = ax + a.offsetWidth, ay2 = ay + a.offsetHeight;
   const hit = [...body.children].some(el => {
     const x = body.offsetLeft + el.offsetLeft, y = body.offsetTop + el.offsetTop, x2 = x + el.offsetWidth, y2 = y + el.offsetHeight;
     return el.offsetWidth > 0 && y2 > ay && y < ay2 && x2 > ax && x < ax2;
-  }) || ay2 > foot.offsetTop + 6;
+  });
   a.classList.toggle('aside', hit);
 }
 function paintMus() {

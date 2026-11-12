@@ -202,7 +202,7 @@ function stmtToggleMerchant(btn) {
 /* a corrected category: remembered, and the draft rebuilt */
 function stmtRecat(key, cat) {
   if (!impDraft || !impDraft.reads || STMT_CATS.indexOf(cat) < 0) return;
-  const body = $('#tourBody'), tour = $('#tour');
+  const body = $('#tourBody'), tour = $('#tourScroll');
   /* what the person has done on this screen stays: ticks and amounts they changed by hand (on lines whose number did not just move),
      which folds are open, where they scrolled */
   const was = impRows(impDraft), hand = {};

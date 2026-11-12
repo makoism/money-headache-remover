@@ -12,7 +12,7 @@
 @font-face { font-family: "Fraunces"; font-style: normal; font-weight: 100 900; font-display: swap; src: url(fonts/fraunces-latin-ext.woff2) format("woff2"); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
 :root {
   color-scheme: light;
-  --bg: #eef4ef; --panel: rgba(255, 255, 255, .62); --card: rgba(255, 255, 255, .62); --field: #ffffff; --seg-on: #ffffff;
+  --bg: #eef4ef; --panel: rgba(255, 255, 255, .62); --card: rgba(255, 255, 255, .62); --field: #ffffff; --seg-on: #ffffff; --float: rgba(255, 255, 255, .86);
   --ink: #122018; --ink2: #4f6a5c; --ink3: #58705f; --hair: rgba(18, 32, 24, .1); --track: rgba(18, 32, 24, .07); --track2: rgba(18, 32, 24, .11);
   --accent: #1f7a52; --on-accent: #ffffff; --accent-h: #27895d; --link: #1f7a52;
   --c1: #b8512e; --c2: #2c6db5; --c3: #3e8e2b; --c4: #d6568a; --c5: #d99a12; --c6: #7e3f96; --c7: #0b8fa8;
@@ -29,7 +29,7 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    --bg: #0c1a15; --panel: rgba(255, 255, 255, .055); --card: rgba(255, 255, 255, .055); --field: rgba(0, 0, 0, .28); --seg-on: rgba(255, 255, 255, .14);
+    --bg: #0c1a15; --panel: rgba(255, 255, 255, .055); --card: rgba(255, 255, 255, .055); --field: rgba(0, 0, 0, .28); --seg-on: rgba(255, 255, 255, .14); --float: rgba(16, 34, 27, .78);
     --ink: #e9f3ee; --ink2: #a9c4b7; --ink3: #7f998d; --hair: rgba(255, 255, 255, .1); --track: rgba(255, 255, 255, .08); --track2: rgba(255, 255, 255, .14);
     --accent: #8fd9b0; --on-accent: #0b1813; --accent-h: #a5e4c2; --link: #9ad8b8;
     --c1: #d95926; --c2: #3987e5; --c3: #3fa03c; --c4: #d55181; --c5: #c98500; --c6: #a266c9; --c7: #1a9dad;
@@ -41,7 +41,7 @@
 }
 :root[data-theme="dark"] {
     color-scheme: dark;
-    --bg: #0c1a15; --panel: rgba(255, 255, 255, .055); --card: rgba(255, 255, 255, .055); --field: rgba(0, 0, 0, .28); --seg-on: rgba(255, 255, 255, .14);
+    --bg: #0c1a15; --panel: rgba(255, 255, 255, .055); --card: rgba(255, 255, 255, .055); --field: rgba(0, 0, 0, .28); --seg-on: rgba(255, 255, 255, .14); --float: rgba(16, 34, 27, .78);
     --ink: #e9f3ee; --ink2: #a9c4b7; --ink3: #7f998d; --hair: rgba(255, 255, 255, .1); --track: rgba(255, 255, 255, .08); --track2: rgba(255, 255, 255, .14);
     --accent: #8fd9b0; --on-accent: #0b1813; --accent-h: #a5e4c2; --link: #9ad8b8;
     --c1: #d95926; --c2: #3987e5; --c3: #3fa03c; --c4: #d55181; --c5: #c98500; --c6: #a266c9; --c7: #1a9dad;
@@ -435,8 +435,14 @@ table.plain tbody tr { cursor: default; } table.plain tbody tr:hover td { backgr
 }
 
 /* ---- the first-open tour ---- */
-.tour { position: fixed; inset: 0; z-index: 50; background: var(--aurora), var(--bg); overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; }
-.tour-in { max-width: 600px; margin: 0 auto; min-height: 100%; display: flex; flex-direction: column; padding: max(18px, env(safe-area-inset-top)) 24px 0; }
+/* the setup: a fixed layer, a scrolling column, and the footer with the buttons under it. The column's content dissolves over its last
+   80px (a mask on the scroller, which shows the layer's own background through it), so a long screen fades out before the buttons
+   and nothing is painted over it: no bar, no edge */
+.tour { position: fixed; inset: 0; z-index: 50; background: var(--aurora), var(--bg); display: flex; flex-direction: column; }
+.tour[hidden] { display: none; }
+.tour-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch;
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 80px), transparent); mask-image: linear-gradient(to bottom, #000 calc(100% - 80px), transparent); }
+.tour-in { max-width: 600px; margin: 0 auto; min-height: 100%; display: flex; flex-direction: column; padding: max(18px, env(safe-area-inset-top)) 24px 88px; }
 .tour-top { display: flex; align-items: center; justify-content: flex-end; gap: 16px; }
 .tour-part { font-size: 15px; color: var(--ink2); font-weight: 500; }
 .tour-dots { display: flex; gap: 5px; padding: 14px 0 0; }
@@ -504,12 +510,8 @@ svg.tour-scene { width: 100%; max-width: 440px; height: auto; }
 .tour-more { max-width: 460px; }
 .tour-more label { font-size: 15px; font-weight: 500; color: var(--ink2); }
 .tour-more .selbox select { border: 0; box-shadow: inset 0 0 0 1px var(--hair); background: var(--field); border-radius: 14px; min-height: 52px; padding: 0 16px; font-weight: 500; font-size: 17px; width: 100%; outline: none; }
-/* the footer stays at the bottom while a long screen scrolls. Its floor runs the whole width of the window and fades in at the top,
-   so on a wide screen it reads as the bottom of the page and not as a box the width of the column */
-.tour-foot { position: sticky; bottom: 0; z-index: 2; padding: 18px 0 max(20px, env(safe-area-inset-bottom)); margin-top: auto; }
-.tour-foot::before { content: ''; position: absolute; top: 0; bottom: 0; left: -100vw; right: -100vw; z-index: -1; pointer-events: none;
-  background: linear-gradient(to top, color-mix(in srgb, var(--bg) 96%, transparent) 68%, transparent); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
-  -webkit-mask-image: linear-gradient(to top, #000 72%, transparent); mask-image: linear-gradient(to top, #000 72%, transparent); }
+.tour-foot { flex: none; width: min(600px, 100%); box-sizing: border-box; margin: 0 auto; padding: 6px 24px max(20px, env(safe-area-inset-bottom)); }
+@media (max-width: 640px) { .tour-foot { padding-left: 20px; padding-right: 20px; } }
 .tour-chips.one .chip { justify-content: flex-start; }
 
 /* celebration */
@@ -538,7 +540,7 @@ svg.tour-scene { width: 100%; max-width: 440px; height: auto; }
 .asst.done .asst-steps, .asst.done .asst-delta { opacity: .75; }
 .asst-foot { align-items: center; }
 .help-btn .q { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: var(--bg); color: var(--ink); font-weight: 700; font-size: 17px; }
-.help-menu { display: grid; min-width: 232px; background: var(--field); border-radius: 18px; padding: 6px; box-shadow: 0 18px 40px -14px rgba(0, 0, 0, .45), 0 0 0 1px var(--hair); }
+.help-menu { display: grid; min-width: 232px; background: var(--float); -webkit-backdrop-filter: blur(24px) saturate(140%); backdrop-filter: blur(24px) saturate(140%); border-radius: 18px; padding: 6px; box-shadow: 0 18px 40px -14px rgba(0, 0, 0, .45), 0 0 0 1px var(--hair); }
 .help-menu button { border: 0; background: none; text-align: left; min-height: 48px; padding: 0 14px; border-radius: 12px; font-size: 16px; font-weight: 500; cursor: pointer; }
 .help-menu button:hover { background: var(--track); }
 .ask { position: fixed; z-index: 41; right: max(16px, env(safe-area-inset-right)); bottom: max(76px, calc(env(safe-area-inset-bottom) + 70px)); width: min(440px, calc(100vw - 32px)); max-height: min(660px, calc(100dvh - 110px)); display: flex; flex-direction: column; background: var(--bg); border-radius: 22px; box-shadow: 0 24px 60px -16px rgba(0, 0, 0, .5), 0 0 0 1px var(--hair); overflow: hidden; }
@@ -596,7 +598,7 @@ svg.tour-scene { width: 100%; max-width: 440px; height: auto; }
 .msg.card .row-btns { display: flex; flex-wrap: wrap; gap: 8px; }
 /* on laptops and phones that are not very tall, keep the first and last screens from running under the buttons */
 @media (max-height: 940px) { .tour-body { gap: 16px; padding-top: clamp(14px, 3vh, 34px); padding-bottom: 14px; } svg.tour-scene { max-width: 300px; } .tour-body p { font-size: 18px; line-height: 1.4; } .tour-body p.cap { font-size: 14px; } }
-@media (max-height: 860px) { svg.tour-scene { max-width: 236px; } .tour-in:has(.tour-foot.last) svg.tour-scene { display: none; } }
+@media (max-height: 860px) { svg.tour-scene { max-width: 236px; } .tour:has(.tour-foot.last) svg.tour-scene { display: none; } }
 @media (max-height: 740px) { svg.tour-scene { max-width: 175px; } }
 /* the short hello video screen: a card that opens the video in a new tab, or a 16:9 player in the downloaded app */
 .tour-video { display: inline-flex; align-items: center; gap: 14px; text-decoration: none; color: var(--ink); background: var(--card); border: .5px solid var(--hair); border-radius: 18px; padding: 14px 20px 14px 16px; min-height: 64px; max-width: 100%; transition: background .2s, transform .1s; }
@@ -805,7 +807,7 @@ svg.tour-scene { width: 100%; max-width: 440px; height: auto; }
 .dpb:focus-visible, .dpb.open { outline: none; box-shadow: inset 0 0 0 2px var(--accent), 0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent); }
 .dpb:disabled { opacity: .5; cursor: default; }
 .dp-pick.open .pick-t { background: var(--track); }
-.dp { position: fixed; z-index: 120; width: 308px; max-width: calc(100vw - 20px); background: var(--field); color: var(--ink); border-radius: 22px; padding: 10px 10px 8px; box-shadow: 0 26px 64px -14px rgba(0, 0, 0, .42), 0 0 0 .5px var(--hair); opacity: 0; transform: scale(.94) translateY(-4px); transition: opacity .12s ease-out, transform .17s cubic-bezier(.2, .9, .3, 1.15); will-change: transform, opacity; user-select: none; -webkit-user-select: none; letter-spacing: -.01em; }
+.dp { position: fixed; z-index: 120; width: 308px; max-width: calc(100vw - 20px); background: var(--float); -webkit-backdrop-filter: blur(24px) saturate(140%); backdrop-filter: blur(24px) saturate(140%); color: var(--ink); border-radius: 22px; padding: 10px 10px 8px; box-shadow: 0 26px 64px -14px rgba(0, 0, 0, .42), 0 0 0 .5px var(--hair); opacity: 0; transform: scale(.94) translateY(-4px); transition: opacity .12s ease-out, transform .17s cubic-bezier(.2, .9, .3, 1.15); will-change: transform, opacity; user-select: none; -webkit-user-select: none; letter-spacing: -.01em; }
 .dp.in { opacity: 1; transform: none; }
 .dp.out { opacity: 0; transform: scale(.97); transition-duration: .1s; }
 .dp-h { display: flex; align-items: center; justify-content: space-between; gap: 4px; padding: 2px 2px 8px; }
@@ -872,7 +874,7 @@ body.gw-open, body.co-open.gw-open { overflow: hidden; }
 .co-hole { position: absolute; border-radius: 18px; box-shadow: 0 0 0 3px rgba(255, 255, 255, .9), 0 0 0 9999px rgba(8, 10, 18, .6); pointer-events: none; opacity: 0; transition: opacity .2s; }
 .co.on .co-hole { opacity: 1; }
 .co.mv .co-hole { transition: opacity .2s, left .3s cubic-bezier(.3, .8, .2, 1), top .3s cubic-bezier(.3, .8, .2, 1), width .3s cubic-bezier(.3, .8, .2, 1), height .3s cubic-bezier(.3, .8, .2, 1); }
-.co-pop { position: absolute; width: min(364px, calc(100vw - 24px)); background: var(--field); color: var(--ink); border-radius: 22px; padding: 18px 20px 14px; box-shadow: 0 28px 70px -16px rgba(0, 0, 0, .55); opacity: 0; transform: translateY(8px); transition: opacity .2s, transform .22s cubic-bezier(.2, .9, .3, 1); }
+.co-pop { position: absolute; width: min(364px, calc(100vw - 24px)); background: var(--float); -webkit-backdrop-filter: blur(24px) saturate(140%); backdrop-filter: blur(24px) saturate(140%); color: var(--ink); border-radius: 22px; padding: 18px 20px 14px; box-shadow: 0 28px 70px -16px rgba(0, 0, 0, .55); opacity: 0; transform: translateY(8px); transition: opacity .2s, transform .22s cubic-bezier(.2, .9, .3, 1); }
 .co.on .co-pop { opacity: 1; transform: none; }
 .co.mv .co-pop { transition: opacity .2s, transform .22s cubic-bezier(.2, .9, .3, 1), left .3s cubic-bezier(.3, .8, .2, 1), top .3s cubic-bezier(.3, .8, .2, 1); }
 .co-pop.swap h2, .co-pop.swap #coB, .co-pop.swap .co-n { animation: coFade .24s ease-out; }
@@ -881,7 +883,7 @@ body.gw-open, body.co-open.gw-open { overflow: hidden; }
 .co-pop h2 { font-size: 21px; font-weight: 500; letter-spacing: -.008em; margin: 4px 0 6px; line-height: 1.2; }
 .co-pop #coB { font-size: 16px; color: var(--ink2); line-height: 1.4; }
 .co-foot { display: flex; align-items: center; gap: 8px; margin-top: 14px; }
-.co-arrow { position: absolute; width: 14px; height: 14px; background: var(--field); transform: rotate(45deg); border-radius: 3px; }
+.co-arrow { position: absolute; width: 14px; height: 14px; background: var(--float); transform: rotate(45deg); border-radius: 3px; }
 .co-arrow.up { top: -6px; } .co-arrow.down { bottom: -6px; }
 .co-pop.sheet { border-radius: 24px; }
 
@@ -1589,17 +1591,19 @@ body.gw-open, body.co-open.gw-open { overflow: hidden; }
   </div>
 
   <p class="foot" id="footNote">Not financial advice. Sample numbers are invented. Replace them with yours.</p>
-  <p class="foot ver" id="verFoot">Version 30.1, updated Nov 12, 4:25 pm</p>
+  <p class="foot ver" id="verFoot">Version 30.2, updated Nov 12, 4:50 pm</p>
 </div>
 <div class="tip" id="tip" role="tooltip"></div>
 <div class="tour" id="tour" role="dialog" aria-modal="true" aria-labelledby="tourTitle" hidden>
+  <div class="tour-scroll" id="tourScroll">
   <div class="tour-in">
     <div class="tour-top"><span class="tour-part sr" id="tourPart"></span><span class="tour-tools"><button type="button" class="link" id="tourMus" aria-pressed="true">Music on</button><button type="button" class="link" id="tourSnd" aria-pressed="false">Sound on</button><button type="button" class="link" id="tourSkip">Skip tour</button></span></div>
     <div class="tour-dots" id="tourDots" role="img"></div>
     <div class="tour-body" id="tourBody"></div>
     <span id="tourArt" aria-hidden="true"></span>
-    <div class="tour-foot"><button type="button" class="btn" id="tourBack">Back</button><span class="tour-gap"></span><button type="button" class="link" id="tourAlt" hidden>Go to my month</button><button type="button" class="btn solid" id="tourNext">Next</button></div>
   </div>
+  </div>
+  <div class="tour-foot"><button type="button" class="btn" id="tourBack">Back</button><span class="tour-gap"></span><button type="button" class="link" id="tourAlt" hidden>Go to my month</button><button type="button" class="btn solid" id="tourNext">Next</button></div>
 </div>
 <div id="cheer" role="status" aria-live="polite"></div>
 <canvas id="confetti" aria-hidden="true"></canvas>
@@ -1609,7 +1613,7 @@ body.gw-open, body.co-open.gw-open { overflow: hidden; }
     <button type="button" id="helpTab">Explain this tab</button>
     <button type="button" id="helpSetup">Guided setup</button>
     <button type="button" id="helpVideo" hidden>Intro video</button>
-    <p class="help-ver">Version 30.1</p>
+    <p class="help-ver">Version 30.2</p>
   </div>
   <div class="help-row"><button type="button" class="help-btn ask-btn" id="askBtn">Ask</button><button type="button" class="help-btn" id="helpBtn" aria-expanded="false" aria-controls="helpMenu"><span class="q" aria-hidden="true">?</span>Help</button></div>
 </div>
@@ -4254,7 +4258,7 @@ function stmtToggleMerchant(btn) {
 /* a corrected category: remembered, and the draft rebuilt */
 function stmtRecat(key, cat) {
   if (!impDraft || !impDraft.reads || STMT_CATS.indexOf(cat) < 0) return;
-  const body = $('#tourBody'), tour = $('#tour');
+  const body = $('#tourBody'), tour = $('#tourScroll');
   /* what the person has done on this screen stays: ticks and amounts they changed by hand (on lines whose number did not just move),
      which folds are open, where they scrolled */
   const was = impRows(impDraft), hand = {};
@@ -5327,7 +5331,7 @@ const TOUR = [
         b.disabled = true;
         try { const code = await vaultTurnOn(); b.closest('.row-btns').hidden = true; vaultShowCode($('#tourVaultCode'), code); sfx('next'); } catch (e) { b.disabled = false; return; }
         /* the code is the last thing on the screen and the footer floats over the end of it: bring it fully into view */
-        const t = $('#tour'); requestAnimationFrame(() => t.scrollTo({ top: t.scrollHeight, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }));
+        const t = $('#tourScroll'); requestAnimationFrame(() => t.scrollTo({ top: t.scrollHeight, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }));
       });
     } },
 ];
@@ -5374,7 +5378,7 @@ function renderTour(dir) {
   if (t.id !== 'reveal') { const ch = $('#cheer'); if (ch && ch.classList.contains('on')) { clearTimeout(CONF.cheerT); ch.classList.remove('on'); } }
   if (tourMode === 'full') { S.ui.tourAt = t.id; persist(); }
   $('#tour').classList.toggle('welcome', t.part === PART.welcome || !!t.last);
-  const f = t.focus ? $(t.focus, $('#tourBody')) : null; (f || $('#tourTitle')).focus({ preventScroll: true }); $('#tour').scrollTop = 0;
+  const f = t.focus ? $(t.focus, $('#tourBody')) : null; (f || $('#tourTitle')).focus({ preventScroll: true }); $('#tourScroll').scrollTop = 0;
 }
 function paintSnd() {
   const on = !(S.ui && S.ui.mute), b = $('#tourSnd'), sw = $('#setSnd');
@@ -5382,16 +5386,16 @@ function paintSnd() {
   if (sw) { sw.setAttribute('aria-checked', String(on)); const t = $('#sndTxt'); if (t) t.textContent = on ? 'On' : 'Off'; }
 }
 function toggleSnd() { if (S.ui.mute) delete S.ui.mute; else S.ui.mute = true; persist(); paintSnd(); MUSIC.sync(); sfx('tap'); }
-/* the setup's art sits above the footer. When a screen's words or fields reach down to where it sits (short windows, long screens),
+/* the setup's art sits low in the column. When a screen's words or fields reach down to where it sits (short windows, long screens),
    the art steps aside instead of lying over them. Measured with offsets, which ignore the slide-in animation. */
 function fitTourArt() {
   const a = $('#tourArt .art'); if (!a) return;
-  const body = $('#tourBody'), foot = $('.tour-foot');
+  const body = $('#tourBody');
   const ax = a.offsetLeft, ay = a.offsetTop, ax2 = ax + a.offsetWidth, ay2 = ay + a.offsetHeight;
   const hit = [...body.children].some(el => {
     const x = body.offsetLeft + el.offsetLeft, y = body.offsetTop + el.offsetTop, x2 = x + el.offsetWidth, y2 = y + el.offsetHeight;
     return el.offsetWidth > 0 && y2 > ay && y < ay2 && x2 > ax && x < ax2;
-  }) || ay2 > foot.offsetTop + 6;
+  });
   a.classList.toggle('aside', hit);
 }
 function paintMus() {

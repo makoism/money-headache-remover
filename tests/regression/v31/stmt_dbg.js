@@ -8,7 +8,7 @@ const { w } = require('/tmp/v22/lib.js');
   const m = () => p.evaluate(() => { const t = document.querySelector('#tour'), ti = document.querySelector('.tour-in'), f = document.querySelector('.tour-foot'), fr = f.getBoundingClientRect(), bk = document.querySelector('#tourBack').getBoundingClientRect(); return { tourScroll: [t.scrollTop, t.scrollHeight, t.clientHeight], tourIn: ti.getBoundingClientRect().height, foot: [Math.round(fr.top), Math.round(fr.bottom), Math.round(fr.height)], back: [Math.round(bk.top), Math.round(bk.bottom)], inner: innerHeight, footCs: [getComputedStyle(f).position, getComputedStyle(f).bottom, getComputedStyle(f).paddingBottom], bodyPad: getComputedStyle(document.querySelector('.tour-body')).paddingBottom, tourInPad: getComputedStyle(ti).paddingBottom }; });
   console.log('top', JSON.stringify(await m()));
   await p.screenshot({ path: '/tmp/v31/stmt_top.png' });
-  await p.evaluate(() => { document.querySelector('#tour').scrollTop = 99999; }); await w(300);
+  await p.evaluate(() => { document.querySelector('#tourScroll').scrollTop = 99999; }); await w(300);
   console.log('scrolled', JSON.stringify(await m()));
   await p.screenshot({ path: '/tmp/v31/stmt_bottom.png' });
   await b.close();
