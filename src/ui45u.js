@@ -114,13 +114,16 @@ const STEP_SOURCE = { id: 'source', part: PART.money, setup: true, title: 'Your 
       <div class="imp-out" id="impOut"></div>
       ${art('grass')}
     </div>
-    <div class="src-panel" id="srcAiPanel" hidden>
-      <p><b>Use any AI.</b> Claude cannot read files from this copy of the page, so: copy the message, paste it into your AI with your statements, answer its questions, paste its final answer below.</p>
+    <details class="src-how src-alt" id="srcAiPanel">
+      <summary id="srcAiSum">Prefer your own AI? Use it instead</summary>
+      <div class="src-how-in">
+      <p id="srcAiLede">An alternative to the upload above, with the same result. If you would rather not send statements through this page, or you like ChatGPT, Gemini or the Claude app better: copy one message, paste it into that AI with your statements, answer its questions, and paste its final answer back here. It is checked and reviewed the same way.</p>
       <div class="row-btns"><button type="button" class="btn small solid" id="impCopy">Copy message</button><span class="msg" id="impCopyMsg" role="status"></span></div>
       <div class="row-btns ai-apps" id="impAis"></div>
       <textarea id="impPaste" aria-label="The AI's answer" spellcheck="false" placeholder="Paste the answer here"></textarea>
       <div class="row-btns"><button type="button" class="btn small solid" id="impCheck">Check it</button><span class="msg" id="impPasteMsg" role="status"></span></div>
-    </div>
+      </div>
+    </details>
     ${IMP_HOW()}
     <p class="cap">${impOnly ? '<button type="button" class="link" id="srcSkip">Not now</button>' : 'No statements at hand? <button type="button" class="link" id="srcSkip">Type the numbers instead</button>. Receipts takes statements any time.'}</p>`,
   after: () => {
@@ -128,10 +131,16 @@ const STEP_SOURCE = { id: 'source', part: PART.money, setup: true, title: 'Your 
     /* where Claude can read files, the upload is the screen. Where it cannot (a copy without the relay or a sign-in), the any-AI route takes over. */
     const paintSrc = () => {
       const sub = $('#srcUploadSub'); if (!sub) return;
-      const up = !!askFn; $('#srcUploadPanel').hidden = !up; $('#srcAiPanel').hidden = up;
+      const up = !!askFn, fold = $('#srcAiPanel'); $('#srcUploadPanel').hidden = !up;
       if (up) sub.textContent = askDoc ? 'CSV, Excel, PDF or screenshots' : 'CSV, Excel or screenshots';
       const here = $('#impHere'); if (here) { const h = askFn && !askDoc && inArtifact() ? hereLink().replace(/^Open/, 'PDFs: open') : ''; here.innerHTML = h; here.hidden = !h; }
-      if (!up) { const p = $('#srcAiPanel p'); if (p && inArtifact() && RELAY_URL) p.innerHTML = `<b>Use any AI.</b> ${hereLink()} Or: copy the message, paste it into your AI with your statements, answer its questions, paste its final answer below.`; }
+      /* with the upload working, the other-AI route is a folded alternative; without it, it is the way, so it stands open and says why */
+      if (fold) {
+        fold.open = !up; fold.classList.toggle('alone', !up);
+        $('#srcAiSum').textContent = up ? 'Prefer your own AI? Use it instead' : 'Use your own AI';
+        $('#srcAiLede').innerHTML = up ? 'An alternative to the upload above, with the same result. If you would rather not send statements through this page, or you like ChatGPT, Gemini or the Claude app better: copy one message, paste it into that AI with your statements, answer its questions, and paste its final answer back here. It is checked and reviewed the same way.'
+          : `Claude cannot read files from this copy of the page. ${inArtifact() && RELAY_URL ? hereLink() + ' Or use' : 'Use'} any AI: copy one message, paste it into ChatGPT, Gemini or the Claude app with your statements, answer its questions, and paste its final answer below.`;
+      }
     };
     connectAsk().then(paintSrc);
     $('#impPick').addEventListener('click', () => $('#impFile').click());

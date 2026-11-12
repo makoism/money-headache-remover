@@ -7,11 +7,11 @@ let pass = 0, fail = 0; const ok = (n, c, x) => { if (c) pass++; else fail++; co
   await p.setViewport({ width: 320, height: 700 });
   await p.goto((process.env.PAGE_URL || 'file:///home/claude/work/money-map-team.html') + '?sfxtest#2026-11', { waitUntil: 'load' }); await w(900);
   const playing = () => p.evaluate(() => window.__music.playing());
-  ok('tour open, music not yet started (no tap)', !(await playing()));
+  ok('page open, music not yet started (no tap)', !(await playing()));
   const tools = await p.evaluate(() => { const r = document.querySelector('.tour-tools').getBoundingClientRect(), t = document.querySelector('#tourMus').textContent; const bs = [...document.querySelectorAll('.tour-tools button')].map(b => { const q = b.getBoundingClientRect(); return [b.textContent, Math.round(q.left), Math.round(q.right), Math.round(q.top)]; }); return { right: Math.round(r.right), tops: new Set(bs.map(x => x[3])).size, bs, t }; });
   ok('three links fit one row at 320 wide', tools.right <= 320 && tools.tops === 1, tools);
   await p.click('#tourNext'); await w(600);
-  ok('first tap inside the setup starts the music', await playing());
+  ok('the first tap starts the music', await playing());
   ok('music link says on', (await p.$eval('#tourMus', e => e.textContent + e.getAttribute('aria-pressed'))) === 'Music ontrue');
   await p.click('#tourMus'); await w(300);
   ok('Music off stops it and says so', !(await playing()) && (await p.$eval('#tourMus', e => e.textContent)) === 'Music off');
@@ -24,7 +24,7 @@ let pass = 0, fail = 0; const ok = (n, c, x) => { if (c) pass++; else fail++; co
   await p.click('#tourSnd'); await w(400);
   ok('Sound on brings it back', await playing());
   await p.click('#tourSkip'); await w(500);
-  ok('closing the setup stops the music', !(await playing()));
+  ok('closing the setup keeps the music going (it plays in the app too)', await playing());
   // Settings switch
   await p.evaluate(() => document.querySelector('.tabs [data-tab=basics]').click()); await w(600);
   const row = await p.evaluate(() => { const s = document.querySelector('#setMus'); return s ? [s.getAttribute('aria-checked'), document.querySelector('#musTxt').textContent] : null; });
@@ -34,9 +34,7 @@ let pass = 0, fail = 0; const ok = (n, c, x) => { if (c) pass++; else fail++; co
   await p.click('#setMus'); await w(300);
   // reopen the setup from Help: music starts on a tap
   await p.evaluate(() => document.querySelector('#helpBtn').click()); await w(300); await p.click('#helpSetup'); await w(700);
-  ok('reopened setup plays again on its own (the context already runs)', await playing());
-  await p.click('#tourTitle'); await w(400);
-  ok('...and after a tap', await playing());
+  ok('the reopened setup still has it', await playing());
   // the hello video playing keeps the level at 0: go to the video screen and pretend the video plays (only where the video file exists)
   await p.click('#tourSkip'); await w(500);
   await p.evaluate(() => document.querySelector('#helpBtn').click()); await w(300); await p.click('#helpVideo'); await w(700);

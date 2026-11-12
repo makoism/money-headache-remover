@@ -183,11 +183,12 @@
       </div>
       <p class="scan-off" id="scanOff" role="status" hidden></p>
       <details class="scan-app" id="scanApp">
-        <summary>Other AI app</summary>
+        <summary>Prefer your own AI? Use it instead</summary>
+        <p class="cap">An alternative to the buttons above, with the same result. If you would rather not send receipts through this page, or you like ChatGPT, Gemini or the Claude app better: copy one message, paste it into that AI with the photos, and paste its reply back here. It is checked and listed for review the same way.</p>
         <ol class="scan-steps">
           <li>Tap <b>Copy message</b>.</li>
           <li>Paste it into your AI app, attach the photos, send.</li>
-          <li>Paste the reply below.</li>
+          <li>Paste the reply below and tap <b>Check</b>.</li>
         </ol>
         <div class="row-btns">
           <button type="button" class="btn small solid" id="scanCopy">Copy message</button>
@@ -265,7 +266,7 @@
       <div class="field sndrow">
         <span class="lab" id="musLab">Music</span>
         <div class="snd-r"><button type="button" class="sw" id="setMus" role="switch" aria-labelledby="musLab" aria-checked="true"><i></i></button><span class="cap" id="musTxt">On</span></div>
-        <p class="cap">A quiet piece, made in the browser, while the guided setup is open.</p>
+        <p class="cap">A quiet piece, made in the browser while the app is open. Starts at your first tap.</p>
       </div>
       <div class="field themerow">
         <span class="lab" id="themeLab">Look</span>
@@ -348,6 +349,14 @@
   </div>
   </div>
   <div class="tour-foot"><button type="button" class="btn" id="tourBack">Back</button><span class="tour-gap"></span><button type="button" class="link" id="tourAlt" hidden>Go to my month</button><button type="button" class="btn solid" id="tourNext">Next</button></div>
+</div>
+<div class="cam" id="cam" role="dialog" aria-modal="true" aria-labelledby="camH" hidden>
+  <div class="cam-in">
+    <div class="cam-top"><h2 id="camH">Camera</h2><button type="button" class="link" id="camClose">Close</button></div>
+    <div class="cam-view"><video id="camVid" autoplay playsinline muted></video><i class="cam-flash" id="camFlash"></i></div>
+    <p class="cap" id="camMsg" role="status">Hold the receipt flat in the frame, then take the photo. Take as many as you need.</p>
+    <div class="row-btns"><button type="button" class="btn solid" id="camShot">Take photo</button><button type="button" class="btn" id="camDone" hidden>Done</button><button type="button" class="btn" id="camPick" hidden>Choose files instead</button></div>
+  </div>
 </div>
 <div id="cheer" role="status" aria-live="polite"></div>
 <canvas id="confetti" aria-hidden="true"></canvas>

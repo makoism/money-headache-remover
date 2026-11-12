@@ -120,6 +120,7 @@ const SFX = (() => {
   return {
     muted: () => !!(S.ui && S.ui.mute),
     ctx: () => get(),   /* the music shares this context (phones allow only a few) */
+    state: () => (ctx ? ctx.state : 'none'),
     play(name, arg) {
       if (S.ui && S.ui.mute) return;
       const now = Date.now(); if (gaps[name] && last[name] && now - last[name] < gaps[name]) return; last[name] = now;
@@ -444,25 +445,26 @@ function addAnotherGoal(fromId) {
   return id;
 }
 
-/* ===== sliders that explain themselves ===== */
-const SPF = { jar: { base: null, last: -1, t: 0 }, goal: { base: null, last: -1, t: 0 } };
+/* ===== the split sliders: each one moves on its own =====
+   Shares of one pot: the five jars share what the bills leave, the goals share the goal jar. A slider changes only its own share.
+   What is not given out waits as "unassigned" (the hatched end of the pot and the line under it); a slider pushed past what is
+   unassigned stops there. Spread it shares the unassigned part by the current shares; Give it to puts all of it in one. */
+const SPF = { jar: { last: -1, from: 0, hit: false, t: 0 }, goal: { last: -1, from: 0, hit: false, t: 0 } };
 function spTouch(kind, vals, i, repaint) {
-  const f = SPF[kind]; if (!f.base) f.base = vals.slice(); f.last = i; clearTimeout(f.t);
-  f.t = setTimeout(() => { f.base = null; f.last = -1; repaint(); }, 2600);
+  const f = SPF[kind]; if (f.last !== i) f.from = vals[i]; f.last = i; clearTimeout(f.t);
+  f.t = setTimeout(() => { f.last = -1; f.hit = false; repaint(); }, 2600);
 }
-const spDeltas = (kind, vals) => { const f = SPF[kind]; return f.base ? vals.map((v, k) => v - (f.base[k] || 0)) : vals.map(() => 0); };
-function spWhy(kind, names, vals, total) {
-  const f = SPF[kind], ds = spDeltas(kind, vals), m = f.last;
-  if (!f.base || m < 0 || !ds[m]) return `Shares always total <b>${total}%</b>. Raise one and the others shrink; lower one and the others grow.`;
-  const others = ds.map((x, k) => [k, x]).filter(p => p[0] !== m && p[1] !== 0).map(p => `${esc(names[p[0]])} ${p[1] > 0 ? '+' : '−'}${Math.abs(p[1])}%`).join(', ');
-  return ds[m] > 0 ? `<b>${esc(names[m])}</b> +${ds[m]}%. Others adjusted${others ? ': ' + others : ''}.`
-    : `<b>${esc(names[m])}</b> −${-ds[m]}%. Others adjusted${others ? ': ' + others : ''}.`;
+function spWhy(kind, names, vals, total, moneyOf) {
+  const f = SPF[kind], free = total - sumOf(vals), m = f.last;
+  if (m >= 0 && f.hit && vals[m] === f.from) return `<b>${esc(names[m])}</b> can only take what is unassigned, and nothing is. Lower another one first.`;
+  if (m >= 0 && vals[m] !== f.from) { const d = vals[m] - f.from; return `<b>${esc(names[m])}</b> ${d > 0 ? '+' : '−'}${Math.abs(d)}%${f.hit ? ': all that was unassigned. To go further, lower another one.' : `. Unassigned now <b>${free}%</b>${free > 0 ? ` (${moneyOf(free)})` : ''}.`}`; }
+  return `Each slider moves on its own. Lower one and the difference waits as unassigned; raise one and it takes from there. Shares total <b>${total}%</b>.`;
 }
 const PENCIL = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M13.6 3.4a1.8 1.8 0 0 1 2.6 2.6L7.4 14.8 4 15.6l.8-3.4z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>';
 const pctPill = (attr, i, label, max) => `<label class="pctp"><input type="number" inputmode="numeric" min="0" max="${max}" step="1" data-${attr}="${i}" aria-label="${esc(label)}, percent of pay"><b>%</b>${PENCIL}</label>`;
 /* paint one list of shares; "kind" is jar or goal */
 function spPaint(kind, o) {
-  const ds = spDeltas(kind, o.vals), f = SPF[kind], act = document.activeElement;
+  const f = SPF[kind], act = document.activeElement, free = o.total - sumOf(o.vals);
   o.vals.forEach((v, i) => {
     const row = $(o.row(i)); if (!row) return;
     const pi = $('.pctp input', row); if (pi && pi !== act) pi.value = v; else if (pi && +pi.value !== v && pi.value !== '') pi.value = v;
@@ -470,21 +472,20 @@ function spPaint(kind, o) {
     const m = $('.split-m', row); if (m) m.textContent = o.money(i);
     const s = $('.split-s', row); if (s && o.note) s.textContent = o.note(i);
     const d = $('.dlt', row);
-    if (d) { const x = ds[i]; d.textContent = x ? (x > 0 ? '+' : '−') + Math.abs(x) + '%' : ''; d.className = 'dlt' + (x > 0 ? ' up' : x < 0 ? ' down' : ''); }
-    row.classList.toggle('moved', f.last === i && !!f.base);
+    if (d) { const x = f.last === i ? v - f.from : 0; d.textContent = x ? (x > 0 ? '+' : '−') + Math.abs(x) + '%' : ''; d.className = 'dlt' + (x > 0 ? ' up' : x < 0 ? ' down' : ''); }
+    row.classList.toggle('moved', f.last === i && v !== f.from);
   });
-  const pot = $(o.pot); if (pot) $$('i', pot).forEach((seg, i) => { seg.style.flexGrow = Math.max(o.vals[i], 0.0001); });
-  const why = $(o.why); if (why) why.innerHTML = spWhy(kind, o.names, o.vals, o.total);
+  const pot = $(o.pot); if (pot) { $$('i', pot).forEach((seg, i) => { seg.style.flexGrow = Math.max(i < o.vals.length ? o.vals[i] : free, 0.0001); }); }
+  const pool = $(o.pool);
+  if (pool) { pool.classList.toggle('has', free > 0); $('.pool-t', pool).innerHTML = free > 0 ? `Unassigned <b>${free}%</b> · ${o.moneyOf(free)}` : 'All of it is given out.'; }
+  const why = $(o.why); if (why) why.innerHTML = spWhy(kind, o.names, o.vals, o.total, o.moneyOf);
 }
-/* a short flash on every share that changed, and a few stars from the thumb that is being dragged */
+/* a short bump on the share that moved, a flash on the pool line, and a few leaves from the thumb being dragged */
 function spFlash(o, before, after, moved, fromRange) {
-  after.forEach((v, i) => {
-    const row = $(o.row(i)); if (!row || i === moved || v === before[i]) return;
-    row.classList.remove('gain', 'lose'); void row.offsetWidth; row.classList.add(v > before[i] ? 'gain' : 'lose');
-  });
   const row = $(o.row(moved)); if (!row) return;
-  const bump = $('.pctp', row); if (bump) { bump.classList.remove('bump'); void bump.offsetWidth; bump.classList.add('bump'); }
-  if (fromRange) {
+  const bump = $('.pctp', row); if (bump && after[moved] !== before[moved]) { bump.classList.remove('bump'); void bump.offsetWidth; bump.classList.add('bump'); }
+  const pool = $(o.pool); if (pool && after[moved] !== before[moved]) { pool.classList.remove('flash'); void pool.offsetWidth; pool.classList.add('flash'); }
+  if (fromRange && after[moved] !== before[moved]) {
     const r = $('.rng input', row), host = $('.rng', row); if (!r || !host) return;
     const now = Date.now(); if (now - (spFlash.t || 0) < 70) return; spFlash.t = now;
     const w = host.getBoundingClientRect().width, fr = (+r.max > 0 ? after[moved] / +r.max : 0);
@@ -492,17 +493,22 @@ function spFlash(o, before, after, moved, fromRange) {
   }
 }
 const SPLIT_SPEC = {
-  jar: () => ({ row: i => `[data-jrow="${i}"]`, vals: jarVals, total: jarRest, money: i => fmt(jarMoney(i)) + ' a month', pot: '#jarPot', why: '#jarWhy', names: JAR5.map(j => JAR_LABEL[j]) }),
-  goal: () => ({ row: i => `[data-grow="${i}"]`, vals: gsPct, total: 100, money: i => fmt(splitMoney(i)) + ' a month', note: i => splitNoteFor(i), pot: '#goalPot', why: '#splitWhy', names: S.plan.goals.map(g => g.name) }),
+  jar: () => ({ row: i => `[data-jrow="${i}"]`, vals: jarVals, total: jarRest, money: i => fmt(jarMoney(i)) + ' a month', moneyOf: pct => fmt(jarMoneyOf(pct)), pot: '#jarPot', pool: '#jarPool', why: '#jarWhy', names: JAR5.map(j => JAR_LABEL[j]) }),
+  goal: () => ({ row: i => `[data-grow="${i}"]`, vals: gsPct, total: 100, money: i => fmt(splitMoney(i)) + ' a month', moneyOf: pct => fmt(gsMoneyOf(pct)), note: i => splitNoteFor(i), pot: '#goalPot', pool: '#goalPool', why: '#splitWhy', names: S.plan.goals.map(g => g.name) }),
 };
+const spSet = (kind, next) => { if (kind === 'jar') jarVals = next; else gsPct = next; if (kind === 'jar') paintJars(); else paintSplit(); };
 function splitApply(kind, i, p, fromRange) {
-  const o = SPLIT_SPEC[kind](), before = o.vals.slice(), next = rebalance(before, i, p, o.total);
+  const o = SPLIT_SPEC[kind](), before = o.vals.slice(), mv = moveShare(before, i, p, o.total);
   spTouch(kind, before, i, () => (kind === 'jar' ? paintJars() : paintSplit()));
-  if (kind === 'jar') jarVals = next; else gsPct = next;
-  if (kind === 'jar') paintJars(); else paintSplit();
-  spFlash(SPLIT_SPEC[kind](), before, next, i, fromRange);
-  if (fromRange) sfx('tick', o.total > 0 ? next[i] / o.total * 100 : 0); else sfx('type');
+  SPF[kind].hit = mv.hit;
+  spSet(kind, mv.out);
+  spFlash(SPLIT_SPEC[kind](), before, mv.out, i, fromRange);
+  if (mv.hit && mv.out[i] === before[i]) { if (fromRange) sfx('thunk'); return; }
+  if (fromRange) sfx('tick', o.total > 0 ? mv.out[i] / o.total * 100 : 0); else sfx('type');
 }
+/* the unassigned part: spread it by the current shares, or give all of it to one share */
+function splitSpread(kind) { const o = SPLIT_SPEC[kind](); if (o.total - sumOf(o.vals) <= 0) return; SPF[kind].last = -1; spSet(kind, spreadFree(o.vals, o.total)); sfx('whoosh'); autosave(); }
+function splitGive(kind, i) { const o = SPLIT_SPEC[kind](), free = o.total - sumOf(o.vals); if (!(free > 0) || !(i >= 0 && i < o.vals.length)) return; const before = o.vals.slice(), next = before.slice(); next[i] += free; spTouch(kind, before, i, () => (kind === 'jar' ? paintJars() : paintSplit())); SPF[kind].hit = false; spSet(kind, next); spFlash(SPLIT_SPEC[kind](), before, next, i, false); sfx('coin'); autosave(); }
 
 /* one line per jar, for the fold on the split screen */
 const JAR_LINES = {
@@ -538,6 +544,7 @@ function tourExtraInput(e) {
 function tourExtraChange(e) {
   const t = e.target, d = t.dataset || {};
   if (t.id === 'tourEnds' && $('#loanSw')) { loanSync(); return true; }
+  if (d.give !== undefined) { if (t.value !== '') { splitGive(d.give, +t.value); t.value = ''; } return true; }
   if (d.jpct !== undefined) { paintJars(); return true; }
   if (d.gpct !== undefined) { paintSplit(); return true; }
   if (t.name === 'tourSub') { subsToggle(t); return true; }
@@ -560,7 +567,8 @@ function tourExtraClick(e) {
   }
   const mg = el.closest('[data-moreg]');
   if (mg) { autosave(true); const id = addAnotherGoal(mg.dataset.moreg); if (id) { sfx('pop'); gotoStep('goal-' + id); } return true; }
-  if (el.closest('#jarReset')) { jarVals = lr(JAR5.map(j => JARS.find(x => x.id === j).usual), jarRest); SPF.jar.base = null; SPF.jar.last = -1; paintJars(); sfx('whoosh'); autosave(); return true; }
-  if (el.closest('#splitReset')) { S.plan.goals.forEach(g => forgetKey(S, 'goal:' + g.id)); splitInit(); paintSplit(); sfx('whoosh'); autosave(); return true; }
+  const sp = el.closest('[data-spread]'); if (sp) { splitSpread(sp.dataset.spread); return true; }
+  if (el.closest('#jarReset')) { jarVals = lr(JAR5.map(j => JARS.find(x => x.id === j).usual), jarRest); SPF.jar.last = -1; SPF.jar.hit = false; paintJars(); sfx('whoosh'); autosave(); return true; }
+  if (el.closest('#splitReset')) { S.plan.goals.forEach(g => forgetKey(S, 'goal:' + g.id)); splitInit(); SPF.goal.last = -1; SPF.goal.hit = false; paintSplit(); sfx('whoosh'); autosave(); return true; }
   return false;
 }

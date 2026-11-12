@@ -22,16 +22,16 @@ function lr(w, total) {
   raw.map((x, i) => [x - fl[i], i]).sort((a, b) => b[0] - a[0] || a[1] - b[1]).slice(0, Math.max(0, left)).forEach(p => { fl[p[1]]++; });
   return fl;
 }
-/* move one share to p; the others give or take in proportion, and the total stays put */
-function rebalance(vals, i, p, total) {
-  p = Math.max(0, Math.min(total, Math.round(p)));
-  const out = vals.slice(), others = vals.map((v, j) => j).filter(j => j !== i);
-  if (!others.length) { out[i] = total; return out; }
-  out[i] = p;
-  const base = others.reduce((a, j) => a + vals[j], 0), got = lr(others.map(j => (base > 0 ? vals[j] : 1)), total - p);
-  others.forEach((j, k) => { out[j] = got[k]; });
-  return out;
+/* move one share to p. Only that share changes: it can take what is still unassigned and no more, and whatever it gives up
+   becomes unassigned. The other shares never move on their own. Returns the new list and whether the move was cut short. */
+function moveShare(vals, i, p, total) {
+  const out = vals.slice(), others = vals.reduce((a, v, j) => a + (j === i ? 0 : v), 0), room = Math.max(0, total - others), want = Math.round(p);
+  out[i] = Math.max(0, Math.min(room, want));
+  return { out, hit: want > room };
 }
+const sumOf = a => a.reduce((x, y) => x + y, 0);
+/* share the unassigned part among the shares: by the current shares, or evenly when all are zero */
+const spreadFree = (vals, total) => { const free = total - sumOf(vals); if (free <= 0) return vals.slice(); const got = lr(vals.some(v => v > 0) ? vals : vals.map(() => 1), free); return vals.map((v, k) => v + got[k]); };
 
 /* ----- the typed numbers: pay, other income and the balance on one screen. Skipped once statements gave the pay. ----- */
 const STEP_MONEY = { id: 'money', part: PART.money, setup: true, focus: '#tourPay', title: 'Your money', skipIf: () => importApplied() && havePay(),
@@ -132,6 +132,7 @@ const moreBtn = kind => `<div class="row-btns"><button type="button" class="btn 
 /* ----- where the rest of the pay goes: the five other jars share what the bills leave ----- */
 const JAR5 = ['lts', 'play', 'edu', 'ffa', 'give'];
 const JAR_LABEL = { lts: 'Long-Term Savings for Spending', play: 'Play', edu: 'Education', ffa: 'Financial Freedom', give: 'Give' };
+const JAR_SHORT = { lts: 'Savings', play: 'Play', edu: 'Education', ffa: 'Freedom', give: 'Give' };
 let jarVals = null, jarRest = 0, jarNec = 0;
 /* the share of the pay the bills leave for the other five jars, in whole percents; 0 when the bills use all of it */
 const restPct = () => { const pay = payNow(); return pay > 0 && necTotal() < pay ? Math.max(0, 100 - Math.min(100, Math.round(necTotal() / pay * 100))) : 0; };
@@ -141,7 +142,7 @@ function jarInit() {
   const mine = JAR5.map(j => Math.round(a[j] * 100));
   /* an earlier setup that did not fit left the usual shares in place, so they are the starting point again */
   jarVals = mine.reduce((x, y) => x + y, 0) === jarRest && S.cfg.aims ? mine : lr(JAR5.map(j => a[j]), jarRest);
-  SPF.jar.base = null; SPF.jar.last = -1;
+  SPF.jar.last = -1; SPF.jar.hit = false;
 }
 /* Share a sum of money in whole steps (the same step the page rounds to elsewhere) by weights, with nothing left over.
    Coins that do not fill a step go to the weight at "pref" if it has any, or to the biggest one. */
@@ -152,10 +153,13 @@ function shareMoney(total, weights, pref) {
   if (dust > 0) { const k = pref !== undefined && weights[pref] > 0 ? pref : weights.indexOf(Math.max(...weights)); out[k] = round2(out[k] + dust); }
   return out;
 }
-/* what the bills leave, shared by the five jars: exactly all of it, so no pay is stranded */
-const jarMoneyList = weights => shareMoney(payNow() - necTotal(), weights, 1);
+/* what the bills leave, shared by the five jars by their shares; the part not given out stays unassigned (it shows as left over) */
+const jarMoneyList = weights => shareMoney(jarRest > 0 ? round2((payNow() - necTotal()) * sumOf(weights) / jarRest) : 0, weights, 1);
+const jarMoneyOf = pct => (jarRest > 0 ? round2((payNow() - necTotal()) * pct / jarRest) : 0);
 const jarMoney = i => jarMoneyList(jarVals)[i];
-const potHTML = (id, cols, vals) => `<div class="pot" id="${id}" aria-hidden="true">${cols.map((c, i) => `<i style="background:${c};flex-grow:${Math.max(vals[i], 0.0001)}"></i>`).join('')}</div>`;
+const potHTML = (id, cols, vals, total) => `<div class="pot" id="${id}" aria-hidden="true">${cols.map((c, i) => `<i style="background:${c};flex-grow:${Math.max(vals[i], 0.0001)}"></i>`).join('')}<i class="free" style="flex-grow:${Math.max(total - sumOf(vals), 0.0001)}"></i></div>`;
+/* the line under the pot: how much is unassigned, with Spread it and Give it to */
+const poolHTML = (kind, names) => `<div class="pool" id="${kind}Pool" aria-live="polite"><span class="pool-t"></span><span class="pool-acts"><button type="button" class="link" data-spread="${kind}">Spread it</button><label class="pool-give">Give it to <select class="inp sm" data-give="${kind}" aria-label="Give the unassigned part to one"><option value="">…</option>${names.map((n, i) => `<option value="${i}">${esc(n)}</option>`).join('')}</select></label></span></div>`;
 function jarRows() {
   return JAR5.map((j, i) => `<div class="split-row" data-jrow="${i}"><div class="split-h"><i class="dot" style="--c:${JARVAR[j]}"></i><b>${JAR_LABEL[j]}</b><span class="dlt"></span>${pctPill('jpct', i, JAR_LABEL[j], jarRest)}</div><p class="split-m"></p>
     <div class="rng" style="--c:${JARVAR[j]}"><input type="range" min="0" max="${jarRest}" step="1" value="${jarVals[i]}" data-jar="${i}" aria-label="${JAR_LABEL[j]}, share of your pay"></div></div>`).join('');
@@ -196,7 +200,7 @@ const STEP_JARS = { id: 'jars', part: PART.jars, setup: true, when: havePay,
     <p class="cap">If you truly have none, continue and split below.</p>${jarSplitHTML()}`;
     if (jarRest <= 0) return `<p>Bills <b>${fmt(nec)}</b>, pay <b>${fmt(pay)}</b>. ${nec > pay ? `Bills exceed pay by <b>${fmt(nec - pay)}</b>, so` : 'Bills take all of it, so'} nothing is left for the other five jars: no play money and nothing for goals, for now.</p>
     <p>You can still add goals next. They start filling once bills drop below pay. To lower a bill, go back. Otherwise continue and adjust under Plan later.</p>`;
-    return `<p>Bills <b>${fmt(nec)}</b> = <b>${jarNec}%</b> of pay: the Necessities jar. The other <b>${jarRest}%</b> (${fmt(pay - nec)}) is shared by the five jars below, starting at the usual proportions. Drag a bar or type a percent to change them.</p>
+    return `<p>Bills <b>${fmt(nec)}</b> = <b>${jarNec}%</b> of pay: the Necessities jar. The other <b>${jarRest}%</b> (${fmt(pay - nec)}) is yours to split between the five jars below, starting at the usual proportions. Each slider moves on its own: what you take away waits as unassigned, and a slider can only take what is unassigned.</p>
     ${jarsFold()}${jarSplitHTML()}`;
   },
   after: () => { if (jarRest > 0) paintJars(); },
@@ -206,7 +210,7 @@ const jarsFold = () => `<details class="src-how"><summary>The six jars, in short
     <p>Every month, pay is split into six jars. Each jar has one purpose, and play money is the jar you spend on fun without guilt. Usual shares of take-home pay:</p>
     <ul class="jar-lines">${JARS.map(j => `<li><i class="dot" style="--c:${JARVAR[j.id]}"></i><span><b>${esc(j.name)}</b> ${Math.round(j.usual * 100)}%. ${esc(JAR_LINES[j.id])}</span></li>`).join('')}</ul>
     <p class="cap">From T. Harv Eker&rsquo;s jar system (Secrets of the Millionaire Mind). Shares are a guide, not a rule.</p></div></details>`;
-const jarSplitHTML = () => `${potHTML('jarPot', JAR5.map(j => JARVAR[j]), jarVals)}
+const jarSplitHTML = () => `${potHTML('jarPot', JAR5.map(j => JARVAR[j]), jarVals, jarRest)}${poolHTML('jar', JAR5.map(j => JAR_SHORT[j]))}
     <div class="split" id="jarSplit">${jarRows()}</div>
     <p class="why" id="jarWhy" aria-live="polite"></p>
     <div class="row-btns"><button type="button" class="link" id="jarReset">Use the usual amounts</button></div>`;
@@ -293,7 +297,7 @@ function capWeights(w, caps, B) {
 }
 function splitInit() {
   const gs = S.plan.goals; gsIds = gs.map(g => g.id); gsBudget = ltsBudget();
-  SPF.goal.base = null; SPF.goal.last = -1;
+  SPF.goal.last = -1; SPF.goal.hit = false;
   const amts = gs.map(g => val(S, 'goal:' + g.id, START)), sa = amts.reduce((a, b) => a + b, 0);
   if (gs.length && gs.every(g => hasOwnMonthly(S, g.id)) && sa > 0) { gsPct = lr(amts, 100); return; }
   const B = gsBudget, needs = gs.map(g => (g.due && g.target > g.start ? goalDefault(S, g, SAVE_FROM) : 0)), open = gs.map(g => g.target > g.start), tn = needs.reduce((a, b) => a + b, 0);
@@ -318,7 +322,8 @@ function splitInit() {
     gsPct[i]++; gsPct[j]--;
   }
 }
-const splitMoney = i => { const g = S.plan.goals[i]; return Math.min(shareMoney(gsBudget, gsPct)[i], g ? goalRoom(g) : Infinity); };
+const gsMoneyOf = pct => round2(gsBudget * pct / 100);
+const splitMoney = i => { const g = S.plan.goals[i]; return Math.min(shareMoney(gsMoneyOf(sumOf(gsPct)), gsPct)[i], g ? goalRoom(g) : Infinity); };
 function applySplit() { gsIds.forEach((id, k) => { if (goalById(S, id)) setVal(S, 'goal:' + id, START, splitMoney(k), 'after'); }); }
 /* the line under each goal: how much more it needs, and when it will be full */
 function splitLine(g, C2) {
@@ -354,9 +359,9 @@ const STEP_SPLIT = { id: 'goalsplit', part: PART.goals, setup: true, when: () =>
   title: () => (S.plan.goals.length > 1 ? 'Split goal money' : 'Goal money'),
   body: () => {
     splitInit(); const pct = Math.round(aimsOf(S).lts * 100), many = S.plan.goals.length > 1;
-    return `<p>${many ? `The Long-Term Savings for Spending jar is <b>${pct}%</b> of pay, <b>${fmt(gsBudget)}</b> a month, shared between your goals. A goal with a date gets what it needs first. Drag a bar or type a percent.`
+    return `<p>${many ? `The Long-Term Savings for Spending jar is <b>${pct}%</b> of pay, <b>${fmt(gsBudget)}</b> a month, shared between your goals. A goal with a date gets what it needs first. Each slider moves on its own; what you take away waits as unassigned.`
       : `The Long-Term Savings for Spending jar is <b>${pct}%</b> of pay, <b>${fmt(gsBudget)}</b> a month. ${unusedOf() > 0 ? 'This goal is filled first.' : 'All of it goes to this goal.'}`}</p>
-    ${many ? potHTML('goalPot', S.plan.goals.map(g => `var(--c${g.slot})`), gsPct) : ''}
+    ${many ? potHTML('goalPot', S.plan.goals.map(g => `var(--c${g.slot})`), gsPct, 100) + poolHTML('goal', S.plan.goals.map(g => g.name)) : ''}
     <div class="split" id="goalSplit">${splitRows()}</div>
     <p class="cap" id="splitUnused" aria-live="polite"></p>
     ${many ? '<p class="why" id="splitWhy" aria-live="polite"></p><div class="row-btns"><button type="button" class="link" id="splitReset">Reset to suggested split</button></div>' : ''}`;

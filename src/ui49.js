@@ -230,9 +230,59 @@ function scanCheck() {
   askCard(bot, p, false, scanCtx()); sfx('next');
 }
 
+/* ---------- the camera ----------
+   On a phone the Camera button opens the phone's own camera (the file input with capture). On a computer that input only opens a
+   file dialog, which is misleading, so there the button opens the computer's camera in a sheet: a live view, Take photo as many
+   times as needed, Done. Each photo joins the files to read like a chosen picture. */
+const handheld = () => /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && matchMedia('(pointer: coarse)').matches);
+let camStream = null, camShots = 0;
+function camOpen() {
+  scanConnect();
+  if (handheld() || !(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) { $('#scanCamIn').click(); return; }
+  const box = $('#cam'), vid = $('#camVid'), msg = $('#camMsg');
+  camShots = 0; box.hidden = false; $('#camShot').hidden = false; $('#camShot').disabled = true; $('#camDone').hidden = true; $('#camPick').hidden = true;
+  msg.textContent = 'Starting the camera…';
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1440 } }, audio: false }).then(stream => {
+    if (box.hidden) { stream.getTracks().forEach(t => t.stop()); return; }
+    camStream = stream; vid.srcObject = stream; $('#camShot').disabled = false; $('#camShot').focus();
+    msg.textContent = 'Hold the receipt flat in the frame, then take the photo. Take as many as you need.';
+  }, err => {
+    const why = err && (err.name === 'NotAllowedError' || err.name === 'SecurityError') ? 'The camera was not allowed.' : err && err.name === 'NotFoundError' ? 'No camera was found on this computer.' : 'The camera could not be started.';
+    msg.textContent = why + ' Choose files instead.'; $('#camShot').hidden = true; $('#camPick').hidden = false; $('#camPick').focus();
+  });
+}
+function camClose() {
+  const box = $('#cam'); if (box.hidden) return;
+  if (camStream) { camStream.getTracks().forEach(t => t.stop()); camStream = null; }
+  $('#camVid').srcObject = null; box.hidden = true;
+  if (camShots && scanFiles.length) $('#scanRead').focus({ preventScroll: true }); else $('#scanCam').focus({ preventScroll: true });
+}
+function camShot() {
+  const vid = $('#camVid'); if (!camStream || !vid.videoWidth) return;
+  const long = Math.max(vid.videoWidth, vid.videoHeight), k = Math.min(1, 1600 / long), c = document.createElement('canvas');
+  c.width = Math.round(vid.videoWidth * k); c.height = Math.round(vid.videoHeight * k);
+  c.getContext('2d').drawImage(vid, 0, 0, c.width, c.height);
+  const fl = $('#camFlash'); fl.classList.remove('on'); void fl.offsetWidth; fl.classList.add('on'); sfx('coin');
+  c.toBlob(blob => {
+    if (!blob) return;
+    camShots++;
+    const f = new File([blob], `photo-${camShots}.jpg`, { type: 'image/jpeg', lastModified: Date.now() });
+    scanAdd([f]).then(() => { $('#camMsg').textContent = `${camShots} photo${camShots === 1 ? '' : 's'} added. Take another, or Done.`; $('#camDone').hidden = false; });
+  }, 'image/jpeg', .9);
+}
+function wireCam() {
+  $('#camShot').addEventListener('click', camShot);
+  $('#camDone').addEventListener('click', camClose);
+  $('#camClose').addEventListener('click', camClose);
+  $('#camPick').addEventListener('click', () => { camClose(); $('#scanPickIn').click(); });
+  $('#cam').addEventListener('click', e => { if (e.target === e.currentTarget) camClose(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#cam').hidden) camClose(); });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) camClose(); });
+}
 function wireScan() {
+  wireCam();
   const pick = e => { const l = Array.from(e.target.files); scanAdd(l).then(() => { if (scanFiles.length) $('#scanRead').focus({ preventScroll: true }); }); e.target.value = ''; };
-  $('#scanCam').addEventListener('click', () => { scanConnect(); $('#scanCamIn').click(); });
+  $('#scanCam').addEventListener('click', camOpen);
   $('#scanPick').addEventListener('click', () => { scanConnect(); $('#scanPickIn').click(); });
   $('#scanCamIn').addEventListener('change', pick);
   $('#scanPickIn').addEventListener('change', pick);
@@ -250,7 +300,7 @@ function wireScan() {
   $('#hScan').addEventListener('click', () => {
     switchTab('receipts');
     if (scanSettled && !askFn) { $('#scan').scrollIntoView({ block: 'start' }); return; }
-    scanConnect(); $('#scanCamIn').click();
+    camOpen();
   });
 }
 /* first time the Receipts tab opens, find out whether Claude can be reached so the card shows the right thing */

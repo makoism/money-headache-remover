@@ -376,8 +376,6 @@ function wireTour() {
   $('#tourSkip').addEventListener('click', leaveTour);
   $('#tourSnd').addEventListener('click', toggleSnd); $('#setSnd').addEventListener('click', toggleSnd);
   $('#tourMus').addEventListener('click', toggleMus); $('#setMus').addEventListener('click', toggleMus); paintMus();
-  /* the setup's music may only start after a tap; any tap or key inside the setup counts */
-  $('#tour').addEventListener('pointerdown', () => MUSIC.wake(), { passive: true }); $('#tour').addEventListener('keydown', () => MUSIC.wake());
   addEventListener('resize', () => { if (tourIsOpen) fitTourArt(); });
   const body = $('#tourBody');
   body.addEventListener('input', e => { tourTouched = true; tourExtraInput(e); autosave(); });

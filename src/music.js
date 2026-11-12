@@ -1,9 +1,9 @@
 
-/* ---------- music for the setup ----------
-   A quiet, slow, original piece in the spirit of Japanese environmental music, made in the browser while the guided setup is open:
+/* ---------- music ----------
+   A quiet, slow, original piece in the spirit of Japanese environmental music, made in the browser while the app is open:
    a soft pad that changes chord every so often, a sparse melody of bell-like notes with echoes, wind far off and the odd water drop.
    Nothing is recorded or downloaded, and no two listens are the same. Browsers allow sound only after a tap, so it starts on the first
-   tap inside the setup, goes quiet while the hello video plays, fades out when the setup closes, and Music on/off (top of the setup,
+   tap anywhere in the app, goes quiet while the hello video plays, pauses while the tab is hidden, and Music on/off (top of the setup,
    or Settings) switches it off on this device. Sound off silences it too. */
 const MUSIC = (() => {
   const ROOT = 174.61;                                   /* F3; everything is tuned from here */
@@ -106,13 +106,11 @@ const MUSIC = (() => {
     const want = videoPlaying() ? 0 : 1;
     if (want !== level) { level = want; st.bus.gain.cancelScheduledValues(now); st.bus.gain.setValueAtTime(st.bus.gain.value, now); st.bus.gain.linearRampToValueAtTime(want * LEVEL, now + (want ? 3 : 1)); }
   }
-  let waking = false;
   function start() {
-    if (st || !allowed() || !tourIsOpen) return;
+    if (st || !allowed() || document.hidden) return;
     const c = SFX.ctx(); if (!c) return;
-    if (c.state !== 'running') {                      /* before the first tap the browser keeps it suspended; resume and come back */
-      if (waking) return; waking = true;
-      try { c.resume().then(() => { waking = false; if (c.state === 'running') start(); }, () => { waking = false; }); } catch (e) { waking = false; }
+    if (c.state !== 'running') {                      /* before the first tap the browser keeps it suspended: ask again on every tap, come back when it runs */
+      try { c.resume().then(() => { if (c.state === 'running') start(); }, () => {}); } catch (e) { /* no sound then */ }
       return;
     }
     try { st = build(c, c.destination); } catch (e) { st = null; return; }
@@ -125,18 +123,21 @@ const MUSIC = (() => {
     s.bus.gain.cancelScheduledValues(now); s.bus.gain.setValueAtTime(s.bus.gain.value, now); s.bus.gain.linearRampToValueAtTime(0, now + (quick ? .4 : 1.6));
     tearDown(s, now + (quick ? .4 : 1.6));
   }
-  document.addEventListener('visibilitychange', () => { if (document.hidden) stop(true); else if (tourIsOpen) start(); });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) stop(true); else start(); });
+  /* the first tap anywhere lets the browser start sound (on click, not pointerdown: the browser counts the tap only from mousedown on);
+     later taps are free */
+  document.addEventListener('click', () => { if (allowed()) start(); }, { capture: true });
+  document.addEventListener('keydown', () => { if (allowed()) start(); }, { capture: true });
   return {
     on: () => !(S && S.ui && S.ui.music === false),
     playing: () => !!st,
     level: () => level,                                                /* 1, or 0 while the hello video plays */
-    wake: () => { if (allowed() && tourIsOpen) start(); },            /* called on taps inside the setup */
-    sync: () => { if (!allowed()) stop(); else if (tourIsOpen) start(); },
-    tourClosed: () => stop(),
+    wake: () => { if (allowed()) start(); },
+    sync: () => { if (!allowed()) stop(); else start(); },
+    tourClosed: () => {},                                              /* the music carries on into the app */
     setOn(v) { if (v) delete S.ui.music; else S.ui.music = false; persist(); this.sync(); },
     /* for the offline check: schedule `seconds` of music into a given context and output */
     render(c, out, seconds) { const s = build(c, out); s.bus.gain.setValueAtTime(LEVEL, 0); step(s, seconds); return s; },
   };
 })();
-if (/[?&]sfxtest\b/.test(location.search)) window.__music = MUSIC;
-if (/[?&]sfxtest\b/.test(location.search)) { window.__S = () => S; window.__ls = () => LS_STATE; window.__tour = () => tourIsOpen; }
+if (/[?&]sfxtest\b/.test(location.search)) { window.__music = MUSIC; window.__actx = () => SFX.state(); }

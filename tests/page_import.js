@@ -66,7 +66,7 @@ const coach = async p => { for (let i = 0; i < 12; i++) { const v = await p.eval
   ok(await toStmts(p), 'the video and the currency come first, then Your statements');
   ok(await p.$eval('#tourNext', e => e.hidden) && (await p.$eval('#srcSkip', e => e.textContent)) === 'Type the numbers instead', 'no Next button on the statements screen; the typed path is a link');
   await w(600);
-  ok(!(await vis(p, '#srcUploadPanel')) && (await vis(p, '#srcAiPanel')), 'without Claude, the any-AI route takes the screen');
+  ok(!(await vis(p, '#srcUploadPanel')) && (await p.$eval('#srcAiPanel', e => e.open && /Use your own AI/.test(e.querySelector('summary').textContent))), 'without Claude, the any-AI route stands open as the way');
   const answer = 'Here you go:\n```json\n' + JSON.stringify({ summary: 'From your files.', pay: { amount: 40000, how: 'monthly' }, other_income: null, balance: { amount: 5000, date: '2026-11-01' }, bills: [{ id: 'rent', amount: 9000, note: 'landlord' }, { id: 'food', amount: 7000 }], subscriptions: [{ name: 'Netflix', amount: 279 }], loans: [], card_other: null, questions: [], skipped: [] }) + '\n```';
   await p.$eval('#impPaste', (e, v) => { e.value = v; }, answer); await p.click('#impCheck'); await w(500);
   ok((await title(p)) === 'Check what was found', 'a pasted answer opens the review: ' + await title(p));
@@ -84,7 +84,7 @@ const coach = async p => { for (let i = 0; i < 12; i++) { const v = await p.eval
   await p.goto(BASE + '/?i=1#2026-11', { waitUntil: 'load' }); await w(900);
   ok(await toStmts(p), 'Your statements again, with the relay on');
   await w(700);
-  ok((await vis(p, '#srcUploadPanel')) && !(await vis(p, '#srcAiPanel')), 'with Claude reachable, the upload is the screen and the any-AI route stays away');
+  ok((await vis(p, '#srcUploadPanel')) && (await p.$eval('#srcAiPanel', e => !e.open && /Prefer your own AI/.test(e.querySelector('summary').textContent))), 'with Claude reachable, the upload is the screen and the any-AI route is a folded alternative');
   const sub = await p.$eval('#srcUploadSub', e => e.textContent);
   ok(/CSV, Excel, PDF or screenshots/.test(sub), 'the caption names every file type on the relay route: ' + sub);
   await upload(p, ['/tmp/v28/imp/locked.pdf']);
