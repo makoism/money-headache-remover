@@ -26,11 +26,11 @@ const probe = () => {
   const b = await puppeteer.launch({ executablePath: '/usr/bin/google-chrome', headless: 'new', args: ['--no-sandbox', '--disable-gpu'] });
   const all = new Map(); let screens = 0;
   for (const dev of ['light', 'dark']) for (const pref of ['auto', 'light', 'dark']) for (const vw of [390, 1100]) {
-    const eff = pref === 'auto' ? dev : pref;
+    const eff = pref === 'auto' ? dev : pref; /* 'auto' here is stored as auto (follows the device); with nothing stored the page is dark by default */
     const S = M.presetState('¥'); S.ui = Object.assign(S.ui, { setup: true, sampleHidden: false, done: { pay: true, bills: true, goals: true, receipts: true }, seen: { home: true, month: true, goals: true, receipts: true, basics: true } });
     S.receipts = [{ id: 'r1', d: '2026-11-03', a: 1234, c: 'food', t: 'Lunch' }];
     const p = await b.newPage(); await p.setViewport({ width: vw, height: 900 }); await p.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: dev }]);
-    await p.evaluateOnNewDocument((st, pr) => { if (!sessionStorage.getItem('__s')) { localStorage.setItem('money-map-template-v2', st); if (pr !== 'auto') localStorage.setItem('money-map-theme', pr); sessionStorage.setItem('__s', '1'); } }, JSON.stringify(S), pref);
+    await p.evaluateOnNewDocument((st, pr) => { if (!sessionStorage.getItem('__s')) { localStorage.setItem('money-map-template-v2', st); localStorage.setItem('money-map-theme', pr); sessionStorage.setItem('__s', '1'); } }, JSON.stringify(S), pref);
     await p.goto('file://' + PAGE + '#2026-11', { waitUntil: 'load' }); await w(500);
     const skip = () => p.evaluate(() => { const t = document.querySelector('#tour'); if (t && !t.hidden) document.querySelector('#tourSkip').click(); const c = document.querySelector('#co:not([hidden]) #coSkip'); if (c) c.click(); });
     await skip(); await w(300);

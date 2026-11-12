@@ -8,6 +8,8 @@ MODE=${1:-fast}; BAD=0
 step() { echo; echo "== $1"; }
 step "build"; ./build.sh || exit 1
 node -e "const fs=require('fs');const h=fs.readFileSync('../money-map-team.html','utf8');fs.writeFileSync('/tmp/chk.js',h.slice(h.lastIndexOf('<script>')+8,h.lastIndexOf('</script>')))" && node --check /tmp/chk.js && echo "syntax ok" || { echo "SYNTAX ERROR"; exit 1; }
+# a stray brace in the stylesheet silently drops every rule after it on some screens: the braces must balance
+node -e "const s=require('fs').readFileSync('style.css','utf8');let d=0,l=1,bad=0;for(const c of s){if(c==='{')d++;else if(c==='}')d--;if(c==='\\n')l++;if(d<0&&!bad)bad=l;}if(d!==0||bad){console.log('CSS BRACES UNBALANCED (depth '+d+(bad?', negative at line '+bad:'')+')');process.exit(1);}console.log('css braces ok')" || exit 1
 step "main suite (test_team)"; OUT=$(node test_team.js 2>&1); echo "$OUT" | tail -2; echo "$OUT" | grep -q "^FAIL" && BAD=1
 step "safety copy and backup reminder (v24.2)"
 # timing-sensitive under load (fresh IndexedDB per run): one quiet retry before it counts as a failure

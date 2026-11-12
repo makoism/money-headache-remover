@@ -1,6 +1,6 @@
 /* ---------- the fun parts of the guided setup ----------
-   Sound effects (all made in the browser, no audio files), the subscriptions list, the loan toggle with its goblin,
-   the shrine of the six jars, and the helpers that make the sliders easy to understand. */
+   Sound effects (all made in the browser, no audio files), the subscriptions list, the loan toggle,
+   the six jars in short, and the helpers that make the sliders easy to understand. */
 
 /* ===== sound effects =====
    Every sound is a small recipe: (context, where to send it, when to start, an optional number). The same recipes play on the
@@ -21,17 +21,6 @@ const SFXD = (() => {
     src.buffer = buf; f.type = o.ft || 'bandpass'; f.Q.value = o.q || 1.2; f.frequency.setValueAtTime(o.f0, t); if (o.f1) f.frequency.exponentialRampToValueAtTime(o.f1, t + o.dur);
     g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(o.vol || .1, t + (o.atk || .02)); g.gain.exponentialRampToValueAtTime(0.0001, t + o.dur);
     src.connect(f); f.connect(g); g.connect(out); src.start(t); src.stop(t + o.dur + .05);
-  };
-  /* a voice: a buzzing wave shaped by two vowel filters, so "heh" and "ha" sound like a small throat */
-  const voice = (c, out, o) => {
-    const t = o.t, osc = c.createOscillator(), lfo = c.createOscillator(), lg = c.createGain(), g = c.createGain(), f1 = c.createBiquadFilter(), f2 = c.createBiquadFilter(), mix = c.createGain();
-    osc.type = 'sawtooth'; osc.frequency.setValueAtTime(o.f, t); osc.frequency.linearRampToValueAtTime(o.f2 || o.f, t + o.dur);
-    lfo.frequency.value = o.vib || 28; lg.gain.value = o.vd || 10; lfo.connect(lg); lg.connect(osc.frequency);
-    f1.type = 'bandpass'; f1.frequency.value = o.a1 || 700; f1.Q.value = 5; f2.type = 'bandpass'; f2.frequency.value = o.a2 || 1700; f2.Q.value = 7; mix.gain.value = 1;
-    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(o.vol || .5, t + .012); g.gain.setValueAtTime(o.vol || .5, t + Math.max(.014, o.dur - .035)); g.gain.exponentialRampToValueAtTime(0.0001, t + o.dur);
-    osc.connect(f1); osc.connect(f2); f1.connect(mix); f2.connect(mix); mix.connect(g); g.connect(out);
-    osc.start(t); lfo.start(t); osc.stop(t + o.dur + .03); lfo.stop(t + o.dur + .03);
-    if (!o.nobreath) noise(c, out, { t: t - .02 > 0 ? t - .02 : t, dur: .035, f0: 3500, ft: 'highpass', q: .5, vol: .012, atk: .005 });
   };
   /* ----- the sound design: deep, soft air, like wind going past in the next room. No beeps, no bells. -----
      Every sound is low-passed noise sweeping up (forward) or down (back), with a very quiet low hum under the bigger ones.
@@ -67,17 +56,6 @@ const SFXD = (() => {
     hum(c, o, t + .12, { f: 165, f2: 185, dur: 1.0, vol: .045, atk: .45 });
   };
   d.soft = (c, o, t) => { air(c, o, t, { dur: .3, f0: 210, f1: 380, vol: .2, atk: .08 }); hum(c, o, t, { f: 116, f2: 134, dur: .3, vol: .035, atk: .08 }); };
-  /* "heh heh heh heh heee": four quick breaths, each a little higher, ending on a squeak (kept quiet) */
-  d.giggle = (c, o, t) => {
-    for (let k = 0; k < 4; k++) voice(c, o, { t: t + k * .125, f: 300 + k * 26, f2: 270 + k * 26, dur: .075, vol: .1, a1: 650, a2: 1750, vib: 30, vd: 9 });
-    voice(c, o, { t: t + .55, f: 420, f2: 640, dur: .2, vol: .09, a1: 380, a2: 2200, vib: 22, vd: 14 });
-  };
-  /* "mwah ha ha ha haaa": a low start, then slower falling laughs (kept quiet) */
-  d.laugh = (c, o, t) => {
-    voice(c, o, { t, f: 200, f2: 150, dur: .26, vol: .11, a1: 520, a2: 1100, vib: 12, vd: 7 });
-    [[.34, 235, 190], [.55, 215, 170], [.76, 195, 150]].forEach(p => voice(c, o, { t: t + p[0], f: p[1], f2: p[2], dur: .13, vol: .1, a1: 800, a2: 1250, vib: 26, vd: 8 }));
-    voice(c, o, { t: t + .98, f: 185, f2: 110, dur: .34, vol: .1, a1: 780, a2: 1200, vib: 14, vd: 9 });
-  };
   /* the whoosh family (moving between pages, saving, finishing) is a little quieter than before */
   const trim = (f, k) => (c, o, t, a) => { const g = c.createGain(); g.gain.value = k; g.connect(o); f(c, g, t, a); };
   ['next', 'back', 'whoosh', 'coin', 'pop', 'thunk', 'sparkle', 'soft'].forEach(n => { d[n] = trim(d[n], .62); });
@@ -127,14 +105,14 @@ const SFX = (() => {
 if (/[?&]sfxtest\b/.test(location.search)) window.__sfx = SFXD;
 const sfx = (n, a) => SFX.play(n, a);
 
-/* ===== a little confetti of stars, for sliders and switches ===== */
-const STAR_COLORS = ['#ffd84a', '#ff7ac6', '#7ad7ff', '#9cff7a', '#c59bff', '#ffb36b'];
+/* ===== a few small leaves, for sliders and switches ===== */
 function sparkBurst(host, x, y, n, spread) {
   if (!host) return;
+  const cols = leafColors();
   for (let i = 0; i < n; i++) {
     const s = document.createElement('i'), a = Math.random() * Math.PI * 2, r = (spread || 46) * (.45 + Math.random() * .75);
     s.className = 'spk'; s.setAttribute('aria-hidden', 'true');
-    s.style.cssText = `left:${x}px;top:${y}px;--dx:${Math.round(Math.cos(a) * r)}px;--dy:${Math.round(Math.sin(a) * r - 10)}px;--s:${(.6 + Math.random() * .9).toFixed(2)};--c:${STAR_COLORS[(Math.random() * STAR_COLORS.length) | 0]};--d:${Math.round(Math.random() * 90)}ms;--r:${Math.round(Math.random() * 180 - 90)}deg`;
+    s.style.cssText = `left:${x}px;top:${y}px;--dx:${Math.round(Math.cos(a) * r)}px;--dy:${Math.round(Math.sin(a) * r - 10)}px;--s:${(.6 + Math.random() * .9).toFixed(2)};--c:${cols[(Math.random() * cols.length) | 0]};--d:${Math.round(Math.random() * 90)}ms;--r:${Math.round(Math.random() * 180 - 90)}deg`;
     host.appendChild(s); setTimeout(() => { if (s.parentNode) s.parentNode.removeChild(s); }, 900);
   }
 }
@@ -347,47 +325,6 @@ function cardLeave(d) {
   if (b > 0) S.ui.cardB = cents2(b); else delete S.ui.cardB;
 }
 
-/* ===== the goblin ===== */
-function goblinSVG() {
-  return `<div class="gob" id="gob" aria-hidden="true"><span class="gob-bub">Hm</span>
-  <svg viewBox="0 0 130 112" width="130" height="112" focusable="false">
-    <defs><linearGradient id="gbSk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8fd36b"/><stop offset="1" stop-color="#5fa84a"/></linearGradient>
-    <linearGradient id="gbCl" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5a4a8c"/><stop offset="1" stop-color="#3a2f63"/></linearGradient></defs>
-    <path class="gb-hump" d="M4 112 C0 70 14 34 46 28 C64 25 76 38 80 54 L82 112 Z" fill="url(#gbCl)"/>
-    <path d="M18 70 C26 52 38 44 52 42" fill="none" stroke="#7a68b4" stroke-width="2.5" stroke-linecap="round" opacity=".55"/>
-    <path d="M20 92 C28 80 40 76 52 78" fill="none" stroke="#7a68b4" stroke-width="2.5" stroke-linecap="round" opacity=".4"/>
-    <g class="gb-head">
-      <path d="M62 44 L24 26 L58 66 Z" fill="#6fb552"/><path d="M58 47 L33 33 L56 62 Z" fill="#e7a39b"/>
-      <path d="M102 42 L128 24 L106 66 Z" fill="#6fb552"/><path d="M103 47 L120 32 L106 61 Z" fill="#e7a39b"/>
-      <ellipse cx="84" cy="52" rx="26" ry="24" fill="url(#gbSk)"/>
-      <path d="M62 38 C70 30 96 28 106 40" fill="none" stroke="#4d9238" stroke-width="3" stroke-linecap="round" opacity=".5"/>
-      <path class="gb-nose" d="M86 50 C106 50 122 60 116 74 C112 82 100 80 96 70 C92 66 88 62 86 58 Z" fill="#86cd63"/>
-      <path d="M96 72 C104 78 112 76 114 70" fill="none" stroke="#4d9238" stroke-width="2" stroke-linecap="round"/>
-      <ellipse cx="104" cy="70" rx="2.6" ry="1.9" fill="#3d7a2c"/>
-      <g class="gb-eyes"><path d="M66 46 C71 41 80 41 83 46 C78 49 70 50 66 46 Z" fill="#fff6b0"/><path d="M89 44 C93 39 102 40 104 45 C100 48 93 49 89 44 Z" fill="#fff6b0"/>
-        <circle class="gb-p" cx="79" cy="45.5" r="2.7" fill="#1d1630"/><circle class="gb-p" cx="100.5" cy="44.6" r="2.7" fill="#1d1630"/></g>
-      <path d="M64 43 C71 38 80 38 84 44" fill="none" stroke="#3d7a2c" stroke-width="3.4" stroke-linecap="round"/><path d="M89 41 C94 36 103 37 106 43" fill="none" stroke="#3d7a2c" stroke-width="3.4" stroke-linecap="round"/>
-      <path d="M62 31 L70 38" stroke="#3d7a2c" stroke-width="3" stroke-linecap="round" opacity="0"/>
-      <path class="gb-mouth" d="M68 64 C80 80 100 78 108 62 C96 70 80 70 68 64 Z" fill="#3b1a2e"/>
-      <path d="M74 66 L77 72 L80 67 Z" fill="#fff"/><path d="M90 68 L93 74 L96 67 Z" fill="#fff"/><path d="M82 69 L84 73 L86 69 Z" fill="#fff" opacity=".9"/>
-    </g>
-    <g class="gb-hands" fill="#78c156" stroke="#4d9238" stroke-width="1.2">
-      <rect x="46" y="96" width="9" height="16" rx="4.5"/><rect x="56" y="93" width="9" height="19" rx="4.5"/><rect x="66" y="96" width="9" height="16" rx="4.5"/>
-      <rect x="92" y="96" width="9" height="16" rx="4.5"/><rect x="102" y="93" width="9" height="19" rx="4.5"/><rect x="112" y="96" width="9" height="16" rx="4.5"/>
-    </g>
-  </svg></div>`;
-}
-let gobN = 0, gobT = 0;
-function gobReact() {
-  const g = $('#gob'); if (!g) return;
-  gobN++;
-  const laugh = gobN % 2 === 0, bub = $('.gob-bub', g), say = laugh ? ['Ha', 'Ha ha'] : ['Hm', 'Heh', 'Ha'];
-  if (bub) bub.textContent = say[((gobN / 2) | 0) % say.length];
-  g.classList.remove('pop', 'lol'); void g.offsetWidth; g.classList.add('pop'); if (laugh) g.classList.add('lol');
-  sfx(laugh ? 'laugh' : 'giggle');
-  clearTimeout(gobT); gobT = setTimeout(() => { g.classList.remove('pop', 'lol'); }, laugh ? 1800 : 1400);
-}
-
 /* ===== loans: each month or total amount ===== */
 const loanOf = id => (S.ui.loans && S.ui.loans[id]) || {};
 const noteOf = l => (l.note ? localize(l.note) : '');
@@ -399,7 +336,7 @@ function loanBody(l) {
   return `<p>${LOAN_NOTE}</p>
   <div class="loan-top"><div class="loan-tg${swOn ? ' tot' : ''}" id="loanTg"><span class="lt${swOn ? '' : ' on'}" data-lt="month">Monthly</span>
     <button type="button" class="sw" id="loanSw" role="switch" aria-checked="${swOn}" aria-label="Enter total instead of monthly amount"><i></i></button>
-    <span class="lt${swOn ? ' on' : ''}" data-lt="total">Total</span></div>${goblinSVG()}</div>
+    <span class="lt${swOn ? ' on' : ''}" data-lt="total">Total</span></div></div>
   <div class="tour-fields loan-fields ${swOn ? 'm-tot' : 'm-month'}" id="loanFields">
     <div class="lf" data-lf="name">${textField('tourLName', 'Name', l.name)}</div>
     <div class="lf" data-lf="month">${moneyField('tourAmt', 'Monthly', monthly)}</div>
@@ -434,7 +371,6 @@ function loanSetMode(mode, fx) {
     tg.classList.remove('zap'); void tg.offsetWidth; tg.classList.add('zap'); setTimeout(() => tg.classList.remove('zap'), 900);
     const r = sw.getBoundingClientRect(), h = tg.getBoundingClientRect();
     sparkBurst(tg, r.left - h.left + r.width / 2, r.top - h.top + r.height / 2, 18, 70);
-    gobReact();
   }
   const inp = $(on ? '#tourTot' : '#tourAmt'); if (inp) inp.focus({ preventScroll: true });
   loanSync();
@@ -578,7 +514,6 @@ function tourExtraClick(e) {
   const sw = el.closest('#loanSw'), lt = el.closest('.lt');
   if (sw) { loanSetMode(sw.getAttribute('aria-checked') === 'true' ? 'month' : 'total', true); return true; }
   if (lt) { loanSetMode(lt.dataset.lt, true); return true; }
-  if (el.closest('#gob')) { gobReact(); return true; }
   if (el.closest('#cardUse')) { cardUse(); return true; }
   if (el.closest('#subsAddO')) { const arr = subsReadO(); if (arr.length < SUB_MAX_O) { arr.push({ n: '', a: 0 }); sfx('pop'); subsPaintO(arr, true); autosave(); } return true; }
   const sx = el.closest('.so-x');

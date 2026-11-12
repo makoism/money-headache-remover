@@ -27,10 +27,10 @@ function drawRoad() {
     const pk = se.v.indexOf(Math.max(...se.v)), px = X(pk), py = Y(se.v[pk]), lw = se.g.name.length * 7.4 + 12;
     const bx = [px - lw / 2, py - 24, px + lw / 2, py - 6];
     const ok = bx[0] > 0 && bx[2] < W && placed.every(p => bx[2] < p[0] || bx[0] > p[2] || bx[3] < p[1] || bx[1] > p[3]);
-    s += `<circle cx="${px}" cy="${py}" r="4.5" fill="var(--c${se.g.slot})" stroke="var(--card)" stroke-width="2"/>`;
+    s += `<circle cx="${px}" cy="${py}" r="4.5" fill="var(--c${se.g.slot})" stroke="var(--bg)" stroke-width="2"/>`;
     if (ok) { placed.push(bx); s += `<text class="lbl-d" x="${px}" y="${py - 11}" text-anchor="middle">${esc(se.g.name)}</text>`; }
   });
-  s += `<g id="xh" visibility="hidden"><line id="xhl" y1="${T}" y2="${H - B}" stroke="var(--ink)" stroke-width="1.5"/>${series.map(se => `<circle class="xd" r="5" fill="var(--c${se.g.slot})" stroke="var(--card)" stroke-width="2"/>`).join('')}</g></svg>`;
+  s += `<g id="xh" visibility="hidden"><line id="xhl" y1="${T}" y2="${H - B}" stroke="var(--ink)" stroke-width="1.5"/>${series.map(se => `<circle class="xd" r="5" fill="var(--c${se.g.slot})" stroke="var(--bg)" stroke-width="2"/>`).join('')}</g></svg>`;
   $('#chartbox').innerHTML = s; geom = { W, L, R, n, X, Y };
   $('#roadTable').innerHTML = `<table><thead><tr><th>Month</th>${gs.map(g => `<th>${esc(g.name)}</th>`).join('')}</tr></thead><tbody>${C.months.map(m => `<tr data-ym="${m.ym}"><td>${monthLabel(m.ym)}</td>${gs.map(g => `<td>${fmt(m.bal[g.id])}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
 }

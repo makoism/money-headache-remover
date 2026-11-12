@@ -4,20 +4,19 @@ let tourN = 0, tourIsOpen = false, tourReturn = null, tourMode = 'full', TS = []
 const num0 = v => clampAmt(v);
 const firstName = () => (S.ui && S.ui.name) || '';
 
-/* a small house at dusk with one warm window: the welcome and the goodbye */
+/* a small house on a green hill, a tree beside it: the welcome and the goodbye. Drawn in the colours of the current look. */
 function homeScene() {
-  return `<svg class="tour-fig tour-scene" viewBox="44 30 232 108" role="img" aria-label="A small house at dusk with one warm, lit window">
-    <defs><linearGradient id="hsSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1d2347"/><stop offset="1" stop-color="#4a4a82"/></linearGradient>
-    <radialGradient id="hsGlow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#ffd27a" stop-opacity=".7"/><stop offset="1" stop-color="#ffd27a" stop-opacity="0"/></radialGradient></defs>
-    <rect width="320" height="150" rx="22" fill="url(#hsSky)"/>
-    <g fill="#fff"><circle cx="38" cy="26" r="1.5" opacity=".8"/><circle cx="84" cy="14" r="1.1" opacity=".7"/><circle cx="124" cy="30" r="1.3" opacity=".6"/><circle cx="236" cy="16" r="1.6" opacity=".85"/><circle cx="284" cy="42" r="1.2" opacity=".7"/><circle cx="262" cy="22" r="1" opacity=".6"/><circle cx="206" cy="38" r="1.1" opacity=".55"/><circle cx="70" cy="44" r="1.3" opacity=".75"/><circle cx="118" cy="40" r="1.1" opacity=".6"/><circle cx="96" cy="58" r="1" opacity=".5"/><circle cx="238" cy="48" r="1.4" opacity=".8"/><circle cx="256" cy="38" r="1.1" opacity=".6"/></g>
-    <path d="M0 116 Q80 94 160 110 T320 102 V150 H0 Z" fill="#2d3366"/><path d="M0 132 Q100 118 190 130 T320 126 V150 H0 Z" fill="#232853"/>
-    <circle cx="148" cy="99" r="54" fill="url(#hsGlow)"/>
-    <rect x="180" y="46" width="12" height="24" fill="#2c3263"/><path d="M186 41 q-6 -4.5 0 -9" fill="none" stroke="#fff" stroke-opacity=".3" stroke-width="3" stroke-linecap="round"/>
-    <rect x="116" y="72" width="88" height="56" rx="4" fill="#4b5190"/><polygon points="106,76 160,40 214,76" fill="#2c3263"/>
-    <rect x="132" y="86" width="30" height="26" rx="3" fill="#ffd27a"/><path d="M147 86 V112 M132 99 H162" stroke="#c98a2e" stroke-width="2" opacity=".7"/>
-    <path d="M176 128 V108 a8 8 0 0 1 16 0 V128 Z" fill="#2c3263"/><circle cx="188" cy="118" r="1.4" fill="#ffd27a"/>
-    <rect x="62" y="108" width="4" height="22" fill="#232853"/><circle cx="64" cy="102" r="15" fill="#2f6a6e"/><circle cx="58" cy="109" r="9" fill="#2b5f63"/>
+  return `<svg class="tour-fig tour-scene" viewBox="0 0 320 118" role="img" aria-label="A small house on a green hill, with a tree beside it">
+    <defs><linearGradient id="hsFade" x1="0" y1="0" x2="0" y2="1"><stop offset=".62" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient><mask id="hsMask"><rect width="320" height="118" fill="url(#hsFade)"/></mask></defs>
+    <g mask="url(#hsMask)"><path d="M0 90 C60 64 118 70 170 82 C222 94 270 70 320 78 V118 H0 Z" fill="var(--accent)" opacity=".14"/>
+    <path d="M0 108 C70 88 140 104 200 100 C250 97 290 86 320 96 V118 H0 Z" fill="var(--accent)" opacity=".3"/></g>
+    <path d="M74 101 V70 M74 80 L64.5 69 M74 75 L83 65" fill="none" stroke="var(--accent)" stroke-width="2.8" stroke-linecap="round"/>
+    <g fill="var(--accent)" opacity=".62"><circle cx="74" cy="55" r="17"/><circle cx="60" cy="64" r="11.5"/><circle cx="88.5" cy="63" r="11.5"/></g>
+    <path d="M190 100 V80 L212 62 L234 80 V100" fill="none" stroke="var(--accent)" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>
+    <path d="M184 84 L212 60 L240 84" fill="none" stroke="var(--accent)" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>
+    <rect x="205.5" y="82" width="13" height="11.5" rx="2.5" fill="#ffd27a"/>
+    <path d="M30 108 q2 -8 5 -12 M35 108 q0 -6 -3 -10 M131 108 q2 -7 4 -10 M136 108 q0 -5 -2 -8 M262 102 q2 -7 5 -10 M267 102 q1 -6 -2 -9 M292 99 q1 -5 3 -7" fill="none" stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round" opacity=".55"/>
+    <g fill="var(--accent)" opacity=".45"><path d="M256 36 q9 1 11 10 q-9 -1 -11 -10 Z"/><path d="M284 52 q7 1 8 8 q-7 -1 -8 -8 Z"/><path d="M20 58 q7 0 9 8 q-7 0 -9 -8 Z"/></g>
   </svg>`;
 }
 const LOCK = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
@@ -179,7 +178,7 @@ function wireRestore() {
 }
 const TOUR = [
   /* the first screen is the video and nothing else: Mako says what this is and what to do. A copy without the video starts at the next screen. */
-  { id: 'video', part: PART.welcome, title: 'Welcome', next: 'Next', skipIf: () => !hasHello,
+  { id: 'video', part: PART.welcome, title: 'Welcome', next: 'Next', skipIf: () => !hasHello, art: 'vine',
     body: () => {
       const player = helloFileOk && !helloFailed;
       return `${player ? helloPlayer() : helloCard()}
@@ -190,7 +189,7 @@ const TOUR = [
       ${restoreHTML()}`;
     },
     after: wireRestore },
-  { id: 'currency', part: PART.welcome, title: 'Currency',
+  { id: 'currency', part: PART.welcome, title: 'Currency', art: 'sprig',
     body: () => {
       const cur = (S.ui && S.ui.cur) || '₱', pick = CURS.filter(c => TOUR_CURS.indexOf(c[0]) >= 0).sort((x, y) => TOUR_CURS.indexOf(x[0]) - TOUR_CURS.indexOf(y[0])), rest = CURS.filter(c => TOUR_CURS.indexOf(c[0]) < 0);
       return `${hasHello ? '' : homeScene()}<div class="tour-chips" role="radiogroup" aria-label="Currency">${pick.map(c => chip('tourCur', c[0], c[0], curName(c), c[0] === cur)).join('')}</div>
@@ -275,6 +274,7 @@ function renderTour(dir) {
   $('#tourDots').setAttribute('aria-label', pend ? `${t.part}, step ${first + 1}` : `${t.part}, step ${first + 1} of ${count}`);
   tourTouched = false;
   const body = $('#tourBody'); body.innerHTML = `<h2 id="tourTitle" tabindex="-1">${title}</h2>${t.body()}`;
+  $('#tourArt').innerHTML = t.art ? art(t.art) : '';
   moneyUpAll(body);
   body.classList.remove('in-r', 'in-l'); if (dir) { void body.offsetWidth; body.classList.add(dir > 0 ? 'in-r' : 'in-l'); }
   const setupRun = tourMode === 'full' && TS.some(x => x.setup);

@@ -9,8 +9,8 @@ assert '<title>M.H.R.2000 (The Money Headache Remover 2000)</title>' in html
 assert html.count("const HELLO_FILE = 'hello.mp4';") == 1
 INLINE_HTML=html.replace("const HELLO_FILE = 'hello.mp4';","const HELLO_FILE = '';")
 head='''<link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#fbfbfd" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#eef4ef" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0c1a15" media="(prefers-color-scheme: dark)">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="M.H.R.2000">
@@ -31,7 +31,7 @@ html=html.replace('</body>', reg+'</body>')
 open(OUT+'/index.html','w',encoding='utf8').write(html)
 manifest={
  "name":"M.H.R.2000 (The Money Headache Remover 2000)","short_name":"M.H.R.2000","description":"A calm budget page that shows what you can really spend. Your numbers stay on your device.",
- "start_url":"./","scope":"./","display":"standalone","orientation":"any","background_color":"#fbfbfd","theme_color":"#fbfbfd",
+ "start_url":"./","scope":"./","display":"standalone","orientation":"any","background_color":"#0c1a15","theme_color":"#0c1a15",
  "icons":[{"src":"icons/icon-192.png","sizes":"192x192","type":"image/png","purpose":"any"},{"src":"icons/icon-512.png","sizes":"512x512","type":"image/png","purpose":"any"},{"src":"icons/icon-maskable-512.png","sizes":"512x512","type":"image/png","purpose":"maskable"}]}
 open(OUT+'/manifest.webmanifest','w').write(json.dumps(manifest,indent=2))
 sw='''/* Offline support. Your numbers are not stored here, they live in the browser's own storage, so updating this file never touches them.

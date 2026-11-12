@@ -153,7 +153,8 @@ function changeCurrency(v) {
 }
 /* appearance: Auto follows the device. The choice is about this browser, so it is kept apart from the plan and does not travel with a backup. */
 const THEME_KEY = 'money-map-theme';
-const themePref = () => { try { const v = localStorage.getItem(THEME_KEY); return v === 'light' || v === 'dark' ? v : 'auto'; } catch (e) { return 'auto'; } };
+/* Forest (dark) is the default look; Auto follows the device, Light is the pale sage version */
+const themePref = () => { try { const v = localStorage.getItem(THEME_KEY); return v === 'light' || v === 'auto' ? v : 'dark'; } catch (e) { return 'dark'; } };
 function applyTheme() {
   const t = themePref(), root = document.documentElement;
   if (t === 'auto') root.removeAttribute('data-theme'); else root.setAttribute('data-theme', t);
@@ -161,10 +162,10 @@ function applyTheme() {
   /* an installed copy also colours the phone's top bar */
   $$('meta[name="theme-color"]').forEach(m => {
     if (m.dataset.media === undefined) { m.dataset.media = m.getAttribute('media') || ''; m.dataset.content = m.getAttribute('content') || ''; }
-    if (t === 'auto') { if (m.dataset.media) m.setAttribute('media', m.dataset.media); m.setAttribute('content', m.dataset.content); } else { m.removeAttribute('media'); m.setAttribute('content', t === 'dark' ? '#000000' : '#fbfbfd'); }
+    if (t === 'auto') { if (m.dataset.media) m.setAttribute('media', m.dataset.media); m.setAttribute('content', m.dataset.content); } else { m.removeAttribute('media'); m.setAttribute('content', t === 'dark' ? '#0c1a15' : '#eef4ef'); }
   });
 }
-function setTheme(t) { try { if (t === 'light' || t === 'dark') localStorage.setItem(THEME_KEY, t); else localStorage.removeItem(THEME_KEY); } catch (e) { /* no storage: it lasts until the page closes */ } applyTheme(); }
+function setTheme(t) { try { localStorage.setItem(THEME_KEY, t === 'light' || t === 'auto' ? t : 'dark'); } catch (e) { /* no storage: it lasts until the page closes */ } applyTheme(); }
 /* what loadLocal found: 'ok' (saved numbers read), 'none' (nothing saved yet) or 'bad' (storage blocked or the saved text is damaged). Anything but 'ok' lets ui43.js look for the second copy. */
 let LS_STATE = 'none';
 function loadLocal() { applyTheme(); try { const raw = localStorage.getItem(KEY); if (raw) { S = upgradeLegacy(normalize(JSON.parse(raw))); LS_STATE = 'ok'; } } catch (e) { LS_STATE = 'bad'; /* no storage, or damaged */ } }

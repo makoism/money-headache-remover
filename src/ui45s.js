@@ -220,7 +220,7 @@ const GOAL_KINDS = [
   { k: 'car', id: 'car', name: 'Yearly cost', slot: 6, pick: 'A yearly cost', hint: 'Insurance, taxes, holidays', title: 'Yearly cost', cost: 'Full amount for the year, not per month.' },
   { k: 'other', id: 'other', name: 'Something else', slot: 2, pick: 'Something else', hint: 'Anything with a price', title: 'Goal', cost: '' },
 ];
-const STEP_TOOLPICK = { id: 'goals-pick', part: PART.goals, setup: true, pick: true, title: 'Goals',
+const STEP_TOOLPICK = { id: 'goals-pick', part: PART.goals, setup: true, pick: true, title: 'Goals', art: 'sprout',
   body: () => `<p>The Long-Term Savings for Spending jar holds money saved now and spent later: a cushion, a trip, a big purchase. Tick what you are saving for. Add more later.</p>
     <div class="tour-chips two" role="group" aria-label="Goals">${GOAL_KINDS.map(k => { const on = S.ui.gset ? !!goalById(S, k.id) : k.k === 'rainy'; return `<label class="chip multi${on ? ' on' : ''}"><input type="checkbox" name="tourGoalPick" value="${k.k}"${on ? ' checked' : ''}><b>${k.pick}</b><span>${k.hint}</span></label>`; }).join('')}</div>
     <p class="cap">Unsure? Keep the emergency fund.</p>`,
@@ -387,7 +387,7 @@ const behindText = () => {
   const names = b.map(g => `<b>${esc(g.name)}</b>`).join(' and ');
   return `${names} ${b.length === 1 ? 'misses its date' : 'miss their dates'} at this pace. Under Plan, Goals: move the date, lower the amount or give it more pay.`;
 };
-const STEP_REVEAL = { id: 'reveal', part: PART.spend,
+const STEP_REVEAL = { id: 'reveal', part: PART.spend, art: 'branch',
   title: () => { const f = planFacts(); return f.st === 'over' ? 'Plan exceeds pay' : f.play > 0 ? 'Play money' : 'Play money'; },
   show: () => { if (tourMode === 'full' && S.ui.done && S.ui.done.pay && S.ui.done.bills && S.ui.done.goals) { S.ui.setup = true; persist(); } },
   body: () => {

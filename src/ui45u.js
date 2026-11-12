@@ -85,9 +85,10 @@ function importAddFiles(list) {
   paintImport();
 }
 function paintImport() {
-  const list = $('#impFiles'), read = $('#impRead'), stop = $('#impStop'); if (!list) return;
+  const list = $('#impFiles'), read = $('#impRead'), stop = $('#impStop'), go = $('#impGo'), panel = $('#srcUploadPanel'); if (!list) return;
   list.innerHTML = impFiles.map((f, i) => `<span class="fchip"><span>${esc(f.file.name)} (${sizeLabel(f.file.size)})</span><button type="button" data-imprm="${i}" aria-label="Remove ${esc(f.file.name)}">&times;</button></span>`).join('');
-  list.hidden = !impFiles.length; read.hidden = !impFiles.length || impBusy; stop.hidden = !impBusy;
+  list.hidden = !impFiles.length; read.hidden = !impFiles.length || impBusy; stop.hidden = !impBusy; if (go) go.hidden = read.hidden && stop.hidden;
+  if (panel) panel.classList.toggle('has', impFiles.length > 0 || impBusy); /* with files in, the big field folds to a row */
 }
 /* the how-to, kept short: what to look for in a banking app */
 const IMP_HOW = () => `<details class="src-how"><summary>How to get your statements</summary><div class="src-how-in">
@@ -99,11 +100,19 @@ const IMP_HOW = () => `<details class="src-how"><summary>How to get your stateme
   <p>Nothing is stored. Files go to Claude once, the numbers come back, the files are forgotten.</p></div></details>`;
 const STEP_SOURCE = { id: 'source', part: PART.money, setup: true, title: 'Your statements', next: false,
   body: () => `<p>Bank, e-wallet and credit card: the last 2 or 3 months, everything in one go. Screenshots of the app&rsquo;s transaction list work, so do PDF, CSV and Excel exports. The numbers come out exact, and your history fills in.</p>
-    <div class="src-panel" id="srcUploadPanel">
+    <div class="src-panel drop" id="srcUploadPanel">
       <p class="cap src-here" id="impHere" hidden></p>
-      <div class="row-btns"><button type="button" class="btn small solid" id="impPick">Choose files</button><input type="file" id="impFile" multiple accept=".csv,.tsv,.txt,.xlsx,.pdf,text/csv,text/plain,application/pdf,image/*" hidden><button type="button" class="btn small solid" id="impRead" hidden>Read files</button><button type="button" class="btn small" id="impStop" hidden>Stop</button><span class="cap" id="srcUploadSub">CSV, Excel, PDF or screenshots.</span></div>
-      <div class="fchips" id="impFiles" hidden></div><p class="cap" id="impNote" role="status" hidden></p><p class="cap" id="impProg" role="status" aria-live="polite" hidden></p>
+      <div class="drop-in">
+        <svg class="drop-arrow" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M32 46V22M23 31l9-9 9 9"/><path d="M18 50h28" opacity=".45"/></svg>
+        <p class="drop-t">Statements go here.</p>
+        <button type="button" class="btn solid" id="impPick">Choose files</button><input type="file" id="impFile" multiple accept=".csv,.tsv,.txt,.xlsx,.pdf,text/csv,text/plain,application/pdf,image/*" hidden>
+        <p class="cap drop-sub" id="srcUploadSub">CSV, Excel, PDF or screenshots</p>
+      </div>
+      <div class="fchips" id="impFiles" hidden></div>
+      <div class="row-btns" id="impGo" hidden><button type="button" class="btn small solid" id="impRead" hidden>Read files</button><button type="button" class="btn small" id="impStop" hidden>Stop</button></div>
+      <p class="cap" id="impNote" role="status" hidden></p><p class="cap" id="impProg" role="status" aria-live="polite" hidden></p>
       <div class="imp-out" id="impOut"></div>
+      ${art('grass')}
     </div>
     <div class="src-panel" id="srcAiPanel" hidden>
       <p><b>Use any AI.</b> Claude cannot read files from this copy of the page, so: copy the message, paste it into your AI with your statements, answer its questions, paste its final answer below.</p>
@@ -120,7 +129,7 @@ const STEP_SOURCE = { id: 'source', part: PART.money, setup: true, title: 'Your 
     const paintSrc = () => {
       const sub = $('#srcUploadSub'); if (!sub) return;
       const up = !!askFn; $('#srcUploadPanel').hidden = !up; $('#srcAiPanel').hidden = up;
-      if (up) sub.textContent = askDoc ? 'CSV, Excel, PDF or screenshots.' : 'CSV, Excel or screenshots.';
+      if (up) sub.textContent = askDoc ? 'CSV, Excel, PDF or screenshots' : 'CSV, Excel or screenshots';
       const here = $('#impHere'); if (here) { const h = askFn && !askDoc && inArtifact() ? hereLink().replace(/^Open/, 'PDFs: open') : ''; here.innerHTML = h; here.hidden = !h; }
       if (!up) { const p = $('#srcAiPanel p'); if (p && inArtifact() && RELAY_URL) p.innerHTML = `<b>Use any AI.</b> ${hereLink()} Or: copy the message, paste it into your AI with your statements, answer its questions, paste its final answer below.`; }
     };

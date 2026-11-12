@@ -1,6 +1,7 @@
 
 /* ---------- wire up events ---------- */
 function wire() {
+  placeArt();
   $$('[data-tab]').forEach(b => {
     b.addEventListener('click', () => switchTab(b.dataset.tab));
     b.addEventListener('keydown', e => {

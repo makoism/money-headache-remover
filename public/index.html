@@ -5,46 +5,69 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>M.H.R.2000 (The Money Headache Remover 2000)</title>
 <style>
+/* Two greens. Forest (dark) is the default; Day is the pale sage version. Glass panels sit on a soft aurora of moss and mint. */
 :root {
   color-scheme: light;
-  --bg: #fbfbfd; --panel: #f5f5f7; --card: #f5f5f7; --field: #ffffff; --seg-on: #ffffff;
-  --ink: #1d1d1f; --ink2: #636368; --ink3: #74747a; --hair: #d2d2d7; --track: #e8e8ed; --track2: #dcdce1;
-  --accent: #0071e3; --on-accent: #fff; --link: #0066cc;
+  --bg: #eef4ef; --panel: rgba(255, 255, 255, .62); --card: rgba(255, 255, 255, .62); --field: #ffffff; --seg-on: #ffffff;
+  --ink: #122018; --ink2: #4f6a5c; --ink3: #58705f; --hair: rgba(18, 32, 24, .1); --track: rgba(18, 32, 24, .07); --track2: rgba(18, 32, 24, .11);
+  --accent: #1f7a52; --on-accent: #ffffff; --accent-h: #27895d; --link: #1f7a52;
   --c1: #b8512e; --c2: #2c6db5; --c3: #3e8e2b; --c4: #d6568a; --c5: #d99a12; --c6: #7e3f96; --c7: #0b8fa8;
-  --good: #1e7a34; --good-bg: rgba(30, 122, 52, .12); --warn: #a84b00; --warn-bg: rgba(168, 75, 0, .12); --bad: #c4262e; --bad-bg: rgba(196, 38, 46, .1);
-  --warn-on: #ff9f0a; --bad-on: #ff6961; --ok-dot: #b0b0b6;
+  --good: #1f7a52; --good-bg: rgba(31, 122, 82, .12); --warn: #9a6a00; --warn-bg: rgba(154, 106, 0, .12); --bad: #b8352e; --bad-bg: rgba(184, 53, 46, .1);
+  --warn-on: #c98500; --bad-on: #e0524b; --ok-dot: #a9bdb2;
+  --leaf: rgba(31, 122, 82, .34); --glass-hi: rgba(255, 255, 255, .5);
+  --aurora: radial-gradient(60% 45% at 85% -5%, rgba(143, 217, 176, .5) 0%, rgba(143, 217, 176, 0) 70%), radial-gradient(70% 50% at -10% 60%, rgba(95, 185, 138, .22) 0%, rgba(95, 185, 138, 0) 70%), radial-gradient(50% 40% at 60% 110%, rgba(255, 255, 255, .7) 0%, rgba(255, 255, 255, 0) 70%);
   --f: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", "Helvetica Neue", "Hiragino Sans", "Noto Sans JP", "Segoe UI", Roboto, Arial, sans-serif;
   --gap: 40px;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    --bg: #000000; --panel: #1c1c1e; --card: #1c1c1e; --field: #2c2c2e; --seg-on: #636366;
-    --ink: #f5f5f7; --ink2: #a1a1a6; --ink3: #8e8e93; --hair: #3a3a3c; --track: #2c2c2e; --track2: #3a3a3c;
-    --link: #2997ff;
+    --bg: #0c1a15; --panel: rgba(255, 255, 255, .055); --card: rgba(255, 255, 255, .055); --field: rgba(0, 0, 0, .28); --seg-on: rgba(255, 255, 255, .14);
+    --ink: #e9f3ee; --ink2: #a9c4b7; --ink3: #7f998d; --hair: rgba(255, 255, 255, .1); --track: rgba(255, 255, 255, .08); --track2: rgba(255, 255, 255, .14);
+    --accent: #8fd9b0; --on-accent: #0b1813; --accent-h: #a5e4c2; --link: #9ad8b8;
     --c1: #d95926; --c2: #3987e5; --c3: #3fa03c; --c4: #d55181; --c5: #c98500; --c6: #a266c9; --c7: #1a9dad;
-    --good: #30d158; --good-bg: rgba(48, 209, 88, .16); --warn: #ff9f0a; --warn-bg: rgba(255, 159, 10, .16); --bad: #ff6961; --bad-bg: rgba(255, 105, 97, .16);
-    --ok-dot: #636366;
+    --good: #8fd9b0; --good-bg: rgba(143, 217, 176, .16); --warn: #e8c37a; --warn-bg: rgba(232, 195, 122, .16); --bad: #ef8f8f; --bad-bg: rgba(239, 143, 143, .16);
+    --warn-on: #e8c37a; --bad-on: #ef8f8f; --ok-dot: #4f6a5c;
+    --leaf: rgba(143, 217, 176, .42); --glass-hi: rgba(255, 255, 255, .06);
+    --aurora: radial-gradient(60% 45% at 85% -5%, rgba(95, 185, 138, .26) 0%, rgba(95, 185, 138, 0) 70%), radial-gradient(70% 50% at -10% 60%, rgba(31, 107, 74, .32) 0%, rgba(31, 107, 74, 0) 70%), radial-gradient(50% 40% at 60% 110%, rgba(143, 217, 176, .12) 0%, rgba(143, 217, 176, 0) 70%);
   }
 }
 :root[data-theme="dark"] {
     color-scheme: dark;
-    --bg: #000000; --panel: #1c1c1e; --card: #1c1c1e; --field: #2c2c2e; --seg-on: #636366;
-    --ink: #f5f5f7; --ink2: #a1a1a6; --ink3: #8e8e93; --hair: #3a3a3c; --track: #2c2c2e; --track2: #3a3a3c;
-    --link: #2997ff;
+    --bg: #0c1a15; --panel: rgba(255, 255, 255, .055); --card: rgba(255, 255, 255, .055); --field: rgba(0, 0, 0, .28); --seg-on: rgba(255, 255, 255, .14);
+    --ink: #e9f3ee; --ink2: #a9c4b7; --ink3: #7f998d; --hair: rgba(255, 255, 255, .1); --track: rgba(255, 255, 255, .08); --track2: rgba(255, 255, 255, .14);
+    --accent: #8fd9b0; --on-accent: #0b1813; --accent-h: #a5e4c2; --link: #9ad8b8;
     --c1: #d95926; --c2: #3987e5; --c3: #3fa03c; --c4: #d55181; --c5: #c98500; --c6: #a266c9; --c7: #1a9dad;
-    --good: #30d158; --good-bg: rgba(48, 209, 88, .16); --warn: #ff9f0a; --warn-bg: rgba(255, 159, 10, .16); --bad: #ff6961; --bad-bg: rgba(255, 105, 97, .16);
-    --ok-dot: #636366;
+    --good: #8fd9b0; --good-bg: rgba(143, 217, 176, .16); --warn: #e8c37a; --warn-bg: rgba(232, 195, 122, .16); --bad: #ef8f8f; --bad-bg: rgba(239, 143, 143, .16);
+    --warn-on: #e8c37a; --bad-on: #ef8f8f; --ok-dot: #4f6a5c;
+    --leaf: rgba(143, 217, 176, .42); --glass-hi: rgba(255, 255, 255, .06);
+    --aurora: radial-gradient(60% 45% at 85% -5%, rgba(95, 185, 138, .26) 0%, rgba(95, 185, 138, 0) 70%), radial-gradient(70% 50% at -10% 60%, rgba(31, 107, 74, .32) 0%, rgba(31, 107, 74, 0) 70%), radial-gradient(50% 40% at 60% 110%, rgba(143, 217, 176, .12) 0%, rgba(143, 217, 176, 0) 70%);
 }
 * { box-sizing: border-box; }
+/* glass: translucent panels with a hairline and a top highlight; blur only on the large ones, so phones stay quick */
+.card, .start, .tour-fields, .tour-cloud, .split-row, .gw-card, .mgb, .tour-ledger, .why, .sub-o, .newcat, .hnext, .msg.ai, .tour-try, .src-panel, .imp-q { box-shadow: inset 0 0 0 1px var(--hair), inset 0 1px 0 var(--glass-hi); }
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) { .card, .gw-card, .hnext, .src-panel { -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); } }
 html { -webkit-text-size-adjust: 100%; }
-body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--f); font-size: 17px; line-height: 1.47; letter-spacing: -.022em; font-weight: 400; -webkit-font-smoothing: antialiased; }
+body { margin: 0; background: var(--bg); color: var(--ink); position: relative; font-family: var(--f); font-size: 17px; line-height: 1.47; letter-spacing: -.022em; font-weight: 400; -webkit-font-smoothing: antialiased; }
+body::before { content: ''; position: fixed; inset: 0; z-index: -1; background: var(--aurora); pointer-events: none; }
 button, input, select, textarea { font: inherit; letter-spacing: inherit; color: inherit; }
 h1, h2, h3, p { margin: 0; }
 b, strong { font-weight: 600; }
 :focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 65%, transparent); outline-offset: 2px; border-radius: 8px; }
 .wrap { max-width: 760px; margin: 0 auto; padding: 0 24px 120px; display: flex; flex-direction: column; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+/* leaves, grass and vines: thin lines in the leaf ink, behind the words, one piece per screen */
+.art { position: absolute; color: var(--leaf); pointer-events: none; line-height: 0; z-index: 0; }
+.art svg { display: block; width: 100%; height: auto; }
+.card.hspend { position: relative; overflow: hidden; padding-bottom: calc(clamp(28px, 6vw, 60px) + 26px); } .hspend .art-grass { right: 18px; bottom: -3px; width: 132px; }
+.card.scan { position: relative; overflow: hidden; } .scan .head { padding-right: 84px; } .scan .art-sprig { right: 14px; top: 14px; width: 86px; }
+.hero { position: relative; } .hero .art-vine { left: -4px; top: 72px; width: 56px; }
+.card.sect:has(#goalCards) { position: relative; overflow: hidden; } .card:has(#goalCards) .art-sprout { right: 18px; bottom: 14px; width: 54px; }
+.tour-in { position: relative; } .tour #tourArt .art { z-index: 0; }
+.tour .art-vine { width: 72px; right: 14px; bottom: 96px; } .tour .art-sprig { width: 112px; left: 22px; bottom: 100px; }
+.tour .art-sprout { width: 56px; right: 26px; bottom: 104px; } .tour .art-branch { width: 156px; right: 8px; bottom: 100px; }
+@media (max-height: 700px) { .tour .art { display: none; } }
+
 
 /* top bar and tabs */
 .top { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 22px 0 0; }
@@ -96,7 +119,7 @@ b, strong { font-weight: 600; }
 .btn { border: 0; background: var(--track); color: var(--ink); border-radius: 980px; padding: 0 22px; min-height: 44px; font-weight: 500; font-size: 16px; cursor: pointer; transition: background .2s, transform .1s, opacity .2s; }
 .btn:hover { background: var(--track2); }
 .btn:active { transform: scale(.97); }
-.btn.solid { background: var(--accent); color: #fff; } .btn.solid:hover { background: #0077ed; }
+.btn.solid { background: var(--accent); color: var(--on-accent); } .btn.solid:hover { background: var(--accent-h); }
 .btn.small { min-height: 38px; padding: 0 18px; font-size: 15px; }
 .btn.warnbtn { color: var(--bad); }
 
@@ -401,7 +424,7 @@ table.plain tbody tr { cursor: default; } table.plain tbody tr:hover td { backgr
 }
 
 /* ---- the first-open tour ---- */
-.tour { position: fixed; inset: 0; z-index: 50; background: var(--bg); overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.tour { position: fixed; inset: 0; z-index: 50; background: var(--aurora), var(--bg); overflow-y: auto; -webkit-overflow-scrolling: touch; }
 .tour-in { max-width: 600px; margin: 0 auto; min-height: 100%; display: flex; flex-direction: column; padding: max(18px, env(safe-area-inset-top)) 24px max(20px, env(safe-area-inset-bottom)); }
 .tour-top { display: flex; align-items: center; justify-content: flex-end; gap: 16px; }
 .tour-part { font-size: 15px; color: var(--ink2); font-weight: 500; }
@@ -410,7 +433,7 @@ table.plain tbody tr { cursor: default; } table.plain tbody tr:hover td { backgr
 .tour-dots i b { display: block; height: 100%; border-radius: 3px; background: var(--ink3); transition: width .25s; }
 .tour-dots i.on b { background: var(--ink); }
 .tour-links { display: flex; align-items: center; gap: 18px; }
-.tour-body { flex: 1 1 auto; display: flex; flex-direction: column; justify-content: flex-start; gap: 24px; padding: clamp(28px, 8vh, 84px) 0 28px; }
+.tour-body { flex: 1 1 auto; display: flex; flex-direction: column; justify-content: flex-start; gap: 26px; padding: clamp(32px, 9vh, 100px) 0 28px; position: relative; z-index: 1; }
 .tour-body h2 { font-size: clamp(30px, 7vw, 44px); line-height: 1.08; font-weight: 600; letter-spacing: -.035em; text-wrap: balance; outline: none; }
 .tour-body p { font-size: 19px; line-height: 1.45; color: var(--ink2); max-width: 38ch; text-wrap: pretty; letter-spacing: -.015em; }
 .tour-body p b, .tour-body li b { color: var(--ink); font-weight: 600; }
@@ -450,8 +473,8 @@ svg.tour-fig text.t { font-family: var(--f); font-size: 11.5px; fill: var(--ink2
 
 /* welcome: warm, quiet, and a little bit like coming home */
 .hello { margin: 28px 2px 0; font-size: clamp(22px, 4vw, 28px); font-weight: 600; letter-spacing: -.025em; line-height: 1.2; color: var(--ink); }
-.tour.welcome { background: radial-gradient(130% 55% at 50% -8%, color-mix(in srgb, #ffc766 16%, var(--bg)), var(--bg) 62%); }
-svg.tour-scene { width: 100%; max-width: 440px; height: auto; border-radius: 22px; box-shadow: 0 10px 30px -14px rgba(29, 35, 71, .55); }
+
+svg.tour-scene { width: 100%; max-width: 440px; height: auto; }
 .tour-cloud { display: flex; gap: 12px; align-items: flex-start; background: var(--panel); border-radius: 16px; padding: 14px 16px; max-width: 460px; font-size: 16px; line-height: 1.4; }
 .tour-cloud > svg { flex: 0 0 22px; width: 22px; height: 22px; margin-top: 2px; color: var(--good); }
 .tour-cloud > div { min-width: 0; flex: 1 1 auto; } .tour-cloud b { display: block; margin-bottom: 4px; } .tour-cloud .cap { margin: 0 0 10px; } .tour-cloud .row-btns { align-items: center; gap: 10px; } .tour-cloud .row-btns .cap { margin: 0; }
@@ -475,7 +498,7 @@ svg.tour-scene { width: 100%; max-width: 440px; height: auto; border-radius: 22p
 
 /* celebration */
 #confetti { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 70; }
-#cheer { position: fixed; left: 50%; bottom: max(22px, calc(env(safe-area-inset-bottom) + 14px)); transform: translate(-50%, 16px); opacity: 0; z-index: 71; width: max-content; max-width: min(92vw, 420px); padding: 14px 22px; border-radius: 22px; background: var(--ink); color: var(--bg); font-size: 16px; font-weight: 500; line-height: 1.3; text-align: center; pointer-events: none; box-shadow: 0 14px 34px -12px rgba(0, 0, 0, .4); transition: opacity .25s, transform .4s cubic-bezier(.2, .9, .3, 1.2); }
+#cheer { position: fixed; left: 50%; bottom: max(22px, calc(env(safe-area-inset-bottom) + 14px)); transform: translate(-50%, 16px); opacity: 0; z-index: 71; width: max-content; max-width: min(92vw, 420px); padding: 14px 22px; border-radius: 22px; background: var(--accent); color: var(--on-accent); font-size: 16px; font-weight: 500; line-height: 1.3; text-align: center; pointer-events: none; box-shadow: 0 14px 34px -12px rgba(0, 0, 0, .4); transition: opacity .25s, transform .4s cubic-bezier(.2, .9, .3, 1.2); }
 #cheer.on { opacity: 1; transform: translate(-50%, 0); }
 @media (prefers-reduced-motion: reduce) { #cheer { transition: opacity .01s; transform: translate(-50%, 0); } }
 
@@ -510,7 +533,7 @@ svg.tour-scene { width: 100%; max-width: 440px; height: auto; border-radius: 22p
 .ask-log { flex: 1 1 auto; min-height: 120px; overflow-y: auto; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
 .msg { max-width: 88%; padding: 10px 14px; border-radius: 18px; font-size: 16px; line-height: 1.4; white-space: pre-wrap; overflow-wrap: anywhere; }
 .msg.ai { align-self: flex-start; background: var(--panel); border-bottom-left-radius: 6px; }
-.msg.me { align-self: flex-end; background: var(--accent); color: #fff; border-bottom-right-radius: 6px; }
+.msg.me { align-self: flex-end; background: var(--accent); color: var(--on-accent); border-bottom-right-radius: 6px; }
 .msg.wait { color: var(--ink2); } .msg.note { color: var(--warn); background: var(--warn-bg); }
 .ask-sug { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 16px 10px; }
 .sugg { border: 0; background: var(--track); border-radius: 980px; min-height: 38px; padding: 0 14px; font-size: 15px; cursor: pointer; text-align: left; }
@@ -556,7 +579,8 @@ svg.tour-scene { width: 100%; max-width: 440px; height: auto; border-radius: 22p
 .msg.card .left { font-size: 13px; color: var(--ink2); }
 .msg.card .row-btns { display: flex; flex-wrap: wrap; gap: 8px; }
 /* on laptops and phones that are not very tall, keep the first and last screens from running under the buttons */
-@media (max-height: 940px) { .tour-body { gap: 16px; padding-top: clamp(14px, 3vh, 34px); padding-bottom: 14px; } svg.tour-scene { max-width: 300px; } .tour-body p { font-size: 18px; line-height: 1.4; } .tour-body p.cap { font-size: 14px; } @media (max-height: 860px) { svg.tour-scene { max-width: 236px; } .tour-in:has(.tour-foot.last) svg.tour-scene { display: none; } }
+@media (max-height: 940px) { .tour-body { gap: 16px; padding-top: clamp(14px, 3vh, 34px); padding-bottom: 14px; } svg.tour-scene { max-width: 300px; } .tour-body p { font-size: 18px; line-height: 1.4; } .tour-body p.cap { font-size: 14px; } }
+@media (max-height: 860px) { svg.tour-scene { max-width: 236px; } .tour-in:has(.tour-foot.last) svg.tour-scene { display: none; } }
 @media (max-height: 740px) { svg.tour-scene { max-width: 175px; } }
 /* the short hello video screen: a card that opens the video in a new tab, or a 16:9 player in the downloaded app */
 .tour-video { display: inline-flex; align-items: center; gap: 14px; text-decoration: none; color: var(--ink); background: var(--card); border: .5px solid var(--hair); border-radius: 18px; padding: 14px 20px 14px 16px; min-height: 64px; max-width: 100%; transition: background .2s, transform .1s; }
@@ -572,15 +596,15 @@ svg.tour-scene { width: 100%; max-width: 440px; height: auto; border-radius: 22p
 .tour-body .cap a { color: var(--link); text-underline-offset: 2px; }
 /* the hello video player: a play button on the cover, then speed choices under it */
 .tour-vframe video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000; }
-.tour-vframe .tour-play { position: absolute; left: 50%; top: 50%; width: 68px; height: 68px; margin: -34px 0 0 -34px; border: 0; border-radius: 50%; background: var(--accent); color: #fff; display: grid; place-items: center; cursor: pointer; box-shadow: 0 6px 20px rgba(0, 0, 0, .35); transition: transform .15s, background .2s; }
-.tour-vframe .tour-play:hover { background: #0077ed; transform: scale(1.05); }
+.tour-vframe .tour-play { position: absolute; left: 50%; top: 50%; width: 68px; height: 68px; margin: -34px 0 0 -34px; border: 0; border-radius: 50%; background: var(--accent); color: var(--on-accent); display: grid; place-items: center; cursor: pointer; box-shadow: 0 6px 20px rgba(0, 0, 0, .35); transition: transform .15s, background .2s; }
+.tour-vframe .tour-play:hover { background: var(--accent-h); transform: scale(1.05); }
 .tour-vframe .tour-play svg { width: 30px; height: 30px; margin-left: 3px; }
 .tour-vframe.playing .tour-play { display: none; }
 .tour-speed { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; max-width: 560px; }
 .tour-speed span { font-size: 14px; color: var(--ink2); margin-right: 4px; }
 .tour-speed button { border: 0; background: var(--track); color: var(--ink); border-radius: 980px; min-height: 36px; min-width: 48px; padding: 0 12px; font-size: 14px; font-weight: 500; cursor: pointer; transition: background .2s, color .2s; }
 .tour-speed button:hover { background: var(--track2); }
-.tour-speed button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+.tour-speed button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
 @media (max-width: 430px) { .tour-speed { gap: 5px; } .tour-speed span { margin-right: 0; } .tour-speed button { min-width: 38px; padding: 0 9px; } }
 @media (max-height: 700px) { .tour-vframe { max-width: 300px; } }
 
@@ -621,9 +645,10 @@ svg.tour-scene { width: 100%; max-width: 440px; height: auto; border-radius: 22p
 /* =====================================================================
    v22: Home, pickers, goal flow, coach marks, and the setup extras
    ===================================================================== */
-:root { --flame: #ee7a0a; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --flame: #ff9f0a; } }
-:root[data-theme="dark"] { --flame: #ff9f0a; }
+/* the streak leaf: the accent green of each look */
+:root { --streak: #1f7a52; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --streak: #8fd9b0; } }
+:root[data-theme="dark"] { --streak: #8fd9b0; }
 .btn:disabled { opacity: .4; cursor: not-allowed; }
 .btn:disabled:active { transform: none; }
 .tab-in { animation: tabIn .26s cubic-bezier(.2, .8, .2, 1); }
@@ -704,8 +729,8 @@ svg.tour-scene { width: 100%; max-width: 440px; height: auto; border-radius: 22p
 .hst-top { display: flex; align-items: center; gap: 14px; margin-top: 14px; }
 .hst-fl { width: 54px; height: 54px; color: var(--hair); flex: none; transform-origin: 50% 90%; }
 .hst-fl svg { width: 100%; height: 100%; display: block; }
-.hst-fl.lit { color: var(--flame); animation: flick 2.2s ease-in-out infinite alternate; }
-@keyframes flick { from { transform: scale(1) rotate(-2deg); } to { transform: scale(1.07) rotate(2deg); } }
+.hst-fl.lit { color: var(--streak); animation: sway 2.6s ease-in-out infinite alternate; }
+@keyframes sway { from { transform: rotate(-4deg); } to { transform: scale(1.04) rotate(4deg); } }
 .hst-n { display: flex; align-items: baseline; gap: 8px; }
 .hst-n b { font-size: 58px; line-height: 1; font-weight: 600; letter-spacing: -.045em; font-variant-numeric: tabular-nums; }
 .hst-n span { font-size: 17px; color: var(--ink2); }
@@ -714,10 +739,10 @@ svg.tour-scene { width: 100%; max-width: 440px; height: auto; border-radius: 22p
 .wd { flex: 1 1 0; max-width: 36px; aspect-ratio: 1; border-radius: 50%; background: var(--track2); display: grid; place-items: center; }
 .wd-i { display: grid; width: 62%; height: 62%; }
 .wd-i svg { width: 100%; height: 100%; display: block; }
-.wd.done { background: color-mix(in srgb, var(--flame) 22%, var(--panel)); color: var(--flame); }
+.wd.done { background: color-mix(in srgb, var(--streak) 22%, var(--panel)); color: var(--streak); }
 .wd.shield { background: color-mix(in srgb, var(--accent) 18%, var(--panel)); color: var(--accent); }
 .wd.miss { background: transparent; box-shadow: inset 0 0 0 1.5px var(--hair); }
-.wd.now { background: transparent; box-shadow: inset 0 0 0 2px var(--flame); }
+.wd.now { background: transparent; box-shadow: inset 0 0 0 2px var(--streak); }
 .wd.none { opacity: .55; }
 .hst-sh { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--ink2); margin-top: 14px; line-height: 1.3; }
 .hst-sh svg { width: 20px; height: 20px; color: var(--ink3); flex: none; }
@@ -751,7 +776,7 @@ svg.tour-scene { width: 100%; max-width: 440px; height: auto; border-radius: 22p
 .hb-i { width: 32px; height: 32px; color: var(--ink3); opacity: .6; margin-bottom: 4px; display: block; }
 .hb-i svg { width: 100%; height: 100%; display: block; }
 .hb b { font-size: 15px; font-weight: 600; } .hb span:last-child { font-size: 13px; color: var(--ink2); line-height: 1.3; }
-.hb.on .hb-i { color: var(--flame); opacity: 1; } .hb:not(.on) b { color: var(--ink2); }
+.hb.on .hb-i { color: var(--streak); opacity: 1; } .hb:not(.on) b { color: var(--ink2); }
 .hb-n { font-size: 14px; color: var(--ink2); }
 .hdeep-l { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
 
@@ -781,7 +806,7 @@ b.dp-t { cursor: default; }
 .dp-g button:active:not(:disabled) { transform: scale(.9); }
 .dp-g button.out { color: var(--ink3); opacity: .55; }
 .dp-g button.today { color: var(--accent); font-weight: 600; }
-.dp-g button.on { background: var(--accent); color: #fff; font-weight: 600; }
+.dp-g button.on { background: var(--accent); color: var(--on-accent); font-weight: 600; }
 .dp-g button:disabled { opacity: .22; cursor: default; }
 .dp-g.sl-l { animation: dpL .17s ease-out; } .dp-g.sl-r { animation: dpR .17s ease-out; }
 @keyframes dpL { from { opacity: 0; transform: translateX(16px); } } @keyframes dpR { from { opacity: 0; transform: translateX(-16px); } }
@@ -790,11 +815,11 @@ b.dp-t { cursor: default; }
 .dp-mg { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
 .dp-mg button { height: 44px; border: 0; background: none; border-radius: 12px; font-size: 16px; cursor: pointer; color: var(--ink); transition: background .1s; }
 .dp-mg button:hover:not(:disabled):not(.on) { background: var(--track); }
-.dp-mg button.on { background: var(--accent); color: #fff; font-weight: 600; } .dp-mg button.today:not(.on) { color: var(--accent); font-weight: 600; } .dp-mg button:disabled { opacity: .25; }
+.dp-mg button.on { background: var(--accent); color: var(--on-accent); font-weight: 600; } .dp-mg button.today:not(.on) { color: var(--accent); font-weight: 600; } .dp-mg button:disabled { opacity: .25; }
 .dp-month { width: 292px; max-height: min(430px, 72vh); overflow-y: auto; overscroll-behavior: contain; }
 .dp-y b { display: block; font-size: 14px; color: var(--ink2); padding: 10px 6px 6px; font-weight: 600; }
 .dp-none { width: 100%; text-align: left; border: 0; background: none; border-radius: 12px; padding: 10px 12px; font-size: 16px; cursor: pointer; color: var(--ink); }
-.dp-none:hover { background: var(--track); } .dp-none.on { background: var(--accent); color: #fff; font-weight: 600; }
+.dp-none:hover { background: var(--track); } .dp-none.on { background: var(--accent); color: var(--on-accent); font-weight: 600; }
 
 /* ---------- add a goal ---------- */
 .gw { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; padding: 16px; }
@@ -817,7 +842,7 @@ b.dp-t { cursor: default; }
 .gw-chip.on { box-shadow: inset 0 0 0 2px var(--accent); }
 .gw-quick { display: flex; flex-wrap: wrap; gap: 8px; }
 .chipbtn { border: 0; background: var(--track); border-radius: 980px; min-height: 38px; padding: 0 16px; font-size: 15px; font-weight: 500; cursor: pointer; transition: background .15s, color .15s, transform .1s; color: var(--ink); }
-.chipbtn:active { transform: scale(.96); } .chipbtn.on { background: var(--accent); color: #fff; }
+.chipbtn:active { transform: scale(.96); } .chipbtn.on { background: var(--accent); color: var(--on-accent); }
 .gw-plan { font-size: 17px; background: var(--field); padding: 14px 16px; border-radius: 16px; line-height: 1.4; min-height: 3.3em; box-shadow: inset 0 0 0 1px var(--hair); }
 .gw-plan b { font-weight: 600; } .gw-plan.bad { color: var(--bad); }
 .gw-foot { display: flex; justify-content: space-between; gap: 12px; margin-top: 24px; }
@@ -852,6 +877,15 @@ body.gw-open, body.co-open.gw-open { overflow: hidden; }
 /* setup from statements */
 .src-panel, .src-how { max-width: 640px; }
 .src-panel { margin: 0 0 12px; padding: 12px 14px; border-radius: 18px; background: color-mix(in srgb, var(--accent) 6%, var(--panel)); }
+/* the statements field: one calm box with the arrow, the button and the file types; once files are in it folds to a row */
+.src-panel.drop { position: relative; overflow: hidden; border-radius: 28px; padding: 14px 16px 16px; margin-top: 36px; }
+.drop-in { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; text-align: center; min-height: 268px; padding: 18px 0 30px; }
+.drop-arrow { width: 56px; height: 56px; color: var(--accent); }
+.drop-t { font-size: 15px; color: var(--ink2); }
+.drop-sub.cap { margin: 0; font-size: 13px; color: var(--ink3); }
+.drop.has .drop-in { flex-direction: row; min-height: 0; padding: 4px 0 8px; gap: 12px; justify-content: flex-start; text-align: left; flex-wrap: wrap; }
+.drop.has .drop-arrow, .drop.has .drop-t { display: none; } .drop.has .drop-in .btn { min-height: 38px; padding: 0 18px; font-size: 15px; }
+.drop .art-grass { left: 12px; bottom: -3px; width: 132px; opacity: .9; } .drop.has .art-grass { display: none; }
 .fchips { display: flex; flex-wrap: wrap; gap: 6px; }
 .src-panel .fchips { margin: 10px 0 2px; }
 .src-panel .cap { margin: 8px 0 0; max-width: none; }
@@ -886,9 +920,9 @@ body.gw-open, body.co-open.gw-open { overflow: hidden; }
 .inv-row input.txt:focus { box-shadow: inset 0 0 0 2px var(--accent); }
 
 /* ---------- setup extras ---------- */
-.spk { position: absolute; width: 14px; height: 14px; margin: -7px 0 0 -7px; pointer-events: none; background: var(--c); clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%); opacity: 0; animation: spk .85s ease-out var(--d) forwards; z-index: 3; }
+.spk { position: absolute; width: 14px; height: 14px; margin: -7px 0 0 -7px; pointer-events: none; background: var(--c); clip-path: path('M7 0 Q14 7 7 14 Q0 7 7 0 Z'); opacity: 0; animation: spk .85s ease-out var(--d) forwards; z-index: 3; }
 @keyframes spk { 0% { transform: translate(0, 0) scale(0) rotate(0); opacity: 1; } 25% { opacity: 1; transform: translate(calc(var(--dx) * .4), calc(var(--dy) * .4)) scale(var(--s)) rotate(calc(var(--r) * .3)); } 100% { transform: translate(var(--dx), var(--dy)) scale(0) rotate(var(--r)); opacity: 0; } }
-.rng, .shr { position: relative; }
+.rng { position: relative; }
 .split { display: grid; gap: 14px; max-width: 460px; }
 .split-row { display: grid; gap: 4px; padding: 10px 12px; margin: 0 -12px; border-radius: 16px; transition: background .4s; }
 .split-row.moved { background: color-mix(in srgb, var(--accent) 7%, transparent); }
@@ -916,7 +950,7 @@ body.gw-open, body.co-open.gw-open { overflow: hidden; }
 .sw[aria-checked="true"] { background: #34c759; } .sw[aria-checked="true"] i { transform: translateX(22px); }
 .sw.zap i { animation: swZap .45s ease-out; } @keyframes swZap { 40% { transform: translateX(11px) scale(1.2); } }
 .loan-top { display: flex; align-items: flex-end; justify-content: space-between; gap: 8px 16px; flex-wrap: wrap; max-width: 460px; }
-.loan-tg { display: flex; align-items: center; gap: 12px; padding-bottom: 6px; }
+.loan-tg { position: relative; display: flex; align-items: center; gap: 12px; padding-bottom: 6px; }
 .lt { font-size: 16px; font-weight: 500; color: var(--ink3); transition: color .2s; cursor: pointer; }
 .lt.on { color: var(--ink); font-weight: 600; }
 .loan-fields { display: grid; gap: 22px; }
@@ -924,17 +958,6 @@ body.gw-open, body.co-open.gw-open { overflow: hidden; }
 .loan-fields .lf[data-lf="name"] { order: 1; } .loan-fields .lf[data-lf="month"] { order: 2; } .loan-fields .lf[data-lf="total"] { order: 3; } .loan-fields .lf:not([data-lf]) { order: 4; } .loan-fields > .cap { order: 5; }
 .loan-fields.m-tot .lf[data-lf="total"] { order: 2; } .loan-fields.m-tot .lf[data-lf="month"] { order: 3; }
 .loan-fields.m-month .lf[data-lf="month"] .inp, .loan-fields.m-tot .lf[data-lf="total"] .inp { box-shadow: inset 0 0 0 1.5px var(--accent); }
-.gob { position: relative; width: 130px; height: 112px; flex: none; margin-right: 4px; }
-.gob svg { display: block; overflow: hidden; }
-.gob .gb-head { transform-box: fill-box; transform-origin: 62% 100%; transform: translateY(24px) rotate(-5deg); transition: transform .35s cubic-bezier(.3, 1.3, .4, 1); }
-.gob.pop .gb-head { transform: translateY(0) rotate(3deg); }
-.gob .gb-p { animation: gobLook 3.4s ease-in-out infinite; }
-@keyframes gobLook { 0%, 30% { transform: translateX(0); } 40%, 60% { transform: translateX(-2px); } 70%, 100% { transform: translateX(1.4px); } }
-.gob .gb-mouth { transform-box: fill-box; transform-origin: 50% 20%; }
-.gob.lol .gb-mouth { animation: gobMouth .16s ease-in-out infinite alternate; } .gob.lol .gb-head { animation: gobShake .13s ease-in-out infinite alternate; }
-@keyframes gobMouth { from { transform: scaleY(.8); } to { transform: scaleY(1.5); } } @keyframes gobShake { from { transform: translateY(0) rotate(1deg); } to { transform: translateY(2px) rotate(6deg); } }
-.gob-bub { position: absolute; right: 100%; top: 6px; margin-right: -14px; background: var(--field); border-radius: 14px; padding: 4px 11px; font-size: 13px; font-weight: 600; white-space: nowrap; opacity: 0; transform: scale(.6) translateX(10px); transform-origin: 100% 50%; transition: opacity .15s, transform .25s cubic-bezier(.3, 1.4, .4, 1); box-shadow: 0 4px 14px -4px rgba(0, 0, 0, .35), 0 0 0 1px var(--hair); }
-.gob.pop .gob-bub { opacity: 1; transform: none; }
 .tour-chips .chip.on { background: var(--field); }
 
 /* the transcript under the hello video */
@@ -969,8 +992,6 @@ body.gw-open, body.co-open.gw-open { overflow: hidden; }
 .tour-top { flex-wrap: wrap; row-gap: 2px; }
 .split { grid-template-columns: minmax(0, 1fr); }
 .split-row, .split-h { min-width: 0; }
-.gob-bub { right: auto; left: 100%; margin: 0 0 0 -12px; transform-origin: 0 50%; transform: scale(.6) translateX(-10px); }
-.gob.pop .gob-bub { transform: none; }
 
 .sndrow .lab { font-size: 15px; color: var(--ink2); }
 .snd-r { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
@@ -1204,8 +1225,8 @@ body.gw-open, body.co-open.gw-open { overflow: hidden; }
 .note-line.bad { color: var(--bad); }
 </style>
 <link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#fbfbfd" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#eef4ef" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0c1a15" media="(prefers-color-scheme: dark)">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="M.H.R.2000">
@@ -1484,7 +1505,7 @@ body.gw-open, body.co-open.gw-open { overflow: hidden; }
           <button type="button" data-theme-set="light" aria-pressed="false">Light</button>
           <button type="button" data-theme-set="dark" aria-pressed="false">Dark</button>
         </div>
-        <p class="cap">Auto follows the device. This browser only.</p>
+        <p class="cap">Dark is the forest look. Light is the pale version. Auto follows the device. This browser only.</p>
       </div>
       <div class="sets" id="sets"></div>
       <div class="backup" id="jarGuide">
@@ -1545,7 +1566,7 @@ body.gw-open, body.co-open.gw-open { overflow: hidden; }
   </div>
 
   <p class="foot" id="footNote">Not financial advice. Sample numbers are invented. Replace them with yours.</p>
-  <p class="foot ver" id="verFoot">Version 28.4, updated Nov 12, 12:05 pm</p>
+  <p class="foot ver" id="verFoot">Version 29.0, updated Nov 12, 1:15 pm</p>
 </div>
 <div class="tip" id="tip" role="tooltip"></div>
 <div class="tour" id="tour" role="dialog" aria-modal="true" aria-labelledby="tourTitle" hidden>
@@ -1553,6 +1574,7 @@ body.gw-open, body.co-open.gw-open { overflow: hidden; }
     <div class="tour-top"><span class="tour-part sr" id="tourPart"></span><span class="tour-tools"><button type="button" class="link" id="tourSnd" aria-pressed="false">Sound on</button><button type="button" class="link" id="tourSkip">Skip tour</button></span></div>
     <div class="tour-dots" id="tourDots" role="img"></div>
     <div class="tour-body" id="tourBody"></div>
+    <span id="tourArt" aria-hidden="true"></span>
     <div class="tour-foot"><button type="button" class="btn" id="tourBack">Back</button><span class="tour-gap"></span><button type="button" class="link" id="tourAlt" hidden>Go to my month</button><button type="button" class="btn solid" id="tourNext">Next</button></div>
   </div>
 </div>
@@ -1564,7 +1586,7 @@ body.gw-open, body.co-open.gw-open { overflow: hidden; }
     <button type="button" id="helpTab">Explain this tab</button>
     <button type="button" id="helpSetup">Guided setup</button>
     <button type="button" id="helpVideo" hidden>Intro video</button>
-    <p class="help-ver">Version 28.4</p>
+    <p class="help-ver">Version 29.0</p>
   </div>
   <div class="help-row"><button type="button" class="help-btn ask-btn" id="askBtn">Ask</button><button type="button" class="help-btn" id="helpBtn" aria-expanded="false" aria-controls="helpMenu"><span class="q" aria-hidden="true">?</span>Help</button></div>
 </div>
@@ -2546,7 +2568,8 @@ function changeCurrency(v) {
 }
 /* appearance: Auto follows the device. The choice is about this browser, so it is kept apart from the plan and does not travel with a backup. */
 const THEME_KEY = 'money-map-theme';
-const themePref = () => { try { const v = localStorage.getItem(THEME_KEY); return v === 'light' || v === 'dark' ? v : 'auto'; } catch (e) { return 'auto'; } };
+/* Forest (dark) is the default look; Auto follows the device, Light is the pale sage version */
+const themePref = () => { try { const v = localStorage.getItem(THEME_KEY); return v === 'light' || v === 'auto' ? v : 'dark'; } catch (e) { return 'dark'; } };
 function applyTheme() {
   const t = themePref(), root = document.documentElement;
   if (t === 'auto') root.removeAttribute('data-theme'); else root.setAttribute('data-theme', t);
@@ -2554,10 +2577,10 @@ function applyTheme() {
   /* an installed copy also colours the phone's top bar */
   $$('meta[name="theme-color"]').forEach(m => {
     if (m.dataset.media === undefined) { m.dataset.media = m.getAttribute('media') || ''; m.dataset.content = m.getAttribute('content') || ''; }
-    if (t === 'auto') { if (m.dataset.media) m.setAttribute('media', m.dataset.media); m.setAttribute('content', m.dataset.content); } else { m.removeAttribute('media'); m.setAttribute('content', t === 'dark' ? '#000000' : '#fbfbfd'); }
+    if (t === 'auto') { if (m.dataset.media) m.setAttribute('media', m.dataset.media); m.setAttribute('content', m.dataset.content); } else { m.removeAttribute('media'); m.setAttribute('content', t === 'dark' ? '#0c1a15' : '#eef4ef'); }
   });
 }
-function setTheme(t) { try { if (t === 'light' || t === 'dark') localStorage.setItem(THEME_KEY, t); else localStorage.removeItem(THEME_KEY); } catch (e) { /* no storage: it lasts until the page closes */ } applyTheme(); }
+function setTheme(t) { try { localStorage.setItem(THEME_KEY, t === 'light' || t === 'auto' ? t : 'dark'); } catch (e) { /* no storage: it lasts until the page closes */ } applyTheme(); }
 /* what loadLocal found: 'ok' (saved numbers read), 'none' (nothing saved yet) or 'bad' (storage blocked or the saved text is damaged). Anything but 'ok' lets ui43.js look for the second copy. */
 let LS_STATE = 'none';
 function loadLocal() { applyTheme(); try { const raw = localStorage.getItem(KEY); if (raw) { S = upgradeLegacy(normalize(JSON.parse(raw))); LS_STATE = 'ok'; } } catch (e) { LS_STATE = 'bad'; /* no storage, or damaged */ } }
@@ -2595,6 +2618,26 @@ function confirmClick(btn, text, run) {
   const key = btn.dataset.armkey || btn.id;
   if (armedKey === key) { clearTimeout(armedTimer); armedKey = null; delete btn.dataset.orig; run(); return; }
   disarm(); armedKey = key; btn.dataset.orig = btn.textContent; btn.textContent = text; armedTimer = setTimeout(disarm, 4000);
+}
+
+/* ===== leaves, grass and vines: thin line art, one piece per screen, never on top of the words =====
+   art(kind, place) returns an inline SVG in the current ink of var(--leaf); the place class sets where it sits (see .art in style.css).
+   Kinds: grass (a tuft along a bottom edge), sprig (a stem with small leaves), vine (a long climbing stem), sprout (two leaves),
+   branch (an arched stem with leaves). Each is a closed little drawing; nothing repeats from screen to screen. */
+const ART = {
+  grass: `<svg viewBox="0 0 132 50" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 48Q4.5 34.9 0 24.2M17 48Q15.1 30.6 9.4 16.4M27 48Q26.6 32.1 25.3 19.1M36 48Q36.3 38.4 37.1 30.6M48 48Q47.9 38.7 47.7 31.1M58 48Q56.2 38.3 50.8 30.3M69 48Q70.9 33.6 76.5 21.8M80 48Q78.9 37.6 75.5 29M90 48Q92.5 30.9 100 16.9M101 48Q100.7 31.6 99.9 18.1M113 48Q111 26.3 104.9 8.6M124 48Q123.2 27.9 120.8 11.4"/></svg>`,
+  sprig: `<svg viewBox="0 0 122 66" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 60C40 56 76 36 116 10"/><path transform="translate(27.8 55.1) rotate(-58.3)" d="M0 0Q12 -7.5 24 0Q12 7.5 0 0ZM3.6 0H17.3"/><path transform="translate(47.5 48.2) rotate(19.5)" d="M0 0Q10.9 -6.8 21.9 0Q10.9 6.8 0 0ZM3.3 0H15.8"/><path transform="translate(66.3 39.4) rotate(-69)" d="M0 0Q9.9 -6.2 19.8 0Q9.9 6.2 0 0ZM3 0H14.3"/><path transform="translate(84.4 29.6) rotate(12)" d="M0 0Q8.9 -5.5 17.7 0Q8.9 5.5 0 0ZM2.7 0H12.7"/><path transform="translate(100.6 19.8) rotate(-73.9)" d="M0 0Q7.8 -4.9 15.6 0Q7.8 4.9 0 0ZM2.3 0H11.2"/><path transform="translate(116 10) rotate(-40)" d="M0 0Q6.5 -4.5 13 0Q6.5 4.5 0 0Z"/></svg>`,
+  vine: `<svg viewBox="0 0 90 232" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M44 228C-30 170 110 90 30 10"/><path transform="translate(25.9 206.2) rotate(-184.6)" d="M0 0Q11 -7 22 0Q11 7 0 0ZM3.3 0H15.8"/><path transform="translate(22.1 178.7) rotate(-13.3)" d="M0 0Q11 -7 22 0Q11 7 0 0ZM3.3 0H15.8"/><path transform="translate(30.1 149.2) rotate(-138.9)" d="M0 0Q11 -7 22 0Q11 7 0 0ZM3.3 0H15.8"/><path transform="translate(43 118.3) rotate(2.1)" d="M0 0Q11 -7 22 0Q11 7 0 0ZM3.3 0H15.8"/><path transform="translate(53.4 86.1) rotate(-148.1)" d="M0 0Q11 -7 22 0Q11 7 0 0ZM3.3 0H15.8"/><path transform="translate(54.3 53.1) rotate(-30.6)" d="M0 0Q11 -7 22 0Q11 7 0 0ZM3.3 0H15.8"/><path transform="translate(30 10) rotate(-135)" d="M0 0Q7 -4.5 14 0Q7 4.5 0 0Z"/></svg>`,
+  sprout: `<svg viewBox="0 0 76 76" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M38 72V38"/><path transform="translate(38 44) rotate(-150)" d="M0 0Q15 -9 30 0Q15 9 0 0ZM4.5 0H21.6"/><path transform="translate(38 40) rotate(-32)" d="M0 0Q15 -9 30 0Q15 9 0 0ZM4.5 0H21.6"/><path d="M38 38c-2-6 0-10 4-12 2 4 1 8-4 12z"/></svg>`,
+  branch: `<svg viewBox="0 0 172 78" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 72C50 40 100 22 168 6"/><path transform="translate(26.4 57.7) rotate(15.7)" d="M0 0Q13 -8 26 0Q13 8 0 0ZM3.9 0H18.7"/><path transform="translate(46.9 46.7) rotate(-72.4)" d="M0 0Q12.1 -7.4 24.2 0Q12.1 7.4 0 0ZM3.6 0H17.4"/><path transform="translate(68.2 36.9) rotate(23.2)" d="M0 0Q11.2 -6.9 22.4 0Q11.2 6.9 0 0ZM3.4 0H16.1"/><path transform="translate(90.8 28.1) rotate(-65.7)" d="M0 0Q10.3 -6.3 20.5 0Q10.3 6.3 0 0ZM3.1 0H14.8"/><path transform="translate(113 20.7) rotate(28.8)" d="M0 0Q9.4 -5.8 18.7 0Q9.4 5.8 0 0ZM2.8 0H13.5"/><path transform="translate(136.7 13.9) rotate(-61.1)" d="M0 0Q8.5 -5.2 16.9 0Q8.5 5.2 0 0ZM2.5 0H12.2"/><path transform="translate(168 6) rotate(-30)" d="M0 0Q7 -5 14 0Q7 5 0 0Z"/></svg>`,
+};
+function art(kind, place) { return ART[kind] ? `<span class="art art-${kind}${place ? ' art-' + place : ''}" aria-hidden="true">${ART[kind]}</span>` : ''; }
+/* the tabs: one drawing each, placed once. Receipts: a sprig by the scan card's title. Plan: a vine up the side of the big number. Goals: a sprout in the corner of the goals card. */
+function placeArt() {
+  const scan = $('#scan'), hero = $('#hero'), goals = $('#goalCards') && $('#goalCards').closest('.card');
+  if (scan && !$('.art', scan)) scan.insertAdjacentHTML('beforeend', art('sprig'));
+  if (hero && !$('.art', hero)) hero.insertAdjacentHTML('beforeend', art('vine'));
+  if (goals && !$('.art', goals)) goals.insertAdjacentHTML('beforeend', art('sprout'));
 }
 /* ===== ACTIONS: the one door for changing the numbers =====
    The model (model.js) holds the arithmetic and the small mutation primitives. This file wraps them as named, checked,
@@ -3155,10 +3198,10 @@ function drawRoad() {
     const pk = se.v.indexOf(Math.max(...se.v)), px = X(pk), py = Y(se.v[pk]), lw = se.g.name.length * 7.4 + 12;
     const bx = [px - lw / 2, py - 24, px + lw / 2, py - 6];
     const ok = bx[0] > 0 && bx[2] < W && placed.every(p => bx[2] < p[0] || bx[0] > p[2] || bx[3] < p[1] || bx[1] > p[3]);
-    s += `<circle cx="${px}" cy="${py}" r="4.5" fill="var(--c${se.g.slot})" stroke="var(--card)" stroke-width="2"/>`;
+    s += `<circle cx="${px}" cy="${py}" r="4.5" fill="var(--c${se.g.slot})" stroke="var(--bg)" stroke-width="2"/>`;
     if (ok) { placed.push(bx); s += `<text class="lbl-d" x="${px}" y="${py - 11}" text-anchor="middle">${esc(se.g.name)}</text>`; }
   });
-  s += `<g id="xh" visibility="hidden"><line id="xhl" y1="${T}" y2="${H - B}" stroke="var(--ink)" stroke-width="1.5"/>${series.map(se => `<circle class="xd" r="5" fill="var(--c${se.g.slot})" stroke="var(--card)" stroke-width="2"/>`).join('')}</g></svg>`;
+  s += `<g id="xh" visibility="hidden"><line id="xhl" y1="${T}" y2="${H - B}" stroke="var(--ink)" stroke-width="1.5"/>${series.map(se => `<circle class="xd" r="5" fill="var(--c${se.g.slot})" stroke="var(--bg)" stroke-width="2"/>`).join('')}</g></svg>`;
   $('#chartbox').innerHTML = s; geom = { W, L, R, n, X, Y };
   $('#roadTable').innerHTML = `<table><thead><tr><th>Month</th>${gs.map(g => `<th>${esc(g.name)}</th>`).join('')}</tr></thead><tbody>${C.months.map(m => `<tr data-ym="${m.ym}"><td>${monthLabel(m.ym)}</td>${gs.map(g => `<td>${fmt(m.bal[g.id])}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
 }
@@ -3280,9 +3323,9 @@ function wireReceipts() {
   $('#rcFields').addEventListener('change', e => { if (remindChange(e.target)) renderReceipts(); });
 }
 
-/* ---------- a little celebration: confetti and a one-line cheer ----------
-   Big for the first paycheck and for finishing the setup, medium for each setup step, small for adding things.
-   With reduced motion switched on there is no confetti, only the cheer. */
+/* ---------- a little celebration: falling leaves and a one-line cheer ----------
+   Big for the first paycheck and for finishing the setup (leaves fall across the whole screen), medium for each setup step
+   and small for adding things (a handful tossed up from the button). With reduced motion switched on there are no leaves, only the cheer. */
 const CHEERS = {
   pay: 'Pay entered.',
   bills: 'Bills checked.',
@@ -3290,7 +3333,8 @@ const CHEERS = {
   receipts: 'First receipt logged.',
 };
 const CONF = { parts: [], raf: 0, last: 0, tick: 0, cheerT: 0 };
-const confettiColors = () => { const cs = getComputedStyle(document.documentElement), c = [1, 2, 3, 4, 5, 6, 7].map(i => cs.getPropertyValue('--c' + i).trim()).filter(Boolean); return c.concat(['#ffd27a', '#ffffff']); };
+/* leaf colours follow the look: the greens of the current theme, two fixed mid greens and one gold leaf */
+const leafColors = () => { const cs = getComputedStyle(document.documentElement), v = n => cs.getPropertyValue(n).trim(); return [v('--accent'), v('--accent-h'), v('--good'), '#5db98a', '#3a9a68', v('--warn')].filter(Boolean); };
 function cheer(msg) {
   const el = $('#cheer'); if (!el || !msg) return;
   el.textContent = msg; el.classList.add('on'); clearTimeout(CONF.cheerT);
@@ -3300,36 +3344,37 @@ function celebrate(size, msg, from) {
   cheer(msg);
   const cv = $('#confetti'); if (!cv || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) return;
   const now = Date.now(); if (size === 'small' && now - CONF.last < 900) return; CONF.last = now;
-  const W = innerWidth, H = innerHeight, dpr = Math.min(2, window.devicePixelRatio || 1), cols = confettiColors(), r = Math.random;
+  const W = innerWidth, H = innerHeight, dpr = Math.min(2, window.devicePixelRatio || 1), cols = leafColors(), r = Math.random;
   if (!CONF.parts.length) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); cv.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0); }
+  /* one leaf: a length and a half width, a slow tumble (rot), a flip (tilt) and a side-to-side sway */
   const add = (x, y, ang, spd) => CONF.parts.push({
-    x, y, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd, w: 6 + r() * 5, h: 3 + r() * 4, round: r() < .3, rot: r() * 6.28, vr: (r() - .5) * .35,
-    tilt: r() * 6.28, vt: .08 + r() * .14, color: cols[Math.floor(r() * cols.length)], life: 0, max: 120 + r() * 70,
+    x, y, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd, w: 10 + r() * 7, h: 2.6 + r() * 2, rot: r() * 6.28, vr: (r() - .5) * .14,
+    tilt: r() * 6.28, vt: .04 + r() * .08, sway: r() * 6.28, sw: .5 + r() * 1.1, color: cols[Math.floor(r() * cols.length)], life: 0, max: 190 + r() * 110,
   });
   if (size === 'big') {
-    for (let i = 0; i < 60; i++) { add(W * .1, H + 8, -1.57 + .55 + (r() - .5) * .7, 13 + r() * 9); add(W * .9, H + 8, -1.57 - .55 + (r() - .5) * .7, 13 + r() * 9); }
-    for (let i = 0; i < 40; i++) add(r() * W, -12 - r() * 60, 1.57 + (r() - .5) * .5, 1 + r() * 2);
+    for (let i = 0; i < 110; i++) add(r() * W, -16 - r() * H * .5, 1.57 + (r() - .5) * .6, .6 + r() * 1.4);
   } else {
     let x = W / 2, y = H * .72;
     if (from && from.getBoundingClientRect) { const b = from.getBoundingClientRect(); if (b.width) { x = b.left + b.width / 2; y = b.top + b.height / 2; } }
-    const n = size === 'med' ? 70 : 28, sp = size === 'med' ? 12 : 8;
-    for (let i = 0; i < n; i++) add(x, y, -1.57 + (r() - .5) * 1.7, sp * (.5 + r()));
+    const n = size === 'med' ? 44 : 18, sp = size === 'med' ? 6.5 : 4.5;
+    for (let i = 0; i < n; i++) add(x, y, -1.57 + (r() - .5) * 1.9, sp * (.5 + r()));
   }
-  if (!CONF.raf) { CONF.tick = performance.now(); CONF.raf = requestAnimationFrame(confettiFrame); }
+  if (!CONF.raf) { CONF.tick = performance.now(); CONF.raf = requestAnimationFrame(leafFrame); }
 }
-function confettiFrame(t) {
+function leafFrame(t) {
   const cv = $('#confetti'), ctx = cv.getContext('2d'), H = innerHeight, dt = Math.min(2.5, (t - CONF.tick) / 16.67 || 1); CONF.tick = t;
   ctx.clearRect(0, 0, cv.width, cv.height);
   CONF.parts = CONF.parts.filter(p => {
-    p.life += dt; p.vy = Math.min(9, p.vy + .34 * dt); p.vx *= Math.pow(.985, dt); p.vy *= Math.pow(.992, dt);
-    p.x += p.vx * dt; p.y += p.vy * dt; p.rot += p.vr * dt; p.tilt += p.vt * dt;
+    p.life += dt; p.vy = Math.min(3.8, p.vy + .11 * dt); p.vx *= Math.pow(.975, dt);
+    p.x += (p.vx + Math.sin(p.sway + p.life * .06) * p.sw) * dt; p.y += p.vy * dt; p.rot += p.vr * dt; p.tilt += p.vt * dt;
     if (p.life > p.max || p.y > H + 30) return false;
     const fade = p.life > p.max * .7 ? 1 - (p.life - p.max * .7) / (p.max * .3) : 1;
     ctx.save(); ctx.globalAlpha = Math.max(0, fade); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.scale(1, Math.cos(p.tilt)); ctx.fillStyle = p.color;
-    if (p.round) { ctx.beginPath(); ctx.arc(0, 0, p.h * .7, 0, 6.28); ctx.fill(); } else ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+    ctx.beginPath(); ctx.moveTo(-p.w / 2, 0); ctx.quadraticCurveTo(0, -p.h * 2, p.w / 2, 0); ctx.quadraticCurveTo(0, p.h * 2, -p.w / 2, 0); ctx.fill();
+    ctx.strokeStyle = p.color; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(-p.w / 2, 0); ctx.lineTo(-p.w / 2 - 3, 0); ctx.stroke();
     ctx.restore(); return true;
   });
-  if (CONF.parts.length) CONF.raf = requestAnimationFrame(confettiFrame); else { CONF.raf = 0; ctx.clearRect(0, 0, cv.width, cv.height); }
+  if (CONF.parts.length) CONF.raf = requestAnimationFrame(leafFrame); else { CONF.raf = 0; ctx.clearRect(0, 0, cv.width, cv.height); }
 }
 /* the first time each setup step is done */
 function afterDone(k) {
@@ -3560,7 +3605,7 @@ const GOAL_KINDS = [
   { k: 'car', id: 'car', name: 'Yearly cost', slot: 6, pick: 'A yearly cost', hint: 'Insurance, taxes, holidays', title: 'Yearly cost', cost: 'Full amount for the year, not per month.' },
   { k: 'other', id: 'other', name: 'Something else', slot: 2, pick: 'Something else', hint: 'Anything with a price', title: 'Goal', cost: '' },
 ];
-const STEP_TOOLPICK = { id: 'goals-pick', part: PART.goals, setup: true, pick: true, title: 'Goals',
+const STEP_TOOLPICK = { id: 'goals-pick', part: PART.goals, setup: true, pick: true, title: 'Goals', art: 'sprout',
   body: () => `<p>The Long-Term Savings for Spending jar holds money saved now and spent later: a cushion, a trip, a big purchase. Tick what you are saving for. Add more later.</p>
     <div class="tour-chips two" role="group" aria-label="Goals">${GOAL_KINDS.map(k => { const on = S.ui.gset ? !!goalById(S, k.id) : k.k === 'rainy'; return `<label class="chip multi${on ? ' on' : ''}"><input type="checkbox" name="tourGoalPick" value="${k.k}"${on ? ' checked' : ''}><b>${k.pick}</b><span>${k.hint}</span></label>`; }).join('')}</div>
     <p class="cap">Unsure? Keep the emergency fund.</p>`,
@@ -3727,7 +3772,7 @@ const behindText = () => {
   const names = b.map(g => `<b>${esc(g.name)}</b>`).join(' and ');
   return `${names} ${b.length === 1 ? 'misses its date' : 'miss their dates'} at this pace. Under Plan, Goals: move the date, lower the amount or give it more pay.`;
 };
-const STEP_REVEAL = { id: 'reveal', part: PART.spend,
+const STEP_REVEAL = { id: 'reveal', part: PART.spend, art: 'branch',
   title: () => { const f = planFacts(); return f.st === 'over' ? 'Plan exceeds pay' : f.play > 0 ? 'Play money' : 'Play money'; },
   show: () => { if (tourMode === 'full' && S.ui.done && S.ui.done.pay && S.ui.done.bills && S.ui.done.goals) { S.ui.setup = true; persist(); } },
   body: () => {
@@ -3838,9 +3883,10 @@ function importAddFiles(list) {
   paintImport();
 }
 function paintImport() {
-  const list = $('#impFiles'), read = $('#impRead'), stop = $('#impStop'); if (!list) return;
+  const list = $('#impFiles'), read = $('#impRead'), stop = $('#impStop'), go = $('#impGo'), panel = $('#srcUploadPanel'); if (!list) return;
   list.innerHTML = impFiles.map((f, i) => `<span class="fchip"><span>${esc(f.file.name)} (${sizeLabel(f.file.size)})</span><button type="button" data-imprm="${i}" aria-label="Remove ${esc(f.file.name)}">&times;</button></span>`).join('');
-  list.hidden = !impFiles.length; read.hidden = !impFiles.length || impBusy; stop.hidden = !impBusy;
+  list.hidden = !impFiles.length; read.hidden = !impFiles.length || impBusy; stop.hidden = !impBusy; if (go) go.hidden = read.hidden && stop.hidden;
+  if (panel) panel.classList.toggle('has', impFiles.length > 0 || impBusy); /* with files in, the big field folds to a row */
 }
 /* the how-to, kept short: what to look for in a banking app */
 const IMP_HOW = () => `<details class="src-how"><summary>How to get your statements</summary><div class="src-how-in">
@@ -3852,11 +3898,19 @@ const IMP_HOW = () => `<details class="src-how"><summary>How to get your stateme
   <p>Nothing is stored. Files go to Claude once, the numbers come back, the files are forgotten.</p></div></details>`;
 const STEP_SOURCE = { id: 'source', part: PART.money, setup: true, title: 'Your statements', next: false,
   body: () => `<p>Bank, e-wallet and credit card: the last 2 or 3 months, everything in one go. Screenshots of the app&rsquo;s transaction list work, so do PDF, CSV and Excel exports. The numbers come out exact, and your history fills in.</p>
-    <div class="src-panel" id="srcUploadPanel">
+    <div class="src-panel drop" id="srcUploadPanel">
       <p class="cap src-here" id="impHere" hidden></p>
-      <div class="row-btns"><button type="button" class="btn small solid" id="impPick">Choose files</button><input type="file" id="impFile" multiple accept=".csv,.tsv,.txt,.xlsx,.pdf,text/csv,text/plain,application/pdf,image/*" hidden><button type="button" class="btn small solid" id="impRead" hidden>Read files</button><button type="button" class="btn small" id="impStop" hidden>Stop</button><span class="cap" id="srcUploadSub">CSV, Excel, PDF or screenshots.</span></div>
-      <div class="fchips" id="impFiles" hidden></div><p class="cap" id="impNote" role="status" hidden></p><p class="cap" id="impProg" role="status" aria-live="polite" hidden></p>
+      <div class="drop-in">
+        <svg class="drop-arrow" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M32 46V22M23 31l9-9 9 9"/><path d="M18 50h28" opacity=".45"/></svg>
+        <p class="drop-t">Statements go here.</p>
+        <button type="button" class="btn solid" id="impPick">Choose files</button><input type="file" id="impFile" multiple accept=".csv,.tsv,.txt,.xlsx,.pdf,text/csv,text/plain,application/pdf,image/*" hidden>
+        <p class="cap drop-sub" id="srcUploadSub">CSV, Excel, PDF or screenshots</p>
+      </div>
+      <div class="fchips" id="impFiles" hidden></div>
+      <div class="row-btns" id="impGo" hidden><button type="button" class="btn small solid" id="impRead" hidden>Read files</button><button type="button" class="btn small" id="impStop" hidden>Stop</button></div>
+      <p class="cap" id="impNote" role="status" hidden></p><p class="cap" id="impProg" role="status" aria-live="polite" hidden></p>
       <div class="imp-out" id="impOut"></div>
+      ${art('grass')}
     </div>
     <div class="src-panel" id="srcAiPanel" hidden>
       <p><b>Use any AI.</b> Claude cannot read files from this copy of the page, so: copy the message, paste it into your AI with your statements, answer its questions, paste its final answer below.</p>
@@ -3873,7 +3927,7 @@ const STEP_SOURCE = { id: 'source', part: PART.money, setup: true, title: 'Your 
     const paintSrc = () => {
       const sub = $('#srcUploadSub'); if (!sub) return;
       const up = !!askFn; $('#srcUploadPanel').hidden = !up; $('#srcAiPanel').hidden = up;
-      if (up) sub.textContent = askDoc ? 'CSV, Excel, PDF or screenshots.' : 'CSV, Excel or screenshots.';
+      if (up) sub.textContent = askDoc ? 'CSV, Excel, PDF or screenshots' : 'CSV, Excel or screenshots';
       const here = $('#impHere'); if (here) { const h = askFn && !askDoc && inArtifact() ? hereLink().replace(/^Open/, 'PDFs: open') : ''; here.innerHTML = h; here.hidden = !h; }
       if (!up) { const p = $('#srcAiPanel p'); if (p && inArtifact() && RELAY_URL) p.innerHTML = `<b>Use any AI.</b> ${hereLink()} Or: copy the message, paste it into your AI with your statements, answer its questions, paste its final answer below.`; }
     };
@@ -4205,8 +4259,8 @@ function stmtAfterApply(keep) {
   S.ui.imp = Object.assign({}, S.ui.imp || {}, { rows: d.meta.rows, receipts: added, files: d.meta.files.map(f => f.file).slice(0, 12) });
 }
 /* ---------- the fun parts of the guided setup ----------
-   Sound effects (all made in the browser, no audio files), the subscriptions list, the loan toggle with its goblin,
-   the shrine of the six jars, and the helpers that make the sliders easy to understand. */
+   Sound effects (all made in the browser, no audio files), the subscriptions list, the loan toggle,
+   the six jars in short, and the helpers that make the sliders easy to understand. */
 
 /* ===== sound effects =====
    Every sound is a small recipe: (context, where to send it, when to start, an optional number). The same recipes play on the
@@ -4227,17 +4281,6 @@ const SFXD = (() => {
     src.buffer = buf; f.type = o.ft || 'bandpass'; f.Q.value = o.q || 1.2; f.frequency.setValueAtTime(o.f0, t); if (o.f1) f.frequency.exponentialRampToValueAtTime(o.f1, t + o.dur);
     g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(o.vol || .1, t + (o.atk || .02)); g.gain.exponentialRampToValueAtTime(0.0001, t + o.dur);
     src.connect(f); f.connect(g); g.connect(out); src.start(t); src.stop(t + o.dur + .05);
-  };
-  /* a voice: a buzzing wave shaped by two vowel filters, so "heh" and "ha" sound like a small throat */
-  const voice = (c, out, o) => {
-    const t = o.t, osc = c.createOscillator(), lfo = c.createOscillator(), lg = c.createGain(), g = c.createGain(), f1 = c.createBiquadFilter(), f2 = c.createBiquadFilter(), mix = c.createGain();
-    osc.type = 'sawtooth'; osc.frequency.setValueAtTime(o.f, t); osc.frequency.linearRampToValueAtTime(o.f2 || o.f, t + o.dur);
-    lfo.frequency.value = o.vib || 28; lg.gain.value = o.vd || 10; lfo.connect(lg); lg.connect(osc.frequency);
-    f1.type = 'bandpass'; f1.frequency.value = o.a1 || 700; f1.Q.value = 5; f2.type = 'bandpass'; f2.frequency.value = o.a2 || 1700; f2.Q.value = 7; mix.gain.value = 1;
-    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(o.vol || .5, t + .012); g.gain.setValueAtTime(o.vol || .5, t + Math.max(.014, o.dur - .035)); g.gain.exponentialRampToValueAtTime(0.0001, t + o.dur);
-    osc.connect(f1); osc.connect(f2); f1.connect(mix); f2.connect(mix); mix.connect(g); g.connect(out);
-    osc.start(t); lfo.start(t); osc.stop(t + o.dur + .03); lfo.stop(t + o.dur + .03);
-    if (!o.nobreath) noise(c, out, { t: t - .02 > 0 ? t - .02 : t, dur: .035, f0: 3500, ft: 'highpass', q: .5, vol: .012, atk: .005 });
   };
   /* ----- the sound design: deep, soft air, like wind going past in the next room. No beeps, no bells. -----
      Every sound is low-passed noise sweeping up (forward) or down (back), with a very quiet low hum under the bigger ones.
@@ -4273,17 +4316,6 @@ const SFXD = (() => {
     hum(c, o, t + .12, { f: 165, f2: 185, dur: 1.0, vol: .045, atk: .45 });
   };
   d.soft = (c, o, t) => { air(c, o, t, { dur: .3, f0: 210, f1: 380, vol: .2, atk: .08 }); hum(c, o, t, { f: 116, f2: 134, dur: .3, vol: .035, atk: .08 }); };
-  /* "heh heh heh heh heee": four quick breaths, each a little higher, ending on a squeak (kept quiet) */
-  d.giggle = (c, o, t) => {
-    for (let k = 0; k < 4; k++) voice(c, o, { t: t + k * .125, f: 300 + k * 26, f2: 270 + k * 26, dur: .075, vol: .1, a1: 650, a2: 1750, vib: 30, vd: 9 });
-    voice(c, o, { t: t + .55, f: 420, f2: 640, dur: .2, vol: .09, a1: 380, a2: 2200, vib: 22, vd: 14 });
-  };
-  /* "mwah ha ha ha haaa": a low start, then slower falling laughs (kept quiet) */
-  d.laugh = (c, o, t) => {
-    voice(c, o, { t, f: 200, f2: 150, dur: .26, vol: .11, a1: 520, a2: 1100, vib: 12, vd: 7 });
-    [[.34, 235, 190], [.55, 215, 170], [.76, 195, 150]].forEach(p => voice(c, o, { t: t + p[0], f: p[1], f2: p[2], dur: .13, vol: .1, a1: 800, a2: 1250, vib: 26, vd: 8 }));
-    voice(c, o, { t: t + .98, f: 185, f2: 110, dur: .34, vol: .1, a1: 780, a2: 1200, vib: 14, vd: 9 });
-  };
   /* the whoosh family (moving between pages, saving, finishing) is a little quieter than before */
   const trim = (f, k) => (c, o, t, a) => { const g = c.createGain(); g.gain.value = k; g.connect(o); f(c, g, t, a); };
   ['next', 'back', 'whoosh', 'coin', 'pop', 'thunk', 'sparkle', 'soft'].forEach(n => { d[n] = trim(d[n], .62); });
@@ -4333,14 +4365,14 @@ const SFX = (() => {
 if (/[?&]sfxtest\b/.test(location.search)) window.__sfx = SFXD;
 const sfx = (n, a) => SFX.play(n, a);
 
-/* ===== a little confetti of stars, for sliders and switches ===== */
-const STAR_COLORS = ['#ffd84a', '#ff7ac6', '#7ad7ff', '#9cff7a', '#c59bff', '#ffb36b'];
+/* ===== a few small leaves, for sliders and switches ===== */
 function sparkBurst(host, x, y, n, spread) {
   if (!host) return;
+  const cols = leafColors();
   for (let i = 0; i < n; i++) {
     const s = document.createElement('i'), a = Math.random() * Math.PI * 2, r = (spread || 46) * (.45 + Math.random() * .75);
     s.className = 'spk'; s.setAttribute('aria-hidden', 'true');
-    s.style.cssText = `left:${x}px;top:${y}px;--dx:${Math.round(Math.cos(a) * r)}px;--dy:${Math.round(Math.sin(a) * r - 10)}px;--s:${(.6 + Math.random() * .9).toFixed(2)};--c:${STAR_COLORS[(Math.random() * STAR_COLORS.length) | 0]};--d:${Math.round(Math.random() * 90)}ms;--r:${Math.round(Math.random() * 180 - 90)}deg`;
+    s.style.cssText = `left:${x}px;top:${y}px;--dx:${Math.round(Math.cos(a) * r)}px;--dy:${Math.round(Math.sin(a) * r - 10)}px;--s:${(.6 + Math.random() * .9).toFixed(2)};--c:${cols[(Math.random() * cols.length) | 0]};--d:${Math.round(Math.random() * 90)}ms;--r:${Math.round(Math.random() * 180 - 90)}deg`;
     host.appendChild(s); setTimeout(() => { if (s.parentNode) s.parentNode.removeChild(s); }, 900);
   }
 }
@@ -4553,47 +4585,6 @@ function cardLeave(d) {
   if (b > 0) S.ui.cardB = cents2(b); else delete S.ui.cardB;
 }
 
-/* ===== the goblin ===== */
-function goblinSVG() {
-  return `<div class="gob" id="gob" aria-hidden="true"><span class="gob-bub">Hm</span>
-  <svg viewBox="0 0 130 112" width="130" height="112" focusable="false">
-    <defs><linearGradient id="gbSk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8fd36b"/><stop offset="1" stop-color="#5fa84a"/></linearGradient>
-    <linearGradient id="gbCl" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5a4a8c"/><stop offset="1" stop-color="#3a2f63"/></linearGradient></defs>
-    <path class="gb-hump" d="M4 112 C0 70 14 34 46 28 C64 25 76 38 80 54 L82 112 Z" fill="url(#gbCl)"/>
-    <path d="M18 70 C26 52 38 44 52 42" fill="none" stroke="#7a68b4" stroke-width="2.5" stroke-linecap="round" opacity=".55"/>
-    <path d="M20 92 C28 80 40 76 52 78" fill="none" stroke="#7a68b4" stroke-width="2.5" stroke-linecap="round" opacity=".4"/>
-    <g class="gb-head">
-      <path d="M62 44 L24 26 L58 66 Z" fill="#6fb552"/><path d="M58 47 L33 33 L56 62 Z" fill="#e7a39b"/>
-      <path d="M102 42 L128 24 L106 66 Z" fill="#6fb552"/><path d="M103 47 L120 32 L106 61 Z" fill="#e7a39b"/>
-      <ellipse cx="84" cy="52" rx="26" ry="24" fill="url(#gbSk)"/>
-      <path d="M62 38 C70 30 96 28 106 40" fill="none" stroke="#4d9238" stroke-width="3" stroke-linecap="round" opacity=".5"/>
-      <path class="gb-nose" d="M86 50 C106 50 122 60 116 74 C112 82 100 80 96 70 C92 66 88 62 86 58 Z" fill="#86cd63"/>
-      <path d="M96 72 C104 78 112 76 114 70" fill="none" stroke="#4d9238" stroke-width="2" stroke-linecap="round"/>
-      <ellipse cx="104" cy="70" rx="2.6" ry="1.9" fill="#3d7a2c"/>
-      <g class="gb-eyes"><path d="M66 46 C71 41 80 41 83 46 C78 49 70 50 66 46 Z" fill="#fff6b0"/><path d="M89 44 C93 39 102 40 104 45 C100 48 93 49 89 44 Z" fill="#fff6b0"/>
-        <circle class="gb-p" cx="79" cy="45.5" r="2.7" fill="#1d1630"/><circle class="gb-p" cx="100.5" cy="44.6" r="2.7" fill="#1d1630"/></g>
-      <path d="M64 43 C71 38 80 38 84 44" fill="none" stroke="#3d7a2c" stroke-width="3.4" stroke-linecap="round"/><path d="M89 41 C94 36 103 37 106 43" fill="none" stroke="#3d7a2c" stroke-width="3.4" stroke-linecap="round"/>
-      <path d="M62 31 L70 38" stroke="#3d7a2c" stroke-width="3" stroke-linecap="round" opacity="0"/>
-      <path class="gb-mouth" d="M68 64 C80 80 100 78 108 62 C96 70 80 70 68 64 Z" fill="#3b1a2e"/>
-      <path d="M74 66 L77 72 L80 67 Z" fill="#fff"/><path d="M90 68 L93 74 L96 67 Z" fill="#fff"/><path d="M82 69 L84 73 L86 69 Z" fill="#fff" opacity=".9"/>
-    </g>
-    <g class="gb-hands" fill="#78c156" stroke="#4d9238" stroke-width="1.2">
-      <rect x="46" y="96" width="9" height="16" rx="4.5"/><rect x="56" y="93" width="9" height="19" rx="4.5"/><rect x="66" y="96" width="9" height="16" rx="4.5"/>
-      <rect x="92" y="96" width="9" height="16" rx="4.5"/><rect x="102" y="93" width="9" height="19" rx="4.5"/><rect x="112" y="96" width="9" height="16" rx="4.5"/>
-    </g>
-  </svg></div>`;
-}
-let gobN = 0, gobT = 0;
-function gobReact() {
-  const g = $('#gob'); if (!g) return;
-  gobN++;
-  const laugh = gobN % 2 === 0, bub = $('.gob-bub', g), say = laugh ? ['Ha', 'Ha ha'] : ['Hm', 'Heh', 'Ha'];
-  if (bub) bub.textContent = say[((gobN / 2) | 0) % say.length];
-  g.classList.remove('pop', 'lol'); void g.offsetWidth; g.classList.add('pop'); if (laugh) g.classList.add('lol');
-  sfx(laugh ? 'laugh' : 'giggle');
-  clearTimeout(gobT); gobT = setTimeout(() => { g.classList.remove('pop', 'lol'); }, laugh ? 1800 : 1400);
-}
-
 /* ===== loans: each month or total amount ===== */
 const loanOf = id => (S.ui.loans && S.ui.loans[id]) || {};
 const noteOf = l => (l.note ? localize(l.note) : '');
@@ -4605,7 +4596,7 @@ function loanBody(l) {
   return `<p>${LOAN_NOTE}</p>
   <div class="loan-top"><div class="loan-tg${swOn ? ' tot' : ''}" id="loanTg"><span class="lt${swOn ? '' : ' on'}" data-lt="month">Monthly</span>
     <button type="button" class="sw" id="loanSw" role="switch" aria-checked="${swOn}" aria-label="Enter total instead of monthly amount"><i></i></button>
-    <span class="lt${swOn ? ' on' : ''}" data-lt="total">Total</span></div>${goblinSVG()}</div>
+    <span class="lt${swOn ? ' on' : ''}" data-lt="total">Total</span></div></div>
   <div class="tour-fields loan-fields ${swOn ? 'm-tot' : 'm-month'}" id="loanFields">
     <div class="lf" data-lf="name">${textField('tourLName', 'Name', l.name)}</div>
     <div class="lf" data-lf="month">${moneyField('tourAmt', 'Monthly', monthly)}</div>
@@ -4640,7 +4631,6 @@ function loanSetMode(mode, fx) {
     tg.classList.remove('zap'); void tg.offsetWidth; tg.classList.add('zap'); setTimeout(() => tg.classList.remove('zap'), 900);
     const r = sw.getBoundingClientRect(), h = tg.getBoundingClientRect();
     sparkBurst(tg, r.left - h.left + r.width / 2, r.top - h.top + r.height / 2, 18, 70);
-    gobReact();
   }
   const inp = $(on ? '#tourTot' : '#tourAmt'); if (inp) inp.focus({ preventScroll: true });
   loanSync();
@@ -4784,7 +4774,6 @@ function tourExtraClick(e) {
   const sw = el.closest('#loanSw'), lt = el.closest('.lt');
   if (sw) { loanSetMode(sw.getAttribute('aria-checked') === 'true' ? 'month' : 'total', true); return true; }
   if (lt) { loanSetMode(lt.dataset.lt, true); return true; }
-  if (el.closest('#gob')) { gobReact(); return true; }
   if (el.closest('#cardUse')) { cardUse(); return true; }
   if (el.closest('#subsAddO')) { const arr = subsReadO(); if (arr.length < SUB_MAX_O) { arr.push({ n: '', a: 0 }); sfx('pop'); subsPaintO(arr, true); autosave(); } return true; }
   const sx = el.closest('.so-x');
@@ -4901,20 +4890,19 @@ let tourN = 0, tourIsOpen = false, tourReturn = null, tourMode = 'full', TS = []
 const num0 = v => clampAmt(v);
 const firstName = () => (S.ui && S.ui.name) || '';
 
-/* a small house at dusk with one warm window: the welcome and the goodbye */
+/* a small house on a green hill, a tree beside it: the welcome and the goodbye. Drawn in the colours of the current look. */
 function homeScene() {
-  return `<svg class="tour-fig tour-scene" viewBox="44 30 232 108" role="img" aria-label="A small house at dusk with one warm, lit window">
-    <defs><linearGradient id="hsSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1d2347"/><stop offset="1" stop-color="#4a4a82"/></linearGradient>
-    <radialGradient id="hsGlow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#ffd27a" stop-opacity=".7"/><stop offset="1" stop-color="#ffd27a" stop-opacity="0"/></radialGradient></defs>
-    <rect width="320" height="150" rx="22" fill="url(#hsSky)"/>
-    <g fill="#fff"><circle cx="38" cy="26" r="1.5" opacity=".8"/><circle cx="84" cy="14" r="1.1" opacity=".7"/><circle cx="124" cy="30" r="1.3" opacity=".6"/><circle cx="236" cy="16" r="1.6" opacity=".85"/><circle cx="284" cy="42" r="1.2" opacity=".7"/><circle cx="262" cy="22" r="1" opacity=".6"/><circle cx="206" cy="38" r="1.1" opacity=".55"/><circle cx="70" cy="44" r="1.3" opacity=".75"/><circle cx="118" cy="40" r="1.1" opacity=".6"/><circle cx="96" cy="58" r="1" opacity=".5"/><circle cx="238" cy="48" r="1.4" opacity=".8"/><circle cx="256" cy="38" r="1.1" opacity=".6"/></g>
-    <path d="M0 116 Q80 94 160 110 T320 102 V150 H0 Z" fill="#2d3366"/><path d="M0 132 Q100 118 190 130 T320 126 V150 H0 Z" fill="#232853"/>
-    <circle cx="148" cy="99" r="54" fill="url(#hsGlow)"/>
-    <rect x="180" y="46" width="12" height="24" fill="#2c3263"/><path d="M186 41 q-6 -4.5 0 -9" fill="none" stroke="#fff" stroke-opacity=".3" stroke-width="3" stroke-linecap="round"/>
-    <rect x="116" y="72" width="88" height="56" rx="4" fill="#4b5190"/><polygon points="106,76 160,40 214,76" fill="#2c3263"/>
-    <rect x="132" y="86" width="30" height="26" rx="3" fill="#ffd27a"/><path d="M147 86 V112 M132 99 H162" stroke="#c98a2e" stroke-width="2" opacity=".7"/>
-    <path d="M176 128 V108 a8 8 0 0 1 16 0 V128 Z" fill="#2c3263"/><circle cx="188" cy="118" r="1.4" fill="#ffd27a"/>
-    <rect x="62" y="108" width="4" height="22" fill="#232853"/><circle cx="64" cy="102" r="15" fill="#2f6a6e"/><circle cx="58" cy="109" r="9" fill="#2b5f63"/>
+  return `<svg class="tour-fig tour-scene" viewBox="0 0 320 118" role="img" aria-label="A small house on a green hill, with a tree beside it">
+    <defs><linearGradient id="hsFade" x1="0" y1="0" x2="0" y2="1"><stop offset=".62" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient><mask id="hsMask"><rect width="320" height="118" fill="url(#hsFade)"/></mask></defs>
+    <g mask="url(#hsMask)"><path d="M0 90 C60 64 118 70 170 82 C222 94 270 70 320 78 V118 H0 Z" fill="var(--accent)" opacity=".14"/>
+    <path d="M0 108 C70 88 140 104 200 100 C250 97 290 86 320 96 V118 H0 Z" fill="var(--accent)" opacity=".3"/></g>
+    <path d="M74 101 V70 M74 80 L64.5 69 M74 75 L83 65" fill="none" stroke="var(--accent)" stroke-width="2.8" stroke-linecap="round"/>
+    <g fill="var(--accent)" opacity=".62"><circle cx="74" cy="55" r="17"/><circle cx="60" cy="64" r="11.5"/><circle cx="88.5" cy="63" r="11.5"/></g>
+    <path d="M190 100 V80 L212 62 L234 80 V100" fill="none" stroke="var(--accent)" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>
+    <path d="M184 84 L212 60 L240 84" fill="none" stroke="var(--accent)" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>
+    <rect x="205.5" y="82" width="13" height="11.5" rx="2.5" fill="#ffd27a"/>
+    <path d="M30 108 q2 -8 5 -12 M35 108 q0 -6 -3 -10 M131 108 q2 -7 4 -10 M136 108 q0 -5 -2 -8 M262 102 q2 -7 5 -10 M267 102 q1 -6 -2 -9 M292 99 q1 -5 3 -7" fill="none" stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round" opacity=".55"/>
+    <g fill="var(--accent)" opacity=".45"><path d="M256 36 q9 1 11 10 q-9 -1 -11 -10 Z"/><path d="M284 52 q7 1 8 8 q-7 -1 -8 -8 Z"/><path d="M20 58 q7 0 9 8 q-7 0 -9 -8 Z"/></g>
   </svg>`;
 }
 const LOCK = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
@@ -5076,7 +5064,7 @@ function wireRestore() {
 }
 const TOUR = [
   /* the first screen is the video and nothing else: Mako says what this is and what to do. A copy without the video starts at the next screen. */
-  { id: 'video', part: PART.welcome, title: 'Welcome', next: 'Next', skipIf: () => !hasHello,
+  { id: 'video', part: PART.welcome, title: 'Welcome', next: 'Next', skipIf: () => !hasHello, art: 'vine',
     body: () => {
       const player = helloFileOk && !helloFailed;
       return `${player ? helloPlayer() : helloCard()}
@@ -5087,7 +5075,7 @@ const TOUR = [
       ${restoreHTML()}`;
     },
     after: wireRestore },
-  { id: 'currency', part: PART.welcome, title: 'Currency',
+  { id: 'currency', part: PART.welcome, title: 'Currency', art: 'sprig',
     body: () => {
       const cur = (S.ui && S.ui.cur) || '₱', pick = CURS.filter(c => TOUR_CURS.indexOf(c[0]) >= 0).sort((x, y) => TOUR_CURS.indexOf(x[0]) - TOUR_CURS.indexOf(y[0])), rest = CURS.filter(c => TOUR_CURS.indexOf(c[0]) < 0);
       return `${hasHello ? '' : homeScene()}<div class="tour-chips" role="radiogroup" aria-label="Currency">${pick.map(c => chip('tourCur', c[0], c[0], curName(c), c[0] === cur)).join('')}</div>
@@ -5172,6 +5160,7 @@ function renderTour(dir) {
   $('#tourDots').setAttribute('aria-label', pend ? `${t.part}, step ${first + 1}` : `${t.part}, step ${first + 1} of ${count}`);
   tourTouched = false;
   const body = $('#tourBody'); body.innerHTML = `<h2 id="tourTitle" tabindex="-1">${title}</h2>${t.body()}`;
+  $('#tourArt').innerHTML = t.art ? art(t.art) : '';
   moneyUpAll(body);
   body.classList.remove('in-r', 'in-l'); if (dir) { void body.offsetWidth; body.classList.add(dir > 0 ? 'in-r' : 'in-l'); }
   const setupRun = tourMode === 'full' && TS.some(x => x.setup);
@@ -7045,12 +7034,12 @@ const ymd = d => d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.g
 const wkOf = d => { const t = typeof d === 'string' ? new Date(d + 'T12:00:00') : new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12); t.setDate(t.getDate() - ((t.getDay() + 6) % 7)); return ymd(t); };
 const wkAdd = (k, n) => { const t = new Date(k + 'T12:00:00'); t.setDate(t.getDate() + 7 * n); return ymd(t); };
 const HI = {
-  flame: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12.4 2.2c.5 3-.8 4.5-2.3 6.2C8.6 10.1 6.7 12 6.7 14.8A5.3 5.3 0 0 0 12 20.3a5.3 5.3 0 0 0 5.3-5.5c0-2.1-.9-3.7-2.1-5-.1 1.3-.7 2.1-1.7 2.6.5-3.2-.3-6.2-1.1-10.2z"/><path fill="var(--card)" opacity=".55" d="M12 20.3a2.7 2.7 0 0 1-2.7-2.7c0-1.5 1.1-2.2 1.8-3.3.4 1 1.1 1.2 1.5.7.7.8 2.1 1.5 2.1 2.6A2.7 2.7 0 0 1 12 20.3z"/></svg>',
-  shield: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2.8l7.2 2.6v5.8c0 4.3-2.9 7.6-7.2 9.6-4.3-2-7.2-5.3-7.2-9.6V5.4z"/><path d="M8.6 11.8l2.5 2.5 4.4-4.9" fill="none" stroke="var(--card)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
-  receipt: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M6 2.8h12v18.4l-2.4-1.6L13.2 21l-2.4-1.4L8.4 21 6 19.6z"/><path d="M9 8h6M9 11.5h6M9 15h3.5" stroke="var(--card)" stroke-width="1.7" stroke-linecap="round"/></svg>',
-  coin: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.3" fill="currentColor"/><path d="M12 6.6v10.8M9.2 9.4c0-1.1 1.2-1.9 2.8-1.9s2.8.8 2.8 1.9-1.2 1.7-2.8 2-2.8.9-2.8 2.1 1.2 1.9 2.8 1.9 2.8-.8 2.8-1.9" fill="none" stroke="var(--card)" stroke-width="1.6" stroke-linecap="round"/></svg>',
-  target: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.3" fill="currentColor"/><circle cx="12" cy="12" r="5.8" fill="var(--card)"/><circle cx="12" cy="12" r="2.8" fill="currentColor"/></svg>',
-  check: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.3" fill="currentColor"/><path d="M7.6 12.4l3 3 5.9-6.6" fill="none" stroke="var(--card)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  leaf: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4.6 19.4C4.4 11 10.2 4.8 20.2 4.2c.3 9.6-5.4 15.5-15.6 15.2z"/><path d="M5.8 18.2C9 13.4 12.6 9.6 18 6.6" fill="none" stroke="var(--bg)" stroke-opacity=".75" stroke-width="1.6" stroke-linecap="round"/><path d="M4.6 19.4L2.6 21.4" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>',
+  shield: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2.8l7.2 2.6v5.8c0 4.3-2.9 7.6-7.2 9.6-4.3-2-7.2-5.3-7.2-9.6V5.4z"/><path d="M8.6 11.8l2.5 2.5 4.4-4.9" fill="none" stroke="var(--bg)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  receipt: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M6 2.8h12v18.4l-2.4-1.6L13.2 21l-2.4-1.4L8.4 21 6 19.6z"/><path d="M9 8h6M9 11.5h6M9 15h3.5" stroke="var(--bg)" stroke-width="1.7" stroke-linecap="round"/></svg>',
+  coin: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.3" fill="currentColor"/><path d="M12 6.6v10.8M9.2 9.4c0-1.1 1.2-1.9 2.8-1.9s2.8.8 2.8 1.9-1.2 1.7-2.8 2-2.8.9-2.8 2.1 1.2 1.9 2.8 1.9 2.8-.8 2.8-1.9" fill="none" stroke="var(--bg)" stroke-width="1.6" stroke-linecap="round"/></svg>',
+  target: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.3" fill="currentColor"/><circle cx="12" cy="12" r="5.8" fill="var(--bg)"/><circle cx="12" cy="12" r="2.8" fill="currentColor"/></svg>',
+  check: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.3" fill="currentColor"/><path d="M7.6 12.4l3 3 5.9-6.6" fill="none" stroke="var(--bg)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   half: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2.7a9.3 9.3 0 0 1 0 18.6z" fill="currentColor"/></svg>',
   star: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2.6l2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 17l-5.7 3.1 1.2-6.4L2.8 9.3l6.4-.8z"/></svg>',
   lock: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5.5" y="10.5" width="13" height="9.5" rx="2.4" fill="currentColor"/><path d="M8.6 10.5V8a3.4 3.4 0 0 1 6.8 0v2.5" fill="none" stroke="currentColor" stroke-width="2"/></svg>',
@@ -7101,7 +7090,7 @@ const BADGES = [
   { id: 'track', n: 'On track', h: 'A goal is on track.', i: 'check', ok: () => !!(S.ui.done && S.ui.done.goals) && S.plan.goals.some(g => { const s = goalInfo(S, C, g.id, nowYm()).state; return s === 'ontrack' || s === 'full'; }) },
   { id: 'half', n: 'Halfway', h: 'A goal reaches 50%.', i: 'half', ok: () => !!(S.ui.done && S.ui.done.goals) && S.plan.goals.some(g => g.target > 0 && goalInfo(S, C, g.id, nowYm()).pct >= 0.5) },
   { id: 'rcpt10', n: '10 receipts', h: 'Log 10 receipts.', i: 'star', ok: () => (S.receipts || []).length >= 10 },
-  { id: 'wk4', n: '4 weeks', h: 'Log 4 weeks running.', i: 'flame', ok: () => streakInfo().best >= 4 },
+  { id: 'wk4', n: '4 weeks', h: 'Log 4 weeks running.', i: 'leaf', ok: () => streakInfo().best >= 4 },
   { id: 'wk12', n: '12 weeks', h: 'Log 12 weeks running.', i: 'shield', ok: () => streakInfo().best >= 12 },
 ];
 let badgeTimer = 0;
@@ -7188,7 +7177,7 @@ function renderStreak() {
   const el = $('#hStreak'), s = streakInfo(), now = new Date(), dow = (now.getDay() + 6) % 7, toSun = 6 - dow;
   const dots = s.dots.map((d, i) => {
     const lab = { done: 'Logged', shield: 'Shield used', miss: 'Missed', now: 'This week', none: '' }[d.s];
-    return `<li class="wd ${d.s}${i === 7 ? ' cur' : ''}" title="Week of ${dateLabel(d.k)}: ${lab || 'No streak yet'}"><span class="wd-i" aria-hidden="true">${d.s === 'done' ? HI.flame : d.s === 'shield' ? HI.shield : ''}</span><span class="sr">Week of ${dateLabel(d.k)}: ${lab || 'nothing'}</span></li>`;
+    return `<li class="wd ${d.s}${i === 7 ? ' cur' : ''}" title="Week of ${dateLabel(d.k)}: ${lab || 'No streak yet'}"><span class="wd-i" aria-hidden="true">${d.s === 'done' ? HI.leaf : d.s === 'shield' ? HI.shield : ''}</span><span class="sr">Week of ${dateLabel(d.k)}: ${lab || 'nothing'}</span></li>`;
   }).join('');
   const toShield = 4 - (s.run % 4);
   let line;
@@ -7196,7 +7185,7 @@ function renderStreak() {
   else if (s.n > 0) line = `Streak: ${s.n} wk. Log by Sunday.` + (toSun <= 1 ? ' Last day.' : ` ${plural(toSun + 1, 'day')} left.`);
   else line = 'No streak. Log one receipt this week to start.';
   const sh = s.shield ? `<p class="hst-sh on">${HI.shield}<span>Shield ready. Covers one missed week.</span></p>` : s.n > 0 || s.run > 0 ? `<p class="hst-sh">${HI.shield}<span>${plural(toShield, 'week')} to the next shield.</span></p>` : '';
-  put(el, `<h2>Streak</h2><div class="hst-top"><span class="hst-fl${s.n > 0 ? ' lit' : ''}" aria-hidden="true">${HI.flame}</span><p class="hst-n"><b>${s.n}</b><span>${s.n === 1 ? 'week' : 'weeks'}</span></p></div`); put(el, `<h2>Streak</h2><div class="hst-top"><span class="hst-fl${s.n > 0 ? ' lit' : ''}" aria-hidden="true">${HI.flame}</span><p class="hst-n"><b>${s.n}</b><span>${s.n === 1 ? 'week' : 'weeks'}</span></p></div>
+  put(el, `<h2>Streak</h2><div class="hst-top"><span class="hst-fl${s.n > 0 ? ' lit' : ''}" aria-hidden="true">${HI.leaf}</span><p class="hst-n"><b>${s.n}</b><span>${s.n === 1 ? 'week' : 'weeks'}</span></p></div`); put(el, `<h2>Streak</h2><div class="hst-top"><span class="hst-fl${s.n > 0 ? ' lit' : ''}" aria-hidden="true">${HI.leaf}</span><p class="hst-n"><b>${s.n}</b><span>${s.n === 1 ? 'week' : 'weeks'}</span></p></div>
     <p class="hst-line">${line}</p><ol class="wdots" aria-label="Last 8 weeks">${dots}</ol>${sh}
     <div class="row-btns">${s.done ? '' : '<button type="button" class="btn small" data-checkin>Nothing to log</button>'}${s.best > s.n ? `<span class="hst-best">Best: ${plural(s.best, 'week')}</span>` : ''}</div>`);
 }
@@ -7249,7 +7238,7 @@ function renderSpend() {
   const covered = !p.over && p.planned > 0 && HV.month.status === 'good' && !sampleOn();
   put(el, `<h2>Play money</h2><p class="hs-big${p.over ? ' neg' : ''}" style="--n:${fmt2(p.left).length}">${fmt2(p.left)}</p><p class="hs-lbl">${p.over ? 'Over in ' : 'Left in '}${monthLabel(ym)}</p>
     <div class="hs-bar${p.over ? ' over' : ''}" role="img" aria-label="${fmt2(p.spent)} of ${fmt(p.planned)} spent"><i style="width:${p.frac * 100}%"></i><span class="pace" style="left:${p.dayFrac * 100}%"></span></div>
-    <p class="hs-sub">${p.count ? `Spent ${fmt2(p.spent)} of ${fmt(p.planned)}.` : `Nothing logged yet. ${fmt(p.planned)} planned.`} ${p.over ? '' : wk}</p>${p.count || p.over ? chip : ''}${covered ? '<p class="hs-ok">Bills and goals are planned for. This part is free to spend.</p>' : ''}`);
+    <p class="hs-sub">${p.count ? `Spent ${fmt2(p.spent)} of ${fmt(p.planned)}.` : `Nothing logged yet. ${fmt(p.planned)} planned.`} ${p.over ? '' : wk}</p>${p.count || p.over ? chip : ''}${covered ? '<p class="hs-ok">Bills and goals are planned for. This part is free to spend.</p>' : ''}${art('grass')}`);
 }
 /* a row opens to show its details; which ones are open survives a redraw */
 const HOPEN = new Set();
@@ -7599,6 +7588,7 @@ document.addEventListener('input', e => { const el = e.target; if (el && el.data
 
 /* ---------- wire up events ---------- */
 function wire() {
+  placeArt();
   $$('[data-tab]').forEach(b => {
     b.addEventListener('click', () => switchTab(b.dataset.tab));
     b.addEventListener('keydown', e => {

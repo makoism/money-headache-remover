@@ -8,12 +8,12 @@ const ymd = d => d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.g
 const wkOf = d => { const t = typeof d === 'string' ? new Date(d + 'T12:00:00') : new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12); t.setDate(t.getDate() - ((t.getDay() + 6) % 7)); return ymd(t); };
 const wkAdd = (k, n) => { const t = new Date(k + 'T12:00:00'); t.setDate(t.getDate() + 7 * n); return ymd(t); };
 const HI = {
-  flame: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12.4 2.2c.5 3-.8 4.5-2.3 6.2C8.6 10.1 6.7 12 6.7 14.8A5.3 5.3 0 0 0 12 20.3a5.3 5.3 0 0 0 5.3-5.5c0-2.1-.9-3.7-2.1-5-.1 1.3-.7 2.1-1.7 2.6.5-3.2-.3-6.2-1.1-10.2z"/><path fill="var(--card)" opacity=".55" d="M12 20.3a2.7 2.7 0 0 1-2.7-2.7c0-1.5 1.1-2.2 1.8-3.3.4 1 1.1 1.2 1.5.7.7.8 2.1 1.5 2.1 2.6A2.7 2.7 0 0 1 12 20.3z"/></svg>',
-  shield: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2.8l7.2 2.6v5.8c0 4.3-2.9 7.6-7.2 9.6-4.3-2-7.2-5.3-7.2-9.6V5.4z"/><path d="M8.6 11.8l2.5 2.5 4.4-4.9" fill="none" stroke="var(--card)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
-  receipt: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M6 2.8h12v18.4l-2.4-1.6L13.2 21l-2.4-1.4L8.4 21 6 19.6z"/><path d="M9 8h6M9 11.5h6M9 15h3.5" stroke="var(--card)" stroke-width="1.7" stroke-linecap="round"/></svg>',
-  coin: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.3" fill="currentColor"/><path d="M12 6.6v10.8M9.2 9.4c0-1.1 1.2-1.9 2.8-1.9s2.8.8 2.8 1.9-1.2 1.7-2.8 2-2.8.9-2.8 2.1 1.2 1.9 2.8 1.9 2.8-.8 2.8-1.9" fill="none" stroke="var(--card)" stroke-width="1.6" stroke-linecap="round"/></svg>',
-  target: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.3" fill="currentColor"/><circle cx="12" cy="12" r="5.8" fill="var(--card)"/><circle cx="12" cy="12" r="2.8" fill="currentColor"/></svg>',
-  check: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.3" fill="currentColor"/><path d="M7.6 12.4l3 3 5.9-6.6" fill="none" stroke="var(--card)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  leaf: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4.6 19.4C4.4 11 10.2 4.8 20.2 4.2c.3 9.6-5.4 15.5-15.6 15.2z"/><path d="M5.8 18.2C9 13.4 12.6 9.6 18 6.6" fill="none" stroke="var(--bg)" stroke-opacity=".75" stroke-width="1.6" stroke-linecap="round"/><path d="M4.6 19.4L2.6 21.4" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>',
+  shield: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2.8l7.2 2.6v5.8c0 4.3-2.9 7.6-7.2 9.6-4.3-2-7.2-5.3-7.2-9.6V5.4z"/><path d="M8.6 11.8l2.5 2.5 4.4-4.9" fill="none" stroke="var(--bg)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  receipt: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M6 2.8h12v18.4l-2.4-1.6L13.2 21l-2.4-1.4L8.4 21 6 19.6z"/><path d="M9 8h6M9 11.5h6M9 15h3.5" stroke="var(--bg)" stroke-width="1.7" stroke-linecap="round"/></svg>',
+  coin: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.3" fill="currentColor"/><path d="M12 6.6v10.8M9.2 9.4c0-1.1 1.2-1.9 2.8-1.9s2.8.8 2.8 1.9-1.2 1.7-2.8 2-2.8.9-2.8 2.1 1.2 1.9 2.8 1.9 2.8-.8 2.8-1.9" fill="none" stroke="var(--bg)" stroke-width="1.6" stroke-linecap="round"/></svg>',
+  target: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.3" fill="currentColor"/><circle cx="12" cy="12" r="5.8" fill="var(--bg)"/><circle cx="12" cy="12" r="2.8" fill="currentColor"/></svg>',
+  check: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.3" fill="currentColor"/><path d="M7.6 12.4l3 3 5.9-6.6" fill="none" stroke="var(--bg)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   half: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2.7a9.3 9.3 0 0 1 0 18.6z" fill="currentColor"/></svg>',
   star: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2.6l2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 17l-5.7 3.1 1.2-6.4L2.8 9.3l6.4-.8z"/></svg>',
   lock: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5.5" y="10.5" width="13" height="9.5" rx="2.4" fill="currentColor"/><path d="M8.6 10.5V8a3.4 3.4 0 0 1 6.8 0v2.5" fill="none" stroke="currentColor" stroke-width="2"/></svg>',
@@ -64,7 +64,7 @@ const BADGES = [
   { id: 'track', n: 'On track', h: 'A goal is on track.', i: 'check', ok: () => !!(S.ui.done && S.ui.done.goals) && S.plan.goals.some(g => { const s = goalInfo(S, C, g.id, nowYm()).state; return s === 'ontrack' || s === 'full'; }) },
   { id: 'half', n: 'Halfway', h: 'A goal reaches 50%.', i: 'half', ok: () => !!(S.ui.done && S.ui.done.goals) && S.plan.goals.some(g => g.target > 0 && goalInfo(S, C, g.id, nowYm()).pct >= 0.5) },
   { id: 'rcpt10', n: '10 receipts', h: 'Log 10 receipts.', i: 'star', ok: () => (S.receipts || []).length >= 10 },
-  { id: 'wk4', n: '4 weeks', h: 'Log 4 weeks running.', i: 'flame', ok: () => streakInfo().best >= 4 },
+  { id: 'wk4', n: '4 weeks', h: 'Log 4 weeks running.', i: 'leaf', ok: () => streakInfo().best >= 4 },
   { id: 'wk12', n: '12 weeks', h: 'Log 12 weeks running.', i: 'shield', ok: () => streakInfo().best >= 12 },
 ];
 let badgeTimer = 0;
@@ -151,7 +151,7 @@ function renderStreak() {
   const el = $('#hStreak'), s = streakInfo(), now = new Date(), dow = (now.getDay() + 6) % 7, toSun = 6 - dow;
   const dots = s.dots.map((d, i) => {
     const lab = { done: 'Logged', shield: 'Shield used', miss: 'Missed', now: 'This week', none: '' }[d.s];
-    return `<li class="wd ${d.s}${i === 7 ? ' cur' : ''}" title="Week of ${dateLabel(d.k)}: ${lab || 'No streak yet'}"><span class="wd-i" aria-hidden="true">${d.s === 'done' ? HI.flame : d.s === 'shield' ? HI.shield : ''}</span><span class="sr">Week of ${dateLabel(d.k)}: ${lab || 'nothing'}</span></li>`;
+    return `<li class="wd ${d.s}${i === 7 ? ' cur' : ''}" title="Week of ${dateLabel(d.k)}: ${lab || 'No streak yet'}"><span class="wd-i" aria-hidden="true">${d.s === 'done' ? HI.leaf : d.s === 'shield' ? HI.shield : ''}</span><span class="sr">Week of ${dateLabel(d.k)}: ${lab || 'nothing'}</span></li>`;
   }).join('');
   const toShield = 4 - (s.run % 4);
   let line;
@@ -159,7 +159,7 @@ function renderStreak() {
   else if (s.n > 0) line = `Streak: ${s.n} wk. Log by Sunday.` + (toSun <= 1 ? ' Last day.' : ` ${plural(toSun + 1, 'day')} left.`);
   else line = 'No streak. Log one receipt this week to start.';
   const sh = s.shield ? `<p class="hst-sh on">${HI.shield}<span>Shield ready. Covers one missed week.</span></p>` : s.n > 0 || s.run > 0 ? `<p class="hst-sh">${HI.shield}<span>${plural(toShield, 'week')} to the next shield.</span></p>` : '';
-  put(el, `<h2>Streak</h2><div class="hst-top"><span class="hst-fl${s.n > 0 ? ' lit' : ''}" aria-hidden="true">${HI.flame}</span><p class="hst-n"><b>${s.n}</b><span>${s.n === 1 ? 'week' : 'weeks'}</span></p></div`); put(el, `<h2>Streak</h2><div class="hst-top"><span class="hst-fl${s.n > 0 ? ' lit' : ''}" aria-hidden="true">${HI.flame}</span><p class="hst-n"><b>${s.n}</b><span>${s.n === 1 ? 'week' : 'weeks'}</span></p></div>
+  put(el, `<h2>Streak</h2><div class="hst-top"><span class="hst-fl${s.n > 0 ? ' lit' : ''}" aria-hidden="true">${HI.leaf}</span><p class="hst-n"><b>${s.n}</b><span>${s.n === 1 ? 'week' : 'weeks'}</span></p></div`); put(el, `<h2>Streak</h2><div class="hst-top"><span class="hst-fl${s.n > 0 ? ' lit' : ''}" aria-hidden="true">${HI.leaf}</span><p class="hst-n"><b>${s.n}</b><span>${s.n === 1 ? 'week' : 'weeks'}</span></p></div>
     <p class="hst-line">${line}</p><ol class="wdots" aria-label="Last 8 weeks">${dots}</ol>${sh}
     <div class="row-btns">${s.done ? '' : '<button type="button" class="btn small" data-checkin>Nothing to log</button>'}${s.best > s.n ? `<span class="hst-best">Best: ${plural(s.best, 'week')}</span>` : ''}</div>`);
 }
@@ -212,7 +212,7 @@ function renderSpend() {
   const covered = !p.over && p.planned > 0 && HV.month.status === 'good' && !sampleOn();
   put(el, `<h2>Play money</h2><p class="hs-big${p.over ? ' neg' : ''}" style="--n:${fmt2(p.left).length}">${fmt2(p.left)}</p><p class="hs-lbl">${p.over ? 'Over in ' : 'Left in '}${monthLabel(ym)}</p>
     <div class="hs-bar${p.over ? ' over' : ''}" role="img" aria-label="${fmt2(p.spent)} of ${fmt(p.planned)} spent"><i style="width:${p.frac * 100}%"></i><span class="pace" style="left:${p.dayFrac * 100}%"></span></div>
-    <p class="hs-sub">${p.count ? `Spent ${fmt2(p.spent)} of ${fmt(p.planned)}.` : `Nothing logged yet. ${fmt(p.planned)} planned.`} ${p.over ? '' : wk}</p>${p.count || p.over ? chip : ''}${covered ? '<p class="hs-ok">Bills and goals are planned for. This part is free to spend.</p>' : ''}`);
+    <p class="hs-sub">${p.count ? `Spent ${fmt2(p.spent)} of ${fmt(p.planned)}.` : `Nothing logged yet. ${fmt(p.planned)} planned.`} ${p.over ? '' : wk}</p>${p.count || p.over ? chip : ''}${covered ? '<p class="hs-ok">Bills and goals are planned for. This part is free to spend.</p>' : ''}${art('grass')}`);
 }
 /* a row opens to show its details; which ones are open survives a redraw */
 const HOPEN = new Set();

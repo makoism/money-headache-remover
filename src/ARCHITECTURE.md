@@ -25,14 +25,15 @@ ui41/ui42     adapters to the outside: the AI route (relay or viewer's Claude) a
 | `ui0.js` | State `S`, normalising saved data, saving (`persist`, `flush`), small helpers |
 | `actions.js` | `ACT`: transactions with undo (`ACT.tx`, `ACT.undo`), setters for pay, lines, goals, jars, receipts, name, currency, Home layout; `ACT.summary()` reads the key numbers |
 | `ui1.js` to `ui4.js` | The Plan tab (lines, ledger), bar and legend, road chart, tooltips, Receipts |
-| `ui44.js` | Confetti and the one-line cheer toast |
-| `stmt.js` | Statements to numbers, pure: `stmtCleanRows` (one file's rows, checked), `stmtMonths`, `stmtMerge` (duplicates once), `stmtMerchants`, `stmtNumbers` (pay, balance, bills, subs, loans, card, questions), `stmtReceipts`. Unit test: `node /tmp/v29/stmt_test.js` |
+| `art.js` | The nature art: `ART` (inline SVG for grass, sprig, vine, sprout, branch, drawn in `--leaf`), `art(kind)`, `placeArt()` (Scan, hero, goals card). Regenerate with `/tmp/v30/mkart.py` |
+| `ui44.js` | The celebration: falling leaves on the `#confetti` canvas and the one-line cheer toast |
+| `stmt.js` | Statements to numbers, pure: `stmtCleanRows` (one file's rows, checked), `stmtGroups` (files of one account, told apart by the transaction dates and printed periods, never file names; periods joined end to end), `stmtMerge` (duplicates once, within an account), `stmtMerchants`, `stmtNumbers` (pay, balance, bills, subs, loans, card, questions, the months line), `stmtReceipts`. Unit test: `node /tmp/v29/stmt_test.js` (42) |
 | `ui45s.js` | Setup screens (the typed money screen, bills, jars fold and split, goals, reveal), `SUBS` (subscription list and price hints by country) |
 | `ui45u.js` | Setup from statements: the Your statements screen (upload; the any-AI route where Claude cannot be reached; Type the numbers instead), the review screen, `importApply`. `IMP_FORMAT` + `importClean` are the pasted-answer contract |
-| `ui45v.js` | The statement reader: one fixed-shape job per file (`STMT_ROWS_SCHEMA`), four at a time, then one category job per new merchant (`STMT_CATS_SCHEMA`, `STMT_CAT_GUIDE`); progress lines, `stmtReviewHTML` (what was read, categories to correct), `stmtRecat`, `stmtAfterApply` (receipts with `src:'stmt'`, learned categories in `S.ui.cats`) |
+| `ui45v.js` | The statement reader: one fixed-shape job per file (`STMT_ROWS_SCHEMA`; a text file over 120 lines goes in parts that come back as one read), four at a time, then one category job per new merchant (`STMT_CATS_SCHEMA`, `STMT_CAT_GUIDE`); progress lines, `stmtReviewHTML` (what was read, categories with a tap for the rows behind each merchant), `stmtRecat`, `stmtAfterApply` (receipts with `src:'stmt'`, learned categories in `S.ui.cats`). The tool is offered with `tool_choice` auto and asked for in the prompt: Sonnet 5.5 refuses a forced tool |
 | `ui45x.js` | Setup extras (card calculator, subscriptions, goals add-another, `JAR_LINES`), **sound effects** (`SFXD` recipes, levels, routing) |
 | `ui45t.js` | Hello-video transcript (Mako's words, timed) |
-| `ui45.js` | The tour engine: `TOUR` order (video and welcome, currency, statements, review, typed money, bills, split, goals, play money, done), open, close, next, back, autosave, hello video, house drawing |
+| `ui45.js` | The tour engine: `TOUR` order (video and welcome, currency, statements, review, typed money, bills, split, goals, play money, done), open, close, next, back, autosave, hello video, the hill scene (`homeScene`, drawn in the look's accent) |
 | `ui46.js` | Help menu, Ask Claude (viewer's own Claude account), copy-for-any-AI route |
 | `ui47.js` | Date and month pickers |
 | `ui48.js` | Coach marks (spotlight tour of a tab, only from Help: Explain this tab) |
@@ -54,6 +55,8 @@ All `ui*.js` files share one scope (one IIFE) in the order set in `build.sh`. Fu
 |---|---|
 | A subscription price or country hint | `SUBS` in `ui45s.js` (`[id, name, US, Japan, Philippines]`) |
 | A sound, its level or character | `SFXD`, `CLICK`, `trim` in `ui45x.js` |
+| The look (greens, glass, aurora) | the two palettes at the top of `style.css` (Day = light root, Forest = dark), `--aurora`, the glass rule and `.art-*` placements; the streak colour is `--streak`; PWA colours in `../pwa/make_pwa.py` and the icons |
+| A celebration (leaves, sparks) | `celebrate`, `leafColors`, `leafFrame` in `ui44.js`; `sparkBurst` (small leaves on switches and sliders) in `ui45x.js` |
 | Setup wording or order | the step definitions in `ui45s.js`, `ui45u.js` and `ui45.js`; the order is the `TOUR` array in `ui45.js` (`skipIf` drops the typed screens once statements gave the numbers) |
 | A Home card | its `render…` function in `ui6.js`; markup slot in `body.html`; order and visibility via `HOME_SECTIONS` and `ACT.setHome` |
 | What the statement reader asks Claude for | `STMT_ROWS_SCHEMA`, `STMT_CATS_SCHEMA` and `STMT_CAT_GUIDE` in `ui45v.js`; the arithmetic that turns rows into numbers is `stmtNumbers` in `stmt.js` (change the unit test with it). The pasted-answer route keeps `importRules` and `IMP_FORMAT` in `ui45u.js`, with `importClean` to match |

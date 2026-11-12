@@ -90,6 +90,7 @@ const strip = j => { const o = JSON.parse(j); return JSON.stringify(canon({ step
   await p.type('#hAmt', '1200'); await p.evaluate(() => document.querySelector('#hForm').requestSubmit()); await w(900);
   let v = await vis(); ck(v.hid && /Make it exact/.test(await p.$eval('#hNext', e => e.textContent)), 'typed numbers: the Make it exact card comes first, the reminder waits');
   await p.click('#hNext [data-hideexact]'); await w(500);
+  for (let i = 0; i < 12; i++) { if (await p.evaluate(k => { try { return !!JSON.parse(localStorage.getItem(k)).ui.exactHidden; } catch (e) { return false; } }, KEY)) break; await w(250); } /* the save is deferred; wait for it under load */
   v = await vis(); ck(!v.hid && /Back up your numbers/.test(v.t), 'reminder appears once the cards are done: ' + v.t.slice(0, 60));
   await p.click('#hBk [data-bk-later]'); await w(300);
   if (0) console.log('DBG later:', JSON.stringify(await p.evaluate(k => { const o = JSON.parse(localStorage.getItem(k)); return { later: o.ui.bkLater, bk: o.ui.bk, hid: document.querySelector('#hBk').hidden, now: Date.now() }; }, KEY)));
@@ -98,6 +99,7 @@ const strip = j => { const o = JSON.parse(j); return JSON.stringify(canon({ step
   await p.evaluate(() => document.querySelector('[data-tab="basics"]').click()); await w(400);
   ck(/Last backup: never/.test(await p.$eval('#bkWhen', e => e.textContent)), 'Settings says: last backup never');
   await p.click('#bkSave'); await w(1500);
+  for (let i = 0; i < 12; i++) { if (/today/.test(await p.$eval('#bkWhen', e => e.textContent))) break; await w(250); }
   ck(/Last backup: today/.test(await p.$eval('#bkWhen', e => e.textContent)), 'Save file marks the backup: ' + await p.$eval('#bkWhen', e => e.textContent));
   { const o = JSON.parse(await p.evaluate(k => localStorage.getItem(k), KEY)); o.ui.bk = Date.now() - 30 * 864e5; delete o.ui.bkLater; await lose(p, JSON.stringify(o)); } await reload(p);
   v = await vis(); ck(!v.hid && /30 days ago/.test(v.t), 'a 30-day-old backup shows the reminder: ' + v.t.slice(0, 50));
