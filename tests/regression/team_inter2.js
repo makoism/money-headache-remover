@@ -33,12 +33,12 @@ const puppeteer = require('/home/claude/work/tools/node_modules/puppeteer-core')
   ok('page behind the tour is inert', await p.$eval('.wrap', e => e.inert));
   ok('dialog is labelled and modal', await p.$eval('#tour', e => e.getAttribute('role') === 'dialog' && e.getAttribute('aria-modal') === 'true'));
   ok('focus lands on the tour title', await p.evaluate(() => document.activeElement.id === 'tourTitle'));
-  ok('screen 1 is a welcome with the cozy house', (await q('#tourTitle')) === 'Welcome' && (await q('#tourPart')) === 'Welcome · 1 of 3' && (await p.$$eval('#tourBody svg.tour-scene', e => e.length)) === 1);
+  ok('screen 1 is the welcome with the video first', (await q('#tourTitle')) === 'Welcome' && (await q('#tourPart')) === 'Welcome · 1 of 2' && (await p.$$eval('#tourBody .tour-vframe, #tourBody .tour-video, #tourBody svg.tour-scene', e => e.length)) >= 1);
   ok('...and a promise that it stays private', (await tourText()).includes('stays in this browser') && (await tourText()).includes('Nobody else can see it'));
-  ok('...asking what to call you', (await val('#tourName')) === '' && (await q('#tourNext')) === 'Continue');
+  ok('...asking what to call you', (await val('#tourName')) === '' && (await q('#tourNext')) === 'Next');
   ok('no back button on screen 1', await p.$eval('#tourBack', e => e.hidden));
   await p.type('#tourName', '  Mara '); await p.click('#tourNext'); await w(250);
-  ok('screen 2 greets you by name and asks for the currency', (await q('#tourTitle')) === 'Currency' && (await q('#tourPart')) === 'Welcome · 2 of 3');
+  ok('screen 2 asks for the currency', (await q('#tourTitle')) === 'Currency' && (await q('#tourPart')) === 'Welcome · 2 of 2');
   ok('six currency chips, pesos preselected', (await p.$$eval('input[name=tourCur]', e => e.length)) === 6 && (await p.$eval('input[name=tourCur]:checked', e => e.value)) === '₱');
   await p.click('input[name=tourCur][value="$"]'); await w(150);
   ok('picking a chip selects it', (await p.$eval('input[name=tourCur]:checked', e => e.value)) === '$' && (await p.$eval('input[name=tourCur][value="$"]', e => e.closest('.chip').classList.contains('on'))));
@@ -47,16 +47,16 @@ const puppeteer = require('/home/claude/work/tools/node_modules/puppeteer-core')
   await p.click('input[name=tourCur][value="₱"]'); await w(150);
   ok('back to pesos', (await p.$eval('input[name=tourCur]:checked', e => e.value)) === '₱' && (await val('#tourCurMore')) === '');
   await p.click('#tourNext'); await w(250);
-  ok('screen 3 is the video from Mako', (await q('#tourTitle')) === 'Intro video');
-  await p.click('#tourNext'); await w(250);
+  ok('screen 3 is Your statements, with the typed path as a link', (await q('#tourTitle')) === 'Your statements' && (await p.$eval('#tourNext', e => e.hidden)));
+  await p.click('#srcSkip'); await w(250);
   const fill = { rent: 9000, utilities: 1500, food: 6000 };
   for (let g = 0; g < 60; g++) {
     const title = await q('#tourTitle'), nx = await q('#tourNext');
-    if (await p.$('#tourPay')) await set('#tourPay', 28000);
+    if (await p.$('#tourPay')) { await set('#tourPay', 28000); if (await p.$('#tourBank')) await set('#tourBank', 12000); }
     else if (await p.$('#tourBank')) await set('#tourBank', 12000);
     else if (await p.$('#tourAmt')) { const k = Object.keys(fill).find(x => title.toLowerCase().includes(x)); if (k) await set('#tourAmt', fill[k]); }
     if (title.startsWith('Setup done')) break;
-    await p.click('#tourNext'); await w(260);
+    if (await p.$eval('#tourNext', e => e.hidden)) await p.click('#srcSkip'); else await p.click('#tourNext'); await w(260);
   }
   ok('the last screen greets you by name', (await q('#tourTitle')) === 'Setup done, Mara.');
   ok('last screen has one way out', ['View month', 'Done', 'Go to bills'].includes(await q('#tourNext')));
@@ -74,13 +74,13 @@ const puppeteer = require('/home/claude/work/tools/node_modules/puppeteer-core')
   await reload(); ok('tour does not open again', await p.$eval('#tour', e => e.hidden));
   ok('pay survives a reload', (await val('#h-a')) === '₱28,000');
   await p.evaluate(() => document.querySelector('#helpBtn').click()); await w(150);
-  await p.click('#helpTour'); await w(300);
-  ok('the tour can be replayed from Help, at the first screen, with the name kept', await p.$eval('#tour', e => !e.hidden) && (await q('#tourTitle')) === 'Welcome' && (await val('#tourName')) === 'Mara');
+  await p.click('#helpVideo'); await w(300);
+  ok('the video can be replayed from Help, on the first screen, with the name kept', await p.$eval('#tour', e => !e.hidden) && (await q('#tourTitle')) === 'Welcome' && (await val('#tourName')) === 'Mara');
   await p.keyboard.press('Escape'); await w(250);
   ok('Escape closes the tour', await p.$eval('#tour', e => e.hidden));
   await p.evaluate(() => document.querySelector('#helpBtn').click()); await w(150);
   await p.click('#helpSetup'); await w(300);
-  ok('"Walk me through setup" opens at the pay question, filled in', await p.$eval('#tour', e => !e.hidden) && (await q('#tourTitle')) === 'Monthly pay' && (await val('#tourPay')) === '28000' && (await q('#tourSkip')) === 'Finish later');
+  ok('"Guided setup" opens where it was left, with the numbers kept', await p.$eval('#tour', e => !e.hidden) && ['Your statements', 'Your money'].includes(await q('#tourTitle')) && (await p.$('#tourPay') ? (await val('#tourPay')) === '28000' : true) && (await q('#tourSkip')) === 'Finish later');
   await p.click('#tourSkip'); await w(250);
   ok('Finish later closes it', await p.$eval('#tour', e => e.hidden));
   /* skipping on the very first visit */
@@ -94,10 +94,10 @@ const puppeteer = require('/home/claude/work/tools/node_modules/puppeteer-core')
   await fresh(); await p.type('#tourName', '<img src=x onerror="window.__xss3=1">Bo'); await p.click('#tourNext'); await w(250);
   await p.click('input[name=tourCur][value="$"]'); await w(150);
   ok('markup in the name is never run or shown as an element', (await p.evaluate(() => window.__xss3)) === undefined && (await p.$$eval('#tourBody img, #tourTitle img', e => e.length)) === 0);
-  for (let i = 0; i < 3; i++) { await p.click('#tourNext'); await w(100); } /* Intro video, Your numbers (Type it in), then pay */
-  ok('the pay box suggests no amount and uses the chosen currency', (await q('#tourTitle')) === 'Monthly pay' && (await p.$eval('#tourPay', e => e.placeholder)) === 'Amount' && (await p.$eval('#tourPay', e => e.closest('.inp').textContent)).includes('$'));
+  for (let i = 0; i < 6 && (await q('#tourTitle')) !== 'Your money'; i++) { if (await p.$eval('#tourNext', e => e.hidden)) await p.click('#srcSkip'); else await p.click('#tourNext'); await w(100); } /* past the statements to the typed money screen */
+  ok('the pay box suggests no amount and uses the chosen currency', (await q('#tourTitle')) === 'Your money' && (await p.$eval('#tourPay', e => e.placeholder)) === 'Amount' && (await p.$eval('#tourPay', e => e.closest('.inp').textContent)).includes('$'));
   await p.type('#tourPay', '2500');
-  let gd = 0; while (gd++ < 60 && !(await q('#tourTitle')).startsWith('Setup done')) { await p.click('#tourNext'); await w(100); }
+  let gd = 0; while (gd++ < 60 && !(await q('#tourTitle')).startsWith('Setup done')) { if (await p.$eval('#tourNext', e => e.hidden)) await p.click('#srcSkip'); else await p.click('#tourNext'); await w(100); }
   ok('the ending never mentions pesos for a dollar user', !(await tourText()).toLowerCase().includes('peso'));
   await p.click('#tourNext'); await w(500); await coach();
   ok('the page now speaks dollars', (await q('#hHero')).includes('$') || (await q('#hSpend')).includes('$'));
@@ -281,7 +281,8 @@ const puppeteer = require('/home/claude/work/tools/node_modules/puppeteer-core')
   // ----- progress flags -----
   await tab('goals'); await tab('month'); await w(900);
   ok('goals and receipts are marked done', !!(await p.evaluate(() => { try { return JSON.parse(localStorage.getItem('money-map-template-v2')).ui.done || {}; } catch (e) { return {}; } })).goals && !!(await p.evaluate(() => { try { return JSON.parse(localStorage.getItem('money-map-template-v2')).ui.done || {}; } catch (e) { return {}; } })).receipts);
-  await tab('home'); ok('with everything done, the next-step banner is gone', await p.$eval('#hNext', e => e.hidden));
+  await tab('home'); ok('with everything done (typed numbers), the card offers Make it exact', !(await p.$eval('#hNext', e => e.hidden)) && /Make it exact/.test(await q('#hNext')));
+  await p.click('#hNext [data-hideexact]'); await w(400); ok('hidden once, the next-step banner is gone', await p.$eval('#hNext', e => e.hidden));
 
   // ----- persistence of the custom plan -----
   await reload();
@@ -301,25 +302,20 @@ const puppeteer = require('/home/claude/work/tools/node_modules/puppeteer-core')
   ok('receipt notes are escaped', (await p.evaluate(() => window.__xss2)) === undefined && (await p.$eval('#rcList', e => e.innerText)).includes('<script>'));
   await tab('month'); await p.click('#rb-nec [data-edit]'); await w(200);
 
-  // ----- AI prompt and backup round trip carry the plan, not the receipts -----
+  // ----- backup round trip: the backup text restores the plan; a copy without receipts leaves the receipts alone -----
   await tab('basics'); await w(300);
-  const prompt = await val('#aiBox');
-  ok('prompt explains the page', prompt.includes('HOW THE PAGE WORKS') && prompt.includes('SETUP JSON FORMAT') && prompt.includes('MY SAVINGS GOALS'));
-  ok('prompt lists the custom line and goal', prompt.includes('Pet food') && prompt.includes('Gym') && prompt.includes('Japan trip'));
-  ok('prompt mentions new keys', prompt.includes('"plan.lines"') && prompt.includes('line:<id>'));
-  const json = prompt.slice(prompt.indexOf('CURRENT SETUP JSON') + 'CURRENT SETUP JSON\n'.length);
-  let parsed; try { parsed = JSON.parse(json); } catch (e) { parsed = null; }
-  ok('prompt JSON parses with a plan and no receipts', !!parsed && parsed.plan.lines.length >= 10 && parsed.plan.goals.length === 4 && parsed.receipts === undefined);
-  ok('prompt JSON carries no jar aims, the split is derived from the amounts', parsed && parsed.cfg && !('aims' in parsed.cfg));
-  ok('prompt has no personal terms', !/Mako|NISA|Mercari|Tokyo|Chiba|20x/i.test(prompt));
-  const beforeLeft = await q('#leftTotal').catch(() => null);
+  const full = await val('#bk');
+  let parsed; try { parsed = JSON.parse(full); } catch (e) { parsed = null; }
+  ok('backup text parses with the plan and the receipts', !!parsed && parsed.plan.lines.length >= 10 && parsed.plan.goals.length === 4 && Array.isArray(parsed.receipts) && parsed.receipts.length >= 1);
+  ok('backup text has no personal terms', !/Mako|NISA|Mercari|Tokyo|Chiba|20x/i.test(full));
+  delete parsed.receipts; const json = JSON.stringify(parsed);
   await tab('month'); const bLeft = await q('#leftTotal'), bHero = await q('#heroNum'); await tab('basics');
   await p.click('#bkReset'); await p.click('#bkReset'); await w(350);
   await tab('month'); ok('back to the sample', (await q('#heroNum')) === '₱3,000' && (await p.$$eval('#rb-nec .ed', e => e.length)) === 10);
   await tab('receipts'); ok('resetting to the sample keeps receipts', (await p.$$eval('#rcList .rc, #rcCats tr', e => e.length)) >= 1);
   await tab('basics'); await p.$eval('#bk', (el, v) => { el.value = v; }, json); await p.click('#bkLoad'); await w(450);
   await tab('month'); ok('round trip restores plan and numbers', (await q('#leftTotal')) === bLeft && (await q('#heroNum')) === bHero);
-  await tab('receipts'); ok('loading an AI setup leaves receipts alone', (await p.$$eval('#rcCats tr', e => e.length)) >= 1);
+  await tab('receipts'); ok('loading a plan without receipts leaves receipts alone', (await p.$$eval('#rcCats tr', e => e.length)) >= 1);
 
   // ----- start from zero keeps your structure -----
   await tab('basics'); await p.click('#blankBtn'); await p.click('#blankBtn'); await w(500);

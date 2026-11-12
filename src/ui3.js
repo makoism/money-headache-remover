@@ -66,7 +66,6 @@ function switchTab(t, focus) {
   TABS.forEach(n => { const p = $('#p-' + n); p.hidden = n !== t; if (n === t && prev !== t) { p.classList.remove('tab-in'); void p.offsetWidth; p.classList.add('tab-in'); } });
   hideTip(); if (t !== 'month') $('#dock').classList.remove('on'); if (t === 'receipts') { prepareReceiptForm(); scanInit(); } render(); scrollTo({ top: 0 });
   if (prev !== t) sfx('whoosh', 0.5);
-  if (!focus && S.ui.toured && !tourIsOpen) maybeTabTour(t);
 }
 function setOpen(id) {
   openId = id;

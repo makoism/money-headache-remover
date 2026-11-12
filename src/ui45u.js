@@ -1,13 +1,12 @@
-/* ---------- setup from statements: upload, or use any AI, then review ----------
-   The fastest setup: the person's own bank, e-wallet or card statements. Three doors on one screen:
-     Upload here      files are read by Claude (relay or the viewer's account), the page checks every field, shows a review.
-     Use any AI       one message to copy into any AI app with the statements; the answer is pasted back, same review.
-     Type it in       the question screens, as before.
-   After the review is applied, the typed money and bills screens are skipped and the setup goes on to the jars.
+/* ---------- setup from statements: upload (or use any AI where Claude cannot be reached), then review ----------
+   The setup is the person's own bank, e-wallet or card statements. Where Claude can read files (the relay, or the viewer's own
+   account) the screen is the upload; the page checks every field and shows a review. Where it cannot, one message is copied into
+   any AI app with the statements and the answer pasted back, same review. "Type the numbers instead" goes to the question screens.
+   After the review is applied, the typed money and bills screens are skipped (they ask only what the statements did not answer).
    Machine contract: IMP_FORMAT and importClean belong together; change both or neither. Nothing here computes money. */
 const IMP_BILLS = ['rent', 'util', 'food', 'net', 'phone', 'ins', 'gas'];
 const IMP_FORMAT = `{"summary":"one or two plain sentences","pay":{"amount":35000,"how":"twice a month, 15th and 30th"},"other_income":0,"balance":{"amount":12400,"date":"2026-11-10"},"bills":[{"id":"rent","amount":8000,"note":"5th each month, LANDLORD NAME"}],"subscriptions":[{"name":"Netflix","amount":279}],"loans":[{"name":"Home Credit","amount":2500,"ends":"2027-06"}],"card_other":1500,"questions":[{"text":"Is the 8,000 on the 5th your rent?","relates":"rent"}],"skipped":["one line per thing left out"]}`;
-let impDraft = null, impFiles = [], impBusy = false, impCtl = null, impAnswers = {};
+let impDraft = null, impFiles = [], impBusy = false, impCtl = null, impAnswers = {}, impOnly = false; /* impOnly: opened from Home to make the numbers exact; the tour closes after */
 const importApplied = () => !!(S.ui.src === 'import');
 function importRules(cur) {
   return `RULES
@@ -70,32 +69,7 @@ function importClean(raw) {
 /* the pasted answer from another AI: the JSON block, however it is wrapped */
 function importParse(text) { const p = parseLoose(text); return p.ok ? importClean(p.value) : null; }
 
-/* ----- reading files here ----- */
-async function importRead() {
-  if (impBusy || !impFiles.length) return;
-  const out = $('#impOut'); out.innerHTML = '';
-  const bot = document.createElement('div'); bot.className = 'msg ai wait'; bot.textContent = 'Reading. This takes a few seconds.'; out.append(bot);
-  impBusy = true; impCtl = new AbortController(); paintImport();
-  try {
-    if (!askFn) { await connectAsk(); if (!askFn) throw { code: askReason === 'relay_off' ? 'relay_unconfigured' : 'not_granted' }; }
-    const texts = [], imgs = []; let budget = ASK_TEXT_BYTES;
-    for (const f of impFiles) {
-      if (f.kind === 'image' || f.kind === 'pdf') { imgs.push(f.file); continue; }
-      let t = await readTextFile(f.file); if (budget < 500) continue;
-      if (byteLen(t) > budget) t = clipBytes(t, budget); budget -= byteLen(t); texts.push({ name: f.file.name, text: t });
-    }
-    const raw = await askFn.json(importPrompt(texts, imgs.length), Object.assign({ cache: false, modelTier: 'default', maxTokens: 8192, signal: impCtl.signal }, imgs.length ? { images: imgs } : {}));
-    const d = importClean(raw);
-    if (!d.found) { bot.classList.remove('wait'); bot.classList.add('note'); bot.textContent = (d.summary ? d.summary + ' ' : '') + 'No monthly numbers could be read from these files. Try a CSV export, or clearer screenshots of whole pages.'; }
-    else { impDraft = d; impAnswers = {}; impFiles = []; bot.remove(); sfx('next'); gotoStep('review'); }
-  } catch (e) {
-    const code = e && e.code;
-    if (code === 'cancelled') bot.remove();
-    else if (code === 'invite_required') inviteForm(bot, () => importRead());
-    else { askFilesFail(e, bot); if (code === 'relay_unconfigured' && e.message) bot.textContent = e.message + ' Use any AI below, or type the numbers in.'; else if (['not_granted', 'sampling_disabled', 'relay_unconfigured', 'capability_removed'].indexOf(code) >= 0) bot.textContent = 'Reading files is not available here. Use any AI below, or type the numbers in.'; }
-  }
-  impBusy = false; paintImport();
-}
+/* ----- reading files here: see ui45v.js (stmtRun, importRead) ----- */
 function importAddFiles(list) {
   const notes = [];
   Array.from(list || []).forEach(f => {
@@ -123,42 +97,40 @@ const IMP_HOW = () => `<details class="src-how"><summary>How to get your stateme
   ${sym() === '¥' ? '<p>Japanese banks: 入出金明細 then CSVダウンロード. Card apps: 利用明細 then screenshots of each month.</p>' : ''}
   <p>Credit cards: the last statement (CSV or screenshots). Cash spending: add it on the review screen.</p>
   <p>Nothing is stored. Files go to Claude once, the numbers come back, the files are forgotten.</p></div></details>`;
-const STEP_SOURCE = { id: 'source', part: PART.money, setup: true, title: 'Your numbers', next: 'Type it in',
-  body: () => `<p>Fastest: your bank, e-wallet or card statements. They fill in pay, bills and balance in one go.</p>
-    <div class="src-opts" role="group" aria-label="How to enter your numbers">
-      <button type="button" class="src-opt" data-src="upload" id="srcUpload"><b>Upload statements</b><span id="srcUploadSub">CSV or screenshots. Read in a few seconds.</span></button>
-      <button type="button" class="src-opt" data-src="ai"><b>Use any AI</b><span>Copy a message, paste it with your statements into ChatGPT, Claude or Gemini, paste the answer back.</span></button>
-    </div>
-    <div class="src-panel" id="srcUploadPanel" hidden>
+const STEP_SOURCE = { id: 'source', part: PART.money, setup: true, title: 'Your statements', next: false,
+  body: () => `<p>Bank, e-wallet and credit card: the last 2 or 3 months, everything in one go. Screenshots of the app&rsquo;s transaction list work, so do PDF, CSV and Excel exports. The numbers come out exact, and your history fills in.</p>
+    <div class="src-panel" id="srcUploadPanel">
       <p class="cap src-here" id="impHere" hidden></p>
-      <div class="row-btns"><button type="button" class="btn small solid" id="impPick">Choose files</button><input type="file" id="impFile" multiple accept=".csv,.tsv,.txt,.xlsx,.pdf,text/csv,text/plain,application/pdf,image/*" hidden><button type="button" class="btn small solid" id="impRead" hidden>Read files</button><button type="button" class="btn small" id="impStop" hidden>Stop</button></div>
-      <div class="fchips" id="impFiles" hidden></div><p class="cap" id="impNote" role="status" hidden></p>
+      <div class="row-btns"><button type="button" class="btn small solid" id="impPick">Choose files</button><input type="file" id="impFile" multiple accept=".csv,.tsv,.txt,.xlsx,.pdf,text/csv,text/plain,application/pdf,image/*" hidden><button type="button" class="btn small solid" id="impRead" hidden>Read files</button><button type="button" class="btn small" id="impStop" hidden>Stop</button><span class="cap" id="srcUploadSub">CSV, Excel, PDF or screenshots.</span></div>
+      <div class="fchips" id="impFiles" hidden></div><p class="cap" id="impNote" role="status" hidden></p><p class="cap" id="impProg" role="status" aria-live="polite" hidden></p>
       <div class="imp-out" id="impOut"></div>
     </div>
     <div class="src-panel" id="srcAiPanel" hidden>
-      <ol class="bk-steps"><li>Copy the message.</li><li>Paste it into your AI with your statement files or screenshots. Answer its questions.</li><li>Paste its final answer below.</li></ol>
+      <p><b>Use any AI.</b> Claude cannot read files from this copy of the page, so: copy the message, paste it into your AI with your statements, answer its questions, paste its final answer below.</p>
       <div class="row-btns"><button type="button" class="btn small solid" id="impCopy">Copy message</button><span class="msg" id="impCopyMsg" role="status"></span></div>
       <div class="row-btns ai-apps" id="impAis"></div>
       <textarea id="impPaste" aria-label="The AI's answer" spellcheck="false" placeholder="Paste the answer here"></textarea>
       <div class="row-btns"><button type="button" class="btn small solid" id="impCheck">Check it</button><span class="msg" id="impPasteMsg" role="status"></span></div>
     </div>
     ${IMP_HOW()}
-    <p class="cap">Or tap <b>Type it in</b>: about ten questions, rough numbers are fine.</p>`,
-  /* Type it in after an earlier import: the typed screens come back (they are skipped only while the import stands) */
-  leave: d => { if (d > 0 && !impDraft && importApplied()) { delete S.ui.src; delete S.ui.imp; persist(); } },
+    <p class="cap">${impOnly ? '<button type="button" class="link" id="srcSkip">Not now</button>' : 'No statements at hand? <button type="button" class="link" id="srcSkip">Type the numbers instead</button>. Receipts takes statements any time.'}</p>`,
   after: () => {
     const body = $('#tourBody');
-    const show = which => { $('#srcUploadPanel').hidden = which !== 'upload'; $('#srcAiPanel').hidden = which !== 'ai'; $$('.src-opt', body).forEach(b => b.classList.toggle('on', b.dataset.src === which)); };
-    $$('.src-opt', body).forEach(b => b.addEventListener('click', () => { show(b.dataset.src); sfx('tap'); if (b.dataset.src === 'upload') { connectAsk().then(paintSrc); $('#impPick').focus(); } else $('#impCopy').focus(); }));
-    const paintSrc = () => { const sub = $('#srcUploadSub'); if (!sub) return; if (askFn) sub.textContent = (askDoc ? 'CSV, Excel, PDF or screenshots.' : 'CSV, Excel or screenshots.') + ' Read in a few seconds.'; else if (askReason === 'relay_off') sub.textContent = 'The AI is not switched on for this page yet. Use any AI instead.'; else if (askReason === 'no_runtime') sub.textContent = 'Not available in this copy of the page. Use any AI instead.'; else if (inArtifact()) sub.textContent = 'Here it needs a Claude sign-in.' + (RELAY_URL ? ' At the app\'s own address it works for everyone.' : '');
-      /* the way out of this copy: a plain link, shown once the door is open and this copy cannot read files for everyone */
-      const here = $('#impHere'); if (here) { const h = !askFn && inArtifact() ? hereLink() : (askFn && !askDoc && inArtifact() ? hereLink().replace(/^Open/, 'PDFs: open') : ''); here.innerHTML = h; here.hidden = !h; } };
+    /* where Claude can read files, the upload is the screen. Where it cannot (a copy without the relay or a sign-in), the any-AI route takes over. */
+    const paintSrc = () => {
+      const sub = $('#srcUploadSub'); if (!sub) return;
+      const up = !!askFn; $('#srcUploadPanel').hidden = !up; $('#srcAiPanel').hidden = up;
+      if (up) sub.textContent = askDoc ? 'CSV, Excel, PDF or screenshots.' : 'CSV, Excel or screenshots.';
+      const here = $('#impHere'); if (here) { const h = askFn && !askDoc && inArtifact() ? hereLink().replace(/^Open/, 'PDFs: open') : ''; here.innerHTML = h; here.hidden = !h; }
+      if (!up) { const p = $('#srcAiPanel p'); if (p && inArtifact() && RELAY_URL) p.innerHTML = `<b>Use any AI.</b> ${hereLink()} Or: copy the message, paste it into your AI with your statements, answer its questions, paste its final answer below.`; }
+    };
     connectAsk().then(paintSrc);
     $('#impPick').addEventListener('click', () => $('#impFile').click());
     $('#impFile').addEventListener('change', e => { importAddFiles(e.target.files); e.target.value = ''; if (impFiles.length) $('#impRead').focus(); });
     $('#impFiles').addEventListener('click', e => { const b = e.target.closest('[data-imprm]'); if (!b) return; impFiles.splice(+b.dataset.imprm, 1); paintImport(); });
     $('#impRead').addEventListener('click', importRead);
     $('#impStop').addEventListener('click', () => { if (impCtl) impCtl.abort(); });
+    $('#srcSkip').addEventListener('click', () => { impDraft = null; tourStep(1); }); /* typing instead: a pasted or read draft is dropped */
     const panel = $('#srcUploadPanel');
     panel.addEventListener('dragover', e => { if (e.dataTransfer && Array.from(e.dataTransfer.types || []).indexOf('Files') >= 0) e.preventDefault(); });
     panel.addEventListener('drop', e => { if (!e.dataTransfer || !e.dataTransfer.files.length) return; e.preventDefault(); importAddFiles(e.dataTransfer.files); });
@@ -176,21 +148,21 @@ const STEP_SOURCE = { id: 'source', part: PART.money, setup: true, title: 'Your 
 
 /* ----- the review: tick what to use, fix any amount, answer the questions ----- */
 function impRows(d) {
-  const rows = [];
-  rows.push({ k: 'pay', label: 'Monthly pay', note: d.how, a: d.pay, on: d.pay !== null });
-  rows.push({ k: 'other', label: 'Other income', note: '', a: d.other, on: d.other !== null && d.other > 0 });
-  rows.push({ k: 'bal', label: 'Balance now', note: '', a: d.balance, on: d.balance !== null });
-  IMP_BILLS.forEach(id => { const l = lineById(S, id); if (!l) return; rows.push({ k: 'bill:' + id, label: BILL_Q[id] || l.name, note: d.notes[id] || '', a: d.bills[id] !== undefined ? d.bills[id] : null, on: d.bills[id] !== undefined }); });
-  d.subs.forEach((s, i) => rows.push({ k: 'sub:' + i, label: s.n, note: 'Subscription', a: s.a, on: true }));
-  d.loans.forEach((l, i) => rows.push({ k: 'loan:' + i, label: l.n, note: 'Loan' + (l.e ? ', last payment ' + monthLabel(l.e) : ''), a: l.a, on: true }));
-  if (lineById(S, 'card')) rows.push({ k: 'card', label: 'Card: other spending', note: 'Shopping, eating out, not counted above', a: d.card, on: d.card !== null });
+  const rows = [], whole = v => (v === null || v === undefined ? null : Math.round(v)); /* the plan keeps whole units; the receipts keep the cents */
+  rows.push({ k: 'pay', label: 'Monthly pay', note: d.how, a: whole(d.pay), on: d.pay !== null });
+  rows.push({ k: 'other', label: 'Other income', note: '', a: whole(d.other), on: d.other !== null && d.other > 0 });
+  rows.push({ k: 'bal', label: 'Balance now', note: '', a: whole(d.balance), on: d.balance !== null });
+  IMP_BILLS.forEach(id => { const l = lineById(S, id); if (!l) return; rows.push({ k: 'bill:' + id, label: BILL_Q[id] || l.name, note: d.notes[id] || '', a: d.bills[id] !== undefined ? whole(d.bills[id]) : null, on: d.bills[id] !== undefined }); });
+  d.subs.forEach((s, i) => rows.push({ k: 'sub:' + i, label: s.n, note: 'Subscription', a: whole(s.a), on: true }));
+  d.loans.forEach((l, i) => rows.push({ k: 'loan:' + i, label: l.n, note: 'Loan' + (l.e ? ', last payment ' + monthLabel(l.e) : ''), a: whole(l.a), on: true }));
+  if (lineById(S, 'card')) rows.push({ k: 'card', label: 'Card: other spending', note: 'Shopping, eating out, not counted above', a: whole(d.card), on: d.card !== null });
   return rows;
 }
 const STEP_REVIEW = { id: 'review', part: PART.money, setup: true, when: () => !!impDraft, title: 'Check what was found', next: 'Use these numbers', focus: '',
   body: () => {
     const d = impDraft, rows = impRows(d);
     const qs = d.questions.length ? `<div class="imp-qs">${d.questions.map((q, i) => `<div class="imp-q"><p>${esc(q.t)}</p><div class="tour-chips" role="radiogroup" aria-label="${esc(q.t)}">${chip('impq' + i, 'yes', 'Yes', '', impAnswers[i] === 'yes')}${chip('impq' + i, 'no', 'No', '', impAnswers[i] === 'no')}</div></div>`).join('')}</div>` : '';
-    return `<p>${esc(d.summary || 'Here is what the statements show.')} Tick what is right, fix any amount. Unticked lines are left out.</p>${qs}
+    return `<p>${esc(d.summary || 'Here is what the statements show.')} Tick what is right, fix any amount. Unticked lines are left out.</p>${typeof stmtReviewHTML === 'function' ? stmtReviewHTML(d) : ''}${qs}
       <div class="imp-list">${rows.map((r, i) => `<div class="imp-row${r.on ? ' on' : ''}" data-impi="${i}"><label class="imp-ck"><input type="checkbox" data-impck="${i}"${r.on ? ' checked' : ''}><span class="imp-l"><b>${esc(r.label)}</b>${r.note ? `<small>${esc(r.note)}</small>` : ''}</span></label><div class="inp sm"><span class="yen cs"></span><input type="number" inputmode="decimal" min="0" step="any" data-impa="${i}" aria-label="${esc(r.label)}, amount each month" placeholder="0" value="${r.a === null ? '' : r.a}"></div></div>`).join('')}</div>
       ${d.skipped.length ? `<p class="cap">Left out: ${esc(d.skipped.join(' '))}</p>` : ''}
       <p class="cap">Missing a bill? Tick it and type the amount. Anything can be changed later in Plan.</p>`;
@@ -200,6 +172,8 @@ const STEP_REVIEW = { id: 'review', part: PART.money, setup: true, when: () => !
     if (body.__impWired) return; body.__impWired = true;
     body.addEventListener('change', e => {
       if (!impDraft) return;
+      const cs = e.target.closest('select[data-cat]'); if (cs) { stmtRecat(cs.dataset.cat, cs.value); return; }
+      if (e.target.id === 'impKeep') { impDraft.keep = e.target.checked; return; }
       const ck = e.target.closest('[data-impck]'); if (ck) { const row = ck.closest('.imp-row'); row.classList.toggle('on', ck.checked); return; }
       const q = e.target.closest('input[name^=impq]'); if (q) { const i = +q.name.slice(4); impAnswers[i] = q.value; const rel = impDraft.questions[i].r; if (rel) { const key = rel === 'pay' ? 'pay' : 'bill:' + rel, rows = impRows(impDraft), ri = rows.findIndex(r => r.k === key); const ckb = $(`[data-impck="${ri}"]`, body); if (ckb && q.value === 'no') { ckb.checked = false; ckb.closest('.imp-row').classList.remove('on'); } if (ckb && q.value === 'yes') { ckb.checked = true; ckb.closest('.imp-row').classList.add('on'); } } }
     });
@@ -239,7 +213,9 @@ function importApply() {
     if (chosen.indexOf('card') >= 0) { setVal(S, keyOf('card'), START, Math.round(card.a), 'after'); S.ui.cardT = Math.round(card.a); delete S.ui.cardB; }
     markDone('bills', true);
     S.ui.src = 'import'; S.ui.imp = { at: Date.now() };
+    if (typeof stmtAfterApply === 'function') { const keep = $('#impKeep'); stmtAfterApply(keep ? keep.checked : impDraft.keep !== false); }
   });
-  impDraft = null; impAnswers = {}; tourJump = 'jobs';
-  celebrate('small', 'Numbers in. Now the jars.');
+  const kept = (S.ui.imp && S.ui.imp.receipts) || 0;
+  impDraft = null; impAnswers = {}; tourJump = null;
+  celebrate('small', impOnly ? (kept ? `Numbers exact. ${kept} receipts kept.` : 'Numbers exact.') : (kept ? `Numbers in. ${kept} receipts kept.` : 'Numbers in.'));
 }

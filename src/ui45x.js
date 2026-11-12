@@ -534,65 +534,11 @@ function splitApply(kind, i, p, fromRange) {
   if (fromRange) sfx('tick', o.total > 0 ? next[i] / o.total * 100 : 0); else sfx('type');
 }
 
-/* ===== the shrine ===== */
-const SHRINE_FILE = '';   /* put a picture file name here (next to the page) to show it in place of the drawn shrine */
-const SHRINE_LINES = {
+/* one line per jar, for the fold on the split screen */
+const JAR_LINES = {
   nec: 'Bills and essentials. Paid first.', lts: 'Saved now, spent later.', play: 'Spend freely. No guilt.',
   edu: 'Books, courses, skills.', ffa: 'Invested. Not spent.', give: 'Gifts and donations.',
 };
-const SHRINE_SHORT = { nec: 'NEEDS', lts: 'SAVE', play: 'PLAY', edu: 'LEARN', ffa: 'FREEDOM', give: 'GIVE' };
-function shrineJar(j, i, x, y) {
-  const c = JARVAR[j.id], cl = `shj${i}`;
-  return `<g class="shr-jar" data-sj="${i}" role="button" tabindex="0" aria-label="${esc(j.name)} jar" transform="translate(${x} ${y})">
-    <circle class="shr-halo" cx="40" cy="62" r="54" fill="url(#shHalo)" style="--c:${c}"/>
-    <g class="shr-rays" opacity=".55">${[0, 30, 60, 90, 120, 150].map(a => `<rect x="39" y="-14" width="2" height="152" fill="${c}" transform="rotate(${a} 40 62)" opacity=".55"/>`).join('')}</g>
-    <clipPath id="${cl}"><path d="M14 28 H66 V34 C74 38 78 46 78 58 V96 C78 106 72 112 62 112 H18 C8 112 2 106 2 96 V58 C2 46 6 38 14 34 Z"/></clipPath>
-    <path d="M14 28 H66 V34 C74 38 78 46 78 58 V96 C78 106 72 112 62 112 H18 C8 112 2 106 2 96 V58 C2 46 6 38 14 34 Z" fill="#ffffff" fill-opacity=".14" stroke="#fff" stroke-width="2.4"/>
-    <g clip-path="url(#${cl})"><rect x="0" y="48" width="80" height="70" fill="${c}"/>
-      <g filter="url(#shMelt)"><rect x="0" y="48" width="80" height="70" fill="url(#shLiq)" opacity=".85"/>
-        <use href="#dog" x="${4 + (i % 3) * 4}" y="52" width="26" height="26" opacity=".85" transform="rotate(${-12 + i * 9} 20 66)"/>
-        <use href="#dog" x="40" y="70" width="30" height="30" opacity=".8" transform="rotate(${14 - i * 7} 55 85)"/>
-        <use href="#eye" x="8" y="86" width="24" height="16" opacity=".9"/><use href="#eye" x="46" y="52" width="20" height="14" opacity=".85"/></g></g>
-    <path d="M10 40 C8 56 8 74 10 92" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".6"/>
-    <rect x="9" y="12" width="62" height="18" rx="5" fill="url(#shGold)" stroke="#7a4b00" stroke-width="1.6"/><path d="M14 18 H66" stroke="#fff" stroke-width="1.6" opacity=".6"/>
-    <rect x="14" y="64" width="52" height="22" rx="4" fill="#fffbe6" stroke="#2b1a4a" stroke-width="1.5"/><text x="40" y="79.5" text-anchor="middle" class="shr-lbl">${SHRINE_SHORT[j.id]}</text>
-    <g class="shr-flame" transform="translate(40 128)"><path d="M0 -14 C6 -6 5 0 0 3 C-5 0 -6 -6 0 -14 Z" fill="#ffd84a"/><path d="M0 -8 C3 -4 2.5 -1 0 1 C-2.5 -1 -3 -4 0 -8 Z" fill="#ff7a3a"/></g>
-    <ellipse cx="40" cy="132" rx="30" ry="5" fill="#2b1a4a" opacity=".5"/>
-  </g>`;
-}
-function shrineArt() {
-  if (SHRINE_FILE && /^[\w.-]+\.(jpg|png|webp)$/.test(SHRINE_FILE)) return `<div class="shr"><img class="shr-img" src="${esc(SHRINE_FILE)}" alt="The six jars"></div>`;
-  const dogs = [[18, 20, 40, -10], [120, 8, 30, 14], [250, 28, 44, 8], [320, 4, 32, -16], [70, 150, 36, 20], [196, 160, 30, -8], [302, 150, 40, 12], [10, 290, 34, 6], [150, 300, 42, -14], [290, 296, 32, 18]];
-  return `<div class="shr" id="shrine"><svg viewBox="0 0 360 330" role="img" aria-label="The six jars">
-  <defs>
-    <radialGradient id="shBg" cx=".5" cy=".5" r=".2" spreadMethod="repeat"><stop offset="0" stop-color="#ff2fa8"/><stop offset=".25" stop-color="#ffb000"/><stop offset=".5" stop-color="#19e6a6"/><stop offset=".75" stop-color="#3a5bff"/><stop offset="1" stop-color="#ff2fa8"/></radialGradient>
-    <radialGradient id="shHalo"><stop offset="0" stop-color="#fff" stop-opacity=".9"/><stop offset=".45" stop-color="#fff" stop-opacity=".25"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
-    <linearGradient id="shLiq" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset=".5" stop-color="#ff7ac6" stop-opacity=".35"/><stop offset="1" stop-color="#7ad7ff" stop-opacity=".5"/></linearGradient>
-    <linearGradient id="shGold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe27a"/><stop offset=".5" stop-color="#e0a020"/><stop offset="1" stop-color="#9a5f00"/></linearGradient>
-    <filter id="shWarp" x="-10%" y="-10%" width="120%" height="120%"><feTurbulence type="fractalNoise" baseFrequency=".011 .018" numOctaves="2" seed="7" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="46" xChannelSelector="R" yChannelSelector="G"/></filter>
-    <filter id="shMelt" x="-10%" y="-10%" width="120%" height="120%"><feTurbulence type="turbulence" baseFrequency=".05 .09" numOctaves="2" seed="3" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="9" xChannelSelector="R" yChannelSelector="G"/></filter>
-    <symbol id="dog" viewBox="0 0 40 40"><ellipse cx="8" cy="18" rx="6" ry="11" fill="#6b3b1e"/><ellipse cx="32" cy="18" rx="6" ry="11" fill="#6b3b1e"/><ellipse cx="20" cy="20" rx="13" ry="14" fill="#d9a066"/><circle cx="14.5" cy="16" r="4" fill="#fff"/><circle cx="25.5" cy="16" r="4" fill="#fff"/><circle cx="15.2" cy="16.4" r="2.1" fill="#1b0f2e"/><circle cx="25" cy="16.4" r="2.1" fill="#1b0f2e"/><ellipse cx="20" cy="26" rx="7" ry="5.4" fill="#f3d3a6"/><ellipse cx="20" cy="23.4" rx="3.2" ry="2.2" fill="#1b0f2e"/><path d="M20 25.6 V28 M16 28.4 Q20 31.5 24 28.4" fill="none" stroke="#1b0f2e" stroke-width="1.1" stroke-linecap="round"/><path d="M17.4 29.6 Q20 35 22.6 29.6 Z" fill="#ff6f91"/></symbol>
-    <symbol id="eye" viewBox="0 0 30 20"><path d="M1 10 C7 1 23 1 29 10 C23 19 7 19 1 10 Z" fill="#fff" stroke="#2b1a4a" stroke-width="1.4"/><circle cx="15" cy="10" r="6.2" fill="#19a7ff"/><circle cx="15" cy="10" r="3.2" fill="#12062b"/><circle cx="17" cy="8" r="1.3" fill="#fff"/></symbol>
-  </defs>
-  <g class="shr-bg"><g filter="url(#shWarp)"><rect x="-40" y="-40" width="440" height="410" fill="url(#shBg)"/>
-    ${dogs.map(d => `<use href="#dog" x="${d[0]}" y="${d[1]}" width="${d[2]}" height="${d[2]}" opacity=".6" transform="rotate(${d[3]} ${d[0] + d[2] / 2} ${d[1] + d[2] / 2})"/>`).join('')}</g></g>
-  <rect x="8" y="170" width="344" height="8" rx="4" fill="#2b1a4a" opacity=".55"/>
-  <rect x="0" y="0" width="360" height="330" fill="none" stroke="#2b1a4a" stroke-width="6" rx="14"/>
-  ${JARS.map((j, i) => shrineJar(j, i, 12 + (i % 3) * 112, i < 3 ? 22 : 178)).join('')}
-  <text x="180" y="22" text-anchor="middle" class="shr-meme">THE SIX JARS</text>
-  </svg></div>`;
-}
-function shrineBody() {
-  return `<p>Based on T. Harv Eker&rsquo;s jar system.</p>
-  ${shrineArt()}
-  <ul class="shr-list">${JARS.map((j, i) => `<li data-sj="${i}"><i class="dot" style="--c:${JARVAR[j.id]}"></i><span><b>${esc(j.name)}</b> ${esc(SHRINE_LINES[j.id])}</span></li>`).join('')}</ul>
-  <p class="cap">Source: Secrets of the Millionaire Mind. Fan page, not affiliated with him.</p>`;
-}
-function shrinePoke(i) {
-  const g = $(`.shr-jar[data-sj="${i}"]`), host = $('#shrine'); sfx(i % 2 ? 'coin' : 'pop');
-  if (g && host) { g.classList.remove('poke'); void g.getBoundingClientRect(); g.classList.add('poke'); const r = g.getBoundingClientRect(), h = host.getBoundingClientRect(); sparkBurst(host, r.left - h.left + r.width / 2, r.top - h.top + r.height / 2, 10, 50); }
-  $$('.shr-list li').forEach(li => li.classList.toggle('lit', +li.dataset.sj === i));
-}
 
 /* ===== subscriptions: ticking opens that one's amount box ===== */
 function subsToggle(t) {
@@ -647,6 +593,5 @@ function tourExtraClick(e) {
   if (mg) { autosave(true); const id = addAnotherGoal(mg.dataset.moreg); if (id) { sfx('pop'); gotoStep('goal-' + id); } return true; }
   if (el.closest('#jarReset')) { jarVals = lr(JAR5.map(j => JARS.find(x => x.id === j).usual), jarRest); SPF.jar.base = null; SPF.jar.last = -1; paintJars(); sfx('whoosh'); autosave(); return true; }
   if (el.closest('#splitReset')) { S.plan.goals.forEach(g => forgetKey(S, 'goal:' + g.id)); splitInit(); paintSplit(); sfx('whoosh'); autosave(); return true; }
-  const sj = el.closest('.shr-jar, .shr-list li'); if (sj) { shrinePoke(+sj.dataset.sj); return true; }
   return false;
 }

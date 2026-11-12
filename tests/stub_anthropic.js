@@ -16,6 +16,30 @@ const srv = http.createServer((req, res) => {
     const badDoc = docList.find(d => !d.source || d.source.type !== 'base64' || d.source.media_type !== 'application/pdf' || !/^JVBERi/.test(d.source.data || ''));
     if (badDoc) { res.writeHead(400, { 'content-type': 'application/json' }); return res.end(JSON.stringify({ error: { type: 'invalid_request_error', message: 'Could not process PDF' } })); }
     const echo = `ECHO model=${j.model} max=${j.max_tokens} sys=${(j.system || '').length} imgs=${imgs} docs=${docList.length} tools=${(j.tools || []).length} text=${lastText.slice(0, 120)}`;
+    if (j.tool_choice && j.tool_choice.type === 'tool') {
+      /* a forced tool: the statement reader gets rows parsed from the text (or a fixed table for a PDF or image), the category job maps by keyword */
+      const name = j.tool_choice.name; let input = {};
+      if (name === 'statement_rows') {
+        const rows = []; let closing = null;
+        lastText.split('\n').forEach(line => { const m = line.match(/^(\d{4}-\d{2}-\d{2}),([^,]+),([\d.]*),([\d.]*),?([\d.]*)/); if (m) { if (m[3]) rows.push({ date: m[1], text: m[2].trim(), amount: +m[3], dir: 'out' }); if (m[4]) rows.push({ date: m[1], text: m[2].trim(), amount: +m[4], dir: 'in' }); if (m[5]) closing = +m[5]; } });
+        /* the file's name decides the account: "card" is a card statement, "wallet" an e-wallet, anything else a bank */
+        const fname = (lastText.match(/FILE(?: NAME)?: ([^\n]+?) -----|FILE NAME: ([^\n]+)/) || []).slice(1).find(Boolean) || '';
+        const isCard = /card/i.test(fname), isWallet = /wallet|gcash/i.test(fname);
+        if (!rows.length) {
+          if (isCard) { ['2026-10-01', '2026-10-09', '2026-10-20', '2026-10-31'].forEach((d, i) => rows.push({ date: d, text: ['ZARA MANILA', 'JOLLIBEE', 'PAYMENT RECEIVED THANK YOU', 'LAZADA'][i], amount: [3200, 450, 6500, 1800][i], dir: i === 2 ? 'in' : 'out' })); closing = 5450; }
+          else { ['2026-10-01', '2026-10-15', '2026-10-16', '2026-10-31'].forEach((d, i) => rows.push({ date: d, text: ['SM SUPERMARKET', 'PAYROLL CREDIT', 'MERALCO BILL PAYMENT', 'PAYROLL CREDIT'][i], amount: [2180.5, 21000, 2455.1, 21000][i], dir: i === 1 || i === 3 ? 'in' : 'out' })); closing = 18402.4; }
+        }
+        if (/MAKECUT/.test(lastText)) { const out = { id: 'msg_1', type: 'message', role: 'assistant', model: j.model, stop_reason: 'max_tokens', content: [], usage: { input_tokens: 500, output_tokens: 10 } }; res.writeHead(200, { 'content-type': 'application/json' }); return res.end(JSON.stringify(out)); }
+        input = { account: isCard ? 'Test Card' : isWallet ? 'Test Wallet' : 'Test Bank', kind: isCard ? 'card' : isWallet ? 'ewallet' : 'bank', currency: 'PHP', period: { from: rows[0].date, to: rows[rows.length - 1].date }, closing_balance: closing, rows, notes: [] };
+      } else if (name === 'merchant_categories') {
+        const keys = [], lines = {}; lastText.replace(/^- key=(.+?) \|(.*)$/gm, (m, k, rest) => { keys.push(k); lines[k] = rest; return m; });
+        /* by keyword; the two-way ones (cash in, payment received) go by the direction the line shows */
+        const pick = k => /payroll|salary/.test(k) ? 'pay' : /rent/.test(k) ? 'rent' : /meralco|maynilad|tokyo gas/.test(k) ? 'util' : /supermarket|puregold|grocery/.test(k) ? 'food' : /pldt|fibr|internet/.test(k) ? 'net' : /globe|smart|rakuten mobile/.test(k) ? 'phone' : /netflix|spotify/.test(k) ? 'subs' : /grab|shell|fuel/.test(k) ? 'gas' : /home credit|loan/.test(k) ? 'loan' : /credit card|card payment/.test(k) ? 'card_payment' : /transfer to/.test(k) ? 'transfer_out' : /cash in|payment received|refund/.test(k) ? (/, out 0,/.test(lines[k] || '') ? 'transfer_in' : 'transfer_out') : /upwork|payout/.test(k) ? 'other_income' : /jollibee|zara/.test(k) ? 'play' : 'other';
+        input = { merchants: keys.map(k => ({ key: k, category: pick(k), name: k.replace(/\b\w/g, c => c.toUpperCase()).slice(0, 24) })) };
+      }
+      const out = { id: 'msg_1', type: 'message', role: 'assistant', model: j.model, stop_reason: 'tool_use', content: [{ type: 'tool_use', id: 'tu_f', name, input }], usage: { input_tokens: 500, output_tokens: 200 } };
+      res.writeHead(200, { 'content-type': 'application/json' }); return res.end(JSON.stringify(out));
+    }
     if (j.tools && j.tools.length && !/tool_result/.test(lastText)) {
       /* first round: call the first tool with a fixed input */
       const out = { id: 'msg_1', type: 'message', role: 'assistant', model: j.model, stop_reason: 'tool_use', content: [{ type: 'text', text: 'Let me check.' }, { type: 'tool_use', id: 'tu_1', name: j.tools[0].name, input: { q: 'ping' } }], usage: { input_tokens: 50, output_tokens: 20 } };

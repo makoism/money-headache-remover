@@ -59,6 +59,12 @@ function paintBk() {
   const el = $('#bkWhen'); if (!el) return; const a = bkAge();
   el.textContent = a === null ? 'Last backup: never.' : a === 0 ? 'Last backup: today.' : `Last backup: ${a === 1 ? '1 day' : a + ' days'} ago.`;
 }
+/* a backup is due: numbers in, no cloud copy, none saved for three weeks, and Later not pressed this week */
+function backupDue() {
+  if (!(S.ui.done || {}).pay || sampleOn() || (vault.on && vaultAvailable())) return false;
+  const a = bkAge(), later = +S.ui.bkLater || 0;
+  return (a === null || a >= 21) && Date.now() - later > 7 * DAY_MS;
+}
 function renderBackupNudge() {
   const el = $('#hBk'); if (!el) return; let html = '';
   const cloud = vaultAvailable();
@@ -73,10 +79,9 @@ function renderBackupNudge() {
   } else if (bkNote) {
     const when = bkNote.t ? new Date(bkNote.t).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
     html = `<div class="hn-t"><b>Numbers restored</b><span>This page had lost its saved numbers. It loaded the copy kept in this browser${when ? ' from ' + when : ''}. Save a backup file to be safe.</span></div><div class="hn-b"><button type="button" class="btn small solid" data-bk-now>Save a copy</button><button type="button" class="link" data-bk-ok>OK</button></div>`;
-  } else if ((S.ui.done || {}).pay && !sampleOn() && $('#hNext').hidden) {
-    const a = bkAge(), later = +S.ui.bkLater || 0;
-    if (vault.on && cloud) html = '';
-    else if ((a === null || a >= 21) && Date.now() - later > 7 * DAY_MS) {
+  } else if (backupDue() && $('#hNext').hidden) {
+    const a = bkAge();
+    {
       html = cloud
         ? `<div class="hn-t"><b>Back up your numbers</b><span>They live on this device only. Cloud backup keeps an encrypted copy that only you can open.</span></div><div class="hn-b"><button type="button" class="btn small solid" data-vault-on>Turn on cloud backup</button><button type="button" class="link" data-bk-now>Save a file instead</button><button type="button" class="link" data-bk-later>Later</button></div>`
         : `<div class="hn-t"><b>${a === null ? 'Back up your numbers' : `Last backup: ${a} days ago`}</b><span>They live in this browser only. Save a file copy so nothing is lost.</span></div><div class="hn-b"><button type="button" class="btn small solid" data-bk-now>Save a copy</button><button type="button" class="link" data-bk-later>Later</button></div>`;

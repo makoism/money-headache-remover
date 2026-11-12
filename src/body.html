@@ -286,14 +286,7 @@
           <button type="button" class="btn small warnbtn" id="bkReset">Restore samples</button>
           <button type="button" class="btn small" id="showStart">Show first steps</button>
           <button type="button" class="btn small" id="setupOpen">Guided setup</button>
-          <button type="button" class="btn small" id="tourOpen">Tour</button>
         </div>
-      </div>
-      <div class="backup">
-        <h3>Other AI</h3>
-        <p class="cap">Copy this prompt into any AI. It explains the page and includes your numbers (not receipts), so the AI can check them and suggest a setup. Paste a new setup under Saved data.</p>
-        <textarea id="aiBox" readonly aria-label="Prompt for your own AI" spellcheck="false"></textarea>
-        <div class="row-btns"><button type="button" class="btn small solid" id="aiCopy">Copy prompt</button><span class="msg" id="aiMsg" role="status"></span></div>
       </div>
       <div class="backup" id="installBox" hidden>
         <h3>On your phone</h3>
@@ -322,13 +315,6 @@
           <div class="row-btns inv-row"><input class="txt" id="vaultIn" type="text" autocomplete="off" spellcheck="false" placeholder="MHR-XXXX-XXXX-XXXX-XXXX-XXXX" aria-label="Recovery code" maxlength="40"><button type="button" class="btn small" id="vaultUse">Load</button><span class="msg" id="vaultMsg" role="status"></span></div>
           <p class="cap">Loading replaces the numbers here with the cloud copy and keeps this device in sync with it.</p>
         </div>
-        <h4>Move to another device</h4>
-        <ol class="bk-steps">
-          <li>Here: <b>Save file</b> or <b>Copy text</b>.</li>
-          <li>Send it to yourself (email the file or paste the text).</li>
-          <li>On the other device: open this page, go to Settings.</li>
-          <li><b>Choose file</b> below, or paste the text and tap <b>Load text</b>.</li>
-        </ol>
         <h4>Restore</h4>
         <textarea id="bk" aria-label="Your saved numbers" spellcheck="false"></textarea>
         <div class="row-btns">
@@ -349,10 +335,10 @@
 <div class="tip" id="tip" role="tooltip"></div>
 <div class="tour" id="tour" role="dialog" aria-modal="true" aria-labelledby="tourTitle" hidden>
   <div class="tour-in">
-    <div class="tour-top"><span class="tour-part" id="tourPart"></span><span class="tour-tools"><button type="button" class="link" id="tourSnd" aria-pressed="false">Sound on</button><button type="button" class="link" id="tourSkip">Skip tour</button></span></div>
+    <div class="tour-top"><span class="tour-part sr" id="tourPart"></span><span class="tour-tools"><button type="button" class="link" id="tourSnd" aria-pressed="false">Sound on</button><button type="button" class="link" id="tourSkip">Skip tour</button></span></div>
     <div class="tour-dots" id="tourDots" role="img"></div>
     <div class="tour-body" id="tourBody"></div>
-    <div class="tour-foot"><button type="button" class="btn" id="tourBack">Back</button><span class="tour-gap"></span><button type="button" class="link" id="tourPartSkip" hidden>Skip this part</button><button type="button" class="link" id="tourAlt" hidden>Go to my month</button><button type="button" class="btn solid" id="tourNext">Next</button></div>
+    <div class="tour-foot"><button type="button" class="btn" id="tourBack">Back</button><span class="tour-gap"></span><button type="button" class="link" id="tourAlt" hidden>Go to my month</button><button type="button" class="btn solid" id="tourNext">Next</button></div>
   </div>
 </div>
 <div id="cheer" role="status" aria-live="polite"></div>
@@ -362,7 +348,6 @@
     <button type="button" id="helpAsk">Ask about my money</button>
     <button type="button" id="helpTab">Explain this tab</button>
     <button type="button" id="helpSetup">Guided setup</button>
-    <button type="button" id="helpTour">Tour</button>
     <button type="button" id="helpVideo" hidden>Intro video</button>
     <p class="help-ver">Version @@VER@@</p>
   </div>

@@ -25,7 +25,7 @@ exports.runTour = async (p, pr, shot) => {
     seen.push(i+': '+part+' | '+title);
     if (title==='Welcome') { if (pr.name) await type('#tourName', pr.name); }
     else if (title.startsWith('Currency')) { await p.evaluate(c => { const el=[...document.querySelectorAll('input[name=tourCur]')].find(x=>x.value===c); if (el) el.click(); else { const s=document.querySelector('#tourCurMore'); s.value=c; s.dispatchEvent(new Event('change',{bubbles:true})); } }, pr.cur); }
-    else if (await has('#tourPay')) await type('#tourPay', pr.pay);
+    else if (await has('#tourPay')) { await type('#tourPay', pr.pay); if (await has('#tourExtra')) await type('#tourExtra', pr.extra||''); if (await has('#tourBank')) await type('#tourBank', pr.bank); }
     else if (await has('#tourExtra')) await type('#tourExtra', pr.extra||'');
     else if (await has('#tourBank')) await type('#tourBank', pr.bank);
     else if (title.startsWith('Which of these') || title === 'Monthly bills') {
@@ -52,6 +52,7 @@ exports.runTour = async (p, pr, shot) => {
     if (shot) await shot(i);
     const nx = await p.$eval('#tourNext', e=>e.textContent);
     if (nx==='View month' || nx==='Done' || nx==='Go to bills') { await p.click('#tourNext'); await w(900); break; }
+    if (await p.$eval('#tourNext', e=>e.hidden)) { /* the statements screen: the typed path is a link */ if (await has('#srcSkip')) { await p.click('#srcSkip'); await w(260); continue; } probs.push(`Next hidden at step ${i} (${title})`); break; }
     if (await p.$eval('#tourNext', e=>e.disabled)) { probs.push(`Next disabled at step ${i} (${title})`); break; }
     await p.click('#tourNext'); await w(260);
   }

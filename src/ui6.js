@@ -139,10 +139,13 @@ function renderNext() {
     else if (!d.goals) step = ['Next: add a goal', 'Pick something to save for.', 'Add goal', 'data-gw'];
     else if (!(S.receipts || []).length) step = ['Next: log a receipt', 'Enter an amount in Log spend, then tap Log.', 'Log receipt', 'data-focus="hAmt"'];
   }
+  /* a month to close comes first (it is timely); then, for typed numbers, the statements that make them exact */
   if (!step && (month = monthToClose())) { const nm = FULL[+month.pm.slice(5) - 1]; step = [`Next: finish ${nm}`, `${month.n ? plural(month.n, 'receipt') + ' logged' : 'Nothing logged'} for ${nm}. Log what you spent, or upload the month's statement under Receipts.`, 'Receipts', 'data-tab-go="receipts"']; }
+  if (!step && d.pay && d.bills && S.ui.src !== 'import' && !S.ui.exactHidden && !sampleOn()) step = ['Make it exact', 'Upload 2 or 3 months of statements (screenshots of the bank app work). The numbers become exact and your history fills in.', 'Upload', 'data-exact'];
   el.hidden = !step; if (!step) return;
   const left = ['pay', 'bills', 'goals', 'receipts'].filter(k => !d[k]).length;
-  put(el, `<div class="hn-t"><b>${step[0]}</b><span>${step[1]}${month ? '' : ' ' + (left === 1 ? '1 step left.' : left + ' steps left.')}</span></div><div class="hn-b"><button type="button" class="btn small solid" ${step[3]}>${step[2]}</button><button type="button" class="link" ${month ? `data-hidemonth="${month.pm}"` : 'data-hidenext'}>Hide</button></div>`);
+  const exact = step[3] === 'data-exact';
+  put(el, `<div class="hn-t"><b>${step[0]}</b><span>${step[1]}${month || exact ? '' : ' ' + (left === 1 ? '1 step left.' : left + ' steps left.')}</span></div><div class="hn-b"><button type="button" class="btn small solid" ${step[3]}>${step[2]}</button><button type="button" class="link" ${month ? `data-hidemonth="${month.pm}"` : exact ? 'data-hideexact' : 'data-hidenext'}>Hide</button></div>`);
 }
 function renderStreak() {
   const el = $('#hStreak'), s = streakInfo(), now = new Date(), dow = (now.getDay() + 6) % 7, toSun = 6 - dow;
@@ -481,6 +484,8 @@ function wireHome() {
     if (e.target.closest('[data-checkin]')) { const r = markWeek(); persist(); render(); sfx('sparkle'); if (r) celebrate(WK_MILE.indexOf(r.n) >= 0 && r.n > 1 ? 'med' : 'small', r.n > 1 ? `Checked in. Streak: ${r.n} weeks.` : 'Checked in. Streak: week 1.'); return; }
     if (e.target.closest('[data-hidenext]')) { S.ui.sampleHidden = true; persist(); render(); return; }
     const hm = e.target.closest('[data-hidemonth]'); if (hm) { S.ui.mcSeen = hm.dataset.hidemonth; persist(); render(); return; }
+    if (e.target.closest('[data-hideexact]')) { S.ui.exactHidden = true; persist(); render(); return; }
+    if (e.target.closest('[data-exact]')) { impOnly = true; openTour('source', 'full'); return; }
     const f = e.target.closest('[data-focus]'); if (f) { const t = document.getElementById(f.dataset.focus); if (t) { t.scrollIntoView({ behavior: 'smooth', block: 'center' }); t.focus({ preventScroll: true }); } }
   });
   const hero = $('#hHero'), move = e => {

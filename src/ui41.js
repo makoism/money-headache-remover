@@ -153,6 +153,20 @@ function relayFn() {
     if (key) relayCache.set(key, { t: Date.now(), text: j.text, truncated: !!j.truncated });
     return { text: j.text, truncated: !!j.truncated, modelTierApplied: tier };
   };
+  /* a fixed-shape answer: Claude is made to call one tool, and that tool's input is the answer, so no prose can come back */
+  fn.form = async (input, opts) => {
+    opts = opts || {};
+    if (opts.signal && opts.signal.aborted) throw { code: 'cancelled', message: 'Stopped before sending.' };
+    const tier = opts.modelTier === 'inherit' || !opts.modelTier ? 'default' : opts.modelTier;
+    const body = { v: 1, anon: anonId(), invite: inviteCode(), tier, tools: [{ name: opts.name, description: opts.description || 'Return the result.', input_schema: opts.schema }], tool_choice: { type: 'tool', name: opts.name } };
+    if (opts.maxTokens > 0) body.max_tokens = Math.floor(opts.maxTokens);
+    if (opts.system) body.system = String(opts.system);
+    const messages = await relayMessages(input, opts.images);
+    const res = await (await call(Object.assign({}, body, { messages }), opts.signal)).json();
+    const use = (res.content || []).find(b => b.type === 'tool_use' && b.name === opts.name);
+    if (res.stop_reason === 'max_tokens' || !use || !use.input || typeof use.input !== 'object') throw { code: 'invalid_json', message: res.stop_reason === 'max_tokens' ? 'The answer was cut short.' : 'No result came back.', text: (res.content || []).filter(b => b.type === 'text').map(b => b.text).join('') };
+    return use.input;
+  };
   fn.json = async (input, opts) => {
     const r = await fn(input, Object.assign({}, opts || {}, { __json: true }));
     const p = parseLoose(r.text);

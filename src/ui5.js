@@ -183,7 +183,6 @@ function wire() {
   twoStep($('#blankBtn'), 'Tap again to zero all', blank);
   twoStep($('#blankTop'), 'Tap again to zero all', blank);
   twoStep($('#bkReset'), 'Tap again to restore', () => { const old = S, u = S.ui; S = presetState(u.cur); S.ui = Object.assign({}, u, { preset: S.ui.preset, sampleHidden: false, done: {} }); delete S.ui.cleared; delete S.ui.setup; delete S.ui.gset; delete S.ui.sb; delete S.ui.tourAt; delete S.ui.src; delete S.ui.imp; S.receipts = old.receipts; editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = 'Samples restored.'; });
-  $('#aiCopy').addEventListener('click', () => { $('#aiBox').value = aiPrompt(); copyBox($('#aiBox'), $('#aiMsg')); });
   wireReceipts(); wireTour(); wireHelp(); wireHome(); wireScan(); wireAskAi(); wireSafe(); wireVault();
 
   /* tooltips */
@@ -209,50 +208,6 @@ function wire() {
   addEventListener('hashchange', () => { const h = location.hash.slice(1); if (MONTHS.includes(h) && h !== sel) select(h); else if (h.indexOf('move=') === 0) { moveRead(); if (moveIn) { if (!hasData(S)) moveApply(); else { if (tab !== 'home') switchTab('home'); renderBackupNudge(); } } } });
 }
 
-/* ---------- a prompt people can paste into their own AI ---------- */
-function snapshot() {
-  const J = JSON.parse(JSON.stringify(S));
-  delete J.receipts;
-  ['a', 'b', 'side'].concat(S.plan.lines.map(l => l.key)).forEach(k => { if (!J.steps[k]) J.steps[k] = [{ from: START, v: val(S, k, START) }]; });
-  J.cfg = { bankStart: cfg(S, 'bankStart'), minBank: cfg(S, 'minBank'), ceiling: cfg(S, 'ceiling') };
-  J.ui = { cur: S.ui.cur }; J.rev = 0; return J;
-}
-function aiPrompt() {
-  const c = calcAll(S), m = c.byYm[START], cur = sym() || '(no symbol)', JS = jarsOf(S, m);
-  const names = { a: 'Salary (take-home, per month)', b: 'Second income', side: 'Side income' };
-  const jarWord = { nec: 'Necessities', play: 'Play', edu: 'Education', ffa: 'Financial Freedom', give: 'Give' };
-  const lines = ['a', 'b', 'side'].map(k => `- ${names[k]}: ${val(S, k, START)}`).concat(S.plan.lines.map(l => `- [${jarWord[l.jar]}] ${l.name} (key ${l.key}): ${val(S, l.key, START)}` + (l.ends ? `, last payment ${l.ends}${l.redirect ? ', then its money goes to the emergency fund' : ''}` : ''))).join('\n');
-  const goals = S.plan.goals.map(g => `- ${g.name} (id ${g.id}): goal ${g.target}, already saved ${g.start}` + (g.due ? `, needed by ${g.due}` : ', no date') + (g.emergency ? `, this is the emergency fund, someday goal ${g.stretch || 0}` : '') + `, monthly saving now ${val(S, 'goal:' + g.id, START)}`).join('\n') || '- (none yet)';
-  const st = { good: 'On plan', tight: 'Tight', short: 'Short' }[statusOf(S, m)];
-  return localize(`I use a one-page budget planner called M.H.R.2000 (The Money Headache Remover 2000). It plans about two years, month by month. Please check my numbers and help me improve my plan.
-
-HOW THE PAGE WORKS
-- The page splits take-home pay into six jars, from T. Harv Eker's jar system. Eker's usual split, as a share of take-home pay: ${JARS.map(j => `${j.name} ${Math.round(j.usual * 100)}%`).join(', ')}. Necessities means bills, food, one-time costs and credit card spending. Long-Term Savings for Spending is the total of my savings goals. Play is my play money. Every bit of pay should have a purpose, so pay that is not in a jar shows as "left over". The usual split is a guide, not a strict rule: if necessities are above 55%, the other jars should still get something, even a small amount.
-- Each month: money in (salary + second income + side income) minus every line in the five line jars, one-time costs and the savings goals = left over. My balance moves by the left over amount every month.
-- A month is "Short" if my balance would end below my minimum, "Tight" if it spends more than it brings in but stays above the minimum, and "On plan" otherwise.
-- Play money is the Play jar: what I can spend freely on eating out, hobbies, treats and fun, with no guilt. Groceries are a bill under Necessities. Play money is the big number on the page.
-- A savings goal with a date splits what is still missing evenly over the months before it, then stops. A goal with no date aims to fill in about a year. Each goal stops when it is full. One goal can be the emergency fund: the usual advice is three to six months of necessities, and it is what I borrow from in a short month. A line with a last payment month can send its money to the emergency fund afterwards.
-- A change typed for one month applies to that month only. "Keep for later months" makes it the plan from that month on.
-
-MY NUMBERS (currency symbol: ${cur}; first month: ${monthLabel(START)}; amounts per month)
-${lines}
-- Money you have today: ${cfg(S, 'bankStart')}; lowest balance I am comfortable with: ${cfg(S, 'minBank')}; most I want to spend a month: ${cfg(S, 'ceiling')}
-MY SAVINGS GOALS
-${goals}
-RESULT FOR ${monthLabel(START).toUpperCase()}: left over ${m.pool.left}, balance ends at ${m.bankEnd}, status ${st}.
-JAR SPLIT FOR ${monthLabel(START).toUpperCase()} (each jar's amount as a share of ${JS.over ? 'what the plan spends, which is more than my pay' : 'take-home pay'}): ${JS.list.map(j => `${j.name} ${j.pct}%`).join(', ')}${JS.rest > 0 ? `, left over ${JS.restPct}% (no purpose yet)` : ''}.
-
-WHAT I WANT
-1. Ask me up to five short questions about my situation (country, how I am paid, debts, goals) before you suggest changes.
-2. Check my numbers against Eker's usual split and for gaps, such as irregular yearly costs I may have forgotten, and tell me what my real play money is.
-3. If I ask for a new setup, give me the updated JSON below in one code block. I will paste it under Settings, Saved data, Restore, with Load text.
-
-SETUP JSON FORMAT
-"plan.lines" lists the lines: {"id":"short-id","jar":"nec|play|edu|ffa|give","name":"text","def":number,"ends":"YYYY-MM" (optional last payment month),"redirect":true (optional)}. Built-in lines keep their ids; a new line needs a new id and its amount is stored under the key "line:<id>". "plan.goals" lists the goals: {"id":"short-id","name":"text","target":number,"start":number,"due":"YYYY-MM-DD" or "","monthly":number (optional, only for a goal with no date),"emergency":true (at most one),"stretch":number (emergency fund only),"slot":1-7}. "steps" sets an amount from a month on: {"key":[{"from":"YYYY-MM","v":number}]}, where key is a, b, side, a line's key (shown above) or "goal:<goal id>". "once" overrides one month: {"YYYY-MM":{"key":number}}. "items" are one-time costs: {"YYYY-MM":[{"id":"x1","label":"name","amount":number}]}. "cfg" holds bankStart, minBank and ceiling. "ui.cur" is the currency symbol. Months run ${START} to ${END}. Keep "v":1 and "rev":0.
-
-CURRENT SETUP JSON
-${JSON.stringify(snapshot())}`);
-}
 
 /* ---------- start ---------- */
 function initialMonth() {

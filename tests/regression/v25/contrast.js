@@ -49,8 +49,8 @@ const probe = () => {
     await p.evaluate(() => (document.querySelector('#helpBtn')||{click(){}}).click());
     await p.evaluate(() => { (document.querySelector('#helpBtn')||{click(){}}).click(); (document.querySelector('#helpAsk')||{click(){}}).click(); }); await w(500); (await p.evaluate(probe)).forEach(x => all.set(eff + ' ASK ' + x.sel + '|' + x.text, [x])); screens++;
     await p.evaluate(() => { const x = document.querySelector('#askClose'); if (x) x.click(); }); await w(200);
-    await p.evaluate(() => { (document.querySelector('#helpBtn')||{click(){}}).click(); (document.querySelector('#helpTour')||{click(){}}).click(); }); await w(700);
-    for (let i = 0; i < 8; i++) { (await p.evaluate(probe)).forEach(x => all.set(eff + ' TOUR' + i + ' ' + x.sel + '|' + x.text, [x])); screens++; const nx = await p.$('#tourNext'); if (!nx) break; const dis = await p.$eval('#tourNext', e => e.disabled).catch(() => true); if (dis) break; await p.click('#tourNext'); await w(250); }
+    await p.evaluate(() => { (document.querySelector('#helpBtn')||{click(){}}).click(); (document.querySelector('#helpSetup')||{click(){}}).click(); }); await w(700);
+    for (let i = 0; i < 8; i++) { (await p.evaluate(probe)).forEach(x => all.set(eff + ' TOUR' + i + ' ' + x.sel + '|' + x.text, [x])); screens++; const nx = await p.$('#tourNext'); if (!nx) break; const hid = await p.$eval('#tourNext', e => e.hidden).catch(() => true); if (hid) { if (await p.$('#srcSkip')) { await p.click('#srcSkip'); await w(250); continue; } break; } const dis = await p.$eval('#tourNext', e => e.disabled).catch(() => true); if (dis) break; await p.click('#tourNext'); await w(250); }
     await p.close();
   }
   await b.close();

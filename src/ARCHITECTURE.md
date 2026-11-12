@@ -26,20 +26,22 @@ ui41/ui42     adapters to the outside: the AI route (relay or viewer's Claude) a
 | `actions.js` | `ACT`: transactions with undo (`ACT.tx`, `ACT.undo`), setters for pay, lines, goals, jars, receipts, name, currency, Home layout; `ACT.summary()` reads the key numbers |
 | `ui1.js` to `ui4.js` | The Plan tab (lines, ledger), bar and legend, road chart, tooltips, Receipts |
 | `ui44.js` | Confetti and the one-line cheer toast |
-| `ui45s.js` | Setup screens (questions), `SUBS` (subscription list and price hints by country) |
-| `ui45u.js` | Setup from statements: the source step (upload here, use any AI, type it in), the review screen, `importApply`. `IMP_FORMAT` + `importClean` are a machine contract |
-| `ui45x.js` | Welcome extras, the shrine, **sound effects** (`SFXD` recipes, levels, routing) |
+| `stmt.js` | Statements to numbers, pure: `stmtCleanRows` (one file's rows, checked), `stmtMonths`, `stmtMerge` (duplicates once), `stmtMerchants`, `stmtNumbers` (pay, balance, bills, subs, loans, card, questions), `stmtReceipts`. Unit test: `node /tmp/v29/stmt_test.js` |
+| `ui45s.js` | Setup screens (the typed money screen, bills, jars fold and split, goals, reveal), `SUBS` (subscription list and price hints by country) |
+| `ui45u.js` | Setup from statements: the Your statements screen (upload; the any-AI route where Claude cannot be reached; Type the numbers instead), the review screen, `importApply`. `IMP_FORMAT` + `importClean` are the pasted-answer contract |
+| `ui45v.js` | The statement reader: one fixed-shape job per file (`STMT_ROWS_SCHEMA`), four at a time, then one category job per new merchant (`STMT_CATS_SCHEMA`, `STMT_CAT_GUIDE`); progress lines, `stmtReviewHTML` (what was read, categories to correct), `stmtRecat`, `stmtAfterApply` (receipts with `src:'stmt'`, learned categories in `S.ui.cats`) |
+| `ui45x.js` | Setup extras (card calculator, subscriptions, goals add-another, `JAR_LINES`), **sound effects** (`SFXD` recipes, levels, routing) |
 | `ui45t.js` | Hello-video transcript (Mako's words, timed) |
-| `ui45.js` | The tour engine: open, close, next, back, autosave, welcome house drawing |
+| `ui45.js` | The tour engine: `TOUR` order (video and welcome, currency, statements, review, typed money, bills, split, goals, play money, done), open, close, next, back, autosave, hello video, house drawing |
 | `ui46.js` | Help menu, Ask Claude (viewer's own Claude account), copy-for-any-AI route |
 | `ui47.js` | Date and month pickers |
-| `ui48.js` | Coach marks (spotlight tours of each tab) |
+| `ui48.js` | Coach marks (spotlight tour of a tab, only from Help: Explain this tab) |
 | `ui41.js` | The AI route: `relayFn()` mirrors Claude's `sample` surface over the site's `/api/ai`; `relayHealth`, anon id, invite code |
 | `ui42.js` | The cloud copy: recovery code, keys (PBKDF2 + HKDF), AES-GCM, push after each save, restore, conflict notice |
 | `ui43.js` | Saving safety: IndexedDB second copy with automatic restore, backup reminder cards on Home |
 | `ui49.js` | Scan receipts card |
 | `ui6.js` | Home: status, next step, hero goal, play money, streak, badges, add-a-goal wizard |
-| `ui5.js` | Wiring all events, Settings backup/restore, the copy-for-AI prompt, startup |
+| `ui5.js` | Wiring all events, Settings backup/restore, startup |
 | `style.css`, `body.html` | Look and static markup. `body.html` has `@@VER@@` and `@@STAMP@@` placeholders |
 | `VERSION` | Line 1: version number. Line 2: date and time shown at the bottom and in Help. |
 | `RELAY` | One line: the site's address, used only by copies opened as a file. Empty until the site exists. |
@@ -52,9 +54,10 @@ All `ui*.js` files share one scope (one IIFE) in the order set in `build.sh`. Fu
 |---|---|
 | A subscription price or country hint | `SUBS` in `ui45s.js` (`[id, name, US, Japan, Philippines]`) |
 | A sound, its level or character | `SFXD`, `CLICK`, `trim` in `ui45x.js` |
-| Setup wording | the step definitions in `ui45s.js` and `ui45.js` |
+| Setup wording or order | the step definitions in `ui45s.js`, `ui45u.js` and `ui45.js`; the order is the `TOUR` array in `ui45.js` (`skipIf` drops the typed screens once statements gave the numbers) |
 | A Home card | its `render…` function in `ui6.js`; markup slot in `body.html`; order and visibility via `HOME_SECTIONS` and `ACT.setHome` |
-| What the statement import asks for | `importRules` and `IMP_FORMAT` in `ui45u.js`, with `importClean` updated to match |
+| What the statement reader asks Claude for | `STMT_ROWS_SCHEMA`, `STMT_CATS_SCHEMA` and `STMT_CAT_GUIDE` in `ui45v.js`; the arithmetic that turns rows into numbers is `stmtNumbers` in `stmt.js` (change the unit test with it). The pasted-answer route keeps `importRules` and `IMP_FORMAT` in `ui45u.js`, with `importClean` to match |
+| The category words | `STMT_CATS`, `STMT_BILL_CATS`, `STMT_LINE` in `stmt.js`; the stub's keyword map in `../site/tests/stub_anthropic.js` for the tests |
 | Which files the AI can read | `IMG_TYPES` and `DOC_LIMITS` in `ui41.js` (PDFs go up as document blocks on the relay route only; `askDoc` in `ui46.js` is null elsewhere), mirrored by `MAX_DOCS` in `../site/functions/api/ai.js` |
 | What the assistant may do | `ASST_GUIDE` (the list Claude reads) and `asstCheck` (the checked actions) in `ui4a.js`; both must agree; `asstPicture` is what it knows |
 | The Home "Next" card and the finish-last-month nudge | `renderNext` and `monthToClose` in `ui6.js` |
@@ -64,7 +67,7 @@ All `ui*.js` files share one scope (one IIFE) in the order set in `build.sh`. Fu
 | The version | `VERSION` |
 
 ## Contracts: do not edit casually
-- `askExtractPrompt`, `scanMessage` and the AI-prompt JSON format in `ui46.js` / `ui5.js`, and `IMP_FORMAT` / `importClean` in `ui45u.js`, are read by machines (Claude and other AIs). Changing a field name breaks reading photos and pasted setups.
+- `askExtractPrompt` and `scanMessage` in `ui46.js`, `IMP_FORMAT` / `importClean` in `ui45u.js`, and the two schemas in `ui45v.js` are read by machines (Claude and other AIs). Changing a field name breaks reading photos, statements and pasted setups.
 - The relay request shape (`functions/api/ai.js` validate) and `relayFn` in `ui41.js` must agree. The vault record shape (`functions/api/vault`) and `ui42.js` must agree.
 - Storage key `money-map-template-v2` and the shape of `S`: only add fields; `normalize` fills defaults, so older saved copies keep loading.
 - `model.js` outputs feed every screen; any change must pass the full number checks.

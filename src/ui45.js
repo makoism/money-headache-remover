@@ -169,23 +169,33 @@ function wireTx(v) {
   update();
 }
 
+/* the recovery-code link on the first screen: shows only where a cloud copy can exist; a code loads the numbers and closes the setup */
+const restoreHTML = () => `<p class="cap tour-restore" id="tourRestore" hidden><button type="button" class="link" id="tourRestoreBtn">Used this before on another phone? Enter your recovery code.</button></p>
+      <div class="tour-restore-in" id="tourRestoreIn" hidden><div class="row-btns inv-row"><input class="txt" id="tourVaultIn" type="text" autocomplete="off" spellcheck="false" placeholder="MHR-XXXX-XXXX-XXXX-XXXX-XXXX" aria-label="Recovery code" maxlength="40"><button type="button" class="btn small solid" id="tourVaultUse">Load</button></div><p class="cap" id="tourVaultMsg" role="status"></p></div>`;
+function wireRestore() {
+  relayHealth().then(h => { const p = $('#tourRestore'); if (p && h && h.vault && tourMode === 'full' && pristine()) p.hidden = false; });
+  const b = $('#tourRestoreBtn'); if (b) b.addEventListener('click', () => { $('#tourRestoreIn').hidden = false; $('#tourRestore').hidden = true; $('#tourVaultIn').focus(); });
+  const go = async () => { const ok = await vaultRestore($('#tourVaultIn').value, $('#tourVaultMsg')); if (ok) cheer('Welcome back.'); };
+  const u = $('#tourVaultUse'); if (u) { u.addEventListener('click', go); $('#tourVaultIn').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); go(); } }); }
+}
 const TOUR = [
-  { id: 'hello', part: PART.welcome, title: 'Welcome', next: 'Continue',
-    body: () => `${homeScene()}
+  /* the first screen is the video: Mako says what this is and what to do. The rest of the screen is the welcome as it was. */
+  { id: 'video', part: PART.welcome, title: 'Welcome', next: 'Next',
+    body: () => {
+      const player = hasHello && helloFileOk && !helloFailed;
+      const video = !hasHello ? homeScene() : `${player ? helloPlayer() : helloCard()}
+      <p class="cap">${player
+        ? 'Six minutes from Mako, who made this. Also under Help.' + (helloVideo ? ` <a id="tourVideo" target="_blank" rel="noopener noreferrer" href="${esc(helloVideo.watch)}">Not playing? Open on Google Drive.</a>` : '')
+        : 'Six minutes from Mako, who made this. Come back here when done, or skip. Also under Help.'}</p>
+      ${txHTML(player)}`;
+      return `${video}
       <p>Know where your money stands, and what it is working toward.</p>
       <ul class="tour-get"><li>Your month on one screen.</li><li>Play money you can spend with no guilt.</li><li>Each goal, and the date you reach it.</li></ul>
-      <p class="cap">Setup takes a few minutes with your statements, about ten by hand. Stop any time.</p>
-      <p class="tour-safe">${LOCK}<span>Data stays in this browser. Nobody else can see it.</span></p>
-      <p class="cap tour-restore" id="tourRestore" hidden><button type="button" class="link" id="tourRestoreBtn">Used this before on another phone? Enter your recovery code.</button></p>
-      <div class="tour-restore-in" id="tourRestoreIn" hidden><div class="row-btns inv-row"><input class="txt" id="tourVaultIn" type="text" autocomplete="off" spellcheck="false" placeholder="MHR-XXXX-XXXX-XXXX-XXXX-XXXX" aria-label="Recovery code" maxlength="40"><button type="button" class="btn small solid" id="tourVaultUse">Load</button></div><p class="cap" id="tourVaultMsg" role="status"></p></div>
-      <div class="tour-fields"><div class="field"><label for="tourName">First name <span class="opt">(optional)</span></label><div class="inp"><input id="tourName" type="text" maxlength="24" autocomplete="given-name" spellcheck="false" placeholder="First name" value="${esc(firstName())}"></div></div></div>`,
-    after: () => {
-      /* the recovery link shows only where a cloud copy can exist; typing a code loads it and closes the setup */
-      relayHealth().then(h => { const p = $('#tourRestore'); if (p && h && h.vault && tourMode === 'full' && pristine()) p.hidden = false; });
-      const b = $('#tourRestoreBtn'); if (b) b.addEventListener('click', () => { $('#tourRestoreIn').hidden = false; $('#tourRestore').hidden = true; $('#tourVaultIn').focus(); });
-      const go = async () => { const ok = await vaultRestore($('#tourVaultIn').value, $('#tourVaultMsg')); if (ok) cheer('Welcome back.'); };
-      const u = $('#tourVaultUse'); if (u) { u.addEventListener('click', go); $('#tourVaultIn').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); go(); } }); }
+      <p class="cap">Data stays in this browser. Nobody else can see it.</p>
+      <div class="tour-fields"><div class="field"><label for="tourName">First name <span class="opt">(optional)</span></label><div class="inp"><input id="tourName" type="text" maxlength="24" autocomplete="given-name" spellcheck="false" placeholder="First name" value="${esc(firstName())}"></div></div></div>
+      ${restoreHTML()}`;
     },
+    after: wireRestore,
     leave: () => { const el = $('#tourName'); if (el) { const n = cleanName(el.value); if (n) S.ui.name = n; else delete S.ui.name; persist(); } } },
   { id: 'currency', part: PART.welcome, title: 'Currency',
     body: () => {
@@ -193,36 +203,14 @@ const TOUR = [
       return `<div class="tour-chips" role="radiogroup" aria-label="Currency">${pick.map(c => chip('tourCur', c[0], c[0], curName(c), c[0] === cur)).join('')}</div>
       <div class="field tour-more"><label for="tourCurMore">Other currency</label><div class="selbox"><select id="tourCurMore"><option value="">Choose currency</option>${rest.map(c => `<option value="${esc(c[0])}"${c[0] === cur ? ' selected' : ''}>${esc(c[1])}</option>`).join('')}</select></div></div>`;
     } },
-  ...(hasHello ? [{ id: 'video', part: PART.welcome, title: 'Intro video', next: () => (tourMode === 'full' ? 'Start setup' : 'Next'),
-    body: () => {
-      const player = helloFileOk && !helloFailed;
-      return `<p>A short video from Mako, who built this.</p>
-      ${player ? helloPlayer() : helloCard()}
-      <p class="cap">${player
-        ? 'About six minutes. Also under Help.' + (helloVideo ? ` <a id="tourVideo" target="_blank" rel="noopener noreferrer" href="${esc(helloVideo.watch)}">Not playing? Open on Google Drive.</a>` : '')
-        : 'About six minutes. Return here when done, or skip. Also under Help.'}</p>
-      ${txHTML(player)}`;
-    } }] : []),
+  /* the statements are the setup. The typed screens follow only for what the statements did not answer, or when they were skipped. */
   STEP_SOURCE, STEP_REVIEW,
-  ...[STEP_PAY, STEP_EXTRA, STEP_BANK, STEP_FLOOR, STEP_BILLS].map(s => Object.assign({}, s, { skipIf: importApplied })),
-  { dyn: true, setup: true, skipIf: importApplied, steps: () => chosenBills().map(billStep) },
-  { id: 'jobs', part: PART.jars, title: 'Six jars',
-    body: () => {
-      return `<p>Bills are the first jar: Necessities. The rest of your pay is divided between the other five. Usual shares of take-home pay:</p>
-      <div class="tour-fig"><div class="bar tour-bar" role="img" aria-label="Pay split into six jars">${JARS.map(j => `<div class="seg-b ${JARCLS[j.id]}" style="flex-grow:${j.usual * 100}"></div>`).join('')}</div>
-      <div class="legend">${JARS.map(j => `<span><i class="${JARCLS[j.id]}"></i>${j.name} ${Math.round(j.usual * 100)}%</span>`).join('')}</div></div>
-      <p class="cap">Shares are a guide, not a rule. Next: what each jar is for, then split your own pay.</p>`;
-    } },
-  { id: 'shrine', part: PART.jars, title: 'Jar purposes', body: shrineBody },
+  STEP_MONEY, STEP_BILLS,
+  { dyn: true, setup: true, skipIf: () => importApplied(), steps: () => chosenBills().map(billStep) },
   STEP_JARS,
   STEP_TOOLPICK, { dyn: true, setup: true, steps: () => (S.ui.gset ? S.plan.goals : [{ id: 'rainy' }]).map(g => goalStep(g.id)) }, STEP_SPLIT,
   STEP_REVEAL,
-  { id: 'remind', part: PART.habit, title: 'Set a reminder',
-    body: () => `<p>The plan only works if it matches real spending. Choose how often to be reminded to log receipts. Weekly is a good start.${askImg ? ' Screenshots work too: give them to Ask Claude under Help and check the result.' : ''}</p>
-      <div class="tour-fig tour-remind">${remindFieldsHTML('tour')}
-      <div class="cal-btns" id="tourCal">${calBtnsInner()}</div><p class="cal-msg cap" id="tourCalMsg" role="status"></p>
-      <p class="cap">${inArtifact() ? 'Google Calendar repeats it. Outlook, Microsoft 365 and Yahoo open a one-time event: set the repeat there. Apple and others show text to copy.' : 'Google Calendar and the downloaded file repeat it. Outlook, Microsoft 365 and Yahoo open a one-time event: set the repeat there.'} Set for <span id="tourWhen"></span>.</p></div>` },
-  { id: 'ready', part: PART.habit, title: () => (firstName() ? `Setup done, ${esc(firstName())}.` : 'Setup done.'), last: true,
+  { id: 'ready', part: PART.spend, title: () => (firstName() ? `Setup done, ${esc(firstName())}.` : 'Setup done.'), last: true,
     next: () => (S.ui.setup ? 'Done' : 'Go to bills'),
     body: () => {
       if (S.ui.setup) {
@@ -239,7 +227,7 @@ const TOUR = [
           ? `<div class="tour-cloud" id="tourCloud">${LOCK}<div><b>Keep a copy in the cloud</b><p class="cap">Your numbers live in this browser. Cloud backup keeps an encrypted copy that only your recovery code can open. New phone, or browser cleared: enter the code and the numbers come back.</p>
             <div class="row-btns"><button type="button" class="btn small solid" id="tourVaultOn">Turn on cloud backup</button><span class="cap">Later: Settings, Cloud backup.</span></div><div class="tour-vault-code" id="tourVaultCode"></div></div></div>` : '';
         return `${homeScene()}${ok ? `<p class="tour-st"><span class="chip good">${IC.ok}On plan</span></p>` : ''}<p>Your month:</p>${ledgerHTML(f)}<p>${line}</p>${goal ? `<p>${goal}</p>` : ''}
-        <p>Plan: edit any line. Receipts: log what you spend, so this stays true. Help (bottom right) replays this tour and shows each tab.</p>${cloud}`;
+        <p>Receipts keeps this true: log what you spend, or upload each month's statement. Help, bottom right, has the video and this setup.</p>${cloud}`;
       }
       const m = calcAll(S).byYm[sel], pay = m.a + m.b + m.side, L = m.pool.left;
       const zero = S.ui.preset === 'blank' || !!S.ui.cleared;
@@ -249,7 +237,7 @@ const TOUR = [
         : 'Pay entered. All of it is assigned.';
       return `${homeScene()}<p>${msg}</p>
       <p>${zero ? 'Bills and goals are empty. Open Plan, Necessities, and enter what you pay.' : 'Bills and goals are still samples. Open Plan, Necessities, and set each line. Or use <b>Zero all</b> in Settings.'}</p>
-      <p>Help (bottom right) replays this tour and the setup.</p>`;
+      <p>Help (bottom right) has the video and the setup.</p>`;
     },
     after: () => {
       const b = $('#tourVaultOn'); if (!b) return;
@@ -291,13 +279,12 @@ function renderTour(dir) {
   const body = $('#tourBody'); body.innerHTML = `<h2 id="tourTitle" tabindex="-1">${title}</h2>${t.body()}`;
   moneyUpAll(body);
   body.classList.remove('in-r', 'in-l'); if (dir) { void body.offsetWidth; body.classList.add(dir > 0 ? 'in-r' : 'in-l'); }
-  const hasSetup = tourMode === 'full' && same.some(x => x.setup), setupRun = tourMode === 'full' && TS.some(x => x.setup);
-  $('#tourSkip').textContent = setupRun ? 'Finish later' : 'Skip tour'; $('#tourSkip').hidden = !!t.last && setupRun; $('#tourPartSkip').hidden = !hasSetup;
+  const setupRun = tourMode === 'full' && TS.some(x => x.setup);
+  $('#tourSkip').textContent = setupRun ? 'Finish later' : 'Skip'; $('#tourSkip').hidden = !!t.last && setupRun;
   $('#tourBack').hidden = tourN === 0; $('.tour-foot').classList.toggle('last', !!t.last);
-  const nx = $('#tourNext'); nx.textContent = (typeof t.next === 'function' ? t.next() : t.next) || 'Next'; $('#tourAlt').hidden = !(t.last && !S.ui.setup);
+  const nx = $('#tourNext'), label = typeof t.next === 'function' ? t.next() : t.next; nx.hidden = label === false; nx.textContent = label || 'Next'; $('#tourAlt').hidden = !(t.last && !S.ui.setup);
   paintSnd();
   $$('#tour .cs').forEach(e => { e.textContent = sym(); });
-  if (t.id === 'remind') tourReminder();
   if (t.id === 'video') wireHello(); else helloStop();
   if (t.after) t.after();
   if (t.show) t.show();
@@ -312,17 +299,12 @@ function paintSnd() {
   if (sw) { sw.setAttribute('aria-checked', String(on)); const t = $('#sndTxt'); if (t) t.textContent = on ? 'On' : 'Off'; }
 }
 function toggleSnd() { if (S.ui.mute) delete S.ui.mute; else S.ui.mute = true; persist(); paintSnd(); sfx('tap'); }
-function tourReminder() {
-  const o = reminderOf(); remindShow($('#tourBody'), o);
-  calFill($('#tourCal'), o);
-  $('#tourWhen').textContent = reminderWhen(o);
-}
 function showTourShell() { $('#tour').hidden = false; $('.wrap').inert = true; $('#dock').inert = true; helpAside(true); }
 /* at: the id of the screen to open on. mode: 'full' asks the questions, 'replay' only shows the screens. */
 function openTour(at, mode) {
   tourMode = mode || (S.ui.setup ? 'replay' : 'full'); tourIsOpen = true; tourReturn = document.activeElement; tourN = 0; TS = []; buildSteps();
   let i = typeof at === 'string' ? TS.findIndex(s => s.id === at) : -1;
-  if (i < 0 && tourMode === 'full' && S.ui.toured) { const want = S.ui.tourAt && TS.some(s => s.id === S.ui.tourAt && s.setup) ? S.ui.tourAt : 'pay'; i = TS.findIndex(s => s.id === want); }
+  if (i < 0 && tourMode === 'full' && S.ui.toured) { const want = S.ui.tourAt && TS.some(s => s.id === S.ui.tourAt && s.setup) ? S.ui.tourAt : 'source'; i = TS.findIndex(s => s.id === want); }
   tourN = Math.max(0, i); showTourShell(); renderTour(0); sfx('whoosh');
 }
 function closeTour(toBills, done) {
@@ -335,7 +317,7 @@ function closeTour(toBills, done) {
   if (toBills) { S.ui.seen = Object.assign(S.ui.seen || {}, { month: true }); switchTab('month'); openRow('nec'); }
   else {
     scrollTo({ top: 0 });
-    if (done) { if (tab !== 'home') switchTab('home'); else maybeTabTour('home'); }
+    if (done && tab !== 'home') switchTab('home');
     else if (tourReturn && tourReturn.focus) try { tourReturn.focus({ preventScroll: true }); } catch (e) { /* gone */ }
   }
 }
@@ -355,37 +337,34 @@ function tourStep(d) {
   const cur = TS[tourN];
   if (cur.leave) cur.leave(d);
   if (d > 0 && cur.last) { closeTour(!S.ui.setup, true); sfx('fanfare'); return; }
+  /* opened from Home only to make the numbers exact: done after the review (or the skip) */
+  if (d > 0 && impOnly && (cur.id === 'source' || cur.id === 'review')) { impOnly = false; tourJump = null; closeTour(false, true); sfx('fanfare'); return; }
+  const was = TS.map(s => s.id), at = was.indexOf(cur.id);
   buildSteps();
   let nx = tourN + d;
+  if (TS[tourN] !== cur) {
+    /* the screen just left is gone from the list (a review once applied, a step whose condition changed): step from where it stood */
+    if (d > 0) { nx = TS.findIndex(s => was.indexOf(s.id) < 0 || was.indexOf(s.id) > at); if (nx < 0) nx = TS.length - 1; }
+    else { nx = 0; TS.forEach((s, i) => { if (was.indexOf(s.id) >= 0 && was.indexOf(s.id) < at) nx = i; }); }
+  }
   if (tourJump) { const j = TS.findIndex(s => s.id === tourJump); tourJump = null; if (j >= 0) nx = j; }
   tourN = Math.max(0, Math.min(TS.length - 1, nx)); renderTour(d); sfx(d > 0 ? 'next' : 'back');
   if (d > 0 && TS[tourN].id === 'reveal' && havePay()) { celebrate('big', 'This is yours to spend.'); sfx('fanfare'); }
 }
 function gotoStep(id) { buildSteps(); const i = TS.findIndex(x => x.id === id); if (i < 0) return; tourN = i; renderTour(1); sfx('next'); }
-/* jump to the first screen of the next part, keeping whatever was typed on this one */
-function skipPart() {
-  if (tourMode !== 'full') return;
-  const cur = TS[tourN]; if (cur.leave && !cur.pick) cur.leave(0);
-  buildSteps();
-  const i = TS.findIndex((s, k) => k > tourN && s.part !== cur.part);
-  if (i < 0) { closeTour(false); return; }
-  tourN = i; renderTour(1); sfx('next');
-}
 function leaveTour() { autosave(true); closeTour(false); }
 function wireTour() {
   $('#tourNext').addEventListener('click', () => tourStep(1));
   $('#tourBack').addEventListener('click', () => tourStep(-1));
   $('#tourAlt').addEventListener('click', () => closeTour(false, true));
   $('#tourSkip').addEventListener('click', leaveTour);
-  $('#tourPartSkip').addEventListener('click', skipPart);
   $('#tourSnd').addEventListener('click', toggleSnd); $('#setSnd').addEventListener('click', toggleSnd);
   const body = $('#tourBody');
   body.addEventListener('input', e => { tourTouched = true; tourExtraInput(e); autosave(); });
   body.addEventListener('click', e => { if (!tourExtraClick(e) && e.target.closest('button:not(.tx-l), a.btn')) sfx('tap'); });
   body.addEventListener('change', e => {
     const t = e.target; tourTouched = true;
-    if (remindChange(t)) { tourReminder(); sfx('tap'); }
-    else if (t.name === 'tourCur') { setTourCur(t.value); sfx('tap'); }
+    if (t.name === 'tourCur') { setTourCur(t.value); sfx('tap'); }
     else if (t.id === 'tourCurMore') { if (t.value) setTourCur(t.value); sfx('tap'); }
     else if (t.name === 'tourBill' || t.name === 'tourGoalPick') { t.closest('.chip').classList.toggle('on', t.checked); sfx(t.checked ? 'on' : 'off'); }
     else if (t.name === 'tourEm') { $$('#tourBody input[name=tourEm]').forEach(i => i.closest('.chip').classList.toggle('on', i.checked)); $('#tourEmCap').innerHTML = emCap(+t.value); sfx('tap'); }
@@ -395,7 +374,6 @@ function wireTour() {
   body.addEventListener('focusout', () => autosave());
   $('#tour').addEventListener('keydown', e => {
     if (e.key === 'Escape') { e.preventDefault(); leaveTour(); return; }
-    if ((e.key === 'Enter' || e.key === ' ') && e.target.closest && e.target.closest('.shr-jar')) { e.preventDefault(); shrinePoke(+e.target.closest('.shr-jar').dataset.sj); return; }
     if (e.key === 'Enter' && e.target.matches('[data-subamt], .so-n, .so-a, #tourCardT, #tourCardB')) { e.preventDefault(); e.target.blur(); return; }
     if (e.key === 'Enter' && e.target.matches('#tourBody input:not([type=range]):not([type=checkbox]):not([type=radio])')) { e.preventDefault(); tourStep(1); return; }
     if (e.key !== 'Tab') return;
@@ -407,7 +385,6 @@ function wireTour() {
   /* a closed tab or a phone that locks the screen must not lose the last thing typed */
   window.addEventListener('pagehide', () => autosave(true));
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') autosave(true); });
-  $('#tourOpen').addEventListener('click', () => openTour('hello', 'replay'));
   $('#tourOpen2').addEventListener('click', () => openTour(0));
   $('#setupOpen').addEventListener('click', () => openTour(undefined, 'full'));
 }

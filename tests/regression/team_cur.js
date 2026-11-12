@@ -127,7 +127,7 @@ const puppeteer = require('/home/claude/work/tools/node_modules/puppeteer-core')
   }
   await fresh(); await p.click('#tourNext'); await w(200);
   await p.click('input[name=tourCur][value="€"]'); await w(150);
-  for (let gk = 0; gk < 40 && !(await q('#tourTitle')).startsWith('Setup done'); gk++) { await p.click('#tourNext'); await w(80); }
+  for (let gk = 0; gk < 40 && !(await q('#tourTitle')).startsWith('Setup done'); gk++) { if (await p.$eval('#tourNext', e => e.hidden)) await p.click('#srcSkip'); else await p.click('#tourNext'); await w(80); }
   ok('tour ending for a sample currency keeps the clear-the-samples tip', (await tourText()).includes('Zero all') && !(await tourText()).toLowerCase().includes('peso'));
   await p.click('#tourAlt'); await w(300);
   ok('...and the page shows euros', (await q('#heroNum')).startsWith('€'));

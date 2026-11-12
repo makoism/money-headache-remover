@@ -7,7 +7,8 @@ each goal with its date, and an assistant that knows your picture and can carry 
 
 - `public/` is the whole app: one HTML page plus the installable-app files and the intro video. It is built from `team/` sources
   (kept in Claude's working folder) by `build_site.sh`; do not edit `public/index.html` by hand.
-- `functions/api/ai.js` relays AI requests to Anthropic on the owner's key with daily caps and an optional code word. Images and PDF statements go through as content blocks; Excel files are turned into CSV text in the browser first (`team/ui4b.js`).
+- `functions/api/ai.js` relays AI requests to Anthropic on the owner's key with daily caps and an optional code word. Images and PDF statements go through as content blocks; Excel files are turned into CSV text in the browser first (`team/ui4b.js`). A request may force one tool (`tool_choice`): the statement reader uses that to get every file back as a fixed-shape table of rows, which the page turns into the monthly numbers itself (`team/stmt.js`).
+- Setup opens with Mako's video, then the statements: each file is one small read, four at a time, a bad file fails alone, and the review shows what was read with a category per merchant to correct (corrections are remembered). `tests/page_import.js` walks it with a CSV, a PDF, an Excel file and a broken file; `tests/stub_anthropic.js` answers like the real API.
 - `functions/api/vault/[id].js` stores each person's encrypted cloud copy. The server never sees a readable number.
 - `functions/api/health.js` says what this deployment offers.
 - `worker/index.js` is the Worker entry: it serves `public/` and routes `/api/*` to the handlers above (Cloudflare runs `npx wrangler deploy` on every push).

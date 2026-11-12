@@ -1,6 +1,6 @@
 
 /* ===== coach marks: a short spotlight tour of a tab, pointing at the real parts of the page =====
-   Opens by itself the first time a tab is visited after setup. Skippable at any step, and always available from Help, "Show me around this tab". */
+   Only when asked for: Help, "Explain this tab". Skippable at any step. */
 const COACH = {
   home: [
     ['#hStatus', 'Where you stand', 'Read this first. On plan: this month fits your pay and your balance stays above your minimum.'],
@@ -60,11 +60,6 @@ function coBuild() {
   const again = () => { if (CO.open && !CO.raf) CO.raf = requestAnimationFrame(() => { CO.raf = 0; coPlace(); }); };
   addEventListener('resize', again); document.addEventListener('scroll', again, true);
   return el;
-}
-function maybeTabTour(t) {
-  if (!COACH[t] || CO.open || tourIsOpen || ($('#gw') && !$('#gw').hidden)) return;
-  if (S.ui.seen && S.ui.seen[t]) return;
-  setTimeout(() => { if (tab === t && !CO.open && !tourIsOpen && !(S.ui.seen && S.ui.seen[t])) openTabTour(t); }, 520);
 }
 function openTabTour(t) {
   const list = (COACH[t] || []).map(x => ({ el: $(x[0]), t: x[1], b: x[2] })).filter(s => coVisible(s.el));

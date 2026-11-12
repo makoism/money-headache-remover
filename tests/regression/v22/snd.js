@@ -12,7 +12,7 @@ const { w, P, launch, runTour } = require('./lib.js');
   console.log('before', before, 'after', after);
   await p.screenshot({ path: '/tmp/v22/snd.png' });
   // tour button reflects it
-  await p.evaluate(() => document.querySelector('#helpBtn').click()); await w(200); await p.click('#helpTour'); await w(500);
+  await p.evaluate(() => document.querySelector('#helpBtn').click()); await w(200); await p.click('#helpSetup'); await w(500);
   console.log('tour button text when muted:', await p.$eval('#tourSnd', e => e.textContent));
   console.log('errors', JSON.stringify(errs)); await b.close();
 })();

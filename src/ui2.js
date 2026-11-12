@@ -215,7 +215,7 @@ function readItems() {
 
 function renderSettings() {
   SETF.forEach(f => setIdle($('#st-' + f.k), cfg(S, f.k)));
-  if (tab === 'basics') { setIdle($('#bk'), JSON.stringify(S)); setIdle($('#aiBox'), aiPrompt()); }
+  if (tab === 'basics') setIdle($('#bk'), JSON.stringify(S));
 }
 
 function renderMonthTable() {

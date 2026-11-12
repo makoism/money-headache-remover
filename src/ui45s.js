@@ -2,7 +2,7 @@
 /* ---------- the guided setup: one question at a time, written straight into the plan ----------
    Every screen saves as you type, so closing the tour half way loses nothing.
    Nothing here invents a number: a field you leave empty stays empty. */
-const PART = { welcome: 'Welcome', money: 'Money', bills: 'Bills', jars: 'Jars', goals: 'Goals', spend: 'Play money', habit: 'Reminders' };
+const PART = { welcome: 'Welcome', money: 'Money', bills: 'Bills', jars: 'Jars', goals: 'Goals', spend: 'Play money' };
 
 const inum = id => { const el = document.getElementById(id); return el ? num0(el.value) : 0; };
 const moneyField = (id, label, v, hint) => `<div class="field"><label for="${id}">${label}</label><div class="inp"><span class="yen cs"></span><input id="${id}" type="number" inputmode="numeric" min="0" step="any" aria-describedby="tourTitle" placeholder="${hint || 'Amount'}" value="${v > 0 ? v : ''}"></div></div>`;
@@ -33,34 +33,22 @@ function rebalance(vals, i, p, total) {
   return out;
 }
 
-/* ----- the first questions: pay, anything else that comes in, the bank, the lowest balance ----- */
-const STEP_PAY = { id: 'pay', part: PART.money, setup: true, focus: '#tourPay', title: 'Monthly pay',
+/* ----- the typed numbers: pay, other income and the balance on one screen. Skipped once statements gave the pay. ----- */
+const STEP_MONEY = { id: 'money', part: PART.money, setup: true, focus: '#tourPay', title: 'Your money', skipIf: () => importApplied() && havePay(),
   body: () => {
     const pay = S.ui.done && S.ui.done.pay ? val(S, 'a', START) : '';
-    return `<p>Monthly take-home, after tax. Paid twice a month: add both.</p>
-    <div class="tour-fields">${moneyField('tourPay', 'Monthly take-home pay', pay)}</div>
-    <p class="cap">Not sure yet? Leave it blank. The Salary line on the Plan tab takes it later.</p>`;
+    return `<p>Take-home pay after tax, each month. Paid twice a month: add both. Other income is a second job, a partner&rsquo;s share, benefits. Balance is bank accounts plus cash; rough is fine.</p>
+    <div class="tour-fields">${moneyField('tourPay', 'Monthly take-home pay', pay)}${moneyField('tourExtra', 'Other income each month <span class="opt">(optional)</span>', val(S, 'b', START), 'None')}${moneyField('tourBank', 'Balance now', S.cfg.bankStart !== undefined ? S.cfg.bankStart : '', 'Rough is fine')}</div>
+    <p class="cap">Not sure of a number? Leave it blank; the Plan tab takes it later.</p>`;
   },
   leave: () => {
-    const el = $('#tourPay'); if (!el) return;
-    if (el.value === '' && !tourTouched) return;
-    const pay = num0(el.value); setVal(S, 'a', START, pay, 'after'); if (pay > 0) markDone('pay'); persist();
+    const pay = $('#tourPay'), extra = $('#tourExtra'), bank = $('#tourBank'); if (!pay) return;
+    if (pay.value !== '' || tourTouched) { const v = num0(pay.value); setVal(S, 'a', START, v, 'after'); if (v > 0) markDone('pay'); }
+    if (extra && (extra.value !== '' || tourTouched || S.steps.b)) setVal(S, 'b', START, num0(extra.value), 'after');
+    if (bank && bank.value !== '' && +bank.value >= 0) S.cfg.bankStart = num0(bank.value);
+    if (S.cfg.minBank === undefined && payNow() > 0) S.cfg.minBank = toUnit(payNow() * 0.1); /* the safety line: a tenth of pay unless Settings says otherwise */
+    persist();
   } };
-const STEP_EXTRA = { id: 'extra', part: PART.money, setup: true, focus: '#tourExtra', title: 'Other income',
-  body: () => `<p>A second job, a partner&rsquo;s share, benefits. Skip if none.</p>
-    <div class="tour-fields">${moneyField('tourExtra', 'Other income each month', val(S, 'b', START))}</div>`,
-  leave: () => { const el = $('#tourExtra'); if (!el) return; if (el.value === '' && !tourTouched && !S.steps.b) return; setVal(S, 'b', START, num0(el.value), 'after'); persist(); } };
-const STEP_BANK = { id: 'bank', part: PART.money, setup: true, focus: '#tourBank', title: 'Balance today',
-  body: () => `<p>Bank accounts plus cash. A rough number is fine.</p>
-    <div class="tour-fields">${moneyField('tourBank', 'Balance now', S.cfg.bankStart !== undefined ? S.cfg.bankStart : '', 'Rough is fine')}</div>`,
-  leave: () => { const el = $('#tourBank'); if (el && el.value !== '' && +el.value >= 0) { S.cfg.bankStart = num0(el.value); persist(); } } };
-const STEP_FLOOR = { id: 'floor', part: PART.money, setup: true, when: () => payNow() > 0, focus: '#tourFloor', title: 'Minimum balance',
-  body: () => {
-    const sug = toUnit(payNow() * 0.1), cur = S.cfg.minBank !== undefined ? S.cfg.minBank : sug;
-    return `<p>Your safety line: the lowest balance you want to see. You get a warning if a month would end below it. Default: a tenth of pay.</p>
-    <div class="tour-fields">${moneyField('tourFloor', 'Lowest balance', cur)}</div>`;
-  },
-  leave: () => { const el = $('#tourFloor'); if (!el) return; S.cfg.minBank = el.value === '' ? toUnit(payNow() * 0.1) : num0(el.value); persist(); } };
 
 /* ----- bills: tick the ones you pay, then one screen for each ----- */
 const BILLS_ON = ['rent', 'util', 'food', 'net', 'phone', 'gas'];
@@ -82,7 +70,7 @@ function chosenBills() {
   base.forEach(id => { out.push(id); all.forEach(l => { if (moreKind(l.id) === id) out.push(l.id); }); });
   return out;
 }
-const STEP_BILLS = { id: 'bills-pick', part: PART.bills, setup: true, pick: true, title: 'Monthly bills',
+const STEP_BILLS = { id: 'bills-pick', part: PART.bills, setup: true, pick: true, skipIf: () => importApplied(), title: 'Monthly bills',
   body: () => {
     const on = chosenBills();
     return `<p>Tick what applies. Rough numbers are fine.</p>
@@ -208,11 +196,16 @@ const STEP_JARS = { id: 'jars', part: PART.jars, setup: true, when: havePay,
     <p class="cap">If you truly have none, continue and split below.</p>${jarSplitHTML()}`;
     if (jarRest <= 0) return `<p>Bills <b>${fmt(nec)}</b>, pay <b>${fmt(pay)}</b>. ${nec > pay ? `Bills exceed pay by <b>${fmt(nec - pay)}</b>, so` : 'Bills take all of it, so'} nothing is left for the other five jars: no play money and nothing for goals, for now.</p>
     <p>You can still add goals next. They start filling once bills drop below pay. To lower a bill, go back. Otherwise continue and adjust under Plan later.</p>`;
-    return `<p>Bills <b>${fmt(nec)}</b> = <b>${jarNec}%</b> of pay: the Necessities jar. The other <b>${jarRest}%</b> (${fmt(pay - nec)}) is shared by the five jars below, starting at Eker&rsquo;s usual proportions. Drag a bar or type a percent to change them.</p>
-    ${jarSplitHTML()}`;
+    return `<p>Bills <b>${fmt(nec)}</b> = <b>${jarNec}%</b> of pay: the Necessities jar. The other <b>${jarRest}%</b> (${fmt(pay - nec)}) is shared by the five jars below, starting at the usual proportions. Drag a bar or type a percent to change them.</p>
+    ${jarsFold()}${jarSplitHTML()}`;
   },
   after: () => { if (jarRest > 0) paintJars(); },
   leave: () => commitJars() };
+/* the six jars in short, folded: pay is split into jars and each jar has one purpose */
+const jarsFold = () => `<details class="src-how"><summary>The six jars, in short</summary><div class="src-how-in">
+    <p>Every month, pay is split into six jars. Each jar has one purpose, and play money is the jar you spend on fun without guilt. Usual shares of take-home pay:</p>
+    <ul class="jar-lines">${JARS.map(j => `<li><i class="dot" style="--c:${JARVAR[j.id]}"></i><span><b>${esc(j.name)}</b> ${Math.round(j.usual * 100)}%. ${esc(JAR_LINES[j.id])}</span></li>`).join('')}</ul>
+    <p class="cap">From T. Harv Eker&rsquo;s jar system (Secrets of the Millionaire Mind). Shares are a guide, not a rule.</p></div></details>`;
 const jarSplitHTML = () => `${potHTML('jarPot', JAR5.map(j => JARVAR[j]), jarVals)}
     <div class="split" id="jarSplit">${jarRows()}</div>
     <p class="why" id="jarWhy" aria-live="polite"></p>
@@ -357,7 +350,7 @@ function paintSplit() {
   if (S.plan.goals.length === 1) { const row = $('[data-grow="0"]'); if (row) { $('.split-m', row).textContent = fmt(splitMoney(0)) + ' a month'; $('.split-s', row).textContent = splitNoteFor(0); } return; }
   spPaint('goal', SPLIT_SPEC.goal());
 }
-const STEP_SPLIT = { id: 'goalsplit', part: PART.goals, setup: true, when: () => havePay() && S.plan.goals.length > 0 && ltsBudget() > 0,
+const STEP_SPLIT = { id: 'goalsplit', part: PART.goals, setup: true, when: () => havePay() && S.plan.goals.length > 1 && ltsBudget() > 0,
   title: () => (S.plan.goals.length > 1 ? 'Split goal money' : 'Goal money'),
   body: () => {
     splitInit(); const pct = Math.round(aimsOf(S).lts * 100), many = S.plan.goals.length > 1;

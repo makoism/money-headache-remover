@@ -46,7 +46,7 @@ process.on('unhandledRejection', e => { console.log('UNHANDLED', e && e.message)
   ok(await p.evaluate(() => document.querySelectorAll('#scanFiles .sfile').length === 1 && document.querySelector('#scanRead').textContent === 'Read 1 photo'), 'photo chip and "Read 1 photo"');
   await (await p.$('#scanPickIn')).uploadFile('/tmp/v22/receipt_small.png', '/tmp/v22/doc.pdf'); await w(1200);
   const info = await p.evaluate(() => ({ n: document.querySelectorAll('#scanFiles .sfile').length, msg: document.querySelector('#scanMsg').textContent, read: document.querySelector('#scanRead').textContent }));
-  ok(info.n === 2 && /PDFs cannot be read/.test(info.msg), 'png added, pdf refused with a plain note: ' + JSON.stringify(info));
+  ok(info.n === 2 && /cannot be read here/.test(info.msg), 'png added, pdf refused with a plain note: ' + JSON.stringify(info));
   await p.screenshot({ path: '/tmp/v22/scan_files.png' });
   // remove the png chip, then re-add to test remove
   await p.evaluate(() => document.querySelector('#scanFiles [data-rm="1"]').click()); await w(200);

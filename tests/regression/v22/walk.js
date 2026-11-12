@@ -49,6 +49,7 @@ const P = {
     await p.screenshot({ path: `${out}/${String(i).padStart(2,'0')}.png` });
     const nx = await p.$eval('#tourNext', e=>e.textContent);
     if (nx==='View month' || nx==='Done' || nx==='Go to bills') { await p.click('#tourNext'); await w(900); break; }
+    if (await p.$eval('#tourNext', e=>e.hidden)) { await p.click('#srcSkip'); await w(300); continue; }
     const dis = await p.$eval('#tourNext', e=>e.disabled);
     if (dis) { probs.push(`Next disabled at step ${i} (${title})`); break; }
     await p.click('#tourNext'); await w(300);

@@ -51,13 +51,13 @@ const STATE = JSON.stringify({ steps: 5, ui: { name: 'Mara', cur: '$', toured: t
     ok('the menu starts closed', (await H.hidden('#helpMenu')) === true && (await p.$eval('#helpBtn', e => e.getAttribute('aria-expanded'))) === 'false');
     await p.click('#helpBtn'); await w(150);
     ok('click opens the menu', (await H.hidden('#helpMenu')) === false && (await p.$eval('#helpBtn', e => e.getAttribute('aria-expanded'))) === 'true');
-    ok('without Claude, Ask is still the first item and the tour is offered', (await H.hidden('#helpAsk')) === false && (await H.q('#helpTour')) === 'Tour');
+    ok('without Claude, Ask is still the first item and the setup is offered', (await H.hidden('#helpAsk')) === false && (await H.q('#helpSetup')) === 'Guided setup');
     await p.keyboard.press('Escape'); await w(100);
     ok('Esc closes the menu and keeps focus on the pill', (await H.hidden('#helpMenu')) === true && (await p.evaluate(() => document.activeElement.id)) === 'helpBtn');
     await p.click('#helpBtn'); await w(100); await p.mouse.click(30, 300); await w(100);
     ok('clicking elsewhere closes the menu', (await H.hidden('#helpMenu')) === true);
-    await p.click('#helpBtn'); await w(100); await p.click('#helpTour'); await w(300);
-    ok('"Take the tour again" opens the tour from the first screen', (await p.$eval('#tour', e => !e.hidden)) && (await H.q('#tourTitle')).startsWith('Welcome'));
+    await p.click('#helpBtn'); await w(100); await p.click('#helpSetup'); await w(300);
+    ok('"Guided setup" opens the setup', (await p.$eval('#tour', e => !e.hidden)) && (await H.q('#tourTitle')).length > 0);
     ok('...and the help pill steps aside while it is open', await p.$eval('#help', e => e.inert) && (await H.hidden('#helpMenu')) === true);
     await p.click('#tourSkip'); await w(300);
     ok('closing the tour returns focus to the help pill', (await p.evaluate(() => document.activeElement.id)) === 'helpBtn' && !(await p.$eval('#help', e => e.inert)));
@@ -157,7 +157,7 @@ const STATE = JSON.stringify({ steps: 5, ui: { name: 'Mara', cur: '$', toured: t
     // tour hides it
     await p.evaluate(() => document.querySelector('#tourOpen') && 0);
     await p.keyboard.press('Escape'); await w(100);
-    await p.click('#helpBtn'); await w(100); await p.click('#helpTour'); await w(300);
+    await p.click('#helpBtn'); await w(100); await p.click('#helpSetup'); await w(300);
     ok('opening the tour hides the panel and the pill', (await H.hidden('#ask')) === true && await p.$eval('#help', e => e.inert));
     await p.click('#tourSkip'); await w(250);
     // the panel doesn't cover the toast / celebration and the toast is above the pill
@@ -168,7 +168,7 @@ const STATE = JSON.stringify({ steps: 5, ui: { name: 'Mara', cur: '$', toured: t
     await p.type('#askIn', 'allowed?'); await p.keyboard.press('Enter'); await w(300);
     ok('if the person declines permission, the panel explains why and offers Try again', (await H.hidden('#askForm')) === true && (await H.hidden('#askOff')) === false && (await H.q('#askOffTxt')).length > 20);
     await p.click('#askClose'); await w(100); await p.click('#helpBtn'); await w(100);
-    ok('...and Ask Claude stays in the menu so they can retry', (await H.hidden('#helpAsk')) === false && (await H.hidden('#helpTour')) === false);
+    ok('...and Ask Claude stays in the menu so they can retry', (await H.hidden('#helpAsk')) === false && (await H.hidden('#helpSetup')) === false);
   });
 
   /* ---------- C. a connection that says no up front ---------- */

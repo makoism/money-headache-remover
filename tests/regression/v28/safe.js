@@ -88,7 +88,9 @@ const strip = j => { const o = JSON.parse(j); return JSON.stringify(canon({ step
   // log a receipt so the next-step card goes away
   await p.evaluate(() => document.querySelector('[data-tab="home"]').click()); await w(500); await coach(p);
   await p.type('#hAmt', '1200'); await p.evaluate(() => document.querySelector('#hForm').requestSubmit()); await w(900);
-  let v = await vis(); ck(!v.hid && /Back up your numbers/.test(v.t), 'reminder appears once the first steps are done: ' + v.t.slice(0, 60));
+  let v = await vis(); ck(v.hid && /Make it exact/.test(await p.$eval('#hNext', e => e.textContent)), 'typed numbers: the Make it exact card comes first, the reminder waits');
+  await p.click('#hNext [data-hideexact]'); await w(500);
+  v = await vis(); ck(!v.hid && /Back up your numbers/.test(v.t), 'reminder appears once the cards are done: ' + v.t.slice(0, 60));
   await p.click('#hBk [data-bk-later]'); await w(300);
   if (0) console.log('DBG later:', JSON.stringify(await p.evaluate(k => { const o = JSON.parse(localStorage.getItem(k)); return { later: o.ui.bkLater, bk: o.ui.bk, hid: document.querySelector('#hBk').hidden, now: Date.now() }; }, KEY)));
   ck((await vis()).hid, 'Later hides it');

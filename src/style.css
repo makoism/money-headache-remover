@@ -396,7 +396,7 @@ table.plain tbody tr { cursor: default; } table.plain tbody tr:hover td { backgr
 /* ---- the first-open tour ---- */
 .tour { position: fixed; inset: 0; z-index: 50; background: var(--bg); overflow-y: auto; -webkit-overflow-scrolling: touch; }
 .tour-in { max-width: 600px; margin: 0 auto; min-height: 100%; display: flex; flex-direction: column; padding: max(18px, env(safe-area-inset-top)) 24px max(20px, env(safe-area-inset-bottom)); }
-.tour-top { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.tour-top { display: flex; align-items: center; justify-content: flex-end; gap: 16px; }
 .tour-part { font-size: 15px; color: var(--ink2); font-weight: 500; }
 .tour-dots { display: flex; gap: 5px; padding: 14px 0 0; }
 .tour-dots i { flex: 1 1 0; height: 5px; border-radius: 3px; background: var(--track2); overflow: hidden; }
@@ -424,9 +424,9 @@ svg.tour-fig text.t { font-family: var(--f); font-size: 11.5px; fill: var(--ink2
 .tour-map li { display: grid; gap: 2px; padding-left: 18px; border-left: 3px solid var(--hair); }
 .tour-map li b { font-size: 19px; letter-spacing: -.02em; }
 .tour-map u { text-decoration: none; font-weight: 600; color: var(--ink); }
-.tour-remind, .tour-fields { display: grid; max-width: 460px; background: var(--panel); border-radius: 20px; padding: 20px 22px; gap: 24px; }
-.tour-remind .selbox select, .tour-more .selbox select { border: 0; box-shadow: inset 0 0 0 1px var(--hair); background: var(--field); border-radius: 14px; min-height: 52px; padding: 0 16px; font-weight: 500; font-size: 17px; width: 100%; outline: none; }
-.tour-remind .field label, .tour-fields .field label { font-size: 15px; font-weight: 500; color: var(--ink2); }
+.tour-fields { display: grid; max-width: 460px; background: var(--panel); border-radius: 20px; padding: 20px 22px; gap: 24px; }
+.tour-more .selbox select { border: 0; box-shadow: inset 0 0 0 1px var(--hair); background: var(--field); border-radius: 14px; min-height: 52px; padding: 0 16px; font-weight: 500; font-size: 17px; width: 100%; outline: none; }
+.tour-fields .field label { font-size: 15px; font-weight: 500; color: var(--ink2); }
 .tour-foot { display: flex; align-items: center; gap: 12px; padding-top: 8px; }
 .tour-gap { flex: 1 1 auto; }
 .tour-foot .btn { min-width: 112px; }
@@ -445,8 +445,6 @@ svg.tour-fig text.t { font-family: var(--f); font-size: 11.5px; fill: var(--ink2
 .hello { margin: 28px 2px 0; font-size: clamp(22px, 4vw, 28px); font-weight: 600; letter-spacing: -.025em; line-height: 1.2; color: var(--ink); }
 .tour.welcome { background: radial-gradient(130% 55% at 50% -8%, color-mix(in srgb, #ffc766 16%, var(--bg)), var(--bg) 62%); }
 svg.tour-scene { width: 100%; max-width: 440px; height: auto; border-radius: 22px; box-shadow: 0 10px 30px -14px rgba(29, 35, 71, .55); }
-.tour-body p.tour-safe { display: flex; gap: 12px; align-items: flex-start; background: var(--panel); border-radius: 16px; padding: 14px 16px; font-size: 16px; line-height: 1.4; max-width: 460px; }
-.tour-safe svg { flex: 0 0 22px; width: 22px; height: 22px; margin-top: 1px; color: var(--good); }
 .tour-cloud { display: flex; gap: 12px; align-items: flex-start; background: var(--panel); border-radius: 16px; padding: 14px 16px; max-width: 460px; font-size: 16px; line-height: 1.4; }
 .tour-cloud > svg { flex: 0 0 22px; width: 22px; height: 22px; margin-top: 2px; color: var(--good); }
 .tour-cloud > div { min-width: 0; flex: 1 1 auto; } .tour-cloud b { display: block; margin-bottom: 4px; } .tour-cloud .cap { margin: 0 0 10px; } .tour-cloud .row-btns { align-items: center; gap: 10px; } .tour-cloud .row-btns .cap { margin: 0; }
@@ -551,8 +549,7 @@ svg.tour-scene { width: 100%; max-width: 440px; height: auto; border-radius: 22p
 .msg.card .left { font-size: 13px; color: var(--ink2); }
 .msg.card .row-btns { display: flex; flex-wrap: wrap; gap: 8px; }
 /* on laptops and phones that are not very tall, keep the first and last screens from running under the buttons */
-@media (max-height: 940px) { .tour-body { gap: 16px; padding-top: clamp(14px, 3vh, 34px); padding-bottom: 14px; } svg.tour-scene { max-width: 300px; } .tour-body p { font-size: 18px; line-height: 1.4; } .tour-body p.cap { font-size: 14px; } .tour-body p.tour-safe { font-size: 15px; padding: 12px 14px; } }
-@media (max-height: 860px) { svg.tour-scene { max-width: 236px; } .tour-in:has(.tour-foot.last) svg.tour-scene { display: none; } }
+@media (max-height: 940px) { .tour-body { gap: 16px; padding-top: clamp(14px, 3vh, 34px); padding-bottom: 14px; } svg.tour-scene { max-width: 300px; } .tour-body p { font-size: 18px; line-height: 1.4; } .tour-body p.cap { font-size: 14px; } @media (max-height: 860px) { svg.tour-scene { max-width: 236px; } .tour-in:has(.tour-foot.last) svg.tour-scene { display: none; } }
 @media (max-height: 740px) { svg.tour-scene { max-width: 175px; } }
 /* the short hello video screen: a card that opens the video in a new tab, or a 16:9 player in the downloaded app */
 .tour-video { display: inline-flex; align-items: center; gap: 14px; text-decoration: none; color: var(--ink); background: var(--card); border: .5px solid var(--hair); border-radius: 18px; padding: 14px 20px 14px 16px; min-height: 64px; max-width: 100%; transition: background .2s, transform .1s; }
@@ -607,7 +604,7 @@ svg.tour-scene { width: 100%; max-width: 440px; height: auto; border-radius: 22p
 .tour-reveal b { font-size: clamp(54px, 16vw, 88px); font-weight: 600; letter-spacing: -.045em; line-height: 1; font-variant-numeric: tabular-nums; }
 .tour-reveal span { font-size: 19px; color: var(--ink2); }
 /* One dropdown arrow everywhere: the browser's own arrow hugged the right edge of the field, so draw it inset and centred instead. */
-.sets select, .selbox select, .rcform .selbox select, .remind-fields .selbox select, .rcmonth select, .tour-remind .selbox select, .tour-more .selbox select, .tour-fields .selbox select, .ed-edit select {
+.sets select, .selbox select, .rcform .selbox select, .remind-fields .selbox select, .rcmonth select, .tour-more .selbox select, .tour-fields .selbox select, .ed-edit select {
   -webkit-appearance: none; -moz-appearance: none; appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14'%3E%3Cpath d='M3 5.25l4 4 4-4' fill='none' stroke='%238e8e93' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat; background-size: 14px 14px; background-position: right 18px center; padding-right: 44px; text-overflow: ellipsis;
@@ -846,16 +843,12 @@ body.gw-open, body.co-open.gw-open { overflow: hidden; }
 .inv-row { margin-top: 8px; }
 .tour-restore { margin-top: -4px; }
 /* setup from statements */
-.src-opts { display: grid; gap: 10px; margin: 6px 0 12px; }
-.src-opt { text-align: left; display: grid; gap: 2px; padding: 14px 16px; border-radius: 18px; border: 0; background: var(--panel); box-shadow: inset 0 0 0 1px var(--hair); color: inherit; font: inherit; cursor: pointer; }
-.src-opt b { font-weight: 600; } .src-opt span { color: var(--ink2); font-size: 14px; line-height: 1.35; }
-.src-opt.on { box-shadow: inset 0 0 0 2px var(--accent); }
-.src-opt:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.src-opts, .src-panel, .src-how { max-width: 640px; }
+.src-panel, .src-how { max-width: 640px; }
 .src-panel { margin: 0 0 12px; padding: 12px 14px; border-radius: 18px; background: color-mix(in srgb, var(--accent) 6%, var(--panel)); }
 .fchips { display: flex; flex-wrap: wrap; gap: 6px; }
 .src-panel .fchips { margin: 10px 0 2px; }
 .src-panel .cap { margin: 8px 0 0; max-width: none; }
+.src-panel .row-btns .cap { margin: 0; }
 .src-here { margin: 0 0 12px !important; }
 .note-line { display: block; margin-top: 6px; line-height: 1.4; }
 .note-line:first-child { margin-top: 0; }
@@ -863,6 +856,10 @@ body.gw-open, body.co-open.gw-open { overflow: hidden; }
 .src-panel textarea { width: 100%; min-height: 84px; margin-top: 8px; border: 0; box-shadow: inset 0 0 0 1px var(--hair); border-radius: 14px; background: var(--field); padding: 10px 12px; font-size: 13px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 0; color: inherit; }
 .src-how { margin: 4px 0 10px; } .src-how summary { cursor: pointer; color: var(--accent); font-weight: 500; }
 .src-how-in p { font-size: 14px; color: var(--ink2); margin: 8px 0 0; }
+.jar-lines { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 6px; max-width: 520px; }
+.jar-lines li { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; line-height: 1.4; color: var(--ink2); }
+.jar-lines li b { color: var(--ink); font-weight: 600; }
+.jar-lines .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--c); margin-top: 5px; flex: none; }
 .imp-out .msg { margin-top: 10px; padding: 10px 12px; border-radius: 14px; background: var(--panel); font-size: 14px; white-space: pre-wrap; }
 .imp-out .msg.wait { color: var(--ink2); }
 .imp-list { display: grid; gap: 6px; margin: 8px 0 10px; }
@@ -932,29 +929,6 @@ body.gw-open, body.co-open.gw-open { overflow: hidden; }
 .gob-bub { position: absolute; right: 100%; top: 6px; margin-right: -14px; background: var(--field); border-radius: 14px; padding: 4px 11px; font-size: 13px; font-weight: 600; white-space: nowrap; opacity: 0; transform: scale(.6) translateX(10px); transform-origin: 100% 50%; transition: opacity .15s, transform .25s cubic-bezier(.3, 1.4, .4, 1); box-shadow: 0 4px 14px -4px rgba(0, 0, 0, .35), 0 0 0 1px var(--hair); }
 .gob.pop .gob-bub { opacity: 1; transform: none; }
 .tour-chips .chip.on { background: var(--field); }
-
-/* the shrine */
-.shr { max-width: 520px; border-radius: 20px; overflow: hidden; background: #14072b; box-shadow: 0 18px 44px -18px rgba(0, 0, 0, .6); }
-.shr svg { display: block; width: 100%; height: auto; }
-.shr-img { display: block; width: 100%; height: auto; }
-.shr-bg { animation: shrHue 16s linear infinite; }
-@keyframes shrHue { to { filter: hue-rotate(360deg); } }
-.shr-meme { font: 800 22px Impact, "Arial Black", var(--f); fill: #fff; stroke: #000; stroke-width: 4.5px; paint-order: stroke fill; letter-spacing: .5px; }
-.shr-jar { cursor: pointer; transform-box: fill-box; transform-origin: 50% 85%; outline: none; }
-.shr-jar:focus-visible .shr-halo { opacity: 1; }
-.shr-halo { transform-box: fill-box; transform-origin: 50% 50%; animation: halo 2.6s ease-in-out infinite alternate; }
-@keyframes halo { from { scale: .9; opacity: .55; } to { scale: 1.12; opacity: 1; } }
-.shr-rays { transform-box: fill-box; transform-origin: 50% 50%; animation: rays 12s linear infinite; }
-@keyframes rays { to { rotate: 360deg; } }
-.shr-flame path { transform-box: fill-box; transform-origin: 50% 100%; animation: flame .45s ease-in-out infinite alternate; }
-@keyframes flame { from { scale: 1 1; } to { scale: .86 1.14; } }
-.shr-lbl { font: 800 10.5px var(--f); fill: #2b1a4a; letter-spacing: .4px; }
-.shr-jar.poke { animation: jarPoke .55s ease-out; }
-@keyframes jarPoke { 30% { scale: 1.16 .88; rotate: -5deg; } 60% { scale: .95 1.08; rotate: 4deg; } 100% { scale: 1; rotate: 0deg; } }
-.shr-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; max-width: 520px; }
-.shr-list li { display: flex; gap: 10px; align-items: flex-start; padding: 8px 12px; margin: 0 -12px; border-radius: 12px; font-size: 16px; color: var(--ink2); transition: background .25s; cursor: pointer; }
-.shr-list li.lit { background: var(--panel); } .shr-list li b { color: var(--ink); font-weight: 600; }
-.shr-list .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--c); margin-top: 8px; flex: none; }
 
 /* the transcript under the hello video */
 .tx { max-width: 560px; margin-top: 18px; }
@@ -1207,3 +1181,12 @@ body.gw-open, body.co-open.gw-open { overflow: hidden; }
 @media (max-width: 379px) { .tour-chips.two { grid-template-columns: minmax(0, 1fr); } }
 /* a jar name that is long wraps; it is never cut off */
 .split-h b { white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.2; }
+/* the statement review: what was read, the merchants, the receipts tick */
+.imp-fold { margin: 4px 0 8px; }
+.imp-files { margin: 6px 0 0 18px; padding: 0; font-size: 14px; color: var(--ink2); } .imp-files li { margin: 2px 0; }
+.imp-ms { display: grid; gap: 6px; margin-top: 8px; }
+.imp-m { display: flex; align-items: center; gap: 10px; padding: 6px 10px; border-radius: 12px; background: var(--panel); box-shadow: inset 0 0 0 1px var(--hair); }
+.imp-m-n { flex: 1 1 auto; min-width: 0; display: grid; } .imp-m-n b { font-weight: 600; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .imp-m-n small { color: var(--ink2); font-size: 12.5px; }
+.imp-m select { flex: 0 0 150px; min-width: 0; }
+.imp-keep { display: flex; gap: 10px; align-items: flex-start; margin: 8px 0 12px; font-size: 14px; color: var(--ink2); } .imp-keep input { width: 20px; height: 20px; accent-color: var(--accent); flex: none; margin-top: 1px; }
+.note-line.bad { color: var(--bad); }
