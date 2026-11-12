@@ -520,10 +520,10 @@ svg.tour-scene { width: 100%; max-width: 440px; height: auto; }
 .pixc.tr { right: 16px; top: 14px; } .pixc.br { right: 16px; bottom: 12px; } .pixc.bl { left: 16px; bottom: 12px; } .pixc.off { display: none; }
 #hHero.empty .pixc { display: none; }
 #peek { position: fixed; left: 12px; bottom: max(14px, env(safe-area-inset-bottom)); z-index: 69; pointer-events: none; transform: translateY(130%); transition: transform .55s cubic-bezier(.2, .9, .3, 1.1); }
-#peek.up { transform: translateY(0); }
+#peek.up { transform: translateY(32%); } /* only the head and gills show: it peeks, it does not block */
 #peek .pix { animation: peekBob 1.4s ease-in-out infinite; transform-origin: 50% 100%; filter: drop-shadow(0 6px 10px rgba(0, 0, 0, .35)); }
 @keyframes peekBob { 0%, 100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-4px) rotate(2deg); } }
-#peek.peek-ocelot { left: auto; right: 12px; bottom: 150px; transform: translateX(130%); } #peek.peek-ocelot.up { transform: translateX(0); }
+#peek.peek-ocelot { left: auto; right: 0; bottom: 150px; transform: translateX(130%); } #peek.peek-ocelot.up { transform: translateX(42%); }
 @media (prefers-reduced-motion: reduce) { #peek { transition: none; } #peek .pix { animation: none; } }
 /* the camera sheet (computers only): a live view in a glass card over a scrim */
 .cam { position: fixed; inset: 0; z-index: 60; background: rgba(4, 12, 9, .62); display: grid; place-items: center; padding: 16px; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
