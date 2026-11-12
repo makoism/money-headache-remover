@@ -60,7 +60,7 @@ async function stmtRunJob(job, signal) {
   let text = null, images = null;
   if (job.kind === 'text') { let t = await readTextFile(job.files[0]); if (byteLen(t) > ASK_TEXT_BYTES) t = clipBytes(t, ASK_TEXT_BYTES); text = { name: job.name, text: t }; }
   else images = job.files;
-  const raw = await stmtAsk('statement_rows', 'The transaction rows of one statement file.', STMT_ROWS_SCHEMA, stmtRowsPrompt(what, job.name, text), Object.assign({ cache: false, modelTier: 'default', maxTokens: 16000, signal }, images ? { images } : {}));
+  const raw = await stmtAsk('statement_rows', 'The transaction rows of one statement file.', STMT_ROWS_SCHEMA, stmtRowsPrompt(what, job.name, text), Object.assign({ cache: false, modelTier: 'default', maxTokens: 24000, effort: 'low', signal }, images ? { images } : {}));
   return stmtCleanRows(raw, job.name, todayStr());
 }
 function stmtErrorText(e, name) {
@@ -94,7 +94,7 @@ async function stmtCategorize(merchants, signal) {
   const ask = merchants.filter(m => !map[m.k]).slice(0, STMT_MAX_MERCHANTS);
   if (ask.length) {
     const list = ask.map(m => `- key=${m.k} | seen ${m.n} ${m.n === 1 ? 'time' : 'times'}, in ${m.inTotal}, out ${m.outTotal}, months ${m.months.join(',')} | e.g. ${m.samples.map(s => `"${s}"`).join('; ')}`).join('\n');
-    const raw = await stmtAsk('merchant_categories', 'One category per merchant key.', STMT_CATS_SCHEMA, `Give each merchant one category. Amounts are in ${sym() || 'the local currency'}.\n\n${STMT_CAT_GUIDE}\n\nMERCHANTS\n${list}`, { cache: false, modelTier: 'default', maxTokens: 8000, signal });
+    const raw = await stmtAsk('merchant_categories', 'One category per merchant key.', STMT_CATS_SCHEMA, `Give each merchant one category. Amounts are in ${sym() || 'the local currency'}.\n\n${STMT_CAT_GUIDE}\n\nMERCHANTS\n${list}`, { cache: false, modelTier: 'default', maxTokens: 8000, effort: 'low', signal });
     (Array.isArray(raw && raw.merchants) ? raw.merchants : []).forEach(x => { if (x && typeof x.key === 'string' && STMT_CATS.indexOf(x.category) >= 0 && ask.some(m => m.k === x.key)) map[x.key] = x.category; });
   }
   merchants.forEach(m => { if (!map[m.k]) map[m.k] = m.inTotal > m.outTotal ? 'other_income' : 'other'; });

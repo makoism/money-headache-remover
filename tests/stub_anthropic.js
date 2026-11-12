@@ -15,10 +15,14 @@ const srv = http.createServer((req, res) => {
     const docList = j.messages.reduce((a, m) => a.concat(Array.isArray(m.content) ? m.content.filter(c => c.type === 'document') : []), []);
     const badDoc = docList.find(d => !d.source || d.source.type !== 'base64' || d.source.media_type !== 'application/pdf' || !/^JVBERi/.test(d.source.data || ''));
     if (badDoc) { res.writeHead(400, { 'content-type': 'application/json' }); return res.end(JSON.stringify({ error: { type: 'invalid_request_error', message: 'Could not process PDF' } })); }
-    const echo = `ECHO model=${j.model} max=${j.max_tokens} sys=${(j.system || '').length} imgs=${imgs} docs=${docList.length} tools=${(j.tools || []).length} text=${lastText.slice(0, 120)}`;
-    if (j.tool_choice && j.tool_choice.type === 'tool') {
-      /* a forced tool: the statement reader gets rows parsed from the text (or a fixed table for a PDF or image), the category job maps by keyword */
-      const name = j.tool_choice.name; let input = {};
+    const echo = `ECHO model=${j.model} max=${j.max_tokens} sys=${(j.system || '').length} imgs=${imgs} docs=${docList.length} tools=${(j.tools || []).length} choice=${j.tool_choice ? j.tool_choice.type : ''} effort=${(j.output_config || {}).effort || ''} text=${lastText.slice(0, 120)}`;
+    /* the real API (Sonnet 5.5, Opus 5.5) refuses a forced tool: the relay must never forward one */
+    if (j.tool_choice && (j.tool_choice.type === 'tool' || j.tool_choice.type === 'any')) { res.writeHead(400, { 'content-type': 'application/json' }); return res.end(JSON.stringify({ error: { type: 'invalid_request_error', message: 'tool_choice: type "tool" and "any" are not supported for this model.' } })); }
+    if (j.output_config && j.output_config.effort && ['low', 'medium', 'high'].indexOf(j.output_config.effort) < 0) { res.writeHead(400, { 'content-type': 'application/json' }); return res.end(JSON.stringify({ error: { type: 'invalid_request_error', message: 'output_config.effort: unknown value' } })); }
+    const formTool = (j.tools || []).find(t => t.name === 'statement_rows' || t.name === 'merchant_categories');
+    if (formTool && !/tool_result/.test(lastText)) {
+      /* the statement reader's tools, called the way the model would: rows parsed from the text (or a fixed table for a PDF or image), the category job maps by keyword */
+      const name = formTool.name; let input = {};
       if (name === 'statement_rows') {
         const rows = []; let closing = null;
         lastText.split('\n').forEach(line => { const m = line.match(/^(\d{4}-\d{2}-\d{2}),([^,]+),([\d.]*),([\d.]*),?([\d.]*)/); if (m) { if (m[3]) rows.push({ date: m[1], text: m[2].trim(), amount: +m[3], dir: 'out' }); if (m[4]) rows.push({ date: m[1], text: m[2].trim(), amount: +m[4], dir: 'in' }); if (m[5]) closing = +m[5]; } });

@@ -38,6 +38,15 @@ const msg = (text, extra) => Object.assign({ v: 1, anon, tier: 'quick', messages
   // second round with tool_result
   r = await post('/api/ai', { v: 1, anon, tier: 'quick', tools: [{ name: 'get_plan', description: 'x', input_schema: { type: 'object' } }], messages: [{ role: 'user', content: 'use a tool' }, { role: 'assistant', content: j.content }, { role: 'user', content: [{ type: 'tool_result', tool_use_id: 'tu_1', content: '{"play":320}' }] }] }); j = await r.json();
   ok(r.status === 200 && /tool_result/.test(j.text), 'tools: tool_result round answers with text');
+  // a forced tool choice is never forwarded (Sonnet 5.5 refuses it with a 400, which the stand-in copies): it goes up as auto
+  r = await post('/api/ai', { v: 1, anon, tier: 'quick', tools: [{ name: 'statement_rows', description: 'x', input_schema: { type: 'object' } }], tool_choice: { type: 'tool', name: 'statement_rows' }, messages: [{ role: 'user', content: 'rows please' }] }); j = await r.json();
+  ok(r.status === 200 && j.stop_reason === 'tool_use' && j.content.some(b => b.type === 'tool_use' && b.name === 'statement_rows'), 'a forced tool choice goes up as auto and the tool is still called: ' + (j.error ? j.error.message : j.stop_reason));
+  r = await post('/api/ai', { v: 1, anon, tier: 'quick', tools: [{ name: 'get_plan', description: 'x', input_schema: { type: 'object' } }], tool_choice: { type: 'any' }, messages: [{ role: 'user', content: [{ type: 'tool_result', tool_use_id: 'tu_1', content: 'x' }] }] }); j = await r.json();
+  ok(r.status === 200 && /choice=auto/.test(j.text), 'tool_choice any goes up as auto: ' + (j.text || '').slice(0, 80));
+  r = await post('/api/ai', { v: 1, anon, tier: 'quick', tools: [{ name: 'get_plan', description: 'x', input_schema: { type: 'object' } }], tool_choice: { type: 'tool', name: 'nope' }, messages: [{ role: 'user', content: 'x' }] }); ok(r.status === 400, 'a tool_choice naming an unknown tool is still refused');
+  // effort: passed through as output_config, checked
+  r = await post('/api/ai', msg('effort test', { effort: 'low' })); j = await r.json(); ok(r.status === 200 && /effort=low/.test(j.text), 'effort low goes up as output_config.effort: ' + (j.text || '').slice(0, 80));
+  r = await post('/api/ai', msg('effort test', { effort: 'max' })); ok(r.status === 400, 'an effort outside low, medium, high is refused');
   // streaming
   r = await post('/api/ai', msg('stream me please', { stream: true }));
   ok(r.status === 200 && /text\/event-stream/.test(r.headers.get('content-type')), 'stream: event-stream content type');

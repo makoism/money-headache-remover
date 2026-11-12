@@ -153,19 +153,24 @@ function relayFn() {
     if (key) relayCache.set(key, { t: Date.now(), text: j.text, truncated: !!j.truncated });
     return { text: j.text, truncated: !!j.truncated, modelTierApplied: tier };
   };
-  /* a fixed-shape answer: Claude is made to call one tool, and that tool's input is the answer, so no prose can come back */
+  /* a fixed-shape answer: one tool is offered and the prompt says to answer by calling it, so the tool's input is the answer.
+     The choice stays auto (Sonnet 5.5 and later refuse a forced tool); should words come back instead, any JSON in them is read. */
   fn.form = async (input, opts) => {
     opts = opts || {};
     if (opts.signal && opts.signal.aborted) throw { code: 'cancelled', message: 'Stopped before sending.' };
     const tier = opts.modelTier === 'inherit' || !opts.modelTier ? 'default' : opts.modelTier;
-    const body = { v: 1, anon: anonId(), invite: inviteCode(), tier, tools: [{ name: opts.name, description: opts.description || 'Return the result.', input_schema: opts.schema }], tool_choice: { type: 'tool', name: opts.name } };
+    const body = { v: 1, anon: anonId(), invite: inviteCode(), tier, tools: [{ name: opts.name, description: opts.description || 'Return the result.', input_schema: opts.schema }], tool_choice: { type: 'auto' } };
     if (opts.maxTokens > 0) body.max_tokens = Math.floor(opts.maxTokens);
+    if (opts.effort) body.effort = opts.effort;
     if (opts.system) body.system = String(opts.system);
-    const messages = await relayMessages(input, opts.images);
+    const ask = `${input}\n\nAnswer by calling the ${opts.name} tool once, with every field filled in. No words outside the tool call.`;
+    const messages = await relayMessages(ask, opts.images);
     const res = await (await call(Object.assign({}, body, { messages }), opts.signal)).json();
     const use = (res.content || []).find(b => b.type === 'tool_use' && b.name === opts.name);
-    if (res.stop_reason === 'max_tokens' || !use || !use.input || typeof use.input !== 'object') throw { code: 'invalid_json', message: res.stop_reason === 'max_tokens' ? 'The answer was cut short.' : 'No result came back.', text: (res.content || []).filter(b => b.type === 'text').map(b => b.text).join('') };
-    return use.input;
+    if (use && use.input && typeof use.input === 'object' && res.stop_reason !== 'max_tokens') return use.input;
+    const text = (res.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
+    if (res.stop_reason !== 'max_tokens') { const p = parseLoose(text); if (p.ok && p.value && typeof p.value === 'object' && !Array.isArray(p.value)) return p.value; }
+    throw { code: 'invalid_json', message: res.stop_reason === 'max_tokens' ? 'The answer was cut short.' : 'No result came back.', text };
   };
   fn.json = async (input, opts) => {
     const r = await fn(input, Object.assign({}, opts || {}, { __json: true }));
