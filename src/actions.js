@@ -82,6 +82,12 @@ const ACT = {
     return ACT.tx('goal saving', () => { if (amount === null || amount === undefined) useSuggested(S, id); else setVal(S, 'goal:' + id, ym || START, clampAmt(amount), scope === 'month' ? 'month' : 'after'); });
   },
 
+  /* a month's unspent play money put toward a goal, for that month only (see sweepPlay); returns what was moved */
+  sweep(ym, goalId, amount) {
+    if (!goalById(S, goalId)) throw new Error('unknown goal ' + goalId); if (MONTHS.indexOf(ym) < 0) throw new Error('unknown month ' + ym);
+    return ACT.tx('top-up', () => sweepPlay(S, ym, goalId, amount));
+  },
+
   /* ---- jars ---- */
   setAims(aims) {
     return ACT.tx('jar split', () => { const a = {}; JARS.forEach(j => { const v = +(aims && aims[j.id]); a[j.id] = isFinite(v) && v >= 0 && v <= 1 ? v : aimsOf(S)[j.id]; }); S.cfg.aims = a; });

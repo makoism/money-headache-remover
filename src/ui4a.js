@@ -13,6 +13,7 @@ HOW TO ANSWER
 - The page's own arithmetic is the truth. When you propose a change, the person sees the exact before and after, so keep your own estimate short.
 - You are not a licensed adviser: when a question is really about investment products, loans or taxes, say so in one line and stay with the budget.
 - Money mindset of the page: awareness, not willpower. Every bit of pay gets a purpose. Play money is for spending with no guilt. Goals get a date. A short month is fixed by moving money, not by shame.
+- When a goal in the picture has a "for:" line, that is the person's own reason. When they weigh a purchase or a change, put it next to that reason in plain numbers (how many months sooner or later the goal is full), without preaching.
 
 CHANGING THE PAGE
 You cannot change anything yourself. To propose changes, end the reply with exactly one block in this form, after your text:
@@ -27,8 +28,8 @@ ACTIONS
 - set_line {key, amount, scope?}: a bill or a jar line's monthly amount. key is a line key from the picture. scope "after" (default) means from this month on; "month" means this month only.
 - set_jar {jar, amount}: the whole monthly amount of the play, edu, ffa or give jar (it goes on the jar's main line).
 - add_line {jar, name, amount}: a new line; jar is nec, play, edu, ffa or give. remove_line {key}: remove a line.
-- add_goal {name, target, saved?, due?, monthly?}: a new goal; due is YYYY-MM-DD; monthly is the saving a month (left out: the page spreads it to the date, or over about a year).
-- update_goal {id, name?, target?, saved?, due?}: change a goal. remove_goal {id}. set_goal_saving {id, amount}: the monthly saving for a goal; amount null returns to the page's suggested amount. set_main_goal {id}: the goal Home leads with.
+- add_goal {name, target, saved?, due?, monthly?, why?}: a new goal; due is YYYY-MM-DD; monthly is the saving a month (left out: the page spreads it to the date, or over about a year); why is the reason in the person's own words, under 80 characters, only when they said it.
+- update_goal {id, name?, target?, saved?, due?, why?}: change a goal (why: the reason in their words, empty to clear). remove_goal {id}. set_goal_saving {id, amount}: the monthly saving for a goal; amount null returns to the page's suggested amount. set_main_goal {id}: the goal Home leads with.
 - set_home {sections}: what Home shows and in what order, from goal, play, log, goals, jars, more. Leave one out to hide it.
 - set_name {name}.
 - log_spend {amount, category?, date?, note?}: log a receipt, money already spent. category is a line key from the picture (left out: the play money line); date is YYYY-MM-DD, left out: today; note is the shop or item in a few words. One action per receipt. Use it when the person tells you they spent something.`;
@@ -40,7 +41,7 @@ function asstPicture(T) {
   const C2 = calcAll(T), ym = nowYm(), m = C2.byYm[ym], V = viewOf(T, C2, ym, ymd(new Date())), J = jarsOf(T, m), cur = sym() || 'no symbol';
   const n = v => (typeof v === 'number' ? (Math.abs(v - Math.round(v)) < 0.005 ? Math.round(v) : Math.round(v * 100) / 100) : v);
   const lines = T.plan.lines.map(l => `  ${l.key} | ${l.name} | ${JAR_WORD[l.jar] || l.jar} | ${n(val(T, l.key, ym))}${l.ends ? ' | last payment ' + l.ends : ''}`).join('\n');
-  const goals = V.goals.map(r => `  ${r.id} | ${r.name}${r.emergency ? ' (emergency fund)' : ''} | goal ${n(r.target)} | saved ${n(r.saved)} | ${n(val(T, 'goal:' + r.id, ym))} a month | ${r.due ? 'needed by ' + r.due : 'no date'} | ${r.pct >= 100 ? 'full' : r.reached ? 'full in ' + monthLabel(r.reached) : 'not full within ' + SPAN}${V.main && V.main.id === r.id ? ' | main goal' : ''}`).join('\n') || '  (none)';
+  const goals = V.goals.map(r => `  ${r.id} | ${r.name}${r.emergency ? ' (emergency fund)' : ''}${(goalById(T, r.id) || {}).why ? ' | for: ' + goalById(T, r.id).why : ''} | goal ${n(r.target)} | saved ${n(r.saved)} | ${n(val(T, 'goal:' + r.id, ym))} a month | ${r.due ? 'needed by ' + r.due : 'no date'} | ${r.pct >= 100 ? 'full' : r.reached ? 'full in ' + monthLabel(r.reached) : 'not full within ' + SPAN}${V.main && V.main.id === r.id ? ' | main goal' : ''}`).join('\n') || '  (none)';
   const rs = receiptStats(T, ym), cats = Object.keys(rs.byKey || {}).map(k => [k, rs.byKey[k]]).sort((a, b) => b[1] - a[1]).slice(0, 6);
   const byAcct = {}; (rs.list || []).forEach(r => { if (r.s) byAcct[r.s] = (byAcct[r.s] || 0) + r.a; }); const accLine = Object.keys(byAcct).map(k => `${k} ${n(byAcct[k])}`).join(', ');
   /* the last three months with receipts: what was logged against what was planned, so "what is realistic" has data behind it */
@@ -91,7 +92,8 @@ function asstCheck(raw) {
     else if (d === 'add_goal') {
       const name = cleanSubName(a.name), target = amtOf(a.target), saved = a.saved === undefined ? 0 : amtOf(a.saved), due = typeof a.due === 'string' && validDate(a.due) && MONTHS.indexOf(a.due.slice(0, 7)) >= 0 ? a.due : '', monthly = a.monthly === undefined || a.monthly === null ? null : amtOf(a.monthly);
       if (!name || !(target > 0) || !(saved >= 0) || S.plan.goals.length >= MAX_GOALS) return dropped.push(d);
-      push(`New goal ${name}: ${f(target)}${saved > 0 ? ', ' + f(saved) + ' saved' : ''}${due ? ', needed by ' + dateLabel(due) : ''}${monthly !== null ? ', ' + f(monthly) + ' a month' : ''}`, T => { const id = addGoal(T, name); if (!id) return; updateGoal(T, id, { target, start: saved, due }); if (monthly !== null) setVal(T, 'goal:' + id, ym, monthly, 'after'); markDoneOn(T, 'goals'); });
+      const why = typeof a.why === 'string' ? a.why.trim().slice(0, 80) : '';
+      push(`New goal ${name}: ${f(target)}${saved > 0 ? ', ' + f(saved) + ' saved' : ''}${due ? ', needed by ' + dateLabel(due) : ''}${monthly !== null ? ', ' + f(monthly) + ' a month' : ''}${why ? ', for: ' + why : ''}`, T => { const id = addGoal(T, name); if (!id) return; updateGoal(T, id, { target, start: saved, due, why }); if (monthly !== null) setVal(T, 'goal:' + id, ym, monthly, 'after'); markDoneOn(T, 'goals'); });
     }
     else if (d === 'update_goal') {
       const g = goalOf(S, a.id); if (!g) return dropped.push(d + ' ' + (a.id || '')); const p = {}, parts = [];
@@ -99,6 +101,7 @@ function asstCheck(raw) {
       if (a.target !== undefined) { const t = amtOf(a.target); if (t > 0) { p.target = t; parts.push(`goal ${f(g.target)} to ${f(t)}`); } }
       if (a.saved !== undefined) { const s2 = amtOf(a.saved); if (s2 >= 0) { p.start = s2; parts.push(`saved ${f(g.start)} to ${f(s2)}`); } }
       if (a.due !== undefined) { const du = a.due ? (typeof a.due === 'string' && validDate(a.due) && MONTHS.indexOf(a.due.slice(0, 7)) >= 0 ? a.due : null) : ''; if (du !== null) { p.due = du; parts.push(du ? `date to ${dateLabel(du)}` : 'no date'); } }
+      if (a.why !== undefined) { const wy = typeof a.why === 'string' ? a.why.trim().slice(0, 80) : ''; p.why = wy; parts.push(wy ? `reason: ${wy}` : 'reason removed'); }
       if (!parts.length) return dropped.push(d);
       push(`${g.name}: ${parts.join(', ')}`, T => updateGoal(T, g.id, p));
     }

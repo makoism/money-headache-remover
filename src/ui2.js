@@ -19,7 +19,9 @@ function paintLegend(m) {
   const J = jarsOf(S, m), has = J.income > 0 && !J.over;
   const row = (cls, name, sub, v, p, neg) => `<div class="lg${neg ? ' neg' : ''}"><i class="${cls}"></i><span>${name}${sub ? `<small>${sub}</small>` : ''}</span><b>${fmt(v)}</b><em>${p}</em></div>`;
   $('#legend').classList.toggle('nopct', !has);
-  $('#legend').innerHTML = J.list.map(j => row(JARCLS[j.id], j.name, JARTAG[j.id], j.v, has ? j.pct + '%' : '')).join('')
+  const live = S.plan.goals.filter(g => g.target > 0 && m.g[g.id] && m.g[g.id].actual > 0).map(g => g.name);
+  const ltsTag = live.length ? esc(live.slice(0, 2).join(', ') + (live.length > 2 ? ` and ${live.length - 2} more` : '')) : JARTAG.lts;
+  $('#legend').innerHTML = J.list.map(j => row(JARCLS[j.id], j.name, j.id === 'lts' ? ltsTag : JARTAG[j.id], j.v, has ? j.pct + '%' : '')).join('')
     + (J.rest > 0 ? row('rest', 'Left', 'Unassigned', J.rest, has ? J.restPct + '%' : '') : '')
     + (J.short > 0 ? row('rest', 'Short by', 'Plan exceeds pay', J.short, '', true) : '');
 }
@@ -177,7 +179,7 @@ function renderGoals(m) {
     const c = $('#jc-' + g.id); if (!c) return;
     const gi = goalInfo(S, C, g.id, sel), cap = capOf(g);
     const pct = cap > 0 ? Math.min(1, gi.bal / cap) : 0, gb = $('.gbar', c);
-    $('#jn-' + g.id).textContent = g.name;
+    $('#jn-' + g.id).textContent = g.name; const jw = $('#jw-' + g.id); if (jw) jw.textContent = g.why || '';
     $('.fill', gb).style.width = (pct * 100) + '%'; gb.setAttribute('aria-label', `${g.name}: ${Math.round(pct * 100)}% of ${fmt(cap)}`);
     const tick = $('.gtick', gb); if (g.emergency && cap > gi.target && gi.target > 0) { tick.style.left = `calc(${gi.target / cap * 100}% - 1px)`; tick.hidden = false; } else tick.hidden = true;
     $('#jv-' + g.id).innerHTML = gi.target > 0 ? `<b>${fmt(gi.bal)}</b> planned of ${fmt(gi.target)}` : '<b>No goal amount yet</b>';
@@ -220,9 +222,11 @@ function renderSettings() {
 
 function renderMonthTable() {
   const word = { good: 'On plan', tight: 'Tight', short: 'Short' }, icon = { good: IC.ok, tight: IC.warn, short: IC.bad };
+  const fullIn = {}; S.plan.goals.forEach(g => { const r = C.reached[g.id]; if (g.target > 0 && r) (fullIn[r] = fullIn[r] || []).push(g); });
   const rows = C.months.map(m => {
-    const st = statusOf(S, m);
-    return `<tr data-ym="${m.ym}" class="${m.ym === sel ? 'on' : ''}" tabindex="0" aria-label="${fullLabel(m.ym)}: ${word[st]}"><td>${monthLabel(m.ym)}</td><td class="${m.pool.left < 0 ? 'neg' : ''}">${fmt(m.pool.left)}</td><td class="${m.bankEnd < cfg(S, 'minBank') ? 'neg' : ''}">${fmt(m.bankEnd)}</td><td><span class="st ${st}">${icon[st]}<span class="stw">${word[st]}</span></span></td></tr>`;
+    const st = statusOf(S, m), gs = fullIn[m.ym] || [];
+    const marks = gs.map(g => `<span class="mt-g" style="--c:var(--c${g.slot})">${HI.leaf}${esc(g.name)} full</span>`).join('');
+    return `<tr data-ym="${m.ym}" class="${m.ym === sel ? 'on' : ''}" tabindex="0" aria-label="${fullLabel(m.ym)}: ${word[st]}${gs.length ? ', ' + gs.map(g => g.name + ' full').join(', ') : ''}"><td>${monthLabel(m.ym)}${marks}</td><td class="${m.pool.left < 0 ? 'neg' : ''}">${fmt(m.pool.left)}</td><td class="${m.bankEnd < cfg(S, 'minBank') ? 'neg' : ''}">${fmt(m.bankEnd)}</td><td><span class="st ${st}">${icon[st]}<span class="stw">${word[st]}</span></span></td></tr>`;
   }).join('');
   $('#monthTable').innerHTML = `<table><thead><tr><th>Month</th><th>Left</th><th>Bank, month end</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table>`;
 }

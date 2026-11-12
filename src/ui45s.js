@@ -258,9 +258,10 @@ const goalStep = id => ({ id: 'goal-' + id, part: PART.goals, setup: true,
       <p class="cap" id="tourEmCap">${emCap(m)}</p>
       <div class="tour-fields">${moneyField('tourGSaved', 'Already saved', g.start)}</div>`;
     }
-    return `<p>Name, cost, and a date if there is one.</p>
+    return `<p>Name, cost, a date if there is one, and the reason in your words.</p>
     <div class="tour-fields">
       ${g.emergency ? '' : textField('tourGName', 'Name', g.name)}
+      ${g.emergency ? '' : `<div class="field"><label for="tourGWhy">Why (optional)</label><div class="inp"><input id="tourGWhy" type="text" maxlength="80" spellcheck="false" value="${esc(g.why || '')}" placeholder="In your words: who it is for, what it changes"></div><p class="cap">Shows with the goal, so the reason stays in view.</p></div>`}
       <div class="field">${moneyField('tourGCost', 'Cost', g.target).replace(/^<div class="field">|<\/div>$/g, '')}${k.cost ? `<p class="cap">${k.cost}</p>` : ''}</div>
       ${moneyField('tourGSaved', 'Already saved', g.start)}
       ${g.emergency ? '' : `<div class="field"><label for="tourGDue">Needed by</label><input type="date" id="tourGDue" min="${lo}" max="${hi}" value="${esc(g.due)}"><p class="cap">With a date, the monthly amount is worked out for you.</p></div>`}
@@ -273,8 +274,8 @@ const goalStep = id => ({ id: 'goal-' + id, part: PART.goals, setup: true,
       const m = +($('input[name=tourEm]:checked') || { value: 3 }).value, n = necTotal();
       updateGoal(S, id, { start: inum('tourGSaved'), target: m * n, stretch: (m >= 6 ? 12 : 6) * n });
     } else {
-      const nm = $('#tourGName'), du = $('#tourGDue');
-      updateGoal(S, id, { name: nm && nm.value.trim() ? nm.value : g.name, target: inum('tourGCost'), start: inum('tourGSaved'), due: du ? du.value : g.due });
+      const nm = $('#tourGName'), du = $('#tourGDue'), wy = $('#tourGWhy');
+      updateGoal(S, id, { name: nm && nm.value.trim() ? nm.value : g.name, target: inum('tourGCost'), start: inum('tourGSaved'), due: du ? du.value : g.due, why: wy ? wy.value : (g.why || '') });
     }
     settleGoals(); persist();
   } });

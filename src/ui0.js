@@ -61,6 +61,8 @@ function normalize(d) {
   if (typeof u.name !== 'string' || !cleanName(u.name)) delete u.name; else u.name = cleanName(u.name);
   if (typeof u.hope !== 'string' || !Object.prototype.hasOwnProperty.call(HOPES, u.hope)) delete u.hope;
   if (!(u.rcDay >= 0 && u.rcDay <= 6)) delete u.rcDay;
+  /* month-end top-ups already answered: {amt, id} when money moved, {hide: true} when kept as play */
+  if (u.sweep && typeof u.sweep === 'object') { const o = {}; Object.keys(u.sweep).forEach(k => { const v = u.sweep[k]; if (/^\d{4}-\d{2}$/.test(k) && v && typeof v === 'object') { if (v.hide === true) o[k] = { hide: true }; else if (typeof v.amt === 'number' && v.amt > 0 && typeof v.id === 'string') o[k] = { amt: Math.round(v.amt), id: v.id.slice(0, 24) }; } }); if (Object.keys(o).length) u.sweep = o; else delete u.sweep; } else delete u.sweep;
   if (typeof u.rcTime !== 'string' || !/^\d{2}:\d{2}$/.test(u.rcTime)) delete u.rcTime;
   if (!REMIND_FREQS.some(x => x[0] === u.rcFreq)) delete u.rcFreq;
   if (!(Number.isInteger(u.rcDom) && (u.rcDom === DOM_LAST || (u.rcDom >= 1 && u.rcDom <= 28)))) delete u.rcDom;

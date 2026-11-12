@@ -4,8 +4,8 @@
 const COACH = {
   home: [
     ['#hStatus', 'Where you stand', 'Read this first. On plan: this month fits your pay and your balance stays above your minimum.'],
-    ['#hHero', 'Main goal', 'What the money pays for and the months left. Tap Forecast for the graph.'],
-    ['#hSpend', 'Play money', 'What is left to spend this month. Spend it on fun, no guilt.'],
+    ['#hHero', 'Main goal', 'Your reason, in your words, with what this month adds and the months left. Tap Forecast for the graph.'],
+    ['#hSpend', 'Play money', 'What is left to spend this month. Spend it on fun, no guilt. What is left at month end can go toward a goal.'],
     ['#hQuick', 'Log spend', 'Enter an amount, pick a category, tap Log. Do it as you spend or weekly.'],
     ['#hGoals', 'Goals', 'Tap a goal to open it. Edit it or set it as main goal.'],
     ['#hBuckets', 'Jars', 'Left to spend in spending jars. Total saved in saving jars.'],

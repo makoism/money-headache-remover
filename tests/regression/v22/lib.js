@@ -18,7 +18,8 @@ exports.launch = async (vw, vh, scheme='light', reduce=false) => {
 };
 exports.runTour = async (p, pr, shot) => {
   const w = exports.w;
-  const type = async (sel, val) => { await p.$eval(sel, e => { e.focus(); e.select && e.select(); }); await p.keyboard.press('Backspace'); if (val!=='' && val!==null) await p.type(sel, String(val)); };
+  /* the page moves the caret to the end of a box it focuses itself (one frame later), so wait two frames before selecting all */
+  const type = async (sel, val) => { await p.$eval(sel, e => e.focus()); await p.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))); await p.$eval(sel, e => { e.select && e.select(); }); await p.keyboard.press('Backspace'); if (val!=='' && val!==null) await p.type(sel, String(val)); };
   const has = async s => !!(await p.$(s)); const seen=[], probs=[];
   for (let i=0;i<60;i++) {
     const title = await p.$eval('#tourTitle', e=>e.textContent), part = await p.$eval('#tourPart', e=>e.textContent);

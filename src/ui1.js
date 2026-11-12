@@ -80,6 +80,7 @@ function goalFormHTML(g) {
   const own = hasOwnMonthly(S, g.id), id = esc(g.id), lo = START + '-01', hi = END + '-28';
   return `<div class="gform" data-gid="${id}">
     <div class="field"><label for="ge-${id}-name">Name</label><input class="txt" id="ge-${id}-name" data-g="name" type="text" value="${esc(g.name)}" maxlength="60"></div>
+    <div class="field wide"><label for="ge-${id}-why">Why (optional)</label><input class="txt" id="ge-${id}-why" data-g="why" type="text" value="${esc(g.why || '')}" maxlength="80" placeholder="In your words: who it is for, what it changes"><p class="cap">Shows with the goal, so the reason stays in view.</p></div>
     <div class="field"><label for="ge-${id}-target">Goal amount</label><div class="inp"><span class="yen cs"></span><input id="ge-${id}-target" data-g="target" type="number" inputmode="numeric" min="0" step="100" value="${g.target}"></div></div>
     <div class="field"><label for="ge-${id}-start">Already saved</label><div class="inp"><span class="yen cs"></span><input id="ge-${id}-start" data-g="start" type="number" inputmode="numeric" min="0" step="100" value="${g.start}"></div></div>
     <div class="field"><label for="ge-${id}-due">Needed by</label><input type="date" id="ge-${id}-due" data-g="due" min="${lo}" max="${hi}" value="${esc(g.due)}"><p class="cap">With a date, the shortfall is spread over the months before it. Without one, the goal fills in about a year.${g.due ? ' <button type="button" class="link" data-gnodate>Remove date</button>' : ''}</p></div>
@@ -92,6 +93,7 @@ function goalCardHTML(g) {
   const id = esc(g.id);
   return `<div class="gcard" id="jc-${id}" data-gid="${id}" style="--c:var(--c${g.slot})">
     <div class="jhead"><span class="jarn"><i class="dot"></i><span id="jn-${id}">${esc(g.name)}</span></span><span class="jarv" id="jv-${id}"></span></div>
+    <p class="gwhy" id="jw-${id}">${esc(g.why || '')}</p>
     <div class="gbar" role="img" aria-label="${esc(g.name)} progress"><i class="fill" style="width:0%"></i><span class="gtick" hidden></span></div>
     <div class="jfoot"><span class="jstat plain" id="js-${id}"></span><span class="jart" id="jt-${id}"></span></div>
     <p class="gsave"><span id="gs-${id}"></span> <button type="button" class="link" data-adjust>Change monthly amount</button></p>

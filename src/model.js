@@ -23,7 +23,7 @@ const CFG = {
 const JARS = [
   { id: 'nec',  name: 'Necessities',                    usual: 0.55, about: 'Rent, food, utilities and every other bill.' },
   { id: 'lts',  name: 'Long-Term Savings for Spending', usual: 0.10, about: 'Saved now, spent later: a big purchase, a trip, a rainy day, a surprise. Savings goals live here.' },
-  { id: 'play', name: 'Play',                           usual: 0.10, about: 'Fun for you and your family, no guilt. Spend all of it every month.' },
+  { id: 'play', name: 'Play',                           usual: 0.10, about: 'Fun for you and your family, no guilt. What is left at month end can go to a goal.' },
   { id: 'edu',  name: 'Education',                      usual: 0.10, about: 'Courses, books, coaching, skill building.' },
   { id: 'ffa',  name: 'Financial Freedom',              usual: 0.10, about: 'Financial Freedom Account: investments you never spend. They grow and eventually pay you.' },
   { id: 'give', name: 'Give',                           usual: 0.05, about: 'Charity, donations and gifts.' },
@@ -183,7 +183,7 @@ const MAX_AMT = 1e9;
 const clampAmt = v => { v = Math.round(+v); return isFinite(v) ? Math.max(0, Math.min(MAX_AMT, v)) : 0; };
 function setVal(S, key, ym, v, scope) {
   v = clampAmt(v);
-  if (scope === 'once' || ONCE_KEYS.has(key)) { (S.once[ym] = S.once[ym] || {})[key] = v; return; }
+  if (scope === 'once' || scope === 'month' || ONCE_KEYS.has(key)) { (S.once[ym] = S.once[ym] || {})[key] = v; return; }
   if (S.once[ym]) delete S.once[ym][key];
   const arr = (S.steps[key] = S.steps[key] || []).filter(s => s.from < ym);
   arr.push({ from: ym, v }); S.steps[key] = arr;
@@ -219,6 +219,7 @@ function updateLine(S, id, patch) {
 }
 const validDue = d => (typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d) && MONTHS.indexOf(d.slice(0, 7)) >= 0 && validDate(d) ? d : '');   /* a real calendar day inside the months the page covers */
 const pickSlot = S => { const used = S.plan.goals.map(g => g.slot); return SLOTS.find(s => used.indexOf(s) < 0) || SLOTS[S.plan.goals.length % SLOTS.length]; };
+const WHY_MAX = 80;
 function addGoal(S, name) {
   if (S.plan.goals.length >= MAX_GOALS) return null;
   const id = newId(S, 'g', x => goalById(S, x));
@@ -233,6 +234,8 @@ function updateGoal(S, id, patch) {
   if (patch.target !== undefined) g.target = n(patch.target);
   if (patch.start !== undefined) g.start = n(patch.start);
   if (patch.due !== undefined) g.due = validDue(patch.due);
+  /* the reason, in the person's own words; shown with the goal wherever it appears */
+  if (patch.why !== undefined) { const w = typeof patch.why === 'string' ? patch.why.replace(/[\u0000-\u001f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, WHY_MAX) : ''; if (w) g.why = w; else delete g.why; }
   if (patch.emergency !== undefined) {
     if (patch.emergency) { S.plan.goals.forEach(x => { if (x.id !== id) { delete x.emergency; delete x.stretch; } }); g.emergency = true; if (g.stretch === undefined) g.stretch = 0; }
     else { delete g.emergency; delete g.stretch; }
@@ -359,6 +362,16 @@ function fixes(S, m) {
 function trimPlay(S, m, ym, target) {
   let need = m.jar.play - target;
   m.lines.filter(x => x.jar === 'play' && x.on).forEach(x => { if (need <= 0) return; const cut = Math.min(x.v, need); setVal(S, x.key, ym, x.v - cut, 'once'); need -= cut; });
+}
+/* unspent play money of a month put toward a goal: that month's play lines go down by the amount and the goal's deposit goes up by it,
+   both for that month only, so the month's money out is unchanged and the goal is simply fuller. Returns what was moved. */
+function sweepPlay(S, ym, goalId, amount) {
+  const g = goalById(S, goalId), m = calcAll(S).byYm[ym]; if (!g || !m) return 0;
+  const room = Math.max(0, capOf(g) - m.balBefore[g.id] - (m.g[g.id] ? m.g[g.id].actual : 0));
+  let need = Math.max(0, Math.min(Math.floor(+amount || 0), m.jar.play, room)); const moved = need; if (!(need > 0)) return 0;
+  m.lines.filter(x => x.jar === 'play' && x.on).forEach(x => { if (need <= 0) return; const cut = Math.min(x.v, need); setVal(S, x.key, ym, x.v - cut, 'once'); need -= cut; });
+  setVal(S, 'goal:' + g.id, ym, val(S, 'goal:' + g.id, ym) + moved, 'once');
+  return moved;
 }
 
 /* ---- receipts ---- */
@@ -597,6 +610,7 @@ function cleanPlan(raw, legacy) {
     let slot = SLOTS.indexOf(+g.slot) >= 0 && !used.has(+g.slot) ? +g.slot : (SLOTS.find(s => !used.has(s)) || SLOTS[0]); used.add(slot);
     const o = { id: g.id, name: str(g.name, 60) || 'Untitled', target: num(g.target), start: num(g.start), due: validDue(g.due), slot };
     if (typeof g.monthly === 'number' && isFinite(g.monthly) && g.monthly >= 0) o.monthly = Math.round(g.monthly);
+    const why = str(g.why, WHY_MAX).replace(/\s+/g, ' ').trim(); if (why) o.why = why;
     if (g.emergency && !hasE) { hasE = true; o.emergency = true; o.stretch = num(g.stretch); }
     goals.push(o);
   });

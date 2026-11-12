@@ -1,7 +1,7 @@
 const fs = require('fs');
 const src = fs.readFileSync(__dirname + '/model.js', 'utf8');
-const api = new Function(src + ';return {cleanSteps,cleanOnce,cleanItems,cleanCfg,validDue,wholePercents,presetState,sampleOf,SAMPLES,presetKey,roundUnit,MONTHS,JARS,jarsOf,calcAll,freshState,blankState,setVal,val,goalInfo,statusOf,fixes,cfg,resetMonth,aimsOf,basePlan,cleanPlan,cleanReceipts,addLine,removeLine,updateLine,addGoal,removeGoal,updateGoal,useSuggested,hasOwnMonthly,trimPlay,undoOnce,receiptStats,receiptsFor,addReceipt,updateReceipt,removeReceipt,catName,nextWeekday,gcalUrl,outlookUrl,reminderTimes,allKeys,emergencyGoal,lineByKey,goalById,MAX_GOALS,MAX_LINES,readyBy};')();
-const { cleanSteps, cleanOnce, cleanItems, cleanCfg, validDue, wholePercents, readyBy, presetState, sampleOf, SAMPLES, presetKey, roundUnit, MONTHS, JARS, jarsOf, calcAll, freshState: modelFresh, blankState, setVal, val, goalInfo, statusOf, fixes, cfg, aimsOf, basePlan, cleanPlan, cleanReceipts, addLine, removeLine, updateLine, addGoal, removeGoal, updateGoal, useSuggested, hasOwnMonthly, trimPlay, receiptStats, addReceipt, updateReceipt, removeReceipt, catName, nextWeekday, gcalUrl, outlookUrl, reminderTimes, allKeys, emergencyGoal, lineByKey, goalById, MAX_GOALS } = api;
+const api = new Function(src + ';return {sweepPlay,cleanSteps,cleanOnce,cleanItems,cleanCfg,validDue,wholePercents,presetState,sampleOf,SAMPLES,presetKey,roundUnit,MONTHS,JARS,jarsOf,calcAll,freshState,blankState,setVal,val,goalInfo,statusOf,fixes,cfg,resetMonth,aimsOf,basePlan,cleanPlan,cleanReceipts,addLine,removeLine,updateLine,addGoal,removeGoal,updateGoal,useSuggested,hasOwnMonthly,trimPlay,undoOnce,receiptStats,receiptsFor,addReceipt,updateReceipt,removeReceipt,catName,nextWeekday,gcalUrl,outlookUrl,reminderTimes,allKeys,emergencyGoal,lineByKey,goalById,MAX_GOALS,MAX_LINES,readyBy};')();
+const { sweepPlay, cleanSteps, cleanOnce, cleanItems, cleanCfg, validDue, wholePercents, readyBy, presetState, sampleOf, SAMPLES, presetKey, roundUnit, MONTHS, JARS, jarsOf, calcAll, freshState: modelFresh, blankState, setVal, val, goalInfo, statusOf, fixes, cfg, aimsOf, basePlan, cleanPlan, cleanReceipts, addLine, removeLine, updateLine, addGoal, removeGoal, updateGoal, useSuggested, hasOwnMonthly, trimPlay, receiptStats, addReceipt, updateReceipt, removeReceipt, catName, nextWeekday, gcalUrl, outlookUrl, reminderTimes, allKeys, emergencyGoal, lineByKey, goalById, MAX_GOALS } = api;
 /* the older 35,000 sample, kept working for saved copies from before the per-currency samples. The checks below were written for it. */
 const freshState = () => { const f = modelFresh(); f.ui.preset = 'legacy'; f.plan = basePlan({}); return f; };
 let fails = 0;
@@ -279,6 +279,41 @@ eq('default rounding step follows the size of the pay', [roundUnit(presetState('
   eq('one-time costs are cleaned and an empty list is kept', [cleanItems({ '2026-12': [{ id: 'q', label: 'x', amount: 'nine' }, null, 5, { id: 'ok', label: ' Vet ', amount: 400.4 }] })['2026-12'], cleanItems({ '2026-12': [] })['2026-12']], [[{ id: 'ok', label: 'Vet', amount: 400 }], []]);
   eq('settings keep only known, sensible values', cleanCfg({ bankStart: 'lots', minBank: -50, ceiling: 5000.4, loanLast: '2027-08', evil: 1, aims: { nec: 2, play: 0.2 } }), { ceiling: 5000, loanLast: '2027-08', aims: { play: 0.2 } });
   eq('a valid saved copy passes through unchanged', (() => { const S = presetState('¥'); setVal(S, 'a', '2027-03', 250000, 'after'); setVal(S, 'draw', '2027-06', 5000, 'once'); S.items['2027-02'] = [{ id: 'x1', label: 'Fix', amount: 9000 }]; const C = JSON.stringify; return [C(cleanSteps(S.steps)) === C(S.steps), C(cleanOnce(S.once)) === C(S.once), C(cleanItems(S.items)) === C(S.items)]; })(), [true, true, true]);
+}
+
+/* ---------- the reason behind a goal, one-month changes, and unspent play money put toward a goal (v34.0) ---------- */
+{
+  const T = presetState('¥'), gid = T.plan.goals[0].id;
+  updateGoal(T, gid, { why: '  A week in   Hokkaido with Mum  ' });
+  eq('a goal keeps its reason, tidied', goalById(T, gid).why, 'A week in Hokkaido with Mum');
+  updateGoal(T, gid, { why: 'x'.repeat(200) });
+  eq('the reason is capped at 80 characters', goalById(T, gid).why.length, 80);
+  updateGoal(T, gid, { why: '   ' });
+  eq('an empty reason is removed', goalById(T, gid).why, undefined);
+  updateGoal(T, gid, { why: 'Flights for the whole family' });
+  eq('a saved copy keeps the reason', cleanPlan(JSON.parse(JSON.stringify(T.plan))).goals[0].why, 'Flights for the whole family');
+  eq('a saved copy drops a non-text reason', cleanPlan(JSON.parse(JSON.stringify(Object.assign({}, T.plan, { goals: [Object.assign({}, T.plan.goals[0], { why: 42 })] })))).goals[0].why, undefined);
+  /* scope "month" means that month only, as the assistant and the actions layer promise */
+  const U = presetState('¥'), before = val(U, 'envelope', '2026-12');
+  setVal(U, 'envelope', '2026-11', 1000, 'month');
+  eq('a month-scoped change applies to that month', val(U, 'envelope', '2026-11'), 1000);
+  eq('a month-scoped change leaves the next month alone', val(U, 'envelope', '2026-12'), before);
+  /* the sweep: play money down, the goal up, the month's money out unchanged, the goal fuller for good */
+  const V = presetState('¥'), g2 = V.plan.goals.find(g => !g.emergency && g.target > 0) || V.plan.goals[0], ym = '2026-11';
+  const c0 = calcAll(V), m0 = c0.byYm[ym], play0 = m0.jar.play, dep0 = m0.g[g2.id].actual, out0 = m0.pool.out, bal0 = c0.byYm['2027-03'].bal[g2.id];
+  const moved = sweepPlay(V, ym, g2.id, 3400.7);
+  const c1 = calcAll(V), m1 = c1.byYm[ym];
+  eq('the sweep moves whole units only', moved, 3400);
+  eq('play money of that month goes down by the amount', m1.jar.play, play0 - 3400);
+  eq('the goal deposit of that month goes up by the amount', m1.g[g2.id].actual, dep0 + 3400);
+  eq('money out of the month is unchanged', m1.pool.out, out0);
+  eq('the bank balance of the month is unchanged', m1.bankEnd, m0.bankEnd);
+  eq('the goal stays fuller in later months', c1.byYm['2027-03'].bal[g2.id] - bal0, 3400);
+  eq('the next month is untouched', c1.byYm['2026-12'].jar.play, c0.byYm['2026-12'].jar.play);
+  eq('a sweep bigger than the play money is capped to it', sweepPlay(presetState('¥'), ym, g2.id, 1e9), play0);
+  const W = presetState('¥'); updateGoal(W, g2.id, { target: 100, start: 0 });
+  eq('a sweep never fills a goal past its target', (() => { const mv = sweepPlay(W, ym, g2.id, 5000); const c = calcAll(W); return [mv <= 100, c.byYm[ym].bal[g2.id] <= 100]; })(), [true, true]);
+  eq('a sweep of nothing changes nothing', sweepPlay(presetState('¥'), ym, g2.id, 0), 0);
 }
 
 console.log(fails ? fails + ' FAILED' : 'ALL PASS');

@@ -52,7 +52,7 @@
 }
 * { box-sizing: border-box; }
 /* glass: translucent panels with a hairline and a top highlight; blur only on the large ones, so phones stay quick */
-.card, .start, .tour-fields, .tour-cloud, .split-row, .gw-card, .mgb, .tour-ledger, .why, .sub-o, .newcat, .hnext, .msg.ai, .tour-try, .src-panel, .imp-q { box-shadow: inset 0 0 0 1px var(--hair), inset 0 1px 0 var(--glass-hi); }
+.card, .start, .tour-fields, .tour-cloud, .tour-goal, .split-row, .gw-card, .mgb, .tour-ledger, .why, .sub-o, .newcat, .hnext, .msg.ai, .tour-try, .src-panel, .imp-q { box-shadow: inset 0 0 0 1px var(--hair), inset 0 1px 0 var(--glass-hi); }
 @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) { .card, .gw-card, .hnext, .src-panel { -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); } }
 html { -webkit-text-size-adjust: 100%; }
 body { margin: 0; background: var(--bg); color: var(--ink); position: relative; font-family: var(--f); font-size: 17px; line-height: 1.47; letter-spacing: -.008em; font-weight: 400; -webkit-font-smoothing: antialiased; }
@@ -277,6 +277,10 @@ b, strong { font-weight: 600; }
 .jstat.good { background: var(--good-bg); color: var(--good); } .jstat.warn { background: var(--warn-bg); color: var(--warn); } .jstat.plain { background: var(--track2); color: var(--ink2); }
 .jart { font-size: 15px; color: var(--ink2); }
 .gsave { margin-top: 12px; font-size: 15px; color: var(--ink2); }
+/* the reason behind a goal, in the person's words: quiet, under the name, gone when empty */
+/* All months: the month a goal becomes full carries its name */
+.mt-g { display: inline-flex; align-items: center; gap: 4px; margin: 2px 0 0 8px; padding: 1px 8px 1px 6px; border-radius: 999px; font-size: 12px; line-height: 1.5; color: var(--c); background: color-mix(in srgb, var(--c) 14%, transparent); vertical-align: 1px; white-space: nowrap; } .mt-g svg { width: 12px; height: 12px; }
+.gwhy { margin: 4px 0 10px; font-size: 15px; line-height: 1.4; color: var(--ink2); } .gwhy:empty { display: none; }
 .gsave b { color: var(--ink); font-weight: 600; }
 
 /* chart and tables */
@@ -497,6 +501,13 @@ svg.tour-fig text.t { font-family: var(--f); font-size: 11.5px; fill: var(--ink2
 .hello { margin: 28px 2px 0; font-size: clamp(22px, 4vw, 28px); font-weight: 600; letter-spacing: -.025em; line-height: 1.2; color: var(--ink); }
 
 svg.tour-scene { width: 100%; max-width: 440px; height: auto; }
+/* the destination block on Setup done: name, reason, bar, numbers */
+.tour-goal { margin: 6px 0 22px; padding: 18px 20px; border-radius: 18px; max-width: 460px; }
+.tour-goal-k { margin: 0; font-size: 13px; color: var(--ink3); }
+.tour-goal-n { margin: 2px 0 0; font-family: var(--fd); font-weight: 500; font-size: 26px; line-height: 1.15; letter-spacing: -.012em; }
+.tour-goal-w { margin: 6px 0 0; font-size: 16px; line-height: 1.4; color: var(--ink2); }
+.tour-goal .hg-b { margin-top: 14px; }
+.tour-goal-l { margin: 10px 0 0; font-size: 15px; color: var(--ink2); } .tour-goal-l b { color: var(--ink); font-weight: 600; }
 .tour-cloud { display: flex; gap: 12px; align-items: flex-start; background: var(--panel); border-radius: 16px; padding: 14px 16px; max-width: 460px; font-size: 16px; line-height: 1.4; }
 .tour-cloud > svg { flex: 0 0 22px; width: 22px; height: 22px; margin-top: 2px; color: var(--good); }
 .tour-cloud > div { min-width: 0; flex: 1 1 auto; } .tour-cloud b { display: block; margin-bottom: 4px; } .tour-cloud .cap { margin: 0 0 10px; } .tour-cloud .row-btns { align-items: center; gap: 10px; } .tour-cloud .row-btns .cap { margin: 0; }
@@ -721,7 +732,8 @@ svg.tour-scene { width: 100%; max-width: 440px; height: auto; }
 .hnext { margin-top: 20px; display: flex; align-items: center; justify-content: space-between; gap: 12px 20px; flex-wrap: wrap; padding: 16px 20px; border-radius: 22px; background: color-mix(in srgb, var(--accent) 9%, var(--panel)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 26%, transparent); }
 .hn-t { display: grid; gap: 2px; min-width: 0; flex: 1 1 260px; }
 .hn-t b { font-size: 17px; } .hn-t span { font-size: 15px; color: var(--ink2); line-height: 1.35; }
-.hn-b { display: flex; align-items: center; gap: 12px; }
+.hn-b { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.hn-b select.inp.sm { display: inline-block; flex: none; width: auto; min-width: 0; min-height: 34px; padding: 4px 30px 4px 12px; font-size: 15px; border-radius: 12px; -webkit-appearance: none; appearance: none; background-image: linear-gradient(45deg, transparent 50%, var(--ink3) 50%), linear-gradient(135deg, var(--ink3) 50%, transparent 50%); background-position: calc(100% - 15px) 50%, calc(100% - 10px) 50%; background-size: 5px 5px, 5px 5px; background-repeat: no-repeat; }
 .hq { display: grid; gap: 18px; }
 .hform { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr) auto; gap: 14px; align-items: end; }
 .hform .hadd { min-height: 52px; padding: 0 30px; }
@@ -747,6 +759,7 @@ svg.tour-scene { width: 100%; max-width: 440px; height: auto; }
 .hw-bar .fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 6px; background: var(--c); transition: width .9s cubic-bezier(.2, .8, .2, 1); }
 .hw-bar .ms { position: absolute; top: -3px; bottom: -3px; width: 3px; margin-left: -1.5px; background: var(--panel); border-radius: 2px; }
 .hw-nums { display: flex; justify-content: space-between; gap: 6px 14px; flex-wrap: wrap; margin-top: 12px; font-size: 15px; color: var(--ink2); }
+.hw-add { margin: 6px 0 0; font-size: 15px; color: var(--ink2); } .hw-add b { color: var(--ink); font-weight: 600; }
 .hw-nums b { color: var(--ink); font-weight: 600; }
 .hw-graph { margin-top: 18px; }
 .hw-graph svg { width: 100%; height: auto; display: block; overflow: visible; touch-action: pan-y; }
@@ -1637,7 +1650,7 @@ body.gw-open, body.co-open.gw-open { overflow: hidden; }
   </div>
 
   <p class="foot" id="footNote">Not financial advice. Sample numbers are invented. Replace them with yours.</p>
-  <p class="foot ver" id="verFoot">Version 33.1, updated Nov 12, 7:05 pm</p>
+  <p class="foot ver" id="verFoot">Version 34.0, updated Nov 12, 10:55 pm</p>
 </div>
 <div class="tip" id="tip" role="tooltip"></div>
 <div class="tour" id="tour" role="dialog" aria-modal="true" aria-labelledby="tourTitle" hidden>
@@ -1668,7 +1681,7 @@ body.gw-open, body.co-open.gw-open { overflow: hidden; }
     <button type="button" id="helpTab">Explain this tab</button>
     <button type="button" id="helpSetup">Guided setup</button>
     <button type="button" id="helpVideo" hidden>Intro video</button>
-    <p class="help-ver">Version 33.1</p>
+    <p class="help-ver">Version 34.0</p>
   </div>
   <div class="help-row"><button type="button" class="help-btn ask-btn" id="askBtn">Ask</button><button type="button" class="help-btn" id="helpBtn" aria-expanded="false" aria-controls="helpMenu"><span class="q" aria-hidden="true">?</span>Help</button></div>
 </div>
@@ -1718,7 +1731,7 @@ const CFG = {
 const JARS = [
   { id: 'nec',  name: 'Necessities',                    usual: 0.55, about: 'Rent, food, utilities and every other bill.' },
   { id: 'lts',  name: 'Long-Term Savings for Spending', usual: 0.10, about: 'Saved now, spent later: a big purchase, a trip, a rainy day, a surprise. Savings goals live here.' },
-  { id: 'play', name: 'Play',                           usual: 0.10, about: 'Fun for you and your family, no guilt. Spend all of it every month.' },
+  { id: 'play', name: 'Play',                           usual: 0.10, about: 'Fun for you and your family, no guilt. What is left at month end can go to a goal.' },
   { id: 'edu',  name: 'Education',                      usual: 0.10, about: 'Courses, books, coaching, skill building.' },
   { id: 'ffa',  name: 'Financial Freedom',              usual: 0.10, about: 'Financial Freedom Account: investments you never spend. They grow and eventually pay you.' },
   { id: 'give', name: 'Give',                           usual: 0.05, about: 'Charity, donations and gifts.' },
@@ -1878,7 +1891,7 @@ const MAX_AMT = 1e9;
 const clampAmt = v => { v = Math.round(+v); return isFinite(v) ? Math.max(0, Math.min(MAX_AMT, v)) : 0; };
 function setVal(S, key, ym, v, scope) {
   v = clampAmt(v);
-  if (scope === 'once' || ONCE_KEYS.has(key)) { (S.once[ym] = S.once[ym] || {})[key] = v; return; }
+  if (scope === 'once' || scope === 'month' || ONCE_KEYS.has(key)) { (S.once[ym] = S.once[ym] || {})[key] = v; return; }
   if (S.once[ym]) delete S.once[ym][key];
   const arr = (S.steps[key] = S.steps[key] || []).filter(s => s.from < ym);
   arr.push({ from: ym, v }); S.steps[key] = arr;
@@ -1914,6 +1927,7 @@ function updateLine(S, id, patch) {
 }
 const validDue = d => (typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d) && MONTHS.indexOf(d.slice(0, 7)) >= 0 && validDate(d) ? d : '');   /* a real calendar day inside the months the page covers */
 const pickSlot = S => { const used = S.plan.goals.map(g => g.slot); return SLOTS.find(s => used.indexOf(s) < 0) || SLOTS[S.plan.goals.length % SLOTS.length]; };
+const WHY_MAX = 80;
 function addGoal(S, name) {
   if (S.plan.goals.length >= MAX_GOALS) return null;
   const id = newId(S, 'g', x => goalById(S, x));
@@ -1928,6 +1942,8 @@ function updateGoal(S, id, patch) {
   if (patch.target !== undefined) g.target = n(patch.target);
   if (patch.start !== undefined) g.start = n(patch.start);
   if (patch.due !== undefined) g.due = validDue(patch.due);
+  /* the reason, in the person's own words; shown with the goal wherever it appears */
+  if (patch.why !== undefined) { const w = typeof patch.why === 'string' ? patch.why.replace(/[\u0000-\u001f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, WHY_MAX) : ''; if (w) g.why = w; else delete g.why; }
   if (patch.emergency !== undefined) {
     if (patch.emergency) { S.plan.goals.forEach(x => { if (x.id !== id) { delete x.emergency; delete x.stretch; } }); g.emergency = true; if (g.stretch === undefined) g.stretch = 0; }
     else { delete g.emergency; delete g.stretch; }
@@ -2054,6 +2070,16 @@ function fixes(S, m) {
 function trimPlay(S, m, ym, target) {
   let need = m.jar.play - target;
   m.lines.filter(x => x.jar === 'play' && x.on).forEach(x => { if (need <= 0) return; const cut = Math.min(x.v, need); setVal(S, x.key, ym, x.v - cut, 'once'); need -= cut; });
+}
+/* unspent play money of a month put toward a goal: that month's play lines go down by the amount and the goal's deposit goes up by it,
+   both for that month only, so the month's money out is unchanged and the goal is simply fuller. Returns what was moved. */
+function sweepPlay(S, ym, goalId, amount) {
+  const g = goalById(S, goalId), m = calcAll(S).byYm[ym]; if (!g || !m) return 0;
+  const room = Math.max(0, capOf(g) - m.balBefore[g.id] - (m.g[g.id] ? m.g[g.id].actual : 0));
+  let need = Math.max(0, Math.min(Math.floor(+amount || 0), m.jar.play, room)); const moved = need; if (!(need > 0)) return 0;
+  m.lines.filter(x => x.jar === 'play' && x.on).forEach(x => { if (need <= 0) return; const cut = Math.min(x.v, need); setVal(S, x.key, ym, x.v - cut, 'once'); need -= cut; });
+  setVal(S, 'goal:' + g.id, ym, val(S, 'goal:' + g.id, ym) + moved, 'once');
+  return moved;
 }
 
 /* ---- receipts ---- */
@@ -2292,6 +2318,7 @@ function cleanPlan(raw, legacy) {
     let slot = SLOTS.indexOf(+g.slot) >= 0 && !used.has(+g.slot) ? +g.slot : (SLOTS.find(s => !used.has(s)) || SLOTS[0]); used.add(slot);
     const o = { id: g.id, name: str(g.name, 60) || 'Untitled', target: num(g.target), start: num(g.start), due: validDue(g.due), slot };
     if (typeof g.monthly === 'number' && isFinite(g.monthly) && g.monthly >= 0) o.monthly = Math.round(g.monthly);
+    const why = str(g.why, WHY_MAX).replace(/\s+/g, ' ').trim(); if (why) o.why = why;
     if (g.emergency && !hasE) { hasE = true; o.emergency = true; o.stretch = num(g.stretch); }
     goals.push(o);
   });
@@ -2563,6 +2590,8 @@ function normalize(d) {
   if (typeof u.name !== 'string' || !cleanName(u.name)) delete u.name; else u.name = cleanName(u.name);
   if (typeof u.hope !== 'string' || !Object.prototype.hasOwnProperty.call(HOPES, u.hope)) delete u.hope;
   if (!(u.rcDay >= 0 && u.rcDay <= 6)) delete u.rcDay;
+  /* month-end top-ups already answered: {amt, id} when money moved, {hide: true} when kept as play */
+  if (u.sweep && typeof u.sweep === 'object') { const o = {}; Object.keys(u.sweep).forEach(k => { const v = u.sweep[k]; if (/^\d{4}-\d{2}$/.test(k) && v && typeof v === 'object') { if (v.hide === true) o[k] = { hide: true }; else if (typeof v.amt === 'number' && v.amt > 0 && typeof v.id === 'string') o[k] = { amt: Math.round(v.amt), id: v.id.slice(0, 24) }; } }); if (Object.keys(o).length) u.sweep = o; else delete u.sweep; } else delete u.sweep;
   if (typeof u.rcTime !== 'string' || !/^\d{2}:\d{2}$/.test(u.rcTime)) delete u.rcTime;
   if (!REMIND_FREQS.some(x => x[0] === u.rcFreq)) delete u.rcFreq;
   if (!(Number.isInteger(u.rcDom) && (u.rcDom === DOM_LAST || (u.rcDom >= 1 && u.rcDom <= 28)))) delete u.rcDom;
@@ -2862,6 +2891,12 @@ const ACT = {
     return ACT.tx('goal saving', () => { if (amount === null || amount === undefined) useSuggested(S, id); else setVal(S, 'goal:' + id, ym || START, clampAmt(amount), scope === 'month' ? 'month' : 'after'); });
   },
 
+  /* a month's unspent play money put toward a goal, for that month only (see sweepPlay); returns what was moved */
+  sweep(ym, goalId, amount) {
+    if (!goalById(S, goalId)) throw new Error('unknown goal ' + goalId); if (MONTHS.indexOf(ym) < 0) throw new Error('unknown month ' + ym);
+    return ACT.tx('top-up', () => sweepPlay(S, ym, goalId, amount));
+  },
+
   /* ---- jars ---- */
   setAims(aims) {
     return ACT.tx('jar split', () => { const a = {}; JARS.forEach(j => { const v = +(aims && aims[j.id]); a[j.id] = isFinite(v) && v >= 0 && v <= 1 ? v : aimsOf(S)[j.id]; }); S.cfg.aims = a; });
@@ -2977,6 +3012,7 @@ function goalFormHTML(g) {
   const own = hasOwnMonthly(S, g.id), id = esc(g.id), lo = START + '-01', hi = END + '-28';
   return `<div class="gform" data-gid="${id}">
     <div class="field"><label for="ge-${id}-name">Name</label><input class="txt" id="ge-${id}-name" data-g="name" type="text" value="${esc(g.name)}" maxlength="60"></div>
+    <div class="field wide"><label for="ge-${id}-why">Why (optional)</label><input class="txt" id="ge-${id}-why" data-g="why" type="text" value="${esc(g.why || '')}" maxlength="80" placeholder="In your words: who it is for, what it changes"><p class="cap">Shows with the goal, so the reason stays in view.</p></div>
     <div class="field"><label for="ge-${id}-target">Goal amount</label><div class="inp"><span class="yen cs"></span><input id="ge-${id}-target" data-g="target" type="number" inputmode="numeric" min="0" step="100" value="${g.target}"></div></div>
     <div class="field"><label for="ge-${id}-start">Already saved</label><div class="inp"><span class="yen cs"></span><input id="ge-${id}-start" data-g="start" type="number" inputmode="numeric" min="0" step="100" value="${g.start}"></div></div>
     <div class="field"><label for="ge-${id}-due">Needed by</label><input type="date" id="ge-${id}-due" data-g="due" min="${lo}" max="${hi}" value="${esc(g.due)}"><p class="cap">With a date, the shortfall is spread over the months before it. Without one, the goal fills in about a year.${g.due ? ' <button type="button" class="link" data-gnodate>Remove date</button>' : ''}</p></div>
@@ -2989,6 +3025,7 @@ function goalCardHTML(g) {
   const id = esc(g.id);
   return `<div class="gcard" id="jc-${id}" data-gid="${id}" style="--c:var(--c${g.slot})">
     <div class="jhead"><span class="jarn"><i class="dot"></i><span id="jn-${id}">${esc(g.name)}</span></span><span class="jarv" id="jv-${id}"></span></div>
+    <p class="gwhy" id="jw-${id}">${esc(g.why || '')}</p>
     <div class="gbar" role="img" aria-label="${esc(g.name)} progress"><i class="fill" style="width:0%"></i><span class="gtick" hidden></span></div>
     <div class="jfoot"><span class="jstat plain" id="js-${id}"></span><span class="jart" id="jt-${id}"></span></div>
     <p class="gsave"><span id="gs-${id}"></span> <button type="button" class="link" data-adjust>Change monthly amount</button></p>
@@ -3101,7 +3138,9 @@ function paintLegend(m) {
   const J = jarsOf(S, m), has = J.income > 0 && !J.over;
   const row = (cls, name, sub, v, p, neg) => `<div class="lg${neg ? ' neg' : ''}"><i class="${cls}"></i><span>${name}${sub ? `<small>${sub}</small>` : ''}</span><b>${fmt(v)}</b><em>${p}</em></div>`;
   $('#legend').classList.toggle('nopct', !has);
-  $('#legend').innerHTML = J.list.map(j => row(JARCLS[j.id], j.name, JARTAG[j.id], j.v, has ? j.pct + '%' : '')).join('')
+  const live = S.plan.goals.filter(g => g.target > 0 && m.g[g.id] && m.g[g.id].actual > 0).map(g => g.name);
+  const ltsTag = live.length ? esc(live.slice(0, 2).join(', ') + (live.length > 2 ? ` and ${live.length - 2} more` : '')) : JARTAG.lts;
+  $('#legend').innerHTML = J.list.map(j => row(JARCLS[j.id], j.name, j.id === 'lts' ? ltsTag : JARTAG[j.id], j.v, has ? j.pct + '%' : '')).join('')
     + (J.rest > 0 ? row('rest', 'Left', 'Unassigned', J.rest, has ? J.restPct + '%' : '') : '')
     + (J.short > 0 ? row('rest', 'Short by', 'Plan exceeds pay', J.short, '', true) : '');
 }
@@ -3259,7 +3298,7 @@ function renderGoals(m) {
     const c = $('#jc-' + g.id); if (!c) return;
     const gi = goalInfo(S, C, g.id, sel), cap = capOf(g);
     const pct = cap > 0 ? Math.min(1, gi.bal / cap) : 0, gb = $('.gbar', c);
-    $('#jn-' + g.id).textContent = g.name;
+    $('#jn-' + g.id).textContent = g.name; const jw = $('#jw-' + g.id); if (jw) jw.textContent = g.why || '';
     $('.fill', gb).style.width = (pct * 100) + '%'; gb.setAttribute('aria-label', `${g.name}: ${Math.round(pct * 100)}% of ${fmt(cap)}`);
     const tick = $('.gtick', gb); if (g.emergency && cap > gi.target && gi.target > 0) { tick.style.left = `calc(${gi.target / cap * 100}% - 1px)`; tick.hidden = false; } else tick.hidden = true;
     $('#jv-' + g.id).innerHTML = gi.target > 0 ? `<b>${fmt(gi.bal)}</b> planned of ${fmt(gi.target)}` : '<b>No goal amount yet</b>';
@@ -3302,9 +3341,11 @@ function renderSettings() {
 
 function renderMonthTable() {
   const word = { good: 'On plan', tight: 'Tight', short: 'Short' }, icon = { good: IC.ok, tight: IC.warn, short: IC.bad };
+  const fullIn = {}; S.plan.goals.forEach(g => { const r = C.reached[g.id]; if (g.target > 0 && r) (fullIn[r] = fullIn[r] || []).push(g); });
   const rows = C.months.map(m => {
-    const st = statusOf(S, m);
-    return `<tr data-ym="${m.ym}" class="${m.ym === sel ? 'on' : ''}" tabindex="0" aria-label="${fullLabel(m.ym)}: ${word[st]}"><td>${monthLabel(m.ym)}</td><td class="${m.pool.left < 0 ? 'neg' : ''}">${fmt(m.pool.left)}</td><td class="${m.bankEnd < cfg(S, 'minBank') ? 'neg' : ''}">${fmt(m.bankEnd)}</td><td><span class="st ${st}">${icon[st]}<span class="stw">${word[st]}</span></span></td></tr>`;
+    const st = statusOf(S, m), gs = fullIn[m.ym] || [];
+    const marks = gs.map(g => `<span class="mt-g" style="--c:var(--c${g.slot})">${HI.leaf}${esc(g.name)} full</span>`).join('');
+    return `<tr data-ym="${m.ym}" class="${m.ym === sel ? 'on' : ''}" tabindex="0" aria-label="${fullLabel(m.ym)}: ${word[st]}${gs.length ? ', ' + gs.map(g => g.name + ' full').join(', ') : ''}"><td>${monthLabel(m.ym)}${marks}</td><td class="${m.pool.left < 0 ? 'neg' : ''}">${fmt(m.pool.left)}</td><td class="${m.bankEnd < cfg(S, 'minBank') ? 'neg' : ''}">${fmt(m.bankEnd)}</td><td><span class="st ${st}">${icon[st]}<span class="stw">${word[st]}</span></span></td></tr>`;
   }).join('');
   $('#monthTable').innerHTML = `<table><thead><tr><th>Month</th><th>Left</th><th>Bank, month end</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
@@ -3783,9 +3824,10 @@ const goalStep = id => ({ id: 'goal-' + id, part: PART.goals, setup: true,
       <p class="cap" id="tourEmCap">${emCap(m)}</p>
       <div class="tour-fields">${moneyField('tourGSaved', 'Already saved', g.start)}</div>`;
     }
-    return `<p>Name, cost, and a date if there is one.</p>
+    return `<p>Name, cost, a date if there is one, and the reason in your words.</p>
     <div class="tour-fields">
       ${g.emergency ? '' : textField('tourGName', 'Name', g.name)}
+      ${g.emergency ? '' : `<div class="field"><label for="tourGWhy">Why (optional)</label><div class="inp"><input id="tourGWhy" type="text" maxlength="80" spellcheck="false" value="${esc(g.why || '')}" placeholder="In your words: who it is for, what it changes"></div><p class="cap">Shows with the goal, so the reason stays in view.</p></div>`}
       <div class="field">${moneyField('tourGCost', 'Cost', g.target).replace(/^<div class="field">|<\/div>$/g, '')}${k.cost ? `<p class="cap">${k.cost}</p>` : ''}</div>
       ${moneyField('tourGSaved', 'Already saved', g.start)}
       ${g.emergency ? '' : `<div class="field"><label for="tourGDue">Needed by</label><input type="date" id="tourGDue" min="${lo}" max="${hi}" value="${esc(g.due)}"><p class="cap">With a date, the monthly amount is worked out for you.</p></div>`}
@@ -3798,8 +3840,8 @@ const goalStep = id => ({ id: 'goal-' + id, part: PART.goals, setup: true,
       const m = +($('input[name=tourEm]:checked') || { value: 3 }).value, n = necTotal();
       updateGoal(S, id, { start: inum('tourGSaved'), target: m * n, stretch: (m >= 6 ? 12 : 6) * n });
     } else {
-      const nm = $('#tourGName'), du = $('#tourGDue');
-      updateGoal(S, id, { name: nm && nm.value.trim() ? nm.value : g.name, target: inum('tourGCost'), start: inum('tourGSaved'), due: du ? du.value : g.due });
+      const nm = $('#tourGName'), du = $('#tourGDue'), wy = $('#tourGWhy');
+      updateGoal(S, id, { name: nm && nm.value.trim() ? nm.value : g.name, target: inum('tourGCost'), start: inum('tourGSaved'), due: du ? du.value : g.due, why: wy ? wy.value : (g.why || '') });
     }
     settleGoals(); persist();
   } });
@@ -5197,7 +5239,7 @@ const MUSIC = (() => {
     render(c, out, seconds) { const s = build(c, out); s.bus.gain.setValueAtTime(LEVEL, 0); step(s, seconds); return s; },
   };
 })();
-if (/[?&]sfxtest\b/.test(location.search)) { window.__music = MUSIC; window.__actx = () => SFX.state(); window.__pix = { placePix, pixFitAll, peek, celebrate, renderHome }; }
+if (/[?&]sfxtest\b/.test(location.search)) { window.__music = MUSIC; window.__actx = () => SFX.state(); window.__pix = { placePix, pixFitAll, peek, celebrate, renderHome }; window.__t = { get S() { return S; }, calcAll, addGoal, updateGoal, persist, restructure, asstPicture, goalById }; }
 /* Transcript of the hello video, as [start second, line]. This is Mako's own transcript text, kept in his words (fillers and all); only typing-tool glitches were fixed (doubled words, two typos). Each line is timed against the audio. */
 const TRANSCRIPT = [[4.0, "At the park. Look at these trees."],
 [10.2, "Um, I'm kind of nervous because I don't usually record myself."],
@@ -5511,14 +5553,19 @@ const TOUR = [
           : f.st === 'spare' ? `Play money <b>${fmt(f.play)}</b> a month. <b>${fmt(f.L)}</b> of pay is unassigned: raise a goal or add to play money.`
           : `Play money <b>${fmt(f.play)}</b> a month, to spend without guilt. All other pay is assigned.`;
         const V = viewOf(S, f.C, nowYm(), ymd(new Date())), r = V.main, mg = r ? goalById(S, r.id) : null;
-        const goal = mg ? `Main goal: <b>${esc(mg.name)}</b>. ${r.pct >= 100 ? 'Full.' : r.reached ? (r.months <= 0 ? 'Full <b>this month</b>.' : `<b>${plural(r.months, 'month')}</b> to go. Full ${fullLabel(r.reached)}.`) : 'Not full within ' + SPAN + ' at this pace.'}` : '';
+        /* the last screen lands on the destination: the goal, the reason in the person's words, when it is full and what each month adds */
+        const when = r ? (r.pct >= 100 ? 'Full.' : r.reached ? (r.months <= 0 ? 'Full <b>this month</b>.' : `Full <b>${fullLabel(r.reached)}</b>, ${plural(r.months, 'month')} from now.`) : 'Not full within ' + SPAN + ' at this pace.') : '';
+        const dep = r ? f.C.byYm[nowYm()].g[r.id].actual : 0;
+        const goal = mg ? `<div class="tour-goal" style="--c:var(--c${mg.slot})"><p class="tour-goal-k">Main goal</p><p class="tour-goal-n">${esc(mg.name)}</p>${mg.why ? `<p class="tour-goal-w">${esc(mg.why)}</p>` : ''}
+          <div class="hg-b" role="img" aria-label="${r.pct} percent"><i style="width:${Math.min(100, r.pct)}%"></i></div>
+          <p class="tour-goal-l"><b>${fmt(r.saved)}</b> of ${fmt(r.target)}${dep > 0 && r.pct < 100 ? `, <b>+${fmt(dep)}</b> a month` : ''}. ${when}</p></div>` : '';
         const ok = f.st === 'even' || f.st === 'spare';
         /* on the app's own address: one tap keeps an encrypted copy in the cloud, so a lost phone does not mean lost numbers */
         const cloud = typeof vaultAvailable === 'function' && vaultAvailable() && !(vault && vault.on)
           ? `<div class="tour-cloud" id="tourCloud">${LOCK}<div><b>Keep a copy in the cloud</b><p class="cap">Your numbers live in this browser. Cloud backup keeps an encrypted copy that only your recovery code can open. New phone, or browser cleared: enter the code and the numbers come back.</p>
             <div class="row-btns"><button type="button" class="btn small solid" id="tourVaultOn">Turn on cloud backup</button><span class="cap">Later: Settings, Cloud backup.</span></div><div class="tour-vault-code" id="tourVaultCode"></div></div></div>` : '';
-        return `${homeScene()}${ok ? `<p class="tour-st"><span class="chip good">${IC.ok}On plan</span></p>` : ''}<p>Your month:</p>${ledgerHTML(f)}<p>${line}</p>${goal ? `<p>${goal}</p>` : ''}
-        <p>Receipts keeps this true: log what you spend, or upload each month's statement. Help, bottom right, has the video and this setup.</p>${cloud}`;
+        return `${homeScene()}${ok ? `<p class="tour-st"><span class="chip good">${IC.ok}On plan</span></p>` : ''}${goal}<p>Your month:</p>${ledgerHTML(f)}<p>${line}</p>
+        <p>Receipts keeps this true: log what you spend, or upload each month's statement. What is left of play money at month end can go toward a goal. Help, bottom right, has the video and this setup.</p>${cloud}`;
       }
       const m = calcAll(S).byYm[sel], pay = m.a + m.b + m.side, L = m.pool.left;
       const zero = S.ui.preset === 'blank' || !!S.ui.cleared;
@@ -5714,11 +5761,11 @@ The page is about awareness, not perfection: see where money goes, give each pay
 THE PAGE
 - Two pills sit bottom right: Ask (the money assistant: it sees the plan, answers money questions, and can propose changes that the person applies with one tap and can undo) and Help (a pill with a question mark) which opens: Ask about my money, Explain this tab, Guided setup, Intro video.
 - Three tabs along the top: Home, Receipts, Plan. Inside Plan, a switch at the top has Month, Goals and All months. Settings is reached from Home: open the folded section Streak, badges, pages, then tap Settings under Pages, or tap the gear at the top right.
-- Home: the first screen, kept simple. At the very top, under your name, a status line says where you stand this month: On plan, Tight month or Short, then whether all pay is assigned and where your balance ends. A line under it says whether you have logged receipts this week. While the figures are still the invented sample, it says Sample numbers instead. Top card: the main goal in plain words (for example "Yearly bill covered"), months to go, the date it is full, a progress bar and a status. Tap Forecast under it for details and a graph. Next, Play money: what is left this month, with a weekly amount. Next, Log spend: amount, category and Log. Under Date, note you can set the date and a note, and Scan receipt jumps to the scanner. Then Goals: one row per goal with what it pays for and months to go. Tap a row to open it: amount saved, status, Edit goal, and Set as main goal. Add goal starts a new goal, and See every goal on one graph draws all goals together. Then Jars: the six jars. The jars you spend from (Necessities, Play, Education, Give) show what is left. The two you save in (Long-Term Savings for Spending, Financial Freedom) show what has built up. The folded section Streak, badges, pages holds the weekly streak, badges and the links to other pages.
+- Home: the first screen, kept simple. At the very top, under your name, a status line says where you stand this month: On plan, Tight month or Short, then whether all pay is assigned and where your balance ends. A line under it says whether you have logged receipts this week. While the figures are still the invented sample, it says Sample numbers instead. Top card: the main goal, headed by the reason the person wrote for it (or a plain line such as "Yearly bill covered" when they wrote none), months to go, the date it is full, a progress bar, what this month adds and what is still to go, and a status. Tap Forecast under it for details and a graph. In the first days of a month, when last month was logged and some play money was left, a card above offers to put that money toward a goal (one tap, Undo after); Keep as play puts it away. Next, Play money: what is left this month, with a weekly amount. Next, Log spend: amount, category and Log. Under Date, note you can set the date and a note, and Scan receipt jumps to the scanner. Then Goals: one row per goal with what it pays for and months to go. Tap a row to open it: amount saved, status, Edit goal, and Set as main goal. Add goal starts a new goal, and See every goal on one graph draws all goals together. Then Jars: the six jars. The jars you spend from (Necessities, Play, Education, Give) show what is left. The two you save in (Long-Term Savings for Spending, Financial Freedom) show what has built up. The folded section Streak, badges, pages holds the weekly streak, badges and the links to other pages.
 - On every page except Home and Settings, a slim bar under the tabs shows the main goal, months to go and play money left. Tap it to go Home. It updates as receipts are logged.
 - The main goal is the nearest goal still being saved for, unless the person picks one with Set as main goal.
 - Receipts: at the top is Scan receipts. When Claude can be reached, tap Camera or Choose files (photos, screenshots, a bank CSV or a PDF statement), then Read. Claude sorts the receipts into categories and lists what it found, with a category picker on each line, before anything is added. Tap Add to my page to add them, and Undo is offered afterwards. When the page cannot reach Claude, the card shows Other AI app: tap Copy message, paste it into an AI app with the receipt photos, paste the reply into Reply and tap Check. Below that: the form with Date, Amount, Category, Note and Log receipt, a Month picker with the receipts of that month, plan against spent for each category, and a Reminder card that adds a repeating event to Google, Apple, Outlook.com, Microsoft 365, Yahoo or other calendars, or copies the event text.
-- Plan, Goals: each goal is a savings bucket with an amount and, optionally, a date. With a date, the page spreads what is missing over the months before it. Without a date it aims to fill the goal in about a year. Edit goal renames, resizes, dates or removes it. Change monthly amount sets the monthly saving. Add goal starts the three-step flow. Forecast shows each goal month by month as a chart, and Table switches to numbers. The emergency fund is the one goal that can be borrowed from in a short month.
+- Plan, Goals: each goal is a savings bucket with an amount and, optionally, a date. With a date, the page spreads what is missing over the months before it. Without a date it aims to fill the goal in about a year. Edit goal renames, resizes, dates or removes it, and has a Why line: the reason in the person's words, shown with the goal on Home, here and on the last setup screen. Change monthly amount sets the monthly saving. Add goal starts the three-step flow. Forecast shows each goal month by month as a chart, and Table switches to numbers. The emergency fund is the one goal that can be borrowed from in a short month.
 - Plan, Month: the whole plan for one month. A Choose a month list, the big Play money number with a weekly amount, a status chip (On plan, Tight or Short), the pay split by jar as a coloured bar, and Details: Money in (Salary, Second income, Side income), Money out (Necessities, One-time costs, Long-Term Savings for Spending, Play money, Education, Financial Freedom, Give) and Left. Tap an amount to type a new one: it changes that month only, and Keep for later months makes it the new usual. Open a jar and tap Rename, remove or add lines to change its list. Reset month and Undo all revert edits. A Short month offers one-tap fixes: spend less, or borrow from the emergency fund. All months shows a table of every month.
 - Where to put a paycheck: Plan, Month, open Salary under Money in, and type the monthly take-home pay (after tax). If paid twice a month, add both together.
 - Settings: Name, Currency, Sound, Look (Auto, Light or Dark), Balance (Money today, Minimum balance, Monthly spending ceiling), Six jars (Eker's usual percentages, shown as a guide; Re-split pay reruns the split), Reset and setup (Zero all, Restore samples, Show first steps, Guided setup), and Saved data: Backup with Save file or Copy text, Spreadsheet with Export spreadsheet (every month as one table to check in Google Sheets or Excel), Cloud backup (Turn on; an encrypted copy that only the recovery code opens, which also moves the numbers to another phone), and Restore with Load text or Choose file.
@@ -5726,7 +5773,7 @@ THE PAGE
 - Yen, pesos and euros start with sample numbers made up for one salary (about 200,000 yen, 30,000 pesos or 1,650 euros a month), with every bill and goal worked out from it. Any other currency starts at zero. Samples should be replaced with real numbers. Changing the currency in Settings swaps the sample to match, but only while the numbers are untouched. Once someone has typed their own numbers, only the symbol changes.
 - Filling the page from files: in this chat there is a paperclip button. A person can add photos or screenshots of receipts, credit card statements or bank statements, or a CSV file from their bank (PDFs cannot be read here: use a screenshot of each page, or the CSV). Then they press Send. Claude reads the files and lists what it found: receipts, monthly pay, bill amounts and the money they have today. Nothing on the page changes until the person taps Add to my page, and Undo is offered right after. The files go to the person's own Claude account only when they press Send, and this page does not keep them. Only dates from November 2026 on can be added. Never say you changed anything yourself: changes happen only through that button.
 - The page works in any currency. The currency is chosen in the tour or under Settings.`;
-const ASK_SUGGEST = ['Where is my money going?', 'What can I realistically save each month?', 'Help me plan a trip', 'Cut my play money a little', 'I spent 300 on lunch today'];
+const ASK_SUGGEST = ['Where is my money going?', 'What would bring my goal closer?', 'What can I realistically save each month?', 'Help me plan a trip', 'Cut my play money a little', 'I spent 300 on lunch today'];
 
 function askNumbers() {
   const c = calcAll(S), m = c.byYm[sel], J = jarsOf(S, m), st = { good: 'On plan', tight: 'Tight', short: 'Short' }[statusOf(S, m)], cur = sym() || 'none';
@@ -6129,6 +6176,7 @@ HOW TO ANSWER
 - The page's own arithmetic is the truth. When you propose a change, the person sees the exact before and after, so keep your own estimate short.
 - You are not a licensed adviser: when a question is really about investment products, loans or taxes, say so in one line and stay with the budget.
 - Money mindset of the page: awareness, not willpower. Every bit of pay gets a purpose. Play money is for spending with no guilt. Goals get a date. A short month is fixed by moving money, not by shame.
+- When a goal in the picture has a "for:" line, that is the person's own reason. When they weigh a purchase or a change, put it next to that reason in plain numbers (how many months sooner or later the goal is full), without preaching.
 
 CHANGING THE PAGE
 You cannot change anything yourself. To propose changes, end the reply with exactly one block in this form, after your text:
@@ -6143,8 +6191,8 @@ ACTIONS
 - set_line {key, amount, scope?}: a bill or a jar line's monthly amount. key is a line key from the picture. scope "after" (default) means from this month on; "month" means this month only.
 - set_jar {jar, amount}: the whole monthly amount of the play, edu, ffa or give jar (it goes on the jar's main line).
 - add_line {jar, name, amount}: a new line; jar is nec, play, edu, ffa or give. remove_line {key}: remove a line.
-- add_goal {name, target, saved?, due?, monthly?}: a new goal; due is YYYY-MM-DD; monthly is the saving a month (left out: the page spreads it to the date, or over about a year).
-- update_goal {id, name?, target?, saved?, due?}: change a goal. remove_goal {id}. set_goal_saving {id, amount}: the monthly saving for a goal; amount null returns to the page's suggested amount. set_main_goal {id}: the goal Home leads with.
+- add_goal {name, target, saved?, due?, monthly?, why?}: a new goal; due is YYYY-MM-DD; monthly is the saving a month (left out: the page spreads it to the date, or over about a year); why is the reason in the person's own words, under 80 characters, only when they said it.
+- update_goal {id, name?, target?, saved?, due?, why?}: change a goal (why: the reason in their words, empty to clear). remove_goal {id}. set_goal_saving {id, amount}: the monthly saving for a goal; amount null returns to the page's suggested amount. set_main_goal {id}: the goal Home leads with.
 - set_home {sections}: what Home shows and in what order, from goal, play, log, goals, jars, more. Leave one out to hide it.
 - set_name {name}.
 - log_spend {amount, category?, date?, note?}: log a receipt, money already spent. category is a line key from the picture (left out: the play money line); date is YYYY-MM-DD, left out: today; note is the shop or item in a few words. One action per receipt. Use it when the person tells you they spent something.`;
@@ -6156,7 +6204,7 @@ function asstPicture(T) {
   const C2 = calcAll(T), ym = nowYm(), m = C2.byYm[ym], V = viewOf(T, C2, ym, ymd(new Date())), J = jarsOf(T, m), cur = sym() || 'no symbol';
   const n = v => (typeof v === 'number' ? (Math.abs(v - Math.round(v)) < 0.005 ? Math.round(v) : Math.round(v * 100) / 100) : v);
   const lines = T.plan.lines.map(l => `  ${l.key} | ${l.name} | ${JAR_WORD[l.jar] || l.jar} | ${n(val(T, l.key, ym))}${l.ends ? ' | last payment ' + l.ends : ''}`).join('\n');
-  const goals = V.goals.map(r => `  ${r.id} | ${r.name}${r.emergency ? ' (emergency fund)' : ''} | goal ${n(r.target)} | saved ${n(r.saved)} | ${n(val(T, 'goal:' + r.id, ym))} a month | ${r.due ? 'needed by ' + r.due : 'no date'} | ${r.pct >= 100 ? 'full' : r.reached ? 'full in ' + monthLabel(r.reached) : 'not full within ' + SPAN}${V.main && V.main.id === r.id ? ' | main goal' : ''}`).join('\n') || '  (none)';
+  const goals = V.goals.map(r => `  ${r.id} | ${r.name}${r.emergency ? ' (emergency fund)' : ''}${(goalById(T, r.id) || {}).why ? ' | for: ' + goalById(T, r.id).why : ''} | goal ${n(r.target)} | saved ${n(r.saved)} | ${n(val(T, 'goal:' + r.id, ym))} a month | ${r.due ? 'needed by ' + r.due : 'no date'} | ${r.pct >= 100 ? 'full' : r.reached ? 'full in ' + monthLabel(r.reached) : 'not full within ' + SPAN}${V.main && V.main.id === r.id ? ' | main goal' : ''}`).join('\n') || '  (none)';
   const rs = receiptStats(T, ym), cats = Object.keys(rs.byKey || {}).map(k => [k, rs.byKey[k]]).sort((a, b) => b[1] - a[1]).slice(0, 6);
   const byAcct = {}; (rs.list || []).forEach(r => { if (r.s) byAcct[r.s] = (byAcct[r.s] || 0) + r.a; }); const accLine = Object.keys(byAcct).map(k => `${k} ${n(byAcct[k])}`).join(', ');
   /* the last three months with receipts: what was logged against what was planned, so "what is realistic" has data behind it */
@@ -6207,7 +6255,8 @@ function asstCheck(raw) {
     else if (d === 'add_goal') {
       const name = cleanSubName(a.name), target = amtOf(a.target), saved = a.saved === undefined ? 0 : amtOf(a.saved), due = typeof a.due === 'string' && validDate(a.due) && MONTHS.indexOf(a.due.slice(0, 7)) >= 0 ? a.due : '', monthly = a.monthly === undefined || a.monthly === null ? null : amtOf(a.monthly);
       if (!name || !(target > 0) || !(saved >= 0) || S.plan.goals.length >= MAX_GOALS) return dropped.push(d);
-      push(`New goal ${name}: ${f(target)}${saved > 0 ? ', ' + f(saved) + ' saved' : ''}${due ? ', needed by ' + dateLabel(due) : ''}${monthly !== null ? ', ' + f(monthly) + ' a month' : ''}`, T => { const id = addGoal(T, name); if (!id) return; updateGoal(T, id, { target, start: saved, due }); if (monthly !== null) setVal(T, 'goal:' + id, ym, monthly, 'after'); markDoneOn(T, 'goals'); });
+      const why = typeof a.why === 'string' ? a.why.trim().slice(0, 80) : '';
+      push(`New goal ${name}: ${f(target)}${saved > 0 ? ', ' + f(saved) + ' saved' : ''}${due ? ', needed by ' + dateLabel(due) : ''}${monthly !== null ? ', ' + f(monthly) + ' a month' : ''}${why ? ', for: ' + why : ''}`, T => { const id = addGoal(T, name); if (!id) return; updateGoal(T, id, { target, start: saved, due, why }); if (monthly !== null) setVal(T, 'goal:' + id, ym, monthly, 'after'); markDoneOn(T, 'goals'); });
     }
     else if (d === 'update_goal') {
       const g = goalOf(S, a.id); if (!g) return dropped.push(d + ' ' + (a.id || '')); const p = {}, parts = [];
@@ -6215,6 +6264,7 @@ function asstCheck(raw) {
       if (a.target !== undefined) { const t = amtOf(a.target); if (t > 0) { p.target = t; parts.push(`goal ${f(g.target)} to ${f(t)}`); } }
       if (a.saved !== undefined) { const s2 = amtOf(a.saved); if (s2 >= 0) { p.start = s2; parts.push(`saved ${f(g.start)} to ${f(s2)}`); } }
       if (a.due !== undefined) { const du = a.due ? (typeof a.due === 'string' && validDate(a.due) && MONTHS.indexOf(a.due.slice(0, 7)) >= 0 ? a.due : null) : ''; if (du !== null) { p.due = du; parts.push(du ? `date to ${dateLabel(du)}` : 'no date'); } }
+      if (a.why !== undefined) { const wy = typeof a.why === 'string' ? a.why.trim().slice(0, 80) : ''; p.why = wy; parts.push(wy ? `reason: ${wy}` : 'reason removed'); }
       if (!parts.length) return dropped.push(d);
       push(`${g.name}: ${parts.join(', ')}`, T => updateGoal(T, g.id, p));
     }
@@ -6491,8 +6541,8 @@ function dpWatch() {
 const COACH = {
   home: [
     ['#hStatus', 'Where you stand', 'Read this first. On plan: this month fits your pay and your balance stays above your minimum.'],
-    ['#hHero', 'Main goal', 'What the money pays for and the months left. Tap Forecast for the graph.'],
-    ['#hSpend', 'Play money', 'What is left to spend this month. Spend it on fun, no guilt.'],
+    ['#hHero', 'Main goal', 'Your reason, in your words, with what this month adds and the months left. Tap Forecast for the graph.'],
+    ['#hSpend', 'Play money', 'What is left to spend this month. Spend it on fun, no guilt. What is left at month end can go toward a goal.'],
     ['#hQuick', 'Log spend', 'Enter an amount, pick a category, tap Log. Do it as you spend or weekly.'],
     ['#hGoals', 'Goals', 'Tap a goal to open it. Edit it or set it as main goal.'],
     ['#hBuckets', 'Jars', 'Left to spend in spending jars. Total saved in saving jars.'],
@@ -7523,6 +7573,8 @@ const HI = {
   half: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2.7a9.3 9.3 0 0 1 0 18.6z" fill="currentColor"/></svg>',
   star: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2.6l2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 17l-5.7 3.1 1.2-6.4L2.8 9.3l6.4-.8z"/></svg>',
   lock: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5.5" y="10.5" width="13" height="9.5" rx="2.4" fill="currentColor"/><path d="M8.6 10.5V8a3.4 3.4 0 0 1 6.8 0v2.5" fill="none" stroke="currentColor" stroke-width="2"/></svg>',
+  flower: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="6.2" r="3.1" fill="currentColor"/><circle cx="17.8" cy="12" r="3.1" fill="currentColor"/><circle cx="12" cy="17.8" r="3.1" fill="currentColor"/><circle cx="6.2" cy="12" r="3.1" fill="currentColor"/><circle cx="12" cy="12" r="3" fill="var(--bg)"/></svg>',
+  drop: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2.6c3.6 4.6 6.4 8.2 6.4 11.6a6.4 6.4 0 0 1-12.8 0c0-3.4 2.8-7 6.4-11.6z"/><path d="M9.2 14.6a3 3 0 0 0 2.4 2.9" fill="none" stroke="var(--bg)" stroke-opacity=".75" stroke-width="1.5" stroke-linecap="round"/></svg>',
 };
 
 /* ---------- the weekly streak ----------
@@ -7572,6 +7624,8 @@ const BADGES = [
   { id: 'rcpt10', n: '10 receipts', h: 'Log 10 receipts.', i: 'star', ok: () => (S.receipts || []).length >= 10 },
   { id: 'wk4', n: '4 weeks', h: 'Log 4 weeks running.', i: 'leaf', ok: () => streakInfo().best >= 4 },
   { id: 'wk12', n: '12 weeks', h: 'Log 12 weeks running.', i: 'shield', ok: () => streakInfo().best >= 12 },
+  { id: 'full', n: 'Goal full', h: 'A goal reaches its amount.', i: 'flower', ok: () => !!(S.ui.done && S.ui.done.goals) && S.plan.goals.some(g => g.target > 0 && goalInfo(S, C, g.id, nowYm()).pct >= 1) },
+  { id: 'topup', n: 'Top-up', h: 'Put unspent play money toward a goal.', i: 'drop', ok: () => !!(S.ui.sweep && Object.keys(S.ui.sweep).some(k => S.ui.sweep[k] && S.ui.sweep[k].amt > 0)) },
 ];
 let badgeTimer = 0;
 function checkBadges() {
@@ -7637,6 +7691,19 @@ function monthToClose() {
   const pm = MONTHS[i - 1]; if (S.ui.mcSeen === pm) return null;
   const n = receiptsFor(S, pm).length; return n < 4 ? { pm, n } : null;
 }
+/* last month's unspent play money: once the month is logged (four receipts or more, or a statement), what was not spent can go toward a goal.
+   One offer per month, kept until the person answers it or the month after has gone by. */
+let SWEPT = null;
+function sweepOffer() {
+  const d = S.ui.done || {}; if (!(d.pay && d.bills && d.goals) || sampleOn()) return null;
+  const i = MONTHS.indexOf(nowYm()); if (i < 1) return null;
+  const pm = MONTHS[i - 1], seen = S.ui.sweep && S.ui.sweep[pm]; if (seen) return null;
+  const rs = receiptStats(S, pm); if (rs.count < 4 && !rs.list.some(r => r.src === 'stmt')) return null;
+  const m = C.byYm[pm], left = Math.floor(m.jar.play - (rs.byJar.play || 0)); if (!(left >= Math.max(1, roundUnit(S)))) return null;
+  const goals = goalRows(S, C, pm).filter(r => r.live && r.pct < 100 && r.target > 0 && Math.max(0, capOf(goalById(S, r.id)) - r.saved) > 0); if (!goals.length) return null;
+  const main = pickMain(S, goals) || goals[0];
+  return { pm, left, goals, main };
+}
 function renderNext() {
   const el = $('#hNext'), d = S.ui.done || {}; let step = null, month = null;
   if (!S.ui.sampleHidden) {
@@ -7646,12 +7713,45 @@ function renderNext() {
     else if (!(S.receipts || []).length) step = ['Next: log a receipt', 'Enter an amount in Log spend, then tap Log.', 'Log receipt', 'data-focus="hAmt"'];
   }
   /* a month to close comes first (it is timely); then, for typed numbers, the statements that make them exact */
-  if (!step && (month = monthToClose())) { const nm = FULL[+month.pm.slice(5) - 1]; step = [`Next: finish ${nm}`, `${month.n ? plural(month.n, 'receipt') + ' logged' : 'Nothing logged'} for ${nm}. Log what you spent, or upload the month's statement under Receipts.`, 'Receipts', 'data-tab-go="receipts"']; }
+  if (!step && (month = monthToClose())) { const nm = FULL[+month.pm.slice(5) - 1]; step = [`Next: finish ${nm}`, `${month.n ? plural(month.n, 'receipt') + ' logged' : 'Nothing logged'} for ${nm}. Log what you spent, or upload the month's statement under Receipts.${HV && HV.main && HV.main.live && HV.main.pct < 100 ? ` Once it is in, what is left of play money can go toward ${esc(goalById(S, HV.main.id).name)}.` : ''}`, 'Receipts', 'data-tab-go="receipts"']; }
+  /* a sweep just made: say so, with Undo, until the next page load */
+  if (!step && SWEPT) { const g = goalById(S, SWEPT.id); step = [`${fmt(SWEPT.amt)} put toward ${g ? g.name : 'the goal'}`, SWEPT.note || `From ${FULL[+SWEPT.pm.slice(5) - 1]}'s play money.`, 'Undo', 'data-sweepundo']; }
+  let sw = null;
+  if (!step && (sw = sweepOffer())) {
+    const nm = FULL[+sw.pm.slice(5) - 1], one = sw.goals.length === 1;
+    const pick = one ? '' : `<select class="inp sm" data-sweepgoal aria-label="Which goal">${sw.goals.map(r => `<option value="${esc(r.id)}"${r.id === sw.main.id ? ' selected' : ''}>${esc(r.name)}</option>`).join('')}</select>`;
+    step = [`${nm}: ${fmt(sw.left)} of play money unspent`, `Keep it as play, or put it toward ${one ? esc(sw.main.name) : 'a goal'}. Either is fine.`, one ? `Put it toward ${esc(sw.main.name)}` : 'Put it toward', `data-sweep="${sw.pm}"`, pick];
+  }
   if (!step && d.pay && d.bills && S.ui.src !== 'import' && !S.ui.exactHidden && !sampleOn()) step = ['Make it exact', 'Upload 2 or 3 months of statements (screenshots of the bank app work). The numbers become exact and your history fills in.', 'Upload', 'data-exact'];
   el.hidden = !step; if (!step) return;
   const left = ['pay', 'bills', 'goals', 'receipts'].filter(k => !d[k]).length;
   const exact = step[3] === 'data-exact';
-  put(el, `<div class="hn-t"><b>${step[0]}</b><span>${step[1]}${month || exact ? '' : ' ' + (left === 1 ? '1 step left.' : left + ' steps left.')}</span></div><div class="hn-b"><button type="button" class="btn small solid" ${step[3]}>${step[2]}</button><button type="button" class="link" ${month ? `data-hidemonth="${month.pm}"` : exact ? 'data-hideexact' : 'data-hidenext'}>Hide</button></div>`);
+  const swept = step[3] === 'data-sweepundo', sweep = sw && step[3].indexOf('data-sweep=') === 0;
+  const tail = swept ? '' : sweep ? `<button type="button" class="link" data-sweephide="${sw.pm}">Keep as play</button>` : `<button type="button" class="link" ${month ? `data-hidemonth="${month.pm}"` : exact ? 'data-hideexact' : 'data-hidenext'}>Hide</button>`;
+  put(el, `<div class="hn-t"><b>${step[0]}</b><span>${step[1]}${month || exact || sweep || swept ? '' : ' ' + (left === 1 ? '1 step left.' : left + ' steps left.')}</span></div><div class="hn-b">${step[4] || ''}<button type="button" class="btn small ${swept ? '' : 'solid'}" ${step[3]}>${step[2]}</button>${tail}</div>`);
+}
+/* put last month's unspent play money toward the chosen goal: one undoable change, then the new date is said out loud */
+function doSweep(pm) {
+  const o = sweepOffer(); if (!o || o.pm !== pm) { render(); return; }
+  const sel = $('#hNext [data-sweepgoal]'), id = sel && goalById(S, sel.value) ? sel.value : o.main.id, g = goalById(S, id);
+  const before = C.reached[id] || null, lastIx = MONTHS.length - 1;
+  const moved = ACT.sweep(pm, id, o.left);
+  if (!(moved > 0)) { cheer('Nothing to move.'); return; }
+  S.ui.sweep = Object.assign({}, S.ui.sweep, { [pm]: { amt: moved, id } }); persist();
+  const after = C.reached[id] || null, gi = goalInfo(S, C, id, nowYm());
+  let note = '';
+  if (gi.pct >= 1) note = `${g.name} is full.`;
+  else if (after && before && after < before) { const n = ymIdx(before) - ymIdx(after); note = `Full ${monthLabel(after)}, ${plural(n, 'month')} sooner.`; }
+  else note = `${fmt(Math.max(0, g.target - gi.bal))} to go.${after ? ` Full ${monthLabel(after)}.` : ''}`;
+  SWEPT = { pm, id, amt: moved, note: `${note}${g.why ? ' ' + g.why + '.' : ''}` };
+  sfx('coin'); celebrate('med', `${g.name}: +${fmt(moved)}. ${note}`);
+  render();
+}
+function undoSweep() {
+  if (!SWEPT) return; const pm = SWEPT.pm;
+  if (ACT.lastLabel() === 'top-up') ACT.undo();
+  if (S.ui.sweep) { delete S.ui.sweep[pm]; if (!Object.keys(S.ui.sweep).length) delete S.ui.sweep; }
+  SWEPT = null; persist(); sfx('back'); cheer('Undone.'); render();
 }
 function renderStreak() {
   const el = $('#hStreak'), s = streakInfo(), now = new Date(), dow = (now.getDay() + 6) % 7, toSun = 6 - dow;
@@ -7688,8 +7788,9 @@ function renderHero() {
     put(el, `<div class="hw-empty"><h2>No goal set</h2><p>Add a goal to see what it unlocks and when.</p><button type="button" class="btn solid" data-gw>Add goal</button></div>`);
     return;
   }
-  const g = goalById(S, r.id), purpose = purposeFor(g), pct = r.pct, fr = fracOf(r);
-  if (!g) return; /* view and plan out of step for a moment (a goal just removed); the next restructure redraws */
+  const g = goalById(S, r.id), pct = r.pct, fr = fracOf(r);
+  if (!g) return;
+  const purpose = g.why || purposeFor(g); /* view and plan out of step for a moment (a goal just removed); the next restructure redraws */
   let chip = '', sub = '', fix = '';
   if (r.pct >= 100 || r.state === 'full') chip = '<span class="chip good">' + IC.ok + 'Full</span>';
   else if (r.state === 'ontrack') { chip = '<span class="chip good">' + IC.ok + 'On track</span>'; sub = `Needed by ${dateLabel(g.due)}. ${r.slack === 0 ? 'On time.' : plural(r.slack, 'month') + ' spare.'}`; }
@@ -7697,18 +7798,21 @@ function renderHero() {
   else if (r.state === 'noeta') { chip = '<span class="chip tight">' + IC.warn + 'Slow</span>'; sub = 'Raise the monthly amount to finish sooner.'; fix = '<button type="button" class="btn small" data-open="lts">Change monthly amount</button>'; }
   const when = r.pct >= 100 ? 'Full.' : r.reached ? (r.months <= 0 ? 'Full <b>this month</b>.' : `<b>${plural(r.months, 'month')}</b> to go. Full ${fullLabel(r.reached)}.`) : 'Not full within ' + SPAN + ' at this pace.';
   const ms = [25, 50, 75].map(p => `<span class="ms${pct >= p ? ' hit' : ''}" style="left:${p}%"></span>`).join('');
+  /* what moves it: this month's deposit and what is still to go, so progress reads as motion, not a percent */
+  const mg = C.byYm[HV.ym] && C.byYm[HV.ym].g[g.id], put1 = mg ? mg.actual : 0, togo = Math.max(0, r.target - r.saved);
+  const adds = r.pct < 100 && r.live ? `<p class="hw-add">${put1 > 0 ? `<b>+${fmt(put1)}</b> this month. ` : ''}${fmt(togo)} to go.</p>` : '';
   el.className = 'card hwin';
   put(el, `<p class="hw-k">Main goal: ${esc(g.name)}</p>
     <h2 class="hw-p">${esc(purpose)}</h2>
     <p class="hw-when">${when}</p>
     <div class="hw-bar" role="img" aria-label="${pct} percent of ${esc(g.name)} saved" style="--c:var(--c${g.slot})"><i class="fill" style="width:${fr * 100}%"></i>${ms}</div>
     <div class="hw-nums"><span><b>${fmt(r.saved)}</b> of ${fmt(r.target)}</span><span>${pct}%</span></div>
-    ${chip}
+    ${adds}${chip}
     <details class="hw-more"><summary>Forecast</summary>${sub ? `<p class="hw-sub">${sub}</p>` : ''}${r.reached ? `<div class="hw-graph" id="hGraph">${heroGraph(g)}</div>` : ''}<div class="row-btns">${fix}<button type="button" class="btn small" data-tab-go="goals">Edit goals</button></div></details>`);
   /* a milestone is celebrated once, the first time the plan passes it */
   const hit = pct >= 100 ? 4 : pct >= 75 ? 3 : pct >= 50 ? 2 : pct >= 25 ? 1 : 0, ms0 = S.ui.ms = S.ui.ms || {};
   if (ms0[g.id] === undefined) { ms0[g.id] = hit; persist(); }
-  else if (hit > (ms0[g.id] || 0)) { ms0[g.id] = hit; persist(); sfx(hit === 4 ? 'fanfare' : 'sparkle'); celebrate(hit === 4 ? 'big' : 'med', hit === 4 ? `${g.name}: full.` : `${g.name}: ${hit * 25}%.`); }
+  else if (hit > (ms0[g.id] || 0)) { ms0[g.id] = hit; persist(); sfx(hit === 4 ? 'fanfare' : 'sparkle'); celebrate(hit === 4 ? 'big' : 'med', hit === 4 ? `${g.name}: full.${g.why ? ' ' + g.why + '.' : ''}` : `${g.name}: ${hit * 25}%.${g.why && hit >= 2 ? ' ' + g.why + '.' : ''}`); }
 }
 function renderSpend() {
   const el = $('#hSpend'), p = HV.play, ym = HV.ym;
@@ -7718,7 +7822,7 @@ function renderSpend() {
   const covered = !p.over && p.planned > 0 && HV.month.status === 'good' && !sampleOn();
   put(el, `<h2>Play money</h2><p class="hs-big${p.over ? ' neg' : ''}" style="--n:${fmt2(p.left).length}">${fmt2(p.left)}</p><p class="hs-lbl">${p.over ? 'Over in ' : 'Left in '}${monthLabel(ym)}</p>
     <div class="hs-bar${p.over ? ' over' : ''}" role="img" aria-label="${fmt2(p.spent)} of ${fmt(p.planned)} spent"><i style="width:${p.frac * 100}%"></i><span class="pace" style="left:${p.dayFrac * 100}%"></span></div>
-    <p class="hs-sub">${p.count ? `Spent ${fmt2(p.spent)} of ${fmt(p.planned)}.` : `Nothing logged yet. ${fmt(p.planned)} planned.`} ${p.over ? '' : wk}</p>${p.count || p.over ? chip : ''}${covered ? '<p class="hs-ok">Bills and goals are planned for. This part is free to spend.</p>' : ''}${art('grass')}`);
+    <p class="hs-sub">${p.count ? `Spent ${fmt2(p.spent)} of ${fmt(p.planned)}.` : `Nothing logged yet. ${fmt(p.planned)} planned.`} ${p.over ? '' : wk}</p>${p.count || p.over ? chip : ''}${covered ? `<p class="hs-ok">Bills and goals are planned for. This part is free to spend.${HV.main && HV.main.live && HV.main.pct < 100 ? ` What is left at month end can go toward ${esc(goalById(S, HV.main.id).name)}.` : ''}</p>` : ''}${art('grass')}`);
 }
 /* a row opens to show its details; which ones are open survives a redraw */
 const HOPEN = new Set();
@@ -7728,7 +7832,7 @@ function goalRowHtml(r) {
   const st = r.state === 'ontrack' || r.state === 'full' || r.state === 'paid' ? 'good' : r.state === 'behind' || r.state === 'noeta' || r.state === 'short' ? 'warn' : 'plain';
   const stw = { ontrack: 'On track', full: 'Full', paid: 'Paid', short: 'Short', behind: 'Behind', noeta: 'Slow', eta: 'Filling', unset: 'Unset', none: '' }[r.state] || '';
   const eta = r.state === 'paid' ? `Paid ${dateLabel(g.due)}` : r.state === 'short' ? `Had ${fmt(r.had)} of ${fmt(g.target)}` : r.state === 'unset' ? 'No amount' : r.reached ? `Full ${monthLabel(r.reached)}` : `Not full in ${SPAN}`;
-  return `<li class="gd"><details data-hgid="${esc(r.id)}"${HOPEN.has(r.id) ? ' open' : ''} style="--c:var(--c${g.slot})"><summary><i class="dot"></i><span class="gd-t"><b>${esc(g.name)}</b><small>${esc(purposeFor(g))}</small></span><span class="gd-m${main ? ' main' : ''}">${esc(monthsShort(r))}</span></summary>
+  return `<li class="gd"><details data-hgid="${esc(r.id)}"${HOPEN.has(r.id) ? ' open' : ''} style="--c:var(--c${g.slot})"><summary><i class="dot"></i><span class="gd-t"><b>${esc(g.name)}</b><small>${esc(g.why || purposeFor(g))}</small></span><span class="gd-m${main ? ' main' : ''}">${esc(monthsShort(r))}</span></summary>
     <div class="gd-b"><div class="hg-b" role="img" aria-label="${r.pct} percent"><i style="width:${fracOf(r) * 100}%"></i></div>
     <p class="gd-n"><span>${fmt(r.saved)} of ${fmt(r.target)}</span><span>${esc(eta)}</span></p>${stw ? `<p class="gd-c"><em class="${st}">${stw}</em>${main ? '<span class="gd-main">Main goal</span>' : ''}</p>` : (main ? '<p class="gd-c"><span class="gd-main">Main goal</span></p>' : '')}
     <div class="row-btns"><button type="button" class="btn small" data-tab-go="goals">Edit goal</button>${!main && r.live ? `<button type="button" class="btn small" data-main="${esc(r.id)}">Set as main goal</button>` : ''}</div></div></details></li>`;
@@ -7874,7 +7978,7 @@ function gwPlan() {
 }
 function openGoalWizard() {
   if (S.plan.goals.length >= MAX_GOALS) { cheer(`Limit: ${MAX_GOALS} goals.`); return; }
-  GW = { step: 0, kind: null, name: '', cost: '', saved: '', due: '', ret: document.activeElement, dir: 0 };
+  GW = { step: 0, kind: null, name: '', why: '', cost: '', saved: '', due: '', ret: document.activeElement, dir: 0 };
   let el = $('#gw');
   if (!el) {
     el = document.createElement('div'); el.id = 'gw'; el.className = 'gw'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-labelledby', 'gwT'); document.body.appendChild(el);
@@ -7902,7 +8006,8 @@ function paintGW() {
   if (g.step === 0) {
     t = 'Goal type';
     body = `<div class="gw-chips" role="group" aria-label="Goal type">${gwKinds().map(x => `<button type="button" class="gw-chip${k && k.k === x.k ? ' on' : ''}" data-kind="${x.k}" aria-pressed="${!!(k && k.k === x.k)}"><b>${x.pick}</b><span>${x.hint}</span></button>`).join('')}</div>
-      <div class="field"><label for="gwName">Name</label><input class="txt" id="gwName" type="text" maxlength="60" value="${esc(g.name)}" placeholder="Japan trip"></div>`;
+      <div class="field"><label for="gwName">Name</label><input class="txt" id="gwName" type="text" maxlength="60" value="${esc(g.name)}" placeholder="Japan trip"></div>
+      <div class="field"><label for="gwWhy">Why (optional)</label><input class="txt" id="gwWhy" type="text" maxlength="80" value="${esc(g.why)}" placeholder="In your words: who it is for, what it changes"><p class="cap">Shows with the goal, so the reason stays in view.</p></div>`;
   } else if (g.step === 1) {
     t = 'Amount';
     body = `<div class="field"><label for="gwCost">${k && k.cost ? 'Total cost' : 'Total cost'}</label><div class="inp"><span class="yen cs"></span><input id="gwCost" type="number" inputmode="numeric" min="0" step="any" value="${esc(g.cost)}" placeholder="0"></div>${k && k.cost ? `<p class="cap">${k.cost}</p>` : ''}</div>
@@ -7931,7 +8036,7 @@ function gwRefresh() {
 }
 function gwInput(e) {
   const g = GW, t = e.target; if (!g) return;
-  if (t.id === 'gwName') g.name = t.value; else if (t.id === 'gwCost') g.cost = t.value; else if (t.id === 'gwSaved') g.saved = t.value;
+  if (t.id === 'gwName') g.name = t.value; else if (t.id === 'gwWhy') g.why = t.value; else if (t.id === 'gwCost') g.cost = t.value; else if (t.id === 'gwSaved') g.saved = t.value;
   else if (t.id === 'gwDue') { g.due = t.value; $$('.gw-quick .chipbtn').forEach(b => { const q = +b.dataset.q; b.classList.toggle('on', q === 0 ? !g.due : g.due === gwDate(q)); }); }
   gwRefresh();
 }
@@ -7943,7 +8048,7 @@ function gwNext() {
 function gwFinish() {
   const g = GW, k = g.kind; if (!g || !k) return;
   const id = addGoal(S, g.name.trim() || k.name); if (!id) { closeGoalWizard(); return; }
-  updateGoal(S, id, { target: g.cost, start: g.saved || 0, due: k.em ? '' : g.due });
+  updateGoal(S, id, { target: g.cost, start: g.saved || 0, due: k.em ? '' : g.due, why: g.why || '' });
   if (k.em) updateGoal(S, id, { emergency: true });
   S.ui.gk = S.ui.gk || {}; S.ui.gk[id] = k.k; markDone('goals', true); persist();
   closeGoalWizard(true); editGoal = null; restructure(); queueWins(true);
@@ -7992,6 +8097,9 @@ function wireHome() {
     if (e.target.closest('[data-hidenext]')) { S.ui.sampleHidden = true; persist(); render(); return; }
     const hm = e.target.closest('[data-hidemonth]'); if (hm) { S.ui.mcSeen = hm.dataset.hidemonth; persist(); render(); return; }
     if (e.target.closest('[data-hideexact]')) { S.ui.exactHidden = true; persist(); render(); return; }
+    const sh = e.target.closest('[data-sweephide]'); if (sh) { S.ui.sweep = Object.assign({}, S.ui.sweep, { [sh.dataset.sweephide]: { hide: true } }); persist(); sfx('tap'); render(); return; }
+    const sb = e.target.closest('[data-sweep]'); if (sb) { doSweep(sb.dataset.sweep); return; }
+    if (e.target.closest('[data-sweepundo]')) { undoSweep(); return; }
     if (e.target.closest('[data-exact]')) { impOnly = true; openTour('source', 'full'); return; }
     const f = e.target.closest('[data-focus]'); if (f) { const t = document.getElementById(f.dataset.focus); if (t) { t.scrollIntoView({ behavior: 'smooth', block: 'center' }); t.focus({ preventScroll: true }); } }
   });

@@ -17,7 +17,7 @@ const P = {
   await p.evaluateOnNewDocument(() => { try { if(!sessionStorage.getItem('__c')){ (localStorage.clear(), indexedDB.deleteDatabase('money-map-safe')); sessionStorage.setItem('__c','1'); } } catch(e){} });
   await p.goto('file:///home/claude/work/money-map-team.html#2026-11', { waitUntil:'load' }); await w(900);
   await p.screenshot({ path: `${out}/00-first.png` });
-  const type = async (sel, val) => { await p.$eval(sel, e => { e.focus(); e.select && e.select(); }); await p.keyboard.press('Backspace'); if (val!=='' && val!==null) await p.type(sel, String(val)); };
+  const type = async (sel, val) => { await p.$eval(sel, e => e.focus()); await p.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))); await p.$eval(sel, e => { e.select && e.select(); }); await p.keyboard.press('Backspace'); if (val!=='' && val!==null) await p.type(sel, String(val)); };
   const has = async s => !!(await p.$(s));
   const seen=[];
   for (let i=0;i<60;i++) {

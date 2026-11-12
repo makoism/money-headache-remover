@@ -3,7 +3,7 @@ const { w, P, launch } = require('./lib.js');
   const [,, vw='390', vh='844', out='/tmp/v22/i'] = process.argv; require('fs').mkdirSync(out,{recursive:true});
   const { b, p, errs } = await launch(vw, vh, 'light');
   const pr = P.b; const log = (...a) => console.log(...a);
-  const type = async (sel, val) => { await p.$eval(sel, e => { e.focus(); e.select && e.select(); }); await p.keyboard.press('Backspace'); if (val!=='' && val!==null) await p.type(sel, String(val)); };
+  const type = async (sel, val) => { await p.$eval(sel, e => e.focus()); await p.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))); await p.$eval(sel, e => { e.select && e.select(); }); await p.keyboard.press('Backspace'); if (val!=='' && val!==null) await p.type(sel, String(val)); };
   const has = async s => !!(await p.$(s));
   const title = () => p.$eval('#tourTitle', e=>e.textContent);
   const next = async () => { await p.click('#tourNext'); await w(320); };

@@ -217,14 +217,19 @@ const TOUR = [
           : f.st === 'spare' ? `Play money <b>${fmt(f.play)}</b> a month. <b>${fmt(f.L)}</b> of pay is unassigned: raise a goal or add to play money.`
           : `Play money <b>${fmt(f.play)}</b> a month, to spend without guilt. All other pay is assigned.`;
         const V = viewOf(S, f.C, nowYm(), ymd(new Date())), r = V.main, mg = r ? goalById(S, r.id) : null;
-        const goal = mg ? `Main goal: <b>${esc(mg.name)}</b>. ${r.pct >= 100 ? 'Full.' : r.reached ? (r.months <= 0 ? 'Full <b>this month</b>.' : `<b>${plural(r.months, 'month')}</b> to go. Full ${fullLabel(r.reached)}.`) : 'Not full within ' + SPAN + ' at this pace.'}` : '';
+        /* the last screen lands on the destination: the goal, the reason in the person's words, when it is full and what each month adds */
+        const when = r ? (r.pct >= 100 ? 'Full.' : r.reached ? (r.months <= 0 ? 'Full <b>this month</b>.' : `Full <b>${fullLabel(r.reached)}</b>, ${plural(r.months, 'month')} from now.`) : 'Not full within ' + SPAN + ' at this pace.') : '';
+        const dep = r ? f.C.byYm[nowYm()].g[r.id].actual : 0;
+        const goal = mg ? `<div class="tour-goal" style="--c:var(--c${mg.slot})"><p class="tour-goal-k">Main goal</p><p class="tour-goal-n">${esc(mg.name)}</p>${mg.why ? `<p class="tour-goal-w">${esc(mg.why)}</p>` : ''}
+          <div class="hg-b" role="img" aria-label="${r.pct} percent"><i style="width:${Math.min(100, r.pct)}%"></i></div>
+          <p class="tour-goal-l"><b>${fmt(r.saved)}</b> of ${fmt(r.target)}${dep > 0 && r.pct < 100 ? `, <b>+${fmt(dep)}</b> a month` : ''}. ${when}</p></div>` : '';
         const ok = f.st === 'even' || f.st === 'spare';
         /* on the app's own address: one tap keeps an encrypted copy in the cloud, so a lost phone does not mean lost numbers */
         const cloud = typeof vaultAvailable === 'function' && vaultAvailable() && !(vault && vault.on)
           ? `<div class="tour-cloud" id="tourCloud">${LOCK}<div><b>Keep a copy in the cloud</b><p class="cap">Your numbers live in this browser. Cloud backup keeps an encrypted copy that only your recovery code can open. New phone, or browser cleared: enter the code and the numbers come back.</p>
             <div class="row-btns"><button type="button" class="btn small solid" id="tourVaultOn">Turn on cloud backup</button><span class="cap">Later: Settings, Cloud backup.</span></div><div class="tour-vault-code" id="tourVaultCode"></div></div></div>` : '';
-        return `${homeScene()}${ok ? `<p class="tour-st"><span class="chip good">${IC.ok}On plan</span></p>` : ''}<p>Your month:</p>${ledgerHTML(f)}<p>${line}</p>${goal ? `<p>${goal}</p>` : ''}
-        <p>Receipts keeps this true: log what you spend, or upload each month's statement. Help, bottom right, has the video and this setup.</p>${cloud}`;
+        return `${homeScene()}${ok ? `<p class="tour-st"><span class="chip good">${IC.ok}On plan</span></p>` : ''}${goal}<p>Your month:</p>${ledgerHTML(f)}<p>${line}</p>
+        <p>Receipts keeps this true: log what you spend, or upload each month's statement. What is left of play money at month end can go toward a goal. Help, bottom right, has the video and this setup.</p>${cloud}`;
       }
       const m = calcAll(S).byYm[sel], pay = m.a + m.b + m.side, L = m.pool.left;
       const zero = S.ui.preset === 'blank' || !!S.ui.cleared;

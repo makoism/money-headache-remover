@@ -224,7 +224,8 @@ const puppeteer = require('/home/claude/work/tools/node_modules/puppeteer-core')
   ok('form is ready for the next one', (await val('#rcAmt')) === '' && (await val('#rcDate')) === '2026-11-08' && (await val('#rcCat')) === 'bill:util');
   await p.select('#rcCat', 'envelope'); await p.type('#rcAmt', '1200'); await p.type('#rcNote', 'Dinner'); await p.keyboard.press('Enter'); await w(350);
   ok('Enter submits', (await p.$$eval('#rcList .rc', e => e.length)) === 2);
-  ok('later receipts get a small cheer', /^(Logged|Week \d|First receipt|\d+ weeks)/.test(await cheerOn()));
+  /* the first receipt's badge toast lands 900 ms after it and may replace this cheer when the machine is slow; both are right */
+  { const c2 = await cheerOn(); const good = /^(Logged|Week \d|First receipt|\d+ weeks|Badge: First receipt)/.test(c2); ok('later receipts get a small cheer', good); if (!good) console.log('  cheer was:', JSON.stringify(c2)); }
   await p.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'reduce' }]); await w(3300); await w(1200);
   await p.type('#rcAmt', '15'); await p.click('#rcSave'); await w(400);
   ok('with reduced motion there is a cheer but no confetti', /^(Logged|Week \d|First receipt|\d+ weeks)/.test(await cheerOn()) && (await confettiPx()) === 0);

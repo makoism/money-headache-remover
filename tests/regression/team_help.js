@@ -76,7 +76,7 @@ const STATE = JSON.stringify({ steps: 5, ui: { name: 'Mara', cur: '$', toured: t
     await p.click('#helpAsk'); await w(250);
     ok('the panel opens, menu closes, focus is in the box', (await H.hidden('#ask')) === false && (await H.hidden('#helpMenu')) === true && (await p.evaluate(() => document.activeElement.id)) === 'askIn');
     ok('it introduces itself as the money assistant', (await H.q('#askLog')).startsWith('Ask anything about your money or this page'));
-    ok('five suggestions plus the fill-in-from-files chip', (await p.$$eval('#askSug .sugg', e => e.length)) === 6 && (await p.$$eval('#askSug .sugg:not([data-files])', e => e.length)) === 5);
+    ok('six suggestions plus the fill-in-from-files chip', (await p.$$eval('#askSug .sugg', e => e.length)) === 7 && (await p.$$eval('#askSug .sugg:not([data-files])', e => e.length)) === 6);
     ok('the numbers box starts ticked (the assistant sees the plan by default)', await p.$eval('#askNums', e => e.checked));
     ok('the privacy line says what is sent', (await H.q('#askForm .cap')).includes('Claude account') && (await H.q('#askForm .cap')).includes('while the box is ticked'));
     ok('panel is on screen at desktop and mobile widths', await p.$eval('#ask', e => { const r = e.getBoundingClientRect(); return r.right <= innerWidth && r.bottom <= innerHeight && r.top >= 0 && r.width <= 440; }));

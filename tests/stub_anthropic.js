@@ -4,7 +4,9 @@ const http = require('http');
 const port = +process.argv[2] || 8790;
 const srv = http.createServer((req, res) => {
   let body = ''; req.on('data', c => body += c); req.on('end', () => {
-    const j = JSON.parse(body || '{}'), last = j.messages[j.messages.length - 1];
+    let j; try { j = JSON.parse(body || '{}'); } catch (e) { j = {}; }
+    if (!Array.isArray(j.messages) || !j.messages.length) { res.writeHead(400, { 'content-type': 'application/json' }); return res.end(JSON.stringify({ error: { type: 'invalid_request_error', message: 'messages: field required' } })); }
+    const last = j.messages[j.messages.length - 1];
     const lastText = typeof last.content === 'string' ? last.content : last.content.map(c => c.type === 'text' ? c.text : c.type === 'tool_result' ? '[tool_result ' + JSON.stringify(c.content) + ']' : '[' + c.type + ']').join(' ');
     if (req.headers['x-api-key'] !== 'test-key') { res.writeHead(401, { 'content-type': 'application/json' }); return res.end(JSON.stringify({ error: { type: 'authentication_error', message: 'invalid x-api-key' } })); }
     if (/MAKE429/.test(lastText)) { res.writeHead(429, { 'content-type': 'application/json' }); return res.end(JSON.stringify({ error: { type: 'rate_limit_error', message: 'slow down' } })); }

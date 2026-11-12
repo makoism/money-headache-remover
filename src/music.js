@@ -140,4 +140,4 @@ const MUSIC = (() => {
     render(c, out, seconds) { const s = build(c, out); s.bus.gain.setValueAtTime(LEVEL, 0); step(s, seconds); return s; },
   };
 })();
-if (/[?&]sfxtest\b/.test(location.search)) { window.__music = MUSIC; window.__actx = () => SFX.state(); window.__pix = { placePix, pixFitAll, peek, celebrate, renderHome }; }
+if (/[?&]sfxtest\b/.test(location.search)) { window.__music = MUSIC; window.__actx = () => SFX.state(); window.__pix = { placePix, pixFitAll, peek, celebrate, renderHome }; window.__t = { get S() { return S; }, calcAll, addGoal, updateGoal, persist, restructure, asstPicture, goalById }; }

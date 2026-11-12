@@ -15,7 +15,7 @@ const P = {
   await p.emulateMediaFeatures([{name:'prefers-color-scheme', value:scheme}]);
   await p.evaluateOnNewDocument(() => { try { (localStorage.clear(), indexedDB.deleteDatabase('money-map-safe')); } catch(e){} });
   await p.goto('file:///home/claude/work/money-map-team.html#2026-11', { waitUntil:'load' }); await w(800);
-  const type = async (sel, val) => { await p.$eval(sel, e => { e.focus(); e.select && e.select(); }); await p.keyboard.press('Backspace'); if (val!=='' && val!==null) await p.type(sel, String(val)); };
+  const type = async (sel, val) => { await p.$eval(sel, e => e.focus()); await p.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))); await p.$eval(sel, e => { e.select && e.select(); }); await p.keyboard.press('Backspace'); if (val!=='' && val!==null) await p.type(sel, String(val)); };
   const has = async s => !!(await p.$(s));
   const seen=[]; const probs=[];
   for (let i=0;i<60;i++) {

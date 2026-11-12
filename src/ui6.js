@@ -17,6 +17,8 @@ const HI = {
   half: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2.7a9.3 9.3 0 0 1 0 18.6z" fill="currentColor"/></svg>',
   star: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2.6l2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 17l-5.7 3.1 1.2-6.4L2.8 9.3l6.4-.8z"/></svg>',
   lock: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5.5" y="10.5" width="13" height="9.5" rx="2.4" fill="currentColor"/><path d="M8.6 10.5V8a3.4 3.4 0 0 1 6.8 0v2.5" fill="none" stroke="currentColor" stroke-width="2"/></svg>',
+  flower: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="6.2" r="3.1" fill="currentColor"/><circle cx="17.8" cy="12" r="3.1" fill="currentColor"/><circle cx="12" cy="17.8" r="3.1" fill="currentColor"/><circle cx="6.2" cy="12" r="3.1" fill="currentColor"/><circle cx="12" cy="12" r="3" fill="var(--bg)"/></svg>',
+  drop: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2.6c3.6 4.6 6.4 8.2 6.4 11.6a6.4 6.4 0 0 1-12.8 0c0-3.4 2.8-7 6.4-11.6z"/><path d="M9.2 14.6a3 3 0 0 0 2.4 2.9" fill="none" stroke="var(--bg)" stroke-opacity=".75" stroke-width="1.5" stroke-linecap="round"/></svg>',
 };
 
 /* ---------- the weekly streak ----------
@@ -66,6 +68,8 @@ const BADGES = [
   { id: 'rcpt10', n: '10 receipts', h: 'Log 10 receipts.', i: 'star', ok: () => (S.receipts || []).length >= 10 },
   { id: 'wk4', n: '4 weeks', h: 'Log 4 weeks running.', i: 'leaf', ok: () => streakInfo().best >= 4 },
   { id: 'wk12', n: '12 weeks', h: 'Log 12 weeks running.', i: 'shield', ok: () => streakInfo().best >= 12 },
+  { id: 'full', n: 'Goal full', h: 'A goal reaches its amount.', i: 'flower', ok: () => !!(S.ui.done && S.ui.done.goals) && S.plan.goals.some(g => g.target > 0 && goalInfo(S, C, g.id, nowYm()).pct >= 1) },
+  { id: 'topup', n: 'Top-up', h: 'Put unspent play money toward a goal.', i: 'drop', ok: () => !!(S.ui.sweep && Object.keys(S.ui.sweep).some(k => S.ui.sweep[k] && S.ui.sweep[k].amt > 0)) },
 ];
 let badgeTimer = 0;
 function checkBadges() {
@@ -131,6 +135,19 @@ function monthToClose() {
   const pm = MONTHS[i - 1]; if (S.ui.mcSeen === pm) return null;
   const n = receiptsFor(S, pm).length; return n < 4 ? { pm, n } : null;
 }
+/* last month's unspent play money: once the month is logged (four receipts or more, or a statement), what was not spent can go toward a goal.
+   One offer per month, kept until the person answers it or the month after has gone by. */
+let SWEPT = null;
+function sweepOffer() {
+  const d = S.ui.done || {}; if (!(d.pay && d.bills && d.goals) || sampleOn()) return null;
+  const i = MONTHS.indexOf(nowYm()); if (i < 1) return null;
+  const pm = MONTHS[i - 1], seen = S.ui.sweep && S.ui.sweep[pm]; if (seen) return null;
+  const rs = receiptStats(S, pm); if (rs.count < 4 && !rs.list.some(r => r.src === 'stmt')) return null;
+  const m = C.byYm[pm], left = Math.floor(m.jar.play - (rs.byJar.play || 0)); if (!(left >= Math.max(1, roundUnit(S)))) return null;
+  const goals = goalRows(S, C, pm).filter(r => r.live && r.pct < 100 && r.target > 0 && Math.max(0, capOf(goalById(S, r.id)) - r.saved) > 0); if (!goals.length) return null;
+  const main = pickMain(S, goals) || goals[0];
+  return { pm, left, goals, main };
+}
 function renderNext() {
   const el = $('#hNext'), d = S.ui.done || {}; let step = null, month = null;
   if (!S.ui.sampleHidden) {
@@ -140,12 +157,45 @@ function renderNext() {
     else if (!(S.receipts || []).length) step = ['Next: log a receipt', 'Enter an amount in Log spend, then tap Log.', 'Log receipt', 'data-focus="hAmt"'];
   }
   /* a month to close comes first (it is timely); then, for typed numbers, the statements that make them exact */
-  if (!step && (month = monthToClose())) { const nm = FULL[+month.pm.slice(5) - 1]; step = [`Next: finish ${nm}`, `${month.n ? plural(month.n, 'receipt') + ' logged' : 'Nothing logged'} for ${nm}. Log what you spent, or upload the month's statement under Receipts.`, 'Receipts', 'data-tab-go="receipts"']; }
+  if (!step && (month = monthToClose())) { const nm = FULL[+month.pm.slice(5) - 1]; step = [`Next: finish ${nm}`, `${month.n ? plural(month.n, 'receipt') + ' logged' : 'Nothing logged'} for ${nm}. Log what you spent, or upload the month's statement under Receipts.${HV && HV.main && HV.main.live && HV.main.pct < 100 ? ` Once it is in, what is left of play money can go toward ${esc(goalById(S, HV.main.id).name)}.` : ''}`, 'Receipts', 'data-tab-go="receipts"']; }
+  /* a sweep just made: say so, with Undo, until the next page load */
+  if (!step && SWEPT) { const g = goalById(S, SWEPT.id); step = [`${fmt(SWEPT.amt)} put toward ${g ? g.name : 'the goal'}`, SWEPT.note || `From ${FULL[+SWEPT.pm.slice(5) - 1]}'s play money.`, 'Undo', 'data-sweepundo']; }
+  let sw = null;
+  if (!step && (sw = sweepOffer())) {
+    const nm = FULL[+sw.pm.slice(5) - 1], one = sw.goals.length === 1;
+    const pick = one ? '' : `<select class="inp sm" data-sweepgoal aria-label="Which goal">${sw.goals.map(r => `<option value="${esc(r.id)}"${r.id === sw.main.id ? ' selected' : ''}>${esc(r.name)}</option>`).join('')}</select>`;
+    step = [`${nm}: ${fmt(sw.left)} of play money unspent`, `Keep it as play, or put it toward ${one ? esc(sw.main.name) : 'a goal'}. Either is fine.`, one ? `Put it toward ${esc(sw.main.name)}` : 'Put it toward', `data-sweep="${sw.pm}"`, pick];
+  }
   if (!step && d.pay && d.bills && S.ui.src !== 'import' && !S.ui.exactHidden && !sampleOn()) step = ['Make it exact', 'Upload 2 or 3 months of statements (screenshots of the bank app work). The numbers become exact and your history fills in.', 'Upload', 'data-exact'];
   el.hidden = !step; if (!step) return;
   const left = ['pay', 'bills', 'goals', 'receipts'].filter(k => !d[k]).length;
   const exact = step[3] === 'data-exact';
-  put(el, `<div class="hn-t"><b>${step[0]}</b><span>${step[1]}${month || exact ? '' : ' ' + (left === 1 ? '1 step left.' : left + ' steps left.')}</span></div><div class="hn-b"><button type="button" class="btn small solid" ${step[3]}>${step[2]}</button><button type="button" class="link" ${month ? `data-hidemonth="${month.pm}"` : exact ? 'data-hideexact' : 'data-hidenext'}>Hide</button></div>`);
+  const swept = step[3] === 'data-sweepundo', sweep = sw && step[3].indexOf('data-sweep=') === 0;
+  const tail = swept ? '' : sweep ? `<button type="button" class="link" data-sweephide="${sw.pm}">Keep as play</button>` : `<button type="button" class="link" ${month ? `data-hidemonth="${month.pm}"` : exact ? 'data-hideexact' : 'data-hidenext'}>Hide</button>`;
+  put(el, `<div class="hn-t"><b>${step[0]}</b><span>${step[1]}${month || exact || sweep || swept ? '' : ' ' + (left === 1 ? '1 step left.' : left + ' steps left.')}</span></div><div class="hn-b">${step[4] || ''}<button type="button" class="btn small ${swept ? '' : 'solid'}" ${step[3]}>${step[2]}</button>${tail}</div>`);
+}
+/* put last month's unspent play money toward the chosen goal: one undoable change, then the new date is said out loud */
+function doSweep(pm) {
+  const o = sweepOffer(); if (!o || o.pm !== pm) { render(); return; }
+  const sel = $('#hNext [data-sweepgoal]'), id = sel && goalById(S, sel.value) ? sel.value : o.main.id, g = goalById(S, id);
+  const before = C.reached[id] || null, lastIx = MONTHS.length - 1;
+  const moved = ACT.sweep(pm, id, o.left);
+  if (!(moved > 0)) { cheer('Nothing to move.'); return; }
+  S.ui.sweep = Object.assign({}, S.ui.sweep, { [pm]: { amt: moved, id } }); persist();
+  const after = C.reached[id] || null, gi = goalInfo(S, C, id, nowYm());
+  let note = '';
+  if (gi.pct >= 1) note = `${g.name} is full.`;
+  else if (after && before && after < before) { const n = ymIdx(before) - ymIdx(after); note = `Full ${monthLabel(after)}, ${plural(n, 'month')} sooner.`; }
+  else note = `${fmt(Math.max(0, g.target - gi.bal))} to go.${after ? ` Full ${monthLabel(after)}.` : ''}`;
+  SWEPT = { pm, id, amt: moved, note: `${note}${g.why ? ' ' + g.why + '.' : ''}` };
+  sfx('coin'); celebrate('med', `${g.name}: +${fmt(moved)}. ${note}`);
+  render();
+}
+function undoSweep() {
+  if (!SWEPT) return; const pm = SWEPT.pm;
+  if (ACT.lastLabel() === 'top-up') ACT.undo();
+  if (S.ui.sweep) { delete S.ui.sweep[pm]; if (!Object.keys(S.ui.sweep).length) delete S.ui.sweep; }
+  SWEPT = null; persist(); sfx('back'); cheer('Undone.'); render();
 }
 function renderStreak() {
   const el = $('#hStreak'), s = streakInfo(), now = new Date(), dow = (now.getDay() + 6) % 7, toSun = 6 - dow;
@@ -182,8 +232,9 @@ function renderHero() {
     put(el, `<div class="hw-empty"><h2>No goal set</h2><p>Add a goal to see what it unlocks and when.</p><button type="button" class="btn solid" data-gw>Add goal</button></div>`);
     return;
   }
-  const g = goalById(S, r.id), purpose = purposeFor(g), pct = r.pct, fr = fracOf(r);
-  if (!g) return; /* view and plan out of step for a moment (a goal just removed); the next restructure redraws */
+  const g = goalById(S, r.id), pct = r.pct, fr = fracOf(r);
+  if (!g) return;
+  const purpose = g.why || purposeFor(g); /* view and plan out of step for a moment (a goal just removed); the next restructure redraws */
   let chip = '', sub = '', fix = '';
   if (r.pct >= 100 || r.state === 'full') chip = '<span class="chip good">' + IC.ok + 'Full</span>';
   else if (r.state === 'ontrack') { chip = '<span class="chip good">' + IC.ok + 'On track</span>'; sub = `Needed by ${dateLabel(g.due)}. ${r.slack === 0 ? 'On time.' : plural(r.slack, 'month') + ' spare.'}`; }
@@ -191,18 +242,21 @@ function renderHero() {
   else if (r.state === 'noeta') { chip = '<span class="chip tight">' + IC.warn + 'Slow</span>'; sub = 'Raise the monthly amount to finish sooner.'; fix = '<button type="button" class="btn small" data-open="lts">Change monthly amount</button>'; }
   const when = r.pct >= 100 ? 'Full.' : r.reached ? (r.months <= 0 ? 'Full <b>this month</b>.' : `<b>${plural(r.months, 'month')}</b> to go. Full ${fullLabel(r.reached)}.`) : 'Not full within ' + SPAN + ' at this pace.';
   const ms = [25, 50, 75].map(p => `<span class="ms${pct >= p ? ' hit' : ''}" style="left:${p}%"></span>`).join('');
+  /* what moves it: this month's deposit and what is still to go, so progress reads as motion, not a percent */
+  const mg = C.byYm[HV.ym] && C.byYm[HV.ym].g[g.id], put1 = mg ? mg.actual : 0, togo = Math.max(0, r.target - r.saved);
+  const adds = r.pct < 100 && r.live ? `<p class="hw-add">${put1 > 0 ? `<b>+${fmt(put1)}</b> this month. ` : ''}${fmt(togo)} to go.</p>` : '';
   el.className = 'card hwin';
   put(el, `<p class="hw-k">Main goal: ${esc(g.name)}</p>
     <h2 class="hw-p">${esc(purpose)}</h2>
     <p class="hw-when">${when}</p>
     <div class="hw-bar" role="img" aria-label="${pct} percent of ${esc(g.name)} saved" style="--c:var(--c${g.slot})"><i class="fill" style="width:${fr * 100}%"></i>${ms}</div>
     <div class="hw-nums"><span><b>${fmt(r.saved)}</b> of ${fmt(r.target)}</span><span>${pct}%</span></div>
-    ${chip}
+    ${adds}${chip}
     <details class="hw-more"><summary>Forecast</summary>${sub ? `<p class="hw-sub">${sub}</p>` : ''}${r.reached ? `<div class="hw-graph" id="hGraph">${heroGraph(g)}</div>` : ''}<div class="row-btns">${fix}<button type="button" class="btn small" data-tab-go="goals">Edit goals</button></div></details>`);
   /* a milestone is celebrated once, the first time the plan passes it */
   const hit = pct >= 100 ? 4 : pct >= 75 ? 3 : pct >= 50 ? 2 : pct >= 25 ? 1 : 0, ms0 = S.ui.ms = S.ui.ms || {};
   if (ms0[g.id] === undefined) { ms0[g.id] = hit; persist(); }
-  else if (hit > (ms0[g.id] || 0)) { ms0[g.id] = hit; persist(); sfx(hit === 4 ? 'fanfare' : 'sparkle'); celebrate(hit === 4 ? 'big' : 'med', hit === 4 ? `${g.name}: full.` : `${g.name}: ${hit * 25}%.`); }
+  else if (hit > (ms0[g.id] || 0)) { ms0[g.id] = hit; persist(); sfx(hit === 4 ? 'fanfare' : 'sparkle'); celebrate(hit === 4 ? 'big' : 'med', hit === 4 ? `${g.name}: full.${g.why ? ' ' + g.why + '.' : ''}` : `${g.name}: ${hit * 25}%.${g.why && hit >= 2 ? ' ' + g.why + '.' : ''}`); }
 }
 function renderSpend() {
   const el = $('#hSpend'), p = HV.play, ym = HV.ym;
@@ -212,7 +266,7 @@ function renderSpend() {
   const covered = !p.over && p.planned > 0 && HV.month.status === 'good' && !sampleOn();
   put(el, `<h2>Play money</h2><p class="hs-big${p.over ? ' neg' : ''}" style="--n:${fmt2(p.left).length}">${fmt2(p.left)}</p><p class="hs-lbl">${p.over ? 'Over in ' : 'Left in '}${monthLabel(ym)}</p>
     <div class="hs-bar${p.over ? ' over' : ''}" role="img" aria-label="${fmt2(p.spent)} of ${fmt(p.planned)} spent"><i style="width:${p.frac * 100}%"></i><span class="pace" style="left:${p.dayFrac * 100}%"></span></div>
-    <p class="hs-sub">${p.count ? `Spent ${fmt2(p.spent)} of ${fmt(p.planned)}.` : `Nothing logged yet. ${fmt(p.planned)} planned.`} ${p.over ? '' : wk}</p>${p.count || p.over ? chip : ''}${covered ? '<p class="hs-ok">Bills and goals are planned for. This part is free to spend.</p>' : ''}${art('grass')}`);
+    <p class="hs-sub">${p.count ? `Spent ${fmt2(p.spent)} of ${fmt(p.planned)}.` : `Nothing logged yet. ${fmt(p.planned)} planned.`} ${p.over ? '' : wk}</p>${p.count || p.over ? chip : ''}${covered ? `<p class="hs-ok">Bills and goals are planned for. This part is free to spend.${HV.main && HV.main.live && HV.main.pct < 100 ? ` What is left at month end can go toward ${esc(goalById(S, HV.main.id).name)}.` : ''}</p>` : ''}${art('grass')}`);
 }
 /* a row opens to show its details; which ones are open survives a redraw */
 const HOPEN = new Set();
@@ -222,7 +276,7 @@ function goalRowHtml(r) {
   const st = r.state === 'ontrack' || r.state === 'full' || r.state === 'paid' ? 'good' : r.state === 'behind' || r.state === 'noeta' || r.state === 'short' ? 'warn' : 'plain';
   const stw = { ontrack: 'On track', full: 'Full', paid: 'Paid', short: 'Short', behind: 'Behind', noeta: 'Slow', eta: 'Filling', unset: 'Unset', none: '' }[r.state] || '';
   const eta = r.state === 'paid' ? `Paid ${dateLabel(g.due)}` : r.state === 'short' ? `Had ${fmt(r.had)} of ${fmt(g.target)}` : r.state === 'unset' ? 'No amount' : r.reached ? `Full ${monthLabel(r.reached)}` : `Not full in ${SPAN}`;
-  return `<li class="gd"><details data-hgid="${esc(r.id)}"${HOPEN.has(r.id) ? ' open' : ''} style="--c:var(--c${g.slot})"><summary><i class="dot"></i><span class="gd-t"><b>${esc(g.name)}</b><small>${esc(purposeFor(g))}</small></span><span class="gd-m${main ? ' main' : ''}">${esc(monthsShort(r))}</span></summary>
+  return `<li class="gd"><details data-hgid="${esc(r.id)}"${HOPEN.has(r.id) ? ' open' : ''} style="--c:var(--c${g.slot})"><summary><i class="dot"></i><span class="gd-t"><b>${esc(g.name)}</b><small>${esc(g.why || purposeFor(g))}</small></span><span class="gd-m${main ? ' main' : ''}">${esc(monthsShort(r))}</span></summary>
     <div class="gd-b"><div class="hg-b" role="img" aria-label="${r.pct} percent"><i style="width:${fracOf(r) * 100}%"></i></div>
     <p class="gd-n"><span>${fmt(r.saved)} of ${fmt(r.target)}</span><span>${esc(eta)}</span></p>${stw ? `<p class="gd-c"><em class="${st}">${stw}</em>${main ? '<span class="gd-main">Main goal</span>' : ''}</p>` : (main ? '<p class="gd-c"><span class="gd-main">Main goal</span></p>' : '')}
     <div class="row-btns"><button type="button" class="btn small" data-tab-go="goals">Edit goal</button>${!main && r.live ? `<button type="button" class="btn small" data-main="${esc(r.id)}">Set as main goal</button>` : ''}</div></div></details></li>`;
@@ -368,7 +422,7 @@ function gwPlan() {
 }
 function openGoalWizard() {
   if (S.plan.goals.length >= MAX_GOALS) { cheer(`Limit: ${MAX_GOALS} goals.`); return; }
-  GW = { step: 0, kind: null, name: '', cost: '', saved: '', due: '', ret: document.activeElement, dir: 0 };
+  GW = { step: 0, kind: null, name: '', why: '', cost: '', saved: '', due: '', ret: document.activeElement, dir: 0 };
   let el = $('#gw');
   if (!el) {
     el = document.createElement('div'); el.id = 'gw'; el.className = 'gw'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-labelledby', 'gwT'); document.body.appendChild(el);
@@ -396,7 +450,8 @@ function paintGW() {
   if (g.step === 0) {
     t = 'Goal type';
     body = `<div class="gw-chips" role="group" aria-label="Goal type">${gwKinds().map(x => `<button type="button" class="gw-chip${k && k.k === x.k ? ' on' : ''}" data-kind="${x.k}" aria-pressed="${!!(k && k.k === x.k)}"><b>${x.pick}</b><span>${x.hint}</span></button>`).join('')}</div>
-      <div class="field"><label for="gwName">Name</label><input class="txt" id="gwName" type="text" maxlength="60" value="${esc(g.name)}" placeholder="Japan trip"></div>`;
+      <div class="field"><label for="gwName">Name</label><input class="txt" id="gwName" type="text" maxlength="60" value="${esc(g.name)}" placeholder="Japan trip"></div>
+      <div class="field"><label for="gwWhy">Why (optional)</label><input class="txt" id="gwWhy" type="text" maxlength="80" value="${esc(g.why)}" placeholder="In your words: who it is for, what it changes"><p class="cap">Shows with the goal, so the reason stays in view.</p></div>`;
   } else if (g.step === 1) {
     t = 'Amount';
     body = `<div class="field"><label for="gwCost">${k && k.cost ? 'Total cost' : 'Total cost'}</label><div class="inp"><span class="yen cs"></span><input id="gwCost" type="number" inputmode="numeric" min="0" step="any" value="${esc(g.cost)}" placeholder="0"></div>${k && k.cost ? `<p class="cap">${k.cost}</p>` : ''}</div>
@@ -425,7 +480,7 @@ function gwRefresh() {
 }
 function gwInput(e) {
   const g = GW, t = e.target; if (!g) return;
-  if (t.id === 'gwName') g.name = t.value; else if (t.id === 'gwCost') g.cost = t.value; else if (t.id === 'gwSaved') g.saved = t.value;
+  if (t.id === 'gwName') g.name = t.value; else if (t.id === 'gwWhy') g.why = t.value; else if (t.id === 'gwCost') g.cost = t.value; else if (t.id === 'gwSaved') g.saved = t.value;
   else if (t.id === 'gwDue') { g.due = t.value; $$('.gw-quick .chipbtn').forEach(b => { const q = +b.dataset.q; b.classList.toggle('on', q === 0 ? !g.due : g.due === gwDate(q)); }); }
   gwRefresh();
 }
@@ -437,7 +492,7 @@ function gwNext() {
 function gwFinish() {
   const g = GW, k = g.kind; if (!g || !k) return;
   const id = addGoal(S, g.name.trim() || k.name); if (!id) { closeGoalWizard(); return; }
-  updateGoal(S, id, { target: g.cost, start: g.saved || 0, due: k.em ? '' : g.due });
+  updateGoal(S, id, { target: g.cost, start: g.saved || 0, due: k.em ? '' : g.due, why: g.why || '' });
   if (k.em) updateGoal(S, id, { emergency: true });
   S.ui.gk = S.ui.gk || {}; S.ui.gk[id] = k.k; markDone('goals', true); persist();
   closeGoalWizard(true); editGoal = null; restructure(); queueWins(true);
@@ -486,6 +541,9 @@ function wireHome() {
     if (e.target.closest('[data-hidenext]')) { S.ui.sampleHidden = true; persist(); render(); return; }
     const hm = e.target.closest('[data-hidemonth]'); if (hm) { S.ui.mcSeen = hm.dataset.hidemonth; persist(); render(); return; }
     if (e.target.closest('[data-hideexact]')) { S.ui.exactHidden = true; persist(); render(); return; }
+    const sh = e.target.closest('[data-sweephide]'); if (sh) { S.ui.sweep = Object.assign({}, S.ui.sweep, { [sh.dataset.sweephide]: { hide: true } }); persist(); sfx('tap'); render(); return; }
+    const sb = e.target.closest('[data-sweep]'); if (sb) { doSweep(sb.dataset.sweep); return; }
+    if (e.target.closest('[data-sweepundo]')) { undoSweep(); return; }
     if (e.target.closest('[data-exact]')) { impOnly = true; openTour('source', 'full'); return; }
     const f = e.target.closest('[data-focus]'); if (f) { const t = document.getElementById(f.dataset.focus); if (t) { t.scrollIntoView({ behavior: 'smooth', block: 'center' }); t.focus({ preventScroll: true }); } }
   });

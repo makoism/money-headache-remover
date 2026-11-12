@@ -45,7 +45,7 @@
 }
 * { box-sizing: border-box; }
 /* glass: translucent panels with a hairline and a top highlight; blur only on the large ones, so phones stay quick */
-.card, .start, .tour-fields, .tour-cloud, .split-row, .gw-card, .mgb, .tour-ledger, .why, .sub-o, .newcat, .hnext, .msg.ai, .tour-try, .src-panel, .imp-q { box-shadow: inset 0 0 0 1px var(--hair), inset 0 1px 0 var(--glass-hi); }
+.card, .start, .tour-fields, .tour-cloud, .tour-goal, .split-row, .gw-card, .mgb, .tour-ledger, .why, .sub-o, .newcat, .hnext, .msg.ai, .tour-try, .src-panel, .imp-q { box-shadow: inset 0 0 0 1px var(--hair), inset 0 1px 0 var(--glass-hi); }
 @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) { .card, .gw-card, .hnext, .src-panel { -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); } }
 html { -webkit-text-size-adjust: 100%; }
 body { margin: 0; background: var(--bg); color: var(--ink); position: relative; font-family: var(--f); font-size: 17px; line-height: 1.47; letter-spacing: -.008em; font-weight: 400; -webkit-font-smoothing: antialiased; }
@@ -270,6 +270,10 @@ b, strong { font-weight: 600; }
 .jstat.good { background: var(--good-bg); color: var(--good); } .jstat.warn { background: var(--warn-bg); color: var(--warn); } .jstat.plain { background: var(--track2); color: var(--ink2); }
 .jart { font-size: 15px; color: var(--ink2); }
 .gsave { margin-top: 12px; font-size: 15px; color: var(--ink2); }
+/* the reason behind a goal, in the person's words: quiet, under the name, gone when empty */
+/* All months: the month a goal becomes full carries its name */
+.mt-g { display: inline-flex; align-items: center; gap: 4px; margin: 2px 0 0 8px; padding: 1px 8px 1px 6px; border-radius: 999px; font-size: 12px; line-height: 1.5; color: var(--c); background: color-mix(in srgb, var(--c) 14%, transparent); vertical-align: 1px; white-space: nowrap; } .mt-g svg { width: 12px; height: 12px; }
+.gwhy { margin: 4px 0 10px; font-size: 15px; line-height: 1.4; color: var(--ink2); } .gwhy:empty { display: none; }
 .gsave b { color: var(--ink); font-weight: 600; }
 
 /* chart and tables */
@@ -490,6 +494,13 @@ svg.tour-fig text.t { font-family: var(--f); font-size: 11.5px; fill: var(--ink2
 .hello { margin: 28px 2px 0; font-size: clamp(22px, 4vw, 28px); font-weight: 600; letter-spacing: -.025em; line-height: 1.2; color: var(--ink); }
 
 svg.tour-scene { width: 100%; max-width: 440px; height: auto; }
+/* the destination block on Setup done: name, reason, bar, numbers */
+.tour-goal { margin: 6px 0 22px; padding: 18px 20px; border-radius: 18px; max-width: 460px; }
+.tour-goal-k { margin: 0; font-size: 13px; color: var(--ink3); }
+.tour-goal-n { margin: 2px 0 0; font-family: var(--fd); font-weight: 500; font-size: 26px; line-height: 1.15; letter-spacing: -.012em; }
+.tour-goal-w { margin: 6px 0 0; font-size: 16px; line-height: 1.4; color: var(--ink2); }
+.tour-goal .hg-b { margin-top: 14px; }
+.tour-goal-l { margin: 10px 0 0; font-size: 15px; color: var(--ink2); } .tour-goal-l b { color: var(--ink); font-weight: 600; }
 .tour-cloud { display: flex; gap: 12px; align-items: flex-start; background: var(--panel); border-radius: 16px; padding: 14px 16px; max-width: 460px; font-size: 16px; line-height: 1.4; }
 .tour-cloud > svg { flex: 0 0 22px; width: 22px; height: 22px; margin-top: 2px; color: var(--good); }
 .tour-cloud > div { min-width: 0; flex: 1 1 auto; } .tour-cloud b { display: block; margin-bottom: 4px; } .tour-cloud .cap { margin: 0 0 10px; } .tour-cloud .row-btns { align-items: center; gap: 10px; } .tour-cloud .row-btns .cap { margin: 0; }
@@ -714,7 +725,8 @@ svg.tour-scene { width: 100%; max-width: 440px; height: auto; }
 .hnext { margin-top: 20px; display: flex; align-items: center; justify-content: space-between; gap: 12px 20px; flex-wrap: wrap; padding: 16px 20px; border-radius: 22px; background: color-mix(in srgb, var(--accent) 9%, var(--panel)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 26%, transparent); }
 .hn-t { display: grid; gap: 2px; min-width: 0; flex: 1 1 260px; }
 .hn-t b { font-size: 17px; } .hn-t span { font-size: 15px; color: var(--ink2); line-height: 1.35; }
-.hn-b { display: flex; align-items: center; gap: 12px; }
+.hn-b { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.hn-b select.inp.sm { display: inline-block; flex: none; width: auto; min-width: 0; min-height: 34px; padding: 4px 30px 4px 12px; font-size: 15px; border-radius: 12px; -webkit-appearance: none; appearance: none; background-image: linear-gradient(45deg, transparent 50%, var(--ink3) 50%), linear-gradient(135deg, var(--ink3) 50%, transparent 50%); background-position: calc(100% - 15px) 50%, calc(100% - 10px) 50%; background-size: 5px 5px, 5px 5px; background-repeat: no-repeat; }
 .hq { display: grid; gap: 18px; }
 .hform { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr) auto; gap: 14px; align-items: end; }
 .hform .hadd { min-height: 52px; padding: 0 30px; }
@@ -740,6 +752,7 @@ svg.tour-scene { width: 100%; max-width: 440px; height: auto; }
 .hw-bar .fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 6px; background: var(--c); transition: width .9s cubic-bezier(.2, .8, .2, 1); }
 .hw-bar .ms { position: absolute; top: -3px; bottom: -3px; width: 3px; margin-left: -1.5px; background: var(--panel); border-radius: 2px; }
 .hw-nums { display: flex; justify-content: space-between; gap: 6px 14px; flex-wrap: wrap; margin-top: 12px; font-size: 15px; color: var(--ink2); }
+.hw-add { margin: 6px 0 0; font-size: 15px; color: var(--ink2); } .hw-add b { color: var(--ink); font-weight: 600; }
 .hw-nums b { color: var(--ink); font-weight: 600; }
 .hw-graph { margin-top: 18px; }
 .hw-graph svg { width: 100%; height: auto; display: block; overflow: visible; touch-action: pan-y; }

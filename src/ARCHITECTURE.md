@@ -21,9 +21,9 @@ ui41/ui42     adapters to the outside: the AI route (relay or viewer's Claude) a
 ## Files
 | File | What it holds |
 |---|---|
-| `model.js` | The money model: `calcAll`, `goalInfo`, `jarsOf`, `viewOf`, `statusOf`, `receiptStats`. Pure. Never change without the number checks. |
+| `model.js` | The money model: `calcAll`, `goalInfo`, `jarsOf`, `viewOf`, `statusOf`, `receiptStats`, `sweepPlay` (a month's unspent play money into a goal, that month only). A goal carries `why`, the reason in the person's words (`WHY_MAX` 80). `setVal` scope `once` or `month` is one month; `after` is from that month on. Pure. Never change without the number checks. |
 | `ui0.js` | State `S`, normalising saved data, saving (`persist`, `flush`), small helpers |
-| `actions.js` | `ACT`: transactions with undo (`ACT.tx`, `ACT.undo`), setters for pay, lines, goals, jars, receipts, name, currency, Home layout; `ACT.summary()` reads the key numbers |
+| `actions.js` | `ACT`: transactions with undo (`ACT.tx`, `ACT.undo`), setters for pay, lines, goals, jars, receipts, name, currency, Home layout, `ACT.sweep(ym, goalId, amount)`; `ACT.summary()` reads the key numbers |
 | `ui1.js` to `ui4.js` | The Plan tab (lines, ledger), bar and legend, road chart, tooltips, Receipts |
 | `art.js` | The nature line art: `ART` (inline SVG for grass, sprig, vine, sprout, branch, drawn in `--leaf`), `art(kind)`, `ART_SEATS` (Scan, Month hero, ledger, the backup reminder, All months, the backup area) and `placeArt()`. Regenerate with `/tmp/v30/mkart.py` |
 | `pixel.js` | The pixel art: `PIX` (axolotl, ocelot, tulip, daisy, sunflower, sprout, cactus, mushroom, clover as crisp SVG), `pix(kind, scale)`, `PIX_SEATS` (host, sprites, scale, corner), `placePix()` and `pixFit()` (a sprite hides itself when words or controls reach its corner; `put()` re-seats after a redraw, `pixQueue()` re-checks on resize), `peek(kind)` (the axolotl pops up bottom-left on a big celebration, the ocelot walks in from the right on a medium one, never under reduced motion). Regenerate with `/tmp/v32/mkpix.py` |
@@ -43,7 +43,7 @@ ui41/ui42     adapters to the outside: the AI route (relay or viewer's Claude) a
 | `ui42.js` | The cloud copy: recovery code, keys (PBKDF2 + HKDF), AES-GCM, push after each save, restore, conflict notice |
 | `ui43.js` | Saving safety: IndexedDB second copy with automatic restore, backup reminder cards on Home |
 | `ui49.js` | Scan receipts card |
-| `ui6.js` | Home: status, next step, hero goal, play money, streak, badges, add-a-goal wizard |
+| `ui6.js` | Home: status, next step (first steps, finish last month, the month-end top-up offer `sweepOffer`/`doSweep`/`undoSweep`, Make it exact), hero goal (the reason as its headline, what this month adds and what is to go), play money, streak, badges (`BADGES`, now ten), add-a-goal wizard |
 | `ui5.js` | Wiring all events, Settings backup/restore, startup |
 | `style.css`, `body.html` | Look and static markup (`@font-face` first, then the two palettes). `body.html` has `@@VER@@` and `@@STAMP@@` placeholders |
 | `VERSION` | Line 1: version number. Line 2: date and time shown at the bottom and in Help. |
@@ -67,6 +67,8 @@ All `ui*.js` files share one scope (one IIFE) in the order set in `build.sh`. Fu
 | The computer camera | `camOpen`, `camShot`, `camClose` in `ui49.js` (phones keep the native capture input) |
 | Setup wording or order | the step definitions in `ui45s.js`, `ui45u.js` and `ui45.js`; the order is the `TOUR` array in `ui45.js` (`skipIf` drops the typed screens once statements gave the numbers) |
 | A Home card | its `render…` function in `ui6.js`; markup slot in `body.html`; order and visibility via `HOME_SECTIONS` and `ACT.setHome` |
+| The reason behind a goal (the Why line) | asked in `goalStep` (`ui45s.js`, `#tourGWhy`), the goal editor (`goalFormHTML` in `ui1.js`, `data-g="why"`) and the add-goal wizard (`#gwWhy`); shown by `renderHero`, `goalRowHtml`, `renderGoals` (`#jw-id`), the Setup done block (`ui45.js`), the celebrations, and the assistant's picture (`for:`) |
+| The month-end top-up (unspent play money to a goal) | `sweepOffer` decides when (last month has four receipts or a statement, something left, a goal with room, not answered yet: `S.ui.sweep[ym]`), `doSweep` moves it through `ACT.sweep`, `undoSweep` takes it back; the model side is `sweepPlay` in `model.js` |
 | What the statement reader asks Claude for | `STMT_ROWS_SCHEMA`, `STMT_CATS_SCHEMA` and `STMT_CAT_GUIDE` in `ui45v.js`; the arithmetic that turns rows into numbers is `stmtNumbers` in `stmt.js` (change the unit test with it). The pasted-answer route keeps `importRules` and `IMP_FORMAT` in `ui45u.js`, with `importClean` to match |
 | The category words | `STMT_CATS`, `STMT_BILL_CATS`, `STMT_LINE` in `stmt.js`; the stub's keyword map in `../site/tests/stub_anthropic.js` for the tests |
 | Which files the AI can read | `IMG_TYPES` and `DOC_LIMITS` in `ui41.js` (PDFs go up as document blocks on the relay route only; `askDoc` in `ui46.js` is null elsewhere), mirrored by `MAX_DOCS` in `../site/functions/api/ai.js` |
