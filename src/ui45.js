@@ -174,7 +174,7 @@ function wireTx(v) {
 }
 
 /* the recovery-code link on the first screen: shows only where a cloud copy can exist; a code loads the numbers and closes the setup */
-const restoreHTML = () => `<p class="cap tour-restore" id="tourRestore" hidden><button type="button" class="link" id="tourRestoreBtn">Used this before on another phone? Enter your recovery code.</button></p>
+const restoreHTML = () => `<p class="cap tour-restore" id="tourRestore" hidden>Used this before on another phone? <button type="button" class="link" id="tourRestoreBtn">Enter your recovery code</button></p>
       <div class="tour-restore-in" id="tourRestoreIn" hidden><div class="row-btns inv-row"><input class="txt" id="tourVaultIn" type="text" autocomplete="off" spellcheck="false" placeholder="MHR-XXXX-XXXX-XXXX-XXXX-XXXX" aria-label="Recovery code" maxlength="40"><button type="button" class="btn small solid" id="tourVaultUse">Load</button></div><p class="cap" id="tourVaultMsg" role="status"></p></div>`;
 function wireRestore() {
   relayHealth().then(h => { const p = $('#tourRestore'); if (p && h && h.vault && tourMode === 'full' && pristine()) p.hidden = false; });
@@ -218,7 +218,7 @@ const TOUR = [
     body: () => {
       if (S.ui.setup) {
         const f = planFacts();
-        const line = f.st === 'over' ? `Plan exceeds pay by <b>${fmt(-f.L)}</b>. No play money yet. Lower a bill under Plan.`
+        const line = f.st === 'over' ? `Plan exceeds pay by <b>${fmt(-f.L)}</b>.${f.play > 0 ? ` Play money is ${fmt(f.play)}, but the month still comes up short.` : ' No play money yet.'} Under Plan: lower a bill or a goal, or add income.`
           : f.play <= 0 ? 'No play money in the plan. Raise the Play line under Plan.'
           : f.st === 'spare' ? `Play money <b>${fmt(f.play)}</b> a month. <b>${fmt(f.L)}</b> of pay is unassigned: raise a goal or add to play money.`
           : `Play money <b>${fmt(f.play)}</b> a month, to spend without guilt. All other pay is assigned.`;
@@ -239,12 +239,16 @@ const TOUR = [
       }
       const m = calcAll(S).byYm[sel], pay = m.a + m.b + m.side, L = m.pool.left;
       const zero = S.ui.preset === 'blank' || !!S.ui.cleared;
-      const msg = !(S.ui.done && S.ui.done.pay) || pay <= 0 ? (zero ? 'Pay skipped. Everything is zero until you add numbers.' : 'Pay skipped. Numbers are samples until you add yours.')
+      const dn = S.ui.done || {}, billsIn = !!dn.bills || Array.isArray(S.ui.sb); /* the bill screens were answered (even if left at zero) */
+      const msg = !dn.pay || pay <= 0 ? (zero ? 'Pay skipped. Everything is zero until you add numbers.' : 'Pay skipped, so the pay shown is a sample until you add yours: Plan, Money in, Salary. Or Help, Guided setup, to come back here.')
         : L > 0 ? `Pay entered. <b>${fmt(L)}</b> is unassigned: raise a goal or add to play money.`
-        : L < 0 ? `Pay entered. The sample plan exceeds pay by <b>${fmt(-L)}</b> because bills are still samples. Enter your real bills next.`
+        : L < 0 ? `Pay entered. The ${billsIn ? 'plan' : 'sample plan'} exceeds pay by <b>${fmt(-L)}</b>${billsIn ? '' : ' because bills are still samples'}. ${billsIn ? 'Lower a bill under Plan.' : 'Enter your real bills next.'}`
         : 'Pay entered. All of it is assigned.';
+      const bills = zero ? 'Bills and goals are empty. Open Plan, Necessities, and enter what you pay.'
+        : billsIn ? (necTotal() > 0 ? 'Your bills are in. Any line left at zero can be set under Plan, Necessities.' : 'Your bills are all at zero so far. Set each line under Plan, Necessities.')
+        : 'Bills and goals are still samples. Open Plan, Necessities, and set each line. Or use <b>Zero all</b> in Settings.';
       return `${homeScene()}<p>${msg}</p>
-      <p>${zero ? 'Bills and goals are empty. Open Plan, Necessities, and enter what you pay.' : 'Bills and goals are still samples. Open Plan, Necessities, and set each line. Or use <b>Zero all</b> in Settings.'}</p>
+      <p>${bills}</p>
       <p>Help (bottom right) has the video and the setup.</p>`;
     },
     after: () => {
@@ -290,8 +294,8 @@ function renderTour(dir) {
   body.classList.remove('in-r', 'in-l'); if (dir) { void body.offsetWidth; body.classList.add(dir > 0 ? 'in-r' : 'in-l'); }
   const setupRun = tourMode === 'full' && TS.some(x => x.setup);
   $('#tourSkip').textContent = setupRun ? 'Finish later' : 'Skip'; $('#tourSkip').hidden = !!t.last && setupRun;
-  $('#tourBack').hidden = tourN === 0; $('.tour-foot').classList.toggle('last', !!t.last);
-  const nx = $('#tourNext'), label = typeof t.next === 'function' ? t.next() : t.next; nx.hidden = label === false; nx.textContent = label || 'Next'; $('#tourAlt').hidden = !(t.last && !S.ui.setup);
+  $('#tourBack').hidden = tourN === 0; $('.tour-foot').classList.toggle('last', !!t.last); $('#tour').classList.toggle('last', !!t.last);
+  const nx = $('#tourNext'), label = typeof t.next === 'function' ? t.next() : t.next; nx.hidden = label === false; nx.textContent = label || 'Next'; nx.classList.toggle('solid', !t.nextPlain); $('#tourAlt').hidden = !(t.last && !S.ui.setup);
   paintSnd();
   $$('#tour .cs').forEach(e => { e.textContent = sym(); });
   if (t.id === 'video') wireHello(); else helloStop();
@@ -376,7 +380,7 @@ function tourStep(d) {
   }
   if (tourJump) { const j = TS.findIndex(s => s.id === tourJump); tourJump = null; if (j >= 0) nx = j; }
   tourN = Math.max(0, Math.min(TS.length - 1, nx)); renderTour(d); sfx(d > 0 ? 'next' : 'back');
-  if (d > 0 && TS[tourN].id === 'reveal' && havePay()) { celebrate('big', 'This is yours to spend.'); sfx('fanfare'); }
+  if (d > 0 && TS[tourN].id === 'reveal' && havePay()) { const f = planFacts(); if (f.st !== 'over' && f.play > 0) { celebrate('big', 'This is yours to spend.'); sfx('fanfare'); } }
 }
 function gotoStep(id) { buildSteps(); const i = TS.findIndex(x => x.id === id); if (i < 0) return; tourN = i; renderTour(1); sfx('next'); }
 function leaveTour() { autosave(true); closeTour(false); }

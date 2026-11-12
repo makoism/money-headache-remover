@@ -24,6 +24,28 @@ THE PAGE
 - Yen, pesos and euros start with sample numbers made up for one salary (about 200,000 yen, 30,000 pesos or 1,650 euros a month), with every bill and goal worked out from it. Any other currency starts at zero. Samples should be replaced with real numbers. Changing the currency in Settings swaps the sample to match, but only while the numbers are untouched. Once someone has typed their own numbers, only the symbol changes.
 - Filling the page from files: in this chat there is a paperclip button. A person can add photos or screenshots of receipts, credit card statements or bank statements, or a CSV file from their bank (PDFs cannot be read here: use a screenshot of each page, or the CSV). Then they press Send. Claude reads the files and lists what it found: receipts, monthly pay, bill amounts and the money they have today. Nothing on the page changes until the person taps Add to my page, and Undo is offered right after. The files go to the person's own Claude account only when they press Send, and this page does not keep them. Only dates from November 2026 on can be added. Never say you changed anything yourself: changes happen only through that button.
 - The page works in any currency. The currency is chosen in the tour or under Settings.`;
+/* the problem report: what a fix needs and nothing private. Version, device, look, the page open, how the numbers came in, how much is
+   in the plan (counts only), and the last errors this device logged */
+function reportText() {
+  const v = ($('#verFoot') && $('#verFoot').textContent) || '', ui = S.ui || {};
+  const look = document.documentElement.getAttribute('data-theme') || 'auto', dark = matchMedia('(prefers-color-scheme: dark)').matches;
+  const errs = errLog();
+  const lines = [
+    'M.H.R.2000 problem report',
+    v,
+    `Device: ${navigator.userAgent}`,
+    `Screen: ${innerWidth}x${innerHeight}, pixel ratio ${devicePixelRatio}, look ${look}${look === 'auto' ? (dark ? ' (dark)' : ' (light)') : ''}, ${navigator.onLine ? 'online' : 'offline'}, ${matchMedia('(display-mode: standalone)').matches ? 'installed app' : 'browser tab'}`,
+    `Page: ${tab}, setup ${tourIsOpen ? 'open' : 'closed'}, numbers from ${ui.src === 'import' ? 'statements' : 'typing'}, currency ${ui.cur || '?'}`,
+    `Plan: ${S.plan.goals.length} goals, ${S.plan.lines.length} lines, ${(S.receipts || []).length} receipts, ${Object.keys(S.once || {}).length} edited months`,
+    `Storage: ${(() => { try { return (localStorage.getItem(KEY) || '').length + ' chars'; } catch (e) { return 'blocked'; } })()}, backup ${ui.bk ? 'last on ' + new Date(+ui.bk).toISOString().slice(0, 10) : 'never'}`,
+    `Errors (${errs.length}):`,
+    ...(errs.length ? errs.slice(-8).map(e => `  ${e.t.slice(0, 16).replace('T', ' ')} ${e.where}: ${e.msg}${e.at ? ' @ ' + e.at : ''}`) : ['  none logged']),
+    'What I was doing: ',
+  ];
+  return lines.join('\n');
+}
+function openReport() { const r = $('#rep'); $('#repText').value = reportText(); $('#repMsg').textContent = ''; r.hidden = false; sfx('whoosh'); $('#repCopy').focus({ preventScroll: true }); }
+function closeReport() { $('#rep').hidden = true; sfx('back'); $('#helpBtn').focus({ preventScroll: true }); }
 const ASK_SUGGEST = ['Where is my money going?', 'What would bring my goal closer?', 'What can I realistically save each month?', 'Help me plan a trip', 'Cut my play money a little', 'I spent 300 on lunch today'];
 
 function askNumbers() {
@@ -74,7 +96,9 @@ async function askSend(q) {
   if (askFiles.length && q === undefined) return askReadFiles(text);
   if (!text) return;
   $('#askIn').value = ''; $('#askSug').hidden = true;
-  askMsg('me', text); const bot = askMsg('ai', 'Working…'); bot.classList.add('wait');
+  /* a question sent again after the code word (or a retry) keeps its one bubble instead of repeating it */
+  const last = $('#askLog').lastElementChild, again = last && last.classList.contains('me') && last.textContent === text;
+  if (!again) askMsg('me', text); const bot = askMsg('ai', 'Working…'); bot.classList.add('wait');
   askTurns.push({ role: 'user', content: text });
   const input = asstInput();
   askCtl = new AbortController(); askSetBusy(true);
@@ -388,6 +412,10 @@ function wireHelp() {
   $('#helpTab').addEventListener('click', () => { setHelpMenu(false); $('#helpBtn').focus({ preventScroll: true }); openTabTour(tab); });
   $('#helpVideo').hidden = !hasHello;
   $('#helpVideo').addEventListener('click', () => { setHelpMenu(false); $('#helpBtn').focus({ preventScroll: true }); openTour('video', 'replay'); });
+  $('#helpReport').addEventListener('click', () => { setHelpMenu(false); openReport(); });
+  $('#repClose').addEventListener('click', closeReport);
+  $('#rep').addEventListener('click', e => { if (e.target === $('#rep')) closeReport(); });
+  $('#repCopy').addEventListener('click', () => copyText($('#repText').value, $('#repMsg'), 'Copied. Send it to Mako.'));
   $('#helpAsk').addEventListener('click', openAsk);
   $('#askBtn').addEventListener('click', openAsk);
   $('#askRetry').addEventListener('click', () => { askFn = null; askGone = false; openAsk(); });

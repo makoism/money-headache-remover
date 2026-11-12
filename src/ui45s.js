@@ -84,7 +84,9 @@ const STEP_BILLS = { id: 'bills-pick', part: PART.bills, setup: true, pick: true
     const keep = necLines().filter(l => ids.indexOf(baseOf(l.id)) >= 0).map(l => l.id);
     /* the sample amounts are not yours: every line starts empty, and what you type replaces it */
     necLines().forEach(l => { if (keep.indexOf(l.id) < 0 || !S.steps[l.key]) setVal(S, l.key, START, 0, 'after'); });
-    markDone('bills'); persist();
+    /* ticking is not entering: the bills count as done once an amount is typed, or every bill screen has been passed (no bills ticked counts too) */
+    if (!ids.length) markDone('bills');
+    persist();
   } };
 const billStep = id => ({ id: 'bill-' + id, part: PART.bills, setup: true, focus: baseOf(id) === 'subs' ? '' : '#tourAmt',
   title: () => { const l = lineById(S, id); if (!l) return ''; const mk = moreKind(id); return mk ? MORE_KINDS[mk].title : (BILL_Q[id] || `${esc(l.name)}`); },
@@ -122,7 +124,7 @@ const billStep = id => ({ id: 'bill-' + id, part: PART.bills, setup: true, focus
     const l = lineById(S, id); if (!l) return;
     if (baseOf(id) === 'loan') { loanLeave(l); persist(); return; }
     if (baseOf(id) === 'card') cardLeave(d); /* before the amount is read: a filled calculator with an empty amount box counts when the person moves on */
-    setVal(S, l.key, START, inum('tourAmt'), 'after');
+    setVal(S, l.key, START, inum('tourAmt'), 'after'); if (inum('tourAmt') > 0) markDone('bills');
     const nm = $('#tourLName'); if (nm && nm.value.trim()) updateLine(S, id, { name: nm.value });
     if (baseOf(id) === 'subs') subsLeave();
     persist();
@@ -191,7 +193,15 @@ function commitJars() {
   persist();
 }
 /* goals added after the bills use all of the pay, or after the savings jar was set to nothing, start at zero and not at their usual sample amount */
-function settleGoals() { if (havePay() && !(ltsBudget() > 0)) S.plan.goals.forEach(g => setVal(S, 'goal:' + g.id, START, 0, 'after')); }
+/* after the goals are picked or sized: with no goal money in the split, every goal saves nothing for now. With exactly one goal the whole
+   Long-Term Savings jar goes to it (the split screen opens only for two or more), capped by what it still needs, so the setup's own
+   defaults never plan more than the pay allows. */
+function settleGoals() {
+  if (!havePay()) return;
+  const B = ltsBudget();
+  if (!(B > 0)) { S.plan.goals.forEach(g => setVal(S, 'goal:' + g.id, START, 0, 'after')); return; }
+  if (S.plan.goals.length === 1) { const g = S.plan.goals[0]; setVal(S, 'goal:' + g.id, START, Math.min(B, goalRoom(g)), 'after'); }
+}
 const STEP_JARS = { id: 'jars', part: PART.jars, setup: true, when: havePay,
   title: 'Split the rest',
   body: () => {
@@ -200,11 +210,11 @@ const STEP_JARS = { id: 'jars', part: PART.jars, setup: true, when: havePay,
     <p class="cap">If you truly have none, continue and split below.</p>${jarSplitHTML()}`;
     if (jarRest <= 0) return `<p>Bills <b>${fmt(nec)}</b>, pay <b>${fmt(pay)}</b>. ${nec > pay ? `Bills exceed pay by <b>${fmt(nec - pay)}</b>, so` : 'Bills take all of it, so'} nothing is left for the other five jars: no play money and nothing for goals, for now.</p>
     <p>You can still add goals next. They start filling once bills drop below pay. To lower a bill, go back. Otherwise continue and adjust under Plan later.</p>`;
-    return `<p>Bills <b>${fmt(nec)}</b> = <b>${jarNec}%</b> of pay: the Necessities jar. The other <b>${jarRest}%</b> (${fmt(pay - nec)}) is yours to split between the five jars below, starting at the usual proportions. Each slider moves on its own: what you take away waits as unassigned, and a slider can only take what is unassigned.</p>
+    return `<p>Bills <b>${fmt(nec)}</b> = <b>${jarNec}%</b> of pay: the Necessities jar. The other <b>${jarRest}%</b> (${fmt(pay - nec)}) is yours to split between the five jars below, starting at the usual proportions.</p>
     ${jarsFold()}${jarSplitHTML()}`;
   },
   after: () => { if (jarRest > 0) paintJars(); },
-  leave: () => commitJars() };
+  leave: () => { commitJars(); markDone('bills'); } }; /* past the bills: whatever was typed for them is the person's own */
 /* the six jars in short, folded: pay is split into jars and each jar has one purpose */
 const jarsFold = () => `<details class="src-how"><summary>The six jars, in short</summary><div class="src-how-in">
     <p>Every month, pay is split into six jars. Each jar has one purpose, and play money is the jar you spend on fun without guilt. Usual shares of take-home pay:</p>
@@ -258,7 +268,7 @@ const goalStep = id => ({ id: 'goal-' + id, part: PART.goals, setup: true,
       <p class="cap" id="tourEmCap">${emCap(m)}</p>
       <div class="tour-fields">${moneyField('tourGSaved', 'Already saved', g.start)}</div>`;
     }
-    return `<p>Name, cost, a date if there is one, and the reason in your words.</p>
+    return `<p>${g.emergency ? 'A cushion for surprises. How much do you want to hold? Usual advice: three to six months of bills.' : 'Name, cost, a date if there is one, and the reason in your words.'}</p>
     <div class="tour-fields">
       ${g.emergency ? '' : textField('tourGName', 'Name', g.name)}
       ${g.emergency ? '' : `<div class="field"><label for="tourGWhy">Why (optional)</label><div class="inp"><input id="tourGWhy" type="text" maxlength="80" spellcheck="false" value="${esc(g.why || '')}" placeholder="In your words: who it is for, what it changes"></div><p class="cap">Shows with the goal, so the reason stays in view.</p></div>`}
@@ -282,7 +292,14 @@ const goalStep = id => ({ id: 'goal-' + id, part: PART.goals, setup: true,
 
 /* ----- dividing the goal money: dated goals get what they need first, the rest is shared ----- */
 let gsIds = [], gsPct = [], gsBudget = 0, splitC2 = null;
-const ltsBudget = () => (restPct() > 0 ? jarMoneyList(JAR5.map(j => aimsOf(S)[j]))[0] : 0);
+/* the Long-Term Savings jar's money a month, by the same arithmetic as the jars screen: whole percents of the pay the bills leave.
+   The committed shares are used as they stand (a part may be left unassigned); before any commit, the usual proportions fill the rest. */
+const ltsBudget = () => {
+  const rest = restPct(); if (!(rest > 0)) return 0;
+  const a = aimsOf(S), mine = JAR5.map(j => Math.round(a[j] * 100));
+  const vals = S.cfg.aims && sumOf(mine) > 0 && sumOf(mine) <= rest ? mine : lr(JAR5.map(j => a[j]), rest);
+  return shareMoney(round2((payNow() - necTotal()) * sumOf(vals) / rest), vals, 1)[0];
+};
 /* A goal can only take what it still needs, so a goal that is nearly full does not get more than that and the others pick up the rest. */
 const goalRoom = g => Math.max(0, capOf(g) - g.start);
 function capWeights(w, caps, B) {
@@ -399,7 +416,7 @@ const STEP_REVEAL = { id: 'reveal', part: PART.spend, art: 'branch',
   body: () => {
     const f = planFacts(), play = f.play, wk = roundTo(play / 4.35), seg = (cls, v) => (v > 0 ? `<div class="seg-b ${cls}" style="flex-grow:${v}"></div>` : '');
     if (f.st === 'nopay') return `<div class="tour-reveal"><b>${fmt(play)}</b><span>a month, sample</span></div>
-      <p>No pay entered, so every number here is a sample. Play money is the fun jar, worked out after bills and goals. Add pay under Salary.</p>`;
+      <p>No pay entered, so every number here is a sample. Play money is the fun jar, worked out after bills and goals. Add your pay under Plan, Money in, or tap Back to enter it here.</p>`;
     if (f.st === 'over') return `<div class="tour-reveal neg"><b>${fmt(-f.L)}</b><span>short a month</span></div>
       <p>Plan spends <b>${fmt(f.J.out)}</b>; pay is <b>${fmt(f.inc)}</b>.${play > 0 ? '' : ' Nothing left, so no play money yet.'}</p>
       ${ledgerHTML(f)}

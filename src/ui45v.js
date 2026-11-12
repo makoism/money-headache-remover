@@ -182,7 +182,8 @@ async function importRead() {
     const merchants = stmtMerchants(stmtMerge(reads).rows);
     stmtPaintProgress(jobs, `Sorting ${merchants.length} ${merchants.length === 1 ? 'merchant' : 'merchants'} into categories.`);
     const catMap = await stmtCategorize(merchants, impCtl.signal);
-    impDraft = stmtDraft(reads, catMap, jobs); impAnswers = {}; impAccts.forEach(a => { a.files = []; }); bot.remove(); stmtPaintProgress([]); sfx('next'); gotoStep('review');
+    if (impCtl && impCtl.signal.aborted) throw { code: 'cancelled' };
+    impDraft = stmtDraft(reads, catMap, jobs); impAnswers = {}; impAccts.forEach(a => { a.files = []; }); bot.remove(); stmtPaintProgress([]); sfx('next'); if (tourIsOpen && TS[tourN] && TS[tourN].id === 'source') gotoStep('review');
   } catch (e) {
     const code = e && e.code;
     if (code === 'cancelled') { bot.remove(); stmtPaintProgress([]); }

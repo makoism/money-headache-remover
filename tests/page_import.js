@@ -67,7 +67,7 @@ const coach = async p => { for (let i = 0; i < 12; i++) { const v = await p.eval
   p.on('request', r => { if (/\/api\/health/.test(r.url())) r.respond({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, ai: false, vault: false }) }); else r.continue(); });
   await p.goto(BASE + '/?i=0#2026-11', { waitUntil: 'load' }); await w(900);
   ok(await toStmts(p), 'the video and the currency come first, then Your statements');
-  ok(await p.$eval('#tourNext', e => e.hidden) && (await p.$eval('#srcSkip', e => e.textContent)) === 'Type the numbers instead', 'no Next button on the statements screen; the typed path is a link');
+  ok(!(await p.$eval('#tourNext', e => e.hidden)) && (await p.$eval('#tourNext', e => e.textContent)) === 'Type numbers instead' && !(await p.$eval('#tourNext', e => e.classList.contains('solid'))) && (await p.$eval('#srcSkip', e => e.textContent)) === 'Type the numbers instead', 'the statements screen offers the typed path in the footer (plain button) and as a link');
   await w(600);
   ok(!(await vis(p, '#srcUploadPanel')) && (await p.$eval('#srcAiPanel', e => e.open && /Use your own AI/.test(e.querySelector('summary').textContent))), 'without Claude, the any-AI route stands open as the way');
   const answer = 'Here you go:\n```json\n' + JSON.stringify({ summary: 'From your files.', pay: { amount: 40000, how: 'monthly' }, other_income: null, balance: { amount: 5000, date: '2026-11-01' }, bills: [{ id: 'rent', amount: 9000, note: 'landlord' }, { id: 'food', amount: 7000 }], subscriptions: [{ name: 'Netflix', amount: 279 }], loans: [], card_other: null, questions: [], skipped: [] }) + '\n```';

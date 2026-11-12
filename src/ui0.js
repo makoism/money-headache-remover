@@ -4,6 +4,25 @@
 const $ = (s, r) => (r || document).querySelector(s);
 const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
 const KEY = 'money-map-template-v2';
+/* a small log of what went wrong on this device (no money data): the last twelve errors, kept for Help, Report a problem.
+   safe(fn, host) runs one card's drawing on its own, so one card hitting a snag never takes the page down with it */
+const ERR_KEY = 'mhr-errlog', ERR_MAX = 12;
+function errLog() { try { const a = JSON.parse(localStorage.getItem(ERR_KEY) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
+function logErr(where, e) {
+  const msg = e && e.message ? e.message : String(e), at = e && e.stack ? String(e.stack).split('\n').slice(0, 3).join(' | ').replace(/https?:\/\/[^ )]+/g, m => m.split('/').pop()).slice(0, 300) : '';
+  try { const a = errLog(); a.push({ t: new Date().toISOString(), where: String(where).slice(0, 40), msg: msg.slice(0, 200), at }); while (a.length > ERR_MAX) a.shift(); localStorage.setItem(ERR_KEY, JSON.stringify(a)); } catch (er) { /* storage full or blocked: the log is best effort */ }
+  if (/[?&]sfxtest\b/.test(location.search)) (window.__errs = window.__errs || []).push(where + ': ' + msg);
+}
+function safe(fn, host, where) {
+  try { return fn(); } catch (e) {
+    logErr(where || (host || 'card'), e);
+    const el = typeof host === 'string' ? $(host) : host;
+    if (el && el.innerHTML !== undefined) el.innerHTML = '<p class="cap snag">This part hit a snag and is resting. The rest of the page works. If it keeps happening, Help has Report a problem.</p>';
+    return undefined;
+  }
+}
+addEventListener('error', e => logErr('page', e.error || e.message));
+addEventListener('unhandledrejection', e => logErr('promise', e.reason));
 const PAGE_URL = 'https://claude.ai/artifact/Ksf1kNTW7KRsd7ZHmiVC1w';
 /* what the person would like this page to help with (chosen on the welcome screens; the keys are the only values ever stored) */
 const HOPES = { see: ['See where it goes', 'see where your money goes'], save: ['Save for a goal', 'save for a goal'], calm: ['Less money stress', 'feel calm about money'], owe: ['Pay down debt', 'pay down debt'] };
@@ -175,8 +194,32 @@ function setSave(kind) {
   const el = $('#save'), t = $('#saveTxt'); el.className = 'save ' + (kind === 'ok' ? 'ok' : kind === 'busy' ? 'busy' : '');
   t.textContent = { ok: 'Saved', busy: 'Saving…', device: 'Saved in this browser', error: 'Not saved. Save a copy in Settings.' }[kind] || '';
 }
-function persist() { S.rev = Date.now(); setSave('busy'); clearTimeout(saveTimer); saveTimer = setTimeout(flush, 500); }
-function flush() { let ok = true; try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { ok = false; } setSave(ok ? 'device' : 'error'); mirrorOut(m => { if (!ok && m) setSave('device'); }); vaultQueue(); }
+/* the revision only ever goes up, whatever the device clock does (a clock set back must never make this tab refuse to save) */
+function persist() { S.rev = Math.max(Date.now(), (+S.rev || 0) + 1); setSave('busy'); clearTimeout(saveTimer); saveTimer = setTimeout(flush, 500); }
+function flush() { saveTimer = null; let ok = true; try { if (!storedIsNewer()) localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { ok = false; } setSave(ok ? 'device' : 'error'); mirrorOut(m => { if (!ok && m) setSave('device'); }); vaultQueue(); }
+/* another tab saved a newer copy than this tab holds (only possible with two tabs open): then this tab must not write over it */
+function storedIsNewer() { try { const raw = localStorage.getItem(KEY); if (!raw) return false; const i = raw.indexOf('"rev":'); if (i < 0) return false; const r = parseInt(raw.slice(i + 6), 10); return r > +(S.rev || 0); } catch (e) { return false; } }
+/* two tabs of the app in one browser: when the other tab saves, this one takes its numbers instead of writing over them later.
+   Only a newer copy is taken, and not while this tab is in the middle of typing or has a save on the way */
+let otherTabT = 0;
+addEventListener('storage', e => {
+  if (e.key !== KEY || !e.newValue) return;
+  clearTimeout(otherTabT);
+  otherTabT = setTimeout(() => {
+    let d; try { d = JSON.parse(e.newValue); } catch (er) { return; }
+    if (!d || !(+d.rev > +(S.rev || 0))) return;
+    const busy = saveTimer || (document.activeElement && /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName) && !document.activeElement.readOnly) || tourIsOpen;
+    if (busy) { pendingOther = d; return; }
+    adoptOther(d);
+  }, 300);
+});
+let pendingOther = null;
+function adoptOther(d) {
+  try { S = upgradeLegacy(normalize(d)); } catch (er) { logErr('other tab', er); return; }
+  pendingOther = null; restructure(); render(); if (typeof cheer === 'function') cheer('Updated from another tab.');
+}
+/* when the typing is done, a copy that arrived meanwhile is taken */
+addEventListener('focusout', () => { if (pendingOther && !saveTimer && !tourIsOpen) setTimeout(() => { if (pendingOther && !saveTimer) adoptOther(pendingOther); }, 400); });
 /* first steps the page walks a new person through; each ticks off when they do it */
 function markDone(k, quiet) { if (!k) return; const d = S.ui.done = S.ui.done || {}, was = !!d[k]; d[k] = true; if (!was && !quiet) afterDone(k); }
 const doneFor = key => (key === 'a' || key === 'b' || key === 'side' ? 'pay' : key.slice(0, 5) === 'goal:' ? 'goals' : (lineByKey(S, key) && lineByKey(S, key).jar === 'nec' ? 'bills' : null));

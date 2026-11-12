@@ -59,6 +59,8 @@ const hideTip = () => $('#tip').classList.remove('on');
 /* ---------- tabs and rows ---------- */
 function switchTab(t, focus) {
   const prev = tab; tab = t; disarm();
+  /* a receipt logged for another month moved the open month so its list could be seen; the plan pages open on the month in hand again */
+  if (selByReceipt && (t === 'month' || t === 'months' || t === 'goals')) { selByReceipt = false; const ym = nowYm(); if (MONTHS.indexOf(ym) >= 0 && ym !== sel) { sel = ym; itemsSig = ''; try { history.replaceState(null, '', '#' + ym); } catch (e) { /* sandboxed */ } } }
   const lit = t === 'months' || t === 'goals' ? 'month' : t === 'basics' ? '' : t;
   $$('[data-tab]').forEach(b => { const on = b.dataset.tab === lit; b.setAttribute('aria-selected', String(on)); b.tabIndex = on ? 0 : -1; if (on && focus) b.focus(); });
   $$('.subnav [data-sub]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.sub === t)));

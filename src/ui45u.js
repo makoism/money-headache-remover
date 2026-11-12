@@ -147,7 +147,10 @@ const IMP_HOW = () => `<details class="src-how"><summary>How to get your stateme
   ${sym() === '¥' ? '<p>Japanese banks: 入出金明細 then CSVダウンロード. Card apps: 利用明細 then screenshots of each month.</p>' : ''}
   <p>Credit cards: the last statement (CSV or screenshots). Cash spending: add it on the review screen.</p>
   <p>Nothing is stored. Files go to Claude once, the numbers come back, the files are forgotten.</p></div></details>`;
-const STEP_SOURCE = { id: 'source', part: PART.money, setup: true, title: 'Your statements', next: false,
+/* the footer's own button is the way past this screen without statements: a plain "Type numbers instead" (or "Not now" when opened from Home),
+   so nobody has to find the small link at the foot of a long screen. Reading files moves on by itself. */
+const STEP_SOURCE = { id: 'source', part: PART.money, setup: true, title: 'Your statements', next: () => (impOnly ? 'Not now' : 'Type numbers instead'), nextPlain: true,
+  leave: d => { if (d > 0) { impDraft = null; if (impCtl) impCtl.abort(); } }, /* moving on by hand drops a draft and stops a read still running */
   body: () => { acctInit(); return `<p>One box per account: your bank, each card, each wallet. Name each the way you say it, and the app will too. Put in the last 2 or 3 months of each: PDF, CSV or Excel exports, or screenshots of the transaction list. The numbers come out exact, and your history fills in.</p>
     <div id="srcUploadPanel">
       <p class="cap src-here" id="impHere" hidden></p>
@@ -169,7 +172,7 @@ const STEP_SOURCE = { id: 'source', part: PART.money, setup: true, title: 'Your 
       </div>
     </details>
     ${IMP_HOW()}
-    <p class="cap">${impOnly ? '<button type="button" class="link" id="srcSkip">Not now</button>' : 'No statements at hand? <button type="button" class="link" id="srcSkip">Type the numbers instead</button>. Receipts takes statements any time.'}</p>`; },
+    <p class="cap">${impOnly ? '<button type="button" class="link" id="srcSkip">Not now</button>' : 'No statements at hand? <button type="button" class="link" id="srcSkip">Type the numbers instead</button>. Receipts takes statements any time, so this can wait.'}</p>`; },
   after: () => {
     const body = $('#tourBody');
     /* where Claude can read files, the upload is the screen. Where it cannot (a copy without the relay or a sign-in), the any-AI route takes over. */

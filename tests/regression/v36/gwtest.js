@@ -1,0 +1,26 @@
+const L = require('/tmp/v22/lib.js'); const { w, P, runTour } = L;
+(async () => {
+  const { b, p, errs } = await L.launch(390, 844, 'dark');
+  await runTour(p, P.a); await w(1000);
+  await p.evaluate(() => document.querySelector('[data-tab="home"]').click()); await w(400);
+  await p.evaluate(() => { const b = [...document.querySelectorAll('#hGoals button')].find(b => /^Add goal$/.test(b.textContent.trim())); b.click(); }); await w(500);
+  console.log('wizard open', await p.evaluate(() => !document.querySelector('#gw').hidden));
+  await p.evaluate(() => document.querySelector('#gwNext').click()); await w(300);
+  console.log('early tap hint:', await p.$eval('#gwHint', e => e.textContent));
+  await p.screenshot({ path: '/tmp/v36/gw-hint.png' });
+  console.log('kinds', await p.evaluate(() => [...document.querySelectorAll('[data-kind]')].map(e => e.dataset.kind)));
+  await p.evaluate(() => document.querySelector('[data-kind="buy"]').click()); await w(200);
+  console.log('name after pick', await p.$eval('#gwName', e => e.value));
+  await p.evaluate(() => document.querySelector('#gwNext').click()); await w(400);
+  console.log('step title', await p.$eval('#gwT', e => e.textContent));
+  await p.evaluate(() => document.querySelector('#gwNext').click()); await w(300);
+  console.log('early tap hint 2:', await p.$eval('#gwHint', e => e.textContent));
+  await p.type('#gwCost', '60000'); await p.evaluate(() => document.querySelector('#gwNext').click()); await w(400);
+  console.log('step title', await p.$eval('#gwT', e => e.textContent), await p.$eval('#gwPlan', e => e.textContent));
+  await p.screenshot({ path: '/tmp/v36/gw-date.png' });
+  await p.evaluate(() => document.querySelector('#gwNext').click()); await w(900);
+  console.log('goals now', await p.evaluate(() => JSON.parse(localStorage.getItem('money-map-template-v2')).plan.goals.map(g => g.name + ':' + g.target)));
+  await p.screenshot({ path: '/tmp/v36/gw-done.png' });
+  console.log(errs);
+  await b.close();
+})();

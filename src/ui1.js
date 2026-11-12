@@ -40,7 +40,7 @@ function fieldHTML(f, multi, editing) {
   const head = editing && l
     ? `<input class="txt nm-in" type="text" value="${esc(l.name)}" maxlength="60" data-lname="${esc(l.id)}" aria-label="Name of this line">`
     : `<label for="i-${f.fid}">${multi ? dot + esc(f.label) : 'This month'}</label>`;
-  const edit = editing && l ? `<div class="ed-edit"><label class="mini">Last payment <select data-lends="${esc(l.id)}">${monthOptions(l.ends)}</select></label>
+  const edit = editing && l ? `<div class="ed-edit"><label class="mini"><span>Last payment</span><select data-lends="${esc(l.id)}">${monthOptions(l.ends)}</select></label>
     ${l.ends && emergencyGoal(S) ? `<label class="check"><input type="checkbox" data-lredir="${esc(l.id)}"${l.redirect ? ' checked' : ''}><span>Then move its money to the emergency fund</span></label>` : ''}
     <button type="button" class="btn small warnbtn" data-ldel="${esc(l.id)}" data-armkey="ldel-${esc(l.id)}">Remove</button></div>` : '';
   return `<div class="ed" id="e-${f.fid}"><div class="ed-top">${head}

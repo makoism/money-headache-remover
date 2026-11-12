@@ -229,7 +229,10 @@ function renderHero() {
   const el = $('#hHero'), r = HV.main;
   if (!r) {
     el.className = 'card hwin empty';
-    put(el, `<div class="hw-empty"><h2>No goal set</h2><p>Add a goal to see what it unlocks and when.</p><button type="button" class="btn solid" data-gw>Add goal</button></div>`);
+    /* a goal that exists but has no amount yet (the setup was left early) is not "no goal": it asks for its amount */
+    const unset = S.plan.goals.filter(g => !(g.target > 0));
+    if (unset.length) put(el, `<div class="hw-empty"><h2>${esc(unset[0].name)} has no amount yet</h2><p>Set the amount to see what each month adds and when it is full.</p><button type="button" class="btn solid" data-gset="${esc(unset[0].id)}">Set amount</button></div>`);
+    else put(el, `<div class="hw-empty"><h2>No goal set</h2><p>Add a goal to see what it unlocks and when.</p><button type="button" class="btn solid" data-gw>Add goal</button></div>`);
     return;
   }
   const g = goalById(S, r.id), pct = r.pct, fr = fracOf(r);
@@ -276,7 +279,9 @@ function goalRowHtml(r) {
   const st = r.state === 'ontrack' || r.state === 'full' || r.state === 'paid' ? 'good' : r.state === 'behind' || r.state === 'noeta' || r.state === 'short' ? 'warn' : 'plain';
   const stw = { ontrack: 'On track', full: 'Full', paid: 'Paid', short: 'Short', behind: 'Behind', noeta: 'Slow', eta: 'Filling', unset: 'Unset', none: '' }[r.state] || '';
   const eta = r.state === 'paid' ? `Paid ${dateLabel(g.due)}` : r.state === 'short' ? `Had ${fmt(r.had)} of ${fmt(g.target)}` : r.state === 'unset' ? 'No amount' : r.reached ? `Full ${monthLabel(r.reached)}` : `Not full in ${SPAN}`;
-  return `<li class="gd"><details data-hgid="${esc(r.id)}"${HOPEN.has(r.id) ? ' open' : ''} style="--c:var(--c${g.slot})"><summary><i class="dot"></i><span class="gd-t"><b>${esc(g.name)}</b><small>${esc(g.why || purposeFor(g))}</small></span><span class="gd-m${main ? ' main' : ''}">${esc(monthsShort(r))}</span></summary>
+  /* the small line is the reason in the person's words; a stock purpose that only repeats the name gives way to the numbers */
+  const pp = purposeFor(g), small = g.why || (pp.toLowerCase().indexOf(String(g.name).toLowerCase()) === 0 && r.target > 0 ? `${fmt(r.saved)} of ${fmt(r.target)}` : pp);
+  return `<li class="gd"><details data-hgid="${esc(r.id)}"${HOPEN.has(r.id) ? ' open' : ''} style="--c:var(--c${g.slot})"><summary><i class="dot"></i><span class="gd-t"><b>${esc(g.name)}</b><small>${esc(small)}</small></span><span class="gd-m${main ? ' main' : ''}">${esc(monthsShort(r))}</span></summary>
     <div class="gd-b"><div class="hg-b" role="img" aria-label="${r.pct} percent"><i style="width:${fracOf(r) * 100}%"></i></div>
     <p class="gd-n"><span>${fmt(r.saved)} of ${fmt(r.target)}</span><span>${esc(eta)}</span></p>${stw ? `<p class="gd-c"><em class="${st}">${stw}</em>${main ? '<span class="gd-main">Main goal</span>' : ''}</p>` : (main ? '<p class="gd-c"><span class="gd-main">Main goal</span></p>' : '')}
     <div class="row-btns"><button type="button" class="btn small" data-tab-go="goals">Edit goal</button>${!main && r.live ? `<button type="button" class="btn small" data-main="${esc(r.id)}">Set as main goal</button>` : ''}</div></div></details></li>`;
@@ -401,7 +406,7 @@ function renderHome() {
   checkBadges(); paintSnd(); paintBk(); paintFoot();
   if (tab !== 'home') return;
   applyHomeOrder();
-  renderNext(); renderBackupNudge(); renderStatus(); syncQuick(); renderHero(); renderSpend(); renderGoalsHome(); renderBuckets(); renderStreak(); renderBadges();
+  safe(renderNext, '#hNext'); safe(renderBackupNudge, '#hBk'); safe(renderStatus, '#hStatus'); safe(syncQuick, null, 'quick'); safe(renderHero, '#hHero'); safe(renderSpend, '#hSpend'); safe(renderGoalsHome, '#hGoals'); safe(renderBuckets, '#hBuckets'); safe(renderStreak, '#hStreak'); safe(renderBadges, '#hBadges');
   placePix(); /* the pixel plants, back in their corners after the cards were redrawn */
 }
 
@@ -451,7 +456,7 @@ function paintGW() {
   if (g.step === 0) {
     t = 'Goal type';
     body = `<div class="gw-chips" role="group" aria-label="Goal type">${gwKinds().map(x => `<button type="button" class="gw-chip${k && k.k === x.k ? ' on' : ''}" data-kind="${x.k}" aria-pressed="${!!(k && k.k === x.k)}"><b>${x.pick}</b><span>${x.hint}</span></button>`).join('')}</div>
-      <div class="field"><label for="gwName">Name</label><input class="txt" id="gwName" type="text" maxlength="60" value="${esc(g.name)}" placeholder="Japan trip"></div>
+      <div class="field"><label for="gwName">Name</label><input class="txt" id="gwName" type="text" maxlength="60" value="${esc(g.name)}" placeholder="${esc(S.plan.goals.some(x => /japan trip/i.test(x.name)) ? 'Name it' : 'Japan trip')}"></div>
       <div class="field"><label for="gwWhy">Why (optional)</label><input class="txt" id="gwWhy" type="text" maxlength="80" value="${esc(g.why)}" placeholder="In your words: who it is for, what it changes"><p class="cap">Shows with the goal, so the reason stays in view.</p></div>`;
   } else if (g.step === 1) {
     t = 'Amount';
@@ -465,6 +470,7 @@ function paintGW() {
   }
   el.innerHTML = `<div class="gw-scrim" data-gwx></div><div class="gw-card"><div class="gw-top">${dots}<button type="button" class="ask-x" data-gwx aria-label="Close">&times;</button></div>
     <h2 id="gwT">${t}</h2><div class="gw-body ${g.dir > 0 ? 'in-r' : g.dir < 0 ? 'in-l' : ''}">${body}</div>
+    <p class="cap gw-hint" id="gwHint" role="status"></p>
     <div class="gw-foot">${g.step > 0 ? '<button type="button" class="btn" data-gwback>Back</button>' : '<span></span>'}<button type="button" class="btn solid" id="gwNext" data-gwnext>${nextTxt}</button></div></div>`;
   $$('.cs', el).forEach(e => { e.textContent = sym(); });
   gwRefresh();
@@ -474,9 +480,13 @@ function paintGW() {
 function gwRefresh() {
   const g = GW, el = $('#gw'); if (!g || !el) return;
   const n = $('#gwNext'); if (!n) return;
-  if (g.step === 0) n.disabled = !(g.kind && g.name.trim());
-  else if (g.step === 1) n.disabled = !(+g.cost > 0);
-  else { const p = gwPlan(), pe = $('#gwPlan'); if (pe) { pe.innerHTML = p.txt; pe.classList.toggle('bad', !!p.bad); } n.disabled = !!p.bad || !(+g.cost > 0); }
+  /* the button stays tappable: a tap too early says what is missing instead of doing nothing */
+  let wait = '';
+  if (g.step === 0) wait = !g.kind ? 'Pick a goal type first.' : !g.name.trim() ? 'Give the goal a name.' : '';
+  else if (g.step === 1) wait = !(+g.cost > 0) ? 'Enter the total cost.' : '';
+  else { const p = gwPlan(), pe = $('#gwPlan'); if (pe) { pe.innerHTML = p.txt; pe.classList.toggle('bad', !!p.bad); } wait = p.bad ? 'Change the date or the amount first.' : !(+g.cost > 0) ? 'Enter the total cost.' : ''; }
+  n.classList.toggle('dim', !!wait); n.setAttribute('aria-disabled', String(!!wait)); n.dataset.wait = wait;
+  const h = $('#gwHint'); if (h && !wait) h.textContent = '';
   if (typeof dpSync === 'function') dpSync(el);
 }
 function gwInput(e) {
@@ -486,12 +496,14 @@ function gwInput(e) {
   gwRefresh();
 }
 function gwNext() {
-  const g = GW; if (!g) return; const n = $('#gwNext'); if (n && n.disabled) { sfx('off'); return; }
+  const g = GW; if (!g) return; const n = $('#gwNext'); if (n && n.dataset.wait) { sfx('off'); const h = $('#gwHint'); if (h) h.textContent = n.dataset.wait; return; }
   if (g.step < 2) { g.step++; g.dir = 1; sfx('next'); paintGW(); return; }
   gwFinish();
 }
 function gwFinish() {
   const g = GW, k = g.kind; if (!g || !k) return;
+  /* the goal already leading Home stays the main goal; a new one does not take its place unasked */
+  if (!(S.ui.main && goalById(S, S.ui.main)) && HV && HV.main && goalById(S, HV.main.id)) S.ui.main = HV.main.id;
   const id = addGoal(S, g.name.trim() || k.name); if (!id) { closeGoalWizard(); return; }
   updateGoal(S, id, { target: g.cost, start: g.saved || 0, due: k.em ? '' : g.due, why: g.why || '' });
   if (k.em) updateGoal(S, id, { emergency: true });
@@ -526,6 +538,7 @@ function wireHome() {
     const d = $('#hDate').value || todayStr(), a = +$('#hAmt').value, c = $('#hCat').value, n = $('#hNote').value, msg = $('#hMsg');
     if (!(a > 0)) { msg.textContent = 'Enter an amount.'; $('#hAmt').focus(); sfx('off'); return; }
     if (!validDate(d) || MONTHS.indexOf(d.slice(0, 7)) < 0) { msg.textContent = `Date must be ${monthLabel(START)} to ${monthLabel(END)}.`; return; }
+    if (d > todayStr() && !futureOk(d, msg, $('#hSave'))) { const dt = $('.hmore'); if (dt) dt.open = true; return; }
     if (c === CAT_NEW) { msg.textContent = 'Add the new category, or pick one from the list.'; $('#hNewName').focus(); sfx('off'); return; }
     if (needTitle(c, n)) { const dt = $('.hmore'); if (dt) dt.open = true; msg.textContent = 'Add a short title, e.g. “Vet bill”.'; $('#hNote').focus(); sfx('off'); return; }
     const first = !(S.receipts || []).length, nm = c === 'other' ? 'Other' : (lineByKey(S, c) || { name: 'Other' }).name;
@@ -538,6 +551,8 @@ function wireHome() {
   $('#hCat').addEventListener('change', () => { catPicked('h'); syncOtherTitle('hCat', 'hNote'); $('#hMsg').textContent = ''; if ($('#hCat').value === 'other') { const dt = $('.hmore'); if (dt) dt.open = true; const hn = $('#hNote'); if (hn) hn.focus(); } });
   $('#p-home').addEventListener('click', e => {
     if (e.target.closest('[data-gw]')) { openGoalWizard(); return; }
+    /* a goal without an amount: open its editor on Goals, scrolled into view */
+    const gs = e.target.closest('[data-gset]'); if (gs) { editGoal = gs.dataset.gset; buildGoals(); switchTab('goals'); const ed = $(`#goalCards [data-gid="${gs.dataset.gset}"]`); if (ed) requestAnimationFrame(() => { ed.scrollIntoView({ block: 'start', behavior: 'smooth' }); const f = $('input[data-g="target"]', ed); if (f) f.focus({ preventScroll: true }); }); return; }
     if (e.target.closest('[data-checkin]')) { const r = markWeek(); persist(); render(); sfx('sparkle'); if (r) celebrate(WK_MILE.indexOf(r.n) >= 0 && r.n > 1 ? 'med' : 'small', r.n > 1 ? `Checked in. Streak: ${r.n} weeks.` : 'Checked in. Streak: week 1.'); return; }
     if (e.target.closest('[data-hidenext]')) { S.ui.sampleHidden = true; persist(); render(); return; }
     const hm = e.target.closest('[data-hidemonth]'); if (hm) { S.ui.mcSeen = hm.dataset.hidemonth; persist(); render(); return; }
@@ -568,6 +583,7 @@ function wireHome() {
    Every amount box (the ones with the currency sign in front) becomes a text box that shows 12,345.
    Its .value still reads back as a plain number, so nothing else in the page has to know. */
 const NATIVE_VALUE = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+const COMMA_DEC = ['€', 'R$', 'kr', 'zł', 'R']; /* currencies usually written with a decimal comma */
 const withCommas = s => { s = String(s == null ? '' : s); const m = s.match(/^(\d*)(\.\d*)?$/); return m ? m[1].replace(/\B(?=(\d{3})+(?!\d))/g, ',') + (m[2] || '') : s; };
 const isMoneyBox = el => !!el && el.tagName === 'INPUT' && el.type === 'number' && !!el.parentElement && el.parentElement.classList.contains('inp') && !!el.parentElement.querySelector(':scope > .yen');
 function caretEnd(el) {
@@ -588,8 +604,9 @@ function moneyUp(el) {
 function moneyUpAll(root) { $$('input[type=number]', root || document).forEach(el => { if (isMoneyBox(el)) moneyUp(el); }); }
 function moneyTyped(el, ev) {
   let raw = NATIVE_VALUE.get.call(el); const pos = el.selectionStart == null ? raw.length : el.selectionStart;
-  /* a comma typed by hand is somebody's decimal point */
-  let at = pos; if (ev && ev.data === ',' && raw.charAt(pos - 1) === ',') raw = raw.slice(0, pos - 1) + '.' + raw.slice(pos);
+  /* a comma typed by hand: a decimal point where the currency writes decimals that way (12,50 euro), otherwise a thousands separator
+     (1,200 pesos is twelve hundred, never one peso twenty) and the box regroups it on its own */
+  let at = pos; if (ev && ev.data === ',' && raw.charAt(pos - 1) === ',') { const dec = COMMA_DEC.indexOf(sym()) >= 0; raw = raw.slice(0, pos - 1) + (dec ? '.' : '') + raw.slice(pos); if (!dec) at = pos - 1; }
   const sig = t => t.replace(/[^\d.]/g, '');
   let all = sig(raw), n = sig(raw.slice(0, at)).length;
   const dot = all.indexOf('.');

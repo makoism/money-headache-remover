@@ -18,7 +18,7 @@ if ! safe_once; then echo "(retrying once)"; sleep 3; safe_once || BAD=1; fi
 step "guard (idle CPU, tab speed, no outside requests, no errors)"; node tests/guard.js 2>&1 | grep -v "^\[agent\|^- \|^Allowed\|^For det" ; [ ${PIPESTATUS[0]} -ne 0 ] && BAD=1
 if [ "$MODE" = "full" ]; then
   # a script that cannot even start (syntax error, crash, timeout) counts as a failure, not a quiet skip
-  for f in /tmp/team_inter2.js /tmp/team_help.js /tmp/team_cur.js /tmp/team_month.js /tmp/team_card.js /tmp/v22/video.js /tmp/v22/home.js /tmp/v22/walk.js /tmp/v22/snd.js /tmp/v22/cal.js /tmp/v22/scan.js /tmp/v31/music_test.js /tmp/v31/split_test.js /tmp/v33/pix_test.js /tmp/v34/purpose_test.js /tmp/v35/look_test.js; do
+  for f in /tmp/team_inter2.js /tmp/team_help.js /tmp/team_cur.js /tmp/team_month.js /tmp/team_card.js /tmp/v22/video.js /tmp/v22/home.js /tmp/v22/walk.js /tmp/v22/snd.js /tmp/v22/cal.js /tmp/v22/scan.js /tmp/v31/music_test.js /tmp/v31/split_test.js /tmp/v33/pix_test.js /tmp/v34/purpose_test.js /tmp/v35/look_test.js /tmp/v35/upgrade_test.js /tmp/v36/ux_test.js; do
     step "$f"
     for try in 1 2; do
       OUT=$(timeout 400 node $f 2>&1); RC=$?
@@ -33,7 +33,13 @@ if [ "$MODE" = "full" ]; then
   step "number checks (about 6 minutes)"; OUT=$(bash /tmp/v26/num.sh 2>&1); echo "$OUT" | grep -v "^\[agent\|^- \|^Allowed\|^For det"
   echo "$OUT" | grep -q "mismatches [1-9]\|FAIL [1-9]\|^FAIL" && { echo "NUMBER CHECKS FAILED"; BAD=1; }
   echo "$OUT" | grep -q "NUMDONE" || { echo "NUMBER CHECKS DID NOT FINISH"; BAD=1; }
-  echo "App package: cd ../pwa && python3 make_pwa.py, then serve dist and run node /tmp/team_pwa.js (8 PASS expected)"
+  step "installable app (service worker, offline, update offer)"
+  (cd /home/claude/work/pwa && python3 make_pwa.py >/dev/null 2>&1) || { echo "PWA BUILD FAILED"; BAD=1; }
+  (cd /home/claude/work/pwa/dist && python3 -m http.server 8765 >/dev/null 2>&1 & echo $! > /tmp/pwa_http.pid); sleep 1
+  OUT=$(timeout 300 node /tmp/team_pwa.js 2>&1); RC=$?; echo "$OUT" | grep -v "^\[agent\|^- \|^Allowed\|^For det" | grep "FAIL\|PASS" | head -14
+  { [ $RC -ne 0 ] || echo "$OUT" | grep -q "^FAIL\|Error:"; } && { echo "PWA TEST FAILED"; BAD=1; }
+  [ "$(echo "$OUT" | grep -c '^PASS')" -ge 10 ] || { echo "PWA TEST SHORT ($(echo "$OUT" | grep -c '^PASS') PASS, 10 expected)"; BAD=1; }
+  kill $(cat /tmp/pwa_http.pid) 2>/dev/null; rm -f /tmp/pwa_http.pid
 fi
 echo; [ $BAD -eq 0 ] && echo "ALL GOOD" || echo "SOMETHING FAILED, see above"
 exit $BAD

@@ -24,7 +24,15 @@ html=html.replace('</head>', head+'</head>')
 reg='''<script>
 /* Lets the page work offline once it has been opened. Skipped when the file is opened straight from a folder. */
 if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
-  window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
+  window.addEventListener('load', function () {
+    var had = !!navigator.serviceWorker.controller;
+    navigator.serviceWorker.register('sw.js').then(function (reg) {
+      /* a page kept open for days: look for a newer version each time it comes back into view */
+      document.addEventListener('visibilitychange', function () { if (!document.hidden && reg.update) reg.update().catch(function () {}); });
+    }).catch(function () {});
+    /* a newer version took over while this page was open: the page offers a reload (never forces one) */
+    navigator.serviceWorker.addEventListener('controllerchange', function () { if (had) window.dispatchEvent(new CustomEvent('mhr:update')); had = true; });
+  });
 }
 </script>
 '''

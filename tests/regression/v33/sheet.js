@@ -1,0 +1,27 @@
+const puppeteer = require('/home/claude/work/tools/node_modules/puppeteer-core');
+const { w, P, runTour } = require('/tmp/v22/lib.js');
+(async () => {
+  const b = await puppeteer.launch({ executablePath: '/usr/bin/google-chrome', headless: 'new', args: ['--no-sandbox'] });
+  const p = await b.newPage(); await p.setViewport({ width: 390, height: 844, deviceScaleFactor: 2 });
+  await p.goto('http://127.0.0.1:8788/?sfxtest#2026-11', { waitUntil: 'load' }); await w(800);
+  let shot = false;
+  await runTour(p, P.b, async () => { const t = await p.$eval('#tourTitle', e => e.textContent); if (!shot && /done/i.test(t)) { shot = true; await w(1100); await p.screenshot({ path: '/tmp/v33/m_done.png' }); } });
+  await w(1500);
+  await p.evaluate(() => window.scrollTo(0, 0)); await w(300);
+  await p.evaluate(() => { const h = document.querySelector('#hHero'); h.scrollIntoView({ block: 'start' }); window.scrollBy(0, -70); }); await w(300);
+  await p.screenshot({ path: '/tmp/v33/m_hero.png' });
+  await p.evaluate(() => { document.querySelector('#hMore').open = true; document.querySelector('#hStreak').scrollIntoView({ block: 'start' }); window.scrollBy(0, -20); }); await w(300);
+  await p.screenshot({ path: '/tmp/v33/m_streak.png' });
+  await p.evaluate(() => { document.querySelector('#hDeep').scrollIntoView({ block: 'start' }); window.scrollBy(0, -20); }); await w(300);
+  await p.screenshot({ path: '/tmp/v33/m_pages.png' });
+  await p.evaluate(() => document.querySelector('[data-tab="goals"]').click()); await w(500);
+  await p.evaluate(() => { document.querySelector('#secRoad').scrollIntoView({ block: 'start' }); window.scrollBy(0, -20); }); await w(300);
+  await p.screenshot({ path: '/tmp/v33/m_road.png' });
+  await p.evaluate(() => document.querySelector('[data-tab-go="basics"]') ? document.querySelector('[data-tab-go="basics"]').click() : document.querySelector('[data-tab="basics"]').click()); await w(500);
+  await p.evaluate(() => window.scrollTo(0, 0)); await w(200);
+  await p.screenshot({ path: '/tmp/v33/m_settings.png' });
+  await p.evaluate(() => document.querySelector('[data-tab="home"]').click()); await w(400);
+  await p.evaluate(() => window.scrollTo(0, 0)); await p.evaluate(() => __pix.celebrate('med', 'Badge: First goal.')); await w(1000);
+  await p.screenshot({ path: '/tmp/v33/m_ocelot.png' });
+  await b.close();
+})();

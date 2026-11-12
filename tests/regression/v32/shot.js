@@ -1,0 +1,2 @@
+const puppeteer = require('/home/claude/work/tools/node_modules/puppeteer-core');
+(async () => { const b = await puppeteer.launch({ executablePath: '/usr/bin/google-chrome', headless: 'new', args: ['--no-sandbox'] }); const p = await b.newPage(); await p.setViewport({ width: 1300, height: 700 }); await p.goto('file:///tmp/v32/pix.html'); await p.screenshot({ path: '/tmp/v32/pix.png', fullPage: true }); await b.close(); })();

@@ -1,11 +1,11 @@
 
 /* ---------- receipts ---------- */
-let rcHowSet = false;
+let rcHowSet = false, selByReceipt = false; /* the open month moved to follow a receipt logged for another month (Plan undoes that when opened) */
 function prepareReceiptForm() {
   const d = $('#rcDate'); d.min = START + '-01'; d.max = END + '-31'; if (!d.value) d.value = todayStr();
 }
 function resetRcForm() {
-  editRc = null; $('#rcAmt').value = ''; $('#rcNote').value = ''; syncOtherTitle('rcCat', 'rcNote'); $('#rcSave').textContent = 'Add receipt'; $('#rcCancel').hidden = true;
+  editRc = null; $('#rcAmt').value = ''; $('#rcNote').value = ''; syncOtherTitle('rcCat', 'rcNote'); $('#rcSave').textContent = 'Log receipt'; $('#rcCancel').hidden = true;
 }
 /* choosing "Other" asks for a title, so the receipt can say what it was; every other category keeps the optional note */
 function syncOtherTitle(catId, noteId) {
@@ -16,6 +16,13 @@ function syncOtherTitle(catId, noteId) {
   inp.setAttribute('aria-required', String(other));
 }
 const needTitle = (c, n) => c === 'other' && !String(n || '').trim();
+/* a receipt dated after today asks once; the same tap again within a few seconds logs it anyway */
+let futureArm = null, futureT = 0;
+function futureOk(d, msg, btn) {
+  if (futureArm === d + btn.id) { futureArm = null; clearTimeout(futureT); return true; }
+  futureArm = d + btn.id; clearTimeout(futureT); futureT = setTimeout(() => { futureArm = null; }, 6000);
+  msg.textContent = `${dateLabel(d)} is in the future. Tap again to log it anyway, or change the date.`; sfx('off'); return false;
+}
 function renderReceipts() {
   const m = C.byYm[sel], rs = receiptStats(S, sel), playPlan = m.jar.play, playSpent = rs.byJar.play || 0;
   setIdle($('#rcMonth'), sel);
@@ -47,6 +54,8 @@ function wireReceipts() {
     const d = $('#rcDate').value, a = +$('#rcAmt').value, c = $('#rcCat').value, n = $('#rcNote').value, msg = $('#rcMsg');
     if (!validDate(d) || MONTHS.indexOf(d.slice(0, 7)) < 0) { msg.textContent = `Date must be ${monthLabel(START)} to ${monthLabel(END)}.`; $('#rcDate').focus(); return; }
     if (!(a > 0)) { msg.textContent = 'Enter an amount.'; $('#rcAmt').focus(); return; }
+    /* a date after today is nearly always a slip of the finger: it is logged only on a second tap */
+    if (d > todayStr() && !futureOk(d, msg, $('#rcSave'))) return;
     if (c === CAT_NEW) { msg.textContent = 'Add the new category, or pick one from the list.'; $('#rcNewName').focus(); return; }
     if (needTitle(c, n)) { msg.textContent = 'Add a short title, e.g. “Vet bill”.'; $('#rcNote').focus(); return; }
     S.ui.rcCat = c; const wasEdit = !!editRc;
@@ -54,7 +63,7 @@ function wireReceipts() {
     if (wasEdit) updateReceipt(S, editRc, d, a, c, n); else { addReceipt(S, d, a, c, n); markDone('receipts', true); }
     msg.textContent = (wasEdit ? 'Saved. ' : 'Logged. ') + fmt2(a) + ': ' + (c === 'other' ? 'Other' : (lineByKey(S, c) || { name: 'Other' }).name) + '.';
     resetRcForm(); persist();
-    if (d.slice(0, 7) !== sel) select(d.slice(0, 7)); else render();
+    if (d.slice(0, 7) !== sel) { select(d.slice(0, 7)); selByReceipt = true; } else render(); /* the list follows the receipt, so it can be seen where it went; Plan goes back to this month on its own */
     $('#rcAmt').focus();
     if (!wasEdit) afterLog(firstRc);
   });

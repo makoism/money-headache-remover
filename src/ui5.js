@@ -23,7 +23,7 @@ function wire() {
     if (r) restructure(); else render();
   });
   $('#hideSample').addEventListener('click', () => { S.ui.sampleHidden = true; persist(); render(); });
-  $('#showStart').addEventListener('click', () => { S.ui.sampleHidden = false; persist(); switchTab('home'); });
+  $('#showStart').addEventListener('click', () => { delete S.ui.sampleHidden; delete S.ui.exactHidden; persist(); switchTab('home'); });
   /* buttons that jump somewhere, wherever they are on the page */
   document.addEventListener('click', e => {
     const o = e.target.closest('[data-open]'); if (o) { openRow(o.dataset.open); return; }
@@ -180,7 +180,7 @@ function wire() {
       clearTimeout(t); t = 0; b.textContent = orig; run();
     });
   };
-  const blank = () => { S = blankState(S); S.ui.cleared = true; delete S.ui.setup; delete S.ui.src; delete S.ui.imp; editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = 'All zero. Start with salary.'; select(START); if (tab !== 'month') switchTab('month'); };
+  const blank = () => { S = blankState(S, sampleOn()); S.ui.cleared = true; delete S.ui.setup; delete S.ui.src; delete S.ui.imp; editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = 'All zero. Start with salary.'; select(START); if (tab !== 'month') switchTab('month'); };
   twoStep($('#blankBtn'), 'Tap again to zero all', blank);
   twoStep($('#blankTop'), 'Tap again to zero all', blank);
   twoStep($('#bkReset'), 'Tap again to restore', () => { const old = S, u = S.ui; S = presetState(u.cur); S.ui = Object.assign({}, u, { preset: S.ui.preset, sampleHidden: false, done: {} }); delete S.ui.cleared; delete S.ui.setup; delete S.ui.gset; delete S.ui.sb; delete S.ui.tourAt; delete S.ui.src; delete S.ui.imp; S.receipts = old.receipts; editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = 'Samples restored.'; });
@@ -205,7 +205,11 @@ function wire() {
   const dock = $('#dock');
   if ('IntersectionObserver' in window) new IntersectionObserver(es => { const en = es[0]; dock.classList.toggle('on', tab === 'month' && !en.isIntersecting && en.boundingClientRect.top < 0); }).observe($('#hero'));
   document.addEventListener('visibilitychange', () => { if (document.hidden) flush(); });
-  addEventListener('pagehide', () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* no storage */ } mirrorOut(); clearTimeout(vaultTimer); vaultPush(); });
+  /* the installable app: a newer version took over underneath; offer the reload, save first */
+  addEventListener('mhr:update', () => { const u = $('#upd'); if (u) u.hidden = false; });
+  if ($('#updGo')) $('#updGo').addEventListener('click', () => { flush(); location.reload(); });
+  /* on the way out, write this tab's copy unless another tab has saved a newer one since (then this tab's is the stale one) */
+  addEventListener('pagehide', () => { try { if (!storedIsNewer()) localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* no storage */ } mirrorOut(); clearTimeout(vaultTimer); vaultPush(); });
   addEventListener('hashchange', () => { const h = location.hash.slice(1); if (MONTHS.includes(h) && h !== sel) select(h); else if (h.indexOf('move=') === 0) { moveRead(); if (moveIn) { if (!hasData(S)) moveApply(); else { if (tab !== 'home') switchTab('home'); renderBackupNudge(); } } } });
 }
 

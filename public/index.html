@@ -20,6 +20,7 @@
   --good: #1f7a52; --good-bg: rgba(31, 122, 82, .12); --warn: #9a6a00; --warn-bg: rgba(154, 106, 0, .12); --bad: #b8352e; --bad-bg: rgba(184, 53, 46, .1);
   --warn-on: #c98500; --bad-on: #e0524b; --ok-dot: #a9bdb2;
   --leaf: rgba(31, 122, 82, .34); --glass-hi: rgba(255, 255, 255, .5);
+  --acc-tint: rgba(31, 122, 82, .08); --acc-tint2: rgba(31, 122, 82, .2); --acc-glow: rgba(31, 122, 82, .25); --acc-ring: rgba(31, 122, 82, .65);
   --aurora: radial-gradient(60% 45% at 85% -5%, rgba(143, 217, 176, .5) 0%, rgba(143, 217, 176, 0) 70%), radial-gradient(70% 50% at -10% 60%, rgba(95, 185, 138, .22) 0%, rgba(95, 185, 138, 0) 70%), radial-gradient(50% 40% at 60% 110%, rgba(255, 255, 255, .7) 0%, rgba(255, 255, 255, 0) 70%);
   /* type: Nunito Sans for reading, Fraunces (a soft serif) for titles and the big numbers. Both are served next to the page (fonts/);
      a copy opened as a plain file falls back to the device's own fonts */
@@ -46,6 +47,7 @@
     --good: #8fd9b0; --good-bg: rgba(143, 217, 176, .16); --warn: #e8c37a; --warn-bg: rgba(232, 195, 122, .16); --bad: #ef8f8f; --bad-bg: rgba(239, 143, 143, .16);
     --warn-on: #e8c37a; --bad-on: #ef8f8f; --ok-dot: #4f6a5c;
     --leaf: rgba(143, 217, 176, .42); --glass-hi: rgba(255, 255, 255, .06);
+    --acc-tint: rgba(143, 217, 176, .1); --acc-tint2: rgba(143, 217, 176, .22); --acc-glow: rgba(143, 217, 176, .28); --acc-ring: rgba(143, 217, 176, .65);
     --aurora: radial-gradient(60% 45% at 85% -5%, rgba(95, 185, 138, .26) 0%, rgba(95, 185, 138, 0) 70%), radial-gradient(70% 50% at -10% 60%, rgba(31, 107, 74, .32) 0%, rgba(31, 107, 74, 0) 70%), radial-gradient(50% 40% at 60% 110%, rgba(143, 217, 176, .12) 0%, rgba(143, 217, 176, 0) 70%);
   }
 }
@@ -58,12 +60,28 @@
     --good: #8fd9b0; --good-bg: rgba(143, 217, 176, .16); --warn: #e8c37a; --warn-bg: rgba(232, 195, 122, .16); --bad: #ef8f8f; --bad-bg: rgba(239, 143, 143, .16);
     --warn-on: #e8c37a; --bad-on: #ef8f8f; --ok-dot: #4f6a5c;
     --leaf: rgba(143, 217, 176, .42); --glass-hi: rgba(255, 255, 255, .06);
+    --acc-tint: rgba(143, 217, 176, .1); --acc-tint2: rgba(143, 217, 176, .22); --acc-glow: rgba(143, 217, 176, .28); --acc-ring: rgba(143, 217, 176, .65);
     --aurora: radial-gradient(60% 45% at 85% -5%, rgba(95, 185, 138, .26) 0%, rgba(95, 185, 138, 0) 70%), radial-gradient(70% 50% at -10% 60%, rgba(31, 107, 74, .32) 0%, rgba(31, 107, 74, 0) 70%), radial-gradient(50% 40% at 60% 110%, rgba(143, 217, 176, .12) 0%, rgba(143, 217, 176, 0) 70%);
 }
 * { box-sizing: border-box; }
 /* glass: translucent panels with a hairline and a top highlight; blur only on the large ones, so phones stay quick */
 .card, .start, .tour-fields, .tour-cloud, .tour-goal, .split-row, .gw-card, .mgb, .tour-ledger, .why, .sub-o, .newcat, .hnext, .msg.ai, .tour-try, .src-panel, .imp-q { box-shadow: inset 0 0 0 1px var(--hair), inset 0 1px 0 var(--glass-hi); }
 @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) { .card, .gw-card, .hnext, .src-panel { -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); } }
+/* Safari before 16.2 has no color-mix(): the same tints from plain rgba, so nothing goes transparent or invisible there */
+@supports not (color: color-mix(in srgb, red 50%, blue)) {
+  .hnext { background: var(--acc-tint); box-shadow: inset 0 0 0 1px var(--acc-tint2); }
+  .rc.on, .split-row.moved, .src-panel, .imp-q { background: var(--acc-tint); }
+  .wd.done, .wd.shield { background: var(--acc-tint2); }
+  .mt-g { background: var(--track2); }
+  .tip { background: var(--ink); }
+  .dock { background: var(--bg); }
+  tbody tr:hover td { background: var(--track); }
+  :focus-visible { outline: 3px solid var(--acc-ring); }
+  .pick:focus-within .pick-t { outline: 3px solid var(--acc-ring); }
+  .inp:focus-within, .amt-in:focus, .txt:focus, .dpb:focus-visible, .dpb.open, .pctp:focus-within, .tour-chips .chip:focus-within, .sets select:focus, .sets input[type=date]:focus, .selbox select:focus, .rcform input[type=date]:focus, .remind-fields input[type=time]:focus, .tour-fields input[type=date]:focus { box-shadow: inset 0 0 0 2px var(--accent), 0 0 0 4px var(--acc-glow); }
+  .rng input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 4px var(--acc-glow), 0 2px 6px rgba(0, 0, 0, .28); }
+  .imp-row.on { box-shadow: inset 0 0 0 1px var(--accent); }
+}
 html { -webkit-text-size-adjust: 100%; }
 body { margin: 0; background: var(--bg); color: var(--ink); position: relative; font-family: var(--f); font-size: 17px; line-height: 1.47; letter-spacing: -.008em; font-weight: 400; -webkit-font-smoothing: antialiased; }
 body::before { content: ''; position: fixed; inset: 0; z-index: -1; background: var(--aurora); pointer-events: none; }
@@ -82,14 +100,14 @@ b, strong { font-weight: 600; }
 .card.hspend { position: relative; overflow: hidden; padding-bottom: calc(var(--pad-card) + 26px); } .hspend .art-grass { right: 18px; bottom: -3px; width: 132px; }
 .card.scan { position: relative; overflow: hidden; } .scan .head { padding-right: 84px; } .scan .art-sprig { right: 14px; top: 14px; width: 86px; }
 .hero { position: relative; } .hero .art-vine { left: -4px; top: 72px; width: 56px; }
-.card.sect:has(#goalCards) { position: relative; overflow: hidden; } .card:has(#goalCards) .art-sprout { right: 18px; bottom: 14px; width: 54px; }
+#secGoals { position: relative; overflow: hidden; } #secGoals .art-sprout { right: 18px; bottom: 14px; width: 54px; }
 .tour-in { position: relative; } .tour #tourArt .art { z-index: 0; }
 /* more seats: the Plan ledger, the Receipts reminder, All months, the saved-data box in Settings */
 .card.ledger { position: relative; overflow: hidden; padding-bottom: 54px; } .ledger .art-grass { right: 16px; bottom: -3px; width: 120px; }
 #rcRemind { position: relative; overflow: hidden; } #rcRemind .head { padding-right: 84px; } #rcRemind .art-sprig { right: 14px; top: 12px; width: 80px; }
 #p-months .card.sect { position: relative; overflow: hidden; } #p-months .card.sect .head { padding-right: 120px; } #p-months .art-branch { right: 10px; top: 6px; width: 132px; }
 #p-basics .card.sect { position: relative; overflow: hidden; padding-bottom: calc(var(--pad-card) + 30px); } #p-basics .card.sect .art-grass { right: 16px; bottom: -3px; width: 132px; }
-.card.sect:has(#rcForm) { position: relative; overflow: hidden; } .card.sect:has(#rcForm) .head { padding-right: 96px; } .card.sect:has(#rcForm) .art-twig { right: 14px; top: 10px; width: 96px; }
+#secLog { position: relative; overflow: hidden; } #secLog .head { padding-right: 96px; } #secLog .art-twig { right: 14px; top: 10px; width: 96px; }
 .tour .art-vine { width: 72px; right: 14px; bottom: 96px; } .tour .art-sprig { width: 118px; left: 46px; bottom: 100px; }
 .tour .art-sprout { width: 56px; right: 26px; bottom: 104px; } .tour .art-branch { width: 164px; right: 8px; bottom: 100px; }
 .tour .art-fern { width: 104px; right: 16px; bottom: 92px; } .tour .art-twig { width: 96px; right: 18px; bottom: 100px; } .tour .art-flower { width: 50px; right: 34px; bottom: 98px; }
@@ -242,7 +260,7 @@ b, strong { font-weight: 600; }
 .field label, .field .l { font-size: 15px; font-weight: 500; color: var(--ink2); }
 .inp { display: flex; align-items: center; background: var(--field); border-radius: var(--r-ctl); box-shadow: inset 0 0 0 1px var(--hair); padding: 0 16px; min-height: var(--ctl-h); transition: box-shadow .15s; }
 .inp:focus-within { box-shadow: inset 0 0 0 2px var(--accent), 0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent); }
-.inp .yen { color: var(--ink3); margin-right: 6px; font-size: 19px; }
+.inp .yen { color: var(--ink3); margin-right: 6px; font-size: 19px; white-space: nowrap; flex: none; }
 .inp input { border: 0; background: transparent; width: 100%; min-width: 0; font-weight: 500; font-size: 19px; padding: 8px 0; outline: none; font-variant-numeric: lining-nums tabular-nums; }
 .inp input::-webkit-outer-spin-button, .inp input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .inp input[type=number] { -moz-appearance: textfield; appearance: textfield; }
@@ -291,7 +309,7 @@ b, strong { font-weight: 600; }
 .gsave { margin-top: 12px; font-size: 15px; color: var(--ink2); }
 /* the reason behind a goal, in the person's words: quiet, under the name, gone when empty */
 /* All months: the month a goal becomes full carries its name */
-.mt-g { display: inline-flex; align-items: center; gap: 4px; margin: 2px 0 0 8px; padding: 1px 8px 1px 6px; border-radius: 999px; font-size: 12px; line-height: 1.5; color: var(--c); background: color-mix(in srgb, var(--c) 14%, transparent); vertical-align: 1px; white-space: nowrap; } .mt-g svg { width: 12px; height: 12px; }
+.mt-g { display: inline-flex; align-items: center; gap: 4px; margin: 2px 0 0 8px; padding: 1px 8px 1px 6px; border-radius: 999px; font-size: 12px; line-height: 1.5; color: var(--c); background: color-mix(in srgb, var(--c) 14%, transparent); vertical-align: 1px; white-space: nowrap; max-width: 170px; } .mt-g svg { width: 12px; height: 12px; flex: none; } .mt-g > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .gwhy { margin: 4px 0 10px; font-size: 15px; line-height: 1.4; color: var(--ink2); } .gwhy:empty { display: none; }
 .gsave b { color: var(--ink); font-weight: 600; }
 
@@ -349,7 +367,7 @@ td.neg { color: var(--bad); font-weight: 600; }
   .ledger { gap: 44px; }
   .row-h { gap: 4px; } .amt-in { width: 104px; padding-left: 6px; padding-right: 6px; }
   .ed .inp { width: 150px; }
-  #monthTable table { min-width: 0; } #monthTable .stw { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); } #monthTable th:last-child { font-size: 0; } #monthTable th:last-child::after { content: ''; }
+  #monthTable table { min-width: 0; } #monthTable .mt-g { display: flex; max-width: 108px; margin: 4px 0 0; } #monthTable th { white-space: normal; line-height: 1.2; vertical-align: bottom; } #monthTable .stw { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); } #monthTable th:last-child { font-size: 0; } #monthTable th:last-child::after { content: ''; }
   .tablewrap table { font-size: 15px; }
   th, td { padding-left: 6px; padding-right: 6px; }
   .legend { gap: 8px 16px; }
@@ -396,7 +414,7 @@ details.how li b { color: var(--ink); font-weight: 600; }
 /* ---- editing lines ---- */
 .ed-top .nm-in { flex: 1 1 auto; min-width: 0; width: auto; min-height: 44px; }
 .ed-edit { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; padding: 8px 0 0; }
-.ed-edit .mini { display: inline-flex; align-items: center; gap: 10px; font-size: 14px; color: var(--ink2); }
+.ed-edit .mini { display: inline-flex; align-items: center; gap: 10px; font-size: 14px; color: var(--ink2); } .ed-edit .mini > span { white-space: nowrap; flex: none; }
 .ed-edit select { border: 0; box-shadow: inset 0 0 0 1px var(--hair); background: var(--field); border-radius: var(--r-ctl-xs); min-height: 40px; padding: 0 10px; font-size: 15px; outline: none; }
 .check { display: flex; align-items: flex-start; gap: 10px; font-size: 15px; line-height: 1.4; cursor: pointer; }
 .check input { width: 20px; height: 20px; margin: 1px 0 0; flex: none; accent-color: var(--accent); }
@@ -549,7 +567,15 @@ svg.tour-scene { width: 100%; max-width: 440px; height: auto; }
 #peek .pix { animation: peekBob 1.4s ease-in-out infinite; transform-origin: 50% 100%; filter: drop-shadow(0 6px 10px rgba(0, 0, 0, .35)); }
 @keyframes peekBob { 0%, 100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-4px) rotate(2deg); } }
 #peek.peek-ocelot { left: auto; right: 0; bottom: 150px; transform: translateX(130%); } #peek.peek-ocelot.up { transform: translateX(42%); }
+/* while the setup is open its footer owns the bottom edge: the axolotl peeks above the Back button, not over it */
+#tour:not([hidden]) ~ #peek.peek-axolotl { bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
 @media (prefers-reduced-motion: reduce) { #peek { transition: none; } #peek .pix { animation: none; } }
+/* the reload offer when a newer version arrives under an open page */
+.upd { position: fixed; left: 50%; top: max(12px, env(safe-area-inset-top)); transform: translateX(-50%); z-index: 72; display: flex; align-items: center; gap: 12px; padding: 10px 10px 10px 18px; border-radius: var(--r-panel); background: var(--float); -webkit-backdrop-filter: blur(24px) saturate(140%); backdrop-filter: blur(24px) saturate(140%); box-shadow: 0 18px 40px -14px rgba(0, 0, 0, .45), 0 0 0 1px var(--hair); font-size: 15px; font-weight: 500; max-width: calc(100vw - 24px); }
+/* the problem report sheet shares the camera sheet's glass */
+.rep .cam-in { width: min(560px, 100%); }
+.rep textarea { width: 100%; min-height: 180px; border: 0; box-shadow: inset 0 0 0 1px var(--hair); border-radius: var(--r-ctl); background: var(--field); padding: 12px 14px; font-size: 13px; line-height: 1.45; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 0; color: inherit; resize: vertical; }
+.cap.snag { padding: 10px 12px; border-radius: var(--r-ctl); background: var(--warn-bg); color: var(--warn); }
 /* the camera sheet (computers only): a live view in a glass card over a scrim */
 .cam { position: fixed; inset: 0; z-index: 60; background: rgba(4, 12, 9, .62); display: grid; place-items: center; padding: 16px; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
 .cam-in { width: min(640px, 100%); background: var(--float); -webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px); border-radius: var(--r-card); padding: 16px 18px 18px; display: grid; gap: 12px; box-shadow: 0 30px 80px -20px rgba(0, 0, 0, .6), inset 0 0 0 1px var(--hair); }
@@ -596,6 +622,8 @@ svg.tour-scene { width: 100%; max-width: 440px; height: auto; }
 .msg.me { align-self: flex-end; background: var(--accent); color: var(--on-accent); border-bottom-right-radius: 6px; }
 .msg.wait { color: var(--ink2); } .msg.note { color: var(--warn); background: var(--warn-bg); }
 .ask-sug { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 16px 10px; }
+/* on a phone the suggestions are one swipeable row, so the chat itself keeps the room (the first message stays readable on opening) */
+@media (max-width: 520px) { .ask-sug { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; padding-bottom: 12px; -webkit-overflow-scrolling: touch; } .ask-sug::-webkit-scrollbar { display: none; } .ask-sug .sugg { flex: 0 0 auto; white-space: nowrap; } .ask-log { min-height: 170px; } }
 .sugg { border: 0; background: var(--track); border-radius: 980px; min-height: 38px; padding: 0 14px; font-size: 15px; cursor: pointer; text-align: left; }
 .sugg:hover { background: var(--track2); }
 .ask-form { padding: 10px 16px 14px; border-top: .5px solid var(--hair); display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
@@ -640,7 +668,7 @@ svg.tour-scene { width: 100%; max-width: 440px; height: auto; }
 .msg.card .row-btns { display: flex; flex-wrap: wrap; gap: 8px; }
 /* on laptops and phones that are not very tall, keep the first and last screens from running under the buttons */
 @media (max-height: 940px) { .tour-body { gap: 16px; padding-top: clamp(14px, 3vh, 34px); padding-bottom: 14px; } svg.tour-scene { max-width: 300px; } .tour-body p { font-size: 18px; line-height: 1.4; } .tour-body p.cap { font-size: 14px; } }
-@media (max-height: 860px) { svg.tour-scene { max-width: 236px; } .tour:has(.tour-foot.last) svg.tour-scene { display: none; } }
+@media (max-height: 860px) { svg.tour-scene { max-width: 236px; } .tour.last svg.tour-scene { display: none; } }
 @media (max-height: 740px) { svg.tour-scene { max-width: 175px; } }
 /* the short hello video screen: a card that opens the video in a new tab, or a 16:9 player in the downloaded app */
 .tour-video { display: inline-flex; align-items: center; gap: 14px; text-decoration: none; color: var(--ink); background: var(--card); border: .5px solid var(--hair); border-radius: var(--r-box); padding: 14px 20px 14px 16px; min-height: 64px; max-width: 100%; transition: background .2s, transform .1s; }
@@ -931,6 +959,7 @@ b.dp-t { cursor: default; }
 .gw-plan { font-size: 17px; background: var(--field); padding: 14px 16px; border-radius: var(--r-box); line-height: 1.4; min-height: 3.3em; box-shadow: inset 0 0 0 1px var(--hair); }
 .gw-plan b { font-weight: 600; } .gw-plan.bad { color: var(--bad); }
 .gw-foot { display: flex; justify-content: space-between; gap: 12px; margin-top: 24px; }
+.gw .btn.dim { opacity: .55; } .gw-hint { margin: 14px 0 -10px; min-height: 0; color: var(--warn); } .gw-hint:empty { display: none; }
 .gw-foot .btn { min-width: 124px; }
 body.gw-open, body.co-open.gw-open { overflow: hidden; }
 @media (max-width: 560px) { .gw { align-items: end; padding: 0; } .gw-card { border-radius: var(--r-card) var(--r-card) 0 0; width: 100%; max-height: 92dvh; padding-bottom: max(24px, env(safe-area-inset-bottom)); } .gw-chips { grid-template-columns: 1fr 1fr; } }
@@ -1481,7 +1510,7 @@ body.gw-open, body.co-open.gw-open { overflow: hidden; }
   <!-- GOALS -->
   <div id="p-goals" role="tabpanel" aria-labelledby="tab-goals" hidden>
     <div class="plan-top"><div class="subnav" role="group" aria-label="Plan pages"><button type="button" data-tab-go="month" data-sub="month">Month</button><button type="button" data-tab-go="goals" data-sub="goals">Goals</button><button type="button" data-tab-go="months" data-sub="months">All months</button></div></div>
-    <section class="card sect">
+    <section class="card sect" id="secGoals">
       <div class="head">
         <h2>Goals</h2>
         <p class="sub2" id="goalsSub"></p>
@@ -1543,7 +1572,7 @@ body.gw-open, body.co-open.gw-open { overflow: hidden; }
         <div class="scan-out" id="scanOut2" aria-live="polite"></div>
       </details>
     </section>
-    <section class="card sect">
+    <section class="card sect" id="secLog">
       <div class="head">
         <h2>Receipts</h2>
         <p class="sub2">Log as you spend or in a batch. <button type="button" class="link" data-scroll="rcRemind">Set reminder</button></p>
@@ -1664,7 +1693,7 @@ body.gw-open, body.co-open.gw-open { overflow: hidden; }
           <p class="cap">Loading replaces the numbers here with the cloud copy and keeps this device in sync with it.</p>
         </div>
         <h4>Restore</h4>
-        <textarea id="bk" aria-label="Your saved numbers" spellcheck="false"></textarea>
+        <textarea id="bk" aria-label="Your saved numbers" spellcheck="false" placeholder="Paste the backup text here"></textarea>
         <div class="row-btns">
           <button type="button" class="btn small" id="bkLoad">Load text</button>
           <button type="button" class="btn small" id="bkFileBtn">Choose file</button>
@@ -1678,7 +1707,7 @@ body.gw-open, body.co-open.gw-open { overflow: hidden; }
   </div>
 
   <p class="foot" id="footNote">Not financial advice. Sample numbers are invented. Replace them with yours.</p>
-  <p class="foot ver" id="verFoot">Version 35.0, updated Nov 13, 12:05 am</p>
+  <p class="foot ver" id="verFoot">Version 35.1, updated Nov 13, 1:45 am</p>
 </div>
 <div class="tip" id="tip" role="tooltip"></div>
 <div class="tour" id="tour" role="dialog" aria-modal="true" aria-labelledby="tourTitle" hidden>
@@ -1700,6 +1729,15 @@ body.gw-open, body.co-open.gw-open { overflow: hidden; }
     <div class="row-btns"><button type="button" class="btn solid" id="camShot">Take photo</button><button type="button" class="btn" id="camDone" hidden>Done</button><button type="button" class="btn" id="camPick" hidden>Choose files instead</button></div>
   </div>
 </div>
+<div class="upd" id="upd" role="status" hidden><span>A newer version is ready.</span><button type="button" class="btn small solid" id="updGo">Reload</button></div>
+<div class="cam rep" id="rep" role="dialog" aria-labelledby="repT" hidden>
+  <div class="cam-in">
+    <div class="cam-top"><h2 id="repT">Report a problem</h2><button type="button" class="ask-x" id="repClose" aria-label="Close">&times;</button></div>
+    <p class="cap">Copy this and send it to Mako with what you were doing. It names the version, the device and the last errors. It holds none of your numbers.</p>
+    <textarea id="repText" readonly rows="9" spellcheck="false"></textarea>
+    <div class="row-btns"><button type="button" class="btn small solid" id="repCopy">Copy</button><span class="msg" id="repMsg" role="status"></span></div>
+  </div>
+</div>
 <div id="peek" aria-hidden="true" hidden></div>
 <div id="cheer" role="status" aria-live="polite"></div>
 <canvas id="confetti" aria-hidden="true"></canvas>
@@ -1709,7 +1747,8 @@ body.gw-open, body.co-open.gw-open { overflow: hidden; }
     <button type="button" id="helpTab">Explain this tab</button>
     <button type="button" id="helpSetup">Guided setup</button>
     <button type="button" id="helpVideo" hidden>Intro video</button>
-    <p class="help-ver">Version 35.0</p>
+    <button type="button" id="helpReport">Report a problem</button>
+    <p class="help-ver">Version 35.1</p>
   </div>
   <div class="help-row"><button type="button" class="help-btn ask-btn" id="askBtn">Ask</button><button type="button" class="help-btn" id="helpBtn" aria-expanded="false" aria-controls="helpMenu"><span class="q" aria-hidden="true">?</span>Help</button></div>
 </div>
@@ -1985,9 +2024,11 @@ const hasOwnMonthly = (S, id) => !!(S.steps['goal:' + id] || Object.keys(S.once)
 
 /* every amount in the plan can be cleared with "start from zero"; names and structure stay */
 const MONEY_CFG = ['bankStart', 'minBank', 'ceiling'];
-function blankState(S) {
-  const f = freshState(); f.ui = Object.assign({}, S.ui, { sampleHidden: true }); f.receipts = (S.receipts || []).slice();
-  f.plan = { lines: S.plan.lines.map(l => Object.assign({}, l, { def: 0 })), goals: S.plan.goals.map(g => { const o = Object.assign({}, g, { target: 0, start: 0 }); delete o.monthly; if (o.emergency) o.stretch = 0; return o; }) };
+/* dropGoals: the sample's invented goals go; a person's own goals stay, emptied */
+function blankState(S, dropGoals) {
+  const f = freshState(); f.ui = Object.assign({}, S.ui); delete f.ui.sampleHidden; delete f.ui.exactHidden; f.receipts = (S.receipts || []).slice(); /* the Next card guides the fresh start */
+  const goals = dropGoals ? S.plan.goals.filter(g => g.emergency) : S.plan.goals;
+  f.plan = { lines: S.plan.lines.map(l => Object.assign({}, l, { def: 0 })), goals: goals.map(g => { const o = Object.assign({}, g, { target: 0, start: 0 }); delete o.monthly; if (o.emergency) o.stretch = 0; return o; }) };
   ['a', 'b', 'side'].forEach(k => { f.steps[k] = [{ from: START, v: 0 }]; });
   MONEY_CFG.forEach(k => { f.cfg[k] = 0; });
   if (S.cfg && S.cfg.aims) f.cfg.aims = Object.assign({}, S.cfg.aims);
@@ -2561,6 +2602,25 @@ function stmtReceipts(rows, catOf, acctOf) {
 const $ = (s, r) => (r || document).querySelector(s);
 const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
 const KEY = 'money-map-template-v2';
+/* a small log of what went wrong on this device (no money data): the last twelve errors, kept for Help, Report a problem.
+   safe(fn, host) runs one card's drawing on its own, so one card hitting a snag never takes the page down with it */
+const ERR_KEY = 'mhr-errlog', ERR_MAX = 12;
+function errLog() { try { const a = JSON.parse(localStorage.getItem(ERR_KEY) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
+function logErr(where, e) {
+  const msg = e && e.message ? e.message : String(e), at = e && e.stack ? String(e.stack).split('\n').slice(0, 3).join(' | ').replace(/https?:\/\/[^ )]+/g, m => m.split('/').pop()).slice(0, 300) : '';
+  try { const a = errLog(); a.push({ t: new Date().toISOString(), where: String(where).slice(0, 40), msg: msg.slice(0, 200), at }); while (a.length > ERR_MAX) a.shift(); localStorage.setItem(ERR_KEY, JSON.stringify(a)); } catch (er) { /* storage full or blocked: the log is best effort */ }
+  if (/[?&]sfxtest\b/.test(location.search)) (window.__errs = window.__errs || []).push(where + ': ' + msg);
+}
+function safe(fn, host, where) {
+  try { return fn(); } catch (e) {
+    logErr(where || (host || 'card'), e);
+    const el = typeof host === 'string' ? $(host) : host;
+    if (el && el.innerHTML !== undefined) el.innerHTML = '<p class="cap snag">This part hit a snag and is resting. The rest of the page works. If it keeps happening, Help has Report a problem.</p>';
+    return undefined;
+  }
+}
+addEventListener('error', e => logErr('page', e.error || e.message));
+addEventListener('unhandledrejection', e => logErr('promise', e.reason));
 const PAGE_URL = 'https://claude.ai/artifact/Ksf1kNTW7KRsd7ZHmiVC1w';
 /* what the person would like this page to help with (chosen on the welcome screens; the keys are the only values ever stored) */
 const HOPES = { see: ['See where it goes', 'see where your money goes'], save: ['Save for a goal', 'save for a goal'], calm: ['Less money stress', 'feel calm about money'], owe: ['Pay down debt', 'pay down debt'] };
@@ -2732,8 +2792,32 @@ function setSave(kind) {
   const el = $('#save'), t = $('#saveTxt'); el.className = 'save ' + (kind === 'ok' ? 'ok' : kind === 'busy' ? 'busy' : '');
   t.textContent = { ok: 'Saved', busy: 'Saving…', device: 'Saved in this browser', error: 'Not saved. Save a copy in Settings.' }[kind] || '';
 }
-function persist() { S.rev = Date.now(); setSave('busy'); clearTimeout(saveTimer); saveTimer = setTimeout(flush, 500); }
-function flush() { let ok = true; try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { ok = false; } setSave(ok ? 'device' : 'error'); mirrorOut(m => { if (!ok && m) setSave('device'); }); vaultQueue(); }
+/* the revision only ever goes up, whatever the device clock does (a clock set back must never make this tab refuse to save) */
+function persist() { S.rev = Math.max(Date.now(), (+S.rev || 0) + 1); setSave('busy'); clearTimeout(saveTimer); saveTimer = setTimeout(flush, 500); }
+function flush() { saveTimer = null; let ok = true; try { if (!storedIsNewer()) localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { ok = false; } setSave(ok ? 'device' : 'error'); mirrorOut(m => { if (!ok && m) setSave('device'); }); vaultQueue(); }
+/* another tab saved a newer copy than this tab holds (only possible with two tabs open): then this tab must not write over it */
+function storedIsNewer() { try { const raw = localStorage.getItem(KEY); if (!raw) return false; const i = raw.indexOf('"rev":'); if (i < 0) return false; const r = parseInt(raw.slice(i + 6), 10); return r > +(S.rev || 0); } catch (e) { return false; } }
+/* two tabs of the app in one browser: when the other tab saves, this one takes its numbers instead of writing over them later.
+   Only a newer copy is taken, and not while this tab is in the middle of typing or has a save on the way */
+let otherTabT = 0;
+addEventListener('storage', e => {
+  if (e.key !== KEY || !e.newValue) return;
+  clearTimeout(otherTabT);
+  otherTabT = setTimeout(() => {
+    let d; try { d = JSON.parse(e.newValue); } catch (er) { return; }
+    if (!d || !(+d.rev > +(S.rev || 0))) return;
+    const busy = saveTimer || (document.activeElement && /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName) && !document.activeElement.readOnly) || tourIsOpen;
+    if (busy) { pendingOther = d; return; }
+    adoptOther(d);
+  }, 300);
+});
+let pendingOther = null;
+function adoptOther(d) {
+  try { S = upgradeLegacy(normalize(d)); } catch (er) { logErr('other tab', er); return; }
+  pendingOther = null; restructure(); render(); if (typeof cheer === 'function') cheer('Updated from another tab.');
+}
+/* when the typing is done, a copy that arrived meanwhile is taken */
+addEventListener('focusout', () => { if (pendingOther && !saveTimer && !tourIsOpen) setTimeout(() => { if (pendingOther && !saveTimer) adoptOther(pendingOther); }, 400); });
 /* first steps the page walks a new person through; each ticks off when they do it */
 function markDone(k, quiet) { if (!k) return; const d = S.ui.done = S.ui.done || {}, was = !!d[k]; d[k] = true; if (!was && !quiet) afterDone(k); }
 const doneFor = key => (key === 'a' || key === 'b' || key === 'side' ? 'pay' : key.slice(0, 5) === 'goal:' ? 'goals' : (lineByKey(S, key) && lineByKey(S, key).jar === 'nec' ? 'bills' : null));
@@ -2782,11 +2866,9 @@ const ART = {
 function art(kind, place) { return ART[kind] ? `<span class="art art-${kind}${place ? ' art-' + place : ''}" aria-hidden="true">${ART[kind]}</span>` : ''; }
 /* the tabs: one drawing each, placed once. Receipts: a sprig by the scan card's title. Plan: a vine up the side of the big number. Goals: a sprout in the corner of the goals card. */
 /* where the drawings live: one per card, chosen for the card (a seat is skipped when the card is missing or already has one) */
-const ART_SEATS = [['#scan', 'sprig'], ['#hero', 'vine'], ['#ledger', 'grass'], ['#rcRemind', 'sprig'], ['#monthTable', 'branch'], ['#p-basics .card.sect', 'grass'], ['#rcForm', 'twig']];
+const ART_SEATS = [['#scan', 'sprig'], ['#hero', 'vine'], ['#ledger', 'grass'], ['#rcRemind', 'sprig'], ['#monthTable', 'branch'], ['#p-basics .card.sect', 'grass'], ['#secLog', 'twig'], ['#secGoals', 'sprout']];
 function placeArt() {
-  ART_SEATS.forEach(([sel, kind]) => { let host = $(sel); if (!host) return; if (sel === '#monthTable' || sel === '#rcForm') host = host.closest('.card') || host; if (!$('.art', host)) host.insertAdjacentHTML('beforeend', art(kind)); });
-  const goals = $('#goalCards') && $('#goalCards').closest('.card');
-  if (goals && !$('.art', goals)) goals.insertAdjacentHTML('beforeend', art('sprout'));
+  ART_SEATS.forEach(([sel, kind]) => { let host = $(sel); if (!host) return; if (sel === '#monthTable') host = host.closest('.card') || host; if (!$('.art', host)) host.insertAdjacentHTML('beforeend', art(kind)); });
   pixQueue();
 }
 /* ---------- pixel art: small flat sprites in the corners, and two secret guys ----------
@@ -3006,7 +3088,7 @@ function fieldHTML(f, multi, editing) {
   const head = editing && l
     ? `<input class="txt nm-in" type="text" value="${esc(l.name)}" maxlength="60" data-lname="${esc(l.id)}" aria-label="Name of this line">`
     : `<label for="i-${f.fid}">${multi ? dot + esc(f.label) : 'This month'}</label>`;
-  const edit = editing && l ? `<div class="ed-edit"><label class="mini">Last payment <select data-lends="${esc(l.id)}">${monthOptions(l.ends)}</select></label>
+  const edit = editing && l ? `<div class="ed-edit"><label class="mini"><span>Last payment</span><select data-lends="${esc(l.id)}">${monthOptions(l.ends)}</select></label>
     ${l.ends && emergencyGoal(S) ? `<label class="check"><input type="checkbox" data-lredir="${esc(l.id)}"${l.redirect ? ' checked' : ''}><span>Then move its money to the emergency fund</span></label>` : ''}
     <button type="button" class="btn small warnbtn" data-ldel="${esc(l.id)}" data-armkey="ldel-${esc(l.id)}">Remove</button></div>` : '';
   return `<div class="ed" id="e-${f.fid}"><div class="ed-top">${head}
@@ -3206,7 +3288,7 @@ function renderStart() {
   const mine = !!S.ui.setup && !S.ui.cleared, zero = S.ui.preset === 'blank' || !!S.ui.cleared;
   $('#basicsSub').textContent = BASICS_SUB;
   $('#makeCap').textContent = mine ? 'These are your numbers. Change them any time. Saved in this browser only; nobody else sees them.' : zero ? 'Everything starts at zero. Type over it. Saved in this browser only.' : MAKE_CAP;
-  $('#blankBtn').hidden = zero || mine; $('#showStart').hidden = true; $('#tourOpen2').textContent = mine ? 'Tour' : 'Guided setup';
+  $('#blankBtn').hidden = zero; $('#showStart').hidden = !(S.ui.sampleHidden || S.ui.exactHidden); /* Zero all stays while there is anything to zero: Restore names it as the way to start over. Show first steps brings back a hidden Next card */ $('#tourOpen2').textContent = mine ? 'Tour' : 'Guided setup';
 }
 
 /* ---------- render ---------- */
@@ -3285,10 +3367,10 @@ function render() {
   });
   renderItems(m);
 
-  renderMonthTable(); renderGoals(m); renderSettings(); homeView(); renderBand(); renderHome(); queueWins(false); placePix();
+  safe(renderMonthTable, '#monthTable'); safe(() => renderGoals(m), '#goalCards'); safe(renderSettings, null, 'settings'); safe(homeView, null, 'homeView'); safe(renderBand, '#mgBand'); safe(renderHome, null, 'home'); safe(() => queueWins(false), null, 'wins'); safe(placePix, null, 'pix');
   $$('.cs').forEach(e => { e.textContent = sym(); });
-  if (tab === 'goals') drawRoad();
-  if (tab === 'receipts') renderReceipts();
+  if (tab === 'goals') safe(drawRoad, '#chartbox', 'road');
+  if (tab === 'receipts') safe(renderReceipts, null, 'receipts');
   if (typeof dpSync === 'function') dpSync();
 }
 
@@ -3370,7 +3452,7 @@ function readItems() {
 
 function renderSettings() {
   SETF.forEach(f => setIdle($('#st-' + f.k), cfg(S, f.k)));
-  if (tab === 'basics') setIdle($('#bk'), JSON.stringify(S));
+  /* the Restore box starts empty: it is for pasting a copy in. Copy text fills it when the clipboard is not allowed. */
 }
 
 function renderMonthTable() {
@@ -3378,7 +3460,7 @@ function renderMonthTable() {
   const fullIn = {}; S.plan.goals.forEach(g => { const r = C.reached[g.id]; if (g.target > 0 && r) (fullIn[r] = fullIn[r] || []).push(g); });
   const rows = C.months.map(m => {
     const st = statusOf(S, m), gs = fullIn[m.ym] || [];
-    const marks = gs.map(g => `<span class="mt-g" style="--c:var(--c${g.slot})">${HI.leaf}${esc(g.name)} full</span>`).join('');
+    const marks = gs.map(g => `<span class="mt-g" style="--c:var(--c${g.slot})" title="${esc(g.name)} full">${HI.leaf}<span>${esc(g.name)} full</span></span>`).join('');
     return `<tr data-ym="${m.ym}" class="${m.ym === sel ? 'on' : ''}" tabindex="0" aria-label="${fullLabel(m.ym)}: ${word[st]}${gs.length ? ', ' + gs.map(g => g.name + ' full').join(', ') : ''}"><td>${monthLabel(m.ym)}${marks}</td><td class="${m.pool.left < 0 ? 'neg' : ''}">${fmt(m.pool.left)}</td><td class="${m.bankEnd < cfg(S, 'minBank') ? 'neg' : ''}">${fmt(m.bankEnd)}</td><td><span class="st ${st}">${icon[st]}<span class="stw">${word[st]}</span></span></td></tr>`;
   }).join('');
   $('#monthTable').innerHTML = `<table><thead><tr><th>Month</th><th>Left</th><th>Bank, month end</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table>`;
@@ -3444,6 +3526,8 @@ const hideTip = () => $('#tip').classList.remove('on');
 /* ---------- tabs and rows ---------- */
 function switchTab(t, focus) {
   const prev = tab; tab = t; disarm();
+  /* a receipt logged for another month moved the open month so its list could be seen; the plan pages open on the month in hand again */
+  if (selByReceipt && (t === 'month' || t === 'months' || t === 'goals')) { selByReceipt = false; const ym = nowYm(); if (MONTHS.indexOf(ym) >= 0 && ym !== sel) { sel = ym; itemsSig = ''; try { history.replaceState(null, '', '#' + ym); } catch (e) { /* sandboxed */ } } }
   const lit = t === 'months' || t === 'goals' ? 'month' : t === 'basics' ? '' : t;
   $$('[data-tab]').forEach(b => { const on = b.dataset.tab === lit; b.setAttribute('aria-selected', String(on)); b.tabIndex = on ? 0 : -1; if (on && focus) b.focus(); });
   $$('.subnav [data-sub]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.sub === t)));
@@ -3463,12 +3547,12 @@ function openRow(id) {
 }
 
 /* ---------- receipts ---------- */
-let rcHowSet = false;
+let rcHowSet = false, selByReceipt = false; /* the open month moved to follow a receipt logged for another month (Plan undoes that when opened) */
 function prepareReceiptForm() {
   const d = $('#rcDate'); d.min = START + '-01'; d.max = END + '-31'; if (!d.value) d.value = todayStr();
 }
 function resetRcForm() {
-  editRc = null; $('#rcAmt').value = ''; $('#rcNote').value = ''; syncOtherTitle('rcCat', 'rcNote'); $('#rcSave').textContent = 'Add receipt'; $('#rcCancel').hidden = true;
+  editRc = null; $('#rcAmt').value = ''; $('#rcNote').value = ''; syncOtherTitle('rcCat', 'rcNote'); $('#rcSave').textContent = 'Log receipt'; $('#rcCancel').hidden = true;
 }
 /* choosing "Other" asks for a title, so the receipt can say what it was; every other category keeps the optional note */
 function syncOtherTitle(catId, noteId) {
@@ -3479,6 +3563,13 @@ function syncOtherTitle(catId, noteId) {
   inp.setAttribute('aria-required', String(other));
 }
 const needTitle = (c, n) => c === 'other' && !String(n || '').trim();
+/* a receipt dated after today asks once; the same tap again within a few seconds logs it anyway */
+let futureArm = null, futureT = 0;
+function futureOk(d, msg, btn) {
+  if (futureArm === d + btn.id) { futureArm = null; clearTimeout(futureT); return true; }
+  futureArm = d + btn.id; clearTimeout(futureT); futureT = setTimeout(() => { futureArm = null; }, 6000);
+  msg.textContent = `${dateLabel(d)} is in the future. Tap again to log it anyway, or change the date.`; sfx('off'); return false;
+}
 function renderReceipts() {
   const m = C.byYm[sel], rs = receiptStats(S, sel), playPlan = m.jar.play, playSpent = rs.byJar.play || 0;
   setIdle($('#rcMonth'), sel);
@@ -3510,6 +3601,8 @@ function wireReceipts() {
     const d = $('#rcDate').value, a = +$('#rcAmt').value, c = $('#rcCat').value, n = $('#rcNote').value, msg = $('#rcMsg');
     if (!validDate(d) || MONTHS.indexOf(d.slice(0, 7)) < 0) { msg.textContent = `Date must be ${monthLabel(START)} to ${monthLabel(END)}.`; $('#rcDate').focus(); return; }
     if (!(a > 0)) { msg.textContent = 'Enter an amount.'; $('#rcAmt').focus(); return; }
+    /* a date after today is nearly always a slip of the finger: it is logged only on a second tap */
+    if (d > todayStr() && !futureOk(d, msg, $('#rcSave'))) return;
     if (c === CAT_NEW) { msg.textContent = 'Add the new category, or pick one from the list.'; $('#rcNewName').focus(); return; }
     if (needTitle(c, n)) { msg.textContent = 'Add a short title, e.g. “Vet bill”.'; $('#rcNote').focus(); return; }
     S.ui.rcCat = c; const wasEdit = !!editRc;
@@ -3517,7 +3610,7 @@ function wireReceipts() {
     if (wasEdit) updateReceipt(S, editRc, d, a, c, n); else { addReceipt(S, d, a, c, n); markDone('receipts', true); }
     msg.textContent = (wasEdit ? 'Saved. ' : 'Logged. ') + fmt2(a) + ': ' + (c === 'other' ? 'Other' : (lineByKey(S, c) || { name: 'Other' }).name) + '.';
     resetRcForm(); persist();
-    if (d.slice(0, 7) !== sel) select(d.slice(0, 7)); else render();
+    if (d.slice(0, 7) !== sel) { select(d.slice(0, 7)); selByReceipt = true; } else render(); /* the list follows the receipt, so it can be seen where it went; Plan goes back to this month on its own */
     $('#rcAmt').focus();
     if (!wasEdit) afterLog(firstRc);
   });
@@ -3684,7 +3777,9 @@ const STEP_BILLS = { id: 'bills-pick', part: PART.bills, setup: true, pick: true
     const keep = necLines().filter(l => ids.indexOf(baseOf(l.id)) >= 0).map(l => l.id);
     /* the sample amounts are not yours: every line starts empty, and what you type replaces it */
     necLines().forEach(l => { if (keep.indexOf(l.id) < 0 || !S.steps[l.key]) setVal(S, l.key, START, 0, 'after'); });
-    markDone('bills'); persist();
+    /* ticking is not entering: the bills count as done once an amount is typed, or every bill screen has been passed (no bills ticked counts too) */
+    if (!ids.length) markDone('bills');
+    persist();
   } };
 const billStep = id => ({ id: 'bill-' + id, part: PART.bills, setup: true, focus: baseOf(id) === 'subs' ? '' : '#tourAmt',
   title: () => { const l = lineById(S, id); if (!l) return ''; const mk = moreKind(id); return mk ? MORE_KINDS[mk].title : (BILL_Q[id] || `${esc(l.name)}`); },
@@ -3722,7 +3817,7 @@ const billStep = id => ({ id: 'bill-' + id, part: PART.bills, setup: true, focus
     const l = lineById(S, id); if (!l) return;
     if (baseOf(id) === 'loan') { loanLeave(l); persist(); return; }
     if (baseOf(id) === 'card') cardLeave(d); /* before the amount is read: a filled calculator with an empty amount box counts when the person moves on */
-    setVal(S, l.key, START, inum('tourAmt'), 'after');
+    setVal(S, l.key, START, inum('tourAmt'), 'after'); if (inum('tourAmt') > 0) markDone('bills');
     const nm = $('#tourLName'); if (nm && nm.value.trim()) updateLine(S, id, { name: nm.value });
     if (baseOf(id) === 'subs') subsLeave();
     persist();
@@ -3791,7 +3886,15 @@ function commitJars() {
   persist();
 }
 /* goals added after the bills use all of the pay, or after the savings jar was set to nothing, start at zero and not at their usual sample amount */
-function settleGoals() { if (havePay() && !(ltsBudget() > 0)) S.plan.goals.forEach(g => setVal(S, 'goal:' + g.id, START, 0, 'after')); }
+/* after the goals are picked or sized: with no goal money in the split, every goal saves nothing for now. With exactly one goal the whole
+   Long-Term Savings jar goes to it (the split screen opens only for two or more), capped by what it still needs, so the setup's own
+   defaults never plan more than the pay allows. */
+function settleGoals() {
+  if (!havePay()) return;
+  const B = ltsBudget();
+  if (!(B > 0)) { S.plan.goals.forEach(g => setVal(S, 'goal:' + g.id, START, 0, 'after')); return; }
+  if (S.plan.goals.length === 1) { const g = S.plan.goals[0]; setVal(S, 'goal:' + g.id, START, Math.min(B, goalRoom(g)), 'after'); }
+}
 const STEP_JARS = { id: 'jars', part: PART.jars, setup: true, when: havePay,
   title: 'Split the rest',
   body: () => {
@@ -3800,11 +3903,11 @@ const STEP_JARS = { id: 'jars', part: PART.jars, setup: true, when: havePay,
     <p class="cap">If you truly have none, continue and split below.</p>${jarSplitHTML()}`;
     if (jarRest <= 0) return `<p>Bills <b>${fmt(nec)}</b>, pay <b>${fmt(pay)}</b>. ${nec > pay ? `Bills exceed pay by <b>${fmt(nec - pay)}</b>, so` : 'Bills take all of it, so'} nothing is left for the other five jars: no play money and nothing for goals, for now.</p>
     <p>You can still add goals next. They start filling once bills drop below pay. To lower a bill, go back. Otherwise continue and adjust under Plan later.</p>`;
-    return `<p>Bills <b>${fmt(nec)}</b> = <b>${jarNec}%</b> of pay: the Necessities jar. The other <b>${jarRest}%</b> (${fmt(pay - nec)}) is yours to split between the five jars below, starting at the usual proportions. Each slider moves on its own: what you take away waits as unassigned, and a slider can only take what is unassigned.</p>
+    return `<p>Bills <b>${fmt(nec)}</b> = <b>${jarNec}%</b> of pay: the Necessities jar. The other <b>${jarRest}%</b> (${fmt(pay - nec)}) is yours to split between the five jars below, starting at the usual proportions.</p>
     ${jarsFold()}${jarSplitHTML()}`;
   },
   after: () => { if (jarRest > 0) paintJars(); },
-  leave: () => commitJars() };
+  leave: () => { commitJars(); markDone('bills'); } }; /* past the bills: whatever was typed for them is the person's own */
 /* the six jars in short, folded: pay is split into jars and each jar has one purpose */
 const jarsFold = () => `<details class="src-how"><summary>The six jars, in short</summary><div class="src-how-in">
     <p>Every month, pay is split into six jars. Each jar has one purpose, and play money is the jar you spend on fun without guilt. Usual shares of take-home pay:</p>
@@ -3858,7 +3961,7 @@ const goalStep = id => ({ id: 'goal-' + id, part: PART.goals, setup: true,
       <p class="cap" id="tourEmCap">${emCap(m)}</p>
       <div class="tour-fields">${moneyField('tourGSaved', 'Already saved', g.start)}</div>`;
     }
-    return `<p>Name, cost, a date if there is one, and the reason in your words.</p>
+    return `<p>${g.emergency ? 'A cushion for surprises. How much do you want to hold? Usual advice: three to six months of bills.' : 'Name, cost, a date if there is one, and the reason in your words.'}</p>
     <div class="tour-fields">
       ${g.emergency ? '' : textField('tourGName', 'Name', g.name)}
       ${g.emergency ? '' : `<div class="field"><label for="tourGWhy">Why (optional)</label><div class="inp"><input id="tourGWhy" type="text" maxlength="80" spellcheck="false" value="${esc(g.why || '')}" placeholder="In your words: who it is for, what it changes"></div><p class="cap">Shows with the goal, so the reason stays in view.</p></div>`}
@@ -3882,7 +3985,14 @@ const goalStep = id => ({ id: 'goal-' + id, part: PART.goals, setup: true,
 
 /* ----- dividing the goal money: dated goals get what they need first, the rest is shared ----- */
 let gsIds = [], gsPct = [], gsBudget = 0, splitC2 = null;
-const ltsBudget = () => (restPct() > 0 ? jarMoneyList(JAR5.map(j => aimsOf(S)[j]))[0] : 0);
+/* the Long-Term Savings jar's money a month, by the same arithmetic as the jars screen: whole percents of the pay the bills leave.
+   The committed shares are used as they stand (a part may be left unassigned); before any commit, the usual proportions fill the rest. */
+const ltsBudget = () => {
+  const rest = restPct(); if (!(rest > 0)) return 0;
+  const a = aimsOf(S), mine = JAR5.map(j => Math.round(a[j] * 100));
+  const vals = S.cfg.aims && sumOf(mine) > 0 && sumOf(mine) <= rest ? mine : lr(JAR5.map(j => a[j]), rest);
+  return shareMoney(round2((payNow() - necTotal()) * sumOf(vals) / rest), vals, 1)[0];
+};
 /* A goal can only take what it still needs, so a goal that is nearly full does not get more than that and the others pick up the rest. */
 const goalRoom = g => Math.max(0, capOf(g) - g.start);
 function capWeights(w, caps, B) {
@@ -3999,7 +4109,7 @@ const STEP_REVEAL = { id: 'reveal', part: PART.spend, art: 'branch',
   body: () => {
     const f = planFacts(), play = f.play, wk = roundTo(play / 4.35), seg = (cls, v) => (v > 0 ? `<div class="seg-b ${cls}" style="flex-grow:${v}"></div>` : '');
     if (f.st === 'nopay') return `<div class="tour-reveal"><b>${fmt(play)}</b><span>a month, sample</span></div>
-      <p>No pay entered, so every number here is a sample. Play money is the fun jar, worked out after bills and goals. Add pay under Salary.</p>`;
+      <p>No pay entered, so every number here is a sample. Play money is the fun jar, worked out after bills and goals. Add your pay under Plan, Money in, or tap Back to enter it here.</p>`;
     if (f.st === 'over') return `<div class="tour-reveal neg"><b>${fmt(-f.L)}</b><span>short a month</span></div>
       <p>Plan spends <b>${fmt(f.J.out)}</b>; pay is <b>${fmt(f.inc)}</b>.${play > 0 ? '' : ' Nothing left, so no play money yet.'}</p>
       ${ledgerHTML(f)}
@@ -4166,7 +4276,10 @@ const IMP_HOW = () => `<details class="src-how"><summary>How to get your stateme
   ${sym() === '¥' ? '<p>Japanese banks: 入出金明細 then CSVダウンロード. Card apps: 利用明細 then screenshots of each month.</p>' : ''}
   <p>Credit cards: the last statement (CSV or screenshots). Cash spending: add it on the review screen.</p>
   <p>Nothing is stored. Files go to Claude once, the numbers come back, the files are forgotten.</p></div></details>`;
-const STEP_SOURCE = { id: 'source', part: PART.money, setup: true, title: 'Your statements', next: false,
+/* the footer's own button is the way past this screen without statements: a plain "Type numbers instead" (or "Not now" when opened from Home),
+   so nobody has to find the small link at the foot of a long screen. Reading files moves on by itself. */
+const STEP_SOURCE = { id: 'source', part: PART.money, setup: true, title: 'Your statements', next: () => (impOnly ? 'Not now' : 'Type numbers instead'), nextPlain: true,
+  leave: d => { if (d > 0) { impDraft = null; if (impCtl) impCtl.abort(); } }, /* moving on by hand drops a draft and stops a read still running */
   body: () => { acctInit(); return `<p>One box per account: your bank, each card, each wallet. Name each the way you say it, and the app will too. Put in the last 2 or 3 months of each: PDF, CSV or Excel exports, or screenshots of the transaction list. The numbers come out exact, and your history fills in.</p>
     <div id="srcUploadPanel">
       <p class="cap src-here" id="impHere" hidden></p>
@@ -4188,7 +4301,7 @@ const STEP_SOURCE = { id: 'source', part: PART.money, setup: true, title: 'Your 
       </div>
     </details>
     ${IMP_HOW()}
-    <p class="cap">${impOnly ? '<button type="button" class="link" id="srcSkip">Not now</button>' : 'No statements at hand? <button type="button" class="link" id="srcSkip">Type the numbers instead</button>. Receipts takes statements any time.'}</p>`; },
+    <p class="cap">${impOnly ? '<button type="button" class="link" id="srcSkip">Not now</button>' : 'No statements at hand? <button type="button" class="link" id="srcSkip">Type the numbers instead</button>. Receipts takes statements any time, so this can wait.'}</p>`; },
   after: () => {
     const body = $('#tourBody');
     /* where Claude can read files, the upload is the screen. Where it cannot (a copy without the relay or a sign-in), the any-AI route takes over. */
@@ -4494,7 +4607,8 @@ async function importRead() {
     const merchants = stmtMerchants(stmtMerge(reads).rows);
     stmtPaintProgress(jobs, `Sorting ${merchants.length} ${merchants.length === 1 ? 'merchant' : 'merchants'} into categories.`);
     const catMap = await stmtCategorize(merchants, impCtl.signal);
-    impDraft = stmtDraft(reads, catMap, jobs); impAnswers = {}; impAccts.forEach(a => { a.files = []; }); bot.remove(); stmtPaintProgress([]); sfx('next'); gotoStep('review');
+    if (impCtl && impCtl.signal.aborted) throw { code: 'cancelled' };
+    impDraft = stmtDraft(reads, catMap, jobs); impAnswers = {}; impAccts.forEach(a => { a.files = []; }); bot.remove(); stmtPaintProgress([]); sfx('next'); if (tourIsOpen && TS[tourN] && TS[tourN].id === 'source') gotoStep('review');
   } catch (e) {
     const code = e && e.code;
     if (code === 'cancelled') { bot.remove(); stmtPaintProgress([]); }
@@ -5544,7 +5658,7 @@ function wireTx(v) {
 }
 
 /* the recovery-code link on the first screen: shows only where a cloud copy can exist; a code loads the numbers and closes the setup */
-const restoreHTML = () => `<p class="cap tour-restore" id="tourRestore" hidden><button type="button" class="link" id="tourRestoreBtn">Used this before on another phone? Enter your recovery code.</button></p>
+const restoreHTML = () => `<p class="cap tour-restore" id="tourRestore" hidden>Used this before on another phone? <button type="button" class="link" id="tourRestoreBtn">Enter your recovery code</button></p>
       <div class="tour-restore-in" id="tourRestoreIn" hidden><div class="row-btns inv-row"><input class="txt" id="tourVaultIn" type="text" autocomplete="off" spellcheck="false" placeholder="MHR-XXXX-XXXX-XXXX-XXXX-XXXX" aria-label="Recovery code" maxlength="40"><button type="button" class="btn small solid" id="tourVaultUse">Load</button></div><p class="cap" id="tourVaultMsg" role="status"></p></div>`;
 function wireRestore() {
   relayHealth().then(h => { const p = $('#tourRestore'); if (p && h && h.vault && tourMode === 'full' && pristine()) p.hidden = false; });
@@ -5588,7 +5702,7 @@ const TOUR = [
     body: () => {
       if (S.ui.setup) {
         const f = planFacts();
-        const line = f.st === 'over' ? `Plan exceeds pay by <b>${fmt(-f.L)}</b>. No play money yet. Lower a bill under Plan.`
+        const line = f.st === 'over' ? `Plan exceeds pay by <b>${fmt(-f.L)}</b>.${f.play > 0 ? ` Play money is ${fmt(f.play)}, but the month still comes up short.` : ' No play money yet.'} Under Plan: lower a bill or a goal, or add income.`
           : f.play <= 0 ? 'No play money in the plan. Raise the Play line under Plan.'
           : f.st === 'spare' ? `Play money <b>${fmt(f.play)}</b> a month. <b>${fmt(f.L)}</b> of pay is unassigned: raise a goal or add to play money.`
           : `Play money <b>${fmt(f.play)}</b> a month, to spend without guilt. All other pay is assigned.`;
@@ -5609,12 +5723,16 @@ const TOUR = [
       }
       const m = calcAll(S).byYm[sel], pay = m.a + m.b + m.side, L = m.pool.left;
       const zero = S.ui.preset === 'blank' || !!S.ui.cleared;
-      const msg = !(S.ui.done && S.ui.done.pay) || pay <= 0 ? (zero ? 'Pay skipped. Everything is zero until you add numbers.' : 'Pay skipped. Numbers are samples until you add yours.')
+      const dn = S.ui.done || {}, billsIn = !!dn.bills || Array.isArray(S.ui.sb); /* the bill screens were answered (even if left at zero) */
+      const msg = !dn.pay || pay <= 0 ? (zero ? 'Pay skipped. Everything is zero until you add numbers.' : 'Pay skipped, so the pay shown is a sample until you add yours: Plan, Money in, Salary. Or Help, Guided setup, to come back here.')
         : L > 0 ? `Pay entered. <b>${fmt(L)}</b> is unassigned: raise a goal or add to play money.`
-        : L < 0 ? `Pay entered. The sample plan exceeds pay by <b>${fmt(-L)}</b> because bills are still samples. Enter your real bills next.`
+        : L < 0 ? `Pay entered. The ${billsIn ? 'plan' : 'sample plan'} exceeds pay by <b>${fmt(-L)}</b>${billsIn ? '' : ' because bills are still samples'}. ${billsIn ? 'Lower a bill under Plan.' : 'Enter your real bills next.'}`
         : 'Pay entered. All of it is assigned.';
+      const bills = zero ? 'Bills and goals are empty. Open Plan, Necessities, and enter what you pay.'
+        : billsIn ? (necTotal() > 0 ? 'Your bills are in. Any line left at zero can be set under Plan, Necessities.' : 'Your bills are all at zero so far. Set each line under Plan, Necessities.')
+        : 'Bills and goals are still samples. Open Plan, Necessities, and set each line. Or use <b>Zero all</b> in Settings.';
       return `${homeScene()}<p>${msg}</p>
-      <p>${zero ? 'Bills and goals are empty. Open Plan, Necessities, and enter what you pay.' : 'Bills and goals are still samples. Open Plan, Necessities, and set each line. Or use <b>Zero all</b> in Settings.'}</p>
+      <p>${bills}</p>
       <p>Help (bottom right) has the video and the setup.</p>`;
     },
     after: () => {
@@ -5660,8 +5778,8 @@ function renderTour(dir) {
   body.classList.remove('in-r', 'in-l'); if (dir) { void body.offsetWidth; body.classList.add(dir > 0 ? 'in-r' : 'in-l'); }
   const setupRun = tourMode === 'full' && TS.some(x => x.setup);
   $('#tourSkip').textContent = setupRun ? 'Finish later' : 'Skip'; $('#tourSkip').hidden = !!t.last && setupRun;
-  $('#tourBack').hidden = tourN === 0; $('.tour-foot').classList.toggle('last', !!t.last);
-  const nx = $('#tourNext'), label = typeof t.next === 'function' ? t.next() : t.next; nx.hidden = label === false; nx.textContent = label || 'Next'; $('#tourAlt').hidden = !(t.last && !S.ui.setup);
+  $('#tourBack').hidden = tourN === 0; $('.tour-foot').classList.toggle('last', !!t.last); $('#tour').classList.toggle('last', !!t.last);
+  const nx = $('#tourNext'), label = typeof t.next === 'function' ? t.next() : t.next; nx.hidden = label === false; nx.textContent = label || 'Next'; nx.classList.toggle('solid', !t.nextPlain); $('#tourAlt').hidden = !(t.last && !S.ui.setup);
   paintSnd();
   $$('#tour .cs').forEach(e => { e.textContent = sym(); });
   if (t.id === 'video') wireHello(); else helloStop();
@@ -5746,7 +5864,7 @@ function tourStep(d) {
   }
   if (tourJump) { const j = TS.findIndex(s => s.id === tourJump); tourJump = null; if (j >= 0) nx = j; }
   tourN = Math.max(0, Math.min(TS.length - 1, nx)); renderTour(d); sfx(d > 0 ? 'next' : 'back');
-  if (d > 0 && TS[tourN].id === 'reveal' && havePay()) { celebrate('big', 'This is yours to spend.'); sfx('fanfare'); }
+  if (d > 0 && TS[tourN].id === 'reveal' && havePay()) { const f = planFacts(); if (f.st !== 'over' && f.play > 0) { celebrate('big', 'This is yours to spend.'); sfx('fanfare'); } }
 }
 function gotoStep(id) { buildSteps(); const i = TS.findIndex(x => x.id === id); if (i < 0) return; tourN = i; renderTour(1); sfx('next'); }
 function leaveTour() { autosave(true); closeTour(false); }
@@ -5813,6 +5931,28 @@ THE PAGE
 - Yen, pesos and euros start with sample numbers made up for one salary (about 200,000 yen, 30,000 pesos or 1,650 euros a month), with every bill and goal worked out from it. Any other currency starts at zero. Samples should be replaced with real numbers. Changing the currency in Settings swaps the sample to match, but only while the numbers are untouched. Once someone has typed their own numbers, only the symbol changes.
 - Filling the page from files: in this chat there is a paperclip button. A person can add photos or screenshots of receipts, credit card statements or bank statements, or a CSV file from their bank (PDFs cannot be read here: use a screenshot of each page, or the CSV). Then they press Send. Claude reads the files and lists what it found: receipts, monthly pay, bill amounts and the money they have today. Nothing on the page changes until the person taps Add to my page, and Undo is offered right after. The files go to the person's own Claude account only when they press Send, and this page does not keep them. Only dates from November 2026 on can be added. Never say you changed anything yourself: changes happen only through that button.
 - The page works in any currency. The currency is chosen in the tour or under Settings.`;
+/* the problem report: what a fix needs and nothing private. Version, device, look, the page open, how the numbers came in, how much is
+   in the plan (counts only), and the last errors this device logged */
+function reportText() {
+  const v = ($('#verFoot') && $('#verFoot').textContent) || '', ui = S.ui || {};
+  const look = document.documentElement.getAttribute('data-theme') || 'auto', dark = matchMedia('(prefers-color-scheme: dark)').matches;
+  const errs = errLog();
+  const lines = [
+    'M.H.R.2000 problem report',
+    v,
+    `Device: ${navigator.userAgent}`,
+    `Screen: ${innerWidth}x${innerHeight}, pixel ratio ${devicePixelRatio}, look ${look}${look === 'auto' ? (dark ? ' (dark)' : ' (light)') : ''}, ${navigator.onLine ? 'online' : 'offline'}, ${matchMedia('(display-mode: standalone)').matches ? 'installed app' : 'browser tab'}`,
+    `Page: ${tab}, setup ${tourIsOpen ? 'open' : 'closed'}, numbers from ${ui.src === 'import' ? 'statements' : 'typing'}, currency ${ui.cur || '?'}`,
+    `Plan: ${S.plan.goals.length} goals, ${S.plan.lines.length} lines, ${(S.receipts || []).length} receipts, ${Object.keys(S.once || {}).length} edited months`,
+    `Storage: ${(() => { try { return (localStorage.getItem(KEY) || '').length + ' chars'; } catch (e) { return 'blocked'; } })()}, backup ${ui.bk ? 'last on ' + new Date(+ui.bk).toISOString().slice(0, 10) : 'never'}`,
+    `Errors (${errs.length}):`,
+    ...(errs.length ? errs.slice(-8).map(e => `  ${e.t.slice(0, 16).replace('T', ' ')} ${e.where}: ${e.msg}${e.at ? ' @ ' + e.at : ''}`) : ['  none logged']),
+    'What I was doing: ',
+  ];
+  return lines.join('\n');
+}
+function openReport() { const r = $('#rep'); $('#repText').value = reportText(); $('#repMsg').textContent = ''; r.hidden = false; sfx('whoosh'); $('#repCopy').focus({ preventScroll: true }); }
+function closeReport() { $('#rep').hidden = true; sfx('back'); $('#helpBtn').focus({ preventScroll: true }); }
 const ASK_SUGGEST = ['Where is my money going?', 'What would bring my goal closer?', 'What can I realistically save each month?', 'Help me plan a trip', 'Cut my play money a little', 'I spent 300 on lunch today'];
 
 function askNumbers() {
@@ -5863,7 +6003,9 @@ async function askSend(q) {
   if (askFiles.length && q === undefined) return askReadFiles(text);
   if (!text) return;
   $('#askIn').value = ''; $('#askSug').hidden = true;
-  askMsg('me', text); const bot = askMsg('ai', 'Working…'); bot.classList.add('wait');
+  /* a question sent again after the code word (or a retry) keeps its one bubble instead of repeating it */
+  const last = $('#askLog').lastElementChild, again = last && last.classList.contains('me') && last.textContent === text;
+  if (!again) askMsg('me', text); const bot = askMsg('ai', 'Working…'); bot.classList.add('wait');
   askTurns.push({ role: 'user', content: text });
   const input = asstInput();
   askCtl = new AbortController(); askSetBusy(true);
@@ -6177,6 +6319,10 @@ function wireHelp() {
   $('#helpTab').addEventListener('click', () => { setHelpMenu(false); $('#helpBtn').focus({ preventScroll: true }); openTabTour(tab); });
   $('#helpVideo').hidden = !hasHello;
   $('#helpVideo').addEventListener('click', () => { setHelpMenu(false); $('#helpBtn').focus({ preventScroll: true }); openTour('video', 'replay'); });
+  $('#helpReport').addEventListener('click', () => { setHelpMenu(false); openReport(); });
+  $('#repClose').addEventListener('click', closeReport);
+  $('#rep').addEventListener('click', e => { if (e.target === $('#rep')) closeReport(); });
+  $('#repCopy').addEventListener('click', () => copyText($('#repText').value, $('#repMsg'), 'Copied. Send it to Mako.'));
   $('#helpAsk').addEventListener('click', openAsk);
   $('#askBtn').addEventListener('click', openAsk);
   $('#askRetry').addEventListener('click', () => { askFn = null; askGone = false; openAsk(); });
@@ -7214,6 +7360,11 @@ function paintScan() {
     const b = document.createElement('button'); b.type = 'button'; b.className = 'link'; b.id = 'scanRetry'; b.textContent = 'Try again'; msg.append(' ', b);
     if (!scanOpened) { $('#scanApp').open = true; scanOpened = true; }
   }
+  /* without the buttons, the own-AI route is the way, not an alternative: its heading and first line say so */
+  const sum = $('#scanApp > summary'), lede = $('#scanApp > p.cap');
+  if (sum) sum.textContent = off ? 'Use your own AI' : 'Prefer your own AI? Use it instead';
+  if (lede) lede.textContent = off ? 'Copy one message, paste it into ChatGPT, Gemini or the Claude app with the photos, and paste its reply back here. It is checked and listed for review the same way.'
+    : 'An alternative to the buttons above, with the same result. If you would rather not send receipts through this page, or you like ChatGPT, Gemini or the Claude app better: copy one message, paste it into that AI with the photos, and paste its reply back here. It is checked and listed for review the same way.';
   $('#scanCam').disabled = $('#scanPick').disabled = scanBusy;
 }
 function scanConnect(force) {
@@ -7825,7 +7976,10 @@ function renderHero() {
   const el = $('#hHero'), r = HV.main;
   if (!r) {
     el.className = 'card hwin empty';
-    put(el, `<div class="hw-empty"><h2>No goal set</h2><p>Add a goal to see what it unlocks and when.</p><button type="button" class="btn solid" data-gw>Add goal</button></div>`);
+    /* a goal that exists but has no amount yet (the setup was left early) is not "no goal": it asks for its amount */
+    const unset = S.plan.goals.filter(g => !(g.target > 0));
+    if (unset.length) put(el, `<div class="hw-empty"><h2>${esc(unset[0].name)} has no amount yet</h2><p>Set the amount to see what each month adds and when it is full.</p><button type="button" class="btn solid" data-gset="${esc(unset[0].id)}">Set amount</button></div>`);
+    else put(el, `<div class="hw-empty"><h2>No goal set</h2><p>Add a goal to see what it unlocks and when.</p><button type="button" class="btn solid" data-gw>Add goal</button></div>`);
     return;
   }
   const g = goalById(S, r.id), pct = r.pct, fr = fracOf(r);
@@ -7872,7 +8026,9 @@ function goalRowHtml(r) {
   const st = r.state === 'ontrack' || r.state === 'full' || r.state === 'paid' ? 'good' : r.state === 'behind' || r.state === 'noeta' || r.state === 'short' ? 'warn' : 'plain';
   const stw = { ontrack: 'On track', full: 'Full', paid: 'Paid', short: 'Short', behind: 'Behind', noeta: 'Slow', eta: 'Filling', unset: 'Unset', none: '' }[r.state] || '';
   const eta = r.state === 'paid' ? `Paid ${dateLabel(g.due)}` : r.state === 'short' ? `Had ${fmt(r.had)} of ${fmt(g.target)}` : r.state === 'unset' ? 'No amount' : r.reached ? `Full ${monthLabel(r.reached)}` : `Not full in ${SPAN}`;
-  return `<li class="gd"><details data-hgid="${esc(r.id)}"${HOPEN.has(r.id) ? ' open' : ''} style="--c:var(--c${g.slot})"><summary><i class="dot"></i><span class="gd-t"><b>${esc(g.name)}</b><small>${esc(g.why || purposeFor(g))}</small></span><span class="gd-m${main ? ' main' : ''}">${esc(monthsShort(r))}</span></summary>
+  /* the small line is the reason in the person's words; a stock purpose that only repeats the name gives way to the numbers */
+  const pp = purposeFor(g), small = g.why || (pp.toLowerCase().indexOf(String(g.name).toLowerCase()) === 0 && r.target > 0 ? `${fmt(r.saved)} of ${fmt(r.target)}` : pp);
+  return `<li class="gd"><details data-hgid="${esc(r.id)}"${HOPEN.has(r.id) ? ' open' : ''} style="--c:var(--c${g.slot})"><summary><i class="dot"></i><span class="gd-t"><b>${esc(g.name)}</b><small>${esc(small)}</small></span><span class="gd-m${main ? ' main' : ''}">${esc(monthsShort(r))}</span></summary>
     <div class="gd-b"><div class="hg-b" role="img" aria-label="${r.pct} percent"><i style="width:${fracOf(r) * 100}%"></i></div>
     <p class="gd-n"><span>${fmt(r.saved)} of ${fmt(r.target)}</span><span>${esc(eta)}</span></p>${stw ? `<p class="gd-c"><em class="${st}">${stw}</em>${main ? '<span class="gd-main">Main goal</span>' : ''}</p>` : (main ? '<p class="gd-c"><span class="gd-main">Main goal</span></p>' : '')}
     <div class="row-btns"><button type="button" class="btn small" data-tab-go="goals">Edit goal</button>${!main && r.live ? `<button type="button" class="btn small" data-main="${esc(r.id)}">Set as main goal</button>` : ''}</div></div></details></li>`;
@@ -7997,7 +8153,7 @@ function renderHome() {
   checkBadges(); paintSnd(); paintBk(); paintFoot();
   if (tab !== 'home') return;
   applyHomeOrder();
-  renderNext(); renderBackupNudge(); renderStatus(); syncQuick(); renderHero(); renderSpend(); renderGoalsHome(); renderBuckets(); renderStreak(); renderBadges();
+  safe(renderNext, '#hNext'); safe(renderBackupNudge, '#hBk'); safe(renderStatus, '#hStatus'); safe(syncQuick, null, 'quick'); safe(renderHero, '#hHero'); safe(renderSpend, '#hSpend'); safe(renderGoalsHome, '#hGoals'); safe(renderBuckets, '#hBuckets'); safe(renderStreak, '#hStreak'); safe(renderBadges, '#hBadges');
   placePix(); /* the pixel plants, back in their corners after the cards were redrawn */
 }
 
@@ -8047,7 +8203,7 @@ function paintGW() {
   if (g.step === 0) {
     t = 'Goal type';
     body = `<div class="gw-chips" role="group" aria-label="Goal type">${gwKinds().map(x => `<button type="button" class="gw-chip${k && k.k === x.k ? ' on' : ''}" data-kind="${x.k}" aria-pressed="${!!(k && k.k === x.k)}"><b>${x.pick}</b><span>${x.hint}</span></button>`).join('')}</div>
-      <div class="field"><label for="gwName">Name</label><input class="txt" id="gwName" type="text" maxlength="60" value="${esc(g.name)}" placeholder="Japan trip"></div>
+      <div class="field"><label for="gwName">Name</label><input class="txt" id="gwName" type="text" maxlength="60" value="${esc(g.name)}" placeholder="${esc(S.plan.goals.some(x => /japan trip/i.test(x.name)) ? 'Name it' : 'Japan trip')}"></div>
       <div class="field"><label for="gwWhy">Why (optional)</label><input class="txt" id="gwWhy" type="text" maxlength="80" value="${esc(g.why)}" placeholder="In your words: who it is for, what it changes"><p class="cap">Shows with the goal, so the reason stays in view.</p></div>`;
   } else if (g.step === 1) {
     t = 'Amount';
@@ -8061,6 +8217,7 @@ function paintGW() {
   }
   el.innerHTML = `<div class="gw-scrim" data-gwx></div><div class="gw-card"><div class="gw-top">${dots}<button type="button" class="ask-x" data-gwx aria-label="Close">&times;</button></div>
     <h2 id="gwT">${t}</h2><div class="gw-body ${g.dir > 0 ? 'in-r' : g.dir < 0 ? 'in-l' : ''}">${body}</div>
+    <p class="cap gw-hint" id="gwHint" role="status"></p>
     <div class="gw-foot">${g.step > 0 ? '<button type="button" class="btn" data-gwback>Back</button>' : '<span></span>'}<button type="button" class="btn solid" id="gwNext" data-gwnext>${nextTxt}</button></div></div>`;
   $$('.cs', el).forEach(e => { e.textContent = sym(); });
   gwRefresh();
@@ -8070,9 +8227,13 @@ function paintGW() {
 function gwRefresh() {
   const g = GW, el = $('#gw'); if (!g || !el) return;
   const n = $('#gwNext'); if (!n) return;
-  if (g.step === 0) n.disabled = !(g.kind && g.name.trim());
-  else if (g.step === 1) n.disabled = !(+g.cost > 0);
-  else { const p = gwPlan(), pe = $('#gwPlan'); if (pe) { pe.innerHTML = p.txt; pe.classList.toggle('bad', !!p.bad); } n.disabled = !!p.bad || !(+g.cost > 0); }
+  /* the button stays tappable: a tap too early says what is missing instead of doing nothing */
+  let wait = '';
+  if (g.step === 0) wait = !g.kind ? 'Pick a goal type first.' : !g.name.trim() ? 'Give the goal a name.' : '';
+  else if (g.step === 1) wait = !(+g.cost > 0) ? 'Enter the total cost.' : '';
+  else { const p = gwPlan(), pe = $('#gwPlan'); if (pe) { pe.innerHTML = p.txt; pe.classList.toggle('bad', !!p.bad); } wait = p.bad ? 'Change the date or the amount first.' : !(+g.cost > 0) ? 'Enter the total cost.' : ''; }
+  n.classList.toggle('dim', !!wait); n.setAttribute('aria-disabled', String(!!wait)); n.dataset.wait = wait;
+  const h = $('#gwHint'); if (h && !wait) h.textContent = '';
   if (typeof dpSync === 'function') dpSync(el);
 }
 function gwInput(e) {
@@ -8082,12 +8243,14 @@ function gwInput(e) {
   gwRefresh();
 }
 function gwNext() {
-  const g = GW; if (!g) return; const n = $('#gwNext'); if (n && n.disabled) { sfx('off'); return; }
+  const g = GW; if (!g) return; const n = $('#gwNext'); if (n && n.dataset.wait) { sfx('off'); const h = $('#gwHint'); if (h) h.textContent = n.dataset.wait; return; }
   if (g.step < 2) { g.step++; g.dir = 1; sfx('next'); paintGW(); return; }
   gwFinish();
 }
 function gwFinish() {
   const g = GW, k = g.kind; if (!g || !k) return;
+  /* the goal already leading Home stays the main goal; a new one does not take its place unasked */
+  if (!(S.ui.main && goalById(S, S.ui.main)) && HV && HV.main && goalById(S, HV.main.id)) S.ui.main = HV.main.id;
   const id = addGoal(S, g.name.trim() || k.name); if (!id) { closeGoalWizard(); return; }
   updateGoal(S, id, { target: g.cost, start: g.saved || 0, due: k.em ? '' : g.due, why: g.why || '' });
   if (k.em) updateGoal(S, id, { emergency: true });
@@ -8122,6 +8285,7 @@ function wireHome() {
     const d = $('#hDate').value || todayStr(), a = +$('#hAmt').value, c = $('#hCat').value, n = $('#hNote').value, msg = $('#hMsg');
     if (!(a > 0)) { msg.textContent = 'Enter an amount.'; $('#hAmt').focus(); sfx('off'); return; }
     if (!validDate(d) || MONTHS.indexOf(d.slice(0, 7)) < 0) { msg.textContent = `Date must be ${monthLabel(START)} to ${monthLabel(END)}.`; return; }
+    if (d > todayStr() && !futureOk(d, msg, $('#hSave'))) { const dt = $('.hmore'); if (dt) dt.open = true; return; }
     if (c === CAT_NEW) { msg.textContent = 'Add the new category, or pick one from the list.'; $('#hNewName').focus(); sfx('off'); return; }
     if (needTitle(c, n)) { const dt = $('.hmore'); if (dt) dt.open = true; msg.textContent = 'Add a short title, e.g. “Vet bill”.'; $('#hNote').focus(); sfx('off'); return; }
     const first = !(S.receipts || []).length, nm = c === 'other' ? 'Other' : (lineByKey(S, c) || { name: 'Other' }).name;
@@ -8134,6 +8298,8 @@ function wireHome() {
   $('#hCat').addEventListener('change', () => { catPicked('h'); syncOtherTitle('hCat', 'hNote'); $('#hMsg').textContent = ''; if ($('#hCat').value === 'other') { const dt = $('.hmore'); if (dt) dt.open = true; const hn = $('#hNote'); if (hn) hn.focus(); } });
   $('#p-home').addEventListener('click', e => {
     if (e.target.closest('[data-gw]')) { openGoalWizard(); return; }
+    /* a goal without an amount: open its editor on Goals, scrolled into view */
+    const gs = e.target.closest('[data-gset]'); if (gs) { editGoal = gs.dataset.gset; buildGoals(); switchTab('goals'); const ed = $(`#goalCards [data-gid="${gs.dataset.gset}"]`); if (ed) requestAnimationFrame(() => { ed.scrollIntoView({ block: 'start', behavior: 'smooth' }); const f = $('input[data-g="target"]', ed); if (f) f.focus({ preventScroll: true }); }); return; }
     if (e.target.closest('[data-checkin]')) { const r = markWeek(); persist(); render(); sfx('sparkle'); if (r) celebrate(WK_MILE.indexOf(r.n) >= 0 && r.n > 1 ? 'med' : 'small', r.n > 1 ? `Checked in. Streak: ${r.n} weeks.` : 'Checked in. Streak: week 1.'); return; }
     if (e.target.closest('[data-hidenext]')) { S.ui.sampleHidden = true; persist(); render(); return; }
     const hm = e.target.closest('[data-hidemonth]'); if (hm) { S.ui.mcSeen = hm.dataset.hidemonth; persist(); render(); return; }
@@ -8164,6 +8330,7 @@ function wireHome() {
    Every amount box (the ones with the currency sign in front) becomes a text box that shows 12,345.
    Its .value still reads back as a plain number, so nothing else in the page has to know. */
 const NATIVE_VALUE = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+const COMMA_DEC = ['€', 'R$', 'kr', 'zł', 'R']; /* currencies usually written with a decimal comma */
 const withCommas = s => { s = String(s == null ? '' : s); const m = s.match(/^(\d*)(\.\d*)?$/); return m ? m[1].replace(/\B(?=(\d{3})+(?!\d))/g, ',') + (m[2] || '') : s; };
 const isMoneyBox = el => !!el && el.tagName === 'INPUT' && el.type === 'number' && !!el.parentElement && el.parentElement.classList.contains('inp') && !!el.parentElement.querySelector(':scope > .yen');
 function caretEnd(el) {
@@ -8184,8 +8351,9 @@ function moneyUp(el) {
 function moneyUpAll(root) { $$('input[type=number]', root || document).forEach(el => { if (isMoneyBox(el)) moneyUp(el); }); }
 function moneyTyped(el, ev) {
   let raw = NATIVE_VALUE.get.call(el); const pos = el.selectionStart == null ? raw.length : el.selectionStart;
-  /* a comma typed by hand is somebody's decimal point */
-  let at = pos; if (ev && ev.data === ',' && raw.charAt(pos - 1) === ',') raw = raw.slice(0, pos - 1) + '.' + raw.slice(pos);
+  /* a comma typed by hand: a decimal point where the currency writes decimals that way (12,50 euro), otherwise a thousands separator
+     (1,200 pesos is twelve hundred, never one peso twenty) and the box regroups it on its own */
+  let at = pos; if (ev && ev.data === ',' && raw.charAt(pos - 1) === ',') { const dec = COMMA_DEC.indexOf(sym()) >= 0; raw = raw.slice(0, pos - 1) + (dec ? '.' : '') + raw.slice(pos); if (!dec) at = pos - 1; }
   const sig = t => t.replace(/[^\d.]/g, '');
   let all = sig(raw), n = sig(raw.slice(0, at)).length;
   const dot = all.indexOf('.');
@@ -8240,7 +8408,7 @@ function wire() {
     if (r) restructure(); else render();
   });
   $('#hideSample').addEventListener('click', () => { S.ui.sampleHidden = true; persist(); render(); });
-  $('#showStart').addEventListener('click', () => { S.ui.sampleHidden = false; persist(); switchTab('home'); });
+  $('#showStart').addEventListener('click', () => { delete S.ui.sampleHidden; delete S.ui.exactHidden; persist(); switchTab('home'); });
   /* buttons that jump somewhere, wherever they are on the page */
   document.addEventListener('click', e => {
     const o = e.target.closest('[data-open]'); if (o) { openRow(o.dataset.open); return; }
@@ -8397,7 +8565,7 @@ function wire() {
       clearTimeout(t); t = 0; b.textContent = orig; run();
     });
   };
-  const blank = () => { S = blankState(S); S.ui.cleared = true; delete S.ui.setup; delete S.ui.src; delete S.ui.imp; editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = 'All zero. Start with salary.'; select(START); if (tab !== 'month') switchTab('month'); };
+  const blank = () => { S = blankState(S, sampleOn()); S.ui.cleared = true; delete S.ui.setup; delete S.ui.src; delete S.ui.imp; editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = 'All zero. Start with salary.'; select(START); if (tab !== 'month') switchTab('month'); };
   twoStep($('#blankBtn'), 'Tap again to zero all', blank);
   twoStep($('#blankTop'), 'Tap again to zero all', blank);
   twoStep($('#bkReset'), 'Tap again to restore', () => { const old = S, u = S.ui; S = presetState(u.cur); S.ui = Object.assign({}, u, { preset: S.ui.preset, sampleHidden: false, done: {} }); delete S.ui.cleared; delete S.ui.setup; delete S.ui.gset; delete S.ui.sb; delete S.ui.tourAt; delete S.ui.src; delete S.ui.imp; S.receipts = old.receipts; editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = 'Samples restored.'; });
@@ -8422,7 +8590,11 @@ function wire() {
   const dock = $('#dock');
   if ('IntersectionObserver' in window) new IntersectionObserver(es => { const en = es[0]; dock.classList.toggle('on', tab === 'month' && !en.isIntersecting && en.boundingClientRect.top < 0); }).observe($('#hero'));
   document.addEventListener('visibilitychange', () => { if (document.hidden) flush(); });
-  addEventListener('pagehide', () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* no storage */ } mirrorOut(); clearTimeout(vaultTimer); vaultPush(); });
+  /* the installable app: a newer version took over underneath; offer the reload, save first */
+  addEventListener('mhr:update', () => { const u = $('#upd'); if (u) u.hidden = false; });
+  if ($('#updGo')) $('#updGo').addEventListener('click', () => { flush(); location.reload(); });
+  /* on the way out, write this tab's copy unless another tab has saved a newer one since (then this tab's is the stale one) */
+  addEventListener('pagehide', () => { try { if (!storedIsNewer()) localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* no storage */ } mirrorOut(); clearTimeout(vaultTimer); vaultPush(); });
   addEventListener('hashchange', () => { const h = location.hash.slice(1); if (MONTHS.includes(h) && h !== sel) select(h); else if (h.indexOf('move=') === 0) { moveRead(); if (moveIn) { if (!hasData(S)) moveApply(); else { if (tab !== 'home') switchTab('home'); renderBackupNudge(); } } } });
 }
 
@@ -8444,7 +8616,15 @@ recoverMirror().then(() => vaultCheck()); paintBk();
 <script>
 /* Lets the page work offline once it has been opened. Skipped when the file is opened straight from a folder. */
 if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
-  window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
+  window.addEventListener('load', function () {
+    var had = !!navigator.serviceWorker.controller;
+    navigator.serviceWorker.register('sw.js').then(function (reg) {
+      /* a page kept open for days: look for a newer version each time it comes back into view */
+      document.addEventListener('visibilitychange', function () { if (!document.hidden && reg.update) reg.update().catch(function () {}); });
+    }).catch(function () {});
+    /* a newer version took over while this page was open: the page offers a reload (never forces one) */
+    navigator.serviceWorker.addEventListener('controllerchange', function () { if (had) window.dispatchEvent(new CustomEvent('mhr:update')); had = true; });
+  });
 }
 </script>
 </body>

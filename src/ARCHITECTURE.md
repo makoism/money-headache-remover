@@ -75,7 +75,12 @@ All `ui*.js` files share one scope (one IIFE) in the order set in `build.sh`. Fu
 | The category words | `STMT_CATS`, `STMT_BILL_CATS`, `STMT_LINE` in `stmt.js`; the stub's keyword map in `../site/tests/stub_anthropic.js` for the tests |
 | Which files the AI can read | `IMG_TYPES` and `DOC_LIMITS` in `ui41.js` (PDFs go up as document blocks on the relay route only; `askDoc` in `ui46.js` is null elsewhere), mirrored by `MAX_DOCS` in `../site/functions/api/ai.js` |
 | What the assistant may do | `ASST_GUIDE` (the list Claude reads) and `asstCheck` (the checked actions) in `ui4a.js`; both must agree; `asstPicture` is what it knows |
-| The Home "Next" card and the finish-last-month nudge | `renderNext` and `monthToClose` in `ui6.js` |
+| The Home "Next" card and the finish-last-month nudge | `renderNext` and `monthToClose` in `ui6.js`; `done.bills` is set when a bill amount is typed, when no bills are ticked, or when the jars screen is passed (ticking alone is not entering); `Show first steps` in Settings brings a hidden card back |
+| Goal money in the setup | `ltsBudget` in `ui45s.js` (the Long-Term Savings jar's money, by the jars screen's own arithmetic: whole percents of the pay the bills leave); `settleGoals` gives a lone goal the whole jar (capped by what it still needs), the split screen (`STEP_SPLIT`) shares it between two or more |
+| A card that hit a snag, the error log, Report a problem | `safe(fn, host, where)`, `logErr`, `errLog` (`mhr-errlog`, last 12) in `ui0.js`; `reportText`, `openReport` in `ui46.js` (version, device, screen, look, counts, last errors; no money) |
+| Two tabs, a clock set back, a newer version online | `storedIsNewer`, the `storage` listener and `adoptOther` in `ui0.js` (`persist` only ever raises `rev`); the update offer `#upd` (`mhr:update` from the registration script in `../pwa/make_pwa.py`, handled in `ui5.js`) |
+| Typed commas in amount boxes | `moneyTyped` in `ui6.js`: a comma is a decimal point only for `COMMA_DEC` currencies, otherwise dropped (the box regroups thousands itself) |
+| A receipt dated after today | `futureOk` in `ui4.js` (asks once, logs on the second tap); `selByReceipt` lets the Plan pages return to the month in hand after the list followed a receipt into another month |
 | AI limits, models, the code word | the Cloudflare project's Variables (see `../site/SETUP.md`) |
 | Colours, spacing | variables at the top of `style.css` |
 | Sample numbers per currency | `presetState` in `model.js` |
@@ -86,6 +91,7 @@ All `ui*.js` files share one scope (one IIFE) in the order set in `build.sh`. Fu
 - The relay request shape (`functions/api/ai.js` validate) and `relayFn` in `ui41.js` must agree. The vault record shape (`functions/api/vault`) and `ui42.js` must agree.
 - Storage key `money-map-template-v2` and the shape of `S`: only add fields; `normalize` fills defaults, so older saved copies keep loading.
 - `model.js` outputs feed every screen; any change must pass the full number checks.
+- `rev` in the saved copy only goes up (`persist`); a tab never writes over a newer copy, so a clock set back or a second tab cannot lose a save.
 
 ## Rules for new code
 1. **Idle is zero.** No `setInterval`, no polling, no `requestAnimationFrame` loops except while an animation is visibly running. A MutationObserver callback must never write to the DOM unconditionally (it would re-trigger itself).
@@ -99,12 +105,13 @@ All `ui*.js` files share one scope (one IIFE) in the order set in `build.sh`. Fu
 ## Checks and release
 ```
 ./check.sh          # about 1 minute: build, syntax, main suite, safety tests, idle and speed guard
-./check.sh full     # adds all regression scripts and the number checks (about 15 minutes); a script that cannot start counts as a failure
+./check.sh full     # adds all regression scripts, the number checks and the installable app (about 25 minutes); a script that cannot start counts as a failure. Run nothing else that opens a browser meanwhile.
 cd ../site && ./tests/dev.sh && node tests/relay.test.js && node tests/page_relay.js && node tests/page_vault.js && node tests/page_import.js   # the server and the hosted page
 ```
 Site release: `cd ../site && ./build_site.sh`, copy into the GitHub clone (`/home/claude/money-headache-remover`), commit, push `main`; Cloudflare deploys within a minute; check `/api/health` and the Version stamp on the live address.
-Release: edit source, update `VERSION`, `./check.sh full`, rebuild the app package (`cd ../pwa && python3 make_pwa.py`, test with `node /tmp/team_pwa.js`, 8 PASS expected), publish (`list_files`, `get_artifact`, `publish_files` with `mode: patch` and the current live version), check the live page, add a dated entry to the Project doc.
+Release: edit source, update `VERSION`, `./check.sh full` (it builds and tests the app package too), publish (`list_files`, `get_artifact`, `publish_files` with `mode: patch` and the current live version), check the live page, add a dated entry to the Project doc.
 
 ## Known limits
 - In the artifact, data lives in the browser (localStorage plus a second copy in IndexedDB); clearing site data removes both; only a backup file survives. On the site, the optional cloud copy survives anything as long as the person keeps the recovery code. The artifact cannot reach the relay or the vault (its pages may not call other hosts).
 - Sounds were only measured offline, never heard on a real speaker. Not tested on a real phone or iPhone Safari.
+- The customer-experience pass (v35.1) walked the page as a new person on a phone (`/tmp/v36/ux_*.js`: naive and filled setups, the site's statement path, every tab and sheet, a crawl that taps every control). `/tmp/v36/ux_test.js` keeps what it fixed; redo the walk after any change to the setup's order or to Home.

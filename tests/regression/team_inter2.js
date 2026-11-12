@@ -48,7 +48,7 @@ const puppeteer = require('/home/claude/work/tools/node_modules/puppeteer-core')
   await p.click('input[name=tourCur][value="₱"]'); await w(150);
   ok('back to pesos', (await p.$eval('input[name=tourCur]:checked', e => e.value)) === '₱' && (await val('#tourCurMore')) === '');
   await p.click('#tourNext'); await w(250);
-  ok('screen 3 is Your statements, with the typed path as a link', (await q('#tourTitle')) === 'Your statements' && (await p.$eval('#tourNext', e => e.hidden)));
+  ok('screen 3 is Your statements, with the typed path in the footer', (await q('#tourTitle')) === 'Your statements' && !(await p.$eval('#tourNext', e => e.hidden)) && (await q('#tourNext')) === 'Type numbers instead');
   await p.evaluate(() => document.querySelector('#srcSkip').scrollIntoView({ block: 'center' })); await p.click('#srcSkip'); await w(250);
   const fill = { rent: 9000, utilities: 1500, food: 6000 };
   for (let g = 0; g < 60; g++) {
@@ -190,10 +190,10 @@ const puppeteer = require('/home/claude/work/tools/node_modules/puppeteer-core')
   ok('Done closes the editor', (await p.$$eval('.gform', e => e.length)) === 0);
   await p.click('#addGoalBtn'); await w(600);
   ok('Add a goal opens the guided sheet at its first step', await p.$eval('#gw', e => !e.hidden) && (await p.$$eval('.gw-chip', e => e.length)) >= 5);
-  ok('the sheet cannot go on until something is chosen', await p.$eval('#gwNext', e => e.disabled));
+  ok('the sheet cannot go on until something is chosen', await p.$eval('#gwNext', e => e.getAttribute('aria-disabled') === 'true'));
   await p.click('.gw-chip:last-child'); await w(250);
   await p.$eval('#gwName', e => { e.focus(); e.select(); }); await p.keyboard.press('Backspace'); await p.type('#gwName', 'Laptop'); await p.click('#gwNext'); await w(450);
-  ok('step two asks how much it is', (await p.$$eval('.gw-card input[data-mny]', e => e.length)) >= 1 && await p.$eval('#gwNext', e => e.disabled));
+  ok('step two asks how much it is', (await p.$$eval('.gw-card input[data-mny]', e => e.length)) >= 1 && await p.$eval('#gwNext', e => e.getAttribute('aria-disabled') === 'true'));
   await p.type('#gwCost', '36000'); await w(150); await p.click('#gwNext'); await w(450);
   ok('step three shows a plan line and a month picker button', (await q('#gwPlan')).length > 10 && (await p.$$eval('#gwDue-btn', e => e.length)) === 1);
   await p.click('#gwNext'); await w(900);
@@ -238,7 +238,9 @@ const puppeteer = require('/home/claude/work/tools/node_modules/puppeteer-core')
   await set('#rcDate', '2020-01-01', 'change'); await p.type('#rcAmt', '5'); await p.click('#rcSave'); await w(200);
   ok('a date outside the months is refused', (await q('#rcMsg')).includes('Date must be') && (await p.$$eval('#rcList .rc', e => e.length)) === 2);
   await p.$eval('#rcAmt', e => { e.value = ''; });
-  await set('#rcDate', '2026-12-02', 'change'); await p.type('#rcAmt', '90'); await p.select('#rcCat', 'other'); await p.type('#rcNote', 'Vet bill'); await p.click('#rcSave'); await w(450);
+  await set('#rcDate', '2026-12-02', 'change'); await p.type('#rcAmt', '90'); await p.select('#rcCat', 'other'); await p.type('#rcNote', 'Vet bill'); await p.click('#rcSave'); await w(300);
+  ok('a date after today asks first', (await q('#rcMsg')).includes('in the future') && (await p.$$eval('#rcList .rc', e => e.length)) === 2);
+  await p.click('#rcSave'); await w(450);
   ok('a receipt in another month jumps to that month', (await q('#rcTitle')) === 'Receipts, December 2026' && (await p.$$eval('#rcList .rc', e => e.length)) === 1);
   ok('Other is a valid category and keeps its title', (await q('#rcList .rc')).includes('Other') && (await q('#rcList .rc')).includes('Vet bill'));
   await p.select('#rcMonth', '2026-11'); await w(300);
@@ -253,9 +255,9 @@ const puppeteer = require('/home/claude/work/tools/node_modules/puppeteer-core')
   ok('edit loads the receipt into the form', (await val('#rcAmt')) !== '' && (await q('#rcSave')) === 'Save changes' && !(await p.$eval('#rcCancel', e => e.hidden)));
   await set('#rcAmt', '1300'); await p.click('#rcSave'); await w(350);
   ok('edit saved', (await q('#rcSum')).includes('₱1,550.50') || (await q('#rcSum')).includes('₱1,300'));
-  ok('form back to adding', (await q('#rcSave')) === 'Add receipt' && (await p.$eval('#rcCancel', e => e.hidden)));
+  ok('form back to adding', (await q('#rcSave')) === 'Log receipt' && (await p.$eval('#rcCancel', e => e.hidden)));
   await p.click('#rcList .rc [data-rcedit]'); await w(250); await p.click('#rcCancel'); await w(250);
-  ok('cancel leaves the receipt alone', (await p.$$eval('#rcList .rc', e => e.length)) === 2 && (await q('#rcSave')) === 'Add receipt');
+  ok('cancel leaves the receipt alone', (await p.$$eval('#rcList .rc', e => e.length)) === 2 && (await q('#rcSave')) === 'Log receipt');
   // delete (two taps)
   await p.click('#rcList .rc [data-rcdel]'); await w(150);
   ok('delete needs a second tap', (await p.$$eval('#rcList .rc', e => e.length)) === 2 && (await q('#rcList .rc [data-rcdel]')).startsWith('Tap again'));
@@ -306,6 +308,7 @@ const puppeteer = require('/home/claude/work/tools/node_modules/puppeteer-core')
 
   // ----- backup round trip: the backup text restores the plan; a copy without receipts leaves the receipts alone -----
   await tab('basics'); await w(300);
+  await p.evaluate(() => document.querySelector('#bkCopy').click()); await w(300);
   const full = await val('#bk');
   let parsed; try { parsed = JSON.parse(full); } catch (e) { parsed = null; }
   ok('backup text parses with the plan and the receipts', !!parsed && parsed.plan.lines.length >= 10 && parsed.plan.goals.length === 4 && Array.isArray(parsed.receipts) && parsed.receipts.length >= 1);

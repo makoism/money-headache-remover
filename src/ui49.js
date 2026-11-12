@@ -40,6 +40,11 @@ function paintScan() {
     const b = document.createElement('button'); b.type = 'button'; b.className = 'link'; b.id = 'scanRetry'; b.textContent = 'Try again'; msg.append(' ', b);
     if (!scanOpened) { $('#scanApp').open = true; scanOpened = true; }
   }
+  /* without the buttons, the own-AI route is the way, not an alternative: its heading and first line say so */
+  const sum = $('#scanApp > summary'), lede = $('#scanApp > p.cap');
+  if (sum) sum.textContent = off ? 'Use your own AI' : 'Prefer your own AI? Use it instead';
+  if (lede) lede.textContent = off ? 'Copy one message, paste it into ChatGPT, Gemini or the Claude app with the photos, and paste its reply back here. It is checked and listed for review the same way.'
+    : 'An alternative to the buttons above, with the same result. If you would rather not send receipts through this page, or you like ChatGPT, Gemini or the Claude app better: copy one message, paste it into that AI with the photos, and paste its reply back here. It is checked and listed for review the same way.';
   $('#scanCam').disabled = $('#scanPick').disabled = scanBusy;
 }
 function scanConnect(force) {

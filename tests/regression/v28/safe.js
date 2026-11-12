@@ -13,7 +13,7 @@ const open = async (init, vw = 390) => {
 };
 const idbRec = p => p.evaluate(() => new Promise(res => { const rq = indexedDB.open('money-map-safe'); rq.onerror = () => res(null); rq.onsuccess = () => { try { const g = rq.result.transaction('kv').objectStore('kv').get('state'); g.onsuccess = () => res(g.result || null); g.onerror = () => res(null); } catch (e) { res(null); } }; }));
 const lose = (p, val) => p.evaluate((k, v) => { const o = Storage.prototype.setItem; Storage.prototype.setItem = function () {}; if (v === null) localStorage.removeItem(k); else o.call(localStorage, k, v); }, KEY, val);
-const reload = async p => { await p.reload({ waitUntil: 'load' }); await w(1800); };
+const reload = async p => { await p.reload({ waitUntil: 'load' }); await w(2600); }; /* the second copy is read through IndexedDB, slow under test load */
 const coach = async p => { for (let i = 0; i < 12; i++) { const vis = await p.evaluate(() => { const c = document.querySelector('#co'); return !!c && !c.hidden && getComputedStyle(c).display !== 'none' && c.getBoundingClientRect().width > 0; }); if (!vis) return; await p.click('#coNext').catch(() => {}); await w(450); } };
 const keep = p => p.evaluate(() => sessionStorage.setItem('__k', '1'));
 const tourOpen = p => p.evaluate(() => { const t = document.querySelector('#tour'); return !!t && !t.hidden; });

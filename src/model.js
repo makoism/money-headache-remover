@@ -249,9 +249,11 @@ const hasOwnMonthly = (S, id) => !!(S.steps['goal:' + id] || Object.keys(S.once)
 
 /* every amount in the plan can be cleared with "start from zero"; names and structure stay */
 const MONEY_CFG = ['bankStart', 'minBank', 'ceiling'];
-function blankState(S) {
-  const f = freshState(); f.ui = Object.assign({}, S.ui, { sampleHidden: true }); f.receipts = (S.receipts || []).slice();
-  f.plan = { lines: S.plan.lines.map(l => Object.assign({}, l, { def: 0 })), goals: S.plan.goals.map(g => { const o = Object.assign({}, g, { target: 0, start: 0 }); delete o.monthly; if (o.emergency) o.stretch = 0; return o; }) };
+/* dropGoals: the sample's invented goals go; a person's own goals stay, emptied */
+function blankState(S, dropGoals) {
+  const f = freshState(); f.ui = Object.assign({}, S.ui); delete f.ui.sampleHidden; delete f.ui.exactHidden; f.receipts = (S.receipts || []).slice(); /* the Next card guides the fresh start */
+  const goals = dropGoals ? S.plan.goals.filter(g => g.emergency) : S.plan.goals;
+  f.plan = { lines: S.plan.lines.map(l => Object.assign({}, l, { def: 0 })), goals: goals.map(g => { const o = Object.assign({}, g, { target: 0, start: 0 }); delete o.monthly; if (o.emergency) o.stretch = 0; return o; }) };
   ['a', 'b', 'side'].forEach(k => { f.steps[k] = [{ from: START, v: 0 }]; });
   MONEY_CFG.forEach(k => { f.cfg[k] = 0; });
   if (S.cfg && S.cfg.aims) f.cfg.aims = Object.assign({}, S.cfg.aims);

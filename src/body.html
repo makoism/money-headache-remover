@@ -139,7 +139,7 @@
   <!-- GOALS -->
   <div id="p-goals" role="tabpanel" aria-labelledby="tab-goals" hidden>
     <div class="plan-top"><div class="subnav" role="group" aria-label="Plan pages"><button type="button" data-tab-go="month" data-sub="month">Month</button><button type="button" data-tab-go="goals" data-sub="goals">Goals</button><button type="button" data-tab-go="months" data-sub="months">All months</button></div></div>
-    <section class="card sect">
+    <section class="card sect" id="secGoals">
       <div class="head">
         <h2>Goals</h2>
         <p class="sub2" id="goalsSub"></p>
@@ -201,7 +201,7 @@
         <div class="scan-out" id="scanOut2" aria-live="polite"></div>
       </details>
     </section>
-    <section class="card sect">
+    <section class="card sect" id="secLog">
       <div class="head">
         <h2>Receipts</h2>
         <p class="sub2">Log as you spend or in a batch. <button type="button" class="link" data-scroll="rcRemind">Set reminder</button></p>
@@ -322,7 +322,7 @@
           <p class="cap">Loading replaces the numbers here with the cloud copy and keeps this device in sync with it.</p>
         </div>
         <h4>Restore</h4>
-        <textarea id="bk" aria-label="Your saved numbers" spellcheck="false"></textarea>
+        <textarea id="bk" aria-label="Your saved numbers" spellcheck="false" placeholder="Paste the backup text here"></textarea>
         <div class="row-btns">
           <button type="button" class="btn small" id="bkLoad">Load text</button>
           <button type="button" class="btn small" id="bkFileBtn">Choose file</button>
@@ -358,6 +358,15 @@
     <div class="row-btns"><button type="button" class="btn solid" id="camShot">Take photo</button><button type="button" class="btn" id="camDone" hidden>Done</button><button type="button" class="btn" id="camPick" hidden>Choose files instead</button></div>
   </div>
 </div>
+<div class="upd" id="upd" role="status" hidden><span>A newer version is ready.</span><button type="button" class="btn small solid" id="updGo">Reload</button></div>
+<div class="cam rep" id="rep" role="dialog" aria-labelledby="repT" hidden>
+  <div class="cam-in">
+    <div class="cam-top"><h2 id="repT">Report a problem</h2><button type="button" class="ask-x" id="repClose" aria-label="Close">&times;</button></div>
+    <p class="cap">Copy this and send it to Mako with what you were doing. It names the version, the device and the last errors. It holds none of your numbers.</p>
+    <textarea id="repText" readonly rows="9" spellcheck="false"></textarea>
+    <div class="row-btns"><button type="button" class="btn small solid" id="repCopy">Copy</button><span class="msg" id="repMsg" role="status"></span></div>
+  </div>
+</div>
 <div id="peek" aria-hidden="true" hidden></div>
 <div id="cheer" role="status" aria-live="polite"></div>
 <canvas id="confetti" aria-hidden="true"></canvas>
@@ -367,6 +376,7 @@
     <button type="button" id="helpTab">Explain this tab</button>
     <button type="button" id="helpSetup">Guided setup</button>
     <button type="button" id="helpVideo" hidden>Intro video</button>
+    <button type="button" id="helpReport">Report a problem</button>
     <p class="help-ver">Version @@VER@@</p>
   </div>
   <div class="help-row"><button type="button" class="help-btn ask-btn" id="askBtn">Ask</button><button type="button" class="help-btn" id="helpBtn" aria-expanded="false" aria-controls="helpMenu"><span class="q" aria-hidden="true">?</span>Help</button></div>

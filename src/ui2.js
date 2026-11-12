@@ -53,7 +53,7 @@ function renderStart() {
   const mine = !!S.ui.setup && !S.ui.cleared, zero = S.ui.preset === 'blank' || !!S.ui.cleared;
   $('#basicsSub').textContent = BASICS_SUB;
   $('#makeCap').textContent = mine ? 'These are your numbers. Change them any time. Saved in this browser only; nobody else sees them.' : zero ? 'Everything starts at zero. Type over it. Saved in this browser only.' : MAKE_CAP;
-  $('#blankBtn').hidden = zero || mine; $('#showStart').hidden = true; $('#tourOpen2').textContent = mine ? 'Tour' : 'Guided setup';
+  $('#blankBtn').hidden = zero; $('#showStart').hidden = !(S.ui.sampleHidden || S.ui.exactHidden); /* Zero all stays while there is anything to zero: Restore names it as the way to start over. Show first steps brings back a hidden Next card */ $('#tourOpen2').textContent = mine ? 'Tour' : 'Guided setup';
 }
 
 /* ---------- render ---------- */
@@ -132,10 +132,10 @@ function render() {
   });
   renderItems(m);
 
-  renderMonthTable(); renderGoals(m); renderSettings(); homeView(); renderBand(); renderHome(); queueWins(false); placePix();
+  safe(renderMonthTable, '#monthTable'); safe(() => renderGoals(m), '#goalCards'); safe(renderSettings, null, 'settings'); safe(homeView, null, 'homeView'); safe(renderBand, '#mgBand'); safe(renderHome, null, 'home'); safe(() => queueWins(false), null, 'wins'); safe(placePix, null, 'pix');
   $$('.cs').forEach(e => { e.textContent = sym(); });
-  if (tab === 'goals') drawRoad();
-  if (tab === 'receipts') renderReceipts();
+  if (tab === 'goals') safe(drawRoad, '#chartbox', 'road');
+  if (tab === 'receipts') safe(renderReceipts, null, 'receipts');
   if (typeof dpSync === 'function') dpSync();
 }
 
@@ -217,7 +217,7 @@ function readItems() {
 
 function renderSettings() {
   SETF.forEach(f => setIdle($('#st-' + f.k), cfg(S, f.k)));
-  if (tab === 'basics') setIdle($('#bk'), JSON.stringify(S));
+  /* the Restore box starts empty: it is for pasting a copy in. Copy text fills it when the clipboard is not allowed. */
 }
 
 function renderMonthTable() {
@@ -225,7 +225,7 @@ function renderMonthTable() {
   const fullIn = {}; S.plan.goals.forEach(g => { const r = C.reached[g.id]; if (g.target > 0 && r) (fullIn[r] = fullIn[r] || []).push(g); });
   const rows = C.months.map(m => {
     const st = statusOf(S, m), gs = fullIn[m.ym] || [];
-    const marks = gs.map(g => `<span class="mt-g" style="--c:var(--c${g.slot})">${HI.leaf}${esc(g.name)} full</span>`).join('');
+    const marks = gs.map(g => `<span class="mt-g" style="--c:var(--c${g.slot})" title="${esc(g.name)} full">${HI.leaf}<span>${esc(g.name)} full</span></span>`).join('');
     return `<tr data-ym="${m.ym}" class="${m.ym === sel ? 'on' : ''}" tabindex="0" aria-label="${fullLabel(m.ym)}: ${word[st]}${gs.length ? ', ' + gs.map(g => g.name + ' full').join(', ') : ''}"><td>${monthLabel(m.ym)}${marks}</td><td class="${m.pool.left < 0 ? 'neg' : ''}">${fmt(m.pool.left)}</td><td class="${m.bankEnd < cfg(S, 'minBank') ? 'neg' : ''}">${fmt(m.bankEnd)}</td><td><span class="st ${st}">${icon[st]}<span class="stw">${word[st]}</span></span></td></tr>`;
   }).join('');
   $('#monthTable').innerHTML = `<table><thead><tr><th>Month</th><th>Left</th><th>Bank, month end</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table>`;
