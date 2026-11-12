@@ -1545,7 +1545,7 @@ body.gw-open, body.co-open.gw-open { overflow: hidden; }
   </div>
 
   <p class="foot" id="footNote">Not financial advice. Sample numbers are invented. Replace them with yours.</p>
-  <p class="foot ver" id="verFoot">Version 28.3, updated Nov 12, 11:35 am</p>
+  <p class="foot ver" id="verFoot">Version 28.4, updated Nov 12, 12:05 pm</p>
 </div>
 <div class="tip" id="tip" role="tooltip"></div>
 <div class="tour" id="tour" role="dialog" aria-modal="true" aria-labelledby="tourTitle" hidden>
@@ -1564,7 +1564,7 @@ body.gw-open, body.co-open.gw-open { overflow: hidden; }
     <button type="button" id="helpTab">Explain this tab</button>
     <button type="button" id="helpSetup">Guided setup</button>
     <button type="button" id="helpVideo" hidden>Intro video</button>
-    <p class="help-ver">Version 28.3</p>
+    <p class="help-ver">Version 28.4</p>
   </div>
   <div class="help-row"><button type="button" class="help-btn ask-btn" id="askBtn">Ask</button><button type="button" class="help-btn" id="helpBtn" aria-expanded="false" aria-controls="helpMenu"><span class="q" aria-hidden="true">?</span>Help</button></div>
 </div>
@@ -3990,7 +3990,7 @@ const STMT_ROWS_SCHEMA = {
       text: { type: 'string', description: 'the description as printed, shortened to the merchant, payer or purpose' },
       amount: { type: 'number', description: 'a positive number' },
       dir: { type: 'string', enum: ['in', 'out'], description: 'in when money arrives, out when it leaves' } }, required: ['date', 'text', 'amount', 'dir'] } },
-    notes: { type: 'array', items: { type: 'string' }, description: 'up to four short notes on anything unreadable or left out' }
+    notes: { type: 'array', items: { type: 'string' }, description: 'up to two short notes, only about rows that could not be read or had to be left out; otherwise an empty list. Nothing about the currency, the balance or the file itself' }
   },
   required: ['kind', 'rows']
 };
@@ -4048,7 +4048,7 @@ async function stmtSplitText(jobs) {
   return out.map((j, i) => Object.assign(j, { id: i }));
 }
 async function stmtRunJob(job, signal) {
-  const what = job.kind === 'pdf' ? 'PDF statement' : job.kind === 'images' ? (job.files.length === 1 ? 'screenshot or photo of a statement' : 'set of screenshots of one statement (pages in order)') : job.parts ? `part ${job.part} of ${job.parts} of one statement file (the first lines are the file's title and column names)` : 'statement file';
+  const what = job.kind === 'pdf' ? 'PDF statement' : job.kind === 'images' ? (job.files.length === 1 ? 'screenshot or photo of a statement' : 'set of screenshots of one statement (pages in order)') : job.parts ? `part ${job.part} of ${job.parts} of one statement file (the first lines are the file's title and column names; no note is needed about it being a part)` : 'statement file';
   let text = null, images = null;
   if (job.kind === 'text') { let t = job.text !== undefined ? job.text : await readTextFile(job.files[0]); if (byteLen(t) > ASK_TEXT_BYTES) t = clipBytes(t, ASK_TEXT_BYTES); text = { name: job.file || job.name, text: t }; }
   else images = job.files;

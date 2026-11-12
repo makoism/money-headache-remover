@@ -15,7 +15,7 @@ const STMT_ROWS_SCHEMA = {
       text: { type: 'string', description: 'the description as printed, shortened to the merchant, payer or purpose' },
       amount: { type: 'number', description: 'a positive number' },
       dir: { type: 'string', enum: ['in', 'out'], description: 'in when money arrives, out when it leaves' } }, required: ['date', 'text', 'amount', 'dir'] } },
-    notes: { type: 'array', items: { type: 'string' }, description: 'up to four short notes on anything unreadable or left out' }
+    notes: { type: 'array', items: { type: 'string' }, description: 'up to two short notes, only about rows that could not be read or had to be left out; otherwise an empty list. Nothing about the currency, the balance or the file itself' }
   },
   required: ['kind', 'rows']
 };
@@ -73,7 +73,7 @@ async function stmtSplitText(jobs) {
   return out.map((j, i) => Object.assign(j, { id: i }));
 }
 async function stmtRunJob(job, signal) {
-  const what = job.kind === 'pdf' ? 'PDF statement' : job.kind === 'images' ? (job.files.length === 1 ? 'screenshot or photo of a statement' : 'set of screenshots of one statement (pages in order)') : job.parts ? `part ${job.part} of ${job.parts} of one statement file (the first lines are the file's title and column names)` : 'statement file';
+  const what = job.kind === 'pdf' ? 'PDF statement' : job.kind === 'images' ? (job.files.length === 1 ? 'screenshot or photo of a statement' : 'set of screenshots of one statement (pages in order)') : job.parts ? `part ${job.part} of ${job.parts} of one statement file (the first lines are the file's title and column names; no note is needed about it being a part)` : 'statement file';
   let text = null, images = null;
   if (job.kind === 'text') { let t = job.text !== undefined ? job.text : await readTextFile(job.files[0]); if (byteLen(t) > ASK_TEXT_BYTES) t = clipBytes(t, ASK_TEXT_BYTES); text = { name: job.file || job.name, text: t }; }
   else images = job.files;
