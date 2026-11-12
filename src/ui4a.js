@@ -42,6 +42,7 @@ function asstPicture(T) {
   const lines = T.plan.lines.map(l => `  ${l.key} | ${l.name} | ${JAR_WORD[l.jar] || l.jar} | ${n(val(T, l.key, ym))}${l.ends ? ' | last payment ' + l.ends : ''}`).join('\n');
   const goals = V.goals.map(r => `  ${r.id} | ${r.name}${r.emergency ? ' (emergency fund)' : ''} | goal ${n(r.target)} | saved ${n(r.saved)} | ${n(val(T, 'goal:' + r.id, ym))} a month | ${r.due ? 'needed by ' + r.due : 'no date'} | ${r.pct >= 100 ? 'full' : r.reached ? 'full in ' + monthLabel(r.reached) : 'not full within ' + SPAN}${V.main && V.main.id === r.id ? ' | main goal' : ''}`).join('\n') || '  (none)';
   const rs = receiptStats(T, ym), cats = Object.keys(rs.byKey || {}).map(k => [k, rs.byKey[k]]).sort((a, b) => b[1] - a[1]).slice(0, 6);
+  const byAcct = {}; (rs.list || []).forEach(r => { if (r.s) byAcct[r.s] = (byAcct[r.s] || 0) + r.a; }); const accLine = Object.keys(byAcct).map(k => `${k} ${n(byAcct[k])}`).join(', ');
   /* the last three months with receipts: what was logged against what was planned, so "what is realistic" has data behind it */
   const past = MONTHS.filter(x => x < ym).slice(-3).map(x => { const r = receiptStats(T, x), mm = C2.byYm[x]; if (!r.count || !mm) return null; return `${monthLabel(x, true)} ${x.slice(2, 4)}: ${r.count} receipts, ${n(r.total)} logged; play ${n(r.byJar.play || 0)} of ${n(mm.jar.play)} planned, necessities ${n(r.byJar.nec || 0)} of ${n(mm.jar.nec)} planned`; }).filter(Boolean);
   const ahead = MONTHS.filter(x => x > ym).slice(0, 12), shorts = ahead.filter(x => statusOf(T, C2.byYm[x]) === 'short'), tights = ahead.filter(x => statusOf(T, C2.byYm[x]) === 'tight');
@@ -58,9 +59,10 @@ Lines (key | name | jar | amount):
 ${lines}
 Goals (id | name | goal | saved | monthly | date | when full):
 ${goals}
-Receipts this month: ${rs.count} logged, ${n(rs.total || 0)} in all${cats.length ? '; biggest: ' + cats.map(c => `${catName(T, { c: c[0] })} ${n(c[1])}`).join(', ') : ''}
+Receipts this month: ${rs.count} logged, ${n(rs.total || 0)} in all${cats.length ? '; biggest: ' + cats.map(c => `${catName(T, { c: c[0] })} ${n(c[1])}`).join(', ') : ''}${accLine ? '; by account: ' + accLine : ''}
 Past months: ${past.length ? past.join(' / ') : 'no receipts logged before this month'}
 Home shows, in order: ${home}
+Accounts (as the person names them): ${Array.isArray(T.ui.accts) && T.ui.accts.length ? T.ui.accts.map(a => `${a.name} (${a.kind})`).join(', ') : 'none named yet'}
 Setup: ${T.ui.src === 'import' ? 'numbers came from statements' : T.ui.setup ? 'typed in the guided setup' : 'not finished'}${sampleOn() ? '; the figures are still the invented sample' : ''}`;
 }
 

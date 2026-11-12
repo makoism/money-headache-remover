@@ -53,7 +53,10 @@ const fresh = async b => { const p = await b.newPage(); const errs = []; await p
 /* run the first screens until Your statements */
 const toStmts = async p => { let hit = false; await runTour(p, P.b, async () => { if ((await title(p)) === 'Your statements') { hit = true; throw new Error('stop'); } }).catch(() => {}); return hit; };
 const vis = (p, sel) => p.evaluate(s => { const e = document.querySelector(s); return !!e && !e.hidden && !e.closest('[hidden]'); }, sel);
-const upload = async (p, files) => { const input = await p.$('#impFile'); await input.uploadFile.apply(input, files); await w(400); };
+/* the statements screen has one box per account: upload into the n-th box (0-based), name it, pick its kind, add another */
+const upload = async (p, files, box) => { const inputs = await p.$$('[data-acctfile]'); const input = inputs[box || 0]; await input.uploadFile.apply(input, files); await w(400); };
+const nameBox = async (p, i, name, kind) => { await p.evaluate((i, name, kind) => { const boxes = document.querySelectorAll('.acct'), b = boxes[i]; const ni = b.querySelector('[data-acctname]'); ni.value = name; ni.dispatchEvent(new Event('input', { bubbles: true })); if (kind) { const r = b.querySelector(`input[value="${kind}"]`); r.checked = true; r.dispatchEvent(new Event('change', { bubbles: true })); } }, i, name, kind); await w(100); };
+const addBox = async p => { await p.click('#acctAdd'); await w(250); };
 const progress = p => p.$eval('#impProg', e => e.innerText.replace(/\s+/g, ' ').trim()).catch(() => '');
 const coach = async p => { for (let i = 0; i < 12; i++) { const v = await p.evaluate(() => { const c = document.querySelector('#co'); return !!c && !c.hidden && c.getBoundingClientRect().width > 0; }); if (!v) break; await p.click('#coNext').catch(() => {}); await w(250); } };
 (async () => {
@@ -85,21 +88,28 @@ const coach = async p => { for (let i = 0; i < 12; i++) { const v = await p.eval
   ok(await toStmts(p), 'Your statements again, with the relay on');
   await w(700);
   ok((await vis(p, '#srcUploadPanel')) && (await p.$eval('#srcAiPanel', e => !e.open && /Prefer your own AI/.test(e.querySelector('summary').textContent))), 'with Claude reachable, the upload is the screen and the any-AI route is a folded alternative');
-  const sub = await p.$eval('#srcUploadSub', e => e.textContent);
+  const sub = await p.$eval('.acct .src-sub', e => e.textContent);
   ok(/CSV, Excel, PDF or screenshots/.test(sub), 'the caption names every file type on the relay route: ' + sub);
+  ok((await p.$$eval('.acct', es => es.length)) === 1 && (await p.$eval('.acct input[value="bank"]', e => e.checked)), 'one account box to start with, a bank');
   await upload(p, ['/tmp/v28/imp/locked.pdf']);
   await p.click('#impRead'); await w(2500);
   const lockOut = await p.$eval('#impOut', e => e.textContent), lockProg = await progress(p);
   ok((await title(p)) === 'Your statements' && /asks for a password/.test(lockProg) && /Nothing could be read/.test(lockOut), 'a locked PDF fails alone, with the reason on its line: ' + lockProg.slice(0, 80));
-  await p.click('#impFiles [data-imprm="0"]').catch(() => {}); await w(200);
-  await upload(p, ['/tmp/v28/imp/bank.csv', '/tmp/v28/imp/card.pdf', '/tmp/v28/wallet.xlsx', '/tmp/v28/imp/junk.xlsx']);
-  const chips = await p.$eval('#impFiles', e => e.textContent);
-  ok(/bank\.csv/.test(chips) && /card\.pdf/.test(chips) && /wallet\.xlsx/.test(chips) && /junk\.xlsx/.test(chips), 'four files in the list');
+  await p.click('.acct [data-imprm="0"]').catch(() => {}); await w(200);
+  /* three accounts, named the way the person says them: the bank, a card, a wallet (the broken workbook goes with the wallet) */
+  await nameBox(p, 0, 'BPI');
+  await upload(p, ['/tmp/v28/imp/bank.csv'], 0);
+  await addBox(p); ok((await p.$$eval('.acct', es => es.length)) === 2 && (await p.$eval('.acct:nth-child(2) input[value="card"]', e => e.checked)), 'Add another account makes a card box');
+  await nameBox(p, 1, 'Mercari Card', 'card'); await upload(p, ['/tmp/v28/imp/card.pdf'], 1);
+  await addBox(p); await nameBox(p, 2, 'GCash', 'wallet'); await upload(p, ['/tmp/v28/wallet.xlsx', '/tmp/v28/imp/junk.xlsx'], 2);
+  const chips = await p.$$eval('.acct', es => es.map(e => e.querySelector('[data-acctfiles]').textContent));
+  ok(/bank\.csv/.test(chips[0]) && /card\.pdf/.test(chips[1]) && /wallet\.xlsx/.test(chips[2]) && /junk\.xlsx/.test(chips[2]), 'each file sits in its own account box: ' + chips.map(c => c.slice(0, 30)).join(' | '));
+  ok((await p.$eval('#impRead', e => e.textContent)) === 'Read 4 files', 'the button counts the files');
   await p.click('#impRead'); await w(5000);
   ok((await title(p)) === 'Check what was found', 'the review opens after the read: ' + await title(p));
   const body = await p.$eval('#tourBody', e => e.textContent.replace(/\s+/g, ' '));
-  ok(/What was read \(40 rows\)/.test(body) && /bank\.csv \(Test Bank\): 32 rows, 2026-09-01 to 2026-10-31, 2 full months/.test(body), 'What was read lists the CSV with its rows and full months: ' + (body.match(/What was read[^)]*\)/) || [''])[0]);
-  ok(/card\.pdf \(Test Card\): 4 rows, 2026-10-01 to 2026-10-31, 1 full month/.test(body) && /wallet\.xlsx \(Test Wallet\): 4 rows/.test(body), 'the PDF and the Excel file each got their own read');
+  ok(/What was read \(40 rows\)/.test(body) && /BPI \(bank\): 1 file, 32 rows, 2026-09 to 2026-10, 2 full months/.test(body) && /bank\.csv: 32 rows, 2026-09-01 to 2026-10-31, 2 full months/.test(body), 'What was read lists the bank by the name given, with its file: ' + (body.match(/What was read.{0,120}/) || [''])[0]);
+  ok(/Mercari Card \(card\): 1 file, 4 rows, 2026-10, 1 full month/.test(body) && /GCash \(wallet\): 1 file, 4 rows/.test(body), 'the card and the wallet by their names (the broken workbook is not a read): ' + (body.match(/Mercari Card.{0,60}/) || [''])[0] + ' / ' + (body.match(/GCash \(wallet\).{0,40}/) || [''])[0]);
   ok(/junk\.xlsx: could not be read as a spreadsheet/.test(body), 'a broken workbook failed alone and is named in the review');
   rows = await p.$$eval('.imp-row', es => es.map(e => ({ on: e.classList.contains('on'), l: e.querySelector('b').textContent, a: e.querySelector('input[data-impa]').value })));
   const row = l => rows.find(r => r.l === l) || {};
@@ -121,9 +131,9 @@ const coach = async p => { for (let i = 0; i < 12; i++) { const v = await p.eval
   ok(await p.evaluate(() => document.querySelector('select[data-cat="sm supermarket makati"]').value === 'play'), 'the correction stays selected after the rebuild');
   await p.click('[data-mx="sm supermarket makati"]'); await w(300);
   const mx = await p.evaluate(() => { const x = document.querySelector('.imp-m[data-mk="sm supermarket makati"] .imp-m-x'); return { hid: x.hidden, rows: [...x.querySelectorAll('li')].map(li => li.textContent.replace(/\s+/g, ' ')) }; });
-  ok(!mx.hid && mx.rows.length === 2 && /2026-10-02/.test(mx.rows[0]) && /2,410/.test(mx.rows[0]) && /SM SUPERMARKET MAKATI/.test(mx.rows[0]) && /bank\.csv/.test(mx.rows[0]), 'tapping a merchant shows its rows as printed, newest first, with the file: ' + mx.rows.join(' | '));
+  ok(!mx.hid && mx.rows.length === 2 && /2026-10-02/.test(mx.rows[0]) && /2,410/.test(mx.rows[0]) && /SM SUPERMARKET MAKATI/.test(mx.rows[0]) && /BPI/.test(mx.rows[0]), 'tapping a merchant shows its rows as printed, newest first, with the account: ' + mx.rows.join(' | '));
   await p.screenshot({ path: '/tmp/v30/review_rows.png' });
-  ok(/Monthly amounts are the average over the months each account covers: .*Test Bank Sep 2026 to Oct 2026 \(2 full months\).*Test Card Oct 2026 \(1 full month\)/.test(body), 'the review says which months each account is averaged over: ' + (body.match(/Monthly amounts[^.]*\./) || [''])[0]);
+  ok(/Monthly amounts are the average over the months each account covers: .*BPI Sep 2026 to Oct 2026 \(2 full months\).*Mercari Card Oct 2026 \(1 full month\)/.test(body), 'the review says which months each account is averaged over, by name: ' + (body.match(/Monthly amounts[^.]*\./) || [''])[0]);
   ok(await p.$eval('#impKeep', e => e.checked), 'keeping the rows as receipts is ticked by default');
   const keepLabel = await p.$eval('.imp-keep', e => e.textContent);
   ok(/Keep the 27 spending rows as receipts/.test(keepLabel), 'the tick names the count: ' + keepLabel.slice(0, 50));
@@ -134,7 +144,8 @@ const coach = async p => { for (let i = 0; i < 12; i++) { const v = await p.eval
   ok(last('a') === 42000 && last('bill:rent') === 9000 && last('bill:net') === 1699 && last('bill:util') === 2870 && S.cfg.bankStart === 40698, 'the plan holds the exact numbers: ' + JSON.stringify([last('a'), last('bill:rent'), last('bill:net'), S.cfg.bankStart]));
   ok(S.ui.src === 'import' && S.ui.cats && S.ui.cats['sm supermarket makati'] === 'play' && S.ui.cats['meralco bill payment'] === 'util', 'the categories are remembered, corrections included');
   const rc = S.receipts || [];
-  ok(rc.length === 27 && S.ui.imp.receipts === 27 && rc.every(r => r.src === 'stmt'), 'the 27 spending rows are receipts marked as from a statement: ' + rc.length);
+  ok(rc.length === 27 && S.ui.imp.receipts === 27 && rc.every(r => r.s) && rc.some(r => r.s === 'BPI') && rc.some(r => r.s === 'Mercari Card' && /LAZADA/.test(r.n)), 'the 27 spending rows are receipts, each carrying its account by name: ' + rc.length + ' ' + [...new Set(rc.map(r => r.s))].join(','));
+  ok(Array.isArray(S.ui.accts) && S.ui.accts.map(a => a.name + ':' + a.kind).join(',') === 'BPI:bank,Mercari Card:card,GCash:wallet', 'the accounts are remembered for next time: ' + JSON.stringify(S.ui.accts));
   ok(rc.some(r => /SM SUPERMARKET/.test(r.n) && r.c === 'envelope') && rc.some(r => /MERALCO/.test(r.n) && r.c === 'bill:util') && rc.some(r => /LAZADA/.test(r.n) && r.c === 'card') && !rc.some(r => /PAYROLL|CREDIT CARD PAYMENT|GCASH TRANSFER|CASH IN|PAYMENT RECEIVED/.test(r.n)), 'receipts sit on their lines; income, card payments and transfers are not receipts');
   ok(errs.length === 0, 'no page errors ' + JSON.stringify(errs.slice(0, 3)));
   await p.close();
@@ -158,11 +169,11 @@ const coach = async p => { for (let i = 0; i < 12; i++) { const v = await p.eval
   ok(calls === 4, 'a 300-row CSV is read in three parts, then one category job: ' + calls + ' requests');
   ok((await title(p)) === 'Check what was found', 'the review opens from Home\'s card too');
   const body2 = await p.$eval('#tourBody', e => e.textContent.replace(/\s+/g, ' '));
-  ok(/What was read \(300 rows\)/.test(body2) && /long\.csv \(Test Bank\): 300 rows, 2026-08-01 to 2026-10-31, 3 full months/.test(body2), 'the parts come back as one file with every row and its months: ' + (body2.match(/long\.csv[^,]*,[^,]*,[^,]*,[^.]*/) || [''])[0]);
+  ok(/What was read \(300 rows\)/.test(body2) && /Bank account \(bank\): 1 file, 300 rows, 2026-08 to 2026-10, 3 full months/.test(body2) && /long\.csv: 300 rows, 2026-08-01 to 2026-10-31, 3 full months/.test(body2), 'the parts come back as one file with every row and its months, under an unnamed box called Bank account: ' + (body2.match(/long\.csv[^,]*,[^,]*,[^,]*,[^.]*/) || [''])[0]);
   await p.click('#tourNext'); await w(900);
   ok(await p.evaluate(() => document.getElementById('tour').hidden), 'Use these numbers closes the tour instead of going on to the jars');
   S = await state(p);
-  ok(last('a') === 42000 && (S.receipts || []).filter(r => r.src === 'stmt').length === 294 && (S.receipts || []).some(r => r.a === 120 && r.src !== 'stmt'), 'numbers exact, 294 receipts kept, the one logged by hand still there: ' + (S.receipts || []).filter(r => r.src === 'stmt').length);
+  ok(last('a') === 42000 && (S.receipts || []).filter(r => r.s === 'Bank account').length === 294 && (S.receipts || []).some(r => r.a === 120 && !r.s), 'numbers exact, 294 receipts kept (each naming the account), the one logged by hand still there: ' + (S.receipts || []).filter(r => r.s).length);
   card = await p.$eval('#hNext', e => ({ hid: e.hidden, t: e.textContent.replace(/\s+/g, ' ') }));
   ok(card.hid || !/Make it exact/.test(card.t), 'the Make it exact card is gone');
   ok(errs.length === 0, 'no page errors (Home card) ' + JSON.stringify(errs.slice(0, 3)));

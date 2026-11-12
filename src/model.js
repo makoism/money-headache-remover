@@ -610,7 +610,9 @@ function cleanReceipts(raw) {
     const a = typeof r.a === 'number' ? round2(r.a) : 0; if (!(a > 0) || a > 1e9) return;
     const c = typeof r.c === 'string' && /^[A-Za-z0-9:_-]{1,40}$/.test(r.c) ? r.c : 'other';
     ids.add(r.id);
-    out.push({ id: r.id, d: r.d, a, c, cn: typeof r.cn === 'string' ? r.cn.replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, 60) : '', n: typeof r.n === 'string' ? r.n.replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, 80) : '' });
+    const rc = { id: r.id, d: r.d, a, c, cn: typeof r.cn === 'string' ? r.cn.replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, 60) : '', n: typeof r.n === 'string' ? r.n.replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, 80) : '' };
+    if (typeof r.s === 'string' && r.s.trim()) rc.s = r.s.replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, 40); /* the account it came from, as the person named it */
+    out.push(rc);
   });
   return out;
 }

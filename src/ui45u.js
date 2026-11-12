@@ -6,7 +6,7 @@
    Machine contract: IMP_FORMAT and importClean belong together; change both or neither. Nothing here computes money. */
 const IMP_BILLS = ['rent', 'util', 'food', 'net', 'phone', 'ins', 'gas'];
 const IMP_FORMAT = `{"summary":"one or two plain sentences","pay":{"amount":35000,"how":"twice a month, 15th and 30th"},"other_income":0,"balance":{"amount":12400,"date":"2026-11-10"},"bills":[{"id":"rent","amount":8000,"note":"5th each month, LANDLORD NAME"}],"subscriptions":[{"name":"Netflix","amount":279}],"loans":[{"name":"Home Credit","amount":2500,"ends":"2027-06"}],"card_other":1500,"questions":[{"text":"Is the 8,000 on the 5th your rent?","relates":"rent"}],"skipped":["one line per thing left out"]}`;
-let impDraft = null, impFiles = [], impBusy = false, impCtl = null, impAnswers = {}, impOnly = false; /* impOnly: opened from Home to make the numbers exact; the tour closes after */
+let impDraft = null, impAccts = [], impBusy = false, impCtl = null, impAnswers = {}, impOnly = false; /* impOnly: opened from Home to make the numbers exact; the tour closes after */
 const importApplied = () => !!(S.ui.src === 'import');
 function importRules(cur) {
   return `RULES
@@ -70,26 +70,75 @@ function importClean(raw) {
 function importParse(text) { const p = parseLoose(text); return p.ok ? importClean(p.value) : null; }
 
 /* ----- reading files here: see ui45v.js (stmtRun, importRead) ----- */
-function importAddFiles(list) {
-  const notes = [];
+/* ----- the account boxes: one per bank account, card or wallet, named the way the person says it ----- */
+const ACCT_KINDS = { bank: 'Bank', card: 'Card', wallet: 'Wallet' };
+const ACCT_HINT = { bank: 'BPI savings, Resona, Chase', card: 'Mercari Card, BDO Visa', wallet: 'GCash, Maya, PayPay' };
+const ACCT_MAX = 6, IMP_MAX_FILES = 12;
+let acctSeq = 0;
+const acctNew = (kind, name) => ({ id: 'a' + (++acctSeq), kind: ACCT_KINDS[kind] ? kind : 'bank', name: name || '', files: [] });
+const acctById = id => impAccts.find(a => a.id === id);
+const impFileCount = () => impAccts.reduce((n, a) => n + a.files.length, 0);
+/* a box with no name is called by its kind, numbered when there are two of a kind */
+function acctLabel(a) {
+  if (a.name.trim()) return a.name.trim();
+  const same = impAccts.filter(x => x.kind === a.kind && !x.name.trim()), i = same.indexOf(a);
+  return (a.kind === 'bank' ? 'Bank account' : a.kind === 'card' ? 'Card' : 'Wallet') + (same.length > 1 ? ' ' + (i + 1) : '');
+}
+/* the boxes to start with: the accounts named last time (so a monthly upload needs no typing), else one bank box */
+function acctInit() {
+  if (impAccts.length) return;
+  const last = Array.isArray(S.ui.accts) ? S.ui.accts.filter(x => x && typeof x.name === 'string').slice(0, ACCT_MAX) : [];
+  impAccts = last.length ? last.map(x => acctNew(x.kind, x.name)) : [acctNew('bank')];
+}
+function importAddFiles(list, acctId) {
+  const acct = acctById(acctId) || impAccts[0]; if (!acct) return;
+  const notes = [], all = () => impAccts.reduce((l, a) => l.concat(a.files), []);
   Array.from(list || []).forEach(f => {
     const kind = isTextFile(f) ? 'text' : /^image\//.test(f.type) || /\.(heic|heif|jpe?g|png|webp)$/i.test(f.name || '') ? 'image' : askDoc && isPdfFile(f) ? 'pdf' : '';
     if (!kind) { notes.push(isPdfFile(f) ? (askDoc ? `${f.name}: not a readable PDF.` : pdfHereNote(f)) : oldSheetNote(f) || `${f.name}: only CSV or Excel files, ${askDoc ? 'PDFs, ' : ''}screenshots and photos.`); return; }
     if (kind === 'pdf' && f.size > askDoc.maxInputBytes) { notes.push(`${f.name} is too large. Export fewer months, or take screenshots of the pages.`); return; }
-    if (kind === 'pdf' && impFiles.filter(x => x.kind === 'pdf').length >= askDoc.maxCount) { notes.push(`Up to ${askDoc.maxCount} PDFs at a time. 2 or 3 months of statements is plenty.`); return; }
+    if (kind === 'pdf' && all().filter(x => x.kind === 'pdf').length >= askDoc.maxCount) { notes.push(`Up to ${askDoc.maxCount} PDFs at a time. 2 or 3 months of statements is plenty.`); return; }
     if (f.size > 20000000) { notes.push(`${f.name} is too large.`); return; }
-    if (impFiles.length >= 10) { notes.push('Ten files at a time.'); return; }
-    impFiles.push({ file: f, kind });
+    if (impFileCount() >= IMP_MAX_FILES) { notes.push(`${IMP_MAX_FILES} files at a time.`); return; }
+    acct.files.push({ file: f, kind });
   });
   renderNotes($('#impNote'), notes);
   paintImport();
 }
-function paintImport() {
-  const list = $('#impFiles'), read = $('#impRead'), stop = $('#impStop'), go = $('#impGo'), panel = $('#srcUploadPanel'); if (!list) return;
-  list.innerHTML = impFiles.map((f, i) => `<span class="fchip"><span>${esc(f.file.name)} (${sizeLabel(f.file.size)})</span><button type="button" data-imprm="${i}" aria-label="Remove ${esc(f.file.name)}">&times;</button></span>`).join('');
-  list.hidden = !impFiles.length; read.hidden = !impFiles.length || impBusy; stop.hidden = !impBusy; if (go) go.hidden = read.hidden && stop.hidden;
-  if (panel) panel.classList.toggle('has', impFiles.length > 0 || impBusy); /* with files in, the big field folds to a row */
+function acctHTML(a, i) {
+  return `<div class="src-panel drop acct${a.files.length ? ' has' : ''}" data-acct="${a.id}">
+      <div class="acct-h">
+        <div class="tour-chips kinds" role="radiogroup" aria-label="Kind of account">${['bank', 'card', 'wallet'].map(k => chip('acctKind-' + a.id, k, ACCT_KINDS[k], '', a.kind === k)).join('')}</div>
+        <div class="inp sm acct-name"><input type="text" data-acctname="${a.id}" maxlength="40" autocomplete="off" aria-label="Name of this account" placeholder="Name it: ${ACCT_HINT[a.kind]}" value="${esc(a.name)}"></div>
+      </div>
+      <div class="drop-in">
+        <svg class="drop-arrow" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M32 46V22M23 31l9-9 9 9"/><path d="M18 50h28" opacity=".45"/></svg>
+        <p class="drop-t">Statements of this account go here.</p>
+        <button type="button" class="btn solid" data-acctpick="${a.id}">Choose files</button><input type="file" data-acctfile="${a.id}" multiple accept=".csv,.tsv,.txt,.xlsx,.pdf,text/csv,text/plain,application/pdf,image/*" hidden>
+        <p class="cap drop-sub src-sub">CSV, Excel, PDF or screenshots</p>
+      </div>
+      <div class="fchips" data-acctfiles="${a.id}"${a.files.length ? '' : ' hidden'}></div>
+      ${impAccts.length > 1 ? `<button type="button" class="link acct-rm" data-acctrm="${a.id}">Remove this account</button>` : ''}
+      ${i === 0 ? art('grass') : ''}
+    </div>`;
 }
+function paintImport() {
+  const list = $('#acctList'), read = $('#impRead'), stop = $('#impStop'), go = $('#impGo'); if (!list) return;
+  impAccts.forEach(a => {
+    const box = $(`[data-acct="${a.id}"]`, list); if (!box) return;
+    const chips = $(`[data-acctfiles="${a.id}"]`, box);
+    chips.innerHTML = a.files.map((f, i) => `<span class="fchip"><span>${esc(f.file.name)} (${sizeLabel(f.file.size)})</span><button type="button" data-imprm="${i}" data-imprma="${a.id}" aria-label="Remove ${esc(f.file.name)}">&times;</button></span>`).join('');
+    chips.hidden = !a.files.length; box.classList.toggle('has', a.files.length > 0 || impBusy);
+    const ni = $('[data-acctname]', box); if (ni && ni !== document.activeElement) ni.placeholder = 'Name it: ' + ACCT_HINT[a.kind];
+    $$('.acct-rm', box).forEach(b => { b.hidden = impAccts.length < 2; });
+  });
+  const n = impFileCount();
+  read.hidden = !n || impBusy; stop.hidden = !impBusy; if (go) go.hidden = read.hidden && stop.hidden;
+  read.textContent = n > 1 ? `Read ${n} files` : 'Read file';
+  const add = $('#acctAdd'); if (add) add.hidden = impAccts.length >= ACCT_MAX;
+}
+/* the boxes are rebuilt only when one is added or removed; files and names live in impAccts */
+function paintAccts() { const list = $('#acctList'); if (!list) return; list.innerHTML = impAccts.map(acctHTML).join(''); paintImport(); }
 /* the how-to, kept short: what to look for in a banking app */
 const IMP_HOW = () => `<details class="src-how"><summary>How to get your statements</summary><div class="src-how-in">
   <p>Any bank or e-wallet app: open the account, find <b>Statements</b>, <b>Transaction history</b> or <b>Export</b>, and choose the last 2 or 3 months. A <b>CSV</b> or <b>Excel</b> export, or a <b>PDF</b> statement, is best. If the app only shows a list, take <b>screenshots</b> of each page instead.</p>
@@ -99,20 +148,15 @@ const IMP_HOW = () => `<details class="src-how"><summary>How to get your stateme
   <p>Credit cards: the last statement (CSV or screenshots). Cash spending: add it on the review screen.</p>
   <p>Nothing is stored. Files go to Claude once, the numbers come back, the files are forgotten.</p></div></details>`;
 const STEP_SOURCE = { id: 'source', part: PART.money, setup: true, title: 'Your statements', next: false,
-  body: () => `<p>Bank, e-wallet and credit card: the last 2 or 3 months, everything in one go. Screenshots of the app&rsquo;s transaction list work, so do PDF, CSV and Excel exports. The numbers come out exact, and your history fills in.</p>
-    <div class="src-panel drop" id="srcUploadPanel">
+  body: () => { acctInit(); return `<p>One box per account: your bank, each card, each wallet. Name each the way you say it, and the app will too. Put in the last 2 or 3 months of each: PDF, CSV or Excel exports, or screenshots of the transaction list. The numbers come out exact, and your history fills in.</p>
+    <div id="srcUploadPanel">
       <p class="cap src-here" id="impHere" hidden></p>
-      <div class="drop-in">
-        <svg class="drop-arrow" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M32 46V22M23 31l9-9 9 9"/><path d="M18 50h28" opacity=".45"/></svg>
-        <p class="drop-t">Statements go here.</p>
-        <button type="button" class="btn solid" id="impPick">Choose files</button><input type="file" id="impFile" multiple accept=".csv,.tsv,.txt,.xlsx,.pdf,text/csv,text/plain,application/pdf,image/*" hidden>
-        <p class="cap drop-sub" id="srcUploadSub">CSV, Excel, PDF or screenshots</p>
-      </div>
-      <div class="fchips" id="impFiles" hidden></div>
-      <div class="row-btns" id="impGo" hidden><button type="button" class="btn small solid" id="impRead" hidden>Read files</button><button type="button" class="btn small" id="impStop" hidden>Stop</button></div>
+      <div class="accts" id="acctList">${impAccts.map(acctHTML).join('')}</div>
+      <div class="row-btns"><button type="button" class="link" id="acctAdd">+ Add another account (a card, a wallet)</button></div>
+      <p class="cap" id="srcUploadSub" hidden></p>
+      <div class="row-btns" id="impGo" hidden><button type="button" class="btn solid" id="impRead" hidden>Read files</button><button type="button" class="btn small" id="impStop" hidden>Stop</button></div>
       <p class="cap" id="impNote" role="status" hidden></p><p class="cap" id="impProg" role="status" aria-live="polite" hidden></p>
       <div class="imp-out" id="impOut"></div>
-      ${art('grass')}
     </div>
     <details class="src-how src-alt" id="srcAiPanel">
       <summary id="srcAiSum">Prefer your own AI? Use it instead</summary>
@@ -125,14 +169,14 @@ const STEP_SOURCE = { id: 'source', part: PART.money, setup: true, title: 'Your 
       </div>
     </details>
     ${IMP_HOW()}
-    <p class="cap">${impOnly ? '<button type="button" class="link" id="srcSkip">Not now</button>' : 'No statements at hand? <button type="button" class="link" id="srcSkip">Type the numbers instead</button>. Receipts takes statements any time.'}</p>`,
+    <p class="cap">${impOnly ? '<button type="button" class="link" id="srcSkip">Not now</button>' : 'No statements at hand? <button type="button" class="link" id="srcSkip">Type the numbers instead</button>. Receipts takes statements any time.'}</p>`; },
   after: () => {
     const body = $('#tourBody');
     /* where Claude can read files, the upload is the screen. Where it cannot (a copy without the relay or a sign-in), the any-AI route takes over. */
     const paintSrc = () => {
       const sub = $('#srcUploadSub'); if (!sub) return;
       const up = !!askFn, fold = $('#srcAiPanel'); $('#srcUploadPanel').hidden = !up;
-      if (up) sub.textContent = askDoc ? 'CSV, Excel, PDF or screenshots' : 'CSV, Excel or screenshots';
+      if (up) $$('.src-sub', $('#acctList')).forEach(e => { e.textContent = askDoc ? 'CSV, Excel, PDF or screenshots' : 'CSV, Excel or screenshots'; });
       const here = $('#impHere'); if (here) { const h = askFn && !askDoc && inArtifact() ? hereLink().replace(/^Open/, 'PDFs: open') : ''; here.innerHTML = h; here.hidden = !h; }
       /* with the upload working, the other-AI route is a folded alternative; without it, it is the way, so it stands open and says why */
       if (fold) {
@@ -143,15 +187,23 @@ const STEP_SOURCE = { id: 'source', part: PART.money, setup: true, title: 'Your 
       }
     };
     connectAsk().then(paintSrc);
-    $('#impPick').addEventListener('click', () => $('#impFile').click());
-    $('#impFile').addEventListener('change', e => { importAddFiles(e.target.files); e.target.value = ''; if (impFiles.length) $('#impRead').focus(); });
-    $('#impFiles').addEventListener('click', e => { const b = e.target.closest('[data-imprm]'); if (!b) return; impFiles.splice(+b.dataset.imprm, 1); paintImport(); });
+    const list = $('#acctList');
+    list.addEventListener('click', e => {
+      const pk = e.target.closest('[data-acctpick]'); if (pk) { $(`[data-acctfile="${pk.dataset.acctpick}"]`, list).click(); return; }
+      const rm = e.target.closest('[data-imprm]'); if (rm) { const a = acctById(rm.dataset.imprma); if (a) a.files.splice(+rm.dataset.imprm, 1); paintImport(); return; }
+      const ar = e.target.closest('[data-acctrm]'); if (ar) { const i = impAccts.findIndex(a => a.id === ar.dataset.acctrm); if (i >= 0 && impAccts.length > 1) { impAccts.splice(i, 1); sfx('off'); paintAccts(); } return; }
+    });
+    list.addEventListener('change', e => {
+      const fi = e.target.closest('[data-acctfile]'); if (fi) { importAddFiles(fi.files, fi.dataset.acctfile); fi.value = ''; if (impFileCount()) $('#impRead').focus({ preventScroll: true }); return; }
+      const k = e.target.closest('input[name^="acctKind-"]'); if (k) { const a = acctById(k.name.slice(9)); if (a) { a.kind = k.value; $$('.chip', k.closest('.tour-chips')).forEach(c => c.classList.toggle('on', c.contains(k))); paintImport(); sfx('tap'); } }
+    });
+    list.addEventListener('input', e => { const ni = e.target.closest('[data-acctname]'); if (ni) { const a = acctById(ni.dataset.acctname); if (a) a.name = ni.value.slice(0, 40); } });
+    list.addEventListener('dragover', e => { if (e.target.closest('.acct') && e.dataTransfer && Array.from(e.dataTransfer.types || []).indexOf('Files') >= 0) e.preventDefault(); });
+    list.addEventListener('drop', e => { const box = e.target.closest('.acct'); if (!box || !e.dataTransfer || !e.dataTransfer.files.length) return; e.preventDefault(); importAddFiles(e.dataTransfer.files, box.dataset.acct); });
+    $('#acctAdd').addEventListener('click', () => { if (impAccts.length >= ACCT_MAX) return; impAccts.push(acctNew(impAccts.some(a => a.kind === 'card') ? 'wallet' : 'card')); sfx('pop'); paintAccts(); const ni = $(`[data-acctname="${impAccts[impAccts.length - 1].id}"]`); if (ni) ni.focus(); });
     $('#impRead').addEventListener('click', importRead);
     $('#impStop').addEventListener('click', () => { if (impCtl) impCtl.abort(); });
     $('#srcSkip').addEventListener('click', () => { impDraft = null; tourStep(1); }); /* typing instead: a pasted or read draft is dropped */
-    const panel = $('#srcUploadPanel');
-    panel.addEventListener('dragover', e => { if (e.dataTransfer && Array.from(e.dataTransfer.types || []).indexOf('Files') >= 0) e.preventDefault(); });
-    panel.addEventListener('drop', e => { if (!e.dataTransfer || !e.dataTransfer.files.length) return; e.preventDefault(); importAddFiles(e.dataTransfer.files); });
     $('#impAis').innerHTML = aiPickHTML();
     $('#impCopy').addEventListener('click', async () => { const ok = await copyText(importMessage(), $('#impCopyMsg'), 'Copied. Paste it into your AI with your files.'); if (!ok) { $('#impPaste').value = importMessage(); $('#impPaste').select(); } });
     $('#impCheck').addEventListener('click', () => {
@@ -232,6 +284,7 @@ function importApply() {
     if (chosen.indexOf('card') >= 0) { setVal(S, keyOf('card'), START, Math.round(card.a), 'after'); S.ui.cardT = Math.round(card.a); delete S.ui.cardB; }
     markDone('bills', true);
     S.ui.src = 'import'; S.ui.imp = { at: Date.now() };
+    if (impDraft.accts && impDraft.accts.length) S.ui.accts = impDraft.accts.slice(0, ACCT_MAX);
     if (typeof stmtAfterApply === 'function') { const keep = $('#impKeep'); stmtAfterApply(keep ? keep.checked : impDraft.keep !== false); }
   });
   const kept = (S.ui.imp && S.ui.imp.receipts) || 0;

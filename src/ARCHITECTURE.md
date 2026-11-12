@@ -60,6 +60,9 @@ All `ui*.js` files share one scope (one IIFE) in the order set in `build.sh`. Fu
 | The typefaces | `@font-face` at the top of `style.css` (Nunito Sans for reading, Fraunces for titles and big numbers; files in `../fonts`, copied next to the page by `../pwa/make_pwa.py`); `--f` and `--fd` |
 | The look (greens, glass, aurora) | the two palettes at the top of `style.css` (Day = light root, Forest = dark), `--aurora`, the glass rule and `.art-*` placements; the streak colour is `--streak`; PWA colours in `../pwa/make_pwa.py` and the icons |
 | A celebration (leaves, sparks) | `celebrate`, `leafColors`, `leafFrame` in `ui44.js`; `sparkBurst` (small leaves on switches and sliders) in `ui45x.js` |
+| The split sliders (jars, goals) | `moveShare`, `spreadFree` in `ui45s.js` (a slider changes only its own share; the rest is unassigned), `spPaint`, `splitApply`, `splitSpread`, `splitGive` in `ui45x.js` |
+| The statement account boxes | `impAccts`, `acctNew`, `acctHTML`, `paintAccts` in `ui45u.js`; a job carries `acct` and `stmtTagRead` stamps each read; `stmtGroups` groups boxed reads by box; receipts carry the account as `s`; `S.ui.accts` remembers the names |
+| The computer camera | `camOpen`, `camShot`, `camClose` in `ui49.js` (phones keep the native capture input) |
 | Setup wording or order | the step definitions in `ui45s.js`, `ui45u.js` and `ui45.js`; the order is the `TOUR` array in `ui45.js` (`skipIf` drops the typed screens once statements gave the numbers) |
 | A Home card | its `render…` function in `ui6.js`; markup slot in `body.html`; order and visibility via `HOME_SECTIONS` and `ACT.setHome` |
 | What the statement reader asks Claude for | `STMT_ROWS_SCHEMA`, `STMT_CATS_SCHEMA` and `STMT_CAT_GUIDE` in `ui45v.js`; the arithmetic that turns rows into numbers is `stmtNumbers` in `stmt.js` (change the unit test with it). The pasted-answer route keeps `importRules` and `IMP_FORMAT` in `ui45u.js`, with `importClean` to match |

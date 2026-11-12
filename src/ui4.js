@@ -31,7 +31,7 @@ function renderReceipts() {
   $('#rcCats').innerHTML = rs.count ? `<table class="plain"><thead><tr><th>Category</th><th>Plan</th><th>Spent</th><th>Left</th></tr></thead><tbody>${rows.map(r => `<tr><td>${esc(r.name)}</td><td>${r.plan == null ? '' : fmt(r.plan)}</td><td>${fmt2(r.spent)}</td><td>${r.plan == null ? '' : r.spent > r.plan ? `<span class="over">over ${fmt2(round2(r.spent - r.plan))}</span>` : fmt2(round2(r.plan - r.spent))}</td></tr>`).join('')}</tbody></table><p class="cap tnote">Lines without receipts are not listed.</p>` : '';
 
   $('#rcList').innerHTML = rs.list.map(r => `<div class="rc${editRc === r.id ? ' on' : ''}" data-id="${esc(r.id)}"><div class="rc-main"><b>${fmt2(r.a)}</b><span class="rc-cat">${esc(r.c === 'other' && r.n ? 'Other: ' + r.n : catName(S, r))}</span></div>
-    <div class="rc-sub"><span>${dateLabel(r.d)}</span>${r.n && r.c !== 'other' ? `<span class="rc-note">${esc(r.n)}</span>` : ''}</div>
+    <div class="rc-sub"><span>${dateLabel(r.d)}</span>${r.n && r.c !== 'other' ? `<span class="rc-note">${esc(r.n)}</span>` : ''}${r.s ? `<span class="rc-acct">${esc(r.s)}</span>` : ''}</div>
     <div class="rc-act"><button type="button" class="link" data-rcedit="${esc(r.id)}">Edit</button><button type="button" class="link warn" data-rcdel="${esc(r.id)}" data-armkey="rc-${esc(r.id)}">Delete</button></div></div>`).join('');
 
   /* the reminder */

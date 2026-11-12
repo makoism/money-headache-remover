@@ -99,10 +99,13 @@ function stmtGroupMonths(reads) {
   runs.forEach(run => { const mo = stmtMonths(run); mo.full.forEach(m => { if (full.indexOf(m) < 0) full.push(m); }); mo.partial.forEach(m => { if (partial.indexOf(m) < 0) partial.push(m); }); });
   return { full: full.sort(), partial: partial.filter(m => full.indexOf(m) < 0).sort() };
 }
+/* When the person put the files into named account boxes (read.acct), each box is one account, as they said: files in the same box are
+   the same account whatever their periods, files in different boxes are different accounts. Reads without a box fall back to the data. */
 function stmtGroups(reads) {
-  const groups = [];
+  const groups = [], byBox = {};
   reads.forEach(r => {
-    const hits = groups.filter(g => g.reads.some(x => stmtSameAccount(x, r)));
+    if (r.acct) { let x = byBox[r.acct]; if (!x) { x = { reads: [], box: r.acct }; byBox[r.acct] = x; groups.push(x); } x.reads.push(r); return; }
+    const hits = groups.filter(g => !g.box && g.reads.some(x => stmtSameAccount(x, r)));
     let x = hits[0];
     if (!x) { x = { reads: [] }; groups.push(x); }
     else hits.slice(1).forEach(h => { x.reads = x.reads.concat(h.reads); groups.splice(groups.indexOf(h), 1); }); /* a read that bridges two groups makes them one */
@@ -179,8 +182,8 @@ function stmtNumbers(reads, catOf, today) {
 }
 /* the spending rows as receipts, on the lines the page has; money arriving and the bank's card payments are not spending */
 const STMT_LINE = { rent: 'bill:rent', util: 'bill:util', food: 'bill:food', net: 'bill:net', phone: 'bill:phone', ins: 'bill:ins', subs: 'bill:subs', gas: 'bill:gas', loan: 'bill:loan', play: 'envelope', cash: 'envelope', other: 'card' };
-function stmtReceipts(rows, catOf) {
+function stmtReceipts(rows, catOf, acctOf) {
   const out = [];
-  rows.forEach(r => { if (r.dir !== 'out') return; const c = catOf(r.k), line = STMT_LINE[c]; if (!line) return; out.push({ d: r.d, a: r.a, c: line, n: r.t, k: `${r.d}|${r.a}|${r.k}` }); });
+  rows.forEach(r => { if (r.dir !== 'out') return; const c = catOf(r.k), line = STMT_LINE[c]; if (!line) return; const rc = { d: r.d, a: r.a, c: line, n: r.t, k: `${r.d}|${r.a}|${r.k}` }; const s = acctOf ? acctOf(r.f) : ''; if (s) rc.s = s; out.push(rc); });
   return out;
 }

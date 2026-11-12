@@ -34,10 +34,13 @@ process.on('unhandledRejection', e => { console.log('UNHANDLED', e && e.message)
   const cats = await p.$$eval('#rcCat option', os => os.map(o => o.value).filter(v => v !== 'other'));
   await p.evaluate(c => { window.__cats = c; }, cats);
   // ---- Home link goes to the camera
-  const chooser = p.waitForFileChooser({ timeout: 4000 }).catch(() => null);
+  /* on a phone the Home link opens the phone's camera (a file chooser here); on a computer it opens the camera sheet */
+  const chooser = p.waitForFileChooser({ timeout: 2500 }).catch(() => null);
   await p.evaluate(() => document.querySelector('#hScan').click());
-  const fc = await chooser; ok(!!fc, 'Home link opens the camera/file chooser');
+  const fc = await chooser, sheet = await p.evaluate(() => !document.querySelector('#cam').hidden);
+  ok(!!fc || sheet, 'Home link opens the camera (sheet on a computer, chooser on a phone)');
   if (fc) await fc.cancel();
+  if (sheet) { await p.click('#camClose'); await w(200); }
   await w(500); await skipCoach();
   ok(await p.evaluate(() => document.querySelector('#tab-receipts').getAttribute('aria-selected') === 'true'), 'Home link moved to Receipts tab');
   ok(await p.evaluate(() => !document.querySelector('#scanDirect').hidden && document.querySelector('#scanOff').hidden), 'Scan card shows camera buttons when Claude is reachable');

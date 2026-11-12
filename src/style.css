@@ -913,6 +913,21 @@ body.gw-open, body.co-open.gw-open { overflow: hidden; }
 .drop.has .drop-in { flex-direction: row; min-height: 0; padding: 4px 0 8px; gap: 12px; justify-content: flex-start; text-align: left; flex-wrap: wrap; }
 .drop.has .drop-arrow, .drop.has .drop-t { display: none; } .drop.has .drop-in .btn { min-height: 38px; padding: 0 18px; font-size: 15px; }
 .drop .art-grass { left: 30px; bottom: -2px; width: 132px; opacity: .9; } .drop.has .art-grass { display: none; }
+/* one box per account: its kind, its name, its own drop field. With a file in, the field folds to a row and the box stays compact */
+.accts { display: grid; gap: 12px; max-width: 640px; }
+.src-panel.drop.acct { margin: 0; }
+.acct .drop-in { min-height: 176px; padding: 10px 0 26px; }
+.acct-h { display: grid; gap: 10px; }
+.acct-h .tour-chips.kinds { display: flex; flex-wrap: wrap; gap: 6px; }
+.acct-h .kinds .chip { min-height: 36px; padding: 0 14px; border-radius: 12px; } .acct-h .kinds .chip b { font-size: 15px; font-weight: 500; }
+.acct-name.inp.sm { min-height: 44px; } .acct-name input { font-size: 17px; font-weight: 500; }
+.acct-rm.link { justify-self: start; font-size: 14px; color: var(--ink3); padding: 6px 0 2px; }
+.acct.drop.has .drop-in { padding: 6px 0 4px; }
+@media (min-width: 520px) { .acct-h { grid-template-columns: auto minmax(0, 1fr); align-items: center; } }
+/* the review: files listed under their account */
+.imp-files .imp-acct > ul { margin: 2px 0 6px 14px; padding: 0; } .imp-files .imp-acct > ul li { font-size: 13px; color: var(--ink3); }
+/* a receipt's account, as the person named it */
+.rc-acct { color: var(--ink3); } .rc-acct::before { content: '· '; }
 .fchips { display: flex; flex-wrap: wrap; gap: 6px; }
 .src-panel .fchips { margin: 10px 0 2px; }
 .src-panel .cap { margin: 8px 0 0; max-width: none; }
