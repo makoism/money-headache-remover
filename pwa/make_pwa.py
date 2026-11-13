@@ -15,7 +15,9 @@ head='''<link rel="manifest" href="manifest.webmanifest">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="M.H.R.2000">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="icon" type="image/svg+xml" href="icons/favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="icon" href="favicon.ico" sizes="any">
 <link rel="preload" as="font" type="font/woff2" crossorigin href="fonts/nunito-sans-latin.woff2">
 <link rel="preload" as="font" type="font/woff2" crossorigin href="fonts/fraunces-latin.woff2">
 '''
@@ -61,8 +63,9 @@ sw=sw.replace('@@HASH@@', hashlib.sha256(html.encode('utf8')).hexdigest()[:10])
 open(OUT+'/sw.js','w').write(sw)
 for f in ['hello.mp4','hello-av1.mp4','hello.jpg']:
     shutil.copy('/home/claude/work/hello/'+f, OUT+'/'+f)
-for f in ['icon-192.png','icon-512.png','icon-maskable-512.png','apple-touch-icon.png']:
+for f in ['icon-192.png','icon-512.png','icon-maskable-512.png','apple-touch-icon.png','favicon-32.png','favicon.svg']:
     shutil.copy('/home/claude/work/pwa/'+f, OUT+'/icons/'+f)
+shutil.copy('/home/claude/work/pwa/favicon.ico', OUT+'/favicon.ico')
 # the two typefaces (Nunito Sans for reading, Fraunces for titles), latin and latin-ext subsets, OFL licences alongside
 os.makedirs(OUT+'/fonts', exist_ok=True)
 for f in os.listdir('/home/claude/work/fonts'):
