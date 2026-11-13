@@ -87,10 +87,12 @@ const WORLD = (() => {
     if (typeof AMBI !== 'undefined') AMBI.duck(true);
     if (!quiet && !reduce()) { B.classList.add('opening'); tmr = setTimeout(() => B.classList.remove('opening'), 1400); sfx('whoosh'); }
     scrollTo({ top: 0 });
+    try { if (typeof ECO !== 'undefined') ECO.hideTip(); if (!(history.state && history.state.bw)) history.pushState({ bw: 1 }, ''); } catch (e) { /* no history */ }
   }
-  function close() {
+  function close(fromBack) {
     if (!on() || isShut()) return;
     clearTimeout(tmr); if (typeof AMBI !== 'undefined') AMBI.duck(false);
+    try { if (fromBack !== true && history.state && history.state.bw) history.back(); } catch (e) { /* no history */ }
     const fin = () => { B.classList.remove('closing', 'opening'); B.classList.add('shut'); scrollTo({ top: 0 }); const t = $('.tabs [aria-selected="true"]'); if (t && document.activeElement && $('#scroll').contains(document.activeElement)) try { t.focus({ preventScroll: true }); } catch (e) { /* gone */ } };
     if (reduce()) { fin(); return; }
     B.classList.add('closing'); sfx('soft'); tmr = setTimeout(fin, 380);
@@ -114,7 +116,8 @@ const WORLD = (() => {
     drawHand(); paintSw();
     $('#setWorld').addEventListener('click', () => { setPref('mhr-layout', plain() ? '' : 'plain'); paintSw(); sync(B.classList.contains('scene-on') || B.classList.contains('scene-phone')); SCENE.sync(); sfx('tap'); });
     $('#setStart').addEventListener('click', () => { setPref('mhr-start', startOpen() ? '' : 'open'); paintSw(); sfx('tap'); });
-    $('#scrollX').addEventListener('click', close);
+    $('#scrollX').addEventListener('click', () => close());
+    window.addEventListener('popstate', () => { if (on() && !isShut()) close(true); }); /* the phone's Back button lowers the page instead of leaving the app */
     document.addEventListener('keydown', e => {
       if (e.key !== 'Escape' || e.defaultPrevented || !on() || isShut()) return;
       if (document.body.classList.contains('touring')) return;

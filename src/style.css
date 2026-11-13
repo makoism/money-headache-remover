@@ -1515,7 +1515,7 @@ html.poke, html.poke body { cursor: pointer; }
 .lifetip { display: flex; align-items: center; gap: 6px; }
 .lifetip .ico { display: inline-flex; width: 16px; height: 16px; color: #ffe090; }
 .lifetip .ico svg { width: 16px; height: 16px; }
-@media (min-aspect-ratio: 6/5) { body.pic-world #orb { display: none !important; } }
+body.shroom-menu #orb, body.pic-world #orb { display: none !important; }
 .lifetip.show { opacity: 1; transform: translate(-50%, -6px); }
 
 /* ---------- the layered world (vista.js) ---------- */
@@ -1535,3 +1535,10 @@ html.poke, html.poke body { cursor: pointer; }
 @keyframes vrise { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(0, calc(var(--th) * -1), 0); } }
 #vista .vvig { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 46%, transparent 52%, rgba(4, 10, 12, .5) 100%); }
 @media (prefers-reduced-motion: reduce) { #vista .vsway, #vista .vrays i { animation: none; } }
+
+/* the title and save line sit on bright scenes by day: give them a soft shade so they stay readable */
+body.shroom-menu header.top h1, body.shroom-menu header.top .save { text-shadow: 0 1px 3px rgba(4,20,16,.85), 0 0 10px rgba(4,20,16,.6); }
+
+/* phones: the Close button stays in reach however far the page is scrolled, and buttons are finger sized */
+@media (max-width: 560px) { body.world:not(.shut) .scroll-x { position: fixed; top: 10px; right: 12px; min-height: 44px; z-index: 80; } }
+@media (pointer: coarse) { body.world .scroll button, body.world .scroll .btn, body.world .scroll summary { min-height: 44px; } }

@@ -662,7 +662,7 @@ const SCENE = (() => {
     if (bot) bot.remove(); bot = null; bx = null; document.body.classList.remove('scene-phone'); WORLD.sync(false);
     const top = document.querySelector('.wrap > .top'); if (top) top.style.removeProperty('--sign'); signKey = '';
   }
-  function build() { document.body.classList.remove('pic-world');
+  function build() { document.body.classList.remove('pic-world', 'shroom-menu');
     if (vs) {
       layout(); mood = pickMood(); T = mkT(); document.documentElement.dataset.tod = mood;
       VISTA.build({ W, H, PX, mood, realm, tk: toolkit() }); AMBI.setRealm(realm, mood); return;
@@ -692,15 +692,16 @@ const SCENE = (() => {
   let poked = false;
   function armPoke() {
     if (poked) return; poked = true;
+    if (/[?&]lifetest\b/.test(location.search)) window.__PX = () => ({ PX, sh: vs ? VISTA.shift() : { x: 0, y: 0 } });
     const free = e => { const t = e.target; return t === document.body || t === document.documentElement || (t.classList && (t.classList.contains('wrap') || t.id === 'scene')); };
     document.addEventListener('pointerdown', e => { if (!(cv || vs) || !document.body.classList.contains('world') || !document.body.classList.contains('shut') || !free(e)) return; const sh = vs ? VISTA.shift() : { x: 0, y: 0 }; if ((ECO.on() ? ECO : LIFE).hit(e.clientX - sh.x, e.clientY - sh.y, PX)) e.preventDefault(); }, true);
     /* if nobody has used the menu yet and nothing happens for 20 seconds, say where it is; again after 45 more seconds of quiet. One slow timer that stops for good once a page has been opened from a mushroom. */
     { let act = Date.now(), shown = 0, tm = 0; const bump = () => { act = Date.now(); }; ['pointermove', 'pointerdown', 'keydown', 'wheel', 'touchstart'].forEach(ev => document.addEventListener(ev, bump, { passive: true }));
       const check = () => { tm = 0; if (ECO.menuUsed()) return; const now = Date.now(), quiet = now - act, since = now - shown;
-        if (vs && !document.hidden && ECO.on() && document.body.classList.contains('shut') && quiet >= 20000 && since >= 45000) {
+        if (vs && !document.hidden && ECO.on() && document.body.classList.contains('shut') && quiet >= (matchMedia('(pointer: coarse)').matches ? 8000 : 20000) && since >= 45000) {
           const n = ECO.nodes().find(q => q.menu === 'home' && q.kind === 'menu') || ECO.nodes().find(q => q.menu === 'home'); if (n) { const sh = VISTA.shift(); ECO.tip('Tap a glowing mushroom to open a page. The small ones hold music, sound and settings.', n.x * PX + sh.x, (n.y - n.hh) * PX + sh.y - 8, 7000); for (const q of ECO.nodes()) if (q.menu) q.hint = now; shown = now; } }
-        tm = setTimeout(check, Math.max(1500, 20000 - (Date.now() - act) + 100)); };
-      tm = setTimeout(check, 20000); }
+        tm = setTimeout(check, Math.max(1500, (matchMedia('(pointer: coarse)').matches ? 8000 : 20000) - (Date.now() - act) + 100)); };
+      tm = setTimeout(check, matchMedia('(pointer: coarse)').matches ? 8000 : 20000); }
     let mv = 0; document.addEventListener('pointermove', e => { if (!(cv || vs) || e.pointerType === 'touch' || Date.now() - mv < 90) return; mv = Date.now(); const on = document.body.classList.contains('shut') && free(e) && (ECO.on() ? ECO : LIFE).hover(e.clientX - (vs ? VISTA.shift().x : 0), e.clientY - (vs ? VISTA.shift().y : 0), PX); document.documentElement.classList.toggle('poke', !!on); }, { passive: true });
   }
   function stop() { clearTimeout(timer); stopPhone(); if (cv) cv.remove(); cv = null; if (vs) { VISTA.destroy(); vs = false; } document.body.classList.remove('scene-on'); WORLD.sync(false); delete document.documentElement.dataset.tod; }

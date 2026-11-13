@@ -114,7 +114,7 @@ const ECO = (() => {
   function hideTip() { if (tipEl) { clearTimeout(tipEl._t); tipEl.classList.remove('show'); } }
   function label(txt, x, y, ms, ico) {
     if (!tipEl) { tipEl = document.createElement('div'); tipEl.className = 'lifetip'; document.body.append(tipEl); }
-    tipEl.textContent = ''; if (ico) { const i = document.createElement('span'); i.className = 'ico'; i.innerHTML = ico; tipEl.append(i); } tipEl.append(document.createTextNode(txt)); tipEl.style.left = x + 'px'; tipEl.style.top = y + 'px'; tipEl.classList.add('show'); clearTimeout(tipEl._t); tipEl._t = setTimeout(() => tipEl.classList.remove('show'), ms || 1800);
+    tipEl.textContent = ''; if (ico) { const i = document.createElement('span'); i.className = 'ico'; i.innerHTML = ico; tipEl.append(i); } tipEl.append(document.createTextNode(txt)); tipEl.style.maxWidth = Math.min(300, innerWidth - 20) + 'px'; tipEl.style.whiteSpace = 'normal'; tipEl.style.textAlign = 'left'; { const hw = Math.min(tipEl.offsetWidth || 120, innerWidth - 20) / 2; x = Math.max(hw + 10, Math.min(innerWidth - hw - 10, x)); y = Math.max(8, y); } tipEl.style.left = x + 'px'; tipEl.style.top = y + 'px'; tipEl.classList.add('show'); clearTimeout(tipEl._t); tipEl._t = setTimeout(() => tipEl.classList.remove('show'), ms || 1800);
   }
   function hit(cx, cy, PX) {
     if (!on) return false; const ax = cx / PX, ay = cy / PX, n = find(ax, ay); if (!n) return false;
