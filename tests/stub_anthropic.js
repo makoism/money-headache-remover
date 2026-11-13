@@ -52,7 +52,7 @@ const srv = http.createServer((req, res) => {
       res.writeHead(200, { 'content-type': 'application/json' }); return res.end(JSON.stringify(out));
     }
     /* the money assistant: answer with text and, when the person asks for a change, a ```mhr block */
-    if (/You are the money assistant inside The Burrow/.test(lastText) || /You are the money assistant inside The Burrow/.test(j.messages[0].content)) {
+    if (/You are the money assistant inside M.H.R.2000/.test(lastText) || /You are the money assistant inside M.H.R.2000/.test(j.messages[0].content)) {
       const q = lastText.split('\n').pop();
       const first = typeof j.messages[0].content === 'string' ? j.messages[0].content : '';
       const picture = /PICTURE \(today/.test(first);

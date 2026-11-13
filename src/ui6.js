@@ -235,7 +235,6 @@ const fracOf = r => (r.target > 0 ? Math.min(1, Math.max(0, r.saved / r.target))
 function renderHero() {
   const el = $('#hHero'), r = HV.main;
   if (!r) {
-    try { SCENE.progress(0); } catch (e) { /* the world is a bonus */ }
     el.className = 'card hwin empty';
     /* a goal that exists but has no amount yet (the setup was left early) is not "no goal": it asks for its amount */
     const unset = S.plan.goals.filter(g => !(g.target > 0));
@@ -245,7 +244,6 @@ function renderHero() {
   }
   const g = goalById(S, r.id), pct = r.pct, fr = fracOf(r);
   if (!g) return;
-  try { SCENE.progress(pct); } catch (e) { /* the world is a bonus */ }
   const purpose = g.why || purposeFor(g); /* view and plan out of step for a moment (a goal just removed); the next restructure redraws */
   let chip = '', sub = '', fix = '';
   if (r.pct >= 100 || r.state === 'full') chip = '<span class="chip good">' + IC.ok + 'Full</span>';

@@ -1,4 +1,4 @@
-# The Burrow on Cloudflare Workers: the page from ./public, the API from worker/index.js.
+# M.H.R.2000 on Cloudflare Workers: the page from ./public, the API from worker/index.js.
 # Cloudflare's Workers Builds runs `npx wrangler deploy` on every push to main.
 # Secrets (ANTHROPIC_API_KEY) and plain variables (INVITE_CODES, caps) are set in the dashboard:
 #   Workers & Pages > money-headache-remover > Settings > Variables and Secrets. keep_vars keeps them across deploys.
@@ -9,7 +9,7 @@ keep_vars = true
 
 # the version shown by /api/health; build_site.sh copies it from the page's VERSION file
 [vars]
-SITE_VERSION = "37.0"
+SITE_VERSION = "36.4 / Nov 13, 2:47 pm"
 
 [assets]
 directory = "./public"

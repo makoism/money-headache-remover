@@ -12,7 +12,7 @@ exports.launch = async (vw, vh, scheme='light', reduce=false) => {
   await p.setViewport({ width:+vw, height:+vh });
   const feats=[{name:'prefers-color-scheme', value:scheme}]; if (reduce) feats.push({name:'prefers-reduced-motion', value:'reduce'});
   await p.emulateMediaFeatures(feats);
-  await p.evaluateOnNewDocument(wm => { try { if (!sessionStorage.getItem('__keep')) { localStorage.clear(); if (!wm) localStorage.setItem('mhr-layout', 'plain'); } indexedDB.deleteDatabase('money-map-safe'); } catch(e){} }, process.env.WORLD === '1');
+  await p.evaluateOnNewDocument(() => { try { if (!sessionStorage.getItem('__keep')) localStorage.clear(); indexedDB.deleteDatabase('money-map-safe'); } catch(e){} });
   await p.goto('file://' + (process.env.PAGE || '/home/claude/work/money-map-team.html') + '#2026-11', { waitUntil:'load' }); await exports.w(700);
   return { b, p, errs };
 };

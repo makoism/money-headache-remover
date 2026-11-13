@@ -6,23 +6,21 @@
 </div>
 <div class="wrap">
   <header class="top">
-    <button type="button" class="tstreak" id="topStreak" data-streak aria-label="Streak"></button>
-    <h1>The Burrow<small>Your money, made calm</small></h1>
+    <button type="button" class="tstreak" id="topStreak" data-tab-go="home" aria-label="Streak"></button>
+    <h1>M.H.R.2000<small>The Money Headache Remover 2000</small></h1>
     <span class="top-r"><button type="button" class="topb" id="sndBtn" aria-pressed="false" aria-label="Mute"></button><button type="button" class="topb" id="djBtn" aria-haspopup="dialog" aria-expanded="false" aria-controls="dj" aria-label="Music and volume"></button><span class="save" id="save" role="status"><i></i><span id="saveTxt">Loading</span></span>
     <button type="button" class="gear" id="gearBtn" aria-label="Settings" data-tab-go="basics"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="3.1"/><circle cx="12" cy="12" r="6.6"/><path d="M12 2.6v2.1M12 19.3v2.1M2.6 12h2.1M19.3 12h2.1M5.35 5.35l1.5 1.5M17.15 17.15l1.5 1.5M5.35 18.65l1.5-1.5M17.15 6.85l1.5-1.5"/></svg></button></span>
   </header>
 
   <div class="tabs" role="tablist" aria-label="Pages">
-    <button type="button" role="tab" id="tab-home" aria-controls="p-home" aria-selected="true" data-tab="home" data-cap="How you are doing">Home</button>
-    <button type="button" role="tab" id="tab-receipts" aria-controls="p-receipts" aria-selected="false" data-tab="receipts" tabindex="-1" data-cap="Log what you spent">Receipts</button>
+    <button type="button" role="tab" id="tab-home" aria-controls="p-home" aria-selected="true" data-tab="home">Home</button>
+    <button type="button" role="tab" id="tab-receipts" aria-controls="p-receipts" aria-selected="false" data-tab="receipts" tabindex="-1">Receipts</button>
     <button type="button" role="tab" id="tab-goals" aria-controls="p-goals" aria-selected="false" data-tab="goals" tabindex="-1" hidden>Goals</button>
-    <button type="button" role="tab" id="tab-month" aria-controls="p-month" aria-selected="false" data-tab="month" tabindex="-1" data-cap="Months and goals">Plan</button>
+    <button type="button" role="tab" id="tab-month" aria-controls="p-month" aria-selected="false" data-tab="month" tabindex="-1">Plan</button>
     <button type="button" role="tab" id="tab-basics" aria-controls="p-basics" aria-selected="false" data-tab="basics" tabindex="-1" hidden>Settings</button>
   </div>
   <button type="button" class="mgb" id="mgBand" data-tab-go="home" hidden></button>
 
-  <div class="scroll" id="scroll">
-  <button type="button" class="scroll-x" id="scrollX" aria-label="Close the page and look at the world">Close</button>
   <!-- HOME -->
   <div id="p-home" role="tabpanel" aria-labelledby="tab-home">
     <p class="hello" id="hello" hidden></p>
@@ -271,16 +269,6 @@
         <div class="snd-r"><button type="button" class="sw" id="setMus" role="switch" aria-labelledby="musLab" aria-checked="true"><i></i></button><span class="cap" id="musTxt">On</span></div>
         <p class="cap">A quiet piece, made in the browser while the app is open. Starts at your first tap.</p>
       </div>
-      <div class="field sndrow">
-        <span class="lab" id="worldLab">World layout</span>
-        <div class="snd-r"><button type="button" class="sw" id="setWorld" role="switch" aria-labelledby="worldLab" aria-checked="true"><i></i></button><span class="cap" id="worldTxt">On</span></div>
-        <p class="cap">The pages open on a scroll in the scenery. Off: the plain page. This browser only.</p>
-      </div>
-      <div class="field sndrow" id="startRow">
-        <span class="lab" id="startLab">Start with the pages open</span>
-        <div class="snd-r"><button type="button" class="sw" id="setStart" role="switch" aria-labelledby="startLab" aria-checked="false"><i></i></button><span class="cap" id="startTxt">Off</span></div>
-        <p class="cap">Off: the app opens on the world and you tap a sign.</p>
-      </div>
       <div class="field themerow">
         <span class="lab" id="themeLab">Look</span>
         <div class="seg" role="group" aria-labelledby="themeLab" id="themeSeg">
@@ -350,9 +338,7 @@
 
   <p class="foot" id="footNote">Not financial advice. Sample numbers are invented. Replace them with yours.</p>
   <p class="foot ver" id="verFoot">Version @@VER@@, updated @@STAMP@@</p>
-  </div>
 </div>
-<div class="handfx" id="handFx" aria-hidden="true"></div>
 <div class="tip" id="tip" role="tooltip"></div>
 <div class="tour" id="tour" role="dialog" aria-modal="true" aria-labelledby="tourTitle" hidden>
   <div class="tour-scroll" id="tourScroll">
@@ -376,9 +362,8 @@
 <div class="dj" id="dj" role="dialog" aria-label="Music and volume" hidden>
   <div class="dj-row"><button type="button" class="btn small dj-mute" id="djMute" aria-pressed="false">Sound on</button><label class="dj-vol"><span class="sr">Volume</span><input type="range" id="djVol" min="0" max="100" step="1" value="80"><span id="djVolN" class="cap">80</span></label></div>
   <p class="dj-h">Music</p>
-  <div class="dj-src" role="group" aria-label="Music"><button type="button" class="chip" data-djsrc="forest" aria-pressed="true">Forest</button><button type="button" class="chip" data-djsrc="green" aria-pressed="false">GREEN</button><button type="button" class="chip" data-djsrc="kingdom" aria-pressed="false">Kingdom</button><button type="button" class="chip" data-djsrc="newlands" aria-pressed="false">New Lands</button><button type="button" class="chip" data-djsrc="crowns" aria-pressed="false">Two Crowns</button><button type="button" class="chip" data-djsrc="off" aria-pressed="false">Off</button></div>
+  <div class="dj-src" role="group" aria-label="Music"><button type="button" class="chip" data-djsrc="forest" aria-pressed="true">Forest</button><button type="button" class="chip" data-djsrc="green" aria-pressed="false">GREEN</button><button type="button" class="chip" data-djsrc="off" aria-pressed="false">Off</button></div>
   <div id="djAlb" hidden></div>
-  <div class="dj-bc" id="djBc" hidden></div>
   <p class="cap dj-note" id="djNote" role="status"></p>
   <label class="dj-sc"><input type="checkbox" id="djScene" checked> Scenery in the background</label>
 </div>

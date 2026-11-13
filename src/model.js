@@ -521,7 +521,7 @@ const icsEsc = s => String(s).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replac
 function icsText(o) {
   const t = reminderTimesFor(o), now = o.today || new Date();
   const z = d => d.getUTCFullYear() + pad2(d.getUTCMonth() + 1) + pad2(d.getUTCDate()) + 'T' + pad2(d.getUTCHours()) + pad2(d.getUTCMinutes()) + pad2(d.getUTCSeconds()) + 'Z';
-  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//The Burrow//EN', 'CALSCALE:GREGORIAN', 'BEGIN:VEVENT',
+  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//M.H.R.2000 The Money Headache Remover 2000//EN', 'CALSCALE:GREGORIAN', 'BEGIN:VEVENT',
     'UID:receipts-' + (o.freq || 'weekly') + '-' + t.start + '@mhr2000', 'DTSTAMP:' + z(now), 'DTSTART:' + t.start, 'DTEND:' + t.end,
     'RRULE:' + rruleOf(o), 'SUMMARY:' + icsEsc(o.title), 'DESCRIPTION:' + icsEsc(o.details),
     'BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:' + icsEsc(o.title), 'TRIGGER:PT0M', 'END:VALARM', 'END:VEVENT', 'END:VCALENDAR'];

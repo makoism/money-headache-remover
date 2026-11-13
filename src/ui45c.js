@@ -21,7 +21,7 @@ const onbFaqFor = text => {
   const hit = [[/cash/, 'cash'], [/password|locked|lock/, 'pdf'], [/categor|wrong/, 'wrong'], [/safe|privacy|private|secur|store|keep/, 'safe'], [/share|partner|joint|wife|husband/, 'shared'], [/no statement|don.?t have|without/, 'none'], [/not on|missing|add|extra|expense|bill/, 'extra']].find(x => x[0].test(t));
   return hit ? ONB_FAQ.find(f => f[0] === hit[1]) : null;
 };
-const ONB_GUIDE = `You answer questions from someone setting up The Burrow, a simple money app, right before they upload bank, card and e-wallet statements. Facts about the app:
+const ONB_GUIDE = `You answer questions from someone setting up M.H.R.2000, a simple money app, right before they upload bank, card and e-wallet statements. Facts about the app:
 - They upload the last 2 or 3 months of each account: PDF, CSV or Excel exports, or screenshots. One box per account, named the way they say it.
 - Claude reads each file once into a table (date, description, amount). The app does all the arithmetic itself. The files are not kept; only the numbers stay, in their browser, and nobody else can see them.
 - Every shop or payee gets a category (rent, utilities, food, internet, phone, insurance, subscription, transport, loan, play and so on). The next screen shows every number and category; they can change any of them and the app remembers it for next month. Nothing is used until they tap Use these numbers.

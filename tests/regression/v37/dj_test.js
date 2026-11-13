@@ -45,18 +45,12 @@ const st = p => p.evaluate(() => JSON.parse(localStorage.getItem('money-map-temp
   await p.evaluate(() => { window.YT = { Player: function (id, o) { const el = document.getElementById(id); const f = document.createElement('iframe'); f.id = id; el.replaceWith(f); this.setVolume = () => {}; this.mute = () => {}; this.unMute = () => {}; this.playVideo = () => o.events.onStateChange({ data: 1 }); this.pauseVideo = () => o.events.onStateChange({ data: 2 }); this.loadVideoById = () => o.events.onStateChange({ data: 1 }); this.cueVideoById = () => {}; setTimeout(() => o.events.onReady(), 50); } }; });
   await p.click('#sndBtn'); await w(400);
   await p.click('#djBtn'); await w(300); await p.click('[data-djsrc="green"]'); await w(900);
-  const d = await p.evaluate(() => { const k = document.querySelector('#djDock'), r = k.getBoundingClientRect(); return { frame: !!k.querySelector('iframe'), off: r.right < 0 || getComputedStyle(k).opacity === '0', label: (document.querySelector('[data-djplay]') || {}).getAttribute && document.querySelector('[data-djplay]').getAttribute('aria-label') }; });
-  ok(d.frame && d.off && d.label === 'Pause', 'GREEN: the player runs out of sight and the panel shows Pause: ' + JSON.stringify(d));
-  const geo = await p.evaluate(() => { const r = [...document.querySelectorAll('.dj-ctl .dj-i')].map(e => e.getBoundingClientRect()); const cy = r.map(x => x.top + x.height / 2); return { n: r.length, aligned: Math.max(...cy) - Math.min(...cy) < 1.5, ordered: r[0].left < r[1].left && r[1].left < r[2].left }; });
-  ok(geo.n === 3 && geo.aligned && geo.ordered, 'previous, play and next sit in one centred row: ' + JSON.stringify(geo));
+  const d = await p.evaluate(() => ({ dock: !document.querySelector('#djDock').hidden, frame: !!document.querySelector('#djDock iframe'), vis: (() => { const r = document.querySelector('#djDock').getBoundingClientRect(); return r.width >= 200 && r.height >= 200; })(), label: document.querySelector('#djDockPlay').getAttribute('aria-label') }));
+  ok(d.dock && d.frame && d.vis && d.label === 'Pause', 'GREEN: the player dock is visible (at least 200 by 200) and playing: ' + JSON.stringify(d));
   await p.click('[data-djstep="1"]'); await w(300);
-  ok((await p.$eval('.dj-now b', e => e.textContent)) === 'FEEL', 'Next goes to the second track');
-  /* Kingdom plays in Bandcamp's own player, inside the panel */
-  await p.click('[data-djsrc="kingdom"]'); await w(500);
-  const kb = await p.evaluate(() => { const f = document.querySelector('#djBc iframe'); return { src: f ? f.src : '', inPanel: !!document.querySelector('#dj #djBc'), visible: f ? f.getBoundingClientRect().height > 100 : false }; });
-  ok(/bandcamp\.com\/EmbeddedPlayer\/album=2539297682/.test(kb.src) && kb.inPanel && kb.visible, 'Kingdom shows Bandcamp\'s player inside the panel: ' + JSON.stringify(kb));
-  await p.click('[data-djsrc="forest"]'); await w(400);
-  ok(await p.evaluate(() => !document.querySelector('#djBc iframe')), 'and Forest removes it again, nothing from Bandcamp stays loaded');
+  ok((await p.$eval('#djDockT b', e => e.textContent)) === 'FEEL', 'Next goes to the second track');
+  await p.click('#djDockHide'); await w(300);
+  ok(await p.evaluate(() => document.querySelector('#djDock').hidden), 'closing the dock stops and hides it');
   await p.click('#djBtn'); await w(300); await p.click('[data-djsrc="forest"]'); await w(400);
   ok(await p.evaluate(() => document.querySelector('#djDock').hidden), 'back to Forest, no dock');
   ok(errs.length === 0, 'no page errors ' + JSON.stringify(errs));

@@ -87,7 +87,7 @@ const STATE = JSON.stringify({ steps: 5, ui: { name: 'Mara', cur: '$', toured: t
     let m = await H.mock(), c = m.calls[0];
     ok('one call, asked the default tier, with caching off, a stop signal and a stream handler', m.calls.length === 1 && c.opts.modelTier === 'default' && c.opts.cache === false && c.opts.hasSignal && c.opts.hasOnText);
     ok('input is turns that start and end on the user', Array.isArray(c.input) && c.input[0].role === 'user' && c.input[c.input.length - 1].role === 'user' && c.input.length === 2);
-    ok('the first turn is the assistant guide with the picture (numbers ticked), then the page guide', c.input[0].content.includes('money assistant inside The Burrow') && c.input[0].content.includes('PICTURE (today') && c.input[0].content.includes('Name: Mara') && c.input[0].content.includes('THE PAGE'));
+    ok('the first turn is the assistant guide with the picture (numbers ticked), then the page guide', c.input[0].content.includes('money assistant inside M.H.R.2000') && c.input[0].content.includes('PICTURE (today') && c.input[0].content.includes('Name: Mara') && c.input[0].content.includes('THE PAGE'));
     ok('the question is the last turn, plain', c.input[1].content === 'Where is my money going?');
     ok('the whole lead turn stays under a sensible size', c.input[0].content.length < 16000);
     ok('the answer appears, the suggestions go away', (await H.q('#askLog')).includes('Tap Basics, then type your name.') && (await H.hidden('#askSug')) === true);
