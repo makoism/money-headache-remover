@@ -113,16 +113,29 @@
 
   /* the picture is 1080 x 544; it covers the scene and keeps the mushroom side in view on narrow screens */
   function picMap(W, H) { const s = Math.max(W / 1080, H / 544), ox = Math.min(0, Math.max(W - 1080 * s, W < H * 1.2 ? W * .5 - 340 * s : W * .4 - 400 * s)), oy = Math.min(0, (H - 544 * s) * .8); return { s, ox, oy }; }
+  const PIXCACHE = {};
+  function pixelPic(im, B) {
+    if (PIXCACHE[B]) return PIXCACHE[B];
+    const w = Math.ceil(1080 / B), h = Math.ceil(544 / B), cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+    const g = cv.getContext('2d', { willReadFrequently: true }); g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high'; g.drawImage(im, 0, 0, w, h);
+    const d = g.getImageData(0, 0, w, h), a = d.data, q = 14;
+    for (let i = 0; i < a.length; i += 4) { a[i] = Math.round(a[i] / q) * q; a[i + 1] = Math.round(a[i + 1] / q) * q; a[i + 2] = Math.round(a[i + 2] / q) * q; }
+    g.putImageData(d, 0, 0); return (PIXCACHE[B] = cv);
+  }
   function picPaint(c, g2, mood, W, H) {
     const im = window.__WOODPIC, M = picMap(W, H), x0 = g2.x0, x1 = g2.x1, y0 = g2.y0, y1 = g2.y1;
     c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high';
     c.fillStyle = '#06222c'; c.fillRect(x0, y0, x1 - x0, y1 - y0);
     /* beyond the edges the picture's own border is stretched, so a shift never shows a gap */
     const dw = 1080 * M.s, dh = 544 * M.s;
-    c.drawImage(im, 0, 0, 3, 544, x0, M.oy, M.ox - x0 + 1, dh); c.drawImage(im, 1077, 0, 3, 544, M.ox + dw - 1, M.oy, x1 - (M.ox + dw) + 2, dh);
-    c.drawImage(im, 0, 0, 1080, 544, M.ox, M.oy, dw, dh);
-    if (M.oy > y0) c.drawImage(im, 0, 0, 1080, 3, M.ox, y0, dw, M.oy - y0 + 1);
-    if (M.oy + dh < y1) c.drawImage(im, 0, 541, 1080, 3, M.ox, M.oy + dh - 1, dw, y1 - M.oy - dh + 2);
+    /* on a phone the picture is enlarged a lot, so it is redrawn as real pixel art: big even blocks, a limited palette, no smoothing */
+    let src = im, k = 1;
+    if (W < H * 1.2) { const B = Math.max(2, Math.round(1.2 / M.s)); src = pixelPic(im, B); k = 1 / B; c.imageSmoothingEnabled = false; }
+    const S = (v) => v * k;
+    c.drawImage(src, 0, 0, S(3), S(544), x0, M.oy, M.ox - x0 + 1, dh); c.drawImage(src, S(1077), 0, S(3), S(544), M.ox + dw - 1, M.oy, x1 - (M.ox + dw) + 2, dh);
+    c.drawImage(src, 0, 0, S(1080), S(544), M.ox, M.oy, dw, dh);
+    if (M.oy > y0) c.drawImage(src, 0, 0, S(1080), S(3), M.ox, y0, dw, M.oy - y0 + 1);
+    if (M.oy + dh < y1) c.drawImage(src, 0, S(541), S(1080), S(3), M.ox, M.oy + dh - 1, dw, y1 - M.oy - dh + 2);
     const tint = (op, col, a) => { c.save(); c.globalCompositeOperation = op; c.globalAlpha = a; c.fillStyle = col; c.fillRect(x0, y0, x1 - x0, y1 - y0); c.restore(); };
     if (mood === 'day') { tint('overlay', '#b4f0b8', .6); tint('screen', '#3c6a52', .3); }
     else if (mood === 'morning') { tint('overlay', '#c8ecff', .45); tint('screen', '#2c5058', .2); }
@@ -261,7 +274,7 @@
     cav: { rx: 124, ry: .47, bump: .09, ph: [3.1, 1.2, 5.2] },
     door: (L, H) => ({ x: NK.u(L, .56), y: Math.round(H * .3), rx: L.wide ? 19 : 15, ry: L.wide ? 31 : 25 }),
     geom(L, G0, H) { const sw = L.sw, lx = L.wide ? L.x0 - 40 : L.x0 - 18; L.lx = lx; L.lamps = []; L.heart = { x: L.spirit.x, y: sw - 10 };
-      if (!window.__WOODPIC && window.__WOODWIDE && window.__WOODWIDE()) window.__needPic = true;
+      if (!window.__WOODPIC) window.__needPic = true;
       if (window.__WOODPIC) { const M = picMap(L.W, L.H); L.pic = M; /* the three big mushrooms of the picture are the menu: Home, Receipts, Plan */
         const wx = ix => Math.round(M.ox + ix * M.s); L.cw = Math.round(G0.W * .74); L.x0 = L.cx - Math.round(L.cw / 2); L.x1 = L.x0 + L.cw; L.sw = Math.round(M.oy + 392 * M.s); L.water.y = L.sw + Math.round((G0.H - L.sw) * .5) - 1; L.hut.x = wx(660) - 8; L.house.x = wx(860) - 19; L.spirit.x = wx(565); L.heart = { x: L.spirit.x, y: L.sw - 10 };
         document.body.classList.add('pic-world');
