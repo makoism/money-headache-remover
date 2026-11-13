@@ -9,7 +9,7 @@ keep_vars = true
 
 # the version shown by /api/health; build_site.sh copies it from the page's VERSION file
 [vars]
-SITE_VERSION = "35.1"
+SITE_VERSION = "36.0"
 
 [assets]
 directory = "./public"

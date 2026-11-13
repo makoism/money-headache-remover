@@ -6,8 +6,9 @@
 </div>
 <div class="wrap">
   <header class="top">
+    <button type="button" class="tstreak" id="topStreak" data-tab-go="home" aria-label="Streak"></button>
     <h1>M.H.R.2000<small>The Money Headache Remover 2000</small></h1>
-    <span class="top-r"><span class="save" id="save" role="status"><i></i><span id="saveTxt">Loading</span></span>
+    <span class="top-r"><button type="button" class="topb" id="sndBtn" aria-pressed="false" aria-label="Mute"></button><button type="button" class="topb" id="djBtn" aria-haspopup="dialog" aria-expanded="false" aria-controls="dj" aria-label="Music and volume"></button><span class="save" id="save" role="status"><i></i><span id="saveTxt">Loading</span></span>
     <button type="button" class="gear" id="gearBtn" aria-label="Settings" data-tab-go="basics"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="3.1"/><circle cx="12" cy="12" r="6.6"/><path d="M12 2.6v2.1M12 19.3v2.1M2.6 12h2.1M19.3 12h2.1M5.35 5.35l1.5 1.5M17.15 17.15l1.5 1.5M5.35 18.65l1.5-1.5M17.15 6.85l1.5-1.5"/></svg></button></span>
   </header>
 
@@ -358,6 +359,16 @@
     <div class="row-btns"><button type="button" class="btn solid" id="camShot">Take photo</button><button type="button" class="btn" id="camDone" hidden>Done</button><button type="button" class="btn" id="camPick" hidden>Choose files instead</button></div>
   </div>
 </div>
+<div class="dj" id="dj" role="dialog" aria-label="Music and volume" hidden>
+  <div class="dj-row"><button type="button" class="btn small dj-mute" id="djMute" aria-pressed="false">Sound on</button><label class="dj-vol"><span class="sr">Volume</span><input type="range" id="djVol" min="0" max="100" step="1" value="80"><span id="djVolN" class="cap">80</span></label></div>
+  <p class="dj-h">Music</p>
+  <div class="dj-src" role="group" aria-label="Music"><button type="button" class="chip" data-djsrc="forest" aria-pressed="true">Forest</button><button type="button" class="chip" data-djsrc="green" aria-pressed="false">GREEN</button><button type="button" class="chip" data-djsrc="off" aria-pressed="false">Off</button></div>
+  <div id="djAlb" hidden></div>
+  <p class="cap dj-note" id="djNote" role="status"></p>
+  <label class="dj-sc"><input type="checkbox" id="djScene" checked> Scenery in the background</label>
+</div>
+<div class="djdock" id="djDock" hidden><div class="djdock-v"><div id="djYt"></div></div><div class="djdock-b"><div id="djDockT" class="djdock-t"></div><div class="djdock-c"><button type="button" class="dj-i" id="djDockPrev" aria-label="Previous track"></button><button type="button" class="dj-i" id="djDockPlay" aria-label="Play"></button><button type="button" class="dj-i" id="djDockNext" aria-label="Next track"></button><button type="button" class="dj-i x" id="djDockHide" aria-label="Hide the player and stop">&times;</button></div></div></div>
+<div class="upd undo-bar" id="undoBar" role="status" hidden><span id="undoTxt"></span><button type="button" class="btn small solid" id="undoGo">Undo</button></div>
 <div class="upd" id="upd" role="status" hidden><span>A newer version is ready.</span><button type="button" class="btn small solid" id="updGo">Reload</button></div>
 <div class="cam rep" id="rep" role="dialog" aria-labelledby="repT" hidden>
   <div class="cam-in">

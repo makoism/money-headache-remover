@@ -20,7 +20,7 @@ const nextCard = p => p.evaluate(() => { const e = document.querySelector('#hNex
 (async () => {
   const b = await puppeteer.launch({ executablePath: '/usr/bin/google-chrome', headless: 'new', args: ['--no-sandbox', '--disable-gpu'] });
   let { p, errs } = await open(b, '2026-12-03T10:00:00');
-  ok(await p.evaluate(() => document.body.innerText.includes('Dec')), 'the page runs on the faked date (December)');
+  ok(await p.evaluate(() => document.body.textContent.includes('Dec')), 'the page runs on the faked date (December)');
   await runTour(p, P.a); await w(1200); await coach(p);
   let c = await nextCard(p); ok(!c.hid && /log a receipt/.test(c.t), 'before any receipt, the first-steps card still leads: ' + c.t.slice(0, 50));
   await p.type('#hAmt', '350'); await p.click('#hLog').catch(async () => { await p.keyboard.press('Enter'); }); await w(900);

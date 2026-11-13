@@ -95,7 +95,7 @@ const SFXD = (() => {
   return d;
 })();
 const SFX = (() => {
-  let ctx = null, master = null, bright = null, tapT = 0; const last = {}; let lastBig = 0;
+  let ctx = null, master = null, bright = null, vol = null, tapT = 0; const last = {}; let lastBig = 0;
   const BIG = { next: 1, back: 1, coin: 1, sparkle: 1, fanfare: 1, whoosh: 1, soft: 1, pop: 1, thunk: 1 };
   const CLICK = { tap: 1, on: 1, off: 1 };
   const get = () => {
@@ -104,7 +104,9 @@ const SFX = (() => {
     try {
       ctx = new AC(); master = ctx.createGain(); master.gain.value = .5;
       const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 1500; lp.Q.value = .4;
-      const comp = ctx.createDynamicsCompressor(); master.connect(lp); lp.connect(comp); comp.connect(ctx.destination);
+      /* one volume for everything (effects and music): the top bar's slider, 0 to 100, heard on a gentle curve */
+      vol = ctx.createGain(); vol.gain.value = Math.pow(volOf() / 100, 1.6) * 1.25; vol.connect(ctx.destination);
+      const comp = ctx.createDynamicsCompressor(); master.connect(lp); lp.connect(comp); comp.connect(vol);
       bright = ctx.createGain(); bright.gain.value = .4;
       const lp2 = ctx.createBiquadFilter(); lp2.type = 'lowpass'; lp2.frequency.value = 5200; lp2.Q.value = .4;
       bright.connect(lp2); lp2.connect(comp);
@@ -119,7 +121,9 @@ const SFX = (() => {
   };
   return {
     muted: () => !!(S.ui && S.ui.mute),
-    ctx: () => get(),   /* the music shares this context (phones allow only a few) */
+    ctx: () => get(),
+    out: () => (get(), vol),
+    vol: () => { if (vol && ctx) { vol.gain.cancelScheduledValues(ctx.currentTime); vol.gain.setTargetAtTime(Math.pow(volOf() / 100, 1.6) * 1.25, ctx.currentTime, .05); } },   /* the music shares this context (phones allow only a few) */
     state: () => (ctx ? ctx.state : 'none'),
     play(name, arg) {
       if (S.ui && S.ui.mute) return;

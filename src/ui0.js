@@ -95,6 +95,9 @@ function normalize(d) {
   if (!Array.isArray(u.subs)) delete u.subs; else u.subs = u.subs.filter(x => typeof x === 'string' && /^[a-z0-9]{2,14}$/.test(x)).slice(0, 40);
   delete u.loanMode; delete u.loanTotal;
   if (u.mute !== true) delete u.mute;
+  if (typeof u.vol !== 'number' || !(u.vol >= 0 && u.vol <= 100)) delete u.vol; else u.vol = Math.round(u.vol);
+  if (!(u.dj && typeof u.dj === 'object' && typeof u.dj.src === 'string')) delete u.dj; else u.dj = { src: u.dj.src.slice(0, 16), i: Math.max(0, Math.min(40, Math.round(+u.dj.i) || 0)) };
+  if (u.scene !== false) delete u.scene;
   delete u.subsX;
   const cents = v => Math.round(v * 100) / 100;
   if (!(u.cardT > 0 && u.cardT < 1e9)) delete u.cardT; else u.cardT = cents(u.cardT);

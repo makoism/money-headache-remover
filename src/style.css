@@ -1349,3 +1349,43 @@ body.gw-open, body.co-open.gw-open { overflow: hidden; }
 .imp-m select { flex: 0 0 150px; min-width: 0; }
 .imp-keep { display: flex; gap: 10px; align-items: flex-start; margin: 8px 0 12px; font-size: 14px; color: var(--ink2); } .imp-keep input { width: 20px; height: 20px; accent-color: var(--accent); flex: none; margin-top: 1px; }
 .note-line.bad { color: var(--bad); }
+
+/* Undo after Zero all or Restore samples: same glass as the update offer, near the bottom where the thumb is */
+.upd.undo-bar { top: auto; bottom: calc(96px + env(safe-area-inset-bottom, 0px)); z-index: 73; }
+
+/* ---------- the scenery behind the page (scene.js) ---------- */
+#scene { position: fixed; left: 0; top: 0; z-index: -1; image-rendering: pixelated; image-rendering: crisp-edges; pointer-events: none; }
+body.scene-on::before { display: none; }
+body.scene-on .tour { background: color-mix(in srgb, var(--bg) 62%, transparent); }
+/* while the setup is open the page under it is not drawn: only the scenery shows through */
+body.touring > .wrap, body.touring > .fabs, body.touring #djDock { visibility: hidden; }
+body.scene-on .top h1 { text-shadow: 0 1px 10px var(--bg), 0 0 2px var(--bg); }
+@supports not (color: color-mix(in srgb, red 50%, blue)) { body.scene-on .tour { background: var(--bg); opacity: .97; } }
+/* ---------- top bar: streak, mute, music ---------- */
+.top { justify-content: flex-start; }
+.tstreak { display: inline-flex; align-items: center; gap: 6px; height: 44px; padding: 0 14px 0 11px; border: 0; border-radius: 999px; background: var(--glass, rgba(255,255,255,.06)); box-shadow: inset 0 0 0 1px var(--hair); color: var(--ink2); cursor: pointer; font: inherit; flex: none; }
+.tstreak svg { width: 22px; height: 22px; }
+.tstreak b { font-family: var(--fd, inherit); font-size: 22px; font-weight: 600; line-height: 1; color: var(--ink); }
+.tstreak.lit svg { color: var(--streak, var(--accent)); }
+.tstreak:not(.lit) { opacity: .7; }
+.topb { width: 44px; height: 44px; border: 0; border-radius: 999px; display: inline-grid; place-items: center; background: transparent; color: var(--ink2); cursor: pointer; padding: 0; }
+.topb svg { width: 22px; height: 22px; } .topb:hover { color: var(--ink); background: var(--hair); } .topb.off { color: var(--warn, #e0a050); } .topb.lit { color: var(--accent); }
+@media (max-width: 560px) { .tstreak { height: 38px; padding: 0 11px 0 9px; } .tstreak b { font-size: 19px; } .top h1 { flex: 1 1 auto; } }
+.dj { position: fixed; z-index: 74; top: calc(max(12px, env(safe-area-inset-top)) + 64px); right: max(12px, calc((100vw - 760px) / 2)); width: min(340px, calc(100vw - 24px)); max-height: calc(100vh - 100px); overflow: auto; padding: 18px; border-radius: var(--r-panel); background: var(--float); -webkit-backdrop-filter: blur(24px) saturate(140%); backdrop-filter: blur(24px) saturate(140%); box-shadow: 0 18px 40px -14px rgba(0, 0, 0, .45), 0 0 0 1px var(--hair); display: grid; gap: 12px; }
+.dj-row { display: flex; align-items: center; gap: 12px; } .dj-mute { flex: none; min-width: 98px; } .dj-mute.off { color: var(--warn, #e0a050); }
+.dj-vol { flex: 1; display: flex; align-items: center; gap: 10px; } .dj-vol input { flex: 1; accent-color: var(--accent); } .dj-vol .cap { width: 2.2em; text-align: right; }
+.dj-h { margin: 4px 0 0; font-size: var(--t-cap); color: var(--ink2); }
+.dj-src { display: flex; gap: 8px; flex-wrap: wrap; } .dj-src .chip[aria-pressed="true"] { background: var(--accent); color: var(--on-accent, #0c1a15); }
+.dj-now { display: flex; align-items: center; justify-content: space-between; gap: 10px; } .dj-now b { display: block; font-size: var(--t-ctl); } .dj-now span { font-size: var(--t-cap); color: var(--ink2); }
+.dj-ctl { display: flex; gap: 4px; flex: none; }
+.dj-i { width: 38px; height: 38px; border-radius: 999px; border: 0; background: var(--hair); color: var(--ink); display: inline-grid; place-items: center; cursor: pointer; padding: 0; font-size: 20px; line-height: 1; }
+.dj-i svg { width: 16px; height: 16px; } .dj-i.big { width: 44px; height: 44px; background: var(--accent); color: var(--on-accent, #0c1a15); } .dj-i.big svg { width: 20px; height: 20px; }
+.dj-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.dj-list button { width: 100%; display: flex; gap: 12px; align-items: center; padding: 8px 10px; border: 0; border-radius: var(--r-ctl-s); background: transparent; color: var(--ink); font: inherit; font-size: var(--t-sm); text-align: left; cursor: pointer; }
+.dj-list button span { width: 1.2em; color: var(--ink3, var(--ink2)); font-size: var(--t-micro); } .dj-list button:hover { background: var(--hair); } .dj-list button[aria-current] { background: var(--hair); color: var(--accent); font-weight: 600; }
+.dj-sc { display: flex; gap: 10px; align-items: center; font-size: var(--t-sm); color: var(--ink2); border-top: 1px solid var(--hair); padding-top: 12px; } .dj-sc input { accent-color: var(--accent); width: 18px; height: 18px; }
+.djdock { position: fixed; z-index: 45; left: max(12px, env(safe-area-inset-left)); bottom: max(12px, env(safe-area-inset-bottom)); width: 200px; border-radius: var(--r-box); overflow: hidden; background: var(--float); -webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px); box-shadow: 0 14px 34px -12px rgba(0, 0, 0, .5), 0 0 0 1px var(--hair); }
+.djdock-v { width: 200px; height: 200px; background: #000; } .djdock-v iframe { display: block; width: 200px; height: 200px; border: 0; }
+.djdock-b { padding: 8px 10px 10px; display: grid; gap: 6px; } .djdock-t b { display: block; font-size: var(--t-cap); } .djdock-t span { font-size: var(--t-micro); color: var(--ink2); }
+.djdock-c { display: flex; gap: 4px; } .djdock-c .dj-i { width: 34px; height: 34px; } .djdock-c .x { margin-left: auto; background: transparent; color: var(--ink2); }
+.dj-note:empty { display: none; } .dj-note { margin: 0; color: var(--warn); }

@@ -27,7 +27,8 @@ async function run(width, scheme) {
   await runTour(p, P.b); await w(1500);
   // seats exist once each, on the hosts that are on the page
   const seats = await p.evaluate(() => [...document.querySelectorAll('.pixc')].map(c => c.parentElement.id || c.parentElement.className));
-  ok(new Set(seats).size === seats.length, L + ' one sprite box per host: ' + seats.join(','));
+  const dupes = await p.evaluate(() => { const ps = [...document.querySelectorAll('.pixc')].map(c => c.parentElement); return ps.filter((x, i) => ps.indexOf(x) !== i).length; });
+  ok(dupes === 0, L + ' one sprite box per host: ' + seats.join(','));
   ok(seats.includes('hHero') && seats.includes('hStreak') && seats.includes('hDeep'), L + ' home seats present: ' + seats.join(','));
   await p.evaluate(() => { document.querySelector('#hMore').open = true; }); await w(300);
   await seatsClean(p, L + ' home');

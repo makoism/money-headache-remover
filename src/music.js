@@ -97,7 +97,7 @@ const MUSIC = (() => {
 
   /* ----- the live player ----- */
   let st = null, timer = 0, level = 0;
-  const allowed = () => !!(S && S.ui) && !S.ui.mute && S.ui.music !== false;
+  const allowed = () => !!(S && S.ui) && !S.ui.mute && S.ui.music !== false && djSrc() === 'forest'; /* the album, when chosen, plays instead */
   const videoPlaying = () => { const v = $('#tourVid'); return !!v && !v.paused && !v.ended; };
   function tick() {
     if (!st) return;
@@ -113,7 +113,7 @@ const MUSIC = (() => {
       try { c.resume().then(() => { if (c.state === 'running') start(); }, () => {}); } catch (e) { /* no sound then */ }
       return;
     }
-    try { st = build(c, c.destination); } catch (e) { st = null; return; }
+    try { st = build(c, SFX.out() || c.destination); } catch (e) { st = null; return; }
     level = 0; tick(); timer = setInterval(tick, 250);
   }
   function stop(quick) {

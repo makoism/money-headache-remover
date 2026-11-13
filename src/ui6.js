@@ -209,9 +209,16 @@ function renderStreak() {
   else if (s.n > 0) line = `Streak: ${s.n} wk. Log by Sunday.` + (toSun <= 1 ? ' Last day.' : ` ${plural(toSun + 1, 'day')} left.`);
   else line = 'No streak. Log one receipt this week to start.';
   const sh = s.shield ? `<p class="hst-sh on">${HI.shield}<span>Shield ready. Covers one missed week.</span></p>` : s.n > 0 || s.run > 0 ? `<p class="hst-sh">${HI.shield}<span>${plural(toShield, 'week')} to the next shield.</span></p>` : '';
-  put(el, `<h2>Streak</h2><div class="hst-top"><span class="hst-fl${s.n > 0 ? ' lit' : ''}" aria-hidden="true">${HI.leaf}</span><p class="hst-n"><b>${s.n}</b><span>${s.n === 1 ? 'week' : 'weeks'}</span></p></div`); put(el, `<h2>Streak</h2><div class="hst-top"><span class="hst-fl${s.n > 0 ? ' lit' : ''}" aria-hidden="true">${HI.leaf}</span><p class="hst-n"><b>${s.n}</b><span>${s.n === 1 ? 'week' : 'weeks'}</span></p></div>
+  put(el, `<h2>Streak</h2><div class="hst-top"><span class="hst-fl${s.n > 0 ? ' lit' : ''}" aria-hidden="true">${HI.leaf}</span><p class="hst-n"><b>${s.n}</b><span>${s.n === 1 ? 'week' : 'weeks'}</span></p></div>
     <p class="hst-line">${line}</p><ol class="wdots" aria-label="Last 8 weeks">${dots}</ol>${sh}
     <div class="row-btns">${s.done ? '' : '<button type="button" class="btn small" data-checkin>Nothing to log</button>'}${s.best > s.n ? `<span class="hst-best">Best: ${plural(s.best, 'week')}</span>` : ''}</div>`);
+  paintTopStreak(s);
+}
+/* the streak by the title, on every page: the leaf and the number of weeks */
+function paintTopStreak(s) {
+  const b = $('#topStreak'); if (!b) return; s = s || streakInfo();
+  const h = `${HI.leaf}<b>${s.n}</b>`; if (b.__h !== h) { b.innerHTML = h; b.__h = h; }
+  b.classList.toggle('lit', s.n > 0); b.setAttribute('aria-label', `Streak: ${plural(s.n, 'week')}. ${s.done ? 'This week is logged.' : 'Log a receipt this week to keep it.'}`); b.title = s.done ? 'This week is logged' : s.n ? 'Log a receipt this week to keep it' : 'Log one receipt this week to start a streak';
 }
 function renderBadges() {
   const el = $('#hBadges'), bd = S.ui.bd || {}, n = BADGES.filter(b => bd[b.id]).length;
