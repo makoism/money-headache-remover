@@ -6,6 +6,10 @@
    More albums: add an entry to ALBUMS. */
 const ALBUMS = {
   green: { title: 'GREEN', by: 'Hiroshi Yoshimura', year: 1986, tracks: [['nQkdHvIP0zg', 'CREEK'], ['xOQjZ-PFE1o', 'FEEL'], ['OSOPJ8UbOYg', 'SHEEP'], ['pFoF2Og6AXw', 'SLEEP'], ['TO8kwMJuSvU', 'GREEN'], ['1O58bqXvAsE', 'FEET'], ['67oSBxOEzZ8', 'STREET'], ['ffWtJPbkVNc', 'TEEVEE']] },
+  /* the Kingdom albums are by Amos Roddy and are not free to bundle; they play through Bandcamp's own player (album id in bc) */
+  kingdom: { title: 'Kingdom', by: 'Amos Roddy', year: 2015, bc: 2539297682, tracks: [] },
+  newlands: { title: 'Kingdom New Lands', by: 'Amos Roddy', year: 2016, bc: 864551776, tracks: [] },
+  crowns: { title: 'Kingdom Two Crowns', by: 'Amos Roddy', year: 2018, bc: 2608007289, tracks: [] },
 };
 function djSrc() { return S.ui.music === false ? 'off' : (S.ui.dj && ALBUMS[S.ui.dj.src] ? S.ui.dj.src : 'forest'); }
 const volOf = () => (typeof S.ui.vol === 'number' ? Math.max(0, Math.min(100, S.ui.vol)) : 80);
@@ -33,6 +37,15 @@ const DJ = (() => {
     });
     return apiP;
   }
+  /* ---------- Bandcamp's player for the Kingdom albums ---------- */
+  function showBc() {
+    const a = alb(), b = $('#djBc'); if (!a || !a.bc || !b) return;
+    try { if (yt && ytReady) yt.pauseVideo(); } catch (e) { /* gone */ } playing = false; want = false;
+    const src = `https://bandcamp.com/EmbeddedPlayer/album=${a.bc}/size=small/bgcol=0c1a15/linkcol=8fd9b0/artwork=small/transparent=true/`;
+    if (b.dataset.src !== src) { b.innerHTML = `<iframe title="${esc(a.title)}, Bandcamp player" src="${src}" seamless allow="autoplay"></iframe>`; b.dataset.src = src; }
+    b.hidden = false; const d = $('#djDock'); if (d) d.hidden = true; paint();
+  }
+  function hideBc() { const b = $('#djBc'); if (b) { b.innerHTML = ''; b.dataset.src = ''; b.hidden = true; } }
   function ensure() {
     if (yt) return Promise.resolve();
     $('#djDock').hidden = false; paintDock('Loading…');
@@ -41,30 +54,32 @@ const DJ = (() => {
         playerVars: { playsinline: 1, rel: 0, modestbranding: 1, controls: 1, iv_load_policy: 3, fs: 0 },
         events: {
           onReady: () => { ytReady = true; try { yt.setVolume(volOf()); if (S.ui.mute) yt.mute(); } catch (e) { /* not yet */ } res(); },
-          onStateChange: e => { playing = e.data === 1; if (playing) { want = true; const h = $('#djHint'); if (h) h.hidden = true; } if (e.data === 0) step(1); paint(); },
+          onStateChange: e => { playing = e.data === 1; if (playing) { want = true; const n = $('#djNote'); if (n && /held the music/.test(n.textContent)) n.textContent = ''; } if (e.data === 0) step(1); paint(); },
           onError: () => { step(1); },
         } });
     })).catch(() => { yt = null; $('#djDock').hidden = true; setSrc('forest', true); const n = $('#djNote'); if (n) n.textContent = 'GREEN could not load (it streams from YouTube and needs the internet). Forest plays meanwhile.'; });
   }
   function load(i, go) {
-    const a = alb(); if (!a) return;
+    const a = alb(); if (!a || a.bc) return;
     S.ui.dj = { src: djSrc(), i }; persist();
     if (!yt || !ytReady) { if (go) { want = true; ensure().then(() => load(i, want)); } paint(); return; }
     try { if (go) yt.loadVideoById(a.tracks[i][0]); else yt.cueVideoById(a.tracks[i][0]); } catch (e) { /* player gone */ }
     paint();
   }
-  const step = d => { const a = alb(); if (!a) return; load((idx() + d + a.tracks.length) % a.tracks.length, true); };
+  const step = d => { const a = alb(); if (!a || a.bc) return; load((idx() + d + a.tracks.length) % a.tracks.length, true); };
   /* the browser lets sound start only from a tap; the player arrives a moment after the tap, so the start may be held back.
      Then the dock says so, and a tap on the cover (YouTube's own play button) always works. */
   let holdT = 0;
-  function checkHeld() { clearTimeout(holdT); holdT = setTimeout(() => { if (want && !playing) { const h = $('#djHint'); if (h) h.hidden = false; } }, 2500); }
+  function checkHeld() { clearTimeout(holdT); holdT = setTimeout(() => { if (want && !playing) { const n = $('#djNote'); if (n) n.textContent = 'Your browser held the music back. Tap play once more.'; } }, 2500); }
   function play() {
     const a = alb(); if (!a) return;
-    if (S.ui.mute) setMute(false);                     /* choosing music is a clear wish to hear it */
+    if (S.ui.mute) setMute(false);
+    if (a.bc) { showBc(); return; }
+    hideBc();                     /* choosing music is a clear wish to hear it */
     want = true; if (!ytReady) { ensure().then(() => { if (want) { load(idx(), true); checkHeld(); } }); return; }
     try { yt.playVideo(); } catch (e) { /* gone */ } checkHeld();
   }
-  function pause() { want = false; if (yt && ytReady) try { yt.pauseVideo(); } catch (e) { /* gone */ } }
+  function pause() { want = false; hideBc(); if (yt && ytReady) try { yt.pauseVideo(); } catch (e) { /* gone */ } }
   /* ---------- choosing the source ---------- */
   function setSrc(src, quiet) {
     const n = $('#djNote'); if (n) n.textContent = '';
@@ -91,7 +106,7 @@ const DJ = (() => {
   /* ---------- painting ---------- */
   function paintDock(msg) {
     const a = alb(), i = idx(), d = $('#djDockT'); if (!d) return;
-    d.innerHTML = msg ? `<span class="cap">${esc(msg)}</span>` : a ? `<b>${esc(a.tracks[i][1])}</b><span>${esc(a.by)}, ${esc(a.title)}</span>` : '';
+    d.innerHTML = msg ? `<span class="cap">${esc(msg)}</span>` : a && a.bc ? `<b>${esc(a.title)}</b><span>${esc(a.by)}</span>` : a ? `<b>${esc(a.tracks[i][1])}</b><span>${esc(a.by)}, ${esc(a.title)}</span>` : '';
     $('#djDockPlay').innerHTML = playing ? ICON.pause : ICON.play; $('#djDockPlay').setAttribute('aria-label', playing ? 'Pause' : 'Play');
   }
   function paint() {
@@ -103,12 +118,13 @@ const DJ = (() => {
     const r = $('#djVol'); if (document.activeElement !== r) r.value = v; $('#djVolN').textContent = v;
     $$('[data-djsrc]').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.djsrc === src)));
     const a = alb(), i = idx(), box = $('#djAlb');
-    if (a) {
+    if (a && a.bc) { box.hidden = false; box.innerHTML = `<p class="cap">${esc(a.title)} by ${esc(a.by)}, plays in Bandcamp's own player below. Press play there. Its volume is separate from the slider above.</p>`; }
+    else if (a) {
       box.hidden = false;
       box.innerHTML = `<div class="dj-now"><div><b>${esc(a.tracks[i][1])}</b><span>${esc(a.by)}, ${esc(a.title)} (${a.year})</span></div>
         <div class="dj-ctl"><button type="button" class="dj-i" data-djstep="-1" aria-label="Previous track">${ICON.prev}</button><button type="button" class="dj-i big" data-djplay aria-label="${playing ? 'Pause' : 'Play'}">${playing ? ICON.pause : ICON.play}</button><button type="button" class="dj-i" data-djstep="1" aria-label="Next track">${ICON.next}</button></div></div>
         <ol class="dj-list">${a.tracks.map((t, k) => `<li><button type="button" data-djtrack="${k}"${k === i ? ' aria-current="true"' : ''}><span>${k + 1}</span>${esc(t[1])}</button></li>`).join('')}</ol>
-        <p class="cap">Streams the official release through YouTube's player, shown at the bottom left while it plays.</p>`;
+        <p class="cap">Streams the official release from YouTube, with no video shown.</p>`;
     } else { box.hidden = true; box.innerHTML = ''; }
     $('#djScene').checked = SCENE.on();
     paintDock();

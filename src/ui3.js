@@ -58,6 +58,7 @@ const hideTip = () => $('#tip').classList.remove('on');
 
 /* ---------- tabs and rows ---------- */
 function switchTab(t, focus) {
+  WORLD.open();
   const prev = tab; tab = t; disarm();
   /* a receipt logged for another month moved the open month so its list could be seen; the plan pages open on the month in hand again */
   if (selByReceipt && (t === 'month' || t === 'months' || t === 'goals')) { selByReceipt = false; const ym = nowYm(); if (MONTHS.indexOf(ym) >= 0 && ym !== sel) { sel = ym; itemsSig = ''; try { history.replaceState(null, '', '#' + ym); } catch (e) { /* sandboxed */ } } }

@@ -348,8 +348,8 @@ function closeTour(toBills, done) {
   restructure();
   if (toBills) { S.ui.seen = Object.assign(S.ui.seen || {}, { month: true }); switchTab('month'); openRow('nec'); }
   else {
-    scrollTo({ top: 0 });
-    if (done && tab !== 'home') switchTab('home');
+    scrollTo({ top: 0 }); if (done) WORLD.settle();
+    if (done && tab !== 'home' && !WORLD.isOn()) switchTab('home');
     else if (tourReturn && tourReturn.focus) try { tourReturn.focus({ preventScroll: true }); } catch (e) { /* gone */ }
   }
 }

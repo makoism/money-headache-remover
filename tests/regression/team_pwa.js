@@ -13,14 +13,14 @@ const ok = (n, c) => { console.log(c ? 'PASS' : 'FAIL', n); if (!c) process.exit
   console.log('installability errors:', JSON.stringify(inst.installabilityErrors));
   ok('Chrome finds nothing blocking install', inst.installabilityErrors.length === 0);
   const man = await cdp.send('Page.getAppManifest');
-  ok('manifest parses with name and icons', !man.errors.length && /Money Headache Remover 2000/.test(man.data) && /maskable/.test(man.data));
+  ok('manifest parses with name and icons', !man.errors.length && /The Burrow/.test(man.data) && /maskable/.test(man.data));
   await p.click('#tourNext'); await w(300); /* past the video to the currency screen, where the name is */
   await p.type('#tourName', 'Mara'); await p.click('#tourNext'); await w(250); await p.click('#tourSkip'); await w(1500);
   const before = await p.evaluate(() => (localStorage.getItem('money-map-template-v2') || '').includes('Mara'));
   ok('your name was saved before going offline', before);
   await p.setOfflineMode(true);
   await p.reload({ waitUntil: 'load' }); await w(900);
-  ok('page loads with no network', /Money Headache Remover 2000/.test(await p.title()) && (await p.$eval('#heroNum', e => e.textContent)).length > 0);
+  ok('page loads with no network', /The Burrow/.test(await p.title()) && (await p.$eval('#heroNum', e => e.textContent)).length > 0);
   ok('your saved data is still there offline', await p.evaluate(() => (localStorage.getItem('money-map-template-v2') || '').includes('Mara')));
   ok('and the tour does not come back', await p.$eval('#tour', e => e.hidden));
   /* a newer version put online while the page is open: the page offers a reload, never forces one */
@@ -29,7 +29,7 @@ const ok = (n, c) => { console.log(c ? 'PASS' : 'FAIL', n); if (!c) process.exit
   try {
     await p.evaluate(async () => { const r = await navigator.serviceWorker.getRegistration(); await r.update(); });
     let shown = false; for (let i = 0; i < 40; i++) { await w(250); shown = await p.evaluate(() => !document.querySelector('#upd').hidden); if (shown) break; }
-    ok('a newer version offers a reload (the page is not forced)', shown && /Money Headache Remover 2000/.test(await p.title()));
+    ok('a newer version offers a reload (the page is not forced)', shown && /The Burrow/.test(await p.title()));
     await p.click('#updGo'); await p.waitForNavigation({ waitUntil: 'load' }).catch(() => {}); await w(600);
     ok('after Reload the page is up and the offer is gone', (await p.$eval('#upd', e => e.hidden)) && (await p.evaluate(() => (localStorage.getItem('money-map-template-v2') || '').includes('Mara'))));
   } finally { fs.writeFileSync(swp, sw0); }

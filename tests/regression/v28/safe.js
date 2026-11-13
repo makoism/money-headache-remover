@@ -8,8 +8,9 @@ const open = async (init, vw = 390) => {
   const b = await puppeteer.launch({ executablePath: '/usr/bin/google-chrome', headless: 'new', args: ['--no-sandbox', '--disable-gpu'] });
   const p = await b.newPage(), errs = []; await p.setViewport({ width: vw, height: 844 });
   p.on('pageerror', e => errs.push('PAGEERR ' + e.message)); p.on('console', m => { if (m.type() === 'error' && !/ERR_FILE_NOT_FOUND|ERR_TUNNEL_CONNECTION_FAILED|Failed to load resource/.test(m.text())) errs.push('console: ' + m.text()); });
+  await p.evaluateOnNewDocument(() => { try { if (!localStorage.getItem('mhr-layout')) localStorage.setItem('mhr-layout', 'plain'); } catch (e) { } });
   if (init) await p.evaluateOnNewDocument(init);
-  await p.goto(PAGE + '?s=1#2026-11', { waitUntil: 'load' }); await w(800); return { b, p, errs };
+  await p.goto(PAGE + '?s=1&layout=plain#2026-11', { waitUntil: 'load' }); await w(800); return { b, p, errs };
 };
 const idbRec = p => p.evaluate(() => new Promise(res => { const rq = indexedDB.open('money-map-safe'); rq.onerror = () => res(null); rq.onsuccess = () => { try { const g = rq.result.transaction('kv').objectStore('kv').get('state'); g.onsuccess = () => res(g.result || null); g.onerror = () => res(null); } catch (e) { res(null); } }; }));
 const lose = (p, val) => p.evaluate((k, v) => { const o = Storage.prototype.setItem; Storage.prototype.setItem = function () {}; if (v === null) localStorage.removeItem(k); else o.call(localStorage, k, v); }, KEY, val);

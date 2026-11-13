@@ -142,7 +142,7 @@ const SFX = (() => {
   };
 })();
 if (/[?&]sfxtest\b/.test(location.search)) window.__sfx = SFXD;
-const sfx = (n, a) => SFX.play(n, a);
+const sfx = (n, a) => { SFX.play(n, a); try { (ECO.on() ? ECO : LIFE).onSfx(n); } catch (e) { /* the world is a bonus */ } };
 
 /* ===== a few small leaves, for sliders and switches ===== */
 function sparkBurst(host, x, y, n, spread) {
@@ -188,7 +188,7 @@ const calText = o => o.title + '\nRepeats ' + reminderWhen(o) + '\n' + PAGE_URL;
 function reminderOf() {
   const freq = REMIND_FREQS.some(x => x[0] === S.ui.rcFreq) ? S.ui.rcFreq : 'weekly', time = S.ui.rcTime || '18:00';
   return { freq, day: S.ui.rcDay !== undefined ? +S.ui.rcDay : 0, dom: S.ui.rcDom !== undefined ? +S.ui.rcDom : 1, time, today: new Date(),
-    title: 'Update my M.H.R.2000 receipts', details: `Add ${REMIND_SPAN[freq]} receipts to M.H.R.2000 (The Money Headache Remover 2000): cash, card and e-wallet.\n` + PAGE_URL };
+    title: 'Update my receipts in The Burrow', details: `Add ${REMIND_SPAN[freq]} receipts to The Burrow: cash, card and e-wallet.\n` + PAGE_URL };
 }
 /* the same four fields in the tour and on the Receipts tab; p is the id prefix ("tour" or "rc") */
 function remindFieldsHTML(p) {
