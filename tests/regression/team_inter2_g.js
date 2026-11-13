@@ -262,7 +262,7 @@ const puppeteer = require('/home/claude/work/tools/node_modules/puppeteer-core')
   ok('how-to is closed for later visits', true);
   // weekly reminder
   const g = await p.$eval('#rcCal a[href*="calendar.google.com"]', e => ({ href: decodeURIComponent(e.href), target: e.target, rel: e.rel })), ic = await p.$eval('#rcCal a[href*="outlook.live.com"]', e => ({ href: decodeURIComponent(e.href), target: e.target, rel: e.rel, dl: e.hasAttribute('download') }));
-  ok('Google link is a weekly recurring event', g.href.includes('calendar.google.com/calendar/render?action=TEMPLATE') && g.href.includes('RRULE:FREQ=WEEKLY;BYDAY=SU') && g.href.includes('Update my Money Headache Remover receipts'));
+  ok('Google link is a weekly recurring event', g.href.includes('calendar.google.com/calendar/render?action=TEMPLATE') && g.href.includes('RRULE:FREQ=WEEKLY;BYDAY=SU') && g.href.includes('Update my receipts in The Burrow'));
   ok('Google link opens safely in a new tab', g.target === '_blank' && g.rel.includes('noopener'));
   ok('Google link points back to the page', g.href.includes('claude.ai/artifact/Ksf1kNTW7KRsd7ZHmiVC1w'));
   ok('Outlook link opens a new event safely, with no file download', ic.href.includes('outlook.live.com/calendar/0/deeplink/compose') && ic.target === '_blank' && ic.rel.includes('noopener') && !ic.dl && /startdt=\d{4}-\d{2}-\d{2}T18:00:00/.test(ic.href));
@@ -270,7 +270,7 @@ const puppeteer = require('/home/claude/work/tools/node_modules/puppeteer-core')
   ok('Apple, Samsung and other calendars are buttons, not download links', (await p.$$eval('#rcCal button[data-cal]', e => e.length)) >= 2);
   ok('the copy-paste text starts closed', !(await p.$eval('.ctext', e => e.open)));
   await p.click('.ctext summary'); await w(200);
-  ok('copy text holds the event name, schedule and link', (await val('#rcEventText')).includes('Update my Money Headache Remover receipts') && (await val('#rcEventText')).includes('Repeats every Sunday at 6:00 pm') && (await val('#rcEventText')).includes('claude.ai/artifact/Ksf1kNTW7KRsd7ZHmiVC1w'));
+  ok('copy text holds the event name, schedule and link', (await val('#rcEventText')).includes('Update my receipts in The Burrow') && (await val('#rcEventText')).includes('Repeats every Sunday at 6:00 pm') && (await val('#rcEventText')).includes('claude.ai/artifact/Ksf1kNTW7KRsd7ZHmiVC1w'));
   await p.click('#rcCopy'); await w(250);
   ok('Copy gives feedback', (await q('#rcCopyMsg')).length > 0);
   await p.select('#rcDay', '3'); await set('#rcTime', '07:30', 'change'); await w(300);

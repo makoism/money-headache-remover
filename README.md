@@ -1,4 +1,4 @@
-# M.H.R.2000 (The Money Headache Remover 2000)
+# The Burrow
 
 Live at https://money-headache-remover.mako-162.workers.dev (mirror on Claude: https://claude.ai/artifact/Ksf1kNTW7KRsd7ZHmiVC1w).
 

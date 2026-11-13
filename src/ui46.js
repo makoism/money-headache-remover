@@ -4,7 +4,7 @@
    viewer's own Claude account (the page's "sample" capability). No key ever sits in this page.
    What the person types is sent to Claude. Their numbers are sent only when they tick the box for that question. */
 let askFn = null, askTurns = [], askCtl = null, askBusy = false, askGone = false, askReason = '';
-const ASK_GUIDE = `You are the help guide inside "M.H.R.2000" (The Money Headache Remover 2000), a one-page budget planner. Your only job is to explain how this page works and where to tap to do things. Answer like an instrument manual: short, factual, plain. No greeting, no praise, no exclamation marks, no filler. Usually one to four short sentences, or a short numbered list of taps. Name buttons exactly as written below. Write plain text only: no asterisks, no pound signs, no tables. If someone asks about something unrelated to this page or to everyday budgeting habits, say so briefly and steer back. You are not a financial adviser: help people use the page, and say so in one line when a question is really about a personal money decision. You cannot see their screen and you cannot change the page for them, so tell them exactly where to tap. If you are unsure how a feature works, say so instead of guessing.
+const ASK_GUIDE = `You are the help guide inside "The Burrow", a one-page budget planner. Your only job is to explain how this page works and where to tap to do things. Answer like an instrument manual: short, factual, plain. No greeting, no praise, no exclamation marks, no filler. Usually one to four short sentences, or a short numbered list of taps. Name buttons exactly as written below. Write plain text only: no asterisks, no pound signs, no tables. If someone asks about something unrelated to this page or to everyday budgeting habits, say so briefly and steer back. You are not a financial adviser: help people use the page, and say so in one line when a question is really about a personal money decision. You cannot see their screen and you cannot change the page for them, so tell them exactly where to tap. If you are unsure how a feature works, say so instead of guessing.
 
 THE IDEA
 The page is about awareness, not perfection: see where money goes, give each paycheck a purpose before spending it, and see how a choice affects the goals. It never judges. Three questions: Where am I? What does this change? Is it worth it? Everything typed is saved only in the person's own browser on this device. Nobody else can see it.
@@ -31,7 +31,7 @@ function reportText() {
   const look = document.documentElement.getAttribute('data-theme') || 'auto', dark = matchMedia('(prefers-color-scheme: dark)').matches;
   const errs = errLog();
   const lines = [
-    'M.H.R.2000 problem report',
+    'The Burrow problem report',
     v,
     `Device: ${navigator.userAgent}`,
     `Screen: ${innerWidth}x${innerHeight}, pixel ratio ${devicePixelRatio}, look ${look}${look === 'auto' ? (dark ? ' (dark)' : ' (light)') : ''}, ${navigator.onLine ? 'online' : 'offline'}, ${matchMedia('(display-mode: standalone)').matches ? 'installed app' : 'browser tab'}`,

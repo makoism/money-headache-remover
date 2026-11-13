@@ -38,7 +38,7 @@ ${texts.map(t => `\n----- FILE: ${t.name} -----\n${t.text}`).join('\n')}`;
 /* the message for any other AI app: it may ask first, then must end with the JSON block */
 function importMessage() {
   const cur = sym() || 'my currency';
-  return `I am setting up a budget page called M.H.R.2000. I will attach my bank statements, e-wallet history or credit card statements (CSV files or screenshots). Please work out my monthly numbers.
+  return `I am setting up a budget page called The Burrow. I will attach my bank statements, e-wallet history or credit card statements (CSV files or screenshots). Please work out my monthly numbers.
 
 First, if anything is unclear (which deposits are my salary, which payment is rent, whether a charge repeats), ask me up to five short questions and wait for my answers.
 Then reply with ONLY one JSON block, no other text, in exactly this shape (the values are an example):

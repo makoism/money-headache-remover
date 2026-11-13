@@ -27,6 +27,7 @@ function wire() {
   /* buttons that jump somewhere, wherever they are on the page */
   document.addEventListener('click', e => {
     const o = e.target.closest('[data-open]'); if (o) { openRow(o.dataset.open); return; }
+    if (e.target.closest('[data-streak]')) { switchTab('home'); const m = $('#hMore'); if (m) m.open = true; const el = $('#hStreak'); if (el) setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60); return; }
     const t = e.target.closest('[data-tab-go]'); if (t) { switchTab(t.dataset.tabGo); return; }
     const s = e.target.closest('[data-scroll]'); if (s) { const el = document.getElementById(s.dataset.scroll); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
   });
@@ -188,7 +189,7 @@ function wire() {
   twoStep($('#blankBtn'), 'Tap again to zero all', blank);
   twoStep($('#blankTop'), 'Tap again to zero all', blank);
   twoStep($('#bkReset'), 'Tap again to restore', () => { offerUndo(JSON.stringify(S), 'Samples restored.'); const old = S, u = S.ui; S = presetState(u.cur); S.ui = Object.assign({}, u, { preset: S.ui.preset, sampleHidden: false, done: {} }); delete S.ui.cleared; delete S.ui.setup; delete S.ui.gset; delete S.ui.sb; delete S.ui.tourAt; delete S.ui.src; delete S.ui.imp; S.receipts = old.receipts; editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = 'Samples restored.'; });
-  wireReceipts(); wireTour(); wireHelp(); wireHome(); wireScan(); wireAskAi(); wireSafe(); wireVault(); safe(() => DJ.wire(), null, 'dj'); safe(() => SCENE.start(), null, 'scene');
+  wireReceipts(); wireTour(); wireHelp(); wireHome(); wireScan(); wireAskAi(); wireSafe(); wireVault(); safe(() => DJ.wire(), null, 'dj'); safe(() => SCENE.start(), null, 'scene'); safe(() => WORLD.wire(), null, 'world');
 
   /* tooltips */
   const bar = $('#bar');
