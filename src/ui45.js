@@ -207,7 +207,7 @@ const TOUR = [
     after: () => { if (!hasHello) wireRestore(); },
     leave: () => { const el = $('#tourName'); if (el) { const n = cleanName(el.value); if (n) S.ui.name = n; else delete S.ui.name; persist(); } } },
   /* the statements are the setup. The typed screens follow only for what the statements did not answer, or when they were skipped. */
-  STEP_SOURCE, STEP_REVIEW,
+  STEP_CHAT, STEP_SOURCE, STEP_REVIEW,
   STEP_MONEY, STEP_BILLS,
   { dyn: true, setup: true, skipIf: () => importApplied(), steps: () => chosenBills().map(billStep) },
   STEP_JARS,
@@ -409,6 +409,8 @@ function wireTour() {
   $('#tour').addEventListener('keydown', e => {
     if (e.key === 'Escape') { e.preventDefault(); leaveTour(); return; }
     if (e.key === 'Enter' && e.target.matches('[data-subamt], .so-n, .so-a, #tourCardT, #tourCardB')) { e.preventDefault(); e.target.blur(); return; }
+    if (e.key === 'Enter' && e.target.matches('#onbIn')) { e.preventDefault(); const v = e.target.value; e.target.value = ''; onbAsk(v); return; }
+    if (e.key === 'Enter' && e.target.matches('[data-onbname]')) { e.preventDefault(); const g = $('#onbGo'); if (g) g.click(); return; }
     if (e.key === 'Enter' && e.target.matches('#tourBody input:not([type=range]):not([type=checkbox]):not([type=radio])')) { e.preventDefault(); tourStep(1); return; }
     if (e.key !== 'Tab') return;
     const f = tourFocusables(); if (!f.length) return;

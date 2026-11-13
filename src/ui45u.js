@@ -172,6 +172,7 @@ const STEP_SOURCE = { id: 'source', part: PART.money, setup: true, title: 'Your 
       </div>
     </details>
     ${IMP_HOW()}
+    ${STEP_CHAT.when() ? '<p class="cap">A question first? <button type="button" class="link" id="srcChat">Back to the questions</button></p>' : ''}
     <p class="cap">${impOnly ? '<button type="button" class="link" id="srcSkip">Not now</button>' : 'No statements at hand? <button type="button" class="link" id="srcSkip">Type the numbers instead</button>. Receipts takes statements any time, so this can wait.'}</p>`; },
   after: () => {
     const body = $('#tourBody');
@@ -206,6 +207,7 @@ const STEP_SOURCE = { id: 'source', part: PART.money, setup: true, title: 'Your 
     $('#acctAdd').addEventListener('click', () => { if (impAccts.length >= ACCT_MAX) return; impAccts.push(acctNew(impAccts.some(a => a.kind === 'card') ? 'wallet' : 'card')); sfx('pop'); paintAccts(); const ni = $(`[data-acctname="${impAccts[impAccts.length - 1].id}"]`); if (ni) ni.focus(); });
     $('#impRead').addEventListener('click', importRead);
     $('#impStop').addEventListener('click', () => { if (impCtl) impCtl.abort(); });
+    const sc = $('#srcChat'); if (sc) sc.addEventListener('click', () => tourStep(-1));
     $('#srcSkip').addEventListener('click', () => { impDraft = null; tourStep(1); }); /* typing instead: a pasted or read draft is dropped */
     $('#impAis').innerHTML = aiPickHTML();
     $('#impCopy').addEventListener('click', async () => { const ok = await copyText(importMessage(), $('#impCopyMsg'), 'Copied. Paste it into your AI with your files.'); if (!ok) { $('#impPaste').value = importMessage(); $('#impPaste').select(); } });

@@ -1390,3 +1390,18 @@ body.scene-on .top h1 { text-shadow: 0 1px 10px var(--bg), 0 0 2px var(--bg); }
 .djdock-c { display: flex; gap: 4px; } .djdock-c .dj-i { width: 34px; height: 34px; } .djdock-c .x { margin-left: auto; background: transparent; color: var(--ink2); }
 .dj-note:empty { display: none; } .dj-note { margin: 0; color: var(--warn); }
 .djdock-hint { margin: 0; font-size: var(--t-micro); color: var(--accent); font-weight: 600; }
+
+/* ---------- the phone scenery: a hanging sign for the top bar and a heap of rocks with a stream along the bottom (scene.js, below 720px wide) ---------- */
+#sceneBot { position: fixed; left: 0; bottom: 0; z-index: 30; image-rendering: pixelated; image-rendering: crisp-edges; pointer-events: none; }
+body.touring #sceneBot { display: none; }
+body.scene-phone .wrap > .top { background: var(--sign) center / 100% 100% no-repeat; image-rendering: pixelated; margin-top: 4px; padding: 45px 22px 32px 31px; --ink: #f7eedb; --ink2: rgba(247, 238, 219, .82); --ink3: rgba(247, 238, 219, .55); --track: rgba(247, 238, 219, .12); --hair: rgba(247, 238, 219, .2); color: #f7eedb; }
+body.scene-phone .wrap > .top h1 { text-shadow: none; }
+body.scene-phone .wrap > .top .tstreak { background: rgba(247, 238, 219, .08); }
+body.scene-phone .wrap > .top .topb, body.scene-phone .wrap > .top .gear { background: transparent; }
+body.scene-phone .help { bottom: 24px; }
+body.scene-phone .help-row { gap: 26px; }
+body.scene-phone .wrap { padding-bottom: 170px; }
+body.scene-phone .ask { bottom: 144px; max-height: calc(100dvh - 180px); }
+body.scene-phone #cheer { bottom: 144px; }
+body.scene-phone .upd.undo-bar { bottom: 152px; }
+body.scene-phone .djdock { bottom: 136px; }

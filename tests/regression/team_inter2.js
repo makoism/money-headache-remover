@@ -48,7 +48,9 @@ const puppeteer = require('/home/claude/work/tools/node_modules/puppeteer-core')
   await p.click('input[name=tourCur][value="₱"]'); await w(150);
   ok('back to pesos', (await p.$eval('input[name=tourCur]:checked', e => e.value)) === '₱' && (await val('#tourCurMore')) === '');
   await p.click('#tourNext'); await w(250);
-  ok('screen 3 is Your statements, with the typed path in the footer', (await q('#tourTitle')) === 'Your statements' && !(await p.$eval('#tourNext', e => e.hidden)) && (await q('#tourNext')) === 'Type numbers instead');
+  ok('screen 3 is the questions before the uploads, with Skip to uploads in the footer', (await q('#tourTitle')) === 'Before the uploads' && (await q('#tourNext')) === 'Skip to uploads');
+  await p.click('#tourNext'); await w(250);
+  ok('then Your statements, with the typed path in the footer', (await q('#tourTitle')) === 'Your statements' && !(await p.$eval('#tourNext', e => e.hidden)) && (await q('#tourNext')) === 'Type numbers instead');
   await p.evaluate(() => document.querySelector('#srcSkip').scrollIntoView({ block: 'center' })); await p.click('#srcSkip'); await w(250);
   const fill = { rent: 9000, utilities: 1500, food: 6000 };
   for (let g = 0; g < 60; g++) {
