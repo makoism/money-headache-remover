@@ -1748,7 +1748,7 @@ body.scene-on .top h1 { text-shadow: 0 1px 10px var(--bg), 0 0 2px var(--bg); }
   </div>
 
   <p class="foot" id="footNote">Not financial advice. Sample numbers are invented. Replace them with yours.</p>
-  <p class="foot ver" id="verFoot">Version 36.0, updated Nov 13, 1:30 pm</p>
+  <p class="foot ver" id="verFoot">Version 36.1, updated Nov 13, 2:40 pm</p>
 </div>
 <div class="tip" id="tip" role="tooltip"></div>
 <div class="tour" id="tour" role="dialog" aria-modal="true" aria-labelledby="tourTitle" hidden>
@@ -1799,7 +1799,7 @@ body.scene-on .top h1 { text-shadow: 0 1px 10px var(--bg), 0 0 2px var(--bg); }
     <button type="button" id="helpSetup">Guided setup</button>
     <button type="button" id="helpVideo" hidden>Intro video</button>
     <button type="button" id="helpReport">Report a problem</button>
-    <p class="help-ver">Version 36.0</p>
+    <p class="help-ver">Version 36.1</p>
   </div>
   <div class="help-row"><button type="button" class="help-btn ask-btn" id="askBtn">Ask</button><button type="button" class="help-btn" id="helpBtn" aria-expanded="false" aria-controls="helpMenu"><span class="q" aria-hidden="true">?</span>Help</button></div>
 </div>
@@ -5759,7 +5759,8 @@ const DJ = (() => {
     else { delete S.ui.music; S.ui.dj = { src, i: src === (S.ui.dj && S.ui.dj.src) ? idx() : 0 }; if (src === 'forest') pause(); }
     persist(); MUSIC.sync();
     if (ALBUMS[src] && !quiet) play();
-    $('#djDock').hidden = !ALBUMS[djSrc()] || !yt; paint();
+    if (!ALBUMS[djSrc()]) $('#djDock').hidden = true; else if (yt) $('#djDock').hidden = false; /* while the player loads, ensure() shows the dock itself */
+    paint();
   }
   function setVol(v) {
     S.ui.vol = Math.round(Math.max(0, Math.min(100, v))); persist();

@@ -63,7 +63,8 @@ const DJ = (() => {
     else { delete S.ui.music; S.ui.dj = { src, i: src === (S.ui.dj && S.ui.dj.src) ? idx() : 0 }; if (src === 'forest') pause(); }
     persist(); MUSIC.sync();
     if (ALBUMS[src] && !quiet) play();
-    $('#djDock').hidden = !ALBUMS[djSrc()] || !yt; paint();
+    if (!ALBUMS[djSrc()]) $('#djDock').hidden = true; else if (yt) $('#djDock').hidden = false; /* while the player loads, ensure() shows the dock itself */
+    paint();
   }
   function setVol(v) {
     S.ui.vol = Math.round(Math.max(0, Math.min(100, v))); persist();
