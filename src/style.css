@@ -1389,3 +1389,4 @@ body.scene-on .top h1 { text-shadow: 0 1px 10px var(--bg), 0 0 2px var(--bg); }
 .djdock-b { padding: 8px 10px 10px; display: grid; gap: 6px; } .djdock-t b { display: block; font-size: var(--t-cap); } .djdock-t span { font-size: var(--t-micro); color: var(--ink2); }
 .djdock-c { display: flex; gap: 4px; } .djdock-c .dj-i { width: 34px; height: 34px; } .djdock-c .x { margin-left: auto; background: transparent; color: var(--ink2); }
 .dj-note:empty { display: none; } .dj-note { margin: 0; color: var(--warn); }
+.djdock-hint { margin: 0; font-size: var(--t-micro); color: var(--accent); font-weight: 600; }

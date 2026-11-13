@@ -330,7 +330,7 @@ function paintMus() {
   if (b) { b.setAttribute('aria-pressed', String(on)); b.setAttribute('aria-label', on ? 'Music on. Turn off' : 'Music off. Turn on'); b.classList.toggle('off', !on); b.textContent = on ? 'Music on' : 'Music off'; }
   if (sw) { sw.setAttribute('aria-checked', String(on)); const t = $('#musTxt'); if (t) t.textContent = on ? 'On' : 'Off'; }
 }
-function toggleMus() { MUSIC.setOn(!MUSIC.on()); paintMus(); sfx('tap'); }
+function toggleMus() { DJ.setSrc(MUSIC.on() ? 'off' : (S.ui.dj && S.ui.dj.src) || 'forest', true); sfx('tap'); }
 function showTourShell() { $('#tour').hidden = false; $('.wrap').inert = true; $('#dock').inert = true; helpAside(true); }
 /* at: the id of the screen to open on. mode: 'full' asks the questions, 'replay' only shows the screens. */
 function openTour(at, mode) {

@@ -18,7 +18,7 @@ if ! safe_once; then echo "(retrying once)"; sleep 3; safe_once || BAD=1; fi
 step "guard (idle CPU, tab speed, no outside requests, no errors)"; node tests/guard.js 2>&1 | grep -v "^\[agent\|^- \|^Allowed\|^For det" ; [ ${PIPESTATUS[0]} -ne 0 ] && BAD=1
 if [ "$MODE" = "full" ]; then
   # a script that cannot even start (syntax error, crash, timeout) counts as a failure, not a quiet skip
-  for f in /tmp/team_inter2.js /tmp/team_help.js /tmp/team_cur.js /tmp/team_month.js /tmp/team_card.js /tmp/v22/video.js /tmp/v22/home.js /tmp/v22/walk.js /tmp/v22/snd.js /tmp/v22/cal.js /tmp/v22/scan.js /tmp/v31/music_test.js /tmp/v31/split_test.js /tmp/v33/pix_test.js /tmp/v34/purpose_test.js /tmp/v35/look_test.js /tmp/v35/upgrade_test.js /tmp/v36/ux_test.js /tmp/v36/undo_test.js /tmp/v37/dj_test.js; do
+  for f in /tmp/team_inter2.js /tmp/team_help.js /tmp/team_cur.js /tmp/team_month.js /tmp/team_card.js /tmp/v22/video.js /tmp/v22/home.js /tmp/v22/walk.js /tmp/v22/snd.js /tmp/v22/cal.js /tmp/v22/scan.js /tmp/v31/music_test.js /tmp/v31/split_test.js /tmp/v33/pix_test.js /tmp/v34/purpose_test.js /tmp/v35/look_test.js /tmp/v35/upgrade_test.js /tmp/v36/ux_test.js /tmp/v36/undo_test.js /tmp/v37/dj_test.js /tmp/v37/sync_test.js; do
     step "$f"
     for try in 1 2; do
       OUT=$(timeout 400 node $f 2>&1); RC=$?

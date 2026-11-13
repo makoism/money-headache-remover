@@ -38,10 +38,10 @@ const DJ = (() => {
     $('#djDock').hidden = false; paintDock('Loading…');
     return api().then(() => new Promise(res => {
       yt = new YT.Player('djYt', { width: 200, height: 200, host: 'https://www.youtube-nocookie.com', videoId: alb().tracks[idx()][0],
-        playerVars: { playsinline: 1, rel: 0, modestbranding: 1, controls: 0, disablekb: 1, iv_load_policy: 3, fs: 0 },
+        playerVars: { playsinline: 1, rel: 0, modestbranding: 1, controls: 1, iv_load_policy: 3, fs: 0 },
         events: {
           onReady: () => { ytReady = true; try { yt.setVolume(volOf()); if (S.ui.mute) yt.mute(); } catch (e) { /* not yet */ } res(); },
-          onStateChange: e => { playing = e.data === 1; if (e.data === 0) step(1); paint(); },
+          onStateChange: e => { playing = e.data === 1; if (playing) { want = true; const h = $('#djHint'); if (h) h.hidden = true; } if (e.data === 0) step(1); paint(); },
           onError: () => { step(1); },
         } });
     })).catch(() => { yt = null; $('#djDock').hidden = true; setSrc('forest', true); const n = $('#djNote'); if (n) n.textContent = 'GREEN could not load (it streams from YouTube and needs the internet). Forest plays meanwhile.'; });
@@ -54,15 +54,26 @@ const DJ = (() => {
     paint();
   }
   const step = d => { const a = alb(); if (!a) return; load((idx() + d + a.tracks.length) % a.tracks.length, true); };
-  function play() { const a = alb(); if (!a || S.ui.mute) return; want = true; if (!ytReady) { ensure().then(() => { if (want) load(idx(), true); }); return; } try { yt.playVideo(); } catch (e) { /* gone */ } }
+  /* the browser lets sound start only from a tap; the player arrives a moment after the tap, so the start may be held back.
+     Then the dock says so, and a tap on the cover (YouTube's own play button) always works. */
+  let holdT = 0;
+  function checkHeld() { clearTimeout(holdT); holdT = setTimeout(() => { if (want && !playing) { const h = $('#djHint'); if (h) h.hidden = false; } }, 2500); }
+  function play() {
+    const a = alb(); if (!a) return;
+    if (S.ui.mute) setMute(false);                     /* choosing music is a clear wish to hear it */
+    want = true; if (!ytReady) { ensure().then(() => { if (want) { load(idx(), true); checkHeld(); } }); return; }
+    try { yt.playVideo(); } catch (e) { /* gone */ } checkHeld();
+  }
   function pause() { want = false; if (yt && ytReady) try { yt.pauseVideo(); } catch (e) { /* gone */ } }
   /* ---------- choosing the source ---------- */
   function setSrc(src, quiet) {
     const n = $('#djNote'); if (n) n.textContent = '';
     if (src === 'off') { S.ui.music = false; pause(); }
+    else if (src !== 'forest' && !ALBUMS[src]) src = 'forest';
     else { delete S.ui.music; S.ui.dj = { src, i: src === (S.ui.dj && S.ui.dj.src) ? idx() : 0 }; if (src === 'forest') pause(); }
     persist(); MUSIC.sync();
     if (ALBUMS[src] && !quiet) play();
+    if (typeof paintMus === 'function') paintMus();
     if (!ALBUMS[djSrc()]) $('#djDock').hidden = true; else if (yt) $('#djDock').hidden = false; /* while the player loads, ensure() shows the dock itself */
     paint();
   }
@@ -122,7 +133,7 @@ const DJ = (() => {
     $('#djDockPrev').addEventListener('click', () => step(-1));
     $('#djDockNext').addEventListener('click', () => step(1));
     $('#djDockHide').addEventListener('click', () => { pause(); $('#djDock').hidden = true; });
-    document.addEventListener('click', e => { if (!$('#dj').hidden && !e.target.closest('#dj, #djBtn')) close(); });
+    document.addEventListener('pointerdown', e => { if (!$('#dj').hidden && !e.target.closest('#dj, #djBtn')) close(); });
     document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#dj').hidden) { close(); $('#djBtn').focus(); } });
     /* the hello video and the album never play over each other */
     document.addEventListener('play', e => { if (e.target && e.target.id === 'tourVid' && playing) { wasPlaying = true; pause(); } }, true);
