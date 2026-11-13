@@ -1407,13 +1407,13 @@ body.scene-phone .wrap > .top { background: var(--sign) center / 100% 100% no-re
 body.scene-phone .wrap > .top h1 { text-shadow: none; }
 body.scene-phone .wrap > .top .tstreak { background: rgba(247, 238, 219, .08); }
 body.scene-phone .wrap > .top .topb, body.scene-phone .wrap > .top .gear { background: transparent; }
-body.scene-phone .help { bottom: 24px; }
+body.scene-phone .help { bottom: 66px; }
 body.scene-phone .help-row { gap: 26px; }
-body.scene-phone .wrap { padding-bottom: 170px; }
-body.scene-phone .ask { bottom: 144px; max-height: calc(100dvh - 180px); }
-body.scene-phone #cheer { bottom: 144px; }
-body.scene-phone .upd.undo-bar { bottom: 152px; }
-body.scene-phone .djdock { bottom: 136px; }
+body.scene-phone .wrap { padding-bottom: 212px; }
+body.scene-phone .ask { bottom: 186px; max-height: calc(100dvh - 222px); }
+body.scene-phone #cheer { bottom: 186px; }
+body.scene-phone .upd.undo-bar { bottom: 194px; }
+body.scene-phone .djdock { bottom: 178px; }
 
 /* the music plays without a picture: the player sits out of sight and everything is shown in the music panel */
 .djdock, body.scene-phone .djdock { left: -3000px; top: 0; bottom: auto; opacity: 0; pointer-events: none; }
@@ -1919,7 +1919,7 @@ body.shroom-menu:not(.world) #vista::after { content: ''; position: absolute; in
   </div>
 
   <p class="foot" id="footNote">Not financial advice. Sample numbers are invented. Replace them with yours.</p>
-  <p class="foot ver" id="verFoot">Version 38.1, updated Nov 14, 1:19 am</p>
+  <p class="foot ver" id="verFoot">Version 38.2, updated Nov 14, 7:02 am</p>
   </div>
 </div>
 <div class="handfx" id="handFx" aria-hidden="true"></div>
@@ -1973,7 +1973,7 @@ body.shroom-menu:not(.world) #vista::after { content: ''; position: absolute; in
     <button type="button" id="helpSetup">Guided setup</button>
     <button type="button" id="helpVideo" hidden>Intro video</button>
     <button type="button" id="helpReport">Report a problem</button>
-    <p class="help-ver">Version 38.1</p>
+    <p class="help-ver">Version 38.2</p>
   </div>
   <div class="help-row"><button type="button" class="help-btn ask-btn" id="askBtn">Ask</button><button type="button" class="help-btn" id="helpBtn" aria-expanded="false" aria-controls="helpMenu"><span class="q" aria-hidden="true">?</span>Help</button></div>
 </div>
@@ -10258,41 +10258,59 @@ const SCENE = (() => {
    brook running along the top of the heap, spilling down its face into a stream that crosses the bottom; and in front,
    dark boulders and blades of grass that overlap the ends of the water. Only the water, the foam and a few fireflies move. */
   const PHONE = 720;
-  let mode = '', bot = null, bx = null, bst = null, bsx = null, bfg = null, bfx = null, BW = 0, BH = 42, B = null, signRO = null, botRO = null, signKey = '';
+  let mode = '', bot = null, bx = null, bst = null, bsx = null, bfg = null, bfx = null, BW = 0, BH = 62, B = null, signRO = null, botRO = null, signKey = '';
   const isPhone = () => innerWidth < PHONE;
   const mixh = (a, b, t) => { const A = hex(a), C = hex(b); return '#' + A.map((v, i) => Math.round(v + (C[i] - v) * t).toString(16).padStart(2, '0')).join(''); };
   const put = (c, x, y, col) => { c.fillStyle = col; c.fillRect(x, y, 1, 1); };
   const WOOD = { morning: ['#8a5d39', '#7a5031', '#946543', '#5a3a22', '#33200f'], day: ['#8e603b', '#7d5333', '#9a6a46', '#5c3c23', '#33200f'], sunset: ['#7e4f36', '#6e432d', '#88583d', '#4e3021', '#2c1a0e'], night: ['#4f3a2e', '#443227', '#594236', '#30231b', '#1b130d'] };
 
-  /* ----- the sign ----- */
+  /* ----- the sign: a banner of mossy cobblestones ----- */
+  /* one cobble: rounded, lit from the upper left, a dark underside, speckle, a crack now and then, moss over its top */
+  function cobble(g, x, y, w, h, t, R, mossy) {
+    const q0 = R(), base = mixh(mixh(t.stone, t.stoneD, .1 + R() * .42), q0 < .3 ? t.mossD : q0 < .45 ? t.groundL : t.stone, q0 < .3 ? .28 : q0 < .45 ? .22 : 0), lt = mixh(base, t.stoneL, .6), hi = mixh(base, '#ffffff', .24), dk = mixh(base, '#000000', .36), dd = mixh(base, '#000000', .58);
+    for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) {
+      if ((i === 0 || i === w - 1) && (j === 0 || j === h - 1)) continue;
+      let col = base;
+      if (j === 0) col = hi; else if (i === 0) col = lt; else if (j === h - 1) col = dd; else if (i === w - 1) col = dk;
+      else if (j === 1) col = lt; else if (j === h - 2) col = mixh(base, '#000000', .2); else if (i === w - 2 && w > 4) col = mixh(base, '#000000', .12);
+      else { const q = R(); if (q < .07) col = lt; else if (q < .13) col = dk; }
+      g.fillStyle = col; g.fillRect(x + i, y + j, 1, 1);
+    }
+    if (h > 4 && R() < .4) { let cx = x + 1 + Math.floor(R() * (w - 2)), cy = y + 1; for (let k = 0; k < Math.min(h - 3, 2 + Math.floor(R() * 3)); k++) { g.fillStyle = dk; g.fillRect(cx, cy + k, 1, 1); cx += R() < .5 ? 0 : (R() < .5 ? 1 : -1); } }
+    if (mossy) for (let i = 1; i < w - 1; i++) { const d = R() < .45 ? 0 : R() < .6 ? 1 : 2; for (let k = 0; k < d + (R() < .5 ? 1 : 0); k++) { g.fillStyle = k === 0 ? (R() < .3 ? t.mossL : t.moss) : t.mossD; g.fillRect(x + i, y + k, 1, 1); } }
+  }
   function paintSign() {
     const top = document.querySelector('.wrap > .top'); if (!top) return;
     const r = top.getBoundingClientRect(), P = 3, w = Math.max(24, Math.round(r.width / P)), h = Math.max(26, Math.round(r.height / P));
     const key = w + 'x' + h + mood; if (key === signKey) return; signKey = key;
     const cv2 = document.createElement('canvas'); cv2.width = w; cv2.height = h; const g = cv2.getContext('2d'); if (!g) return;
-    const t = T, wd = WOOD[mood], R = rnd(5), Z = 6, S = 4, y0 = Z, y1 = h - S;           /* limb zone, shadow zone, the board between */
-    /* BACK: the limb across the top, thick at the left and thinning, with its leaves behind the ropes */
-    const limb = x => 3 + Math.round((1 - x / w) * 2);
-    for (let x = 0; x < w; x++) { const th = limb(x), by = 1 + Math.round(Math.sin(x / 17) * .8); g.fillStyle = t.trunkD; g.fillRect(x, by, 1, th + 1); g.fillStyle = t.trunk; g.fillRect(x, by, 1, th - 1); g.fillStyle = t.trunkL; g.fillRect(x, by, 1, 1); if (R() < .12) { g.fillStyle = t.trunkD; g.fillRect(x, by + 1, 1, 2); } }
-    for (let i = 0; i < 9; i++) { const x = Math.floor(R() * w), y = 1 + Math.floor(R() * 3); g.fillStyle = R() < .5 ? t.moss : t.mossD; g.fillRect(x, y, 2 + Math.floor(R() * 3), 1); }
-    for (let i = 0; i < Math.round(w / 9); i++) { const x = 2 + Math.floor(R() * (w - 4)), y = 0 + Math.floor(R() * 3); disk(g, x, y, 2, i % 3 ? t.leafD : t.leaf); if (R() < .6) { g.fillStyle = t.mossL; g.fillRect(x - 1, y - 1, 1, 1); } }
-    /* ropes: two twisted strands from the limb to the board, with a knot where they meet it */
-    for (const rx of [Math.round(w * .17), Math.round(w * .83)]) { for (let y = 3; y <= y0 + 1; y++) { g.fillStyle = y % 2 ? '#c8a874' : '#8c6d44'; g.fillRect(rx, y, 1, 1); g.fillStyle = 'rgba(0,0,0,.3)'; g.fillRect(rx + 1, y, 1, 1); } g.fillStyle = '#d8bc88'; g.fillRect(rx - 1, y0, 3, 2); g.fillStyle = '#7c6038'; g.fillRect(rx - 1, y0 + 1, 3, 1); }
-    /* MID: the board. A frame of wood with grain, and inside it one dark flat panel where everything is written */
-    g.fillStyle = 'rgba(0,0,0,.34)'; g.fillRect(3, y1, w - 6, 2); g.fillStyle = 'rgba(0,0,0,.18)'; g.fillRect(4, y1 + 2, w - 8, 1);    /* its shadow on the page */
-    for (let y = y0; y < y1; y++) { for (let x = 0; x < w; x++) { g.fillStyle = (y - y0) % 5 < 2 ? wd[0] : (y - y0) % 5 < 4 ? wd[1] : wd[3]; g.fillRect(x, y, 1, 1); } }
-    for (let i = 0; i < w; i++) { if (R() < .5) { g.fillStyle = R() < .5 ? wd[2] : wd[3]; g.globalAlpha = .5; g.fillRect(i, y0 + Math.floor(R() * (y1 - y0)), 2 + Math.floor(R() * 5), 1); g.globalAlpha = 1; } }
-    g.fillStyle = wd[2]; g.fillRect(0, y0, w, 1); g.fillRect(0, y0, 1, y1 - y0);                       /* lit edges, top and left */
-    g.fillStyle = wd[4]; g.fillRect(0, y1 - 1, w, 1); g.fillRect(w - 1, y0, 1, y1 - y0);                /* shaded edges, bottom and right */
-    const px0 = 3, py0 = y0 + 3, px1 = w - 3, py1 = y1 - 3, plate = mixh(wd[4], '#000000', .15);
+    const t = T, R = rnd(5), Z = 5, S = 4, y0 = Z, y1 = h - S, F = 7, mortar = mixh(t.stoneD, '#000000', .72);
+    /* its shadow on the page */
+    g.fillStyle = 'rgba(0,0,0,.34)'; g.fillRect(3, y1, w - 6, 2); g.fillStyle = 'rgba(0,0,0,.18)'; g.fillRect(4, y1 + 2, w - 8, 1);
+    g.fillStyle = mortar; g.fillRect(0, y0, w, y1 - y0);
+    /* the frame: a course of cobbles along the top and bottom, a column down each side, each one a different size and tone */
+    const course = (yy, hh) => { let x = 0; while (x < w) { let cw = 7 + Math.floor(R() * 6); if (w - x - cw < 5) cw = w - x; cobble(g, x, yy, cw, hh, t, R, yy === y0 ? R() < .75 : R() < .12); x += cw; } };
+    course(y0, F); course(y1 - F, F);
+    for (const cx of [0, w - F]) { let y = y0 + F; while (y < y1 - F) { let ch = 5 + Math.floor(R() * 4); if (y1 - F - y - ch < 4) ch = y1 - F - y; cobble(g, cx, y, F, ch, t, R, R() < .1); y += ch; } }
+    /* the reading panel: one flat dark slab sunk into the frame, so the words and buttons stay easy to read */
+    const px0 = F, py0 = y0 + F, px1 = w - F, py1 = y1 - F, plate = mixh(mixh(t.stoneD, t.mossD, .18), '#000000', .74);
     g.fillStyle = plate; g.fillRect(px0, py0, px1 - px0, py1 - py0);
-    g.fillStyle = mixh(plate, '#000000', .5); g.fillRect(px0, py0, px1 - px0, 1); g.fillRect(px0, py0, 1, py1 - py0);        /* the panel is sunk into the frame */
-    g.fillStyle = mixh(plate, wd[2], .3); g.fillRect(px0, py1 - 1, px1 - px0, 1); g.fillRect(px1 - 1, py0, 1, py1 - py0);
-    /* NEAR: round-log ends at the corners, moss over the top edge, vines hanging in front of the frame */
-    for (const [x, y] of [[2, y0 + 2], [w - 3, y0 + 2], [2, y1 - 3], [w - 3, y1 - 3]]) { disk(g, x, y, 2, '#c9a273'); g.fillStyle = '#8a643e'; g.fillRect(x - 1, y, 3, 1); g.fillRect(x, y - 1, 1, 3); }
-    for (let x = 0; x < w; x++) { const d = R() < .5 ? 1 : R() < .5 ? 2 : R() < .75 ? 3 : 4; for (let k = 0; k < d; k++) { g.fillStyle = k === 0 ? (R() < .4 ? t.mossL : t.moss) : (R() < .5 ? t.mossD : t.moss); g.fillRect(x, y0 - 1 + k, 1, 1); } }
-    for (let i = 0; i < Math.round(w / 20); i++) { const x = 5 + Math.floor(R() * (w - 10)); g.fillStyle = i % 2 ? '#f4d6e6' : '#fff4c0'; g.fillRect(x, y0 - 2, 1, 1); g.fillStyle = '#ffffff'; g.fillRect(x + 1, y0 - 2, 1, 1); }
-    for (const vx0 of [1, w - 2]) { const dir = vx0 < 8 ? 1 : -1, len = 10 + Math.floor(R() * 5); for (let y = y0; y < y0 + len; y++) { const o = Math.round(Math.sin(y / 2.2 + vx0) * 1); g.fillStyle = t.mossD; g.fillRect(vx0 + o, y, 1, 1); if ((y - y0) % 3 === 1) { g.fillStyle = t.moss; g.fillRect(vx0 + o + dir, y, 1, 1); g.fillStyle = t.mossL; g.fillRect(vx0 + o + dir * 2, y, 1, 1); } } }
+    g.fillStyle = mixh(plate, '#000000', .55); g.fillRect(px0, py0, px1 - px0, 2); g.fillRect(px0, py0, 1, py1 - py0);
+    g.fillStyle = mixh(plate, t.stoneL, .22); g.fillRect(px0 + 1, py1 - 1, px1 - px0 - 1, 1); g.fillRect(px1 - 1, py0 + 1, 1, py1 - py0 - 1);
+    g.fillStyle = mixh(plate, t.moss, .1); for (let i = 0; i < w; i++) if (R() < .08) g.fillRect(px0 + 2 + Math.floor(R() * (px1 - px0 - 4)), py0 + 2 + Math.floor(R() * (py1 - py0 - 4)), 1, 1);
+    /* moss: a lip over the top of the panel, patches growing in the mortar and over the corners */
+    for (let x = px0 + 1; x < px1 - 1; x++) if (R() < .22) { const d = 1 + Math.floor(R() * 2); for (let k = 0; k < d; k++) { g.fillStyle = k ? t.mossD : t.moss; g.fillRect(x, py0 + 2 + k, 1, 1); } }
+    for (let i = 0; i < Math.round(w / 6); i++) { const x = Math.floor(R() * w), y = y0 + F - 1 + Math.floor(R() * 2); g.fillStyle = R() < .5 ? t.mossD : t.moss; g.fillRect(x, y, 1 + Math.floor(R() * 2), 1); }
+    for (const [cx, dir] of [[0, 1], [w - 1, -1]]) for (let k = 0; k < 11; k++) for (let m = 0; m < Math.max(0, 5 - k * .45); m++) if (R() < .7) { g.fillStyle = R() < .4 ? t.mossL : R() < .5 ? t.moss : t.mossD; g.fillRect(cx + dir * m, y0 + k, 1, 1); }
+    /* moss clumps growing over the stones, thicker toward the corners */
+    for (let i = 0, n = Math.round(w / 5); i < n; i++) { const x = Math.floor(R() * w), onTop = R() < .5, y = onTop ? y0 + 1 + Math.floor(R() * (F - 2)) : y1 - F + Math.floor(R() * F), rr = 1 + Math.floor(R() * 2.4); for (let dy = -rr; dy <= rr; dy++) for (let dx = -rr * 2; dx <= rr * 2; dx++) { if ((dx / (rr * 2)) ** 2 + (dy / rr) ** 2 > 1 + (R() - .5) * .5) continue; const xx = x + dx, yy = y + dy; if (xx < 0 || xx >= w || yy < y0 || yy >= y1 || (xx >= px0 && xx < px1 && yy >= py0 && yy < py1)) continue; g.fillStyle = dy < 0 ? t.mossL : R() < .5 ? t.moss : t.mossD; g.fillRect(xx, yy, 1, 1); } }
+    /* a crest of moss and grass along the top, with a few small flowers */
+    for (let x = 0; x < w; x++) { if (R() < .3) continue; const d = 1 + Math.floor(R() * (R() < .2 ? 4 : 2)); for (let k = 0; k < d; k++) { g.fillStyle = k === d - 1 ? (R() < .4 ? t.mossL : t.moss) : t.mossD; g.fillRect(x, y0 - 1 - k, 1, 1); } }
+    for (let i = 0; i < Math.round(w / 18); i++) { const x = 5 + Math.floor(R() * (w - 10)); g.fillStyle = i % 2 ? '#f4d6e6' : '#fff4c0'; g.fillRect(x, y0 - 3, 1, 1); g.fillStyle = '#ffffff'; g.fillRect(x + 1, y0 - 3, 1, 1); g.fillStyle = t.mossD; g.fillRect(x, y0 - 2, 1, 1); }
+    /* ivy hanging over the frame at both ends and in two places between */
+    for (const vx0 of [1, w - 2, Math.round(w * .3), Math.round(w * .68)]) { const dir = vx0 < w / 2 ? 1 : -1, len = (vx0 < 3 || vx0 > w - 4 ? 12 : 5) + Math.floor(R() * 4); for (let y = y0; y < y0 + len; y++) { const o = Math.round(Math.sin(y / 2.2 + vx0) * 1); g.fillStyle = t.mossD; g.fillRect(vx0 + o, y, 1, 1); if ((y - y0) % 3 === 1) { g.fillStyle = t.moss; g.fillRect(vx0 + o + dir, y, 1, 1); g.fillStyle = t.mossL; g.fillRect(vx0 + o + dir * 2, y, 1, 1); } } }
+    /* ambient shade: the lower part of the frame sits a little deeper in shadow */
+    g.globalCompositeOperation = 'source-atop'; const gr = g.createLinearGradient(0, y0, 0, y1); gr.addColorStop(0, 'rgba(255,255,255,.05)'); gr.addColorStop(.6, 'rgba(0,0,0,0)'); gr.addColorStop(1, 'rgba(0,0,0,.28)'); g.fillStyle = gr; g.fillRect(0, y0, w, y1 - y0); g.globalCompositeOperation = 'source-over';
     top.style.setProperty('--sign', `url(${cv2.toDataURL()})`);
   }
 
@@ -10309,8 +10327,10 @@ const SCENE = (() => {
       if (d > 1 + wob) continue;
       const sh = -(nx * .55 + ny * .85);
       let col = sh > .6 ? hi : sh > .22 ? lt : sh > -.12 ? base : sh > -.5 ? mid : dk;
-      if (d > .74) col = sh > .5 ? mid : dk;               /* a dark outline all round, so every stone reads as its own */
+      if (d > (rx > 9 ? .8 : .74)) col = sh > .5 ? (rx > 9 && d > .92 ? dk : mid) : (rx > 9 && d > .9 ? '#04080a' : dk);               /* a dark outline all round, so every stone reads as its own */
       else if (d > .6 && sh < -.2) col = dk;
+      else if (rx > 9 && sh > .35 && d < .5 && d > .12 && ((x + y) % 3 === 0)) col = hi;
+      else if (rx > 9 && sh > .05 && sh <= .35 && ((x * 3 + y) % 7 === 0)) col = lt;
       else if (R() < .025) col = R() < .5 ? dk : lt;
       put(c, x, y, col);
     }
@@ -10322,8 +10342,8 @@ const SCENE = (() => {
     }
   }
   function layoutBot() {
-    const P = 3; BW = Math.ceil(innerWidth / P); BH = 42;
-    const top = innerHeight - BH * P, yF = BH - 8, R = rnd(9);
+    const P = 3; BW = Math.ceil(innerWidth / P); BH = 62;
+    const top = innerHeight - BH * P, yF = BH - 22, R = rnd(9);
     const rect = id => { const e = document.getElementById(id); if (!e) return null; const r = e.getBoundingClientRect(); return r.width > 10 ? r : null; };
     const rs = [rect('askBtn'), rect('helpBtn')].filter(Boolean); let hy0, niches;
     /* one niche per button, a stride of stone round each: two units of air at the sides, three above */
@@ -10332,15 +10352,17 @@ const SCENE = (() => {
       niches = rs.map(r => { const x0 = Math.max(3, Math.floor(r.left / P) - 2), x1 = Math.min(BW - 3, Math.ceil(r.right / P) + 2); return { x0, x1, rr: Math.max(3, Math.min(10, Math.floor((x1 - x0) / 2.2), Math.floor((yF - hy0) / 2))) }; });
     } else { hy0 = yF - 20; niches = [{ x0: BW - 70, x1: BW - 46, rr: 10 }, { x0: BW - 38, x1: BW - 5, rr: 10 }]; }
     const hx0 = Math.min.apply(null, niches.map(n => n.x0)), hx1 = Math.max.apply(null, niches.map(n => n.x1));
-    B = { yF, hy0, niches, hx0, hx1, flies: [] };
+    B = { yF, hy0, niches, hx0, hx1, flies: [], trick: [], stones: [] };
     /* the skyline of the heap: tall around the niches, lumpy everywhere (never a straight line), falling away to either side */
-    B.mtop = x => { const out = x < hx0 ? hx0 - x : x > hx1 ? x - hx1 : 0, k = Math.max(0, 1 - out / 22), e = k * k * (3 - 2 * k); const lumps = Math.sin(x / 2.7) * 1.3 + Math.sin(x / 6.3 + 1.3) * 2.1 + Math.sin(x / 12.1 + .4) * 2.8; return Math.max(4, Math.round(BH - 17 - e * (BH - 17 - (hy0 - 9)) + lumps * (.6 + .8 * e))); };
+    B.mtop = x => { const out = x < hx0 ? hx0 - x : x > hx1 ? x - hx1 : 0, k = Math.max(0, 1 - out / 22), e = k * k * (3 - 2 * k); const lumps = Math.sin(x / 2.7) * 1.3 + Math.sin(x / 6.3 + 1.3) * 2.1 + Math.sin(x / 12.1 + .4) * 2.8; return Math.max(4, Math.round(BH - 38 - e * (BH - 38 - (hy0 - 9)) + lumps * (.6 + .8 * e))); };
     B.hollow = (x, y) => {
       if (y < hy0 || y >= yF) return false;
       for (const n of niches) { if (x < n.x0 || x > n.x1) continue; const q = y - hy0; if (q >= n.rr) return true; const dx = n.rr - Math.sqrt(Math.max(0, n.rr * n.rr - (n.rr - q) * (n.rr - q))); if (x >= n.x0 + dx && x <= n.x1 - dx) return true; }
       return false;
     };
     B.cx = hx0 > 40 ? Math.min(hx0 - 16, 30) : 0;                  /* where the brook leaves the heap, if there is room left of the niches */
+    { const tx = [], cand = [.07, .21, .36, .5, .62, .74, .9]; for (const f of cand) { const x = Math.round(BW * f + (R() - .5) * 6); if (x < hx0 - 3 || x > hx1 + 3) if (x > 3 && x < BW - 3 && Math.abs(x - (B.cx || -99)) > 8) tx.push(x); } B.trick = tx.slice(0, 5).map((x, i) => ({ x, ph: R() * 6.28, y: B.mtop(x) + 3 + Math.floor(R() * 6), len: 0 }));
+      B.stones = [{ x: Math.round(BW * .3), y: BH - 7, rx: 7.5, ry: 4.2 }, { x: Math.round(BW * .62), y: BH - 5, rx: 6, ry: 3.4 }]; }
     for (let i = 0; i < 6; i++) { const n = niches[i % niches.length]; B.flies.push({ cx: n.x0 + (n.x1 - n.x0) * (.15 + R() * .7), cy: hy0 + 4 + R() * (yF - hy0 - 8), rx: 3 + R() * 5, ry: 1 + R() * 3, sp: .035 + R() * .04, ph: R() * 6.28, c: i % 4 }); }
   }
   function paintBot() {
@@ -10351,14 +10373,11 @@ const SCENE = (() => {
     for (let x = 0; x < BW; x++) for (let y = farTop(x); y < BH; y++) put(c, x, y, mixh(mixh(t.stoneD, t.fog, .5), t.far[1], .25));
     for (let i = 0, n = Math.round(BW / 8); i < n; i++) { const x = Math.round((i + R() * .8) * 8), rx = 3.5 + R() * 3, cy = Math.max(rx * .75 + 2, farTop(x) + rx * .6 + R() * 3); boulder(c, x, cy, rx, rx * .75, t, R, { tone: .6, moss: true }); }
     for (let x = 1; x < BW; x += 3 + Math.floor(R() * 4)) { const y = farTop(x) + 2, col = mixh(t.mossD, t.fog, .45); put(c, x, y - 3, col); put(c, x - 1, y - 2, col); put(c, x + 1, y - 2, col); put(c, x, y - 2, col); put(c, x - 2, y - 1, col); put(c, x + 2, y - 1, col); }
-    /* MID: the heap. Dark crevices first, then boulders row by row so the nearer ones overlap the farther ones */
+    /* MID: the heap, made of nine big boulders. Dark crevices first, then four in the back row (their tops are the skyline) and five in front, each a different size */
     for (let x = 0; x < BW; x++) for (let y = B.mtop(x); y < BH; y++) put(c, x, y, mixh(t.stoneD, '#000000', .6));
-    for (let yy = 0; yy < BH + 6; yy += 4) {
-      let x = -6 + R() * 4;
-      while (x < BW + 8) { const rx = 4.5 + R() * 4, ry = rx * (.72 + R() * .15), cy = yy + R() * 2; if (cy - ry * .75 >= B.mtop(Math.round(x)) - 1.5 && cy - ry < BH) boulder(c, x, cy, rx, ry, t, R); x += rx * 1.45 + R() * 2.5; }
-    }
-    /* a crown of bigger stones on top, of different sizes and set at different heights, so the skyline is made of rocks and not a line */
-    for (let x = 2 + R() * 6; x < BW; x += 9 + R() * 12) { const rx = 3.5 + R() * 4.5, ry = rx * (.7 + R() * .25), cy = Math.max(ry + 2, B.mtop(Math.round(x)) + ry * (.1 + R() * .5)); boulder(c, x, cy, rx, ry, t, R, { moss: R() < .55 }); }
+    const jit = () => (R() - .5) * 5, big = (bx, by, rx, o) => boulder(c, bx, by, rx, rx * (.74 + R() * .12), t, R, o);
+    [.1, .34, .6, .86].forEach((f, i) => { const rx = 14 + R() * 5, x = BW * f + jit(); big(x, B.mtop(Math.round(x)) + rx * .62, rx, { moss: i % 2 === 0 || R() < .5, dark: .04 }); });
+    [0, .23, .47, .71, .95].forEach((f, i) => { const rx = 11 + R() * 5, x = BW * f + jit(); big(x, yF - rx * .3 - R() * 3, rx, { moss: R() < .55 }); });
     /* the niches: cut out, then made into rooms: a back wall, dim stones, a glow, a mossy ceiling */
     c.globalCompositeOperation = 'destination-out'; c.fillStyle = '#000';
     for (let y = hy0; y < yF; y++) for (let x = hx0; x <= hx1; x++) if (B.hollow(x, y)) c.fillRect(x, y, 1, 1);
@@ -10375,9 +10394,9 @@ const SCENE = (() => {
     /* the frame: stones set round each opening like an arch (a keystone on top, blocks down the sides), clipped to the opening */
     for (const n of niches) {
       const cxA = (n.x0 + n.x1) / 2, topY = x => { let y = hy0; while (y < yF && !B.hollow(x, y)) y++; return y; };
-      for (let x = n.x0 + 1; x < n.x1; x += (x < n.x0 + n.rr || x > n.x1 - n.rr) ? 3 : 5) { const y = topY(Math.round(x)); if (y >= yF) continue; boulder(c, x, y - 2.2 - R() * .8, 3.6 + R() * 1.4, 3 + R() * .8, t, R, { clip: clipOut, moss: R() < .3 }); }
-      boulder(c, cxA, topY(Math.round(cxA)) - 3.2, 5.6, 4.3, t, R, { clip: clipOut, moss: false });
-      for (const sx of [n.x0 - 2.2, n.x1 + 2.2]) for (let y = yF - 2.5; y > hy0 + n.rr - 1; y -= 5.5) boulder(c, sx + (R() - .5), y, 3 + R() * .8, 3.2 + R() * .6, t, R, { clip: clipOut, moss: R() < .25 });
+      for (let x = n.x0 + 1; x < n.x1; x += (x < n.x0 + n.rr || x > n.x1 - n.rr) ? 4 : 7) { const y = topY(Math.round(x)); if (y >= yF) continue; boulder(c, x, y - 2.6 - R() * .8, 4.6 + R() * 1.6, 3.6 + R() * .8, t, R, { clip: clipOut, moss: R() < .3 }); }
+      boulder(c, cxA, topY(Math.round(cxA)) - 3.6, 6.8, 5, t, R, { clip: clipOut, moss: false });
+      for (const sx of [n.x0 - 2.2, n.x1 + 2.2]) for (let y = yF - 3; y > hy0 + n.rr - 1; y -= 7) boulder(c, sx + (R() - .5), y, 3.8 + R() * .8, 4 + R() * .6, t, R, { clip: clipOut, moss: R() < .25 });
     }
     /* the edge of every opening: a dark inner rim, so it reads as depth rather than a hole cut in a picture */
     for (let y = hy0; y < yF; y++) for (let x = hx0; x <= hx1; x++) { if (!B.hollow(x, y)) continue; if (!B.hollow(x - 1, y) || !B.hollow(x + 1, y) || !B.hollow(x, y - 1)) { c.globalAlpha = .75; put(c, x, y, '#06100c'); c.globalAlpha = 1; } }
@@ -10400,6 +10419,7 @@ const SCENE = (() => {
   /* the nearest layer: dark boulders and grass that overlap the ends of the water. Painted separately so the moving water goes under it. */
   function paintFg() {
     const c = bfx, t = T, R = rnd(17), { yF } = B; c.clearRect(0, 0, BW, BH);
+    for (const st of B.stones) boulder(c, st.x, st.y, st.rx, st.ry, t, R, { dark: .12, moss: true });
     boulder(c, 1, BH - 9, 13, 10, t, R, { dark: .22 }); boulder(c, 17, BH - 3, 7, 4.5, t, R, { dark: .2 });
     boulder(c, BW - 2, BH - 3, 10, 4.8, t, R, { dark: .2, moss: true }); boulder(c, BW - 16, BH - 1, 6, 3, t, R, { dark: .2 });
     for (let x = 0; x < BW; x++) { if (R() < .5) continue; const n = 2 + Math.floor(R() * 3), lean = R() < .5 ? -1 : 1; for (let k = 0; k < n; k++) { const col = k === n - 1 ? mixh(t.mossL, '#000000', .1) : (R() < .5 ? mixh(t.moss, '#000000', .25) : mixh(t.mossD, '#000000', .1)); put(c, x + (k > 1 ? lean : 0), BH - 1 - k, col); } }
@@ -10412,16 +10432,36 @@ const SCENE = (() => {
     /* the brook along the crest of the heap, spilling down its face where the ridge ends */
     if (B.cx) {
       const cx = B.cx, top = B.mtop(cx);
-      for (let x = 0; x <= cx + 3; x++) { const y = B.mtop(x) - 1; put(c, x, y - 1, mixh(t.water, t.water2, .4)); put(c, x, y, ((x + f) % 7 < 3) ? t.foam : t.water); put(c, x, y + 1, t.water2); }
-      for (let x = -1; x < 4; x++) { for (let y = top; y < y0; y++) { const o = ((f * 2 + y + x * 3) % 6); put(c, cx + x, y, x === -1 || x === 3 ? t.water2 : o < 2 ? t.foam : o < 4 ? t.water : t.water2); } }
+      for (let x = Math.max(0, cx - 15); x <= cx + 3; x++) { const y = B.mtop(x) - 1, a = Math.min(1, (x - (cx - 15)) / 9); c.globalAlpha = a * .9; put(c, x, y, ((x + f) % 7 < 3) ? t.foam : t.water); c.globalAlpha = a * .7; put(c, x, y + 1, t.water2); c.globalAlpha = 1; }
+      for (let x = -1; x < 4; x++) { for (let y = top; y < y0; y++) { const o = ((f * 2 + y + x * 3) % 6); c.globalAlpha = x === -1 || x === 3 ? .55 : .95; put(c, cx + x, y, x === -1 || x === 3 ? t.water2 : o < 2 ? t.foam : o < 4 ? t.water : t.water2); c.globalAlpha = 1; } }
       for (let i = 0; i < 9; i++) { const a = (f * 1.2 + i * 7) % 12, sx = cx + 1 + Math.round((i % 2 ? 1 : -1) * (a * .6 + 1)), sy = y0 - 1 - Math.round(Math.sin(a / 12 * 3.14) * 4); if (a < 11) put(c, sx, sy, t.foam); }
     }
-    /* the stream: slides to the right, brighter where it is shallow, darker in the slab's shadow */
-    for (let y = y0; y < y1; y++) {
-      const rowI = y - y0; c.fillStyle = rowI === 0 ? mixh(t.water2, '#000000', .35) : rowI === 1 ? mixh(t.water2, '#000000', .12) : t.water2; c.fillRect(0, y, BW, 1);
-      if (rowI > 0) { const sp = 1 + (rowI % 2), off = (f * sp + rowI * 7) % 13; for (let x = off - 13; x < BW; x += 13) { c.fillStyle = rowI === 2 ? t.water : mixh(t.water, t.water2, .35); c.fillRect(x, y, 3 + (rowI % 2), 1); } }
+    /* trickles: thin threads of water finding their way down between the boulders into the stream */
+    for (const tk of B.trick) {
+      for (let y = tk.y; y < y0; y++) { const wig = Math.round(Math.sin(y * .55 + tk.ph) * .8), x = tk.x + wig, k = (y * 3 + f * 2 + Math.floor(tk.ph * 3)) % 7;
+        c.globalAlpha = .35; put(c, x - 1, y, '#05100c'); put(c, x + 1, y, '#05100c'); c.globalAlpha = .9; put(c, x, y, k < 2 ? t.foam : k < 5 ? t.water : t.water2); c.globalAlpha = 1; }
+      const sp = (f + Math.floor(tk.ph * 4)) % 4; c.globalAlpha = .7; put(c, tk.x - 1 - (sp > 1 ? 1 : 0), y0, t.foam); put(c, tk.x + 1 + (sp > 1 ? 1 : 0), y0, t.foam); c.globalAlpha = 1;
     }
-    for (let i = 0; i < 12; i++) { const x = (i * 11 + f * 2) % BW, y = y0 + 1 + (i % 3); if ((f + i) % 6 < 2) put(c, x, y, t.foam); }
+    /* THE STREAM, in four layers for depth: (1) a water colour that is dark under the bank and brighter toward you, (2) the bank and the boulders mirrored in it,
+       rippling more the nearer to you, (3) bands of current that run faster near you than far, with foam and glints, (4) rings, mist and the foam round stones */
+    const H = y1 - y0;
+    for (let r = 0; r < H; r++) { const k = r / (H - 1); c.fillStyle = mixh(mixh(t.water2, '#000000', .6), mixh(t.water2, t.water, .3), Math.min(1, k * 1.25)); c.fillRect(0, y0 + r, BW, 1); }
+    for (let r = 0; r < H; r++) {
+      const src = yF - 1 - Math.round(r * .8); if (src < 2) break; const amp = .5 + r * .17, off = Math.round(Math.sin(r * 1.15 + f * .5) * amp + Math.sin(r * .43 - f * .27) * amp * .8);
+      c.globalAlpha = Math.max(.1, .55 - (r / H) * .42); c.drawImage(bst, 0, src, BW, 1, off, y0 + r, BW, 1);
+    }
+    c.globalAlpha = .24; c.fillStyle = t.water2; c.fillRect(0, y0, BW, H); c.globalAlpha = 1;
+    for (let r = 1; r < H; r++) {
+      const k = r / (H - 1), sp = .35 + k * k * 2.6, per = 10 + (r % 4) * 3 + Math.round(k * 4), len = 2 + (r % 3) + (k > .55 ? 2 : 0), off = Math.floor(f * sp + r * 7) % per;
+      c.fillStyle = k > .5 ? t.water : mixh(t.water, t.water2, .4); c.globalAlpha = .5 + k * .35;
+      for (let x = off - per; x < BW; x += per) c.fillRect(x, y0 + r, len, 1);
+      if (r % 3 === 0) { c.fillStyle = t.foam; c.globalAlpha = .3 + k * .4; const o2 = Math.floor(f * sp * 1.4 + r * 11) % (per + 7); for (let x = o2 - per - 7; x < BW; x += per + 7) c.fillRect(x, y0 + r, 1 + (k > .6 ? 1 : 0), 1); }
+    }
+    c.globalAlpha = 1;
+    for (let i = 0; i < 16; i++) { const gx = (i * 37 + 11) % BW, gy = y0 + 1 + (i * 7) % (H - 1); if ((f + i * 5) % 11 < 2) { c.globalAlpha = .95; put(c, gx, gy, '#ffffff'); c.globalAlpha = .45; put(c, gx - 1, gy, t.foam); put(c, gx + 1, gy, t.foam); c.globalAlpha = 1; } }
+    for (let i = 0; i < 3; i++) { const p = ((f * .3 + i * 2.1) % 6) / 6, rx = 2 + p * 10, ry = Math.max(.8, rx * .28), cx0 = BW * (.18 + .32 * i) + (i % 2 ? 6 : -4), cy0 = y0 + 4 + i * 4 + (i % 2); c.globalAlpha = (1 - p) * .65; for (let a = 0; a < 6.28; a += .22) put(c, Math.round(cx0 + Math.cos(a) * rx), Math.round(cy0 + Math.sin(a) * ry), t.foam); c.globalAlpha = 1; }
+    for (let r = 0; r < 4; r++) { c.globalAlpha = .2 - r * .045; c.fillStyle = t.fog; c.fillRect(0, y0 + r, BW, 1); } c.globalAlpha = 1;
+    for (const [i, st] of B.stones.entries()) { for (let a = 0; a < 6.28; a += .28) { const k = Math.sin(a * 3 + f * .7 + i * 2); if (k < .15) continue; put(c, Math.round(st.x + Math.cos(a) * (st.rx + 1.5)), Math.round(st.y + st.ry * .55 + Math.sin(a) * (st.ry * .7 + .8)), t.foam); } }
     c.drawImage(bfg, 0, 0);
     for (const fy of B.flies) { const a = fy.ph + f * fy.sp, x = Math.round(fy.cx + Math.cos(a) * fy.rx), y = Math.round(fy.cy + Math.sin(a * 1.3) * fy.ry), col = t.fairy[fy.c]; glow(c, x, y, 3, col, .85); put(c, x, y, '#ffffff'); }
   }

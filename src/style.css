@@ -1400,13 +1400,13 @@ body.scene-phone .wrap > .top { background: var(--sign) center / 100% 100% no-re
 body.scene-phone .wrap > .top h1 { text-shadow: none; }
 body.scene-phone .wrap > .top .tstreak { background: rgba(247, 238, 219, .08); }
 body.scene-phone .wrap > .top .topb, body.scene-phone .wrap > .top .gear { background: transparent; }
-body.scene-phone .help { bottom: 24px; }
+body.scene-phone .help { bottom: 66px; }
 body.scene-phone .help-row { gap: 26px; }
-body.scene-phone .wrap { padding-bottom: 170px; }
-body.scene-phone .ask { bottom: 144px; max-height: calc(100dvh - 180px); }
-body.scene-phone #cheer { bottom: 144px; }
-body.scene-phone .upd.undo-bar { bottom: 152px; }
-body.scene-phone .djdock { bottom: 136px; }
+body.scene-phone .wrap { padding-bottom: 212px; }
+body.scene-phone .ask { bottom: 186px; max-height: calc(100dvh - 222px); }
+body.scene-phone #cheer { bottom: 186px; }
+body.scene-phone .upd.undo-bar { bottom: 194px; }
+body.scene-phone .djdock { bottom: 178px; }
 
 /* the music plays without a picture: the player sits out of sight and everything is shown in the music panel */
 .djdock, body.scene-phone .djdock { left: -3000px; top: 0; bottom: auto; opacity: 0; pointer-events: none; }
