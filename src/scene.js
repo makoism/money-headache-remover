@@ -682,6 +682,7 @@ const SCENE = (() => {
     still = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
     mode = modeNow(); if (mode === 'phone') { startPhone(); return; }
     if (!WORLD.plain()) { vs = true; WORLD.sync(true); build(); loop(); armPoke(); return; }
+    if (typeof VISTA !== 'undefined') { vs = true; WORLD.sync(true); build(); loop(); return; } /* the plain app over the forest: on a wide screen the new scenery is only the background */
     cv = document.createElement('canvas'); cv.id = 'scene'; cv.setAttribute('aria-hidden', 'true');
     cx = cv.getContext('2d'); st = document.createElement('canvas'); sx = st.getContext('2d'); vl = document.createElement('canvas'); vx = vl.getContext('2d');
     if (!cx || !sx || !vx) { cv = null; return; }

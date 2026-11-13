@@ -1549,6 +1549,10 @@ body.shroom-menu header.top h1, body.shroom-menu header.top .save { text-shadow:
 /* phones: the Close button stays in reach however far the page is scrolled, and buttons are finger sized */
 @media (max-width: 560px) { body.world:not(.shut) .scroll-x { position: fixed; top: 10px; right: 12px; min-height: 44px; z-index: 80; } }
 @media (pointer: coarse) { body.world .scroll button, body.world .scroll .btn, body.world .scroll summary { min-height: 44px; } }
+
+/* the forest is only the background behind the plain app: a soft dark band behind the page column keeps the words readable, the sides stay bright */
+body.shroom-menu:not(.world) #vista::after { content: ''; position: absolute; inset: 0; z-index: 99999; pointer-events: none; background: linear-gradient(90deg, rgba(3, 14, 18, .04) 0, rgba(3, 14, 18, .1) 16%, rgba(3, 14, 18, .72) 26%, rgba(3, 14, 18, .8) 50%, rgba(3, 14, 18, .72) 74%, rgba(3, 14, 18, .1) 84%, rgba(3, 14, 18, .04) 100%); }
+@media (max-width: 900px) { body.shroom-menu:not(.world) #vista::after { background: rgba(3, 14, 18, .66); } }
 </style>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#eef4ef" media="(prefers-color-scheme: light)">
@@ -1837,7 +1841,7 @@ body.shroom-menu header.top h1, body.shroom-menu header.top .save { text-shadow:
         <div class="snd-r"><button type="button" class="sw" id="setMus" role="switch" aria-labelledby="musLab" aria-checked="true"><i></i></button><span class="cap" id="musTxt">On</span></div>
         <p class="cap">A quiet piece, made in the browser while the app is open. Starts at your first tap.</p>
       </div>
-      <div class="field sndrow">
+      <div class="field sndrow" hidden>
         <span class="lab" id="worldLab">World layout</span>
         <div class="snd-r"><button type="button" class="sw" id="setWorld" role="switch" aria-labelledby="worldLab" aria-checked="true"><i></i></button><span class="cap" id="worldTxt">On</span></div>
         <p class="cap">The pages open on a scroll in the scenery. Off: the plain page. This browser only.</p>
@@ -1915,7 +1919,7 @@ body.shroom-menu header.top h1, body.shroom-menu header.top .save { text-shadow:
   </div>
 
   <p class="foot" id="footNote">Not financial advice. Sample numbers are invented. Replace them with yours.</p>
-  <p class="foot ver" id="verFoot">Version 38.0, updated Nov 13, 11:47 pm</p>
+  <p class="foot ver" id="verFoot">Version 38.1, updated Nov 14, 1:19 am</p>
   </div>
 </div>
 <div class="handfx" id="handFx" aria-hidden="true"></div>
@@ -1969,7 +1973,7 @@ body.shroom-menu header.top h1, body.shroom-menu header.top .save { text-shadow:
     <button type="button" id="helpSetup">Guided setup</button>
     <button type="button" id="helpVideo" hidden>Intro video</button>
     <button type="button" id="helpReport">Report a problem</button>
-    <p class="help-ver">Version 38.0</p>
+    <p class="help-ver">Version 38.1</p>
   </div>
   <div class="help-row"><button type="button" class="help-btn ask-btn" id="askBtn">Ask</button><button type="button" class="help-btn" id="helpBtn" aria-expanded="false" aria-controls="helpMenu"><span class="q" aria-hidden="true">?</span>Help</button></div>
 </div>
@@ -3829,7 +3833,7 @@ const WORLD = (() => {
     el.innerHTML = `<svg viewBox="0 0 28 ${HAND.length}" shape-rendering="crispEdges">${p}</svg>`;
   }
   const pref = k => { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } }, setPref = (k, v) => { try { if (v) localStorage.setItem(k, v); else localStorage.removeItem(k); } catch (e) { /* private mode */ } };
-  const plain = () => pref('mhr-layout') === 'plain' || /[?&]layout=plain\b/.test(location.search), startOpen = () => pref('mhr-start') === 'open';
+  const plain = () => /[?&]layout=plain\b/.test(location.search) || !(pref('mhr-layout') === 'world' || /[?&]layout=world\b/.test(location.search)), /* the interactive world layout is kept in the code but off: the pages are the plain app, the scenery sits behind it */ startOpen = () => pref('mhr-start') === 'open';
   const HANDS = ["..............oo....",".............osso...","............ossko...","...........osskkoo..","..........osskskso..","........ooosksssko..",".......osssssssssko.","......ossssssssssko.",".....osssssssssssko.","....ossssssssssssko.","...orrcsssssssssko..","..orrRrcssssssskoo..",".orrrrrrcsssssko....","orrRrrrrrcsssko.....","orrrrrrrrrcoo.......","oorrrrrrrro........."];
   /* ---------- the orb: the hands hold a light, and the light holds the little controls ----------
      On the wide scene the music, sound, settings and streak buttons stand in a ring round an orb held in two pixel hands. They are the
@@ -3898,7 +3902,7 @@ const WORLD = (() => {
   }
   function wire() {
     drawHand(); paintSw();
-    $('#setWorld').addEventListener('click', () => { setPref('mhr-layout', plain() ? '' : 'plain'); paintSw(); sync(B.classList.contains('scene-on') || B.classList.contains('scene-phone')); SCENE.sync(); sfx('tap'); });
+    $('#setWorld').addEventListener('click', () => { setPref('mhr-layout', plain() ? 'world' : ''); paintSw(); sync(B.classList.contains('scene-on') || B.classList.contains('scene-phone')); SCENE.sync(); sfx('tap'); });
     $('#setStart').addEventListener('click', () => { setPref('mhr-start', startOpen() ? '' : 'open'); paintSw(); sfx('tap'); });
     $('#scrollX').addEventListener('click', () => close());
     window.addEventListener('popstate', () => { if (on() && !isShut()) close(true); }); /* the phone's Back button lowers the page instead of leaving the app */
@@ -10464,6 +10468,7 @@ const SCENE = (() => {
     still = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
     mode = modeNow(); if (mode === 'phone') { startPhone(); return; }
     if (!WORLD.plain()) { vs = true; WORLD.sync(true); build(); loop(); armPoke(); return; }
+    if (typeof VISTA !== 'undefined') { vs = true; WORLD.sync(true); build(); loop(); return; } /* the plain app over the forest: on a wide screen the new scenery is only the background */
     cv = document.createElement('canvas'); cv.id = 'scene'; cv.setAttribute('aria-hidden', 'true');
     cx = cv.getContext('2d'); st = document.createElement('canvas'); sx = st.getContext('2d'); vl = document.createElement('canvas'); vx = vl.getContext('2d');
     if (!cx || !sx || !vx) { cv = null; return; }

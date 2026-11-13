@@ -45,7 +45,7 @@ const WORLD = (() => {
     el.innerHTML = `<svg viewBox="0 0 28 ${HAND.length}" shape-rendering="crispEdges">${p}</svg>`;
   }
   const pref = k => { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } }, setPref = (k, v) => { try { if (v) localStorage.setItem(k, v); else localStorage.removeItem(k); } catch (e) { /* private mode */ } };
-  const plain = () => pref('mhr-layout') === 'plain' || /[?&]layout=plain\b/.test(location.search), startOpen = () => pref('mhr-start') === 'open';
+  const plain = () => /[?&]layout=plain\b/.test(location.search) || !(pref('mhr-layout') === 'world' || /[?&]layout=world\b/.test(location.search)), /* the interactive world layout is kept in the code but off: the pages are the plain app, the scenery sits behind it */ startOpen = () => pref('mhr-start') === 'open';
   const HANDS = ["..............oo....",".............osso...","............ossko...","...........osskkoo..","..........osskskso..","........ooosksssko..",".......osssssssssko.","......ossssssssssko.",".....osssssssssssko.","....ossssssssssssko.","...orrcsssssssssko..","..orrRrcssssssskoo..",".orrrrrrcsssssko....","orrRrrrrrcsssko.....","orrrrrrrrrcoo.......","oorrrrrrrro........."];
   /* ---------- the orb: the hands hold a light, and the light holds the little controls ----------
      On the wide scene the music, sound, settings and streak buttons stand in a ring round an orb held in two pixel hands. They are the
@@ -114,7 +114,7 @@ const WORLD = (() => {
   }
   function wire() {
     drawHand(); paintSw();
-    $('#setWorld').addEventListener('click', () => { setPref('mhr-layout', plain() ? '' : 'plain'); paintSw(); sync(B.classList.contains('scene-on') || B.classList.contains('scene-phone')); SCENE.sync(); sfx('tap'); });
+    $('#setWorld').addEventListener('click', () => { setPref('mhr-layout', plain() ? 'world' : ''); paintSw(); sync(B.classList.contains('scene-on') || B.classList.contains('scene-phone')); SCENE.sync(); sfx('tap'); });
     $('#setStart').addEventListener('click', () => { setPref('mhr-start', startOpen() ? '' : 'open'); paintSw(); sfx('tap'); });
     $('#scrollX').addEventListener('click', () => close());
     window.addEventListener('popstate', () => { if (on() && !isShut()) close(true); }); /* the phone's Back button lowers the page instead of leaving the app */
