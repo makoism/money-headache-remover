@@ -714,13 +714,13 @@ const SCENE = (() => {
     paint(); paintVeil(); draw();
   }
   function loop() { clearTimeout(timer); if (still || document.hidden || !(cv || bot || vs)) return; if (vs) VISTA.tick(); else if (bot) drawBot(); else draw(); timer = setTimeout(loop, 166); }
-  /* in the world layout the whole scene runs on a phone too; in the plain layout a phone keeps just the sign and the rocks */
+  /* in the world layout the whole scene runs on a phone too; in the plain layout a phone stays plain green */
   const modeNow = () => (isPhone() && WORLD.plain() ? 'phone' : 'wide');
   let rsT = 0;
   function start() {
     if (cv || bot || vs || !on()) return;
     still = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
-    mode = modeNow(); if (mode === 'phone') { startPhone(); return; }
+    mode = modeNow(); if (mode === 'phone') return; /* a phone keeps the plain green page: no sign, no rocks, no scenery */
     if (!WORLD.plain()) { vs = true; WORLD.sync(true); build(); loop(); armPoke(); return; }
     if (typeof VISTA !== 'undefined') { vs = true; WORLD.sync(true); build(); loop(); return; } /* the plain app over the forest: on a wide screen the new scenery is only the background */
     cv = document.createElement('canvas'); cv.id = 'scene'; cv.setAttribute('aria-hidden', 'true');
@@ -746,7 +746,7 @@ const SCENE = (() => {
     let mv = 0; document.addEventListener('pointermove', e => { if (!(cv || vs) || e.pointerType === 'touch' || Date.now() - mv < 90) return; mv = Date.now(); const on = document.body.classList.contains('shut') && free(e) && (ECO.on() ? ECO : LIFE).hover(e.clientX - (vs ? VISTA.shift().x : 0), e.clientY - (vs ? VISTA.shift().y : 0), PX); document.documentElement.classList.toggle('poke', !!on); }, { passive: true });
   }
   function stop() { clearTimeout(timer); stopPhone(); if (cv) cv.remove(); cv = null; if (vs) { VISTA.destroy(); vs = false; } document.body.classList.remove('scene-on'); WORLD.sync(false); delete document.documentElement.dataset.tod; }
-  addEventListener('resize', () => { clearTimeout(rsT); rsT = setTimeout(() => { if (!cv && !bot && !vs) return; if (modeNow() !== mode) { stop(); start(); } else if (bot) buildPhone(); else build(); }, 200); });
+  addEventListener('resize', () => { clearTimeout(rsT); rsT = setTimeout(() => { if (!cv && !bot && !vs) { if (on() && modeNow() !== mode) start(); return; } if (modeNow() !== mode) { stop(); start(); } else if (bot) buildPhone(); else build(); }, 200); });
   document.addEventListener('visibilitychange', () => { if (!document.hidden && (cv || bot || vs)) { if (pickMood() !== mood) (bot ? buildPhone() : build()); loop(); } });
   setInterval(() => { if ((cv || bot || vs) && !document.hidden && pickMood() !== mood) (bot ? buildPhone() : build()); }, 60000);
   /* the main goal's progress builds the house: the still layer is repainted only when a new stage is reached */
