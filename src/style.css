@@ -1568,3 +1568,8 @@ body.shroom-menu:not(.world) #vista::after { content: ''; position: absolute; in
 @media (prefers-reduced-motion: reduce) { .gdh .gv, .gdh .gi { transition: none !important; animation: none !important; } }
 
 .card .art:not(.art-corner) { display: none; } /* the line art is replaced by the garden */
+
+/* ---------- v38.6: deep lush green: darker glass, deeper page, a green shade over the scenery ---------- */
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #06130d; --panel: rgba(6, 36, 24, .6); --card: rgba(6, 36, 24, .6); --field: rgba(0, 14, 8, .42); --seg-on: rgba(120, 210, 160, .17); --float: rgba(5, 27, 18, .9); --hair: rgba(150, 230, 185, .14); --track: rgba(150, 230, 185, .1); --track2: rgba(150, 230, 185, .2); --glass-hi: rgba(170, 240, 200, .06); } }
+:root[data-theme="dark"] { --bg: #06130d; --panel: rgba(6, 36, 24, .6); --card: rgba(6, 36, 24, .6); --field: rgba(0, 14, 8, .42); --seg-on: rgba(120, 210, 160, .17); --float: rgba(5, 27, 18, .9); --hair: rgba(150, 230, 185, .14); --track: rgba(150, 230, 185, .1); --track2: rgba(150, 230, 185, .2); --glass-hi: rgba(170, 240, 200, .06); }
+body.scene-on::after { content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none; background: radial-gradient(120% 90% at 50% 45%, rgba(2, 24, 14, .22), rgba(1, 16, 9, .52)); }

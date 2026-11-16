@@ -1,16 +1,8 @@
-/* ---------- sound in the top bar: one tap to mute, a volume, and a small music station ----------
-   Sources: Forest (the quiet piece made in the browser, music.js), GREEN by Hiroshi Yoshimura (1986), or no music.
-   GREEN streams the official release (the label's uploads on YouTube) through YouTube's own player, which must stay visible
-   while it plays, so it sits in a small dock at the bottom left with its cover; hiding the dock pauses it. Nothing is loaded
-   from YouTube until GREEN is chosen. The volume (S.ui.vol, 0 to 100) sets the sound effects, the forest music and the player.
-   More albums: add an entry to ALBUMS. */
-const ALBUMS = {
-  green: { title: 'GREEN', by: 'Hiroshi Yoshimura', year: 1986, tracks: [['nQkdHvIP0zg', 'CREEK'], ['xOQjZ-PFE1o', 'FEEL'], ['OSOPJ8UbOYg', 'SHEEP'], ['pFoF2Og6AXw', 'SLEEP'], ['TO8kwMJuSvU', 'GREEN'], ['1O58bqXvAsE', 'FEET'], ['67oSBxOEzZ8', 'STREET'], ['ffWtJPbkVNc', 'TEEVEE']] },
-  /* the Kingdom albums are by Amos Roddy and are not free to bundle; they play through Bandcamp's own player (album id in bc) */
-  kingdom: { title: 'Kingdom', by: 'Amos Roddy', year: 2015, bc: 2539297682, tracks: [] },
-  newlands: { title: 'Kingdom New Lands', by: 'Amos Roddy', year: 2016, bc: 864551776, tracks: [] },
-  crowns: { title: 'Kingdom Two Crowns', by: 'Amos Roddy', year: 2018, bc: 2608007289, tracks: [] },
-};
+/* ---------- sound in the top bar: one tap to mute, a volume, and the music switch ----------
+   v38.6: all music is baked into the app. Forest is the quiet piece the browser makes itself (music.js), and the Fairy Woods
+   scenery has its own sounds (ambient.js). Nothing streams: GREEN (YouTube) and the Kingdom albums (Bandcamp) were removed because
+   they cannot play inside the app. ALBUMS stays as an empty table so a bundled album can be added later. */
+const ALBUMS = {};
 function djSrc() { return S.ui.music === false ? 'off' : (S.ui.dj && ALBUMS[S.ui.dj.src] ? S.ui.dj.src : 'forest'); }
 const volOf = () => (typeof S.ui.vol === 'number' ? Math.max(0, Math.min(100, S.ui.vol)) : 80);
 const DJ = (() => {
@@ -26,39 +18,8 @@ const DJ = (() => {
     play: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 5v14l12-7z"/></svg>',
     pause: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6.5 5h4v14h-4zM13.5 5h4v14h-4z"/></svg>',
   };
-  /* ---------- YouTube's player, loaded on demand ---------- */
-  function api() {
-    if (window.YT && YT.Player) return Promise.resolve();
-    if (apiP) return apiP;
-    apiP = new Promise((res, rej) => {
-      const prev = window.onYouTubeIframeAPIReady; window.onYouTubeIframeAPIReady = () => { if (prev) try { prev(); } catch (e) { /* theirs */ } res(); };
-      const s = document.createElement('script'); s.src = 'https://www.youtube.com/iframe_api'; s.async = true; s.onerror = () => { apiP = null; rej(new Error('offline')); };
-      document.head.appendChild(s);
-    });
-    return apiP;
-  }
-  /* ---------- Bandcamp's player for the Kingdom albums ---------- */
-  function showBc() {
-    const a = alb(), b = $('#djBc'); if (!a || !a.bc || !b) return;
-    try { if (yt && ytReady) yt.pauseVideo(); } catch (e) { /* gone */ } playing = false; want = false;
-    const src = `https://bandcamp.com/EmbeddedPlayer/album=${a.bc}/size=small/bgcol=0c1a15/linkcol=8fd9b0/artwork=small/transparent=true/`;
-    if (b.dataset.src !== src) { b.innerHTML = `<iframe title="${esc(a.title)}, Bandcamp player" src="${src}" seamless allow="autoplay"></iframe>`; b.dataset.src = src; }
-    b.hidden = false; const d = $('#djDock'); if (d) d.hidden = true; paint();
-  }
-  function hideBc() { const b = $('#djBc'); if (b) { b.innerHTML = ''; b.dataset.src = ''; b.hidden = true; } }
-  function ensure() {
-    if (yt) return Promise.resolve();
-    $('#djDock').hidden = false; paintDock('Loading…');
-    return api().then(() => new Promise(res => {
-      yt = new YT.Player('djYt', { width: 200, height: 200, host: 'https://www.youtube-nocookie.com', videoId: alb().tracks[idx()][0],
-        playerVars: { playsinline: 1, rel: 0, modestbranding: 1, controls: 1, iv_load_policy: 3, fs: 0 },
-        events: {
-          onReady: () => { ytReady = true; try { yt.setVolume(volOf()); if (S.ui.mute) yt.mute(); } catch (e) { /* not yet */ } res(); },
-          onStateChange: e => { playing = e.data === 1; if (playing) { want = true; const n = $('#djNote'); if (n && /held the music/.test(n.textContent)) n.textContent = ''; } if (e.data === 0) step(1); paint(); },
-          onError: () => { step(1); },
-        } });
-    })).catch(() => { yt = null; $('#djDock').hidden = true; setSrc('forest', true); const n = $('#djNote'); if (n) n.textContent = 'GREEN could not load (it streams from YouTube and needs the internet). Forest plays meanwhile.'; });
-  }
+  /* streaming players removed (v38.6): nothing is loaded from outside */
+  const api = () => Promise.reject(new Error('no streaming')), showBc = () => { }, hideBc = () => { }, ensure = () => Promise.resolve();
   function load(i, go) {
     const a = alb(); if (!a || a.bc) return;
     S.ui.dj = { src: djSrc(), i }; persist();
