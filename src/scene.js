@@ -108,20 +108,27 @@ const SCENE = (() => {
     const R = rnd(7), hz = Math.round(H * .62);
     L = { col, side, wide, hz, cx0: side, cx1: W - side, floor: Math.round(H * .8) };
     L.hut = { x: wide ? Math.max(18, Math.round(side * .3)) : 4, y: Math.round(H * .8) };
-    L.fall = { x: wide ? Math.round(W - side * .5) : W - 10, top: Math.round(hz - (wide ? 52 : 34)), bot: Math.round(H * .79), w: wide ? 8 : 5 };
+    L.fall = { x: wide ? Math.round(W - side * .5) : W - 10, top: Math.round(hz - (wide ? 52 : 34)), bot: Math.round(H * .79), w: wide ? 10 : 6 };
     /* the fall comes down in steps: each drop lands on a rock ledge and spills over to the next, a little to one side */
-    { const F = L.fall, nT = wide ? 3 : 2, hh = F.bot - F.top, dx = wide ? [0, -1, -2] : [0, -1], dw = wide ? [0, 3, 6] : [0, 3]; F.tiers = []; F.ledges = [];
+    { const F = L.fall, nT = 1, hh = F.bot - F.top, dx = wide ? [0, -1, -2] : [0, -1], dw = wide ? [0, 3, 6] : [0, 3]; F.tiers = []; F.ledges = [];
       for (let i = 0; i < nT; i++) F.tiers.push({ x: F.x + dx[i], w: F.w + dw[i], y0: F.top + Math.round(i * hh / nT) + (i ? 4 : 0), y1: i === nT - 1 ? F.bot : F.top + Math.round((i + 1) * hh / nT) });
       for (let i = 0; i < nT - 1; i++) { const a = F.tiers[i], b = F.tiers[i + 1]; F.ledges.push({ y: a.y1, x0: Math.min(a.x, b.x) - 5, x1: Math.max(a.x + a.w, b.x + b.w) + 5 }); } }
     /* each drop wanders a few pixels to one side and the other, in soft curves, and breathes a little in width */
     { const F = L.fall; F.ex = (ti, y) => { const tr = F.tiers[ti]; return Math.round(2 * Math.max(0, Math.min(1, (y - tr.y0) / Math.max(1, tr.y1 - tr.y0 - 1)))); }; }
-    { const F = L.fall; F.off = (ti, y) => { const tr = F.tiers[ti], u = y - tr.y0, k = Math.min(1, u / 7); return Math.round((Math.sin(u * .12 + ti * 2.1) * 1.25 + Math.sin(u * .3 + ti * .9) * .5) * k * (wide ? 1 : .7)); }; }
-    L.pool = { x: L.fall.x + Math.round(L.fall.w / 2), y: L.fall.bot + 3, rx: wide ? 22 : 11, ry: 4 };
+    { const F = L.fall; F.off = (ti, y) => { const tr = F.tiers[ti], u = y - tr.y0, k = Math.min(1, u / 7); return Math.round((Math.sin(u * .07 + ti * 2.1) * 1.1 + Math.sin(u * .17 + ti * .9) * .25) * k * (wide ? 1 : .7)); }; }
+    L.pool = { x: L.fall.x + Math.round(L.fall.w / 2), y: L.fall.bot + 4, rx: wide ? 36 : 17, ry: wide ? 8 : 5 };
+    /* the pool lets a stream go: it leaves at the front edge, wanders left behind the grass and comes down to the foot of the picture a little right of the middle, widening as it nears */
+    { const P = L.pool, xe = Math.round(W * .56), p0 = [P.x - 8, P.y + P.ry - 3], p1 = [Math.max(xe + 20, P.x - Math.round(W * .13)), P.y + 5], p2 = [xe + 6, H - 22], p3 = [xe, H + 2], n = 180; L.stream = [];
+      for (let i = 0; i <= n; i++) { const u = i / n, a = (1 - u) ** 3, b = 3 * (1 - u) ** 2 * u, c2 = 3 * (1 - u) * u * u, d = u ** 3;
+        L.stream.push({ u, x: a * p0[0] + b * p1[0] + c2 * p2[0] + d * p3[0], y: a * p0[1] + b * p1[1] + c2 * p2[1] + d * p3[1], rw: (wide ? 4 : 3) + u * (wide ? 11 : 7), rh: 2.4 + u * 3.6 }); }
+      const at = (i, side) => { const q = L.stream[i]; return { x: Math.round(q.x), y: Math.round(q.y + side * (q.rh + 3)) }; };
+      L.crys = wide ? [{ x: P.x - 31, y: P.y + 3, k: 0, h: 8 }, Object.assign(at(52, -1), { k: 1, h: 6 }), Object.assign(at(100, 1), { k: 2, h: 7 }), Object.assign(at(142, -1), { k: 0, h: 5 }), { x: L.hut.x + 47, y: L.hut.y + 9, k: 1, h: 5 }]
+        : [{ x: P.x - 15, y: P.y + 3, k: 0, h: 6 }, Object.assign(at(110, 1), { k: 2, h: 5 })]; }
     /* the floor, from back to front: cottage and its lantern, the ring in front of it, a standing stone and the deer to the right of the ring;
        on the other side the stag stands on the bank by the pool, two stones at the water's edge. Each stands on its own ground, none on another. */
-    L.stones = wide ? [{ x: L.pool.x + 8, y: L.pool.y + 9, h: 12 }, { x: L.pool.x - 25, y: L.pool.y + 10, h: 9 }] : [{ x: W - 22, y: Math.round(H * .85), h: 10 }];
+    L.stones = wide ? [{ x: L.pool.x + 8, y: L.pool.y + 9, h: 12 }, { x: L.pool.x - 26, y: L.pool.y + 19, h: 9 }] : [{ x: W - 22, y: Math.round(H * .85), h: 10 }];
     L.ring = { x: wide ? Math.round(side * .62) : 18, y: Math.round(H * .9) };
-    L.stag = wide ? { x: L.pool.x - 43, y: L.pool.y + 14 - 15 } : null;
+    L.stag = wide ? { x: L.pool.x - 56, y: L.pool.y - 9 } : null;
     L.deer = wide ? [{ x: L.hut.x + 36, y: L.floor + 15 - 11, flip: true, ph: 0 }] : [];
     /* the main beam of sun comes down onto the cottage; lanterns stand by the cottage, the ring, the stones and the pool */
     { const Lm = LIGHT[pickMood()], sk = wide ? Lm.ang : Lm.ang * .4, hx = L.hut.x + 14, hy = L.hut.y - 8; L.sun = { hx, hy, sk, bx0: hx - sk * hy, w: wide ? 22 : 16 }; }
@@ -212,6 +219,17 @@ const SCENE = (() => {
     const P = L.pool; glow(c, P.x, P.y, P.rx, t.water2, t.glowA * .6);
     c.fillStyle = t.water2; for (let y = -P.ry; y <= P.ry; y++) { const w = Math.round(P.rx * Math.sqrt(1 - (y * y) / (P.ry * P.ry))); c.fillRect(P.x - w, P.y + y, w * 2, 1); }
     c.fillStyle = t.water; for (let y = -P.ry + 1; y < P.ry; y++) { const w = Math.round((P.rx - 3) * Math.sqrt(1 - (y * y) / (P.ry * P.ry))); c.fillRect(P.x - w, P.y + y, w * 2, 1); }
+    /* a soft stony lip round the pool, and the deeper middle */
+    for (let a = 0; a < 6.283; a += .09) { const x = Math.round(P.x + Math.cos(a) * (P.rx + 1)), y = Math.round(P.y + Math.sin(a) * (P.ry + 1)); if (y >= P.y - 1) put(c, x, y, RC() < .5 ? t.stoneD : mixh(t.stoneD, t.moss, .35)); }
+    c.globalAlpha = .45; c.fillStyle = mixh(t.water2, '#3a5aa0', .35); for (let y = -P.ry + 3; y < P.ry - 1; y++) { const w = Math.round((P.rx - 12) * Math.sqrt(1 - (y * y) / (P.ry * P.ry))); if (w > 0) c.fillRect(P.x - w, P.y + y, w * 2, 1); } c.globalAlpha = 1;
+    /* the stream: a dark bank, the water, a paler line down its middle */
+    const blob = (x, y, rw, rh, col) => { c.fillStyle = col; for (let j = -Math.floor(rh); j <= Math.floor(rh); j++) { const w = Math.round(rw * Math.sqrt(Math.max(0, 1 - (j * j) / (rh * rh + .01)))); if (w > 0) c.fillRect(Math.round(x) - w, Math.round(y) + j, w * 2, 1); } };
+    for (const q of L.stream) blob(q.x, q.y + 1, q.rw + 1.5, q.rh + 1.2, mixh(t.stoneD, t.mossD, .45));
+    for (const q of L.stream) blob(q.x, q.y, q.rw, q.rh, t.water2);
+    for (const q of L.stream) blob(q.x, q.y - .5, q.rw * .6, q.rh * .55, t.water);
+    for (let i = 10; i < L.stream.length; i += 11) { const q = L.stream[i], side = (i / 5 | 0) % 2 ? 1 : -1; boulder(c, Math.round(q.x + side * (q.rw + 2.5)), Math.round(q.y + q.rh * .6 + 1), 1.4 + RC() * 1.2, 1 + RC() * .8, t, RC, { moss: true }); }
+    /* crystals growing from the banks and by the cottage */
+    for (const k of L.crys) crystals(c, k.x, k.y, k.h, k.k);
     /* standing stones, mossy, carved with runes */
     for (const s of L.stones) standing(c, s.x, s.y, s.h, t, R);
     /* the overgrown cottage */
@@ -232,18 +250,32 @@ const SCENE = (() => {
     meadowFront(c, t);
     for (const l of L.lamps) { if (l.kind === 'post') lampPost(c, l.x, l.y, t); else if (l.kind === 'hang') lampHang(c, l.x, l.y, l.dir, t); }
   }
+  /* pastel crystals: three shards leaning a little, lit on the left, dark on the right, with one bright edge */
+  const CRYP = [['#f4eaff', '#cdb6ff', '#9a7be0', '#6a4fb0'], ['#e6fffb', '#9af0e4', '#52c4c0', '#2f8a96'], ['#fff0f8', '#ffb8e0', '#e07fc0', '#a24f92']];
+  function shard(c, x, y, h, p) {
+    for (let j = 0; j < h; j++) {
+      const yy = y - h + 1 + j;
+      if (j === 0) { put(c, x, yy, p[0]); continue; }
+      if (j === 1) { put(c, x - 1, yy, p[1]); put(c, x, yy, p[1]); put(c, x + 1, yy, p[2]); continue; }
+      const last = j === h - 1; put(c, x - 1, yy, last ? p[2] : j < 4 ? p[0] : p[1]); put(c, x, yy, last ? p[3] : j < h * .6 ? p[1] : p[2]); put(c, x + 1, yy, p[3]);
+    }
+  }
+  function crystals(c, x, y, h, k) {
+    shard(c, x - 4, y + 1, Math.max(3, h - 3), CRYP[(k + 1) % 3]); shard(c, x + 4, y + 1, Math.max(3, h - 2), CRYP[(k + 2) % 3]); shard(c, x, y, h, CRYP[k % 3]);
+    c.globalAlpha = .5; put(c, x - 5, y + 2, '#06100c'); put(c, x + 5, y + 2, '#06100c'); c.globalAlpha = 1;
+  }
   /* a lantern on a post */
   function lampPost(c, x, y, t) {
     const lit = LIGHT[mood].lamp > 0;
-    c.fillStyle = t.trunkD; c.fillRect(x, y - 10, 1, 10); c.fillRect(x - 2, y - 11, 5, 1); c.fillRect(x - 1, y - 16, 3, 1); c.fillRect(x - 1, y - 12, 3, 1); c.fillRect(x - 2, y - 15, 1, 3); c.fillRect(x + 2, y - 15, 1, 3);
+    c.fillStyle = t.trunkD; c.fillRect(x, y - 10, 1, 10); c.fillRect(x - 2, y - 11, 5, 1); c.fillRect(x - 1, y - 16, 3, 1); c.fillRect(x, y - 17, 1, 1); c.fillRect(x - 1, y - 12, 3, 1); c.fillRect(x - 2, y - 15, 1, 3); c.fillRect(x + 2, y - 15, 1, 3);
     c.fillStyle = lit ? '#ffd27a' : '#bfa060'; c.fillRect(x - 1, y - 15, 3, 3); if (lit) { c.fillStyle = '#fff4c0'; c.fillRect(x, y - 14, 1, 1); }
     c.fillStyle = t.stoneD; c.fillRect(x - 1, y, 3, 1);
   }
   /* a lantern hung from an iron arm nailed to a trunk */
   function lampHang(c, x, y, dir, t) {
     const lit = LIGHT[mood].lamp > 0;
-    c.fillStyle = t.trunkD; c.fillRect(Math.min(x, x - dir * 3), y - 6, 4, 1); c.fillRect(x, y - 5, 1, 2); c.fillRect(x - 1, y - 3, 3, 1); c.fillRect(x - 1, y + 1, 3, 1);
-    c.fillStyle = lit ? '#ffd27a' : '#bfa060'; c.fillRect(x - 1, y - 2, 3, 3); if (lit) { c.fillStyle = '#fff4c0'; c.fillRect(x, y - 1, 1, 1); }
+    c.fillStyle = t.trunkD; c.fillRect(Math.min(x, x - dir * 3), y - 7, 4, 1); c.fillRect(x, y - 6, 1, 2); c.fillRect(x - 1, y - 4, 3, 1); c.fillRect(x - 2, y - 3, 1, 4); c.fillRect(x + 2, y - 3, 1, 4); c.fillRect(x - 1, y + 1, 3, 1);
+    c.fillStyle = lit ? '#ffd27a' : '#bfa060'; c.fillRect(x - 1, y - 3, 3, 4); if (lit) { c.fillStyle = '#fff4c0'; c.fillRect(x, y - 2, 1, 2); }
   }
   /* the dark at the edges, under the canopy and on the floor, in dithered steps: the clearing stays bright, the corners go deep */
   function shade(c) {
@@ -670,18 +702,37 @@ const SCENE = (() => {
     const F = L.fall;
     const Lm = LIGHT[mood];
     F.tiers.forEach((tr, ti) => {
+      const hh = Math.max(1, tr.y1 - tr.y0), q4 = v => Math.round(v * 4) / 4;
       for (let y = tr.y0; y < tr.y1; y++) {
-        const ex = F.ex(ti, y), x0 = tr.x + F.off(ti, y) - (ex >> 1), w = tr.w + ex + ((y >> 2) % 3 === 1 ? 1 : 0);
+        const ex = F.ex(ti, y), x0 = tr.x + F.off(ti, y) - (ex >> 1), w = tr.w + ex, k = (y - tr.y0) / hh;
+        /* one calm sheet: a deep body, a pale core, long soft streaks drifting down, a little lilac in the brightest of it */
         c.fillStyle = t.water2; c.fillRect(x0, y, w, 1);
-        for (let x = 0; x < w; x++) { const p = (((y - (f * 2 - x * 5 + ti * 3)) % 7) + 7) % 7; if (p < 4) { c.fillStyle = p < 2 ? t.foam : t.water; c.fillRect(x0 + x, y, 1, 1); } }
-        if ((f + y * 3) % 11 === 0) { c.fillStyle = t.foam; c.fillRect(x0 - 1 + (y & 1) * (w + 1), y, 1, 1); }
+        for (let x = 0; x < w; x++) {
+          const u = (x + .5) / w, core = 1 - Math.abs(u - .5) * 2;
+          const sw = Math.sin((y - f * (.5 + (x % 3) * .1)) * (.11 + (x % 4) * .015) + x * 1.7) * .5 + Math.sin((y - f * .34) * .05 + x * .9) * .5;
+          const v = core * .5 + sw * .3 + k * .12;
+          if (x === 0 || x === w - 1) { c.globalAlpha = .45; c.fillStyle = mixh(t.water2, '#16334a', .5); c.fillRect(x0 + x, y, 1, 1); c.globalAlpha = 1; continue; }
+          if (v > .28) { c.globalAlpha = q4(Math.min(1, (v - .22) * 1.5)); c.fillStyle = v > .72 ? t.foam : t.water; c.fillRect(x0 + x, y, 1, 1); }
+          if (v > .78 && ((x + (y >> 3)) % 3 === 0)) { c.globalAlpha = .35; c.fillStyle = '#e4d4ff'; c.fillRect(x0 + x, y, 1, 1); }
+          c.globalAlpha = 1;
+        }
       }
-      /* spray where each drop lands */
-      const ls = F.off(ti, tr.y1 - 1);
-      for (let i = 0; i < 6; i++) { const ox = Math.round(Math.sin(f / 3 + i + ti) * (tr.w / 2 + 3)), oy = (f + i * 3) % 4; c.fillStyle = t.foam; c.fillRect(tr.x + ls + tr.w / 2 + ox, tr.y1 - oy, 2, 1); }
+      /* the lip at the top, and a few bubbles sliding down the sheet */
+      { const o0 = F.off(ti, tr.y0); c.fillStyle = t.foam; c.globalAlpha = .7; c.fillRect(tr.x + o0, tr.y0, tr.w, 1); c.globalAlpha = 1; }
+      for (let i = 0; i < 9; i++) { const yy = tr.y0 + ((f * (.5 + (i % 3) * .1) + i * 37) % hh), ee = F.ex(ti, Math.floor(yy)), xx = tr.x + F.off(ti, Math.floor(yy)) - (ee >> 1) + 1 + ((i * 5) % Math.max(1, tr.w + ee - 2)); c.globalAlpha = .75; c.fillStyle = i % 3 === 0 ? '#e4d4ff' : t.foam; c.fillRect(xx, Math.floor(yy), 1, 1 + (i % 4 === 0 ? 1 : 0)); c.globalAlpha = 1; }
+      /* where it lands: a soft mist of spray and a few bright drops */
+      const ls = F.off(ti, tr.y1 - 1), mx = tr.x + ls + tr.w / 2;
+      for (let i = 0; i < 7; i++) { c.globalAlpha = .18 + .06 * (i % 3); c.fillStyle = t.foam; const mw = tr.w + 6 + i * 2 + Math.round(Math.sin(f / 9 + i) * 2); c.fillRect(Math.round(mx - mw / 2), tr.y1 - 1 - i, mw, 1); } c.globalAlpha = 1;
+      for (let i = 0; i < 8; i++) { const ox = Math.round(Math.sin(f / 3 + i * 1.3 + ti) * (tr.w / 2 + 4)), oy = (f + i * 3) % 5; c.fillStyle = t.foam; c.fillRect(Math.round(mx + ox), tr.y1 - oy, 2, 1); }
     });
     for (const lg of F.ledges) for (let i = 0; i < 3; i++) { const x = lg.x0 + 4 + ((f + i * 11) % Math.max(4, lg.x1 - lg.x0 - 8)); if ((f + i * 2) % 6 < 3) { c.fillStyle = t.foam; c.fillRect(x, lg.y - 1, 2, 1); } }
-    const P = L.pool; for (let i = 0; i < 5; i++) { const x = P.x - P.rx + 4 + ((f * 2 + i * 13) % (P.rx * 2 - 8)); if ((f + i) % 5 < 3) { c.fillStyle = t.foam; c.fillRect(x, P.y - 1 + (i % 3), 3, 1); } }
+    /* the pool turns slowly: pastel rings spiralling out from where the water lands, a few bubbles rising, and ripples carried down the stream */
+    { const P = L.pool, sx = P.x - 2, rot = f * .022;
+      for (let a = .6; a < 15.5; a += .1) { const r = a / 15.5, ang = a + rot, x = Math.round(sx + Math.cos(ang) * r * (P.rx - 4)), y = Math.round(P.y + Math.sin(ang) * r * (P.ry - 1)); const seg = Math.floor(a / 1.35) % 3;
+        c.globalAlpha = .5 - r * .2; c.fillStyle = seg === 0 ? t.foam : seg === 1 ? '#c9b3ff' : '#8ff0e0'; c.fillRect(x, y, 1, 1); } c.globalAlpha = 1;
+      for (let i = 0; i < 10; i++) { const ph = ((f * .012 + i * .1) % 1), bx = P.x - P.rx * .8 + ((i * 53) % Math.round(P.rx * 1.6)) + Math.round(Math.sin(f / 14 + i) * 2), by = Math.round(P.y - 1 - ph * 20); c.globalAlpha = (1 - ph) * .85; c.fillStyle = i % 3 === 0 ? '#e4d4ff' : i % 3 === 1 ? '#bff6ee' : t.foam; c.fillRect(bx, by, 1 + (i % 5 === 0 ? 1 : 0), 1 + (i % 5 === 0 ? 1 : 0)); } c.globalAlpha = 1;
+      const N = L.stream.length; for (let i = 0; i < 9; i++) { const q = L.stream[Math.floor(((f * .0042 + i / 9) % 1) * (N - 1))]; const lw = Math.max(2, Math.round(q.rw * .7)); c.globalAlpha = .75; c.fillStyle = i % 3 === 0 ? '#e4d4ff' : t.foam; c.fillRect(Math.round(q.x - lw / 2), Math.round(q.y - q.rh * .3), lw, 1); c.globalAlpha = 1; }
+      for (let i = 0; i < 4; i++) { const q = L.stream[Math.floor(((f * .0042 + i / 4 + .12) % 1) * (N - 1))]; if ((f + i * 7) % 20 < 12) { c.fillStyle = t.foam; c.fillRect(Math.round(q.x + Math.sin(f / 5 + i) * q.rw * .4), Math.round(q.y + q.rh * .3), 1, 1); } } }
     /* runes on the stones breathe in and out */
     const br = .45 + .45 * Math.sin(f / 9);
     for (const s of L.stones) { const w = Math.max(5, Math.round(s.h * .45)); c.globalAlpha = br * t.glowA * .6; c.fillStyle = t.rune; c.fillRect(s.x + Math.floor(w / 2) - 2, s.y - Math.round(s.h * .55) - 1, 5, 5); c.globalAlpha = 1; }
@@ -697,6 +748,7 @@ const SCENE = (() => {
     c.globalCompositeOperation = 'screen';
     if (lt.sun && Lm.sunA) { c.globalAlpha = .9 + .1 * Math.sin(f / 15); c.drawImage(lt.sun, 0, 0); }
     c.globalCompositeOperation = 'lighter';
+    if (L.crys) { const cs = .45 + Lm.wf * .8 + (Lm.lamp ? .25 : 0); L.crys.forEach((k, i) => { const col = ['#b497ff', '#7fe6dc', '#ff9fd2'][k.k % 3], pu = .75 + .25 * Math.sin(f / 16 + i * 1.7); spot(c, k.x, k.y - k.h * .5, 8 + (k.h >> 1), col, .26 * cs * pu); }); }
     if (Lm.lamp) {
       c.globalAlpha = 1; c.drawImage(lt.lamp, 0, 0);
       const lc = mood === 'sunset' ? '#ffb070' : '#ffc060';
@@ -707,6 +759,7 @@ const SCENE = (() => {
       c.globalAlpha = .82 + .18 * Math.sin(f / 18); c.drawImage(lt.wf, 0, 0);
     }
     c.globalCompositeOperation = 'source-over'; c.globalAlpha = 1;
+    if (L.crys) L.crys.forEach((k, i) => { if ((f + i * 17) % 60 < 4) { c.fillStyle = '#ffffff'; c.fillRect(k.x, k.y - k.h - 1, 1, 1); c.globalAlpha = .6; c.fillRect(k.x - 1, k.y - k.h, 3, 1); c.fillRect(k.x, k.y - k.h - 1, 1, 3); c.globalAlpha = 1; } });
     /* specks of dust turning gold in the main beam */
     if (Lm.sunA) { const S2 = L.sun; c.fillStyle = Lm.sun; for (const d of L.dust) { d.y += .04; if (d.y > L.floor) d.y = L.hut.y - 70; if ((f + d.p) % 24 > 15) continue; const x = S2.bx0 + S2.sk * d.y + d.u * (S2.w / 2 + d.y * .035) + Math.sin((f + d.p) / 13) * 1.5; c.globalAlpha = .55 + .35 * Math.sin((f + d.p) / 4); c.fillRect(Math.round(x), Math.round(d.y), 1, 1); } c.globalAlpha = 1; }
     /* fireflies: slow, soft, each blinking in its own time */

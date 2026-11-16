@@ -211,3 +211,10 @@ Favicon (38.11): redrawn as a tree, a mound with a small door and a few coins, o
 - Home Next card: after the first logged spend (and no backup due, exact card hidden) offers "Set a weekly reminder" (data-remindgo -> Receipts, scrolls to #rcRemind; Hide sets S.ui.remindHidden). Backup nudge keeps priority.
 - Jar renamed "Burrows (goals)". Free to spend capped by held-back safety minimum; Short/cushion states; next-3-months line.
 - Still open: card arrears not modeled, variable-income switch, spending-envelope mode, onboarding length, debt after due date, saved-above-target cap, badge toast timing.
+
+### 38.23
+- Waterfall is one tier (nT = 1), no ledges: one calm sheet, pale core, slow long streaks, lilac sparkle, sliding bubbles, mist and drops at the foot. Soft meander (F.off) reduced.
+- Pool larger (rx 36, ry 8) with a slow pastel spiral, rising bubbles. L.stream: bezier from the pool front edge to the bottom edge at W*.56, widening toward the viewer; static bank/water in the art layer (before foreground grass), ripples animated in draw().
+- Crystals (L.crys, shard/crystals helpers): pastel clusters by pool, stream banks and cottage; soft glow pulse and tip twinkle.
+- Lanterns redrawn (finial, roof, framed glass, base). No letter shapes.
+- Stag and second stone moved to keep clear of the stream.
