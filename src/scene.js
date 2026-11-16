@@ -11,7 +11,7 @@ const SCENE = (() => {
   ];
   /* the spirit stag: tall antlers, pale, looking out over the clearing */
   const STAG = ['.......a.a.a..', '........aaa...', '.....a..a.....', '......aaaa.a..', '.........aaa..', '.........bbbb.', '........bbbkbw', '........bbbb..', '........bbb...', '.wbbbbbbbbb...', '.bbbbbbbbbb...', '.bbbbbbbbbb...', '..b.b...b.b...', '..b.b...b.b...', '..d.d...d.d...'];
-  let cv = null, cx = null, st = null, sx = null, vl = null, vx = null, W = 0, H = 0, PX = 3, T = null, mood = '', timer = 0, frame = 0, L = null, still = false, lt = {}, lx = {};
+  let cv = null, cx = null, sk = null, skx = null, stb = null, st = null, sx = null, vl = null, vx = null, W = 0, H = 0, PX = 3, T = null, mood = '', timer = 0, frame = 0, L = null, still = false, lt = {}, lx = {};
   const rnd = s => () => { s |= 0; s = s + 0x6D2B79F5 | 0; let t = Math.imul(s ^ s >>> 15, 1 | s); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
   const hex = h => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
   const mix = (a, b, t) => { const A = hex(a), B = hex(b); return `rgb(${A.map((v, i) => Math.round(v + (B[i] - v) * t)).join(',')})`; };
@@ -84,9 +84,9 @@ const SCENE = (() => {
     const c = sx, t = T, R = rnd(11), hz = L.hz;
     c.clearRect(0, 0, W, H);
     /* sky, seen through the canopy */
-    for (let y = 0; y < H; y++) { const f = Math.min(1, y / hz), seg = f < .55 ? 0 : 1, lf = seg ? (f - .55) / .45 : f / .55; c.fillStyle = mix(t.sky[seg], t.sky[seg + 1], Math.round(lf * 8) / 8); c.fillRect(0, y, W, 1); }
-    if (t.stars) for (const s of L.stars) { c.fillStyle = s[2] > .85 ? '#ffffff' : '#9fb0d8'; c.fillRect(s[0], s[1], 1, 1); }
-    if (mood === 'night') { const mx = L.wide ? Math.round(L.side * .35) : 12; glow(c, mx, 22, 16, '#c8d6ff', .7); disk(c, mx, 22, 7, '#f2f0d8'); disk(c, mx + 3, 20, 6, t.sky[1]); }
+    for (let y = 0; y < H; y++) { const f = Math.min(1, y / hz), seg = f < .55 ? 0 : 1, lf = seg ? (f - .55) / .45 : f / .55; skx.fillStyle = mix(t.sky[seg], t.sky[seg + 1], Math.round(lf * 8) / 8); skx.fillRect(0, y, W, 1); }
+    if (t.stars) for (const s of L.stars) { skx.fillStyle = s[2] > .85 ? '#ffffff' : '#9fb0d8'; skx.fillRect(s[0], s[1], 1, 1); }
+    if (mood === 'night') { const mx = L.wide ? Math.round(L.side * .35) : 12; glow(skx, mx, 22, 16, '#c8d6ff', .7); disk(skx, mx, 22, 7, '#f2f0d8'); disk(skx, mx + 3, 20, 6, t.sky[1]); }
     /* layers of forest fading into the mist: the deeper, the paler. Every tree is its own: crooked, leaning, forked, twisted,
        with branches, hanging vines, knots and moss, and vines drape from one tree to the next. The middle layer is softened with a haze. */
     for (let k = 0; k < 3; k++) {
@@ -96,6 +96,8 @@ const SCENE = (() => {
       for (let x = -4; x < W + 6; x += 4 + Math.floor(R2() * 5)) disk(c, x, base - 2, 3 + k + Math.floor(R2() * 3), col);
       c.globalAlpha = t.mist; c.fillStyle = t.fog; c.fillRect(0, base - 6, W, 10); c.globalAlpha = 1;
     }
+    /* everything so far is the far forest: flyers pass in front of it and behind the near trunks and canopy */
+    stb.width = W; stb.height = H; stb.getContext('2d').drawImage(st, 0, 0); c.clearRect(0, 0, W, H);
     /* the forest floor: moss, ferns */
     c.fillStyle = t.ground; c.fillRect(0, L.floor, W, H - L.floor);
     c.fillStyle = t.groundD; c.fillRect(0, L.floor, W, 1);
@@ -233,7 +235,7 @@ const SCENE = (() => {
   function farTree(c, x, base, k, col, t, R) {
     const dk = mixh(col, '#000000', k === 1 ? .08 : .2), r = R(), type = r < .5 ? 'plain' : r < .68 ? 'crook' : r < .82 ? 'lean' : r < .94 ? 'fork' : 'twist';
     let w = 2 + k * 2 + Math.floor(R() * 3); if (R() < .12) w += 3;
-    const lean = (type === 'lean' ? (R() < .5 ? -1 : 1) * (.18 + R() * .22) : (R() - .5) * .1), amp = type === 'crook' ? 4 + R() * 6 : type === 'twist' ? 1.5 : R() * 1.2, per = 16 + R() * 22, ph = R() * 6.28;
+    const lean = (type === 'lean' ? (R() < .5 ? -1 : 1) * (.03 + R() * .07) : (R() - .5) * .05), amp = type === 'crook' ? 1.6 + R() * 2.6 : type === 'twist' ? 1.3 : R() * 1, per = 16 + R() * 22, ph = R() * 6.28;
     const off = dy => lean * dy + amp * Math.sin(dy / per + ph) - amp * Math.sin(ph), moss = mixh(t.far[k], t.mossD, .35), hz = mixh(col, t.fog, .5), A = [];
     const bot = base + 40, soft = k === 1;
     const bar = (X, Y, ww, cc) => { c.fillStyle = cc; c.fillRect(X, Y, ww, 1); };
@@ -385,12 +387,63 @@ const SCENE = (() => {
     c.fillStyle = t.stone; for (let i = 0; i < 5; i++) c.fillRect(x + 6 + i * 4, base + 2 + (i % 2), 3, 1);
   }
 
+  /* ---------- things that cross the sky behind the trees: birds often, a dragon rarely, a saucer very rarely ----------
+     They are drawn between the sky and the trees, so a trunk can pass in front of them. ?fly=bird|dragon|ufo brings one in at once, for looking at. */
+  const FLYQ = (location.search.match(/[?&]fly=(bird|dragon|ufo)\b/) || [])[1] || '';
+  const fly = { birds: [], dragon: null, ufo: null, nb: 36 + Math.random() * 90, nd: 500 + Math.random() * 600, nu: 900 + Math.random() * 900 };
+  if (FLYQ) { fly.nb = fly.nd = fly.nu = 1e9; fly[{ bird: 'nb', dragon: 'nd', ufo: 'nu' }[FLYQ]] = 8; }
+  const line = (c, x0, y0, x1, y1, col) => { c.fillStyle = col; const n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0)) || 1; for (let i = 0; i <= n; i++) c.fillRect(Math.round(x0 + (x1 - x0) * i / n), Math.round(y0 + (y1 - y0) * i / n), 1, 1); };
+  const BIRD = [['b...b', '.b.b.', '..b..'], ['.....', 'bbbbb', '..b..'], ['..b..', 'bb.bb', '.....']];
+  function flyers(c, f) {
+    if (!L) return; const top = 26, bot = Math.round(L.hz * .78), night = mood === 'night';
+    /* birds: a small flock, a loose V, flapping out of step */
+    if (f > fly.nb) { fly.nb = f + (FLYQ === 'bird' ? 120 : 160 + Math.random() * 280); const dir = Math.random() < .5 ? 1 : -1, n = 3 + Math.floor(Math.random() * 4), y0 = top + 4 + Math.random() * (bot - top - 24), sp = 1.6 + Math.random() * .8;
+      for (let i = 0; i < n; i++) fly.birds.push({ x: dir > 0 ? -6 - i * 5 : W + 6 + i * 5, y: y0 + Math.abs(i - (n >> 1)) * 3 + (i % 2) * 2, dir, sp, ph: Math.floor(Math.random() * 8), bob: Math.random() * 6 }); }
+    const bc = night ? '#9fb4e0' : mood === 'sunset' ? '#3a2a44' : '#22332f';
+    fly.birds = fly.birds.filter(b => { b.x += b.dir * b.sp; if (b.dir > 0 ? b.x > W + 14 : b.x < -16) return false; const fr = BIRD[((f + b.ph) >> 1) % 3 === 2 ? 1 : ((f + b.ph) >> 1) % 2], yy = b.y + Math.sin(f / 9 + b.bob) * 1.5; c.save(); c.translate(Math.round(b.x), Math.round(yy)); c.scale(2, 2); grid(c, 0, 0, fr, { b: bc }, false); c.restore(); return true; });
+    /* the dragon: long, slow wingbeats, a tail that follows the body */
+    if (!fly.dragon && f > fly.nd) { fly.nd = f + (FLYQ === 'dragon' ? 150 : 1300 + Math.random() * 1400); const dir = Math.random() < .5 ? 1 : -1; fly.dragon = { x: dir > 0 ? -40 : W + 40, y: top + 14 + Math.random() * (bot - top - 40), dir, sp: 1.1 }; }
+    if (fly.dragon) { const d = fly.dragon; d.x += d.dir * d.sp; if (d.dir > 0 ? d.x > W + 44 : d.x < -44) fly.dragon = null; else { c.save(); c.translate(Math.round(d.x), Math.round(d.y + Math.sin(f / 11) * 2.5)); c.scale(2, 2); dragon(c, 0, 0, f, d.dir, night); c.restore(); } }
+    /* the saucer: glides in, stops and wobbles, then is gone in a jump */
+    if (!fly.ufo && f > fly.nu) { fly.nu = f + (FLYQ === 'ufo' ? 150 : 1800 + Math.random() * 1800); const dir = Math.random() < .5 ? 1 : -1; fly.ufo = { x: dir > 0 ? -10 : W + 10, y: top + 6 + Math.random() * (bot - top - 30), dir, hx: W * (.3 + Math.random() * .4), st: 0, t: 0, vy: 0 }; }
+    if (fly.ufo) { const u = fly.ufo; u.t++;
+      if (u.st === 0) { u.x += u.dir * 2.2; if ((u.x - u.hx) * u.dir > 0) { u.st = 1; u.t = 0; } }
+      else if (u.st === 1) { u.y += Math.sin(u.t / 2) * .6; if (u.t > 22) { u.st = 2; u.vy = -(.5 + Math.random() * .8); } }
+      else { u.x += u.dir * 6; u.y += u.vy * 3; }
+      if (u.x < -14 || u.x > W + 14 || u.y < -8) fly.ufo = null; else ufo(c, u.x, u.y, f, night, u.st === 1); }
+  }
+  function dragon(c, x, y, f, dir, night) {
+    const body = night ? '#3a466e' : mood === 'sunset' ? '#5a2a3c' : '#8a3036', wing = night ? '#5a6ca0' : mood === 'sunset' ? '#a04a5e' : '#d0624e', belly = night ? '#7d8fc4' : '#f0a070', flap = Math.sin(f / 2.4);
+    /* tail and body: a wave that travels back from the shoulders */
+    for (let i = 0; i < 15; i++) { const bx = x - dir * i, by = y + Math.sin(f / 5 - i * .55) * (1 + i * .12), th = i < 3 ? 3 : i < 9 ? 2 : 1; c.fillStyle = body; c.fillRect(Math.round(bx), Math.round(by - 1), 1, th); if (i < 8) { c.fillStyle = belly; c.fillRect(Math.round(bx), Math.round(by - 1 + th - 1), 1, 1); } if (i > 2 && i % 3 === 0) { c.fillStyle = body; c.fillRect(Math.round(bx), Math.round(by - 2), 1, 1); } }
+    c.fillStyle = body; c.fillRect(Math.round(x - dir * 15), Math.round(y + 1 + Math.sin(f / 5 - 15 * .55) * 2.8), 1, 1); c.fillRect(Math.round(x - dir * 16 + (dir < 0 ? 1 : 0)), Math.round(y + Math.sin(f / 5 - 16 * .55) * 3), 2, 1);
+    /* neck and head */
+    const hx = x + dir * 3, hy = y - 2 + Math.sin(f / 7) * .5; c.fillStyle = body; c.fillRect(Math.round(hx - (dir < 0 ? 1 : 0)), Math.round(hy), 2, 2); c.fillRect(Math.round(hx + dir * 2 - (dir < 0 ? 2 : 0)), Math.round(hy - 1), 3, 2); c.fillRect(Math.round(hx + dir * 4 - (dir < 0 ? 1 : 0)), Math.round(hy), 2, 1);
+    c.fillStyle = body; c.fillRect(Math.round(hx + dir * 2), Math.round(hy - 3), 1, 2); c.fillRect(Math.round(hx + dir), Math.round(hy - 2), 1, 1);
+    c.fillStyle = night ? '#ffb04a' : '#ffe27a'; c.fillRect(Math.round(hx + dir * 3 - (dir < 0 ? 1 : 0)), Math.round(hy - 1), 1, 1);
+    /* the far wing and the near wing: an arm out and up, a membrane stretched back to the body */
+    for (const k of [0, 1]) { const sx0 = x - dir * (1 + k * 2), sy0 = y - 1, up = (k ? flap * .6 : flap), tx = sx0 - dir * (4 + (k ? 0 : 1)) + dir * Math.abs(up) * 2, ty = sy0 - 4 - up * 8;
+      line(c, sx0, sy0, tx, ty, wing); for (let q = 1; q <= 3; q++) line(c, tx, ty, sx0 - dir * (q * 3 + 1), sy0 + (q === 3 ? 1 : 0), wing); line(c, sx0, sy0, tx, ty, k ? body : wing); }
+    if (night && f % 36 < 3) { c.fillStyle = '#ff9a3a'; c.fillRect(Math.round(hx + dir * 6 - (dir < 0 ? 1 : 0)), Math.round(hy), 2, 1); c.fillStyle = '#ffd27a'; c.fillRect(Math.round(hx + dir * 8 - (dir < 0 ? 1 : 0)), Math.round(hy), 1, 1); }
+  }
+  function ufo(c, x, y, f, night, hover) {
+    const X = Math.round(x), Y = Math.round(y);
+    if (night || hover) spot(c, X + 5, Y + 3, hover ? 9 : 7, night ? '#9affd0' : '#d0fff0', hover ? .5 : .3);
+    c.fillStyle = '#bfe9ff'; c.fillRect(X + 3, Y, 5, 1); c.fillRect(X + 2, Y + 1, 7, 1); c.fillStyle = '#f2fbff'; c.fillRect(X + 4, Y, 1, 1);
+    c.fillStyle = '#aeb8c2'; c.fillRect(X, Y + 2, 11, 1); c.fillRect(X + 1, Y + 3, 9, 1); c.fillStyle = '#6d7a84'; c.fillRect(X + 2, Y + 4, 7, 1);
+    const L3 = ['#ff6a6a', '#ffe66a', '#6aff9a']; for (let i = 0; i < 3; i++) { c.fillStyle = (Math.floor(f / 2) + i) % 3 === 0 ? '#ffffff' : L3[i]; c.fillRect(X + 2 + i * 3, Y + 2, 1, 1); }
+    if (hover && f % 4 < 2) { c.globalAlpha = .18; c.fillStyle = '#d8fff0'; for (let k = 0; k < 14; k++) c.fillRect(X + 3 - Math.round(k * .3), Y + 5 + k, 5 + Math.round(k * .6), 1); c.globalAlpha = 1; }
+  }
+
   /* ---------- the living layer ---------- */
   function draw() {
     if (!cx || !st) return;
     const c = cx, t = T, f = frame++;
-    c.drawImage(st, 0, 0);
+    c.drawImage(sk, 0, 0);
     if (t.stars) for (let i = 0; i < L.stars.length; i += 6) { const s = L.stars[i]; if ((f + i) % 23 < 3) { c.fillStyle = '#ffffff'; c.fillRect(s[0] - 1, s[1], 3, 1); c.fillRect(s[0], s[1] - 1, 1, 3); } }
+    c.drawImage(stb, 0, 0);
+    flyers(c, f);
+    c.drawImage(st, 0, 0);
     const F = L.fall;
     const Lm = LIGHT[mood];
     F.tiers.forEach((tr, ti) => {
@@ -668,7 +721,7 @@ const SCENE = (() => {
   function build() {
     if (!cv) return;
     layout(); cv.width = W; cv.height = H; cv.style.width = W * PX + 'px'; cv.style.height = H * PX + 'px';
-    st.width = W; st.height = H; vl.width = W; vl.height = H; mood = pickMood(); T = TOD[mood]; document.documentElement.dataset.tod = mood;
+    sk.width = W; sk.height = H; st.width = W; st.height = H; vl.width = W; vl.height = H; mood = pickMood(); T = TOD[mood]; document.documentElement.dataset.tod = mood;
     paint(); paintLights(); paintVeil(); draw();
   }
   function loop() { clearTimeout(timer); if (still || document.hidden || !(cv || bot)) return; if (bot) drawBot(); else draw(); timer = setTimeout(loop, 166); }
@@ -678,8 +731,8 @@ const SCENE = (() => {
     still = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
     mode = isPhone() ? 'phone' : 'wide'; if (mode === 'phone') { startPhone(); return; }
     cv = document.createElement('canvas'); cv.id = 'scene'; cv.setAttribute('aria-hidden', 'true');
-    cx = cv.getContext('2d'); st = document.createElement('canvas'); sx = st.getContext('2d'); vl = document.createElement('canvas'); vx = vl.getContext('2d');
-    if (!cx || !sx || !vx) { cv = null; return; }
+    cx = cv.getContext('2d'); sk = document.createElement('canvas'); skx = sk.getContext('2d'); stb = document.createElement('canvas'); st = document.createElement('canvas'); sx = st.getContext('2d'); vl = document.createElement('canvas'); vx = vl.getContext('2d');
+    if (!cx || !skx || !sx || !vx) { cv = null; return; }
     document.body.prepend(cv); document.body.classList.add('scene-on');
     build(); loop();
   }

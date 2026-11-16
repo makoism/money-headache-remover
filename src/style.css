@@ -1577,3 +1577,11 @@ body.scene-on::after { content: ''; position: fixed; inset: 0; z-index: -1; poin
 :root[data-tod="day"] body.scene-on::after { background: radial-gradient(120% 90% at 50% 45%, rgba(2, 24, 14, 0), rgba(1, 16, 9, .16)); }
 :root[data-tod="morning"] body.scene-on::after { background: radial-gradient(120% 90% at 50% 45%, rgba(2, 24, 14, 0), rgba(1, 16, 9, .2)); }
 :root[data-tod="sunset"] body.scene-on::after { background: radial-gradient(120% 90% at 50% 45%, rgba(8, 14, 20, .08), rgba(6, 10, 18, .36)); }
+/* ---------- v38.9: tapping a vine grows it ---------- */
+.gv.gv-grow-h { animation: gGrowH .9s steps(24) both; } .gv.gv-grow-v { animation: gGrowV .9s steps(24) both; } .gv.gv-sway { animation: gVSway .8s ease-in-out; }
+@keyframes gGrowH { from { clip-path: inset(0 var(--cl, 60%) 0 0); } to { clip-path: inset(0); } }
+@keyframes gGrowV { from { clip-path: inset(0 0 var(--cl, 60%) 0); } to { clip-path: inset(0); } }
+@keyframes gVSway { 30% { transform: rotate(1.2deg); } 65% { transform: rotate(-.8deg); } 100% { transform: none; } }
+.gpetal { position: absolute; width: 5px; height: 5px; image-rendering: pixelated; pointer-events: none; animation: gPetal 1.3s ease-in forwards; }
+@keyframes gPetal { from { transform: translate(0, 0) rotate(0); opacity: 1; } to { transform: translate(var(--dx, 0), 30px) rotate(160deg); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .gv.gv-grow-h, .gv.gv-grow-v, .gv.gv-sway, .gpetal { animation: none !important; } }
