@@ -18,7 +18,7 @@ function art(kind, place) { return ART[kind] ? `<span class="art art-${kind}${pl
 /* the tabs: one drawing each, placed once. Receipts: a sprig by the scan card's title. Plan: a vine up the side of the big number. Goals: a sprout in the corner of the goals card. */
 /* where the drawings live: one per card, chosen for the card (a seat is skipped when the card is missing or already has one) */
 /* the card corners now hold pixel animals (pixel.js); the line art stays in the setup and on the hero */
-const ART_SEATS = [['#hero', 'vine']];
+const ART_SEATS = []; /* v38.5: the garden replaces the line art */
 function placeArt() {
   ART_SEATS.forEach(([sel, kind]) => { let host = $(sel); if (!host) return; if (sel === '#monthTable') host = host.closest('.card') || host; if (!$('.art', host)) host.insertAdjacentHTML('beforeend', art(kind)); });
   pixQueue();

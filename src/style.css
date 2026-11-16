@@ -1546,3 +1546,25 @@ body.shroom-menu header.top h1, body.shroom-menu header.top .save { text-shadow:
 /* the forest is only the background behind the plain app: a soft dark band behind the page column keeps the words readable, the sides stay bright */
 body.shroom-menu:not(.world) #vista::after { content: ''; position: absolute; inset: 0; z-index: 99999; pointer-events: none; background: linear-gradient(90deg, rgba(3, 14, 18, .04) 0, rgba(3, 14, 18, .1) 16%, rgba(3, 14, 18, .72) 26%, rgba(3, 14, 18, .8) 50%, rgba(3, 14, 18, .72) 74%, rgba(3, 14, 18, .1) 84%, rgba(3, 14, 18, .04) 100%); }
 @media (max-width: 900px) { body.shroom-menu:not(.world) #vista::after { background: rgba(3, 14, 18, .66); } }
+
+/* ---------- the garden (garden.js): vines and small things grown into every box ---------- */
+.wrap, .wrap > [role=tabpanel], .scroll > [role=tabpanel] { position: relative; }
+.gnl { position: absolute; left: 0; top: 0; width: 0; height: 0; pointer-events: none; z-index: 2; }
+.gdh { position: absolute; left: 0; top: 0; width: 0; height: 0; }
+.gv, .gi { position: absolute; image-rendering: pixelated; image-rendering: crisp-edges; filter: drop-shadow(0 2px 1.5px rgba(0, 0, 0, .4)); }
+.gi { background-size: 100% 100%; background-repeat: no-repeat; pointer-events: auto; cursor: pointer; transform-origin: 50% 100%; -webkit-tap-highlight-color: transparent; }
+.gi .pix { display: block; width: 100%; height: 100%; } .gi .pix svg { width: 100%; height: 100%; }
+.gdh:not(.in) .gv-top, .gdh:not(.in) .gv-bottom { clip-path: inset(0 100% 0 0); } .gdh:not(.in) .gv-left, .gdh:not(.in) .gv-right { clip-path: inset(0 0 100% 0); }
+.gdh.in .gv { clip-path: inset(0); transition: clip-path 1.4s steps(40) var(--d, 0ms); }
+.gdh:not(.in) .gi { transform: scale(.1); opacity: 0; }
+.gdh.in .gi { transition: transform .55s cubic-bezier(.3, 1.7, .5, 1) calc(var(--d, 0ms) + 350ms), opacity .25s linear calc(var(--d, 0ms) + 350ms); }
+.gi.act.gi-hop { animation: gHop .5s ease-out 2; } .gi.act.gi-fly { animation: gFly 1.2s ease-in-out; } .gi.act.gi-sway { animation: gSway .9s ease-in-out; } .gi.act.gi-pop { animation: gPop .5s ease-out; }
+@keyframes gHop { 40% { transform: translateY(-9px); } 100% { transform: none; } }
+@keyframes gFly { 35% { transform: translate(14px, -22px) rotate(8deg); } 70% { transform: translate(-6px, -12px) rotate(-6deg); } 100% { transform: none; } }
+@keyframes gSway { 25% { transform: rotate(-9deg); } 55% { transform: rotate(7deg); } 80% { transform: rotate(-3deg); } 100% { transform: none; } }
+@keyframes gPop { 45% { transform: scale(1.4); } 100% { transform: none; } }
+.gheart { position: absolute; width: 14px; height: 14px; background-size: 100% 100%; image-rendering: pixelated; pointer-events: none; animation: gRise 1.2s ease-out forwards; }
+@keyframes gRise { from { transform: translateY(0); opacity: 1; } to { transform: translateY(-34px); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .gdh .gv, .gdh .gi { transition: none !important; animation: none !important; } }
+
+.card .art:not(.art-corner) { display: none; } /* the line art is replaced by the garden */

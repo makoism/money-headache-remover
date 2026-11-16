@@ -1,4 +1,4 @@
-# M.H.R.2000 (The Money Headache Remover 2000): how it is built
+# The Burrow: how it is built
 
 One page. No framework, no libraries, no outside requests from the page itself. The source is a set of small files in this folder; `build.sh` joins them into one HTML file (`../money-map-team.html`). The same page is published two ways: as the Claude artifact (a mirror where AI runs on the viewer's own Claude account) and as the site on Cloudflare Pages (`../site`, the main address: the owner's relay answers AI requests, and an encrypted cloud copy is available).
 

@@ -24,13 +24,7 @@ const PIX = {
 const pix = (kind, scale) => { const p = PIX[kind]; if (!p) return ''; const s = scale || 2; return `<span class="pix pix-${kind}" style="width:${p.w * s}px;height:${p.h * s}px" aria-hidden="true">${p.svg}</span>`; };
 // Where the pixel plants sit: [host, sprites, scale, corner]. A sprite hides itself when words or controls reach its corner,
 // so a long line on a narrow phone never gets covered; the check runs again after the card is redrawn and on resize.
-const PIX_SEATS = [
-  ['#hHero', 'tulip daisy', 3, 'tr'], ['#hStreak', 'sprout', 3, 'tr'], ['#hDeep', 'clover', 3, 'tr'], ['#rcMonthCard', 'mushroom', 3, 'br'],
-  ['#secRoad', 'sunflower', 3, 'tr'], ['#where', 'cactus', 3, 'tr'], ['#p-basics .card.sect', 'owl', 3, 'tr'],
-  /* small animals where the line-art sprigs used to sit (v36) */
-  ['#scan', 'bunny', 3, 'tr'], ['#ledger', 'fox', 3, 'tr'], ['#rcRemind', 'chick', 3, 'tr'], ['#secLog', 'frog', 3, 'tr'],
-  ['#secGoals', 'duck', 3, 'tr'], ['#monthTable', 'sheep', 3, 'tr'],
-];
+const PIX_SEATS = []; /* v38.5: the corner sprites are replaced by the garden (garden.js) */
 const PIX_DONE = new WeakMap(); let pixFitT = 0;
 const near = (a, b, m) => a.width && b.width && a.left < b.right + m && a.right > b.left - m && a.top < b.bottom + m && a.bottom > b.top - m;
 function pixSeat(host, seat) {
@@ -49,7 +43,7 @@ function pixFit(c, host) {
 }
 /* the same check keeps the line art off the words: every piece in a card (not the hero's vine, not the video garden) */
 function pixFitAll() { $$('.pixc').forEach(c => pixFit(c, c.parentElement)); $$('.wrap .art').forEach(a => { if (!a.closest('.hero, .vgarden')) pixFit(a, a.parentElement); }); }
-function pixQueue() { cancelAnimationFrame(pixFitT); pixFitT = requestAnimationFrame(pixFitAll); }
+function pixQueue() { cancelAnimationFrame(pixFitT); pixFitT = requestAnimationFrame(pixFitAll); if (typeof GD !== 'undefined') GD.queue(); }
 function placePix() { PIX_SEATS.forEach(seat => { let host = $(seat[0]); if (!host) return; if (seat[0] === '#monthTable') host = host.closest('.card') || host; PIX_DONE.set(host, seat); pixSeat(host, seat); }); pixQueue(); }
 function pixKeep(host) { const seat = PIX_DONE.get(host); if (seat) { pixSeat(host, seat); pixQueue(); } }
 addEventListener('resize', pixQueue);
