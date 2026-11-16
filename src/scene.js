@@ -3,7 +3,7 @@ const SCENE = (() => {
     morning: { sky: ['#8fbfb2', '#c6e0cc', '#efdcae'], fog: '#d8ecdc', far: ['#8fb9a8', '#6f9d8a', '#50806d'], trunk: '#4d3d2f', trunkD: '#352a20', trunkL: '#6e5a44', moss: '#6fae5a', mossL: '#9bd27c', mossD: '#3f7a3f', leaf: '#3a7d50', leafD: '#2a6040', ground: '#52924f', groundD: '#3b7240', groundL: '#78b868', stone: '#8d978f', stoneD: '#5f6a63', stoneL: '#b0bab1', rune: '#a8f4ff', water: '#c8f2f2', water2: '#86d4dc', foam: '#ffffff', shaft: '#fff4c8', shaftA: .16, win: '#ffe1a0', lit: .6, smoke: '#eef2ee', fairy: ['#ffd6f0', '#c8f7ff', '#fff1a8', '#e2ccff'], motes: 36, mist: .26, stars: false, dew: true, glowA: .45 },
     day: { sky: ['#86cad2', '#bce6d4', '#ecf6d2'], fog: '#d6efdf', far: ['#86b8a0', '#66a086', '#4a8668'], trunk: '#524130', trunkD: '#3a2d21', trunkL: '#735e46', moss: '#7cc866', mossL: '#b0ec8c', mossD: '#4a9446', leaf: '#3a8c55', leafD: '#27693f', ground: '#59a054', groundD: '#41803f', groundL: '#7ec46c', stone: '#929c95', stoneD: '#636e67', stoneL: '#b6c0b8', rune: '#9ff0ff', water: '#bdf0f4', water2: '#78cfe0', foam: '#ffffff', shaft: '#fffbe0', shaftA: .14, win: '#e8f4f0', lit: .15, smoke: '#f4f6f4', fairy: ['#ffe0f4', '#d2fbff', '#fff6b8', '#e8d6ff'], motes: 26, mist: .16, stars: false, dew: false, glowA: .3 },
     sunset: { sky: ['#4b3f7c', '#b4648c', '#f4a86a'], fog: '#e8b8c6', far: ['#9b739b', '#775882', '#563f62'], trunk: '#3f2d29', trunkD: '#2b1f1c', trunkL: '#5c4339', moss: '#6f8f55', mossL: '#94b06c', mossD: '#45603c', leaf: '#3d5246', leafD: '#283a33', ground: '#4b6042', groundD: '#34462f', groundL: '#6c8258', stone: '#8a7f8a', stoneD: '#5d5262', stoneL: '#ac9fab', rune: '#ffc8f0', water: '#f6c0a0', water2: '#c98aa6', foam: '#ffece0', shaft: '#ffd6a0', shaftA: .18, win: '#ffc86a', lit: 1, smoke: '#dcbcc6', fairy: ['#ffc0e0', '#ffd890', '#ffb0b0', '#e0b8ff'], motes: 40, mist: .24, stars: false, dew: false, glowA: .6 },
-    night: { sky: ['#060b1f', '#0f1b3b', '#1b2b54'], fog: '#2c4370', far: ['#1b2a48', '#142138', '#0e192b'], trunk: '#22191b', trunkD: '#160f12', trunkL: '#31272a', moss: '#1f4a3c', mossL: '#2f6a55', mossD: '#163a2f', leaf: '#0f2a24', leafD: '#09201b', ground: '#13291f', groundD: '#0c1d16', groundL: '#1e3d2e', stone: '#3a4556', stoneD: '#262f3d', stoneL: '#4e5b70', rune: '#6affd8', water: '#7cc8f0', water2: '#4a92d0', foam: '#e8f6ff', shaft: '#b8d0ff', shaftA: .1, win: '#ffd27a', lit: 1, smoke: '#4a5a7a', fairy: ['#7affd8', '#c8ff9a', '#9ad8ff', '#f0b8ff'], motes: 56, mist: .3, stars: true, dew: false, glowA: 1 },
+    night: { sky: ['#060b1f', '#0f1b3b', '#1b2b54'], fog: '#2c4370', far: ['#1b2a48', '#142138', '#0e192b'], trunk: '#22191b', trunkD: '#160f12', trunkL: '#31272a', moss: '#1f4a3c', mossL: '#2f6a55', mossD: '#163a2f', leaf: '#0f2a24', leafD: '#09201b', ground: '#13291f', groundD: '#0c1d16', groundL: '#1e3d2e', stone: '#3a4556', stoneD: '#262f3d', stoneL: '#4e5b70', rune: '#6affd8', water: '#5f90cc', water2: '#3a64a0', foam: '#d8eaff', shaft: '#b8d0ff', shaftA: .1, win: '#ffd27a', lit: 1, smoke: '#4a5a7a', fairy: ['#7affd8', '#c8ff9a', '#9ad8ff', '#f0b8ff'], motes: 56, mist: .3, stars: true, dew: false, glowA: 1 },
   };
   const DEER = [
     ['..........a..a', '...........aa.', '..........bbb.', '.........bbkbw', '.........bbbb.', '.........bb...', '.wbbbbbbbbb...', '.bbbbbbbbbb...', '.bwwwwwbbbb...', '.b.b....b.b...', '.d.d....d.d...'],
@@ -53,15 +53,19 @@ const SCENE = (() => {
       for (let i = 0; i < nT; i++) F.tiers.push({ x: F.x + dx[i], w: F.w + dw[i], y0: F.top + Math.round(i * hh / nT) + (i ? 4 : 0), y1: i === nT - 1 ? F.bot : F.top + Math.round((i + 1) * hh / nT) });
       for (let i = 0; i < nT - 1; i++) { const a = F.tiers[i], b = F.tiers[i + 1]; F.ledges.push({ y: a.y1, x0: Math.min(a.x, b.x) - 5, x1: Math.max(a.x + a.w, b.x + b.w) + 5 }); } }
     /* each drop wanders a few pixels to one side and the other, in soft curves, and breathes a little in width */
-    { const F = L.fall; F.off = (ti, y) => { const tr = F.tiers[ti], u = y - tr.y0, k = Math.min(1, u / 7); return Math.round((Math.sin(u * .17 + ti * 2.1) * 2.1 + Math.sin(u * .41 + ti * .9) * .9) * k * (wide ? 1 : .7)); }; }
+    { const F = L.fall; F.off = (ti, y) => { const tr = F.tiers[ti], u = y - tr.y0, k = Math.min(1, u / 7); return Math.round((Math.sin(u * .12 + ti * 2.1) * 1.25 + Math.sin(u * .3 + ti * .9) * .5) * k * (wide ? 1 : .7)); }; }
     L.pool = { x: L.fall.x + Math.round(L.fall.w / 2), y: L.fall.bot + 3, rx: wide ? 22 : 11, ry: 4 };
-    L.stones = wide ? [{ x: Math.round(W - side * .86), y: Math.round(H * .83), h: 16 }, { x: Math.round(W - side * .74), y: Math.round(H * .845), h: 11 }, { x: Math.round(side * .82), y: Math.round(H * .82), h: 13 }] : [{ x: W - 22, y: Math.round(H * .85), h: 10 }];
+    /* the floor, from back to front: cottage and its lantern, the ring in front of it, a standing stone and the deer to the right of the ring;
+       on the other side the stag stands on the bank by the pool, two stones at the water's edge. Each stands on its own ground, none on another. */
+    L.stones = wide ? [{ x: L.pool.x + 8, y: L.pool.y + 9, h: 12 }, { x: L.pool.x - 25, y: L.pool.y + 10, h: 9 }] : [{ x: W - 22, y: Math.round(H * .85), h: 10 }];
     L.ring = { x: wide ? Math.round(side * .62) : 18, y: Math.round(H * .9) };
-    L.stag = wide ? { x: Math.round(W - side * .98) + 2, y: Math.round(H * .8) - 15 } : null;
-    L.deer = wide ? [{ x: Math.round(side * .72) + 4, y: Math.round(H * .8) - 11, flip: false, ph: 0 }] : [];
+    L.stag = wide ? { x: L.pool.x - 43, y: L.pool.y + 14 - 15 } : null;
+    L.deer = wide ? [{ x: L.hut.x + 36, y: L.floor + 15 - 11, flip: true, ph: 0 }] : [];
     /* the main beam of sun comes down onto the cottage; lanterns stand by the cottage, the ring, the stones and the pool */
     { const Lm = LIGHT[pickMood()], sk = wide ? Lm.ang : Lm.ang * .4, hx = L.hut.x + 14, hy = L.hut.y - 8; L.sun = { hx, hy, sk, bx0: hx - sk * hy, w: wide ? 22 : 16 }; }
-    L.lamps = [{ x: L.hut.x + 31, y: L.hut.y - 12, post: false }, { x: L.ring.x + 19, y: L.ring.y, post: true }, { x: L.stones[0].x - 9, y: L.stones[0].y + 1, post: true }, { x: L.pool.x - L.pool.rx - 5, y: L.pool.y + 2, post: true }];
+    { const tw = wide ? Math.max(18, Math.round(side * .28)) : 7;
+      L.lamps = wide ? [{ x: L.hut.x + 31, y: L.hut.y - 12, kind: 'hut', gy: L.hut.y - 12, gr: 15 }, { x: L.ring.x - 19, y: L.ring.y + 2, kind: 'post', gy: L.ring.y - 11, gr: 13 }, { x: tw - Math.round(tw * .35) + 2, y: Math.round(H * .56), kind: 'hang', dir: 1, gy: Math.round(H * .56) - 1, gr: 14 }, { x: W - Math.round(tw * .65) - 3, y: Math.round(H * .6), kind: 'hang', dir: -1, gy: Math.round(H * .6) - 1, gr: 14 }]
+        : [{ x: L.hut.x + 31, y: L.hut.y - 12, kind: 'hut', gy: L.hut.y - 12, gr: 15 }, { x: L.ring.x + 16, y: L.ring.y + 2, kind: 'post', gy: L.ring.y - 11, gr: 13 }]; }
     L.lamps.forEach((l, i) => { l.ph = i * 2.1; });
     L.flies = []; { const R3 = rnd(91), n = wide ? 26 : 12; for (let i = 0; i < n; i++) L.flies.push({ x: R3() * W, y: hz * .72 + R3() * (H - hz * .72 - 6), p: R3() * 60, per: 9 + R3() * 9, vx: (R3() - .5) * .08 }); }
     L.dust = []; { const R4 = rnd(97); for (let i = 0; i < 16; i++) L.dust.push({ y: L.hut.y - 70 + R4() * 78, u: (R4() - .5) * 1.7, p: R4() * 40 }); }
@@ -154,9 +158,9 @@ const SCENE = (() => {
     for (let x = 0; x < W; x += 3) { if (R() < .7) disk(c, x, 4 + Math.floor(R() * 9), 2 + Math.floor(R() * 3), R() < .4 ? t.leafD : R() < .6 ? t.leaf : t.moss); }
     const strands = L.wide ? Math.round(L.side / 4) : 8;
     for (let i = 0; i < strands; i++) { const left = i % 2 === 0, x = L.wide ? (left ? Math.round(R() * L.side) : Math.round(W - R() * L.side)) : Math.round(R() * W); hang(c, x, 4, Math.round(H * (.12 + R() * (L.wide ? .55 : .15))), t, R); }
-    if (L.wide) foreground(c, t, R);
-    for (const l of L.lamps) if (l.post) lampPost(c, l.x, l.y, t);
     shade(c);
+    if (L.wide) foreground(c, t, R);
+    for (const l of L.lamps) { if (l.kind === 'post') lampPost(c, l.x, l.y, t); else if (l.kind === 'hang') lampHang(c, l.x, l.y, l.dir, t); }
   }
   /* a lantern on a post */
   function lampPost(c, x, y, t) {
@@ -164,6 +168,12 @@ const SCENE = (() => {
     c.fillStyle = t.trunkD; c.fillRect(x, y - 10, 1, 10); c.fillRect(x - 2, y - 11, 5, 1); c.fillRect(x - 1, y - 16, 3, 1); c.fillRect(x - 1, y - 12, 3, 1); c.fillRect(x - 2, y - 15, 1, 3); c.fillRect(x + 2, y - 15, 1, 3);
     c.fillStyle = lit ? '#ffd27a' : '#bfa060'; c.fillRect(x - 1, y - 15, 3, 3); if (lit) { c.fillStyle = '#fff4c0'; c.fillRect(x, y - 14, 1, 1); }
     c.fillStyle = t.stoneD; c.fillRect(x - 1, y, 3, 1);
+  }
+  /* a lantern hung from an iron arm nailed to a trunk */
+  function lampHang(c, x, y, dir, t) {
+    const lit = LIGHT[mood].lamp > 0;
+    c.fillStyle = t.trunkD; c.fillRect(Math.min(x, x - dir * 3), y - 6, 4, 1); c.fillRect(x, y - 5, 1, 2); c.fillRect(x - 1, y - 3, 3, 1); c.fillRect(x - 1, y + 1, 3, 1);
+    c.fillStyle = lit ? '#ffd27a' : '#bfa060'; c.fillRect(x - 1, y - 2, 3, 3); if (lit) { c.fillStyle = '#fff4c0'; c.fillRect(x, y - 1, 1, 1); }
   }
   /* the dark at the edges, under the canopy and on the floor, in dithered steps: the clearing stays bright, the corners go deep */
   function shade(c) {
@@ -210,12 +220,13 @@ const SCENE = (() => {
     if (Lm.lamp) { const c = lx.lamp, lp = Lm.lamp, col = mood === 'sunset' ? '#ffb070' : '#ffc060'; c.fillStyle = col;
       const pool = (x, y, rx, ry, a) => { for (let k = 0; k < 4; k++) { c.globalAlpha = a * lp * .22; const rr = rx * (1 - k * .2), hh = ry * (1 - k * .2); for (let yy = -Math.round(hh); yy <= Math.round(hh); yy++) { const w = Math.round(rr * Math.sqrt(1 - (yy * yy) / (hh * hh + .01))); c.fillRect(Math.round(x - w), Math.round(y + yy), w * 2, 1); } } c.globalAlpha = 1; };
       pool(L.hut.x + 20, L.hut.y + 4, 17, 4, 1); pool(L.hut.x + 31, L.hut.y + 1, 12, 3, 1);
-      for (const l of L.lamps) if (l.post) pool(l.x, l.y + 1, 13, 3, 1);
+      for (const l of L.lamps) if (l.kind === 'post') pool(l.x, l.y + 1, 13, 3, 1);
       const w = L.hut; c.globalAlpha = .13 * lp; c.fillRect(w.x + 14, w.y - 15, 14, 15); c.globalAlpha = 1; }
     /* WATERFALL: the water gives off light at dusk and in the night; a halo over the pool and mist */
     if (Lm.wf) { const c = lx.wf, col = mood === 'sunset' ? '#ffc8a0' : '#7fe3ff'; c.fillStyle = col;
-      F.tiers.forEach((tr, ti) => { for (let y = tr.y0; y < tr.y1; y++) { const o = F.off(ti, y), cxx = tr.x + o; c.globalAlpha = .2 * Lm.wf; c.fillRect(cxx, y, tr.w, 1); c.globalAlpha = .1 * Lm.wf; c.fillRect(cxx - 2, y, tr.w + 4, 1); c.globalAlpha = .05 * Lm.wf; c.fillRect(cxx - 5, y, tr.w + 10, 1); } });
-      c.globalAlpha = 1; const P = L.pool; glow(c, P.x, P.y, P.rx + 12, col, .12 * Lm.wf); for (const lg of F.ledges) glow(c, Math.round((lg.x0 + lg.x1) / 2), lg.y, 10, col, .1 * Lm.wf); }
+      /* a vague glow in the air around the fall, strongest next to the water and gone about fourteen pixels out; the water itself is left alone */
+      F.tiers.forEach((tr, ti) => { for (let y = tr.y0 - 4; y < tr.y1 + 2; y++) { const o = F.off(ti, Math.max(tr.y0, Math.min(tr.y1 - 1, y))), x0 = tr.x + o, x1 = tr.x + o + tr.w; for (let d = 1; d <= 14; d++) { const q = 1 - d / 15, a = Math.round(q * q * 4) / 4 * .085 * Lm.wf; if (a <= 0) continue; c.globalAlpha = a; c.fillRect(x0 - d, y, 1, 1); c.fillRect(x1 + d - 1, y, 1, 1); } } });
+      c.globalAlpha = 1; const P = L.pool; for (const lg of F.ledges) glow(c, Math.round((lg.x0 + lg.x1) / 2), lg.y, 9, col, .035 * Lm.wf); glow(c, P.x, P.y - 2, P.rx + 16, col, .03 * Lm.wf); }
   }
   /* ONE FAR TREE. Five kinds (plain, crooked, leaning, forked, twisted), each with its own width, bends, flared roots, knots,
      moss, side branches ending in leaf clumps, and vines hanging from the branches. Returns where vines can be tied. */
@@ -282,10 +293,45 @@ const SCENE = (() => {
   function hangLeaf(c, x, len, dir, col, hi) {
     for (let i = 0; i < len; i++) { const w = Math.round(3.2 * Math.sin(Math.PI * (i + 2) / (len + 4)) + 1), o = Math.round(Math.sin(i / 9) * 2 * dir); for (let k = 0; k < w; k++) put(c, x + o + k - (w >> 1), i, k === 0 ? hi : col); put(c, x + o, i, mixh(col, '#000000', .25)); }
   }
+  /* ---------- the foreground: close, dark and sharp, so the clearing behind it has depth ----------
+     arching ferns with leaflets, grass, foxglove and bluebell stalks, a mossy boulder with toadstools, a fallen log.
+     Lit from the upper left like the rest of the scene. */
   function foreground(c, t, R) {
-    const dark = mixh(t.leafD, '#000000', .5), hi = mixh(t.mossL, '#000000', .3);
-    for (const [x, dir] of [[1, 1], [Math.round(L.side * .2), 1], [W - 2, -1], [W - Math.round(L.side * .2), -1]]) for (let k = 0; k < 3; k++) frond(c, x + k * dir * 2, H - 1, 22 + Math.floor(R() * 18), dir * (k === 1 ? -1 : 1), dark, hi);
-    for (const [x0, dir] of [[2, 1], [W - 3, -1]]) for (let k = 0; k < 5; k++) hangLeaf(c, x0 + dir * k * 5 + Math.floor(R() * 3), 14 + Math.floor(R() * 20), dir, dark, hi);
+    const stem = mixh(t.leafD, '#000000', .25), dk = t.leaf, md = mixh(t.leaf, t.moss, .55), hi = mixh(t.moss, t.mossL, .5), tip = t.mossL;
+    const pt = (x, y, col) => { c.fillStyle = col; c.fillRect(Math.round(x), Math.round(y), 1, 1); };
+    /* a fern: n fronds fanning out from one root, each arching over, leaflets in pairs getting shorter towards the tip */
+    const ferns = (x, y, n, len, dir) => {
+      for (let k = 0; k < n; k++) {
+        const a = ((n === 1 ? .5 : k / (n - 1)) - .5) * 2.3 + dir * .25, ln = len * (.62 + R() * .38), bend = (a < 0 ? -1 : 1) * (.7 + R() * .5);
+        let px = x, py = y;
+        for (let st = 1; st <= ln; st++) {
+          const u = st / ln, th = a + bend * u * u * 1.3; px += Math.sin(th); py -= Math.cos(th) * (1 - u * .35);
+          pt(px, py, stem);
+          if (u > .14 && st % 2 === 0) { const ll = Math.round((1 - u) * 4.4 + 1), qx = Math.cos(th), qy = Math.sin(th);
+            for (let i = 1; i <= ll; i++) { const dy = i > 2 ? 1 : 0; pt(px - qx * i, py - qy * i + dy, i === ll ? hi : md); pt(px + qx * i, py + qy * i + dy, dk); } }
+        }
+        pt(px, py, tip); pt(px + (a < 0 ? -1 : 1), py + 1, hi);
+      }
+    };
+    const grass = (x, y, n, h) => { for (let i = 0; i < n; i++) { const hh = h * (.5 + R() * .6), lean = (R() - .5) * 3; for (let j = 0; j < hh; j++) pt(x + i * 1.5 + lean * j / hh, y - j, j > hh * .65 ? tip : j > hh * .3 ? md : dk); } };
+    const foxglove = (x, y, h) => { for (let j = 0; j < h; j++) pt(x, y - j, j % 5 === 0 ? md : dk); for (let j = 3; j < h - 1; j += 2) { const sd = j % 4 === 1 ? -1 : 1, k = 1 - j / h; pt(x + sd, y - j, '#c88ae0'); pt(x + sd * 2, y - j + 1, k > .5 ? '#9a62b8' : '#7a4a98'); pt(x + sd, y - j + 1, '#f0c0f4'); } pt(x, y - h, '#e8b0f0'); };
+    const bluebell = (x, y, h, dir) => { let px = x, py = y; for (let j = 0; j < h; j++) { px += dir * (j > h * .55 ? .5 : .08); py -= 1; pt(px, py, dk); } for (let k = 0; k < 4; k++) { const bx = px - dir * k * 1.5, by = py + k * 2 + 1; pt(bx, by, '#7a9cf0'); pt(bx, by + 1, '#c8d8ff'); pt(bx + dir, by, '#4a6ad0'); } };
+    const shroom = (x, y, z) => { c.fillStyle = '#efe6d6'; c.fillRect(x, y - z, 1, z); c.fillStyle = '#e6736a'; c.fillRect(x - 1, y - z - 1, 3, 1); c.fillRect(x - 2, y - z, 5, 1); c.fillStyle = '#ffffff'; c.fillRect(x - 1, y - z, 1, 1); c.fillRect(x + 1, y - z - 1, 1, 1); c.fillStyle = '#b4504a'; c.fillRect(x + 2, y - z, 1, 1); };
+    const log = (x, y, len) => {
+      for (let i = 0; i < len; i++) { const top = y - 6 + Math.round(Math.sin(i / 7) * .8); for (let j = top; j < y; j++) { c.fillStyle = j === top ? t.moss : (j - top) % 3 === 2 ? t.trunkD : t.trunk; c.fillRect(x + i, j, 1, 1); } if (i % 4 === 1) pt(x + i, top + 2, t.trunkL); if (i % 5 === 3) pt(x + i, top, t.mossL); }
+      c.fillStyle = t.trunkL; c.fillRect(x, y - 6, 2, 6); c.fillStyle = t.trunkD; c.fillRect(x, y - 4, 2, 1); c.fillStyle = t.mossD; c.fillRect(x + len - 1, y - 6, 1, 6);
+      shroom(x + Math.round(len * .55), y - 6, 2); shroom(x + Math.round(len * .55) + 4, y - 5, 1);
+    };
+    const side = L.side, Wd = W;
+    /* bottom left */
+    foxglove(23, H - 2, 24); foxglove(28, H - 2, 17); grass(14, H - 1, 4, 9); grass(40, H - 1, 4, 7); grass(62, H - 1, 3, 8);
+    boulder(c, 52, H - 2, 8, 5, t, R, { moss: true }); shroom(48, H - 6, 2); shroom(55, H - 5, 3); shroom(57, H - 4, 1);
+    ferns(2, H - 1, 6, 24, 1); ferns(34, H, 4, 12, -1);
+    /* bottom right */
+    log(Wd - 74, H - 2, 22); bluebell(Wd - 44, H - 1, 15, -1); bluebell(Wd - 40, H - 1, 11, -1); grass(Wd - 54, H - 1, 3, 7); grass(Wd - 24, H - 1, 4, 8);
+    ferns(Wd - 3, H - 1, 6, 26, -1); ferns(Wd - 30, H, 4, 12, 1);
+    const dark = mixh(t.leafD, '#000000', .5), hi2 = mixh(t.mossL, '#000000', .3);
+    for (const [x0, dir] of [[2, 1], [W - 3, -1]]) for (let k = 0; k < 5; k++) hangLeaf(c, x0 + dir * k * 5 + Math.floor(R() * 3), 14 + Math.floor(R() * 20), dir, dark, hi2);
     L.bokeh = []; for (let i = 0; i < 8; i++) { const left = i % 2 === 0; L.bokeh.push({ x: left ? R() * L.side : W - R() * L.side, y: H * (.2 + R() * .65), r: 3 + Math.floor(R() * 3), sp: .01 + R() * .015, ph: R() * 6.28, c: t.fairy[i % 4] }); }
   }
   function fern(c, x, y, t, R) { c.fillStyle = R() < .5 ? t.moss : t.mossD; c.fillRect(x, y - 3, 1, 3); c.fillRect(x - 1, y - 2, 1, 1); c.fillRect(x + 1, y - 2, 1, 1); c.fillRect(x - 2, y - 1, 1, 1); c.fillRect(x + 2, y - 1, 1, 1); }
@@ -378,12 +424,11 @@ const SCENE = (() => {
     if (Lm.lamp) {
       c.globalAlpha = 1; c.drawImage(lt.lamp, 0, 0);
       const lc = mood === 'sunset' ? '#ffb070' : '#ffc060';
-      for (const l of L.lamps) { const fl = .8 + .12 * Math.sin(f * .8 + l.ph) + .08 * Math.sin(f * 2.1 + l.ph * 3); spot(c, l.x, l.y - (l.post ? 13 : 0), l.post ? 13 : 15, lc, .55 * Lm.lamp * fl); }
+      for (const l of L.lamps) { const fl = .8 + .12 * Math.sin(f * .8 + l.ph) + .08 * Math.sin(f * 2.1 + l.ph * 3); spot(c, l.x, l.gy, l.gr, lc, .55 * Lm.lamp * fl); }
       const wl = .85 + .1 * Math.sin(f * .7 + 1); spot(c, L.hut.x + 20, L.hut.y - 9, 11, lc, .6 * Lm.lamp * wl);
     }
     if (Lm.wf && lt.wf) {
       c.globalAlpha = .82 + .18 * Math.sin(f / 18); c.drawImage(lt.wf, 0, 0);
-      for (let i = 0; i < 5; i++) { const ti = i % F.tiers.length, tr = F.tiers[ti], y = tr.y0 + ((f * 3 + i * 7) % Math.max(4, tr.y1 - tr.y0)); c.globalAlpha = .9; c.fillStyle = '#ffffff'; c.fillRect(tr.x + F.off(ti, y) + ((f + i * 5) % tr.w), y, 1, 1); }
     }
     c.globalCompositeOperation = 'source-over'; c.globalAlpha = 1;
     /* specks of dust turning gold in the main beam */
