@@ -53,3 +53,5 @@ A failed build that says "error occurred while fetching repository" only means t
 Workers & Pages → the Worker → Settings → Domains & Routes → Add → Custom domain, for example money.ozmedia.global, and follow
 the DNS step it shows (the domain has to be on the same Cloudflare account). Then put the new address in team/RELAY and rebuild,
 so the Claude mirror's move link and file copies point at it.
+
+Address change (2026-11-16): the Worker is now named `the-burrow` (https://the-burrow.mako-162.workers.dev). Browser data is per address, so people move their numbers with Backup then Restore. The cloud database `money-vault` is shared.

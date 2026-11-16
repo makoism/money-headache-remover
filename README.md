@@ -1,6 +1,6 @@
 # The Burrow
 
-Live at https://money-headache-remover.mako-162.workers.dev (mirror on Claude: https://claude.ai/artifact/Ksf1kNTW7KRsd7ZHmiVC1w).
+Live at https://the-burrow.mako-162.workers.dev (moved from money-headache-remover.mako-162.workers.dev, which stays frozen at 38.10; mirror on Claude: https://claude.ai/artifact/Ksf1kNTW7KRsd7ZHmiVC1w).
 
 A calm one-page budget app: real numbers from your statements (CSV, Excel, PDF or screenshots), play money you can spend with no guilt,
 each goal with its date, and an assistant that knows your picture and can carry out what you agree on. Built for Mako's team, friends and family.

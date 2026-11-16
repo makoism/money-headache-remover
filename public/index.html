@@ -1958,7 +1958,7 @@ body.scene-on::after { content: ''; position: fixed; inset: 0; z-index: -1; poin
   </div>
 
   <p class="foot" id="footNote">Not financial advice. Sample numbers are invented. Replace them with yours.</p>
-  <p class="foot ver" id="verFoot">Version 38.9, updated </p>
+  <p class="foot ver" id="verFoot">Version 38.10, updated </p>
   </div>
 </div>
 <div class="handfx" id="handFx" aria-hidden="true"></div>
@@ -2012,7 +2012,7 @@ body.scene-on::after { content: ''; position: fixed; inset: 0; z-index: -1; poin
     <button type="button" id="helpSetup">Guided setup</button>
     <button type="button" id="helpVideo" hidden>Intro video</button>
     <button type="button" id="helpReport">Report a problem</button>
-    <p class="help-ver">Version 38.9</p>
+    <p class="help-ver">Version 38.10</p>
   </div>
   <div class="help-row"><button type="button" class="help-btn ask-btn" id="askBtn">Ask</button><button type="button" class="help-btn" id="helpBtn" aria-expanded="false" aria-controls="helpMenu"><span class="q" aria-hidden="true">?</span>Help</button></div>
 </div>
@@ -10194,10 +10194,11 @@ const SCENE = (() => {
     L.hut = { x: wide ? Math.max(18, Math.round(side * .3)) : 4, y: Math.round(H * .8) };
     L.fall = { x: wide ? Math.round(W - side * .5) : W - 10, top: Math.round(hz - (wide ? 52 : 34)), bot: Math.round(H * .79), w: wide ? 8 : 5 };
     /* the fall comes down in steps: each drop lands on a rock ledge and spills over to the next, a little to one side */
-    { const F = L.fall, nT = wide ? 3 : 2, hh = F.bot - F.top, dx = wide ? [0, -6, 3] : [0, -3], dw = [0, 2, 0]; F.tiers = []; F.ledges = [];
+    { const F = L.fall, nT = wide ? 3 : 2, hh = F.bot - F.top, dx = wide ? [0, -6, 3] : [0, -3], dw = wide ? [0, 3, 6] : [0, 3]; F.tiers = []; F.ledges = [];
       for (let i = 0; i < nT; i++) F.tiers.push({ x: F.x + dx[i], w: F.w + dw[i], y0: F.top + Math.round(i * hh / nT) + (i ? 4 : 0), y1: i === nT - 1 ? F.bot : F.top + Math.round((i + 1) * hh / nT) });
       for (let i = 0; i < nT - 1; i++) { const a = F.tiers[i], b = F.tiers[i + 1]; F.ledges.push({ y: a.y1, x0: Math.min(a.x, b.x) - 5, x1: Math.max(a.x + a.w, b.x + b.w) + 5 }); } }
     /* each drop wanders a few pixels to one side and the other, in soft curves, and breathes a little in width */
+    { const F = L.fall; F.ex = (ti, y) => { const tr = F.tiers[ti]; return Math.round(2 * Math.max(0, Math.min(1, (y - tr.y0) / Math.max(1, tr.y1 - tr.y0 - 1)))); }; }
     { const F = L.fall; F.off = (ti, y) => { const tr = F.tiers[ti], u = y - tr.y0, k = Math.min(1, u / 7); return Math.round((Math.sin(u * .12 + ti * 2.1) * 1.25 + Math.sin(u * .3 + ti * .9) * .5) * k * (wide ? 1 : .7)); }; }
     L.pool = { x: L.fall.x + Math.round(L.fall.w / 2), y: L.fall.bot + 3, rx: wide ? 22 : 11, ry: 4 };
     /* the floor, from back to front: cottage and its lantern, the ring in front of it, a standing stone and the deer to the right of the ring;
@@ -10265,7 +10266,7 @@ const SCENE = (() => {
       while (x < cr + 4) { const rx = 3 + RC() * 3.5, ry = rx * (.7 + RC() * .2), cy = yy + RC() * 2.5; if (cy - ry * .6 >= prof(Math.round(x)) - 1 && cy - ry < F.bot + 2 && (x > cl + 1 || RC() < .6)) boulder(c, x, cy, rx, ry, t, RC, { moss: RC() < .3 }); x += rx * 1.5 + RC() * 2; }
     }
     /* wet dark rock behind each drop, so the water sits in the stone and not on it */
-    F.tiers.forEach((tr, ti) => { for (let y = tr.y0; y < tr.y1; y++) { const o = F.off(ti, y); for (let x = tr.x - 3 + o; x < tr.x + tr.w + 3 + o; x++) { c.globalAlpha = .5; put(c, x, y, '#06100c'); c.globalAlpha = 1; } } });
+    F.tiers.forEach((tr, ti) => { for (let y = tr.y0; y < tr.y1; y++) { const o = F.off(ti, y), ex = F.ex(ti, y); for (let x = tr.x - 3 + o - (ex >> 1); x < tr.x + tr.w + 3 + o + ex; x++) { c.globalAlpha = .5; put(c, x, y, '#06100c'); c.globalAlpha = 1; } } });
     /* the ledges the water lands on: slabs of rock with a lit top, a mossy front and a sheet of water over the lip */
     F.ledges.forEach((lg, i) => {
       const lo = F.tiers[i + 1], up = F.tiers[i];
@@ -10372,7 +10373,7 @@ const SCENE = (() => {
     /* WATERFALL: the water gives off light at dusk and in the night; a halo over the pool and mist */
     if (Lm.wf) { const c = lx.wf, col = mood === 'sunset' ? '#ffc8a0' : '#7fe3ff'; c.fillStyle = col;
       /* a vague glow in the air around the fall, strongest next to the water and gone about fourteen pixels out; the water itself is left alone */
-      F.tiers.forEach((tr, ti) => { for (let y = tr.y0 - 4; y < tr.y1 + 2; y++) { const o = F.off(ti, Math.max(tr.y0, Math.min(tr.y1 - 1, y))), x0 = tr.x + o, x1 = tr.x + o + tr.w; for (let d = 1; d <= 14; d++) { const q = 1 - d / 15, a = Math.round(q * q * 4) / 4 * .085 * Lm.wf; if (a <= 0) continue; c.globalAlpha = a; c.fillRect(x0 - d, y, 1, 1); c.fillRect(x1 + d - 1, y, 1, 1); } } });
+      F.tiers.forEach((tr, ti) => { for (let y = tr.y0 - 4; y < tr.y1 + 2; y++) { const o = F.off(ti, Math.max(tr.y0, Math.min(tr.y1 - 1, y))), ex = F.ex(ti, Math.max(tr.y0, Math.min(tr.y1 - 1, y))), x0 = tr.x + o - (ex >> 1), x1 = tr.x + o + tr.w + ex; for (let d = 1; d <= 14; d++) { const q = 1 - d / 15, a = Math.round(q * q * 4) / 4 * .085 * Lm.wf; if (a <= 0) continue; c.globalAlpha = a; c.fillRect(x0 - d, y, 1, 1); c.fillRect(x1 + d - 1, y, 1, 1); } } });
       c.globalAlpha = 1; const P = L.pool; for (const lg of F.ledges) glow(c, Math.round((lg.x0 + lg.x1) / 2), lg.y, 9, col, .035 * Lm.wf); glow(c, P.x, P.y - 2, P.rx + 16, col, .03 * Lm.wf); }
   }
   /* ONE FAR TREE. Five kinds (plain, crooked, leaning, forked, twisted), each with its own width, bends, flared roots, knots,
@@ -10593,7 +10594,7 @@ const SCENE = (() => {
     const Lm = LIGHT[mood];
     F.tiers.forEach((tr, ti) => {
       for (let y = tr.y0; y < tr.y1; y++) {
-        const x0 = tr.x + F.off(ti, y), w = tr.w + ((y >> 2) % 3 === 1 ? 1 : 0);
+        const ex = F.ex(ti, y), x0 = tr.x + F.off(ti, y) - (ex >> 1), w = tr.w + ex + ((y >> 2) % 3 === 1 ? 1 : 0);
         c.fillStyle = t.water2; c.fillRect(x0, y, w, 1);
         for (let x = 0; x < w; x++) { const p = (((y - (f * 2 - x * 5 + ti * 3)) % 7) + 7) % 7; if (p < 4) { c.fillStyle = p < 2 ? t.foam : t.water; c.fillRect(x0 + x, y, 1, 1); } }
         if ((f + y * 3) % 11 === 0) { c.fillStyle = t.foam; c.fillRect(x0 - 1 + (y & 1) * (w + 1), y, 1, 1); }

@@ -136,3 +136,5 @@ Release: edit source, update `VERSION`, `./check.sh full` (it builds and tests t
 
 
 Favicon (38.9): pwa/make_icons.py draws a pixel burrow with coins, writes the svg icons and runs render_icons.js for PNG and favicon.ico.
+
+Waterfall (38.10): tiers widen top to bottom (dw 0,3,6) and flare 2 px within each tier via F.ex(ti,y), so it never narrows going down.
