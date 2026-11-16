@@ -13,9 +13,19 @@ Nothing in this app is an icon. Everything is something that grew, fell, or was 
 - **Layers, like a real floor.** Soil, moss, tall grass, then small life. Tall grass comes in several species (thin tufts, broad blades, reeds with seed heads, ferns) and several greens (cool, warm, deep), with clearings where small things live.
 - **Straight trunks.** Trees stand straight with only a slight lean. No twisting, swaying or crooked trunks. (Mako's rule.)
 - **Never a floating sticker.** Every picture sits in its world: on its ground, in its light, with a contact shadow, with grass over its feet.
-- **Small surprises for the ones who look.** A stump with a lit door, a rabbit that peeks, a hedgehog that walks by, eyes blinking in the grass. They appear now and then, never on a loop you can set a watch by.
+- **Small surprises for the ones who look.** A stump with a lit door, a frog that blinks on its stone, a snail on the log, eyes blinking in the grass. They appear now and then, never on a loop you can set a watch by.
 - **Icons stay simple.** A small picture (home burrow mound, favicon) is a few big shapes in flat tones, not a scene: one mound, one door, one light, one clump of grass. Detail belongs to the big pictures. Edges are tone against tone, never a black ring: no black outlines on living things (the dragon is shaded dark green, not outlined).
 - **Test:** cover the label. If it still looks like an app icon, it is wrong. If it looks like a place, it is right.
+
+## 0a. The world rule (never skip this one)
+
+**Nothing is laid over the art.** Anything the person needs to see or use (a way back, a label, a sign, a direction) is painted INTO the world it stands in, in that world's own pixel grid, palette, light, ground and weather. The page may add only an invisible hit area and an aria label. Mako, twice: "you just superimpose it on top and be lazy with the work. I told you to incorporate it fully into the graphic."
+
+- **No sticker, no pill, no badge, no overlay canvas** for anything that belongs to a place. The way back to the burrow is a wooden signpost standing on a road in each world (`BUR.drawRoad`, `BUR.drawSign`), not a button drawn on top. (The small "Home" pill is a control, not a picture; it stays out of the art.)
+- **Same world, same light.** Rainy world: night palette, wet planks, rain drips, lamplight on the board. Forest: moss and grass over the foot of the post, the time-of-day tint over the board and road.
+- **Depth.** It stands on the ground with a contact shadow, grass grows over its foot, and creatures in front of it are drawn in front of it (draw it as a sprite in the same layer, at the right depth, never in a separate top layer).
+- **Fit every screen.** Phone and desktop each get their own placement and board size, so it never overlaps the burrow, the creatures or the floating buttons.
+- **Check before showing:** screenshot it at desktop and phone, zoom 3x. If you can imagine peeling it off like a sticker, it is wrong. `artcheck.sh` fails the build if `.bv-sign` shows any background, border or image, or if an overlay canvas for it exists.
 
 ## 1. Who draws these
 
@@ -131,7 +141,7 @@ a gradient doing the work a shape should do; outlines of different weights in on
 ## 12. The checks (`./artcheck.sh`)
 
 Fails the build of a picture if: a colour is off the palette (more than 0.04 in OKLab from any palette colour) for more than 5% of its
-pixels; a sprite uses more than 24 colours; any canvas in a scene is not at the scene's pixel size; the art files contain a smooth
+pixels; a sprite uses more than 24 colours; any canvas in a scene is not at the scene's pixel size; the world rule is broken (a visible background, border or image on `.bv-sign`, or a `paintSign` overlay); the art files contain a smooth
 gradient or blur; a character is drawn without the shared outline pass. It prints a per-picture report. It cannot judge taste, so section 11
 step 9 and 10 stay with a human.
 
@@ -141,7 +151,8 @@ step 9 and 10 stay with a human.
 | --- | --- | --- | --- |
 | Squirrel (3 looks) | squirrel.js | native 44 x 46 cell | fur or ash, rose, gold, bark |
 | Rainy day burrow and world | burrow_rainy.js | 96 x 72 burrow, scene on S | night, moss, ember, bark, stone, teal, violet |
-| Burrow mounds (Home, and burrow screens without their own look yet) | burrows.js (plain look) | 24 x 18 at 5x | moss, bark, gold, ember, one flower colour |
+| Burrow mounds (Home, and burrow screens without their own look yet) | burrows.js (plain look) | 24 x 18 at 5x | moss, bark, gold, ember, one flower colour; one round hole where the coins pile |
+| Signpost and road (every burrow screen) | burrows.js (paintSign) | 64 x 44 at 2x or 3x | bark, moss, stone, gold |
 | Dragon | scene.js | 1x scene grid, about 30 px | moss, teal, ember, rose |
 | Back-tree squirrels, meadow, stump, rabbit, hedgehog | scene.js | 1x scene grid | palette mixed toward the scene's fog |
 | Forest scene (app background) | scene.js | scene grid | older palette, to be moved onto pal.js |

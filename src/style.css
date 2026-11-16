@@ -1590,7 +1590,12 @@ body.scene-on::after { content: ''; position: fixed; inset: 0; z-index: -1; poin
 body.bv-on .wrap, body.bv-on #mgBand { visibility: hidden; }
 #burrowView { position: fixed; inset: 0; z-index: 40; pointer-events: none; }
 #burrowView[hidden] { display: none; }
-.bv-back { position: absolute; top: max(12px, env(safe-area-inset-top)); left: 12px; pointer-events: auto; padding: 8px 14px; border-radius: 999px; border: 0; background: color-mix(in srgb, var(--bg) 70%, transparent); color: var(--fg); font: inherit; font-size: 14px; backdrop-filter: blur(6px); }
+.bv-back { position: absolute; z-index: 6; top: max(12px, env(safe-area-inset-top)); left: 12px; pointer-events: auto; min-height: 44px; padding: 8px 16px 8px 12px; border-radius: 999px; border: 1px solid rgba(233, 243, 238, .28); background: rgba(6, 19, 13, .72); color: #e9f3ee; font: inherit; font-size: 15px; cursor: pointer; backdrop-filter: blur(6px); } /* v38.17: it was under the scene layers (z-index auto, first in the stack), so on the Emergency fund screen nobody could see how to go back */
+.bv-sign { position: absolute; z-index: 6; border: 0; padding: 0; margin: 0; background: transparent; cursor: pointer; pointer-events: auto; display: none; -webkit-tap-highlight-color: transparent; } /* invisible: the sign itself is painted into the world */
+.bv-sign:focus-visible { outline: 2px dashed #8fd9a8; outline-offset: 3px; }
+.bv-ground { position: absolute; left: 0; top: 0; image-rendering: pixelated; pointer-events: none; }
+.bv-back::before { content: '\2039'; margin-right: 6px; font-size: 20px; line-height: 1; vertical-align: -1px; }
+.bv-back:focus-visible { outline: 2px solid #8fd9a8; outline-offset: 2px; }
 .bv-stage { position: absolute; pointer-events: auto; cursor: pointer; }
 .bv-cv { display: block; image-rendering: pixelated; }
 .bv-fx, .bv-rain { position: absolute; left: 0; top: 0; image-rendering: pixelated; pointer-events: none; }

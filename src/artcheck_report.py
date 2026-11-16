@@ -42,4 +42,21 @@ for f in art:
     for pat in ['createRadialGradient','createLinearGradient','shadowBlur','filter = ','ctx.filter','.blur(']:
         if pat in t and not (f=='burrows.js' and pat=='createLinearGradient'):
             print('FAIL',f,'uses',pat,'(smooth effects are not pixel art)'); bad+=1
+css=open('/home/claude/work/team/style.css').read()
+import re
+m=re.search(r'\.bv-sign\s*\{([^}]*)\}',css)
+if m:
+    body=m.group(1)
+    def val(p):
+        mm=re.search(p+r'\s*:\s*([^;]+);',body); return mm.group(1).strip() if mm else None
+    bg,bd=val('background'),val('border')
+    if (bg not in (None,'transparent','none')) or (bd not in (None,'0','none')) or 'box-shadow' in body or 'background-image' in body:
+        print('FAIL style.css .bv-sign is visible: the world rule (ART_GUIDE 0a) says nothing is laid over the art'); bad+=1
+else:
+    print('FAIL .bv-sign hit area missing'); bad+=1
+bt=open('/home/claude/work/team/burrows.js').read()+open('/home/claude/work/team/burrow_rainy.js').read()
+if 'paintSign' in bt:
+    print('FAIL paintSign overlay found: paint the sign into the world (BUR.drawSign)'); bad+=1
+if 'drawSign(' not in open('/home/claude/work/team/burrow_rainy.js').read():
+    print('FAIL rainy world has no in-world sign'); bad+=1
 print('ART CHECK', 'FAIL' if bad else 'PASS'); sys.exit(1 if bad else 0)
