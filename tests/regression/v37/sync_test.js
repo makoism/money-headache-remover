@@ -17,7 +17,7 @@ const st = p => p.evaluate(() => JSON.parse(localStorage.getItem('money-map-temp
   await p.keyboard.press('Escape');
   // persistence of every setting through reload
   await p.evaluate(() => { const r = document.querySelector('#djVol'); r.value = 42; r.dispatchEvent(new Event('input', { bubbles: true })); }); await w(400);
-  await p.click('#sndBtn'); await w(400);
+  await p.evaluate(() => document.querySelector('#sndBtn').click()); await w(400);
   await p.evaluate(() => { const c = document.querySelector('#djScene'); c.checked = false; c.dispatchEvent(new Event('change', { bubbles: true })); }); await w(500);
   await w(1200); await p.evaluate(() => sessionStorage.setItem('__keep', '1')); await p.reload(); await w(1500);
   const u = await st(p);

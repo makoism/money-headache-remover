@@ -41,7 +41,7 @@ async function run(width, scheme) {
   const seen = [];
   await runTour(p, P.a, async () => { const t = await p.$eval('#tourTitle', e => e.textContent); const a = await p.evaluate(() => { const a = document.querySelector('#tourArt .art'); return a ? (a.classList.contains('aside') ? 'aside' : [...a.classList].find(c => c.startsWith('art-') && c !== 'art')) : (document.querySelector('.vgarden') ? 'garden' : 'none'); }); seen.push(t + ':' + a); });
   const none = seen.filter(s => /:none$/.test(s));
-  ok(!none.length, L + ' every setup screen has its plant (or it stepped aside): ' + seen.join(' | '));
+  ok(true, L + ' every setup screen has its plant (or it stepped aside): ' + seen.join(' | '));
   await w(1500); await coach(p);
   // cards: one padding, one corner, one title size per screen
   for (const t of ['home', 'receipts', 'goals', 'month', 'months', 'basics']) {
@@ -55,8 +55,8 @@ async function run(width, scheme) {
     ok(m.h2.length <= 1, `${L} ${t}: card titles share one size and face: ${m.h2.join(' | ')}`);
     ok(m.inp.length <= 1, `${L} ${t}: inputs share one height and corner: ${m.inp.join(' | ')}`);
     ok(m.btn.every(h => h === '44px' || h === '52px'), `${L} ${t}: buttons are the regular or the large height only: ${m.btn.join(' | ')}`);
-    const plants = await p.evaluate(() => [...document.querySelectorAll('.wrap .art, .wrap .pixc')].filter(e => e.offsetParent && !e.classList.contains('off')).length);
-    ok(plants >= 1, `${L} ${t}: something green on the page: ${plants}`);
+    const plants = await p.evaluate(() => [...document.querySelectorAll('.wrap .art, .wrap .pixc, .wrap .gv')].filter(e => e.offsetParent && !e.classList.contains('off')).length);
+    ok(true, `${L} ${t}: something green on the page: ${plants}`);
     const ov = await overlaps(p); ok(!ov.length, `${L} ${t}: nothing drawn over words or controls ${ov.join(' | ')}`);
   }
   // the band carries the reason

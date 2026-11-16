@@ -44,7 +44,7 @@ async function health(p, tag) {
   const b = await puppeteer.launch({ executablePath: '/usr/bin/google-chrome', headless: 'new', args: ['--no-sandbox', '--disable-gpu'] });
   for (let s = 0; s < SESSIONS; s++) {
     const cur = pick(['₱', '¥', '€', '$']), S = M.presetState(cur);
-    S.ui = Object.assign(S.ui, { setup: true, sampleHidden: true, done: { pay: true, bills: true, goals: true, receipts: true }, seen: { home: true, month: true, goals: true, receipts: true, basics: true } });
+    S.ui = Object.assign(S.ui, { toured: true, setup: true, sampleHidden: true, done: { pay: true, bills: true, goals: true, receipts: true }, seen: { home: true, month: true, goals: true, receipts: true, basics: true } });
     const p = await b.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message.slice(0, 120)));
     await p.setViewport({ width: process.env.VW ? +process.env.VW : pick([390, 820, 1200]), height: 900 });
     await p.evaluateOnNewDocument(st => { if (!sessionStorage.getItem('__seen')) { localStorage.setItem('money-map-template-v2', st); sessionStorage.setItem('__seen', '1'); } }, JSON.stringify(S));

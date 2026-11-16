@@ -65,5 +65,13 @@ Learned from Mako: never em dashes; minimal; plain.
 - ./artcheck.sh must end "ART CHECK PASS". ./check.sh must end "GUARD ALL PASS" and "ALL GOOD". Never rebuild while it runs.
 - Fresh load with empty storage and with a filled plan: zero page errors.
 
+- Number audit (38.25): `node tests/qc/fuzz_model.js 4000` (model rules) and `node tests/qc/home_dom.js 120 <seed>` (the screen against the model). Run both after any change to model.js, ui6.js or burrows.js.
+- The fast check misses number checks. Run `./check.sh full` before every deploy. Tests must set S.ui.toured or the tour hides the screen. When a test fails, first decide if the app changed on purpose (update the test) or broke (fix the app).
+
+## Process for every big task (Mako's standing rule)
+1. The first thing on any big task: set a resume timer (send_later) with a self-contained message of the state and the plan. Do not ask; assume it is wanted.
+2. Tell Mako in one line that the timer is set. Cancel or replace it when the task is done.
+3. If a limit is hit, the timer wakes the session and work continues from the plan without waiting for him.
+
 ## How to update this file
 Mako's feedback arrives in chat. Put the lesson, in one line, under the right reviewer's "Learned from Mako" list; if it is a new kind of check, add it to that reviewer's list; if no reviewer owns it, add a reviewer. Copy this file into the project (claude/burrow-qc-roles.md) after changes.

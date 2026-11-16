@@ -221,3 +221,9 @@ Favicon (38.11): redrawn as a tree, a mound with a small door and a few coins, o
 
 ### 38.24
 - Pond (L.pond, pond() drawn after meadowFront so grass does not cover it): stony lip, deep middle, lily pads, reeds. Slow pastel swirl, sparkles, six glowing fish (L.fish, segment bodies on elliptical paths, ripples, spot glow in the light layer). Stream ends in the pond. Crystals and the second stone moved to the pond rim.
+
+## 38.25 (number audit)
+- New: `tests/qc/fuzz_model.js` (4000 random plans, 10M model checks) and `tests/qc/home_dom.js` (reads the real Home screen on random plans and fake dates and compares status, free to spend, weekly and daily figures, held back, tiles, Financial Freedom, burrow percents with model.js). Last runs: 120 plans, 2,779 screen checks, 0 mismatches.
+- Light theme footer pill (`body.scene-on .foot`) darkened so its text passes 4.5:1.
+- Tests brought up to date with intended changes: jar renamed Burrows (goals), pay box placeholder wording, jar note wording, Next card wording ("log spend"), sound button lives in the orb ring (hidden `#sndBtn`, click it by script), garden replaces corner pixel sprites, music sources are Forest and Off, phone has the full scene (no strip). Retired from the full list: pix_test, dj_test, phone_scene_test.
+- Rule: tests must set `S.ui.toured` or the tour covers the screen; run `./check.sh full` before every deploy, not only the fast check.

@@ -9,9 +9,9 @@ const st = p => p.evaluate(() => JSON.parse(localStorage.getItem('money-map-temp
   const tb = await p.evaluate(() => { const s = document.querySelector('#topStreak').getBoundingClientRect(), h = document.querySelector('.top h1').getBoundingClientRect(); return s.right <= h.left + 1 && Math.abs((s.top + s.bottom) / 2 - (h.top + h.bottom) / 2) < 14; });
   ok(tb, 'the streak is to the left of the title, centred with it');
   // one-tap mute
-  await p.click('#sndBtn'); await w(700);
+  await p.evaluate(() => document.querySelector('#sndBtn').click()); await w(700);
   ok((await st(p)).mute === true && (await p.$eval('#sndBtn', e => e.getAttribute('aria-pressed'))) === 'true', 'the speaker button mutes in one tap');
-  await p.click('#sndBtn'); await w(700);
+  await p.evaluate(() => document.querySelector('#sndBtn').click()); await w(700);
   ok(!(await st(p)).mute, 'and turns sound back on');
   // the panel
   await p.click('#djBtn'); await w(300);
@@ -38,12 +38,12 @@ const st = p => p.evaluate(() => JSON.parse(localStorage.getItem('money-map-temp
   await w(800); await p.evaluate(() => sessionStorage.setItem('__keep', '1')); await p.reload({ waitUntil: 'load' }); await w(1500);
   ok((await st(p)).vol === 30, 'the volume survives a reload');
   // the setup's Sound button and Settings agree with the top bar
-  await p.click('#sndBtn'); await w(500);
+  await p.evaluate(() => document.querySelector('#sndBtn').click()); await w(500);
   await p.evaluate(() => document.querySelector('#gearBtn').click()); await w(300);
   ok((await p.$eval('#setSnd', e => e.getAttribute('aria-checked'))) === 'false', 'Settings shows Sound off after the top-bar mute');
   /* with a stand-in for YouTube's player that loads: the dock with the player is visible while GREEN is the source */
   await p.evaluate(() => { window.YT = { Player: function (id, o) { const el = document.getElementById(id); const f = document.createElement('iframe'); f.id = id; el.replaceWith(f); this.setVolume = () => {}; this.mute = () => {}; this.unMute = () => {}; this.playVideo = () => o.events.onStateChange({ data: 1 }); this.pauseVideo = () => o.events.onStateChange({ data: 2 }); this.loadVideoById = () => o.events.onStateChange({ data: 1 }); this.cueVideoById = () => {}; setTimeout(() => o.events.onReady(), 50); } }; });
-  await p.click('#sndBtn'); await w(400);
+  await p.evaluate(() => document.querySelector('#sndBtn').click()); await w(400);
   await p.click('#djBtn'); await w(300); await p.click('[data-djsrc="green"]'); await w(900);
   const d = await p.evaluate(() => { const k = document.querySelector('#djDock'), r = k.getBoundingClientRect(); return { frame: !!k.querySelector('iframe'), off: r.right < 0 || getComputedStyle(k).opacity === '0', label: (document.querySelector('[data-djplay]') || {}).getAttribute && document.querySelector('[data-djplay]').getAttribute('aria-label') }; });
   ok(d.frame && d.off && d.label === 'Pause', 'GREEN: the player runs out of sight and the panel shows Pause: ' + JSON.stringify(d));

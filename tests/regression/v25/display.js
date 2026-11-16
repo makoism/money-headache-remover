@@ -26,7 +26,7 @@ function randomReceipts(S) {
     const S = randomState();
     if (t % 7 === 3) S.ui.cur = 'CHF'; if (t % 11 === 5) S.ui.cur = 'none';
     S.receipts = randomReceipts(S);
-    S.ui = Object.assign(S.ui, { setup: true, sampleHidden: true, done: { pay: true, bills: true, goals: true, receipts: true }, seen: { home: true, month: true, goals: true, receipts: true, basics: true } });
+    S.ui = Object.assign(S.ui, { toured: true, setup: true, sampleHidden: true, done: { pay: true, bills: true, goals: true, receipts: true }, seen: { home: true, month: true, goals: true, receipts: true, basics: true } });
     const cur = S.ui.cur, pre = cur === 'none' ? '' : (/^[A-Za-z]{2,}$/.test(cur) ? cur + ' ' : cur);
     const F = n => { n = Math.round(n); return (n < 0 ? '−' : '') + pre + Math.abs(n).toLocaleString('en-US'); };
     const F2 = n => (Math.abs(n - Math.round(n)) < 0.005 ? F(n) : (n < 0 ? '−' : '') + pre + Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
@@ -58,7 +58,7 @@ function randomReceipts(S) {
       eq(pt + 'legend rows', JSON.stringify(D.legend), JSON.stringify(exp));
       if (showPct) eq(pt + 'legend percents add to 100', D.legend.reduce((a, x) => a + (parseInt(x[2]) || 0), 0), 100);
       /* goals tab */
-      await p.evaluate(() => document.querySelector('#tab-goals').click()); await w(200);
+      await p.evaluate(() => { document.querySelector('#tab-month').click(); const sb = [...document.querySelectorAll('[data-tab-go="goals"][data-sub="goals"]')].find(x => x.offsetParent); sb.click(); }); await w(300);
       for (const g of S.plan.goals) {
         const G = await p.evaluate(id => ({ v: (document.querySelector('#jv-' + id) || {}).innerText, s: (document.querySelector('#js-' + id) || {}).innerText, n: (document.querySelector('#jt-' + id) || {}).innerText }), g.id);
         const go = oracleGoal(S, O, g.id, ym), bal = r.bal[g.id];

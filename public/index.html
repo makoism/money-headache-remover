@@ -1657,7 +1657,7 @@ body.bv-on .wrap, body.bv-on #mgBand { visibility: hidden; }
 .vgarden .tour-vframe { max-width: none; width: 100%; }
 
 /* the footer lines rest on a soft dark pill so they stay readable over the meadow */
-body.scene-on .foot { width: max-content; max-width: min(92%, 520px); margin: 8px auto; padding: 6px 16px; border-radius: 999px; background: rgba(8, 20, 14, .6); color: rgba(232, 244, 234, .86); }
+body.scene-on .foot { width: max-content; max-width: min(92%, 520px); margin: 8px auto; padding: 6px 16px; border-radius: 999px; background: rgba(8, 20, 14, .8); color: rgba(236, 246, 238, .95); }
 
 .bv-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 8px; }
 .bv-amt input { width: 100%; box-sizing: border-box; min-height: 44px; padding: 8px 12px; border-radius: 12px; border: 1px solid color-mix(in srgb, var(--fg) 28%, transparent); background: color-mix(in srgb, var(--bg) 60%, transparent); color: var(--fg); font: inherit; font-size: 16px; }
@@ -1681,7 +1681,7 @@ body.scene-on .foot { width: max-content; max-width: min(92%, 520px); margin: 8p
 /* the Ask and Help pills step aside while the tour or a burrow is open */
 body.touring .help-row, body.bv-on .help-row { display: none; }
 
-.gapbar { margin: 14px 0 0; } .gapbar .cap { margin: 0 0 8px; } .gaprow { display: flex; gap: 10px; align-items: stretch; max-width: 360px; } .gaprow .inp { flex: 1 1 auto; }
+.gapbar { margin: 14px 0 0; } .gapbar .cap { margin: 0 0 8px; } .gaprow { display: flex; gap: 10px; align-items: stretch; max-width: 360px; } .gaprow .inp { flex: 1 1 0; min-width: 0; } .gaprow .btn { flex: 0 0 auto; white-space: nowrap; min-width: 64px; }
 .hst-w.warn { color: var(--warn, #e9b872); }
 /* touch targets: every control a thumb must hit is at least 44px */
 .tabs button, .seg button, .gear, .btn.small, #prevM, #nextM, .mnav button, .tour-top button, .tour-top a { min-height: 44px; }
@@ -2059,7 +2059,7 @@ body.touring .help-row, body.bv-on .help-row { display: none; }
   </div>
 
   <p class="foot" id="footNote">Not financial advice. Sample numbers are invented. Replace them with yours.</p>
-  <p class="foot ver" id="verFoot">Version 38.24</p>
+  <p class="foot ver" id="verFoot">Version 38.25</p>
   </div>
 </div>
 <div class="handfx" id="handFx" aria-hidden="true"></div>
@@ -2113,7 +2113,7 @@ body.touring .help-row, body.bv-on .help-row { display: none; }
     <button type="button" id="helpSetup">Guided setup</button>
     <button type="button" id="helpVideo" hidden>Intro video</button>
     <button type="button" id="helpReport">Report a problem</button>
-    <p class="help-ver">Version 38.24</p>
+    <p class="help-ver">Version 38.25</p>
   </div>
   <div class="help-row"><button type="button" class="help-btn ask-btn" id="askBtn">Ask</button><button type="button" class="help-btn" id="helpBtn" aria-expanded="false" aria-controls="helpMenu"><span class="q" aria-hidden="true">?</span>Help</button></div>
 </div>

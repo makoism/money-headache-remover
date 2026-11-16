@@ -98,7 +98,7 @@ const puppeteer = require('/home/claude/work/tools/node_modules/puppeteer-core')
   await p.click('input[name=tourCur][value="$"]'); await w(150);
   ok('markup in the name is never run or shown as an element', (await p.evaluate(() => window.__xss3)) === undefined && (await p.$$eval('#tourBody img, #tourTitle img', e => e.length)) === 0);
   for (let i = 0; i < 6 && (await q('#tourTitle')) !== 'Your money'; i++) { if (await p.$eval('#tourNext', e => e.hidden)) { await p.evaluate(() => document.querySelector('#srcSkip').scrollIntoView({ block: 'center' })); await p.click('#srcSkip'); } else await p.click('#tourNext'); await w(100); } /* past the statements to the typed money screen */
-  ok('the pay box suggests no amount and uses the chosen currency', (await q('#tourTitle')) === 'Your money' && (await p.$eval('#tourPay', e => e.placeholder)) === 'Amount' && (await p.$eval('#tourPay', e => e.closest('.inp').textContent)).includes('$'));
+  ok('the pay box suggests no amount and uses the chosen currency', (await q('#tourTitle')) === 'Your money' && !/\d/.test(await p.$eval('#tourPay', e => e.placeholder)) && (await p.$eval('#tourPay', e => e.closest('.inp').textContent)).includes('$'));
   await p.type('#tourPay', '2500');
   let gd = 0; while (gd++ < 60 && !(await q('#tourTitle')).startsWith('Setup done')) { if (await p.$eval('#tourNext', e => e.hidden)) { await p.evaluate(() => document.querySelector('#srcSkip').scrollIntoView({ block: 'center' })); await p.click('#srcSkip'); } else await p.click('#tourNext'); await w(100); }
   ok('the ending never mentions pesos for a dollar user', !(await tourText()).toLowerCase().includes('peso'));
@@ -113,9 +113,9 @@ const puppeteer = require('/home/claude/work/tools/node_modules/puppeteer-core')
   /* ============ THE PAGE ============ */
   await fresh(); await skipTour(); await tab('month'); await w(300);
   const lg = await p.$$eval('#legend .lg', e => e.map(x => x.innerText.replace(/\s+/g, ' ').trim()));
-  ok('legend shows six jars in order', lg.length === 6 && ['Necessities', 'Long-Term Savings for Spending', 'Play', 'Education', 'Financial Freedom', 'Give'].every((n, i) => lg[i].startsWith(n)));
+  ok('legend shows six jars in order', lg.length === 6 && ['Necessities', 'Burrows (goals)', 'Play', 'Education', 'Financial Freedom', 'Give'].every((n, i) => lg[i].startsWith(n)));
   ok('necessities 55%, give 5%', lg[0].includes('₱16,500') && lg[0].includes('55%') && lg[5].includes('₱1,500') && lg[5].includes('5%'));
-  ok('jar note in line', (await q('#jarNote')).startsWith('Necessities are 55% of pay, in line with Eker'));
+  ok('jar note in line', (await q('#jarNote')).startsWith('Necessities are 55% of pay'));
   ok('hero is the play money', (await q('#heroNum')) === '₱3,000');
   ok('five tabs', (await p.$$eval('.tabs [role=tab]', e => e.length)) === 5);
   ok('ledger rows follow the jars', JSON.stringify(await p.$$eval('#rowsOut .row', e => e.map(x => x.dataset.id))) === JSON.stringify(['nec', 'items', 'lts', 'play', 'edu', 'ffa', 'give']));
