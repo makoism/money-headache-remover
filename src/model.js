@@ -140,9 +140,32 @@ const dueYm = g => (g.due ? g.due.slice(0, 7) : null);
 /* the last month to be saving: a due date after the 15th means pay day that month still counts */
 const readyBy = g => { if (!g.due) return null; const ym = g.due.slice(0, 7), day = +g.due.slice(8, 10) || 1; return day > PAYDAY ? ym : ymAdd(ym, -1); };
 const capOf = g => (g.emergency ? Math.max(g.stretch || 0, g.target) : g.target);
+
+/* ---------- cards and loans: a balance, a yearly rate, a minimum payment, and extra money on top ---------- */
+const MAX_DEBTS = 12, DEBT_KINDS = ['card', 'loan', 'personal'];
+const debtsOf = S => (S.plan && Array.isArray(S.plan.debts) ? S.plan.debts : []);
+const debtById = (S, id) => debtsOf(S).find(d => d.id === id);
+const DEBT_KIND_NAME = { card: 'Credit card', loan: 'Loan', personal: 'Owed to a person' };
+/* one month: interest is added to what is owed, then the payment comes off. Whole amounts only. */
+function debtStep(d, bal, extra) {
+  const interest = bal > 0 ? Math.round(bal * d.apr / 1200) : 0;
+  const pay = Math.min(bal + interest, d.min + Math.max(0, extra));
+  return { start: bal, interest, extra: Math.max(0, extra), pay, bal: bal + interest - pay };
+}
+/* from a balance with a steady extra: how long, how much interest, or never */
+function debtProject(d, bal, extra, startYm) {
+  let months = 0, interest = 0, paid = 0;
+  while (bal > 0 && months < 600) {
+    const st = debtStep(d, bal, extra);
+    if (st.pay <= st.interest) return { never: true, months, interest, paid, ym: null };
+    interest += st.interest; paid += st.pay; bal = st.bal; months++;
+  }
+  if (bal > 0) return { never: true, months, interest, paid, ym: null };
+  return { never: false, months, interest, paid, ym: months ? ymAdd(startYm, months - 1) : startYm };
+}
 /* the split a person chose in setup, as shares of pay. Only the setup steps read it, as their starting point; nothing on screen shows it. */
 const aimsOf = S => { const a = (S.cfg && S.cfg.aims) || {}, o = {}; JARS.forEach(j => { const v = a[j.id]; o[j.id] = typeof v === 'number' && v >= 0 && v <= 1 ? v : j.usual; }); return o; };
-const allKeys = S => ['a', 'b', 'side'].concat(S.plan.lines.map(l => l.key), S.plan.goals.map(g => 'goal:' + g.id));
+const allKeys = S => ['a', 'b', 'side'].concat(S.plan.lines.map(l => l.key), S.plan.goals.map(g => 'goal:' + g.id), debtsOf(S).map(d => 'debt:' + d.id));
 
 /* rounding step for default monthly amounts: whole tens for small currencies, hundreds for big ones */
 const roundUnit = S => { const pay = Math.max(0, ...MONTHS.map(ym => val(S, 'a', ym) + val(S, 'b', ym) + val(S, 'side', ym))); return pay >= 20000 ? 100 : pay >= 5000 ? 10 : 5; };
@@ -166,6 +189,7 @@ function defOf(S, key, ym) {
   if (BASE_DEF[key] !== undefined) return BASE_DEF[key];
   const l = lineByKey(S, key); if (l) return l.def;
   if (key.slice(0, 5) === 'goal:') { const g = goalById(S, key.slice(5)); if (g) return goalDefault(S, g, ym); }
+  if (key.slice(0, 5) === 'debt:') { const d = debtById(S, key.slice(5)); return d ? d.extra : 0; }
   return 0;
 }
 const ONCE_KEYS = new Set(['draw']);
@@ -265,6 +289,7 @@ function calcAll(S) {
   const goals = goalsOf(S), lines = linesOf(S), eg = emergencyGoal(S);
   let bank = cfg(S, 'bankStart');
   const bal = {}; goals.forEach(g => { bal[g.id] = g.start; });
+  const debts = debtsOf(S), dbal = {}; debts.forEach(d => { dbal[d.id] = d.balance; });
   const redirects = lines.filter(l => l.ends && l.redirect).map(l => ({ l, amt: val(S, l.key, l.ends) }));
   for (const ym of MONTHS) {
     const m = { ym };
@@ -275,7 +300,10 @@ function calcAll(S) {
     m.lines.forEach(x => { m.jar[x.jar] += x.v; });
     m.billsTotal = m.jar.nec;
     m.items = itemsFor(S, ym); m.itemsTotal = sum(m.items.map(i => +i.amount || 0));
-    m.jar.nec += m.itemsTotal;
+    m.debts = {}; m.debtPay = 0; m.debtInterest = 0;
+    debts.forEach(d => { const st = debtStep(d, dbal[d.id], val(S, 'debt:' + d.id, ym)); dbal[d.id] = st.bal; m.debts[d.id] = st; m.debtPay += st.pay; m.debtInterest += st.interest; });
+    m.debtOwed = sum(debts.map(d => dbal[d.id]));
+    m.jar.nec += m.itemsTotal + m.debtPay;
     m.balBefore = Object.assign({}, bal);
     const freed = redirects.reduce((acc, r) => acc + (ym > r.l.ends ? r.amt : 0), 0);
     const g = {};
@@ -621,7 +649,41 @@ function cleanPlan(raw, legacy) {
     if (g.emergency && !hasE) { hasE = true; o.emergency = true; o.stretch = num(g.stretch); }
     goals.push(o);
   });
-  return { lines, goals };
+  const out = { lines, goals };
+  const debts = cleanDebts(raw.debts, gids, ids); if (debts.length) out.debts = debts;
+  const rec = cleanRecurring(raw.recurring, keys); if (rec.length) out.recurring = rec;
+  return out;
+}
+function cleanDebts(raw, gids, lids) {
+  if (!Array.isArray(raw)) return [];
+  const seen = new Set(), out = [], str = (v, n) => (typeof v === 'string' ? v.replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, n) : '');
+  const whole = v => (typeof v === 'number' && isFinite(v) && v >= 0 ? Math.min(Math.round(v), 1e9) : 0);
+  raw.slice(0, MAX_DEBTS).forEach(d => {
+    if (!d || typeof d !== 'object' || typeof d.id !== 'string' || !SAFE_ID.test(d.id) || seen.has(d.id)) return;
+    seen.add(d.id);
+    const apr = typeof d.apr === 'number' && isFinite(d.apr) ? Math.max(0, Math.min(100, Math.round(d.apr * 100) / 100)) : 0;
+    out.push({ id: d.id, name: str(d.name, 60) || 'Untitled', kind: DEBT_KINDS.indexOf(d.kind) >= 0 ? d.kind : 'loan', balance: whole(d.balance), apr, min: whole(d.min), extra: whole(d.extra) });
+  });
+  return out;
+}
+/* spending that repeats on its own: a weekday every week, or a day of the month. Ends where it is cleared. */
+const MAX_RECURRING = 20;
+function cleanRecurring(raw) {
+  if (!Array.isArray(raw)) return [];
+  const seen = new Set(), out = [];
+  raw.slice(0, MAX_RECURRING).forEach(r => {
+    if (!r || typeof r !== 'object' || typeof r.id !== 'string' || !SAFE_ID.test(r.id) || seen.has(r.id)) return;
+    const a = typeof r.a === 'number' ? round2(r.a) : 0; if (!(a > 0) || a > 1e9) return;
+    const every = r.every === 'week' ? 'week' : r.every === 'month' ? 'month' : null; if (!every) return;
+    const on = Math.round(+r.on); if (every === 'week' ? !(on >= 0 && on <= 6) : !(on >= 1 && on <= 28)) return;
+    /* a start before the first month the page covers begins at the first day it covers */
+    const from = typeof r.from === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(r.from) && r.from < MONTHS[0] + '-01' ? MONTHS[0] + '-01' : r.from;
+    if (!validDate(from)) return;
+    seen.add(r.id);
+    const c = typeof r.c === 'string' && /^[A-Za-z0-9:_-]{1,40}$/.test(r.c) ? r.c : 'other';
+    out.push({ id: r.id, a, c, n: typeof r.n === 'string' ? r.n.replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, 80) : '', every, on, from, last: validDate(r.last) ? r.last : '' });
+  });
+  return out;
 }
 function cleanReceipts(raw) {
   if (!Array.isArray(raw)) return [];
@@ -636,4 +698,88 @@ function cleanReceipts(raw) {
     out.push(rc);
   });
   return out;
+}
+
+/* ---------- debts: where each one stands and which gets the extra money first ---------- */
+/* payoff: the month the balance reaches 0 inside the page's months, or the projection past them. */
+function debtRows(S, C) {
+  const last = C.months[C.months.length - 1];
+  const rows = debtsOf(S).map(d => {
+    let paidYm = null, interest = 0, paid = 0;
+    for (const m of C.months) { const x = m.debts[d.id]; interest += x.interest; paid += x.pay; if (paidYm === null && x.bal === 0) { paidYm = m.ym; break; } }
+    let proj = null;
+    if (paidYm === null) { const lx = last.debts[d.id]; proj = debtProject(d, lx.bal, lx.extra, ymAdd(last.ym, 1)); interest += proj.interest; paid += proj.paid; paidYm = proj.ym; }
+    const cur = C.months[0].debts[d.id];
+    return { id: d.id, name: d.name, kind: d.kind, balance: d.balance, apr: d.apr, min: d.min, extra: d.extra, payoffYm: paidYm, never: !!(proj && proj.never) || (d.balance > 0 && d.min + d.extra <= cur.interest && paidYm === null),
+      totalInterest: interest, totalPaid: paid, pctPaid: 0, first: false, done: d.balance <= 0 };
+  });
+  /* highest rate first; the same rate, the smaller balance first */
+  const open = rows.filter(r => !r.done).sort((a, b) => b.apr - a.apr || a.balance - b.balance || (a.id < b.id ? -1 : 1));
+  if (open.length > 1) open[0].first = true;
+  return rows;
+}
+/* where the debts stand at a month end */
+function debtOwedAt(C, ym) { return C.byYm[ym].debtOwed; }
+
+/* ---------- extra money (a bonus, a 13th month pay, a refund, a good freelance month) and where it goes ---------- */
+const EXTRA_DESTS = ['bank', 'goal', 'play', 'ffa', 'debt'];
+/* The amount is added to this month's pay for this month only and the same amount is put where the person chose. Returns what moved and what stayed in the bank. */
+function addExtraMoney(S, ym, amount, dest) {
+  amount = Math.round(+amount); if (!(amount > 0) || amount > MAX_AMT || MONTHS.indexOf(ym) < 0) return null;
+  const C0 = calcAll(S), m0 = C0.byYm[ym]; let placed = 0, key = null, room = amount;
+  if (dest && dest.t === 'goal') { const g = goalById(S, dest.id); if (!g || g.target <= 0) return null; key = 'goal:' + g.id; room = Math.max(0, capOf(g) - m0.balBefore[g.id] - m0.g[g.id].actual); if (g.due && ym > readyBy(g)) room = 0; }
+  else if (dest && dest.t === 'play') { const l = S.plan.lines.find(x => x.jar === 'play'); if (!l) return null; key = l.key; }
+  else if (dest && dest.t === 'ffa') { const l = S.plan.lines.find(x => x.jar === 'ffa'); if (!l) return null; key = l.key; }
+  else if (dest && dest.t === 'debt') { const d = debtById(S, dest.id); if (!d) return null; key = 'debt:' + d.id; const st = m0.debts[d.id]; room = Math.max(0, st.start + st.interest - st.pay); }
+  else if (dest && dest.t !== 'bank') return null;
+  placed = key ? Math.min(amount, room) : 0;
+  setVal(S, 'side', ym, val(S, 'side', ym) + amount, 'once');
+  if (key && placed > 0) setVal(S, key, ym, val(S, key, ym) + placed, 'once');
+  return { amount, placed, toBank: amount - placed };
+}
+
+/* ---------- spending limits: each line's plan against what was logged for it ---------- */
+function limitsOf(S, C, ym) {
+  const m = C.byYm[ym], rs = receiptStats(S, ym), rows = [];
+  m.lines.forEach(x => {
+    if (!x.on) return;
+    const spent = rs.byKey[x.key] || 0, soft = x.jar === 'play' || x.jar === 'edu' || x.jar === 'give';
+    if (x.jar === 'ffa') return;
+    if (!(soft || spent > 0) || !(x.v > 0 || spent > 0)) return;
+    rows.push({ key: x.key, name: x.name, jar: x.jar, planned: x.v, spent, left: round2(x.v - spent), over: round2(x.v - spent) < 0 });
+  });
+  return { rows, other: rs.byKey.other || 0, total: rs.total };
+}
+
+/* ---------- last month in one look ---------- */
+function lookBack(S, C, ym) {
+  const m = C.byYm[ym]; if (!m) return null;
+  const rs = receiptStats(S, ym), lim = limitsOf(S, C, ym);
+  const jars = ['nec', 'play', 'edu', 'give'].map(j => ({ id: j, planned: m.jar[j], spent: rs.byJar[j] || 0, left: round2(m.jar[j] - (rs.byJar[j] || 0)) }));
+  return { ym, inflow: m.inflow, out: m.out, left: m.left, bankStart: m.bankStart, bankEnd: m.bankEnd, count: rs.count, logged: rs.total, other: rs.byJar.other || 0, jars,
+    over: lim.rows.filter(r => r.over).sort((a, b) => a.left - b.left), goalsAdded: m.goalsTotal, debtPaid: m.debtPay, interest: m.debtInterest, owed: m.debtOwed };
+}
+
+/* ---------- repeating spending: adds the receipts that came due since the last time, never more than 60 at once ---------- */
+function dueDates(r, fromExcl, toIncl) {
+  const out = [], start = r.last ? r.last : null;
+  let t = new Date((start || r.from) + 'T00:00:00Z'); const end = new Date(toIncl + 'T00:00:00Z');
+  if (!start) t = new Date(t.getTime() - 86400000);
+  for (let i = 0; i < 4000 && out.length < 60; i++) {
+    t = new Date(t.getTime() + 86400000); if (t > end) break;
+    const iso = t.toISOString().slice(0, 10), dow = t.getUTCDay(), dom = t.getUTCDate();
+    if (iso < r.from) continue;
+    if (r.every === 'week' ? dow === r.on : dom === r.on) out.push(iso);
+  }
+  return out;
+}
+function applyRecurring(S, today) {
+  const rec = S.plan && S.plan.recurring; if (!rec || !rec.length || !validDate(today)) return 0;
+  let n = 0;
+  rec.forEach(r => {
+    const ds = dueDates(r, null, today);
+    ds.forEach(d => { if (d.slice(0, 7) < START || d.slice(0, 7) > END) return; if (addReceipt(S, d, r.a, r.c, r.n)) n++; });
+    if (ds.length) r.last = ds[ds.length - 1];
+  });
+  return n;
 }

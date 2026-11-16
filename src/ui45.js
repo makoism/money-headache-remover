@@ -202,9 +202,10 @@ const TOUR = [
       <div class="field tour-more"><label for="tourCurMore">Other currency</label><div class="selbox"><select id="tourCurMore"><option value="">Choose currency</option>${rest.map(c => `<option value="${esc(c[0])}"${c[0] === cur ? ' selected' : ''}>${esc(c[1])}</option>`).join('')}</select></div></div>
       <div class="tour-fields"><div class="field"><label for="tourName">First name <span class="opt">(optional)</span></label><div class="inp"><input id="tourName" type="text" maxlength="24" autocomplete="given-name" spellcheck="false" placeholder="First name" value="${esc(firstName())}"></div></div></div>
       <p class="cap">Data stays in this browser. Nobody else can see it.</p>
+      <p class="cap">${quickSetup() ? 'The first setup is short: pay, rent, food and one goal. <button type="button" class="link" id="tourFull">Ask me everything now</button>' : 'Longer setup is on.'}</p>
       ${hasHello ? '' : restoreHTML()}`;
     },
-    after: () => { if (!hasHello) wireRestore(); },
+    after: () => { if (!hasHello) wireRestore(); const f = $('#tourFull'); if (f) f.addEventListener('click', () => { S.ui.full = true; persist(); buildSteps(); f.replaceWith(document.createTextNode('Longer setup is on.')); }); },
     leave: () => { const el = $('#tourName'); if (el) { const n = cleanName(el.value); if (n) S.ui.name = n; else delete S.ui.name; persist(); } } },
   /* the statements are the setup. The typed screens follow only for what the statements did not answer, or when they were skipped. */
   STEP_CHAT, STEP_SOURCE, STEP_REVIEW,

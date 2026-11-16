@@ -24,13 +24,15 @@ const monShort = ym => MON[+ym.slice(5) - 1], monLong = ym => monShort(ym) + ' '
     const keys = S.plan.lines.map(l => l.key).concat(['other']);
     const nr = pick([0, 0, 2, 5, 9]);
     for (let i = 0; i < nr; i++) { const c = pick(keys), l = S.plan.lines.find(x => x.key === c); S.receipts.push({ id: 'r' + i, d: ym + '-' + String(ri(1, 28)).padStart(2, '0'), a: Math.round((pick([0.5, 19.99, 250, 1234.56, 4000, 12000, ri(1, 90000) / 100]) ) * 100) / 100, c: l ? c : 'other', cn: l ? l.name : 'Other', n: '' }); }
+    if (t % 3 === 0) { S.plan.debts = []; for (let i = 0; i < ri(1, 3); i++) S.plan.debts.push({ id: 'd' + i, name: 'Debt ' + i, kind: pick(['card', 'loan', 'personal']), balance: pick([500, 5000, 60000, ri(1000, 900000)]), apr: pick([0, 12, 24, 36]), min: pick([0, 100, 3000, ri(0, 20000)]), extra: pick([0, 0, 1000, ri(0, 9000)]) }); }
+    if (t % 2 === 0) S.ui.limits = true;
     S.ui = Object.assign(S.ui, { toured: true, setup: true, sampleHidden: true, done: { pay: true, bills: true, goals: true, receipts: true }, seen: { home: true, month: true, goals: true, receipts: true, basics: true } });
     const C = M.calcAll(S), V = M.viewOf(S, C, ym, today), m = C.byYm[ym], floor = M.cfg(S, 'minBank'), tag = '#' + t + ' ' + cur + ' ' + today;
     const { b, p, errs } = await phone({ w: 1100, h: 900, dpr: 1 });
     await p.evaluateOnNewDocument(st => { localStorage.setItem('money-map-template-v2', st); }, JSON.stringify(S));
     await p.evaluateOnNewDocument(iso => { const real = Date, fixed = new real(iso).getTime(), start = real.now(); class D extends real { constructor(...a) { if (!a.length) super(fixed + (real.now() - start)); else super(...a); } static now() { return fixed + (real.now() - start); } } window.Date = D; }, today + 'T10:00:00');
     await p.goto('file://' + PAGE + '#' + ym); await w(1300);
-    const T = await p.evaluate(() => { const g = i => { const e = document.querySelector('#' + i); return e && !e.hidden ? e.innerText.replace(/\s+/g, ' ').trim() : null; }; return { st: g('hStatus'), sp: g('hSpend'), bu: g('hBuckets'), go: g('hGoals'), bur: g('hBur') }; });
+    const T = await p.evaluate(() => { const g = i => { const e = document.querySelector('#' + i); return e && !e.hidden ? e.innerText.replace(/\s+/g, ' ').trim() : null; }; return { st: g('hStatus'), sp: g('hSpend'), bu: g('hBuckets'), go: g('hGoals'), bur: g('hBur'), de: g('hDebts'), li: g('hLimits') }; });
     eq(tag + ' page errors', errs.join(' | '), '');
     /* ---- status ---- */
     const stat = m.inflow > 0 ? M.statusOf(S, m) : 'none';
@@ -50,7 +52,7 @@ const monShort = ym => MON[+ym.slice(5) - 1], monLong = ym => monShort(ym) + ' '
       has(tag + ' chest big', T.sp, F2(freeLeft));
       has(tag + ' chest spent', T.sp, p0.count ? 'Spent ' + F2(p0.spent) + ' of ' + F(p0.planned) : 'Nothing logged yet. ' + F(p0.planned) + ' planned');
       if (!p0.over) {
-        if (p0.perWeek != null) has(tag + ' chest week', T.sp, F(Math.max(0, freeLeft) / (p0.daysLeft / 7)) + ' a week, ' + p0.daysLeft + (p0.daysLeft === 1 ? ' day' : ' days') + ' left');
+        if (p0.perWeek != null) has(tag + ' chest week', T.sp, F(Math.max(0, freeLeft) / (p0.daysLeft / 7)) + ' a week for the ' + p0.daysLeft + (p0.daysLeft === 1 ? ' day' : ' days') + ' left');
         if (freeLeft > 0 && p0.daysLeft > 0) has(tag + ' chest day', T.sp, 'About ' + F(freeLeft / p0.daysLeft) + ' a day');
       }
       if (held > 0) has(tag + ' chest held', T.sp, F(held) + ' is held back');
@@ -65,6 +67,22 @@ const monShort = ym => MON[+ym.slice(5) - 1], monLong = ym => monShort(ym) + ' '
     else { has(tag + ' ffa', T.bu, F(ff.planned)); if (ff.total > ff.planned) has(tag + ' ffa total', T.bu, F(ff.total) + ' planned in total so far'); else lacks(tag + ' ffa total', T.bu, 'planned in total so far'); }
     /* ---- goals list ---- */
     V.goals.forEach(r => { const g = S.plan.goals.find(x => x.id === r.id); if (r.target > 0 && !g.why) { const pp = T.go.indexOf(g.name.replace(/\s+/g, ' ').trim()); checks++; if (pp < 0) fails.push(tag + ' goals home: ' + g.name + ' missing'); } });
+    /* ---- cards and loans on Home ---- */
+    if (!S.plan.debts) eq(tag + ' debts card hidden', T.de, null);
+    else {
+      const ds = S.plan.debts, rowsD = M.debtRows(S, C), owed = ds.reduce((a, d) => a + m.debts[d.id].start, 0);
+      has(tag + ' debts owed', T.de || '', F(owed)); has(tag + ' debts head', T.de || '', 'Owed at the start of ' + monShort(ym));
+      if (m.debtPay > 0) has(tag + ' debts pay', T.de, 'You pay ' + F(m.debtPay) + ' this month' + (m.debtInterest > 0 ? ', ' + F(m.debtInterest) + ' of it interest' : ''));
+      if (rowsD.every(r => !r.never)) has(tag + ' debts free', T.de, 'Debt free ' + monLong(rowsD.reduce((a, r) => (r.payoffYm > a ? r.payoffYm : a), '')));
+      ds.forEach(d => has(tag + ' debts row ' + d.id, T.de, F(m.debts[d.id].start)));
+    }
+    /* ---- spending limits ---- */
+    if (!S.ui.limits) eq(tag + ' limits hidden', T.li, null);
+    else {
+      const L = M.limitsOf(S, C, ym);
+      if (!L.rows.length && !L.other) eq(tag + ' limits empty hidden', T.li, null);
+      else L.rows.forEach(r => { has(tag + ' limit ' + r.key, T.li || '', r.over ? F2(-r.left) + ' over' : F2(r.left) + ' left'); has(tag + ' limit spent ' + r.key, T.li, F2(r.spent) + ' of ' + F(r.planned)); });
+    }
     /* ---- burrows percents, matched by goal id (names can repeat) ---- */
     const BP = await p.evaluate(() => { const o = {}; document.querySelectorAll('#hBur .hb-b').forEach(x => { o[x.dataset.b] = (x.querySelector('.hb-p') || {}).textContent; }); return o; });
     V.goals.filter(r => r.live && r.target > 0).forEach(r => eq(tag + ' burrow pct ' + r.id, BP[r.id], r.pct + '% ' + (r.kind === 'debt' ? 'paid off' : 'full')));

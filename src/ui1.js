@@ -11,6 +11,7 @@ const JARNAME = {}; JARS.forEach(j => { JARNAME[j.id] = j.name; });
 const JARROWS = [
   { id: 'nec', jar: 'nec', name: 'Necessities', cap: 'Rent, food, utilities, every other monthly bill.' },
   { id: 'items', jar: 'nec', name: 'One-time costs', kind: 'items' },
+  { id: 'debts', jar: 'nec', name: 'Cards and loans', kind: 'debts', cap: 'Minimum payments plus extra.' },
   { id: 'lts', jar: 'lts', name: 'Burrows (goals)', kind: 'goals', cap: 'Savings goals: big purchases, rainy day fund, trips, surprises.' },
   { id: 'play', jar: 'play', name: 'Play money', cap: 'Eating out, hobbies, treats, fun. Groceries go under Necessities.' },
   { id: 'edu', jar: 'edu', name: 'Education', cap: 'Courses, books, coaching, skill building.' },
@@ -25,6 +26,7 @@ function computeFields() {
   IN_ROWS.forEach(r => FIELDS.push({ fid: r.id, row: r.id, key: r.key, label: r.name, note: r.note, kind: 'in' }));
   JARROWS.forEach(r => {
     if (r.kind === 'items') return;
+    if (r.kind === 'debts') { debtsOf(S).forEach(d => FIELDS.push({ fid: 'd-' + d.id, row: r.id, key: 'debt:' + d.id, label: 'Extra on ' + d.name, did: d.id, kind: 'debt', color: JARVAR.nec })); return; }
     if (r.kind === 'goals') S.plan.goals.forEach(g => FIELDS.push({ fid: 'g-' + g.id, row: r.id, key: 'goal:' + g.id, label: g.name, gid: g.id, kind: 'goal', sl: { frac: 0.1 }, color: 'var(--c' + g.slot + ')', dotc: 'var(--c' + g.slot + ')' }));
     else {
       const ls = S.plan.lines.filter(l => l.jar === r.jar);
@@ -57,10 +59,11 @@ function rowHTML(r, inRow) {
     <div class="inp sm"><span class="yen cs"></span><input id="addAmt" type="number" inputmode="numeric" min="0" step="100" placeholder="0" aria-label="One-time cost amount"></div>
     <button class="btn small solid" type="submit">Add cost</button></form>`;
   else {
-    const multi = r.kind === 'goals' || fs.length !== 1;
+    const multi = r.kind === 'goals' || r.kind === 'debts' || fs.length !== 1;
     body = (inRow ? '' : `<p class="cap jcap" id="jcap-${r.id}"></p>`) + fs.map(f => fieldHTML(f, multi, editing)).join('');
     if (!inRow && !fs.length) body += '<p class="cap">No lines.</p>';
     if (r.kind === 'goals') body += '<p class="cap"><button type="button" class="link" data-tab-go="goals">Edit goals</button></p>';
+    else if (r.kind === 'debts') body += '<p class="cap"><button type="button" class="link" data-tab-go="goals">Edit cards and loans</button></p>';
     else if (!inRow) body += editing
       ? `<form class="addrow" data-addline="${r.jar}" autocomplete="off"><input class="txt" type="text" placeholder="New line, e.g. Pet food" maxlength="60" aria-label="Name of the new line">
         <div class="inp sm"><span class="yen cs"></span><input type="number" inputmode="numeric" min="0" step="100" placeholder="Monthly amount" aria-label="Monthly amount of the new line"></div>
@@ -69,7 +72,7 @@ function rowHTML(r, inRow) {
       : `<p class="cap"><button type="button" class="link" data-edit="${r.id}">Rename, remove or add lines</button></p>`;
   }
   const pills = `<span class="pill chg" id="rc-${r.id}" hidden>edited</span>`;
-  const single = (inRow || (r.kind !== 'goals' && r.kind !== 'items' && fs.length === 1)) ? fs[0] : null;
+  const single = (inRow || (r.kind !== 'goals' && r.kind !== 'items' && r.kind !== 'debts' && fs.length === 1)) ? fs[0] : null;
   const amt = single ? `<input class="amt-in" id="h-${r.id}" data-k="${esc(single.key)}" type="text" inputmode="numeric" autocomplete="off" aria-label="${esc(r.name)}, this month">` : `<span class="amt" id="ra-${r.id}"></span>`;
   return `<div class="row" data-id="${r.id}"><div class="row-h" id="rh-${r.id}"><button type="button" class="row-t" id="rt-${r.id}" aria-expanded="false" aria-controls="rb-${r.id}">${inRow ? '' : `<i class="dot g-${r.jar}"></i>`}<span class="nm">${esc(r.name)}${pills}</span></button>${amt}${IC.chev}</div>
     <div class="row-b${fs.length > 1 || r.kind === 'goals' ? ' sub' : ''}" id="rb-${r.id}" role="region" aria-labelledby="rt-${r.id}" hidden>${body}</div></div>`;

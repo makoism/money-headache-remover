@@ -30,6 +30,9 @@ if [ "$MODE" = "full" ]; then
       break
     done
   done
+  step "money fuzz, debts fuzz, Home screen against the model, debts screen, click sweep"
+  qc() { OUT=$(timeout 900 node "$@" 2>&1); RC=$?; echo "$OUT" | grep -v "^\[agent\|^- \|^Allowed\|^For det" | tail -3; { [ $RC -ne 0 ] || echo "$OUT" | grep -q "FAIL [1-9]\|mismatches [1-9]\|^FAIL"; } && { echo "QC FAILED: $*"; BAD=1; }; }
+  qc tests/qc/fuzz_model.js 3000 11; qc tests/qc/fuzz_debts.js 3000 12; qc tests/qc/home_dom.js 40 13; qc tests/qc/debts_ui.js; qc tests/qc/recurring_ui.js; qc tests/qc/debts_rate_ui.js; qc tests/qc/pay_ui.js; qc tests/qc/click_sweep.js
   step "number checks (about 6 minutes)"; OUT=$(bash /tmp/v26/num.sh 2>&1); echo "$OUT" | grep -v "^\[agent\|^- \|^Allowed\|^For det"
   echo "$OUT" | grep -q "mismatches [1-9]\|FAIL [1-9]\|^FAIL" && { echo "NUMBER CHECKS FAILED"; BAD=1; }
   echo "$OUT" | grep -q "NUMDONE" || { echo "NUMBER CHECKS DID NOT FINISH"; BAD=1; }

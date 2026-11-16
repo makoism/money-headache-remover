@@ -149,7 +149,7 @@ const IMP_HOW = () => `<details class="src-how"><summary>How to get your stateme
   <p>Nothing is stored. Files go to Claude once, the numbers come back, the files are forgotten.</p></div></details>`;
 /* the footer's own button is the way past this screen without statements: a plain "Type numbers instead" (or "Not now" when opened from Home),
    so nobody has to find the small link at the foot of a long screen. Reading files moves on by itself. */
-const STEP_SOURCE = { id: 'source', part: PART.money, setup: true, title: 'Your statements', next: () => (impOnly ? 'Not now' : 'Type numbers instead'), nextPlain: true,
+const STEP_SOURCE = { id: 'source', part: PART.money, setup: true, skipIf: () => quickSetup() && !impOnly, title: 'Your statements', next: () => (impOnly ? 'Not now' : 'Type numbers instead'), nextPlain: true,
   leave: d => { if (d > 0) { impDraft = null; if (impCtl) impCtl.abort(); } }, /* moving on by hand drops a draft and stops a read still running */
   body: () => { acctInit(); return `<p>One box per account: your bank, each card, each wallet. Name each the way you say it, and the app will too. Put in the last 2 or 3 months of each: PDF, CSV or Excel exports, or screenshots of the transaction list. The numbers come out exact, and your history fills in.</p>
     <div id="srcUploadPanel">

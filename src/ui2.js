@@ -70,7 +70,7 @@ function render() {
 
   /* hero: play money, then one verdict */
   const pin = m.pool.in, play = m.jar.play, wk = roundTo(play / 4.35);
-  $('#heroNum').textContent = fmt(play); $('#heroNum').style.setProperty('--n', String(fmt(play).length)); $('#heroWk').textContent = `About ${fmt(wk)} a week.`;
+  $('#heroNum').textContent = fmt(play); $('#heroNum').style.setProperty('--n', String(fmt(play).length)); $('#heroWk').textContent = `About ${fmt(wk)} a week, planned.`;
   const rs = receiptStats(S, sel), playSpent = rs.byJar.play || 0;
   $('#rcLine').innerHTML = !rs.count ? '<button type="button" class="link" data-tab-go="receipts">Add a receipt</button> to see actual spend.'
     : play > 0 ? `Receipts: ${fmt2(playSpent)} spent, ${playSpent > play ? fmt2(round2(playSpent - play)) + ' over' : fmt2(round2(play - playSpent)) + ' left'}. <button type="button" class="link" data-tab-go="receipts">See receipts</button>`
@@ -105,7 +105,7 @@ function render() {
   const lt = $('#leftTotal'); lt.textContent = fmt(L); lt.classList.toggle('neg', L < 0);
   $('#bankLine').textContent = `Balance: ${fmt(m.bankStart)} to ${fmt(m.bankEnd)} this month.`;
   $('#rowDraw').hidden = !(m.draw > 0); $('#ra-draw').textContent = fmt(m.draw);
-  const amts = { a: m.a, b: m.b, side: m.side, nec: m.billsTotal, items: m.itemsTotal, lts: m.goalsTotal, play: m.jar.play, edu: m.jar.edu, ffa: m.jar.ffa, give: m.jar.give };
+  const amts = { a: m.a, b: m.b, side: m.side, nec: m.billsTotal, items: m.itemsTotal, debts: m.debtPay, lts: m.goalsTotal, play: m.jar.play, edu: m.jar.edu, ffa: m.jar.ffa, give: m.jar.give };
   const changed = {}, chgList = [], nextYm = MONTHS[MONTHS.indexOf(sel) + 1] || null;
   FIELDS.forEach(f => {
     const on = !f.ends || sel <= f.ends, v = on ? val(S, f.key, sel) : 0, inp = $('#i-' + f.fid);
@@ -128,11 +128,11 @@ function render() {
     const a = $('#ra-' + r.id) || $('#h-' + r.id); if (a.tagName === 'INPUT') setIdle(a, fmt(amts[r.id])); else a.textContent = fmt(amts[r.id]);
     a.classList.toggle('zero', !amts[r.id]);
     $('#rc-' + r.id).hidden = !changed[r.id];
-    const jc = $('#jcap-' + r.id); if (jc) jc.textContent = localize(r.cap) + (r.id === 'lts' ? LTS_HINT : '');
+    const jc = $('#jcap-' + r.id); if (jc && r.id !== 'debts') jc.textContent = localize(r.cap) + (r.id === 'lts' ? LTS_HINT : '');
   });
   renderItems(m);
 
-  safe(renderMonthTable, '#monthTable'); safe(() => renderGoals(m), '#goalCards'); safe(renderSettings, null, 'settings'); safe(homeView, null, 'homeView'); safe(renderBand, '#mgBand'); safe(renderHome, null, 'home'); safe(() => queueWins(false), null, 'wins'); safe(placePix, null, 'pix');
+  safe(renderMonthTable, '#monthTable'); safe(() => renderGoals(m), '#goalCards'); safe(renderDebts, '#secDebts'); safe(renderLookBack, '#rcBack'); safe(renderRecurring, '#rcRepeat'); safe(renderSettings, null, 'settings'); safe(homeView, null, 'homeView'); safe(renderBand, '#mgBand'); safe(renderHome, null, 'home'); safe(() => queueWins(false), null, 'wins'); safe(placePix, null, 'pix');
   $$('.cs').forEach(e => { e.textContent = sym(); });
   if (tab === 'goals') safe(drawRoad, '#chartbox', 'road');
   if (tab === 'receipts') safe(renderReceipts, null, 'receipts');
@@ -141,6 +141,7 @@ function render() {
 
 function noteFor(f, m, v, on) {
   if (f.kind === 'goal') return goalNote(f.gid, m);
+  if (f.kind === 'debt') { const d = debtById(S, f.did), x = d && m.debts[d.id]; return x ? `Minimum ${fmt(d.min)} is already included. This month it pays ${fmt(x.pay)}${x.interest > 0 ? `, ${fmt(x.interest)} of it interest` : ''}. Owed after: ${fmt(x.bal)}.` : ''; }
   let t = f.note ? esc(localize(f.note)) + ' ' : '';
   if (f.ends) t += on ? (v > 0 ? `Last payment ${monthLabel(f.ends)}.` : '') : 'Paid off.';
   if (f.sl && f.sl.mark) { const ceil = cfg(S, 'ceiling'); if (ceil > 0) t += (m.jar.play > ceil ? ` <b>Above the ${fmt(ceil)} ceiling.</b>` : ` Mark = ${fmt(ceil)} ceiling.`); }

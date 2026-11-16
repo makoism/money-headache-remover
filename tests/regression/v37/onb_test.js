@@ -4,7 +4,7 @@ const VW = +process.env.VW || 390, VH = +process.env.VH || 844;
 (async () => {
   const { b, p, errs } = await L.launch(VW, VH, 'dark');
   const title = () => p.$eval('.tour h2, #tourTitle', e => e.textContent).catch(() => '');
-  for (let i = 0; i < 4 && !/Before the uploads/.test(await title()); i++) { await p.click('#tourNext'); await w(600); }
+  for (let i = 0; i < 4 && !/Before the uploads/.test(await title()); i++) { if (await p.$('#tourFull')) { await p.click('#tourFull'); await w(300); } await p.click('#tourNext'); await w(600); }
   ok(/Before the uploads/.test(await title()), 'the conversation comes right before the uploads: ' + await title());
   ok(await p.$$eval('#onbLog .msg.ai', e => e.length) === 2 && await p.$$eval('[data-onbk]', e => e.length) === 4, 'it opens with two messages and four choices');
   ok(/Skip to uploads/.test(await p.$eval('#tourNext', e => e.textContent)), 'the footer offers Skip to uploads');

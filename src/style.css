@@ -1685,3 +1685,27 @@ body.touring .help-row, body.bv-on .help-row { display: none; }
 @media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) #scene { opacity: .2; } }
 /* the burrow panel is always a dark forest, so its words are always light */
 .hb-scene .hb-n, .hb-scene .hb-p { color: #e6f2ea; }
+
+/* ---------- cards and loans, extra money, limits, last month, repeating, why ---------- */
+.dform .selbox select { width: 100%; }
+.hdebts .gdl, .hlimits .lim, .recl { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 10px; }
+.hdebts .gdl li { display: flex; justify-content: space-between; gap: 12px; font-size: 16px; }
+.hdebts .gdn { display: inline-flex; align-items: center; gap: 10px; min-width: 0; } .hdebts .gdw { font-variant-numeric: tabular-nums; font-weight: 600; }
+.hdebts .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--c); flex: none; }
+.lim li { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: baseline; }
+.lim .ln { font-weight: 600; min-width: 0; overflow-wrap: anywhere; } .lim .lv { font-variant-numeric: tabular-nums; font-weight: 600; text-align: right; }
+.lim .lb { grid-column: 1 / -1; height: 6px; border-radius: 3px; background: var(--track2); overflow: hidden; } .lim .lb i { display: block; height: 100%; background: var(--accent); border-radius: 3px; }
+.lim .ls { grid-column: 1 / -1; font-size: 13px; color: var(--ink2); font-variant-numeric: tabular-nums; }
+.lim li.over .lb i { background: var(--bad); } .lim li.over .lv { color: var(--bad); }
+.recl li { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; align-items: baseline; }
+.recl li > .cap { grid-column: 1; margin: 0; } .recl li > button { grid-row: 1 / span 2; grid-column: 2; align-self: center; min-height: 44px; }
+.rec-form { display: grid; gap: 12px; margin-top: 14px; } .rec-form .btn { justify-self: start; }
+.lbt { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; } .lbt th, .lbt td { padding: 8px 4px; text-align: right; border-bottom: 1px solid var(--hair); font-weight: 500; }
+.lbt th:first-child, .lbt tbody th { text-align: left; font-weight: 600; } .lbt thead th { color: var(--ink2); font-size: 13px; }
+.whyl { margin: 0 0 14px; display: grid; gap: 0; } .whyl div { display: flex; justify-content: space-between; gap: 16px; padding: 10px 0; border-bottom: 1px solid var(--hair); }
+.whyl dt { color: var(--ink2); font-size: 15px; } .whyl dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.hs-more { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 4px 16px; }
+
+.dform .rate { display: flex; gap: 8px; align-items: stretch; }
+.dform .rate .txt { flex: 1 1 50%; min-width: 0; }
+.dform .rate .selbox { flex: 1 1 50%; min-width: 0; }

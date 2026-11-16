@@ -25,6 +25,7 @@ exports.runTour = async (p, pr, shot) => {
     const title = await p.$eval('#tourTitle', e=>e.textContent), part = await p.$eval('#tourPart', e=>e.textContent);
     seen.push(i+': '+part+' | '+title);
     if (await has('#tourName')) { if (pr.name) await type('#tourName', pr.name); }
+    if (title.startsWith('Currency') && pr.quick !== true && await has('#tourFull')) { await p.evaluate(() => document.querySelector('#tourFull').click()); await w(250); }
     if (title.startsWith('Currency')) { await p.evaluate(c => { const el=[...document.querySelectorAll('input[name=tourCur]')].find(x=>x.value===c); if (el) el.click(); else { const s=document.querySelector('#tourCurMore'); s.value=c; s.dispatchEvent(new Event('change',{bubbles:true})); } }, pr.cur); }
     else if (await has('#tourPay')) { await type('#tourPay', pr.pay); if (await has('#tourExtra')) await type('#tourExtra', pr.extra||''); if (await has('#tourBank')) await type('#tourBank', pr.bank); }
     else if (await has('#tourExtra')) await type('#tourExtra', pr.extra||'');

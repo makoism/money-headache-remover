@@ -1692,6 +1692,30 @@ body.touring .help-row, body.bv-on .help-row { display: none; }
 @media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) #scene { opacity: .2; } }
 /* the burrow panel is always a dark forest, so its words are always light */
 .hb-scene .hb-n, .hb-scene .hb-p { color: #e6f2ea; }
+
+/* ---------- cards and loans, extra money, limits, last month, repeating, why ---------- */
+.dform .selbox select { width: 100%; }
+.hdebts .gdl, .hlimits .lim, .recl { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 10px; }
+.hdebts .gdl li { display: flex; justify-content: space-between; gap: 12px; font-size: 16px; }
+.hdebts .gdn { display: inline-flex; align-items: center; gap: 10px; min-width: 0; } .hdebts .gdw { font-variant-numeric: tabular-nums; font-weight: 600; }
+.hdebts .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--c); flex: none; }
+.lim li { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: baseline; }
+.lim .ln { font-weight: 600; min-width: 0; overflow-wrap: anywhere; } .lim .lv { font-variant-numeric: tabular-nums; font-weight: 600; text-align: right; }
+.lim .lb { grid-column: 1 / -1; height: 6px; border-radius: 3px; background: var(--track2); overflow: hidden; } .lim .lb i { display: block; height: 100%; background: var(--accent); border-radius: 3px; }
+.lim .ls { grid-column: 1 / -1; font-size: 13px; color: var(--ink2); font-variant-numeric: tabular-nums; }
+.lim li.over .lb i { background: var(--bad); } .lim li.over .lv { color: var(--bad); }
+.recl li { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; align-items: baseline; }
+.recl li > .cap { grid-column: 1; margin: 0; } .recl li > button { grid-row: 1 / span 2; grid-column: 2; align-self: center; min-height: 44px; }
+.rec-form { display: grid; gap: 12px; margin-top: 14px; } .rec-form .btn { justify-self: start; }
+.lbt { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; } .lbt th, .lbt td { padding: 8px 4px; text-align: right; border-bottom: 1px solid var(--hair); font-weight: 500; }
+.lbt th:first-child, .lbt tbody th { text-align: left; font-weight: 600; } .lbt thead th { color: var(--ink2); font-size: 13px; }
+.whyl { margin: 0 0 14px; display: grid; gap: 0; } .whyl div { display: flex; justify-content: space-between; gap: 16px; padding: 10px 0; border-bottom: 1px solid var(--hair); }
+.whyl dt { color: var(--ink2); font-size: 15px; } .whyl dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.hs-more { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 4px 16px; }
+
+.dform .rate { display: flex; gap: 8px; align-items: stretch; }
+.dform .rate .txt { flex: 1 1 50%; min-width: 0; }
+.dform .rate .selbox { flex: 1 1 50%; min-width: 0; }
 </style>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#eef4ef" media="(prefers-color-scheme: light)">
@@ -1760,6 +1784,8 @@ body.touring .help-row, body.bv-on .help-row { display: none; }
       <button type="button" class="link hscan" id="hScan">Scan receipt</button>
     </section>
     <section class="card hgoals" id="hGoals" aria-label="Goals"></section>
+    <section class="card hdebts" id="hDebts" aria-label="Cards and loans" hidden></section>
+    <section class="card hlimits" id="hLimits" aria-label="Spending limits" hidden></section>
     <section class="card hbuckets" id="hBuckets" aria-label="Financial Freedom"></section>
     <details class="card hmore2" id="hMore">
       <summary>Streak, badges, pages</summary>
@@ -1826,6 +1852,7 @@ body.touring .help-row, body.bv-on .help-row { display: none; }
       <div class="lsec">
         <div class="lsec-h"><h3>Money in</h3><b id="inTotal"></b></div>
         <div class="rows rows-in" id="rowsIn"></div>
+        <div class="row-btns"><button type="button" class="btn small" id="xmBtn" data-xm>Extra money came in</button><button type="button" class="btn small" id="payBtn" data-pay>Paid weekly or twice a month?</button></div>
       </div>
       <div class="lsec">
         <div class="lsec-h"><h3>Money out</h3><b id="outTotal"></b></div>
@@ -1860,6 +1887,14 @@ body.touring .help-row, body.bv-on .help-row { display: none; }
       </div>
       <div class="goals" id="goalCards"></div>
       <div class="row-btns"><button type="button" class="btn small solid" id="addGoalBtn">Add goal</button><span class="msg" id="goalMsg" role="status"></span></div>
+    </section>
+    <section class="card sect" id="secDebts">
+      <div class="head">
+        <h2>Cards and loans</h2>
+        <p class="sub2" id="debtSub"></p>
+      </div>
+      <div class="goals" id="debtCards"></div>
+      <div class="row-btns"><button type="button" class="btn small solid" id="addDebtBtn">Add card or loan</button><span class="msg" id="debtMsg" role="status"></span></div>
     </section>
     <section class="card sect" id="secRoad">
       <div class="head"><h2>Forecast</h2><p class="sub2">Each goal at month end, if the plan holds.</p></div>
@@ -1937,6 +1972,8 @@ body.touring .help-row, body.bv-on .help-row { display: none; }
       <div class="tablewrap" id="rcCats"></div>
       <div class="rclist" id="rcList"></div>
     </section>
+    <section class="card sect" id="rcBack" hidden></section>
+    <section class="card sect" id="rcRepeat" hidden></section>
     <section class="card sect" id="rcRemind">
       <div class="head">
         <h2>Reminder</h2>
@@ -1970,6 +2007,11 @@ body.touring .help-row, body.bv-on .help-row { display: none; }
         <label for="curSel">Currency</label>
         <div class="selbox"><select id="curSel"></select></div>
         <p class="cap" id="curNote" aria-live="polite"></p>
+      </div>
+      <div class="field sndrow">
+        <span class="lab" id="limLab">Spending limits</span>
+        <div class="snd-r"><button type="button" class="sw" id="setLim" role="switch" aria-labelledby="limLab" aria-checked="false"><i></i></button><span class="cap" id="limTxt">Off</span></div>
+        <p class="cap">Shows each line against what you logged, on Home. A line that goes over its plan turns red.</p>
       </div>
       <div class="field sndrow">
         <span class="lab" id="sndLab">Sound</span>
@@ -2059,7 +2101,7 @@ body.touring .help-row, body.bv-on .help-row { display: none; }
   </div>
 
   <p class="foot" id="footNote">Not financial advice. Sample numbers are invented. Replace them with yours.</p>
-  <p class="foot ver" id="verFoot">Version 38.25</p>
+  <p class="foot ver" id="verFoot">Version 38.26</p>
   </div>
 </div>
 <div class="handfx" id="handFx" aria-hidden="true"></div>
@@ -2113,7 +2155,7 @@ body.touring .help-row, body.bv-on .help-row { display: none; }
     <button type="button" id="helpSetup">Guided setup</button>
     <button type="button" id="helpVideo" hidden>Intro video</button>
     <button type="button" id="helpReport">Report a problem</button>
-    <p class="help-ver">Version 38.25</p>
+    <p class="help-ver">Version 38.26</p>
   </div>
   <div class="help-row"><button type="button" class="help-btn ask-btn" id="askBtn">Ask</button><button type="button" class="help-btn" id="helpBtn" aria-expanded="false" aria-controls="helpMenu"><span class="q" aria-hidden="true">?</span>Help</button></div>
 </div>
@@ -2280,9 +2322,32 @@ const dueYm = g => (g.due ? g.due.slice(0, 7) : null);
 /* the last month to be saving: a due date after the 15th means pay day that month still counts */
 const readyBy = g => { if (!g.due) return null; const ym = g.due.slice(0, 7), day = +g.due.slice(8, 10) || 1; return day > PAYDAY ? ym : ymAdd(ym, -1); };
 const capOf = g => (g.emergency ? Math.max(g.stretch || 0, g.target) : g.target);
+
+/* ---------- cards and loans: a balance, a yearly rate, a minimum payment, and extra money on top ---------- */
+const MAX_DEBTS = 12, DEBT_KINDS = ['card', 'loan', 'personal'];
+const debtsOf = S => (S.plan && Array.isArray(S.plan.debts) ? S.plan.debts : []);
+const debtById = (S, id) => debtsOf(S).find(d => d.id === id);
+const DEBT_KIND_NAME = { card: 'Credit card', loan: 'Loan', personal: 'Owed to a person' };
+/* one month: interest is added to what is owed, then the payment comes off. Whole amounts only. */
+function debtStep(d, bal, extra) {
+  const interest = bal > 0 ? Math.round(bal * d.apr / 1200) : 0;
+  const pay = Math.min(bal + interest, d.min + Math.max(0, extra));
+  return { start: bal, interest, extra: Math.max(0, extra), pay, bal: bal + interest - pay };
+}
+/* from a balance with a steady extra: how long, how much interest, or never */
+function debtProject(d, bal, extra, startYm) {
+  let months = 0, interest = 0, paid = 0;
+  while (bal > 0 && months < 600) {
+    const st = debtStep(d, bal, extra);
+    if (st.pay <= st.interest) return { never: true, months, interest, paid, ym: null };
+    interest += st.interest; paid += st.pay; bal = st.bal; months++;
+  }
+  if (bal > 0) return { never: true, months, interest, paid, ym: null };
+  return { never: false, months, interest, paid, ym: months ? ymAdd(startYm, months - 1) : startYm };
+}
 /* the split a person chose in setup, as shares of pay. Only the setup steps read it, as their starting point; nothing on screen shows it. */
 const aimsOf = S => { const a = (S.cfg && S.cfg.aims) || {}, o = {}; JARS.forEach(j => { const v = a[j.id]; o[j.id] = typeof v === 'number' && v >= 0 && v <= 1 ? v : j.usual; }); return o; };
-const allKeys = S => ['a', 'b', 'side'].concat(S.plan.lines.map(l => l.key), S.plan.goals.map(g => 'goal:' + g.id));
+const allKeys = S => ['a', 'b', 'side'].concat(S.plan.lines.map(l => l.key), S.plan.goals.map(g => 'goal:' + g.id), debtsOf(S).map(d => 'debt:' + d.id));
 
 /* rounding step for default monthly amounts: whole tens for small currencies, hundreds for big ones */
 const roundUnit = S => { const pay = Math.max(0, ...MONTHS.map(ym => val(S, 'a', ym) + val(S, 'b', ym) + val(S, 'side', ym))); return pay >= 20000 ? 100 : pay >= 5000 ? 10 : 5; };
@@ -2306,6 +2371,7 @@ function defOf(S, key, ym) {
   if (BASE_DEF[key] !== undefined) return BASE_DEF[key];
   const l = lineByKey(S, key); if (l) return l.def;
   if (key.slice(0, 5) === 'goal:') { const g = goalById(S, key.slice(5)); if (g) return goalDefault(S, g, ym); }
+  if (key.slice(0, 5) === 'debt:') { const d = debtById(S, key.slice(5)); return d ? d.extra : 0; }
   return 0;
 }
 const ONCE_KEYS = new Set(['draw']);
@@ -2405,6 +2471,7 @@ function calcAll(S) {
   const goals = goalsOf(S), lines = linesOf(S), eg = emergencyGoal(S);
   let bank = cfg(S, 'bankStart');
   const bal = {}; goals.forEach(g => { bal[g.id] = g.start; });
+  const debts = debtsOf(S), dbal = {}; debts.forEach(d => { dbal[d.id] = d.balance; });
   const redirects = lines.filter(l => l.ends && l.redirect).map(l => ({ l, amt: val(S, l.key, l.ends) }));
   for (const ym of MONTHS) {
     const m = { ym };
@@ -2415,7 +2482,10 @@ function calcAll(S) {
     m.lines.forEach(x => { m.jar[x.jar] += x.v; });
     m.billsTotal = m.jar.nec;
     m.items = itemsFor(S, ym); m.itemsTotal = sum(m.items.map(i => +i.amount || 0));
-    m.jar.nec += m.itemsTotal;
+    m.debts = {}; m.debtPay = 0; m.debtInterest = 0;
+    debts.forEach(d => { const st = debtStep(d, dbal[d.id], val(S, 'debt:' + d.id, ym)); dbal[d.id] = st.bal; m.debts[d.id] = st; m.debtPay += st.pay; m.debtInterest += st.interest; });
+    m.debtOwed = sum(debts.map(d => dbal[d.id]));
+    m.jar.nec += m.itemsTotal + m.debtPay;
     m.balBefore = Object.assign({}, bal);
     const freed = redirects.reduce((acc, r) => acc + (ym > r.l.ends ? r.amt : 0), 0);
     const g = {};
@@ -2761,7 +2831,41 @@ function cleanPlan(raw, legacy) {
     if (g.emergency && !hasE) { hasE = true; o.emergency = true; o.stretch = num(g.stretch); }
     goals.push(o);
   });
-  return { lines, goals };
+  const out = { lines, goals };
+  const debts = cleanDebts(raw.debts, gids, ids); if (debts.length) out.debts = debts;
+  const rec = cleanRecurring(raw.recurring, keys); if (rec.length) out.recurring = rec;
+  return out;
+}
+function cleanDebts(raw, gids, lids) {
+  if (!Array.isArray(raw)) return [];
+  const seen = new Set(), out = [], str = (v, n) => (typeof v === 'string' ? v.replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, n) : '');
+  const whole = v => (typeof v === 'number' && isFinite(v) && v >= 0 ? Math.min(Math.round(v), 1e9) : 0);
+  raw.slice(0, MAX_DEBTS).forEach(d => {
+    if (!d || typeof d !== 'object' || typeof d.id !== 'string' || !SAFE_ID.test(d.id) || seen.has(d.id)) return;
+    seen.add(d.id);
+    const apr = typeof d.apr === 'number' && isFinite(d.apr) ? Math.max(0, Math.min(100, Math.round(d.apr * 100) / 100)) : 0;
+    out.push({ id: d.id, name: str(d.name, 60) || 'Untitled', kind: DEBT_KINDS.indexOf(d.kind) >= 0 ? d.kind : 'loan', balance: whole(d.balance), apr, min: whole(d.min), extra: whole(d.extra) });
+  });
+  return out;
+}
+/* spending that repeats on its own: a weekday every week, or a day of the month. Ends where it is cleared. */
+const MAX_RECURRING = 20;
+function cleanRecurring(raw) {
+  if (!Array.isArray(raw)) return [];
+  const seen = new Set(), out = [];
+  raw.slice(0, MAX_RECURRING).forEach(r => {
+    if (!r || typeof r !== 'object' || typeof r.id !== 'string' || !SAFE_ID.test(r.id) || seen.has(r.id)) return;
+    const a = typeof r.a === 'number' ? round2(r.a) : 0; if (!(a > 0) || a > 1e9) return;
+    const every = r.every === 'week' ? 'week' : r.every === 'month' ? 'month' : null; if (!every) return;
+    const on = Math.round(+r.on); if (every === 'week' ? !(on >= 0 && on <= 6) : !(on >= 1 && on <= 28)) return;
+    /* a start before the first month the page covers begins at the first day it covers */
+    const from = typeof r.from === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(r.from) && r.from < MONTHS[0] + '-01' ? MONTHS[0] + '-01' : r.from;
+    if (!validDate(from)) return;
+    seen.add(r.id);
+    const c = typeof r.c === 'string' && /^[A-Za-z0-9:_-]{1,40}$/.test(r.c) ? r.c : 'other';
+    out.push({ id: r.id, a, c, n: typeof r.n === 'string' ? r.n.replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, 80) : '', every, on, from, last: validDate(r.last) ? r.last : '' });
+  });
+  return out;
 }
 function cleanReceipts(raw) {
   if (!Array.isArray(raw)) return [];
@@ -2776,6 +2880,90 @@ function cleanReceipts(raw) {
     out.push(rc);
   });
   return out;
+}
+
+/* ---------- debts: where each one stands and which gets the extra money first ---------- */
+/* payoff: the month the balance reaches 0 inside the page's months, or the projection past them. */
+function debtRows(S, C) {
+  const last = C.months[C.months.length - 1];
+  const rows = debtsOf(S).map(d => {
+    let paidYm = null, interest = 0, paid = 0;
+    for (const m of C.months) { const x = m.debts[d.id]; interest += x.interest; paid += x.pay; if (paidYm === null && x.bal === 0) { paidYm = m.ym; break; } }
+    let proj = null;
+    if (paidYm === null) { const lx = last.debts[d.id]; proj = debtProject(d, lx.bal, lx.extra, ymAdd(last.ym, 1)); interest += proj.interest; paid += proj.paid; paidYm = proj.ym; }
+    const cur = C.months[0].debts[d.id];
+    return { id: d.id, name: d.name, kind: d.kind, balance: d.balance, apr: d.apr, min: d.min, extra: d.extra, payoffYm: paidYm, never: !!(proj && proj.never) || (d.balance > 0 && d.min + d.extra <= cur.interest && paidYm === null),
+      totalInterest: interest, totalPaid: paid, pctPaid: 0, first: false, done: d.balance <= 0 };
+  });
+  /* highest rate first; the same rate, the smaller balance first */
+  const open = rows.filter(r => !r.done).sort((a, b) => b.apr - a.apr || a.balance - b.balance || (a.id < b.id ? -1 : 1));
+  if (open.length > 1) open[0].first = true;
+  return rows;
+}
+/* where the debts stand at a month end */
+function debtOwedAt(C, ym) { return C.byYm[ym].debtOwed; }
+
+/* ---------- extra money (a bonus, a 13th month pay, a refund, a good freelance month) and where it goes ---------- */
+const EXTRA_DESTS = ['bank', 'goal', 'play', 'ffa', 'debt'];
+/* The amount is added to this month's pay for this month only and the same amount is put where the person chose. Returns what moved and what stayed in the bank. */
+function addExtraMoney(S, ym, amount, dest) {
+  amount = Math.round(+amount); if (!(amount > 0) || amount > MAX_AMT || MONTHS.indexOf(ym) < 0) return null;
+  const C0 = calcAll(S), m0 = C0.byYm[ym]; let placed = 0, key = null, room = amount;
+  if (dest && dest.t === 'goal') { const g = goalById(S, dest.id); if (!g || g.target <= 0) return null; key = 'goal:' + g.id; room = Math.max(0, capOf(g) - m0.balBefore[g.id] - m0.g[g.id].actual); if (g.due && ym > readyBy(g)) room = 0; }
+  else if (dest && dest.t === 'play') { const l = S.plan.lines.find(x => x.jar === 'play'); if (!l) return null; key = l.key; }
+  else if (dest && dest.t === 'ffa') { const l = S.plan.lines.find(x => x.jar === 'ffa'); if (!l) return null; key = l.key; }
+  else if (dest && dest.t === 'debt') { const d = debtById(S, dest.id); if (!d) return null; key = 'debt:' + d.id; const st = m0.debts[d.id]; room = Math.max(0, st.start + st.interest - st.pay); }
+  else if (dest && dest.t !== 'bank') return null;
+  placed = key ? Math.min(amount, room) : 0;
+  setVal(S, 'side', ym, val(S, 'side', ym) + amount, 'once');
+  if (key && placed > 0) setVal(S, key, ym, val(S, key, ym) + placed, 'once');
+  return { amount, placed, toBank: amount - placed };
+}
+
+/* ---------- spending limits: each line's plan against what was logged for it ---------- */
+function limitsOf(S, C, ym) {
+  const m = C.byYm[ym], rs = receiptStats(S, ym), rows = [];
+  m.lines.forEach(x => {
+    if (!x.on) return;
+    const spent = rs.byKey[x.key] || 0, soft = x.jar === 'play' || x.jar === 'edu' || x.jar === 'give';
+    if (x.jar === 'ffa') return;
+    if (!(soft || spent > 0) || !(x.v > 0 || spent > 0)) return;
+    rows.push({ key: x.key, name: x.name, jar: x.jar, planned: x.v, spent, left: round2(x.v - spent), over: round2(x.v - spent) < 0 });
+  });
+  return { rows, other: rs.byKey.other || 0, total: rs.total };
+}
+
+/* ---------- last month in one look ---------- */
+function lookBack(S, C, ym) {
+  const m = C.byYm[ym]; if (!m) return null;
+  const rs = receiptStats(S, ym), lim = limitsOf(S, C, ym);
+  const jars = ['nec', 'play', 'edu', 'give'].map(j => ({ id: j, planned: m.jar[j], spent: rs.byJar[j] || 0, left: round2(m.jar[j] - (rs.byJar[j] || 0)) }));
+  return { ym, inflow: m.inflow, out: m.out, left: m.left, bankStart: m.bankStart, bankEnd: m.bankEnd, count: rs.count, logged: rs.total, other: rs.byJar.other || 0, jars,
+    over: lim.rows.filter(r => r.over).sort((a, b) => a.left - b.left), goalsAdded: m.goalsTotal, debtPaid: m.debtPay, interest: m.debtInterest, owed: m.debtOwed };
+}
+
+/* ---------- repeating spending: adds the receipts that came due since the last time, never more than 60 at once ---------- */
+function dueDates(r, fromExcl, toIncl) {
+  const out = [], start = r.last ? r.last : null;
+  let t = new Date((start || r.from) + 'T00:00:00Z'); const end = new Date(toIncl + 'T00:00:00Z');
+  if (!start) t = new Date(t.getTime() - 86400000);
+  for (let i = 0; i < 4000 && out.length < 60; i++) {
+    t = new Date(t.getTime() + 86400000); if (t > end) break;
+    const iso = t.toISOString().slice(0, 10), dow = t.getUTCDay(), dom = t.getUTCDate();
+    if (iso < r.from) continue;
+    if (r.every === 'week' ? dow === r.on : dom === r.on) out.push(iso);
+  }
+  return out;
+}
+function applyRecurring(S, today) {
+  const rec = S.plan && S.plan.recurring; if (!rec || !rec.length || !validDate(today)) return 0;
+  let n = 0;
+  rec.forEach(r => {
+    const ds = dueDates(r, null, today);
+    ds.forEach(d => { if (d.slice(0, 7) < START || d.slice(0, 7) > END) return; if (addReceipt(S, d, r.a, r.c, r.n)) n++; });
+    if (ds.length) r.last = ds[ds.length - 1];
+  });
+  return n;
 }
 /* ===== statements to numbers =====
    Pure functions, no DOM. Claude does two small, fixed-shape jobs: each file becomes a table of rows (date, text, amount, in or out),
@@ -3066,6 +3254,10 @@ function normalize(d) {
   if (typeof u.vol !== 'number' || !(u.vol >= 0 && u.vol <= 100)) delete u.vol; else u.vol = Math.round(u.vol);
   if (!(u.dj && typeof u.dj === 'object' && typeof u.dj.src === 'string')) delete u.dj; else u.dj = { src: u.dj.src.slice(0, 16), i: Math.max(0, Math.min(40, Math.round(+u.dj.i) || 0)) };
   if (u.scene !== false) delete u.scene;
+  if (u.limits !== true) delete u.limits;
+  if (u.full !== true) delete u.full;
+  if (u.moreBillsHidden !== true) delete u.moreBillsHidden;
+  if (u.noDebts !== true) delete u.noDebts;
   delete u.subsX;
   const cents = v => Math.round(v * 100) / 100;
   if (!(u.cardT > 0 && u.cardT < 1e9)) delete u.cardT; else u.cardT = cents(u.cardT);
@@ -3745,6 +3937,7 @@ const JARNAME = {}; JARS.forEach(j => { JARNAME[j.id] = j.name; });
 const JARROWS = [
   { id: 'nec', jar: 'nec', name: 'Necessities', cap: 'Rent, food, utilities, every other monthly bill.' },
   { id: 'items', jar: 'nec', name: 'One-time costs', kind: 'items' },
+  { id: 'debts', jar: 'nec', name: 'Cards and loans', kind: 'debts', cap: 'Minimum payments plus extra.' },
   { id: 'lts', jar: 'lts', name: 'Burrows (goals)', kind: 'goals', cap: 'Savings goals: big purchases, rainy day fund, trips, surprises.' },
   { id: 'play', jar: 'play', name: 'Play money', cap: 'Eating out, hobbies, treats, fun. Groceries go under Necessities.' },
   { id: 'edu', jar: 'edu', name: 'Education', cap: 'Courses, books, coaching, skill building.' },
@@ -3759,6 +3952,7 @@ function computeFields() {
   IN_ROWS.forEach(r => FIELDS.push({ fid: r.id, row: r.id, key: r.key, label: r.name, note: r.note, kind: 'in' }));
   JARROWS.forEach(r => {
     if (r.kind === 'items') return;
+    if (r.kind === 'debts') { debtsOf(S).forEach(d => FIELDS.push({ fid: 'd-' + d.id, row: r.id, key: 'debt:' + d.id, label: 'Extra on ' + d.name, did: d.id, kind: 'debt', color: JARVAR.nec })); return; }
     if (r.kind === 'goals') S.plan.goals.forEach(g => FIELDS.push({ fid: 'g-' + g.id, row: r.id, key: 'goal:' + g.id, label: g.name, gid: g.id, kind: 'goal', sl: { frac: 0.1 }, color: 'var(--c' + g.slot + ')', dotc: 'var(--c' + g.slot + ')' }));
     else {
       const ls = S.plan.lines.filter(l => l.jar === r.jar);
@@ -3791,10 +3985,11 @@ function rowHTML(r, inRow) {
     <div class="inp sm"><span class="yen cs"></span><input id="addAmt" type="number" inputmode="numeric" min="0" step="100" placeholder="0" aria-label="One-time cost amount"></div>
     <button class="btn small solid" type="submit">Add cost</button></form>`;
   else {
-    const multi = r.kind === 'goals' || fs.length !== 1;
+    const multi = r.kind === 'goals' || r.kind === 'debts' || fs.length !== 1;
     body = (inRow ? '' : `<p class="cap jcap" id="jcap-${r.id}"></p>`) + fs.map(f => fieldHTML(f, multi, editing)).join('');
     if (!inRow && !fs.length) body += '<p class="cap">No lines.</p>';
     if (r.kind === 'goals') body += '<p class="cap"><button type="button" class="link" data-tab-go="goals">Edit goals</button></p>';
+    else if (r.kind === 'debts') body += '<p class="cap"><button type="button" class="link" data-tab-go="goals">Edit cards and loans</button></p>';
     else if (!inRow) body += editing
       ? `<form class="addrow" data-addline="${r.jar}" autocomplete="off"><input class="txt" type="text" placeholder="New line, e.g. Pet food" maxlength="60" aria-label="Name of the new line">
         <div class="inp sm"><span class="yen cs"></span><input type="number" inputmode="numeric" min="0" step="100" placeholder="Monthly amount" aria-label="Monthly amount of the new line"></div>
@@ -3803,7 +3998,7 @@ function rowHTML(r, inRow) {
       : `<p class="cap"><button type="button" class="link" data-edit="${r.id}">Rename, remove or add lines</button></p>`;
   }
   const pills = `<span class="pill chg" id="rc-${r.id}" hidden>edited</span>`;
-  const single = (inRow || (r.kind !== 'goals' && r.kind !== 'items' && fs.length === 1)) ? fs[0] : null;
+  const single = (inRow || (r.kind !== 'goals' && r.kind !== 'items' && r.kind !== 'debts' && fs.length === 1)) ? fs[0] : null;
   const amt = single ? `<input class="amt-in" id="h-${r.id}" data-k="${esc(single.key)}" type="text" inputmode="numeric" autocomplete="off" aria-label="${esc(r.name)}, this month">` : `<span class="amt" id="ra-${r.id}"></span>`;
   return `<div class="row" data-id="${r.id}"><div class="row-h" id="rh-${r.id}"><button type="button" class="row-t" id="rt-${r.id}" aria-expanded="false" aria-controls="rb-${r.id}">${inRow ? '' : `<i class="dot g-${r.jar}"></i>`}<span class="nm">${esc(r.name)}${pills}</span></button>${amt}${IC.chev}</div>
     <div class="row-b${fs.length > 1 || r.kind === 'goals' ? ' sub' : ''}" id="rb-${r.id}" role="region" aria-labelledby="rt-${r.id}" hidden>${body}</div></div>`;
@@ -3992,7 +4187,7 @@ function render() {
 
   /* hero: play money, then one verdict */
   const pin = m.pool.in, play = m.jar.play, wk = roundTo(play / 4.35);
-  $('#heroNum').textContent = fmt(play); $('#heroNum').style.setProperty('--n', String(fmt(play).length)); $('#heroWk').textContent = `About ${fmt(wk)} a week.`;
+  $('#heroNum').textContent = fmt(play); $('#heroNum').style.setProperty('--n', String(fmt(play).length)); $('#heroWk').textContent = `About ${fmt(wk)} a week, planned.`;
   const rs = receiptStats(S, sel), playSpent = rs.byJar.play || 0;
   $('#rcLine').innerHTML = !rs.count ? '<button type="button" class="link" data-tab-go="receipts">Add a receipt</button> to see actual spend.'
     : play > 0 ? `Receipts: ${fmt2(playSpent)} spent, ${playSpent > play ? fmt2(round2(playSpent - play)) + ' over' : fmt2(round2(play - playSpent)) + ' left'}. <button type="button" class="link" data-tab-go="receipts">See receipts</button>`
@@ -4027,7 +4222,7 @@ function render() {
   const lt = $('#leftTotal'); lt.textContent = fmt(L); lt.classList.toggle('neg', L < 0);
   $('#bankLine').textContent = `Balance: ${fmt(m.bankStart)} to ${fmt(m.bankEnd)} this month.`;
   $('#rowDraw').hidden = !(m.draw > 0); $('#ra-draw').textContent = fmt(m.draw);
-  const amts = { a: m.a, b: m.b, side: m.side, nec: m.billsTotal, items: m.itemsTotal, lts: m.goalsTotal, play: m.jar.play, edu: m.jar.edu, ffa: m.jar.ffa, give: m.jar.give };
+  const amts = { a: m.a, b: m.b, side: m.side, nec: m.billsTotal, items: m.itemsTotal, debts: m.debtPay, lts: m.goalsTotal, play: m.jar.play, edu: m.jar.edu, ffa: m.jar.ffa, give: m.jar.give };
   const changed = {}, chgList = [], nextYm = MONTHS[MONTHS.indexOf(sel) + 1] || null;
   FIELDS.forEach(f => {
     const on = !f.ends || sel <= f.ends, v = on ? val(S, f.key, sel) : 0, inp = $('#i-' + f.fid);
@@ -4050,11 +4245,11 @@ function render() {
     const a = $('#ra-' + r.id) || $('#h-' + r.id); if (a.tagName === 'INPUT') setIdle(a, fmt(amts[r.id])); else a.textContent = fmt(amts[r.id]);
     a.classList.toggle('zero', !amts[r.id]);
     $('#rc-' + r.id).hidden = !changed[r.id];
-    const jc = $('#jcap-' + r.id); if (jc) jc.textContent = localize(r.cap) + (r.id === 'lts' ? LTS_HINT : '');
+    const jc = $('#jcap-' + r.id); if (jc && r.id !== 'debts') jc.textContent = localize(r.cap) + (r.id === 'lts' ? LTS_HINT : '');
   });
   renderItems(m);
 
-  safe(renderMonthTable, '#monthTable'); safe(() => renderGoals(m), '#goalCards'); safe(renderSettings, null, 'settings'); safe(homeView, null, 'homeView'); safe(renderBand, '#mgBand'); safe(renderHome, null, 'home'); safe(() => queueWins(false), null, 'wins'); safe(placePix, null, 'pix');
+  safe(renderMonthTable, '#monthTable'); safe(() => renderGoals(m), '#goalCards'); safe(renderDebts, '#secDebts'); safe(renderLookBack, '#rcBack'); safe(renderRecurring, '#rcRepeat'); safe(renderSettings, null, 'settings'); safe(homeView, null, 'homeView'); safe(renderBand, '#mgBand'); safe(renderHome, null, 'home'); safe(() => queueWins(false), null, 'wins'); safe(placePix, null, 'pix');
   $$('.cs').forEach(e => { e.textContent = sym(); });
   if (tab === 'goals') safe(drawRoad, '#chartbox', 'road');
   if (tab === 'receipts') safe(renderReceipts, null, 'receipts');
@@ -4063,6 +4258,7 @@ function render() {
 
 function noteFor(f, m, v, on) {
   if (f.kind === 'goal') return goalNote(f.gid, m);
+  if (f.kind === 'debt') { const d = debtById(S, f.did), x = d && m.debts[d.id]; return x ? `Minimum ${fmt(d.min)} is already included. This month it pays ${fmt(x.pay)}${x.interest > 0 ? `, ${fmt(x.interest)} of it interest` : ''}. Owed after: ${fmt(x.bal)}.` : ''; }
   let t = f.note ? esc(localize(f.note)) + ' ' : '';
   if (f.ends) t += on ? (v > 0 ? `Last payment ${monthLabel(f.ends)}.` : '') : 'Paid off.';
   if (f.sl && f.sl.mark) { const ceil = cfg(S, 'ceiling'); if (ceil > 0) t += (m.jar.play > ceil ? ` <b>Above the ${fmt(ceil)} ceiling.</b>` : ` Mark = ${fmt(ceil)} ceiling.`); }
@@ -4564,6 +4760,9 @@ const STEP_MONEY = { id: 'money', part: PART.money, setup: true, focus: '#tourPa
 
 /* ----- bills: tick the ones you pay, then one screen for each ----- */
 const BILLS_ON = ['rent', 'util', 'food', 'net', 'phone', 'gas'];
+/* The first setup is short: pay, rent and food, one goal. Everything else is asked for later, one card at a time (Next on Home). A longer setup is one tap away on the Currency screen. */
+const quickSetup = () => !(S.ui && S.ui.full === true);
+const BILLS_QUICK = ['rent', 'food'];
 const BILL_Q = { rent: 'Rent or mortgage', util: 'Utilities', food: 'Food and groceries', net: 'Internet', phone: 'Phone', ins: 'Insurance', subs: 'Subscriptions', gas: 'Transport', loan: 'Loan or debt payment', card: 'Credit card' };
 const BILL_NOTE = {
   rent: () => 'Full amount. If someone else pays part, add their share as other income.',
@@ -4578,7 +4777,7 @@ const BILL_NOTE = {
 const baseOf = id => moreKind(id) || id;
 function chosenBills() {
   const all = necLines(), ids = all.map(l => l.id), sb = Array.isArray(S.ui.sb) ? S.ui.sb.filter(id => ids.indexOf(id) >= 0 && !moreKind(id)) : null;
-  const base = sb || BILLS_ON.filter(id => ids.indexOf(id) >= 0), out = [];
+  const base = sb || (quickSetup() ? BILLS_QUICK : BILLS_ON).filter(id => ids.indexOf(id) >= 0), out = [];
   base.forEach(id => { out.push(id); all.forEach(l => { if (moreKind(l.id) === id) out.push(l.id); }); });
   return out;
 }
@@ -4593,6 +4792,7 @@ const STEP_BILLS = { id: 'bills-pick', part: PART.bills, setup: true, pick: true
     if (d <= 0) return;
     const ids = $$('#tourBody input[name=tourBill]:checked').map(i => i.value).filter(id => lineById(S, id));
     S.ui.sb = ids;
+    if (quickSetup() && !S.ui.gset) applyGoalPick(['rainy'], false); /* the short setup keeps the emergency fund only; more goals come later */
     const keep = necLines().filter(l => ids.indexOf(baseOf(l.id)) >= 0).map(l => l.id);
     /* the sample amounts are not yours: every line starts empty, and what you type replaces it */
     necLines().forEach(l => { if (keep.indexOf(l.id) < 0 || !S.steps[l.key]) setVal(S, l.key, START, 0, 'after'); });
@@ -4628,7 +4828,7 @@ const billStep = id => ({ id: 'bill-' + id, part: PART.bills, setup: true, focus
         <div class="row-btns"><span class="cap" id="cardCap" aria-live="polite"></span><button type="button" class="btn small solid" id="cardUse" hidden>Use this amount</button></div>
       </div></details>
       <p class="cap">A card is paid a month late. This month you pay last month's bill, so put that bill under One-time costs for this month (Plan, then Month). The amount above is what you expect to put on the card from now on.</p>
-      <p class="cap">No credit card: go back and untick it. Paying off an old balance: add a Pay off a debt goal.</p>`;
+      <p class="cap">No credit card: go back and untick it. Owe on a card or loan? Add it under Cards and loans on the Goals tab.</p>`;
     }
     return `${note ? `<p>${esc(note())}</p>` : ''}
     <div class="tour-fields">${named ? textField('tourLName', 'Name', l.name) : ''}${moneyField('tourAmt', 'Each month', val(S, l.key, START))}</div>${b === 'ins' ? moreBtn('ins') : ''}`;
@@ -4745,16 +4945,17 @@ const GOAL_KINDS = [
   { k: 'moving', id: 'moving', name: 'Home or move', slot: 4, pick: 'A home or a move', hint: 'Deposit, movers, furniture', title: 'Home or move', cost: 'Deposit, movers, furniture.' },
   { k: 'buy', id: 'buy', name: 'Big purchase', slot: 1, pick: 'A big purchase', hint: 'Laptop, car, wedding', title: 'Big purchase', cost: 'The price, or your best guess.' },
   { k: 'car', id: 'car', name: 'Yearly cost', slot: 6, pick: 'A yearly cost', hint: 'Insurance, taxes, holidays', title: 'Yearly cost', cost: 'Full amount for the year, not per month.' },
-  { k: 'debt', id: 'debt', name: 'Pay off debt', slot: 3, debt: true, pick: 'Pay off a debt', hint: 'Card, loan, balance', title: 'Pay off debt', cost: 'What you still owe in total, with any interest.' },
+  { k: 'debt', id: 'debt', name: 'Pay off debt', slot: 3, debt: true, pick: 'Pay off a debt', hint: 'A balance with no interest', title: 'Pay off debt', cost: 'What you still owe in total. For a card or loan with interest, use Cards and loans on the Goals tab instead.' },
   { k: 'other', id: 'other', name: 'Something else', slot: 2, pick: 'Something else', hint: 'Anything with a price', title: 'Goal', cost: '' },
 ];
-const STEP_TOOLPICK = { id: 'goals-pick', part: PART.goals, setup: true, pick: true, title: 'Goals', art: 'sprout',
+const STEP_TOOLPICK = { id: 'goals-pick', part: PART.goals, setup: true, pick: true, skipIf: () => quickSetup(), title: 'Goals', art: 'sprout',
   body: () => `<p>Burrows hold money you build up: a cushion, a trip, a big purchase, or paying off a debt. Tick what you are working toward. Add more later.</p>
     <div class="tour-chips two" role="group" aria-label="Goals">${GOAL_KINDS.map(k => { const on = S.ui.gset ? !!goalById(S, k.id) : k.k === 'rainy'; return `<label class="chip multi${on ? ' on' : ''}"><input type="checkbox" name="tourGoalPick" value="${k.k}"${on ? ' checked' : ''}><b>${k.pick}</b><span>${k.hint}</span></label>`; }).join('')}</div>
-    <p class="cap">Unsure? Keep the emergency fund. Owe something with interest, like a card? Add &ldquo;Pay off a debt&rdquo; too.</p>`,
-  leave: d => {
-    if (d <= 0) return;
-    const picked = $$('#tourBody input[name=tourGoalPick]:checked').map(i => i.value), first = !S.ui.gset, old = S.plan.goals, next = [], gk = S.ui.gk || {};
+    <p class="cap">Unsure? Keep the emergency fund. Owe on a card or loan? Add it after setup, under Cards and loans on the Goals tab. It works out the interest and the payoff date.</p>`,
+  leave: d => { if (d <= 0) return; applyGoalPick($$('#tourBody input[name=tourGoalPick]:checked').map(i => i.value), true); } };
+function applyGoalPick(picked, mark) {
+  {
+    const first = !S.ui.gset, old = S.plan.goals, next = [], gk = S.ui.gk || {};
     GOAL_KINDS.forEach(k => {
       if (picked.indexOf(k.k) < 0) return;
       const ex = first ? null : goalById(S, k.id);
@@ -4763,8 +4964,9 @@ const STEP_TOOLPICK = { id: 'goals-pick', part: PART.goals, setup: true, pick: t
     });
     if (!first) old.forEach(g => { if (!GOAL_KINDS.some(k => k.id === g.id) && !gk[g.id] && next.indexOf(g) < 0) next.push(g); });
     old.forEach(g => { if (next.indexOf(g) < 0) forgetKey(S, 'goal:' + g.id); });
-    S.plan.goals = next.slice(0, MAX_GOALS); S.ui.gset = true; settleGoals(); markDone('goals'); persist();
-  } };
+    S.plan.goals = next.slice(0, MAX_GOALS); S.ui.gset = true; settleGoals(); if (mark) markDone('goals'); persist();
+  }
+}
 const EM_MONTHS = [[1, 'month'], [3, 'months'], [6, 'months']];
 const emMonths = g => { const n = necTotal(); if (n <= 0 || !(g.target > 0)) return 3; const m = g.target / n; return EM_MONTHS.reduce((best, x) => Math.abs(x[0] - m) < Math.abs(best - m) ? x[0] : best, 3); };
 const emCap = m => `${m} month${m === 1 ? '' : 's'} of your bills is <b>${fmt(m * necTotal())}</b>.`;
@@ -4802,7 +5004,7 @@ const goalStep = id => ({ id: 'goal-' + id, part: PART.goals, setup: true,
       const nm = $('#tourGName'), du = $('#tourGDue'), wy = $('#tourGWhy');
       updateGoal(S, id, { name: nm && nm.value.trim() ? nm.value : g.name, target: inum('tourGCost'), start: inum('tourGSaved'), due: du ? du.value : g.due, why: wy ? wy.value : (g.why || '') });
     }
-    settleGoals(); persist();
+    settleGoals(); if (quickSetup()) markDone('goals'); persist();
   } });
 
 /* ----- dividing the goal money: dated goals get what they need first, the rest is shared ----- */
@@ -5101,7 +5303,7 @@ const IMP_HOW = () => `<details class="src-how"><summary>How to get your stateme
   <p>Nothing is stored. Files go to Claude once, the numbers come back, the files are forgotten.</p></div></details>`;
 /* the footer's own button is the way past this screen without statements: a plain "Type numbers instead" (or "Not now" when opened from Home),
    so nobody has to find the small link at the foot of a long screen. Reading files moves on by itself. */
-const STEP_SOURCE = { id: 'source', part: PART.money, setup: true, title: 'Your statements', next: () => (impOnly ? 'Not now' : 'Type numbers instead'), nextPlain: true,
+const STEP_SOURCE = { id: 'source', part: PART.money, setup: true, skipIf: () => quickSetup() && !impOnly, title: 'Your statements', next: () => (impOnly ? 'Not now' : 'Type numbers instead'), nextPlain: true,
   leave: d => { if (d > 0) { impDraft = null; if (impCtl) impCtl.abort(); } }, /* moving on by hand drops a draft and stops a read still running */
   body: () => { acctInit(); return `<p>One box per account: your bank, each card, each wallet. Name each the way you say it, and the app will too. Put in the last 2 or 3 months of each: PDF, CSV or Excel exports, or screenshots of the transaction list. The numbers come out exact, and your history fills in.</p>
     <div id="srcUploadPanel">
@@ -5621,7 +5823,7 @@ function onbApply() {
   if (impAccts.some(a => a.files.length)) return;
   impAccts = bx.map(b => acctNew(b.kind, b.name));
 }
-const STEP_CHAT = { id: 'chat', part: PART.money, setup: true, art: '', title: 'Before the uploads', when: () => !impOnly || !(Array.isArray(S.ui.accts) && S.ui.accts.length),
+const STEP_CHAT = { id: 'chat', part: PART.money, setup: true, art: '', title: 'Before the uploads', skipIf: () => quickSetup() && !impOnly, when: () => !impOnly || !(Array.isArray(S.ui.accts) && S.ui.accts.length),
   next: () => onbNextLabel(), nextPlain: true,
   leave: d => { if (d > 0) onbApply(); },
   body: () => `<div class="onb" id="onbLog" role="log" aria-live="polite"></div><div class="onb-a" id="onbAns"></div>`,
@@ -6033,7 +6235,7 @@ function loanBody(l) {
     <p class="cap" id="loanCalc"></p>
   </div>`;
 }
-const LOAN_NOTE = 'Monthly is the payment you make each month, not what you owe in total. Owe a total, like a card balance? Switch to Total, or add it later as a Pay off a debt goal. Set the last payment month and the other value is filled in.';
+const LOAN_NOTE = 'Monthly is the payment you make each month, not what you owe in total. Owe a total, like a card balance? Switch to Total, or add it later under Cards and loans on the Goals tab. Set the last payment month and the other value is filled in.';
 function loanSync() {
   const am = $('#tourAmt'), to = $('#tourTot'), en = $('#tourEnds'), cap = $('#loanCalc'); if (!am || !to || !en || !cap) return;
   const n = loanPayments(en.value), plural = n === 1 ? '' : 's';
@@ -12571,9 +12773,10 @@ const TOUR = [
       <div class="field tour-more"><label for="tourCurMore">Other currency</label><div class="selbox"><select id="tourCurMore"><option value="">Choose currency</option>${rest.map(c => `<option value="${esc(c[0])}"${c[0] === cur ? ' selected' : ''}>${esc(c[1])}</option>`).join('')}</select></div></div>
       <div class="tour-fields"><div class="field"><label for="tourName">First name <span class="opt">(optional)</span></label><div class="inp"><input id="tourName" type="text" maxlength="24" autocomplete="given-name" spellcheck="false" placeholder="First name" value="${esc(firstName())}"></div></div></div>
       <p class="cap">Data stays in this browser. Nobody else can see it.</p>
+      <p class="cap">${quickSetup() ? 'The first setup is short: pay, rent, food and one goal. <button type="button" class="link" id="tourFull">Ask me everything now</button>' : 'Longer setup is on.'}</p>
       ${hasHello ? '' : restoreHTML()}`;
     },
-    after: () => { if (!hasHello) wireRestore(); },
+    after: () => { if (!hasHello) wireRestore(); const f = $('#tourFull'); if (f) f.addEventListener('click', () => { S.ui.full = true; persist(); buildSteps(); f.replaceWith(document.createTextNode('Longer setup is on.')); }); },
     leave: () => { const el = $('#tourName'); if (el) { const n = cleanName(el.value); if (n) S.ui.name = n; else delete S.ui.name; persist(); } } },
   /* the statements are the setup. The typed screens follow only for what the statements did not answer, or when they were skipped. */
   STEP_CHAT, STEP_SOURCE, STEP_REVIEW,
@@ -14770,7 +14973,7 @@ function renderStatus() {
     for (let k = 1; k <= 3 && i0 >= 0 && i0 + k < MONTHS.length; k++) { const x = MONTHS[i0 + k], mx = C.byYm[x]; if (!mx) continue; const st = statusOf(S, mx); if (st === 'short' && mx.left < 0) bad.push(`${monthLabel(x, true)} is short`); else if (st === 'tight') bad.push(`${monthLabel(x, true)} is tight`); }
     if (i0 >= 0 && i0 + 1 < MONTHS.length) ahead = `<p class="hst-w${bad.length ? ' warn' : ' on'}">${bad.length ? 'Coming up: ' + bad.join(', ') + '. Open Plan to see why.' : 'The next 3 months look fine.'}</p>`;
   }
-  put(el, `<span class="chip ${cls}">${cls === 'good' ? IC.ok : cls ? IC.warn : ''}${word}</span><p class="hst-l">${line}</p>${ahead}${wk}`);
+  put(el, `<span class="chip ${cls}">${cls === 'good' ? IC.ok : cls ? IC.warn : ''}${word}</span><p class="hst-l">${line}</p>${ahead}${wk}${m.inflow > 0 && !sampleOn() ? '<p class="cap hs-more"><button type="button" class="link" data-why="status">How is this worked out?</button></p>' : ''}`);
   el.hidden = false;
 }
 /* the first days of a month: last month is only complete once what was spent is in; a statement does it in one go */
@@ -14812,13 +15015,15 @@ function renderNext() {
     step = [`${nm}: ${fmt(sw.left)} of play money unspent`, `Keep it as play, or put it toward ${one ? esc(sw.main.name) : 'a goal'}. Either is fine.`, one ? `Put it toward ${esc(sw.main.name)}` : 'Put it toward', `data-sweep="${sw.pm}"`, pick];
   }
   if (!step && d.pay && d.bills && S.ui.src !== 'import' && !S.ui.exactHidden && !sampleOn()) step = ['Make it exact', 'Upload 2 or 3 months of statements (screenshots of the bank app work). The numbers become exact and your history fills in.', 'Upload', 'data-exact'];
+  if (!step && d.pay && d.bills && S.ui.full !== true && !S.ui.moreBillsHidden && !sampleOn() && necLines().filter(l => val(S, l.key, nowYm()) > 0).length < 4) step = ['Next: add your other bills', 'Utilities, internet, phone, transport. Rough numbers are fine.', 'Open bills', 'data-open="nec"', '', 'data-hidebills'];
+  if (!step && d.pay && d.bills && !S.ui.noDebts && !(S.plan.debts && S.plan.debts.length) && !sampleOn() && !backupDue()) step = ['Next: do you owe on a card or loan?', 'Add it and the burrow works out the interest, the payoff date and which to pay first.', 'Add a card or loan', 'data-debtgo', '', 'data-nodebts'];
   if (!step && (S.receipts || []).length && !S.ui.remindHidden && !sampleOn() && !backupDue()) step = ['Set a weekly reminder', 'A calendar reminder keeps this a habit. Logging a few minutes each week keeps the numbers true.', 'Set reminder', 'data-remindgo'];
   el.hidden = !step; if (!step) return;
   const left = ['pay', 'bills', 'goals', 'receipts'].filter(k => !d[k]).length;
   const exact = step[3] === 'data-exact';
   const swept = step[3] === 'data-sweepundo', sweep = sw && step[3].indexOf('data-sweep=') === 0;
-  const tail = swept ? '' : sweep ? `<button type="button" class="link" data-sweephide="${sw.pm}">Keep as play</button>` : `<button type="button" class="link" ${month ? `data-hidemonth="${month.pm}"` : exact ? 'data-hideexact' : step[3] === 'data-remindgo' ? 'data-hideremind' : 'data-hidenext'}>Hide</button>`;
-  put(el, `<div class="hn-t"><b>${step[0]}</b><span>${step[1]}${month || exact || sweep || swept || step[3] === 'data-remindgo' ? '' : ' ' + (left === 1 ? '1 step left.' : left + ' steps left.')}</span></div><div class="hn-b">${step[4] || ''}<button type="button" class="btn small ${swept ? '' : 'solid'}" ${step[3]}>${step[2]}</button>${tail}</div>`);
+  const tail = swept ? '' : sweep ? `<button type="button" class="link" data-sweephide="${sw.pm}">Keep as play</button>` : `<button type="button" class="link" ${month ? `data-hidemonth="${month.pm}"` : exact ? 'data-hideexact' : step[3] === 'data-remindgo' ? 'data-hideremind' : step[5] || 'data-hidenext'}>Hide</button>`;
+  put(el, `<div class="hn-t"><b>${step[0]}</b><span>${step[1]}${month || exact || sweep || swept || step[5] || step[3] === 'data-remindgo' ? '' : ' ' + (left === 1 ? '1 step left.' : left + ' steps left.')}</span></div><div class="hn-b">${step[4] || ''}<button type="button" class="btn small ${swept ? '' : 'solid'}" ${step[3]}>${step[2]}</button>${tail}</div>`);
 }
 /* put last month's unspent play money toward the chosen goal: one undoable change, then the new date is said out loud */
 function doSweep(pm) {
@@ -14954,21 +15159,22 @@ function renderSpend() {
   const lastD = (S.receipts || []).reduce((a, r) => (r.d > a ? r.d : a), ''), today = todayStr();
   const gapN = lastD && !sampleOn() && lastD.slice(0, 7) === ym ? Math.floor((Date.parse(today) - Date.parse(lastD)) / 864e5) : 0;
   const gapBox = gapN >= 3 && today.slice(0, 7) === ym ? `<form class="gapbar" id="gapForm" autocomplete="off"><p class="cap">Nothing logged for ${gapN} days. Spent something? Add a rough total.</p><div class="gaprow"><div class="inp"><span class="yen cs"></span><input id="gapAmt" type="number" inputmode="decimal" min="0" step="any" placeholder="0" aria-label="Rough total spent since ${esc(lastD)}"></div><button type="submit" class="btn small">Add</button></div></form>` : '';
+const links = `<p class="cap hs-more"><button type="button" class="link" data-xm>Extra money came in?</button> <button type="button" class="link" data-why="free">How is this worked out?</button></p>`;
   /* necessities: a plain yes or no, with the number behind it */
   const nec = b('nec'), covered = m.inflow >= nec.planned;
   const necTile = `<li class="bk${covered ? ' ok' : ' over'}" style="--c:${JARVAR.nec}"><span class="bk-n"><i></i>Necessities</span><b>${covered ? 'Covered' : 'Short'}</b><span class="bk-s">${covered ? (m.status === 'short' && m.left < 0 ? `Bills fit in your pay, but the whole month is short.` : `Pay covers ${fmt(nec.planned)} of bills in ${monthLabel(ym, true)}${nec.spent > 0 ? `. ${fmt2(nec.spent)} logged.` : ''}`) : `Pay is ${fmt(nec.planned - m.inflow)} under the bills.`}</span></li>`;
   const tile = (x, what) => `<li class="bk${x.left < 0 ? ' over' : ''}" style="--c:${JARVAR[x.id]}"><span class="bk-n"><i></i>${esc(x.name)}</span><b>${fmt2(x.left)}</b><span class="bk-s">${x.planned <= 0 ? what : (x.left < 0 ? 'Over' : 'Left') + ' of ' + fmt(x.planned) + ' in ' + monthLabel(ym, true) + '. ' + what}</span></li>`;
   const tiles = `<ul class="bkl chl">${necTile}${tile(b('edu'), 'For courses and books.')}${tile(b('give'), 'For gifts and charity.')}</ul>${V.otherSpent > 0 ? `<p class="cap">${fmt2(V.otherSpent)} logged as Other. Not taken from a pot.</p>` : ''}`;
-  if (p.planned <= 0 && p.spent <= 0) { put(el, `${head}<p class="hs-lbl">Free to spend (play money) in ${monthLabel(ym)}</p><p class="hs-big zero">${fmt(0)}</p><p class="cap">No play money planned for ${monthLabel(ym)}.</p><div class="row-btns"><button type="button" class="btn small" data-open="play">Set in Plan</button></div>${smp}${tiles}`); return; }
+  if (p.planned <= 0 && p.spent <= 0) { put(el, `${head}<p class="hs-lbl">Free to spend (play money) in ${monthLabel(ym)}</p><p class="hs-big zero">${fmt(0)}</p><p class="cap">No play money planned for ${monthLabel(ym)}.</p><div class="row-btns"><button type="button" class="btn small" data-open="play">Set in Plan</button></div>${smp}${sampleOn() ? '' : links}${tiles}`); return; }
   /* free to spend can never be more than the plan can afford: when the month would end under the safety minimum, that gap is held back */
   const held = m.status === 'short' && m.left < 0 ? Math.max(0, cfg(S, 'minBank') - m.bankEnd) : 0, freeLeft = Math.max(p.left < 0 ? p.left : 0, round2(p.left - held));
-  const wk = p.perWeek != null ? `<b>${fmt(Math.max(0, freeLeft) / (p.daysLeft / 7))}</b> a week, ${plural(p.daysLeft, 'day')} left.` : `${plural(p.daysLeft, 'day')} left.`;
+  const wk = p.perWeek != null ? `<b>${fmt(Math.max(0, freeLeft) / (p.daysLeft / 7))}</b> a week for the ${plural(p.daysLeft, 'day')} left.` : `${plural(p.daysLeft, 'day')} left.`;
   const chip = p.over ? `<span class="chip short">${IC.bad}Over</span>` : p.ahead ? `<span class="chip tight">${IC.warn}Ahead of pace</span>` : `<span class="chip good">${IC.ok}On pace</span>`;
 
   const free = !p.over && p.planned > 0 && m.status === 'good' && !sampleOn();
   put(el, `${head}<p class="hs-lbl">${p.over ? 'Over play money in ' : 'Free to spend (play money) in '}${monthLabel(ym)}</p><p class="hs-big${p.over ? ' neg' : ''}" style="--n:${fmt2(freeLeft).length}">${fmt2(freeLeft)}</p>
     <div class="hs-bar${p.over ? ' over' : ''}" role="img" aria-label="${fmt2(p.spent)} of ${fmt(p.planned)} spent"><i style="width:${p.frac * 100}%"></i><span class="pace" style="left:${p.dayFrac * 100}%"></span></div>
-    <p class="hs-sub">${p.count ? `Spent ${fmt2(p.spent)} of ${fmt(p.planned)}.` : `Nothing logged yet. ${fmt(p.planned)} planned.`} ${p.over ? '' : wk}${!p.over && freeLeft > 0 && p.daysLeft > 0 ? ` About <b>${fmt(freeLeft / p.daysLeft)}</b> a day.` : ''}</p>${held > 0 ? `<p class="hs-ok warn">${fmt(held)} is held back. Your bank would end under your ${fmt(cfg(S, 'minBank'))} minimum, so it is not safe to spend.</p>` : ''}${p.count || p.over ? chip : ''}${free ? `<p class="hs-ok">Bills and goals are planned for, so this part is free to spend.${V.main && V.main.live && V.main.pct < 100 ? ` What is left at month end can go toward ${esc(goalById(S, V.main.id).name)}.` : ''}</p>` : ''}${gapBox}${smp}${tiles}`);
+    <p class="hs-sub">${p.count ? `Spent ${fmt2(p.spent)} of ${fmt(p.planned)}.` : `Nothing logged yet. ${fmt(p.planned)} planned.`} ${p.over ? '' : wk}${!p.over && freeLeft > 0 && p.daysLeft > 0 ? ` About <b>${fmt(freeLeft / p.daysLeft)}</b> a day.` : ''}</p>${held > 0 ? `<p class="hs-ok warn">${fmt(held)} is held back. Your bank would end under your ${fmt(cfg(S, 'minBank'))} minimum, so it is not safe to spend.</p>` : ''}${p.count || p.over ? chip : ''}${free ? `<p class="hs-ok">Bills and goals are planned for, so this part is free to spend.${V.main && V.main.live && V.main.pct < 100 ? ` What is left at month end can go toward ${esc(goalById(S, V.main.id).name)}.` : ''}</p>` : ''}${gapBox}${smp}${sampleOn() ? '' : links}${tiles}`);
 }
 /* a row opens to show its details; which ones are open survives a redraw */
 const HOPEN = new Set();
@@ -15087,8 +15293,8 @@ function syncQuick() {
 }
 /* what Home can show, in the usual order. S.ui.home (set through ACT.setHome, for example by the assistant) reorders or hides these cards;
    the status, next-step and backup cards always stay on top. */
-const HOME_SECTIONS = ['play', 'log', 'goal', 'goals', 'jars', 'more'];
-const HOME_EL = { goal: 'hHero', play: 'hSpend', log: 'hQuick', goals: 'hGoals', jars: 'hBuckets', more: 'hMore' };
+const HOME_SECTIONS = ['play', 'log', 'goal', 'goals', 'debts', 'limits', 'jars', 'more'];
+const HOME_EL = { goal: 'hHero', play: 'hSpend', log: 'hQuick', goals: 'hGoals', debts: 'hDebts', limits: 'hLimits', jars: 'hBuckets', more: 'hMore' };
 let homeOrderSig = '';
 function applyHomeOrder() {
   const order = Array.isArray(S.ui.home) && S.ui.home.length ? S.ui.home.filter(id => HOME_SECTIONS.indexOf(id) >= 0) : HOME_SECTIONS;
@@ -15104,7 +15310,7 @@ function renderHome() {
   checkBadges(); paintSnd(); paintBk(); paintFoot();
   if (tab !== 'home') return;
   applyHomeOrder();
-  safe(renderNext, '#hNext'); safe(() => BUR.home(), '#hBur'); safe(renderBackupNudge, '#hBk'); safe(renderStatus, '#hStatus'); safe(syncQuick, null, 'quick'); safe(renderHero, '#hHero'); safe(renderSpend, '#hSpend'); safe(renderGoalsHome, '#hGoals'); safe(renderBuckets, '#hBuckets'); safe(renderStreak, '#hStreak'); safe(renderBadges, '#hBadges');
+  safe(renderNext, '#hNext'); safe(() => BUR.home(), '#hBur'); safe(renderBackupNudge, '#hBk'); safe(renderStatus, '#hStatus'); safe(syncQuick, null, 'quick'); safe(renderHero, '#hHero'); safe(renderSpend, '#hSpend'); safe(renderGoalsHome, '#hGoals'); safe(renderHomeDebts, '#hDebts'); safe(renderLimits, '#hLimits'); safe(renderBuckets, '#hBuckets'); safe(renderStreak, '#hStreak'); safe(renderBadges, '#hBadges');
   placePix(); /* the pixel plants, back in their corners after the cards were redrawn */
 }
 
@@ -15255,6 +15461,9 @@ function wireHome() {
     if (e.target.closest('[data-hidenext]')) { S.ui.sampleHidden = true; persist(); render(); return; }
     const hm = e.target.closest('[data-hidemonth]'); if (hm) { S.ui.mcSeen = hm.dataset.hidemonth; persist(); render(); return; }
     if (e.target.closest('[data-hideexact]')) { S.ui.exactHidden = true; persist(); render(); return; }
+    if (e.target.closest('[data-nodebts]')) { S.ui.noDebts = true; persist(); render(); return; }
+    if (e.target.closest('[data-debtgo]')) { switchTab('goals'); setTimeout(() => { const b = document.getElementById('addDebtBtn'); if (b) { b.scrollIntoView({ block: 'center' }); b.click(); } }, 160); return; }
+    if (e.target.closest('[data-hidebills]')) { S.ui.moreBillsHidden = true; persist(); render(); return; }
     if (e.target.closest('[data-hideremind]')) { S.ui.remindHidden = true; persist(); render(); return; }
     if (e.target.closest('[data-remindgo]')) { S.ui.remindHidden = true; persist(); switchTab('receipts'); setTimeout(() => { const r = document.getElementById('rcRemind'); if (r) r.scrollIntoView({ block: 'start' }); }, 120); return; }
     const sh = e.target.closest('[data-sweephide]'); if (sh) { S.ui.sweep = Object.assign({}, S.ui.sweep, { [sh.dataset.sweephide]: { hide: true } }); persist(); sfx('tap'); render(); return; }
@@ -15285,6 +15494,19 @@ function wireHome() {
 const NATIVE_VALUE = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
 const COMMA_DEC = ['€', 'R$', 'kr', 'zł', 'R']; /* currencies usually written with a decimal comma */
 const withCommas = s => { s = String(s == null ? '' : s); const m = s.match(/^(\d*)(\.\d*)?$/); return m ? m[1].replace(/\B(?=(\d{3})+(?!\d))/g, ',') + (m[2] || '') : s; };
+/* sums typed in an amount box: 1200+300, 500*2, 2,400/3. Plain arithmetic only, never run as code. A trailing sign is ignored while typing. */
+const MONEY_OP = /[+*\/x\u00d7\u2212-]/;
+function evalMoney(src) {
+  const t = String(src).replace(/,/g, '').replace(/\s+/g, '').replace(/[x\u00d7]/gi, '*').replace(/\u2212/g, '-').replace(/[+\-*\/.]+$/, '');
+  if (!t || !/^[0-9.+\-*\/()]+$/.test(t)) return null;
+  let i = 0;
+  const num = () => { const m = /^\d*\.?\d+|^\d+\.?/.exec(t.slice(i)); if (!m) throw 0; i += m[0].length; return parseFloat(m[0]); };
+  const atom = () => { if (t[i] === '(') { i++; const v = expr(); if (t[i] !== ')') throw 0; i++; return v; } return num(); };
+  const term = () => { let v = atom(); while (t[i] === '*' || t[i] === '/') { const o = t[i++], r = atom(); v = o === '*' ? v * r : (r === 0 ? NaN : v / r); } return v; };
+  const expr = () => { let v = term(); while (t[i] === '+' || t[i] === '-') { const o = t[i++], r = term(); v = o === '+' ? v + r : v - r; } return v; };
+  try { const v = expr(); if (i !== t.length || !isFinite(v) || v < 0) return null; return Math.round(v * 100) / 100; } catch (e) { return null; }
+}
+const hasMoneyOp = raw => MONEY_OP.test(String(raw).replace(/^\s*-/, '').replace(/,/g, ''));
 const isMoneyBox = el => !!el && el.tagName === 'INPUT' && el.type === 'number' && !!el.parentElement && el.parentElement.classList.contains('inp') && !!el.parentElement.querySelector(':scope > .yen');
 function caretEnd(el) {
   if (!el || el.readOnly || el.disabled || el.value === '') return;
@@ -15298,12 +15520,12 @@ function moneyUp(el) {
   const v = el.value;
   el.dataset.mny = '1'; el.type = 'text'; el.setAttribute('autocomplete', 'off');
   if (!el.getAttribute('inputmode')) el.setAttribute('inputmode', 'decimal');
-  Object.defineProperty(el, 'value', { configurable: true, get() { return NATIVE_VALUE.get.call(this).replace(/,/g, ''); }, set(x) { NATIVE_VALUE.set.call(this, withCommas(x)); } });
+  Object.defineProperty(el, 'value', { configurable: true, get() { const r = NATIVE_VALUE.get.call(this); if (hasMoneyOp(r)) { const v = evalMoney(r); return v === null ? '' : String(v); } return r.replace(/,/g, ''); }, set(x) { NATIVE_VALUE.set.call(this, withCommas(x)); } });
   NATIVE_VALUE.set.call(el, withCommas(v));
 }
 function moneyUpAll(root) { $$('input[type=number]', root || document).forEach(el => { if (isMoneyBox(el)) moneyUp(el); }); }
 function moneyTyped(el, ev) {
-  let raw = NATIVE_VALUE.get.call(el); const pos = el.selectionStart == null ? raw.length : el.selectionStart;
+  let raw = NATIVE_VALUE.get.call(el); if (hasMoneyOp(raw)) return; const pos = el.selectionStart == null ? raw.length : el.selectionStart;
   /* a comma typed by hand: a decimal point where the currency writes decimals that way (12,50 euro), otherwise a thousands separator
      (1,200 pesos is twelve hundred, never one peso twenty) and the box regroups it on its own */
   let at = pos; if (ev && ev.data === ',' && raw.charAt(pos - 1) === ',') { const dec = COMMA_DEC.indexOf(sym()) >= 0; raw = raw.slice(0, pos - 1) + (dec ? '.' : '') + raw.slice(pos); if (!dec) at = pos - 1; }
@@ -15319,6 +15541,8 @@ function moneyTyped(el, ev) {
   try { el.setSelectionRange(i, i); } catch (err) { /* ignore */ }
 }
 document.addEventListener('input', e => { const el = e.target; if (el && el.dataset && el.dataset.mny && !e.isComposing) moneyTyped(el, e); }, true);
+/* leaving the box turns the sum into its answer */
+document.addEventListener('focusout', e => { const el = e.target; if (el && el.dataset && el.dataset.mny && hasMoneyOp(NATIVE_VALUE.get.call(el))) { const v = evalMoney(NATIVE_VALUE.get.call(el)); NATIVE_VALUE.set.call(el, v === null ? '' : withCommas(String(v))); el.dispatchEvent(new Event('change', { bubbles: true })); } }, true);
 (function () {
   let pt = null, ptT = 0;
   ['pointerdown', 'mousedown', 'touchstart'].forEach(ev => document.addEventListener(ev, e => { pt = e.target; ptT = Date.now(); }, true));
@@ -15335,6 +15559,339 @@ document.addEventListener('input', e => { const el = e.target; if (el && el.data
       if (n.tagName === 'INPUT') { if (isMoneyBox(n)) moneyUp(n); } else if (n.querySelector) moneyUpAll(n);
     }))).observe(document.body, { childList: true, subtree: true });
   }
+})();
+/* ===================== cards and loans, extra money, spending limits, last month, repeating spending ===================== */
+
+/* ---------- cards and loans: Goals page card, Plan row, Home summary ---------- */
+let DEBT_EDIT = null, DEBT_DRAFT = null, debtSig = '';
+const debtMinToCover = d => Math.floor(d.balance * d.apr / 1200) + 1;
+function debtFormHTML(d, isNew) {
+  const id = esc(isNew ? 'new' : d.id), kinds = DEBT_KINDS.map(k => `<option value="${k}"${d.kind === k ? ' selected' : ''}>${DEBT_KIND_NAME[k]}</option>`).join('');
+  return `<div class="gform dform" data-did="${id}">
+    <div class="field"><label for="de-${id}-name">Name</label><input class="txt" id="de-${id}-name" data-d="name" type="text" value="${esc(d.name)}" maxlength="60" placeholder="e.g. BPI card"></div>
+    <div class="field"><label for="de-${id}-kind">Type</label><div class="selbox"><select id="de-${id}-kind" data-d="kind">${kinds}</select></div></div>
+    <div class="field"><label for="de-${id}-bal">Owed now</label><div class="inp"><span class="yen cs"></span><input id="de-${id}-bal" data-d="balance" type="number" inputmode="numeric" min="0" step="100" value="${d.balance === '' ? '' : d.balance}" placeholder="0"></div></div>
+    <div class="field"><label for="de-${id}-apr">Interest rate, %</label><div class="rate"><input class="txt" id="de-${id}-apr" data-d="apr" type="text" inputmode="decimal" value="${d.apr === '' ? '' : esc(String(d.apr))}" placeholder="0" maxlength="6"><div class="selbox"><select id="de-${id}-per" data-per aria-label="Interest rate is per"><option value="year" selected>a year</option><option value="month">a month</option></select></div></div><p class="cap">Cards often show it per month (like 3.5) or per year (like 42). Pick what your statement says. Use 0 for money owed to a person.</p></div>
+    <div class="field"><label for="de-${id}-min">Minimum a month</label><div class="inp"><span class="yen cs"></span><input id="de-${id}-min" data-d="min" type="number" inputmode="numeric" min="0" step="100" value="${d.min === '' ? '' : d.min}" placeholder="0"></div><p class="cap">The least you must pay. It is part of Necessities.</p></div>
+    <div class="field"><label for="de-${id}-extra">Extra a month</label><div class="inp"><span class="yen cs"></span><input id="de-${id}-extra" data-d="extra" type="number" inputmode="numeric" min="0" step="100" value="${d.extra === '' ? '' : d.extra}" placeholder="0"></div><p class="cap">On top of the minimum. It goes straight off what you owe, so interest drops.</p></div>
+    <p class="cap wide" id="de-${id}-msg" role="status"></p>
+    <div class="row-btns wide">${isNew ? '<button type="button" class="btn small solid" data-dsave>Add</button><button type="button" class="btn small" data-dcancel>Cancel</button>'
+      : `<button type="button" class="btn small solid" data-ddone>Done</button><button type="button" class="btn small warnbtn" data-ddel data-armkey="ddel-${id}">Remove</button>`}</div></div>`;
+}
+function debtCardHTML(d, r, x, i, first) {
+  const id = esc(d.id), slot = SLOTS[i % SLOTS.length], open = DEBT_EDIT === d.id;
+  const done = x.start <= 0, pct = d.balance > 0 ? Math.max(0, Math.min(1, 1 - x.bal / d.balance)) : 1;
+  let stat, cls = 'plain', note = '';
+  if (done) { cls = 'good'; stat = IC.ok + 'Paid off'; note = 'Nothing owed.'; }
+  else if (r.never) { cls = 'bad'; stat = IC.bad + 'Not paid off'; note = `The payment does not cover the interest. Pay at least ${fmt(debtMinToCover(d))} a month.`; }
+  else { cls = 'good'; stat = IC.ok + 'On the way'; note = `Paid off ${monthLabel(r.payoffYm)}.${r.totalInterest > 0 ? ' About ' + fmt(r.totalInterest) + ' interest in all.' : ''}`; }
+  return `<div class="gcard dcard" id="dc-${id}" data-did="${id}" style="--c:var(--c${slot})">
+    <div class="jhead"><span class="jarn"><i class="dot"></i><span>${esc(d.name)}</span></span><span class="jarv"><b>${fmt(x.start)}</b> owed</span></div>
+    <div class="gbar" role="img" aria-label="${esc(d.name)}: ${Math.round(pct * 100)}% paid by the end of ${monthLabel(sel, true)}"><i class="fill" style="width:${pct * 100}%"></i></div>
+    <div class="jfoot"><span class="jstat ${cls}">${stat}</span><span class="jart">${esc(note)}</span></div>
+    <p class="gsave">${DEBT_KIND_NAME[d.kind]}${d.apr > 0 ? `, ${esc(String(d.apr))}% a year` : ''}. Pays <b>${fmt(x.pay)}</b> in ${monthLabel(sel, true)}${x.interest > 0 ? ` (${fmt(x.interest)} of it interest)` : ''}.</p>
+    ${first && !done ? '<p class="gsave"><b>Put extra money here first.</b> It has the highest rate.</p>' : ''}
+    <p class="gedit"><button type="button" class="link" data-dedit="${id}" aria-expanded="${open}">${open ? 'Close' : 'Edit'}</button></p>
+    ${open ? debtFormHTML(d, false) : ''}</div>`;
+}
+function renderDebts() {
+  const sec = $('#secDebts'); if (!sec) return;
+  paintLim();
+  const ds = debtsOf(S), m = C.byYm[sel], rows = ds.length ? debtRows(S, C) : [];
+  const sample = sampleOn();
+  sec.hidden = false;
+  const sig = JSON.stringify([ds, DEBT_EDIT, DEBT_DRAFT, sel, sample, m.debts, rows.map(r => [r.payoffYm, r.never, r.totalInterest, r.first])]);
+  const holding = sec.contains(document.activeElement) && document.activeElement.matches('input, select') && (DEBT_EDIT !== null || DEBT_DRAFT !== null);
+  if (sig !== debtSig && !holding) {
+    debtSig = sig;
+    const cards = $('#debtCards');
+    if (sample) cards.innerHTML = '<p class="cap">Finish the first steps, then add your cards and loans here.</p>';
+    else cards.innerHTML = (ds.length ? ds.map((d, i) => debtCardHTML(d, rows[i], m.debts[d.id], i, rows[i].first)).join('') : '<p class="cap">None. Add a card or loan to see when each is paid off and how much interest it costs.</p>')
+      + (DEBT_DRAFT ? `<div class="gcard dcard" data-did="new"><div class="jhead"><span class="jarn"><span>New card or loan</span></span></div>${debtFormHTML(DEBT_DRAFT, true)}</div>` : '');
+    $('#addDebtBtn').hidden = sample || DEBT_DRAFT !== null || ds.length >= MAX_DEBTS;
+    $('#debtMsg').textContent = ds.length >= MAX_DEBTS ? `Limit: ${MAX_DEBTS}.` : '';
+  }
+  const owed = m.debts && ds.length ? sum(ds.map(d => m.debts[d.id].start)) : 0;
+  const free = rows.length && rows.every(r => !r.never) ? rows.reduce((a, r) => (r.payoffYm > a ? r.payoffYm : a), '') : '';
+  $('#debtSub').textContent = !ds.length ? 'Cards and loans with interest. Their payments are part of Necessities.'
+    : `${fmt(owed)} owed at the start of ${monthLabel(sel, true)}. ${m.debtInterest > 0 ? fmt(m.debtInterest) + ' interest this month. ' : ''}${free ? 'Debt free ' + monthLabel(free) + '.' : rows.some(r => r.never) ? 'One of them is not being paid off.' : ''}`;
+  /* the Plan row */
+  const row = document.querySelector('.row[data-id="debts"]'); if (row) row.hidden = !ds.length;
+  const note = $('#jcap-debts'); if (note) note.textContent = ds.length ? `${fmt(sum(ds.map(d => Math.min(d.min, m.debts[d.id].start + m.debts[d.id].interest))))} minimums${m.debtPay - sum(ds.map(d => Math.min(d.min, m.debts[d.id].start + m.debts[d.id].interest))) > 0 ? ' and ' + fmt(m.debtPay - sum(ds.map(d => Math.min(d.min, m.debts[d.id].start + m.debts[d.id].interest)))) + ' extra' : ''}. Extra goes straight off what you owe.` : '';
+}
+function debtRead(form) {
+  const g = k => form.querySelector(`[data-d="${k}"]`), num = k => { const v = Math.round(+g(k).value || 0); return Math.max(0, Math.min(1e9, v)); };
+  const per = form.querySelector('[data-per]'), apr = parseFloat(String(g('apr').value).replace(',', '.')) * (per && per.value === 'month' ? 12 : 1);
+  return { name: g('name').value.trim().slice(0, 60), kind: g('kind').value, balance: num('balance'), apr: isFinite(apr) ? Math.max(0, Math.min(100, Math.round(apr * 100) / 100)) : 0, min: num('min'), extra: num('extra') };
+}
+function debtsInit() {
+  const sec = $('#secDebts'); if (!sec) return;
+  sec.addEventListener('click', e => {
+    const t = e.target.closest('button'); if (!t) return;
+    if (t.id === 'addDebtBtn') { DEBT_EDIT = null; DEBT_DRAFT = { id: '', name: '', kind: 'card', balance: '', apr: '', min: '', extra: '' }; debtSig = ''; renderDebts(); const f = sec.querySelector('[data-d="name"]'); if (f) f.focus(); return; }
+    if (t.hasAttribute('data-dcancel')) { DEBT_DRAFT = null; debtSig = ''; renderDebts(); return; }
+    if (t.hasAttribute('data-dsave')) {
+      const form = t.closest('.dform'), v = debtRead(form), msg = $('#de-new-msg');
+      if (!v.name) { msg.textContent = 'Give it a name.'; return; }
+      if (!(v.balance > 0)) { msg.textContent = 'Enter how much is owed.'; return; }
+      const d = { id: newId(S, 'd', x => debtsOf(S).some(q => q.id === x)), name: v.name, kind: v.kind, balance: v.balance, apr: v.apr, min: v.min, extra: v.extra };
+      S.plan.debts = debtsOf(S).concat([d]); DEBT_DRAFT = null; DEBT_EDIT = null; debtSig = ''; persist(); restructure(); cheer('Added.'); return;
+    }
+    const ed = t.closest('[data-dedit]'); if (ed) { DEBT_EDIT = DEBT_EDIT === ed.dataset.dedit ? null : ed.dataset.dedit; debtSig = ''; renderDebts(); return; }
+    if (t.hasAttribute('data-ddone')) { DEBT_EDIT = null; debtSig = ''; renderDebts(); return; }
+    if (t.hasAttribute('data-ddel')) {
+      const id = t.closest('.dform').dataset.did;
+      confirmClick(t, 'Tap again to remove', () => {
+        S.plan.debts = debtsOf(S).filter(d => d.id !== id); if (!S.plan.debts.length) delete S.plan.debts;
+        delete S.steps['debt:' + id]; Object.keys(S.once).forEach(ym => { delete S.once[ym]['debt:' + id]; if (!Object.keys(S.once[ym]).length) delete S.once[ym]; });
+        DEBT_EDIT = null; debtSig = ''; persist(); restructure();
+      });
+    }
+  });
+  /* an existing debt saves when a box is left; a new one waits for Add */
+  sec.addEventListener('change', e => {
+    const form = e.target.closest('.dform'); if (!form) return;
+    if (form.dataset.did === 'new') { DEBT_DRAFT = Object.assign({}, DEBT_DRAFT, debtRead(form)); return; }
+    const d = debtById(S, form.dataset.did); if (!d) return;
+    const v = debtRead(form); if (!v.name) v.name = d.name;
+    Object.assign(d, v); persist(); setTimeout(() => restructure(), 80);
+  });
+}
+
+/* the Home card: what is owed, when it ends, where the next extra money should go */
+function renderHomeDebts() {
+  const el = $('#hDebts'); if (!el) return;
+  const ds = debtsOf(S); if (!ds.length || sampleOn()) { el.hidden = true; return; }
+  const ym = HV.ym, m = C.byYm[ym], rows = debtRows(S, C), owed = sum(ds.map(d => m.debts[d.id].start));
+  const free = rows.every(r => !r.never) ? rows.reduce((a, r) => (r.payoffYm > a ? r.payoffYm : a), '') : '';
+  const first = rows.find(r => r.first), bad = rows.find(r => r.never);
+  el.hidden = false;
+  put(el, `<h2>Cards and loans</h2><p class="hs-lbl">Owed at the start of ${esc(monthLabel(ym, true))}</p><p class="hs-big" style="--n:${fmt(owed).length}">${fmt(owed)}</p>
+    <p class="hs-sub">${m.debtPay > 0 ? `You pay <b>${fmt(m.debtPay)}</b> this month${m.debtInterest > 0 ? `, ${fmt(m.debtInterest)} of it interest` : ''}. ` : ''}${free ? `Debt free <b>${esc(monthLabel(free))}</b>.` : bad ? `<b>${esc(bad.name)}</b> is not being paid off. Pay at least ${fmt(debtMinToCover(debtById(S, bad.id)))} a month.` : ''}</p>
+    ${first && !bad ? `<p class="cap">Extra money goes to <b>${esc(first.name)}</b> first. It has the highest rate.</p>` : ''}
+    <ul class="gdl">${rows.map(r => `<li><span class="gdn"><i class="dot" style="--c:var(--c${SLOTS[rows.indexOf(r) % SLOTS.length]})"></i>${esc(r.name)}</span><span class="gdw">${fmt(m.debts[r.id].start)}</span></li>`).join('')}</ul>
+    <div class="row-btns"><button type="button" class="btn small" data-tab-go="goals">See details</button></div>`);
+}
+
+/* ---------- extra money: a bonus, a 13th month pay, a refund, a good freelance month ---------- */
+let XM = null;
+function xmDests() {
+  const out = [{ t: 'bank', label: 'Keep it as a cushion' }];
+  const live = S.plan.goals.filter(g => g.target > 0);
+  live.forEach(g => out.push({ t: 'goal', id: g.id, label: (kindOfGoal(S, g) === 'debt' ? 'Pay toward ' : 'Add to ') + g.name }));
+  debtsOf(S).forEach(d => { if (d.balance > 0) out.push({ t: 'debt', id: d.id, label: 'Pay down ' + d.name }); });
+  if (S.plan.lines.some(l => l.jar === 'play')) out.push({ t: 'play', label: 'Spend it, play money' });
+  if (S.plan.lines.some(l => l.jar === 'ffa')) out.push({ t: 'ffa', label: 'Financial Freedom' });
+  return out;
+}
+function openExtra() {
+  if (sampleOn()) { cheer('Finish the first steps first.'); return; }
+  XM = { amt: '', dest: 0, ym: HV && HV.ym ? HV.ym : sel, ret: document.activeElement };
+  let el = $('#xm');
+  if (!el) {
+    el = document.createElement('div'); el.id = 'xm'; el.className = 'gw xm'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-labelledby', 'xmT'); document.body.appendChild(el);
+    el.addEventListener('click', xmClick);
+    el.addEventListener('keydown', e => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closeExtra(); } });
+  }
+  xmPaint(); el.hidden = false; requestAnimationFrame(() => el.classList.add('on')); document.body.classList.add('gw-open');
+  const f = $('#xmAmt'); if (f) f.focus();
+}
+function closeExtra() { const el = $('#xm'); if (el) { el.classList.remove('on'); setTimeout(() => { el.hidden = true; }, 200); } document.body.classList.remove('gw-open'); const r = XM && XM.ret; XM = null; if (r && r.focus) try { r.focus(); } catch (e) { /* gone */ } }
+function xmPreview() {
+  const ds = xmDests(), d = ds[XM.dest] || ds[0], amt = Math.round(+(($('#xmAmt') || {}).value) || 0);
+  if (!(amt > 0)) return 'Enter the amount.';
+  /* try it on a copy of the month changes, then put them back */
+  const T = JSON.parse(JSON.stringify({ steps: S.steps, once: S.once })); let res;
+  try { res = addExtraMoney(S, XM.ym, amt, d); } finally { S.once = T.once; S.steps = T.steps; }
+  if (!res) return 'That cannot take extra money.';
+  return res.toBank > 0 ? `${fmt(res.placed)} goes to: ${d.label.toLowerCase()}. ${fmt(res.toBank)} stays in the balance.` : `All ${fmt(res.placed || amt)} goes to: ${d.label.toLowerCase()}.`;
+}
+function xmPaint() {
+  const el = $('#xm'); if (!el || !XM) return;
+  const ds = xmDests(), mons = MONTHS.filter(x => x >= START).slice(0, MONTHS.length);
+  el.innerHTML = `<div class="gw-scrim" data-xmno></div><div class="gw-card"><h2 id="xmT">Extra money came in</h2><p class="cap">A bonus, a 13th month pay, a refund, a good freelance month. It is added to ${esc(monthLabel(XM.ym))} only.</p>
+    <div class="field"><label for="xmAmt">Amount</label><div class="inp"><span class="yen cs"></span><input id="xmAmt" type="number" inputmode="numeric" min="0" step="100" value="${XM.amt}" placeholder="0"></div></div>
+    <div class="field"><label for="xmMon">Month</label><div class="selbox"><select id="xmMon">${mons.map(x => `<option value="${x}"${x === XM.ym ? ' selected' : ''}>${esc(monthLabel(x))}</option>`).join('')}</select></div></div>
+    <div class="field"><label for="xmDest">Where should it go?</label><div class="selbox"><select id="xmDest">${ds.map((d, i) => `<option value="${i}"${i === XM.dest ? ' selected' : ''}>${esc(d.label)}</option>`).join('')}</select></div></div>
+    <p class="cap" id="xmPrev" role="status"></p>
+    <div class="row-btns"><button type="button" class="btn solid" data-xmok>Add</button><button type="button" class="btn" data-xmno>Cancel</button></div></div>`;
+  const amt = $('#xmAmt'); const upd = () => { if (!XM) return; XM.amt = amt.value; $('#xmPrev').textContent = xmPreview(); };
+  amt.addEventListener('input', upd); amt.addEventListener('change', upd);
+  $('#xmMon').addEventListener('change', e => { if (!XM) return; XM.ym = e.target.value; upd(); });
+  $('#xmDest').addEventListener('change', e => { if (!XM) return; XM.dest = +e.target.value; upd(); });
+  upd();
+}
+function xmClick(e) {
+  const b = e.target.closest('button, [data-xmno]'); if (!b) return;
+  if (b.hasAttribute('data-xmno')) { closeExtra(); return; }
+  if (b.hasAttribute('data-xmok')) {
+    const amt = Math.round(+$('#xmAmt').value || 0), d = xmDests()[XM.dest];
+    if (!(amt > 0)) { $('#xmPrev').textContent = 'Enter the amount.'; return; }
+    const res = addExtraMoney(S, XM.ym, amt, d); if (!res) return;
+    markDone('pay'); persist(); closeExtra(); render(); sfx('sparkle'); cheer(res.toBank > 0 ? 'Added. The rest stays in the balance.' : 'Added.');
+  }
+}
+
+/* ---------- pay that comes weekly, every two weeks or twice a month, or that changes: work out one monthly number ---------- */
+const PAYF = [['month', 'Once a month', 1], ['twice', 'Twice a month', 2], ['two', 'Every two weeks', 26 / 12], ['week', 'Every week', 52 / 12]];
+let PY = null;
+function payMonthly(per, f) { const m = PAYF.find(x => x[0] === f) || PAYF[0]; return Math.round((+per || 0) * m[2]); }
+function openPay() {
+  if (sampleOn()) { cheer('Finish the first steps first.'); return; }
+  PY = { f: 'month', amt: '', ym: HV && HV.ym ? HV.ym : sel, ret: document.activeElement };
+  let el = $('#pay');
+  if (!el) {
+    el = document.createElement('div'); el.id = 'pay'; el.className = 'gw xm'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-labelledby', 'payT'); document.body.appendChild(el);
+    el.addEventListener('click', payClick);
+    el.addEventListener('input', payShow); el.addEventListener('change', payShow);
+    el.addEventListener('keydown', e => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closePay(); } });
+  }
+  el.innerHTML = `<div class="gw-scrim" data-payno></div><div class="gw-card"><h2 id="payT">Work out your monthly pay</h2><p class="cap">The plan works in months. Say how often you are paid and how much each time.</p>
+    <div class="field"><label for="payF">How often are you paid?</label><div class="selbox"><select id="payF">${PAYF.map(x => `<option value="${x[0]}">${x[1]}</option>`).join('')}</select></div></div>
+    <div class="field"><label for="payA">How much each time?</label><div class="inp"><span class="yen cs"></span><input id="payA" type="number" inputmode="numeric" min="0" step="100" placeholder="0"></div></div>
+    <p class="cap" id="payRes" role="status">Enter the amount.</p>
+    <p class="cap">If your pay changes from month to month, put in the least you usually get. When more comes in, use "Extra money came in" and choose where it goes.</p>
+    <div class="row-btns"><button type="button" class="btn solid" data-payok>Use as my monthly pay</button><button type="button" class="btn" data-payno>Cancel</button></div></div>`;
+  el.hidden = false; requestAnimationFrame(() => el.classList.add('on')); document.body.classList.add('gw-open');
+  const f = $('#payA'); if (f) f.focus();
+}
+function closePay() { const el = $('#pay'); if (el) { el.classList.remove('on'); setTimeout(() => { el.hidden = true; }, 200); } document.body.classList.remove('gw-open'); const r = PY && PY.ret; PY = null; if (r && r.focus) try { r.focus(); } catch (e) { /* gone */ } }
+function payShow() { const r = $('#payRes'); if (!r || !PY) return; const a = +$('#payA').value || 0, f = $('#payF').value, m = payMonthly(a, f); r.textContent = a > 0 ? `That is about ${fmt(m)} a month.${f === 'two' || f === 'week' ? ' Some months you are paid an extra time. Plan with this number and treat that month as extra money.' : ''}` : 'Enter the amount.'; }
+function payClick(e) {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.hasAttribute('data-payno')) { closePay(); return; }
+  if (b.hasAttribute('data-payok')) {
+    const m = payMonthly(+$('#payA').value || 0, $('#payF').value); if (!(m > 0)) { $('#payRes').textContent = 'Enter the amount.'; return; }
+    setVal(S, 'a', PY.ym, m, 'after'); markDone('pay'); persist(); closePay(); render(); sfx('sparkle'); cheer('Monthly pay set to ' + fmt(m) + '.');
+  }
+}
+
+/* ---------- spending limits: every line against what was logged for it (Home, when switched on in Settings) ---------- */
+function renderLimits() {
+  const el = $('#hLimits'); if (!el) return;
+  if (!S.ui.limits || sampleOn() || !HV) { el.hidden = true; return; }
+  const L = limitsOf(S, C, HV.ym); if (!L.rows.length && !L.other) { el.hidden = true; return; }
+  el.hidden = false;
+  put(el, `<h2>Spending limits</h2><p class="hs-lbl">Each line against what you logged in ${esc(monthLabel(HV.ym, true))}</p>
+    <ul class="lim">${L.rows.map(r => { const f = r.planned > 0 ? Math.min(1, r.spent / r.planned) : (r.spent > 0 ? 1 : 0); return `<li class="${r.over ? 'over' : ''}"><span class="ln">${esc(r.name)}</span><span class="lv">${r.over ? `${fmt2(-r.left)} over` : `${fmt2(r.left)} left`}</span><span class="lb" role="img" aria-label="${esc(r.name)}: ${fmt2(r.spent)} of ${fmt(r.planned)}"><i style="width:${f * 100}%"></i></span><span class="ls">${fmt2(r.spent)} of ${fmt(r.planned)}</span></li>`; }).join('')}</ul>
+    ${L.other > 0 ? `<p class="cap">${fmt2(L.other)} logged as Other has no limit.</p>` : ''}`);
+}
+
+/* ---------- last month ---------- */
+function renderLookBack() {
+  const el = $('#rcBack'); if (!el) return;
+  const ym = sel, pm = MONTHS[MONTHS.indexOf(ym) - 1]; if (!pm || sampleOn()) { el.hidden = true; return; }
+  const b = lookBack(S, C, pm); if (!b || !(b.inflow > 0) || !b.count) { el.hidden = true; return; }
+  el.hidden = false;
+  const names = { nec: 'Necessities', play: 'Play money', edu: 'Education', give: 'Give' };
+  const rows = b.jars.filter(j => j.planned > 0 || j.spent > 0).map(j => `<tr><th scope="row">${names[j.id]}</th><td>${fmt(j.planned)}</td><td>${j.spent > 0 ? fmt2(j.spent) : j.id === 'nec' ? 'in plan' : '0'}</td></tr>`).join('');
+  put(el, `<h2>Last month, ${esc(monthLabel(pm))}</h2>
+    <p class="cap">${b.count} ${b.count === 1 ? 'receipt' : 'receipts'}, ${fmt2(b.logged)} logged. The balance went ${b.left >= 0 ? 'up' : 'down'} ${fmt(Math.abs(b.left))}, from ${fmt(b.bankStart)} to ${fmt(b.bankEnd)}.</p>
+    <div class="tablewrap"><table class="lbt"><thead><tr><th scope="col"></th><th scope="col">Planned</th><th scope="col">Spent</th></tr></thead><tbody>${rows}</tbody></table></div>
+    ${b.over.length ? `<p class="cap">Over the plan: ${b.over.slice(0, 3).map(r => `${esc(r.name)} by ${fmt2(-r.left)}`).join(', ')}.</p>` : '<p class="cap">Nothing went over its plan.</p>'}
+    <p class="cap">${b.goalsAdded > 0 ? `${fmt(b.goalsAdded)} went to goals. ` : ''}${b.debtPaid > 0 ? `${fmt(b.debtPaid)} went to cards and loans, ${fmt(b.interest)} of it interest. ` : ''}</p>`);
+}
+
+/* ---------- repeating spending ---------- */
+let REC_OPEN = false;
+const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+function renderRecurring() {
+  const el = $('#rcRepeat'); if (!el) return;
+  if (sampleOn()) { el.hidden = true; return; }
+  el.hidden = false;
+  const rs = (S.plan.recurring || []);
+  const cats = Array.from($('#rcCat').options).filter(o => o.value !== CAT_NEW);
+  const list = rs.map(r => `<li><span><b>${fmt2(r.a)}</b> ${esc(r.n || (lineByKey(S, r.c) ? lineByKey(S, r.c).name : 'Other'))}</span><span class="cap">${r.every === 'week' ? 'Every ' + WEEKDAYS[r.on] : 'On day ' + r.on + ' of the month'}</span><button type="button" class="link warn" data-recdel="${esc(r.id)}" data-armkey="rec-${esc(r.id)}">Stop</button></li>`).join('');
+  const sig = JSON.stringify([rs, REC_OPEN, cats.map(o => o.value + o.textContent)]); if (el.dataset.sig === sig) return;
+  if (el.contains(document.activeElement) && document.activeElement.matches('input, select') && REC_OPEN) return;
+  el.dataset.sig = sig;
+  el.innerHTML = `<div class="head"><h2>Repeating spending</h2><p class="sub2">A gym fee, a weekly top-up. It is logged for you on its day.</p></div>
+    ${rs.length ? `<ul class="recl">${list}</ul>` : '<p class="cap">None yet.</p>'}
+    ${REC_OPEN ? `<form class="addrow rec-form" id="recForm" autocomplete="off">
+      <div class="inp sm"><span class="yen cs"></span><input id="recAmt" type="number" inputmode="decimal" min="0" step="any" placeholder="Amount" aria-label="Amount"></div>
+      <div class="selbox"><select id="recCat" aria-label="Category">${cats.map(o => `<option value="${esc(o.value)}">${esc(o.textContent)}</option>`).join('')}</select></div>
+      <input class="txt" id="recNote" type="text" maxlength="80" placeholder="Note (optional)" aria-label="Note">
+      <div class="selbox"><select id="recEvery" aria-label="How often"><option value="week">Every week</option><option value="month">Every month</option></select></div>
+      <div class="selbox"><select id="recOn" aria-label="Day"></select></div>
+      <button class="btn small solid" type="submit">Repeat</button><button class="btn small" type="button" id="recCancel">Cancel</button></form>`
+      : `<div class="row-btns"><button type="button" class="btn small" id="recAdd"${rs.length >= MAX_RECURRING ? ' disabled' : ''}>Add repeating spending</button></div>`}`;
+  const ev = $('#recEvery'); if (ev) { const fillOn = () => { $('#recOn').innerHTML = ev.value === 'week' ? WEEKDAYS.map((n, i) => `<option value="${i}">${n}</option>`).join('') : Array.from({ length: 28 }, (_, i) => `<option value="${i + 1}">Day ${i + 1}</option>`).join(''); }; fillOn(); ev.addEventListener('change', fillOn); }
+}
+function recurringInit() {
+  const el = $('#rcRepeat'); if (!el) return;
+  el.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    if (b.id === 'recAdd') { REC_OPEN = true; el.dataset.sig = ''; renderRecurring(); const a = $('#recAmt'); if (a) a.focus(); return; }
+    if (b.id === 'recCancel') { REC_OPEN = false; el.dataset.sig = ''; renderRecurring(); return; }
+    const del = b.closest('[data-recdel]'); if (del) confirmClick(del, 'Tap again to stop', () => { S.plan.recurring = (S.plan.recurring || []).filter(r => r.id !== del.dataset.recdel); if (!S.plan.recurring.length) delete S.plan.recurring; el.dataset.sig = ''; persist(); renderRecurring(); });
+  });
+  el.addEventListener('submit', e => {
+    if (e.target.id !== 'recForm') return; e.preventDefault();
+    const a = round2(+$('#recAmt').value || 0); if (!(a > 0)) { cheer('Enter an amount.'); return; }
+    const every = $('#recEvery').value, on = +$('#recOn').value, c = $('#recCat').value, today = todayStr();
+    const r = { id: newId(S, 'rp', x => (S.plan.recurring || []).some(q => q.id === x)), a, c: lineByKey(S, c) ? c : 'other', n: $('#recNote').value.trim().slice(0, 80), every, on, from: today, last: '' };
+    S.plan.recurring = (S.plan.recurring || []).concat([r]); REC_OPEN = false; el.dataset.sig = '';
+    const n = applyRecurring(S, today); persist(); render(); cheer(n ? 'Repeating. Today\'s was logged.' : 'Repeating.');
+  });
+}
+
+/* ---------- how a number is worked out ---------- */
+function openWhy(kind) {
+  if (!HV || !C) return;
+  const V = HV, ym = V.ym, m = C.byYm[ym], p = V.play, floor = cfg(S, 'minBank'), mon = monthLabel(ym, true);
+  let title, rows = [], foot = '';
+  if (kind === 'free') {
+    const held = m.status === 'short' && m.left < 0 ? Math.max(0, floor - m.bankEnd) : 0, freeLeft = Math.max(p.left < 0 ? p.left : 0, round2(p.left - held));
+    title = 'Free to spend (play money)';
+    rows = [[`Play money planned for ${mon}`, fmt(p.planned)], [`Logged in Play money (${p.count} ${p.count === 1 ? 'receipt' : 'receipts'})`, '−' + fmt2(p.spent)]];
+    if (held > 0) rows.push(['Held back so the balance stays above your minimum', '−' + fmt(held)]);
+    rows.push(['Free to spend', fmt2(freeLeft)]);
+    if (p.perWeek != null) rows.push([`Per week for the ${plural(p.daysLeft, 'day')} left`, fmt(Math.max(0, freeLeft) / (p.daysLeft / 7))]);
+    if (p.daysLeft > 0 && freeLeft > 0) rows.push(['Per day', fmt(freeLeft / p.daysLeft)]);
+    foot = 'Planned is the Play money total on the Plan page. Logged is every receipt in Play money this month.';
+  } else {
+    title = 'Where you stand in ' + mon;
+    rows = [['Pay and other money in', fmt(m.inflow)], ['Bills, one-time costs and card payments', '−' + fmt(m.jar.nec)], ['Goals', '−' + fmt(m.goalsTotal)], ['Play money, Education, Financial Freedom, Give', '−' + fmt(m.jar.play + m.jar.edu + m.jar.ffa + m.jar.give)], ['Left in the month', (m.left < 0 ? '−' : '') + fmt(Math.abs(m.left))], ['Balance at the start', fmt(m.bankStart)], ['Balance at the end', fmt(m.bankEnd)], ['Your minimum balance', fmt(floor)]];
+    foot = m.bankEnd < floor ? 'The balance ends under your minimum, so the month is short.' : m.left < 0 ? 'The month spends more than comes in, but the balance covers it.' : 'Everything planned fits in your pay.';
+  }
+  let el = $('#why');
+  if (!el) {
+    el = document.createElement('div'); el.id = 'why'; el.className = 'gw'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-labelledby', 'whyT'); document.body.appendChild(el);
+    el.addEventListener('click', e => { if (e.target.closest('[data-whyno]')) closeWhy(); });
+    el.addEventListener('keydown', e => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closeWhy(); } });
+  }
+  el.dataset.ret = ''; el._ret = document.activeElement;
+  el.innerHTML = `<div class="gw-scrim" data-whyno></div><div class="gw-card"><h2 id="whyT">${esc(title)}</h2><dl class="whyl">${rows.map(r => `<div><dt>${esc(r[0])}</dt><dd>${esc(r[1])}</dd></div>`).join('')}</dl><p class="cap">${esc(foot)}</p><div class="row-btns"><button type="button" class="btn solid" data-whyno>Close</button></div></div>`;
+  el.hidden = false; requestAnimationFrame(() => el.classList.add('on')); document.body.classList.add('gw-open');
+  const c = el.querySelector('.btn'); if (c) c.focus();
+}
+function closeWhy() { const el = $('#why'); if (!el) return; el.classList.remove('on'); setTimeout(() => { el.hidden = true; }, 200); document.body.classList.remove('gw-open'); if (el._ret && el._ret.focus) try { el._ret.focus(); } catch (e) { /* gone */ } }
+
+/* ---------- Settings switch and page wiring ---------- */
+function paintLim() { const b = $('#setLim'); if (!b) return; const on = S.ui.limits === true; b.setAttribute('aria-checked', String(on)); $('#limTxt').textContent = on ? 'On' : 'Off'; }
+(function () {
+  document.addEventListener('click', e => {
+    if (e.target.closest('[data-xm]')) { openExtra(); return; }
+    if (e.target.closest('[data-pay]')) { openPay(); return; }
+    const w = e.target.closest('[data-why]'); if (w) openWhy(w.dataset.why);
+  });
+  const lim = $('#setLim'); if (lim) lim.addEventListener('click', () => { if (S.ui.limits === true) delete S.ui.limits; else S.ui.limits = true; persist(); render(); });
+  /* switching "a year" / "a month" converts the number in the box, so the same rate is shown either way */
+  document.addEventListener('change', e => {
+    const s = e.target.closest && e.target.closest('[data-per]'); if (!s) return;
+    const f = s.closest('.dform'), box = f && f.querySelector('[data-d="apr"]'); if (!box) return;
+    const v = parseFloat(String(box.value).replace(',', '.')); if (!isFinite(v)) return;
+    box.value = String(Math.round((s.value === 'month' ? v / 12 : v * 12) * 100) / 100);
+  });
+  debtsInit(); recurringInit();
+  /* repeating spending that came due since the last visit is logged when the page opens and when it comes back to the front */
+  const due = () => {
+    if (!S.plan || !S.plan.recurring || !S.plan.recurring.length) return;
+    let n = 0; try { n = applyRecurring(S, todayStr()); } catch (e) { n = 0; }
+    if (n > 0) { persist(); render(); cheer(n === 1 ? 'Logged 1 repeating payment.' : 'Logged ' + n + ' repeating payments.'); }
+  };
+  setTimeout(due, 600);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) due(); });
 })();
 
 /* ---------- wire up events ---------- */

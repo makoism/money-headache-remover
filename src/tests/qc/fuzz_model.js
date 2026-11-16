@@ -56,7 +56,7 @@ function checkCalc(id, S) {
     const jarSum = m.jar.nec + m.jar.play + m.jar.edu + m.jar.ffa + m.jar.give;
     ok(tag, m.out === jarSum + m.goalsTotal, 'out != jars + goals');
     const linesSum = m.lines.reduce((a, l) => a + l.v, 0);
-    ok(tag, jarSum === linesSum + m.itemsTotal, 'jars != lines + items ' + jarSum + ' ' + linesSum + ' ' + m.itemsTotal);
+    ok(tag, jarSum === linesSum + m.itemsTotal + (m.debtPay || 0), 'jars != lines + items ' + jarSum + ' ' + linesSum + ' ' + m.itemsTotal);
     ok(tag, m.inflow === m.a + m.b + m.side + m.draw, 'inflow parts');
     // goals
     let gs = 0;

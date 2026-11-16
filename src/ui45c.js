@@ -123,7 +123,7 @@ function onbApply() {
   if (impAccts.some(a => a.files.length)) return;
   impAccts = bx.map(b => acctNew(b.kind, b.name));
 }
-const STEP_CHAT = { id: 'chat', part: PART.money, setup: true, art: '', title: 'Before the uploads', when: () => !impOnly || !(Array.isArray(S.ui.accts) && S.ui.accts.length),
+const STEP_CHAT = { id: 'chat', part: PART.money, setup: true, art: '', title: 'Before the uploads', skipIf: () => quickSetup() && !impOnly, when: () => !impOnly || !(Array.isArray(S.ui.accts) && S.ui.accts.length),
   next: () => onbNextLabel(), nextPlain: true,
   leave: d => { if (d > 0) onbApply(); },
   body: () => `<div class="onb" id="onbLog" role="log" aria-live="polite"></div><div class="onb-a" id="onbAns"></div>`,

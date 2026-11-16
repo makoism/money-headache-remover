@@ -384,7 +384,7 @@ function loanBody(l) {
     <p class="cap" id="loanCalc"></p>
   </div>`;
 }
-const LOAN_NOTE = 'Monthly is the payment you make each month, not what you owe in total. Owe a total, like a card balance? Switch to Total, or add it later as a Pay off a debt goal. Set the last payment month and the other value is filled in.';
+const LOAN_NOTE = 'Monthly is the payment you make each month, not what you owe in total. Owe a total, like a card balance? Switch to Total, or add it later under Cards and loans on the Goals tab. Set the last payment month and the other value is filled in.';
 function loanSync() {
   const am = $('#tourAmt'), to = $('#tourTot'), en = $('#tourEnds'), cap = $('#loanCalc'); if (!am || !to || !en || !cap) return;
   const n = loanPayments(en.value), plural = n === 1 ? '' : 's';

@@ -47,6 +47,8 @@ const puppeteer = require('/home/claude/work/tools/node_modules/puppeteer-core')
   ok('another currency from the list clears the chips', (await p.$$eval('input[name=tourCur]:checked', e => e.length)) === 0 && (await val('#tourCurMore')) === 'S$');
   await p.click('input[name=tourCur][value="₱"]'); await w(150);
   ok('back to pesos', (await p.$eval('input[name=tourCur]:checked', e => e.value)) === '₱' && (await val('#tourCurMore')) === '');
+  ok('the short setup is the default, with a way to ask for every question', await p.$('#tourFull') !== null);
+  await p.click('#tourFull'); await w(300);
   await p.click('#tourNext'); await w(250);
   ok('screen 3 is the questions before the uploads, with Skip to uploads in the footer', (await q('#tourTitle')) === 'Before the uploads' && (await q('#tourNext')) === 'Skip to uploads');
   await p.click('#tourNext'); await w(250);
@@ -118,7 +120,7 @@ const puppeteer = require('/home/claude/work/tools/node_modules/puppeteer-core')
   ok('jar note in line', (await q('#jarNote')).startsWith('Necessities are 55% of pay'));
   ok('hero is the play money', (await q('#heroNum')) === '₱3,000');
   ok('five tabs', (await p.$$eval('.tabs [role=tab]', e => e.length)) === 5);
-  ok('ledger rows follow the jars', JSON.stringify(await p.$$eval('#rowsOut .row', e => e.map(x => x.dataset.id))) === JSON.stringify(['nec', 'items', 'lts', 'play', 'edu', 'ffa', 'give']));
+  ok('ledger rows follow the jars', JSON.stringify(await p.$$eval('#rowsOut .row', e => e.map(x => x.dataset.id))) === JSON.stringify(['nec', 'items', 'debts', 'lts', 'play', 'edu', 'ffa', 'give']));
   ok('hero invites a first receipt', (await q('#rcLine')).includes('Add a receipt'));
 
   // one-month edit, undo
@@ -288,7 +290,8 @@ const puppeteer = require('/home/claude/work/tools/node_modules/puppeteer-core')
   await tab('goals'); await tab('month'); await w(900);
   ok('goals and receipts are marked done', !!(await p.evaluate(() => { try { return JSON.parse(localStorage.getItem('money-map-template-v2')).ui.done || {}; } catch (e) { return {}; } })).goals && !!(await p.evaluate(() => { try { return JSON.parse(localStorage.getItem('money-map-template-v2')).ui.done || {}; } catch (e) { return {}; } })).receipts);
   await tab('home'); ok('with everything done (typed numbers), the card offers Make it exact', !(await p.$eval('#hNext', e => e.hidden)) && /Make it exact/.test(await q('#hNext')));
-  await p.click('#hNext [data-hideexact]'); await w(400); ok('hidden once, the next-step banner is gone', await p.$eval('#hNext', e => e.hidden));
+  await p.click('#hNext [data-hideexact]'); await w(400); ok('then it asks about cards and loans (or the backup reminder comes first)', !(await p.$eval('#hNext', e => e.hidden)) ? /card or loan/.test(await q('#hNext')) : true);
+  if (!(await p.$eval('#hNext', e => e.hidden))) { await p.click('#hNext [data-nodebts]'); await w(400); } ok('hidden once, the next-step banner is gone', await p.$eval('#hNext', e => e.hidden));
 
   // ----- persistence of the custom plan -----
   await reload();

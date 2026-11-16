@@ -52,6 +52,9 @@ const STEP_MONEY = { id: 'money', part: PART.money, setup: true, focus: '#tourPa
 
 /* ----- bills: tick the ones you pay, then one screen for each ----- */
 const BILLS_ON = ['rent', 'util', 'food', 'net', 'phone', 'gas'];
+/* The first setup is short: pay, rent and food, one goal. Everything else is asked for later, one card at a time (Next on Home). A longer setup is one tap away on the Currency screen. */
+const quickSetup = () => !(S.ui && S.ui.full === true);
+const BILLS_QUICK = ['rent', 'food'];
 const BILL_Q = { rent: 'Rent or mortgage', util: 'Utilities', food: 'Food and groceries', net: 'Internet', phone: 'Phone', ins: 'Insurance', subs: 'Subscriptions', gas: 'Transport', loan: 'Loan or debt payment', card: 'Credit card' };
 const BILL_NOTE = {
   rent: () => 'Full amount. If someone else pays part, add their share as other income.',
@@ -66,7 +69,7 @@ const BILL_NOTE = {
 const baseOf = id => moreKind(id) || id;
 function chosenBills() {
   const all = necLines(), ids = all.map(l => l.id), sb = Array.isArray(S.ui.sb) ? S.ui.sb.filter(id => ids.indexOf(id) >= 0 && !moreKind(id)) : null;
-  const base = sb || BILLS_ON.filter(id => ids.indexOf(id) >= 0), out = [];
+  const base = sb || (quickSetup() ? BILLS_QUICK : BILLS_ON).filter(id => ids.indexOf(id) >= 0), out = [];
   base.forEach(id => { out.push(id); all.forEach(l => { if (moreKind(l.id) === id) out.push(l.id); }); });
   return out;
 }
@@ -81,6 +84,7 @@ const STEP_BILLS = { id: 'bills-pick', part: PART.bills, setup: true, pick: true
     if (d <= 0) return;
     const ids = $$('#tourBody input[name=tourBill]:checked').map(i => i.value).filter(id => lineById(S, id));
     S.ui.sb = ids;
+    if (quickSetup() && !S.ui.gset) applyGoalPick(['rainy'], false); /* the short setup keeps the emergency fund only; more goals come later */
     const keep = necLines().filter(l => ids.indexOf(baseOf(l.id)) >= 0).map(l => l.id);
     /* the sample amounts are not yours: every line starts empty, and what you type replaces it */
     necLines().forEach(l => { if (keep.indexOf(l.id) < 0 || !S.steps[l.key]) setVal(S, l.key, START, 0, 'after'); });
@@ -116,7 +120,7 @@ const billStep = id => ({ id: 'bill-' + id, part: PART.bills, setup: true, focus
         <div class="row-btns"><span class="cap" id="cardCap" aria-live="polite"></span><button type="button" class="btn small solid" id="cardUse" hidden>Use this amount</button></div>
       </div></details>
       <p class="cap">A card is paid a month late. This month you pay last month's bill, so put that bill under One-time costs for this month (Plan, then Month). The amount above is what you expect to put on the card from now on.</p>
-      <p class="cap">No credit card: go back and untick it. Paying off an old balance: add a Pay off a debt goal.</p>`;
+      <p class="cap">No credit card: go back and untick it. Owe on a card or loan? Add it under Cards and loans on the Goals tab.</p>`;
     }
     return `${note ? `<p>${esc(note())}</p>` : ''}
     <div class="tour-fields">${named ? textField('tourLName', 'Name', l.name) : ''}${moneyField('tourAmt', 'Each month', val(S, l.key, START))}</div>${b === 'ins' ? moreBtn('ins') : ''}`;
@@ -233,16 +237,17 @@ const GOAL_KINDS = [
   { k: 'moving', id: 'moving', name: 'Home or move', slot: 4, pick: 'A home or a move', hint: 'Deposit, movers, furniture', title: 'Home or move', cost: 'Deposit, movers, furniture.' },
   { k: 'buy', id: 'buy', name: 'Big purchase', slot: 1, pick: 'A big purchase', hint: 'Laptop, car, wedding', title: 'Big purchase', cost: 'The price, or your best guess.' },
   { k: 'car', id: 'car', name: 'Yearly cost', slot: 6, pick: 'A yearly cost', hint: 'Insurance, taxes, holidays', title: 'Yearly cost', cost: 'Full amount for the year, not per month.' },
-  { k: 'debt', id: 'debt', name: 'Pay off debt', slot: 3, debt: true, pick: 'Pay off a debt', hint: 'Card, loan, balance', title: 'Pay off debt', cost: 'What you still owe in total, with any interest.' },
+  { k: 'debt', id: 'debt', name: 'Pay off debt', slot: 3, debt: true, pick: 'Pay off a debt', hint: 'A balance with no interest', title: 'Pay off debt', cost: 'What you still owe in total. For a card or loan with interest, use Cards and loans on the Goals tab instead.' },
   { k: 'other', id: 'other', name: 'Something else', slot: 2, pick: 'Something else', hint: 'Anything with a price', title: 'Goal', cost: '' },
 ];
-const STEP_TOOLPICK = { id: 'goals-pick', part: PART.goals, setup: true, pick: true, title: 'Goals', art: 'sprout',
+const STEP_TOOLPICK = { id: 'goals-pick', part: PART.goals, setup: true, pick: true, skipIf: () => quickSetup(), title: 'Goals', art: 'sprout',
   body: () => `<p>Burrows hold money you build up: a cushion, a trip, a big purchase, or paying off a debt. Tick what you are working toward. Add more later.</p>
     <div class="tour-chips two" role="group" aria-label="Goals">${GOAL_KINDS.map(k => { const on = S.ui.gset ? !!goalById(S, k.id) : k.k === 'rainy'; return `<label class="chip multi${on ? ' on' : ''}"><input type="checkbox" name="tourGoalPick" value="${k.k}"${on ? ' checked' : ''}><b>${k.pick}</b><span>${k.hint}</span></label>`; }).join('')}</div>
-    <p class="cap">Unsure? Keep the emergency fund. Owe something with interest, like a card? Add &ldquo;Pay off a debt&rdquo; too.</p>`,
-  leave: d => {
-    if (d <= 0) return;
-    const picked = $$('#tourBody input[name=tourGoalPick]:checked').map(i => i.value), first = !S.ui.gset, old = S.plan.goals, next = [], gk = S.ui.gk || {};
+    <p class="cap">Unsure? Keep the emergency fund. Owe on a card or loan? Add it after setup, under Cards and loans on the Goals tab. It works out the interest and the payoff date.</p>`,
+  leave: d => { if (d <= 0) return; applyGoalPick($$('#tourBody input[name=tourGoalPick]:checked').map(i => i.value), true); } };
+function applyGoalPick(picked, mark) {
+  {
+    const first = !S.ui.gset, old = S.plan.goals, next = [], gk = S.ui.gk || {};
     GOAL_KINDS.forEach(k => {
       if (picked.indexOf(k.k) < 0) return;
       const ex = first ? null : goalById(S, k.id);
@@ -251,8 +256,9 @@ const STEP_TOOLPICK = { id: 'goals-pick', part: PART.goals, setup: true, pick: t
     });
     if (!first) old.forEach(g => { if (!GOAL_KINDS.some(k => k.id === g.id) && !gk[g.id] && next.indexOf(g) < 0) next.push(g); });
     old.forEach(g => { if (next.indexOf(g) < 0) forgetKey(S, 'goal:' + g.id); });
-    S.plan.goals = next.slice(0, MAX_GOALS); S.ui.gset = true; settleGoals(); markDone('goals'); persist();
-  } };
+    S.plan.goals = next.slice(0, MAX_GOALS); S.ui.gset = true; settleGoals(); if (mark) markDone('goals'); persist();
+  }
+}
 const EM_MONTHS = [[1, 'month'], [3, 'months'], [6, 'months']];
 const emMonths = g => { const n = necTotal(); if (n <= 0 || !(g.target > 0)) return 3; const m = g.target / n; return EM_MONTHS.reduce((best, x) => Math.abs(x[0] - m) < Math.abs(best - m) ? x[0] : best, 3); };
 const emCap = m => `${m} month${m === 1 ? '' : 's'} of your bills is <b>${fmt(m * necTotal())}</b>.`;
@@ -290,7 +296,7 @@ const goalStep = id => ({ id: 'goal-' + id, part: PART.goals, setup: true,
       const nm = $('#tourGName'), du = $('#tourGDue'), wy = $('#tourGWhy');
       updateGoal(S, id, { name: nm && nm.value.trim() ? nm.value : g.name, target: inum('tourGCost'), start: inum('tourGSaved'), due: du ? du.value : g.due, why: wy ? wy.value : (g.why || '') });
     }
-    settleGoals(); persist();
+    settleGoals(); if (quickSetup()) markDone('goals'); persist();
   } });
 
 /* ----- dividing the goal money: dated goals get what they need first, the rest is shared ----- */

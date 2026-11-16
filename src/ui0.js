@@ -98,6 +98,10 @@ function normalize(d) {
   if (typeof u.vol !== 'number' || !(u.vol >= 0 && u.vol <= 100)) delete u.vol; else u.vol = Math.round(u.vol);
   if (!(u.dj && typeof u.dj === 'object' && typeof u.dj.src === 'string')) delete u.dj; else u.dj = { src: u.dj.src.slice(0, 16), i: Math.max(0, Math.min(40, Math.round(+u.dj.i) || 0)) };
   if (u.scene !== false) delete u.scene;
+  if (u.limits !== true) delete u.limits;
+  if (u.full !== true) delete u.full;
+  if (u.moreBillsHidden !== true) delete u.moreBillsHidden;
+  if (u.noDebts !== true) delete u.noDebts;
   delete u.subsX;
   const cents = v => Math.round(v * 100) / 100;
   if (!(u.cardT > 0 && u.cardT < 1e9)) delete u.cardT; else u.cardT = cents(u.cardT);
