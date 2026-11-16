@@ -3,6 +3,10 @@
 One artist, one hand. Every picture in this app (a creature, a burrow, a whole world, an icon) is drawn by the same rules so that it
 looks like one person made it on purpose. Read this before drawing anything. The checks at the end are run on every picture.
 
+## 00. The number one rule: it has to flow
+
+**Anything you add must flow with whatever you add it to.** It is never laid on and then stopped (Mako on the card vines: "just kind of added here and then stopped"). Grow it from something: a vine starts full at a card corner, runs a short way along one edge and a shorter way down the other, and thins out. It breathes: never close to words, buttons or fields, never in dialogs or bars. It is an accent, small and cute, never the main thing. Not on every card: pick where it belongs, and give each its own kind (leaves, ivy, fern, glory, bramble, wisteria). The purple wisteria on Goals stays as it is. Check at 3x: if you can point to where it was glued on, it is wrong. (`garden.js` PLAN and `placeCorner` implement this.)
+
 ## 0. The nature rule (first, above everything)
 
 Nothing in this app is an icon. Everything is something that grew, fell, or was dug. Draw the way nature is, with its inconsistencies.
@@ -13,7 +17,7 @@ Nothing in this app is an icon. Everything is something that grew, fell, or was 
 - **Layers, like a real floor.** Soil, moss, tall grass, then small life. Tall grass comes in several species (thin tufts, broad blades, reeds with seed heads, ferns) and several greens (cool, warm, deep), with clearings where small things live.
 - **Straight trunks.** Trees stand straight with only a slight lean. No twisting, swaying or crooked trunks. (Mako's rule.)
 - **Never a floating sticker.** Every picture sits in its world: on its ground, in its light, with a contact shadow, with grass over its feet.
-- **Small surprises for the ones who look.** A stump with a lit door, a frog that blinks on its stone, a snail on the log, eyes blinking in the grass. They appear now and then, never on a loop you can set a watch by.
+- **Small surprises for the ones who look.** A stump with a lit door, an alien blob wandering by the stone, a snail on the log, eyes blinking in the grass. They appear now and then, never on a loop you can set a watch by.
 - **Icons stay simple.** A small picture (home burrow mound, favicon) is a few big shapes in flat tones, not a scene: one mound, one door, one light, one clump of grass. Detail belongs to the big pictures. Edges are tone against tone, never a black ring: no black outlines on living things (the dragon is shaded dark green, not outlined).
 - **Test:** cover the label. If it still looks like an app icon, it is wrong. If it looks like a place, it is right.
 
@@ -26,6 +30,8 @@ Nothing in this app is an icon. Everything is something that grew, fell, or was 
 - **Depth.** It stands on the ground with a contact shadow, grass grows over its foot, and creatures in front of it are drawn in front of it (draw it as a sprite in the same layer, at the right depth, never in a separate top layer).
 - **Fit every screen.** Phone and desktop each get their own placement and board size, so it never overlaps the burrow, the creatures or the floating buttons.
 - **Check before showing:** screenshot it at desktop and phone, zoom 3x. If you can imagine peeling it off like a sticker, it is wrong. `artcheck.sh` fails the build if `.bv-sign` shows any background, border or image, or if an overlay canvas for it exists.
+
+Squirrel: Elthen's pixel squirrel (itch.io, free, edits allowed), cut into `sqpx.js` and drawn by `SQP` in squirrel.js, is the only squirrel (Mako chose it). Idle, run, and a gold-coin variation (nut frames recoloured, a coin added to the run frames). Colours kept as the artist drew them. Never bigger than the deer.
 
 ## 1. Who draws these
 

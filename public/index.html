@@ -1658,6 +1658,11 @@ body.bv-on .wrap, body.bv-on #mgBand { visibility: hidden; }
 
 /* the footer lines rest on a soft dark pill so they stay readable over the meadow */
 body.scene-on .foot { width: max-content; max-width: min(92%, 520px); margin: 8px auto; padding: 6px 16px; border-radius: 999px; background: rgba(8, 20, 14, .6); color: rgba(232, 244, 234, .86); }
+
+.bv-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 8px; }
+.bv-amt input { width: 100%; box-sizing: border-box; min-height: 44px; padding: 8px 12px; border-radius: 12px; border: 1px solid color-mix(in srgb, var(--fg) 28%, transparent); background: color-mix(in srgb, var(--bg) 60%, transparent); color: var(--fg); font: inherit; font-size: 16px; }
+.bv-row { display: flex; align-items: center; gap: 12px; margin: 10px 0 0; }
+.bv-msg { min-height: 1em; margin: 6px 0 0; }
 </style>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#eef4ef" media="(prefers-color-scheme: light)">
@@ -1683,7 +1688,7 @@ body.scene-on .foot { width: max-content; max-width: min(92%, 520px); margin: 8p
   <header class="top">
     <button type="button" class="tstreak" id="topStreak" data-streak aria-label="Streak" tabindex="-1" aria-hidden="true"></button>
     <h1>the burrow<small>for money freedom</small></h1>
-    <span class="top-r"><button type="button" class="topb" id="sndBtn" aria-pressed="false" aria-label="Mute"></button><button type="button" class="topb" id="djBtn" aria-haspopup="dialog" aria-expanded="false" aria-controls="dj" aria-label="Music and volume"></button><span class="save" id="save" role="status"><i></i><span id="saveTxt">Loading</span></span>
+    <span class="top-r"><button type="button" class="topb" id="sndBtn" aria-pressed="false" aria-label="Mute" hidden></button><button type="button" class="topb" id="djBtn" aria-haspopup="dialog" aria-expanded="false" aria-controls="dj" aria-label="Sound and music"></button><span class="save" id="save" role="status"><i></i><span id="saveTxt">Loading</span></span>
     <button type="button" class="gear" id="gearBtn" aria-label="Settings" data-tab-go="basics"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="3.1"/><circle cx="12" cy="12" r="6.6"/><path d="M12 2.6v2.1M12 19.3v2.1M2.6 12h2.1M19.3 12h2.1M5.35 5.35l1.5 1.5M17.15 17.15l1.5 1.5M5.35 18.65l1.5-1.5M17.15 6.85l1.5-1.5"/></svg></button></span>
   </header>
 
@@ -2025,7 +2030,7 @@ body.scene-on .foot { width: max-content; max-width: min(92%, 520px); margin: 8p
   </div>
 
   <p class="foot" id="footNote">Not financial advice. Sample numbers are invented. Replace them with yours.</p>
-  <p class="foot ver" id="verFoot">Version 38.18, updated </p>
+  <p class="foot ver" id="verFoot">Version 38.19, updated </p>
   </div>
 </div>
 <div class="handfx" id="handFx" aria-hidden="true"></div>
@@ -2079,7 +2084,7 @@ body.scene-on .foot { width: max-content; max-width: min(92%, 520px); margin: 8p
     <button type="button" id="helpSetup">Guided setup</button>
     <button type="button" id="helpVideo" hidden>Intro video</button>
     <button type="button" id="helpReport">Report a problem</button>
-    <p class="help-ver">Version 38.18</p>
+    <p class="help-ver">Version 38.19</p>
   </div>
   <div class="help-row"><button type="button" class="help-btn ask-btn" id="askBtn">Ask</button><button type="button" class="help-btn" id="helpBtn" aria-expanded="false" aria-controls="helpMenu"><span class="q" aria-hidden="true">?</span>Help</button></div>
 </div>
@@ -3346,11 +3351,11 @@ const GARDEN_POOL = { flower: ['poppy', 'poppyY', 'poppyP', 'bluebell', 'bluebel
   creature: ['bee', 'beeB', 'ladybug', 'ladybugY', 'butterfly', 'butterflyB', 'butterflyP', 'butterflyV', 'mouse', 'mouseB', 'hedgehog', 'bluebird', 'bluebirdY', 'robin', 'turtle', 'caterpillar', 'squirrel', 'cat', 'catG', 'fawn', 'firefly', 'snail', 'frog', 'bunny', 'fox', 'chick', 'duck', 'sheep', 'owl'],
   heart: ['heart', 'heartP', 'heartB', 'heartY', 'heartleaf'] };
 /* ---------- the garden: quiet nature on the cards ----------
-   A thin layer (.gnl) inside each page holds, for each box, a container (.gdh) with:
-     - one vine of its own kind (ivy, morning glory, wisteria, bramble, fern, clover) along an edge, bending round the words and controls;
-     - a thin border vine along another edge, hugging the rim, swelling now and then into a bigger tuft; and sometimes a second one;
-     - on a few cards, one small plant (sprout, berries, leaves) standing in free room at the right side of the card.
-   A box with no good place for something gets nothing. Nothing is clickable: the layer takes no taps, so words and buttons keep every one.
+   THE RULE: anything added has to flow with what it is added to. A vine here is not laid on a card, it grows out of one of its corners:
+   it starts full at the corner, runs a short way along one edge and a shorter way down the other, and thins out. Only some cards get one
+   (PLAN below), each with a species of its own, so no two cards wear the same thing. No dialogs, no bars, nothing near the words.
+   A thin layer (.gnl) inside each page holds, for each box that has a plan, a container (.gdh) with that one corner vine.
+   A box with no good place for it gets nothing. Nothing is clickable: the layer takes no taps, so words and buttons keep every one.
    The picture follows the layout: it is redrawn when a box changes size, a page opens, or the cards are rebuilt (GD.queue()). */
 const GD = (() => {
   const S = 3, OV = 2, D = 16;                 /* one cell is 3px; vines overhang the edge by 2 cells and reach at most 16 cells in */
@@ -3366,18 +3371,15 @@ const GD = (() => {
     wisteria: { leaf: ['g', 'G'], big: .15, tend: .9, long: 1, end: ['cluster'], bloom: ['v', 'p'], bp: .1, edges: ['top'] },
     bramble: { thick: 1, leaf: ['G', 'g'], big: .45, tend: .45, end: ['berry', 'berry', 'leaf'], bloom: ['w', 'q'], bp: .35, edges: ['bottom', 'left'] },
     fern: { leaf: ['g', 'l', 'G'], big: 0, tend: .9, end: ['frond'], bloom: [], bp: 0, edges: ['top', 'right'] },
+    leaves: { leaf: ['g', 'l', 'g', 'G'], big: .8, tend: 0, end: ['leaf'], bloom: [], bp: 0, edges: ['top', 'right'] },
     clover: { leaf: ['g', 'l'], big: 0, tend: .3, end: ['leaf'], bloom: ['p', 'w', 'q'], bp: .4, clover: true, edges: ['bottom', 'top'] },
   };
+  /* corner: tl, tr, bl, br. The wisteria on Goals is the one the person loves and stays exactly as it was (hanging from the top edge). */
   const PLAN = {
-    hNext: { plant: 'sprout' }, hHero: { vine: 'glory' }, hGoals: { vine: 'wisteria' }, hBuckets: { plant: 'berries' }, hMore: { plant: 'leafpair' },
-    scan: { vine: 'fern' }, where: { vine: 'clover' }, ledger: { vine: 'ivy' },
+    hHero: { vine: 'leaves', corner: 'tr' }, hGoals: { vine: 'wisteria', old: true }, hBuckets: { vine: 'ivy', corner: 'tr' },
+    scan: { vine: 'fern', corner: 'tr' }, rcMonthCard: { vine: 'glory', corner: 'br' }, where: { vine: 'bramble', corner: 'br' },
   };
-  const usedPlants = new Set(), extra = {};
-  function planFor(key) {
-    if (PLAN[key]) return PLAN[key];
-    if (!extra[key]) { const r = rng(hash('plan-' + key)), names = Object.keys(SPECIES); extra[key] = { vine: names[Math.floor(r() * names.length)] }; }
-    return extra[key];
-  }
+  const planFor = key => PLAN[key] || {};
   /* ---------- finding the free room in a box ---------- */
   const SOLID = new Set(['INPUT', 'SELECT', 'TEXTAREA', 'BUTTON', 'IMG', 'svg', 'CANVAS', 'PROGRESS', 'VIDEO', 'SUMMARY']);
   function occupy(host, hr) {
@@ -3415,13 +3417,13 @@ const GD = (() => {
     return out;
   }
   /* ---------- the vine ---------- */
-  function vineStrip(r, N, avail, u0, u1, sp, lvl, lite) {
+  function vineStrip(r, N, avail, u0, u1, sp, lvl, lite, ce) {
     const H = D + OV, grid = []; for (let i = 0; i < H; i++) grid.push(new Array(N).fill(''));
     const put = (u, v, ch, force) => { if (u < 0 || u >= N || v < -OV || v >= D) return false; if (v >= 0 && !force && v >= avail[u]) return false; grid[v + OV][u] = ch; return true; };
     const free = (u, v) => u >= 0 && u < N && v >= 0 && v < avail[u];
     const amp = .9 + r() * 1.1, fr = .1 + r() * .14, ph = r() * 6.3, ys = [], bp = sp.bp * (1 + lvl * .7), pickB = () => sp.bloom[Math.floor(r() * sp.bloom.length)];
     for (let u = u0; u < u1; u++) {
-      const taper = Math.min(1, (u - u0) / 6, (u1 - 1 - u) / 6), cap = Math.max(0, Math.min(avail[u] - 1, 4));
+      const taper = Math.min(ce === 'start' ? 1 : (u - u0) / 6, ce === 'end' ? 1 : (u1 - 1 - u) / 6, 1), cap = Math.max(0, Math.min(avail[u] - 1, 4));
       let y;
       if (lite) { /* hugs the rim, now and then swelling into a tuft that reaches further in */
         const bump = Math.max(0, Math.sin((u - u0) / Math.max(8, u1 - u0) * 3.14 * 2 + ph)) * Math.max(0, cap - 1) * .9 * taper;
@@ -3450,7 +3452,7 @@ const GD = (() => {
       if (sp.bloom.length && r() < bp) { const c = pickB(), v = y + (down ? -1 : 1); if (v >= 1 && free(u, v + (down ? 1 : -1))) { put(u, v, 'y'); put(u - 1, v, c); put(u + 1, v, c); put(u, v - 1, c); put(u, v + 1, c); } }
     }
     /* a curl at the tip */
-    const tu = u1 - 1, ty = ys[tu] || 0; if (tu - 2 > u0 && !sp.clover) { put(tu + 1, ty + 1, 'G'); put(tu + 1, ty + 2, 'G'); put(tu, ty + 2, 'g'); }
+    const tu = u1 - 1, ty = ys[tu] || 0; if (tu - 2 > u0 && !sp.clover && ce !== 'end') { put(tu + 1, ty + 1, 'G'); put(tu + 1, ty + 2, 'G'); put(tu, ty + 2, 'g'); }
     return grid;
   }
   /* transposes a strip grid for an edge into canvas cells: [col,row] -> char */
@@ -3517,34 +3519,24 @@ const GD = (() => {
       }
       return placed;
     };
-    if (!isBar) {
-      if (plan.vine) placeVine(plan.vine, false);
-      const names = Object.keys(SPECIES), lr = rng(hash('lite-' + h.key));
-      const pk = names[Math.floor(lr() * names.length)]; placeVine(pk === 'wisteria' ? 'ivy' : pk, true);
-      if (lr() < .3) placeVine('clover', true);
-    }
-    /* the plant: one, standing on the floor of the card near a corner, or on a block inside it, on the side that leaves the other corner clear */
-    if (!isBar && plan.plant) {
-      let planted = false;
-      const name = plan.plant, sz = sizeOf(name), side = hash(h.key) & 1, stickUp = 0, stickDown = 0;
-      if (sz) for (const sc of (sz.w * 3 > cols * S * .6 || hr.height < 70 ? [2] : hr.height > 200 ? [4, 3, 2] : [3, 2])) {
-        const wC = Math.ceil(sz.w * sc / S), hC = Math.ceil(sz.h * sc / S); let best = null, bs = -1;
-        const jMin = -Math.floor(Math.min(stickUp, sz.h * sc * .45) / S), iMin = 0;
-        for (let j = jMin; j <= rows - hC + stickDown; j += 1) for (let i = iMin; i <= cols - wC - iMin; i += 1) {
-          let ok = true; for (let jj = Math.max(0, j); jj < Math.min(rows, j + hC) && ok; jj += 2) for (let ii = Math.max(0, i); ii < Math.min(cols, i + wC); ii += 2) if (blocked(ii, jj) || (ii + 1 < cols && blocked(ii + 1, jj))) { ok = false; break; }
-          if (!ok || i + wC / 2 < cols * .62) continue; if (j + hC - 1 >= 0 && j + hC - 1 < rows && blocked(i, j + hC - 1)) continue;
-          const onFloor = j + hC >= rows - 1, onBlock = !onFloor && j + hC < rows && (blocked(i + (wC >> 1), j + hC) || blocked(i, j + hC) || blocked(i + wC - 1, j + hC));
-          if (!(onFloor || onBlock)) continue;
-          const cx = Math.min(i, cols - i - wC) / cols; let s = r() * .4 + (onFloor ? 3 - cx * 5 : 1.2 - cx); if (j < 0) s += .5;
-          if (s > bs) { bs = s; best = [i, j]; }
-        }
-        if (!best || bs < .5) continue; const [i, j] = best;
-        const it = document.createElement('span'); it.className = 'gi gi-sway'; it.dataset.n = name;
-        const px = sz.w * sc, py = sz.h * sc; it.style.cssText = `left:${Math.round(ox + i * S)}px;top:${Math.round(oy + j * S)}px;width:${px}px;height:${py}px;--d:0ms`;
-        if (GS[name] || GV[name]) it.style.backgroundImage = `url(${gsUrl(name)})`; else it.innerHTML = pix(name, sc).replace(/ style="[^"]*"/, ' style="width:100%;height:100%"');
-        box.append(it); planted = true; break;
-      }
-    }
+    /* a corner vine: full at the corner, a run along the horizontal edge, a shorter one down the vertical edge, both thinning out */
+    const placeCorner = (spn, corner) => {
+      const sp = SPECIES[spn], top = corner[0] === 't', right = corner[1] === 'r', he = top ? 'top' : 'bottom', ve = right ? 'right' : 'left';
+      let any = false;
+      [[he, 1], [ve, .4]].forEach(([e, frac]) => {
+        if (e === 'top' && gap.up < 6) return; if (e === 'bottom' && gap.down < 6) return;
+        const av = profile(o, e), N = av.length; if (N < 16) return;
+        const horiz = e === 'top' || e === 'bottom', atEnd = horiz ? right : !top, span = Math.max(8, Math.min(Math.round(N * (horiz ? .3 : .3) * frac * 1.5), horiz ? 38 : 20));
+        const u0 = atEnd ? N - span : 0, u1 = atEnd ? N : span;
+        const vr = rng(hash('corner-' + h.key + e)), grid = vineStrip(vr, N, av, u0, u1, sp, 0, false, atEnd ? 'end' : 'start'), sc = stripCanvas(grid, N, e); if (!sc) return;
+        const cv = sc.c; cv.className = 'gv gv-' + e; cv.dataset.vk = h.key + '|' + e; cv.dataset.sp = spn; cv.style.width = sc.cw * S + 'px'; cv.style.height = sc.ch * S + 'px';
+        const Z = (D + OV) * S; let lx = ox, ty = oy; if (e === 'top') ty = oy - OV * S; else if (e === 'bottom') ty = oy + hr.height + OV * S - Z; else if (e === 'left') lx = ox - OV * S; else lx = ox + hr.width + OV * S - Z;
+        cv.style.left = Math.round(lx) + 'px'; cv.style.top = Math.round(ty) + 'px'; cv.style.setProperty('--d', Math.round(r() * 300) + 'ms'); cv.style.transformOrigin = e === 'right' ? '100% 50%' : e === 'bottom' ? '50% 100%' : '0 0';
+        box.append(cv); any = true;
+      });
+      return any;
+    };
+    if (!isBar && !h.dlg) { if (plan.old) placeVine(plan.vine, false); else if (plan.vine) placeCorner(plan.vine, plan.corner || 'tr'); }
     if (!box.children.length) box.remove(); else io && io.observe(h.el);
   }
   const grown = new Set(), seen = new WeakSet(); let io = null, ro = null, qT = 0, running = false, ready = false, grew = '';
@@ -6237,6 +6229,8 @@ const PXK = (() => {
   }
   return { B, halo };
 })();
+/* the squirrel: Elthen's Pixel Art Shop "2D Pixel Art Squirrel Sprites" (itch.io, free, modification allowed): idle 0-5, run 0-7 (runc = the same with a gold coin in the mouth, added), nut 0-1 (holding the nut, here recoloured as a gold coin). Rows of ramp keys: 0-3 = PAL.fur dark to light, a b = cream and grey, x y z = three golds. Facing right; the last row is the feet. */
+const SQPX = {"idle0":["...............","...............","..0000.........",".033320........","0333321000.00..","0303221003010..","00.0221003220..","...02101020220.","..0110120222230","..0101222000000","..01022222010..","...0020030200..","....01220000...",".....0012020...","......000000..."],"idle1":["................","................","..0000..........",".033320.........","03333210.00.00..","00032210.03010..","..022210003220..","..0221101020220.","..01110120222230","...0101222000000","...01022222010..","....0020030200..",".....01220000...","......0012020...",".......000000..."],"idle2":["...0...........","..030..........",".0330..........","03320..........","033210..00.00..","032210..03010..","022210.003220..","02211001020220.","011110120222230",".01101222000000",".011022222010..","..00020030200..","....01220000...",".....0012020...","......000000..."],"idle3":["...............",".....000.......","....0330.......","...0330........","..03330.00.00..",".023320.03010..",".022210003220..","02221001020220.","022110120222230","011101222000000",".011022222010..",".011020030200..","..0001220000...",".....0012020...","......000000..."],"idle4":["................","................","................","................","...00000.00.00..","..033330.03010..",".033320.003220..",".02221001020220.","0222100120222230","0221101222000000","01111022222010..",".0111020030200..",".011101220000...","..000.0012020...",".......000000..."],"idle5":["................","................","................","00000...........","033330...00.00..",".033330..03010..",".033220.003220..","022211101020220.","0221110120222230","0111101222000000",".0111022222010..","..011020030200..","...0001220000...","......0012020...",".......000000..."],"run0":["....................","....................","....................","....................","00..................","0300................","03320...............","033220..............","0322110.............",".0221110............",".0211110.....00.00..",".0111110000..03010..",".01111012210003220..","..01101222222020220.","...00022022220222230",".....022203322000000",".....01200302010....","......0120002010....","......0000.00.00...."],"run1":[".....................",".....................",".....................",".....................","0000.................","033300...............",".033220.......00.00..",".0322110......03010..",".02221110..00003220..","..011111000221020220.","..0111101222220222230","...011012222222000000","....00022222330010...","......0220330020010..","......012000..02000..",".....01200.....00....",".....000.............",".....................","....................."],"run2":["0000.................","033300...............",".033220..............",".0332220.............",".03221110............","..0221110.....00.00..","..011111000...03010..","..01111012200003220..","...01101222221020220.","....00022222220222230","......022022222000000","......012033330010...",".....01200000020010..",".....000......02000..","...............00....",".....................",".....................",".....................","....................."],"run3":["....................","0000................","03330...............",".03320..............",".033220.............",".0322210............",".0222110............","..0211110...........","..01111000...00.00..","..011101220..03010..","...010122220003220..","....002222221020220.",".....022022220222230",".....012033222000000","....0120000330010...","....000....0020010..",".............02000..","..............00....","...................."],"run4":["..................","..................","..................","000...............","0330..............",".0330.............",".03330............","..0320............","..02220...........",".022110...........",".021110....00.00..","011110000..03010..","0111012210003220..",".0101222222020220.","..0022022220222230","...022203322000000","...01200302010....","....0120002010....","....0000.00.00...."],"run5":["...................","...................","......00...........",".....030...........","...00330...........","..033330...........",".0223320....00.00..","0222220.....03010..","0211120...0003220..","011111000021020220.","0111101222220222230",".011012222322000000","..0002202302010....","....0222002010.....",".....012000.00.....","......0120.........","......0000.........","...................","..................."],"run6":["...................","...................","...................","....00000..........","..0033330..........",".0333300....00.00..","0233200.....03010..","02221100000003220..","021110122221020220.","0111012222220222230","0111022022222000000",".01102220302010....","..00.012002010.....","......01200.00.....","......0000.........","...................","...................","...................","..................."],"run7":["...................","...................","...................","..00...............",".030...............","0330...............","03320..............","022110......00.00..","0221110000..03010..","02111012220003220..","011101222221020220.","0111022022220222230",".011022203322000000","..00.0120002010....","......01202010.....","......00000.00.....","...................","...................","..................."],"nut0":["..0000........",".033320.......","0333321000.00.","0303221003010.","00.0221003220.","...02101022220","..011012020220","..010122202230","..010222200ba0","...0020022yy10","....012200zz0.",".....0012020..","......000000.."],"nut1":["..0000........",".033320.......","03333210......","0303221000.00.","00.0221003010.","...0210103220.","..011012022220","..010122020220","..010222202230","...00200220ba0","....012200zz0.",".....0012020..","......000000.."],"runc0":[".......................",".......................",".......................",".......................","00.....................","0300...................","03320..................","033220.................","0322110................",".0221110...............",".0211110.....00.00.....",".0111110000..03010.....",".01111012210003220.....","..01101222222020220....","...00022022220222230...",".....02220332200000xx..",".....01200302010..xzyx.","......0120002010...xx..","......0000.00.00......."],"runc1":["........................","........................","........................","........................","0000....................","033300..................",".033220.......00.00.....",".0322110......03010.....",".02221110..00003220.....","..011111000221020220....","..0111101222220222230...","...01101222222200000xx..","....00022222330010.xzyx.","......0220330020010.xx..","......012000..02000.....",".....01200.....00.......",".....000................","........................","........................"],"runc2":["0000....................","033300..................",".033220.................",".0332220................",".03221110...............","..0221110.....00.00.....","..011111000...03010.....","..01111012200003220.....","...01101222221020220....","....00022222220222230...","......02202222200000xx..","......012033330010.xzyx.",".....01200000020010.xx..",".....000......02000.....","...............00.......","........................","........................","........................","........................"],"runc3":[".......................","0000...................","03330..................",".03320.................",".033220................",".0322210...............",".0222110...............","..0211110..............","..01111000...00.00.....","..011101220..03010.....","...010122220003220.....","....002222221020220....",".....022022220222230...",".....01203322200000xx..","....0120000330010.xzyx.","....000....0020010.xx..",".............02000.....","..............00.......","......................."],"runc4":[".....................",".....................",".....................","000..................","0330.................",".0330................",".03330...............","..0320...............","..02220..............",".022110..............",".021110....00.00.....","011110000..03010.....","0111012210003220.....",".0101222222020220....","..0022022220222230...","...02220332200000xx..","...01200302010..xzyx.","....0120002010...xx..","....0000.00.00......."],"runc5":["......................","......................","......00..............",".....030..............","...00330..............","..033330..............",".0223320....00.00.....","0222220.....03010.....","0211120...0003220.....","011111000021020220....","0111101222220222230...",".01101222232200000xx..","..0002202302010..xzyx.","....0222002010....xx..",".....012000.00........","......0120............","......0000............","......................","......................"],"runc6":["......................","......................","......................","....00000.............","..0033330.............",".0333300....00.00.....","0233200.....03010.....","02221100000003220.....","021110122221020220....","0111012222220222230...","011102202222200000xx..",".01102220302010..xzyx.","..00.012002010....xx..","......01200.00........","......0000............","......................","......................","......................","......................"],"runc7":["......................","......................","......................","..00..................",".030..................","0330..................","03320.................","022110......00.00.....","0221110000..03010.....","02111012220003220.....","011101222221020220....","0111022022220222230...",".01102220332200000xx..","..00.0120002010..xzyx.","......01202010....xx..","......00000.00........","......................","......................","......................"]};
 /* ---------- the squirrel: stocking up the burrow ----------
    A short, quiet moment for the big steps: a squirrel hops in with one gold coin, looks at the burrow, crouches, tosses the coin in at the
    door, bounces for joy and hops away. It is drawn live from parts (tail, body, head, ears, arms, feet) in a small pixel picture with a
@@ -6380,6 +6374,31 @@ const SQ = (() => {
   let STYPICK = 0;
   return { STY, T, frame, sprite, pose, END, STAGE, burrow, stash, pick(i) { STYPICK = i; } };
 })();
+
+/* ---------- the squirrel (Elthen's pixel squirrel, sqpx.js): draws its frames with the palette. Used for the add-money trips and the forest floor. Frames: idle0-5, run0-7, runc0-7 (coin in mouth), nut0-1 (holding the coin). ---------- */
+const SQP = (() => {
+  const cache = {}, col = () => ({ 0: '#2f2f2e', 1: '#694129', 2: '#825235', 3: '#a67354', a: '#e4e4e4', b: '#c2bdbd', x: PAL.gold[1], y: PAL.gold[3], z: PAL.gold[4] });   /* the artist's own browns, kept as drawn: Mako chose this squirrel */
+  function img(name) {
+    if (cache[name]) return cache[name]; const rows = SQPX[name]; if (!rows) return null; const w = Math.max(...rows.map(r => r.length)), h = rows.length, cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+    const g = cv.getContext('2d'), c = col(); rows.forEach((r, y) => { for (let x = 0; x < r.length; x++) { const k = r[x]; if (k === '.') continue; g.fillStyle = c[k]; g.fillRect(x, y, 1, 1); } });
+    return (cache[name] = cv);
+  }
+  /* (x, y) is the middle of the feet; flip faces it left; a soft contact shadow lies under the feet */
+  function draw(g, name, x, y, flip, shadow) {
+    const cv = img(name); if (!cv) return; x = Math.round(x); y = Math.round(y);
+    if (shadow !== false) { g.save(); g.globalAlpha = .3; g.fillStyle = PAL.night[0]; const w = Math.round(cv.width * .42); g.fillRect(x - w, y, w * 2, 1); g.fillRect(x - w + 2, y + 1, w * 2 - 4, 1); g.restore(); }
+    g.save(); g.translate(x, y - cv.height); if (flip) { g.scale(-1, 1); g.drawImage(cv, -Math.round(cv.width * .5), 0); } else g.drawImage(cv, -Math.round(cv.width * .5), 0); g.restore();
+  }
+  let tc = null;
+  /* the same, but dimmed toward a colour (the time of day), by drawing through a small scratch canvas */
+  function drawTint(g, name, x, y, flip, tint, a) {
+    const cv = img(name); if (!cv) return; if (!tc) tc = document.createElement('canvas'); tc.width = cv.width; tc.height = cv.height; const t = tc.getContext('2d'); t.clearRect(0, 0, tc.width, tc.height); t.drawImage(cv, 0, 0);
+    t.globalCompositeOperation = 'source-atop'; t.fillStyle = tint; t.globalAlpha = a; t.fillRect(0, 0, tc.width, tc.height); x = Math.round(x); y = Math.round(y);
+    g.save(); g.globalAlpha = .3; g.fillStyle = 'rgba(0,0,0,1)'; const w = Math.round(cv.width * .4); g.fillRect(x - w, y, w * 2, 1); g.restore();
+    g.save(); g.translate(x, y - cv.height); if (flip) g.scale(-1, 1); g.drawImage(tc, -Math.round(cv.width * .5), 0); g.restore();
+  }
+  return { img, draw, drawTint };
+})();
 if (/[?&]sqtest\b/.test(location.search)) window.__sq = SQ;   /* test hook only */
 /* ---------- burrows: one full-screen picture per savings bucket ----------
    A burrow is a savings goal (Rainy day, a trip, a big purchase) shown as a house in a hill in the middle of the forest scene, with its own
@@ -6388,7 +6407,7 @@ if (/[?&]sqtest\b/.test(location.search)) window.__sq = SQ;   /* test hook only 
    It only reads the plan (goalRows); nothing here is stored or changed. `#burrow=<goalId>` in the address opens one on load.
    A LOOK is { mood, w, h, paint(g, pct, t, k), fx: { init(k), draw(g, t, k) } }. k carries the geometry (see geom()). */
 const BUR = (() => {
-  let grc = null, SIGNR = null, el = null, cv = null, g = null, fxc = null, fg = null, rc = null, rg = null, bgc = null, bgg = null, bg0 = null, bg0g = null, clc = null, clg = null, bgPct = -1, pop = null, cur = null, tm = 0, k = null, t0 = 0, stockT = -1, stockStyle = 'A', pulseAt = 0, stockExtra = 0, forcePct = -1;
+  let anim = null, sparks = [], danceT = -1, grc = null, SIGNR = null, el = null, cv = null, g = null, fxc = null, fg = null, rc = null, rg = null, bgc = null, bgg = null, bg0 = null, bg0g = null, clc = null, clg = null, bgPct = -1, pop = null, cur = null, tm = 0, k = null, t0 = 0, stockT = -1, stockStyle = 'A', pulseAt = 0, stockExtra = 0, forcePct = -1;
   const LOOKS = {};
   const reduced = () => !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
   const rows = () => { try { return goalRows(S, C, nowYm()).filter(r => r.live && r.target > 0); } catch (e) { return []; } };
@@ -6405,13 +6424,13 @@ const BUR = (() => {
       /* the moss shade differs a little: greener, bluer or yellower */
       const sh = rn() * 3 | 0, off = sh === 0 ? 0 : sh === 1 ? -1 : 1, base0 = night ? 1 : 2, mo = [0, 1, 2, 3].map(i => M[Math.max(1, Math.min(6, base0 + i + off))]);
       const so = night ? [E[0], E[1], E[2]] : [E[1], E[2], E[3]];
-      const pk = cx + Math.round((rn() - .5) * 2), hm = 13 + Math.round(rn()), half = 10.5 + Math.round(rn() * 1.4);
-      const hh = []; for (let x = 0; x < W; x++) { const u = Math.abs(x - pk) / (x < pk ? half - .5 : half); hh[x] = u >= 1 ? 0 : Math.round(hm * Math.pow(1 - u * u, .8)); }
+      const pk = 11 + (rn() * 2 | 0), hm = 13 + Math.round(rn()), half = 9.5 + Math.round(rn() * 1.2);
+      const hh = []; for (let x = 0; x < W; x++) { const u = Math.abs(x - pk) / half; hh[x] = u >= 1 ? 0 : Math.round(hm * Math.pow(1 - u * u, .8)); }
       for (let x = 0; x < W; x++) { const top = base - hh[x]; if (hh[x] < 1) continue; const lit = x < pk ? 0 : 1;
         for (let y = top; y <= base; y++) { const d = y - top, gd = 2 + Math.round(4 * Math.pow(hh[x] / hm, 1.3));
           if (d < gd) px(x, y, d < 1 ? mo[lit ? 3 : 2] : d < 2 ? mo[lit ? 2 : 1] : mo[lit ? 1 : 0]); else px(x, y, d > gd + 3 ? so[0] : d > gd + 1 ? so[1] : so[2]); } }
       /* the hole: a circle, a ring of earth around it, dark inside, the coins piled from the bottom */
-      const r = 4 + rn() * .6, hx = cx + Math.round((rn() - .5) * 2), hy = base - 5.5, d2 = (x, y) => Math.hypot(x - hx, y - hy);
+      const r = 4 + rn() * .6, hx = pk, hy = base - 5.5, d2 = (x, y) => Math.hypot(x - hx, y - hy);
       for (let y = Math.floor(hy - r - 2); y <= Math.ceil(hy + r + 2); y++) for (let x = Math.floor(hx - r - 2); x <= Math.ceil(hx + r + 2); x++) { const d = d2(x, y); if (d <= r) px(x, y, night ? PAL.night[0] : E[0]); else if (d <= r + 1.15) px(x, y, y < hy - r * .2 ? E[1] : E[2]); }
       const lv = Math.round(Math.min(1, pct) * (2 * r - 1));
       PXK.halo(g, hx, hy + 1, 6, PAL.ember[4], .08 + .14 * Math.min(1, pct), .9);
@@ -6424,12 +6443,41 @@ const BUR = (() => {
       if (rn() < .5) { const sx = cx - s1 * 9; px(sx, base, PAL.stone[3]); px(sx + 1, base, PAL.stone[2]); px(sx, base - 1, PAL.stone[4]); }
       for (let y = base + 1; y < H; y++) for (let x = 2; x < W - 2; x++) { const d = y - base, e = Math.min(x - 2, W - 3 - x); if (d > 1 && (e < 3 || B[y & 3][x & 3] > e + 5)) continue; px(x, y, d === 1 ? so[2] : so[1]); }
     }, fx: null };
+  /* ---------- adding money without leaving the burrow: a small panel in the pop-up. The money comes from this month's unspent play money (the same top-up
+     the plan already has, so it is one undoable change). Then the coins drop into the burrow one by one, with sounds, and the little animals dance. ---------- */
+  function playLeft() { try { const ym = nowYm(), m = calcAll(S).byYm[ym], spent = (receiptStats(S, ym).byJar || {}).play || 0; return Math.max(0, Math.floor((m.jar.play - spent) * 100) / 100); } catch (e) { return 0; } }
+  function addPanel(r) {
+    const left = playLeft(), room = Math.max(0, Math.ceil(r.target - r.saved)), cap = Math.max(0, Math.min(Math.floor(left), room));
+    const nice = v => { const st = cap > 20000 ? 1000 : cap > 4000 ? 500 : cap > 800 ? 100 : 10; return Math.max(1, Math.min(cap, Math.round(v / st) * st)); };
+    const chips = [...new Set([nice(cap * .25), nice(cap * .5), cap])].filter(v => v > 0 && v <= cap);
+    if (!(cap > 0)) { pop.innerHTML = `<h2>${esc(r.name)}</h2><p class="bv-s">${room <= 0 ? 'This burrow is full.' : 'No play money left this month to move here.'}</p><button type="button" class="link bv-no">Back</button>`; pop.querySelector('.bv-no').addEventListener('click', e => { e.stopPropagation(); fill(); }); return; }
+    pop.innerHTML = `<h2>Add to ${esc(r.name)}</h2><p class="bv-n">From play money: <b>${fmt(left)}</b> left this month</p>`
+      + `<div class="bv-chips">${chips.map(v => `<button type="button" class="chip" data-v="${v}">${fmt(v)}</button>`).join('')}</div>`
+      + `<label class="bv-amt"><span class="sr">Amount</span><input type="number" inputmode="numeric" min="1" max="${cap}" step="1" placeholder="Amount"></label>`
+      + `<div class="bv-row"><button type="button" class="btn bv-go">Add</button><button type="button" class="link bv-no">Back</button></div><p class="bv-s bv-msg" role="status"></p>`;
+    const inp = pop.querySelector('input'), msg = pop.querySelector('.bv-msg');
+    pop.querySelectorAll('.chip').forEach(c => c.addEventListener('click', e => { e.stopPropagation(); inp.value = c.dataset.v; inp.focus(); }));
+    pop.querySelector('.bv-no').addEventListener('click', e => { e.stopPropagation(); fill(); });
+    const go = e => { if (e) e.stopPropagation(); const v = Math.floor(+inp.value); if (!(v >= 1 && v <= cap)) { msg.textContent = `Enter an amount from 1 to ${fmt(cap)}.`; return; } feed(r, v); };
+    pop.querySelector('.bv-go').addEventListener('click', go); inp.addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') go(); });
+    setTimeout(() => { try { inp.focus({ preventScroll: true }); } catch (e) { /* fine */ } }, 0);
+  }
+  function feed(r, v) {
+    const before = Math.min(1, r.saved / r.target); let moved = 0;
+    try { moved = ACT.sweep(nowYm(), r.id, v); } catch (e) { moved = 0; }
+    if (!(moved > 0)) { const m = pop.querySelector('.bv-msg'); if (m) m.textContent = 'That could not be added.'; return; }
+    try { render(); } catch (e) { /* the page behind redraws on its own */ }
+    const r2 = rows().find(x => x.id === r.id) || r, to = Math.min(1, r2.saved / r2.target), n = Math.max(2, Math.min(5, Math.round(1 + (to - before) * 10)));
+    pop.innerHTML = `<h2>${esc(r.name)}</h2><p class="bv-n"><b>+${fmt(moved)}</b></p><p class="bv-s">Going in.</p>`;
+    if (reduced()) { fill(); return; }
+    anim = { from: before, to, t0: performance.now(), n, shown: before, landed: 0, moved, full: to >= 1, id: r.id };
+  }
+  function undoAdd() { try { ACT.undo(); render(); } catch (e) { /* nothing to undo */ } fill(); }
   /* ---------- the stage: sizes, geometry, the loop ---------- */
   function build() {
     el = document.createElement('section'); el.id = 'burrowView'; el.setAttribute('aria-label', 'Burrow');
-    el.innerHTML = '<button type="button" class="bv-back" aria-label="Back to home">Home</button><canvas class="bv-bg0" aria-hidden="true"></canvas><div class="bv-cloudwrap"><canvas class="bv-clouds" aria-hidden="true"></canvas></div><canvas class="bv-bg" aria-hidden="true"></canvas><canvas class="bv-ground" aria-hidden="true"></canvas><div class="bv-stage"><canvas class="bv-cv" aria-hidden="true"></canvas></div><canvas class="bv-fx" aria-hidden="true"></canvas><canvas class="bv-rain" aria-hidden="true"></canvas><button type="button" class="bv-sign" aria-label="Back to the burrow" title="Back to the burrow"></button><div class="bv-pop" hidden></div><button type="button" class="bv-nav bv-prev" aria-label="Previous burrow">&#8249;</button><button type="button" class="bv-nav bv-next" aria-label="Next burrow">&#8250;</button><nav class="bv-dots" aria-label="Burrows"></nav>';
+    el.innerHTML = '<canvas class="bv-bg0" aria-hidden="true"></canvas><div class="bv-cloudwrap"><canvas class="bv-clouds" aria-hidden="true"></canvas></div><canvas class="bv-bg" aria-hidden="true"></canvas><canvas class="bv-ground" aria-hidden="true"></canvas><div class="bv-stage"><canvas class="bv-cv" aria-hidden="true"></canvas></div><canvas class="bv-fx" aria-hidden="true"></canvas><canvas class="bv-rain" aria-hidden="true"></canvas><button type="button" class="bv-sign" aria-label="Back home" title="Back home"></button><div class="bv-pop" hidden></div><button type="button" class="bv-nav bv-prev" aria-label="Previous burrow">&#8249;</button><button type="button" class="bv-nav bv-next" aria-label="Next burrow">&#8250;</button><nav class="bv-dots" aria-label="Burrows"></nav>';
     document.body.append(el); cv = el.querySelector('.bv-cv'); g = cv.getContext('2d'); fxc = el.querySelector('.bv-fx'); fg = fxc.getContext('2d'); rc = el.querySelector('.bv-rain'); rg = rc.getContext('2d'); bgc = el.querySelector('.bv-bg'); bgg = bgc.getContext('2d'); bg0 = el.querySelector('.bv-bg0'); bg0g = bg0.getContext('2d'); clc = el.querySelector('.bv-clouds'); grc = el.querySelector('.bv-ground'); clg = clc.getContext('2d'); pop = el.querySelector('.bv-pop');
-    el.querySelector('.bv-back').addEventListener('click', close);
     el.querySelector('.bv-sign').addEventListener('click', close);
     el.querySelector('.bv-prev').addEventListener('click', () => step(-1)); el.querySelector('.bv-next').addEventListener('click', () => step(1));
     let sx0 = 0, sy0 = 0; el.addEventListener('pointerdown', e => { sx0 = e.clientX; sy0 = e.clientY; }); el.addEventListener('pointerup', e => { const dx = e.clientX - sx0, dy = e.clientY - sy0; if (Math.abs(dx) > 70 && Math.abs(dy) < 60 && !e.target.closest('.bv-pop, .bv-back, .bv-nav, .bv-dots')) step(dx < 0 ? 1 : -1); });
@@ -6443,7 +6491,7 @@ const BUR = (() => {
      The art is drawn by drawRoad and drawSign into the same pixel grid, palette, light and layering as the rest of the world: the road is the world's
      earth with a ragged grass verge and ruts, the post has a contact shadow and grass over its foot, the wood is lit by the world's own light, and the rain
      falls in front of it. The HTML button (.bv-sign) is only an invisible hit area placed over the painted sign. See ART_GUIDE.md section 0. */
-  const GL = { B: ['##.', '#.#', '##.', '#.#', '##.'], A: ['.#.', '#.#', '###', '#.#', '#.#'], C: ['.##', '#..', '#..', '#..', '.##'], K: ['#.#', '#.#', '##.', '#.#', '#.#'], T: ['###', '.#.', '.#.', '.#.', '.#.'], O: ['.#.', '#.#', '#.#', '#.#', '.#.'], H: ['#.#', '#.#', '###', '#.#', '#.#'], E: ['###', '#..', '##.', '#..', '###'], U: ['#.#', '#.#', '#.#', '#.#', '###'], R: ['##.', '#.#', '##.', '#.#', '#.#'], W: ['#.#', '#.#', '#.#', '###', '#.#'] };
+  const GL = { M: ['#.#', '###', '###', '#.#', '#.#'], B: ['##.', '#.#', '##.', '#.#', '##.'], A: ['.#.', '#.#', '###', '#.#', '#.#'], C: ['.##', '#..', '#..', '#..', '.##'], K: ['#.#', '#.#', '##.', '#.#', '#.#'], T: ['###', '.#.', '.#.', '.#.', '.#.'], O: ['.#.', '#.#', '#.#', '#.#', '.#.'], H: ['#.#', '#.#', '###', '#.#', '#.#'], E: ['###', '#..', '##.', '#..', '###'], U: ['#.#', '#.#', '#.#', '#.#', '###'], R: ['##.', '#.#', '##.', '#.#', '#.#'], W: ['#.#', '#.#', '#.#', '###', '#.#'] };
   const hsh = (a, b) => { let h = Math.imul(a * 374761393 + b * 668265263 + 1013, 1274126177); h ^= h >>> 13; return ((Math.imul(h, 1103515245) >>> 0) % 1000) / 1000; };
   /* o: { x1, y1, w1 (far end), x2, y2, w2 (near end), bend, night, wet } */
   function drawRoad(g, o) {
@@ -6466,7 +6514,7 @@ const BUR = (() => {
   /* o: { night, lit: -1 (light from the left) | 0 | 1 (from the right), wet, narrow }. (bx, by) is the foot of the post. Returns the hit rectangle. */
   function drawSign(g, bx, by, o) {
     const E = PAL.bark, Mo = PAL.moss, G = PAL.gold, night = !!o.night, lit = o.lit || 0, narrow = !!o.narrow, px = (x, y, c) => { g.fillStyle = c; g.fillRect(Math.floor(x), Math.floor(y), 1, 1); };
-    const wd = night ? [E[0], E[1], E[2], E[3]] : [E[1], E[2], E[3], E[4]], bw = narrow ? 40 : 58, bh = narrow ? 24 : 17, top = by - (o.gap == null ? 14 : o.gap) - bh, left = bx - Math.round(narrow ? 22 : 32);
+    const wd = night ? [E[0], E[1], E[2], E[3]] : [E[1], E[2], E[3], E[4]], bw = narrow ? 40 : 58, bh = narrow ? 19 : 17, top = by - (o.gap == null ? 14 : o.gap) - bh, left = bx - Math.round(narrow ? 22 : 32);
     /* contact shadow on the ground */
     g.globalAlpha = .34; g.fillStyle = PAL.night[0]; for (let y = -1; y <= 1; y++) for (let x = -7; x <= 7; x++) if ((x / 7) ** 2 + (y / 1.6) ** 2 <= 1) g.fillRect(bx + x + (lit ? -lit * 2 : 0), by + y, 1, 1); g.globalAlpha = 1;
     /* the post: lit on one side, dark on the other, with grain */
@@ -6486,8 +6534,8 @@ const BUR = (() => {
     if (o.wet) for (let x = left + 6; x < left + bw - 2; x++) if (hsh(x, 9) < .1) px(x, top + bh, PAL.rain[2]);
     /* its words (the small pixel alphabet), a little dry-brushed, and the arrow */
     const ink = G[3], word = (str, x, y) => { for (const ch of str) { if (GL[ch]) GL[ch].forEach((row, j) => { for (let i = 0; i < 3; i++) if (row[i] === '#') px(x + i, y + j, ink); }); x += 4; } };
-    if (narrow) { word('BACK', left + 13, top + 3); word('TO THE', left + 13, top + 9); word('BURROW', left + 13, top + 15); for (let i = 0; i < 5; i++) px(left + 5 + i, mid, ink); px(left + 6, mid - 1, ink); px(left + 6, mid + 1, ink); px(left + 7, mid - 2, ink); px(left + 7, mid + 2, ink); }
-    else { word('BACK TO', left + 15, top + 3); word('THE BURROW', left + 15, top + 9); for (let i = 0; i < 6; i++) px(left + 6 + i, mid, ink); px(left + 7, mid - 1, ink); px(left + 7, mid + 1, ink); px(left + 8, mid - 2, ink); px(left + 8, mid + 2, ink); }
+    if (narrow) { word('BACK', left + 13, top + 4); word('HOME', left + 13, top + 11); for (let i = 0; i < 5; i++) px(left + 5 + i, mid, ink); px(left + 6, mid - 1, ink); px(left + 6, mid + 1, ink); px(left + 7, mid - 2, ink); px(left + 7, mid + 2, ink); }
+    else { word('BACK', left + 15, top + 3); word('HOME', left + 15, top + 9); for (let i = 0; i < 6; i++) px(left + 6 + i, mid, ink); px(left + 7, mid - 1, ink); px(left + 7, mid + 1, ink); px(left + 8, mid - 2, ink); px(left + 8, mid + 2, ink); }
     /* grass and a fern growing over the foot of the post, in front of it */
     for (let i = -6; i <= 6; i++) { const h = hsh(bx + i, 3); if (h < .62) { const len = 2 + Math.round(h * 6); for (let j = 0; j < len; j++) px(bx + i + (j > 2 ? (i < 0 ? -1 : 1) : 0), by + 1 - j, Mo[j === len - 1 ? 4 : j > 1 ? 3 : 2]); } }
     return { x: left - 1, y: top - 2, w: bw + 3, h: by - top + 4 };
@@ -6533,19 +6581,49 @@ const BUR = (() => {
     const all = rows(), r = all.find(x => x.id === cur) || all[0]; if (!r) return;
     cur = r.id; const pct = Math.min(1, r.saved / r.target); LK = LOOKS[lookOf(r)] ? lookOf(r) : 'plain';
     pop.innerHTML = `<h2>${esc(r.name)}</h2><p class="bv-n"><b>${fmt(r.saved)}</b> of ${fmt(r.target)}</p><div class="bv-bar" role="img" aria-label="${Math.round(pct * 100)} percent full"><i style="width:${Math.round(pct * 100)}%"></i></div><p class="bv-s">${Math.round(pct * 100)}% full</p><button type="button" class="btn bv-add">Add money</button>`;
-    pop.querySelector('.bv-add').addEventListener('click', e => { e.stopPropagation(); close(); switchTab('receipts'); });
+    pop.querySelector('.bv-add').addEventListener('click', e => { e.stopPropagation(); addPanel(r); });
     el.querySelector('.bv-dots').innerHTML = all.map(x => `<button type="button" data-b="${esc(x.id)}" aria-label="${esc(x.name)}" aria-current="${x.id === cur}"></button>`).join('');
     el.querySelectorAll('.bv-dots button').forEach(b => b.addEventListener('click', () => open(b.dataset.b)));
     try { if (!LOOKS[LK].bg) SCENE.look(LOOKS[LK].mood || ''); } catch (e) { /* the world is a bonus */ }
     return { pct, r };
   }
+  /* the coins: they fall one after another from above the door into the hole; each landing makes a sound and a small spark; the pile rises with them */
+  function stepAnim(now, dpt) {
+    const a = anim, e = now - a.t0, TL = 1600, LAND = 1250;
+    let landed = 0; for (let i = 0; i < a.n; i++) if (e >= i * TL + LAND) landed++;
+    if (landed > a.landed) { for (let i = a.landed; i < landed; i++) { try { sfx('coin'); } catch (x) { /* quiet */ } sparks.push({ x: dpt.x, y: dpt.y + 2, t0: now }); } a.landed = landed; }
+    a.shown = a.from + (a.to - a.from) * (landed / a.n);
+    if (e > (a.n - 1) * TL + TL + 200) { const full = a.full; anim = null; danceT = now; pulseAt = now; try { sfx(full ? 'fanfare' : 'sparkle'); } catch (x) { /* quiet */ }
+      for (let i = 0; i < 10; i++) sparks.push({ x: dpt.x + (i - 5) * 5, y: dpt.y - 6 - (i % 3) * 4, t0: now + i * 60 });
+      fill(); const m = document.createElement('p'); m.className = 'bv-s'; m.innerHTML = `Added. <button type="button" class="link bv-undo">Undo</button>`; pop.append(m); m.querySelector('.bv-undo').addEventListener('click', ev => { ev.stopPropagation(); undoAdd(); }); }
+  }
+  /* the squirrel brings one gold coin per trip: it runs in from alternating sides with the coin in its mouth, sits by the door, throws the coin in, and runs off */
+  function drawCoins(g2, now, dpt, k) {
+    if (anim) {
+      const e = now - anim.t0, TL = 1600, small = LK === 'plain', i = Math.floor(e / TL), u = e - i * TL, rf = ms => Math.floor(u / ms) % 8, nf = Math.floor(u / 220) & 1, idl = Math.floor(u / 260) % 6;
+      if (i >= 0 && i < anim.n) {
+        const side = i % 2 ? 1 : -1, stopX = dpt.x + side * (small ? 11 : 17), startX = side < 0 ? -16 : k.W + 16, fy = dpt.y + (small ? 12 : 17), face = side > 0;
+                if (u < 800) { const t = 1 - Math.pow(1 - u / 800, 1.6), x = startX + (stopX - startX) * t; SQP.draw(g2, 'runc' + rf(90), x, fy, face); }
+        else if (u < 1000) SQP.draw(g2, 'nut' + nf, stopX, fy, face);
+        else if (u < 1250) { SQP.draw(g2, 'idle' + idl, stopX, fy, face); const t = (u - 1000) / 250, cx = stopX + (dpt.x - stopX) * t, cy = fy - 9 - Math.sin(t * Math.PI) * 9 + (dpt.y - fy + 9) * t * t;
+          g2.fillStyle = PAL.gold[1]; g2.fillRect(Math.round(cx), Math.round(cy) + 1, 3, 1); g2.fillStyle = PAL.gold[3]; g2.fillRect(Math.round(cx), Math.round(cy), 3, 1); g2.fillStyle = PAL.gold[4]; g2.fillRect(Math.round(cx), Math.round(cy), 1, 1); }
+        else if (u < 1380) SQP.draw(g2, 'idle' + idl, stopX, fy, face);
+        else { const t = (u - 1380) / 220, x = stopX + (startX - stopX) * Math.pow(Math.min(1, t), 1.8); SQP.draw(g2, 'run' + rf(80), x, fy, !face); }
+      }
+      PXK.halo(g2, dpt.x, dpt.y, 12, PAL.gold[4], .1 + .08 * Math.sin(e / 140)); }
+    sparks = sparks.filter(s => now - s.t0 < 700);
+    sparks.forEach(s => { const u = (now - s.t0) / 700; if (u < 0) return; g2.globalAlpha = 1 - u; g2.fillStyle = PAL.gold[4]; const r2 = 1 + Math.round(u * 5), y = Math.round(s.y - u * 8); g2.fillRect(s.x, y, 1, 1); g2.fillRect(s.x - r2, y + 1, 1, 1); g2.fillRect(s.x + r2, y + 1, 1, 1); g2.fillRect(s.x, y - r2 + 1, 1, 1); g2.globalAlpha = 1; });
+  }
   function frame(now) {
     const L = LOOKS[LK], t = now - t0, rr = rows().find(x => x.id === cur); if (!rr) return;
-    const pct = Math.min(1, Math.max(0, (forcePct >= 0 ? forcePct : rr.saved / rr.target) + stockExtra));
+    const door = L.door ? L.door(k) : { x: k.x0 + L.w / 2 }, dpt = { x: Math.round(door.x), y: Math.round(L.doorY ? L.doorY(k) : LK === 'plain' ? k.y0 + 10 : k.ground - 12) };
+    if (anim) stepAnim(now, dpt);
+    const pct = anim ? Math.min(1, anim.shown) : Math.min(1, Math.max(0, (forcePct >= 0 ? forcePct : rr.saved / rr.target) + stockExtra));
     if (L.bg && Math.floor(pct * 10) !== bgPct) { bgPct = Math.floor(pct * 10); L.bg(bg0g, clg, bgg, k, pct); if (L.sign) { SIGNR = L.sign(); placeSign(); } }
     g.clearRect(0, 0, L.w, L.h); L.paint(g, pct, t, k, false, seedOf(cur));
     fg.clearRect(0, 0, k.W, k.H); rg.clearRect(0, 0, k.Wr, k.Hr);
-    if (L.fx) L.fx.draw(fg, t, k, { rg, pct, pulse: pulseAt, stock: stockT >= 0 ? now - stockT : -1, style: stockStyle });
+    if (L.fx) L.fx.draw(fg, t, k, { rg, pct, pulse: pulseAt, stock: stockT >= 0 ? now - stockT : -1, style: stockStyle, dance: danceT >= 0 ? now - danceT : -1 });
+    drawCoins(fg, now, dpt, k);
     if (stockT >= 0) {
       const dt = now - stockT; if (dt > SQ.END + 200) { stockT = -1; stockExtra = 0; }
       else { const door = L.door ? L.door(k) : { x: k.x0 + L.w / 2 }; if (dt > SQ.T.crouch + 700) stockExtra = .035 * Math.min(1, (dt - SQ.T.crouch - 700) / 400); fg.save(); SQ.frame(fg, dt, stockStyle, { W: k.W, base: Math.round(k.ground) - 1, dx: Math.round(door.x), tint: L.tint, shadow: true }); fg.restore(); }
@@ -6558,7 +6636,7 @@ const BUR = (() => {
     open2(id);
   }
   function open2(id) {
-    if (!el) build(); cur = id; const f = fill(); if (!f) { cur = null; return; }
+    if (!el) build(); anim = null; cur = id; const f = fill(); if (!f) { cur = null; return; }
     document.body.classList.add('bv-on'); el.hidden = false; pop.hidden = false; t0 = performance.now(); layout(); loop();
   }
   function close() { cur = null; clearTimeout(tm); if (el) el.hidden = true; document.body.classList.remove('bv-on'); try { SCENE.look(''); } catch (e) { } }
@@ -6740,8 +6818,8 @@ const BUR = (() => {
     for (let i = 0; i < 8; i++) { const t = rnd(), x = rnd() * W, y = gy + 8 + t * (H - gy - 12), rx = 5 + t * 16 + rnd() * 5; if (Math.abs(x - cx) < 26 && y < gy + 14) continue; PUDS.push([x, y, rx, rx * .2 + .6]); ellPx(g, x, y, rx, rx * .2 + .6, 'rgba(12,30,48,.62)'); ellPx(g, x, y - .4, rx - 2, rx * .2, rgb(mixc(hor, [90, 130, 180], .4), .32)); }
     /* the way back: a wet dirt road coming in from the bottom-left corner, running up to the shore and under the lake's edge (it is the road you arrived by) */
     const narrowS = W < 170, twS = wide ? 19 : 9;
-    BUR.drawRoad(g, { x1: twS + (narrowS ? 62 : 100), y1: H - 44, w1: 6, x2: twS + 18, y2: H + 3, w2: 46, bend: 1.25, night: true, wet: true, lift: true });
     lake(g, W, H, gy, cx, rnd, mx);
+    BUR.drawRoad(g, { x1: cx - 8, y1: gy + 1, w1: 10, x2: twS + 18, y2: H + 3, w2: 46, bend: narrowS ? .8 : .62, night: true, wet: true, lift: true });
     /* framing trunks: grooved bark in three tones, moss, knots, roots, and a thin rim of the door's light on the inner edge */
     const tw = wide ? 19 : 9;
     for (const side of [-1, 1]) {
@@ -6781,6 +6859,11 @@ const BUR = (() => {
       /* a round door at the foot, a round window above it (lit by the fx layer), a stone step, a lantern on a hook */
       for (let y = hb - 8; y <= hb; y++) for (let x = -3; x <= 3; x++) { const arch = y < hb - 5 && Math.abs(x) * Math.abs(x) + (y - (hb - 5)) * (y - (hb - 5)) > 12; if (arch) continue; px(g, hx + x, y, Math.abs(x) === 3 || y === hb - 8 ? PAL.bark[1] : PAL.bark[2]); }
       px(g, hx + 2, hb - 3, PAL.gold[3]); rect(g, hx - 4, hb, 9, 1, PAL.stone[3]); rect(g, hx - 3, hb + 1, 7, 1, PAL.stone[2]);
+      /* a little bench in front of the house, its seat warm from the window light */
+      { const bx0 = hx + 9, bb = gy + 11, Eb = PAL.bark; ellPx(g, bx0 + 7, bb + 1, 9, 1.5, 'rgba(0,0,0,.4)');
+        rect(g, bx0 + 1, bb - 5, 2, 6, Eb[0]); rect(g, bx0 + 11, bb - 5, 2, 6, Eb[0]); rect(g, bx0 - 1, bb - 6, 16, 2, Eb[2]); rect(g, bx0 - 1, bb - 6, 16, 1, Eb[3]);
+        rect(g, bx0, bb - 12, 2, 6, Eb[1]); rect(g, bx0 + 12, bb - 12, 2, 6, Eb[1]); rect(g, bx0, bb - 12, 14, 1, Eb[2]); rect(g, bx0, bb - 9, 14, 1, Eb[1]);
+        px(g, bx0 + 3, bb - 7, PAL.moss[3]); px(g, bx0 + 4, bb - 7, PAL.moss[2]); px(g, bx0 + 9, bb - 12, PAL.moss[3]); px(g, bx0 + 12, bb + 1, PAL.moss[3]); px(g, bx0 + 1, bb + 1, PAL.moss[4]); } 
       for (let i = -9; i <= 9; i++) if (hsh0(hx + i, 5) < .6) { const len = 1 + Math.round(hsh0(hx + i, 6) * 3); for (let j2 = 0; j2 < len; j2++) px(g, hx + i, hb + 1 - j2, PAL.moss[j2 > 1 ? 4 : 3]); } } else HOUSE = null;
     /* fern fronds in the front corners, and a canopy across the top */
     const fern = (ox, oy, dir, n, L) => { for (let f = 0; f < n; f++) { const a = (f / (n - 1) - .5) * 2.2 + dir * .5, len = L * (.7 + .3 * Math.cos(a * 1.3)); for (let s = 0; s < len; s += 1) { const x = ox + Math.sin(a) * s + dir * s * s * .01, y = oy - Math.cos(a) * s * .8 + s * s * .012; px(g, x, y, '#0c2119'); if (s % 2 === 0 && s > 4) { const lf = 4 * (1 - s / len) + 1; for (let q = 1; q <= lf; q++) { px(g, x + Math.cos(a) * q, y + Math.sin(a) * q * .6 + q * .3, s % 4 ? '#13382a' : '#1c5238'); px(g, x - Math.cos(a) * q, y - Math.sin(a) * q * .6 + q * .3, '#0c2119'); } } } } };
@@ -6797,7 +6880,7 @@ const BUR = (() => {
   function init(k) {
     const n = Math.round(k.Wr * k.Hr / 230), drops = [];
     for (let i = 0; i < n; i++) drops.push(newDrop(k, true, i % 3 === 0));
-    const wisps = [], nW = k.W >= 200 ? 7 : 5; for (let i = 0; i < nW; i++) wisps.push({ a: rn() * 6.28, sp: .035 + rn() * .06, rx: 26 + rn() * 46, ry: 7 + rn() * 12, cy: -22 - rn() * 14, ph: rn() * 6.28, warm: i % 3 !== 2 });
+    const wisps = [], nW = k.W >= 200 ? 17 : 11, cols = [PAL.ember[5], PAL.rose[4], PAL.teal[4], PAL.violet[4], PAL.gold[4]], cores = [PAL.gold[4], PAL.rose[5], PAL.teal[5], PAL.violet[5], PAL.ash[5]]; for (let i = 0; i < nW; i++) { const c = i % 5; wisps.push({ a: rn() * 6.28, sp: .03 + rn() * .06, rx: 7 + rn() * 20, ry: 4 + rn() * 9, hx: 12 + rn() * (k.W - 24), hy: 10 + rn() * (k.ground - 12 - 10 + (i % 4 === 0 ? 12 : 0)), ph: rn() * 6.28, c: cols[c], core: cores[c], big: i % 4 === 0 }); }
     F = { drops, wisps, splashes: [], ripples: [], smoke: [], nextSmoke: 0, nextFlash: 9000 + rn() * 8000, flash: -1, lastPulse: performance.now() - 5000, nextPulse: 6000, last: performance.now(), sn: { x: 0, dir: 1, ph: 0 } };
   }
   function newDrop(k, anywhere, far) { return { x: rn() * (k.Wr + 24) - 8, y: anywhere ? rn() * k.Hr : -6 - rn() * 20, v: far ? 30 + rn() * 12 : 50 + rn() * 20, far, end: (k.ground - 3 + rn() * (k.H - k.ground + 3)) * k.f }; }
@@ -6823,6 +6906,7 @@ const BUR = (() => {
     const x0 = k.x0, y0 = k.y0, gy = k.ground, dx = x0 + CX;
     if (now > F.lastPulse + F.nextPulse) { F.lastPulse = now; F.nextPulse = 18000 + rn() * 8000; }
     if (st.pulse && Math.abs(now - st.pulse) < 80) F.lastPulse = now;
+    const dn = st.dance >= 0 && st.dance < 5400 ? Math.min(1, st.dance / 300, (5400 - st.dance) / 700) : 0;
     const pe = pulseEnv(t), fl = 1 + .035 * Math.sin(t / 1100) + .02 * Math.sin(t / 2300 + 1);
     /* lightning: a faint far flash */
     if (now > F.nextFlash) { F.flash = now; F.nextFlash = now + 40000 + rn() * 30000; }
@@ -6843,19 +6927,19 @@ const BUR = (() => {
       ellPx(g, cxm, cy, rx, ry, PAL.rose[2]); ellPx(g, cxm - .3, cy - .4, rx - .7, ry - .6, cap); ellPx(g, cxm - rx * .35, cy - ry * .45, rx * .35, ry * .25, PAL.rose[5]);
       rect(g, Math.round(cxm - rx + .5), Math.round(cy + ry - .3), Math.round(rx * 2 - 1), 1, PAL.ash[5]);
       [[-.45, -.2], [.3, -.55], [.55, .1]].forEach(([a, b]) => px(g, cxm + a * rx, cy + b * ry, PAL.ash[5])); };
-    [[x0 + 4, gy + 3, 0], [x0 + 90, gy + 2, 1]].forEach(([mx, my, gi]) => { const ps = .5 + .5 * Math.sin(t / 2600 + gi * 2); PXK.halo(g, mx, my - 5, 11, PAL.ember[4], .1 + .06 * ps);
+    [[x0 + 4, gy + 3, 0], [x0 + 90, gy + 2, 1]].forEach(([mx, my0, gi]) => { const my = my0 - dn * Math.abs(Math.sin(t / 210 + gi * 1.6)) * 2.5, ps = .5 + .5 * Math.sin(t / 2600 + gi * 2); PXK.halo(g, mx, my - 5, 11, PAL.ember[4], .1 + .06 * ps);
       toad(mx + (gi ? 3 : -3), my + 1, 2.4, 3, gi ? 1 : -1, PAL.rose[3]); toad(mx, my, 3.6, 4, gi ? -1 : 1, PAL.rose[4]);
       px(g, mx - 0, my - 3, PAL.night[0]); px(g, mx + 2, my - 3, PAL.night[0]); });
     const shd = (x, y, rx) => { ellPx(g, x, y, rx, rx * .26, 'rgba(0,0,0,.38)'); ellPx(g, x, y, rx * .6, rx * .16, 'rgba(0,0,0,.2)'); };
     shd(x0 + 15, gy + 6.4, 8); shd(x0 + 81, gy + 6.4, 6.4);
     /* the frog under a lily leaf, left of the door */
-    const fx = x0 + 15, fy = gy + 6, br = Math.sin(t / 1500) * .35, blink = (t % 4200) < 140, rib = (t % 7300) / 1000, puff = rib > 5.6 && rib < 6.1 ? Math.sin((rib - 5.6) / .5 * Math.PI) : 0, look = pe > .3 ? 1 : 0;
+    const fx = x0 + 15, fyL = gy + 6, fy = fyL - dn * Math.abs(Math.sin(t / 190)) * 3.4, br = Math.sin(t / 1500) * .35, blink = (t % 4200) < 140, rib = (t % 7300) / 1000, puff = rib > 5.6 && rib < 6.1 ? Math.sin((rib - 5.6) / .5 * Math.PI) : 0, look = pe > .3 ? 1 : 0;
     ellPx(g, fx, fy - 3.4, 6.2, 3.6 + br, '#2a7250'); ellPx(g, fx - .3, fy - 3.8, 5.6, 3.1 + br, '#43945f'); ellPx(g, fx - 1.5, fy - 5, 3, 1.3, '#7cc489'); ellPx(g, fx + 1.5, fy - 2, 3.4, 1.6, '#c0eba8');
     if (puff) ellPx(g, fx + 3.4, fy - 2, 2 + puff * 1.4, 1.6 + puff, '#fff1b0');
     ellPx(g, fx - 5, fy - 1.2, 2.4, 1.5, '#2a7250'); ellPx(g, fx + 4, fy - .9, 2, 1.1, '#2a7250');
     [-2.4, 2.8].forEach((ox, i) => { ellPx(g, fx + ox, fy - 7.4, 1.9, 1.9, '#43945f'); if (blink) rect(g, fx + ox - 1, fy - 7, 3, 1, '#1c5238'); else { ellPx(g, fx + ox, fy - 7.4, 1.4, 1.4, '#fcd23c'); px(g, fx + ox + look * .6, fy - 7.6, '#1a0f08'); px(g, fx + ox - .6, fy - 8.2, '#f6f2ea'); } });
     px(g, fx + 5.8, fy - 3.4, '#1c5238'); px(g, fx + 4.8, fy - 3, '#1c5238'); if (rib > 5.5 && rib < 6.6) { const u = (rib - 5.5) / 1.1; px(g, fx + 7 + u * 2, fy - 9 - u * 7, '#dff0ff'); px(g, fx + 8 + u * 2, fy - 10 - u * 7, '#dff0ff'); px(g, fx + 8 + u * 2, fy - 11 - u * 7, '#dff0ff'); }
-    rect(g, fx + 4, fy - 15, 1, 10, '#2a7250'); ellPx(g, fx + 2, fy - 16, 8.4, 2.7, '#1c5238'); ellPx(g, fx + 2, fy - 16.5, 7.8, 2.1, '#43945f'); ellPx(g, fx + 1, fy - 17, 5, 1, '#7cc489'); for (let i = -5; i < 6; i++) px(g, fx + 2 + i, fy - 16.5, '#7cc489');
+    rect(g, fx + 4, fyL - 15, 1, 10, '#2a7250'); ellPx(g, fx + 2, fyL - 16, 8.4, 2.7, '#1c5238'); ellPx(g, fx + 2, fyL - 16.5, 7.8, 2.1, '#43945f'); ellPx(g, fx + 1, fyL - 17, 5, 1, '#7cc489'); for (let i = -5; i < 6; i++) px(g, fx + 2 + i, fyL - 16.5, '#7cc489');
     /* animals far behind, in the trees and at the tree line (none of them near the burrow: only the frog and the snail are in front of it) */
     { const far = (c, a) => mixc(c, [58, 88, 112], a), col = c => `rgb(${c[0] | 0},${c[1] | 0},${c[2] | 0})`; F.cr = F.cr || { sq: null, nextSq: now + 7000, hops: [] };
       const okT = TREES.filter(T => Math.abs(T.x - dx) > 54 && T.h > 34 && T.x > 6 && T.x < k.W - 6);
@@ -6864,7 +6948,7 @@ const BUR = (() => {
         g.fillStyle = col(far([20, 30, 52], .2)); g.fillRect(bx - 2, by - hop, 4, 3); g.fillRect(bx + turn * 2, by - 2 - hop, 2, 2); g.fillRect(bx - turn * 4, by + 1 - hop, 3, 1); g.fillStyle = col(far([150, 176, 214], .3)); g.fillRect(bx + (turn > 0 ? 0 : -2), by + 1 - hop, 2, 2); g.fillStyle = 'rgba(255,200,120,.8)'; g.fillRect(bx + turn * 2 + (turn > 0 ? 1 : 0), by - 2 - hop, 1, 1); });
       /* a squirrel runs up a far trunk, pauses to look about, and goes back down */
       const S0 = F.cr.sq;
-      if (!S0 && now > F.cr.nextSq && okT.length) { const T = okT[(rn() * okT.length) | 0]; F.cr.sq = { T, y: gy - 2, up: true, side: rn() < .5 ? -1 : 1, pause: 0, ph: 0, turns: 1 }; F.cr.nextSq = now + 22000 + rn() * 18000; }
+      if (!S0 && false && now > F.cr.nextSq && okT.length) { const T = okT[(rn() * okT.length) | 0]; F.cr.sq = { T, y: gy - 2, up: true, side: rn() < .5 ? -1 : 1, pause: 0, ph: 0, turns: 1 }; F.cr.nextSq = now + 22000 + rn() * 18000; }
       if (F.cr.sq) { const q = F.cr.sq, T = q.T, top = T.ty + T.h * .42, X = Math.round(T.x + q.side * 2);
         if (q.pause > 0) q.pause -= dt; else { q.y += (q.up ? -1 : 1) * 5 * dt; q.ph += dt * 5; if (rn() < dt * .5) q.pause = 1 + rn() * 2.2; }
         if (q.up && q.y < top) { if (q.turns-- > 0) { q.up = false; q.pause = 2.5; } else F.cr.sq = null; } if (!q.up && q.y > gy - 1) F.cr.sq = null;
@@ -6876,9 +6960,21 @@ const BUR = (() => {
         g.fillStyle = c1; r2(-4, dy0 - 8, 9, 4); r2(4, dy0 - 8, 2, 3); [-4, -3, 3, 4].forEach(o => r2(o, dy0 - 4, 1, 4));
         for (let q = 0; q < 4; q++) r2(5 + Math.round(q * .6), dy0 - 9 - 3 * (1 - dip) + q * dip * 2.2, 2, 1);
         const hx = 7 + Math.round(dip * 2), hy = dy0 - 12 + dip * 9; r2(hx, hy, 3, 2); r2(hx + 1, hy - 2, 1, 2); r2(hx + 3, hy + 1, 1, 1); g.fillStyle = c2; r2(-3, dy0 - 8, 6, 1); g.fillStyle = 'rgba(8,12,24,.8)'; r2(hx + 2, hy, 1, 1); g.fillStyle = col(far([200, 210, 225], .6)); r2(-5, dy0 - 8, 1, 2); } }
+    /* a snowy owl on the branch at the left (a plain snowy owl, white with dark bars): it blinks, turns its head toward the door now and then, and bobs when the burrow is fed */
+    { const ow = R.rainy.owl(); if (ow) { const A5 = PAL.ash, Eo = PAL.bark, ox = Math.round(ow.x), oy = Math.round(ow.y) - dn * Math.abs(Math.sin(t / 200)) * 2, cyc = (t % 9000) / 1000, turn = cyc > 6 && cyc < 7.6 ? -1 : 1, bl = (t % 5200) < 150, wide = dn > 0 || (t % 23000) > 22000;
+        ellPx(g, ox - 1.5, ow.y + .6, 5.4, 1.2, 'rgba(0,0,0,.35)');
+        ellPx(g, ox, oy - 6, 4.6, 5.8, A5[4]); ellPx(g, ox - .6, oy - 6.4, 3.9, 5.2, A5[5]); ellPx(g, ox + 2, oy - 5, 2.2, 4.4, A5[3]);
+        for (const [a, b] of [[-2, -3], [1, -2], [-1, -5], [2, -4], [-2, -7], [0, -8]]) px(g, ox + a, oy + b, Eo[1]);
+        rect(g, ox - 4, oy - 5, 2, 5, A5[3]); rect(g, ox + 3, oy - 4, 1, 3, A5[3]);
+        ellPx(g, ox, oy - 12, 3.9, 3.5, A5[5]); ellPx(g, ox - 1, oy - 12.8, 2.4, 1.5, '#ffffff'); ellPx(g, ox + 1.4, oy - 11.2, 2.2, 2, A5[4]);
+        px(g, ox + turn * 3 + (turn > 0 ? -1 : 0), oy - 14, A5[4]); px(g, ox - turn * 3 + (turn > 0 ? 0 : -1), oy - 14, A5[4]);
+        [-1.6, 1.8].forEach(e => { const ex = ox + e + turn * .6; if (bl) rect(g, Math.round(ex - 1), oy - 12, 3, 1, Eo[1]); else { ellPx(g, ex, oy - 12, wide ? 1.7 : 1.35, wide ? 1.7 : 1.35, PAL.gold[4]); px(g, Math.round(ex + turn * .7), oy - 12, '#1a0f08'); } });
+        px(g, Math.round(ox + turn * .6), oy - 10.4, PAL.ember[3]); px(g, Math.round(ox + turn * .6), oy - 9.6, Eo[1]);
+        rect(g, ox - 2, ow.y - 1, 2, 1, Eo[1]); rect(g, ox + 1, ow.y - 1, 2, 1, Eo[1]);
+        g.fillStyle = 'rgba(160,190,235,.35)'; g.fillRect(ox - 4, oy - 9, 1, 5); } }
     /* the snail with a glowing shell, crossing the stones */
-    const sn = F.sn; sn.x += sn.dir * dt * .8; if (sn.x > 22) sn.dir = -1; if (sn.x < -22) sn.dir = 1;
-    const sx = dx + sn.x, sy = gy + 3, d = sn.dir, sp = .5 + .5 * Math.sin(t / 1600); shd(sx, sy + .4, 5.2);
+    const sn = F.sn; sn.x += sn.dir * dt * (.8 + dn * 2.4); if (sn.x > 22) sn.dir = -1; if (sn.x < -22) sn.dir = 1;
+    const sx = dx + sn.x, sy = gy + 3 - dn * Math.abs(Math.sin(t / 170)) * 1.8, d = sn.dir, sp = .5 + .5 * Math.sin(t / 1600); shd(sx, sy + .4, 5.2);
     ellPx(g, sx, sy - 1, 4.4, 1.4, '#f0aa5e'); ellPx(g, sx + d * 3.6, sy - 2.2, 1.8, 1.6, '#d8d2c8'); px(g, sx + d * 4.6, sy - 4, '#d8d2c8'); px(g, sx + d * 3.2, sy - 4.2 - (Math.sin(t / 1200) > 0 ? 1 : 0), '#d8d2c8'); px(g, sx + d * 4.6, sy - 5, '#1a0f08'); px(g, sx + d * 3.2, sy - 5.4 - (Math.sin(t / 1200) > 0 ? 1 : 0), '#1a0f08');
     ellPx(g, sx - d * 1, sy - 4, 3.2, 3.2, '#5e42a0'); ellPx(g, sx - d * 1.2, sy - 4.2, 2.5, 2.5, `rgb(${150 + 40 * sp | 0},${110 + 40 * sp | 0},${230})`); ellPx(g, sx - d * 1.4, sy - 4.4, 1.2, 1.2, '#e6d8ff'); px(g, sx - d * 3, sy - 6, '#f6f2ea');
     PXK.halo(g, sx, sy - 4, 9, PAL.violet[4], .2 + .15 * sp);
@@ -6889,14 +6985,21 @@ const BUR = (() => {
     if (now > F.nextSmoke) { F.smoke.push({ x: x0 + 73, y: y0 + 25, vx: 2 + rn() * 2, vy: -4.5 - rn() * 1.5, age: 0, big: pe > .2 }); F.nextSmoke = now + (pe > .2 ? 1300 : 2000); }
     F.smoke = F.smoke.filter(s => (s.age += dt) < 7); F.smoke.forEach(s => { s.x += (s.vx + s.age * 2) * dt; s.y += s.vy * dt * (1 - s.age / 6); const u = s.age / 7, r = 1.3 + u * (s.big ? 4.6 : 3.4), a = .3 * (1 - u); ellPx(g, s.x, s.y, r, r * .85, `rgba(150,176,206,${a})`); ellPx(g, s.x - r * .25, s.y - r * .3, r * .55, r * .45, `rgba(190,210,230,${a * .8})`); });
     /* a few small fairy lights drifting slowly, like on the main screen: a soft halo, one bright pixel, a gentle twinkle (they ease toward the door at the breath) */
-    F.wisps.forEach((w, wi) => { w.a += dt * w.sp * (1 + pe * .5); const k2 = 1 - pe * .3, wx = dx + Math.cos(w.a) * w.rx * k2, wy = gy + w.cy + Math.sin(w.a * 1.3 + w.ph) * w.ry * k2, tw = .6 + .4 * Math.sin(t / 1700 + w.ph * 3);
-      PXK.halo(g, wx, wy, 5, w.warm ? PAL.ember[5] : PAL.rose[4], .26 * tw); px(g, Math.round(wx), Math.round(wy), w.warm ? PAL.gold[4] : PAL.rose[5]); });
+    F.wisps.forEach((w, wi) => { w.a += dt * w.sp * (1 + pe * .5 + dn * 5); const k2 = 1 + dn * .8, wx = w.hx + Math.cos(w.a) * w.rx * k2, wy = w.hy + Math.sin(w.a * 1.3 + w.ph) * w.ry * k2, tw = .6 + .4 * Math.sin(t / 1700 + w.ph * 3);
+      PXK.halo(g, wx, wy, w.big ? 7 : 5, w.c, (w.big ? .3 : .24) * tw + dn * .12); px(g, Math.round(wx), Math.round(wy), w.core); if (dn > 0 && (Math.floor(t / 90) + wi) % 3 === 0) px(g, Math.round(wx + Math.sin(t / 70 + wi) * 3), Math.round(wy + Math.cos(t / 80 + wi) * 3), w.core); });
     /* things flying far behind: a flock of small birds now and then, and a paper lantern rising slowly */
     { const sky = Math.max(14, y0 + 12); F.fly = F.fly || { birds: [], nextB: now + 4000, lant: [], nextL: now + 9000 };
       if (now > F.fly.nextB && F.fly.birds.length === 0) { const dirB = rn() < .5 ? 1 : -1, n = 3 + (rn() * 3 | 0), by = 6 + rn() * (sky - 8); for (let i = 0; i < n; i++) F.fly.birds.push({ x: dirB > 0 ? -8 - i * 5 : k.W + 8 + i * 5, y: by + Math.abs(i - 1) * 2 + (i & 1), v: dirB * (4.2 + rn() * .6), ph: rn() * 6.28 }); F.fly.nextB = now + 30000 + rn() * 30000; }
       F.fly.birds = F.fly.birds.filter(b => b.x > -16 && b.x < k.W + 16); F.fly.birds.forEach(b => { b.x += b.v * dt; b.y += Math.sin(t / 1900 + b.ph) * dt * .6; const up = Math.sin(t / 380 + b.ph) > 0, bx = Math.round(b.x), by = Math.round(b.y); g.fillStyle = 'rgba(196,206,238,.62)'; g.fillRect(bx, by, 1, 1); if (up) { g.fillRect(bx - 1, by - 1, 1, 1); g.fillRect(bx + 1, by - 1, 1, 1); g.fillRect(bx - 2, by - 2, 1, 1); g.fillRect(bx + 2, by - 2, 1, 1); } else { g.fillRect(bx - 1, by, 1, 1); g.fillRect(bx + 1, by, 1, 1); g.fillRect(bx - 2, by + 1, 1, 1); g.fillRect(bx + 2, by + 1, 1, 1); } });
+      /* now and then a little troop of colourful magic wisps drifts across the sky, glowing, with a trail of sparkles, and fades away softly */
+      F.fly.mg = F.fly.mg || { list: [], next: now + 14000 };
+      if (now > F.fly.mg.next && F.fly.mg.list.length === 0) { const dirM = rn() < .5 ? 1 : -1, n = 3 + (rn() * 2 | 0), cs = [PAL.rose[4], PAL.teal[4], PAL.violet[4], PAL.gold[4], PAL.ember[4]], y1 = 12 + rn() * Math.max(10, sky - 18); for (let i = 0; i < n; i++) F.fly.mg.list.push({ x: dirM > 0 ? k.W * .06 - i * 7 : k.W * .94 + i * 7, y: y1 + i * 3, v: dirM * (7 + rn() * 2), ph: rn() * 6.28, c: cs[(i + (rn() * 5 | 0)) % 5], age: 0, life: (k.W * .88) / 7.5 + 2 }); F.fly.mg.next = now + 50000 + rn() * 50000; }
+      F.fly.mg.list = F.fly.mg.list.filter(m => (m.age += dt) < m.life);
+      F.fly.mg.list.forEach(m => { m.x += m.v * dt; const wy = m.y + Math.sin(m.age * 1.3 + m.ph) * 5, a = Math.max(0, Math.min(1, m.age / 2.5, (m.life - m.age) / 2.5)); g.globalAlpha = a;
+        for (let q = 1; q <= 4; q++) { g.fillStyle = m.c; g.globalAlpha = a * (1 - q / 5) * .7; g.fillRect(Math.round(m.x - Math.sign(m.v) * q * 2.2), Math.round(wy + Math.sin((m.age - q * .12) * 1.3 + m.ph) * 5 - Math.sin(m.age * 1.3 + m.ph) * 5), 1, 1); }
+        g.globalAlpha = a; PXK.halo(g, m.x, wy, 8, m.c, .34); g.globalAlpha = a; px(g, Math.round(m.x), Math.round(wy), '#fff4d8'); g.globalAlpha = 1; });
       if (now > F.fly.nextL && F.fly.lant.length < 1) { F.fly.lant.push({ x: x0 + 20 + rn() * 56, y: gy - 22, age: 0 }); F.fly.nextL = now + 45000 + rn() * 35000; }
-      F.fly.lant = F.fly.lant.filter(l => (l.age += dt) < 46); F.fly.lant.forEach(l => { l.y -= dt * 2.6; const lx = Math.round(l.x + Math.sin(l.age / 4) * 5 + l.age * .25), ly = Math.round(l.y), a = Math.min(1, l.age / 4, (46 - l.age) / 8); if (ly < 4) return; g.globalAlpha = a;
+      F.fly.lant = F.fly.lant.filter(l => (l.age += dt) < 46 && l.y > -6); F.fly.lant.forEach(l => { l.y -= dt * 2.6; const lx = Math.round(l.x + Math.sin(l.age / 4) * 5 + l.age * .25), ly = Math.round(l.y), a = Math.min(1, l.age / 4, (46 - l.age) / 8, (ly - 3) / 22, (k.W - lx) / 14, (lx + 4) / 14); if (a <= .02) return; g.globalAlpha = a;
         PXK.halo(g, lx + 1, ly + 1, 7, PAL.ember[4], .3); g.fillStyle = PAL.ember[2]; g.fillRect(lx, ly + 3, 3, 1); g.fillStyle = PAL.gold[3]; g.fillRect(lx, ly, 3, 3); g.fillStyle = PAL.gold[4]; g.fillRect(lx + 1, ly + 1, 1, 1); g.fillStyle = PAL.ember[3]; g.fillRect(lx, ly - 1, 3, 1); g.globalAlpha = 1; }); }
     /* rain: drawn on a finer canvas (units f times smaller). Far drops are small and pale, near drops longer; they stop on the hill and the leaves and splash */
     const rg = st.rg, f = k.f, sh = shields(k).map(s => ({ cx: s.cx * f, cy: s.cy * f, rx: s.rx * f, ry: s.ry * f })), col = ['rgba(108,146,188,.45)', 'rgba(162,200,238,.8)'], pudR = pud.concat(PUDS).map(p => [p[0] * f, p[1] * f, p[2] * f, p[3] * f]);
@@ -10952,6 +11055,39 @@ const SCENE = (() => {
     const h = new Date().getHours(); return h >= 5 && h < 10 ? 'morning' : h >= 10 && h < 16 ? 'day' : h >= 16 && h < 19 ? 'sunset' : 'night';
   };
   const on = () => !(S && S.ui && S.ui.scene === false);
+  /* the spirit stag: the picture is never changed. It breathes (the head lifts a little), grazes (bows its head to the grass and chews), and now and then walks a few steps along the bank,
+     legs in diagonal pairs, turning to face the way it goes. Frames come at 6 a second. */
+  const STAGP = { b: '#eef4f6', d: '#c8d6dc', w: '#ffffff', k: '#2a3a48', a: '#bff4ff', g: '#8cc48a' };
+  const stagRnd = rnd(91);
+  function stagLife(c, f) {
+    const S0 = L.stag; if (!S0.m) S0.m = { mode: 'stand', t: 0, n: 40, wx: 0, dir: -1, face: -1 };
+    const m = S0.m; m.t++;
+    if (m.t >= m.n) { const r = stagRnd(); m.t = 0;
+      if (m.mode !== 'stand') { m.mode = 'stand'; m.n = 24 + (stagRnd() * 40 | 0); }
+      else if (r < .4) { m.mode = 'eat'; m.n = 46; }
+      else if (r < .75) { m.mode = 'walk'; m.n = 18 + (stagRnd() * 22 | 0); m.dir = m.wx < -8 ? 1 : m.wx > 6 ? -1 : (stagRnd() < .5 ? -1 : 1); m.face = m.dir; }
+      else { m.mode = 'stand'; m.n = 30 + (stagRnd() * 40 | 0); } }
+    if (m.mode === 'walk') m.wx = Math.max(-14, Math.min(9, m.wx + m.dir * .6));
+    const g = .3 + .2 * Math.sin(f / 11), bx = Math.round(S0.x + m.wx);
+    glow(c, bx + 7, S0.y + 7, 10, '#d8f4ff', g * (mood === 'day' ? .6 : 1.2));
+    const flip = m.face < 0;
+    let dy = 0, dx = 0, chew = false;
+    if (m.mode === 'eat') { const t = m.t; if (t < 2) { dy = 2; dx = 0; } else if (t < 4) { dy = 4; dx = 1; } else if (t < 40) { dy = 5; dx = 2; chew = true; } else if (t < 43) { dy = 3; dx = 1; } else { dy = 1; dx = 0; } }
+    else if (Math.sin(f / 6) > .55) dy = -1;
+    if (m.mode === 'walk') dy = (m.t % 6 < 3) ? 0 : -1;
+    const lift = m.mode === 'walk' ? (m.t % 6 < 3 ? 1 : 2) : 0;   /* which diagonal pair of legs is in the air */
+    const put = (i, j, ch) => { const pc = STAGP[ch]; if (!pc) return; const xx = flip ? 13 - i : i; c.fillStyle = pc; c.fillRect(bx + xx, Math.round(S0.y + j), 1, 1); };
+    for (let j = 0; j < STAG.length; j++) { const row = STAG[j];
+      for (let i = 0; i < row.length; i++) { const ch = row[i]; if (ch === '.') continue;
+        if (j < 9 && dy) {   /* the head and antlers */
+          if (j === 8 && dy < 0) { put(i, j, ch); continue; }
+          const jj = j + dy - (chew && j === 8 && (m.t % 6 < 3) ? 1 : 0); put(i + dx, jj, ch); continue; }
+        if (j >= 12) { const leg = (i === 2 || i === 10) ? 1 : 2; if (lift === leg) { if (j === 12) put(i, j, 'b'); else if (j === 13) put(i, j, 'd'); continue; } }
+        put(i, j, ch); }
+    }
+    if (dy > 0) for (let q = 0; q < 2 && dy >= 4; q++) put(8 + q, 8 + dy - 1 + 0, 'b');   /* the neck stays joined to the chest while the head is bowed */
+    if (chew && m.t % 6 < 3) put(11 + dx, 8 + dy, 'g');
+  }
   /* ---------- light: sun, lamps and the glowing water each have their own layer, and each breathes in its own way ----------
      sun: colour, strength, slant of the beams.  lamp: how lit the lanterns and the window are.  wf: how much the waterfall glows.
      veil: how much of the page colour lies over the scenery behind the words.  shade: depth of the dark at the edges. */
@@ -11500,12 +11636,25 @@ const SCENE = (() => {
     c.globalCompositeOperation = 'lighter'; const S1 = E.stump, fl = .75 + .15 * Math.sin(f * .7) + .1 * Math.sin(f * 1.9);
     spot(c, S1.wx, S1.wy, 6, '#ffc060', .5 * fl); spot(c, S1.rx, S1.ry, 3, '#ffc060', .4 * fl); spot(c, S1.lx, S1.ly, 7, '#ffd890', .45 * fl);
     for (let i = 0; i < 4; i++) { const age = (f * .6 + i * 9) % 36, x = S1.lx + Math.sin(age / 5 + i * 2) * 4, y = S1.ly - age * .5; c.globalAlpha = Math.max(0, .7 - age / 40); c.fillStyle = '#ffe9a8'; c.fillRect(Math.round(x), Math.round(y), 1, 1); } c.globalAlpha = 1; c.globalCompositeOperation = 'source-over';
-    /* a small frog on its stone: it blinks, its throat pulses, and now and then it hops up and sits down again */
-    { const F0 = E.frog, cyc = ff % 260, hop = cyc < 4 ? [0, 3, 4, 2][cyc] : 0, fx = F0.x, fy = F0.y - 3 - hop, gr = mixh(PAL.moss[6], t.fog, .08), gl = mixh(PAL.ash[5], t.fog, .08), gd = mixh(PAL.moss[4], t.fog, .1), blink = cyc % 70 > 64;
-      ell2(c, fx, fy + 1, 3.6, 2.2, gd); ell2(c, fx, fy, 3.2, 2, gr); ell2(c, fx + .5, fy + 1.2, 1.6, .8, mixh(PAL.moss[5], t.fog, .1)); put(c, fx - 3, fy + 2, gd); put(c, fx + 3, fy + 2, gd); put(c, fx - 2, fy + 3, gd); put(c, fx + 2, fy + 3, gd);
-      ell2(c, fx - 2, fy - 2, 1.2, 1.2, gr); ell2(c, fx + 2, fy - 2, 1.2, 1.2, gr);
-      put(c, fx - 2, fy - 2, blink ? gd : PAL.gold[4]); put(c, fx + 2, fy - 2, blink ? gd : PAL.gold[4]); if (!blink) { put(c, fx - 2, fy - 1, PAL.night[0]); put(c, fx + 2, fy - 1, PAL.night[0]); }
-      if (cyc % 26 < 12) { c.fillStyle = gl; c.fillRect(fx - 1, fy + 2, 3, 1); } }
+    /* the slim squirrel on the meadow floor: now and then it runs in from one side, sits up and looks about, and runs off again */
+    { const G = L.sqg || (L.sqg = { mode: 'wait', next: ff + 120 + (Math.random() * 240 | 0), x: 0, n: 0, dir: 1, stop: 0 }), fy = Math.round(L.floor + (H - L.floor) * .62), lo = L.wide ? L.cx0 - 22 : 0, hi = L.wide ? L.cx1 + 22 : W;
+      if (G.mode === 'wait' && (ff > G.next || (window.__sqForce && (window.__sqForce = 0, 1)))) { G.dir = Math.random() < .5 ? 1 : -1; G.x = G.dir > 0 ? lo - 14 : hi + 14; G.stop = G.dir > 0 ? lo + 26 + Math.random() * 40 : hi - 26 - Math.random() * 40; G.mode = 'in'; G.n = 0; }
+      if (G.mode !== 'wait') { G.n++; let nm = 'idle' + (Math.floor(G.n / 3) % 6);
+        if (G.mode === 'in') { G.x += G.dir * 5; nm = 'run' + (G.n % 8); if ((G.x - G.stop) * G.dir >= 0) { G.x = G.stop; G.mode = 'sit'; G.n = 0; } }
+        else if (G.mode === 'sit') { nm = 'idle' + (Math.floor(G.n / 3) % 6); if (G.n > 26) { G.mode = 'out'; G.n = 0; } }
+        else { G.x -= G.dir * 5; nm = 'run' + (G.n % 8); if (G.x < lo - 20 || G.x > hi + 20) { G.mode = 'wait'; G.next = ff + 600 + (Math.random() * 900 | 0); } }
+        if (G.mode !== 'wait') SQP.drawTint(c, nm, G.x, fy, G.mode === 'out' ? G.dir > 0 : G.dir < 0, t.fog, .22); }
+    }
+    /* a small alien blob (a jelly of violet and teal with one big eye and two glowing feelers): it wanders slowly along the grass by the stone, squashing as it goes, stops to look about and blinks */
+    { const F0 = E.frog, ph = ff / 190, sp = Math.sin(ph), mv = Math.abs(Math.cos(ph)) > .3, dir = Math.cos(ph) > 0 ? 1 : -1, bxp = Math.round(F0.x + sp * 13), by0 = F0.y + 1,
+        sq = mv ? Math.sin(ff / 3.2) : Math.sin(ff / 14) * .35, rx = 3.8 - sq * .5, ry = 3 + sq * .6, hopY = mv ? Math.abs(Math.sin(ff / 3.2)) * 1.1 : 0, cy = Math.round(by0 - ry - hopY), blink = ff % 95 > 90, look = mv ? dir : (Math.sin(ff / 40) > .5 ? 1 : Math.sin(ff / 40) < -.5 ? -1 : 0),
+        d1 = mixh(PAL.violet[1], t.fog, .1), d2 = mixh(PAL.violet[2], t.fog, .1), d3 = mixh(PAL.violet[3], t.fog, .1), hi = mixh(PAL.teal[5], t.fog, .08);
+      PXK.halo(c, bxp, cy, 8, PAL.teal[4], .1, .9);
+      c.fillStyle = 'rgba(0,0,0,.22)'; c.fillRect(bxp - 4, by0 + 1, 9, 1);
+      ell2(c, bxp, cy + .5, rx + .6, ry + .4, d1); ell2(c, bxp, cy, rx, ry, d2); ell2(c, bxp - .4, cy - .5, rx - .9, ry - .9, d3); ell2(c, bxp - 1.2, cy - ry * .5, rx * .35, ry * .22, hi);
+      for (const o of [-2, 0, 2]) put(c, bxp + o, Math.round(cy + ry - .2), mixh(PAL.teal[3], t.fog, .1));
+      if (blink) { c.fillStyle = d1; c.fillRect(bxp + look - 1, cy - 1, 3, 1); } else { ell2(c, bxp + look * .6, cy - 1, 1.7, 1.7, mixh(PAL.ash[5], t.fog, .06)); put(c, bxp + look * 1.2 + (look ? 0 : 0), cy - 1, PAL.night[0]); put(c, bxp + look * 1.2, cy - 2, mixh(PAL.ash[5], t.fog, .02)); }
+      for (const sd of [-1, 1]) { const sw = Math.round(Math.sin(ff / 9 + sd) * .8), ax = bxp + sd * 2; put(c, ax, cy - Math.round(ry) - 1, d3); put(c, ax + sw, cy - Math.round(ry) - 2, d3); c.globalAlpha = .6 + .4 * Math.sin(ff / 7 + sd * 2); put(c, ax + sw, cy - Math.round(ry) - 3, PAL.gold[4]); c.globalAlpha = 1; } }
     /* a snail crosses the fallen log, a few minutes to the top and back */
     { const lx = E.log.x, ly = E.log.y, cyc = ff % 1400, u = cyc < 700 ? cyc / 700 : 1 - (cyc - 700) / 700, dirn = cyc < 700 ? 1 : -1, sx = Math.round(lx - 8 + u * 15), sy = ly - 6, body = mixh(PAL.ash[5], t.fog, .12), shell = mixh(PAL.bark[3], t.fog, .12);
       for (let i = 0; i < 5; i++) put(c, sx + dirn * (i - 2) - (dirn > 0 ? 0 : 0), sy, i === 4 ? body : mixh(PAL.ash[4], t.fog, .12));
@@ -11523,7 +11672,7 @@ const SCENE = (() => {
     c.drawImage(stb, 0, 0);
     flyers(c, f);
     c.drawImage(stb2, 0, 0);
-    climbers(c, f); driftLights(c, f);
+    driftLights(c, f);
     c.drawImage(st, 0, 0);
     const F = L.fall;
     const Lm = LIGHT[mood];
@@ -11548,7 +11697,7 @@ const SCENE = (() => {
     c.globalAlpha = 1;
     const pal = { b: mood === 'night' ? '#5a4a46' : '#a8714a', d: mood === 'night' ? '#3e3230' : '#7a4f32', w: '#f1e6d6', k: '#1e1a18', a: '#d9c3a0' };
     for (const d of L.deer) { const up = (f + d.ph) % 64 > 46; grid(c, d.x, d.y, DEER[up ? 0 : 1], pal, d.flip); }
-    if (L.stag) { const g = .3 + .2 * Math.sin(f / 11); glow(c, L.stag.x + 7, L.stag.y + 7, 10, '#d8f4ff', g * (mood === 'day' ? .6 : 1.2)); grid(c, L.stag.x, L.stag.y, STAG, { b: '#eef4f6', d: '#c8d6dc', w: '#ffffff', k: '#2a3a48', a: '#bff4ff' }, true); }
+    if (L.stag) stagLife(c, f);
     for (const m of L.mist) { m.x += m.v; if (m.x > W + m.w) m.x = -m.w; c.globalAlpha = t.mist * .7; c.fillStyle = t.fog; c.fillRect(Math.round(m.x), Math.round(m.y), Math.round(m.w), 3); c.fillRect(Math.round(m.x + 6), Math.round(m.y - 2), Math.round(m.w * .6), 2); c.globalAlpha = 1; }
     if (t.dew) for (const d of L.dew) { if ((f + d[2]) % 40 < 2) { c.fillStyle = '#ffffff'; c.fillRect(d[0], d[1], 1, 1); c.globalAlpha = .6; c.fillRect(d[0] - 1, d[1], 3, 1); c.fillRect(d[0], d[1] - 1, 1, 3); c.globalAlpha = 1; } }
     /* light: the sun breathes slowly, the lanterns flicker each in their own time, the waterfall pulses */
@@ -11924,7 +12073,7 @@ const DJ = (() => {
   function paint() {
     const m = !!S.ui.mute, v = volOf(), src = djSrc();
     const b = $('#sndBtn'); if (b) { b.innerHTML = m || v === 0 ? ICON.off : ICON.on; b.setAttribute('aria-label', m ? 'Sound off. Tap to turn on' : 'Sound on. Tap to mute'); b.setAttribute('aria-pressed', String(m)); b.classList.toggle('off', m); }
-    const n = $('#djBtn'); if (n) { n.innerHTML = ICON.note; n.classList.toggle('lit', playing || (src === 'forest' && !m && MUSIC.playing())); }
+    const n = $('#djBtn'); if (n) { n.innerHTML = m || v === 0 ? ICON.off : ICON.on; n.setAttribute('aria-label', m ? 'Sound off. Open sound and music' : 'Sound and music'); n.classList.toggle('off', m); n.classList.toggle('lit', !m && (playing || (src === 'forest' && MUSIC.playing()))); }
     const pnl = $('#dj'); if (!pnl || pnl.hidden) { paintDock(); return; }
     $('#djMute').textContent = m ? 'Sound off' : 'Sound on'; $('#djMute').setAttribute('aria-pressed', String(m)); $('#djMute').classList.toggle('off', m);
     const r = $('#djVol'); if (document.activeElement !== r) r.value = v; $('#djVolN').textContent = v;

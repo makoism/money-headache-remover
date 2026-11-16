@@ -5,7 +5,7 @@
    It only reads the plan (goalRows); nothing here is stored or changed. `#burrow=<goalId>` in the address opens one on load.
    A LOOK is { mood, w, h, paint(g, pct, t, k), fx: { init(k), draw(g, t, k) } }. k carries the geometry (see geom()). */
 const BUR = (() => {
-  let grc = null, SIGNR = null, el = null, cv = null, g = null, fxc = null, fg = null, rc = null, rg = null, bgc = null, bgg = null, bg0 = null, bg0g = null, clc = null, clg = null, bgPct = -1, pop = null, cur = null, tm = 0, k = null, t0 = 0, stockT = -1, stockStyle = 'A', pulseAt = 0, stockExtra = 0, forcePct = -1;
+  let anim = null, sparks = [], danceT = -1, grc = null, SIGNR = null, el = null, cv = null, g = null, fxc = null, fg = null, rc = null, rg = null, bgc = null, bgg = null, bg0 = null, bg0g = null, clc = null, clg = null, bgPct = -1, pop = null, cur = null, tm = 0, k = null, t0 = 0, stockT = -1, stockStyle = 'A', pulseAt = 0, stockExtra = 0, forcePct = -1;
   const LOOKS = {};
   const reduced = () => !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
   const rows = () => { try { return goalRows(S, C, nowYm()).filter(r => r.live && r.target > 0); } catch (e) { return []; } };
@@ -22,13 +22,13 @@ const BUR = (() => {
       /* the moss shade differs a little: greener, bluer or yellower */
       const sh = rn() * 3 | 0, off = sh === 0 ? 0 : sh === 1 ? -1 : 1, base0 = night ? 1 : 2, mo = [0, 1, 2, 3].map(i => M[Math.max(1, Math.min(6, base0 + i + off))]);
       const so = night ? [E[0], E[1], E[2]] : [E[1], E[2], E[3]];
-      const pk = cx + Math.round((rn() - .5) * 2), hm = 13 + Math.round(rn()), half = 10.5 + Math.round(rn() * 1.4);
-      const hh = []; for (let x = 0; x < W; x++) { const u = Math.abs(x - pk) / (x < pk ? half - .5 : half); hh[x] = u >= 1 ? 0 : Math.round(hm * Math.pow(1 - u * u, .8)); }
+      const pk = 11 + (rn() * 2 | 0), hm = 13 + Math.round(rn()), half = 9.5 + Math.round(rn() * 1.2);
+      const hh = []; for (let x = 0; x < W; x++) { const u = Math.abs(x - pk) / half; hh[x] = u >= 1 ? 0 : Math.round(hm * Math.pow(1 - u * u, .8)); }
       for (let x = 0; x < W; x++) { const top = base - hh[x]; if (hh[x] < 1) continue; const lit = x < pk ? 0 : 1;
         for (let y = top; y <= base; y++) { const d = y - top, gd = 2 + Math.round(4 * Math.pow(hh[x] / hm, 1.3));
           if (d < gd) px(x, y, d < 1 ? mo[lit ? 3 : 2] : d < 2 ? mo[lit ? 2 : 1] : mo[lit ? 1 : 0]); else px(x, y, d > gd + 3 ? so[0] : d > gd + 1 ? so[1] : so[2]); } }
       /* the hole: a circle, a ring of earth around it, dark inside, the coins piled from the bottom */
-      const r = 4 + rn() * .6, hx = cx + Math.round((rn() - .5) * 2), hy = base - 5.5, d2 = (x, y) => Math.hypot(x - hx, y - hy);
+      const r = 4 + rn() * .6, hx = pk, hy = base - 5.5, d2 = (x, y) => Math.hypot(x - hx, y - hy);
       for (let y = Math.floor(hy - r - 2); y <= Math.ceil(hy + r + 2); y++) for (let x = Math.floor(hx - r - 2); x <= Math.ceil(hx + r + 2); x++) { const d = d2(x, y); if (d <= r) px(x, y, night ? PAL.night[0] : E[0]); else if (d <= r + 1.15) px(x, y, y < hy - r * .2 ? E[1] : E[2]); }
       const lv = Math.round(Math.min(1, pct) * (2 * r - 1));
       PXK.halo(g, hx, hy + 1, 6, PAL.ember[4], .08 + .14 * Math.min(1, pct), .9);
@@ -41,12 +41,41 @@ const BUR = (() => {
       if (rn() < .5) { const sx = cx - s1 * 9; px(sx, base, PAL.stone[3]); px(sx + 1, base, PAL.stone[2]); px(sx, base - 1, PAL.stone[4]); }
       for (let y = base + 1; y < H; y++) for (let x = 2; x < W - 2; x++) { const d = y - base, e = Math.min(x - 2, W - 3 - x); if (d > 1 && (e < 3 || B[y & 3][x & 3] > e + 5)) continue; px(x, y, d === 1 ? so[2] : so[1]); }
     }, fx: null };
+  /* ---------- adding money without leaving the burrow: a small panel in the pop-up. The money comes from this month's unspent play money (the same top-up
+     the plan already has, so it is one undoable change). Then the coins drop into the burrow one by one, with sounds, and the little animals dance. ---------- */
+  function playLeft() { try { const ym = nowYm(), m = calcAll(S).byYm[ym], spent = (receiptStats(S, ym).byJar || {}).play || 0; return Math.max(0, Math.floor((m.jar.play - spent) * 100) / 100); } catch (e) { return 0; } }
+  function addPanel(r) {
+    const left = playLeft(), room = Math.max(0, Math.ceil(r.target - r.saved)), cap = Math.max(0, Math.min(Math.floor(left), room));
+    const nice = v => { const st = cap > 20000 ? 1000 : cap > 4000 ? 500 : cap > 800 ? 100 : 10; return Math.max(1, Math.min(cap, Math.round(v / st) * st)); };
+    const chips = [...new Set([nice(cap * .25), nice(cap * .5), cap])].filter(v => v > 0 && v <= cap);
+    if (!(cap > 0)) { pop.innerHTML = `<h2>${esc(r.name)}</h2><p class="bv-s">${room <= 0 ? 'This burrow is full.' : 'No play money left this month to move here.'}</p><button type="button" class="link bv-no">Back</button>`; pop.querySelector('.bv-no').addEventListener('click', e => { e.stopPropagation(); fill(); }); return; }
+    pop.innerHTML = `<h2>Add to ${esc(r.name)}</h2><p class="bv-n">From play money: <b>${fmt(left)}</b> left this month</p>`
+      + `<div class="bv-chips">${chips.map(v => `<button type="button" class="chip" data-v="${v}">${fmt(v)}</button>`).join('')}</div>`
+      + `<label class="bv-amt"><span class="sr">Amount</span><input type="number" inputmode="numeric" min="1" max="${cap}" step="1" placeholder="Amount"></label>`
+      + `<div class="bv-row"><button type="button" class="btn bv-go">Add</button><button type="button" class="link bv-no">Back</button></div><p class="bv-s bv-msg" role="status"></p>`;
+    const inp = pop.querySelector('input'), msg = pop.querySelector('.bv-msg');
+    pop.querySelectorAll('.chip').forEach(c => c.addEventListener('click', e => { e.stopPropagation(); inp.value = c.dataset.v; inp.focus(); }));
+    pop.querySelector('.bv-no').addEventListener('click', e => { e.stopPropagation(); fill(); });
+    const go = e => { if (e) e.stopPropagation(); const v = Math.floor(+inp.value); if (!(v >= 1 && v <= cap)) { msg.textContent = `Enter an amount from 1 to ${fmt(cap)}.`; return; } feed(r, v); };
+    pop.querySelector('.bv-go').addEventListener('click', go); inp.addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') go(); });
+    setTimeout(() => { try { inp.focus({ preventScroll: true }); } catch (e) { /* fine */ } }, 0);
+  }
+  function feed(r, v) {
+    const before = Math.min(1, r.saved / r.target); let moved = 0;
+    try { moved = ACT.sweep(nowYm(), r.id, v); } catch (e) { moved = 0; }
+    if (!(moved > 0)) { const m = pop.querySelector('.bv-msg'); if (m) m.textContent = 'That could not be added.'; return; }
+    try { render(); } catch (e) { /* the page behind redraws on its own */ }
+    const r2 = rows().find(x => x.id === r.id) || r, to = Math.min(1, r2.saved / r2.target), n = Math.max(2, Math.min(5, Math.round(1 + (to - before) * 10)));
+    pop.innerHTML = `<h2>${esc(r.name)}</h2><p class="bv-n"><b>+${fmt(moved)}</b></p><p class="bv-s">Going in.</p>`;
+    if (reduced()) { fill(); return; }
+    anim = { from: before, to, t0: performance.now(), n, shown: before, landed: 0, moved, full: to >= 1, id: r.id };
+  }
+  function undoAdd() { try { ACT.undo(); render(); } catch (e) { /* nothing to undo */ } fill(); }
   /* ---------- the stage: sizes, geometry, the loop ---------- */
   function build() {
     el = document.createElement('section'); el.id = 'burrowView'; el.setAttribute('aria-label', 'Burrow');
-    el.innerHTML = '<button type="button" class="bv-back" aria-label="Back to home">Home</button><canvas class="bv-bg0" aria-hidden="true"></canvas><div class="bv-cloudwrap"><canvas class="bv-clouds" aria-hidden="true"></canvas></div><canvas class="bv-bg" aria-hidden="true"></canvas><canvas class="bv-ground" aria-hidden="true"></canvas><div class="bv-stage"><canvas class="bv-cv" aria-hidden="true"></canvas></div><canvas class="bv-fx" aria-hidden="true"></canvas><canvas class="bv-rain" aria-hidden="true"></canvas><button type="button" class="bv-sign" aria-label="Back to the burrow" title="Back to the burrow"></button><div class="bv-pop" hidden></div><button type="button" class="bv-nav bv-prev" aria-label="Previous burrow">&#8249;</button><button type="button" class="bv-nav bv-next" aria-label="Next burrow">&#8250;</button><nav class="bv-dots" aria-label="Burrows"></nav>';
+    el.innerHTML = '<canvas class="bv-bg0" aria-hidden="true"></canvas><div class="bv-cloudwrap"><canvas class="bv-clouds" aria-hidden="true"></canvas></div><canvas class="bv-bg" aria-hidden="true"></canvas><canvas class="bv-ground" aria-hidden="true"></canvas><div class="bv-stage"><canvas class="bv-cv" aria-hidden="true"></canvas></div><canvas class="bv-fx" aria-hidden="true"></canvas><canvas class="bv-rain" aria-hidden="true"></canvas><button type="button" class="bv-sign" aria-label="Back home" title="Back home"></button><div class="bv-pop" hidden></div><button type="button" class="bv-nav bv-prev" aria-label="Previous burrow">&#8249;</button><button type="button" class="bv-nav bv-next" aria-label="Next burrow">&#8250;</button><nav class="bv-dots" aria-label="Burrows"></nav>';
     document.body.append(el); cv = el.querySelector('.bv-cv'); g = cv.getContext('2d'); fxc = el.querySelector('.bv-fx'); fg = fxc.getContext('2d'); rc = el.querySelector('.bv-rain'); rg = rc.getContext('2d'); bgc = el.querySelector('.bv-bg'); bgg = bgc.getContext('2d'); bg0 = el.querySelector('.bv-bg0'); bg0g = bg0.getContext('2d'); clc = el.querySelector('.bv-clouds'); grc = el.querySelector('.bv-ground'); clg = clc.getContext('2d'); pop = el.querySelector('.bv-pop');
-    el.querySelector('.bv-back').addEventListener('click', close);
     el.querySelector('.bv-sign').addEventListener('click', close);
     el.querySelector('.bv-prev').addEventListener('click', () => step(-1)); el.querySelector('.bv-next').addEventListener('click', () => step(1));
     let sx0 = 0, sy0 = 0; el.addEventListener('pointerdown', e => { sx0 = e.clientX; sy0 = e.clientY; }); el.addEventListener('pointerup', e => { const dx = e.clientX - sx0, dy = e.clientY - sy0; if (Math.abs(dx) > 70 && Math.abs(dy) < 60 && !e.target.closest('.bv-pop, .bv-back, .bv-nav, .bv-dots')) step(dx < 0 ? 1 : -1); });
@@ -60,7 +89,7 @@ const BUR = (() => {
      The art is drawn by drawRoad and drawSign into the same pixel grid, palette, light and layering as the rest of the world: the road is the world's
      earth with a ragged grass verge and ruts, the post has a contact shadow and grass over its foot, the wood is lit by the world's own light, and the rain
      falls in front of it. The HTML button (.bv-sign) is only an invisible hit area placed over the painted sign. See ART_GUIDE.md section 0. */
-  const GL = { B: ['##.', '#.#', '##.', '#.#', '##.'], A: ['.#.', '#.#', '###', '#.#', '#.#'], C: ['.##', '#..', '#..', '#..', '.##'], K: ['#.#', '#.#', '##.', '#.#', '#.#'], T: ['###', '.#.', '.#.', '.#.', '.#.'], O: ['.#.', '#.#', '#.#', '#.#', '.#.'], H: ['#.#', '#.#', '###', '#.#', '#.#'], E: ['###', '#..', '##.', '#..', '###'], U: ['#.#', '#.#', '#.#', '#.#', '###'], R: ['##.', '#.#', '##.', '#.#', '#.#'], W: ['#.#', '#.#', '#.#', '###', '#.#'] };
+  const GL = { M: ['#.#', '###', '###', '#.#', '#.#'], B: ['##.', '#.#', '##.', '#.#', '##.'], A: ['.#.', '#.#', '###', '#.#', '#.#'], C: ['.##', '#..', '#..', '#..', '.##'], K: ['#.#', '#.#', '##.', '#.#', '#.#'], T: ['###', '.#.', '.#.', '.#.', '.#.'], O: ['.#.', '#.#', '#.#', '#.#', '.#.'], H: ['#.#', '#.#', '###', '#.#', '#.#'], E: ['###', '#..', '##.', '#..', '###'], U: ['#.#', '#.#', '#.#', '#.#', '###'], R: ['##.', '#.#', '##.', '#.#', '#.#'], W: ['#.#', '#.#', '#.#', '###', '#.#'] };
   const hsh = (a, b) => { let h = Math.imul(a * 374761393 + b * 668265263 + 1013, 1274126177); h ^= h >>> 13; return ((Math.imul(h, 1103515245) >>> 0) % 1000) / 1000; };
   /* o: { x1, y1, w1 (far end), x2, y2, w2 (near end), bend, night, wet } */
   function drawRoad(g, o) {
@@ -83,7 +112,7 @@ const BUR = (() => {
   /* o: { night, lit: -1 (light from the left) | 0 | 1 (from the right), wet, narrow }. (bx, by) is the foot of the post. Returns the hit rectangle. */
   function drawSign(g, bx, by, o) {
     const E = PAL.bark, Mo = PAL.moss, G = PAL.gold, night = !!o.night, lit = o.lit || 0, narrow = !!o.narrow, px = (x, y, c) => { g.fillStyle = c; g.fillRect(Math.floor(x), Math.floor(y), 1, 1); };
-    const wd = night ? [E[0], E[1], E[2], E[3]] : [E[1], E[2], E[3], E[4]], bw = narrow ? 40 : 58, bh = narrow ? 24 : 17, top = by - (o.gap == null ? 14 : o.gap) - bh, left = bx - Math.round(narrow ? 22 : 32);
+    const wd = night ? [E[0], E[1], E[2], E[3]] : [E[1], E[2], E[3], E[4]], bw = narrow ? 40 : 58, bh = narrow ? 19 : 17, top = by - (o.gap == null ? 14 : o.gap) - bh, left = bx - Math.round(narrow ? 22 : 32);
     /* contact shadow on the ground */
     g.globalAlpha = .34; g.fillStyle = PAL.night[0]; for (let y = -1; y <= 1; y++) for (let x = -7; x <= 7; x++) if ((x / 7) ** 2 + (y / 1.6) ** 2 <= 1) g.fillRect(bx + x + (lit ? -lit * 2 : 0), by + y, 1, 1); g.globalAlpha = 1;
     /* the post: lit on one side, dark on the other, with grain */
@@ -103,8 +132,8 @@ const BUR = (() => {
     if (o.wet) for (let x = left + 6; x < left + bw - 2; x++) if (hsh(x, 9) < .1) px(x, top + bh, PAL.rain[2]);
     /* its words (the small pixel alphabet), a little dry-brushed, and the arrow */
     const ink = G[3], word = (str, x, y) => { for (const ch of str) { if (GL[ch]) GL[ch].forEach((row, j) => { for (let i = 0; i < 3; i++) if (row[i] === '#') px(x + i, y + j, ink); }); x += 4; } };
-    if (narrow) { word('BACK', left + 13, top + 3); word('TO THE', left + 13, top + 9); word('BURROW', left + 13, top + 15); for (let i = 0; i < 5; i++) px(left + 5 + i, mid, ink); px(left + 6, mid - 1, ink); px(left + 6, mid + 1, ink); px(left + 7, mid - 2, ink); px(left + 7, mid + 2, ink); }
-    else { word('BACK TO', left + 15, top + 3); word('THE BURROW', left + 15, top + 9); for (let i = 0; i < 6; i++) px(left + 6 + i, mid, ink); px(left + 7, mid - 1, ink); px(left + 7, mid + 1, ink); px(left + 8, mid - 2, ink); px(left + 8, mid + 2, ink); }
+    if (narrow) { word('BACK', left + 13, top + 4); word('HOME', left + 13, top + 11); for (let i = 0; i < 5; i++) px(left + 5 + i, mid, ink); px(left + 6, mid - 1, ink); px(left + 6, mid + 1, ink); px(left + 7, mid - 2, ink); px(left + 7, mid + 2, ink); }
+    else { word('BACK', left + 15, top + 3); word('HOME', left + 15, top + 9); for (let i = 0; i < 6; i++) px(left + 6 + i, mid, ink); px(left + 7, mid - 1, ink); px(left + 7, mid + 1, ink); px(left + 8, mid - 2, ink); px(left + 8, mid + 2, ink); }
     /* grass and a fern growing over the foot of the post, in front of it */
     for (let i = -6; i <= 6; i++) { const h = hsh(bx + i, 3); if (h < .62) { const len = 2 + Math.round(h * 6); for (let j = 0; j < len; j++) px(bx + i + (j > 2 ? (i < 0 ? -1 : 1) : 0), by + 1 - j, Mo[j === len - 1 ? 4 : j > 1 ? 3 : 2]); } }
     return { x: left - 1, y: top - 2, w: bw + 3, h: by - top + 4 };
@@ -150,19 +179,49 @@ const BUR = (() => {
     const all = rows(), r = all.find(x => x.id === cur) || all[0]; if (!r) return;
     cur = r.id; const pct = Math.min(1, r.saved / r.target); LK = LOOKS[lookOf(r)] ? lookOf(r) : 'plain';
     pop.innerHTML = `<h2>${esc(r.name)}</h2><p class="bv-n"><b>${fmt(r.saved)}</b> of ${fmt(r.target)}</p><div class="bv-bar" role="img" aria-label="${Math.round(pct * 100)} percent full"><i style="width:${Math.round(pct * 100)}%"></i></div><p class="bv-s">${Math.round(pct * 100)}% full</p><button type="button" class="btn bv-add">Add money</button>`;
-    pop.querySelector('.bv-add').addEventListener('click', e => { e.stopPropagation(); close(); switchTab('receipts'); });
+    pop.querySelector('.bv-add').addEventListener('click', e => { e.stopPropagation(); addPanel(r); });
     el.querySelector('.bv-dots').innerHTML = all.map(x => `<button type="button" data-b="${esc(x.id)}" aria-label="${esc(x.name)}" aria-current="${x.id === cur}"></button>`).join('');
     el.querySelectorAll('.bv-dots button').forEach(b => b.addEventListener('click', () => open(b.dataset.b)));
     try { if (!LOOKS[LK].bg) SCENE.look(LOOKS[LK].mood || ''); } catch (e) { /* the world is a bonus */ }
     return { pct, r };
   }
+  /* the coins: they fall one after another from above the door into the hole; each landing makes a sound and a small spark; the pile rises with them */
+  function stepAnim(now, dpt) {
+    const a = anim, e = now - a.t0, TL = 1600, LAND = 1250;
+    let landed = 0; for (let i = 0; i < a.n; i++) if (e >= i * TL + LAND) landed++;
+    if (landed > a.landed) { for (let i = a.landed; i < landed; i++) { try { sfx('coin'); } catch (x) { /* quiet */ } sparks.push({ x: dpt.x, y: dpt.y + 2, t0: now }); } a.landed = landed; }
+    a.shown = a.from + (a.to - a.from) * (landed / a.n);
+    if (e > (a.n - 1) * TL + TL + 200) { const full = a.full; anim = null; danceT = now; pulseAt = now; try { sfx(full ? 'fanfare' : 'sparkle'); } catch (x) { /* quiet */ }
+      for (let i = 0; i < 10; i++) sparks.push({ x: dpt.x + (i - 5) * 5, y: dpt.y - 6 - (i % 3) * 4, t0: now + i * 60 });
+      fill(); const m = document.createElement('p'); m.className = 'bv-s'; m.innerHTML = `Added. <button type="button" class="link bv-undo">Undo</button>`; pop.append(m); m.querySelector('.bv-undo').addEventListener('click', ev => { ev.stopPropagation(); undoAdd(); }); }
+  }
+  /* the squirrel brings one gold coin per trip: it runs in from alternating sides with the coin in its mouth, sits by the door, throws the coin in, and runs off */
+  function drawCoins(g2, now, dpt, k) {
+    if (anim) {
+      const e = now - anim.t0, TL = 1600, small = LK === 'plain', i = Math.floor(e / TL), u = e - i * TL, rf = ms => Math.floor(u / ms) % 8, nf = Math.floor(u / 220) & 1, idl = Math.floor(u / 260) % 6;
+      if (i >= 0 && i < anim.n) {
+        const side = i % 2 ? 1 : -1, stopX = dpt.x + side * (small ? 11 : 17), startX = side < 0 ? -16 : k.W + 16, fy = dpt.y + (small ? 12 : 17), face = side > 0;
+                if (u < 800) { const t = 1 - Math.pow(1 - u / 800, 1.6), x = startX + (stopX - startX) * t; SQP.draw(g2, 'runc' + rf(90), x, fy, face); }
+        else if (u < 1000) SQP.draw(g2, 'nut' + nf, stopX, fy, face);
+        else if (u < 1250) { SQP.draw(g2, 'idle' + idl, stopX, fy, face); const t = (u - 1000) / 250, cx = stopX + (dpt.x - stopX) * t, cy = fy - 9 - Math.sin(t * Math.PI) * 9 + (dpt.y - fy + 9) * t * t;
+          g2.fillStyle = PAL.gold[1]; g2.fillRect(Math.round(cx), Math.round(cy) + 1, 3, 1); g2.fillStyle = PAL.gold[3]; g2.fillRect(Math.round(cx), Math.round(cy), 3, 1); g2.fillStyle = PAL.gold[4]; g2.fillRect(Math.round(cx), Math.round(cy), 1, 1); }
+        else if (u < 1380) SQP.draw(g2, 'idle' + idl, stopX, fy, face);
+        else { const t = (u - 1380) / 220, x = stopX + (startX - stopX) * Math.pow(Math.min(1, t), 1.8); SQP.draw(g2, 'run' + rf(80), x, fy, !face); }
+      }
+      PXK.halo(g2, dpt.x, dpt.y, 12, PAL.gold[4], .1 + .08 * Math.sin(e / 140)); }
+    sparks = sparks.filter(s => now - s.t0 < 700);
+    sparks.forEach(s => { const u = (now - s.t0) / 700; if (u < 0) return; g2.globalAlpha = 1 - u; g2.fillStyle = PAL.gold[4]; const r2 = 1 + Math.round(u * 5), y = Math.round(s.y - u * 8); g2.fillRect(s.x, y, 1, 1); g2.fillRect(s.x - r2, y + 1, 1, 1); g2.fillRect(s.x + r2, y + 1, 1, 1); g2.fillRect(s.x, y - r2 + 1, 1, 1); g2.globalAlpha = 1; });
+  }
   function frame(now) {
     const L = LOOKS[LK], t = now - t0, rr = rows().find(x => x.id === cur); if (!rr) return;
-    const pct = Math.min(1, Math.max(0, (forcePct >= 0 ? forcePct : rr.saved / rr.target) + stockExtra));
+    const door = L.door ? L.door(k) : { x: k.x0 + L.w / 2 }, dpt = { x: Math.round(door.x), y: Math.round(L.doorY ? L.doorY(k) : LK === 'plain' ? k.y0 + 10 : k.ground - 12) };
+    if (anim) stepAnim(now, dpt);
+    const pct = anim ? Math.min(1, anim.shown) : Math.min(1, Math.max(0, (forcePct >= 0 ? forcePct : rr.saved / rr.target) + stockExtra));
     if (L.bg && Math.floor(pct * 10) !== bgPct) { bgPct = Math.floor(pct * 10); L.bg(bg0g, clg, bgg, k, pct); if (L.sign) { SIGNR = L.sign(); placeSign(); } }
     g.clearRect(0, 0, L.w, L.h); L.paint(g, pct, t, k, false, seedOf(cur));
     fg.clearRect(0, 0, k.W, k.H); rg.clearRect(0, 0, k.Wr, k.Hr);
-    if (L.fx) L.fx.draw(fg, t, k, { rg, pct, pulse: pulseAt, stock: stockT >= 0 ? now - stockT : -1, style: stockStyle });
+    if (L.fx) L.fx.draw(fg, t, k, { rg, pct, pulse: pulseAt, stock: stockT >= 0 ? now - stockT : -1, style: stockStyle, dance: danceT >= 0 ? now - danceT : -1 });
+    drawCoins(fg, now, dpt, k);
     if (stockT >= 0) {
       const dt = now - stockT; if (dt > SQ.END + 200) { stockT = -1; stockExtra = 0; }
       else { const door = L.door ? L.door(k) : { x: k.x0 + L.w / 2 }; if (dt > SQ.T.crouch + 700) stockExtra = .035 * Math.min(1, (dt - SQ.T.crouch - 700) / 400); fg.save(); SQ.frame(fg, dt, stockStyle, { W: k.W, base: Math.round(k.ground) - 1, dx: Math.round(door.x), tint: L.tint, shadow: true }); fg.restore(); }
@@ -175,7 +234,7 @@ const BUR = (() => {
     open2(id);
   }
   function open2(id) {
-    if (!el) build(); cur = id; const f = fill(); if (!f) { cur = null; return; }
+    if (!el) build(); anim = null; cur = id; const f = fill(); if (!f) { cur = null; return; }
     document.body.classList.add('bv-on'); el.hidden = false; pop.hidden = false; t0 = performance.now(); layout(); loop();
   }
   function close() { cur = null; clearTimeout(tm); if (el) el.hidden = true; document.body.classList.remove('bv-on'); try { SCENE.look(''); } catch (e) { } }

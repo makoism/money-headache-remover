@@ -1651,3 +1651,8 @@ body.bv-on .wrap, body.bv-on #mgBand { visibility: hidden; }
 
 /* the footer lines rest on a soft dark pill so they stay readable over the meadow */
 body.scene-on .foot { width: max-content; max-width: min(92%, 520px); margin: 8px auto; padding: 6px 16px; border-radius: 999px; background: rgba(8, 20, 14, .6); color: rgba(232, 244, 234, .86); }
+
+.bv-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 8px; }
+.bv-amt input { width: 100%; box-sizing: border-box; min-height: 44px; padding: 8px 12px; border-radius: 12px; border: 1px solid color-mix(in srgb, var(--fg) 28%, transparent); background: color-mix(in srgb, var(--bg) 60%, transparent); color: var(--fg); font: inherit; font-size: 16px; }
+.bv-row { display: flex; align-items: center; gap: 12px; margin: 10px 0 0; }
+.bv-msg { min-height: 1em; margin: 6px 0 0; }

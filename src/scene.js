@@ -21,6 +21,39 @@ const SCENE = (() => {
     const h = new Date().getHours(); return h >= 5 && h < 10 ? 'morning' : h >= 10 && h < 16 ? 'day' : h >= 16 && h < 19 ? 'sunset' : 'night';
   };
   const on = () => !(S && S.ui && S.ui.scene === false);
+  /* the spirit stag: the picture is never changed. It breathes (the head lifts a little), grazes (bows its head to the grass and chews), and now and then walks a few steps along the bank,
+     legs in diagonal pairs, turning to face the way it goes. Frames come at 6 a second. */
+  const STAGP = { b: '#eef4f6', d: '#c8d6dc', w: '#ffffff', k: '#2a3a48', a: '#bff4ff', g: '#8cc48a' };
+  const stagRnd = rnd(91);
+  function stagLife(c, f) {
+    const S0 = L.stag; if (!S0.m) S0.m = { mode: 'stand', t: 0, n: 40, wx: 0, dir: -1, face: -1 };
+    const m = S0.m; m.t++;
+    if (m.t >= m.n) { const r = stagRnd(); m.t = 0;
+      if (m.mode !== 'stand') { m.mode = 'stand'; m.n = 24 + (stagRnd() * 40 | 0); }
+      else if (r < .4) { m.mode = 'eat'; m.n = 46; }
+      else if (r < .75) { m.mode = 'walk'; m.n = 18 + (stagRnd() * 22 | 0); m.dir = m.wx < -8 ? 1 : m.wx > 6 ? -1 : (stagRnd() < .5 ? -1 : 1); m.face = m.dir; }
+      else { m.mode = 'stand'; m.n = 30 + (stagRnd() * 40 | 0); } }
+    if (m.mode === 'walk') m.wx = Math.max(-14, Math.min(9, m.wx + m.dir * .6));
+    const g = .3 + .2 * Math.sin(f / 11), bx = Math.round(S0.x + m.wx);
+    glow(c, bx + 7, S0.y + 7, 10, '#d8f4ff', g * (mood === 'day' ? .6 : 1.2));
+    const flip = m.face < 0;
+    let dy = 0, dx = 0, chew = false;
+    if (m.mode === 'eat') { const t = m.t; if (t < 2) { dy = 2; dx = 0; } else if (t < 4) { dy = 4; dx = 1; } else if (t < 40) { dy = 5; dx = 2; chew = true; } else if (t < 43) { dy = 3; dx = 1; } else { dy = 1; dx = 0; } }
+    else if (Math.sin(f / 6) > .55) dy = -1;
+    if (m.mode === 'walk') dy = (m.t % 6 < 3) ? 0 : -1;
+    const lift = m.mode === 'walk' ? (m.t % 6 < 3 ? 1 : 2) : 0;   /* which diagonal pair of legs is in the air */
+    const put = (i, j, ch) => { const pc = STAGP[ch]; if (!pc) return; const xx = flip ? 13 - i : i; c.fillStyle = pc; c.fillRect(bx + xx, Math.round(S0.y + j), 1, 1); };
+    for (let j = 0; j < STAG.length; j++) { const row = STAG[j];
+      for (let i = 0; i < row.length; i++) { const ch = row[i]; if (ch === '.') continue;
+        if (j < 9 && dy) {   /* the head and antlers */
+          if (j === 8 && dy < 0) { put(i, j, ch); continue; }
+          const jj = j + dy - (chew && j === 8 && (m.t % 6 < 3) ? 1 : 0); put(i + dx, jj, ch); continue; }
+        if (j >= 12) { const leg = (i === 2 || i === 10) ? 1 : 2; if (lift === leg) { if (j === 12) put(i, j, 'b'); else if (j === 13) put(i, j, 'd'); continue; } }
+        put(i, j, ch); }
+    }
+    if (dy > 0) for (let q = 0; q < 2 && dy >= 4; q++) put(8 + q, 8 + dy - 1 + 0, 'b');   /* the neck stays joined to the chest while the head is bowed */
+    if (chew && m.t % 6 < 3) put(11 + dx, 8 + dy, 'g');
+  }
   /* ---------- light: sun, lamps and the glowing water each have their own layer, and each breathes in its own way ----------
      sun: colour, strength, slant of the beams.  lamp: how lit the lanterns and the window are.  wf: how much the waterfall glows.
      veil: how much of the page colour lies over the scenery behind the words.  shade: depth of the dark at the edges. */
@@ -569,12 +602,25 @@ const SCENE = (() => {
     c.globalCompositeOperation = 'lighter'; const S1 = E.stump, fl = .75 + .15 * Math.sin(f * .7) + .1 * Math.sin(f * 1.9);
     spot(c, S1.wx, S1.wy, 6, '#ffc060', .5 * fl); spot(c, S1.rx, S1.ry, 3, '#ffc060', .4 * fl); spot(c, S1.lx, S1.ly, 7, '#ffd890', .45 * fl);
     for (let i = 0; i < 4; i++) { const age = (f * .6 + i * 9) % 36, x = S1.lx + Math.sin(age / 5 + i * 2) * 4, y = S1.ly - age * .5; c.globalAlpha = Math.max(0, .7 - age / 40); c.fillStyle = '#ffe9a8'; c.fillRect(Math.round(x), Math.round(y), 1, 1); } c.globalAlpha = 1; c.globalCompositeOperation = 'source-over';
-    /* a small frog on its stone: it blinks, its throat pulses, and now and then it hops up and sits down again */
-    { const F0 = E.frog, cyc = ff % 260, hop = cyc < 4 ? [0, 3, 4, 2][cyc] : 0, fx = F0.x, fy = F0.y - 3 - hop, gr = mixh(PAL.moss[6], t.fog, .08), gl = mixh(PAL.ash[5], t.fog, .08), gd = mixh(PAL.moss[4], t.fog, .1), blink = cyc % 70 > 64;
-      ell2(c, fx, fy + 1, 3.6, 2.2, gd); ell2(c, fx, fy, 3.2, 2, gr); ell2(c, fx + .5, fy + 1.2, 1.6, .8, mixh(PAL.moss[5], t.fog, .1)); put(c, fx - 3, fy + 2, gd); put(c, fx + 3, fy + 2, gd); put(c, fx - 2, fy + 3, gd); put(c, fx + 2, fy + 3, gd);
-      ell2(c, fx - 2, fy - 2, 1.2, 1.2, gr); ell2(c, fx + 2, fy - 2, 1.2, 1.2, gr);
-      put(c, fx - 2, fy - 2, blink ? gd : PAL.gold[4]); put(c, fx + 2, fy - 2, blink ? gd : PAL.gold[4]); if (!blink) { put(c, fx - 2, fy - 1, PAL.night[0]); put(c, fx + 2, fy - 1, PAL.night[0]); }
-      if (cyc % 26 < 12) { c.fillStyle = gl; c.fillRect(fx - 1, fy + 2, 3, 1); } }
+    /* the slim squirrel on the meadow floor: now and then it runs in from one side, sits up and looks about, and runs off again */
+    { const G = L.sqg || (L.sqg = { mode: 'wait', next: ff + 120 + (Math.random() * 240 | 0), x: 0, n: 0, dir: 1, stop: 0 }), fy = Math.round(L.floor + (H - L.floor) * .62), lo = L.wide ? L.cx0 - 22 : 0, hi = L.wide ? L.cx1 + 22 : W;
+      if (G.mode === 'wait' && (ff > G.next || (window.__sqForce && (window.__sqForce = 0, 1)))) { G.dir = Math.random() < .5 ? 1 : -1; G.x = G.dir > 0 ? lo - 14 : hi + 14; G.stop = G.dir > 0 ? lo + 26 + Math.random() * 40 : hi - 26 - Math.random() * 40; G.mode = 'in'; G.n = 0; }
+      if (G.mode !== 'wait') { G.n++; let nm = 'idle' + (Math.floor(G.n / 3) % 6);
+        if (G.mode === 'in') { G.x += G.dir * 5; nm = 'run' + (G.n % 8); if ((G.x - G.stop) * G.dir >= 0) { G.x = G.stop; G.mode = 'sit'; G.n = 0; } }
+        else if (G.mode === 'sit') { nm = 'idle' + (Math.floor(G.n / 3) % 6); if (G.n > 26) { G.mode = 'out'; G.n = 0; } }
+        else { G.x -= G.dir * 5; nm = 'run' + (G.n % 8); if (G.x < lo - 20 || G.x > hi + 20) { G.mode = 'wait'; G.next = ff + 600 + (Math.random() * 900 | 0); } }
+        if (G.mode !== 'wait') SQP.drawTint(c, nm, G.x, fy, G.mode === 'out' ? G.dir > 0 : G.dir < 0, t.fog, .22); }
+    }
+    /* a small alien blob (a jelly of violet and teal with one big eye and two glowing feelers): it wanders slowly along the grass by the stone, squashing as it goes, stops to look about and blinks */
+    { const F0 = E.frog, ph = ff / 190, sp = Math.sin(ph), mv = Math.abs(Math.cos(ph)) > .3, dir = Math.cos(ph) > 0 ? 1 : -1, bxp = Math.round(F0.x + sp * 13), by0 = F0.y + 1,
+        sq = mv ? Math.sin(ff / 3.2) : Math.sin(ff / 14) * .35, rx = 3.8 - sq * .5, ry = 3 + sq * .6, hopY = mv ? Math.abs(Math.sin(ff / 3.2)) * 1.1 : 0, cy = Math.round(by0 - ry - hopY), blink = ff % 95 > 90, look = mv ? dir : (Math.sin(ff / 40) > .5 ? 1 : Math.sin(ff / 40) < -.5 ? -1 : 0),
+        d1 = mixh(PAL.violet[1], t.fog, .1), d2 = mixh(PAL.violet[2], t.fog, .1), d3 = mixh(PAL.violet[3], t.fog, .1), hi = mixh(PAL.teal[5], t.fog, .08);
+      PXK.halo(c, bxp, cy, 8, PAL.teal[4], .1, .9);
+      c.fillStyle = 'rgba(0,0,0,.22)'; c.fillRect(bxp - 4, by0 + 1, 9, 1);
+      ell2(c, bxp, cy + .5, rx + .6, ry + .4, d1); ell2(c, bxp, cy, rx, ry, d2); ell2(c, bxp - .4, cy - .5, rx - .9, ry - .9, d3); ell2(c, bxp - 1.2, cy - ry * .5, rx * .35, ry * .22, hi);
+      for (const o of [-2, 0, 2]) put(c, bxp + o, Math.round(cy + ry - .2), mixh(PAL.teal[3], t.fog, .1));
+      if (blink) { c.fillStyle = d1; c.fillRect(bxp + look - 1, cy - 1, 3, 1); } else { ell2(c, bxp + look * .6, cy - 1, 1.7, 1.7, mixh(PAL.ash[5], t.fog, .06)); put(c, bxp + look * 1.2 + (look ? 0 : 0), cy - 1, PAL.night[0]); put(c, bxp + look * 1.2, cy - 2, mixh(PAL.ash[5], t.fog, .02)); }
+      for (const sd of [-1, 1]) { const sw = Math.round(Math.sin(ff / 9 + sd) * .8), ax = bxp + sd * 2; put(c, ax, cy - Math.round(ry) - 1, d3); put(c, ax + sw, cy - Math.round(ry) - 2, d3); c.globalAlpha = .6 + .4 * Math.sin(ff / 7 + sd * 2); put(c, ax + sw, cy - Math.round(ry) - 3, PAL.gold[4]); c.globalAlpha = 1; } }
     /* a snail crosses the fallen log, a few minutes to the top and back */
     { const lx = E.log.x, ly = E.log.y, cyc = ff % 1400, u = cyc < 700 ? cyc / 700 : 1 - (cyc - 700) / 700, dirn = cyc < 700 ? 1 : -1, sx = Math.round(lx - 8 + u * 15), sy = ly - 6, body = mixh(PAL.ash[5], t.fog, .12), shell = mixh(PAL.bark[3], t.fog, .12);
       for (let i = 0; i < 5; i++) put(c, sx + dirn * (i - 2) - (dirn > 0 ? 0 : 0), sy, i === 4 ? body : mixh(PAL.ash[4], t.fog, .12));
@@ -592,7 +638,7 @@ const SCENE = (() => {
     c.drawImage(stb, 0, 0);
     flyers(c, f);
     c.drawImage(stb2, 0, 0);
-    climbers(c, f); driftLights(c, f);
+    driftLights(c, f);
     c.drawImage(st, 0, 0);
     const F = L.fall;
     const Lm = LIGHT[mood];
@@ -617,7 +663,7 @@ const SCENE = (() => {
     c.globalAlpha = 1;
     const pal = { b: mood === 'night' ? '#5a4a46' : '#a8714a', d: mood === 'night' ? '#3e3230' : '#7a4f32', w: '#f1e6d6', k: '#1e1a18', a: '#d9c3a0' };
     for (const d of L.deer) { const up = (f + d.ph) % 64 > 46; grid(c, d.x, d.y, DEER[up ? 0 : 1], pal, d.flip); }
-    if (L.stag) { const g = .3 + .2 * Math.sin(f / 11); glow(c, L.stag.x + 7, L.stag.y + 7, 10, '#d8f4ff', g * (mood === 'day' ? .6 : 1.2)); grid(c, L.stag.x, L.stag.y, STAG, { b: '#eef4f6', d: '#c8d6dc', w: '#ffffff', k: '#2a3a48', a: '#bff4ff' }, true); }
+    if (L.stag) stagLife(c, f);
     for (const m of L.mist) { m.x += m.v; if (m.x > W + m.w) m.x = -m.w; c.globalAlpha = t.mist * .7; c.fillStyle = t.fog; c.fillRect(Math.round(m.x), Math.round(m.y), Math.round(m.w), 3); c.fillRect(Math.round(m.x + 6), Math.round(m.y - 2), Math.round(m.w * .6), 2); c.globalAlpha = 1; }
     if (t.dew) for (const d of L.dew) { if ((f + d[2]) % 40 < 2) { c.fillStyle = '#ffffff'; c.fillRect(d[0], d[1], 1, 1); c.globalAlpha = .6; c.fillRect(d[0] - 1, d[1], 3, 1); c.fillRect(d[0], d[1] - 1, 1, 3); c.globalAlpha = 1; } }
     /* light: the sun breathes slowly, the lanterns flicker each in their own time, the waterfall pulses */

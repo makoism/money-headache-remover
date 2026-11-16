@@ -1,9 +1,9 @@
 /* ---------- the garden: quiet nature on the cards ----------
-   A thin layer (.gnl) inside each page holds, for each box, a container (.gdh) with:
-     - one vine of its own kind (ivy, morning glory, wisteria, bramble, fern, clover) along an edge, bending round the words and controls;
-     - a thin border vine along another edge, hugging the rim, swelling now and then into a bigger tuft; and sometimes a second one;
-     - on a few cards, one small plant (sprout, berries, leaves) standing in free room at the right side of the card.
-   A box with no good place for something gets nothing. Nothing is clickable: the layer takes no taps, so words and buttons keep every one.
+   THE RULE: anything added has to flow with what it is added to. A vine here is not laid on a card, it grows out of one of its corners:
+   it starts full at the corner, runs a short way along one edge and a shorter way down the other, and thins out. Only some cards get one
+   (PLAN below), each with a species of its own, so no two cards wear the same thing. No dialogs, no bars, nothing near the words.
+   A thin layer (.gnl) inside each page holds, for each box that has a plan, a container (.gdh) with that one corner vine.
+   A box with no good place for it gets nothing. Nothing is clickable: the layer takes no taps, so words and buttons keep every one.
    The picture follows the layout: it is redrawn when a box changes size, a page opens, or the cards are rebuilt (GD.queue()). */
 const GD = (() => {
   const S = 3, OV = 2, D = 16;                 /* one cell is 3px; vines overhang the edge by 2 cells and reach at most 16 cells in */
@@ -19,18 +19,15 @@ const GD = (() => {
     wisteria: { leaf: ['g', 'G'], big: .15, tend: .9, long: 1, end: ['cluster'], bloom: ['v', 'p'], bp: .1, edges: ['top'] },
     bramble: { thick: 1, leaf: ['G', 'g'], big: .45, tend: .45, end: ['berry', 'berry', 'leaf'], bloom: ['w', 'q'], bp: .35, edges: ['bottom', 'left'] },
     fern: { leaf: ['g', 'l', 'G'], big: 0, tend: .9, end: ['frond'], bloom: [], bp: 0, edges: ['top', 'right'] },
+    leaves: { leaf: ['g', 'l', 'g', 'G'], big: .8, tend: 0, end: ['leaf'], bloom: [], bp: 0, edges: ['top', 'right'] },
     clover: { leaf: ['g', 'l'], big: 0, tend: .3, end: ['leaf'], bloom: ['p', 'w', 'q'], bp: .4, clover: true, edges: ['bottom', 'top'] },
   };
+  /* corner: tl, tr, bl, br. The wisteria on Goals is the one the person loves and stays exactly as it was (hanging from the top edge). */
   const PLAN = {
-    hNext: { plant: 'sprout' }, hHero: { vine: 'glory' }, hGoals: { vine: 'wisteria' }, hBuckets: { plant: 'berries' }, hMore: { plant: 'leafpair' },
-    scan: { vine: 'fern' }, where: { vine: 'clover' }, ledger: { vine: 'ivy' },
+    hHero: { vine: 'leaves', corner: 'tr' }, hGoals: { vine: 'wisteria', old: true }, hBuckets: { vine: 'ivy', corner: 'tr' },
+    scan: { vine: 'fern', corner: 'tr' }, rcMonthCard: { vine: 'glory', corner: 'br' }, where: { vine: 'bramble', corner: 'br' },
   };
-  const usedPlants = new Set(), extra = {};
-  function planFor(key) {
-    if (PLAN[key]) return PLAN[key];
-    if (!extra[key]) { const r = rng(hash('plan-' + key)), names = Object.keys(SPECIES); extra[key] = { vine: names[Math.floor(r() * names.length)] }; }
-    return extra[key];
-  }
+  const planFor = key => PLAN[key] || {};
   /* ---------- finding the free room in a box ---------- */
   const SOLID = new Set(['INPUT', 'SELECT', 'TEXTAREA', 'BUTTON', 'IMG', 'svg', 'CANVAS', 'PROGRESS', 'VIDEO', 'SUMMARY']);
   function occupy(host, hr) {
@@ -68,13 +65,13 @@ const GD = (() => {
     return out;
   }
   /* ---------- the vine ---------- */
-  function vineStrip(r, N, avail, u0, u1, sp, lvl, lite) {
+  function vineStrip(r, N, avail, u0, u1, sp, lvl, lite, ce) {
     const H = D + OV, grid = []; for (let i = 0; i < H; i++) grid.push(new Array(N).fill(''));
     const put = (u, v, ch, force) => { if (u < 0 || u >= N || v < -OV || v >= D) return false; if (v >= 0 && !force && v >= avail[u]) return false; grid[v + OV][u] = ch; return true; };
     const free = (u, v) => u >= 0 && u < N && v >= 0 && v < avail[u];
     const amp = .9 + r() * 1.1, fr = .1 + r() * .14, ph = r() * 6.3, ys = [], bp = sp.bp * (1 + lvl * .7), pickB = () => sp.bloom[Math.floor(r() * sp.bloom.length)];
     for (let u = u0; u < u1; u++) {
-      const taper = Math.min(1, (u - u0) / 6, (u1 - 1 - u) / 6), cap = Math.max(0, Math.min(avail[u] - 1, 4));
+      const taper = Math.min(ce === 'start' ? 1 : (u - u0) / 6, ce === 'end' ? 1 : (u1 - 1 - u) / 6, 1), cap = Math.max(0, Math.min(avail[u] - 1, 4));
       let y;
       if (lite) { /* hugs the rim, now and then swelling into a tuft that reaches further in */
         const bump = Math.max(0, Math.sin((u - u0) / Math.max(8, u1 - u0) * 3.14 * 2 + ph)) * Math.max(0, cap - 1) * .9 * taper;
@@ -103,7 +100,7 @@ const GD = (() => {
       if (sp.bloom.length && r() < bp) { const c = pickB(), v = y + (down ? -1 : 1); if (v >= 1 && free(u, v + (down ? 1 : -1))) { put(u, v, 'y'); put(u - 1, v, c); put(u + 1, v, c); put(u, v - 1, c); put(u, v + 1, c); } }
     }
     /* a curl at the tip */
-    const tu = u1 - 1, ty = ys[tu] || 0; if (tu - 2 > u0 && !sp.clover) { put(tu + 1, ty + 1, 'G'); put(tu + 1, ty + 2, 'G'); put(tu, ty + 2, 'g'); }
+    const tu = u1 - 1, ty = ys[tu] || 0; if (tu - 2 > u0 && !sp.clover && ce !== 'end') { put(tu + 1, ty + 1, 'G'); put(tu + 1, ty + 2, 'G'); put(tu, ty + 2, 'g'); }
     return grid;
   }
   /* transposes a strip grid for an edge into canvas cells: [col,row] -> char */
@@ -170,34 +167,24 @@ const GD = (() => {
       }
       return placed;
     };
-    if (!isBar) {
-      if (plan.vine) placeVine(plan.vine, false);
-      const names = Object.keys(SPECIES), lr = rng(hash('lite-' + h.key));
-      const pk = names[Math.floor(lr() * names.length)]; placeVine(pk === 'wisteria' ? 'ivy' : pk, true);
-      if (lr() < .3) placeVine('clover', true);
-    }
-    /* the plant: one, standing on the floor of the card near a corner, or on a block inside it, on the side that leaves the other corner clear */
-    if (!isBar && plan.plant) {
-      let planted = false;
-      const name = plan.plant, sz = sizeOf(name), side = hash(h.key) & 1, stickUp = 0, stickDown = 0;
-      if (sz) for (const sc of (sz.w * 3 > cols * S * .6 || hr.height < 70 ? [2] : hr.height > 200 ? [4, 3, 2] : [3, 2])) {
-        const wC = Math.ceil(sz.w * sc / S), hC = Math.ceil(sz.h * sc / S); let best = null, bs = -1;
-        const jMin = -Math.floor(Math.min(stickUp, sz.h * sc * .45) / S), iMin = 0;
-        for (let j = jMin; j <= rows - hC + stickDown; j += 1) for (let i = iMin; i <= cols - wC - iMin; i += 1) {
-          let ok = true; for (let jj = Math.max(0, j); jj < Math.min(rows, j + hC) && ok; jj += 2) for (let ii = Math.max(0, i); ii < Math.min(cols, i + wC); ii += 2) if (blocked(ii, jj) || (ii + 1 < cols && blocked(ii + 1, jj))) { ok = false; break; }
-          if (!ok || i + wC / 2 < cols * .62) continue; if (j + hC - 1 >= 0 && j + hC - 1 < rows && blocked(i, j + hC - 1)) continue;
-          const onFloor = j + hC >= rows - 1, onBlock = !onFloor && j + hC < rows && (blocked(i + (wC >> 1), j + hC) || blocked(i, j + hC) || blocked(i + wC - 1, j + hC));
-          if (!(onFloor || onBlock)) continue;
-          const cx = Math.min(i, cols - i - wC) / cols; let s = r() * .4 + (onFloor ? 3 - cx * 5 : 1.2 - cx); if (j < 0) s += .5;
-          if (s > bs) { bs = s; best = [i, j]; }
-        }
-        if (!best || bs < .5) continue; const [i, j] = best;
-        const it = document.createElement('span'); it.className = 'gi gi-sway'; it.dataset.n = name;
-        const px = sz.w * sc, py = sz.h * sc; it.style.cssText = `left:${Math.round(ox + i * S)}px;top:${Math.round(oy + j * S)}px;width:${px}px;height:${py}px;--d:0ms`;
-        if (GS[name] || GV[name]) it.style.backgroundImage = `url(${gsUrl(name)})`; else it.innerHTML = pix(name, sc).replace(/ style="[^"]*"/, ' style="width:100%;height:100%"');
-        box.append(it); planted = true; break;
-      }
-    }
+    /* a corner vine: full at the corner, a run along the horizontal edge, a shorter one down the vertical edge, both thinning out */
+    const placeCorner = (spn, corner) => {
+      const sp = SPECIES[spn], top = corner[0] === 't', right = corner[1] === 'r', he = top ? 'top' : 'bottom', ve = right ? 'right' : 'left';
+      let any = false;
+      [[he, 1], [ve, .4]].forEach(([e, frac]) => {
+        if (e === 'top' && gap.up < 6) return; if (e === 'bottom' && gap.down < 6) return;
+        const av = profile(o, e), N = av.length; if (N < 16) return;
+        const horiz = e === 'top' || e === 'bottom', atEnd = horiz ? right : !top, span = Math.max(8, Math.min(Math.round(N * (horiz ? .3 : .3) * frac * 1.5), horiz ? 38 : 20));
+        const u0 = atEnd ? N - span : 0, u1 = atEnd ? N : span;
+        const vr = rng(hash('corner-' + h.key + e)), grid = vineStrip(vr, N, av, u0, u1, sp, 0, false, atEnd ? 'end' : 'start'), sc = stripCanvas(grid, N, e); if (!sc) return;
+        const cv = sc.c; cv.className = 'gv gv-' + e; cv.dataset.vk = h.key + '|' + e; cv.dataset.sp = spn; cv.style.width = sc.cw * S + 'px'; cv.style.height = sc.ch * S + 'px';
+        const Z = (D + OV) * S; let lx = ox, ty = oy; if (e === 'top') ty = oy - OV * S; else if (e === 'bottom') ty = oy + hr.height + OV * S - Z; else if (e === 'left') lx = ox - OV * S; else lx = ox + hr.width + OV * S - Z;
+        cv.style.left = Math.round(lx) + 'px'; cv.style.top = Math.round(ty) + 'px'; cv.style.setProperty('--d', Math.round(r() * 300) + 'ms'); cv.style.transformOrigin = e === 'right' ? '100% 50%' : e === 'bottom' ? '50% 100%' : '0 0';
+        box.append(cv); any = true;
+      });
+      return any;
+    };
+    if (!isBar && !h.dlg) { if (plan.old) placeVine(plan.vine, false); else if (plan.vine) placeCorner(plan.vine, plan.corner || 'tr'); }
     if (!box.children.length) box.remove(); else io && io.observe(h.el);
   }
   const grown = new Set(), seen = new WeakSet(); let io = null, ro = null, qT = 0, running = false, ready = false, grew = '';

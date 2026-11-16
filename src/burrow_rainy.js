@@ -157,8 +157,8 @@
     for (let i = 0; i < 8; i++) { const t = rnd(), x = rnd() * W, y = gy + 8 + t * (H - gy - 12), rx = 5 + t * 16 + rnd() * 5; if (Math.abs(x - cx) < 26 && y < gy + 14) continue; PUDS.push([x, y, rx, rx * .2 + .6]); ellPx(g, x, y, rx, rx * .2 + .6, 'rgba(12,30,48,.62)'); ellPx(g, x, y - .4, rx - 2, rx * .2, rgb(mixc(hor, [90, 130, 180], .4), .32)); }
     /* the way back: a wet dirt road coming in from the bottom-left corner, running up to the shore and under the lake's edge (it is the road you arrived by) */
     const narrowS = W < 170, twS = wide ? 19 : 9;
-    BUR.drawRoad(g, { x1: twS + (narrowS ? 62 : 100), y1: H - 44, w1: 6, x2: twS + 18, y2: H + 3, w2: 46, bend: 1.25, night: true, wet: true, lift: true });
     lake(g, W, H, gy, cx, rnd, mx);
+    BUR.drawRoad(g, { x1: cx - 8, y1: gy + 1, w1: 10, x2: twS + 18, y2: H + 3, w2: 46, bend: narrowS ? .8 : .62, night: true, wet: true, lift: true });
     /* framing trunks: grooved bark in three tones, moss, knots, roots, and a thin rim of the door's light on the inner edge */
     const tw = wide ? 19 : 9;
     for (const side of [-1, 1]) {
@@ -198,6 +198,11 @@
       /* a round door at the foot, a round window above it (lit by the fx layer), a stone step, a lantern on a hook */
       for (let y = hb - 8; y <= hb; y++) for (let x = -3; x <= 3; x++) { const arch = y < hb - 5 && Math.abs(x) * Math.abs(x) + (y - (hb - 5)) * (y - (hb - 5)) > 12; if (arch) continue; px(g, hx + x, y, Math.abs(x) === 3 || y === hb - 8 ? PAL.bark[1] : PAL.bark[2]); }
       px(g, hx + 2, hb - 3, PAL.gold[3]); rect(g, hx - 4, hb, 9, 1, PAL.stone[3]); rect(g, hx - 3, hb + 1, 7, 1, PAL.stone[2]);
+      /* a little bench in front of the house, its seat warm from the window light */
+      { const bx0 = hx + 9, bb = gy + 11, Eb = PAL.bark; ellPx(g, bx0 + 7, bb + 1, 9, 1.5, 'rgba(0,0,0,.4)');
+        rect(g, bx0 + 1, bb - 5, 2, 6, Eb[0]); rect(g, bx0 + 11, bb - 5, 2, 6, Eb[0]); rect(g, bx0 - 1, bb - 6, 16, 2, Eb[2]); rect(g, bx0 - 1, bb - 6, 16, 1, Eb[3]);
+        rect(g, bx0, bb - 12, 2, 6, Eb[1]); rect(g, bx0 + 12, bb - 12, 2, 6, Eb[1]); rect(g, bx0, bb - 12, 14, 1, Eb[2]); rect(g, bx0, bb - 9, 14, 1, Eb[1]);
+        px(g, bx0 + 3, bb - 7, PAL.moss[3]); px(g, bx0 + 4, bb - 7, PAL.moss[2]); px(g, bx0 + 9, bb - 12, PAL.moss[3]); px(g, bx0 + 12, bb + 1, PAL.moss[3]); px(g, bx0 + 1, bb + 1, PAL.moss[4]); } 
       for (let i = -9; i <= 9; i++) if (hsh0(hx + i, 5) < .6) { const len = 1 + Math.round(hsh0(hx + i, 6) * 3); for (let j2 = 0; j2 < len; j2++) px(g, hx + i, hb + 1 - j2, PAL.moss[j2 > 1 ? 4 : 3]); } } else HOUSE = null;
     /* fern fronds in the front corners, and a canopy across the top */
     const fern = (ox, oy, dir, n, L) => { for (let f = 0; f < n; f++) { const a = (f / (n - 1) - .5) * 2.2 + dir * .5, len = L * (.7 + .3 * Math.cos(a * 1.3)); for (let s = 0; s < len; s += 1) { const x = ox + Math.sin(a) * s + dir * s * s * .01, y = oy - Math.cos(a) * s * .8 + s * s * .012; px(g, x, y, '#0c2119'); if (s % 2 === 0 && s > 4) { const lf = 4 * (1 - s / len) + 1; for (let q = 1; q <= lf; q++) { px(g, x + Math.cos(a) * q, y + Math.sin(a) * q * .6 + q * .3, s % 4 ? '#13382a' : '#1c5238'); px(g, x - Math.cos(a) * q, y - Math.sin(a) * q * .6 + q * .3, '#0c2119'); } } } } };
@@ -214,7 +219,7 @@
   function init(k) {
     const n = Math.round(k.Wr * k.Hr / 230), drops = [];
     for (let i = 0; i < n; i++) drops.push(newDrop(k, true, i % 3 === 0));
-    const wisps = [], nW = k.W >= 200 ? 7 : 5; for (let i = 0; i < nW; i++) wisps.push({ a: rn() * 6.28, sp: .035 + rn() * .06, rx: 26 + rn() * 46, ry: 7 + rn() * 12, cy: -22 - rn() * 14, ph: rn() * 6.28, warm: i % 3 !== 2 });
+    const wisps = [], nW = k.W >= 200 ? 17 : 11, cols = [PAL.ember[5], PAL.rose[4], PAL.teal[4], PAL.violet[4], PAL.gold[4]], cores = [PAL.gold[4], PAL.rose[5], PAL.teal[5], PAL.violet[5], PAL.ash[5]]; for (let i = 0; i < nW; i++) { const c = i % 5; wisps.push({ a: rn() * 6.28, sp: .03 + rn() * .06, rx: 7 + rn() * 20, ry: 4 + rn() * 9, hx: 12 + rn() * (k.W - 24), hy: 10 + rn() * (k.ground - 12 - 10 + (i % 4 === 0 ? 12 : 0)), ph: rn() * 6.28, c: cols[c], core: cores[c], big: i % 4 === 0 }); }
     F = { drops, wisps, splashes: [], ripples: [], smoke: [], nextSmoke: 0, nextFlash: 9000 + rn() * 8000, flash: -1, lastPulse: performance.now() - 5000, nextPulse: 6000, last: performance.now(), sn: { x: 0, dir: 1, ph: 0 } };
   }
   function newDrop(k, anywhere, far) { return { x: rn() * (k.Wr + 24) - 8, y: anywhere ? rn() * k.Hr : -6 - rn() * 20, v: far ? 30 + rn() * 12 : 50 + rn() * 20, far, end: (k.ground - 3 + rn() * (k.H - k.ground + 3)) * k.f }; }
@@ -240,6 +245,7 @@
     const x0 = k.x0, y0 = k.y0, gy = k.ground, dx = x0 + CX;
     if (now > F.lastPulse + F.nextPulse) { F.lastPulse = now; F.nextPulse = 18000 + rn() * 8000; }
     if (st.pulse && Math.abs(now - st.pulse) < 80) F.lastPulse = now;
+    const dn = st.dance >= 0 && st.dance < 5400 ? Math.min(1, st.dance / 300, (5400 - st.dance) / 700) : 0;
     const pe = pulseEnv(t), fl = 1 + .035 * Math.sin(t / 1100) + .02 * Math.sin(t / 2300 + 1);
     /* lightning: a faint far flash */
     if (now > F.nextFlash) { F.flash = now; F.nextFlash = now + 40000 + rn() * 30000; }
@@ -260,19 +266,19 @@
       ellPx(g, cxm, cy, rx, ry, PAL.rose[2]); ellPx(g, cxm - .3, cy - .4, rx - .7, ry - .6, cap); ellPx(g, cxm - rx * .35, cy - ry * .45, rx * .35, ry * .25, PAL.rose[5]);
       rect(g, Math.round(cxm - rx + .5), Math.round(cy + ry - .3), Math.round(rx * 2 - 1), 1, PAL.ash[5]);
       [[-.45, -.2], [.3, -.55], [.55, .1]].forEach(([a, b]) => px(g, cxm + a * rx, cy + b * ry, PAL.ash[5])); };
-    [[x0 + 4, gy + 3, 0], [x0 + 90, gy + 2, 1]].forEach(([mx, my, gi]) => { const ps = .5 + .5 * Math.sin(t / 2600 + gi * 2); PXK.halo(g, mx, my - 5, 11, PAL.ember[4], .1 + .06 * ps);
+    [[x0 + 4, gy + 3, 0], [x0 + 90, gy + 2, 1]].forEach(([mx, my0, gi]) => { const my = my0 - dn * Math.abs(Math.sin(t / 210 + gi * 1.6)) * 2.5, ps = .5 + .5 * Math.sin(t / 2600 + gi * 2); PXK.halo(g, mx, my - 5, 11, PAL.ember[4], .1 + .06 * ps);
       toad(mx + (gi ? 3 : -3), my + 1, 2.4, 3, gi ? 1 : -1, PAL.rose[3]); toad(mx, my, 3.6, 4, gi ? -1 : 1, PAL.rose[4]);
       px(g, mx - 0, my - 3, PAL.night[0]); px(g, mx + 2, my - 3, PAL.night[0]); });
     const shd = (x, y, rx) => { ellPx(g, x, y, rx, rx * .26, 'rgba(0,0,0,.38)'); ellPx(g, x, y, rx * .6, rx * .16, 'rgba(0,0,0,.2)'); };
     shd(x0 + 15, gy + 6.4, 8); shd(x0 + 81, gy + 6.4, 6.4);
     /* the frog under a lily leaf, left of the door */
-    const fx = x0 + 15, fy = gy + 6, br = Math.sin(t / 1500) * .35, blink = (t % 4200) < 140, rib = (t % 7300) / 1000, puff = rib > 5.6 && rib < 6.1 ? Math.sin((rib - 5.6) / .5 * Math.PI) : 0, look = pe > .3 ? 1 : 0;
+    const fx = x0 + 15, fyL = gy + 6, fy = fyL - dn * Math.abs(Math.sin(t / 190)) * 3.4, br = Math.sin(t / 1500) * .35, blink = (t % 4200) < 140, rib = (t % 7300) / 1000, puff = rib > 5.6 && rib < 6.1 ? Math.sin((rib - 5.6) / .5 * Math.PI) : 0, look = pe > .3 ? 1 : 0;
     ellPx(g, fx, fy - 3.4, 6.2, 3.6 + br, '#2a7250'); ellPx(g, fx - .3, fy - 3.8, 5.6, 3.1 + br, '#43945f'); ellPx(g, fx - 1.5, fy - 5, 3, 1.3, '#7cc489'); ellPx(g, fx + 1.5, fy - 2, 3.4, 1.6, '#c0eba8');
     if (puff) ellPx(g, fx + 3.4, fy - 2, 2 + puff * 1.4, 1.6 + puff, '#fff1b0');
     ellPx(g, fx - 5, fy - 1.2, 2.4, 1.5, '#2a7250'); ellPx(g, fx + 4, fy - .9, 2, 1.1, '#2a7250');
     [-2.4, 2.8].forEach((ox, i) => { ellPx(g, fx + ox, fy - 7.4, 1.9, 1.9, '#43945f'); if (blink) rect(g, fx + ox - 1, fy - 7, 3, 1, '#1c5238'); else { ellPx(g, fx + ox, fy - 7.4, 1.4, 1.4, '#fcd23c'); px(g, fx + ox + look * .6, fy - 7.6, '#1a0f08'); px(g, fx + ox - .6, fy - 8.2, '#f6f2ea'); } });
     px(g, fx + 5.8, fy - 3.4, '#1c5238'); px(g, fx + 4.8, fy - 3, '#1c5238'); if (rib > 5.5 && rib < 6.6) { const u = (rib - 5.5) / 1.1; px(g, fx + 7 + u * 2, fy - 9 - u * 7, '#dff0ff'); px(g, fx + 8 + u * 2, fy - 10 - u * 7, '#dff0ff'); px(g, fx + 8 + u * 2, fy - 11 - u * 7, '#dff0ff'); }
-    rect(g, fx + 4, fy - 15, 1, 10, '#2a7250'); ellPx(g, fx + 2, fy - 16, 8.4, 2.7, '#1c5238'); ellPx(g, fx + 2, fy - 16.5, 7.8, 2.1, '#43945f'); ellPx(g, fx + 1, fy - 17, 5, 1, '#7cc489'); for (let i = -5; i < 6; i++) px(g, fx + 2 + i, fy - 16.5, '#7cc489');
+    rect(g, fx + 4, fyL - 15, 1, 10, '#2a7250'); ellPx(g, fx + 2, fyL - 16, 8.4, 2.7, '#1c5238'); ellPx(g, fx + 2, fyL - 16.5, 7.8, 2.1, '#43945f'); ellPx(g, fx + 1, fyL - 17, 5, 1, '#7cc489'); for (let i = -5; i < 6; i++) px(g, fx + 2 + i, fyL - 16.5, '#7cc489');
     /* animals far behind, in the trees and at the tree line (none of them near the burrow: only the frog and the snail are in front of it) */
     { const far = (c, a) => mixc(c, [58, 88, 112], a), col = c => `rgb(${c[0] | 0},${c[1] | 0},${c[2] | 0})`; F.cr = F.cr || { sq: null, nextSq: now + 7000, hops: [] };
       const okT = TREES.filter(T => Math.abs(T.x - dx) > 54 && T.h > 34 && T.x > 6 && T.x < k.W - 6);
@@ -281,7 +287,7 @@
         g.fillStyle = col(far([20, 30, 52], .2)); g.fillRect(bx - 2, by - hop, 4, 3); g.fillRect(bx + turn * 2, by - 2 - hop, 2, 2); g.fillRect(bx - turn * 4, by + 1 - hop, 3, 1); g.fillStyle = col(far([150, 176, 214], .3)); g.fillRect(bx + (turn > 0 ? 0 : -2), by + 1 - hop, 2, 2); g.fillStyle = 'rgba(255,200,120,.8)'; g.fillRect(bx + turn * 2 + (turn > 0 ? 1 : 0), by - 2 - hop, 1, 1); });
       /* a squirrel runs up a far trunk, pauses to look about, and goes back down */
       const S0 = F.cr.sq;
-      if (!S0 && now > F.cr.nextSq && okT.length) { const T = okT[(rn() * okT.length) | 0]; F.cr.sq = { T, y: gy - 2, up: true, side: rn() < .5 ? -1 : 1, pause: 0, ph: 0, turns: 1 }; F.cr.nextSq = now + 22000 + rn() * 18000; }
+      if (!S0 && false && now > F.cr.nextSq && okT.length) { const T = okT[(rn() * okT.length) | 0]; F.cr.sq = { T, y: gy - 2, up: true, side: rn() < .5 ? -1 : 1, pause: 0, ph: 0, turns: 1 }; F.cr.nextSq = now + 22000 + rn() * 18000; }
       if (F.cr.sq) { const q = F.cr.sq, T = q.T, top = T.ty + T.h * .42, X = Math.round(T.x + q.side * 2);
         if (q.pause > 0) q.pause -= dt; else { q.y += (q.up ? -1 : 1) * 5 * dt; q.ph += dt * 5; if (rn() < dt * .5) q.pause = 1 + rn() * 2.2; }
         if (q.up && q.y < top) { if (q.turns-- > 0) { q.up = false; q.pause = 2.5; } else F.cr.sq = null; } if (!q.up && q.y > gy - 1) F.cr.sq = null;
@@ -293,9 +299,21 @@
         g.fillStyle = c1; r2(-4, dy0 - 8, 9, 4); r2(4, dy0 - 8, 2, 3); [-4, -3, 3, 4].forEach(o => r2(o, dy0 - 4, 1, 4));
         for (let q = 0; q < 4; q++) r2(5 + Math.round(q * .6), dy0 - 9 - 3 * (1 - dip) + q * dip * 2.2, 2, 1);
         const hx = 7 + Math.round(dip * 2), hy = dy0 - 12 + dip * 9; r2(hx, hy, 3, 2); r2(hx + 1, hy - 2, 1, 2); r2(hx + 3, hy + 1, 1, 1); g.fillStyle = c2; r2(-3, dy0 - 8, 6, 1); g.fillStyle = 'rgba(8,12,24,.8)'; r2(hx + 2, hy, 1, 1); g.fillStyle = col(far([200, 210, 225], .6)); r2(-5, dy0 - 8, 1, 2); } }
+    /* a snowy owl on the branch at the left (a plain snowy owl, white with dark bars): it blinks, turns its head toward the door now and then, and bobs when the burrow is fed */
+    { const ow = R.rainy.owl(); if (ow) { const A5 = PAL.ash, Eo = PAL.bark, ox = Math.round(ow.x), oy = Math.round(ow.y) - dn * Math.abs(Math.sin(t / 200)) * 2, cyc = (t % 9000) / 1000, turn = cyc > 6 && cyc < 7.6 ? -1 : 1, bl = (t % 5200) < 150, wide = dn > 0 || (t % 23000) > 22000;
+        ellPx(g, ox - 1.5, ow.y + .6, 5.4, 1.2, 'rgba(0,0,0,.35)');
+        ellPx(g, ox, oy - 6, 4.6, 5.8, A5[4]); ellPx(g, ox - .6, oy - 6.4, 3.9, 5.2, A5[5]); ellPx(g, ox + 2, oy - 5, 2.2, 4.4, A5[3]);
+        for (const [a, b] of [[-2, -3], [1, -2], [-1, -5], [2, -4], [-2, -7], [0, -8]]) px(g, ox + a, oy + b, Eo[1]);
+        rect(g, ox - 4, oy - 5, 2, 5, A5[3]); rect(g, ox + 3, oy - 4, 1, 3, A5[3]);
+        ellPx(g, ox, oy - 12, 3.9, 3.5, A5[5]); ellPx(g, ox - 1, oy - 12.8, 2.4, 1.5, '#ffffff'); ellPx(g, ox + 1.4, oy - 11.2, 2.2, 2, A5[4]);
+        px(g, ox + turn * 3 + (turn > 0 ? -1 : 0), oy - 14, A5[4]); px(g, ox - turn * 3 + (turn > 0 ? 0 : -1), oy - 14, A5[4]);
+        [-1.6, 1.8].forEach(e => { const ex = ox + e + turn * .6; if (bl) rect(g, Math.round(ex - 1), oy - 12, 3, 1, Eo[1]); else { ellPx(g, ex, oy - 12, wide ? 1.7 : 1.35, wide ? 1.7 : 1.35, PAL.gold[4]); px(g, Math.round(ex + turn * .7), oy - 12, '#1a0f08'); } });
+        px(g, Math.round(ox + turn * .6), oy - 10.4, PAL.ember[3]); px(g, Math.round(ox + turn * .6), oy - 9.6, Eo[1]);
+        rect(g, ox - 2, ow.y - 1, 2, 1, Eo[1]); rect(g, ox + 1, ow.y - 1, 2, 1, Eo[1]);
+        g.fillStyle = 'rgba(160,190,235,.35)'; g.fillRect(ox - 4, oy - 9, 1, 5); } }
     /* the snail with a glowing shell, crossing the stones */
-    const sn = F.sn; sn.x += sn.dir * dt * .8; if (sn.x > 22) sn.dir = -1; if (sn.x < -22) sn.dir = 1;
-    const sx = dx + sn.x, sy = gy + 3, d = sn.dir, sp = .5 + .5 * Math.sin(t / 1600); shd(sx, sy + .4, 5.2);
+    const sn = F.sn; sn.x += sn.dir * dt * (.8 + dn * 2.4); if (sn.x > 22) sn.dir = -1; if (sn.x < -22) sn.dir = 1;
+    const sx = dx + sn.x, sy = gy + 3 - dn * Math.abs(Math.sin(t / 170)) * 1.8, d = sn.dir, sp = .5 + .5 * Math.sin(t / 1600); shd(sx, sy + .4, 5.2);
     ellPx(g, sx, sy - 1, 4.4, 1.4, '#f0aa5e'); ellPx(g, sx + d * 3.6, sy - 2.2, 1.8, 1.6, '#d8d2c8'); px(g, sx + d * 4.6, sy - 4, '#d8d2c8'); px(g, sx + d * 3.2, sy - 4.2 - (Math.sin(t / 1200) > 0 ? 1 : 0), '#d8d2c8'); px(g, sx + d * 4.6, sy - 5, '#1a0f08'); px(g, sx + d * 3.2, sy - 5.4 - (Math.sin(t / 1200) > 0 ? 1 : 0), '#1a0f08');
     ellPx(g, sx - d * 1, sy - 4, 3.2, 3.2, '#5e42a0'); ellPx(g, sx - d * 1.2, sy - 4.2, 2.5, 2.5, `rgb(${150 + 40 * sp | 0},${110 + 40 * sp | 0},${230})`); ellPx(g, sx - d * 1.4, sy - 4.4, 1.2, 1.2, '#e6d8ff'); px(g, sx - d * 3, sy - 6, '#f6f2ea');
     PXK.halo(g, sx, sy - 4, 9, PAL.violet[4], .2 + .15 * sp);
@@ -306,14 +324,21 @@
     if (now > F.nextSmoke) { F.smoke.push({ x: x0 + 73, y: y0 + 25, vx: 2 + rn() * 2, vy: -4.5 - rn() * 1.5, age: 0, big: pe > .2 }); F.nextSmoke = now + (pe > .2 ? 1300 : 2000); }
     F.smoke = F.smoke.filter(s => (s.age += dt) < 7); F.smoke.forEach(s => { s.x += (s.vx + s.age * 2) * dt; s.y += s.vy * dt * (1 - s.age / 6); const u = s.age / 7, r = 1.3 + u * (s.big ? 4.6 : 3.4), a = .3 * (1 - u); ellPx(g, s.x, s.y, r, r * .85, `rgba(150,176,206,${a})`); ellPx(g, s.x - r * .25, s.y - r * .3, r * .55, r * .45, `rgba(190,210,230,${a * .8})`); });
     /* a few small fairy lights drifting slowly, like on the main screen: a soft halo, one bright pixel, a gentle twinkle (they ease toward the door at the breath) */
-    F.wisps.forEach((w, wi) => { w.a += dt * w.sp * (1 + pe * .5); const k2 = 1 - pe * .3, wx = dx + Math.cos(w.a) * w.rx * k2, wy = gy + w.cy + Math.sin(w.a * 1.3 + w.ph) * w.ry * k2, tw = .6 + .4 * Math.sin(t / 1700 + w.ph * 3);
-      PXK.halo(g, wx, wy, 5, w.warm ? PAL.ember[5] : PAL.rose[4], .26 * tw); px(g, Math.round(wx), Math.round(wy), w.warm ? PAL.gold[4] : PAL.rose[5]); });
+    F.wisps.forEach((w, wi) => { w.a += dt * w.sp * (1 + pe * .5 + dn * 5); const k2 = 1 + dn * .8, wx = w.hx + Math.cos(w.a) * w.rx * k2, wy = w.hy + Math.sin(w.a * 1.3 + w.ph) * w.ry * k2, tw = .6 + .4 * Math.sin(t / 1700 + w.ph * 3);
+      PXK.halo(g, wx, wy, w.big ? 7 : 5, w.c, (w.big ? .3 : .24) * tw + dn * .12); px(g, Math.round(wx), Math.round(wy), w.core); if (dn > 0 && (Math.floor(t / 90) + wi) % 3 === 0) px(g, Math.round(wx + Math.sin(t / 70 + wi) * 3), Math.round(wy + Math.cos(t / 80 + wi) * 3), w.core); });
     /* things flying far behind: a flock of small birds now and then, and a paper lantern rising slowly */
     { const sky = Math.max(14, y0 + 12); F.fly = F.fly || { birds: [], nextB: now + 4000, lant: [], nextL: now + 9000 };
       if (now > F.fly.nextB && F.fly.birds.length === 0) { const dirB = rn() < .5 ? 1 : -1, n = 3 + (rn() * 3 | 0), by = 6 + rn() * (sky - 8); for (let i = 0; i < n; i++) F.fly.birds.push({ x: dirB > 0 ? -8 - i * 5 : k.W + 8 + i * 5, y: by + Math.abs(i - 1) * 2 + (i & 1), v: dirB * (4.2 + rn() * .6), ph: rn() * 6.28 }); F.fly.nextB = now + 30000 + rn() * 30000; }
       F.fly.birds = F.fly.birds.filter(b => b.x > -16 && b.x < k.W + 16); F.fly.birds.forEach(b => { b.x += b.v * dt; b.y += Math.sin(t / 1900 + b.ph) * dt * .6; const up = Math.sin(t / 380 + b.ph) > 0, bx = Math.round(b.x), by = Math.round(b.y); g.fillStyle = 'rgba(196,206,238,.62)'; g.fillRect(bx, by, 1, 1); if (up) { g.fillRect(bx - 1, by - 1, 1, 1); g.fillRect(bx + 1, by - 1, 1, 1); g.fillRect(bx - 2, by - 2, 1, 1); g.fillRect(bx + 2, by - 2, 1, 1); } else { g.fillRect(bx - 1, by, 1, 1); g.fillRect(bx + 1, by, 1, 1); g.fillRect(bx - 2, by + 1, 1, 1); g.fillRect(bx + 2, by + 1, 1, 1); } });
+      /* now and then a little troop of colourful magic wisps drifts across the sky, glowing, with a trail of sparkles, and fades away softly */
+      F.fly.mg = F.fly.mg || { list: [], next: now + 14000 };
+      if (now > F.fly.mg.next && F.fly.mg.list.length === 0) { const dirM = rn() < .5 ? 1 : -1, n = 3 + (rn() * 2 | 0), cs = [PAL.rose[4], PAL.teal[4], PAL.violet[4], PAL.gold[4], PAL.ember[4]], y1 = 12 + rn() * Math.max(10, sky - 18); for (let i = 0; i < n; i++) F.fly.mg.list.push({ x: dirM > 0 ? k.W * .06 - i * 7 : k.W * .94 + i * 7, y: y1 + i * 3, v: dirM * (7 + rn() * 2), ph: rn() * 6.28, c: cs[(i + (rn() * 5 | 0)) % 5], age: 0, life: (k.W * .88) / 7.5 + 2 }); F.fly.mg.next = now + 50000 + rn() * 50000; }
+      F.fly.mg.list = F.fly.mg.list.filter(m => (m.age += dt) < m.life);
+      F.fly.mg.list.forEach(m => { m.x += m.v * dt; const wy = m.y + Math.sin(m.age * 1.3 + m.ph) * 5, a = Math.max(0, Math.min(1, m.age / 2.5, (m.life - m.age) / 2.5)); g.globalAlpha = a;
+        for (let q = 1; q <= 4; q++) { g.fillStyle = m.c; g.globalAlpha = a * (1 - q / 5) * .7; g.fillRect(Math.round(m.x - Math.sign(m.v) * q * 2.2), Math.round(wy + Math.sin((m.age - q * .12) * 1.3 + m.ph) * 5 - Math.sin(m.age * 1.3 + m.ph) * 5), 1, 1); }
+        g.globalAlpha = a; PXK.halo(g, m.x, wy, 8, m.c, .34); g.globalAlpha = a; px(g, Math.round(m.x), Math.round(wy), '#fff4d8'); g.globalAlpha = 1; });
       if (now > F.fly.nextL && F.fly.lant.length < 1) { F.fly.lant.push({ x: x0 + 20 + rn() * 56, y: gy - 22, age: 0 }); F.fly.nextL = now + 45000 + rn() * 35000; }
-      F.fly.lant = F.fly.lant.filter(l => (l.age += dt) < 46); F.fly.lant.forEach(l => { l.y -= dt * 2.6; const lx = Math.round(l.x + Math.sin(l.age / 4) * 5 + l.age * .25), ly = Math.round(l.y), a = Math.min(1, l.age / 4, (46 - l.age) / 8); if (ly < 4) return; g.globalAlpha = a;
+      F.fly.lant = F.fly.lant.filter(l => (l.age += dt) < 46 && l.y > -6); F.fly.lant.forEach(l => { l.y -= dt * 2.6; const lx = Math.round(l.x + Math.sin(l.age / 4) * 5 + l.age * .25), ly = Math.round(l.y), a = Math.min(1, l.age / 4, (46 - l.age) / 8, (ly - 3) / 22, (k.W - lx) / 14, (lx + 4) / 14); if (a <= .02) return; g.globalAlpha = a;
         PXK.halo(g, lx + 1, ly + 1, 7, PAL.ember[4], .3); g.fillStyle = PAL.ember[2]; g.fillRect(lx, ly + 3, 3, 1); g.fillStyle = PAL.gold[3]; g.fillRect(lx, ly, 3, 3); g.fillStyle = PAL.gold[4]; g.fillRect(lx + 1, ly + 1, 1, 1); g.fillStyle = PAL.ember[3]; g.fillRect(lx, ly - 1, 3, 1); g.globalAlpha = 1; }); }
     /* rain: drawn on a finer canvas (units f times smaller). Far drops are small and pale, near drops longer; they stop on the hill and the leaves and splash */
     const rg = st.rg, f = k.f, sh = shields(k).map(s => ({ cx: s.cx * f, cy: s.cy * f, rx: s.rx * f, ry: s.ry * f })), col = ['rgba(108,146,188,.45)', 'rgba(162,200,238,.8)'], pudR = pud.concat(PUDS).map(p => [p[0] * f, p[1] * f, p[2] * f, p[3] * f]);

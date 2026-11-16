@@ -141,4 +141,29 @@ const SQ = (() => {
   let STYPICK = 0;
   return { STY, T, frame, sprite, pose, END, STAGE, burrow, stash, pick(i) { STYPICK = i; } };
 })();
+
+/* ---------- the squirrel (Elthen's pixel squirrel, sqpx.js): draws its frames with the palette. Used for the add-money trips and the forest floor. Frames: idle0-5, run0-7, runc0-7 (coin in mouth), nut0-1 (holding the coin). ---------- */
+const SQP = (() => {
+  const cache = {}, col = () => ({ 0: '#2f2f2e', 1: '#694129', 2: '#825235', 3: '#a67354', a: '#e4e4e4', b: '#c2bdbd', x: PAL.gold[1], y: PAL.gold[3], z: PAL.gold[4] });   /* the artist's own browns, kept as drawn: Mako chose this squirrel */
+  function img(name) {
+    if (cache[name]) return cache[name]; const rows = SQPX[name]; if (!rows) return null; const w = Math.max(...rows.map(r => r.length)), h = rows.length, cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+    const g = cv.getContext('2d'), c = col(); rows.forEach((r, y) => { for (let x = 0; x < r.length; x++) { const k = r[x]; if (k === '.') continue; g.fillStyle = c[k]; g.fillRect(x, y, 1, 1); } });
+    return (cache[name] = cv);
+  }
+  /* (x, y) is the middle of the feet; flip faces it left; a soft contact shadow lies under the feet */
+  function draw(g, name, x, y, flip, shadow) {
+    const cv = img(name); if (!cv) return; x = Math.round(x); y = Math.round(y);
+    if (shadow !== false) { g.save(); g.globalAlpha = .3; g.fillStyle = PAL.night[0]; const w = Math.round(cv.width * .42); g.fillRect(x - w, y, w * 2, 1); g.fillRect(x - w + 2, y + 1, w * 2 - 4, 1); g.restore(); }
+    g.save(); g.translate(x, y - cv.height); if (flip) { g.scale(-1, 1); g.drawImage(cv, -Math.round(cv.width * .5), 0); } else g.drawImage(cv, -Math.round(cv.width * .5), 0); g.restore();
+  }
+  let tc = null;
+  /* the same, but dimmed toward a colour (the time of day), by drawing through a small scratch canvas */
+  function drawTint(g, name, x, y, flip, tint, a) {
+    const cv = img(name); if (!cv) return; if (!tc) tc = document.createElement('canvas'); tc.width = cv.width; tc.height = cv.height; const t = tc.getContext('2d'); t.clearRect(0, 0, tc.width, tc.height); t.drawImage(cv, 0, 0);
+    t.globalCompositeOperation = 'source-atop'; t.fillStyle = tint; t.globalAlpha = a; t.fillRect(0, 0, tc.width, tc.height); x = Math.round(x); y = Math.round(y);
+    g.save(); g.globalAlpha = .3; g.fillStyle = 'rgba(0,0,0,1)'; const w = Math.round(cv.width * .4); g.fillRect(x - w, y, w * 2, 1); g.restore();
+    g.save(); g.translate(x, y - cv.height); if (flip) g.scale(-1, 1); g.drawImage(tc, -Math.round(cv.width * .5), 0); g.restore();
+  }
+  return { img, draw, drawTint };
+})();
 if (/[?&]sqtest\b/.test(location.search)) window.__sq = SQ;   /* test hook only */

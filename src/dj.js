@@ -73,7 +73,7 @@ const DJ = (() => {
   function paint() {
     const m = !!S.ui.mute, v = volOf(), src = djSrc();
     const b = $('#sndBtn'); if (b) { b.innerHTML = m || v === 0 ? ICON.off : ICON.on; b.setAttribute('aria-label', m ? 'Sound off. Tap to turn on' : 'Sound on. Tap to mute'); b.setAttribute('aria-pressed', String(m)); b.classList.toggle('off', m); }
-    const n = $('#djBtn'); if (n) { n.innerHTML = ICON.note; n.classList.toggle('lit', playing || (src === 'forest' && !m && MUSIC.playing())); }
+    const n = $('#djBtn'); if (n) { n.innerHTML = m || v === 0 ? ICON.off : ICON.on; n.setAttribute('aria-label', m ? 'Sound off. Open sound and music' : 'Sound and music'); n.classList.toggle('off', m); n.classList.toggle('lit', !m && (playing || (src === 'forest' && MUSIC.playing()))); }
     const pnl = $('#dj'); if (!pnl || pnl.hidden) { paintDock(); return; }
     $('#djMute').textContent = m ? 'Sound off' : 'Sound on'; $('#djMute').setAttribute('aria-pressed', String(m)); $('#djMute').classList.toggle('off', m);
     const r = $('#djVol'); if (document.activeElement !== r) r.value = v; $('#djVolN').textContent = v;
