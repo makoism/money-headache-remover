@@ -150,3 +150,25 @@ Favicon (38.11): redrawn as a tree, a mound with a small door and a few coins, o
 ## 38.14
 - squirrel.js: a short squirrel-and-coin moment (canvas 100x38 at 3x, bottom left, no taps, about 5 s, gone after). Plays on a new streak week, the first receipt, a batch of 3 or more receipts, a goal quarter, and spare money moved into a goal. At most once per 150 s; not for reduced motion. `?sqtest` exposes `window.__sq`.
 - Icons: grassy burrow hill with round door, gold, flowers and sparkles on a lavender sky (16x16 art, make_icons.py).
+
+## 38.15 (preview, not on the live site)
+- squirrel.js rebuilt: the squirrel is drawn live from parts (tail, body, head, ears, paws, feet) with an outline pass; three looks A Classic, B Chibi, C Grey (`SQ.STY`); a 6 s story (hop in, look, crouch, toss, joy bounce, hop away). `SQ.frame(g, t, style, {W, base, dx})`, `SQ.stash()` for the corner moment elsewhere, `SQ.burrow()` the small corner burrow.
+- burrows.js: burrow screens. A LOOK = { mood, w, h, paint, fx }. Stage 80% down, one art pixel = S screen pixels (`round(vh/150)`, capped to the width), weather on its own finer canvas (`.bv-rain`). `BUR.home()` draws the Home overview (`#hBur`): one small burrow per savings goal with how full, a short note, the play money number. Spending jars are not burrows.
+- burrow_rainy.js: the Rainy Day look (night, rain stopped by the hill, lit door with the coin pile as high as the goal is full, windows, lantern, chimney smoke, puddles, frog, mouse, glowing snail, mushrooms, wisps, a breath of light every 10-15 s and when the squirrel stocks it, far lightning).
+- scene.js: `SCENE.look(mood)` overrides the time of day for a burrow screen ('' follows the clock).
+- Test hooks: `?burrowtest` gives `window.__bur`, `?sqtest` gives `window.__sq`. Open a burrow from the address with `#burrow=<goalId>`.
+- 38.15 later: the Rainy Day look has its own world (`R.rainy.bg(sky, clouds, world, k, pct)`: three canvases `.bv-bg0` sky, `.bv-clouds` drifting, `.bv-bg` trees, ground, path, puddles, trunks, canopy; an owl on its branch and a toadstool house on wide screens). The fuller the fund, the calmer the storm: rain thins to 30% of its count, clouds shrink, the sky warms; at 100% the rain stops and the stars come out. Creatures have contact shadows; the squirrel is lit cool with warm light on the side facing the door (`SQ.frame` option `tint`, `shadow`). Burrows: swipe, arrow keys or the side arrows go to the next burrow with a short fade. `?burrowtest` gives `__bur.force(pct)` for checks.
+
+## 38.16 (preview, not live)
+- Pixel art bible: ART_GUIDE.md (rules), pal.js (74-colour palette `PAL`, `PXK.halo` stepped dithered glow), artcheck.sh (palette %, sprite colour count, no gradients/blur in art files).
+- Art applied: all hex colours in squirrel.js, burrows.js, burrow_rainy.js snapped to the palette; the 7 radial gradients and the squirrel's linear gradient replaced by stepped halos/bands; rain moved onto the main art pixel grid (Sr = S, f = 1, denser, slower, shorter streaks).
+- Streak button hidden in the top bar (`#topStreak { display:none !important }`, kept in DOM so orb/tool code and the pop-up streak keep working). Streak still shows in "Streak, badges, pages" and when logging.
+
+## 38.17 (preview, not live)
+- Rainy burrow: the stone path is now a small lake (`lake()` in burrow_rainy.js, `lakeFx()` for fish, glints and pixel ripples). Rain now lands across the whole foreground. Framing trunks have straight bark grooves (no sine wobble).
+- Burrow mounds (LOOKS.plain, 56x42, seeded from the goal id with `seedOf`) replace the toy hill: uneven earth mound, roots over a lopsided arch, coin heap, moss, ferns, stones, mushrooms. Home shows them at exactly 2x.
+- Main forest (scene.js): dragon redrawn (dark green, outlined, big eye, no 2x scaling); back trees are straight (`type` plain|fork only, trunk geometry returned for climbers); squirrels climb back trunks now and then (`climbers`, `?sq`); drifting back lights (`driftLights`); the bottom meadow (`meadow`, `meadowFront`, `meadowLife`: tall grass in three tones and several species, log, stump with a lit door, rabbit, eyes, hedgehog; `?eggs` forces them); the scrim is lighter at the very bottom (six stepped bands); footer lines sit on a dark pill.
+- Welcome video garland: `.vgarden` is exactly video width + padding at every size (CSS vars `--vw`, `--vp`).
+- Favicon: night-sky palette, richer and darker (pwa/make_icons.py).
+- artcheck.sh covers home mounds and the dragon; ART_GUIDE.md has the nature rule (section 0).
+- 38.17 round 2: dragon has no black outline (deep green is the darkest tone); grass has five families (cool, warm, deep, lime, dark blue-green) plus a per-clump light/dark shift; rabbit and hedgehog removed, a frog on a mossy stone and a snail on the log instead (E.frog, E.log); home burrow mounds redrawn simple (40 x 30, mossy mound + arched door + coins + one grass clump + one flower); scene build runs in its own timer task (startup long task under 200 ms); guard.js idle CPU is the median of three windows (limit unchanged at 1.5%).

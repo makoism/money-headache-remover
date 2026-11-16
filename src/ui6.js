@@ -416,7 +416,7 @@ function renderHome() {
   checkBadges(); paintSnd(); paintBk(); paintFoot();
   if (tab !== 'home') return;
   applyHomeOrder();
-  safe(renderNext, '#hNext'); safe(renderBackupNudge, '#hBk'); safe(renderStatus, '#hStatus'); safe(syncQuick, null, 'quick'); safe(renderHero, '#hHero'); safe(renderSpend, '#hSpend'); safe(renderGoalsHome, '#hGoals'); safe(renderBuckets, '#hBuckets'); safe(renderStreak, '#hStreak'); safe(renderBadges, '#hBadges');
+  safe(renderNext, '#hNext'); safe(() => BUR.home(), '#hBur'); safe(renderBackupNudge, '#hBk'); safe(renderStatus, '#hStatus'); safe(syncQuick, null, 'quick'); safe(renderHero, '#hHero'); safe(renderSpend, '#hSpend'); safe(renderGoalsHome, '#hGoals'); safe(renderBuckets, '#hBuckets'); safe(renderStreak, '#hStreak'); safe(renderBadges, '#hBadges');
   placePix(); /* the pixel plants, back in their corners after the cards were redrawn */
 }
 

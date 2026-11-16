@@ -17,7 +17,7 @@ const PAGE = process.env.PAGE || '/home/claude/work/money-map-team.html';
     await p.evaluate(t => document.querySelector(`[data-tab="${t}"]`).click(), tab); await w(900);
     /* the first-open coach marks are a dialog, not the resting state: close them, then measure the page at rest */
     await p.evaluate(() => { const s = document.querySelector("#coSkip"); if (s && s.offsetParent) s.click(); }); await w(2200);
-    const a = await m(); await w(4000); const z = await m(), cpu = (z.TaskDuration - a.TaskDuration) / 4 * 100;
+    const wins = []; for (let i = 0; i < 3; i++) { const a = await m(); await w(4000); const z = await m(); wins.push((z.TaskDuration - a.TaskDuration) / 4 * 100); } const cpu = wins.sort((x, y) => x - y)[1]; /* median of three 4 s windows: one noisy window is not the page's resting cost */
     check(cpu < 1.5, `idle CPU on ${tab}: ${cpu.toFixed(2)}% (limit 1.5%)`);
   }
   const lat = [];

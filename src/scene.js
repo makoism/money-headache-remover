@@ -15,8 +15,9 @@ const SCENE = (() => {
   const rnd = s => () => { s |= 0; s = s + 0x6D2B79F5 | 0; let t = Math.imul(s ^ s >>> 15, 1 | s); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
   const hex = h => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
   const mix = (a, b, t) => { const A = hex(a), B = hex(b); return `rgb(${A.map((v, i) => Math.round(v + (B[i] - v) * t)).join(',')})`; };
+  let look = '';   /* a burrow screen can ask for its own light (morning, day, sunset, night); '' follows the clock */
   const pickMood = () => {
-    const q = (location.search.match(/[?&]tod=(morning|day|sunset|night)\b/) || [])[1]; if (q) return q;
+    const q = (location.search.match(/[?&]tod=(morning|day|sunset|night)\b/) || [])[1]; if (q) return q; if (look) return look;
     const h = new Date().getHours(); return h >= 5 && h < 10 ? 'morning' : h >= 10 && h < 16 ? 'day' : h >= 16 && h < 19 ? 'sunset' : 'night';
   };
   const on = () => !(S && S.ui && S.ui.scene === false);
@@ -69,6 +70,7 @@ const SCENE = (() => {
         : [{ x: L.hut.x + 31, y: L.hut.y - 12, kind: 'hut', gy: L.hut.y - 12, gr: 15 }, { x: L.ring.x + 16, y: L.ring.y + 2, kind: 'post', gy: L.ring.y - 11, gr: 13 }]; }
     L.lamps.forEach((l, i) => { l.ph = i * 2.1; });
     L.flies = []; { const R3 = rnd(91), n = wide ? 26 : 12; for (let i = 0; i < n; i++) L.flies.push({ x: R3() * W, y: hz * .72 + R3() * (H - hz * .72 - 6), p: R3() * 60, per: 9 + R3() * 9, vx: (R3() - .5) * .08 }); }
+    L.drift = []; { const R5 = rnd(113), n = wide ? 24 : 12; for (let i = 0; i < n; i++) L.drift.push({ ax: R5() * W, ay: hz * .18 + R5() * hz * .78, rx: 8 + R5() * 24, ry: 4 + R5() * 12, sp: .006 + R5() * .014, ph: R5() * 6.28, r: 2 + (R5() * 2 | 0), ci: i, per: 14 + R5() * 20 }); }
     L.dust = []; { const R4 = rnd(97); for (let i = 0; i < 16; i++) L.dust.push({ y: L.hut.y - 70 + R4() * 78, u: (R4() - .5) * 1.7, p: R4() * 40 }); }
     L.stars = []; for (let i = 0; i < Math.round(W * H / 300); i++) L.stars.push([Math.floor(R() * W), Math.floor(R() * hz * .6), R()]);
     L.shafts = []; for (let i = 0; i < (wide ? 5 : 3); i++) { const left = i % 2 === 0; L.shafts.push({ x: wide ? (left ? R() * side * .9 : W - side * .9 + R() * side * .8) : R() * W, w: 6 + R() * 10, sk: .35 + R() * .2 }); }
@@ -90,9 +92,11 @@ const SCENE = (() => {
     if (mood === 'night') { const mx = L.wide ? Math.round(L.side * .35) : 12; glow(skx, mx, 22, 16, '#c8d6ff', .7); disk(skx, mx, 22, 7, '#f2f0d8'); disk(skx, mx + 3, 20, 6, t.sky[1]); }
     /* layers of forest fading into the mist: the deeper, the paler. Every tree is its own: crooked, leaning, forked, twisted,
        with branches, hanging vines, knots and moss, and vines drape from one tree to the next. The middle layer is softened with a haze. */
+    L.climb = [];
     for (let k = 0; k < 3; k++) {
       const base = hz + 4 + k * 10, hz2 = [.1, .3, .04][k], col = mixh(t.far[k], t.fog, hz2), R2 = rnd(31 + k), trees = [];
       for (let x = -4; x < W + 6; x += 12 + k * 4 + Math.floor(R2() * 13)) trees.push(farTree(c, x, base, k, col, t, R2));
+      if (k > 0) for (const tr of trees) if (tr.w >= 3) L.climb.push({ x: tr.x, off: tr.off, w: tr.w, base: tr.base, k, yt: Math.round(tr.base * .3), yb: tr.base - 3 });
       for (let i = 1; i < trees.length; i++) if (R2() < .55 && trees[i].x - trees[i - 1].x < 46) drapeVine(c, trees[i - 1], trees[i], col, t, R2);
       for (let x = -4; x < W + 6; x += 4 + Math.floor(R2() * 5)) disk(c, x, base - 2, 3 + k + Math.floor(R2() * 3), col);
       c.globalAlpha = t.mist; c.fillStyle = t.fog; c.fillRect(0, base - 6, W, 10); c.globalAlpha = 1;
@@ -105,6 +109,7 @@ const SCENE = (() => {
     c.fillStyle = t.groundD; c.fillRect(0, L.floor, W, 1);
     for (let y = L.floor + 1; y < H; y++) for (let x = (y * 7) % 4; x < W; x += 4) { const v = R(); if (v < .35) { c.fillStyle = v < .17 ? t.groundD : t.groundL; c.fillRect(x, y, 1, 1); } }
     for (let i = 0; i < Math.round(W / 6); i++) fern(c, Math.floor(R() * W), L.floor + 2 + Math.floor(R() * (H - L.floor - 4)), t, R);
+    meadow(c, t);
     /* shafts of light through the canopy */
     for (const s of L.shafts) { c.globalAlpha = t.shaftA; c.fillStyle = t.shaft; for (let y = 0; y < L.floor + 6; y++) c.fillRect(Math.round(s.x + y * s.sk), y, Math.round(s.w), 1); c.globalAlpha = 1; }
     /* the carved cliff and the glowing pool */
@@ -164,6 +169,7 @@ const SCENE = (() => {
     for (let i = 0; i < strands; i++) { const left = i % 2 === 0, x = L.wide ? (left ? Math.round(R() * L.side) : Math.round(W - R() * L.side)) : Math.round(R() * W); hang(c, x, 4, Math.round(H * (.12 + R() * (L.wide ? .55 : .15))), t, R); }
     shade(c);
     if (L.wide) foreground(c, t, R);
+    meadowFront(c, t);
     for (const l of L.lamps) { if (l.kind === 'post') lampPost(c, l.x, l.y, t); else if (l.kind === 'hang') lampHang(c, l.x, l.y, l.dir, t); }
   }
   /* a lantern on a post */
@@ -235,9 +241,9 @@ const SCENE = (() => {
   /* ONE FAR TREE. Five kinds (plain, crooked, leaning, forked, twisted), each with its own width, bends, flared roots, knots,
      moss, side branches ending in leaf clumps, and vines hanging from the branches. Returns where vines can be tied. */
   function farTree(c, x, base, k, col, t, R) {
-    const dk = mixh(col, '#000000', k === 1 ? .08 : .2), r = R(), type = r < .5 ? 'plain' : r < .68 ? 'crook' : r < .82 ? 'lean' : r < .94 ? 'fork' : 'twist';
+    const dk = mixh(col, '#000000', k === 1 ? .08 : .2), r = R(), type = r < .88 ? 'plain' : 'fork'; /* straight trunks only: no crooks, twists or sways (Mako) */
     let w = 2 + k * 2 + Math.floor(R() * 3); if (R() < .12) w += 3;
-    const lean = (type === 'lean' ? (R() < .5 ? -1 : 1) * (.03 + R() * .07) : (R() - .5) * .05), amp = type === 'crook' ? 1.6 + R() * 2.6 : type === 'twist' ? 1.3 : R() * 1, per = 16 + R() * 22, ph = R() * 6.28;
+    const lean = (type === 'lean' ? (R() < .5 ? -1 : 1) * (.03 + R() * .07) : (R() - .5) * .05), amp = R() * .3, per = 16 + R() * 22, ph = R() * 6.28;
     const off = dy => lean * dy + amp * Math.sin(dy / per + ph) - amp * Math.sin(ph), moss = mixh(t.far[k], t.mossD, .35), hz = mixh(col, t.fog, .5), A = [];
     const bot = base + 40, soft = k === 1;
     const bar = (X, Y, ww, cc) => { c.fillStyle = cc; c.fillRect(X, Y, ww, 1); };
@@ -273,7 +279,7 @@ const SCENE = (() => {
     }
     for (let i = 0, n = 1 + Math.floor(R() * 2); i < n; i++) hangVine(c, Math.round(x + off(base * (.2 + R() * .5)) + (R() - .5) * w), Math.round(base * (.1 + R() * .3)), 10 + Math.floor(R() * 26), col, t, R);
     A.push({ x: Math.round(x + off(base * .55)), y: Math.round(base * .45) });
-    return { x, A };
+    return { x, A, off, w, base };
   }
   function hangVine(c, x, y, len, col, t, R) {
     const sw = (R() - .5) * 2, ph = R() * 6.28, lc = mixh(col, t.leafD, .4);
@@ -405,7 +411,7 @@ const SCENE = (() => {
     fly.birds = fly.birds.filter(b => { b.x += b.dir * b.sp; if (b.dir > 0 ? b.x > W + 14 : b.x < -16) return false; const fr = BIRD[((f + b.ph) >> 1) % 3 === 2 ? 1 : ((f + b.ph) >> 1) % 2], yy = b.y + Math.sin(f / 9 + b.bob) * 1.5; c.save(); c.translate(Math.round(b.x), Math.round(yy)); c.scale(2, 2); grid(c, 0, 0, fr, { b: bc }, false); c.restore(); return true; });
     /* the dragon: long, slow wingbeats, a tail that follows the body */
     if (!fly.dragon && f > fly.nd) { fly.nd = f + (FLYQ === 'dragon' ? 150 : 4500 + Math.random() * 4500); const dir = Math.random() < .5 ? 1 : -1; fly.dragon = { x: dir > 0 ? -40 : W + 40, y: top + 14 + Math.random() * (bot - top - 40), dir, sp: 1, y0: 0, t: 0, ph: Math.random() * 6.28 }; fly.dragon.y0 = fly.dragon.y; }
-    if (fly.dragon) { const d = fly.dragon; d.t++; d.x += d.dir * d.sp * (.8 + .35 * Math.sin(d.t / 70 + d.ph)); d.y = d.y0 + Math.sin(d.t / 34 + d.ph) * 10 + Math.sin(d.t / 13) * 2.2 + (d.t / 60) * -1.6 * Math.sin(d.ph); if (d.dir > 0 ? d.x > W + 44 : d.x < -44) fly.dragon = null; else { c.save(); c.globalAlpha = .82; c.translate(Math.round(d.x), Math.round(d.y)); c.scale(2, 2); dragon(c, 0, 0, f, d.dir, night); c.restore(); } }
+    if (fly.dragon) { const d = fly.dragon; d.t++; d.x += d.dir * d.sp * (.8 + .35 * Math.sin(d.t / 70 + d.ph)); d.y = d.y0 + Math.sin(d.t / 34 + d.ph) * 10 + Math.sin(d.t / 13) * 2.2 + (d.t / 60) * -1.6 * Math.sin(d.ph); if (d.dir > 0 ? d.x > W + 44 : d.x < -44) fly.dragon = null; else { c.save(); c.globalAlpha = .94; c.translate(Math.round(d.x), Math.round(d.y)); dragon(c, 0, 0, f, d.dir, night); c.restore(); } }
     /* the saucer: glides in, stops and wobbles, then is gone in a jump */
     if (!fly.ufo && f > fly.nu) { fly.nu = f + (FLYQ === 'ufo' ? 150 : 5400 + Math.random() * 5400); const dir = Math.random() < .5 ? 1 : -1; fly.ufo = { x: dir > 0 ? -10 : W + 10, y: top + 6 + Math.random() * (bot - top - 30), dir, hx: W * (.3 + Math.random() * .4), st: 0, t: 0, vy: 0 }; }
     if (fly.ufo) { const u = fly.ufo; u.t++;
@@ -414,19 +420,35 @@ const SCENE = (() => {
       else { u.x += u.dir * 6; u.y += u.vy * 3; }
       if (u.x < -14 || u.x > W + 14 || u.y < -8) fly.ufo = null; else ufo(c, u.x, u.y, f, night, u.st === 1); }
   }
+  /* the dragon: dark green, outlined, round-headed, with one big shiny eye and a pink cheek. Drawn at the scene's own pixel size (no scaling).
+     Local coordinates: +x is forward, and the sprite is mirrored by dir. Colours come from the palette (pal.js): moss for the body, teal for the wings,
+     ember for the horns and the tip of the tail. */
   function dragon(c, x, y, f, dir, night) {
-    const body = night ? '#3a466e' : mood === 'sunset' ? '#5a2a3c' : '#8a3036', wing = night ? '#5a6ca0' : mood === 'sunset' ? '#a04a5e' : '#d0624e', belly = night ? '#7d8fc4' : '#f0a070', flap = Math.sin(f / 2.4);
-    /* tail and body: a wave that travels back from the shoulders */
-    for (let i = 0; i < 15; i++) { const bx = x - dir * i, by = y + Math.sin(f / 5 - i * .55) * (1 + i * .12), th = i < 3 ? 3 : i < 9 ? 2 : 1; c.fillStyle = body; c.fillRect(Math.round(bx), Math.round(by - 1), 1, th); if (i < 8) { c.fillStyle = belly; c.fillRect(Math.round(bx), Math.round(by - 1 + th - 1), 1, 1); } if (i > 2 && i % 3 === 0) { c.fillStyle = body; c.fillRect(Math.round(bx), Math.round(by - 2), 1, 1); } }
-    c.fillStyle = body; c.fillRect(Math.round(x - dir * 15), Math.round(y + 1 + Math.sin(f / 5 - 15 * .55) * 2.8), 1, 1); c.fillRect(Math.round(x - dir * 16 + (dir < 0 ? 1 : 0)), Math.round(y + Math.sin(f / 5 - 16 * .55) * 3), 2, 1);
-    /* neck and head */
-    const hx = x + dir * 3, hy = y - 2 + Math.sin(f / 7) * .5; c.fillStyle = body; c.fillRect(Math.round(hx - (dir < 0 ? 1 : 0)), Math.round(hy), 2, 2); c.fillRect(Math.round(hx + dir * 2 - (dir < 0 ? 2 : 0)), Math.round(hy - 1), 3, 2); c.fillRect(Math.round(hx + dir * 4 - (dir < 0 ? 1 : 0)), Math.round(hy), 2, 1);
-    c.fillStyle = body; c.fillRect(Math.round(hx + dir * 2), Math.round(hy - 3), 1, 2); c.fillRect(Math.round(hx + dir), Math.round(hy - 2), 1, 1);
-    c.fillStyle = night ? '#ffb04a' : '#ffe27a'; c.fillRect(Math.round(hx + dir * 3 - (dir < 0 ? 1 : 0)), Math.round(hy - 1), 1, 1);
-    /* the far wing and the near wing: an arm out and up, a membrane stretched back to the body */
-    for (const k of [0, 1]) { const sx0 = x - dir * (1 + k * 2), sy0 = y - 1, up = (k ? flap * .6 : flap), tx = sx0 - dir * (4 + (k ? 0 : 1)) + dir * Math.abs(up) * 2, ty = sy0 - 4 - up * 8;
-      line(c, sx0, sy0, tx, ty, wing); for (let q = 1; q <= 3; q++) line(c, tx, ty, sx0 - dir * (q * 3 + 1), sy0 + (q === 3 ? 1 : 0), wing); line(c, sx0, sy0, tx, ty, k ? body : wing); }
-    if (night && f % 36 < 3) { c.fillStyle = '#ff9a3a'; c.fillRect(Math.round(hx + dir * 6 - (dir < 0 ? 1 : 0)), Math.round(hy), 2, 1); c.fillStyle = '#ffd27a'; c.fillRect(Math.round(hx + dir * 8 - (dir < 0 ? 1 : 0)), Math.round(hy), 1, 1); }
+    const M = PAL.moss, T = PAL.teal, E = PAL.ember, flap = Math.sin(f / 2.4), O = M[2]; /* v38.17: no black outline. The darkest tone used is a deep green, and the body is shaded instead of ringed */
+    const P = (ox, oy, cc) => { c.fillStyle = cc; c.fillRect(Math.round(x + dir * ox), Math.round(y + oy), 1, 1); };
+    const Ln = (x0, y0, x1, y1, cc) => line(c, x + dir * x0, y + y0, x + dir * x1, y + y1, cc);
+    const wing = k => { const sx0 = -(1 + k * 3), sy0 = -3, up = k ? flap * .6 : flap, tx = sx0 - (5 + (k ? 0 : 2)) + Math.abs(up) * 3, ty = sy0 - 8 - up * 10, mem = k ? T[1] : T[0], edge = k ? T[3] : T[2];
+      for (let q = 0; q <= 9; q++) Ln(tx, ty, sx0 - q * 1.7 - 1, sy0 + 2 + (q > 6 ? 1 : 0), mem);
+      for (let q = 1; q <= 3; q++) Ln(tx, ty, sx0 - q * 5.4, sy0 + 2 + (q === 3 ? 2 : 0), edge);
+      Ln(sx0, sy0, tx, ty, M[1]); P(tx, ty - 1, E[3]); };
+    wing(0);
+    /* tail and body: a wave that travels back from the shoulders; outline first, then fill */
+    const seg = []; for (let i = 0; i < 22; i++) seg.push([-i, Math.round(Math.sin(f / 5 - i * .5) * (1 + i * .12)), i < 4 ? 5 : i < 9 ? 4 : i < 15 ? 3 : 2]);
+    seg.forEach(([ox, cy, th], i) => { for (let j = 0; j < th; j++) P(ox, cy - 1 + j, j === 0 ? M[4] : j === th - 1 ? (i < 10 ? M[5] : M[2]) : j === 1 ? M[3] : M[2]); if (i > 1 && i < 17 && i % 3 === 1) { P(ox, cy - 2, M[5]); P(ox - 1, cy - 2, O); } });
+    { const [ox, cy] = seg[21]; [[-1, -1], [-1, 0], [-2, -1], [-2, 0], [-3, 0]].forEach(([a, b]) => P(ox + a, cy + b, a === -1 ? E[4] : E[3])); P(ox - 4, cy, E[1]); }
+    wing(1);
+    /* neck, round head, snout */
+    [[1, -1], [2, -2], [3, -3]].forEach(([a, b]) => { P(a, b, M[4]); P(a, b + 1, M[3]); });
+    const hx = 6, hy = -6;
+    const inH = (xx, yy) => (xx * xx) / 17 + (yy * yy) / 10 <= 1 || (xx >= 3 && xx <= 6 && yy >= -1 && yy <= 2);
+    for (let yy = -4; yy <= 4; yy++) for (let xx = -5; xx <= 7; xx++) if (inH(xx, yy)) P(hx + xx, hy + yy, yy < -1 ? M[4] : yy > 1 ? M[5] : M[3]);
+    /* the cute part: a big dark eye with two shines, a pink cheek, a nostril and a small smile */
+    [[0, -1], [1, -1], [2, -1], [0, 0], [1, 0], [2, 0], [0, 1], [1, 1], [2, 1]].forEach(([a, b]) => P(hx + a, hy + b, PAL.night[0]));
+    P(hx, hy - 1, PAL.ash[5]); P(hx + 1, hy - 1, PAL.ash[3]); P(hx + 2, hy + 1, E[5]);
+    P(hx - 2, hy + 2, PAL.rose[4]); P(hx - 1, hy + 2, PAL.rose[3]); P(hx + 6, hy - .5, PAL.night[0]); P(hx + 3, hy + 3, O); P(hx + 4, hy + 3, O); P(hx + 5, hy + 2, O);
+    /* two small horns and a fin behind the eye */
+    P(hx - 1, hy - 5, E[3]); P(hx - 1, hy - 6, E[4]); P(hx + 2, hy - 5, E[3]); P(hx + 2, hy - 6, E[4]); P(hx - 4, hy - 3, T[3]); P(hx - 5, hy - 2, T[2]);
+    if (night && f % 36 < 3) { P(hx + 9, hy + 1, E[4]); P(hx + 10, hy + 1, E[5]); P(hx + 11, hy + 1, E[6]); P(hx + 10, hy, E[3]); }
   }
   function ufo(c, x, y, f, night, hover) {
     const X = Math.round(x), Y = Math.round(y);
@@ -437,6 +459,130 @@ const SCENE = (() => {
     if (hover && f % 4 < 2) { c.globalAlpha = .18; c.fillStyle = '#d8fff0'; for (let k = 0; k < 14; k++) c.fillRect(X + 3 - Math.round(k * .3), Y + 5 + k, 5 + Math.round(k * .6), 1); c.globalAlpha = 1; }
   }
 
+  /* ---------- the meadow: the whole bottom of the screen, which is what you see when you scroll down. Tall grass in patches (cool, warm and deep greens),
+     reeds, ferns, flower spikes, mushrooms, mossy stones, a fallen log and a stump with a tiny door. Clearings are left for the little things that
+     live there (a frog on its stone, a snail on the log, a pair of eyes). Nothing is spread evenly: every clump has its own height, lean and colour. ---------- */
+  const EGGQ = /[?&]eggs\b/.test(location.search) ? 130 : 0, SQQ = /[?&]sq\b/.test(location.search);
+  const tones3 = t => [
+    [mixh(t.mossD, t.fog, .1), t.moss, t.mossL, mixh(t.mossL, t.shaft, .3)],
+    [mixh(t.mossD, '#000000', .15), mixh(t.moss, '#a8a050', .22), mixh(t.mossL, '#d8d070', .25), mixh(t.mossL, '#f0ecb0', .4)],
+    [mixh(t.leafD, '#000000', .1), t.mossD, t.moss, mixh(t.mossL, t.shaft, .15)],
+    /* lime: young, sunlit grass */
+    [mixh(t.moss, '#6a8a30', .3), mixh(t.moss, '#8ab840', .4), mixh(t.mossL, '#c8e070', .4), mixh(t.mossL, '#f4f4b8', .5)],
+    /* deep: old grass in the shade, almost blue */
+    [mixh(t.mossD, '#000000', .35), mixh(t.mossD, '#0c3a40', .4), mixh(t.moss, '#0c3a40', .35), mixh(t.moss, t.shaft, .12)]];
+  const blade2 = (c, x, y, h, lean, c1, c2) => { for (let i = 0; i < h; i++) { c.fillStyle = i >= h - 2 ? c2 : c1; c.fillRect(x + Math.round(lean * Math.pow(i / h, 2) * 3.4), y - i, 1, 1); } };
+  const leaf2 = (c, x, y, h, lean, c0, c1, c2) => { for (let i = 0; i < h; i++) { const u = i / h, xo = Math.round(lean * u * u * 3.4); c.fillStyle = c0; c.fillRect(x + xo, y - i, 1, 1); if (u >= .18 && u < .7) { c.fillStyle = c1; c.fillRect(x + xo + 1, y - i, 1, 1); } if (i === h - 1) { c.fillStyle = c2; c.fillRect(x + xo, y - i, 1, 1); } } };
+  const ell2 = (c, x, y, rx, ry, col) => { c.fillStyle = col; for (let j = -Math.ceil(ry); j <= ry; j++) { const w = Math.round(Math.sqrt(Math.max(0, 1 - (j / ry) ** 2)) * rx); c.fillRect(Math.round(x - w), Math.round(y + j), w * 2 + 1, 1); } };
+  function meadow(c, t) {
+    const RM = rnd(131), T3 = tones3(t), x0 = L.wide ? L.cx0 - 22 : 0, x1 = L.wide ? L.cx1 + 22 : W, fl = L.floor, bandH = H - fl, span = x1 - x0, ph = RM() * 6.28, ph2 = RM() * 6.28;
+    const E = L.eggs = { stump: { x: Math.round(x0 + span * (.2 + RM() * .06)), y: Math.round(fl + bandH * .56) }, frog: { x: Math.round(x0 + span * (.64 + RM() * .06)), y: Math.round(fl + bandH * .44) }, eyes: { x: Math.round(x0 + span * (.44 + RM() * .05)), y: Math.round(fl + bandH * .3) } };
+    const lgx = Math.round(x0 + span * .82), lgy = Math.round(fl + bandH * .5), clear = (x, y) => Math.hypot((x - E.stump.x) / 21, (y - E.stump.y + 4) / 12) < 1 || Math.hypot((x - lgx) / 16, (y - lgy + 3) / 8) < 1 || Math.hypot((x - E.frog.x) / 11, (y - E.frog.y) / 6) < 1 || Math.hypot((x - E.eyes.x) / 9, (y - E.eyes.y) / 6) < 1;
+    E.log = { x: lgx, y: lgy };
+    const flowerCols = [PAL.violet[4], PAL.rose[4], PAL.ash[5], PAL.gold[3]].map(cc => mixh(cc, t.fog, .1));
+    /* a dark, damp floor with patches of lighter moss */
+    for (let i = 0; i < Math.round(span / 7); i++) { const x = x0 + RM() * span, y = fl + 2 + RM() * (bandH - 4); ell2(c, x, y, 3 + RM() * 7, 1 + RM() * 1.8, RM() < .5 ? mixh(t.mossD, t.ground, .4) : mixh(t.moss, t.ground, .5)); }
+    /* the log and the stump come first, so the grass can grow over their feet */
+    { const lx = Math.round(x0 + span * .82), ly = Math.round(fl + bandH * .5), tc = [t.trunkD, t.trunk, t.trunkL];
+      for (let x = -11; x <= 11; x++) { const h = 5 - (Math.abs(x) > 9 ? 1 : 0); for (let j = 0; j < h; j++) { c.fillStyle = j === 0 ? tc[2] : j >= h - 1 ? tc[0] : ((x * 3 + j * 5) % 7 === 0 ? tc[0] : tc[1]); c.fillRect(lx + x, ly - h + j, 1, 1); } }
+      ell2(c, lx - 11, ly - 2.5, 1.4, 2.6, mixh(t.trunkL, '#e8d8a8', .3)); ell2(c, lx - 11, ly - 2.5, .6, 1.4, t.trunk);
+      for (let x = -9; x <= 7; x++) if ((x * 7) % 3 !== 0) { c.fillStyle = (x & 1) ? t.moss : t.mossL; c.fillRect(lx + x, ly - 6, 1, 1 + ((x * 5) % 2)); }
+      [[-3, 7], [1, 5], [5, 8]].forEach(([ox, h], i) => { c.fillStyle = PAL.ash[3]; c.fillRect(lx + ox, ly - 6 - h + 5, 1, 2); c.fillStyle = i === 1 ? PAL.rose[3] : PAL.ash[4]; c.fillRect(lx + ox - 1, ly - 7 - h + 5, 3, 1); }); }
+    { const E1 = E.stump, sx = E1.x, sy = E1.y, tc = [t.trunkD, t.trunk, t.trunkL];
+      for (let x = -8; x <= 8; x++) { const top = sy - 11 + Math.round(Math.abs(x) * .22); for (let y = top; y <= sy; y++) { c.fillStyle = y === top ? tc[2] : ((x + 20) * 5 % 7 === 0 || x === 8) ? tc[0] : tc[1]; c.fillRect(sx + x, y, 1, 1); } }
+      ell2(c, sx, sy - 11, 8, 2.4, mixh(t.trunkL, '#e8d8a8', .3)); ell2(c, sx, sy - 11, 5.5, 1.5, mixh(t.trunk, '#c8b080', .25)); ell2(c, sx, sy - 11, 2.5, .7, mixh(t.trunkL, '#e8d8a8', .3));
+      for (let x = -8; x <= -2; x++) { c.fillStyle = t.moss; c.fillRect(sx + x, sy - 11 + Math.round(Math.abs(x) * .22) - (x % 2 ? 1 : 0), 1, 2); c.fillStyle = t.mossL; c.fillRect(sx + x, sy - 12 + Math.round(Math.abs(x) * .22), 1, 1); }
+      /* the door: an arch with a warm window, a round window over it, two steps */
+      for (let y = -5; y <= 0; y++) for (let x = -2; x <= 2; x++) { if (y === -5 && Math.abs(x) === 2) continue; c.fillStyle = Math.abs(x) === 2 || y === -5 ? PAL.bark[2] : PAL.bark[0]; c.fillRect(sx + x - 1, sy + y, 1, 1); }
+      c.fillStyle = PAL.ember[3]; c.fillRect(sx - 1, sy - 3, 1, 2); c.fillStyle = PAL.ember[5]; c.fillRect(sx - 1, sy - 4, 1, 1);
+      ell2(c, sx + 4, sy - 6, 1.2, 1.2, PAL.bark[0]); c.fillStyle = PAL.ember[4]; c.fillRect(sx + 4, sy - 6, 1, 1);
+      c.fillStyle = PAL.stone[3]; c.fillRect(sx - 3, sy + 1, 4, 1); c.fillStyle = PAL.stone[2]; c.fillRect(sx - 2, sy + 2, 3, 1);
+      for (let r = 0; r < 4; r++) { c.fillStyle = tc[0]; c.fillRect(sx + 7 + r, sy - 1 + (r > 1 ? 1 : 0), 2, 1); c.fillRect(sx - 9 - r, sy - 1 + (r > 1 ? 1 : 0), 2, 1); }
+      E1.wx = sx - 1; E1.wy = sy - 3; E1.rx = sx + 4; E1.ry = sy - 6;
+      /* a lantern on a short post beside it */
+      c.fillStyle = PAL.bark[1]; c.fillRect(sx + 11, sy - 7, 1, 8); c.fillStyle = PAL.ember[4]; c.fillRect(sx + 10, sy - 9, 3, 2); c.fillStyle = PAL.ember[6]; c.fillRect(sx + 11, sy - 9, 1, 1); E1.lx = sx + 11; E1.ly = sy - 8; }
+    /* a flat mossy stone at the water-damp spot where the frog sits */
+    { const F0 = E.frog; ell2(c, F0.x, F0.y + 2, 7.4, 3.3, mixh(t.stoneD, '#000000', .35)); ell2(c, F0.x, F0.y + 1, 7, 3, t.stoneD); ell2(c, F0.x - 1, F0.y, 5, 1.8, t.stone);
+      for (let i = -6; i <= 5; i++) if ((i * 5) % 3 !== 0) { c.fillStyle = i & 1 ? t.moss : t.mossL; c.fillRect(F0.x + i, F0.y - 2 + (Math.abs(i) > 4 ? 1 : 0), 1, 1 + ((i * 3) & 1)); } }
+    /* stones with moss on top, in threes */
+    for (let g = 0; g < 4; g++) { const gx = x0 + 20 + RM() * (span - 40), gy = fl + 6 + RM() * (bandH - 12); if (clear(gx, gy)) continue; [[0, 0, 4.2, 2.6], [5, 1, 2.8, 1.9], [-4, 1, 2, 1.4]].forEach(([ox, oy, rx, ry]) => { ell2(c, gx + ox, gy + oy + 1, rx + .6, ry + .5, mixh(t.stoneD, '#000000', .4)); ell2(c, gx + ox, gy + oy, rx, ry, t.stoneD); ell2(c, gx + ox - 1, gy + oy - .6, rx * .6, ry * .5, t.stone); c.fillStyle = t.stoneL; c.fillRect(Math.round(gx + ox - rx * .4), Math.round(gy + oy - ry * .6), 2, 1); c.fillStyle = t.moss; c.fillRect(Math.round(gx + ox + rx * .2), Math.round(gy + oy - ry), 3, 1); c.fillStyle = t.mossL; c.fillRect(Math.round(gx + ox + rx * .3), Math.round(gy + oy - ry - 1), 1, 1); }); }
+    /* the grass, band by band from far to near */
+    for (let b = 0; b < 4; b++) {
+      const by = fl - 1 + b * bandH / 3.3, kk = b / 3;
+      for (let x = x0; x < x1; x += 3 + (RM() * 5 | 0)) {
+        const y = Math.round(by + (RM() - .5) * 5), dens = .5 + .5 * Math.sin(x * .08 + ph + b) * Math.sin(x * .031 + ph2 + b * 2);
+        if (RM() > .35 + dens * .75) continue;
+        const cl = clear(x, y), r0 = RM(), sh = (RM() - .5) * .7, tone = T3[r0 < .32 ? 0 : r0 < .5 ? 1 : r0 < .66 ? 2 : r0 < .83 ? 3 : 4].map(col => { col = sh < 0 ? mixh(col, '#04100c', -sh * .8) : mixh(col, '#e4f6b0', sh * .5); return kk < .4 ? mixh(col, t.fog, .12 * (1 - kk * 2)) : col; }), roll = cl ? RM() * .5 : RM(), hmax = 9 + (RM() * 11 | 0) - Math.round(kk * 3);
+        if (roll < .5) { const n = 4 + (RM() * 5 | 0); for (let i = 0; i < n; i++) blade2(c, x + i - (n >> 1) + (RM() * 2 | 0), y, cl ? 3 + (RM() * 2 | 0) : 5 + (RM() * (hmax - 5) | 0), (RM() - .5) * 2.6, tone[i % 2 ? 1 : 0] === tone[1] ? tone[1] : tone[0], i % 3 ? tone[3] : tone[2]); }
+        else if (roll < .66) { for (let i = 0; i < 3; i++) leaf2(c, x + i * 2 - 2, y, 7 + (RM() * (hmax - 5) | 0), (i - 1) * 1.2 + (RM() - .5), tone[0], tone[1], tone[3]); }
+        else if (roll < .75) { const n = 2 + (RM() * 2 | 0); for (let i = 0; i < n; i++) { const h = 14 + (RM() * 9 | 0), xx = x + i * 2 - 1; for (let j = 0; j < h; j++) put(c, xx, y - j, j > h - 4 ? mixh(PAL.bark[3], t.fog, .15) : tone[1]); put(c, xx, y - h - 1, mixh(PAL.bark[2], t.fog, .1)); put(c, xx, y - h, mixh(PAL.bark[3], t.fog, .1)); put(c, xx + 1, y - h + 1, mixh(PAL.bark[2], t.fog, .1)); } }
+        else if (roll < .84) { for (let i = 0; i < 3; i++) frond(c, x + (i - 1), y, 8 + (RM() * 6 | 0), i === 0 ? -1 : 1, i === 1 ? tone[0] : tone[1], tone[3]); }
+        else if (roll < .92) { const h = 8 + (RM() * 6 | 0), fc = flowerCols[RM() * 4 | 0]; for (let j = 0; j < h; j++) put(c, x, y - j, tone[1]); for (let j = 2; j < h - 1; j += 2) { put(c, x + (j & 2 ? 1 : -1), y - j, fc); put(c, x + (j & 2 ? 1 : -1), y - j - 1, tone[2]); } put(c, x, y - h, fc); put(c, x, y - h - 1, mixh(fc, '#ffffff', .3)); }
+        else { const n = 2 + (RM() * 2 | 0); for (let i = 0; i < n; i++) { const mx = x + i * 4 - 3, h = 2 + (RM() * 3 | 0), cap = [PAL.rose[3], PAL.ash[4], PAL.ember[3]][i % 3]; c.fillStyle = PAL.ash[3]; c.fillRect(mx, y - h, 1, h); c.fillStyle = mixh(cap, t.fog, .08); c.fillRect(mx - 1, y - h - 1, 3, 1); c.fillRect(mx - 1, y - h, 1, 1); c.fillRect(mx + 1, y - h, 1, 1); c.fillStyle = PAL.ash[5]; c.fillRect(mx, y - h - 1, 1, 1); } }
+      }
+    }
+  }
+  /* the near grass: dark, sharp and tall along the bottom edge, leaving gaps; taller at the sides of the middle than in it */
+  function meadowFront(c, t) {
+    const RM = rnd(171), x0 = L.wide ? L.cx0 - 22 : 0, x1 = L.wide ? L.cx1 + 22 : W, T3 = tones3(t);
+    for (let x = x0 - 6; x < x1 + 6; x += 3 + (RM() * 6 | 0)) {
+      const edge = Math.min(1, Math.min(x - x0, x1 - x) / 40), tone = T3[RM() < .5 ? 2 : RM() < .5 ? 4 : 0].map(col => mixh(col, '#000000', .12 + RM() * .2)), n = 3 + (RM() * 4 | 0), gap = RM() < .22;
+      if (gap) continue;
+      for (let i = 0; i < n; i++) { const h = 8 + (RM() * (10 + 12 * (1 - edge)) | 0); (RM() < .3 ? leaf2 : blade2)(c, x + i - (n >> 1), H - 1, h, (RM() - .5) * 3, tone[1], tone[2], mixh(tone[2], t.shaft, .35)); }
+    }
+  }
+  /* ---------- squirrels on the back trees: now and then one runs up a far trunk, stops to look about, and comes down again ---------- */
+  const SQK = { list: [], next: 0 };
+  function squirrel(c, x, y, up, side, ph, m, t, look) {
+    /* the trunk is on the -side of the squirrel; the tail arches away from it and up over the head */
+    const F = PAL.fur.map(cc => mixh(cc, t.fog, m)), hd = up ? -1 : 1, e = (ex, ey, rx, ry, col) => ell2(c, ex, ey, rx, ry, col), q = (ex, ey, col) => put(c, Math.round(ex), Math.round(ey), col);
+    const P0 = [x + side * 1.2, y - hd * 3], P1 = [x + side * 8.5, y - hd * 2.5], P2 = [x + side * 3.2, y + hd * 7.5], pt = u => [(1 - u) * (1 - u) * P0[0] + 2 * u * (1 - u) * P1[0] + u * u * P2[0], (1 - u) * (1 - u) * P0[1] + 2 * u * (1 - u) * P1[1] + u * u * P2[1]];
+    for (let i = 0; i <= 10; i++) { const u = i / 10, [tx, ty] = pt(u), r = 1.1 + 1.9 * Math.sin(Math.min(1, u * 1.15) * Math.PI) ; e(tx, ty, r + .9, r + .9, F[0]); }
+    for (let i = 0; i <= 10; i++) { const u = i / 10, [tx, ty] = pt(u), r = 1.1 + 1.9 * Math.sin(Math.min(1, u * 1.15) * Math.PI); e(tx, ty, r, r, u > .8 ? F[5] : F[3]); if (u > .15 && u < .85) e(tx + side * -.5, ty, r * .55, r * .6, F[4]); }
+    for (let i = 1; i < 10; i += 3) { const [tx, ty] = pt(i / 10); q(tx + side * 1.2, ty, F[2]); }
+    e(x, y, 2.4, 3.5, F[0]); e(x, y, 1.6, 2.7, F[3]); e(x - side * .9, y + hd * .5, .7, 1.8, PAL.ash[5]);
+    const hx = x - side * .3, hy = y + hd * 4.4; e(hx, hy, 2.5, 2.3, F[0]); e(hx, hy, 1.8, 1.6, F[3]); e(hx - side * .6, hy + hd * .8, .8, .6, PAL.ash[5]);
+    q(hx + side * .9, hy + hd * 2.6, F[0]); q(hx + side * 1.4, hy + hd * 3.3, F[0]); q(hx + side * .9, hy + hd * 3.1, F[4]); q(hx - side * 1.4, hy + hd * 2.4, F[0]); q(hx - side * 1.4, hy + hd * 3, F[4]);
+    const ex = look ? hx + side * .9 : hx - side * 1; q(ex, hy - hd * .3, PAL.night[0]); q(ex, hy - hd * .3 - hd, PAL.ash[5]); q(hx - side * (look ? 2.4 : 2.6), hy + hd * .6, PAL.night[0]);
+    q(x - side * 2.6, y + hd * (1.2 + (ph & 1) * 1.6), F[1]); q(x - side * 2.6, y - hd * (1 + ((ph + 1) & 1) * 1.6), F[1]);
+  }
+  function climbers(c, f) {
+    if (!L.climb || !L.climb.length) return; const t = T;
+    if (f > SQK.next && SQK.list.length < 2) { const tr = L.climb[Math.floor(Math.random() * L.climb.length)], up = Math.random() < .7; SQK.list.push({ tr, y: up ? tr.yb : tr.yt, up, side: Math.random() < .5 ? -1 : 1, pause: 0, ph: 0, turns: Math.random() < .5 ? 1 : 0 }); SQK.next = f + (SQQ ? 60 : 110 + Math.random() * 230); }
+    SQK.list = SQK.list.filter(s => {
+      if (s.pause > 0) s.pause--; else { s.y += (s.up ? -1 : 1) * 1.5; s.ph++; if (Math.random() < .05) s.pause = 5 + (Math.random() * 9 | 0); }
+      if (s.up && s.y < s.tr.yt) { if (s.turns > 0) { s.turns--; s.up = false; s.pause = 12; } else return false; }
+      if (!s.up && s.y > s.tr.yb) return false;
+      const X = Math.round(s.tr.x + s.tr.off(s.tr.base - s.y) + s.side * (s.tr.w / 2 + .5)); squirrel(c, X, Math.round(s.y), s.up, s.side, s.ph, s.tr.k === 1 ? .28 : .12, t, s.pause > 0); return true; });
+  }
+  /* ---------- lights drifting through the trees at the back, behind the trunks in front ---------- */
+  function driftLights(c, f) {
+    if (!L.drift) return; const t = T, day = mood === 'day' || mood === 'morning', col = t.fairy;
+    c.globalCompositeOperation = 'lighter';
+    for (const d of L.drift) { const a = d.ph + f * d.sp, x = Math.round(d.ax + Math.cos(a) * d.rx + Math.sin(a * 2.3) * 3), y = Math.round(d.ay + Math.sin(a * 1.4) * d.ry), br = .55 + .45 * Math.sin(f / d.per + d.ph); spot(c, x, y, d.r + 1, col[d.ci % col.length], (day ? .22 : .5) * br); c.globalAlpha = (day ? .4 : .85) * br; c.fillStyle = col[d.ci % col.length]; c.fillRect(x, y, 1, 1); c.globalAlpha = 1; }
+    c.globalCompositeOperation = 'source-over';
+  }
+  /* ---------- the little things in the meadow ---------- */
+  function meadowLife(c, f) {
+    const E = L.eggs; if (!E) return; const t = T, ff = f + EGGQ, tg = (m, col) => { };
+    /* the stump's window and lantern flicker, and a ring of light drifts up from the door */
+    c.globalCompositeOperation = 'lighter'; const S1 = E.stump, fl = .75 + .15 * Math.sin(f * .7) + .1 * Math.sin(f * 1.9);
+    spot(c, S1.wx, S1.wy, 6, '#ffc060', .5 * fl); spot(c, S1.rx, S1.ry, 3, '#ffc060', .4 * fl); spot(c, S1.lx, S1.ly, 7, '#ffd890', .45 * fl);
+    for (let i = 0; i < 4; i++) { const age = (f * .6 + i * 9) % 36, x = S1.lx + Math.sin(age / 5 + i * 2) * 4, y = S1.ly - age * .5; c.globalAlpha = Math.max(0, .7 - age / 40); c.fillStyle = '#ffe9a8'; c.fillRect(Math.round(x), Math.round(y), 1, 1); } c.globalAlpha = 1; c.globalCompositeOperation = 'source-over';
+    /* a small frog on its stone: it blinks, its throat pulses, and now and then it hops up and sits down again */
+    { const F0 = E.frog, cyc = ff % 260, hop = cyc < 4 ? [0, 3, 4, 2][cyc] : 0, fx = F0.x, fy = F0.y - 3 - hop, gr = mixh(PAL.moss[6], t.fog, .08), gl = mixh(PAL.ash[5], t.fog, .08), gd = mixh(PAL.moss[4], t.fog, .1), blink = cyc % 70 > 64;
+      ell2(c, fx, fy + 1, 3.6, 2.2, gd); ell2(c, fx, fy, 3.2, 2, gr); ell2(c, fx + .5, fy + 1.2, 1.6, .8, mixh(PAL.moss[5], t.fog, .1)); put(c, fx - 3, fy + 2, gd); put(c, fx + 3, fy + 2, gd); put(c, fx - 2, fy + 3, gd); put(c, fx + 2, fy + 3, gd);
+      ell2(c, fx - 2, fy - 2, 1.2, 1.2, gr); ell2(c, fx + 2, fy - 2, 1.2, 1.2, gr);
+      put(c, fx - 2, fy - 2, blink ? gd : PAL.gold[4]); put(c, fx + 2, fy - 2, blink ? gd : PAL.gold[4]); if (!blink) { put(c, fx - 2, fy - 1, PAL.night[0]); put(c, fx + 2, fy - 1, PAL.night[0]); }
+      if (cyc % 26 < 12) { c.fillStyle = gl; c.fillRect(fx - 1, fy + 2, 3, 1); } }
+    /* a snail crosses the fallen log, a few minutes to the top and back */
+    { const lx = E.log.x, ly = E.log.y, cyc = ff % 1400, u = cyc < 700 ? cyc / 700 : 1 - (cyc - 700) / 700, dirn = cyc < 700 ? 1 : -1, sx = Math.round(lx - 8 + u * 15), sy = ly - 6, body = mixh(PAL.ash[5], t.fog, .12), shell = mixh(PAL.bark[3], t.fog, .12);
+      for (let i = 0; i < 5; i++) put(c, sx + dirn * (i - 2) - (dirn > 0 ? 0 : 0), sy, i === 4 ? body : mixh(PAL.ash[4], t.fog, .12));
+      put(c, sx + dirn * 3, sy - 1, body); put(c, sx + dirn * 3, sy - 2, PAL.ash[3]); put(c, sx + dirn * 4, sy - 2, PAL.ash[3]);
+      ell2(c, sx - dirn * .5, sy - 2, 2, 1.8, mixh(PAL.bark[1], t.fog, .12)); ell2(c, sx - dirn * .5, sy - 2, 1.4, 1.3, shell); put(c, sx - dirn * .5, sy - 2, mixh(PAL.gold[3], t.fog, .1)); }
+    /* a pair of eyes in the tall grass, blinking, now and then */
+    { const E2 = E.eyes, cyc = (ff + 90) % 520; if (cyc < 70) { const blink = cyc > 30 && cyc < 34; c.globalCompositeOperation = 'lighter'; c.fillStyle = '#ffd470'; if (!blink) { c.fillRect(E2.x - 2, E2.y, 1, 2); c.fillRect(E2.x + 2, E2.y, 1, 2); c.globalAlpha = .5; c.fillStyle = '#ffffff'; c.fillRect(E2.x - 2, E2.y, 1, 1); c.fillRect(E2.x + 2, E2.y, 1, 1); c.globalAlpha = 1; } else { c.fillRect(E2.x - 2, E2.y + 1, 1, 1); c.fillRect(E2.x + 2, E2.y + 1, 1, 1); } c.globalCompositeOperation = 'source-over'; const T4 = tones3(t)[2]; for (let i = -4; i <= 4; i += 2) blade2(c, E2.x + i, E2.y + 3, 5 + (i & 3), i * .3, T4[1], T4[3]); } }
+  }
   /* ---------- the living layer ---------- */
   function draw() {
     if (!cx || !st) return;
@@ -446,6 +592,7 @@ const SCENE = (() => {
     c.drawImage(stb, 0, 0);
     flyers(c, f);
     c.drawImage(stb2, 0, 0);
+    climbers(c, f); driftLights(c, f);
     c.drawImage(st, 0, 0);
     const F = L.fall;
     const Lm = LIGHT[mood];
@@ -511,6 +658,7 @@ const SCENE = (() => {
       if (tw < 6) { c.globalAlpha = .4; c.fillRect(Math.round(m.x) - 1, Math.round(m.y), 3, 1); c.fillRect(Math.round(m.x), Math.round(m.y) - 1, 1, 3); }
     }
     c.globalAlpha = 1;
+    meadowLife(c, f);
     if (L.bokeh) for (const b of L.bokeh) { const a = b.ph + f * b.sp; glow(c, Math.round(b.x + Math.sin(a) * 6), Math.round(b.y + Math.cos(a * .8) * 4), b.r, b.c, .3 + .12 * Math.sin(a * 2)); }
     c.drawImage(vl, 0, 0);
   }
@@ -519,6 +667,8 @@ const SCENE = (() => {
     c.clearRect(0, 0, W, H);
     for (let x = 0; x < W; x++) { const d = L.wide ? Math.min(x - L.cx0, L.cx1 - x) : 99; if (d < -8) continue; const k = L.wide ? Math.min(1, (d + 8) / 16) : 1; c.globalAlpha = a0 * k; c.fillStyle = bg; c.fillRect(x, 0, 1, H); }
     c.globalAlpha = 1;
+    /* the words rest less at the very bottom of the page so the meadow shows: six stepped bands are cleared from the scrim */
+    c.globalCompositeOperation = 'destination-out'; c.globalAlpha = .1; for (let i = 0; i < 6; i++) c.fillRect(0, Math.round(H * (.72 + i * .035)), W, H); c.globalAlpha = 1; c.globalCompositeOperation = 'source-over';
   }
 
   /* ---------- on a phone: nothing behind the words ----------
@@ -737,11 +887,13 @@ const SCENE = (() => {
     cx = cv.getContext('2d'); sk = document.createElement('canvas'); skx = sk.getContext('2d'); stb = document.createElement('canvas'); stb2 = document.createElement('canvas'); st = document.createElement('canvas'); sx = st.getContext('2d'); vl = document.createElement('canvas'); vx = vl.getContext('2d');
     if (!cx || !skx || !sx || !vx) { cv = null; return; }
     document.body.prepend(cv); document.body.classList.add('scene-on');
-    build(); loop();
+    /* v38.17: the forest is painted in its own task, after the page's first work, so startup never holds the main thread for one long stretch */
+    const mine = cv; setTimeout(() => { if (cv === mine) { build(); loop(); } }, 0);
   }
   function stop() { clearTimeout(timer); stopPhone(); if (cv) cv.remove(); cv = null; document.body.classList.remove('scene-on'); delete document.documentElement.dataset.tod; }
   addEventListener('resize', () => { clearTimeout(rsT); rsT = setTimeout(() => { if (!cv && !bot) return; if ((isPhone() ? 'phone' : 'wide') !== mode) { stop(); start(); } else if (bot) buildPhone(); else build(); }, 200); });
   document.addEventListener('visibilitychange', () => { if (!document.hidden && (cv || bot)) { if (pickMood() !== mood) (bot ? buildPhone() : build()); loop(); } });
   setInterval(() => { if ((cv || bot) && !document.hidden && pickMood() !== mood) (bot ? buildPhone() : build()); }, 60000);
-  return { progress() { }, flare() { }, start, stop, sync: () => (on() ? (cv ? build() : bot ? buildPhone() : start()) : stop()), mood: () => mood, set(v) { if (v) delete S.ui.scene; else S.ui.scene = false; persist(); this.sync(); }, on };
+  if (/[?&]scenetest\b/.test(location.search)) window.__scene = { squirrel: (c, x, y, up, side, ph, m, look) => squirrel(c, x, y, up, side, ph, m, T, look), dragon: (c, x, y, f, dir, night) => dragon(c, x, y, f, dir, night), get: () => ({ L, W, H, PX, mood }) };
+  return { progress() { }, flare() { }, look(m) { m = m || ''; if (m === look) return; look = m; if (cv) build(); else if (bot) buildPhone(); }, start, stop, sync: () => (on() ? (cv ? build() : bot ? buildPhone() : start()) : stop()), mood: () => mood, set(v) { if (v) delete S.ui.scene; else S.ui.scene = false; persist(); this.sync(); }, on };
 })();

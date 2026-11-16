@@ -1,4 +1,4 @@
-# The Burrow icon: a grassy burrow hill with a round door and a little gold inside, a few flowers, sparkles in a lavender sky.
+# The Burrow icon: a mossy burrow hill with a round door and a little gold inside, a few flowers, sparkles in a deep night sky.
 # Drawn once here as a 16 x 16 pixel picture (big pixels, so it still reads at 16 px), then written as the SVGs, PNGs and favicon.ico.
 from PIL import Image, ImageDraw
 ART = [
@@ -19,8 +19,9 @@ ART = [
  "DDDDDDDDDDDDDDDD",
  "DDDDDDDDDDDDDDDD",
 ]
-PAL = {'a':'#c8c0f0','m':'#c2d6ee','s':'#bfe6ee','W':'#ffffff','Y':'#ffe27a','G':'#1f6a3a','g':'#3a9e52','h':'#7ad07a','F':'#ff8fb8','f':'#ffd84a',
-       'B':'#6e4529','K':'#120a05','C':'#f6c945','D':'#4a3320'}
+# colours come from the burrow palette (pal.js): a night sky, a deep mossy hill, bark, gold
+PAL = {'a':'#111f36','m':'#1b3150','s':'#2b4a72','W':'#f6f2ea','Y':'#ffd470','G':'#1c5238','g':'#2a7250','h':'#43945f','F':'#ee90b2','f':'#fcd23c',
+       'B':'#7a4c28','K':'#050b14','C':'#fcd23c','D':'#34200f'}
 N = 16
 def hx(h): return tuple(int(h[i:i+2], 16) for i in (1, 3, 5))
 def rects(cell):
