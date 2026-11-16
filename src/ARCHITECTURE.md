@@ -144,3 +144,9 @@ Favicon (38.11): redrawn as a tree, a mound with a small door and a few coins, o
 38.12: waterfall tiers line up (dx 0,-1,-2) and the rock channel is wider; favicon redrawn as a tree hollow with gold seen from the ground, rounded corners (pwa/make_icons.py).
 
 38.12 (later): flyers now pass behind the nearer rows of trees (between the deepest row and the rest), not in front of them. Favicon redrawn at 32x32: low angle from the ground, dark trunk with a gold-filled hollow, flowers on the ground, lush canopy, tinted sky, rounded corners.
+
+38.13: garden reworked: no tap-to-grow, every card gets one vine of its own kind plus a thin border vine (sometimes two) that swells into tufts; plants (sprout, berries, leaves) only at the right side of three cards; clover, rose, wheat, lavender and bluebell removed. Header reads "the burrow / for money freedom" in lowercase. Dragon rarer (about 2 to 4 minutes apart at the earliest), a slow wavy flight, and a little faded; saucer rarer too.
+
+## 38.14
+- squirrel.js: a short squirrel-and-coin moment (canvas 100x38 at 3x, bottom left, no taps, about 5 s, gone after). Plays on a new streak week, the first receipt, a batch of 3 or more receipts, a goal quarter, and spare money moved into a goal. At most once per 150 s; not for reduced motion. `?sqtest` exposes `window.__sq`.
+- Icons: grassy burrow hill with round door, gold, flowers and sparkles on a lavender sky (16x16 art, make_icons.py).

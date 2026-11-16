@@ -242,7 +242,7 @@ function askApply(ch) {
   ch.bills.forEach(b => step(b.key, b.amount)); if (ch.bills.length) markDone('bills', true);
   if (ch.balance != null) { u.bankSet = true; u.hadBank = S.cfg.bankStart !== undefined; u.bank = S.cfg.bankStart; S.cfg.bankStart = ch.balance; }
   persist(); itemsSig = ''; restructure();
-  if (u.ids.length) afterLog((S.receipts || []).length === u.ids.length); else sfx('coin');
+  if (u.ids.length) afterLog((S.receipts || []).length === u.ids.length, u.ids.length); else sfx('coin');
   return u;
 }
 function askUndoApply(u) {

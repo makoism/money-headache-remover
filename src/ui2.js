@@ -60,7 +60,7 @@ function renderStart() {
 function render() {
   C = calcAll(S);
   const m = C.byYm[sel], st = statusOf(S, m), floor = cfg(S, 'minBank'), mon = monthLabel(sel, true), L = m.pool.left;
-  document.title = 'The Burrow';
+  document.title = 'the burrow';
   $('#curSel').value = (S.ui && S.ui.cur) || '₱'; renderStart();
   { const nm = (S.ui && S.ui.name) || '', hr = new Date().getHours(), hi = $('#hello'); hi.hidden = !nm; hi.textContent = nm; setIdle($('#nameIn'), nm); }
 

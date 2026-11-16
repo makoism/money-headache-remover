@@ -3,7 +3,7 @@ SRC='/home/claude/work/money-map-team.html'
 OUT='/home/claude/work/pwa/dist'
 shutil.rmtree(OUT, ignore_errors=True); os.makedirs(OUT+'/icons')
 html=open(SRC,encoding='utf8').read()
-assert '<title>The Burrow</title>' in html
+assert '<title>the burrow</title>' in html
 # The app folder carries the small welcome video (hello.mp4 and its cover hello.jpg) next to index.html, so it plays on its screen.
 # The single downloaded .html file has no such neighbours, so it uses the Google Drive card instead.
 assert html.count("const HELLO_FILE = 'hello.mp4';") == 1
@@ -13,7 +13,7 @@ head='''<link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#0c1a15" media="(prefers-color-scheme: dark)">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="The Burrow">
+<meta name="apple-mobile-web-app-title" content="the burrow">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/svg+xml" href="icons/favicon.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
@@ -42,7 +42,7 @@ assert html.count('</body>')==1
 html=html.replace('</body>', reg+'</body>')
 open(OUT+'/index.html','w',encoding='utf8').write(html)
 manifest={
- "name":"The Burrow","short_name":"The Burrow","description":"A calm budget page that shows what you can really spend. Your numbers stay on your device.",
+ "name":"the burrow","short_name":"the burrow","description":"A calm budget page that shows what you can really spend. Your numbers stay on your device.",
  "start_url":"./","scope":"./","display":"standalone","orientation":"any","background_color":"#0c1a15","theme_color":"#0c1a15",
  "icons":[{"src":"icons/icon-192.png","sizes":"192x192","type":"image/png","purpose":"any"},{"src":"icons/icon-512.png","sizes":"512x512","type":"image/png","purpose":"any"},{"src":"icons/icon-maskable-512.png","sizes":"512x512","type":"image/png","purpose":"maskable"}]}
 open(OUT+'/manifest.webmanifest','w').write(json.dumps(manifest,indent=2))

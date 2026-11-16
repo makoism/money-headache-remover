@@ -392,7 +392,7 @@ const SCENE = (() => {
   /* ---------- things that cross the sky behind the trees: birds often, a dragon rarely, a saucer very rarely ----------
      They are drawn between the sky and the trees, so a trunk can pass in front of them. ?fly=bird|dragon|ufo brings one in at once, for looking at. */
   const FLYQ = (location.search.match(/[?&]fly=(bird|dragon|ufo)\b/) || [])[1] || '';
-  const fly = { birds: [], dragon: null, ufo: null, nb: 36 + Math.random() * 90, nd: 500 + Math.random() * 600, nu: 900 + Math.random() * 900 };
+  const fly = { birds: [], dragon: null, ufo: null, nb: 36 + Math.random() * 90, nd: 2400 + Math.random() * 2400, nu: 3600 + Math.random() * 3600 };
   if (FLYQ) { fly.nb = fly.nd = fly.nu = 1e9; fly[{ bird: 'nb', dragon: 'nd', ufo: 'nu' }[FLYQ]] = 8; }
   const line = (c, x0, y0, x1, y1, col) => { c.fillStyle = col; const n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0)) || 1; for (let i = 0; i <= n; i++) c.fillRect(Math.round(x0 + (x1 - x0) * i / n), Math.round(y0 + (y1 - y0) * i / n), 1, 1); };
   const BIRD = [['b...b', '.b.b.', '..b..'], ['.....', 'bbbbb', '..b..'], ['..b..', 'bb.bb', '.....']];
@@ -404,10 +404,10 @@ const SCENE = (() => {
     const bc = night ? '#9fb4e0' : mood === 'sunset' ? '#3a2a44' : '#22332f';
     fly.birds = fly.birds.filter(b => { b.x += b.dir * b.sp; if (b.dir > 0 ? b.x > W + 14 : b.x < -16) return false; const fr = BIRD[((f + b.ph) >> 1) % 3 === 2 ? 1 : ((f + b.ph) >> 1) % 2], yy = b.y + Math.sin(f / 9 + b.bob) * 1.5; c.save(); c.translate(Math.round(b.x), Math.round(yy)); c.scale(2, 2); grid(c, 0, 0, fr, { b: bc }, false); c.restore(); return true; });
     /* the dragon: long, slow wingbeats, a tail that follows the body */
-    if (!fly.dragon && f > fly.nd) { fly.nd = f + (FLYQ === 'dragon' ? 150 : 1300 + Math.random() * 1400); const dir = Math.random() < .5 ? 1 : -1; fly.dragon = { x: dir > 0 ? -40 : W + 40, y: top + 14 + Math.random() * (bot - top - 40), dir, sp: 1.1 }; }
-    if (fly.dragon) { const d = fly.dragon; d.x += d.dir * d.sp; if (d.dir > 0 ? d.x > W + 44 : d.x < -44) fly.dragon = null; else { c.save(); c.translate(Math.round(d.x), Math.round(d.y + Math.sin(f / 11) * 2.5)); c.scale(2, 2); dragon(c, 0, 0, f, d.dir, night); c.restore(); } }
+    if (!fly.dragon && f > fly.nd) { fly.nd = f + (FLYQ === 'dragon' ? 150 : 4500 + Math.random() * 4500); const dir = Math.random() < .5 ? 1 : -1; fly.dragon = { x: dir > 0 ? -40 : W + 40, y: top + 14 + Math.random() * (bot - top - 40), dir, sp: 1, y0: 0, t: 0, ph: Math.random() * 6.28 }; fly.dragon.y0 = fly.dragon.y; }
+    if (fly.dragon) { const d = fly.dragon; d.t++; d.x += d.dir * d.sp * (.8 + .35 * Math.sin(d.t / 70 + d.ph)); d.y = d.y0 + Math.sin(d.t / 34 + d.ph) * 10 + Math.sin(d.t / 13) * 2.2 + (d.t / 60) * -1.6 * Math.sin(d.ph); if (d.dir > 0 ? d.x > W + 44 : d.x < -44) fly.dragon = null; else { c.save(); c.globalAlpha = .82; c.translate(Math.round(d.x), Math.round(d.y)); c.scale(2, 2); dragon(c, 0, 0, f, d.dir, night); c.restore(); } }
     /* the saucer: glides in, stops and wobbles, then is gone in a jump */
-    if (!fly.ufo && f > fly.nu) { fly.nu = f + (FLYQ === 'ufo' ? 150 : 1800 + Math.random() * 1800); const dir = Math.random() < .5 ? 1 : -1; fly.ufo = { x: dir > 0 ? -10 : W + 10, y: top + 6 + Math.random() * (bot - top - 30), dir, hx: W * (.3 + Math.random() * .4), st: 0, t: 0, vy: 0 }; }
+    if (!fly.ufo && f > fly.nu) { fly.nu = f + (FLYQ === 'ufo' ? 150 : 5400 + Math.random() * 5400); const dir = Math.random() < .5 ? 1 : -1; fly.ufo = { x: dir > 0 ? -10 : W + 10, y: top + 6 + Math.random() * (bot - top - 30), dir, hx: W * (.3 + Math.random() * .4), st: 0, t: 0, vy: 0 }; }
     if (fly.ufo) { const u = fly.ufo; u.t++;
       if (u.st === 0) { u.x += u.dir * 2.2; if ((u.x - u.hx) * u.dir > 0) { u.st = 1; u.t = 0; } }
       else if (u.st === 1) { u.y += Math.sin(u.t / 2) * .6; if (u.t > 22) { u.st = 2; u.vy = -(.5 + Math.random() * .8); } }

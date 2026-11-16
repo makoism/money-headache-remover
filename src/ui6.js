@@ -48,14 +48,15 @@ function markWeek() {
   return { n: streakInfo().n, before };
 }
 const WK_MILE = [1, 4, 8, 12, 26, 52];
-function afterLog(first) {
+function afterLog(first, batch) {
   pulseBand();
   const r = markWeek(); persist(); render();
   if (r) {
     const big = WK_MILE.indexOf(r.n) >= 0 && r.n > 1;
     sfx(big ? 'fanfare' : 'sparkle');
     celebrate(big ? 'med' : 'small', first || r.n === 1 ? 'Logged. Streak: week 1.' : `Logged. Streak: ${r.n} weeks.`);
-  } else { sfx('coin'); celebrate('small', 'Logged.'); }
+    SQ.stash();   /* a new streak week, or the very first receipt: the squirrel stocks the burrow */
+  } else { sfx('coin'); celebrate('small', 'Logged.'); if (batch >= 3 || first) SQ.stash(); }
 }
 
 /* ---------- badges ---------- */
@@ -188,7 +189,7 @@ function doSweep(pm) {
   else if (after && before && after < before) { const n = ymIdx(before) - ymIdx(after); note = `Full ${monthLabel(after)}, ${plural(n, 'month')} sooner.`; }
   else note = `${fmt(Math.max(0, g.target - gi.bal))} to go.${after ? ` Full ${monthLabel(after)}.` : ''}`;
   SWEPT = { pm, id, amt: moved, note: `${note}${g.why ? ' ' + g.why + '.' : ''}` };
-  sfx('coin'); celebrate('med', `${g.name}: +${fmt(moved)}. ${note}`);
+  sfx('coin'); celebrate('med', `${g.name}: +${fmt(moved)}. ${note}`); SQ.stash();
   render();
 }
 function undoSweep() {
@@ -268,7 +269,7 @@ function renderHero() {
   /* a milestone is celebrated once, the first time the plan passes it */
   const hit = pct >= 100 ? 4 : pct >= 75 ? 3 : pct >= 50 ? 2 : pct >= 25 ? 1 : 0, ms0 = S.ui.ms = S.ui.ms || {};
   if (ms0[g.id] === undefined) { ms0[g.id] = hit; persist(); }
-  else if (hit > (ms0[g.id] || 0)) { ms0[g.id] = hit; persist(); sfx(hit === 4 ? 'fanfare' : 'sparkle'); celebrate(hit === 4 ? 'big' : 'med', hit === 4 ? `${g.name}: full.${g.why ? ' ' + g.why + '.' : ''}` : `${g.name}: ${hit * 25}%.${g.why && hit >= 2 ? ' ' + g.why + '.' : ''}`); }
+  else if (hit > (ms0[g.id] || 0)) { ms0[g.id] = hit; persist(); sfx(hit === 4 ? 'fanfare' : 'sparkle'); SQ.stash(); celebrate(hit === 4 ? 'big' : 'med', hit === 4 ? `${g.name}: full.${g.why ? ' ' + g.why + '.' : ''}` : `${g.name}: ${hit * 25}%.${g.why && hit >= 2 ? ' ' + g.why + '.' : ''}`); }
 }
 function renderSpend() {
   const el = $('#hSpend'), p = HV.play, ym = HV.ym;

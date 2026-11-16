@@ -1,6 +1,6 @@
 {
-  "name": "The Burrow",
-  "short_name": "The Burrow",
+  "name": "the burrow",
+  "short_name": "the burrow",
   "description": "A calm budget page that shows what you can really spend. Your numbers stay on your device.",
   "start_url": "./",
   "scope": "./",
