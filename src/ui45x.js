@@ -437,7 +437,7 @@ function addAnotherBill(kind, afterId) {
   S.ui.more = Object.assign({}, S.ui.more, { [id]: kind }); persist();
   return id;
 }
-const GOAL_NOUN = { travel: 'trip', moving: 'home or move', buy: 'purchase', car: 'yearly cost', other: 'goal' };
+const GOAL_NOUN = { travel: 'trip', moving: 'home or move', buy: 'purchase', car: 'yearly cost', debt: 'debt', other: 'goal' };
 const goalKindOf = id => GOAL_KINDS.find(x => x.id === id) || GOAL_KINDS.find(x => x.k === (S.ui.gk || {})[id]) || null;
 function addAnotherGoal(fromId) {
   const k = goalKindOf(fromId); if (!k || k.em || S.plan.goals.length >= MAX_GOALS) return null;

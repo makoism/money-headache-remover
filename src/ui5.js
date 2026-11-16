@@ -142,7 +142,7 @@ function wire() {
     try {
       const d = JSON.parse($('#bk').value);
       if (!d || typeof d !== 'object' || !d.steps || !d.once || !d.cfg) throw new Error('bad');
-      const old = S; S = upgradeLegacy(normalize(d)); S.ui = Object.assign({}, old.ui, S.ui, { sampleHidden: true });
+      const old = S; offerUndo(JSON.stringify(old), 'Backup loaded.'); S = upgradeLegacy(normalize(d)); S.ui = Object.assign({}, old.ui, S.ui, { sampleHidden: true });
       if (!Array.isArray(d.receipts)) S.receipts = old.receipts;
       editRow = null; editGoal = null; editRc = null; itemsSig = ''; S.ui.bk = Date.now(); delete S.ui.bkLater; persist(); restructure(); msg.textContent = 'Loaded.'; sfx('next');
     } catch (e) { msg.textContent = 'Not a valid backup. Use the whole file, or paste all of the copied text.'; }

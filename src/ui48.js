@@ -5,10 +5,10 @@ const COACH = {
   home: [
     ['#hStatus', 'Where you stand', 'Read this first. On plan: this month fits your pay and your balance stays above your minimum.'],
     ['#hHero', 'Main goal', 'Your reason, in your words, with what this month adds and the months left. Tap Forecast for the graph.'],
-    ['#hSpend', 'Play money', 'What is left to spend this month. Spend it on fun, no guilt. What is left at month end can go toward a goal.'],
+    ['#hSpend', 'Treasure chest', 'The money you use this month. The big number is free to spend on fun, no guilt. Below it: are your necessities covered, and what is left for learning and giving. What is left at month end can go toward a goal.'],
     ['#hQuick', 'Log spend', 'Enter an amount, pick a category, tap Log. Do it as you spend or weekly.'],
     ['#hGoals', 'Goals', 'Tap a goal to open it. Edit it or set it as main goal.'],
-    ['#hBuckets', 'Jars', 'Left to spend in spending jars. Total saved in saving jars.'],
+    ['#hBuckets', 'Financial Freedom', 'Money you invest and never spend. It only grows. Goals and debt live in the burrows at the top.'],
     ['#askBtn', 'Ask', 'Any money question, any time. It knows your plan and can make changes you approve.'],
   ],
   receipts: [

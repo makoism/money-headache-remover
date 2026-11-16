@@ -217,7 +217,7 @@ const STEP_JARS = { id: 'jars', part: PART.jars, setup: true, when: havePay,
   leave: () => { commitJars(); markDone('bills'); } }; /* past the bills: whatever was typed for them is the person's own */
 /* the six jars in short, folded: pay is split into jars and each jar has one purpose */
 const jarsFold = () => `<details class="src-how"><summary>The six jars, in short</summary><div class="src-how-in">
-    <p>Every month, pay is split into six jars. Each jar has one purpose, and play money is the jar you spend on fun without guilt. Usual shares of take-home pay:</p>
+    <p>A jar is one slice of your pay with one job. Every month, pay is split into six jars. Four of them (Necessities, Play, Education, Give) are money you use this month: they sit in your <b>treasure chest</b> on Home. Long-Term Savings fills your <b>burrows</b>, and Financial Freedom only grows. Play is the jar you spend on fun without guilt. Usual shares of take-home pay:</p>
     <ul class="jar-lines">${JARS.map(j => `<li><i class="dot" style="--c:${JARVAR[j.id]}"></i><span><b>${esc(j.name)}</b> ${Math.round(j.usual * 100)}%. ${esc(JAR_LINES[j.id])}</span></li>`).join('')}</ul>
     <p class="cap">From T. Harv Eker&rsquo;s jar system (Secrets of the Millionaire Mind). Shares are a guide, not a rule.</p></div></details>`;
 const jarSplitHTML = () => `${potHTML('jarPot', JAR5.map(j => JARVAR[j]), jarVals, jarRest)}${poolHTML('jar', JAR5.map(j => JAR_SHORT[j]))}
@@ -232,12 +232,13 @@ const GOAL_KINDS = [
   { k: 'moving', id: 'moving', name: 'Home or move', slot: 4, pick: 'A home or a move', hint: 'Deposit, movers, furniture', title: 'Home or move', cost: 'Deposit, movers, furniture.' },
   { k: 'buy', id: 'buy', name: 'Big purchase', slot: 1, pick: 'A big purchase', hint: 'Laptop, car, wedding', title: 'Big purchase', cost: 'The price, or your best guess.' },
   { k: 'car', id: 'car', name: 'Yearly cost', slot: 6, pick: 'A yearly cost', hint: 'Insurance, taxes, holidays', title: 'Yearly cost', cost: 'Full amount for the year, not per month.' },
+  { k: 'debt', id: 'debt', name: 'Pay off debt', slot: 3, debt: true, pick: 'Pay off a debt', hint: 'Card, loan, balance', title: 'Pay off debt', cost: 'What you still owe in total, with any interest.' },
   { k: 'other', id: 'other', name: 'Something else', slot: 2, pick: 'Something else', hint: 'Anything with a price', title: 'Goal', cost: '' },
 ];
 const STEP_TOOLPICK = { id: 'goals-pick', part: PART.goals, setup: true, pick: true, title: 'Goals', art: 'sprout',
-  body: () => `<p>The Long-Term Savings for Spending jar holds money saved now and spent later: a cushion, a trip, a big purchase. Tick what you are saving for. Add more later.</p>
+  body: () => `<p>Burrows hold money you build up: a cushion, a trip, a big purchase, or paying off a debt. Tick what you are working toward. Add more later.</p>
     <div class="tour-chips two" role="group" aria-label="Goals">${GOAL_KINDS.map(k => { const on = S.ui.gset ? !!goalById(S, k.id) : k.k === 'rainy'; return `<label class="chip multi${on ? ' on' : ''}"><input type="checkbox" name="tourGoalPick" value="${k.k}"${on ? ' checked' : ''}><b>${k.pick}</b><span>${k.hint}</span></label>`; }).join('')}</div>
-    <p class="cap">Unsure? Keep the emergency fund.</p>`,
+    <p class="cap">Unsure? Keep the emergency fund. Owe something with interest, like a card? Add &ldquo;Pay off a debt&rdquo; too.</p>`,
   leave: d => {
     if (d <= 0) return;
     const picked = $$('#tourBody input[name=tourGoalPick]:checked').map(i => i.value), first = !S.ui.gset, old = S.plan.goals, next = [], gk = S.ui.gk || {};
@@ -268,13 +269,14 @@ const goalStep = id => ({ id: 'goal-' + id, part: PART.goals, setup: true,
       <p class="cap" id="tourEmCap">${emCap(m)}</p>
       <div class="tour-fields">${moneyField('tourGSaved', 'Already saved', g.start)}</div>`;
     }
-    return `<p>${g.emergency ? 'A cushion for surprises. How much do you want to hold? Usual advice: three to six months of bills.' : 'Name, cost, a date if there is one, and the reason in your words.'}</p>
+    const dbt = !!k.debt;
+    return `<p>${g.emergency ? 'A cushion for surprises. How much do you want to hold? Usual advice: three to six months of bills.' : dbt ? 'Name the debt and how much you owe in total. The smallest payment you must make stays in Necessities. This burrow is for the extra you pay on top, so the debt shrinks faster.' : 'Name, cost, a date if there is one, and the reason in your words.'}</p>
     <div class="tour-fields">
       ${g.emergency ? '' : textField('tourGName', 'Name', g.name)}
-      ${g.emergency ? '' : `<div class="field"><label for="tourGWhy">Why (optional)</label><div class="inp"><input id="tourGWhy" type="text" maxlength="80" spellcheck="false" value="${esc(g.why || '')}" placeholder="In your words: who it is for, what it changes"></div><p class="cap">Shows with the goal, so the reason stays in view.</p></div>`}
-      <div class="field">${moneyField('tourGCost', 'Cost', g.target).replace(/^<div class="field">|<\/div>$/g, '')}${k.cost ? `<p class="cap">${k.cost}</p>` : ''}</div>
-      ${moneyField('tourGSaved', 'Already saved', g.start)}
-      ${g.emergency ? '' : `<div class="field"><label for="tourGDue">Needed by</label><input type="date" id="tourGDue" min="${lo}" max="${hi}" value="${esc(g.due)}"><p class="cap">With a date, the monthly amount is worked out for you.</p></div>`}
+      ${g.emergency ? '' : `<div class="field"><label for="tourGWhy">Why (optional)</label><div class="inp"><input id="tourGWhy" type="text" maxlength="80" spellcheck="false" value="${esc(g.why || '')}" placeholder="Why it matters, in your words"></div><p class="cap">Shows with the goal, so the reason stays in view.</p></div>`}
+      <div class="field">${moneyField('tourGCost', dbt ? 'Total owed' : 'Cost', g.target).replace(/^<div class="field">|<\/div>$/g, '')}${k.cost ? `<p class="cap">${k.cost}</p>` : ''}</div>
+      ${moneyField('tourGSaved', dbt ? 'Already paid off' : 'Already saved', g.start)}
+      ${g.emergency ? '' : `<div class="field"><label for="tourGDue">${dbt ? 'Paid off by' : 'Needed by'}</label><input type="date" id="tourGDue" min="${lo}" max="${hi}" value="${esc(g.due)}"><p class="cap">With a date, the monthly amount is worked out for you.</p></div>`}
     </div>
     ${k.k && !k.em && S.plan.goals.length < MAX_GOALS ? `<div class="row-btns"><button type="button" class="btn small more" data-moreg="${esc(id)}">Add another ${GOAL_NOUN[k.k] || 'goal'}</button></div>` : ''}`;
   },
@@ -344,7 +346,8 @@ const gsMoneyOf = pct => round2(gsBudget * pct / 100);
 const splitMoney = i => { const g = S.plan.goals[i]; return Math.min(shareMoney(gsMoneyOf(sumOf(gsPct)), gsPct)[i], g ? goalRoom(g) : Infinity); };
 function applySplit() { gsIds.forEach((id, k) => { if (goalById(S, id)) setVal(S, 'goal:' + id, START, splitMoney(k), 'after'); }); }
 /* the line under each goal: how much more it needs, and when it will be full */
-function splitLine(g, C2) {
+function splitLine(g, C2) { return dw(S, g, splitLine0(g, C2)); }
+function splitLine0(g, C2) {
   if (!(g.target > 0)) return 'No cost set.';
   const togo = Math.max(0, g.target - g.start), tg = `${fmt(togo)} to go. `, k = S.plan.goals.indexOf(g);
   if (togo <= 0) return 'Already full.';

@@ -48,8 +48,8 @@ const BUR = (() => {
     const left = playLeft(), room = Math.max(0, Math.ceil(r.target - r.saved)), cap = Math.max(0, Math.min(Math.floor(left), room));
     const nice = v => { const st = cap > 20000 ? 1000 : cap > 4000 ? 500 : cap > 800 ? 100 : 10; return Math.max(1, Math.min(cap, Math.round(v / st) * st)); };
     const chips = [...new Set([nice(cap * .25), nice(cap * .5), cap])].filter(v => v > 0 && v <= cap);
-    if (!(cap > 0)) { pop.innerHTML = `<h2>${esc(r.name)}</h2><p class="bv-s">${room <= 0 ? 'This burrow is full.' : 'No play money left this month to move here.'}</p><button type="button" class="link bv-no">Back</button>`; pop.querySelector('.bv-no').addEventListener('click', e => { e.stopPropagation(); fill(); }); return; }
-    pop.innerHTML = `<h2>Add to ${esc(r.name)}</h2><p class="bv-n">From play money: <b>${fmt(left)}</b> left this month</p>`
+    if (!(cap > 0)) { pop.innerHTML = `<h2>${esc(r.name)}</h2><p class="bv-s">${room <= 0 ? 'This burrow is full.' : 'No free-to-spend money left this month to move here.'}</p><button type="button" class="link bv-no">Back</button>`; pop.querySelector('.bv-no').addEventListener('click', e => { e.stopPropagation(); fill(); }); return; }
+    pop.innerHTML = `<h2>Add to ${esc(r.name)}</h2><p class="bv-n">From free to spend: <b>${fmt(left)}</b> left this month</p>`
       + `<div class="bv-chips">${chips.map(v => `<button type="button" class="chip" data-v="${v}">${fmt(v)}</button>`).join('')}</div>`
       + `<label class="bv-amt"><span class="sr">Amount</span><input type="number" inputmode="numeric" min="1" max="${cap}" step="1" placeholder="Amount"></label>`
       + `<div class="bv-row"><button type="button" class="btn bv-go">Add</button><button type="button" class="link bv-no">Back</button></div><p class="bv-s bv-msg" role="status"></p>`;
@@ -178,7 +178,7 @@ const BUR = (() => {
   function fill() {
     const all = rows(), r = all.find(x => x.id === cur) || all[0]; if (!r) return;
     cur = r.id; const pct = Math.min(1, r.saved / r.target); LK = LOOKS[lookOf(r)] ? lookOf(r) : 'plain';
-    pop.innerHTML = `<h2>${esc(r.name)}</h2><p class="bv-n"><b>${fmt(r.saved)}</b> of ${fmt(r.target)}</p><div class="bv-bar" role="img" aria-label="${Math.round(pct * 100)} percent full"><i style="width:${Math.round(pct * 100)}%"></i></div><p class="bv-s">${Math.round(pct * 100)}% full</p><button type="button" class="btn bv-add">Add money</button>`;
+    pop.innerHTML = `<h2>${esc(r.name)}</h2><p class="bv-n"><b>${fmt(r.saved)}</b> ${r.kind === 'debt' ? 'paid of' : 'of'} ${fmt(r.target)}</p><div class="bv-bar" role="img" aria-label="${Math.round(pct * 100)} percent ${r.kind === 'debt' ? 'paid off' : 'full'}"><i style="width:${Math.round(pct * 100)}%"></i></div><p class="bv-s">${Math.round(pct * 100)}% ${r.kind === 'debt' ? 'paid off. ' + fmt(Math.max(0, r.target - r.saved)) + ' still owed' : 'full'}</p><button type="button" class="btn bv-add">${r.kind === 'debt' ? 'Add a payment' : 'Add money'}</button>`;
     pop.querySelector('.bv-add').addEventListener('click', e => { e.stopPropagation(); addPanel(r); });
     el.querySelector('.bv-dots').innerHTML = all.map(x => `<button type="button" data-b="${esc(x.id)}" aria-label="${esc(x.name)}" aria-current="${x.id === cur}"></button>`).join('');
     el.querySelectorAll('.bv-dots button').forEach(b => b.addEventListener('click', () => open(b.dataset.b)));
@@ -242,14 +242,14 @@ const BUR = (() => {
   function stock(style) { if (!cur) return; stockT = performance.now(); stockStyle = style || 'A'; pulseAt = stockT + SQ.T.crouch + 700; }
   /* ---------- Home: one picture with a burrow for each savings bucket, how full it is, a short note and the play money number ---------- */
   function home() {
-    const el0 = document.querySelector('#hBur'); if (!el0) return; const all = rows();
+    const el0 = document.querySelector('#hBur'); if (!el0) return; const all = rows().slice().sort((a, b) => (b.emergency ? 1 : 0) - (a.emergency ? 1 : 0)); /* the emergency fund is always first */
     if (!all.length) { el0.hidden = true; return; } el0.hidden = false;
     const pc = r => Math.min(1, r.saved / r.target), full = all.find(r => pc(r) >= 1), near = all.filter(r => pc(r) < 1).sort((a, b) => pc(b) - pc(a))[0];
-    let note = full ? `${full.name} is full.` : near ? `${near.name} is closest, ${Math.round(pc(near) * 100)}% full.` : '';
+    const dw = r => r.kind === 'debt' ? 'paid off' : 'full'; let note = full ? (full.kind === 'debt' ? `${full.name} is paid off.` : `${full.name} is full.`) : near ? `${near.name} is closest, ${near.pct}% ${dw(near)}.` : '';
     let wk = ''; try { wk = streakInfo().done ? 'This week: receipts logged.' : 'No receipts logged this week yet.'; } catch (e) { }
     let play = ''; try { const f = planFacts(); if (f && typeof f.play === 'number') play = `Play money left this month: <b>${fmt(f.play)}</b>`; } catch (e) { }
-    el0.innerHTML = '<div class="hb-scene">' + all.map(r => `<button type="button" class="hb-b" data-b="${esc(r.id)}" aria-label="${esc(r.name)}, ${Math.round(pc(r) * 100)} percent full. Open"><canvas width="24" height="18" aria-hidden="true"></canvas><span class="hb-n">${esc(r.name)}</span><span class="hb-bar"><i style="width:${Math.round(pc(r) * 100)}%"></i></span><span class="hb-p">${Math.round(pc(r) * 100)}% full</span></button>`).join('') + '</div>'
-      + `<p class="hb-note">${esc(note)} ${esc(wk)}</p>` + (play ? `<p class="hb-play">${play}</p>` : '');
+    el0.innerHTML = '<h2 class="hb-h">Burrows</h2><p class="cap hb-what">Money that piles up over months: a cushion, a trip, a debt. The numbers include what you plan to add this month.</p><div class="hb-scene">' + all.map(r => `<button type="button" class="hb-b" data-b="${esc(r.id)}" aria-label="${esc(r.name)}, ${r.pct} percent ${dw(r)}. Open"><canvas width="24" height="18" aria-hidden="true"></canvas><span class="hb-n">${esc(r.name)}</span><span class="hb-bar"><i style="width:${Math.round(pc(r) * 100)}%"></i></span><span class="hb-p">${r.pct}% ${dw(r)}</span></button>`).join('') + '</div>'
+      + `<p class="hb-note">${esc(note)} ${esc(wk)}</p>` ;
     el0.querySelectorAll('.hb-b').forEach((bt, i) => { const r = all[i], c = bt.querySelector('canvas').getContext('2d'); LOOKS.plain.paint(c, pc(r), 0, null, lookOf(r) === 'rainy', seedOf(r.id)); });
     if (!el0._w) { el0._w = 1; el0.addEventListener('click', e => { const bt = e.target.closest('.hb-b'); if (bt) open(bt.dataset.b); }); }
   }

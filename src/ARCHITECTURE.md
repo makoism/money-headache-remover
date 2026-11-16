@@ -193,3 +193,10 @@ Favicon (38.11): redrawn as a tree, a mound with a small door and a few coins, o
 ## 38.20
 - Time of day follows the real sun (scene.js `moodAt`, `sunTimes`, `TZ`): sunrise and sunset from the date and a place worked out from the device time zone (city table, fallback latitude 35 and longitude from the offset; no location permission). Morning: sunrise minus 45 min to plus 3.5 h; day until 1.5 h before sunset; sunset until 45 min after; night otherwise; fixed hours where the sun does not rise or set. Rechecked every minute and when the tab returns; a change rebuilds the scene (a hard cut, no fade yet). `?tod=` still overrides.
 - Stag: lifting the head one step keeps the throat row in place, so the head no longer comes loose from the neck while walking.
+
+## 38.21: Treasure chest
+- Home order: status sentence, burrows (emergency fund first, heading Burrows), Treasure chest card (#hSpend, free to spend, Necessities covered or short, Education, Give, pixel chest painted in the corner by chestArt()), Log spend, main goal, goals, Financial Freedom card (#hBuckets, plan only).
+- No stored data changed. Debt is a goal kind ('debt', GOAL_KINDS in ui45s.js): target = total owed, start = already paid off. Wording through dw()/dwr()/debtWords() in model.js.
+- Chest shows 'Add pay' instead of numbers when pay is 0. Financial Freedom hides when pay is 0.
+- Pills (.help-row) hide while body.touring or body.bv-on. Restore from text now offers Undo.
+- QC panel: QC_ROLES.md (also in the project as claude/burrow-qc-roles.md).

@@ -1663,6 +1663,23 @@ body.scene-on .foot { width: max-content; max-width: min(92%, 520px); margin: 8p
 .bv-amt input { width: 100%; box-sizing: border-box; min-height: 44px; padding: 8px 12px; border-radius: 12px; border: 1px solid color-mix(in srgb, var(--fg) 28%, transparent); background: color-mix(in srgb, var(--bg) 60%, transparent); color: var(--fg); font: inherit; font-size: 16px; }
 .bv-row { display: flex; align-items: center; gap: 12px; margin: 10px 0 0; }
 .bv-msg { min-height: 1em; margin: 6px 0 0; }
+
+/* the treasure chest */
+.card.hspend { padding-bottom: var(--pad-card); } .hspend .art-grass { display: none; }
+.chest-art { position: absolute; right: 18px; top: 16px; width: 90px; height: 72px; image-rendering: pixelated; pointer-events: none; }
+.hspend h2, .hspend .hs-lbl { max-width: calc(100% - 110px); }
+.chl { margin-top: 22px; } .bk.ok b { color: var(--good, var(--c4)); }
+@media (min-width: 900px) { .chl { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.hbuckets .hs-big { margin-top: 10px; }
+.chl .bk:last-child:nth-child(odd) { grid-column: 1 / -1; } @media (min-width: 900px) { .chl .bk:last-child:nth-child(odd) { grid-column: auto; } }
+/* purpose lines: what each part is for, in one short sentence */
+.hbur .hb-h { font-size: var(--t-h2, 22px); font-weight: 500; margin: 0 4px 2px; } .hbur .hb-what, .hspend .chest-what { margin: 0 4px 12px; max-width: 46ch; }
+.hspend .chest-what { margin: -2px 0 14px; max-width: calc(100% - 110px); }
+.tour-body p.tour-what { font-size: var(--t-lead); color: var(--ink); max-width: 36ch; }
+@media (max-width: 640px) { .tour-in { padding-bottom: 96px; } }
+
+/* the Ask and Help pills step aside while the tour or a burrow is open */
+body.touring .help-row, body.bv-on .help-row { display: none; }
 </style>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#eef4ef" media="(prefers-color-scheme: light)">
@@ -1712,7 +1729,7 @@ body.scene-on .foot { width: max-content; max-width: min(92%, 520px); margin: 8p
     <section class="hnext" id="moveBanner" aria-label="New address" hidden></section>
     <section class="hbur" id="hBur" aria-label="Burrows" hidden></section>
     <section class="card hwin" id="hHero" aria-label="Main goal"></section>
-    <section class="card hspend" id="hSpend" aria-label="Play money"></section>
+    <section class="card hspend" id="hSpend" aria-label="Treasure chest"></section>
     <section class="card hq" id="hQuick" aria-labelledby="hqT">
       <h2 id="hqT">Log spend</h2>
       <form class="hform" id="hForm" autocomplete="off" novalidate>
@@ -1731,7 +1748,7 @@ body.scene-on .foot { width: max-content; max-width: min(92%, 520px); margin: 8p
       <button type="button" class="link hscan" id="hScan">Scan receipt</button>
     </section>
     <section class="card hgoals" id="hGoals" aria-label="Goals"></section>
-    <section class="card hbuckets" id="hBuckets" aria-label="Jars"></section>
+    <section class="card hbuckets" id="hBuckets" aria-label="Financial Freedom"></section>
     <details class="card hmore2" id="hMore">
       <summary>Streak, badges, pages</summary>
       <div class="hmore2-in">
@@ -2030,7 +2047,7 @@ body.scene-on .foot { width: max-content; max-width: min(92%, 520px); margin: 8p
   </div>
 
   <p class="foot" id="footNote">Not financial advice. Sample numbers are invented. Replace them with yours.</p>
-  <p class="foot ver" id="verFoot">Version 38.20, updated </p>
+  <p class="foot ver" id="verFoot">Version 38.21</p>
   </div>
 </div>
 <div class="handfx" id="handFx" aria-hidden="true"></div>
@@ -2084,7 +2101,7 @@ body.scene-on .foot { width: max-content; max-width: min(92%, 520px); margin: 8p
     <button type="button" id="helpSetup">Guided setup</button>
     <button type="button" id="helpVideo" hidden>Intro video</button>
     <button type="button" id="helpReport">Report a problem</button>
-    <p class="help-ver">Version 38.20</p>
+    <p class="help-ver">Version 38.21</p>
   </div>
   <div class="help-row"><button type="button" class="help-btn ask-btn" id="askBtn">Ask</button><button type="button" class="help-btn" id="helpBtn" aria-expanded="false" aria-controls="helpMenu"><span class="q" aria-hidden="true">?</span>Help</button></div>
 </div>
@@ -2518,14 +2535,19 @@ const validDate = d => { if (typeof d !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.tes
    Everything a screen shows is worked out here, from calcAll and goalInfo, as plain numbers and words. The screens only draw what these return,
    so there is one set of numbers in the whole page. They have their own test against an independent recomputation. ===== */
 const wholePct = (v, t) => (t > 0 ? (v >= t ? 100 : Math.min(99, Math.max(0, Math.floor(v * 100 / t)))) : 0);
-const GOAL_DEFAULT_NAME = { rainy: 'Emergency fund', travel: 'Trip', moving: 'Home or move', buy: 'Big purchase', car: 'Yearly cost', other: 'Something else' };
-const PURPOSE_OF_KIND = { rainy: 'Emergencies covered', travel: 'Trip paid for', moving: 'Move paid for', buy: 'Paid in cash', car: 'Yearly bill covered', other: '' };
+const GOAL_DEFAULT_NAME = { rainy: 'Emergency fund', travel: 'Trip', moving: 'Home or move', buy: 'Big purchase', car: 'Yearly cost', debt: 'Pay off debt', other: 'Something else' };
+const PURPOSE_OF_KIND = { rainy: 'Emergencies covered', travel: 'Trip paid for', moving: 'Move paid for', buy: 'Paid in cash', car: 'Yearly bill covered', debt: 'Debt paid off', other: '' };
 const PURPOSE_VERBS = /^(buy|get|build|start|take|go|pay|visit|learn|fix|move|plan|book|host|open|join|make|finish|upgrade|replace|renew|fund|cover|see|send|adopt|rent|own|throw|celebrate|travel|clear|write|launch|hire|support|invest|surf|ride|run|swim|climb|dive|drive|fly|marry|study|train|enrol|enroll|treat|gift|surprise|retire|quit)\b/i;
 const kindOfGoal = (S, g) => { if (g.emergency) return 'rainy'; const gk = (S.ui && S.ui.gk) || {}; return gk[g.id] || (Object.prototype.hasOwnProperty.call(PURPOSE_OF_KIND, g.id) ? g.id : 'other'); };
 /* the plain sentence under a goal: what the money will let the person do. Built-in wording here; a line written by Claude for a custom goal replaces it on screen. */
+/* a debt reads as paid off and still owed, never full or to go (money); times stay as they are */
+const debtWords = s => String(s).replace(/Not full/g, 'Not paid off').replace(/not full/g, 'not paid off').replace(/\bFull\b/g, 'Paid off').replace(/\bfull\b/g, 'paid off').replace(/(?<!months?) to go\b/g, ' still owed').replace(/Filling/g, 'Paying').replace(/Saved so far/g, 'Paid off so far').replace(/planned of/g, 'paid off of');
+const dw = (S, g, s) => (g && kindOfGoal(S, g) === 'debt') ? debtWords(s) : s;
+const dwr = (r, s) => (r && r.kind === 'debt') ? debtWords(s) : s;
 function purposeOf(S, g) {
   const name = String(g.name || '').replace(/\s+/g, ' ').trim(), kind = kindOfGoal(S, g);
   if (kind === 'rainy') return PURPOSE_OF_KIND.rainy;
+  if (kind === 'debt' && name && name !== GOAL_DEFAULT_NAME.debt && !PURPOSE_VERBS.test(name)) return name.charAt(0).toUpperCase() + name.slice(1) + ' paid off';
   if (PURPOSE_OF_KIND[kind] && (!name || name === GOAL_DEFAULT_NAME[kind])) return PURPOSE_OF_KIND[kind];
   if (!name) return 'Goal covered';
   if (PURPOSE_VERBS.test(name)) return 'Ready to ' + name.charAt(0).toLowerCase() + name.slice(1);
@@ -3777,14 +3799,15 @@ function rowHTML(r, inRow) {
 
 /* ---------- goal cards ---------- */
 function goalFormHTML(g) {
+  const dbt = typeof kindOfGoal === 'function' && kindOfGoal(S, g) === 'debt';
   const own = hasOwnMonthly(S, g.id), id = esc(g.id), lo = START + '-01', hi = END + '-28';
   return `<div class="gform" data-gid="${id}">
     <div class="field"><label for="ge-${id}-name">Name</label><input class="txt" id="ge-${id}-name" data-g="name" type="text" value="${esc(g.name)}" maxlength="60"></div>
-    <div class="field wide"><label for="ge-${id}-why">Why (optional)</label><input class="txt" id="ge-${id}-why" data-g="why" type="text" value="${esc(g.why || '')}" maxlength="80" placeholder="In your words: who it is for, what it changes"><p class="cap">Shows with the goal, so the reason stays in view.</p></div>
-    <div class="field"><label for="ge-${id}-target">Goal amount</label><div class="inp"><span class="yen cs"></span><input id="ge-${id}-target" data-g="target" type="number" inputmode="numeric" min="0" step="100" value="${g.target}"></div></div>
-    <div class="field"><label for="ge-${id}-start">Already saved</label><div class="inp"><span class="yen cs"></span><input id="ge-${id}-start" data-g="start" type="number" inputmode="numeric" min="0" step="100" value="${g.start}"></div></div>
-    <div class="field"><label for="ge-${id}-due">Needed by</label><input type="date" id="ge-${id}-due" data-g="due" min="${lo}" max="${hi}" value="${esc(g.due)}"><p class="cap">With a date, the shortfall is spread over the months before it. Without one, the goal fills in about a year.${g.due ? ' <button type="button" class="link" data-gnodate>Remove date</button>' : ''}</p></div>
-    <div class="field wide"><label class="check"><input type="checkbox" data-g="emergency"${g.emergency ? ' checked' : ''}><span>Emergency fund</span></label><p class="cap">The one goal you can borrow from in a short month. A finished payment can send its money here.</p></div>
+    <div class="field wide"><label for="ge-${id}-why">Why (optional)</label><input class="txt" id="ge-${id}-why" data-g="why" type="text" value="${esc(g.why || '')}" maxlength="80" placeholder="Why it matters, in your words"><p class="cap">Shows with the goal, so the reason stays in view.</p></div>
+    <div class="field"><label for="ge-${id}-target">${dbt ? 'Total owed' : 'Goal amount'}</label><div class="inp"><span class="yen cs"></span><input id="ge-${id}-target" data-g="target" type="number" inputmode="numeric" min="0" step="100" value="${g.target}"></div></div>
+    <div class="field"><label for="ge-${id}-start">${dbt ? 'Already paid off' : 'Already saved'}</label><div class="inp"><span class="yen cs"></span><input id="ge-${id}-start" data-g="start" type="number" inputmode="numeric" min="0" step="100" value="${g.start}"></div></div>
+    <div class="field"><label for="ge-${id}-due">${dbt ? 'Paid off by' : 'Needed by'}</label><input type="date" id="ge-${id}-due" data-g="due" min="${lo}" max="${hi}" value="${esc(g.due)}"><p class="cap">With a date, the amount left is spread over the months before it. Without one, it is planned over about a year.${g.due ? ' <button type="button" class="link" data-gnodate>Remove date</button>' : ''}</p></div>
+    ${dbt ? '' : `<div class="field wide"><label class="check"><input type="checkbox" data-g="emergency"${g.emergency ? ' checked' : ''}><span>Emergency fund</span></label><p class="cap">The one goal you can borrow from in a short month. A finished payment can send its money here.</p></div>`}
     ${g.emergency ? `<div class="field"><label for="ge-${id}-stretch">Long-term goal</label><div class="inp"><span class="yen cs"></span><input id="ge-${id}-stretch" data-g="stretch" type="number" inputmode="numeric" min="0" step="1000" value="${g.stretch || 0}"></div><p class="cap">Usual advice: three to six months of necessities. The goal amount above is the first stop; this is the larger one.</p></div>` : ''}
     ${own ? `<p class="cap wide">Monthly amount set by you. <button type="button" class="link" data-gauto>Use suggested amount</button></p>` : '<p class="cap wide">Monthly amount is computed. To change it, open Long-Term Savings under Month.</p>'}
     <div class="row-btns wide"><button type="button" class="btn small solid" data-gdone>Done</button><button type="button" class="btn small warnbtn" data-gdel data-armkey="gdel-${id}">Remove goal</button></div></div>`;
@@ -3917,9 +3940,9 @@ function jarNote(m) {
   const J = jarsOf(S, m); if (J.inn <= 0) return '';
   if (J.over) return `Plan exceeds pay by ${fmt(J.short)}, so percents are off. Lower a bill or jar.`;
   const nec = J.list[0], u = nec.usual;
-  const lead = nec.pct > u + 1 ? `Necessities are ${nec.pct}% of pay, above Eker&rsquo;s usual ${u}%. Common. Keep the other jars going, even small: the habit matters more than the exact percent.`
-    : nec.pct < u - 1 ? `Necessities are ${nec.pct}% of pay, under Eker&rsquo;s usual ${u}%. More room for the other jars.`
-    : `Necessities are ${nec.pct}% of pay, in line with Eker&rsquo;s usual ${u}%.`;
+  const lead = nec.pct > u + 1 ? `Necessities are ${nec.pct}% of pay, above the usual ${u}%. That is common. Keep the other jars going, even small: the habit matters more than the exact percent.`
+    : nec.pct < u - 1 ? `Necessities are ${nec.pct}% of pay, under the usual ${u}%. More room for the other jars.`
+    : `Necessities are ${nec.pct}% of pay, about the usual ${u}% many people aim for.`;
   return lead;
 }
 const LTS_HINT = ' Each slider sets that goal’s amount this month. Leave them alone to use the computed amounts (from goal amounts and dates). Up takes from Left; down returns to Left.';
@@ -4044,12 +4067,12 @@ function goalNote(gid, m) {
     else {
       t += `Due <b>${dateLabel(g.due)}</b>. `;
       if (gi.state === 'ontrack') t += `Full <b>${monthLabel(gi.reached)}</b>${gi.slack === 0 ? ', on time.' : `, ${gi.slack} month${gi.slack === 1 ? '' : 's'} early.`}` + (gi.need != null ? ` Needs about ${fmt(gi.need)} a month.` : '');
-      else if (gi.state === 'behind') t += `At this pace: ${gi.reached ? 'full <b>' + monthLabel(gi.reached) + '</b>' : 'not full within ' + SPAN}. Too late.` + (gi.need != null ? ` Needs about <b>${fmt(gi.need)}</b> a month.` : '');
-      else if (gi.state === 'full') t += 'Full.';
+      else if (gi.state === 'behind') t += dw(S, g, `At this pace: ${gi.reached ? 'full <b>' + monthLabel(gi.reached) + '</b>' : 'not full within ' + SPAN}. Too late.`) + (gi.need != null ? ` Needs about <b>${fmt(gi.need)}</b> a month.` : '');
+      else if (gi.state === 'full') t += dw(S, g, 'Full.');
     }
   } else if (g.emergency) {
     t += gi.state === 'full' ? `Past ${fmt(tg)}${cap > tg ? `, heading to ${fmt(cap)}` : ''}.` : gi.reached ? `Reaches ${fmt(tg)} <b>${monthLabel(gi.reached)}</b>${cap > tg ? `, then continues to ${fmt(cap)}` : ''}.` : `Not at ${fmt(tg)} within ${SPAN} at this pace.`;
-  } else t += gi.state === 'full' ? 'Full.' : gi.reached ? `Full <b>${monthLabel(gi.reached)}</b>.` : `Not full within ${SPAN} at this pace.`;
+  } else t += dw(S, g, gi.state === 'full' ? 'Full.' : gi.reached ? `Full <b>${monthLabel(gi.reached)}</b>.` : `Not full within ${SPAN} at this pace.`);
   if (g.emergency) {
     if (m.billsTotal > 0) t += ` ${fmt(tg)} = ${+(tg / m.billsTotal).toFixed(1)} months of necessities` + (cap > tg ? `; ${fmt(cap)} = ${+(cap / m.billsTotal).toFixed(1)}` : '') + '.';
     if (gm && gm.loan > 0) t += ` Includes ${fmt(gm.loan)} from an ended payment.`;
@@ -4069,7 +4092,7 @@ function renderGoals(m) {
     $('#jn-' + g.id).textContent = g.name; const jw = $('#jw-' + g.id); if (jw) jw.textContent = g.why || '';
     $('.fill', gb).style.width = (pct * 100) + '%'; gb.setAttribute('aria-label', `${g.name}: ${Math.round(pct * 100)}% of ${fmt(cap)}`);
     const tick = $('.gtick', gb); if (g.emergency && cap > gi.target && gi.target > 0) { tick.style.left = `calc(${gi.target / cap * 100}% - 1px)`; tick.hidden = false; } else tick.hidden = true;
-    $('#jv-' + g.id).innerHTML = gi.target > 0 ? `<b>${fmt(gi.bal)}</b> planned of ${fmt(gi.target)}` : '<b>No goal amount yet</b>';
+    $('#jv-' + g.id).innerHTML = gi.target > 0 ? dw(S, g, `<b>${fmt(gi.bal)}</b> planned of ${fmt(gi.target)}`) : '<b>No goal amount yet</b>';
     const js = $('#js-' + g.id); let cls = 'plain', ic = IC.clock, tx = '', note = '';
     if (gi.state === 'ontrack') { cls = 'good'; ic = IC.ok; tx = 'On track'; note = `Full ${monthLabel(gi.reached)}`; }
     else if (gi.state === 'behind') { cls = 'warn'; ic = IC.warn; tx = 'Behind'; note = gi.need != null ? `Needs ${fmt(gi.need)} a month` : 'Not ready in time'; }
@@ -4079,9 +4102,10 @@ function renderGoals(m) {
     else if (gi.state === 'eta') { tx = 'Filling'; note = `Full ${monthLabel(gi.reached)}`; }
     else if (gi.state === 'noeta') { tx = 'Slow'; note = `Not full within ${SPAN}`; }
     else { tx = 'Unset'; note = 'Edit goal to add an amount'; }
+    tx = dw(S, g, tx); note = dw(S, g, note);
     js.className = 'jstat ' + cls; js.innerHTML = ic + tx; $('#jt-' + g.id).textContent = note;
     const gm = m.g[g.id], put = gm.actual;
-    $('#gs-' + g.id).innerHTML = `Held now: <b>${fmt(g.start)}</b>. ` + (put > 0 ? `Plan adds <b>${fmt(put)}</b> in ${monthLabel(sel, true)}.` : `Plan adds nothing in ${monthLabel(sel, true)}.`);
+    $('#gs-' + g.id).innerHTML = `${dw(S, g, 'Saved so far')}: <b>${fmt(g.start)}</b>. ` + (put > 0 ? `Plan adds <b>${fmt(put)}</b> in ${monthLabel(sel, true)}.` : `Plan adds nothing in ${monthLabel(sel, true)}.`);
   });
 }
 
@@ -4693,7 +4717,7 @@ const STEP_JARS = { id: 'jars', part: PART.jars, setup: true, when: havePay,
   leave: () => { commitJars(); markDone('bills'); } }; /* past the bills: whatever was typed for them is the person's own */
 /* the six jars in short, folded: pay is split into jars and each jar has one purpose */
 const jarsFold = () => `<details class="src-how"><summary>The six jars, in short</summary><div class="src-how-in">
-    <p>Every month, pay is split into six jars. Each jar has one purpose, and play money is the jar you spend on fun without guilt. Usual shares of take-home pay:</p>
+    <p>A jar is one slice of your pay with one job. Every month, pay is split into six jars. Four of them (Necessities, Play, Education, Give) are money you use this month: they sit in your <b>treasure chest</b> on Home. Long-Term Savings fills your <b>burrows</b>, and Financial Freedom only grows. Play is the jar you spend on fun without guilt. Usual shares of take-home pay:</p>
     <ul class="jar-lines">${JARS.map(j => `<li><i class="dot" style="--c:${JARVAR[j.id]}"></i><span><b>${esc(j.name)}</b> ${Math.round(j.usual * 100)}%. ${esc(JAR_LINES[j.id])}</span></li>`).join('')}</ul>
     <p class="cap">From T. Harv Eker&rsquo;s jar system (Secrets of the Millionaire Mind). Shares are a guide, not a rule.</p></div></details>`;
 const jarSplitHTML = () => `${potHTML('jarPot', JAR5.map(j => JARVAR[j]), jarVals, jarRest)}${poolHTML('jar', JAR5.map(j => JAR_SHORT[j]))}
@@ -4708,12 +4732,13 @@ const GOAL_KINDS = [
   { k: 'moving', id: 'moving', name: 'Home or move', slot: 4, pick: 'A home or a move', hint: 'Deposit, movers, furniture', title: 'Home or move', cost: 'Deposit, movers, furniture.' },
   { k: 'buy', id: 'buy', name: 'Big purchase', slot: 1, pick: 'A big purchase', hint: 'Laptop, car, wedding', title: 'Big purchase', cost: 'The price, or your best guess.' },
   { k: 'car', id: 'car', name: 'Yearly cost', slot: 6, pick: 'A yearly cost', hint: 'Insurance, taxes, holidays', title: 'Yearly cost', cost: 'Full amount for the year, not per month.' },
+  { k: 'debt', id: 'debt', name: 'Pay off debt', slot: 3, debt: true, pick: 'Pay off a debt', hint: 'Card, loan, balance', title: 'Pay off debt', cost: 'What you still owe in total, with any interest.' },
   { k: 'other', id: 'other', name: 'Something else', slot: 2, pick: 'Something else', hint: 'Anything with a price', title: 'Goal', cost: '' },
 ];
 const STEP_TOOLPICK = { id: 'goals-pick', part: PART.goals, setup: true, pick: true, title: 'Goals', art: 'sprout',
-  body: () => `<p>The Long-Term Savings for Spending jar holds money saved now and spent later: a cushion, a trip, a big purchase. Tick what you are saving for. Add more later.</p>
+  body: () => `<p>Burrows hold money you build up: a cushion, a trip, a big purchase, or paying off a debt. Tick what you are working toward. Add more later.</p>
     <div class="tour-chips two" role="group" aria-label="Goals">${GOAL_KINDS.map(k => { const on = S.ui.gset ? !!goalById(S, k.id) : k.k === 'rainy'; return `<label class="chip multi${on ? ' on' : ''}"><input type="checkbox" name="tourGoalPick" value="${k.k}"${on ? ' checked' : ''}><b>${k.pick}</b><span>${k.hint}</span></label>`; }).join('')}</div>
-    <p class="cap">Unsure? Keep the emergency fund.</p>`,
+    <p class="cap">Unsure? Keep the emergency fund. Owe something with interest, like a card? Add &ldquo;Pay off a debt&rdquo; too.</p>`,
   leave: d => {
     if (d <= 0) return;
     const picked = $$('#tourBody input[name=tourGoalPick]:checked').map(i => i.value), first = !S.ui.gset, old = S.plan.goals, next = [], gk = S.ui.gk || {};
@@ -4744,13 +4769,14 @@ const goalStep = id => ({ id: 'goal-' + id, part: PART.goals, setup: true,
       <p class="cap" id="tourEmCap">${emCap(m)}</p>
       <div class="tour-fields">${moneyField('tourGSaved', 'Already saved', g.start)}</div>`;
     }
-    return `<p>${g.emergency ? 'A cushion for surprises. How much do you want to hold? Usual advice: three to six months of bills.' : 'Name, cost, a date if there is one, and the reason in your words.'}</p>
+    const dbt = !!k.debt;
+    return `<p>${g.emergency ? 'A cushion for surprises. How much do you want to hold? Usual advice: three to six months of bills.' : dbt ? 'Name the debt and how much you owe in total. The smallest payment you must make stays in Necessities. This burrow is for the extra you pay on top, so the debt shrinks faster.' : 'Name, cost, a date if there is one, and the reason in your words.'}</p>
     <div class="tour-fields">
       ${g.emergency ? '' : textField('tourGName', 'Name', g.name)}
-      ${g.emergency ? '' : `<div class="field"><label for="tourGWhy">Why (optional)</label><div class="inp"><input id="tourGWhy" type="text" maxlength="80" spellcheck="false" value="${esc(g.why || '')}" placeholder="In your words: who it is for, what it changes"></div><p class="cap">Shows with the goal, so the reason stays in view.</p></div>`}
-      <div class="field">${moneyField('tourGCost', 'Cost', g.target).replace(/^<div class="field">|<\/div>$/g, '')}${k.cost ? `<p class="cap">${k.cost}</p>` : ''}</div>
-      ${moneyField('tourGSaved', 'Already saved', g.start)}
-      ${g.emergency ? '' : `<div class="field"><label for="tourGDue">Needed by</label><input type="date" id="tourGDue" min="${lo}" max="${hi}" value="${esc(g.due)}"><p class="cap">With a date, the monthly amount is worked out for you.</p></div>`}
+      ${g.emergency ? '' : `<div class="field"><label for="tourGWhy">Why (optional)</label><div class="inp"><input id="tourGWhy" type="text" maxlength="80" spellcheck="false" value="${esc(g.why || '')}" placeholder="Why it matters, in your words"></div><p class="cap">Shows with the goal, so the reason stays in view.</p></div>`}
+      <div class="field">${moneyField('tourGCost', dbt ? 'Total owed' : 'Cost', g.target).replace(/^<div class="field">|<\/div>$/g, '')}${k.cost ? `<p class="cap">${k.cost}</p>` : ''}</div>
+      ${moneyField('tourGSaved', dbt ? 'Already paid off' : 'Already saved', g.start)}
+      ${g.emergency ? '' : `<div class="field"><label for="tourGDue">${dbt ? 'Paid off by' : 'Needed by'}</label><input type="date" id="tourGDue" min="${lo}" max="${hi}" value="${esc(g.due)}"><p class="cap">With a date, the monthly amount is worked out for you.</p></div>`}
     </div>
     ${k.k && !k.em && S.plan.goals.length < MAX_GOALS ? `<div class="row-btns"><button type="button" class="btn small more" data-moreg="${esc(id)}">Add another ${GOAL_NOUN[k.k] || 'goal'}</button></div>` : ''}`;
   },
@@ -4820,7 +4846,8 @@ const gsMoneyOf = pct => round2(gsBudget * pct / 100);
 const splitMoney = i => { const g = S.plan.goals[i]; return Math.min(shareMoney(gsMoneyOf(sumOf(gsPct)), gsPct)[i], g ? goalRoom(g) : Infinity); };
 function applySplit() { gsIds.forEach((id, k) => { if (goalById(S, id)) setVal(S, 'goal:' + id, START, splitMoney(k), 'after'); }); }
 /* the line under each goal: how much more it needs, and when it will be full */
-function splitLine(g, C2) {
+function splitLine(g, C2) { return dw(S, g, splitLine0(g, C2)); }
+function splitLine0(g, C2) {
   if (!(g.target > 0)) return 'No cost set.';
   const togo = Math.max(0, g.target - g.start), tg = `${fmt(togo)} to go. `, k = S.plan.goals.indexOf(g);
   if (togo <= 0) return 'Already full.';
@@ -6046,7 +6073,7 @@ function addAnotherBill(kind, afterId) {
   S.ui.more = Object.assign({}, S.ui.more, { [id]: kind }); persist();
   return id;
 }
-const GOAL_NOUN = { travel: 'trip', moving: 'home or move', buy: 'purchase', car: 'yearly cost', other: 'goal' };
+const GOAL_NOUN = { travel: 'trip', moving: 'home or move', buy: 'purchase', car: 'yearly cost', debt: 'debt', other: 'goal' };
 const goalKindOf = id => GOAL_KINDS.find(x => x.id === id) || GOAL_KINDS.find(x => x.k === (S.ui.gk || {})[id]) || null;
 function addAnotherGoal(fromId) {
   const k = goalKindOf(fromId); if (!k || k.em || S.plan.goals.length >= MAX_GOALS) return null;
@@ -6450,8 +6477,8 @@ const BUR = (() => {
     const left = playLeft(), room = Math.max(0, Math.ceil(r.target - r.saved)), cap = Math.max(0, Math.min(Math.floor(left), room));
     const nice = v => { const st = cap > 20000 ? 1000 : cap > 4000 ? 500 : cap > 800 ? 100 : 10; return Math.max(1, Math.min(cap, Math.round(v / st) * st)); };
     const chips = [...new Set([nice(cap * .25), nice(cap * .5), cap])].filter(v => v > 0 && v <= cap);
-    if (!(cap > 0)) { pop.innerHTML = `<h2>${esc(r.name)}</h2><p class="bv-s">${room <= 0 ? 'This burrow is full.' : 'No play money left this month to move here.'}</p><button type="button" class="link bv-no">Back</button>`; pop.querySelector('.bv-no').addEventListener('click', e => { e.stopPropagation(); fill(); }); return; }
-    pop.innerHTML = `<h2>Add to ${esc(r.name)}</h2><p class="bv-n">From play money: <b>${fmt(left)}</b> left this month</p>`
+    if (!(cap > 0)) { pop.innerHTML = `<h2>${esc(r.name)}</h2><p class="bv-s">${room <= 0 ? 'This burrow is full.' : 'No free-to-spend money left this month to move here.'}</p><button type="button" class="link bv-no">Back</button>`; pop.querySelector('.bv-no').addEventListener('click', e => { e.stopPropagation(); fill(); }); return; }
+    pop.innerHTML = `<h2>Add to ${esc(r.name)}</h2><p class="bv-n">From free to spend: <b>${fmt(left)}</b> left this month</p>`
       + `<div class="bv-chips">${chips.map(v => `<button type="button" class="chip" data-v="${v}">${fmt(v)}</button>`).join('')}</div>`
       + `<label class="bv-amt"><span class="sr">Amount</span><input type="number" inputmode="numeric" min="1" max="${cap}" step="1" placeholder="Amount"></label>`
       + `<div class="bv-row"><button type="button" class="btn bv-go">Add</button><button type="button" class="link bv-no">Back</button></div><p class="bv-s bv-msg" role="status"></p>`;
@@ -6580,7 +6607,7 @@ const BUR = (() => {
   function fill() {
     const all = rows(), r = all.find(x => x.id === cur) || all[0]; if (!r) return;
     cur = r.id; const pct = Math.min(1, r.saved / r.target); LK = LOOKS[lookOf(r)] ? lookOf(r) : 'plain';
-    pop.innerHTML = `<h2>${esc(r.name)}</h2><p class="bv-n"><b>${fmt(r.saved)}</b> of ${fmt(r.target)}</p><div class="bv-bar" role="img" aria-label="${Math.round(pct * 100)} percent full"><i style="width:${Math.round(pct * 100)}%"></i></div><p class="bv-s">${Math.round(pct * 100)}% full</p><button type="button" class="btn bv-add">Add money</button>`;
+    pop.innerHTML = `<h2>${esc(r.name)}</h2><p class="bv-n"><b>${fmt(r.saved)}</b> ${r.kind === 'debt' ? 'paid of' : 'of'} ${fmt(r.target)}</p><div class="bv-bar" role="img" aria-label="${Math.round(pct * 100)} percent ${r.kind === 'debt' ? 'paid off' : 'full'}"><i style="width:${Math.round(pct * 100)}%"></i></div><p class="bv-s">${Math.round(pct * 100)}% ${r.kind === 'debt' ? 'paid off. ' + fmt(Math.max(0, r.target - r.saved)) + ' still owed' : 'full'}</p><button type="button" class="btn bv-add">${r.kind === 'debt' ? 'Add a payment' : 'Add money'}</button>`;
     pop.querySelector('.bv-add').addEventListener('click', e => { e.stopPropagation(); addPanel(r); });
     el.querySelector('.bv-dots').innerHTML = all.map(x => `<button type="button" data-b="${esc(x.id)}" aria-label="${esc(x.name)}" aria-current="${x.id === cur}"></button>`).join('');
     el.querySelectorAll('.bv-dots button').forEach(b => b.addEventListener('click', () => open(b.dataset.b)));
@@ -6644,14 +6671,14 @@ const BUR = (() => {
   function stock(style) { if (!cur) return; stockT = performance.now(); stockStyle = style || 'A'; pulseAt = stockT + SQ.T.crouch + 700; }
   /* ---------- Home: one picture with a burrow for each savings bucket, how full it is, a short note and the play money number ---------- */
   function home() {
-    const el0 = document.querySelector('#hBur'); if (!el0) return; const all = rows();
+    const el0 = document.querySelector('#hBur'); if (!el0) return; const all = rows().slice().sort((a, b) => (b.emergency ? 1 : 0) - (a.emergency ? 1 : 0)); /* the emergency fund is always first */
     if (!all.length) { el0.hidden = true; return; } el0.hidden = false;
     const pc = r => Math.min(1, r.saved / r.target), full = all.find(r => pc(r) >= 1), near = all.filter(r => pc(r) < 1).sort((a, b) => pc(b) - pc(a))[0];
-    let note = full ? `${full.name} is full.` : near ? `${near.name} is closest, ${Math.round(pc(near) * 100)}% full.` : '';
+    const dw = r => r.kind === 'debt' ? 'paid off' : 'full'; let note = full ? (full.kind === 'debt' ? `${full.name} is paid off.` : `${full.name} is full.`) : near ? `${near.name} is closest, ${near.pct}% ${dw(near)}.` : '';
     let wk = ''; try { wk = streakInfo().done ? 'This week: receipts logged.' : 'No receipts logged this week yet.'; } catch (e) { }
     let play = ''; try { const f = planFacts(); if (f && typeof f.play === 'number') play = `Play money left this month: <b>${fmt(f.play)}</b>`; } catch (e) { }
-    el0.innerHTML = '<div class="hb-scene">' + all.map(r => `<button type="button" class="hb-b" data-b="${esc(r.id)}" aria-label="${esc(r.name)}, ${Math.round(pc(r) * 100)} percent full. Open"><canvas width="24" height="18" aria-hidden="true"></canvas><span class="hb-n">${esc(r.name)}</span><span class="hb-bar"><i style="width:${Math.round(pc(r) * 100)}%"></i></span><span class="hb-p">${Math.round(pc(r) * 100)}% full</span></button>`).join('') + '</div>'
-      + `<p class="hb-note">${esc(note)} ${esc(wk)}</p>` + (play ? `<p class="hb-play">${play}</p>` : '');
+    el0.innerHTML = '<h2 class="hb-h">Burrows</h2><p class="cap hb-what">Money that piles up over months: a cushion, a trip, a debt. The numbers include what you plan to add this month.</p><div class="hb-scene">' + all.map(r => `<button type="button" class="hb-b" data-b="${esc(r.id)}" aria-label="${esc(r.name)}, ${r.pct} percent ${dw(r)}. Open"><canvas width="24" height="18" aria-hidden="true"></canvas><span class="hb-n">${esc(r.name)}</span><span class="hb-bar"><i style="width:${Math.round(pc(r) * 100)}%"></i></span><span class="hb-p">${r.pct}% ${dw(r)}</span></button>`).join('') + '</div>'
+      + `<p class="hb-note">${esc(note)} ${esc(wk)}</p>` ;
     el0.querySelectorAll('.hb-b').forEach((bt, i) => { const r = all[i], c = bt.querySelector('canvas').getContext('2d'); LOOKS.plain.paint(c, pc(r), 0, null, lookOf(r) === 'rainy', seedOf(r.id)); });
     if (!el0._w) { el0._w = 1; el0.addEventListener('click', e => { const bt = e.target.closest('.hb-b'); if (bt) open(bt.dataset.b); }); }
   }
@@ -12431,7 +12458,7 @@ const TOUR = [
   { id: 'video', part: PART.welcome, title: 'Welcome', next: 'Next', skipIf: () => !hasHello, art: () => (helloFileOk && !helloFailed ? '' : 'vine'),
     body: () => {
       const player = helloFileOk && !helloFailed;
-      return `${player ? helloPlayer() : helloCard()}
+      return `<p class="tour-what">Put in your pay and bills. The burrow shows how much is really free to spend, and saves toward the things you want.</p>${player ? helloPlayer() : helloCard()}
       <p class="cap">${player
         ? 'Six minutes from Mako, who made this. Also under Help.' + (helloVideo ? ` <a id="tourVideo" target="_blank" rel="noopener noreferrer" href="${esc(helloVideo.watch)}">Not playing? Open on Google Drive.</a>` : '')
         : 'Six minutes from Mako, who made this. Come back here when done, or skip. Also under Help.'}</p>
@@ -12468,7 +12495,8 @@ const TOUR = [
           : `Play money <b>${fmt(f.play)}</b> a month, to spend without guilt. All other pay is assigned.`;
         const V = viewOf(S, f.C, nowYm(), ymd(new Date())), r = V.main, mg = r ? goalById(S, r.id) : null;
         /* the last screen lands on the destination: the goal, the reason in the person's words, when it is full and what each month adds */
-        const when = r ? (r.pct >= 100 ? 'Full.' : r.reached ? (r.months <= 0 ? 'Full <b>this month</b>.' : `Full <b>${fullLabel(r.reached)}</b>, ${plural(r.months, 'month')} from now.`) : 'Not full within ' + SPAN + ' at this pace.') : '';
+        const when0 = r ? (r.pct >= 100 ? 'Full.' : r.reached ? (r.months <= 0 ? 'Full <b>this month</b>.' : `Full <b>${fullLabel(r.reached)}</b>, ${plural(r.months, 'month')} from now.`) : 'Not full within ' + SPAN + ' at this pace.') : '';
+        const when = mg ? dw(S, mg, when0) : when0;
         const dep = r ? f.C.byYm[nowYm()].g[r.id].actual : 0;
         const goal = mg ? `<div class="tour-goal" style="--c:var(--c${mg.slot})"><p class="tour-goal-k">Main goal</p><p class="tour-goal-n">${esc(mg.name)}</p>${mg.why ? `<p class="tour-goal-w">${esc(mg.why)}</p>` : ''}
           <div class="hg-b" role="img" aria-label="${r.pct} percent"><i style="width:${Math.min(100, r.pct)}%"></i></div>
@@ -13142,7 +13170,7 @@ ACTIONS
 - add_line {jar, name, amount}: a new line; jar is nec, play, edu, ffa or give. remove_line {key}: remove a line.
 - add_goal {name, target, saved?, due?, monthly?, why?}: a new goal; due is YYYY-MM-DD; monthly is the saving a month (left out: the page spreads it to the date, or over about a year); why is the reason in the person's own words, under 80 characters, only when they said it.
 - update_goal {id, name?, target?, saved?, due?, why?}: change a goal (why: the reason in their words, empty to clear). remove_goal {id}. set_goal_saving {id, amount}: the monthly saving for a goal; amount null returns to the page's suggested amount. set_main_goal {id}: the goal Home leads with.
-- set_home {sections}: what Home shows and in what order, from goal, play, log, goals, jars, more. Leave one out to hide it.
+- set_home {sections}: what Home shows and in what order, from play (the treasure chest), log, goal, goals, jars (Financial Freedom), more. Leave one out to hide it.
 - set_name {name}.
 - log_spend {amount, category?, date?, note?}: log a receipt, money already spent. category is a line key from the picture (left out: the play money line); date is YYYY-MM-DD, left out: today; note is the shop or item in a few words. One action per receipt. Use it when the person tells you they spent something.`;
 const JAR_WORD = { nec: 'Necessities', lts: 'Long-term savings', play: 'Play', edu: 'Education', ffa: 'Financial freedom', give: 'Give' };
@@ -13220,7 +13248,7 @@ function asstCheck(raw) {
     else if (d === 'remove_goal') { const g = goalOf(S, a.id); if (!g) return dropped.push(d); push(`Remove the goal ${g.name}`, T => removeGoal(T, g.id)); }
     else if (d === 'set_goal_saving') { const g = goalOf(S, a.id); if (!g || (a.amount !== null && !(amt >= 0))) return dropped.push(d); push(a.amount === null ? `${g.name}: back to the suggested monthly amount` : `${g.name}: ${f(val(S, 'goal:' + g.id, ym))} to ${f(amt)} a month${since}`, T => { if (a.amount === null) useSuggested(T, g.id); else setVal(T, 'goal:' + g.id, ym, amt, scope); }); }
     else if (d === 'set_main_goal') { const g = goalOf(S, a.id); if (!g) return dropped.push(d); push(`Home leads with ${g.name}`, T => { T.ui.main = g.id; }); }
-    else if (d === 'set_home') { const secs = Array.isArray(a.sections) ? a.sections.filter((x, i, arr) => HOME_SECTIONS.indexOf(x) >= 0 && arr.indexOf(x) === i) : []; if (!secs.length) return dropped.push(d); const names = { goal: 'main goal', play: 'play money', log: 'log spend', goals: 'goals', jars: 'jars', more: 'streak and badges' }; push(`Home shows: ${secs.map(x => names[x]).join(', ')}${secs.length < HOME_SECTIONS.length ? ' (the rest hidden)' : ''}`, T => { if (secs.join() === HOME_SECTIONS.join()) delete T.ui.home; else T.ui.home = secs; }); }
+    else if (d === 'set_home') { const secs = Array.isArray(a.sections) ? a.sections.filter((x, i, arr) => HOME_SECTIONS.indexOf(x) >= 0 && arr.indexOf(x) === i) : []; if (!secs.length) return dropped.push(d); const names = { goal: 'main goal', play: 'treasure chest', log: 'log spend', goals: 'goals', jars: 'financial freedom', more: 'streak and badges' }; push(`Home shows: ${secs.map(x => names[x]).join(', ')}${secs.length < HOME_SECTIONS.length ? ' (the rest hidden)' : ''}`, T => { if (secs.join() === HOME_SECTIONS.join()) delete T.ui.home; else T.ui.home = secs; }); }
     else if (d === 'set_name') { const nm = cleanName(a.name); if (!nm) return dropped.push(d); push(`Name: ${nm}`, T => { T.ui.name = nm; }); }
     else if (d === 'log_spend') {
       const l = a.category === undefined || a.category === null || a.category === '' ? lineOf(S, 'envelope') : lineOf(S, a.category), key = l ? l.key : 'other';
@@ -13491,10 +13519,10 @@ const COACH = {
   home: [
     ['#hStatus', 'Where you stand', 'Read this first. On plan: this month fits your pay and your balance stays above your minimum.'],
     ['#hHero', 'Main goal', 'Your reason, in your words, with what this month adds and the months left. Tap Forecast for the graph.'],
-    ['#hSpend', 'Play money', 'What is left to spend this month. Spend it on fun, no guilt. What is left at month end can go toward a goal.'],
+    ['#hSpend', 'Treasure chest', 'The money you use this month. The big number is free to spend on fun, no guilt. Below it: are your necessities covered, and what is left for learning and giving. What is left at month end can go toward a goal.'],
     ['#hQuick', 'Log spend', 'Enter an amount, pick a category, tap Log. Do it as you spend or weekly.'],
     ['#hGoals', 'Goals', 'Tap a goal to open it. Edit it or set it as main goal.'],
-    ['#hBuckets', 'Jars', 'Left to spend in spending jars. Total saved in saving jars.'],
+    ['#hBuckets', 'Financial Freedom', 'Money you invest and never spend. It only grows. Goals and debt live in the burrows at the top.'],
     ['#askBtn', 'Ask', 'Any money question, any time. It knows your plan and can make changes you approve.'],
   ],
   receipts: [
@@ -14631,9 +14659,9 @@ function renderStatus() {
   let cls, word, line;
   if (!(m.inflow > 0)) { cls = ''; word = 'No plan yet'; line = 'Add your monthly pay to start.'; }
   else if (sampleOn()) { const d = S.ui.done || {}; cls = ''; word = 'Sample numbers'; line = d.pay && d.bills ? 'Pay and bills are yours. The goals are still invented. Add a goal below.' : 'Invented figures for now. Finish the step below to make them yours.'; }
-  else if (m.status === 'good') { cls = 'good'; word = 'On plan'; line = `${m.left < u ? 'All pay assigned.' : fmt(m.left) + ' of pay unassigned.'} Balance ends ${mon} at ${fmt(m.bankEnd)}.`; }
-  else if (m.status === 'tight') { cls = 'tight'; word = 'Tight month'; line = `Spends ${fmt(-m.left)} more than comes in. Balance covers it and ends ${mon} at ${fmt(m.bankEnd)}.`; }
-  else { cls = 'short'; word = 'Short'; line = `Balance would end ${mon} at ${fmt(m.bankEnd)}, under your ${fmt(floor)} minimum. Open Plan to fix it.`; }
+  else if (m.status === 'good') { cls = 'good'; word = 'You are okay'; const pl = V.play && V.play.planned > 0 ? (V.play.left > 0 ? ` ${fmt2(V.play.left)} is free to spend.` : V.play.left < 0 ? ` Play money is ${fmt2(-V.play.left)} over.` : ' Play money is used up.') : ''; line = m.left < u && V.month.out - m.jar.nec <= 0 ? `Bills use all of your pay. Nothing is set aside yet.` : `Bills are covered and goals are planned for.${pl}`; }
+  else if (m.status === 'tight') { cls = 'tight'; word = 'Tight month'; line = `Plans ${fmt(-m.left)} more than your pay. Your balance covers it, ending ${mon} at ${fmt(m.bankEnd)}.`; }
+  else { cls = 'short'; word = 'Short'; line = `Not enough for ${mon}. Your bank would end at ${fmt(m.bankEnd)}, under your safety minimum of ${fmt(floor)}. Change it in Settings, or open Plan to fix the month.`; }
   let wk = '';
   if (cls && $('#hNext').hidden) wk = streakInfo().done ? '<p class="hst-w on">This week: receipts logged.</p>' : '<p class="hst-w">This week: nothing logged yet. Log by Sunday.</p>';
   put(el, `<span class="chip ${cls}">${cls === 'good' ? IC.ok : cls ? IC.warn : ''}${word}</span><p class="hst-l">${line}</p>${wk}`);
@@ -14665,7 +14693,7 @@ function renderNext() {
     if (!d.pay) step = ['Next: enter pay', 'The plan starts from monthly pay.', 'Enter pay', 'data-open="a"'];
     else if (!d.bills) step = ['Next: check bills', 'Set each bill to the real amount.', 'Open bills', 'data-open="nec"'];
     else if (!d.goals) step = ['Next: add a goal', 'Pick something to save for.', 'Add goal', 'data-gw'];
-    else if (!(S.receipts || []).length) step = ['Next: log a receipt', 'Enter an amount in Log spend, then tap Log.', 'Log receipt', 'data-focus="hAmt"'];
+    else if (!(S.receipts || []).length) step = ['Next: log spend', 'Enter an amount in Log spend, then tap Log.', 'Log spend', 'data-focus="hAmt"'];
   }
   /* a month to close comes first (it is timely); then, for typed numbers, the statements that make them exact */
   if (!step && (month = monthToClose())) { const nm = FULL[+month.pm.slice(5) - 1]; step = [`Next: finish ${nm}`, `${month.n ? plural(month.n, 'receipt') + ' logged' : 'Nothing logged'} for ${nm}. Log what you spent, or upload the month's statement under Receipts.${HV && HV.main && HV.main.live && HV.main.pct < 100 ? ` Once it is in, what is left of play money can go toward ${esc(goalById(S, HV.main.id).name)}.` : ''}`, 'Receipts', 'data-tab-go="receipts"']; }
@@ -14695,9 +14723,9 @@ function doSweep(pm) {
   S.ui.sweep = Object.assign({}, S.ui.sweep, { [pm]: { amt: moved, id } }); persist();
   const after = C.reached[id] || null, gi = goalInfo(S, C, id, nowYm());
   let note = '';
-  if (gi.pct >= 1) note = `${g.name} is full.`;
+  if (gi.pct >= 1) note = dw(S, g, `${g.name} is full.`);
   else if (after && before && after < before) { const n = ymIdx(before) - ymIdx(after); note = `Full ${monthLabel(after)}, ${plural(n, 'month')} sooner.`; }
-  else note = `${fmt(Math.max(0, g.target - gi.bal))} to go.${after ? ` Full ${monthLabel(after)}.` : ''}`;
+  else note = dw(S, g, `${fmt(Math.max(0, g.target - gi.bal))} to go.${after ? ` Full ${monthLabel(after)}.` : ''}`);
   SWEPT = { pm, id, amt: moved, note: `${note}${g.why ? ' ' + g.why + '.' : ''}` };
   sfx('coin'); celebrate('med', `${g.name}: +${fmt(moved)}. ${note}`); SQ.stash();
   render();
@@ -14740,7 +14768,8 @@ let HV = null;
 const homeView = () => (HV = viewOf(S, C, nowYm(), ymd(new Date())));
 /* the sentence under a goal: a line Claude wrote for this exact name, otherwise the built-in wording */
 function purposeFor(g) { if (!g) return ''; const w = S.ui && S.ui.win && S.ui.win[g.id]; return w && w.n === g.name && typeof w.t === 'string' && w.t ? w.t : purposeOf(S, g); }
-const monthsText = r => r.pct >= 100 ? 'Full' : r.reached ? (r.months <= 0 ? 'Full this month' : plural(r.months, 'month') + ' to go') : 'No date at this pace';
+const monthsText = r => dwr(r, monthsText0(r));
+const monthsText0 = r => r.pct >= 100 ? 'Full' : r.reached ? (r.months <= 0 ? 'Full this month' : plural(r.months, 'month') + ' to go') : 'No date at this pace';
 const monthsShort = r => r.state === 'paid' ? 'Paid' : r.state === 'short' ? 'Short' : r.state === 'unset' ? 'No amount' : r.pct >= 100 ? 'Done' : r.reached ? (r.months <= 0 ? 'This month' : plural(r.months, 'month')) : 'Over ' + SPAN;
 const fracOf = r => (r.target > 0 ? Math.min(1, Math.max(0, r.saved / r.target)) : 0);
 function renderHero() {
@@ -14763,11 +14792,11 @@ function renderHero() {
   else if (r.state === 'ontrack') { chip = '<span class="chip good">' + IC.ok + 'On track</span>'; sub = `Needed by ${dateLabel(g.due)}. ${r.slack === 0 ? 'On time.' : plural(r.slack, 'month') + ' spare.'}`; }
   else if (r.state === 'behind') { chip = '<span class="chip tight">' + IC.warn + 'Behind</span>'; sub = `Needed by ${dateLabel(g.due)}.` + (r.need != null ? ` Save about ${fmt(r.need)} a month.` : ''); fix = '<button type="button" class="btn small" data-open="lts">Change monthly amount</button>'; }
   else if (r.state === 'noeta') { chip = '<span class="chip tight">' + IC.warn + 'Slow</span>'; sub = 'Raise the monthly amount to finish sooner.'; fix = '<button type="button" class="btn small" data-open="lts">Change monthly amount</button>'; }
-  const when = r.pct >= 100 ? 'Full.' : r.reached ? (r.months <= 0 ? 'Full <b>this month</b>.' : `<b>${plural(r.months, 'month')}</b> to go. Full ${fullLabel(r.reached)}.`) : 'Not full within ' + SPAN + ' at this pace.';
+  const when = dwr(r, r.pct >= 100 ? 'Full.' : r.reached ? (r.months <= 0 ? 'Full <b>this month</b>.' : `<b>${plural(r.months, 'month')}</b> to go. Full ${fullLabel(r.reached)}.`) : 'Not full within ' + SPAN + ' at this pace.');
   const ms = [25, 50, 75].map(p => `<span class="ms${pct >= p ? ' hit' : ''}" style="left:${p}%"></span>`).join('');
   /* what moves it: this month's deposit and what is still to go, so progress reads as motion, not a percent */
   const mg = C.byYm[HV.ym] && C.byYm[HV.ym].g[g.id], put1 = mg ? mg.actual : 0, togo = Math.max(0, r.target - r.saved);
-  const adds = r.pct < 100 && r.live ? `<p class="hw-add">${put1 > 0 ? `<b>+${fmt(put1)}</b> this month. ` : ''}${fmt(togo)} to go.</p>` : '';
+  const adds = r.pct < 100 && r.live ? `<p class="hw-add">${put1 > 0 ? `<b>+${fmt(put1)}</b> this month. ` : ''}${dwr(r, fmt(togo) + ' to go.')}</p>` : '';
   el.className = 'card hwin';
   put(el, `<p class="hw-k">Main goal: ${esc(g.name)}</p>
     <h2 class="hw-p">${esc(purpose)}</h2>
@@ -14781,15 +14810,41 @@ function renderHero() {
   if (ms0[g.id] === undefined) { ms0[g.id] = hit; persist(); }
   else if (hit > (ms0[g.id] || 0)) { ms0[g.id] = hit; persist(); sfx(hit === 4 ? 'fanfare' : 'sparkle'); SQ.stash(); celebrate(hit === 4 ? 'big' : 'med', hit === 4 ? `${g.name}: full.${g.why ? ' ' + g.why + '.' : ''}` : `${g.name}: ${hit * 25}%.${g.why && hit >= 2 ? ' ' + g.why + '.' : ''}`); }
 }
+/* the treasure chest: a small pixel chest painted into the corner of the card, in the same palette and light as the burrows (flat tones, no outlines, a warm line of gold under the lid) */
+function chestArt(gold) {
+  const W = 30, H = 24, cv = document.createElement('canvas'); cv.width = W; cv.height = H; const g = cv.getContext('2d'), B = PAL.bark, K = PAL.stone, G = PAL.gold, M = PAL.moss;
+  const px = (x, y, c) => { g.fillStyle = c; g.fillRect(x, y, 1, 1); }, rect = (x, y, w, h, c) => { g.fillStyle = c; g.fillRect(x, y, w, h); };
+  g.globalAlpha = .28; rect(3, 22, 25, 1, PAL.night[0]); rect(5, 23, 21, 1, PAL.night[0]); g.globalAlpha = 1;                 /* contact shadow */
+  rect(3, 12, 25, 10, B[2]); rect(3, 12, 25, 1, B[3]); rect(3, 20, 25, 2, B[1]);                                                  /* the body */
+  for (let x = 8; x < 26; x += 6) rect(x, 13, 1, 7, B[1]);                                                                         /* plank seams */
+  const lid = [[8, 14], [6, 18], [5, 20], [4, 22], [4, 22], [3, 24]];                                                                /* the lid, a low dome: [start, width] per row from the top */
+  lid.forEach(([s, w], i) => { const y = 6 + i; rect(s, y, w, 1, i < 2 ? B[3] : B[2]); px(s + w - 1, y, B[1]); if (i === 0) rect(s + 2, y, w - 4, 1, B[4]); });
+  rect(3, 11, 25, 1, B[1]);
+  if (gold) { rect(4, 12, 23, 1, G[2]); rect(9, 12, 12, 1, G[3]); }                                                               /* gold shows under the lid */
+  [7, 21].forEach(x => { rect(x, 8, 2, 14, K[3]); rect(x, 8, 1, 14, K[4]); px(x + 1, 21, K[2]); });                                /* iron bands */
+  rect(13, 11, 4, 5, G[3]); rect(13, 11, 4, 1, G[4]); rect(13, 15, 4, 1, G[1]); px(14, 13, PAL.night[0]); px(15, 13, PAL.night[0]); px(14, 14, PAL.night[0]);   /* the lock */
+  if (gold) { [[0, 20], [1, 21], [28, 21], [27, 20]].forEach(([x, y]) => { rect(x, y, 2, 1, G[3]); px(x, y, G[4]); }); }               /* a few coins on the ground */
+  px(25, 5, M[3]); px(26, 6, M[2]); px(24, 6, M[4]);                                                                                /* moss on the lid */
+  return cv.toDataURL();
+}
 function renderSpend() {
-  const el = $('#hSpend'), p = HV.play, ym = HV.ym;
-  if (p.planned <= 0 && p.spent <= 0) { put(el, `<h2>Play money</h2><p class="hs-big zero">${fmt(0)}</p><p class="cap">No play money planned for ${monthLabel(ym)}.</p><div class="row-btns"><button type="button" class="btn small" data-open="play">Set in Plan</button></div>`); return; }
+  const el = $('#hSpend'), p = HV.play, ym = HV.ym, V = HV, m = V.month, b = id => V.buckets.find(x => x.id === id);
+  const art0 = `<img class="chest-art" alt="" aria-hidden="true" src="${chestArt(p.left > 0)}">`;
+  const head = `${art0}<h2>Treasure chest</h2><p class="cap chest-what">Money for this month. It starts fresh each month.</p>`;
+  if (!(m.inflow > 0)) { put(el, `${head}<p class="hs-ok">Add your monthly pay and this shows what is free to spend, and whether your bills are covered.</p><div class="row-btns"><button type="button" class="btn small" data-open="a">Add pay</button></div>`); return; }
+  const smp = sampleOn() ? `<p class="cap">Sample numbers. Yours appear once you finish setup.</p>` : '';
+  /* necessities: a plain yes or no, with the number behind it */
+  const nec = b('nec'), covered = m.inflow >= nec.planned;
+  const necTile = `<li class="bk${covered ? ' ok' : ' over'}" style="--c:${JARVAR.nec}"><span class="bk-n"><i></i>Necessities</span><b>${covered ? 'Covered' : 'Short'}</b><span class="bk-s">${covered ? `Pay covers ${fmt(nec.planned)} of bills in ${monthLabel(ym, true)}${nec.spent > 0 ? `. ${fmt2(nec.spent)} logged.` : ''}` : `Pay is ${fmt(nec.planned - m.inflow)} under the bills.`}</span></li>`;
+  const tile = (x, what) => `<li class="bk${x.left < 0 ? ' over' : ''}" style="--c:${JARVAR[x.id]}"><span class="bk-n"><i></i>${esc(x.name)}</span><b>${fmt2(x.left)}</b><span class="bk-s">${x.planned <= 0 ? what : (x.left < 0 ? 'Over' : 'Left') + ' of ' + fmt(x.planned) + ' in ' + monthLabel(ym, true) + '. ' + what}</span></li>`;
+  const tiles = `<ul class="bkl chl">${necTile}${tile(b('edu'), 'For courses and books.')}${tile(b('give'), 'For gifts and charity.')}</ul>${V.otherSpent > 0 ? `<p class="cap">${fmt2(V.otherSpent)} logged as Other. Not taken from a pot.</p>` : ''}`;
+  if (p.planned <= 0 && p.spent <= 0) { put(el, `${head}<p class="hs-lbl">Free to spend (play money) in ${monthLabel(ym)}</p><p class="hs-big zero">${fmt(0)}</p><p class="cap">No play money planned for ${monthLabel(ym)}.</p><div class="row-btns"><button type="button" class="btn small" data-open="play">Set in Plan</button></div>${smp}${tiles}`); return; }
   const chip = p.over ? `<span class="chip short">${IC.bad}Over</span>` : p.ahead ? `<span class="chip tight">${IC.warn}Ahead of pace</span>` : `<span class="chip good">${IC.ok}On pace</span>`;
   const wk = p.perWeek != null ? `<b>${fmt(p.perWeek)}</b> a week, ${plural(p.daysLeft, 'day')} left.` : `${plural(p.daysLeft, 'day')} left.`;
-  const covered = !p.over && p.planned > 0 && HV.month.status === 'good' && !sampleOn();
-  put(el, `<h2>Play money</h2><p class="hs-big${p.over ? ' neg' : ''}" style="--n:${fmt2(p.left).length}">${fmt2(p.left)}</p><p class="hs-lbl">${p.over ? 'Over in ' : 'Left in '}${monthLabel(ym)}</p>
+  const free = !p.over && p.planned > 0 && m.status === 'good' && !sampleOn();
+  put(el, `${head}<p class="hs-lbl">${p.over ? 'Over play money in ' : 'Free to spend (play money) in '}${monthLabel(ym)}</p><p class="hs-big${p.over ? ' neg' : ''}" style="--n:${fmt2(p.left).length}">${fmt2(p.left)}</p>
     <div class="hs-bar${p.over ? ' over' : ''}" role="img" aria-label="${fmt2(p.spent)} of ${fmt(p.planned)} spent"><i style="width:${p.frac * 100}%"></i><span class="pace" style="left:${p.dayFrac * 100}%"></span></div>
-    <p class="hs-sub">${p.count ? `Spent ${fmt2(p.spent)} of ${fmt(p.planned)}.` : `Nothing logged yet. ${fmt(p.planned)} planned.`} ${p.over ? '' : wk}</p>${p.count || p.over ? chip : ''}${covered ? `<p class="hs-ok">Bills and goals are planned for. This part is free to spend.${HV.main && HV.main.live && HV.main.pct < 100 ? ` What is left at month end can go toward ${esc(goalById(S, HV.main.id).name)}.` : ''}</p>` : ''}${art('grass')}`);
+    <p class="hs-sub">${p.count ? `Spent ${fmt2(p.spent)} of ${fmt(p.planned)}.` : `Nothing logged yet. ${fmt(p.planned)} planned.`} ${p.over ? '' : wk}</p>${p.count || p.over ? chip : ''}${free ? `<p class="hs-ok">Bills and goals are planned for, so this part is free to spend.${V.main && V.main.live && V.main.pct < 100 ? ` What is left at month end can go toward ${esc(goalById(S, V.main.id).name)}.` : ''}</p>` : ''}${smp}${tiles}`);
 }
 /* a row opens to show its details; which ones are open survives a redraw */
 const HOPEN = new Set();
@@ -14797,8 +14852,8 @@ function goalRowHtml(r) {
   const g = goalById(S, r.id), main = HV.main && HV.main.id === r.id;
   if (!g) return '';
   const st = r.state === 'ontrack' || r.state === 'full' || r.state === 'paid' ? 'good' : r.state === 'behind' || r.state === 'noeta' || r.state === 'short' ? 'warn' : 'plain';
-  const stw = { ontrack: 'On track', full: 'Full', paid: 'Paid', short: 'Short', behind: 'Behind', noeta: 'Slow', eta: 'Filling', unset: 'Unset', none: '' }[r.state] || '';
-  const eta = r.state === 'paid' ? `Paid ${dateLabel(g.due)}` : r.state === 'short' ? `Had ${fmt(r.had)} of ${fmt(g.target)}` : r.state === 'unset' ? 'No amount' : r.reached ? `Full ${monthLabel(r.reached)}` : `Not full in ${SPAN}`;
+  const stw = { ontrack: 'On track', full: r.kind === 'debt' ? 'Paid off' : 'Full', paid: 'Paid', short: 'Short', behind: 'Behind', noeta: 'Slow', eta: r.kind === 'debt' ? 'Paying' : 'Filling', unset: 'Unset', none: '' }[r.state] || '';
+  const eta = r.state === 'paid' ? `Paid ${dateLabel(g.due)}` : r.state === 'short' ? `Had ${fmt(r.had)} of ${fmt(g.target)}` : r.state === 'unset' ? 'No amount' : r.reached ? dwr(r, `Full ${monthLabel(r.reached)}`) : dwr(r, `Not full in ${SPAN}`);
   /* the small line is the reason in the person's words; a stock purpose that only repeats the name gives way to the numbers */
   const pp = purposeFor(g), small = g.why || (pp.toLowerCase().indexOf(String(g.name).toLowerCase()) === 0 && r.target > 0 ? `${fmt(r.saved)} of ${fmt(r.target)}` : pp);
   return `<li class="gd"><details data-hgid="${esc(r.id)}"${HOPEN.has(r.id) ? ' open' : ''} style="--c:var(--c${g.slot})"><summary><i class="dot"></i><span class="gd-t"><b>${esc(g.name)}</b><small>${esc(small)}</small></span><span class="gd-m${main ? ' main' : ''}">${esc(monthsShort(r))}</span></summary>
@@ -14854,20 +14909,19 @@ function ggMove(e) {
   showTip(`<b>${i === 0 ? 'Now' : monthLabel(MONTHS[GG.i0 + i - 1]) + ' (end)'}</b><br>${rows.join('<br>')}`, e.clientX, e.clientY);
 }
 function ggClear() { hideTip(); const cx = $('#ggX'); if (cx) { cx.setAttribute('x1', -20); cx.setAttribute('x2', -20); } $$('#hGGraph circle[id^="ggD"]').forEach(d => d.setAttribute('cx', -20)); }
-/* the six jars: what is left in the ones you spend from, and what has built up in the ones you save in */
+/* Financial Freedom is the one pot that only grows: money you invest and never spend, so it sits with the goals, not in the chest */
 function renderBuckets() {
-  const el = $('#hBuckets'), V = HV;
-  const tile = b => b.kind === 'save'
-    ? `<li class="bk" style="--c:${JARVAR[b.id]}"><span class="bk-n"><i></i>${esc(b.name)}</span><b>${fmt(b.total)}</b><span class="bk-s">Saved so far${b.planned > 0 ? `. +${fmt(b.planned)} this month` : ''}</span></li>`
-    : `<li class="bk${b.left < 0 ? ' over' : ''}" style="--c:${JARVAR[b.id]}"><span class="bk-n"><i></i>${esc(b.name)}</span><b>${fmt2(b.left)}</b><span class="bk-s">${b.left < 0 ? 'Over' : 'Left'} of ${fmt(b.planned)}, ${monthLabel(V.ym, true)}</span></li>`;
-  put(el, `<h2>Jars</h2><ul class="bkl">${V.buckets.map(tile).join('')}</ul>${V.otherSpent > 0 ? `<p class="cap">${fmt2(V.otherSpent)} logged as Other. Not taken from a jar.</p>` : ''}`);
+  const el = $('#hBuckets'), V = HV, f = V.buckets.find(x => x.id === 'ffa'); if (!f) return;
+  if (!(V.month.inflow > 0) || !(f.planned > 0 || f.total > 0)) { el.hidden = true; return; }
+  el.hidden = false;
+  put(el, `<h2>Financial Freedom</h2><p class="hs-lbl">Planned this month. Invested and never spent.</p><p class="hs-big" style="--n:${fmt(f.planned).length}">${fmt(f.planned)}</p><p class="hs-sub">${f.total > f.planned ? `<b>${fmt(f.total)}</b> planned in total so far. ` : ''}It only grows, and one day it pays you.</p>${sampleOn() ? '<p class="cap">Sample numbers.</p>' : ''}`);
 }
 /* the reminder under the tabs on every other page: what you are working toward, how close it is, and what is left to spend */
 function renderBand() {
   const el = $('#mgBand'); if (!el) return;
   const V = HV, r = V && V.main;
   if (!r || tab === 'home' || tab === 'basics') { el.hidden = true; return; }
-  const g = goalById(S, r.id), p = V.play, when = r.pct >= 100 ? 'Full' : r.reached ? (r.months <= 0 ? 'This month' : plural(r.months, 'month') + ' to go') : 'Over ' + SPAN;
+  const g = goalById(S, r.id), p = V.play, when = dwr(r, r.pct >= 100 ? 'Full' : r.reached ? (r.months <= 0 ? 'This month' : plural(r.months, 'month') + ' to go') : 'Over ' + SPAN);
   if (!g) { el.hidden = true; return; }
   const purpose = g.why || g.name;
   put(el, `<span class="mg-l" style="--c:var(--c${g.slot})"><i class="dot"></i><b>${esc(purpose)}</b><em>${when}</em></span><span class="mg-bar" aria-hidden="true" style="--c:var(--c${g.slot})"><i style="width:${fracOf(r) * 100}%"></i></span><span class="mg-s">${p.over ? fmt2(Math.abs(p.left)) + ' over play money' : fmt2(p.left) + ' play money left'}, ${monthLabel(V.ym, true)}</span>`);
@@ -14909,7 +14963,7 @@ function syncQuick() {
 }
 /* what Home can show, in the usual order. S.ui.home (set through ACT.setHome, for example by the assistant) reorders or hides these cards;
    the status, next-step and backup cards always stay on top. */
-const HOME_SECTIONS = ['goal', 'play', 'log', 'goals', 'jars', 'more'];
+const HOME_SECTIONS = ['play', 'log', 'goal', 'goals', 'jars', 'more'];
 const HOME_EL = { goal: 'hHero', play: 'hSpend', log: 'hQuick', goals: 'hGoals', jars: 'hBuckets', more: 'hMore' };
 let homeOrderSig = '';
 function applyHomeOrder() {
@@ -14938,11 +14992,11 @@ function gwDate(months) { const d = new Date(); d.setMonth(d.getMonth() + months
 function gwPlan() {
   const cost = clampAmt(GW.cost), saved = clampAmt(GW.saved), rem = Math.max(0, cost - saved), u = roundUnit(S);
   if (!(cost > 0)) return { txt: 'Enter the cost to see the monthly amount.' };
-  if (rem <= 0) return { txt: 'Already saved in full. Shows as full.', ok: true };
+  if (rem <= 0) return { txt: GW.kind && GW.kind.debt ? 'Already paid off in full.' : 'Already saved in full. Shows as full.', ok: true };
   if (GW.due && !GW.kind.em) {
     const rb = readyBy({ due: GW.due }), n = rb ? ymCount(SAVE_FROM, rb) : 0;
     if (n < 1) return { txt: 'Too soon to save anything by then. Pick a later date.', bad: true };
-    return { txt: `Save about <b>${fmt(Math.ceil(rem / n / u) * u)}</b> a month for ${plural(n, 'month')}. Ready by ${dateLabel(GW.due)}.`, ok: true };
+    return { txt: `${GW.kind && GW.kind.debt ? 'Pay about' : 'Save about'} <b>${fmt(Math.ceil(rem / n / u) * u)}</b> a month for ${plural(n, 'month')}. ${GW.kind && GW.kind.debt ? 'Paid off' : 'Ready'} by ${dateLabel(GW.due)}.`, ok: true };
   }
   return { txt: `No date: plan assumes 12 months. About <b>${fmt(Math.ceil(rem / 12 / u) * u)}</b> a month.`, ok: true };
 }
@@ -14977,14 +15031,14 @@ function paintGW() {
     t = 'Goal type';
     body = `<div class="gw-chips" role="group" aria-label="Goal type">${gwKinds().map(x => `<button type="button" class="gw-chip${k && k.k === x.k ? ' on' : ''}" data-kind="${x.k}" aria-pressed="${!!(k && k.k === x.k)}"><b>${x.pick}</b><span>${x.hint}</span></button>`).join('')}</div>
       <div class="field"><label for="gwName">Name</label><input class="txt" id="gwName" type="text" maxlength="60" value="${esc(g.name)}" placeholder="${esc(S.plan.goals.some(x => /japan trip/i.test(x.name)) ? 'Name it' : 'Japan trip')}"></div>
-      <div class="field"><label for="gwWhy">Why (optional)</label><input class="txt" id="gwWhy" type="text" maxlength="80" value="${esc(g.why)}" placeholder="In your words: who it is for, what it changes"><p class="cap">Shows with the goal, so the reason stays in view.</p></div>`;
+      <div class="field"><label for="gwWhy">Why (optional)</label><input class="txt" id="gwWhy" type="text" maxlength="80" value="${esc(g.why)}" placeholder="Why it matters, in your words"><p class="cap">Shows with the goal, so the reason stays in view.</p></div>`;
   } else if (g.step === 1) {
     t = 'Amount';
-    body = `<div class="field"><label for="gwCost">${k && k.cost ? 'Total cost' : 'Total cost'}</label><div class="inp"><span class="yen cs"></span><input id="gwCost" type="number" inputmode="numeric" min="0" step="any" value="${esc(g.cost)}" placeholder="0"></div>${k && k.cost ? `<p class="cap">${k.cost}</p>` : ''}</div>
-      <div class="field"><label for="gwSaved">Already saved</label><div class="inp"><span class="yen cs"></span><input id="gwSaved" type="number" inputmode="numeric" min="0" step="any" value="${esc(g.saved)}" placeholder="0"></div></div>`;
+    body = `<div class="field"><label for="gwCost">${k && k.debt ? 'Total owed' : 'Total cost'}</label><div class="inp"><span class="yen cs"></span><input id="gwCost" type="number" inputmode="numeric" min="0" step="any" value="${esc(g.cost)}" placeholder="0"></div>${k && k.cost ? `<p class="cap">${k.cost}</p>` : ''}</div>
+      <div class="field"><label for="gwSaved">${k && k.debt ? 'Already paid off' : 'Already saved'}</label><div class="inp"><span class="yen cs"></span><input id="gwSaved" type="number" inputmode="numeric" min="0" step="any" value="${esc(g.saved)}" placeholder="0"></div></div>`;
   } else {
     t = k && k.em ? 'Plan' : 'Date'; nextTxt = 'Add goal';
-    body = (k && k.em ? '' : `<div class="field"><label for="gwDue">Needed by</label><input type="date" id="gwDue" value="${esc(g.due)}" min="${todayStr()}" max="${END}-28"></div>
+    body = (k && k.em ? '' : `<div class="field"><label for="gwDue">${k && k.debt ? 'Paid off by' : 'Needed by'}</label><input type="date" id="gwDue" value="${esc(g.due)}" min="${todayStr()}" max="${END}-28"></div>
       <div class="gw-quick" role="group" aria-label="Quick dates">${GW_QUICK.map(q => `<button type="button" class="chipbtn${(q[1] === 0 ? !g.due : g.due === gwDate(q[1])) ? ' on' : ''}" data-q="${q[1]}">${q[0]}</button>`).join('')}</div>`)
       + `<p class="gw-plan" id="gwPlan" aria-live="polite"></p>`;
   }
@@ -15003,7 +15057,7 @@ function gwRefresh() {
   /* the button stays tappable: a tap too early says what is missing instead of doing nothing */
   let wait = '';
   if (g.step === 0) wait = !g.kind ? 'Pick a goal type first.' : !g.name.trim() ? 'Give the goal a name.' : '';
-  else if (g.step === 1) wait = !(+g.cost > 0) ? 'Enter the total cost.' : '';
+  else if (g.step === 1) wait = !(+g.cost > 0) ? (g.kind && g.kind.debt ? 'Enter how much you owe.' : 'Enter the total cost.') : '';
   else { const p = gwPlan(), pe = $('#gwPlan'); if (pe) { pe.innerHTML = p.txt; pe.classList.toggle('bad', !!p.bad); } wait = p.bad ? 'Change the date or the amount first.' : !(+g.cost > 0) ? 'Enter the total cost.' : ''; }
   n.classList.toggle('dim', !!wait); n.setAttribute('aria-disabled', String(!!wait)); n.dataset.wait = wait;
   const h = $('#gwHint'); if (h && !wait) h.textContent = '';
@@ -15300,7 +15354,7 @@ function wire() {
     try {
       const d = JSON.parse($('#bk').value);
       if (!d || typeof d !== 'object' || !d.steps || !d.once || !d.cfg) throw new Error('bad');
-      const old = S; S = upgradeLegacy(normalize(d)); S.ui = Object.assign({}, old.ui, S.ui, { sampleHidden: true });
+      const old = S; offerUndo(JSON.stringify(old), 'Backup loaded.'); S = upgradeLegacy(normalize(d)); S.ui = Object.assign({}, old.ui, S.ui, { sampleHidden: true });
       if (!Array.isArray(d.receipts)) S.receipts = old.receipts;
       editRow = null; editGoal = null; editRc = null; itemsSig = ''; S.ui.bk = Date.now(); delete S.ui.bkLater; persist(); restructure(); msg.textContent = 'Loaded.'; sfx('next');
     } catch (e) { msg.textContent = 'Not a valid backup. Use the whole file, or paste all of the copied text.'; }

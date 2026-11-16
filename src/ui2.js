@@ -30,9 +30,9 @@ function jarNote(m) {
   const J = jarsOf(S, m); if (J.inn <= 0) return '';
   if (J.over) return `Plan exceeds pay by ${fmt(J.short)}, so percents are off. Lower a bill or jar.`;
   const nec = J.list[0], u = nec.usual;
-  const lead = nec.pct > u + 1 ? `Necessities are ${nec.pct}% of pay, above Eker&rsquo;s usual ${u}%. Common. Keep the other jars going, even small: the habit matters more than the exact percent.`
-    : nec.pct < u - 1 ? `Necessities are ${nec.pct}% of pay, under Eker&rsquo;s usual ${u}%. More room for the other jars.`
-    : `Necessities are ${nec.pct}% of pay, in line with Eker&rsquo;s usual ${u}%.`;
+  const lead = nec.pct > u + 1 ? `Necessities are ${nec.pct}% of pay, above the usual ${u}%. That is common. Keep the other jars going, even small: the habit matters more than the exact percent.`
+    : nec.pct < u - 1 ? `Necessities are ${nec.pct}% of pay, under the usual ${u}%. More room for the other jars.`
+    : `Necessities are ${nec.pct}% of pay, about the usual ${u}% many people aim for.`;
   return lead;
 }
 const LTS_HINT = ' Each slider sets that goal’s amount this month. Leave them alone to use the computed amounts (from goal amounts and dates). Up takes from Left; down returns to Left.';
@@ -157,12 +157,12 @@ function goalNote(gid, m) {
     else {
       t += `Due <b>${dateLabel(g.due)}</b>. `;
       if (gi.state === 'ontrack') t += `Full <b>${monthLabel(gi.reached)}</b>${gi.slack === 0 ? ', on time.' : `, ${gi.slack} month${gi.slack === 1 ? '' : 's'} early.`}` + (gi.need != null ? ` Needs about ${fmt(gi.need)} a month.` : '');
-      else if (gi.state === 'behind') t += `At this pace: ${gi.reached ? 'full <b>' + monthLabel(gi.reached) + '</b>' : 'not full within ' + SPAN}. Too late.` + (gi.need != null ? ` Needs about <b>${fmt(gi.need)}</b> a month.` : '');
-      else if (gi.state === 'full') t += 'Full.';
+      else if (gi.state === 'behind') t += dw(S, g, `At this pace: ${gi.reached ? 'full <b>' + monthLabel(gi.reached) + '</b>' : 'not full within ' + SPAN}. Too late.`) + (gi.need != null ? ` Needs about <b>${fmt(gi.need)}</b> a month.` : '');
+      else if (gi.state === 'full') t += dw(S, g, 'Full.');
     }
   } else if (g.emergency) {
     t += gi.state === 'full' ? `Past ${fmt(tg)}${cap > tg ? `, heading to ${fmt(cap)}` : ''}.` : gi.reached ? `Reaches ${fmt(tg)} <b>${monthLabel(gi.reached)}</b>${cap > tg ? `, then continues to ${fmt(cap)}` : ''}.` : `Not at ${fmt(tg)} within ${SPAN} at this pace.`;
-  } else t += gi.state === 'full' ? 'Full.' : gi.reached ? `Full <b>${monthLabel(gi.reached)}</b>.` : `Not full within ${SPAN} at this pace.`;
+  } else t += dw(S, g, gi.state === 'full' ? 'Full.' : gi.reached ? `Full <b>${monthLabel(gi.reached)}</b>.` : `Not full within ${SPAN} at this pace.`);
   if (g.emergency) {
     if (m.billsTotal > 0) t += ` ${fmt(tg)} = ${+(tg / m.billsTotal).toFixed(1)} months of necessities` + (cap > tg ? `; ${fmt(cap)} = ${+(cap / m.billsTotal).toFixed(1)}` : '') + '.';
     if (gm && gm.loan > 0) t += ` Includes ${fmt(gm.loan)} from an ended payment.`;
@@ -182,7 +182,7 @@ function renderGoals(m) {
     $('#jn-' + g.id).textContent = g.name; const jw = $('#jw-' + g.id); if (jw) jw.textContent = g.why || '';
     $('.fill', gb).style.width = (pct * 100) + '%'; gb.setAttribute('aria-label', `${g.name}: ${Math.round(pct * 100)}% of ${fmt(cap)}`);
     const tick = $('.gtick', gb); if (g.emergency && cap > gi.target && gi.target > 0) { tick.style.left = `calc(${gi.target / cap * 100}% - 1px)`; tick.hidden = false; } else tick.hidden = true;
-    $('#jv-' + g.id).innerHTML = gi.target > 0 ? `<b>${fmt(gi.bal)}</b> planned of ${fmt(gi.target)}` : '<b>No goal amount yet</b>';
+    $('#jv-' + g.id).innerHTML = gi.target > 0 ? dw(S, g, `<b>${fmt(gi.bal)}</b> planned of ${fmt(gi.target)}`) : '<b>No goal amount yet</b>';
     const js = $('#js-' + g.id); let cls = 'plain', ic = IC.clock, tx = '', note = '';
     if (gi.state === 'ontrack') { cls = 'good'; ic = IC.ok; tx = 'On track'; note = `Full ${monthLabel(gi.reached)}`; }
     else if (gi.state === 'behind') { cls = 'warn'; ic = IC.warn; tx = 'Behind'; note = gi.need != null ? `Needs ${fmt(gi.need)} a month` : 'Not ready in time'; }
@@ -192,9 +192,10 @@ function renderGoals(m) {
     else if (gi.state === 'eta') { tx = 'Filling'; note = `Full ${monthLabel(gi.reached)}`; }
     else if (gi.state === 'noeta') { tx = 'Slow'; note = `Not full within ${SPAN}`; }
     else { tx = 'Unset'; note = 'Edit goal to add an amount'; }
+    tx = dw(S, g, tx); note = dw(S, g, note);
     js.className = 'jstat ' + cls; js.innerHTML = ic + tx; $('#jt-' + g.id).textContent = note;
     const gm = m.g[g.id], put = gm.actual;
-    $('#gs-' + g.id).innerHTML = `Held now: <b>${fmt(g.start)}</b>. ` + (put > 0 ? `Plan adds <b>${fmt(put)}</b> in ${monthLabel(sel, true)}.` : `Plan adds nothing in ${monthLabel(sel, true)}.`);
+    $('#gs-' + g.id).innerHTML = `${dw(S, g, 'Saved so far')}: <b>${fmt(g.start)}</b>. ` + (put > 0 ? `Plan adds <b>${fmt(put)}</b> in ${monthLabel(sel, true)}.` : `Plan adds nothing in ${monthLabel(sel, true)}.`);
   });
 }
 

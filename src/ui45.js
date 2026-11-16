@@ -187,7 +187,7 @@ const TOUR = [
   { id: 'video', part: PART.welcome, title: 'Welcome', next: 'Next', skipIf: () => !hasHello, art: () => (helloFileOk && !helloFailed ? '' : 'vine'),
     body: () => {
       const player = helloFileOk && !helloFailed;
-      return `${player ? helloPlayer() : helloCard()}
+      return `<p class="tour-what">Put in your pay and bills. The burrow shows how much is really free to spend, and saves toward the things you want.</p>${player ? helloPlayer() : helloCard()}
       <p class="cap">${player
         ? 'Six minutes from Mako, who made this. Also under Help.' + (helloVideo ? ` <a id="tourVideo" target="_blank" rel="noopener noreferrer" href="${esc(helloVideo.watch)}">Not playing? Open on Google Drive.</a>` : '')
         : 'Six minutes from Mako, who made this. Come back here when done, or skip. Also under Help.'}</p>
@@ -224,7 +224,8 @@ const TOUR = [
           : `Play money <b>${fmt(f.play)}</b> a month, to spend without guilt. All other pay is assigned.`;
         const V = viewOf(S, f.C, nowYm(), ymd(new Date())), r = V.main, mg = r ? goalById(S, r.id) : null;
         /* the last screen lands on the destination: the goal, the reason in the person's words, when it is full and what each month adds */
-        const when = r ? (r.pct >= 100 ? 'Full.' : r.reached ? (r.months <= 0 ? 'Full <b>this month</b>.' : `Full <b>${fullLabel(r.reached)}</b>, ${plural(r.months, 'month')} from now.`) : 'Not full within ' + SPAN + ' at this pace.') : '';
+        const when0 = r ? (r.pct >= 100 ? 'Full.' : r.reached ? (r.months <= 0 ? 'Full <b>this month</b>.' : `Full <b>${fullLabel(r.reached)}</b>, ${plural(r.months, 'month')} from now.`) : 'Not full within ' + SPAN + ' at this pace.') : '';
+        const when = mg ? dw(S, mg, when0) : when0;
         const dep = r ? f.C.byYm[nowYm()].g[r.id].actual : 0;
         const goal = mg ? `<div class="tour-goal" style="--c:var(--c${mg.slot})"><p class="tour-goal-k">Main goal</p><p class="tour-goal-n">${esc(mg.name)}</p>${mg.why ? `<p class="tour-goal-w">${esc(mg.why)}</p>` : ''}
           <div class="hg-b" role="img" aria-label="${r.pct} percent"><i style="width:${Math.min(100, r.pct)}%"></i></div>

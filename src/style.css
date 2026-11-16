@@ -1656,3 +1656,20 @@ body.scene-on .foot { width: max-content; max-width: min(92%, 520px); margin: 8p
 .bv-amt input { width: 100%; box-sizing: border-box; min-height: 44px; padding: 8px 12px; border-radius: 12px; border: 1px solid color-mix(in srgb, var(--fg) 28%, transparent); background: color-mix(in srgb, var(--bg) 60%, transparent); color: var(--fg); font: inherit; font-size: 16px; }
 .bv-row { display: flex; align-items: center; gap: 12px; margin: 10px 0 0; }
 .bv-msg { min-height: 1em; margin: 6px 0 0; }
+
+/* the treasure chest */
+.card.hspend { padding-bottom: var(--pad-card); } .hspend .art-grass { display: none; }
+.chest-art { position: absolute; right: 18px; top: 16px; width: 90px; height: 72px; image-rendering: pixelated; pointer-events: none; }
+.hspend h2, .hspend .hs-lbl { max-width: calc(100% - 110px); }
+.chl { margin-top: 22px; } .bk.ok b { color: var(--good, var(--c4)); }
+@media (min-width: 900px) { .chl { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.hbuckets .hs-big { margin-top: 10px; }
+.chl .bk:last-child:nth-child(odd) { grid-column: 1 / -1; } @media (min-width: 900px) { .chl .bk:last-child:nth-child(odd) { grid-column: auto; } }
+/* purpose lines: what each part is for, in one short sentence */
+.hbur .hb-h { font-size: var(--t-h2, 22px); font-weight: 500; margin: 0 4px 2px; } .hbur .hb-what, .hspend .chest-what { margin: 0 4px 12px; max-width: 46ch; }
+.hspend .chest-what { margin: -2px 0 14px; max-width: calc(100% - 110px); }
+.tour-body p.tour-what { font-size: var(--t-lead); color: var(--ink); max-width: 36ch; }
+@media (max-width: 640px) { .tour-in { padding-bottom: 96px; } }
+
+/* the Ask and Help pills step aside while the tour or a burrow is open */
+body.touring .help-row, body.bv-on .help-row { display: none; }
