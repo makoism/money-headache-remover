@@ -140,3 +140,7 @@ Favicon (38.9): pwa/make_icons.py draws a pixel burrow with coins, writes the sv
 Waterfall (38.10): tiers widen top to bottom (dw 0,3,6) and flare 2 px within each tier via F.ex(ti,y), so it never narrows going down.
 
 Favicon (38.11): redrawn as a tree, a mound with a small door and a few coins, on a full deep green square (pwa/make_icons.py).
+
+38.12: waterfall tiers line up (dx 0,-1,-2) and the rock channel is wider; favicon redrawn as a tree hollow with gold seen from the ground, rounded corners (pwa/make_icons.py).
+
+38.12 (later): flyers now pass behind the nearer rows of trees (between the deepest row and the rest), not in front of them. Favicon redrawn at 32x32: low angle from the ground, dark trunk with a gold-filled hollow, flowers on the ground, lush canopy, tinted sky, rounded corners.
