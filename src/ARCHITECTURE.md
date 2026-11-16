@@ -189,3 +189,7 @@ Favicon (38.11): redrawn as a tree, a mound with a small door and a few coins, o
 - Squirrel: Elthen's itch.io pixel squirrel (free, modification allowed; credit him in the credits if any are added), cut into `sqpx.js` and drawn by `SQP`, replaces the oversized climber. Add-money trips use it: runs in with a gold coin (sprite `runc`), sits, throws the coin into the door, runs off (1.6 s a trip, 2 to 5 trips); forest meadow squirrel (small size) runs in now and then, sits, leaves. The old SQ story (chibi) is unchanged. `climbers()` is no longer called.
 - Rainy road is drawn after the lake so it shows as a dirt causeway from the door to the corner.
 
+
+## 38.20
+- Time of day follows the real sun (scene.js `moodAt`, `sunTimes`, `TZ`): sunrise and sunset from the date and a place worked out from the device time zone (city table, fallback latitude 35 and longitude from the offset; no location permission). Morning: sunrise minus 45 min to plus 3.5 h; day until 1.5 h before sunset; sunset until 45 min after; night otherwise; fixed hours where the sun does not rise or set. Rechecked every minute and when the tab returns; a change rebuilds the scene (a hard cut, no fade yet). `?tod=` still overrides.
+- Stag: lifting the head one step keeps the throat row in place, so the head no longer comes loose from the neck while walking.

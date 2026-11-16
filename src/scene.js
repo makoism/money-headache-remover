@@ -18,8 +18,34 @@ const SCENE = (() => {
   let look = '';   /* a burrow screen can ask for its own light (morning, day, sunset, night); '' follows the clock */
   const pickMood = () => {
     const q = (location.search.match(/[?&]tod=(morning|day|sunset|night)\b/) || [])[1]; if (q) return q; if (look) return look;
-    const h = new Date().getHours(); return h >= 5 && h < 10 ? 'morning' : h >= 10 && h < 16 ? 'day' : h >= 16 && h < 19 ? 'sunset' : 'night';
+    return moodAt(new Date());
   };
+  /* the light follows the real sun. Where you are comes from the device's time zone (a city for it, no location asked for); sunrise and sunset come from the date and that place,
+     so the days are long in summer and short in winter. Morning: from a little before sunrise to about three and a half hours after. Day: until an hour and a half before sunset.
+     Sunset: from there to three quarters of an hour after it. Night: the rest. Where the sun never rises or sets (far north) it falls back to fixed hours. */
+  const TZ = { 'Asia/Tokyo': [35.7, 139.7], 'Asia/Seoul': [37.6, 127], 'Asia/Manila': [14.6, 121], 'Asia/Singapore': [1.35, 103.8], 'Asia/Hong_Kong': [22.3, 114.2], 'Asia/Shanghai': [31.2, 121.5], 'Asia/Taipei': [25, 121.5],
+    'Asia/Bangkok': [13.75, 100.5], 'Asia/Jakarta': [-6.2, 106.8], 'Asia/Kolkata': [28.6, 77.2], 'Asia/Calcutta': [19, 72.8], 'Asia/Dubai': [25.2, 55.3], 'Asia/Karachi': [24.9, 67], 'Asia/Dhaka': [23.8, 90.4], 'Asia/Kuala_Lumpur': [3.1, 101.7], 'Asia/Ho_Chi_Minh': [10.8, 106.7],
+    'Australia/Sydney': [-33.9, 151.2], 'Australia/Melbourne': [-37.8, 145], 'Australia/Brisbane': [-27.5, 153], 'Australia/Perth': [-31.95, 115.9], 'Pacific/Auckland': [-36.85, 174.8],
+    'Europe/London': [51.5, -.1], 'Europe/Dublin': [53.3, -6.3], 'Europe/Paris': [48.85, 2.35], 'Europe/Berlin': [52.5, 13.4], 'Europe/Madrid': [40.4, -3.7], 'Europe/Rome': [41.9, 12.5], 'Europe/Amsterdam': [52.4, 4.9], 'Europe/Stockholm': [59.3, 18.1], 'Europe/Moscow': [55.75, 37.6], 'Europe/Istanbul': [41, 29], 'Europe/Lisbon': [38.7, -9.1],
+    'Africa/Cairo': [30, 31.2], 'Africa/Lagos': [6.5, 3.4], 'Africa/Johannesburg': [-26.2, 28], 'Africa/Nairobi': [-1.3, 36.8],
+    'America/New_York': [40.7, -74], 'America/Chicago': [41.9, -87.6], 'America/Denver': [39.7, -105], 'America/Los_Angeles': [34, -118.2], 'America/Toronto': [43.65, -79.4], 'America/Vancouver': [49.3, -123.1], 'America/Mexico_City': [19.4, -99.1], 'America/Sao_Paulo': [-23.5, -46.6], 'America/Argentina/Buenos_Aires': [-34.6, -58.4], 'America/Bogota': [4.7, -74.1], 'Pacific/Honolulu': [21.3, -157.9] };
+  const placeNow = d => { let z = ''; try { z = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) { /* unknown */ } const p = TZ[z]; if (p) return p; const lon = -d.getTimezoneOffset() / 60 * 15; return [/^(Australia|Antarctica)|Johannesburg|Santiago|Sao_Paulo|Buenos/.test(z) ? -30 : 35, lon]; };
+  /* sunrise and sunset in minutes after local midnight (NOAA's simple method), or null when the sun does not rise or set that day */
+  function sunTimes(d, lat, lon) {
+    const rad = Math.PI / 180, start = new Date(d.getFullYear(), 0, 0), n = Math.floor((new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12) - start) / 864e5), g = 2 * Math.PI / 365 * (n - 1 + (12 - 12) / 24);
+    const eot = 229.18 * (.000075 + .001868 * Math.cos(g) - .032077 * Math.sin(g) - .014615 * Math.cos(2 * g) - .040849 * Math.sin(2 * g)), dec = .006918 - .399912 * Math.cos(g) + .070257 * Math.sin(g) - .006758 * Math.cos(2 * g) + .000907 * Math.sin(2 * g) - .002697 * Math.cos(3 * g) + .00148 * Math.sin(3 * g);
+    const c = (Math.cos(90.833 * rad) - Math.sin(lat * rad) * Math.sin(dec)) / (Math.cos(lat * rad) * Math.cos(dec)); if (c < -1 || c > 1) return null;
+    const ha = Math.acos(c) / rad, off = -new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12).getTimezoneOffset();
+    return { rise: 720 - 4 * (lon + ha) - eot + off, set: 720 - 4 * (lon - ha) - eot + off };
+  }
+  function moodAt(d) {
+    const m = d.getHours() * 60 + d.getMinutes(), [lat, lon] = placeNow(d), s = sunTimes(d, lat, lon);
+    if (!s) { const h = d.getHours(); return h >= 5 && h < 10 ? 'morning' : h >= 10 && h < 16 ? 'day' : h >= 16 && h < 19 ? 'sunset' : 'night'; }
+    if (m >= s.rise - 45 && m < s.rise + 210) return 'morning';
+    if (m >= s.rise + 210 && m < s.set - 90) return 'day';
+    if (m >= s.set - 90 && m < s.set + 45) return 'sunset';
+    return 'night';
+  }
   const on = () => !(S && S.ui && S.ui.scene === false);
   /* the spirit stag: the picture is never changed. It breathes (the head lifts a little), grazes (bows its head to the grass and chews), and now and then walks a few steps along the bank,
      legs in diagonal pairs, turning to face the way it goes. Frames come at 6 a second. */
@@ -47,6 +73,7 @@ const SCENE = (() => {
       for (let i = 0; i < row.length; i++) { const ch = row[i]; if (ch === '.') continue;
         if (j < 9 && dy) {   /* the head and antlers */
           if (j === 8 && dy < 0) { put(i, j, ch); continue; }
+          if (j === 7 && dy < 0) put(i, j, ch);   /* lifting the head one pixel keeps the throat where it was, so the head never comes loose from the neck */
           const jj = j + dy - (chew && j === 8 && (m.t % 6 < 3) ? 1 : 0); put(i + dx, jj, ch); continue; }
         if (j >= 12) { const leg = (i === 2 || i === 10) ? 1 : 2; if (lift === leg) { if (j === 12) put(i, j, 'b'); else if (j === 13) put(i, j, 'd'); continue; } }
         put(i, j, ch); }
