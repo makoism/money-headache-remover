@@ -130,4 +130,4 @@ Release: edit source, update `VERSION`, `./check.sh full` (it builds and tests t
 - Sounds were only measured offline, never heard on a real speaker. Not tested on a real phone or iPhone Safari.
 - The customer-experience pass (v35.1) walked the page as a new person on a phone (`/tmp/v36/ux_*.js`: naive and filled setups, the site's statement path, every tab and sheet, a crawl that taps every control). `/tmp/v36/ux_test.js` keeps what it fixed; redo the walk after any change to the setup's order or to Home.
 
-| `scene.js` phone (38.3) | A phone in the plain layout starts no scene: plain green page, no sign, no rocks, no water. The sign and boulder code (`startPhone`, `paintSign`, `paintBot`, `drawBot`) stays in the file but is not started. Wide screens keep the forest as a background only. |
+| `scene.js` (38.4) | The 36.0 pixel scenery again, on every screen size: blue sky, moon, vines, cottage, waterfall, flowers. It is the 36.0 `SCENE` module unchanged plus no-op `progress` and `flare`. The 38.x native forest (`vista.js`, `vs_*.js`) and the phone sign and rocks code are no longer started; the 38.3 file is saved as `backup_forest/scene.js.v38.3`. |
