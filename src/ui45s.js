@@ -6,7 +6,7 @@ const PART = { welcome: 'Welcome', money: 'Money', bills: 'Bills', jars: 'Jars',
 
 const inum = id => { const el = document.getElementById(id); return el ? num0(el.value) : 0; };
 const moneyField = (id, label, v, hint) => `<div class="field"><label for="${id}">${label}</label><div class="inp"><span class="yen cs"></span><input id="${id}" type="number" inputmode="numeric" min="0" step="any" aria-describedby="tourTitle" placeholder="${hint || 'Amount'}" value="${v > 0 ? v : ''}"></div></div>`;
-const textField = (id, label, v, max) => `<div class="field"><label for="${id}">${label}</label><div class="inp"><input id="${id}" type="text" maxlength="${max || 60}" spellcheck="false" value="${esc(v)}"></div></div>`;
+const textField = (id, label, v, max, ph) => `<div class="field"><label for="${id}">${label}</label><div class="inp"><input id="${id}" type="text" maxlength="${max || 60}" spellcheck="false" value="${esc(v)}"${ph ? ` placeholder="${esc(ph)}"` : ''}></div></div>`;
 const payNow = () => val(S, 'a', START) + val(S, 'b', START) + val(S, 'side', START);
 const havePay = () => !!(S.ui.done && S.ui.done.pay) && payNow() > 0;
 const necLines = () => S.plan.lines.filter(l => l.jar === 'nec');
@@ -38,7 +38,7 @@ const STEP_MONEY = { id: 'money', part: PART.money, setup: true, focus: '#tourPa
   body: () => {
     const pay = S.ui.done && S.ui.done.pay ? val(S, 'a', START) : '';
     return `<p>Take-home pay after tax, each month. Paid twice a month: add both. Other income is a second job, a partner&rsquo;s share, benefits. Balance is bank accounts plus cash; rough is fine.</p>
-    <div class="tour-fields">${moneyField('tourPay', 'Monthly take-home pay', pay)}${moneyField('tourExtra', 'Other income each month <span class="opt">(optional)</span>', val(S, 'b', START), 'None')}${moneyField('tourBank', 'Balance now', S.cfg.bankStart !== undefined ? S.cfg.bankStart : '', 'Rough is fine')}</div>
+    <div class="tour-fields">${moneyField('tourPay', 'Monthly take-home pay', pay, 'All paychecks added together')}${moneyField('tourExtra', 'Other income each month <span class="opt">(optional)</span>', val(S, 'b', START), 'None')}${moneyField('tourBank', 'Balance now', S.cfg.bankStart !== undefined ? S.cfg.bankStart : '', 'Rough is fine')}</div>
     <p class="cap">Not sure of a number? Leave it blank; the Plan tab takes it later.</p>`;
   },
   leave: () => {
@@ -115,7 +115,8 @@ const billStep = id => ({ id: 'bill-' + id, part: PART.bills, setup: true, focus
         <div class="tour-fields">${moneyField('tourCardT', 'Statement total, each month', calc ? c.t : '')}${moneyField('tourCardB', 'Of that, bills already listed', calc ? c.b : '', 'Optional')}</div>
         <div class="row-btns"><span class="cap" id="cardCap" aria-live="polite"></span><button type="button" class="btn small solid" id="cardUse" hidden>Use this amount</button></div>
       </div></details>
-      <p class="cap">No credit card: go back and untick it. Paying off an old balance: use loan or debt.</p>`;
+      <p class="cap">A card is paid a month late. This month you pay last month's bill, so put that bill under One-time costs for this month (Plan, then Month). The amount above is what you expect to put on the card from now on.</p>
+      <p class="cap">No credit card: go back and untick it. Paying off an old balance: add a Pay off a debt goal.</p>`;
     }
     return `${note ? `<p>${esc(note())}</p>` : ''}
     <div class="tour-fields">${named ? textField('tourLName', 'Name', l.name) : ''}${moneyField('tourAmt', 'Each month', val(S, l.key, START))}</div>${b === 'ins' ? moreBtn('ins') : ''}`;
@@ -133,7 +134,7 @@ const moreBtn = kind => `<div class="row-btns"><button type="button" class="btn 
 
 /* ----- where the rest of the pay goes: the five other jars share what the bills leave ----- */
 const JAR5 = ['lts', 'play', 'edu', 'ffa', 'give'];
-const JAR_LABEL = { lts: 'Long-Term Savings for Spending', play: 'Play', edu: 'Education', ffa: 'Financial Freedom', give: 'Give' };
+const JAR_LABEL = { lts: 'Burrows (goals)', play: 'Play', edu: 'Education', ffa: 'Financial Freedom', give: 'Give' };
 const JAR_SHORT = { lts: 'Savings', play: 'Play', edu: 'Education', ffa: 'Freedom', give: 'Give' };
 let jarVals = null, jarRest = 0, jarNec = 0;
 /* the share of the pay the bills leave for the other five jars, in whole percents; 0 when the bills use all of it */
@@ -272,7 +273,7 @@ const goalStep = id => ({ id: 'goal-' + id, part: PART.goals, setup: true,
     const dbt = !!k.debt;
     return `<p>${g.emergency ? 'A cushion for surprises. How much do you want to hold? Usual advice: three to six months of bills.' : dbt ? 'Name the debt and how much you owe in total. The smallest payment you must make stays in Necessities. This burrow is for the extra you pay on top, so the debt shrinks faster.' : 'Name, cost, a date if there is one, and the reason in your words.'}</p>
     <div class="tour-fields">
-      ${g.emergency ? '' : textField('tourGName', 'Name', g.name)}
+      ${g.emergency ? '' : textField('tourGName', 'Name', k.name && g.name === k.name ? '' : g.name, 60, k.name)}
       ${g.emergency ? '' : `<div class="field"><label for="tourGWhy">Why (optional)</label><div class="inp"><input id="tourGWhy" type="text" maxlength="80" spellcheck="false" value="${esc(g.why || '')}" placeholder="Why it matters, in your words"></div><p class="cap">Shows with the goal, so the reason stays in view.</p></div>`}
       <div class="field">${moneyField('tourGCost', dbt ? 'Total owed' : 'Cost', g.target).replace(/^<div class="field">|<\/div>$/g, '')}${k.cost ? `<p class="cap">${k.cost}</p>` : ''}</div>
       ${moneyField('tourGSaved', dbt ? 'Already paid off' : 'Already saved', g.start)}
@@ -380,8 +381,8 @@ const STEP_SPLIT = { id: 'goalsplit', part: PART.goals, setup: true, when: () =>
   title: () => (S.plan.goals.length > 1 ? 'Split goal money' : 'Goal money'),
   body: () => {
     splitInit(); const pct = Math.round(aimsOf(S).lts * 100), many = S.plan.goals.length > 1;
-    return `<p>${many ? `The Long-Term Savings for Spending jar is <b>${pct}%</b> of pay, <b>${fmt(gsBudget)}</b> a month, shared between your goals. A goal with a date gets what it needs first. Each slider moves on its own; what you take away waits as unassigned.`
-      : `The Long-Term Savings for Spending jar is <b>${pct}%</b> of pay, <b>${fmt(gsBudget)}</b> a month. ${unusedOf() > 0 ? 'This goal is filled first.' : 'All of it goes to this goal.'}`}</p>
+    return `<p>${many ? `The Burrows jar is <b>${pct}%</b> of pay, <b>${fmt(gsBudget)}</b> a month, shared between your goals. A goal with a date gets what it needs first. Each slider moves on its own; what you take away waits as unassigned.`
+      : `The Burrows jar is <b>${pct}%</b> of pay, <b>${fmt(gsBudget)}</b> a month. ${unusedOf() > 0 ? 'This goal is filled first.' : 'All of it goes to this goal.'}`}</p>
     ${many ? potHTML('goalPot', S.plan.goals.map(g => `var(--c${g.slot})`), gsPct, 100) + poolHTML('goal', S.plan.goals.map(g => g.name)) : ''}
     <div class="split" id="goalSplit">${splitRows()}</div>
     <p class="cap" id="splitUnused" aria-live="polite"></p>
@@ -401,7 +402,7 @@ function planFacts() {
 const ledgerRow = (k, v, cls) => `<div${cls ? ` class="${cls}"` : ''}><dt>${k}</dt><dd>${v}</dd></div>`;
 function ledgerHTML(f) {
   const rows = [ledgerRow('Pay in', fmt(f.inc)), ledgerRow('Bills (Necessities)', fmt(f.bills))];
-  if (f.goals > 0) rows.push(ledgerRow('Goals (Long-Term Savings for Spending)', fmt(f.goals)));
+  if (f.goals > 0) rows.push(ledgerRow('Goals (burrows)', fmt(f.goals)));
   if (f.other > 0) rows.push(ledgerRow('Education, Financial Freedom and Give', fmt(f.other)));
   rows.push(ledgerRow('Play money', fmt(f.play), 'play'));
   if (f.st === 'over') rows.push(ledgerRow('Short by', fmt(-f.L), 'neg')); else if (f.st === 'spare') rows.push(ledgerRow('Left, unassigned', fmt(f.L)));

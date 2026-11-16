@@ -284,7 +284,7 @@ function renderTour(dir) {
   const same = TS.filter(x => x.part === t.part), first = same.indexOf(t), count = same.length;
   /* until the person has ticked which bills or goals they have, the length of the part is not known yet, so the label leaves the total out */
   const pend = same.some((x, i) => x.pick && i >= first) || (t.id === 'pay' && !payNow());
-  $('#tourPart').textContent = pend ? `${t.part} · ${first + 1}` : `${t.part} · ${first + 1} of ${count}`;
+  $('#tourPart').textContent = pend || count < 2 ? (count < 2 && !pend ? t.part : `${t.part} · ${first + 1}`) : `${t.part} · ${first + 1} of ${count}`;
   const keys = TS.map(x => x.part).filter((p, i, a) => a.indexOf(p) === i), at = keys.indexOf(t.part);
   $('#tourDots').innerHTML = keys.map((k, i) => `<i class="${i < at ? 'past' : i === at ? 'on' : ''}"><b style="width:${i < at ? 100 : i > at ? 0 : Math.round((first + 1) / count * 100)}%"></b></i>`).join('');
   $('#tourDots').setAttribute('aria-label', pend ? `${t.part}, step ${first + 1}` : `${t.part}, step ${first + 1} of ${count}`);

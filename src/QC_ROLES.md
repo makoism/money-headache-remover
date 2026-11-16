@@ -30,6 +30,8 @@ Recompute by hand against the plan; do not trust the screen.
 - Sample vs real data never mixed; nothing shows a made-up number once the person has entered theirs.
 - Debt: paid off fills, owed shrinks, wording never says saved/full.
 Learned from panel (38.21): one percent rule (floored) on Home, popup and goal bars; restore from text must offer Undo; known open: debt after its due date shows Short with 0 paid, saved above target keeps adding monthly.
+Learned from panel (38.22): free to spend is capped so it can never show next to Short (held back = minimum balance minus month-end bank); sample-only tests miss crashes in the healthy state, so test a real plan too.
+Learned from Mako: zoom out to the objective: the app must give a true picture of money and what can really be spent; check it with his real numbers, not only sample data.
 Learned from Mako: accuracy and stability first. Nobody loses data.
 
 ## 3. Data safety
@@ -59,6 +61,7 @@ Learned from Mako: vines too thick and too same-y; subtle, tasteful, varied; kee
 Learned from Mako: never em dashes; minimal; plain.
 
 ## 7. Regression runner
+- Scenario scripts live in tests/qc: good1.js (healthy plan must say 'You are okay', no error log), mako_scenario.js (real yen numbers: Nov left -41,918, bank 1,010, free to spend 26,010). Run them before any Home change.
 - ./artcheck.sh must end "ART CHECK PASS". ./check.sh must end "GUARD ALL PASS" and "ALL GOOD". Never rebuild while it runs.
 - Fresh load with empty storage and with a filled plan: zero page errors.
 

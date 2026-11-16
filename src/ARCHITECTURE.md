@@ -200,3 +200,14 @@ Favicon (38.11): redrawn as a tree, a mound with a small door and a few coins, o
 - Chest shows 'Add pay' instead of numbers when pay is 0. Financial Freedom hides when pay is 0.
 - Pills (.help-row) hide while body.touring or body.bv-on. Restore from text now offers Undo.
 - QC panel: QC_ROLES.md (also in the project as claude/burrow-qc-roles.md).
+
+## 38.22: objective pass
+- renderStatus crash fixed (jar data comes from C.byYm, not the view). Free to spend in the chest is capped: held back = minimum balance minus month-end bank when status is Short; the weekly and daily figures follow the capped number.
+- Default goal names (Trip, Pay off debt...) show as a placeholder so typing replaces them. Loan note says monthly payment, not total owed. Step counter drops 'of 1'.
+- Open, ranked: money-left-after-everything figure for the next 3 months; card arrears mode (statement paid next month); spending envelope mode in the tour; variable income switch (plan on lowest month); come-back hooks (reminder at end of setup, missed-days banner); sticky Log button with last category; fewer onboarding screens; debt-first split; two pay lines.
+
+### 38.22 (addendum)
+- "Second income / Side income / Other income" now read pay wording; side pay note says enter the lowest expected month.
+- Home Next card: after the first logged spend (and no backup due, exact card hidden) offers "Set a weekly reminder" (data-remindgo -> Receipts, scrolls to #rcRemind; Hide sets S.ui.remindHidden). Backup nudge keeps priority.
+- Jar renamed "Burrows (goals)". Free to spend capped by held-back safety minimum; Short/cushion states; next-3-months line.
+- Still open: card arrears not modeled, variable-income switch, spending-envelope mode, onboarding length, debt after due date, saved-above-target cap, badge toast timing.

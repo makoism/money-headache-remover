@@ -1673,3 +1673,15 @@ body.scene-on .foot { width: max-content; max-width: min(92%, 520px); margin: 8p
 
 /* the Ask and Help pills step aside while the tour or a burrow is open */
 body.touring .help-row, body.bv-on .help-row { display: none; }
+
+.gapbar { margin: 14px 0 0; } .gapbar .cap { margin: 0 0 8px; } .gaprow { display: flex; gap: 10px; align-items: stretch; max-width: 360px; } .gaprow .inp { flex: 1 1 auto; }
+.hst-w.warn { color: var(--warn, #e9b872); }
+/* touch targets: every control a thumb must hit is at least 44px */
+.tabs button, .seg button, .gear, .btn.small, #prevM, #nextM, .mnav button, .tour-top button, .tour-top a { min-height: 44px; }
+.gear { width: 44px; height: 44px; }
+.btn.small { --btn-h-s: 44px; }
+/* Day look: the forest is washed out so dark text on the pale page stays readable */
+:root[data-theme="light"] #scene { opacity: .2; }
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) #scene { opacity: .2; } }
+/* the burrow panel is always a dark forest, so its words are always light */
+.hb-scene .hb-n, .hb-scene .hb-p { color: #e6f2ea; }

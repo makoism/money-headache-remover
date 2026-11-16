@@ -22,7 +22,7 @@ const CFG = {
 /* ---- The six jars (T. Harv Eker's system). "usual" is Eker's usual share of pay for each jar. It is only a guide: the page never shows it as a target, and the shares it does show always come from the real amounts. ---- */
 const JARS = [
   { id: 'nec',  name: 'Necessities',                    usual: 0.55, about: 'Rent, food, utilities and every other bill.' },
-  { id: 'lts',  name: 'Long-Term Savings for Spending', usual: 0.10, about: 'Saved now, spent later: a big purchase, a trip, a rainy day, a surprise. Savings goals live here.' },
+  { id: 'lts',  name: 'Burrows (goals)', usual: 0.10, about: 'Saved now, spent later: a big purchase, a trip, a rainy day, a surprise. Savings goals live here.' },
   { id: 'play', name: 'Play',                           usual: 0.10, about: 'Fun for you and your family, no guilt. What is left at month end can go to a goal.' },
   { id: 'edu',  name: 'Education',                      usual: 0.10, about: 'Courses, books, coaching, skill building.' },
   { id: 'ffa',  name: 'Financial Freedom',              usual: 0.10, about: 'Financial Freedom Account: investments you never spend. They grow and eventually pay you.' },

@@ -3,7 +3,7 @@
 const IN_ROWS = [
   { id: 'a', name: 'Salary', key: 'a', note: 'Monthly take-home pay, after tax. Paid twice a month: add both.' },
   { id: 'b', name: 'Second income', key: 'b', note: 'Optional. A partner’s share, a second job, benefits: anything regular.' },
-  { id: 'side', name: 'Side income', key: 'side', note: 'Optional. Freelance or gig income. Use a cautious average.' },
+  { id: 'side', name: 'Side income', key: 'side', note: 'Optional. Freelance, gig or cash work that changes month to month. Enter the lowest month you expect, so the plan still works in a slow one. Extra that comes in is a bonus.' },
 ];
 const JARCLS = { nec: 'g-nec', lts: 'g-lts', play: 'g-play', edu: 'g-edu', ffa: 'g-ffa', give: 'g-give' };
 const JARVAR = { nec: 'var(--c1)', lts: 'var(--c7)', play: 'var(--c5)', edu: 'var(--c2)', ffa: 'var(--c3)', give: 'var(--c6)' };
@@ -11,7 +11,7 @@ const JARNAME = {}; JARS.forEach(j => { JARNAME[j.id] = j.name; });
 const JARROWS = [
   { id: 'nec', jar: 'nec', name: 'Necessities', cap: 'Rent, food, utilities, every other monthly bill.' },
   { id: 'items', jar: 'nec', name: 'One-time costs', kind: 'items' },
-  { id: 'lts', jar: 'lts', name: 'Long-Term Savings for Spending', kind: 'goals', cap: 'Savings goals: big purchases, rainy day fund, trips, surprises.' },
+  { id: 'lts', jar: 'lts', name: 'Burrows (goals)', kind: 'goals', cap: 'Savings goals: big purchases, rainy day fund, trips, surprises.' },
   { id: 'play', jar: 'play', name: 'Play money', cap: 'Eating out, hobbies, treats, fun. Groceries go under Necessities.' },
   { id: 'edu', jar: 'edu', name: 'Education', cap: 'Courses, books, coaching, skill building.' },
   { id: 'ffa', jar: 'ffa', name: 'Financial Freedom', cap: 'Money you never spend: index fund, retirement plan. Put away regularly, leave alone.' },
@@ -87,7 +87,7 @@ function goalFormHTML(g) {
     <div class="field"><label for="ge-${id}-due">${dbt ? 'Paid off by' : 'Needed by'}</label><input type="date" id="ge-${id}-due" data-g="due" min="${lo}" max="${hi}" value="${esc(g.due)}"><p class="cap">With a date, the amount left is spread over the months before it. Without one, it is planned over about a year.${g.due ? ' <button type="button" class="link" data-gnodate>Remove date</button>' : ''}</p></div>
     ${dbt ? '' : `<div class="field wide"><label class="check"><input type="checkbox" data-g="emergency"${g.emergency ? ' checked' : ''}><span>Emergency fund</span></label><p class="cap">The one goal you can borrow from in a short month. A finished payment can send its money here.</p></div>`}
     ${g.emergency ? `<div class="field"><label for="ge-${id}-stretch">Long-term goal</label><div class="inp"><span class="yen cs"></span><input id="ge-${id}-stretch" data-g="stretch" type="number" inputmode="numeric" min="0" step="1000" value="${g.stretch || 0}"></div><p class="cap">Usual advice: three to six months of necessities. The goal amount above is the first stop; this is the larger one.</p></div>` : ''}
-    ${own ? `<p class="cap wide">Monthly amount set by you. <button type="button" class="link" data-gauto>Use suggested amount</button></p>` : '<p class="cap wide">Monthly amount is computed. To change it, open Long-Term Savings under Month.</p>'}
+    ${own ? `<p class="cap wide">Monthly amount set by you. <button type="button" class="link" data-gauto>Use suggested amount</button></p>` : '<p class="cap wide">Monthly amount is computed. To change it, open Burrows (goals) under Month.</p>'}
     <div class="row-btns wide"><button type="button" class="btn small solid" data-gdone>Done</button><button type="button" class="btn small warnbtn" data-gdel data-armkey="gdel-${id}">Remove goal</button></div></div>`;
 }
 function goalCardHTML(g) {

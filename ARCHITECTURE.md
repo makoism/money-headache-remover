@@ -21,26 +21,42 @@ ui41/ui42     adapters to the outside: the AI route (relay or viewer's Claude) a
 ## Files
 | File | What it holds |
 |---|---|
-| `model.js` | The money model: `calcAll`, `goalInfo`, `jarsOf`, `viewOf`, `statusOf`, `receiptStats`. Pure. Never change without the number checks. |
+| `model.js` | The money model: `calcAll`, `goalInfo`, `jarsOf`, `viewOf`, `statusOf`, `receiptStats`, `sweepPlay` (a month's unspent play money into a goal, that month only). A goal carries `why`, the reason in the person's words (`WHY_MAX` 80). `setVal` scope `once` or `month` is one month; `after` is from that month on. Pure. Never change without the number checks. |
 | `ui0.js` | State `S`, normalising saved data, saving (`persist`, `flush`), small helpers |
-| `actions.js` | `ACT`: transactions with undo (`ACT.tx`, `ACT.undo`), setters for pay, lines, goals, jars, receipts, name, currency, Home layout; `ACT.summary()` reads the key numbers |
+| `actions.js` | `ACT`: transactions with undo (`ACT.tx`, `ACT.undo`), setters for pay, lines, goals, jars, receipts, name, currency, Home layout, `ACT.sweep(ym, goalId, amount)`; `ACT.summary()` reads the key numbers |
 | `ui1.js` to `ui4.js` | The Plan tab (lines, ledger), bar and legend, road chart, tooltips, Receipts |
-| `ui44.js` | Confetti and the one-line cheer toast |
-| `ui45s.js` | Setup screens (questions), `SUBS` (subscription list and price hints by country) |
-| `ui45u.js` | Setup from statements: the source step (upload here, use any AI, type it in), the review screen, `importApply`. `IMP_FORMAT` + `importClean` are a machine contract |
-| `ui45x.js` | Welcome extras, the shrine, **sound effects** (`SFXD` recipes, levels, routing) |
+| `style.css` (top) | THE RULESET: the tokens every screen is built from. Corners grow with padding (`--r-ctl` 14, `--r-ctl-s` 12, `--r-ctl-xs` 10, `--r-box` 18, `--r-panel` 24, `--r-card` 28, pills 980); one card padding (`--pad-card`) and one distance between cards (`--gap-card`); type tiers `--t-micro` 13 to `--t-h1`; control heights `--ctl-h` 52, `--btn-h` 44, `--btn-h-s` 38, `--btn-h-l` 52. Use a token, never a raw number, for any of these |
+| `art.js` | The nature line art: `ART` (inline SVG for grass, sprig, vine, sprout, branch, drawn in `--leaf`), `art(kind)`, `ART_SEATS` (Scan, Month hero, ledger, the backup reminder, All months, the Settings card, the Receipts form) and `placeArt()`; fern, twig, flower and the `corner` vine (the garland around the hello video) come from `/tmp/v35/mkart2.py`, the rest from `/tmp/v30/mkart.py`. Every setup screen gets a plant: a step's own `art`, else `ART_BY_PART` (ui45.js); `fitTourArt` hides it when the words reach it, and `pixFit` does the same for art inside cards |
+| `pixel.js` | The pixel art: `PIX` (axolotl, ocelot, tulip, daisy, sunflower, sprout, cactus, mushroom, clover as crisp SVG), `pix(kind, scale)`, `PIX_SEATS` (host, sprites, scale, corner), `placePix()` and `pixFit()` (a sprite hides itself when words or controls reach its corner; `put()` re-seats after a redraw, `pixQueue()` re-checks on resize), `peek(kind)` (the axolotl pops up bottom-left on a big celebration, the ocelot walks in from the right on a medium one, never under reduced motion). Regenerate with `/tmp/v32/mkpix.py` |
+| `ui44.js` | The celebration: falling leaves on the `#confetti` canvas and the one-line cheer toast |
+| `stmt.js` | Statements to numbers, pure: `stmtCleanRows` (one file's rows, checked), `stmtGroups` (files of one account, told apart by the transaction dates and printed periods, never file names; periods joined end to end), `stmtMerge` (duplicates once, within an account), `stmtMerchants`, `stmtNumbers` (pay, balance, bills, subs, loans, card, questions, the months line), `stmtReceipts`. Unit test: `node /tmp/v29/stmt_test.js` (42) |
+| `ui45s.js` | Setup screens (the typed money screen, bills, jars fold and split, goals, reveal), `SUBS` (subscription list and price hints by country) |
+| `ui45c.js` | Before the uploads: the conversation screen (`STEP_CHAT`). Asks the kinds of account, how many, their names; explains why, what happens, how categories work; `ONB_FAQ` answers common questions without AI, typed ones go to `askFn` with `ONB_GUIDE`. Saved in `S.ui.onb`; `onbApply` turns the answers into the upload boxes |
+| `ui45u.js` | Setup from statements: the Your statements screen (upload; the any-AI route where Claude cannot be reached; Type the numbers instead), the review screen, `importApply`. `IMP_FORMAT` + `importClean` are the pasted-answer contract |
+| `ui45v.js` | The statement reader: one fixed-shape job per file (`STMT_ROWS_SCHEMA`; a text file over 120 lines goes in parts that come back as one read), four at a time, then one category job per new merchant (`STMT_CATS_SCHEMA`, `STMT_CAT_GUIDE`); progress lines, `stmtReviewHTML` (what was read, categories with a tap for the rows behind each merchant), `stmtRecat`, `stmtAfterApply` (receipts with `src:'stmt'`, learned categories in `S.ui.cats`). The tool is offered with `tool_choice` auto and asked for in the prompt: Sonnet 5.5 refuses a forced tool |
+| `ui45x.js` | Setup extras (card calculator, subscriptions, goals add-another, `JAR_LINES`), **sound effects** (`SFXD` recipes, levels, routing) |
+| `music.js` | `MUSIC`: the setup's background piece (original, generative: pad, bell melody with echoes, wind, drops), started on the first tap in the setup, quiet while the hello video plays, off with Music off or Sound off, stopped when the setup closes. `MUSIC.render(ctx, out, seconds)` schedules it into an offline context for checks |
+| `world.js` | The world: the pages live on a scroll that a hand raises over the scene; the orb (hands drawn by rule on a canvas, a glass sphere with CSS stars and orbiting sparks, tinted by `--realm`) holds the small controls |
+| `realm.js` | The six realms: `REALMS` (name, one line, palette turn for the old LIFE scenes), `REALM_GLOW`, `pickRealm` (random, never the same twice running, `?realm=` pins one; the dream one is rare) |
+| `card.js` | The realm title card shown on each open (name and one line, fades in and out in about 3.5 seconds, never blocks a tap; skipped when `?realm=`, `?tod=`, `?lifetest`, `?sfxtest` or `?nocard` is in the address) |
+| `scene.js`, `sprites.js`, `life.js` | The old scene engine and the Fairy Woods (`wood`) and plain mode; `life.js` is the older creature system (LIFE) 38.8 composition: foreground rebuilt (ferns, foxgloves, bluebells, log, boulder), waterfall straighter, glow outside the water. 38.9: straighter back trees; flyers (birds often, dragon and saucer rarely) drawn between far forest and near trunks, `?fly=bird|dragon|ufo` to preview. |
+| `vgfx.js`, `vista.js`, `vcommon.js` | The depth engine ("HD-2D for the browser"): stacked canvas layers moved by pointer/tilt parallax, per-layer blur and haze, a screen-blend light canvas, CSS god rays and weather. A realm registers a set with `VISTA.reg(id, {stageK, eco, pal, layout, rays, weather, layers, lights})`; painters work in viewport units. Live drawing runs at 6 fps and only while visible |
+| `lifekit.js` | ECO, the network engine: nodes (spirit, plant, creature, home, house) and links (root, feed, talk, vine, wire). Touching or hearing anything sends glyph bubbles, pulses along links and expanding waves; the realm's Spirit connects everything. Bubble count is capped (6 wide, 3 narrow) |
+| `vs_*.js` | One scene set per realm: `vs_wood` (LIFE based), `vs_crystal` (Crystal Heart, Elders, veins in the floor), `vs_sea` (Old Jelly, ribbons of light), `vs_shire` (Heart Tree, roots cut open under the grass, Greenlings carry energy through them), `vs_chiba` (cats with odd physics, the Great Cat), `vs_dream` (the Sleeper moon, silver threads to everything, a mirror sea). Each has at least 7 creatures (2 or more magical), 8 plant kinds, a goal house that builds in 8 stages with progress (`g.tk.stage()`), four moods |
+| `nook_realm.js`, `vs_wood_forest.js` | Fairy Woods (the only realm in use; `ONLY_REALM = 'wood'` in `realm.js`, `?realm=` still shows others, set `''` to restore random). Native layered scene, no picture: glowing mushrooms are painted by `gshroom`, `grade` adds the teal vignette, far trees/trunks/roots come from `NK.forest`. Body gets `shroom-menu`, the orb is hidden (CSS), folk, huts, lanterns and the depth post-process are off. The menu is mushrooms: big ones open Home, Receipts, Plan; small ones are Streak, Sound, Music, Settings, Ask, Help (`L.shrooms`, `L.tools`; on a phone `L.tools[0]` and `[5]` are placed so every button is on screen). Tool taps click the real (hidden) buttons through `nd.tap`, deferred 40 ms so the outside-click handler does not close the panel. The goal house is a toadstool ring (stages 0-7, `?stage=N` forces one). Hover shows an icon bubble; clickable mushrooms shine softly; after 20 s of no input a hint shows (one re-arming timeout). `?lifetest` exposes `__ECO` and `__PX()` for tap tests. `vs_wood_pic.js` and the picture code are inert and not in the build. Other realms are paused (`vs_extra*.js` are not in the build). |
+| `ambient.js` | Per-realm sound beds and event voices (`AMBI.setRealm`, `AMBI.sound`) |
 | `ui45t.js` | Hello-video transcript (Mako's words, timed) |
-| `ui45.js` | The tour engine: open, close, next, back, autosave, welcome house drawing |
+| `ui45.js` | The tour engine: `TOUR` order (video and welcome, currency, statements, review, typed money, bills, split, goals, play money, done), open, close, next, back, autosave, hello video, the hill scene (`homeScene`, drawn in the look's accent) |
 | `ui46.js` | Help menu, Ask Claude (viewer's own Claude account), copy-for-any-AI route |
 | `ui47.js` | Date and month pickers |
-| `ui48.js` | Coach marks (spotlight tours of each tab) |
+| `ui48.js` | Coach marks (spotlight tour of a tab, only from Help: Explain this tab) |
 | `ui41.js` | The AI route: `relayFn()` mirrors Claude's `sample` surface over the site's `/api/ai`; `relayHealth`, anon id, invite code |
 | `ui42.js` | The cloud copy: recovery code, keys (PBKDF2 + HKDF), AES-GCM, push after each save, restore, conflict notice |
 | `ui43.js` | Saving safety: IndexedDB second copy with automatic restore, backup reminder cards on Home |
 | `ui49.js` | Scan receipts card |
-| `ui6.js` | Home: status, next step, hero goal, play money, streak, badges, add-a-goal wizard |
-| `ui5.js` | Wiring all events, Settings backup/restore, the copy-for-AI prompt, startup |
-| `style.css`, `body.html` | Look and static markup. `body.html` has `@@VER@@` and `@@STAMP@@` placeholders |
+| `ui6.js` | Home: status, next step (first steps, finish last month, the month-end top-up offer `sweepOffer`/`doSweep`/`undoSweep`, Make it exact), hero goal (the reason as its headline, what this month adds and what is to go), play money, streak, badges (`BADGES`, now ten), add-a-goal wizard |
+| `ui5.js` | Wiring all events, Settings backup/restore, startup |
+| `style.css`, `body.html` | Look and static markup (`@font-face` first, then the two palettes). `body.html` has `@@VER@@` and `@@STAMP@@` placeholders |
 | `VERSION` | Line 1: version number. Line 2: date and time shown at the bottom and in Help. |
 | `RELAY` | One line: the site's address, used only by copies opened as a file. Empty until the site exists. |
 | `test_team.js`, `tests/` | Main suite and guard tests. More regression scripts live in `/tmp/v22`, `/tmp/v25`, `/tmp/v27`. |
@@ -51,20 +67,45 @@ All `ui*.js` files share one scope (one IIFE) in the order set in `build.sh`. Fu
 | Change | Where |
 |---|---|
 | A subscription price or country hint | `SUBS` in `ui45s.js` (`[id, name, US, Japan, Philippines]`) |
-| A sound, its level or character | `SFXD`, `CLICK`, `trim` in `ui45x.js` |
-| Setup wording | the step definitions in `ui45s.js` and `ui45.js` |
+| A sound, its level or character | `SFXD` in `ui45x.js`: `air` (wind), `rustle` (leaves), `drop` (water), `bird`, `hum`; `trim` sets the family levels; leaves, drops and the bird go to the bright output (`o.hi`) |
+| The setup music (notes, chords, pace, level) | `music.js`: `DEG` and `CHORDS` (F major pentatonic plus the seventh), `LEVEL`, `PAD`, the timings in `changeChord`, `nextNote`, `step` |
+| The typefaces | `@font-face` at the top of `style.css` (Nunito Sans for reading, Fraunces for titles and big numbers; files in `../fonts`, copied next to the page by `../pwa/make_pwa.py`); `--f` and `--fd` |
+| The look (greens, glass, aurora) | the two palettes at the top of `style.css` (Day = light root, Forest = dark), `--aurora`, the glass rule and `.art-*` placements; the streak colour is `--streak`; PWA colours in `../pwa/make_pwa.py` and the icons |
+| A celebration (leaves, sparks, the peek guys) | `celebrate`, `leafColors`, `leafFrame` in `ui44.js` (it calls `peek('axolotl')` for big and `peek('ocelot')` for medium); `sparkBurst` (small leaves on switches and sliders) in `ui45x.js` |
+| The hello video's garden | `garden()`, `fromMako()` in `ui45.js` (four turned copies of `ART.corner`, two pixel-flower groups, the note in Caveat with an SVG arrow); `.vgarden`, `.vg-*`, `.from-mako` in `style.css`; the handwriting face is `fonts/caveat-latin.woff2` (OFL), `--fh`, used for that one note only |
+| Where a plant sits | line art: `ART_SEATS` in `art.js` and the `.art-*` rules in `style.css`; pixel art: `PIX_SEATS` in `pixel.js` (`tr`, `br`, `bl` corners in `.pixc`). New sprite: a grid in `/tmp/v32/mkpix.py`, then paste the generated `PIX` block |
+| The split sliders (jars, goals) | `moveShare`, `spreadFree` in `ui45s.js` (a slider changes only its own share; the rest is unassigned), `spPaint`, `splitApply`, `splitSpread`, `splitGive` in `ui45x.js` |
+| The statement account boxes | `impAccts`, `acctNew`, `acctHTML`, `paintAccts` in `ui45u.js`; a job carries `acct` and `stmtTagRead` stamps each read; `stmtGroups` groups boxed reads by box; receipts carry the account as `s`; `S.ui.accts` remembers the names |
+| The computer camera | `camOpen`, `camShot`, `camClose` in `ui49.js` (phones keep the native capture input) |
+| Setup wording or order | the step definitions in `ui45s.js`, `ui45u.js` and `ui45.js`; the order is the `TOUR` array in `ui45.js` (`skipIf` drops the typed screens once statements gave the numbers) |
 | A Home card | its `render…` function in `ui6.js`; markup slot in `body.html`; order and visibility via `HOME_SECTIONS` and `ACT.setHome` |
-| What the statement import asks for | `importRules` and `IMP_FORMAT` in `ui45u.js`, with `importClean` updated to match |
+| The reason behind a goal (the Why line) | asked in `goalStep` (`ui45s.js`, `#tourGWhy`), the goal editor (`goalFormHTML` in `ui1.js`, `data-g="why"`) and the add-goal wizard (`#gwWhy`); shown by `renderHero`, `goalRowHtml`, `renderGoals` (`#jw-id`), the Setup done block (`ui45.js`), the celebrations, and the assistant's picture (`for:`) |
+| The month-end top-up (unspent play money to a goal) | `sweepOffer` decides when (last month has four receipts or a statement, something left, a goal with room, not answered yet: `S.ui.sweep[ym]`), `doSweep` moves it through `ACT.sweep`, `undoSweep` takes it back; the model side is `sweepPlay` in `model.js` |
+| What the statement reader asks Claude for | `STMT_ROWS_SCHEMA`, `STMT_CATS_SCHEMA` and `STMT_CAT_GUIDE` in `ui45v.js`; the arithmetic that turns rows into numbers is `stmtNumbers` in `stmt.js` (change the unit test with it). The pasted-answer route keeps `importRules` and `IMP_FORMAT` in `ui45u.js`, with `importClean` to match |
+| The category words | `STMT_CATS`, `STMT_BILL_CATS`, `STMT_LINE` in `stmt.js`; the stub's keyword map in `../site/tests/stub_anthropic.js` for the tests |
+| Which files the AI can read | `IMG_TYPES` and `DOC_LIMITS` in `ui41.js` (PDFs go up as document blocks on the relay route only; `askDoc` in `ui46.js` is null elsewhere), mirrored by `MAX_DOCS` in `../site/functions/api/ai.js` |
+| What the assistant may do | `ASST_GUIDE` (the list Claude reads) and `asstCheck` (the checked actions) in `ui4a.js`; both must agree; `asstPicture` is what it knows |
+| The Home "Next" card and the finish-last-month nudge | `renderNext` and `monthToClose` in `ui6.js`; `done.bills` is set when a bill amount is typed, when no bills are ticked, or when the jars screen is passed (ticking alone is not entering); `Show first steps` in Settings brings a hidden card back |
+| Goal money in the setup | `ltsBudget` in `ui45s.js` (the Long-Term Savings jar's money, by the jars screen's own arithmetic: whole percents of the pay the bills leave); `settleGoals` gives a lone goal the whole jar (capped by what it still needs), the split screen (`STEP_SPLIT`) shares it between two or more |
+| A card that hit a snag, the error log, Report a problem | `safe(fn, host, where)`, `logErr`, `errLog` (`mhr-errlog`, last 12) in `ui0.js`; `reportText`, `openReport` in `ui46.js` (version, device, screen, look, counts, last errors; no money) |
+| Two tabs, a clock set back, a newer version online | `storedIsNewer`, the `storage` listener and `adoptOther` in `ui0.js` (`persist` only ever raises `rev`); the update offer `#upd` (`mhr:update` from the registration script in `../pwa/make_pwa.py`, handled in `ui5.js`) |
+| The scenery behind the page | `scene.js` (`SCENE`): below 720px wide there is no scene behind the words, only `paintSign` (a wooden sign painted into the header's `--sign`) and `#sceneBot` (a stream along the bottom with stone seats measured under Ask and Help). Above that: one pixel canvas, still layer painted per size and mood, living layer at 6 fps, veil over the page column; moods by the clock (`?tod=` fixes one); `S.ui.scene === false` turns it off (music panel). Since 36.2 it is a deep old forest (trunks in mist, cottage, fairy ring, rune stones, waterfall pool with a spirit stag, fairies); the cozy cabin version is in git history at 36.1. Music on/off is one setting: the Settings switch, the setup button and the panel all go through `DJ.setSrc`. 38.8 composition: foreground rebuilt (ferns, foxgloves, bluebells, log, boulder), waterfall straighter, glow outside the water. 38.9: straighter back trees; flyers (birds often, dragon and saucer rarely) drawn between far forest and near trunks, `?fly=bird|dragon|ufo` to preview. |
+| Top bar: streak, mute, music | `paintTopStreak` in `ui6.js`; `dj.js` (`DJ`, `ALBUMS`, `djSrc`, `volOf`): one-tap mute (`S.ui.mute`), volume `S.ui.vol` through `SFX.out()`/`SFX.vol()` in `ui45x.js`, sources Forest / an album / Off (`S.ui.dj`, `S.ui.music`); albums stream through YouTube's visible player in `#djDock`, loaded only when chosen; add an album to `ALBUMS` |
+| Animals in card corners | `PIX_SEATS` in `pixel.js` (sprites from `/tmp/v37/mkpix.py`); the line-art seats in `art.js` are down to the hero vine |
+| Undo after Zero all or Restore samples | `offerUndo` in `ui5.js` (`#undoBar`, 15 seconds) |
+| Typed commas in amount boxes | `moneyTyped` in `ui6.js`: a comma is a decimal point only for `COMMA_DEC` currencies, otherwise dropped (the box regroups thousands itself) |
+| A receipt dated after today | `futureOk` in `ui4.js` (asks once, logs on the second tap); `selByReceipt` lets the Plan pages return to the month in hand after the list followed a receipt into another month |
 | AI limits, models, the code word | the Cloudflare project's Variables (see `../site/SETUP.md`) |
 | Colours, spacing | variables at the top of `style.css` |
 | Sample numbers per currency | `presetState` in `model.js` |
 | The version | `VERSION` |
 
 ## Contracts: do not edit casually
-- `askExtractPrompt`, `scanMessage` and the AI-prompt JSON format in `ui46.js` / `ui5.js`, and `IMP_FORMAT` / `importClean` in `ui45u.js`, are read by machines (Claude and other AIs). Changing a field name breaks reading photos and pasted setups.
+- `askExtractPrompt` and `scanMessage` in `ui46.js`, `IMP_FORMAT` / `importClean` in `ui45u.js`, and the two schemas in `ui45v.js` are read by machines (Claude and other AIs). Changing a field name breaks reading photos, statements and pasted setups.
 - The relay request shape (`functions/api/ai.js` validate) and `relayFn` in `ui41.js` must agree. The vault record shape (`functions/api/vault`) and `ui42.js` must agree.
 - Storage key `money-map-template-v2` and the shape of `S`: only add fields; `normalize` fills defaults, so older saved copies keep loading.
 - `model.js` outputs feed every screen; any change must pass the full number checks.
+- `rev` in the saved copy only goes up (`persist`); a tab never writes over a newer copy, so a clock set back or a second tab cannot lose a save.
 
 ## Rules for new code
 1. **Idle is zero.** No `setInterval`, no polling, no `requestAnimationFrame` loops except while an animation is visibly running. A MutationObserver callback must never write to the DOM unconditionally (it would re-trigger itself).
@@ -78,12 +119,95 @@ All `ui*.js` files share one scope (one IIFE) in the order set in `build.sh`. Fu
 ## Checks and release
 ```
 ./check.sh          # about 1 minute: build, syntax, main suite, safety tests, idle and speed guard
-./check.sh full     # adds all regression scripts and the number checks (about 10 minutes)
+./check.sh full     # adds all regression scripts, the number checks and the installable app (about 25 minutes); a script that cannot start counts as a failure. Run nothing else that opens a browser meanwhile.
 cd ../site && ./tests/dev.sh && node tests/relay.test.js && node tests/page_relay.js && node tests/page_vault.js && node tests/page_import.js   # the server and the hosted page
 ```
 Site release: `cd ../site && ./build_site.sh`, copy into the GitHub clone (`/home/claude/money-headache-remover`), commit, push `main`; Cloudflare deploys within a minute; check `/api/health` and the Version stamp on the live address.
-Release: edit source, update `VERSION`, `./check.sh full`, rebuild the app package (`cd ../pwa && python3 make_pwa.py`, test with `node /tmp/team_pwa.js`, 8 PASS expected), publish (`list_files`, `get_artifact`, `publish_files` with `mode: patch` and the current live version), check the live page, add a dated entry to the Project doc.
+Release: edit source, update `VERSION`, `./check.sh full` (it builds and tests the app package too), publish (`list_files`, `get_artifact`, `publish_files` with `mode: patch` and the current live version), check the live page, add a dated entry to the Project doc.
 
 ## Known limits
 - In the artifact, data lives in the browser (localStorage plus a second copy in IndexedDB); clearing site data removes both; only a backup file survives. On the site, the optional cloud copy survives anything as long as the person keeps the recovery code. The artifact cannot reach the relay or the vault (its pages may not call other hosts).
 - Sounds were only measured offline, never heard on a real speaker. Not tested on a real phone or iPhone Safari.
+- The customer-experience pass (v35.1) walked the page as a new person on a phone (`/tmp/v36/ux_*.js`: naive and filled setups, the site's statement path, every tab and sheet, a crawl that taps every control). `/tmp/v36/ux_test.js` keeps what it fixed; redo the walk after any change to the setup's order or to Home.
+
+| `scene.js` (38.7) | Lighting pass: `LIGHT` table per time of day; three light layers (sun, lamp, wf) painted once and composited each frame (screen / lighter) with their own breathing and flicker; one main sunbeam onto the cottage plus thinner beams under the canopy gaps; dithered shade at edges; lanterns on posts, window and lantern glow, fireflies and a glowing waterfall at dusk and night; waterfall drops wander a few pixels in soft curves (`L.fall.off`). Before that:  The 36.3 Fairy Woods scenery again, on every screen size (a phone gets the whole picture, no sign and no rocks strip): glowing fairies, the stepped three-tier waterfall, hut, stag and deer. It is the 36.3 `SCENE` module plus no-op `progress` and `flare`, with `isPhone` forced false. The 38.x native forest (`vista.js`, `vs_*.js`) is no longer started. Deep green: darker glass variables and a green shade over the picture (`body.scene-on::after`) at the end of `style.css`. The 38.5 file is saved as `backup_forest/scene.js.v38.5-36.0scene`. 38.8 composition: foreground rebuilt (ferns, foxgloves, bluebells, log, boulder), waterfall straighter, glow outside the water. 38.9: straighter back trees; flyers (birds often, dragon and saucer rarely) drawn between far forest and near trunks, `?fly=bird|dragon|ufo` to preview. |
+| `dj.js` music (38.6) | All music is baked in: Forest (made in the browser by `music.js`) and Off. GREEN (YouTube) and the three Kingdom albums (Bandcamp) were removed because they cannot play inside the app; nothing streams from outside. `ALBUMS` is empty. |
+| `gsprites.js`, `garden.js` (38.5) | The garden: pixel nature grown into every box (header, tabs, each card, the music, camera and report panels). `gsprites.js` holds about 55 sprites drawn as text rows (`GS`), colour swaps (`GV`) and the pool lists (`GARDEN_POOL`); the older `PIX` sprites join the pool. `garden.js` keeps a layer `.gnl` per page and a container `.gdh` per box. For each box it scans words, controls and coloured blocks into a 3px grid, grows one to five pixel vines (stem, leaves, hanging tendrils, blossoms) along edges using the free depth, and sets small things only in empty cells (ground things need a floor, flyers hang in the air). Picks come from shuffled decks so boxes do not repeat. Positions use layout offsets, not rects, so a sliding page does not skew them. It redraws through one `ResizeObserver` (each element observed once; observing again fires at once and loops) and `GD.queue()` from `pixQueue`. Nothing runs idle: growth plays once on first view (`IntersectionObserver`), taps play a one-shot reaction. The old corner sprites (`PIX_SEATS`) and line art (`ART_SEATS`) are emptied. Class names: `gnl`, `gdh`, `gv`, `gi` (not `gd`, which the goals list uses). 38.9: one ornament per card from PLAN (a plant or one vine species), vines tap-to-grow (levels 0-3, kept in GROWTH), no animals. |
+
+
+Favicon (38.9): pwa/make_icons.py draws a pixel burrow with coins, writes the svg icons and runs render_icons.js for PNG and favicon.ico.
+
+Waterfall (38.10): tiers widen top to bottom (dw 0,3,6) and flare 2 px within each tier via F.ex(ti,y), so it never narrows going down.
+
+Favicon (38.11): redrawn as a tree, a mound with a small door and a few coins, on a full deep green square (pwa/make_icons.py).
+
+38.12: waterfall tiers line up (dx 0,-1,-2) and the rock channel is wider; favicon redrawn as a tree hollow with gold seen from the ground, rounded corners (pwa/make_icons.py).
+
+38.12 (later): flyers now pass behind the nearer rows of trees (between the deepest row and the rest), not in front of them. Favicon redrawn at 32x32: low angle from the ground, dark trunk with a gold-filled hollow, flowers on the ground, lush canopy, tinted sky, rounded corners.
+
+38.13: garden reworked: no tap-to-grow, every card gets one vine of its own kind plus a thin border vine (sometimes two) that swells into tufts; plants (sprout, berries, leaves) only at the right side of three cards; clover, rose, wheat, lavender and bluebell removed. Header reads "the burrow / for money freedom" in lowercase. Dragon rarer (about 2 to 4 minutes apart at the earliest), a slow wavy flight, and a little faded; saucer rarer too.
+
+## 38.14
+- squirrel.js: a short squirrel-and-coin moment (canvas 100x38 at 3x, bottom left, no taps, about 5 s, gone after). Plays on a new streak week, the first receipt, a batch of 3 or more receipts, a goal quarter, and spare money moved into a goal. At most once per 150 s; not for reduced motion. `?sqtest` exposes `window.__sq`.
+- Icons: grassy burrow hill with round door, gold, flowers and sparkles on a lavender sky (16x16 art, make_icons.py).
+
+## 38.15 (preview, not on the live site)
+- squirrel.js rebuilt: the squirrel is drawn live from parts (tail, body, head, ears, paws, feet) with an outline pass; three looks A Classic, B Chibi, C Grey (`SQ.STY`); a 6 s story (hop in, look, crouch, toss, joy bounce, hop away). `SQ.frame(g, t, style, {W, base, dx})`, `SQ.stash()` for the corner moment elsewhere, `SQ.burrow()` the small corner burrow.
+- burrows.js: burrow screens. A LOOK = { mood, w, h, paint, fx }. Stage 80% down, one art pixel = S screen pixels (`round(vh/150)`, capped to the width), weather on its own finer canvas (`.bv-rain`). `BUR.home()` draws the Home overview (`#hBur`): one small burrow per savings goal with how full, a short note, the play money number. Spending jars are not burrows.
+- burrow_rainy.js: the Rainy Day look (night, rain stopped by the hill, lit door with the coin pile as high as the goal is full, windows, lantern, chimney smoke, puddles, frog, mouse, glowing snail, mushrooms, wisps, a breath of light every 10-15 s and when the squirrel stocks it, far lightning).
+- scene.js: `SCENE.look(mood)` overrides the time of day for a burrow screen ('' follows the clock).
+- Test hooks: `?burrowtest` gives `window.__bur`, `?sqtest` gives `window.__sq`. Open a burrow from the address with `#burrow=<goalId>`.
+- 38.15 later: the Rainy Day look has its own world (`R.rainy.bg(sky, clouds, world, k, pct)`: three canvases `.bv-bg0` sky, `.bv-clouds` drifting, `.bv-bg` trees, ground, path, puddles, trunks, canopy; an owl on its branch and a toadstool house on wide screens). The fuller the fund, the calmer the storm: rain thins to 30% of its count, clouds shrink, the sky warms; at 100% the rain stops and the stars come out. Creatures have contact shadows; the squirrel is lit cool with warm light on the side facing the door (`SQ.frame` option `tint`, `shadow`). Burrows: swipe, arrow keys or the side arrows go to the next burrow with a short fade. `?burrowtest` gives `__bur.force(pct)` for checks.
+
+## 38.16 (preview, not live)
+- Pixel art bible: ART_GUIDE.md (rules), pal.js (74-colour palette `PAL`, `PXK.halo` stepped dithered glow), artcheck.sh (palette %, sprite colour count, no gradients/blur in art files).
+- Art applied: all hex colours in squirrel.js, burrows.js, burrow_rainy.js snapped to the palette; the 7 radial gradients and the squirrel's linear gradient replaced by stepped halos/bands; rain moved onto the main art pixel grid (Sr = S, f = 1, denser, slower, shorter streaks).
+- Streak button hidden in the top bar (`#topStreak { display:none !important }`, kept in DOM so orb/tool code and the pop-up streak keep working). Streak still shows in "Streak, badges, pages" and when logging.
+
+## 38.17 (preview, not live)
+- Rainy burrow: the stone path is now a small lake (`lake()` in burrow_rainy.js, `lakeFx()` for fish, glints and pixel ripples). Rain now lands across the whole foreground. Framing trunks have straight bark grooves (no sine wobble).
+- Burrow mounds (LOOKS.plain, 56x42, seeded from the goal id with `seedOf`) replace the toy hill: uneven earth mound, roots over a lopsided arch, coin heap, moss, ferns, stones, mushrooms. Home shows them at exactly 2x.
+- Main forest (scene.js): dragon redrawn (dark green, outlined, big eye, no 2x scaling); back trees are straight (`type` plain|fork only, trunk geometry returned for climbers); squirrels climb back trunks now and then (`climbers`, `?sq`); drifting back lights (`driftLights`); the bottom meadow (`meadow`, `meadowFront`, `meadowLife`: tall grass in three tones and several species, log, stump with a lit door, rabbit, eyes, hedgehog; `?eggs` forces them); the scrim is lighter at the very bottom (six stepped bands); footer lines sit on a dark pill.
+- Welcome video garland: `.vgarden` is exactly video width + padding at every size (CSS vars `--vw`, `--vp`).
+- Favicon: night-sky palette, richer and darker (pwa/make_icons.py).
+- artcheck.sh covers home mounds and the dragon; ART_GUIDE.md has the nature rule (section 0).
+- 38.17 round 2: dragon has no black outline (deep green is the darkest tone); grass has five families (cool, warm, deep, lime, dark blue-green) plus a per-clump light/dark shift; rabbit and hedgehog removed, a frog on a mossy stone and a snail on the log instead (E.frog, E.log); home burrow mounds redrawn simple (40 x 30, mossy mound + arched door + coins + one grass clump + one flower); scene build runs in its own timer task (startup long task under 200 ms); guard.js idle CPU is the median of three windows (limit unchanged at 1.5%).
+
+## 38.18
+- Burrow screens: "BACK TO THE BURROW" is painted INTO each world (world rule, ART_GUIDE 0a): a dirt road (`BUR.drawRoad`) and a wooden signpost with a left arrow (`BUR.drawSign`, 3 x 5 pixel alphabet `GL`). Forest: `groundPaint()` into `canvas.bv-ground` (grass over the post foot, time-of-day tint); rainy: the road is part of `bg()` and the sign is a sprite (`SPR`) drawn in the fx layer in front of the creatures. `.bv-sign` is only an invisible hit button (`SIGNR` rect, `placeSign()`), aria-label "Back to the burrow". Phone gets a lower narrow board so it clears the burrow and the Ask/Help buttons. The small "Home" pill is kept; its z-index was auto so the scene layers hid it (now 6).
+- Home burrow icons: a round hole in the middle of a mossy mound, money piling up inside the circle; width, height, hole size, moss shade, tuft, flower and a stone differ per burrow (seedOf). PAL.gold has 5 steps (0-4): never index gold[5].
+- Rainy burrow: calmer and warmer. Rain fewer and slower, fish slower, lamplight flicker slow and small, breath pulse rarer, lightning rare and faint, smoke slower, snail slower; warm tint stronger and blue weaker. The mouse and the duckling and the fox kit are gone (only a frog and a snail stand in front), the glowing mushrooms are pink toadstools with cream spots, the owl is gone, 5-7 slow fairy lights replace the 9-15 fast wisps, and things fly far behind: a flock of small birds every 30-60 s and a paper lantern rising every 45-80 s (`F.fly`).
+- Rainy world far animals (`F.cr`): birds perched in tree tops, a squirrel that climbs a far trunk now and then, a doe grazing at the right tree line on wide screens; mushroom house is a real mushroom (stalk, gills, cap, spots, door); trunks realistic.
+
+## 38.19
+- Burrow screens: the Home pill is gone (the signpost is the way back; Escape still works). The sign now reads BACK HOME (3 x 5 font got an M). The rainy road starts at the door and runs along the lake's shore to the corner.
+- Add money stays on the burrow screen: `addPanel()` in burrows.js (amount chips, a field, Add / Back) moves unspent play money with `ACT.sweep` (one undoable change, "Undo" shown after). `feed()` then runs `anim`: coins fall one by one from above the door (`stepAnim`, `drawCoins`), each landing plays sfx('coin') and sparks, the pile rises with them, then sfx('sparkle') or sfx('fanfare') when the burrow is full, and `danceT` starts a 5 s dance (`st.dance` is passed to a look's fx): the rainy frog hops, toadstools and snail bob, fairies swirl, the owl bobs. Reduced motion skips straight to the result.
+- Rainy world: 11 to 17 fairies spread over the whole screen in five colours, rare colourful magic wisps drifting across the sky, a snowy owl on the left branch (blinks, turns its head), a bench by the toadstool house, the paper lantern fades by height and at the edges; the far squirrel is paused until the new squirrel design is chosen.
+- Main forest (scene.js): the spirit stag keeps its picture and now breathes, grazes and walks a few steps (`stagLife`); the meadow frog is replaced by a small alien blob that wanders (violet jelly, one eye, two feelers).
+- Home: one sound button (the speaker; it opens the sound and music panel; `#sndBtn` stays in the page but hidden), home burrow mounds centred in their 24 x 18 canvas.
+- Cards (garden.js): the thin border vines and plants are gone. Only six cards have a vine, each its own kind, grown from a corner (`PLAN`, `placeCorner`, `vineStrip(..., ce)`): Main goal leaves, Jars ivy, Scan receipts fern, month card glory, Plan "where" bramble; Goals keeps the old purple wisteria exactly. No dialogs. Brand guide gets rule 00 "it has to flow".
+- Squirrel: Elthen's itch.io pixel squirrel (free, modification allowed; credit him in the credits if any are added), cut into `sqpx.js` and drawn by `SQP`, replaces the oversized climber. Add-money trips use it: runs in with a gold coin (sprite `runc`), sits, throws the coin into the door, runs off (1.6 s a trip, 2 to 5 trips); forest meadow squirrel (small size) runs in now and then, sits, leaves. The old SQ story (chibi) is unchanged. `climbers()` is no longer called.
+- Rainy road is drawn after the lake so it shows as a dirt causeway from the door to the corner.
+
+
+## 38.20
+- Time of day follows the real sun (scene.js `moodAt`, `sunTimes`, `TZ`): sunrise and sunset from the date and a place worked out from the device time zone (city table, fallback latitude 35 and longitude from the offset; no location permission). Morning: sunrise minus 45 min to plus 3.5 h; day until 1.5 h before sunset; sunset until 45 min after; night otherwise; fixed hours where the sun does not rise or set. Rechecked every minute and when the tab returns; a change rebuilds the scene (a hard cut, no fade yet). `?tod=` still overrides.
+- Stag: lifting the head one step keeps the throat row in place, so the head no longer comes loose from the neck while walking.
+
+## 38.21: Treasure chest
+- Home order: status sentence, burrows (emergency fund first, heading Burrows), Treasure chest card (#hSpend, free to spend, Necessities covered or short, Education, Give, pixel chest painted in the corner by chestArt()), Log spend, main goal, goals, Financial Freedom card (#hBuckets, plan only).
+- No stored data changed. Debt is a goal kind ('debt', GOAL_KINDS in ui45s.js): target = total owed, start = already paid off. Wording through dw()/dwr()/debtWords() in model.js.
+- Chest shows 'Add pay' instead of numbers when pay is 0. Financial Freedom hides when pay is 0.
+- Pills (.help-row) hide while body.touring or body.bv-on. Restore from text now offers Undo.
+- QC panel: QC_ROLES.md (also in the project as claude/burrow-qc-roles.md).
+
+## 38.22: objective pass
+- renderStatus crash fixed (jar data comes from C.byYm, not the view). Free to spend in the chest is capped: held back = minimum balance minus month-end bank when status is Short; the weekly and daily figures follow the capped number.
+- Default goal names (Trip, Pay off debt...) show as a placeholder so typing replaces them. Loan note says monthly payment, not total owed. Step counter drops 'of 1'.
+- Open, ranked: money-left-after-everything figure for the next 3 months; card arrears mode (statement paid next month); spending envelope mode in the tour; variable income switch (plan on lowest month); come-back hooks (reminder at end of setup, missed-days banner); sticky Log button with last category; fewer onboarding screens; debt-first split; two pay lines.
+
+### 38.22 (addendum)
+- "Second income / Side income / Other income" now read pay wording; side pay note says enter the lowest expected month.
+- Home Next card: after the first logged spend (and no backup due, exact card hidden) offers "Set a weekly reminder" (data-remindgo -> Receipts, scrolls to #rcRemind; Hide sets S.ui.remindHidden). Backup nudge keeps priority.
+- Jar renamed "Burrows (goals)". Free to spend capped by held-back safety minimum; Short/cushion states; next-3-months line.
+- Still open: card arrears not modeled, variable-income switch, spending-envelope mode, onboarding length, debt after due date, saved-above-target cap, badge toast timing.
