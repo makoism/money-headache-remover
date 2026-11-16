@@ -121,12 +121,13 @@ const SCENE = (() => {
     { const P = L.pool, xe = Math.round(W * .56), p0 = [P.x - 8, P.y + P.ry - 3], p1 = [Math.max(xe + 20, P.x - Math.round(W * .13)), P.y + 5], p2 = [xe + 6, H - 22], p3 = [xe, H + 2], n = 180; L.stream = [];
       for (let i = 0; i <= n; i++) { const u = i / n, a = (1 - u) ** 3, b = 3 * (1 - u) ** 2 * u, c2 = 3 * (1 - u) * u * u, d = u ** 3;
         L.stream.push({ u, x: a * p0[0] + b * p1[0] + c2 * p2[0] + d * p3[0], y: a * p0[1] + b * p1[1] + c2 * p2[1] + d * p3[1], rw: (wide ? 4 : 3) + u * (wide ? 11 : 7), rh: 2.4 + u * 3.6 }); }
+      L.pond = { x: xe + 6, y: H - 1, rx: Math.round(W * (wide ? .23 : .36)), ry: wide ? 21 : 15 };
       const at = (i, side) => { const q = L.stream[i]; return { x: Math.round(q.x), y: Math.round(q.y + side * (q.rh + 3)) }; };
-      L.crys = wide ? [{ x: P.x - 31, y: P.y + 3, k: 0, h: 8 }, Object.assign(at(52, -1), { k: 1, h: 6 }), Object.assign(at(100, 1), { k: 2, h: 7 }), Object.assign(at(142, -1), { k: 0, h: 5 }), { x: L.hut.x + 47, y: L.hut.y + 9, k: 1, h: 5 }]
-        : [{ x: P.x - 15, y: P.y + 3, k: 0, h: 6 }, Object.assign(at(110, 1), { k: 2, h: 5 })]; }
+      L.crys = wide ? [{ x: P.x - 31, y: P.y + 3, k: 0, h: 8 }, Object.assign(at(52, -1), { k: 1, h: 6 }), { x: L.pond.x - L.pond.rx + 8, y: L.pond.y - 9, k: 2, h: 7 }, { x: L.pond.x + L.pond.rx - 12, y: L.pond.y - 11, k: 0, h: 6 }, { x: L.hut.x + 47, y: L.hut.y + 9, k: 1, h: 5 }]
+        : [{ x: P.x - 15, y: P.y + 3, k: 0, h: 6 }, { x: L.pond.x + L.pond.rx - 8, y: L.pond.y - 8, k: 2, h: 5 }]; }
     /* the floor, from back to front: cottage and its lantern, the ring in front of it, a standing stone and the deer to the right of the ring;
        on the other side the stag stands on the bank by the pool, two stones at the water's edge. Each stands on its own ground, none on another. */
-    L.stones = wide ? [{ x: L.pool.x + 8, y: L.pool.y + 9, h: 12 }, { x: L.pool.x - 26, y: L.pool.y + 19, h: 9 }] : [{ x: W - 22, y: Math.round(H * .85), h: 10 }];
+    L.stones = wide ? [{ x: L.pool.x + 8, y: L.pool.y + 9, h: 12 }, { x: L.pond.x + L.pond.rx + 9, y: L.pond.y - 5, h: 9 }] : [{ x: W - 22, y: Math.round(H * .85), h: 10 }];
     L.ring = { x: wide ? Math.round(side * .62) : 18, y: Math.round(H * .9) };
     L.stag = wide ? { x: L.pool.x - 56, y: L.pool.y - 9 } : null;
     L.deer = wide ? [{ x: L.hut.x + 36, y: L.floor + 15 - 11, flip: true, ph: 0 }] : [];
@@ -138,6 +139,7 @@ const SCENE = (() => {
     L.lamps.forEach((l, i) => { l.ph = i * 2.1; });
     L.flies = []; { const R3 = rnd(91), n = wide ? 26 : 12; for (let i = 0; i < n; i++) L.flies.push({ x: R3() * W, y: hz * .72 + R3() * (H - hz * .72 - 6), p: R3() * 60, per: 9 + R3() * 9, vx: (R3() - .5) * .08 }); }
     L.drift = []; { const R5 = rnd(113), n = wide ? 24 : 12; for (let i = 0; i < n; i++) L.drift.push({ ax: R5() * W, ay: hz * .18 + R5() * hz * .78, rx: 8 + R5() * 24, ry: 4 + R5() * 12, sp: .006 + R5() * .014, ph: R5() * 6.28, r: 2 + (R5() * 2 | 0), ci: i, per: 14 + R5() * 20 }); }
+    L.fish = []; { const R6 = rnd(131), n = wide ? 6 : 4, cols = [['#7ff5ff', '#d8ffff'], ['#ff9fe0', '#ffe4f6'], ['#ffe27a', '#fff6c8'], ['#b9a0ff', '#ece4ff'], ['#8fffc0', '#e0ffee'], ['#ffb27a', '#ffe6cc']]; for (let i = 0; i < n; i++) L.fish.push({ ph: R6() * 6.28, sp: (.009 + R6() * .008) * (i % 2 ? -1 : 1), rxk: .45 + R6() * .3, ryk: .22 + R6() * .18, cyk: .35 + R6() * .25, col: cols[i % cols.length], sz: .9 + R6() * .5, ring: R6() * 200 }); }
     L.dust = []; { const R4 = rnd(97); for (let i = 0; i < 16; i++) L.dust.push({ y: L.hut.y - 70 + R4() * 78, u: (R4() - .5) * 1.7, p: R4() * 40 }); }
     L.stars = []; for (let i = 0; i < Math.round(W * H / 300); i++) L.stars.push([Math.floor(R() * W), Math.floor(R() * hz * .6), R()]);
     L.shafts = []; for (let i = 0; i < (wide ? 5 : 3); i++) { const left = i % 2 === 0; L.shafts.push({ x: wide ? (left ? R() * side * .9 : W - side * .9 + R() * side * .8) : R() * W, w: 6 + R() * 10, sk: .35 + R() * .2 }); }
@@ -248,7 +250,23 @@ const SCENE = (() => {
     shade(c);
     if (L.wide) foreground(c, t, R);
     meadowFront(c, t);
+    pond(c, t, rnd(211));
     for (const l of L.lamps) { if (l.kind === 'post') lampPost(c, l.x, l.y, t); else if (l.kind === 'hang') lampHang(c, l.x, l.y, l.dir, t); }
+  }
+  const ell = (c, cx, cy, rx, ry, col) => { c.fillStyle = col; for (let j = -Math.floor(ry); j <= Math.floor(ry); j++) { const w = Math.round(rx * Math.sqrt(Math.max(0, 1 - (j * j) / (ry * ry + .01)))); if (w > 0) c.fillRect(Math.round(cx) - w, Math.round(cy) + j, w * 2, 1); } };
+  /* the pond at the foot of the picture: stony lip, deep middle, lily pads with a flower or two, and reeds at the back edge */
+  function pond(c, t, R) {
+    const P = L.pond; if (!P) return;
+    ell(c, P.x, P.y + 1, P.rx + 3, P.ry + 3, mixh(t.stoneD, t.mossD, .5));
+    ell(c, P.x, P.y, P.rx + 1, P.ry + 1, mixh(t.stone, t.mossD, .35));
+    ell(c, P.x, P.y, P.rx, P.ry, t.water2);
+    c.globalAlpha = .55; ell(c, P.x, P.y - 1, P.rx - 5, P.ry - 3, t.water); c.globalAlpha = .4; ell(c, P.x + 4, P.y + 2, P.rx * .62, P.ry * .55, mixh(t.water2, '#2a4a9a', .55)); c.globalAlpha = 1;
+    for (let a = 3.2; a < 6.15; a += .17) { const x = Math.round(P.x + Math.cos(a) * (P.rx + 2)), y = Math.round(P.y + Math.sin(a) * (P.ry + 2)); boulder(c, x, y + 1, 2 + R() * 2.2, 1.5 + R() * 1.2, t, R, { moss: R() < .7 }); }
+    for (const [lx, ly, fl] of [[-.55, -.5, 1], [-.2, -.2, 0], [.35, -.55, 1], [.58, -.18, 0], [-.7, -.12, 0], [.05, -.72, 1]]) {
+      const x = Math.round(P.x + lx * P.rx), y = Math.round(P.y + ly * P.ry * 1.2); ell(c, x, y + 1, 3.6, 1.8, mixh(t.mossD, '#000000', .3)); ell(c, x, y, 3.4, 1.6, t.moss); put(c, x + 1, y, t.water2); put(c, x + 2, y - 1, t.water2);
+      if (fl) { put(c, x - 1, y - 1, '#fff0f8'); put(c, x, y - 1, '#ffb8e0'); put(c, x - 1, y - 2, '#ffb8e0'); put(c, x - 2, y - 1, '#e07fc0'); }
+    }
+    for (const [rxk, h] of [[-.78, 9], [-.7, 6], [-.12, 5], [.5, 7], [.72, 10], [.8, 6]]) { const a = Math.acos(Math.max(-.99, Math.min(.99, rxk))), x = Math.round(P.x + rxk * (P.rx + 2)), y = Math.round(P.y - Math.sin(a) * (P.ry + 2)); for (let k = 0; k < h; k++) put(c, x + (k > h * .6 ? 1 : 0), y - k, k % 3 === 0 ? t.moss : t.mossD); put(c, x + 1, y - h, '#6a4a30'); put(c, x + 1, y - h - 1, '#6a4a30'); }
   }
   /* pastel crystals: three shards leaning a little, lit on the left, dark on the right, with one bright edge */
   const CRYP = [['#f4eaff', '#cdb6ff', '#9a7be0', '#6a4fb0'], ['#e6fffb', '#9af0e4', '#52c4c0', '#2f8a96'], ['#fff0f8', '#ffb8e0', '#e07fc0', '#a24f92']];
@@ -328,6 +346,7 @@ const SCENE = (() => {
     if (Lm.wf) { const c = lx.wf, col = mood === 'sunset' ? '#ffc8a0' : '#7fe3ff'; c.fillStyle = col;
       /* a vague glow in the air around the fall, strongest next to the water and gone about fourteen pixels out; the water itself is left alone */
       F.tiers.forEach((tr, ti) => { for (let y = tr.y0 - 4; y < tr.y1 + 2; y++) { const o = F.off(ti, Math.max(tr.y0, Math.min(tr.y1 - 1, y))), ex = F.ex(ti, Math.max(tr.y0, Math.min(tr.y1 - 1, y))), x0 = tr.x + o - (ex >> 1), x1 = tr.x + o + tr.w + ex; for (let d = 1; d <= 14; d++) { const q = 1 - d / 15, a = Math.round(q * q * 4) / 4 * .085 * Lm.wf; if (a <= 0) continue; c.globalAlpha = a; c.fillRect(x0 - d, y, 1, 1); c.fillRect(x1 + d - 1, y, 1, 1); } } });
+      { const Pd = L.pond; if (Pd) { c.globalAlpha = .035 * Lm.wf; for (let k = 0; k < 5; k++) ell(c, Pd.x, Pd.y - 2, Pd.rx + 2 + k * 4, Pd.ry + 1 + k * 2.5, col); } }
       c.globalAlpha = 1; const P = L.pool; for (const lg of F.ledges) glow(c, Math.round((lg.x0 + lg.x1) / 2), lg.y, 9, col, .035 * Lm.wf); glow(c, P.x, P.y - 2, P.rx + 16, col, .03 * Lm.wf); }
   }
   /* ONE FAR TREE. Five kinds (plain, crooked, leaning, forked, twisted), each with its own width, bends, flared roots, knots,
@@ -733,6 +752,18 @@ const SCENE = (() => {
       for (let i = 0; i < 10; i++) { const ph = ((f * .012 + i * .1) % 1), bx = P.x - P.rx * .8 + ((i * 53) % Math.round(P.rx * 1.6)) + Math.round(Math.sin(f / 14 + i) * 2), by = Math.round(P.y - 1 - ph * 20); c.globalAlpha = (1 - ph) * .85; c.fillStyle = i % 3 === 0 ? '#e4d4ff' : i % 3 === 1 ? '#bff6ee' : t.foam; c.fillRect(bx, by, 1 + (i % 5 === 0 ? 1 : 0), 1 + (i % 5 === 0 ? 1 : 0)); } c.globalAlpha = 1;
       const N = L.stream.length; for (let i = 0; i < 9; i++) { const q = L.stream[Math.floor(((f * .0042 + i / 9) % 1) * (N - 1))]; const lw = Math.max(2, Math.round(q.rw * .7)); c.globalAlpha = .75; c.fillStyle = i % 3 === 0 ? '#e4d4ff' : t.foam; c.fillRect(Math.round(q.x - lw / 2), Math.round(q.y - q.rh * .3), lw, 1); c.globalAlpha = 1; }
       for (let i = 0; i < 4; i++) { const q = L.stream[Math.floor(((f * .0042 + i / 4 + .12) % 1) * (N - 1))]; if ((f + i * 7) % 20 < 12) { c.fillStyle = t.foam; c.fillRect(Math.round(q.x + Math.sin(f / 5 + i) * q.rw * .4), Math.round(q.y + q.rh * .3), 1, 1); } } }
+    /* the pond: a slow pastel turn on the surface, sparkles, and the glowing fish going round, each now and then sending a ring out */
+    if (L.pond) { const P = L.pond, rot = -f * .015;
+      for (let a = .8; a < 13; a += .12) { const r = a / 13, ang = a + rot, x = Math.round(P.x + 6 + Math.cos(ang) * r * (P.rx - 8)), y = Math.round(P.y - 4 + Math.sin(ang) * r * (P.ry - 5)); if (y > P.y - P.ry + 2) { const seg = Math.floor(a / 1.5) % 3; c.globalAlpha = .34 - r * .12; c.fillStyle = seg === 0 ? t.foam : seg === 1 ? '#c9b3ff' : '#8ff0e0'; c.fillRect(x, y, 1, 1); } } c.globalAlpha = 1;
+      for (let i = 0; i < 12; i++) { if ((f + i * 13) % 44 < 5) { const x = Math.round(P.x + Math.cos(i * 2.4) * P.rx * .8), y = Math.round(P.y - P.ry * (.2 + ((i * 37) % 60) / 100)); c.globalAlpha = .8; c.fillStyle = t.foam; c.fillRect(x, y, 2, 1); c.globalAlpha = .5; c.fillRect(x, y - 1, 1, 1); c.globalAlpha = 1; } }
+      for (const fi of L.fish) {
+        const a = fi.ph + f * fi.sp, dir = fi.sp > 0 ? 1 : -1, cx = P.x + 4, cy = P.y - P.ry * fi.cyk, Rx = P.rx * fi.rxk, Ry = P.ry * fi.ryk;
+        const pos = k => { const q = a - k * dir * .05; return [cx + Math.cos(q) * Rx + Math.cos(q * 2.3 + fi.ph) * Rx * .1, cy + Math.sin(q) * Ry]; };
+        const rp = (f + fi.ring) % 240; if (rp < 36) { const [hx, hy] = pos(0), r = rp / 36 * 8; c.globalAlpha = (1 - rp / 36) * .55; c.fillStyle = t.foam; for (let g = 0; g < 6.28; g += .4) c.fillRect(Math.round(hx + Math.cos(g) * r), Math.round(hy + Math.sin(g) * r * .4), 1, 1); c.globalAlpha = 1; }
+        for (let k = 4; k >= 0; k--) { const [x, y] = pos(k * 1.1), wob = k > 2 ? Math.round(Math.sin(f * .35 + k) * (k - 2)) : 0, big = fi.sz > 1.15 && k < 3 ? 1 : 0; c.globalAlpha = .28; c.fillStyle = '#06203a'; c.fillRect(Math.round(x), Math.round(y) + wob + 2, k < 2 ? 3 : 2, 1); c.fillStyle = k === 0 ? fi.col[1] : fi.col[0]; c.globalAlpha = k > 3 ? .8 : 1; c.fillRect(Math.round(x), Math.round(y) + wob, (k < 2 ? 3 : k < 3 ? 2 : 2) + big, k === 4 ? 3 : k === 3 ? 1 : 2); if (k === 1) { c.fillStyle = fi.col[1]; c.globalAlpha = .6; c.fillRect(Math.round(x) + 1, Math.round(y) - 1, 1, 1); } }
+        c.globalAlpha = 1; const [ex, ey] = pos(0); c.fillStyle = '#0a1a30'; c.fillRect(Math.round(ex + (dir > 0 ? -Math.sin(a) : Math.sin(a)) * .8), Math.round(ey), 1, 1);
+      }
+    }
     /* runes on the stones breathe in and out */
     const br = .45 + .45 * Math.sin(f / 9);
     for (const s of L.stones) { const w = Math.max(5, Math.round(s.h * .45)); c.globalAlpha = br * t.glowA * .6; c.fillStyle = t.rune; c.fillRect(s.x + Math.floor(w / 2) - 2, s.y - Math.round(s.h * .55) - 1, 5, 5); c.globalAlpha = 1; }
@@ -748,6 +779,7 @@ const SCENE = (() => {
     c.globalCompositeOperation = 'screen';
     if (lt.sun && Lm.sunA) { c.globalAlpha = .9 + .1 * Math.sin(f / 15); c.drawImage(lt.sun, 0, 0); }
     c.globalCompositeOperation = 'lighter';
+    if (L.fish && L.pond) { const P = L.pond, fg = .5 + Lm.wf * 1 + (Lm.lamp ? .3 : 0); for (const fi of L.fish) { const a = fi.ph + f * fi.sp, x = P.x + 4 + Math.cos(a) * P.rx * fi.rxk, y = P.y - P.ry * fi.cyk + Math.sin(a) * P.ry * fi.ryk; spot(c, x, y, 8, fi.col[0], .3 * fg * (.8 + .2 * Math.sin(f / 11 + fi.ph))); } }
     if (L.crys) { const cs = .45 + Lm.wf * .8 + (Lm.lamp ? .25 : 0); L.crys.forEach((k, i) => { const col = ['#b497ff', '#7fe6dc', '#ff9fd2'][k.k % 3], pu = .75 + .25 * Math.sin(f / 16 + i * 1.7); spot(c, k.x, k.y - k.h * .5, 8 + (k.h >> 1), col, .26 * cs * pu); }); }
     if (Lm.lamp) {
       c.globalAlpha = 1; c.drawImage(lt.lamp, 0, 0);

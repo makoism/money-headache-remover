@@ -218,3 +218,6 @@ Favicon (38.11): redrawn as a tree, a mound with a small door and a few coins, o
 - Crystals (L.crys, shard/crystals helpers): pastel clusters by pool, stream banks and cottage; soft glow pulse and tip twinkle.
 - Lanterns redrawn (finial, roof, framed glass, base). No letter shapes.
 - Stag and second stone moved to keep clear of the stream.
+
+### 38.24
+- Pond (L.pond, pond() drawn after meadowFront so grass does not cover it): stony lip, deep middle, lily pads, reeds. Slow pastel swirl, sparkles, six glowing fish (L.fish, segment bodies on elliptical paths, ripples, spot glow in the light layer). Stream ends in the pond. Crystals and the second stone moved to the pond rim.
