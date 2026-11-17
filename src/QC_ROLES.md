@@ -1,5 +1,7 @@
 # QC panel for the burrow
 
+> North star: read NORTH_STAR.md first. Every change is judged by it.
+
 Every build goes past these reviewers before Mako sees it. Each reviewer is a separate agent that has not seen the work being made, and each checks only its own list. Run them in parallel, fix every BLOCKER, then re-run the ones that failed. Whenever Mako gives feedback, add it to the matching reviewer's "Learned from Mako" list the same day, so the same miss never repeats.
 
 Report format for every reviewer: BLOCKERS (wrong, broken, data at risk), CONFUSING (exact text and place, with a replacement), POLISH. Under 600 words. Screenshots in /tmp/qc/<role>/.
@@ -80,3 +82,7 @@ Mako's feedback arrives in chat. Put the lesson, in one line, under the right re
 - Novice: a first-time user does not know what APR means or that setup never asked about a card. Ask about cards and loans after setup (Next card), take the rate per month or per year, and keep the old "Pay off a debt" goal only for balances with no interest.
 - Regression: tests must set `sessionStorage.__keep` to keep saved state across a reload; `persist()` saves after 500 ms, so wait before reloading. Test helpers walk the long setup (`#tourFull`) unless told otherwise.
 - Wording editor: Plan says "About X a week, planned." and Home says "X a week for the N days left." They answer different questions.
+
+
+## Visual first (2026-11-17, from Mako)
+Every reviewer asks: could this be shown as a picture, a pile of coins, a filling burrow, or a moving coin instead of a number or a sentence? If yes and it is not, that is a defect. Numbers sit under a picture, never instead of one. Function first; simple art is fine.

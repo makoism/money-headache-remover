@@ -88,7 +88,7 @@ eq('no borrow without an emergency goal', fixes(S4c, calcAll(S4c).byYm['2026-11'
 const B = blankState(S), CB = calcAll(B);
 eq('blank: nothing comes in or goes out', CB.months.every(m => m.pool.in === 0 && m.pool.out === 0), true);
 eq('blank: bank is zero', CB.months[23].bankEnd, 0);
-eq('blank keeps the currency', B.ui.cur, '₱');
+eq('blank keeps the currency', B.ui.cur, S.ui.cur);
 eq('blank keeps the line names', B.plan.lines.map(l => l.name), S.plan.lines.map(l => l.name));
 const B2 = blankState(S); setVal(B2, 'a', '2026-11', 50000, 'after'); setVal(B2, 'bill:rent', '2026-11', 15000, 'after');
 eq('blank then enter a salary and rent', calcAll(B2).byYm['2027-03'].pool.left, 35000);

@@ -123,7 +123,7 @@ function presetState(cur, v1) {
   f.plan.goals.forEach(g => { g.target = 0; g.start = 0; delete g.monthly; if (g.emergency) g.stretch = 0; });
   return f;
 }
-const freshState = () => presetState('₱');
+const freshState = () => presetState('¥');
 /* what the page uses when you have not typed your own: the loaded sample's pay and balances, or zero */
 const presetKey = S => (S.ui && S.ui.preset) || 'legacy';
 const cfgDef = (S, k) => { const p = presetKey(S); return p === 'blank' ? 0 : SAMPLES[p] ? sampleOf(p).cfg[k] : CFG[k]; };

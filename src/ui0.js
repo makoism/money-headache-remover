@@ -70,6 +70,7 @@ const cleanWin = t => { t = String(t).replace(/\s+/g, ' ').trim().replace(/[.!\s
 /* ---------- state load / save ---------- */
 function normalize(d) {
   const f = freshState(); if (!d || typeof d !== 'object') return f;
+  f.ui.cur = '₱'; /* a saved copy without a currency is an old peso copy; new copies start in yen */
   /* every amount in a saved or imported copy is checked: a text, a negative number or a broken list never reaches the sums */
   f.steps = cleanSteps(d.steps); f.once = cleanOnce(d.once); f.items = cleanItems(d.items); f.cfg = cleanCfg(d.cfg);
   if (d.ui && typeof d.ui === 'object') f.ui = Object.assign(f.ui, d.ui);

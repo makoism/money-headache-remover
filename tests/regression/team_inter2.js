@@ -1,4 +1,5 @@
 const puppeteer = require('/home/claude/work/tools/node_modules/puppeteer-core');
+const PESO = (() => { const src = require('fs').readFileSync(process.env.MODEL || '/home/claude/work/team/model.js', 'utf8'); const api = new Function(src + ';return { presetState };')(); return JSON.stringify(api.presetState('₱')); })();
 (async () => {
   const b = await puppeteer.launch({ executablePath: '/usr/bin/google-chrome', headless: 'new', args: ['--no-sandbox', '--disable-gpu', '--disable-features=BackForwardCache,ProactivelySwapBrowsingInstance', '--disable-site-isolation-trials'] });
   const p = await b.newPage(); const errs = [];
@@ -40,7 +41,7 @@ const puppeteer = require('/home/claude/work/tools/node_modules/puppeteer-core')
   ok('screen 2 asks for the currency and what to call you', (await q('#tourTitle')) === 'Currency' && (await q('#tourPart')) === 'Welcome · 2 of 2' && (await val('#tourName')) === '');
   ok('...and a promise that it stays private', (await tourText()).includes('stays in this browser') && (await tourText()).includes('Nobody else can see it'));
   await p.type('#tourName', '  Mara ');
-  ok('six currency chips, pesos preselected', (await p.$$eval('input[name=tourCur]', e => e.length)) === 6 && (await p.$eval('input[name=tourCur]:checked', e => e.value)) === '₱');
+  ok('six currency chips, yen preselected', (await p.$$eval('input[name=tourCur]', e => e.length)) === 6 && (await p.$eval('input[name=tourCur]:checked', e => e.value)) === '¥');
   await p.click('input[name=tourCur][value="$"]'); await w(150);
   ok('picking a chip selects it', (await p.$eval('input[name=tourCur]:checked', e => e.value)) === '$' && (await p.$eval('input[name=tourCur][value="$"]', e => e.closest('.chip').classList.contains('on'))));
   await p.select('#tourCurMore', 'S$'); await w(150);
@@ -93,7 +94,7 @@ const puppeteer = require('/home/claude/work/tools/node_modules/puppeteer-core')
   await p.click('#tourSkip'); await w(250);
   await coach();
   ok('skipping on the first visit keeps the sample', await p.$eval('#tour', e => e.hidden));
-  await tab('month'); ok('...and the sample pay is still there', (await val('#h-a')) === '₱30,000');
+  await tab('month'); ok('...and the sample pay is still there', (await val('#h-a')) === '¥200,000');
   await reload(); ok('and the tour does not come back', await p.$eval('#tour', e => e.hidden));
   /* a name is text, never markup */
   await fresh(); await p.click('#tourNext'); await w(250); await p.type('#tourName', '<img src=x onerror="window.__xss3=1">Bo');
@@ -113,7 +114,7 @@ const puppeteer = require('/home/claude/work/tools/node_modules/puppeteer-core')
   await tab('home'); ok('clearing the name hides the greeting name', !(await q('#hello')).includes(','));
 
   /* ============ THE PAGE ============ */
-  await fresh(); await skipTour(); await tab('month'); await w(300);
+  await seed(PESO); await skipTour(); await tab('month'); await w(300); /* the page checks below were written for the peso sample, so seed that copy (the default is yen since 38.28) */
   const lg = await p.$$eval('#legend .lg', e => e.map(x => x.innerText.replace(/\s+/g, ' ').trim()));
   ok('legend shows six jars in order', lg.length === 6 && ['Necessities', 'Burrows (goals)', 'Play', 'Education', 'Financial Freedom', 'Give'].every((n, i) => lg[i].startsWith(n)));
   ok('necessities 55%, give 5%', lg[0].includes('₱16,500') && lg[0].includes('55%') && lg[5].includes('₱1,500') && lg[5].includes('5%'));

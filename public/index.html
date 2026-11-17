@@ -2101,7 +2101,7 @@ body.touring .help-row, body.bv-on .help-row { display: none; }
   </div>
 
   <p class="foot" id="footNote">Not financial advice. Sample numbers are invented. Replace them with yours.</p>
-  <p class="foot ver" id="verFoot">Version 38.27</p>
+  <p class="foot ver" id="verFoot">Version 38.28</p>
   </div>
 </div>
 <div class="handfx" id="handFx" aria-hidden="true"></div>
@@ -2155,7 +2155,7 @@ body.touring .help-row, body.bv-on .help-row { display: none; }
     <button type="button" id="helpSetup">Guided setup</button>
     <button type="button" id="helpVideo" hidden>Intro video</button>
     <button type="button" id="helpReport">Report a problem</button>
-    <p class="help-ver">Version 38.27</p>
+    <p class="help-ver">Version 38.28</p>
   </div>
   <div class="help-row"><button type="button" class="help-btn ask-btn" id="askBtn">Ask</button><button type="button" class="help-btn" id="helpBtn" aria-expanded="false" aria-controls="helpMenu"><span class="q" aria-hidden="true">?</span>Help</button></div>
 </div>
@@ -2305,7 +2305,7 @@ function presetState(cur, v1) {
   f.plan.goals.forEach(g => { g.target = 0; g.start = 0; delete g.monthly; if (g.emergency) g.stretch = 0; });
   return f;
 }
-const freshState = () => presetState('₱');
+const freshState = () => presetState('¥');
 /* what the page uses when you have not typed your own: the loaded sample's pay and balances, or zero */
 const presetKey = S => (S.ui && S.ui.preset) || 'legacy';
 const cfgDef = (S, k) => { const p = presetKey(S); return p === 'blank' ? 0 : SAMPLES[p] ? sampleOf(p).cfg[k] : CFG[k]; };
@@ -3226,6 +3226,7 @@ const cleanWin = t => { t = String(t).replace(/\s+/g, ' ').trim().replace(/[.!\s
 /* ---------- state load / save ---------- */
 function normalize(d) {
   const f = freshState(); if (!d || typeof d !== 'object') return f;
+  f.ui.cur = '₱'; /* a saved copy without a currency is an old peso copy; new copies start in yen */
   /* every amount in a saved or imported copy is checked: a text, a negative number or a broken list never reaches the sums */
   f.steps = cleanSteps(d.steps); f.once = cleanOnce(d.once); f.items = cleanItems(d.items); f.cfg = cleanCfg(d.cfg);
   if (d.ui && typeof d.ui === 'object') f.ui = Object.assign(f.ui, d.ui);
@@ -12601,7 +12602,7 @@ function homeScene() {
 const LOCK = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
 
 /* choices on the welcome screens are real radio buttons, drawn as soft chips */
-const TOUR_CURS = ['₱', '$', '€', '£', '¥', 'A$'];
+const TOUR_CURS = ['¥', '₱', '$', '€', '£', 'A$'];
 const curName = c => c[1].indexOf(c[0] + ' ') === 0 ? c[1].slice(c[0].length + 1) : c[1];
 const chip = (name, value, big, label, on) => `<label class="chip${on ? ' on' : ''}"><input type="radio" name="${name}" value="${esc(value)}"${on ? ' checked' : ''}>${big ? `<b>${esc(big)}</b>` : ''}<span>${esc(label)}</span></label>`;
 function syncTourCur() {

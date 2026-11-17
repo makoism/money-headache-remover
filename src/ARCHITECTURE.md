@@ -1,5 +1,7 @@
 # The Burrow: how it is built
 
+> North star: read NORTH_STAR.md first. Every change is judged by it.
+
 One page. No framework, no libraries, no outside requests from the page itself. The source is a set of small files in this folder; `build.sh` joins them into one HTML file (`../money-map-team.html`). The same page is published two ways: as the Claude artifact (a mirror where AI runs on the viewer's own Claude account) and as the site on Cloudflare Pages (`../site`, the main address: the owner's relay answers AI requests, and an encrypted cloud copy is available).
 
 ## Layers
@@ -240,3 +242,6 @@ Favicon (38.11): redrawn as a tree, a mound with a small door and a few coins, o
 ## 38.27
 - Scene: removed the two bluebell stalks at the lower right of the foreground. At night their dark stems vanished into the water and only the blue bells showed, as a floating diagonal line.
 - Scene: the lit pond at the foot of the picture is gone. The waterfall now falls into one big blob-shaped pool (`L.pool`, edge radius `L.pool.k(angle)`, point test `L.pool.has`) with no stream leaving it, ringed by big rocks in groups of 3, 1 and 5. The fall lands at `L.pool.fx`, near the back right of the basin. The fallen log with the snail moved to the grass in front of the pool.
+
+## 38.28
+- New copies start in yen: `freshState` is `presetState('¥')` (model.js) and the setup lists ¥ first (`TOUR_CURS`, ui45.js). `normalize` (ui0.js) sets `ui.cur = '₱'` before overlaying a saved copy, so a saved copy with no currency stays pesos and nobody's numbers change. North star in NORTH_STAR.md.

@@ -32,11 +32,11 @@ const puppeteer = require('/home/claude/work/tools/node_modules/puppeteer-core')
 
   /* ---- Basics: switching currency swaps the sample while it is untouched ---- */
   await fresh(); await skipTour();
-  ok('starts as the peso sample', (await pay()) === '₱30,000');
+  ok('starts as the yen sample', (await pay()) === '¥200,000' && (await q('#heroNum')) === '¥20,000');
   await tab('basics');
-  await p.select('#curSel', '¥'); await w(300);
+  await p.select('#curSel', '₱'); await w(300);
   await tab('month');
-  ok('yen sample is 200,000 a month', (await pay()) === '¥200,000' && (await q('#heroNum')) === '¥20,000');
+  ok('peso sample is 30,000 a month', (await pay()) === '₱30,000' && (await q('#heroNum')) === '₱3,000');
   await tab('basics'); ok('...with a note saying so', (await note()) === 'Sample amounts now match this currency.');
   await p.select('#curSel', '€'); await w(300); await tab('month');
   ok('euro sample is 1,650 a month', (await pay()) === '€1,650' && (await q('#heroNum')) === '€165');
@@ -75,7 +75,7 @@ const puppeteer = require('/home/claude/work/tools/node_modules/puppeteer-core')
   await p.click('#roadToggle'); await w(200);
 
   /* ---- Philippine examples show only for the peso ---- */
-  await fresh(); await skipTour(); await tab('month'); await openRow('nec');
+  await fresh(); await skipTour(); await tab('basics'); await p.select('#curSel', '₱'); await w(300); await tab('month'); await openRow('nec');
   let all = await p.evaluate(() => [...document.body.children].filter(e => e.tagName !== 'SCRIPT').map(e => e.textContent).join(' '));
   ok('pesos keep the local examples', all.includes('SSS, PhilHealth and Pag-IBIG') && all.includes('Commute, Grab, fuel'));
   await tab('basics'); await p.select('#curSel', '¥'); await w(300); await tab('month'); await openRow('nec');
