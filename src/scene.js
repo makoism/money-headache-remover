@@ -116,20 +116,22 @@ const SCENE = (() => {
     /* each drop wanders a few pixels to one side and the other, in soft curves, and breathes a little in width */
     { const F = L.fall; F.ex = (ti, y) => { const tr = F.tiers[ti]; return Math.round(2 * Math.max(0, Math.min(1, (y - tr.y0) / Math.max(1, tr.y1 - tr.y0 - 1)))); }; }
     { const F = L.fall; F.off = (ti, y) => { const tr = F.tiers[ti], u = y - tr.y0, k = Math.min(1, u / 7); return Math.round((Math.sin(u * .07 + ti * 2.1) * 1.1 + Math.sin(u * .17 + ti * .9) * .25) * k * (wide ? 1 : .7)); }; }
-    L.pool = { x: L.fall.x + Math.round(L.fall.w / 2), y: L.fall.bot + 4, rx: wide ? 36 : 17, ry: wide ? 8 : 5 };
-    /* the pool lets a stream go: it leaves at the front edge, wanders left behind the grass and comes down to the foot of the picture a little right of the middle, widening as it nears */
-    { const P = L.pool, xe = Math.round(W * .56), p0 = [P.x - 8, P.y + P.ry - 3], p1 = [Math.max(xe + 20, P.x - Math.round(W * .13)), P.y + 5], p2 = [xe + 6, H - 22], p3 = [xe, H + 2], n = 180; L.stream = [];
-      for (let i = 0; i <= n; i++) { const u = i / n, a = (1 - u) ** 3, b = 3 * (1 - u) ** 2 * u, c2 = 3 * (1 - u) * u * u, d = u ** 3;
-        L.stream.push({ u, x: a * p0[0] + b * p1[0] + c2 * p2[0] + d * p3[0], y: a * p0[1] + b * p1[1] + c2 * p2[1] + d * p3[1], rw: (wide ? 4 : 3) + u * (wide ? 11 : 7), rh: 2.4 + u * 3.6 }); }
-      L.pond = { x: xe + 6, y: H - 1, rx: Math.round(W * (wide ? .23 : .36)), ry: wide ? 21 : 15 };
-      const at = (i, side) => { const q = L.stream[i]; return { x: Math.round(q.x), y: Math.round(q.y + side * (q.rh + 3)) }; };
-      L.crys = wide ? [{ x: P.x - 31, y: P.y + 3, k: 0, h: 8 }, Object.assign(at(52, -1), { k: 1, h: 6 }), { x: L.pond.x - L.pond.rx + 8, y: L.pond.y - 9, k: 2, h: 7 }, { x: L.pond.x + L.pond.rx - 12, y: L.pond.y - 11, k: 0, h: 6 }, { x: L.hut.x + 47, y: L.hut.y + 9, k: 1, h: 5 }]
-        : [{ x: P.x - 15, y: P.y + 3, k: 0, h: 6 }, { x: L.pond.x + L.pond.rx - 8, y: L.pond.y - 8, k: 2, h: 5 }]; }
+    { const fc = L.fall.x + Math.round(L.fall.w / 2), rx = wide ? 80 : 34, ry = wide ? 19 : 14, shift = Math.round(rx * .35);
+      /* the fall lands at fx, near the back right of the basin, which spreads out to the left and toward the front */
+      L.pool = { x: fc - shift, y: L.fall.bot - 4 + Math.round(ry * 1.05), rx, ry, fx: fc }; }
+    /* the pool is a blob, not an ellipse: a lobe out at the left, a bay at the front left and a bulge at the front right; the rings turning inside it are clipped to its edge */
+    L.pool.k = a => 1 + .17 * Math.sin(2 * a + .6) + .15 * Math.sin(3 * a + 2.2) + .09 * Math.sin(4 * a + .3) + .06 * Math.sin(6 * a + 1.1);
+    L.pool.has = (x, y, sc) => { const P = L.pool, dx = (x + .5 - P.x) / P.rx, dy = (y + .5 - P.y) / P.ry; return Math.hypot(dx, dy) <= P.k(Math.atan2(dy, dx)) * (sc || 1); };
+    /* the fall pools in one big natural basin: no stream leaves it */
+    { const P = L.pool, xe = Math.round(W * .56); L.stream = [];
+      L.pond = null;
+      L.crys = wide ? [{ x: P.x - P.rx - 6, y: P.y + 4, k: 0, h: 8 }, { x: P.x - Math.round(P.rx * .74), y: P.y + Math.round(P.ry * 1.1) + 4, k: 1, h: 6 }, { x: P.x - P.rx - 24, y: P.y + 12, k: 2, h: 7 }, { x: L.hut.x + 47, y: L.hut.y + 9, k: 1, h: 5 }]
+        : [{ x: P.x - P.rx - 3, y: P.y + 3, k: 0, h: 6 }]; }
     /* the floor, from back to front: cottage and its lantern, the ring in front of it, a standing stone and the deer to the right of the ring;
        on the other side the stag stands on the bank by the pool, two stones at the water's edge. Each stands on its own ground, none on another. */
-    L.stones = wide ? [{ x: L.pool.x + 8, y: L.pool.y + 9, h: 12 }, { x: L.pond.x + L.pond.rx + 9, y: L.pond.y - 5, h: 9 }] : [{ x: W - 22, y: Math.round(H * .85), h: 10 }];
+    L.stones = wide ? [{ x: L.pool.x - L.pool.rx - 14, y: L.pool.y + 10, h: 12 }] : [{ x: W - 22, y: Math.round(H * .85), h: 10 }];
     L.ring = { x: wide ? Math.round(side * .62) : 18, y: Math.round(H * .9) };
-    L.stag = wide ? { x: L.pool.x - 56, y: L.pool.y - 9 } : null;
+    L.stag = wide ? { x: L.pool.x - L.pool.rx - 34, y: L.pool.y - 9 } : null;
     L.deer = wide ? [{ x: L.hut.x + 36, y: L.floor + 15 - 11, flip: true, ph: 0 }] : [];
     /* the main beam of sun comes down onto the cottage; lanterns stand by the cottage, the ring, the stones and the pool */
     { const Lm = LIGHT[pickMood()], sk = wide ? Lm.ang : Lm.ang * .4, hx = L.hut.x + 14, hy = L.hut.y - 8; L.sun = { hx, hy, sk, bx0: hx - sk * hy, w: wide ? 22 : 16 }; }
@@ -218,12 +220,18 @@ const SCENE = (() => {
     /* light catching the rock on the side the sun comes from */
     for (let y = F.top; y < F.bot; y += 2) if (RC() < .5) put(c, cl + 1 + Math.floor(RC() * 3), y, t.stoneL);
     for (let i = 0; i < 4; i++) rune(c, cl + 3 + Math.floor(R() * (cr - cl - 8)), F.top + 10 + Math.floor(R() * (F.bot - F.top - 20)), t, .55);
-    const P = L.pool; glow(c, P.x, P.y, P.rx, t.water2, t.glowA * .6);
-    c.fillStyle = t.water2; for (let y = -P.ry; y <= P.ry; y++) { const w = Math.round(P.rx * Math.sqrt(1 - (y * y) / (P.ry * P.ry))); c.fillRect(P.x - w, P.y + y, w * 2, 1); }
-    c.fillStyle = t.water; for (let y = -P.ry + 1; y < P.ry; y++) { const w = Math.round((P.rx - 3) * Math.sqrt(1 - (y * y) / (P.ry * P.ry))); c.fillRect(P.x - w, P.y + y, w * 2, 1); }
-    /* a soft stony lip round the pool, and the deeper middle */
-    for (let a = 0; a < 6.283; a += .09) { const x = Math.round(P.x + Math.cos(a) * (P.rx + 1)), y = Math.round(P.y + Math.sin(a) * (P.ry + 1)); if (y >= P.y - 1) put(c, x, y, RC() < .5 ? t.stoneD : mixh(t.stoneD, t.moss, .35)); }
-    c.globalAlpha = .45; c.fillStyle = mixh(t.water2, '#3a5aa0', .35); for (let y = -P.ry + 3; y < P.ry - 1; y++) { const w = Math.round((P.rx - 12) * Math.sqrt(1 - (y * y) / (P.ry * P.ry))); if (w > 0) c.fillRect(P.x - w, P.y + y, w * 2, 1); } c.globalAlpha = 1;
+    const P = L.pool, K = P.k;
+    const inBlob = (x, y, sc) => { const dx = (x + .5 - P.x) / P.rx, dy = (y + .5 - P.y) / P.ry; return Math.hypot(dx, dy) <= K(Math.atan2(dy, dx)) * sc; };
+    const bx = Math.ceil(P.rx * 1.3), by = Math.ceil(P.ry * 1.3);
+    for (let y = P.y - by; y <= P.y + by; y++) for (let x = P.x - bx; x <= P.x + bx; x++) if (inBlob(x, y, 1)) put(c, x, y, inBlob(x, y, .86) ? t.water : t.water2);
+    c.globalAlpha = .45; for (let y = P.y - by; y <= P.y + by; y++) for (let x = P.x - bx; x <= P.x + bx; x++) if (inBlob(x - 3, y + 1, .5)) put(c, x, y, mixh(t.water2, '#3a5aa0', .35)); c.globalAlpha = 1;
+    /* a stony lip all round */
+    for (let a = 0; a < 6.283; a += .07) { const r = K(a), x = Math.round(P.x + Math.cos(a) * P.rx * (r + .035)), y = Math.round(P.y + Math.sin(a) * P.ry * (r + .09)); put(c, x, y, RC() < .5 ? t.stoneD : mixh(t.stoneD, t.moss, .35)); }
+    /* big rocks round the edge, in groups of one, three and five, painted back to front so the near ones overlap */
+    { const sz = L.wide ? 1.2 : .8, groups = [[.3, .6, .9], [1.3], [1.7, 1.95, 2.2, 2.45, 2.7], [3.0, 3.25, 3.5], [3.85], [4.2, 4.45, 4.7], [5.25]], fr = v => v - Math.floor(v);
+      const rk = []; groups.forEach((g, gi) => g.forEach((a, i) => { const rw = 3.6 + 3.8 * fr(Math.sin((gi * 7 + i + 1) * 12.9898) * 43758.5453); rk.push([a, rw, rw * (.66 + .1 * fr(rw * 9.1))]); }));
+      rk.sort((u, v) => Math.sin(u[0]) - Math.sin(v[0]));
+      for (const [a, rw, rh] of rk) { const r = K(a), x = Math.round(P.x + Math.cos(a) * P.rx * (r + .06)), y = Math.round(P.y + Math.sin(a) * P.ry * (r + .12) + (Math.sin(a) > 0 ? 2 : 0)); boulder(c, x, y, rw * sz, rh * sz, t, RC, { moss: RC() < .7 }); } }
     /* the stream: a dark bank, the water, a paler line down its middle */
     const blob = (x, y, rw, rh, col) => { c.fillStyle = col; for (let j = -Math.floor(rh); j <= Math.floor(rh); j++) { const w = Math.round(rw * Math.sqrt(Math.max(0, 1 - (j * j) / (rh * rh + .01)))); if (w > 0) c.fillRect(Math.round(x) - w, Math.round(y) + j, w * 2, 1); } };
     for (const q of L.stream) blob(q.x, q.y + 1, q.rw + 1.5, q.rh + 1.2, mixh(t.stoneD, t.mossD, .45));
@@ -347,7 +355,7 @@ const SCENE = (() => {
       /* a vague glow in the air around the fall, strongest next to the water and gone about fourteen pixels out; the water itself is left alone */
       F.tiers.forEach((tr, ti) => { for (let y = tr.y0 - 4; y < tr.y1 + 2; y++) { const o = F.off(ti, Math.max(tr.y0, Math.min(tr.y1 - 1, y))), ex = F.ex(ti, Math.max(tr.y0, Math.min(tr.y1 - 1, y))), x0 = tr.x + o - (ex >> 1), x1 = tr.x + o + tr.w + ex; for (let d = 1; d <= 14; d++) { const q = 1 - d / 15, a = Math.round(q * q * 4) / 4 * .085 * Lm.wf; if (a <= 0) continue; c.globalAlpha = a; c.fillRect(x0 - d, y, 1, 1); c.fillRect(x1 + d - 1, y, 1, 1); } } });
       { const Pd = L.pond; if (Pd) { c.globalAlpha = .035 * Lm.wf; for (let k = 0; k < 5; k++) ell(c, Pd.x, Pd.y - 2, Pd.rx + 2 + k * 4, Pd.ry + 1 + k * 2.5, col); } }
-      c.globalAlpha = 1; const P = L.pool; for (const lg of F.ledges) glow(c, Math.round((lg.x0 + lg.x1) / 2), lg.y, 9, col, .035 * Lm.wf); glow(c, P.x, P.y - 2, P.rx + 16, col, .03 * Lm.wf); }
+      c.globalAlpha = 1; const P = L.pool; for (const lg of F.ledges) glow(c, Math.round((lg.x0 + lg.x1) / 2), lg.y, 9, col, .035 * Lm.wf); c.globalAlpha = .016 * Lm.wf; for (let k = 0; k < 5; k++) ell(c, P.x, P.y - 1, P.rx + 4 + k * 4, P.ry + 2 + k * 3, col); c.globalAlpha = 1; }
   }
   /* ONE FAR TREE. Five kinds (plain, crooked, leaning, forked, twisted), each with its own width, bends, flared roots, knots,
      moss, side branches ending in leaf clumps, and vines hanging from the branches. Returns where vines can be tied. */
@@ -449,7 +457,7 @@ const SCENE = (() => {
     boulder(c, 52, H - 2, 8, 5, t, R, { moss: true }); shroom(48, H - 6, 2); shroom(55, H - 5, 3); shroom(57, H - 4, 1);
     ferns(2, H - 1, 6, 24, 1); ferns(34, H, 4, 12, -1);
     /* bottom right */
-    log(Wd - 74, H - 2, 22); bluebell(Wd - 44, H - 1, 15, -1); bluebell(Wd - 40, H - 1, 11, -1); grass(Wd - 54, H - 1, 3, 7); grass(Wd - 24, H - 1, 4, 8);
+    log(Wd - 74, H - 2, 22); grass(Wd - 54, H - 1, 3, 7); grass(Wd - 24, H - 1, 4, 8);
     ferns(Wd - 3, H - 1, 6, 26, -1); ferns(Wd - 30, H, 4, 12, 1);
     const dark = mixh(t.leafD, '#000000', .5), hi2 = mixh(t.mossL, '#000000', .3);
     for (const [x0, dir] of [[2, 1], [W - 3, -1]]) for (let k = 0; k < 5; k++) hangLeaf(c, x0 + dir * k * 5 + Math.floor(R() * 3), 14 + Math.floor(R() * 20), dir, dark, hi2);
@@ -588,7 +596,7 @@ const SCENE = (() => {
   function meadow(c, t) {
     const RM = rnd(131), T3 = tones3(t), x0 = L.wide ? L.cx0 - 22 : 0, x1 = L.wide ? L.cx1 + 22 : W, fl = L.floor, bandH = H - fl, span = x1 - x0, ph = RM() * 6.28, ph2 = RM() * 6.28;
     const E = L.eggs = { stump: { x: Math.round(x0 + span * (.2 + RM() * .06)), y: Math.round(fl + bandH * .56) }, frog: { x: Math.round(x0 + span * (.64 + RM() * .06)), y: Math.round(fl + bandH * .44) }, eyes: { x: Math.round(x0 + span * (.44 + RM() * .05)), y: Math.round(fl + bandH * .3) } };
-    const lgx = Math.round(x0 + span * .82), lgy = Math.round(fl + bandH * .5), clear = (x, y) => Math.hypot((x - E.stump.x) / 21, (y - E.stump.y + 4) / 12) < 1 || Math.hypot((x - lgx) / 16, (y - lgy + 3) / 8) < 1 || Math.hypot((x - E.frog.x) / 11, (y - E.frog.y) / 6) < 1 || Math.hypot((x - E.eyes.x) / 9, (y - E.eyes.y) / 6) < 1;
+    const lgx = Math.round(x0 + span * .52), lgy = Math.round(fl + bandH * .74), clear = (x, y) => Math.hypot((x - E.stump.x) / 21, (y - E.stump.y + 4) / 12) < 1 || Math.hypot((x - lgx) / 16, (y - lgy + 3) / 8) < 1 || Math.hypot((x - E.frog.x) / 11, (y - E.frog.y) / 6) < 1 || Math.hypot((x - E.eyes.x) / 9, (y - E.eyes.y) / 6) < 1;
     E.log = { x: lgx, y: lgy };
     const flowerCols = [PAL.violet[4], PAL.rose[4], PAL.ash[5], PAL.gold[3]].map(cc => mixh(cc, t.fog, .1));
     /* a dark, damp floor with patches of lighter moss */
@@ -746,12 +754,12 @@ const SCENE = (() => {
     });
     for (const lg of F.ledges) for (let i = 0; i < 3; i++) { const x = lg.x0 + 4 + ((f + i * 11) % Math.max(4, lg.x1 - lg.x0 - 8)); if ((f + i * 2) % 6 < 3) { c.fillStyle = t.foam; c.fillRect(x, lg.y - 1, 2, 1); } }
     /* the pool turns slowly: pastel rings spiralling out from where the water lands, a few bubbles rising, and ripples carried down the stream */
-    { const P = L.pool, sx = P.x - 2, rot = f * .022;
-      for (let a = .6; a < 15.5; a += .1) { const r = a / 15.5, ang = a + rot, x = Math.round(sx + Math.cos(ang) * r * (P.rx - 4)), y = Math.round(P.y + Math.sin(ang) * r * (P.ry - 1)); const seg = Math.floor(a / 1.35) % 3;
+    { const P = L.pool, sx = P.fx - 2, sh = P.fx - P.x, rot = f * .022;
+      for (let a = .6; a < 15.5; a += .1) { const r = a / 15.5, ang = a + rot, x = Math.round(sx + Math.cos(ang) * r * (P.rx + sh - 4)), y = Math.round(P.y + Math.sin(ang) * r * (P.ry - 1)); if (!P.has(x, y, .94)) continue; const seg = Math.floor(a / 1.35) % 3;
         c.globalAlpha = .5 - r * .2; c.fillStyle = seg === 0 ? t.foam : seg === 1 ? '#c9b3ff' : '#8ff0e0'; c.fillRect(x, y, 1, 1); } c.globalAlpha = 1;
       for (let i = 0; i < 10; i++) { const ph = ((f * .012 + i * .1) % 1), bx = P.x - P.rx * .8 + ((i * 53) % Math.round(P.rx * 1.6)) + Math.round(Math.sin(f / 14 + i) * 2), by = Math.round(P.y - 1 - ph * 20); c.globalAlpha = (1 - ph) * .85; c.fillStyle = i % 3 === 0 ? '#e4d4ff' : i % 3 === 1 ? '#bff6ee' : t.foam; c.fillRect(bx, by, 1 + (i % 5 === 0 ? 1 : 0), 1 + (i % 5 === 0 ? 1 : 0)); } c.globalAlpha = 1;
-      const N = L.stream.length; for (let i = 0; i < 9; i++) { const q = L.stream[Math.floor(((f * .0042 + i / 9) % 1) * (N - 1))]; const lw = Math.max(2, Math.round(q.rw * .7)); c.globalAlpha = .75; c.fillStyle = i % 3 === 0 ? '#e4d4ff' : t.foam; c.fillRect(Math.round(q.x - lw / 2), Math.round(q.y - q.rh * .3), lw, 1); c.globalAlpha = 1; }
-      for (let i = 0; i < 4; i++) { const q = L.stream[Math.floor(((f * .0042 + i / 4 + .12) % 1) * (N - 1))]; if ((f + i * 7) % 20 < 12) { c.fillStyle = t.foam; c.fillRect(Math.round(q.x + Math.sin(f / 5 + i) * q.rw * .4), Math.round(q.y + q.rh * .3), 1, 1); } } }
+      const N = L.stream.length; if (N) for (let i = 0; i < 9; i++) { const q = L.stream[Math.floor(((f * .0042 + i / 9) % 1) * (N - 1))]; const lw = Math.max(2, Math.round(q.rw * .7)); c.globalAlpha = .75; c.fillStyle = i % 3 === 0 ? '#e4d4ff' : t.foam; c.fillRect(Math.round(q.x - lw / 2), Math.round(q.y - q.rh * .3), lw, 1); c.globalAlpha = 1; }
+      if (N) for (let i = 0; i < 4; i++) { const q = L.stream[Math.floor(((f * .0042 + i / 4 + .12) % 1) * (N - 1))]; if ((f + i * 7) % 20 < 12) { c.fillStyle = t.foam; c.fillRect(Math.round(q.x + Math.sin(f / 5 + i) * q.rw * .4), Math.round(q.y + q.rh * .3), 1, 1); } } }
     /* the pond: a slow pastel turn on the surface, sparkles, and the glowing fish going round, each now and then sending a ring out */
     if (L.pond) { const P = L.pond, rot = -f * .015;
       for (let a = .8; a < 13; a += .12) { const r = a / 13, ang = a + rot, x = Math.round(P.x + 6 + Math.cos(ang) * r * (P.rx - 8)), y = Math.round(P.y - 4 + Math.sin(ang) * r * (P.ry - 5)); if (y > P.y - P.ry + 2) { const seg = Math.floor(a / 1.5) % 3; c.globalAlpha = .34 - r * .12; c.fillStyle = seg === 0 ? t.foam : seg === 1 ? '#c9b3ff' : '#8ff0e0'; c.fillRect(x, y, 1, 1); } } c.globalAlpha = 1;

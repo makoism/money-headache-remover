@@ -236,3 +236,7 @@ Favicon (38.11): redrawn as a tree, a mound with a small door and a few coins, o
 - Shorter setup is the default: Welcome, Currency, pay, bills (rent and food first), split, emergency fund, play money, done. "Ask me everything now" (`#tourFull`, `S.ui.full`) restores the long walk; the other bills come back as a Next card. Test helper `runTour` asks for the long walk unless `pr.quick`.
 - Wording: Plan hero says "About X a week, planned."; Home chest says "X a week for the N days left."
 - Tests: `tests/qc/fuzz_debts.js`, `home_dom.js` (now also cards and limits), `debts_ui.js`, `recurring_ui.js`, `pay_ui.js`, `click_sweep.js`; all run in `./check.sh full`. Test pages wipe storage on every load unless `sessionStorage.__keep` is set; `persist()` saves after 500 ms.
+
+## 38.27
+- Scene: removed the two bluebell stalks at the lower right of the foreground. At night their dark stems vanished into the water and only the blue bells showed, as a floating diagonal line.
+- Scene: the lit pond at the foot of the picture is gone. The waterfall now falls into one big blob-shaped pool (`L.pool`, edge radius `L.pool.k(angle)`, point test `L.pool.has`) with no stream leaving it, ringed by big rocks in groups of 3, 1 and 5. The fall lands at `L.pool.fx`, near the back right of the basin. The fallen log with the snail moved to the grass in front of the pool.

@@ -75,3 +75,8 @@ Learned from Mako: never em dashes; minimal; plain.
 
 ## How to update this file
 Mako's feedback arrives in chat. Put the lesson, in one line, under the right reviewer's "Learned from Mako" list; if it is a new kind of check, add it to that reviewer's list; if no reviewer owns it, add a reviewer. Copy this file into the project (claude/burrow-qc-roles.md) after changes.
+
+## Lessons from 38.26
+- Novice: a first-time user does not know what APR means or that setup never asked about a card. Ask about cards and loans after setup (Next card), take the rate per month or per year, and keep the old "Pay off a debt" goal only for balances with no interest.
+- Regression: tests must set `sessionStorage.__keep` to keep saved state across a reload; `persist()` saves after 500 ms, so wait before reloading. Test helpers walk the long setup (`#tourFull`) unless told otherwise.
+- Wording editor: Plan says "About X a week, planned." and Home says "X a week for the N days left." They answer different questions.
