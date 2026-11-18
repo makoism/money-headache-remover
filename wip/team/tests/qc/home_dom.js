@@ -68,7 +68,7 @@ const monShort = ym => MON[+ym.slice(5) - 1], monLong = ym => monShort(ym) + ' '
       if (held > 0) has(tag + ' chest held', T.sp, F(held) + ' is held back');
       const nec = V.buckets.find(x => x.id === 'nec'), covered = m.inflow >= nec.planned;
       has(tag + ' chest nec', T.sp, 'Bills and basics'); { const nR = V.map.month.find(x => x.id === 'nec'); has(tag + ' chest nec', T.sp, nR && nR.overBy > 0 ? 'Over' : covered ? 'Covered' : 'Short'); }
-      ['edu', 'give'].forEach(id => { const x = V.buckets.find(q => q.id === id), T2 = V.cells[id]; has(tag + ' chest ' + id, T.sp, x.left < 0 ? (T2.bank >= 0.005 ? '−' + F2(T2.bank) : F2(0)) : F2(x.left)); if (x.planned > 0) has(tag + ' chest ' + id, T.sp, (x.left < 0 ? F(T2.over) + ' more than the ' + F(x.planned) + ' for ' + monShort(ym) : 'Left of ' + F(x.planned) + ' in ' + monShort(ym))); });
+      ['edu', 'give'].forEach(id => { const x = V.buckets.find(q => q.id === id), T2 = V.cells[id]; has(tag + ' chest ' + id, T.sp, x.left < 0 ? (T2.bank >= 0.005 ? '−' + F2(T2.bank) : F2(0)) : F2(x.left)); if (x.planned > 0) has(tag + ' chest ' + id, T.sp, (x.left < 0 ? F(T2.over) + ' more than the ' + F(x.planned) + ' for ' + monShort(ym) : 'left of the ' + F(x.planned) + ' for ' + monShort(ym))); });
       if (V.otherSpent > 0) has(tag + ' chest other', T.sp, F2(V.otherSpent) + ' logged as Other');
     }
     /* ---- Investing: its own card is retired (38.29); it is a room in the Burrows section and a share of the pay strip ---- */
