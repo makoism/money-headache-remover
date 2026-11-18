@@ -9,9 +9,9 @@ const cents = x => Math.round(x * 100) / 100;
 function parseCsv(t) { t = t.replace(/^﻿/, ''); const rows = []; let row = [], cell = '', q = false; for (let i = 0; i < t.length; i++) { const c = t[i]; if (q) { if (c === '"') { if (t[i + 1] === '"') { cell += '"'; i++; } else q = false; } else cell += c; } else if (c === '"') q = true; else if (c === ',') { row.push(cell); cell = ''; } else if (c === '\r') { /* skip */ } else if (c === '\n') { row.push(cell); rows.push(row); row = []; cell = ''; } else cell += c; } if (cell || row.length) { row.push(cell); rows.push(row); } return rows; }
 for (let t = 0; t < N; t++) {
   const S = randomState();
-  /* receipts on random days, in cents, some in lines of each jar and some "other" */
+  /* receipts on random days, in cents (whole yen, as the app stores yen), some in lines of each jar and some "other" */
   const nR = ri(0, 14); S.receipts = [];
-  for (let k = 0; k < nR; k++) { const l = pick(S.plan.lines.concat([null, null])); S.receipts.push({ id: 'r' + k, d: pick(M.MONTHS) + '-' + String(ri(1, 28)).padStart(2, '0'), a: cents(ri(1, 900000) / 100), c: l ? l.key : 'other', cn: l ? l.name : 'Other', n: '' }); }
+  for (let k = 0; k < nR; k++) { const l = pick(S.plan.lines.concat([null, null])); S.receipts.push({ id: 'r' + k, d: pick(M.MONTHS) + '-' + String(ri(1, 28)).padStart(2, '0'), a: S.ui.cur === '¥' ? ri(1, 9000) : cents(ri(1, 900000) / 100), c: l ? l.key : 'other', cn: l ? l.name : 'Other', n: '' }); }
   const rr = rnd(); if (rr < .5) { const g = pick(S.plan.goals); S.ui.main = g ? g.id : 'nope'; } else if (rr < .6) S.ui.main = 'zzz-none';
   if (rnd() < .5) { S.ui.gk = {}; S.plan.goals.forEach(g => { if (rnd() < .5) S.ui.gk[g.id] = pick(['travel', 'moving', 'buy', 'car', 'other']); }); }
   const O = oracle(S), C = M.calcAll(S), tag = '#' + t + ' ' + S.ui.cur + ' ';
@@ -21,7 +21,8 @@ for (let t = 0; t < N; t++) {
     /* goals */
     const exp = S.plan.goals.map(g => {
       const og = oracleGoal(S, O, g.id, ym), bal = row.bal[g.id], reached = O.reached[g.id] || null;
-      return { id: g.id, saved: bal, pct: g.target > 0 ? (bal >= g.target ? 100 : Math.min(99, Math.floor(bal * 100 / g.target))) : 0, state: og.state, need: og.need, slack: og.slack, had: og.had, reached, months: reached ? Math.max(0, mIdx(reached) - mIdx(ym)) : null, live: g.target > 0 && og.state !== 'paid' && og.state !== 'short', target: g.target, emergency: !!g.emergency };
+      const cap = O.cap(g);   /* 38.30: the Emergency fund's target is the longer goal once the person said yes to it (stretchOn) */
+      return { id: g.id, saved: bal, pct: cap > 0 ? (bal >= cap ? 100 : Math.min(99, Math.floor(bal * 100 / cap))) : 0, state: og.state, need: og.need, slack: og.slack, had: og.had, reached, months: reached ? Math.max(0, mIdx(reached) - mIdx(ym)) : null, live: g.target > 0 && og.state !== 'paid' && og.state !== 'short', target: cap, emergency: !!g.emergency };
     });
     eq(pt + 'goals', V.goals.map(r => ({ id: r.id, saved: r.saved, pct: r.pct, state: r.state, need: r.need, slack: r.slack, had: r.had, reached: r.reached, months: r.months, live: r.live, target: r.target, emergency: r.emergency })), exp);
     eq(pt + 'live count', V.live, exp.filter(g => g.live).length);

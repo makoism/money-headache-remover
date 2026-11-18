@@ -68,7 +68,34 @@ function oracle(S) {
     goals.forEach(g => { r.spent[g.id] = 0; if (g.due && g.target > 0 && ym === dueM(g)) { r.spent[g.id] = Math.min(bal[g.id], g.target); bal[g.id] -= r.spent[g.id]; } });
     r.bal = Object.assign({}, bal); out.push(r);
   });
+  oracleOverspend(S, out, lines);
   return { rows: out, reached, lastSave, dueM, cap };
+}
+/* 38.30 rule, recounted from the plain words and in whole cents: money spent past what a month planned comes out of the bank and stays out in every later month.
+   Only when at least one receipt exists. Per month:
+   - Bills and basics are judged line by line: what was logged on a line past that line's plan (a line that has ended plans 0).
+   - Other: what was logged as Other past the month's one-time costs (a one-time cost is money already set aside for it).
+   - Free to spend and Investing: what was logged past the month's plan for them.
+   - Education and Giving are burrows that keep what is not spent: each holds the plans so far minus what was logged on it.
+     If a burrow would drop below zero, that part comes out of the bank and the burrow is empty, not negative.
+   r.bankPlanned keeps the bank before this rule; r.bankStart and r.bankEnd become the real bank. */
+function oracleOverspend(S, rows, lines) {
+  const C = x => Math.round((+x || 0) * 100), rc = S.receipts || [];
+  rows.forEach(r => { r.bankPlanned = r.bankEnd; r.overNow = 0; r.over = 0; });
+  if (!rc.length) return;
+  const jarOfKey = k => { const l = lines.find(x => x.key === k); return l ? l.jar : 'other'; };
+  const stock = { edu: 0, give: 0 }; let cum = 0;
+  rows.forEach(r => {
+    const byKey = {}, byJar = {};
+    rc.filter(x => String(x.d).slice(0, 7) === r.ym).forEach(x => { byKey[x.c] = (byKey[x.c] || 0) + C(x.a); const j = jarOfKey(x.c); byJar[j] = (byJar[j] || 0) + C(x.a); });
+    let inc = 0;
+    r.lineVals.filter(l => l.jar === 'nec').forEach(l => { inc += Math.max(0, (byKey[l.key] || 0) - C(l.v)); });
+    inc += Math.max(0, (byJar.other || 0) - C(r.items));
+    inc += Math.max(0, (byJar.play || 0) - C(r.jar.play));
+    inc += Math.max(0, (byJar.ffa || 0) - C(r.jar.ffa));
+    ['edu', 'give'].forEach(j => { stock[j] += C(r.jar[j]) - (byJar[j] || 0); if (stock[j] < 0) { inc += -stock[j]; stock[j] = 0; } });
+    r.bankStart = (C(r.bankStart) - cum) / 100; cum += inc; r.overNow = inc / 100; r.over = cum / 100; r.bankEnd = (C(r.bankEnd) - cum) / 100;
+  });
 }
 /* the status of one goal in one month, again from the plain rules */
 function oracleGoal(S, O, id, ym) {
