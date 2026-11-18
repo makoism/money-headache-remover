@@ -12,6 +12,8 @@ function renderMap() {
   const el = $('#hMap'), V = HV; if (!el) return;
   if (!V || !V.map || !(V.month.inflow > 0)) { el.hidden = true; return; }
   const M = V.map, mon = monthLabel(V.ym, true);
+  /* the proof: where the money sits against where it came from, worked out apart (model.js proofOf). A miss is shown, never hidden. */
+  const PF = proofOf(S, C, V.ym, M); if (!PF.ok && !renderMap.told) { renderMap.told = true; logErr('proof', new Error('numbers off by ' + PF.off + ' in ' + V.ym)); }
   el.hidden = false;
   const n = (l, v, cls) => `<li class="mp-n${cls ? ' ' + cls : ''}"><span class="mp-l">${esc(l)}</span><b>${v}</b></li>`;
   const SPL = { nec: 'Bills and basics', play: 'Free to spend', edu: 'Education', give: 'Giving', ffa: 'Investing' };
@@ -41,7 +43,8 @@ function renderMap() {
     <div class="mp-where" role="img" aria-label="${esc(parts.map(x => x.name + ' ' + fmt(x.amount)).join(', '))}">${wseg}</div>
     <ul class="mp-key">${wkey}</ul>
     <ul class="mp-nums">${n('In burrows', fmt2(M.saved))}${n('In the bank, end of ' + mon, fmt2(M.bankEnd), M.bankEnd < minB ? 'bad' : '')}</ul>
-    <p class="cap mp-proof">Bank ${fmt2(M.bankEnd)} + burrows ${fmt2(M.saved)} = <b>${fmt2(M.total)}</b> at the end of ${esc(mon)}. Burrow amounts include what you plan to add this month.${(() => { const pm = (C && C.months || []).filter(x => x.pendLeft > 0); if (!pm.length) return ''; const tot = pm.reduce((a, x) => a + x.pendLeft, 0); return ' ' + fmt2(tot) + (pm.length === 1 ? ' of ' + FULL[+pm[0].ym.slice(5) - 1] + "'s free to spend" : ' of free to spend from ' + pm.length + ' past months') + ' is left out until you answer on Home.'; })()}${M.overspent > 0 ? ' The bank is lowered by ' + fmt2(M.overspent) + ' you spent over plan.' : ''} This comes from your plan and your receipts and is not checked against your bank yet.</p>
+    <p class="cap mp-proof">Bank ${fmt2(M.bankEnd)} + burrows ${fmt2(M.saved)} = <b>${fmt2(M.total)}</b> at the end of ${esc(mon)}. Burrow amounts include what you plan to add this month.${PF.pendAmount > 0 ? ' ' + fmt2(PF.pendAmount) + (PF.pendMonths.length === 1 ? ' of ' + FULL[+PF.pendMonths[0].slice(5) - 1] + "'s free to spend" : ' of free to spend from ' + PF.pendMonths.length + ' past months') + ' is left out until you answer on Home.' : ''}${M.overspent > 0 ? ' The bank is lowered by ' + fmt2(M.overspent) + ' you spent over plan.' : ''} This comes from your plan and your receipts and is not checked against your bank yet.${PF.ok ? ' Checked: what you started with, plus your pay, less what was spent, comes to the same total.' : ''}</p>
+    ${PF.ok ? '' : `<p class="cap mp-bad" role="alert">These numbers do not add up. They are off by ${fmt2(PF.offBy)}. Nothing you entered is lost. Please tell Mako.</p>`}
     ${warn}
     <h3 class="mp-h">This month</h3><div class="hb-scene mp-rooms" id="mpRooms"></div>`);
   BUR.dropCoins(el.querySelector('.mp-split'));

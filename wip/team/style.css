@@ -1718,6 +1718,7 @@ body.touring .help-row, body.bv-on .help-row { display: none; }
 .mp-n.bad b { color: var(--bad); }
 .mp-proof { margin: 12px 4px 0; max-width: 62ch; }
 .mp-proof b { color: var(--ink); font-weight: 600; }
+.mp-bad { margin: 8px 4px 0; max-width: 62ch; color: var(--bad); font-weight: 600; }
 :root { --bankc: #7b948a; }
 .mp-cap { font-size: var(--t-cap); color: var(--ink2); margin: 16px 4px 8px; }
 .mp-split, .mp-where { display: flex; gap: 3px; height: 30px; border-radius: 10px; overflow: visible; position: relative; }

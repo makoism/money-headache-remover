@@ -384,7 +384,9 @@ function wholePercents(vals, base) {
   /* whole numbers all the way through, so two shares that are truly equal are a tie, never a rounding accident */
   const v = vals.map(x => Math.max(0, Math.round(+x || 0))), sum = v.reduce((a, b) => a + b, 0), bs = Math.round(base);
   if (!(bs > 0) || !(sum > 0)) return v.map(() => 0);
-  const den = Math.min(sum, bs), total = Math.floor((den * 200 + bs) / (2 * bs));
+  /* the shares are parts of the base. When they add up to more than the base (a plan paid partly with borrowed money), the whole percents still add up
+     to one true figure, the rounded total, instead of each being cut down on its own and adding up to nothing in particular */
+  const den = sum, total = Math.floor((den * 200 + bs) / (2 * bs));
   const out = v.map(x => Math.floor(x * total / den)), rem = v.map((x, i) => x * total - out[i] * den);
   const left = total - out.reduce((a, b) => a + b, 0);
   v.map((x, i) => i).filter(i => v[i] > 0).sort((i, j) => rem[j] - rem[i] || i - j).slice(0, Math.max(0, left)).forEach(i => { out[i]++; });
@@ -398,7 +400,14 @@ function jarsOf(S, m) {
   const restCover = Math.min(rest, m.draw || 0), unpR = Math.max(0, rest - restCover), usedOver = Math.min(unpR, m.overNow || 0), restKept = Math.max(0, restCover - Math.max(0, (m.overNow || 0) - unpR));   /* borrowed money not used up by spending past plan stays in the bank */   /* borrowed money that went to overspending, not pay left over */
   const vals = { nec: m.jar.nec, lts: m.goalsTotal, play: m.jar.play, edu: m.jar.edu, ffa: m.jar.ffa, give: m.jar.give };
   const pcts = wholePercents(JARS.map(j => vals[j.id]).concat([rest - restCover]), base);
+  /* borrowed money that pays for part of the plan. The places are shown as shares of real pay, so with borrowed money in the plan they add up to more
+     than 100: placedPct says how much, and borrowUsedPct is the part past 100. Places + not placed = 100 + borrowed, always. */
+  const realPay = inn - dw0, borrowUsed = short > 0 ? 0 : Math.max(0, dw0 - restCover), sumPct = pcts.reduce((a, b) => a + b, 0);
+  const borrowUsedPct = borrowUsed > 0 && base === realPay ? Math.max(0, sumPct - 100) : 0;
+  /* named amounts the screens show (they never work these out themselves) */
+  const unplaced = Math.max(0, rest - restCover), unplacedNet = round2(rest - restCover - usedOver), exceedsBy = short + dw0;
   return { income: base, inn, out, rest, restCover, restKept, usedOver, short, draw: m.draw || 0, over: short > 0, restPct: pcts[6],
+    realPay, borrowUsed, borrowUsedPct, placedPct: sumPct - pcts[6], unplaced, unplacedNet, exceedsBy,
     list: JARS.map((j, i) => ({ id: j.id, name: j.name, usual: Math.round(j.usual * 100), v: vals[j.id], pct: pcts[i] })) };
 }
 
@@ -603,6 +612,40 @@ function mapOf(S, C, ym, V0) {
     goalParts: (V0.goals || []).filter(g => g.live !== false || ((m.g[g.id] && m.g[g.id].actual) || 0) > 0).map(g => ({ id: g.id, name: g.name, slot: g.slot, saved: g.saved, plan: (m.g[g.id] && m.g[g.id].actual) || 0 })),
     split: ['nec', 'lts', 'play', 'edu', 'ffa', 'give'].map(id => ({ id, amount: id === 'lts' ? (m.goalsTotal || 0) : (m.jar[id] || 0) })).filter(x => x.amount > 0) };
 }
+/* THE PROOF. Where the money sits must equal where the money came from, less what left. The two sides are worked out apart from each other:
+     sits:  the bank + every goal + the Education, Giving and Investing piles at the end of the month (what the screens show, from mapOf)
+     came:  what there was at the start + all pay so far - everything that left, added up here from the plan and the raw receipts, in whole cents
+   What leaves: bills, one-time costs and debt payments as planned (taken as paid), anything logged past a bill or past the one-time costs,
+   Free to spend as planned (taken as spent) plus anything logged past it, less unspent Free to spend the person has answered for (it went back
+   to the bank or to a goal), what was logged from Education and Giving, and goal money spent on its date. Investing never leaves; money borrowed
+   from the emergency fund only moves. If the two sides differ, a number on a screen is wrong, and the page says so instead of showing it as true. */
+function proofOf(S, C, ym, map0) {
+  const c = x => Math.round((+x || 0) * 100), goals = goalsOf(S), has = (S.receipts || []).length > 0;
+  const part = { start: c(cfg(S, 'bankStart')) + goals.reduce((a, g) => a + c(g.start), 0), pay: 0, planned: 0, past: 0, free: 0, back: 0, piles: 0, goals: 0 };
+  let pend = 0; const pendMonths = [];
+  for (const x of MONTHS) {
+    if (x > ym) break;
+    const m = C.byYm[x], byKey = {}, byJar = {};
+    if (has) (S.receipts || []).forEach(r => { if (r.d.slice(0, 7) !== x) return; const l = lineByKey(S, r.c), j = l ? l.jar : 'other'; byKey[r.c] = (byKey[r.c] || 0) + c(r.a); byJar[j] = (byJar[j] || 0) + c(r.a); });
+    let necPlan = 0, necPast = 0, playPlan = 0;
+    m.lines.forEach(l => { const v = l.on ? c(l.v) : 0; if (l.jar === 'nec') { necPlan += v; necPast += Math.max(0, (byKey[l.key] || 0) - v); } else if (l.jar === 'play') playPlan += v; });
+    const items = c(m.itemsTotal);
+    part.pay += c(m.a) + c(m.b) + c(m.side);
+    part.planned += necPlan + items + c(m.debtPay);
+    part.past += necPast + Math.max(0, (byJar.other || 0) - items) + Math.max(0, (byJar.play || 0) - playPlan);
+    part.free += playPlan; part.back += c(m.counted);
+    part.piles += (byJar.edu || 0) + (byJar.give || 0);
+    goals.forEach(g => { part.goals += c(m.spent[g.id]); });
+    if (m.pendLeft > 0) { pend += c(m.pendLeft); pendMonths.push(x); }
+  }
+  const came = part.start + part.pay - part.planned - part.past - part.free + part.back - part.piles - part.goals;
+  const map = map0 || viewOf(S, C, ym).map, sits = c(map.total), sitsParts = c(map.bankEnd) + c(map.goalsSaved) + map.burrows.reduce((a, b) => a + c(b.amount), 0);
+  const off = sits - came;
+  return { ok: off === 0 && sitsParts === sits, off: off / 100, offBy: Math.abs(off) / 100, sits: sits / 100, came: came / 100, partsOk: sitsParts === sits,
+    start: part.start / 100, pay: part.pay / 100, left: (part.planned + part.past + part.free - part.back + part.piles + part.goals) / 100,
+    pendAmount: pend / 100, pendMonths };
+}
+
 /* the whole plan as one table, a row for each month: what you could open in Google Sheets or Excel to check every number */
 function sheetRows(S, C) {
   const head = ['Month', 'Money in', 'Bills and basics', 'Savings goals', 'Play', 'Education', 'Investing', 'Giving', 'Money out', 'Left over', 'Balance at start', 'Balance at end'];

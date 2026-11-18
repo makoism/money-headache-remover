@@ -87,10 +87,13 @@ function oracleGoal(S, O, id, ym) {
 }
 /* whole percents that add to 100, by integer arithmetic: floor each share, give spare points to the biggest remainders (lower position wins a tie) */
 function oraclePercents(vals, base) {
+  /* 38.31 rule: the shares are parts of the base; the whole percents add up to the rounded total (100 when the shares fill the base, more when a
+     plan is paid partly with borrowed money). Integer arithmetic only. */
   const v = vals.map(x => Math.max(0, x)), sum = v.reduce((a, b) => a + b, 0);
   if (!(base > 0) || !(sum > 0)) return v.map(() => 0);
-  const den = Math.min(sum, base), fl = v.map(x => Math.floor(x * 100 / den)), rem = v.map((x, i) => x * 100 - fl[i] * den);
-  let spare = 100 - fl.reduce((a, b) => a + b, 0);
+  const T = Math.floor((sum * 200 + base) / (2 * base));            // the total in whole percents, rounded half up
+  const fl = v.map(x => Math.floor(x * T / sum)), rem = v.map((x, i) => x * T - fl[i] * sum);
+  const spare = T - fl.reduce((a, b) => a + b, 0);
   v.map((x, i) => i).filter(i => v[i] > 0).sort((a, b) => rem[b] - rem[a] || a - b).slice(0, Math.max(0, spare)).forEach(i => { fl[i]++; });
   return fl;
 }
@@ -167,7 +170,14 @@ for (let t = 0; t < N; t++) {
     J.list.forEach((j, k) => { eq(p + 'jar amount ' + j.id, j.v, vals[k]); eq(p + 'jar pct ' + j.id, j.pct, pc[k]); });
     eq(p + 'rest', J.rest, rest); eq(p + 'borrowed left', J.restCover, borrowedLeft); eq(p + 'restPct', J.restPct, pc[6]); eq(p + 'short', J.short, short);
     if (DBG.indexOf(String(t) + ' ' + r.ym) >= 0) console.log('DBG', t, r.ym, JSON.stringify({ vals, base, inn, outv, rest, short, app: J.list.map(j => j.pct).concat([J.restPct]), orc: pc, appBase: J.income }));
-    const sumPct = pc.reduce((a, b) => a + b, 0); checks++; if (base > 0 && sumPct !== 100) { if (fails.length < 40) fails.push(p + 'percents add to ' + sumPct); }
+    /* places + not placed = 100 + borrowed, always: the borrowed part is the emergency-fund money the plan uses up, as a whole percent of real pay */
+    const borrowUsed = short > 0 ? 0 : Math.max(0, r.draw - borrowedLeft), sumPct = pc.reduce((a, b) => a + b, 0);
+    const expBorrowPct = borrowUsed > 0 && base === realPay ? Math.floor((borrowUsed * 200 + base) / (2 * base)) : 0;
+    eq(p + 'borrowed used', J.borrowUsed, borrowUsed); eq(p + 'borrowed used pct', J.borrowUsedPct, Math.max(0, sumPct - 100));
+    const sumAll = vals.reduce((a, b) => a + b, 0);
+    checks++; if (base > 0 && sumAll >= base && sumPct !== 100 + expBorrowPct) { if (fails.length < 40) fails.push(p + 'percents add to ' + sumPct + ', expected ' + (100 + expBorrowPct)); }
+    checks++; if (base > 0 && sumAll < base && sumPct > 100) { if (fails.length < 40) fails.push(p + 'percents add to ' + sumPct + ' with less than the base placed'); }
+    eq(p + 'placed pct', J.placedPct, sumPct - pc[6]);
   });
   /* the bank rolls forward exactly by what is left each month */
   let b = M.cfg(S, 'bankStart'); C.months.forEach(m => { b += m.left; }); eq(tag + ' final bank', C.months[C.months.length - 1].bankEnd, b);

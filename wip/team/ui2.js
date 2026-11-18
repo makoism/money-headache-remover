@@ -25,6 +25,7 @@ function paintLegend(m) {
     + (J.rest - J.restCover - J.usedOver >= 0.5 ? row('rest', J.restCover > 0 || J.usedOver > 0 ? 'Not placed yet' : 'Left', J.restCover > 0 || J.usedOver > 0 ? 'stays in the bank' : 'Not placed yet', round2(J.rest - J.restCover - J.usedOver), has && J.usedOver < 0.5 ? J.restPct + '%' : '') : '')
     + (J.usedOver >= 0.5 ? row('rest', 'Used for spending past plan', 'came out of pay with no place', J.usedOver, '') : '')
     + (J.rest > 0 && J.restCover > 0 ? row('rest', 'Borrowed', J.restKept > 0 ? (J.restKept < J.restCover - 0.5 ? fmt(J.restKept) + ' of it stays in the bank' : 'from the emergency fund, stays in the bank') : 'from the emergency fund, used for spending past plan', J.restCover, '') : '')
+    + (J.borrowUsed >= 0.5 ? row('rest', 'Borrowed', 'from the emergency fund, pays for part of this plan', J.borrowUsed, has && J.borrowUsedPct > 0 ? J.borrowUsedPct + '%' : '') : '')
     + (J.short > 0 ? row('rest', J.draw > 0 ? 'Still over after borrowing' : st0 === 'tight' ? 'Over pay by' : 'Short by', J.draw > 0 ? fmt(J.draw) + ' borrowed from the emergency fund' + (st0 === 'tight' ? ', your balance covers the rest' : '') : st0 === 'tight' ? 'Your balance covers it' : 'Plan exceeds pay', J.short, '', true) : '');
 }
 /* one plain sentence under the table: how this month's bills sit against Eker's usual split, and whether every bit of pay has a purpose */
@@ -32,10 +33,12 @@ function jarNote(m) {
   const J = jarsOf(S, m); if (J.inn <= 0) return '';
   if (J.over) return `Plan exceeds pay by ${fmt(J.short + (J.draw || 0))}${J.draw > 0 ? ', ' + fmt(J.draw) + ' of it from your emergency fund' : ''}, so percents are off. Lower a bill or another place.`;
   const nec = J.list[0], u = nec.usual;
+  /* a plan paid partly with borrowed money: say why the places add up to more than all of the pay */
+  const borrowed = J.borrowUsedPct > 0 ? ` Your places add up to ${J.placedPct}% of your pay, because ${fmt(J.borrowUsed)} of this plan is borrowed from your emergency fund.` : '';
   const lead = nec.pct > u + 1 ? `Bills and basics are ${nec.pct}% of pay, above the usual ${u}%. That is common. Keep the other places going, even small: the habit matters more than the exact percent.`
     : nec.pct < u - 1 ? `Bills and basics are ${nec.pct}% of pay, under the usual ${u}%. More room for the other places.`
     : `Bills and basics are ${nec.pct}% of pay, about the usual ${u}% many people aim for.`;
-  return lead;
+  return lead + borrowed;
 }
 const LTS_HINT = ' Each slider sets that goal’s amount this month. Leave them alone to use the computed amounts (from goal amounts and dates). Up takes from Left; down returns to Left.';
 
