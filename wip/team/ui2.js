@@ -26,7 +26,7 @@ function paintLegend(m) {
   const live = S.plan.goals.filter(g => g.target > 0 && m.g[g.id] && m.g[g.id].actual > 0).map(g => g.name);
   const ltsTag = live.length ? esc(live.slice(0, 2).join(', ') + (live.length > 2 ? ` and ${live.length - 2} more` : '')) : JARTAG.lts;
   $('#legend').innerHTML = J.list.map(j => row(JARCLS[j.id], j.name, j.id === 'lts' ? ltsTag : JARTAG[j.id], j.v, has ? j.pct + '%' : '')).join('')
-    + (J.unplacedNet >= 0.5 ? row('rest', J.restCover > 0 || J.usedOver > 0 ? 'Not placed yet' : 'Left', J.restCover > 0 || J.usedOver > 0 ? 'stays in the bank' : 'Not placed yet', J.unplacedNet, has && J.usedOver < 0.5 ? J.restPct + '%' : '') : '')
+    + (J.unplacedNet >= 0.5 ? row('rest', 'Not placed yet', J.restCover > 0 || J.usedOver > 0 ? 'stays in the bank' : '', J.unplacedNet, has && J.usedOver < 0.5 ? J.restPct + '%' : '') : '')
     + (J.usedOver >= 0.5 ? row('rest', 'Used for spending past plan', 'came out of pay with no place', J.usedOver, '') : '')
     + (J.rest > 0 && J.restCover > 0 ? row('rest', 'Borrowed', J.restKept > 0 ? (J.restKept < J.restCover - 0.5 ? fmt2(J.restKept) + ' of it stays in the bank' : 'from the emergency fund, stays in the bank') : 'from the emergency fund, used for spending past plan', J.restCover, '') : '')
     + (J.borrowUsed >= 0.5 ? row('rest', 'Borrowed', 'from the emergency fund, pays for part of this plan', J.borrowUsed, has && J.borrowUsedPct > 0 ? J.borrowUsedPct + '%' : '') : '')
@@ -98,7 +98,7 @@ function render() {
   const chip = $('#chip'); chip.className = 'chip ' + st; chip.hidden = pin <= 0;
   const overFree = playSpent > play && play >= 0 && rs.count > 0, overAny = !overFree && (m.overNow || 0) > 0.004;
   if (overFree || overAny) { chip.className = 'chip short'; chip.innerHTML = IC.bad + (overFree && !((m.overNec || 0) > 0.004) ? 'Over free to spend' : 'Over plan'); }
-  else if (Lun >= roundUnit(S) && st === 'good') { chip.className = 'chip tight'; chip.innerHTML = IC.warn + 'Pay not placed'; }
+  else if (Lun >= roundUnit(S) && st === 'good') { chip.className = 'chip tight'; chip.innerHTML = IC.warn + 'Not placed yet'; }
   else chip.innerHTML = st === 'good' ? IC.ok + 'On plan' : st === 'tight' ? IC.warn + 'Tight month' : IC.bad + 'Short';
   const gap = PC.bankGap;
   let vt;

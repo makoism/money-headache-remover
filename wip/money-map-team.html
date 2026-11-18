@@ -1888,7 +1888,7 @@ p .link::after, li .link::after, span .link::after, .cap .link::after { content:
       <form class="hform" id="hForm" autocomplete="off" novalidate>
         <div class="field hamt"><label for="hAmt">Amount</label><div class="inp"><span class="yen cs"></span><input id="hAmt" type="number" inputmode="decimal" min="0" step="any" placeholder="0"></div></div>
         <div class="field hcat"><label for="hCat">Category</label><div class="selbox"><select id="hCat"></select></div></div>
-        <button class="btn solid hadd" type="submit" id="hSave">Log</button>
+        <button class="btn solid hadd" type="submit" id="hSave">Log spend</button>
         <p class="msg hmsg" id="hMsg" role="status"></p>
         <details class="hmore"><summary>Date, note</summary>
           <div class="hmore-in">
@@ -2255,7 +2255,7 @@ p .link::after, li .link::after, span .link::after, .cap .link::after { content:
 </div>
 <div class="djdock" id="djDock" hidden><div class="djdock-v"><div id="djYt"></div></div><div class="djdock-b"><p class="djdock-hint" id="djHint" hidden>Tap the cover to start. Browsers need a tap on the player itself.</p><div id="djDockT" class="djdock-t"></div><div class="djdock-c"><button type="button" class="dj-i" id="djDockPrev" aria-label="Previous track"></button><button type="button" class="dj-i" id="djDockPlay" aria-label="Play"></button><button type="button" class="dj-i" id="djDockNext" aria-label="Next track"></button><button type="button" class="dj-i x" id="djDockHide" aria-label="Hide the player and stop">&times;</button></div></div></div>
 <div class="upd undo-bar" id="undoBar" role="status" hidden><span id="undoTxt"></span><button type="button" class="btn small solid" id="undoGo">Undo</button></div>
-<div class="upd" id="upd" role="status" hidden><span>A newer version is ready.</span><button type="button" class="btn small solid" id="updGo">Reload</button></div>
+<div class="upd" id="upd" role="status" hidden><span>A newer version is ready. </span><button type="button" class="btn small solid" id="updGo">Reload</button></div>
 <div class="cam rep" id="rep" role="dialog" aria-labelledby="repT" hidden>
   <div class="cam-in">
     <div class="cam-top"><h2 id="repT">Report a problem</h2><button type="button" class="ask-x" id="repClose" aria-label="Close">&times;</button></div>
@@ -2328,7 +2328,7 @@ const JARS = [
   { id: 'lts',  name: 'Goals', usual: 0.10, about: 'Saved now, spent later: a big purchase, a trip, a rainy day, a surprise. Your burrows live here.' },
   { id: 'play', name: 'Free to spend',                         usual: 0.10, about: 'Fun for you and your family, no guilt. What is left at month end can go to a goal.' },
   { id: 'edu',  name: 'Education',                      usual: 0.10, about: 'Courses, books, coaching, skill building.' },
-  { id: 'ffa',  name: 'Investing',              usual: 0.10, about: 'Investments you never spend. They grow and eventually pay you.' },
+  { id: 'ffa',  name: 'Investing',              usual: 0.10, about: 'Never spent. It grows over time.' },
   { id: 'give', name: 'Giving',                         usual: 0.05, about: 'Charity, donations and gifts.' },
 ];
 /* the usual share of each place as a whole percent, for the screens that name it (they never work it out) */
@@ -4615,7 +4615,7 @@ function paintLegend(m) {
   const live = S.plan.goals.filter(g => g.target > 0 && m.g[g.id] && m.g[g.id].actual > 0).map(g => g.name);
   const ltsTag = live.length ? esc(live.slice(0, 2).join(', ') + (live.length > 2 ? ` and ${live.length - 2} more` : '')) : JARTAG.lts;
   $('#legend').innerHTML = J.list.map(j => row(JARCLS[j.id], j.name, j.id === 'lts' ? ltsTag : JARTAG[j.id], j.v, has ? j.pct + '%' : '')).join('')
-    + (J.unplacedNet >= 0.5 ? row('rest', J.restCover > 0 || J.usedOver > 0 ? 'Not placed yet' : 'Left', J.restCover > 0 || J.usedOver > 0 ? 'stays in the bank' : 'Not placed yet', J.unplacedNet, has && J.usedOver < 0.5 ? J.restPct + '%' : '') : '')
+    + (J.unplacedNet >= 0.5 ? row('rest', 'Not placed yet', J.restCover > 0 || J.usedOver > 0 ? 'stays in the bank' : '', J.unplacedNet, has && J.usedOver < 0.5 ? J.restPct + '%' : '') : '')
     + (J.usedOver >= 0.5 ? row('rest', 'Used for spending past plan', 'came out of pay with no place', J.usedOver, '') : '')
     + (J.rest > 0 && J.restCover > 0 ? row('rest', 'Borrowed', J.restKept > 0 ? (J.restKept < J.restCover - 0.5 ? fmt2(J.restKept) + ' of it stays in the bank' : 'from the emergency fund, stays in the bank') : 'from the emergency fund, used for spending past plan', J.restCover, '') : '')
     + (J.borrowUsed >= 0.5 ? row('rest', 'Borrowed', 'from the emergency fund, pays for part of this plan', J.borrowUsed, has && J.borrowUsedPct > 0 ? J.borrowUsedPct + '%' : '') : '')
@@ -4687,7 +4687,7 @@ function render() {
   const chip = $('#chip'); chip.className = 'chip ' + st; chip.hidden = pin <= 0;
   const overFree = playSpent > play && play >= 0 && rs.count > 0, overAny = !overFree && (m.overNow || 0) > 0.004;
   if (overFree || overAny) { chip.className = 'chip short'; chip.innerHTML = IC.bad + (overFree && !((m.overNec || 0) > 0.004) ? 'Over free to spend' : 'Over plan'); }
-  else if (Lun >= roundUnit(S) && st === 'good') { chip.className = 'chip tight'; chip.innerHTML = IC.warn + 'Pay not placed'; }
+  else if (Lun >= roundUnit(S) && st === 'good') { chip.className = 'chip tight'; chip.innerHTML = IC.warn + 'Not placed yet'; }
   else chip.innerHTML = st === 'good' ? IC.ok + 'On plan' : st === 'tight' ? IC.warn + 'Tight month' : IC.bad + 'Short';
   const gap = PC.bankGap;
   let vt;
@@ -5288,7 +5288,7 @@ const STEP_MONEY = { id: 'money', part: PART.money, setup: true, focus: '#tourPa
     const pay = S.ui.done && S.ui.done.pay ? val(S, 'a', START) : '';
     return `<p>Take-home pay after tax, each month. Paid twice a month: add both. Other pay is a second job, a partner&rsquo;s share, benefits. Balance is bank accounts plus cash; rough is fine.</p>
     <div class="tour-fields">${moneyField('tourPay', 'Monthly take-home pay', pay, 'All paychecks')}${moneyField('tourExtra', 'Other pay each month <span class="opt">(optional)</span>', val(S, 'b', START), 'None')}${moneyField('tourBank', 'Balance now', S.cfg.bankStart !== undefined ? S.cfg.bankStart : '', 'Rough is fine. Overdrawn? Type a minus').replace('<input ', '<input data-neg="ok" ').replace(' inputmode="decimal" min="0"', ' inputmode="text"')}</div>
-    <p class="cap">Not sure of a number? Leave it blank; the Plan tab takes it later.</p>`;
+    <p class="cap">Not sure? Leave it blank and add it later on Plan.</p>`;
   },
   leave: () => {
     const pay = $('#tourPay'), extra = $('#tourExtra'), bank = $('#tourBank'); if (!pay) return;
@@ -5524,7 +5524,7 @@ const goalStep = id => ({ id: 'goal-' + id, part: PART.goals, setup: true,
       <div class="field tour-q1"><span class="l" id="tourEmL">Months of bills to cover</span>
       <div class="tour-chips" role="radiogroup" aria-labelledby="tourEmL">${EM_MONTHS.map(x => chip('tourEm', String(x[0]), String(x[0]), x[1], x[0] === m)).join('')}</div></div>
       <p class="cap" id="tourEmCap">${emCap(m)}</p>
-      <div class="tour-fields">${moneyField('tourGSaved', 'Already saved', g.start)}</div><p class="cap">Count it once. If this money sits in your bank account, lower your balance by the same amount.</p>`;
+      <div class="tour-fields">${moneyField('tourGSaved', 'Already saved', g.start)}</div><p class="cap">If this money is already in your bank balance above, take it out of that number so it is not counted twice.</p>`;
     }
     const dbt = !!k.debt;
     return `<p>${g.emergency ? 'A cushion for surprises. How much do you want to hold? Usual advice: three to six months of bills.' : dbt ? 'Name the debt and how much you owe in total. The smallest payment you must make stays in Bills and basics. This burrow is for the extra you pay on top, so the debt shrinks faster.' : 'Name, cost, a date if there is one, and the reason in your words.'}</p>
@@ -5532,7 +5532,7 @@ const goalStep = id => ({ id: 'goal-' + id, part: PART.goals, setup: true,
       ${g.emergency ? '' : textField('tourGName', 'Name', k.name && g.name === k.name ? '' : g.name, 60, k.name)}
       ${g.emergency ? '' : `<div class="field"><label for="tourGWhy">Why (optional)</label><div class="inp"><input id="tourGWhy" type="text" maxlength="80" spellcheck="false" value="${esc(g.why || '')}" placeholder="Why it matters, in your words"></div><p class="cap">Shows with the goal, so the reason stays in view.</p></div>`}
       <div class="field">${moneyField('tourGCost', dbt ? 'Total owed' : g.emergency ? 'How much to hold' : 'Cost', g.target).replace(/^<div class="field">|<\/div>$/g, '')}${k.cost ? `<p class="cap">${k.cost}</p>` : ''}</div>
-      ${moneyField('tourGSaved', dbt ? 'Already paid off' : 'Already saved', g.start)}${dbt ? '' : `<p class="cap">Count it once. If this money sits in your bank account, lower your balance by the same amount.</p>`}
+      ${moneyField('tourGSaved', dbt ? 'Already paid off' : 'Already saved', g.start)}${dbt ? '' : `<p class="cap">If this money is already in your bank balance above, take it out of that number so it is not counted twice.</p>`}
       ${g.emergency ? '' : `<div class="field"><label for="tourGDue">${dbt ? 'Paid off by' : 'Needed by'}</label><input type="date" id="tourGDue" min="${lo}" max="${hi}" value="${esc(g.due)}"><p class="cap">With a date, the monthly amount is worked out for you.</p></div>`}
     </div>
     ${k.k && !k.em && S.plan.goals.length < MAX_GOALS ? `<div class="row-btns"><button type="button" class="btn small more" data-moreg="${esc(id)}">Add another ${GOAL_NOUN[k.k] || 'goal'}</button></div>` : ''}`;
@@ -13460,12 +13460,12 @@ const TOUR = [
           ? `<div class="tour-cloud" id="tourCloud">${LOCK}<div><b>Keep a copy in the cloud</b><p class="cap">Your numbers live in this browser. Cloud backup keeps an encrypted copy that only your recovery code can open. New phone, or browser cleared: enter the code and the numbers come back.</p>
             <div class="row-btns"><button type="button" class="btn small solid" id="tourVaultOn">Turn on cloud backup</button><span class="cap">Later: Settings, Cloud backup.</span></div><div class="tour-vault-code" id="tourVaultCode"></div></div></div>` : '';
         return `${homeScene()}${ok ? (f.st === 'spare' ? `<p class="tour-st"><span class="chip tight">${IC.warn}Pay not placed</span></p>` : `<p class="tour-st"><span class="chip good">${IC.ok}On plan</span></p>`) : ''}${goal}<p>Your month:</p>${ledgerHTML(f)}<p>${line}</p>
-        <p>Receipts keeps this true: log what you spend, or upload each month's statement. What is left of free to spend at month end can go toward a goal. Help, bottom right, has the video and this setup.</p>${cloud}`;
+        <p>Receipts keeps this true: log what you spend, or upload each month's statement. What is left of Free to spend at month end can go toward a goal. Help, bottom right, has the video and this setup.</p>${cloud}`;
       }
       const PF = planFactsOf(S, calcAll(S), sel, true), pay = PF.pay, L = PF.L;   /* model.js */
       const zero = S.ui.preset === 'blank' || !!S.ui.cleared;
       const dn = S.ui.done || {}, billsIn = !!dn.bills || Array.isArray(S.ui.sb); /* the bill screens were answered (even if left at zero) */
-      const msg = !dn.pay || pay <= 0 ? (zero ? 'Pay skipped. Everything is zero until you add numbers.' : 'Pay skipped, so the pay shown is a sample until you add yours: Plan, Month, Details, Money in, Salary. Or Help, Guided setup, to come back here.')
+      const msg = !dn.pay || pay <= 0 ? (zero ? 'Pay skipped. Everything is zero until you add numbers.' : 'No pay yet, so the numbers are samples. Add yours on Plan: Month, Details, Money in, Salary. Or Help, Guided setup, to come back here.')
         : L > 0 ? `Pay entered. <b>${fmt2(L)}</b> is not placed yet: raise a goal or add to free to spend.`
         : L < 0 ? `Pay entered. The ${billsIn ? 'plan' : 'sample plan'} exceeds pay by <b>${fmt2(PF.shortBy)}</b>${billsIn ? '' : ' because bills are still samples'}. ${billsIn ? 'Lower a bill under Plan.' : 'Enter your real bills next.'}`
         : 'Pay entered. All of it is assigned.';
@@ -14137,7 +14137,7 @@ You cannot change anything yourself. To propose changes, end the reply with exac
 Rules for the block: only the action names and fields listed under ACTIONS; amounts are plain monthly numbers in the page's currency; ids and keys exactly as given in the picture; at most 8 actions; one block per reply; no block when nothing should change. For "what if" questions, propose the change: the person sees the before and after and can choose not to apply it. Propose one clear change rather than many small ones. Never propose removing anything unless asked.
 
 ACTIONS
-- set_pay {amount}: monthly take-home pay (Salary). set_other_income {amount}: the Second income line.
+- set_pay {amount}: monthly take-home pay (Salary). set_other_income {amount}: the Second pay line.
 - set_balance {amount}: money today. set_min_balance {amount}: the safety line.
 - set_line {key, amount, scope?}: a bill or a jar line's monthly amount. key is a line key from the picture. scope "after" (default) means from this month on; "month" means this month only.
 - set_jar {jar, amount}: the whole monthly amount of the play, edu, ffa or give jar (it goes on the jar's main line).
@@ -14196,7 +14196,7 @@ function asstCheck(raw) {
     const push = (text, run) => out.push({ text, run, on: true, a });
     const amt = amtOf(a.amount);
     if (d === 'set_pay') { if (!(amt >= 0)) return dropped.push(d); push(`Salary: ${f(val(S, 'a', ym))} to ${f(amt)} a month`, T => { setVal(T, 'a', ym, amt, 'after'); if (amt > 0) markDoneOn(T, 'pay'); }); }
-    else if (d === 'set_other_income') { if (!(amt >= 0)) return dropped.push(d); push(`Second income: ${f(val(S, 'b', ym))} to ${f(amt)} a month`, T => setVal(T, 'b', ym, amt, 'after')); }
+    else if (d === 'set_other_income') { if (!(amt >= 0)) return dropped.push(d); push(`Second pay: ${f(val(S, 'b', ym))} to ${f(amt)} a month`, T => setVal(T, 'b', ym, amt, 'after')); }
     else if (d === 'set_balance') { if (!(amt >= 0)) return dropped.push(d); push(`Money today: ${f(cfg(S, 'bankStart'))} to ${f(amt)}`, T => { T.cfg.bankStart = Math.round(amt); }); }
     else if (d === 'set_min_balance') { if (!(amt >= 0)) return dropped.push(d); push(`Minimum balance: ${f(cfg(S, 'minBank'))} to ${f(amt)}`, T => { T.cfg.minBank = Math.round(amt); }); }
     else if (d === 'set_line') { const l = lineOf(S, a.key); if (!l || !(amt >= 0)) return dropped.push(d + ' ' + (a.key || '')); push(`${l.name}: ${f(val(S, l.key, ym))} to ${f(amt)} a month${since}`, T => { setVal(T, l.key, ym, amt, scope); if (l.jar === 'nec') markDoneOn(T, 'bills'); }); }

@@ -39,7 +39,7 @@ const STEP_MONEY = { id: 'money', part: PART.money, setup: true, focus: '#tourPa
     const pay = S.ui.done && S.ui.done.pay ? val(S, 'a', START) : '';
     return `<p>Take-home pay after tax, each month. Paid twice a month: add both. Other pay is a second job, a partner&rsquo;s share, benefits. Balance is bank accounts plus cash; rough is fine.</p>
     <div class="tour-fields">${moneyField('tourPay', 'Monthly take-home pay', pay, 'All paychecks')}${moneyField('tourExtra', 'Other pay each month <span class="opt">(optional)</span>', val(S, 'b', START), 'None')}${moneyField('tourBank', 'Balance now', S.cfg.bankStart !== undefined ? S.cfg.bankStart : '', 'Rough is fine. Overdrawn? Type a minus').replace('<input ', '<input data-neg="ok" ').replace(' inputmode="decimal" min="0"', ' inputmode="text"')}</div>
-    <p class="cap">Not sure of a number? Leave it blank; the Plan tab takes it later.</p>`;
+    <p class="cap">Not sure? Leave it blank and add it later on Plan.</p>`;
   },
   leave: () => {
     const pay = $('#tourPay'), extra = $('#tourExtra'), bank = $('#tourBank'); if (!pay) return;
@@ -275,7 +275,7 @@ const goalStep = id => ({ id: 'goal-' + id, part: PART.goals, setup: true,
       <div class="field tour-q1"><span class="l" id="tourEmL">Months of bills to cover</span>
       <div class="tour-chips" role="radiogroup" aria-labelledby="tourEmL">${EM_MONTHS.map(x => chip('tourEm', String(x[0]), String(x[0]), x[1], x[0] === m)).join('')}</div></div>
       <p class="cap" id="tourEmCap">${emCap(m)}</p>
-      <div class="tour-fields">${moneyField('tourGSaved', 'Already saved', g.start)}</div><p class="cap">Count it once. If this money sits in your bank account, lower your balance by the same amount.</p>`;
+      <div class="tour-fields">${moneyField('tourGSaved', 'Already saved', g.start)}</div><p class="cap">If this money is already in your bank balance above, take it out of that number so it is not counted twice.</p>`;
     }
     const dbt = !!k.debt;
     return `<p>${g.emergency ? 'A cushion for surprises. How much do you want to hold? Usual advice: three to six months of bills.' : dbt ? 'Name the debt and how much you owe in total. The smallest payment you must make stays in Bills and basics. This burrow is for the extra you pay on top, so the debt shrinks faster.' : 'Name, cost, a date if there is one, and the reason in your words.'}</p>
@@ -283,7 +283,7 @@ const goalStep = id => ({ id: 'goal-' + id, part: PART.goals, setup: true,
       ${g.emergency ? '' : textField('tourGName', 'Name', k.name && g.name === k.name ? '' : g.name, 60, k.name)}
       ${g.emergency ? '' : `<div class="field"><label for="tourGWhy">Why (optional)</label><div class="inp"><input id="tourGWhy" type="text" maxlength="80" spellcheck="false" value="${esc(g.why || '')}" placeholder="Why it matters, in your words"></div><p class="cap">Shows with the goal, so the reason stays in view.</p></div>`}
       <div class="field">${moneyField('tourGCost', dbt ? 'Total owed' : g.emergency ? 'How much to hold' : 'Cost', g.target).replace(/^<div class="field">|<\/div>$/g, '')}${k.cost ? `<p class="cap">${k.cost}</p>` : ''}</div>
-      ${moneyField('tourGSaved', dbt ? 'Already paid off' : 'Already saved', g.start)}${dbt ? '' : `<p class="cap">Count it once. If this money sits in your bank account, lower your balance by the same amount.</p>`}
+      ${moneyField('tourGSaved', dbt ? 'Already paid off' : 'Already saved', g.start)}${dbt ? '' : `<p class="cap">If this money is already in your bank balance above, take it out of that number so it is not counted twice.</p>`}
       ${g.emergency ? '' : `<div class="field"><label for="tourGDue">${dbt ? 'Paid off by' : 'Needed by'}</label><input type="date" id="tourGDue" min="${lo}" max="${hi}" value="${esc(g.due)}"><p class="cap">With a date, the monthly amount is worked out for you.</p></div>`}
     </div>
     ${k.k && !k.em && S.plan.goals.length < MAX_GOALS ? `<div class="row-btns"><button type="button" class="btn small more" data-moreg="${esc(id)}">Add another ${GOAL_NOUN[k.k] || 'goal'}</button></div>` : ''}`;

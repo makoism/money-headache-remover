@@ -23,7 +23,7 @@ You cannot change anything yourself. To propose changes, end the reply with exac
 Rules for the block: only the action names and fields listed under ACTIONS; amounts are plain monthly numbers in the page's currency; ids and keys exactly as given in the picture; at most 8 actions; one block per reply; no block when nothing should change. For "what if" questions, propose the change: the person sees the before and after and can choose not to apply it. Propose one clear change rather than many small ones. Never propose removing anything unless asked.
 
 ACTIONS
-- set_pay {amount}: monthly take-home pay (Salary). set_other_income {amount}: the Second income line.
+- set_pay {amount}: monthly take-home pay (Salary). set_other_income {amount}: the Second pay line.
 - set_balance {amount}: money today. set_min_balance {amount}: the safety line.
 - set_line {key, amount, scope?}: a bill or a jar line's monthly amount. key is a line key from the picture. scope "after" (default) means from this month on; "month" means this month only.
 - set_jar {jar, amount}: the whole monthly amount of the play, edu, ffa or give jar (it goes on the jar's main line).
@@ -82,7 +82,7 @@ function asstCheck(raw) {
     const push = (text, run) => out.push({ text, run, on: true, a });
     const amt = amtOf(a.amount);
     if (d === 'set_pay') { if (!(amt >= 0)) return dropped.push(d); push(`Salary: ${f(val(S, 'a', ym))} to ${f(amt)} a month`, T => { setVal(T, 'a', ym, amt, 'after'); if (amt > 0) markDoneOn(T, 'pay'); }); }
-    else if (d === 'set_other_income') { if (!(amt >= 0)) return dropped.push(d); push(`Second income: ${f(val(S, 'b', ym))} to ${f(amt)} a month`, T => setVal(T, 'b', ym, amt, 'after')); }
+    else if (d === 'set_other_income') { if (!(amt >= 0)) return dropped.push(d); push(`Second pay: ${f(val(S, 'b', ym))} to ${f(amt)} a month`, T => setVal(T, 'b', ym, amt, 'after')); }
     else if (d === 'set_balance') { if (!(amt >= 0)) return dropped.push(d); push(`Money today: ${f(cfg(S, 'bankStart'))} to ${f(amt)}`, T => { T.cfg.bankStart = Math.round(amt); }); }
     else if (d === 'set_min_balance') { if (!(amt >= 0)) return dropped.push(d); push(`Minimum balance: ${f(cfg(S, 'minBank'))} to ${f(amt)}`, T => { T.cfg.minBank = Math.round(amt); }); }
     else if (d === 'set_line') { const l = lineOf(S, a.key); if (!l || !(amt >= 0)) return dropped.push(d + ' ' + (a.key || '')); push(`${l.name}: ${f(val(S, l.key, ym))} to ${f(amt)} a month${since}`, T => { setVal(T, l.key, ym, amt, scope); if (l.jar === 'nec') markDoneOn(T, 'bills'); }); }

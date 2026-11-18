@@ -27,7 +27,7 @@ const JARS = [
   { id: 'lts',  name: 'Goals', usual: 0.10, about: 'Saved now, spent later: a big purchase, a trip, a rainy day, a surprise. Your burrows live here.' },
   { id: 'play', name: 'Free to spend',                         usual: 0.10, about: 'Fun for you and your family, no guilt. What is left at month end can go to a goal.' },
   { id: 'edu',  name: 'Education',                      usual: 0.10, about: 'Courses, books, coaching, skill building.' },
-  { id: 'ffa',  name: 'Investing',              usual: 0.10, about: 'Investments you never spend. They grow and eventually pay you.' },
+  { id: 'ffa',  name: 'Investing',              usual: 0.10, about: 'Never spent. It grows over time.' },
   { id: 'give', name: 'Giving',                         usual: 0.05, about: 'Charity, donations and gifts.' },
 ];
 /* the usual share of each place as a whole percent, for the screens that name it (they never work it out) */

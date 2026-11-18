@@ -237,12 +237,12 @@ const TOUR = [
           ? `<div class="tour-cloud" id="tourCloud">${LOCK}<div><b>Keep a copy in the cloud</b><p class="cap">Your numbers live in this browser. Cloud backup keeps an encrypted copy that only your recovery code can open. New phone, or browser cleared: enter the code and the numbers come back.</p>
             <div class="row-btns"><button type="button" class="btn small solid" id="tourVaultOn">Turn on cloud backup</button><span class="cap">Later: Settings, Cloud backup.</span></div><div class="tour-vault-code" id="tourVaultCode"></div></div></div>` : '';
         return `${homeScene()}${ok ? (f.st === 'spare' ? `<p class="tour-st"><span class="chip tight">${IC.warn}Pay not placed</span></p>` : `<p class="tour-st"><span class="chip good">${IC.ok}On plan</span></p>`) : ''}${goal}<p>Your month:</p>${ledgerHTML(f)}<p>${line}</p>
-        <p>Receipts keeps this true: log what you spend, or upload each month's statement. What is left of free to spend at month end can go toward a goal. Help, bottom right, has the video and this setup.</p>${cloud}`;
+        <p>Receipts keeps this true: log what you spend, or upload each month's statement. What is left of Free to spend at month end can go toward a goal. Help, bottom right, has the video and this setup.</p>${cloud}`;
       }
       const PF = planFactsOf(S, calcAll(S), sel, true), pay = PF.pay, L = PF.L;   /* model.js */
       const zero = S.ui.preset === 'blank' || !!S.ui.cleared;
       const dn = S.ui.done || {}, billsIn = !!dn.bills || Array.isArray(S.ui.sb); /* the bill screens were answered (even if left at zero) */
-      const msg = !dn.pay || pay <= 0 ? (zero ? 'Pay skipped. Everything is zero until you add numbers.' : 'Pay skipped, so the pay shown is a sample until you add yours: Plan, Month, Details, Money in, Salary. Or Help, Guided setup, to come back here.')
+      const msg = !dn.pay || pay <= 0 ? (zero ? 'Pay skipped. Everything is zero until you add numbers.' : 'No pay yet, so the numbers are samples. Add yours on Plan: Month, Details, Money in, Salary. Or Help, Guided setup, to come back here.')
         : L > 0 ? `Pay entered. <b>${fmt2(L)}</b> is not placed yet: raise a goal or add to free to spend.`
         : L < 0 ? `Pay entered. The ${billsIn ? 'plan' : 'sample plan'} exceeds pay by <b>${fmt2(PF.shortBy)}</b>${billsIn ? '' : ' because bills are still samples'}. ${billsIn ? 'Lower a bill under Plan.' : 'Enter your real bills next.'}`
         : 'Pay entered. All of it is assigned.';
