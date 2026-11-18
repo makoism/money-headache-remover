@@ -432,8 +432,9 @@ function goalInfo(S, C, id, ym) {
     slack = reached ? ymIdx(rb) - ymIdx(reached) : null;
     if (ym <= rb) need = Math.max(0, Math.ceil((target - m.balBefore[id]) / ymCount(ym, rb)));
   } else state = bal >= target ? 'full' : (reached ? 'eta' : 'noeta');
-  /* pctWhole is the one whole percent shown for a goal anywhere: rounded down, and 100 only when it is really full */
-  return { id, target, bal, pct: target > 0 ? Math.min(1, bal / target) : 0, pctWhole: wholePct(bal, target), togo: Math.max(0, g.target - bal), reached, readyBy: rb, state, need, slack, had };
+  /* pctWhole is the one whole percent shown for a goal anywhere: rounded down, and 100 only when it is really full.
+     togo counts to the same target as pct (the longer emergency goal once the person said yes to it), so every screen says one amount */
+  return { id, target, bal, pct: target > 0 ? Math.min(1, bal / target) : 0, pctWhole: wholePct(bal, target), togo: Math.max(0, target - bal), reached, readyBy: rb, state, need, slack, had };
 }
 
 /* a rounding step that fits the size of the number */

@@ -10,7 +10,12 @@ function paintBar(el, m, withLabels) {
     d.setAttribute('aria-label', `${j.name} ${fmt(j.v)}`); if (j.v > 0) names.push(`${j.name} ${fmt(j.v)}`);
   });
   const r = $('[data-k="rest"]', el); r.hidden = rest <= 0; r.style.flexGrow = rest;
-  r.dataset.tip = `<b>Left</b> ${fmt(rest)}` + (J.restCover > 0 ? (J.unplaced >= 0.5 ? `<br>${fmt(J.unplaced)} not placed yet (${J.restPct}% of pay)<br>${fmt(J.restCover)} borrowed from the emergency fund` : (J.restKept > 0 ? '<br>borrowed from the emergency fund, kept in the bank' : '<br>borrowed money, used for spending past plan')) : J.income > 0 ? `<br>${J.restPct}% of pay, not placed yet` : ''); r.setAttribute('aria-label', `Left ${fmt(rest)}`);
+  /* the Left piece: pay with no place, what spending past plan already used of it, and borrowed money, each the model's own amount (jarsOf) */
+  const tipL = [];
+  if (J.unplacedNet >= 0.5) tipL.push(J.restCover > 0 || J.usedOver >= 0.5 ? `${fmt(J.unplacedNet)} not placed yet` + (J.usedOver < 0.5 ? ` (${J.restPct}% of pay)` : '') : J.income > 0 ? `${J.restPct}% of pay, not placed yet` : '');
+  if (J.usedOver >= 0.5) tipL.push(`${fmt(J.usedOver)} used for spending past plan`);
+  if (J.restCover > 0) tipL.push(J.unplaced >= 0.5 ? `${fmt(J.restCover)} borrowed from the emergency fund` : J.restKept > 0 ? 'borrowed from the emergency fund, kept in the bank' : 'borrowed money, used for spending past plan');
+  r.dataset.tip = `<b>Left</b> ${fmt(rest)}` + tipL.filter(Boolean).map(x => '<br>' + x).join(''); r.setAttribute('aria-label', `Left ${fmt(rest)}`);
   if (rest > 0) names.push('Left ' + fmt(rest));
   if (withLabels) el.setAttribute('aria-label', `Pay ${fmt(m.pool.in)} by place: ` + names.join(', '));
 }

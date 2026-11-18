@@ -27,6 +27,8 @@ function randomState() {
   if (chance(.5)) { const n = ri(0, 3); for (let i = 0; i < n; i++) M.addLine(S, pick(M.LINE_JARS), 'x' + i, amt()); }
   if (chance(.5)) { const n = ri(0, 3); for (let i = 0; i < n; i++) { const id = M.addGoal(S, 'g' + i); if (id) M.updateGoal(S, id, { target: amt(), start: amt(), due: chance(.5) ? pick(MO) + '-' + pick(['01', '15', '16', '28']) : '', stretch: amt() }); } }
   if (chance(.3)) { const g = pick(S.plan.goals); if (g) M.updateGoal(S, g.id, { emergency: true, stretch: amt(), target: amt(), start: amt() }); }
+  /* a yes to the longer emergency goal (stretchOn): every goal figure must use the longer target the same way (PLAN step 4) */
+  if (chance(.3)) S.plan.goals.forEach(g => { if (g.emergency) g.stretchOn = true; });
   S.plan.goals.forEach(g => { if (chance(.2)) M.updateGoal(S, g.id, { target: amt(), start: amt(), due: chance(.5) ? pick(MO) + '-' + pick(['01', '15', '16', '30']) : '' }); });
   if (chance(.4)) { const l = pick(S.plan.lines); M.updateLine(S, l.id, { ends: pick(MO), redirect: chance(.5) }); }
   S.cfg = S.cfg || {};
@@ -117,6 +119,7 @@ function checkViews(id, S, C) {
         ok(tag + ' ' + r.id, Number.isInteger(r.pct) && r.pct >= 0 && r.pct <= 100, 'goal pct ' + r.pct);
         ok(tag + ' ' + r.id, (r.pct === 100) === (r.target > 0 && r.saved >= r.target), 'pct 100 iff saved>=target ' + r.pct + ' ' + r.saved + '/' + r.target);
         ok(tag + ' ' + r.id, r.target === 0 ? r.pct === 0 : true, 'pct with no target');
+        { const gi = M.goalInfo(S, C, r.id, ym); ok(tag + ' ' + r.id, gi.togo === r.togo && gi.target === r.target, 'to go differs between goalInfo and goalRows: ' + gi.togo + ' vs ' + r.togo + ' (target ' + gi.target + ' vs ' + r.target + ')'); }
         if (r.months !== null) ok(tag + ' ' + r.id, r.months >= 0 && Number.isInteger(r.months), 'months to go');
         if (r.need !== null) ok(tag + ' ' + r.id, fin(r.need) && r.need >= 0, 'need');
       });

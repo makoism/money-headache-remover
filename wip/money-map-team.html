@@ -2697,8 +2697,9 @@ function goalInfo(S, C, id, ym) {
     slack = reached ? ymIdx(rb) - ymIdx(reached) : null;
     if (ym <= rb) need = Math.max(0, Math.ceil((target - m.balBefore[id]) / ymCount(ym, rb)));
   } else state = bal >= target ? 'full' : (reached ? 'eta' : 'noeta');
-  /* pctWhole is the one whole percent shown for a goal anywhere: rounded down, and 100 only when it is really full */
-  return { id, target, bal, pct: target > 0 ? Math.min(1, bal / target) : 0, pctWhole: wholePct(bal, target), togo: Math.max(0, g.target - bal), reached, readyBy: rb, state, need, slack, had };
+  /* pctWhole is the one whole percent shown for a goal anywhere: rounded down, and 100 only when it is really full.
+     togo counts to the same target as pct (the longer emergency goal once the person said yes to it), so every screen says one amount */
+  return { id, target, bal, pct: target > 0 ? Math.min(1, bal / target) : 0, pctWhole: wholePct(bal, target), togo: Math.max(0, target - bal), reached, readyBy: rb, state, need, slack, had };
 }
 
 /* a rounding step that fits the size of the number */
@@ -4457,7 +4458,12 @@ function paintBar(el, m, withLabels) {
     d.setAttribute('aria-label', `${j.name} ${fmt(j.v)}`); if (j.v > 0) names.push(`${j.name} ${fmt(j.v)}`);
   });
   const r = $('[data-k="rest"]', el); r.hidden = rest <= 0; r.style.flexGrow = rest;
-  r.dataset.tip = `<b>Left</b> ${fmt(rest)}` + (J.restCover > 0 ? (J.unplaced >= 0.5 ? `<br>${fmt(J.unplaced)} not placed yet (${J.restPct}% of pay)<br>${fmt(J.restCover)} borrowed from the emergency fund` : (J.restKept > 0 ? '<br>borrowed from the emergency fund, kept in the bank' : '<br>borrowed money, used for spending past plan')) : J.income > 0 ? `<br>${J.restPct}% of pay, not placed yet` : ''); r.setAttribute('aria-label', `Left ${fmt(rest)}`);
+  /* the Left piece: pay with no place, what spending past plan already used of it, and borrowed money, each the model's own amount (jarsOf) */
+  const tipL = [];
+  if (J.unplacedNet >= 0.5) tipL.push(J.restCover > 0 || J.usedOver >= 0.5 ? `${fmt(J.unplacedNet)} not placed yet` + (J.usedOver < 0.5 ? ` (${J.restPct}% of pay)` : '') : J.income > 0 ? `${J.restPct}% of pay, not placed yet` : '');
+  if (J.usedOver >= 0.5) tipL.push(`${fmt(J.usedOver)} used for spending past plan`);
+  if (J.restCover > 0) tipL.push(J.unplaced >= 0.5 ? `${fmt(J.restCover)} borrowed from the emergency fund` : J.restKept > 0 ? 'borrowed from the emergency fund, kept in the bank' : 'borrowed money, used for spending past plan');
+  r.dataset.tip = `<b>Left</b> ${fmt(rest)}` + tipL.filter(Boolean).map(x => '<br>' + x).join(''); r.setAttribute('aria-label', `Left ${fmt(rest)}`);
   if (rest > 0) names.push('Left ' + fmt(rest));
   if (withLabels) el.setAttribute('aria-label', `Pay ${fmt(m.pool.in)} by place: ` + names.join(', '));
 }
@@ -15470,18 +15476,6 @@ function renderStatus() {
   put(el, `<span class="chip ${cls}">${cls === 'good' ? IC.ok : cls ? IC.warn : ''}${word}</span><p class="hst-l">${line}</p>${ahead}${wk}${m.inflow > 0 && !sampleOn() ? '<p class="cap hs-more"><button type="button" class="link" data-why="status">How is this worked out?</button></p>' : ''}`);
   el.hidden = false;
 }
-/* the first days of a month: last month is only complete once what was spent is in; a statement does it in one go */
-function monthToClose() {
-  const d = S.ui.done || {}; if (!(d.pay && d.bills) || sampleOn()) return null;
-  const today = todayStr(), i = MONTHS.indexOf(today.slice(0, 7)); if (i < 1) return null;
-  for (let k = i - 1; k >= 0; k--) {
-    const pm = MONTHS[k]; if (S.ui.mcSeen === pm || (S.ui.mcOk && S.ui.mcOk[pm])) continue;
-    const rs = receiptStats(S, pm); if (rs.count >= 4 || rs.list.some(r => r.src === 'stmt')) continue;
-    const m = C.byYm[pm], left = Math.floor(m.jar.play - (rs.byJar.play || 0));
-    return { pm, n: rs.count, left: Math.max(0, left), planned: m.jar.play, logged: rs.byJar.play || 0 };
-  }
-  return null;
-}
 /* last month's unspent free to spend: once the month is logged (four receipts or more, or a statement), what was not spent can go toward a goal.
    One offer per month, kept until the person answers it or the month after has gone by. */
 let SWEPT = null;
@@ -15512,6 +15506,8 @@ function renderNext() {
   /* a sweep just made: say so, with Undo, until the next page load */
   if (SWEPT && SWEPT.id && !sweepAns(S, SWEPT.pm)) SWEPT = null;
   if (SWEPT && !(S.ui.sweep && S.ui.sweep[SWEPT.pm])) SWEPT = null;
+  /* receipts logged later can use up the money the answer was about: then there is nothing left to report (the same rule as after a reload), never "0 counted" */
+  if (SWEPT && C && !((C.byYm[SWEPT.pm] || {}).counted > 0)) SWEPT = null;
   /* after a reload, an answer made in the last 3 days still shows with Undo */
   if (!SWEPT && S.ui.sweep && !sweepOffer()) { const k = Object.keys(S.ui.sweep).filter(q => S.ui.sweep[q].t && Date.now() - S.ui.sweep[q].t < 3 * 864e5 && C.byYm[q] && C.byYm[q].counted > 0).sort().pop(); if (k) { const e = S.ui.sweep[k]; SWEPT = { pm: k, id: e.id || null, to: e.id ? undefined : 'bank', amt: e.amt, note: `From ${FULL[+k.slice(5) - 1]}'s free to spend.${e.id ? '' : ' The bank figure now includes it.'}` }; } }
   if (!step && SWEPT) {

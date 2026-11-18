@@ -142,18 +142,6 @@ function renderStatus() {
   put(el, `<span class="chip ${cls}">${cls === 'good' ? IC.ok : cls ? IC.warn : ''}${word}</span><p class="hst-l">${line}</p>${ahead}${wk}${m.inflow > 0 && !sampleOn() ? '<p class="cap hs-more"><button type="button" class="link" data-why="status">How is this worked out?</button></p>' : ''}`);
   el.hidden = false;
 }
-/* the first days of a month: last month is only complete once what was spent is in; a statement does it in one go */
-function monthToClose() {
-  const d = S.ui.done || {}; if (!(d.pay && d.bills) || sampleOn()) return null;
-  const today = todayStr(), i = MONTHS.indexOf(today.slice(0, 7)); if (i < 1) return null;
-  for (let k = i - 1; k >= 0; k--) {
-    const pm = MONTHS[k]; if (S.ui.mcSeen === pm || (S.ui.mcOk && S.ui.mcOk[pm])) continue;
-    const rs = receiptStats(S, pm); if (rs.count >= 4 || rs.list.some(r => r.src === 'stmt')) continue;
-    const m = C.byYm[pm], left = Math.floor(m.jar.play - (rs.byJar.play || 0));
-    return { pm, n: rs.count, left: Math.max(0, left), planned: m.jar.play, logged: rs.byJar.play || 0 };
-  }
-  return null;
-}
 /* last month's unspent free to spend: once the month is logged (four receipts or more, or a statement), what was not spent can go toward a goal.
    One offer per month, kept until the person answers it or the month after has gone by. */
 let SWEPT = null;
@@ -184,6 +172,8 @@ function renderNext() {
   /* a sweep just made: say so, with Undo, until the next page load */
   if (SWEPT && SWEPT.id && !sweepAns(S, SWEPT.pm)) SWEPT = null;
   if (SWEPT && !(S.ui.sweep && S.ui.sweep[SWEPT.pm])) SWEPT = null;
+  /* receipts logged later can use up the money the answer was about: then there is nothing left to report (the same rule as after a reload), never "0 counted" */
+  if (SWEPT && C && !((C.byYm[SWEPT.pm] || {}).counted > 0)) SWEPT = null;
   /* after a reload, an answer made in the last 3 days still shows with Undo */
   if (!SWEPT && S.ui.sweep && !sweepOffer()) { const k = Object.keys(S.ui.sweep).filter(q => S.ui.sweep[q].t && Date.now() - S.ui.sweep[q].t < 3 * 864e5 && C.byYm[q] && C.byYm[q].counted > 0).sort().pop(); if (k) { const e = S.ui.sweep[k]; SWEPT = { pm: k, id: e.id || null, to: e.id ? undefined : 'bank', amt: e.amt, note: `From ${FULL[+k.slice(5) - 1]}'s free to spend.${e.id ? '' : ' The bank figure now includes it.'}` }; } }
   if (!step && SWEPT) {
