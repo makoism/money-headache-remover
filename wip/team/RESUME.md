@@ -29,7 +29,7 @@ Nothing may ship until section 6 is done in full.
 git fetch && git checkout wip-38.31          # or: git fetch burrow-wip-38.31.bundle wip-38.31:wip-38.31
 cd wip/team
 bash tests/setup_env.sh                      # rebuilds the whole test environment FROM THE REPO. Must print "setup ok"
-bash tests/verify.sh tests/qc/golden/3831a.json    # the quick gate, about 3 minutes. Must end "VERIFY OK"
+bash tests/verify.sh tests/qc/golden/3831b.json    # the quick gate, about 3 minutes. Must end "VERIFY OK"
 ```
 
 Rules that keep work from being lost:
@@ -61,7 +61,7 @@ Where the named values live in `model.js`:
 1. Run `node tests/qc/display_math.js` and pick a line.
 2. Give the amount a name with a money meaning and work it out in `model.js`, on the object the screen already reads. Copy the exact expression. Do not write a general helper such as "subtract two numbers": that only hides the sum.
 3. Replace the expression in the screen with the named value.
-4. Run `bash tests/verify.sh tests/qc/golden/3831a.json`. Golden screens must say `0 screens differ`, unless the change is a fix you can name.
+4. Run `bash tests/verify.sh tests/qc/golden/3831b.json`. Golden screens must say `0 screens differ`, unless the change is a fix you can name.
 5. Lower the number in `tests/qc/display_math.max`. Commit.
 
 ## 4. What changed for people in 38.31 (for the release notes)
@@ -71,6 +71,7 @@ Where the named values live in `model.js`:
 - Home could never say "Building your cushion", and could never say that spending went past the plan this month. Two values were missing from `viewOf().month`. Both states work now.
 - The bills amount still to pay shows cents in both Home cards (it showed 26,535 in one and 26,534.51 in the other).
 - The percent in a goal's screen-reader label is rounded down like every other goal percent.
+- When the bank ends a month below zero, Home says so in one amber line with the month, the amount and the causes (the month started below zero, the plan spends more than comes in, spending went past the plan). It never says "Building your cushion" for that any more, and is never red.
 - Plan amounts keep cents (dollars, euros, pesos and the rest); yen stays whole. Before, a typed 49.99 was saved as 50 without saying so. Plans saved by older versions load exactly as they were.
 
 ## 5. Known problems, in the order to do them

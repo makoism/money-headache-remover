@@ -107,6 +107,12 @@ function checkViews(id, S, C) {
       const v = M.viewOf(S, C, ym, today), m = C.byYm[ym], tag = id + ' view ' + ym + ' ' + today;
       ok(tag, v.month.left === m.left && v.month.inflow === m.inflow && v.month.out === m.out && v.month.bankEnd === m.bankEnd, 'month mismatch');
       ok(tag, v.play.planned === m.jar.play, 'play planned');
+      { const z = v.month.belowZero;   /* decision 2: the below-zero line's parts explain the whole, to the cent */
+        if (m.bankEnd < -0.004) { ok(tag, !!z && Math.abs(z.by + m.bankEnd) < 0.005, 'belowZero missing or wrong ' + JSON.stringify(z) + ' bankEnd ' + m.bankEnd);
+          if (z) { ok(tag, Math.abs((z.adds - z.takes) - (m.bankEnd - m.bankStart)) < 0.005 && !(z.adds > 0 && z.takes > 0), 'belowZero change ' + JSON.stringify(z));
+            ok(tag, Math.abs(z.by - (z.startBelow > 0 ? z.startBelow + z.takes - z.adds : z.takes - m.bankStart)) < 0.005, 'belowZero parts do not add up ' + JSON.stringify(z) + ' start ' + m.bankStart);
+            ok(tag, z.overNow >= 0 && z.overBefore >= -0.004 && z.planGap >= 0, 'belowZero negative part ' + JSON.stringify(z)); } }
+        else ok(tag, z === null, 'belowZero shown with the bank at or above zero'); }
       ok(tag, Math.abs(v.play.left - (v.play.planned - v.play.spent)) < 0.005, 'play left');
       ok(tag, v.play.over === (v.play.left < 0), 'play over');
       ok(tag, v.play.daysLeft >= 1 && v.play.daysLeft <= v.play.dim && v.play.dayN >= 1 && v.play.dayN <= v.play.dim, 'days ' + JSON.stringify(v.play));

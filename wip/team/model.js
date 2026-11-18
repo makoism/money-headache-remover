@@ -421,6 +421,21 @@ function jarsOf(S, m) {
     list: JARS.map((j, i) => ({ id: j.id, name: j.name, usual: Math.round(j.usual * 100), v: vals[j.id], pct: pcts[i] })) };
 }
 
+/* Decision 2 (Mako, 2026-11-18): when the bank ends a month below zero, Home says so in one plain amber line, naming the month, the amount and the
+   causes the model knows. Each cause is an amount; a screen only picks the words. null when the bank does not end below zero.
+     by          how far below zero the bank ends
+     startBelow  how far below zero the month starts (0 when it starts at or above zero)
+     adds        what the month adds to the bank (0 when it takes away)
+     planGap     how much more the month plans to spend than comes in (0 when it does not)
+     overNow     spending past the plan this month, which came out of the bank
+     overBefore  spending past the plan in earlier months, already in the starting figure
+   by = startBelow - adds + (what the month takes away), so the parts always explain the whole. */
+function belowZeroOf(m) {
+  if (!(m.bankEnd < -0.004)) return null;
+  const change = round2(m.bankEnd - m.bankStart);
+  return { by: round2(-m.bankEnd), startBelow: m.bankStart < 0 ? round2(-m.bankStart) : 0, adds: change > 0 ? change : 0, takes: change < 0 ? round2(-change) : 0,
+    planGap: m.pool.left < 0 ? round2(-m.pool.left) : 0, overNow: m.overNow || 0, overBefore: round2((m.over || 0) - (m.overNow || 0)) };
+}
 const statusOf = (S, m) => (m.bankEnd < cfg(S, 'minBank') ? 'short' : (m.pool.left < 0 ? 'tight' : 'good'));
 
 function goalInfo(S, C, id, ym) {
@@ -585,6 +600,7 @@ function viewOf(S, C, ym, today) {
   });
   /* bankStart, bankChange and overNow were missing here in 38.30, so Home could never say "Building your cushion" or "went past the plan this month" */
   const month = { inflow: m.inflow, out: m.out, left: m.left, bankStart: m.bankStart, bankEnd: m.bankEnd, bankChange: round2(m.bankEnd - m.bankStart), over: m.over || 0, overNow: m.overNow || 0, status: statusOf(S, m) };
+  month.belowZero = belowZeroOf(m);
   const map = mapOf(S, C, ym, { play, month, goals }), nec = buckets.find(x => x.id === 'nec'), pcl = planCells(S, C, ym), dwv = m.draw || 0;
   /* HOME CELLS: the worked-out amounts Home shows, each defined once here. Screens read them; they never do the sum.
      A pile tile (Education, Giving) spent past this month's amount: how much past, how much of that the bank pays, how much the pile covered. */

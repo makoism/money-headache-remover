@@ -123,10 +123,22 @@ function renderStatus() {
   const el = $('#hStatus'), V = HV, m = V && V.month; if (!el || !m) return;
   const u = roundUnit(S), mon = monthLabel(V.ym, true), floor = cfg(S, 'minBank');
   let cls, word, line;
-  if (!(m.inflow > 0)) { if (m.left < 0 || m.bankEnd < 0) { cls = 'short'; word = 'No pay entered'; line = m.left < 0 ? `Your plan spends ${fmt(V.cells.planSpend)} in ${mon} and no pay is entered, so your bank would end at ${fmt(m.bankEnd)}. Add your monthly pay under Plan.` : `You logged spending in ${mon} with no pay entered, so your bank would end at ${fmt2(m.bankEnd)}. Add your monthly pay under Plan.`; } else { cls = ''; word = 'No plan yet'; line = 'Add your monthly pay to start.'; } }
+  if (!(m.inflow > 0)) { if (m.left < 0 || m.bankEnd < 0) { cls = 'tight'; word = 'No pay entered';   /* amber, never red (decision 2) */ line = m.left < 0 ? `Your plan spends ${fmt(V.cells.planSpend)} in ${mon} and no pay is entered, so your bank would end at ${fmt(m.bankEnd)}. Add your monthly pay under Plan.` : `You logged spending in ${mon} with no pay entered, so your bank would end at ${fmt2(m.bankEnd)}. Add your monthly pay under Plan.`; } else { cls = ''; word = 'No plan yet'; line = 'Add your monthly pay to start.'; } }
   else if (sampleOn()) { const d = S.ui.done || {}; cls = ''; word = 'Sample numbers'; line = d.pay && d.bills ? 'Pay and bills are yours. The goals are still invented. Add a goal below.' : 'Invented figures for now. Finish the step below to make them yours.'; }
   else if (m.status === 'good') { cls = 'good'; word = V.play && V.play.planned > 0 && V.play.left < 0 ? 'Over free to spend' : 'You are okay'; if (word !== 'You are okay') cls = 'tight'; const nOv = V.map && V.map.month.find(r => r.id === 'nec'), nOvT = nOv && nOv.overBy > 0 ? ` Bills and basics are ${fmt2(nOv.overBy)} over.` : ''; const pl = nOvT + (V.play && V.play.planned > 0 ? (V.play.left > 0 ? ` ${fmt2(V.play.left)} is free to spend.` : V.play.left < 0 ? ` Free to spend is ${fmt2(V.play.overBy)} over.` : ' Free to spend is used up.') : ''); const unp = V.cells.unplaced; line = !nOvT && unp >= u ? `${fmt(unp)} of your pay has no place yet. Bills are covered. Give it a goal or a place, or keep it as a cushion.${pl}` : m.left < u && ((C.byYm[V.ym] || {}).out - (C.byYm[V.ym] || { jar: {} }).jar.nec) <= 0 ? `Bills use all of your pay. Nothing is set aside yet.` : (nOvT ? `Bills went past the plan.${pl}` : `Bills are covered and goals are planned for.${pl}`); if (nOvT) { cls = 'tight'; word = 'Over plan'; } }
   else if (m.status === 'tight') { cls = 'tight'; word = 'Tight month'; const dw = ((C.byYm[V.ym] || {}).draw) || 0; line = `Plans ${fmt(V.cells.overPay)} more than your pay${dw > 0 ? ', ' + fmt(dw) + ' of it from your emergency fund' : ''}. Your balance covers it, ending ${mon} at ${fmt(m.bankEnd)}.`; }
+  else if (m.belowZero) {
+    /* decision 2 (Mako, 2026-11-18): below zero is one plain amber line with the month, the amount and the causes the model knows (viewOf().month.belowZero).
+       Never red, never "cushion", and nothing about unpaid bills: the model does not know that */
+    const z = m.belowZero, why = [];
+    if (z.planGap > 0) why.push(`${mon} plans ${fmt2(z.planGap)} more than comes in`);
+    if (z.overNow > 0) why.push(`${fmt2(z.overNow)} went past the plan this month`);
+    cls = 'tight'; word = 'Below zero';
+    line = `Your bank ends ${mon} at ${fmt2(m.bankEnd)}.`
+      + (z.startBelow > 0 ? ` It starts the month at ${fmt2(m.bankStart)}${z.adds > 0 ? `, and ${mon} adds ${fmt2(z.adds)}` : ''}.` + (z.overBefore > 0 ? ` Spending past the plan in earlier months took ${fmt2(z.overBefore)}.` : '') : '')
+      + (z.takes > 0 && why.length ? ` ${why.join(', and ')}.` : '')   /* each cause starts with the month name or an amount */
+      + ' Open Plan to see the month.';
+  }
   else if (m.status === 'short' && m.bankChange >= 0) { cls = 'tight'; word = 'Building your cushion'; line = `Your bank is under your safety minimum of ${fmt(floor)}, but ${mon} adds to it. It will end at ${fmt(m.bankEnd)}. You can change the minimum in Settings.`; }
   else { cls = 'short'; word = 'Short'; line = `Not enough for ${mon}. Your bank would end at ${fmt(m.bankEnd)}, under your safety minimum of ${fmt(floor)}. Change it in Settings, or open Plan to fix the month.`; }
   if (m.status === 'good' && word === 'You are okay' && (m.overNow || 0) > 0.004) { word = 'Over plan'; cls = 'tight'; line = `${fmt2(m.overNow)} went past the plan this month and came out of your bank. ` + line; }
@@ -136,7 +148,7 @@ function renderStatus() {
   let ahead = '';
   if (cls && !sampleOn()) {
     const i0 = MONTHS.indexOf(V.ym), bad = [];
-    for (let k = 1; k <= 3 && i0 >= 0 && i0 + k < MONTHS.length; k++) { const x = MONTHS[i0 + k], mx = C.byYm[x]; if (!mx) continue; const st = statusOf(S, mx); if (st === 'short') bad.push(`${monthLabel(x, true)} ${mx.left < 0 ? 'is short' : 'ends under your minimum'}`); else if (st === 'tight') bad.push(`${monthLabel(x, true)} is tight`); }
+    for (let k = 1; k <= 3 && i0 >= 0 && i0 + k < MONTHS.length; k++) { const x = MONTHS[i0 + k], mx = C.byYm[x]; if (!mx) continue; const st = statusOf(S, mx); if (st === 'short') bad.push(`${monthLabel(x, true)} ${mx.bankEnd < 0 ? 'ends below zero' : mx.left < 0 ? 'is short' : 'ends under your minimum'}`); else if (st === 'tight') bad.push(`${monthLabel(x, true)} is tight`); }
     if (i0 >= 0 && i0 + 1 < MONTHS.length && !(m.over > 0.004 && !bad.length)) ahead = `<p class="hst-w${bad.length ? ' warn' : ' on'}">${bad.length ? 'Coming up: ' + bad.join(', ') + '. Open Plan to see why.' : 'The next 3 months look fine.'}</p>`;
   }
   put(el, `<span class="chip ${cls}">${cls === 'good' ? IC.ok : cls ? IC.warn : ''}${word}</span><p class="hst-l">${line}</p>${ahead}${wk}${m.inflow > 0 && !sampleOn() ? '<p class="cap hs-more"><button type="button" class="link" data-why="status">How is this worked out?</button></p>' : ''}`);

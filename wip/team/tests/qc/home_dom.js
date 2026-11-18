@@ -37,12 +37,19 @@ const monShort = ym => MON[+ym.slice(5) - 1], monLong = ym => monShort(ym) + ' '
     eq(tag + ' page errors', errs.join(' | '), '');
     /* ---- status ---- */
     const stat = m.inflow > 0 ? M.statusOf(S, m) : 'none';
-    if (stat === 'none') has(tag + ' status', T.st || '', 'No plan yet');
+    /* no pay entered: 'No pay entered' when the plan or logged spending takes the bank below zero (ui6.js renderStatus says why), otherwise 'No plan yet' */
+    if (stat === 'none') has(tag + ' status', T.st || '', m.left < 0 || m.bankEnd < 0 ? 'No pay entered' : 'No plan yet');
     else if (stat === 'good') { { const nO = V.map.month.find(x => x.id === 'nec'), necOver = !!(nO && nO.overBy > 0), playOver = V.play.planned > 0 && V.play.left < 0; has(tag + ' status', T.st, necOver ? 'Over plan' : playOver ? 'Over free to spend' : V.month.overNow > 0.004 ? 'Over plan' : 'You are okay'); if (!necOver && !playOver && V.month.overNow > 0.004) has(tag + ' status past plan', T.st, F2(V.month.overNow) + ' went past the plan this month'); } if (V.play.planned > 0) { if (V.play.left > 0) has(tag + ' status free', T.st, F2(V.play.left) + ' is free to spend'); else if (V.play.left < 0) has(tag + ' status over', T.st, 'Free to spend is ' + F2(V.play.overBy) + ' over'); } }
     else if (stat === 'tight') { has(tag + ' status', T.st, 'Tight month'); has(tag + ' status', T.st, 'Plans ' + F(V.cells.overPay) + ' more than your pay'); has(tag + ' status', T.st, 'ending ' + monShort(ym) + ' at ' + F(m.bankEnd)); }
+    /* decision 2 (Mako, 2026-11-18): below zero is one amber line with the month, the amount and its causes; this replaced "Building your cushion" and "Short" there */
+    else if (m.bankEnd < -0.004) { has(tag + ' status', T.st, 'Below zero'); has(tag + ' status', T.st, 'Your bank ends ' + monShort(ym) + ' at ' + F2(m.bankEnd) + '.');
+      if (m.bankStart < 0) has(tag + ' status start', T.st, 'It starts the month at ' + F2(m.bankStart));
+      if (m.bankEnd < m.bankStart && m.pool.left < 0) has(tag + ' status plan', T.st, monShort(ym) + ' plans ' + F2(-m.pool.left) + ' more than comes in');
+      if (m.bankEnd < m.bankStart && (m.overNow || 0) > 0) has(tag + ' status over', T.st, F2(m.overNow) + ' went past the plan this month');
+      if (/cushion/.test(T.st)) eq(tag + ' status never cushion below zero', T.st, '(no cushion)'); }
     else if (V.month.bankChange >= 0) { has(tag + ' status', T.st, 'Building your cushion'); has(tag + ' status', T.st, 'safety minimum of ' + F(floor)); has(tag + ' status', T.st, 'end at ' + F(m.bankEnd)); }
     else { has(tag + ' status', T.st, 'Short'); has(tag + ' status', T.st, 'bank would end at ' + F(m.bankEnd)); has(tag + ' status', T.st, 'safety minimum of ' + F(floor)); }
-    if (stat !== 'none') { const i0 = M.MONTHS.indexOf(ym), bad = []; for (let k = 1; k <= 3 && i0 + k < M.MONTHS.length; k++) { const x = M.MONTHS[i0 + k], mx = C.byYm[x], st = M.statusOf(S, mx); if (st === 'short') bad.push(monShort(x) + (mx.left < 0 ? ' is short' : ' ends under your minimum')); else if (st === 'tight') bad.push(monShort(x) + ' is tight'); } if (i0 + 1 < M.MONTHS.length && !(V.month.over > 0.004 && !bad.length)) has(tag + ' status ahead', T.st, bad.length ? 'Coming up: ' + bad.join(', ') + '.' : 'The next 3 months look fine.'); }
+    if (stat !== 'none') { const i0 = M.MONTHS.indexOf(ym), bad = []; for (let k = 1; k <= 3 && i0 + k < M.MONTHS.length; k++) { const x = M.MONTHS[i0 + k], mx = C.byYm[x], st = M.statusOf(S, mx); if (st === 'short') bad.push(monShort(x) + (mx.bankEnd < 0 ? ' ends below zero' : mx.left < 0 ? ' is short' : ' ends under your minimum')); else if (st === 'tight') bad.push(monShort(x) + ' is tight'); } if (i0 + 1 < M.MONTHS.length && !(V.month.over > 0.004 && !bad.length)) has(tag + ' status ahead', T.st, bad.length ? 'Coming up: ' + bad.join(', ') + '.' : 'The next 3 months look fine.'); }
     /* ---- treasure chest ---- */
     const p0 = V.play;
     if (!(m.inflow > 0)) has(tag + ' chest', T.sp || '', 'Add your monthly pay');
