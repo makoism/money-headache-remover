@@ -32,7 +32,7 @@ function randomState() {
   S.plan.goals.forEach(g => { if (chance(.2)) M.updateGoal(S, g.id, { target: amt(), start: amt(), due: chance(.5) ? pick(MO) + '-' + pick(['01', '15', '16', '30']) : '' }); });
   if (chance(.4)) { const l = pick(S.plan.lines); M.updateLine(S, l.id, { ends: pick(MO), redirect: chance(.5) }); }
   S.cfg = S.cfg || {};
-  if (chance(.5)) S.cfg.bankStart = amt(); if (chance(.5)) S.cfg.minBank = amt();
+  if (chance(.5)) S.cfg.bankStart = amt(); else if (chance(.3)) S.cfg.bankStart = -amt();   /* overdrawn starts too (38.31) */ if (chance(.5)) S.cfg.minBank = amt();
   const nIt = ri(0, 3); for (let i = 0; i < nIt; i++) { const ym = pick(MO); (S.items[ym] = S.items[ym] || []).push({ id: 'i' + i, label: 'it', amount: chance(.1) ? NaN : amt() }); }
   S.receipts = [];
   const nR = ri(0, 12);

@@ -133,7 +133,7 @@ function wire() {
   $('#themeSeg').addEventListener('click', e => { const b = e.target.closest('[data-theme-set]'); if (!b) return; setTheme(b.dataset.themeSet); sfx('tap'); });
 
   /* basics */
-  SETF.forEach(f => { const go = e => onCfg(f.k, Math.max(0, Math.round(+e.target.value || 0))); $('#st-' + f.k).addEventListener('input', go); $('#st-' + f.k).addEventListener('change', go); });
+  SETF.forEach(f => { const go = e => onCfg(f.k, +e.target.value || 0); $('#st-' + f.k).addEventListener('input', go); $('#st-' + f.k).addEventListener('change', go); });
   $('#redivide').addEventListener('click', e => confirmClick(e.currentTarget, 'Tap again: opens the setup steps. They can replace your goals and saved amounts. Undo stays up for 30 seconds after.', () => { RESPLIT_SNAP = JSON.stringify(S); S.ui.preSplit = RESPLIT_SNAP; persist(); if (typeof openTour === 'function') openTour('jars', 'full'); }));
   const copyBox = async (ta, msg) => {
     ta.focus(); ta.select();

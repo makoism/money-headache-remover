@@ -168,6 +168,7 @@ const eq = (ctxMsg, a, b) => { checks++; if (a !== b && !(Number.isNaN(a) && Num
 const N = +(process.env.N || 3000); const DBG = process.env.DBG ? process.env.DBG.split(',') : [];
 for (let t = 0; t < N; t++) {
   const S = randomState(), tag = '#' + t + ' ' + S.ui.cur;
+  if (t % 5 === 3) S.cfg.bankStart = -(1 + (t * 7919) % 250000);   /* every fifth plan starts overdrawn (38.31); kept out of randomState so the golden screens draw the same plans */
   const stab = o => JSON.stringify(o, (k, v) => v && typeof v === 'object' && !Array.isArray(v) ? Object.keys(v).sort().reduce((a, x) => (a[x] = v[x], a), {}) : v);
   const sortSteps = o => { const r = {}; Object.keys(o).forEach(k => { r[k] = o[k].slice().sort((a, b) => (a.from < b.from ? -1 : 1)); }); return r; };
   eq(tag + ' steps survive cleaning', stab(M.cleanSteps(S.steps)), stab(sortSteps(S.steps))); eq(tag + ' once survives cleaning', stab(M.cleanOnce(S.once)), stab(Object.fromEntries(Object.entries(S.once).filter(([k, v]) => Object.keys(v).length))));

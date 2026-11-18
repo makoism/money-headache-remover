@@ -22,7 +22,7 @@ function plan() {
   if (chance(.4)) M.setVal(S, 'draw', pick(MO.slice(0, 8)), money(), 'once');
   if (chance(.4)) { const ym = pick(MO.slice(0, 8)); S.items[ym] = [{ id: 'i1', label: 'x', amount: money() }]; }
   if (chance(.3)) { S.plan.debts = [{ id: 'd0', name: 'card', kind: 'card', balance: money() * 5, apr: pick([0, 12, 24]), min: money(), extra: pick([0, money()]) }]; }
-  if (chance(.5)) S.cfg.bankStart = money() * 3; if (chance(.3)) S.cfg.minBank = money();
+  if (chance(.5)) S.cfg.bankStart = money() * 3; else if (chance(.3)) S.cfg.bankStart = -money();   /* overdrawn starts too (38.31) */ if (chance(.3)) S.cfg.minBank = money();
   /* receipts over the first months: every category, cents outside yen, sometimes far past the plan */
   const upTo = ri(0, 9), keys = S.plan.lines.map(l => l.key).concat(['other', 'other']);
   S.receipts = []; const nR = pick([0, 0, 3, 12, 40]);

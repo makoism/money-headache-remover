@@ -213,6 +213,8 @@ const MAX_AMT = 1e9;
 /* decision 1 (Mako, 2026-11-18): with the plan (S) given, a typed amount keeps its cents, except in yen, which has none.
    Without S (counts, goal targets) it stays a whole number, as before */
 const clampAmt = (v, S) => { v = +v; if (!isFinite(v)) return 0; v = S ? wholeAmt(S, v) : Math.round(v); return Math.max(0, Math.min(MAX_AMT, v)); };
+/* the bank balance is the one amount that can be below zero: an overdrawn account is real money owed, and storing it as 0 made every bank figure too high (38.31 QC round 3) */
+const clampBank = (v, S) => { v = +v; if (!isFinite(v)) return 0; v = S ? wholeAmt(S, v) : Math.round(v); return Math.max(-MAX_AMT, Math.min(MAX_AMT, v)) || 0; };
 function setVal(S, key, ym, v, scope) {
   v = clampAmt(v, S);
   if (scope === 'once' || scope === 'month' || ONCE_KEYS.has(key)) { (S.once[ym] = S.once[ym] || {})[key] = v; return; }
@@ -842,6 +844,7 @@ const loanMonthlyFrom = (total, n) => (n > 0 ? Math.ceil(Math.max(0, Math.round(
 const SAFE_KEY = /^[A-Za-z0-9:_-]{1,40}$/, YM_FORM = /^(20\d\d|21\d\d)-(0[1-9]|1[0-2])$/;
 /* a saved amount loads exactly as it was saved, to the cent (decision 1): whole amounts from older versions load unchanged */
 const cleanAmt = v => (typeof v === 'number' && isFinite(v) && v >= 0 ? Math.min(MAX_AMT, round2(v)) : null);
+const cleanSigned = v => (typeof v === 'number' && isFinite(v) ? Math.max(-MAX_AMT, Math.min(MAX_AMT, round2(v))) || 0 : null);
 const isMap = o => !!o && typeof o === 'object' && !Array.isArray(o);
 function cleanSteps(raw) {
   const out = {}; if (!isMap(raw)) return out;
@@ -885,7 +888,7 @@ const CFG_AMOUNTS = ['bankStart', 'minBank', 'ceiling', 'moveTarget', 'moveStart
 const CFG_KNOWN = new Set(CFG_AMOUNTS.concat(['loanLast', 'redirectLoan', 'moveMonth', 'carDue', 'aims']));
 function cleanCfg(raw) {
   const out = {}; if (!isMap(raw)) return out;
-  CFG_AMOUNTS.forEach(k => { const v = cleanAmt(raw[k]); if (v !== null) out[k] = v; });
+  CFG_AMOUNTS.forEach(k => { const v = k === 'bankStart' ? cleanSigned(raw[k]) : cleanAmt(raw[k]); if (v !== null) out[k] = v; });
   if (typeof raw.loanLast === 'string' && MONTHS.indexOf(raw.loanLast) >= 0) out.loanLast = raw.loanLast;
   if (typeof raw.redirectLoan === 'boolean') out.redirectLoan = raw.redirectLoan;
   if (typeof raw.moveMonth === 'string' && YM_FORM.test(raw.moveMonth)) out.moveMonth = raw.moveMonth;

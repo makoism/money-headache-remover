@@ -739,7 +739,7 @@ function wireHome() {
    Its .value still reads back as a plain number, so nothing else in the page has to know. */
 const NATIVE_VALUE = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
 const COMMA_DEC = ['€', 'R$', 'kr', 'zł', 'R']; /* currencies usually written with a decimal comma */
-const withCommas = s => { s = String(s == null ? '' : s); const m = s.match(/^(\d*)(\.\d*)?$/); return m ? m[1].replace(/\B(?=(\d{3})+(?!\d))/g, ',') + (m[2] || '') : s; };
+const withCommas = s => { s = String(s == null ? '' : s); const m = s.match(/^(-?)(\d*)(\.\d*)?$/); return m ? m[1] + m[2].replace(/\B(?=(\d{3})+(?!\d))/g, ',') + (m[3] || '') : s; };
 /* sums typed in an amount box: 1200+300, 500*2, 2,400/3. Plain arithmetic only, never run as code. A trailing sign is ignored while typing. */
 const MONEY_OP = /[+*\/x\u00d7\u2212-]/;
 function evalMoney(src) {
@@ -766,7 +766,7 @@ function moneyUp(el) {
   const v = el.value;
   el.dataset.mny = '1'; el.type = 'text'; el.setAttribute('autocomplete', 'off');
   if (!el.getAttribute('inputmode')) el.setAttribute('inputmode', 'decimal');
-  Object.defineProperty(el, 'value', { configurable: true, get() { const r = NATIVE_VALUE.get.call(this); if (hasMoneyOp(r)) { const v = evalMoney(r); return v === null ? (this._mnyOK !== undefined ? this._mnyOK : '') : String(v); } return r.replace(/,/g, ''); }, set(x) { NATIVE_VALUE.set.call(this, withCommas(x)); } });
+  Object.defineProperty(el, 'value', { configurable: true, get() { const r = NATIVE_VALUE.get.call(this); if (hasMoneyOp(r)) { const v = evalMoney(r); return v === null ? (this._mnyOK !== undefined ? this._mnyOK : '') : String(v); } return r.replace(/,/g, ''); }, set(x) { const n = +x; NATIVE_VALUE.set.call(this, withCommas(x !== '' && x != null && isFinite(n) && Math.abs(n - Math.round(n)) >= 0.005 ? n.toFixed(2) : x)); } });   /* an amount the page puts in a box shows its cents as two digits, 400.50 not 400.5 (decision 1) */
   NATIVE_VALUE.set.call(el, withCommas(v));
 }
 function moneyUpAll(root) { $$('input[type=number]', root || document).forEach(el => { if (isMoneyBox(el)) moneyUp(el); }); }
@@ -776,7 +776,9 @@ function moneyTyped(el, ev) {
   /* a letter is never dropped in silence (12O typed for 120 would become 12): the box keeps what it had and says why (38.31 QC round 2) */
   { const lt = /[A-Za-z]/.exec(raw); if (lt) { try { cheer(`Numbers only: "${lt[0]}" was not added. Check the amount.`); } catch (x) { } NATIVE_VALUE.set.call(el, el._mnyPrev !== undefined ? el._mnyPrev : ''); return; } }
   /* a minus sign is never kept; the person is told, so a refund typed as -500 is not quietly turned into +500 (receipt boxes refuse it themselves) */
-  if (/^\s*[-\u2212\u2013\uFF0D\u30FC\u2010-\u2015]/.test(raw) && el.id !== 'rcAmt' && el.id !== 'hAmt') { try { cheer('Amounts take no minus sign. The old amount stays.'); } catch (x) { } NATIVE_VALUE.set.call(el, el._mnyPrev !== undefined ? el._mnyPrev : ''); el._refuse = Date.now() + 2500; try { el.blur(); } catch (x) { } return; }
+  const negOK = el.dataset.neg === 'ok';   /* the bank balance box takes a minus: an overdrawn account (38.31 QC round 3) */
+  if (negOK) raw = raw.replace(/^\s*[\u2212\u2013\uFF0D\u30FC\u2010-\u2015]/, '-');
+  if (!negOK && /^\s*[-\u2212\u2013\uFF0D\u30FC\u2010-\u2015]/.test(raw) && el.id !== 'rcAmt' && el.id !== 'hAmt') { try { cheer('Amounts take no minus sign. The old amount stays.'); } catch (x) { } NATIVE_VALUE.set.call(el, el._mnyPrev !== undefined ? el._mnyPrev : ''); el._refuse = Date.now() + 2500; try { el.blur(); } catch (x) { } return; }
   { const big = parseFloat(raw.replace(/[^\d.]/g, '')); if (big > 1e9 && el.id !== 'rcAmt' && el.id !== 'hAmt') { try { cheer(`That amount is too large. The most is 1,000,000,000. ${el._mnyAtFocus ? 'The old amount stays.' : 'Type it again.'}`); } catch (x) { } el._refuse = Date.now() + 2500; NATIVE_VALUE.set.call(el, el._mnyAtFocus !== undefined ? el._mnyAtFocus : ''); el._mnyPrev = el._mnyAtFocus; el.dispatchEvent(new Event('input', { bubbles: true })); return;   /* a typo is refused and the amount from before this typing comes back, never the largest amount (38.31 data safety round) */ } } const pos = el.selectionStart == null ? raw.length : el.selectionStart;
   /* a comma typed by hand: a decimal point where the currency writes decimals that way (12,50 euro), otherwise a thousands separator
      (1,200 pesos is twelve hundred, never one peso twenty) and the box regroups it on its own */
@@ -786,7 +788,8 @@ function moneyTyped(el, ev) {
   const dot = all.indexOf('.');
   if (dot >= 0) all = all.slice(0, dot) + '.' + all.slice(dot + 1).replace(/\./g, '').slice(0, 2);
   n = Math.min(n, all.length);
-  const out = withCommas(all);
+  const neg = negOK && /^\s*-/.test(raw); if (neg) n++;
+  const out = (neg ? '-' : '') + withCommas(all);
   if (out === NATIVE_VALUE.get.call(el)) return;
   let k = 0, i = 0; for (; i < out.length && k < n; i++) if (out.charAt(i) !== ',') k++;
   NATIVE_VALUE.set.call(el, out);

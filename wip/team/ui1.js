@@ -167,7 +167,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Enter' && /^(h|rc)New
 
 const CURS = [['₱', '₱ Philippine peso'], ['$', '$ Dollar'], ['€', '€ Euro'], ['£', '£ Pound'], ['¥', '¥ Yen or yuan'], ['₹', '₹ Rupee'], ['₩', '₩ Won'], ['R$', 'R$ Real'], ['A$', 'A$ Australian dollar'], ['C$', 'C$ Canadian dollar'], ['S$', 'S$ Singapore dollar'], ['NZ$', 'NZ$ New Zealand dollar'], ['CHF', 'CHF Swiss franc'], ['kr', 'kr Krona or krone'], ['R', 'R Rand'], ['zł', 'zł Zloty'], ['none', 'No symbol']];
 const SETF = [
-  { k: 'bankStart', label: 'Money today (bank plus cash)', hint: 'What you have right now. It is the start of the first month in the plan. Update when you check.' },
+  { k: 'bankStart', label: 'Money today (bank plus cash)', hint: 'What you have right now. It is the start of the first month in the plan. Update when you check. Overdrawn? Type a minus, like -400.' },
   { k: 'minBank', label: 'Minimum balance', hint: 'Warns when a month would end below this.' },
   { k: 'ceiling', label: 'Free to spend cap', hint: 'The most you want Free to spend to be in a month. A mark on the Free to spend bar in Plan shows it.' },
 ];
@@ -177,7 +177,7 @@ function buildStatic() {
   $('#monthSel').innerHTML = opts; $('#rcMonth').innerHTML = opts;
   $('#rcFields').innerHTML = remindFieldsHTML('rc');
   $('#jarList').innerHTML = JARS.map(j => `<div class="j"><i class="${JARCLS[j.id]}"></i><span class="jn">${j.name}<small>${j.about}</small></span><b class="jp">${j.usualPct}%</b></div>`).join('');
-  $('#sets').innerHTML = '<h3 class="grp">Balance</h3>' + SETF.map(f => `<div class="field"><label for="st-${f.k}">${f.label}</label><div class="inp"><span class="yen cs"></span><input id="st-${f.k}" type="number" inputmode="decimal" min="0" step="any"></div><p class="cap">${f.hint}</p></div>`).join('');
+  $('#sets').innerHTML = '<h3 class="grp">Balance</h3>' + SETF.map(f => `<div class="field"><label for="st-${f.k}">${f.label}</label><div class="inp"><span class="yen cs"></span><input id="st-${f.k}" type="number" inputmode="${f.k === 'bankStart' ? 'text' : 'decimal'}"${f.k === 'bankStart' ? ' data-neg="ok"' : ' min="0"'} step="any"></div><p class="cap">${f.hint}</p></div>`).join('');
   $('#rowsIn').innerHTML = '';
   restructure(true);
 }

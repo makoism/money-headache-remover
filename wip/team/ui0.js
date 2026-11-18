@@ -289,7 +289,7 @@ function onSet(key, v) {
   else setVal(S, key, sel, v, 'once');
   markDone(doneFor(key)); persist(); schedule();
 }
-function onCfg(k, v) { S.cfg[k] = clampAmt(v, S); persist(); schedule(); }
+function onCfg(k, v) { S.cfg[k] = k === 'bankStart' ? clampBank(v, S) : clampAmt(v, S); persist(); schedule(); }
 function select(ym) {
   sel = ym; itemsSig = ''; try { history.replaceState(null, '', '#' + ym); } catch (e) { /* sandboxed */ }
   render();
