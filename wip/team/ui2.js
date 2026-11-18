@@ -82,7 +82,7 @@ function render() {
   const PC = planCells(S, C, sel);   /* the worked-out amounts for this screen come from the model */
   const pin = m.pool.in, play = m.jar.play, wk = weekOf(play);
   try { const mr = HV && HV.map && HV.map.month.find(r => r.id === 'play'); if (mr) BUR.roomCv($('#heroRoomW'), mr, 'play'); } catch (e) { /* the number still shows */ }
-  const rs = receiptStats(S, sel), playSpent = rs.byJar.play || 0, playLeft = round2(play - playSpent), heroShow = freeOf(S, { left: m.left, bankEnd: m.bankEnd, over: m.over || 0, status: st }, { left: playLeft }).free, heroTxt = (playSpent > 0 || heroShow !== play) ? fmt2(heroShow) : fmt(heroShow);
+  const rs = receiptStats(S, sel), playSpent = rs.byJar.play || 0, playLeft = round2(play - playSpent), heroShow = freeOf(S, { left: m.left, bankStart: m.bankStart, bankEnd: m.bankEnd, over: m.over || 0, status: st }, { left: playLeft }).free, heroTxt = (playSpent > 0 || heroShow !== play) ? fmt2(heroShow) : fmt(heroShow);
   $('#heroNum').textContent = heroTxt; $('#heroNum').style.setProperty('--n', String(heroTxt.length)); $('#heroNum').style.color = heroShow < 0 ? 'var(--bad)' : '';
   $('#heroWk').textContent = (playSpent > 0 || heroShow !== play) ? `Planned ${fmt(play)} this month, about ${fmt(wk)} a week.` : `Planned: about ${fmt(wk)} a week across the whole month.`;
   $('#rcLine').innerHTML = !rs.count ? '<button type="button" class="link" data-tab-go="receipts">Add a receipt</button> to see actual spend.'

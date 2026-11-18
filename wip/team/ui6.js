@@ -139,7 +139,7 @@ function renderStatus() {
       + (z.takes > 0 && why.length ? ` ${why.join(', and ')}.` : '')   /* each cause starts with the month name or an amount */
       + ' Open Plan to see the month.';
   }
-  else if (m.status === 'short' && m.bankChange >= 0) { cls = 'tight'; word = 'Building your cushion'; line = `Your bank is under your safety minimum of ${fmt(floor)}, but ${mon} adds to it. It will end at ${fmt(m.bankEnd)}. You can change the minimum in Settings.`; }
+  else if (m.status === 'short' && m.bankChange > 0.004) { cls = 'tight'; word = 'Building your cushion';   /* only when the month really adds (38.31 round: it said "adds to it" when it added nothing) */ line = `Your bank is under your safety minimum of ${fmt(floor)}, but ${mon} adds to it. It will end at ${fmt(m.bankEnd)}. You can change the minimum in Settings.`; }
   else { cls = 'short'; word = 'Short'; line = `Not enough for ${mon}. Your bank would end at ${fmt(m.bankEnd)}, under your safety minimum of ${fmt(floor)}. Change it in Settings, or open Plan to fix the month.`; }
   if (m.status === 'good' && word === 'You are okay' && (m.overNow || 0) > 0.004) { word = 'Over plan'; cls = 'tight'; line = `${fmt2(m.overNow)} went past the plan this month and came out of your bank. ` + line; }
   let wk = '';

@@ -58,7 +58,7 @@ function randomReceipts(S) {
       const minBank = M.cfg(S, 'minBank'), st = r.bankEnd < minBank ? 'short' : (r.left < 0 ? 'tight' : 'good');
       let dk = r.left - r.draw; if (dk > 0) dk = Math.max(0, dk - r.overNow);
       const playSpentC = S.receipts.filter(x => x.d.slice(0, 7) === ym && (S.plan.lines.find(q => q.key === x.c) || {}).jar === 'play').reduce((a, x) => a + cents(x.a), 0);
-      const pLeft = Math.round(r.jar.play * 100 - playSpentC) / 100, held = st === 'short' && (r.left < 0 || r.over > 0) ? Math.min(Math.max(0, pLeft), Math.max(0, minBank - r.bankEnd)) : 0;
+      const pLeft = Math.round(r.jar.play * 100 - playSpentC) / 100, held = st === 'short' && !(Math.round((r.bankEnd - r.bankStart) * 100) > 0) ?   /* 38.31 money accuracy round, in step with expect_month.js */  Math.min(Math.max(0, pLeft), Math.max(0, minBank - r.bankEnd)) : 0;
       const safe = Math.max(pLeft < 0 ? pLeft : 0, Math.round((pLeft - held) * 100) / 100);
       eq(pt + 'where title', D.where, r.draw > 0 ? F(r.inflow - r.draw) + ' pay and ' + F(r.draw) + ' borrowed, by place' : F(r.inflow) + ' pay, by place'); eq(pt + 'dock', D.dock, r.a + r.b + r.side > 0 || r.left < 0 ? F(Math.abs(dk)) : ''); eq(pt + 'in', D.inT, F(r.inflow)); eq(pt + 'out', D.outT, F(r.outflow)); eq(pt + 'left', D.left, F(r.left));
       /* the bank line: with spending past plan so far it says the planned bank and what came off it; otherwise where the bank goes */

@@ -2899,7 +2899,10 @@ function viewOf(S, C, ym, today) {
 const overspendUpTo = (S, C, ym) => (C.byYm[ym] ? C.byYm[ym].over : 0);
 /* Free to spend: the free to spend left, less what is held back so the balance stays above its minimum. One rule, used by every screen that shows the number. */
 function freeOf(S, mv, p) {
-  const held = mv.status === 'short' && (mv.left < 0 || mv.over > 0) ? Math.min(Math.max(0, p.left), Math.max(0, cfg(S, 'minBank') - mv.bankEnd)) : 0;
+  /* a short month holds back Free to spend unless the month really adds to the bank (38.31 money accuracy round: a month that starts under the
+     minimum and adds nothing showed Free to spend next to "Short") */
+  const adds = (mv.bankStart != null ? round2(mv.bankEnd - mv.bankStart) : mv.bankChange) > 0.004;
+  const held = mv.status === 'short' && !adds ? Math.min(Math.max(0, p.left), Math.max(0, cfg(S, 'minBank') - mv.bankEnd)) : 0;
   return { held, free: Math.max(p.left < 0 ? p.left : 0, round2(p.left - held)) };
 }
 /* The burrow map Home draws, from the plan and the receipts (no bank balance yet; real balances come with pay day).
@@ -3571,7 +3574,7 @@ const payScale = () => Math.max(1000, val(S, 'a', sel) + val(S, 'b', sel) + val(
 /* one weekly figure for the whole app: the plan for a month, spread over that month's weeks (days in the open month / 7) */
 const weekOf = (play, ym) => { ym = ym || (typeof sel === 'string' ? sel : START); return roundTo(play / (new Date(+ym.slice(0, 4), +ym.slice(5, 7), 0).getDate() / 7)); };
 /* what is really safe to spend of Free to spend: the plan left over, less anything the bank cannot cover (the one meaning of "left" on every screen) */
-const playSafeLeft = (S, m, spent) => freeOf(S, { left: m.left, bankEnd: m.bankEnd, over: m.over || 0, status: statusOf(S, m) }, { left: round2(m.jar.play - spent) }).free;
+const playSafeLeft = (S, m, spent) => freeOf(S, { left: m.left, bankStart: m.bankStart, bankEnd: m.bankEnd, over: m.over || 0, status: statusOf(S, m) }, { left: round2(m.jar.play - spent) }).free;
 const roundTo = x => { const u = x >= 1000 ? 100 : x >= 60 ? 10 : 1; return Math.round(x / u) * u; };
 const setIdle = (el, v) => { if (el && document.activeElement !== el) el.value = v; };
 const IC = {
@@ -4608,7 +4611,7 @@ function render() {
   const PC = planCells(S, C, sel);   /* the worked-out amounts for this screen come from the model */
   const pin = m.pool.in, play = m.jar.play, wk = weekOf(play);
   try { const mr = HV && HV.map && HV.map.month.find(r => r.id === 'play'); if (mr) BUR.roomCv($('#heroRoomW'), mr, 'play'); } catch (e) { /* the number still shows */ }
-  const rs = receiptStats(S, sel), playSpent = rs.byJar.play || 0, playLeft = round2(play - playSpent), heroShow = freeOf(S, { left: m.left, bankEnd: m.bankEnd, over: m.over || 0, status: st }, { left: playLeft }).free, heroTxt = (playSpent > 0 || heroShow !== play) ? fmt2(heroShow) : fmt(heroShow);
+  const rs = receiptStats(S, sel), playSpent = rs.byJar.play || 0, playLeft = round2(play - playSpent), heroShow = freeOf(S, { left: m.left, bankStart: m.bankStart, bankEnd: m.bankEnd, over: m.over || 0, status: st }, { left: playLeft }).free, heroTxt = (playSpent > 0 || heroShow !== play) ? fmt2(heroShow) : fmt(heroShow);
   $('#heroNum').textContent = heroTxt; $('#heroNum').style.setProperty('--n', String(heroTxt.length)); $('#heroNum').style.color = heroShow < 0 ? 'var(--bad)' : '';
   $('#heroWk').textContent = (playSpent > 0 || heroShow !== play) ? `Planned ${fmt(play)} this month, about ${fmt(wk)} a week.` : `Planned: about ${fmt(wk)} a week across the whole month.`;
   $('#rcLine').innerHTML = !rs.count ? '<button type="button" class="link" data-tab-go="receipts">Add a receipt</button> to see actual spend.'
@@ -15546,7 +15549,7 @@ function renderStatus() {
       + (z.takes > 0 && why.length ? ` ${why.join(', and ')}.` : '')   /* each cause starts with the month name or an amount */
       + ' Open Plan to see the month.';
   }
-  else if (m.status === 'short' && m.bankChange >= 0) { cls = 'tight'; word = 'Building your cushion'; line = `Your bank is under your safety minimum of ${fmt(floor)}, but ${mon} adds to it. It will end at ${fmt(m.bankEnd)}. You can change the minimum in Settings.`; }
+  else if (m.status === 'short' && m.bankChange > 0.004) { cls = 'tight'; word = 'Building your cushion';   /* only when the month really adds (38.31 round: it said "adds to it" when it added nothing) */ line = `Your bank is under your safety minimum of ${fmt(floor)}, but ${mon} adds to it. It will end at ${fmt(m.bankEnd)}. You can change the minimum in Settings.`; }
   else { cls = 'short'; word = 'Short'; line = `Not enough for ${mon}. Your bank would end at ${fmt(m.bankEnd)}, under your safety minimum of ${fmt(floor)}. Change it in Settings, or open Plan to fix the month.`; }
   if (m.status === 'good' && word === 'You are okay' && (m.overNow || 0) > 0.004) { word = 'Over plan'; cls = 'tight'; line = `${fmt2(m.overNow)} went past the plan this month and came out of your bank. ` + line; }
   let wk = '';

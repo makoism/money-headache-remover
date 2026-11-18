@@ -620,7 +620,10 @@ function viewOf(S, C, ym, today) {
 const overspendUpTo = (S, C, ym) => (C.byYm[ym] ? C.byYm[ym].over : 0);
 /* Free to spend: the free to spend left, less what is held back so the balance stays above its minimum. One rule, used by every screen that shows the number. */
 function freeOf(S, mv, p) {
-  const held = mv.status === 'short' && (mv.left < 0 || mv.over > 0) ? Math.min(Math.max(0, p.left), Math.max(0, cfg(S, 'minBank') - mv.bankEnd)) : 0;
+  /* a short month holds back Free to spend unless the month really adds to the bank (38.31 money accuracy round: a month that starts under the
+     minimum and adds nothing showed Free to spend next to "Short") */
+  const adds = (mv.bankStart != null ? round2(mv.bankEnd - mv.bankStart) : mv.bankChange) > 0.004;
+  const held = mv.status === 'short' && !adds ? Math.min(Math.max(0, p.left), Math.max(0, cfg(S, 'minBank') - mv.bankEnd)) : 0;
   return { held, free: Math.max(p.left < 0 ? p.left : 0, round2(p.left - held)) };
 }
 /* The burrow map Home draws, from the plan and the receipts (no bank balance yet; real balances come with pay day).

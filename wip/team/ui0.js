@@ -51,7 +51,7 @@ const payScale = () => Math.max(1000, val(S, 'a', sel) + val(S, 'b', sel) + val(
 /* one weekly figure for the whole app: the plan for a month, spread over that month's weeks (days in the open month / 7) */
 const weekOf = (play, ym) => { ym = ym || (typeof sel === 'string' ? sel : START); return roundTo(play / (new Date(+ym.slice(0, 4), +ym.slice(5, 7), 0).getDate() / 7)); };
 /* what is really safe to spend of Free to spend: the plan left over, less anything the bank cannot cover (the one meaning of "left" on every screen) */
-const playSafeLeft = (S, m, spent) => freeOf(S, { left: m.left, bankEnd: m.bankEnd, over: m.over || 0, status: statusOf(S, m) }, { left: round2(m.jar.play - spent) }).free;
+const playSafeLeft = (S, m, spent) => freeOf(S, { left: m.left, bankStart: m.bankStart, bankEnd: m.bankEnd, over: m.over || 0, status: statusOf(S, m) }, { left: round2(m.jar.play - spent) }).free;
 const roundTo = x => { const u = x >= 1000 ? 100 : x >= 60 ? 10 : 1; return Math.round(x / u) * u; };
 const setIdle = (el, v) => { if (el && document.activeElement !== el) el.value = v; };
 const IC = {
