@@ -254,8 +254,8 @@ const doneFor = key => (key === 'a' || key === 'b' || key === 'side' ? 'pay' : k
 
 /* ---------- edits ---------- */
 /* Every change applies to the open month only. "Keep for later months" turns it into the plan from this month on. */
-function onSet(key, v) { v = clampAmt(v); setVal(S, key, sel, v, 'once'); markDone(doneFor(key)); persist(); schedule(); }
-function onCfg(k, v) { S.cfg[k] = clampAmt(v); persist(); schedule(); }
+function onSet(key, v) { v = clampAmt(v, S); setVal(S, key, sel, v, 'once'); markDone(doneFor(key)); persist(); schedule(); }
+function onCfg(k, v) { S.cfg[k] = clampAmt(v, S); persist(); schedule(); }
 function select(ym) {
   sel = ym; itemsSig = ''; try { history.replaceState(null, '', '#' + ym); } catch (e) { /* sandboxed */ }
   render();

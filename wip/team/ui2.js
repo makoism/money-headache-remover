@@ -139,7 +139,7 @@ function render() {
     }
     $('#n-' + f.fid).innerHTML = noteFor(f, m, v, on);
     const fs = on ? fstate(f.key) : null, k = $('#k-' + f.fid); k.hidden = !fs;
-    if (fs) { $('#kt-' + f.fid).textContent = `Edited for ${mon} only. ${nextYm ? 'Back to ' + fmt(fs.u) + ' in ' + monthLabel(nextYm, true) + '.' : 'Usual: ' + fmt(fs.u) + '.'}`; changed[f.row] = true; chgList.push(`${f.label} ${fmt(fs.ov)} (usual ${fmt(fs.u)})`); }
+    if (fs) { $('#kt-' + f.fid).textContent = `Edited for ${mon} only. ${nextYm ? 'Back to ' + fmt2(fs.u) + ' in ' + monthLabel(nextYm, true) + '.' : 'Usual: ' + fmt2(fs.u) + '.'}`; changed[f.row] = true; chgList.push(`${f.label} ${fmt2(fs.ov)} (usual ${fmt2(fs.u)})`); }
   });
   if (m.draw > 0) chgList.push(`Borrowed ${fmt(m.draw)} from emergency fund`);
   if (S.items[sel] !== undefined) chgList.push('One-time costs edited');
@@ -147,7 +147,7 @@ function render() {
   if (chgList.length) $('#chgTxt').textContent = `Edited for ${fullLabel(sel)}: ${chgList.join(', ')}.` + (nextYm ? ` ${FULL[+nextYm.slice(5) - 1]} goes back to normal.` : '');
   $('#ledgerSub').textContent = `Tap an amount to edit it for ${fullLabel(sel)} only.` + (nextYm ? ` ${FULL[+nextYm.slice(5) - 1]} goes back to normal.` : '') + ' Tap a name to open.';
   [...IN_ROWS, ...JARROWS].forEach(r => {
-    const a = $('#ra-' + r.id) || $('#h-' + r.id); if (a.tagName === 'INPUT') setIdle(a, fmt(amts[r.id])); else a.textContent = fmt(amts[r.id]);
+    const a = $('#ra-' + r.id) || $('#h-' + r.id); if (a.tagName === 'INPUT') setIdle(a, fmt2(amts[r.id]));   /* a typed amount shows its cents (decision 1) */ else a.textContent = fmt(amts[r.id]);
     a.classList.toggle('zero', !amts[r.id]);
     $('#rc-' + r.id).hidden = !changed[r.id];
     const jc = $('#jcap-' + r.id); if (jc && r.id !== 'debts') jc.textContent = localize(r.cap) + (r.id === 'lts' ? LTS_HINT : '');
@@ -235,7 +235,7 @@ function renderItems(m) {
 function readItems() {
   return $$('#items .item').map(r => {
     const id = r.dataset.id, old = (C.byYm[sel].items.find(i => i.id === id) || {});
-    return { id, label: $('.txt', r).value.trim() || 'Untitled', amount: clampAmt($('input[data-mny], input[type=number]', r).value), note: old.note };
+    return { id, label: $('.txt', r).value.trim() || 'Untitled', amount: clampAmt($('input[data-mny], input[type=number]', r).value, S), note: old.note };
   });
 }
 

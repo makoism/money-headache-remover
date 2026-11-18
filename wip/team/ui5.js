@@ -73,7 +73,7 @@ function wire() {
       persist(); restructure(); const ni = $(`[data-lname="${id}"]`); if (ni) ni.focus();
       celebrate('small', 'Added.', $('button[type=submit]', f));
     } else if (ai) {
-      e.preventDefault(); const l = $('#addLabel'), a = $('#addAmt'), amt = clampAmt(a.value);
+      e.preventDefault(); const l = $('#addLabel'), a = $('#addAmt'), amt = clampAmt(a.value, S);
       if (!amt) { a.focus(); return; }
       S.items[sel] = readItems().concat([{ id: 'x' + Date.now().toString(36), label: l.value.trim() || 'One-time cost', amount: amt }]);
       l.value = ''; a.value = ''; itemsSig = ''; persist(); render();

@@ -2475,9 +2475,11 @@ function val(S, key, ym) {
 }
 /* no amount anywhere is bigger than this, typed or loaded, so a screen and a reload always agree */
 const MAX_AMT = 1e9;
-const clampAmt = v => { v = Math.round(+v); return isFinite(v) ? Math.max(0, Math.min(MAX_AMT, v)) : 0; };
+/* decision 1 (Mako, 2026-11-18): with the plan (S) given, a typed amount keeps its cents, except in yen, which has none.
+   Without S (counts, goal targets) it stays a whole number, as before */
+const clampAmt = (v, S) => { v = +v; if (!isFinite(v)) return 0; v = S ? wholeAmt(S, v) : Math.round(v); return Math.max(0, Math.min(MAX_AMT, v)); };
 function setVal(S, key, ym, v, scope) {
-  v = clampAmt(v);
+  v = clampAmt(v, S);
   if (scope === 'once' || scope === 'month' || ONCE_KEYS.has(key)) { (S.once[ym] = S.once[ym] || {})[key] = v; return; }
   if (S.once[ym]) delete S.once[ym][key];
   const arr = (S.steps[key] = S.steps[key] || []).filter(s => s.from < ym);
@@ -2499,7 +2501,7 @@ function addLine(S, jar, name, amount) {
   if (LINE_JARS.indexOf(jar) < 0 || S.plan.lines.length >= MAX_LINES) return null;
   const id = newId(S, 'l', x => lineById(S, x)), l = { id, key: 'line:' + id, jar, name: (name || '').trim().slice(0, 60) || 'New line', def: 0 };
   S.plan.lines.push(l);
-  if (amount > 0) setVal(S, l.key, START, Math.round(amount), 'after');
+  if (amount > 0) setVal(S, l.key, START, amount, 'after');   /* setVal keeps the cents (decision 1) */
   return id;
 }
 function removeLine(S, id) { const l = lineById(S, id); if (!l) return false; S.plan.lines = S.plan.lines.filter(x => x.id !== id); forgetKey(S, l.key); return true; }
@@ -2653,8 +2655,9 @@ function applyOverspend(S, months) {
 /* whole percents that always add up to 100: every share is rounded down, then the biggest remainders get the spare points.
    A share of nothing stays 0, so an empty jar never shows a percent. Used everywhere a set of percents is shown together. */
 function wholePercents(vals, base) {
-  /* whole numbers all the way through, so two shares that are truly equal are a tie, never a rounding accident */
-  const v = vals.map(x => Math.max(0, Math.round(+x || 0))), sum = v.reduce((a, b) => a + b, 0), bs = Math.round(base);
+  /* whole numbers all the way through, so two shares that are truly equal are a tie, never a rounding accident. The whole numbers are cents
+     (decision 1: amounts keep cents), so shares that add up to the base still do after rounding; for whole amounts the result is the same as before */
+  const v = vals.map(x => Math.max(0, Math.round((+x || 0) * 100))), sum = v.reduce((a, b) => a + b, 0), bs = Math.round(base * 100);
   if (!(bs > 0) || !(sum > 0)) return v.map(() => 0);
   /* the shares are parts of the base. When they add up to more than the base (a plan paid partly with borrowed money), the whole percents still add up
      to one true figure, the rounded total, instead of each being cut down on its own and adding up to nothing in particular */
@@ -3051,7 +3054,8 @@ const loanMonthlyFrom = (total, n) => (n > 0 ? Math.ceil(Math.max(0, Math.round(
 
 /* ---- cleaning the amounts in a saved copy: only whole, non-negative, sensible numbers get through ---- */
 const SAFE_KEY = /^[A-Za-z0-9:_-]{1,40}$/, YM_FORM = /^(20\d\d|21\d\d)-(0[1-9]|1[0-2])$/;
-const cleanAmt = v => (typeof v === 'number' && isFinite(v) && v >= 0 ? clampAmt(v) : null);
+/* a saved amount loads exactly as it was saved, to the cent (decision 1): whole amounts from older versions load unchanged */
+const cleanAmt = v => (typeof v === 'number' && isFinite(v) && v >= 0 ? Math.min(MAX_AMT, round2(v)) : null);
 const isMap = o => !!o && typeof o === 'object' && !Array.isArray(o);
 function cleanSteps(raw) {
   const out = {}; if (!isMap(raw)) return out;
@@ -3711,8 +3715,8 @@ const doneFor = key => (key === 'a' || key === 'b' || key === 'side' ? 'pay' : k
 
 /* ---------- edits ---------- */
 /* Every change applies to the open month only. "Keep for later months" turns it into the plan from this month on. */
-function onSet(key, v) { v = clampAmt(v); setVal(S, key, sel, v, 'once'); markDone(doneFor(key)); persist(); schedule(); }
-function onCfg(k, v) { S.cfg[k] = clampAmt(v); persist(); schedule(); }
+function onSet(key, v) { v = clampAmt(v, S); setVal(S, key, sel, v, 'once'); markDone(doneFor(key)); persist(); schedule(); }
+function onCfg(k, v) { S.cfg[k] = clampAmt(v, S); persist(); schedule(); }
 function select(ym) {
   sel = ym; itemsSig = ''; try { history.replaceState(null, '', '#' + ym); } catch (e) { /* sandboxed */ }
   render();
@@ -4172,20 +4176,20 @@ const ACT = {
   setPay(amount, scope, ym) { return ACT.setIncome('a', amount, scope, ym); },
   setIncome(key, amount, scope, ym) {
     if (['a', 'b', 'side'].indexOf(key) < 0) throw new Error('unknown income ' + key);
-    return ACT.tx('income', () => { setVal(S, key, ym || START, clampAmt(amount), scope === 'month' ? 'month' : 'after'); if (key === 'a' && clampAmt(amount) > 0) markDone('pay', true); });
+    return ACT.tx('income', () => { setVal(S, key, ym || START, clampAmt(amount, S), scope === 'month' ? 'month' : 'after'); if (key === 'a' && clampAmt(amount, S) > 0) markDone('pay', true); });
   },
-  setBalance(v) { return ACT.tx('balance', () => { S.cfg.bankStart = clampAmt(v); }); },
-  setMinBalance(v) { return ACT.tx('minimum balance', () => { S.cfg.minBank = clampAmt(v); }); },
-  setCeiling(v) { return ACT.tx('spending ceiling', () => { S.cfg.ceiling = clampAmt(v); }); },
+  setBalance(v) { return ACT.tx('balance', () => { S.cfg.bankStart = clampAmt(v, S); }); },
+  setMinBalance(v) { return ACT.tx('minimum balance', () => { S.cfg.minBank = clampAmt(v, S); }); },
+  setCeiling(v) { return ACT.tx('spending ceiling', () => { S.cfg.ceiling = clampAmt(v, S); }); },
 
   /* ---- lines (bills and the other jars) ---- */
   setLine(key, amount, scope, ym) {
     const l = lineByKey(S, key); if (!l) throw new Error('unknown line ' + key);
-    return ACT.tx('line', () => { setVal(S, key, ym || START, clampAmt(amount), scope === 'month' ? 'month' : 'after'); if (l.jar === 'nec') markDone('bills', true); });
+    return ACT.tx('line', () => { setVal(S, key, ym || START, clampAmt(amount, S), scope === 'month' ? 'month' : 'after'); if (l.jar === 'nec') markDone('bills', true); });
   },
   renameLine(id, name) { return ACT.tx('rename', () => updateLine(S, id, { name: cleanSubName(name) })); },
   setLineEnds(id, ends, redirect) { return ACT.tx('last payment', () => updateLine(S, id, Object.assign({ ends: ends || '' }, redirect === undefined ? {} : { redirect: !!redirect }))); },
-  addLine(jar, name, amount) { return ACT.tx('add line', () => addLine(S, jar, cleanSubName(name), clampAmt(amount))); },
+  addLine(jar, name, amount) { return ACT.tx('add line', () => addLine(S, jar, cleanSubName(name), clampAmt(amount, S))); },
   removeLine(id) { return ACT.tx('remove line', () => removeLine(S, id)); },
 
   /* ---- goals ---- */
@@ -4195,7 +4199,7 @@ const ACT = {
       const patch = {}; ['target', 'start', 'due', 'emergency', 'stretch'].forEach(k => { if (g && g[k] !== undefined) patch[k] = g[k]; });
       updateGoal(S, id, patch);
       if (g && g.kind) { S.ui.gk = Object.assign({}, S.ui.gk, { [id]: g.kind }); }
-      if (g && g.monthly !== undefined && g.monthly !== null) setVal(S, 'goal:' + id, START, clampAmt(g.monthly), 'after');
+      if (g && g.monthly !== undefined && g.monthly !== null) setVal(S, 'goal:' + id, START, clampAmt(g.monthly, S), 'after');
       markDone('goals', true); return id;
     });
   },
@@ -4204,7 +4208,7 @@ const ACT = {
   /* a goal's monthly saving: an amount, or null to go back to the suggested amount */
   setGoalSaving(id, amount, scope, ym) {
     if (!goalById(S, id)) throw new Error('unknown goal ' + id);
-    return ACT.tx('goal saving', () => { if (amount === null || amount === undefined) useSuggested(S, id); else setVal(S, 'goal:' + id, ym || START, clampAmt(amount), scope === 'month' ? 'month' : 'after'); });
+    return ACT.tx('goal saving', () => { if (amount === null || amount === undefined) useSuggested(S, id); else setVal(S, 'goal:' + id, ym || START, clampAmt(amount, S), scope === 'month' ? 'month' : 'after'); });
   },
 
   /* a month's unspent play money put toward a goal, for that month only (see sweepPlay); returns what was moved */
@@ -4303,7 +4307,7 @@ function fieldHTML(f, multi, editing) {
     ${l.ends && emergencyGoal(S) ? `<label class="check"><input type="checkbox" data-lredir="${esc(l.id)}"${l.redirect ? ' checked' : ''}><span>Then move its money to the emergency fund</span></label>` : ''}
     <button type="button" class="btn small warnbtn" data-ldel="${esc(l.id)}" data-armkey="ldel-${esc(l.id)}">Remove</button></div>` : '';
   return `<div class="ed" id="e-${f.fid}"><div class="ed-top">${head}
-    <div class="inp sm"><span class="yen cs"></span><input id="i-${f.fid}" data-k="${esc(f.key)}" type="number" inputmode="numeric" min="0" step="1" aria-label="${esc(f.label)}, this month"></div></div>
+    <div class="inp sm"><span class="yen cs"></span><input id="i-${f.fid}" data-k="${esc(f.key)}" type="number" inputmode="decimal" min="0" step="any" aria-label="${esc(f.label)}, this month"></div></div>
     ${f.sl ? `<div class="rng" style="--c:${f.color}"><input type="range" id="r-${f.fid}" data-k="${esc(f.key)}" min="0" max="100" step="1" aria-label="${esc(f.label)} slider">${f.sl.mark ? `<span class="mark" id="m-${f.fid}" title="Your ceiling"></span>` : ''}</div>` : ''}
     <p class="nt" id="n-${f.fid}"></p>
     <p class="keep" id="k-${f.fid}" hidden><span id="kt-${f.fid}"></span><button type="button" class="link" data-keep="${esc(f.key)}">Keep for later months</button><button type="button" class="link" data-undo="${esc(f.key)}">Undo</button></p>${edit}</div>`;
@@ -4313,7 +4317,7 @@ function rowHTML(r, inRow) {
   let body;
   if (r.kind === 'items') body = `<p class="cap" id="itemsSub"></p><div class="items" id="items"></div>
     <form class="addrow" id="addItem" autocomplete="off"><input class="txt" id="addLabel" type="text" placeholder="What is it for?" aria-label="One-time cost name" maxlength="60">
-    <div class="inp sm"><span class="yen cs"></span><input id="addAmt" type="number" inputmode="numeric" min="0" step="100" placeholder="0" aria-label="One-time cost amount"></div>
+    <div class="inp sm"><span class="yen cs"></span><input id="addAmt" type="number" inputmode="decimal" min="0" step="any" placeholder="0" aria-label="One-time cost amount"></div>
     <button class="btn small solid" type="submit">Add cost</button></form>`;
   else {
     const multi = r.kind === 'goals' || r.kind === 'debts' || fs.length !== 1;
@@ -4323,14 +4327,14 @@ function rowHTML(r, inRow) {
     else if (r.kind === 'debts') body += '<p class="cap"><button type="button" class="link" data-tab-go="goals">Edit cards and loans</button></p>';
     else if (!inRow) body += editing
       ? `<form class="addrow" data-addline="${r.jar}" autocomplete="off"><input class="txt" type="text" placeholder="New line, e.g. Pet food" maxlength="60" aria-label="Name of the new line">
-        <div class="inp sm"><span class="yen cs"></span><input type="number" inputmode="numeric" min="0" step="100" placeholder="Monthly amount" aria-label="Monthly amount of the new line"></div>
+        <div class="inp sm"><span class="yen cs"></span><input type="number" inputmode="decimal" min="0" step="any" placeholder="Monthly amount" aria-label="Monthly amount of the new line"></div>
         <button class="btn small solid" type="submit">Add line</button></form>
         <div class="row-btns"><button type="button" class="btn small" data-edit="${r.id}">Done</button></div>`
       : `<p class="cap"><button type="button" class="link" data-edit="${r.id}">Rename, remove or add lines</button></p>`;
   }
   const pills = `<span class="pill chg" id="rc-${r.id}" hidden>edited</span>`;
   const single = (inRow || (r.kind !== 'goals' && r.kind !== 'items' && r.kind !== 'debts' && fs.length === 1)) ? fs[0] : null;
-  const amt = single ? `<input class="amt-in" id="h-${r.id}" data-k="${esc(single.key)}" type="text" inputmode="numeric" autocomplete="off" aria-label="${esc(r.name)}, this month">` : `<span class="amt" id="ra-${r.id}"></span>`;
+  const amt = single ? `<input class="amt-in" id="h-${r.id}" data-k="${esc(single.key)}" type="text" inputmode="decimal" autocomplete="off" aria-label="${esc(r.name)}, this month">` : `<span class="amt" id="ra-${r.id}"></span>`;
   return `<div class="row" data-id="${r.id}"><div class="row-h" id="rh-${r.id}"><button type="button" class="row-t" id="rt-${r.id}" aria-expanded="false" aria-controls="rb-${r.id}">${inRow ? '' : `<i class="dot g-${r.jar}"></i>`}<span class="nm">${esc(r.name)}${pills}</span></button>${amt}${IC.chev}</div>
     <div class="row-b${fs.length > 1 || r.kind === 'goals' ? ' sub' : ''}" id="rb-${r.id}" role="region" aria-labelledby="rt-${r.id}" hidden>${body}</div></div>`;
 }
@@ -4434,7 +4438,7 @@ function buildStatic() {
   $('#monthSel').innerHTML = opts; $('#rcMonth').innerHTML = opts;
   $('#rcFields').innerHTML = remindFieldsHTML('rc');
   $('#jarList').innerHTML = JARS.map(j => `<div class="j"><i class="${JARCLS[j.id]}"></i><span class="jn">${j.name}<small>${j.about}</small></span><b class="jp">${j.usualPct}%</b></div>`).join('');
-  $('#sets').innerHTML = '<h3 class="grp">Balance</h3>' + SETF.map(f => `<div class="field"><label for="st-${f.k}">${f.label}</label><div class="inp"><span class="yen cs"></span><input id="st-${f.k}" type="number" inputmode="numeric" min="0" step="1000"></div><p class="cap">${f.hint}</p></div>`).join('');
+  $('#sets').innerHTML = '<h3 class="grp">Balance</h3>' + SETF.map(f => `<div class="field"><label for="st-${f.k}">${f.label}</label><div class="inp"><span class="yen cs"></span><input id="st-${f.k}" type="number" inputmode="decimal" min="0" step="any"></div><p class="cap">${f.hint}</p></div>`).join('');
   $('#rowsIn').innerHTML = '';
   restructure(true);
 }
@@ -4587,7 +4591,7 @@ function render() {
     }
     $('#n-' + f.fid).innerHTML = noteFor(f, m, v, on);
     const fs = on ? fstate(f.key) : null, k = $('#k-' + f.fid); k.hidden = !fs;
-    if (fs) { $('#kt-' + f.fid).textContent = `Edited for ${mon} only. ${nextYm ? 'Back to ' + fmt(fs.u) + ' in ' + monthLabel(nextYm, true) + '.' : 'Usual: ' + fmt(fs.u) + '.'}`; changed[f.row] = true; chgList.push(`${f.label} ${fmt(fs.ov)} (usual ${fmt(fs.u)})`); }
+    if (fs) { $('#kt-' + f.fid).textContent = `Edited for ${mon} only. ${nextYm ? 'Back to ' + fmt2(fs.u) + ' in ' + monthLabel(nextYm, true) + '.' : 'Usual: ' + fmt2(fs.u) + '.'}`; changed[f.row] = true; chgList.push(`${f.label} ${fmt2(fs.ov)} (usual ${fmt2(fs.u)})`); }
   });
   if (m.draw > 0) chgList.push(`Borrowed ${fmt(m.draw)} from emergency fund`);
   if (S.items[sel] !== undefined) chgList.push('One-time costs edited');
@@ -4595,7 +4599,7 @@ function render() {
   if (chgList.length) $('#chgTxt').textContent = `Edited for ${fullLabel(sel)}: ${chgList.join(', ')}.` + (nextYm ? ` ${FULL[+nextYm.slice(5) - 1]} goes back to normal.` : '');
   $('#ledgerSub').textContent = `Tap an amount to edit it for ${fullLabel(sel)} only.` + (nextYm ? ` ${FULL[+nextYm.slice(5) - 1]} goes back to normal.` : '') + ' Tap a name to open.';
   [...IN_ROWS, ...JARROWS].forEach(r => {
-    const a = $('#ra-' + r.id) || $('#h-' + r.id); if (a.tagName === 'INPUT') setIdle(a, fmt(amts[r.id])); else a.textContent = fmt(amts[r.id]);
+    const a = $('#ra-' + r.id) || $('#h-' + r.id); if (a.tagName === 'INPUT') setIdle(a, fmt2(amts[r.id]));   /* a typed amount shows its cents (decision 1) */ else a.textContent = fmt(amts[r.id]);
     a.classList.toggle('zero', !amts[r.id]);
     $('#rc-' + r.id).hidden = !changed[r.id];
     const jc = $('#jcap-' + r.id); if (jc && r.id !== 'debts') jc.textContent = localize(r.cap) + (r.id === 'lts' ? LTS_HINT : '');
@@ -4683,7 +4687,7 @@ function renderItems(m) {
 function readItems() {
   return $$('#items .item').map(r => {
     const id = r.dataset.id, old = (C.byYm[sel].items.find(i => i.id === id) || {});
-    return { id, label: $('.txt', r).value.trim() || 'Untitled', amount: clampAmt($('input[data-mny], input[type=number]', r).value), note: old.note };
+    return { id, label: $('.txt', r).value.trim() || 'Untitled', amount: clampAmt($('input[data-mny], input[type=number]', r).value, S), note: old.note };
   });
 }
 
@@ -16656,7 +16660,7 @@ function wire() {
       persist(); restructure(); const ni = $(`[data-lname="${id}"]`); if (ni) ni.focus();
       celebrate('small', 'Added.', $('button[type=submit]', f));
     } else if (ai) {
-      e.preventDefault(); const l = $('#addLabel'), a = $('#addAmt'), amt = clampAmt(a.value);
+      e.preventDefault(); const l = $('#addLabel'), a = $('#addAmt'), amt = clampAmt(a.value, S);
       if (!amt) { a.focus(); return; }
       S.items[sel] = readItems().concat([{ id: 'x' + Date.now().toString(36), label: l.value.trim() || 'One-time cost', amount: amt }]);
       l.value = ''; a.value = ''; itemsSig = ''; persist(); render();

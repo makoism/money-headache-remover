@@ -47,20 +47,20 @@ const ACT = {
   setPay(amount, scope, ym) { return ACT.setIncome('a', amount, scope, ym); },
   setIncome(key, amount, scope, ym) {
     if (['a', 'b', 'side'].indexOf(key) < 0) throw new Error('unknown income ' + key);
-    return ACT.tx('income', () => { setVal(S, key, ym || START, clampAmt(amount), scope === 'month' ? 'month' : 'after'); if (key === 'a' && clampAmt(amount) > 0) markDone('pay', true); });
+    return ACT.tx('income', () => { setVal(S, key, ym || START, clampAmt(amount, S), scope === 'month' ? 'month' : 'after'); if (key === 'a' && clampAmt(amount, S) > 0) markDone('pay', true); });
   },
-  setBalance(v) { return ACT.tx('balance', () => { S.cfg.bankStart = clampAmt(v); }); },
-  setMinBalance(v) { return ACT.tx('minimum balance', () => { S.cfg.minBank = clampAmt(v); }); },
-  setCeiling(v) { return ACT.tx('spending ceiling', () => { S.cfg.ceiling = clampAmt(v); }); },
+  setBalance(v) { return ACT.tx('balance', () => { S.cfg.bankStart = clampAmt(v, S); }); },
+  setMinBalance(v) { return ACT.tx('minimum balance', () => { S.cfg.minBank = clampAmt(v, S); }); },
+  setCeiling(v) { return ACT.tx('spending ceiling', () => { S.cfg.ceiling = clampAmt(v, S); }); },
 
   /* ---- lines (bills and the other jars) ---- */
   setLine(key, amount, scope, ym) {
     const l = lineByKey(S, key); if (!l) throw new Error('unknown line ' + key);
-    return ACT.tx('line', () => { setVal(S, key, ym || START, clampAmt(amount), scope === 'month' ? 'month' : 'after'); if (l.jar === 'nec') markDone('bills', true); });
+    return ACT.tx('line', () => { setVal(S, key, ym || START, clampAmt(amount, S), scope === 'month' ? 'month' : 'after'); if (l.jar === 'nec') markDone('bills', true); });
   },
   renameLine(id, name) { return ACT.tx('rename', () => updateLine(S, id, { name: cleanSubName(name) })); },
   setLineEnds(id, ends, redirect) { return ACT.tx('last payment', () => updateLine(S, id, Object.assign({ ends: ends || '' }, redirect === undefined ? {} : { redirect: !!redirect }))); },
-  addLine(jar, name, amount) { return ACT.tx('add line', () => addLine(S, jar, cleanSubName(name), clampAmt(amount))); },
+  addLine(jar, name, amount) { return ACT.tx('add line', () => addLine(S, jar, cleanSubName(name), clampAmt(amount, S))); },
   removeLine(id) { return ACT.tx('remove line', () => removeLine(S, id)); },
 
   /* ---- goals ---- */
@@ -70,7 +70,7 @@ const ACT = {
       const patch = {}; ['target', 'start', 'due', 'emergency', 'stretch'].forEach(k => { if (g && g[k] !== undefined) patch[k] = g[k]; });
       updateGoal(S, id, patch);
       if (g && g.kind) { S.ui.gk = Object.assign({}, S.ui.gk, { [id]: g.kind }); }
-      if (g && g.monthly !== undefined && g.monthly !== null) setVal(S, 'goal:' + id, START, clampAmt(g.monthly), 'after');
+      if (g && g.monthly !== undefined && g.monthly !== null) setVal(S, 'goal:' + id, START, clampAmt(g.monthly, S), 'after');
       markDone('goals', true); return id;
     });
   },
@@ -79,7 +79,7 @@ const ACT = {
   /* a goal's monthly saving: an amount, or null to go back to the suggested amount */
   setGoalSaving(id, amount, scope, ym) {
     if (!goalById(S, id)) throw new Error('unknown goal ' + id);
-    return ACT.tx('goal saving', () => { if (amount === null || amount === undefined) useSuggested(S, id); else setVal(S, 'goal:' + id, ym || START, clampAmt(amount), scope === 'month' ? 'month' : 'after'); });
+    return ACT.tx('goal saving', () => { if (amount === null || amount === undefined) useSuggested(S, id); else setVal(S, 'goal:' + id, ym || START, clampAmt(amount, S), scope === 'month' ? 'month' : 'after'); });
   },
 
   /* a month's unspent play money put toward a goal, for that month only (see sweepPlay); returns what was moved */

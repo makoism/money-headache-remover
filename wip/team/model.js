@@ -210,9 +210,11 @@ function val(S, key, ym) {
 }
 /* no amount anywhere is bigger than this, typed or loaded, so a screen and a reload always agree */
 const MAX_AMT = 1e9;
-const clampAmt = v => { v = Math.round(+v); return isFinite(v) ? Math.max(0, Math.min(MAX_AMT, v)) : 0; };
+/* decision 1 (Mako, 2026-11-18): with the plan (S) given, a typed amount keeps its cents, except in yen, which has none.
+   Without S (counts, goal targets) it stays a whole number, as before */
+const clampAmt = (v, S) => { v = +v; if (!isFinite(v)) return 0; v = S ? wholeAmt(S, v) : Math.round(v); return Math.max(0, Math.min(MAX_AMT, v)); };
 function setVal(S, key, ym, v, scope) {
-  v = clampAmt(v);
+  v = clampAmt(v, S);
   if (scope === 'once' || scope === 'month' || ONCE_KEYS.has(key)) { (S.once[ym] = S.once[ym] || {})[key] = v; return; }
   if (S.once[ym]) delete S.once[ym][key];
   const arr = (S.steps[key] = S.steps[key] || []).filter(s => s.from < ym);
@@ -234,7 +236,7 @@ function addLine(S, jar, name, amount) {
   if (LINE_JARS.indexOf(jar) < 0 || S.plan.lines.length >= MAX_LINES) return null;
   const id = newId(S, 'l', x => lineById(S, x)), l = { id, key: 'line:' + id, jar, name: (name || '').trim().slice(0, 60) || 'New line', def: 0 };
   S.plan.lines.push(l);
-  if (amount > 0) setVal(S, l.key, START, Math.round(amount), 'after');
+  if (amount > 0) setVal(S, l.key, START, amount, 'after');   /* setVal keeps the cents (decision 1) */
   return id;
 }
 function removeLine(S, id) { const l = lineById(S, id); if (!l) return false; S.plan.lines = S.plan.lines.filter(x => x.id !== id); forgetKey(S, l.key); return true; }
@@ -388,8 +390,9 @@ function applyOverspend(S, months) {
 /* whole percents that always add up to 100: every share is rounded down, then the biggest remainders get the spare points.
    A share of nothing stays 0, so an empty jar never shows a percent. Used everywhere a set of percents is shown together. */
 function wholePercents(vals, base) {
-  /* whole numbers all the way through, so two shares that are truly equal are a tie, never a rounding accident */
-  const v = vals.map(x => Math.max(0, Math.round(+x || 0))), sum = v.reduce((a, b) => a + b, 0), bs = Math.round(base);
+  /* whole numbers all the way through, so two shares that are truly equal are a tie, never a rounding accident. The whole numbers are cents
+     (decision 1: amounts keep cents), so shares that add up to the base still do after rounding; for whole amounts the result is the same as before */
+  const v = vals.map(x => Math.max(0, Math.round((+x || 0) * 100))), sum = v.reduce((a, b) => a + b, 0), bs = Math.round(base * 100);
   if (!(bs > 0) || !(sum > 0)) return v.map(() => 0);
   /* the shares are parts of the base. When they add up to more than the base (a plan paid partly with borrowed money), the whole percents still add up
      to one true figure, the rounded total, instead of each being cut down on its own and adding up to nothing in particular */
@@ -786,7 +789,8 @@ const loanMonthlyFrom = (total, n) => (n > 0 ? Math.ceil(Math.max(0, Math.round(
 
 /* ---- cleaning the amounts in a saved copy: only whole, non-negative, sensible numbers get through ---- */
 const SAFE_KEY = /^[A-Za-z0-9:_-]{1,40}$/, YM_FORM = /^(20\d\d|21\d\d)-(0[1-9]|1[0-2])$/;
-const cleanAmt = v => (typeof v === 'number' && isFinite(v) && v >= 0 ? clampAmt(v) : null);
+/* a saved amount loads exactly as it was saved, to the cent (decision 1): whole amounts from older versions load unchanged */
+const cleanAmt = v => (typeof v === 'number' && isFinite(v) && v >= 0 ? Math.min(MAX_AMT, round2(v)) : null);
 const isMap = o => !!o && typeof o === 'object' && !Array.isArray(o);
 function cleanSteps(raw) {
   const out = {}; if (!isMap(raw)) return out;

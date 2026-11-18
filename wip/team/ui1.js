@@ -46,7 +46,7 @@ function fieldHTML(f, multi, editing) {
     ${l.ends && emergencyGoal(S) ? `<label class="check"><input type="checkbox" data-lredir="${esc(l.id)}"${l.redirect ? ' checked' : ''}><span>Then move its money to the emergency fund</span></label>` : ''}
     <button type="button" class="btn small warnbtn" data-ldel="${esc(l.id)}" data-armkey="ldel-${esc(l.id)}">Remove</button></div>` : '';
   return `<div class="ed" id="e-${f.fid}"><div class="ed-top">${head}
-    <div class="inp sm"><span class="yen cs"></span><input id="i-${f.fid}" data-k="${esc(f.key)}" type="number" inputmode="numeric" min="0" step="1" aria-label="${esc(f.label)}, this month"></div></div>
+    <div class="inp sm"><span class="yen cs"></span><input id="i-${f.fid}" data-k="${esc(f.key)}" type="number" inputmode="decimal" min="0" step="any" aria-label="${esc(f.label)}, this month"></div></div>
     ${f.sl ? `<div class="rng" style="--c:${f.color}"><input type="range" id="r-${f.fid}" data-k="${esc(f.key)}" min="0" max="100" step="1" aria-label="${esc(f.label)} slider">${f.sl.mark ? `<span class="mark" id="m-${f.fid}" title="Your ceiling"></span>` : ''}</div>` : ''}
     <p class="nt" id="n-${f.fid}"></p>
     <p class="keep" id="k-${f.fid}" hidden><span id="kt-${f.fid}"></span><button type="button" class="link" data-keep="${esc(f.key)}">Keep for later months</button><button type="button" class="link" data-undo="${esc(f.key)}">Undo</button></p>${edit}</div>`;
@@ -56,7 +56,7 @@ function rowHTML(r, inRow) {
   let body;
   if (r.kind === 'items') body = `<p class="cap" id="itemsSub"></p><div class="items" id="items"></div>
     <form class="addrow" id="addItem" autocomplete="off"><input class="txt" id="addLabel" type="text" placeholder="What is it for?" aria-label="One-time cost name" maxlength="60">
-    <div class="inp sm"><span class="yen cs"></span><input id="addAmt" type="number" inputmode="numeric" min="0" step="100" placeholder="0" aria-label="One-time cost amount"></div>
+    <div class="inp sm"><span class="yen cs"></span><input id="addAmt" type="number" inputmode="decimal" min="0" step="any" placeholder="0" aria-label="One-time cost amount"></div>
     <button class="btn small solid" type="submit">Add cost</button></form>`;
   else {
     const multi = r.kind === 'goals' || r.kind === 'debts' || fs.length !== 1;
@@ -66,14 +66,14 @@ function rowHTML(r, inRow) {
     else if (r.kind === 'debts') body += '<p class="cap"><button type="button" class="link" data-tab-go="goals">Edit cards and loans</button></p>';
     else if (!inRow) body += editing
       ? `<form class="addrow" data-addline="${r.jar}" autocomplete="off"><input class="txt" type="text" placeholder="New line, e.g. Pet food" maxlength="60" aria-label="Name of the new line">
-        <div class="inp sm"><span class="yen cs"></span><input type="number" inputmode="numeric" min="0" step="100" placeholder="Monthly amount" aria-label="Monthly amount of the new line"></div>
+        <div class="inp sm"><span class="yen cs"></span><input type="number" inputmode="decimal" min="0" step="any" placeholder="Monthly amount" aria-label="Monthly amount of the new line"></div>
         <button class="btn small solid" type="submit">Add line</button></form>
         <div class="row-btns"><button type="button" class="btn small" data-edit="${r.id}">Done</button></div>`
       : `<p class="cap"><button type="button" class="link" data-edit="${r.id}">Rename, remove or add lines</button></p>`;
   }
   const pills = `<span class="pill chg" id="rc-${r.id}" hidden>edited</span>`;
   const single = (inRow || (r.kind !== 'goals' && r.kind !== 'items' && r.kind !== 'debts' && fs.length === 1)) ? fs[0] : null;
-  const amt = single ? `<input class="amt-in" id="h-${r.id}" data-k="${esc(single.key)}" type="text" inputmode="numeric" autocomplete="off" aria-label="${esc(r.name)}, this month">` : `<span class="amt" id="ra-${r.id}"></span>`;
+  const amt = single ? `<input class="amt-in" id="h-${r.id}" data-k="${esc(single.key)}" type="text" inputmode="decimal" autocomplete="off" aria-label="${esc(r.name)}, this month">` : `<span class="amt" id="ra-${r.id}"></span>`;
   return `<div class="row" data-id="${r.id}"><div class="row-h" id="rh-${r.id}"><button type="button" class="row-t" id="rt-${r.id}" aria-expanded="false" aria-controls="rb-${r.id}">${inRow ? '' : `<i class="dot g-${r.jar}"></i>`}<span class="nm">${esc(r.name)}${pills}</span></button>${amt}${IC.chev}</div>
     <div class="row-b${fs.length > 1 || r.kind === 'goals' ? ' sub' : ''}" id="rb-${r.id}" role="region" aria-labelledby="rt-${r.id}" hidden>${body}</div></div>`;
 }
@@ -177,7 +177,7 @@ function buildStatic() {
   $('#monthSel').innerHTML = opts; $('#rcMonth').innerHTML = opts;
   $('#rcFields').innerHTML = remindFieldsHTML('rc');
   $('#jarList').innerHTML = JARS.map(j => `<div class="j"><i class="${JARCLS[j.id]}"></i><span class="jn">${j.name}<small>${j.about}</small></span><b class="jp">${j.usualPct}%</b></div>`).join('');
-  $('#sets').innerHTML = '<h3 class="grp">Balance</h3>' + SETF.map(f => `<div class="field"><label for="st-${f.k}">${f.label}</label><div class="inp"><span class="yen cs"></span><input id="st-${f.k}" type="number" inputmode="numeric" min="0" step="1000"></div><p class="cap">${f.hint}</p></div>`).join('');
+  $('#sets').innerHTML = '<h3 class="grp">Balance</h3>' + SETF.map(f => `<div class="field"><label for="st-${f.k}">${f.label}</label><div class="inp"><span class="yen cs"></span><input id="st-${f.k}" type="number" inputmode="decimal" min="0" step="any"></div><p class="cap">${f.hint}</p></div>`).join('');
   $('#rowsIn').innerHTML = '';
   restructure(true);
 }

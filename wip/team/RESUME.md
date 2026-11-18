@@ -71,6 +71,7 @@ Where the named values live in `model.js`:
 - Home could never say "Building your cushion", and could never say that spending went past the plan this month. Two values were missing from `viewOf().month`. Both states work now.
 - The bills amount still to pay shows cents in both Home cards (it showed 26,535 in one and 26,534.51 in the other).
 - The percent in a goal's screen-reader label is rounded down like every other goal percent.
+- Plan amounts keep cents (dollars, euros, pesos and the rest); yen stays whole. Before, a typed 49.99 was saved as 50 without saying so. Plans saved by older versions load exactly as they were.
 
 ## 5. Known problems, in the order to do them
 
