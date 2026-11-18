@@ -710,7 +710,8 @@ function sheetRows(S, C) {
   });
   return [head].concat(rows);
 }
-const csvCell = v => { let s = typeof v === 'number' ? String(Math.round(v)) : String(v == null ? '' : v); if (typeof v === 'string' && /^[=+\-@\t\r]/.test(s)) s = "'" + s; return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+/* numbers keep their cents (38.30 bank figures carry cents from receipts), so the spreadsheet agrees with every screen to the cent */
+const csvCell = v => { let s = typeof v === 'number' ? String(Math.round(v * 100) / 100 || 0) : String(v == null ? '' : v); if (typeof v === 'string' && /^[=+\-@\t\r]/.test(s)) s = "'" + s; return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
 const sheetCsv = (S, C) => '﻿' + sheetRows(S, C).map(r => r.map(csvCell).join(',')).join('\r\n') + '\r\n';
 
 /* ---- the receipts reminder for the calendar: every day, every week, every two weeks or every month ---- */

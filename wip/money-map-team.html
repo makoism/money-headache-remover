@@ -1725,6 +1725,7 @@ body.touring .help-row, body.bv-on .help-row { display: none; }
 .mp-n.bad b { color: var(--bad); }
 .mp-proof { margin: 12px 4px 0; max-width: 62ch; }
 .mp-proof b { color: var(--ink); font-weight: 600; }
+.mp-bad { margin: 8px 4px 0; max-width: 62ch; color: var(--bad); font-weight: 600; }
 :root { --bankc: #7b948a; }
 .mp-cap { font-size: var(--t-cap); color: var(--ink2); margin: 16px 4px 8px; }
 .mp-split, .mp-where { display: flex; gap: 3px; height: 30px; border-radius: 10px; overflow: visible; position: relative; }
@@ -2294,6 +2295,8 @@ const JARS = [
   { id: 'ffa',  name: 'Investing',              usual: 0.10, about: 'Investments you never spend. They grow and eventually pay you.' },
   { id: 'give', name: 'Giving',                         usual: 0.05, about: 'Charity, donations and gifts.' },
 ];
+/* the usual share of each place as a whole percent, for the screens that name it (they never work it out) */
+JARS.forEach(j => { j.usualPct = Math.round(j.usual * 100); });
 const LINE_JARS = ['nec', 'play', 'edu', 'ffa', 'give'];
 /* a few words for each jar, shown under its name wherever the split is listed */
 const JARTAG = { nec: 'Bills', lts: 'Goals', play: 'Fun, no guilt', edu: 'Courses and books', ffa: 'Never spent', give: 'Charity and gifts' };
@@ -2583,8 +2586,11 @@ function calcAll(S) {
     m.billsTotal = m.jar.nec;
     m.items = itemsFor(S, ym); m.itemsTotal = sum(m.items.map(i => +i.amount || 0));
     m.debts = {}; m.debtPay = 0; m.debtInterest = 0;
-    debts.forEach(d => { const st = debtStep(d, dbal[d.id], val(S, 'debt:' + d.id, ym)); dbal[d.id] = st.bal; m.debts[d.id] = st; m.debtPay += st.pay; m.debtInterest += st.interest; });
+    debts.forEach(d => { const st = debtStep(d, dbal[d.id], val(S, 'debt:' + d.id, ym)); dbal[d.id] = st.bal; m.debts[d.id] = st; m.debtPay += st.pay; m.debtInterest += st.interest;
+      st.paidPct = d.balance > 0 ? Math.max(0, Math.min(1, 1 - st.bal / d.balance)) : 1; st.paidPctWhole = Math.round(st.paidPct * 100); });   /* how much of the debt is paid off by the end of this month */
     m.debtOwed = sum(debts.map(d => dbal[d.id]));
+    /* named amounts for the cards and loans screens: owed at the start of the month, the minimum payments, and what is paid on top of them */
+    m.debtStart = sum(debts.map(d => m.debts[d.id].start)); m.debtMin = sum(debts.map(d => Math.min(d.min, m.debts[d.id].start + m.debts[d.id].interest))); m.debtExtra = m.debtPay - m.debtMin;
     m.jar.nec += m.itemsTotal + m.debtPay;
     m.balBefore = Object.assign({}, bal);
     const freed = redirects.reduce((acc, r) => acc + (ym > r.l.ends ? r.amt : 0), 0);
@@ -2648,7 +2654,9 @@ function wholePercents(vals, base) {
   /* whole numbers all the way through, so two shares that are truly equal are a tie, never a rounding accident */
   const v = vals.map(x => Math.max(0, Math.round(+x || 0))), sum = v.reduce((a, b) => a + b, 0), bs = Math.round(base);
   if (!(bs > 0) || !(sum > 0)) return v.map(() => 0);
-  const den = Math.min(sum, bs), total = Math.floor((den * 200 + bs) / (2 * bs));
+  /* the shares are parts of the base. When they add up to more than the base (a plan paid partly with borrowed money), the whole percents still add up
+     to one true figure, the rounded total, instead of each being cut down on its own and adding up to nothing in particular */
+  const den = sum, total = Math.floor((den * 200 + bs) / (2 * bs));
   const out = v.map(x => Math.floor(x * total / den)), rem = v.map((x, i) => x * total - out[i] * den);
   const left = total - out.reduce((a, b) => a + b, 0);
   v.map((x, i) => i).filter(i => v[i] > 0).sort((i, j) => rem[j] - rem[i] || i - j).slice(0, Math.max(0, left)).forEach(i => { out[i]++; });
@@ -2662,7 +2670,14 @@ function jarsOf(S, m) {
   const restCover = Math.min(rest, m.draw || 0), unpR = Math.max(0, rest - restCover), usedOver = Math.min(unpR, m.overNow || 0), restKept = Math.max(0, restCover - Math.max(0, (m.overNow || 0) - unpR));   /* borrowed money not used up by spending past plan stays in the bank */   /* borrowed money that went to overspending, not pay left over */
   const vals = { nec: m.jar.nec, lts: m.goalsTotal, play: m.jar.play, edu: m.jar.edu, ffa: m.jar.ffa, give: m.jar.give };
   const pcts = wholePercents(JARS.map(j => vals[j.id]).concat([rest - restCover]), base);
+  /* borrowed money that pays for part of the plan. The places are shown as shares of real pay, so with borrowed money in the plan they add up to more
+     than 100: placedPct says how much, and borrowUsedPct is the part past 100. Places + not placed = 100 + borrowed, always. */
+  const realPay = inn - dw0, borrowUsed = short > 0 ? 0 : Math.max(0, dw0 - restCover), sumPct = pcts.reduce((a, b) => a + b, 0);
+  const borrowUsedPct = borrowUsed > 0 && base === realPay ? Math.max(0, sumPct - 100) : 0;
+  /* named amounts the screens show (they never work these out themselves) */
+  const unplaced = Math.max(0, rest - restCover), unplacedNet = round2(rest - restCover - usedOver), exceedsBy = short + dw0;
   return { income: base, inn, out, rest, restCover, restKept, usedOver, short, draw: m.draw || 0, over: short > 0, restPct: pcts[6],
+    realPay, borrowUsed, borrowUsedPct, placedPct: sumPct - pcts[6], unplaced, unplacedNet, exceedsBy,
     list: JARS.map((j, i) => ({ id: j.id, name: j.name, usual: Math.round(j.usual * 100), v: vals[j.id], pct: pcts[i] })) };
 }
 
@@ -2680,7 +2695,8 @@ function goalInfo(S, C, id, ym) {
     slack = reached ? ymIdx(rb) - ymIdx(reached) : null;
     if (ym <= rb) need = Math.max(0, Math.ceil((target - m.balBefore[id]) / ymCount(ym, rb)));
   } else state = bal >= target ? 'full' : (reached ? 'eta' : 'noeta');
-  return { id, target, bal, pct: target > 0 ? Math.min(1, bal / target) : 0, reached, readyBy: rb, state, need, slack, had };
+  /* pctWhole is the one whole percent shown for a goal anywhere: rounded down, and 100 only when it is really full */
+  return { id, target, bal, pct: target > 0 ? Math.min(1, bal / target) : 0, pctWhole: wholePct(bal, target), togo: Math.max(0, g.target - bal), reached, readyBy: rb, state, need, slack, had };
 }
 
 /* a rounding step that fits the size of the number */
@@ -2798,7 +2814,7 @@ function goalRows(S, C, ym) {
   const ix = ymIdx(ym);
   return S.plan.goals.map(g => {
     const gi = goalInfo(S, C, g.id, ym), live = g.target > 0 && gi.state !== 'paid' && gi.state !== 'short';
-    return { id: g.id, name: g.name, slot: g.slot, kind: kindOfGoal(S, g), emergency: !!g.emergency, target: capOf(g), saved: gi.bal, pct: wholePct(gi.bal, capOf(g)), state: gi.state,
+    return { id: g.id, name: g.name, slot: g.slot, kind: kindOfGoal(S, g), emergency: !!g.emergency, target: capOf(g), saved: gi.bal, togo: Math.max(0, capOf(g) - gi.bal), pct: wholePct(gi.bal, capOf(g)), state: gi.state,
       reached: gi.reached, months: gi.reached ? Math.max(0, ymIdx(gi.reached) - ix) : null, need: gi.need, slack: gi.slack, due: g.due || null, readyBy: gi.readyBy, had: gi.had, live };
   });
 }
@@ -2815,7 +2831,7 @@ function viewOf(S, C, ym, today) {
   const m = C.byYm[ym], rs = receiptStats(S, ym), goals = goalRows(S, C, ym), main = pickMain(S, goals);
   const dim = new Date(+ym.slice(0, 4), +ym.slice(5, 7), 0).getDate(), dayN = today && today.slice(0, 7) === ym ? +today.slice(8, 10) : 1, daysLeft = Math.max(1, dim - dayN + 1);
   const planPlay = m.jar.play, spentPlay = rs.byJar.play || 0, leftPlay = round2(planPlay - spentPlay), pace = planPlay * dayN / dim;
-  const play = { planned: planPlay, spent: spentPlay, left: leftPlay, over: leftPlay < 0, count: rs.count, daysLeft, dim, dayN,
+  const play = { planned: planPlay, spent: spentPlay, left: leftPlay, over: leftPlay < 0, overBy: leftPlay < 0 ? round2(-leftPlay) : 0, count: rs.count, daysLeft, dim, dayN,
     frac: planPlay > 0 ? Math.min(1, spentPlay / planPlay) : 1, dayFrac: Math.min(1, dayN / dim), ahead: leftPlay >= 0 && spentPlay > pace * 1.15 + 1,
     perWeek: daysLeft >= 4 ? Math.max(0, leftPlay) / (daysLeft / 7) : null };
   const goalsSaved = sum(Object.keys(m.bal).map(id => m.bal[id]));
@@ -2826,8 +2842,23 @@ function viewOf(S, C, ym, today) {
     const planned = m.jar[j.id], spent = rs.byJar[j.id] || 0;
     return { id: j.id, name: j.name, kind: 'spend', planned, spent, left: round2(planned - spent), total: null };
   });
-  const month = { inflow: m.inflow, out: m.out, left: m.left, bankEnd: m.bankEnd, over: m.over || 0, status: statusOf(S, m) };
-  return { ym, main, goals, live: goals.filter(r => r.live).length, play, buckets, otherSpent: rs.byJar.other || 0, month, map: mapOf(S, C, ym, { play, month, goals }) };
+  /* bankStart, bankChange and overNow were missing here in 38.30, so Home could never say "Building your cushion" or "went past the plan this month" */
+  const month = { inflow: m.inflow, out: m.out, left: m.left, bankStart: m.bankStart, bankEnd: m.bankEnd, bankChange: round2(m.bankEnd - m.bankStart), over: m.over || 0, overNow: m.overNow || 0, status: statusOf(S, m) };
+  const map = mapOf(S, C, ym, { play, month, goals }), nec = buckets.find(x => x.id === 'nec'), pcl = planCells(S, C, ym), dwv = m.draw || 0;
+  /* HOME CELLS: the worked-out amounts Home shows, each defined once here. Screens read them; they never do the sum.
+     A pile tile (Education, Giving) spent past this month's amount: how much past, how much of that the bank pays, how much the pile covered. */
+  const tileOf = id => { const x = buckets.find(q => q.id === id), br = map.burrows.find(r => r.id === id); if (!x || !(x.left < 0)) return { over: 0, bank: 0, pile: 0 }; const over = round2(-x.left), bank = Math.min(-x.left, br ? (br.overBy || 0) : -x.left); return { over, bank, pile: round2(over - bank) }; };
+  const cells = {
+    planSpend: -m.left,                                   /* what the plan spends when no pay is entered (shown only then) */
+    unplaced: pcl.unplaced, overPay: pcl.overPay,         /* pay with no place; how much more than the pay the month plans */
+    billsOverPay: nec.planned - (m.inflow - dwv),         /* how far the pay is under the bills (shown only when it is) */
+    freeOver: map.free < 0 ? round2(-map.free) : 0,       /* Free to spend that came out of the bank */
+    perWeek: play.perWeek != null ? Math.max(0, map.free) / (play.daysLeft / 7) : null,   /* safe Free to spend a week for the days left */
+    perDay: map.free > 0 && play.daysLeft > 0 ? map.free / play.daysLeft : null,
+    edu: tileOf('edu'), give: tileOf('give'),
+    otherPlaces: m.jar.play + m.jar.edu + m.jar.ffa + m.jar.give, leftAbs: Math.abs(m.left)   /* for the window that explains the month */
+  };
+  return { ym, main, goals, live: goals.filter(r => r.live).length, play, buckets, otherSpent: rs.byJar.other || 0, month, map, cells };
 }
 const overspendUpTo = (S, C, ym) => (C.byYm[ym] ? C.byYm[ym].over : 0);
 /* Free to spend: the free to spend left, less what is held back so the balance stays above its minimum. One rule, used by every screen that shows the number. */
@@ -2854,7 +2885,7 @@ function mapOf(S, C, ym, V0) {
   const names = { edu: 'Education', give: 'Giving', ffa: 'Investing' }, subs = { edu: 'courses and books', give: 'charity and gifts', ffa: 'never spent' };
   const burrows = ['edu', 'ffa', 'give'].map(id => {
     const bal = round2(st[id]), monthly = m.jar[id];
-    return { id, name: names[id], amount: Math.max(0, bal), overBy: bal < -0.004 ? round2(-bal) : 0, sub: subs[id], monthly, planned: round2(pl[id]), logged: round2(lg[id]), over: bal < -0.004,
+    return { id, name: names[id], amount: Math.max(0, bal), overBy: bal < -0.004 ? round2(-bal) : 0, sub: subs[id], monthly, planned: round2(pl[id]), logged: round2(lg[id]), loggedPast: round2(round2(lg[id]) - round2(pl[id])), over: bal < -0.004,
       fill: monthly > 0 ? Math.max(0, Math.min(1, bal / (monthly * 6))) : (bal > 0 ? .5 : 0) };
   }).filter(r => r.monthly > 0 || r.amount > 0);
   /* the pile in every room is drawn against the biggest room, so a bigger pile means more money (square root, so the small ones still show) */
@@ -2863,10 +2894,76 @@ function mapOf(S, C, ym, V0) {
   const goalsSaved = round2(sum(Object.keys(m.bal).map(id => m.bal[id]))), saved = round2(goalsSaved + sum(burrows.map(r => r.amount)));
   /* spending past what was planned comes out of the bank, so the bank and the total stay true to the receipts */
   const overspent = m.over || 0, bankEnd = m.bankEnd;
-  return { ym, free: fo.free, held: fo.held, overspent, billsLeft, billsPlanned: planNec, goalsSaved, saved, bankEnd, total: round2(bankEnd + saved), month, burrows,
+  /* the pay strip: real pay against what the plan places. Pay with no place is its own piece (less what spending past plan already used); a plan bigger than the pay says by how much */
+  const payReal = Math.max(0, m.inflow - (m.draw || 0)), placed = m.out, gap0 = round2(payReal - placed), usedOver = Math.min(Math.max(0, gap0), m.overNow || 0), payGap = round2(gap0 - usedOver), planOver = payGap < -0.5 ? round2(-payGap) : 0;
+  return { ym, free: fo.free, held: fo.held, overspent, billsLeft, billsPlanned: planNec, goalsSaved, saved, bankEnd, bankBelow: bankEnd < 0 ? round2(-bankEnd) : 0, total: round2(bankEnd + saved), month, burrows,
+    payReal, placed, payGap, usedOver, planOver,
     goalParts: (V0.goals || []).filter(g => g.live !== false || ((m.g[g.id] && m.g[g.id].actual) || 0) > 0).map(g => ({ id: g.id, name: g.name, slot: g.slot, saved: g.saved, plan: (m.g[g.id] && m.g[g.id].actual) || 0 })),
     split: ['nec', 'lts', 'play', 'edu', 'ffa', 'give'].map(id => ({ id, amount: id === 'lts' ? (m.goalsTotal || 0) : (m.jar[id] || 0) })).filter(x => x.amount > 0) };
 }
+/* the goal wizard's suggestion: what is still missing, spread evenly over n months and rounded up to the plan's unit (the same rule as evenSave) */
+function wizardMonthly(S, cost, saved, n) { const rem = Math.max(0, clampAmt(cost) - clampAmt(saved)), u = roundUnit(S); return n > 0 ? Math.ceil(rem / n / u) * u : 0; }
+
+/* a category spent past its plan: how much past (over), how much of it the bank pays (bank) and how much its own pile covered (pile). Only Education and Giving have a pile. */
+function overParts(m, jar, spent, plan) { const over = round2(spent - plan), soft = jar === 'edu' || jar === 'give'; if (!soft) return { over, bank: over, pile: 0, soft }; const bank = round2(Math.min(over, ((m && m.ovB) || {})[jar] || 0)); return { over, bank, pile: round2(over - bank), soft }; }
+/* the most that can be moved into a burrow from Free to spend: whole units, no more than is left to spend and no more than the burrow has room for */
+const moveCap = (target, saved, left) => Math.max(0, Math.min(Math.floor(left), Math.max(0, Math.ceil(target - saved))));
+/* the total of a list of receipts (for the statement review: what the new receipts add up to) */
+const receiptsTotal = list => round2(sum((list || []).map(r => +r.a || 0)));
+/* what is left of a planned amount after what was logged against it */
+const leftOfPlan = (plan, spent) => round2(plan - spent);
+
+/* ---- PLAN CELLS: every worked-out amount the Plan tab and the dock at the foot of the page show. Screens read these; they never do the sum. ---- */
+function planCells(S, C, ym) {
+  const m = C.byYm[ym], rs = receiptStats(S, ym), dw = m.draw || 0, L = m.pool.left, over = m.overNow || 0;
+  const play = m.jar.play, playSpent = rs.byJar.play || 0;
+  let dock = dw > 0 ? L - dw : L;                  /* money borrowed from the emergency fund is not pay */
+  if (dock > 0) dock = Math.max(0, dock - over);   /* and pay with no place that spending past plan already used is not left */
+  return {
+    pay: m.pool.in - dw,                           /* real pay this month: what came in, less what was borrowed */
+    unplaced: Math.max(0, (L - dw) - over),        /* pay with no place, less what spending past plan already took from it */
+    overPay: -(L - dw),                            /* how much more than the pay the month plans to spend (shown in a tight month) */
+    bankGap: Math.max(0, cfg(S, 'minBank') - m.bankEnd),   /* how far the bank ends under the safety minimum */
+    bankBelowZero: -m.bankEnd,                     /* how far below zero the bank ends (shown only when it is) */
+    dock, dockAbs: Math.abs(dock),                 /* the dock number: pay not placed yet, or (when negative) how much more is planned than the pay */
+    playOver: round2(playSpent - play)             /* Free to spend logged past its plan (shown only when it is) */
+  };
+}
+
+/* THE PROOF. Where the money sits must equal where the money came from, less what left. The two sides are worked out apart from each other:
+     sits:  the bank + every goal + the Education, Giving and Investing piles at the end of the month (what the screens show, from mapOf)
+     came:  what there was at the start + all pay so far - everything that left, added up here from the plan and the raw receipts, in whole cents
+   What leaves: bills, one-time costs and debt payments as planned (taken as paid), anything logged past a bill or past the one-time costs,
+   Free to spend as planned (taken as spent) plus anything logged past it, less unspent Free to spend the person has answered for (it went back
+   to the bank or to a goal), what was logged from Education and Giving, and goal money spent on its date. Investing never leaves; money borrowed
+   from the emergency fund only moves. If the two sides differ, a number on a screen is wrong, and the page says so instead of showing it as true. */
+function proofOf(S, C, ym, map0) {
+  const c = x => Math.round((+x || 0) * 100), goals = goalsOf(S), has = (S.receipts || []).length > 0;
+  const part = { start: c(cfg(S, 'bankStart')) + goals.reduce((a, g) => a + c(g.start), 0), pay: 0, planned: 0, past: 0, free: 0, back: 0, piles: 0, goals: 0 };
+  let pend = 0; const pendMonths = [];
+  for (const x of MONTHS) {
+    if (x > ym) break;
+    const m = C.byYm[x], byKey = {}, byJar = {};
+    if (has) (S.receipts || []).forEach(r => { if (r.d.slice(0, 7) !== x) return; const l = lineByKey(S, r.c), j = l ? l.jar : 'other'; byKey[r.c] = (byKey[r.c] || 0) + c(r.a); byJar[j] = (byJar[j] || 0) + c(r.a); });
+    let necPlan = 0, necPast = 0, playPlan = 0;
+    m.lines.forEach(l => { const v = l.on ? c(l.v) : 0; if (l.jar === 'nec') { necPlan += v; necPast += Math.max(0, (byKey[l.key] || 0) - v); } else if (l.jar === 'play') playPlan += v; });
+    const items = c(m.itemsTotal);
+    part.pay += c(m.a) + c(m.b) + c(m.side);
+    part.planned += necPlan + items + c(m.debtPay);
+    part.past += necPast + Math.max(0, (byJar.other || 0) - items) + Math.max(0, (byJar.play || 0) - playPlan);
+    part.free += playPlan; part.back += c(m.counted);
+    part.piles += (byJar.edu || 0) + (byJar.give || 0);
+    goals.forEach(g => { part.goals += c(m.spent[g.id]); });
+    if (m.pendLeft > 0) { pend += c(m.pendLeft); pendMonths.push(x); }
+  }
+  const came = part.start + part.pay - part.planned - part.past - part.free + part.back - part.piles - part.goals;
+  const map = map0 || viewOf(S, C, ym).map, sits = c(map.total), sitsParts = c(map.bankEnd) + c(map.goalsSaved) + map.burrows.reduce((a, b) => a + c(b.amount), 0);
+  const off = sits - came;
+  return { ok: off === 0 && sitsParts === sits, off: off / 100, offBy: Math.abs(off) / 100, sits: sits / 100, came: came / 100, partsOk: sitsParts === sits,
+    start: part.start / 100, pay: part.pay / 100, left: (part.planned + part.past + part.free - part.back + part.piles + part.goals) / 100,
+    pendAmount: pend / 100, pendMonths };
+}
+
 /* the whole plan as one table, a row for each month: what you could open in Google Sheets or Excel to check every number */
 function sheetRows(S, C) {
   const head = ['Month', 'Money in', 'Bills and basics', 'Savings goals', 'Play', 'Education', 'Investing', 'Giving', 'Money out', 'Left over', 'Balance at start', 'Balance at end'];
@@ -2878,7 +2975,8 @@ function sheetRows(S, C) {
   });
   return [head].concat(rows);
 }
-const csvCell = v => { let s = typeof v === 'number' ? String(Math.round(v)) : String(v == null ? '' : v); if (typeof v === 'string' && /^[=+\-@\t\r]/.test(s)) s = "'" + s; return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+/* numbers keep their cents (38.30 bank figures carry cents from receipts), so the spreadsheet agrees with every screen to the cent */
+const csvCell = v => { let s = typeof v === 'number' ? String(Math.round(v * 100) / 100 || 0) : String(v == null ? '' : v); if (typeof v === 'string' && /^[=+\-@\t\r]/.test(s)) s = "'" + s; return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
 const sheetCsv = (S, C) => '﻿' + sheetRows(S, C).map(r => r.map(csvCell).join(',')).join('\r\n') + '\r\n';
 
 /* ---- the receipts reminder for the calendar: every day, every week, every two weeks or every month ---- */
@@ -3125,19 +3223,22 @@ function limitsOf(S, C, ym) {
     const spent = rs.byKey[x.key] || 0, soft = x.jar === 'play' || x.jar === 'edu' || x.jar === 'give';
     if (x.jar === 'ffa') return;
     if (!(soft || spent > 0) || !(x.v > 0 || spent > 0)) return;
-    rows.push({ key: x.key, name: x.name, jar: x.jar, planned: x.v, spent, left: round2(x.v - spent), over: round2(x.v - spent) < 0 });
+    rows.push({ key: x.key, name: x.name, jar: x.jar, planned: x.v, spent, left: round2(x.v - spent), over: round2(x.v - spent) < 0, overBy: round2(x.v - spent) < 0 ? round2(spent - x.v) : 0 });
   });
   return { rows, other: rs.byKey.other || 0, total: rs.total };
 }
 
 /* ---------- last month in one look ---------- */
-function lookBack(S, C, ym) {
+function lookBack0(S, C, ym) {
   const m = C.byYm[ym]; if (!m) return null;
   const rs = receiptStats(S, ym), lim = limitsOf(S, C, ym);
   const jars = ['nec', 'play', 'edu', 'give'].map(j => ({ id: j, planned: m.jar[j], spent: rs.byJar[j] || 0, left: round2(m.jar[j] - (rs.byJar[j] || 0)) }));
   return { ym, inflow: m.inflow, out: m.out, left: round2(m.bankEnd - m.bankStart), planLeft: m.left, bankStart: m.bankStart, bankEnd: m.bankEnd, count: rs.count, logged: rs.total, other: rs.byJar.other || 0, jars,
     over: lim.rows.map(r => (r.jar === 'edu' || r.jar === 'give') && r.over ? Object.assign({}, r, { left: -Math.min(-r.left, (m.ovB || {})[r.jar] || 0) }) : r).filter(r => r.over && r.left < -0.004).concat((rs.byJar.other || 0) - (m.itemsTotal || 0) > 0.004 ? [{ name: 'Other', left: -round2((rs.byJar.other || 0) - (m.itemsTotal || 0)), over: true }] : []).sort((a, b) => a.left - b.left), goalsAdded: round2(m.goalsTotal + ((m.topup && m.topup.used) || 0)), debtPaid: m.debtPay, interest: m.debtInterest, owed: m.debtOwed };
 }
+
+/* last month with its named amounts: how much the balance moved (change), and for each line over its plan, by how much (overBy) */
+function lookBack(S, C, ym) { const b = lookBack0(S, C, ym); if (!b) return b; b.change = Math.abs(round2(b.bankEnd - b.bankStart)); b.over = b.over.map(r => Object.assign({}, r, { overBy: round2(-r.left) })); return b; }
 
 /* ---------- repeating spending: adds the receipts that came due since the last time, never more than 60 at once ---------- */
 function dueDates(r, fromExcl, toIncl) {
@@ -4329,7 +4430,7 @@ function buildStatic() {
   const opts = MONTHS.map(ym => `<option value="${ym}">${fullLabel(ym)}</option>`).join('');
   $('#monthSel').innerHTML = opts; $('#rcMonth').innerHTML = opts;
   $('#rcFields').innerHTML = remindFieldsHTML('rc');
-  $('#jarList').innerHTML = JARS.map(j => `<div class="j"><i class="${JARCLS[j.id]}"></i><span class="jn">${j.name}<small>${j.about}</small></span><b class="jp">${Math.round(j.usual * 100)}%</b></div>`).join('');
+  $('#jarList').innerHTML = JARS.map(j => `<div class="j"><i class="${JARCLS[j.id]}"></i><span class="jn">${j.name}<small>${j.about}</small></span><b class="jp">${j.usualPct}%</b></div>`).join('');
   $('#sets').innerHTML = '<h3 class="grp">Balance</h3>' + SETF.map(f => `<div class="field"><label for="st-${f.k}">${f.label}</label><div class="inp"><span class="yen cs"></span><input id="st-${f.k}" type="number" inputmode="numeric" min="0" step="1000"></div><p class="cap">${f.hint}</p></div>`).join('');
   $('#rowsIn').innerHTML = '';
   restructure(true);
@@ -4344,10 +4445,9 @@ function restructure(first) {
 }
 
 /* ---------- bar and legend (hero and dock): the six jars ---------- */
-const pc = x => Math.round(x * 100) + '%';
 function paintBar(el, m, withLabels) {
   if (!el.children.length) el.innerHTML = JARS.map(j => `<div class="seg-b ${JARCLS[j.id]}" data-k="${j.id}" ${withLabels ? 'tabindex="0"' : ''}></div>`).join('') + `<div class="seg-b rest" data-k="rest" ${withLabels ? 'tabindex="0"' : ''}></div>`;
-  const J = jarsOf(S, m), rest = Math.max(0, m.pool.left), names = [];
+  const J = jarsOf(S, m), rest = J.rest, names = [];
   J.list.forEach(j => {
     const d = $(`[data-k="${j.id}"]`, el);
     d.hidden = j.v <= 0; d.style.flexGrow = Math.max(j.v, 0);
@@ -4355,7 +4455,7 @@ function paintBar(el, m, withLabels) {
     d.setAttribute('aria-label', `${j.name} ${fmt(j.v)}`); if (j.v > 0) names.push(`${j.name} ${fmt(j.v)}`);
   });
   const r = $('[data-k="rest"]', el); r.hidden = rest <= 0; r.style.flexGrow = rest;
-  r.dataset.tip = `<b>Left</b> ${fmt(rest)}` + (J.restCover > 0 ? (J.rest - J.restCover >= 0.5 ? `<br>${fmt(J.rest - J.restCover)} not placed yet (${J.restPct}% of pay)<br>${fmt(J.restCover)} borrowed from the emergency fund` : (J.restKept > 0 ? '<br>borrowed from the emergency fund, kept in the bank' : '<br>borrowed money, used for spending past plan')) : J.income > 0 ? `<br>${J.restPct}% of pay, not placed yet` : ''); r.setAttribute('aria-label', `Left ${fmt(rest)}`);
+  r.dataset.tip = `<b>Left</b> ${fmt(rest)}` + (J.restCover > 0 ? (J.unplaced >= 0.5 ? `<br>${fmt(J.unplaced)} not placed yet (${J.restPct}% of pay)<br>${fmt(J.restCover)} borrowed from the emergency fund` : (J.restKept > 0 ? '<br>borrowed from the emergency fund, kept in the bank' : '<br>borrowed money, used for spending past plan')) : J.income > 0 ? `<br>${J.restPct}% of pay, not placed yet` : ''); r.setAttribute('aria-label', `Left ${fmt(rest)}`);
   if (rest > 0) names.push('Left ' + fmt(rest));
   if (withLabels) el.setAttribute('aria-label', `Pay ${fmt(m.pool.in)} by place: ` + names.join(', '));
 }
@@ -4366,20 +4466,23 @@ function paintLegend(m) {
   const live = S.plan.goals.filter(g => g.target > 0 && m.g[g.id] && m.g[g.id].actual > 0).map(g => g.name);
   const ltsTag = live.length ? esc(live.slice(0, 2).join(', ') + (live.length > 2 ? ` and ${live.length - 2} more` : '')) : JARTAG.lts;
   $('#legend').innerHTML = J.list.map(j => row(JARCLS[j.id], j.name, j.id === 'lts' ? ltsTag : JARTAG[j.id], j.v, has ? j.pct + '%' : '')).join('')
-    + (J.rest - J.restCover - J.usedOver >= 0.5 ? row('rest', J.restCover > 0 || J.usedOver > 0 ? 'Not placed yet' : 'Left', J.restCover > 0 || J.usedOver > 0 ? 'stays in the bank' : 'Not placed yet', round2(J.rest - J.restCover - J.usedOver), has && J.usedOver < 0.5 ? J.restPct + '%' : '') : '')
+    + (J.unplacedNet >= 0.5 ? row('rest', J.restCover > 0 || J.usedOver > 0 ? 'Not placed yet' : 'Left', J.restCover > 0 || J.usedOver > 0 ? 'stays in the bank' : 'Not placed yet', J.unplacedNet, has && J.usedOver < 0.5 ? J.restPct + '%' : '') : '')
     + (J.usedOver >= 0.5 ? row('rest', 'Used for spending past plan', 'came out of pay with no place', J.usedOver, '') : '')
     + (J.rest > 0 && J.restCover > 0 ? row('rest', 'Borrowed', J.restKept > 0 ? (J.restKept < J.restCover - 0.5 ? fmt(J.restKept) + ' of it stays in the bank' : 'from the emergency fund, stays in the bank') : 'from the emergency fund, used for spending past plan', J.restCover, '') : '')
+    + (J.borrowUsed >= 0.5 ? row('rest', 'Borrowed', 'from the emergency fund, pays for part of this plan', J.borrowUsed, has && J.borrowUsedPct > 0 ? J.borrowUsedPct + '%' : '') : '')
     + (J.short > 0 ? row('rest', J.draw > 0 ? 'Still over after borrowing' : st0 === 'tight' ? 'Over pay by' : 'Short by', J.draw > 0 ? fmt(J.draw) + ' borrowed from the emergency fund' + (st0 === 'tight' ? ', your balance covers the rest' : '') : st0 === 'tight' ? 'Your balance covers it' : 'Plan exceeds pay', J.short, '', true) : '');
 }
 /* one plain sentence under the table: how this month's bills sit against Eker's usual split, and whether every bit of pay has a purpose */
 function jarNote(m) {
   const J = jarsOf(S, m); if (J.inn <= 0) return '';
-  if (J.over) return `Plan exceeds pay by ${fmt(J.short + (J.draw || 0))}${J.draw > 0 ? ', ' + fmt(J.draw) + ' of it from your emergency fund' : ''}, so percents are off. Lower a bill or another place.`;
+  if (J.over) return `Plan exceeds pay by ${fmt(J.exceedsBy)}${J.draw > 0 ? ', ' + fmt(J.draw) + ' of it from your emergency fund' : ''}, so percents are off. Lower a bill or another place.`;
   const nec = J.list[0], u = nec.usual;
+  /* a plan paid partly with borrowed money: say why the places add up to more than all of the pay */
+  const borrowed = J.borrowUsedPct > 0 ? ` Your places add up to ${J.placedPct}% of your pay, because ${fmt(J.borrowUsed)} of this plan is borrowed from your emergency fund.` : '';
   const lead = nec.pct > u + 1 ? `Bills and basics are ${nec.pct}% of pay, above the usual ${u}%. That is common. Keep the other places going, even small: the habit matters more than the exact percent.`
     : nec.pct < u - 1 ? `Bills and basics are ${nec.pct}% of pay, under the usual ${u}%. More room for the other places.`
     : `Bills and basics are ${nec.pct}% of pay, about the usual ${u}% many people aim for.`;
-  return lead;
+  return lead + borrowed;
 }
 const LTS_HINT = ' Each slider sets that goal’s amount this month. Leave them alone to use the computed amounts (from goal amounts and dates). Up takes from Left; down returns to Left.';
 
@@ -4416,25 +4519,26 @@ function render() {
   $('#payTxt').hidden = true;
 
   /* hero: free to spend, then one verdict */
+  const PC = planCells(S, C, sel);   /* the worked-out amounts for this screen come from the model */
   const pin = m.pool.in, play = m.jar.play, wk = weekOf(play);
   try { const mr = HV && HV.map && HV.map.month.find(r => r.id === 'play'); if (mr) BUR.roomCv($('#heroRoomW'), mr, 'play'); } catch (e) { /* the number still shows */ }
   const rs = receiptStats(S, sel), playSpent = rs.byJar.play || 0, playLeft = round2(play - playSpent), heroShow = freeOf(S, { left: m.left, bankEnd: m.bankEnd, over: m.over || 0, status: st }, { left: playLeft }).free, heroTxt = (playSpent > 0 || heroShow !== play) ? fmt2(heroShow) : fmt(heroShow);
   $('#heroNum').textContent = heroTxt; $('#heroNum').style.setProperty('--n', String(heroTxt.length)); $('#heroNum').style.color = heroShow < 0 ? 'var(--bad)' : '';
   $('#heroWk').textContent = (playSpent > 0 || heroShow !== play) ? `Planned ${fmt(play)} this month, about ${fmt(wk)} a week.` : `Planned: about ${fmt(wk)} a week across the whole month.`;
   $('#rcLine').innerHTML = !rs.count ? '<button type="button" class="link" data-tab-go="receipts">Add a receipt</button> to see actual spend.'
-    : play > 0 ? `Receipts: ${fmt2(playSpent)} spent, ${playSpent > play ? fmt2(round2(playSpent - play)) + ' over' : (m.counted > 0 ? fmt2(m.counted) + ' not spent' + (m.topup && m.topup.used > 0 ? ', ' + fmt2(m.topup.used) + ' went to a goal' : ', came back to the bank') : m.pendLeft > 0 ? fmt2(m.pendLeft) + ' not logged as spent yet, Home asks where it goes' : fmt2(playSafeLeft(S, m, playSpent)) + ' safe to spend')}. <button type="button" class="link" data-tab-go="receipts">See receipts</button>`
+    : play > 0 ? `Receipts: ${fmt2(playSpent)} spent, ${playSpent > play ? fmt2(PC.playOver) + ' over' : (m.counted > 0 ? fmt2(m.counted) + ' not spent' + (m.topup && m.topup.used > 0 ? ', ' + fmt2(m.topup.used) + ' went to a goal' : ', came back to the bank') : m.pendLeft > 0 ? fmt2(m.pendLeft) + ' not logged as spent yet, Home asks where it goes' : fmt2(playSafeLeft(S, m, playSpent)) + ' safe to spend')}. <button type="button" class="link" data-tab-go="receipts">See receipts</button>`
     : `Receipts: ${fmt2(rs.total)} spent. <button type="button" class="link" data-tab-go="receipts">See receipts</button>`;
-  const Lun = Math.max(0, (L - (m.draw || 0)) - (m.overNow || 0));   /* pay with no place, less what spending past plan already took from it */
+  const Lun = PC.unplaced;   /* pay with no place, less what spending past plan already took from it */
   const chip = $('#chip'); chip.className = 'chip ' + st; chip.hidden = pin <= 0;
   const overFree = playSpent > play && play >= 0 && rs.count > 0, overAny = !overFree && (m.overNow || 0) > 0.004;
   if (overFree || overAny) { chip.className = 'chip short'; chip.innerHTML = IC.bad + (overFree && !((m.overNec || 0) > 0.004) ? 'Over free to spend' : 'Over plan'); }
   else if (Lun >= roundUnit(S) && st === 'good') { chip.className = 'chip tight'; chip.innerHTML = IC.warn + 'Pay not placed'; }
   else chip.innerHTML = st === 'good' ? IC.ok + 'On plan' : st === 'tight' ? IC.warn + 'Tight month' : IC.bad + 'Short';
-  const gap = Math.max(0, floor - m.bankEnd);
+  const gap = PC.bankGap;
   let vt;
   if (pin <= 0) vt = 'Enter monthly take-home pay: tap Salary below.';
   else if (st === 'good') vt = (Lun < roundUnit(S) ? 'All pay assigned.' : `${fmt(Lun)} of pay not placed yet.`) + (Lun >= pin * 0.08 ? ' Raise a goal or another place to use it, or keep it as a cushion.' : '');
-  else if (st === 'tight') vt = `Month spends ${fmt(-(L - (m.draw || 0)))} more than your pay${m.draw > 0 ? ', ' + fmt(m.draw) + ' of it borrowed' : ''}. Balance covers it and ends at ${fmt(m.bankEnd)}, at or above the ${fmt(floor)} minimum.`;
+  else if (st === 'tight') vt = `Month spends ${fmt(PC.overPay)} more than your pay${m.draw > 0 ? ', ' + fmt(m.draw) + ' of it borrowed' : ''}. Balance covers it and ends at ${fmt(m.bankEnd)}, at or above the ${fmt(floor)} minimum.`;
   else vt = `Balance would end at ${fmt(m.bankEnd)}, ${fmt(gap)} under the ${fmt(floor)} minimum.` + (fixes(S, m).length ? ' Pick a fix:' : ' Lower a cost or add pay to fix it.');
   if (m.draw > 0) vt += ` ${fmt(m.draw)} is borrowed from the emergency fund.`;
   $('#verdict').textContent = vt;
@@ -4447,19 +4551,18 @@ function render() {
   $('#fixBtns').innerHTML = btns;
 
   /* where it goes */
-  $('#whereTitle').textContent = m.draw > 0 ? `${fmt(m.pool.in - m.draw)} pay and ${fmt(m.draw)} borrowed, by place` : `${fmt(m.pool.in)} pay, by place`;
+  $('#whereTitle').textContent = m.draw > 0 ? `${fmt(PC.pay)} pay and ${fmt(m.draw)} borrowed, by place` : `${fmt(m.pool.in)} pay, by place`;
   paintBar($('#bar'), m, true); paintBar($('#dockBar'), m, false); paintLegend(m); $('#jarNote').innerHTML = jarNote(m);
   const el = $('#endline'); el.hidden = !(m.pool.out > m.pool.in); if (!el.hidden) el.style.left = (m.pool.in / m.pool.out * 100) + '%';
-  const dw = m.draw || 0; let Ld = dw > 0 ? L - dw : L;   /* money borrowed from the emergency fund is not pay */
-  if (Ld > 0) Ld = Math.max(0, Ld - (m.overNow || 0));   /* and pay with no place that spending past plan already used is not left */
+  const dw = m.draw || 0, Ld = PC.dock;   /* borrowed money is not pay, and pay that spending past plan already used is not left (model.js planCells) */
   const bankOnly = pin <= 0 && L >= 0 && m.bankEnd < 0;   /* spending with no pay entered: the bank shortfall still shows */
-  $('#dockNum').textContent = bankOnly ? fmt(-m.bankEnd) : pin > 0 || L < 0 ? fmt(Math.abs(Ld)) : ''; $('#dockNum').style.color = Ld < 0 || bankOnly ? 'var(--bad)' : '';
+  $('#dockNum').textContent = bankOnly ? fmt(PC.bankBelowZero) : pin > 0 || L < 0 ? fmt(PC.dockAbs) : ''; $('#dockNum').style.color = Ld < 0 || bankOnly ? 'var(--bad)' : '';
   $('#dockTxt').textContent = pin <= 0 ? (L < 0 ? 'planned with no pay entered in ' + mon + '. Add your pay in Plan.' : bankOnly ? 'below zero in the bank at the end of ' + mon + ', with no pay entered. Add your pay in Plan.' : 'No plan yet. Add your pay in Plan.') : `${Ld < 0 ? 'more planned than your pay in ' + mon + (dw > 0 ? ', ' + fmt(dw) + ' borrowed from your emergency fund' : '') : Ld < roundUnit(S) ? 'of your pay not planned yet in ' + mon : 'of your pay not placed yet in ' + mon} · ${overFree && !((m.overNec || 0) > 0.004) ? 'Over free to spend' : overFree || overAny ? 'Over plan' : Ld >= roundUnit(S) && st === 'good' ? 'Still needs a place' : st === 'good' ? 'On plan' : st === 'tight' ? 'Tight' : 'Short'}`;
 
   /* the details */
   $('#inTotal').textContent = fmt2(m.pool.in); $('#outTotal').textContent = fmt2(m.pool.out);
   { const oc = $('#outCounted'); const cn = m.counted || 0, tu = (m.topup && m.topup.used) || 0, tg = tu > 0 ? goalById(S, m.topup.id) : null;
-    oc.hidden = !(cn > 0); if (cn > 0) oc.textContent = `${fmt2(cn)} of this month's Free to spend was not spent. ${tu > 0 && tg ? `${fmt2(tu)} went to ${tg.name}${cn - tu > 0.004 ? ' and ' + fmt2(round2(cn - tu)) + ' came back to the bank' : ''}` : 'It came back to the bank'}, so the bank ends higher than the figures above.`; }
+    oc.hidden = !(cn > 0); if (cn > 0) oc.textContent = `${fmt2(cn)} of this month's Free to spend was not spent. ${tu > 0 && tg ? `${fmt2(tu)} went to ${tg.name}${cn - tu > 0.004 ? ' and ' + fmt2(m.credit) + ' came back to the bank' : ''}` : 'It came back to the bank'}, so the bank ends higher than the figures above.`; }
   const lt = $('#leftTotal'); lt.textContent = fmt2(L); lt.classList.toggle('neg', L < 0);
   const ovr = m.over || 0;
   $('#bankLine').textContent = ovr > 0 ? `Bank ends at ${fmt2(m.bankEnd)}: ${fmt2(m.bankPlanned)} planned, less ${fmt2(ovr)} spent over plan so far.` : (Math.abs(m.bankStart - m.bankEnd) < 0.5 ? `Bank stays at ${fmt2(m.bankEnd)} this month.` : `Bank goes from ${fmt2(m.bankStart)} to ${fmt2(m.bankEnd)} this month.`);
@@ -4538,9 +4641,9 @@ function renderGoals(m) {
   gs.forEach(g => {
     const c = $('#jc-' + g.id); if (!c) return;
     const gi = goalInfo(S, C, g.id, sel), cap = capOf(g);
-    const pct = cap > 0 ? Math.min(1, gi.bal / cap) : 0, gb = $('.gbar', c);
+    const pct = gi.pct, gb = $('.gbar', c);
     $('#jn-' + g.id).textContent = g.name; const jw = $('#jw-' + g.id); if (jw) jw.textContent = g.why || '';
-    $('.fill', gb).style.width = (pct * 100) + '%'; gb.setAttribute('aria-label', `${g.name}: ${Math.round(pct * 100)}% of ${fmt(cap)}`);
+    $('.fill', gb).style.width = (pct * 100) + '%'; gb.setAttribute('aria-label', `${g.name}: ${gi.pctWhole}% of ${fmt(cap)}`);
     const tick = $('.gtick', gb); if (g.emergency && cap > gi.target && gi.target > 0) { tick.style.left = `calc(${gi.target / cap * 100}% - 1px)`; tick.hidden = false; } else tick.hidden = true;
     $('#jv-' + g.id).innerHTML = gi.target > 0 ? dw(S, g, `<b>${fmt(gi.bal)}</b> of ${fmt(gi.target)}`) : '<b>No goal amount yet</b>';
     const js = $('#js-' + g.id); let cls = 'plain', ic = IC.clock, tx = '', note = '';
@@ -4838,10 +4941,9 @@ function dupOk(d, a, c, n, msg, btn) {
 const isDupRc = (d, a, c, n) => (S.receipts || []).some(r => r.d === d && r.a === wholeAmt(S, a) && r.c === (lineByKey(S, c) ? c : 'other') && (r.n || '') === (n || '').trim().slice(0, 80));
 /* the part of an overspend the burrow's own pile covers, and the part that comes out of the bank */
 const overCell = (r, m) => {
-  const d = round2(r.spent - r.plan), soft = r.jar === 'edu' || r.jar === 'give';
-  if (!soft) return `<span class="over">over ${fmt2(d)}</span>`;
-  const bank = Math.min(d, ((m && m.ovB) || {})[r.jar] || 0), pile = round2(d - bank);
-  return (pile > 0 ? `<span class="pile">from the pile ${fmt2(pile)}</span>` : '') + (pile > 0 && bank > 0 ? ', ' : '') + (bank > 0 ? `<span class="over">${pile > 0 ? '' : 'over '}${fmt2(round2(bank))}${pile > 0 ? ' over' : ''}</span>` : '');
+  const O = overParts(m, r.jar, r.spent, r.plan), pile = O.pile, bank = O.bank;   /* the split is worked out in model.js */
+  if (!O.soft) return `<span class="over">over ${fmt2(O.over)}</span>`;
+  return (pile > 0 ? `<span class="pile">from the pile ${fmt2(O.pile)}</span>` : '') + (pile > 0 && bank > 0 ? ', ' : '') + (bank > 0 ? `<span class="over">${pile > 0 ? '' : 'over '}${fmt2(O.bank)}${pile > 0 ? ' over' : ''}</span>` : '');
 };
 const pileOk = jar => { const b = HV && HV.map && HV.map.burrows.find(x => x.id === jar); return !!b && !b.over; };
 function renderReceipts() {
@@ -4849,14 +4951,14 @@ function renderReceipts() {
   setIdle($('#rcMonth'), sel);
   $('#rcTitle').textContent = 'Receipts, ' + fullLabel(sel);
   let sum = rs.count ? `${fmt2(rs.total)} spent, ${rs.count} receipt${rs.count === 1 ? '' : 's'}.` : 'No receipts this month.';
-  if (playPlan > 0 || playSpent > 0) sum += ` Free to spend: ${fmt2(playPlan)} planned, ${fmt2(playSpent)} spent, ` + (playSpent > playPlan ? `${fmt2(round2(playSpent - playPlan))} over.` : (m.counted > 0 ? `${fmt2(m.counted)} not spent: ${m.topup && m.topup.used > 0 ? fmt2(m.topup.used) + ' went to a goal' + (m.counted - m.topup.used > 0.004 ? ', ' + fmt2(round2(m.counted - m.topup.used)) + ' came back to the bank' : '') : 'came back to the bank'}.` : m.pendLeft > 0 ? `${fmt2(m.pendLeft)} not logged as spent yet; Home asks where it goes.` : `${fmt2(playSafeLeft(S, m, playSpent))} safe to spend.`));
+  if (playPlan > 0 || playSpent > 0) sum += ` Free to spend: ${fmt2(playPlan)} planned, ${fmt2(playSpent)} spent, ` + (playSpent > playPlan ? `${fmt2(planCells(S, C, sel).playOver)} over.` : (m.counted > 0 ? `${fmt2(m.counted)} not spent: ${m.topup && m.topup.used > 0 ? fmt2(m.topup.used) + ' went to a goal' + (m.counted - m.topup.used > 0.004 ? ', ' + fmt2(m.credit) + ' came back to the bank' : '') : 'came back to the bank'}.` : m.pendLeft > 0 ? `${fmt2(m.pendLeft)} not logged as spent yet; Home asks where it goes.` : `${fmt2(playSafeLeft(S, m, playSpent))} safe to spend.`));
   $('#rcSum').textContent = sum;
 
   /* plan against spending, for every category that has a receipt (and the play money lines) */
   const rows = [], known = new Set();
   m.lines.forEach(x => { known.add(x.key); const sp = rs.byKey[x.key] || 0; if (sp > 0 || (x.jar === 'play' && x.on)) rows.push({ name: x.name, jar: x.jar, plan: x.on ? x.v : 0, spent: sp, safe: x.key === 'envelope' && x.on ? playSafeLeft(S, m, rs.byJar.play || 0) : null }); });
   Object.keys(rs.byKey).forEach(k => { if (!known.has(k)) { const r = rs.list.find(q => q.c === k); rows.push({ name: r ? catName(S, r) : 'Other', plan: null, spent: rs.byKey[k] }); } });
-  $('#rcCats').innerHTML = rs.count ? `<table class="plain"><thead><tr><th>Category</th><th>Plan</th><th>Spent</th><th>Left to spend</th></tr></thead><tbody>${rows.map(r => `<tr><td>${esc(r.name)}</td><td>${r.plan == null ? '' : fmt(r.plan)}</td><td>${fmt2(r.spent)}</td><td>${r.plan == null ? `<span class="over">over ${fmt2(r.spent)}</span>` : r.spent > r.plan ? overCell(r, m) : (r.safe != null ? fmt2(r.safe) : r.jar === 'ffa' ? 'saved' : fmt2(round2(r.plan - r.spent)))}</td></tr>`).join('')}</tbody></table><p class="cap tnote">Lines without receipts are not listed.</p>` : '';
+  $('#rcCats').innerHTML = rs.count ? `<table class="plain"><thead><tr><th>Category</th><th>Plan</th><th>Spent</th><th>Left to spend</th></tr></thead><tbody>${rows.map(r => `<tr><td>${esc(r.name)}</td><td>${r.plan == null ? '' : fmt(r.plan)}</td><td>${fmt2(r.spent)}</td><td>${r.plan == null ? `<span class="over">over ${fmt2(r.spent)}</span>` : r.spent > r.plan ? overCell(r, m) : (r.safe != null ? fmt2(r.safe) : r.jar === 'ffa' ? 'saved' : fmt2(leftOfPlan(r.plan, r.spent)))}</td></tr>`).join('')}</tbody></table><p class="cap tnote">Lines without receipts are not listed.</p>` : '';
 
   $('#rcList').innerHTML = rs.list.map(r => `<div class="rc${editRc === r.id ? ' on' : ''}" data-id="${esc(r.id)}"><div class="rc-main"><b>${fmt2(r.a)}</b><span class="rc-cat">${esc(r.c === 'other' && r.n ? 'Other: ' + r.n : catName(S, r))}</span></div>
     <div class="rc-sub"><span>${dateLabel(r.d)}</span>${r.n && r.c !== 'other' ? `<span class="rc-note">${esc(r.n)}</span>` : ''}${r.s ? `<span class="rc-acct">${esc(r.s)}</span>` : ''}</div>
@@ -5195,7 +5297,7 @@ const STEP_JARS = { id: 'jars', part: PART.jars, setup: true, when: havePay,
 /* the six jars in short, folded: pay is split into jars and each jar has one purpose */
 const jarsFold = () => `<details class="src-how"><summary>Where your pay goes, in short</summary><div class="src-how-in">
     <p>Every month, your pay is split into six places, each with one job. Bills and basics and Free to spend are for this month. Your goals, Education, Giving and Investing fill <b>burrows</b> that pile up over months. Free to spend is what you spend on fun without guilt. Usual shares of take-home pay:</p>
-    <ul class="jar-lines">${JARS.map(j => `<li><i class="dot" style="--c:${JARVAR[j.id]}"></i><span><b>${esc(j.name)}</b> ${Math.round(j.usual * 100)}%. ${esc(JAR_LINES[j.id])}</span></li>`).join('')}</ul>
+    <ul class="jar-lines">${JARS.map(j => `<li><i class="dot" style="--c:${JARVAR[j.id]}"></i><span><b>${esc(j.name)}</b> ${j.usualPct}%. ${esc(JAR_LINES[j.id])}</span></li>`).join('')}</ul>
     <p class="cap">The shares are a guide, not a rule.</p></div></details>`;
 const jarSplitHTML = () => `${potHTML('jarPot', JAR5.map(j => JARVAR[j]), jarVals, jarRest)}${poolHTML('jar', JAR5.map(j => JAR_SHORT[j]))}
     <div class="split" id="jarSplit">${jarRows()}</div>
@@ -7047,7 +7149,7 @@ const BUR = (() => {
      the plan already has, so it is one undoable change). Then the coins drop into the burrow one by one, with sounds, and the little animals dance. ---------- */
   function playLeft() { try { const ym = nowYm(), m = calcAll(S).byYm[ym], spent = (receiptStats(S, ym).byJar || {}).play || 0; return Math.max(0, Math.floor((m.jar.play - spent) * 100) / 100); } catch (e) { return 0; } }
   function addPanel(r) {
-    const left = playLeft(), room = Math.max(0, Math.ceil(r.target - r.saved)), cap = Math.max(0, Math.min(Math.floor(left), room));
+    const left = playLeft(), room = Math.max(0, Math.ceil(r.target - r.saved)), cap = moveCap(r.target, r.saved, left);
     const nice = v => { const st = cap > 20000 ? 1000 : cap > 4000 ? 500 : cap > 800 ? 100 : 10; return Math.max(1, Math.min(cap, Math.round(v / st) * st)); };
     const chips = [...new Set([nice(cap * .25), nice(cap * .5), cap])].filter(v => v > 0 && v <= cap);
     if (!(cap > 0)) { pop.innerHTML = `<h2>${esc(r.name)}</h2><p class="bv-s">${room <= 0 ? 'This burrow is full.' : 'No free-to-spend money left this month to move here.'}</p><button type="button" class="link bv-no">Back</button>`; pop.querySelector('.bv-no').addEventListener('click', e => { e.stopPropagation(); fill(); }); return; }
@@ -7180,7 +7282,7 @@ const BUR = (() => {
   function fill() {
     const all = rows(), r = all.find(x => x.id === cur) || all[0]; if (!r) return;
     cur = r.id; const pct = Math.min(1, r.saved / r.target); LK = LOOKS[lookOf(r)] ? lookOf(r) : 'plain';
-    pop.innerHTML = `<h2>${esc(r.name)}</h2><p class="bv-n"><b>${fmt(r.saved)}</b> ${r.kind === 'debt' ? 'paid of' : 'of'} ${fmt(r.target)}</p><div class="bv-bar" role="img" aria-label="${(pct >= 1 ? 100 : Math.min(99, Math.floor(pct * 100)))} percent ${r.kind === 'debt' ? 'paid off' : 'full'}"><i style="width:${(pct >= 1 ? 100 : Math.min(99, Math.floor(pct * 100)))}%"></i></div><p class="bv-s">${(pct >= 1 ? 100 : Math.min(99, Math.floor(pct * 100)))}% ${r.kind === 'debt' ? 'paid off. ' + fmt(Math.max(0, r.target - r.saved)) + ' still owed' : 'full'}</p><button type="button" class="btn bv-add">${r.kind === 'debt' ? 'Add a payment' : 'Add money'}</button>`;
+    pop.innerHTML = `<h2>${esc(r.name)}</h2><p class="bv-n"><b>${fmt(r.saved)}</b> ${r.kind === 'debt' ? 'paid of' : 'of'} ${fmt(r.target)}</p><div class="bv-bar" role="img" aria-label="${r.pct} percent ${r.kind === 'debt' ? 'paid off' : 'full'}"><i style="width:${r.pct}%"></i></div><p class="bv-s">${r.pct}% ${r.kind === 'debt' ? 'paid off. ' + fmt(r.togo) + ' still owed' : 'full'}</p><button type="button" class="btn bv-add">${r.kind === 'debt' ? 'Add a payment' : 'Add money'}</button>`;
     pop.querySelector('.bv-add').addEventListener('click', e => { e.stopPropagation(); addPanel(r); });
     el.querySelector('.bv-dots').innerHTML = all.map(x => `<button type="button" data-b="${esc(x.id)}" aria-label="${esc(x.name)}" aria-current="${x.id === cur}"></button>`).join('');
     el.querySelectorAll('.bv-dots button').forEach(b => b.addEventListener('click', () => open(b.dataset.b)));
@@ -13650,7 +13752,7 @@ function askCard(bot, p, clipped, ctx) {
   const rows = [];
   if (p.receipts.length) {
     const fresh = p.receipts.filter(r => !r.dup), g = el('div', 'grp'), ul = el('ul', 'rv-list');
-    const head = el('div', 'rv-h'); head.append(el('b', '', fresh.length ? `${fresh.length} new receipt${fresh.length === 1 ? '' : 's'}` : 'No new receipts'), el('span', '', fresh.length ? fmt2(fresh.reduce((a, r) => a + r.a, 0)) : 'All already on your page.'));
+    const head = el('div', 'rv-h'); head.append(el('b', '', fresh.length ? `${fresh.length} new receipt${fresh.length === 1 ? '' : 's'}` : 'No new receipts'), el('span', '', fresh.length ? fmt2(receiptsTotal(fresh)) : 'All already on your page.'));
     g.append(head);
     p.receipts.forEach(r => {
       const li = el('li', 'rv-row' + (r.dup ? ' dupe' : '')), lab = el('label', 'rv-main'), i = el('input'), cat = r.c === 'other' ? 'Other' : (lineByKey(S, r.c) || { name: 'Other' }).name;
@@ -15346,11 +15448,11 @@ function renderStatus() {
   const el = $('#hStatus'), V = HV, m = V && V.month; if (!el || !m) return;
   const u = roundUnit(S), mon = monthLabel(V.ym, true), floor = cfg(S, 'minBank');
   let cls, word, line;
-  if (!(m.inflow > 0)) { if (m.left < 0 || m.bankEnd < 0) { cls = 'short'; word = 'No pay entered'; line = m.left < 0 ? `Your plan spends ${fmt(-m.left)} in ${mon} and no pay is entered, so your bank would end at ${fmt(m.bankEnd)}. Add your monthly pay under Plan.` : `You logged spending in ${mon} with no pay entered, so your bank would end at ${fmt2(m.bankEnd)}. Add your monthly pay under Plan.`; } else { cls = ''; word = 'No plan yet'; line = 'Add your monthly pay to start.'; } }
+  if (!(m.inflow > 0)) { if (m.left < 0 || m.bankEnd < 0) { cls = 'short'; word = 'No pay entered'; line = m.left < 0 ? `Your plan spends ${fmt(V.cells.planSpend)} in ${mon} and no pay is entered, so your bank would end at ${fmt(m.bankEnd)}. Add your monthly pay under Plan.` : `You logged spending in ${mon} with no pay entered, so your bank would end at ${fmt2(m.bankEnd)}. Add your monthly pay under Plan.`; } else { cls = ''; word = 'No plan yet'; line = 'Add your monthly pay to start.'; } }
   else if (sampleOn()) { const d = S.ui.done || {}; cls = ''; word = 'Sample numbers'; line = d.pay && d.bills ? 'Pay and bills are yours. The goals are still invented. Add a goal below.' : 'Invented figures for now. Finish the step below to make them yours.'; }
-  else if (m.status === 'good') { cls = 'good'; word = V.play && V.play.planned > 0 && V.play.left < 0 ? 'Over free to spend' : 'You are okay'; if (word !== 'You are okay') cls = 'tight'; const nOv = V.map && V.map.month.find(r => r.id === 'nec'), nOvT = nOv && nOv.overBy > 0 ? ` Bills and basics are ${fmt2(nOv.overBy)} over.` : ''; const pl = nOvT + (V.play && V.play.planned > 0 ? (V.play.left > 0 ? ` ${fmt2(V.play.left)} is free to spend.` : V.play.left < 0 ? ` Free to spend is ${fmt2(-V.play.left)} over.` : ' Free to spend is used up.') : ''); const unp = m.left - (((C.byYm[V.ym] || {}).draw) || 0) - (((C.byYm[V.ym] || {}).overNow) || 0); line = !nOvT && unp >= u ? `${fmt(unp)} of your pay has no place yet. Bills are covered. Give it a goal or a place, or keep it as a cushion.${pl}` : m.left < u && ((C.byYm[V.ym] || {}).out - (C.byYm[V.ym] || { jar: {} }).jar.nec) <= 0 ? `Bills use all of your pay. Nothing is set aside yet.` : (nOvT ? `Bills went past the plan.${pl}` : `Bills are covered and goals are planned for.${pl}`); if (nOvT) { cls = 'tight'; word = 'Over plan'; } }
-  else if (m.status === 'tight') { cls = 'tight'; word = 'Tight month'; const dw = ((C.byYm[V.ym] || {}).draw) || 0; line = `Plans ${fmt(-(m.left - dw))} more than your pay${dw > 0 ? ', ' + fmt(dw) + ' of it from your emergency fund' : ''}. Your balance covers it, ending ${mon} at ${fmt(m.bankEnd)}.`; }
-  else if (m.status === 'short' && round2(m.bankEnd - m.bankStart) >= 0) { cls = 'tight'; word = 'Building your cushion'; line = `Your bank is under your safety minimum of ${fmt(floor)}, but ${mon} adds to it. It will end at ${fmt(m.bankEnd)}. You can change the minimum in Settings.`; }
+  else if (m.status === 'good') { cls = 'good'; word = V.play && V.play.planned > 0 && V.play.left < 0 ? 'Over free to spend' : 'You are okay'; if (word !== 'You are okay') cls = 'tight'; const nOv = V.map && V.map.month.find(r => r.id === 'nec'), nOvT = nOv && nOv.overBy > 0 ? ` Bills and basics are ${fmt2(nOv.overBy)} over.` : ''; const pl = nOvT + (V.play && V.play.planned > 0 ? (V.play.left > 0 ? ` ${fmt2(V.play.left)} is free to spend.` : V.play.left < 0 ? ` Free to spend is ${fmt2(V.play.overBy)} over.` : ' Free to spend is used up.') : ''); const unp = V.cells.unplaced; line = !nOvT && unp >= u ? `${fmt(unp)} of your pay has no place yet. Bills are covered. Give it a goal or a place, or keep it as a cushion.${pl}` : m.left < u && ((C.byYm[V.ym] || {}).out - (C.byYm[V.ym] || { jar: {} }).jar.nec) <= 0 ? `Bills use all of your pay. Nothing is set aside yet.` : (nOvT ? `Bills went past the plan.${pl}` : `Bills are covered and goals are planned for.${pl}`); if (nOvT) { cls = 'tight'; word = 'Over plan'; } }
+  else if (m.status === 'tight') { cls = 'tight'; word = 'Tight month'; const dw = ((C.byYm[V.ym] || {}).draw) || 0; line = `Plans ${fmt(V.cells.overPay)} more than your pay${dw > 0 ? ', ' + fmt(dw) + ' of it from your emergency fund' : ''}. Your balance covers it, ending ${mon} at ${fmt(m.bankEnd)}.`; }
+  else if (m.status === 'short' && m.bankChange >= 0) { cls = 'tight'; word = 'Building your cushion'; line = `Your bank is under your safety minimum of ${fmt(floor)}, but ${mon} adds to it. It will end at ${fmt(m.bankEnd)}. You can change the minimum in Settings.`; }
   else { cls = 'short'; word = 'Short'; line = `Not enough for ${mon}. Your bank would end at ${fmt(m.bankEnd)}, under your safety minimum of ${fmt(floor)}. Change it in Settings, or open Plan to fix the month.`; }
   if (m.status === 'good' && word === 'You are okay' && (m.overNow || 0) > 0.004) { word = 'Over plan'; cls = 'tight'; line = `${fmt2(m.overNow)} went past the plan this month and came out of your bank. ` + line; }
   let wk = '';
@@ -15410,9 +15512,9 @@ function renderNext() {
   /* after a reload, an answer made in the last 3 days still shows with Undo */
   if (!SWEPT && S.ui.sweep && !sweepOffer()) { const k = Object.keys(S.ui.sweep).filter(q => S.ui.sweep[q].t && Date.now() - S.ui.sweep[q].t < 3 * 864e5 && C.byYm[q] && C.byYm[q].counted > 0).sort().pop(); if (k) { const e = S.ui.sweep[k]; SWEPT = { pm: k, id: e.id || null, to: e.id ? undefined : 'bank', amt: e.amt, note: `From ${FULL[+k.slice(5) - 1]}'s free to spend.${e.id ? '' : ' The bank figure now includes it.'}` }; } }
   if (!step && SWEPT) {
-    const g = SWEPT.id ? goalById(S, SWEPT.id) : null, mm = C.byYm[SWEPT.pm] || {}, used = (mm.topup && mm.topup.used) || 0, cnt = mm.counted || 0, rest = round2(cnt - used), nm = FULL[+SWEPT.pm.slice(5) - 1];
+    const g = SWEPT.id ? goalById(S, SWEPT.id) : null, mm = C.byYm[SWEPT.pm] || {}, used = (mm.topup && mm.topup.used) || 0, cnt = mm.counted || 0, rest = mm.credit || 0, nm = FULL[+SWEPT.pm.slice(5) - 1];
     let body;
-    if (g && used > 0) { let gi = null; try { gi = goalInfo(S, C, g.id, nowYm()); } catch (e) { } const rd = C.reached[g.id]; body = gi ? (gi.pct >= 1 ? dw(S, g, `${g.name} is full.`) : dw(S, g, `${fmt(Math.max(0, g.target - gi.bal))} to go.${rd ? ` Full ${monthLabel(rd)}.` : ''}`)) : ''; body += (g.why ? ' ' + g.why + '.' : '') + (rest > 0.004 ? ` The other ${fmt2(rest)} stays in the bank.` : ''); }
+    if (g && used > 0) { let gi = null; try { gi = goalInfo(S, C, g.id, nowYm()); } catch (e) { } const rd = C.reached[g.id]; body = gi ? (gi.pct >= 1 ? dw(S, g, `${g.name} is full.`) : dw(S, g, `${fmt(gi.togo)} to go.${rd ? ` Full ${monthLabel(rd)}.` : ''}`)) : ''; body += (g.why ? ' ' + g.why + '.' : '') + (rest > 0.004 ? ` The other ${fmt2(rest)} stays in the bank.` : ''); }
     else if (g) body = `From ${nm}'s free to spend. ${g.name} had no room left, so it stays in the bank.`;
     else body = `From ${nm}'s free to spend. The bank figure now includes it.`;
     step = [g && used > 0 ? `${fmt2(used)} put toward ${g.name}` : `${fmt2(cnt)} counted in the bank`, body, 'Undo', 'data-sweepundo'];
@@ -15446,7 +15548,7 @@ function doSweep(pm) {
   let note = '';
   if (gi.pct >= 1) note = dw(S, g, `${g.name} is full.`);
   else if (after && before && after < before) { const n = ymIdx(before) - ymIdx(after); note = `Full ${monthLabel(after)}, ${plural(n, 'month')} sooner.`; }
-  else note = dw(S, g, `${fmt(Math.max(0, g.target - gi.bal))} to go.${after ? ` Full ${monthLabel(after)}.` : ''}`);
+  else note = dw(S, g, `${fmt(gi.togo)} to go.${after ? ` Full ${monthLabel(after)}.` : ''}`);
   SWEPT = { pm, id, amt: moved, note: `${note}${g.why ? ' ' + g.why + '.' : ''}` };
   sfx('coin'); celebrate('med', `${g.name}: +${fmt(moved)}. ${note}`); SQ.stash();
   render();
@@ -15523,7 +15625,7 @@ function renderHero() {
   const when = dwr(r, r.pct >= 100 ? 'Full.' : r.reached ? (r.months <= 0 ? 'Full <b>this month</b>.' : `<b>${plural(r.months, 'month')}</b> to go. Full ${fullLabel(r.reached)}.`) : 'Not full within ' + SPAN + ' at this pace.');
   const ms = [25, 50, 75].map(p => `<span class="ms${pct >= p ? ' hit' : ''}" style="left:${p}%"></span>`).join('');
   /* what moves it: this month's deposit and what is still to go, so progress reads as motion, not a percent */
-  const mg = C.byYm[HV.ym] && C.byYm[HV.ym].g[g.id], put1 = mg ? mg.actual : 0, togo = Math.max(0, r.target - r.saved);
+  const mg = C.byYm[HV.ym] && C.byYm[HV.ym].g[g.id], put1 = mg ? mg.actual : 0, togo = r.togo;
   const adds = r.pct < 100 && r.live ? `<p class="hw-add">${put1 > 0 ? `<b>+${fmt(put1)}</b> this month. ` : ''}${dwr(r, fmt(togo) + ' to go.')}</p>` : '';
   el.className = 'card hwin';
   put(el, `<p class="hw-k">Main goal: ${esc(g.name)}</p>
@@ -15536,7 +15638,7 @@ function renderHero() {
   /* a milestone is celebrated once, the first time the plan passes it */
   const hit = pct >= 100 ? 4 : pct >= 75 ? 3 : pct >= 50 ? 2 : pct >= 25 ? 1 : 0, ms0 = S.ui.ms = S.ui.ms || {};
   if (ms0[g.id] === undefined) { ms0[g.id] = hit; persist(); }
-  else if (hit > (ms0[g.id] || 0)) { ms0[g.id] = hit; persist(); sfx(hit === 4 ? 'fanfare' : 'sparkle'); SQ.stash(); celebrate(hit === 4 ? 'big' : 'med', hit === 4 ? `${g.name}: full.${g.why ? ' ' + g.why + '.' : ''}` : `${g.name}: ${hit * 25}%.${g.why && hit >= 2 ? ' ' + g.why + '.' : ''}`); }
+  else if (hit > (ms0[g.id] || 0)) { ms0[g.id] = hit; persist(); sfx(hit === 4 ? 'fanfare' : 'sparkle'); SQ.stash(); celebrate(hit === 4 ? 'big' : 'med', hit === 4 ? `${g.name}: full.${g.why ? ' ' + g.why + '.' : ''}` : `${g.name}: ${[0, 25, 50, 75, 100][hit]}%.${g.why && hit >= 2 ? ' ' + g.why + '.' : ''}`); }
 }
 /* the free to spend: a small pixel chest painted into the corner of the card, in the same palette and light as the burrows (flat tones, no outlines, a warm line of gold under the lid) */
 function chestArt(gold) {
@@ -15579,25 +15681,25 @@ const links = `<p class="cap hs-more"><button type="button" class="link" data-xm
   /* necessities: a plain yes or no, with the number behind it */
   const nec = b('nec'), covered = m.inflow >= nec.planned;
   const necRoom = V.map && V.map.month.find(r => r.id === 'nec'), necOver = necRoom && necRoom.overBy > 0 ? necRoom.overBy : 0;
-  const necTile = necOver > 0 ? `<li class="bk over" style="--c:${JARVAR.nec}"><span class="bk-n"><i></i>Bills and basics</span><b>Over</b><span class="bk-s">${fmt2(necOver)} past what a bill was planned for in ${monthLabel(ym, true)}. ${necRoom && necRoom.amount > 0 ? fmt(necRoom.amount) + ' of your bills are still to pay. ' : ''}${fmt2(nec.spent)} logged of ${fmt(nec.planned)} planned.</span></li>` : `<li class="bk${covered ? ' ok' : ' over'}" style="--c:${JARVAR.nec}"><span class="bk-n"><i></i>Bills and basics</span><b>${covered ? 'Covered' : 'Short'}</b><span class="bk-s">${covered ? (m.status === 'short' && m.left < 0 ? `Bills fit in your pay, but the whole month is short.` : C.byYm[ym] && C.byYm[ym].bankEnd < 0 ? `Bills fit in your pay, but spending past plan leaves the bank below zero.` : `${m.inflow - ((C.byYm[ym] && C.byYm[ym].draw) || 0) >= nec.planned ? 'Your pay is enough for' : 'Your pay and money borrowed from the emergency fund cover'} ${fmt(nec.planned)} of bills in ${monthLabel(ym, true)}${nec.spent > 0 ? `. ${fmt2(nec.spent)} logged.` : ''}`) : `Pay is ${fmt(nec.planned - (m.inflow - (((C.byYm[ym] && C.byYm[ym].draw)) || 0)))} under the bills${(C.byYm[ym] && C.byYm[ym].draw) > 0 ? ', even with ' + fmt(C.byYm[ym].draw) + ' borrowed from the emergency fund' : ''}.`}</span></li>`;
+  const necTile = necOver > 0 ? `<li class="bk over" style="--c:${JARVAR.nec}"><span class="bk-n"><i></i>Bills and basics</span><b>Over</b><span class="bk-s">${fmt2(necOver)} past what a bill was planned for in ${monthLabel(ym, true)}. ${necRoom && necRoom.amount > 0 ? fmt2(necRoom.amount) + ' of your bills are still to pay. ' : ''}${fmt2(nec.spent)} logged of ${fmt(nec.planned)} planned.</span></li>` : `<li class="bk${covered ? ' ok' : ' over'}" style="--c:${JARVAR.nec}"><span class="bk-n"><i></i>Bills and basics</span><b>${covered ? 'Covered' : 'Short'}</b><span class="bk-s">${covered ? (m.status === 'short' && m.left < 0 ? `Bills fit in your pay, but the whole month is short.` : C.byYm[ym] && C.byYm[ym].bankEnd < 0 ? `Bills fit in your pay, but spending past plan leaves the bank below zero.` : `${m.inflow - ((C.byYm[ym] && C.byYm[ym].draw) || 0) >= nec.planned ? 'Your pay is enough for' : 'Your pay and money borrowed from the emergency fund cover'} ${fmt(nec.planned)} of bills in ${monthLabel(ym, true)}${nec.spent > 0 ? `. ${fmt2(nec.spent)} logged.` : ''}`) : `Pay is ${fmt(V.cells.billsOverPay)} under the bills${(C.byYm[ym] && C.byYm[ym].draw) > 0 ? ', even with ' + fmt(C.byYm[ym].draw) + ' borrowed from the emergency fund' : ''}.`}</span></li>`;
   /* spent past this month's plan: the burrow's own pile covers what it can, the rest comes out of the bank (the same split as the Receipts table) */
   const WHAT = { edu: 'For courses and books.', give: 'For gifts and charity.' };
-  const bankPart = x => { const br = V.map && V.map.burrows.find(r => r.id === x.id); return x.left < 0 ? Math.min(-x.left, br ? (br.overBy || 0) : -x.left) : 0; };
+  const bankPart = x => ((V.cells && V.cells[x.id]) || { bank: 0 }).bank;   /* the part of a pile overspend the bank pays (model.js viewOf cells) */
   const pileCovers = x => x.left < 0 && bankPart(x) < 0.005;
-  const tile = x0 => { const x = x0, o = x.left < 0 ? round2(-x.left) : 0, bk = bankPart(x), pl = round2(o - bk), mon = monthLabel(ym, true);
+  const tile = x0 => { const x = x0, T = (V.cells && V.cells[x.id]) || { over: 0, bank: 0, pile: 0 }, o = T.over, bk = T.bank, pl = T.pile, mon = monthLabel(ym, true);
     const sub = x.planned <= 0 ? '' : o > 0 ? `${fmt(o)} more than the ${fmt(x.planned)} for ${mon}. ` + (bk < 0.005 ? 'All of it came from the pile. ' : pl > 0 ? `${fmt(pl)} came from the pile, ${fmt2(bk)} is over and comes out of the bank. ` : `It comes out of the bank. `) : 'Left of ' + fmt(x.planned) + ' in ' + mon + '. ';
     return `<li class="bk${bk >= 0.005 ? ' over' : ''}" style="--c:${JARVAR[x.id]}"><span class="bk-n"><i></i>${esc(x.name)}</span><b>${o > 0 ? (bk >= 0.005 ? '−' + fmt2(bk) : fmt2(0)) : fmt2(x.left)}</b><span class="bk-s">${sub}${WHAT[x.id] || ''}</span></li>`; };
   const tiles = `<ul class="bkl chl">${necTile}${tile(b('edu'))}${tile(b('give'))}</ul>${V.otherSpent > 0 ? `<p class="cap">${fmt2(V.otherSpent)} logged as Other. Not taken from a pot.</p>` : ''}`;
   if (p.planned <= 0 && p.spent <= 0) { put(el, `${head}<p class="hs-lbl">Free to spend in ${monthLabel(ym)}</p><p class="hs-big zero">${fmt(0)}</p><p class="cap">No free to spend planned for ${monthLabel(ym)}.</p><div class="row-btns"><button type="button" class="btn small" data-open="play">Set in Plan</button></div>${smp}${sampleOn() ? '' : links}${tiles}`); return; }
   /* free to spend can never be more than the plan can afford: when the month would end under the safety minimum, that gap is held back */
   const fo = freeOf(S, m, p), held = fo.held, freeLeft = fo.free;
-  const wk = p.perWeek != null && freeLeft > 0 ? `<b>${fmt(Math.max(0, freeLeft) / (p.daysLeft / 7))}</b> a week to stay inside it for the ${plural(p.daysLeft, 'day')} left.` : `${plural(p.daysLeft, 'day')} left.`;
+  const wk = p.perWeek != null && freeLeft > 0 ? `<b>${fmt(V.cells.perWeek)}</b> a week to stay inside it for the ${plural(p.daysLeft, 'day')} left.` : `${plural(p.daysLeft, 'day')} left.`;
   const chip = p.over ? `<span class="chip short">${IC.bad}Over</span>` : p.ahead ? `<span class="chip tight">${IC.warn}Ahead of pace</span>` : `<span class="chip good">${IC.ok}On pace</span>`;
 
   const free = !p.over && p.planned > 0 && m.status === 'good' && !sampleOn();
   put(el, `${head}<p class="hs-lbl">${p.over ? 'Over free to spend in ' : 'Free to spend in '}${monthLabel(ym)}</p><p class="hs-big${p.over ? ' neg' : ''}" style="--n:${fmt2(freeLeft).length}">${fmt2(freeLeft)}</p>
     <div class="hs-bar${p.over ? ' over' : ''}" role="img" aria-label="${fmt2(p.spent)} of ${fmt(p.planned)} spent"><i style="width:${p.frac * 100}%"></i><span class="pace" style="left:${p.dayFrac * 100}%"></span></div><p class="cap hs-key">The bar is what you have spent. The mark is how far through the month you are.</p>
-    <p class="hs-sub">${p.count ? `Spent ${fmt2(p.spent)} of ${fmt(p.planned)}.` : `Nothing logged yet. ${fmt(p.planned)} planned.`} ${p.over ? '' : wk}${!p.over && freeLeft > 0 && p.daysLeft > 0 ? ` About <b>${fmt(freeLeft / p.daysLeft)}</b> a day.` : ''}</p>${p.over && freeLeft < 0 ? `<p class="hs-ok warn">${fmt2(-freeLeft)} came out of your bank. Spend nothing more from Free to spend this month.</p>` : ''}${held > 0 ? `<p class="hs-ok warn">${fmt(held)} is held back. Your bank would end under your ${fmt(cfg(S, 'minBank'))} minimum, so it is not safe to spend.</p>` : ''}${p.count || p.over ? chip : ''}${free ? `<p class="hs-ok">Bills and goals are planned for, so this part is free to spend.${V.main && V.main.live && V.main.pct < 100 ? ` What is left at month end can go toward ${esc(goalById(S, V.main.id).name)}.` : ''}</p>` : ''}${gapBox}${smp}${sampleOn() ? '' : links}${tiles}`);
+    <p class="hs-sub">${p.count ? `Spent ${fmt2(p.spent)} of ${fmt(p.planned)}.` : `Nothing logged yet. ${fmt(p.planned)} planned.`} ${p.over ? '' : wk}${!p.over && freeLeft > 0 && p.daysLeft > 0 ? ` About <b>${fmt(V.cells.perDay)}</b> a day.` : ''}</p>${p.over && freeLeft < 0 ? `<p class="hs-ok warn">${fmt2(V.cells.freeOver)} came out of your bank. Spend nothing more from Free to spend this month.</p>` : ''}${held > 0 ? `<p class="hs-ok warn">${fmt(held)} is held back. Your bank would end under your ${fmt(cfg(S, 'minBank'))} minimum, so it is not safe to spend.</p>` : ''}${p.count || p.over ? chip : ''}${free ? `<p class="hs-ok">Bills and goals are planned for, so this part is free to spend.${V.main && V.main.live && V.main.pct < 100 ? ` What is left at month end can go toward ${esc(goalById(S, V.main.id).name)}.` : ''}</p>` : ''}${gapBox}${smp}${sampleOn() ? '' : links}${tiles}`);
 }
 /* a row opens to show its details; which ones are open survives a redraw */
 const HOPEN = new Set();
@@ -15679,8 +15781,8 @@ function renderBand() {
   const g = goalById(S, r.id), p = V.play, when = dwr(r, r.pct >= 100 ? 'Full' : r.reached ? (r.months <= 0 ? 'This month' : plural(r.months, 'month') + ' to go') : 'Over ' + SPAN);
   if (!g) { el.hidden = true; return; }
   const purpose = g.why || g.name;
-  put(el, `<span class="mg-l" style="--c:var(--c${g.slot})"><i class="dot"></i><b>${esc(purpose)}</b><em>${when}</em></span><span class="mg-bar" aria-hidden="true" style="--c:var(--c${g.slot})"><i style="width:${fracOf(r) * 100}%"></i></span><span class="mg-s">${sampleOn() ? 'Sample numbers. ' : ''}${(() => { const fr = freeOf(S, V.month, p).free; return fr < 0 ? 'Free to spend: ' + fmt2(-fr) + ' over' : 'Free to spend: ' + fmt2(fr) + ' left'; })()}, ${monthLabel(V.ym, true)}</span>`);
-  el.setAttribute('aria-label', `Main goal: ${g.name}${g.why ? ', ' + g.why : ''}. ${when}. ${(() => { const fr = freeOf(S, V.month, p).free; return fr < 0 ? 'Free to spend ' + fmt2(-fr) + ' over' : 'Free to spend ' + fmt2(fr) + ' left'; })()}. Tap for Home.`);
+  put(el, `<span class="mg-l" style="--c:var(--c${g.slot})"><i class="dot"></i><b>${esc(purpose)}</b><em>${when}</em></span><span class="mg-bar" aria-hidden="true" style="--c:var(--c${g.slot})"><i style="width:${fracOf(r) * 100}%"></i></span><span class="mg-s">${sampleOn() ? 'Sample numbers. ' : ''}${V.map.free < 0 ? 'Free to spend: ' + fmt2(V.cells.freeOver) + ' over' : 'Free to spend: ' + fmt2(V.map.free) + ' left'}, ${monthLabel(V.ym, true)}</span>`);
+  el.setAttribute('aria-label', `Main goal: ${g.name}${g.why ? ', ' + g.why : ''}. ${when}. ${V.map.free < 0 ? 'Free to spend ' + fmt2(V.cells.freeOver) + ' over' : 'Free to spend ' + fmt2(V.map.free) + ' left'}. Tap for Home.`);
   el.hidden = false;
 }
 /* A custom goal gets a line of its own from Claude ("You can go surfing") when this page is open from its Claude link. Only the goal's name is sent.
@@ -15751,9 +15853,9 @@ function gwPlan() {
   if (GW.due && !GW.kind.em) {
     const rb = readyBy({ due: GW.due }), n = rb ? ymCount(SAVE_FROM, rb) : 0;
     if (n < 1) return { txt: 'Too soon to save anything by then. Pick a later date.', bad: true };
-    return { txt: `${GW.kind && GW.kind.debt ? 'Pay about' : 'Save about'} <b>${fmt(Math.ceil(rem / n / u) * u)}</b> a month for ${plural(n, 'month')}. ${GW.kind && GW.kind.debt ? 'Paid off' : 'Ready'} by ${dateLabel(GW.due)}.`, ok: true };
+    return { txt: `${GW.kind && GW.kind.debt ? 'Pay about' : 'Save about'} <b>${fmt(wizardMonthly(S, GW.cost, GW.saved, n))}</b> a month for ${plural(n, 'month')}. ${GW.kind && GW.kind.debt ? 'Paid off' : 'Ready'} by ${dateLabel(GW.due)}.`, ok: true };
   }
-  return { txt: `No date: plan assumes 12 months. About <b>${fmt(Math.ceil(rem / 12 / u) * u)}</b> a month.`, ok: true };
+  return { txt: `No date: plan assumes 12 months. About <b>${fmt(wizardMonthly(S, GW.cost, GW.saved, 12))}</b> a month.`, ok: true };
 }
 function openGoalWizard() {
   if (S.plan.goals.length >= MAX_GOALS) { cheer(`Limit: ${MAX_GOALS} goals.`); return; }
@@ -16040,14 +16142,14 @@ function debtFormHTML(d, isNew) {
 }
 function debtCardHTML(d, r, x, i, first) {
   const id = esc(d.id), slot = SLOTS[i % SLOTS.length], open = DEBT_EDIT === d.id;
-  const done = x.start <= 0, pct = d.balance > 0 ? Math.max(0, Math.min(1, 1 - x.bal / d.balance)) : 1;
+  const done = x.start <= 0, pct = x.paidPct;
   let stat, cls = 'plain', note = '';
   if (done) { cls = 'good'; stat = IC.ok + 'Paid off'; note = 'Nothing owed.'; }
   else if (r.never) { cls = 'bad'; stat = IC.bad + 'Not paid off'; note = `The payment does not cover the interest. Pay at least ${fmt(debtMinToCover(d))} a month.`; }
   else { cls = 'good'; stat = IC.ok + 'On the way'; note = `Paid off ${monthLabel(r.payoffYm)}.${r.totalInterest > 0 ? ' About ' + fmt(r.totalInterest) + ' interest in all.' : ''}`; }
   return `<div class="gcard dcard" id="dc-${id}" data-did="${id}" style="--c:var(--c${slot})">
     <div class="jhead"><span class="jarn"><i class="dot"></i><span>${esc(d.name)}</span></span><span class="jarv"><b>${fmt(x.start)}</b> owed</span></div>
-    <div class="gbar" role="img" aria-label="${esc(d.name)}: ${Math.round(pct * 100)}% paid by the end of ${monthLabel(sel, true)}"><i class="fill" style="width:${pct * 100}%"></i></div>
+    <div class="gbar" role="img" aria-label="${esc(d.name)}: ${x.paidPctWhole}% paid by the end of ${monthLabel(sel, true)}"><i class="fill" style="width:${pct * 100}%"></i></div>
     <div class="jfoot"><span class="jstat ${cls}">${stat}</span><span class="jart">${esc(note)}</span></div>
     <p class="gsave">${DEBT_KIND_NAME[d.kind]}${d.apr > 0 ? `, ${esc(String(d.apr))}% a year` : ''}. Pays <b>${fmt(x.pay)}</b> in ${monthLabel(sel, true)}${x.interest > 0 ? ` (${fmt(x.interest)} of it interest)` : ''}.</p>
     ${first && !done ? '<p class="gsave"><b>Put extra money here first.</b> It has the highest rate.</p>' : ''}
@@ -16071,13 +16173,13 @@ function renderDebts() {
     $('#addDebtBtn').hidden = sample || DEBT_DRAFT !== null || ds.length >= MAX_DEBTS;
     $('#debtMsg').textContent = ds.length >= MAX_DEBTS ? `Limit: ${MAX_DEBTS}.` : '';
   }
-  const owed = m.debts && ds.length ? sum(ds.map(d => m.debts[d.id].start)) : 0;
+  const owed = (m.debts && ds.length ? m.debtStart : 0) || 0;
   const free = rows.length && rows.every(r => !r.never) ? rows.reduce((a, r) => (r.payoffYm > a ? r.payoffYm : a), '') : '';
   $('#debtSub').textContent = !ds.length ? 'Cards and loans with interest. Their payments are part of Bills and basics.'
     : `${fmt(owed)} owed at the start of ${monthLabel(sel, true)}. ${m.debtInterest > 0 ? fmt(m.debtInterest) + ' interest this month. ' : ''}${free ? 'Debt free ' + monthLabel(free) + '.' : rows.some(r => r.never) ? 'One of them is not being paid off.' : ''}`;
   /* the Plan row */
   const row = document.querySelector('.row[data-id="debts"]'); if (row) row.hidden = !ds.length;
-  const note = $('#jcap-debts'); if (note) note.textContent = ds.length ? `${fmt(sum(ds.map(d => Math.min(d.min, m.debts[d.id].start + m.debts[d.id].interest))))} minimums${m.debtPay - sum(ds.map(d => Math.min(d.min, m.debts[d.id].start + m.debts[d.id].interest))) > 0 ? ' and ' + fmt(m.debtPay - sum(ds.map(d => Math.min(d.min, m.debts[d.id].start + m.debts[d.id].interest)))) + ' extra' : ''}. Extra goes straight off what you owe.` : '';
+  const note = $('#jcap-debts'); if (note) note.textContent = ds.length ? `${fmt(m.debtMin)} minimums${m.debtExtra > 0 ? ' and ' + fmt(m.debtExtra) + ' extra' : ''}. Extra goes straight off what you owe.` : '';
 }
 function debtRead(form) {
   const g = k => form.querySelector(`[data-d="${k}"]`), num = k => { const v = Math.round(+g(k).value || 0); return Math.max(0, Math.min(1e9, v)); };
@@ -16122,7 +16224,7 @@ function debtsInit() {
 function renderHomeDebts() {
   const el = $('#hDebts'); if (!el) return;
   const ds = debtsOf(S); if (!ds.length || sampleOn()) { el.hidden = true; return; }
-  const ym = HV.ym, m = C.byYm[ym], rows = debtRows(S, C), owed = sum(ds.map(d => m.debts[d.id].start));
+  const ym = HV.ym, m = C.byYm[ym], rows = debtRows(S, C), owed = m.debtStart || 0;
   const free = rows.every(r => !r.never) ? rows.reduce((a, r) => (r.payoffYm > a ? r.payoffYm : a), '') : '';
   const first = rows.find(r => r.first), bad = rows.find(r => r.never);
   el.hidden = false;
@@ -16233,7 +16335,7 @@ function renderLimits() {
   const L = limitsOf(S, C, HV.ym); if (!L.rows.length && !L.other) { el.hidden = true; return; }
   el.hidden = false;
   put(el, `<h2>Spending limits</h2><p class="hs-lbl">Each line against what you logged in ${esc(monthLabel(HV.ym, true))}</p>
-    <ul class="lim">${L.rows.map(r => { const f = r.planned > 0 ? Math.min(1, r.spent / r.planned) : (r.spent > 0 ? 1 : 0); return `<li class="${r.over ? 'over' : ''}"><span class="ln">${esc(r.name)}</span><span class="lv">${r.over ? `${fmt2(-r.left)} over` : `${fmt2(r.left)} left`}</span><span class="lb" role="img" aria-label="${esc(r.name)}: ${fmt2(r.spent)} of ${fmt(r.planned)}"><i style="width:${f * 100}%"></i></span><span class="ls">${fmt2(r.spent)} of ${fmt(r.planned)}</span></li>`; }).join('')}</ul>
+    <ul class="lim">${L.rows.map(r => { const f = r.planned > 0 ? Math.min(1, r.spent / r.planned) : (r.spent > 0 ? 1 : 0); return `<li class="${r.over ? 'over' : ''}"><span class="ln">${esc(r.name)}</span><span class="lv">${r.over ? `${fmt2(r.overBy)} over` : `${fmt2(r.left)} left`}</span><span class="lb" role="img" aria-label="${esc(r.name)}: ${fmt2(r.spent)} of ${fmt(r.planned)}"><i style="width:${f * 100}%"></i></span><span class="ls">${fmt2(r.spent)} of ${fmt(r.planned)}</span></li>`; }).join('')}</ul>
     ${L.other > 0 ? `<p class="cap">${fmt2(L.other)} logged as Other has no limit.</p>` : ''}`);
 }
 
@@ -16246,9 +16348,9 @@ function renderLookBack() {
   const names = { nec: 'Bills and basics', play: 'Free to spend', edu: 'Education', give: 'Giving' };
   const rows = b.jars.filter(j => j.planned > 0 || j.spent > 0).map(j => `<tr><th scope="row">${names[j.id]}</th><td>${fmt(j.planned)}</td><td>${j.spent > 0 ? fmt2(j.spent) : j.id === 'nec' ? 'in plan' : fmt(0)}</td></tr>`).join('');
   put(el, `<h2>Last month, ${esc(monthLabel(pm))}</h2>
-    <p class="cap">${b.count} ${b.count === 1 ? 'receipt' : 'receipts'}, ${fmt2(b.logged)} logged. The balance went ${b.left >= 0 ? 'up' : 'down'} ${fmt2(Math.abs(round2(b.bankEnd - b.bankStart)))}, from ${fmt2(b.bankStart)} to ${fmt2(b.bankEnd)}.</p>
+    <p class="cap">${b.count} ${b.count === 1 ? 'receipt' : 'receipts'}, ${fmt2(b.logged)} logged. The balance went ${b.left >= 0 ? 'up' : 'down'} ${fmt2(b.change)}, from ${fmt2(b.bankStart)} to ${fmt2(b.bankEnd)}.</p>
     <div class="tablewrap"><table class="lbt"><thead><tr><th scope="col"></th><th scope="col">Planned</th><th scope="col">Spent</th></tr></thead><tbody>${rows}</tbody></table></div>
-    ${b.over.length ? `<p class="cap">Over the plan: ${b.over.slice(0, 3).map(r => `${esc(r.name)} by ${fmt2(-r.left)}`).join(', ')}.</p>` : '<p class="cap">Nothing went over its plan.</p>'}
+    ${b.over.length ? `<p class="cap">Over the plan: ${b.over.slice(0, 3).map(r => `${esc(r.name)} by ${fmt2(r.overBy)}`).join(', ')}.</p>` : '<p class="cap">Nothing went over its plan.</p>'}
     <p class="cap">${b.goalsAdded > 0 ? `${fmt(b.goalsAdded)} went to goals. ` : ''}${b.debtPaid > 0 ? `${fmt(b.debtPaid)} went to cards and loans, ${fmt(b.interest)} of it interest. ` : ''}</p>`);
 }
 
@@ -16313,7 +16415,7 @@ function openWhy(kind) {
     title = r.name;
     rows = [[`Planned for ${mon}`, fmt(r.monthly)], ['Planned since the start of your plan', fmt(r.planned)]];
     if (r.id !== 'ffa' || r.logged > 0) rows.push(['Logged', (r.logged > 0 ? '−' : '') + fmt2(r.logged)]);
-    rows.push([r.over ? 'Logged more than planned' : 'In this burrow', r.over ? fmt2(r.logged - r.planned) : fmt(r.amount)]);
+    rows.push([r.over ? 'Logged more than planned' : 'In this burrow', r.over ? fmt2(r.loggedPast) : fmt(r.amount)]);
     foot = r.id === 'ffa' ? 'Money you invest and never spend. It only grows.' : 'Money that piles up. What you log here comes out of the pile, and it does not touch your monthly bills.';
   } else if (kind === 'free') {
     const fo = freeOf(S, V.month, p), held = fo.held, freeLeft = fo.free;
@@ -16321,12 +16423,12 @@ function openWhy(kind) {
     rows = [[`Free to spend planned for ${mon}`, fmt(p.planned)], [`Logged in Free to spend (${p.count} ${p.count === 1 ? 'receipt' : 'receipts'})`, '−' + fmt2(p.spent)]];
     if (held > 0) rows.push(['Held back so the balance stays above your minimum', '−' + fmt(held)]);
     rows.push(['Free to spend', fmt2(freeLeft)]);
-    if (p.perWeek != null) rows.push([`Per week for the ${plural(p.daysLeft, 'day')} left`, fmt(Math.max(0, freeLeft) / (p.daysLeft / 7))]);
-    if (p.daysLeft > 0 && freeLeft > 0) rows.push(['Per day', fmt(freeLeft / p.daysLeft)]);
+    if (p.perWeek != null) rows.push([`Per week for the ${plural(p.daysLeft, 'day')} left`, fmt(V.cells.perWeek)]);
+    if (p.daysLeft > 0 && freeLeft > 0) rows.push(['Per day', fmt(V.cells.perDay)]);
     foot = 'Planned is the Free to spend total on the Plan page. Logged is every receipt in Free to spend this month.';
   } else {
     title = 'Where you stand in ' + mon;
-    rows = [['Pay and other money in', fmt(m.inflow)], ['Bills, one-time costs and card payments', '−' + fmt(m.jar.nec)], ['Goals', '−' + fmt(m.goalsTotal)], ['Free to spend, Education, Investing, Give', '−' + fmt(m.jar.play + m.jar.edu + m.jar.ffa + m.jar.give)], ['Left in the month', (m.left < 0 ? '−' : '') + fmt(Math.abs(m.left))], ['Balance at the start', fmt(m.bankStart)], ['Balance at the end', fmt(m.bankEnd)], ['Your minimum balance', fmt(floor)]];
+    rows = [['Pay and other money in', fmt(m.inflow)], ['Bills, one-time costs and card payments', '−' + fmt(m.jar.nec)], ['Goals', '−' + fmt(m.goalsTotal)], ['Free to spend, Education, Investing, Give', '−' + fmt(V.cells.otherPlaces)], ['Left in the month', (m.left < 0 ? '−' : '') + fmt(V.cells.leftAbs)], ['Balance at the start', fmt(m.bankStart)], ['Balance at the end', fmt(m.bankEnd)], ['Your minimum balance', fmt(floor)]];
     foot = m.bankEnd < floor ? 'The balance ends under your minimum, so the month is short.' : m.left < 0 ? 'The month spends more than comes in, but the balance covers it.' : 'Everything planned fits in your pay.';
   }
   let el = $('#why');
@@ -16374,14 +16476,16 @@ function paintLim() { const b = $('#setLim'); if (!b) return; const on = S.ui.li
    This month's two rooms (Bills and basics, Free to spend) are here; the burrows (goals, Education, Giving, Investing) are the next section, drawn by BUR.home.
    Every figure comes from V.map (model.js, mapOf). Until real balances arrive (pay day, a later step) the bank figure is the plan's balance at the end of the month and the page says so. */
 /* what covers a plan bigger than the pay: the emergency fund first (what was borrowed), then the bank */
-const coverText = (over, draw, bank, minB) => {
+const coverText = (over, draw, bank, minB, below) => {
   const rest = round2(over - (draw || 0));
-  return (draw > 0 ? fmt(draw) + ' is borrowed from your emergency fund' + (rest < -0.5 ? ' (more than the gap, the extra stays in your bank)' : '') + '. ' : '') + (rest <= 0.5 ? '' : bank < 0 ? 'Your bank cannot cover ' + (draw > 0 ? 'the rest' : 'it') + ': it would end ' + fmt(-bank) + ' below zero.' : bank < minB ? 'The bank covers ' + (draw > 0 ? 'the rest' : 'it') + ' but ends under your minimum.' : 'The bank covers ' + (draw > 0 ? 'the rest.' : 'the difference.'));
+  return (draw > 0 ? fmt(draw) + ' is borrowed from your emergency fund' + (rest < -0.5 ? ' (more than the gap, the extra stays in your bank)' : '') + '. ' : '') + (rest <= 0.5 ? '' : bank < 0 ? 'Your bank cannot cover ' + (draw > 0 ? 'the rest' : 'it') + ': it would end ' + fmt(below) + ' below zero.' : bank < minB ? 'The bank covers ' + (draw > 0 ? 'the rest' : 'it') + ' but ends under your minimum.' : 'The bank covers ' + (draw > 0 ? 'the rest.' : 'the difference.'));
 };
 function renderMap() {
   const el = $('#hMap'), V = HV; if (!el) return;
   if (!V || !V.map || !(V.month.inflow > 0)) { el.hidden = true; return; }
   const M = V.map, mon = monthLabel(V.ym, true);
+  /* the proof: where the money sits against where it came from, worked out apart (model.js proofOf). A miss is shown, never hidden. */
+  const PF = proofOf(S, C, V.ym, M); if (!PF.ok && !renderMap.told) { renderMap.told = true; logErr('proof', new Error('numbers off by ' + PF.off + ' in ' + V.ym)); }
   el.hidden = false;
   const n = (l, v, cls) => `<li class="mp-n${cls ? ' ' + cls : ''}"><span class="mp-l">${esc(l)}</span><b>${v}</b></li>`;
   const SPL = { nec: 'Bills and basics', play: 'Free to spend', edu: 'Education', give: 'Giving', ffa: 'Investing' };
@@ -16390,10 +16494,10 @@ function renderMap() {
   const split = [];
   M.split.forEach(x => { if (x.id !== 'lts') split.push({ id: x.id, name: SPL[x.id], amount: x.amount, c: col(x.id) }); else M.goalParts.filter(g => g.plan > 0).forEach(g => split.push({ id: 'goal:' + g.id, name: g.name, amount: g.plan, c: gcol(g) })); });
   /* the strip always adds up to the real pay: pay the plan has not placed is its own piece, and a plan bigger than the pay says so */
-  const dwn = (C && C.byYm[V.ym] && C.byYm[V.ym].draw) || 0, realPay = Math.max(0, ((HV && HV.month && HV.month.inflow) || 0) - dwn), placed = split.reduce((a, x) => a + x.amount, 0), gapPay0 = round2(realPay - placed), usedOver = Math.min(Math.max(0, gapPay0), (C && C.byYm[V.ym] && C.byYm[V.ym].overNow) || 0), gapPay = round2(gapPay0 - usedOver);
+  const dwn = (C && C.byYm[V.ym] && C.byYm[V.ym].draw) || 0, placed = M.placed, usedOver = M.usedOver, gapPay = M.payGap;   /* the pay strip's amounts come from the model (mapOf) */
   if (gapPay > 0.5) split.push({ id: 'unplaced', name: 'Not placed yet, stays in the bank', amount: gapPay, c: 'var(--bankc)' });
   if (usedOver > 0.5) split.push({ id: 'usedover', name: 'Used for spending past plan', amount: usedOver, c: 'var(--bad)' });
-  const planOver = gapPay < -0.5 ? round2(-gapPay) : 0;
+  const planOver = M.planOver;
   const seg = split.map(x => `<i class="mp-seg" data-drop="pay:${esc(x.id)}" style="flex:${x.amount};--c:${x.c}" title="${esc(x.name)} ${esc(fmt(x.amount))}"></i>`).join('');
   const key = split.map(x => `<li><i style="background:${x.c}"></i>${esc(x.name)} <b>${fmt(x.amount)}</b></li>`).join('');
   const pb = M.bankEnd > 0 ? M.bankEnd : 0;
@@ -16401,17 +16505,18 @@ function renderMap() {
   const wseg = parts.map(x => `<i style="flex:${x.amount};--c:${x.c}" title="${esc(x.name)} ${esc(fmt(x.amount))}"></i>`).join('');
   const wkey = (M.bankEnd < 0 ? `<li class="mp-neg"><i style="background:var(--bad)"></i>In the bank <b>${fmt2(M.bankEnd)}</b> (short)</li>` : '') + parts.map(x => `<li><i style="background:${x.c}"></i>${esc(x.name)} <b>${fmt2(x.amount)}</b></li>`).join('');
   const smp = '';   /* the one sample notice is the status line at the top of Home */
-  const minB = cfg(S, 'minBank'), warn = !(M.bankEnd < minB) ? '' : M.bankEnd < 0 ? `<p class="mp-warn" role="status">Your bank would end ${fmt(-M.bankEnd)} below zero in ${esc(mon)}. ${M.overspent > 0 ? 'Spending is past what you planned.' : 'Your plan is bigger than your pay.'} Spend nothing more from Free to spend until you check your plan.</p>` : `<p class="mp-warn" role="status">Your bank ends at ${fmt(M.bankEnd)} in ${esc(mon)}, under your safety minimum of ${fmt(minB)}. ${(() => { const pl = (M.month || []).find(x => x.id === 'play'); return pl && pl.amount < pl.planned - 0.5 ? 'Free to spend is lowered to match.' : 'Open Plan to pick a fix.'; })()}</p>`;
+  const minB = cfg(S, 'minBank'), warn = !(M.bankEnd < minB) ? '' : M.bankEnd < 0 ? `<p class="mp-warn" role="status">Your bank would end ${fmt(M.bankBelow)} below zero in ${esc(mon)}. ${M.overspent > 0 ? 'Spending is past what you planned.' : 'Your plan is bigger than your pay.'} Spend nothing more from Free to spend until you check your plan.</p>` : `<p class="mp-warn" role="status">Your bank ends at ${fmt(M.bankEnd)} in ${esc(mon)}, under your safety minimum of ${fmt(minB)}. ${(() => { const pl = (M.month || []).find(x => x.id === 'play'); return pl && pl.amount < pl.planned - 0.5 ? 'Free to spend is lowered to match.' : 'Open Plan to pick a fix.'; })()}</p>`;
   put(el, `<h2 class="hb-h">Your burrow${typeof sampleOn === 'function' && sampleOn() ? ' <span class="smp-tag">Sample numbers</span>' : ''}</h2><p class="cap hb-what">Where your money is. This month's money is below, your burrows after it.</p>${smp}
     <p class="mp-cap">Your pay in ${esc(mon)}, and where it goes</p>
     <div class="mp-split" role="img" aria-label="Your pay in ${esc(mon)} splits into: ${esc(split.map(x => x.name + ' ' + fmt(x.amount)).join(', '))}">${seg}${planOver && placed > 0 ? `<b class="mp-past" style="width:${Math.min(100, planOver / placed * 100)}%" title="Planned past your pay ${esc(fmt(planOver))}"></b>` : ''}</div>
-    <ul class="mp-key">${key}${planOver ? `<li><i style="background:var(--bad)"></i>Past your pay <b>${fmt(planOver)}</b></li>` : ''}</ul>${planOver ? `<p class="cap">Your plan places ${fmt(planOver)} more than your pay. ${coverText(planOver, dwn, M.bankEnd, cfg(S, 'minBank'))}</p>` : ''}
+    <ul class="mp-key">${key}${planOver ? `<li><i style="background:var(--bad)"></i>Past your pay <b>${fmt(planOver)}</b></li>` : ''}</ul>${planOver ? `<p class="cap">Your plan places ${fmt(planOver)} more than your pay. ${coverText(planOver, dwn, M.bankEnd, cfg(S, 'minBank'), M.bankBelow)}</p>` : ''}
     <p class="mp-act"><button type="button" class="btn small" id="mpPay">Watch where your pay goes</button></p>
     <p class="mp-cap">Where your money sits at the end of ${esc(mon)}: the bank, your goals and your burrows</p>
     <div class="mp-where" role="img" aria-label="${esc(parts.map(x => x.name + ' ' + fmt(x.amount)).join(', '))}">${wseg}</div>
     <ul class="mp-key">${wkey}</ul>
     <ul class="mp-nums">${n('In burrows', fmt2(M.saved))}${n('In the bank, end of ' + mon, fmt2(M.bankEnd), M.bankEnd < minB ? 'bad' : '')}</ul>
-    <p class="cap mp-proof">Bank ${fmt2(M.bankEnd)} + burrows ${fmt2(M.saved)} = <b>${fmt2(M.total)}</b> at the end of ${esc(mon)}. Burrow amounts include what you plan to add this month.${(() => { const pm = (C && C.months || []).filter(x => x.pendLeft > 0); if (!pm.length) return ''; const tot = pm.reduce((a, x) => a + x.pendLeft, 0); return ' ' + fmt2(tot) + (pm.length === 1 ? ' of ' + FULL[+pm[0].ym.slice(5) - 1] + "'s free to spend" : ' of free to spend from ' + pm.length + ' past months') + ' is left out until you answer on Home.'; })()}${M.overspent > 0 ? ' The bank is lowered by ' + fmt2(M.overspent) + ' you spent over plan.' : ''} This comes from your plan and your receipts and is not checked against your bank yet.</p>
+    <p class="cap mp-proof">Bank ${fmt2(M.bankEnd)} + burrows ${fmt2(M.saved)} = <b>${fmt2(M.total)}</b> at the end of ${esc(mon)}. Burrow amounts include what you plan to add this month.${PF.pendAmount > 0 ? ' ' + fmt2(PF.pendAmount) + (PF.pendMonths.length === 1 ? ' of ' + FULL[+PF.pendMonths[0].slice(5) - 1] + "'s free to spend" : ' of free to spend from ' + PF.pendMonths.length + ' past months') + ' is left out until you answer on Home.' : ''}${M.overspent > 0 ? ' The bank is lowered by ' + fmt2(M.overspent) + ' you spent over plan.' : ''} This comes from your plan and your receipts and is not checked against your bank yet.${PF.ok ? ' Checked: what you started with, plus your pay, less what was spent, comes to the same total.' : ''}</p>
+    ${PF.ok ? '' : `<p class="cap mp-bad" role="alert">These numbers do not add up. They are off by ${fmt2(PF.offBy)}. Nothing you entered is lost. Please tell Mako.</p>`}
     ${warn}
     <h3 class="mp-h">This month</h3><div class="hb-scene mp-rooms" id="mpRooms"></div>`);
   BUR.dropCoins(el.querySelector('.mp-split'));
