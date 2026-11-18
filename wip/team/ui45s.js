@@ -432,7 +432,7 @@ const STEP_REVEAL = { id: 'reveal', part: PART.spend, art: 'branch',
     const rest = f.J.rest;
     const bar = `${chestImg(play > 0 ? 0.75 : 0.1)}<div class="tour-fig"><div class="bar tour-bar" role="img" aria-label="Pay by jar">${f.J.list.map(j => seg(JARCLS[j.id], j.v)).join('')}${seg('rest', rest)}</div>
       <div class="legend">${f.J.list.map(j => (j.v > 0 ? `<span><i class="${JARCLS[j.id]}"></i>${j.name} ${j.pct}%</span>` : '')).join('')}${rest > 0 ? `<span><i class="rest"></i>Left ${f.J.restPct}%</span>` : ''}</div></div>`;
-    const big = `<div class="tour-reveal"><b>${fmt2(play)}</b><span>a month${play > 0 ? `, about ${fmt(wk)} a week` : ''}</span></div>`;
+    const big = `<div class="tour-reveal"><b>${fmt2(play)}</b><span>a month${play > 0 ? `, about ${fmtAbout(wk)} a week` : ''}</span></div>`;
     if (play <= 0) {
       const all = f.billPct >= 0.95;
       return `${big}<p>${all ? `Bills take <b>${f.J.list[0].pct}%</b> of pay, so almost nothing is left for free to spend.` : 'Nothing is set aside for free to spend.'} About 10% of pay is a common amount to keep for it.</p>

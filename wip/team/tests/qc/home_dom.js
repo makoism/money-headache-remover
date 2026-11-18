@@ -16,8 +16,10 @@ const monShort = ym => MON[+ym.slice(5) - 1], monLong = ym => monShort(ym) + ' '
     const S = randomState();
     if (t % 5 === 1) S.ui.cur = '¥'; if (t % 7 === 3) S.ui.cur = 'CHF'; if (t % 11 === 5) S.ui.cur = 'none';
     const cur = S.ui.cur, pre = cur === 'none' ? '' : (/^[A-Za-z]{2,}$/.test(cur) ? cur + ' ' : cur);
-    const F = n => { n = Math.round(n); return (n < 0 ? '−' : '') + pre + Math.abs(n).toLocaleString('en-US'); };
-    const F2 = n => (Math.abs(n - Math.round(n)) < 0.005 ? F(n) : (n < 0 ? '−' : '') + pre + Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+    const F0 = n => { n = Math.round(n); return (n < 0 ? '−' : '') + pre + Math.abs(n).toLocaleString('en-US'); };
+    /* 38.31 number gate round 3: the page writes every amount whole when whole, else to the cent; F and F2 are now the same rule */
+    const F2 = n => (Math.abs(n - Math.round(n)) < 0.005 ? F0(n) : (n < 0 ? '−' : '') + pre + Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+    const F = F2;
     const ym = pick(M.MONTHS.slice(0, 12)), day = pick([1, 3, 10, 15, 22, 27, 28]), today = ym + '-' + String(day).padStart(2, '0');
     /* receipts: some in the month on screen, play and other jars, with cents */
     S.receipts = [];
@@ -60,8 +62,8 @@ const monShort = ym => MON[+ym.slice(5) - 1], monLong = ym => monShort(ym) + ' '
       has(tag + ' chest big', T.sp, F2(freeLeft));
       has(tag + ' chest spent', T.sp, p0.count ? 'Spent ' + F2(p0.spent) + ' of ' + F(p0.planned) : 'Nothing logged yet. ' + F(p0.planned) + ' planned');
       if (!p0.over) {
-        if (p0.perWeek != null && freeLeft > 0) has(tag + ' chest week', T.sp, F(V.cells.perWeek) + ' a week to stay inside it for the ' + p0.daysLeft + (p0.daysLeft === 1 ? ' day' : ' days') + ' left');
-        if (freeLeft > 0 && p0.daysLeft > 0) has(tag + ' chest day', T.sp, 'About ' + F(V.cells.perDay) + ' a day');
+        if (p0.perWeek != null && freeLeft > 0) has(tag + ' chest week', T.sp, F0(V.cells.perWeek) + ' a week to stay inside it for the ' + p0.daysLeft + (p0.daysLeft === 1 ? ' day' : ' days') + ' left');
+        if (freeLeft > 0 && p0.daysLeft > 0) has(tag + ' chest day', T.sp, 'About ' + F0(V.cells.perDay) + ' a day');
       }
       if (held > 0) has(tag + ' chest held', T.sp, F(held) + ' is held back');
       const nec = V.buckets.find(x => x.id === 'nec'), covered = m.inflow >= nec.planned;

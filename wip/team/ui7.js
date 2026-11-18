@@ -301,8 +301,8 @@ function openWhy(kind) {
     rows = [[`Free to spend planned for ${mon}`, fmt(p.planned)], [`Logged in Free to spend (${p.count} ${p.count === 1 ? 'receipt' : 'receipts'})`, '−' + fmt2(p.spent)]];
     if (held > 0) rows.push(['Held back so the balance stays above your minimum', '−' + fmt(held)]);
     rows.push(['Free to spend', fmt2(freeLeft)]);
-    if (p.perWeek != null) rows.push([`Per week for the ${plural(p.daysLeft, 'day')} left`, fmt(V.cells.perWeek)]);
-    if (p.daysLeft > 0 && freeLeft > 0) rows.push(['Per day', fmt(V.cells.perDay)]);
+    if (p.perWeek != null) rows.push([`Per week for the ${plural(p.daysLeft, 'day')} left`, fmtAbout(V.cells.perWeek)]);
+    if (p.daysLeft > 0 && freeLeft > 0) rows.push(['Per day', fmtAbout(V.cells.perDay)]);
     foot = 'Planned is the Free to spend total on the Plan page. Logged is every receipt in Free to spend this month.';
   } else {
     title = 'Where you stand in ' + mon;

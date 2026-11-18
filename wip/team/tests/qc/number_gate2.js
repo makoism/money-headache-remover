@@ -28,4 +28,15 @@ async function open(setup){const {b,p,errs}=await R.phone({w:390,h:844,dpr:1,mob
   const d=await p.evaluate(()=>document.getElementById('dockTxt').innerText);
   ck(`(4) after typing pay the dock does not say "sample pay" ("${d.slice(0,60)}")`,!/sample pay/.test(d),d);
   ck('no page errors',errs.length===0,errs.join(' | '));await b.close(); }
+ /* 5 (round 3): amounts with cents read the same on every screen: rent 1,234.56, Free to spend 300.44, receipts 0.01 and 19.99 */
+ { const {b,p,errs}=await open(()=>{const S=__t.S;S.ui.done={pay:true,bills:true,goals:true,receipts:true};S.ui.sampleHidden=true;
+    S.plan.lines.find(l=>l.key==='bill:rent').def=1234.56;S.plan.lines.find(l=>l.key==='bill:food').def=400;S.plan.lines.find(l=>l.key==='envelope').def=300.44;
+    S.receipts=[{id:'c1',d:'2026-11-05',a:0.01,c:'envelope',cn:'Free to spend',n:''},{id:'c2',d:'2026-11-06',a:19.99,c:'envelope',cn:'Free to spend',n:''}];__t.persist();__t.restructure();});
+  const plan=await p.evaluate(()=>document.getElementById('p-month').innerText.replace(/\s+/g,' '));
+  ck('(5) Plan says "Planned $300.44 this month", never "$300"',/Planned \$300\.44 this month/.test(plan)&&!/Planned \$300 this month/.test(plan),plan.slice(0,200));
+  ck('(5) Plan writes Bills and basics as $1,634.56, never $1,635',/\$1,634\.56/.test(plan)&&!/\$1,635\b/.test(plan));
+  await L.tab(p,'tab-receipts');await w(600);
+  const rc=await p.evaluate(()=>document.getElementById('p-receipts').innerText.replace(/\s+/g,' '));
+  ck('(5) the Receipts row for Free to spend reads $300.44, $20, $280.44',/Free to spend \$300\.44 \$20 \$280\.44/.test(rc),(rc.match(/Free to spend \$[^A-Z]{0,40}/g)||[]).join(' | '));
+  ck('no page errors',errs.length===0,errs.join(' | '));await b.close(); }
  console.log(bad?'FAILED '+bad:'ALL PASS');process.exit(bad?1:0);})();
