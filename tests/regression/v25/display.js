@@ -68,14 +68,14 @@ function randomReceipts(S) {
       const rest = Math.max(0, r.inflow - r.outflow), short = Math.max(0, r.outflow - r.inflow), realPay = r.inflow - r.draw, base = short > 0 ? r.outflow : (r.draw > 0 && realPay > 0 ? realPay : r.inflow);
       const restCover = Math.min(rest, r.draw), usedOver = Math.min(Math.max(0, rest - restCover), r.overNow), unplacedNet = Math.round((rest - restCover - usedOver) * 100) / 100;
       const vals = [r.jar.nec, r.goalsTotal, r.jar.play, r.jar.edu, r.jar.ffa, r.jar.give, rest - restCover], pc = oraclePercents(vals, base), showPct = base > 0 && !(short > 0);
-      const names = M.JARS.map(j => j.name), exp = names.map((n, i) => [n, F(vals[i]), showPct ? pc[i] + '%' : '']);
-      if (unplacedNet >= 0.5) exp.push([restCover > 0 || usedOver > 0 ? 'Not placed yet' : 'Left', F(unplacedNet), showPct && usedOver < 0.5 ? pc[6] + '%' : '']);
-      if (usedOver >= 0.5) exp.push(['Used for spending past plan', F(usedOver), '']);
+      const names = M.JARS.map(j => j.name), exp = names.map((n, i) => [n, F2(vals[i]), showPct ? pc[i] + '%' : '']);
+      if (unplacedNet >= 0.5) exp.push([restCover > 0 || usedOver > 0 ? 'Not placed yet' : 'Left', F2(unplacedNet), showPct && usedOver < 0.5 ? pc[6] + '%' : '']);
+      if (usedOver >= 0.5) exp.push(['Used for spending past plan', F2(usedOver), '']);
       /* 38.31 Borrowed rows: emergency-fund money not needed by the plan, then emergency-fund money that pays for part of the plan (its percent is the part past 100) */
-      if (rest > 0 && restCover > 0) exp.push(['Borrowed', F(restCover), '']);
+      if (rest > 0 && restCover > 0) exp.push(['Borrowed', F2(restCover), '']);
       const borrowUsed = short > 0 ? 0 : Math.max(0, r.draw - restCover), sumPct = pc.reduce((a, b) => a + b, 0);
-      if (borrowUsed >= 0.5) exp.push(['Borrowed', F(borrowUsed), showPct && base === realPay && sumPct > 100 ? (sumPct - 100) + '%' : '']);
-      if (short > 0) exp.push([r.draw > 0 ? 'Still over after borrowing' : st === 'tight' ? 'Over pay by' : 'Short by', F(short), '']);
+      if (borrowUsed >= 0.5) exp.push(['Borrowed', F2(borrowUsed), showPct && base === realPay && sumPct > 100 ? (sumPct - 100) + '%' : '']);
+      if (short > 0) exp.push([r.draw > 0 ? 'Still over after borrowing' : st === 'tight' ? 'Over pay by' : 'Short by', F2(short), '']);
       eq(pt + 'legend rows', JSON.stringify(D.legend), JSON.stringify(exp));
       if (showPct && !(r.draw > 0) && usedOver < 0.5) eq(pt + 'legend percents add to 100', D.legend.reduce((a, x) => a + (parseInt(x[2]) || 0), 0), 100);   /* with borrowed money they add to 100 + borrowed (oracle.js checks that rule) */
       /* goals tab */
