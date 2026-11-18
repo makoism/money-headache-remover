@@ -254,7 +254,22 @@ const doneFor = key => (key === 'a' || key === 'b' || key === 'side' ? 'pay' : k
 
 /* ---------- edits ---------- */
 /* Every change applies to the open month only. "Keep for later months" turns it into the plan from this month on. */
-function onSet(key, v) { v = clampAmt(v, S); setVal(S, key, sel, v, 'once'); markDone(doneFor(key)); persist(); schedule(); }
+/* decision 5 (Mako, 2026-11-18): the first pay or bills entry becomes the usual amount for every month; after that, an edit is for the month shown
+   (with "Keep for later months"). Pay counts as entered once it is marked done; a bill line once the person has set it in any month.
+   FIRST_EDIT keeps one edit (every keystroke until the box is left) on the same footing, so typing 3, 30, 300 never turns into a one-month change */
+let FIRST_EDIT = null;
+function isFirstEntry(key) {
+  const d = doneFor(key);
+  if (d === 'pay') return !(S.ui.done && S.ui.done.pay);
+  if (d === 'bills') return !(S.steps[key] && S.steps[key].length) && !Object.keys(S.once).some(ym => S.once[ym] && S.once[ym][key] !== undefined);
+  return false;
+}
+function onSet(key, v) {
+  v = clampAmt(v, S);
+  if (FIRST_EDIT === key || isFirstEntry(key)) { FIRST_EDIT = key; setVal(S, key, START, v, 'after'); }
+  else setVal(S, key, sel, v, 'once');
+  markDone(doneFor(key)); persist(); schedule();
+}
 function onCfg(k, v) { S.cfg[k] = clampAmt(v, S); persist(); schedule(); }
 function select(ym) {
   sel = ym; itemsSig = ''; try { history.replaceState(null, '', '#' + ym); } catch (e) { /* sandboxed */ }

@@ -124,11 +124,15 @@ const PESO = (() => { const src = require('fs').readFileSync(process.env.MODEL |
   ok('ledger rows follow the jars', JSON.stringify(await p.$$eval('#rowsOut .row', e => e.map(x => x.dataset.id))) === JSON.stringify(['nec', 'items', 'debts', 'lts', 'play', 'edu', 'ffa', 'give']));
   ok('hero invites a first receipt', (await q('#rcLine')).includes('Add a receipt'));
 
+  // the first salary entry becomes the usual amount for every month (decision 5, Mako 2026-11-18); before it, this test's first edit was month-only.
+  // It types the sample's own 30,000, so every figure below is unchanged, and the one-month edit is the second entry, as a person would make it.
+  await p.click('#h-a'); await p.keyboard.type('30000'); await p.keyboard.press('Enter'); await w(300);
+  ok('the first salary edit cheers, with no leaves over the words (leaves are for big moments only, ui44.js)', (await cheerOn()) === 'Pay entered.' && (await confettiPx()) === 0);
+  await w(900); ok('pay is marked done', !!(await p.evaluate(() => { try { return JSON.parse(localStorage.getItem('money-map-template-v2')).ui.done || {}; } catch (e) { return {}; } })).pay);
+  ok('the first salary entry is the usual amount for every month, not a one-month change (decision 5)', await p.evaluate(() => { try { const d = JSON.parse(localStorage.getItem('money-map-template-v2')); return (d.steps.a || []).some(x => x.v === 30000) && !Object.keys(d.once || {}).some(ym => d.once[ym].a !== undefined); } catch (e) { return false; } }));
   // one-month edit, undo
   await p.click('#h-a'); await p.keyboard.type('40000'); await p.keyboard.press('Enter'); await w(300);
   ok('salary edit formats', (await val('#h-a')) === '₱40,000');
-  ok('the first salary edit cheers, with no leaves over the words (leaves are for big moments only, ui44.js)', (await cheerOn()) === 'Pay entered.' && (await confettiPx()) === 0);
-  await w(900); ok('pay is marked done', !!(await p.evaluate(() => { try { return JSON.parse(localStorage.getItem('money-map-template-v2')).ui.done || {}; } catch (e) { return {}; } })).pay);
   ok('left over now 10,000', (await q('#leftTotal')) === '₱10,000');
   await p.click('#nextM'); await w(250); ok('Dec back to usual', (await val('#h-a')) === '₱30,000'); await p.click('#prevM'); await w(200);
   ok('summary line', (await q('#chgTxt')).includes('Salary ₱40,000 (usual ₱30,000)'));

@@ -72,6 +72,7 @@ Where the named values live in `model.js`:
 - The bills amount still to pay shows cents in both Home cards (it showed 26,535 in one and 26,534.51 in the other).
 - The percent in a goal's screen-reader label is rounded down like every other goal percent.
 - When the bank ends a month below zero, Home says so in one amber line with the month, the amount and the causes (the month started below zero, the plan spends more than comes in, spending went past the plan). It never says "Building your cushion" for that any more, and is never red.
+- The first pay or bill amount a person enters becomes the usual amount for every month (it says so). Later edits are for the month shown, as before. Before, entering pay from Home's "Enter pay" card set only that month, and later months fell back to the sample pay.
 - Plan amounts keep cents (dollars, euros, pesos and the rest); yen stays whole. Before, a typed 49.99 was saved as 50 without saying so. Plans saved by older versions load exactly as they were.
 
 ## 5. Known problems, in the order to do them

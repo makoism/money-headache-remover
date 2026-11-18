@@ -47,6 +47,8 @@ function wire() {
     /* a typed sum that does not come out as an amount (below zero, divided by zero) puts the old amount back */
     if (t.dataset.k && hasMoneyOp(t.value) && evalMoney(t.value) === null && t._orig !== undefined) { try { cheer('That sum does not work out to an amount. The old amount stays.'); } catch (x) { } if (val(S, t.dataset.k, sel) !== t._orig) onSet(t.dataset.k, t._orig); }
     render(); } });
+  /* decision 5: leaving the box ends a first entry; say once that it is now the usual amount */
+  led.addEventListener('focusout', () => { if (FIRST_EDIT) { FIRST_EDIT = null; setTimeout(() => { try { cheer('Saved as the usual amount for every month.'); } catch (x) { } }, 1200); } });   /* after the first-pay badge line, so neither hides the other */
   led.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.classList && e.target.classList.contains('amt-in')) e.target.blur(); });
   led.addEventListener('change', e => {
     const t = e.target, d = t.dataset || {};
