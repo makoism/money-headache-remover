@@ -10,8 +10,13 @@ exports.phone = async (opt = {}) => {
   const W = opt.w || 385, H = opt.h || 730;
   await p.setViewport({ width: W, height: H, deviceScaleFactor: opt.dpr || 2.8, isMobile: !!opt.mobile, hasTouch: !!opt.mobile });
   await p.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: 'dark' }]);
-  /* storage is wiped on the first load only; with opt.keep a reload keeps what the page saved (needed by every reload test) */
-  await p.evaluateOnNewDocument((keep) => { try { if (!sessionStorage.getItem('__keep')) { localStorage.clear(); indexedDB.deleteDatabase('money-map-safe'); } if (keep) sessionStorage.setItem('__keep', '1'); } catch (e) {} }, !!opt.keep);
+  /* Storage. Every launch above gets a fresh, empty, throwaway browser profile, so the first load always starts with nothing saved.
+     opt.keep (every reload test): nothing is wiped, ever, so a reload sees exactly what the page saved.
+       It used to wipe "unless sessionStorage says __keep", but Chrome sometimes loses that sessionStorage flag across a reload
+       of a file:// page; the helper then wiped the saved plan itself and the reload test failed about half the time
+       with 0 receipts and sample numbers, although the app had saved correctly. The app was never at fault.
+     without opt.keep: the old behaviour, storage is wiped at every page load unless the test sets __keep itself. */
+  if (!opt.keep) await p.evaluateOnNewDocument(() => { try { if (!sessionStorage.getItem('__keep')) { localStorage.clear(); indexedDB.deleteDatabase('money-map-safe'); } } catch (e) {} });
   if (opt.cpu) { const c = await p.createCDPSession(); await c.send('Emulation.setCPUThrottlingRate', { rate: opt.cpu }); }
   return { b, p, errs };
 };
