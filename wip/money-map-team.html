@@ -584,7 +584,7 @@ svg.tour-scene { width: 100%; max-width: 440px; height: auto; }
 .cam-view video { width: 100%; height: 100%; object-fit: cover; display: block; }
 .cam-flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; } .cam-flash.on { animation: camFlash .35s ease-out; }
 @keyframes camFlash { from { opacity: .85; } to { opacity: 0; } }
-#cheer { position: fixed; left: 50%; bottom: max(22px, calc(env(safe-area-inset-bottom) + 14px)); transform: translate(-50%, 16px); opacity: 0; z-index: 71; width: max-content; max-width: min(92vw, 420px); padding: 14px 22px; border-radius: var(--r-panel); background: var(--accent); color: var(--on-accent); font-size: 16px; font-weight: 500; line-height: 1.3; text-align: center; pointer-events: none; cursor: pointer; box-shadow: 0 14px 34px -12px rgba(0, 0, 0, .4); transition: opacity .25s, transform .4s cubic-bezier(.2, .9, .3, 1.2); }
+#cheer { position: fixed; left: 50%; bottom: max(22px, calc(env(safe-area-inset-bottom) + 14px)); transform: translate(-50%, 16px); opacity: 0; z-index: 71; width: max-content; max-width: min(92vw, 420px); padding: 14px 22px; border-radius: var(--r-panel); background: var(--accent); color: var(--on-accent); font-size: 16px; font-weight: 500; line-height: 1.3; text-align: center; pointer-events: none; box-shadow: 0 14px 34px -12px rgba(0, 0, 0, .4); transition: opacity .25s, transform .4s cubic-bezier(.2, .9, .3, 1.2); }
 #cheer.on { opacity: 1; transform: translate(-50%, 0); }
 @media (prefers-reduced-motion: reduce) { #cheer { transition: opacity .01s; transform: translate(-50%, 0); } }
 
@@ -1844,7 +1844,6 @@ p .link::after, li .link::after, span .link::after, .cap .link::after { content:
 .sw::after { content: ''; position: absolute; left: -4px; right: -4px; top: 50%; height: 44px; transform: translateY(-50%); }
 /* phones: the Ask and Help pills are smaller, so they cover less of the cards behind them (38.31 QC rounds 2 and 3) */
 @media (max-width: 420px) { .help-btn { min-height: 44px; padding: 0 12px 0 6px; font-size: 15px; gap: 6px; } .help-btn .q { width: 28px; height: 28px; font-size: 15px; } }
-#cheer.on { pointer-events: auto; }
 </style>
 </head>
 <body>
@@ -5196,7 +5195,7 @@ const CONF = { parts: [], raf: 0, last: 0, tick: 0, cheerT: 0 };
 const leafColors = () => { const cs = getComputedStyle(document.documentElement), v = n => cs.getPropertyValue(n).trim(); return [v('--accent'), v('--accent-h'), v('--good'), '#5db98a', '#3a9a68', v('--warn')].filter(Boolean); };
 function cheer(msg) {
   const el = $('#cheer'); if (!el || !msg) return;
-  el.textContent = msg; el.classList.add('on'); clearTimeout(CONF.cheerT);
+  el.textContent = msg; el.classList.add('on'); CONF.cheerAt = Date.now(); clearTimeout(CONF.cheerT);
   CONF.cheerT = setTimeout(() => { el.classList.remove('on'); CONF.cheerT = setTimeout(() => { if (!el.classList.contains('on')) el.textContent = ''; }, 500); }, 3400);
 }
 function celebrate(size, msg, from) {
@@ -5245,8 +5244,8 @@ function afterDone(k) {
   if (all) celebrate('big', 'Setup complete. All four steps done.');
   else celebrate('med', CHEERS[k]);
 }
-/* a tap puts a message away at once, so it never sits over words someone is reading (38.31 north-star round 3) */
-(() => { const el = document.getElementById('cheer'); if (el) el.addEventListener('click', () => { el.classList.remove('on'); clearTimeout(CONF.cheerT); }); })();
+/* any tap puts a message away, so it never sits over words someone is reading; the message itself never takes a tap meant for a button under it (38.31 north-star round 3) */
+document.addEventListener('pointerdown', () => { const el = document.getElementById('cheer'); if (el && el.classList.contains('on') && Date.now() - (CONF.cheerAt || 0) > 600) { el.classList.remove('on'); clearTimeout(CONF.cheerT); } }, true);
 
 /* ---------- the guided setup: one question at a time, written straight into the plan ----------
    Every screen saves as you type, so closing the tour half way loses nothing.

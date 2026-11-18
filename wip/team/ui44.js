@@ -13,7 +13,7 @@ const CONF = { parts: [], raf: 0, last: 0, tick: 0, cheerT: 0 };
 const leafColors = () => { const cs = getComputedStyle(document.documentElement), v = n => cs.getPropertyValue(n).trim(); return [v('--accent'), v('--accent-h'), v('--good'), '#5db98a', '#3a9a68', v('--warn')].filter(Boolean); };
 function cheer(msg) {
   const el = $('#cheer'); if (!el || !msg) return;
-  el.textContent = msg; el.classList.add('on'); clearTimeout(CONF.cheerT);
+  el.textContent = msg; el.classList.add('on'); CONF.cheerAt = Date.now(); clearTimeout(CONF.cheerT);
   CONF.cheerT = setTimeout(() => { el.classList.remove('on'); CONF.cheerT = setTimeout(() => { if (!el.classList.contains('on')) el.textContent = ''; }, 500); }, 3400);
 }
 function celebrate(size, msg, from) {
@@ -62,5 +62,5 @@ function afterDone(k) {
   if (all) celebrate('big', 'Setup complete. All four steps done.');
   else celebrate('med', CHEERS[k]);
 }
-/* a tap puts a message away at once, so it never sits over words someone is reading (38.31 north-star round 3) */
-(() => { const el = document.getElementById('cheer'); if (el) el.addEventListener('click', () => { el.classList.remove('on'); clearTimeout(CONF.cheerT); }); })();
+/* any tap puts a message away, so it never sits over words someone is reading; the message itself never takes a tap meant for a button under it (38.31 north-star round 3) */
+document.addEventListener('pointerdown', () => { const el = document.getElementById('cheer'); if (el && el.classList.contains('on') && Date.now() - (CONF.cheerAt || 0) > 600) { el.classList.remove('on'); clearTimeout(CONF.cheerT); } }, true);

@@ -21,7 +21,9 @@ async function open(short){const {b,p,errs}=await R.phone({w:390,h:844,dpr:1,mob
  { const {b,p,errs,seen}=await open(false);
   ck('(month on plan) the badge message shows',seen.some(t=>/badge/i.test(t)),JSON.stringify(seen));
   await p.evaluate(()=>{const e=document.getElementById('cheer');e.textContent='Test message';e.classList.add('on');});await w(300);
-  await p.evaluate(()=>document.getElementById('cheer').click());await w(200);
-  ck('a tap puts the message away at once',await p.evaluate(()=>!document.getElementById('cheer').classList.contains('on')));
+  await w(700);const btn=await p.evaluate(()=>{const e=document.getElementById('cheer'),r=e.getBoundingClientRect(),x=r.left+r.width/2,y=r.top+r.height/2,u=document.elementFromPoint(x,y);return [x,y,u===e];});
+  ck('the message never takes a tap meant for what is under it',btn[2]===false);
+  await p.mouse.click(btn[0],btn[1]);await w(200);
+  ck('a tap anywhere puts the message away at once',await p.evaluate(()=>!document.getElementById('cheer').classList.contains('on')));
   ck('no page errors',errs.length===0,errs.join(' | '));await b.close(); }
  console.log(bad?'FAILED '+bad:'ALL PASS');process.exit(bad?1:0);})();
