@@ -1,9 +1,8 @@
 
 /* ---------- bar and legend (hero and dock): the six jars ---------- */
-const pc = x => Math.round(x * 100) + '%';
 function paintBar(el, m, withLabels) {
   if (!el.children.length) el.innerHTML = JARS.map(j => `<div class="seg-b ${JARCLS[j.id]}" data-k="${j.id}" ${withLabels ? 'tabindex="0"' : ''}></div>`).join('') + `<div class="seg-b rest" data-k="rest" ${withLabels ? 'tabindex="0"' : ''}></div>`;
-  const J = jarsOf(S, m), rest = Math.max(0, m.pool.left), names = [];
+  const J = jarsOf(S, m), rest = J.rest, names = [];
   J.list.forEach(j => {
     const d = $(`[data-k="${j.id}"]`, el);
     d.hidden = j.v <= 0; d.style.flexGrow = Math.max(j.v, 0);
@@ -11,7 +10,7 @@ function paintBar(el, m, withLabels) {
     d.setAttribute('aria-label', `${j.name} ${fmt(j.v)}`); if (j.v > 0) names.push(`${j.name} ${fmt(j.v)}`);
   });
   const r = $('[data-k="rest"]', el); r.hidden = rest <= 0; r.style.flexGrow = rest;
-  r.dataset.tip = `<b>Left</b> ${fmt(rest)}` + (J.restCover > 0 ? (J.rest - J.restCover >= 0.5 ? `<br>${fmt(J.rest - J.restCover)} not placed yet (${J.restPct}% of pay)<br>${fmt(J.restCover)} borrowed from the emergency fund` : (J.restKept > 0 ? '<br>borrowed from the emergency fund, kept in the bank' : '<br>borrowed money, used for spending past plan')) : J.income > 0 ? `<br>${J.restPct}% of pay, not placed yet` : ''); r.setAttribute('aria-label', `Left ${fmt(rest)}`);
+  r.dataset.tip = `<b>Left</b> ${fmt(rest)}` + (J.restCover > 0 ? (J.unplaced >= 0.5 ? `<br>${fmt(J.unplaced)} not placed yet (${J.restPct}% of pay)<br>${fmt(J.restCover)} borrowed from the emergency fund` : (J.restKept > 0 ? '<br>borrowed from the emergency fund, kept in the bank' : '<br>borrowed money, used for spending past plan')) : J.income > 0 ? `<br>${J.restPct}% of pay, not placed yet` : ''); r.setAttribute('aria-label', `Left ${fmt(rest)}`);
   if (rest > 0) names.push('Left ' + fmt(rest));
   if (withLabels) el.setAttribute('aria-label', `Pay ${fmt(m.pool.in)} by place: ` + names.join(', '));
 }
@@ -22,7 +21,7 @@ function paintLegend(m) {
   const live = S.plan.goals.filter(g => g.target > 0 && m.g[g.id] && m.g[g.id].actual > 0).map(g => g.name);
   const ltsTag = live.length ? esc(live.slice(0, 2).join(', ') + (live.length > 2 ? ` and ${live.length - 2} more` : '')) : JARTAG.lts;
   $('#legend').innerHTML = J.list.map(j => row(JARCLS[j.id], j.name, j.id === 'lts' ? ltsTag : JARTAG[j.id], j.v, has ? j.pct + '%' : '')).join('')
-    + (J.rest - J.restCover - J.usedOver >= 0.5 ? row('rest', J.restCover > 0 || J.usedOver > 0 ? 'Not placed yet' : 'Left', J.restCover > 0 || J.usedOver > 0 ? 'stays in the bank' : 'Not placed yet', round2(J.rest - J.restCover - J.usedOver), has && J.usedOver < 0.5 ? J.restPct + '%' : '') : '')
+    + (J.unplacedNet >= 0.5 ? row('rest', J.restCover > 0 || J.usedOver > 0 ? 'Not placed yet' : 'Left', J.restCover > 0 || J.usedOver > 0 ? 'stays in the bank' : 'Not placed yet', J.unplacedNet, has && J.usedOver < 0.5 ? J.restPct + '%' : '') : '')
     + (J.usedOver >= 0.5 ? row('rest', 'Used for spending past plan', 'came out of pay with no place', J.usedOver, '') : '')
     + (J.rest > 0 && J.restCover > 0 ? row('rest', 'Borrowed', J.restKept > 0 ? (J.restKept < J.restCover - 0.5 ? fmt(J.restKept) + ' of it stays in the bank' : 'from the emergency fund, stays in the bank') : 'from the emergency fund, used for spending past plan', J.restCover, '') : '')
     + (J.borrowUsed >= 0.5 ? row('rest', 'Borrowed', 'from the emergency fund, pays for part of this plan', J.borrowUsed, has && J.borrowUsedPct > 0 ? J.borrowUsedPct + '%' : '') : '')
@@ -31,7 +30,7 @@ function paintLegend(m) {
 /* one plain sentence under the table: how this month's bills sit against Eker's usual split, and whether every bit of pay has a purpose */
 function jarNote(m) {
   const J = jarsOf(S, m); if (J.inn <= 0) return '';
-  if (J.over) return `Plan exceeds pay by ${fmt(J.short + (J.draw || 0))}${J.draw > 0 ? ', ' + fmt(J.draw) + ' of it from your emergency fund' : ''}, so percents are off. Lower a bill or another place.`;
+  if (J.over) return `Plan exceeds pay by ${fmt(J.exceedsBy)}${J.draw > 0 ? ', ' + fmt(J.draw) + ' of it from your emergency fund' : ''}, so percents are off. Lower a bill or another place.`;
   const nec = J.list[0], u = nec.usual;
   /* a plan paid partly with borrowed money: say why the places add up to more than all of the pay */
   const borrowed = J.borrowUsedPct > 0 ? ` Your places add up to ${J.placedPct}% of your pay, because ${fmt(J.borrowUsed)} of this plan is borrowed from your emergency fund.` : '';
@@ -75,25 +74,26 @@ function render() {
   $('#payTxt').hidden = true;
 
   /* hero: free to spend, then one verdict */
+  const PC = planCells(S, C, sel);   /* the worked-out amounts for this screen come from the model */
   const pin = m.pool.in, play = m.jar.play, wk = weekOf(play);
   try { const mr = HV && HV.map && HV.map.month.find(r => r.id === 'play'); if (mr) BUR.roomCv($('#heroRoomW'), mr, 'play'); } catch (e) { /* the number still shows */ }
   const rs = receiptStats(S, sel), playSpent = rs.byJar.play || 0, playLeft = round2(play - playSpent), heroShow = freeOf(S, { left: m.left, bankEnd: m.bankEnd, over: m.over || 0, status: st }, { left: playLeft }).free, heroTxt = (playSpent > 0 || heroShow !== play) ? fmt2(heroShow) : fmt(heroShow);
   $('#heroNum').textContent = heroTxt; $('#heroNum').style.setProperty('--n', String(heroTxt.length)); $('#heroNum').style.color = heroShow < 0 ? 'var(--bad)' : '';
   $('#heroWk').textContent = (playSpent > 0 || heroShow !== play) ? `Planned ${fmt(play)} this month, about ${fmt(wk)} a week.` : `Planned: about ${fmt(wk)} a week across the whole month.`;
   $('#rcLine').innerHTML = !rs.count ? '<button type="button" class="link" data-tab-go="receipts">Add a receipt</button> to see actual spend.'
-    : play > 0 ? `Receipts: ${fmt2(playSpent)} spent, ${playSpent > play ? fmt2(round2(playSpent - play)) + ' over' : (m.counted > 0 ? fmt2(m.counted) + ' not spent' + (m.topup && m.topup.used > 0 ? ', ' + fmt2(m.topup.used) + ' went to a goal' : ', came back to the bank') : m.pendLeft > 0 ? fmt2(m.pendLeft) + ' not logged as spent yet, Home asks where it goes' : fmt2(playSafeLeft(S, m, playSpent)) + ' safe to spend')}. <button type="button" class="link" data-tab-go="receipts">See receipts</button>`
+    : play > 0 ? `Receipts: ${fmt2(playSpent)} spent, ${playSpent > play ? fmt2(PC.playOver) + ' over' : (m.counted > 0 ? fmt2(m.counted) + ' not spent' + (m.topup && m.topup.used > 0 ? ', ' + fmt2(m.topup.used) + ' went to a goal' : ', came back to the bank') : m.pendLeft > 0 ? fmt2(m.pendLeft) + ' not logged as spent yet, Home asks where it goes' : fmt2(playSafeLeft(S, m, playSpent)) + ' safe to spend')}. <button type="button" class="link" data-tab-go="receipts">See receipts</button>`
     : `Receipts: ${fmt2(rs.total)} spent. <button type="button" class="link" data-tab-go="receipts">See receipts</button>`;
-  const Lun = Math.max(0, (L - (m.draw || 0)) - (m.overNow || 0));   /* pay with no place, less what spending past plan already took from it */
+  const Lun = PC.unplaced;   /* pay with no place, less what spending past plan already took from it */
   const chip = $('#chip'); chip.className = 'chip ' + st; chip.hidden = pin <= 0;
   const overFree = playSpent > play && play >= 0 && rs.count > 0, overAny = !overFree && (m.overNow || 0) > 0.004;
   if (overFree || overAny) { chip.className = 'chip short'; chip.innerHTML = IC.bad + (overFree && !((m.overNec || 0) > 0.004) ? 'Over free to spend' : 'Over plan'); }
   else if (Lun >= roundUnit(S) && st === 'good') { chip.className = 'chip tight'; chip.innerHTML = IC.warn + 'Pay not placed'; }
   else chip.innerHTML = st === 'good' ? IC.ok + 'On plan' : st === 'tight' ? IC.warn + 'Tight month' : IC.bad + 'Short';
-  const gap = Math.max(0, floor - m.bankEnd);
+  const gap = PC.bankGap;
   let vt;
   if (pin <= 0) vt = 'Enter monthly take-home pay: tap Salary below.';
   else if (st === 'good') vt = (Lun < roundUnit(S) ? 'All pay assigned.' : `${fmt(Lun)} of pay not placed yet.`) + (Lun >= pin * 0.08 ? ' Raise a goal or another place to use it, or keep it as a cushion.' : '');
-  else if (st === 'tight') vt = `Month spends ${fmt(-(L - (m.draw || 0)))} more than your pay${m.draw > 0 ? ', ' + fmt(m.draw) + ' of it borrowed' : ''}. Balance covers it and ends at ${fmt(m.bankEnd)}, at or above the ${fmt(floor)} minimum.`;
+  else if (st === 'tight') vt = `Month spends ${fmt(PC.overPay)} more than your pay${m.draw > 0 ? ', ' + fmt(m.draw) + ' of it borrowed' : ''}. Balance covers it and ends at ${fmt(m.bankEnd)}, at or above the ${fmt(floor)} minimum.`;
   else vt = `Balance would end at ${fmt(m.bankEnd)}, ${fmt(gap)} under the ${fmt(floor)} minimum.` + (fixes(S, m).length ? ' Pick a fix:' : ' Lower a cost or add pay to fix it.');
   if (m.draw > 0) vt += ` ${fmt(m.draw)} is borrowed from the emergency fund.`;
   $('#verdict').textContent = vt;
@@ -106,19 +106,18 @@ function render() {
   $('#fixBtns').innerHTML = btns;
 
   /* where it goes */
-  $('#whereTitle').textContent = m.draw > 0 ? `${fmt(m.pool.in - m.draw)} pay and ${fmt(m.draw)} borrowed, by place` : `${fmt(m.pool.in)} pay, by place`;
+  $('#whereTitle').textContent = m.draw > 0 ? `${fmt(PC.pay)} pay and ${fmt(m.draw)} borrowed, by place` : `${fmt(m.pool.in)} pay, by place`;
   paintBar($('#bar'), m, true); paintBar($('#dockBar'), m, false); paintLegend(m); $('#jarNote').innerHTML = jarNote(m);
   const el = $('#endline'); el.hidden = !(m.pool.out > m.pool.in); if (!el.hidden) el.style.left = (m.pool.in / m.pool.out * 100) + '%';
-  const dw = m.draw || 0; let Ld = dw > 0 ? L - dw : L;   /* money borrowed from the emergency fund is not pay */
-  if (Ld > 0) Ld = Math.max(0, Ld - (m.overNow || 0));   /* and pay with no place that spending past plan already used is not left */
+  const dw = m.draw || 0, Ld = PC.dock;   /* borrowed money is not pay, and pay that spending past plan already used is not left (model.js planCells) */
   const bankOnly = pin <= 0 && L >= 0 && m.bankEnd < 0;   /* spending with no pay entered: the bank shortfall still shows */
-  $('#dockNum').textContent = bankOnly ? fmt(-m.bankEnd) : pin > 0 || L < 0 ? fmt(Math.abs(Ld)) : ''; $('#dockNum').style.color = Ld < 0 || bankOnly ? 'var(--bad)' : '';
+  $('#dockNum').textContent = bankOnly ? fmt(PC.bankBelowZero) : pin > 0 || L < 0 ? fmt(PC.dockAbs) : ''; $('#dockNum').style.color = Ld < 0 || bankOnly ? 'var(--bad)' : '';
   $('#dockTxt').textContent = pin <= 0 ? (L < 0 ? 'planned with no pay entered in ' + mon + '. Add your pay in Plan.' : bankOnly ? 'below zero in the bank at the end of ' + mon + ', with no pay entered. Add your pay in Plan.' : 'No plan yet. Add your pay in Plan.') : `${Ld < 0 ? 'more planned than your pay in ' + mon + (dw > 0 ? ', ' + fmt(dw) + ' borrowed from your emergency fund' : '') : Ld < roundUnit(S) ? 'of your pay not planned yet in ' + mon : 'of your pay not placed yet in ' + mon} · ${overFree && !((m.overNec || 0) > 0.004) ? 'Over free to spend' : overFree || overAny ? 'Over plan' : Ld >= roundUnit(S) && st === 'good' ? 'Still needs a place' : st === 'good' ? 'On plan' : st === 'tight' ? 'Tight' : 'Short'}`;
 
   /* the details */
   $('#inTotal').textContent = fmt2(m.pool.in); $('#outTotal').textContent = fmt2(m.pool.out);
   { const oc = $('#outCounted'); const cn = m.counted || 0, tu = (m.topup && m.topup.used) || 0, tg = tu > 0 ? goalById(S, m.topup.id) : null;
-    oc.hidden = !(cn > 0); if (cn > 0) oc.textContent = `${fmt2(cn)} of this month's Free to spend was not spent. ${tu > 0 && tg ? `${fmt2(tu)} went to ${tg.name}${cn - tu > 0.004 ? ' and ' + fmt2(round2(cn - tu)) + ' came back to the bank' : ''}` : 'It came back to the bank'}, so the bank ends higher than the figures above.`; }
+    oc.hidden = !(cn > 0); if (cn > 0) oc.textContent = `${fmt2(cn)} of this month's Free to spend was not spent. ${tu > 0 && tg ? `${fmt2(tu)} went to ${tg.name}${cn - tu > 0.004 ? ' and ' + fmt2(m.credit) + ' came back to the bank' : ''}` : 'It came back to the bank'}, so the bank ends higher than the figures above.`; }
   const lt = $('#leftTotal'); lt.textContent = fmt2(L); lt.classList.toggle('neg', L < 0);
   const ovr = m.over || 0;
   $('#bankLine').textContent = ovr > 0 ? `Bank ends at ${fmt2(m.bankEnd)}: ${fmt2(m.bankPlanned)} planned, less ${fmt2(ovr)} spent over plan so far.` : (Math.abs(m.bankStart - m.bankEnd) < 0.5 ? `Bank stays at ${fmt2(m.bankEnd)} this month.` : `Bank goes from ${fmt2(m.bankStart)} to ${fmt2(m.bankEnd)} this month.`);
@@ -197,9 +196,9 @@ function renderGoals(m) {
   gs.forEach(g => {
     const c = $('#jc-' + g.id); if (!c) return;
     const gi = goalInfo(S, C, g.id, sel), cap = capOf(g);
-    const pct = cap > 0 ? Math.min(1, gi.bal / cap) : 0, gb = $('.gbar', c);
+    const pct = gi.pct, gb = $('.gbar', c);
     $('#jn-' + g.id).textContent = g.name; const jw = $('#jw-' + g.id); if (jw) jw.textContent = g.why || '';
-    $('.fill', gb).style.width = (pct * 100) + '%'; gb.setAttribute('aria-label', `${g.name}: ${Math.round(pct * 100)}% of ${fmt(cap)}`);
+    $('.fill', gb).style.width = (pct * 100) + '%'; gb.setAttribute('aria-label', `${g.name}: ${gi.pctWhole}% of ${fmt(cap)}`);
     const tick = $('.gtick', gb); if (g.emergency && cap > gi.target && gi.target > 0) { tick.style.left = `calc(${gi.target / cap * 100}% - 1px)`; tick.hidden = false; } else tick.hidden = true;
     $('#jv-' + g.id).innerHTML = gi.target > 0 ? dw(S, g, `<b>${fmt(gi.bal)}</b> of ${fmt(gi.target)}`) : '<b>No goal amount yet</b>';
     const js = $('#js-' + g.id); let cls = 'plain', ic = IC.clock, tx = '', note = '';

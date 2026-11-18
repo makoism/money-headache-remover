@@ -124,7 +124,7 @@ function why0(n, fn, seen) {
 /* ---- the places a number is shown ---- */
 const finds = [];
 const fnOf = anc => [...anc].slice(0, -1).reverse().find(a => /Function/.test(a.type)) || ast;
-const CSS = /(width|left|right|top|bottom|height|inset|flex-basis|stroke-dasharray|stroke-dashoffset|--[\w-]+)\s*[:=]\s*["']?\s*(calc\()?$/;
+const CSS = /((width|left|right|top|bottom|height|inset|flex-basis|stroke-dasharray|stroke-dashoffset|--[\w-]+)\s*[:=]\s*["']?\s*(calc\()?|^calc\()$/;
 const push = (kind, n, anc, whyTxt) => { const [f, l] = at(n); if (MODEL_FILES.has(f)) return; finds.push({ kind, file: f, line: l, snip: text(n).slice(0, 110), why: whyTxt }); };
 walk.ancestor(ast, {
   CallExpression(n, _s, anc) {

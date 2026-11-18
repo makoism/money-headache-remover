@@ -425,7 +425,8 @@ function goalInfo(S, C, id, ym) {
     slack = reached ? ymIdx(rb) - ymIdx(reached) : null;
     if (ym <= rb) need = Math.max(0, Math.ceil((target - m.balBefore[id]) / ymCount(ym, rb)));
   } else state = bal >= target ? 'full' : (reached ? 'eta' : 'noeta');
-  return { id, target, bal, pct: target > 0 ? Math.min(1, bal / target) : 0, reached, readyBy: rb, state, need, slack, had };
+  /* pctWhole is the one whole percent shown for a goal anywhere: rounded down, and 100 only when it is really full */
+  return { id, target, bal, pct: target > 0 ? Math.min(1, bal / target) : 0, pctWhole: wholePct(bal, target), togo: Math.max(0, g.target - bal), reached, readyBy: rb, state, need, slack, had };
 }
 
 /* a rounding step that fits the size of the number */
@@ -543,7 +544,7 @@ function goalRows(S, C, ym) {
   const ix = ymIdx(ym);
   return S.plan.goals.map(g => {
     const gi = goalInfo(S, C, g.id, ym), live = g.target > 0 && gi.state !== 'paid' && gi.state !== 'short';
-    return { id: g.id, name: g.name, slot: g.slot, kind: kindOfGoal(S, g), emergency: !!g.emergency, target: capOf(g), saved: gi.bal, pct: wholePct(gi.bal, capOf(g)), state: gi.state,
+    return { id: g.id, name: g.name, slot: g.slot, kind: kindOfGoal(S, g), emergency: !!g.emergency, target: capOf(g), saved: gi.bal, togo: Math.max(0, capOf(g) - gi.bal), pct: wholePct(gi.bal, capOf(g)), state: gi.state,
       reached: gi.reached, months: gi.reached ? Math.max(0, ymIdx(gi.reached) - ix) : null, need: gi.need, slack: gi.slack, due: g.due || null, readyBy: gi.readyBy, had: gi.had, live };
   });
 }
@@ -560,7 +561,7 @@ function viewOf(S, C, ym, today) {
   const m = C.byYm[ym], rs = receiptStats(S, ym), goals = goalRows(S, C, ym), main = pickMain(S, goals);
   const dim = new Date(+ym.slice(0, 4), +ym.slice(5, 7), 0).getDate(), dayN = today && today.slice(0, 7) === ym ? +today.slice(8, 10) : 1, daysLeft = Math.max(1, dim - dayN + 1);
   const planPlay = m.jar.play, spentPlay = rs.byJar.play || 0, leftPlay = round2(planPlay - spentPlay), pace = planPlay * dayN / dim;
-  const play = { planned: planPlay, spent: spentPlay, left: leftPlay, over: leftPlay < 0, count: rs.count, daysLeft, dim, dayN,
+  const play = { planned: planPlay, spent: spentPlay, left: leftPlay, over: leftPlay < 0, overBy: leftPlay < 0 ? round2(-leftPlay) : 0, count: rs.count, daysLeft, dim, dayN,
     frac: planPlay > 0 ? Math.min(1, spentPlay / planPlay) : 1, dayFrac: Math.min(1, dayN / dim), ahead: leftPlay >= 0 && spentPlay > pace * 1.15 + 1,
     perWeek: daysLeft >= 4 ? Math.max(0, leftPlay) / (daysLeft / 7) : null };
   const goalsSaved = sum(Object.keys(m.bal).map(id => m.bal[id]));
@@ -572,7 +573,20 @@ function viewOf(S, C, ym, today) {
     return { id: j.id, name: j.name, kind: 'spend', planned, spent, left: round2(planned - spent), total: null };
   });
   const month = { inflow: m.inflow, out: m.out, left: m.left, bankEnd: m.bankEnd, over: m.over || 0, status: statusOf(S, m) };
-  return { ym, main, goals, live: goals.filter(r => r.live).length, play, buckets, otherSpent: rs.byJar.other || 0, month, map: mapOf(S, C, ym, { play, month, goals }) };
+  const map = mapOf(S, C, ym, { play, month, goals }), nec = buckets.find(x => x.id === 'nec'), pcl = planCells(S, C, ym), dwv = m.draw || 0;
+  /* HOME CELLS: the worked-out amounts Home shows, each defined once here. Screens read them; they never do the sum.
+     A pile tile (Education, Giving) spent past this month's amount: how much past, how much of that the bank pays, how much the pile covered. */
+  const tileOf = id => { const x = buckets.find(q => q.id === id), br = map.burrows.find(r => r.id === id); if (!x || !(x.left < 0)) return { over: 0, bank: 0, pile: 0 }; const over = round2(-x.left), bank = Math.min(-x.left, br ? (br.overBy || 0) : -x.left); return { over, bank, pile: round2(over - bank) }; };
+  const cells = {
+    planSpend: -m.left,                                   /* what the plan spends when no pay is entered (shown only then) */
+    unplaced: pcl.unplaced, overPay: pcl.overPay,         /* pay with no place; how much more than the pay the month plans */
+    billsOverPay: nec.planned - (m.inflow - dwv),         /* how far the pay is under the bills (shown only when it is) */
+    freeOver: map.free < 0 ? round2(-map.free) : 0,       /* Free to spend that came out of the bank */
+    perWeek: play.perWeek != null && map.free > 0 ? Math.max(0, map.free) / (play.daysLeft / 7) : null,   /* safe Free to spend a week for the days left */
+    perDay: map.free > 0 && play.daysLeft > 0 ? map.free / play.daysLeft : null,
+    edu: tileOf('edu'), give: tileOf('give')
+  };
+  return { ym, main, goals, live: goals.filter(r => r.live).length, play, buckets, otherSpent: rs.byJar.other || 0, month, map, cells };
 }
 const overspendUpTo = (S, C, ym) => (C.byYm[ym] ? C.byYm[ym].over : 0);
 /* Free to spend: the free to spend left, less what is held back so the balance stays above its minimum. One rule, used by every screen that shows the number. */
@@ -612,6 +626,26 @@ function mapOf(S, C, ym, V0) {
     goalParts: (V0.goals || []).filter(g => g.live !== false || ((m.g[g.id] && m.g[g.id].actual) || 0) > 0).map(g => ({ id: g.id, name: g.name, slot: g.slot, saved: g.saved, plan: (m.g[g.id] && m.g[g.id].actual) || 0 })),
     split: ['nec', 'lts', 'play', 'edu', 'ffa', 'give'].map(id => ({ id, amount: id === 'lts' ? (m.goalsTotal || 0) : (m.jar[id] || 0) })).filter(x => x.amount > 0) };
 }
+/* the goal wizard's suggestion: what is still missing, spread evenly over n months and rounded up to the plan's unit (the same rule as evenSave) */
+function wizardMonthly(S, cost, saved, n) { const rem = Math.max(0, clampAmt(cost) - clampAmt(saved)), u = roundUnit(S); return n > 0 ? Math.ceil(rem / n / u) * u : 0; }
+
+/* ---- PLAN CELLS: every worked-out amount the Plan tab and the dock at the foot of the page show. Screens read these; they never do the sum. ---- */
+function planCells(S, C, ym) {
+  const m = C.byYm[ym], rs = receiptStats(S, ym), dw = m.draw || 0, L = m.pool.left, over = m.overNow || 0;
+  const play = m.jar.play, playSpent = rs.byJar.play || 0;
+  let dock = dw > 0 ? L - dw : L;                  /* money borrowed from the emergency fund is not pay */
+  if (dock > 0) dock = Math.max(0, dock - over);   /* and pay with no place that spending past plan already used is not left */
+  return {
+    pay: m.pool.in - dw,                           /* real pay this month: what came in, less what was borrowed */
+    unplaced: Math.max(0, (L - dw) - over),        /* pay with no place, less what spending past plan already took from it */
+    overPay: -(L - dw),                            /* how much more than the pay the month plans to spend (shown in a tight month) */
+    bankGap: Math.max(0, cfg(S, 'minBank') - m.bankEnd),   /* how far the bank ends under the safety minimum */
+    bankBelowZero: -m.bankEnd,                     /* how far below zero the bank ends (shown only when it is) */
+    dock, dockAbs: Math.abs(dock),                 /* the dock number: pay not placed yet, or (when negative) how much more is planned than the pay */
+    playOver: round2(playSpent - play)             /* Free to spend logged past its plan (shown only when it is) */
+  };
+}
+
 /* THE PROOF. Where the money sits must equal where the money came from, less what left. The two sides are worked out apart from each other:
      sits:  the bank + every goal + the Education, Giving and Investing piles at the end of the month (what the screens show, from mapOf)
      came:  what there was at the start + all pay so far - everything that left, added up here from the plan and the raw receipts, in whole cents
