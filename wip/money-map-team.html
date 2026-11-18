@@ -1822,6 +1822,9 @@ body.scene-on .card, body.scene-on .why, body.scene-on .gw-card { background: co
 /* the four numbers never break inside a number (art director, 38.31 round): one line, a size that fits four across on a laptop */
 .mp-four .mp-n b { overflow-wrap: normal; white-space: nowrap; font-size: clamp(20px, 2.1vw + 12px, 28px); }
 @media (min-width: 720px) { .mp-four .mp-n b { font-size: clamp(18px, 1.6vw, 26px); } }
+/* phones: with the scene on, the cards are already solid (above), so a blur behind them shows nothing but makes the phone redraw it on every frame
+   of the animated scene, a known cause of flicker and stutter while scrolling on phones (Mako, 2026-11-18: the mobile version is glitchy) */
+body.scene-on .card, body.scene-on .gw-card, body.scene-on .hnext, body.scene-on .src-panel { -webkit-backdrop-filter: none; backdrop-filter: none; }
 </style>
 </head>
 <body>
