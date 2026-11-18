@@ -98,3 +98,12 @@ Three documents were kept in the Claude project and should be copied into the re
 9. **Real figures.** From now on, rebuilt test helpers and plan documents use made-up numbers of the same shape. No new real figures go into the repo.
 10. **The Claude artifact mirror** stays while it works (checked 2026-11-18: it loads and serves 38.28). Retire it once it stops working.
 
+## Process change (Mako, 2026-11-18)
+
+1. **v1** means 38.31 shipped. After that Mako uses it himself with his real numbers while step B is built, and step B is adjusted from what he finds.
+2. **Checks by cost.** Cheap checks (`tests/verify.sh`) after every commit. The two gate agents run on a release candidate only. The seven-role panel runs when screens or wording changed in a release, and once before v1. Agents get screenshots and extracted screen text where possible, not the whole page.
+3. **Steps 1 and 2 are time-boxed.** Keep the tests that protect numbers, data safety and Mako's real-numbers scenario. Retire the others with a written reason in the commit. Never retire a test to hide a failure.
+4. **Step B is split.** B1: the ledger and "check your bank", shipped on its own first. B2: the Chest and the pay day ritual.
+5. **No new art, music or video work** until v1 is in use.
+6. **A fresh session for each step**, with a short handoff in RESUME.md, using the model that fits the job.
+

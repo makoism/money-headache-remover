@@ -34,11 +34,11 @@ const PESO = (() => { const src = require('fs').readFileSync(process.env.MODEL |
   ok('page behind the tour is inert', await p.$eval('.wrap', e => e.inert));
   ok('dialog is labelled and modal', await p.$eval('#tour', e => e.getAttribute('role') === 'dialog' && e.getAttribute('aria-modal') === 'true'));
   ok('focus lands on the tour title', await p.evaluate(() => document.activeElement.id === 'tourTitle'));
-  ok('screen 1 is the video and nothing else', (await q('#tourTitle')) === 'Welcome' && (await q('#tourPart')) === 'Welcome · 1 of 2' && (await p.$$eval('#tourBody .tour-vframe, #tourBody .tour-video', e => e.length)) >= 1 && !(await p.$('#tourName')) && (await p.$$eval('#tourBody .tour-fields, #tourBody .tour-get', e => e.length)) === 0);
+  ok('screen 1 is the video and nothing else', (await q('#tourTitle')) === 'Welcome' && /^Step 1 of \d+: Welcome$/.test(await q('#tourPart')) /* step labels since the 38.26 shorter setup */ && (await p.$$eval('#tourBody .tour-vframe, #tourBody .tour-video', e => e.length)) >= 1 && !(await p.$('#tourName')) && (await p.$$eval('#tourBody .tour-fields, #tourBody .tour-get', e => e.length)) === 0);
   ok('...with one way on', (await q('#tourNext')) === 'Next' && !(await p.$eval('#tourNext', e => e.hidden)));
   ok('no back button on screen 1', await p.$eval('#tourBack', e => e.hidden));
   await p.click('#tourNext'); await w(250);
-  ok('screen 2 asks for the currency and what to call you', (await q('#tourTitle')) === 'Currency' && (await q('#tourPart')) === 'Welcome · 2 of 2' && (await val('#tourName')) === '');
+  ok('screen 2 asks for the currency and what to call you', (await q('#tourTitle')) === 'Currency' && /^Step 1 of \d+: Welcome$/.test(await q('#tourPart')) && (await val('#tourName')) === '');
   ok('...and a promise that it stays private', (await tourText()).includes('stays in this browser') && (await tourText()).includes('Nobody else can see it'));
   await p.type('#tourName', '  Mara ');
   ok('six currency chips, yen preselected', (await p.$$eval('input[name=tourCur]', e => e.length)) === 6 && (await p.$eval('input[name=tourCur]:checked', e => e.value)) === '¥');
@@ -116,9 +116,9 @@ const PESO = (() => { const src = require('fs').readFileSync(process.env.MODEL |
   /* ============ THE PAGE ============ */
   await seed(PESO); await skipTour(); await tab('month'); await w(300); /* the page checks below were written for the peso sample, so seed that copy (the default is yen since 38.28) */
   const lg = await p.$$eval('#legend .lg', e => e.map(x => x.innerText.replace(/\s+/g, ' ').trim()));
-  ok('legend shows six jars in order', lg.length === 6 && ['Necessities', 'Burrows (goals)', 'Play', 'Education', 'Financial Freedom', 'Give'].every((n, i) => lg[i].startsWith(n)));
+  ok('legend shows six jars in order', lg.length === 6 && ['Bills and basics', 'Goals', 'Free to spend', 'Education', 'Investing', 'Giving'] /* 38.29 words */.every((n, i) => lg[i].startsWith(n)));
   ok('necessities 55%, give 5%', lg[0].includes('₱16,500') && lg[0].includes('55%') && lg[5].includes('₱1,500') && lg[5].includes('5%'));
-  ok('jar note in line', (await q('#jarNote')).startsWith('Necessities are 55% of pay'));
+  ok('jar note in line', (await q('#jarNote')).startsWith('Bills and basics are 55% of pay'));
   ok('hero is the play money', (await q('#heroNum')) === '₱3,000');
   ok('five tabs', (await p.$$eval('.tabs [role=tab]', e => e.length)) === 5);
   ok('ledger rows follow the jars', JSON.stringify(await p.$$eval('#rowsOut .row', e => e.map(x => x.dataset.id))) === JSON.stringify(['nec', 'items', 'debts', 'lts', 'play', 'edu', 'ffa', 'give']));
@@ -127,7 +127,7 @@ const PESO = (() => { const src = require('fs').readFileSync(process.env.MODEL |
   // one-month edit, undo
   await p.click('#h-a'); await p.keyboard.type('40000'); await p.keyboard.press('Enter'); await w(300);
   ok('salary edit formats', (await val('#h-a')) === '₱40,000');
-  ok('the first salary edit cheers', (await cheerOn()) === 'Pay entered.' && (await confettiPx()) > 10);
+  ok('the first salary edit cheers, with no leaves over the words (leaves are for big moments only, ui44.js)', (await cheerOn()) === 'Pay entered.' && (await confettiPx()) === 0);
   await w(900); ok('pay is marked done', !!(await p.evaluate(() => { try { return JSON.parse(localStorage.getItem('money-map-template-v2')).ui.done || {}; } catch (e) { return {}; } })).pay);
   ok('left over now 10,000', (await q('#leftTotal')) === '₱10,000');
   await p.click('#nextM'); await w(250); ok('Dec back to usual', (await val('#h-a')) === '₱30,000'); await p.click('#prevM'); await w(200);
@@ -172,7 +172,7 @@ const PESO = (() => { const src = require('fs').readFileSync(process.env.MODEL |
 
   // ----- jar percentages -----
   await tab('basics');
-  ok('settings lists the six jars with Eker\'s usual shares, read only', (await p.$$eval('#jarList input', e => e.length)) === 0 && (await p.$eval('#jarList', e => e.innerText.replace(/\s+/g, ' '))).includes('Necessities') && (await p.$eval('#jarList', e => e.innerText)).includes('55%') && (await p.$eval('#jarList', e => e.innerText)).includes('5%'));
+  ok('settings lists the six jars with Eker\'s usual shares, read only', (await p.$$eval('#jarList input', e => e.length)) === 0 && (await p.$eval('#jarList', e => e.innerText.replace(/\s+/g, ' '))).includes('Bills and basics') && (await p.$eval('#jarList', e => e.innerText)).includes('55%') && (await p.$eval('#jarList', e => e.innerText)).includes('5%'));
 
   // ----- goals -----
   await tab('goals');
@@ -219,11 +219,11 @@ const PESO = (() => { const src = require('fs').readFileSync(process.env.MODEL |
 
   // ----- receipts -----
   await tab('receipts');
-  ok('category list is grouped by jar', (await p.$$eval('#rcCat optgroup', e => e.map(x => x.label).join(','))) === 'Play,Necessities,Education,Financial Freedom,Give');
+  ok('category list is grouped by jar', (await p.$$eval('#rcCat optgroup', e => e.map(x => x.label).join(','))) === 'Free to spend,Bills and basics,Education,Investing,Giving'); /* 38.29 words */
   ok('defaults to spending money', (await val('#rcCat')) === 'envelope');
   await set('#rcDate', '2026-11-08', 'change'); await p.type('#rcAmt', '250.50'); await p.select('#rcCat', 'bill:util'); await p.type('#rcNote', 'Palengke'); const utilName = await p.$eval('#rcCat option[value="bill:util"]', e => e.textContent.trim());
   await p.click('#rcSave'); await w(350);
-  { const c1 = await cheerOn(); ok('the first receipt cheers (or finishes the setup)', c1.includes('Logged. Streak: week 1') || c1.startsWith('Setup complete')); ok('...with confetti', (await confettiPx()) > 10); }
+  { const c1 = await cheerOn(); ok('the first receipt cheers (or finishes the setup)', c1.includes('Logged. Streak: week 1') || c1.startsWith('Setup complete')); ok('...the cheer line only, no leaves over the words (small moment, ui44.js)', (await confettiPx()) === 0); }
   ok('receipt added', (await p.$$eval('#rcList .rc', e => e.length)) === 1 && (await q('#rcList .rc')).includes('₱250.50') && (await q('#rcList .rc')).includes(utilName));
   ok('summary counts it', (await q('#rcSum')).includes('₱250.50 spent, 1 receipt'));
   ok('form is ready for the next one', (await val('#rcAmt')) === '' && (await val('#rcDate')) === '2026-11-08' && (await val('#rcCat')) === 'bill:util');
@@ -236,8 +236,8 @@ const PESO = (() => { const src = require('fs').readFileSync(process.env.MODEL |
   ok('with reduced motion there is a cheer but no confetti', /^(Logged|Week \d|First receipt|\d+ weeks)/.test(await cheerOn()) && (await confettiPx()) === 0);
   await p.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'no-preference' }]);
   await p.$$eval('#rcList .rc [data-rcdel]', b => b[0] && b[0].click()); await w(100); await p.$$eval('#rcList .rc [data-rcdel]', b => b[0] && b[0].click()); await w(300);
-  ok('category table lists plan and spent', (await p.$eval('#rcCats', e => e.innerText)).includes('Play money') && (await p.$eval('#rcCats', e => e.innerText)).includes('₱1,200'));
-  ok('play receipts are measured against spending money', (await q('#rcSum')).includes('Play money: ₱3,800 planned, ₱1,200 spent, ₱2,600 left'));
+  ok('category table lists plan and spent', (await p.$eval('#rcCats', e => e.innerText)).includes('Free to spend') /* "play money" is retired */ && (await p.$eval('#rcCats', e => e.innerText)).includes('₱1,200'));
+  ok('play receipts are measured against spending money', (await q('#rcSum')).includes('Free to spend: ₱3,800 planned, ₱1,200 spent, ₱2,600 safe to spend'));
   await p.click('#rcSave'); await w(200);
   ok('empty amount is refused', (await q('#rcMsg')).includes('amount') && (await p.$$eval('#rcList .rc', e => e.length)) === 2);
   await set('#rcDate', '2020-01-01', 'change'); await p.type('#rcAmt', '5'); await p.click('#rcSave'); await w(200);
@@ -253,7 +253,7 @@ const PESO = (() => { const src = require('fs').readFileSync(process.env.MODEL |
   ok('newest first', (await q('#rcList .rc .rc-note')) === 'Dinner' || (await q('#rcList .rc')).includes('Dinner') || true);
   // hero line on the first page
   await tab('month');
-  ok('hero shows receipts against spending money', (await q('#rcLine')).includes('₱1,200 spent, ₱2,600 left'));
+  ok('hero shows receipts against spending money', (await q('#rcLine')).includes('₱1,200 spent, ₱2,600 safe to spend'));
   await tab('receipts');
   // edit
   await p.click('#rcList .rc [data-rcedit]'); await w(300);
@@ -322,7 +322,7 @@ const PESO = (() => { const src = require('fs').readFileSync(process.env.MODEL |
   delete parsed.receipts; const json = JSON.stringify(parsed);
   await tab('month'); const bLeft = await q('#leftTotal'), bHero = await q('#heroNum'); await tab('basics');
   await p.click('#bkReset'); await p.click('#bkReset'); await w(350);
-  await tab('month'); ok('back to the sample', (await q('#heroNum')) === '₱3,000' && (await p.$$eval('#rb-nec .ed', e => e.length)) === 10);
+  await tab('month'); ok('back to the sample: ₱3,000 of Free to spend less the ₱10 receipt kept from the escaping check (38.30: the hero is what is still safe to spend)', (await q('#heroNum')) === '₱2,990' && (await p.$$eval('#rb-nec .ed', e => e.length)) === 10);
   await tab('receipts'); ok('resetting to the sample keeps receipts', (await p.$$eval('#rcList .rc, #rcCats tr', e => e.length)) >= 1);
   await tab('basics'); await p.$eval('#bk', (el, v) => { el.value = v; }, json); await p.click('#bkLoad'); await w(450);
   await tab('month'); ok('round trip restores plan and numbers', (await q('#leftTotal')) === bLeft && (await q('#heroNum')) === bHero);
@@ -338,7 +338,7 @@ const PESO = (() => { const src = require('fs').readFileSync(process.env.MODEL |
   ok('blank then salary', (await q('#leftTotal')) === '₱30,000');
 
   // ----- currency -----
-  await tab('basics'); await p.select('#curSel', '€'); await tab('month'); ok('currency symbol', (await q('#heroNum')) === '€0' || (await q('#heroNum')).startsWith('€'));
+  await tab('basics'); await p.select('#curSel', '€'); await tab('month'); ok('currency symbol (after Zero all the ₱10 receipt is past a plan of 0, so Free to spend reads −€10: 38.30 overspend rule)', /^−?€/.test(await q('#heroNum')));
   await tab('basics'); await p.select('#curSel', '₱'); await w(150);
 
   // ----- an old saved copy still loads -----
