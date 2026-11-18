@@ -371,6 +371,8 @@ function closeTour(toBills, done) {
     if (done && tab !== 'home' && !WORLD.isOn()) switchTab('home');
     else if (tourReturn && tourReturn.focus) try { tourReturn.focus({ preventScroll: true }); } catch (e) { /* gone */ }
   }
+  /* nothing to return to (the first setup): the keyboard starts at the tabs, not at the floating Ask and Help pills (38.31 layout round 3) */
+  if (!document.activeElement || document.activeElement === document.body || $('#tour').contains(document.activeElement)) { const tb = $('[role="tab"][aria-selected="true"]') || $('#tab-home'); if (tb) try { tb.focus({ preventScroll: true }); } catch (e) { /* hidden */ } }
 }
 /* every change on the screen is written straight away, so closing, reloading or tapping somewhere else never loses it */
 let asT = 0;

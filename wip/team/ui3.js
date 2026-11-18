@@ -76,5 +76,8 @@ function setOpen(id) {
 function openRow(id) {
   if (tab !== 'month') switchTab('month');
   setOpen(id);
-  const r = $(`.row[data-id="${id}"]`); if (r) r.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  /* the row's heading lands just under the fixed summary bar, never hidden behind it (38.31 layout round 3) */
+  const r = $(`.row[data-id="${id}"]`); if (!r) return;
+  const go = smooth => { const d = $('.dock'), dh = d && getComputedStyle(d).display !== 'none' ? d.getBoundingClientRect().bottom : 0; const want = Math.max(0, r.getBoundingClientRect().top + window.scrollY - Math.max(0, dh) - 8); if (Math.abs(want - window.scrollY) > 2) window.scrollTo({ top: want, behavior: smooth ? 'smooth' : 'auto' }); };
+  go(true); setTimeout(() => go(false), 650); setTimeout(() => go(false), 1400);   /* again once the summary bar has its final height (it grows as setup closes) */
 }

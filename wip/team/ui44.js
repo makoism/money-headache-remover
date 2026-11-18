@@ -62,3 +62,5 @@ function afterDone(k) {
   if (all) celebrate('big', 'Setup complete. All four steps done.');
   else celebrate('med', CHEERS[k]);
 }
+/* a tap puts a message away at once, so it never sits over words someone is reading (38.31 north-star round 3) */
+(() => { const el = document.getElementById('cheer'); if (el) el.addEventListener('click', () => { el.classList.remove('on'); clearTimeout(CONF.cheerT); }); })();

@@ -103,8 +103,8 @@ function render() {
   let vt;
   if (pin <= 0) vt = 'Enter monthly take-home pay: tap Salary below.';
   else if (st === 'good') vt = (Lun < 0.005 ? 'All pay is placed.' :   /* exact: a small amount not placed is named, never called placed (38.31 money accuracy round 3) */ `${fmt2(Lun)} of pay not placed yet.`) + (Lun >= pin * 0.08 ? ' Raise a goal or another place to use it, or keep it as a cushion.' : '');
-  else if (st === 'tight') vt = `Month spends ${fmt2(PC.overPay)} more than your pay${m.draw > 0 ? ', ' + fmt2(m.draw) + ' of it borrowed' : ''}. Balance covers it and ends at ${fmt2(m.bankEnd)}, at or above the ${fmt2(floor)} minimum.`;
-  else vt = `Balance would end at ${fmt2(m.bankEnd)}, ${fmt2(gap)} under the ${fmt2(floor)} minimum.` + (fixes(S, m).length ? ' Pick a fix:' : ' Lower a cost or add pay to fix it.');
+  else if (st === 'tight') vt = `Month spends ${fmt2(PC.overPay)} more than your pay${m.draw > 0 ? ', ' + fmt2(m.draw) + ' of it borrowed' : ''}. Balance covers it and ends at ${fmt2(m.bankEnd)}, at or above the ${fmt2(floor)} minimum balance (change it in Settings).`;
+  else vt = (floor > 0 ? `Balance would end at ${fmt2(m.bankEnd)}, ${fmt2(gap)} under the ${fmt2(floor)} minimum balance (change it in Settings).` : `Balance would end at ${fmt2(m.bankEnd)}, below zero.`) + (fixes(S, m).length ? ' Pick a fix:' : ' Lower a cost or add pay to fix it.');
   if (m.draw > 0) vt += ` ${fmt2(m.draw)} is borrowed from the emergency fund.`;
   $('#verdict').textContent = vt;
   let btns = '';

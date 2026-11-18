@@ -584,7 +584,7 @@ svg.tour-scene { width: 100%; max-width: 440px; height: auto; }
 .cam-view video { width: 100%; height: 100%; object-fit: cover; display: block; }
 .cam-flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; } .cam-flash.on { animation: camFlash .35s ease-out; }
 @keyframes camFlash { from { opacity: .85; } to { opacity: 0; } }
-#cheer { position: fixed; left: 50%; bottom: max(22px, calc(env(safe-area-inset-bottom) + 14px)); transform: translate(-50%, 16px); opacity: 0; z-index: 71; width: max-content; max-width: min(92vw, 420px); padding: 14px 22px; border-radius: var(--r-panel); background: var(--accent); color: var(--on-accent); font-size: 16px; font-weight: 500; line-height: 1.3; text-align: center; pointer-events: none; box-shadow: 0 14px 34px -12px rgba(0, 0, 0, .4); transition: opacity .25s, transform .4s cubic-bezier(.2, .9, .3, 1.2); }
+#cheer { position: fixed; left: 50%; bottom: max(22px, calc(env(safe-area-inset-bottom) + 14px)); transform: translate(-50%, 16px); opacity: 0; z-index: 71; width: max-content; max-width: min(92vw, 420px); padding: 14px 22px; border-radius: var(--r-panel); background: var(--accent); color: var(--on-accent); font-size: 16px; font-weight: 500; line-height: 1.3; text-align: center; pointer-events: none; cursor: pointer; box-shadow: 0 14px 34px -12px rgba(0, 0, 0, .4); transition: opacity .25s, transform .4s cubic-bezier(.2, .9, .3, 1.2); }
 #cheer.on { opacity: 1; transform: translate(-50%, 0); }
 @media (prefers-reduced-motion: reduce) { #cheer { transition: opacity .01s; transform: translate(-50%, 0); } }
 
@@ -1844,6 +1844,7 @@ p .link::after, li .link::after, span .link::after, .cap .link::after { content:
 .sw::after { content: ''; position: absolute; left: -4px; right: -4px; top: 50%; height: 44px; transform: translateY(-50%); }
 /* phones: the Ask and Help pills are smaller, so they cover less of the cards behind them (38.31 QC rounds 2 and 3) */
 @media (max-width: 420px) { .help-btn { min-height: 44px; padding: 0 12px 0 6px; font-size: 15px; gap: 6px; } .help-btn .q { width: 28px; height: 28px; font-size: 15px; } }
+#cheer.on { pointer-events: auto; }
 </style>
 </head>
 <body>
@@ -4692,8 +4693,8 @@ function render() {
   let vt;
   if (pin <= 0) vt = 'Enter monthly take-home pay: tap Salary below.';
   else if (st === 'good') vt = (Lun < 0.005 ? 'All pay is placed.' :   /* exact: a small amount not placed is named, never called placed (38.31 money accuracy round 3) */ `${fmt2(Lun)} of pay not placed yet.`) + (Lun >= pin * 0.08 ? ' Raise a goal or another place to use it, or keep it as a cushion.' : '');
-  else if (st === 'tight') vt = `Month spends ${fmt2(PC.overPay)} more than your pay${m.draw > 0 ? ', ' + fmt2(m.draw) + ' of it borrowed' : ''}. Balance covers it and ends at ${fmt2(m.bankEnd)}, at or above the ${fmt2(floor)} minimum.`;
-  else vt = `Balance would end at ${fmt2(m.bankEnd)}, ${fmt2(gap)} under the ${fmt2(floor)} minimum.` + (fixes(S, m).length ? ' Pick a fix:' : ' Lower a cost or add pay to fix it.');
+  else if (st === 'tight') vt = `Month spends ${fmt2(PC.overPay)} more than your pay${m.draw > 0 ? ', ' + fmt2(m.draw) + ' of it borrowed' : ''}. Balance covers it and ends at ${fmt2(m.bankEnd)}, at or above the ${fmt2(floor)} minimum balance (change it in Settings).`;
+  else vt = (floor > 0 ? `Balance would end at ${fmt2(m.bankEnd)}, ${fmt2(gap)} under the ${fmt2(floor)} minimum balance (change it in Settings).` : `Balance would end at ${fmt2(m.bankEnd)}, below zero.`) + (fixes(S, m).length ? ' Pick a fix:' : ' Lower a cost or add pay to fix it.');
   if (m.draw > 0) vt += ` ${fmt2(m.draw)} is borrowed from the emergency fund.`;
   $('#verdict').textContent = vt;
   let btns = '';
@@ -4930,7 +4931,10 @@ function setOpen(id) {
 function openRow(id) {
   if (tab !== 'month') switchTab('month');
   setOpen(id);
-  const r = $(`.row[data-id="${id}"]`); if (r) r.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  /* the row's heading lands just under the fixed summary bar, never hidden behind it (38.31 layout round 3) */
+  const r = $(`.row[data-id="${id}"]`); if (!r) return;
+  const go = smooth => { const d = $('.dock'), dh = d && getComputedStyle(d).display !== 'none' ? d.getBoundingClientRect().bottom : 0; const want = Math.max(0, r.getBoundingClientRect().top + window.scrollY - Math.max(0, dh) - 8); if (Math.abs(want - window.scrollY) > 2) window.scrollTo({ top: want, behavior: smooth ? 'smooth' : 'auto' }); };
+  go(true); setTimeout(() => go(false), 650); setTimeout(() => go(false), 1400);   /* again once the summary bar has its final height (it grows as setup closes) */
 }
 /* ---------- the world: the pages live on a scroll that a hand raises over the scene ----------
    With the scenery on, the app opens onto the world. Home, Receipts and Plan are the three big lights of the orb held in two hands; choosing one makes a
@@ -5241,6 +5245,8 @@ function afterDone(k) {
   if (all) celebrate('big', 'Setup complete. All four steps done.');
   else celebrate('med', CHEERS[k]);
 }
+/* a tap puts a message away at once, so it never sits over words someone is reading (38.31 north-star round 3) */
+(() => { const el = document.getElementById('cheer'); if (el) el.addEventListener('click', () => { el.classList.remove('on'); clearTimeout(CONF.cheerT); }); })();
 
 /* ---------- the guided setup: one question at a time, written straight into the plan ----------
    Every screen saves as you type, so closing the tour half way loses nothing.
@@ -13588,6 +13594,8 @@ function closeTour(toBills, done) {
     if (done && tab !== 'home' && !WORLD.isOn()) switchTab('home');
     else if (tourReturn && tourReturn.focus) try { tourReturn.focus({ preventScroll: true }); } catch (e) { /* gone */ }
   }
+  /* nothing to return to (the first setup): the keyboard starts at the tabs, not at the floating Ask and Help pills (38.31 layout round 3) */
+  if (!document.activeElement || document.activeElement === document.body || $('#tour').contains(document.activeElement)) { const tb = $('[role="tab"][aria-selected="true"]') || $('#tab-home'); if (tb) try { tb.focus({ preventScroll: true }); } catch (e) { /* hidden */ } }
 }
 /* every change on the screen is written straight away, so closing, reloading or tapping somewhere else never loses it */
 let asT = 0;
@@ -15592,7 +15600,7 @@ function checkBadges() {
   const fresh = earned.filter(b => !S.ui.bd[b.id]); if (!fresh.length) return;
   fresh.forEach(b => { S.ui.bd[b.id] = true; });
   persist(); clearTimeout(badgeTimer);
-  badgeTimer = setTimeout(() => { if (HV && HV.map && HV.map.overspent > 0) { if (tab === 'home') renderBadges(); return; } sfx('fanfare'); celebrate('med', fresh.length === 1 ? `Badge: ${fresh[0].n}.` : `${fresh.length} badges: ${fresh.map(b => b.n).join(', ')}.`); if (tab === 'home') renderBadges(); }, 900);
+  badgeTimer = setTimeout(() => { const bm = C && C.byYm[nowYm()]; if ((HV && HV.map && HV.map.overspent > 0) || (bm && (bm.bankEnd < 0 || statusOf(S, bm) === 'short'))) { if (tab === 'home') renderBadges(); return; }   /* no cheering while the month is short or below zero: the badge waits in the list (38.31 north-star round 3) */ sfx('fanfare'); celebrate('med', fresh.length === 1 ? `Badge: ${fresh[0].n}.` : `${fresh.length} badges: ${fresh.map(b => b.n).join(', ')}.`); if (tab === 'home') renderBadges(); }, 900);
 }
 
 /* ---------- next win ---------- */
