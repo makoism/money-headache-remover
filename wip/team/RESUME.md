@@ -78,7 +78,7 @@ Where the named values live in `model.js`:
 ## 6. Before anything ships (no exceptions)
 
 1. `bash tests/setup_env.sh`, then `./check.sh full` prints ALL GOOD. It has never been green on 38.30 or 38.31.
-2. Two fresh QC agents, started at the same time on the finished build, each given only its own brief and the built page, never your reasoning:
+2. Stage the build: `bash tests/qc/stage_build.sh` (runs verify.sh, copies the exact build to `/tmp/qc_build/build.html`). Then two fresh QC agents, started at the same time on that file, each given only its own brief and the built page, never your reasoning. They are project subagents in `.claude/agents/` (`qc-north-star`, `qc-numbers`; the panel is `qc-novice`, `qc-money-accuracy`, `qc-data-safety`, `qc-layout-touch`, `qc-art-director`, `qc-wording`, `qc-regression`). Start each with only the build path:
    - north-star agent: `NORTH_STAR.md` and `QC_AGENT.md`
    - number-logic agent: `QC_NUMBERS.md`
 3. The seven-role panel in `QC_ROLES.md`, in parallel with the two.
