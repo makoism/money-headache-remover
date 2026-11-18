@@ -2,6 +2,8 @@
 
 Written after reading every .md file at the repo root and in wip/team, the commit history of wip-38.30 and wip-38.31, all of `model.js`, `check.sh`, the head of every file in `tests/qc`, and what Mako pasted into this chat (the handoff with the bird's-eye design, DECISIONS.md, and the old chat's QC panel). File names are given for every important claim. "Inferred" marks anything I worked out rather than read.
 
+**Updated after Mako's "go" (2026-11-18):** his six decisions and plan fixes are recorded in DECISIONS.md ("Decisions of 2026-11-18") and applied below. Conflicts 1, 2, 7, 8 and 9 in section F are closed by them.
+
 ---
 
 ## A. The purpose
@@ -32,8 +34,10 @@ The design (HANDOFF.md section 4) is one cutaway picture of a hill. Every coin i
   |   [Investing: never spent, only grows]                        |   safe or growing
   |_______________________________________________________________|
 
-   Total 412,000   Free to spend 26,010   Bills left 54,000   Saved 180,000
-   Chest + This month + Free to spend + Burrows = Total.  Matches your bank, checked 2 days ago.
+   EXAMPLE, made-up numbers:
+   Total 250,000   Free to spend 18,000   Bills left 40,000   Saved 120,000
+   Chest + This month + Burrows = Total   (Free to spend is inside This month; never counted twice)
+   Matches your bank, checked 2 days ago.
 ```
 
 The four numbers and the proof line sit under the picture, never instead of it (NORTH_STAR.md, "Visual first").
@@ -42,8 +46,9 @@ The four numbers and the proof line sit under the picture, never instead of it (
 
 ```
  FIRST OPEN (about 3 minutes)
-   Mako's video  ->  a few questions statements cannot answer  ->  upload statements or type numbers
+   Mako's video  ->  statements, or the prompt for any AI  ->  only the questions statements cannot answer
    ->  place the money you already have  ->  "this is your burrow, filled"   (not a forecast table)
+   (order set by Mako, 2026-11-18)
 
  PAY DAY (monthly or twice a month)
    enter what landed  ->  gold coins drop into the Chest  ->  they split into each room, counting up
@@ -97,7 +102,7 @@ Grouped. Each rule names its source. "Inferred" marks the ones I worked out.
 - The final words: Chest, This month, Burrows, Free to spend, Pay day, Take out, Check your bank, Proof line, Bills and basics, Investing. Retired: jar, bucket, Necessities, Financial Freedom, "play money", "income", "allocation", "unassigned" (say "not placed yet"). Debt reads paid off / still owed (HANDOFF.md section 3).
 
 ### 4. Look, art and sound
-- Priorities 3 and 4: clean, rounded, Apple-like look (the square look was rejected); quiet whooshes and a tiny click (DECISIONS.md).
+- Priorities 3 and 4 (updated 2026-11-18, the old lines are marked superseded): the look is green glass over a nature scene with a deep, lush feel, rounded, never square; sounds are nature themed, wind and water drops (DECISIONS.md).
 - ART_GUIDE.md is the law. Rule 00: anything added must flow from what it is added to. World rule: nothing is laid over the art; it is painted in. One pixel size, palette only, no gradients or blur, no black outlines on living things. Run `artcheck.sh` (ART_GUIDE.md).
 - The squirrel is Elthen's sprite only. Claude-drawn squirrels were rejected (DECISIONS.md; ART_GUIDE.md).
 - Background: the 36.3 version with fairies and the three-layer waterfall, the whole app in darker green. Rejected: mushroom-menu world, cobblestone banner, rocks and water, the original 36.0 background (DECISIONS.md). (Inferred: the current scene is a later evolution of it, with a one-tier waterfall and pool since 38.23 to 38.27, per ARCHITECTURE.md. Mako approved those releases, so the later dates win.)
@@ -179,20 +184,23 @@ The order follows one rule: **first make the eyes trustworthy, then make the num
 
 | # | Step | Why here | North star | How it is checked | Must pass before it ships |
 |---|---|---|---|---|---|
+| 0 | The QC agent files in `.claude/agents/` (north-star, number-logic, the seven roles), each reading only its own brief and the build | The gates must exist before anything is judged | Strangers judge clarity and truth | Each file names only its brief; a test run on the current build | none (no app change) |
 | 1 | Finish the stale tests: `team_inter2`, `team_month`, `purpose_test`, `monkey`, `display`, `team_cur` (and its fixture), and rebuild `team_map.js` from what 38.29 says it covered. For each failure, decide whether the test is old or the app is wrong, using the old test's wording as the record of intent | Every later step depends on the checks telling the truth | A check that cries wolf hides the wolf | Each script alone, one at a time, then twice more to rule out flakiness | `verify.sh` OK; commit and push |
-| 2 | Bring back Mako's real-numbers check (`good1.js`, `mako_scenario.js`). The missing helpers must be rebuilt from their callers, never invented. If the expected numbers (Nov left -41,918, bank 1,010, free to spend 26,010) no longer fit the 38.30 rules, I ask Mako rather than change them | Sample-only tests missed real crashes before (QC_ROLES.md, 38.22) | True picture with his real money | The scenario prints his numbers | `verify.sh` OK |
+| 2 | Bring back the real-numbers style check (`good1.js`, `mako_scenario.js`). The missing helpers are rebuilt from their callers, never invented, and use made-up yen numbers of the same shape as Mako's (DECISIONS.md decision 9); no real figures are added | Sample-only tests missed real crashes before (QC_ROLES.md, 38.22) | True picture with a realistic plan | The scenario prints its expected numbers | `verify.sh` OK |
 | 3 | Confirm `reset_undo.js` passes (the commit says 11 checks), three runs | It guards an Undo that touches saved data | Nobody loses data | Three runs, alone | `verify.sh` OK |
 | 4 | Number findings: the "0 counted" card, "pay not placed" beside Left when overspent, the goal "to go" question, and one value for unspent money (`sweepOffer` against `m.pendLeft`) | Wrong or contradicting numbers come before anything visual | Accuracy is priority 1 | A new test for each, written to fail first; oracle, proof, fuzz, `home_dom` | `verify.sh` OK |
-| 5 | Two decisions for Mako, asked once and together: whole cents in plan boxes (RESUME.md item 5 against HANDOFF.md "decide"), and "Building your cushion" below zero (RESUME.md item 7). Until he answers I build the safe default: keep cents for currencies with cents, and never say "cushion" while the bank ends below zero | They change what people read about their own money | Honest picture | Golden screens show exactly the intended change | `verify.sh` OK |
+| 5 | Mako's decisions 1, 2, 3 and 5 (DECISIONS.md, 2026-11-18): cents kept in plan boxes except yen, with a migration test that old whole-unit plans load unchanged and a release-note line; a plain amber below-zero line naming month, amount and the cause the model knows; the month-end question asked under four receipts with the "Only N receipts are logged" line; the first pay or bills entry becomes the usual amount, older month-only tests judged one by one and updated naming this decision | They change what people read about their own money | Honest picture | New tests first; golden screens show exactly the intended changes | `verify.sh` OK |
 | 6 | Screen maths 15 to 0 (the setup tour, the month-end move), one at a time, following the pattern in RESUME.md section 3 | One source for every number | No number can drift from its source | `display_math.js` count drops; golden screens unchanged | `verify.sh` OK |
-| 7 | North-star items S1 (no month-end question while setup is unfinished), S2 (proof line after "Decide later"), S3 (where a top-up went), S5 (the 25% / 29% popup), S6 ("not placed yet" only), B2 (first pay entry). S4 (first screen mostly numbers) is the roadmap, so I report it rather than rush it | These are the last gate's own findings | Clarity and nothing that lies | The matching tests, then the gates | `verify.sh` OK |
-| 8 | Rerun what was never run on 38.31: guard, safe, the click sweep at three sizes and two themes, the installable app. Bump VERSION to 38.31, record a new golden baseline, then `./check.sh full` until ALL GOOD | RESUME.md section 6, gate 1 | Stability | `./check.sh full` ends ALL GOOD | All automated checks |
+| 7 | North-star items S1 (no month-end question while setup is unfinished), S2 (proof line after "Decide later"), S3 (where a top-up went), S5 (the 25% / 29% popup), S6 ("not placed yet" only), B2 (now decision 5). S4 (first screen mostly numbers): read exactly what the gate flagged; if a simple visual fix is small, build it before release; if big, tell Mako in two lines and he decides whether it ships as an exception. No other gate failure is an exception | These are the last gate's own findings | Clarity and nothing that lies | The matching tests, then the gates | `verify.sh` OK |
+| 8 | Load a real saved 38.28 plan into 38.31 and compare every bank figure: 38.30 changed the overspend rule, so existing users' bank numbers will change. Explain every difference with the rule behind it and show Mako before deploy. Then rerun what was never run on 38.31: guard, safe, the click sweep at three sizes and two themes, the installable app. Bump VERSION to 38.31, record a new golden baseline, then `./check.sh full` until ALL GOOD | RESUME.md section 6, gate 1 | Stability | `./check.sh full` ends ALL GOOD | All automated checks |
 | 9 | The gates, in parallel, all fresh, on the exact file to be deployed: north-star agent, number-logic agent, seven-role panel. Fix, then run new agents. Repeat until both gates pass | RESUME.md section 6, gates 2 to 4 | Strangers judge clarity and truth | Their verdicts | Both gates PASS, panel BLOCKERS fixed |
 | 10 | Deploy: build the site, commit to `main`, push, check that Cloudflare deployed, check the live page, then send Mako the link and an honest report. Update RESUME.md and HANDOFF.md | Only now | People get the true picture | Live version stamp, /api/health, a walk of the live page | Everything above |
-| 11 | Step B: ledger, real balances, the Chest, the Pay day ritual. Migration test first, from every stored version since 38.2x | The design's next step, on a deployed base | "Where all of it is" becomes literally true | Conservation tests, migration from all 19 old builds, oracle extended | Steps 8 to 10 again |
-| 12 | Step C: week check-in, Take out, Check your bank, the "checked N days ago" honesty | Needs the ledger | Ties the picture to the real bank | Same | Same |
-| 13 | Step D: art pass (the cutaway, coin flows, Elthen's squirrel on pay day) | Art last, so it decorates true numbers | Visual first, once the numbers are real | `artcheck.sh`, art director, Mako | Same |
-| 14 | The rolling month window (inferred need, see C), before Oct 2028 | The app stops at Oct 2028 | Nothing unknown about future months | Oracle and fuzz over a moved window | Same |
+| 11 | The rolling month window, right after 38.31 ships and before step B (Mako, 2026-11-18) | The ledger and its migration need the month list; the app stops at Oct 2028 | Nothing unknown about future months | Oracle and fuzz over a moved window | Same |
+| 12 | Step B: ledger, real balances, the Chest, the Pay day ritual. Migration test first, from every stored version since 38.2x. The proof formula test (`tests/qc/proof_formula.js`, Wallet and Track) is written first. When Mako pastes the design documents, add what is missing here: Wallet as the default for Free to spend with Track as a switch; tabs Home, Pay day, Spend, Burrows, Plan, Settings behind the gear; the This month flow strip and the extra Next actions; the six jars as a usual split suggested on pay day; migration (goal starts and the bank start become opening balances, the rest starts as Chest money to place); setup ending by placing the money already there; the Help panel and six video scripts, re-read after steps B and C; the intro video reshoot | The design's next step, on a deployed base | "Where all of it is" becomes literally true | Conservation tests, migration from all 19 old builds, oracle extended | Steps 8 to 10 again |
+| 13 | Step C: week check-in, Take out, Check your bank, the "checked N days ago" honesty | Needs the ledger | Ties the picture to the real bank | Same | Same |
+| 14 | Step D: art pass (the cutaway, coin flows, Elthen's squirrel on pay day) | Art last, so it decorates true numbers | Visual first, once the numbers are real | `artcheck.sh`, art director, Mako | Same |
+
+The Claude artifact mirror still works (checked 2026-11-18, serves 38.28), so each deploy also updates it. It is retired once it stops working (DECISIONS.md decision 10).
 
 On deploy (step 10): `build_site.sh` expects the sources next to the repo (`../team`, `../pwa`) and copies `/tmp/v*` back into `tests/regression`. In this container that would fail, or overwrite the repo's fixed tests with stale /tmp copies. I will run it from a layout it expects, check the diff of `tests/regression` before committing, and never commit a test change I did not make on purpose.
 
@@ -254,15 +262,15 @@ Kept from the repo copy, because the old chat's version lacked them: the north-s
 ## F. Conflicts and gaps
 
 ### Where the files disagree
-1. **What "Chest" means.** QC_ROLES.md (old glossary) and the old chat say the Chest is this month's money. The bird's-eye design (HANDOFF.md section 3) says the Chest is only where new pay waits, and "This month" is separate. The design is newer. To be settled in step B; noted in QC_ROLES.md.
-2. **Deploying with open items.** HANDOFF.md section 8 step 5 says to deploy anyway if only roadmap or polish items remain on the north-star gate. Your instruction in this chat says not until both agents pass. I follow the stricter one.
+1. **Closed (decision 4).** **What "Chest" means.** QC_ROLES.md (old glossary) and the old chat say the Chest is this month's money. The bird's-eye design (HANDOFF.md section 3) says the Chest is only where new pay waits, and "This month" is separate. The design is newer. To be settled in step B; noted in QC_ROLES.md.
+2. **Closed (decision 6: only S4 may be an exception, and Mako decides).** **Deploying with open items.** HANDOFF.md section 8 step 5 says to deploy anyway if only roadmap or polish items remain on the north-star gate. Your instruction in this chat says not until both agents pass. I follow the stricter one.
 3. **Can agents be started?** RESUME.md says not from an ordinary chat. In this session they can (see E).
 4. **How the goal top-up works.** ARCHITECTURE.md (38.30) says it goes through `ACT.sweep` and stores the lines it cut. The code (`ui6.js` `doSweep`) stores a marker instead, as HANDOFF.md says. ARCHITECTURE.md is out of date. Also, the dropped option "add it to next month" still lives in the code (`releasePlay` with `'next'` in `model.js` and `actions.js`), and the headers of `leftover_choice.js` and `leftover_thin.js` still describe it.
 5. **The root copies are older.** README.md, ARCHITECTURE.md, NORTH_STAR.md and QC_ROLES.md at the repo root are older than the wip/team copies. README.md says the sources live in "Claude's working folder", which is no longer true.
 6. **Deploy instructions disagree.** ARCHITECTURE.md "Checks and release" mixes an older Cloudflare Pages and artifact flow. SETUP.md and RESUME.md say pushing `main` deploys the Worker. `build_site.sh` expects a folder layout that does not exist here. HANDOFF.md says the exact recipe is in Mako's memory file, which I cannot read.
-7. **Months with few receipts.** ARCHITECTURE.md says the month-end card waits for four receipts or a statement. HANDOFF.md says months with fewer than four receipts are asked anyway, and Mako has not said whether that is right.
-8. **Typed cents.** RESUME.md treats silent rounding as a problem; HANDOFF.md says "decide". Needs Mako.
-9. **"Building your cushion" below zero.** RESUME.md item 7 says decide with Mako. I think it fails the north star as it stands (see C).
+7. **Closed (decision 3).** **Months with few receipts.** ARCHITECTURE.md says the month-end card waits for four receipts or a statement. HANDOFF.md says months with fewer than four receipts are asked anyway, and Mako has not said whether that is right.
+8. **Closed (decision 1).** **Typed cents.** Cents kept, yen whole.
+9. **Closed (decision 2).** **"Building your cushion" below zero.** RESUME.md item 7 says decide with Mako. I think it fails the north star as it stands (see C).
 10. **Commit trailer.** WORLD_PLAN.md names an older model and session in its trailer. I use the attribution this session was given.
 11. **The check server port.** HANDOFF.md says to run a server on 8788 before `./check.sh full`; `check.sh` starts its own on 8765 for the installable-app test. Minor; the script is what runs.
 
@@ -273,7 +281,7 @@ Kept from the repo copy, because the old chat's version lacked them: the north-s
 - `tests/qc/build.js` and `tests/qc/joyfull2.js` (needed by Mako's scenario checks) are missing.
 - `team_map.js` and the `legacy_yen.json` fixture are missing.
 - A way to see the live site from this container. The fix is on your side: allow the host in the environment's network settings, or check the live page yourself after a deploy.
-- Your answers on: cents in plan boxes, "Building your cushion" below zero, and months with fewer than four receipts.
+- The design documents for step B (Mako will paste them).
 
 ---
 

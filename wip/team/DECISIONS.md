@@ -17,8 +17,8 @@ The one purpose is a bird's-eye view and clarity of money, so the person feels s
 
 1. Accuracy and stability like a spreadsheet. Nobody loses data.
 2. Minimal UI, a bird's-eye view, wording like a manual or like him.
-3. A clean, rounded, Apple-like look. The square look was rejected.
-4. Quiet whooshes on page moves and a tiny click on buttons.
+3. ~~A clean, rounded, Apple-like look. The square look was rejected.~~ Superseded 2026-11-18: the look is green glass over a nature scene, with a deep, lush feel. Rounded, never square.
+4. ~~Quiet whooshes on page moves and a tiny click on buttons.~~ Superseded 2026-11-18: sounds are nature themed (wind, water drops), quiet.
 5. Code that is efficient, snappy, lowest energy, and quick to adjust later.
 
 Lens for every feature (2026-11-12): what is the priority from the user's side, and does this serve it? Anything off that line is unneeded and can be removed.
@@ -69,7 +69,7 @@ If something can be shown visually instead of as numbers or text, and that makes
 - The Anthropic key lives only in the Cloudflare secret `ANTHROPIC_API_KEY`. Never in chat, never in the repo.
 - The app's AI ran on the monthly API credits included with Mako's Max plan. After the move to the org plan those credits may need claiming again by a Team owner. Check the assistant on the live site.
 - Mako is fine with his own AI credits paying for the app's AI if that gives the best experience, and also fine with offering people their own AI.
-- The artifact link https://claude.ai/artifact/Ksf1kNTW7KRsd7ZHmiVC1w stays as a mirror.
+- The artifact link https://claude.ai/artifact/Ksf1kNTW7KRsd7ZHmiVC1w stays as a mirror while it works (see decision 10 below).
 
 ## How Mako wants the work done
 
@@ -84,3 +84,17 @@ If something can be shown visually instead of as numbers or text, and that makes
 ## Not in the repo yet
 
 Three documents were kept in the Claude project and should be copied into the repo: the bird's-eye design (the detailed plan for the next steps), the resume notes, and the QC roles.
+
+## Decisions of 2026-11-18 (Mako's answers to PLAN.md)
+
+1. **Cents.** Plan boxes keep cents for currencies that have them; yen stays whole. This reverses the older whole-unit rule on purpose: a migration test proves old whole-unit plans load unchanged, and the release notes say so.
+2. **Bank below zero.** Home shows a plain amber line naming the month, the amount and the cause the model knows. Never red, no shame, never "cushion", and never say bills are unpaid unless the model says so.
+3. **Month-end question with fewer than four receipts.** Ask anyway, with: "Only N receipts are logged, so this may be spending you have not logged yet." Keep "Decide later".
+4. **Chest** is only where new pay waits on pay day. "This month" is separate and includes Free to spend.
+5. **First pay or bills entry** becomes the usual amount for every month, unless the person changes a month. Older tests that assume month-only are judged one by one and updated naming this decision.
+6. **S4 (first screen mostly numbers).** If a simple visual fix is small, build it before release. If it is big, Mako decides in two lines whether it ships as an exception. No other gate failure is an exception.
+7. **Proof line.** No coin is counted twice: Total = Chest + This month + Burrows, and Free to spend is inside This month. One rule for Wallet mode (Free to spend not tracked) and one for Track mode, written as a test before the code.
+8. **First open order:** the video, then statements or the AI prompt, then only the questions statements cannot answer, then place the money already there.
+9. **Real figures.** From now on, rebuilt test helpers and plan documents use made-up numbers of the same shape. No new real figures go into the repo.
+10. **The Claude artifact mirror** stays while it works (checked 2026-11-18: it loads and serves 38.28). Retire it once it stops working.
+

@@ -35,7 +35,7 @@ A coin is always in exactly one of three states:
 - This month: set aside for bills and basics and Free to spend, leaving on their dates.
 - Resting: in a burrow (Free to spend in Track mode, Emergency fund, each goal, Education, Giving, Investing), stays until the person decides.
 
-Home is a cutaway of the hill. Depth means how locked the money is: near the surface is spent soon, deep is safe or growing. Coin piles in each chamber match the real amounts. Under it, four numbers only: Total, Free to spend, Bills left to pay, Saved. The line under them is the proof: Chest + This month + Free to spend + Burrows = Total, with "Matches your bank, checked 2 days ago".
+Home is a cutaway of the hill. Depth means how locked the money is: near the surface is spent soon, deep is safe or growing. Coin piles in each chamber match the real amounts. Under it, four numbers only: Total, Free to spend, Bills left to pay, Saved. The line under them is the proof: Chest + This month + Burrows = Total, with "Matches your bank, checked 2 days ago". (Corrected 2026-11-18, Mako: Free to spend is inside This month, so it is never added again. The exact rule for Wallet and Track mode is in tests/qc/proof_formula.js.)
 
 Free to spend is the Free to spend burrow balance (Track mode), or "in your wallet" (Wallet mode, not tracked). Default is Wallet mode (everyone has cash in a wallet); Track is a switch.
 
@@ -77,7 +77,7 @@ Education, Give and Investing shown as burrows with running totals; a coin pile 
 - Add S.ledger of events (pay in, move, spend, take out, check). Balances are derived from the ledger, never stored separately.
 - Migration with nothing lost for anyone: goal starts and the bank start become opening balances; everything else starts as Chest money to place. It must work from every stored version since 38.2x; write the migration test before the code.
 - The real Chest (waiting room) and the Pay day screen with the visible coin split (see the rhythms above). Saved as a pay day receipt.
-- The proof line becomes a true identity: Chest + This month + Free to spend + Burrows = Total, with the "checked N days ago" age.
+- The proof line becomes a true identity: Chest + This month + Burrows = Total (Free to spend is inside This month; tests/qc/proof_formula.js), with the "checked N days ago" age.
 - Reconcile the Chest wording (section 3).
 - Conservation tests: total always equals the sum of the places; undo restores exactly; every migration path.
 

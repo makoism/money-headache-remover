@@ -13,7 +13,8 @@ Two fresh agents run at the same time on the same finished build. Both must pass
 
 ## Shared glossary (one word per thing, everywhere)
 - Burrow: money that piles up over months (emergency fund, trip, home, yearly cost, debt). Never "goal card" in user text except on the Goals list.
-- Chest: money for this month (Bills and basics, Free to spend). Resets monthly. (Open, to settle in step B of HANDOFF.md: the bird's-eye design makes the Chest only the place where new money waits on pay day, and "This month" the part for Bills and basics and Free to spend. The design is the newer decision.)
+- Chest: only where new pay waits on pay day, before it is placed. Empty the rest of the time; loose coins in it mean money not placed yet (Mako, 2026-11-18, DECISIONS.md decision 4).
+- This month: Bills and basics plus Free to spend, the money set aside for this month. Separate from the Chest.
 - Free to spend: say "Free to spend" everywhere; the old "play money" wording is retired.
 - Investing: invested and never spent. Only grows.
 - Paid off / still owed for debt. Full / saved for everything else.
