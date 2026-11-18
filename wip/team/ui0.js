@@ -214,7 +214,8 @@ function applyTheme() {
 function setTheme(t) { try { localStorage.setItem(THEME_KEY, t === 'light' || t === 'auto' ? t : 'dark'); } catch (e) { /* no storage: it lasts until the page closes */ } applyTheme(); }
 /* what loadLocal found: 'ok' (saved numbers read), 'none' (nothing saved yet) or 'bad' (storage blocked or the saved text is damaged). Anything but 'ok' lets ui43.js look for the second copy. */
 let LS_STATE = 'none';
-function loadLocal() { applyTheme(); try { const raw = localStorage.getItem(KEY); if (raw) { S = upgradeLegacy(normalize(JSON.parse(raw))); LS_STATE = 'ok'; } } catch (e) { LS_STATE = 'bad'; /* no storage, or damaged */ } }
+let LOADED_REV = null;   /* the rev of the copy this page loaded, so the second copy can tell whether anything changed since */
+function loadLocal() { applyTheme(); try { const raw = localStorage.getItem(KEY); if (raw) { S = upgradeLegacy(normalize(JSON.parse(raw))); LS_STATE = 'ok'; LOADED_REV = +S.rev || 0; } } catch (e) { LS_STATE = 'bad'; /* no storage, or damaged */ } }
 function setSave(kind) {
   const el = $('#save'), t = $('#saveTxt'); el.className = 'save ' + (kind === 'ok' ? 'ok' : kind === 'busy' ? 'busy' : '');
   t.textContent = { ok: 'Saved', busy: 'Saving…', device: 'Saved in this browser', error: 'Not saved. Save a copy in Settings.' }[kind] || '';

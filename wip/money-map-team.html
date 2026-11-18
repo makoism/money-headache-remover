@@ -3739,7 +3739,8 @@ function applyTheme() {
 function setTheme(t) { try { localStorage.setItem(THEME_KEY, t === 'light' || t === 'auto' ? t : 'dark'); } catch (e) { /* no storage: it lasts until the page closes */ } applyTheme(); }
 /* what loadLocal found: 'ok' (saved numbers read), 'none' (nothing saved yet) or 'bad' (storage blocked or the saved text is damaged). Anything but 'ok' lets ui43.js look for the second copy. */
 let LS_STATE = 'none';
-function loadLocal() { applyTheme(); try { const raw = localStorage.getItem(KEY); if (raw) { S = upgradeLegacy(normalize(JSON.parse(raw))); LS_STATE = 'ok'; } } catch (e) { LS_STATE = 'bad'; /* no storage, or damaged */ } }
+let LOADED_REV = null;   /* the rev of the copy this page loaded, so the second copy can tell whether anything changed since */
+function loadLocal() { applyTheme(); try { const raw = localStorage.getItem(KEY); if (raw) { S = upgradeLegacy(normalize(JSON.parse(raw))); LS_STATE = 'ok'; LOADED_REV = +S.rev || 0; } } catch (e) { LS_STATE = 'bad'; /* no storage, or damaged */ } }
 function setSave(kind) {
   const el = $('#save'), t = $('#saveTxt'); el.className = 'save ' + (kind === 'ok' ? 'ok' : kind === 'busy' ? 'busy' : '');
   t.textContent = { ok: 'Saved', busy: 'Saving…', device: 'Saved in this browser', error: 'Not saved. Save a copy in Settings.' }[kind] || '';
@@ -15336,14 +15337,18 @@ const pristine = () => hasData(S) === false;
 const okBackup = d => !!d && typeof d === 'object' && !!d.steps && !!d.once && !!d.cfg;
 async function recoverMirror() {
   try {
-    if (LS_STATE !== 'ok') {
-      const rec = await idbGet();
-      let d = null; try { d = rec && typeof rec.json === 'string' ? JSON.parse(rec.json) : null; } catch (e) { d = null; }
-      if (okBackup(d) && hasData(d) && pristine()) {
-        S = upgradeLegacy(normalize(d)); editRow = null; editGoal = null; editRc = null; itemsSig = '';
-        bkNote = { t: +rec.t || 0 };
-        if (tourIsOpen) closeTour(false); else { persist(); restructure(); }
-      }
+    const rec = await idbGet();
+    let d = null; try { d = rec && typeof rec.json === 'string' ? JSON.parse(rec.json) : null; } catch (e) { d = null; }
+    /* the main copy is missing or damaged: the second copy brings everything back (only on an untouched page).
+       Or the main copy loaded fine but is older: a save to it failed (storage full or blocked) while the second copy took it, so the second copy
+       is the newer truth. Taken only if nothing changed on this page since it loaded (38.31 data safety round: a receipt logged while the main
+       save failed was shown as saved, then lost on reload) */
+    const lost = LS_STATE !== 'ok' && okBackup(d) && hasData(d) && pristine();
+    const newer = LS_STATE === 'ok' && okBackup(d) && +rec.rev > (+S.rev || 0) && (+S.rev || 0) === LOADED_REV;
+    if (lost || newer) {
+      S = upgradeLegacy(normalize(d)); editRow = null; editGoal = null; editRc = null; itemsSig = '';
+      bkNote = { t: +rec.t || 0 };
+      if (tourIsOpen) closeTour(false); else { persist(); restructure(); }
     }
   } catch (e) { window.__restoreErr = String(e && e.stack || e); /* the second copy is only a help */ }
   mirrorReady = true; mirrorOut();

@@ -39,14 +39,18 @@ const pristine = () => hasData(S) === false;
 const okBackup = d => !!d && typeof d === 'object' && !!d.steps && !!d.once && !!d.cfg;
 async function recoverMirror() {
   try {
-    if (LS_STATE !== 'ok') {
-      const rec = await idbGet();
-      let d = null; try { d = rec && typeof rec.json === 'string' ? JSON.parse(rec.json) : null; } catch (e) { d = null; }
-      if (okBackup(d) && hasData(d) && pristine()) {
-        S = upgradeLegacy(normalize(d)); editRow = null; editGoal = null; editRc = null; itemsSig = '';
-        bkNote = { t: +rec.t || 0 };
-        if (tourIsOpen) closeTour(false); else { persist(); restructure(); }
-      }
+    const rec = await idbGet();
+    let d = null; try { d = rec && typeof rec.json === 'string' ? JSON.parse(rec.json) : null; } catch (e) { d = null; }
+    /* the main copy is missing or damaged: the second copy brings everything back (only on an untouched page).
+       Or the main copy loaded fine but is older: a save to it failed (storage full or blocked) while the second copy took it, so the second copy
+       is the newer truth. Taken only if nothing changed on this page since it loaded (38.31 data safety round: a receipt logged while the main
+       save failed was shown as saved, then lost on reload) */
+    const lost = LS_STATE !== 'ok' && okBackup(d) && hasData(d) && pristine();
+    const newer = LS_STATE === 'ok' && okBackup(d) && +rec.rev > (+S.rev || 0) && (+S.rev || 0) === LOADED_REV;
+    if (lost || newer) {
+      S = upgradeLegacy(normalize(d)); editRow = null; editGoal = null; editRc = null; itemsSig = '';
+      bkNote = { t: +rec.t || 0 };
+      if (tourIsOpen) closeTour(false); else { persist(); restructure(); }
     }
   } catch (e) { window.__restoreErr = String(e && e.stack || e); /* the second copy is only a help */ }
   mirrorReady = true; mirrorOut();
