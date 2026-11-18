@@ -19,7 +19,7 @@ const st = p => p.evaluate(() => JSON.parse(localStorage.getItem('money-map-temp
   await p.evaluate(() => { const r = document.querySelector('#djVol'); r.value = 42; r.dispatchEvent(new Event('input', { bubbles: true })); }); await w(400);
   await p.evaluate(() => document.querySelector('#sndBtn').click()); await w(400);
   await p.evaluate(() => { const c = document.querySelector('#djScene'); c.checked = false; c.dispatchEvent(new Event('change', { bubbles: true })); }); await w(500);
-  await w(1200); await p.evaluate(() => sessionStorage.setItem('__keep', '1')); await p.reload(); await w(1500);
+  await w(1200); await p.evaluate(() => { sessionStorage.setItem('__keep', '1'); localStorage.setItem('__keep', '1'); }); await p.reload();   /* the localStorage flag survives the reload (lib.js) */ await w(1500);
   const u = await st(p);
   ok(u.vol === 42 && u.mute === true && u.scene === false, 'volume, mute and scenery come back after reload: ' + JSON.stringify({ vol: u.vol, mute: u.mute, scene: u.scene }));
   await p.click('#djBtn'); await w(300); ok(await p.$eval('#djVolN', e => e.textContent) === '42' && await p.$eval('#sndBtn', e => e.getAttribute('aria-pressed')) === 'true', 'and the controls show them');

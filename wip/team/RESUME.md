@@ -4,6 +4,8 @@ Written 2026-11-18 on branch `wip-38.31`. Read this whole file before touching a
 
 ## 0. Handoff (latest first)
 
+**2026-11-18, PLAN step 8 automated part done.** `./check.sh full` ALL GOOD on 38.31 (third run; first run found two real bugs in the pay day picture, fixed in 924ed82). VERSION 38.31, golden baseline `3831e.json`. `check.sh full` now serves the build on 8788 itself; `setup_env.sh` copies the welcome video. Reload tests on `/tmp/v22/lib.js` must set a localStorage `__keep` too. Next: stage the build and run the two gates and the panel (step 9); SHOW MAKO `STEP8_COMPARE.md` and wait for his go before any deploy (step 10).
+
 **2026-11-18, end of PLAN step 7b (commit e35d3a9), step 8 started.** Version one Home: `homeV1()` in ui6.js (one next action; the rest behind More), four numbers in ui8.js. Test `tests/qc/home_v1.js`. Golden baseline `3831d.json`. Step 8: `tests/qc/compare_3828.js` (38.28 saved plan into 38.31; every bank difference is spending past the plan, to the yen) and `STEP8_COMPARE.md`, the report Mako must see before any deploy. `./check.sh full` run started; see the commit after it for the result.
 
 **2026-11-18, end of PLAN step 7 (commit 80ec98f).** S2 (proof line after Decide later), S3 (guarded), S5 (graph "Now" was start of month; `goal_agree.js`), S6 (dock word). Golden baseline now `3831c.json`. Next: step 7b (version one Home).
