@@ -307,7 +307,9 @@ function calcAll(S) {
     m.lines = lines.map(l => { const on = !l.ends || ym <= l.ends; return { id: l.id, key: l.key, jar: l.jar, name: l.name, on, v: on ? val(S, l.key, ym) : 0 }; });
     /* free to spend left unspent in a past month: nothing changes until the person answers (m.pendLeft is the open question).
        After "keep it in the bank" or a move to a goal, whatever is still unspent counts in the bank, so the figures match the real bank */
-    if (!VIRT_OFF && CUR_YM && S.ui && S.ui.done && S.ui.done.pay && S.ui.done.bills && S.ui.done.goals && ym < CUR_YM()) {
+    /* S1 (gate, 38.30): no question before the first receipt is logged. Until then the person has not started logging, so a past month's
+       Free to spend is taken as planned, as in any month without an answer, and nothing on Home asks about it */
+    if (!VIRT_OFF && CUR_YM && S.ui && S.ui.done && S.ui.done.pay && S.ui.done.bills && S.ui.done.goals && (S.receipts || []).length > 0 && ym < CUR_YM()) {
       const en = sweepAns(S, ym);
       if (!(en && en.hide)) {
         const rs = receiptStats(S, ym);

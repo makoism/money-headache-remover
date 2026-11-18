@@ -11,7 +11,7 @@ await p.evaluate(()=>{const S=__t.S;S.ui.done={pay:true,bills:true,goals:true,re
 await L.tab(p,'tab-month');await L.tab(p,'tab-home');
 const card=()=>p.evaluate(()=>{const e=document.getElementById('hNext');return e&&!e.hidden?e.innerText.replace(/\s+/g,' '):'(none)'});
 const bank=()=>p.evaluate(()=>{const C=__t.calcAll(__t.S);return JSON.stringify(C.months.slice(0,3).map(m=>[m.ym,m.bankEnd,m.jar.play]))});
-const c0=await card();ck('a thin month gets the same question, with a plain warning',/November: ¥32,500 of free to spend is not logged as spent/.test(c0)&&/Only 3 receipts logged for November/.test(c0)&&/Open November receipts/.test(c0));
+const c0=await card();ck('a thin month gets the same question, with the few-receipts line (decision 3)',/November: ¥32,500 of free to spend is not logged as spent/.test(c0)&&/Only 3 receipts are logged, so this may be spending you have not logged yet/.test(c0)&&/Open November receipts/.test(c0));
 const b0=JSON.parse(await bank());ck('until answered the bank figure is unchanged',b0[0][1]===150000);
 await p.evaluate(()=>document.querySelector('[data-sweepbank]').click());await w(500);
 const b1=JSON.parse(await bank());ck('counting it raises the bank figure by it',b1[0][1]===150000+32500);

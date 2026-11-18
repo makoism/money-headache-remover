@@ -28,7 +28,10 @@ await p.evaluate(()=>document.querySelector('[data-sweepundo]').click());await w
 ck('Undo removes only the top-up: the edit stays and the question is back',await p.evaluate(()=>(__t.S.once['2026-11']||{}).envelope)===45000&&/is not logged as spent/.test(await card()));
 ck('and every figure is the plain unanswered one (no money lost)',await tot()===await p.evaluate(()=>{const S=__t.S;const C=__t.calcAll(S);const m=C.byYm['2026-12'];return Math.round(m.bankEnd+Object.values(m.bal).reduce((a,b)=>a+b,0))}));
 await p.evaluate(()=>{const S=__t.S;delete S.once['2026-11'].envelope;__t.persist();__t.restructure();});await w(300);
-/* zero receipts: the question still shows */
+/* no receipts ever: no question yet (S1, gate 38.30: the person has not started logging). One receipt in another month: November is asked
+   even with none of its own, with the few-receipts line (decision 3, Mako 2026-11-18) */
 await p.evaluate(()=>{const S=__t.S;S.ui.sweep={};S.once={};S.receipts=[];__t.persist();__t.restructure();});await w(400);
-const c3=await card();ck('with no receipts at all the month-end question still shows',/is not logged as spent/.test(c3)&&/Nothing is logged for November/.test(c3));
+const c3=await card();ck('with no receipts at all there is no month-end question yet (S1)',!/is not logged as spent/.test(c3));
+await p.evaluate(()=>{const S=__t.S;S.receipts=[{id:'rdec',d:'2026-12-02',a:500,c:'envelope',cn:'Free to spend',n:''}];__t.persist();__t.restructure();});await w(400);
+const c4=await card();ck('after the first receipt, a November with none of its own is asked, saying so (decision 3)',/November: .* is not logged as spent/.test(c4)&&/No receipts are logged, so this may be spending you have not logged yet/.test(c4));
 ck('no page errors',errs.length===0);await b.close();console.log(bad?'FAILED '+bad:'ALL PASS');process.exit(bad?1:0);})();
