@@ -213,9 +213,9 @@ const STEP_JARS = { id: 'jars', part: PART.jars, setup: true, when: havePay,
     jarInit(); const pay = payNow(), nec = necTotal();
     if (nec <= 0) return `<p>No bills listed, so the other five places would share all of your pay. If that is wrong, go back and add bills.</p>
     <p class="cap">If you truly have none, continue and split below.</p>${jarSplitHTML()}`;
-    if (jarRest <= 0) return `<p>Bills <b>${fmt(nec)}</b>, pay <b>${fmt(pay)}</b>. ${nec > pay ? `Bills exceed pay by <b>${fmt(setupCells(S).billsOverPay)}</b>, so` : 'Bills take all of it, so'} nothing is left for the other five places: no free to spend and nothing for goals, for now.</p>
+    if (jarRest <= 0) return `<p>Bills <b>${fmt2(nec)}</b>, pay <b>${fmt2(pay)}</b>. ${nec > pay ? `Bills exceed pay by <b>${fmt2(setupCells(S).billsOverPay)}</b>, so` : 'Bills take all of it, so'} nothing is left for the other five places: no free to spend and nothing for goals, for now.</p>
     <p>You can still add goals next. They start filling once bills drop below pay. To lower a bill, go back. Otherwise continue and adjust under Plan later.</p>`;
-    return `<p>Bills <b>${fmt(nec)}</b> = <b>${jarNec}%</b> of pay: Bills and basics. The other <b>${jarRest}%</b> (${fmt(setupCells(S).payOverBills)}) is yours to split between the five places below, starting at the usual proportions.</p>
+    return `<p>Bills <b>${fmt2(nec)}</b> = <b>${jarNec}%</b> of pay: Bills and basics. The other <b>${jarRest}%</b> (${fmt2(setupCells(S).payOverBills)}) is yours to split between the five places below, starting at the usual proportions.</p>
     ${jarsFold()}${jarSplitHTML()}`;
   },
   after: () => { if (jarRest > 0) paintJars(); },
@@ -261,7 +261,7 @@ function applyGoalPick(picked, mark) {
 }
 const EM_MONTHS = [[1, 'month'], [3, 'months'], [6, 'months']];
 const emMonths = g => { const n = necTotal(); if (n <= 0 || !(g.target > 0)) return 3; const m = g.target / n; return EM_MONTHS.reduce((best, x) => Math.abs(x[0] - m) < Math.abs(best - m) ? x[0] : best, 3); };
-const emCap = m => `${m} month${m === 1 ? '' : 's'} of your bills is <b>${fmt(setupCells(S).billsFor[m])}</b>.`;
+const emCap = m => `${m} month${m === 1 ? '' : 's'} of your bills is <b>${fmt2(setupCells(S).billsFor[m])}</b>.`;
 const goalStep = id => ({ id: 'goal-' + id, part: PART.goals, setup: true,
   focus: '#tourGCost, #tourGSaved',
   title: () => { const g = goalById(S, id), k = goalKindOf(id); return g ? (k ? (S.ui.gk && S.ui.gk[id] ? `Your next ${GOAL_NOUN[k.k] || 'goal'}` : k.title) : 'Your goal') : ''; },
@@ -356,14 +356,14 @@ function applySplit() { gsIds.forEach((id, k) => { if (goalById(S, id)) setVal(S
 function splitLine(g, C2) { return dw(S, g, splitLine0(g, C2)); }
 function splitLine0(g, C2) {
   if (!(g.target > 0)) return 'No cost set.';
-  const togo = setupCells(S).togo[g.id] || 0, tg = `${fmt(togo)} to go. `, k = S.plan.goals.indexOf(g);
+  const togo = setupCells(S).togo[g.id] || 0, tg = `${fmt2(togo)} to go. `, k = S.plan.goals.indexOf(g);
   if (togo <= 0) return 'Already full.';
   if (!(splitMoney(k) > 0)) return tg + 'Nothing goes into this one.';
   const gi = goalInfo(S, C2, g.id, START);
   if (gi.state === 'full') return 'Already full.';
   if (gi.state === 'paid' || gi.state === 'short') return tg + 'Date is this month or passed.';
   if (gi.state === 'ontrack') return `${tg}Full ${monthLabel(gi.reached)}, ahead of ${dateLabel(g.due)}.`;
-  if (gi.state === 'behind') return gi.need != null ? `${tg}Needs about ${fmt(gi.need)} a month for ${dateLabel(g.due)}.` : tg + 'Not ready in time.';
+  if (gi.state === 'behind') return gi.need != null ? `${tg}Needs about ${fmt2(gi.need)} a month for ${dateLabel(g.due)}.` : tg + 'Not ready in time.';
   if (gi.state === 'eta') return `${tg}Full ${monthLabel(gi.reached)}.`;
   if (gi.state === 'noeta') return `${tg}Not full within ${SPAN} at this pace.`;
   return tg;
@@ -379,16 +379,16 @@ const unusedOf = () => Math.max(0, round2(gsBudget - S.plan.goals.reduce((a, g, 
 function paintSplit() {
   if (!$('#goalSplit')) return;
   applySplit(); splitC2 = calcAll(S);
-  { const u = unusedOf(), el = $('#splitUnused'); if (el) el.textContent = u > 0 ? `${fmt(u)} of this is not placed yet: goals cannot take more now. Add a goal or raise a cost.` : ''; }
-  if (S.plan.goals.length === 1) { const row = $('[data-grow="0"]'); if (row) { $('.split-m', row).textContent = fmt(splitMoney(0)) + ' a month'; $('.split-s', row).textContent = splitNoteFor(0); } return; }
+  { const u = unusedOf(), el = $('#splitUnused'); if (el) el.textContent = u > 0 ? `${fmt2(u)} of this is not placed yet: goals cannot take more now. Add a goal or raise a cost.` : ''; }
+  if (S.plan.goals.length === 1) { const row = $('[data-grow="0"]'); if (row) { $('.split-m', row).textContent = fmt2(splitMoney(0)) + ' a month'; $('.split-s', row).textContent = splitNoteFor(0); } return; }
   spPaint('goal', SPLIT_SPEC.goal());
 }
 const STEP_SPLIT = { id: 'goalsplit', part: PART.goals, setup: true, when: () => havePay() && S.plan.goals.length > 1 && ltsBudget() > 0,
   title: () => (S.plan.goals.length > 1 ? 'Split goal money' : 'Goal money'),
   body: () => {
     splitInit(); const pct = setupCells(S).ltsPct, many = S.plan.goals.length > 1;
-    return `<p>${many ? `Burrows get <b>${pct}%</b> of pay, <b>${fmt(gsBudget)}</b> a month, shared between your goals. A goal with a date gets what it needs first. Each slider moves on its own; what you take away waits as not placed yet.`
-      : `Burrows get <b>${pct}%</b> of pay, <b>${fmt(gsBudget)}</b> a month. ${unusedOf() > 0 ? 'This goal is filled first.' : 'All of it goes to this goal.'}`}</p>
+    return `<p>${many ? `Burrows get <b>${pct}%</b> of pay, <b>${fmt2(gsBudget)}</b> a month, shared between your goals. A goal with a date gets what it needs first. Each slider moves on its own; what you take away waits as not placed yet.`
+      : `Burrows get <b>${pct}%</b> of pay, <b>${fmt2(gsBudget)}</b> a month. ${unusedOf() > 0 ? 'This goal is filled first.' : 'All of it goes to this goal.'}`}</p>
     ${many ? potHTML('goalPot', S.plan.goals.map(g => `var(--c${g.slot})`), gsPct, 100) + poolHTML('goal', S.plan.goals.map(g => g.name)) : ''}
     <div class="split" id="goalSplit">${splitRows()}</div>
     <p class="cap" id="splitUnused" aria-live="polite"></p>
@@ -402,11 +402,11 @@ const STEP_SPLIT = { id: 'goalsplit', part: PART.goals, setup: true, when: () =>
 function planFacts() { const C = calcAll(S); return Object.assign({ C }, planFactsOf(S, C, sel, havePay())); }   /* model.js planFactsOf */
 const ledgerRow = (k, v, cls) => `<div${cls ? ` class="${cls}"` : ''}><dt>${k}</dt><dd>${v}</dd></div>`;
 function ledgerHTML(f) {
-  const rows = [ledgerRow('Pay in', fmt(f.inc)), ledgerRow('Bills and basics', fmt(f.bills))];
-  if (f.goals > 0) rows.push(ledgerRow('Goals', fmt(f.goals)));
-  if (f.other > 0) rows.push(ledgerRow('Education, Investing and Giving', fmt(f.other)));
-  rows.push(ledgerRow('Free to spend', fmt(f.play), 'play'));
-  if (f.st === 'over') rows.push(ledgerRow('Short by', fmt(f.shortBy), 'neg')); else if (f.st === 'spare') rows.push(ledgerRow('Left, not placed yet', fmt(f.L)));
+  const rows = [ledgerRow('Pay in', fmt2(f.inc)), ledgerRow('Bills and basics', fmt2(f.bills))];
+  if (f.goals > 0) rows.push(ledgerRow('Goals', fmt2(f.goals)));
+  if (f.other > 0) rows.push(ledgerRow('Education, Investing and Giving', fmt2(f.other)));
+  rows.push(ledgerRow('Free to spend', fmt2(f.play), 'play'));
+  if (f.st === 'over') rows.push(ledgerRow('Short by', fmt2(f.shortBy), 'neg')); else if (f.st === 'spare') rows.push(ledgerRow('Left, not placed yet', fmt2(f.L)));
   return `<dl class="tour-ledger">${rows.join('')}</dl>`;
 }
 const behindGoals = () => (tourMode === 'full' && havePay() ? S.plan.goals.filter(g => goalInfo(S, calcAll(S), g.id, START).state === 'behind') : []);
@@ -422,22 +422,22 @@ const STEP_REVEAL = { id: 'reveal', part: PART.spend, art: 'branch',
   show: () => { if (tourMode === 'full' && S.ui.done && S.ui.done.pay && S.ui.done.bills && S.ui.done.goals) { S.ui.setup = true; persist(); } },
   body: () => {
     const f = planFacts(), play = f.play, wk = weekOf(play), seg = (cls, v) => (v > 0 ? `<div class="seg-b ${cls}" style="flex-grow:${v}"></div>` : '');
-    if (f.st === 'nopay') return `${chestImg(0.5)}<div class="tour-reveal"><b>${fmt(play)}</b><span>a month, sample</span></div>
+    if (f.st === 'nopay') return `${chestImg(0.5)}<div class="tour-reveal"><b>${fmt2(play)}</b><span>a month, sample</span></div>
       <p>No pay entered, so every number here is a sample. Free to spend is for fun, worked out after bills and goals. Add your pay under Plan, Money in, or tap Back to enter it here.</p>`;
-    if (f.st === 'over') return `<div class="tour-reveal neg"><b>${fmt(f.shortBy)}</b><span>short a month</span></div>
-      <p>Plan spends <b>${fmt(f.J.out)}</b>; pay is <b>${fmt(f.inc)}</b>.${play > 0 ? '' : ' Nothing left, so no free to spend yet.'}</p>
+    if (f.st === 'over') return `<div class="tour-reveal neg"><b>${fmt2(f.shortBy)}</b><span>short a month</span></div>
+      <p>Plan spends <b>${fmt2(f.J.out)}</b>; pay is <b>${fmt2(f.inc)}</b>.${play > 0 ? '' : ' Nothing left, so no free to spend yet.'}</p>
       ${ledgerHTML(f)}
       <p>Under Plan: lower a bill or add income.${play > 0 ? '' : ' Free to spend appears as soon as there is room.'}</p>`;
     const rest = f.J.rest;
     const bar = `${chestImg(play > 0 ? 0.75 : 0.1)}<div class="tour-fig"><div class="bar tour-bar" role="img" aria-label="Pay by jar">${f.J.list.map(j => seg(JARCLS[j.id], j.v)).join('')}${seg('rest', rest)}</div>
       <div class="legend">${f.J.list.map(j => (j.v > 0 ? `<span><i class="${JARCLS[j.id]}"></i>${j.name} ${j.pct}%</span>` : '')).join('')}${rest > 0 ? `<span><i class="rest"></i>Left ${f.J.restPct}%</span>` : ''}</div></div>`;
-    const big = `<div class="tour-reveal"><b>${fmt(play)}</b><span>a month${play > 0 ? `, about ${fmt(wk)} a week` : ''}</span></div>`;
+    const big = `<div class="tour-reveal"><b>${fmt2(play)}</b><span>a month${play > 0 ? `, about ${fmt(wk)} a week` : ''}</span></div>`;
     if (play <= 0) {
       const all = f.billPct >= 0.95;
       return `${big}<p>${all ? `Bills take <b>${f.J.list[0].pct}%</b> of pay, so almost nothing is left for free to spend.` : 'Nothing is set aside for free to spend.'} About 10% of pay is a common amount to keep for it.</p>
       ${bar}<p>${behindText() || 'To add some, raise the Free to spend line under Plan or lower a bill.'}</p>`;
     }
-    const msg = behindText() || (f.st === 'spare' ? `<b>${fmt(f.L)}</b> of pay is not placed yet. Raise a goal or add to free to spend.` : f.billPct >= 0.9 ? 'Bills take most of pay, so the month is tight. Lowering a bill is the easiest fix.' : 'All pay is placed.');
-    return `${big}<p>Bills are paid and every other place has its share: this is yours to spend on fun, no guilt. Split of ${fmt(f.inc)} pay:</p>
+    const msg = behindText() || (f.st === 'spare' ? `<b>${fmt2(f.L)}</b> of pay is not placed yet. Raise a goal or add to free to spend.` : f.billPct >= 0.9 ? 'Bills take most of pay, so the month is tight. Lowering a bill is the easiest fix.' : 'All pay is placed.');
+    return `${big}<p>Bills are paid and every other place has its share: this is yours to spend on fun, no guilt. Split of ${fmt2(f.inc)} pay:</p>
     ${bar}<p>${msg}</p>`;
   } };

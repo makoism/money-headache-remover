@@ -1,7 +1,7 @@
 
 /* ---------- the first-open tour: welcome, the video, then the setup questions ---------- */
 let tourN = 0, tourIsOpen = false, tourReturn = null, tourMode = 'full', TS = [], tourDir = 0;
-const num0 = v => clampAmt(v);
+const num0 = v => clampAmt(v, S);   /* decision 1: setup keeps typed cents too (yen whole); before, it rounded every currency (38.31 money accuracy round 2) */
 const firstName = () => (S.ui && S.ui.name) || '';
 
 /* a small house on a green hill, a tree beside it: the welcome and the goodbye. Drawn in the colours of the current look. */
@@ -219,10 +219,10 @@ const TOUR = [
     body: () => {
       if (S.ui.setup) {
         const f = planFacts();
-        const line = f.st === 'over' ? `Plan exceeds pay by <b>${fmt(f.shortBy)}</b>.${f.play > 0 ? ` Free to spend is ${fmt(f.play)}, but the month still comes up short.` : ' Nothing is free to spend yet.'} Under Plan: lower a bill or a goal, or add income.`
+        const line = f.st === 'over' ? `Plan exceeds pay by <b>${fmt2(f.shortBy)}</b>.${f.play > 0 ? ` Free to spend is ${fmt2(f.play)}, but the month still comes up short.` : ' Nothing is free to spend yet.'} Under Plan: lower a bill or a goal, or add income.`
           : f.play <= 0 ? 'Nothing is free to spend in the plan. Raise the Free to spend line under Plan.'
-          : f.st === 'spare' ? `Free to spend <b>${fmt(f.play)}</b> a month. <b>${fmt(f.L)}</b> of pay is not placed yet: raise a goal or add to free to spend.`
-          : `Free to spend <b>${fmt(f.play)}</b> a month, to spend without guilt. All other pay is placed.`;
+          : f.st === 'spare' ? `Free to spend <b>${fmt2(f.play)}</b> a month. <b>${fmt2(f.L)}</b> of pay is not placed yet: raise a goal or add to free to spend.`
+          : `Free to spend <b>${fmt2(f.play)}</b> a month, to spend without guilt. All other pay is placed.`;
         const V = viewOf(S, f.C, nowYm(), ymd(new Date())), r = V.main, mg = r ? goalById(S, r.id) : null;
         /* the last screen lands on the destination: the goal, the reason in the person's words, when it is full and what each month adds */
         const when0 = r ? (r.pct >= 100 ? 'Full.' : r.reached ? (r.months <= 0 ? 'Full <b>this month</b>.' : `Full <b>${fullLabel(r.reached)}</b>, ${plural(r.months, 'month')} from now.`) : 'Not full within ' + SPAN + ' at this pace.') : '';
@@ -230,7 +230,7 @@ const TOUR = [
         const dep = r ? f.C.byYm[nowYm()].g[r.id].actual : 0;
         const goal = mg ? `<div class="tour-goal" style="--c:var(--c${mg.slot})"><p class="tour-goal-k">Main goal</p><p class="tour-goal-n">${esc(mg.name)}</p>${mg.why ? `<p class="tour-goal-w">${esc(mg.why)}</p>` : ''}
           <div class="hg-b" role="img" aria-label="${r.pct} percent"><i style="width:${Math.min(100, r.pct)}%"></i></div>
-          <p class="tour-goal-l"><b>${fmt(r.saved)}</b> of ${fmt(r.target)}${dep > 0 && r.pct < 100 ? `, <b>+${fmt(dep)}</b> a month` : ''}. ${when}</p></div>` : '';
+          <p class="tour-goal-l"><b>${fmt2(r.saved)}</b> of ${fmt2(r.target)}${dep > 0 && r.pct < 100 ? `, <b>+${fmt2(dep)}</b> a month` : ''}. ${when}</p></div>` : '';
         const ok = f.st === 'even' || f.st === 'spare';
         /* on the app's own address: one tap keeps an encrypted copy in the cloud, so a lost phone does not mean lost numbers */
         const cloud = typeof vaultAvailable === 'function' && vaultAvailable() && !(vault && vault.on)
@@ -243,8 +243,8 @@ const TOUR = [
       const zero = S.ui.preset === 'blank' || !!S.ui.cleared;
       const dn = S.ui.done || {}, billsIn = !!dn.bills || Array.isArray(S.ui.sb); /* the bill screens were answered (even if left at zero) */
       const msg = !dn.pay || pay <= 0 ? (zero ? 'Pay skipped. Everything is zero until you add numbers.' : 'Pay skipped, so the pay shown is a sample until you add yours: Plan, Money in, Salary. Or Help, Guided setup, to come back here.')
-        : L > 0 ? `Pay entered. <b>${fmt(L)}</b> is not placed yet: raise a goal or add to free to spend.`
-        : L < 0 ? `Pay entered. The ${billsIn ? 'plan' : 'sample plan'} exceeds pay by <b>${fmt(PF.shortBy)}</b>${billsIn ? '' : ' because bills are still samples'}. ${billsIn ? 'Lower a bill under Plan.' : 'Enter your real bills next.'}`
+        : L > 0 ? `Pay entered. <b>${fmt2(L)}</b> is not placed yet: raise a goal or add to free to spend.`
+        : L < 0 ? `Pay entered. The ${billsIn ? 'plan' : 'sample plan'} exceeds pay by <b>${fmt2(PF.shortBy)}</b>${billsIn ? '' : ' because bills are still samples'}. ${billsIn ? 'Lower a bill under Plan.' : 'Enter your real bills next.'}`
         : 'Pay entered. All of it is assigned.';
       const bills = zero ? 'Bills and goals are empty. Open Plan, Bills and basics, and enter what you pay.'
         : billsIn ? (necTotal() > 0 ? 'Your bills are in. Any line left at zero can be set under Plan, Bills and basics.' : 'Your bills are all at zero so far. Set each line under Plan, Bills and basics.')
