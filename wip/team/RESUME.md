@@ -89,6 +89,8 @@ Agents cannot be started from an ordinary chat. If you are in one, say so plainl
 
 ## 7. Mako's standing rules
 
+The full list of Mako's decisions is in `DECISIONS.md`. Read it at the start of every session; it wins over anything here that disagrees.
+
 - North star: a bird's-eye view and clarity of money, so the person feels safe because they know where all of it is. Check every instruction and feature against it.
 - Visual first: if a number can be shown as a picture and that is clearer, show the picture.
 - Accuracy first. Nobody loses data.
