@@ -7,7 +7,7 @@ let pass = 0, fail = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL 
   await p.goto('file:///home/claude/work/money-map-team.html?sfxtest#2026-11', { waitUntil: 'load' }); await w(600);
   await runTour(p, P.a); await w(900);
   const key = 'money-map-template-v2';
-  await p.evaluate(() => sessionStorage.setItem('__keep', '1'));
+  await p.evaluate(() => { sessionStorage.setItem('__keep', '1'); localStorage.setItem('__keep', '1'); });   /* keep the saved plan across the reloads below (lib.js) */
   /* plant a weekly repeat that started 3 weeks ago, then reopen the page */
   await p.evaluate(() => {
     const S = window.__t.S, d = new Date(); d.setDate(d.getDate() - 21);
