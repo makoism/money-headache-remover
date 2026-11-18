@@ -954,6 +954,7 @@ function cleanRecurring(raw) {
   });
   return out;
 }
+const RC_KNOWN = new Set(['id', 'd', 'a', 'c', 'cn', 'n', 's']);
 function cleanReceipts(raw) {
   if (!Array.isArray(raw)) return [];
   const ids = new Set(), out = [];
@@ -964,6 +965,8 @@ function cleanReceipts(raw) {
     ids.add(r.id);
     const rc = { id: r.id, d: r.d, a, c, cn: typeof r.cn === 'string' ? r.cn.replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, 60) : '', n: typeof r.n === 'string' ? r.n.replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, 80) : '' };
     if (typeof r.s === 'string' && r.s.trim()) rc.s = r.s.replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, 40); /* the account it came from, as the person named it */
+    /* a plain field this version does not know (saved by a newer one) is kept as it was; nothing reads it (38.31 data safety round) */
+    Object.keys(r).filter(k => !(k in rc) && !RC_KNOWN.has(k) && /^[A-Za-z][A-Za-z0-9_]{0,39}$/.test(k) && ['string', 'number', 'boolean'].indexOf(typeof r[k]) >= 0).slice(0, 12).forEach(k => { rc[k] = typeof r[k] === 'string' ? r[k].slice(0, 200) : r[k]; });
     out.push(rc);
   });
   return out;

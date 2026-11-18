@@ -140,6 +140,9 @@ function normalize(d) {
   /* the play line was once called "Spending money" and then "Play money"; an untouched old name follows the new one (saved copies keep matching the sample) */
   { const sl = f.plan && f.plan.lines && f.plan.lines.find(l => l.id === 'spend'); if (sl && (sl.name === 'Spending money' || sl.name === 'Play money')) sl.name = 'Free to spend'; }
   f.receipts = cleanReceipts(d.receipts);
+  /* saved data only gains fields (ARCHITECTURE.md contract): a field this version does not know, saved by a newer one, is kept as it was, so an old
+     tab left open or a rollback never strips it (38.31 data safety round). Nothing here reads it, so it never reaches a sum */
+  Object.keys(d).forEach(k => { if (!(k in f) && /^[A-Za-z][A-Za-z0-9_]{0,39}$/.test(k)) { try { f[k] = JSON.parse(JSON.stringify(d[k])); } catch (e) { } } });
   return f;
 }
 /* Changing the currency swaps in that currency's sample (or zeros) only while the numbers are still untouched.
