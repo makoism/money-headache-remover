@@ -3,9 +3,11 @@ let bad=0;const ck=(n,c)=>{console.log(c?'PASS':'FAIL',n);if(!c)bad++;};
 const L=require('./lib_r12.js');const R=L.R;const w=R.w;
 (async()=>{const {b,p,errs}=await R.phone({w:385,h:800,dpr:2,mobile:true});
 await p.evaluateOnNewDocument(()=>{const real=Date,fixed=new real('2026-12-03T10:00:00').getTime(),start=real.now();class D extends real{constructor(...a){if(!a.length)super(fixed+(real.now()-start));else super(...a);}static now(){return fixed+(real.now()-start);}}window.Date=D;});
-await p.goto('file:///home/claude/work/money-map-team.html?sfxtest');await w(1200);
+await p.goto('file:///home/claude/work/money-map-team.html?sfxtest#2026-12');   /* the month on screen is the one the test resets */await w(1200);
 await p.evaluate(()=>{const s=document.getElementById('tourSkip');s&&s.click();});await w(400);await p.evaluate(()=>{const s=document.getElementById('coSkip');s&&s.click();});await w(400);
 await L.zero(p);await L.base(p);
+/* the set-up steps leave the first month on screen; the test is about December, so put December on screen */
+await p.evaluate(()=>{location.hash='#2026-12';});await w(600);
 await p.evaluate(()=>{const S=__t.S;S.ui.done={pay:true,bills:true,goals:true,receipts:true};S.ui.sampleHidden=true;S.receipts=[];
  [['2026-12-01',3000],['2026-12-02',2500]].forEach((x,i)=>S.receipts.push({id:'rx'+i,d:x[0],a:x[1],c:'envelope',cn:'Free to spend',n:''}));
  S.once['2026-12']=Object.assign({},S.once['2026-12'],{envelope:45000});
@@ -14,6 +16,7 @@ await p.evaluate(()=>{const S=__t.S;S.ui.done={pay:true,bills:true,goals:true,re
 await L.tab(p,'tab-month');await w(400);
 const snap=()=>p.evaluate(()=>JSON.stringify({once:__t.S.once,items:__t.S.items,rc:__t.S.receipts.map(r=>r.id)}));
 const before=JSON.parse(await snap());
+ck('December is the month on screen',await p.evaluate(()=>location.hash==='#2026-12'));
 ck('the month has an edit to reset',!!before.once['2026-12']&&before.once['2026-12'].envelope===45000);
 await p.evaluate(()=>document.getElementById('resetMonth').click());await w(300);
 await p.evaluate(()=>document.getElementById('resetMonth').click());await w(600);
