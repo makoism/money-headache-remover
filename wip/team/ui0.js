@@ -87,7 +87,18 @@ function normalize(d) {
   if (!(u.rcDay >= 0 && u.rcDay <= 6)) delete u.rcDay;
   /* month-end top-ups already answered: {amt, id} when money moved, {hide: true} when kept as play */
   if (u.mcOk && typeof u.mcOk === 'object') { const q = {}; Object.keys(u.mcOk).forEach(k => { if (/^\d{4}-\d{2}$/.test(k) && u.mcOk[k] === true) q[k] = true; }); if (Object.keys(q).length) u.mcOk = q; else delete u.mcOk; } else delete u.mcOk;
-  if (u.sweep && typeof u.sweep === 'object') { const o = {}; Object.keys(u.sweep).forEach(k => { const v = u.sweep[k]; if (/^\d{4}-\d{2}$/.test(k) && v && typeof v === 'object') { if (v.hide === true) o[k] = { hide: true }; else if (typeof v.amt === 'number' && v.amt > 0 && (v.to === 'bank' || v.to === 'next')) o[k] = { amt: round2(v.amt), to: v.to }; if (typeof v.t === 'number') o[k].t = v.t; else if (typeof v.amt === 'number' && v.amt > 0 && typeof v.id === 'string') { o[k] = { amt: round2(v.amt), id: v.id.slice(0, 24) }; if (typeof v.t === 'number') o[k].t = v.t; if (Array.isArray(v.cuts)) o[k].cuts = v.cuts.filter(c => c && typeof c.key === 'string' && typeof c.cut === 'number' && c.cut > 0).slice(0, 12).map(c => ({ key: c.key.slice(0, 40), cut: Math.round(c.cut) })); if (typeof v.fp === 'string') o[k].fp = v.fp.slice(0, 240); } } }); if (Object.keys(o).length) u.sweep = o; else delete u.sweep; } else delete u.sweep;
+  if (u.sweep && typeof u.sweep === 'object') {
+    const o = {};
+    Object.keys(u.sweep).forEach(k => {
+      const v = u.sweep[k]; if (!(/^\d{4}-\d{2}$/.test(k) && v && typeof v === 'object')) return;
+      let e = null;
+      if (v.hide === true) e = { hide: true };
+      else if (typeof v.amt === 'number' && v.amt > 0 && (v.to === 'bank' || v.to === 'next')) e = { amt: round2(v.amt), to: v.to };
+      else if (typeof v.amt === 'number' && v.amt > 0 && typeof v.id === 'string') e = { amt: round2(v.amt), id: v.id.slice(0, 24) };
+      if (e) { if (typeof v.t === 'number' && !e.hide) e.t = v.t; o[k] = e; }
+    });
+    if (Object.keys(o).length) u.sweep = o; else delete u.sweep;
+  } else delete u.sweep;
   if (typeof u.rcTime !== 'string' || !/^\d{2}:\d{2}$/.test(u.rcTime)) delete u.rcTime;
   if (!REMIND_FREQS.some(x => x[0] === u.rcFreq)) delete u.rcFreq;
   if (!(Number.isInteger(u.rcDom) && (u.rcDom === DOM_LAST || (u.rcDom >= 1 && u.rcDom <= 28)))) delete u.rcDom;
