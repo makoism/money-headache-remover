@@ -6,13 +6,18 @@ Every build goes past these reviewers before Mako sees it. Each reviewer is a se
 
 Report format for every reviewer: BLOCKERS (wrong, broken, data at risk), CONFUSING (exact text and place, with a replacement), POLISH. Under 600 words. Screenshots in /tmp/qc/<role>/.
 
+## The two final-gate agents (Mako, 2026-11-17, every release and every step from now on)
+Two fresh agents run at the same time on the same finished build. Both must pass before anything ships; on a fail, fix or bring it to Mako, then run fresh agents again.
+1. North-star QC agent (QC_AGENT.md in the repo): given only NORTH_STAR.md, the plain rules and the build. Checks the north star, visual first, fresh eyes, wording, nothing lies or breaks, data safety, art.
+2. Number-logic agent (QC_NUMBERS.md in the repo): its only job is that every number is correct in every situation (typos, wrong or duplicate receipts, overspending, negative bank, blanks, no input, dates, currency, undo and reload). It drives the real app, recomputes the numbers itself and compares every screen.
+
 ## Shared glossary (one word per thing, everywhere)
 - Burrow: money that piles up over months (emergency fund, trip, home, yearly cost, debt). Never "goal card" in user text except on the Goals list.
-- Treasure chest: money for this month (Necessities, Free to spend, Education, Give). Resets monthly.
-- Free to spend = play money. Show "Free to spend (play money)" at least once on Home; Log spend category stays "Play money".
-- Financial Freedom: invested and never spent. Only grows.
+- Chest: money for this month (Bills and basics, Free to spend). Resets monthly. (Open, to settle in step B of HANDOFF.md: the bird's-eye design makes the Chest only the place where new money waits on pay day, and "This month" the part for Bills and basics and Free to spend. The design is the newer decision.)
+- Free to spend: say "Free to spend" everywhere; the old "play money" wording is retired.
+- Investing: invested and never spent. Only grows.
 - Paid off / still owed for debt. Full / saved for everything else.
-- Pay, bills, jars. No "income", "allocation", "liabilities".
+- Pay, bills, places. No "income", "allocation", "liabilities", "unassigned" (say "not placed yet").
 
 ## 1. Novice (knows nothing about budgeting)
 Pretend to be a 25 year old sent the link by a friend. Walk the whole tour and every page.
@@ -34,18 +39,20 @@ Recompute by hand against the plan; do not trust the screen.
 Learned from panel (38.21): one percent rule (floored) on Home, popup and goal bars; restore from text must offer Undo; known open: debt after its due date shows Short with 0 paid, saved above target keeps adding monthly.
 Learned from panel (38.22): free to spend is capped so it can never show next to Short (held back = minimum balance minus month-end bank); sample-only tests miss crashes in the healthy state, so test a real plan too.
 Learned from Mako: zoom out to the objective: the app must give a true picture of money and what can really be spent; check it with his real numbers, not only sample data.
+Learned from panel (38.30): spending past a plan (Free to spend, Bills, a burrow below zero) comes out of the bank and stays out in every later month; one bank figure on Home, Plan > Month, All months, the status line, the chip and toasts; pay the plan has not placed is shown as its own piece, and a plan bigger than the pay says so; a bank under the minimum or below zero gets a plain warning on Home and lowers what is safe to spend.
 Learned from Mako: accuracy and stability first. Nobody loses data.
+Learned from Mako (2026-11-17): a separate number-logic agent checks every number in every situation (typo, wrong receipt, overspend, missing input) on every release and step.
 
 ## 3. Data safety
 - Saved plans survive upgrades (no migration that drops fields), reloads, back in the tour, closing mid-step, offline, two tabs.
-- Undo works for money moves. Backup and restore round-trip.
+- Undo works for money moves. Backup and restore round-trip. Re-split pay keeps a copy and offers Undo, even after a reload.
 - Deleting anything asks first and says what is lost.
 - Nothing writes the API key anywhere; INVITE_CODES stays a dashboard variable; repo is PUBLIC so no secrets in it.
 
 ## 4. Layout and touch (phone 390x844 and desktop 1300x900, also 320 wide)
 - No overflow, clipping, overlap. Fixed Ask and Help pills never hide a button or text the person must reach (leave bottom padding).
 - Tap targets 44px or more. Contrast passes in light and dark. Long names and long numbers wrap or truncate cleanly.
-- Keyboard order and focus visible. No console errors.
+- Keyboard order and focus visible. No console errors. Text sits on solid panels, never straight on the scenery.
 Learned from panel (38.21): Ask and Help pills hide while the tour or a burrow is open; tap targets under 44px on tabs, sub-tabs, small buttons still open; light theme contrast over the forest is poor (about 2:1) and needs a decision.
 Learned from Mako: decoration must not get close to text; everything needs breathing room.
 
@@ -55,11 +62,12 @@ Learned from Mako: decoration must not get close to text; everything needs breat
 - Palette ramps only, flat tones, no gradients or blur, no black outlines on living things, big pixels, one light model; run artcheck.sh.
 - Green nature look. Consistency across burrows, chest, scene.
 Learned from Mako: vines too thick and too same-y; subtle, tasteful, varied; keep the purple wisteria; squirrel must be Elthen's sprite.
+Learned from Mako (2026-11-17): the Free to spend picture must look like a real treasure chest.
 
 ## 6. Wording editor
 - Minimal wording like a manual. Never "too AI". Never em dashes. Sentence case. Plain verbs.
 - One word per thing (glossary above). Buttons name the action ("Log spend", "Add a payment").
-- Errors say what to do. No jargon (Eker, allocation) without a plain explanation.
+- Errors say what to do. No jargon (Eker, allocation, unassigned) without a plain explanation.
 Learned from Mako: never em dashes; minimal; plain.
 
 ## 7. Regression runner
@@ -76,7 +84,7 @@ Learned from Mako: never em dashes; minimal; plain.
 3. If a limit is hit, the timer wakes the session and work continues from the plan without waiting for him.
 
 ## How to update this file
-Mako's feedback arrives in chat. Put the lesson, in one line, under the right reviewer's "Learned from Mako" list; if it is a new kind of check, add it to that reviewer's list; if no reviewer owns it, add a reviewer. Copy this file into the project (claude/burrow-qc-roles.md) after changes.
+Mako's feedback arrives in chat. Put the lesson, in one line, under the right reviewer's "Learned from Mako" list; if it is a new kind of check, add it to that reviewer's list; if no reviewer owns it, add a reviewer. Copy this file into the project (claude/burrow-qc-roles.md) after changes. Each role is also a project subagent in .claude/agents/ (qc-*.md) that reads its section of this file, so a lesson added here reaches the agent with no other change.
 
 ## Lessons from 38.26
 - Novice: a first-time user does not know what APR means or that setup never asked about a card. Ask about cards and loans after setup (Next card), take the rate per month or per year, and keep the old "Pay off a debt" goal only for balances with no interest.
