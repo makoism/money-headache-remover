@@ -4,6 +4,8 @@ Written 2026-11-18 on branch `wip-38.31`. Read this whole file before touching a
 
 ## 0. Handoff (latest first)
 
+**2026-11-18, end of PLAN step 5 (commits a299a4b, d83d77b, d785a2e).** Decision 1 (cents kept, yen whole; old plans load unchanged; `wholePercents` now works in cents), decision 2 (amber "Below zero" line from `viewOf().month.belowZero`), decision 5 (first pay or bill entry is the usual amount; closes B2). New tests: `cents_plan.js`, `below_zero.js`, `first_entry.js`. New golden baseline `tests/qc/golden/3831b.json` (verify against it). Reload tests must use `R.phone({keep: true})`. Next: step 6 (screen maths 15 to 0).
+
 **2026-11-18, end of PLAN step 4 (commit 38a3a58).** Three number fixes, each with a test that failed first: the "$0 counted" answer card, the Plan bar's Left piece calling used pay "not placed", goal "to go" against the longer emergency target. `sweepOffer` reads `m.pendLeft` (one value); dead `monthToClose` removed. New `tests/qc/number_findings.js` (in check.sh full). Next: step 5 (decisions 1, 2, 5).
 
 **2026-11-18, end of PLAN.md steps 0 to 3.** Read PLAN.md (section D is the order) and DECISIONS.md (the 2026-11-18 decisions, the process change and "Version one") before anything else.
