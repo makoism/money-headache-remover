@@ -1,0 +1,86 @@
+# The Burrow: Mako's decisions and standing rules
+
+Collected 2026-11-18 from the decisions saved for the Burrow project, so that no single chat holds them. These are Mako's own decisions, in his words as closely as they were recorded. Where two entries disagree, the later date wins. Read this with `NORTH_STAR.md`, `ARCHITECTURE.md` and `RESUME.md`.
+
+## What it is and who it is for
+
+- The Burrow is a one-page budget app. It was first called M.H.R.2000 (The Money Headache Remover 2000). The name is "The Burrow" everywhere now.
+- Mako builds it for himself first, then for his team, friends and family. About 10 people at most will use it, all for free. Claude builds it; Mako does not code.
+- Success is not selling it or earning from it. It only succeeds if his team and friends actually keep using it. Every feature should make people invested in and aware of their money, and give them a place they want to come back to. He wants pushback on anything that does not serve that.
+- It should feel like something he made for himself and for people who want it: personal in formatting (not in wording), never a corporate onboarding with unneeded info.
+
+## North star (2026-11-17, "hard bake this in")
+
+The one purpose is a bird's-eye view and clarity of money, so the person feels safe because they know exactly where all their money is, where it is stocking up, what is flowing in and out, and what they can spend. Ease of use and getting people to actually use it are implied. Every instruction and every feature is checked against this. Pixel art and look do not change it.
+
+## Priorities, in order
+
+1. Accuracy and stability like a spreadsheet. Nobody loses data.
+2. Minimal UI, a bird's-eye view, wording like a manual or like him.
+3. A clean, rounded, Apple-like look. The square look was rejected.
+4. Quiet whooshes on page moves and a tiny click on buttons.
+5. Code that is efficient, snappy, lowest energy, and quick to adjust later.
+
+Lens for every feature (2026-11-12): what is the priority from the user's side, and does this serve it? Anything off that line is unneeded and can be removed.
+
+## The numbers
+
+- All numbers are based on one dataset as stable as a Google Sheet. Everything derives from it, so a wrong number is not really possible (2026-11-18).
+- Work everything out from the actual data: the transaction dates in the statements, never file names or what the person says about the files, unless they give other instructions. Keep to the spreadsheet way, everything as data sets (2026-11-12).
+- Real numbers should come from uploaded bank or card statements, or from a prompt pasted into any AI. Setup asks only what statements cannot answer.
+- Planned money that goes unspent at month end must not silently drop out. The app asks the person to choose where it goes, because being aware of where your money is matters most (2026-11-18). Current pile sizes are fine: goal piles show progress toward the goal, other piles show the amount.
+
+## Visual first (2026-11-17, "hard bake this in as a rule")
+
+If something can be shown visually instead of as numbers or text, and that makes it clearer, prefer the visual even if it costs more to build. Example: gold coins visibly splitting into each burrow on pay day, with small cute animations. "Even a kid can figure it out." Function first, polished art later, so simple is fine. When Mako gives an idea that could be shown visually, point that out and prioritise it.
+
+## How the app is laid out
+
+- Burrows (2026-11-16): one burrow per savings bucket or goal. Spending jars are not burrows. Home is one picture with a small burrow icon per bucket showing how full it is, plus a short note. Tapping one opens that burrow's own full-screen world: art only, with a default pop-up of stats and an add-receipt button. The coins in the door must match the real percentage.
+- Each burrow gets a completely different world. Mako wants to design each one together with Claude, who asks him at the start of each. The first is Rainy Day: rain outside, safe, cozy, dark evening, lit, magic, creatures and life everywhere, all animated.
+- Treasure chest (approved 2026-11-16): a second section under the burrows for the more fluid money. An easy overview of everything other than the burrows: necessities paid and allocated this month, play money for the month, plus education, financial freedom and give if people fund them.
+- Education and Give should also be burrows, because they stock up (2026-11-17).
+- He logs weekly. Play money is not tracked in detail; it stays a small number.
+- Pay day (2026-11-17): enter the paycheck and see gold coins flow into each burrow, the treasure chest or a small money bag. A monthly screen to log receipts with coins going into each burrow. Weekly logging of play money and other spending. An overview, because he sees many numbers but no bird's-eye view.
+- In burrow mode, "add money" is done entirely on that screen in a small inline panel. Then gold builds up in the burrow with sound and the animals dance.
+- The squirrel-puts-a-gold-coin-in-the-burrow animation plays only at significant moments (a batch of expenses logged, first log, streak activation, big steps toward saving) and every time money is added on a burrow screen. Never spammy.
+- The streak is no longer in the top left of the header. It appears only when he does something, such as logging, or at the bottom of Home.
+- The onboarding starts with his video, as the first page on its own, with the questions after it. He plans to reshoot it with a new script that walks through the process.
+- He wants an in-app money assistant that knows the whole financial picture, answers questions, changes what the app shows, and carries out decisions once agreed.
+
+## Look and art
+
+- Branding: the header reads "the burrow" with "for money freedom" under it, all lowercase. The favicon is the grassy burrow hill with a magical sparkle.
+- Background: the version with the animated fairies and the waterfall in 3 layers (v36.3). The whole app in darker green for a deep, lush nature feel. Rejected: the mushroom-menu forest "world", the cobblestone banner, rocks and water, the newer forest graphics, and the original v36.0 background (too old).
+- Lighting should vary instead of being all dark: brighter daytime with a sunbeam on the cottage; evening using the lamps, fireflies and a glowing waterfall. Waterfall streams curve and drift a few pixels.
+- Time of day follows the season, matching real daylight times.
+- Pixel-art nature theme on every box and menu: vines, flowers, small animals, hearts. Each box has something unique but one coherent theme, fitted into the empty spaces around the text. Immersive and interactive like a real space, not web-design icons.
+- One rule set and one quality level for every graphic, written up as a brand guide. A unique, hand-made, not-AI-looking feel with personal flair. A "20-year pixel-art director" review pass before any variations are sent.
+- Number one design rule: anything added must flow with whatever it is added to, not be stuck on and stopped. Card vines are subtle accents from a corner, not on every card, a different kind per card, with breathing room from the text. The purple Goals flowers stay.
+- Strong art rule: never superimpose anything on the art. Labels and navigation, such as the "back to the burrow" signpost and road, are painted into the world's own graphic. Animals belong in the background and trees, with at most two or three in front.
+- The squirrel is Elthen's free itch.io pixel-art sprite sheet (Mako supplied it), plus a gold-coin-carrying variation. Claude-drawn squirrels were rejected.
+- All music is baked into the app. Anything that cannot play inside it is removed. The built-in Forest piece and Off remain.
+
+## Hosting
+
+- Repo: `makoism/money-headache-remover` on GitHub.
+- Live address: https://the-burrow.mako-162.workers.dev (Cloudflare Worker `the-burrow`, created by Mako from the same repo). The old address, https://money-headache-remover.mako-162.workers.dev, stays up until people have moved their data across.
+- Database: Cloudflare D1 `money-vault`.
+- The Anthropic key lives only in the Cloudflare secret `ANTHROPIC_API_KEY`. Never in chat, never in the repo.
+- The app's AI ran on the monthly API credits included with Mako's Max plan. After the move to the org plan those credits may need claiming again by a Team owner. Check the assistant on the live site.
+- Mako is fine with his own AI credits paying for the app's AI if that gives the best experience, and also fine with offering people their own AI.
+- The artifact link https://claude.ai/artifact/Ksf1kNTW7KRsd7ZHmiVC1w stays as a mirror.
+
+## How Mako wants the work done
+
+- Do not ask many small questions. Just go ahead. Keep building when he does not respond. Send each tested version. Make sure small things like formatting are not missed.
+- For every big task, set a resume timer first, so the work wakes itself up if a limit is hit. Tell him in one line that it is set. If a usage limit stops the work, resume as soon as it resets, without waiting for him.
+- When a piece of work is finished, send the link to the live page again.
+- Check every instruction on The Burrow against the north star first.
+- Before any build is sent: a panel of separate reviewer roles, each with its own criteria, including a fresh-eyes pass as someone who knows nothing about budgeting or finance, plus the full UI and onboarding. Every time he gives feedback, update the matching reviewer's criteria so it is never missed again.
+- Two final gates on every release, each a fresh agent given only its brief and the finished build, never the builder's reasoning. One checks the north star and his core rules. One checks that every number is correct in every situation. Both must pass before shipping.
+- Plain words. No em dashes anywhere.
+
+## Not in the repo yet
+
+Three documents were kept in the Claude project and should be copied into the repo: the bird's-eye design (the detailed plan for the next steps), the resume notes, and the QC roles.
