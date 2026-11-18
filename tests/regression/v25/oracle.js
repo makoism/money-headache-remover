@@ -24,15 +24,17 @@ function oracle(S) {
   const lastSave = g => { if (!g.due) return null; const m = dueM(g), d = +g.due.slice(8, 10); return d > 15 ? m : (() => { const i = mIdx(m) - 1; return Math.floor(i / 12) + '-' + String(i % 12 + 1).padStart(2, '0'); })(); };
   const pays = months.map(ym => valueOf('a', ym, () => payDefault) + valueOf('b', ym, () => 0) + valueOf('side', ym, () => 0));
   const unit = Math.max.apply(null, pays) >= 20000 ? 100 : Math.max.apply(null, pays) >= 5000 ? 10 : 5;
+  const capFor = g => (g.emergency && g.stretchOn === true) ? Math.max(g.stretch || 0, g.target) : g.target;
   const goalDefault = (g, ym) => {
     if (g.due) { const rest = Math.max(0, g.target - g.start); if (rest === 0) return 0; const ls = lastSave(g); if (ym > ls) return 0; const n = mIdx(ls) - mIdx(first) + 1; if (n < 1) return 0; return ceilDiv(rest, n * unit) * unit; }
     if (typeof g.monthly === 'number') return g.monthly;
-    const rest = Math.max(0, g.target - g.start); if (rest === 0) return 0; return ceilDiv(rest, 12 * unit) * unit;
+    const rest = Math.max(0, capFor(g) - g.start); if (rest === 0) return 0; return ceilDiv(rest, 12 * unit) * unit;
   };
   const goalValue = (g, ym) => { if (g.due && ym > lastSave(g)) return 0; return valueOf('goal:' + g.id, ym, () => goalDefault(g, ym)); };
   const lineValue = (l, ym) => valueOf(l.key, ym, () => l.def);
   const eg = goals.find(g => g.emergency) || null;
-  const cap = g => g.emergency ? Math.max(g.stretch || 0, g.target) : g.target;
+  /* 38.30 rule: the Emergency fund stops at its target unless the person said yes to the longer goal (stretchOn) */
+  const cap = g => (g.emergency && g.stretchOn === true) ? Math.max(g.stretch || 0, g.target) : g.target;
   let bank = M.cfg(S, 'bankStart');
   const bal = {}; goals.forEach(g => { bal[g.id] = g.start; });
   const reached = {}; const out = [];
@@ -61,7 +63,7 @@ function oracle(S) {
     r.left = r.inflow - r.outflow;
     r.bankStart = bank; bank += r.left; r.bankEnd = bank;
     goals.forEach(g => { bal[g.id] += r.g[g.id].actual - (eg && g.id === eg.id ? r.draw : 0); });
-    goals.forEach(g => { if (g.target > 0 && reached[g.id] === undefined && bal[g.id] >= g.target) reached[g.id] = ym; });
+    goals.forEach(g => { if (g.target > 0 && reached[g.id] === undefined && bal[g.id] >= cap(g)) reached[g.id] = ym; });
     r.spent = {};
     goals.forEach(g => { r.spent[g.id] = 0; if (g.due && g.target > 0 && ym === dueM(g)) { r.spent[g.id] = Math.min(bal[g.id], g.target); bal[g.id] -= r.spent[g.id]; } });
     r.bal = Object.assign({}, bal); out.push(r);
@@ -72,14 +74,15 @@ function oracle(S) {
 function oracleGoal(S, O, id, ym) {
   const g = S.plan.goals.find(x => x.id === id), row = O.rows.find(r => r.ym === ym);
   const reached = O.reached[id] || null, ls = O.lastSave(g), dm = O.dueM(g);
+  const T = O.cap(g);   /* 38.30 rule: every goal is judged against its cap (the target, or the longer goal once the person said yes) */
   let state, need = null, slack = null, had = null;
-  if (!(g.target > 0)) state = 'unset';
-  else if (dm && ym >= dm) { had = O.rows.find(r => r.ym === dm).spent[id]; state = had >= g.target ? 'paid' : 'short'; }
+  if (!(T > 0)) state = 'unset';
+  else if (dm && ym >= dm) { had = O.rows.find(r => r.ym === dm).spent[id]; state = had >= T ? 'paid' : 'short'; }
   else if (ls) {
-    state = reached && reached <= ls ? (row.bal[id] >= g.target ? 'full' : 'ontrack') : 'behind';
+    state = reached && reached <= ls ? (row.bal[id] >= T ? 'full' : 'ontrack') : 'behind';
     slack = reached ? mIdx(ls) - mIdx(reached) : null;
-    if (ym <= ls) need = Math.max(0, ceilDiv(Math.max(0, g.target - row.before[id]), mIdx(ls) - mIdx(ym) + 1));
-  } else state = row.bal[id] >= g.target ? 'full' : (reached ? 'eta' : 'noeta');
+    if (ym <= ls) need = Math.max(0, ceilDiv(Math.max(0, T - row.before[id]), mIdx(ls) - mIdx(ym) + 1));
+  } else state = row.bal[id] >= T ? 'full' : (reached ? 'eta' : 'noeta');
   return { state, need, slack, had, reached };
 }
 /* whole percents that add to 100, by integer arithmetic: floor each share, give spare points to the biggest remainders (lower position wins a tie) */
@@ -116,7 +119,7 @@ function randomState() {
     if (rnd() < .6) { g.target = ri(0, pay * 8); } if (rnd() < .6) { g.start = ri(0, Math.max(1, Math.round(g.target * 1.3))); }
     if (!g.emergency && rnd() < .5) { const ym = pick(M.MONTHS), d = pick([1, 10, 14, 15, 16, 17, 28]); g.due = ym + '-' + String(d).padStart(2, '0'); }
     else if (!g.emergency && rnd() < .4) g.due = '';
-    if (g.emergency) { g.stretch = rnd() < .5 ? ri(0, g.target * 3) : g.stretch; if (rnd() < .2) g.due = ''; }
+    if (g.emergency) { g.stretch = rnd() < .5 ? ri(0, g.target * 3) : g.stretch; if (rnd() < .2) g.due = ''; if (rnd() < .5) g.stretchOn = true; }
     if (!g.due && rnd() < .5) g.monthly = ri(0, Math.round(pay * .3));
     if (rnd() < .5) M.setVal(S, 'goal:' + g.id, pick(M.MONTHS), ri(0, Math.round(pay * .4)), rnd() < .6 ? 'after' : 'once');
     if (rnd() < .3) M.setVal(S, 'goal:' + g.id, pick(M.MONTHS), ri(0, Math.round(pay * .4)), 'after');
@@ -156,11 +159,13 @@ for (let t = 0; t < N; t++) {
     });
     eq(p + 'status', M.statusOf(S, m), r.bankEnd < M.cfg(S, 'minBank') ? 'short' : (r.left < 0 ? 'tight' : 'good'));
     /* the jars and their percents */
-    const J = M.jarsOf(S, m), inn = r.inflow, outv = r.outflow, rest = Math.max(0, inn - outv), short = Math.max(0, outv - inn), base = short > 0 ? outv : inn;
-    const vals = [r.jar.nec, r.goalsTotal, r.jar.play, r.jar.edu, r.jar.ffa, r.jar.give, rest];
+    /* 38.30 rule: percents are shares of real pay, never of money borrowed from the emergency fund; borrowed money that is left over is not pay waiting to be placed */
+    const J = M.jarsOf(S, m), inn = r.inflow, outv = r.outflow, rest = Math.max(0, inn - outv), short = Math.max(0, outv - inn), realPay = inn - r.draw, base = short > 0 ? outv : (r.draw > 0 && realPay > 0 ? realPay : inn);
+    const borrowedLeft = Math.min(rest, r.draw);
+    const vals = [r.jar.nec, r.goalsTotal, r.jar.play, r.jar.edu, r.jar.ffa, r.jar.give, rest - borrowedLeft];
     const pc = oraclePercents(vals, base);
     J.list.forEach((j, k) => { eq(p + 'jar amount ' + j.id, j.v, vals[k]); eq(p + 'jar pct ' + j.id, j.pct, pc[k]); });
-    eq(p + 'rest', J.rest, rest); eq(p + 'restPct', J.restPct, pc[6]); eq(p + 'short', J.short, short);
+    eq(p + 'rest', J.rest, rest); eq(p + 'borrowed left', J.restCover, borrowedLeft); eq(p + 'restPct', J.restPct, pc[6]); eq(p + 'short', J.short, short);
     if (DBG.indexOf(String(t) + ' ' + r.ym) >= 0) console.log('DBG', t, r.ym, JSON.stringify({ vals, base, inn, outv, rest, short, app: J.list.map(j => j.pct).concat([J.restPct]), orc: pc, appBase: J.income }));
     const sumPct = pc.reduce((a, b) => a + b, 0); checks++; if (base > 0 && sumPct !== 100) { if (fails.length < 40) fails.push(p + 'percents add to ' + sumPct); }
   });

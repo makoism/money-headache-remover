@@ -10,7 +10,8 @@ exports.phone = async (opt = {}) => {
   const W = opt.w || 385, H = opt.h || 730;
   await p.setViewport({ width: W, height: H, deviceScaleFactor: opt.dpr || 2.8, isMobile: !!opt.mobile, hasTouch: !!opt.mobile });
   await p.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: 'dark' }]);
-  await p.evaluateOnNewDocument(() => { try { localStorage.clear(); indexedDB.deleteDatabase('money-map-safe'); } catch (e) {} });
+  /* storage is wiped on the first load only; with opt.keep a reload keeps what the page saved (needed by every reload test) */
+  await p.evaluateOnNewDocument((keep) => { try { if (!sessionStorage.getItem('__keep')) { localStorage.clear(); indexedDB.deleteDatabase('money-map-safe'); } if (keep) sessionStorage.setItem('__keep', '1'); } catch (e) {} }, !!opt.keep);
   if (opt.cpu) { const c = await p.createCDPSession(); await c.send('Emulation.setCPUThrottlingRate', { rate: opt.cpu }); }
   return { b, p, errs };
 };

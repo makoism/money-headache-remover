@@ -15,6 +15,8 @@ const tabs = ['home', 'receipts', 'goals', 'month', 'months', 'basics'];
     S.ui = Object.assign(S.ui, { toured: true, setup: true, sampleHidden: true, done: { pay: true, bills: true, goals: true, receipts: true }, seen: { home: true, month: true, goals: true, receipts: true, basics: true } });
     const { b, p, errs } = await phone({ w: W, h: H, dpr: 1, mobile: W < 700 });
     await p.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: theme }]);
+    /* a link that leaves the page (calendar sites, help pages) must not carry the test away with it: the page stays, the outside request is refused and counted */
+    let left = 0; await p.setRequestInterception(true); p.on('request', r => { const u = r.url(); if (r.isNavigationRequest() && r.frame() === p.mainFrame() && !/^(file|data|blob|about):/.test(u)) { left++; r.abort().catch(() => { }); } else r.continue().catch(() => { }); });
     await p.evaluateOnNewDocument(st => { localStorage.setItem('money-map-template-v2', st); }, JSON.stringify(S));
     await p.evaluateOnNewDocument(() => { const real = Date, fixed = new real('2026-11-17T10:00:00').getTime(), start = real.now(); class D extends real { constructor(...a) { if (!a.length) super(fixed + (real.now() - start)); else super(...a); } static now() { return fixed + (real.now() - start); } } window.Date = D; window.confirm = () => false; window.alert = () => { }; window.prompt = () => null; });
     await p.goto('file://' + PAGE + '#2026-11'); await w(1400);
