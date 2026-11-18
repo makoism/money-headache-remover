@@ -4,6 +4,8 @@ Written 2026-11-18 on branch `wip-38.31`. Read this whole file before touching a
 
 ## 0. Handoff (latest first)
 
+**2026-11-18, end of PLAN step 7 (commit 80ec98f).** S2 (proof line after Decide later), S3 (guarded), S5 (graph "Now" was start of month; `goal_agree.js`), S6 (dock word). Golden baseline now `3831c.json`. Next: step 7b (version one Home).
+
 **2026-11-18, end of PLAN step 6 (commit 2e43f9c).** Screen maths 0 open, `display_math.max` is 0. New model values: `setupCells`, `planFactsOf`, `splitDraft`, `topupFit`. Next: step 7 (S2, S3, S5, S6), then 7b.
 
 **2026-11-18, end of PLAN step 5 (commits a299a4b, d83d77b, d785a2e).** Decision 1 (cents kept, yen whole; old plans load unchanged; `wholePercents` now works in cents), decision 2 (amber "Below zero" line from `viewOf().month.belowZero`), decision 5 (first pay or bill entry is the usual amount; closes B2). New tests: `cents_plan.js`, `below_zero.js`, `first_entry.js`. New golden baseline `tests/qc/golden/3831c.json` (verify against it). Reload tests must use `R.phone({keep: true})`. Next: step 6 (screen maths 15 to 0).
