@@ -99,7 +99,7 @@ const helloSrc = () => (helloHqOk() ? HELLO_FILE_HQ : HELLO_FILE);
 const fromMako = () => `<p class="from-mako" aria-label="From Mako"><span>from Mako</span><svg class="fm-arrow" viewBox="0 0 76 46" aria-hidden="true"><path d="M3 9c14-7 30-4 42 7 8 7 13 15 18 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M52 37c4 2 8 3 11 3-1-3-2-7-1-11" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/></svg></p>`;
 const garden = inner => `<div class="vgarden">${['tl', 'tr', 'bl', 'br'].map(k => `<span class="art art-corner vg-${k}" aria-hidden="true">${ART.corner}</span>`).join('')}<span class="vg-pix vg-pix-l" aria-hidden="true">${pix('tulip', 2)}${pix('clover', 2)}</span><span class="vg-pix vg-pix-r" aria-hidden="true">${pix('daisy', 2)}${pix('sprout', 2)}</span>${inner}</div>`;
 /* a plant on every setup screen: a step names its own, or takes its part's; it steps aside when the words reach it (fitTourArt) */
-const ART_BY_PART = { [PART.welcome]: 'vine', [PART.money]: 'twig', [PART.bills]: 'fern', [PART.jars]: 'sprout', [PART.goals]: 'flower', [PART.spend]: 'branch' };
+const ART_BY_PART = { [PART.welcome]: '',   /* no floating vine in the setup dialog (38.31 art director round 2: not from a corner, not on the pixel grid) */ [PART.money]: 'twig', [PART.bills]: 'fern', [PART.jars]: 'sprout', [PART.goals]: 'flower', [PART.spend]: 'branch' };
 const helloPlayer = () => { const f = helloSrc(), blob = helloBlob(), have = !blob || !!helloUrls[f], src = blob ? helloUrls[f] || '' : f; return `${fromMako()}${garden(`<div class="tour-vframe${have ? '' : ' loading'}" id="tourVF"><video id="tourVid" preload="metadata" playsinline poster="${esc(HELLO_POSTER)}"${src ? ` src="${esc(src)}"` : ''} aria-label="A short hello video"></video><button type="button" class="tour-play" id="tourPlay" aria-label="Play the video"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg></button><div class="tour-load" id="tourLoad" role="status"><span>Getting the video ready <em id="tourLoadPct" aria-hidden="true">0%</em></span><i aria-hidden="true"><b id="tourLoadBar"></b></i></div></div>`)}
   <div class="tour-speed" id="tourSpeed" role="group" aria-label="Playback speed"><span>Speed</span>${HELLO_RATES.map(r => `<button type="button" data-rate="${r}" aria-pressed="${r === helloRate}">${r}x</button>`).join('')}</div>`; };
 const helloCard = () => helloVideo
@@ -184,7 +184,7 @@ function wireRestore() {
 }
 const TOUR = [
   /* the first screen is the video and nothing else: Mako says what this is and what to do. A copy without the video starts at the next screen. */
-  { id: 'video', part: PART.welcome, title: 'Welcome', next: 'Next', skipIf: () => !hasHello, art: () => (helloFileOk && !helloFailed ? '' : 'vine'),
+  { id: 'video', part: PART.welcome, title: 'Welcome', next: 'Next', skipIf: () => !hasHello, art: () => '',
     body: () => {
       const player = helloFileOk && !helloFailed;
       return `<p class="tour-what">Put in your pay and bills. The burrow shows how much is really free to spend, and saves toward the things you want.</p>${player ? helloPlayer() : helloCard()}
