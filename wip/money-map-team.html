@@ -1819,6 +1819,9 @@ body.scene-on .card, body.scene-on .why, body.scene-on .gw-card { background: co
 .mp-pay > summary::after { content: 'Show'; margin-left: auto; color: var(--acc, var(--ink)); font-weight: 600; font-size: 14px; }
 .mp-pay[open] > summary::after { content: 'Hide'; }
 .hv1-more { display: block; width: 100%; margin: 4px 0 16px; }   /* the standard button height (look_test: one or two heights only) */
+/* the four numbers never break inside a number (art director, 38.31 round): one line, a size that fits four across on a laptop */
+.mp-four .mp-n b { overflow-wrap: normal; white-space: nowrap; font-size: clamp(20px, 2.1vw + 12px, 28px); }
+@media (min-width: 720px) { .mp-four .mp-n b { font-size: clamp(18px, 1.6vw, 26px); } }
 </style>
 </head>
 <body>
