@@ -27,6 +27,7 @@ const monShort = ym => MON[+ym.slice(5) - 1], monLong = ym => monShort(ym) + ' '
     if (t % 3 === 0) { S.plan.debts = []; for (let i = 0; i < ri(1, 3); i++) S.plan.debts.push({ id: 'd' + i, name: 'Debt ' + i, kind: pick(['card', 'loan', 'personal']), balance: pick([500, 5000, 60000, ri(1000, 900000)]), apr: pick([0, 12, 24, 36]), min: pick([0, 100, 3000, ri(0, 20000)]), extra: pick([0, 0, 1000, ri(0, 9000)]) }); }
     if (t % 2 === 0) S.ui.limits = true;
     S.ui = Object.assign(S.ui, { toured: true, setup: true, sampleHidden: true, done: { pay: true, bills: true, goals: true, receipts: true }, seen: { home: true, month: true, goals: true, receipts: true, basics: true } });
+    if (M.setCurYm) M.setCurYm(() => ym);   /* the page knows what month it is; the model here must too */
     const C = M.calcAll(S), V = M.viewOf(S, C, ym, today), m = C.byYm[ym], floor = M.cfg(S, 'minBank'), tag = '#' + t + ' ' + cur + ' ' + today;
     const { b, p, errs } = await phone({ w: 1100, h: 900, dpr: 1 });
     await p.evaluateOnNewDocument(st => { localStorage.setItem('money-map-template-v2', st); }, JSON.stringify(S));
@@ -37,35 +38,35 @@ const monShort = ym => MON[+ym.slice(5) - 1], monLong = ym => monShort(ym) + ' '
     /* ---- status ---- */
     const stat = m.inflow > 0 ? M.statusOf(S, m) : 'none';
     if (stat === 'none') has(tag + ' status', T.st || '', 'No plan yet');
-    else if (stat === 'good') { { const nO = V.map.month.find(x => x.id === 'nec'); has(tag + ' status', T.st, nO && nO.overBy > 0 ? 'Over plan' : 'You are okay'); } if (V.play.planned > 0) { if (V.play.left > 0) has(tag + ' status free', T.st, F2(V.play.left) + ' is free to spend'); else if (V.play.left < 0) has(tag + ' status over', T.st, 'Free to spend is ' + F2(-V.play.left) + ' over'); } }
-    else if (stat === 'tight') { has(tag + ' status', T.st, 'Tight month'); has(tag + ' status', T.st, 'Plans ' + F(-m.left) + ' more than your pay'); has(tag + ' status', T.st, 'ending ' + monShort(ym) + ' at ' + F(m.bankEnd)); }
-    else if (m.left >= 0) { has(tag + ' status', T.st, 'Building your cushion'); has(tag + ' status', T.st, 'safety minimum of ' + F(floor)); has(tag + ' status', T.st, 'end at ' + F(m.bankEnd)); }
+    else if (stat === 'good') { { const nO = V.map.month.find(x => x.id === 'nec'), necOver = !!(nO && nO.overBy > 0), playOver = V.play.planned > 0 && V.play.left < 0; has(tag + ' status', T.st, necOver ? 'Over plan' : playOver ? 'Over free to spend' : V.month.overNow > 0.004 ? 'Over plan' : 'You are okay'); if (!necOver && !playOver && V.month.overNow > 0.004) has(tag + ' status past plan', T.st, F2(V.month.overNow) + ' went past the plan this month'); } if (V.play.planned > 0) { if (V.play.left > 0) has(tag + ' status free', T.st, F2(V.play.left) + ' is free to spend'); else if (V.play.left < 0) has(tag + ' status over', T.st, 'Free to spend is ' + F2(V.play.overBy) + ' over'); } }
+    else if (stat === 'tight') { has(tag + ' status', T.st, 'Tight month'); has(tag + ' status', T.st, 'Plans ' + F(V.cells.overPay) + ' more than your pay'); has(tag + ' status', T.st, 'ending ' + monShort(ym) + ' at ' + F(m.bankEnd)); }
+    else if (V.month.bankChange >= 0) { has(tag + ' status', T.st, 'Building your cushion'); has(tag + ' status', T.st, 'safety minimum of ' + F(floor)); has(tag + ' status', T.st, 'end at ' + F(m.bankEnd)); }
     else { has(tag + ' status', T.st, 'Short'); has(tag + ' status', T.st, 'bank would end at ' + F(m.bankEnd)); has(tag + ' status', T.st, 'safety minimum of ' + F(floor)); }
-    if (stat !== 'none') { const i0 = M.MONTHS.indexOf(ym), bad = []; for (let k = 1; k <= 3 && i0 + k < M.MONTHS.length; k++) { const x = M.MONTHS[i0 + k], mx = C.byYm[x], st = M.statusOf(S, mx); if (st === 'short' && mx.left < 0) bad.push(monShort(x) + ' is short'); else if (st === 'tight') bad.push(monShort(x) + ' is tight'); } if (i0 + 1 < M.MONTHS.length) has(tag + ' status ahead', T.st, bad.length ? 'Coming up: ' + bad.join(', ') + '.' : 'The next 3 months look fine.'); }
+    if (stat !== 'none') { const i0 = M.MONTHS.indexOf(ym), bad = []; for (let k = 1; k <= 3 && i0 + k < M.MONTHS.length; k++) { const x = M.MONTHS[i0 + k], mx = C.byYm[x], st = M.statusOf(S, mx); if (st === 'short') bad.push(monShort(x) + (mx.left < 0 ? ' is short' : ' ends under your minimum')); else if (st === 'tight') bad.push(monShort(x) + ' is tight'); } if (i0 + 1 < M.MONTHS.length && !(V.month.over > 0.004 && !bad.length)) has(tag + ' status ahead', T.st, bad.length ? 'Coming up: ' + bad.join(', ') + '.' : 'The next 3 months look fine.'); }
     /* ---- treasure chest ---- */
     const p0 = V.play;
     if (!(m.inflow > 0)) has(tag + ' chest', T.sp || '', 'Add your monthly pay');
     else if (p0.planned <= 0 && p0.spent <= 0) { has(tag + ' chest', T.sp, 'Free to spend in ' + monLong(ym)); has(tag + ' chest', T.sp, 'No free to spend planned'); }
     else {
-      const held = stat === 'short' && m.left < 0 ? Math.max(0, floor - m.bankEnd) : 0, freeLeft = Math.max(p0.left < 0 ? p0.left : 0, Math.round((p0.left - held) * 100) / 100);
+      const held = V.map.held, freeLeft = V.map.free;   /* one rule for every screen: model.js freeOf, through the map */
       has(tag + ' chest label', T.sp, (p0.over ? 'Over free to spend in ' : 'Free to spend in ') + monLong(ym));
       has(tag + ' chest big', T.sp, F2(freeLeft));
       has(tag + ' chest spent', T.sp, p0.count ? 'Spent ' + F2(p0.spent) + ' of ' + F(p0.planned) : 'Nothing logged yet. ' + F(p0.planned) + ' planned');
       if (!p0.over) {
-        if (p0.perWeek != null) has(tag + ' chest week', T.sp, F(Math.max(0, freeLeft) / (p0.daysLeft / 7)) + ' a week to stay inside it for the ' + p0.daysLeft + (p0.daysLeft === 1 ? ' day' : ' days') + ' left');
-        if (freeLeft > 0 && p0.daysLeft > 0) has(tag + ' chest day', T.sp, 'About ' + F(freeLeft / p0.daysLeft) + ' a day');
+        if (p0.perWeek != null && freeLeft > 0) has(tag + ' chest week', T.sp, F(V.cells.perWeek) + ' a week to stay inside it for the ' + p0.daysLeft + (p0.daysLeft === 1 ? ' day' : ' days') + ' left');
+        if (freeLeft > 0 && p0.daysLeft > 0) has(tag + ' chest day', T.sp, 'About ' + F(V.cells.perDay) + ' a day');
       }
       if (held > 0) has(tag + ' chest held', T.sp, F(held) + ' is held back');
       const nec = V.buckets.find(x => x.id === 'nec'), covered = m.inflow >= nec.planned;
-      has(tag + ' chest nec', T.sp, 'Bills and basics'); has(tag + ' chest nec', T.sp, nec.spent > nec.planned ? 'Over' : covered ? 'Covered' : 'Short');
-      ['edu', 'give'].forEach(id => { const x = V.buckets.find(q => q.id === id); has(tag + ' chest ' + id, T.sp, F2(x.left)); if (x.planned > 0) has(tag + ' chest ' + id, T.sp, (x.left < 0 ? F(-x.left) + ' over the ' + F(x.planned) + ' for ' + monShort(ym) : 'Left of ' + F(x.planned) + ' in ' + monShort(ym))); });
+      has(tag + ' chest nec', T.sp, 'Bills and basics'); { const nR = V.map.month.find(x => x.id === 'nec'); has(tag + ' chest nec', T.sp, nR && nR.overBy > 0 ? 'Over' : covered ? 'Covered' : 'Short'); }
+      ['edu', 'give'].forEach(id => { const x = V.buckets.find(q => q.id === id), T2 = V.cells[id]; has(tag + ' chest ' + id, T.sp, x.left < 0 ? (T2.bank >= 0.005 ? '−' + F2(T2.bank) : F2(0)) : F2(x.left)); if (x.planned > 0) has(tag + ' chest ' + id, T.sp, (x.left < 0 ? F(T2.over) + ' more than the ' + F(x.planned) + ' for ' + monShort(ym) : 'Left of ' + F(x.planned) + ' in ' + monShort(ym))); });
       if (V.otherSpent > 0) has(tag + ' chest other', T.sp, F2(V.otherSpent) + ' logged as Other');
     }
     /* ---- Investing: its own card is retired (38.29); it is a room in the Burrows section and a share of the pay strip ---- */
     eq(tag + ' ffa card retired', T.bu, null);
     /* ---- Your burrow (38.29): the four numbers and the proof line come from the model's map ---- */
     if (!(m.inflow > 0)) eq(tag + ' map hidden', T.mp, null);
-    else { const M = V.map; has(tag + ' map free', T.mp, F2(M.free)); has(tag + ' map bills left', T.mp, F(M.billsLeft)); has(tag + ' map saved', T.mp, F(M.saved)); has(tag + ' map bank', T.mp, F(M.bankEnd)); has(tag + ' map total', T.mp, F(M.total)); }
+    else { const M = V.map; has(tag + ' map free', T.mp, F2(M.free)); has(tag + ' map bills left', T.mp, F2(M.billsLeft)); has(tag + ' map saved', T.mp, F2(M.saved)); has(tag + ' map bank', T.mp, F2(M.bankEnd)); has(tag + ' map total', T.mp, F2(M.total)); has(tag + ' proof', T.mp, 'Checked: what you started with'); lacks(tag + ' proof', T.mp, 'do not add up'); }
     /* ---- goals list ---- */
     V.goals.forEach(r => { const g = S.plan.goals.find(x => x.id === r.id); if (r.target > 0 && !g.why) { const pp = T.go.indexOf(g.name.replace(/\s+/g, ' ').trim()); checks++; if (pp < 0) fails.push(tag + ' goals home: ' + g.name + ' missing'); } });
     /* ---- cards and loans on Home ---- */

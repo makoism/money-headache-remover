@@ -3,7 +3,7 @@
    Then it compares everything the app's calcAll / goalInfo / jarsOf / receiptStats report. */
 const vm = require('vm'), fs = require('fs');
 const ctx = vm.createContext({ console, Math, JSON, Date });
-vm.runInContext(fs.readFileSync(process.env.MODEL || '/home/claude/work/team/model.js', 'utf8') + '\n;this.__M={debtRows,limitsOf,lookBack,addExtraMoney,debtsOf,presetState,calcAll,goalInfo,jarsOf,statusOf,receiptStats,addReceipt,setVal,addLine,addGoal,updateGoal,updateLine,emergencyGoal,MONTHS,START,SAVE_FROM,SAMPLES,SPAN,JARS,cfg,roundUnit,round2,lineByKey,wholePercents,cleanSteps,cleanOnce,cleanItems,cleanCfg,fixes,trimPlay,viewOf,sheetCsv,sheetRows,purposeOf,pickMain,kindOfGoal,goalRows,wholePct,PURPOSE_VERBS};', ctx);
+vm.runInContext(fs.readFileSync(process.env.MODEL || '/home/claude/work/team/model.js', 'utf8') + '\n;this.__M={debtRows,limitsOf,lookBack,addExtraMoney,debtsOf,presetState,calcAll,goalInfo,jarsOf,statusOf,receiptStats,addReceipt,setVal,addLine,addGoal,updateGoal,updateLine,emergencyGoal,MONTHS,START,SAVE_FROM,SAMPLES,SPAN,JARS,cfg,roundUnit,round2,lineByKey,wholePercents,cleanSteps,cleanOnce,cleanItems,cleanCfg,fixes,trimPlay,viewOf,sheetCsv,sheetRows,purposeOf,pickMain,kindOfGoal,goalRows,wholePct,PURPOSE_VERBS,setCurYm:typeof setCurYm!=="undefined"?setCurYm:null,proofOf:typeof proofOf!=="undefined"?proofOf:null,planCells:typeof planCells!=="undefined"?planCells:null};', ctx);
 const M = ctx.__M;
 
 /* ---------- the oracle ---------- */

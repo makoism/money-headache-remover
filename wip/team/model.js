@@ -577,7 +577,8 @@ function viewOf(S, C, ym, today) {
     const planned = m.jar[j.id], spent = rs.byJar[j.id] || 0;
     return { id: j.id, name: j.name, kind: 'spend', planned, spent, left: round2(planned - spent), total: null };
   });
-  const month = { inflow: m.inflow, out: m.out, left: m.left, bankEnd: m.bankEnd, over: m.over || 0, status: statusOf(S, m) };
+  /* bankStart, bankChange and overNow were missing here in 38.30, so Home could never say "Building your cushion" or "went past the plan this month" */
+  const month = { inflow: m.inflow, out: m.out, left: m.left, bankStart: m.bankStart, bankEnd: m.bankEnd, bankChange: round2(m.bankEnd - m.bankStart), over: m.over || 0, overNow: m.overNow || 0, status: statusOf(S, m) };
   const map = mapOf(S, C, ym, { play, month, goals }), nec = buckets.find(x => x.id === 'nec'), pcl = planCells(S, C, ym), dwv = m.draw || 0;
   /* HOME CELLS: the worked-out amounts Home shows, each defined once here. Screens read them; they never do the sum.
      A pile tile (Education, Giving) spent past this month's amount: how much past, how much of that the bank pays, how much the pile covered. */

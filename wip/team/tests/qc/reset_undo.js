@@ -1,0 +1,33 @@
+/* Reset month then Undo: Undo gives back only that month's edits. Receipts logged after the reset and edits to other months stay. Run: node tests/qc/reset_undo.js */
+let bad=0;const ck=(n,c)=>{console.log(c?'PASS':'FAIL',n);if(!c)bad++;};
+const L=require('./lib_r12.js');const R=L.R;const w=R.w;
+(async()=>{const {b,p,errs}=await R.phone({w:385,h:800,dpr:2,mobile:true});
+await p.evaluateOnNewDocument(()=>{const real=Date,fixed=new real('2026-12-03T10:00:00').getTime(),start=real.now();class D extends real{constructor(...a){if(!a.length)super(fixed+(real.now()-start));else super(...a);}static now(){return fixed+(real.now()-start);}}window.Date=D;});
+await p.goto('file:///home/claude/work/money-map-team.html?sfxtest');await w(1200);
+await p.evaluate(()=>{const s=document.getElementById('tourSkip');s&&s.click();});await w(400);await p.evaluate(()=>{const s=document.getElementById('coSkip');s&&s.click();});await w(400);
+await L.zero(p);await L.base(p);
+await p.evaluate(()=>{const S=__t.S;S.ui.done={pay:true,bills:true,goals:true,receipts:true};S.ui.sampleHidden=true;S.receipts=[];
+ [['2026-12-01',3000],['2026-12-02',2500]].forEach((x,i)=>S.receipts.push({id:'rx'+i,d:x[0],a:x[1],c:'envelope',cn:'Free to spend',n:''}));
+ S.once['2026-12']=Object.assign({},S.once['2026-12'],{envelope:45000});
+ S.once['2027-01']=Object.assign({},S.once['2027-01'],{envelope:52000});
+ __t.persist();__t.restructure();});
+await L.tab(p,'tab-month');await w(400);
+const snap=()=>p.evaluate(()=>JSON.stringify({once:__t.S.once,items:__t.S.items,rc:__t.S.receipts.map(r=>r.id)}));
+const before=JSON.parse(await snap());
+ck('the month has an edit to reset',!!before.once['2026-12']&&before.once['2026-12'].envelope===45000);
+await p.evaluate(()=>document.getElementById('resetMonth').click());await w(300);
+await p.evaluate(()=>document.getElementById('resetMonth').click());await w(600);
+let mid=JSON.parse(await snap());
+ck('Reset month removed only this month\'s edits',!mid.once['2026-12']&&!!mid.once['2027-01']&&mid.once['2027-01'].envelope===52000);
+ck('receipts stayed through the reset',JSON.stringify(mid.rc)===JSON.stringify(before.rc));
+ck('Undo is offered',await p.evaluate(()=>!document.getElementById('undoBar').hidden));
+/* work done after the reset: a new receipt and an edit to a different month */
+await p.evaluate(()=>{const S=__t.S;S.receipts.push({id:'rnew',d:'2026-12-02',a:1800,c:'envelope',cn:'Free to spend',n:''});S.once['2027-02']=Object.assign({},S.once['2027-02'],{envelope:61000});__t.persist();__t.restructure();});await w(400);
+await p.evaluate(()=>document.getElementById('undoGo').click());await w(700);
+const after=JSON.parse(await snap());
+ck('Undo brings back this month\'s edit exactly',JSON.stringify(after.once['2026-12'])===JSON.stringify(before.once['2026-12']));
+ck('Undo gives back this month\'s extra costs exactly',JSON.stringify(after.items['2026-12'])===JSON.stringify(before.items['2026-12']));
+ck('the receipt logged after the reset is still there',after.rc.indexOf('rnew')>=0&&after.rc.length===before.rc.length+1);
+ck('the edit to another month after the reset is still there',!!after.once['2027-02']&&after.once['2027-02'].envelope===61000);
+ck('the month that was never reset is untouched',JSON.stringify(after.once['2027-01'])===JSON.stringify(before.once['2027-01']));
+ck('no page errors',errs.length===0);await b.close();console.log(bad?'FAILED '+bad:'ALL PASS');process.exit(bad?1:0);})();
