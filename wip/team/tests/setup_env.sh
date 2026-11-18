@@ -30,4 +30,14 @@ mkdir -p /tmp/v39 /tmp/wd /tmp/qlogs
 cp "$TEAM/tests/qc/real.js" /tmp/v39/real.js
 cp "$TEAM/tests/safe.js" /tmp/v28/safe.js 2>/dev/null || true
 cp "$REPO/tests/regression/rw.py" /tmp/wd/rw.py 2>/dev/null || true
-echo "setup ok: chrome $( [ -x /usr/bin/google-chrome ] && echo yes || echo MISSING ), puppeteer $( [ -d "$WORK/tools/node_modules/puppeteer-core" ] && echo yes || echo MISSING ), page $( [ -f "$WORK/money-map-team.html" ] && echo linked || echo MISSING )"
+# 5. fixtures: old released builds for the upgrade test, rebuilt from git history (never kept only in /tmp)
+mkdir -p /tmp/v35/old; OLDN=0; OLDBAD=0
+while read -r ver sha; do
+  case "$ver" in ''|\#*) continue;; esac
+  out="/tmp/v35/old/v$ver.html"; [ -s "$out" ] && { OLDN=$((OLDN+1)); continue; }
+  git -C "$REPO" cat-file -e "$sha^{commit}" 2>/dev/null || git -C "$REPO" fetch -q --depth=1 origin "$sha" 2>/dev/null || true
+  if git -C "$REPO" show "$sha:public/index.html" > "$out" 2>/dev/null && [ -s "$out" ]; then OLDN=$((OLDN+1)); else rm -f "$out"; OLDBAD=$((OLDBAD+1)); fi
+done < "$TEAM/tests/fixtures/old_builds.txt"
+# saved copies from older builds (for team_cur.js), kept in the repo
+for f in "$TEAM"/tests/fixtures/*.json; do [ -f "$f" ] && cp "$f" /tmp/; done
+echo "setup ok: chrome $( [ -x /usr/bin/google-chrome ] && echo yes || echo MISSING ), puppeteer $( [ -d "$WORK/tools/node_modules/puppeteer-core" ] && echo yes || echo MISSING ), page $( [ -f "$WORK/money-map-team.html" ] && echo linked || echo MISSING ), old builds $OLDN$( [ $OLDBAD -gt 0 ] && echo " ($OLDBAD MISSING)" )"
