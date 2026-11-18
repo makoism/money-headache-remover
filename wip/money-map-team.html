@@ -2743,7 +2743,9 @@ function fixes(S, m) {
   const gap = Math.max(0, floor - m.bankEnd);
   const st = niceStepFor(Math.max(play, gap));
   /* lowering the plan can only fix the part of the gap the plan causes; money already spent past the plan stays spent */
-  const planGap = m.bankPlanned != null ? Math.max(0, floor - m.bankPlanned) : gap;
+  /* earlier months' spending past plan is already in this month's starting bank and cannot be undone either: only this month's own past-plan
+     spending is added back (38.31 number gate: it added back every month's, so "Spend 235,000 instead" left the bank under the minimum) */
+  const planGap = Math.max(0, floor - (m.bankEnd + (m.overNow || 0)));
   if (planGap > 0) { const ne = Math.floor((play - planGap) / st) * st; if (ne >= 0 && ne < play) out.push({ id: 'trim', amount: ne }); }
   const eg = emergencyGoal(S), room = eg ? Math.max(0, m.balBefore[eg.id] - m.draw) : 0;
   if (gap > 0 && room > 0) out.push({ id: 'borrow', amount: round2(Math.min(room, gap)) });
@@ -4535,31 +4537,31 @@ function paintBar(el, m, withLabels) {
   J.list.forEach(j => {
     const d = $(`[data-k="${j.id}"]`, el);
     d.hidden = j.v <= 0; d.style.flexGrow = Math.max(j.v, 0);
-    d.dataset.tip = `<i style="--c:${JARVAR[j.id]}"></i><b>${j.name}</b> ${fmt(j.v)}` + (J.income > 0 && !J.over ? `<br>${j.pct}% of pay` : '');
-    d.setAttribute('aria-label', `${j.name} ${fmt(j.v)}`); if (j.v > 0) names.push(`${j.name} ${fmt(j.v)}`);
+    d.dataset.tip = `<i style="--c:${JARVAR[j.id]}"></i><b>${j.name}</b> ${fmt2(j.v)}` + (J.income > 0 && !J.over ? `<br>${j.pct}% of pay` : '');
+    d.setAttribute('aria-label', `${j.name} ${fmt2(j.v)}`); if (j.v > 0) names.push(`${j.name} ${fmt2(j.v)}`);
   });
   const r = $('[data-k="rest"]', el); r.hidden = rest <= 0; r.style.flexGrow = rest;
   /* the Left piece: pay with no place, what spending past plan already used of it, and borrowed money, each the model's own amount (jarsOf) */
   const tipL = [];
-  if (J.unplacedNet >= 0.5) tipL.push(J.restCover > 0 || J.usedOver >= 0.5 ? `${fmt(J.unplacedNet)} not placed yet` + (J.usedOver < 0.5 ? ` (${J.restPct}% of pay)` : '') : J.income > 0 ? `${J.restPct}% of pay, not placed yet` : '');
-  if (J.usedOver >= 0.5) tipL.push(`${fmt(J.usedOver)} used for spending past plan`);
-  if (J.restCover > 0) tipL.push(J.unplaced >= 0.5 ? `${fmt(J.restCover)} borrowed from the emergency fund` : J.restKept > 0 ? 'borrowed from the emergency fund, kept in the bank' : 'borrowed money, used for spending past plan');
-  r.dataset.tip = `<b>Left</b> ${fmt(rest)}` + tipL.filter(Boolean).map(x => '<br>' + x).join(''); r.setAttribute('aria-label', `Left ${fmt(rest)}`);
-  if (rest > 0) names.push('Left ' + fmt(rest));
-  if (withLabels) el.setAttribute('aria-label', `Pay ${fmt(m.pool.in)} by place: ` + names.join(', '));
+  if (J.unplacedNet >= 0.5) tipL.push(J.restCover > 0 || J.usedOver >= 0.5 ? `${fmt2(J.unplacedNet)} not placed yet` + (J.usedOver < 0.5 ? ` (${J.restPct}% of pay)` : '') : J.income > 0 ? `${J.restPct}% of pay, not placed yet` : '');
+  if (J.usedOver >= 0.5) tipL.push(`${fmt2(J.usedOver)} used for spending past plan`);
+  if (J.restCover > 0) tipL.push(J.unplaced >= 0.5 ? `${fmt2(J.restCover)} borrowed from the emergency fund` : J.restKept > 0 ? 'borrowed from the emergency fund, kept in the bank' : 'borrowed money, used for spending past plan');
+  r.dataset.tip = `<b>Left</b> ${fmt2(rest)}` + tipL.filter(Boolean).map(x => '<br>' + x).join(''); r.setAttribute('aria-label', `Left ${fmt2(rest)}`);
+  if (rest > 0) names.push('Left ' + fmt2(rest));
+  if (withLabels) el.setAttribute('aria-label', `Pay ${fmt2(m.pool.in)} by place: ` + names.join(', '));
 }
 function paintLegend(m) {
   const st0 = statusOf(S, m), J = jarsOf(S, m), has = J.income > 0 && !J.over;
-  const row = (cls, name, sub, v, p, neg) => `<div class="lg${neg ? ' neg' : ''}"><i class="${cls}"></i><span>${name}${sub ? `<small>${sub}</small>` : ''}</span><b>${fmt(v)}</b><em>${p}</em></div>`;
+  const row = (cls, name, sub, v, p, neg) => `<div class="lg${neg ? ' neg' : ''}"><i class="${cls}"></i><span>${name}${sub ? `<small>${sub}</small>` : ''}</span><b>${fmt2(v)}</b><em>${p}</em></div>`;
   $('#legend').classList.toggle('nopct', !has);
   const live = S.plan.goals.filter(g => g.target > 0 && m.g[g.id] && m.g[g.id].actual > 0).map(g => g.name);
   const ltsTag = live.length ? esc(live.slice(0, 2).join(', ') + (live.length > 2 ? ` and ${live.length - 2} more` : '')) : JARTAG.lts;
   $('#legend').innerHTML = J.list.map(j => row(JARCLS[j.id], j.name, j.id === 'lts' ? ltsTag : JARTAG[j.id], j.v, has ? j.pct + '%' : '')).join('')
     + (J.unplacedNet >= 0.5 ? row('rest', J.restCover > 0 || J.usedOver > 0 ? 'Not placed yet' : 'Left', J.restCover > 0 || J.usedOver > 0 ? 'stays in the bank' : 'Not placed yet', J.unplacedNet, has && J.usedOver < 0.5 ? J.restPct + '%' : '') : '')
     + (J.usedOver >= 0.5 ? row('rest', 'Used for spending past plan', 'came out of pay with no place', J.usedOver, '') : '')
-    + (J.rest > 0 && J.restCover > 0 ? row('rest', 'Borrowed', J.restKept > 0 ? (J.restKept < J.restCover - 0.5 ? fmt(J.restKept) + ' of it stays in the bank' : 'from the emergency fund, stays in the bank') : 'from the emergency fund, used for spending past plan', J.restCover, '') : '')
+    + (J.rest > 0 && J.restCover > 0 ? row('rest', 'Borrowed', J.restKept > 0 ? (J.restKept < J.restCover - 0.5 ? fmt2(J.restKept) + ' of it stays in the bank' : 'from the emergency fund, stays in the bank') : 'from the emergency fund, used for spending past plan', J.restCover, '') : '')
     + (J.borrowUsed >= 0.5 ? row('rest', 'Borrowed', 'from the emergency fund, pays for part of this plan', J.borrowUsed, has && J.borrowUsedPct > 0 ? J.borrowUsedPct + '%' : '') : '')
-    + (J.short > 0 ? row('rest', J.draw > 0 ? 'Still over after borrowing' : st0 === 'tight' ? 'Over pay by' : 'Short by', J.draw > 0 ? fmt(J.draw) + ' borrowed from the emergency fund' + (st0 === 'tight' ? ', your balance covers the rest' : '') : st0 === 'tight' ? 'Your balance covers it' : 'Plan exceeds pay', J.short, '', true) : '');
+    + (J.short > 0 ? row('rest', J.draw > 0 ? 'Still over after borrowing' : st0 === 'tight' ? 'Over pay by' : 'Short by', J.draw > 0 ? fmt2(J.draw) + ' borrowed from the emergency fund' + (st0 === 'tight' ? ', your balance covers the rest' : '') : st0 === 'tight' ? 'Your balance covers it' : 'Plan exceeds pay', J.short, '', true) : '');
 }
 /* one plain sentence under the table: how this month's bills sit against Eker's usual split, and whether every bit of pay has a purpose */
 function jarNote(m) {
@@ -4627,14 +4629,14 @@ function render() {
   let vt;
   if (pin <= 0) vt = 'Enter monthly take-home pay: tap Salary below.';
   else if (st === 'good') vt = (Lun < roundUnit(S) ? 'All pay assigned.' : `${fmt(Lun)} of pay not placed yet.`) + (Lun >= pin * 0.08 ? ' Raise a goal or another place to use it, or keep it as a cushion.' : '');
-  else if (st === 'tight') vt = `Month spends ${fmt(PC.overPay)} more than your pay${m.draw > 0 ? ', ' + fmt(m.draw) + ' of it borrowed' : ''}. Balance covers it and ends at ${fmt(m.bankEnd)}, at or above the ${fmt(floor)} minimum.`;
-  else vt = `Balance would end at ${fmt(m.bankEnd)}, ${fmt(gap)} under the ${fmt(floor)} minimum.` + (fixes(S, m).length ? ' Pick a fix:' : ' Lower a cost or add pay to fix it.');
-  if (m.draw > 0) vt += ` ${fmt(m.draw)} is borrowed from the emergency fund.`;
+  else if (st === 'tight') vt = `Month spends ${fmt2(PC.overPay)} more than your pay${m.draw > 0 ? ', ' + fmt2(m.draw) + ' of it borrowed' : ''}. Balance covers it and ends at ${fmt2(m.bankEnd)}, at or above the ${fmt2(floor)} minimum.`;
+  else vt = `Balance would end at ${fmt2(m.bankEnd)}, ${fmt2(gap)} under the ${fmt2(floor)} minimum.` + (fixes(S, m).length ? ' Pick a fix:' : ' Lower a cost or add pay to fix it.');
+  if (m.draw > 0) vt += ` ${fmt2(m.draw)} is borrowed from the emergency fund.`;
   $('#verdict').textContent = vt;
   let btns = '';
   if (st !== 'good') fixes(S, m).forEach(f => {
-    btns += f.id === 'trim' ? `<button type="button" class="btn small" data-fx="trim" data-amt="${f.amount}">Spend ${fmt(f.amount)} instead</button>`
-      : `<button type="button" class="btn small" data-fx="borrow" data-amt="${f.amount}">Borrow ${fmt(f.amount)} from emergency fund</button>`;
+    btns += f.id === 'trim' ? `<button type="button" class="btn small" data-fx="trim" data-amt="${f.amount}">Spend ${fmt2(f.amount)} instead</button>`
+      : `<button type="button" class="btn small" data-fx="borrow" data-amt="${f.amount}">Borrow ${fmt2(f.amount)} from emergency fund</button>`;
   });
   if (m.draw > 0) btns += '<button type="button" class="btn small" data-fx="unborrow">Undo borrow</button>';
   $('#fixBtns').innerHTML = btns;
@@ -16591,7 +16593,7 @@ function paintLim() { const b = $('#setLim'); if (!b) return; const on = S.ui.li
 /* what covers a plan bigger than the pay: the emergency fund first (what was borrowed), then the bank */
 const coverText = (over, draw, bank, minB, below) => {
   const rest = round2(over - (draw || 0));
-  return (draw > 0 ? fmt(draw) + ' is borrowed from your emergency fund' + (rest < -0.5 ? ' (more than the gap, the extra stays in your bank)' : '') + '. ' : '') + (rest <= 0.5 ? '' : bank < 0 ? 'Your bank cannot cover ' + (draw > 0 ? 'the rest' : 'it') + ': it would end ' + fmt(below) + ' below zero.' : bank < minB ? 'The bank covers ' + (draw > 0 ? 'the rest' : 'it') + ' but ends under your minimum.' : 'The bank covers ' + (draw > 0 ? 'the rest.' : 'the difference.'));
+  return (draw > 0 ? fmt2(draw) + ' is borrowed from your emergency fund' + (rest < -0.5 ? ' (more than the gap, the extra stays in your bank)' : '') + '. ' : '') + (rest <= 0.5 ? '' : bank < 0 ? 'Your bank cannot cover ' + (draw > 0 ? 'the rest' : 'it') + ': it would end ' + fmt2(below) + ' below zero.' : bank < minB ? 'The bank covers ' + (draw > 0 ? 'the rest' : 'it') + ' but ends under your minimum.' : 'The bank covers ' + (draw > 0 ? 'the rest.' : 'the difference.'));
 };
 function renderMap() {
   const el = $('#hMap'), V = HV; if (!el) return;
@@ -16620,7 +16622,7 @@ function renderMap() {
   const wseg = parts.map(x => `<i style="flex:${x.amount};--c:${x.c}" title="${esc(x.name)} ${esc(fmt(x.amount))}"></i>`).join('');
   const wkey = (M.bankEnd < 0 ? `<li class="mp-neg"><i style="background:var(--bad)"></i>In the bank <b>${fmt2(M.bankEnd)}</b> (short)</li>` : '') + parts.map(x => `<li><i style="background:${x.c}"></i>${esc(x.name)} <b>${fmt2(x.amount)}</b></li>`).join('');
   const smp = '';   /* the one sample notice is the status line at the top of Home */
-  const minB = cfg(S, 'minBank'), warn = !(M.bankEnd < minB) ? '' : M.bankEnd < 0 ? `<p class="mp-warn" role="status">Your bank would end ${fmt(M.bankBelow)} below zero in ${esc(mon)}. ${M.overspent > 0 ? 'Spending is past what you planned.' : 'Your plan is bigger than your pay.'} Spend nothing more from Free to spend until you check your plan.</p>` : `<p class="mp-warn" role="status">Your bank ends at ${fmt(M.bankEnd)} in ${esc(mon)}, under your safety minimum of ${fmt(minB)}. ${(() => { const pl = (M.month || []).find(x => x.id === 'play'); return pl && pl.amount < pl.planned - 0.5 ? 'Free to spend is lowered to match.' : 'Open Plan to pick a fix.'; })()}</p>`;
+  const minB = cfg(S, 'minBank'), warn = !(M.bankEnd < minB) ? '' : M.bankEnd < 0 ? `<p class="mp-warn" role="status">Your bank would end ${fmt2(M.bankBelow)} below zero in ${esc(mon)}. ${M.overspent > 0 ? 'Spending is past what you planned.' : 'Your plan is bigger than your pay.'} Spend nothing more from Free to spend until you check your plan.</p>` : `<p class="mp-warn" role="status">Your bank ends at ${fmt2(M.bankEnd)} in ${esc(mon)}, under your safety minimum of ${fmt(minB)}. ${(() => { const pl = (M.month || []).find(x => x.id === 'play'); return pl && pl.amount < pl.planned - 0.5 ? 'Free to spend is lowered to match.' : 'Open Plan to pick a fix.'; })()}</p>`;
   put(el, `<h2 class="hb-h">Your burrow${typeof sampleOn === 'function' && sampleOn() ? ' <span class="smp-tag">Sample numbers</span>' : ''}</h2><p class="cap hb-what">Where your money is. This month's money is below, your burrows after it.</p>${smp}
     <details class="mp-pay"${renderMap.payOpen ? ' open' : ''}><summary class="mp-cap">Your pay in ${esc(mon)}, and where it goes</summary>
     <div class="mp-split" role="img" aria-label="Your pay in ${esc(mon)} splits into: ${esc(split.map(x => x.name + ' ' + fmt(x.amount)).join(', '))}">${seg}${planOver && placed > 0 ? `<b class="mp-past" style="width:${Math.min(100, planOver / placed * 100)}%" title="Planned past your pay ${esc(fmt(planOver))}"></b>` : ''}</div>

@@ -287,6 +287,8 @@ eq('default rounding step follows the size of the pay', [roundUnit(presetState('
   /* 38.31 money accuracy round: a short month holds back Free to spend unless the month really adds to the bank */
   eq('a short month that adds nothing holds Free to spend back', (() => { const S = presetState('$'); S.cfg.minBank = 125; const f = freeOf(S, { left: 0, bankStart: 50, bankEnd: 50, over: 0, status: 'short' }, { left: 50 }); return [f.held, f.free]; })(), [50, 0]);
   eq('a short month that adds to the bank does not', (() => { const S = presetState('$'); S.cfg.minBank = 125; const f = freeOf(S, { left: 10, bankStart: 50, bankEnd: 60, over: 0, status: 'short' }, { left: 50 }); return [f.held, f.free]; })(), [0, 50]);
+  /* 38.31 number gate, blocker 3: after spending past the plan in an earlier month, "Spend X instead" must bring the bank back to the minimum */
+  eq('the Spend instead fix counts earlier spending past plan as gone', (() => { const S = presetState('¥'); S.cfg.minBank = 20000; const f = fixes(S, { jar: { play: 300000 }, bankEnd: -57500, overNow: 0, over: 13000, bankPlanned: -44500, balBefore: {}, draw: 0 }).find(x => x.id === 'trim'); return !!f && -57500 + (300000 - f.amount) >= 20000; })(), true);
   eq('a valid saved copy passes through unchanged', (() => { const S = presetState('¥'); setVal(S, 'a', '2027-03', 250000, 'after'); setVal(S, 'draw', '2027-06', 5000, 'once'); S.items['2027-02'] = [{ id: 'x1', label: 'Fix', amount: 9000 }]; const C = JSON.stringify; return [C(cleanSteps(S.steps)) === C(S.steps), C(cleanOnce(S.once)) === C(S.once), C(cleanItems(S.items)) === C(S.items)]; })(), [true, true, true]);
 }
 

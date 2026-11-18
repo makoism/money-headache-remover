@@ -40,7 +40,8 @@ function makeState(t) {
   for (let t = 0; t < N; t++) {
     const { S, ym, today } = makeState(t);
     const { b, p, errs } = await phone({ w: 1100, h: 900, dpr: 1 });
-    await p.setRequestInterception(true); p.on('request', r => { const u = r.url(); if (r.isNavigationRequest() && r.frame() === p.mainFrame() && !/^(file|data|blob|about):/.test(u)) r.abort().catch(() => { }); else r.continue().catch(() => { }); });
+    /* the assistant relay's health check is refused every time: through this container's proxy it sometimes answered, so the Receipts screen flickered between two wordings */
+    await p.setRequestInterception(true); p.on('request', r => { const u = r.url(); if ((r.isNavigationRequest() && r.frame() === p.mainFrame() && !/^(file|data|blob|about):/.test(u)) || /\/api\//.test(u)) r.abort().catch(() => { }); else r.continue().catch(() => { }); });
     await p.evaluateOnNewDocument(st => { localStorage.setItem('money-map-template-v2', st); }, JSON.stringify(S));
     /* a fixed clock and fixed dice, so two runs of the same build always give the same words */
     await p.evaluateOnNewDocument(iso => { const real = Date, fixed = new real(iso).getTime(); class D extends real { constructor(...a) { if (!a.length) super(fixed); else super(...a); } static now() { return fixed; } } window.Date = D; let s = 42; Math.random = () => (s = (s * 1664525 + 1013904223) % 4294967296) / 4294967296; }, today + 'T10:00:00');
