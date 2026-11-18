@@ -58,7 +58,7 @@ function wire() {
   });
   led.addEventListener('click', e => {
     const ed = e.target.closest('[data-edit]'); if (ed) { editRow = editRow === ed.dataset.edit ? null : ed.dataset.edit; openId = ed.dataset.edit; restructure(); return; }
-    const ld = e.target.closest('[data-ldel]'); if (ld) { confirmClick(ld, 'Tap again to remove', () => { const l = lineById(S, ld.dataset.ldel); if (l && l.jar === 'nec') markDone('bills', true); removeLine(S, ld.dataset.ldel); persist(); restructure(); }); return; }
+    const ld = e.target.closest('[data-ldel]'); if (ld) { const l0 = lineById(S, ld.dataset.ldel), ln = l0 ? l0.name : 'This line'; confirmClick(ld, `Tap again: removes ${ln} from every month. You can undo for ${KEEP_DAYS} days.`, () => { const sn = snapNoCopy(); keepCopy(sn, `${ln} was removed.`); offerUndo(sn, `${ln} removed. You can undo for ${KEEP_DAYS} days.`); const l = lineById(S, ld.dataset.ldel); if (l && l.jar === 'nec') markDone('bills', true); removeLine(S, ld.dataset.ldel); persist(); restructure(); }); return; }
     const h = e.target.closest('.row-h'); if (h && !e.target.closest('input')) { const id = h.closest('.row').dataset.id; setOpen(openId === id ? null : id); return; }
     const kp = e.target.closest('[data-keep]'); if (kp) { const o = S.once[sel]; if (o && o[kp.dataset.keep] !== undefined) setVal(S, kp.dataset.keep, sel, o[kp.dataset.keep], 'after'); persist(); render(); return; }
     const ua = e.target.closest('#undoAll'); if (ua) { delete S.once[sel]; persist(); render(); return; }
@@ -102,7 +102,8 @@ function wire() {
     if (e.target.closest('[data-gdone]')) { editGoal = null; buildGoals(); render(); }
     else if (e.target.closest('[data-gnodate]')) { updateGoal(S, id, { due: '' }); markDone('goals', true); persist(); buildGoals(); render(); }
     else if (e.target.closest('[data-gauto]')) { useSuggested(S, id); sfx('next'); persist(); buildGoals(); render(); }
-    else { const gd = e.target.closest('[data-gdel]'); if (gd) confirmClick(gd, 'Tap again to remove', () => { removeGoal(S, id); markDone('goals', true); if (editGoal === id) editGoal = null; persist(); restructure(); }); }
+    else { const gd = e.target.closest('[data-gdel]'); if (gd) { const g0 = goalById(S, id), r0 = HV && HV.goals ? HV.goals.find(r => r.id === id) : null, nm = g0 ? g0.name : 'This goal', what = nm + (r0 && r0.saved > 0 ? ` and its ${fmt2(r0.saved)} saved` : '');   /* names what goes, keeps a copy (38.31 data safety round 3) */
+      confirmClick(gd, `Tap again: removes ${what}. You can undo for ${KEEP_DAYS} days.`, () => { const sn = snapNoCopy(); removeGoal(S, id); keepCopy(sn, `${nm} was removed.`); offerUndo(sn, `${nm} removed. You can undo for ${KEEP_DAYS} days.`); markDone('goals', true); if (editGoal === id) editGoal = null; persist(); restructure(); }); } }
   });
   /* every keystroke saves; the page redraws on change so the cursor stays put while typing */
   const goalEdit = t => {
@@ -201,7 +202,7 @@ function wire() {
   twoStep($('#blankTop'), 'Tap again: clears pay, bills, goals and saved amounts. Receipts stay.', blank);
   twoStep($('#bkLoad'), `Tap again: replaces your pay, bills, goals and receipts with this copy. You can undo for ${KEEP_DAYS} days.`, loadBackup);
   twoStep($('#setupOpen'), `Tap again: setup can change your pay, bills, goals and saved amounts. You can undo for ${KEEP_DAYS} days.`, () => openSetupWithCopy(undefined, 'full'));   /* both ask first, and keep a copy (38.31 data safety round 2) */
-  twoStep($('#bkReset'), 'Tap again: replaces your numbers with the samples', () => { offerUndo(JSON.stringify(S), 'Samples restored.'); const old = S, u = S.ui; S = presetState(u.cur); S.ui = Object.assign({}, u, { preset: S.ui.preset, sampleHidden: false, done: {} }); delete S.ui.cleared; delete S.ui.setup; delete S.ui.gset; delete S.ui.sb; delete S.ui.tourAt; delete S.ui.src; delete S.ui.imp; S.receipts = old.receipts; editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = 'Samples restored.'; });
+  twoStep($('#bkReset'), `Tap again: puts the sample pay, bills and goals in place of yours. Receipts stay. You can undo for ${KEEP_DAYS} days.`, () => { const sn0 = snapNoCopy(); offerUndo(sn0, `Samples restored. You can undo for ${KEEP_DAYS} days.`); const old = S, u = S.ui; S = presetState(u.cur); S.ui = Object.assign({}, u, { preset: S.ui.preset, sampleHidden: false, done: {} }); delete S.ui.cleared; delete S.ui.setup; delete S.ui.gset; delete S.ui.sb; delete S.ui.tourAt; delete S.ui.src; delete S.ui.imp; S.receipts = old.receipts; keepCopy(sn0, 'Samples replaced your numbers.'); editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = 'Samples restored.'; });
   wireReceipts(); safe(() => BUR.boot(), null, 'burrow'); wireTour(); wireHelp(); wireHome(); wireScan(); wireAskAi(); wireSafe(); wireVault(); safe(() => DJ.wire(), null, 'dj'); safe(() => SCENE.start(), null, 'scene'); safe(() => WORLD.wire(), null, 'world');
 
   /* tooltips */

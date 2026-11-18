@@ -79,7 +79,9 @@ function debtsInit() {
     if (t.hasAttribute('data-ddone')) { DEBT_EDIT = null; debtSig = ''; renderDebts(); return; }
     if (t.hasAttribute('data-ddel')) {
       const id = t.closest('.dform').dataset.did;
-      confirmClick(t, 'Tap again to remove', () => {
+      const d0 = debtsOf(S).find(d => d.id === id), dn = d0 ? d0.name : 'This card or loan';
+      confirmClick(t, `Tap again: removes ${dn} and its payments. You can undo for ${KEEP_DAYS} days.`, () => {
+        const sn = snapNoCopy(); keepCopy(sn, `${dn} was removed.`); if (window.offerUndoG) window.offerUndoG(sn, `${dn} removed. You can undo for ${KEEP_DAYS} days.`);   /* 38.31 data safety round 3 */
         S.plan.debts = debtsOf(S).filter(d => d.id !== id); if (!S.plan.debts.length) delete S.plan.debts;
         delete S.steps['debt:' + id]; Object.keys(S.once).forEach(ym => { delete S.once[ym]['debt:' + id]; if (!Object.keys(S.once[ym]).length) delete S.once[ym]; });
         DEBT_EDIT = null; debtSig = ''; persist(); restructure();

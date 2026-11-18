@@ -9,7 +9,7 @@ let pass = 0, fail = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL 
     await p.evaluate(() => document.querySelector('#gearBtn').click()); await w(300);
     await p.evaluate(s => { const b = document.querySelector(s); b.scrollIntoView({ block: 'center' }); b.click(); }, btn); await w(150);
     await p.evaluate(s => document.querySelector(s).click(), btn); await w(600);
-    ok(await p.evaluate(() => !document.querySelector('#undoBar').hidden) && (await p.$eval('#undoTxt', e => e.textContent)) === txt, `${btn}: Undo offered ("${txt}")`);
+    ok(await p.evaluate(() => !document.querySelector('#undoBar').hidden) && (await p.$eval('#undoTxt', e => e.textContent)).startsWith(txt), `${btn}: Undo offered ("${txt}")`);   /* 38.31 data safety round 3: the message now adds how long Undo lasts */
     ok((await p.evaluate(() => JSON.stringify(window.__t.S.plan))) !== before, `${btn}: numbers changed`);
     await p.evaluate(() => document.querySelector('#undoGo').click()); await w(800);
     ok((await p.evaluate(() => JSON.stringify(window.__t.S.plan))) === before, `${btn}: Undo brings the plan back exactly`);
