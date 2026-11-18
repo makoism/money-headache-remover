@@ -81,7 +81,7 @@ function oracle(S) {
    r.bankPlanned keeps the bank before this rule; r.bankStart and r.bankEnd become the real bank. */
 function oracleOverspend(S, rows, lines) {
   const C = x => Math.round((+x || 0) * 100), rc = S.receipts || [];
-  rows.forEach(r => { r.bankPlanned = r.bankEnd; r.overNow = 0; r.over = 0; });
+  rows.forEach(r => { r.bankPlanned = r.bankEnd; r.overNow = 0; r.over = 0; r.ovB = {}; });
   if (!rc.length) return;
   const jarOfKey = k => { const l = lines.find(x => x.key === k); return l ? l.jar : 'other'; };
   const stock = { edu: 0, give: 0 }; let cum = 0;
@@ -93,7 +93,7 @@ function oracleOverspend(S, rows, lines) {
     inc += Math.max(0, (byJar.other || 0) - C(r.items));
     inc += Math.max(0, (byJar.play || 0) - C(r.jar.play));
     inc += Math.max(0, (byJar.ffa || 0) - C(r.jar.ffa));
-    ['edu', 'give'].forEach(j => { stock[j] += C(r.jar[j]) - (byJar[j] || 0); if (stock[j] < 0) { inc += -stock[j]; stock[j] = 0; } });
+    ['edu', 'give'].forEach(j => { stock[j] += C(r.jar[j]) - (byJar[j] || 0); if (stock[j] < 0) { inc += -stock[j]; r.ovB[j] = -stock[j] / 100; stock[j] = 0; } });   /* r.ovB: the part the bank paid this month */
     r.bankStart = (C(r.bankStart) - cum) / 100; cum += inc; r.overNow = inc / 100; r.over = cum / 100; r.bankEnd = (C(r.bankEnd) - cum) / 100;
   });
 }
