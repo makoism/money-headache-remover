@@ -4,6 +4,8 @@ Written 2026-11-18 on branch `wip-38.31`. Read this whole file before touching a
 
 ## 0. Handoff (latest first)
 
+**2026-11-18, end of PLAN step 6 (commit 2e43f9c).** Screen maths 0 open, `display_math.max` is 0. New model values: `setupCells`, `planFactsOf`, `splitDraft`, `topupFit`. Next: step 7 (S2, S3, S5, S6), then 7b.
+
 **2026-11-18, end of PLAN step 5 (commits a299a4b, d83d77b, d785a2e).** Decision 1 (cents kept, yen whole; old plans load unchanged; `wholePercents` now works in cents), decision 2 (amber "Below zero" line from `viewOf().month.belowZero`), decision 5 (first pay or bill entry is the usual amount; closes B2). New tests: `cents_plan.js`, `below_zero.js`, `first_entry.js`. New golden baseline `tests/qc/golden/3831b.json` (verify against it). Reload tests must use `R.phone({keep: true})`. Next: step 6 (screen maths 15 to 0).
 
 **2026-11-18, end of PLAN step 4 (commit 38a3a58).** Three number fixes, each with a test that failed first: the "$0 counted" answer card, the Plan bar's Left piece calling used pay "not placed", goal "to go" against the longer emergency target. `sweepOffer` reads `m.pendLeft` (one value); dead `monthToClose` removed. New `tests/qc/number_findings.js` (in check.sh full). Next: step 5 (decisions 1, 2, 5).
@@ -45,7 +47,7 @@ Rules that keep work from being lost:
 Mako's rule: every number comes from one dataset, as stable as a sheet, so a wrong number is not possible without it showing. Four parts enforce it.
 
 1. **One source.** What a person types is stored (plan, one-off changes, receipts, settings). Everything else is worked out fresh by `model.js`. Nothing worked out is saved.
-2. **Screens never do money maths.** A screen may choose, format and place a value. It may not add, subtract, round, clamp, negate or total one. `tests/qc/display_math.js` reads the screen code and lists every break. The count is in `tests/qc/display_math.max` and may only go down. It was 87 and is 15. Exceptions need a reason in `display_math.allow`.
+2. **Screens never do money maths.** A screen may choose, format and place a value. It may not add, subtract, round, clamp, negate or total one. `tests/qc/display_math.js` reads the screen code and lists every break. The count is in `tests/qc/display_math.max` and may only go down. It was 87, then 15, and is 0 (step 6). Exceptions need a reason in `display_math.allow`.
 3. **An independent second calculation.** `tests/regression/v25/oracle.js` works the plan out again from the plain rules, in whole numbers, with none of the app's code, and compares field by field on thousands of random plans. It must report `mismatches 0`.
 4. **The proof.** `proofOf()` in `model.js` checks that where the money sits (bank + goals + piles) equals where it came from (start + pay - everything that left), to the cent. Home shows the result and shows a warning if it fails. `tests/qc/proof_fuzz.js` runs it on random plans and must print `PROOF PASS`. It was tested by planting five bugs; it caught all five.
 
