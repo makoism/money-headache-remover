@@ -294,7 +294,11 @@ const PESO = (() => { const src = require('fs').readFileSync(process.env.MODEL |
   // ----- progress flags -----
   await tab('goals'); await tab('month'); await w(900);
   ok('goals and receipts are marked done', !!(await p.evaluate(() => { try { return JSON.parse(localStorage.getItem('money-map-template-v2')).ui.done || {}; } catch (e) { return {}; } })).goals && !!(await p.evaluate(() => { try { return JSON.parse(localStorage.getItem('money-map-template-v2')).ui.done || {}; } catch (e) { return {}; } })).receipts);
-  await tab('home'); ok('with everything done (typed numbers), the card offers Make it exact', !(await p.$eval('#hNext', e => e.hidden)) && /Make it exact/.test(await q('#hNext')));
+  // version one Home (Mako, 2026-11-18): suggestions that are not urgent (Make it exact, other bills, cards and loans, reminder) wait behind More;
+  // Log spend is the one action. The card is the same once More is open.
+  await tab('home'); ok('version one: with everything done, Log spend is the action and Make it exact waits behind More', await p.evaluate(() => getComputedStyle(document.getElementById('hNext')).display === 'none' && getComputedStyle(document.getElementById('hQuick')).display !== 'none'));
+  await p.click('#hMoreBtn'); await w(400);
+  ok('with everything done (typed numbers), the card offers Make it exact', !(await p.$eval('#hNext', e => e.hidden)) && /Make it exact/.test(await q('#hNext')));
   await p.click('#hNext [data-hideexact]'); await w(400); ok('then it asks about cards and loans (or the backup reminder comes first)', !(await p.$eval('#hNext', e => e.hidden)) ? /card or loan/.test(await q('#hNext')) : true);
   if (!(await p.$eval('#hNext', e => e.hidden))) { await p.click('#hNext [data-nodebts]'); await w(400); } ok('hidden once, the next-step banner is gone', await p.$eval('#hNext', e => e.hidden));
 

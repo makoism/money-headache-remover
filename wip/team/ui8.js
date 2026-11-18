@@ -16,6 +16,8 @@ function renderMap() {
   const PF = proofOf(S, C, V.ym, M); if (!PF.ok && !renderMap.told) { renderMap.told = true; logErr('proof', new Error('numbers off by ' + PF.off + ' in ' + V.ym)); }
   el.hidden = false;
   const n = (l, v, cls) => `<li class="mp-n${cls ? ' ' + cls : ''}"><span class="mp-l">${esc(l)}</span><b>${v}</b></li>`;
+  /* version one: the four numbers (Mako, 2026-11-18), each the model's own (mapOf): total, free to spend, bills left, saved */
+  const n4 = (l, v, sub, cls) => `<li class="mp-n${cls ? ' ' + cls : ''}"><span class="mp-l">${esc(l)}</span><b>${v}</b><small>${esc(sub)}</small></li>`;
   const SPL = { nec: 'Bills and basics', play: 'Free to spend', edu: 'Education', give: 'Giving', ffa: 'Investing' };
   const col = id => JARVAR[id], gcol = g => `var(--c${g.slot})`;
   /* the goals share of the pay is drawn goal by goal, each in its own colour, so it matches the Goals list and the graph */
@@ -35,18 +37,19 @@ function renderMap() {
   const smp = '';   /* the one sample notice is the status line at the top of Home */
   const minB = cfg(S, 'minBank'), warn = !(M.bankEnd < minB) ? '' : M.bankEnd < 0 ? `<p class="mp-warn" role="status">Your bank would end ${fmt(M.bankBelow)} below zero in ${esc(mon)}. ${M.overspent > 0 ? 'Spending is past what you planned.' : 'Your plan is bigger than your pay.'} Spend nothing more from Free to spend until you check your plan.</p>` : `<p class="mp-warn" role="status">Your bank ends at ${fmt(M.bankEnd)} in ${esc(mon)}, under your safety minimum of ${fmt(minB)}. ${(() => { const pl = (M.month || []).find(x => x.id === 'play'); return pl && pl.amount < pl.planned - 0.5 ? 'Free to spend is lowered to match.' : 'Open Plan to pick a fix.'; })()}</p>`;
   put(el, `<h2 class="hb-h">Your burrow${typeof sampleOn === 'function' && sampleOn() ? ' <span class="smp-tag">Sample numbers</span>' : ''}</h2><p class="cap hb-what">Where your money is. This month's money is below, your burrows after it.</p>${smp}
-    <p class="mp-cap">Your pay in ${esc(mon)}, and where it goes</p>
+    <details class="mp-pay"${renderMap.payOpen ? ' open' : ''}><summary class="mp-cap">Your pay in ${esc(mon)}, and where it goes</summary>
     <div class="mp-split" role="img" aria-label="Your pay in ${esc(mon)} splits into: ${esc(split.map(x => x.name + ' ' + fmt(x.amount)).join(', '))}">${seg}${planOver && placed > 0 ? `<b class="mp-past" style="width:${Math.min(100, planOver / placed * 100)}%" title="Planned past your pay ${esc(fmt(planOver))}"></b>` : ''}</div>
     <ul class="mp-key">${key}${planOver ? `<li><i style="background:var(--bad)"></i>Past your pay <b>${fmt(planOver)}</b></li>` : ''}</ul>${planOver ? `<p class="cap">Your plan places ${fmt(planOver)} more than your pay. ${coverText(planOver, dwn, M.bankEnd, cfg(S, 'minBank'), M.bankBelow)}</p>` : ''}
-    <p class="mp-act"><button type="button" class="btn small" id="mpPay">Watch where your pay goes</button></p>
+    <p class="mp-act"><button type="button" class="btn small" id="mpPay">Watch where your pay goes</button></p></details>
     <p class="mp-cap">Where your money sits at the end of ${esc(mon)}: the bank, your goals and your burrows</p>
     <div class="mp-where" role="img" aria-label="${esc(parts.map(x => x.name + ' ' + fmt(x.amount)).join(', '))}">${wseg}</div>
     <ul class="mp-key">${wkey}</ul>
-    <ul class="mp-nums">${n('In burrows', fmt2(M.saved))}${n('In the bank, end of ' + mon, fmt2(M.bankEnd), M.bankEnd < minB ? 'bad' : '')}</ul>
+    <ul class="mp-nums mp-four" aria-label="Your four numbers">${n4('Total', fmt2(M.total), 'bank and burrows, end of ' + mon, M.total < 0 ? 'bad' : '')}${n4('Free to spend', fmt2(M.month.find(r => r.id === 'play').amount), 'safe to spend in ' + mon)}${n4('Bills left', fmt2(M.billsLeft), 'still to pay in ' + mon)}${n4('Saved', fmt2(M.saved), 'in your burrows')}</ul>
     <p class="cap mp-proof">Bank ${fmt2(M.bankEnd)} + burrows ${fmt2(M.saved)} = <b>${fmt2(M.total)}</b> at the end of ${esc(mon)}. Burrow amounts include what you plan to add this month.${PF.pendAmount > 0 ? ' ' + fmt2(PF.pendAmount) + (PF.pendMonths.length === 1 ? ' of ' + FULL[+PF.pendMonths[0].slice(5) - 1] + "'s free to spend" : ' of free to spend from ' + PF.pendMonths.length + ' past months') + (typeof SWEEP_LATER !== 'undefined' && SWEEP_LATER && PF.pendMonths.every(q => SWEEP_LATER[q]) ? ' is left out until you answer. You chose Decide later, so Home asks again the next time you open the app.' : ' is left out until you answer the question on Home.') : ''}${M.overspent > 0 ? ' The bank is lowered by ' + fmt2(M.overspent) + ' you spent over plan.' : ''} This comes from your plan and your receipts and is not checked against your bank yet.${PF.ok ? ' Checked: what you started with, plus your pay, less what was spent, comes to the same total.' : ''}</p>
     ${PF.ok ? '' : `<p class="cap mp-bad" role="alert">These numbers do not add up. They are off by ${fmt2(PF.offBy)}. Nothing you entered is lost. Please tell Mako.</p>`}
     ${warn}
     <h3 class="mp-h">This month</h3><div class="hb-scene mp-rooms" id="mpRooms"></div>`);
+  { const dp = el.querySelector('.mp-pay'); if (dp) dp.ontoggle = () => { renderMap.payOpen = dp.open; }; }
   BUR.dropCoins(el.querySelector('.mp-split'));
   const pb2 = $('#mpPay'); if (pb2) pb2.onclick = () => payDay({ pay: (realPay || dwn > 0) ? realPay : placed, over: planOver, draw: dwn, bank: M.bankEnd, minB: cfg(S, 'minBank'), mon, places: split });
   BUR.monthRooms($('#mpRooms'));

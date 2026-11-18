@@ -47,11 +47,13 @@ const monShort = ym => MON[+ym.slice(5) - 1], monLong = ym => monShort(ym) + ' '
     const O = require('/tmp/v25/oracle.js').oracle(S), r = O.rows.find(x => x.ym === ym), MP = V.map;
     const val = s => { const neg = /^[−-]/.test(s), n = +String(s).replace(/[^0-9.]/g, ''); return Math.round((neg ? -n : n) * 100); };
     /* 1. the bank, against the independent recount */
-    const bankLi = T.nums.find(x => /^In the bank/.test(x[0])), burLi = T.nums.find(x => x[0] === 'In burrows');
+    /* version one (Mako, 2026-11-18): the tiles are the four numbers (Total, Free to spend, Bills left, Saved); the bank figure is in the proof line.
+       Before, two tiles read "In burrows" and "In the bank, end of <month>"; the same figures are checked where they are now */
+    const pm0 = /^Bank (.+?) \+ burrows/.exec(T.proof), bankLi = pm0 ? ['In the bank, end of ' + monShort(ym), pm0[1]] : null, burLi = T.nums.find(x => x[0] === 'Saved'), totLi = T.nums.find(x => x[0] === 'Total');
     /* the oracle does not recount cards and loans yet (RESUME.md section 5 item 9); their payments come from the model here, and fuzz_debts.js checks those */
     let debtPaid = 0; for (const x of M.MONTHS) { if (x > ym) break; debtPaid += C.byYm[x].debtPay || 0; }
     eq(tag + ' bank on the map = independent bank' + (debtPaid ? ' (less card and loan payments)' : ''), bankLi ? bankLi[1] : null, F2(Math.round((r.bankEnd - debtPaid) * 100) / 100));
-    eq(tag + ' bank label names the month', bankLi ? bankLi[0] : null, 'In the bank, end of ' + monShort(ym));
+    eq(tag + ' the Total tile = model total', totLi ? totLi[1] : null, F2(MP.total));
     /* every figure is the model's map */
     eq(tag + ' burrows on the map = model', burLi ? burLi[1] : null, F2(MP.saved));
     /* 2. the proof line adds up on its own */

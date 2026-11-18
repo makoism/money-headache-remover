@@ -1808,6 +1808,17 @@ body.scene-on .card, body.scene-on .why, body.scene-on .gw-card { background: co
 .gw-card .cap { margin-bottom: 14px; }
 .gw-card .row-btns { margin-top: 14px; }
 .tour-reveal + p, .tour-chest + .tour-reveal { margin-top: 4px; }
+
+/* ---- version one Home (Mako, 2026-11-18): the picture, the four numbers, one next action; the rest waits behind More ---- */
+.v1x { display: none !important; }
+.mp-n small { font-size: 13px; color: var(--ink2); line-height: 1.3; }
+.mp-n.bad b { color: var(--warn); }   /* amber, never red, for a total below zero (decision 2) */
+.mp-pay { margin: 4px 0 0; }
+.mp-pay > summary { cursor: pointer; list-style: none; min-height: 44px; display: flex; align-items: center; gap: 8px; margin: 8px 4px 0; }
+.mp-pay > summary::-webkit-details-marker { display: none; }
+.mp-pay > summary::after { content: 'Show'; margin-left: auto; color: var(--acc, var(--ink)); font-weight: 600; font-size: 14px; }
+.mp-pay[open] > summary::after { content: 'Hide'; }
+.hv1-more { display: block; width: 100%; min-height: 48px; margin: 4px 0 16px; }
 </style>
 </head>
 <body>
@@ -15599,6 +15610,9 @@ function renderNext() {
   if (!step && d.pay && d.bills && S.ui.full !== true && !S.ui.moreBillsHidden && !sampleOn() && necLines().filter(l => val(S, l.key, nowYm()) > 0).length < 4) step = ['Next: add your other bills', 'Utilities, internet, phone, transport. Rough numbers are fine.', 'Open bills', 'data-open="nec"', '', 'data-hidebills'];
   if (!step && d.pay && d.bills && !S.ui.noDebts && !(S.plan.debts && S.plan.debts.length) && !sampleOn() && !backupDue()) step = ['Next: do you owe on a card or loan?', 'Add it and the burrow works out the interest, the payoff date and which to pay first.', 'Add a card or loan', 'data-debtgo', '', 'data-nodebts'];
   if (!step && (S.receipts || []).length && !S.ui.remindHidden && !sampleOn() && !backupDue()) step = ['Set a weekly reminder', 'A calendar reminder keeps this a habit. Logging a few minutes each week keeps the numbers true.', 'Set reminder', 'data-remindgo'];
+  /* version one (Mako, 2026-11-18): Home shows one next action. These suggestions are useful but never urgent, so they sit behind More and
+     Log spend stays the action; "Next: log spend" is the Log spend card itself */
+  el.dataset.v1 = !step ? '' : step[3] === 'data-focus="hAmt"' ? 'log' : ['data-exact', 'data-open="nec"', 'data-debtgo', 'data-remindgo'].indexOf(step[3]) >= 0 && d.pay && d.bills && d.goals ? 'later' : 'now';
   el.hidden = !step; if (!step) return;
   const left = ['pay', 'bills', 'goals', 'receipts'].filter(k => !d[k]).length;
   const exact = step[3] === 'data-exact';
@@ -15908,7 +15922,30 @@ function renderHome() {
   if (tab !== 'home') return;
   applyHomeOrder();
   safe(renderMap, '#hMap'); safe(renderNext, '#hNext'); safe(() => BUR.home(), '#hBur'); safe(renderBackupNudge, '#hBk'); safe(renderStatus, '#hStatus'); safe(syncQuick, null, 'quick'); safe(renderHero, '#hHero'); safe(renderSpend, '#hSpend'); safe(renderGoalsHome, '#hGoals'); safe(renderHomeDebts, '#hDebts'); safe(renderLimits, '#hLimits'); safe(renderBuckets, '#hBuckets'); safe(renderStreak, '#hStreak'); safe(renderBadges, '#hBadges');
+  safe(homeV1, null, 'v1');
   placePix(); /* the pixel plants, back in their corners after the cards were redrawn */
+}
+/* ---------- version one Home (Mako, 2026-11-18): the picture, the four numbers and one next action; everything else waits behind More ----------
+   Nothing is deleted: every card is still drawn and still works, it is only out of sight until it is needed or the person taps More.
+   The one action, in this order: the new-address banner, a step from renderNext that matters now, the backup reminder; with none of these,
+   the Log spend card is the action. The status line shows only when it says something needs attention (or that the numbers are samples). */
+let HOME_ALL = false, QUICK_OPEN = false;
+const V1_EXTRA = ['hHero', 'hSpend', 'hGoals', 'hDebts', 'hLimits', 'hBuckets', 'hMore'];
+function homeV1() {
+  const panel = $('#p-home'); if (!panel) return;
+  const nx = $('#hNext'), acts = [$('#moveBanner'), nx && nx.dataset.v1 === 'now' ? nx : null, $('#hBk')].filter(e => e && !e.hidden);
+  const action = acts[0] || null, logIsNext = !action;
+  ['moveBanner', 'hBk', 'hNext'].forEach(id => { const e = $('#' + id); if (e) e.classList.toggle('v1x', e !== action && !(HOME_ALL && e.dataset.v1 === 'later')); });
+  /* the Log spend card sits right under the action place, above the burrows, whenever it is the action or was opened */
+  const q = $('#hQuick'), bur = $('#hBur');
+  if (q && bur && q.nextElementSibling !== bur) panel.insertBefore(q, bur);
+  if (q) q.classList.toggle('v1x', !(logIsNext || QUICK_OPEN || HOME_ALL));
+  V1_EXTRA.forEach(id => { const e = $('#' + id); if (e) e.classList.toggle('v1x', !HOME_ALL); });
+  const st = $('#hStatus'); if (st) st.classList.toggle('v1x', !HOME_ALL && !!st.querySelector('.chip.good'));
+  let mb = $('#hMoreBtn');
+  if (!mb) { mb = document.createElement('button'); mb.type = 'button'; mb.id = 'hMoreBtn'; mb.className = 'btn hv1-more'; mb.addEventListener('click', () => { HOME_ALL = !HOME_ALL; sfx('tap'); renderHome(); }); }
+  if (bur && mb.previousElementSibling !== bur) bur.after(mb);
+  mb.textContent = HOME_ALL ? 'Show less' : 'More: free to spend, goals, cards, streak'; mb.setAttribute('aria-expanded', String(HOME_ALL));
 }
 
 /* ---------- add a goal: what, how much, by when ---------- */
@@ -16080,7 +16117,7 @@ function wireHome() {
     const sb = e.target.closest('[data-sweep]'); if (sb) { doSweep(sb.dataset.sweep); return; }
     if (e.target.closest('[data-sweepundo]')) { undoSweep(); return; }
     if (e.target.closest('[data-exact]')) { impOnly = true; openTour('source', 'full'); return; }
-    const f = e.target.closest('[data-focus]'); if (f) { const t = document.getElementById(f.dataset.focus); if (t) { t.scrollIntoView({ behavior: 'smooth', block: 'center' }); t.focus({ preventScroll: true }); } }
+    const f = e.target.closest('[data-focus]'); if (f) { if (f.dataset.focus === 'hAmt' && !QUICK_OPEN) { QUICK_OPEN = true; homeV1(); } const t = document.getElementById(f.dataset.focus); if (t) { t.scrollIntoView({ behavior: 'smooth', block: 'center' }); t.focus({ preventScroll: true }); } }
   });
   const hero = $('#hHero'), move = e => {
     if (!HG) return; const svg = $('#hGraph svg'); if (!svg) return;
@@ -16558,6 +16595,8 @@ function renderMap() {
   const PF = proofOf(S, C, V.ym, M); if (!PF.ok && !renderMap.told) { renderMap.told = true; logErr('proof', new Error('numbers off by ' + PF.off + ' in ' + V.ym)); }
   el.hidden = false;
   const n = (l, v, cls) => `<li class="mp-n${cls ? ' ' + cls : ''}"><span class="mp-l">${esc(l)}</span><b>${v}</b></li>`;
+  /* version one: the four numbers (Mako, 2026-11-18), each the model's own (mapOf): total, free to spend, bills left, saved */
+  const n4 = (l, v, sub, cls) => `<li class="mp-n${cls ? ' ' + cls : ''}"><span class="mp-l">${esc(l)}</span><b>${v}</b><small>${esc(sub)}</small></li>`;
   const SPL = { nec: 'Bills and basics', play: 'Free to spend', edu: 'Education', give: 'Giving', ffa: 'Investing' };
   const col = id => JARVAR[id], gcol = g => `var(--c${g.slot})`;
   /* the goals share of the pay is drawn goal by goal, each in its own colour, so it matches the Goals list and the graph */
@@ -16577,18 +16616,19 @@ function renderMap() {
   const smp = '';   /* the one sample notice is the status line at the top of Home */
   const minB = cfg(S, 'minBank'), warn = !(M.bankEnd < minB) ? '' : M.bankEnd < 0 ? `<p class="mp-warn" role="status">Your bank would end ${fmt(M.bankBelow)} below zero in ${esc(mon)}. ${M.overspent > 0 ? 'Spending is past what you planned.' : 'Your plan is bigger than your pay.'} Spend nothing more from Free to spend until you check your plan.</p>` : `<p class="mp-warn" role="status">Your bank ends at ${fmt(M.bankEnd)} in ${esc(mon)}, under your safety minimum of ${fmt(minB)}. ${(() => { const pl = (M.month || []).find(x => x.id === 'play'); return pl && pl.amount < pl.planned - 0.5 ? 'Free to spend is lowered to match.' : 'Open Plan to pick a fix.'; })()}</p>`;
   put(el, `<h2 class="hb-h">Your burrow${typeof sampleOn === 'function' && sampleOn() ? ' <span class="smp-tag">Sample numbers</span>' : ''}</h2><p class="cap hb-what">Where your money is. This month's money is below, your burrows after it.</p>${smp}
-    <p class="mp-cap">Your pay in ${esc(mon)}, and where it goes</p>
+    <details class="mp-pay"${renderMap.payOpen ? ' open' : ''}><summary class="mp-cap">Your pay in ${esc(mon)}, and where it goes</summary>
     <div class="mp-split" role="img" aria-label="Your pay in ${esc(mon)} splits into: ${esc(split.map(x => x.name + ' ' + fmt(x.amount)).join(', '))}">${seg}${planOver && placed > 0 ? `<b class="mp-past" style="width:${Math.min(100, planOver / placed * 100)}%" title="Planned past your pay ${esc(fmt(planOver))}"></b>` : ''}</div>
     <ul class="mp-key">${key}${planOver ? `<li><i style="background:var(--bad)"></i>Past your pay <b>${fmt(planOver)}</b></li>` : ''}</ul>${planOver ? `<p class="cap">Your plan places ${fmt(planOver)} more than your pay. ${coverText(planOver, dwn, M.bankEnd, cfg(S, 'minBank'), M.bankBelow)}</p>` : ''}
-    <p class="mp-act"><button type="button" class="btn small" id="mpPay">Watch where your pay goes</button></p>
+    <p class="mp-act"><button type="button" class="btn small" id="mpPay">Watch where your pay goes</button></p></details>
     <p class="mp-cap">Where your money sits at the end of ${esc(mon)}: the bank, your goals and your burrows</p>
     <div class="mp-where" role="img" aria-label="${esc(parts.map(x => x.name + ' ' + fmt(x.amount)).join(', '))}">${wseg}</div>
     <ul class="mp-key">${wkey}</ul>
-    <ul class="mp-nums">${n('In burrows', fmt2(M.saved))}${n('In the bank, end of ' + mon, fmt2(M.bankEnd), M.bankEnd < minB ? 'bad' : '')}</ul>
+    <ul class="mp-nums mp-four" aria-label="Your four numbers">${n4('Total', fmt2(M.total), 'bank and burrows, end of ' + mon, M.total < 0 ? 'bad' : '')}${n4('Free to spend', fmt2(M.month.find(r => r.id === 'play').amount), 'safe to spend in ' + mon)}${n4('Bills left', fmt2(M.billsLeft), 'still to pay in ' + mon)}${n4('Saved', fmt2(M.saved), 'in your burrows')}</ul>
     <p class="cap mp-proof">Bank ${fmt2(M.bankEnd)} + burrows ${fmt2(M.saved)} = <b>${fmt2(M.total)}</b> at the end of ${esc(mon)}. Burrow amounts include what you plan to add this month.${PF.pendAmount > 0 ? ' ' + fmt2(PF.pendAmount) + (PF.pendMonths.length === 1 ? ' of ' + FULL[+PF.pendMonths[0].slice(5) - 1] + "'s free to spend" : ' of free to spend from ' + PF.pendMonths.length + ' past months') + (typeof SWEEP_LATER !== 'undefined' && SWEEP_LATER && PF.pendMonths.every(q => SWEEP_LATER[q]) ? ' is left out until you answer. You chose Decide later, so Home asks again the next time you open the app.' : ' is left out until you answer the question on Home.') : ''}${M.overspent > 0 ? ' The bank is lowered by ' + fmt2(M.overspent) + ' you spent over plan.' : ''} This comes from your plan and your receipts and is not checked against your bank yet.${PF.ok ? ' Checked: what you started with, plus your pay, less what was spent, comes to the same total.' : ''}</p>
     ${PF.ok ? '' : `<p class="cap mp-bad" role="alert">These numbers do not add up. They are off by ${fmt2(PF.offBy)}. Nothing you entered is lost. Please tell Mako.</p>`}
     ${warn}
     <h3 class="mp-h">This month</h3><div class="hb-scene mp-rooms" id="mpRooms"></div>`);
+  { const dp = el.querySelector('.mp-pay'); if (dp) dp.ontoggle = () => { renderMap.payOpen = dp.open; }; }
   BUR.dropCoins(el.querySelector('.mp-split'));
   const pb2 = $('#mpPay'); if (pb2) pb2.onclick = () => payDay({ pay: (realPay || dwn > 0) ? realPay : placed, over: planOver, draw: dwn, bank: M.bankEnd, minB: cfg(S, 'minBank'), mon, places: split });
   BUR.monthRooms($('#mpRooms'));

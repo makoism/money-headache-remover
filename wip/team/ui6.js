@@ -206,6 +206,9 @@ function renderNext() {
   if (!step && d.pay && d.bills && S.ui.full !== true && !S.ui.moreBillsHidden && !sampleOn() && necLines().filter(l => val(S, l.key, nowYm()) > 0).length < 4) step = ['Next: add your other bills', 'Utilities, internet, phone, transport. Rough numbers are fine.', 'Open bills', 'data-open="nec"', '', 'data-hidebills'];
   if (!step && d.pay && d.bills && !S.ui.noDebts && !(S.plan.debts && S.plan.debts.length) && !sampleOn() && !backupDue()) step = ['Next: do you owe on a card or loan?', 'Add it and the burrow works out the interest, the payoff date and which to pay first.', 'Add a card or loan', 'data-debtgo', '', 'data-nodebts'];
   if (!step && (S.receipts || []).length && !S.ui.remindHidden && !sampleOn() && !backupDue()) step = ['Set a weekly reminder', 'A calendar reminder keeps this a habit. Logging a few minutes each week keeps the numbers true.', 'Set reminder', 'data-remindgo'];
+  /* version one (Mako, 2026-11-18): Home shows one next action. These suggestions are useful but never urgent, so they sit behind More and
+     Log spend stays the action; "Next: log spend" is the Log spend card itself */
+  el.dataset.v1 = !step ? '' : step[3] === 'data-focus="hAmt"' ? 'log' : ['data-exact', 'data-open="nec"', 'data-debtgo', 'data-remindgo'].indexOf(step[3]) >= 0 && d.pay && d.bills && d.goals ? 'later' : 'now';
   el.hidden = !step; if (!step) return;
   const left = ['pay', 'bills', 'goals', 'receipts'].filter(k => !d[k]).length;
   const exact = step[3] === 'data-exact';
@@ -515,7 +518,30 @@ function renderHome() {
   if (tab !== 'home') return;
   applyHomeOrder();
   safe(renderMap, '#hMap'); safe(renderNext, '#hNext'); safe(() => BUR.home(), '#hBur'); safe(renderBackupNudge, '#hBk'); safe(renderStatus, '#hStatus'); safe(syncQuick, null, 'quick'); safe(renderHero, '#hHero'); safe(renderSpend, '#hSpend'); safe(renderGoalsHome, '#hGoals'); safe(renderHomeDebts, '#hDebts'); safe(renderLimits, '#hLimits'); safe(renderBuckets, '#hBuckets'); safe(renderStreak, '#hStreak'); safe(renderBadges, '#hBadges');
+  safe(homeV1, null, 'v1');
   placePix(); /* the pixel plants, back in their corners after the cards were redrawn */
+}
+/* ---------- version one Home (Mako, 2026-11-18): the picture, the four numbers and one next action; everything else waits behind More ----------
+   Nothing is deleted: every card is still drawn and still works, it is only out of sight until it is needed or the person taps More.
+   The one action, in this order: the new-address banner, a step from renderNext that matters now, the backup reminder; with none of these,
+   the Log spend card is the action. The status line shows only when it says something needs attention (or that the numbers are samples). */
+let HOME_ALL = false, QUICK_OPEN = false;
+const V1_EXTRA = ['hHero', 'hSpend', 'hGoals', 'hDebts', 'hLimits', 'hBuckets', 'hMore'];
+function homeV1() {
+  const panel = $('#p-home'); if (!panel) return;
+  const nx = $('#hNext'), acts = [$('#moveBanner'), nx && nx.dataset.v1 === 'now' ? nx : null, $('#hBk')].filter(e => e && !e.hidden);
+  const action = acts[0] || null, logIsNext = !action;
+  ['moveBanner', 'hBk', 'hNext'].forEach(id => { const e = $('#' + id); if (e) e.classList.toggle('v1x', e !== action && !(HOME_ALL && e.dataset.v1 === 'later')); });
+  /* the Log spend card sits right under the action place, above the burrows, whenever it is the action or was opened */
+  const q = $('#hQuick'), bur = $('#hBur');
+  if (q && bur && q.nextElementSibling !== bur) panel.insertBefore(q, bur);
+  if (q) q.classList.toggle('v1x', !(logIsNext || QUICK_OPEN || HOME_ALL));
+  V1_EXTRA.forEach(id => { const e = $('#' + id); if (e) e.classList.toggle('v1x', !HOME_ALL); });
+  const st = $('#hStatus'); if (st) st.classList.toggle('v1x', !HOME_ALL && !!st.querySelector('.chip.good'));
+  let mb = $('#hMoreBtn');
+  if (!mb) { mb = document.createElement('button'); mb.type = 'button'; mb.id = 'hMoreBtn'; mb.className = 'btn hv1-more'; mb.addEventListener('click', () => { HOME_ALL = !HOME_ALL; sfx('tap'); renderHome(); }); }
+  if (bur && mb.previousElementSibling !== bur) bur.after(mb);
+  mb.textContent = HOME_ALL ? 'Show less' : 'More: free to spend, goals, cards, streak'; mb.setAttribute('aria-expanded', String(HOME_ALL));
 }
 
 /* ---------- add a goal: what, how much, by when ---------- */
@@ -687,7 +713,7 @@ function wireHome() {
     const sb = e.target.closest('[data-sweep]'); if (sb) { doSweep(sb.dataset.sweep); return; }
     if (e.target.closest('[data-sweepundo]')) { undoSweep(); return; }
     if (e.target.closest('[data-exact]')) { impOnly = true; openTour('source', 'full'); return; }
-    const f = e.target.closest('[data-focus]'); if (f) { const t = document.getElementById(f.dataset.focus); if (t) { t.scrollIntoView({ behavior: 'smooth', block: 'center' }); t.focus({ preventScroll: true }); } }
+    const f = e.target.closest('[data-focus]'); if (f) { if (f.dataset.focus === 'hAmt' && !QUICK_OPEN) { QUICK_OPEN = true; homeV1(); } const t = document.getElementById(f.dataset.focus); if (t) { t.scrollIntoView({ behavior: 'smooth', block: 'center' }); t.focus({ preventScroll: true }); } }
   });
   const hero = $('#hHero'), move = e => {
     if (!HG) return; const svg = $('#hGraph svg'); if (!svg) return;

@@ -1801,3 +1801,14 @@ body.scene-on .card, body.scene-on .why, body.scene-on .gw-card { background: co
 .gw-card .cap { margin-bottom: 14px; }
 .gw-card .row-btns { margin-top: 14px; }
 .tour-reveal + p, .tour-chest + .tour-reveal { margin-top: 4px; }
+
+/* ---- version one Home (Mako, 2026-11-18): the picture, the four numbers, one next action; the rest waits behind More ---- */
+.v1x { display: none !important; }
+.mp-n small { font-size: 13px; color: var(--ink2); line-height: 1.3; }
+.mp-n.bad b { color: var(--warn); }   /* amber, never red, for a total below zero (decision 2) */
+.mp-pay { margin: 4px 0 0; }
+.mp-pay > summary { cursor: pointer; list-style: none; min-height: 44px; display: flex; align-items: center; gap: 8px; margin: 8px 4px 0; }
+.mp-pay > summary::-webkit-details-marker { display: none; }
+.mp-pay > summary::after { content: 'Show'; margin-left: auto; color: var(--acc, var(--ink)); font-weight: 600; font-size: 14px; }
+.mp-pay[open] > summary::after { content: 'Hide'; }
+.hv1-more { display: block; width: 100%; min-height: 48px; margin: 4px 0 16px; }
