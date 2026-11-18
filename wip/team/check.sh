@@ -26,7 +26,7 @@ if ! safe_once; then echo "(retrying once)"; sleep 3; safe_once || BAD=1; fi
 step "guard (idle CPU, tab speed, no outside requests, no errors)"; node tests/guard.js 2>&1 | grep -v "^\[agent\|^- \|^Allowed\|^For det" ; [ ${PIPESTATUS[0]} -ne 0 ] && BAD=1
 if [ "$MODE" = "full" ]; then
   # a script that cannot even start (syntax error, crash, timeout) counts as a failure, not a quiet skip
-  for f in /tmp/team_inter2.js /tmp/team_help.js /tmp/team_cur.js /tmp/team_month.js /tmp/team_card.js /tmp/v22/video.js /tmp/v22/home.js /tmp/v22/walk.js /tmp/v22/snd.js /tmp/v22/cal.js /tmp/v22/scan.js /tmp/v31/music_test.js /tmp/v31/split_test.js /tmp/v34/purpose_test.js /tmp/v35/look_test.js /tmp/v35/upgrade_test.js /tmp/v36/ux_test.js /tmp/v36/undo_test.js /tmp/v37/sync_test.js /tmp/v37/onb_test.js; do
+  for f in /tmp/team_inter2.js /tmp/team_help.js /tmp/team_month.js /tmp/team_card.js /tmp/v22/video.js /tmp/v22/home.js /tmp/v22/walk.js /tmp/v22/snd.js /tmp/v22/cal.js /tmp/v22/scan.js /tmp/v31/music_test.js /tmp/v31/split_test.js /tmp/v34/purpose_test.js /tmp/v35/look_test.js /tmp/v35/upgrade_test.js /tmp/v36/ux_test.js /tmp/v36/undo_test.js /tmp/v37/sync_test.js /tmp/v37/onb_test.js; do
     step "$f"
     for try in 1 2; do
       OUT=$(timeout 400 node $f 2>&1); RC=$?
@@ -40,7 +40,7 @@ if [ "$MODE" = "full" ]; then
   done
   step "money fuzz, debts fuzz, Home screen against the model, debts screen, click sweep"
   qc() { OUT=$(timeout 900 node "$@" 2>&1); RC=$?; echo "$OUT" | grep -v "^\[agent\|^- \|^Allowed\|^For det" | tail -3; { [ $RC -ne 0 ] || echo "$OUT" | grep -q "FAIL [1-9]\|mismatches [1-9]\|^FAIL"; } && { echo "QC FAILED: $*"; BAD=1; }; }
-  qc tests/qc/fuzz_model.js 3000 11; qc tests/qc/fuzz_debts.js 3000 12; qc tests/qc/home_dom.js 40 13; qc tests/qc/home_map.js 24 7; qc tests/qc/debts_ui.js; qc tests/qc/recurring_ui.js; qc tests/qc/debts_rate_ui.js; qc tests/qc/pay_ui.js; qc tests/qc/leftover_choice.js; qc tests/qc/leftover_thin.js; qc tests/qc/leftover_stale.js; qc tests/qc/leftover_cents.js; qc tests/qc/leftover_reload.js; qc tests/qc/reset_undo.js; qc tests/qc/click_sweep.js
+  qc tests/qc/fuzz_model.js 3000 11; qc tests/qc/fuzz_debts.js 3000 12; qc tests/qc/home_dom.js 40 13; qc tests/qc/home_map.js 24 7; qc tests/qc/currency_ui.js; qc tests/qc/debts_ui.js; qc tests/qc/recurring_ui.js; qc tests/qc/debts_rate_ui.js; qc tests/qc/pay_ui.js; qc tests/qc/leftover_choice.js; qc tests/qc/leftover_thin.js; qc tests/qc/leftover_stale.js; qc tests/qc/leftover_cents.js; qc tests/qc/leftover_reload.js; qc tests/qc/reset_undo.js; qc tests/qc/click_sweep.js
   step "number checks (about 6 minutes)"; OUT=$(bash /tmp/v26/num.sh 2>&1); echo "$OUT" | grep -v "^\[agent\|^- \|^Allowed\|^For det"
   echo "$OUT" | grep -q "mismatches [1-9]\|FAIL [1-9]\|^FAIL" && { echo "NUMBER CHECKS FAILED"; BAD=1; }
   echo "$OUT" | grep -q "NUMDONE" || { echo "NUMBER CHECKS DID NOT FINISH"; BAD=1; }

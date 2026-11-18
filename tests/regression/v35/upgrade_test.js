@@ -18,7 +18,7 @@ async function fresh(b) { const ctx = await b.createBrowserContext(); const p = 
     await p.evaluate(() => { const t = document.querySelector('#tour'); if (t && !t.hidden) { const b = document.querySelector('#tourSkip, #tourClose'); if (b) b.click(); } });
     await w(300);
     // name, pay (the Salary box on the Plan or This month tab), three receipts
-    const got = { name: false, pay: false, rc: 0 };
+    const got = { name: false, pay: false, rc: 0, amts: [] };
     if (await p.$('#nameIn')) { await p.evaluate(() => { const e = document.querySelector('#nameIn'); e.value = 'Aiko'; e.dispatchEvent(new Event('input', { bubbles: true })); e.dispatchEvent(new Event('change', { bubbles: true })); }); got.name = true; }
     const payIn = await p.$('#h-a'); if (payIn) { await p.evaluate(() => { const e = document.querySelector('#h-a'); e.focus(); e.value = '35000'; e.dispatchEvent(new Event('input', { bubbles: true })); e.dispatchEvent(new Event('change', { bubbles: true })); e.blur(); }); got.pay = true; }
     await p.evaluate(() => { const t = document.querySelector('[data-tab="receipts"]'); if (t) t.click(); }); await w(300);
@@ -30,7 +30,7 @@ async function fresh(b) { const ctx = await b.createBrowserContext(); const p = 
       const before = await p.evaluate(() => document.querySelectorAll('#rcList .rc').length);
       await p.click('#rcSave').catch(() => {}); await w(350);
       const after = await p.evaluate(() => document.querySelectorAll('#rcList .rc').length);
-      if (after > before) got.rc++; else console.log(`  (${ver}: a receipt did not take: ${await p.evaluate(() => (document.querySelector('#rcMsg') || {}).textContent)})`);
+      if (after > before) { got.rc++; got.amts.push(a); } else console.log(`  (${ver}: a receipt did not take: ${await p.evaluate(() => (document.querySelector('#rcMsg') || {}).textContent)})`);
     }
     await w(900);
     const saved = await p.evaluate(k => localStorage.getItem(k), KEY);
@@ -49,7 +49,7 @@ async function fresh(b) { const ctx = await b.createBrowserContext(); const p = 
       return { name: S.ui.name, rc: (S.receipts || []).length, rcSum: Math.round((S.receipts || []).reduce((a, r) => a + (+r.a || 0), 0) * 100) / 100, goals: S.plan.goals.length, lines: S.plan.lines.length, pay: m.a, payIn: m.pool.in, cur: S.ui.cur, tourOpen: !document.querySelector('#tour').hidden, heroTxt: (document.querySelector('#hHero') || {}).textContent || '', status: (document.querySelector('#hStatus') || {}).textContent || '', ver: (document.querySelector('#verFoot') || {}).textContent }; });
     ok(!got.name || r.name === 'Aiko', `${ver} -> now: the name came through (${r.name})`);
     ok(r.rc === oldRc && r.rc === got.rc, `${ver} -> now: ${r.rc} receipts came through (old build had ${oldRc})`);
-    const want = [120, 350.5, 80].slice(0, got.rc).reduce((a, b) => a + b, 0);
+    const want = got.amts.reduce((a, b) => a + b, 0);   /* the receipts that really took in the old build (a failed one may be any of the three) */
     ok(Math.abs(r.rcSum - want) < .001, `${ver} -> now: receipt amounts intact (${r.rcSum} of ${want})`);
     ok(!got.pay || r.pay === 35000, `${ver} -> now: the typed pay came through (${r.pay})`);
     ok(r.goals >= 1 && r.lines >= 3, `${ver} -> now: the plan is intact (${r.goals} goals, ${r.lines} lines, pay in ${r.payIn}, ${r.cur})`);
