@@ -259,8 +259,10 @@ function renderMonthTable() {
     const bk = m.bankEnd, grew = (m.overNow || 0) > 0.004;
     const st = grew ? 'short' : statusOf(S, m), gs = fullIn[m.ym] || [];
     const marks = gs.map(g => `<span class="mt-g" style="--c:var(--c${g.slot})" title="${esc(g.name)} full">${HI.leaf}<span>${esc(g.name)} full</span></span>`).join('');
-    const wd = grew ? 'Over plan' : word[st];
-    return `<tr data-ym="${m.ym}" class="${m.ym === sel ? 'on' : ''}" tabindex="0" aria-label="${fullLabel(m.ym)}: ${wd}${gs.length ? ', ' + gs.map(g => g.name + ' full').join(', ') : ''}"><td>${monthLabel(m.ym)}${marks}</td><td class="${m.pool.left < 0 ? 'neg' : ''}">${fmt2(m.pool.left)}</td><td class="${bk < cfg(S, 'minBank') ? 'neg' : ''}">${fmt2(bk)}</td><td><span class="st ${st}">${icon[st]}<span class="stw">${wd}</span></span></td></tr>`;
+    /* the same verdict as this month's own Plan view: pay with no place is "Not placed yet", never "On plan" (38.31 novice round 4) */
+    const unp = !grew && st === 'good' && planCells(S, C, m.ym).unplaced >= roundUnit(S);
+    const wd = grew ? 'Over plan' : unp ? 'Not placed yet' : word[st];
+    return `<tr data-ym="${m.ym}" class="${m.ym === sel ? 'on' : ''}" tabindex="0" aria-label="${fullLabel(m.ym)}: ${wd}${gs.length ? ', ' + gs.map(g => g.name + ' full').join(', ') : ''}"><td>${monthLabel(m.ym)}${marks}</td><td class="${m.pool.left < 0 ? 'neg' : ''}">${fmt2(m.pool.left)}</td><td class="${bk < cfg(S, 'minBank') ? 'neg' : ''}">${fmt2(bk)}</td><td><span class="st ${unp ? 'tight' : st}">${unp ? IC.warn : icon[st]}<span class="stw">${wd}</span></span></td></tr>`;
   }).join('');
   $('#monthTable').innerHTML = `<table><thead><tr><th>Month</th><th>Not placed</th><th>Bank, month end</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
