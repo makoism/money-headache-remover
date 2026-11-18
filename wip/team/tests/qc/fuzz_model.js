@@ -54,6 +54,7 @@ function checkCalc(id, S) {
     ok(tag, m.pool.left === m.left && m.pool.in === m.inflow && m.pool.out === m.out, 'pool mismatch');
     ok(tag, m.bankStart === prevBank, 'bank chain break ' + m.bankStart + ' vs ' + prevBank);
     ok(tag, Math.abs(m.bankEnd - (m.bankStart + m.left - (m.overNow || 0))) < 0.011, 'bankEnd');
+    { const ob = m.overBits || {}, sb = Object.keys(ob).reduce((x, k) => x + ob[k], 0); ok(tag, Math.abs(sb - (m.overNow || 0)) < 0.011 && Object.keys(ob).every(k => ob[k] > 0), 'overBits ' + JSON.stringify(ob) + ' do not add up to overNow ' + m.overNow); }   /* every place past plan is named, and they add up (38.31) */
     prevBank = m.bankEnd;
     const jarSum = m.jar.nec + m.jar.play + m.jar.edu + m.jar.ffa + m.jar.give;
     ok(tag, m.out === jarSum + m.goalsTotal, 'out != jars + goals');

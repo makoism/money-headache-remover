@@ -121,7 +121,7 @@ function buildRcCat() {
   const el = $('#rcCat'), keep = el.value || S.ui.rcCat; let h = '';
   [['play', 'Free to spend'], ['nec', 'Bills and basics'], ['edu', 'Education'], ['ffa', 'Investing'], ['give', 'Giving']].forEach(p => {
     const ls = S.plan.lines.filter(l => l.jar === p[0]); if (!ls.length) return;
-    h += `<optgroup label="${p[1]}">` + ls.map(l => `<option value="${esc(l.key)}">${esc(l.name === 'Courses and books' ? 'Education' : l.name)}</option>`).join('') + '</optgroup>';
+    h += `<optgroup label="${p[1]}">` + ls.map(l => `<option value="${esc(l.key)}">${esc(shownLine(l.name))}</option>`).join('') + '</optgroup>';
   });
   el.innerHTML = h + `<option value="other">Other</option><option value="${CAT_NEW}">+ Add category</option>`;
   const opts = Array.from(el.options).map(o => o.value);

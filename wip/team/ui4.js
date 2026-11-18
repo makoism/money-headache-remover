@@ -23,6 +23,15 @@ function futureOk(d, msg, btn) {
   futureArm = d + btn.id; clearTimeout(futureT); futureT = setTimeout(() => { futureArm = null; }, 6000);
   msg.textContent = `${dateLabel(d)} is in the future. Tap again to log it anyway, or change the date.`; sfx('off'); return false;
 }
+/* a receipt bigger than the whole month's pay is nearly always a typo (400000 for 40000): it is logged only on a second tap (38.31 number gate round 3) */
+let bigArm = null, bigT = 0;
+function bigOk(d, a, msg, btn) {
+  const pay = ((C && C.byYm[d.slice(0, 7)]) || {}).inflow || 0;
+  if (!(pay > 0) || !(a > pay)) return true;
+  const k = d + '|' + a + '|' + btn.id; if (bigArm === k) { bigArm = null; clearTimeout(bigT); return true; }
+  bigArm = k; clearTimeout(bigT); bigT = setTimeout(() => { bigArm = null; }, 6000);
+  msg.textContent = `${fmt2(a)} is more than all of your pay in ${monthLabel(d.slice(0, 7))} (${fmt2(pay)}). Tap again to log it anyway, or check the amount.`; sfx('off'); return false;
+}
 /* the same receipt twice in a row is nearly always a double tap: it is logged only on a second tap */
 function dupOk(d, a, c, n, msg, btn) {
   const key = 'dup' + d + a + c + n + btn.id;
@@ -48,7 +57,7 @@ function renderReceipts() {
 
   /* plan against spending, for every category that has a receipt (and the play money lines) */
   const rows = [], known = new Set();
-  m.lines.forEach(x => { known.add(x.key); const sp = rs.byKey[x.key] || 0; if (sp > 0 || (x.jar === 'play' && x.on)) rows.push({ name: x.name, jar: x.jar, plan: x.on ? x.v : 0, spent: sp, safe: x.key === 'envelope' && x.on ? playSafeLeft(S, m, rs.byJar.play || 0) : null }); });
+  m.lines.forEach(x => { known.add(x.key); const sp = rs.byKey[x.key] || 0; if (sp > 0 || (x.jar === 'play' && x.on)) rows.push({ name: shownLine(x.name), jar: x.jar, plan: x.on ? x.v : 0, spent: sp, safe: x.key === 'envelope' && x.on ? playSafeLeft(S, m, rs.byJar.play || 0) : null }); });
   /* Other is planned by the month's one-time costs (money already set aside, model.js applyOverspend): only spending past them is over */
   Object.keys(rs.byKey).forEach(k => { if (!known.has(k)) { const r = rs.list.find(q => q.c === k), it = k === 'other' && m.itemsTotal > 0 ? m.itemsTotal : null; rows.push({ name: r ? catName(S, r) : 'Other', jar: 'other', plan: it, spent: rs.byKey[k] }); } });
   $('#rcCats').innerHTML = rs.count ? `<table class="plain"><thead><tr><th>Category</th><th>Plan</th><th>Spent</th><th>Left to spend</th></tr></thead><tbody>${rows.map(r => `<tr><td>${esc(r.name)}</td><td>${r.plan == null ? '' : fmt(r.plan)}</td><td>${fmt2(r.spent)}</td><td>${r.plan == null ? `<span class="over">over ${fmt2(r.spent)}</span>` : r.spent > r.plan ? overCell(r, m) : (r.safe != null ? fmt2(r.safe) : r.jar === 'ffa' ? 'saved' : fmt2(leftOfPlan(r.plan, r.spent)))}</td></tr>`).join('')}</tbody></table><p class="cap tnote">Lines without receipts are not listed.</p>` : '';
@@ -69,12 +78,13 @@ function wireReceipts() {
     e.preventDefault();
     const d = $('#rcDate').value, a = +$('#rcAmt').value, c = $('#rcCat').value, n = $('#rcNote').value, msg = $('#rcMsg');
     if (!validDate(d) || MONTHS.indexOf(d.slice(0, 7)) < 0) { msg.textContent = `Date must be ${monthLabel(START)} to ${monthLabel(END)}.`; $('#rcDate').focus(); return; }
-    if ($('#rcAmt').dataset.neg) { msg.textContent = 'Type the amount without a minus sign. A receipt is money you spent.'; $('#rcAmt').value = ''; delete $('#rcAmt').dataset.neg; $('#rcAmt').focus(); return; }
+    if ($('#rcAmt').dataset.neg) { msg.textContent = 'Type the amount without a minus sign. A receipt is money you spent. For a refund, lower or delete the receipt it pays back.'; $('#rcAmt').value = ''; delete $('#rcAmt').dataset.neg; $('#rcAmt').focus(); return; }
     if (!(wholeAmt(S, a) > 0)) { msg.textContent = 'Enter an amount.'; $('#rcAmt').focus(); return; }
     if (wholeAmt(S, a) > 1e9) { msg.textContent = 'That amount is too large. The most is 1,000,000,000.'; $('#rcAmt').focus(); return; }
     /* a date after today is nearly always a slip of the finger: it is logged only on a second tap */
     if (d > todayStr() && !futureOk(d, msg, $('#rcSave'))) return;
     if (!editRc && isDupRc(d, a, c, n) && !dupOk(d, a, c, n, msg, $('#rcSave'))) return;
+    if (!bigOk(d, wholeAmt(S, a), msg, $('#rcSave'))) { $('#rcAmt').focus(); return; }
     if (c === CAT_NEW) { msg.textContent = 'Add the new category, or pick one from the list.'; $('#rcNewName').focus(); return; }
     if (needTitle(c, n)) { msg.textContent = 'Add a short title, e.g. “Vet bill”.'; $('#rcNote').focus(); return; }
     S.ui.rcCat = c; const wasEdit = !!editRc;

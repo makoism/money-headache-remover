@@ -382,8 +382,11 @@ function applyOverspend(S, months) {
       /* a one-time cost is money already set aside in the plan: what is logged as Other is that cost being paid, and only the part past it is spent past plan */
       const it = m.itemsTotal || 0, otherOver = Math.max(0, (by.other || 0) - it), itemsLeft = Math.max(0, it - (by.other || 0));
       m.billsLeftM = round2(nl.reduce((a, l) => a + Math.max(0, (l.on ? l.v : 0) - (rsm.byKey[l.key] || 0)), 0) + itemsLeft + (m.debtPay || 0));
+      /* what went past the plan, place by place; the parts add up to overNow, so a screen can name every place (38.31 number gate round 3: Other was never named) */
+      const bits = { nec: m.overNec, play: round2(Math.max(0, (by.play || 0) - m.jar.play)), other: round2(otherOver), ffa: round2(Math.max(0, (by.ffa || 0) - m.jar.ffa)) };
       inc = Math.max(0, (by.play || 0) - m.jar.play) + m.overNec + otherOver + Math.max(0, (by.ffa || 0) - m.jar.ffa);
-      m.ovB = {}; Object.keys(st).forEach(j => { st[j] += m.jar[j] - (j === 'ffa' ? 0 : (by[j] || 0)); if (st[j] < -0.004) { inc += -st[j]; m.ovB[j] = round2(-st[j]); st[j] = 0; } });
+      m.ovB = {}; Object.keys(st).forEach(j => { st[j] += m.jar[j] - (j === 'ffa' ? 0 : (by[j] || 0)); if (st[j] < -0.004) { inc += -st[j]; m.ovB[j] = round2(-st[j]); bits[j] = round2((bits[j] || 0) - st[j]); st[j] = 0; } });
+      m.overBits = {}; Object.keys(bits).forEach(j => { if (bits[j] > 0.004) m.overBits[j] = bits[j]; });
     }
     m.bankPlanned = m.bankEnd; m.overNow = round2(inc); m.bankStart = round2(m.bankStart - cum); cum = round2(cum + inc); m.over = cum; m.bankEnd = round2(m.bankEnd - cum);
   }
@@ -520,7 +523,9 @@ function releasePlay0(S, ym, to, toYm, amount) {
 }
 
 /* ---- receipts ---- */
-const catName = (S, r) => { if (r.c === 'other') return 'Other'; const l = lineByKey(S, r.c); return l ? (l.name === 'Courses and books' ? 'Education' : l.name) : (r.cn || 'Other'); };
+/* the one place a line's shown name is decided: the learning line is called Education wherever money is named (38.31 number gate round 3) */
+const shownLine = n => (n === 'Courses and books' ? 'Education' : n);
+const catName = (S, r) => { if (r.c === 'other') return 'Other'; const l = lineByKey(S, r.c); return l ? shownLine(l.name) : (r.cn || 'Other'); };
 function receiptsFor(S, ym) {
   return (S.receipts || []).filter(r => r.d.slice(0, 7) === ym).sort((x, y) => (x.d === y.d ? (x.id < y.id ? 1 : -1) : (x.d < y.d ? 1 : -1)));
 }
@@ -604,7 +609,7 @@ function viewOf(S, C, ym, today) {
     return { id: j.id, name: j.name, kind: 'spend', planned, spent, left: round2(planned - spent), total: null };
   });
   /* bankStart, bankChange and overNow were missing here in 38.30, so Home could never say "Building your cushion" or "went past the plan this month" */
-  const month = { inflow: m.inflow, out: m.out, left: m.left, bankStart: m.bankStart, bankEnd: m.bankEnd, bankChange: round2(m.bankEnd - m.bankStart), over: m.over || 0, overNow: m.overNow || 0, status: statusOf(S, m) };
+  const month = { inflow: m.inflow, out: m.out, left: m.left, bankStart: m.bankStart, bankEnd: m.bankEnd, bankChange: round2(m.bankEnd - m.bankStart), over: m.over || 0, overNow: m.overNow || 0, overBits: m.overBits || {}, status: statusOf(S, m) };
   month.belowZero = belowZeroOf(m);
   const map = mapOf(S, C, ym, { play, month, goals }), nec = buckets.find(x => x.id === 'nec'), pcl = planCells(S, C, ym), dwv = m.draw || 0;
   /* HOME CELLS: the worked-out amounts Home shows, each defined once here. Screens read them; they never do the sum.
@@ -1024,7 +1029,7 @@ function limitsOf(S, C, ym) {
     const spent = rs.byKey[x.key] || 0, soft = x.jar === 'play' || x.jar === 'edu' || x.jar === 'give';
     if (x.jar === 'ffa') return;
     if (!(soft || spent > 0) || !(x.v > 0 || spent > 0)) return;
-    rows.push({ key: x.key, name: x.name, jar: x.jar, planned: x.v, spent, left: round2(x.v - spent), over: round2(x.v - spent) < 0, overBy: round2(x.v - spent) < 0 ? round2(spent - x.v) : 0 });
+    rows.push({ key: x.key, name: shownLine(x.name), jar: x.jar, planned: x.v, spent, left: round2(x.v - spent), over: round2(x.v - spent) < 0, overBy: round2(x.v - spent) < 0 ? round2(spent - x.v) : 0 });
   });
   return { rows, other: rs.byKey.other || 0, total: rs.total };
 }

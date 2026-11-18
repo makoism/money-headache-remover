@@ -388,7 +388,7 @@ function tourStep(d) {
   pauseHello(); autosave(true);
   const cur = TS[tourN];
   if (!cur) return;
-  if (cur.leave) cur.leave(d);
+  if (cur.leave) { cur.leave(d); schedule(); }   /* the header behind setup follows what was just typed: "your pay", not "the sample pay" (38.31 number gate round 3) */
   if (d > 0 && cur.last) { closeTour(!S.ui.setup, true); sfx('fanfare'); return; }
   /* opened from Home only to make the numbers exact: done after the review (or the skip) */
   if (d > 0 && impOnly && (cur.id === 'source' || cur.id === 'review')) { impOnly = false; tourJump = null; closeTour(false, true); sfx('fanfare'); return; }
