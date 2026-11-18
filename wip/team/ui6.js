@@ -156,6 +156,8 @@ function renderStatus() {
 }
 /* last month's unspent free to spend: once the month is logged (four receipts or more, or a statement), what was not spent can go toward a goal.
    One offer per month, kept until the person answers it or the month after has gone by. */
+/* a receipt just logged can be taken back out with one tap, for as long as the Undo bar shows (38.31 data safety round). Only that receipt goes */
+function rcUndo(id, txt) { if (id && window.offerUndoG) window.offerUndoG('receipt', txt, () => { removeReceipt(S, id); }); }
 let SWEPT = null;
 function sweepOffer() {
   const d = S.ui.done || {}; if (!(d.pay && d.bills && d.goals) || sampleOn()) return null;
@@ -679,10 +681,11 @@ function wireHome() {
     if (isDupRc(d, a, c, n) && !dupOk(d, a, c, n, msg, $('#hSave'))) return;
     if (needTitle(c, n)) { const dt = $('.hmore'); if (dt) dt.open = true; msg.textContent = 'Add a short title, e.g. “Vet bill”.'; $('#hNote').focus(); sfx('off'); return; }
     const first = !(S.receipts || []).length, nm = c === 'other' ? 'Other' : ((lineByKey(S, c) || { name: 'Other' }).name === 'Courses and books' ? 'Education' : (lineByKey(S, c) || { name: 'Other' }).name);
-    addReceipt(S, d, a, c, n); S.ui.rcCat = c; markDone('receipts', true);
+    const rid = addReceipt(S, d, a, c, n); S.ui.rcCat = c; markDone('receipts', true);
     $('#hAmt').value = ''; delete $('#hAmt').dataset.neg; $('#hNote').value = ''; syncOtherTitle('hCat', 'hNote'); $('#hDate').value = todayStr(); if (typeof dpSync === 'function') dpSync($('#hQuick'));
     msg.textContent = `Logged ${fmt2(wholeAmt(S, a))}: ${nm}.`;
     persist(); render(); afterLog(first); $('#hAmt').focus();
+    rcUndo(rid, `Logged ${fmt2(wholeAmt(S, a))}: ${nm}.`);   /* one tap takes this receipt back out (38.31 data safety round) */
   });
   $('#hAmt').addEventListener('input', () => { $('#hMsg').textContent = ''; });
   /* a minus sign typed first is refused with a plain reason, never quietly turned into spending */

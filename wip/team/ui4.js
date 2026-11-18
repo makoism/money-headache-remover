@@ -79,12 +79,12 @@ function wireReceipts() {
     if (needTitle(c, n)) { msg.textContent = 'Add a short title, e.g. “Vet bill”.'; $('#rcNote').focus(); return; }
     S.ui.rcCat = c; const wasEdit = !!editRc;
     const firstRc = !(S.ui.done && S.ui.done.receipts);
-    if (wasEdit) updateReceipt(S, editRc, d, a, c, n); else { addReceipt(S, d, a, c, n); markDone('receipts', true); }
+    let rid = null; if (wasEdit) updateReceipt(S, editRc, d, a, c, n); else { rid = addReceipt(S, d, a, c, n); markDone('receipts', true); }
     msg.textContent = (wasEdit ? 'Saved. ' : 'Logged. ') + fmt2(wholeAmt(S, a)) + ': ' + (c === 'other' ? 'Other' : (lineByKey(S, c) || { name: 'Other' }).name) + '.';
     resetRcForm(); persist();
     if (d.slice(0, 7) !== sel) { select(d.slice(0, 7)); selByReceipt = true; } else render(); /* the list follows the receipt, so it can be seen where it went; Plan goes back to this month on its own */
     $('#rcAmt').focus();
-    if (!wasEdit) afterLog(firstRc);
+    if (!wasEdit) { afterLog(firstRc); rcUndo(rid, msg.textContent); }   /* one tap takes this receipt back out (38.31 data safety round) */
   });
   $('#rcCat').addEventListener('change', () => { catPicked('rc'); syncOtherTitle('rcCat', 'rcNote'); $('#rcMsg').textContent = ''; });
   $('#rcCancel').addEventListener('click', () => { resetRcForm(); $('#rcMsg').textContent = ''; render(); });
@@ -97,7 +97,9 @@ function wireReceipts() {
       const cat = $('#rcCat'); cat.value = Array.from(cat.options).some(o => o.value === r.c) ? r.c : 'other';
       syncOtherTitle('rcCat', 'rcNote'); $('#rcSave').textContent = 'Save changes'; $('#rcCancel').hidden = false; $('#rcMsg').textContent = '';
       render(); $('#rcForm').scrollIntoView({ behavior: 'smooth', block: 'center' }); $('#rcAmt').focus();
-    } else if (del) confirmClick(del, 'Tap again to delete', () => { if (editRc === del.dataset.rcdel) resetRcForm(); removeReceipt(S, del.dataset.rcdel); { const mm = $('#rcMsg'); if (mm) mm.textContent = ''; } persist(); render(); });
+    } else if (del) { const r0 = (S.receipts || []).find(x => x.id === del.dataset.rcdel), copy = r0 ? JSON.parse(JSON.stringify(r0)) : null, what = r0 ? `${fmt2(r0.a)}, ${r0.c === 'other' ? 'Other' : (lineByKey(S, r0.c) || { name: r0.cn || 'Other' }).name}, ${dateLabel(r0.d)}` : 'this receipt';
+      confirmClick(del, `Tap again: delete ${what}`, () => { if (editRc === del.dataset.rcdel) resetRcForm(); removeReceipt(S, del.dataset.rcdel);
+        if (copy && window.offerUndoG) window.offerUndoG('receipt', `Deleted ${what}.`, () => { if (!(S.receipts || []).some(x => x.id === copy.id)) S.receipts.push(copy); });   /* Undo puts back exactly this receipt (38.31 data safety round) */ { const mm = $('#rcMsg'); if (mm) mm.textContent = ''; } persist(); render(); }); }
   });
   $('#rcFields').addEventListener('change', e => { if (remindChange(e.target)) renderReceipts(); });
 }
