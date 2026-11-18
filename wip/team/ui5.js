@@ -187,7 +187,7 @@ function wire() {
       clearTimeout(t); t = 0; b.textContent = orig; run();
     });
   };
-  /* Zero all and Restore samples replace every number: the copy before stays one tap away for 30 seconds */
+  /* Set all to zero and Restore samples replace every number: the copy before stays one tap away for 30 seconds */
   let undoSnap = null, undoT = 0;
   let undoFn = null;
   const offerUndo = (snap, txt, fn, ms) => { undoFn = fn || null; undoSnap = snap; $('#undoTxt').textContent = txt; $('#undoBar').hidden = false; clearTimeout(undoT); undoT = setTimeout(() => { $('#undoBar').hidden = true; undoSnap = null; }, ms || 30000); };

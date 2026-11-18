@@ -2079,7 +2079,7 @@ p .link::after, li .link::after, span .link::after, .cap .link::after { content:
         <div class="field"><label for="rcCat">Category</label><div class="selbox"><select id="rcCat"></select></div></div>
         <div class="field"><label for="rcNote">Note</label><input class="txt" id="rcNote" type="text" maxlength="80" placeholder="Where or what"></div>
         <div class="newcat" id="rcNew" hidden></div>
-        <div class="row-btns rcbtns"><button class="btn solid" type="submit" id="rcSave">Log receipt</button><button type="button" class="link" id="rcCancel" hidden>Cancel</button><span class="msg" id="rcMsg" role="status"></span></div>
+        <div class="row-btns rcbtns"><button class="btn solid" type="submit" id="rcSave">Log spend</button><button type="button" class="link" id="rcCancel" hidden>Cancel</button><span class="msg" id="rcMsg" role="status"></span></div>
       </form>
     </section>
     <section class="card sect" id="rcMonthCard">
@@ -2172,7 +2172,7 @@ p .link::after, li .link::after, span .link::after, .cap .link::after { content:
         <h3>Reset and setup</h3>
         <p class="cap" id="makeCap">Amounts are samples for one salary. Start at zero or type over them. Saved in this browser only. Nobody else sees it, including whoever shared this page.</p>
         <div class="row-btns">
-          <button type="button" class="btn small solid" id="blankBtn">Zero all</button>
+          <button type="button" class="btn small solid" id="blankBtn">Set all to zero</button>
           <button type="button" class="btn small warnbtn" id="bkReset">Restore samples</button>
           <button type="button" class="btn small" id="showStart">Show first steps</button>
           <button type="button" class="btn small" id="setupOpen">Guided setup</button>
@@ -2213,7 +2213,7 @@ p .link::after, li .link::after, span .link::after, .cap .link::after { content:
           <input type="file" id="bkFile" accept=".json,application/json,text/plain" hidden>
           <span class="msg" id="bkMsg" role="status"></span>
         </div>
-        <p class="cap">Restore replaces the numbers and receipts here with the copy. Back up first to keep what is here.<span id="zeroHint"> To start from zero use <b>Zero all</b>.</span></p>
+        <p class="cap">Restore replaces the numbers and receipts here with the copy. Back up first to keep what is here.<span id="zeroHint"> To start from zero use <b>Set all to zero</b>.</span></p>
         <p class="cap">If numbers look empty after clearing the browser or switching devices, restore your latest copy.</p>
       </div>
     </section>
@@ -2325,7 +2325,7 @@ const CFG = {
 /* ---- The six jars (T. Harv Eker's system). "usual" is Eker's usual share of pay for each jar. It is only a guide: the page never shows it as a target, and the shares it does show always come from the real amounts. ---- */
 const JARS = [
   { id: 'nec',  name: 'Bills and basics',                    usual: 0.55, about: 'Rent, food, utilities and every other bill.' },
-  { id: 'lts',  name: 'Goals', usual: 0.10, about: 'Saved now, spent later: a big purchase, a trip, a rainy day, a surprise. Savings goals live here.' },
+  { id: 'lts',  name: 'Goals', usual: 0.10, about: 'Saved now, spent later: a big purchase, a trip, a rainy day, a surprise. Your burrows live here.' },
   { id: 'play', name: 'Free to spend',                         usual: 0.10, about: 'Fun for you and your family, no guilt. What is left at month end can go to a goal.' },
   { id: 'edu',  name: 'Education',                      usual: 0.10, about: 'Courses, books, coaching, skill building.' },
   { id: 'ffa',  name: 'Investing',              usual: 0.10, about: 'Investments you never spend. They grow and eventually pay you.' },
@@ -4656,7 +4656,7 @@ function renderStart() {
   $('#basicsSub').textContent = BASICS_SUB;
   $('#makeCap').textContent = mine ? 'These are your numbers. Change them any time. Saved in this browser only; nobody else sees them.' : zero ? 'Everything starts at zero. Type over it. Saved in this browser only.' : MAKE_CAP;
   { const so = typeof sampleOn === 'function' && sampleOn(); ['#payBtn', '#xmBtn'].forEach(s => { const b = $(s); if (b) b.hidden = so; }); }
-  $('#blankBtn').hidden = zero; { const zh = $('#zeroHint'); if (zh) zh.hidden = zero; } $('#showStart').hidden = !(S.ui.sampleHidden || S.ui.exactHidden); /* Zero all stays while there is anything to zero: Restore names it as the way to start over. Show first steps brings back a hidden Next card */ $('#tourOpen2').textContent = mine ? 'Tour' : 'Guided setup';
+  $('#blankBtn').hidden = zero; { const zh = $('#zeroHint'); if (zh) zh.hidden = zero; } $('#showStart').hidden = !(S.ui.sampleHidden || S.ui.exactHidden); /* Set all to zero stays while there is anything to zero: Restore names it as the way to start over. Show first steps brings back a hidden Next card */ $('#tourOpen2').textContent = mine ? 'Tour' : 'Guided setup';
 }
 
 /* ---------- render ---------- */
@@ -4678,7 +4678,7 @@ function render() {
   const rs = receiptStats(S, sel), playSpent = rs.byJar.play || 0, playLeft = round2(play - playSpent), heroShow = freeOf(S, { left: m.left, bankStart: m.bankStart, bankEnd: m.bankEnd, over: m.over || 0, status: st }, { left: playLeft }).free, heroTxt = (playSpent > 0 || heroShow !== play) ? fmt2(heroShow) : fmt(heroShow);
   $('#heroNum').textContent = heroTxt; $('#heroNum').style.setProperty('--n', String(heroTxt.length)); $('#heroNum').style.color = heroShow < 0 ? 'var(--bad)' : '';
   $('#heroWk').textContent = (playSpent > 0 || heroShow !== play) ? `Planned ${fmt(play)} this month, about ${fmtAbout(wk)} a week.` : `Planned: about ${fmtAbout(wk)} a week across the whole month.`;
-  $('#rcLine').innerHTML = !rs.count ? '<button type="button" class="link" data-tab-go="receipts">Add a receipt</button> to see actual spend.'
+  $('#rcLine').innerHTML = !rs.count ? '<button type="button" class="link" data-tab-go="receipts">Log spend</button> to see what you really spent.'
     : play > 0 ? `Receipts: ${fmt2(playSpent)} spent, ${playSpent > play ? fmt2(PC.playOver) + ' over' : (m.counted > 0 ? fmt2(m.counted) + ' not spent' + (m.topup && m.topup.used > 0 ? ', ' + fmt2(m.topup.used) + ' went to a goal' : ', came back to the bank') : m.pendLeft > 0 ? fmt2(m.pendLeft) + ' not logged as spent yet, Home asks where it goes' : fmt2(playSafeLeft(S, m, playSpent)) + ' safe to spend')}. <button type="button" class="link" data-tab-go="receipts">See receipts</button>`
     : playSpent > 0 ? `Receipts: ${fmt2(playSpent)} spent from Free to spend, which has no plan this month. <button type="button" class="link" data-tab-go="receipts">See receipts</button>`
     : `Receipts: nothing spent from Free to spend. <button type="button" class="link" data-tab-go="receipts">See receipts</button>`;
@@ -4850,7 +4850,7 @@ function renderMonthTable() {
     const wd = grew ? 'Over plan' : word[st];
     return `<tr data-ym="${m.ym}" class="${m.ym === sel ? 'on' : ''}" tabindex="0" aria-label="${fullLabel(m.ym)}: ${wd}${gs.length ? ', ' + gs.map(g => g.name + ' full').join(', ') : ''}"><td>${monthLabel(m.ym)}${marks}</td><td class="${m.pool.left < 0 ? 'neg' : ''}">${fmt2(m.pool.left)}</td><td class="${bk < cfg(S, 'minBank') ? 'neg' : ''}">${fmt2(bk)}</td><td><span class="st ${st}">${icon[st]}<span class="stw">${wd}</span></span></td></tr>`;
   }).join('');
-  $('#monthTable').innerHTML = `<table><thead><tr><th>Month</th><th>Left</th><th>Bank, month end</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table>`;
+  $('#monthTable').innerHTML = `<table><thead><tr><th>Month</th><th>Not placed</th><th>Bank, month end</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 
 /* ---------- chart ---------- */
@@ -5069,7 +5069,7 @@ function prepareReceiptForm() {
   const d = $('#rcDate'); d.min = START + '-01'; d.max = END + '-31'; if (!d.value) d.value = todayStr();
 }
 function resetRcForm() {
-  editRc = null; $('#rcAmt').value = ''; delete $('#rcAmt').dataset.neg; $('#rcNote').value = ''; syncOtherTitle('rcCat', 'rcNote'); $('#rcSave').textContent = 'Log receipt'; $('#rcCancel').hidden = true;
+  editRc = null; $('#rcAmt').value = ''; delete $('#rcAmt').dataset.neg; $('#rcNote').value = ''; syncOtherTitle('rcCat', 'rcNote'); $('#rcSave').textContent = 'Log spend'; $('#rcCancel').hidden = true;
 }
 /* choosing "Other" asks for a title, so the receipt can say what it was; every other category keeps the optional note */
 function syncOtherTitle(catId, noteId) {
@@ -5300,9 +5300,9 @@ const quickSetup = () => !(S.ui && S.ui.full === true);
 const BILLS_QUICK = ['rent', 'food'];
 const BILL_Q = { rent: 'Rent or mortgage', util: 'Utilities', food: 'Food and groceries', net: 'Internet', phone: 'Phone', ins: 'Insurance', subs: 'Subscriptions', gas: 'Transport', loan: 'Loan or debt payment', card: 'Credit card' };
 const BILL_NOTE = {
-  rent: () => 'Full amount. If someone else pays part, add their share as other pay.',
+  rent: () => 'Full amount, even if someone shares it. Put their share under Money in.',
   util: () => 'Electricity, gas and water.',
-  food: () => 'Groceries and everyday meals. Eating out for fun comes out of free to spend.',
+  food: () => 'Groceries and everyday meals. Eating out for fun goes under Free to spend.',
   net: () => 'Home internet, or the data plan if that is how you connect.',
   phone: () => 'Your monthly plan, or what you usually spend on top-ups.',
   ins: () => 'Health, life, car or home. Use the monthly amount.' + (S.ui.cur === '₱' ? ' Self-employed? Include your own SSS, PhilHealth and Pag-IBIG.' : ''),
@@ -5459,7 +5459,7 @@ const STEP_JARS = { id: 'jars', part: PART.jars, setup: true, when: havePay,
     <p class="cap">If you truly have none, continue and split below.</p>${jarSplitHTML()}`;
     if (jarRest <= 0) return `<p>Bills <b>${fmt2(nec)}</b>, pay <b>${fmt2(pay)}</b>. ${nec > pay ? `Bills exceed pay by <b>${fmt2(setupCells(S).billsOverPay)}</b>, so` : 'Bills take all of it, so'} nothing is left for the other five places: no free to spend and nothing for goals, for now.</p>
     <p>You can still add goals next. They start filling once bills drop below pay. To lower a bill, go back. Otherwise continue and adjust under Plan later.</p>`;
-    return `<p>Bills <b>${fmt2(nec)}</b> = <b>${jarNec}%</b> of pay: Bills and basics. The other <b>${jarRest}%</b> (${fmt2(setupCells(S).payOverBills)}) is yours to split between the five places below, starting at the usual proportions.</p>
+    return `<p>Bills and basics take <b>${fmt2(nec)}</b>, <b>${jarNec}%</b> of pay. The other <b>${jarRest}%</b> (${fmt2(setupCells(S).payOverBills)}) is yours to split between the five places below, starting at the usual proportions.</p>
     ${jarsFold()}${jarSplitHTML()}`;
   },
   after: () => { if (jarRest > 0) paintJars(); },
@@ -13419,10 +13419,10 @@ const TOUR = [
       <div class="field tour-more"><label for="tourCurMore">Other currency</label><div class="selbox"><select id="tourCurMore"><option value="">Choose currency</option>${rest.map(c => `<option value="${esc(c[0])}"${c[0] === cur ? ' selected' : ''}>${esc(c[1])}</option>`).join('')}</select></div></div>
       <div class="tour-fields"><div class="field"><label for="tourName">First name <span class="opt">(optional)</span></label><div class="inp"><input id="tourName" type="text" maxlength="24" autocomplete="given-name" spellcheck="false" placeholder="First name" value="${esc(firstName())}"></div></div></div>
       <p class="cap">Data stays in this browser. Nobody else can see it.</p>
-      <p class="cap">${quickSetup() ? 'The first setup is short: pay, rent, food and one goal. <button type="button" class="link" id="tourFull">Ask me everything now</button>' : 'Longer setup is on.'}</p>
+      <p class="cap">${quickSetup() ? 'The first setup is short: pay, rent, food and one goal. <button type="button" class="link" id="tourFull">Use the longer setup</button>' : 'Longer setup is on: every bill and goal.'}</p>
       ${hasHello ? '' : restoreHTML()}`;
     },
-    after: () => { if (!hasHello) wireRestore(); const f = $('#tourFull'); if (f) f.addEventListener('click', () => { S.ui.full = true; persist(); buildSteps(); f.replaceWith(document.createTextNode('Longer setup is on.')); }); },
+    after: () => { if (!hasHello) wireRestore(); const f = $('#tourFull'); if (f) f.addEventListener('click', () => { S.ui.full = true; persist(); buildSteps(); f.replaceWith(document.createTextNode('Longer setup is on: every bill and goal.')); }); },
     leave: () => { const el = $('#tourName'); if (el) { const n = cleanName(el.value); if (n) S.ui.name = n; else delete S.ui.name; persist(); } } },
   /* the statements are the setup. The typed screens follow only for what the statements did not answer, or when they were skipped. */
   STEP_CHAT, STEP_SOURCE, STEP_REVIEW,
@@ -13431,7 +13431,7 @@ const TOUR = [
   STEP_JARS,
   STEP_TOOLPICK, { dyn: true, setup: true, steps: () => (S.ui.gset ? S.plan.goals : [{ id: 'rainy' }]).map(g => goalStep(g.id)) }, STEP_SPLIT,
   STEP_REVEAL,
-  { id: 'ready', part: PART.spend, title: () => (firstName() ? `Setup done, ${esc(firstName())}.` : 'Setup done.'), last: true,
+  { id: 'ready', part: PART.spend, title: () => (firstName() ? `Setup done, ${esc(firstName())}` : 'Setup done'), last: true,
     next: () => (S.ui.setup ? 'Done' : 'Go to bills'),
     body: () => {
       if (S.ui.setup) {
@@ -13465,7 +13465,7 @@ const TOUR = [
         : 'Pay entered. All of it is assigned.';
       const bills = zero && !(necTotal() > 0) ? 'Bills and goals are empty. Open Plan, Bills and basics, and enter what you pay.'
         : billsIn ? (necTotal() > 0 ? 'Your bills are in. Any line left at zero can be set under Plan, Bills and basics.' : 'Your bills are all at zero so far. Set each line under Plan, Bills and basics.')
-        : 'Bills and goals are still samples. Open Plan, Bills and basics, and set each line. Or use <b>Zero all</b> in Settings.';
+        : 'Bills and goals are still samples. Open Plan, Bills and basics, and set each line. Or use <b>Set all to zero</b> in Settings.';
       return `${homeScene()}<p>${msg}</p>
       <p>${bills}</p>
       <p>Help (bottom right) has the video and the setup.</p>`;
@@ -13502,7 +13502,7 @@ function renderTour(dir) {
   const same = TS.filter(x => x.part === t.part), first = same.indexOf(t), count = same.length;
   /* until the person has ticked which bills or goals they have, the length of the part is not known yet, so the label leaves the total out */
   const pend = same.some((x, i) => x.pick && i >= first) || (t.id === 'pay' && !payNow());
-  const keys = Object.values(PART), at = Math.max(0, keys.indexOf(t.part));   /* a fixed list, so the count never changes part-way */
+  const keys = Object.values(PART).filter(k => TS.some(x => x.part === k)), at = Math.max(0, keys.indexOf(t.part));   /* only parts this setup has, so the count never skips a number (38.31 wording and layout round 3) */
   /* one count for the whole setup, the same as the progress bar: one segment per part */
   $('#tourPart').textContent = `Step ${at + 1} of ${keys.length}: ${t.part}`;
   $('#tourDots').innerHTML = keys.map((k, i) => `<i class="${i < at ? 'past' : i === at ? 'on' : ''}"><b style="width:${i < at ? 100 : i > at ? 0 : Math.round((first + 1) / count * 100)}%"></b></i>`).join('');
@@ -13683,7 +13683,7 @@ THE PAGE
 - Plan, Goals: each goal is a savings bucket with an amount and, optionally, a date. With a date, the page spreads what is missing over the months before it. Without a date it aims to fill the goal in about a year. Edit goal renames, resizes, dates or removes it, and has a Why line: the reason in the person's words, shown with the goal on Home, here and on the last setup screen. Change monthly amount sets the monthly saving. Add goal starts the three-step flow. Forecast shows each goal month by month as a chart, and Table switches to numbers. The emergency fund is the one goal that can be borrowed from in a short month.
 - Plan, Month: the whole plan for one month. A Choose a month list, the big Free to spend number with a weekly amount, a status chip (On plan, Tight or Short), the pay split by jar as a coloured bar, and Details: Money in (Salary, Second income, Side income), Money out (Bills and basics, One-time costs, Long-Term Savings for Spending, Free to spend, Education, Investing, Give) and Left. Tap an amount to type a new one: it changes that month only, and Keep for later months makes it the new usual. Open a jar and tap Rename, remove or add lines to change its list. Reset month and Undo all revert edits. A Short month offers one-tap fixes: spend less, or borrow from the emergency fund. All months shows a table of every month.
 - Where to put a paycheck: Plan, Month, open Salary under Money in, and type the monthly take-home pay (after tax). If paid twice a month, add both together.
-- Settings: Name, Currency, Sound, Look (Auto, Light or Dark), Balance (Money today, Minimum balance, Monthly spending ceiling), Six places (the usual percentages, shown as a guide; Re-split pay reruns the split), Reset and setup (Zero all, Restore samples, Show first steps, Guided setup), and Saved data: Backup with Save file or Copy text, Spreadsheet with Export spreadsheet (every month as one table to check in Google Sheets or Excel), Cloud backup (Turn on; an encrypted copy that only the recovery code opens, which also moves the numbers to another phone), and Restore with Load text or Choose file.
+- Settings: Name, Currency, Sound, Look (Auto, Light or Dark), Balance (Money today, Minimum balance, Monthly spending ceiling), Six places (the usual percentages, shown as a guide; Re-split pay reruns the split), Reset and setup (Set all to zero, Restore samples, Show first steps, Guided setup), and Saved data: Backup with Save file or Copy text, Spreadsheet with Export spreadsheet (every month as one table to check in Google Sheets or Excel), Cloud backup (Turn on; an encrypted copy that only the recovery code opens, which also moves the numbers to another phone), and Restore with Load text or Choose file.
 - Setup: Guided setup (Help, Guided setup) opens with Mako's video, then the currency, then Your statements: 2 or 3 months of bank, e-wallet or card statements (CSV, Excel, PDF or screenshots) are read by Claude into rows, the page works out the monthly numbers, and a review with tick boxes follows (categories can be corrected; the rows become receipts). Type the numbers instead asks pay, balance and bills one by one. Then the split of what is left, goals, and free to spend. Each step saves as you type.
 - Yen, pesos and euros start with sample numbers made up for one salary (about 200,000 yen, 30,000 pesos or 1,650 euros a month), with every bill and goal worked out from it. Any other currency starts at zero. Samples should be replaced with real numbers. Changing the currency in Settings swaps the sample to match, but only while the numbers are untouched. Once someone has typed their own numbers, only the symbol changes.
 - Filling the page from files: in this chat there is a paperclip button. A person can add photos or screenshots of receipts, credit card statements or bank statements, or a CSV file from their bank (PDFs cannot be read here: use a screenshot of each page, or the CSV). Then they press Send. Claude reads the files and lists what it found: receipts, monthly pay, bill amounts and the money they have today. Nothing on the page changes until the person taps Add to my page, and Undo is offered right after. The files go to the person's own Claude account only when they press Send, and this page does not keep them. Only dates from November 2026 on can be added. Never say you changed anything yourself: changes happen only through that button.
@@ -14036,7 +14036,7 @@ function askView(mode) {
       : askReason === 'no_runtime' ? 'This copy of the page cannot reach Claude. Downloaded files behave this way.'
       : askReason === 'not_granted' || askReason === 'sampling_disabled' || askReason === 'capability_disabled' ? 'Permission not granted, or not signed in to Claude in this browser.'
       : 'Claude could not be reached from this view.';
-    $('#askOffTxt').textContent = why + (askReason === 'relay_off' ? '' : RELAY_URL && inArtifact() ? ' At the app\'s own address it works for everyone.' : ' Open the page from its own address, or from its Claude link signed in, and the chat works.');
+    $('#askOffTxt').textContent = why + (askReason === 'relay_off' ? '' : RELAY_URL && inArtifact() ? ' At the app\'s own address it works for everyone.' : ' Open the web link, not a downloaded file, and the chat works.');
     const lk = $('#askOffLink'); if (lk) { if (RELAY_URL && inArtifact()) { lk.href = hasData(S) ? moveLink() : RELAY_URL; lk.textContent = hasData(S) ? 'Open it and move my numbers' : 'Open the app'; } lk.hidden = !RELAY_URL && !inArtifact(); }
   }
 }
@@ -15862,7 +15862,7 @@ function chestArt(gold) {
 function renderSpend() {
   const el = $('#hSpend'), p = HV.play, ym = HV.ym, V = HV, m = V.month, b = id => V.buckets.find(x => x.id === id);
   const art0 = `<img class="chest-art" alt="" aria-hidden="true" src="${chestArt(p.left > 0)}">`;
-  const head = `${art0}<h2>Free to spend</h2><p class="cap chest-what">Your free to spend for this month. It starts fresh each month.</p>`;
+  const head = `${art0}<h2>Free to spend</h2><p class="cap chest-what">Money for anything you like this month. It starts fresh each month.</p>`;
   if (!(m.inflow > 0)) { put(el, `${head}<p class="hs-ok">Add your monthly pay and this shows what is free to spend, and whether your bills are covered.</p><div class="row-btns"><button type="button" class="btn small" data-open="a">Add pay</button></div>`); return; }
   const smp = '';   /* the one sample notice is the status line at the top of Home */
   /* a few quiet days: one box to add a rough total, so a gap never makes the numbers lie */
@@ -15875,11 +15875,11 @@ const links = `<p class="cap hs-more"><button type="button" class="link" data-xm
   const necRoom = V.map && V.map.month.find(r => r.id === 'nec'), necOver = necRoom && necRoom.overBy > 0 ? necRoom.overBy : 0;
   const necTile = necOver > 0 ? `<li class="bk over" style="--c:${JARVAR.nec}"><span class="bk-n"><i></i>Bills and basics</span><b>Over</b><span class="bk-s">${fmt2(necOver)} past what a bill was planned for in ${monthLabel(ym, true)}. ${necRoom && necRoom.amount > 0 ? fmt2(necRoom.amount) + ' of your bills are still to pay. ' : ''}${fmt2(nec.spent)} logged of ${fmt(nec.planned)} planned.</span></li>` : `<li class="bk${covered ? ' ok' : ' over'}" style="--c:${JARVAR.nec}"><span class="bk-n"><i></i>Bills and basics</span><b>${covered ? 'Covered' : 'Short'}</b><span class="bk-s">${covered ? (m.status === 'short' && m.left < 0 ? `Bills fit in your pay, but the whole month is short.` : C.byYm[ym] && C.byYm[ym].bankEnd < 0 ? `Bills fit in your pay, but spending past plan leaves the bank below zero.` : `${m.inflow - ((C.byYm[ym] && C.byYm[ym].draw) || 0) >= nec.planned ? 'Your pay is enough for' : 'Your pay and money borrowed from the emergency fund cover'} ${fmt(nec.planned)} of bills in ${monthLabel(ym, true)}${nec.spent > 0 ? `. ${fmt2(nec.spent)} logged.` : ''}`) : `Pay is ${fmt(V.cells.billsOverPay)} under the bills${(C.byYm[ym] && C.byYm[ym].draw) > 0 ? ', even with ' + fmt(C.byYm[ym].draw) + ' borrowed from the emergency fund' : ''}.`}</span></li>`;
   /* spent past this month's plan: the burrow's own pile covers what it can, the rest comes out of the bank (the same split as the Receipts table) */
-  const WHAT = { edu: 'For courses and books.', give: 'For gifts and charity.' };
+  const WHAT = { edu: 'For courses and books.', give: 'For charity and gifts.' };
   const bankPart = x => ((V.cells && V.cells[x.id]) || { bank: 0 }).bank;   /* the part of a pile overspend the bank pays (model.js viewOf cells) */
   const pileCovers = x => x.left < 0 && bankPart(x) < 0.005;
   const tile = x0 => { const x = x0, T = (V.cells && V.cells[x.id]) || { over: 0, bank: 0, pile: 0 }, o = T.over, bk = T.bank, pl = T.pile, mon = monthLabel(ym, true);
-    const sub = x.planned <= 0 ? '' : o > 0 ? `${fmt(o)} more than the ${fmt(x.planned)} for ${mon}. ` + (bk < 0.005 ? 'All of it came from the pile. ' : pl > 0 ? `${fmt(pl)} came from the pile, ${fmt2(bk)} is over and comes out of the bank. ` : `It comes out of the bank. `) : 'Left of ' + fmt(x.planned) + ' in ' + mon + '. ';
+    const sub = x.planned <= 0 ? '' : o > 0 ? `${fmt(o)} more than the ${fmt(x.planned)} for ${mon}. ` + (bk < 0.005 ? 'All of it came from the pile. ' : pl > 0 ? `${fmt(pl)} came from the pile, ${fmt2(bk)} is over and comes out of the bank. ` : `It comes out of the bank. `) : 'left of the ' + fmt(x.planned) + ' for ' + mon + '. ';
     return `<li class="bk${bk >= 0.005 ? ' over' : ''}" style="--c:${JARVAR[x.id]}"><span class="bk-n"><i></i>${esc(x.name)}</span><b>${o > 0 ? (bk >= 0.005 ? '−' + fmt2(bk) : fmt2(0)) : fmt2(x.left)}</b><span class="bk-s">${sub}${WHAT[x.id] || ''}</span></li>`; };
   const tiles = `<ul class="bkl chl">${necTile}${tile(b('edu'))}${tile(b('give'))}</ul>${V.otherSpent > 0 ? `<p class="cap">${fmt2(V.otherSpent)} logged as Other. Not taken from a pot.</p>` : ''}`;
   if (p.planned <= 0 && p.spent <= 0) { put(el, `${head}<p class="hs-lbl">Free to spend in ${monthLabel(ym)}</p><p class="hs-big zero">${fmt(0)}</p><p class="cap">No free to spend planned for ${monthLabel(ym)}.</p><div class="row-btns"><button type="button" class="btn small" data-open="play">Set in Plan</button></div>${smp}${sampleOn() ? '' : links}${tiles}`); return; }
@@ -16653,7 +16653,7 @@ function openWhy(kind) {
     foot = 'Planned is the Free to spend total on the Plan page. Logged is every receipt in Free to spend this month.';
   } else {
     title = 'Where you stand in ' + mon;
-    rows = [['Pay and other money in', fmt(m.inflow)], ['Bills, one-time costs and card payments', '−' + fmt(m.jar.nec)], ['Goals', '−' + fmt(m.goalsTotal)], ['Free to spend, Education, Investing, Give', '−' + fmt(V.cells.otherPlaces)], ['Left in the month', (m.left < 0 ? '−' : '') + fmt(V.cells.leftAbs)], ['Balance at the start', fmt(m.bankStart)], ['Balance at the end', fmt(m.bankEnd)], ['Your minimum balance', fmt(floor)]];
+    rows = [['Pay and other money in', fmt(m.inflow)], ['Bills, one-time costs and card payments', '−' + fmt(m.jar.nec)], ['Goals', '−' + fmt(m.goalsTotal)], ['Free to spend, Education, Investing, Giving', '−' + fmt(V.cells.otherPlaces)], ['Left in the month', (m.left < 0 ? '−' : '') + fmt(V.cells.leftAbs)], ['Balance at the start', fmt(m.bankStart)], ['Balance at the end', fmt(m.bankEnd)], ['Your minimum balance', fmt(floor)]];
     foot = m.bankEnd < floor ? 'The balance ends under your minimum, so the month is short.' : m.left < 0 ? 'The month spends more than comes in, but the balance covers it.' : 'Everything planned fits in your pay.';
   }
   let el = $('#why');
@@ -17009,7 +17009,7 @@ function wire() {
       clearTimeout(t); t = 0; b.textContent = orig; run();
     });
   };
-  /* Zero all and Restore samples replace every number: the copy before stays one tap away for 30 seconds */
+  /* Set all to zero and Restore samples replace every number: the copy before stays one tap away for 30 seconds */
   let undoSnap = null, undoT = 0;
   let undoFn = null;
   const offerUndo = (snap, txt, fn, ms) => { undoFn = fn || null; undoSnap = snap; $('#undoTxt').textContent = txt; $('#undoBar').hidden = false; clearTimeout(undoT); undoT = setTimeout(() => { $('#undoBar').hidden = true; undoSnap = null; }, ms || 30000); };

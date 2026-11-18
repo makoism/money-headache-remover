@@ -64,7 +64,7 @@ const PESO = (() => { const src = require('fs').readFileSync(process.env.MODEL |
     if (title.startsWith('Setup done')) break;
     if (await p.$eval('#tourNext', e => e.hidden)) { await p.evaluate(() => document.querySelector('#srcSkip').scrollIntoView({ block: 'center' })); await p.click('#srcSkip'); } else await p.click('#tourNext'); await w(260);
   }
-  ok('the last screen greets you by name', (await q('#tourTitle')) === 'Setup done, Mara.');
+  ok('the last screen greets you by name', (await q('#tourTitle')) === 'Setup done, Mara');
   ok('last screen has one way out', ['View month', 'Done', 'Go to bills'].includes(await q('#tourNext')));
   await p.click('#tourNext'); await w(600);
   await coach();
@@ -122,7 +122,7 @@ const PESO = (() => { const src = require('fs').readFileSync(process.env.MODEL |
   ok('hero is the play money', (await q('#heroNum')) === '₱3,000');
   ok('five tabs', (await p.$$eval('.tabs [role=tab]', e => e.length)) === 5);
   ok('ledger rows follow the jars', JSON.stringify(await p.$$eval('#rowsOut .row', e => e.map(x => x.dataset.id))) === JSON.stringify(['nec', 'items', 'debts', 'lts', 'play', 'edu', 'ffa', 'give']));
-  ok('hero invites a first receipt', (await q('#rcLine')).includes('Add a receipt'));
+  ok('hero invites a first receipt', (await q('#rcLine')).includes('Log spend'));
 
   // the first salary entry becomes the usual amount for every month (decision 5, Mako 2026-11-18); before it, this test's first edit was month-only.
   // It types the sample's own 30,000, so every figure below is unchanged, and the one-month edit is the second entry, as a person would make it.
@@ -264,9 +264,9 @@ const PESO = (() => { const src = require('fs').readFileSync(process.env.MODEL |
   ok('edit loads the receipt into the form', (await val('#rcAmt')) !== '' && (await q('#rcSave')) === 'Save changes' && !(await p.$eval('#rcCancel', e => e.hidden)));
   await set('#rcAmt', '1300'); await p.click('#rcSave'); await w(350);
   ok('edit saved', (await q('#rcSum')).includes('₱1,550.50') || (await q('#rcSum')).includes('₱1,300'));
-  ok('form back to adding', (await q('#rcSave')) === 'Log receipt' && (await p.$eval('#rcCancel', e => e.hidden)));
+  ok('form back to adding', (await q('#rcSave')) === 'Log spend' && (await p.$eval('#rcCancel', e => e.hidden)));
   await p.click('#rcList .rc [data-rcedit]'); await w(250); await p.click('#rcCancel'); await w(250);
-  ok('cancel leaves the receipt alone', (await p.$$eval('#rcList .rc', e => e.length)) === 2 && (await q('#rcSave')) === 'Log receipt');
+  ok('cancel leaves the receipt alone', (await p.$$eval('#rcList .rc', e => e.length)) === 2 && (await q('#rcSave')) === 'Log spend');
   // delete (two taps)
   await p.click('#rcList .rc [data-rcdel]'); await w(150);
   ok('delete needs a second tap', (await p.$$eval('#rcList .rc', e => e.length)) === 2 && (await q('#rcList .rc [data-rcdel]')).startsWith('Tap again'));

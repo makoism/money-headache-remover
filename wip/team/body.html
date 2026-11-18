@@ -230,7 +230,7 @@
         <div class="field"><label for="rcCat">Category</label><div class="selbox"><select id="rcCat"></select></div></div>
         <div class="field"><label for="rcNote">Note</label><input class="txt" id="rcNote" type="text" maxlength="80" placeholder="Where or what"></div>
         <div class="newcat" id="rcNew" hidden></div>
-        <div class="row-btns rcbtns"><button class="btn solid" type="submit" id="rcSave">Log receipt</button><button type="button" class="link" id="rcCancel" hidden>Cancel</button><span class="msg" id="rcMsg" role="status"></span></div>
+        <div class="row-btns rcbtns"><button class="btn solid" type="submit" id="rcSave">Log spend</button><button type="button" class="link" id="rcCancel" hidden>Cancel</button><span class="msg" id="rcMsg" role="status"></span></div>
       </form>
     </section>
     <section class="card sect" id="rcMonthCard">
@@ -323,7 +323,7 @@
         <h3>Reset and setup</h3>
         <p class="cap" id="makeCap">Amounts are samples for one salary. Start at zero or type over them. Saved in this browser only. Nobody else sees it, including whoever shared this page.</p>
         <div class="row-btns">
-          <button type="button" class="btn small solid" id="blankBtn">Zero all</button>
+          <button type="button" class="btn small solid" id="blankBtn">Set all to zero</button>
           <button type="button" class="btn small warnbtn" id="bkReset">Restore samples</button>
           <button type="button" class="btn small" id="showStart">Show first steps</button>
           <button type="button" class="btn small" id="setupOpen">Guided setup</button>
@@ -364,7 +364,7 @@
           <input type="file" id="bkFile" accept=".json,application/json,text/plain" hidden>
           <span class="msg" id="bkMsg" role="status"></span>
         </div>
-        <p class="cap">Restore replaces the numbers and receipts here with the copy. Back up first to keep what is here.<span id="zeroHint"> To start from zero use <b>Zero all</b>.</span></p>
+        <p class="cap">Restore replaces the numbers and receipts here with the copy. Back up first to keep what is here.<span id="zeroHint"> To start from zero use <b>Set all to zero</b>.</span></p>
         <p class="cap">If numbers look empty after clearing the browser or switching devices, restore your latest copy.</p>
       </div>
     </section>

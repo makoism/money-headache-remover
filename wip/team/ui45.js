@@ -202,10 +202,10 @@ const TOUR = [
       <div class="field tour-more"><label for="tourCurMore">Other currency</label><div class="selbox"><select id="tourCurMore"><option value="">Choose currency</option>${rest.map(c => `<option value="${esc(c[0])}"${c[0] === cur ? ' selected' : ''}>${esc(c[1])}</option>`).join('')}</select></div></div>
       <div class="tour-fields"><div class="field"><label for="tourName">First name <span class="opt">(optional)</span></label><div class="inp"><input id="tourName" type="text" maxlength="24" autocomplete="given-name" spellcheck="false" placeholder="First name" value="${esc(firstName())}"></div></div></div>
       <p class="cap">Data stays in this browser. Nobody else can see it.</p>
-      <p class="cap">${quickSetup() ? 'The first setup is short: pay, rent, food and one goal. <button type="button" class="link" id="tourFull">Ask me everything now</button>' : 'Longer setup is on.'}</p>
+      <p class="cap">${quickSetup() ? 'The first setup is short: pay, rent, food and one goal. <button type="button" class="link" id="tourFull">Use the longer setup</button>' : 'Longer setup is on: every bill and goal.'}</p>
       ${hasHello ? '' : restoreHTML()}`;
     },
-    after: () => { if (!hasHello) wireRestore(); const f = $('#tourFull'); if (f) f.addEventListener('click', () => { S.ui.full = true; persist(); buildSteps(); f.replaceWith(document.createTextNode('Longer setup is on.')); }); },
+    after: () => { if (!hasHello) wireRestore(); const f = $('#tourFull'); if (f) f.addEventListener('click', () => { S.ui.full = true; persist(); buildSteps(); f.replaceWith(document.createTextNode('Longer setup is on: every bill and goal.')); }); },
     leave: () => { const el = $('#tourName'); if (el) { const n = cleanName(el.value); if (n) S.ui.name = n; else delete S.ui.name; persist(); } } },
   /* the statements are the setup. The typed screens follow only for what the statements did not answer, or when they were skipped. */
   STEP_CHAT, STEP_SOURCE, STEP_REVIEW,
@@ -214,7 +214,7 @@ const TOUR = [
   STEP_JARS,
   STEP_TOOLPICK, { dyn: true, setup: true, steps: () => (S.ui.gset ? S.plan.goals : [{ id: 'rainy' }]).map(g => goalStep(g.id)) }, STEP_SPLIT,
   STEP_REVEAL,
-  { id: 'ready', part: PART.spend, title: () => (firstName() ? `Setup done, ${esc(firstName())}.` : 'Setup done.'), last: true,
+  { id: 'ready', part: PART.spend, title: () => (firstName() ? `Setup done, ${esc(firstName())}` : 'Setup done'), last: true,
     next: () => (S.ui.setup ? 'Done' : 'Go to bills'),
     body: () => {
       if (S.ui.setup) {
@@ -248,7 +248,7 @@ const TOUR = [
         : 'Pay entered. All of it is assigned.';
       const bills = zero && !(necTotal() > 0) ? 'Bills and goals are empty. Open Plan, Bills and basics, and enter what you pay.'
         : billsIn ? (necTotal() > 0 ? 'Your bills are in. Any line left at zero can be set under Plan, Bills and basics.' : 'Your bills are all at zero so far. Set each line under Plan, Bills and basics.')
-        : 'Bills and goals are still samples. Open Plan, Bills and basics, and set each line. Or use <b>Zero all</b> in Settings.';
+        : 'Bills and goals are still samples. Open Plan, Bills and basics, and set each line. Or use <b>Set all to zero</b> in Settings.';
       return `${homeScene()}<p>${msg}</p>
       <p>${bills}</p>
       <p>Help (bottom right) has the video and the setup.</p>`;
@@ -285,7 +285,7 @@ function renderTour(dir) {
   const same = TS.filter(x => x.part === t.part), first = same.indexOf(t), count = same.length;
   /* until the person has ticked which bills or goals they have, the length of the part is not known yet, so the label leaves the total out */
   const pend = same.some((x, i) => x.pick && i >= first) || (t.id === 'pay' && !payNow());
-  const keys = Object.values(PART), at = Math.max(0, keys.indexOf(t.part));   /* a fixed list, so the count never changes part-way */
+  const keys = Object.values(PART).filter(k => TS.some(x => x.part === k)), at = Math.max(0, keys.indexOf(t.part));   /* only parts this setup has, so the count never skips a number (38.31 wording and layout round 3) */
   /* one count for the whole setup, the same as the progress bar: one segment per part */
   $('#tourPart').textContent = `Step ${at + 1} of ${keys.length}: ${t.part}`;
   $('#tourDots').innerHTML = keys.map((k, i) => `<i class="${i < at ? 'past' : i === at ? 'on' : ''}"><b style="width:${i < at ? 100 : i > at ? 0 : Math.round((first + 1) / count * 100)}%"></b></i>`).join('');
