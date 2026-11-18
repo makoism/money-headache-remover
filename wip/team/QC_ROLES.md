@@ -72,7 +72,7 @@ Learned from Mako (2026-11-17): the Free to spend picture must look like a real 
 Learned from Mako: never em dashes; minimal; plain.
 
 ## 7. Regression runner
-- Scenario scripts live in tests/qc: good1.js (healthy plan must say 'You are okay', no error log), mako_scenario.js (real yen numbers: Nov left -41,918, bank 1,010, free to spend 26,010). Run them before any Home change.
+- Scenario script: tests/qc/scenario_yen.js, a yen plan shaped like Mako's with made-up numbers (a month that plans more than the pay, a small bank, a bill past its plan; and a healthy variant that must say 'You are okay' with an empty error log). Every expected figure is worked out by hand in the file. Run it before any Home change. Mako checks his own real numbers himself (no real figures in the repo, decision 9).
 - ./artcheck.sh must end "ART CHECK PASS". ./check.sh must end "GUARD ALL PASS" and "ALL GOOD". Never rebuild while it runs.
 - Fresh load with empty storage and with a filled plan: zero page errors.
 
