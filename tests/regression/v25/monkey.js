@@ -16,23 +16,24 @@ async function compare(p, tag) {
   const raw = await p.evaluate(() => localStorage.getItem('money-map-template-v2')); if (!raw) return;
   const S = JSON.parse(raw), cur = (S.ui && S.ui.cur) || '₱', pre = cur === 'none' ? '' : (/^[A-Za-z]{2,}$/.test(cur) ? cur + ' ' : cur);
   const F = n => { n = Math.round(n); return (n < 0 ? '−' : '') + pre + Math.abs(n).toLocaleString('en-US'); };
+  const F2 = n => (Math.abs(n - Math.round(n)) < 0.005 ? F(n) : (n < 0 ? '−' : '') + pre + Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
   /* what the page computes is from its own cleaned copy; the saved copy is what it wrote, so it is already clean */
   const O = oracle(S), ym = await p.evaluate(() => document.querySelector('#monthSel').value), r = O.rows.find(x => x.ym === ym); if (!r) return;
   await p.evaluate(() => document.querySelector('#tab-month').click()); await w(150);
   const D = await p.evaluate(() => { const q = s => (document.querySelector(s) || {}).textContent; return { where: q('#whereTitle'), dock: q('#dockNum'), inT: q('#inTotal'), outT: q('#outTotal'), left: q('#leftTotal'), bank: q('#bankLine'), hero: q('#heroNum'),
     legend: [...document.querySelectorAll('#legend .lg')].map(x => [x.querySelector('span').firstChild.textContent, x.querySelector('b').textContent, x.querySelector('em').textContent]) }; });
-  const pt = tag + ' ' + ym + ' ';
-  eq(pt + 'where', D.where, F(r.inflow) + ' pay, by jar'); eq(pt + 'dock', D.dock, F(r.left)); eq(pt + 'in', D.inT, F(r.inflow)); eq(pt + 'out', D.outT, F(r.outflow)); eq(pt + 'left', D.left, F(r.left));
-  eq(pt + 'bank', D.bank, `Balance: ${F(r.bankStart)} to ${F(r.bankEnd)} this month.`); eq(pt + 'play', D.hero, F(r.jar.play));
-  const rest = Math.max(0, r.inflow - r.outflow), short = Math.max(0, r.outflow - r.inflow), base = short > 0 ? r.outflow : r.inflow;
-  const vals = [r.jar.nec, r.goalsTotal, r.jar.play, r.jar.edu, r.jar.ffa, r.jar.give, rest], pc = oraclePercents(vals, base), showPct = base > 0 && !(short > 0);
-  const exp = M.JARS.map((j, i) => [j.name, F(vals[i]), showPct ? pc[i] + '%' : '']); if (rest > 0) exp.push(['Left', F(rest), showPct ? pc[6] + '%' : '']); if (short > 0) exp.push(['Short by', F(short), '']);
+  const pt = tag + ' ' + ym + ' ', X = require('/tmp/v25/expect_month.js')({ S, O, r, ym, M, oraclePercents, F, F2 });   /* 38.29 to 38.31 rules, shared with display.js */
+  eq(pt + 'where', D.where, X.where); eq(pt + 'dock', D.dock, X.dock); eq(pt + 'in', D.inT, F(r.inflow)); eq(pt + 'out', D.outT, F(r.outflow)); eq(pt + 'left', D.left, F(r.left));
+  eq(pt + 'bank', D.bank, X.bank); eq(pt + 'play', D.hero, X.hero);
+  const exp = X.legend;
   eq(pt + 'legend', JSON.stringify(D.legend), JSON.stringify(exp));
   /* the goals */
-  await p.evaluate(() => document.querySelector('#tab-goals').click()); await w(150);
+  /* Goals lives under Plan since 38.x; open it the way a person does (the old #tab-goals button is hidden) */
+  await p.evaluate(() => { document.querySelector('#tab-month').click(); const sb = [...document.querySelectorAll('[data-tab-go="goals"][data-sub="goals"]')].find(x => x.offsetParent); if (sb) sb.click(); else document.querySelector('#tab-goals').click(); }); await w(200);
   for (const g of S.plan.goals) {
-    const G = await p.evaluate(id => (document.querySelector('#jv-' + id) || {}).innerText, g.id);
-    eq(pt + g.id + ' goal amounts', G, g.target > 0 ? `${F(r.bal[g.id])} planned of ${F(g.target)}` : 'No goal amount yet');
+    /* textContent, not innerText: a random tap may have opened the setup or the goal window over the page, and covered text reads as empty */
+    const G = await p.evaluate(id => ((document.querySelector('#jv-' + id) || {}).textContent || '').replace(/\s+/g, ' ').trim(), g.id);
+    eq(pt + g.id + ' goal amounts', G, X.goalAmount(g));
   }
 }
 async function health(p, tag) {
