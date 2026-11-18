@@ -772,7 +772,7 @@ function moneyTyped(el, ev) {
   let raw = NATIVE_VALUE.get.call(el); if (hasMoneyOp(raw)) return;
   /* a minus sign is never kept; the person is told, so a refund typed as -500 is not quietly turned into +500 (receipt boxes refuse it themselves) */
   if (/^\s*[-\u2212\u2013\uFF0D\u30FC\u2010-\u2015]/.test(raw) && el.id !== 'rcAmt' && el.id !== 'hAmt') { try { cheer('Amounts take no minus sign. The old amount stays.'); } catch (x) { } NATIVE_VALUE.set.call(el, el._mnyPrev !== undefined ? el._mnyPrev : ''); el._refuse = Date.now() + 2500; try { el.blur(); } catch (x) { } return; }
-  { const big = parseFloat(raw.replace(/[^\d.]/g, '')); if (big > 1e9 && el.id !== 'rcAmt' && el.id !== 'hAmt') { try { cheer('That amount is too large. The most is 1,000,000,000.'); } catch (x) { } NATIVE_VALUE.set.call(el, withCommas('1000000000')); return; } } const pos = el.selectionStart == null ? raw.length : el.selectionStart;
+  { const big = parseFloat(raw.replace(/[^\d.]/g, '')); if (big > 1e9 && el.id !== 'rcAmt' && el.id !== 'hAmt') { try { cheer('That amount is too large. The most is 1,000,000,000. The old amount stays.'); } catch (x) { } el._refuse = Date.now() + 2500; NATIVE_VALUE.set.call(el, el._mnyAtFocus !== undefined ? el._mnyAtFocus : ''); el._mnyPrev = el._mnyAtFocus; el.dispatchEvent(new Event('input', { bubbles: true })); return;   /* a typo is refused and the amount from before this typing comes back, never the largest amount (38.31 data safety round) */ } } const pos = el.selectionStart == null ? raw.length : el.selectionStart;
   /* a comma typed by hand: a decimal point where the currency writes decimals that way (12,50 euro), otherwise a thousands separator
      (1,200 pesos is twelve hundred, never one peso twenty) and the box regroups it on its own */
   let at = pos; if (ev && ev.data === ',' && raw.charAt(pos - 1) === ',') { const dec = COMMA_DEC.indexOf(sym()) >= 0; raw = raw.slice(0, pos - 1) + (dec ? '.' : '') + raw.slice(pos); if (!dec) at = pos - 1; }
@@ -787,7 +787,7 @@ function moneyTyped(el, ev) {
   NATIVE_VALUE.set.call(el, out);
   try { el.setSelectionRange(i, i); } catch (err) { /* ignore */ }
 }
-document.addEventListener('focusin', e => { const el = e.target; if (el && el.dataset && el.dataset.mny) { el._mnyPrev = NATIVE_VALUE.get.call(el); el._mnyOK = String(el._mnyPrev).replace(/,/g, ''); if (hasMoneyOp(el._mnyOK)) el._mnyOK = ''; } }, true);
+document.addEventListener('focusin', e => { const el = e.target; if (el && el.dataset && el.dataset.mny) { el._mnyPrev = NATIVE_VALUE.get.call(el); el._mnyAtFocus = el._mnyPrev; el._mnyOK = String(el._mnyPrev).replace(/,/g, ''); if (hasMoneyOp(el._mnyOK)) el._mnyOK = ''; } }, true);
 /* the value before each edit, so a refused entry can put it back */
 document.addEventListener('beforeinput', e => { const el = e.target; if (el && el.dataset && el.dataset.mny && !(el._refuse && Date.now() < el._refuse)) el._mnyPrev = NATIVE_VALUE.get.call(el); }, true);
 /* a Japanese keyboard types full-width digits, signs and points: read them as the plain ones */
