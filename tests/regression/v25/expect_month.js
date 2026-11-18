@@ -7,10 +7,10 @@ module.exports = function expectMonth({ S, O, r, ym, M, oraclePercents, F, F2 })
   const playSpentC = (S.receipts || []).filter(x => x.d.slice(0, 7) === ym && (S.plan.lines.find(q => q.key === x.c) || {}).jar === 'play').reduce((a, x) => a + cents(x.a), 0);
   const pLeft = Math.round(r.jar.play * 100 - playSpentC) / 100, held = st === 'short' && !(Math.round((r.bankEnd - r.bankStart) * 100) > 0) ?   /* 38.31 money accuracy round: held unless the month really adds to the bank (it was: left < 0 or past plan, which let a month adding nothing show Free to spend next to Short) */  Math.min(Math.max(0, pLeft), Math.max(0, minBank - r.bankEnd)) : 0;
   const safe = Math.max(pLeft < 0 ? pLeft : 0, Math.round((pLeft - held) * 100) / 100);
-  const where = r.draw > 0 ? F(r.inflow - r.draw) + ' pay and ' + F(r.draw) + ' borrowed, by place' : F(r.inflow) + ' pay, by place';
+  const where = r.draw > 0 ? F2(r.inflow - r.draw) + ' pay and ' + F2(r.draw) + ' borrowed, by place' : F2(r.inflow) + ' pay, by place';   /* 38.31 number gate round 2: to the cent */
   /* with no pay entered and nothing planned past it, the dock shows how far below zero the bank ends, if it does */
   const pin = r.a + r.b + r.side, bankOnly = pin <= 0 && r.left >= 0 && r.bankEnd < 0;
-  const dock = bankOnly ? F(-r.bankEnd) : pin > 0 || r.left < 0 ? F(Math.abs(dk)) : '';
+  const dock = bankOnly ? F2(-r.bankEnd) : pin > 0 || r.left < 0 ? F2(Math.abs(dk)) : '';
   const bank = r.over > 0 ? `Bank ends at ${F2(r.bankEnd)}: ${F2(r.bankPlanned)} planned, less ${F2(r.over)} spent over plan so far.` : Math.abs(r.bankStart - r.bankEnd) < 0.5 ? `Bank stays at ${F2(r.bankEnd)} this month.` : `Bank goes from ${F2(r.bankStart)} to ${F2(r.bankEnd)} this month.`;
   const rest = Math.max(0, r.inflow - r.outflow), short = Math.max(0, r.outflow - r.inflow), realPay = r.inflow - r.draw, base = short > 0 ? r.outflow : (r.draw > 0 && realPay > 0 ? realPay : r.inflow);
   const restCover = Math.min(rest, r.draw), usedOver = Math.min(Math.max(0, rest - restCover), r.overNow), unplacedNet = Math.round((rest - restCover - usedOver) * 100) / 100;

@@ -17,7 +17,7 @@ function paintBar(el, m, withLabels) {
   if (J.restCover > 0) tipL.push(J.unplaced >= 0.5 ? `${fmt2(J.restCover)} borrowed from the emergency fund` : J.restKept > 0 ? 'borrowed from the emergency fund, kept in the bank' : 'borrowed money, used for spending past plan');
   r.dataset.tip = `<b>Left</b> ${fmt2(rest)}` + tipL.filter(Boolean).map(x => '<br>' + x).join(''); r.setAttribute('aria-label', `Left ${fmt2(rest)}`);
   if (rest > 0) names.push('Left ' + fmt2(rest));
-  if (withLabels) el.setAttribute('aria-label', `Pay ${fmt2(m.pool.in)} by place: ` + names.join(', '));
+  if (withLabels) el.setAttribute('aria-label', `${fmt2(J.realPay)} pay${J.draw > 0 ? ' and ' + fmt2(J.draw) + ' borrowed' : ''}, by place: ` + names.join(', '));   /* borrowed money is not pay (38.31 number gate round 2) */
 }
 function paintLegend(m) {
   const st0 = statusOf(S, m), J = jarsOf(S, m), has = J.income > 0 && !J.over;
@@ -87,7 +87,8 @@ function render() {
   $('#heroWk').textContent = (playSpent > 0 || heroShow !== play) ? `Planned ${fmt(play)} this month, about ${fmt(wk)} a week.` : `Planned: about ${fmt(wk)} a week across the whole month.`;
   $('#rcLine').innerHTML = !rs.count ? '<button type="button" class="link" data-tab-go="receipts">Add a receipt</button> to see actual spend.'
     : play > 0 ? `Receipts: ${fmt2(playSpent)} spent, ${playSpent > play ? fmt2(PC.playOver) + ' over' : (m.counted > 0 ? fmt2(m.counted) + ' not spent' + (m.topup && m.topup.used > 0 ? ', ' + fmt2(m.topup.used) + ' went to a goal' : ', came back to the bank') : m.pendLeft > 0 ? fmt2(m.pendLeft) + ' not logged as spent yet, Home asks where it goes' : fmt2(playSafeLeft(S, m, playSpent)) + ' safe to spend')}. <button type="button" class="link" data-tab-go="receipts">See receipts</button>`
-    : `Receipts: ${fmt2(rs.total)} spent. <button type="button" class="link" data-tab-go="receipts">See receipts</button>`;
+    : playSpent > 0 ? `Receipts: ${fmt2(playSpent)} spent from Free to spend, which has no plan this month. <button type="button" class="link" data-tab-go="receipts">See receipts</button>`
+    : `Receipts: nothing spent from Free to spend. <button type="button" class="link" data-tab-go="receipts">See receipts</button>`;
   const Lun = PC.unplaced;   /* pay with no place, less what spending past plan already took from it */
   const chip = $('#chip'); chip.className = 'chip ' + st; chip.hidden = pin <= 0;
   const overFree = playSpent > play && play >= 0 && rs.count > 0, overAny = !overFree && (m.overNow || 0) > 0.004;
@@ -97,7 +98,7 @@ function render() {
   const gap = PC.bankGap;
   let vt;
   if (pin <= 0) vt = 'Enter monthly take-home pay: tap Salary below.';
-  else if (st === 'good') vt = (Lun < roundUnit(S) ? 'All pay is placed.' : `${fmt(Lun)} of pay not placed yet.`) + (Lun >= pin * 0.08 ? ' Raise a goal or another place to use it, or keep it as a cushion.' : '');
+  else if (st === 'good') vt = (Lun < roundUnit(S) ? 'All pay is placed.' : `${fmt2(Lun)} of pay not placed yet.`) + (Lun >= pin * 0.08 ? ' Raise a goal or another place to use it, or keep it as a cushion.' : '');
   else if (st === 'tight') vt = `Month spends ${fmt2(PC.overPay)} more than your pay${m.draw > 0 ? ', ' + fmt2(m.draw) + ' of it borrowed' : ''}. Balance covers it and ends at ${fmt2(m.bankEnd)}, at or above the ${fmt2(floor)} minimum.`;
   else vt = `Balance would end at ${fmt2(m.bankEnd)}, ${fmt2(gap)} under the ${fmt2(floor)} minimum.` + (fixes(S, m).length ? ' Pick a fix:' : ' Lower a cost or add pay to fix it.');
   if (m.draw > 0) vt += ` ${fmt2(m.draw)} is borrowed from the emergency fund.`;
@@ -111,13 +112,13 @@ function render() {
   $('#fixBtns').innerHTML = btns;
 
   /* where it goes */
-  $('#whereTitle').textContent = m.draw > 0 ? `${fmt(PC.pay)} pay and ${fmt(m.draw)} borrowed, by place` : `${fmt(m.pool.in)} pay, by place`;
+  $('#whereTitle').textContent = m.draw > 0 ? `${fmt2(PC.pay)} pay and ${fmt2(m.draw)} borrowed, by place` : `${fmt2(m.pool.in)} pay, by place`;
   paintBar($('#bar'), m, true); paintBar($('#dockBar'), m, false); paintLegend(m); $('#jarNote').innerHTML = jarNote(m);
   const el = $('#endline'); el.hidden = !(m.pool.out > m.pool.in); if (!el.hidden) el.style.left = (m.pool.in / m.pool.out * 100) + '%';
   const dw = m.draw || 0, Ld = PC.dock;   /* borrowed money is not pay, and pay that spending past plan already used is not left (model.js planCells) */
   const bankOnly = pin <= 0 && L >= 0 && m.bankEnd < 0;   /* spending with no pay entered: the bank shortfall still shows */
-  $('#dockNum').textContent = bankOnly ? fmt(PC.bankBelowZero) : pin > 0 || L < 0 ? fmt(PC.dockAbs) : ''; $('#dockNum').style.color = Ld < 0 || bankOnly ? 'var(--bad)' : '';
-  $('#dockTxt').textContent = pin <= 0 ? (L < 0 ? 'planned with no pay entered in ' + mon + '. Add your pay in Plan.' : bankOnly ? 'below zero in the bank at the end of ' + mon + ', with no pay entered. Add your pay in Plan.' : 'No plan yet. Add your pay in Plan.') : `${Ld < 0 ? (sampleOn() ? 'more planned than the sample pay in ' : 'more planned than your pay in ') + mon + (dw > 0 ? ', ' + fmt(dw) + ' borrowed from your emergency fund' : '') : (sampleOn() ? 'of the sample pay not placed yet in ' : 'of your pay not placed yet in ') + mon   /* S6: one word, "not placed yet" (38.29 glossary) */} · ${overFree && !((m.overNec || 0) > 0.004) ? 'Over free to spend' : overFree || overAny ? 'Over plan' : Ld >= roundUnit(S) && st === 'good' ? 'Still needs a place' : st === 'good' ? 'On plan' : st === 'tight' ? 'Tight' : 'Short'}`;
+  $('#dockNum').textContent = bankOnly ? fmt2(PC.bankBelowZero) : pin > 0 || L < 0 ? fmt2(PC.dockAbs) : ''; $('#dockNum').style.color = Ld < 0 || bankOnly ? 'var(--bad)' : '';
+  $('#dockTxt').textContent = pin <= 0 ? (L < 0 ? 'planned with no pay entered in ' + mon + '. Add your pay in Plan.' : bankOnly ? 'below zero in the bank at the end of ' + mon + ', with no pay entered. Add your pay in Plan.' : 'No plan yet. Add your pay in Plan.') : `${Ld < 0 ? (sampleOn() && !(S.ui.done || {}).pay ? 'more planned than the sample pay in ' : 'more planned than your pay in ') + mon + (dw > 0 ? ', ' + fmt(dw) + ' borrowed from your emergency fund' : '') : (sampleOn() && !(S.ui.done || {}).pay ? 'of the sample pay not placed yet in ' : 'of your pay not placed yet in ') + mon   /* S6: one word, "not placed yet" (38.29 glossary) */} · ${overFree && !((m.overNec || 0) > 0.004) ? 'Over free to spend' : overFree || overAny ? 'Over plan' : Ld >= roundUnit(S) && st === 'good' ? 'Still needs a place' : st === 'good' ? 'On plan' : st === 'tight' ? 'Tight' : 'Short'}`;
 
   /* the details */
   $('#inTotal').textContent = fmt2(m.pool.in); $('#outTotal').textContent = fmt2(m.pool.out);
