@@ -12,6 +12,8 @@ mkdir -p "$WORK/tools"
 ln -sfn "$TEAM" "$WORK/team"
 ln -sfn "$TEAM/../money-map-team.html" "$WORK/money-map-team.html"
 mkdir -p "$WORK/pwa" && cp -r "$REPO/pwa/." "$WORK/pwa/"
+# the welcome video and its cover: the installable-app build (pwa/make_pwa.py) copies them from here
+mkdir -p "$WORK/hello" && cp "$REPO"/public/hello.mp4 "$REPO"/public/hello-av1.mp4 "$REPO"/public/hello.jpg "$WORK/hello/"
 [ -d "$REPO/public/fonts" ] && { mkdir -p "$WORK/fonts"; cp -r "$REPO/public/fonts/." "$WORK/fonts/"; } || true
 # 2. the browser driver
 if [ ! -d "$WORK/tools/node_modules/puppeteer-core" ]; then ( cd "$WORK/tools" && { [ -f package.json ] || npm init -y >/dev/null 2>&1; } && npm i puppeteer-core acorn acorn-walk >/dev/null 2>&1 ); fi

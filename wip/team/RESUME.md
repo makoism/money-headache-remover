@@ -4,6 +4,8 @@ Written 2026-11-18 on branch `wip-38.31`. Read this whole file before touching a
 
 ## 0. Handoff (latest first)
 
+**2026-11-18, end of PLAN step 7b (commit e35d3a9), step 8 started.** Version one Home: `homeV1()` in ui6.js (one next action; the rest behind More), four numbers in ui8.js. Test `tests/qc/home_v1.js`. Golden baseline `3831d.json`. Step 8: `tests/qc/compare_3828.js` (38.28 saved plan into 38.31; every bank difference is spending past the plan, to the yen) and `STEP8_COMPARE.md`, the report Mako must see before any deploy. `./check.sh full` run started; see the commit after it for the result.
+
 **2026-11-18, end of PLAN step 7 (commit 80ec98f).** S2 (proof line after Decide later), S3 (guarded), S5 (graph "Now" was start of month; `goal_agree.js`), S6 (dock word). Golden baseline now `3831c.json`. Next: step 7b (version one Home).
 
 **2026-11-18, end of PLAN step 6 (commit 2e43f9c).** Screen maths 0 open, `display_math.max` is 0. New model values: `setupCells`, `planFactsOf`, `splitDraft`, `topupFit`. Next: step 7 (S2, S3, S5, S6), then 7b.

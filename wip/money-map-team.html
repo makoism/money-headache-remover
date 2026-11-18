@@ -1818,7 +1818,7 @@ body.scene-on .card, body.scene-on .why, body.scene-on .gw-card { background: co
 .mp-pay > summary::-webkit-details-marker { display: none; }
 .mp-pay > summary::after { content: 'Show'; margin-left: auto; color: var(--acc, var(--ink)); font-weight: 600; font-size: 14px; }
 .mp-pay[open] > summary::after { content: 'Hide'; }
-.hv1-more { display: block; width: 100%; min-height: 48px; margin: 4px 0 16px; }
+.hv1-more { display: block; width: 100%; margin: 4px 0 16px; }   /* the standard button height (look_test: one or two heights only) */
 </style>
 </head>
 <body>
@@ -16630,7 +16630,7 @@ function renderMap() {
     <h3 class="mp-h">This month</h3><div class="hb-scene mp-rooms" id="mpRooms"></div>`);
   { const dp = el.querySelector('.mp-pay'); if (dp) dp.ontoggle = () => { renderMap.payOpen = dp.open; }; }
   BUR.dropCoins(el.querySelector('.mp-split'));
-  const pb2 = $('#mpPay'); if (pb2) pb2.onclick = () => payDay({ pay: (realPay || dwn > 0) ? realPay : placed, over: planOver, draw: dwn, bank: M.bankEnd, minB: cfg(S, 'minBank'), mon, places: split });
+  const pb2 = $('#mpPay'); if (pb2) pb2.onclick = () => payDay({ pay: (M.payReal || dwn > 0) ? M.payReal : placed,   /* model.js mapOf payReal (the screen's own realPay was moved there and this line was missed) */ over: planOver, draw: dwn, bank: M.bankEnd, below: M.bankBelow, minB: cfg(S, 'minBank'), mon, places: split });
   BUR.monthRooms($('#mpRooms'));
 }
 
@@ -16642,7 +16642,7 @@ function payDay(o) {
   if (!ov) { ov = document.createElement('div'); ov.id = 'pdv'; ov.className = 'pdv'; ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true'); ov.setAttribute('aria-label', 'Pay day'); document.body.appendChild(ov); }
   const total = o.places.reduce((a, x) => a + x.amount, 0) || 1, maxA = Math.max(...o.places.map(x => x.amount), 1);
   const calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  ov.innerHTML = `<div class="pdv-in"><h2>Pay day</h2><p class="cap pdv-sub">${typeof sampleOn === 'function' && sampleOn() ? '<span class="smp-tag">Sample numbers</span> Sample pay of <b>' + esc(fmt(o.pay)) + '</b> in ' + esc(o.mon) + '. Enter your pay to see yours. Each coin' : 'Your pay of <b>' + esc(fmt(o.pay)) + '</b> in ' + esc(o.mon) + '. Each coin'} goes where your plan sends it.${o.over ? ' Your plan places ' + esc(fmt(o.over)) + ' more than your pay. ' + esc(coverText(o.over, o.draw, o.bank, o.minB)) : ''}</p>
+  ov.innerHTML = `<div class="pdv-in"><h2>Pay day</h2><p class="cap pdv-sub">${typeof sampleOn === 'function' && sampleOn() ? '<span class="smp-tag">Sample numbers</span> Sample pay of <b>' + esc(fmt(o.pay)) + '</b> in ' + esc(o.mon) + '. Enter your pay to see yours. Each coin' : 'Your pay of <b>' + esc(fmt(o.pay)) + '</b> in ' + esc(o.mon) + '. Each coin'} goes where your plan sends it.${o.over ? ' Your plan places ' + esc(fmt(o.over)) + ' more than your pay. ' + esc(coverText(o.over, o.draw, o.bank, o.minB, o.below)) : ''}</p>
     <div class="pdv-stage" id="pdvStage"><div class="pdv-purse"><b>${esc(fmt(o.pay))}</b><canvas width="24" height="18" aria-hidden="true"></canvas></div>
     <div class="pdv-row">${o.places.map((x, i) => `<div class="pdv-room" data-i="${i}"><canvas width="24" height="18" aria-hidden="true"></canvas><i class="pdv-dot" style="background:${x.c}"></i><span class="pdv-n">${esc(x.name)}</span><b class="pdv-a">${esc(fmt(0))}</b></div>`).join('')}</div></div>
     <p class="pdv-done" id="pdvDone" aria-live="polite"></p><div class="pdv-btns">${typeof sampleOn === 'function' && sampleOn() ? '<button type="button" class="btn small" id="pdvEnter">Enter pay</button>' : ''}<button type="button" class="btn small" id="pdvAgain">Watch again</button><button type="button" class="btn small solid" id="pdvClose">Done</button></div></div>`;
@@ -16660,7 +16660,7 @@ function payDay(o) {
   const shown = o.places.map(() => 0);
   const draw = (i, landed, n) => { const x = o.places[i], _s = (shown[i] = n ? x.amount * landed / n : x.amount), _l = Math.max(0, o.pay - shown.reduce((a, b) => a + b, 0)); if (n && landed) purse.parentElement.querySelector('b').textContent = fmt(_l) + ' left'; const fill = Math.sqrt(x.amount / maxA) * (n ? landed / n : 1); paint(rooms[i].querySelector('canvas'), landed ? Math.max(fill, .12) : 0, kindOf(x), 7 + i * 13); rooms[i].querySelector('.pdv-a').textContent = fmt(n ? x.amount * landed / n : x.amount); };
   paintPurse(purse, true);
-  const finish = () => { rooms.forEach((r, i) => draw(i, 1, 1)); const shortBy = o.over > 0 ? fmt(o.over) : '', un = o.places.find(x => x.id === 'unplaced'), doneTxt = shortBy ? 'Your plan is ' + shortBy + ' bigger than your pay.' + ' ' + coverText(o.over, o.draw, o.bank, o.minB) : un ? fmt2(un.amount) + ' of your pay has no goal yet and stays in the bank.' : 'Every coin has a home.'; $('#pdvDone').textContent = doneTxt; $('#pdvDone').setAttribute('aria-label', doneTxt + ' ' + o.places.map(x => `${x.name} ${fmt(x.amount)}`).join(', ') + '.'); purse.parentElement.classList.add('empty'); purse.parentElement.querySelector('b').textContent = shortBy ? shortBy + ' short' : un ? fmt(un.amount) + ' not placed' : fmt(0) + ' left'; paintPurse(purse, false); };
+  const finish = () => { rooms.forEach((r, i) => draw(i, 1, 1)); const shortBy = o.over > 0 ? fmt(o.over) : '', un = o.places.find(x => x.id === 'unplaced'), doneTxt = shortBy ? 'Your plan is ' + shortBy + ' bigger than your pay.' + ' ' + coverText(o.over, o.draw, o.bank, o.minB, o.below) : un ? fmt2(un.amount) + ' of your pay has no goal yet and stays in the bank.' : 'Every coin has a home.'; $('#pdvDone').textContent = doneTxt; $('#pdvDone').setAttribute('aria-label', doneTxt + ' ' + o.places.map(x => `${x.name} ${fmt(x.amount)}`).join(', ') + '.'); purse.parentElement.classList.add('empty'); purse.parentElement.querySelector('b').textContent = shortBy ? shortBy + ' short' : un ? fmt(un.amount) + ' not placed' : fmt(0) + ' left'; paintPurse(purse, false); };
   let raf = 0, run = 0;
   const close = () => { run++; cancelAnimationFrame(raf); ov.hidden = true; document.body.classList.remove('pdv-on'); ov.querySelectorAll('.pdv-coin').forEach(c => c.remove()); document.removeEventListener('keydown', esc_); const b = $('#mpPay'); if (b) b.focus(); };
   const esc_ = e => { if (e.key === 'Escape') close(); };

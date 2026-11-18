@@ -32,7 +32,7 @@ const read = p => p.evaluate(() => {
   const t = s => { const e = document.querySelector(s); return e ? e.textContent.replace(/\s+/g, ' ').trim() : null; };
   const li = [...document.querySelectorAll('#hMap .mp-nums .mp-n')].map(x => [x.querySelector('.mp-l').textContent.trim(), x.querySelector('b').textContent.trim()]);
   document.getElementById('tab-month').click();
-  return { left: t('#leftTotal'), hero: t('#heroNum'), mapBank: (li.find(x => /^In the bank/.test(x[0])) || [])[1], status: t('#hStatus'), proofBad: !!document.querySelector('#hMap .mp-bad'), errlog: localStorage.getItem('mhr-errlog') };
+  return { left: t('#leftTotal'), hero: t('#heroNum'), mapBank: ((/^Bank (\S+) \+/.exec(t('#hMap .mp-proof') || '')) || [])[1],   /* version one: the bank figure is in the proof line (the old "In the bank" tile became the four numbers) */ status: t('#hStatus'), proofBad: !!document.querySelector('#hMap .mp-bad'), errlog: localStorage.getItem('mhr-errlog') };
 });
 (async () => {
   /* the tight month. Left over = 300,000 - 336,000 = -36,000. Planned bank end = 52,000 - 36,000 = 16,000.

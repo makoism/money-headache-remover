@@ -1811,4 +1811,4 @@ body.scene-on .card, body.scene-on .why, body.scene-on .gw-card { background: co
 .mp-pay > summary::-webkit-details-marker { display: none; }
 .mp-pay > summary::after { content: 'Show'; margin-left: auto; color: var(--acc, var(--ink)); font-weight: 600; font-size: 14px; }
 .mp-pay[open] > summary::after { content: 'Hide'; }
-.hv1-more { display: block; width: 100%; min-height: 48px; margin: 4px 0 16px; }
+.hv1-more { display: block; width: 100%; margin: 4px 0 16px; }   /* the standard button height (look_test: one or two heights only) */
