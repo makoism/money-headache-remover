@@ -343,6 +343,12 @@ function openTour(at, mode) {
   tourN = Math.max(0, i); showTourShell(); renderTour(0); sfx('whoosh'); MUSIC.wake();
 }
 let RESPLIT_SNAP = null;   /* the copy taken when Re-split pay opens the setup steps, so closing them can offer Undo */
+/* Guided setup run again over a plan the person already has (38.31 data safety round: it changed pay and saved amounts with no copy and no Undo):
+   the same copy as Re-split pay, kept in the saved plan too, so Undo is offered when setup closes, or after a reload if the page was closed part-way */
+function openSetupWithCopy(at, mode) {
+  if (typeof hasData === 'function' && hasData(S) && !RESPLIT_SNAP) { RESPLIT_SNAP = JSON.stringify(S); S.ui.preSplit = RESPLIT_SNAP; persist(); }
+  openTour(at, mode);
+}
 function closeTour(toBills, done) {
   pauseHello(); helloStop(); tourIsOpen = false; document.body.classList.remove('touring'); clearTimeout(asT); MUSIC.tourClosed();
   S.ui.toured = true; if (done) delete S.ui.tourAt;
@@ -350,7 +356,7 @@ function closeTour(toBills, done) {
   $('#tour').hidden = true; $('.wrap').inert = false; $('#dock').inert = false; helpAside(false);
   TS = [];
   restructure();
-  if (RESPLIT_SNAP) { const sn = RESPLIT_SNAP; RESPLIT_SNAP = null; delete S.ui.preSplit; persist(); try { if (JSON.stringify([sn && JSON.parse(sn).plan, sn && JSON.parse(sn).steps, sn && JSON.parse(sn).once, sn && JSON.parse(sn).items, sn && JSON.parse(sn).cfg]) !== JSON.stringify([S.plan, S.steps, S.once, S.items, S.cfg]) && window.offerUndoG) window.offerUndoG(sn, 'Split changed.'); } catch (e) { /* the plan is already saved */ } }
+  if (RESPLIT_SNAP) { const sn = RESPLIT_SNAP; RESPLIT_SNAP = null; delete S.ui.preSplit; persist(); try { if (JSON.stringify([sn && JSON.parse(sn).plan, sn && JSON.parse(sn).steps, sn && JSON.parse(sn).once, sn && JSON.parse(sn).items, sn && JSON.parse(sn).cfg]) !== JSON.stringify([S.plan, S.steps, S.once, S.items, S.cfg]) && window.offerUndoG) window.offerUndoG(sn, 'Setup changed your plan.'); } catch (e) { /* the plan is already saved */ } }
   if (toBills) { S.ui.seen = Object.assign(S.ui.seen || {}, { month: true }); switchTab('month'); openRow('nec'); }
   else {
     scrollTo({ top: 0 }); if (done) WORLD.settle();
@@ -428,6 +434,6 @@ function wireTour() {
   /* a closed tab or a phone that locks the screen must not lose the last thing typed */
   window.addEventListener('pagehide', () => autosave(true));
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') autosave(true); });
-  $('#tourOpen2').addEventListener('click', () => openTour(0));
-  $('#setupOpen').addEventListener('click', () => openTour(undefined, 'full'));
+  $('#tourOpen2').addEventListener('click', () => openSetupWithCopy(0));
+  $('#setupOpen').addEventListener('click', () => openSetupWithCopy(undefined, 'full'));
 }

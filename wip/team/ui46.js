@@ -408,7 +408,7 @@ function closeAsk() { if (askCtl && askBusy) askCtl.abort(); $('#ask').hidden = 
 function helpAside(on) { $('#help').inert = on; if (on) { setHelpMenu(false); $('#ask').hidden = true; if (askCtl && askBusy) askCtl.abort(); } }
 function wireHelp() {
   $('#helpBtn').addEventListener('click', () => setHelpMenu($('#helpMenu').hidden));
-  $('#helpSetup').addEventListener('click', () => { setHelpMenu(false); $('#helpBtn').focus({ preventScroll: true }); openTour(undefined, 'full'); });
+  $('#helpSetup').addEventListener('click', () => { setHelpMenu(false); $('#helpBtn').focus({ preventScroll: true }); openSetupWithCopy(undefined, 'full'); });
   $('#helpTab').addEventListener('click', () => { setHelpMenu(false); $('#helpBtn').focus({ preventScroll: true }); openTabTour(tab); });
   $('#helpVideo').hidden = !hasHello;
   $('#helpVideo').addEventListener('click', () => { setHelpMenu(false); $('#helpBtn').focus({ preventScroll: true }); openTour('video', 'replay'); });
