@@ -1,0 +1,6 @@
+# Places where a screen may work a number out itself. Each line:   file :: exact snippet :: the reason
+# Keep this list short. Every line is a debt, and a line with no reason does not count.
+ui8.js :: fmt(_l) :: Pay day animation: the purse counts down while coins land. The amounts it ends on are the model's (mapOf).
+ui8.js :: fmt(n ? x.amount * landed / n : x.amount) :: Pay day animation: a place fills up coin by coin. The amount it ends on is the model's.
+ui6.js :: p * 100 :: The fixed axis labels 0%, 50%, 100% on the goals graph. Not a money figure.
+ui7.js :: fmt(res.placed || amt) :: Echoes the amount just typed into the Extra money box, rounded to whole units as it is stored.

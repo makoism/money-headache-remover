@@ -267,7 +267,7 @@ function askCard(bot, p, clipped, ctx) {
   const rows = [];
   if (p.receipts.length) {
     const fresh = p.receipts.filter(r => !r.dup), g = el('div', 'grp'), ul = el('ul', 'rv-list');
-    const head = el('div', 'rv-h'); head.append(el('b', '', fresh.length ? `${fresh.length} new receipt${fresh.length === 1 ? '' : 's'}` : 'No new receipts'), el('span', '', fresh.length ? fmt2(fresh.reduce((a, r) => a + r.a, 0)) : 'All already on your page.'));
+    const head = el('div', 'rv-h'); head.append(el('b', '', fresh.length ? `${fresh.length} new receipt${fresh.length === 1 ? '' : 's'}` : 'No new receipts'), el('span', '', fresh.length ? fmt2(receiptsTotal(fresh)) : 'All already on your page.'));
     g.append(head);
     p.receipts.forEach(r => {
       const li = el('li', 'rv-row' + (r.dup ? ' dupe' : '')), lab = el('label', 'rv-main'), i = el('input'), cat = r.c === 'other' ? 'Other' : (lineByKey(S, r.c) || { name: 'Other' }).name;

@@ -10,7 +10,7 @@
    Run:  node tests/qc/display_math.js            exit 1 if anything is found that is not in display_math.allow
          node tests/qc/display_math.js list       print every finding, allowed ones too
          BARS=1 node tests/qc/display_math.js list
-   An exception needs a line in tests/qc/display_math.allow:   file.js | exact snippet | the reason
+   An exception needs a line in tests/qc/display_math.allow:   file.js :: exact snippet :: the reason
    Needs acorn and acorn-walk (tests/setup_env.sh installs them). */
 const fs = require('fs'), path = require('path');
 const TOOLS = process.env.TOOLS || '/home/claude/work/tools/node_modules/';
@@ -153,7 +153,7 @@ walk.ancestor(ast, {
 
 /* ---- the allow list: exceptions with a reason ---- */
 const allowFile = __dirname + '/display_math.allow';
-const allow = fs.existsSync(allowFile) ? fs.readFileSync(allowFile, 'utf8').split('\n').filter(l => l.trim() && !l.startsWith('#')).map(l => l.split('|').map(x => x.trim())) : [];
+const allow = fs.existsSync(allowFile) ? fs.readFileSync(allowFile, 'utf8').split('\n').filter(l => l.trim() && !l.startsWith('#')).map(l => l.split(' :: ').map(x => x.trim())) : [];
 const used = new Set();
 const isAllowed = f => { const i = allow.findIndex(a => a[0] === f.file && f.snip.includes(a[1])); if (i >= 0) used.add(i); return i >= 0 && !!(allow[i][2] || '').trim(); };
 const open = finds.filter(f => !isAllowed(f));
@@ -161,7 +161,7 @@ const show = f => `  ${f.kind.padEnd(7)} ${f.file}:${f.line}  ${f.snip}\n       
 if (MODE === 'list') { finds.forEach(f => console.log(show(f) + (open.includes(f) ? '' : '   [allowed]'))); }
 else open.slice(0, 200).forEach(f => console.log(show(f)));
 const by = k => open.filter(f => f.kind === k).length;
-allow.forEach((a, i) => { if (!used.has(i)) console.log('  unused allow line (remove it): ' + a.join(' | ')); });
+allow.forEach((a, i) => { if (!used.has(i)) console.log('  unused allow line (remove it): ' + a.join(' :: ')); });
 console.log(`screen maths: ${open.length} open (amounts ${by('amount')}, percents ${by('percent')}${BARS ? ', bars ' + by('bar') : ''}), ${finds.length - open.length} allowed with a reason, ${files.length} files read`);
 console.log(open.length ? 'FAIL screens do money maths' : 'PASS screens only show what the model worked out');
 process.exit(open.length ? 1 : 0);

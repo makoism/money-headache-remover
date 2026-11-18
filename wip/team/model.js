@@ -30,6 +30,8 @@ const JARS = [
   { id: 'ffa',  name: 'Investing',              usual: 0.10, about: 'Investments you never spend. They grow and eventually pay you.' },
   { id: 'give', name: 'Giving',                         usual: 0.05, about: 'Charity, donations and gifts.' },
 ];
+/* the usual share of each place as a whole percent, for the screens that name it (they never work it out) */
+JARS.forEach(j => { j.usualPct = Math.round(j.usual * 100); });
 const LINE_JARS = ['nec', 'play', 'edu', 'ffa', 'give'];
 /* a few words for each jar, shown under its name wherever the split is listed */
 const JARTAG = { nec: 'Bills', lts: 'Goals', play: 'Fun, no guilt', edu: 'Courses and books', ffa: 'Never spent', give: 'Charity and gifts' };
@@ -319,8 +321,11 @@ function calcAll(S) {
     m.billsTotal = m.jar.nec;
     m.items = itemsFor(S, ym); m.itemsTotal = sum(m.items.map(i => +i.amount || 0));
     m.debts = {}; m.debtPay = 0; m.debtInterest = 0;
-    debts.forEach(d => { const st = debtStep(d, dbal[d.id], val(S, 'debt:' + d.id, ym)); dbal[d.id] = st.bal; m.debts[d.id] = st; m.debtPay += st.pay; m.debtInterest += st.interest; });
+    debts.forEach(d => { const st = debtStep(d, dbal[d.id], val(S, 'debt:' + d.id, ym)); dbal[d.id] = st.bal; m.debts[d.id] = st; m.debtPay += st.pay; m.debtInterest += st.interest;
+      st.paidPct = d.balance > 0 ? Math.max(0, Math.min(1, 1 - st.bal / d.balance)) : 1; st.paidPctWhole = Math.round(st.paidPct * 100); });   /* how much of the debt is paid off by the end of this month */
     m.debtOwed = sum(debts.map(d => dbal[d.id]));
+    /* named amounts for the cards and loans screens: owed at the start of the month, the minimum payments, and what is paid on top of them */
+    m.debtStart = sum(debts.map(d => m.debts[d.id].start)); m.debtMin = sum(debts.map(d => Math.min(d.min, m.debts[d.id].start + m.debts[d.id].interest))); m.debtExtra = m.debtPay - m.debtMin;
     m.jar.nec += m.itemsTotal + m.debtPay;
     m.balBefore = Object.assign({}, bal);
     const freed = redirects.reduce((acc, r) => acc + (ym > r.l.ends ? r.amt : 0), 0);
@@ -582,9 +587,10 @@ function viewOf(S, C, ym, today) {
     unplaced: pcl.unplaced, overPay: pcl.overPay,         /* pay with no place; how much more than the pay the month plans */
     billsOverPay: nec.planned - (m.inflow - dwv),         /* how far the pay is under the bills (shown only when it is) */
     freeOver: map.free < 0 ? round2(-map.free) : 0,       /* Free to spend that came out of the bank */
-    perWeek: play.perWeek != null && map.free > 0 ? Math.max(0, map.free) / (play.daysLeft / 7) : null,   /* safe Free to spend a week for the days left */
+    perWeek: play.perWeek != null ? Math.max(0, map.free) / (play.daysLeft / 7) : null,   /* safe Free to spend a week for the days left */
     perDay: map.free > 0 && play.daysLeft > 0 ? map.free / play.daysLeft : null,
-    edu: tileOf('edu'), give: tileOf('give')
+    edu: tileOf('edu'), give: tileOf('give'),
+    otherPlaces: m.jar.play + m.jar.edu + m.jar.ffa + m.jar.give, leftAbs: Math.abs(m.left)   /* for the window that explains the month */
   };
   return { ym, main, goals, live: goals.filter(r => r.live).length, play, buckets, otherSpent: rs.byJar.other || 0, month, map, cells };
 }
@@ -613,7 +619,7 @@ function mapOf(S, C, ym, V0) {
   const names = { edu: 'Education', give: 'Giving', ffa: 'Investing' }, subs = { edu: 'courses and books', give: 'charity and gifts', ffa: 'never spent' };
   const burrows = ['edu', 'ffa', 'give'].map(id => {
     const bal = round2(st[id]), monthly = m.jar[id];
-    return { id, name: names[id], amount: Math.max(0, bal), overBy: bal < -0.004 ? round2(-bal) : 0, sub: subs[id], monthly, planned: round2(pl[id]), logged: round2(lg[id]), over: bal < -0.004,
+    return { id, name: names[id], amount: Math.max(0, bal), overBy: bal < -0.004 ? round2(-bal) : 0, sub: subs[id], monthly, planned: round2(pl[id]), logged: round2(lg[id]), loggedPast: round2(round2(lg[id]) - round2(pl[id])), over: bal < -0.004,
       fill: monthly > 0 ? Math.max(0, Math.min(1, bal / (monthly * 6))) : (bal > 0 ? .5 : 0) };
   }).filter(r => r.monthly > 0 || r.amount > 0);
   /* the pile in every room is drawn against the biggest room, so a bigger pile means more money (square root, so the small ones still show) */
@@ -622,12 +628,24 @@ function mapOf(S, C, ym, V0) {
   const goalsSaved = round2(sum(Object.keys(m.bal).map(id => m.bal[id]))), saved = round2(goalsSaved + sum(burrows.map(r => r.amount)));
   /* spending past what was planned comes out of the bank, so the bank and the total stay true to the receipts */
   const overspent = m.over || 0, bankEnd = m.bankEnd;
-  return { ym, free: fo.free, held: fo.held, overspent, billsLeft, billsPlanned: planNec, goalsSaved, saved, bankEnd, total: round2(bankEnd + saved), month, burrows,
+  /* the pay strip: real pay against what the plan places. Pay with no place is its own piece (less what spending past plan already used); a plan bigger than the pay says by how much */
+  const payReal = Math.max(0, m.inflow - (m.draw || 0)), placed = m.out, gap0 = round2(payReal - placed), usedOver = Math.min(Math.max(0, gap0), m.overNow || 0), payGap = round2(gap0 - usedOver), planOver = payGap < -0.5 ? round2(-payGap) : 0;
+  return { ym, free: fo.free, held: fo.held, overspent, billsLeft, billsPlanned: planNec, goalsSaved, saved, bankEnd, bankBelow: bankEnd < 0 ? round2(-bankEnd) : 0, total: round2(bankEnd + saved), month, burrows,
+    payReal, placed, payGap, usedOver, planOver,
     goalParts: (V0.goals || []).filter(g => g.live !== false || ((m.g[g.id] && m.g[g.id].actual) || 0) > 0).map(g => ({ id: g.id, name: g.name, slot: g.slot, saved: g.saved, plan: (m.g[g.id] && m.g[g.id].actual) || 0 })),
     split: ['nec', 'lts', 'play', 'edu', 'ffa', 'give'].map(id => ({ id, amount: id === 'lts' ? (m.goalsTotal || 0) : (m.jar[id] || 0) })).filter(x => x.amount > 0) };
 }
 /* the goal wizard's suggestion: what is still missing, spread evenly over n months and rounded up to the plan's unit (the same rule as evenSave) */
 function wizardMonthly(S, cost, saved, n) { const rem = Math.max(0, clampAmt(cost) - clampAmt(saved)), u = roundUnit(S); return n > 0 ? Math.ceil(rem / n / u) * u : 0; }
+
+/* a category spent past its plan: how much past (over), how much of it the bank pays (bank) and how much its own pile covered (pile). Only Education and Giving have a pile. */
+function overParts(m, jar, spent, plan) { const over = round2(spent - plan), soft = jar === 'edu' || jar === 'give'; if (!soft) return { over, bank: over, pile: 0, soft }; const bank = round2(Math.min(over, ((m && m.ovB) || {})[jar] || 0)); return { over, bank, pile: round2(over - bank), soft }; }
+/* the most that can be moved into a burrow from Free to spend: whole units, no more than is left to spend and no more than the burrow has room for */
+const moveCap = (target, saved, left) => Math.max(0, Math.min(Math.floor(left), Math.max(0, Math.ceil(target - saved))));
+/* the total of a list of receipts (for the statement review: what the new receipts add up to) */
+const receiptsTotal = list => round2(sum((list || []).map(r => +r.a || 0)));
+/* what is left of a planned amount after what was logged against it */
+const leftOfPlan = (plan, spent) => round2(plan - spent);
 
 /* ---- PLAN CELLS: every worked-out amount the Plan tab and the dock at the foot of the page show. Screens read these; they never do the sum. ---- */
 function planCells(S, C, ym) {
@@ -938,19 +956,22 @@ function limitsOf(S, C, ym) {
     const spent = rs.byKey[x.key] || 0, soft = x.jar === 'play' || x.jar === 'edu' || x.jar === 'give';
     if (x.jar === 'ffa') return;
     if (!(soft || spent > 0) || !(x.v > 0 || spent > 0)) return;
-    rows.push({ key: x.key, name: x.name, jar: x.jar, planned: x.v, spent, left: round2(x.v - spent), over: round2(x.v - spent) < 0 });
+    rows.push({ key: x.key, name: x.name, jar: x.jar, planned: x.v, spent, left: round2(x.v - spent), over: round2(x.v - spent) < 0, overBy: round2(x.v - spent) < 0 ? round2(spent - x.v) : 0 });
   });
   return { rows, other: rs.byKey.other || 0, total: rs.total };
 }
 
 /* ---------- last month in one look ---------- */
-function lookBack(S, C, ym) {
+function lookBack0(S, C, ym) {
   const m = C.byYm[ym]; if (!m) return null;
   const rs = receiptStats(S, ym), lim = limitsOf(S, C, ym);
   const jars = ['nec', 'play', 'edu', 'give'].map(j => ({ id: j, planned: m.jar[j], spent: rs.byJar[j] || 0, left: round2(m.jar[j] - (rs.byJar[j] || 0)) }));
   return { ym, inflow: m.inflow, out: m.out, left: round2(m.bankEnd - m.bankStart), planLeft: m.left, bankStart: m.bankStart, bankEnd: m.bankEnd, count: rs.count, logged: rs.total, other: rs.byJar.other || 0, jars,
     over: lim.rows.map(r => (r.jar === 'edu' || r.jar === 'give') && r.over ? Object.assign({}, r, { left: -Math.min(-r.left, (m.ovB || {})[r.jar] || 0) }) : r).filter(r => r.over && r.left < -0.004).concat((rs.byJar.other || 0) - (m.itemsTotal || 0) > 0.004 ? [{ name: 'Other', left: -round2((rs.byJar.other || 0) - (m.itemsTotal || 0)), over: true }] : []).sort((a, b) => a.left - b.left), goalsAdded: round2(m.goalsTotal + ((m.topup && m.topup.used) || 0)), debtPaid: m.debtPay, interest: m.debtInterest, owed: m.debtOwed };
 }
+
+/* last month with its named amounts: how much the balance moved (change), and for each line over its plan, by how much (overBy) */
+function lookBack(S, C, ym) { const b = lookBack0(S, C, ym); if (!b) return b; b.change = Math.abs(round2(b.bankEnd - b.bankStart)); b.over = b.over.map(r => Object.assign({}, r, { overBy: round2(-r.left) })); return b; }
 
 /* ---------- repeating spending: adds the receipts that came due since the last time, never more than 60 at once ---------- */
 function dueDates(r, fromExcl, toIncl) {

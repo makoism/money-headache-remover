@@ -4,9 +4,9 @@
    This month's two rooms (Bills and basics, Free to spend) are here; the burrows (goals, Education, Giving, Investing) are the next section, drawn by BUR.home.
    Every figure comes from V.map (model.js, mapOf). Until real balances arrive (pay day, a later step) the bank figure is the plan's balance at the end of the month and the page says so. */
 /* what covers a plan bigger than the pay: the emergency fund first (what was borrowed), then the bank */
-const coverText = (over, draw, bank, minB) => {
+const coverText = (over, draw, bank, minB, below) => {
   const rest = round2(over - (draw || 0));
-  return (draw > 0 ? fmt(draw) + ' is borrowed from your emergency fund' + (rest < -0.5 ? ' (more than the gap, the extra stays in your bank)' : '') + '. ' : '') + (rest <= 0.5 ? '' : bank < 0 ? 'Your bank cannot cover ' + (draw > 0 ? 'the rest' : 'it') + ': it would end ' + fmt(-bank) + ' below zero.' : bank < minB ? 'The bank covers ' + (draw > 0 ? 'the rest' : 'it') + ' but ends under your minimum.' : 'The bank covers ' + (draw > 0 ? 'the rest.' : 'the difference.'));
+  return (draw > 0 ? fmt(draw) + ' is borrowed from your emergency fund' + (rest < -0.5 ? ' (more than the gap, the extra stays in your bank)' : '') + '. ' : '') + (rest <= 0.5 ? '' : bank < 0 ? 'Your bank cannot cover ' + (draw > 0 ? 'the rest' : 'it') + ': it would end ' + fmt(below) + ' below zero.' : bank < minB ? 'The bank covers ' + (draw > 0 ? 'the rest' : 'it') + ' but ends under your minimum.' : 'The bank covers ' + (draw > 0 ? 'the rest.' : 'the difference.'));
 };
 function renderMap() {
   const el = $('#hMap'), V = HV; if (!el) return;
@@ -22,10 +22,10 @@ function renderMap() {
   const split = [];
   M.split.forEach(x => { if (x.id !== 'lts') split.push({ id: x.id, name: SPL[x.id], amount: x.amount, c: col(x.id) }); else M.goalParts.filter(g => g.plan > 0).forEach(g => split.push({ id: 'goal:' + g.id, name: g.name, amount: g.plan, c: gcol(g) })); });
   /* the strip always adds up to the real pay: pay the plan has not placed is its own piece, and a plan bigger than the pay says so */
-  const dwn = (C && C.byYm[V.ym] && C.byYm[V.ym].draw) || 0, realPay = Math.max(0, ((HV && HV.month && HV.month.inflow) || 0) - dwn), placed = split.reduce((a, x) => a + x.amount, 0), gapPay0 = round2(realPay - placed), usedOver = Math.min(Math.max(0, gapPay0), (C && C.byYm[V.ym] && C.byYm[V.ym].overNow) || 0), gapPay = round2(gapPay0 - usedOver);
+  const dwn = (C && C.byYm[V.ym] && C.byYm[V.ym].draw) || 0, placed = M.placed, usedOver = M.usedOver, gapPay = M.payGap;   /* the pay strip's amounts come from the model (mapOf) */
   if (gapPay > 0.5) split.push({ id: 'unplaced', name: 'Not placed yet, stays in the bank', amount: gapPay, c: 'var(--bankc)' });
   if (usedOver > 0.5) split.push({ id: 'usedover', name: 'Used for spending past plan', amount: usedOver, c: 'var(--bad)' });
-  const planOver = gapPay < -0.5 ? round2(-gapPay) : 0;
+  const planOver = M.planOver;
   const seg = split.map(x => `<i class="mp-seg" data-drop="pay:${esc(x.id)}" style="flex:${x.amount};--c:${x.c}" title="${esc(x.name)} ${esc(fmt(x.amount))}"></i>`).join('');
   const key = split.map(x => `<li><i style="background:${x.c}"></i>${esc(x.name)} <b>${fmt(x.amount)}</b></li>`).join('');
   const pb = M.bankEnd > 0 ? M.bankEnd : 0;
@@ -33,11 +33,11 @@ function renderMap() {
   const wseg = parts.map(x => `<i style="flex:${x.amount};--c:${x.c}" title="${esc(x.name)} ${esc(fmt(x.amount))}"></i>`).join('');
   const wkey = (M.bankEnd < 0 ? `<li class="mp-neg"><i style="background:var(--bad)"></i>In the bank <b>${fmt2(M.bankEnd)}</b> (short)</li>` : '') + parts.map(x => `<li><i style="background:${x.c}"></i>${esc(x.name)} <b>${fmt2(x.amount)}</b></li>`).join('');
   const smp = '';   /* the one sample notice is the status line at the top of Home */
-  const minB = cfg(S, 'minBank'), warn = !(M.bankEnd < minB) ? '' : M.bankEnd < 0 ? `<p class="mp-warn" role="status">Your bank would end ${fmt(-M.bankEnd)} below zero in ${esc(mon)}. ${M.overspent > 0 ? 'Spending is past what you planned.' : 'Your plan is bigger than your pay.'} Spend nothing more from Free to spend until you check your plan.</p>` : `<p class="mp-warn" role="status">Your bank ends at ${fmt(M.bankEnd)} in ${esc(mon)}, under your safety minimum of ${fmt(minB)}. ${(() => { const pl = (M.month || []).find(x => x.id === 'play'); return pl && pl.amount < pl.planned - 0.5 ? 'Free to spend is lowered to match.' : 'Open Plan to pick a fix.'; })()}</p>`;
+  const minB = cfg(S, 'minBank'), warn = !(M.bankEnd < minB) ? '' : M.bankEnd < 0 ? `<p class="mp-warn" role="status">Your bank would end ${fmt(M.bankBelow)} below zero in ${esc(mon)}. ${M.overspent > 0 ? 'Spending is past what you planned.' : 'Your plan is bigger than your pay.'} Spend nothing more from Free to spend until you check your plan.</p>` : `<p class="mp-warn" role="status">Your bank ends at ${fmt(M.bankEnd)} in ${esc(mon)}, under your safety minimum of ${fmt(minB)}. ${(() => { const pl = (M.month || []).find(x => x.id === 'play'); return pl && pl.amount < pl.planned - 0.5 ? 'Free to spend is lowered to match.' : 'Open Plan to pick a fix.'; })()}</p>`;
   put(el, `<h2 class="hb-h">Your burrow${typeof sampleOn === 'function' && sampleOn() ? ' <span class="smp-tag">Sample numbers</span>' : ''}</h2><p class="cap hb-what">Where your money is. This month's money is below, your burrows after it.</p>${smp}
     <p class="mp-cap">Your pay in ${esc(mon)}, and where it goes</p>
     <div class="mp-split" role="img" aria-label="Your pay in ${esc(mon)} splits into: ${esc(split.map(x => x.name + ' ' + fmt(x.amount)).join(', '))}">${seg}${planOver && placed > 0 ? `<b class="mp-past" style="width:${Math.min(100, planOver / placed * 100)}%" title="Planned past your pay ${esc(fmt(planOver))}"></b>` : ''}</div>
-    <ul class="mp-key">${key}${planOver ? `<li><i style="background:var(--bad)"></i>Past your pay <b>${fmt(planOver)}</b></li>` : ''}</ul>${planOver ? `<p class="cap">Your plan places ${fmt(planOver)} more than your pay. ${coverText(planOver, dwn, M.bankEnd, cfg(S, 'minBank'))}</p>` : ''}
+    <ul class="mp-key">${key}${planOver ? `<li><i style="background:var(--bad)"></i>Past your pay <b>${fmt(planOver)}</b></li>` : ''}</ul>${planOver ? `<p class="cap">Your plan places ${fmt(planOver)} more than your pay. ${coverText(planOver, dwn, M.bankEnd, cfg(S, 'minBank'), M.bankBelow)}</p>` : ''}
     <p class="mp-act"><button type="button" class="btn small" id="mpPay">Watch where your pay goes</button></p>
     <p class="mp-cap">Where your money sits at the end of ${esc(mon)}: the bank, your goals and your burrows</p>
     <div class="mp-where" role="img" aria-label="${esc(parts.map(x => x.name + ' ' + fmt(x.amount)).join(', '))}">${wseg}</div>

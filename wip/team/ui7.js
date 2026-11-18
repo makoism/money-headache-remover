@@ -18,14 +18,14 @@ function debtFormHTML(d, isNew) {
 }
 function debtCardHTML(d, r, x, i, first) {
   const id = esc(d.id), slot = SLOTS[i % SLOTS.length], open = DEBT_EDIT === d.id;
-  const done = x.start <= 0, pct = d.balance > 0 ? Math.max(0, Math.min(1, 1 - x.bal / d.balance)) : 1;
+  const done = x.start <= 0, pct = x.paidPct;
   let stat, cls = 'plain', note = '';
   if (done) { cls = 'good'; stat = IC.ok + 'Paid off'; note = 'Nothing owed.'; }
   else if (r.never) { cls = 'bad'; stat = IC.bad + 'Not paid off'; note = `The payment does not cover the interest. Pay at least ${fmt(debtMinToCover(d))} a month.`; }
   else { cls = 'good'; stat = IC.ok + 'On the way'; note = `Paid off ${monthLabel(r.payoffYm)}.${r.totalInterest > 0 ? ' About ' + fmt(r.totalInterest) + ' interest in all.' : ''}`; }
   return `<div class="gcard dcard" id="dc-${id}" data-did="${id}" style="--c:var(--c${slot})">
     <div class="jhead"><span class="jarn"><i class="dot"></i><span>${esc(d.name)}</span></span><span class="jarv"><b>${fmt(x.start)}</b> owed</span></div>
-    <div class="gbar" role="img" aria-label="${esc(d.name)}: ${Math.round(pct * 100)}% paid by the end of ${monthLabel(sel, true)}"><i class="fill" style="width:${pct * 100}%"></i></div>
+    <div class="gbar" role="img" aria-label="${esc(d.name)}: ${x.paidPctWhole}% paid by the end of ${monthLabel(sel, true)}"><i class="fill" style="width:${pct * 100}%"></i></div>
     <div class="jfoot"><span class="jstat ${cls}">${stat}</span><span class="jart">${esc(note)}</span></div>
     <p class="gsave">${DEBT_KIND_NAME[d.kind]}${d.apr > 0 ? `, ${esc(String(d.apr))}% a year` : ''}. Pays <b>${fmt(x.pay)}</b> in ${monthLabel(sel, true)}${x.interest > 0 ? ` (${fmt(x.interest)} of it interest)` : ''}.</p>
     ${first && !done ? '<p class="gsave"><b>Put extra money here first.</b> It has the highest rate.</p>' : ''}
@@ -49,13 +49,13 @@ function renderDebts() {
     $('#addDebtBtn').hidden = sample || DEBT_DRAFT !== null || ds.length >= MAX_DEBTS;
     $('#debtMsg').textContent = ds.length >= MAX_DEBTS ? `Limit: ${MAX_DEBTS}.` : '';
   }
-  const owed = m.debts && ds.length ? sum(ds.map(d => m.debts[d.id].start)) : 0;
+  const owed = (m.debts && ds.length ? m.debtStart : 0) || 0;
   const free = rows.length && rows.every(r => !r.never) ? rows.reduce((a, r) => (r.payoffYm > a ? r.payoffYm : a), '') : '';
   $('#debtSub').textContent = !ds.length ? 'Cards and loans with interest. Their payments are part of Bills and basics.'
     : `${fmt(owed)} owed at the start of ${monthLabel(sel, true)}. ${m.debtInterest > 0 ? fmt(m.debtInterest) + ' interest this month. ' : ''}${free ? 'Debt free ' + monthLabel(free) + '.' : rows.some(r => r.never) ? 'One of them is not being paid off.' : ''}`;
   /* the Plan row */
   const row = document.querySelector('.row[data-id="debts"]'); if (row) row.hidden = !ds.length;
-  const note = $('#jcap-debts'); if (note) note.textContent = ds.length ? `${fmt(sum(ds.map(d => Math.min(d.min, m.debts[d.id].start + m.debts[d.id].interest))))} minimums${m.debtPay - sum(ds.map(d => Math.min(d.min, m.debts[d.id].start + m.debts[d.id].interest))) > 0 ? ' and ' + fmt(m.debtPay - sum(ds.map(d => Math.min(d.min, m.debts[d.id].start + m.debts[d.id].interest)))) + ' extra' : ''}. Extra goes straight off what you owe.` : '';
+  const note = $('#jcap-debts'); if (note) note.textContent = ds.length ? `${fmt(m.debtMin)} minimums${m.debtExtra > 0 ? ' and ' + fmt(m.debtExtra) + ' extra' : ''}. Extra goes straight off what you owe.` : '';
 }
 function debtRead(form) {
   const g = k => form.querySelector(`[data-d="${k}"]`), num = k => { const v = Math.round(+g(k).value || 0); return Math.max(0, Math.min(1e9, v)); };
@@ -100,7 +100,7 @@ function debtsInit() {
 function renderHomeDebts() {
   const el = $('#hDebts'); if (!el) return;
   const ds = debtsOf(S); if (!ds.length || sampleOn()) { el.hidden = true; return; }
-  const ym = HV.ym, m = C.byYm[ym], rows = debtRows(S, C), owed = sum(ds.map(d => m.debts[d.id].start));
+  const ym = HV.ym, m = C.byYm[ym], rows = debtRows(S, C), owed = m.debtStart || 0;
   const free = rows.every(r => !r.never) ? rows.reduce((a, r) => (r.payoffYm > a ? r.payoffYm : a), '') : '';
   const first = rows.find(r => r.first), bad = rows.find(r => r.never);
   el.hidden = false;
@@ -211,7 +211,7 @@ function renderLimits() {
   const L = limitsOf(S, C, HV.ym); if (!L.rows.length && !L.other) { el.hidden = true; return; }
   el.hidden = false;
   put(el, `<h2>Spending limits</h2><p class="hs-lbl">Each line against what you logged in ${esc(monthLabel(HV.ym, true))}</p>
-    <ul class="lim">${L.rows.map(r => { const f = r.planned > 0 ? Math.min(1, r.spent / r.planned) : (r.spent > 0 ? 1 : 0); return `<li class="${r.over ? 'over' : ''}"><span class="ln">${esc(r.name)}</span><span class="lv">${r.over ? `${fmt2(-r.left)} over` : `${fmt2(r.left)} left`}</span><span class="lb" role="img" aria-label="${esc(r.name)}: ${fmt2(r.spent)} of ${fmt(r.planned)}"><i style="width:${f * 100}%"></i></span><span class="ls">${fmt2(r.spent)} of ${fmt(r.planned)}</span></li>`; }).join('')}</ul>
+    <ul class="lim">${L.rows.map(r => { const f = r.planned > 0 ? Math.min(1, r.spent / r.planned) : (r.spent > 0 ? 1 : 0); return `<li class="${r.over ? 'over' : ''}"><span class="ln">${esc(r.name)}</span><span class="lv">${r.over ? `${fmt2(r.overBy)} over` : `${fmt2(r.left)} left`}</span><span class="lb" role="img" aria-label="${esc(r.name)}: ${fmt2(r.spent)} of ${fmt(r.planned)}"><i style="width:${f * 100}%"></i></span><span class="ls">${fmt2(r.spent)} of ${fmt(r.planned)}</span></li>`; }).join('')}</ul>
     ${L.other > 0 ? `<p class="cap">${fmt2(L.other)} logged as Other has no limit.</p>` : ''}`);
 }
 
@@ -224,9 +224,9 @@ function renderLookBack() {
   const names = { nec: 'Bills and basics', play: 'Free to spend', edu: 'Education', give: 'Giving' };
   const rows = b.jars.filter(j => j.planned > 0 || j.spent > 0).map(j => `<tr><th scope="row">${names[j.id]}</th><td>${fmt(j.planned)}</td><td>${j.spent > 0 ? fmt2(j.spent) : j.id === 'nec' ? 'in plan' : fmt(0)}</td></tr>`).join('');
   put(el, `<h2>Last month, ${esc(monthLabel(pm))}</h2>
-    <p class="cap">${b.count} ${b.count === 1 ? 'receipt' : 'receipts'}, ${fmt2(b.logged)} logged. The balance went ${b.left >= 0 ? 'up' : 'down'} ${fmt2(Math.abs(round2(b.bankEnd - b.bankStart)))}, from ${fmt2(b.bankStart)} to ${fmt2(b.bankEnd)}.</p>
+    <p class="cap">${b.count} ${b.count === 1 ? 'receipt' : 'receipts'}, ${fmt2(b.logged)} logged. The balance went ${b.left >= 0 ? 'up' : 'down'} ${fmt2(b.change)}, from ${fmt2(b.bankStart)} to ${fmt2(b.bankEnd)}.</p>
     <div class="tablewrap"><table class="lbt"><thead><tr><th scope="col"></th><th scope="col">Planned</th><th scope="col">Spent</th></tr></thead><tbody>${rows}</tbody></table></div>
-    ${b.over.length ? `<p class="cap">Over the plan: ${b.over.slice(0, 3).map(r => `${esc(r.name)} by ${fmt2(-r.left)}`).join(', ')}.</p>` : '<p class="cap">Nothing went over its plan.</p>'}
+    ${b.over.length ? `<p class="cap">Over the plan: ${b.over.slice(0, 3).map(r => `${esc(r.name)} by ${fmt2(r.overBy)}`).join(', ')}.</p>` : '<p class="cap">Nothing went over its plan.</p>'}
     <p class="cap">${b.goalsAdded > 0 ? `${fmt(b.goalsAdded)} went to goals. ` : ''}${b.debtPaid > 0 ? `${fmt(b.debtPaid)} went to cards and loans, ${fmt(b.interest)} of it interest. ` : ''}</p>`);
 }
 
@@ -291,7 +291,7 @@ function openWhy(kind) {
     title = r.name;
     rows = [[`Planned for ${mon}`, fmt(r.monthly)], ['Planned since the start of your plan', fmt(r.planned)]];
     if (r.id !== 'ffa' || r.logged > 0) rows.push(['Logged', (r.logged > 0 ? '−' : '') + fmt2(r.logged)]);
-    rows.push([r.over ? 'Logged more than planned' : 'In this burrow', r.over ? fmt2(r.logged - r.planned) : fmt(r.amount)]);
+    rows.push([r.over ? 'Logged more than planned' : 'In this burrow', r.over ? fmt2(r.loggedPast) : fmt(r.amount)]);
     foot = r.id === 'ffa' ? 'Money you invest and never spend. It only grows.' : 'Money that piles up. What you log here comes out of the pile, and it does not touch your monthly bills.';
   } else if (kind === 'free') {
     const fo = freeOf(S, V.month, p), held = fo.held, freeLeft = fo.free;
@@ -299,12 +299,12 @@ function openWhy(kind) {
     rows = [[`Free to spend planned for ${mon}`, fmt(p.planned)], [`Logged in Free to spend (${p.count} ${p.count === 1 ? 'receipt' : 'receipts'})`, '−' + fmt2(p.spent)]];
     if (held > 0) rows.push(['Held back so the balance stays above your minimum', '−' + fmt(held)]);
     rows.push(['Free to spend', fmt2(freeLeft)]);
-    if (p.perWeek != null) rows.push([`Per week for the ${plural(p.daysLeft, 'day')} left`, fmt(Math.max(0, freeLeft) / (p.daysLeft / 7))]);
-    if (p.daysLeft > 0 && freeLeft > 0) rows.push(['Per day', fmt(freeLeft / p.daysLeft)]);
+    if (p.perWeek != null) rows.push([`Per week for the ${plural(p.daysLeft, 'day')} left`, fmt(V.cells.perWeek)]);
+    if (p.daysLeft > 0 && freeLeft > 0) rows.push(['Per day', fmt(V.cells.perDay)]);
     foot = 'Planned is the Free to spend total on the Plan page. Logged is every receipt in Free to spend this month.';
   } else {
     title = 'Where you stand in ' + mon;
-    rows = [['Pay and other money in', fmt(m.inflow)], ['Bills, one-time costs and card payments', '−' + fmt(m.jar.nec)], ['Goals', '−' + fmt(m.goalsTotal)], ['Free to spend, Education, Investing, Give', '−' + fmt(m.jar.play + m.jar.edu + m.jar.ffa + m.jar.give)], ['Left in the month', (m.left < 0 ? '−' : '') + fmt(Math.abs(m.left))], ['Balance at the start', fmt(m.bankStart)], ['Balance at the end', fmt(m.bankEnd)], ['Your minimum balance', fmt(floor)]];
+    rows = [['Pay and other money in', fmt(m.inflow)], ['Bills, one-time costs and card payments', '−' + fmt(m.jar.nec)], ['Goals', '−' + fmt(m.goalsTotal)], ['Free to spend, Education, Investing, Give', '−' + fmt(V.cells.otherPlaces)], ['Left in the month', (m.left < 0 ? '−' : '') + fmt(V.cells.leftAbs)], ['Balance at the start', fmt(m.bankStart)], ['Balance at the end', fmt(m.bankEnd)], ['Your minimum balance', fmt(floor)]];
     foot = m.bankEnd < floor ? 'The balance ends under your minimum, so the month is short.' : m.left < 0 ? 'The month spends more than comes in, but the balance covers it.' : 'Everything planned fits in your pay.';
   }
   let el = $('#why');

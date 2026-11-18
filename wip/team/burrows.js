@@ -136,7 +136,7 @@ const BUR = (() => {
      the plan already has, so it is one undoable change). Then the coins drop into the burrow one by one, with sounds, and the little animals dance. ---------- */
   function playLeft() { try { const ym = nowYm(), m = calcAll(S).byYm[ym], spent = (receiptStats(S, ym).byJar || {}).play || 0; return Math.max(0, Math.floor((m.jar.play - spent) * 100) / 100); } catch (e) { return 0; } }
   function addPanel(r) {
-    const left = playLeft(), room = Math.max(0, Math.ceil(r.target - r.saved)), cap = Math.max(0, Math.min(Math.floor(left), room));
+    const left = playLeft(), room = Math.max(0, Math.ceil(r.target - r.saved)), cap = moveCap(r.target, r.saved, left);
     const nice = v => { const st = cap > 20000 ? 1000 : cap > 4000 ? 500 : cap > 800 ? 100 : 10; return Math.max(1, Math.min(cap, Math.round(v / st) * st)); };
     const chips = [...new Set([nice(cap * .25), nice(cap * .5), cap])].filter(v => v > 0 && v <= cap);
     if (!(cap > 0)) { pop.innerHTML = `<h2>${esc(r.name)}</h2><p class="bv-s">${room <= 0 ? 'This burrow is full.' : 'No free-to-spend money left this month to move here.'}</p><button type="button" class="link bv-no">Back</button>`; pop.querySelector('.bv-no').addEventListener('click', e => { e.stopPropagation(); fill(); }); return; }
@@ -269,7 +269,7 @@ const BUR = (() => {
   function fill() {
     const all = rows(), r = all.find(x => x.id === cur) || all[0]; if (!r) return;
     cur = r.id; const pct = Math.min(1, r.saved / r.target); LK = LOOKS[lookOf(r)] ? lookOf(r) : 'plain';
-    pop.innerHTML = `<h2>${esc(r.name)}</h2><p class="bv-n"><b>${fmt(r.saved)}</b> ${r.kind === 'debt' ? 'paid of' : 'of'} ${fmt(r.target)}</p><div class="bv-bar" role="img" aria-label="${(pct >= 1 ? 100 : Math.min(99, Math.floor(pct * 100)))} percent ${r.kind === 'debt' ? 'paid off' : 'full'}"><i style="width:${(pct >= 1 ? 100 : Math.min(99, Math.floor(pct * 100)))}%"></i></div><p class="bv-s">${(pct >= 1 ? 100 : Math.min(99, Math.floor(pct * 100)))}% ${r.kind === 'debt' ? 'paid off. ' + fmt(Math.max(0, r.target - r.saved)) + ' still owed' : 'full'}</p><button type="button" class="btn bv-add">${r.kind === 'debt' ? 'Add a payment' : 'Add money'}</button>`;
+    pop.innerHTML = `<h2>${esc(r.name)}</h2><p class="bv-n"><b>${fmt(r.saved)}</b> ${r.kind === 'debt' ? 'paid of' : 'of'} ${fmt(r.target)}</p><div class="bv-bar" role="img" aria-label="${r.pct} percent ${r.kind === 'debt' ? 'paid off' : 'full'}"><i style="width:${r.pct}%"></i></div><p class="bv-s">${r.pct}% ${r.kind === 'debt' ? 'paid off. ' + fmt(r.togo) + ' still owed' : 'full'}</p><button type="button" class="btn bv-add">${r.kind === 'debt' ? 'Add a payment' : 'Add money'}</button>`;
     pop.querySelector('.bv-add').addEventListener('click', e => { e.stopPropagation(); addPanel(r); });
     el.querySelector('.bv-dots').innerHTML = all.map(x => `<button type="button" data-b="${esc(x.id)}" aria-label="${esc(x.name)}" aria-current="${x.id === cur}"></button>`).join('');
     el.querySelectorAll('.bv-dots button').forEach(b => b.addEventListener('click', () => open(b.dataset.b)));
