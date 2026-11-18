@@ -186,7 +186,14 @@ function renderNext() {
   if (SWEPT && !(S.ui.sweep && S.ui.sweep[SWEPT.pm])) SWEPT = null;
   /* after a reload, an answer made in the last 3 days still shows with Undo */
   if (!SWEPT && S.ui.sweep && !sweepOffer()) { const k = Object.keys(S.ui.sweep).filter(q => S.ui.sweep[q].t && Date.now() - S.ui.sweep[q].t < 3 * 864e5 && C.byYm[q] && C.byYm[q].counted > 0).sort().pop(); if (k) { const e = S.ui.sweep[k]; SWEPT = { pm: k, id: e.id || null, to: e.id ? undefined : 'bank', amt: e.amt, note: `From ${FULL[+k.slice(5) - 1]}'s free to spend.${e.id ? '' : ' The bank figure now includes it.'}` }; } }
-  if (!step && SWEPT) { const g = SWEPT.id ? goalById(S, SWEPT.id) : null, mm = C.byYm[SWEPT.pm] || {}, used = (mm.topup && mm.topup.used) || 0, cnt = mm.counted || 0, rest = round2(cnt - used); step = [SWEPT.id && used > 0 ? `${fmt2(used)} put toward ${g ? g.name : 'the goal'}` : `${fmt2(cnt)} counted in the bank`, (SWEPT.note || `From ${FULL[+SWEPT.pm.slice(5) - 1]}'s free to spend.`) + (used > 0 && rest > 0.004 ? ` The other ${fmt2(rest)} stays in the bank.` : ''), 'Undo', 'data-sweepundo']; }
+  if (!step && SWEPT) {
+    const g = SWEPT.id ? goalById(S, SWEPT.id) : null, mm = C.byYm[SWEPT.pm] || {}, used = (mm.topup && mm.topup.used) || 0, cnt = mm.counted || 0, rest = round2(cnt - used), nm = FULL[+SWEPT.pm.slice(5) - 1];
+    let body;
+    if (g && used > 0) { let gi = null; try { gi = goalInfo(S, C, g.id, nowYm()); } catch (e) { } const rd = C.reached[g.id]; body = gi ? (gi.pct >= 1 ? dw(S, g, `${g.name} is full.`) : dw(S, g, `${fmt(Math.max(0, g.target - gi.bal))} to go.${rd ? ` Full ${monthLabel(rd)}.` : ''}`)) : ''; body += (g.why ? ' ' + g.why + '.' : '') + (rest > 0.004 ? ` The other ${fmt2(rest)} stays in the bank.` : ''); }
+    else if (g) body = `From ${nm}'s free to spend. ${g.name} had no room left, so it stays in the bank.`;
+    else body = `From ${nm}'s free to spend. The bank figure now includes it.`;
+    step = [g && used > 0 ? `${fmt2(used)} put toward ${g.name}` : `${fmt2(cnt)} counted in the bank`, body, 'Undo', 'data-sweepundo'];
+  }
   let sw = null;
   if (!step && (sw = sweepOffer())) {
     const nm = FULL[+sw.pm.slice(5) - 1], one = sw.goals.length === 1, nowNm = FULL[+sw.now.slice(5) - 1];

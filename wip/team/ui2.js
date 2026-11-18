@@ -78,7 +78,7 @@ function render() {
   $('#heroNum').textContent = heroTxt; $('#heroNum').style.setProperty('--n', String(heroTxt.length)); $('#heroNum').style.color = heroShow < 0 ? 'var(--bad)' : '';
   $('#heroWk').textContent = (playSpent > 0 || heroShow !== play) ? `Planned ${fmt(play)} this month, about ${fmt(wk)} a week.` : `Planned: about ${fmt(wk)} a week across the whole month.`;
   $('#rcLine').innerHTML = !rs.count ? '<button type="button" class="link" data-tab-go="receipts">Add a receipt</button> to see actual spend.'
-    : play > 0 ? `Receipts: ${fmt2(playSpent)} spent, ${playSpent > play ? fmt2(round2(playSpent - play)) + ' over' : fmt2(playSafeLeft(S, m, playSpent)) + ' safe to spend'}. <button type="button" class="link" data-tab-go="receipts">See receipts</button>`
+    : play > 0 ? `Receipts: ${fmt2(playSpent)} spent, ${playSpent > play ? fmt2(round2(playSpent - play)) + ' over' : (m.counted > 0 ? fmt2(m.counted) + ' not spent' + (m.topup && m.topup.used > 0 ? ', ' + fmt2(m.topup.used) + ' went to a goal' : ', came back to the bank') : m.pendLeft > 0 ? fmt2(m.pendLeft) + ' not logged as spent yet, Home asks where it goes' : fmt2(playSafeLeft(S, m, playSpent)) + ' safe to spend')}. <button type="button" class="link" data-tab-go="receipts">See receipts</button>`
     : `Receipts: ${fmt2(rs.total)} spent. <button type="button" class="link" data-tab-go="receipts">See receipts</button>`;
   const Lun = Math.max(0, (L - (m.draw || 0)) - (m.overNow || 0));   /* pay with no place, less what spending past plan already took from it */
   const chip = $('#chip'); chip.className = 'chip ' + st; chip.hidden = pin <= 0;
@@ -211,7 +211,7 @@ function renderGoals(m) {
     tx = dw(S, g, tx); note = dw(S, g, note);
     js.className = 'jstat ' + cls; js.innerHTML = ic + tx; $('#jt-' + g.id).textContent = note;
     const gm = m.g[g.id], put = gm.actual;
-    $('#gs-' + g.id).innerHTML = `${dw(S, g, 'Saved so far')}: <b>${fmt(m.balBefore && m.balBefore[g.id] !== undefined ? m.balBefore[g.id] : g.start)}</b>. ` + (put > 0 ? `Plan adds <b>${fmt(put)}</b> in ${monthLabel(sel, true)}.` : `Plan adds nothing in ${monthLabel(sel, true)}.`) + (g.emergency && m.draw > 0 ? ` <b>${fmt(m.draw)}</b> borrowed in ${monthLabel(sel, true)}.` : '');
+    $('#gs-' + g.id).innerHTML = `${dw(S, g, 'Saved so far')}: <b>${fmt(m.balBefore && m.balBefore[g.id] !== undefined ? m.balBefore[g.id] : g.start)}</b>. ` + (put > 0 ? `Plan adds <b>${fmt2(put)}</b> in ${monthLabel(sel, true)}.` : gm.up > 0 ? '' : `Plan adds nothing in ${monthLabel(sel, true)}.`) + (gm.up > 0 ? ` <b>${fmt2(gm.up)}</b> from unspent Free to spend, as you chose.` : '') + (g.emergency && m.draw > 0 ? ` <b>${fmt(m.draw)}</b> borrowed in ${monthLabel(sel, true)}.` : '');
   });
 }
 
@@ -245,7 +245,7 @@ function renderMonthTable() {
     const st = grew ? 'short' : statusOf(S, m), gs = fullIn[m.ym] || [];
     const marks = gs.map(g => `<span class="mt-g" style="--c:var(--c${g.slot})" title="${esc(g.name)} full">${HI.leaf}<span>${esc(g.name)} full</span></span>`).join('');
     const wd = grew ? 'Over plan' : word[st];
-    return `<tr data-ym="${m.ym}" class="${m.ym === sel ? 'on' : ''}" tabindex="0" aria-label="${fullLabel(m.ym)}: ${wd}${gs.length ? ', ' + gs.map(g => g.name + ' full').join(', ') : ''}"><td>${monthLabel(m.ym)}${marks}</td><td class="${m.pool.left < 0 ? 'neg' : ''}">${fmt(m.pool.left)}</td><td class="${bk < cfg(S, 'minBank') ? 'neg' : ''}">${fmt(bk)}</td><td><span class="st ${st}">${icon[st]}<span class="stw">${wd}</span></span></td></tr>`;
+    return `<tr data-ym="${m.ym}" class="${m.ym === sel ? 'on' : ''}" tabindex="0" aria-label="${fullLabel(m.ym)}: ${wd}${gs.length ? ', ' + gs.map(g => g.name + ' full').join(', ') : ''}"><td>${monthLabel(m.ym)}${marks}</td><td class="${m.pool.left < 0 ? 'neg' : ''}">${fmt2(m.pool.left)}</td><td class="${bk < cfg(S, 'minBank') ? 'neg' : ''}">${fmt2(bk)}</td><td><span class="st ${st}">${icon[st]}<span class="stw">${wd}</span></span></td></tr>`;
   }).join('');
   $('#monthTable').innerHTML = `<table><thead><tr><th>Month</th><th>Left</th><th>Bank, month end</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table>`;
 }

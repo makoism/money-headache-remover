@@ -3136,7 +3136,7 @@ function lookBack(S, C, ym) {
   const rs = receiptStats(S, ym), lim = limitsOf(S, C, ym);
   const jars = ['nec', 'play', 'edu', 'give'].map(j => ({ id: j, planned: m.jar[j], spent: rs.byJar[j] || 0, left: round2(m.jar[j] - (rs.byJar[j] || 0)) }));
   return { ym, inflow: m.inflow, out: m.out, left: round2(m.bankEnd - m.bankStart), planLeft: m.left, bankStart: m.bankStart, bankEnd: m.bankEnd, count: rs.count, logged: rs.total, other: rs.byJar.other || 0, jars,
-    over: lim.rows.map(r => (r.jar === 'edu' || r.jar === 'give') && r.over ? Object.assign({}, r, { left: -Math.min(-r.left, (m.ovB || {})[r.jar] || 0) }) : r).filter(r => r.over && r.left < -0.004).concat((rs.byJar.other || 0) - (m.itemsTotal || 0) > 0.004 ? [{ name: 'Other', left: -round2((rs.byJar.other || 0) - (m.itemsTotal || 0)), over: true }] : []).sort((a, b) => a.left - b.left), goalsAdded: m.goalsTotal, debtPaid: m.debtPay, interest: m.debtInterest, owed: m.debtOwed };
+    over: lim.rows.map(r => (r.jar === 'edu' || r.jar === 'give') && r.over ? Object.assign({}, r, { left: -Math.min(-r.left, (m.ovB || {})[r.jar] || 0) }) : r).filter(r => r.over && r.left < -0.004).concat((rs.byJar.other || 0) - (m.itemsTotal || 0) > 0.004 ? [{ name: 'Other', left: -round2((rs.byJar.other || 0) - (m.itemsTotal || 0)), over: true }] : []).sort((a, b) => a.left - b.left), goalsAdded: round2(m.goalsTotal + ((m.topup && m.topup.used) || 0)), debtPaid: m.debtPay, interest: m.debtInterest, owed: m.debtOwed };
 }
 
 /* ---------- repeating spending: adds the receipts that came due since the last time, never more than 60 at once ---------- */
@@ -4422,7 +4422,7 @@ function render() {
   $('#heroNum').textContent = heroTxt; $('#heroNum').style.setProperty('--n', String(heroTxt.length)); $('#heroNum').style.color = heroShow < 0 ? 'var(--bad)' : '';
   $('#heroWk').textContent = (playSpent > 0 || heroShow !== play) ? `Planned ${fmt(play)} this month, about ${fmt(wk)} a week.` : `Planned: about ${fmt(wk)} a week across the whole month.`;
   $('#rcLine').innerHTML = !rs.count ? '<button type="button" class="link" data-tab-go="receipts">Add a receipt</button> to see actual spend.'
-    : play > 0 ? `Receipts: ${fmt2(playSpent)} spent, ${playSpent > play ? fmt2(round2(playSpent - play)) + ' over' : fmt2(playSafeLeft(S, m, playSpent)) + ' safe to spend'}. <button type="button" class="link" data-tab-go="receipts">See receipts</button>`
+    : play > 0 ? `Receipts: ${fmt2(playSpent)} spent, ${playSpent > play ? fmt2(round2(playSpent - play)) + ' over' : (m.counted > 0 ? fmt2(m.counted) + ' not spent' + (m.topup && m.topup.used > 0 ? ', ' + fmt2(m.topup.used) + ' went to a goal' : ', came back to the bank') : m.pendLeft > 0 ? fmt2(m.pendLeft) + ' not logged as spent yet, Home asks where it goes' : fmt2(playSafeLeft(S, m, playSpent)) + ' safe to spend')}. <button type="button" class="link" data-tab-go="receipts">See receipts</button>`
     : `Receipts: ${fmt2(rs.total)} spent. <button type="button" class="link" data-tab-go="receipts">See receipts</button>`;
   const Lun = Math.max(0, (L - (m.draw || 0)) - (m.overNow || 0));   /* pay with no place, less what spending past plan already took from it */
   const chip = $('#chip'); chip.className = 'chip ' + st; chip.hidden = pin <= 0;
@@ -4555,7 +4555,7 @@ function renderGoals(m) {
     tx = dw(S, g, tx); note = dw(S, g, note);
     js.className = 'jstat ' + cls; js.innerHTML = ic + tx; $('#jt-' + g.id).textContent = note;
     const gm = m.g[g.id], put = gm.actual;
-    $('#gs-' + g.id).innerHTML = `${dw(S, g, 'Saved so far')}: <b>${fmt(m.balBefore && m.balBefore[g.id] !== undefined ? m.balBefore[g.id] : g.start)}</b>. ` + (put > 0 ? `Plan adds <b>${fmt(put)}</b> in ${monthLabel(sel, true)}.` : `Plan adds nothing in ${monthLabel(sel, true)}.`) + (g.emergency && m.draw > 0 ? ` <b>${fmt(m.draw)}</b> borrowed in ${monthLabel(sel, true)}.` : '');
+    $('#gs-' + g.id).innerHTML = `${dw(S, g, 'Saved so far')}: <b>${fmt(m.balBefore && m.balBefore[g.id] !== undefined ? m.balBefore[g.id] : g.start)}</b>. ` + (put > 0 ? `Plan adds <b>${fmt2(put)}</b> in ${monthLabel(sel, true)}.` : gm.up > 0 ? '' : `Plan adds nothing in ${monthLabel(sel, true)}.`) + (gm.up > 0 ? ` <b>${fmt2(gm.up)}</b> from unspent Free to spend, as you chose.` : '') + (g.emergency && m.draw > 0 ? ` <b>${fmt(m.draw)}</b> borrowed in ${monthLabel(sel, true)}.` : '');
   });
 }
 
@@ -4589,7 +4589,7 @@ function renderMonthTable() {
     const st = grew ? 'short' : statusOf(S, m), gs = fullIn[m.ym] || [];
     const marks = gs.map(g => `<span class="mt-g" style="--c:var(--c${g.slot})" title="${esc(g.name)} full">${HI.leaf}<span>${esc(g.name)} full</span></span>`).join('');
     const wd = grew ? 'Over plan' : word[st];
-    return `<tr data-ym="${m.ym}" class="${m.ym === sel ? 'on' : ''}" tabindex="0" aria-label="${fullLabel(m.ym)}: ${wd}${gs.length ? ', ' + gs.map(g => g.name + ' full').join(', ') : ''}"><td>${monthLabel(m.ym)}${marks}</td><td class="${m.pool.left < 0 ? 'neg' : ''}">${fmt(m.pool.left)}</td><td class="${bk < cfg(S, 'minBank') ? 'neg' : ''}">${fmt(bk)}</td><td><span class="st ${st}">${icon[st]}<span class="stw">${wd}</span></span></td></tr>`;
+    return `<tr data-ym="${m.ym}" class="${m.ym === sel ? 'on' : ''}" tabindex="0" aria-label="${fullLabel(m.ym)}: ${wd}${gs.length ? ', ' + gs.map(g => g.name + ' full').join(', ') : ''}"><td>${monthLabel(m.ym)}${marks}</td><td class="${m.pool.left < 0 ? 'neg' : ''}">${fmt2(m.pool.left)}</td><td class="${bk < cfg(S, 'minBank') ? 'neg' : ''}">${fmt2(bk)}</td><td><span class="st ${st}">${icon[st]}<span class="stw">${wd}</span></span></td></tr>`;
   }).join('');
   $('#monthTable').innerHTML = `<table><thead><tr><th>Month</th><th>Left</th><th>Bank, month end</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
@@ -15409,7 +15409,14 @@ function renderNext() {
   if (SWEPT && !(S.ui.sweep && S.ui.sweep[SWEPT.pm])) SWEPT = null;
   /* after a reload, an answer made in the last 3 days still shows with Undo */
   if (!SWEPT && S.ui.sweep && !sweepOffer()) { const k = Object.keys(S.ui.sweep).filter(q => S.ui.sweep[q].t && Date.now() - S.ui.sweep[q].t < 3 * 864e5 && C.byYm[q] && C.byYm[q].counted > 0).sort().pop(); if (k) { const e = S.ui.sweep[k]; SWEPT = { pm: k, id: e.id || null, to: e.id ? undefined : 'bank', amt: e.amt, note: `From ${FULL[+k.slice(5) - 1]}'s free to spend.${e.id ? '' : ' The bank figure now includes it.'}` }; } }
-  if (!step && SWEPT) { const g = SWEPT.id ? goalById(S, SWEPT.id) : null, mm = C.byYm[SWEPT.pm] || {}, used = (mm.topup && mm.topup.used) || 0, cnt = mm.counted || 0, rest = round2(cnt - used); step = [SWEPT.id && used > 0 ? `${fmt2(used)} put toward ${g ? g.name : 'the goal'}` : `${fmt2(cnt)} counted in the bank`, (SWEPT.note || `From ${FULL[+SWEPT.pm.slice(5) - 1]}'s free to spend.`) + (used > 0 && rest > 0.004 ? ` The other ${fmt2(rest)} stays in the bank.` : ''), 'Undo', 'data-sweepundo']; }
+  if (!step && SWEPT) {
+    const g = SWEPT.id ? goalById(S, SWEPT.id) : null, mm = C.byYm[SWEPT.pm] || {}, used = (mm.topup && mm.topup.used) || 0, cnt = mm.counted || 0, rest = round2(cnt - used), nm = FULL[+SWEPT.pm.slice(5) - 1];
+    let body;
+    if (g && used > 0) { let gi = null; try { gi = goalInfo(S, C, g.id, nowYm()); } catch (e) { } const rd = C.reached[g.id]; body = gi ? (gi.pct >= 1 ? dw(S, g, `${g.name} is full.`) : dw(S, g, `${fmt(Math.max(0, g.target - gi.bal))} to go.${rd ? ` Full ${monthLabel(rd)}.` : ''}`)) : ''; body += (g.why ? ' ' + g.why + '.' : '') + (rest > 0.004 ? ` The other ${fmt2(rest)} stays in the bank.` : ''); }
+    else if (g) body = `From ${nm}'s free to spend. ${g.name} had no room left, so it stays in the bank.`;
+    else body = `From ${nm}'s free to spend. The bank figure now includes it.`;
+    step = [g && used > 0 ? `${fmt2(used)} put toward ${g.name}` : `${fmt2(cnt)} counted in the bank`, body, 'Undo', 'data-sweepundo'];
+  }
   let sw = null;
   if (!step && (sw = sweepOffer())) {
     const nm = FULL[+sw.pm.slice(5) - 1], one = sw.goals.length === 1, nowNm = FULL[+sw.now.slice(5) - 1];
@@ -16239,7 +16246,7 @@ function renderLookBack() {
   const names = { nec: 'Bills and basics', play: 'Free to spend', edu: 'Education', give: 'Giving' };
   const rows = b.jars.filter(j => j.planned > 0 || j.spent > 0).map(j => `<tr><th scope="row">${names[j.id]}</th><td>${fmt(j.planned)}</td><td>${j.spent > 0 ? fmt2(j.spent) : j.id === 'nec' ? 'in plan' : fmt(0)}</td></tr>`).join('');
   put(el, `<h2>Last month, ${esc(monthLabel(pm))}</h2>
-    <p class="cap">${b.count} ${b.count === 1 ? 'receipt' : 'receipts'}, ${fmt2(b.logged)} logged. The balance went ${b.left >= 0 ? 'up' : 'down'} ${fmt(Math.abs(b.left))}, from ${fmt(b.bankStart)} to ${fmt(b.bankEnd)}.</p>
+    <p class="cap">${b.count} ${b.count === 1 ? 'receipt' : 'receipts'}, ${fmt2(b.logged)} logged. The balance went ${b.left >= 0 ? 'up' : 'down'} ${fmt2(Math.abs(round2(b.bankEnd - b.bankStart)))}, from ${fmt2(b.bankStart)} to ${fmt2(b.bankEnd)}.</p>
     <div class="tablewrap"><table class="lbt"><thead><tr><th scope="col"></th><th scope="col">Planned</th><th scope="col">Spent</th></tr></thead><tbody>${rows}</tbody></table></div>
     ${b.over.length ? `<p class="cap">Over the plan: ${b.over.slice(0, 3).map(r => `${esc(r.name)} by ${fmt2(-r.left)}`).join(', ')}.</p>` : '<p class="cap">Nothing went over its plan.</p>'}
     <p class="cap">${b.goalsAdded > 0 ? `${fmt(b.goalsAdded)} went to goals. ` : ''}${b.debtPaid > 0 ? `${fmt(b.debtPaid)} went to cards and loans, ${fmt(b.interest)} of it interest. ` : ''}</p>`);
@@ -16553,7 +16560,7 @@ function wire() {
     }
   });
   $('#rowsOut').addEventListener('change', e => { if (e.target.closest('#items')) { S.items[sel] = readItems(); persist(); render(); } });
-  $('#resetMonth').addEventListener('click', e => confirmClick(e.currentTarget, 'Tap again: removes the edits you made for this month. Receipts stay.', () => { offerUndo(JSON.stringify(S), 'Month reset.'); resetMonth(S, sel); itemsSig = ''; persist(); render(); }));
+  $('#resetMonth').addEventListener('click', e => confirmClick(e.currentTarget, 'Tap again: removes the edits you made for this month. Receipts stay.', () => { { const ym0 = sel, o0 = S.once[ym0] ? JSON.parse(JSON.stringify(S.once[ym0])) : undefined, i0 = S.items[ym0] !== undefined ? JSON.parse(JSON.stringify(S.items[ym0])) : undefined; offerUndo('reset', 'Month reset.', () => { if (o0 !== undefined) S.once[ym0] = o0; else delete S.once[ym0]; if (i0 !== undefined) S.items[ym0] = i0; else delete S.items[ym0]; }); } resetMonth(S, sel); itemsSig = ''; persist(); render(); }));
   $('#fixBtns').addEventListener('click', e => {
     const b = e.target.closest('[data-fx]'); if (!b) return; const f = b.dataset.fx, m = C.byYm[sel];
     if (f === 'trim') trimPlay(S, m, sel, +b.dataset.amt);
@@ -16659,11 +16666,12 @@ function wire() {
   };
   /* Zero all and Restore samples replace every number: the copy before stays one tap away for 30 seconds */
   let undoSnap = null, undoT = 0;
-  const offerUndo = (snap, txt) => { undoSnap = snap; $('#undoTxt').textContent = txt; $('#undoBar').hidden = false; clearTimeout(undoT); undoT = setTimeout(() => { $('#undoBar').hidden = true; undoSnap = null; }, 30000); };
+  let undoFn = null;
+  const offerUndo = (snap, txt, fn) => { undoFn = fn || null; undoSnap = snap; $('#undoTxt').textContent = txt; $('#undoBar').hidden = false; clearTimeout(undoT); undoT = setTimeout(() => { $('#undoBar').hidden = true; undoSnap = null; }, 30000); };
   window.offerUndoG = offerUndo;
   /* the setup steps were opened by Re-split pay and the page was closed part-way: the copy from before is still one tap away */
   if (S.ui && S.ui.preSplit && !tourIsOpen) { const sn = S.ui.preSplit; delete S.ui.preSplit; persist(); offerUndo(sn, 'Your split was being changed.'); }
-  $('#undoGo').addEventListener('click', () => { if (!undoSnap) return; clearTimeout(undoT); $('#undoBar').hidden = true; S = normalize(JSON.parse(undoSnap)); undoSnap = null; editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = ''; sfx('back'); cheer('Your numbers are back.'); });
+  $('#undoGo').addEventListener('click', () => { if (!undoSnap) return; clearTimeout(undoT); $('#undoBar').hidden = true; if (undoFn) { undoFn(); undoFn = null; } else S = normalize(JSON.parse(undoSnap)); undoSnap = null; editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = ''; sfx('back'); cheer('Your numbers are back.'); });
   const blank = () => { offerUndo(JSON.stringify(S), 'All numbers zeroed.'); S = blankState(S, sampleOn()); S.ui.cleared = true; delete S.ui.setup; delete S.ui.src; delete S.ui.imp; editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = 'All zero. Start with salary.'; select(START); if (tab !== 'month') switchTab('month'); };
   twoStep($('#blankBtn'), 'Tap again: clears pay, bills, goals and saved amounts. Receipts stay.', blank);
   twoStep($('#blankTop'), 'Tap again: clears pay, bills, goals and saved amounts. Receipts stay.', blank);

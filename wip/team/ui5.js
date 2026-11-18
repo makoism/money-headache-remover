@@ -81,7 +81,7 @@ function wire() {
     }
   });
   $('#rowsOut').addEventListener('change', e => { if (e.target.closest('#items')) { S.items[sel] = readItems(); persist(); render(); } });
-  $('#resetMonth').addEventListener('click', e => confirmClick(e.currentTarget, 'Tap again: removes the edits you made for this month. Receipts stay.', () => { offerUndo(JSON.stringify(S), 'Month reset.'); resetMonth(S, sel); itemsSig = ''; persist(); render(); }));
+  $('#resetMonth').addEventListener('click', e => confirmClick(e.currentTarget, 'Tap again: removes the edits you made for this month. Receipts stay.', () => { { const ym0 = sel, o0 = S.once[ym0] ? JSON.parse(JSON.stringify(S.once[ym0])) : undefined, i0 = S.items[ym0] !== undefined ? JSON.parse(JSON.stringify(S.items[ym0])) : undefined; offerUndo('reset', 'Month reset.', () => { if (o0 !== undefined) S.once[ym0] = o0; else delete S.once[ym0]; if (i0 !== undefined) S.items[ym0] = i0; else delete S.items[ym0]; }); } resetMonth(S, sel); itemsSig = ''; persist(); render(); }));
   $('#fixBtns').addEventListener('click', e => {
     const b = e.target.closest('[data-fx]'); if (!b) return; const f = b.dataset.fx, m = C.byYm[sel];
     if (f === 'trim') trimPlay(S, m, sel, +b.dataset.amt);
@@ -187,11 +187,12 @@ function wire() {
   };
   /* Zero all and Restore samples replace every number: the copy before stays one tap away for 30 seconds */
   let undoSnap = null, undoT = 0;
-  const offerUndo = (snap, txt) => { undoSnap = snap; $('#undoTxt').textContent = txt; $('#undoBar').hidden = false; clearTimeout(undoT); undoT = setTimeout(() => { $('#undoBar').hidden = true; undoSnap = null; }, 30000); };
+  let undoFn = null;
+  const offerUndo = (snap, txt, fn) => { undoFn = fn || null; undoSnap = snap; $('#undoTxt').textContent = txt; $('#undoBar').hidden = false; clearTimeout(undoT); undoT = setTimeout(() => { $('#undoBar').hidden = true; undoSnap = null; }, 30000); };
   window.offerUndoG = offerUndo;
   /* the setup steps were opened by Re-split pay and the page was closed part-way: the copy from before is still one tap away */
   if (S.ui && S.ui.preSplit && !tourIsOpen) { const sn = S.ui.preSplit; delete S.ui.preSplit; persist(); offerUndo(sn, 'Your split was being changed.'); }
-  $('#undoGo').addEventListener('click', () => { if (!undoSnap) return; clearTimeout(undoT); $('#undoBar').hidden = true; S = normalize(JSON.parse(undoSnap)); undoSnap = null; editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = ''; sfx('back'); cheer('Your numbers are back.'); });
+  $('#undoGo').addEventListener('click', () => { if (!undoSnap) return; clearTimeout(undoT); $('#undoBar').hidden = true; if (undoFn) { undoFn(); undoFn = null; } else S = normalize(JSON.parse(undoSnap)); undoSnap = null; editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = ''; sfx('back'); cheer('Your numbers are back.'); });
   const blank = () => { offerUndo(JSON.stringify(S), 'All numbers zeroed.'); S = blankState(S, sampleOn()); S.ui.cleared = true; delete S.ui.setup; delete S.ui.src; delete S.ui.imp; editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = 'All zero. Start with salary.'; select(START); if (tab !== 'month') switchTab('month'); };
   twoStep($('#blankBtn'), 'Tap again: clears pay, bills, goals and saved amounts. Receipts stay.', blank);
   twoStep($('#blankTop'), 'Tap again: clears pay, bills, goals and saved amounts. Receipts stay.', blank);
