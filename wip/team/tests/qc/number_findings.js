@@ -29,6 +29,11 @@ const relook=async p=>{await L.tab(p,'tab-month');await L.tab(p,'tab-home');};
   await p.evaluate(h=>document.querySelector(h==='bank'?'[data-sweepbank]':'[data-sweep]').click(),how);await w(600);
   const c1=await card(p);
   ck(`[${how}] the answer card says the full amount`,how==='bank'?/\$212\.50 counted in the bank/.test(c1):/\$212\.50 put toward Trip/.test(c1),c1);
+  /* S3 (38.30 gate): Plan says where the answered money went, for that month */
+  { await L.tab(p,'tab-month');await p.evaluate(()=>{const e=document.getElementById('monthSel');e.value='2026-11';e.dispatchEvent(new Event('change',{bubbles:true}));});await w(500);
+    const t=await p.evaluate(()=>{const e=document.getElementById('outCounted');return e&&!e.hidden?e.innerText.replace(/\s+/g,' '):'(none)';});
+    ck(`[${how}] Plan for November says where the money went`,how==='bank'?/\$212\.50 of this month's Free to spend was not spent\. It came back to the bank/.test(t):/\$212\.50 went to Trip/.test(t),t);
+    await L.tab(p,'tab-home'); }
   await addRc(p,[['2026-11-20',100]]);await relook(p);
   const c2=await card(p),m2=await p.evaluate(()=>{const m=__t.calcAll(__t.S).byYm['2026-11'];return [m.counted,m.topup&&m.topup.used];});
   ck(`[${how}] after a later receipt the card follows the model (${m2})`,m2[0]===112.5&&(how==='bank'?/\$112\.50 counted in the bank/.test(c2):/\$112\.50 put toward Trip/.test(c2)),c2);
@@ -38,6 +43,17 @@ const relook=async p=>{await L.tab(p,'tab-month');await L.tab(p,'tab-home');};
   ck(`[${how}] no page errors`,errs.length===0,errs.join(' | '));
   await b.close();
  }
+ /* ---- S2 (38.30 gate): after "Decide later" the proof line does not point to a card that is gone ---- */
+ { const {b,p,errs}=await open();
+  await p.evaluate(()=>{const S=__t.S;S.ui.done={pay:true,bills:true,goals:true,receipts:true};S.ui.sampleHidden=true;S.receipts=[];__t.persist();__t.restructure();});
+  await addRc(p,[['2026-11-03',40.25],['2026-11-09',47.25]]);await relook(p);
+  const proof=()=>p.evaluate(()=>{const e=document.querySelector('.mp-proof');return e?e.innerText.replace(/\s+/g,' '):'(none)';});
+  const p0=await proof();ck('[later] before answering, the proof line says to answer the question on Home',/\$212\.50 of November's free to spend is left out until you answer the question on Home/.test(p0),p0);
+  await p.evaluate(()=>document.querySelector('[data-sweephide]').click());await w(600);
+  const c=await card(p),p1=await proof();
+  ck('[later] after Decide later, no month-end question shows',!/not logged as spent/.test(c),c);
+  ck('[later] and the proof line says when it will be asked again, not "answer on Home"',/You chose Decide later, so Home asks again the next time you open the app/.test(p1)&&!/answer the question on Home/.test(p1),p1);
+  ck('[later] no page errors',errs.length===0,errs.join(' | '));await b.close(); }
  /* ---- 2: spending past the plan uses the pay with no place ---- */
  for(const [spent,unpl] of [[0,820],[500,620],[1500,0]]){
   const {b,p,errs}=await open();

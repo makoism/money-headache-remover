@@ -106,11 +106,11 @@ function heroGraph(g) {
   const line = pts.map((v, i) => (i ? 'L' : 'M') + X(i).toFixed(1) + ' ' + Y(v).toFixed(1)).join('');
   const area = line + `L${X(n - 1).toFixed(1)} ${Y(0)}L${X(0).toFixed(1)} ${Y(0)}Z`;
   const rb = readyBy(g), di = rb ? MONTHS.indexOf(rb) - i0 + 1 : -1;
-  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(g.name)}: ${fmt(pts[0])} saved now, ${reached ? 'full in ' + monthLabel(reached) : 'not full within ' + SPAN}, goal ${fmt(g.target)}"><title>${esc(g.name)} progress</title>`;
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(g.name)}: ${fmt(pts[0])} saved at the start of ${monthLabel(ym0)}, ${reached ? 'full in ' + monthLabel(reached) : 'not full within ' + SPAN}, goal ${fmt(g.target)}"><title>${esc(g.name)} progress</title>`;
   s += `<line class="hg-g" x1="${L}" x2="${W - R}" y1="${Y(0)}" y2="${Y(0)}"/><line class="hg-t" x1="${L}" x2="${W - R}" y1="${Y(g.target)}" y2="${Y(g.target)}"/><text class="hg-x" x="${W - R}" y="${Y(g.target) - 7}" text-anchor="end">Goal ${fmt(g.target)}</text>`;
   if (di > 0 && di < n) s += `<line class="hg-d" x1="${X(di)}" x2="${X(di)}" y1="${T - 6}" y2="${H - B}"/><text class="hg-x" x="${X(di)}" y="${H - 9}" text-anchor="${di > n * .75 ? 'end' : 'middle'}">Needed by</text>`;
   s += `<path class="hg-a" d="${area}" style="--c:var(--c${g.slot})"/><path class="hg-l${HGD ? '' : ' draw'}" d="${line}" style="--c:var(--c${g.slot})"/>`; HGD = true;
-  s += `<circle class="hg-p" cx="${X(0)}" cy="${Y(pts[0])}" r="5" style="--c:var(--c${g.slot})"/><text class="hg-x" x="${X(0)}" y="${H - 9}" text-anchor="start">Now</text>`;
+  s += `<circle class="hg-p" cx="${X(0)}" cy="${Y(pts[0])}" r="5" style="--c:var(--c${g.slot})"/><text class="hg-x" x="${X(0)}" y="${H - 9}" text-anchor="start">Start of ${monthLabel(ym0, true)}</text>`;   /* the first point is the balance before this month's saving; every other "saved" figure is after it (S5) */
   if (reached) s += `<circle class="hg-p big" cx="${X(n - 1)}" cy="${Y(pts[n - 1])}" r="6.5" style="--c:var(--c${g.slot})"/><text class="hg-x" x="${X(n - 1)}" y="${di > 0 && Math.abs(di - (n - 1)) < 2 ? H - 20 : H - 9}" text-anchor="end">Full ${monthLabel(reached, true)} ${reached.slice(0, 4)}</text>`;
   s += `<circle id="hgM" class="hg-p" r="5.5" cx="-20" cy="-20" style="--c:var(--c${g.slot})"/></svg>`;
   HG = { pts, X, Y, W, n, i0, g };
