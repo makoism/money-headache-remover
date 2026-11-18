@@ -157,7 +157,7 @@ function renderStatus() {
 /* last month's unspent free to spend: once the month is logged (four receipts or more, or a statement), what was not spent can go toward a goal.
    One offer per month, kept until the person answers it or the month after has gone by. */
 /* a receipt just logged can be taken back out with one tap, for as long as the Undo bar shows (38.31 data safety round). Only that receipt goes */
-function rcUndo(id, txt) { if (id && window.offerUndoG) window.offerUndoG('receipt', txt, () => { removeReceipt(S, id); }); }
+function rcUndo(id, txt) { if (id && window.offerUndoG) window.offerUndoG('receipt', txt, () => { removeReceipt(S, id); }, 8000); }   /* 8 seconds: it sits over the numbers that just changed */
 let SWEPT = null;
 function sweepOffer() {
   const d = S.ui.done || {}; if (!(d.pay && d.bills && d.goals) || sampleOn()) return null;

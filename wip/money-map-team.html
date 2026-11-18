@@ -2194,7 +2194,7 @@ body.scene-on .card, body.scene-on .gw-card, body.scene-on .hnext, body.scene-on
           <input type="file" id="bkFile" accept=".json,application/json,text/plain" hidden>
           <span class="msg" id="bkMsg" role="status"></span>
         </div>
-        <p class="cap">Restore replaces the numbers and receipts here with the copy. Back up first to keep what is here. To start from zero use <b>Zero all</b>.</p>
+        <p class="cap">Restore replaces the numbers and receipts here with the copy. Back up first to keep what is here.<span id="zeroHint"> To start from zero use <b>Zero all</b>.</span></p>
         <p class="cap">If numbers look empty after clearing the browser or switching devices, restore your latest copy.</p>
       </div>
     </section>
@@ -4533,7 +4533,7 @@ const CURS = [['₱', '₱ Philippine peso'], ['$', '$ Dollar'], ['€', '€ Eu
 const SETF = [
   { k: 'bankStart', label: 'Money today (bank plus cash)', hint: 'What you have right now. It is the start of the first month in the plan. Update when you check.' },
   { k: 'minBank', label: 'Minimum balance', hint: 'Warns when a month would end below this.' },
-  { k: 'ceiling', label: 'Monthly spending ceiling', hint: 'Marked on the Free to spend bar in Plan.' },
+  { k: 'ceiling', label: 'Free to spend cap', hint: 'The most you want Free to spend to be in a month. A mark on the Free to spend bar in Plan shows it.' },
 ];
 function buildStatic() {
   $('#curSel').innerHTML = CURS.map(c => `<option value="${esc(c[0])}">${esc(c[1])}</option>`).join('');
@@ -4594,7 +4594,9 @@ function jarNote(m) {
   const nec = J.list[0], u = nec.usual;
   /* a plan paid partly with borrowed money: say why the places add up to more than all of the pay */
   const borrowed = J.borrowUsedPct > 0 ? ` Your places add up to ${J.placedPct}% of your pay, because ${fmt(J.borrowUsed)} of this plan is borrowed from your emergency fund.` : '';
-  const lead = nec.pct > u + 1 ? `Bills and basics are ${nec.pct}% of pay, above the usual ${u}%. That is common. Keep the other places going, even small: the habit matters more than the exact percent.`
+  const others = J.list.slice(1).some(j => j.v > 0);
+  const lead = nec.pct >= 100 ? `Bills and basics cost more than all of your pay this month.${borrowed ? '' : ' Lower a bill or add pay.'}`   /* 38.31 north-star round 2: never calm about this */
+    : nec.pct > u + 1 ? `Bills and basics are ${nec.pct}% of pay, above the usual ${u}%.${others ? ' Keep the other places going, even small: the habit matters more than the exact percent.' : ' Nothing is left for the other places this month.'}`
     : nec.pct < u - 1 ? `Bills and basics are ${nec.pct}% of pay, under the usual ${u}%. More room for the other places.`
     : `Bills and basics are ${nec.pct}% of pay, about the usual ${u}% many people aim for.`;
   return lead + borrowed;
@@ -4618,7 +4620,7 @@ function renderStart() {
   $('#basicsSub').textContent = BASICS_SUB;
   $('#makeCap').textContent = mine ? 'These are your numbers. Change them any time. Saved in this browser only; nobody else sees them.' : zero ? 'Everything starts at zero. Type over it. Saved in this browser only.' : MAKE_CAP;
   { const so = typeof sampleOn === 'function' && sampleOn(); ['#payBtn', '#xmBtn'].forEach(s => { const b = $(s); if (b) b.hidden = so; }); }
-  $('#blankBtn').hidden = zero; $('#showStart').hidden = !(S.ui.sampleHidden || S.ui.exactHidden); /* Zero all stays while there is anything to zero: Restore names it as the way to start over. Show first steps brings back a hidden Next card */ $('#tourOpen2').textContent = mine ? 'Tour' : 'Guided setup';
+  $('#blankBtn').hidden = zero; { const zh = $('#zeroHint'); if (zh) zh.hidden = zero; } $('#showStart').hidden = !(S.ui.sampleHidden || S.ui.exactHidden); /* Zero all stays while there is anything to zero: Restore names it as the way to start over. Show first steps brings back a hidden Next card */ $('#tourOpen2').textContent = mine ? 'Tour' : 'Guided setup';
 }
 
 /* ---------- render ---------- */
@@ -15614,7 +15616,7 @@ function renderStatus() {
 /* last month's unspent free to spend: once the month is logged (four receipts or more, or a statement), what was not spent can go toward a goal.
    One offer per month, kept until the person answers it or the month after has gone by. */
 /* a receipt just logged can be taken back out with one tap, for as long as the Undo bar shows (38.31 data safety round). Only that receipt goes */
-function rcUndo(id, txt) { if (id && window.offerUndoG) window.offerUndoG('receipt', txt, () => { removeReceipt(S, id); }); }
+function rcUndo(id, txt) { if (id && window.offerUndoG) window.offerUndoG('receipt', txt, () => { removeReceipt(S, id); }, 8000); }   /* 8 seconds: it sits over the numbers that just changed */
 let SWEPT = null;
 function sweepOffer() {
   const d = S.ui.done || {}; if (!(d.pay && d.bills && d.goals) || sampleOn()) return null;
@@ -16679,8 +16681,8 @@ function renderMap() {
     <p class="mp-cap">Where your money sits at the end of ${esc(mon)}: the bank and your burrows</p>
     <div class="mp-where" role="img" aria-label="${esc(parts.map(x => x.name + ' ' + fmt(x.amount)).join(', '))}">${wseg}</div>
     <ul class="mp-key">${wkey}</ul>
-    <ul class="mp-nums mp-four" aria-label="Your four numbers">${n4('Total', fmt2(M.total), 'bank and burrows, end of ' + mon, M.total < 0 ? 'bad' : '')}${n4('Free to spend', fmt2(M.month.find(r => r.id === 'play').amount), 'safe to spend in ' + mon)}${n4('Bills left', fmt2(M.billsLeft), 'still to pay in ' + mon)}${n4('Saved', fmt2(M.saved), 'in your burrows')}</ul>
-    <p class="cap mp-proof">Bank ${fmt2(M.bankEnd)} + burrows ${fmt2(M.saved)} = <b>${fmt2(M.total)}</b> at the end of ${esc(mon)}. Burrow amounts include what you plan to add this month.${PF.pendAmount > 0 ? ' ' + fmt2(PF.pendAmount) + (PF.pendMonths.length === 1 ? ' of ' + FULL[+PF.pendMonths[0].slice(5) - 1] + "'s free to spend" : ' of free to spend from ' + PF.pendMonths.length + ' past months') + (typeof SWEEP_LATER !== 'undefined' && SWEEP_LATER && PF.pendMonths.every(q => SWEEP_LATER[q]) ? ' is left out until you answer. You chose Decide later, so Home asks again the next time you open the app.' : ' is left out until you answer the question on Home.') : ''}${M.overspent > 0 ? ' The bank is lowered by ' + fmt2(M.overspent) + ' you spent over plan.' : ''} These are your plan's and receipts' numbers, not yet compared with your bank.${PF.ok ? ' They add up: what you started with, plus your pay, less what was spent, comes to the same total.' : ''}</p>
+    <ul class="mp-nums mp-four" aria-label="Your four numbers">${n4('Total', fmt2(M.total), 'planned for the end of ' + mon + ': bank and burrows', M.total < 0 ? 'bad' : '')}${(M.free < 0 ? n4('Free to spend', fmt2(M.free), 'over in ' + mon, 'bad') : n4('Free to spend', fmt2(M.month.find(r => r.id === 'play').amount), 'safe to spend in ' + mon))   /* one figure, as the chest below shows it (38.31 north-star round 2) */}${n4('Bills left', fmt2(M.billsLeft), 'still to pay in ' + mon)}${n4('Saved', fmt2(M.saved), 'in your burrows by the end of ' + mon + ', with this month\'s saving')}</ul>
+    <p class="cap mp-proof">Bank ${fmt2(M.bankEnd)} + burrows ${fmt2(M.saved)} = <b>${fmt2(M.total)}</b> at the end of ${esc(mon)}. Burrow amounts include what you plan to add this month.${PF.pendAmount > 0 ? ' ' + fmt2(PF.pendAmount) + (PF.pendMonths.length === 1 ? ' of ' + FULL[+PF.pendMonths[0].slice(5) - 1] + "'s free to spend" : ' of free to spend from ' + PF.pendMonths.length + ' past months') + (typeof SWEEP_LATER !== 'undefined' && SWEEP_LATER && PF.pendMonths.every(q => SWEEP_LATER[q]) ? ' is left out until you answer. You chose Decide later, so Home asks again the next time you open the app.' : ' is left out until you answer the question on Home.') : ''}${M.overspent > 0 ? ' The bank is lowered by ' + fmt2(M.overspent) + ' you spent over plan.' : ''} These are your plan's and receipts' numbers, not yet compared with your bank.${PF.ok ? ' They add up: what you started with, plus your pay, less what is planned and spent, comes to the same total.' : ''}</p>
     ${PF.ok ? '' : `<p class="cap mp-bad" role="alert">These numbers do not add up. They are off by ${fmt2(PF.offBy)}. Nothing you entered is lost. Please tell Mako.</p>`}
     ${warn}
     <h3 class="mp-h">This month</h3><div class="hb-scene mp-rooms" id="mpRooms"></div>`);
@@ -16939,7 +16941,7 @@ function wire() {
   /* Zero all and Restore samples replace every number: the copy before stays one tap away for 30 seconds */
   let undoSnap = null, undoT = 0;
   let undoFn = null;
-  const offerUndo = (snap, txt, fn) => { undoFn = fn || null; undoSnap = snap; $('#undoTxt').textContent = txt; $('#undoBar').hidden = false; clearTimeout(undoT); undoT = setTimeout(() => { $('#undoBar').hidden = true; undoSnap = null; }, 30000); };
+  const offerUndo = (snap, txt, fn, ms) => { undoFn = fn || null; undoSnap = snap; $('#undoTxt').textContent = txt; $('#undoBar').hidden = false; clearTimeout(undoT); undoT = setTimeout(() => { $('#undoBar').hidden = true; undoSnap = null; }, ms || 30000); };
   window.offerUndoG = offerUndo;
   /* the setup steps were opened by Re-split pay and the page was closed part-way: the copy from before is still one tap away */
   if (S.ui && S.ui.preSplit && !tourIsOpen) { const sn = S.ui.preSplit; delete S.ui.preSplit; keepCopy(sn, 'Setup was changing your plan.'); persist(); }

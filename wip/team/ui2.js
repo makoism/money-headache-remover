@@ -39,7 +39,9 @@ function jarNote(m) {
   const nec = J.list[0], u = nec.usual;
   /* a plan paid partly with borrowed money: say why the places add up to more than all of the pay */
   const borrowed = J.borrowUsedPct > 0 ? ` Your places add up to ${J.placedPct}% of your pay, because ${fmt(J.borrowUsed)} of this plan is borrowed from your emergency fund.` : '';
-  const lead = nec.pct > u + 1 ? `Bills and basics are ${nec.pct}% of pay, above the usual ${u}%. That is common. Keep the other places going, even small: the habit matters more than the exact percent.`
+  const others = J.list.slice(1).some(j => j.v > 0);
+  const lead = nec.pct >= 100 ? `Bills and basics cost more than all of your pay this month.${borrowed ? '' : ' Lower a bill or add pay.'}`   /* 38.31 north-star round 2: never calm about this */
+    : nec.pct > u + 1 ? `Bills and basics are ${nec.pct}% of pay, above the usual ${u}%.${others ? ' Keep the other places going, even small: the habit matters more than the exact percent.' : ' Nothing is left for the other places this month.'}`
     : nec.pct < u - 1 ? `Bills and basics are ${nec.pct}% of pay, under the usual ${u}%. More room for the other places.`
     : `Bills and basics are ${nec.pct}% of pay, about the usual ${u}% many people aim for.`;
   return lead + borrowed;
@@ -63,7 +65,7 @@ function renderStart() {
   $('#basicsSub').textContent = BASICS_SUB;
   $('#makeCap').textContent = mine ? 'These are your numbers. Change them any time. Saved in this browser only; nobody else sees them.' : zero ? 'Everything starts at zero. Type over it. Saved in this browser only.' : MAKE_CAP;
   { const so = typeof sampleOn === 'function' && sampleOn(); ['#payBtn', '#xmBtn'].forEach(s => { const b = $(s); if (b) b.hidden = so; }); }
-  $('#blankBtn').hidden = zero; $('#showStart').hidden = !(S.ui.sampleHidden || S.ui.exactHidden); /* Zero all stays while there is anything to zero: Restore names it as the way to start over. Show first steps brings back a hidden Next card */ $('#tourOpen2').textContent = mine ? 'Tour' : 'Guided setup';
+  $('#blankBtn').hidden = zero; { const zh = $('#zeroHint'); if (zh) zh.hidden = zero; } $('#showStart').hidden = !(S.ui.sampleHidden || S.ui.exactHidden); /* Zero all stays while there is anything to zero: Restore names it as the way to start over. Show first steps brings back a hidden Next card */ $('#tourOpen2').textContent = mine ? 'Tour' : 'Guided setup';
 }
 
 /* ---------- render ---------- */
