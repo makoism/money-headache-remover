@@ -218,7 +218,7 @@ function doSweep(pm) {
   const o = sweepOffer(); if (!o || o.pm !== pm || !o.main) { render(); return; }
   const sel = $('#hNext [data-sweepgoal]'), id = sel && goalById(S, sel.value) ? sel.value : o.main.id, g = goalById(S, id);
   const before = C.reached[id] || null, lastIx = MONTHS.length - 1;
-  const pmm = C.byYm[pm], room = pmm && pmm.g[id] ? Math.max(0, capOf(g) - pmm.balBefore[id] - pmm.g[id].actual) : 0, moved = Math.min(flrCur(S, o.left), round2(room));
+  const moved = topupFit(S, C, pm, id);   /* model.js: last month's unspent amount, cut to the goal's room */
   if (!(moved > 0)) { cheer('Nothing to move.'); return; }
   S.ui.sweep = Object.assign({}, S.ui.sweep, { [pm]: { amt: moved, id, t: Date.now() } }); persist();
   const C2 = calcAll(S), after = C2.reached[id] || null, gi = goalInfo(S, C2, id, nowYm());

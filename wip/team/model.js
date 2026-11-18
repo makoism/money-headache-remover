@@ -670,6 +670,35 @@ const receiptsTotal = list => round2(sum((list || []).map(r => +r.a || 0)));
 /* what is left of a planned amount after what was logged against it */
 const leftOfPlan = (plan, spent) => round2(plan - spent);
 
+/* ---- SETUP CELLS: the amounts the setup tour shows while the plan is made (its figures are the first month's). Screens read these; they never do the sum. ---- */
+function setupCells(S) {
+  const pay = val(S, 'a', START) + val(S, 'b', START) + val(S, 'side', START);            /* pay in the first month: salary, second and side income */
+  const nec = sum(linesOf(S).filter(l => l.jar === 'nec').map(l => val(S, l.key, START)));   /* every bill in the first month */
+  const billsFor = {}; [1, 3, 6].forEach(n => { billsFor[n] = n * nec; });                  /* n months of bills: the usual emergency fund sizes */
+  const togo = {}; goalsOf(S).forEach(g => { togo[g.id] = Math.max(0, g.target - g.start); });   /* what a goal still needs, from what is already saved */
+  return { pay, nec, billsOverPay: nec - pay, payOverBills: pay - nec, billsFor, togo, ltsPct: Math.round(aimsOf(S).lts * 100) };
+}
+/* what the plan adds up to in a month, for the end of the setup tour. hasPay: the person has entered pay */
+function planFactsOf(S, C, ym, hasPay) {
+  const m = C.byYm[ym], J = jarsOf(S, m), inc = J.inn, L = m.pool.left, play = m.jar.play;
+  const tol = roundUnit(S), bills = m.jar.nec, goals = m.goalsTotal, other = m.jar.edu + m.jar.ffa + m.jar.give;
+  const st = !hasPay ? 'nopay' : L < 0 ? 'over' : L >= tol ? 'spare' : 'even';
+  return { m, J, inc, L, play, tol, bills, goals, other, st, billPct: inc > 0 ? bills / inc : 0,
+    pay: m.a + m.b + m.side,          /* pay entered for the month, without borrowed money */
+    shortBy: L < 0 ? -L : 0 };        /* how much more the month plans than comes in (shown only when it does) */
+}
+/* the month-end question, "Put it toward a goal": what moves is last month's unspent Free to spend (m.pendLeft), cut to what the goal still has room
+   for after that month's own saving. The same room rule calcAll applies to the stored answer, so the toast and the goal agree */
+function topupFit(S, C, pm, id) {
+  const m = C.byYm[pm], g = goalById(S, id); if (!m || !g || !m.g[id]) return 0;
+  const room = Math.max(0, capOf(g) - m.balBefore[id] - m.g[id].actual);
+  return Math.min(flrCur(S, m.pendLeft || 0), round2(room));
+}
+/* a split being made on a setup screen (percent shares that are not saved yet): the part not given out, and how far the share being moved has gone */
+function splitDraft(vals, total, from, i) {
+  const free = total - sum(vals), d = i >= 0 ? vals[i] - from : 0;
+  return { free, moved: Math.abs(d), up: d > 0, down: d < 0 };
+}
 /* ---- PLAN CELLS: every worked-out amount the Plan tab and the dock at the foot of the page show. Screens read these; they never do the sum. ---- */
 function planCells(S, C, ym) {
   const m = C.byYm[ym], rs = receiptStats(S, ym), dw = m.draw || 0, L = m.pool.left, over = m.overNow || 0;

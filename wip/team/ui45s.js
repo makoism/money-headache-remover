@@ -5,12 +5,12 @@
 const PART = { welcome: 'Welcome', money: 'Money', bills: 'Bills', jars: 'Split', goals: 'Goals', spend: 'Free to spend' };
 
 const inum = id => { const el = document.getElementById(id); return el ? num0(el.value) : 0; };
-const moneyField = (id, label, v, hint) => `<div class="field"><label for="${id}">${label}</label><div class="inp"><span class="yen cs"></span><input id="${id}" type="number" inputmode="numeric" min="0" step="any" aria-describedby="tourTitle" placeholder="${hint || 'Amount'}" value="${v > 0 ? v : ''}"></div></div>`;
+const moneyField = (id, label, v, hint) => `<div class="field"><label for="${id}">${label}</label><div class="inp"><span class="yen cs"></span><input id="${id}" type="number" inputmode="decimal" min="0" step="any" aria-describedby="tourTitle" placeholder="${hint || 'Amount'}" value="${v > 0 ? v : ''}"></div></div>`;
 const textField = (id, label, v, max, ph) => `<div class="field"><label for="${id}">${label}</label><div class="inp"><input id="${id}" type="text" maxlength="${max || 60}" spellcheck="false" value="${esc(v)}"${ph ? ` placeholder="${esc(ph)}"` : ''}></div></div>`;
-const payNow = () => val(S, 'a', START) + val(S, 'b', START) + val(S, 'side', START);
+const payNow = () => setupCells(S).pay;   /* model.js setupCells: the tour's figures are worked out there */
 const havePay = () => !!(S.ui.done && S.ui.done.pay) && payNow() > 0;
 const necLines = () => S.plan.lines.filter(l => l.jar === 'nec');
-const necTotal = () => necLines().reduce((a, l) => a + val(S, l.key, START), 0);
+const necTotal = () => setupCells(S).nec;
 const toUnit = x => { const u = roundUnit(S); return Math.round(x / u) * u; };
 /* set when the person types or taps anything on the current screen, so an empty box that was cleared on purpose still saves as zero */
 let tourTouched = false;
@@ -213,9 +213,9 @@ const STEP_JARS = { id: 'jars', part: PART.jars, setup: true, when: havePay,
     jarInit(); const pay = payNow(), nec = necTotal();
     if (nec <= 0) return `<p>No bills listed, so the other five places would share all of your pay. If that is wrong, go back and add bills.</p>
     <p class="cap">If you truly have none, continue and split below.</p>${jarSplitHTML()}`;
-    if (jarRest <= 0) return `<p>Bills <b>${fmt(nec)}</b>, pay <b>${fmt(pay)}</b>. ${nec > pay ? `Bills exceed pay by <b>${fmt(nec - pay)}</b>, so` : 'Bills take all of it, so'} nothing is left for the other five places: no free to spend and nothing for goals, for now.</p>
+    if (jarRest <= 0) return `<p>Bills <b>${fmt(nec)}</b>, pay <b>${fmt(pay)}</b>. ${nec > pay ? `Bills exceed pay by <b>${fmt(setupCells(S).billsOverPay)}</b>, so` : 'Bills take all of it, so'} nothing is left for the other five places: no free to spend and nothing for goals, for now.</p>
     <p>You can still add goals next. They start filling once bills drop below pay. To lower a bill, go back. Otherwise continue and adjust under Plan later.</p>`;
-    return `<p>Bills <b>${fmt(nec)}</b> = <b>${jarNec}%</b> of pay: Bills and basics. The other <b>${jarRest}%</b> (${fmt(pay - nec)}) is yours to split between the five places below, starting at the usual proportions.</p>
+    return `<p>Bills <b>${fmt(nec)}</b> = <b>${jarNec}%</b> of pay: Bills and basics. The other <b>${jarRest}%</b> (${fmt(setupCells(S).payOverBills)}) is yours to split between the five places below, starting at the usual proportions.</p>
     ${jarsFold()}${jarSplitHTML()}`;
   },
   after: () => { if (jarRest > 0) paintJars(); },
@@ -261,7 +261,7 @@ function applyGoalPick(picked, mark) {
 }
 const EM_MONTHS = [[1, 'month'], [3, 'months'], [6, 'months']];
 const emMonths = g => { const n = necTotal(); if (n <= 0 || !(g.target > 0)) return 3; const m = g.target / n; return EM_MONTHS.reduce((best, x) => Math.abs(x[0] - m) < Math.abs(best - m) ? x[0] : best, 3); };
-const emCap = m => `${m} month${m === 1 ? '' : 's'} of your bills is <b>${fmt(m * necTotal())}</b>.`;
+const emCap = m => `${m} month${m === 1 ? '' : 's'} of your bills is <b>${fmt(setupCells(S).billsFor[m])}</b>.`;
 const goalStep = id => ({ id: 'goal-' + id, part: PART.goals, setup: true,
   focus: '#tourGCost, #tourGSaved',
   title: () => { const g = goalById(S, id), k = goalKindOf(id); return g ? (k ? (S.ui.gk && S.ui.gk[id] ? `Your next ${GOAL_NOUN[k.k] || 'goal'}` : k.title) : 'Your goal') : ''; },
@@ -356,7 +356,7 @@ function applySplit() { gsIds.forEach((id, k) => { if (goalById(S, id)) setVal(S
 function splitLine(g, C2) { return dw(S, g, splitLine0(g, C2)); }
 function splitLine0(g, C2) {
   if (!(g.target > 0)) return 'No cost set.';
-  const togo = Math.max(0, g.target - g.start), tg = `${fmt(togo)} to go. `, k = S.plan.goals.indexOf(g);
+  const togo = setupCells(S).togo[g.id] || 0, tg = `${fmt(togo)} to go. `, k = S.plan.goals.indexOf(g);
   if (togo <= 0) return 'Already full.';
   if (!(splitMoney(k) > 0)) return tg + 'Nothing goes into this one.';
   const gi = goalInfo(S, C2, g.id, START);
@@ -386,7 +386,7 @@ function paintSplit() {
 const STEP_SPLIT = { id: 'goalsplit', part: PART.goals, setup: true, when: () => havePay() && S.plan.goals.length > 1 && ltsBudget() > 0,
   title: () => (S.plan.goals.length > 1 ? 'Split goal money' : 'Goal money'),
   body: () => {
-    splitInit(); const pct = Math.round(aimsOf(S).lts * 100), many = S.plan.goals.length > 1;
+    splitInit(); const pct = setupCells(S).ltsPct, many = S.plan.goals.length > 1;
     return `<p>${many ? `Burrows get <b>${pct}%</b> of pay, <b>${fmt(gsBudget)}</b> a month, shared between your goals. A goal with a date gets what it needs first. Each slider moves on its own; what you take away waits as not placed yet.`
       : `Burrows get <b>${pct}%</b> of pay, <b>${fmt(gsBudget)}</b> a month. ${unusedOf() > 0 ? 'This goal is filled first.' : 'All of it goes to this goal.'}`}</p>
     ${many ? potHTML('goalPot', S.plan.goals.map(g => `var(--c${g.slot})`), gsPct, 100) + poolHTML('goal', S.plan.goals.map(g => g.name)) : ''}
@@ -399,19 +399,14 @@ const STEP_SPLIT = { id: 'goalsplit', part: PART.goals, setup: true, when: () =>
 
 /* ----- the payoff: your free to spend ----- */
 /* what the plan adds up to right now, in plain terms. Everything the reveal and the last screen say comes from here. */
-function planFacts() {
-  const C = calcAll(S), m = C.byYm[sel], J = jarsOf(S, m), inc = J.inn, L = m.pool.left, play = m.jar.play;
-  const tol = roundUnit(S), bills = m.jar.nec, goals = m.goalsTotal, other = m.jar.edu + m.jar.ffa + m.jar.give;
-  const st = !havePay() ? 'nopay' : L < 0 ? 'over' : L >= tol ? 'spare' : 'even';
-  return { C, m, J, inc, L, play, tol, bills, goals, other, st, billPct: inc > 0 ? bills / inc : 0 };
-}
+function planFacts() { const C = calcAll(S); return Object.assign({ C }, planFactsOf(S, C, sel, havePay())); }   /* model.js planFactsOf */
 const ledgerRow = (k, v, cls) => `<div${cls ? ` class="${cls}"` : ''}><dt>${k}</dt><dd>${v}</dd></div>`;
 function ledgerHTML(f) {
   const rows = [ledgerRow('Pay in', fmt(f.inc)), ledgerRow('Bills and basics', fmt(f.bills))];
   if (f.goals > 0) rows.push(ledgerRow('Goals', fmt(f.goals)));
   if (f.other > 0) rows.push(ledgerRow('Education, Investing and Giving', fmt(f.other)));
   rows.push(ledgerRow('Free to spend', fmt(f.play), 'play'));
-  if (f.st === 'over') rows.push(ledgerRow('Short by', fmt(-f.L), 'neg')); else if (f.st === 'spare') rows.push(ledgerRow('Left, not placed yet', fmt(f.L)));
+  if (f.st === 'over') rows.push(ledgerRow('Short by', fmt(f.shortBy), 'neg')); else if (f.st === 'spare') rows.push(ledgerRow('Left, not placed yet', fmt(f.L)));
   return `<dl class="tour-ledger">${rows.join('')}</dl>`;
 }
 const behindGoals = () => (tourMode === 'full' && havePay() ? S.plan.goals.filter(g => goalInfo(S, calcAll(S), g.id, START).state === 'behind') : []);
@@ -429,7 +424,7 @@ const STEP_REVEAL = { id: 'reveal', part: PART.spend, art: 'branch',
     const f = planFacts(), play = f.play, wk = weekOf(play), seg = (cls, v) => (v > 0 ? `<div class="seg-b ${cls}" style="flex-grow:${v}"></div>` : '');
     if (f.st === 'nopay') return `${chestImg(0.5)}<div class="tour-reveal"><b>${fmt(play)}</b><span>a month, sample</span></div>
       <p>No pay entered, so every number here is a sample. Free to spend is for fun, worked out after bills and goals. Add your pay under Plan, Money in, or tap Back to enter it here.</p>`;
-    if (f.st === 'over') return `<div class="tour-reveal neg"><b>${fmt(-f.L)}</b><span>short a month</span></div>
+    if (f.st === 'over') return `<div class="tour-reveal neg"><b>${fmt(f.shortBy)}</b><span>short a month</span></div>
       <p>Plan spends <b>${fmt(f.J.out)}</b>; pay is <b>${fmt(f.inc)}</b>.${play > 0 ? '' : ' Nothing left, so no free to spend yet.'}</p>
       ${ledgerHTML(f)}
       <p>Under Plan: lower a bill or add income.${play > 0 ? '' : ' Free to spend appears as soon as there is room.'}</p>`;

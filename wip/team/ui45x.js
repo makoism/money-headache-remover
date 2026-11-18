@@ -459,16 +459,16 @@ function spTouch(kind, vals, i, repaint) {
   f.t = setTimeout(() => { f.last = -1; f.hit = false; repaint(); }, 2600);
 }
 function spWhy(kind, names, vals, total, moneyOf) {
-  const f = SPF[kind], free = total - sumOf(vals), m = f.last;
+  const f = SPF[kind], m = f.last, sd = splitDraft(vals, total, f.from, m), free = sd.free;   /* model.js splitDraft */
   if (m >= 0 && f.hit && vals[m] === f.from) return `<b>${esc(names[m])}</b> can only take what is not placed yet, and nothing is. Lower another one first.`;
-  if (m >= 0 && vals[m] !== f.from) { const d = vals[m] - f.from; return `<b>${esc(names[m])}</b> ${d > 0 ? '+' : '−'}${Math.abs(d)}%${f.hit ? ': all that was not placed yet. To go further, lower another one.' : `. Unassigned now <b>${free}%</b>${free > 0 ? ` (${moneyOf(free)})` : ''}.`}`; }
+  if (m >= 0 && vals[m] !== f.from) { return `<b>${esc(names[m])}</b> ${sd.up ? '+' : '−'}${sd.moved}%${f.hit ? ': all that was not placed yet. To go further, lower another one.' : `. Not placed yet now <b>${free}%</b>${free > 0 ? ` (${moneyOf(free)})` : ''}.`}`; }
   return `Each slider moves on its own. Lower one and the difference waits as not placed yet; raise one and it takes from there. Shares total <b>${total}%</b>.`;
 }
 const PENCIL = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M13.6 3.4a1.8 1.8 0 0 1 2.6 2.6L7.4 14.8 4 15.6l.8-3.4z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>';
 const pctPill = (attr, i, label, max) => `<label class="pctp"><input type="number" inputmode="numeric" min="0" max="${max}" step="1" data-${attr}="${i}" aria-label="${esc(label)}, percent of pay"><b>%</b>${PENCIL}</label>`;
 /* paint one list of shares; "kind" is jar or goal */
 function spPaint(kind, o) {
-  const f = SPF[kind], act = document.activeElement, free = o.total - sumOf(o.vals);
+  const f = SPF[kind], act = document.activeElement, free = splitDraft(o.vals, o.total, 0, -1).free;   /* model.js */
   o.vals.forEach((v, i) => {
     const row = $(o.row(i)); if (!row) return;
     const pi = $('.pctp input', row); if (pi && pi !== act) pi.value = v; else if (pi && +pi.value !== v && pi.value !== '') pi.value = v;
@@ -476,7 +476,7 @@ function spPaint(kind, o) {
     const m = $('.split-m', row); if (m) m.textContent = o.money(i);
     const s = $('.split-s', row); if (s && o.note) s.textContent = o.note(i);
     const d = $('.dlt', row);
-    if (d) { const x = f.last === i ? v - f.from : 0; d.textContent = x ? (x > 0 ? '+' : '−') + Math.abs(x) + '%' : ''; d.className = 'dlt' + (x > 0 ? ' up' : x < 0 ? ' down' : ''); }
+    if (d) { const x = splitDraft(o.vals, o.total, f.from, f.last === i ? i : -1); d.textContent = x.moved ? `${x.up ? '+' : '−'}${x.moved}%` : ''; d.className = 'dlt' + (x.up ? ' up' : x.down ? ' down' : ''); }
     row.classList.toggle('moved', f.last === i && v !== f.from);
   });
   const pot = $(o.pot); if (pot) { $$('i', pot).forEach((seg, i) => { seg.style.flexGrow = Math.max(i < o.vals.length ? o.vals[i] : free, 0.0001); }); }

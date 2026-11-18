@@ -1,4 +1,4 @@
-// Split the rest: each slider moves on its own; what is taken away waits as unassigned; Spread it and Give it to; the goal split the same way
+// Split the rest: each slider moves on its own; what is taken away waits as not placed yet (38.29 word; "unassigned" is retired); Spread it and Give it to; the goal split the same way
 const puppeteer = require('/home/claude/work/tools/node_modules/puppeteer-core');
 const { w, P, runTour } = require('/tmp/v22/lib.js');
 let pass = 0, fail = 0; const ok = (n, c, x) => { if (c) pass++; else fail++; console.log((c ? 'PASS ' : 'FAIL ') + n + (c ? '' : ' ' + JSON.stringify(x || ''))); };
@@ -20,17 +20,17 @@ const sum = a => a.reduce((x, y) => x + y, 0);
   // lower one: only it changes, the difference becomes unassigned
   await slide(1, v0[1] - 5); await w(150); let v = await vals();
   ok('lowering one share changes only that share', v[1] === v0[1] - 5 && v.every((x, k) => k === 1 || x === v0[k]), { v0, v });
-  let pl = await pool(); ok('the 5% waits as unassigned, with the money', pl.has && /Unassigned 5%/.test(pl.t) && /Spread it/.test(pl.t), pl);
-  ok('why line explains the move', /−5%.*Unassigned now 5%/.test(await p.$eval('#jarWhy', e => e.textContent)), await p.$eval('#jarWhy', e => e.textContent));
+  let pl = await pool(); ok('the 5% waits as unassigned, with the money', pl.has && /Not placed yet 5%/.test(pl.t) && /Spread it/.test(pl.t), pl);
+  ok('why line explains the move', /−5%.*Not placed yet now 5%/.test(await p.$eval('#jarWhy', e => e.textContent)), await p.$eval('#jarWhy', e => e.textContent));
   // raise another: it takes from the unassigned part and stops when that is gone
   await slide(3, v[3] + 20); await w(150); const v2 = await vals();
   ok('raising one takes only what is unassigned', v2[3] === v[3] + 5 && sum(v2) === total && v2.every((x, k) => k === 3 || x === v[k]), { v, v2 });
-  ok('why line says it stopped', /all that was unassigned|can only take what is unassigned/.test(await p.$eval('#jarWhy', e => e.textContent)), await p.$eval('#jarWhy', e => e.textContent));
+  ok('why line says it stopped', /all that was not placed yet|can only take what is not placed yet/.test(await p.$eval('#jarWhy', e => e.textContent)), await p.$eval('#jarWhy', e => e.textContent));
   ok('pool is empty again', !(await pool()).has);
   // percent box obeys the same rule
   await p.evaluate(() => { const i = document.querySelector('[data-jrow="0"] .pctp input'); i.value = '0'; i.dispatchEvent(new Event('input', { bubbles: true })); }); await w(150);
   const v3 = await vals(); ok('typing 0 frees that share', v3[0] === 0 && sum(v3) === total - v2[0], { v2, v3 });
-  pl = await pool(); ok('pool shows the freed part', pl.has && new RegExp('Unassigned ' + v2[0] + '%').test(pl.t), pl);
+  pl = await pool(); ok('pool shows the freed part', pl.has && new RegExp('Not placed yet ' + v2[0] + '%').test(pl.t), pl);
   // Spread it: shared by the current shares, nothing left
   await p.click('[data-spread="jar"]'); await w(250); const v4 = await vals();
   ok('Spread it gives the unassigned part out by the current shares', sum(v4) === total && v4[0] === 0 && v4.every((x, k) => x >= v3[k]), { v3, v4 });
@@ -55,7 +55,7 @@ const sum = a => a.reduce((x, y) => x + y, 0);
     const g0 = await gv(); ok('goal shares start fully given out', sum(g0) === 100 && !(await p.$eval('#goalPool', e => e.classList.contains('has'))), g0);
     await p.evaluate(() => { const r = document.querySelectorAll('#goalSplit input[type=range]')[0]; r.value = +r.value - 7; r.dispatchEvent(new Event('input', { bubbles: true })); }); await w(150);
     const g1 = await gv(); ok('a goal share moves on its own too', g1[0] === g0[0] - 7 && g1.slice(1).every((x, k) => x === g0[k + 1]), { g0, g1 });
-    ok('goal pool shows the unassigned part', /Unassigned 7%/.test(await p.$eval('#goalPool', e => e.textContent)));
+    ok('goal pool shows the unassigned part', /Not placed yet 7%/.test(await p.$eval('#goalPool', e => e.textContent)));
     await p.click('[data-spread="goal"]'); await w(200); ok('Spread it works for goals', sum(await gv()) === 100);
   } else console.log('note: only one goal for this persona, the goal split screen did not show');
   ok('no page errors', errs.length === 0, errs);

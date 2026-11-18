@@ -219,7 +219,7 @@ const TOUR = [
     body: () => {
       if (S.ui.setup) {
         const f = planFacts();
-        const line = f.st === 'over' ? `Plan exceeds pay by <b>${fmt(-f.L)}</b>.${f.play > 0 ? ` Free to spend is ${fmt(f.play)}, but the month still comes up short.` : ' Nothing is free to spend yet.'} Under Plan: lower a bill or a goal, or add income.`
+        const line = f.st === 'over' ? `Plan exceeds pay by <b>${fmt(f.shortBy)}</b>.${f.play > 0 ? ` Free to spend is ${fmt(f.play)}, but the month still comes up short.` : ' Nothing is free to spend yet.'} Under Plan: lower a bill or a goal, or add income.`
           : f.play <= 0 ? 'Nothing is free to spend in the plan. Raise the Free to spend line under Plan.'
           : f.st === 'spare' ? `Free to spend <b>${fmt(f.play)}</b> a month. <b>${fmt(f.L)}</b> of pay is not placed yet: raise a goal or add to free to spend.`
           : `Free to spend <b>${fmt(f.play)}</b> a month, to spend without guilt. All other pay is assigned.`;
@@ -239,12 +239,12 @@ const TOUR = [
         return `${homeScene()}${ok ? (f.st === 'spare' ? `<p class="tour-st"><span class="chip tight">${IC.warn}Pay not placed</span></p>` : `<p class="tour-st"><span class="chip good">${IC.ok}On plan</span></p>`) : ''}${goal}<p>Your month:</p>${ledgerHTML(f)}<p>${line}</p>
         <p>Receipts keeps this true: log what you spend, or upload each month's statement. What is left of free to spend at month end can go toward a goal. Help, bottom right, has the video and this setup.</p>${cloud}`;
       }
-      const m = calcAll(S).byYm[sel], pay = m.a + m.b + m.side, L = m.pool.left;
+      const PF = planFactsOf(S, calcAll(S), sel, true), pay = PF.pay, L = PF.L;   /* model.js */
       const zero = S.ui.preset === 'blank' || !!S.ui.cleared;
       const dn = S.ui.done || {}, billsIn = !!dn.bills || Array.isArray(S.ui.sb); /* the bill screens were answered (even if left at zero) */
       const msg = !dn.pay || pay <= 0 ? (zero ? 'Pay skipped. Everything is zero until you add numbers.' : 'Pay skipped, so the pay shown is a sample until you add yours: Plan, Money in, Salary. Or Help, Guided setup, to come back here.')
         : L > 0 ? `Pay entered. <b>${fmt(L)}</b> is not placed yet: raise a goal or add to free to spend.`
-        : L < 0 ? `Pay entered. The ${billsIn ? 'plan' : 'sample plan'} exceeds pay by <b>${fmt(-L)}</b>${billsIn ? '' : ' because bills are still samples'}. ${billsIn ? 'Lower a bill under Plan.' : 'Enter your real bills next.'}`
+        : L < 0 ? `Pay entered. The ${billsIn ? 'plan' : 'sample plan'} exceeds pay by <b>${fmt(PF.shortBy)}</b>${billsIn ? '' : ' because bills are still samples'}. ${billsIn ? 'Lower a bill under Plan.' : 'Enter your real bills next.'}`
         : 'Pay entered. All of it is assigned.';
       const bills = zero ? 'Bills and goals are empty. Open Plan, Bills and basics, and enter what you pay.'
         : billsIn ? (necTotal() > 0 ? 'Your bills are in. Any line left at zero can be set under Plan, Bills and basics.' : 'Your bills are all at zero so far. Set each line under Plan, Bills and basics.')
