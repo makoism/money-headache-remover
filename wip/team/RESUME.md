@@ -2,6 +2,14 @@
 
 Written 2026-11-18 on branch `wip-38.31`. Read this whole file before touching anything. It replaces the resume notes that lived outside the repo.
 
+## 0. Handoff (latest first)
+
+**2026-11-18, end of PLAN.md steps 0 to 3.** Read PLAN.md (section D is the order) and DECISIONS.md (the 2026-11-18 decisions, the process change and "Version one") before anything else.
+- Done: Mako's decisions recorded; QC agents in `.claude/agents/` with `tests/qc/stage_build.sh`; the proof formula test (`tests/qc/proof_formula.js`); the reload flake (it was the test helper); S1 (no month-end question before the first receipt) and decision 3 (few-receipts line); a Receipts bug (Other spending called "over" when a one-time cost covered it) fixed; every stale test judged: kept and updated `team_inter2`, `team_month`, `purpose_test` (v34 top-up part retired), `viewtest`, `display`, `monkey`, `upgrade_test` (old builds rebuilt from git history); replaced `team_map` by `tests/qc/home_map.js`, `team_cur` by `tests/qc/currency_ui.js`, `good1` and `mako_scenario` by `tests/qc/scenario_yen.js` (made-up numbers). `reset_undo` 3 of 3. Every commit message says why.
+- Next: PLAN.md step 4 (number findings: the "0 counted" card, "pay not placed" beside Left when overspent, goal "to go" against the stretched target, one value for unspent money in `sweepOffer` and `m.pendLeft`), then step 5 (decisions 1, 2 and 5; 3 is done), 6, 7, 7b (version one Home), 8.
+- Known: the golden comparison inside `verify.sh` can flicker under load (one run showed 6 differences, a rerun alone 4). The four named differences are the decision-3 wording (2) and the 38.31 Home status states (2); #4 ("Building your cushion" below zero) is what decision 2 replaces. Re-record the baseline after decision 2.
+- The oracle does not recount cards and loans yet; `home_map.js` takes their payments from the model and says so.
+
 ## 1. Where things stand
 
 | Thing | State |
