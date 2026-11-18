@@ -37,8 +37,8 @@ const spreadFree = (vals, total) => { const free = total - sumOf(vals); if (free
 const STEP_MONEY = { id: 'money', part: PART.money, setup: true, focus: '#tourPay', title: 'Your money', skipIf: () => importApplied() && havePay(),
   body: () => {
     const pay = S.ui.done && S.ui.done.pay ? val(S, 'a', START) : '';
-    return `<p>Take-home pay after tax, each month. Paid twice a month: add both. Other income is a second job, a partner&rsquo;s share, benefits. Balance is bank accounts plus cash; rough is fine.</p>
-    <div class="tour-fields">${moneyField('tourPay', 'Monthly take-home pay', pay, 'All paychecks')}${moneyField('tourExtra', 'Other income each month <span class="opt">(optional)</span>', val(S, 'b', START), 'None')}${moneyField('tourBank', 'Balance now', S.cfg.bankStart !== undefined ? S.cfg.bankStart : '', 'Rough is fine')}</div>
+    return `<p>Take-home pay after tax, each month. Paid twice a month: add both. Other pay is a second job, a partner&rsquo;s share, benefits. Balance is bank accounts plus cash; rough is fine.</p>
+    <div class="tour-fields">${moneyField('tourPay', 'Monthly take-home pay', pay, 'All paychecks')}${moneyField('tourExtra', 'Other pay each month <span class="opt">(optional)</span>', val(S, 'b', START), 'None')}${moneyField('tourBank', 'Balance now', S.cfg.bankStart !== undefined ? S.cfg.bankStart : '', 'Rough is fine')}</div>
     <p class="cap">Not sure of a number? Leave it blank; the Plan tab takes it later.</p>`;
   },
   leave: () => {
@@ -57,7 +57,7 @@ const quickSetup = () => !(S.ui && S.ui.full === true);
 const BILLS_QUICK = ['rent', 'food'];
 const BILL_Q = { rent: 'Rent or mortgage', util: 'Utilities', food: 'Food and groceries', net: 'Internet', phone: 'Phone', ins: 'Insurance', subs: 'Subscriptions', gas: 'Transport', loan: 'Loan or debt payment', card: 'Credit card' };
 const BILL_NOTE = {
-  rent: () => 'Full amount. If someone else pays part, add their share as other income.',
+  rent: () => 'Full amount. If someone else pays part, add their share as other pay.',
   util: () => 'Electricity, gas and water.',
   food: () => 'Groceries and everyday meals. Eating out for fun comes out of free to spend.',
   net: () => 'Home internet, or the data plan if that is how you connect.',
@@ -437,7 +437,7 @@ const STEP_REVEAL = { id: 'reveal', part: PART.spend, art: 'branch',
       return `${big}<p>${all ? `Bills take <b>${f.J.list[0].pct}%</b> of pay, so almost nothing is left for free to spend.` : 'Nothing is set aside for free to spend.'} About 10% of pay is a common amount to keep for it.</p>
       ${bar}<p>${behindText() || 'To add some, raise the Free to spend line under Plan or lower a bill.'}</p>`;
     }
-    const msg = behindText() || (f.st === 'spare' ? `<b>${fmt(f.L)}</b> of pay is not placed yet. Raise a goal or add to free to spend.` : f.billPct >= 0.9 ? 'Bills take most of pay, so the month is tight. Lowering a bill is the easiest fix.' : 'All pay is assigned.');
+    const msg = behindText() || (f.st === 'spare' ? `<b>${fmt(f.L)}</b> of pay is not placed yet. Raise a goal or add to free to spend.` : f.billPct >= 0.9 ? 'Bills take most of pay, so the month is tight. Lowering a bill is the easiest fix.' : 'All pay is placed.');
     return `${big}<p>Bills are paid and every other place has its share: this is yours to spend on fun, no guilt. Split of ${fmt(f.inc)} pay:</p>
     ${bar}<p>${msg}</p>`;
   } };

@@ -2,8 +2,8 @@
 /* ---------- what is on the page ---------- */
 const IN_ROWS = [
   { id: 'a', name: 'Salary', key: 'a', note: 'Monthly take-home pay, after tax. Paid twice a month: add both.' },
-  { id: 'b', name: 'Second income', key: 'b', note: 'Optional. A partner’s share, a second job, benefits: anything regular.' },
-  { id: 'side', name: 'Side income', key: 'side', note: 'Optional. Freelance, gig or cash work that changes month to month. Enter the lowest month you expect, so the plan still works in a slow one. Extra that comes in is a bonus.' },
+  { id: 'b', name: 'Second pay', key: 'b', note: 'Optional. A partner’s share, a second job, benefits: anything regular.' },
+  { id: 'side', name: 'Side pay', key: 'side', note: 'Optional. Freelance, gig or cash work that changes month to month. Enter the lowest month you expect, so the plan still works in a slow one. Extra that comes in is a bonus.' },
 ];
 const JARCLS = { nec: 'g-nec', lts: 'g-lts', play: 'g-play', edu: 'g-edu', ffa: 'g-ffa', give: 'g-give' };
 const JARVAR = { nec: 'var(--c1)', lts: 'var(--cl)', play: 'var(--cp)', edu: 'var(--c2)', ffa: 'var(--c3)', give: 'var(--cg)' };

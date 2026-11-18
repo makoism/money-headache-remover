@@ -97,7 +97,7 @@ function render() {
   const gap = PC.bankGap;
   let vt;
   if (pin <= 0) vt = 'Enter monthly take-home pay: tap Salary below.';
-  else if (st === 'good') vt = (Lun < roundUnit(S) ? 'All pay assigned.' : `${fmt(Lun)} of pay not placed yet.`) + (Lun >= pin * 0.08 ? ' Raise a goal or another place to use it, or keep it as a cushion.' : '');
+  else if (st === 'good') vt = (Lun < roundUnit(S) ? 'All pay is placed.' : `${fmt(Lun)} of pay not placed yet.`) + (Lun >= pin * 0.08 ? ' Raise a goal or another place to use it, or keep it as a cushion.' : '');
   else if (st === 'tight') vt = `Month spends ${fmt2(PC.overPay)} more than your pay${m.draw > 0 ? ', ' + fmt2(m.draw) + ' of it borrowed' : ''}. Balance covers it and ends at ${fmt2(m.bankEnd)}, at or above the ${fmt2(floor)} minimum.`;
   else vt = `Balance would end at ${fmt2(m.bankEnd)}, ${fmt2(gap)} under the ${fmt2(floor)} minimum.` + (fixes(S, m).length ? ' Pick a fix:' : ' Lower a cost or add pay to fix it.');
   if (m.draw > 0) vt += ` ${fmt2(m.draw)} is borrowed from the emergency fund.`;
@@ -117,7 +117,7 @@ function render() {
   const dw = m.draw || 0, Ld = PC.dock;   /* borrowed money is not pay, and pay that spending past plan already used is not left (model.js planCells) */
   const bankOnly = pin <= 0 && L >= 0 && m.bankEnd < 0;   /* spending with no pay entered: the bank shortfall still shows */
   $('#dockNum').textContent = bankOnly ? fmt(PC.bankBelowZero) : pin > 0 || L < 0 ? fmt(PC.dockAbs) : ''; $('#dockNum').style.color = Ld < 0 || bankOnly ? 'var(--bad)' : '';
-  $('#dockTxt').textContent = pin <= 0 ? (L < 0 ? 'planned with no pay entered in ' + mon + '. Add your pay in Plan.' : bankOnly ? 'below zero in the bank at the end of ' + mon + ', with no pay entered. Add your pay in Plan.' : 'No plan yet. Add your pay in Plan.') : `${Ld < 0 ? 'more planned than your pay in ' + mon + (dw > 0 ? ', ' + fmt(dw) + ' borrowed from your emergency fund' : '') : 'of your pay not placed yet in ' + mon   /* S6: one word, "not placed yet" (38.29 glossary) */} · ${overFree && !((m.overNec || 0) > 0.004) ? 'Over free to spend' : overFree || overAny ? 'Over plan' : Ld >= roundUnit(S) && st === 'good' ? 'Still needs a place' : st === 'good' ? 'On plan' : st === 'tight' ? 'Tight' : 'Short'}`;
+  $('#dockTxt').textContent = pin <= 0 ? (L < 0 ? 'planned with no pay entered in ' + mon + '. Add your pay in Plan.' : bankOnly ? 'below zero in the bank at the end of ' + mon + ', with no pay entered. Add your pay in Plan.' : 'No plan yet. Add your pay in Plan.') : `${Ld < 0 ? (sampleOn() ? 'more planned than the sample pay in ' : 'more planned than your pay in ') + mon + (dw > 0 ? ', ' + fmt(dw) + ' borrowed from your emergency fund' : '') : (sampleOn() ? 'of the sample pay not placed yet in ' : 'of your pay not placed yet in ') + mon   /* S6: one word, "not placed yet" (38.29 glossary) */} · ${overFree && !((m.overNec || 0) > 0.004) ? 'Over free to spend' : overFree || overAny ? 'Over plan' : Ld >= roundUnit(S) && st === 'good' ? 'Still needs a place' : st === 'good' ? 'On plan' : st === 'tight' ? 'Tight' : 'Short'}`;
 
   /* the details */
   $('#inTotal').textContent = fmt2(m.pool.in); $('#outTotal').textContent = fmt2(m.pool.out);

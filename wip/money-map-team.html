@@ -4349,8 +4349,8 @@ const ACT = {
 /* ---------- what is on the page ---------- */
 const IN_ROWS = [
   { id: 'a', name: 'Salary', key: 'a', note: 'Monthly take-home pay, after tax. Paid twice a month: add both.' },
-  { id: 'b', name: 'Second income', key: 'b', note: 'Optional. A partner’s share, a second job, benefits: anything regular.' },
-  { id: 'side', name: 'Side income', key: 'side', note: 'Optional. Freelance, gig or cash work that changes month to month. Enter the lowest month you expect, so the plan still works in a slow one. Extra that comes in is a bonus.' },
+  { id: 'b', name: 'Second pay', key: 'b', note: 'Optional. A partner’s share, a second job, benefits: anything regular.' },
+  { id: 'side', name: 'Side pay', key: 'side', note: 'Optional. Freelance, gig or cash work that changes month to month. Enter the lowest month you expect, so the plan still works in a slow one. Extra that comes in is a bonus.' },
 ];
 const JARCLS = { nec: 'g-nec', lts: 'g-lts', play: 'g-play', edu: 'g-edu', ffa: 'g-ffa', give: 'g-give' };
 const JARVAR = { nec: 'var(--c1)', lts: 'var(--cl)', play: 'var(--cp)', edu: 'var(--c2)', ffa: 'var(--c3)', give: 'var(--cg)' };
@@ -4635,7 +4635,7 @@ function render() {
   const gap = PC.bankGap;
   let vt;
   if (pin <= 0) vt = 'Enter monthly take-home pay: tap Salary below.';
-  else if (st === 'good') vt = (Lun < roundUnit(S) ? 'All pay assigned.' : `${fmt(Lun)} of pay not placed yet.`) + (Lun >= pin * 0.08 ? ' Raise a goal or another place to use it, or keep it as a cushion.' : '');
+  else if (st === 'good') vt = (Lun < roundUnit(S) ? 'All pay is placed.' : `${fmt(Lun)} of pay not placed yet.`) + (Lun >= pin * 0.08 ? ' Raise a goal or another place to use it, or keep it as a cushion.' : '');
   else if (st === 'tight') vt = `Month spends ${fmt2(PC.overPay)} more than your pay${m.draw > 0 ? ', ' + fmt2(m.draw) + ' of it borrowed' : ''}. Balance covers it and ends at ${fmt2(m.bankEnd)}, at or above the ${fmt2(floor)} minimum.`;
   else vt = `Balance would end at ${fmt2(m.bankEnd)}, ${fmt2(gap)} under the ${fmt2(floor)} minimum.` + (fixes(S, m).length ? ' Pick a fix:' : ' Lower a cost or add pay to fix it.');
   if (m.draw > 0) vt += ` ${fmt2(m.draw)} is borrowed from the emergency fund.`;
@@ -4655,7 +4655,7 @@ function render() {
   const dw = m.draw || 0, Ld = PC.dock;   /* borrowed money is not pay, and pay that spending past plan already used is not left (model.js planCells) */
   const bankOnly = pin <= 0 && L >= 0 && m.bankEnd < 0;   /* spending with no pay entered: the bank shortfall still shows */
   $('#dockNum').textContent = bankOnly ? fmt(PC.bankBelowZero) : pin > 0 || L < 0 ? fmt(PC.dockAbs) : ''; $('#dockNum').style.color = Ld < 0 || bankOnly ? 'var(--bad)' : '';
-  $('#dockTxt').textContent = pin <= 0 ? (L < 0 ? 'planned with no pay entered in ' + mon + '. Add your pay in Plan.' : bankOnly ? 'below zero in the bank at the end of ' + mon + ', with no pay entered. Add your pay in Plan.' : 'No plan yet. Add your pay in Plan.') : `${Ld < 0 ? 'more planned than your pay in ' + mon + (dw > 0 ? ', ' + fmt(dw) + ' borrowed from your emergency fund' : '') : 'of your pay not placed yet in ' + mon   /* S6: one word, "not placed yet" (38.29 glossary) */} · ${overFree && !((m.overNec || 0) > 0.004) ? 'Over free to spend' : overFree || overAny ? 'Over plan' : Ld >= roundUnit(S) && st === 'good' ? 'Still needs a place' : st === 'good' ? 'On plan' : st === 'tight' ? 'Tight' : 'Short'}`;
+  $('#dockTxt').textContent = pin <= 0 ? (L < 0 ? 'planned with no pay entered in ' + mon + '. Add your pay in Plan.' : bankOnly ? 'below zero in the bank at the end of ' + mon + ', with no pay entered. Add your pay in Plan.' : 'No plan yet. Add your pay in Plan.') : `${Ld < 0 ? (sampleOn() ? 'more planned than the sample pay in ' : 'more planned than your pay in ') + mon + (dw > 0 ? ', ' + fmt(dw) + ' borrowed from your emergency fund' : '') : (sampleOn() ? 'of the sample pay not placed yet in ' : 'of your pay not placed yet in ') + mon   /* S6: one word, "not placed yet" (38.29 glossary) */} · ${overFree && !((m.overNec || 0) > 0.004) ? 'Over free to spend' : overFree || overAny ? 'Over plan' : Ld >= roundUnit(S) && st === 'good' ? 'Still needs a place' : st === 'good' ? 'On plan' : st === 'tight' ? 'Tight' : 'Short'}`;
 
   /* the details */
   $('#inTotal').textContent = fmt2(m.pool.in); $('#outTotal').textContent = fmt2(m.pool.out);
@@ -5212,8 +5212,8 @@ const spreadFree = (vals, total) => { const free = total - sumOf(vals); if (free
 const STEP_MONEY = { id: 'money', part: PART.money, setup: true, focus: '#tourPay', title: 'Your money', skipIf: () => importApplied() && havePay(),
   body: () => {
     const pay = S.ui.done && S.ui.done.pay ? val(S, 'a', START) : '';
-    return `<p>Take-home pay after tax, each month. Paid twice a month: add both. Other income is a second job, a partner&rsquo;s share, benefits. Balance is bank accounts plus cash; rough is fine.</p>
-    <div class="tour-fields">${moneyField('tourPay', 'Monthly take-home pay', pay, 'All paychecks')}${moneyField('tourExtra', 'Other income each month <span class="opt">(optional)</span>', val(S, 'b', START), 'None')}${moneyField('tourBank', 'Balance now', S.cfg.bankStart !== undefined ? S.cfg.bankStart : '', 'Rough is fine')}</div>
+    return `<p>Take-home pay after tax, each month. Paid twice a month: add both. Other pay is a second job, a partner&rsquo;s share, benefits. Balance is bank accounts plus cash; rough is fine.</p>
+    <div class="tour-fields">${moneyField('tourPay', 'Monthly take-home pay', pay, 'All paychecks')}${moneyField('tourExtra', 'Other pay each month <span class="opt">(optional)</span>', val(S, 'b', START), 'None')}${moneyField('tourBank', 'Balance now', S.cfg.bankStart !== undefined ? S.cfg.bankStart : '', 'Rough is fine')}</div>
     <p class="cap">Not sure of a number? Leave it blank; the Plan tab takes it later.</p>`;
   },
   leave: () => {
@@ -5232,7 +5232,7 @@ const quickSetup = () => !(S.ui && S.ui.full === true);
 const BILLS_QUICK = ['rent', 'food'];
 const BILL_Q = { rent: 'Rent or mortgage', util: 'Utilities', food: 'Food and groceries', net: 'Internet', phone: 'Phone', ins: 'Insurance', subs: 'Subscriptions', gas: 'Transport', loan: 'Loan or debt payment', card: 'Credit card' };
 const BILL_NOTE = {
-  rent: () => 'Full amount. If someone else pays part, add their share as other income.',
+  rent: () => 'Full amount. If someone else pays part, add their share as other pay.',
   util: () => 'Electricity, gas and water.',
   food: () => 'Groceries and everyday meals. Eating out for fun comes out of free to spend.',
   net: () => 'Home internet, or the data plan if that is how you connect.',
@@ -5612,7 +5612,7 @@ const STEP_REVEAL = { id: 'reveal', part: PART.spend, art: 'branch',
       return `${big}<p>${all ? `Bills take <b>${f.J.list[0].pct}%</b> of pay, so almost nothing is left for free to spend.` : 'Nothing is set aside for free to spend.'} About 10% of pay is a common amount to keep for it.</p>
       ${bar}<p>${behindText() || 'To add some, raise the Free to spend line under Plan or lower a bill.'}</p>`;
     }
-    const msg = behindText() || (f.st === 'spare' ? `<b>${fmt(f.L)}</b> of pay is not placed yet. Raise a goal or add to free to spend.` : f.billPct >= 0.9 ? 'Bills take most of pay, so the month is tight. Lowering a bill is the easiest fix.' : 'All pay is assigned.');
+    const msg = behindText() || (f.st === 'spare' ? `<b>${fmt(f.L)}</b> of pay is not placed yet. Raise a goal or add to free to spend.` : f.billPct >= 0.9 ? 'Bills take most of pay, so the month is tight. Lowering a bill is the easiest fix.' : 'All pay is placed.');
     return `${big}<p>Bills are paid and every other place has its share: this is yours to spend on fun, no guilt. Split of ${fmt(f.inc)} pay:</p>
     ${bar}<p>${msg}</p>`;
   } };
@@ -5844,7 +5844,7 @@ const STEP_SOURCE = { id: 'source', part: PART.money, setup: true, skipIf: () =>
 function impRows(d) {
   const rows = [], whole = v => (v === null || v === undefined ? null : Math.round(v)); /* the plan keeps whole units; the receipts keep the cents */
   rows.push({ k: 'pay', label: 'Monthly pay', note: d.how, a: whole(d.pay), on: d.pay !== null });
-  rows.push({ k: 'other', label: 'Other income', note: '', a: whole(d.other), on: d.other !== null && d.other > 0 });
+  rows.push({ k: 'other', label: 'Other pay', note: '', a: whole(d.other), on: d.other !== null && d.other > 0 });
   rows.push({ k: 'bal', label: 'Balance now', note: '', a: whole(d.balance), on: d.balance !== null });
   IMP_BILLS.forEach(id => { const l = lineById(S, id); if (!l) return; rows.push({ k: 'bill:' + id, label: BILL_Q[id] || l.name, note: d.notes[id] || '', a: d.bills[id] !== undefined ? whole(d.bills[id]) : null, on: d.bills[id] !== undefined }); });
   d.subs.forEach((s, i) => rows.push({ k: 'sub:' + i, label: s.n, note: 'Subscription', a: whole(s.a), on: true }));
@@ -13370,7 +13370,7 @@ const TOUR = [
         const line = f.st === 'over' ? `Plan exceeds pay by <b>${fmt(f.shortBy)}</b>.${f.play > 0 ? ` Free to spend is ${fmt(f.play)}, but the month still comes up short.` : ' Nothing is free to spend yet.'} Under Plan: lower a bill or a goal, or add income.`
           : f.play <= 0 ? 'Nothing is free to spend in the plan. Raise the Free to spend line under Plan.'
           : f.st === 'spare' ? `Free to spend <b>${fmt(f.play)}</b> a month. <b>${fmt(f.L)}</b> of pay is not placed yet: raise a goal or add to free to spend.`
-          : `Free to spend <b>${fmt(f.play)}</b> a month, to spend without guilt. All other pay is assigned.`;
+          : `Free to spend <b>${fmt(f.play)}</b> a month, to spend without guilt. All other pay is placed.`;
         const V = viewOf(S, f.C, nowYm(), ymd(new Date())), r = V.main, mg = r ? goalById(S, r.id) : null;
         /* the last screen lands on the destination: the goal, the reason in the person's words, when it is full and what each month adds */
         const when0 = r ? (r.pct >= 100 ? 'Full.' : r.reached ? (r.months <= 0 ? 'Full <b>this month</b>.' : `Full <b>${fullLabel(r.reached)}</b>, ${plural(r.months, 'month')} from now.`) : 'Not full within ' + SPAN + ' at this pace.') : '';
@@ -15974,7 +15974,7 @@ function homeV1() {
   let mb = $('#hMoreBtn');
   if (!mb) { mb = document.createElement('button'); mb.type = 'button'; mb.id = 'hMoreBtn'; mb.className = 'btn hv1-more'; mb.addEventListener('click', () => { HOME_ALL = !HOME_ALL; sfx('tap'); renderHome(); }); }
   if (bur && mb.previousElementSibling !== bur) bur.after(mb);
-  mb.textContent = HOME_ALL ? 'Show less' : 'More: free to spend, goals, cards, streak'; mb.setAttribute('aria-expanded', String(HOME_ALL));
+  mb.textContent = HOME_ALL ? 'Show less' : 'More: Free to spend, goals, cards, streak'; mb.setAttribute('aria-expanded', String(HOME_ALL));
 }
 
 /* ---------- add a goal: what, how much, by when ---------- */
@@ -16650,11 +16650,11 @@ function renderMap() {
     <div class="mp-split" role="img" aria-label="Your pay in ${esc(mon)} splits into: ${esc(split.map(x => x.name + ' ' + fmt(x.amount)).join(', '))}">${seg}${planOver && placed > 0 ? `<b class="mp-past" style="width:${Math.min(100, planOver / placed * 100)}%" title="Planned past your pay ${esc(fmt(planOver))}"></b>` : ''}</div>
     <ul class="mp-key">${key}${planOver ? `<li><i style="background:var(--bad)"></i>Past your pay <b>${fmt(planOver)}</b></li>` : ''}</ul>${planOver ? `<p class="cap">Your plan places ${fmt(planOver)} more than your pay. ${coverText(planOver, dwn, M.bankEnd, cfg(S, 'minBank'), M.bankBelow)}</p>` : ''}
     <p class="mp-act"><button type="button" class="btn small" id="mpPay">Watch where your pay goes</button></p></details>
-    <p class="mp-cap">Where your money sits at the end of ${esc(mon)}: the bank, your goals and your burrows</p>
+    <p class="mp-cap">Where your money sits at the end of ${esc(mon)}: the bank and your burrows</p>
     <div class="mp-where" role="img" aria-label="${esc(parts.map(x => x.name + ' ' + fmt(x.amount)).join(', '))}">${wseg}</div>
     <ul class="mp-key">${wkey}</ul>
     <ul class="mp-nums mp-four" aria-label="Your four numbers">${n4('Total', fmt2(M.total), 'bank and burrows, end of ' + mon, M.total < 0 ? 'bad' : '')}${n4('Free to spend', fmt2(M.month.find(r => r.id === 'play').amount), 'safe to spend in ' + mon)}${n4('Bills left', fmt2(M.billsLeft), 'still to pay in ' + mon)}${n4('Saved', fmt2(M.saved), 'in your burrows')}</ul>
-    <p class="cap mp-proof">Bank ${fmt2(M.bankEnd)} + burrows ${fmt2(M.saved)} = <b>${fmt2(M.total)}</b> at the end of ${esc(mon)}. Burrow amounts include what you plan to add this month.${PF.pendAmount > 0 ? ' ' + fmt2(PF.pendAmount) + (PF.pendMonths.length === 1 ? ' of ' + FULL[+PF.pendMonths[0].slice(5) - 1] + "'s free to spend" : ' of free to spend from ' + PF.pendMonths.length + ' past months') + (typeof SWEEP_LATER !== 'undefined' && SWEEP_LATER && PF.pendMonths.every(q => SWEEP_LATER[q]) ? ' is left out until you answer. You chose Decide later, so Home asks again the next time you open the app.' : ' is left out until you answer the question on Home.') : ''}${M.overspent > 0 ? ' The bank is lowered by ' + fmt2(M.overspent) + ' you spent over plan.' : ''} This comes from your plan and your receipts and is not checked against your bank yet.${PF.ok ? ' Checked: what you started with, plus your pay, less what was spent, comes to the same total.' : ''}</p>
+    <p class="cap mp-proof">Bank ${fmt2(M.bankEnd)} + burrows ${fmt2(M.saved)} = <b>${fmt2(M.total)}</b> at the end of ${esc(mon)}. Burrow amounts include what you plan to add this month.${PF.pendAmount > 0 ? ' ' + fmt2(PF.pendAmount) + (PF.pendMonths.length === 1 ? ' of ' + FULL[+PF.pendMonths[0].slice(5) - 1] + "'s free to spend" : ' of free to spend from ' + PF.pendMonths.length + ' past months') + (typeof SWEEP_LATER !== 'undefined' && SWEEP_LATER && PF.pendMonths.every(q => SWEEP_LATER[q]) ? ' is left out until you answer. You chose Decide later, so Home asks again the next time you open the app.' : ' is left out until you answer the question on Home.') : ''}${M.overspent > 0 ? ' The bank is lowered by ' + fmt2(M.overspent) + ' you spent over plan.' : ''} These are your plan's and receipts' numbers, not yet compared with your bank.${PF.ok ? ' They add up: what you started with, plus your pay, less what was spent, comes to the same total.' : ''}</p>
     ${PF.ok ? '' : `<p class="cap mp-bad" role="alert">These numbers do not add up. They are off by ${fmt2(PF.offBy)}. Nothing you entered is lost. Please tell Mako.</p>`}
     ${warn}
     <h3 class="mp-h">This month</h3><div class="hb-scene mp-rooms" id="mpRooms"></div>`);

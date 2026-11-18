@@ -543,7 +543,7 @@ function homeV1() {
   let mb = $('#hMoreBtn');
   if (!mb) { mb = document.createElement('button'); mb.type = 'button'; mb.id = 'hMoreBtn'; mb.className = 'btn hv1-more'; mb.addEventListener('click', () => { HOME_ALL = !HOME_ALL; sfx('tap'); renderHome(); }); }
   if (bur && mb.previousElementSibling !== bur) bur.after(mb);
-  mb.textContent = HOME_ALL ? 'Show less' : 'More: free to spend, goals, cards, streak'; mb.setAttribute('aria-expanded', String(HOME_ALL));
+  mb.textContent = HOME_ALL ? 'Show less' : 'More: Free to spend, goals, cards, streak'; mb.setAttribute('aria-expanded', String(HOME_ALL));
 }
 
 /* ---------- add a goal: what, how much, by when ---------- */

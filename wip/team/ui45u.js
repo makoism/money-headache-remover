@@ -226,7 +226,7 @@ const STEP_SOURCE = { id: 'source', part: PART.money, setup: true, skipIf: () =>
 function impRows(d) {
   const rows = [], whole = v => (v === null || v === undefined ? null : Math.round(v)); /* the plan keeps whole units; the receipts keep the cents */
   rows.push({ k: 'pay', label: 'Monthly pay', note: d.how, a: whole(d.pay), on: d.pay !== null });
-  rows.push({ k: 'other', label: 'Other income', note: '', a: whole(d.other), on: d.other !== null && d.other > 0 });
+  rows.push({ k: 'other', label: 'Other pay', note: '', a: whole(d.other), on: d.other !== null && d.other > 0 });
   rows.push({ k: 'bal', label: 'Balance now', note: '', a: whole(d.balance), on: d.balance !== null });
   IMP_BILLS.forEach(id => { const l = lineById(S, id); if (!l) return; rows.push({ k: 'bill:' + id, label: BILL_Q[id] || l.name, note: d.notes[id] || '', a: d.bills[id] !== undefined ? whole(d.bills[id]) : null, on: d.bills[id] !== undefined }); });
   d.subs.forEach((s, i) => rows.push({ k: 'sub:' + i, label: s.n, note: 'Subscription', a: whole(s.a), on: true }));

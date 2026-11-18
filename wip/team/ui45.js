@@ -222,7 +222,7 @@ const TOUR = [
         const line = f.st === 'over' ? `Plan exceeds pay by <b>${fmt(f.shortBy)}</b>.${f.play > 0 ? ` Free to spend is ${fmt(f.play)}, but the month still comes up short.` : ' Nothing is free to spend yet.'} Under Plan: lower a bill or a goal, or add income.`
           : f.play <= 0 ? 'Nothing is free to spend in the plan. Raise the Free to spend line under Plan.'
           : f.st === 'spare' ? `Free to spend <b>${fmt(f.play)}</b> a month. <b>${fmt(f.L)}</b> of pay is not placed yet: raise a goal or add to free to spend.`
-          : `Free to spend <b>${fmt(f.play)}</b> a month, to spend without guilt. All other pay is assigned.`;
+          : `Free to spend <b>${fmt(f.play)}</b> a month, to spend without guilt. All other pay is placed.`;
         const V = viewOf(S, f.C, nowYm(), ymd(new Date())), r = V.main, mg = r ? goalById(S, r.id) : null;
         /* the last screen lands on the destination: the goal, the reason in the person's words, when it is full and what each month adds */
         const when0 = r ? (r.pct >= 100 ? 'Full.' : r.reached ? (r.months <= 0 ? 'Full <b>this month</b>.' : `Full <b>${fullLabel(r.reached)}</b>, ${plural(r.months, 'month')} from now.`) : 'Not full within ' + SPAN + ' at this pace.') : '';
