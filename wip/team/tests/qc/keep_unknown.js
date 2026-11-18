@@ -19,5 +19,12 @@ const L=require('./lib_r12.js');const R=L.R;const w=R.w;
  ck('the unknown fields on the receipt are still saved',d.receipts.find(r=>r.id==='q1').tag==='coffee'&&d.receipts.find(r=>r.id==='q1').src2===7,JSON.stringify(d.receipts[0]));
  const bank1=await p.evaluate(()=>__t.calcAll(__t.S).byYm['2026-12'].bankEnd);
  ck(`no number changed because of them (bank in Dec ${bank0} before, ${bank1} after the new 5 receipt)`,Math.round((bank0-bank1)*100)===500||Math.round((bank0-bank1)*100)===0);
+ /* round 2 (the reviewer's method): another tab writes new fields while this page is open, without a newer rev; this page then saves (its
+    unload save included). The fields must survive, a settings field too */
+ await p.evaluate(()=>{const k='money-map-template-v2',d=JSON.parse(localStorage.getItem(k));d.future={x:1};d.cfg.newOpt=5;d.receipts[0].tag2='work';localStorage.setItem(k,JSON.stringify(d));});
+ await p.evaluate(()=>{__t.persist();});await w(1500);
+ await p.reload();await p.waitForFunction(()=>window.__t&&__t.S&&__t.S.ui&&__t.S.ui.cleared===true,{timeout:15000}).catch(()=>{});await w(1500);
+ const d2=await p.evaluate(()=>JSON.parse(localStorage.getItem('money-map-template-v2')));
+ ck('fields written by another tab while this page was open survive its save and a reload',JSON.stringify(d2.future)==='{"x":1}'&&d2.cfg.newOpt===5&&d2.receipts.find(r=>r.id==='q1').tag2==='work',JSON.stringify([d2.future,d2.cfg.newOpt,d2.receipts[0]]));
  ck('no page errors',errs.length===0,errs.join(' | '));
  await b.close();console.log(bad?'FAILED '+bad:'ALL PASS');process.exit(bad?1:0);})();

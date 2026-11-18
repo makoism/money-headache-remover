@@ -143,6 +143,7 @@ function normalize(d) {
   /* saved data only gains fields (ARCHITECTURE.md contract): a field this version does not know, saved by a newer one, is kept as it was, so an old
      tab left open or a rollback never strips it (38.31 data safety round). Nothing here reads it, so it never reaches a sum */
   Object.keys(d).forEach(k => { if (!(k in f) && /^[A-Za-z][A-Za-z0-9_]{0,39}$/.test(k)) { try { f[k] = JSON.parse(JSON.stringify(d[k])); } catch (e) { } } });
+  if (d.cfg && typeof d.cfg === 'object') Object.keys(d.cfg).forEach(k => { if (!CFG_KNOWN.has(k) && !(k in f.cfg) && /^[A-Za-z][A-Za-z0-9_]{0,39}$/.test(k) && ['string', 'number', 'boolean'].indexOf(typeof d.cfg[k]) >= 0) f.cfg[k] = d.cfg[k]; });
   return f;
 }
 /* Changing the currency swaps in that currency's sample (or zeros) only while the numbers are still untouched.
@@ -228,7 +229,18 @@ function persist() { S.rev = Math.max(Date.now(), (+S.rev || 0) + 1); setSave('b
 /* receipts another tab saved since this tab last read are kept, never written over */
 let seenRev = 0, mergedN = 0;
 function mergeOtherReceipts() { try { const raw = localStorage.getItem(KEY); if (!raw) return; const d = JSON.parse(raw); if (!d || !Array.isArray(d.receipts) || !(+d.rev > seenRev)) return; const have = new Set((S.receipts || []).map(r => r.id)); d.receipts.forEach(r => { if (r && r.id && !have.has(r.id) && !RM_IDS.has(r.id)) (S.receipts = S.receipts || []).push(r); mergedN++; }); } catch (e) { /* the save goes ahead */ } }
-function flush() { saveTimer = null; let ok = true; try { mergedN = 0; mergeOtherReceipts(); if (mergedN > 0) setTimeout(() => { try { render(); } catch (e) { } }, 0); if (!storedIsNewer()) { localStorage.setItem(KEY, JSON.stringify(S)); seenRev = +S.rev || 0; } } catch (e) { ok = false; } setSave(ok ? 'device' : 'error'); mirrorOut(m => { if (!ok && m) setSave('device'); }); vaultQueue(); }
+/* saved data only gains fields: before this page writes, it carries over any field the stored copy has that this version does not know (a newer
+   version may have saved it from another tab), so an older page left open never strips it (38.31 data safety round 2) */
+const PLAIN_KEY = /^[A-Za-z][A-Za-z0-9_]{0,39}$/;
+function keepUnknown() {
+  try {
+    const raw = localStorage.getItem(KEY); if (!raw) return; const d = JSON.parse(raw); if (!d || typeof d !== 'object') return;
+    Object.keys(d).forEach(k => { if (!(k in S) && PLAIN_KEY.test(k)) S[k] = d[k]; });
+    if (d.cfg && typeof d.cfg === 'object' && S.cfg) Object.keys(d.cfg).forEach(k => { if (!(k in S.cfg) && !CFG_KNOWN.has(k) && PLAIN_KEY.test(k)) S.cfg[k] = d.cfg[k]; });
+    if (Array.isArray(d.receipts) && Array.isArray(S.receipts)) { const by = new Map(d.receipts.filter(r => r && typeof r.id === 'string').map(r => [r.id, r])); S.receipts.forEach(r => { const o = by.get(r.id); if (o) Object.keys(o).forEach(k => { if (!(k in r) && !RC_KNOWN.has(k) && PLAIN_KEY.test(k) && ['string', 'number', 'boolean'].indexOf(typeof o[k]) >= 0) r[k] = o[k]; }); }); }
+  } catch (e) { /* the stored copy is unreadable: nothing to carry over */ }
+}
+function flush() { saveTimer = null; let ok = true; try { mergedN = 0; mergeOtherReceipts(); keepUnknown(); if (mergedN > 0) setTimeout(() => { try { render(); } catch (e) { } }, 0); if (!storedIsNewer()) { localStorage.setItem(KEY, JSON.stringify(S)); seenRev = +S.rev || 0; } } catch (e) { ok = false; } setSave(ok ? 'device' : 'error'); mirrorOut(m => { if (!ok && m) setSave('device'); }); vaultQueue(); }
 /* another tab saved a newer copy than this tab holds (only possible with two tabs open): then this tab must not write over it */
 function storedIsNewer() { try { const raw = localStorage.getItem(KEY); if (!raw) return false; const i = raw.indexOf('"rev":'); if (i < 0) return false; const r = parseInt(raw.slice(i + 6), 10); return r > +(S.rev || 0); } catch (e) { return false; } }
 /* two tabs of the app in one browser: when the other tab saves, this one takes its numbers instead of writing over them later.

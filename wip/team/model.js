@@ -880,6 +880,8 @@ function cleanItems(raw) {
   return out;
 }
 const CFG_AMOUNTS = ['bankStart', 'minBank', 'ceiling', 'moveTarget', 'moveStart', 'travelTarget', 'travelStart', 'carTarget', 'carStart', 'rainyStart', 'rainyTarget', 'rainyStretch'];
+/* every setting this version knows; anything else in a saved copy is a newer version's and is kept untouched by the page (ui0.js) */
+const CFG_KNOWN = new Set(CFG_AMOUNTS.concat(['loanLast', 'redirectLoan', 'moveMonth', 'carDue', 'aims']));
 function cleanCfg(raw) {
   const out = {}; if (!isMap(raw)) return out;
   CFG_AMOUNTS.forEach(k => { const v = cleanAmt(raw[k]); if (v !== null) out[k] = v; });

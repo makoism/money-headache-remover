@@ -332,7 +332,7 @@ const PESO = (() => { const src = require('fs').readFileSync(process.env.MODEL |
   await p.click('#bkReset'); await p.click('#bkReset'); await w(350);
   await tab('month'); ok('back to the sample: ₱3,000 of Free to spend less the ₱10 receipt kept from the escaping check (38.30: the hero is what is still safe to spend)', (await q('#heroNum')) === '₱2,990' && (await p.$$eval('#rb-nec .ed', e => e.length)) === 10);
   await tab('receipts'); ok('resetting to the sample keeps receipts', (await p.$$eval('#rcList .rc, #rcCats tr', e => e.length)) >= 1);
-  await tab('basics'); await p.$eval('#bk', (el, v) => { el.value = v; }, json); await p.click('#bkLoad'); await w(450);
+  await tab('basics'); await p.$eval('#bk', (el, v) => { el.value = v; }, json); await p.click('#bkLoad'); await w(200); await p.click('#bkLoad'); await w(450);   /* Load text asks first since 38.31 (data safety round 2): two taps */
   await tab('month'); ok('round trip restores plan and numbers', (await q('#leftTotal')) === bLeft && (await q('#heroNum')) === bHero);
   await tab('receipts'); ok('loading a plan without receipts leaves receipts alone', (await p.$$eval('#rcCats tr', e => e.length)) >= 1);
 

@@ -3162,6 +3162,8 @@ function cleanItems(raw) {
   return out;
 }
 const CFG_AMOUNTS = ['bankStart', 'minBank', 'ceiling', 'moveTarget', 'moveStart', 'travelTarget', 'travelStart', 'carTarget', 'carStart', 'rainyStart', 'rainyTarget', 'rainyStretch'];
+/* every setting this version knows; anything else in a saved copy is a newer version's and is kept untouched by the page (ui0.js) */
+const CFG_KNOWN = new Set(CFG_AMOUNTS.concat(['loanLast', 'redirectLoan', 'moveMonth', 'carDue', 'aims']));
 function cleanCfg(raw) {
   const out = {}; if (!isMap(raw)) return out;
   CFG_AMOUNTS.forEach(k => { const v = cleanAmt(raw[k]); if (v !== null) out[k] = v; });
@@ -3674,6 +3676,7 @@ function normalize(d) {
   /* saved data only gains fields (ARCHITECTURE.md contract): a field this version does not know, saved by a newer one, is kept as it was, so an old
      tab left open or a rollback never strips it (38.31 data safety round). Nothing here reads it, so it never reaches a sum */
   Object.keys(d).forEach(k => { if (!(k in f) && /^[A-Za-z][A-Za-z0-9_]{0,39}$/.test(k)) { try { f[k] = JSON.parse(JSON.stringify(d[k])); } catch (e) { } } });
+  if (d.cfg && typeof d.cfg === 'object') Object.keys(d.cfg).forEach(k => { if (!CFG_KNOWN.has(k) && !(k in f.cfg) && /^[A-Za-z][A-Za-z0-9_]{0,39}$/.test(k) && ['string', 'number', 'boolean'].indexOf(typeof d.cfg[k]) >= 0) f.cfg[k] = d.cfg[k]; });
   return f;
 }
 /* Changing the currency swaps in that currency's sample (or zeros) only while the numbers are still untouched.
@@ -3759,7 +3762,18 @@ function persist() { S.rev = Math.max(Date.now(), (+S.rev || 0) + 1); setSave('b
 /* receipts another tab saved since this tab last read are kept, never written over */
 let seenRev = 0, mergedN = 0;
 function mergeOtherReceipts() { try { const raw = localStorage.getItem(KEY); if (!raw) return; const d = JSON.parse(raw); if (!d || !Array.isArray(d.receipts) || !(+d.rev > seenRev)) return; const have = new Set((S.receipts || []).map(r => r.id)); d.receipts.forEach(r => { if (r && r.id && !have.has(r.id) && !RM_IDS.has(r.id)) (S.receipts = S.receipts || []).push(r); mergedN++; }); } catch (e) { /* the save goes ahead */ } }
-function flush() { saveTimer = null; let ok = true; try { mergedN = 0; mergeOtherReceipts(); if (mergedN > 0) setTimeout(() => { try { render(); } catch (e) { } }, 0); if (!storedIsNewer()) { localStorage.setItem(KEY, JSON.stringify(S)); seenRev = +S.rev || 0; } } catch (e) { ok = false; } setSave(ok ? 'device' : 'error'); mirrorOut(m => { if (!ok && m) setSave('device'); }); vaultQueue(); }
+/* saved data only gains fields: before this page writes, it carries over any field the stored copy has that this version does not know (a newer
+   version may have saved it from another tab), so an older page left open never strips it (38.31 data safety round 2) */
+const PLAIN_KEY = /^[A-Za-z][A-Za-z0-9_]{0,39}$/;
+function keepUnknown() {
+  try {
+    const raw = localStorage.getItem(KEY); if (!raw) return; const d = JSON.parse(raw); if (!d || typeof d !== 'object') return;
+    Object.keys(d).forEach(k => { if (!(k in S) && PLAIN_KEY.test(k)) S[k] = d[k]; });
+    if (d.cfg && typeof d.cfg === 'object' && S.cfg) Object.keys(d.cfg).forEach(k => { if (!(k in S.cfg) && !CFG_KNOWN.has(k) && PLAIN_KEY.test(k)) S.cfg[k] = d.cfg[k]; });
+    if (Array.isArray(d.receipts) && Array.isArray(S.receipts)) { const by = new Map(d.receipts.filter(r => r && typeof r.id === 'string').map(r => [r.id, r])); S.receipts.forEach(r => { const o = by.get(r.id); if (o) Object.keys(o).forEach(k => { if (!(k in r) && !RC_KNOWN.has(k) && PLAIN_KEY.test(k) && ['string', 'number', 'boolean'].indexOf(typeof o[k]) >= 0) r[k] = o[k]; }); }); }
+  } catch (e) { /* the stored copy is unreadable: nothing to carry over */ }
+}
+function flush() { saveTimer = null; let ok = true; try { mergedN = 0; mergeOtherReceipts(); keepUnknown(); if (mergedN > 0) setTimeout(() => { try { render(); } catch (e) { } }, 0); if (!storedIsNewer()) { localStorage.setItem(KEY, JSON.stringify(S)); seenRev = +S.rev || 0; } } catch (e) { ok = false; } setSave(ok ? 'device' : 'error'); mirrorOut(m => { if (!ok && m) setSave('device'); }); vaultQueue(); }
 /* another tab saved a newer copy than this tab holds (only possible with two tabs open): then this tab must not write over it */
 function storedIsNewer() { try { const raw = localStorage.getItem(KEY); if (!raw) return false; const i = raw.indexOf('"rev":'); if (i < 0) return false; const r = parseInt(raw.slice(i + 6), 10); return r > +(S.rev || 0); } catch (e) { return false; } }
 /* two tabs of the app in one browser: when the other tab saves, this one takes its numbers instead of writing over them later.
@@ -13496,8 +13510,13 @@ function openTour(at, mode) {
 let RESPLIT_SNAP = null;   /* the copy taken when Re-split pay opens the setup steps, so closing them can offer Undo */
 /* Guided setup run again over a plan the person already has (38.31 data safety round: it changed pay and saved amounts with no copy and no Undo):
    the same copy as Re-split pay, kept in the saved plan too, so Undo is offered when setup closes, or after a reload if the page was closed part-way */
+/* a copy of the numbers from before a big change (setup run again, a backup loaded), kept in the saved plan for 3 days so Undo survives a reload
+   (38.31 data safety round 2). Only the newest is kept, and a copy never holds an older copy inside it */
+const KEEP_DAYS = 3;
+function snapNoCopy() { const c = JSON.parse(JSON.stringify(S)); if (c.ui) { delete c.ui.keep; delete c.ui.preSplit; } return JSON.stringify(c); }
+function keepCopy(snap, why) { S.ui.keep = { snap, t: Date.now(), why }; }
 function openSetupWithCopy(at, mode) {
-  if (typeof hasData === 'function' && hasData(S) && !RESPLIT_SNAP) { RESPLIT_SNAP = JSON.stringify(S); S.ui.preSplit = RESPLIT_SNAP; persist(); }
+  if (typeof hasData === 'function' && hasData(S) && !RESPLIT_SNAP) { RESPLIT_SNAP = snapNoCopy(); S.ui.preSplit = RESPLIT_SNAP; persist(); }
   openTour(at, mode);
 }
 function closeTour(toBills, done) {
@@ -13507,7 +13526,10 @@ function closeTour(toBills, done) {
   $('#tour').hidden = true; $('.wrap').inert = false; $('#dock').inert = false; helpAside(false);
   TS = [];
   restructure();
-  if (RESPLIT_SNAP) { const sn = RESPLIT_SNAP; RESPLIT_SNAP = null; delete S.ui.preSplit; persist(); try { if (JSON.stringify([sn && JSON.parse(sn).plan, sn && JSON.parse(sn).steps, sn && JSON.parse(sn).once, sn && JSON.parse(sn).items, sn && JSON.parse(sn).cfg]) !== JSON.stringify([S.plan, S.steps, S.once, S.items, S.cfg]) && window.offerUndoG) window.offerUndoG(sn, 'Setup changed your plan.'); } catch (e) { /* the plan is already saved */ } }
+  if (RESPLIT_SNAP) { const sn = RESPLIT_SNAP; RESPLIT_SNAP = null; delete S.ui.preSplit;
+    let changed = false; try { const o = JSON.parse(sn); changed = JSON.stringify([o.plan, o.steps, o.once, o.items, o.cfg]) !== JSON.stringify([S.plan, S.steps, S.once, S.items, S.cfg]); } catch (e) { }
+    if (changed) { keepCopy(sn, 'Setup changed your plan.'); if (window.offerUndoG) window.offerUndoG(sn, `Setup changed your plan. You can undo for ${KEEP_DAYS} days.`); }
+    persist(); }
   if (toBills) { S.ui.seen = Object.assign(S.ui.seen || {}, { month: true }); switchTab('month'); openRow('nec'); }
   else {
     scrollTo({ top: 0 }); if (done) WORLD.settle();
@@ -13586,7 +13608,7 @@ function wireTour() {
   window.addEventListener('pagehide', () => autosave(true));
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') autosave(true); });
   $('#tourOpen2').addEventListener('click', () => openSetupWithCopy(0));
-  $('#setupOpen').addEventListener('click', () => openSetupWithCopy(undefined, 'full'));
+
 }
 
 /* ---------- help: the tour again, and (where this view allows it) a chat with Claude about this page ----------
@@ -16875,12 +16897,11 @@ function wire() {
     try {
       const d = JSON.parse($('#bk').value);
       if (!d || typeof d !== 'object' || !d.steps || !d.once || !d.cfg) throw new Error('bad');
-      const old = S; offerUndo(JSON.stringify(old), 'Backup loaded.'); S = upgradeLegacy(normalize(d)); S.ui = Object.assign({}, old.ui, S.ui, { sampleHidden: true });
+      const old = S, oldSnap = snapNoCopy(); offerUndo(oldSnap, `Backup loaded. You can undo for ${KEEP_DAYS} days.`); S = upgradeLegacy(normalize(d)); S.ui = Object.assign({}, old.ui, S.ui, { sampleHidden: true }); keepCopy(oldSnap, 'A backup replaced your numbers.');
       if (!Array.isArray(d.receipts)) S.receipts = old.receipts;
       editRow = null; editGoal = null; editRc = null; itemsSig = ''; S.ui.bk = Date.now(); delete S.ui.bkLater; persist(); restructure(); msg.textContent = 'Loaded.'; sfx('next');
     } catch (e) { msg.textContent = 'Not a valid backup. Use the whole file, or paste all of the copied text.'; }
   };
-  $('#bkLoad').addEventListener('click', loadBackup);
   /* a file for the person to keep. In the Claude viewer plain downloads are blocked, so the viewer's own save prompt is used there; elsewhere the browser downloads it. */
   const saveOut = async (name, text, mime, msg, alt) => {
     if (inArtifact()) {
@@ -16905,7 +16926,7 @@ function wire() {
     const f = e.target.files && e.target.files[0], msg = $('#bkMsg'); e.target.value = ''; if (!f) return;
     if (f.size > 20e6) { msg.textContent = 'File too large for a backup.'; return; }
     const r = new FileReader(); r.onerror = () => { msg.textContent = 'File unreadable. Try Copy text.'; };
-    r.onload = () => { $('#bk').value = String(r.result || ''); loadBackup(); }; r.readAsText(f);
+    r.onload = () => { const t = String(r.result || ''); $('#bk').value = t; let ok = false; try { const d = JSON.parse(t); ok = !!(d && typeof d === 'object' && d.steps && d.once && d.cfg); } catch (e) { } $('#bkMsg').textContent = ok ? 'File read. Tap Load text twice to replace your numbers with it.' : 'Not a valid backup. Use the whole file, or paste all of the copied text.'; }; r.readAsText(f);   /* a picked file never replaces anything on its own (38.31 data safety round 2) */
   });
   const twoStep = (b, armedText, run) => {
     let t = 0; const orig = b.textContent;
@@ -16920,11 +16941,15 @@ function wire() {
   const offerUndo = (snap, txt, fn) => { undoFn = fn || null; undoSnap = snap; $('#undoTxt').textContent = txt; $('#undoBar').hidden = false; clearTimeout(undoT); undoT = setTimeout(() => { $('#undoBar').hidden = true; undoSnap = null; }, 30000); };
   window.offerUndoG = offerUndo;
   /* the setup steps were opened by Re-split pay and the page was closed part-way: the copy from before is still one tap away */
-  if (S.ui && S.ui.preSplit && !tourIsOpen) { const sn = S.ui.preSplit; delete S.ui.preSplit; persist(); offerUndo(sn, 'Setup was changing your plan.'); }
+  if (S.ui && S.ui.preSplit && !tourIsOpen) { const sn = S.ui.preSplit; delete S.ui.preSplit; keepCopy(sn, 'Setup was changing your plan.'); persist(); }
+  /* the copy from before a big change is offered again on every open for 3 days, then let go */
+  if (S.ui && S.ui.keep) { const k = S.ui.keep; if (!(typeof k.snap === 'string' && +k.t > 0) || Date.now() - k.t > KEEP_DAYS * 864e5) { delete S.ui.keep; persist(); } else offerUndo(k.snap, `${k.why || 'Your numbers changed.'} You can undo until ${dateLabel(ymd(new Date(+k.t + KEEP_DAYS * 864e5)))}.`); }
   $('#undoGo').addEventListener('click', () => { if (!undoSnap) return; clearTimeout(undoT); $('#undoBar').hidden = true; if (undoFn) { undoFn(); undoFn = null; } else S = normalize(JSON.parse(undoSnap)); undoSnap = null; editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = ''; sfx('back'); cheer('Your numbers are back.'); });
   const blank = () => { offerUndo(JSON.stringify(S), 'All numbers zeroed.'); S = blankState(S, sampleOn()); S.ui.cleared = true; delete S.ui.setup; delete S.ui.src; delete S.ui.imp; editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = 'All zero. Start with salary.'; select(START); if (tab !== 'month') switchTab('month'); };
   twoStep($('#blankBtn'), 'Tap again: clears pay, bills, goals and saved amounts. Receipts stay.', blank);
   twoStep($('#blankTop'), 'Tap again: clears pay, bills, goals and saved amounts. Receipts stay.', blank);
+  twoStep($('#bkLoad'), `Tap again: replaces your pay, bills, goals and receipts with this copy. You can undo for ${KEEP_DAYS} days.`, loadBackup);
+  twoStep($('#setupOpen'), `Tap again: setup can change your pay, bills, goals and saved amounts. You can undo for ${KEEP_DAYS} days.`, () => openSetupWithCopy(undefined, 'full'));   /* both ask first, and keep a copy (38.31 data safety round 2) */
   twoStep($('#bkReset'), 'Tap again: replaces your numbers with the samples', () => { offerUndo(JSON.stringify(S), 'Samples restored.'); const old = S, u = S.ui; S = presetState(u.cur); S.ui = Object.assign({}, u, { preset: S.ui.preset, sampleHidden: false, done: {} }); delete S.ui.cleared; delete S.ui.setup; delete S.ui.gset; delete S.ui.sb; delete S.ui.tourAt; delete S.ui.src; delete S.ui.imp; S.receipts = old.receipts; editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = 'Samples restored.'; });
   wireReceipts(); safe(() => BUR.boot(), null, 'burrow'); wireTour(); wireHelp(); wireHome(); wireScan(); wireAskAi(); wireSafe(); wireVault(); safe(() => DJ.wire(), null, 'dj'); safe(() => SCENE.start(), null, 'scene'); safe(() => WORLD.wire(), null, 'world');
 

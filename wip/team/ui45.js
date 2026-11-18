@@ -345,8 +345,13 @@ function openTour(at, mode) {
 let RESPLIT_SNAP = null;   /* the copy taken when Re-split pay opens the setup steps, so closing them can offer Undo */
 /* Guided setup run again over a plan the person already has (38.31 data safety round: it changed pay and saved amounts with no copy and no Undo):
    the same copy as Re-split pay, kept in the saved plan too, so Undo is offered when setup closes, or after a reload if the page was closed part-way */
+/* a copy of the numbers from before a big change (setup run again, a backup loaded), kept in the saved plan for 3 days so Undo survives a reload
+   (38.31 data safety round 2). Only the newest is kept, and a copy never holds an older copy inside it */
+const KEEP_DAYS = 3;
+function snapNoCopy() { const c = JSON.parse(JSON.stringify(S)); if (c.ui) { delete c.ui.keep; delete c.ui.preSplit; } return JSON.stringify(c); }
+function keepCopy(snap, why) { S.ui.keep = { snap, t: Date.now(), why }; }
 function openSetupWithCopy(at, mode) {
-  if (typeof hasData === 'function' && hasData(S) && !RESPLIT_SNAP) { RESPLIT_SNAP = JSON.stringify(S); S.ui.preSplit = RESPLIT_SNAP; persist(); }
+  if (typeof hasData === 'function' && hasData(S) && !RESPLIT_SNAP) { RESPLIT_SNAP = snapNoCopy(); S.ui.preSplit = RESPLIT_SNAP; persist(); }
   openTour(at, mode);
 }
 function closeTour(toBills, done) {
@@ -356,7 +361,10 @@ function closeTour(toBills, done) {
   $('#tour').hidden = true; $('.wrap').inert = false; $('#dock').inert = false; helpAside(false);
   TS = [];
   restructure();
-  if (RESPLIT_SNAP) { const sn = RESPLIT_SNAP; RESPLIT_SNAP = null; delete S.ui.preSplit; persist(); try { if (JSON.stringify([sn && JSON.parse(sn).plan, sn && JSON.parse(sn).steps, sn && JSON.parse(sn).once, sn && JSON.parse(sn).items, sn && JSON.parse(sn).cfg]) !== JSON.stringify([S.plan, S.steps, S.once, S.items, S.cfg]) && window.offerUndoG) window.offerUndoG(sn, 'Setup changed your plan.'); } catch (e) { /* the plan is already saved */ } }
+  if (RESPLIT_SNAP) { const sn = RESPLIT_SNAP; RESPLIT_SNAP = null; delete S.ui.preSplit;
+    let changed = false; try { const o = JSON.parse(sn); changed = JSON.stringify([o.plan, o.steps, o.once, o.items, o.cfg]) !== JSON.stringify([S.plan, S.steps, S.once, S.items, S.cfg]); } catch (e) { }
+    if (changed) { keepCopy(sn, 'Setup changed your plan.'); if (window.offerUndoG) window.offerUndoG(sn, `Setup changed your plan. You can undo for ${KEEP_DAYS} days.`); }
+    persist(); }
   if (toBills) { S.ui.seen = Object.assign(S.ui.seen || {}, { month: true }); switchTab('month'); openRow('nec'); }
   else {
     scrollTo({ top: 0 }); if (done) WORLD.settle();
@@ -435,5 +443,5 @@ function wireTour() {
   window.addEventListener('pagehide', () => autosave(true));
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') autosave(true); });
   $('#tourOpen2').addEventListener('click', () => openSetupWithCopy(0));
-  $('#setupOpen').addEventListener('click', () => openSetupWithCopy(undefined, 'full'));
+
 }

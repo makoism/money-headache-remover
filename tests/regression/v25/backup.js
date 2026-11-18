@@ -38,7 +38,8 @@ const KEYS = ['steps', 'once', 'items', 'cfg', 'receipts', 'plan'];
     const Z = await read();
     ok(cur + ' wipe really cleared the plan', JSON.stringify(Z.steps) !== JSON.stringify(A.steps));
     /* load the file */
-    const inp = await p.$('#bkFile'); await inp.uploadFile(f); await w(700); await waitSaved();
+    const inp = await p.$('#bkFile'); await inp.uploadFile(f); await w(700);
+    await p.evaluate(() => { document.querySelector('#bkLoad').click(); document.querySelector('#bkLoad').click(); }); await w(500); await waitSaved();   /* since 38.31 a picked file goes into the box and Load text asks first (data safety round 2) */
     const B = await read();
     ok(cur + ' after loading the file every number matches', KEYS.every(k => JSON.stringify(B[k]) === JSON.stringify(A[k])), KEYS.filter(k => JSON.stringify(B[k]) !== JSON.stringify(A[k])).join(','));
     const msg = await p.evaluate(() => document.querySelector('#bkMsg').textContent);
@@ -53,7 +54,7 @@ const KEYS = ['steps', 'once', 'items', 'cfg', 'receipts', 'plan'];
     /* paste route */
     await p.evaluate(() => { document.querySelector('#blankBtn').click(); document.querySelector('#blankBtn').click(); }); await w(500); await waitSaved();
     await p.evaluate(() => document.querySelector('#tab-basics').click()); await w(300);
-    await p.evaluate(t => { const ta = document.querySelector('#bk'); ta.value = t; ta.dispatchEvent(new Event('input', { bubbles: true })); document.querySelector('#bkLoad').click(); }, txt); await w(600); await waitSaved();
+    await p.evaluate(t => { const ta = document.querySelector('#bk'); ta.value = t; ta.dispatchEvent(new Event('input', { bubbles: true })); document.querySelector('#bkLoad').click(); document.querySelector('#bkLoad').click(); },   /* Load text asks first since 38.31: two taps */ txt); await w(600); await waitSaved();
     const D = await read(); ok(cur + ' pasted copy loads every number', KEYS.every(k => JSON.stringify(D[k]) === JSON.stringify(A[k])), KEYS.filter(k => JSON.stringify(D[k]) !== JSON.stringify(A[k])).join(','));
     ok(cur + ' currency kept', D.ui.cur === A.ui.cur);
     ok(cur + ' no page errors', errs.length === 0, errs.join(' | '));
