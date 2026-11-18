@@ -67,6 +67,7 @@ function renderStart() {
   $('#basicsSub').textContent = BASICS_SUB;
   $('#makeCap').textContent = mine ? 'These are your numbers. Change them any time. Saved in this browser only; nobody else sees them.' : zero ? 'Everything starts at zero. Type over it. Saved in this browser only.' : MAKE_CAP;
   { const so = typeof sampleOn === 'function' && sampleOn(); ['#payBtn', '#xmBtn'].forEach(s => { const b = $(s); if (b) b.hidden = so; }); }
+  { const rb = $('#bkReset'); if (rb && !rb.dataset.armed) rb.textContent = SAMPLES[(S.ui && S.ui.cur) || '₱'] ? 'Restore samples' : 'Clear my plan'; }
   $('#blankBtn').hidden = zero; { const zh = $('#zeroHint'); if (zh) zh.hidden = zero; } $('#showStart').hidden = !(S.ui.sampleHidden || S.ui.exactHidden); /* Set all to zero stays while there is anything to zero: Restore names it as the way to start over. Show first steps brings back a hidden Next card */ $('#tourOpen2').textContent = mine ? 'Tour' : 'Guided setup';
 }
 

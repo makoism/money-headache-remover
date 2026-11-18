@@ -181,13 +181,13 @@ function wire() {
     r.onload = () => { const t = String(r.result || ''); $('#bk').value = t; let ok = false; try { const d = JSON.parse(t); ok = !!(d && typeof d === 'object' && d.steps && d.once && d.cfg); } catch (e) { } $('#bkMsg').textContent = ok ? `File read. Tap Load text, then tap again, to replace your numbers with it. You can undo for ${KEEP_DAYS} days.` : 'Not a valid backup. Use the whole file, or paste all of the copied text.'; }; r.readAsText(f);   /* a picked file never replaces anything on its own (38.31 data safety round 2) */
   });
   const twoStep = (b, armedText, run) => {
-    let t = 0; const orig = b.textContent;
+    let t = 0, orig = '';
     b.addEventListener('click', () => {
-      if (!t) { t = setTimeout(() => { t = 0; b.textContent = orig; }, 4000); b.textContent = armedText; return; }
-      clearTimeout(t); t = 0; b.textContent = orig; run();
+      if (!t) { orig = b.textContent; b.dataset.armed = '1'; t = setTimeout(() => { t = 0; b.textContent = orig; delete b.dataset.armed; }, 4000); b.textContent = typeof armedText === 'function' ? armedText() : armedText; return; }
+      clearTimeout(t); t = 0; b.textContent = orig; delete b.dataset.armed; run();
     });
   };
-  /* Set all to zero and Restore samples replace every number: the copy before stays one tap away for 30 seconds */
+  /* Set all to zero and Restore samples replace every number: a copy of before is kept for KEEP_DAYS days */
   let undoSnap = null, undoT = 0;
   let undoFn = null;
   const offerUndo = (snap, txt, fn, ms) => { undoFn = fn || null; undoSnap = snap; $('#undoTxt').textContent = txt; $('#undoBar').hidden = false; clearTimeout(undoT); undoT = setTimeout(() => { $('#undoBar').hidden = true; undoSnap = null; }, ms || 30000); };
@@ -202,7 +202,9 @@ function wire() {
   twoStep($('#blankTop'), 'Tap again: clears pay, bills, goals and saved amounts. Receipts stay.', blank);
   twoStep($('#bkLoad'), `Tap again: replaces your pay, bills, goals and receipts with this copy. You can undo for ${KEEP_DAYS} days.`, loadBackup);
   twoStep($('#setupOpen'), `Tap again: setup can change your pay, bills, goals and saved amounts. You can undo for ${KEEP_DAYS} days.`, () => openSetupWithCopy(undefined, 'full'));   /* both ask first, and keep a copy (38.31 data safety round 2) */
-  twoStep($('#bkReset'), `Tap again: puts the sample pay, bills and goals in place of yours. Receipts stay. You can undo for ${KEEP_DAYS} days.`, () => { const sn0 = snapNoCopy(); offerUndo(sn0, `Samples restored. You can undo for ${KEEP_DAYS} days.`); const old = S, u = S.ui; S = presetState(u.cur); S.ui = Object.assign({}, u, { preset: S.ui.preset, sampleHidden: false, done: {} }); delete S.ui.cleared; delete S.ui.setup; delete S.ui.gset; delete S.ui.sb; delete S.ui.tourAt; delete S.ui.src; delete S.ui.imp; S.receipts = old.receipts; keepCopy(sn0, 'Samples replaced your numbers.'); editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = 'Samples restored.'; });
+  /* only some currencies have samples; for the rest this button clears the plan, and every word says so (38.31 data safety round 3) */
+  const hasSamples = () => !!SAMPLES[(S.ui && S.ui.cur) || '₱'];
+  twoStep($('#bkReset'), () => hasSamples() ? `Tap again: puts the sample pay, bills and goals in place of yours. Receipts stay. You can undo for ${KEEP_DAYS} days.` : `Tap again: clears your pay, bills, goals and balance. Receipts stay. You can undo for ${KEEP_DAYS} days.`, () => { const smp = hasSamples(), sn0 = snapNoCopy(); offerUndo(sn0, `${smp ? 'Samples restored' : 'Plan cleared'}. You can undo for ${KEEP_DAYS} days.`); const old = S, u = S.ui; S = presetState(u.cur); S.ui = Object.assign({}, u, { preset: S.ui.preset, sampleHidden: false, done: {} }); delete S.ui.cleared; delete S.ui.setup; delete S.ui.gset; delete S.ui.sb; delete S.ui.tourAt; delete S.ui.src; delete S.ui.imp; S.receipts = old.receipts; keepCopy(sn0, smp ? 'Samples replaced your numbers.' : 'Your plan was cleared.'); editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = smp ? 'Samples restored.' : 'Plan cleared.'; });
   wireReceipts(); safe(() => BUR.boot(), null, 'burrow'); wireTour(); wireHelp(); wireHome(); wireScan(); wireAskAi(); wireSafe(); wireVault(); safe(() => DJ.wire(), null, 'dj'); safe(() => SCENE.start(), null, 'scene'); safe(() => WORLD.wire(), null, 'world');
 
   /* tooltips */

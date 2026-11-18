@@ -28,7 +28,7 @@ const L=require('./lib_r12.js');const R=L.R;const w=R.w;
  ck(`Restore samples asks first and says receipts stay ("${t2.slice(0,70)}")`,/Receipts stay\. You can undo for 3 days/.test(t2));
  await p.evaluate(()=>document.getElementById('bkReset').click());await w(800);
  await reload();
- ck(`after a reload Undo of the samples is still offered ("${await bar()}")`,/Samples replaced your numbers/.test(await bar()));
+ ck(`after a reload Undo is still offered, named truthfully for dollars, which have no samples ("${await bar()}")`,/Your plan was cleared/.test(await bar()));   /* round 3: with no dollar samples the button clears the plan and says so */
  await p.evaluate(()=>document.getElementById('undoGo').click());await w(800);
  ck('Undo brings every number back',await snap()===before,await snap());
  ck('no page errors',errs.length===0,errs.join(' | '));

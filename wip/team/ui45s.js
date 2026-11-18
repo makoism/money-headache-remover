@@ -424,7 +424,7 @@ const STEP_REVEAL = { id: 'reveal', part: PART.spend, art: 'branch',
   body: () => {
     const f = planFacts(), play = f.play, wk = weekOf(play), seg = (cls, v) => (v > 0 ? `<div class="seg-b ${cls}" style="flex-grow:${v}"></div>` : '');
     if (f.st === 'nopay') return `${chestImg(0.5)}<div class="tour-reveal"><b>${fmt2(play)}</b><span>a month, sample</span></div>
-      <p>No pay entered, so every number here is a sample. Free to spend is for fun, worked out after bills and goals. Add your pay under Plan, Money in, or tap Back to enter it here.</p>`;
+      <p>No pay entered, so every number here is a sample. Free to spend is for fun, worked out after bills and goals. Add your pay under Plan, Month, Details, Money in, or tap Back to enter it here.</p>`;
     if (f.st === 'over') return `<div class="tour-reveal neg"><b>${fmt2(f.shortBy)}</b><span>short a month</span></div>
       <p>Plan spends <b>${fmt2(f.J.out)}</b>; pay is <b>${fmt2(f.inc)}</b>.${play > 0 ? '' : ' Nothing left, so no free to spend yet.'}</p>
       ${ledgerHTML(f)}
