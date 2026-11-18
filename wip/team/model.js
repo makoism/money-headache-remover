@@ -903,11 +903,12 @@ function cleanCfg(raw) {
 }
 
 /* ---- cleaning up anything loaded from a saved copy ---- */
+const GOAL_KNOWN = new Set(['id', 'name', 'target', 'start', 'due', 'slot', 'monthly', 'why', 'emergency', 'stretch', 'stretchOn']);
 function cleanPlan(raw, legacy) {
   const base = basePlan(legacy);
   if (!raw || typeof raw !== 'object' || !Array.isArray(raw.lines) || !Array.isArray(raw.goals)) return base;
   const str = (v, n) => (typeof v === 'string' ? v.replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, n) : '');
-  const num = v => (typeof v === 'number' && isFinite(v) && v >= 0 ? Math.min(Math.round(v), 1e9) : 0);
+  const num = v => (typeof v === 'number' && isFinite(v) && v >= 0 ? Math.min(round2(v), 1e9) : 0);   /* cents kept on load (decision 1): a goal saved at 300.44 came back as 300 */
   const ids = new Set(), keys = new Set(), lines = [], goals = [];
   raw.lines.slice(0, MAX_LINES).forEach(l => {
     if (!l || typeof l !== 'object' || typeof l.id !== 'string' || !SAFE_ID.test(l.id) || ids.has(l.id) || LINE_JARS.indexOf(l.jar) < 0) return;
@@ -924,9 +925,11 @@ function cleanPlan(raw, legacy) {
     gids.add(g.id);
     let slot = SLOTS.indexOf(+g.slot) >= 0 && !used.has(+g.slot) ? +g.slot : (SLOTS.find(s => !used.has(s)) || SLOTS[0]); used.add(slot);
     const o = { id: g.id, name: str(g.name, 60) || 'Untitled', target: num(g.target), start: num(g.start), due: validDue(g.due), slot };
-    if (typeof g.monthly === 'number' && isFinite(g.monthly) && g.monthly >= 0) o.monthly = Math.round(g.monthly);
+    if (typeof g.monthly === 'number' && isFinite(g.monthly) && g.monthly >= 0) o.monthly = Math.min(MAX_AMT, round2(g.monthly));   /* cents kept (decision 1) */
     const why = str(g.why, WHY_MAX).replace(/\s+/g, ' ').trim(); if (why) o.why = why;
     if (g.emergency && !hasE) { hasE = true; o.emergency = true; o.stretch = num(g.stretch); if (g.stretchOn === true || g.stretchOn === false) o.stretchOn = g.stretchOn; }
+    /* a newer version's plain fields on a goal are kept, so restoring its backup here and saving loses nothing (38.31 data safety round 3) */
+    Object.keys(g).filter(k => !(k in o) && !GOAL_KNOWN.has(k) && /^[A-Za-z][A-Za-z0-9_]{0,39}$/.test(k) && ['string', 'number', 'boolean'].indexOf(typeof g[k]) >= 0).slice(0, 12).forEach(k => { o[k] = typeof g[k] === 'string' ? g[k].slice(0, 200) : g[k]; });
     goals.push(o);
   });
   const out = { lines, goals };

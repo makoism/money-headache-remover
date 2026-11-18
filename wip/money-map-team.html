@@ -2184,7 +2184,7 @@ p .link::after, li .link::after, span .link::after, .cap .link::after { content:
       </div>
       <div class="backup" id="bkArea">
         <h3>Saved data</h3>
-        <p class="cap" id="savedCap">Data is stored in this browser on this device only. Nothing is sent anywhere. A second copy is kept here in case the first goes missing, and is loaded on its own if so. It does not move to other devices. Clearing site data removes both, so only a backup file survives that. A backup is your own copy of numbers and receipts.</p>
+        <p class="cap" id="savedCap">Data is stored in this browser on this device only. Your numbers are sent only when you use Ask and tick the box to include them. A second copy is kept here in case the first goes missing, and is loaded on its own if so. It does not move to other devices. Clearing site data removes both, so only a backup file survives that. A backup is your own copy of numbers and receipts.</p>
         <h4>Backup</h4>
         <div class="row-btns">
           <button type="button" class="btn small solid" id="bkSave">Save file</button>
@@ -2514,6 +2514,8 @@ const MAX_AMT = 1e9;
 /* decision 1 (Mako, 2026-11-18): with the plan (S) given, a typed amount keeps its cents, except in yen, which has none.
    Without S (counts, goal targets) it stays a whole number, as before */
 const clampAmt = (v, S) => { v = +v; if (!isFinite(v)) return 0; v = S ? wholeAmt(S, v) : Math.round(v); return Math.max(0, Math.min(MAX_AMT, v)); };
+/* the bank balance is the one amount that can be below zero: an overdrawn account is real money owed, and storing it as 0 made every bank figure too high (38.31 QC round 3) */
+const clampBank = (v, S) => { v = +v; if (!isFinite(v)) return 0; v = S ? wholeAmt(S, v) : Math.round(v); return Math.max(-MAX_AMT, Math.min(MAX_AMT, v)) || 0; };
 function setVal(S, key, ym, v, scope) {
   v = clampAmt(v, S);
   if (scope === 'once' || scope === 'month' || ONCE_KEYS.has(key)) { (S.once[ym] = S.once[ym] || {})[key] = v; return; }
@@ -2681,8 +2683,11 @@ function applyOverspend(S, months) {
       /* a one-time cost is money already set aside in the plan: what is logged as Other is that cost being paid, and only the part past it is spent past plan */
       const it = m.itemsTotal || 0, otherOver = Math.max(0, (by.other || 0) - it), itemsLeft = Math.max(0, it - (by.other || 0));
       m.billsLeftM = round2(nl.reduce((a, l) => a + Math.max(0, (l.on ? l.v : 0) - (rsm.byKey[l.key] || 0)), 0) + itemsLeft + (m.debtPay || 0));
+      /* what went past the plan, place by place; the parts add up to overNow, so a screen can name every place (38.31 number gate round 3: Other was never named) */
+      const bits = { nec: m.overNec, play: round2(Math.max(0, (by.play || 0) - m.jar.play)), other: round2(otherOver), ffa: round2(Math.max(0, (by.ffa || 0) - m.jar.ffa)) };
       inc = Math.max(0, (by.play || 0) - m.jar.play) + m.overNec + otherOver + Math.max(0, (by.ffa || 0) - m.jar.ffa);
-      m.ovB = {}; Object.keys(st).forEach(j => { st[j] += m.jar[j] - (j === 'ffa' ? 0 : (by[j] || 0)); if (st[j] < -0.004) { inc += -st[j]; m.ovB[j] = round2(-st[j]); st[j] = 0; } });
+      m.ovB = {}; Object.keys(st).forEach(j => { st[j] += m.jar[j] - (j === 'ffa' ? 0 : (by[j] || 0)); if (st[j] < -0.004) { inc += -st[j]; m.ovB[j] = round2(-st[j]); bits[j] = round2((bits[j] || 0) - st[j]); st[j] = 0; } });
+      m.overBits = {}; Object.keys(bits).forEach(j => { if (bits[j] > 0.004) m.overBits[j] = bits[j]; });
     }
     m.bankPlanned = m.bankEnd; m.overNow = round2(inc); m.bankStart = round2(m.bankStart - cum); cum = round2(cum + inc); m.over = cum; m.bankEnd = round2(m.bankEnd - cum);
   }
@@ -2819,7 +2824,9 @@ function releasePlay0(S, ym, to, toYm, amount) {
 }
 
 /* ---- receipts ---- */
-const catName = (S, r) => { if (r.c === 'other') return 'Other'; const l = lineByKey(S, r.c); return l ? (l.name === 'Courses and books' ? 'Education' : l.name) : (r.cn || 'Other'); };
+/* the one place a line's shown name is decided: the learning line is called Education wherever money is named (38.31 number gate round 3) */
+const shownLine = n => (n === 'Courses and books' ? 'Education' : n);
+const catName = (S, r) => { if (r.c === 'other') return 'Other'; const l = lineByKey(S, r.c); return l ? shownLine(l.name) : (r.cn || 'Other'); };
 function receiptsFor(S, ym) {
   return (S.receipts || []).filter(r => r.d.slice(0, 7) === ym).sort((x, y) => (x.d === y.d ? (x.id < y.id ? 1 : -1) : (x.d < y.d ? 1 : -1)));
 }
@@ -2903,7 +2910,7 @@ function viewOf(S, C, ym, today) {
     return { id: j.id, name: j.name, kind: 'spend', planned, spent, left: round2(planned - spent), total: null };
   });
   /* bankStart, bankChange and overNow were missing here in 38.30, so Home could never say "Building your cushion" or "went past the plan this month" */
-  const month = { inflow: m.inflow, out: m.out, left: m.left, bankStart: m.bankStart, bankEnd: m.bankEnd, bankChange: round2(m.bankEnd - m.bankStart), over: m.over || 0, overNow: m.overNow || 0, status: statusOf(S, m) };
+  const month = { inflow: m.inflow, out: m.out, left: m.left, bankStart: m.bankStart, bankEnd: m.bankEnd, bankChange: round2(m.bankEnd - m.bankStart), over: m.over || 0, overNow: m.overNow || 0, overBits: m.overBits || {}, status: statusOf(S, m) };
   month.belowZero = belowZeroOf(m);
   const map = mapOf(S, C, ym, { play, month, goals }), nec = buckets.find(x => x.id === 'nec'), pcl = planCells(S, C, ym), dwv = m.draw || 0;
   /* HOME CELLS: the worked-out amounts Home shows, each defined once here. Screens read them; they never do the sum.
@@ -3143,6 +3150,7 @@ const loanMonthlyFrom = (total, n) => (n > 0 ? Math.ceil(Math.max(0, Math.round(
 const SAFE_KEY = /^[A-Za-z0-9:_-]{1,40}$/, YM_FORM = /^(20\d\d|21\d\d)-(0[1-9]|1[0-2])$/;
 /* a saved amount loads exactly as it was saved, to the cent (decision 1): whole amounts from older versions load unchanged */
 const cleanAmt = v => (typeof v === 'number' && isFinite(v) && v >= 0 ? Math.min(MAX_AMT, round2(v)) : null);
+const cleanSigned = v => (typeof v === 'number' && isFinite(v) ? Math.max(-MAX_AMT, Math.min(MAX_AMT, round2(v))) || 0 : null);
 const isMap = o => !!o && typeof o === 'object' && !Array.isArray(o);
 function cleanSteps(raw) {
   const out = {}; if (!isMap(raw)) return out;
@@ -3186,7 +3194,7 @@ const CFG_AMOUNTS = ['bankStart', 'minBank', 'ceiling', 'moveTarget', 'moveStart
 const CFG_KNOWN = new Set(CFG_AMOUNTS.concat(['loanLast', 'redirectLoan', 'moveMonth', 'carDue', 'aims']));
 function cleanCfg(raw) {
   const out = {}; if (!isMap(raw)) return out;
-  CFG_AMOUNTS.forEach(k => { const v = cleanAmt(raw[k]); if (v !== null) out[k] = v; });
+  CFG_AMOUNTS.forEach(k => { const v = k === 'bankStart' ? cleanSigned(raw[k]) : cleanAmt(raw[k]); if (v !== null) out[k] = v; });
   if (typeof raw.loanLast === 'string' && MONTHS.indexOf(raw.loanLast) >= 0) out.loanLast = raw.loanLast;
   if (typeof raw.redirectLoan === 'boolean') out.redirectLoan = raw.redirectLoan;
   if (typeof raw.moveMonth === 'string' && YM_FORM.test(raw.moveMonth)) out.moveMonth = raw.moveMonth;
@@ -3196,11 +3204,12 @@ function cleanCfg(raw) {
 }
 
 /* ---- cleaning up anything loaded from a saved copy ---- */
+const GOAL_KNOWN = new Set(['id', 'name', 'target', 'start', 'due', 'slot', 'monthly', 'why', 'emergency', 'stretch', 'stretchOn']);
 function cleanPlan(raw, legacy) {
   const base = basePlan(legacy);
   if (!raw || typeof raw !== 'object' || !Array.isArray(raw.lines) || !Array.isArray(raw.goals)) return base;
   const str = (v, n) => (typeof v === 'string' ? v.replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, n) : '');
-  const num = v => (typeof v === 'number' && isFinite(v) && v >= 0 ? Math.min(Math.round(v), 1e9) : 0);
+  const num = v => (typeof v === 'number' && isFinite(v) && v >= 0 ? Math.min(round2(v), 1e9) : 0);   /* cents kept on load (decision 1): a goal saved at 300.44 came back as 300 */
   const ids = new Set(), keys = new Set(), lines = [], goals = [];
   raw.lines.slice(0, MAX_LINES).forEach(l => {
     if (!l || typeof l !== 'object' || typeof l.id !== 'string' || !SAFE_ID.test(l.id) || ids.has(l.id) || LINE_JARS.indexOf(l.jar) < 0) return;
@@ -3217,9 +3226,11 @@ function cleanPlan(raw, legacy) {
     gids.add(g.id);
     let slot = SLOTS.indexOf(+g.slot) >= 0 && !used.has(+g.slot) ? +g.slot : (SLOTS.find(s => !used.has(s)) || SLOTS[0]); used.add(slot);
     const o = { id: g.id, name: str(g.name, 60) || 'Untitled', target: num(g.target), start: num(g.start), due: validDue(g.due), slot };
-    if (typeof g.monthly === 'number' && isFinite(g.monthly) && g.monthly >= 0) o.monthly = Math.round(g.monthly);
+    if (typeof g.monthly === 'number' && isFinite(g.monthly) && g.monthly >= 0) o.monthly = Math.min(MAX_AMT, round2(g.monthly));   /* cents kept (decision 1) */
     const why = str(g.why, WHY_MAX).replace(/\s+/g, ' ').trim(); if (why) o.why = why;
     if (g.emergency && !hasE) { hasE = true; o.emergency = true; o.stretch = num(g.stretch); if (g.stretchOn === true || g.stretchOn === false) o.stretchOn = g.stretchOn; }
+    /* a newer version's plain fields on a goal are kept, so restoring its backup here and saving loses nothing (38.31 data safety round 3) */
+    Object.keys(g).filter(k => !(k in o) && !GOAL_KNOWN.has(k) && /^[A-Za-z][A-Za-z0-9_]{0,39}$/.test(k) && ['string', 'number', 'boolean'].indexOf(typeof g[k]) >= 0).slice(0, 12).forEach(k => { o[k] = typeof g[k] === 'string' ? g[k].slice(0, 200) : g[k]; });
     goals.push(o);
   });
   const out = { lines, goals };
@@ -3322,7 +3333,7 @@ function limitsOf(S, C, ym) {
     const spent = rs.byKey[x.key] || 0, soft = x.jar === 'play' || x.jar === 'edu' || x.jar === 'give';
     if (x.jar === 'ffa') return;
     if (!(soft || spent > 0) || !(x.v > 0 || spent > 0)) return;
-    rows.push({ key: x.key, name: x.name, jar: x.jar, planned: x.v, spent, left: round2(x.v - spent), over: round2(x.v - spent) < 0, overBy: round2(x.v - spent) < 0 ? round2(spent - x.v) : 0 });
+    rows.push({ key: x.key, name: shownLine(x.name), jar: x.jar, planned: x.v, spent, left: round2(x.v - spent), over: round2(x.v - spent) < 0, overBy: round2(x.v - spent) < 0 ? round2(spent - x.v) : 0 });
   });
   return { rows, other: rs.byKey.other || 0, total: rs.total };
 }
@@ -3594,9 +3605,12 @@ let saveTimer = null, raf = 0, itemsSig = '', geom = null, FIELDS = [];
 /* ---------- small helpers ---------- */
 const sym = () => { const c = (S.ui && S.ui.cur) || '₱'; return c === 'none' ? '' : c; };
 const pre = () => { const c = sym(); return /^[A-Za-z]{2,}$/.test(c) ? c + ' ' : c; };
-function fmt(n) { n = Math.round(n); const neg = n < 0, a = Math.abs(n); return (neg ? '−' : '') + pre() + a.toLocaleString('en-US'); }
-/* receipts keep their centavos */
-function fmt2(n) { if (Math.abs(n - Math.round(n)) < 0.005) return fmt(n); return (n < 0 ? '−' : '') + pre() + Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+/* a rough figure ("about 80 a week"): whole units only */
+function fmtAbout(n) { n = Math.round(n); const neg = n < 0, a = Math.abs(n); return (neg ? '−' : '') + pre() + a.toLocaleString('en-US'); }
+/* every amount: whole units when it is whole, otherwise to the cent. Since decision 1 (plan amounts keep cents) one amount must read the same
+   on every screen, so fmt and fmt2 are the same (38.31 number gate rounds 1 to 3 found the same amount rounded in one place, exact in another) */
+function fmt(n) { return fmt2(n); }
+function fmt2(n) { if (Math.abs(n - Math.round(n)) < 0.005) return fmtAbout(n); return (n < 0 ? '−' : '') + pre() + Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 function fmtAxis(n) { return n >= 1e6 ? +(n / 1e6).toFixed(2) + 'M' : n >= 1000 ? n.toLocaleString('en-US') : String(n); }
 const niceUp = x => { if (x <= 0) return 1; const p = Math.pow(10, Math.floor(Math.log10(x))); for (const k of [1, 1.5, 2, 3, 4, 5, 6, 8, 10]) if (k * p >= x - 1e-9) return k * p; return 10 * p; };
 const stepOf = x => { const p = Math.pow(10, Math.floor(Math.log10(Math.max(x, 1)))); for (const k of [1, 2, 5, 10]) if (k * p >= x) return k * p; return 10 * p; };
@@ -3839,7 +3853,7 @@ function onSet(key, v) {
   else setVal(S, key, sel, v, 'once');
   markDone(doneFor(key)); persist(); schedule();
 }
-function onCfg(k, v) { S.cfg[k] = clampAmt(v, S); persist(); schedule(); }
+function onCfg(k, v) { S.cfg[k] = k === 'bankStart' ? clampBank(v, S) : clampAmt(v, S); persist(); schedule(); }
 function select(ym) {
   sel = ym; itemsSig = ''; try { history.replaceState(null, '', '#' + ym); } catch (e) { /* sandboxed */ }
   render();
@@ -4505,7 +4519,7 @@ function buildRcCat() {
   const el = $('#rcCat'), keep = el.value || S.ui.rcCat; let h = '';
   [['play', 'Free to spend'], ['nec', 'Bills and basics'], ['edu', 'Education'], ['ffa', 'Investing'], ['give', 'Giving']].forEach(p => {
     const ls = S.plan.lines.filter(l => l.jar === p[0]); if (!ls.length) return;
-    h += `<optgroup label="${p[1]}">` + ls.map(l => `<option value="${esc(l.key)}">${esc(l.name === 'Courses and books' ? 'Education' : l.name)}</option>`).join('') + '</optgroup>';
+    h += `<optgroup label="${p[1]}">` + ls.map(l => `<option value="${esc(l.key)}">${esc(shownLine(l.name))}</option>`).join('') + '</optgroup>';
   });
   el.innerHTML = h + `<option value="other">Other</option><option value="${CAT_NEW}">+ Add category</option>`;
   const opts = Array.from(el.options).map(o => o.value);
@@ -4551,7 +4565,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Enter' && /^(h|rc)New
 
 const CURS = [['₱', '₱ Philippine peso'], ['$', '$ Dollar'], ['€', '€ Euro'], ['£', '£ Pound'], ['¥', '¥ Yen or yuan'], ['₹', '₹ Rupee'], ['₩', '₩ Won'], ['R$', 'R$ Real'], ['A$', 'A$ Australian dollar'], ['C$', 'C$ Canadian dollar'], ['S$', 'S$ Singapore dollar'], ['NZ$', 'NZ$ New Zealand dollar'], ['CHF', 'CHF Swiss franc'], ['kr', 'kr Krona or krone'], ['R', 'R Rand'], ['zł', 'zł Zloty'], ['none', 'No symbol']];
 const SETF = [
-  { k: 'bankStart', label: 'Money today (bank plus cash)', hint: 'What you have right now. It is the start of the first month in the plan. Update when you check.' },
+  { k: 'bankStart', label: 'Money today (bank plus cash)', hint: 'What you have right now. It is the start of the first month in the plan. Update when you check. Overdrawn? Type a minus, like -400.' },
   { k: 'minBank', label: 'Minimum balance', hint: 'Warns when a month would end below this.' },
   { k: 'ceiling', label: 'Free to spend cap', hint: 'The most you want Free to spend to be in a month. A mark on the Free to spend bar in Plan shows it.' },
 ];
@@ -4561,7 +4575,7 @@ function buildStatic() {
   $('#monthSel').innerHTML = opts; $('#rcMonth').innerHTML = opts;
   $('#rcFields').innerHTML = remindFieldsHTML('rc');
   $('#jarList').innerHTML = JARS.map(j => `<div class="j"><i class="${JARCLS[j.id]}"></i><span class="jn">${j.name}<small>${j.about}</small></span><b class="jp">${j.usualPct}%</b></div>`).join('');
-  $('#sets').innerHTML = '<h3 class="grp">Balance</h3>' + SETF.map(f => `<div class="field"><label for="st-${f.k}">${f.label}</label><div class="inp"><span class="yen cs"></span><input id="st-${f.k}" type="number" inputmode="decimal" min="0" step="any"></div><p class="cap">${f.hint}</p></div>`).join('');
+  $('#sets').innerHTML = '<h3 class="grp">Balance</h3>' + SETF.map(f => `<div class="field"><label for="st-${f.k}">${f.label}</label><div class="inp"><span class="yen cs"></span><input id="st-${f.k}" type="number" inputmode="${f.k === 'bankStart' ? 'text' : 'decimal'}"${f.k === 'bankStart' ? ' data-neg="ok"' : ' min="0"'} step="any"></div><p class="cap">${f.hint}</p></div>`).join('');
   $('#rowsIn').innerHTML = '';
   restructure(true);
 }
@@ -4615,6 +4629,8 @@ function jarNote(m) {
   /* a plan paid partly with borrowed money: say why the places add up to more than all of the pay */
   const borrowed = J.borrowUsedPct > 0 ? ` Your places add up to ${J.placedPct}% of your pay, because ${fmt(J.borrowUsed)} of this plan is borrowed from your emergency fund.` : '';
   const others = J.list.slice(1).some(j => j.v > 0);
+  /* no bills in the plan is blank, not low: never praised as "under the usual" (38.31 number gate, wording and novice round 3) */
+  if (!(nec.v > 0)) return 'No bills planned yet. Add rent, food and the rest under Money out.' + borrowed;
   const lead = nec.pct >= 100 ? `Bills and basics cost more than all of your pay this month.${borrowed ? '' : ' Lower a bill or add pay.'}`   /* 38.31 north-star round 2: never calm about this */
     : nec.pct > u + 1 ? `Bills and basics are ${nec.pct}% of pay, above the usual ${u}%.${others ? ' Keep the other places going, even small: the habit matters more than the exact percent.' : ' Nothing is left for the other places this month.'}`
     : nec.pct < u - 1 ? `Bills and basics are ${nec.pct}% of pay, under the usual ${u}%. More room for the other places.`
@@ -4661,7 +4677,7 @@ function render() {
   try { const mr = HV && HV.map && HV.map.month.find(r => r.id === 'play'); if (mr) BUR.roomCv($('#heroRoomW'), mr, 'play'); } catch (e) { /* the number still shows */ }
   const rs = receiptStats(S, sel), playSpent = rs.byJar.play || 0, playLeft = round2(play - playSpent), heroShow = freeOf(S, { left: m.left, bankStart: m.bankStart, bankEnd: m.bankEnd, over: m.over || 0, status: st }, { left: playLeft }).free, heroTxt = (playSpent > 0 || heroShow !== play) ? fmt2(heroShow) : fmt(heroShow);
   $('#heroNum').textContent = heroTxt; $('#heroNum').style.setProperty('--n', String(heroTxt.length)); $('#heroNum').style.color = heroShow < 0 ? 'var(--bad)' : '';
-  $('#heroWk').textContent = (playSpent > 0 || heroShow !== play) ? `Planned ${fmt(play)} this month, about ${fmt(wk)} a week.` : `Planned: about ${fmt(wk)} a week across the whole month.`;
+  $('#heroWk').textContent = (playSpent > 0 || heroShow !== play) ? `Planned ${fmt(play)} this month, about ${fmtAbout(wk)} a week.` : `Planned: about ${fmtAbout(wk)} a week across the whole month.`;
   $('#rcLine').innerHTML = !rs.count ? '<button type="button" class="link" data-tab-go="receipts">Add a receipt</button> to see actual spend.'
     : play > 0 ? `Receipts: ${fmt2(playSpent)} spent, ${playSpent > play ? fmt2(PC.playOver) + ' over' : (m.counted > 0 ? fmt2(m.counted) + ' not spent' + (m.topup && m.topup.used > 0 ? ', ' + fmt2(m.topup.used) + ' went to a goal' : ', came back to the bank') : m.pendLeft > 0 ? fmt2(m.pendLeft) + ' not logged as spent yet, Home asks where it goes' : fmt2(playSafeLeft(S, m, playSpent)) + ' safe to spend')}. <button type="button" class="link" data-tab-go="receipts">See receipts</button>`
     : playSpent > 0 ? `Receipts: ${fmt2(playSpent)} spent from Free to spend, which has no plan this month. <button type="button" class="link" data-tab-go="receipts">See receipts</button>`
@@ -4694,8 +4710,10 @@ function render() {
   const el = $('#endline'); el.hidden = !(m.pool.out > m.pool.in); if (!el.hidden) el.style.left = (m.pool.in / m.pool.out * 100) + '%';
   const dw = m.draw || 0, Ld = PC.dock;   /* borrowed money is not pay, and pay that spending past plan already used is not left (model.js planCells) */
   const bankOnly = pin <= 0 && L >= 0 && m.bankEnd < 0;   /* spending with no pay entered: the bank shortfall still shows */
-  $('#dockNum').textContent = bankOnly ? fmt2(PC.bankBelowZero) : pin > 0 || L < 0 ? fmt2(PC.dockAbs) : ''; $('#dockNum').style.color = Ld < 0 || bankOnly ? 'var(--bad)' : '';
-  $('#dockTxt').textContent = pin <= 0 ? (L < 0 ? 'planned with no pay entered in ' + mon + '. Add your pay in Plan.' : bankOnly ? 'below zero in the bank at the end of ' + mon + ', with no pay entered. Add your pay in Plan.' : 'No plan yet. Add your pay in Plan.') : `${Ld < 0 ? (sampleOn() && !(S.ui.done || {}).pay ? 'more planned than the sample pay in ' : 'more planned than your pay in ') + mon + (dw > 0 ? ', ' + fmt(dw) + ' borrowed from your emergency fund' : '') : (sampleOn() && !(S.ui.done || {}).pay ? 'of the sample pay not placed yet in ' : 'of your pay not placed yet in ') + mon   /* S6: one word, "not placed yet" (38.29 glossary) */} · ${overFree && !((m.overNec || 0) > 0.004) ? 'Over free to spend' : overFree || overAny ? 'Over plan' : Ld >= roundUnit(S) && st === 'good' ? 'Still needs a place' : st === 'good' ? 'On plan' : st === 'tight' ? 'Tight' : 'Short'}`;
+  const allPlaced = pin > 0 && !bankOnly && Math.abs(Ld) < 0.005;   /* every coin placed: say so, not "$0 not placed yet" (38.31 novice round 3) */
+  const covered = Ld < 0 && dw > 0 && dw >= -Ld - 0.004;   /* more planned than pay, all of it borrowed from the emergency fund: on plan, so not alarm red (38.31 north-star round 3) */
+  $('#dockNum').textContent = allPlaced ? '' : bankOnly ? fmt2(PC.bankBelowZero) : pin > 0 || L < 0 ? fmt2(PC.dockAbs) : ''; $('#dockNum').style.color = (Ld < 0 && !covered) || bankOnly ? 'var(--bad)' : covered ? 'var(--warn)' : '';
+  $('#dockTxt').textContent = pin <= 0 ? (L < 0 ? 'planned with no pay entered in ' + mon + '. Add your pay in Plan.' : bankOnly ? 'below zero in the bank at the end of ' + mon + ', with no pay entered. Add your pay in Plan.' : 'No plan yet. Add your pay in Plan.') : `${Ld < 0 ? (sampleOn() && !(S.ui.done || {}).pay ? 'more planned than the sample pay in ' : 'more planned than your pay in ') + mon + (dw > 0 ? ', ' + fmt(dw) + ' borrowed from your emergency fund' : '') : (allPlaced ? (sampleOn() && !(S.ui.done || {}).pay ? 'All of the sample pay has a place in ' : 'All of your pay has a place in ') : sampleOn() && !(S.ui.done || {}).pay ? 'of the sample pay not placed yet in ' : 'of your pay not placed yet in ') + mon   /* S6: one word, "not placed yet" (38.29 glossary) */} · ${overFree && !((m.overNec || 0) > 0.004) ? 'Over free to spend' : overFree || overAny ? 'Over plan' : Ld >= roundUnit(S) && st === 'good' ? 'Place it on Plan' : st === 'good' ? 'On plan' : st === 'tight' ? 'Tight' : 'Short'}`;
 
   /* the details */
   $('#inTotal').textContent = fmt2(m.pool.in); $('#outTotal').textContent = fmt2(m.pool.out);
@@ -5069,6 +5087,15 @@ function futureOk(d, msg, btn) {
   futureArm = d + btn.id; clearTimeout(futureT); futureT = setTimeout(() => { futureArm = null; }, 6000);
   msg.textContent = `${dateLabel(d)} is in the future. Tap again to log it anyway, or change the date.`; sfx('off'); return false;
 }
+/* a receipt bigger than the whole month's pay is nearly always a typo (400000 for 40000): it is logged only on a second tap (38.31 number gate round 3) */
+let bigArm = null, bigT = 0;
+function bigOk(d, a, msg, btn) {
+  const pay = ((C && C.byYm[d.slice(0, 7)]) || {}).inflow || 0;
+  if (!(pay > 0) || !(a > pay)) return true;
+  const k = d + '|' + a + '|' + btn.id; if (bigArm === k) { bigArm = null; clearTimeout(bigT); return true; }
+  bigArm = k; clearTimeout(bigT); bigT = setTimeout(() => { bigArm = null; }, 6000);
+  msg.textContent = `${fmt2(a)} is more than all of your pay in ${monthLabel(d.slice(0, 7))} (${fmt2(pay)}). Tap again to log it anyway, or check the amount.`; sfx('off'); return false;
+}
 /* the same receipt twice in a row is nearly always a double tap: it is logged only on a second tap */
 function dupOk(d, a, c, n, msg, btn) {
   const key = 'dup' + d + a + c + n + btn.id;
@@ -5094,7 +5121,7 @@ function renderReceipts() {
 
   /* plan against spending, for every category that has a receipt (and the play money lines) */
   const rows = [], known = new Set();
-  m.lines.forEach(x => { known.add(x.key); const sp = rs.byKey[x.key] || 0; if (sp > 0 || (x.jar === 'play' && x.on)) rows.push({ name: x.name, jar: x.jar, plan: x.on ? x.v : 0, spent: sp, safe: x.key === 'envelope' && x.on ? playSafeLeft(S, m, rs.byJar.play || 0) : null }); });
+  m.lines.forEach(x => { known.add(x.key); const sp = rs.byKey[x.key] || 0; if (sp > 0 || (x.jar === 'play' && x.on)) rows.push({ name: shownLine(x.name), jar: x.jar, plan: x.on ? x.v : 0, spent: sp, safe: x.key === 'envelope' && x.on ? playSafeLeft(S, m, rs.byJar.play || 0) : null }); });
   /* Other is planned by the month's one-time costs (money already set aside, model.js applyOverspend): only spending past them is over */
   Object.keys(rs.byKey).forEach(k => { if (!known.has(k)) { const r = rs.list.find(q => q.c === k), it = k === 'other' && m.itemsTotal > 0 ? m.itemsTotal : null; rows.push({ name: r ? catName(S, r) : 'Other', jar: 'other', plan: it, spent: rs.byKey[k] }); } });
   $('#rcCats').innerHTML = rs.count ? `<table class="plain"><thead><tr><th>Category</th><th>Plan</th><th>Spent</th><th>Left to spend</th></tr></thead><tbody>${rows.map(r => `<tr><td>${esc(r.name)}</td><td>${r.plan == null ? '' : fmt(r.plan)}</td><td>${fmt2(r.spent)}</td><td>${r.plan == null ? `<span class="over">over ${fmt2(r.spent)}</span>` : r.spent > r.plan ? overCell(r, m) : (r.safe != null ? fmt2(r.safe) : r.jar === 'ffa' ? 'saved' : fmt2(leftOfPlan(r.plan, r.spent)))}</td></tr>`).join('')}</tbody></table><p class="cap tnote">Lines without receipts are not listed.</p>` : '';
@@ -5115,12 +5142,13 @@ function wireReceipts() {
     e.preventDefault();
     const d = $('#rcDate').value, a = +$('#rcAmt').value, c = $('#rcCat').value, n = $('#rcNote').value, msg = $('#rcMsg');
     if (!validDate(d) || MONTHS.indexOf(d.slice(0, 7)) < 0) { msg.textContent = `Date must be ${monthLabel(START)} to ${monthLabel(END)}.`; $('#rcDate').focus(); return; }
-    if ($('#rcAmt').dataset.neg) { msg.textContent = 'Type the amount without a minus sign. A receipt is money you spent.'; $('#rcAmt').value = ''; delete $('#rcAmt').dataset.neg; $('#rcAmt').focus(); return; }
+    if ($('#rcAmt').dataset.neg) { msg.textContent = 'Type the amount without a minus sign. A receipt is money you spent. For a refund, lower or delete the receipt it pays back.'; $('#rcAmt').value = ''; delete $('#rcAmt').dataset.neg; $('#rcAmt').focus(); return; }
     if (!(wholeAmt(S, a) > 0)) { msg.textContent = 'Enter an amount.'; $('#rcAmt').focus(); return; }
     if (wholeAmt(S, a) > 1e9) { msg.textContent = 'That amount is too large. The most is 1,000,000,000.'; $('#rcAmt').focus(); return; }
     /* a date after today is nearly always a slip of the finger: it is logged only on a second tap */
     if (d > todayStr() && !futureOk(d, msg, $('#rcSave'))) return;
     if (!editRc && isDupRc(d, a, c, n) && !dupOk(d, a, c, n, msg, $('#rcSave'))) return;
+    if (!bigOk(d, wholeAmt(S, a), msg, $('#rcSave'))) { $('#rcAmt').focus(); return; }
     if (c === CAT_NEW) { msg.textContent = 'Add the new category, or pick one from the list.'; $('#rcNewName').focus(); return; }
     if (needTitle(c, n)) { msg.textContent = 'Add a short title, e.g. “Vet bill”.'; $('#rcNote').focus(); return; }
     S.ui.rcCat = c; const wasEdit = !!editRc;
@@ -5253,14 +5281,14 @@ const STEP_MONEY = { id: 'money', part: PART.money, setup: true, focus: '#tourPa
   body: () => {
     const pay = S.ui.done && S.ui.done.pay ? val(S, 'a', START) : '';
     return `<p>Take-home pay after tax, each month. Paid twice a month: add both. Other pay is a second job, a partner&rsquo;s share, benefits. Balance is bank accounts plus cash; rough is fine.</p>
-    <div class="tour-fields">${moneyField('tourPay', 'Monthly take-home pay', pay, 'All paychecks')}${moneyField('tourExtra', 'Other pay each month <span class="opt">(optional)</span>', val(S, 'b', START), 'None')}${moneyField('tourBank', 'Balance now', S.cfg.bankStart !== undefined ? S.cfg.bankStart : '', 'Rough is fine')}</div>
+    <div class="tour-fields">${moneyField('tourPay', 'Monthly take-home pay', pay, 'All paychecks')}${moneyField('tourExtra', 'Other pay each month <span class="opt">(optional)</span>', val(S, 'b', START), 'None')}${moneyField('tourBank', 'Balance now', S.cfg.bankStart !== undefined ? S.cfg.bankStart : '', 'Rough is fine. Overdrawn? Type a minus').replace('<input ', '<input data-neg="ok" ').replace(' inputmode="decimal" min="0"', ' inputmode="text"')}</div>
     <p class="cap">Not sure of a number? Leave it blank; the Plan tab takes it later.</p>`;
   },
   leave: () => {
     const pay = $('#tourPay'), extra = $('#tourExtra'), bank = $('#tourBank'); if (!pay) return;
     if (pay.value !== '' || tourTouched) { const v = num0(pay.value); setVal(S, 'a', START, v, 'after'); if (v > 0) markDone('pay'); }
     if (extra && (extra.value !== '' || tourTouched || S.steps.b)) setVal(S, 'b', START, num0(extra.value), 'after');
-    if (bank && bank.value !== '' && +bank.value >= 0) S.cfg.bankStart = num0(bank.value);
+    if (bank && bank.value !== '' && isFinite(+bank.value)) S.cfg.bankStart = clampBank(bank.value, S);
     if (S.cfg.minBank === undefined && payNow() > 0) S.cfg.minBank = toUnit(payNow() * 0.1); /* the safety line: a tenth of pay unless Settings says otherwise */
     persist();
   } };
@@ -5647,7 +5675,7 @@ const STEP_REVEAL = { id: 'reveal', part: PART.spend, art: 'branch',
     const rest = f.J.rest;
     const bar = `${chestImg(play > 0 ? 0.75 : 0.1)}<div class="tour-fig"><div class="bar tour-bar" role="img" aria-label="Pay by jar">${f.J.list.map(j => seg(JARCLS[j.id], j.v)).join('')}${seg('rest', rest)}</div>
       <div class="legend">${f.J.list.map(j => (j.v > 0 ? `<span><i class="${JARCLS[j.id]}"></i>${j.name} ${j.pct}%</span>` : '')).join('')}${rest > 0 ? `<span><i class="rest"></i>Left ${f.J.restPct}%</span>` : ''}</div></div>`;
-    const big = `<div class="tour-reveal"><b>${fmt2(play)}</b><span>a month${play > 0 ? `, about ${fmt(wk)} a week` : ''}</span></div>`;
+    const big = `<div class="tour-reveal"><b>${fmt2(play)}</b><span>a month${play > 0 ? `, about ${fmtAbout(wk)} a week` : ''}</span></div>`;
     if (play <= 0) {
       const all = f.billPct >= 0.95;
       return `${big}<p>${all ? `Bills take <b>${f.J.list[0].pct}%</b> of pay, so almost nothing is left for free to spend.` : 'Nothing is set aside for free to spend.'} About 10% of pay is a common amount to keep for it.</p>
@@ -13577,7 +13605,7 @@ function tourStep(d) {
   pauseHello(); autosave(true);
   const cur = TS[tourN];
   if (!cur) return;
-  if (cur.leave) cur.leave(d);
+  if (cur.leave) { cur.leave(d); schedule(); }   /* the header behind setup follows what was just typed: "your pay", not "the sample pay" (38.31 number gate round 3) */
   if (d > 0 && cur.last) { closeTour(!S.ui.setup, true); sfx('fanfare'); return; }
   /* opened from Home only to make the numbers exact: done after the review (or the skip) */
   if (d > 0 && impOnly && (cur.id === 'source' || cur.id === 'review')) { impOnly = false; tourJump = null; closeTour(false, true); sfx('fanfare'); return; }
@@ -15007,7 +15035,7 @@ async function vaultRestore(raw, msgEl) {
   } catch (e) { vault = { code: '', rev: 0, on: false }; vaultKeys = null; vaultSaveLocal(); msgEl.textContent = 'That copy could not be opened with this code.'; return false; }
 }
 /* ---------- what Settings shows ---------- */
-const SAVED_LOCAL = 'Data is stored in this browser on this device only. Nothing is sent anywhere. A second copy is kept here in case the first goes missing, and is loaded on its own if so. It does not move to other devices. Clearing site data removes both, so only a backup file survives that. A backup is your own copy of numbers and receipts.';
+const SAVED_LOCAL = 'Data is stored in this browser on this device only. Your numbers are sent only when you use Ask and tick the box to include them. A second copy is kept here in case the first goes missing, and is loaded on its own if so. It does not move to other devices. Clearing site data removes both, so only a backup file survives that. A backup is your own copy of numbers and receipts.';
 const SAVED_CLOUD = 'Data is stored in this browser, with a second copy here in case the first goes missing, and an encrypted cloud copy (Cloud backup below) that follows every save. Clearing site data removes the two copies on this device; the recovery code brings the cloud copy back. A backup file is your own copy of numbers and receipts.';
 function paintVault() {
   const box = $('#vaultBox'); if (!box) return;
@@ -15605,7 +15633,9 @@ function renderStatus() {
   let cls, word, line;
   if (!(m.inflow > 0)) { if (m.left < 0 || m.bankEnd < 0) { cls = 'tight'; word = 'No pay entered';   /* amber, never red (decision 2) */ line = m.left < 0 ? `Your plan spends ${fmt(V.cells.planSpend)} in ${mon} and no pay is entered, so your bank would end at ${fmt(m.bankEnd)}. Add your monthly pay under Plan.` : `You logged spending in ${mon} with no pay entered, so your bank would end at ${fmt2(m.bankEnd)}. Add your monthly pay under Plan.`; } else { cls = ''; word = 'No plan yet'; line = 'Add your monthly pay to start.'; } }
   else if (sampleOn()) { const d = S.ui.done || {}; cls = ''; word = 'Sample numbers'; line = d.pay && d.bills ? 'Pay and bills are yours. The goals are still invented. Add a goal below.' : 'Invented figures for now. Finish the step below to make them yours.'; }
-  else if (m.status === 'good') { cls = 'good'; word = V.play && V.play.planned > 0 && V.play.left < 0 ? 'Over free to spend' : 'You are okay'; if (word !== 'You are okay') cls = 'tight'; const nOv = V.map && V.map.month.find(r => r.id === 'nec'), nOvT = nOv && nOv.overBy > 0 ? ` Bills and basics are ${fmt2(nOv.overBy)} over.` : ''; const pl = nOvT + (V.play && V.play.planned > 0 ? (V.play.left > 0 ? ` ${fmt2(V.play.left)} is free to spend.` : V.play.left < 0 ? ` Free to spend is ${fmt2(V.play.overBy)} over.` : ' Free to spend is used up.') : ''); const unp = V.cells.unplaced; line = !nOvT && unp >= u ? `${fmt2(unp)} of your pay has no place yet. Bills are covered. Give it a goal or a place, or keep it as a cushion.${pl}` : m.left < u && ((C.byYm[V.ym] || {}).out - (C.byYm[V.ym] || { jar: {} }).jar.nec) <= 0 ? `Bills use all of your pay. Nothing is set aside yet.` : (nOvT ? `Bills went past the plan.${pl}` : `Bills are covered and goals are planned for.${pl}`); if (nOvT) { cls = 'tight'; word = 'Over plan'; } }
+  else if (m.status === 'good') { cls = 'good'; word = V.play && V.play.planned > 0 && V.play.left < 0 ? 'Over free to spend' : 'You are okay'; if (word !== 'You are okay') cls = 'tight'; const nOv = V.map && V.map.month.find(r => r.id === 'nec'), nOvT = nOv && nOv.overBy > 0 ? ` Bills and basics are ${fmt2(nOv.overBy)} over.` : ''; const pl = nOvT + (V.play && V.play.planned > 0 ? (V.play.left > 0 ? ` ${fmt2(V.play.left)} is free to spend.` : V.play.left < 0 ? ` Free to spend is ${fmt2(V.play.overBy)} over.` : ' Free to spend is used up.') : ''); const unp = V.cells.unplaced; line = !nOvT && unp >= u ? `${fmt2(unp)} of your pay has no place yet. Bills are covered. Give it a goal or a place, or keep it as a cushion.${pl}` : m.left < u && ((C.byYm[V.ym] || {}).out - (C.byYm[V.ym] || { jar: {} }).jar.nec) <= 0 ? `Bills use all of your pay. Nothing is set aside yet.` : (nOvT ? `Bills went past the plan.${pl}` : `Bills are covered and goals are planned for.${pl}`); { const OB = (V.month && V.month.overBits) || {}, ON = { other: 'Other', ffa: 'Investing', edu: 'Education', give: 'Giving' }, ext = Object.keys(ON).filter(j => OB[j] > 0).map(j => ` ${ON[j]} is ${fmt2(OB[j])} over.`).join('');   /* every place past the plan is named, so the parts add up to what the bank is lowered by (38.31 number gate round 3) */
+    if (ext) { line += ext; if (word !== 'You are okay') { cls = 'tight'; word = 'Over plan'; } } }   /* with nothing else over, the total and "came out of your bank" lead the line below */
+    if (nOvT) { cls = 'tight'; word = 'Over plan'; } }
   else if (m.status === 'tight') { cls = 'tight'; word = 'Tight month'; const dw = ((C.byYm[V.ym] || {}).draw) || 0; line = `Plans ${fmt(V.cells.overPay)} more than your pay${dw > 0 ? ', ' + fmt(dw) + ' of it from your emergency fund' : ''}. Your balance covers it, ending ${mon} at ${fmt(m.bankEnd)}.`; }
   else if (m.belowZero) {
     /* decision 2 (Mako, 2026-11-18): below zero is one plain amber line with the month, the amount and the causes the model knows (viewOf().month.belowZero).
@@ -15855,13 +15885,13 @@ const links = `<p class="cap hs-more"><button type="button" class="link" data-xm
   if (p.planned <= 0 && p.spent <= 0) { put(el, `${head}<p class="hs-lbl">Free to spend in ${monthLabel(ym)}</p><p class="hs-big zero">${fmt(0)}</p><p class="cap">No free to spend planned for ${monthLabel(ym)}.</p><div class="row-btns"><button type="button" class="btn small" data-open="play">Set in Plan</button></div>${smp}${sampleOn() ? '' : links}${tiles}`); return; }
   /* free to spend can never be more than the plan can afford: when the month would end under the safety minimum, that gap is held back */
   const fo = freeOf(S, m, p), held = fo.held, freeLeft = fo.free;
-  const wk = p.perWeek != null && freeLeft > 0 ? `<b>${fmt(V.cells.perWeek)}</b> a week to stay inside it for the ${plural(p.daysLeft, 'day')} left.` : `${plural(p.daysLeft, 'day')} left.`;
+  const wk = p.perWeek != null && freeLeft > 0 ? `<b>${fmtAbout(V.cells.perWeek)}</b> a week to stay inside it for the ${plural(p.daysLeft, 'day')} left.` : `${plural(p.daysLeft, 'day')} left.`;
   const chip = p.over ? `<span class="chip short">${IC.bad}Over</span>` : p.ahead ? `<span class="chip tight">${IC.warn}Ahead of pace</span>` : `<span class="chip good">${IC.ok}On pace</span>`;
 
   const free = !p.over && p.planned > 0 && m.status === 'good' && !sampleOn();
   put(el, `${head}<p class="hs-lbl">${p.over ? 'Over free to spend in ' : 'Free to spend in '}${monthLabel(ym)}</p><p class="hs-big${p.over ? ' neg' : ''}" style="--n:${fmt2(freeLeft).length}">${fmt2(freeLeft)}</p>
     <div class="hs-bar${p.over ? ' over' : ''}" role="img" aria-label="${fmt2(p.spent)} of ${fmt(p.planned)} spent"><i style="width:${p.frac * 100}%"></i><span class="pace" style="left:${p.dayFrac * 100}%"></span></div><p class="cap hs-key">The bar is what you have spent. The mark is how far through the month you are.</p>
-    <p class="hs-sub">${p.count ? `Spent ${fmt2(p.spent)} of ${fmt(p.planned)}.` : `Nothing logged yet. ${fmt(p.planned)} planned.`} ${p.over ? '' : wk}${!p.over && freeLeft > 0 && p.daysLeft > 0 ? ` About <b>${fmt(V.cells.perDay)}</b> a day.` : ''}</p>${p.over && freeLeft < 0 ? `<p class="hs-ok warn">${fmt2(V.cells.freeOver)} came out of your bank. Spend nothing more from Free to spend this month.</p>` : ''}${held > 0 ? `<p class="hs-ok warn">${fmt(held)} is held back. Your bank would end under your ${fmt(cfg(S, 'minBank'))} minimum, so it is not safe to spend.</p>` : ''}${p.count || p.over ? chip : ''}${free ? `<p class="hs-ok">Bills and goals are planned for, so this part is free to spend.${V.main && V.main.live && V.main.pct < 100 ? ` What is left at month end can go toward ${esc(goalById(S, V.main.id).name)}.` : ''}</p>` : ''}${gapBox}${smp}${sampleOn() ? '' : links}${tiles}`);
+    <p class="hs-sub">${p.count ? `Spent ${fmt2(p.spent)} of ${fmt(p.planned)}.` : `Nothing logged yet. ${fmt(p.planned)} planned.`} ${p.over ? '' : wk}${!p.over && freeLeft > 0 && p.daysLeft > 0 ? ` About <b>${fmtAbout(V.cells.perDay)}</b> a day.` : ''}</p>${p.over && freeLeft < 0 ? `<p class="hs-ok warn">${fmt2(V.cells.freeOver)} came out of your bank. Spend nothing more from Free to spend this month.</p>` : ''}${held > 0 ? `<p class="hs-ok warn">${fmt(held)} is held back. Your bank would end under your ${fmt(cfg(S, 'minBank'))} minimum, so it is not safe to spend.</p>` : ''}${p.count || p.over ? chip : ''}${free ? `<p class="hs-ok">Bills and goals are planned for, so this part is free to spend.${V.main && V.main.live && V.main.pct < 100 ? ` What is left at month end can go toward ${esc(goalById(S, V.main.id).name)}.` : ''}</p>` : ''}${gapBox}${smp}${sampleOn() ? '' : links}${tiles}`);
 }
 /* a row opens to show its details; which ones are open survives a redraw */
 const HOPEN = new Set();
@@ -16152,15 +16182,16 @@ function wireHome() {
   $('#hForm').addEventListener('submit', e => {
     e.preventDefault();
     const d = $('#hDate').value || todayStr(), a = +$('#hAmt').value, c = $('#hCat').value, n = $('#hNote').value, msg = $('#hMsg');
-    if ($('#hAmt').dataset.neg) { msg.textContent = 'Type the amount without a minus sign. A receipt is money you spent.'; $('#hAmt').value = ''; delete $('#hAmt').dataset.neg; $('#hAmt').focus(); sfx('off'); return; }
+    if ($('#hAmt').dataset.neg) { msg.textContent = 'Type the amount without a minus sign. A receipt is money you spent. For a refund, lower or delete the receipt it pays back.'; $('#hAmt').value = ''; delete $('#hAmt').dataset.neg; $('#hAmt').focus(); sfx('off'); return; }
     if (!(wholeAmt(S, a) > 0)) { msg.textContent = 'Enter an amount.'; $('#hAmt').focus(); sfx('off'); return; }
     if (wholeAmt(S, a) > 1e9) { msg.textContent = 'That amount is too large. The most is 1,000,000,000.'; $('#hAmt').focus(); sfx('off'); return; }
     if (!validDate(d) || MONTHS.indexOf(d.slice(0, 7)) < 0) { msg.textContent = `Date must be ${monthLabel(START)} to ${monthLabel(END)}.`; return; }
     if (d > todayStr() && !futureOk(d, msg, $('#hSave'))) { const dt = $('.hmore'); if (dt) dt.open = true; return; }
     if (c === CAT_NEW) { msg.textContent = 'Add the new category, or pick one from the list.'; $('#hNewName').focus(); sfx('off'); return; }
     if (isDupRc(d, a, c, n) && !dupOk(d, a, c, n, msg, $('#hSave'))) return;
+    if (!bigOk(d, wholeAmt(S, a), msg, $('#hSave'))) { $('#hAmt').focus(); return; }
     if (needTitle(c, n)) { const dt = $('.hmore'); if (dt) dt.open = true; msg.textContent = 'Add a short title, e.g. “Vet bill”.'; $('#hNote').focus(); sfx('off'); return; }
-    const first = !(S.receipts || []).length, nm = c === 'other' ? 'Other' : ((lineByKey(S, c) || { name: 'Other' }).name === 'Courses and books' ? 'Education' : (lineByKey(S, c) || { name: 'Other' }).name);
+    const first = !(S.receipts || []).length, nm = c === 'other' ? 'Other' : shownLine((lineByKey(S, c) || { name: 'Other' }).name);
     const rid = addReceipt(S, d, a, c, n); S.ui.rcCat = c; markDone('receipts', true);
     $('#hAmt').value = ''; delete $('#hAmt').dataset.neg; $('#hNote').value = ''; syncOtherTitle('hCat', 'hNote'); $('#hDate').value = todayStr(); if (typeof dpSync === 'function') dpSync($('#hQuick'));
     msg.textContent = `Logged ${fmt2(wholeAmt(S, a))}: ${nm}.`;
@@ -16219,7 +16250,7 @@ function wireHome() {
    Its .value still reads back as a plain number, so nothing else in the page has to know. */
 const NATIVE_VALUE = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
 const COMMA_DEC = ['€', 'R$', 'kr', 'zł', 'R']; /* currencies usually written with a decimal comma */
-const withCommas = s => { s = String(s == null ? '' : s); const m = s.match(/^(\d*)(\.\d*)?$/); return m ? m[1].replace(/\B(?=(\d{3})+(?!\d))/g, ',') + (m[2] || '') : s; };
+const withCommas = s => { s = String(s == null ? '' : s); const m = s.match(/^(-?)(\d*)(\.\d*)?$/); return m ? m[1] + m[2].replace(/\B(?=(\d{3})+(?!\d))/g, ',') + (m[3] || '') : s; };
 /* sums typed in an amount box: 1200+300, 500*2, 2,400/3. Plain arithmetic only, never run as code. A trailing sign is ignored while typing. */
 const MONEY_OP = /[+*\/x\u00d7\u2212-]/;
 function evalMoney(src) {
@@ -16246,7 +16277,7 @@ function moneyUp(el) {
   const v = el.value;
   el.dataset.mny = '1'; el.type = 'text'; el.setAttribute('autocomplete', 'off');
   if (!el.getAttribute('inputmode')) el.setAttribute('inputmode', 'decimal');
-  Object.defineProperty(el, 'value', { configurable: true, get() { const r = NATIVE_VALUE.get.call(this); if (hasMoneyOp(r)) { const v = evalMoney(r); return v === null ? (this._mnyOK !== undefined ? this._mnyOK : '') : String(v); } return r.replace(/,/g, ''); }, set(x) { NATIVE_VALUE.set.call(this, withCommas(x)); } });
+  Object.defineProperty(el, 'value', { configurable: true, get() { const r = NATIVE_VALUE.get.call(this); if (hasMoneyOp(r)) { const v = evalMoney(r); return v === null ? (this._mnyOK !== undefined ? this._mnyOK : '') : String(v); } return r.replace(/,/g, ''); }, set(x) { const n = +x; NATIVE_VALUE.set.call(this, withCommas(x !== '' && x != null && isFinite(n) && Math.abs(n - Math.round(n)) >= 0.005 ? n.toFixed(2) : x)); } });   /* an amount the page puts in a box shows its cents as two digits, 400.50 not 400.5 (decision 1) */
   NATIVE_VALUE.set.call(el, withCommas(v));
 }
 function moneyUpAll(root) { $$('input[type=number]', root || document).forEach(el => { if (isMoneyBox(el)) moneyUp(el); }); }
@@ -16256,7 +16287,10 @@ function moneyTyped(el, ev) {
   /* a letter is never dropped in silence (12O typed for 120 would become 12): the box keeps what it had and says why (38.31 QC round 2) */
   { const lt = /[A-Za-z]/.exec(raw); if (lt) { try { cheer(`Numbers only: "${lt[0]}" was not added. Check the amount.`); } catch (x) { } NATIVE_VALUE.set.call(el, el._mnyPrev !== undefined ? el._mnyPrev : ''); return; } }
   /* a minus sign is never kept; the person is told, so a refund typed as -500 is not quietly turned into +500 (receipt boxes refuse it themselves) */
-  if (/^\s*[-\u2212\u2013\uFF0D\u30FC\u2010-\u2015]/.test(raw) && el.id !== 'rcAmt' && el.id !== 'hAmt') { try { cheer('Amounts take no minus sign. The old amount stays.'); } catch (x) { } NATIVE_VALUE.set.call(el, el._mnyPrev !== undefined ? el._mnyPrev : ''); el._refuse = Date.now() + 2500; try { el.blur(); } catch (x) { } return; }
+  const negOK = el.dataset.neg === 'ok' || el.id === 'rcAmt' || el.id === 'hAmt';   /* a receipt box keeps a typed minus in sight, so Log can say why it is refused instead of logging +500 (38.31 number gate round 3) */
+  if ((el.id === 'rcAmt' || el.id === 'hAmt')) { if (/^\s*[-\u2212\u2013\uFF0D\u30FC\u2010-\u2015]/.test(raw)) el.dataset.neg = '1'; else delete el.dataset.neg; }   /* the bank balance box takes a minus: an overdrawn account (38.31 QC round 3) */
+  if (negOK) raw = raw.replace(/^\s*[\u2212\u2013\uFF0D\u30FC\u2010-\u2015]/, '-');
+  if (!negOK && /^\s*[-\u2212\u2013\uFF0D\u30FC\u2010-\u2015]/.test(raw) && el.id !== 'rcAmt' && el.id !== 'hAmt') { try { cheer('Amounts take no minus sign. The old amount stays.'); } catch (x) { } NATIVE_VALUE.set.call(el, el._mnyPrev !== undefined ? el._mnyPrev : ''); el._refuse = Date.now() + 2500; try { el.blur(); } catch (x) { } return; }
   { const big = parseFloat(raw.replace(/[^\d.]/g, '')); if (big > 1e9 && el.id !== 'rcAmt' && el.id !== 'hAmt') { try { cheer(`That amount is too large. The most is 1,000,000,000. ${el._mnyAtFocus ? 'The old amount stays.' : 'Type it again.'}`); } catch (x) { } el._refuse = Date.now() + 2500; NATIVE_VALUE.set.call(el, el._mnyAtFocus !== undefined ? el._mnyAtFocus : ''); el._mnyPrev = el._mnyAtFocus; el.dispatchEvent(new Event('input', { bubbles: true })); return;   /* a typo is refused and the amount from before this typing comes back, never the largest amount (38.31 data safety round) */ } } const pos = el.selectionStart == null ? raw.length : el.selectionStart;
   /* a comma typed by hand: a decimal point where the currency writes decimals that way (12,50 euro), otherwise a thousands separator
      (1,200 pesos is twelve hundred, never one peso twenty) and the box regroups it on its own */
@@ -16266,7 +16300,8 @@ function moneyTyped(el, ev) {
   const dot = all.indexOf('.');
   if (dot >= 0) all = all.slice(0, dot) + '.' + all.slice(dot + 1).replace(/\./g, '').slice(0, 2);
   n = Math.min(n, all.length);
-  const out = withCommas(all);
+  const neg = negOK && /^\s*-/.test(raw); if (neg) n++;
+  const out = (neg ? '-' : '') + withCommas(all);
   if (out === NATIVE_VALUE.get.call(el)) return;
   let k = 0, i = 0; for (; i < out.length && k < n; i++) if (out.charAt(i) !== ',') k++;
   NATIVE_VALUE.set.call(el, out);
@@ -16613,8 +16648,8 @@ function openWhy(kind) {
     rows = [[`Free to spend planned for ${mon}`, fmt(p.planned)], [`Logged in Free to spend (${p.count} ${p.count === 1 ? 'receipt' : 'receipts'})`, '−' + fmt2(p.spent)]];
     if (held > 0) rows.push(['Held back so the balance stays above your minimum', '−' + fmt(held)]);
     rows.push(['Free to spend', fmt2(freeLeft)]);
-    if (p.perWeek != null) rows.push([`Per week for the ${plural(p.daysLeft, 'day')} left`, fmt(V.cells.perWeek)]);
-    if (p.daysLeft > 0 && freeLeft > 0) rows.push(['Per day', fmt(V.cells.perDay)]);
+    if (p.perWeek != null) rows.push([`Per week for the ${plural(p.daysLeft, 'day')} left`, fmtAbout(V.cells.perWeek)]);
+    if (p.daysLeft > 0 && freeLeft > 0) rows.push(['Per day', fmtAbout(V.cells.perDay)]);
     foot = 'Planned is the Free to spend total on the Plan page. Logged is every receipt in Free to spend this month.';
   } else {
     title = 'Where you stand in ' + mon;
@@ -16920,8 +16955,8 @@ function wire() {
   $('#themeSeg').addEventListener('click', e => { const b = e.target.closest('[data-theme-set]'); if (!b) return; setTheme(b.dataset.themeSet); sfx('tap'); });
 
   /* basics */
-  SETF.forEach(f => { const go = e => onCfg(f.k, Math.max(0, Math.round(+e.target.value || 0))); $('#st-' + f.k).addEventListener('input', go); $('#st-' + f.k).addEventListener('change', go); });
-  $('#redivide').addEventListener('click', e => confirmClick(e.currentTarget, 'Tap again: opens the setup steps. They can replace your goals and saved amounts. Undo stays up for 30 seconds after.', () => { RESPLIT_SNAP = JSON.stringify(S); S.ui.preSplit = RESPLIT_SNAP; persist(); if (typeof openTour === 'function') openTour('jars', 'full'); }));
+  SETF.forEach(f => { const go = e => onCfg(f.k, +e.target.value || 0); $('#st-' + f.k).addEventListener('input', go); $('#st-' + f.k).addEventListener('change', go); });
+  $('#redivide').addEventListener('click', e => confirmClick(e.currentTarget, `Tap again: opens the setup steps. They can replace your goals and saved amounts. You can undo for ${KEEP_DAYS} days.`, () => openSetupWithCopy('jars', 'full')));
   const copyBox = async (ta, msg) => {
     ta.focus(); ta.select();
     try { await navigator.clipboard.writeText(ta.value); msg.textContent = 'Copied.'; return true; } catch (e) { /* try the older way */ }
@@ -16965,7 +17000,7 @@ function wire() {
     const f = e.target.files && e.target.files[0], msg = $('#bkMsg'); e.target.value = ''; if (!f) return;
     if (f.size > 20e6) { msg.textContent = 'File too large for a backup.'; return; }
     const r = new FileReader(); r.onerror = () => { msg.textContent = 'File unreadable. Try Copy text.'; };
-    r.onload = () => { const t = String(r.result || ''); $('#bk').value = t; let ok = false; try { const d = JSON.parse(t); ok = !!(d && typeof d === 'object' && d.steps && d.once && d.cfg); } catch (e) { } $('#bkMsg').textContent = ok ? 'File read. Tap Load text twice to replace your numbers with it.' : 'Not a valid backup. Use the whole file, or paste all of the copied text.'; }; r.readAsText(f);   /* a picked file never replaces anything on its own (38.31 data safety round 2) */
+    r.onload = () => { const t = String(r.result || ''); $('#bk').value = t; let ok = false; try { const d = JSON.parse(t); ok = !!(d && typeof d === 'object' && d.steps && d.once && d.cfg); } catch (e) { } $('#bkMsg').textContent = ok ? `File read. Tap Load text, then tap again, to replace your numbers with it. You can undo for ${KEEP_DAYS} days.` : 'Not a valid backup. Use the whole file, or paste all of the copied text.'; }; r.readAsText(f);   /* a picked file never replaces anything on its own (38.31 data safety round 2) */
   });
   const twoStep = (b, armedText, run) => {
     let t = 0; const orig = b.textContent;

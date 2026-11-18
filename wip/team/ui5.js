@@ -134,7 +134,7 @@ function wire() {
 
   /* basics */
   SETF.forEach(f => { const go = e => onCfg(f.k, +e.target.value || 0); $('#st-' + f.k).addEventListener('input', go); $('#st-' + f.k).addEventListener('change', go); });
-  $('#redivide').addEventListener('click', e => confirmClick(e.currentTarget, 'Tap again: opens the setup steps. They can replace your goals and saved amounts. Undo stays up for 30 seconds after.', () => { RESPLIT_SNAP = JSON.stringify(S); S.ui.preSplit = RESPLIT_SNAP; persist(); if (typeof openTour === 'function') openTour('jars', 'full'); }));
+  $('#redivide').addEventListener('click', e => confirmClick(e.currentTarget, `Tap again: opens the setup steps. They can replace your goals and saved amounts. You can undo for ${KEEP_DAYS} days.`, () => openSetupWithCopy('jars', 'full')));
   const copyBox = async (ta, msg) => {
     ta.focus(); ta.select();
     try { await navigator.clipboard.writeText(ta.value); msg.textContent = 'Copied.'; return true; } catch (e) { /* try the older way */ }
@@ -178,7 +178,7 @@ function wire() {
     const f = e.target.files && e.target.files[0], msg = $('#bkMsg'); e.target.value = ''; if (!f) return;
     if (f.size > 20e6) { msg.textContent = 'File too large for a backup.'; return; }
     const r = new FileReader(); r.onerror = () => { msg.textContent = 'File unreadable. Try Copy text.'; };
-    r.onload = () => { const t = String(r.result || ''); $('#bk').value = t; let ok = false; try { const d = JSON.parse(t); ok = !!(d && typeof d === 'object' && d.steps && d.once && d.cfg); } catch (e) { } $('#bkMsg').textContent = ok ? 'File read. Tap Load text twice to replace your numbers with it.' : 'Not a valid backup. Use the whole file, or paste all of the copied text.'; }; r.readAsText(f);   /* a picked file never replaces anything on its own (38.31 data safety round 2) */
+    r.onload = () => { const t = String(r.result || ''); $('#bk').value = t; let ok = false; try { const d = JSON.parse(t); ok = !!(d && typeof d === 'object' && d.steps && d.once && d.cfg); } catch (e) { } $('#bkMsg').textContent = ok ? `File read. Tap Load text, then tap again, to replace your numbers with it. You can undo for ${KEEP_DAYS} days.` : 'Not a valid backup. Use the whole file, or paste all of the copied text.'; }; r.readAsText(f);   /* a picked file never replaces anything on its own (38.31 data safety round 2) */
   });
   const twoStep = (b, armedText, run) => {
     let t = 0; const orig = b.textContent;
