@@ -86,3 +86,13 @@ Mako's feedback arrives in chat. Put the lesson, in one line, under the right re
 
 ## Visual first (2026-11-17, from Mako)
 Every reviewer asks: could this be shown as a picture, a pile of coins, a filling burrow, or a moving coin instead of a number or a sentence? If yes and it is not, that is a defect. Numbers sit under a picture, never instead of one. Function first; simple art is fine.
+
+## Added in 38.31: what every role runs, every time
+
+No role may report on a build until `bash tests/verify.sh` has printed `VERIFY OK` for that exact build. Paste its last ten lines at the top of your report. A report without them is not a QC report.
+
+The numbers role also owns three files and keeps them true:
+
+- `tests/qc/display_math.max` only ever goes down. The goal is 0.
+- `tests/qc/display_math.allow` has a reason on every line. A line with no reason does not count.
+- When Mako gives feedback about a number, add the situation to the six in `QC_NUMBERS.md` so it is checked on every release from then on.

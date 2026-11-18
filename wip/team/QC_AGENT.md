@@ -24,3 +24,9 @@ Spawn a fresh agent with only the above (never a fork). Run it on the exact file
 
 ## Two agents, always together (Mako, 2026-11-17)
 Every release and every step runs this agent AND the number-logic agent (QC_NUMBERS.md) at the same time, each a fresh agent on the same finished build. Both must pass before anything ships. The number-logic agent checks that every number is right in every situation (typos, overspending, missing input); this agent checks the north star, wording, visuals and safety.
+
+## Added in 38.31
+
+- The page now proves its own total. On Home, under "Where your money sits", look for "Checked: what you started with, plus your pay, less what was spent, comes to the same total." If instead you see "These numbers do not add up", that is a FAIL however good the rest looks.
+- When emergency-fund money pays for part of a month, the Plan tab must say so in words a person with no finance background understands: a "Borrowed" row, and a sentence saying why the places add up to more than all of the pay. If the percents add up to more than 100 with no explanation, FAIL.
+- You judge clarity and safety. The number-logic agent judges arithmetic. Do not pass a build because its numbers look plausible; say what a first-time person would understand from each number.

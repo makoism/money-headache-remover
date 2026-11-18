@@ -1,0 +1,98 @@
+# The Burrow: start here
+
+Written 2026-11-18 on branch `wip-38.31`. Read this whole file before touching anything. It replaces the resume notes that lived outside the repo.
+
+## 1. Where things stand
+
+| Thing | State |
+| --- | --- |
+| Live site | 38.28, https://the-burrow.mako-162.workers.dev. Deploys when `main` is pushed. |
+| `wip-38.30` | Built by the earlier session. Never passed `./check.sh full`. Not deployed. |
+| `wip-38.31` (this branch) | 38.30 plus the numbers foundation below. Not deployed. Not yet through the QC agents. |
+| Version stamp | Still says 38.30. Bump `VERSION` to 38.31 when the checks are green, then record a new golden baseline. |
+
+Nothing may ship until section 6 is done in full.
+
+## 2. First ten minutes on a fresh session
+
+```
+git fetch && git checkout wip-38.31          # or: git fetch burrow-wip-38.31.bundle wip-38.31:wip-38.31
+cd wip/team
+bash tests/setup_env.sh                      # rebuilds the whole test environment FROM THE REPO. Must print "setup ok"
+bash tests/verify.sh tests/qc/golden/3831a.json    # the quick gate, about 3 minutes. Must end "VERIFY OK"
+```
+
+Rules that keep work from being lost:
+
+- Nothing a check needs may live only in `/tmp` or `/home/claude/work`. Those folders vanish. The earlier session lost its updated tests that way.
+- Commit and push after every green `verify.sh`. A session can end without warning.
+- Run browser tests one at a time. Several at once makes the timing-based ones fail (`leftover_reload`, `guard`, `team_help`) when nothing is wrong.
+
+## 3. The numbers foundation (what 38.31 is)
+
+Mako's rule: every number comes from one dataset, as stable as a sheet, so a wrong number is not possible without it showing. Four parts enforce it.
+
+1. **One source.** What a person types is stored (plan, one-off changes, receipts, settings). Everything else is worked out fresh by `model.js`. Nothing worked out is saved.
+2. **Screens never do money maths.** A screen may choose, format and place a value. It may not add, subtract, round, clamp, negate or total one. `tests/qc/display_math.js` reads the screen code and lists every break. The count is in `tests/qc/display_math.max` and may only go down. It was 87 and is 15. Exceptions need a reason in `display_math.allow`.
+3. **An independent second calculation.** `tests/regression/v25/oracle.js` works the plan out again from the plain rules, in whole numbers, with none of the app's code, and compares field by field on thousands of random plans. It must report `mismatches 0`.
+4. **The proof.** `proofOf()` in `model.js` checks that where the money sits (bank + goals + piles) equals where it came from (start + pay - everything that left), to the cent. Home shows the result and shows a warning if it fails. `tests/qc/proof_fuzz.js` runs it on random plans and must print `PROOF PASS`. It was tested by planting five bugs; it caught all five.
+
+Where the named values live in `model.js`:
+
+- `jarsOf` : the split and its percents, `unplaced`, `unplacedNet`, `exceedsBy`, `borrowUsed`, `borrowUsedPct`, `placedPct`
+- `planCells` : the Plan tab and the dock
+- `viewOf(...).cells`, `.month`, `.play`, `.map` : Home
+- `goalInfo` (`togo`, `pctWhole`), `goalRows` (`togo`, `pct`)
+- `calcAll` month fields `debtStart`, `debtMin`, `debtExtra`, and each debt's `paidPct`, `paidPctWhole`
+- `limitsOf` rows (`overBy`), `lookBack` (`change`, `overBy`), `overParts`, `leftOfPlan`, `moveCap`, `receiptsTotal`, `wizardMonthly`
+
+### How to move one more sum out of a screen (the pattern)
+
+1. Run `node tests/qc/display_math.js` and pick a line.
+2. Give the amount a name with a money meaning and work it out in `model.js`, on the object the screen already reads. Copy the exact expression. Do not write a general helper such as "subtract two numbers": that only hides the sum.
+3. Replace the expression in the screen with the named value.
+4. Run `bash tests/verify.sh tests/qc/golden/3831a.json`. Golden screens must say `0 screens differ`, unless the change is a fix you can name.
+5. Lower the number in `tests/qc/display_math.max`. Commit.
+
+## 4. What changed for people in 38.31 (for the release notes)
+
+- Months paid partly with emergency-fund money: the split now reconciles. Places + not placed = 100 + borrowed. New "Borrowed" row and a sentence that says why. Before, the percents added to 116, 129, even 312 with no explanation.
+- Home's proof line now really checks the total, and warns if the numbers do not add up.
+- Home could never say "Building your cushion", and could never say that spending went past the plan this month. Two values were missing from `viewOf().month`. Both states work now.
+- The bills amount still to pay shows cents in both Home cards (it showed 26,535 in one and 26,534.51 in the other).
+- The percent in a goal's screen-reader label is rounded down like every other goal percent.
+
+## 5. Known problems, in the order to do them
+
+1. **Stale tests.** These were updated for 38.29 and 38.30 in the old session's `/tmp` and never committed, so the copies in `tests/regression` describe 38.28: `team_inter2.js`, `team_month.js`, `v34/purpose_test.js`, `v25/viewtest.js`, `v25/monkey.js`, `v25/display.js`. `team_map.js` is missing entirely. Fixtures missing: `/tmp/legacy_yen.json` (for `team_cur.js`), `/tmp/v35/old` (for `upgrade_test.js`). For each failure decide: is the test out of date, or is the app wrong? The old test wording is the clue to what was intended. Do not delete a test to get green.
+2. **`tests/qc/reset_undo.js`** fails one check ("Reset month removed only this month's edits"). It is a draft. Find out whether the test or the app is wrong.
+3. **`leftover_reload.js`** passes alone and failed twice when run straight after nine other browser tests. Make its waits depend on the save finishing, not on fixed sleeps.
+4. **Screen maths left: 15.** Thirteen are in the setup tour (`ui45s.js`, `ui45x.js`, `ui45.js`), one is the month-end move (`ui6.js`, `moved`), one is allowed. Note `sweepOffer` in `ui6.js` works out the unspent amount itself, rounded to whole units, while the model's `m.pendLeft` rounds to cents. They should be one value.
+5. **Whole cents.** Plan boxes round typed cents to whole units without saying so (`clampAmt`). Amounts are decimals, not whole cents.
+6. **North-star items from the 38.30 review:** S1 no month-end question while setup is unfinished (`team_month.js` expects this), S2 after "Decide later" the proof line points to a card that is not there, S3 Plan does not show where a top-up went, S4 the first screen is mostly numbers, S5 a "Yearly cost: 25%" popup contradicts 29%, S6 "not planned yet" against "not placed yet".
+7. **Wording to decide with Mako:** "Building your cushion" also shows when the bank ends below zero but the month adds to it.
+8. **Not rerun on 38.31:** the full click sweep (one size passed, 136 clicks), `tests/guard.js`, `tests/safe.js`, the installable-app test.
+9. **The oracle does not yet cover** receipts, spending past plan, piles or month-end answers. The proof covers them by conservation. An independent recount of those rules is the next step up.
+10. **Roadmap after this:** B ledger and real balances with a "check against my bank" amount, statement totals checked against the statement's own balance, then C and D.
+
+## 6. Before anything ships (no exceptions)
+
+1. `bash tests/setup_env.sh`, then `./check.sh full` prints ALL GOOD. It has never been green on 38.30 or 38.31.
+2. Two fresh QC agents, started at the same time on the finished build, each given only its own brief and the built page, never your reasoning:
+   - north-star agent: `NORTH_STAR.md` and `QC_AGENT.md`
+   - number-logic agent: `QC_NUMBERS.md`
+3. The seven-role panel in `QC_ROLES.md`, in parallel with the two.
+4. Any failure: fix it or take it to Mako, then run new agents on the new build. Never reuse an agent that has seen an earlier build.
+5. Deploy as `build_site.sh` at the repo root does it (it copies the team sources into `src/`, builds `public/`), commit to `main`, push, check the Cloudflare run, open the live page, send Mako the link with an honest report.
+
+Agents cannot be started from an ordinary chat. If you are in one, say so plainly and do not call the automated checks "QC passed".
+
+## 7. Mako's standing rules
+
+- North star: a bird's-eye view and clarity of money, so the person feels safe because they know where all of it is. Check every instruction and feature against it.
+- Visual first: if a number can be shown as a picture and that is clearer, show the picture.
+- Accuracy first. Nobody loses data.
+- Plain words, like a manual. No em dashes anywhere in the app.
+- Do not ask many small questions. Keep building. Set a resume timer at the start of a big task where the tool exists.
+- Send the live link again whenever a piece of work is finished.
+- After the org upgrade the in-app AI's credits may need claiming again by a Team owner. Check the assistant on the live site.
