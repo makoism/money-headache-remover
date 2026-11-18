@@ -202,7 +202,8 @@ function commitJars() {
    Long-Term Savings jar goes to it (the split screen opens only for two or more), capped by what it still needs, so the setup's own
    defaults never plan more than the pay allows. */
 function settleGoals() {
-  if (!havePay()) return;
+  /* no pay at all (not even a sample): nothing can go to a goal, or the plan would save money that is not there (38.31 money accuracy round 3) */
+  if (!havePay()) { if (!(payNow() > 0)) S.plan.goals.forEach(g => setVal(S, 'goal:' + g.id, START, 0, 'after')); return; }
   const B = ltsBudget();
   if (!(B > 0)) { S.plan.goals.forEach(g => setVal(S, 'goal:' + g.id, START, 0, 'after')); return; }
   if (S.plan.goals.length === 1) { const g = S.plan.goals[0]; setVal(S, 'goal:' + g.id, START, Math.min(B, goalRoom(g)), 'after'); }

@@ -551,7 +551,8 @@ const validDate = d => { if (typeof d !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.tes
    so there is one set of numbers in the whole page. They have their own test against an independent recomputation. ===== */
 const wholePct = (v, t) => (t > 0 ? (v >= t ? 100 : Math.min(99, Math.max(0, Math.floor(v * 100 / t)))) : 0);
 const GOAL_DEFAULT_NAME = { rainy: 'Emergency fund', travel: 'Trip', moving: 'Home or move', buy: 'Big purchase', car: 'Yearly cost', debt: 'Pay off debt', other: 'Something else' };
-const PURPOSE_OF_KIND = { rainy: 'Emergencies covered', travel: 'Trip paid for', moving: 'Move paid for', buy: 'Paid in cash', car: 'Yearly bill covered', debt: 'Debt paid off', other: '' };
+/* what each kind of goal is for, said as an aim, never as if it were done (38.31 wording round 3: "Emergencies covered" showed at 31%) */
+const PURPOSE_OF_KIND = { rainy: 'Saving for emergencies', travel: 'Saving for a trip', moving: 'Saving for a move', buy: 'Saving to pay in cash', car: 'Saving for a yearly bill', debt: 'Paying off a debt', other: '' };
 const PURPOSE_VERBS = /^(buy|get|build|start|take|go|pay|visit|learn|fix|move|plan|book|host|open|join|make|finish|upgrade|replace|renew|fund|cover|see|send|adopt|rent|own|throw|celebrate|travel|clear|write|launch|hire|support|invest|surf|ride|run|swim|climb|dive|drive|fly|marry|study|train|enrol|enroll|treat|gift|surprise|retire|quit)\b/i;
 const kindOfGoal = (S, g) => { if (g.emergency) return 'rainy'; const gk = (S.ui && S.ui.gk) || {}; return gk[g.id] || (Object.prototype.hasOwnProperty.call(PURPOSE_OF_KIND, g.id) ? g.id : 'other'); };
 /* the plain sentence under a goal: what the money will let the person do. Built-in wording here; a line written by Claude for a custom goal replaces it on screen. */
@@ -562,11 +563,11 @@ const dwr = (r, s) => (r && r.kind === 'debt') ? debtWords(s) : s;
 function purposeOf(S, g) {
   const name = String(g.name || '').replace(/\s+/g, ' ').trim(), kind = kindOfGoal(S, g);
   if (kind === 'rainy') return PURPOSE_OF_KIND.rainy;
-  if (kind === 'debt' && name && name !== GOAL_DEFAULT_NAME.debt && !PURPOSE_VERBS.test(name)) return name.charAt(0).toUpperCase() + name.slice(1) + ' paid off';
+  if (kind === 'debt' && name && name !== GOAL_DEFAULT_NAME.debt && !PURPOSE_VERBS.test(name)) return 'Paying off ' + name;
   if (PURPOSE_OF_KIND[kind] && (!name || name === GOAL_DEFAULT_NAME[kind])) return PURPOSE_OF_KIND[kind];
-  if (!name) return 'Goal covered';
-  if (PURPOSE_VERBS.test(name)) return 'Ready to ' + name.charAt(0).toLowerCase() + name.slice(1);
-  return name.charAt(0).toUpperCase() + name.slice(1) + ' covered';
+  if (!name) return 'Saving for a goal';
+  if (PURPOSE_VERBS.test(name)) return 'Saving to ' + name.charAt(0).toLowerCase() + name.slice(1);
+  return 'Saving for ' + name;   /* an aim, never said as if done (38.31 wording round 3) */
 }
 function goalRows(S, C, ym) {
   const ix = ymIdx(ym);
@@ -686,7 +687,7 @@ function setupCells(S) {
 /* what the plan adds up to in a month, for the end of the setup tour. hasPay: the person has entered pay */
 function planFactsOf(S, C, ym, hasPay) {
   const m = C.byYm[ym], J = jarsOf(S, m), inc = J.inn, L = m.pool.left, play = m.jar.play;
-  const tol = roundUnit(S), bills = m.jar.nec, goals = m.goalsTotal, other = m.jar.edu + m.jar.ffa + m.jar.give;
+  const tol = 0.005, bills = m.jar.nec,   /* any pay not placed is named: "all pay is placed" only when it really is (38.31 money accuracy round 3) */ goals = m.goalsTotal, other = m.jar.edu + m.jar.ffa + m.jar.give;
   const st = !hasPay ? 'nopay' : L < 0 ? 'over' : L >= tol ? 'spare' : 'even';
   return { m, J, inc, L, play, tol, bills, goals, other, st, billPct: inc > 0 ? bills / inc : 0,
     pay: m.a + m.b + m.side,          /* pay entered for the month, without borrowed money */

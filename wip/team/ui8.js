@@ -8,6 +8,15 @@ const coverText = (over, draw, bank, minB, below) => {
   const rest = round2(over - (draw || 0));
   return (draw > 0 ? fmt2(draw) + ' is borrowed from your emergency fund' + (rest < -0.5 ? ' (more than the gap, the extra stays in your bank)' : '') + '. ' : '') + (rest <= 0.5 ? '' : bank < 0 ? 'Your bank cannot cover ' + (draw > 0 ? 'the rest' : 'it') + ': it would end ' + fmt2(below) + ' below zero.' : bank < minB ? 'The bank covers ' + (draw > 0 ? 'the rest' : 'it') + ' but ends under your minimum.' : 'The bank covers ' + (draw > 0 ? 'the rest.' : 'the difference.'));
 };
+/* the four numbers stay on one line and shrink until they fit their card, so a very long amount never runs into the next card
+   (38.31 layout round 3: 1,555,555,554 at 320 wide) */
+function fitFour() {
+  document.querySelectorAll('#hMap .mp-four b').forEach(b => {
+    b.style.fontSize = ''; let fs = parseFloat(getComputedStyle(b).fontSize) || 24;
+    for (let i = 0; i < 20 && b.scrollWidth > b.clientWidth + 1 && fs > 12; i++) { fs -= 1; b.style.fontSize = fs + 'px'; }
+  });
+}
+addEventListener('resize', () => requestAnimationFrame(fitFour), { passive: true });
 function renderMap() {
   const el = $('#hMap'), V = HV; if (!el) return;
   if (!V || !V.map || !(V.month.inflow > 0)) { el.hidden = true; return; }
@@ -50,6 +59,7 @@ function renderMap() {
     ${PF.ok ? '' : `<p class="cap mp-bad" role="alert">These numbers do not add up. They are off by ${fmt2(PF.offBy)}. Nothing you entered is lost. Please tell Mako.</p>`}
     ${warn}`);
   { const dp = el.querySelector('.mp-pay'); if (dp) dp.ontoggle = () => { renderMap.payOpen = dp.open; }; }
+  requestAnimationFrame(fitFour);
   BUR.dropCoins(el.querySelector('.mp-split'));
   const pb2 = $('#mpPay'); if (pb2) pb2.onclick = () => payDay({ pay: (M.payReal || dwn > 0) ? M.payReal : placed,   /* model.js mapOf payReal (the screen's own realPay was moved there and this line was missed) */ over: planOver, draw: dwn, bank: M.bankEnd, below: M.bankBelow, minB: cfg(S, 'minBank'), mon, places: split });
   BUR.monthRooms($('#mpRooms'));

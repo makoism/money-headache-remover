@@ -7,8 +7,8 @@
 :root {
   color-scheme: light;
   --bg: #eef4ef; --panel: rgba(255, 255, 255, .62); --card: rgba(255, 255, 255, .62); --field: #ffffff; --seg-on: #ffffff; --float: rgba(255, 255, 255, .86);
-  --ink: #122018; --ink2: #4f6a5c; --ink3: #58705f; --hair: rgba(18, 32, 24, .1); --track: rgba(18, 32, 24, .07); --track2: rgba(18, 32, 24, .11);
-  --accent: #1f7a52; --on-accent: #ffffff; --accent-h: #27895d; --link: #1f7a52;
+  --ink: #122018; --ink2: #3d5749; --ink3: #44594b; --hair: rgba(18, 32, 24, .1); --track: rgba(18, 32, 24, .07); --track2: rgba(18, 32, 24, .11);
+  --accent: #1f7a52; --on-accent: #ffffff; --accent-h: #27895d; --link: #145c3c;
   --c1: #b8512e; --c2: #2c6db5; --c3: #3e8e2b; --c4: #d6568a; --c5: #d99a12; --c6: #7e3f96; --c7: #0b8fa8; --cp: #d4e04f; --cl: #b9c6d2; --cg: #e8dcc0;
   --good: #1f7a52; --good-bg: rgba(31, 122, 82, .12); --warn: #9a6a00; --warn-bg: rgba(154, 106, 0, .12); --bad: #b8352e; --bad-bg: rgba(184, 53, 46, .1);
   --warn-on: #c98500; --bad-on: #e0524b; --ok-dot: #a9bdb2;
@@ -1824,3 +1824,16 @@ body.scene-on .card, body.scene-on .gw-card, body.scene-on .hnext, body.scene-on
 .bv-dots button::before { content: ''; width: 12px; height: 12px; border-radius: 50%; box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--ink) 70%, transparent); }   /* --fg is never defined, which hid the old dots */
 .bv-dots button[aria-current=true] { background: none; }
 .bv-dots button[aria-current=true]::before { background: var(--accent); box-shadow: none; }
+.mp-four .mp-n { min-width: 0; overflow: hidden; }
+.mp-four .mp-n b { display: block; min-width: 0; }
+
+/* touch targets of at least 44px (38.31 layout rounds 1 to 3). The Plan sub-tabs and links grow to 44px; a switch keeps its look and gets a 44px
+   touch area around it. Links inside a sentence keep the line height and get the same invisible touch area. */
+.subnav button { min-height: 44px; }
+.link { min-height: 44px; }
+p .link, li .link, span .link, .cap .link { min-height: 0; position: relative; }
+p .link::after, li .link::after, span .link::after, .cap .link::after { content: ''; position: absolute; left: -4px; right: -4px; top: 50%; height: 44px; transform: translateY(-50%); }
+.sw { position: relative; }
+.sw::after { content: ''; position: absolute; left: -4px; right: -4px; top: 50%; height: 44px; transform: translateY(-50%); }
+/* phones: the Ask and Help pills are smaller, so they cover less of the cards behind them (38.31 QC rounds 2 and 3) */
+@media (max-width: 420px) { .help-btn { min-height: 44px; padding: 0 12px 0 6px; font-size: 15px; gap: 6px; } .help-btn .q { width: 28px; height: 28px; font-size: 15px; } }
