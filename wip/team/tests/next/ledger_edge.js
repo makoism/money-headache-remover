@@ -282,6 +282,8 @@ const all = (tag, p, want) => { for (const k in want) eq(`${tag} ${k}`, k.includ
   add('G4 bank to e-wallet', S, { k: 'transfer', acct: 'bank', acct2: 'gcash', a: 50, date: '2026-11-28' }); all('G4 a transfer between tracked accounts is not a put-back', proof('G4', S), { free: 600 });
   L.ledgerUndo(S, big.id); all('G4 the large put-back undone', proof('G4', S), { free: 3100 }); L.ledgerRedo(S); all('G4 and redone', proof('G4', S), { free: 600 });
   L.ledgerUndo(S, back.id); all('G4 the first put-back undone: the large one still empties it', proof('G4', S), { free: 600 }); L.ledgerRedo(S);
+  L.ledgerAddAccount(S, { id: 'lea', name: 'Lea', type: 'owedToYou' }); add('G4 lent from the wallet', S, { k: 'transfer', acct: 'wallet', acct2: 'lea', a: 250, date: '2026-11-29', place: 'lent' });
+  all('G4 lending from the wallet is not a put-back', proof('G4', S), { free: 600, lent: 250 });
   add('G4 next pay', S, { k: 'in', sub: 'pay', acct: 'bank', a: 20000, date: '2026-12-15' }); all('G4 a new pay day starts from nothing handed', proof('G4', S), { free: 0, wallet: 0 });
   L.ledgerSetMode(S, 'track'); all('G4 Track mode: handed is still worked out, Free to spend is the place', L.placesOf(S, '2026-12-01'), { wallet: 600, free: 0 });
 }

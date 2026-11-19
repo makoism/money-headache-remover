@@ -177,9 +177,12 @@ function placesOf(S) {
      day, or no date: the order added), never by the order added alone: a late line "handed 700 on the 8th" belongs before the
      pay of the 10th and must not count as handed since then */
   let handed = 0;
-  const hp = []; S.ledger.forEach((raw, i) => { const e = norm(S, raw); if (e && (e.k === 'hand' || (e.k === 'in' && e.sub === 'pay' && e.startsPeriod !== false))) hp.push([e, i, raw.date || '']); });
+  /* money put back from the wallet (a transfer from a home account that is not tracked into a bank, e-wallet or cash account in Total; lending from the wallet is not one) takes away from
+     what was handed out, never below zero */
+  const putBack = e => { const a1 = acctOf(S, e.acct); return e.k === 'transfer' && !!a1 && ASSET[a1.type] && a1.tracked === false && isHome(S, a1) && !!inTotal(S, acctOf(S, e.acct2)) && acctOf(S, e.acct2).type !== 'owedToYou'; };
+  const hp = []; S.ledger.forEach((raw, i) => { const e = norm(S, raw); if (e && (e.k === 'hand' || putBack(e) || (e.k === 'in' && e.sub === 'pay' && e.startsPeriod !== false))) hp.push([e, i, raw.date || '']); });
   hp.sort((p, q) => (p[2] && q[2] && p[2] !== q[2] ? (p[2] < q[2] ? -1 : 1) : p[1] - q[1]));
-  hp.forEach(p => { if (p[0].k === 'hand') handed += p[0].c; else handed = 0; });
+  hp.forEach(p => { if (p[0].k === 'hand') handed += p[0].c; else if (p[0].k === 'transfer') handed = Math.max(0, handed - (p[0].c || 0)); else handed = 0; });
   const ch = {}; for (const k in checks) ch[k] = { typed: fromC(checks[k].typed), unexplained: fromC(checks[k].unexplained), date: checks[k].date };
   return {
     chest: fromC(waiting), waiting: fromC(waiting), bills: fromC(bills), billsOnly: fromC(P.bills || 0), forCards: fromC(reserve), cards,

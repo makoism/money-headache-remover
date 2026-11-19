@@ -112,10 +112,10 @@ function checkBal(setup, list, chk, accts) {
 }
 
 /* I12 worked out here: handed to the wallet since the last pay that started a month, by day (same day: in the order added).
-   Money put back from the wallet (a transfer from the wallet that is not tracked into a tracked account) takes away from it,
+   Money put back from the wallet (a transfer from the wallet that is not tracked into a tracked bank, e-wallet or cash account) takes away from it,
    never below zero (G4) */
 function handedByDay(list, accts) {
-  const inT = id => { const a = accts[id]; return !!a && a.cur == null && a.tracked !== false && ['bank', 'ewallet', 'cash', 'owedToYou'].includes(a.type); };
+  const inT = id => { const a = accts[id]; return !!a && a.cur == null && a.tracked !== false && ['bank', 'ewallet', 'cash'].includes(a.type); };   /* lending from the wallet (to an "owed to you" account) is not a put-back */
   const back = e => e.k === 'transfer' && accts[e.acct] && accts[e.acct].tracked === false && accts[e.acct].cur == null && inT(e.acct2);
   const order = []; list.forEach((e, i) => { if (e.k === 'hand' || back(e) || (e.k === 'in' && e.sub === 'pay' && e.startsPeriod !== false)) order.push([e, i]); });
   order.sort((p, q) => (p[0].date < q[0].date ? -1 : p[0].date > q[0].date ? 1 : p[1] - q[1]));

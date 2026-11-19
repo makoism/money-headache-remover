@@ -132,6 +132,10 @@ const ledInTotal = (x, a) => ledYours(a) && a.tracked !== false && a.cur === x.h
 /* a card paid in full, in the home currency: it has a "for the card" line that always equals what is on the card */
 const ledCardFull = (x, a) => !!a && a.type === 'card' && !!a.inFull && a.cur === x.home;
 const ledLine = id => 'card:' + id;
+/* money put back: a transfer from the wallet that is not tracked (home currency) into a bank, e-wallet or cash account in Total.
+   The opposite of a hand. Lending from the wallet (a transfer to an "owed to you" account) is not a put-back */
+const ledPutBack = (x, e) => { if (e.k !== 'transfer') return false; const a1 = x.by[e.acct], a2 = x.by[e.acct2];
+  return ledYours(a1) && a1.tracked === false && a1.cur === x.home && ledInTotal(x, a2) && a2.type !== 'owedToYou'; };
 
 /* WHAT ONE EVENT DOES, in cents: A = account changes, P = place changes. The whole design is this one function.
    In Wallet mode there is no Free to spend place (that money is handed out), so 'free' is read as 'waiting': a copy that was in
@@ -465,7 +469,8 @@ function ledgerHas(S, src) { return typeof src === 'string' && LED_SRC_FREE[src]
 /* Every figure, added up from the ledger. day (optional): only events dated on or before it count ("as of that day").
    Amounts are in money units. The same names as the reference model, plus afterCards, foreignOwed, below and mode:
      waiting, bills (Bills left, with every "for the card" line), billsOnly, forCards, cards { cardId: set aside },
-     free (Track: the place. Wallet: handed to the wallet since the last pay that started a month), wallet (handed, in both modes),
+     free (Track: the place. Wallet: handed to the wallet since the last pay that started a month, less what was put back from it),
+     wallet (handed, in both modes),
      burrows { id: amount }, saved, lent (the place 'lent': money lent, "owed to you". Inside Total, a line of its own, never in
      saved or burrows), thisMonth, total (= waiting + thisMonth + saved + lent), have (the tracked home accounts added up; always
      equal to total),
@@ -497,12 +502,13 @@ function placesOf(S, day) {
   const lent = P[LED_LENT] || 0;   /* owed to you: yours and inside Total, but not Saved and not Free to spend */
   const waiting = P.waiting || 0, billsOnly = P.bills || 0, bills = billsOnly + reserve, freeP = x.wallet ? 0 : (P.free || 0);
   const thisMonth = bills + freeP, total = waiting + thisMonth + saved + lent;
-  /* handed to the wallet since the last pay that started a month, by day (same day: in the order added) */
+  /* handed to the wallet since the last pay that started a month, by day (same day: in the order added). Money put back from the
+     wallet into a tracked account takes away from it, never below zero: it was handed out and is not any more */
   let handed = 0;
   if (L.some(e => e && e.k === 'hand')) {
-    const order = []; L.forEach((e, i) => { if (e && (!keep || keep(e)) && (e.k === 'hand' || (e.k === 'in' && e.sub === 'pay' && e.startsPeriod !== false))) order.push([e, i]); });
+    const order = []; L.forEach((e, i) => { if (e && (!keep || keep(e)) && (e.k === 'hand' || ledPutBack(x, e) || (e.k === 'in' && e.sub === 'pay' && e.startsPeriod !== false))) order.push([e, i]); });
     order.sort((p, q) => (ledDate(p[0]) < ledDate(q[0]) ? -1 : ledDate(p[0]) > ledDate(q[0]) ? 1 : p[1] - q[1]));
-    order.forEach(p => { if (p[0].k === 'hand') handed += Number.isSafeInteger(p[0].c) ? p[0].c : 0; else handed = 0; });
+    order.forEach(p => { const v = Number.isSafeInteger(p[0].c) ? p[0].c : 0; if (p[0].k === 'hand') handed += v; else if (p[0].k === 'transfer') handed = Math.max(0, handed - v); else handed = 0; });
   }
   /* check your bank, per account: the typed balance less that account's events dated on or before the check's day. The check
      shown is the one with the latest day (same day: the one added last), never just the one added last: a statement imported

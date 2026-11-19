@@ -168,7 +168,8 @@ const DOOR = [
       'in>in':   { so: 'between two accounts that count in Total' },
       hand:      { so: 'to your wallet (Wallet mode): handed out to spend', total: -1, place: -1, handed: 1 },
       'in>out':  { so: 'sent into another currency: it now sits beside Total', total: -1, place: -1 },
-      'out>in':  { so: 'brought home from another currency or back from your wallet: it lands in Total at what arrived', total: 1, place: 1 },
+      'out>in':  { so: 'brought home from another currency: it lands in Total at what arrived', total: 1, place: 1 },
+      back:      { so: 'put back from your wallet: it is inside Total again and no longer handed out', total: 1, place: 1, handed: -1 },
       'out>out': { so: 'between two accounts beside Total' },
     } },
   { id: 'saved', side: 'out', label: 'Saved to a burrow', sub: 'saved',
@@ -367,6 +368,7 @@ function doorPlan(S, kindId, ans, today) {
     case 'moved':
       if (acct.cur === to.cur) {
         if (ac === 'in' && tc === 'out') { events.push(E({ k: 'hand', acct: acct.id, acct2: to.id, c, place })); part('hand', c, place); }
+        else if (ac === 'out' && tc === 'in' && acct.tracked === false && to.type !== 'owedToYou') { events.push(E({ k: 'transfer', acct: acct.id, acct2: to.id, c, place })); part('back', c, place); }   /* the opposite of a hand */
         else { events.push(E({ k: 'transfer', acct: acct.id, acct2: to.id, c, place })); part(ac + '>' + tc, c, ac === 'out' && tc === 'in' ? place : null); }
       } else {
         const c2 = doorCents({ amount: ans.landed, cents: ans.landedCents }); if (c2 === null || !(c2 > 0)) return doorNo('ask', 'landed');
@@ -396,6 +398,8 @@ function doorPlan(S, kindId, ans, today) {
 function doorExpect(S, plan) {
   const k = DOOR_BY[plan.kind], mode = (S.ui || {}).freeMode === 'wallet' ? 'wallet' : 'track', sum = { total: 0, free: 0, bills: 0, saved: 0, owed: 0, waiting: 0, lent: 0, handed: 0 };
   plan.parts.forEach(p => { const n = doorWayMoves(p.way === 'beside' ? DOOR_NONE : k.ways[p.way] || {}, p.c, p.place, p.place2, mode); for (const f in sum) sum[f] += n[f]; });
+  /* money put back from the wallet can only take away what was handed out up to that day: handed out never goes below zero */
+  if (sum.handed < 0) sum.handed = -Math.min(-sum.handed, Math.round(doorL.placesOf(S, plan.events[0].date).wallet * 100));
   for (const f in sum) sum[f] = sum[f] / 100;
   return sum;
 }
