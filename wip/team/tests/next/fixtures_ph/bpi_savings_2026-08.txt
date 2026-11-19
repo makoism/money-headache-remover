@@ -1,0 +1,18 @@
+Bank of the Philippine Islands
+Account Statement
+Account name: JUANA P DELA CRUZ
+Account number: 3149-0456-21
+Account type: Regular Savings
+Statement period: Aug 01, 2026 to Aug 31, 2026
+Beginning balance: PHP 15,300.00
+Ending balance: PHP 17,603.48
+Total debits: PHP 3,699.62
+Total credits: PHP 6,003.10
+Date Description Reference Debit Credit Balance
+Aug 31, 2026 Tax Withheld TX260831001 0.62 0.00 17,603.48
+Aug 31, 2026 Interest Earned IN260831001 0.00 3.10 17,604.10
+Aug 29, 2026 ATM Withdrawal Katipunan AT260829090 2,000.00 0.00 17,601.00
+Aug 28, 2026 InstaPay Transfer from GCash IP260828405 0.00 1,000.00 19,601.00
+Aug 12, 2026 Bills Payment PLDT Home BP260812114 1,699.00 0.00 18,601.00
+Aug 10, 2026 Fund Transfer from BDO DELA CRUZ JUANA FT260810778 0.00 5,000.00 20,300.00
+End of statement

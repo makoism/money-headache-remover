@@ -1,0 +1,19 @@
+GCash Transaction History
+JUANA P. DELA CRUZ
+09175550142
+2026-08-20 to 2026-09-15
+Date and Time Description Reference No. Debit Credit Balance
+STARTING BALANCE 1,804.68
+2026-08-21 03:44 PM Received GCash from JO*N R. with account ending in 0199 7012345600071 300.00 2,104.68
+2026-08-25 06:20 PM Payment to Jollibee Katipunan 7012345600089 289.00 1,815.68
+2026-08-25 06:21 PM Payment to Jollibee Katipunan 7012345600090 289.00 1,526.68
+2026-08-25 06:25 PM Reversal of Payment to Jollibee Katipunan 7012345600093 289.00 1,815.68
+2026-08-28 09:00 AM Transfer from 09175550142 to BPI 7012345600104 1,000.00 815.68
+2026-08-30 10:48 PM Payment to Grab Philippines 7012345600117 215.00 600.68
+2026-09-01 08:03 AM Cash-in from BDO Unibank, Inc. 7012345600120 3,000.00 3,600.68
+2026-09-03 01:00 AM Payment to Netflix 7012345600133 549.00 3,051.68
+2026-09-10 04:15 PM Cash Out at Palawan Pawnshop Cubao 7012345600146 1,500.00 1,551.68
+ENDING BALANCE 1,551.68
+Total Debit 3,842.00
+Total Credit 3,589.00
+Page 1 of 1

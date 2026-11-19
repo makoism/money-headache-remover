@@ -1,0 +1,17 @@
+Metrobank Card Corporation
+Statement of Account
+Cardholder Name: JUANA P DELA CRUZ
+Card Number: 4005 12XX XXXX 7788
+Statement Date: January 08, 2026
+Payment Due Date: January 29, 2026
+Previous Statement Balance 10,450.00
+Payments and Credits 4,000.00
+Purchases and Cash Advances 8,808.40
+Fees and Charges 212.15
+Total Amount Due 15,470.55
+Minimum Amount Due 500.00
+Transaction Date Posting Date Description Amount
+Dec 18 Dec 19 PUREGOLD CUBAO QUEZON CITY 3,120.40
+Dec 28 Dec 28 PAYMENT RECEIVED - THANK YOU 4,000.00 CR
+Dec 30 Jan 02 CEBU PACIFIC AIR PASAY 5,688.00
+Jan 04 Jan 05 FINANCE CHARGE 212.15

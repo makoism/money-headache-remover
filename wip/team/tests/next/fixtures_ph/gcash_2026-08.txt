@@ -1,0 +1,22 @@
+GCash Transaction History
+JUANA P. DELA CRUZ
+09175550142
+2026-08-01 to 2026-08-31
+Date and Time Description Reference No. Debit Credit Balance
+STARTING BALANCE 2,250.00
+2026-08-02 08:41 AM Buy Load Transaction for 09175550142 7012345600011 100.00 2,150.00
+2026-08-05 10:12 AM Cash-in from BDO Unibank, Inc. 7012345600025 2,000.00 4,150.00
+2026-08-06 07:30 PM Payment to Meralco 7012345600038 1,845.32 2,304.68
+2026-08-09 12:05 PM Send Money to MA***A S. with account ending in 0188 7012345600044 500.00 1,804.68
+2026-08-12 09:17 PM Payment to Shopee Philippines 7012345600052 699.00 1,105.68
+2026-08-14 11:02 AM Refund from Shopee Philippines 7012345600067 699.00 1,804.68
+2026-08-21 03:44 PM Received GCash from JO*N R. with account ending in 0199 7012345600071 300.00 2,104.68
+2026-08-25 06:20 PM Payment to Jollibee Katipunan 7012345600089 289.00 1,815.68
+2026-08-25 06:21 PM Payment to Jollibee Katipunan 7012345600090 289.00 1,526.68
+2026-08-25 06:25 PM Reversal of Payment to Jollibee Katipunan 7012345600093 289.00 1,815.68
+2026-08-28 09:00 AM Transfer from 09175550142 to BPI 7012345600104 1,000.00 815.68
+2026-08-30 10:48 PM Payment to Grab Philippines 7012345600117 215.00 600.68
+ENDING BALANCE 600.68
+Total Debit 4,937.32
+Total Credit 3,288.00
+Page 1 of 1

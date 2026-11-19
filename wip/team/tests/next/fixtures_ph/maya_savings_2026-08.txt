@@ -1,0 +1,18 @@
+Maya Bank, Inc.
+Maya Savings
+Statement of Account
+Account Name: JUANA P. DELA CRUZ
+Account Number: 8123 4567 8901
+Mobile Number: +63 917 555 0142
+Address: Blk 7 Lot 12 Sampaguita St., Brgy. Malinis, Quezon City 1100
+Statement Period: 01 Aug 2026 - 31 Aug 2026
+Beginning Balance: PHP 10,000.00
+Date Description Reference ID Withdrawal Deposit Balance
+03 Aug 2026 Deposit via InstaPay from UnionBank MYA0803A1B2 4,000.00 14,000.00
+07 Aug 2026 Purchase 7-Eleven Aurora Blvd MYA0807C3D4 156.00 13,844.00
+15 Aug 2026 Interest Earned MYA0815E5F6 20.55 13,864.55
+15 Aug 2026 Withholding Tax MYA0815E5F7 4.11 13,860.44
+20 Aug 2026 Bank Transfer to Metrobank via InstaPay MYA0820G7H8 2,500.00 11,360.44
+Total Withdrawals: PHP 2,660.11
+Total Deposits: PHP 4,020.55
+Ending Balance: PHP 11,360.44

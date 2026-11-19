@@ -1,0 +1,14 @@
+Metropolitan Bank & Trust Company
+Statement of Account
+Account Name JUANA P DELA CRUZ
+Account No. 066-3-06612345-8
+Statement Period 01-Aug-2026 to 31-Aug-2026
+Date Transaction Description Withdrawal Deposit Balance
+Beginning Balance 7,750.25
+21-Aug-2026 INSTAPAY CREDIT FROM MAYA BANK 2,500.00 10,250.25
+24-Aug-2026 CHECK DEPOSIT 6,000.00 16,250.25
+RENTAL INCOME UNIT 3B
+27-Aug-2026 ATM WITHDRAWAL ANONAS 3,000.00 13,250.25
+Total Withdrawals 3,000.00
+Total Deposits 8,500.00
+Ending Balance 13,250.25
