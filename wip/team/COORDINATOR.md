@@ -15,6 +15,9 @@ Coordinator 3 (session_01BFpKEWbWX57dzJueLvseiT) passed the 150k mark at 05:31 U
 - SIDE N3 stopped at side/ledger-core 0992eee: W1 to W5, G1, G2, G4 fixed; all pass by its report. SIDE N4, session_01BFpKEYfRxzbAN7La7p1sYa, does G3, G5, the ledgerUndo opening event point and the doc updates.
 - For Mako's copy pass: "Monthly bills" (the new Plan row name from A11) is a label he has not seen.
 
+- SIDE N4 is done (side/ledger-core d096d72): G3, G5 and the moved-opening undo fixed, tests first; docs updated; LEDGER CORE ALL PASS with no GAP line by its report. It edited five lines of money_door.js (doorApply), accepted. side/ledger-core is the one ledger branch for after v1. Still open, none blocks wiring: undo the adjust when a late statement arrives; history before the first typed balance; a kind shift; ledger_ref migrate3831 takes the plain shape only.
+- MAIN 4: F4 landed (7424a46). Running now: MAIN 4 only. Free slots: persona walk scripts (faster model) next.
+
 ### Usage
 At 05:31 UTC the five-hour window showed a warning (near its limit); it resets at 09:30 UTC. Keep the count low: MAIN 3 always, at most one or two lanes. Every session keeps a resume timer. If the limit stops everything, check after 09:30 UTC that MAIN 3 restarted (new commits on wip-38.31) and message or replace it.
 
