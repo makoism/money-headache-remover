@@ -30,7 +30,7 @@ const L=require('./lib_r12.js');const R=L.R;const w=R.w;
  /* round 2: one tap only arms Guided setup; a closed setup's Undo survives a reload; Restore asks first and its Undo survives a reload */
  await L.settings(p);const armed=await p.evaluate(()=>{const b=document.getElementById('setupOpen');b.click();return [b.textContent,!!document.querySelector('#tour:not([hidden])')];});
  ck(`one tap on Guided setup only asks ("${armed[0].slice(0,60)}")`,/^Tap again/.test(armed[0])&&!armed[1]);
- await p.evaluate(()=>document.getElementById('setupOpen').click());await w(900);await change();await p.evaluate(()=>document.getElementById('tourSkip').click());await w(900);
+ await w(700);await p.evaluate(()=>document.getElementById('setupOpen').click());await w(900);await change();await p.evaluate(()=>document.getElementById('tourSkip').click());await w(900);
  await w(1500);await p.reload();await p.waitForFunction(()=>window.__t&&__t.S&&__t.S.ui&&__t.S.ui.cleared===true,{timeout:15000}).catch(()=>{});await w(1500);
  const bar3=await p.evaluate(()=>{const e=document.getElementById('undoBar');return e&&!e.hidden?document.getElementById('undoTxt').textContent:'(none)';});
  ck(`after setup closed and a reload, Undo is still offered ("${bar3}")`,/Setup changed your plan/.test(bar3));
@@ -40,7 +40,7 @@ const L=require('./lib_r12.js');const R=L.R;const w=R.w;
  await L.settings(p);await p.evaluate(t=>{document.getElementById('bk').value=t;},other);
  const r1=await p.evaluate(()=>{const b=document.getElementById('bkLoad');b.click();return [b.textContent,__t.S.cfg.bankStart];});
  ck(`one tap on Load text only asks ("${r1[0].slice(0,50)}") and changes nothing`,/^Tap again/.test(r1[0])&&r1[1]===2500);
- await p.evaluate(()=>document.getElementById('bkLoad').click());await w(900);
+ await w(700);await p.evaluate(()=>document.getElementById('bkLoad').click());await w(900);
  ck('the second tap loads the copy',await p.evaluate(()=>__t.S.cfg.bankStart)===500000);
  await w(1500);await p.reload();await p.waitForFunction(()=>window.__t&&__t.S&&__t.S.ui,{timeout:15000}).catch(()=>{});await w(1800);
  const bar4=await p.evaluate(()=>{const e=document.getElementById('undoBar');return e&&!e.hidden?document.getElementById('undoTxt').textContent:'(none)';});
