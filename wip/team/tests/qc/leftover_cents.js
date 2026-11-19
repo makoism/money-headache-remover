@@ -12,7 +12,7 @@ await L.tab(p,'tab-month');await L.tab(p,'tab-home');
 const card=()=>p.evaluate(()=>{const e=document.getElementById('hNext');return e&&!e.hidden?e.innerText.replace(/\s+/g,' '):'(none)'});
 const snap=()=>p.evaluate(()=>{const C=__t.calcAll(__t.S);return JSON.stringify(C.months.map(m=>[m.ym,m.bankEnd,Object.values(m.bal).map(x=>x)]))});
 const s0=await snap();const planBefore=await p.evaluate(()=>JSON.stringify([__t.S.once,__t.S.steps,__t.S.plan.lines.map(l=>l.def)]));
-const c0=await card();ck('card shows the exact cents: $212.50',/\$212\.50 of free to spend is not logged/.test(c0)&&/Count \$212\.50 in the bank/.test(c0));
+const c0=await card();ck('card shows the exact cents: $212.50',/\$212\.50 of Free to spend isn't logged/.test(c0)&&/Count \$212\.50 in the bank/.test(c0));
 await p.evaluate(()=>document.querySelector('[data-sweep]').click());await w(600);
 ck('goal move keeps the saved plan untouched (no rounding)',await p.evaluate(()=>JSON.stringify([__t.S.once,__t.S.steps,__t.S.plan.lines.map(l=>l.def)]))===planBefore);
 const bk=await p.evaluate(()=>{const C=__t.calcAll(__t.S);const m=C.byYm['2026-11'];return [m.bankEnd,m.g.trip1.actual+m.g.trip1.up,m.topup&&m.topup.used]});
