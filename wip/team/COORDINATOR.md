@@ -18,6 +18,10 @@ Coordinator 3 (session_01BFpKEWbWX57dzJueLvseiT) passed the 150k mark at 05:31 U
 - SIDE N4 is done (side/ledger-core d096d72): G3, G5 and the moved-opening undo fixed, tests first; docs updated; LEDGER CORE ALL PASS with no GAP line by its report. It edited five lines of money_door.js (doorApply), accepted. side/ledger-core is the one ledger branch for after v1. Still open, none blocks wiring: undo the adjust when a late statement arrives; history before the first typed balance; a kind shift; ledger_ref migrate3831 takes the plain shape only.
 - MAIN 4: F4 landed (7424a46). Running now: MAIN 4 only. Free slots: persona walk scripts (faster model) next.
 
+- SIDE S is done (side/persona-walks 77b2d02, faster model, docs only): PERSONA_WALKS.md, 7 walks, 63 v1 tasks and 40 team tasks, a brief at the top; PERSONAS_PH.md corrected (paying a card lowers Total). Its note that the v1 screens were missing was wrong (checked: src/ui6.js, ui7.js). The Mako-shaped walk ("Lito") runs in the v1 QC round.
+- MAIN 4 handed off at 7895733 after 20 minutes (size): F4, wallet.xlsx, welcome screen steps, H1 walk done (11 groups in RESUME; worst: two bank numbers on Home after Check your bank), copy tables in the branch and checked (454 rows apply), privacy rows rewritten. tests/page_import.js and page_assistant.js cannot run here (no wrangler; install refused; not in check.sh). MAIN 5 is session_01BFpKEWWxvkJabWSHhA7nC3: H1 fixes, 13 error rows, QC briefs, the copy batch, check.sh full, candidate, QC run, preview. It was told to protect its size (helpers, short reports, hand off before QC if near 120k). MAIN 4 may still land one screen_pack.js commit.
+- Running now: MAIN 5 only.
+
 ### Usage
 At 05:31 UTC the five-hour window showed a warning (near its limit); it resets at 09:30 UTC. Keep the count low: MAIN 3 always, at most one or two lanes. Every session keeps a resume timer. If the limit stops everything, check after 09:30 UTC that MAIN 3 restarted (new commits on wip-38.31) and message or replace it.
 
