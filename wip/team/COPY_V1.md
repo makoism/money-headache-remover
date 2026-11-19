@@ -4,13 +4,15 @@ Voice lane (SIDE M2), 2026-11-19. Every row is one string a person sees, as it i
 
 **Listed against** `origin/wip-38.31` at 20538e3 (setup, Plan, Receipts and messages were listed at b5c51e3 and still apply at 20538e3).
 
-**Rows:** 275. Per file: body.html 14, model.js 6, stmt.js 3, ui0.js 1, ui1.js 24, ui2.js 20, ui4.js 8, ui45.js 21, ui45c.js 20, ui45s.js 44, ui45u.js 20, ui45x.js 13, ui6.js 36, ui7.js 22, ui8.js 23.
+**Rows:** 274. Per file: body.html 14, model.js 6, stmt.js 3, ui0.js 1, ui1.js 24, ui2.js 20, ui4.js 8, ui45.js 21, ui45c.js 20, ui45s.js 44, ui45u.js 20, ui45x.js 13, ui6.js 36, ui7.js 22, ui8.js 22.
 
 **What is in:** setup, Plan, Receipts, Help text in body.html, Home and More, messages and errors in model.js, stmt.js and ui0.js. Sentences, hints, notes, errors, toasts, aria-label and placeholder text.
 
 **What is not in yet (waits for the coordinator's word):** Settings, and every string about saving, the cloud copy, the recovery code, backup, restore and data that could be lost. They are listed as LATE in the notes at the end. Also not in: ui5.js, ui42.js, ui43.js, ui41.js, ui47.js, ui48.js, ui49.js, ui4b.js, ui44.js, ui3.js (Settings, saving and dialogs that belong to them), and the files that are art, prompts sent to Claude or his video transcript.
 
 **What a row never changes:** a button word, a label, a tab, a glossary word, a number, a date, a `${...}`, an HTML tag. Strings that already pass have no row. About 1,150 of the 1,430 strings looked at are labels, buttons or lines that pass.
+
+**Checked by a fresh voice checker (SIDE M3, 2026-11-19):** three qc-voice agents that had not seen the lines read all 275 new lines with only VOICE.md and NORTH_STAR.md. 38 failed (2 for sounding like AI, 20 for not sounding like Mako, 21 for not saying what to do next, some on two counts). 32 rows were rewritten here. 6 were kept because the text right next to them on the screen answers the finding: A-009 (the first sentence a new person reads, plain words before the name Free to spend is taught), E-036 (a toast, the old amount staying is the outcome), F-011 and F-030 (the next sentence in the same place says what to do), C-049 ("ceiling" is the label's own word, listed for Mako), D-007 (the numbered steps under it name the buttons). The row for "Every coin has a home." was taken out: it stays as it is and is flagged for Mako below.
 
 ## How to apply
 
@@ -107,8 +109,8 @@ The lines that would put Mako off most, worst first. They are ordinary rows and 
 # WORST: two "keeps" sentences that teach a lesson
 @@ E-018 | ui6.js | AI: yes A9 unlocks | Mako: no B2 | Next: no
 - Add a burrow to see what it unlocks and when.
-+ Add a burrow to see what you're saving for and when you'll get there
-# WORST: "unlocks" is the lint's one strong word in this file. UNSURE: I can't tell from the string what a burrow unlocks on this card, so the new line says what a burrow shows. If it really unlocks art, say what
++ Add a burrow to see what each month adds and when it's full
+# WORST: "unlocks" is the lint's one strong word in this file. M3 read the code: with a burrow this card shows what the month adds and when it is full, the same words as the line next to it (E-017)
 @@ A-009 | ui45.js | AI: no | Mako: no B2 B13 | Next: yes
 - Put in your pay and bills. The burrow shows how much is really free to spend, and saves toward the things you want.
 + Put in your pay and bills and the burrow shows you how much is really free to spend and saves up for the things you want.
@@ -127,11 +129,11 @@ The lines that would put Mako off most, worst first. They are ordinary rows and 
 # WORST: semicolon between two amounts
 @@ C-012 | ui1.js | AI: no | Mako: no B2 C | Next: no
 - Usual advice: three to six months of necessities. The goal amount above is the first stop; this is the larger one.
-+ Three to six months of Bills and basics is the usual amount. The goal amount above is the first stop and this is the bigger one after it.
++ The usual amount is three to six months of Bills and basics, so the goal amount above is your first stop and this is the bigger one after it.
 # WORST: "necessities" is a retired word, plus a semicolon and a colon reveal
 @@ C-038 | ui2.js | AI: no | Mako: no B2 C | Next: no
 - Each slider sets that goal’s amount this month. Leave them alone to use the computed amounts (from goal amounts and dates). Up takes from Left; down returns to Left.
-+ Each slider sets that goal’s amount for this month. If you leave them alone the amounts are worked out from each goal’s amount and date. Sliding up takes from Left and sliding down gives it back.
++ Each slider sets what goes into that goal this month, so sliding up takes from Left and sliding down gives it back. If you leave them alone the amounts are worked out from each goal’s amount and date.
 # WORST: brackets, a semicolon and "computed" in one hint
 ```
 
@@ -144,7 +146,7 @@ The lines that would put Mako off most, worst first. They are ordinary rows and 
 # "income" is a retired word, the glossary word is pay. UNSURE: Plan has a "Money in" part, so "add more pay" may not be the word on that screen
 @@ A-004 | ui45.js | AI: no | Mako: no B13 | Next: yes
 - Nothing is free to spend in the plan. Raise the Free to spend line under Plan.
-+ Nothing is free to spend in the plan, so raise the Free to spend line under Plan.
++ There's nothing in Free to spend in the plan, so raise the Free to spend line under Plan.
 @@ A-005 | ui45.js | AI: no | Mako: no A13 | Next: yes
 - </b> of pay is not placed yet: raise a goal or add to free to spend.
 + </b> of pay is not placed yet, so raise a goal or add to Free to spend.
@@ -170,7 +172,7 @@ The lines that would put Mako off most, worst first. They are ordinary rows and 
 + The first setup is short, just pay, rent, food and one goal.
 @@ A-015 | ui45.js | AI: no | Mako: no A13 B2 | Next: yes
 - Receipts keeps this true: log what you spend, or upload each month's statement. What is left of Free to spend at month end can go toward a goal. Help, bottom right, has the video and this setup.
-+ To keep this true you log what you spend in Receipts or upload each month's statement. Whatever is left of Free to spend at month end can go into a goal. Help at the bottom right has the video and this setup.
++ To keep this true you log what you spend in Receipts or upload each month's statement, and whatever is left of Free to spend at the end of the month can go into a goal. Help at the bottom right has the video and this setup.
 # UNSURE: "keeps this true" is the team's phrase, not checked against how he'd say it
 @@ A-016 | ui45.js | AI: no | Mako: no B14 B13 | Next: yes
 - Pay skipped. Everything is zero until you add numbers.
@@ -202,7 +204,7 @@ The lines that would put Mako off most, worst first. They are ordinary rows and 
 + After the upload the check screen has Add a line, so put it there, or add it later on the Plan tab if it comes every month. If it's a one-off, go to Receipts and tap Log spend.
 @@ A-025 | ui45c.js | AI: no | Mako: no B13 B3 | Next: yes
 - The check screen shows every shop with its category. Tap one and pick another. The app remembers it, so next month it is already right.
-+ The check screen shows every shop with its category, so you tap the wrong one and pick another. The app remembers it and next month it's already right.
++ The check screen shows every shop with its category, and if one's wrong you tap it and pick another. The app remembers and next month it's already right.
 @@ A-026 | ui45c.js | AI: no | Mako: no B3 | Next: yes
 - The files are sent once to Claude to be read and this app does not keep them. Only the numbers stay, in this browser. Nobody else can see them, Mako included.
 + The files are sent to Claude once to be read and this app doesn't keep them. Only the numbers stay, and they stay in this browser where nobody else can see them, Mako included.
@@ -243,7 +245,7 @@ The lines that would put Mako off most, worst first. They are ordinary rows and 
 # clear wins (Part D 10): "sent once to Claude, an AI" and "The files aren't kept" stay as plain statements
 @@ A-038 | ui45c.js | AI: yes A13 | Mako: no B13 | Next: yes
 - How it is sorted: every shop and payee gets a category, like rent, food, transport, subscriptions or play. The next screen shows every number and category before anything is used. Tap one to change it, and the app remembers your choice for next month.
-+ Every shop and payee gets a category, like rent, food, transport, subscriptions or play. The next screen shows you every number and category before anything is used, and if one is wrong you tap it to change it and the app remembers for next month.
++ Every shop and person you pay gets a category, like rent, food, transport, subscriptions or play. The next screen shows you every number and category before anything is used, and if one is wrong you tap it to change it and the app remembers for next month.
 @@ A-039 | ui45c.js | AI: no | Mako: no B5 | Next: yes
 - Any questions before you start? Tap one below or type your own.
 + Questions before you start? Tap one or type your own.
@@ -274,7 +276,8 @@ The lines that would put Mako off most, worst first. They are ordinary rows and 
 # this old string is in the file once only after A-045 has been applied, so keep the two rows in this order
 @@ A-047 | ui45u.js | AI: no | Mako: no B14 | Next: no, it read like a label
 - files at a time.
-+ files at a time is the most.
++ files at a time is the most, so add the rest after these
+# the fresh check (M3): an error has to say what to do. UNSURE: check that more files can be added after the first ones are read
 @@ A-048 | ui45u.js | AI: no | Mako: no B4 | Next: yes
 - Statements of this account go here.
 + Put this account's statements here
@@ -286,12 +289,12 @@ The lines that would put Mako off most, worst first. They are ordinary rows and 
 + If a PDF asks for a password, like the ones GCash sends, open it with the password first and then save or print it as a new PDF, or take screenshots of it.
 @@ A-051 | ui45u.js | AI: no | Mako: no C brackets B14 | Next: yes
 - Credit cards: the last statement (CSV or screenshots). Cash spending: add it on the review screen.
-+ For credit cards use the last statement, as CSV or screenshots. Cash spending you add on the review screen.
-# UNSURE: this says "review screen", the setup chat says "check screen" for what looks like the same screen. Two names for one thing, not renamed here
++ For credit cards use the last statement as CSV or screenshots, and cash spending you add on the check screen.
+# the fresh check (M3): "review screen" was a second name for the check screen, so this now says check screen like the setup chat. For the main session: say if they are two screens
 @@ A-052 | ui45u.js | AI: yes A5 A4 | Mako: no B13 | Next: yes
 - Nothing is stored. Files go to Claude once, the numbers come back, the files are forgotten.
-+ Nothing is stored - your files go to Claude once, the numbers come back and the files aren't kept.
-# clear wins (Part D 10): "forgotten" became "aren't kept", the same words the setup chat uses
++ Your files go to Claude once and the numbers come back - the files aren't kept
+# clear wins (Part D 10). The fresh check (M3): "Nothing is stored" read as untrue next to "the numbers stay in this browser", so the line now only says what happens to the files. For the main session: a privacy line, check it
 @@ A-053 | ui45u.js | AI: no | Mako: no A13 B13 | Next: yes
 - One box per account: your bank, each card, each wallet. Name each the way you say it, and the app will too. Put in the last 2 or 3 months of each: PDF, CSV or Excel exports, or screenshots of the transaction list. The numbers come out exact, and your history fills in.
 + There's one box per account, so your bank, each card and each wallet. Name each one the way you say it and the app will call it that too. Put in the last 2 or 3 months of each as PDF, CSV or Excel exports or screenshots of the transaction list, and the numbers come out exact and your history fills in.
@@ -407,7 +410,7 @@ The lines that would put Mako off most, worst first. They are ordinary rows and 
 + Money for surprises, and you can borrow from it in a short month. The usual advice is three to six months of bills.
 @@ B-026 | ui45s.js | AI: no | Mako: no retired word | Next: yes
 - A cushion for surprises. How much do you want to hold? Usual advice: three to six months of bills.
-+ Money for surprises. How much do you want to hold? The usual advice is three to six months of bills.
++ Money for surprises, and the usual advice is to hold three to six months of bills. How much do you want to hold?
 # clear wins: kept "hold" because the field under it is called "How much to hold"
 @@ B-027 | ui45s.js | AI: no | Mako: no A5 B14 | Next: yes
 - Name, cost, a date if there is one, and the reason in your words.
@@ -476,14 +479,15 @@ The lines that would put Mako off most, worst first. They are ordinary rows and 
 + can only take what's not placed yet and right now nothing is, so lower another one first.
 @@ B-050 | ui45x.js | AI: no | Mako: no C colon | Next: yes
 - : all that was not placed yet. To go further, lower another one.
-+ , which is all that was not placed yet. To go further lower another one.
++ , which is all that was not placed yet, so lower another one if you want to go further.
 # reads after a name and a percent: "Giving +5%, which is all that was not placed yet"
 @@ B-051 | ui45x.js | AI: yes A13 | Mako: no semicolon | Next: yes
 - Lower one and the difference waits as not placed yet; raise one and it takes from there.
 + Lower one and the difference waits as not placed yet, raise one and it takes from there.
 @@ B-052 | ui45x.js | AI: yes A5 | Mako: no B13 | Next: n/a
 - Bills and essentials. Paid first.
-+ Bills and essentials, paid first
++ Your bills, paid first
+# the fresh check (M3): "Bills and essentials" was a second name for Bills and basics. The line sits under the place's own name so it doesn't say the name again
 @@ B-053 | ui45x.js | AI: no | Mako: no C full stop | Next: n/a
 - Saved now, spent later.
 + Saved now, spent later
@@ -510,7 +514,8 @@ The lines that would put Mako off most, worst first. They are ordinary rows and 
 # "benefits" dropped as the third example (A4). UNSURE: someone on benefits may look for the word
 @@ C-003 | ui1.js | AI: yes A2 | Mako: no B2 B13 | Next: yes
 - Optional. Freelance, gig or cash work that changes month to month. Enter the lowest month you expect, so the plan still works in a slow one. Extra that comes in is a bonus.
-+ Only if you have it. This is freelance, gig or cash work that changes month to month, so put in the lowest month you expect and the plan still works in a slow one - anything extra is a bonus
++ Only if you have it. This is freelance, gig or cash work that changes month to month, so put in the lowest month you expect and the plan still works in a slow one
+# the fresh check (M3): "anything extra is a bonus" was a neat closer (A2), cut
 @@ C-004 | ui1.js | AI: no | Mako: no C | Next: yes
 - Rent, food, utilities, every other monthly bill.
 + Rent, food, utilities and every other monthly bill
@@ -535,7 +540,7 @@ The lines that would put Mako off most, worst first. They are ordinary rows and 
 + Gifts and donations
 @@ C-011 | ui1.js | AI: no | Mako: no B13 | Next: yes
 - The one goal you can borrow from in a short month. A finished payment can send its money here.
-+ This is the one goal you can borrow from when a month comes up short, and a payment that ends can send its money here
++ This is the one goal you can borrow from when a month comes up short, and when one of your monthly payments ends its money can come here
 @@ C-013 | ui1.js | AI: no | Mako: no B2 | Next: yes
 - Monthly amount is computed. To change it, open Burrows under Plan.
 + The monthly amount is worked out for you. To change it open Burrows under Plan.
@@ -551,7 +556,7 @@ The lines that would put Mako off most, worst first. They are ordinary rows and 
 + No burrows yet - add one below
 @@ C-017 | ui1.js | AI: no | Mako: no B14 | Next: yes
 - Limit: ${MAX_GOALS} burrows.
-+ You can have ${MAX_GOALS} burrows at most
++ You can have ${MAX_GOALS} burrows at most, so remove one to add another
 @@ C-018 | ui1.js | AI: no | Mako: no B2 | Next: yes
 - Enter a category name.
 + Type a name for the category
@@ -560,7 +565,7 @@ The lines that would put Mako off most, worst first. They are ordinary rows and 
 + You already have that name, pick it from the list
 @@ C-020 | ui1.js | AI: no | Mako: no B14 | Next: yes
 - Limit: ${MAX_LINES} categories.
-+ You can have ${MAX_LINES} categories at most
++ You can have ${MAX_LINES} categories at most, so remove one to add another
 @@ C-021 | ui1.js | AI: yes A13 | Mako: no B13 | Next: yes
 - No monthly amount yet: set one in Plan to compare.
 + It has no monthly amount yet, so set one in Plan to compare.
@@ -601,10 +606,10 @@ The lines that would put Mako off most, worst first. They are ordinary rows and 
 # WORST: "cushion" is a retired word. UNSURE: "leave it where it is" says less than cushion did
 @@ C-045 | ui2.js | AI: no | Mako: no B14 | Next: yes
 - Month spends ${fmt2(PC.overPay)} more than your pay
-+ This month spends ${fmt2(PC.overPay)} more than your pay
++ This month you spend ${fmt2(PC.overPay)} more than your pay
 @@ C-046 | ui2.js | AI: no | Mako: no B14 C | Next: yes
 - . Balance covers it and ends at ${fmt2(m.bankEnd)}, at or above the ${fmt2(floor)} minimum balance (change it in Settings).
-+ . Your balance covers it and ends at ${fmt2(m.bankEnd)}, which is at or above your ${fmt2(floor)} minimum balance. You can change that in Settings.
++ . Your balance covers it and ends at ${fmt2(m.bankEnd)}, so it doesn't go under your ${fmt2(floor)} minimum balance. You can change that in Settings.
 # brackets out, the side note gets its own sentence
 @@ C-047 | ui2.js | AI: no | Mako: no C | Next: yes
 - under the ${fmt2(floor)} minimum balance (change it in Settings).
@@ -674,7 +679,7 @@ The lines that would put Mako off most, worst first. They are ordinary rows and 
 # clear wins: says what is sent and that nothing is added without the person, kept exact.
 @@ D-005 | body.html | AI: no | Mako: no C B13 | Next: yes
 - One receipt per photo, flat, well lit. A bank CSV, Excel or PDF statement lists a whole month. Files go to Claude on Read; this page keeps none.
-+ One receipt per photo, flat and well lit. A bank statement as a CSV, Excel or PDF file covers a whole month. When you tap Read the files go to Claude and this page keeps none of them.
++ One receipt per photo, flat and well lit. A bank statement as a CSV, Excel or PDF file covers a whole month. When you tap Read, the files go to Claude and this page keeps none of them.
 # WORST: semicolon and clipped words in the line that says where the files go. clear wins: the privacy sentence stays a sentence of its own.
 @@ D-007 | body.html | AI: no | Mako: no B3 B13 | Next: yes
 - An alternative to the buttons above, with the same result. If you would rather not send receipts through this page, or you like ChatGPT, Gemini or the Claude app better: copy one message, paste it into that AI with the photos, and paste its reply back here. It is checked and listed for review the same way.
@@ -686,25 +691,26 @@ The lines that would put Mako off most, worst first. They are ordinary rows and 
 # A numbered step between two that end in a full stop, so it keeps its own.
 @@ D-009 | body.html | AI: no | Mako: no C | Next: yes
 - Google Calendar and Apple Calendar (the downloaded file) repeat on their own. Outlook, Microsoft 365 and Yahoo open once: set Repeat there.
-+ Google Calendar and Apple Calendar, which uses the downloaded file, repeat on their own. Outlook, Microsoft 365 and Yahoo only add it once, so set Repeat in there yourself.
++ Google Calendar and Apple Calendar repeat it on their own, and Apple Calendar uses the downloaded file. Outlook, Microsoft 365 and Yahoo only add it once, so set Repeat in there yourself.
 # UNSURE: I read "open once" as "the event is added one time". If it means something else this row is wrong.
 @@ D-010 | body.html | AI: no | Mako: no B13 | Next: yes
 - Hold the receipt flat in the frame, then take the photo. Take as many as you need.
 + Hold the receipt flat in the frame and take the photo, you can take as many as you need.
 @@ D-011 | body.html | AI: no | Mako: no B13 | Next: yes
 - Tap the cover to start. Browsers need a tap on the player itself.
-+ Tap the cover to start it - browsers need a tap on the player itself
++ Tap the cover to start the video
 @@ D-012 | body.html | AI: no | Mako: no B2 B13 | Next: yes
 - It names the version, the device and the last errors. It holds none of your numbers.
 + It has the version, your device and the last errors in it, and none of your numbers.
 # clear wins: what is in the report and what is not, both kept.
 @@ D-013 | body.html | AI: no | Mako: no C B14 | Next: yes
 - Runs on your Claude account; you approve access first. Only what you type is sent, plus the numbers if ticked.
-+ This runs on your Claude account and you approve access first. Only what you type is sent, plus your numbers if you tick the box.
++ This runs on your Claude account and you approve access first. Only what you type is sent to Claude, plus your numbers if you tick the box.
 # WORST: a semicolon and dropped words in a privacy line. clear wins: "Only what you type is sent" unchanged.
 @@ D-014 | body.html | AI: no | Mako: no B14 | Next: yes
 - Chat runs on Claude. For another AI, copy your question with a short page guide and paste it there.
-+ The chat runs on Claude. To use another AI, copy your question with a short guide to the page and paste it in there.
++ The chat runs on Claude. To use another AI tap Copy question and paste it in there, a short guide to the page gets copied with it.
+# the fresh check (M3): the button under this line is Copy question, now named
 @@ D-015 | model.js | AI: yes A13 A2 | Mako: no B1 | Next: yes
 - Saved now, spent later: a big purchase, a trip, a rainy day, a surprise. Your burrows live here.
 + Money you save now and spend later, on a big purchase, a trip or a surprise. Your burrows are in here.
@@ -721,7 +727,7 @@ The lines that would put Mako off most, worst first. They are ordinary rows and 
 # "include your own SSS, PhilHealth and Pag-IBIG payments" is kept letter for letter: ui0.js swaps that exact piece for other countries.
 @@ D-020 | model.js | AI: no | Mako: no C | Next: yes
 - Pick the last payment month; its money can then move to your emergency fund.
-+ Pick the month of the last payment, and after that its money can move to your emergency fund.
++ Pick the month of the last payment, and after that its money can move to your Emergency fund.
 @@ D-021 | stmt.js | AI: no | Mako: no (retired word "income") | Next: yes
 - regular income?
 + money that comes in every month?
@@ -747,7 +753,7 @@ The lines that would put Mako off most, worst first. They are ordinary rows and 
 # WORST: the example line in VOICE.md Part C, first thing on Home
 @@ E-003 | ui6.js | AI: no | Mako: no B13, retired word cushion | Next: yes
 - of your pay has no place yet. Bills are covered. Give it a goal or a place, or keep it as a cushion.
-+ of your pay has no place yet and your bills are covered, so give it a goal or a place or just leave it in the bank.
++ of your pay is not placed yet and your bills are covered, so give it a goal or a place or just leave it in the bank.
 # WORST: "cushion" is a retired word. clear wins: kept the full stop because another sentence can follow it. UNSURE: "leave it in the bank" for "keep it as a cushion"
 @@ E-004 | ui6.js | AI: no | Mako: no B13 | Next: yes
 - Bills use all of your pay. Nothing is set aside yet.
@@ -757,10 +763,10 @@ The lines that would put Mako off most, worst first. They are ordinary rows and 
 + Nothing logged this week yet, log by Sunday
 @@ E-006 | ui6.js | AI: no | Mako: no B3 | Next: n/a
 - of free to spend is not logged as spent
-+ of free to spend isn't logged as spent
++ of Free to spend isn't logged as spent
 @@ E-007 | ui6.js | AI: no | Mako: no B3 | Next: yes
 - Your bank figure does not include it yet.
-+ Your bank figure doesn't include it yet.
++ Your bank balance doesn't include it yet.
 @@ E-008 | ui6.js | AI: no | Mako: no B3 | Next: yes
 - so this may be spending you have not logged yet.
 + so this may be spending you haven't logged yet.
@@ -779,7 +785,7 @@ The lines that would put Mako off most, worst first. They are ordinary rows and 
 + Utilities, internet, phone and transport - rough numbers are fine
 @@ E-014 | ui6.js | AI: no | Mako: no B14 | Next: yes
 - Streak: ${s.n} wk. Log by Sunday.
-+ Streak: week ${s.n}. Log by Sunday.
++ Streak: week ${s.n}, log by Sunday.
 # UNSURE: "wk" spelled out as "week 3" so it reads right for 1 too, the same shape as the toast "Streak: week 1". It can be followed by "Last day." so the full stop stays
 @@ E-015 | ui6.js | AI: no | Mako: no B13 | Next: yes
 - No streak. Log one receipt this week to start.
@@ -935,10 +941,6 @@ The lines that would put Mako off most, worst first. They are ordinary rows and 
 - of your pay has no goal yet and stays in the bank.
 + of your pay is not placed yet and stays in the bank.
 # glossary: the bar above calls this money "Not placed yet". "is not" spelled out so the glossary words stay exact
-@@ F-024 | ui8.js | AI: yes A2 | Mako: no B10 | Next: n/a
-- Every coin has a home.
-+ All of your pay has a place.
-# UNSURE: the last line of the Pay day animation. The old one is a slogan, the new one says the same thing with the glossary word "place". Also read out as an aria-label so the full stop stays
 @@ F-025 | body.html | AI: no | Mako: no B3 | Next: n/a
 - How you are doing
 + How you're doing
@@ -964,8 +966,8 @@ The lines that would put Mako off most, worst first. They are ordinary rows and 
 + Nothing here yet - add a card or loan to see when each is paid off and how much interest it costs
 @@ F-032 | ui7.js | AI: no | Mako: no B14 clipped | Next: no
 - Limit: ${MAX_DEBTS}.
-+ You can have ${MAX_DEBTS} at most
-# UNSURE: shows when the list is full. The old line doesn't say a limit of what
++ You can have ${MAX_DEBTS} cards and loans at most, so remove one to add another
+# shows when the list is full. The old line didn't say a limit of what
 @@ F-033 | ui7.js | AI: no | Mako: no B13 | Next: yes
 - Cards and loans with interest. Their payments are part of Bills and basics.
 + Cards and loans with interest, and their payments are part of Bills and basics
@@ -981,11 +983,12 @@ The lines that would put Mako off most, worst first. They are ordinary rows and 
 # an error under the form, now it says what to do
 @@ F-038 | ui7.js | AI: yes A4 A5 | Mako: no B13 B3 | Next: yes
 - A bonus, a 13th month pay, a refund, a good freelance month. It is added to ${esc(monthLabel(XM.ym))} only.
-+ A bonus, a 13th month pay, a refund or a good freelance month - it's only added to ${esc(monthLabel(XM.ym))}
-# WORST: four fragments in a row then a stiff line. All four examples kept, they are real cases
++ Like a bonus or a 13th month pay - it's only added to ${esc(monthLabel(XM.ym))}
+# WORST: four fragments in a row then a stiff line. The fresh check (M3): four examples was a list for effect (A4), now two
 @@ F-039 | ui7.js | AI: no | Mako: no C toast, B13 | Next: n/a
 - Added. The rest stays in the balance.
-+ Added and the rest stays in the balance
++ Added and the rest stays in your bank
+# the fresh check (M3): "the balance" didn't say which money. The code calls it toBank
 @@ F-040 | ui7.js | AI: no | Mako: no B13 B3 | Next: yes
 - The plan works in months. Say how often you are paid and how much each time.
 + The plan works in months, so say how often you're paid and how much each time
@@ -1003,8 +1006,8 @@ The lines that would put Mako off most, worst first. They are ordinary rows and 
 + Repeating, and today's was logged
 @@ F-045 | ui7.js | AI: yes A2 | Mako: no B13 | Next: yes
 - Money you invest and never spend. It only grows.
-+ Money you invest and never spend, so it only grows
-# WORST: "It only grows." is the neat closer
++ Money you invest and don't spend
+# WORST: "It only grows." is the neat closer. The fresh check (M3): "it only grows" also reads as a promise that investments never go down, so it is out
 @@ F-046 | ui7.js | AI: no | Mako: no B3 | Next: yes
 - What you log here comes out of the pile, and it does not touch your monthly bills.
 + What you log here comes out of the pile and doesn't touch your monthly bills.
@@ -1136,6 +1139,10 @@ None in ui6.js as sentences. Line 212 only checks backupDue() in code. The backu
 - ui7.js 84: {name} was removed.
 - ui7.js 84: {name} removed. You can undo for {KEEP_DAYS} days.
 - body.html 32: aria-label "Backup" (a label, passes anyway)
+
+#### For Mako: one line kept on purpose
+
+- ui8.js, the last line of the Pay day animation: "Every coin has a home." By the guide it is a slogan (A2), but it may be a line he likes, so it has no row. The plain version would be "All of your pay has a place."
 
 #### Words left alone that the parent should list for Mako or the main session
 
