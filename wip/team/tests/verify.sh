@@ -13,6 +13,7 @@ say "independent oracle (a second calculation written apart from the app)"; OUT=
 say "model fuzz"; OUT=$(node tests/qc/fuzz_model.js ${FUZZ_N:-800} 11 2>&1); echo "$OUT" | grep "^FAIL" | head -5 | cut -c1-220; echo "$OUT" | tail -1; echo "$OUT" | grep -q "FUZZ PASS" || BAD=1
 OUT=$(node tests/qc/fuzz_debts.js ${FUZZ_N:-800} 12 2>&1); echo "$OUT" | tail -1; echo "$OUT" | grep -q "DEBTS FUZZ PASS" || BAD=1
 if [ -f tests/qc/proof_fuzz.js ]; then say "the proof: money is conserved"; OUT=$(node tests/qc/proof_fuzz.js ${PROOF_N:-600} 21 2>&1); echo "$OUT" | grep "^FAIL" | head -6 | cut -c1-260; echo "$OUT" | tail -1; echo "$OUT" | grep -q "PROOF PASS" || BAD=1; fi
+say "launch checklist v1 points on the model"; OUT=$(node tests/qc/v1_model.js 2>&1); echo "$OUT" | grep "^FAIL" | head -6; echo "$OUT" | tail -1; echo "$OUT" | grep -q "V1 MODEL PASS" || BAD=1
 say "screens do no money maths"; OUT=$(node tests/qc/display_math.js 2>&1); echo "$OUT" | tail -2
 MAX=$(cat tests/qc/display_math.max 2>/dev/null || echo 0); N=$(echo "$OUT" | grep -o "screen maths: [0-9]*" | grep -o "[0-9]*$")
 if [ "${N:-999}" -gt "$MAX" ]; then echo "SCREEN MATHS WENT UP: $N open, the limit is $MAX (tests/qc/display_math.max). Move the sum into model.js."; BAD=1; else echo "within the limit ($N of $MAX). The limit only ever goes down; the goal is 0."; fi

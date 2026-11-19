@@ -74,11 +74,15 @@ async function vaultCheck() {
 async function vaultApply(k, srv) {
   const d = JSON.parse(await vaultDecrypt(k, srv.blob, srv.iv));
   if (!okBackup(d)) throw new Error('bad');
-  const old = S; S = upgradeLegacy(normalize(d)); S.ui = Object.assign({}, S.ui, { sampleHidden: true }); if (!Array.isArray(d.receipts)) S.receipts = old.receipts;
+  /* the numbers on this device are kept as a local copy, with Undo, before the cloud copy replaces them (LAUNCH_CHECKLIST E1): the device
+     clock decides "newer", so the copy loaded can be the wrong one */
+  const old = S, oldSnap = snapNoCopy(); S = upgradeLegacy(normalize(d)); S.ui = Object.assign({}, S.ui, { sampleHidden: true }); if (!Array.isArray(d.receipts)) S.receipts = old.receipts;
   S.rev = srv.rev; vault.rev = srv.rev; vaultNote = null;
+  keepCopy(oldSnap, 'The cloud copy replaced the numbers on this device.');
   editRow = null; editGoal = null; editRc = null; itemsSig = '';
   if (tourIsOpen) closeTour(false); else { flush(); restructure(); }
   S.ui.bk = Date.now(); delete S.ui.bkLater;
+  if (window.offerUndoG) window.offerUndoG(oldSnap, `Cloud copy loaded. Your numbers from before are kept: you can undo for ${KEEP_DAYS} days.`);
 }
 async function vaultLoadNewer() {
   if (!vaultNote || vaultNote.kind !== 'newer') return;
@@ -150,3 +154,5 @@ function wireVault() {
   $('#vaultUse').addEventListener('click', async () => { const ok = await vaultRestore($('#vaultIn').value, $('#vaultMsg')); if (ok) { $('#vaultIn').value = ''; paintVault(); } });
   $('#vaultIn').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('#vaultUse').click(); } });
 }
+/* test hook (only with ?sfxtest): the cloud copy functions, so a test can apply a made-up record without reaching the cloud */
+if (/[?&]sfxtest\b/.test(location.search)) window.__vault = { keysFor, vaultEncrypt, vaultApply };

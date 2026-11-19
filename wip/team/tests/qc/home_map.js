@@ -43,7 +43,9 @@ const monShort = ym => MON[+ym.slice(5) - 1], monLong = ym => monShort(ym) + ' '
       const nums = [...el.querySelectorAll('.mp-nums .mp-n')].map(li => [li.querySelector('.mp-l').textContent.trim(), li.querySelector('b').textContent.trim()]);
       const pr = el.querySelector('.mp-proof'); return { nums, proof: pr ? pr.textContent.replace(/\s+/g, ' ').trim() : '', bad: !!el.querySelector('.mp-bad'), text: el.innerText.replace(/\s+/g, ' ') }; });
     eq(tag + ' page errors', errs.join(' | '), '');
-    if (!T) { checks++; fails.push(tag + ' the map is not on Home'); await b.close(); continue; }
+    /* Home draws the map only for a month with money coming in (ui8.js renderMap): a month with no pay and nothing borrowed shows no map by design */
+    if (!T) { checks++; if (V.month.inflow > 0) fails.push(tag + ' the map is not on Home (money in ' + V.month.inflow + ')'); await b.close(); continue; }
+    checks++; if (!(V.month.inflow > 0)) fails.push(tag + ' the map shows for a month with no money in');
     const O = require('/tmp/v25/oracle.js').oracle(S), r = O.rows.find(x => x.ym === ym), MP = V.map;
     const val = s => { const neg = /^[−-]/.test(s), n = +String(s).replace(/[^0-9.]/g, ''); return Math.round((neg ? -n : n) * 100); };
     /* 1. the bank, against the independent recount */

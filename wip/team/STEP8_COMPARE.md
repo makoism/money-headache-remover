@@ -1,6 +1,6 @@
 # What changes for someone already using 38.28 (for Mako, before any deploy)
 
-Written 2026-11-18 for PLAN step 8. Made-up numbers only. Run it yourself: `node tests/qc/compare_3828.js` from `wip/team`.
+Written 2026-11-18 for PLAN step 8; run again 2026-11-19 on the v1 candidate (same result: every bank difference is spending past the plan, to the yen). Made-up numbers only. Run it yourself: `node tests/qc/compare_3828.js` from `wip/team`.
 
 ## How it was checked
 
@@ -30,6 +30,10 @@ The explanation is recounted from the plain rule in the test file, not with 38.3
 - If last month's Free to spend was not all logged as spent, Home asks where it goes (count it in the bank, put it toward a goal, or decide later). The bank does not change until they answer.
 - Home is now version one: the picture, four numbers (Total, Free to spend, Bills left, Saved) and one next action. Everything else is under More.
 - If a month ends below zero, Home says so in one amber line with the cause.
+- Home starts with **In your bank now**: the balance they typed and the day they typed it, and a "Check your bank" button that asks what the bank app shows today. Every other figure on Home is labelled **planned** (LAUNCH_CHECKLIST A1).
+- A **"Pay off a debt"** burrow is no longer counted as savings: money put toward it is paid away, so it is left out of Saved and Total (A3). Anyone with such a burrow will see Saved and Total lower than in 38.28, by what that burrow holds. The burrow itself still shows what is paid off and what is still owed.
+- When there are cards, loans or debt burrows, Home has one line **"You owe X"** at the end of the month (A4).
+- Loading the cloud copy keeps the numbers that were on the device first, with Undo for 3 days (E1).
 
 ## What I need from you
 

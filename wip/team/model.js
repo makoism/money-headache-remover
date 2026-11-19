@@ -567,6 +567,7 @@ const GOAL_DEFAULT_NAME = { rainy: 'Emergency fund', travel: 'Trip', moving: 'Ho
 /* what each kind of goal is for, said as an aim, never as if it were done (38.31 wording round 3: "Emergencies covered" showed at 31%) */
 const PURPOSE_OF_KIND = { rainy: 'Saving for emergencies', travel: 'Saving for a trip', moving: 'Saving for a move', buy: 'Saving to pay in cash', car: 'Saving for a yearly bill', debt: 'Paying off a debt', other: '' };
 const PURPOSE_VERBS = /^(buy|get|build|start|take|go|pay|visit|learn|fix|move|plan|book|host|open|join|make|finish|upgrade|replace|renew|fund|cover|see|send|adopt|rent|own|throw|celebrate|travel|clear|write|launch|hire|support|invest|surf|ride|run|swim|climb|dive|drive|fly|marry|study|train|enrol|enroll|treat|gift|surprise|retire|quit)\b/i;
+const isDebtGoal = (S, id) => { const g = goalById(S, id); return !!g && kindOfGoal(S, g) === 'debt'; };
 const kindOfGoal = (S, g) => { if (g.emergency) return 'rainy'; const gk = (S.ui && S.ui.gk) || {}; return gk[g.id] || (Object.prototype.hasOwnProperty.call(PURPOSE_OF_KIND, g.id) ? g.id : 'other'); };
 /* the plain sentence under a goal: what the money will let the person do. Built-in wording here; a line written by Claude for a custom goal replaces it on screen. */
 /* a debt reads as paid off and still owed, never full or to go (money); times stay as they are */
@@ -608,7 +609,7 @@ function viewOf(S, C, ym, today) {
   const play = { planned: planPlay, spent: spentPlay, left: leftPlay, over: leftPlay < 0, overBy: leftPlay < 0 ? round2(-leftPlay) : 0, count: rs.count, daysLeft, dim, dayN,
     frac: planPlay > 0 ? Math.min(1, spentPlay / planPlay) : 1, dayFrac: Math.min(1, dayN / dim), ahead: leftPlay >= 0 && spentPlay > pace * 1.15 + 1,
     perWeek: daysLeft >= 4 ? Math.max(0, leftPlay) / (daysLeft / 7) : null };
-  const goalsSaved = sum(Object.keys(m.bal).map(id => m.bal[id]));
+  const goalsSaved = sum(Object.keys(m.bal).filter(id => !isDebtGoal(S, id)).map(id => m.bal[id]));   /* a debt goal is money paid away, not saved (LAUNCH_CHECKLIST A3) */
   let ffaSoFar = 0; for (const x of MONTHS) { if (x > ym) break; ffaSoFar += C.byYm[x].jar.ffa; }
   const buckets = JARS.map(j => {
     if (j.id === 'lts') return { id: j.id, name: j.name, kind: 'save', planned: m.goalsTotal, spent: 0, left: null, total: goalsSaved };
@@ -669,14 +670,17 @@ function mapOf(S, C, ym, V0) {
   /* the pile in every room is drawn against the biggest room, so a bigger pile means more money (square root, so the small ones still show) */
   const maxA = Math.max(1, ...month.map(r => r.amount), ...burrows.map(r => r.amount));
   month.concat(burrows).forEach(r => { r.fill = r.amount > 0 ? Math.min(1, Math.sqrt(r.amount / maxA)) : 0; });
-  const goalsSaved = round2(sum(Object.keys(m.bal).map(id => m.bal[id]))), saved = round2(goalsSaved + sum(burrows.map(r => r.amount)));
+  /* money put toward a "Pay off a debt" goal has left: it is paid off, not saved, so it is not in Saved or Total (LAUNCH_CHECKLIST A3) */
+  const goalsSaved = round2(sum(Object.keys(m.bal).filter(id => !isDebtGoal(S, id)).map(id => m.bal[id]))), saved = round2(goalsSaved + sum(burrows.map(r => r.amount)));
+  /* what is owed at the end of the month: cards and loans still owed, plus what every debt goal still has to pay (LAUNCH_CHECKLIST A4) */
+  const owed = round2(sum(Object.keys(m.debts || {}).map(id => Math.max(0, m.debts[id].bal))) + sum((V0.goals || []).filter(g => g.kind === 'debt').map(g => g.togo)));
   /* spending past what was planned comes out of the bank, so the bank and the total stay true to the receipts */
   const overspent = m.over || 0, bankEnd = m.bankEnd;
   /* the pay strip: real pay against what the plan places. Pay with no place is its own piece (less what spending past plan already used); a plan bigger than the pay says by how much */
   const payReal = Math.max(0, m.inflow - (m.draw || 0)), placed = m.out, gap0 = round2(payReal - placed), usedOver = Math.min(Math.max(0, gap0), m.overNow || 0), payGap = round2(gap0 - usedOver), planOver = payGap < -0.5 ? round2(-payGap) : 0;
-  return { ym, free: fo.free, held: fo.held, overspent, billsLeft, billsPlanned: planNec, goalsSaved, saved, bankEnd, bankBelow: bankEnd < 0 ? round2(-bankEnd) : 0, total: round2(bankEnd + saved), month, burrows,
+  return { ym, free: fo.free, held: fo.held, overspent, billsLeft, billsPlanned: planNec, goalsSaved, saved, bankEnd, bankBelow: bankEnd < 0 ? round2(-bankEnd) : 0, total: round2(bankEnd + saved), owed, month, burrows,
     payReal, placed, payGap, usedOver, planOver,
-    goalParts: (V0.goals || []).filter(g => g.live !== false || ((m.g[g.id] && m.g[g.id].actual) || 0) > 0).map(g => ({ id: g.id, name: g.name, slot: g.slot, saved: g.saved, plan: (m.g[g.id] && m.g[g.id].actual) || 0 })),
+    goalParts: (V0.goals || []).filter(g => g.live !== false || ((m.g[g.id] && m.g[g.id].actual) || 0) > 0).map(g => ({ id: g.id, name: g.name, slot: g.slot, debt: g.kind === 'debt', saved: g.saved, plan: (m.g[g.id] && m.g[g.id].actual) || 0 })),
     split: ['nec', 'lts', 'play', 'edu', 'ffa', 'give'].map(id => ({ id, amount: id === 'lts' ? (m.goalsTotal || 0) : (m.jar[id] || 0) })).filter(x => x.amount > 0) };
 }
 /* the goal wizard's suggestion: what is still missing, spread evenly over n months and rounded up to the plan's unit (the same rule as evenSave) */
@@ -746,7 +750,8 @@ function planCells(S, C, ym) {
    from the emergency fund only moves. If the two sides differ, a number on a screen is wrong, and the page says so instead of showing it as true. */
 function proofOf(S, C, ym, map0) {
   const c = x => Math.round((+x || 0) * 100), goals = goalsOf(S), has = (S.receipts || []).length > 0;
-  const part = { start: c(cfg(S, 'bankStart')) + goals.reduce((a, g) => a + c(g.start), 0), pay: 0, planned: 0, past: 0, free: 0, back: 0, piles: 0, goals: 0 };
+  /* a debt goal's "already paid off" was never money held, and what is put toward it leaves (paid to the lender, LAUNCH_CHECKLIST A3) */
+  const part = { start: c(cfg(S, 'bankStart')) + goals.filter(g => !isDebtGoal(S, g.id)).reduce((a, g) => a + c(g.start), 0), debtGoals: 0, pay: 0, planned: 0, past: 0, free: 0, back: 0, piles: 0, goals: 0 };
   let pend = 0; const pendMonths = [];
   for (const x of MONTHS) {
     if (x > ym) break;
@@ -760,14 +765,16 @@ function proofOf(S, C, ym, map0) {
     part.past += necPast + Math.max(0, (byJar.other || 0) - items) + Math.max(0, (byJar.play || 0) - playPlan);
     part.free += playPlan; part.back += c(m.counted);
     part.piles += (byJar.edu || 0) + (byJar.give || 0);
-    goals.forEach(g => { part.goals += c(m.spent[g.id]); });
+    goals.forEach(g => { if (!isDebtGoal(S, g.id)) part.goals += c(m.spent[g.id]); else part.debtGoals += c(m.spent[g.id]); });
     if (m.pendLeft > 0) { pend += c(m.pendLeft); pendMonths.push(x); }
   }
-  const came = part.start + part.pay - part.planned - part.past - part.free + part.back - part.piles - part.goals;
+  /* paid toward debt goals: everything that went in after "already paid off" (what is there now, less the start, plus anything taken out on its date) */
+  goals.forEach(g => { if (isDebtGoal(S, g.id)) part.debtGoals += c(C.byYm[ym].bal[g.id]) - c(g.start); });
+  const came = part.start + part.pay - part.planned - part.past - part.free + part.back - part.piles - part.goals - part.debtGoals;
   const map = map0 || viewOf(S, C, ym).map, sits = c(map.total), sitsParts = c(map.bankEnd) + c(map.goalsSaved) + map.burrows.reduce((a, b) => a + c(b.amount), 0);
   const off = sits - came;
   return { ok: off === 0 && sitsParts === sits, off: off / 100, offBy: Math.abs(off) / 100, sits: sits / 100, came: came / 100, partsOk: sitsParts === sits,
-    start: part.start / 100, pay: part.pay / 100, left: (part.planned + part.past + part.free - part.back + part.piles + part.goals) / 100,
+    start: part.start / 100, pay: part.pay / 100, left: (part.planned + part.past + part.free - part.back + part.piles + part.goals + part.debtGoals) / 100,
     pendAmount: pend / 100, pendMonths };
 }
 

@@ -40,9 +40,10 @@ const allText = p => p.evaluate(() => document.body.innerText);
     home = await allText(p);
     const today = await p.evaluate(() => { const d = new Date(); return d.getDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getMonth()]; });
     ck('(1) typing a balance stores the day it was entered (' + at + ')', /^\d{4}-\d{2}-\d{2}$/.test(at), at);
-    ck('(1) Home says "Balance you entered on ' + today + '" with the amount', new RegExp('Balance you entered on ' + today + '\\b[^\\n]*\\$1,640\\.50').test(home), (home.match(/Balance you entered.{0,60}/) || ['(none)'])[0]);
-    const fresh = await p.evaluate(() => { const f = document.querySelector('.mp-fresh'), k = [...document.querySelectorAll('.mp-key')].pop(); return f && k ? f.getBoundingClientRect().top >= k.getBoundingClientRect().top : false; });
-    ck('(1) the date sits under the bank figure (the "where your money sits" key)', fresh);
+    /* since LAUNCH_CHECKLIST A1 the bank figure is the "In your bank now" card at the top of Home: the amount, then the date under it */
+    ck('(1) Home says "Balance you entered on ' + today + '" with the amount', new RegExp('In your bank now[^]{0,20}\\$1,640\\.50\\s+Balance you entered on ' + today + '\\b').test(home), (home.match(/In your bank now[^]{0,80}/) || ['(none)'])[0]);
+    const fresh = await p.evaluate(() => { const f = document.querySelector('.mp-now .mp-fresh'), k = document.querySelector('.mp-now .mp-now-v'); return f && k ? f.getBoundingClientRect().top >= k.getBoundingClientRect().bottom - 1 : false; });
+    ck('(1) the date sits under the bank figure (the "In your bank now" card)', fresh);
     await p.reload(); await w(1600);
     await p.evaluate(() => { const s = document.getElementById('tourSkip'); s && s.click(); }); await w(300);
     home = await allText(p);

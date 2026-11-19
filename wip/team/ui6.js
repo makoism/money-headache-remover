@@ -542,6 +542,8 @@ function homeV1() {
   if (q) q.classList.toggle('v1x', !(logIsNext || QUICK_OPEN || HOME_ALL));
   V1_EXTRA.forEach(id => { const e = $('#' + id); if (e) e.classList.toggle('v1x', !HOME_ALL); });
   const st = $('#hStatus'); if (st) st.classList.toggle('v1x', !HOME_ALL && !!st.querySelector('.chip.good'));
+  /* the burrow amounts include this month's planned saving: say so on the heading, as every Home figure does (LAUNCH_CHECKLIST A1) */
+  const bh = $('#hBur .hb-h'); if (bh && !bh.querySelector('.ntag')) bh.insertAdjacentHTML('beforeend', ' <em class="ntag plan">planned</em>');
   let mb = $('#hMoreBtn');
   if (!mb) { mb = document.createElement('button'); mb.type = 'button'; mb.id = 'hMoreBtn'; mb.className = 'btn hv1-more'; mb.addEventListener('click', () => { HOME_ALL = !HOME_ALL; sfx('tap'); renderHome(); }); }
   if (bur && mb.previousElementSibling !== bur) bur.after(mb);
