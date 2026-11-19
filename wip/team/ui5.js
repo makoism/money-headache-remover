@@ -83,7 +83,7 @@ function wire() {
     }
   });
   $('#rowsOut').addEventListener('change', e => { if (e.target.closest('#items')) { S.items[sel] = readItems(); persist(); render(); } });
-  $('#resetMonth').addEventListener('click', e => confirmClick(e.currentTarget, 'Tap again: removes the edits you made for this month. Receipts stay.', () => { { const ym0 = sel, o0 = S.once[ym0] ? JSON.parse(JSON.stringify(S.once[ym0])) : undefined, i0 = S.items[ym0] !== undefined ? JSON.parse(JSON.stringify(S.items[ym0])) : undefined; offerUndo('reset', 'Month reset.', () => { if (o0 !== undefined) S.once[ym0] = o0; else delete S.once[ym0]; if (i0 !== undefined) S.items[ym0] = i0; else delete S.items[ym0]; }); } resetMonth(S, sel); itemsSig = ''; persist(); render(); }));
+  $('#resetMonth').addEventListener('click', e => confirmClick(e.currentTarget, `Tap again: removes the edits you made for this month. Receipts stay. You can undo for ${KEEP_DAYS} days.`, () => { const snR = snapNoCopy(); { const ym0 = sel, o0 = S.once[ym0] ? JSON.parse(JSON.stringify(S.once[ym0])) : undefined, i0 = S.items[ym0] !== undefined ? JSON.parse(JSON.stringify(S.items[ym0])) : undefined; offerUndo('reset', 'Month reset.', () => { if (o0 !== undefined) S.once[ym0] = o0; else delete S.once[ym0]; if (i0 !== undefined) S.items[ym0] = i0; else delete S.items[ym0]; }); } resetMonth(S, sel); keepCopy(snR, `${fullLabel(sel)} was reset.`); itemsSig = ''; persist(); render(); }));   /* a 3-day copy like every other big change (38.31 data safety round 4) */
   $('#fixBtns').addEventListener('click', e => {
     const b = e.target.closest('[data-fx]'); if (!b) return; const f = b.dataset.fx, m = C.byYm[sel];
     if (f === 'trim') trimPlay(S, m, sel, +b.dataset.amt);
@@ -181,9 +181,10 @@ function wire() {
     r.onload = () => { const t = String(r.result || ''); $('#bk').value = t; let ok = false; try { const d = JSON.parse(t); ok = !!(d && typeof d === 'object' && d.steps && d.once && d.cfg); } catch (e) { } $('#bkMsg').textContent = ok ? `File read. Tap Load text, then tap again, to replace your numbers with it. You can undo for ${KEEP_DAYS} days.` : 'Not a valid backup. Use the whole file, or paste all of the copied text.'; }; r.readAsText(f);   /* a picked file never replaces anything on its own (38.31 data safety round 2) */
   });
   const twoStep = (b, armedText, run) => {
-    let t = 0, orig = '';
+    let t = 0, orig = '', armedAt = 0;
     b.addEventListener('click', () => {
-      if (!t) { orig = b.textContent; b.dataset.armed = '1'; t = setTimeout(() => { t = 0; b.textContent = orig; delete b.dataset.armed; }, 4000); b.textContent = typeof armedText === 'function' ? armedText() : armedText; return; }
+      if (t && Date.now() - armedAt < 600) return;   /* a double tap never confirms: the warning gets read first (38.31 data safety round 4) */
+      if (!t) { armedAt = Date.now(); orig = b.textContent; b.dataset.armed = '1'; t = setTimeout(() => { t = 0; b.textContent = orig; delete b.dataset.armed; }, 4000); b.textContent = typeof armedText === 'function' ? armedText() : armedText; return; }
       clearTimeout(t); t = 0; b.textContent = orig; delete b.dataset.armed; run();
     });
   };
@@ -197,9 +198,9 @@ function wire() {
   /* the copy from before a big change is offered again on every open for 3 days, then let go */
   if (S.ui && S.ui.keep) { const k = S.ui.keep; if (!(typeof k.snap === 'string' && +k.t > 0) || Date.now() - k.t > KEEP_DAYS * 864e5) { delete S.ui.keep; persist(); } else offerUndo(k.snap, `${k.why || 'Your numbers changed.'} You can undo until ${dateLabel(ymd(new Date(+k.t + KEEP_DAYS * 864e5)))}.`); }
   $('#undoGo').addEventListener('click', () => { if (!undoSnap) return; clearTimeout(undoT); $('#undoBar').hidden = true; if (undoFn) { undoFn(); undoFn = null; } else S = normalize(JSON.parse(undoSnap)); undoSnap = null; editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = ''; sfx('back'); cheer('Your numbers are back.'); });
-  const blank = () => { offerUndo(JSON.stringify(S), 'All numbers zeroed.'); S = blankState(S, sampleOn()); S.ui.cleared = true; delete S.ui.setup; delete S.ui.src; delete S.ui.imp; editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = 'All zero. Start with salary.'; select(START); if (tab !== 'month') switchTab('month'); };
-  twoStep($('#blankBtn'), 'Tap again: clears pay, bills, goals and saved amounts. Receipts stay.', blank);
-  twoStep($('#blankTop'), 'Tap again: clears pay, bills, goals and saved amounts. Receipts stay.', blank);
+  const blank = () => { const sn0 = snapNoCopy(); offerUndo(sn0, `All numbers zeroed. You can undo for ${KEEP_DAYS} days.`); S = blankState(S, sampleOn()); S.ui.cleared = true; delete S.ui.setup; delete S.ui.src; delete S.ui.imp; keepCopy(sn0, 'Your numbers were set to zero.'); editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = 'All zero. Start with salary.';   /* a 3-day copy like every other big change (38.31 data safety round 4) */ select(START); if (tab !== 'month') switchTab('month'); };
+  twoStep($('#blankBtn'), `Tap again: clears pay, bills, goals, saved amounts and your balance. Receipts stay. You can undo for ${KEEP_DAYS} days.`, blank);
+  twoStep($('#blankTop'), `Tap again: clears pay, bills, goals, saved amounts and your balance. Receipts stay. You can undo for ${KEEP_DAYS} days.`, blank);
   twoStep($('#bkLoad'), `Tap again: replaces your pay, bills, goals and receipts with this copy. You can undo for ${KEEP_DAYS} days.`, loadBackup);
   twoStep($('#setupOpen'), `Tap again: setup can change your pay, bills, goals and saved amounts. You can undo for ${KEEP_DAYS} days.`, () => openSetupWithCopy(undefined, 'full'));   /* both ask first, and keep a copy (38.31 data safety round 2) */
   /* only some currencies have samples; for the rest this button clears the plan, and every word says so (38.31 data safety round 3) */

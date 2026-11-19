@@ -11,7 +11,7 @@ const L=require('./lib_r12.js');const R=L.R;const w=R.w;
  const l0=await p.evaluate(()=>document.getElementById('bkReset').textContent);
  ck(`[${cur}] the button reads "${label}"`,l0===label,l0);
  const armed=await p.evaluate(()=>{const b=document.getElementById('bkReset');b.click();return b.textContent;});
- ck(`[${cur}] the confirm says what happens and that receipts stay`,(cur==='€'?/puts the sample pay/:/clears your pay, bills, goals and balance/).test(armed)&&/Receipts stay/.test(armed),armed);
+ await w(700);ck(`[${cur}] the confirm says what happens and that receipts stay`,(cur==='€'?/puts the sample pay/:/clears your pay, bills, goals and balance/).test(armed)&&/Receipts stay/.test(armed),armed);
  await p.evaluate(()=>document.getElementById('bkReset').click());await w(900);
  const r=await p.evaluate(()=>({pay:__t.calcAll(__t.S).byYm['2026-11'].inflow,n:__t.S.receipts.length,msg:document.getElementById('bkMsg').textContent}));
  ck(`[${cur}] the result matches the words (pay ${r.pay})`,cur==='€'?r.pay>0:r.pay===0,JSON.stringify(r));

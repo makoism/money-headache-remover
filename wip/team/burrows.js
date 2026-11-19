@@ -271,6 +271,7 @@ const BUR = (() => {
     cur = r.id; const pct = Math.min(1, r.saved / r.target); LK = LOOKS[lookOf(r)] ? lookOf(r) : 'plain';
     pop.innerHTML = `<h2>${esc(r.name)}</h2><p class="bv-n"><b>${fmt(r.saved)}</b> ${r.kind === 'debt' ? 'paid of' : 'of'} ${fmt(r.target)}</p><div class="bv-bar" role="img" aria-label="${r.pct} percent ${r.kind === 'debt' ? 'paid off' : 'full'}"><i style="width:${r.pct}%"></i></div><p class="bv-s">${r.pct}% ${r.kind === 'debt' ? 'paid off. ' + fmt(r.togo) + ' still owed' : 'full'}</p><button type="button" class="btn bv-add">${r.kind === 'debt' ? 'Add a payment' : 'Add money'}</button>`;
     pop.querySelector('.bv-add').addEventListener('click', e => { e.stopPropagation(); addPanel(r); });
+    el.querySelector('.bv-dots').hidden = all.length < 2;   /* one burrow: no page dots that do nothing (38.31 north-star round 4) */
     el.querySelector('.bv-dots').innerHTML = all.map(x => `<button type="button" data-b="${esc(x.id)}" aria-label="${esc(x.name)}" aria-current="${x.id === cur}"></button>`).join('');
     el.querySelectorAll('.bv-dots button').forEach(b => b.addEventListener('click', () => open(b.dataset.b)));
     try { if (!LOOKS[LK].bg) SCENE.look(LOOKS[LK].mood || ''); } catch (e) { /* the world is a bonus */ }

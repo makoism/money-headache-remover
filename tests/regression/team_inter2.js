@@ -138,7 +138,7 @@ const PESO = (() => { const src = require('fs').readFileSync(process.env.MODEL |
   ok('summary line', (await q('#chgTxt')).includes('Salary ₱40,000 (usual ₱30,000)'));
   await p.click('#undoAll'); await w(250); ok('undo all', (await val('#h-a')) === '₱30,000');
   await p.click('#h-edu'); await p.keyboard.type('0'); await p.keyboard.press('Enter'); await w(300);
-  { const lg2 = await p.$$eval('#legend .lg', e => e.map(x => x.innerText.replace(/\s+/g, ' ').trim())); ok('education zero this month: its jar shows nothing, the freed money shows as left over', (await val('#h-edu')) === '₱0' && lg2.some(x => x.startsWith('Education') && x.includes('₱0') && (x.endsWith('0%') || !x.includes('%'))) && lg2.some(x => x.startsWith('Left') && x.includes('₱3,000') && x.includes('10%'))); }
+  { const lg2 = await p.$$eval('#legend .lg', e => e.map(x => x.innerText.replace(/\s+/g, ' ').trim())); ok('education zero this month: its jar shows nothing, the freed money shows as left over', (await val('#h-edu')) === '₱0' && lg2.some(x => x.startsWith('Education') && x.includes('₱0') && (x.endsWith('0%') || !x.includes('%'))) && lg2.some(x => x.startsWith('Not placed yet') && x.includes('₱3,000') && x.includes('10%'))); }
   await p.click('#undoAll'); await w(250);
 
   // ----- editing lines -----
@@ -329,15 +329,15 @@ const PESO = (() => { const src = require('fs').readFileSync(process.env.MODEL |
   ok('backup text has no personal terms', !/Mako|NISA|Mercari|Tokyo|Chiba|20x/i.test(full));
   delete parsed.receipts; const json = JSON.stringify(parsed);
   await tab('month'); const bLeft = await q('#leftTotal'), bHero = await q('#heroNum'); await tab('basics');
-  await p.click('#bkReset'); await p.click('#bkReset'); await w(350);
+  await p.click('#bkReset'); await w(700); await p.click('#bkReset');   /* a double tap no longer confirms (38.31 data safety round 4) */ await w(350);
   await tab('month'); ok('back to the sample: ₱3,000 of Free to spend less the ₱10 receipt kept from the escaping check (38.30: the hero is what is still safe to spend)', (await q('#heroNum')) === '₱2,990' && (await p.$$eval('#rb-nec .ed', e => e.length)) === 10);
   await tab('receipts'); ok('resetting to the sample keeps receipts', (await p.$$eval('#rcList .rc, #rcCats tr', e => e.length)) >= 1);
-  await tab('basics'); await p.$eval('#bk', (el, v) => { el.value = v; }, json); await p.click('#bkLoad'); await w(200); await p.click('#bkLoad'); await w(450);   /* Load text asks first since 38.31 (data safety round 2): two taps */
+  await tab('basics'); await p.$eval('#bk', (el, v) => { el.value = v; }, json); await p.click('#bkLoad'); await w(700); await p.click('#bkLoad'); await w(450);   /* Load text asks first since 38.31 (data safety round 2): two taps */
   await tab('month'); ok('round trip restores plan and numbers', (await q('#leftTotal')) === bLeft && (await q('#heroNum')) === bHero);
   await tab('receipts'); ok('loading a plan without receipts leaves receipts alone', (await p.$$eval('#rcCats tr', e => e.length)) >= 1);
 
   // ----- start from zero keeps your structure -----
-  await tab('basics'); await p.click('#blankBtn'); await p.click('#blankBtn'); await w(500);
+  await tab('basics'); await p.click('#blankBtn'); await w(700); await p.click('#blankBtn'); await w(500);
   ok('blank: nothing comes in', (await q('#inTotal')) === '₱0' && (await q('#outTotal')) === '₱0');
   ok('blank: your custom line is still there', await p.$eval('#rb-nec', e => e.innerHTML.includes('Pet food')));
   ok('blank: your goal name is still there', (await p.$$eval('#goalCards .gcard', e => e.length)) === 4);

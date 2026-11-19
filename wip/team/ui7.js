@@ -285,7 +285,7 @@ function openWhy(kind) {
     const M = V.map, rsn = receiptStats(S, ym).byJar.nec || 0;
     title = 'Bills and basics';
     const nr = M.month.find(x => x.id === 'nec'), ov = nr && nr.overBy > 0 ? nr.overBy : 0;
-    rows = [[`Planned for ${mon}`, fmt(M.billsPlanned)], ['Logged so far', '−' + fmt2(rsn)]]; if (ov) rows.push(['Logged past a bill\'s plan, still due', '+' + fmt2(ov)]); rows.push(['Left to pay', fmt(M.billsLeft)]);
+    rows = [[`Planned for ${mon}`, fmt(M.billsPlanned)], ['Logged so far', (rsn > 0.004 ? '−' : '') + fmt2(rsn)]]; if (ov) rows.push(['Logged past a bill\'s plan, still due', '+' + fmt2(ov)]); rows.push(['Left to pay', fmt(M.billsLeft)]);
     foot = 'Rent, bills, food, card payments and one-time costs. Logged is every receipt in a Bills and basics line this month.';
   } else if (/^room:(edu|give|ffa)$/.test(kind)) {
     const r = V.map.burrows.find(x => 'room:' + x.id === kind);
@@ -298,7 +298,7 @@ function openWhy(kind) {
   } else if (kind === 'free') {
     const fo = freeOf(S, V.month, p), held = fo.held, freeLeft = fo.free;
     title = 'Free to spend';
-    rows = [[`Free to spend planned for ${mon}`, fmt(p.planned)], [`Logged in Free to spend (${p.count} ${p.count === 1 ? 'receipt' : 'receipts'})`, '−' + fmt2(p.spent)]];
+    rows = [[`Free to spend planned for ${mon}`, fmt(p.planned)], [`Logged in Free to spend (${p.count} ${p.count === 1 ? 'receipt' : 'receipts'})`, (p.spent > 0.004 ? '−' : '') + fmt2(p.spent)]];   /* no minus in front of zero (38.31 north-star round 4) */
     if (held > 0) rows.push(['Held back so the balance stays above your minimum', '−' + fmt(held)]);
     rows.push(['Free to spend', fmt2(freeLeft)]);
     if (p.perWeek != null) rows.push([`Per week for the ${plural(p.daysLeft, 'day')} left`, fmtAbout(V.cells.perWeek)]);

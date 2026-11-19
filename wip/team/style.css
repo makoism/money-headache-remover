@@ -1839,3 +1839,4 @@ p .link::after, li .link::after, span .link::after, .cap .link::after { content:
 @media (max-width: 420px) { .help-btn { min-height: 44px; padding: 0 12px 0 6px; font-size: 15px; gap: 6px; } .help-btn .q { width: 28px; height: 28px; font-size: 15px; } }
 /* phones: one small round Help button instead of two pills, so less of the page sits under it; Ask stays first in the Help menu (38.31 QC round 4: four reviewers saw the pills cover text) */
 @media (max-width: 520px) { #askBtn { display: none; } #helpBtn { font-size: 0; gap: 0; padding: 0 6px; min-width: 44px; justify-content: center; } #helpBtn .q { font-size: 16px; } }
+.bv-dots[hidden] { display: none; }

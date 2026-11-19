@@ -26,7 +26,7 @@ const L=require('./lib_r12.js');const R=L.R;const w=R.w;
  await L.settings(p);
  const t2=await p.evaluate(()=>{const b=document.getElementById('bkReset');b.click();return b.textContent;});
  ck(`Restore samples asks first and says receipts stay ("${t2.slice(0,70)}")`,/Receipts stay\. You can undo for 3 days/.test(t2));
- await p.evaluate(()=>document.getElementById('bkReset').click());await w(800);
+ await w(700);await p.evaluate(()=>document.getElementById('bkReset').click());await w(800);
  await reload();
  ck(`after a reload Undo is still offered, named truthfully for dollars, which have no samples ("${await bar()}")`,/Your plan was cleared/.test(await bar()));   /* round 3: with no dollar samples the button clears the plan and says so */
  await p.evaluate(()=>document.getElementById('undoGo').click());await w(800);

@@ -35,7 +35,7 @@ function paintLegend(m) {
 /* one plain sentence under the table: how this month's bills sit against Eker's usual split, and whether every bit of pay has a purpose */
 function jarNote(m) {
   const J = jarsOf(S, m); if (J.inn <= 0) return '';
-  if (J.over) return `Plan exceeds pay by ${fmt(J.exceedsBy)}${J.draw > 0 ? ', ' + fmt(J.draw) + ' of it from your emergency fund' : ''}, so percents are off. Lower a bill or another place.`;
+  if (J.over) return `Your plan spends ${fmt(J.exceedsBy)} more than your pay${J.draw > 0 ? `. ${fmt(J.draw)} of that comes from your emergency fund` : ''}. Lower a bill or another place.`;
   const nec = J.list[0], u = nec.usual;
   /* a plan paid partly with borrowed money: say why the places add up to more than all of the pay */
   const borrowed = J.borrowUsedPct > 0 ? ` Your places add up to ${J.placedPct}% of your pay, because ${fmt(J.borrowUsed)} of this plan is borrowed from your emergency fund.` : '';
