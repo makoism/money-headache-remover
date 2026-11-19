@@ -262,7 +262,7 @@ const BUR = (() => {
     if (L.fx) L.fx.init(k);
     placeGround(L);
     /* a look with its own world covers the forest scene; the clouds drift on a picture twice as wide */
-    const has = !!L.bg; el.classList.toggle('has-bg', has);
+    const has = !!L.bg; el.classList.toggle('has-bg', has); try { SCENE.wake(); } catch (e) { /* the forest is a bonus */ }
     if (has) { bg0.width = Wf; bg0.height = Hf; bg0.style.width = Wf * S + 'px'; bg0.style.height = Hf * S + 'px'; bgc.width = Wf; bgc.height = Hf; bgc.style.width = Wf * S + 'px'; bgc.style.height = Hf * S + 'px'; clc.width = Wf * 2; clc.height = Hf; clc.style.width = Wf * 2 * S + 'px'; clc.style.height = Hf * S + 'px'; clc.parentNode.style.setProperty('--cw', Wf * S + 'px'); bgPct = -1; }
   }
   let LK = 'plain';
@@ -329,7 +329,7 @@ const BUR = (() => {
     if (!el) build(); anim = null; cur = id; const f = fill(); if (!f) { cur = null; return; }
     document.body.classList.add('bv-on'); el.hidden = false; pop.hidden = false; t0 = performance.now(); layout(); loop();
   }
-  function close() { cur = null; clearTimeout(tm); if (el) el.hidden = true; document.body.classList.remove('bv-on'); try { SCENE.look(''); } catch (e) { } }
+  function close() { cur = null; clearTimeout(tm); if (el) el.hidden = true; document.body.classList.remove('bv-on'); try { SCENE.look(''); SCENE.wake(); } catch (e) { } }
   /* the squirrel stocks the burrow: call this after money has gone into the burrow */
   function stock(style) { if (!cur) return; stockT = performance.now(); stockStyle = style || 'A'; pulseAt = stockT + SQ.T.crouch + 700; }
   /* ---------- Home: one picture with a burrow for each savings bucket, how full it is, a short note and the play money number ---------- */
