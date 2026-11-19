@@ -31,15 +31,28 @@ const phDays = (a, b) => Math.round((Date.parse(b + 'T00:00:00Z') - Date.parse(a
 const phHash = s => { let h = 0x811c9dc5; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } return h.toString(36); };
 const phNorm = t => String(t || '').toLowerCase().replace(/[0-9*#]+/g, ' ').replace(/[^\p{L}\s]/gu, ' ').replace(/\s+/g, ' ').trim();
 
+/* 03/08/2026: the 8th of March or the 3rd of August? Never assumed. Proved from the file: a number over 12 settles it,
+   or the dates run in order only one way. Returns 'md', 'dm', 'same' (no such dates, or both ways agree) or '' (cannot tell). */
+let PH_DAY_FIRST = false;
+function phDateOrder(text) {
+  const all = [], lead = []; let m; const re = /(^|[\s,"])(\d{1,2})\/(\d{1,2})(?:\/(\d{4}|\d{2}))?(?=[\s,"]|$)/gm;
+  while ((m = re.exec(String(text || '')))) { const d = [+m[2], +m[3], m[4] ? +m[4] % 100 : 0]; all.push(d); if (m[1] === '' || m[1] === '\n') lead.push(d); }
+  const md = all.some(d => d[1] > 12), dm = all.some(d => d[0] > 12);
+  if (md && dm) return ''; if (md) return 'md'; if (dm) return 'dm';
+  if (all.every(d => d[0] === d[1])) return 'same';
+  const mono = f => { const k = lead.map(f); return k.length > 1 && (k.every((x, i) => !i || x >= k[i - 1]) || k.every((x, i) => !i || x <= k[i - 1])); };
+  const a = mono(d => d[2] * 10000 + d[0] * 100 + d[1]), b = mono(d => d[2] * 10000 + d[1] * 100 + d[0]);
+  return a && !b ? 'md' : b && !a ? 'dm' : '';
+}
 /* a date at the start of a line. Returns { iso, rest } or { md: [month, day], rest } when no year is printed, or null.
    Philippine statements print month first when both are numbers (08/05/2026 is the 5th of August). */
 function phLeadDate(line) {
   let m;
   if ((m = /^(\d{4})-(\d{2})-(\d{2})\b/.exec(line))) { const iso = phIso(m[1], m[2], m[3]); return iso ? { iso, rest: line.slice(m[0].length) } : null; }
-  if ((m = /^(\d{1,2})\/(\d{1,2})\/(\d{4}|\d{2})\b/.exec(line))) { const iso = phIso(m[3], m[1], m[2]); return iso ? { iso, rest: line.slice(m[0].length) } : null; }
+  if ((m = /^(\d{1,2})\/(\d{1,2})\/(\d{4}|\d{2})\b/.exec(line))) { const iso = PH_DAY_FIRST ? phIso(m[3], m[2], m[1]) : phIso(m[3], m[1], m[2]); return iso ? { iso, rest: line.slice(m[0].length) } : null; }
   if ((m = /^(\d{1,2})[- ]([A-Za-z]{3,9})[- ,]+(\d{4})\b/.exec(line))) { const mo = PH_MON[m[2].slice(0, 3).toLowerCase()], iso = mo ? phIso(m[3], mo, m[1]) : ''; return iso ? { iso, rest: line.slice(m[0].length) } : null; }
   if ((m = /^([A-Za-z]{3,9})\.? (\d{1,2}),? (\d{4})\b/.exec(line))) { const mo = PH_MON[m[1].slice(0, 3).toLowerCase()], iso = mo ? phIso(m[3], mo, m[2]) : ''; return iso ? { iso, rest: line.slice(m[0].length) } : null; }
-  if ((m = /^(\d{1,2})\/(\d{1,2})(?=\s)/.exec(line))) { return +m[1] >= 1 && +m[1] <= 12 && +m[2] >= 1 && +m[2] <= 31 ? { md: [+m[1], +m[2]], rest: line.slice(m[0].length) } : null; }
+  if ((m = /^(\d{1,2})\/(\d{1,2})(?=\s)/.exec(line))) { if (PH_DAY_FIRST) m = [m[0], m[2], m[1]]; return +m[1] >= 1 && +m[1] <= 12 && +m[2] >= 1 && +m[2] <= 31 ? { md: [+m[1], +m[2]], rest: line.slice(m[0].length) } : null; }
   if ((m = /^([A-Za-z]{3,9})\.? (\d{1,2})(?=\s)/.exec(line))) { const mo = PH_MON[m[1].slice(0, 3).toLowerCase()]; return mo && +m[2] >= 1 && +m[2] <= 31 ? { md: [mo, +m[2]], rest: line.slice(m[0].length) } : null; }
   return null;
 }
@@ -249,8 +262,11 @@ function phRead(text, opts) {
   opts = opts || {}; const det = phDetect(text); if (opts.provider && PH_PROVIDERS[opts.provider]) { det.provider = opts.provider; if (!det.card) det.kind = PH_PROVIDERS[opts.provider].kind; }
   if (opts.kind === 'card') { det.card = true; det.kind = 'card'; }
   const lines = String(text || '').split(/\r?\n/);
-  let read; try { read = det.card ? phReadCard(lines, det) : det.csv ? phReadCsv(text, det) : phReadTable(lines, det); } catch (e) { read = phBlank(det, lines); read.why = 'could not be read'; }
-  read.file = opts.file || '';
+  const order = opts.dateOrder || phDateOrder(text); let read;
+  if (!order) { read = phBlank(det, lines); read.why = 'cannot tell the day from the month in dates like 03/08/2026'; read.ask = 'dateOrder'; read.file = opts.file || ''; return read; }
+  PH_DAY_FIRST = order === 'dm';
+  try { read = det.card ? phReadCard(lines, det) : det.csv ? phReadCsv(text, det) : phReadTable(lines, det); } catch (e) { read = phBlank(det, lines); read.why = 'could not be read'; }
+  PH_DAY_FIRST = false; read.file = opts.file || ''; read.dateOrder = order;
   return read;
 }
 
@@ -435,4 +451,4 @@ function phToStmtRead(read, fileName) {
     rows: read.rows.map(r => ({ d: r.date, t: phMask(r.text).text.slice(0, 80), a: r.c / 100, dir: r.dir, k: phNorm(r.text).split(' ').slice(0, 3).join(' '), f: fileName || read.file || '', lid: r.lid, cat: r.conf >= 0.6 ? r.cat : '' })), notes: read.notes.slice(0, 4) };
 }
 
-if (typeof module !== 'undefined' && module.exports) module.exports = { PH_PROVIDERS, phCents, phFmt, phLeadDate, phAnyDate, phDetect, phRead, phReadTable, phReadCsv, phReadCard, phCsvRows, phGuess, phMerge, phPairReversals, phPairTransfers, phAlreadyLogged, phPrepare, phTotals, phEvents, phMask, phLeaks, phAskList, phToStmtRead, phNorm, phDays };
+if (typeof module !== 'undefined' && module.exports) module.exports = { PH_PROVIDERS, phCents, phFmt, phDateOrder, phLeadDate, phAnyDate, phDetect, phRead, phReadTable, phReadCsv, phReadCard, phCsvRows, phGuess, phMerge, phPairReversals, phPairTransfers, phAlreadyLogged, phPrepare, phTotals, phEvents, phMask, phLeaks, phAskList, phToStmtRead, phNorm, phDays };

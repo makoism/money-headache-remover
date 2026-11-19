@@ -3,7 +3,7 @@
 const fs = require('fs'), path = require('path');
 const P = require(path.join(__dirname, '..', '..', 'stmt_ph.js')), dir = path.join(__dirname, 'fixtures_ph');
 let bad = 0, n = 0; const ok = (c, what) => { n++; if (!c) { bad++; console.log('FAIL ' + what); } };
-const files = fs.readdirSync(dir).sort();
+const files = fs.readdirSync(dir).filter(f => !/_dates\.txt$/.test(f)).sort();
 /* everything in the fixtures that names the made-up person or her accounts */
 const secrets = ['JUANA', 'CRUZ', 'DELA', 'SAMPAGUITA', 'MALINIS', 'BLK 7', 'LOT 12', '09175550142', '917 555 0142', '001230456789', '3149-0456-21', '3149045621', '8123 4567 8901', '812345678901', '06612345', '109450012345', '5234-5678-9012-3456', '5234567890123456', '4005 12XX', '0188', '0199', '70123456', 'MA***A', 'JO*N'];
 files.forEach(f => {

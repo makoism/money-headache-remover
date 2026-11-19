@@ -1,0 +1,9 @@
+Sample Savings Bank
+Statement of Account
+Account Number: 4400112233
+Date Description Debit Credit Balance
+Beginning Balance 5,000.00
+03/08/2026 GROCERY MART 500.00 4,500.00
+03/08/2026 PAYROLL CREDIT 9,000.00 13,500.00
+05/09/2026 WATER BILL 300.00 13,200.00
+Ending Balance 13,200.00

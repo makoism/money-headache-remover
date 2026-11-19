@@ -13,10 +13,10 @@ eq(P.phAnyDate('January 08, 2026'), '2026-01-08', 'long date'); eq(P.phAnyDate('
 
 /* 2. every fixture: read without AI, every row accounted for, sums equal the statement's own figures */
 const want = { 'bdo_card_2026-09.txt': ['bdo', 'card', 9], 'bdo_savings_2026-08.txt': ['bdo', 'bank', 13], 'bpi_savings_2026-08.txt': ['bpi', 'bank', 6], 'bpi_savings_noyear_2026-01.txt': ['bpi', 'bank', 4], 'gcash_2026-08-20_to_09-15.txt': ['gcash', 'ewallet', 10], 'gcash_2026-08.txt': ['gcash', 'ewallet', 12], 'maya_savings_2026-08.txt': ['maya', 'bank', 5], 'metrobank_card_2026-01.txt': ['metrobank', 'card', 4], 'metrobank_savings_2026-08.txt': ['metrobank', 'bank', 3], 'unionbank_2026-08.csv': ['unionbank', 'bank', 4] };
-eq(files.length, Object.keys(want).length, 'fixture count');
+eq(files.length, Object.keys(want).length + 2, 'fixture count');
 const printed = (f, re) => { const m = text(f).split('\n').map(l => re.exec(l)).filter(Boolean)[0]; return m ? C(m[1]) : null; };
 files.forEach(f => {
-  const r = reads[f], w = want[f]; if (!w) return ok(false, f + ' has no expectation');
+  const r = reads[f], w = want[f]; if (/_dates\.txt$/.test(f)) return; if (!w) return ok(false, f + ' has no expectation');
   ok(r.ok, `${f} read: ${r.why}`); eq(r.provider, w[0], f + ' provider'); eq(r.kind, w[1], f + ' kind'); eq(r.rows.length, w[2], f + ' rows'); eq(r.unread.length, 0, f + ' unread lines');
   /* counted a second way: lines that start with a date and end with money (the period and heading lines have no money) */
   const dated = text(f).split('\n').filter(l => { const cells = f.endsWith('.csv') ? P.phCsvRows(l)[0] || [] : null; const d = P.phLeadDate((cells ? cells[0] : l.trim()) + ' '); return d && (cells ? cells.length >= 4 : /\d\.\d{2}( CR)?$/.test(l.trim())) && !/^(statement|payment)/i.test(l); }).length;
@@ -55,14 +55,23 @@ r = P.phRead('hello\nthis is not a statement'); ok(!r.ok && r.rows.length === 0,
 r = P.phRead(''); ok(!r.ok, 'empty');
 r = P.phRead(g.replace('Payment to Meralco 7012345600038 1,845.32 2,304.68', 'Payment to Meralco 7012345600038 1,845.32')); ok(!r.ok, 'a row with no balance is refused');
 
+/* 3b. 03/08/2026 is never read silently: the order is proved from the file, or the read is refused and the person is asked */
+const amb = text('ambiguous_dates.txt'); r = P.phRead(amb); ok(!r.ok && r.ask === 'dateOrder' && /day from the month/.test(r.why) && r.rows.length === 0, 'ambiguous dates are refused: ' + r.why);
+r = P.phRead(amb, { dateOrder: 'dm' }); ok(r.ok && r.rows.map(x => x.date).join() === '2026-08-03,2026-08-03,2026-09-05', 'answered day first: ' + r.rows.map(x => x.date).join());
+r = P.phRead(amb, { dateOrder: 'md' }); ok(r.ok && r.rows.map(x => x.date).join() === '2026-03-08,2026-03-08,2026-05-09', 'answered month first');
+r = P.phRead(text('dayfirst_dates.txt')); ok(r.ok && r.dateOrder === 'dm' && r.rows.map(x => x.date).join() === '2026-08-03,2026-08-25,2026-09-05', 'a day over 12 proves day first: ' + r.why);
+eq(P.phDateOrder('01/02/2026 a 1.00 2.00\n01/03/2026 b 1.00 3.00\n02/01/2026 c 1.00 4.00'), 'md', 'in order only as month first');
+eq(P.phDateOrder('01/02/2026 a\n01/03/2026 b\n02/01/2026 c\n13/01/2026 d\n01/14/2026 e'), '', 'both proofs at once is a refusal'); eq(P.phDateOrder('2026-08-03 x\n05 Aug 2026 y'), 'same', 'no numeric dates, nothing to decide'); eq(reads['bdo_savings_2026-08.txt'].dateOrder, 'md', 'BDO fixture is proved month first');
+P.phRead(text('dayfirst_dates.txt')); eq(P.phAnyDate('08/05/2026'), '2026-08-05', 'the order of one file does not leak into the next');
+
 /* 4. overlap and double import add nothing */
 const A = reads['gcash_2026-08.txt'], B = reads['gcash_2026-08-20_to_09-15.txt'];
 let m = P.phMerge([A, B]); eq(m.rows.length, 16, 'two overlapping GCash statements: 16 lines, not 22'); eq(m.dupes, 6, 'six lines were in both');
 eq(m.rows.filter(x => x.dir === 'in').reduce((s, x) => s + x.c, 0) - m.rows.filter(x => x.dir === 'out').reduce((s, x) => s + x.c, 0), B.closing - A.opening, 'merged rows take the first opening to the last closing');
 m = P.phMerge([A, P.phRead(text('gcash_2026-08.txt'), { file: 'copy.pdf' })]); eq(m.rows.length, 12, 'the same file twice'); eq(m.dupes, 12, 'twelve repeats');
-const all = files.map(f => reads[f]), first = P.phPrepare(all, [], []), ev1 = P.phEvents(first.rows);
+const all = files.filter(f => want[f]).map(f => reads[f]), first = P.phPrepare(all, [], []), ev1 = P.phEvents(first.rows);
 const known = []; ev1.forEach(e => { known.push(e.src.lid); if (e.src.lid2) known.push(e.src.lid2); });
-const again = P.phPrepare(files.map(f => P.phRead(text(f), { file: f })), known, []);
+const again = P.phPrepare(files.filter(f => want[f]).map(f => P.phRead(text(f), { file: f })), known, []);
 eq(again.already, again.rows.length, 'second import: every line is already logged'); eq(P.phEvents(again.rows).length, 0, 'second import adds no event'); eq(again.totals.in + again.totals.out + again.totals.moved, 0, 'second import adds no money');
 ok(again.rows.every(x => x.keep === false), 'already logged lines come back unticked');
 /* the two identical Jollibee charges one minute apart are two lines, not one */

@@ -86,6 +86,7 @@ Words for the screens. Drafts, written to VOICE.md (side/voice) as far as I coul
 4. **This one has a password.** Hint for GCash: your last name in small letters and the last 4 digits of your number, like delacruz1234. Under it: The password stays on this phone. It's used once to open the file.
 5. **Reading.** A coin drops into the account's pile for each line read. Then: 12 lines, Aug 2 to Aug 30. It adds up to your closing balance of ₱600.68.
 6. **If it doesn't add up.** This file doesn't add up to its own closing balance, so I won't use it as is. Buttons: Let the AI read it / Try another file / Type it in. Under the first: Your name, numbers and address are taken out first.
+6b. **If the dates could be read two ways** (`read.ask === 'dateOrder'`). Is 03/08/2026 the 8th of March or the 3rd of August? Two buttons with the two dates written out. The answer goes back in as `phRead(text, {dateOrder: 'md' or 'dm'})`.
 7. **Another account?** Buttons: Add another / That's all.
 8. **Review** (next section).
 9. **Done.** The picture: each account's pile at its closing balance.
