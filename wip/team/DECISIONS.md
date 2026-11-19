@@ -217,3 +217,8 @@ LEDGER_DESIGN.md (branch side/ledger-design) is the design for step B1, proved o
 2. **All the copy details are done in one pass with Mako.** He keeps his eye on it, and the team tweaks with him until the wording and all of the UI help are correct. Not screen by screen across many rounds.
 How the team does it (coordinator's reading): the voice lane's rewrite is applied in one batch as the best first version; Mako gets the preview and reads the app itself; his notes are applied in quick rounds on the copy only (strings, hints, help; no logic), each round checked by the script and the combined copy check, until he says it is right. The two full gates still judge numbers and the north star on the candidate.
 
+## How Mako writes, from his reaction to the first voice samples (Mako, 2026-11-19)
+- He does not use many full stops. Where others put one he often writes a space, a hyphen and a space. "I know that's not grammatically correct, but that's how I do things." The team works out from his messages how he uses it, then uses it in the copy. (A plain hyphen with spaces. Em dashes stay out.)
+- Fewer full stops, fewer short separate sentences, less abbreviation. Join a few sentences where it makes sense.
+- "I want it to sound more like someone talking to you in normal conversation."
+
