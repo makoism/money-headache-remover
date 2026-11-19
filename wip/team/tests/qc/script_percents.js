@@ -7,7 +7,7 @@
    (3) every goal "N% full" on Home is within 1 point of saved over target, never above it, and never 100 before the goal is full;
        Home's "most full, N%" names the same N as that goal's tile;
    (4) the Settings guide percents add to 100;
-   (5) Home: In the bank plus every burrow tile equals Total, and the burrow tiles add to Saved; every "$A + $B = $C" sentence adds up.
+   (5) Home: Bank at month end plus every burrow tile equals Total, and the burrow tiles add to Saved; every "$A + $B = $C" sentence adds up.
    Run: node tests/qc/script_percents.js */
 const K = require('./script_lib.js'); const { ck, done } = K.report();
 const num = t => { const m = String(t).match(/([−-]?)\$([\d,]+(?:\.\d+)?)/); return m ? +m[2].replace(/,/g, '') * (m[1] ? -1 : 1) : NaN; };
@@ -55,13 +55,13 @@ const screen = name => K.SCREENS.find(s => s[0] === name)[1];
     if (mf) { const card = home.match(new RegExp(mf[1] + '\\n\\$[\\d,.]+, (\\d+)% full')); ck(`${st}: "most full, ${mf[2]}%" matches the ${mf[1]} tile`, !!card && card[1] === mf[2], card ? card[0] : 'tile not found'); }
     /* (5) Home sums */
     const lines = home.split('\n').map(s => s.trim()).filter(Boolean);
-    const i0 = lines.indexOf('In the bank'), i1 = lines.indexOf('Total', i0);
+    const i0 = lines.indexOf('Bank at month end'), i1 = lines.indexOf('Total', i0);
     if (i0 >= 0 && i1 > i0) {
       let sum = 0, tiles = 0; const parts = [];
       for (let i = i0; i < i1; i++) if (/^[−-]?\$/.test(lines[i])) { sum += num(lines[i]); parts.push(lines[i - 1] + ' ' + lines[i]); if (i > i0 + 1) tiles += num(lines[i]); }
       ck(`${st}: Home bank plus burrows (${parts.join(', ')}) = Total ${lines[i1 + 1]}`, near(sum, num(lines[i1 + 1])), sum.toFixed(2));
       const sv = lines.indexOf('Saved'); if (sv > 0) ck(`${st}: Home burrow tiles add to Saved ${lines[sv + 1]} (${tiles.toFixed(2)})`, near(tiles, num(lines[sv + 1])));
-    } else ck(`${st}: Home shows In the bank ... Total`, false, 'not found');
+    } else ck(`${st}: Home shows Bank at month end ... Total`, false, 'not found');
     for (const s of K.SCREENS) {
       await s[1](p); const t = await p.evaluate(() => document.body.innerText);
       for (const m of t.matchAll(/([−-]?\$[\d,.]+) \+ [a-z ]*([−-]?\$[\d,.]+) = ([−-]?\$[\d,.]+)/g)) ck(`${st}, ${s[0]}: "${m[0]}" adds up`, near(num(m[1]) + num(m[2]), num(m[3])));

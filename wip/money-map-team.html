@@ -1951,7 +1951,7 @@ ol.steps li { margin: 0 0 4px; }
         <div class="field hcat"><label for="hCat">Category</label><div class="selbox"><select id="hCat"></select></div></div>
         <button class="btn solid hadd" type="submit" id="hSave">Log spend</button>
         <p class="msg hmsg" id="hMsg" role="status"></p>
-        <details class="hmore"><summary>Date, note</summary>
+        <details class="hmore"><summary>Add a date or a note</summary>
           <div class="hmore-in">
             <div class="field"><label for="hDate">Date</label><input type="date" id="hDate"></div>
             <div class="field"><label for="hNote">Note</label><input class="txt" id="hNote" type="text" maxlength="80" placeholder="Where or what"></div>
@@ -17033,9 +17033,10 @@ function renderMap() {
   const seg = split.map(x => `<i class="mp-seg" data-drop="pay:${esc(x.id)}" style="flex:${x.amount};--c:${x.c}" title="${esc(x.name)} ${esc(fmt(x.amount))}"></i>`).join('');
   const key = split.map(x => `<li><i style="background:${x.c}"></i>${esc(x.name)} <b>${fmt(x.amount)}</b></li>`).join('');
   const pb = M.bankEnd > 0 ? M.bankEnd : 0;
-  const parts = [{ name: 'In the bank', amount: pb, c: 'var(--bankc)' }].concat(M.goalParts.filter(g => !g.debt).map(g => ({ name: g.name, amount: Math.max(0, g.saved), c: gcol(g) }))   /* a debt goal is paid away, not a pile (LAUNCH_CHECKLIST A3) */, M.burrows.map(r => ({ name: r.name, amount: r.amount, c: col(r.id) }))).filter(x => x.amount > 0);
+  const BANK_END = 'Bank at month end';   /* its own name: "In your bank now" is the typed figure, this one is the plan's (H1 walk, finding 1) */
+  const parts = [{ name: BANK_END, amount: pb, c: 'var(--bankc)', part: 'bank' }].concat(M.goalParts.filter(g => !g.debt).map(g => ({ name: g.name, amount: Math.max(0, g.saved), c: gcol(g) }))   /* a debt goal is paid away, not a pile (LAUNCH_CHECKLIST A3) */, M.burrows.map(r => ({ name: r.name, amount: r.amount, c: col(r.id) }))).filter(x => x.amount > 0);
   const wseg = parts.map(x => `<i style="flex:${x.amount};--c:${x.c}" title="${esc(x.name)} ${esc(fmt(x.amount))}"></i>`).join('');
-  const wkey = (M.bankEnd < 0 ? `<li class="mp-neg"><i style="background:var(--bad)"></i>In the bank <b>${fmt2(M.bankEnd)}</b> (short)</li>` : '') + parts.map(x => `<li><i style="background:${x.c}"></i>${esc(x.name)} <b>${fmt2(x.amount)}</b></li>`).join('');
+  const wkey = (M.bankEnd < 0 ? `<li class="mp-neg" data-part="bank"><i style="background:var(--bad)"></i>${BANK_END} <b>${fmt2(M.bankEnd)}</b> (short)</li>` : '') + parts.map(x => `<li${x.part ? ` data-part="${x.part}"` : ''}><i style="background:${x.c}"></i>${esc(x.name)} <b>${fmt2(x.amount)}</b></li>`).join('');
   /* every Home figure says whether it is what the bank shows now or what the plan expects (LAUNCH_CHECKLIST A1) */
   const PLN = '<em class="ntag plan">planned</em>', NOW = '<em class="ntag now">now</em>';
   /* the now block, first (LAUNCH_CHECKLIST A1 and A5): the bank as typed, with its day, the cards and what is on them, and the bank after the
@@ -17068,7 +17069,7 @@ function renderMap() {
     <p class="mp-act"><button type="button" class="btn small" id="mpPay">Watch where your pay goes</button></p></details>
     <p class="mp-cap mp-where-h">Where your money sits at the end of ${esc(mon)}: the bank and your burrows ${PLN}</p>
     <div class="mp-where" role="img" aria-label="${esc(parts.map(x => x.name + ' ' + fmt(x.amount)).join(', '))}">${wseg}</div>
-    <ul class="mp-key">${wkey}</ul>${oweLine}
+    <ul class="mp-key">${wkey}</ul><p class="cap mp-from" data-planfrom>${BANK_END} is planned from your balance at the start of ${esc(mon)}, so it can differ from your bank now.</p>${oweLine}
     <ul class="mp-nums mp-four" aria-label="Your four numbers">${n4('Total', fmt2(M.total), 'planned for the end of ' + mon + ': bank and burrows', M.total < 0 ? 'bad' : '')}${(M.free < 0 ? n4('Free to spend', fmt2(M.free), 'planned: over in ' + mon, 'bad') : n4('Free to spend', fmt2(M.month.find(r => r.id === 'play').amount), 'planned: safe to spend in ' + mon))   /* one figure, as the chest below shows it (38.31 north-star round 2) */}${n4('Bills left', fmt2(M.billsLeft), 'planned: still to pay in ' + mon)}${n4('Saved', fmt2(M.saved), 'planned: in your burrows by the end of ' + mon + ', with this month\'s saving')}</ul>
     <p class="cap mp-proof">Bank ${fmt2(M.bankEnd)} + burrows ${fmt2(M.saved)} = <b>${fmt2(M.total)}</b> at the end of ${esc(mon)}.${PF.pendAmount > 0 ? ' ' + fmt2(PF.pendAmount) + ' of free to spend is left out until you answer' + (typeof SWEEP_LATER !== 'undefined' && SWEEP_LATER && PF.pendMonths.every(q => SWEEP_LATER[q]) ? ' (Home asks again next time).' : ' the question on Home.') : ''}</p>
     ${PF.ok ? '' : `<p class="cap mp-bad" role="alert">These numbers do not add up. They are off by ${fmt2(PF.offBy)}. Nothing you entered is lost. Please tell Mako.</p>`}
