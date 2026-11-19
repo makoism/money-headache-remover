@@ -229,3 +229,10 @@ Mako: "I don't see how it would work on mobile, nicely... I don't really want to
 2. **On desktop you can enter the world.** It is an extra way in, never the only way: every action still works in the normal app on every device.
 3. The rest is unchanged: the world is part of the art step, designs with Mako first, nothing starts before he says so.
 What follows (coordinator's reading, agreed with him in chat as the team's view): the world's "phones and QC" week in WORLD_3D.md shrinks to desktop checks; the phone needs its own warmth from the 2D art in the art step, since the phone is where he and the team use the app most; "desktop" is decided by a pointer and keyboard and a wide screen, not by the browser's name.
+
+## The coordinator picks the model for each session (Mako, 2026-11-19)
+Mako: "I'll just let you figure out what models to use in the other chats to run the most efficient way we can." He keeps his own chat with the coordinator on the strongest model at medium.
+How the coordinator uses it (its own rule, built on cost rule 2):
+- Strongest model: the main session (app code, numbers, data safety), the ledger and its tests, the two QC gates, money accuracy and data safety reviews, and the voice and copy work (the copy is a reason he would stop using the app).
+- Faster, cheaper model: docs-only lanes, research, runbooks, persona walk scripts, novice, layout and regression reviews.
+- How many sessions run at once matters more than the model: about five or six at most, fewer when nothing useful is unblocked; if Mako says the usage meter is running hot, cut to the main session plus one lane.
