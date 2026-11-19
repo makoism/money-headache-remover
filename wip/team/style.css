@@ -393,6 +393,7 @@ a.btn { display: inline-flex; align-items: center; justify-content: center; text
 .steps li span { color: var(--ink2); font-size: 15px; line-height: 1.45; max-width: 52ch; }
 .steps li .link { font-size: 15px; font-weight: 500; padding-left: 0; }
 .steps li.done b { color: var(--ink2); }
+.howto { margin: 10px 0 0; padding-left: 22px; display: grid; gap: 8px; }   /* plain numbered lines (Backup, Restore); not the .steps grid */
 
 /* ---- short guides ---- */
 details.how { background: var(--field); border-radius: var(--r-box); padding: 0 18px; max-width: 56ch; }

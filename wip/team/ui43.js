@@ -76,7 +76,7 @@ function renderBackupNudge() {
   if (moveIn) {
     html = `<div class="hn-t"><b>Numbers arrived from the Claude link</b><span>${hasData(S) ? 'This page already has numbers of its own. Replace them with the ones that just arrived?' : 'Load them here?'}</span></div><div class="hn-b"><button type="button" class="btn small solid" data-move-load>${hasData(S) ? 'Replace with the arrived numbers' : 'Load them'}</button><button type="button" class="link" data-move-no>Keep what is here</button></div>`;
   } else if (vaultNote && vaultNote.kind === 'newer') {
-    const when = vaultNote.when ? new Date(vaultNote.when).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
+    const when = vaultWhen(vaultNote.when);
     html = `<div class="hn-t"><b>Newer copy in the cloud</b><span>Saved from another device${when ? ' on ' + when : ''}. Tap Load it to load it here, or Keep mine to keep this device's numbers and send them to the cloud in its place.</span></div><div class="hn-b"><button type="button" class="btn small solid" data-vault-load>Load it</button><button type="button" class="link" data-vault-keep>Keep mine</button></div>`;
   } else if (vault.on && vault.failAt) {
     /* LAUNCH_CHECKLIST E9: a cloud save that failed is said on Home too, until a save works */
@@ -84,7 +84,7 @@ function renderBackupNudge() {
   } else if (vault.on && cloud && !S.ui.vaultSeen && !bkNote) {
     html = `<div class="hn-t"><b>Save your recovery code</b><span>Your numbers have an encrypted cloud copy now. This code is the only way to open it on another phone.</span></div><div class="vault-wrap" data-vault-code></div>`;
   } else if (bkNote) {
-    const when = bkNote.t ? new Date(bkNote.t).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
+    const when = bkNote.t ? vaultWhen(bkNote.t).split(',')[0] : '';
     html = `<div class="hn-t"><b>Numbers restored</b><span>This page lost its saved numbers so it loaded the copy kept in this browser${when ? ' from ' + when : ''}. Tap Save a copy to keep a backup file as well.</span></div><div class="hn-b"><button type="button" class="btn small solid" data-bk-now>Save a copy</button><button type="button" class="link" data-bk-ok>OK</button></div>`;
   } else if (backupDue() && $('#hNext').hidden) {
     const a = bkAge();
