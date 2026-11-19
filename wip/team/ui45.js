@@ -246,9 +246,9 @@ const TOUR = [
         : L > 0 ? `Pay entered. <b>${fmt2(L)}</b> is not placed yet: raise a goal or add to free to spend.`
         : L < 0 ? `Pay entered. The ${billsIn ? 'plan' : 'sample plan'} exceeds pay by <b>${fmt2(PF.shortBy)}</b>${billsIn ? '' : ' because bills are still samples'}. ${billsIn ? 'Lower a bill under Plan.' : 'Enter your real bills next.'}`
         : 'Pay entered. All of it is assigned.';
-      const bills = zero && !(necTotal() > 0) ? 'Bills and burrows are empty. Open Plan, Bills and basics, and enter what you pay.'
-        : billsIn ? (necTotal() > 0 ? 'Your bills are in. Any line left at zero can be set under Plan, Bills and basics.' : 'Your bills are all at zero so far. Set each line under Plan, Bills and basics.')
-        : 'Bills and burrows are still samples. Open Plan, Bills and basics, and set each line. Or use <b>Set all to zero</b> in Settings.';
+      const bills = zero && !(necTotal() > 0) ? 'Bills and burrows are empty. Open Plan, Monthly bills, and enter what you pay.'
+        : billsIn ? (necTotal() > 0 ? 'Your bills are in. Any line left at zero can be set under Plan, Monthly bills.' : 'Your bills are all at zero so far. Set each line under Plan, Monthly bills.')
+        : 'Bills and burrows are still samples. Open Plan, Monthly bills, and set each line. Or use <b>Set all to zero</b> in Settings.';
       return `${homeScene()}<p>${msg}</p>
       <p>${bills}</p>
       <p>Help (bottom right) has the video and the setup.</p>`;

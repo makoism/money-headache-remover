@@ -56,7 +56,7 @@ const BASICS_SUB = 'Name, currency, balance, look, saved data.';
 const MAKE_CAP = 'Amounts are samples for one salary. Start at zero or type over them. Saved in this browser only. Nobody else sees it, including whoever shared this page.';
 const START_STEPS = [
   ['pay', 'Enter pay', 'Type monthly take-home pay under Salary.', 'Go to Salary', 'data-open="a"'],
-  ['bills', 'Check bills', 'Set each Bills and basics line to the real amount. Rename, remove or add lines.', 'Open Bills and basics', 'data-open="nec"'],
+  ['bills', 'Check bills', 'Set each Monthly bills line to the real amount. Rename, remove or add lines.', 'Open Monthly bills', 'data-open="nec"'],
   ['goals', 'Set up burrows', 'Name each goal, its cost and its date.', 'Go to Goals', 'data-tab-go="goals"'],
   ['receipts', 'Log receipts', 'Add what you spent. Set a calendar reminder to make it a habit.', 'Go to Receipts', 'data-tab-go="receipts"'],
 ];

@@ -1,0 +1,10 @@
+# Known findings of tests/qc/act_keep.js. Each line is one pattern (a JavaScript regular expression) matched against a FAIL line.
+# A listed failure does not fail the run. A listed line that no longer matches any failure DOES fail the run, so take it out when the app is fixed.
+# Empty on purpose: the main session decides which findings in LANE_act_keep.md are fixed and which are named here.
+# Example:  ^FAIL setName: REPLACES
+# MAIN 3, 2026-11-19 (the coordinator's rule for v1): an action that sets ONE typed value keeps no 3-day copy. Its Undo lasts for the visit and must be exact
+# (the pattern below only matches while it is). Reason: there is one copy slot, and a small edit must not push out the copy of a big change.
+# Bulk and removing actions (tx from the assistant or setup from statements, removeGoal, removeLine, removeReceipts, removeCard, sweep, unsweep, release) are NOT listed: they keep the copy.
+^FAIL (setPay|setIncome|setBalance|setBankNow|setCard|setMinBalance|setCeiling|setLine|renameLine|setLineEnds|updateGoal|setGoalSaving|setAims|setName|setCurrency|setHome): (REPLACES|REMOVES) .*NO COPY in the saved data; Undo now is exact
+# Undo itself has no redo. Named until Mako asks for one.
+^FAIL undo: REPLACES

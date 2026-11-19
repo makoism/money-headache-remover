@@ -909,7 +909,7 @@ function cleanItems(raw) {
 }
 const CFG_AMOUNTS = ['bankStart', 'minBank', 'ceiling', 'moveTarget', 'moveStart', 'travelTarget', 'travelStart', 'carTarget', 'carStart', 'rainyStart', 'rainyTarget', 'rainyStretch'];
 /* every setting this version knows; anything else in a saved copy is a newer version's and is kept untouched by the page (ui0.js) */
-const CFG_KNOWN = new Set(CFG_AMOUNTS.concat(['bankNow', 'bankNowAt', 'loanLast', 'redirectLoan', 'moveMonth', 'carDue', 'aims']));
+const CFG_KNOWN = new Set(CFG_AMOUNTS.concat(['bankAt', 'bankNow', 'bankNowAt', 'loanLast', 'redirectLoan', 'moveMonth', 'carDue', 'aims']));   /* a known field the page took away on purpose (an Undo) is never carried back in from the stored copy */
 function cleanCfg(raw) {
   const out = {}; if (!isMap(raw)) return out;
   CFG_AMOUNTS.forEach(k => { const v = k === 'bankStart' ? cleanSigned(raw[k]) : cleanAmt(raw[k]); if (v !== null) out[k] = v; });

@@ -27,7 +27,7 @@ Sources: SECURITY_REVIEW.md (branch side/security-review, 2026-11-19), the five 
 | A8 | Double counting: a bill drains on its date and its receipt is logged; a statement repeats check-ins | one event per bill (the receipt replaces the drain); import review flags "already logged" | team |
 | A9 | Currency: a switch relabels amounts; money in two currencies (USD via Wise or Payoneer) | team: lock the currency once real data exists; later (Mako decides): each account has its own currency | team lock, later rest |
 | A10 | Percents add to 81% in a month where spending past plan used pay (side A) | that row gets its percent | v1 |
-| A11 | On Plan, Month, "Bills and basics" shows two amounts: the list of places includes card and loan payments, Money out does not (side H, tests/qc/label_agree.js) | one figure, or two different names | v1 |
+| A11 | On Plan, Month, "Bills and basics" shows two amounts: the list of places includes card and loan payments, Money out does not (side H, tests/qc/label_agree.js) | one figure, or two different names | v1: DONE, two names (the Money out row is "Monthly bills"; tests/qc/label_agree.js in check.sh full) |
 
 ## B. People come back
 | # | Point | Fix | Gate |

@@ -239,7 +239,7 @@ const PLAIN_KEY = /^[A-Za-z][A-Za-z0-9_]{0,39}$/;
 function keepUnknown() {
   try {
     const raw = localStorage.getItem(KEY); if (!raw) return; const d = JSON.parse(raw); if (!d || typeof d !== 'object') return;
-    Object.keys(d).forEach(k => { if (!(k in S) && PLAIN_KEY.test(k)) S[k] = d[k]; });
+    Object.keys(d).forEach(k => { if (!(k in S) && k !== 'cards' && PLAIN_KEY.test(k)) S[k] = d[k]; });   /* cards is a field this version knows: gone here means removed here (Undo of the first card) */
     if (d.cfg && typeof d.cfg === 'object' && S.cfg) Object.keys(d.cfg).forEach(k => { if (!(k in S.cfg) && !CFG_KNOWN.has(k) && PLAIN_KEY.test(k)) S.cfg[k] = d.cfg[k]; });
     if (Array.isArray(d.receipts) && Array.isArray(S.receipts)) { const by = new Map(d.receipts.filter(r => r && typeof r.id === 'string').map(r => [r.id, r])); S.receipts.forEach(r => { const o = by.get(r.id); if (o) Object.keys(o).forEach(k => { if (!(k in r) && !RC_KNOWN.has(k) && PLAIN_KEY.test(k) && ['string', 'number', 'boolean'].indexOf(typeof o[k]) >= 0) r[k] = o[k]; }); }); }
   } catch (e) { /* the stored copy is unreadable: nothing to carry over */ }
