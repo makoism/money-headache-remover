@@ -84,7 +84,7 @@ function checkCalc(id, S) {
     const st = M.statusOf(S, m);
     ok(tag, st === 'short' ? m.bankEnd < M.cfg(S, 'minBank') : st === 'tight' ? (m.bankEnd >= M.cfg(S, 'minBank') && m.left < 0) : (m.bankEnd >= M.cfg(S, 'minBank') && m.left >= 0), 'status ' + st);
     // jars
-    const J = M.jarsOf(S, m), pc = J.list.map(j => j.pct).concat([J.restPct]), ps = pc.reduce((a, b) => a + b, 0);
+    const J = M.jarsOf(S, m), pc = J.list.map(j => j.pct).concat([J.restPct, J.usedOverPct || 0]),   /* since 1a78443 the rest is split: not placed, and used for spending past plan */ ps = pc.reduce((a, b) => a + b, 0);
     ok(tag, J.rest >= 0 && J.short >= 0 && !(J.rest > 0 && J.short > 0), 'rest/short');
     ok(tag, J.rest - J.short === m.left, 'rest - short != left');
     const base = J.short > 0 ? m.out : m.inflow;

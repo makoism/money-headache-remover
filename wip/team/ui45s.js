@@ -275,7 +275,7 @@ const goalStep = id => ({ id: 'goal-' + id, part: PART.goals, setup: true,
       <div class="field tour-q1"><span class="l" id="tourEmL">Months of bills to cover</span>
       <div class="tour-chips" role="radiogroup" aria-labelledby="tourEmL">${EM_MONTHS.map(x => chip('tourEm', String(x[0]), String(x[0]), x[1], x[0] === m)).join('')}</div></div>
       <p class="cap" id="tourEmCap">${emCap(m)}</p>
-      <div class="tour-fields">${moneyField('tourGSaved', 'Already saved', g.start)}</div><p class="cap">If this money is already in your bank balance above, take it out of that number so it is not counted twice.</p>`;
+      <div class="tour-fields">${moneyField('tourGSaved', 'Already saved', g.start)}</div><p class="cap">Is this money in the same account as the balance you typed before? Then lower that balance by this amount, so the same money is not counted in two places.</p>`;
     }
     const dbt = !!k.debt;
     return `<p>${g.emergency ? 'A cushion for surprises. How much do you want to hold? Usual advice: three to six months of bills.' : dbt ? 'Name the debt and how much you owe in total. The smallest payment you must make stays in Bills and basics. This burrow is for the extra you pay on top, so the debt shrinks faster.' : 'Name, cost, a date if there is one, and the reason in your words.'}</p>
@@ -283,7 +283,7 @@ const goalStep = id => ({ id: 'goal-' + id, part: PART.goals, setup: true,
       ${g.emergency ? '' : textField('tourGName', 'Name', k.name && g.name === k.name ? '' : g.name, 60, k.name)}
       ${g.emergency ? '' : `<div class="field"><label for="tourGWhy">Why (optional)</label><div class="inp"><input id="tourGWhy" type="text" maxlength="80" spellcheck="false" value="${esc(g.why || '')}" placeholder="Why it matters, in your words"></div><p class="cap">Shows with the goal, so the reason stays in view.</p></div>`}
       <div class="field">${moneyField('tourGCost', dbt ? 'Total owed' : g.emergency ? 'How much to hold' : 'Cost', g.target).replace(/^<div class="field">|<\/div>$/g, '')}${k.cost ? `<p class="cap">${k.cost}</p>` : ''}</div>
-      ${moneyField('tourGSaved', dbt ? 'Already paid off' : 'Already saved', g.start)}${dbt ? '' : `<p class="cap">If this money is already in your bank balance above, take it out of that number so it is not counted twice.</p>`}
+      ${moneyField('tourGSaved', dbt ? 'Already paid off' : 'Already saved', g.start)}${dbt ? '' : `<p class="cap">Is this money in the same account as the balance you typed before? Then lower that balance by this amount, so the same money is not counted in two places.</p>`}
       ${g.emergency ? '' : `<div class="field"><label for="tourGDue">${dbt ? 'Paid off by' : 'Needed by'}</label><input type="date" id="tourGDue" min="${lo}" max="${hi}" value="${esc(g.due)}"><p class="cap">With a date, the monthly amount is worked out for you.</p></div>`}
     </div>
     ${k.k && !k.em && S.plan.goals.length < MAX_GOALS ? `<div class="row-btns"><button type="button" class="btn small more" data-moreg="${esc(id)}">Add another ${GOAL_NOUN[k.k] || 'goal'}</button></div>` : ''}`;
@@ -423,8 +423,10 @@ const STEP_REVEAL = { id: 'reveal', part: PART.spend, art: 'branch',
   show: () => { if (tourMode === 'full' && S.ui.done && S.ui.done.pay && S.ui.done.bills && S.ui.done.goals) { S.ui.setup = true; persist(); } },
   body: () => {
     const f = planFacts(), play = f.play, wk = weekOf(play), seg = (cls, v) => (v > 0 ? `<div class="seg-b ${cls}" style="flex-grow:${v}"></div>` : '');
-    if (f.st === 'nopay') return `${chestImg(0.5)}<div class="tour-reveal"><b>${fmt2(play)}</b><span>a month, sample</span></div>
-      <p>No pay entered, so every number here is a sample. Free to spend is for fun, worked out after bills and burrows. Add your pay under Plan, Month, Details, Money in, or tap Back to enter it here.</p>`;
+    /* no sample money in setup sentences (LAUNCH_CHECKLIST D2): with no pay there is no figure to show yet, only what to do */
+    if (f.st === 'nopay') return `${chestImg(0.2)}
+      <p>Free to spend is money for fun: what is left after bills and burrows. It needs your pay to work it out, so there is no figure yet.</p>
+      <p>Tap Back to type your pay, or add it later under Plan, Month, Details, Money in.</p>`;
     if (f.st === 'over') return `<div class="tour-reveal neg"><b>${fmt2(f.shortBy)}</b><span>short a month</span></div>
       <p>Plan spends <b>${fmt2(f.J.out)}</b>; pay is <b>${fmt2(f.inc)}</b>.${play > 0 ? '' : ' Nothing left, so no free to spend yet.'}</p>
       ${ledgerHTML(f)}

@@ -2,6 +2,32 @@
 
 The coordinator is the one session Mako talks to. It records his decisions in DECISIONS.md (and NORTH_STAR.md, LAUNCH_CHECKLIST.md), starts and messages working sessions, and brings their results back to him. Working sessions take direction from nowhere else. The coordinator hands off at about 150k tokens of history, like every session.
 
+## 2026-11-19, handoff 2 (coordinator 2 to coordinator 3) READ THIS FIRST
+
+Coordinator 2 (session_01BFpKEXXUx4uUjZGJny9MyJ) passed the 150k mark and handed off. The sections below it are its running log; this is the state.
+
+### Mako today (all recorded in DECISIONS.md, last eight sections; read them)
+Pace (use the full allowance by Sunday 22 Nov, again by Wed 25 or Thu 26). The team's shape answered by him (standard Philippine accounts, monthly pay with separate pay supported, cards core, iPhone and Android). The copy must not sound like AI and must sound like him (few full stops, his space hyphen space, joined sentences, normal conversation); all copy in one batch at the end, then ONE pass with him on the preview. The cloud copy must explain itself step by step (E15, v1). Yen stays default. He likes short updates: what was found, what was done. He said: ask him when context is needed. He dictates by voice; messages can cut off.
+
+### Running sessions (send_message to these; all report to the coordinator, so tell each one your new session id first)
+- MAIN 2, session_01BFpKEV7tq6qCSZ8Mg5c5GR, wip-38.31, the only one editing app files. Its v1 list has grown: A1, A3, A4, A5 (cards stored as {name, owed, payDay}, bank as cfg.bankStart plus cfg.bankAt), D2, D3, E1, E6 fixes 1 to 5 (from side/e6-window-test), E9, E10 client part, E15 cloud copy as steps, F2, F4 rest, F6, H1, U1, U2; QC briefs get jobs to finish and the screen pack gets hidden panels; then merge side/phone-fixes (ready, ea880b0) and side/act-keep-checks if it passes; then the copy batch (COPY_V1.md with copy_apply.js from side/voice) in one commit; verify.sh; one check.sh full; one candidate; one QC run (both gates, qc-voice in place of qc-wording, beginner walk with the jobs); then preview link, screenshots, STEP8_COMPARE.md summary. Owed to the coordinator: one line when A1 lands (then tell SIDE H to start part 2), one line on fuzz_model.js 3000 11 (side J saw FUZZ FAIL 1944 on plain wip-38.31), the list of panels never in the screen pack. If it hands off, start a fresh main session from RESUME.md section 0.
+- SIDE M voice, session_01BFpKEV1R93tPPdSS5tfa3a, side/voice: redoing samples after Mako's notes (fewer full stops, his hyphen, joined sentences, plus four cloud copy strings). When they arrive, show Mako before and after in the chat. Then it delivers qc-voice, voice_lint.js, COPY_V1.md, HELP_TEXTS_V2.md.
+- SIDE G vault, session_01BFpKEV1EjMmi3kqEvVfG9f, side/vault-server: server part done (dated versions, soft delete, server decides newer); now doing the RELAY fixes in functions/api/ai.js. Merges only after v1 is deployed and Mako says go.
+- SIDE H, session_01BFpKEYXsoMWMPZT6wAnhGo, side/act-keep-checks: act_keep.js; no report yet. Part 2 waits for A1.
+- SIDE N ledger core, session_01BFpKEZZgy2d3mworAzNt5F, side/ledger-core: ledger.js as a new file against the ledger tests, plus the Philippine gaps (card cut-off day, instalments, paluwagan, 13th month).
+- SIDE O statements, session_01BFpKEWGt66FAVwvxiYaZMt, side/statements-ph: fixtures, stmt_ph.js, masking, STATEMENTS_DESIGN.md. It will list which real statements (blacked out) would settle the unknown bank layouts; pass that list to Mako when it exists.
+- PHONE lane, session_01BFpKEZXbxbYUaG22NPBwJY: done, branch ready.
+- Done, branches kept: side/security-review (F), side/deploy-prep (I), side/e6-window-test (J), side/help-texts (K), side/ph-accounts (L), side/ledger-design (E).
+
+### Open with Mako
+- Security B4, only he can do it (told him; no answer yet, do not nag, mention once with the v1 preview): INVITE_CODES set to a long phrase on the Worker, auto-reload off in the Anthropic console, /api/health says vault true.
+- Two notes from the voice lane for his gut: how casual ("actually", "a bit"); whether one line notes drop the capital. "Less abbreviation": coordinator read it as words in full, contractions stay; the voice lane checks his messages.
+- Before the deploy he exports a backup (rollback to 38.28 with newer data is untested).
+- The usage limit: the five-hour window was near its limit at 02:40 UTC and resets about 04:30 UTC; every session has a resume timer.
+
+### Next lanes when one frees up (run the efficiency agent first)
+Persona walks with PERSONAS_PH.md once a team build exists; G2 measures after v1 deploys; the setup lane after the ledger's actions exist; wiring HELP_TEXTS_V2.md ("?" panels) after v1.
+
 ## 2026-11-19, coordinator 2 (session_01BFpKEXXUx4uUjZGJny9MyJ): six more lanes (pace decision)
 
 Mako's pace decision (DECISIONS.md "Pace: use the full allowance") came in by relay. The efficiency agent reviewed the lane set. Started, each on its own branch, each told to report here:
@@ -19,6 +45,9 @@ Mako's pace decision (DECISIONS.md "Pace: use the full allowance") came in by re
 - SIDE N, session_01BFpKEZZgy2d3mworAzNt5F, side/ledger-core from side/ledger-design: wip/team/ledger.js as a new file proved against the ledger tests, not wired in; main wires it after v1.
 - Next lane to start: statements (when SIDE L reports the Philippine statement formats).
 - Copy batch (efficiency review 2): the voice lane delivers COPY_V1.md as an exact table plus tests/qc/copy_apply.js; glossary terms are not renamed; MAIN 2 applies it in one commit after its last v1 point (tests old to new string, voice_lint in the script tier, golden re-recorded), then verify.sh once and the single check.sh full; qc-voice replaces qc-wording in the panel. Mako sees 10 to 15 before and after pairs first; if he has not reacted by the time MAIN 2 is ready, ask him once in two lines.
+- Done: SIDE J (side/e6-window-test 5564814; found live data loss on import; MAIN 2 told to put fixes 1 to 5 into v1; checklist E6 and E14). SIDE L (side/ph-accounts 0f87594: PH_ACCOUNTS.md, presets_ph.json with 50 names, PERSONAS_PH.md; ledger gaps: card cut-off day, cards not paid in full, instalments, paluwagan, 13th month, sent to SIDE N).
+- SIDE O, session_01BFpKEWGt66FAVwvxiYaZMt, side/statements-ph: made-up Philippine statement fixtures, stmt_ph.js as a new file, on-device masking, STATEMENTS_DESIGN.md. Not wired in.
+- Mako, later the same day: copy in one batch at the end and then ONE pass with him on the preview, tweaked until right; the north star check for onboarding and copy details is combined with the voice checker; cloud copy must explain itself step by step (E15, v1); yen stays default. Voice samples were sent to him (three help texts, six strings); waiting for his reaction, with two notes for his gut: how casual ("actually", "a bit"), and whether one line notes drop the capital. The QC briefs get jobs to finish, not only screens (MAIN 2 was told), because the unclear cloud copy was never tested for.
 
 Rules from the efficiency review:
 - No side lane touches wip/money-map-team.html, check.sh, tests/verify.sh, tests/qc/script_known.txt, tests/qc/lib_r12.js, tests/qc/golden/*, RESUME.md, DECISIONS.md, LAUNCH_CHECKLIST.md. Each lane's handoff is its own LANE_<name>.md. stmt.js is an app file (in the bundle).

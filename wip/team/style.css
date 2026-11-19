@@ -8,10 +8,10 @@
   color-scheme: light;
   --bg: #eef4ef; --panel: rgba(255, 255, 255, .62); --card: rgba(255, 255, 255, .62); --field: #ffffff; --seg-on: #ffffff; --float: rgba(255, 255, 255, .86);
   --ink: #122018; --ink2: #3d5749; --ink3: #44594b; --hair: rgba(18, 32, 24, .1); --track: rgba(18, 32, 24, .07); --track2: rgba(18, 32, 24, .11);
-  --accent: #1f7a52; --on-accent: #ffffff; --accent-h: #27895d; --link: #145c3c;
+  --accent: #1f7a52; --on-accent: #ffffff; --accent-h: #196744; --link: #145c3c;   /* F6: hover darker, so white text keeps 4.5:1 (was #27895d, 4.35:1) */
   --c1: #b8512e; --c2: #2c6db5; --c3: #3e8e2b; --c4: #d6568a; --c5: #d99a12; --c6: #7e3f96; --c7: #0b8fa8; --cp: #d4e04f; --cl: #b9c6d2; --cg: #e8dcc0;
-  --good: #1f7a52; --good-bg: rgba(31, 122, 82, .12); --warn: #9a6a00; --warn-bg: rgba(154, 106, 0, .12); --bad: #b8352e; --bad-bg: rgba(184, 53, 46, .1);
-  --warn-on: #c98500; --bad-on: #e0524b; --ok-dot: #a9bdb2;
+  --good: #166240; --good-bg: rgba(31, 122, 82, .12); --warn: #7a5300; --warn-bg: rgba(154, 106, 0, .12); --bad: #b8352e; --bad-bg: rgba(184, 53, 46, .1);
+  --warn-on: #c98500; --bad-on: #e0524b; --ok-dot: #a9bdb2;   /* F6 (side A finding 2): --good was #1f7a52 (3.85:1 on its tint) and --warn #9a6a00 (3.48:1) as text */
   --leaf: rgba(31, 122, 82, .34); --glass-hi: rgba(255, 255, 255, .5);
   --acc-tint: rgba(31, 122, 82, .08); --acc-tint2: rgba(31, 122, 82, .2); --acc-glow: rgba(31, 122, 82, .25); --acc-ring: rgba(31, 122, 82, .65);
   --aurora: radial-gradient(60% 45% at 85% -5%, rgba(143, 217, 176, .5) 0%, rgba(143, 217, 176, 0) 70%), radial-gradient(70% 50% at -10% 60%, rgba(95, 185, 138, .22) 0%, rgba(95, 185, 138, 0) 70%), radial-gradient(50% 40% at 60% 110%, rgba(255, 255, 255, .7) 0%, rgba(255, 255, 255, 0) 70%);
@@ -1851,3 +1851,26 @@ p .link, li .link, span .link, .cap .link { min-height: 0; position: relative; p
 /* 320 wide: an open goal editor no longer pushes every goal card into the panel's padding (38.31 layout round 4) */
 .gcard { min-width: 0; } .gform, .gform .field, .gform .inp, .gform input, .gform select { min-width: 0; max-width: 100%; }
 #djBtn, #gearBtn { min-width: 44px; flex-shrink: 0; }
+/* "now" and "planned" on every Home figure (LAUNCH_CHECKLIST A1) */
+.ntag { display: inline-block; vertical-align: middle; margin-left: 6px; padding: 1px 8px; border-radius: 999px; font-style: normal; font-size: var(--t-micro); font-weight: 600; letter-spacing: 0; border: 1px solid var(--line, rgba(0,0,0,.2)); color: var(--ink2); background: transparent; }
+.ntag.now { color: var(--ink); border-color: var(--good, currentColor); }
+.mp-now { margin: 10px 0 14px; padding: 12px 14px; border-radius: 14px; background: var(--card); border: 1px solid var(--line, rgba(0,0,0,.2)); }
+.mp-now-h { margin: 0 0 4px; font-weight: 600; }
+.mp-now-v { display: block; font-size: 1.6em; line-height: 1.2; }
+.mp-now-v.bad { color: var(--bad); }
+.mp-now .mp-fresh { margin: 2px 0 6px; }
+.mp-ask label { display: block; font-weight: 600; margin: 6px 0 2px; }
+.mp-askrow { display: flex; gap: 8px; align-items: stretch; margin-top: 6px; }
+.mp-askrow .inp { flex: 1; min-width: 0; }
+.mp-askrow .btn, .mp-now .btn, .mp-now .link { min-height: 44px; }
+.mp-owe { margin: 6px 0 10px; }
+/* F2 (LAUNCH_CHECKLIST, phone check): on screens under 700px tall the page dots sat on the squirrel at the burrow door. There they move to the
+   top strip, above the card; and on every screen they step aside while a coin trip runs (the card then shows "Going in." and no buttons) */
+@media (max-height: 699px) { .bv-dots { top: max(6px, env(safe-area-inset-top)); bottom: auto; } }
+#burrowView:has(.bv-pop:not([hidden]) > .bv-n):not(:has(.bv-pop button)) .bv-dots { visibility: hidden; }
+/* F6 (LAUNCH_CHECKLIST, side A finding 1): five controls on Home were under 44px with More open. Each folding summary is 44px tall, and the
+   two small links in the status and Free to spend lines get a 44px touch box (the negative margin keeps the line where it was) */
+#hQuick .hmore > summary, .hw-more > summary, .gg-wrap > summary { min-height: 44px; display: flex; align-items: center; box-sizing: border-box; }
+p.hs-more .link { padding-top: 12px; padding-bottom: 12px; margin-top: -12px; margin-bottom: -12px; }
+/* F6: a goal's "full" mark in All months kept the goal colour as 12px text (1.84:1 for the yellow goal in light): the words mix toward the ink */
+.mt-g > span { color: color-mix(in srgb, var(--c) 45%, var(--ink)); }

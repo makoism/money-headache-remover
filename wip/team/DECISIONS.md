@@ -206,3 +206,19 @@ LEDGER_DESIGN.md (branch side/ledger-design) is the design for step B1, proved o
 - Moving a 38.31 copy: only typed figures move; the old plan is shown once beside them; a frozen copy is kept. A3 debt goals become loan accounts.
 - Words until Mako picks: "Waiting" (new pay not yet placed), "for the card", "owed to you".
 
+## Copy at the end, the cloud copy explained, yen default (Mako, 2026-11-19)
+1. **All the copy is done at once, at the end** of the v1 points, in one batch. Mako agreed; he wanted the voice problem addressed first.
+2. **Saving your data must be very clear.** Mako on the cloud copy today: "it's like copy this to the cloud to save your data. I don't know how that even works. Do I paste it in a new browser? There's not enough steps there." So the cloud copy explains itself step by step: what it is, what the code is for, exactly what to do on this device, and exactly what to do on another phone or browser to get the numbers back. The same for every other way of keeping data (backup file, restore, the snapshot before a load) and for every message about data that could be lost. One step at a time, plain, in his voice.
+3. **The default currency is Japanese yen.** (It already is; it stays. The team link opening in pesos, checklist D1, is a link setting on top of that.)
+4. Mako likes the updates in this form (short, what was found, what was done). If context is needed at any point, ask him.
+
+## One copy pass with Mako, near the end (Mako, 2026-11-19)
+1. For the smaller details (onboarding, copy, the help in the UI) **the north star check and the voice checker can be combined** into one review, and it can run near the end. That is fine.
+2. **All the copy details are done in one pass with Mako.** He keeps his eye on it, and the team tweaks with him until the wording and all of the UI help are correct. Not screen by screen across many rounds.
+How the team does it (coordinator's reading): the voice lane's rewrite is applied in one batch as the best first version; Mako gets the preview and reads the app itself; his notes are applied in quick rounds on the copy only (strings, hints, help; no logic), each round checked by the script and the combined copy check, until he says it is right. The two full gates still judge numbers and the north star on the candidate.
+
+## How Mako writes, from his reaction to the first voice samples (Mako, 2026-11-19)
+- He does not use many full stops. Where others put one he often writes a space, a hyphen and a space. "I know that's not grammatically correct, but that's how I do things." The team works out from his messages how he uses it, then uses it in the copy. (A plain hyphen with spaces. Em dashes stay out.)
+- Fewer full stops, fewer short separate sentences, less abbreviation. Join a few sentences where it makes sense.
+- "I want it to sound more like someone talking to you in normal conversation."
+
