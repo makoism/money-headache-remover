@@ -22,8 +22,8 @@ let pass=0,fail=0; const ok=(n,c,x)=>{ if(c){pass++;console.log('PASS',n);} else
     ok('save file: .json name and valid backup content', sv.length===1 && /^mhr2000-\d{4}-\d{2}-\d{2}\.json$/.test(sv[0].filename) && (()=>{try{const d=JSON.parse(sv[0].data);return !!d.steps&&!!d.once&&!!d.cfg;}catch(e){return false;}})());
     ok('spreadsheet: message Saved. and .csv with a header row', m2==='Saved.' && sv2.length===2 && /\.csv$/.test(sv2[1].filename) && sv2[1].data.split('\n').length>5, m2);
   } else if(mode==='declined'){ ok('declined says Not saved.', m1==='Not saved.' && m2==='Not saved.', m1+'|'+m2); }
-  else if(mode==='none'){ ok('no download route says so, and does not claim Saved', /unavailable/i.test(m1) && !/Saved/.test(m1) && /unavailable/i.test(m2), m1+'|'+m2); }
-  else { ok('failure says Save failed and points to Copy text', /Save failed/.test(m1) && /Copy text/.test(m1) && /Save failed/.test(m2), m1+'|'+m2); }
+  else if(mode==='none'){ ok('no download route says so, and does not claim Saved', /can.t download files/i.test(m1) && !/Saved/.test(m1) && /can.t download files/i.test(m2), m1+'|'+m2); }
+  else { ok('failure says the save did not work and points to Copy text', /The save didn't work/.test(m1) && /Copy text/.test(m1) && /The save didn't work/.test(m2), m1+'|'+m2); }
   await b.close();
  }
  console.log('PASS',pass,'FAIL',fail);

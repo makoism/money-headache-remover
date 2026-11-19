@@ -52,7 +52,7 @@ function renderReceipts() {
   setIdle($('#rcMonth'), sel);
   $('#rcTitle').textContent = 'Receipts, ' + fullLabel(sel);
   let sum = rs.count ? `${fmt2(rs.total)} spent, ${rs.count} receipt${rs.count === 1 ? '' : 's'}.` : 'No receipts this month.';
-  if (playPlan > 0 || playSpent > 0) sum += ` Free to spend: ${fmt2(playPlan)} planned, ${fmt2(playSpent)} spent, ` + (playSpent > playPlan ? `${fmt2(planCells(S, C, sel).playOver)} over.` : (m.counted > 0 ? `${fmt2(m.counted)} not spent: ${m.topup && m.topup.used > 0 ? fmt2(m.topup.used) + ' went to a goal' + (m.counted - m.topup.used > 0.004 ? ', ' + fmt2(m.credit) + ' came back to the bank' : '') : 'came back to the bank'}.` : m.pendLeft > 0 ? `${fmt2(m.pendLeft)} not logged as spent yet; Home asks where it goes.` : `${fmt2(playSafeLeft(S, m, playSpent))} safe to spend.`));
+  if (playPlan > 0 || playSpent > 0) sum += ` Free to spend: ${fmt2(playPlan)} planned, ${fmt2(playSpent)} spent, ` + (playSpent > playPlan ? `${fmt2(planCells(S, C, sel).playOver)} over.` : (m.counted > 0 ? `${fmt2(m.counted)} not spent: ${m.topup && m.topup.used > 0 ? fmt2(m.topup.used) + ' went to a goal' + (m.counted - m.topup.used > 0.004 ? ', ' + fmt2(m.credit) + ' came back to the bank' : '') : 'came back to the bank'}.` : m.pendLeft > 0 ? `${fmt2(m.pendLeft)} not logged as spent yet, and Home asks where it goes.` : `${fmt2(playSafeLeft(S, m, playSpent))} safe to spend.`));
   $('#rcSum').textContent = sum;
 
   /* plan against spending, for every category that has a receipt (and the play money lines) */
@@ -60,7 +60,7 @@ function renderReceipts() {
   m.lines.forEach(x => { known.add(x.key); const sp = rs.byKey[x.key] || 0; if (sp > 0 || (x.jar === 'play' && x.on)) rows.push({ name: shownLine(x.name), jar: x.jar, plan: x.on ? x.v : 0, spent: sp, safe: x.key === 'envelope' && x.on ? playSafeLeft(S, m, rs.byJar.play || 0) : null }); });
   /* Other is planned by the month's one-time costs (money already set aside, model.js applyOverspend): only spending past them is over */
   Object.keys(rs.byKey).forEach(k => { if (!known.has(k)) { const r = rs.list.find(q => q.c === k), it = k === 'other' && m.itemsTotal > 0 ? m.itemsTotal : null; rows.push({ name: r ? catName(S, r) : 'Other', jar: 'other', plan: it, spent: rs.byKey[k] }); } });
-  $('#rcCats').innerHTML = rs.count ? `<table class="plain"><thead><tr><th>Category</th><th>Plan</th><th>Spent</th><th>Left to spend</th></tr></thead><tbody>${rows.map(r => `<tr><td>${esc(r.name)}</td><td>${r.plan == null ? '' : fmt(r.plan)}</td><td>${fmt2(r.spent)}</td><td>${r.plan == null ? `<span class="over">over ${fmt2(r.spent)}</span>` : r.spent > r.plan ? overCell(r, m) : (r.safe != null ? fmt2(r.safe) : r.jar === 'ffa' ? 'saved' : fmt2(leftOfPlan(r.plan, r.spent)))}</td></tr>`).join('')}</tbody></table><p class="cap tnote">Lines without receipts are not listed.</p>` : '';
+  $('#rcCats').innerHTML = rs.count ? `<table class="plain"><thead><tr><th>Category</th><th>Plan</th><th>Spent</th><th>Left to spend</th></tr></thead><tbody>${rows.map(r => `<tr><td>${esc(r.name)}</td><td>${r.plan == null ? '' : fmt(r.plan)}</td><td>${fmt2(r.spent)}</td><td>${r.plan == null ? `<span class="over">over ${fmt2(r.spent)}</span>` : r.spent > r.plan ? overCell(r, m) : (r.safe != null ? fmt2(r.safe) : r.jar === 'ffa' ? 'saved' : fmt2(leftOfPlan(r.plan, r.spent)))}</td></tr>`).join('')}</tbody></table><p class="cap tnote">Lines with no receipts aren't listed</p>` : '';
 
   $('#rcList').innerHTML = rs.list.map(r => `<div class="rc${editRc === r.id ? ' on' : ''}" data-id="${esc(r.id)}"><div class="rc-main"><b>${fmt2(r.a)}</b><span class="rc-cat">${esc(r.c === 'other' && r.n ? 'Other: ' + r.n : catName(S, r))}</span></div>
     <div class="rc-sub"><span>${dateLabel(r.d)}</span>${r.n && r.c !== 'other' ? `<span class="rc-note">${esc(r.n)}</span>` : ''}${r.s ? `<span class="rc-acct">${esc(r.s)}</span>` : ''}</div>
@@ -77,16 +77,16 @@ function wireReceipts() {
   $('#rcForm').addEventListener('submit', e => {
     e.preventDefault();
     const d = $('#rcDate').value, a = +$('#rcAmt').value, c = $('#rcCat').value, n = $('#rcNote').value, msg = $('#rcMsg');
-    if (!validDate(d) || MONTHS.indexOf(d.slice(0, 7)) < 0) { msg.textContent = `Date must be ${monthLabel(START)} to ${monthLabel(END)}.`; $('#rcDate').focus(); return; }
-    if ($('#rcAmt').dataset.neg) { msg.textContent = 'Type the amount without a minus sign. A receipt is money you spent. For a refund, lower or delete the receipt it pays back.'; $('#rcAmt').value = ''; delete $('#rcAmt').dataset.neg; $('#rcAmt').focus(); return; }
-    if (!(wholeAmt(S, a) > 0)) { msg.textContent = 'Enter an amount.'; $('#rcAmt').focus(); return; }
-    if (wholeAmt(S, a) > 1e9) { msg.textContent = 'That amount is too large. The most is 1,000,000,000.'; $('#rcAmt').focus(); return; }
+    if (!validDate(d) || MONTHS.indexOf(d.slice(0, 7)) < 0) { msg.textContent = `Pick a date from ${monthLabel(START)} to ${monthLabel(END)}`; $('#rcDate').focus(); return; }
+    if ($('#rcAmt').dataset.neg) { msg.textContent = 'Type the amount without a minus sign, because a receipt is money you spent. For a refund, lower or delete the receipt it pays back.'; $('#rcAmt').value = ''; delete $('#rcAmt').dataset.neg; $('#rcAmt').focus(); return; }
+    if (!(wholeAmt(S, a) > 0)) { msg.textContent = 'Type an amount'; $('#rcAmt').focus(); return; }
+    if (wholeAmt(S, a) > 1e9) { msg.textContent = 'That amount is too big. The most is 1,000,000,000.'; $('#rcAmt').focus(); return; }
     /* a date after today is nearly always a slip of the finger: it is logged only on a second tap */
     if (d > todayStr() && !futureOk(d, msg, $('#rcSave'))) return;
     if (!editRc && isDupRc(d, a, c, n) && !dupOk(d, a, c, n, msg, $('#rcSave'))) return;
     if (!bigOk(d, wholeAmt(S, a), msg, $('#rcSave'))) { $('#rcAmt').focus(); return; }
     if (c === CAT_NEW) { msg.textContent = 'Add the new category, or pick one from the list.'; $('#rcNewName').focus(); return; }
-    if (needTitle(c, n)) { msg.textContent = 'Add a short title, e.g. “Vet bill”.'; $('#rcNote').focus(); return; }
+    if (needTitle(c, n)) { msg.textContent = 'Add a short title, like “Vet bill”'; $('#rcNote').focus(); return; }
     S.ui.rcCat = c; const wasEdit = !!editRc;
     const firstRc = !(S.ui.done && S.ui.done.receipts);
     let rid = null; if (wasEdit) updateReceipt(S, editRc, d, a, c, n); else { rid = addReceipt(S, d, a, c, n); markDone('receipts', true); }
@@ -109,7 +109,7 @@ function wireReceipts() {
       render(); $('#rcForm').scrollIntoView({ behavior: 'smooth', block: 'center' }); $('#rcAmt').focus();
     } else if (del) { const r0 = (S.receipts || []).find(x => x.id === del.dataset.rcdel), copy = r0 ? JSON.parse(JSON.stringify(r0)) : null, what = r0 ? `${fmt2(r0.a)}, ${r0.c === 'other' ? 'Other' : (lineByKey(S, r0.c) || { name: r0.cn || 'Other' }).name}, ${dateLabel(r0.d)}` : 'this receipt';
       confirmClick(del, `Tap again: delete ${what}`, () => { if (editRc === del.dataset.rcdel) resetRcForm(); removeReceipt(S, del.dataset.rcdel);
-        if (copy && window.offerUndoG) window.offerUndoG('receipt', `Deleted ${what}.`, () => { if (!(S.receipts || []).some(x => x.id === copy.id)) S.receipts.push(copy); });   /* Undo puts back exactly this receipt (38.31 data safety round) */ { const mm = $('#rcMsg'); if (mm) mm.textContent = ''; } persist(); render(); }); }
+        if (copy && window.offerUndoG) window.offerUndoG('receipt', `Deleted ${what}`, () => { if (!(S.receipts || []).some(x => x.id === copy.id)) S.receipts.push(copy); });   /* Undo puts back exactly this receipt (38.31 data safety round) */ { const mm = $('#rcMsg'); if (mm) mm.textContent = ''; } persist(); render(); }); }
   });
   $('#rcFields').addEventListener('change', e => { if (remindChange(e.target)) renderReceipts(); });
 }

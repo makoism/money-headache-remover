@@ -220,7 +220,7 @@ function calManual(root, o) {
   let box = root.parentNode.querySelector('.cal-manual');
   if (!box) {
     box = document.createElement('div'); box.className = 'cal-manual';
-    box.innerHTML = '<p>No calendar file can be saved here. In your calendar app, add an event, set the same repeat, and paste this in.</p><textarea readonly rows="4" aria-label="Calendar event text" spellcheck="false"></textarea><div class="row-btns"><button type="button" class="btn small solid" data-calcopy>Copy event text</button><span class="msg" role="status"></span></div>';
+    box.innerHTML = '<p>A calendar file can\'t be saved here, so add an event in your calendar app, set the same repeat and paste this in.</p><textarea readonly rows="4" aria-label="Calendar event text" spellcheck="false"></textarea><div class="row-btns"><button type="button" class="btn small solid" data-calcopy>Copy event text</button><span class="msg" role="status"></span></div>';
     const nx = root.nextElementSibling; (nx && nx.classList.contains('cal-msg') ? nx : root).after(box);
   }
   box.querySelector('textarea').value = calText(o);
@@ -232,7 +232,7 @@ document.addEventListener('click', async e => {
   ta.focus(); ta.select();
   try { await navigator.clipboard.writeText(ta.value); msg.textContent = 'Copied.'; return; } catch (er) { /* try the older way */ }
   try { if (document.execCommand('copy')) { msg.textContent = 'Copied.'; return; } } catch (er) { /* fall through */ }
-  msg.textContent = 'Press Ctrl+C (Cmd+C) to copy the selected text.';
+  msg.textContent = 'Press Ctrl+C, or Cmd+C on a Mac, to copy the selected text';
 });
 function calDownload(o) {
   try {
@@ -250,7 +250,7 @@ document.addEventListener('click', e => {
   if (!root || !root.__cal) return;
   if (inArtifact()) { if (msg) msg.textContent = ''; calManual(root, root.__cal).querySelector('textarea').focus({ preventScroll: true }); return; }
   const ok = calDownload(root.__cal);
-  if (msg) msg.textContent = ok ? 'Saved receipts-reminder.ics. Open it to add the repeating event. If nothing happens, open it from your downloads.' : 'File not created here. Use the copy-text option.';
+  if (msg) msg.textContent = ok ? 'Saved receipts-reminder.ics - open it to add the repeating event, and if nothing happens open it from your downloads' : 'The file couldn\'t be made here, so add the event in your calendar app yourself';
 });
 
 /* ===== subscriptions: tick what you pay and type what each one costs you =====
@@ -349,7 +349,7 @@ function cardModel(saved) {
 function cardRecalc() {
   const t = inum('tourCardT'), b = inum('tourCardB'), cap = $('#cardCap'), use = $('#cardUse'); if (!cap || !use) return;
   const r = cents2(Math.max(0, t - b));
-  cap.textContent = t > 0 ? (b >= t ? 'The listed bills cover the whole statement: nothing extra to count.' : `Card spending: ${fmt(r)} a month.`) : '';
+  cap.textContent = t > 0 ? (b >= t ? 'The bills you listed cover the whole statement so there\'s nothing extra to count' : `Card spending: ${fmt(r)} a month.`) : '';
   use.hidden = !(t > 0); use.textContent = r > 0 ? `Use ${fmt(r)}` : 'Use 0';
 }
 function cardUse() {
@@ -384,7 +384,7 @@ function loanBody(l) {
     <p class="cap" id="loanCalc"></p>
   </div>`;
 }
-const LOAN_NOTE = 'Monthly is the payment you make each month, not what you owe in total. Owe a total, like a card balance? Switch to Total, or add it later under Cards and loans on the Goals tab. Set the last payment month and the other value is filled in.';
+const LOAN_NOTE = 'Monthly is the payment you make each month, not what you owe in total. If you owe a total, like a card balance, switch to Total or add it later under Cards and loans in Plan under Burrows. Set the last payment month and the other value is filled in.';
 function loanSync() {
   const am = $('#tourAmt'), to = $('#tourTot'), en = $('#tourEnds'), cap = $('#loanCalc'); if (!am || !to || !en || !cap) return;
   const n = loanPayments(en.value), plural = n === 1 ? '' : 's';
@@ -460,9 +460,9 @@ function spTouch(kind, vals, i, repaint) {
 }
 function spWhy(kind, names, vals, total, moneyOf) {
   const f = SPF[kind], m = f.last, sd = splitDraft(vals, total, f.from, m), free = sd.free;   /* model.js splitDraft */
-  if (m >= 0 && f.hit && vals[m] === f.from) return `<b>${esc(names[m])}</b> can only take what is not placed yet, and nothing is. Lower another one first.`;
-  if (m >= 0 && vals[m] !== f.from) { return `<b>${esc(names[m])}</b> ${sd.up ? '+' : '−'}${sd.moved}%${f.hit ? ': all that was not placed yet. To go further, lower another one.' : `. Not placed yet now <b>${free}%</b>${free > 0 ? ` (${moneyOf(free)})` : ''}.`}`; }
-  return `Each slider moves on its own. Lower one and the difference waits as not placed yet; raise one and it takes from there. ${kind === 'jar' ? `The five places share <b>${total}%</b> of your pay, the part your bills leave.` : `Your goals share <b>${total}%</b> of the goal money.`}`;
+  if (m >= 0 && f.hit && vals[m] === f.from) return `<b>${esc(names[m])}</b> can only take what's not placed yet and right now nothing is, so lower another one first.`;
+  if (m >= 0 && vals[m] !== f.from) { return `<b>${esc(names[m])}</b> ${sd.up ? '+' : '−'}${sd.moved}%${f.hit ? ', which is all that was not placed yet, so lower another one if you want to go further.' : `. Not placed yet now <b>${free}%</b>${free > 0 ? ` (${moneyOf(free)})` : ''}.`}`; }
+  return `Each slider moves on its own. Lower one and the difference waits as not placed yet, raise one and it takes from there. ${kind === 'jar' ? `The five places share <b>${total}%</b> of your pay, the part your bills leave.` : `Your goals share <b>${total}%</b> of the goal money.`}`;
 }
 const PENCIL = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M13.6 3.4a1.8 1.8 0 0 1 2.6 2.6L7.4 14.8 4 15.6l.8-3.4z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>';
 const pctPill = (attr, i, label, max) => `<label class="pctp"><input type="number" inputmode="numeric" min="0" max="${max}" step="1" data-${attr}="${i}" aria-label="${esc(label)}, percent of pay"><b>%</b>${PENCIL}</label>`;
@@ -516,8 +516,8 @@ function splitGive(kind, i) { const o = SPLIT_SPEC[kind](), free = o.total - sum
 
 /* one line per jar, for the fold on the split screen */
 const JAR_LINES = {
-  nec: 'Bills and essentials. Paid first.', lts: 'Saved now, spent later.', play: 'Spend freely. No guilt.',
-  edu: 'Books, courses, skills.', ffa: 'Invested. Not spent.', give: 'Gifts and donations.',
+  nec: 'Your bills, paid first', lts: 'Saved now, spent later', play: 'Yours to spend on anything',
+  edu: 'Books, courses, skills', ffa: 'Invested, not spent', give: 'Gifts and donations',
 };
 
 /* ===== subscriptions: ticking opens that one's amount box ===== */

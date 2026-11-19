@@ -20,6 +20,6 @@ async function open(cur,bank){const {b,p,errs}=await R.phone({w:390,h:844,dpr:1,
   await L.tab(p,'tab-home');await w(800);const t=await p.evaluate(()=>{const e=document.querySelector('.mp-warn');return e?e.innerText:'';});
   ck('(2) the warning names the start below zero as the cause',/It starts the month \$2,000 below zero\./.test(t),t);
   ck('(2) and never says the plan is bigger than the pay when it is not',!/bigger than your pay/.test(t),t);
-  ck('(2) it says the bank figure counts Free to spend as spent',/counts the planned Free to spend as spent/.test(t),t);
+  ck('(2) it says the bank figure counts Free to spend as spent',/counts your planned Free to spend as already spent/.test(t),t);
   ck('no page errors',errs.length===0,errs.join(' | '));await b.close(); }
  console.log(bad?'FAILED '+bad:'ALL PASS');process.exit(bad?1:0);})();

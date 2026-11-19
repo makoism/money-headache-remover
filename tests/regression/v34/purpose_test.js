@@ -33,7 +33,7 @@ const tab = (p, t) => p.evaluate(t => (document.querySelector(`[data-tab="${t}"]
   });
   await w(1200); await coach(p);
   ok(/Main goal Japan trip A week in Hokkaido with Mum/.test(seenDone), 'Setup done leads with the goal and the reason: ' + seenDone.slice(0, 160));
-  ok(/of ¥300,000, \+¥[\d,]+ a month\. Full/.test(seenDone), 'Setup done says what each month adds and when it is full');
+  ok(/of ¥300,000 so far, and your plan adds ¥[\d,]+ a month\. Full/.test(seenDone), 'Setup done says what each month adds and when it is full');
   /* RETIRED 2026-11-18: 'Setup done mentions where leftover play money can go' described the v34 top-up; since 38.30 the month end asks instead (wording, not numbers or data) */
   // ---- Home hero
   let hero = await txt(p, '#hHero');
@@ -41,7 +41,7 @@ const tab = (p, t) => p.evaluate(t => (document.querySelector(`[data-tab="${t}"]
   ok(/\+¥[\d,]+ this month\. ¥[\d,]+ to go\./.test(hero), 'the hero says what this month adds and what is to go');
   ok(!/covered/.test(hero), 'no generated "covered" phrase when a reason is given');
   const play = await txt(p, '#hSpend');
-  ok(/What is left at month end can go toward Japan trip/.test(play), 'the play money card says where what is left can go: ' + play.slice(-80));
+  ok(/What's left at month end can go toward Japan trip/.test(play), 'the play money card says where what is left can go: ' + play.slice(-80));
   // ---- Home goals list carries the reason
   const list = await txt(p, '#hGoals');
   ok(list.includes(WHY), 'the Home goals list shows the reason');

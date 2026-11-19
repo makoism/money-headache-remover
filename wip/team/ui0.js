@@ -17,7 +17,7 @@ function safe(fn, host, where) {
   try { return fn(); } catch (e) {
     logErr(where || (host || 'card'), e);
     const el = typeof host === 'string' ? $(host) : host;
-    if (el && el.innerHTML !== undefined) el.innerHTML = '<p class="cap snag">This part hit a snag and is resting. The rest of the page works. If it keeps happening, Help has Report a problem.</p>';
+    if (el && el.innerHTML !== undefined) el.innerHTML = '<p class="cap snag">This part broke but the rest of the page still works. If it keeps happening, tap Help and then Report a problem.</p>';
     return undefined;
   }
 }

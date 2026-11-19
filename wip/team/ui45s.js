@@ -37,9 +37,9 @@ const spreadFree = (vals, total) => { const free = total - sumOf(vals); if (free
 const STEP_MONEY = { id: 'money', part: PART.money, setup: true, focus: '#tourPay', title: 'Your money', skipIf: () => importApplied() && havePay(),
   body: () => {
     const pay = S.ui.done && S.ui.done.pay ? val(S, 'a', START) : '';
-    return `<p>Take-home pay after tax, each month. Paid twice a month: add both. Other pay is a second job, a partner&rsquo;s share, benefits. Balance is bank accounts plus cash; rough is fine.</p>
+    return `<p>Your take-home pay is what you get each month after tax, and if you're paid twice a month add both. Other pay is a second job, a partner&rsquo;s share or benefits. Balance is your bank accounts plus cash and a rough number is fine.</p>
     <div class="tour-fields">${moneyField('tourPay', 'Monthly take-home pay', pay, 'All paychecks')}${moneyField('tourExtra', 'Other pay each month <span class="opt">(optional)</span>', val(S, 'b', START), 'None')}${moneyField('tourBank', 'Balance now', S.cfg.bankStart !== undefined ? S.cfg.bankStart : '', 'Rough is fine. Overdrawn? Type a minus').replace('<input ', '<input data-neg="ok" ').replace(' inputmode="decimal" min="0"', ' inputmode="text"')}</div>
-    <p class="cap">Not sure? Leave it blank and add it later on Plan.</p>`;
+    <p class="cap">If you're not sure leave it blank and add it later on Plan</p>`;
   },
   leave: () => {
     const pay = $('#tourPay'), extra = $('#tourExtra'), bank = $('#tourBank'); if (!pay) return;
@@ -57,12 +57,12 @@ const quickSetup = () => !(S.ui && S.ui.full === true);
 const BILLS_QUICK = ['rent', 'food'];
 const BILL_Q = { rent: 'Rent or mortgage', util: 'Utilities', food: 'Food and groceries', net: 'Internet', phone: 'Phone', ins: 'Insurance', subs: 'Subscriptions', gas: 'Transport', loan: 'Loan or debt payment', card: 'Credit card' };
 const BILL_NOTE = {
-  rent: () => 'Full amount, even if someone shares it. Put their share under Money in.',
-  util: () => 'Electricity, gas and water.',
-  food: () => 'Groceries and everyday meals. Eating out for fun goes under Free to spend.',
-  net: () => 'Home internet, or the data plan if that is how you connect.',
-  phone: () => 'Your monthly plan, or what you usually spend on top-ups.',
-  ins: () => 'Health, life, car or home. Use the monthly amount.' + (S.ui.cur === '₱' ? ' Self-employed? Include your own SSS, PhilHealth and Pag-IBIG.' : ''),
+  rent: () => 'Put the full amount even if someone shares it. Their share counts as pay, so tap Back and add it to Other pay each month on the Your money step',
+  util: () => 'Electricity, gas and water',
+  food: () => 'Groceries and everyday meals. Eating out for fun isn\'t a bill - it comes out of Free to spend, your money for fun',
+  net: () => 'Home internet, or your data plan if that\'s how you get online',
+  phone: () => 'Your monthly plan, or what you usually spend on top-ups',
+  ins: () => 'Health, life, car or home. Put in what it costs a month.' + (S.ui.cur === '₱' ? ' If you\'re self-employed include your own SSS, PhilHealth and Pag-IBIG too.' : ''),
   gas: () => 'Commute, ' + (S.ui.cur === '₱' ? 'Grab' : 'taxis') + ', fuel, parking, tolls.',
 };
 /* a line that was added with "add another" belongs to the kind it was copied from */
@@ -76,9 +76,9 @@ function chosenBills() {
 const STEP_BILLS = { id: 'bills-pick', part: PART.bills, setup: true, pick: true, skipIf: () => importApplied(), title: 'Monthly bills',
   body: () => {
     const on = chosenBills();
-    return `<p>Tick what applies. Rough numbers are fine.</p>
+    return `<p>A few are ticked to get you started. Tick the ones you pay and untick the ones you don't, rough numbers are fine</p>
     <div class="tour-chips two" role="group" aria-label="Your monthly bills">${necLines().filter(l => !moreKind(l.id)).map(l => `<label class="chip multi${on.indexOf(l.id) >= 0 ? ' on' : ''}"><input type="checkbox" name="tourBill" value="${esc(l.id)}"${on.indexOf(l.id) >= 0 ? ' checked' : ''}><span>${esc(l.name)}</span></label>`).join('')}</div>
-    <p class="cap">Missing one? Add lines later.</p>`;
+    <p class="cap">If one's missing you can add lines later</p>`;
   },
   leave: d => {
     if (d <= 0) return;
@@ -100,28 +100,28 @@ const billStep = id => ({ id: 'bill-' + id, part: PART.bills, setup: true, focus
     if (b === 'loan') return loanBody(l, mk) + moreBtn('loan');
     if (b === 'subs') {
       const m = subsModel(val(S, l.key, START));
-      return `<p>Tick each one, then enter the monthly cost. The grey line is a typical price, as a check only.</p>
+      return `<p>Tick each one and put in what it costs a month. The grey line is a typical price so you can check yours against it.</p>
       ${subsRows(m)}
       <p class="subs-h"><b>Something else</b></p>
-      <p class="cap">Not in the list: add a name and amount.</p>
+      <p class="cap">If it's not in the list add a name and amount</p>
       <div id="subsOthers">${m.O.map(subOtherRow).join('')}</div>
       <div class="row-btns"><button type="button" class="btn small more" id="subsAddO"${m.O.length >= SUB_MAX_O ? ' hidden' : ''}>${m.O.length ? 'Add another' : 'Add something else'}</button></div>
       <div class="tour-fields subs-total">${moneyField('tourAmt', 'Total each month', subsSum(m)).replace('<input ', '<input readonly tabindex="-1" ')}</div>
-      <p class="cap">Typical prices, Nov 2026. Each grey line names its country. Plan and billing change them: use your own bill.</p>`;
+      <p class="cap">Typical prices from Nov 2026 and each grey line names its country. Yours depends on your plan and billing, so go by your own bill.</p>`;
     }
     if (b === 'card') {
       /* one plain question; the statement arithmetic is there for those who only know the statement total */
       const saved = val(S, l.key, START), c = cardModel(saved), calc = c.b > 0;
-      return `<p>What goes on the card each month apart from the bills you already listed: shopping, eating out, online orders, rides. A rough number is fine.</p>
+      return `<p>What you put on the card each month apart from the bills you already listed, like shopping, eating out or online orders. A rough number is fine.</p>
       <p class="cap" data-card-full>Pay the card off in full every month? You can leave this at 0 and tap Next. What's on the card right now goes on Home once setup is done - tap Add a card you pay in full there and Home shows your bank after the cards are paid.</p>
       <div class="tour-fields">${moneyField('tourAmt', 'Card spending, each month', saved)}</div>
       <details class="src-how"${calc ? ' open' : ''}><summary>I only know the statement total</summary><div class="src-how-in">
-        <p class="cap">Enter the statement total, then the part of it that is bills you already listed (rent, food, subscriptions). The rest is card spending.</p>
+        <p class="cap">Enter the statement total, then the part of it that is bills you already listed, like rent, food or subscriptions. The rest is card spending.</p>
         <div class="tour-fields">${moneyField('tourCardT', 'Statement total, each month', calc ? c.t : '')}${moneyField('tourCardB', 'Of that, bills already listed', calc ? c.b : '', 'Optional')}</div>
         <div class="row-btns"><span class="cap" id="cardCap" aria-live="polite"></span><button type="button" class="btn small solid" id="cardUse" hidden>Use this amount</button></div>
       </div></details>
-      <p class="cap">A card is paid a month late. This month you pay last month's bill, so put that bill under One-time costs for this month (Plan, then Month). The amount above is what you expect to put on the card from now on.</p>
-      <p class="cap">No credit card: go back and untick it. Owe on a card or loan? Add it under Cards and loans on the Goals tab.</p>
+      <p class="cap">A card is paid a month late, so this month you pay last month's bill. You can add that bill as a one-time cost for this month once setup is done. The amount above is what you expect to put on the card from now on.</p>
+      <p class="cap">If you have no credit card go back and untick it. If you carry a balance from month to month, add it under Cards and loans once setup is done.</p>
       <p class="cap" data-card-later>You do both of those after setup, so there's nothing more to type here. One-time costs is on the Plan tab under Month - it's for things you pay once. Cards and loans is on the Plan tab under Burrows - it's for a balance you carry from month to month.</p>`;
     }
     return `${note ? `<p>${esc(note())}</p>` : ''}
@@ -169,7 +169,7 @@ const jarMoneyOf = pct => (jarRest > 0 ? round2((payNow() - necTotal()) * pct / 
 const jarMoney = i => jarMoneyList(jarVals)[i];
 const potHTML = (id, cols, vals, total) => `<div class="pot" id="${id}" aria-hidden="true">${cols.map((c, i) => `<i style="background:${c};flex-grow:${Math.max(vals[i], 0.0001)}"></i>`).join('')}<i class="free" style="flex-grow:${Math.max(total - sumOf(vals), 0.0001)}"></i></div>`;
 /* the line under the pot: how much is not placed yet, with Spread it and Give it to */
-const poolHTML = (kind, names) => `<div class="pool" id="${kind}Pool" aria-live="polite"><span class="pool-t"></span><span class="pool-acts"><button type="button" class="link" data-spread="${kind}">Spread it</button><label class="pool-give">Give it to <select class="inp sm" data-give="${kind}" aria-label="Give the part not placed yet to one"><option value="">…</option>${names.map((n, i) => `<option value="${i}">${esc(n)}</option>`).join('')}</select></label></span></div>`;
+const poolHTML = (kind, names) => `<div class="pool" id="${kind}Pool" aria-live="polite"><span class="pool-t"></span><span class="pool-acts"><button type="button" class="link" data-spread="${kind}">Spread it</button><label class="pool-give">Give it to <select class="inp sm" data-give="${kind}" aria-label="Give what's not placed yet to one of these"><option value="">…</option>${names.map((n, i) => `<option value="${i}">${esc(n)}</option>`).join('')}</select></label></span></div>`;
 function jarRows() {
   return JAR5.map((j, i) => `<div class="split-row" data-jrow="${i}"><div class="split-h"><i class="dot" style="--c:${JARVAR[j]}"></i><b>${JAR_LABEL[j]}</b><span class="dlt"></span>${pctPill('jpct', i, JAR_LABEL[j], jarRest)}</div><p class="cap split-d">${JAR_WHAT[j]}</p><p class="split-m"></p>
     <div class="rng" style="--c:${JARVAR[j]}"><input type="range" min="0" max="${jarRest}" step="1" value="${jarVals[i]}" data-jar="${i}" aria-label="${JAR_LABEL[j]}, share of your pay"></div></div>`).join('');
@@ -215,20 +215,20 @@ const STEP_JARS = { id: 'jars', part: PART.jars, setup: true, when: havePay,
   title: 'Split the rest',
   body: () => {
     jarInit(); const pay = payNow(), nec = necTotal();
-    if (nec <= 0) return `<p>No bills listed, so the other five places would share all of your pay. If that is wrong, go back and add bills.</p>
-    <p class="cap">If you truly have none, continue and split below.</p>${jarSplitHTML()}`;
-    if (jarRest <= 0) return `<p>Bills <b>${fmt2(nec)}</b>, pay <b>${fmt2(pay)}</b>. ${nec > pay ? `Bills exceed pay by <b>${fmt2(setupCells(S).billsOverPay)}</b>, so` : 'Bills take all of it, so'} nothing is left for the other five places: no free to spend and nothing for burrows, for now.</p>
-    <p>You can still add burrows next. They start filling once bills drop below pay. To lower a bill, go back. Otherwise continue and adjust under Plan later.</p>`;
-    return `<p>Bills and basics take <b>${fmt2(nec)}</b>, <b>${jarNec}%</b> of pay. The other <b>${jarRest}%</b> (${fmt2(setupCells(S).payOverBills)}) is yours to split between the five places below, starting at the usual proportions.</p>
+    if (nec <= 0) return `<p>You haven't listed any bills, so the other five places would share all of your pay. If that's not right go back and add your bills.</p>
+    <p class="cap">If you really have none, carry on and split it below</p>${jarSplitHTML()}`;
+    if (jarRest <= 0) return `<p>Bills <b>${fmt2(nec)}</b>, pay <b>${fmt2(pay)}</b>. ${nec > pay ? `Bills are <b>${fmt2(setupCells(S).billsOverPay)}</b> more than your pay, so` : 'Bills take all of it, so'} nothing is left for the other five places, so no Free to spend and nothing for burrows for now.</p>
+    <p>You can still add burrows next and they start filling once your bills are lower than your pay. Go back if you want to lower a bill now, or carry on and change it under Plan later.</p>`;
+    return `<p>Bills and basics take <b>${fmt2(nec)}</b>, <b>${jarNec}%</b> of pay. The other <b>${jarRest}%</b> (${fmt2(setupCells(S).payOverBills)}) is yours to split between the five places below, and it starts at the usual shares.</p>
     ${jarsFold()}${jarSplitHTML()}`;
   },
   after: () => { if (jarRest > 0) paintJars(); },
   leave: () => { commitJars(); markDone('bills'); } }; /* past the bills: whatever was typed for them is the person's own */
 /* the six jars in short, folded: pay is split into jars and each jar has one purpose */
 const jarsFold = () => `<details class="src-how"><summary>Where your pay goes, in short</summary><div class="src-how-in">
-    <p>Every month, your pay is split into six places, each with one job. Bills and basics and Free to spend are for this month. Your goals, Education, Giving and Investing fill <b>burrows</b> that pile up over months. Free to spend is what you spend on fun without guilt. Usual shares of take-home pay:</p>
+    <p>Every month your pay gets split into six places and each one has one job. Bills and basics and Free to spend are for this month. Your goals, Education, Giving and Investing fill <b>burrows</b> that pile up over months. Free to spend is yours to spend on whatever you want. Usual shares of take-home pay:</p>
     <ul class="jar-lines">${JARS.map(j => `<li><i class="dot" style="--c:${JARVAR[j.id]}"></i><span><b>${esc(j.name)}</b> ${j.usualPct}%. ${esc(JAR_LINES[j.id])}</span></li>`).join('')}</ul>
-    <p class="cap">The shares are a guide, not a rule.</p></div></details>`;
+    <p class="cap">These shares are a starting point, change them to fit you</p></div></details>`;
 const jarSplitHTML = () => `<p class="cap" id="jarCan" data-split-can>These shares are only a start. Drag a slider or tap a percent to change it, and you can change them again later under Plan.</p>
     ${potHTML('jarPot', JAR5.map(j => JARVAR[j]), jarVals, jarRest)}${poolHTML('jar', JAR5.map(j => JAR_LABEL[j]))}
     <div class="split" id="jarSplit">${jarRows()}</div>
@@ -237,7 +237,7 @@ const jarSplitHTML = () => `<p class="cap" id="jarCan" data-split-can>These shar
 
 /* ----- goals: tick what you are saving for, then one screen for each ----- */
 const GOAL_KINDS = [
-  { k: 'rainy', id: 'rainy', name: 'Emergency fund', slot: 7, em: true, pick: 'Emergency fund', hint: 'Cushion for surprises', title: 'Emergency fund' },
+  { k: 'rainy', id: 'rainy', name: 'Emergency fund', slot: 7, em: true, pick: 'Emergency fund', hint: 'Money for surprises', title: 'Emergency fund' },
   { k: 'travel', id: 'travel', name: 'Trip', slot: 5, pick: 'A trip', hint: 'Flights, stay, food', title: 'Trip', cost: 'Flights, stay, food.' },
   { k: 'moving', id: 'moving', name: 'Home or move', slot: 4, pick: 'A home or a move', hint: 'Deposit, movers, furniture', title: 'Home or move', cost: 'Deposit, movers, furniture.' },
   { k: 'buy', id: 'buy', name: 'Big purchase', slot: 1, pick: 'A big purchase', hint: 'Laptop, car, wedding', title: 'Big purchase', cost: 'The price, or your best guess.' },
@@ -246,9 +246,9 @@ const GOAL_KINDS = [
   { k: 'other', id: 'other', name: 'Something else', slot: 2, pick: 'Something else', hint: 'Anything with a price', title: 'Goal', cost: '' },
 ];
 const STEP_TOOLPICK = { id: 'goals-pick', part: PART.goals, setup: true, pick: true, skipIf: () => quickSetup(), title: 'Burrows', art: 'sprout',
-  body: () => `<p>Burrows hold money you build up: a cushion, a trip, a big purchase, or paying off a debt. Tick what you are working toward. Add more later.</p>
+  body: () => `<p>Burrows hold money you build up for something, like a trip or paying off a debt. Tick the ones you're working on, you can add more later.</p>
     <div class="tour-chips two" role="group" aria-label="Burrows">${GOAL_KINDS.map(k => { const on = S.ui.gset ? !!goalById(S, k.id) : k.k === 'rainy'; return `<label class="chip multi${on ? ' on' : ''}"><input type="checkbox" name="tourGoalPick" value="${k.k}"${on ? ' checked' : ''}><b>${k.pick}</b><span>${k.hint}</span></label>`; }).join('')}</div>
-    <p class="cap">Unsure? Keep the emergency fund. Owe on a card or loan? Add it after setup, under Cards and loans on the Goals tab. It works out the interest and the payoff date.</p>`,
+    <p class="cap">If you're not sure, keep the emergency fund. If you owe on a card or loan, add it after setup under Cards and loans in Plan under Burrows and it works out the interest and the payoff date.</p>`,
   leave: d => { if (d <= 0) return; applyGoalPick($$('#tourBody input[name=tourGoalPick]:checked').map(i => i.value), true); } };
 function applyGoalPick(picked, mark) {
   {
@@ -275,20 +275,20 @@ const goalStep = id => ({ id: 'goal-' + id, part: PART.goals, setup: true,
     const k = goalKindOf(id) || {}, em = !!g.emergency && necTotal() > 0, lo = START + '-01', hi = END + '-28';
     if (em) {
       const m = emMonths(g);
-      return `<p>A cushion for surprises. You can borrow from it in a short month. Usual advice: three to six months of bills.</p>
+      return `<p>Money for surprises, and you can borrow from it in a short month. The usual advice is three to six months of bills.</p>
       <div class="field tour-q1"><span class="l" id="tourEmL">Months of bills to cover</span>
       <div class="tour-chips" role="radiogroup" aria-labelledby="tourEmL">${EM_MONTHS.map(x => chip('tourEm', String(x[0]), String(x[0]), x[1], x[0] === m)).join('')}</div></div>
       <p class="cap" id="tourEmCap">${emCap(m)}</p>
-      <div class="tour-fields">${moneyField('tourGSaved', 'Already saved', g.start)}</div><p class="cap">Is this money in the same account as the balance you typed before? Then lower that balance by this amount, so the same money is not counted in two places.</p>`;
+      <div class="tour-fields">${moneyField('tourGSaved', 'Already saved', g.start)}</div><p class="cap">If this money is in the same account as the balance you typed before, tap Back to the Your money step and lower that balance by this amount, so the same money isn't counted in two places.</p>`;
     }
     const dbt = !!k.debt;
-    return `<p>${g.emergency ? 'A cushion for surprises. How much do you want to hold? Usual advice: three to six months of bills.' : dbt ? 'Name the debt and how much you owe in total. The smallest payment you must make stays in Bills and basics. This burrow is for the extra you pay on top, so the debt shrinks faster.' : 'Name, cost, a date if there is one, and the reason in your words.'}</p>
+    return `<p>${g.emergency ? 'Money for surprises, and the usual advice is to hold three to six months of bills. How much do you want to hold?' : dbt ? 'Name the debt and how much you owe in total. The smallest payment you have to make stays in Bills and basics and this burrow is for the extra you pay on top, so the debt goes down faster.' : 'Give it a name, a cost, a date if there is one and why you want it'}</p>
     <div class="tour-fields">
       ${g.emergency ? '' : textField('tourGName', 'Name', k.name && g.name === k.name ? '' : g.name, 60, k.name)}
-      ${g.emergency ? '' : `<div class="field"><label for="tourGWhy">Why (optional)</label><div class="inp"><input id="tourGWhy" type="text" maxlength="80" spellcheck="false" value="${esc(g.why || '')}" placeholder="Why it matters, in your words"></div><p class="cap">Shows with the goal, so the reason stays in view.</p></div>`}
+      ${g.emergency ? '' : `<div class="field"><label for="tourGWhy">Why (optional)</label><div class="inp"><input id="tourGWhy" type="text" maxlength="80" spellcheck="false" value="${esc(g.why || '')}" placeholder="Why you want it"></div><p class="cap">This shows next to the goal so you keep seeing why</p></div>`}
       <div class="field">${moneyField('tourGCost', dbt ? 'Total owed' : g.emergency ? 'How much to hold' : 'Cost', g.target).replace(/^<div class="field">|<\/div>$/g, '')}${k.cost ? `<p class="cap">${k.cost}</p>` : ''}</div>
-      ${moneyField('tourGSaved', dbt ? 'Already paid off' : 'Already saved', g.start)}${dbt ? '' : `<p class="cap">Is this money in the same account as the balance you typed before? Then lower that balance by this amount, so the same money is not counted in two places.</p>`}
-      ${g.emergency ? '' : `<div class="field"><label for="tourGDue">${dbt ? 'Paid off by' : 'Needed by'}</label><input type="date" id="tourGDue" min="${lo}" max="${hi}" value="${esc(g.due)}"><p class="cap">With a date, the monthly amount is worked out for you.</p></div>`}
+      ${moneyField('tourGSaved', dbt ? 'Already paid off' : 'Already saved', g.start)}${dbt ? '' : `<p class="cap">If this money is in the same account as the balance you typed before, tap Back to the Your money step and lower that balance by this amount, so the same money isn't counted in two places.</p>`}
+      ${g.emergency ? '' : `<div class="field"><label for="tourGDue">${dbt ? 'Paid off by' : 'Needed by'}</label><input type="date" id="tourGDue" min="${lo}" max="${hi}" value="${esc(g.due)}"><p class="cap">Give it a date and the monthly amount gets worked out for you</p></div>`}
     </div>
     ${k.k && !k.em && S.plan.goals.length < MAX_GOALS ? `<div class="row-btns"><button type="button" class="btn small more" data-moreg="${esc(id)}">Add another ${GOAL_NOUN[k.k] || 'goal'}</button></div>` : ''}`;
   },
@@ -384,7 +384,7 @@ const unusedOf = () => Math.max(0, round2(gsBudget - S.plan.goals.reduce((a, g, 
 function paintSplit() {
   if (!$('#goalSplit')) return;
   applySplit(); splitC2 = calcAll(S);
-  { const u = unusedOf(), el = $('#splitUnused'); if (el) el.textContent = u > 0 ? `${fmt2(u)} of this is not placed yet: your burrows cannot take more now. Add a burrow or raise a cost.` : ''; }
+  { const u = unusedOf(), el = $('#splitUnused'); if (el) el.textContent = u > 0 ? `${fmt2(u)} of this is not placed yet because your burrows can't take any more right now. Add a burrow or raise a cost.` : ''; }
   if (S.plan.goals.length === 1) { const row = $('[data-grow="0"]'); if (row) { $('.split-m', row).textContent = fmt2(splitMoney(0)) + ' a month'; $('.split-s', row).textContent = splitNoteFor(0); } return; }
   spPaint('goal', SPLIT_SPEC.goal());
 }
@@ -392,7 +392,7 @@ const STEP_SPLIT = { id: 'goalsplit', part: PART.goals, setup: true, when: () =>
   title: () => (S.plan.goals.length > 1 ? 'Split goal money' : 'Goal money'),
   body: () => {
     splitInit(); const pct = setupCells(S).ltsPct, many = S.plan.goals.length > 1;
-    return `<p>${many ? `Burrows get <b>${pct}%</b> of pay, <b>${fmt2(gsBudget)}</b> a month, shared between your goals. A goal with a date gets what it needs first. Each slider moves on its own; what you take away waits as not placed yet.`
+    return `<p>${many ? `Burrows get <b>${pct}%</b> of pay, <b>${fmt2(gsBudget)}</b> a month, shared between your goals. A goal with a date gets what it needs first. Each slider moves on its own, and what you take off one waits as not placed yet.`
       : `Burrows get <b>${pct}%</b> of pay, <b>${fmt2(gsBudget)}</b> a month. ${unusedOf() > 0 ? 'This goal is filled first.' : 'All of it goes to this goal.'}`}</p>
     ${many ? potHTML('goalPot', S.plan.goals.map(g => `var(--c${g.slot})`), gsPct, 100) + poolHTML('goal', S.plan.goals.map(g => g.name)) : ''}
     <div class="split" id="goalSplit">${splitRows()}</div>
@@ -418,7 +418,7 @@ const behindGoals = () => (tourMode === 'full' && havePay() ? S.plan.goals.filte
 const behindText = () => {
   const b = behindGoals(); if (!b.length) return '';
   const names = b.map(g => `<b>${esc(g.name)}</b>`).join(' and ');
-  return `${names} ${b.length === 1 ? 'misses its date' : 'miss their dates'} at this pace. Under Plan, Burrows: move the date, lower the amount or give it more pay.`;
+  return `${names} ${b.length === 1 ? 'misses its date' : 'miss their dates'} at this pace. Under Plan, Burrows you can move the date, lower the amount or give it more pay.`;
 };
 /* the same pixel chest used on Home and Plan, as a small picture above the figure (visual first) */
 const chestImg = fill => { try { const c = document.createElement('canvas'); c.width = 24; c.height = 18; BUR.LOOKS.room.paint(c.getContext('2d'), fill, 'play', 3); return `<img class="tour-chest" alt="" aria-hidden="true" width="96" height="72" src="${c.toDataURL()}">`; } catch (e) { return ''; } };
@@ -429,22 +429,22 @@ const STEP_REVEAL = { id: 'reveal', part: PART.spend, art: 'branch',
     const f = planFacts(), play = f.play, wk = weekOf(play), seg = (cls, v) => (v > 0 ? `<div class="seg-b ${cls}" style="flex-grow:${v}"></div>` : '');
     /* no sample money in setup sentences (LAUNCH_CHECKLIST D2): with no pay there is no figure to show yet, only what to do */
     if (f.st === 'nopay') return `${chestImg(0.2)}
-      <p>Free to spend is money for fun: what is left after bills and burrows. It needs your pay to work it out, so there is no figure yet.</p>
+      <p>Free to spend is money for fun, it's what's left after bills and burrows. There's no number yet because it needs your pay to work it out.</p>
       <p>Tap Back to type your pay, or add it later under Plan, Month, Details, Money in.</p>`;
     if (f.st === 'over') return `<div class="tour-reveal neg"><b>${fmt2(f.shortBy)}</b><span>short a month</span></div>
-      <p>Plan spends <b>${fmt2(f.J.out)}</b>; pay is <b>${fmt2(f.inc)}</b>.${play > 0 ? '' : ' Nothing left, so no free to spend yet.'}</p>
+      <p>The plan spends <b>${fmt2(f.J.out)}</b> and your pay is <b>${fmt2(f.inc)}</b>.${play > 0 ? '' : ' Nothing is left, so no Free to spend yet.'}</p>
       ${ledgerHTML(f)}
-      <p>Under Plan: lower a bill or add income.${play > 0 ? '' : ' Free to spend appears as soon as there is room.'}</p>`;
+      <p>Under Plan you can lower a bill or add more pay.${play > 0 ? '' : ' Free to spend shows up as soon as there\'s room.'}</p>`;
     const rest = f.J.rest;
-    const bar = `${chestImg(play > 0 ? 0.75 : 0.1)}<div class="tour-fig"><div class="bar tour-bar" role="img" aria-label="Pay by jar">${f.J.list.map(j => seg(JARCLS[j.id], j.v)).join('')}${seg('rest', rest)}</div>
+    const bar = `${chestImg(play > 0 ? 0.75 : 0.1)}<div class="tour-fig"><div class="bar tour-bar" role="img" aria-label="Where your pay goes">${f.J.list.map(j => seg(JARCLS[j.id], j.v)).join('')}${seg('rest', rest)}</div>
       <div class="legend">${f.J.list.map(j => (j.v > 0 ? `<span><i class="${JARCLS[j.id]}"></i>${j.name} ${j.pct}%</span>` : '')).join('')}${rest > 0 ? `<span><i class="rest"></i>Left ${f.J.restPct}%</span>` : ''}</div></div>`;
     const big = `<div class="tour-reveal"><b>${fmt2(play)}</b><span>a month${play > 0 ? `, about ${fmtAbout(wk)} a week` : ''}</span></div>`;
     if (play <= 0) {
       const all = f.billPct >= 0.95;
-      return `${big}<p>${all ? `Bills take <b>${f.J.list[0].pct}%</b> of pay, so almost nothing is left for free to spend.` : 'Nothing is set aside for free to spend.'} About 10% of pay is a common amount to keep for it.</p>
+      return `${big}<p>${all ? `Bills take <b>${f.J.list[0].pct}%</b> of pay, so almost nothing is left for Free to spend.` : 'Nothing is set aside for Free to spend.'} About 10% of pay is a common amount to keep for it.</p>
       ${bar}<p>${behindText() || 'To add some, raise the Free to spend line under Plan or lower a bill.'}</p>`;
     }
-    const msg = behindText() || (f.st === 'spare' ? `<b>${fmt2(f.L)}</b> of pay is not placed yet. Raise a goal or add to free to spend.` : f.billPct >= 0.9 ? 'Bills take most of pay, so the month is tight. Lowering a bill is the easiest fix.' : 'All pay is placed.');
-    return `${big}<p>Bills are paid and every other place has its share: this is yours to spend on fun, no guilt. Split of ${fmt2(f.inc)} pay:</p>
+    const msg = behindText() || (f.st === 'spare' ? `<b>${fmt2(f.L)}</b> of pay is not placed yet. Raise a goal or add it to Free to spend.` : f.billPct >= 0.9 ? 'Bills take most of your pay so the month is tight, and lowering a bill is the easiest fix.' : 'All pay is placed.');
+    return `${big}<p>Bills are paid and every other place has its share, so this is yours to spend on whatever you want. Split of ${fmt2(f.inc)} pay:</p>
     ${bar}<p>${msg}</p>`;
   } };

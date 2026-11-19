@@ -25,7 +25,7 @@ const sum = a => a.reduce((x, y) => x + y, 0);
   // raise another: it takes from the unassigned part and stops when that is gone
   await slide(3, v[3] + 20); await w(150); const v2 = await vals();
   ok('raising one takes only what is unassigned', v2[3] === v[3] + 5 && sum(v2) === total && v2.every((x, k) => k === 3 || x === v[k]), { v, v2 });
-  ok('why line says it stopped', /all that was not placed yet|can only take what is not placed yet/.test(await p.$eval('#jarWhy', e => e.textContent)), await p.$eval('#jarWhy', e => e.textContent));
+  ok('why line says it stopped', /all that was not placed yet|can only take what's not placed yet/.test(await p.$eval('#jarWhy', e => e.textContent)), await p.$eval('#jarWhy', e => e.textContent));
   ok('pool is empty again', !(await pool()).has);
   // percent box obeys the same rule
   await p.evaluate(() => { const i = document.querySelector('[data-jrow="0"] .pctp input'); i.value = '0'; i.dispatchEvent(new Event('input', { bubbles: true })); }); await w(150);

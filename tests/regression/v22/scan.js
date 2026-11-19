@@ -49,7 +49,7 @@ process.on('unhandledRejection', e => { console.log('UNHANDLED', e && e.message)
   ok(await p.evaluate(() => document.querySelectorAll('#scanFiles .sfile').length === 1 && document.querySelector('#scanRead').textContent === 'Read 1 photo'), 'photo chip and "Read 1 photo"');
   await (await p.$('#scanPickIn')).uploadFile('/tmp/v22/receipt_small.png', '/tmp/v22/doc.pdf'); await w(1200);
   const info = await p.evaluate(() => ({ n: document.querySelectorAll('#scanFiles .sfile').length, msg: document.querySelector('#scanMsg').textContent, read: document.querySelector('#scanRead').textContent }));
-  ok(info.n === 2 && /cannot be read here/.test(info.msg), 'png added, pdf refused with a plain note: ' + JSON.stringify(info));
+  ok(info.n === 2 && /can't be read here/.test(info.msg), 'png added, pdf refused with a plain note: ' + JSON.stringify(info));
   await p.screenshot({ path: '/tmp/v22/scan_files.png' });
   // remove the png chip, then re-add to test remove
   await p.evaluate(() => document.querySelector('#scanFiles [data-rm="1"]').click()); await w(200);
@@ -64,7 +64,7 @@ process.on('unhandledRejection', e => { console.log('UNHANDLED', e && e.message)
   ok(calls.length === 1 && calls[0].images.length === 2 && calls[0].hasCats, 'one request with 2 images and the category list');
   ok(calls[0].images[0].type === 'image/jpeg' && calls[0].images[0].size < 2500000 && /\.jpg$/.test(calls[0].images[0].name), 'big photo was shrunk to a smaller jpeg: ' + JSON.stringify(calls[0].images[0]));
   const card = await p.evaluate(() => { const c = document.querySelector('#scanOut .msg.card'); return c ? { rows: c.querySelectorAll('li').length, sels: c.querySelectorAll('select.catsel').length, left: (c.querySelector('.left') || {}).textContent, head: c.querySelector('.grp b').textContent, html: c.innerHTML.includes('<b>x</b>') } : null; });
-  ok(card && card.rows === 3 && card.sels === 3 && /unreadable/.test(card.left) && /blurry/.test(card.left) && !card.html, 'review card: 3 rows, category pickers, left-out note, tags stripped: ' + JSON.stringify(card));
+  ok(card && card.rows === 3 && card.sels === 3 && /couldn't be read/.test(card.left) && /blurry/.test(card.left) && !card.html, 'review card: 3 rows, category pickers, left-out note, tags stripped: ' + JSON.stringify(card));
   await p.screenshot({ path: '/tmp/v22/scan_card.png' });
   // change a category and untick one
   await p.evaluate(() => { const s = document.querySelectorAll('#scanOut select.catsel'); s[1].value = [...s[1].options].find(o => o.value !== 'other' && o.value !== s[1].value).value; s[1].dispatchEvent(new Event('change')); document.querySelectorAll('#scanOut .msg.card li input')[2].click(); });

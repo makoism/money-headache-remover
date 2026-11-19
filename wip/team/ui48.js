@@ -3,38 +3,38 @@
    Only when asked for: Help, "Explain this tab". Skippable at any step. */
 const COACH = {
   home: [
-    ['#hStatus', 'Where you stand', 'Read this first. On plan: this month fits your pay and your balance stays above your minimum.'],
-    ['#hHero', 'Main goal', 'Your reason, in your words, with what this month adds and the months left. Tap Forecast for the graph.'],
-    ['#hSpend', 'Free to spend', 'The money you use this month. The big number is free to spend on fun, no guilt. Below it: are your necessities covered, and what is left for learning and giving. What is left at month end can go toward a goal.'],
-    ['#hQuick', 'Log spend', 'Enter an amount, pick a category, tap Log. Do it as you spend or weekly.'],
-    ['#hGoals', 'Burrows', 'Tap a burrow to open it. Edit it or make it your main burrow.'],
-    ['#hBuckets', 'Investing', 'Money you invest and never spend. It only grows. Goals and debt live in the burrows at the top.'],
-    ['#askBtn', 'Ask', 'Any money question, any time. It knows your plan and can make changes you approve.'],
+    ['#hStatus', 'Where you stand', 'Read this first. On plan means this month fits your pay and your balance stays above your minimum.'],
+    ['#hHero', 'Main goal', 'Your reason in your own words, with what this month adds and how many months are left. Tap Forecast for the graph.'],
+    ['#hSpend', 'Free to spend', 'The money you use this month. The big number is Free to spend and it\'s yours to spend on whatever you want. Under it you can see if your Bills and basics are covered and what\'s left for Education and Giving, and whatever\'s left at the end of the month can go into a goal.'],
+    ['#hQuick', 'Log spend', 'Enter an amount, pick a category and tap Log. Do it as you spend or once a week.'],
+    ['#hGoals', 'Burrows', 'Tap a burrow to open it, then you can edit it or make it your main burrow.'],
+    ['#hBuckets', 'Investing', 'Money you invest and don\'t spend. Goals and debt live in the burrows at the top.'],
+    ['#askBtn', 'Ask', 'Ask any money question here. It knows your plan and can make changes once you approve them.'],
   ],
   receipts: [
-    ['#scan', 'Scan receipts', 'Claude reads receipt photos and files each one. You review before anything is added.'],
-    ['#rcForm', 'Manual entry', 'Date, amount, category. Unsure of the category? Pick Other and change it later.'],
-    ['#rcMonthCard', 'Plan vs spend', 'Per category: planned, spent, left.'],
+    ['#scan', 'Scan receipts', 'Claude reads your receipt photos and sorts each one into a category, and nothing gets added until you\'ve checked it.'],
+    ['#rcForm', 'Manual entry', 'Type the date, amount and category. If you\'re not sure of the category pick Other and change it later.'],
+    ['#rcMonthCard', 'Plan vs spend', 'What you planned, what you spent and what\'s left in each category'],
     ['#rcRemind', 'Reminder', 'Pick a schedule, then add a repeating calendar event.'],
   ],
   goals: [
-    ['#goalCards .gcard', 'Goal', 'Bar = how full by plan. Edit goal changes name, amount or date.'],
-    ['#addGoalBtn', 'Add a burrow', 'Three steps: type, goal amount, date.'],
-    ['#chartbox', 'Forecast', 'Every goal, month by month. Hover or tap to read a month.'],
+    ['#goalCards .gcard', 'Goal', 'The bar shows how full it should be by now if you stick to the plan. Edit goal changes the name, amount or date.'],
+    ['#addGoalBtn', 'Add a burrow', 'Three steps - you pick the type, the goal amount and the date'],
+    ['#chartbox', 'Forecast', 'This shows every goal month by month. Hover over a month or tap it to read it.'],
   ],
   month: [
-    ['#hero', 'Free to spend', 'The big number is this month’s free to spend: yours to spend, no guilt.'],
-    ['#where', 'Pay by place', 'Six places. Hover or tap a colour for the amount.'],
-    ['#ledger', 'Details', 'Tap a row to open it and enter a new amount. Applies to this month only, until you choose Keep for later months.'],
+    ['#hero', 'Free to spend', 'The big number is this month’s Free to spend and it’s yours to spend on whatever you want'],
+    ['#where', 'Pay by place', 'Your pay split into six places. Hover over a colour or tap it to see the amount.'],
+    ['#ledger', 'Details', 'Tap a row to open it and enter a new amount. It only changes this month unless you choose Keep for later months.'],
   ],
   months: [
-    ['#monthTable', 'All months', 'Tap a month to open it. Short = balance falls under the minimum.'],
+    ['#monthTable', 'All months', 'Tap a month to open it. Short means your balance falls under the minimum that month.'],
   ],
   basics: [
-    ['#st-bankStart', 'Balance', 'Current balance. Warns when a month would end under the minimum.'],
-    ['#themeSeg', 'Look', 'Light, Dark or Auto (follows the device). This browser only.'],
+    ['#st-bankStart', 'Balance', 'Your balance right now. It warns you when a month would end under the minimum.'],
+    ['#themeSeg', 'Look', 'Light, Dark or Auto, which follows the device. It\'s set for this browser only.'],
     ['#jarList', 'Six places', 'The usual split, as a guide. Your real split comes from the amounts in each place.'],
-    ['#bkArea', 'Saved data', 'Numbers live in this browser only. Save a file copy regularly. Restore it here or on another device.'],
+    ['#bkArea', 'Saved data', 'Your numbers live in this browser. Tap Save file every now and then to keep a backup, and you can load it here or on another device.'],
   ],
 };
 const CO = { steps: [], i: 0, open: false, tab: '', ret: null, raf: 0 };

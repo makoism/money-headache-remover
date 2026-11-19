@@ -108,10 +108,10 @@ function stmtJoinParts(jobs) {
 }
 function stmtErrorText(e, name) {
   const code = e && e.code;
-  if (code === 'invalid_json' && /cut short/.test(e.message || '')) return 'too long for one read; split it, or fewer pages';
+  if (code === 'invalid_json' && /cut short/.test(e.message || '')) return 'too long for one read, split it or use fewer pages';
   if (code === 'pdf_locked' || code === 'file_rejected') { let m = String(e.message || 'could not be read'); if (name && m.indexOf(name) === 0) m = m.slice(name.length).replace(/^[\s:]+/, ''); return m.replace(/^[^:]{1,40}:\s*/, ''); }
   if (code === 'prompt_too_large') return 'too much for one read';
-  if (code === 'rate_limited') return 'too many requests right now; try again in a minute';
+  if (code === 'rate_limited') return 'too many requests right now, try again in a minute';
   if (code === 'invite_required') return 'needs the code word';
   if (code === 'cancelled') return 'stopped';
   return (e && e.message) ? String(e.message).slice(0, 80) : 'could not be read';
@@ -188,7 +188,7 @@ async function importRead() {
     const code = e && e.code;
     if (code === 'cancelled') { bot.remove(); stmtPaintProgress([]); }
     else if (code === 'invite_required') inviteForm(bot, () => importRead());
-    else { askFilesFail(e, bot); if (code === 'relay_unconfigured' && e.message) bot.textContent = e.message + ' Use any AI below, or type the numbers in.'; else if (['not_granted', 'sampling_disabled', 'relay_unconfigured', 'capability_removed'].indexOf(code) >= 0) bot.textContent = 'Claude cannot be reached from this copy of the page. Use any AI below, or type the numbers in.'; }
+    else { askFilesFail(e, bot); if (code === 'relay_unconfigured' && e.message) bot.textContent = e.message + ' Use any AI below or type the numbers in.'; else if (['not_granted', 'sampling_disabled', 'relay_unconfigured', 'capability_removed'].indexOf(code) >= 0) bot.textContent = 'Claude can\'t be reached from this copy of the page. Use any AI below or type the numbers in.'; }
   } finally {
     impBusy = false; impCtl = null; paintImport();
   }
@@ -204,7 +204,7 @@ function stmtReviewHTML(d) {
   const merch = d.merchants.slice(0, STMT_MAX_MERCHANTS).map(m => `<div class="imp-m" data-mk="${esc(m.k)}"><div class="imp-m-row"><button type="button" class="imp-m-n" data-mx="${esc(m.k)}" aria-expanded="false" title="${esc(m.name)}"><span class="imp-m-t"><b>${esc(m.name)}</b><i aria-hidden="true"></i></span><small>${m.n}${m.n === 1 ? ' row' : ' rows'}, ${m.inTotal > 0 ? 'in ' + fmt(m.inTotal) : 'out ' + fmt(m.outTotal)}${m.inTotal > 0 && m.outTotal > 0 ? ', out ' + fmt(m.outTotal) : ''}</small></button><select class="inp sm" data-cat="${esc(m.k)}" aria-label="Category for ${esc(m.name.slice(0, 40))}">${opts(d.catMap[m.k])}</select></div><div class="imp-m-x" hidden></div></div>`).join('');
   const n = d.receipts.length;
   return `<details class="src-how imp-fold"><summary>What was read (${d.meta.rows} rows)</summary><ul class="imp-files">${files}</ul></details>
-    <details class="src-how imp-fold"><summary>Categories (${d.merchants.length}). Fix any that are wrong; the numbers follow.</summary><p class="cap">Tap a name to see its rows as printed.</p><div class="imp-ms">${merch}</div></details>
+    <details class="src-how imp-fold"><summary>Categories (${d.merchants.length}). Fix any that are wrong and the numbers follow.</summary><p class="cap">Tap a name to see its rows as printed.</p><div class="imp-ms">${merch}</div></details>
     ${n ? `<label class="imp-keep"><input type="checkbox" id="impKeep" checked> Keep the ${n} spending ${n === 1 ? 'row' : 'rows'} as receipts, so Receipts and the assistant know where the money went</label>` : ''}`;
 }
 /* a merchant line opened: every row behind it, as printed, newest first */
@@ -214,7 +214,7 @@ function stmtToggleMerchant(btn) {
   if (!open || x.children.length) return;
   const key = box.dataset.mk, rows = stmtMerge(impDraft.reads).rows.filter(r => r.k === key).sort((a, b) => (a.d < b.d ? 1 : a.d > b.d ? -1 : 0));
   const many = rows.length > 12, show = rows.slice(0, 12);
-  x.innerHTML = `<ul class="imp-rows">${show.map(r => `<li><span class="d">${esc(r.d)}</span><span class="a">${r.dir === 'in' ? '+' : ''}${fmt(r.a)}</span><span class="t">${esc(r.t)}</span><span class="f">${esc((impDraft.acctOf && impDraft.acctOf[r.f]) || r.f)}</span></li>`).join('')}</ul>${many ? `<p class="cap">${rows.length} rows in total; the newest 12 are shown.</p>` : ''}`;
+  x.innerHTML = `<ul class="imp-rows">${show.map(r => `<li><span class="d">${esc(r.d)}</span><span class="a">${r.dir === 'in' ? '+' : ''}${fmt(r.a)}</span><span class="t">${esc(r.t)}</span><span class="f">${esc((impDraft.acctOf && impDraft.acctOf[r.f]) || r.f)}</span></li>`).join('')}</ul>${many ? `<p class="cap">${rows.length} rows in total and the newest 12 are shown.</p>` : ''}`;
 }
 /* a corrected category: remembered, and the draft rebuilt */
 function stmtRecat(key, cat) {

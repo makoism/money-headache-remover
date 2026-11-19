@@ -19,9 +19,9 @@ const NAMES = X => {
   const names = {
     'Bank now': [r('^In your bank now(?: now)?\\n(M)$'), r('^Money today[^\\n]*= (M)$')],
     'Bank at the end of this month': [r('^Bank at month end\\n(M)$'), r('^Bank (M) \\+ burrows'), r('to (M) this month\\.$'), r('^(?:Your bank|Bank) ends at (M)[ :]'), r('^' + X.month + '\\t@\\t(M)$')],
-    'Free to spend, safe to spend': [r('^Free to spend\\n(M)\\nsafe to spend$'), r('^Free to spend\\n(M)\\nplanned: safe to spend'), r('^Free to spend in [A-Z][a-z]+ \\d+\\n(M)$'),
+    'Free to spend, safe to spend': [r('^Free to spend\\n(M)\\nsafe to spend$'), r('^Free to spend\\n(M)\\nplanned: yours to spend over the whole of'), r('^Free to spend in [A-Z][a-z]+ \\d+\\n(M)$'),
       r('^Free to spend: (M) left'), r('^(M)\\nFree to spend\\nPlanned'), r('(M) safe to spend\\. See receipts'), r('spent, (M) safe to spend\\.$'), r('^Free to spend\\t@\\t@\\t(M)$'), r('(M) is free to spend\\.')],
-    'Free to spend, planned': [r('^Planned (M) this month'), r('^Free to spend\\nFun, no guilt\\n(M)$'), r('Free to spend: (M) planned'), r('^Free to spend\\t(M)\\t@\\t@$'), r('^Spent @ of (M)\\.')],
+    'Free to spend, planned': [r('^Planned (M) this month'), r('^Free to spend\\nSpend on fun\\n(M)$'), r('Free to spend: (M) planned'), r('^Free to spend\\t(M)\\t@\\t@$'), r('^Spent @ of (M)\\.')],
     'Free to spend, spent': [r('^Spent (M) of @\\.'), r('^Receipts: (M) spent'), r('planned, (M) spent,'), r('^Free to spend\\t@\\t(M)\\t@$')],
     'Bills and basics, planned': [r('^Bills and basics\\nBills\\n(M)$'), r('^Money out\\n@\\nBills and basics\\n(M)$'), r('enough for (M) of bills')],
     'Bills left to pay': [r('^Bills and basics\\n(M)\\nleft to pay'), r('^Bills left\\n(M)$')],

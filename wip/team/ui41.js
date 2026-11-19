@@ -47,9 +47,9 @@ function pdfLocked(buf) {
 function pdfPages(buf) { const m = new TextDecoder('latin1').decode(buf).match(/\/Type\s*\/Page(?![s\w])/g); return m ? m.length : 1; }
 async function toDocBlock(file) {
   const name = file.name || 'file';
-  if (file.size > DOC_LIMITS.maxInputBytes) throw { code: 'file_rejected', message: `${name} is too large. Export fewer months, or take screenshots of the pages.` };
+  if (file.size > DOC_LIMITS.maxInputBytes) throw { code: 'file_rejected', message: `${name} is too big. Export fewer months or take screenshots of the pages.` };
   const buf = new Uint8Array(await file.arrayBuffer());
-  if (buf.length < 8 || String.fromCharCode(buf[0], buf[1], buf[2], buf[3]) !== '%PDF') throw { code: 'file_rejected', message: `${name} is not a PDF.` };
+  if (buf.length < 8 || String.fromCharCode(buf[0], buf[1], buf[2], buf[3]) !== '%PDF') throw { code: 'file_rejected', message: `${name} isn't a PDF.` };
   if (pdfLocked(buf)) throw { code: 'pdf_locked', message: `${name} asks for a password. Open it with the password, then save or print it as a new PDF, or take screenshots of its pages.` };
   return { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: bytesToB64(buf) }, _pages: pdfPages(buf), _bytes: buf.length };
 }
@@ -64,7 +64,7 @@ async function relayMessages(input, images) {
     /* all the PDFs together have to fit one request: a size cap and a page cap, said plainly before anything is sent */
     const docs = blocks.filter(b => b.type === 'document'), pages = docs.reduce((n, b) => n + (b._pages || 1), 0), bytes = docs.reduce((n, b) => n + (b._bytes || 0), 0);
     if (docs.length > DOC_LIMITS.maxCount) throw { code: 'prompt_too_large', message: `Up to ${DOC_LIMITS.maxCount} PDFs at a time. 2 or 3 months of statements is plenty.` };
-    if (pages > DOC_LIMITS.maxPages || bytes > DOC_LIMITS.maxTotalBytes) throw { code: 'prompt_too_large', message: `About ${pages} pages in ${docs.length} PDFs is too much for one read. Pick fewer months: 2 or 3 is plenty.` };
+    if (pages > DOC_LIMITS.maxPages || bytes > DOC_LIMITS.maxTotalBytes) throw { code: 'prompt_too_large', message: `About ${pages} pages in ${docs.length} PDFs is too much for one read. Pick fewer months, 2 or 3 is plenty.` };
     docs.forEach(b => { delete b._pages; delete b._bytes; });
     const last = msgs[msgs.length - 1]; last.content = [{ type: 'text', text: String(last.content) }].concat(blocks);
   }
@@ -194,7 +194,7 @@ function renderMoveBanner() {
   const el = $('#moveBanner'); if (!el) return;
   if (!showMoveBanner()) { el.hidden = true; return; }
   const has = hasData(S);
-  put(el, `<div class="hn-t"><b>The app has its own address</b><span>Works without a Claude account: reading statements, receipts and the assistant are on for everyone there.</span></div><div class="hn-b"><a class="btn small solid" id="moveGo" href="${esc(has ? moveLink() : RELAY_URL)}" target="_blank" rel="noopener noreferrer">${has ? 'Open it and move my numbers' : 'Open it'}</a><button type="button" class="link" data-move-hide>Not now</button></div>`);
+  put(el, `<div class="hn-t"><b>The app has its own address</b><span>It works without a Claude account, so reading statements and receipts and the assistant are on for everyone there.</span></div><div class="hn-b"><a class="btn small solid" id="moveGo" href="${esc(has ? moveLink() : RELAY_URL)}" target="_blank" rel="noopener noreferrer">${has ? 'Open it and move my numbers' : 'Open it'}</a><button type="button" class="link" data-move-hide>Not now</button></div>`);
   el.hidden = false;
 }
 /* on the app's own address: numbers arriving in the hash */

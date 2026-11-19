@@ -19,7 +19,7 @@ const openAt = async (b, iso, keep) => { const p = await b.newPage(); const errs
   for (let i = 0; i < 30; i++) { const nxt = await p.$eval('#tourNext', e => e.textContent); if (/^(Go to bills|Done)$/.test(nxt)) break; await p.click('#tourNext'); await w(250); }
   const doneTxt = await p.$eval('#tourBody', e => e.innerText);
   ok(/all at zero so far/.test(doneTxt) && !/still samples/.test(doneTxt), 'end screen: bills are at zero, not "still samples"');
-  ok(/Plan: Month, Details, Money in, Salary/.test(doneTxt), 'end screen: says where pay goes');
+  ok(/Plan, then Month, Details, Money in and Salary/.test(doneTxt), 'end screen: says where pay goes');
   await p.click('#tourNext'); await w(900); await p.evaluate(() => document.querySelector('[data-tab="home"]').click()); await w(500);
   ok(/Emergency fund has no amount yet/.test(await p.$eval('#hHero', e => e.innerText)), 'Home asks for the amount of the amount-less goal');
   await p.evaluate(() => document.querySelector('[data-gset]').click()); await w(600);

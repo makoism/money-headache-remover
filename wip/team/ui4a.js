@@ -150,7 +150,7 @@ function asstCard(bot, chk) {
   const apply = document.createElement('button'); apply.type = 'button'; apply.className = 'btn small solid'; foot.append(apply);
   const skip = document.createElement('button'); skip.type = 'button'; skip.className = 'link'; skip.textContent = 'Not now'; foot.append(skip);
   const msg = document.createElement('span'); msg.className = 'msg'; msg.setAttribute('role', 'status'); foot.append(msg);
-  if (chk.dropped.length) { const p = document.createElement('p'); p.className = 'cap'; p.textContent = `Left out (not understood): ${chk.dropped.join(', ')}.`; wrap.append(p); }
+  if (chk.dropped.length) { const p = document.createElement('p'); p.className = 'cap'; p.textContent = `Left out because I didn't understand them: ${chk.dropped.join(', ')}.`; wrap.append(p); }
   wrap.append(foot); bot.append(wrap);
   const paint = () => {
     const n = chk.steps.filter(s => s.on).length, d = asstDelta(chk.steps);
@@ -185,13 +185,13 @@ function asstInput() {
 /* after a reply: show the text, and the card when a block came with it */
 function asstAfter(bot, text, truncated) {
   const sp = asstSplit(text);
-  bot.classList.remove('wait'); bot.textContent = (sp.shown || (sp.block ? 'Here is a change you can apply.' : '')) + (truncated ? '\n\n(Cut short. Ask for less at a time.)' : '');
+  bot.classList.remove('wait'); bot.textContent = (sp.shown || (sp.block ? 'Here\'s a change you can apply.' : '')) + (truncated ? '\n\nThat got cut short, ask for less at a time.' : '');
   if (!sp.block) return;
   const p = parseLoose(sp.block);
   const card = document.createElement('div'); card.className = 'msg ai'; $('#askLog').appendChild(card);
-  if (!p.ok) { card.classList.add('note'); card.textContent = 'The proposed change could not be read. Ask again in other words.'; return; }
+  if (!p.ok) { card.classList.add('note'); card.textContent = 'I couldn\'t read that change. Ask again in other words.'; return; }
   const chk = asstCheck(p.value);
-  if (!chk.steps.length) { card.classList.add('note'); card.textContent = 'Nothing in that proposal matched the page. Ask again in other words.'; return; }
+  if (!chk.steps.length) { card.classList.add('note'); card.textContent = 'Nothing in that change matched the page. Ask again in other words.'; return; }
   asstCard(card, chk); sfx('next');
   $('#askLog').scrollTop = $('#askLog').scrollHeight;
 }

@@ -95,11 +95,11 @@ function importAddFiles(list, acctId) {
   const notes = [], all = () => impAccts.reduce((l, a) => l.concat(a.files), []);
   Array.from(list || []).forEach(f => {
     const kind = isTextFile(f) ? 'text' : /^image\//.test(f.type) || /\.(heic|heif|jpe?g|png|webp)$/i.test(f.name || '') ? 'image' : askDoc && isPdfFile(f) ? 'pdf' : '';
-    if (!kind) { notes.push(isPdfFile(f) ? (askDoc ? `${f.name}: not a readable PDF.` : pdfHereNote(f)) : oldSheetNote(f) || `${f.name}: only CSV or Excel files, ${askDoc ? 'PDFs, ' : ''}screenshots and photos.`); return; }
-    if (kind === 'pdf' && f.size > askDoc.maxInputBytes) { notes.push(`${f.name} is too large. Export fewer months, or take screenshots of the pages.`); return; }
+    if (!kind) { notes.push(isPdfFile(f) ? (askDoc ? `${f.name}: this PDF can't be read. Take screenshots of the pages instead.` : pdfHereNote(f)) : oldSheetNote(f) || `${f.name}: this kind of file can't be read. Use CSV or Excel files, ${askDoc ? 'PDFs, ' : ''}screenshots or photos.`); return; }
+    if (kind === 'pdf' && f.size > askDoc.maxInputBytes) { notes.push(`${f.name} is too big. Export fewer months or take screenshots of the pages.`); return; }
     if (kind === 'pdf' && all().filter(x => x.kind === 'pdf').length >= askDoc.maxCount) { notes.push(`Up to ${askDoc.maxCount} PDFs at a time. 2 or 3 months of statements is plenty.`); return; }
-    if (f.size > 20000000) { notes.push(`${f.name} is too large.`); return; }
-    if (impFileCount() >= IMP_MAX_FILES) { notes.push(`${IMP_MAX_FILES} files at a time.`); return; }
+    if (f.size > 20000000) { notes.push(`${f.name} is too big. Try a smaller file.`); return; }
+    if (impFileCount() >= IMP_MAX_FILES) { notes.push(`${IMP_MAX_FILES} files at a time is the most, so add the rest after these`); return; }
     acct.files.push({ file: f, kind });
   });
   renderNotes($('#impNote'), notes);
@@ -113,7 +113,7 @@ function acctHTML(a, i) {
       </div>
       <div class="drop-in">
         <svg class="drop-arrow" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M32 46V22M23 31l9-9 9 9"/><path d="M18 50h28" opacity=".45"/></svg>
-        <p class="drop-t">Statements of this account go here.</p>
+        <p class="drop-t">Put this account's statements here</p>
         <button type="button" class="btn solid" data-acctpick="${a.id}">Choose files</button><input type="file" data-acctfile="${a.id}" multiple accept=".csv,.tsv,.txt,.xlsx,.pdf,text/csv,text/plain,application/pdf,image/*" hidden>
         <p class="cap drop-sub src-sub">CSV, Excel, PDF or screenshots</p>
       </div>
@@ -141,17 +141,17 @@ function paintImport() {
 function paintAccts() { const list = $('#acctList'); if (!list) return; list.innerHTML = impAccts.map(acctHTML).join(''); paintImport(); }
 /* the how-to, kept short: what to look for in a banking app */
 const IMP_HOW = () => `<details class="src-how"><summary>How to get your statements</summary><div class="src-how-in">
-  <p>Any bank or e-wallet app: open the account, find <b>Statements</b>, <b>Transaction history</b> or <b>Export</b>, and choose the last 2 or 3 months. A <b>CSV</b> or <b>Excel</b> export, or a <b>PDF</b> statement, is best. If the app only shows a list, take <b>screenshots</b> of each page instead.</p>
-  <p>A PDF that asks for a password (GCash sends these) has to be opened with the password first, then saved or printed as a new PDF, or screenshotted.</p>
+  <p>In any bank or e-wallet app you open the account, find <b>Statements</b>, <b>Transaction history</b> or <b>Export</b> and choose the last 2 or 3 months. A <b>CSV</b> or <b>Excel</b> export or a <b>PDF</b> statement is best, and if the app only shows a list you take <b>screenshots</b> of each page instead.</p>
+  <p>If a PDF asks for a password, like the ones GCash sends, open it with the password first and then save or print it as a new PDF, or take screenshots of it.</p>
   ${sym() === '₱' ? '<p>GCash: Profile, Transaction History, export by email. Maya: Account, Statements. BPI, BDO, UnionBank, GoTyme: the account page has Download or Export.</p>' : ''}
   ${sym() === '¥' ? '<p>Japanese banks: 入出金明細 then CSVダウンロード. Card apps: 利用明細 then screenshots of each month.</p>' : ''}
-  <p>Credit cards: the last statement (CSV or screenshots). Cash spending: add it on the review screen.</p>
-  <p>Nothing is stored. Files go to Claude once, the numbers come back, the files are forgotten.</p></div></details>`;
+  <p>For credit cards use the last statement as CSV or screenshots, and cash spending you add on the check screen.</p>
+  <p>Your files go to Claude once to be read and the numbers come back - The Burrow doesn't keep the files</p></div></details>`;
 /* the footer's own button is the way past this screen without statements: a plain "Type numbers instead" (or "Not now" when opened from Home),
    so nobody has to find the small link at the foot of a long screen. Reading files moves on by itself. */
 const STEP_SOURCE = { id: 'source', part: PART.money, setup: true, skipIf: () => quickSetup() && !impOnly, title: 'Your statements', next: () => (impOnly ? 'Not now' : 'Type numbers instead'), nextPlain: true,
   leave: d => { if (d > 0) { impDraft = null; if (impCtl) impCtl.abort(); } }, /* moving on by hand drops a draft and stops a read still running */
-  body: () => { acctInit(); return `<p id="srcIntro">One box per account: your bank, each card, each wallet. Name each the way you say it, and the app will too. Put in the last 2 or 3 months of each: PDF, CSV or Excel exports, or screenshots of the transaction list. The numbers come out exact, and your history fills in.</p>
+  body: () => { acctInit(); return `<p id="srcIntro">There's one box per account, so your bank, each card and each wallet. Name each one the way you say it and the app will call it that too. Put in the last 2 or 3 months of each as PDF, CSV or Excel exports or screenshots of the transaction list, and the numbers come out exact and your history fills in.</p>
     <div id="srcUploadPanel">
       <p class="cap src-here" id="impHere" hidden></p>
       <div class="accts" id="acctList">${impAccts.map(acctHTML).join('')}</div>
@@ -164,7 +164,7 @@ const STEP_SOURCE = { id: 'source', part: PART.money, setup: true, skipIf: () =>
     <details class="src-how src-alt" id="srcAiPanel">
       <summary id="srcAiSum">Prefer your own AI? Use it instead</summary>
       <div class="src-how-in">
-      <p id="srcAiLede">An alternative to the upload above, with the same result. If you would rather not send statements through this page, or you like ChatGPT, Gemini or the Claude app better: copy one message, paste it into that AI with your statements, answer its questions, and paste its final answer back here. It is checked and reviewed the same way.</p>
+      <p id="srcAiLede">Or use your own AI and get the same result. If you'd rather not send statements through this page, or you like ChatGPT, Gemini or the Claude app better, you copy one message, paste it into that AI with your statements, answer its questions and paste its final answer back here. It gets checked the same way.</p>
       <div class="row-btns"><button type="button" class="btn small solid" id="impCopy">Copy message</button><span class="msg" id="impCopyMsg" role="status"></span></div>
       <div class="row-btns ai-apps" id="impAis"></div>
       <textarea id="impPaste" aria-label="The AI's answer" spellcheck="false" placeholder="Paste the answer here"></textarea>
@@ -173,7 +173,7 @@ const STEP_SOURCE = { id: 'source', part: PART.money, setup: true, skipIf: () =>
     </details>
     ${IMP_HOW()}
     ${STEP_CHAT.when() ? '<p class="cap">A question first? <button type="button" class="link" id="srcChat">Back to the questions</button></p>' : ''}
-    <p class="cap">${impOnly ? '' : 'No statements at hand? <button type="button" class="link" id="srcSkip">Type the numbers instead</button>. Receipts takes statements any time, so this can wait.'}</p>`; },
+    <p class="cap">${impOnly ? '' : 'Don\'t have your statements right now? <button type="button" class="link" id="srcSkip">Type the numbers instead</button>. Receipts takes statements any time, so this can wait.'}</p>`; },
   after: () => {
     const body = $('#tourBody');
     /* where Claude can read files, the upload is the screen. Where it cannot (a copy without the relay or a sign-in), the any-AI route takes over. */
@@ -186,9 +186,9 @@ const STEP_SOURCE = { id: 'source', part: PART.money, setup: true, skipIf: () =>
       if (fold) {
         fold.open = !up; fold.classList.toggle('alone', !up);
         $('#srcAiSum').textContent = up ? 'Prefer your own AI? Use it instead' : 'Use your own AI';
-        { const it = $('#srcIntro'); if (it && !up) it.textContent = 'Bring in the last 2 or 3 months of each account: PDF, CSV or Excel exports, or screenshots of the transaction list. An AI app reads them for you, and the numbers come out exact. Your history fills in.'; }
-        $('#srcAiLede').innerHTML = up ? 'An alternative to the upload above, with the same result. If you would rather not send statements through this page, or you like ChatGPT, Gemini or the Claude app better: copy one message, paste it into that AI with your statements, answer its questions, and paste its final answer back here. It is checked and reviewed the same way.'
-          : `Your files go to the AI app, not to this page. ${inArtifact() && RELAY_URL ? hereLink() + ' Or use' : 'Use'} any AI: copy one message, paste it into ChatGPT, Gemini or the Claude app with your statements, answer its questions, and paste its final answer below.`;
+        { const it = $('#srcIntro'); if (it && !up) it.textContent = 'Bring in the last 2 or 3 months of each account as PDF, CSV or Excel exports or screenshots of the transaction list. An AI app reads them for you, so the numbers come out exact and your history fills in.'; }
+        $('#srcAiLede').innerHTML = up ? 'Or use your own AI and get the same result. If you\'d rather not send statements through this page, or you like ChatGPT, Gemini or the Claude app better, you copy one message, paste it into that AI with your statements, answer its questions and paste its final answer back here. It gets checked the same way.'
+          : `Your files go to the AI app, not to this page. ${inArtifact() && RELAY_URL ? hereLink() + ' Or use' : 'Use'} any AI - copy one message, paste it into ChatGPT, Gemini or the Claude app with your statements, answer its questions and paste its final answer below.`;
       }
     };
     connectAsk().then(paintSrc);
@@ -231,17 +231,17 @@ function impRows(d) {
   IMP_BILLS.forEach(id => { const l = lineById(S, id); if (!l) return; rows.push({ k: 'bill:' + id, label: BILL_Q[id] || l.name, note: d.notes[id] || '', a: d.bills[id] !== undefined ? whole(d.bills[id]) : null, on: d.bills[id] !== undefined }); });
   d.subs.forEach((s, i) => rows.push({ k: 'sub:' + i, label: s.n, note: 'Subscription', a: whole(s.a), on: true }));
   d.loans.forEach((l, i) => rows.push({ k: 'loan:' + i, label: l.n, note: 'Loan' + (l.e ? ', last payment ' + monthLabel(l.e) : ''), a: whole(l.a), on: true }));
-  if (lineById(S, 'card')) rows.push({ k: 'card', label: 'Card: other spending', note: 'Shopping, eating out, not counted above', a: whole(d.card), on: d.card !== null });
+  if (lineById(S, 'card')) rows.push({ k: 'card', label: 'Card: other spending', note: 'Shopping and eating out that isn\'t counted above', a: whole(d.card), on: d.card !== null });
   return rows;
 }
 const STEP_REVIEW = { id: 'review', part: PART.money, setup: true, when: () => !!impDraft, title: 'Check what was found', next: 'Use these numbers', focus: '',
   body: () => {
     const d = impDraft, rows = impRows(d);
     const qs = d.questions.length ? `<div class="imp-qs">${d.questions.map((q, i) => `<div class="imp-q"><p>${esc(q.t)}</p><div class="tour-chips" role="radiogroup" aria-label="${esc(q.t)}">${chip('impq' + i, 'yes', 'Yes', '', impAnswers[i] === 'yes')}${chip('impq' + i, 'no', 'No', '', impAnswers[i] === 'no')}</div></div>`).join('')}</div>` : '';
-    return `<p>${esc(d.summary || 'Here is what the statements show.')} Tick what is right, fix any amount. Unticked lines are left out.</p>${typeof stmtReviewHTML === 'function' ? stmtReviewHTML(d) : ''}${qs}
+    return `<p>${esc(d.summary || 'Here\'s what the statements show.')} Tick what's right and fix any amount that isn't. Anything you leave unticked is left out.</p>${typeof stmtReviewHTML === 'function' ? stmtReviewHTML(d) : ''}${qs}
       <div class="imp-list">${rows.map((r, i) => `<div class="imp-row${r.on ? ' on' : ''}" data-impi="${i}"><label class="imp-ck"><input type="checkbox" data-impck="${i}"${r.on ? ' checked' : ''}><span class="imp-l"><b>${esc(r.label)}</b>${r.note ? `<small>${esc(r.note)}</small>` : ''}</span></label><div class="inp sm"><span class="yen cs"></span><input type="number" inputmode="decimal" min="0" step="any" data-impa="${i}" aria-label="${esc(r.label)}, amount each month" placeholder="0" value="${r.a === null ? '' : r.a}"></div></div>`).join('')}</div>
       ${d.skipped.length ? `<p class="cap">Left out: ${esc(d.skipped.join(' '))}</p>` : ''}
-      <p class="cap">Missing a bill? Tick it and type the amount. Anything can be changed later in Plan.</p>`;
+      <p class="cap">If a bill is missing, tick it and type the amount. You can change anything later in Plan.</p>`;
   },
   after: () => {
     const body = $('#tourBody'); $$('.cs', body).forEach(e => { e.textContent = sym(); });

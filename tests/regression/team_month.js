@@ -27,7 +27,7 @@ const nextCard = p => p.evaluate(() => { const e = document.querySelector('#hNex
   await p.type('#hAmt', '350'); await p.click('#hLog').catch(async () => { await p.keyboard.press('Enter'); }); await w(900);
   /* 38.30 replaced the "finish last month" nudge with the month-end question (DECISIONS.md: unspent money is a question, never assumed).
      Decision 3 (Mako, 2026-11-18): asked even with fewer than four receipts, saying so; "Decide later" is kept. */
-  c = await nextCard(p); ok(!c.hid && /November: .* of free to spend is not logged as spent/.test(c.t) && /No receipts are logged, so this may be spending you have not logged yet/.test(c.t), 'after the first receipt, early December asks about November and says nothing is logged for it: ' + c.t.slice(0, 160));
+  c = await nextCard(p); ok(!c.hid && /November: .* of Free to spend isn't logged as spent/.test(c.t) && /No receipts are logged, so this may be spending you haven't logged yet/.test(c.t), 'after the first receipt, early December asks about November and says nothing is logged for it: ' + c.t.slice(0, 160));
   ok(/Open November receipts/.test(c.t) && /Decide later/.test(c.t), 'with a way to the November receipts and Decide later');
   await p.evaluate(() => document.querySelector('#hNext [data-sweephide]').click()); await w(500);
   c = await nextCard(p); ok(c.hid || !/November: /.test(c.t), 'Decide later puts it away for now');

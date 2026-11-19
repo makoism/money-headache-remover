@@ -5,7 +5,7 @@ let pass = 0, fail = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL 
   await p.goto('file:///home/claude/work/money-map-team.html?sfxtest#2026-11', { waitUntil: 'load' }); await w(600);
   await runTour(p, P.a); await w(900);
   const before = await p.evaluate(() => JSON.stringify(window.__t.S.plan));
-  for (const [btn, txt] of [['#blankBtn', 'All numbers zeroed.'], ['#bkReset', 'Samples restored.']]) {
+  for (const [btn, txt] of [['#blankBtn', 'All your numbers are set to zero.'], ['#bkReset', 'Samples restored.']]) {
     await p.evaluate(() => document.querySelector('#gearBtn').click()); await w(300);
     await p.evaluate(s => { const b = document.querySelector(s); b.scrollIntoView({ block: 'center' }); b.click(); }, btn); await w(700);   /* 38.31 data safety round 4: a second tap under 600 ms is ignored (a double tap never confirms), so the deliberate second tap waits 700 ms */
     await p.evaluate(s => document.querySelector(s).click(), btn); await w(600);

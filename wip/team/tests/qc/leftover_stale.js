@@ -13,7 +13,7 @@ const card=()=>p.evaluate(()=>{const e=document.getElementById('hNext');return e
 const bank=()=>p.evaluate(()=>{const C=__t.calcAll(__t.S);return JSON.stringify(C.months.slice(0,3).map(m=>[m.ym,m.bankEnd,m.jar.play]))});
 const tot=()=>p.evaluate(()=>{const C=__t.calcAll(__t.S);const m=C.byYm['2026-12'];return Math.round(m.bankEnd+Object.values(m.bal).reduce((a,b)=>a+b,0))});
 const b0=JSON.parse(await bank()),t0=await tot();
-ck('question is open',/is not logged as spent/.test(await card()));
+ck('question is open',/isn't logged as spent/.test(await card()));
 const mq=()=>p.evaluate(()=>{const m=__t.calcAll(__t.S).byYm['2026-11'];return JSON.stringify([m.jar.play,m.left,m.pool.left,m.pool.out])});const m0=await mq();
 const planBefore=await p.evaluate(()=>JSON.stringify([__t.S.once,__t.S.steps,__t.S.plan.lines.map(l=>l.def),__t.S.plan.goals.map(g=>g.monthly)]));
 await p.evaluate(()=>document.querySelector('[data-sweep]').click());await w(600);
@@ -25,13 +25,13 @@ const tUp=await tot();ck('the goal got money and the total rose by exactly the m
 await p.evaluate(()=>{const S=__t.S;S.once['2026-11']=Object.assign({},S.once['2026-11'],{envelope:45000});__t.persist();__t.restructure();});await w(400);
 ck('after a plan edit the top-up is still shown with Undo',/put toward/.test(await card())&&await p.evaluate(()=>!!document.querySelector('[data-sweepundo]')));
 await p.evaluate(()=>document.querySelector('[data-sweepundo]').click());await w(500);
-ck('Undo removes only the top-up: the edit stays and the question is back',await p.evaluate(()=>(__t.S.once['2026-11']||{}).envelope)===45000&&/is not logged as spent/.test(await card()));
+ck('Undo removes only the top-up: the edit stays and the question is back',await p.evaluate(()=>(__t.S.once['2026-11']||{}).envelope)===45000&&/isn't logged as spent/.test(await card()));
 ck('and every figure is the plain unanswered one (no money lost)',await tot()===await p.evaluate(()=>{const S=__t.S;const C=__t.calcAll(S);const m=C.byYm['2026-12'];return Math.round(m.bankEnd+Object.values(m.bal).reduce((a,b)=>a+b,0))}));
 await p.evaluate(()=>{const S=__t.S;delete S.once['2026-11'].envelope;__t.persist();__t.restructure();});await w(300);
 /* no receipts ever: no question yet (S1, gate 38.30: the person has not started logging). One receipt in another month: November is asked
    even with none of its own, with the few-receipts line (decision 3, Mako 2026-11-18) */
 await p.evaluate(()=>{const S=__t.S;S.ui.sweep={};S.once={};S.receipts=[];__t.persist();__t.restructure();});await w(400);
-const c3=await card();ck('with no receipts at all there is no month-end question yet (S1)',!/is not logged as spent/.test(c3));
+const c3=await card();ck('with no receipts at all there is no month-end question yet (S1)',!/isn't logged as spent/.test(c3));
 await p.evaluate(()=>{const S=__t.S;S.receipts=[{id:'rdec',d:'2026-12-02',a:500,c:'envelope',cn:'Free to spend',n:''}];__t.persist();__t.restructure();});await w(400);
-const c4=await card();ck('after the first receipt, a November with none of its own is asked, saying so (decision 3)',/November: .* is not logged as spent/.test(c4)&&/No receipts are logged, so this may be spending you have not logged yet/.test(c4));
+const c4=await card();ck('after the first receipt, a November with none of its own is asked, saying so (decision 3)',/November: .* isn't logged as spent/.test(c4)&&/No receipts are logged, so this may be spending you haven't logged yet/.test(c4));
 ck('no page errors',errs.length===0);await b.close();console.log(bad?'FAILED '+bad:'ALL PASS');process.exit(bad?1:0);})();

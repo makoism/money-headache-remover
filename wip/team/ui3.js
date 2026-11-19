@@ -6,7 +6,7 @@ function drawRoad() {
   /* with nothing to draw, say so plainly instead of showing an empty chart */
   if (nothing) {
     geom = null; tg.hidden = true; $('#roadLegend').hidden = true; $('#roadTable').hidden = true; $('#roadTable').innerHTML = '';
-    const cb = $('#chartbox'); cb.hidden = false; cb.innerHTML = '<p class="cap">No burrows to chart. Give a burrow a goal amount and it plots here.</p>'; return;
+    const cb = $('#chartbox'); cb.hidden = false; cb.innerHTML = '<p class="cap">No burrows to chart yet - give a burrow a goal amount and it shows up here</p>'; return;
   }
   const asTable = tg.getAttribute('aria-pressed') === 'true';
   tg.hidden = false; $('#roadLegend').hidden = asTable; $('#chartbox').hidden = asTable; $('#roadTable').hidden = !asTable;
@@ -17,7 +17,7 @@ function drawRoad() {
   const mx = Math.max(1, ...series.flatMap(s => s.v), ...gs.map(g => capOf(g)));
   const step = stepOf(mx / 4), top = Math.ceil(mx / step) * step;
   const X = i => L + i * (W - L - R) / (n - 1), Y = v => T + (1 - v / top) * (H - T - B);
-  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Line chart of your burrows from ${monthLabel(START)} to ${monthLabel(END)}. A table view is available."><title>The road ahead</title>`;
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Line chart of your burrows from ${monthLabel(START)} to ${monthLabel(END)}. There's a table view too."><title>The road ahead</title>`;
   for (let v = 0; v <= top; v += step) s += `<line class="${v === 0 ? 'axis-l' : 'grid-l'}" x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${L - 8}" y="${Y(v) + 4}" text-anchor="end">${fmtAxis(v)}</text>`;
   C.months.forEach((m, i) => { if (i % (small ? 6 : 3) === 0) s += `<text x="${X(i)}" y="${H - 8}" text-anchor="middle">${monthLabel(m.ym, true)}${m.ym.slice(5) === '01' || i === 0 ? ' ' + m.ym.slice(2, 4) : ''}</text>`; });
   const si = MONTHS.indexOf(sel); s += `<line x1="${X(si)}" x2="${X(si)}" y1="${T}" y2="${H - B}" stroke="var(--ink)" stroke-width="2" opacity=".35"/>`;

@@ -120,7 +120,7 @@ const STATE = JSON.stringify({ steps: 5, ui: { name: 'Mara', cur: '$', toured: t
     // truncated
     await p.evaluate(() => { window.__mock.mode = 'cut'; });
     await p.type('#askIn', 'long one'); await p.keyboard.press('Enter'); await w(350);
-    ok('a cut-off answer says so', (await H.q('#askLog')).includes('Half an answer') && (await H.q('#askLog')).includes('Cut short'));
+    ok('a cut-off answer says so', (await H.q('#askLog')).includes('Half an answer') && (await H.q('#askLog')).includes('That got cut short'));
     // errors
     const turnsBefore = (await H.mock()).calls.length;
     await p.evaluate(() => { window.__mock.mode = 'err:rate_limited'; });
@@ -132,7 +132,7 @@ const STATE = JSON.stringify({ steps: 5, ui: { name: 'Mara', cur: '$', toured: t
     ok('retry works and the failed turn did not leave a dangling user turn', c.input.length >= 2 && c.input.every((t, i, a) => i === 0 || t.role !== 'user' || a[i - 1].role !== 'user' || true) && c.input[c.input.length - 1].content === 'will fail' && c.input.filter(t => t.content === 'will fail').length === 1);
     await p.evaluate(() => { window.__mock.mode = 'err:upstream_error'; });
     await p.type('#askIn', 'x2'); await p.keyboard.press('Enter'); await w(300);
-    ok('an upstream error says something went wrong', (await H.q('#askLog')).includes('Request failed'));
+    ok('an upstream error says something went wrong', (await H.q('#askLog')).includes("That didn't go through"));
     await p.$eval('#askIn', e => { e.value = ''; });
     await p.evaluate(() => { window.__mock.mode = 'err:session_expired'; });
     await p.type('#askIn', 'x3'); await p.keyboard.press('Enter'); await w(300);

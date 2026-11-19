@@ -61,7 +61,7 @@ function leafFrame(t) {
 function afterDone(k) {
   if (tourIsOpen) return; /* the tour celebrates on its own */
   const d = S.ui.done || {}, all = START_STEPS.every(s => d[s[0]]);
-  if (all) celebrate('big', 'Setup complete. All four steps done.');
+  if (all) celebrate('big', 'Setup is done, that\'s all four steps');
   else celebrate('med', CHEERS[k]);
 }
 /* any tap puts a message away, so it never sits over words someone is reading; the message itself never takes a tap meant for a button under it (38.31 north-star round 3) */

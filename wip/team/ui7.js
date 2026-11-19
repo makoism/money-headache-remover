@@ -6,12 +6,12 @@ const debtMinToCover = d => Math.floor(d.balance * d.apr / 1200) + 1;
 function debtFormHTML(d, isNew) {
   const id = esc(isNew ? 'new' : d.id), kinds = DEBT_KINDS.map(k => `<option value="${k}"${d.kind === k ? ' selected' : ''}>${DEBT_KIND_NAME[k]}</option>`).join('');
   return `<div class="gform dform" data-did="${id}">
-    <div class="field"><label for="de-${id}-name">Name</label><input class="txt" id="de-${id}-name" data-d="name" type="text" value="${esc(d.name)}" maxlength="60" placeholder="e.g. BPI card"></div>
+    <div class="field"><label for="de-${id}-name">Name</label><input class="txt" id="de-${id}-name" data-d="name" type="text" value="${esc(d.name)}" maxlength="60" placeholder="BPI card"></div>
     <div class="field"><label for="de-${id}-kind">Type</label><div class="selbox"><select id="de-${id}-kind" data-d="kind">${kinds}</select></div></div>
     <div class="field"><label for="de-${id}-bal">Owed now</label><div class="inp"><span class="yen cs"></span><input id="de-${id}-bal" data-d="balance" type="number" inputmode="numeric" min="0" step="100" value="${d.balance === '' ? '' : d.balance}" placeholder="0"></div></div>
-    <div class="field"><label for="de-${id}-apr">Interest rate, %</label><div class="rate"><input class="txt" id="de-${id}-apr" data-d="apr" type="text" inputmode="decimal" value="${d.apr === '' ? '' : esc(String(d.apr))}" placeholder="0" maxlength="6"><div class="selbox"><select id="de-${id}-per" data-per aria-label="Interest rate is per"><option value="year" selected>a year</option><option value="month">a month</option></select></div></div><p class="cap">Cards often show it per month (like 3.5) or per year (like 42). Pick what your statement says. Use 0 for money owed to a person.</p></div>
-    <div class="field"><label for="de-${id}-min">Minimum a month</label><div class="inp"><span class="yen cs"></span><input id="de-${id}-min" data-d="min" type="number" inputmode="numeric" min="0" step="100" value="${d.min === '' ? '' : d.min}" placeholder="0"></div><p class="cap">The least you must pay. It is part of Bills and basics.</p></div>
-    <div class="field"><label for="de-${id}-extra">Extra a month</label><div class="inp"><span class="yen cs"></span><input id="de-${id}-extra" data-d="extra" type="number" inputmode="numeric" min="0" step="100" value="${d.extra === '' ? '' : d.extra}" placeholder="0"></div><p class="cap">On top of the minimum. It goes straight off what you owe, so interest drops.</p></div>
+    <div class="field"><label for="de-${id}-apr">Interest rate, %</label><div class="rate"><input class="txt" id="de-${id}-apr" data-d="apr" type="text" inputmode="decimal" value="${d.apr === '' ? '' : esc(String(d.apr))}" placeholder="0" maxlength="6"><div class="selbox"><select id="de-${id}-per" data-per aria-label="Interest rate is per"><option value="year" selected>a year</option><option value="month">a month</option></select></div></div><p class="cap">Cards often show it per month, like 3.5, or per year, like 42, so pick what your statement says. Use 0 for money you owe a person.</p></div>
+    <div class="field"><label for="de-${id}-min">Minimum a month</label><div class="inp"><span class="yen cs"></span><input id="de-${id}-min" data-d="min" type="number" inputmode="numeric" min="0" step="100" value="${d.min === '' ? '' : d.min}" placeholder="0"></div><p class="cap">The least you have to pay, and it's part of Bills and basics</p></div>
+    <div class="field"><label for="de-${id}-extra">Extra a month</label><div class="inp"><span class="yen cs"></span><input id="de-${id}-extra" data-d="extra" type="number" inputmode="numeric" min="0" step="100" value="${d.extra === '' ? '' : d.extra}" placeholder="0"></div><p class="cap">On top of the minimum - it goes straight off what you owe so the interest drops</p></div>
     <p class="cap wide" id="de-${id}-msg" role="status"></p>
     <div class="row-btns wide">${isNew ? '<button type="button" class="btn small solid" data-dsave>Add</button><button type="button" class="btn small" data-dcancel>Cancel</button>'
       : `<button type="button" class="btn small solid" data-ddone>Done</button><button type="button" class="btn small warnbtn" data-ddel data-armkey="ddel-${id}">Remove</button>`}</div></div>`;
@@ -21,7 +21,7 @@ function debtCardHTML(d, r, x, i, first) {
   const done = x.start <= 0, pct = x.paidPct;
   let stat, cls = 'plain', note = '';
   if (done) { cls = 'good'; stat = IC.ok + 'Paid off'; note = 'Nothing owed.'; }
-  else if (r.never) { cls = 'bad'; stat = IC.bad + 'Not paid off'; note = `The payment does not cover the interest. Pay at least ${fmt(debtMinToCover(d))} a month.`; }
+  else if (r.never) { cls = 'bad'; stat = IC.bad + 'Not paid off'; note = `The payment doesn't cover the interest. Pay at least ${fmt(debtMinToCover(d))} a month.`; }
   else { cls = 'good'; stat = IC.ok + 'On the way'; note = `Paid off ${monthLabel(r.payoffYm)}.${r.totalInterest > 0 ? ' About ' + fmt(r.totalInterest) + ' interest in all.' : ''}`; }
   return `<div class="gcard dcard" id="dc-${id}" data-did="${id}" style="--c:var(--c${slot})">
     <div class="jhead"><span class="jarn"><i class="dot"></i><span>${esc(d.name)}</span></span><span class="jarv"><b>${fmt(x.start)}</b> owed</span></div>
@@ -44,15 +44,15 @@ function renderDebts() {
     debtSig = sig;
     const cards = $('#debtCards');
     if (sample) cards.innerHTML = '<p class="cap">Finish the first steps, then add your cards and loans here.</p>';
-    else cards.innerHTML = (ds.length ? ds.map((d, i) => debtCardHTML(d, rows[i], m.debts[d.id], i, rows[i].first)).join('') : '<p class="cap">None. Add a card or loan to see when each is paid off and how much interest it costs.</p>')
+    else cards.innerHTML = (ds.length ? ds.map((d, i) => debtCardHTML(d, rows[i], m.debts[d.id], i, rows[i].first)).join('') : '<p class="cap">Nothing here yet - add a card or loan to see when each is paid off and how much interest it costs</p>')
       + (DEBT_DRAFT ? `<div class="gcard dcard" data-did="new"><div class="jhead"><span class="jarn"><span>New card or loan</span></span></div>${debtFormHTML(DEBT_DRAFT, true)}</div>` : '');
     $('#addDebtBtn').hidden = sample || DEBT_DRAFT !== null || ds.length >= MAX_DEBTS;
-    $('#debtMsg').textContent = ds.length >= MAX_DEBTS ? `Limit: ${MAX_DEBTS}.` : '';
+    $('#debtMsg').textContent = ds.length >= MAX_DEBTS ? `You can have ${MAX_DEBTS} cards and loans at most, so remove one to add another` : '';
   }
   const owed = (m.debts && ds.length ? m.debtStart : 0) || 0;
   const free = rows.length && rows.every(r => !r.never) ? rows.reduce((a, r) => (r.payoffYm > a ? r.payoffYm : a), '') : '';
-  $('#debtSub').textContent = !ds.length ? 'Cards and loans with interest. Their payments are part of Bills and basics.'
-    : `${fmt(owed)} owed at the start of ${monthLabel(sel, true)}. ${m.debtInterest > 0 ? fmt(m.debtInterest) + ' interest this month. ' : ''}${free ? 'Debt free ' + monthLabel(free) + '.' : rows.some(r => r.never) ? 'One of them is not being paid off.' : ''}`;
+  $('#debtSub').textContent = !ds.length ? 'Cards and loans with interest, and their payments are part of Bills and basics'
+    : `${fmt(owed)} owed at the start of ${monthLabel(sel, true)}. ${m.debtInterest > 0 ? fmt(m.debtInterest) + ' interest this month. ' : ''}${free ? 'Debt free ' + monthLabel(free) + '.' : rows.some(r => r.never) ? 'One of them isn\'t being paid off.' : ''}`;
   /* the Plan row */
   const row = document.querySelector('.row[data-id="debts"]'); if (row) row.hidden = !ds.length;
   const note = $('#jcap-debts'); if (note) note.textContent = ds.length ? `${fmt(m.debtMin)} minimums${m.debtExtra > 0 ? ' and ' + fmt(m.debtExtra) + ' extra' : ''}. Extra goes straight off what you owe.` : '';
@@ -107,7 +107,7 @@ function renderHomeDebts() {
   const first = rows.find(r => r.first), bad = rows.find(r => r.never);
   el.hidden = false;
   put(el, `<h2>Cards and loans</h2><p class="hs-lbl">Owed at the start of ${esc(monthLabel(ym, true))}</p><p class="hs-big" style="--n:${fmt(owed).length}">${fmt(owed)}</p>
-    <p class="hs-sub">${m.debtPay > 0 ? `You pay <b>${fmt(m.debtPay)}</b> this month${m.debtInterest > 0 ? `, ${fmt(m.debtInterest)} of it interest` : ''}. ` : ''}${free ? `Debt free <b>${esc(monthLabel(free))}</b>.` : bad ? `<b>${esc(bad.name)}</b> is not being paid off. Pay at least ${fmt(debtMinToCover(debtById(S, bad.id)))} a month.` : ''}</p>
+    <p class="hs-sub">${m.debtPay > 0 ? `You pay <b>${fmt(m.debtPay)}</b> this month${m.debtInterest > 0 ? `, ${fmt(m.debtInterest)} of it interest` : ''}. ` : ''}${free ? `Debt free <b>${esc(monthLabel(free))}</b>.` : bad ? `<b>${esc(bad.name)}</b> isn't being paid off. Pay at least ${fmt(debtMinToCover(debtById(S, bad.id)))} a month.` : ''}</p>
     ${first && !bad ? `<p class="cap">Extra money goes to <b>${esc(first.name)}</b> first. It has the highest rate.</p>` : ''}
     <ul class="gdl">${rows.map(r => `<li><span class="gdn"><i class="dot" style="--c:var(--c${SLOTS[rows.indexOf(r) % SLOTS.length]})"></i>${esc(r.name)}</span><span class="gdw">${fmt(m.debts[r.id].start)}</span></li>`).join('')}</ul>
     <div class="row-btns"><button type="button" class="btn small" data-tab-go="goals">See details</button></div>`);
@@ -143,13 +143,13 @@ function xmPreview() {
   /* try it on a copy of the month changes, then put them back */
   const T = JSON.parse(JSON.stringify({ steps: S.steps, once: S.once })); let res;
   try { res = addExtraMoney(S, XM.ym, amt, d); } finally { S.once = T.once; S.steps = T.steps; }
-  if (!res) return 'That cannot take extra money.';
+  if (!res) return 'That one can\'t take extra money, pick another.';
   return res.toBank > 0 ? `${fmt(res.placed)} goes to: ${d.label.toLowerCase()}. ${fmt(res.toBank)} stays in the balance.` : `All ${fmt(res.placed || amt)} goes to: ${d.label.toLowerCase()}.`;
 }
 function xmPaint() {
   const el = $('#xm'); if (!el || !XM) return;
   const ds = xmDests(), mons = MONTHS.filter(x => x >= START).slice(0, MONTHS.length);
-  el.innerHTML = `<div class="gw-scrim" data-xmno></div><div class="gw-card"><h2 id="xmT">Extra money came in</h2><p class="cap">A bonus, a 13th month pay, a refund, a good freelance month. It is added to ${esc(monthLabel(XM.ym))} only.</p>
+  el.innerHTML = `<div class="gw-scrim" data-xmno></div><div class="gw-card"><h2 id="xmT">Extra money came in</h2><p class="cap">Like a bonus or a 13th month pay - it's only added to ${esc(monthLabel(XM.ym))}</p>
     <div class="field"><label for="xmAmt">Amount</label><div class="inp"><span class="yen cs"></span><input id="xmAmt" type="number" inputmode="numeric" min="0" step="100" value="${XM.amt}" placeholder="0"></div></div>
     <div class="field"><label for="xmMon">Month</label><div class="selbox"><select id="xmMon">${mons.map(x => `<option value="${x}"${x === XM.ym ? ' selected' : ''}>${esc(monthLabel(x))}</option>`).join('')}</select></div></div>
     <div class="field"><label for="xmDest">Where should it go?</label><div class="selbox"><select id="xmDest">${ds.map((d, i) => `<option value="${i}"${i === XM.dest ? ' selected' : ''}>${esc(d.label)}</option>`).join('')}</select></div></div>
@@ -168,7 +168,7 @@ function xmClick(e) {
     const amt = Math.round(+$('#xmAmt').value || 0), d = xmDests()[XM.dest];
     if (!(amt > 0)) { $('#xmPrev').textContent = 'Enter the amount.'; return; }
     const res = addExtraMoney(S, XM.ym, amt, d); if (!res) return;
-    markDone('pay'); persist(); closeExtra(); render(); sfx('sparkle'); cheer(res.toBank > 0 ? 'Added. The rest stays in the balance.' : 'Added.');
+    markDone('pay'); persist(); closeExtra(); render(); sfx('sparkle'); cheer(res.toBank > 0 ? 'Added and the rest stays in your bank' : 'Added.');
   }
 }
 
@@ -186,7 +186,7 @@ function openPay() {
     el.addEventListener('input', payShow); el.addEventListener('change', payShow);
     el.addEventListener('keydown', e => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closePay(); } });
   }
-  el.innerHTML = `<div class="gw-scrim" data-payno></div><div class="gw-card"><h2 id="payT">Work out your monthly pay</h2><p class="cap">The plan works in months. Say how often you are paid and how much each time.</p>
+  el.innerHTML = `<div class="gw-scrim" data-payno></div><div class="gw-card"><h2 id="payT">Work out your monthly pay</h2><p class="cap">The plan works in months, so say how often you're paid and how much each time</p>
     <div class="field"><label for="payF">How often are you paid?</label><div class="selbox"><select id="payF">${PAYF.map(x => `<option value="${x[0]}">${x[1]}</option>`).join('')}</select></div></div>
     <div class="field"><label for="payA">How much each time?</label><div class="inp"><span class="yen cs"></span><input id="payA" type="number" inputmode="numeric" min="0" step="100" placeholder="0"></div></div>
     <p class="cap" id="payRes" role="status">Enter the amount.</p>
@@ -196,7 +196,7 @@ function openPay() {
   const f = $('#payA'); if (f) f.focus();
 }
 function closePay() { const el = $('#pay'); if (el) { el.classList.remove('on'); setTimeout(() => { el.hidden = true; }, 200); } document.body.classList.remove('gw-open'); const r = PY && PY.ret; PY = null; if (r && r.focus) try { r.focus(); } catch (e) { /* gone */ } }
-function payShow() { const r = $('#payRes'); if (!r || !PY) return; const a = +$('#payA').value || 0, f = $('#payF').value, m = payMonthly(a, f); r.textContent = a > 0 ? `That is about ${fmt(m)} a month.${f === 'two' || f === 'week' ? ' Some months you are paid an extra time. Plan with this number and treat that month as extra money.' : ''}` : 'Enter the amount.'; }
+function payShow() { const r = $('#payRes'); if (!r || !PY) return; const a = +$('#payA').value || 0, f = $('#payF').value, m = payMonthly(a, f); r.textContent = a > 0 ? `That's about ${fmt(m)} a month.${f === 'two' || f === 'week' ? ' Some months you\'re paid an extra time, so plan with this number and treat that month as extra money.' : ''}` : 'Enter the amount.'; }
 function payClick(e) {
   const b = e.target.closest('button'); if (!b) return;
   if (b.hasAttribute('data-payno')) { closePay(); return; }
@@ -245,7 +245,7 @@ function renderRecurring() {
   const sig = JSON.stringify([rs, REC_OPEN, cats.map(o => o.value + o.textContent)]); if (el.dataset.sig === sig) return;
   if (el.contains(document.activeElement) && document.activeElement.matches('input, select') && REC_OPEN) return;
   el.dataset.sig = sig;
-  el.innerHTML = `<div class="head"><h2>Repeating spending</h2><p class="sub2">A gym fee, a weekly top-up. It is logged for you on its day.</p></div>
+  el.innerHTML = `<div class="head"><h2>Repeating spending</h2><p class="sub2">Like a gym fee or a weekly top-up - it gets logged for you on its day</p></div>
     ${rs.length ? `<ul class="recl">${list}</ul>` : '<p class="cap">None yet.</p>'}
     ${REC_OPEN ? `<form class="addrow rec-form" id="recForm" autocomplete="off">
       <div class="inp sm"><span class="yen cs"></span><input id="recAmt" type="number" inputmode="decimal" min="0" step="any" placeholder="Amount" aria-label="Amount"></div>
@@ -271,7 +271,7 @@ function recurringInit() {
     const every = $('#recEvery').value, on = +$('#recOn').value, c = $('#recCat').value, today = todayStr();
     const r = { id: newId(S, 'rp', x => (S.plan.recurring || []).some(q => q.id === x)), a, c: lineByKey(S, c) ? c : 'other', n: $('#recNote').value.trim().slice(0, 80), every, on, from: today, last: '' };
     S.plan.recurring = (S.plan.recurring || []).concat([r]); REC_OPEN = false; el.dataset.sig = '';
-    const n = applyRecurring(S, today); persist(); render(); cheer(n ? 'Repeating. Today\'s was logged.' : 'Repeating.');
+    const n = applyRecurring(S, today); persist(); render(); cheer(n ? 'Repeating, and today\'s was logged' : 'Repeating.');
   });
 }
 
@@ -294,7 +294,7 @@ function openWhy(kind) {
     rows = [[`Planned for ${mon}`, fmt(r.monthly)], ['Planned since the start of your plan', fmt(r.planned)]];
     if (r.id !== 'ffa' || r.logged > 0) rows.push(['Logged', (r.logged > 0 ? '−' : '') + fmt2(r.logged)]);
     rows.push([r.over ? 'Logged more than planned' : 'In this burrow', r.over ? fmt2(r.loggedPast) : fmt(r.amount)]);
-    foot = r.id === 'ffa' ? 'Money you invest and never spend. It only grows.' : 'Money that piles up. What you log here comes out of the pile, and it does not touch your monthly bills.';
+    foot = r.id === 'ffa' ? 'Money you invest and don\'t spend' : 'Money that piles up. What you log here comes out of the pile and doesn\'t touch your monthly bills.';
   } else if (kind === 'free') {
     const fo = freeOf(S, V.month, p), held = fo.held, freeLeft = fo.free;
     title = 'Free to spend';
@@ -343,7 +343,7 @@ function paintLim() { const b = $('#setLim'); if (!b) return; const on = S.ui.li
   const due = () => {
     if (!S.plan || !S.plan.recurring || !S.plan.recurring.length) return;
     let n = 0; try { n = applyRecurring(S, todayStr()); } catch (e) { n = 0; }
-    if (n > 0) { persist(); render(); cheer(n === 1 ? 'Logged 1 repeating payment.' : 'Logged ' + n + ' repeating payments.'); }
+    if (n > 0) { persist(); render(); cheer(n === 1 ? 'Logged 1 repeating payment' : 'Logged ' + n + ' repeating payments'); }
   };
   setTimeout(due, 600);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) due(); });

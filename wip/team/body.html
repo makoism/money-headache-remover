@@ -13,7 +13,7 @@
   </header>
 
   <div class="tabs" role="tablist" aria-label="Pages">
-    <button type="button" role="tab" id="tab-home" aria-controls="p-home" aria-selected="true" data-tab="home" data-cap="How you are doing">Home</button>
+    <button type="button" role="tab" id="tab-home" aria-controls="p-home" aria-selected="true" data-tab="home" data-cap="How you're doing">Home</button>
     <button type="button" role="tab" id="tab-receipts" aria-controls="p-receipts" aria-selected="false" data-tab="receipts" tabindex="-1" data-cap="Log what you spent">Receipts</button>
     <button type="button" role="tab" id="tab-goals" aria-controls="p-goals" aria-selected="false" data-tab="goals" tabindex="-1" hidden>Burrows</button>
     <button type="button" role="tab" id="tab-month" aria-controls="p-month" aria-selected="false" data-tab="month" tabindex="-1" data-cap="Months and goals">Plan</button>
@@ -78,11 +78,11 @@
     <div class="plan-top"><div class="subnav" role="group" aria-label="Plan pages"><button type="button" data-tab-go="month" data-sub="month">Month</button><button type="button" data-tab-go="goals" data-sub="goals">Burrows</button><button type="button" data-tab-go="months" data-sub="months">All months</button></div></div>
     <section class="start" id="start" aria-labelledby="startTitle" hidden>
       <h2 id="startTitle">Setup: 4 steps</h2>
-      <p class="cap" id="startSub">Sample numbers for one salary. Replace them with yours. Data stays in this browser.</p>
+      <p class="cap" id="startSub">These are sample numbers for one salary, replace them with yours. Your data stays in this browser.</p>
       <ol class="steps" id="startSteps"></ol>
       <div class="row-btns"><button type="button" class="btn small" id="blankTop">Clear sample</button><button type="button" class="link" id="tourOpen2">Guided setup</button><button type="button" class="link" id="hideSample">Hide</button></div>
     </section>
-    <section class="hero" id="hero" aria-label="This month at a glance">
+    <section class="hero" id="hero" aria-label=&quot;This month&quot;>
       <div class="picker">
         <button type="button" class="arrow" id="prevM" aria-label="Previous month"><svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M12.5 4.5L7 10l5.5 5.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
         <label class="pick"><span class="sr">Choose a month</span><span class="pick-t" id="monthTxt" aria-hidden="true"></span><select id="monthSel"></select>
@@ -140,7 +140,7 @@
     <section class="card sect">
       <div class="head">
         <h2>All months</h2>
-        <p class="sub2">Tap a month to open.</p>
+        <p class="sub2">Tap a month to open it</p>
       </div>
       <div class="tablewrap" id="monthTable"></div>
     </section>
@@ -167,7 +167,7 @@
       <div class="row-btns"><button type="button" class="btn small solid" id="addDebtBtn">Add card or loan</button><span class="msg" id="debtMsg" role="status"></span></div>
     </section>
     <section class="card sect" id="secRoad">
-      <div class="head"><h2>Forecast</h2><p class="sub2">Each goal at month end, if the plan holds.</p></div>
+      <div class="head"><h2>Forecast</h2><p class="sub2">Where each goal is at month end if you stick to the plan</p></div>
       <div class="row-btns"><button type="button" class="btn small" id="roadToggle" aria-pressed="false">Table</button></div>
       <div class="legend" id="roadLegend"></div>
       <div class="chartbox" id="chartbox"></div>
@@ -180,7 +180,7 @@
     <section class="card scan" id="scan" aria-labelledby="scanH">
       <div class="head">
         <h2 id="scanH">Scan receipts</h2>
-        <p class="sub2" id="scanSub">Claude reads receipt photos and statements and files each item by category. You review before anything is added.</p>
+        <p class="sub2" id="scanSub">Claude reads your receipt photos and statements and sorts each item into a category, and nothing gets added until you've checked it.</p>
       </div>
       <div class="scan-direct" id="scanDirect">
         <div class="scan-btns">
@@ -197,15 +197,15 @@
         </div>
         <p class="msg" id="scanMsg" role="status" hidden></p>
         <div class="scan-out" id="scanOut" aria-live="polite"></div>
-        <p class="cap" id="scanCap">One receipt per photo, flat, well lit. A bank CSV, Excel or PDF statement lists a whole month. Files go to Claude on Read; this page keeps none.</p>
+        <p class="cap" id="scanCap">One receipt per photo, flat and well lit. A bank statement as a CSV, Excel or PDF file covers a whole month. When you tap Read, the files go to Claude and this page keeps none of them.</p>
       </div>
       <p class="scan-off" id="scanOff" role="status" hidden></p>
       <details class="scan-app" id="scanApp">
         <summary>Prefer your own AI? Use it instead</summary>
-        <p class="cap">An alternative to the buttons above, with the same result. If you would rather not send receipts through this page, or you like ChatGPT, Gemini or the Claude app better: copy one message, paste it into that AI with the photos, and paste its reply back here. It is checked and listed for review the same way.</p>
+        <p class="cap">This does the same thing as the buttons above. If you don't want to send receipts through this page, or you like ChatGPT, Gemini or the Claude app better, you copy one message, paste it into that AI with the photos and paste its reply back here. The reply gets checked and listed for you to go through the same way.</p>
         <ol class="scan-steps">
           <li>Tap <b>Copy message</b>.</li>
-          <li>Paste it into your AI app, attach the photos, send.</li>
+          <li>Paste it into your AI app, attach the photos and send it.</li>
           <li>Paste the reply below and tap <b>Check</b>.</li>
         </ol>
         <div class="row-btns">
@@ -252,7 +252,7 @@
       <div id="rcFields"></div>
       <div class="cal-btns" id="rcCal"></div>
       <p class="cal-msg" role="status"></p>
-      <p class="cap">Set for <b id="rcWhen"></b>. Google Calendar and Apple Calendar (the downloaded file) repeat on their own. Outlook, Microsoft 365 and Yahoo open once: set Repeat there.</p>
+      <p class="cap">Set for <b id="rcWhen"></b>. Google Calendar and Apple Calendar repeat it on their own, and Apple Calendar uses the downloaded file. Outlook, Microsoft 365 and Yahoo only add it once, so set Repeat in there yourself.</p>
       <details class="ctext">
         <summary>Event text</summary>
         <textarea id="rcEventText" readonly rows="3" aria-label="Text for your calendar event" spellcheck="false"></textarea>
@@ -281,27 +281,27 @@
       <div class="field sndrow">
         <span class="lab" id="limLab">Spending limits</span>
         <div class="snd-r"><button type="button" class="sw" id="setLim" role="switch" aria-labelledby="limLab" aria-checked="false"><i></i></button><span class="cap" id="limTxt">Off</span></div>
-        <p class="cap">Shows each line against what you logged, on Home. A line that goes over its plan turns red.</p>
+        <p class="cap">Shows each line on Home next to what you logged, and a line that goes over its plan turns red.</p>
       </div>
       <div class="field sndrow">
         <span class="lab" id="sndLab">Sound</span>
         <div class="snd-r"><button type="button" class="sw" id="setSnd" role="switch" aria-labelledby="sndLab" aria-checked="true"><i></i></button><span class="cap" id="sndTxt">On</span></div>
-        <p class="cap">Wind, leaves and water drops as feedback. This browser only.</p>
+        <p class="cap">Wind, leaves and water drops when you tap things. This browser only.</p>
       </div>
       <div class="field sndrow">
         <span class="lab" id="musLab">Music</span>
         <div class="snd-r"><button type="button" class="sw" id="setMus" role="switch" aria-labelledby="musLab" aria-checked="true"><i></i></button><span class="cap" id="musTxt">On</span></div>
-        <p class="cap">A quiet piece, made in the browser while the app is open. Starts at your first tap.</p>
+        <p class="cap">A quiet piece of music made in the browser while the app is open. It starts at your first tap.</p>
       </div>
       <div class="field sndrow" hidden>
         <span class="lab" id="worldLab">World layout</span>
         <div class="snd-r"><button type="button" class="sw" id="setWorld" role="switch" aria-labelledby="worldLab" aria-checked="true"><i></i></button><span class="cap" id="worldTxt">On</span></div>
-        <p class="cap">The pages open on a scroll in the scenery. Off: the plain page. This browser only.</p>
+        <p class="cap">The pages open on a scroll in the scenery. Turn it off for the plain page. This browser only.</p>
       </div>
       <div class="field sndrow" id="startRow">
         <span class="lab" id="startLab">Start with the pages open</span>
         <div class="snd-r"><button type="button" class="sw" id="setStart" role="switch" aria-labelledby="startLab" aria-checked="false"><i></i></button><span class="cap" id="startTxt">Off</span></div>
-        <p class="cap">Off: the app opens on the world and you tap a sign.</p>
+        <p class="cap">When it's off the app opens on the world and you tap a sign.</p>
       </div>
       <div class="field themerow">
         <span class="lab" id="themeLab">Look</span>
@@ -315,13 +315,13 @@
       <div class="sets" id="sets"></div>
       <div class="backup" id="jarGuide">
         <h3>Where your pay goes</h3>
-        <p class="cap">Your pay is split into places, each with one job. The percents are a common split, shown as a guide. Your actual split is on Plan and follows your bills and burrows.</p>
+        <p class="cap">Your pay is split into places and each one has one job. The percents are a common split, shown as a guide. Your real split is on Plan and follows your bills and burrows.</p>
         <div class="jlist" id="jarList"></div>
         <div class="row-btns"><button type="button" class="btn small" id="redivide" hidden>Re-split pay</button></div>
       </div>
       <div class="backup">
         <h3>Reset and setup</h3>
-        <p class="cap" id="makeCap">Amounts are samples for one salary. Start at zero or type over them. Saved in this browser only. Nobody else sees it, including whoever shared this page.</p>
+        <p class="cap" id="makeCap">The amounts are samples for one salary, so start at zero or type over them. They're saved in this browser only and nobody else sees them, including whoever shared this page.</p>
         <div class="row-btns">
           <button type="button" class="btn small solid" id="blankBtn">Set all to zero</button>
           <button type="button" class="btn small warnbtn" id="bkReset">Restore samples</button>
@@ -331,22 +331,22 @@
       </div>
       <div class="backup" id="installBox" hidden>
         <h3>On your phone</h3>
-        <p class="cap" id="installCap">Open this address in Safari or Chrome on the phone. iPhone: Share, then Add to Home Screen. Android: the browser menu, then Add to Home screen or Install app. It then opens full screen, like an app, and works without a connection. Same numbers: the icon opens this same browser copy.</p>
+        <p class="cap" id="installCap">Open this address in Safari or Chrome on your phone. On iPhone tap Share, then Add to Home Screen. On Android open the browser menu, then tap Add to Home screen or Install app. After that it opens full screen like an app and works without a connection. On Android the icon opens the same numbers. On iPhone the Home Screen app can start empty because it keeps its own storage, so turn on the cloud copy first and then enter your recovery code there.</p>
       </div>
       <div class="backup" id="bkArea">
         <h3>Saved data</h3>
-        <p class="cap" id="savedCap">Data is stored in this browser on this device only. Your numbers are sent only when you use Ask and tick the box to include them. A second copy is kept here in case the first goes missing, and is loaded on its own if so. It does not move to other devices. Clearing site data removes both, so only a backup file survives that. A backup is your own copy of numbers and receipts.</p>
+        <p class="cap" id="savedCap">Your numbers are saved in this browser on this device only. They only leave it when you ask for that - Ask sends them with your question while the box is ticked, and reading a statement or a receipt photo sends that file to Claude. A second copy is kept here in case the first goes missing, and it loads by itself if that happens. Neither one moves to other devices. Clearing site data removes both, so only a backup file survives that. A backup is your own copy of your numbers and receipts and you make one with Save file below.</p>
         <h4>Backup</h4>
         <div class="row-btns">
           <button type="button" class="btn small solid" id="bkSave">Save file</button>
           <button type="button" class="btn small" id="bkCopy">Copy text</button>
         </div>
         <p class="cap" id="bkWhen" role="status"></p>
-        <p class="cap">A backup file holds all your numbers and receipts as they are at the moment you save it. It does not update by itself.</p>
-        <ol class="cap steps" id="bkSteps"><li>Tap <b>Save file</b>. The file lands in your downloads. Or tap <b>Copy text</b> and paste it into a note.</li><li>Keep it somewhere that is not only this device: your drive, or an email to yourself.</li><li>Save a new one now and then, and before clearing or resetting.</li></ol>
+        <p class="cap">A backup file holds all your numbers and receipts as they are at the moment you save it. It doesn't update by itself.</p>
+        <ol class="cap steps" id="bkSteps"><li>Tap <b>Save file</b>. The file lands in your downloads. Or tap <b>Copy text</b> and paste it into a note.</li><li>Keep it somewhere other than this device too, like your drive or an email to yourself.</li><li>Save a new one every now and then, and always before you clear or reset anything.</li></ol>
         <h4>Spreadsheet</h4>
         <div class="row-btns"><button type="button" class="btn small" id="bkCsv">Export spreadsheet</button></div>
-        <p class="cap">Every plan month as one table: pay, places, goals, balance. Opens in Sheets or Excel. Read-only: edits there do not change this page.</p>
+        <p class="cap">Every plan month as one table with pay, places, goals and balance. It opens in Sheets or Excel. Edits you make there don't change this page.</p>
         <div id="vaultBox" hidden>
           <h4>Cloud copy</h4>
           <p class="cap" id="vaultState" role="status"></p>
@@ -354,7 +354,7 @@
           <div class="row-btns" id="vaultMain"><button type="button" class="btn small solid" id="vaultOn">Keep a copy in the cloud</button><button type="button" class="btn small" id="vaultHave">I have a code</button><button type="button" class="btn small solid" id="vaultRetry" hidden>Send now</button><button type="button" class="btn small" id="vaultShow" hidden>Show code</button><button type="button" class="btn small" id="vaultHow" hidden>Use it on another device</button><button type="button" class="btn small solid" id="vaultLoadNewer" hidden>Load the newer copy</button><button type="button" class="btn small" id="vaultKeepMine" hidden>Keep mine</button><button type="button" class="btn small" id="vaultOff" hidden>Turn off</button></div>
           <div id="vaultCode" hidden></div>
           <div id="vaultFlow" class="vault-flow" hidden></div>
-          <p class="cap">For a new phone, another browser, or a cleared one. Locked on this device with a code only you have, before anything is sent.</p>
+          <p class="cap">For a new phone, another browser or one that got cleared. Before anything is sent it's locked on this device with a code only you have.</p>
         </div>
         <h4>Restore</h4>
         <textarea id="bk" aria-label="Your saved numbers" spellcheck="false" placeholder="Paste the backup text here"></textarea>
@@ -366,7 +366,7 @@
         </div>
         <p class="cap">To get your numbers back from a backup file, on this device or a new one:</p>
         <ol class="cap steps" id="rsSteps"><li>Tap <b>Choose file</b> and pick your backup file. Or paste the backup text in the box above and tap <b>Load text</b>.</li><li>It asks before it replaces anything.</li><li>The numbers that were here are kept for 3 days, with Undo, in case it was the wrong file.</li></ol>
-        <p class="cap">If numbers look empty after clearing the browser or switching devices, this is how they come back.<span id="zeroHint"> To start from zero use <b>Set all to zero</b>.</span></p>
+        <p class="cap">If your numbers look empty after clearing the browser or switching devices, this is how you get them back.<span id="zeroHint"> To start from zero use <b>Set all to zero</b>.</span></p>
       </div>
     </section>
   </div>
@@ -392,7 +392,7 @@
   <div class="cam-in">
     <div class="cam-top"><h2 id="camH">Camera</h2><button type="button" class="link" id="camClose">Close</button></div>
     <div class="cam-view"><video id="camVid" autoplay playsinline muted></video><i class="cam-flash" id="camFlash"></i></div>
-    <p class="cap" id="camMsg" role="status">Hold the receipt flat in the frame, then take the photo. Take as many as you need.</p>
+    <p class="cap" id="camMsg" role="status">Hold the receipt flat in the frame and take the photo, you can take as many as you need.</p>
     <div class="row-btns"><button type="button" class="btn solid" id="camShot">Take photo</button><button type="button" class="btn" id="camDone" hidden>Done</button><button type="button" class="btn" id="camPick" hidden>Choose files instead</button></div>
   </div>
 </div>
@@ -405,13 +405,13 @@
   <p class="cap dj-note" id="djNote" role="status"></p>
   <label class="dj-sc"><input type="checkbox" id="djScene" checked> Scenery in the background</label>
 </div>
-<div class="djdock" id="djDock" hidden><div class="djdock-v"><div id="djYt"></div></div><div class="djdock-b"><p class="djdock-hint" id="djHint" hidden>Tap the cover to start. Browsers need a tap on the player itself.</p><div id="djDockT" class="djdock-t"></div><div class="djdock-c"><button type="button" class="dj-i" id="djDockPrev" aria-label="Previous track"></button><button type="button" class="dj-i" id="djDockPlay" aria-label="Play"></button><button type="button" class="dj-i" id="djDockNext" aria-label="Next track"></button><button type="button" class="dj-i x" id="djDockHide" aria-label="Hide the player and stop">&times;</button></div></div></div>
+<div class="djdock" id="djDock" hidden><div class="djdock-v"><div id="djYt"></div></div><div class="djdock-b"><p class="djdock-hint" id="djHint" hidden>Tap the cover to start the video</p><div id="djDockT" class="djdock-t"></div><div class="djdock-c"><button type="button" class="dj-i" id="djDockPrev" aria-label="Previous track"></button><button type="button" class="dj-i" id="djDockPlay" aria-label="Play"></button><button type="button" class="dj-i" id="djDockNext" aria-label="Next track"></button><button type="button" class="dj-i x" id="djDockHide" aria-label="Hide the player and stop">&times;</button></div></div></div>
 <div class="upd undo-bar" id="undoBar" role="status" hidden><span id="undoTxt"></span><button type="button" class="btn small solid" id="undoGo">Undo</button></div>
 <div class="upd" id="upd" role="status" hidden><span>A newer version is ready. </span><button type="button" class="btn small solid" id="updGo">Reload</button></div>
 <div class="cam rep" id="rep" role="dialog" aria-labelledby="repT" hidden>
   <div class="cam-in">
     <div class="cam-top"><h2 id="repT">Report a problem</h2><button type="button" class="ask-x" id="repClose" aria-label="Close">&times;</button></div>
-    <p class="cap">Copy this and send it to Mako with what you were doing. It names the version, the device and the last errors. It holds none of your numbers.</p>
+    <p class="cap">Copy this and send it to Mako with what you were doing. It has the version, your device and the last errors in it, and none of your numbers.</p>
     <textarea id="repText" readonly rows="9" spellcheck="false"></textarea>
     <div class="row-btns"><button type="button" class="btn small solid" id="repCopy">Copy</button><span class="msg" id="repMsg" role="status"></span></div>
   </div>
@@ -441,11 +441,11 @@
     <div class="ask-files" id="askFiles" hidden></div>
     <p class="ask-fmsg" id="askFilesMsg" role="status" hidden></p>
     <div class="ask-row"><button type="button" class="attach" id="askAttach" aria-label="Add photos or files" title="Add photos, screenshots or a CSV file" hidden><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5l-8.6 8.6a5.5 5.5 0 0 1-7.8-7.8l8.6-8.6a3.7 3.7 0 0 1 5.2 5.2l-8.6 8.6a1.8 1.8 0 0 1-2.6-2.6l7.9-7.9"/></svg></button><input type="file" id="askFile" multiple hidden><textarea id="askIn" rows="1" maxlength="600" placeholder="Ask about the page" aria-label="Your question"></textarea><button type="submit" class="btn solid small" id="askSend">Send</button><button type="button" class="btn small" id="askStop" hidden>Stop</button></div>
-    <p class="cap" id="askCap">Runs on your Claude account; you approve access first. Only what you type is sent, plus the numbers if ticked.</p>
+    <p class="cap" id="askCap">This runs on your Claude account and you approve access first. Only what you type is sent to Claude, plus your numbers if you tick the box.</p>
   </form>
   <details class="ask-ai" id="askAi">
     <summary>Other AI</summary>
-    <p class="cap">Chat runs on Claude. For another AI, copy your question with a short page guide and paste it there.</p>
+    <p class="cap">The chat runs on Claude. To use another AI tap Copy question and paste it in there, a short guide to the page gets copied with it.</p>
     <div class="row-btns"><button type="button" class="btn small solid" id="askAiCopy">Copy question</button><span class="msg" id="askAiMsg" role="status"></span></div>
     <div class="ai-pick" id="askAis"></div>
   </details>

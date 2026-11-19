@@ -43,14 +43,14 @@ async function switchTo(p, cur) {
     ck('B. pay typed, sample bills: the bills follow the new currency', JSON.stringify(lineDefs(s)) === JSON.stringify(lineDefs(M.presetState('₱'))), lineDefs(s).slice(0, 3));
     ck('B. ...the typed pay is unchanged', JSON.stringify(s.steps.a) === JSON.stringify([{ from: '2026-11', v: 273000 }]), s.steps.a);
     ck('B. ...the receipts are unchanged', JSON.stringify(s.receipts.map(r => [r.id, r.d, r.a, r.c])) === JSON.stringify(RC.map(r => [r.id, r.d, r.a, r.c])), s.receipts);
-    ck('B. ...and the note says so', note === 'Sample bills and goals now match this currency. Pay and receipts unchanged.', note);
+    ck('B. ...and the note says so', note === "The sample bills and burrows now match this currency. Your pay and receipts didn't change.", note);
     ck('B. no page errors', errs.length === 0, errs); await b.close(); }
   const edited = JSON.parse(JSON.stringify(typed)); edited.plan.lines.find(l => l.id === 'rent').def = 88800; edited.plan.goals[0].target = 1234500;
   { const { b, p, errs } = await open(edited);
     const before = await state(p), note = await switchTo(p, '€'), s = await state(p);
     ck('C. an edited plan: every amount unchanged', JSON.stringify([s.plan, s.steps, s.cfg]) === JSON.stringify([before.plan, before.steps, before.cfg]) && s.cur === '€', [lineDefs(s).slice(0, 2), s.cur]);
     ck('C. ...the receipts unchanged', JSON.stringify(s.receipts) === JSON.stringify(before.receipts), s.receipts);
-    ck('C. ...and the note says only the symbol changed', note === 'Amounts unchanged. Only the symbol changed.', note);
+    ck('C. ...and the note says only the symbol changed', note === "The amounts didn't change, only the symbol did.", note);
     ck('C. no page errors', errs.length === 0, errs); await b.close(); }
   /* D. a saved copy with no currency: an old peso copy */
   const old = { v: 1, rev: 5, steps: { a: [{ from: '2026-11', v: 41000 }] }, once: {}, items: {}, cfg: { bankStart: 17300 }, ui: {}, plan: M.basePlan({}), receipts: RC.slice() };

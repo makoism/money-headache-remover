@@ -124,8 +124,8 @@ function renderStatus() {
   const u = roundUnit(S), mon = monthLabel(V.ym, true), floor = cfg(S, 'minBank');
   let cls, word, line;
   if (!(m.inflow > 0)) { if (m.left < 0 || m.bankEnd < 0) { cls = 'tight'; word = 'No pay entered';   /* amber, never red (decision 2) */ line = m.left < 0 ? `Your plan spends ${fmt(V.cells.planSpend)} in ${mon} and no pay is entered, so your bank would end at ${fmt(m.bankEnd)}. Add your monthly pay under Plan.` : `You logged spending in ${mon} with no pay entered, so your bank would end at ${fmt2(m.bankEnd)}. Add your monthly pay under Plan.`; } else { cls = ''; word = 'No plan yet'; line = 'Add your monthly pay to start.'; } }
-  else if (sampleOn()) { const d = S.ui.done || {}; cls = ''; word = 'Sample numbers'; line = d.pay && d.bills ? 'Pay and bills are yours. The burrows are still invented. Add a burrow below.' : 'Invented figures for now. Finish the step below to make them yours.'; }
-  else if (m.status === 'good') { cls = 'good'; word = V.play && V.play.planned > 0 && V.play.left < 0 ? 'Over free to spend' : 'You are okay'; if (word !== 'You are okay') cls = 'tight'; const nOv = V.map && V.map.month.find(r => r.id === 'nec'), nOvT = nOv && nOv.overBy > 0 ? ` Bills and basics are ${fmt2(nOv.overBy)} over.` : ''; const pl = nOvT + (V.play && V.play.planned > 0 ? (V.play.left > 0 ? ` ${fmt2(V.play.left)} is free to spend.` : V.play.left < 0 ? ` Free to spend is ${fmt2(V.play.overBy)} over.` : ' Free to spend is used up.') : ''); const unp = V.cells.unplaced; line = !nOvT && unp >= u ? `${fmt2(unp)} of your pay has no place yet. Bills are covered. Give it a goal or a place, or keep it as a cushion.${pl}` : m.left < u && ((C.byYm[V.ym] || {}).out - (C.byYm[V.ym] || { jar: {} }).jar.nec) <= 0 ? `Bills use all of your pay. Nothing is set aside yet.` : (nOvT ? `Bills went past the plan.${pl}` : `Bills are covered and burrows are planned for.${pl}`); { const OB = (V.month && V.month.overBits) || {}, ON = { other: 'Other', ffa: 'Investing', edu: 'Education', give: 'Giving' }, ext = Object.keys(ON).filter(j => OB[j] > 0).map(j => ` ${ON[j]} is ${fmt2(OB[j])} over.`).join('');   /* every place past the plan is named, so the parts add up to what the bank is lowered by (38.31 number gate round 3) */
+  else if (sampleOn()) { const d = S.ui.done || {}; cls = ''; word = 'Sample numbers'; line = d.pay && d.bills ? 'Pay and bills are yours but the burrows are still made up - add one below' : 'These numbers are made up - do the step below to put yours in'; }
+  else if (m.status === 'good') { cls = 'good'; word = V.play && V.play.planned > 0 && V.play.left < 0 ? 'Over free to spend' : 'You are okay'; if (word !== 'You are okay') cls = 'tight'; const nOv = V.map && V.map.month.find(r => r.id === 'nec'), nOvT = nOv && nOv.overBy > 0 ? ` Bills and basics are ${fmt2(nOv.overBy)} over.` : ''; const pl = nOvT + (V.play && V.play.planned > 0 ? (V.play.left > 0 ? ` ${fmt2(V.play.left)} is free to spend.` : V.play.left < 0 ? ` Free to spend is ${fmt2(V.play.overBy)} over.` : ' Free to spend is used up.') : ''); const unp = V.cells.unplaced; line = !nOvT && unp >= u ? `${fmt2(unp)} of your pay is not placed yet and your bills are covered, so give it a goal or a place or just leave it in the bank.${pl}` : m.left < u && ((C.byYm[V.ym] || {}).out - (C.byYm[V.ym] || { jar: {} }).jar.nec) <= 0 ? `Bills use all of your pay so nothing is set aside yet` : (nOvT ? `Bills went past the plan.${pl}` : `Bills are covered and burrows are planned for.${pl}`); { const OB = (V.month && V.month.overBits) || {}, ON = { other: 'Other', ffa: 'Investing', edu: 'Education', give: 'Giving' }, ext = Object.keys(ON).filter(j => OB[j] > 0).map(j => ` ${ON[j]} is ${fmt2(OB[j])} over.`).join('');   /* every place past the plan is named, so the parts add up to what the bank is lowered by (38.31 number gate round 3) */
     if (ext) { line += ext; if (word !== 'You are okay') { cls = 'tight'; word = 'Over plan'; } } }   /* with nothing else over, the total and "came out of your bank" lead the line below */
     if (nOvT) { cls = 'tight'; word = 'Over plan'; } }
   else if (m.status === 'tight') { cls = 'tight'; word = 'Tight month'; const dw = ((C.byYm[V.ym] || {}).draw) || 0; line = `Plans ${fmt(V.cells.overPay)} more than your pay${dw > 0 ? ', ' + fmt(dw) + ' of it from your emergency fund' : ''}. Your balance covers it, ending ${mon} at ${fmt(m.bankEnd)}.`; }
@@ -145,7 +145,7 @@ function renderStatus() {
   else { cls = 'short'; word = 'Short'; line = `Not enough for ${mon}. Your bank would end at ${fmt(m.bankEnd)}, under your safety minimum of ${fmt(floor)}. Change it in Settings, or open Plan to fix the month.`; }
   if (m.status === 'good' && word === 'You are okay' && (m.overNow || 0) > 0.004) { word = 'Over plan'; cls = 'tight'; line = `${fmt2(m.overNow)} went past the plan this month and came out of your bank. ` + line; }
   let wk = '';
-  if (cls && $('#hNext').hidden) wk = streakInfo().done ? '<p class="hst-w on">You logged receipts this week.</p>' : '<p class="hst-w">This week: nothing logged yet. Log by Sunday.</p>';
+  if (cls && $('#hNext').hidden) wk = streakInfo().done ? '<p class="hst-w on">You logged receipts this week.</p>' : '<p class="hst-w">Nothing logged this week yet, log by Sunday</p>';
   /* the next three months, so one tight month ahead is never a surprise */
   let ahead = '';
   if (cls && !sampleOn()) {
@@ -204,12 +204,12 @@ function renderNext() {
   if (!step && (sw = sweepOffer())) {
     const nm = FULL[+sw.pm.slice(5) - 1], one = sw.goals.length === 1, nowNm = FULL[+sw.now.slice(5) - 1];
     const pick = sw.goals.length > 1 ? `<select class="inp sm" data-sweepgoal aria-label="Which goal">${sw.goals.map(r => `<option value="${esc(r.id)}"${r.id === sw.main.id ? ' selected' : ''}>${esc(r.name)}</option>`).join('')}</select>` : '';
-    step = [`${nm}: ${fmt2(sw.left)} of free to spend is not logged as spent`, `Your bank figure does not include it yet. ${sw.n < 4 ? (sw.n === 0 ? 'No receipts are logged' : sw.n === 1 ? 'Only 1 receipt is logged' : `Only ${sw.n} receipts are logged`) + ', so this may be spending you have not logged yet. ' : ''}Count it in the bank, or put it toward a goal. You can undo.`, `Count ${fmt2(sw.left)} in the bank`, `data-sweepbank="${sw.pm}"`, pick];
+    step = [`${nm}: ${fmt2(sw.left)} of Free to spend isn't logged as spent`, `Your bank balance doesn't include it yet. ${sw.n < 4 ? (sw.n === 0 ? 'No receipts are logged' : sw.n === 1 ? 'Only 1 receipt is logged' : `Only ${sw.n} receipts are logged`) + ', so this may be spending you haven\'t logged yet. ' : ''}Count it in the bank or put it toward a goal, you can undo either one.`, `Count ${fmt2(sw.left)} in the bank`, `data-sweepbank="${sw.pm}"`, pick];
   }
-  if (!step && d.pay && d.bills && S.ui.src !== 'import' && !S.ui.exactHidden && !sampleOn()) { const can = typeof askFn !== 'undefined' && !!askFn; step = ['Make it exact', can ? 'Upload 2 or 3 months of statements (screenshots of the bank app work). The numbers become exact and your history fills in.' : 'Bring in 2 or 3 months of statements with an AI app (screenshots of the bank app work). The numbers become exact and your history fills in.', can ? 'Upload' : 'Use an AI app', 'data-exact']; }
-  if (!step && d.pay && d.bills && S.ui.full !== true && !S.ui.moreBillsHidden && !sampleOn() && necLines().filter(l => val(S, l.key, nowYm()) > 0).length < 4) step = ['Next: add your other bills', 'Utilities, internet, phone, transport. Rough numbers are fine.', 'Open bills', 'data-open="nec"', '', 'data-hidebills'];
+  if (!step && d.pay && d.bills && S.ui.src !== 'import' && !S.ui.exactHidden && !sampleOn()) { const can = typeof askFn !== 'undefined' && !!askFn; step = ['Make it exact', can ? 'Upload 2 or 3 months of statements, screenshots of the bank app work too, and the numbers become exact and your history fills in' : 'Bring in 2 or 3 months of statements with an AI app, screenshots of the bank app work too, and the numbers become exact and your history fills in', can ? 'Upload' : 'Use an AI app', 'data-exact']; }
+  if (!step && d.pay && d.bills && S.ui.full !== true && !S.ui.moreBillsHidden && !sampleOn() && necLines().filter(l => val(S, l.key, nowYm()) > 0).length < 4) step = ['Next: add your other bills', 'Utilities, internet, phone and transport - rough numbers are fine', 'Open bills', 'data-open="nec"', '', 'data-hidebills'];
   if (!step && d.pay && d.bills && !S.ui.noDebts && !(S.plan.debts && S.plan.debts.length) && !sampleOn() && !backupDue()) step = ['Next: do you owe on a card or loan?', 'Add it and the burrow works out the interest, the payoff date and which to pay first.', 'Add a card or loan', 'data-debtgo', '', 'data-nodebts'];
-  if (!step && (S.receipts || []).length && !S.ui.remindHidden && !sampleOn() && !backupDue()) step = ['Set a weekly reminder', 'A calendar reminder keeps this a habit. Logging a few minutes each week keeps the numbers true.', 'Set reminder', 'data-remindgo'];
+  if (!step && (S.receipts || []).length && !S.ui.remindHidden && !sampleOn() && !backupDue()) step = ['Set a weekly reminder', 'Put a reminder in your calendar so you log for a few minutes each week and the numbers stay right', 'Set reminder', 'data-remindgo'];
   /* version one (Mako, 2026-11-18): Home shows one next action. These suggestions are useful but never urgent, so they sit behind More and
      Log spend stays the action; "Next: log spend" is the Log spend card itself */
   el.dataset.v1 = !step ? '' : step[3] === 'data-focus="hAmt"' ? 'log' : ['data-exact', 'data-open="nec"', 'data-debtgo', 'data-remindgo'].indexOf(step[3]) >= 0 && d.pay && d.bills && d.goals ? 'later' : 'now';
@@ -259,9 +259,9 @@ function renderStreak() {
   const toShield = 4 - (s.run % 4);
   let line;
   if (s.done) line = s.n > 1 ? `Week done. Streak: ${s.n} weeks.` : 'Week done. Log next week to extend.';
-  else if (s.n > 0) line = `Streak: ${s.n} wk. Log by Sunday.` + (toSun <= 1 ? ' Last day.' : ` ${plural(toSun + 1, 'day')} left.`);
-  else line = 'No streak. Log one receipt this week to start.';
-  const sh = s.shield ? `<p class="hst-sh on">${HI.shield}<span>Shield ready. Covers one missed week.</span></p>` : s.n > 0 || s.run > 0 ? `<p class="hst-sh">${HI.shield}<span>${plural(toShield, 'week')} to the next shield.</span></p>` : '';
+  else if (s.n > 0) line = `Streak: week ${s.n}, log by Sunday.` + (toSun <= 1 ? ' Last day.' : ` ${plural(toSun + 1, 'day')} left.`);
+  else line = 'No streak yet, log one receipt this week to start one';
+  const sh = s.shield ? `<p class="hst-sh on">${HI.shield}<span>Shield ready, it covers one missed week</span></p>` : s.n > 0 || s.run > 0 ? `<p class="hst-sh">${HI.shield}<span>${plural(toShield, 'week')} to the next shield.</span></p>` : '';
   put(el, `<h2>Streak</h2><div class="hst-top"><span class="hst-fl${s.n > 0 ? ' lit' : ''}" aria-hidden="true">${HI.leaf}</span><p class="hst-n"><b>${s.n}</b><span>${s.n === 1 ? 'week' : 'weeks'}</span></p></div>
     <p class="hst-line">${line}</p><ol class="wdots" aria-label="Last 8 weeks">${dots}</ol>${sh}
     <div class="row-btns">${s.done ? '' : '<button type="button" class="btn small" data-checkin>Nothing to log</button>'}${s.best > s.n ? `<span class="hst-best">Best: ${plural(s.best, 'week')}</span>` : ''}</div>`);
@@ -293,8 +293,8 @@ function renderHero() {
     el.className = 'card hwin empty';
     /* a goal that exists but has no amount yet (the setup was left early) is not "no goal": it asks for its amount */
     const unset = S.plan.goals.filter(g => !(g.target > 0));
-    if (unset.length) put(el, `<div class="hw-empty"><h2>${esc(unset[0].name)} has no amount yet</h2><p>Set the amount to see what each month adds and when it is full.</p><button type="button" class="btn solid" data-gset="${esc(unset[0].id)}">Set amount</button></div>`);
-    else put(el, `<div class="hw-empty"><h2>No burrow yet</h2><p>Add a burrow to see what it unlocks and when.</p><button type="button" class="btn solid" data-gw>Add a burrow</button></div>`);
+    if (unset.length) put(el, `<div class="hw-empty"><h2>${esc(unset[0].name)} has no amount yet</h2><p>Set the amount to see what each month adds and when it's full</p><button type="button" class="btn solid" data-gset="${esc(unset[0].id)}">Set amount</button></div>`);
+    else put(el, `<div class="hw-empty"><h2>No burrow yet</h2><p>Add a burrow to see what each month adds and when it's full</p><button type="button" class="btn solid" data-gw>Add a burrow</button></div>`);
     return;
   }
   const g = goalById(S, r.id), pct = r.pct, fr = fracOf(r);
@@ -354,13 +354,13 @@ function chestArt(gold) {
 function renderSpend() {
   const el = $('#hSpend'), p = HV.play, ym = HV.ym, V = HV, m = V.month, b = id => V.buckets.find(x => x.id === id);
   const art0 = `<img class="chest-art" alt="" aria-hidden="true" src="${chestArt(p.left > 0)}">`;
-  const head = `${art0}<h2>Free to spend</h2><p class="cap chest-what">Money for anything you like this month. It starts fresh each month.</p>`;
-  if (!(m.inflow > 0)) { put(el, `${head}<p class="hs-ok">Add your monthly pay and this shows what is free to spend, and whether your bills are covered.</p><div class="row-btns"><button type="button" class="btn small" data-open="a">Add pay</button></div>`); return; }
+  const head = `${art0}<h2>Free to spend</h2><p class="cap chest-what">Spend this on whatever you want, it starts fresh each month</p>`;
+  if (!(m.inflow > 0)) { put(el, `${head}<p class="hs-ok">Add your monthly pay and this shows what's free to spend and whether your bills are covered.</p><div class="row-btns"><button type="button" class="btn small" data-open="a">Add pay</button></div>`); return; }
   const smp = '';   /* the one sample notice is the status line at the top of Home */
   /* a few quiet days: one box to add a rough total, so a gap never makes the numbers lie */
   const lastD = (S.receipts || []).reduce((a, r) => (r.d > a ? r.d : a), ''), today = todayStr();
   const gapN = lastD && !sampleOn() && lastD.slice(0, 7) === ym ? Math.floor((Date.parse(today) - Date.parse(lastD)) / 864e5) : 0;
-  const gapBox = gapN >= 3 && today.slice(0, 7) === ym ? `<form class="gapbar" id="gapForm" autocomplete="off"><p class="cap">Nothing logged for ${gapN} days. Spent something? Add a rough total.</p><div class="gaprow"><div class="inp"><span class="yen cs"></span><input id="gapAmt" type="number" inputmode="decimal" min="0" step="any" placeholder="0" aria-label="Rough total spent since ${esc(lastD)}"></div><button type="submit" class="btn small">Add</button></div></form>` : '';
+  const gapBox = gapN >= 3 && today.slice(0, 7) === ym ? `<form class="gapbar" id="gapForm" autocomplete="off"><p class="cap">Nothing logged for ${gapN} days. If you spent something add a rough total.</p><div class="gaprow"><div class="inp"><span class="yen cs"></span><input id="gapAmt" type="number" inputmode="decimal" min="0" step="any" placeholder="0" aria-label="Rough total spent since ${esc(lastD)}"></div><button type="submit" class="btn small">Add</button></div></form>` : '';
 const links = `<p class="cap hs-more"><button type="button" class="link" data-xm>Extra money came in?</button> <button type="button" class="link" data-why="free">How is this worked out?</button></p>`;
   /* necessities: a plain yes or no, with the number behind it */
   const nec = b('nec'), covered = m.inflow >= nec.planned;
@@ -373,7 +373,7 @@ const links = `<p class="cap hs-more"><button type="button" class="link" data-xm
   const tile = x0 => { const x = x0, T = (V.cells && V.cells[x.id]) || { over: 0, bank: 0, pile: 0 }, o = T.over, bk = T.bank, pl = T.pile, mon = monthLabel(ym, true);
     const sub = x.planned <= 0 ? '' : o > 0 ? `${fmt(o)} more than the ${fmt(x.planned)} for ${mon}. ` + (bk < 0.005 ? 'All of it came from the pile. ' : pl > 0 ? `${fmt(pl)} came from the pile, ${fmt2(bk)} is over and comes out of the bank. ` : `It comes out of the bank. `) : 'left of the ' + fmt(x.planned) + ' for ' + mon + '. ';
     return `<li class="bk${bk >= 0.005 ? ' over' : ''}" style="--c:${JARVAR[x.id]}"><span class="bk-n"><i></i>${esc(x.name)}</span><b>${o > 0 ? (bk >= 0.005 ? '−' + fmt2(bk) : fmt2(0)) : fmt2(x.left)}</b><span class="bk-s">${sub}${WHAT[x.id] || ''}</span></li>`; };
-  const tiles = `<ul class="bkl chl">${necTile}${tile(b('edu'))}${tile(b('give'))}</ul>${V.otherSpent > 0 ? `<p class="cap">${fmt2(V.otherSpent)} logged as Other. Not taken from a pot.</p>` : ''}`;
+  const tiles = `<ul class="bkl chl">${necTile}${tile(b('edu'))}${tile(b('give'))}</ul>${V.otherSpent > 0 ? `<p class="cap">${fmt2(V.otherSpent)} logged as Other, so it didn't come out of a pile</p>` : ''}`;
   if (p.planned <= 0 && p.spent <= 0) { put(el, `${head}<p class="hs-lbl">Free to spend in ${monthLabel(ym)}</p><p class="hs-big zero">${fmt(0)}</p><p class="cap">No free to spend planned for ${monthLabel(ym)}.</p><div class="row-btns"><button type="button" class="btn small" data-open="play">Set in Plan</button></div>${smp}${sampleOn() ? '' : links}${tiles}`); return; }
   /* free to spend can never be more than the plan can afford: when the month would end under the safety minimum, that gap is held back */
   const fo = freeOf(S, m, p), held = fo.held, freeLeft = fo.free;
@@ -382,8 +382,8 @@ const links = `<p class="cap hs-more"><button type="button" class="link" data-xm
 
   const free = !p.over && p.planned > 0 && m.status === 'good' && !sampleOn();
   put(el, `${head}<p class="hs-lbl">${p.over ? 'Over free to spend in ' : 'Free to spend in '}${monthLabel(ym)}</p><p class="hs-big${p.over ? ' neg' : ''}" style="--n:${fmt2(freeLeft).length}">${fmt2(freeLeft)}</p>
-    <div class="hs-bar${p.over ? ' over' : ''}" role="img" aria-label="${fmt2(p.spent)} of ${fmt(p.planned)} spent"><i style="width:${p.frac * 100}%"></i><span class="pace" style="left:${p.dayFrac * 100}%"></span></div><p class="cap hs-key">The bar is what you have spent. The mark is how far through the month you are.</p>
-    <p class="hs-sub">${p.count ? `Spent ${fmt2(p.spent)} of ${fmt(p.planned)}.` : `Nothing logged yet. ${fmt(p.planned)} planned.`} ${p.over ? '' : wk}${!p.over && freeLeft > 0 && p.daysLeft > 0 ? ` About <b>${fmtAbout(V.cells.perDay)}</b> a day.` : ''}</p>${p.over && freeLeft < 0 ? `<p class="hs-ok warn">${fmt2(V.cells.freeOver)} came out of your bank. Spend nothing more from Free to spend this month.</p>` : ''}${held > 0 ? `<p class="hs-ok warn">${fmt(held)} is held back. Your bank would end under your ${fmt(cfg(S, 'minBank'))} minimum, so it is not safe to spend.</p>` : ''}${p.count || p.over ? chip : ''}${free ? `<p class="hs-ok">Bills and burrows are planned for, so this part is free to spend.${V.main && V.main.live && V.main.pct < 100 ? ` What is left at month end can go toward ${esc(goalById(S, V.main.id).name)}.` : ''}</p>` : ''}${gapBox}${smp}${sampleOn() ? '' : links}${tiles}`);
+    <div class="hs-bar${p.over ? ' over' : ''}" role="img" aria-label="${fmt2(p.spent)} of ${fmt(p.planned)} spent"><i style="width:${p.frac * 100}%"></i><span class="pace" style="left:${p.dayFrac * 100}%"></span></div><p class="cap hs-key">The bar is what you've spent and the mark is how far through the month you are</p>
+    <p class="hs-sub">${p.count ? `Spent ${fmt2(p.spent)} of ${fmt(p.planned)}.` : `Nothing logged yet. ${fmt(p.planned)} planned.`} ${p.over ? '' : wk}${!p.over && freeLeft > 0 && p.daysLeft > 0 ? ` About <b>${fmtAbout(V.cells.perDay)}</b> a day.` : ''}</p>${p.over && freeLeft < 0 ? `<p class="hs-ok warn">${fmt2(V.cells.freeOver)} came out of your bank, so don't spend any more from Free to spend this month.</p>` : ''}${held > 0 ? `<p class="hs-ok warn">${fmt(held)} is held back because spending it would leave your bank under your ${fmt(cfg(S, 'minBank'))} minimum.</p>` : ''}${p.count || p.over ? chip : ''}${free ? `<p class="hs-ok">Bills and burrows are planned for, so this part is free to spend.${V.main && V.main.live && V.main.pct < 100 ? ` What's left at month end can go toward ${esc(goalById(S, V.main.id).name)}.` : ''}</p>` : ''}${gapBox}${smp}${sampleOn() ? '' : links}${tiles}`);
 }
 /* a row opens to show its details; which ones are open survives a redraw */
 const HOPEN = new Set();
@@ -402,7 +402,7 @@ function goalRowHtml(r) {
 }
 function renderGoalsHome() {
   const el = $('#hGoals'), rows = HV.goals, gs = S.plan.goals;
-  put(el, `<div class="hgl-h"><h2>Burrows</h2>${gs.length < MAX_GOALS ? '<button type="button" class="btn small solid" data-gw>Add a burrow</button>' : ''}</div>` + (gs.length ? `<ul class="gdl">${rows.map(goalRowHtml).join('')}</ul>${goalsGraph()}` : '<p class="cap">No goals. Add one to list it here.</p>'));
+  put(el, `<div class="hgl-h"><h2>Burrows</h2>${gs.length < MAX_GOALS ? '<button type="button" class="btn small solid" data-gw>Add a burrow</button>' : ''}</div>` + (gs.length ? `<ul class="gdl">${rows.map(goalRowHtml).join('')}</ul>${goalsGraph()}` : '<p class="cap">No burrows yet, add one and it shows up here</p>'));
 }
 /* one graph for every goal still being saved for: each line is the share of that goal saved by the plan, month by month, so a big goal and a small one share a graph.
    A line stops at the month its goal is full. */
@@ -514,7 +514,7 @@ function applyHomeOrder() {
   HOME_SECTIONS.forEach(id => { const el = $('#' + HOME_EL[id]); if (el) el.hidden = order.indexOf(id) < 0; });
   order.forEach(id => { const el = $('#' + HOME_EL[id]); if (el) panel.append(el); });
 }
-const FOOT_SAMPLE = 'Not financial advice. Sample numbers are invented. Replace them with yours.', FOOT_OWN = 'Not financial advice.';
+const FOOT_SAMPLE = 'Not financial advice. The sample numbers are made up, replace them with yours.', FOOT_OWN = 'Not financial advice.';
 function paintFoot() { const el = $('#footNote'); if (!el) return; const t = sampleOn() ? FOOT_SAMPLE : FOOT_OWN; if (el.textContent !== t) el.textContent = t; }
 function renderHome() {
   if (!C) return;
@@ -564,7 +564,7 @@ function gwPlan() {
     if (n < 1) return { txt: 'Too soon to save anything by then. Pick a later date.', bad: true };
     return { txt: `${GW.kind && GW.kind.debt ? 'Pay about' : 'Save about'} <b>${fmt(wizardMonthly(S, GW.cost, GW.saved, n))}</b> a month for ${plural(n, 'month')}. ${GW.kind && GW.kind.debt ? 'Paid off' : 'Ready'} by ${dateLabel(GW.due)}.`, ok: true };
   }
-  return { txt: `No date: plan assumes 12 months. About <b>${fmt(wizardMonthly(S, GW.cost, GW.saved, 12))}</b> a month.`, ok: true };
+  return { txt: `No date, so the plan assumes 12 months. About <b>${fmt(wizardMonthly(S, GW.cost, GW.saved, 12))}</b> a month.`, ok: true };
 }
 function openGoalWizard() {
   if (S.plan.goals.length >= MAX_GOALS) { cheer(`Limit: ${MAX_GOALS} burrows.`); return; }
@@ -597,7 +597,7 @@ function paintGW() {
     t = 'Goal type';
     body = `<div class="gw-chips" role="group" aria-label="Goal type">${gwKinds().map(x => `<button type="button" class="gw-chip${k && k.k === x.k ? ' on' : ''}" data-kind="${x.k}" aria-pressed="${!!(k && k.k === x.k)}"><b>${x.pick}</b><span>${x.hint}</span></button>`).join('')}</div>
       <div class="field"><label for="gwName">Name</label><input class="txt" id="gwName" type="text" maxlength="60" value="${esc(g.name)}" placeholder="${esc(S.plan.goals.some(x => /japan trip/i.test(x.name)) ? 'Name it' : 'Japan trip')}"></div>
-      <div class="field"><label for="gwWhy">Why (optional)</label><input class="txt" id="gwWhy" type="text" maxlength="80" value="${esc(g.why)}" placeholder="Why it matters, in your words"><p class="cap">Shows with the goal, so the reason stays in view.</p></div>`;
+      <div class="field"><label for="gwWhy">Why (optional)</label><input class="txt" id="gwWhy" type="text" maxlength="80" value="${esc(g.why)}" placeholder="Why it matters, in your words"><p class="cap">It shows with the goal so you keep seeing why</p></div>`;
   } else if (g.step === 1) {
     t = 'Amount';
     body = `<div class="field"><label for="gwCost">${k && k.debt ? 'Total owed' : 'Total cost'}</label><div class="inp"><span class="yen cs"></span><input id="gwCost" type="number" inputmode="numeric" min="0" step="any" value="${esc(g.cost)}" placeholder="0"></div>${k && k.cost ? `<p class="cap">${k.cost}</p>` : ''}</div>
@@ -676,15 +676,15 @@ function wireHome() {
   $('#hForm').addEventListener('submit', e => {
     e.preventDefault();
     const d = $('#hDate').value || todayStr(), a = +$('#hAmt').value, c = $('#hCat').value, n = $('#hNote').value, msg = $('#hMsg');
-    if ($('#hAmt').dataset.neg) { msg.textContent = 'Type the amount without a minus sign. A receipt is money you spent. For a refund, lower or delete the receipt it pays back.'; $('#hAmt').value = ''; delete $('#hAmt').dataset.neg; $('#hAmt').focus(); sfx('off'); return; }
+    if ($('#hAmt').dataset.neg) { msg.textContent = 'Type the amount without a minus sign because a receipt is money you spent. For a refund, lower or delete the receipt it pays back.'; $('#hAmt').value = ''; delete $('#hAmt').dataset.neg; $('#hAmt').focus(); sfx('off'); return; }
     if (!(wholeAmt(S, a) > 0)) { msg.textContent = 'Enter an amount.'; $('#hAmt').focus(); sfx('off'); return; }
-    if (wholeAmt(S, a) > 1e9) { msg.textContent = 'That amount is too large. The most is 1,000,000,000.'; $('#hAmt').focus(); sfx('off'); return; }
+    if (wholeAmt(S, a) > 1e9) { msg.textContent = 'That amount is too big. The most is 1,000,000,000.'; $('#hAmt').focus(); sfx('off'); return; }
     if (!validDate(d) || MONTHS.indexOf(d.slice(0, 7)) < 0) { msg.textContent = `Date must be ${monthLabel(START)} to ${monthLabel(END)}.`; return; }
     if (d > todayStr() && !futureOk(d, msg, $('#hSave'))) { const dt = $('.hmore'); if (dt) dt.open = true; return; }
     if (c === CAT_NEW) { msg.textContent = 'Add the new category, or pick one from the list.'; $('#hNewName').focus(); sfx('off'); return; }
     if (isDupRc(d, a, c, n) && !dupOk(d, a, c, n, msg, $('#hSave'))) return;
     if (!bigOk(d, wholeAmt(S, a), msg, $('#hSave'))) { $('#hAmt').focus(); return; }
-    if (needTitle(c, n)) { const dt = $('.hmore'); if (dt) dt.open = true; msg.textContent = 'Add a short title, e.g. “Vet bill”.'; $('#hNote').focus(); sfx('off'); return; }
+    if (needTitle(c, n)) { const dt = $('.hmore'); if (dt) dt.open = true; msg.textContent = 'Add a short title, like “Vet bill”'; $('#hNote').focus(); sfx('off'); return; }
     const first = !(S.receipts || []).length, nm = c === 'other' ? 'Other' : shownLine((lineByKey(S, c) || { name: 'Other' }).name);
     const rid = addReceipt(S, d, a, c, n); S.ui.rcCat = c; markDone('receipts', true);
     $('#hAmt').value = ''; delete $('#hAmt').dataset.neg; $('#hNote').value = ''; syncOtherTitle('hCat', 'hNote'); $('#hDate').value = todayStr(); if (typeof dpSync === 'function') dpSync($('#hQuick'));
@@ -779,13 +779,13 @@ function moneyTyped(el, ev) {
   if (el._refuse && Date.now() < el._refuse) { NATIVE_VALUE.set.call(el, el._mnyPrev !== undefined ? el._mnyPrev : ''); return; }   /* after a refused minus, the rest of that typing is ignored until the person leaves the box */
   let raw = NATIVE_VALUE.get.call(el); if (hasMoneyOp(raw)) return;
   /* a letter is never dropped in silence (12O typed for 120 would become 12): the box keeps what it had and says why (38.31 QC round 2) */
-  { const lt = /[A-Za-z]/.exec(raw); if (lt) { try { cheer(`Numbers only: "${lt[0]}" was not added. Check the amount.`); } catch (x) { } NATIVE_VALUE.set.call(el, el._mnyPrev !== undefined ? el._mnyPrev : ''); return; } }
+  { const lt = /[A-Za-z]/.exec(raw); if (lt) { try { cheer(`Numbers only: "${lt[0]}" wasn't added, check the amount`); } catch (x) { } NATIVE_VALUE.set.call(el, el._mnyPrev !== undefined ? el._mnyPrev : ''); return; } }
   /* a minus sign is never kept; the person is told, so a refund typed as -500 is not quietly turned into +500 (receipt boxes refuse it themselves) */
   const negOK = el.dataset.neg === 'ok' || el.id === 'rcAmt' || el.id === 'hAmt';   /* a receipt box keeps a typed minus in sight, so Log can say why it is refused instead of logging +500 (38.31 number gate round 3) */
   if ((el.id === 'rcAmt' || el.id === 'hAmt')) { if (/^\s*[-\u2212\u2013\uFF0D\u30FC\u2010-\u2015]/.test(raw)) el.dataset.neg = '1'; else delete el.dataset.neg; }   /* the bank balance box takes a minus: an overdrawn account (38.31 QC round 3) */
   if (negOK) raw = raw.replace(/^\s*[\u2212\u2013\uFF0D\u30FC\u2010-\u2015]/, '-');
   if (!negOK && /^\s*[-\u2212\u2013\uFF0D\u30FC\u2010-\u2015]/.test(raw) && el.id !== 'rcAmt' && el.id !== 'hAmt') { try { cheer('Amounts take no minus sign. The old amount stays.'); } catch (x) { } NATIVE_VALUE.set.call(el, el._mnyPrev !== undefined ? el._mnyPrev : ''); el._refuse = Date.now() + 2500; try { el.blur(); } catch (x) { } return; }
-  { const big = parseFloat(raw.replace(/[^\d.]/g, '')); if (big > 1e9 && el.id !== 'rcAmt' && el.id !== 'hAmt') { try { cheer(`That amount is too large. The most is 1,000,000,000. ${el._mnyAtFocus ? 'The old amount stays.' : 'Type it again.'}`); } catch (x) { } el._refuse = Date.now() + 2500; NATIVE_VALUE.set.call(el, el._mnyAtFocus !== undefined ? el._mnyAtFocus : ''); el._mnyPrev = el._mnyAtFocus; el.dispatchEvent(new Event('input', { bubbles: true })); return;   /* a typo is refused and the amount from before this typing comes back, never the largest amount (38.31 data safety round) */ } } const pos = el.selectionStart == null ? raw.length : el.selectionStart;
+  { const big = parseFloat(raw.replace(/[^\d.]/g, '')); if (big > 1e9 && el.id !== 'rcAmt' && el.id !== 'hAmt') { try { cheer(`That amount is too big. The most is 1,000,000,000. ${el._mnyAtFocus ? 'The old amount stays.' : 'Type it again.'}`); } catch (x) { } el._refuse = Date.now() + 2500; NATIVE_VALUE.set.call(el, el._mnyAtFocus !== undefined ? el._mnyAtFocus : ''); el._mnyPrev = el._mnyAtFocus; el.dispatchEvent(new Event('input', { bubbles: true })); return;   /* a typo is refused and the amount from before this typing comes back, never the largest amount (38.31 data safety round) */ } } const pos = el.selectionStart == null ? raw.length : el.selectionStart;
   /* a comma typed by hand: a decimal point where the currency writes decimals that way (12,50 euro), otherwise a thousands separator
      (1,200 pesos is twelve hundred, never one peso twenty) and the box regroups it on its own */
   let at = pos; if (ev && ev.data === ',' && raw.charAt(pos - 1) === ',') { const dec = COMMA_DEC.indexOf(sym()) >= 0; raw = raw.slice(0, pos - 1) + (dec ? '.' : '') + raw.slice(pos); if (!dec) at = pos - 1; }
@@ -823,7 +823,7 @@ document.addEventListener('input', e => { if (!e.isComposing) normFull(e.target)
 document.addEventListener('compositionend', e => { const el = e.target; normFull(el); if (el && el.dispatchEvent) el.dispatchEvent(new Event('input', { bubbles: true })); }, true);
 document.addEventListener('input', e => { const el = e.target; if (el && el.dataset && el.dataset.mny && !e.isComposing) moneyTyped(el, e); }, true);
 /* leaving the box turns the sum into its answer */
-document.addEventListener('focusout', e => { const el = e.target; if (el && el.dataset && el.dataset.mny && hasMoneyOp(NATIVE_VALUE.get.call(el))) { const v = evalMoney(NATIVE_VALUE.get.call(el)); if (v === null) { try { cheer('That sum does not work out to an amount. The old amount stays.'); } catch (x) { } } NATIVE_VALUE.set.call(el, v === null ? withCommas(el._mnyOK || '') : withCommas(String(v))); el.dispatchEvent(new Event('change', { bubbles: true })); } }, true);
+document.addEventListener('focusout', e => { const el = e.target; if (el && el.dataset && el.dataset.mny && hasMoneyOp(NATIVE_VALUE.get.call(el))) { const v = evalMoney(NATIVE_VALUE.get.call(el)); if (v === null) { try { cheer('That sum doesn\'t work out to an amount so the old amount stays'); } catch (x) { } } NATIVE_VALUE.set.call(el, v === null ? withCommas(el._mnyOK || '') : withCommas(String(v))); el.dispatchEvent(new Event('change', { bubbles: true })); } }, true);
 (function () {
   let pt = null, ptT = 0;
   ['pointerdown', 'mousedown', 'touchstart'].forEach(ev => document.addEventListener(ev, e => { pt = e.target; ptT = Date.now(); }, true));

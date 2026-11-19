@@ -32,6 +32,6 @@ async function open(setup,defs){const {b,p,errs}=await R.phone({w:390,h:844,dpr:
   await L.tab(p,'tab-home');await w(800);
   const h=await p.evaluate(()=>{const t=(document.querySelector('.mp-warn')||{}).innerText||'';const m=t.match(/Keep Free to spend to the ¥([\d,]+) shown/);return [m?+m[1].replace(/,/g,''):null,t];});
   ck('(3) the fix amount is Home\'s safe to spend ('+fix+' vs '+h[0]+')',fix!==null&&h[0]!==null&&Math.abs(fix-h[0])<0.005,JSON.stringify([fix,h]));
-  ck('(3) the warning names that figure instead of "spend nothing more"',h[1].includes('Keep Free to spend to the')&&!/Spend nothing more/.test(h[1]),h[1]);
+  ck('(3) the warning names that figure instead of "spend nothing more"',h[1].includes('Keep Free to spend to the')&&!/Spend nothing more|Don't spend any more/.test(h[1]),h[1]);
   ck('no page errors',errs.length===0,errs.join(' | '));await b.close(); }
  console.log(bad?'FAILED '+bad:'ALL PASS');process.exit(bad?1:0);})();

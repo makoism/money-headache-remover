@@ -31,20 +31,20 @@ function scanNote(t) { const e = $('#scanMsg'); if (Array.isArray(t)) return ren
 function paintScan() {
   const off = scanSettled && !askFn && !scanBusy;
   $('#scanDirect').hidden = off;
-  $('#scanSub').textContent = off ? 'Send receipts to an AI app, then paste its reply here. Items are sorted into your categories and listed for review before anything is added.' : (askDoc ? 'Take a photo, or choose pictures, a bank CSV, Excel or PDF statement. ' : 'Take a photo, or choose pictures or a bank CSV. ') + 'Claude reads and sorts them into your categories. You review before anything is added.';
+  $('#scanSub').textContent = off ? 'Send your receipts to an AI app and paste its reply here. They get sorted into your categories and listed, and nothing gets added until you\'ve checked it.' : (askDoc ? 'Take a photo, or choose pictures, a bank CSV, Excel or PDF statement. ' : 'Take a photo, or choose pictures or a bank CSV. ') + 'Claude reads them and sorts them into your categories, and nothing gets added until you\'ve checked it.';
   const msg = $('#scanOff'); msg.hidden = !off;
   if (off) {
-    msg.textContent = askReason === 'no_runtime' ? 'Reading photos is not available here. Use an AI app below.'
-      : askReason === 'not_granted' || askReason === 'sampling_disabled' || askReason === 'capability_disabled' ? 'Reading photos needs a signed-in Claude and your permission. Open this page from its Claude link, or use an AI app below.'
-      : 'Claude could not be reached. Try again, or use an AI app below.';
+    msg.textContent = askReason === 'no_runtime' ? 'Photos can\'t be read here. Use an AI app below.'
+      : askReason === 'not_granted' || askReason === 'sampling_disabled' || askReason === 'capability_disabled' ? 'To read photos here you have to be signed in to Claude and say yes when it asks. Sign in and open this page again, or use your own AI with the steps below.'
+      : 'Claude couldn\'t be reached. Try again or use an AI app below.';
     if (askReason !== 'no_runtime' && askReason !== 'not_granted' && askReason !== 'sampling_disabled' && askReason !== 'capability_disabled') { const b = document.createElement('button'); b.type = 'button'; b.className = 'link'; b.id = 'scanRetry'; b.textContent = 'Try again'; msg.append(' ', b); }
     if (!scanOpened) { $('#scanApp').open = true; scanOpened = true; }
   }
   /* without the buttons, the own-AI route is the way, not an alternative: its heading and first line say so */
   const sum = $('#scanApp > summary'), lede = $('#scanApp > p.cap');
   if (sum) sum.textContent = off ? 'Use your own AI' : 'Prefer your own AI? Use it instead';
-  if (lede) lede.textContent = off ? 'Copy one message, paste it into ChatGPT, Gemini or the Claude app with the photos, and paste its reply back here. It is checked and listed for review the same way.'
-    : 'An alternative to the buttons above, with the same result. If you would rather not send receipts through this page, or you like ChatGPT, Gemini or the Claude app better: copy one message, paste it into that AI with the photos, and paste its reply back here. It is checked and listed for review the same way.';
+  if (lede) lede.textContent = off ? 'Copy one message, paste it into ChatGPT, Gemini or the Claude app with the photos and paste its reply back here. The reply gets checked and listed for you to go through the same way.'
+    : 'This does the same thing as the buttons above. If you don\'t want to send receipts through this page, or you like ChatGPT, Gemini or the Claude app better, you copy one message, paste it into that AI with the photos and paste its reply back here. The reply gets checked and listed for you to go through the same way.';
   $('#scanCam').disabled = $('#scanPick').disabled = scanBusy;
 }
 function scanConnect(force) {
@@ -77,22 +77,22 @@ async function scanAdd(list) {
   const notes = [], maxImg = Math.min(askImg ? askImg.maxCount : 10, 10);
   for (const f of Array.from(list || [])) {
     if (isTextFile(f)) {
-      if (f.size > 2000000) { notes.push(`${f.name} is too large. Try one month at a time.`); continue; }
-      if (scanFiles.filter(x => x.kind === 'text').length >= ASK_MAX_TEXT) { notes.push(`Maximum ${ASK_MAX_TEXT} CSV or Excel files at a time.`); continue; }
+      if (f.size > 2000000) { notes.push(`${f.name} is too big. Try one month at a time.`); continue; }
+      if (scanFiles.filter(x => x.kind === 'text').length >= ASK_MAX_TEXT) { notes.push(`Up to ${ASK_MAX_TEXT} CSV or Excel files at a time.`); continue; }
       scanFiles.push({ file: f, kind: 'text' }); continue;
     }
     if (isPdfFile(f)) {
       if (!askDoc) { notes.push(pdfHereNote(f)); continue; }
-      if (f.size > askDoc.maxInputBytes) { notes.push(`${f.name} is too large. Export fewer months, or take screenshots of the pages.`); continue; }
-      if (scanFiles.filter(x => x.kind === 'pdf').length >= askDoc.maxCount) { notes.push(`Up to ${askDoc.maxCount} PDFs at a time. One month per read keeps the review short.`); continue; }
+      if (f.size > askDoc.maxInputBytes) { notes.push(`${f.name} is too big. Export fewer months or take screenshots of the pages.`); continue; }
+      if (scanFiles.filter(x => x.kind === 'pdf').length >= askDoc.maxCount) { notes.push(`Up to ${askDoc.maxCount} PDFs at a time. One month at a time keeps the list short.`); continue; }
       scanFiles.push({ file: f, kind: 'pdf' }); continue;
     }
     if (!/^image\//.test(f.type) && !/\.(heic|heif|jpe?g|png|webp)$/i.test(f.name || '')) { notes.push(oldSheetNote(f) || `${f.name}: only photos, screenshots, CSV and Excel files can be read.`); continue; }
-    if (!askImg) { notes.push('Photos cannot be sent from here. Use an AI app below, or a CSV from your bank.'); continue; }
-    if (scanFiles.filter(x => x.kind === 'image').length >= maxImg) { notes.push(`Maximum ${maxImg} photos at a time. Read these first, then add the rest.`); continue; }
+    if (!askImg) { notes.push('Photos can\'t be sent from here. Use an AI app below or a CSV from your bank.'); continue; }
+    if (scanFiles.filter(x => x.kind === 'image').length >= maxImg) { notes.push(`Up to ${maxImg} photos at a time. Read these first, then add the rest.`); continue; }
     const g = await shrinkPhoto(f);
-    if (askImg.mediaTypes.indexOf(g.type) < 0) { notes.push(`${f.name}: photo format not supported. Use a screenshot instead.`); continue; }
-    if (g.size > askImg.maxInputBytes) { notes.push(`${f.name} is too large. Use a screenshot instead of the original photo.`); continue; }
+    if (askImg.mediaTypes.indexOf(g.type) < 0) { notes.push(`${f.name} is a kind of photo that can't be read here. Use a screenshot instead.`); continue; }
+    if (g.size > askImg.maxInputBytes) { notes.push(`${f.name} is too big. Use a screenshot instead of the original photo.`); continue; }
     scanFiles.push({ file: g, kind: 'image' });
   }
   paintScanFiles(); scanNote(notes);
@@ -101,7 +101,7 @@ async function scanAdd(list) {
 /* the card is built by the same code as the chat, with this tab's own buttons */
 function scanCtx() {
   return {
-    note: scanNote, scroll: () => {}, openLabel: 'See receipts', tail: ' They are in the list below.',
+    note: scanNote, scroll: () => {}, openLabel: 'See receipts', tail: ' They\'re in the list below.',
     open: () => { $('#rcMonthCard').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
   };
 }
@@ -117,7 +117,7 @@ async function scanRead() {
   if (scanBusy || !scanFiles.length) return;
   if (!(await scanConnect())) { paintScan(); return; }
   const files = scanFiles.slice(), out = $('#scanOut'); scanNote(''); out.textContent = ''; scanKeep = files;
-  const bot = document.createElement('div'); bot.className = 'msg ai wait'; bot.textContent = 'Reading receipts. A few seconds.'; out.append(bot);
+  const bot = document.createElement('div'); bot.className = 'msg ai wait'; bot.textContent = 'Reading your receipts, it takes a few seconds'; out.append(bot);
   scanCtl = new AbortController(); setScanBusy(true);
   try {
     const { p, clipped } = await extractFromFiles(files, '', scanCtl.signal);
@@ -212,7 +212,7 @@ async function copyText(t, msg, done) {
   const ta = document.createElement('textarea'); ta.value = t; ta.setAttribute('readonly', ''); ta.style.cssText = 'position:fixed;left:-9999px;top:0'; document.body.append(ta); ta.select();
   let ok = false; try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
   ta.remove();
-  msg.textContent = ok ? done : 'Copy blocked by the browser. Select the text and copy it by hand.';
+  msg.textContent = ok ? done : 'The browser blocked the copy. Select the text and copy it by hand.';
   return ok;
 }
 /* Reading photos and the chat run on Claude, inside this page. Any other AI works through copy and paste, so these buttons just open its site. */
@@ -228,7 +228,7 @@ function scanCheck() {
   if (!txt.trim()) { msg.textContent = 'Paste the reply first.'; return; }
   const p = askClean(scanParse(txt));
   if (!p.receipts.length) {
-    msg.textContent = p.outside && !p.dropped ? `Those receipts are dated outside ${monthLabel(START)} to ${monthLabel(END)}.` : 'No receipts found. Paste the whole reply: one line per receipt, as date, amount, category, note.';
+    msg.textContent = p.outside && !p.dropped ? `Those receipts are dated outside ${monthLabel(START)} to ${monthLabel(END)}.` : 'No receipts found. Paste the whole reply, it has one line per receipt with the date, amount, category and note.';
     return;
   }
   const bot = document.createElement('div'); bot.className = 'msg ai card'; out.append(bot);
@@ -252,7 +252,7 @@ function camOpen() {
     camStream = stream; vid.srcObject = stream; $('#camShot').disabled = false; $('#camShot').focus();
     msg.textContent = 'Hold the receipt flat in the frame, then take the photo. Take as many as you need.';
   }, err => {
-    const why = err && (err.name === 'NotAllowedError' || err.name === 'SecurityError') ? 'The camera was not allowed.' : err && err.name === 'NotFoundError' ? 'No camera was found on this computer.' : 'The camera could not be started.';
+    const why = err && (err.name === 'NotAllowedError' || err.name === 'SecurityError') ? 'The camera wasn\'t allowed.' : err && err.name === 'NotFoundError' ? 'No camera was found on this computer.' : 'The camera couldn\'t be started.';
     msg.textContent = why + ' Choose files instead.'; $('#camShot').hidden = true; $('#camPick').hidden = false; $('#camPick').focus();
   });
 }
@@ -272,7 +272,7 @@ function camShot() {
     if (!blob) return;
     camShots++;
     const f = new File([blob], `photo-${camShots}.jpg`, { type: 'image/jpeg', lastModified: Date.now() });
-    scanAdd([f]).then(() => { $('#camMsg').textContent = `${camShots} photo${camShots === 1 ? '' : 's'} added. Take another, or Done.`; $('#camDone').hidden = false; });
+    scanAdd([f]).then(() => { $('#camMsg').textContent = `${camShots} photo${camShots === 1 ? '' : 's'} added. Take another or tap Done.`; $('#camDone').hidden = false; });
   }, 'image/jpeg', .9);
 }
 function wireCam() {

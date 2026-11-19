@@ -4,7 +4,7 @@ const VW = +process.env.VW || 390, VH = +process.env.VH || 844;
 (async () => {
   const { b, p, errs } = await L.launch(VW, VH, 'dark');
   const title = () => p.$eval('.tour h2, #tourTitle', e => e.textContent).catch(() => '');
-  for (let i = 0; i < 4 && !/Before the uploads/.test(await title()); i++) { if (await p.$('#tourFull')) { await p.click('#tourFull'); await w(300); } await p.click('#tourNext'); await w(600); }
+  for (let i = 0; i < 4 && !/Before the uploads/.test(await title()); i++) { if (await p.$('#tourFull')) { await p.$eval('#tourFull', e => e.click()); await w(300); } await p.click('#tourNext'); await w(600); }
   ok(/Before the uploads/.test(await title()), 'the conversation comes right before the uploads: ' + await title());
   ok(await p.$$eval('#onbLog .msg.ai', e => e.length) === 2 && await p.$$eval('[data-onbk]', e => e.length) === 4, 'it opens with two messages and four choices');
   ok(/Skip to uploads/.test(await p.$eval('#tourNext', e => e.textContent)), 'the footer offers Skip to uploads');
@@ -19,7 +19,7 @@ const VW = +process.env.VW || 390, VH = +process.env.VH || 844;
   await p.click('#onbGo'); await w(500);
   const log = await p.$eval('#onbLog', e => e.textContent);
   ok(/upload boxes: BPI, Metrobank, GCash/.test(log), 'it lists the boxes by the names given');
-  ok(/Cash does not show/.test(log) && /Why statements/.test(log) && /What happens/.test(log) && /How it is sorted/.test(log), 'it explains cash, why, what happens and the categories');
+  ok(/Cash doesn't show/.test(log) && /Statements already know/.test(log) && /Each file is sent once/.test(log) && /gets a category/.test(log), 'it explains cash, why, what happens and the categories');
   ok(/Go to the uploads/.test(await p.$eval('#tourNext', e => e.textContent)), 'the footer now says Go to the uploads');
   await p.screenshot({ path: `/tmp/v37/onb-${VW}-2.png`, fullPage: false });
   await p.click('[data-onbq="extra"]'); await w(300);
@@ -41,7 +41,7 @@ const VW = +process.env.VW || 390, VH = +process.env.VH || 844;
   await p.click('#srcChat'); await w(600); ok(/Before the uploads/.test(await title()), 'and the link goes back');
   await p.click('#onbReset'); await w(300);
   await p.click('#onbGo'); await w(400);
-  ok(/no statements to upload/.test(await p.$eval('#onbLog', e => e.textContent)), 'None of these says to type the numbers instead');
+  ok(/there's nothing to upload/.test(await p.$eval('#onbLog', e => e.textContent)), 'None of these says to type the numbers instead');
   ok(errs.length === 0, 'no page errors ' + errs.join(' | '));
   console.log(`ONB: ${pass} pass, ${fail} fail`); await b.close(); process.exit(fail ? 1 : 0);
 })();

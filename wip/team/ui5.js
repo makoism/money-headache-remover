@@ -17,9 +17,9 @@ function wire() {
   $('#nameIn').addEventListener('input', e => { S.ui.name = cleanName(e.target.value); if (!S.ui.name) delete S.ui.name; persist(); render(); });
   $('#curSel').addEventListener('change', e => {
     const r = changeCurrency(e.target.value), z = presetKey(S) === 'blank';
-    $('#curNote').textContent = r === 'all' ? (z ? 'All amounts zeroed for this currency. Enter your own.' : 'Sample amounts now match this currency.')
-      : r === 'plan' ? (z ? 'Sample bills and burrows zeroed for this currency. Pay and receipts unchanged.' : 'Sample bills and burrows now match this currency. Pay and receipts unchanged.')
-      : 'Amounts unchanged. Only the symbol changed.';
+    $('#curNote').textContent = r === 'all' ? (z ? 'All amounts are set to zero for this currency, so type in your own.' : 'Sample amounts now match this currency.')
+      : r === 'plan' ? (z ? 'The sample bills and burrows are set to zero for this currency. Your pay and receipts didn\'t change.' : 'The sample bills and burrows now match this currency. Your pay and receipts didn\'t change.')
+      : 'The amounts didn\'t change, only the symbol did.';
     if (r) restructure(); else render();
   });
   $('#hideSample').addEventListener('click', () => { S.ui.sampleHidden = true; persist(); render(); });
@@ -39,13 +39,13 @@ function wire() {
   led.addEventListener('input', e => {
     const t = e.target, d = t.dataset || {};
     if (d.k) { if (t.classList.contains('amt-in') && t._refuse && Date.now() < t._refuse) { t.value = String(val(S, d.k, sel)); return; }
-    if (t.classList.contains('amt-in') && /^\s*[-\u2212\u2013\uFF0D\u30FC\u2010-\u2015]/.test(t.value)) { t._refuse = Date.now() + 2500; try { cheer('Amounts take no minus sign. The old amount stays.'); } catch (x) { } t.value = String(val(S, d.k, sel)); t.blur(); return; } if (t.classList.contains('amt-in') && !hasMoneyOp(t.value) && parseFloat(t.value.replace(/[^\d.]/g, '')) > 1e9) { try { cheer('That amount is too large. The most is 1,000,000,000. The old amount stays.'); } catch (x) { } t._refuse = Date.now() + 2500; if (t._orig !== undefined) { t.value = String(t._orig); onSet(d.k, t._orig); } return; }   /* refused: the amount from before this typing comes back, never the largest amount (38.31 data safety round) */ if (t.classList.contains('amt-in') && hasMoneyOp(t.value)) { const sv = evalMoney(t.value); if (sv !== null && sv >= 0) onSet(d.k, sv); } else onSet(d.k, t.classList.contains('amt-in') ? t.value.replace(/[^\d.]/g, '').replace(/^(\d*\.\d*).*$/, '$1') : t.value); }
+    if (t.classList.contains('amt-in') && /^\s*[-\u2212\u2013\uFF0D\u30FC\u2010-\u2015]/.test(t.value)) { t._refuse = Date.now() + 2500; try { cheer('Type the amount without a minus sign, the old amount stays'); } catch (x) { } t.value = String(val(S, d.k, sel)); t.blur(); return; } if (t.classList.contains('amt-in') && !hasMoneyOp(t.value) && parseFloat(t.value.replace(/[^\d.]/g, '')) > 1e9) { try { cheer('That amount is too big. The most is 1,000,000,000. The old amount stays.'); } catch (x) { } t._refuse = Date.now() + 2500; if (t._orig !== undefined) { t.value = String(t._orig); onSet(d.k, t._orig); } return; }   /* refused: the amount from before this typing comes back, never the largest amount (38.31 data safety round) */ if (t.classList.contains('amt-in') && hasMoneyOp(t.value)) { const sv = evalMoney(t.value); if (sv !== null && sv >= 0) onSet(d.k, sv); } else onSet(d.k, t.classList.contains('amt-in') ? t.value.replace(/[^\d.]/g, '').replace(/^(\d*\.\d*).*$/, '$1') : t.value); }
     else if (d.lname !== undefined && t.value.trim()) { updateLine(S, d.lname, { name: t.value }); persist(); }
   });
   led.addEventListener('focusin', e => { const t = e.target; if (t.classList && t.classList.contains('amt-in')) { t._orig = val(S, t.dataset.k, sel); t.value = String(t._orig); t.select(); } });
   led.addEventListener('focusout', e => { const t = e.target; if (t.classList && t.classList.contains('amt-in')) {
     /* a typed sum that does not come out as an amount (below zero, divided by zero) puts the old amount back */
-    if (t.dataset.k && hasMoneyOp(t.value) && evalMoney(t.value) === null && t._orig !== undefined) { try { cheer('That sum does not work out to an amount. The old amount stays.'); } catch (x) { } if (val(S, t.dataset.k, sel) !== t._orig) onSet(t.dataset.k, t._orig); }
+    if (t.dataset.k && hasMoneyOp(t.value) && evalMoney(t.value) === null && t._orig !== undefined) { try { cheer('That sum doesn\'t work out to an amount so the old amount stays'); } catch (x) { } if (val(S, t.dataset.k, sel) !== t._orig) onSet(t.dataset.k, t._orig); }
     render(); } });
   /* decision 5: leaving the box ends a first entry; say once that it is now the usual amount */
   led.addEventListener('focusout', () => { if (FIRST_EDIT) { FIRST_EDIT = null; setTimeout(() => { try { cheer('Saved as the usual amount for every month.'); } catch (x) { } }, 1200); } });   /* after the first-pay badge line, so neither hides the other */
@@ -139,7 +139,7 @@ function wire() {
     ta.focus(); ta.select();
     try { await navigator.clipboard.writeText(ta.value); msg.textContent = 'Copied.'; return true; } catch (e) { /* try the older way */ }
     try { if (document.execCommand('copy')) { msg.textContent = 'Copied.'; return true; } } catch (e) { /* fall through */ }
-    msg.textContent = 'Press Ctrl+C (Cmd+C) to copy the selected text.';
+    msg.textContent = 'Press Ctrl+C, or Cmd+C on a Mac, to copy the selected text.';
     return false;
   };
   $('#rcCopy').addEventListener('click', () => copyBox($('#rcEventText'), $('#rcCopyMsg')));
@@ -160,15 +160,15 @@ function wire() {
     const out = async t => { base(t + (typeof alt0 === 'function' ? await alt0() : alt0)); return false; };
     if (inArtifact()) {
       let dl = null; try { dl = await window.claude.use('downloads'); } catch (e) { dl = null; }
-      if (!dl || typeof dl.save !== 'function') return out('Downloads are unavailable in this view.');
+      if (!dl || typeof dl.save !== 'function') return out('This view can\'t download files.');
       try { await dl.save({ filename: name, data: text }); msg.textContent = 'Saved.'; sfx('next'); return true; }
-      catch (e) { if (e && e.code === 'declined') { base('Not saved.'); return false; } return out('Save failed.'); }
+      catch (e) { if (e && e.code === 'declined') { base('Not saved.'); return false; } return out('The save didn\'t work so try it again.'); }
     }
     try {
       const blob = new Blob([text], { type: mime }), url = URL.createObjectURL(blob), a = document.createElement('a');
       a.href = url; a.download = name; document.body.appendChild(a); a.click();
       setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1500); msg.textContent = 'Saved to downloads.'; sfx('next'); return true;
-    } catch (e) { return out('File not saved by this browser.'); }
+    } catch (e) { return out('This browser didn\'t save the file so try it again.'); }
   };
   /* Export spreadsheet with no way to save a file: the same table goes to the clipboard, tab separated, so it pastes into cells (J-009) */
   const csvCopy = async () => {
@@ -179,13 +179,13 @@ function wire() {
   /* the file save is shared with the reminder on Home (bkRun, ui43.js); a saved file counts as a backup */
   bkRun = async () => { const ok = await saveOut(`mhr2000-${stamp()}.json`, JSON.stringify(S), 'application/json', $('#bkMsg'), ' Use Copy text.'); if (ok) markBackup(); return ok; };
   $('#bkSave').addEventListener('click', () => { bkRun(); });
-  $('#bkCsv').addEventListener('click', () => { let t; try { t = sheetCsv(S, calcAll(S)); } catch (e) { $('#bkMsg').textContent = 'Spreadsheet could not be built.'; return; } saveOut(`mhr2000-plan-${stamp()}.csv`, t, 'text/csv;charset=utf-8', $('#bkMsg'), csvCopy); });
+  $('#bkCsv').addEventListener('click', () => { let t; try { t = sheetCsv(S, calcAll(S)); } catch (e) { $('#bkMsg').textContent = 'The spreadsheet couldn\'t be made. Try again - if it still won\'t, Save file above still backs up your numbers.'; return; } saveOut(`mhr2000-plan-${stamp()}.csv`, t, 'text/csv;charset=utf-8', $('#bkMsg'), csvCopy); });
   $('#bkFileBtn').addEventListener('click', () => $('#bkFile').click());
   $('#bkFile').addEventListener('change', e => {
     const f = e.target.files && e.target.files[0], msg = $('#bkMsg'); e.target.value = ''; if (!f) return;
-    if (f.size > 20e6) { msg.textContent = 'File too large for a backup.'; return; }
-    const r = new FileReader(); r.onerror = () => { msg.textContent = 'File unreadable. Try Copy text.'; };
-    r.onload = () => { const t = String(r.result || ''); $('#bk').value = t; let ok = false; try { const d = JSON.parse(t); ok = !!(d && typeof d === 'object' && d.steps && d.once && d.cfg); } catch (e) { } $('#bkMsg').textContent = ok ? `File read. Tap Load text, then tap again, to replace your numbers with it. You can undo for ${KEEP_DAYS} days.` : 'Not a valid backup. Use the whole file, or paste all of the copied text.'; }; r.readAsText(f);   /* a picked file never replaces anything on its own (38.31 data safety round 2) */
+    if (f.size > 20e6) { msg.textContent = 'That file is too big to be a backup.'; return; }
+    const r = new FileReader(); r.onerror = () => { msg.textContent = 'That file couldn\'t be read. Tap Choose file and pick it again, or paste the backup text in the box and tap Load text.'; };
+    r.onload = () => { const t = String(r.result || ''); $('#bk').value = t; let ok = false; try { const d = JSON.parse(t); ok = !!(d && typeof d === 'object' && d.steps && d.once && d.cfg); } catch (e) { } $('#bkMsg').textContent = ok ? `The file is read. Tap Load text, then tap it again to replace the numbers here with what's in the file. You can undo for ${KEEP_DAYS} days.` : 'Not a valid backup. Use the whole file, or paste all of the copied text.'; }; r.readAsText(f);   /* a picked file never replaces anything on its own (38.31 data safety round 2) */
   });
   const twoStep = (b, armedText, run) => {
     let t = 0, orig = '', armedAt = 0;
@@ -205,7 +205,7 @@ function wire() {
   /* the copy from before a big change is offered again on every open for 3 days, then let go */
   if (S.ui && S.ui.keep) { const k = S.ui.keep; if (!(typeof k.snap === 'string' && +k.t > 0) || Date.now() - k.t > KEEP_DAYS * 864e5) { delete S.ui.keep; persist(); } else offerUndo(k.snap, `${k.why || 'Your numbers changed.'} You can undo until ${dateLabel(ymd(new Date(+k.t + KEEP_DAYS * 864e5)))}.`, k.act ? () => restoreKept(k.snap, k.added) : null); }   /* a copy an action kept: Undo keeps the receipts logged since (actions.js restoreKept) */
   $('#undoGo').addEventListener('click', () => { if (!undoSnap) return; clearTimeout(undoT); $('#undoBar').hidden = true; if (undoFn) { undoFn(); undoFn = null; } else S = normalize(JSON.parse(undoSnap)); undoSnap = null; editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = ''; sfx('back'); cheer('Your numbers are back.'); });
-  const blank = () => { const sn0 = snapNoCopy(); offerUndo(sn0, `All numbers zeroed. You can undo for ${KEEP_DAYS} days.`); S = blankState(S, sampleOn()); S.ui.cleared = true; delete S.ui.setup; delete S.ui.src; delete S.ui.imp; keepCopy(sn0, 'Your numbers were set to zero.'); editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = 'All zero. Start with salary.';   /* a 3-day copy like every other big change (38.31 data safety round 4) */ select(START); if (tab !== 'month') switchTab('month'); };
+  const blank = () => { const sn0 = snapNoCopy(); offerUndo(sn0, `All your numbers are set to zero. You can undo for ${KEEP_DAYS} days.`); S = blankState(S, sampleOn()); S.ui.cleared = true; delete S.ui.setup; delete S.ui.src; delete S.ui.imp; keepCopy(sn0, 'Your numbers were set to zero.'); editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = 'Everything is at zero now, start with your pay';   /* a 3-day copy like every other big change (38.31 data safety round 4) */ select(START); if (tab !== 'month') switchTab('month'); };
   twoStep($('#blankBtn'), `Tap again: clears pay, bills, goals, saved amounts and your balance. Receipts stay. You can undo for ${KEEP_DAYS} days.`, blank);
   twoStep($('#blankTop'), `Tap again: clears pay, bills, goals, saved amounts and your balance. Receipts stay. You can undo for ${KEEP_DAYS} days.`, blank);
   twoStep($('#bkLoad'), `Tap again: replaces your pay, bills, goals and receipts with this copy. You can undo for ${KEEP_DAYS} days.`, loadBackup);

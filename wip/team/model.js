@@ -31,30 +31,30 @@ const CFG = {
 /* ---- The six jars (T. Harv Eker's system). "usual" is Eker's usual share of pay for each jar. It is only a guide: the page never shows it as a target, and the shares it does show always come from the real amounts. ---- */
 const JARS = [
   { id: 'nec',  name: 'Bills and basics',                    usual: 0.55, about: 'Rent, food, utilities and every other bill.' },
-  { id: 'lts',  name: 'Goal burrows', usual: 0.10, about: 'Saved now, spent later: a big purchase, a trip, a rainy day, a surprise. Your burrows live here.' },
-  { id: 'play', name: 'Free to spend',                         usual: 0.10, about: 'Fun for you and your family, no guilt. What is left at month end can go to a goal.' },
+  { id: 'lts',  name: 'Goal burrows', usual: 0.10, about: 'Money you save now and spend later, on a big purchase, a trip or a surprise. Your burrows are in here.' },
+  { id: 'play', name: 'Free to spend',                         usual: 0.10, about: 'Fun for you and your family, spend it on whatever you want. What\'s left at month end can go to a goal.' },
   { id: 'edu',  name: 'Education',                      usual: 0.10, about: 'Courses, books, coaching, skill building.' },
-  { id: 'ffa',  name: 'Investing',              usual: 0.10, about: 'Never spent. It grows over time.' },
+  { id: 'ffa',  name: 'Investing',              usual: 0.10, about: 'You never spend this, it grows over time.' },
   { id: 'give', name: 'Giving',                         usual: 0.05, about: 'Charity, donations and gifts.' },
 ];
 /* the usual share of each place as a whole percent, for the screens that name it (they never work it out) */
 JARS.forEach(j => { j.usualPct = Math.round(j.usual * 100); });
 const LINE_JARS = ['nec', 'play', 'edu', 'ffa', 'give'];
 /* a few words for each jar, shown under its name wherever the split is listed */
-const JARTAG = { nec: 'Bills', lts: 'Saving toward a goal', play: 'Fun, no guilt', edu: 'Courses and books', ffa: 'Never spent', give: 'Charity and gifts' };
+const JARTAG = { nec: 'Bills', lts: 'Saving toward a goal', play: 'Spend on fun', edu: 'Courses and books', ffa: 'Never spent', give: 'Charity and gifts' };
 
 /* ---- The starting plan: lines you pay every month, and savings goals. All of it can be renamed, removed or added to. ---- */
 const LINE_DEFS = [
-  { id: 'rent',   key: 'bill:rent',  jar: 'nec', name: 'Rent or mortgage', def: 7000, note: 'Biggest bill. Use the full amount, even if someone shares it (put their share under Money in).' },
+  { id: 'rent',   key: 'bill:rent',  jar: 'nec', name: 'Rent or mortgage', def: 7000, note: 'Your biggest bill. Use the full amount even if someone shares it, and put their share under Money in.' },
   { id: 'util',   key: 'bill:util',  jar: 'nec', name: 'Utilities', def: 1750, note: 'Electricity and water. Hot and rainy months can cost more.' },
   { id: 'food',   key: 'bill:food',  jar: 'nec', name: 'Food and groceries', def: 5500, note: 'Groceries and everyday meals. Eating out for fun goes under Free to spend.' },
   { id: 'net',    key: 'bill:net',   jar: 'nec', name: 'Internet', def: 1200 },
   { id: 'phone',  key: 'bill:phone', jar: 'nec', name: 'Phone', def: 500, note: 'Postpaid plan, or the prepaid top-up you usually buy in a month.' },
-  { id: 'ins',    key: 'bill:ins',   jar: 'nec', name: 'Insurance and contributions', def: 1000, note: 'Health or life insurance. Not on payroll: include your own SSS, PhilHealth and Pag-IBIG payments. Monthly amount.' },
+  { id: 'ins',    key: 'bill:ins',   jar: 'nec', name: 'Insurance and contributions', def: 1000, note: 'Health or life insurance, as a monthly amount. If you\'re not on a payroll, include your own SSS, PhilHealth and Pag-IBIG payments.' },
   { id: 'subs',   key: 'bill:subs',  jar: 'nec', name: 'Subscriptions', def: 500, note: 'Streaming, apps, software, gym.' },
   { id: 'gas',    key: 'bill:gas',   jar: 'nec', name: 'Transport', def: 1800, note: 'Commute, Grab, fuel, parking, tolls.' },
-  { id: 'loan',   key: 'bill:loan',  jar: 'nec', name: 'Loan or debt payment', def: 0, note: 'Car loan, personal loan, card installments. Pick the last payment month; its money can then move to your emergency fund.' },
-  { id: 'card',   key: 'card',       jar: 'nec', name: 'Other card spending', def: 0, note: 'Optional. Card spending not already in a line above, like shopping or household items. Fun spending goes under Free to spend.' },
+  { id: 'loan',   key: 'bill:loan',  jar: 'nec', name: 'Loan or debt payment', def: 0, note: 'Car loan, personal loan, card installments. Pick the month of the last payment, and after that its money can move to your Emergency fund.' },
+  { id: 'card',   key: 'card',       jar: 'nec', name: 'Other card spending', def: 0, note: 'Only if you have it. Card spending that isn\'t already in a line above, like shopping or household items. Fun spending goes under Free to spend.' },
   { id: 'spend',  key: 'envelope',   jar: 'play', name: 'Free to spend', def: 3500 },
   { id: 'learn',  key: 'education',  jar: 'edu', name: 'Courses and books', def: 3500 },
   { id: 'invest', key: 'invest',     jar: 'ffa', name: 'Investing', def: 3500 },

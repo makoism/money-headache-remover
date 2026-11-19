@@ -13,5 +13,7 @@ for f in tests/qc/script_words.js tests/qc/script_bad_numbers.js tests/qc/script
   echo "$OUT" | grep -q "^ALL PASS\|^FAILED" || { echo "  $f did not finish (exit $RC): $(echo "$OUT" | tail -2 | tr '\n' ' ' | cut -c1-300)"; NEW=$((NEW+1)); }
   echo "$f: $P pass, $K known, $NEW new"; [ $NEW -eq 0 ] || BAD=1
 done
+# the voice tells a script can catch (VOICE.md): only a "strong" finding that is not in voice_known.txt fails the run
+VL=$(node tests/qc/voice_lint.js --strict --quiet 2>&1); VRC=$?; echo "tests/qc/voice_lint.js: $(echo "$VL" | tail -1 | cut -c1-200)"; [ $VRC -eq 0 ] || { echo "  NEW a strong voice finding (run: node tests/qc/voice_lint.js --strict)"; BAD=1; }
 [ $BAD -eq 0 ] && echo "SCRIPT CHECKS OK (known findings above, see SIDE_A_FINDINGS.md)" || echo "SCRIPT CHECKS FAILED"
 exit $BAD

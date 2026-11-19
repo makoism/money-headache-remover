@@ -41,31 +41,31 @@ function jarNote(m) {
   const borrowed = J.borrowUsedPct > 0 ? ` Your places add up to ${J.placedPct}% of your pay, because ${fmt(J.borrowUsed)} of this plan is borrowed from your emergency fund.` : '';
   const others = J.list.slice(1).some(j => j.v > 0);
   /* no bills in the plan is blank, not low: never praised as "under the usual" (38.31 number gate, wording and novice round 3) */
-  if (!(nec.v > 0)) return 'No bills planned yet. Add rent, food and the rest under Money out.' + borrowed;
+  if (!(nec.v > 0)) return 'No bills planned yet - add rent, food and the rest under Money out.' + borrowed;
   const lead = nec.pct >= 100 ? `Bills and basics cost more than all of your pay this month.${borrowed ? '' : ' Lower a bill or add pay.'}`   /* 38.31 north-star round 2: never calm about this */
-    : nec.pct > u + 1 ? `Bills and basics are ${nec.pct}% of pay, above the usual ${u}%.${others ? ' Keep the other places going, even small: the habit matters more than the exact percent.' : ' Nothing is left for the other places this month.'}`
-    : nec.pct < u - 1 ? `Bills and basics are ${nec.pct}% of pay, under the usual ${u}%. More room for the other places.`
-    : `Bills and basics are ${nec.pct}% of pay, about the usual ${u}% many people aim for.`;
+    : nec.pct > u + 1 ? `Bills and basics are ${nec.pct}% of pay, above the usual ${u}%.${others ? ' Keep putting something in the other places, even a small amount.' : ' Nothing is left for the other places this month.'}`
+    : nec.pct < u - 1 ? `Bills and basics are ${nec.pct}% of pay, under the usual ${u}%, so there's more room for the other places.`
+    : `Bills and basics are ${nec.pct}% of pay, which is about the usual ${u}%.`;
   return lead + borrowed;
 }
-const LTS_HINT = ' Each slider sets that goal’s amount this month. Leave them alone to use the computed amounts (from goal amounts and dates). Up takes from Left; down returns to Left.';
+const LTS_HINT = ' Each slider sets what goes into that goal this month, so sliding up takes from Left and sliding down gives it back. If you leave them alone the amounts are worked out from each goal’s amount and date.';
 
 /* ---------- the first-steps card ---------- */
-const START_SUB = 'Sample numbers for one salary. Replace them with yours. Data stays in this browser.';
+const START_SUB = 'These are sample numbers for one salary, replace them with yours. Your data stays in this browser.';
 const BASICS_SUB = 'Name, currency, balance, look, saved data.';
-const MAKE_CAP = 'Amounts are samples for one salary. Start at zero or type over them. Saved in this browser only. Nobody else sees it, including whoever shared this page.';
+const MAKE_CAP = 'The amounts are samples for one salary, so start at zero or type over them. They\'re saved in this browser only and nobody else sees them, including whoever shared this page.';
 const START_STEPS = [
-  ['pay', 'Enter pay', 'Type monthly take-home pay under Salary.', 'Go to Salary', 'data-open="a"'],
-  ['bills', 'Check bills', 'Set each Monthly bills line to the real amount. Rename, remove or add lines.', 'Open Monthly bills', 'data-open="nec"'],
-  ['goals', 'Set up burrows', 'Name each goal, its cost and its date.', 'Go to Goals', 'data-tab-go="goals"'],
-  ['receipts', 'Log receipts', 'Add what you spent. Set a calendar reminder to make it a habit.', 'Go to Receipts', 'data-tab-go="receipts"'],
+  ['pay', 'Enter pay', 'Type your monthly take-home pay under Salary', 'Go to Salary', 'data-open="a"'],
+  ['bills', 'Check bills', 'Put your real amount on each Monthly bills line, and rename, remove or add lines as you go', 'Open Monthly bills', 'data-open="nec"'],
+  ['goals', 'Set up burrows', 'Give each goal a name, what it costs and a date', 'Go to Goals', 'data-tab-go="goals"'],
+  ['receipts', 'Log receipts', 'Add what you spent, and set a reminder in your calendar so you keep doing it', 'Go to Receipts', 'data-tab-go="receipts"'],
 ];
 function renderStart() {
   /* the checklist now lives on Home as a single next step; the old card stays out of sight */
   $('#start').hidden = true;
   const mine = !!S.ui.setup && !S.ui.cleared, zero = S.ui.preset === 'blank' || !!S.ui.cleared;
   $('#basicsSub').textContent = BASICS_SUB;
-  $('#makeCap').textContent = mine ? 'These are your numbers. Change them any time. Saved in this browser only; nobody else sees them.' : zero ? 'Everything starts at zero. Type over it. Saved in this browser only.' : MAKE_CAP;
+  $('#makeCap').textContent = mine ? 'These are your numbers and you can change them any time. They\'re saved in this browser only and nobody else sees them.' : zero ? 'Everything starts at zero, so type over it. It\'s saved in this browser only.' : MAKE_CAP;
   { const so = typeof sampleOn === 'function' && sampleOn(); ['#payBtn', '#xmBtn'].forEach(s => { const b = $(s); if (b) b.hidden = so; }); }
   { const rb = $('#bkReset'); if (rb && !rb.dataset.armed) rb.textContent = SAMPLES[(S.ui && S.ui.cur) || '₱'] ? 'Restore samples' : 'Clear my plan'; }
   $('#blankBtn').hidden = zero; { const zh = $('#zeroHint'); if (zh) zh.hidden = zero; } $('#showStart').hidden = !(S.ui.sampleHidden || S.ui.exactHidden); /* Set all to zero stays while there is anything to zero: Restore names it as the way to start over. Show first steps brings back a hidden Next card */ $('#tourOpen2').textContent = mine ? 'Tour' : 'Guided setup';
@@ -102,10 +102,10 @@ function render() {
   else chip.innerHTML = st === 'good' ? IC.ok + 'On plan' : st === 'tight' ? IC.warn + 'Tight month' : IC.bad + 'Short';
   const gap = PC.bankGap;
   let vt;
-  if (pin <= 0) vt = 'Enter monthly take-home pay: tap Salary below.';
-  else if (st === 'good') vt = (Lun < 0.005 ? 'All pay is placed.' :   /* exact: a small amount not placed is named, never called placed (38.31 money accuracy round 3) */ `${fmt2(Lun)} of pay not placed yet.`) + (Lun >= pin * 0.08 ? ' Raise a goal or another place to use it, or keep it as a cushion.' : '');
-  else if (st === 'tight') vt = `Month spends ${fmt2(PC.overPay)} more than your pay${m.draw > 0 ? ', ' + fmt2(m.draw) + ' of it borrowed' : ''}. Balance covers it and ends at ${fmt2(m.bankEnd)}, at or above the ${fmt2(floor)} minimum balance (change it in Settings).`;
-  else vt = (floor > 0 ? `Balance would end at ${fmt2(m.bankEnd)}, ${fmt2(gap)} under the ${fmt2(floor)} minimum balance (change it in Settings).` : `Balance would end at ${fmt2(m.bankEnd)}, below zero.`) + (fixes(S, m).length ? ' Pick a fix:' : ' Lower a cost or add pay to fix it.');
+  if (pin <= 0) vt = 'Tap Salary below and type your monthly take-home pay';
+  else if (st === 'good') vt = (Lun < 0.005 ? 'All pay is placed.' :   /* exact: a small amount not placed is named, never called placed (38.31 money accuracy round 3) */ `${fmt2(Lun)} of pay not placed yet.`) + (Lun >= pin * 0.08 ? ' Raise a goal or another place to use it, or leave it where it is.' : '');
+  else if (st === 'tight') vt = `This month you spend ${fmt2(PC.overPay)} more than your pay${m.draw > 0 ? ', ' + fmt2(m.draw) + ' of it borrowed' : ''}. Your balance covers it and ends at ${fmt2(m.bankEnd)}, so it doesn't go under your ${fmt2(floor)} minimum balance. You can change that in Settings.`;
+  else vt = (floor > 0 ? `Balance would end at ${fmt2(m.bankEnd)}, ${fmt2(gap)} under your ${fmt2(floor)} minimum balance. You can change that in Settings.` : `Balance would end at ${fmt2(m.bankEnd)}, below zero.`) + (fixes(S, m).length ? ' Pick a fix:' : ' Lower a cost or add pay to fix it.');
   if (m.draw > 0) vt += ` ${fmt2(m.draw)} is borrowed from the emergency fund.`;
   $('#verdict').textContent = vt;
   let btns = '';
@@ -130,7 +130,7 @@ function render() {
   /* the details */
   $('#inTotal').textContent = fmt2(m.pool.in); $('#outTotal').textContent = fmt2(m.pool.out);
   { const oc = $('#outCounted'); const cn = m.counted || 0, tu = (m.topup && m.topup.used) || 0, tg = tu > 0 ? goalById(S, m.topup.id) : null;
-    oc.hidden = !(cn > 0); if (cn > 0) oc.textContent = `${fmt2(cn)} of this month's Free to spend was not spent. ${tu > 0 && tg ? `${fmt2(tu)} went to ${tg.name}${cn - tu > 0.004 ? ' and ' + fmt2(m.credit) + ' came back to the bank' : ''}` : 'It came back to the bank'}, so the bank ends higher than the figures above.`; }
+    oc.hidden = !(cn > 0); if (cn > 0) oc.textContent = `${fmt2(cn)} of this month's Free to spend wasn't spent. ${tu > 0 && tg ? `${fmt2(tu)} went to ${tg.name}${cn - tu > 0.004 ? ' and ' + fmt2(m.credit) + ' came back to the bank' : ''}` : 'It came back to the bank'}, so the bank ends higher than the numbers above.`; }
   const lt = $('#leftTotal'); lt.textContent = fmt2(L); lt.classList.toggle('neg', L < 0);
   const ovr = m.over || 0;
   $('#bankLine').textContent = ovr > 0 ? `Bank ends at ${fmt2(m.bankEnd)}: ${fmt2(m.bankPlanned)} planned, less ${fmt2(ovr)} spent over plan so far.` : (Math.abs(m.bankStart - m.bankEnd) < 0.5 ? `Bank stays at ${fmt2(m.bankEnd)} this month.` : `Bank goes from ${fmt2(m.bankStart)} to ${fmt2(m.bankEnd)} this month.`);
@@ -174,13 +174,13 @@ function noteFor(f, m, v, on) {
   if (f.kind === 'debt') { const d = debtById(S, f.did), x = d && m.debts[d.id]; return x ? `Minimum ${fmt(d.min)} is already included. This month it pays ${fmt(x.pay)}${x.interest > 0 ? `, ${fmt(x.interest)} of it interest` : ''}. Owed after: ${fmt(x.bal)}.` : ''; }
   let t = f.note ? esc(localize(f.note)) + ' ' : '';
   if (f.ends) t += on ? (v > 0 ? `Last payment ${monthLabel(f.ends)}.` : '') : 'Paid off.';
-  if (f.sl && f.sl.mark) { const ceil = cfg(S, 'ceiling'); if (ceil > 0) t += (m.jar.play > ceil ? ` <b>Above the ${fmt(ceil)} ceiling.</b>` : ` Mark = ${fmt(ceil)} ceiling.`); }
+  if (f.sl && f.sl.mark) { const ceil = cfg(S, 'ceiling'); if (ceil > 0) t += (m.jar.play > ceil ? ` <b>Above the ${fmt(ceil)} ceiling.</b>` : ` The mark is your ${fmt(ceil)} ceiling.`); }
   return t.trim();
 }
 function goalNote(gid, m) {
   const g = goalById(S, gid); if (!g) return '';
   const gi = goalInfo(S, C, gid, sel), gm = m.g[gid], tg = g.target, cap = capOf(g); let t = '';
-  if (tg <= 0) return 'Set the goal amount under Plan, Goals.';
+  if (tg <= 0) return 'Open Plan, then Goals, and set the goal amount';
   if (gm && gm.actual < gm.planned && gm.planned > 0) t += `Needs only <b>${fmt(gm.actual)}</b> this month. `;
   if (g.due) {
     if (gi.state === 'paid') t += `Paid in ${monthLabel(dueYm(g))}.`;
@@ -203,7 +203,7 @@ function goalNote(gid, m) {
 
 function renderGoals(m) {
   const J = jarsOf(S, m), lj = J.list.find(x => x.id === 'lts'), inc = J.income, gs = S.plan.goals;
-  $('#goalsSub').textContent = gs.length ? `Goals get ${fmt(lj.v)} this month` + (inc > 0 && !J.over ? `, ${lj.pct}% of pay.` : '.') : 'No burrows. Add one to see when it is reached.';
+  $('#goalsSub').textContent = gs.length ? `Goals get ${fmt(lj.v)} this month` + (inc > 0 && !J.over ? `, ${lj.pct}% of pay.` : '.') : 'No burrows yet - add one to see when you\'ll reach it';
   
   $('#secRoad').hidden = !gs.length;
   gs.forEach(g => {
@@ -232,7 +232,7 @@ function renderGoals(m) {
 
 function renderItems(m) {
   const list = m.items, sig = sel + '|' + list.map(i => i.id).join(',');
-  $('#itemsSub').textContent = `One-time costs in ${monthLabel(sel)}. Taken from that month’s money.`;
+  $('#itemsSub').textContent = `One-time costs in ${monthLabel(sel)}, taken out of that month’s money`;
   if (sig !== itemsSig) {
     itemsSig = sig;
     $('#items').innerHTML = list.length ? list.map(i => `<div class="item" data-id="${esc(i.id)}"><input class="txt" type="text" value="${esc(i.label)}" aria-label="Name" maxlength="60">

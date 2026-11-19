@@ -39,7 +39,7 @@ const PESO = (() => { const src = require('fs').readFileSync(process.env.MODEL |
   ok('no back button on screen 1', await p.$eval('#tourBack', e => e.hidden));
   await p.click('#tourNext'); await w(250);
   ok('screen 2 asks for the currency and what to call you', (await q('#tourTitle')) === 'Currency' && (await q('#tourPart')) === 'Welcome' && (await val('#tourName')) === '');
-  ok('...and a promise that it stays private', (await tourText()).includes('stays in this browser') && (await tourText()).includes('Nobody else can see it'));
+  ok('...and a promise that it stays private', (await tourText()).includes('stays in this browser') && (await tourText()).includes('nobody else can see it'));
   await p.type('#tourName', '  Mara ');
   ok('six currency chips, yen preselected', (await p.$$eval('input[name=tourCur]', e => e.length)) === 6 && (await p.$eval('input[name=tourCur]:checked', e => e.value)) === '¥');
   await p.click('input[name=tourCur][value="$"]'); await w(150);
@@ -227,7 +227,7 @@ const PESO = (() => { const src = require('fs').readFileSync(process.env.MODEL |
   ok('defaults to spending money', (await val('#rcCat')) === 'envelope');
   await set('#rcDate', '2026-11-08', 'change'); await p.type('#rcAmt', '250.50'); await p.select('#rcCat', 'bill:util'); await p.type('#rcNote', 'Palengke'); const utilName = await p.$eval('#rcCat option[value="bill:util"]', e => e.textContent.trim());
   await p.click('#rcSave'); await w(350);
-  { const c1 = await cheerOn(); ok('the first receipt cheers (or finishes the setup)', c1.includes('Logged. Streak: week 1') || c1.startsWith('Setup complete')); ok('...the cheer line only, no leaves over the words (small moment, ui44.js)', (await confettiPx()) === 0); }
+  { const c1 = await cheerOn(); ok('the first receipt cheers (or finishes the setup)', c1.includes('Logged. Streak: week 1') || c1.startsWith('Setup is done')); ok('...the cheer line only, no leaves over the words (small moment, ui44.js)', (await confettiPx()) === 0); }
   ok('receipt added', (await p.$$eval('#rcList .rc', e => e.length)) === 1 && (await q('#rcList .rc')).includes('₱250.50') && (await q('#rcList .rc')).includes(utilName));
   ok('summary counts it', (await q('#rcSum')).includes('₱250.50 spent, 1 receipt'));
   ok('form is ready for the next one', (await val('#rcAmt')) === '' && (await val('#rcDate')) === '2026-11-08' && (await val('#rcCat')) === 'bill:util');
@@ -245,7 +245,7 @@ const PESO = (() => { const src = require('fs').readFileSync(process.env.MODEL |
   await p.click('#rcSave'); await w(200);
   ok('empty amount is refused', (await q('#rcMsg')).includes('amount') && (await p.$$eval('#rcList .rc', e => e.length)) === 2);
   await set('#rcDate', '2020-01-01', 'change'); await p.type('#rcAmt', '5'); await p.click('#rcSave'); await w(200);
-  ok('a date outside the months is refused', (await q('#rcMsg')).includes('Date must be') && (await p.$$eval('#rcList .rc', e => e.length)) === 2);
+  ok('a date outside the months is refused', (await q('#rcMsg')).includes('Pick a date from') && (await p.$$eval('#rcList .rc', e => e.length)) === 2);
   await p.$eval('#rcAmt', e => { e.value = ''; });
   await set('#rcDate', '2026-12-02', 'change'); await p.type('#rcAmt', '90'); await p.select('#rcCat', 'other'); await p.type('#rcNote', 'Vet bill'); await p.click('#rcSave'); await w(300);
   ok('a date after today asks first', (await q('#rcMsg')).includes('in the future') && (await p.$$eval('#rcList .rc', e => e.length)) === 2);

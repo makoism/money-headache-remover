@@ -104,7 +104,7 @@ const helloPlayer = () => { const f = helloSrc(), blob = helloBlob(), have = !bl
   <div class="tour-speed" id="tourSpeed" role="group" aria-label="Playback speed"><span>Speed</span>${HELLO_RATES.map(r => `<button type="button" data-rate="${r}" aria-pressed="${r === helloRate}">${r}x</button>`).join('')}</div>`; };
 const helloCard = () => helloVideo
   ? `${fromMako()}<div class="row-btns"><a class="tour-video" id="tourVideo" target="_blank" rel="noopener noreferrer" href="${esc(helloVideo.watch)}"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="currentColor" opacity=".18"/><path d="M10 8l6 4-6 4z" fill="currentColor"/></svg><span><b>Watch the video</b><small>Opens in a new tab</small></span></a></div>`
-  : '<p class="cap">Video did not load. Skip it and continue.</p>';
+  : '<p class="cap">The video didn\'t load, so skip it and carry on.</p>';
 function pauseHello() { const v = $('#tourVid'); if (v) try { v.pause(); } catch (e) { /* gone */ } }
 function wireHello() {
   const v = $('#tourVid'), f = $('#tourVF'), play = $('#tourPlay'); if (!v || !f || !play) return;
@@ -184,7 +184,7 @@ function wireRestore() {
     const m = $('#tourVaultMsg'), box = $('#tourVaultFound'); box.hidden = true; box.innerHTML = ''; m.textContent = 'Looking…';
     const f = await vaultFind($('#tourVaultIn').value); if (!$('#tourVaultMsg')) return;
     if (f.err) { m.textContent = f.err; return; }
-    if (f.older) { m.textContent = 'The cloud copy is older than the numbers on this device, so nothing was loaded. To load it anyway: Settings, Cloud copy, I have a code.'; return; }
+    if (f.older) { m.textContent = 'The cloud copy is older than the numbers on this device, so nothing was loaded. To load it anyway go to Settings, find Cloud copy and tap I have a code.'; return; }
     m.textContent = '';
     box.innerHTML = `<p data-vf-found>${vaultFoundLine(f)}</p><p>This device has no numbers of its own yet, so nothing is replaced.</p><div class="row-btns"><button type="button" class="btn small solid" id="tourVaultLoad">Load</button><button type="button" class="link" id="tourVaultNo">Cancel</button></div>`; box.hidden = false;
     $('#tourVaultNo').addEventListener('click', () => { box.hidden = true; box.innerHTML = ''; });
@@ -201,10 +201,10 @@ const TOUR = [
   { id: 'video', part: PART.welcome, title: 'Welcome', next: 'Next', skipIf: () => !hasHello, art: () => '',
     body: () => {
       const player = helloFileOk && !helloFailed;
-      return `<p class="tour-what">Put in your pay and bills. The burrow shows how much is really free to spend, and saves toward the things you want.</p>${player ? helloPlayer() : helloCard()}
+      return `<p class="tour-what">Put in your pay and bills and the burrow shows you how much is really free to spend and saves up for the things you want.</p>${player ? helloPlayer() : helloCard()}
       <p class="cap">${player
-        ? 'Six minutes from Mako, who made this. Also under Help.' + (helloVideo ? ` <a id="tourVideo" target="_blank" rel="noopener noreferrer" href="${esc(helloVideo.watch)}">Not playing? Open on Google Drive.</a>` : '')
-        : 'Six minutes from Mako, who made this. Come back here when done, or skip. Also under Help.'}</p>
+        ? 'Six minutes from Mako, who made this. It\'s under Help too.' + (helloVideo ? ` <a id="tourVideo" target="_blank" rel="noopener noreferrer" href="${esc(helloVideo.watch)}">Not playing? Open on Google Drive.</a>` : '')
+        : 'Six minutes from Mako, who made this. Come back here when you\'re done or skip it, it\'s under Help too.'}</p>
       ${txHTML(player)}
       ${restoreHTML()}`;
     },
@@ -215,8 +215,8 @@ const TOUR = [
       return `${hasHello ? '' : homeScene()}<div class="tour-chips" role="radiogroup" aria-label="Currency">${pick.map(c => chip('tourCur', c[0], c[0], curName(c), c[0] === cur)).join('')}</div>
       <div class="field tour-more"><label for="tourCurMore">Other currency</label><div class="selbox"><select id="tourCurMore"><option value="">Choose currency</option>${rest.map(c => `<option value="${esc(c[0])}"${c[0] === cur ? ' selected' : ''}>${esc(c[1])}</option>`).join('')}</select></div></div>
       <div class="tour-fields"><div class="field"><label for="tourName">First name <span class="opt">(optional)</span></label><div class="inp"><input id="tourName" type="text" maxlength="24" autocomplete="given-name" spellcheck="false" placeholder="First name" value="${esc(firstName())}"></div></div></div>
-      <p class="cap">Data stays in this browser. Nobody else can see it.</p>
-      <p class="cap">${quickSetup() ? 'The first setup is short: pay, rent, food and one goal. <button type="button" class="link" id="tourFull">Use the longer setup</button>' : 'Longer setup is on: every bill and goal.'}</p>
+      <p class="cap">Your data stays in this browser and nobody else can see it.</p>
+      <p class="cap">${quickSetup() ? 'The first setup is short, just your pay, rent, food and an emergency fund. Finish later at the top stops here and keeps what you typed, and Guided setup under Help opens it again. <button type="button" class="link" id="tourFull">Use the longer setup</button>' : 'Longer setup is on: every bill and goal.'}</p>
       ${hasHello ? '' : restoreHTML()}`;
     },
     after: () => { if (!hasHello) wireRestore(); const f = $('#tourFull'); if (f) f.addEventListener('click', () => { S.ui.full = true; persist(); buildSteps(); f.replaceWith(document.createTextNode('Longer setup is on: every bill and goal.')); }); },
@@ -233,10 +233,10 @@ const TOUR = [
     body: () => {
       if (S.ui.setup) {
         const f = planFacts();
-        const line = f.st === 'over' ? `Plan exceeds pay by <b>${fmt2(f.shortBy)}</b>.${f.play > 0 ? ` Free to spend is ${fmt2(f.play)}, but the month still comes up short.` : ' Nothing is free to spend yet.'} Under Plan: lower a bill or a goal, or add income.`
-          : f.play <= 0 ? 'Nothing is free to spend in the plan. Raise the Free to spend line under Plan.'
-          : f.st === 'spare' ? `Free to spend <b>${fmt2(f.play)}</b> a month. <b>${fmt2(f.L)}</b> of pay is not placed yet: raise a goal or add to free to spend.`
-          : `Free to spend <b>${fmt2(f.play)}</b> a month, to spend without guilt. All other pay is placed.`;
+        const line = f.st === 'over' ? `The plan is <b>${fmt2(f.shortBy)}</b> more than your pay.${f.play > 0 ? ` Free to spend is ${fmt2(f.play)}, but the month still comes up short.` : ' Nothing is free to spend yet.'} Under Plan you can lower a bill or a goal, or add more pay.`
+          : f.play <= 0 ? 'There\'s nothing in Free to spend in the plan, so raise the Free to spend line under Plan.'
+          : f.st === 'spare' ? `Free to spend <b>${fmt2(f.play)}</b> a month. <b>${fmt2(f.L)}</b> of pay is not placed yet, so raise a goal or add to Free to spend.`
+          : `Free to spend <b>${fmt2(f.play)}</b> a month, and it's yours to spend on whatever you want. All your other pay is placed.`;
         const V = viewOf(S, f.C, nowYm(), ymd(new Date())), r = V.main, mg = r ? goalById(S, r.id) : null;
         /* the last screen lands on the destination: the goal, the reason in the person's words, when it is full and what each month adds */
         const when0 = r ? (r.pct >= 100 ? 'Full.' : r.reached ? (r.months <= 0 ? 'Full <b>this month</b>.' : `Full <b>${fullLabel(r.reached)}</b>, ${plural(r.months, 'month')} from now.`) : 'Not full within ' + SPAN + ' at this pace.') : '';
@@ -244,28 +244,28 @@ const TOUR = [
         const dep = r ? f.C.byYm[nowYm()].g[r.id].actual : 0;
         const goal = mg ? `<div class="tour-goal" style="--c:var(--c${mg.slot})"><p class="tour-goal-k">Main goal</p><p class="tour-goal-n">${esc(mg.name)}</p>${mg.why ? `<p class="tour-goal-w">${esc(mg.why)}</p>` : ''}
           <div class="hg-b" role="img" aria-label="${r.pct} percent"><i style="width:${Math.min(100, r.pct)}%"></i></div>
-          <p class="tour-goal-l"><b>${fmt2(r.saved)}</b> of ${fmt2(r.target)}${dep > 0 && r.pct < 100 ? `, <b>+${fmt2(dep)}</b> a month` : ''}. ${when}</p></div>` : '';
+          <p class="tour-goal-l"><b>${fmt2(r.saved)}</b> of ${fmt2(r.target)}${dep > 0 && r.pct < 100 ? `so far, and your plan adds <b>${fmt2(dep)}</b> a month` : ''}. ${when}</p></div>` : '';
         const ok = f.st === 'even' || f.st === 'spare';
         /* on the app's own address: one tap keeps an encrypted copy in the cloud, so a lost phone does not mean lost numbers */
         const cloud = typeof vaultAvailable === 'function' && vaultAvailable() && !(vault && vault.on)
-          ? `<div class="tour-cloud" id="tourCloud">${LOCK}<div><b>Keep a copy in the cloud</b><p class="cap">Your numbers live in this browser. A cloud copy keeps a second one, locked with a recovery code only you have. New phone, or browser cleared: enter the code and the numbers come back.</p>
-            <div class="row-btns"><button type="button" class="btn small solid" id="tourVaultOn">Keep a copy in the cloud</button><span class="cap">Later: Settings, Cloud copy.</span></div><div class="tour-vault-code" id="tourVaultCode"></div></div></div>` : '';
+          ? `<div class="tour-cloud" id="tourCloud">${LOCK}<div><b>Keep a copy in the cloud</b><p class="cap">Your numbers live in this browser. A cloud copy keeps a second one, locked with a recovery code only you have. On a new phone or after the browser is cleared you open the Burrow, tap Enter your recovery code, type the code in, tap Load my numbers and they come back.</p>
+            <div class="row-btns"><button type="button" class="btn small solid" id="tourVaultOn">Keep a copy in the cloud</button><span class="cap">Or do it later in Settings, find Cloud copy and tap Keep a copy in the cloud</span></div><div class="tour-vault-code" id="tourVaultCode"></div></div></div>` : '';
         return `${homeScene()}${ok ? (f.st === 'spare' ? `<p class="tour-st"><span class="chip tight">${IC.warn}Pay not placed</span></p>` : `<p class="tour-st"><span class="chip good">${IC.ok}On plan</span></p>`) : ''}${goal}<p>Your month:</p>${ledgerHTML(f)}<p>${line}</p>
-        <p>Receipts keeps this true: log what you spend, or upload each month's statement. What is left of Free to spend at month end can go toward a goal. Help, bottom right, has the video and this setup.</p>${cloud}`;
+        <p>After setup, the Receipts tab at the top is where you log what you spend or upload each month's statement, and that keeps these numbers true. Whatever is left of Free to spend at the end of the month can go into a goal. The ? button at the bottom right of every screen is Help, it has the video and this setup.</p>${cloud}`;
       }
       const PF = planFactsOf(S, calcAll(S), sel, true), pay = PF.pay, L = PF.L;   /* model.js */
       const zero = S.ui.preset === 'blank' || !!S.ui.cleared;
       const dn = S.ui.done || {}, billsIn = !!dn.bills || Array.isArray(S.ui.sb); /* the bill screens were answered (even if left at zero) */
-      const msg = !dn.pay || pay <= 0 ? (zero ? 'Pay skipped. Everything is zero until you add numbers.' : 'No pay yet, so the numbers are samples. Add yours on Plan: Month, Details, Money in, Salary. Or Help, Guided setup, to come back here.')
-        : L > 0 ? `Pay entered. <b>${fmt2(L)}</b> is not placed yet: raise a goal or add to free to spend.`
-        : L < 0 ? `Pay entered. The ${billsIn ? 'plan' : 'sample plan'} exceeds pay by <b>${fmt2(PF.shortBy)}</b>${billsIn ? '' : ' because bills are still samples'}. ${billsIn ? 'Lower a bill under Plan.' : 'Enter your real bills next.'}`
-        : 'Pay entered. All of it is assigned.';
-      const bills = zero && !(necTotal() > 0) ? 'Bills and burrows are empty. Open Plan, Monthly bills, and enter what you pay.'
-        : billsIn ? (necTotal() > 0 ? 'Your bills are in. Any line left at zero can be set under Plan, Monthly bills.' : 'Your bills are all at zero so far. Set each line under Plan, Monthly bills.')
-        : 'Bills and burrows are still samples. Open Plan, Monthly bills, and set each line. Or use <b>Set all to zero</b> in Settings.';
+      const msg = !dn.pay || pay <= 0 ? (zero ? 'You skipped pay, so everything is zero until you add numbers.' : 'No pay yet, so the numbers are samples. To add yours go to Plan, then Month, Details, Money in and Salary, or tap Help and then Guided setup to come back here.')
+        : L > 0 ? `Pay entered. <b>${fmt2(L)}</b> is not placed yet, so raise a goal or add to Free to spend.`
+        : L < 0 ? `Pay entered. The ${billsIn ? 'plan' : 'sample plan'} is <b>${fmt2(PF.shortBy)}</b> more than your pay${billsIn ? '' : ' because bills are still samples'}. ${billsIn ? 'Lower a bill under Plan.' : 'Enter your real bills next.'}`
+        : 'Pay entered. All of it is placed.';
+      const bills = zero && !(necTotal() > 0) ? 'Bills and burrows are empty, so open Plan, go to Monthly bills and enter what you pay.'
+        : billsIn ? (necTotal() > 0 ? 'Your bills are in. If a line is still at zero you can set it under Plan in Monthly bills.' : 'Your bills are all at zero so far, so set each line under Plan in Monthly bills.')
+        : 'Bills and burrows are still samples. Open Plan, go to Monthly bills and set each line, or use <b>Set all to zero</b> in Settings.';
       return `${homeScene()}<p>${msg}</p>
       <p>${bills}</p>
-      <p>Help (bottom right) has the video and the setup.</p>`;
+      <p>Help at the bottom right has the video and the setup.</p>`;
     },
     after: () => {
       const b = $('#tourVaultOn'); if (!b) return;

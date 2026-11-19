@@ -58,14 +58,14 @@ function askMsg(role, text) {
 }
 function askIntro() {
   $('#askLog').innerHTML = ''; askTurns = [];
-  askMsg('ai', 'Ask anything about your money or this page. I can see your plan and can propose changes; nothing changes until you tap Apply.' + (askCanAttach ? ' The paperclip adds receipts or statements to read.' : ''));
+  askMsg('ai', 'Ask anything about your money or this page. I can see your plan and suggest changes, and nothing changes until you tap Apply.' + (askCanAttach ? ' The paperclip adds receipts or statements to read.' : ''));
   $('#askSug').hidden = false;
 }
 function askSetBusy(b) { askBusy = b; $('#askSend').hidden = b; $('#askStop').hidden = !b; $('#askIn').disabled = false; }
 /* the owner can require a code word (set on the relay). Asked once, kept in this browser, then the action runs again. */
 function inviteForm(bot, retry) {
   bot.classList.remove('wait'); bot.classList.add('note'); bot.innerHTML = '';
-  const p = document.createElement('p'); p.textContent = inviteCode() ? 'That code word was not accepted. Ask the person who shared this page for the current one.' : 'This page needs the code word from the person who shared it.';
+  const p = document.createElement('p'); p.textContent = inviteCode() ? 'That code word didn\'t work. Ask the person who shared this page for the current one.' : 'This page needs the code word from the person who shared it.';
   const row = document.createElement('div'); row.className = 'row-btns inv-row';
   const inp = document.createElement('input'); inp.type = 'text'; inp.className = 'txt'; inp.autocomplete = 'off'; inp.spellcheck = false; inp.placeholder = 'Code word'; inp.setAttribute('aria-label', 'Code word'); inp.maxLength = 60;
   const b = document.createElement('button'); b.type = 'button'; b.className = 'btn small solid'; b.textContent = 'Continue';
@@ -78,12 +78,12 @@ function askFail(e, bot, text) {
   if (code === 'invite_required') { askTurns.pop(); if (text) $('#askIn').value = text; inviteForm(bot, () => askSend(text)); return; }
   if (code === 'relay_unconfigured') { askTurns.pop(); if (text) $('#askIn').value = text; bot.classList.remove('wait'); bot.classList.add('note'); bot.textContent = (e && e.message) || 'The AI is not switched on for this page yet.'; return; }
   const gone = ['not_granted', 'sampling_disabled', 'not_declared', 'capability_disabled', 'capability_removed'].indexOf(code) >= 0;
-  const copy = code === 'cancelled' ? '' : gone ? 'Ask Claude needs permission to use your Claude account and is unavailable here. The tour is still under Help.'
+  const copy = code === 'cancelled' ? '' : gone ? 'Ask Claude needs permission to use your Claude account and it doesn\'t have that here. Sign in to Claude and tap Try again. The tour is still under Help.'
     : code === 'rate_limited' ? 'Too many requests, or your Claude usage limit is reached. Try again later.'
     : code === 'session_expired' ? 'Signed out of Claude. Sign in again, then ask again.'
-    : code === 'refused' || code === 'empty_completion' ? 'No answer produced. Rephrase the question.'
-    : code === 'prompt_too_large' ? 'Conversation too long. Use New chat to start fresh.'
-    : 'Request failed. Your question is back in the box. Try again.';
+    : code === 'refused' || code === 'empty_completion' ? 'No answer came back. Ask it another way.'
+    : code === 'prompt_too_large' ? 'This conversation got too long. Tap New chat to start fresh.'
+    : 'That didn\'t go through. Your question is back in the box so try again.';
   if (partial && code !== 'refused') { bot.classList.remove('wait'); bot.textContent = partial + (code === 'cancelled' ? '' : '\n\n(Interrupted)'); }
   else if (code === 'cancelled') bot.remove();
   else { bot.classList.remove('wait'); bot.textContent = copy; bot.classList.add('note'); }
@@ -121,25 +121,25 @@ function wireAskAi() {
    The files go to the person's own Claude account only when they press Send. Claude answers with data, the page checks every field,
    shows what it found, and changes nothing until the person taps "Add to my page". One tap undoes it. */
 let askFiles = [], askCanAttach = false, askImg = null, askDoc = null; /* askDoc: PDF limits, only on the relay route */
-const ASK_CAP_OWN = 'Runs on your Claude account; you approve access first. Your numbers go with each question while the box is ticked. Nothing is kept.';
-const ASK_CAP_RELAY = 'Answered by Claude through this page. Your numbers go with each question while the box is ticked. Nothing is kept.';
+const ASK_CAP_OWN = 'Runs on your Claude account and you approve access first. Your numbers go with each question while the box is ticked. This page doesn\'t keep the chat.';
+const ASK_CAP_RELAY = 'Answered by Claude through this page. Your numbers go with each question while the box is ticked. This page doesn\'t keep the chat.';
 const askCap = () => (askFn && askFn.relay ? ASK_CAP_RELAY : ASK_CAP_OWN);
 const viaRelay = () => !!(askFn && askFn.relay);
 const ASK_MAX_TEXT = 3, ASK_TEXT_BYTES = 170000, MON3 = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const dayLabel = d => MON3[+d.slice(5, 7) - 1] + ' ' + (+d.slice(8, 10));
 const fromYm = () => { const t = todayStr().slice(0, 7); return MONTHS.indexOf(t) >= 0 ? t : START; };
 const isTextFile = f => /\.(csv|tsv|txt)$/i.test(f.name) || ['text/csv', 'text/plain', 'text/tab-separated-values'].indexOf(f.type) >= 0 || (isXlsxFile(f) && xlsxCan());
-const oldSheetNote = f => isXlsFile(f) && !isXlsxFile(f) ? `${f.name}: old Excel format. Open it and save as CSV or .xlsx.` : isXlsxFile(f) && !xlsxCan() ? `${f.name}: this browser cannot open Excel files here. Save it as CSV.` : '';
+const oldSheetNote = f => isXlsFile(f) && !isXlsxFile(f) ? `${f.name} is in the old Excel format. Open it and save it as CSV or .xlsx.` : isXlsxFile(f) && !xlsxCan() ? `${f.name} can't be opened because this browser can't read Excel files here. Save it as CSV.` : '';
 const isImageFile = f => !!askImg && askImg.mediaTypes.indexOf(f.type) >= 0;
 /* a rejected PDF where PDFs cannot go up (the viewer's own Claude takes images only): grouped into one line by renderNotes */
 const pdfHereNote = f => ({ pdfHere: f.name });
-const hereLink = () => (RELAY_URL && inArtifact() ? `<a href="${esc(RELAY_URL)}" target="_blank" rel="noopener">Open the app's own address</a>, where PDFs, Excel files and screenshots are read for everyone, no sign-in.` : '');
+const hereLink = () => (RELAY_URL && inArtifact() ? `<a href="${esc(RELAY_URL)}" target="_blank" rel="noopener">Open the app's own address</a>, where anyone can get PDFs, Excel files and screenshots read without signing in.` : '');
 /* file notes as short lines: the PDFs that cannot be read here in one line, everything else one line each */
 function renderNotes(el, notes) {
   if (!el) return; const pdfs = notes.filter(n => n && n.pdfHere).map(n => n.pdfHere), rest = notes.filter(n => typeof n === 'string' && n);
   const lines = [];
   const linkShown = !!(el.parentElement && el.parentElement.querySelector('.src-here:not([hidden])'));
-  if (pdfs.length) lines.push(`${pdfs.length === 1 ? 'This PDF cannot' : 'PDFs cannot'} be read here: ${esc(pdfs.join(', '))}. ` + (linkShown ? 'The link above opens the address where they can.' : hereLink() || 'Use a screenshot of each page, or a CSV from your bank.'));
+  if (pdfs.length) lines.push(`${pdfs.length === 1 ? 'This PDF can\'t' : 'PDFs cannot'} be read here: ${esc(pdfs.join(', '))}. ` + (linkShown ? 'The link above opens the address where they can.' : hereLink() || 'Use a screenshot of each page, or a CSV from your bank.'));
   rest.forEach(n => lines.push(esc(n)));
   el.innerHTML = lines.map(l => `<span class="note-line">${l}</span>`).join(''); el.hidden = !lines.length;
 }
@@ -149,7 +149,7 @@ function renderAskFiles() {
   const box = $('#askFiles'); box.hidden = !askFiles.length;
   box.innerHTML = askFiles.map((f, i) => `<span class="fchip"><span>${esc(f.file.name)} (${sizeLabel(f.file.size)})</span><button type="button" data-rmf="${i}" aria-label="Remove ${esc(f.file.name)}">&times;</button></span>`).join('');
   $('#askSug').hidden = askFiles.length > 0 || $('#askLog').children.length > 1;
-  $('#askIn').placeholder = askFiles.length ? 'Optional note, e.g. "October card statement"' : 'Ask how something works';
+  $('#askIn').placeholder = askFiles.length ? 'A note if you want, like "October card statement"' : 'Ask how something works';
   $('#askCap').textContent = askFiles.length ? (viaRelay() ? 'Files go to Claude when you press Send. This page keeps none of them.' : 'Files go to your own Claude account when you press Send. This page does not keep them.') + ' Nothing changes until you tap Add to my page.' : askCap();
 }
 function askAddFiles(list) {
@@ -157,19 +157,19 @@ function askAddFiles(list) {
   Array.from(list || []).forEach(f => {
     const kind = isTextFile(f) ? 'text' : isImageFile(f) ? 'image' : askDoc && isPdfFile(f) ? 'pdf' : '';
     if (!kind) { notes.push(isPdfFile(f) ? pdfHereNote(f) : oldSheetNote(f) || `${f.name}: only photos, screenshots${askDoc ? ', PDFs' : ''}, CSV and Excel files can be read.`); return; }
-    if (kind === 'text' && f.size > 2000000) { notes.push(`${f.name} is too large. Try one month at a time.`); return; }
-    if (kind === 'pdf' && f.size > askDoc.maxInputBytes) { notes.push(`${f.name} is too large. Export fewer months, or take screenshots of the pages.`); return; }
+    if (kind === 'text' && f.size > 2000000) { notes.push(`${f.name} is too big. Try one month at a time.`); return; }
+    if (kind === 'pdf' && f.size > askDoc.maxInputBytes) { notes.push(`${f.name} is too big. Export fewer months or take screenshots of the pages.`); return; }
     if (kind === 'pdf' && askFiles.filter(x => x.kind === 'pdf').length >= askDoc.maxCount) { notes.push(`Up to ${askDoc.maxCount} PDFs at a time. 2 or 3 months is plenty.`); return; }
-    if (kind === 'image' && askImg && f.size > askImg.maxInputBytes) { notes.push(`${f.name} is too large. Use a screenshot instead of the original photo.`); return; }
-    if (kind === 'text' && askFiles.filter(x => x.kind === 'text').length >= ASK_MAX_TEXT) { notes.push(`Maximum ${ASK_MAX_TEXT} CSV or Excel files at a time.`); return; }
-    if (kind === 'image' && askFiles.filter(x => x.kind === 'image').length >= maxImg) { notes.push(`Maximum ${maxImg} photos at a time. Add the rest after these.`); return; }
+    if (kind === 'image' && askImg && f.size > askImg.maxInputBytes) { notes.push(`${f.name} is too big. Use a screenshot instead of the original photo.`); return; }
+    if (kind === 'text' && askFiles.filter(x => x.kind === 'text').length >= ASK_MAX_TEXT) { notes.push(`Up to ${ASK_MAX_TEXT} CSV or Excel files at a time.`); return; }
+    if (kind === 'image' && askFiles.filter(x => x.kind === 'image').length >= maxImg) { notes.push(`Up to ${maxImg} photos at a time. Add the rest after these.`); return; }
     askFiles.push({ file: f, kind });
   });
   renderAskFiles(); askFilesNote(notes);
 }
 async function readTextFile(f) {
   const buf = await f.arrayBuffer();
-  if (isXlsxFile(f)) { try { return await xlsxToCsv(buf); } catch (e) { throw { code: 'file_rejected', message: `${f.name} could not be read as a spreadsheet. Save it as CSV and try again.` }; } }
+  if (isXlsxFile(f)) { try { return await xlsxToCsv(buf); } catch (e) { throw { code: 'file_rejected', message: `${f.name} couldn't be read as a spreadsheet. Save it as CSV and try again.` }; } }
   for (const label of ['utf-8', 'shift_jis', 'windows-1252']) { try { return new TextDecoder(label, { fatal: true }).decode(buf).replace(/^﻿/, ''); } catch (e) { /* try the next one */ } }
   return new TextDecoder('utf-8').decode(buf);
 }
@@ -259,7 +259,7 @@ function askCard(bot, p, clipped, ctx) {
     scroll: () => { const l = $('#askLog'); l.scrollTop = l.scrollHeight; },
     openLabel: 'Open Receipts',
     open: () => { closeAsk(); switchTab('receipts'); },
-    tail: ' They are in the Receipts tab.'
+    tail: ' They\'re in the Receipts tab.'
   }, ctx || {});
   const el = (tag, cls, t) => { const e = document.createElement(tag); if (cls) e.className = cls; if (t !== undefined) e.textContent = t; return e; };
   const tick = (on, label) => { const l = el('label', 'check rv-tick'), i = el('input'); i.type = 'checkbox'; i.checked = on; l.append(i, el('span', '', label)); return { l, i }; };
@@ -287,9 +287,9 @@ function askCard(bot, p, clipped, ctx) {
   if (plan.length) { const g = el('div', 'grp'), head = el('div', 'rv-h'); head.append(el('b', '', 'Numbers')); g.append(head); plan.forEach(x => g.append(x.t.l)); bot.append(g); }
   const left = [];
   if (p.outside) left.push(`${p.outside} receipt${p.outside === 1 ? '' : 's'} dated outside ${monthLabel(START)} to ${monthLabel(END)}.`);
-  if (p.away) left.push(`${p.away} receipt${p.away === 1 ? ' is' : 's are'} from outside ${monthLabel(START)} to ${monthLabel(END)}. ${p.away === 1 ? 'It is' : 'They are'} kept in your saved copy, but no month on screen shows ${p.away === 1 ? 'it' : 'them'} yet.`);
-  if (p.dropped) left.push(`${p.dropped} row${p.dropped === 1 ? '' : 's'} unreadable.`);
-  if (clipped) left.push('Long file: only the first part was read.');
+  if (p.away) left.push(`${p.away} receipt${p.away === 1 ? ' is' : 's are'} from outside ${monthLabel(START)} to ${monthLabel(END)}. ${p.away === 1 ? 'It is' : 'They\'re'} kept in your saved copy, but no month on screen shows ${p.away === 1 ? 'it' : 'them'} yet.`);
+  if (p.dropped) left.push(`${p.dropped} row${p.dropped === 1 ? '' : 's'} couldn't be read.`);
+  if (clipped) left.push('It\'s a long file so only the first part was read. Send it one month at a time to get the rest.');
   p.skipped.forEach(x => left.push(x));
   if (left.length) bot.append(el('p', 'left', 'Left out: ' + left.join(' ')));
   const btns = el('div', 'row-btns'), go = el('button', 'btn solid small', 'Add to my page'), no = el('button', 'btn small', 'Not now'); go.type = no.type = 'button';
@@ -318,17 +318,17 @@ function askFilesFail(e, bot, retry) {
   if (code === 'invite_required') { inviteForm(bot, retry); return; }
   if (code === 'relay_unconfigured') { bot.classList.remove('wait'); bot.classList.add('note'); bot.textContent = (e && e.message) || 'The AI is not switched on for this page yet.'; return; }
   const gone = ['not_granted', 'sampling_disabled', 'not_declared', 'capability_disabled', 'capability_removed'].indexOf(code) >= 0;
-  const copy = code === 'cancelled' ? '' : gone ? 'Reading files needs permission to use your Claude account and is unavailable here.'
-    : code === 'images_unavailable' ? 'Photos cannot be sent from here. A CSV from your bank still works.'
-    : code === 'image_rejected' ? 'A photo could not be read. Try a clearer one, or a screenshot.'
-    : code === 'pdf_locked' || code === 'file_rejected' ? ((e && e.message) || 'A file could not be read.') + ' Remove it, then send again.'
-    : code === 'prompt_too_large' ? ((e && e.message && /PDF|pages/.test(e.message)) ? e.message : 'Files too long. Add fewer files, fewer pages, or one month at a time.')
+  const copy = code === 'cancelled' ? '' : gone ? 'Reading files needs permission to use your Claude account and it doesn\'t have that here. Sign in to Claude and say yes when it asks, then send the files again.'
+    : code === 'images_unavailable' ? 'Photos can\'t be sent from here. A CSV from your bank still works.'
+    : code === 'image_rejected' ? 'One photo couldn\'t be read. Try a clearer one or a screenshot.'
+    : code === 'pdf_locked' || code === 'file_rejected' ? ((e && e.message) || 'A file couldn\'t be read.') + ' Remove it, then send again.'
+    : code === 'prompt_too_large' ? ((e && e.message && /PDF|pages/.test(e.message)) ? e.message : 'That\'s too much to read in one go. Add fewer files, fewer pages or one month at a time.')
     : code === 'rate_limited' ? 'Too many requests, or your Claude usage limit is reached. Try again later.'
     : code === 'session_expired' ? 'Signed out of Claude. Sign in again, then send the files again.'
-    : code === 'invalid_json' && e && /cut short/.test(e.message || '') ? 'The answer was cut short: too much for one read. Fewer files at a time (2 or 3 months is plenty).'
+    : code === 'invalid_json' && e && /cut short/.test(e.message || '') ? 'The answer was cut short because it was too much for one read. Send fewer files at a time, 2 or 3 months is plenty.'
     : code === 'invalid_json' && e && e.text ? `Claude answered in words instead of numbers: "${String(e.text).replace(/\s+/g, ' ').trim().slice(0, 200)}" Try fewer files, or one month at a time.`
-    : code === 'invalid_json' || code === 'refused' || code === 'empty_completion' ? 'No entries could be made from those files. Try a clearer photo, or one file at a time.'
-    : 'Request failed. Your files are still attached. Try again.';
+    : code === 'invalid_json' || code === 'refused' || code === 'empty_completion' ? 'Nothing could be read from those files. Try a clearer photo or one file at a time.'
+    : 'That didn\'t go through. Your files are still attached so try again.';
   if (code === 'cancelled') bot.remove(); else { bot.classList.remove('wait'); bot.classList.add('note'); bot.textContent = copy; }
 }
 /* sends photos and CSV files to the person's own Claude and returns the checked result (used by the chat and by the Scan card) */
@@ -371,9 +371,9 @@ function askView(mode) {
   $('#askClear').hidden = !chat;
   if (mode === 'off') {
     const why = askReason === 'relay_off' ? 'The AI is not switched on for this page yet.'
-      : askReason === 'no_runtime' ? 'This copy of the page cannot reach Claude. Downloaded files behave this way.'
-      : askReason === 'not_granted' || askReason === 'sampling_disabled' || askReason === 'capability_disabled' ? 'Permission not granted, or not signed in to Claude in this browser.'
-      : 'Claude could not be reached from this view.';
+      : askReason === 'no_runtime' ? 'This copy of the page can\'t reach Claude. That happens with a downloaded file.'
+      : askReason === 'not_granted' || askReason === 'sampling_disabled' || askReason === 'capability_disabled' ? 'Claude doesn\'t have permission here, or you\'re not signed in to Claude in this browser.'
+      : 'Claude couldn\'t be reached from this view.';
     $('#askOffTxt').textContent = why + (askReason === 'relay_off' ? '' : RELAY_URL && inArtifact() ? ' At the app\'s own address it works for everyone.' : ' Open the web link, not a downloaded file, and the chat works.');
     const lk = $('#askOffLink'); if (lk) { if (RELAY_URL && inArtifact()) { lk.href = hasData(S) ? moveLink() : RELAY_URL; lk.textContent = hasData(S) ? 'Open it and move my numbers' : 'Open the app'; } lk.hidden = !RELAY_URL && !inArtifact(); }
   }

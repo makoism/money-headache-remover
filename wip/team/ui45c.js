@@ -8,13 +8,13 @@ const ONB_KINDS = [['bank', 'Bank account'], ['card', 'Credit card'], ['wallet',
 const ONB_WORD = { bank: ['bank account', 'bank accounts'], card: ['card', 'cards'], wallet: ['e-wallet', 'e-wallets'] };
 const onbWalletEg = () => (sym() === '₱' ? 'GCash, Maya' : sym() === '¥' ? 'PayPay, Suica' : 'PayPal, Venmo, Revolut');
 const ONB_FAQ = [
-  ['cash', 'Some of my bills are paid in cash', () => 'Statements only show what went through an account. After the upload, the check screen lists every bill and has Add a line: put the cash ones there. Day-to-day cash spending goes in Receipts any time.'],
-  ['extra', 'I have an expense that is not on any statement', () => 'Add it on the check screen after the upload (Add a line), or later on the Plan tab if it comes every month. A one-off goes in Receipts, Log spend.'],
-  ['wrong', 'What if something gets the wrong category?', () => 'The check screen shows every shop with its category. Tap one and pick another. The app remembers it, so next month it is already right.'],
-  ['safe', 'Is it safe to upload my statements?', () => 'The files are sent once to Claude to be read and this app does not keep them. Only the numbers stay, in this browser. Nobody else can see them, Mako included.'],
-  ['pdf', 'My bank sends PDFs with a password', () => 'Open the PDF with its password, then save or print it as a new PDF without one, or take screenshots of the pages. Both work.'],
-  ['none', 'I have no statements at hand', () => 'Tap Type numbers instead on the next screen. It takes about five minutes. Statements can go in later from Receipts, and the numbers become exact then.'],
-  ['shared', 'I share an account with someone', () => 'Upload it like any other. On the check screen, untick what is not yours, or change an amount to your share.'],
+  ['cash', 'Some of my bills are paid in cash', () => 'Statements only show what went through an account, so cash bills you add yourself. After the upload the check screen has Add a line for them, and day-to-day cash spending goes in Receipts any time.'],
+  ['extra', 'I have an expense that is not on any statement', () => 'After the upload the check screen has Add a line, so put it there, or add it later on the Plan tab if it comes every month. If it\'s a one-off, go to Receipts and tap Log spend.'],
+  ['wrong', 'What if something gets the wrong category?', () => 'The check screen shows every shop with its category, and if one\'s wrong you tap it and pick another. The app remembers and next month it\'s already right.'],
+  ['safe', 'Is it safe to upload my statements?', () => 'The files are sent to Claude once to be read and this app doesn\'t keep them. Only the numbers stay, and they stay in this browser where nobody else can see them, Mako included.'],
+  ['pdf', 'My bank sends PDFs with a password', () => 'Open the PDF with its password, then save or print it as a new PDF without one. Screenshots of the pages work too.'],
+  ['none', 'I have no statements at hand', () => 'Tap Type numbers instead on the next screen, it takes about five minutes. You can put statements in later from Receipts and the numbers become exact then.'],
+  ['shared', 'I share an account with someone', () => 'Upload it like any other, then on the check screen untick what isn\'t yours or change an amount to your share.'],
 ];
 const onbFaqFor = text => {
   const t = text.toLowerCase();
@@ -46,34 +46,34 @@ const onbBoxLabel = (b, all) => b.name || ((b.kind === 'bank' ? 'Bank account' :
 function onbScript() {
   const o = onbState(), nm = firstName(), m = [], me = t => m.push(['me', t]), ai = t => m.push(['ai', t]);
   ai(`${nm ? `Hi ${nm}. ` : ''}Before the uploads, a few quick questions so the right upload boxes are ready for you.`);
-  ai('Where does your money come in and go out? Pick all that apply.');
+  ai('Where does your money come in and go out? Pick every one you use.');
   if (o.stage === 'kinds') return m;
   const ks = ONB_KINDS.filter(x => o.k[x[0]]);
   me(ks.length ? ks.map(x => x[1]).join(', ') : 'None of these');
   const acc = ['bank', 'card', 'wallet'].filter(k => o.k[k]);
   if (!acc.length) {
-    ai('Then there are no statements to upload, and that is fine. On the next screen tap Type numbers instead: pay, bills and burrows, about five minutes.');
-    if (o.k.cash) ai('Day-to-day cash goes in Receipts. Log it as you spend, or once a week.');
+    ai('Then there\'s nothing to upload. On the next screen tap Type numbers instead and put in your pay, bills and burrows, it takes about five minutes.');
+    if (o.k.cash) ai('Day-to-day cash goes in Receipts, you log it as you spend or once a week.');
     return onbTail(m, o);
   }
   ai('How many of each?');
   if (o.stage === 'count') return m;
   me(acc.map(k => { const n = +o.n[k] || 1; return `${n}${n >= 4 ? '+' : ''} ${ONB_WORD[k][n > 1 ? 1 : 0]}`; }).join(', '));
-  ai(`What do you call them? Use your own words, for example ${acc.map(k => (k === 'bank' ? (sym() === '₱' ? 'BPI' : sym() === '¥' ? 'Resona' : 'Chase') : k === 'card' ? (sym() === '₱' ? 'BDO Visa' : sym() === '¥' ? 'Rakuten Card' : 'Amex') : onbWalletEg().split(', ')[0])).join(', ')}. The app will use these names everywhere. Optional.`);
+  ai(`What do you call them? Use your own words, like ${acc.map(k => (k === 'bank' ? (sym() === '₱' ? 'BPI' : sym() === '¥' ? 'Resona' : 'Chase') : k === 'card' ? (sym() === '₱' ? 'BDO Visa' : sym() === '¥' ? 'Rakuten Card' : 'Amex') : onbWalletEg().split(', ')[0])).join(', ')}. The app uses these names everywhere, and you can skip this.`);
   if (o.stage === 'names') return m;
   const bx = onbBoxes(); me(bx.some(b => b.name) ? bx.map(b => onbBoxLabel(b, bx)).join(', ') : 'Skip names');
   ai(`Here are your upload boxes: ${bx.map(b => onbBoxLabel(b, bx)).join(', ')}. Each takes the last 2 or 3 months, as PDF, CSV or Excel exports, or screenshots of the transaction list.`);
-  if (o.k.cash) ai('Cash does not show on statements. The check screen after the upload has a line for it, and Receipts takes cash any time.');
+  if (o.k.cash) ai('Cash doesn\'t show on statements, so the check screen after the upload has a line for it and Receipts takes cash any time.');
   return onbTail(m, o);
 }
 function onbTail(m, o) {
   const acc = ['bank', 'card', 'wallet'].some(k => o.k[k]);
   if (acc) {
-    m.push(['ai', 'Why statements: they already know where your money went, so there is nothing to guess or remember, and the numbers come out exact.']);
-    m.push(['ai', 'What happens: each file is sent once to Claude, an AI, which turns its rows into a table (date, description, amount). This app then does all the arithmetic itself: your pay, each bill as a monthly average, your balance. The files are not kept.']);
-    m.push(['ai', 'How it is sorted: every shop and payee gets a category, like rent, food, transport, subscriptions or play. The next screen shows every number and category before anything is used. Tap one to change it, and the app remembers your choice for next month.']);
+    m.push(['ai', 'Statements already know where your money went, so there\'s nothing to guess or remember and the numbers come out exact.']);
+    m.push(['ai', 'Each file is sent once to Claude, an AI, which turns its rows into a table of date, description and amount. This app then does all the maths itself, so your pay, each bill as a monthly average and your balance. The files aren\'t kept.']);
+    m.push(['ai', 'Every shop and person you pay gets a category, like rent, food, transport, subscriptions or play. The next screen shows you every number and category before anything is used, and if one is wrong you tap it to change it and the app remembers for next month.']);
   }
-  m.push(['ai', 'Any questions before you start? Tap one below or type your own.']);
+  m.push(['ai', 'Questions before you start? Tap one or type your own.']);
   o.log.forEach(x => m.push(x));
   return m;
 }
@@ -105,7 +105,7 @@ async function onbAsk(q) {
   onbSay('me', q.slice(0, 300)); sfx('tap');
   const faq = onbFaqFor(q);
   if (!askFn) await connectAsk().catch(() => {});
-  if (!askFn) { onbSay('ai', faq ? faq[2]() : 'Typed questions need Claude, which this copy of the page cannot reach. The Ask button on Home answers anything once setup is done, or tap one of the questions below.'); onbPaint(true); return; }
+  if (!askFn) { onbSay('ai', faq ? faq[2]() : 'Typed questions need Claude, and this copy of the page can\'t reach it. Tap one of the questions below, or use the Ask button on Home once setup is done.'); onbPaint(true); return; }
   onbBusy = true; onbPaint(true);
   try {
     const turns = onbState().log.slice(-8).map(([r, t]) => ({ role: r === 'me' ? 'user' : 'assistant', content: t }));
@@ -113,8 +113,8 @@ async function onbAsk(q) {
     turns[0] = { role: 'user', content: ONB_GUIDE + `\n\nTheir currency: ${sym()}.\n\nQuestion: ` + turns[0].content };
     const r = await askFn(turns, { cache: false, modelTier: 'quick' });
     const t = String((r && r.text) || '').replace(/\s*—\s*/g, ', ').trim();
-    onbSay('ai', t || (faq ? faq[2]() : 'No answer came back. Try again, or tap one of the questions below.'));
-  } catch (e) { onbSay('ai', faq ? faq[2]() : 'That did not go through. Try again in a moment, or tap one of the questions below.'); }
+    onbSay('ai', t || (faq ? faq[2]() : 'Nothing came back. Try again or tap a question below.'));
+  } catch (e) { onbSay('ai', faq ? faq[2]() : 'That didn\'t go through. Try again in a moment or tap a question below.'); }
   onbBusy = false; onbPaint(true);
 }
 /* the answers become the boxes on the next screen. Boxes that already hold files, or that the person named there, stay. */

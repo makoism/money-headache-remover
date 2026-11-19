@@ -77,15 +77,15 @@ function renderBackupNudge() {
     html = `<div class="hn-t"><b>Numbers arrived from the Claude link</b><span>${hasData(S) ? 'This page already has numbers of its own. Replace them with the ones that just arrived?' : 'Load them here?'}</span></div><div class="hn-b"><button type="button" class="btn small solid" data-move-load>${hasData(S) ? 'Replace with the arrived numbers' : 'Load them'}</button><button type="button" class="link" data-move-no>Keep what is here</button></div>`;
   } else if (vaultNote && vaultNote.kind === 'newer') {
     const when = vaultNote.when ? new Date(vaultNote.when).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
-    html = `<div class="hn-t"><b>Newer copy in the cloud</b><span>Saved from another device${when ? ' on ' + when : ''}. Load it here, or keep this device's numbers and overwrite it.</span></div><div class="hn-b"><button type="button" class="btn small solid" data-vault-load>Load it</button><button type="button" class="link" data-vault-keep>Keep mine</button></div>`;
+    html = `<div class="hn-t"><b>Newer copy in the cloud</b><span>Saved from another device${when ? ' on ' + when : ''}. Tap Load it to load it here, or Keep mine to keep this device's numbers and send them to the cloud in its place.</span></div><div class="hn-b"><button type="button" class="btn small solid" data-vault-load>Load it</button><button type="button" class="link" data-vault-keep>Keep mine</button></div>`;
   } else if (vault.on && vault.failAt) {
     /* LAUNCH_CHECKLIST E9: a cloud save that failed is said on Home too, until a save works */
     html = `<div class="hn-t"><b>The cloud copy is behind</b><span>Changes made since ${vaultWhen(vault.failAt)} are on this device only. It tries again by itself on your next change.</span></div><div class="hn-b"><button type="button" class="btn small solid" data-vault-retry>Send now</button></div>`;
   } else if (vault.on && cloud && !S.ui.vaultSeen && !bkNote) {
-    html = `<div class="hn-t"><b>Save your recovery code</b><span>Your numbers are backed up to the cloud, encrypted. This code is the only way to open them on another phone.</span></div><div class="vault-wrap" data-vault-code></div>`;
+    html = `<div class="hn-t"><b>Save your recovery code</b><span>Your numbers have an encrypted cloud copy now. This code is the only way to open it on another phone.</span></div><div class="vault-wrap" data-vault-code></div>`;
   } else if (bkNote) {
     const when = bkNote.t ? new Date(bkNote.t).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
-    html = `<div class="hn-t"><b>Numbers restored</b><span>This page had lost its saved numbers. It loaded the copy kept in this browser${when ? ' from ' + when : ''}. Save a backup file to be safe.</span></div><div class="hn-b"><button type="button" class="btn small solid" data-bk-now>Save a copy</button><button type="button" class="link" data-bk-ok>OK</button></div>`;
+    html = `<div class="hn-t"><b>Numbers restored</b><span>This page lost its saved numbers so it loaded the copy kept in this browser${when ? ' from ' + when : ''}. Tap Save a copy to keep a backup file as well.</span></div><div class="hn-b"><button type="button" class="btn small solid" data-bk-now>Save a copy</button><button type="button" class="link" data-bk-ok>OK</button></div>`;
   } else if (backupDue() && $('#hNext').hidden) {
     const a = bkAge();
     {
@@ -121,7 +121,7 @@ function wireSafe() {
     if (e.target.closest('[data-vault-keep]')) { vaultNote = null; vaultPush(true); paintVault(); renderBackupNudge(); return; }
     if (e.target.closest('[data-bk-now]')) {
       const ok = bkRun ? await bkRun() : false;
-      cheer(ok ? 'Backup saved.' : 'Not saved. Settings has Copy text.');
+      cheer(ok ? 'Backup saved.' : 'Not saved. Go to Settings, tap Copy text and paste it into a note instead.');
       if (ok) bkNote = null; renderBackupNudge();
     }
   });
