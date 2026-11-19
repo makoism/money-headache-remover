@@ -127,4 +127,5 @@ for (let t = 0; t < N; t++) {
 /* spending more than a place holds: the docs say spending past the plan is real money, but not which place it comes from */
 rep.waitQ('L1', 'spending more than Bills or Free to spend holds: refused, taken from the Chest, or the place goes below zero');
 rep.waitQ('L4', 'what the Free to spend number shows in Wallet mode (handed out this month, or since the last pay day)');
+require('./ledger_personas_run')(M, rep);
 rep.end();

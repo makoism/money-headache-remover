@@ -14,3 +14,7 @@ Written 2026-11-19 by side session C, before the features exist. **All three tes
 - **Fixtures** are saved copies written by each old build's own save code, with made-up numbers (bank start 23,400; goal starts 6,100 and 2,750; pay 41,000; receipts 120, 350, 80; food 4,321 in Feb 2027 only). Builds 25.0 to 27.7 took one receipt and 37.2 took two; the fixture records exactly what took.
 - **The tests were checked against scratch mocks** (not committed): a window anchored at the first month passes and a naive window that re-applies the bank start fails; a correct ledger passes and one that is off by one cent on a take out fails; a mock migration passes all 419 checks.
 - When a feature lands, move its test into `tests/verify.sh` and delete its `NOT BUILT` line.
+
+## The ledger design proof (side session, 2026-11-19)
+- `ledger_ref.js` is a tiny reference model of `wip/team/LEDGER_DESIGN.md` (tests only, never app code). `ledger_personas.js` holds seven made-up personas and two 38.31 migrations; `ledger_personas_run.js` checks them from `ledger_conservation.js` (identities I1 to I10, worked out on the account side, independent of the model).
+- Run the design proof: `MODEL=tests/next/ledger_ref.js node tests/next/ledger_conservation.js` (PASS). Against model.js it stays NOT BUILT until B1 offers `ledgerFresh`, `ledgerAdd`, `ledgerUndo`, `ledgerRedo`, `placesOf`, `migrate3831` (names in `lib.js` MAYBE).
