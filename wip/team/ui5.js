@@ -155,24 +155,31 @@ function wire() {
     } catch (e) { msg.textContent = 'Not a valid backup. Use the whole file, or paste all of the copied text.'; }
   };
   /* a file for the person to keep. In the Claude viewer plain downloads are blocked, so the viewer's own save prompt is used there; elsewhere the browser downloads it. */
-  const saveOut = async (name, text, mime, msg, alt) => {
+  const saveOut = async (name, text, mime, msg, alt0) => {
+    const base = t => { msg.textContent = t; };   /* a function is the other way out when no file can be saved (J-009): it runs, then says what it did */
+    const out = async t => { base(t + (typeof alt0 === 'function' ? await alt0() : alt0)); return false; };
     if (inArtifact()) {
       let dl = null; try { dl = await window.claude.use('downloads'); } catch (e) { dl = null; }
-      if (!dl || typeof dl.save !== 'function') { msg.textContent = 'Downloads are unavailable in this view.' + alt; return false; }
+      if (!dl || typeof dl.save !== 'function') return out('Downloads are unavailable in this view.');
       try { await dl.save({ filename: name, data: text }); msg.textContent = 'Saved.'; sfx('next'); return true; }
-      catch (e) { msg.textContent = e && e.code === 'declined' ? 'Not saved.' : 'Save failed.' + alt; return false; }
+      catch (e) { if (e && e.code === 'declined') { base('Not saved.'); return false; } return out('Save failed.'); }
     }
     try {
       const blob = new Blob([text], { type: mime }), url = URL.createObjectURL(blob), a = document.createElement('a');
       a.href = url; a.download = name; document.body.appendChild(a); a.click();
       setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1500); msg.textContent = 'Saved to downloads.'; sfx('next'); return true;
-    } catch (e) { msg.textContent = 'File not saved by this browser.' + alt; return false; }
+    } catch (e) { return out('File not saved by this browser.'); }
+  };
+  /* Export spreadsheet with no way to save a file: the same table goes to the clipboard, tab separated, so it pastes into cells (J-009) */
+  const csvCopy = async () => {
+    try { const t = sheetRows(S, calcAll(S)).map(r => r.map(c => String(c == null ? '' : c).replace(/[\t\r\n]+/g, ' ')).join('\t')).join('\n'); await navigator.clipboard.writeText(t); return ' The table was copied instead, so you can paste it into Sheets or Excel.'; }
+    catch (e) { return ' The table could not be copied either. Copy text, above, still keeps your numbers.'; }
   };
   const stamp = () => { const d = new Date(), z = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}`; };
   /* the file save is shared with the reminder on Home (bkRun, ui43.js); a saved file counts as a backup */
   bkRun = async () => { const ok = await saveOut(`mhr2000-${stamp()}.json`, JSON.stringify(S), 'application/json', $('#bkMsg'), ' Use Copy text.'); if (ok) markBackup(); return ok; };
   $('#bkSave').addEventListener('click', () => { bkRun(); });
-  $('#bkCsv').addEventListener('click', () => { let t; try { t = sheetCsv(S, calcAll(S)); } catch (e) { $('#bkMsg').textContent = 'Spreadsheet could not be built.'; return; } saveOut(`mhr2000-plan-${stamp()}.csv`, t, 'text/csv;charset=utf-8', $('#bkMsg'), ''); });
+  $('#bkCsv').addEventListener('click', () => { let t; try { t = sheetCsv(S, calcAll(S)); } catch (e) { $('#bkMsg').textContent = 'Spreadsheet could not be built.'; return; } saveOut(`mhr2000-plan-${stamp()}.csv`, t, 'text/csv;charset=utf-8', $('#bkMsg'), csvCopy); });
   $('#bkFileBtn').addEventListener('click', () => $('#bkFile').click());
   $('#bkFile').addEventListener('change', e => {
     const f = e.target.files && e.target.files[0], msg = $('#bkMsg'); e.target.value = ''; if (!f) return;

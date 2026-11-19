@@ -259,7 +259,7 @@ The one warning the check prints is H-023, which adds a bold button name on purp
 @@ J-009 | ui5.js | AI: no | Mako: no B2 unavailable | Next: yes
 - Downloads are unavailable in this view.
 + This view can't download files.
-# the code adds " Use Copy text." after it for Save file. For Export spreadsheet the code adds nothing and no other way out is on that screen, so no step is named (needs a code change, not a copy row)
+# the code adds " Use Copy text." after it for Save file. For Export spreadsheet the code copies the table and says so (test export_way_out.js)
 @@ J-010 | ui5.js | AI: no | Mako: no B14 clipped | Next: yes
 - Save failed.
 + The save didn't work so try it again.
