@@ -26,6 +26,10 @@ Coordinator 2 (session_01BFpKEXXUx4uUjZGJny9MyJ) passed the 150k mark and handed
 - Mako (04:39 UTC): the 3D world is desktop only (DECISIONS.md last section). He has been greeted in this chat. Offered him the cloud copy help text; not shown yet.
 - Running now: MAIN 2, M2, G, H, N2.
 
+- SIDE G vault and relay is done (side/vault-server 65b1cdc, not merged; merges only after v1 is deployed and Mako says go). Relay fixes S6, S5/S11, S10, S12, L2, L5 in functions/api/ai.js; by its report vault_server 53, vault_clients 28, relay_security 26, relay_clients 27 pass. Asked G: daily cap per address becomes a setting defaulting to 300; a "Before this merges" list in LANE_vault.md. MAIN 2 was given: the page_assistant.js fail "Home shows goals first" (also on plain wip-38.31) and the missing fixture /tmp/v28/wallet.xlsx for page_import.js. For the deploy session and DEPLOY_RUNBOOK.md (side/deploy-prep): L3 in worker/index.js, and the live Worker must have NO ANTHROPIC_BASE_URL set or the relay refuses every call after the vault merge. Add that to Mako's dashboard check (security B4) when it is next mentioned.
+- Mako was shown the cloud copy help text (entry 20) in chat at 04:40 UTC; no reaction yet.
+- Running now: MAIN 2, M2, H, N2 (G finishing one small change).
+
 ### Mako today (all recorded in DECISIONS.md, last eight sections; read them)
 Pace (use the full allowance by Sunday 22 Nov, again by Wed 25 or Thu 26). The team's shape answered by him (standard Philippine accounts, monthly pay with separate pay supported, cards core, iPhone and Android). The copy must not sound like AI and must sound like him (few full stops, his space hyphen space, joined sentences, normal conversation); all copy in one batch at the end, then ONE pass with him on the preview. The cloud copy must explain itself step by step (E15, v1). Yen stays default. He likes short updates: what was found, what was done. He said: ask him when context is needed. He dictates by voice; messages can cut off.
 
