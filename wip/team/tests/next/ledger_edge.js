@@ -196,6 +196,23 @@ const all = (tag, p, want) => { for (const k in want) eq(`${tag} ${k}`, k.includ
     const plain = L.migrate3831({ cur: 'PHP', bankStart: 10, planFigures: { bankEnd: 5 } }, '2026-11-20'); rep.ok(plain.oldFigures.plan.bankEnd === 5, 'W4 the plain shape still carries its own planFigures'); }
 }
 
+{ /* W3 (wiring lane): a debt of Cards and loans keeps its plan.debts id. Real fields: { id, name, kind, balance, apr, min, extra } */
+  const saved = { v: 1, rev: 2, ui: { cur: '₱' }, cfg: { bankNow: 21730.55, bankNowAt: '2026-11-19' }, plan: { lines: [], goals: [], debts: [
+    { id: 'd9q3s1', name: 'Home credit', kind: 'loan', balance: 46000, apr: 18.5, min: 2300, extra: 0 },
+    { id: 'd9qvk2', name: 'Tita Bing', kind: 'personal', balance: 5000, apr: 0, min: 500, extra: 0 },
+    { id: 'bank', name: 'Id already in use', kind: 'loan', balance: 700, apr: 0, min: 0, extra: 0 },
+    { id: 'not an id!', name: 'Odd id', kind: 'card', balance: 300, owed: 999, apr: 42, min: 50, extra: 0 }] } };
+  const S = L.migrate3831(JSON.parse(J(saved)), '2026-11-20'), p = proof('W3 debts', S), by = id => S.accounts.find(a => a.id === id), of = id => S.accounts.find(a => a.debt === id) || {};
+  rep.ok(!!by('d9q3s1') && by('d9q3s1').type === 'loan' && by('d9q3s1').debt === 'd9q3s1' && by('d9q3s1').name === 'Home credit', 'W3 the loan account carries the plan.debts id as its id and in the field debt');
+  rep.ok(!!by('d9qvk2') && by('d9qvk2').debt === 'd9qvk2' && by('d9qvk2').kind === 'personal', 'W3 the second debt too, with its kind');
+  rep.ok(of('bank').type === 'loan' && of('bank').id !== 'bank' && by('bank').type === 'bank', 'W3 a debt id that is already an account id gets another account id and keeps its own in debt');
+  rep.ok(of('not an id!').type === 'loan' && /^[A-Za-z0-9_-]+$/.test(of('not an id!').id || ''), 'W3 a debt id that cannot be an account id is still kept in debt');
+  all('W3 debts', p, { owed: 52000, total: 21730.55, 'accounts.d9q3s1': 46000, 'accounts.d9qvk2': 5000 });
+  eq('W3 the balance is read from balance, no other name', p.accounts[of('not an id!').id], 300); eq('W3 the debt with a used id', p.accounts[of('bank').id], 700);
+  rep.ok(S.oldFigures.notes.length === 0 && S.ledger.every(e => e.src === 'migration'), 'W3 nothing left out');
+  rep.ok(new Set(S.accounts.map(a => a.id)).size === S.accounts.length, 'W3 no two accounts share an id');
+}
+
 /* ===== Philippine shapes (side L). How each is written with the kinds the design has ===== */
 { /* card cut-off day (Mika, thing 8): spent after the cut-off is owed and set aside, but not in the bill due next */
   const S = fresh('PHP', [{ id: 'ub', name: 'UnionBank', type: 'bank' }, { id: 'ubc', name: 'UnionBank card', type: 'card', payDay: 7, cutDay: 17 }]);
