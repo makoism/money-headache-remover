@@ -2,7 +2,30 @@
 
 The coordinator is the one session Mako talks to. It records his decisions in DECISIONS.md (and NORTH_STAR.md, LAUNCH_CHECKLIST.md), starts and messages working sessions, and brings their results back to him. Working sessions take direction from nowhere else. The coordinator hands off at about 150k tokens of history, like every session.
 
-## 2026-11-19, handoff 3 (coordinator 3 to coordinator 4) READ THIS FIRST
+## 2026-11-19, handoff 4 (coordinator 4 to coordinator 5) READ THIS FIRST
+
+Coordinator 4 (session_01BFpKEXvqtaKqkyg3aNk3hU) was at 189k tokens at 10:25 UTC and handed off. A coordinator starts with a large fixed load, so the 150k mark comes after about 20 short turns: read notifications, act, answer in a few lines, never paste reports.
+
+### Usage
+The five-hour limit stopped every session from about 05:45 to 09:30 UTC. At 10:25 UTC the meter shows a WEEKLY warning (seven day window, resets about Sun 22 Nov 00:00 UTC by the session record). Tell Mako once in one line; keep to MAIN plus at most one lane; no lane without a clear need before v1.
+
+### Running sessions (tell each your session id first)
+- MAIN 5, session_01BFpKEWWxvkJabWSHhA7nC3, wip-38.31, the only one on app files; 117k tokens at 10:25 UTC, so it will hand off before the QC run (it was told: hand off if near 120k before QC). Landed: QC briefs with jobs (cddf27a), 12 of 13 error rows (a1c44b0), H1 findings 1, 8 (db6c42b: the planned bank on Home is named "Bank at month end") and 2, 3 (c009424). Still to do, in order: the rest of H1, J-009 small code change with a test, Help reachable in setup if small (inside a burrow and the world view go after v1), finish and run tests/qc/screen_pack_panels.js (left half done by MAIN 4 at 3f7d83b), apply the copy batch in ONE commit (454 rows check clean), golden re-record, verify.sh, ONE check.sh full, candidate, ONE QC run (both gates, qc-voice, beginner walk with jobs, E15 novice move between two browsers, the "Lito" walk from side/persona-walks 77b2d02), then the private preview link, 412x915 screenshots under wip/team/preview/, STEP8_COMPARE.md summary. When it hands off, start MAIN 6 from RESUME.md section 0 top entry with a prompt like MAIN 5's: only session on app files, report to the coordinator, tests first, resume timer, protect its size with helper agents and short reports, never push to main. A fresh main session for the QC run alone is fine.
+- Stopped, do not message: MAIN 3, MAIN 4 (session_01BFpKEWy6YG3aHjgq823AHA, told to stop at 255k), SIDE N3, N4, S.
+
+### Done since handoff 3 (branches kept, nothing merges before v1)
+- side/ledger-core d096d72 (N3 then N4): all ten gaps W1 to W5 and G1 to G5 closed, the moved-opening undo fixed, docs updated; LEDGER CORE ALL PASS by report. The one ledger branch for after v1. Open, none blocks wiring: undo the adjust when a late statement arrives; history before the first typed balance; a kind shift; ledger_ref migrate3831 takes the plain shape only.
+- side/persona-walks 77b2d02 (S, faster model): PERSONA_WALKS.md, 7 walks, 63 v1 tasks, 40 team tasks; PERSONAS_PH.md corrected.
+- On wip-38.31 from MAIN 3 and 4: side/phone-fixes merged, act_keep and exact Undo, A11, F4, wallet.xlsx in setup_env.sh, the welcome screen has the cloud copy steps, copy tables in the branch with the privacy rows rewritten.
+- Coordinator's calls: act_keep stays as built (16 single typed values named in act_keep.known). tests/page_import.js and page_assistant.js cannot run in these containers (no wrangler, install refused, not in check.sh): recorded as not run, say so in the QC note for Mako.
+
+### Mako
+He has not written in this chat since handoff 3. When he writes: greet him in two lines with where things stand. Everything in "Open with Mako" of handoff 3 below still stands. Add for his copy pass: "Monthly bills" (new Plan row name) and "Bank at month end" (new name for the planned bank on Home) are labels he has not seen. Add for the preview note: the two page tests not run here; Help is not reachable inside a burrow.
+
+### Timers
+Coordinator 4's check-in trig_01EYU5mUN12uruSbrdXpeN5r (10:55 UTC) fires into coordinator 4, which only forwards. Set your own.
+
+## 2026-11-19, handoff 3 (coordinator 3 to coordinator 4)
 
 Coordinator 3 (session_01BFpKEWbWX57dzJueLvseiT) passed the 150k mark at 05:31 UTC and handed off. Its running log is the section "handoff 2" below ("Coordinator 3 took over" and the bullets after it); this is the state.
 
