@@ -1,5 +1,5 @@
 /* F1: the corner squirrel (squirrel.js SQ.stash) plays on every screen size, phones included, and its panel sits clear of every control that stays on screen
-   (Ask, Help, the tab bar, anything fixed or sticky that can be tapped), inside the screen. With reduced motion it does not play (by design).
+   or any number (text with a digit), at any frame of the play, with the Home "This month" card in view. Where no spot is free it may show smaller or not at all. With reduced motion it does not play (by design).
    Run: node tests/qc/phone_squirrel.js   (DEVS=iphone13,iphoneSE to pick sizes) */
 const L = require('./phone_lib.js');
 const DEVS = (process.env.DEVS || 'iphoneSE,iphone13,pixel5,big,land8,land,tablet,desktop,iphoneSE+bar,iphone13+bar').split(',');
@@ -10,23 +10,26 @@ const DEVS = (process.env.DEVS || 'iphoneSE,iphone13,pixel5,big,land8,land,table
     const { b, p, errs } = await L.open({ dev, query: 'sqtest' });
     /* DEVS entries ending in +bar get a fixed button across the bottom left, where Ask and Help sat on 38.28 phones: the panel must move above it */
     if (bar) await p.evaluate(() => { const e = document.createElement('button'); e.id = 'testBar'; e.textContent = 'Ask'; e.style.cssText = 'position:fixed;left:0;bottom:66px;width:300px;height:44px;z-index:40'; document.body.append(e); });
+    /* the Home "This month" card in view, then the squirrel; every 250 ms through the whole play, nothing with a digit and no control may be under the panel */
+    await p.evaluate(() => { const m = document.querySelector('#hMap:not([hidden])') || document.querySelector('#hero'); if (m) m.scrollIntoView({ block: 'start' }); }); await L.w(500);
     const ok = await p.evaluate(() => window.__sq.stash());
-    await L.w(1400);
-    const r = await p.evaluate(() => {
-      const cv = [...document.querySelectorAll('body > canvas')].find(c => c.style.zIndex === '70');
-      if (!cv) return { shown: false };
-      const a = cv.getBoundingClientRect();
-      const fixedUp = e => { for (let n = e; n && n !== document.body; n = n.parentElement) { const ps = getComputedStyle(n).position; if (ps === 'fixed' || ps === 'sticky') return true; } return false; };
-      const vis = e => { const q = e.getBoundingClientRect(), cs = getComputedStyle(e); return q.width > 0 && q.height > 0 && cs.visibility !== 'hidden' && cs.display !== 'none' && !e.closest('[hidden]'); };
-      const hits = [...document.querySelectorAll('button, a[href], input, select, textarea, [role=button], [tabindex]:not([tabindex="-1"])')].filter(e => vis(e) && fixedUp(e)).map(e => ({ e, q: e.getBoundingClientRect() }))
-        .filter(({ q }) => q.left < a.right && q.right > a.left && q.top < a.bottom && q.bottom > a.top)
-        .map(({ e, q }) => `${e.id || e.className || e.tagName} (${Math.round(q.left)},${Math.round(q.top)} ${Math.round(q.width)}x${Math.round(q.height)})`);
-      return { shown: true, rect: [a.left, a.top, a.width, a.height].map(Math.round), inside: a.left >= 0 && a.top >= 0 && a.right <= innerWidth && a.bottom <= innerHeight, hits };
+    const under = () => p.evaluate(() => {
+      const cv = [...document.querySelectorAll('body > canvas')].find(c => c.style.zIndex === '70'); if (!cv) return null;
+      const a = cv.getBoundingClientRect(), hit = q => q.width > 0 && q.height > 0 && q.left < a.right && q.right > a.left && q.top < a.bottom && q.bottom > a.top, out = [];
+      const vis = e => !e.checkVisibility || e.checkVisibility({ visibilityProperty: true, opacityProperty: true });
+      document.querySelectorAll('button, a[href], input, select, textarea, [role=button], summary').forEach(e => { if (!cv.contains(e) && hit(e.getBoundingClientRect()) && vis(e)) out.push('control ' + (e.id || e.className || e.tagName)); });
+      const tw = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), rg = document.createRange();
+      for (let n = tw.nextNode(); n; n = tw.nextNode()) { if (!/\d/.test(n.nodeValue) || !n.parentElement || n.parentElement.closest('script, style, [hidden]')) continue; rg.selectNodeContents(n); if (hit(rg.getBoundingClientRect()) && vis(n.parentElement)) out.push('number "' + n.nodeValue.trim().slice(0, 20) + '"'); }
+      return { rect: [a.left, a.top, a.width, a.height].map(Math.round), inside: a.left >= 0 && a.top >= 0 && a.right <= innerWidth && a.bottom <= innerHeight, out };
     });
+    let shown = null; const covered = new Set(); let outside = false;
+    for (let t = 0; t < 7400; t += 250) { await L.w(250); const r = await under(); if (!r) continue; shown = shown || r.rect; if (!r.inside) outside = true; r.out.forEach(x => covered.add(x)); }
     const tag = `${d0} ${L.DEVS[dev].w}x${L.DEVS[dev].h}`;
-    console.log(`${tag}: stash ${ok ? 'agreed' : 'refused'}, panel ${r.shown ? r.rect.join(' ') : 'not shown'}${r.hits && r.hits.length ? ', covers ' + r.hits.join('; ') : ''}`);
-    if (!ok || !r.shown) fails.push(`${tag}: the corner squirrel did not play`);
-    else { if (!r.inside) fails.push(`${tag}: panel ${r.rect.join(' ')} is not fully on screen`); if (r.hits.length) fails.push(`${tag}: panel covers ${r.hits.join('; ')}`); }
+    console.log(`${tag}: stash ${ok ? 'agreed' : 'refused'}, panel ${shown ? shown.join(' ') : 'not shown (no free spot)'}${covered.size ? ', covers ' + [...covered].join('; ') : ''}`);
+    if (!ok) fails.push(`${tag}: the corner squirrel refused to play`);
+    if (outside) fails.push(`${tag}: panel not fully on screen`);
+    if (covered.size) fails.push(`${tag}: panel covers ${[...covered].join('; ')}`);
+    if (dev === 'desktop' && !bar && !shown) fails.push(`${tag}: no panel at all on a wide screen`);
     const again = await p.evaluate(() => window.__sq.stash()); if (again) fails.push(`${tag}: a second call right after played again (150 s rule)`);
     if (errs.length) fails.push(`${tag}: ${errs.join(' | ').slice(0, 200)}`);
     await b.close();

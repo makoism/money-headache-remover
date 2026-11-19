@@ -118,15 +118,21 @@ const SQ = (() => {
     for (let i = 0; i < coins; i++) { const x = cx - 4 + (i % 4) * 2 + (i > 3 ? 1 : 0), y = base - 2 - Math.floor(i / 4) * 2; p(x, y, HC.coin); p(x + 1, y, HC.coin); p(x, y + 1, HC.coinD); p(x + 1, y + 1, HC.coinD); }
     g.fillStyle = HC.dirt; g.fillRect(0, base + 2, 400, 3);
   }
-  /* the corner panel never sits on a control that stays on screen (Ask, Help, a bar): if one is under it, the panel moves up above it. Measured once when it shows. */
-  function clear(cv) {
-    const fixed = e => { for (let n = e; n && n !== document.body; n = n.parentElement) { const ps = getComputedStyle(n).position; if (ps === 'fixed' || ps === 'sticky') return true; } return false; };
-    for (let i = 0; i < 4; i++) {
-      const a = cv.getBoundingClientRect(); let top = Infinity;
-      document.querySelectorAll('button, a[href], input, select, textarea, [role=button]').forEach(e => { if (cv.contains(e)) return; const q = e.getBoundingClientRect(); if (!q.width || !q.height || q.left >= a.right || q.right <= a.left || q.top >= a.bottom || q.bottom <= a.top) return; if (getComputedStyle(e).visibility === 'hidden' || !fixed(e)) return; top = Math.min(top, q.top); });
-      if (top === Infinity) return; const lift = Math.round(a.bottom - top + 8); if (a.top - lift < 0) return;   /* no room above: leave it where it was designed */
-      cv.style.bottom = `calc(${Math.round(innerHeight - a.bottom + lift)}px)`;
+  /* the panel never sits over a number or a control (DECISIONS "v1 must be fully usable"). What is on screen is measured once: every visible control and every
+     piece of text with a digit. The first free spot wins: bottom left, bottom right, top left, top right, at full size and then one step smaller. No free spot: no panel. */
+  function spot(w, h) {
+    const vis = e => !e.checkVisibility || e.checkVisibility({ visibilityProperty: true, opacityProperty: true }), on = q => q.width > 0 && q.height > 0 && q.bottom > 0 && q.top < innerHeight && q.right > 0 && q.left < innerWidth;
+    const busy = [];
+    document.querySelectorAll('button, a[href], input, select, textarea, [role=button], summary').forEach(e => { const q = e.getBoundingClientRect(); if (on(q) && vis(e)) busy.push(q); });
+    const tw = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, { acceptNode: n => /\d/.test(n.nodeValue) ? 1 : 3 }), rg = document.createRange();
+    for (let n = tw.nextNode(); n; n = tw.nextNode()) { const pe = n.parentElement; if (!pe || pe.closest('script, style, [hidden]')) continue; rg.selectNodeContents(n); const q = rg.getBoundingClientRect(); if (on(q) && vis(pe)) busy.push(q); }
+    const sb = 'env(safe-area-inset-bottom,0px)', st = 'env(safe-area-inset-top,0px)';
+    for (const k of [1, .5]) {
+      const W = Math.round(w * k), H = Math.round(h * k);
+      const at = [[10, innerHeight - 8 - H, `left:10px;bottom:calc(8px + ${sb})`], [innerWidth - 10 - W, innerHeight - 8 - H, `right:10px;bottom:calc(8px + ${sb})`], [10, 8, `left:10px;top:calc(8px + ${st})`], [innerWidth - 10 - W, 8, `right:10px;top:calc(8px + ${st})`]];
+      for (const [x, y, css] of at) { if (x < 0 || y < 0) continue; const hit = busy.some(q => q.left < x + W + 4 && q.right > x - 4 && q.top < y + H + 4 && q.bottom > y - 4); if (!hit) return { css, W, H }; }
     }
+    return null;
   }
   /* the corner moment for a big step elsewhere in the app */
   let last = 0, busy = false, nShown = 0;
@@ -135,9 +141,12 @@ const SQ = (() => {
     const now = Date.now(); if (busy || reduced() || now - last < 150000) return false; last = now; busy = true; const n = nShown++;
     setTimeout(() => {
       const W = STAGE.W, H = STAGE.H, sc = window.innerWidth < 1400 ? 2 : 3, cv = document.createElement('canvas'); cv.width = W; cv.height = H; const g = cv.getContext('2d'); if (!g) { busy = false; return; }
-      cv.setAttribute('aria-hidden', 'true'); cv.style.cssText = `position:fixed;left:10px;bottom:calc(8px + env(safe-area-inset-bottom,0px));width:${W * sc}px;height:${H * sc}px;image-rendering:pixelated;pointer-events:none;z-index:70;background:var(--card,#2a3a2a);border-radius:14px;box-shadow:0 2px 10px rgba(0,0,0,.25)`;
-      document.body.append(cv); clear(cv); const t0 = performance.now(); let coined = false, ph = 0;
-      const tick = () => { const t = performance.now() - t0; if (t > END + 200 || !cv.isConnected) { cv.remove(); busy = false; return; }
+      const at = spot(W * sc, H * sc); if (!at) { busy = false; return; }   /* nothing free on this screen: the moment is still marked by the coins in the burrow */
+      cv.setAttribute('aria-hidden', 'true'); cv.style.cssText = `position:fixed;${at.css};width:${at.W}px;height:${at.H}px;image-rendering:pixelated;pointer-events:none;z-index:70;background:var(--card,#2a3a2a);border-radius:14px;box-shadow:0 2px 10px rgba(0,0,0,.25)`;
+      /* the page scrolls under a fixed panel: if the person scrolls while it plays, it leaves rather than cover what comes under it */
+      const gone = () => cv.remove(); addEventListener('scroll', gone, { once: true, passive: true });
+      document.body.append(cv); const t0 = performance.now(); let coined = false, ph = 0;
+      const tick = () => { const t = performance.now() - t0; if (t > END + 200 || !cv.isConnected) { cv.remove(); removeEventListener('scroll', gone); busy = false; return; }
         if (!coined && t > T.crouch + 700) { coined = true; try { sfx('coin'); } catch (e) { /* sound is a bonus */ } }
         const a = Math.min(1, t / 300) * (t > END - 300 ? Math.max(0, 1 - (t - (END - 300)) / 300) : 1);
         g.clearRect(0, 0, W, H); cv.style.opacity = a; g.globalAlpha = 1; const base = H - 5, cx = 26, landed = t > T.crouch + 700;
