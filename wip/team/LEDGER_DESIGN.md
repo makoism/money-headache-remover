@@ -1,6 +1,6 @@
 # The ledger (step B1): the shape on paper, proved before any code
 
-Side session, 2026-11-19. Reference model: `tests/next/ledger_ref.js` (tests only). Proof: `MODEL=tests/next/ledger_ref.js node tests/next/ledger_conservation.js` runs side C's 400 random event lists and seven personas plus two 38.31 migrations; every identity holds to the cent. Made-up numbers only.
+Side session, 2026-11-19. Reference model: `tests/next/ledger_ref.js` (tests only). Proof: `MODEL=tests/next/ledger_ref.js node tests/next/ledger_conservation.js` runs side C's 400 random event lists, eight personas (Mako, the standard Philippine team shape, and the six of the 95% sweep) and two 38.31 migrations; `MODEL=tests/next/ledger_ref.js node tests/next/ledger_fuzz.js` runs 300 random people with every account type and kind over four years. Every identity holds to the cent. Made-up numbers only. B1 is built against these two tests.
 
 ## The idea in one breath
 Two lists and one rule. **Accounts** say where money sits. **Places** say what it is for. Every coin in a tracked account is in exactly one place, so the accounts added up and the places added up are the same number: **Total**. What is owed sits in its own accounts (cards, pay-later, loans), never in a place. Nothing is stored as a balance: every number is added up from dated **events**.
@@ -24,6 +24,12 @@ Two lists and one rule. **Accounts** say where money sits. **Places** say what i
 
 ## Accounts
 Each account has a name, a type and a **currency**: bank, card paid in full (with its pay day), wallet or cash, e-wallet (GCash, Suica), pay-later, loan, and "owed to you" (money lent, still yours). Presets per country are names only, never a bank connection. An account in another currency (USD in Payoneer or Wise) is kept in its own currency, shown beside Total and not in it, until it is moved home; then it lands in Total at the amount that arrived.
+
+**Cards are core** (Mako, 2026-11-19: everyone has one). A card paid in full is one account. A card that carries an older balance is two: the card (new spending, set aside as usual) and "that card, older balance", held like a loan, paid by minimum or instalment from Bills left, with interest as a spend on it. The screen shows them as one card with two lines.
+
+**Fields** (for the statements lane and the account presets):
+- Account: `id`, `name`, `type` (bank, card, ewallet, cash, wallet, paylater, loan, owedToYou), `cur` (ISO code, for example PHP), `inFull` (cards; true unless it carries an older balance), `payDay` (cards and loans: day of the month it is due), `tracked` (false only for the Wallet-mode wallet), `preset` (optional id from a presets file, for example `ph.gcash`), `confirm` (set by the move from 38.31: ask at the first check), `closed` (date; hidden, never deleted).
+- Event: `id`, `k` (kind, below), `sub` (the kind the person picked, for example "family support"), `date` (YYYY-MM-DD, the day it happened, taken from the statement line, never the file name), `a` (amount, cents kept; signed only for adjust), `a2` (convert: what arrived), `acct`, `acct2`, `place`, `place2`, `typedA` (check: the balance typed), `startsPeriod` (pay only; false for a second income that does not start a new month), `src` (typed, statement and line id, receipt id, or migration; lets an import say "already logged", A8), `note`.
 
 ## Places
 Waiting (where new pay waits until placed; its word comes in B2), This month (Bills left, one "for the card" line per card paid in full, Free to spend), and the burrows. A place may go below zero; it is then shown in amber, never refused (L1).
@@ -49,7 +55,8 @@ The person sees "Money came in" and "Money went out" with a short list of kinds;
 - **Total** = tracked home-currency accounts added up = Waiting + This month + Burrows. **Free to spend** = its place (Track) or "handed to your wallet since pay day" (Wallet). **Bills left** = bills place + every "for the card" line. **Saved** = the burrows. Total is not the sum of the four (proof_formula.js).
 - **Owed** = cards + pay-later + loans. For each card paid in full, "for the card" always equals what is on the card, so **bank after the cards are paid** = bank minus those lines (Mako's question, A5). Mid-month his Total does not drop when he pays by card; his Free to spend does, and "for Card A" grows.
 - **Wallet and Track mode.** Track: Free to spend is a place and spending lowers it. Wallet: placing Free to spend hands it out of the tracked accounts (cash taken out, or moved to an e-wallet marked "my wallet"); after that it is not tracked. Someone who pays for fun things by card or from the same bank uses Track (Mako does).
-- **Check your bank, per account.** The person types what each account shows. The difference from that account's events is "unexplained" and shown on that account only. They add what they missed, or accept it (an adjust event). "Start fresh from today" after a missed month is a check plus an adjust on every account.
+- **Check your bank, per account.** The person types what each account shows. The difference from that account's events dated on or before the check's day (a statement imported later can hold older events) is "unexplained" and shown on that account only. They add what they missed, or accept it (an adjust event). "Start fresh from today" after a missed month is a check plus an adjust on every account.
+- **Months without a fixed window.** The ledger is never trimmed. A month is only a view: it runs from one pay day to the next (`payDays`, for example the 10th, or the 15th and 30th; the calendar month if none), and its flow strip adds up only the events dated in it. Any month, years back or ahead, can be shown. Periods chain end to start, and each one's Total moves by exactly what came in minus what went out (tested). A second income on the same day does not start a new month. Months dropped on load (E6) are the E6 lane's test.
 - **Undo.** The last event leaves the list and is kept with the saved copy, so undo and redo survive closing the page and a restore. Because nothing is clamped, every number goes back exactly.
 
 ## Moving a saved 38.31 copy (E5)
@@ -66,4 +73,9 @@ Start from today's typed balance per account: the bank figure (with its date) op
 3. **Lending and shared rent** (France): "owed to you" is an account inside Total, not spending, so paying all the rent and being paid half back nets out exactly.
 4. **Pay-later buys** (Philippine salaried): bought with borrowed money, they touch no place; the instalments are bills.
 5. **Missed month** (start fresh): Waiting can go below zero after the adjust, so L1's amber rule covers Waiting too.
-6. **New phone**: a restored backup shows exactly what was backed up, and its undo list still works.
+6. **Card payment from another place** (fuzz): a card paid in full is always paid out of "for the card"; paying it from a burrow is a move into "for the card" first. Otherwise the line stopped matching the card.
+7. **Statements imported late** (fuzz): a check compares with events dated up to its day, not with the order they were added.
+8. **Cards with an older balance** (team shape): the older balance is held like a loan, so "for the card" stays equal to new spending only.
+9. **New phone**: a restored backup shows exactly what was backed up, and its undo list still works.
+
+The ledger is plain data with no device code, so iPhone and Android run the same numbers; the phone checks belong to the page tests.

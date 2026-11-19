@@ -18,7 +18,7 @@ const BASE = ['MONTHS', 'START', 'END', 'SAMPLES', 'presetState', 'freshState', 
   'addReceipt', 'cleanPlan', 'cleanSteps', 'cleanOnce', 'cleanItems', 'cleanCfg', 'cleanReceipts', 'round2', 'ymIdx', 'ymFrom', 'ymAdd', 'LINE_JARS', 'setCurYm'];
 /* names the new features may add. Missing ones come back undefined, never an error */
 const MAYBE = ['setToday', 'monthsNow', 'migrateToLedger', 'ledgerAdd', 'ledgerUndo', 'placesOf', 'setFreeMode',
-  /* the persona runs in ledger_conservation.js (LEDGER_DESIGN.md): */ 'ledgerFresh', 'ledgerRedo', 'migrate3831', 'LEDGER_V'];
+  /* the persona runs in ledger_conservation.js (LEDGER_DESIGN.md): */ 'ledgerFresh', 'ledgerRedo', 'migrate3831', 'LEDGER_V', 'periodOf', 'flows'];
 function loadModel(file) {
   const src = fs.readFileSync(file || process.env.MODEL || path.join(TEAM, 'model.js'), 'utf8');
   const names = BASE.concat(MAYBE);

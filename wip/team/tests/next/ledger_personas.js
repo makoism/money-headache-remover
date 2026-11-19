@@ -202,6 +202,45 @@ const NEW_PHONE = {
   ],
 };
 
+const PH_TEAM = {
+  name: 'Standard Philippine team shape (Mako, 2026-11-19): two banks, GCash, Maya, cash, two cards (one with an older balance), pay-later, monthly pay on the 15th plus a side income',
+  setup: { cur: 'PHP', mode: 'track', payDays: [15], accounts: [
+    { id: 'bdo', name: 'BDO', type: 'bank' }, { id: 'bpi', name: 'BPI', type: 'bank' },
+    { id: 'gcash', name: 'GCash', type: 'ewallet' }, { id: 'maya', name: 'Maya', type: 'ewallet' }, { id: 'cash', name: 'Cash', type: 'cash' },
+    { id: 'bpiCard', name: 'BPI card', type: 'card', inFull: true, payDay: 5 },
+    { id: 'mbCard', name: 'Metrobank card', type: 'card', inFull: true, payDay: 20 },
+    { id: 'mbOld', name: 'Metrobank card, older balance', type: 'loan', payDay: 20 },
+    { id: 'spl', name: 'SPayLater', type: 'paylater' } ] },
+  steps: [
+    { k: 'open', acct: 'bdo', a: 12480.60, date: '2026-11-14' }, { k: 'open', acct: 'bpi', a: 3050, date: '2026-11-14' },
+    { k: 'open', acct: 'gcash', a: 920.15, date: '2026-11-14' }, { k: 'open', acct: 'maya', a: 410, date: '2026-11-14' },
+    { k: 'open', acct: 'cash', a: 1200, date: '2026-11-14' }, { k: 'open', acct: 'bpiCard', a: 8760, date: '2026-11-14' },
+    { k: 'open', acct: 'mbOld', a: 24000, date: '2026-11-14' },
+    { do: 'expect', total: 18060.75, forCards: 8760, waiting: 9300.75, owed: 32760 },
+    { k: 'in', sub: 'pay', acct: 'bdo', a: 38000, date: '2026-11-15' },
+    { k: 'in', sub: 'pay', acct: 'gcash', a: 6500, date: '2026-11-15', startsPeriod: false },
+    { k: 'move', a: 18000, place: 'waiting', place2: 'bills', date: '2026-11-15' }, { k: 'move', a: 7000, place: 'waiting', place2: 'free', date: '2026-11-15' },
+    { k: 'move', a: 4000, place: 'waiting', place2: 'emergency', date: '2026-11-15' }, { k: 'move', a: 1000, place: 'waiting', place2: 'give', date: '2026-11-15' },
+    { k: 'spend', sub: 'spend', acct: 'bpiCard', a: 2350, place: 'free', date: '2026-11-16' },
+    { k: 'spend', sub: 'bill', acct: 'mbCard', a: 1499, place: 'bills', date: '2026-11-18' },
+    { k: 'spend', sub: 'spend', acct: 'spl', a: 3600, place: 'free', date: '2026-11-20' },
+    { k: 'spend', sub: 'family support', acct: 'gcash', a: 5000, place: 'bills', date: '2026-11-21' },
+    { k: 'repay', sub: 'card payment', acct: 'bdo', acct2: 'bpiCard', a: 8760, date: '2026-12-05' },
+    { k: 'repay', sub: 'card payment (older balance)', acct: 'bdo', acct2: 'mbOld', a: 2500, place: 'bills', date: '2026-12-05' },
+    { k: 'spend', sub: 'interest', acct: 'mbOld', a: 380, place: 'bills', date: '2026-12-06' },
+    { do: 'expect', owed: 29329, forCards: 3849, total: 46300.75, free: 4650 },
+    { k: 'transfer', acct: 'bdo', acct2: 'maya', a: 2000, date: '2026-12-07' },
+    { k: 'spend', sub: 'spend', acct: 'maya', a: 1250.50, place: 'free', date: '2026-12-08' },
+    { k: 'check', acct: 'bdo', typedA: 37150.60, date: '2026-12-09' },
+    { do: 'expect', unexplainedOf: ['bdo', -70] },
+    { k: 'adjust', acct: 'bdo', a: -70, place: 'bills', date: '2026-12-09' },
+    { k: 'check', acct: 'cash', typedA: 950, date: '2026-12-09' },
+    { k: 'adjust', acct: 'cash', a: -250, place: 'free', date: '2026-12-09' },
+    { do: 'expect', total: 44730.25, free: 3149.50 },
+    { do: 'reload' }, { do: 'undo' }, { do: 'redo' },
+  ],
+};
+
 /* moving a saved 38.31 copy into the ledger (made-up shape and numbers) */
 const MIGRATIONS = [
   { name: '38.31 copy with a bank, two cards and two goal starts', old: { cur: 'JPY', freeMode: 'track', bankStart: 152340, bankAt: '2026-11-18',
@@ -212,4 +251,4 @@ const MIGRATIONS = [
     expect: { total: -1400.50, waiting: -2400.50, saved: 1000, owed: 0 } },
 ];
 
-module.exports = { PERSONAS: [MAKO, PH_FREELANCER, PH_SALARIED, JAPAN, FRANCE, MISSED, NEW_PHONE], MIGRATIONS };
+module.exports = { PERSONAS: [MAKO, PH_TEAM, PH_FREELANCER, PH_SALARIED, JAPAN, FRANCE, MISSED, NEW_PHONE], MIGRATIONS };

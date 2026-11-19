@@ -19,8 +19,7 @@ const { cents } = require('./lib');
 const { PERSONAS, MIGRATIONS } = require('./ledger_personas');
 const J = JSON.stringify;
 
-module.exports = function (M, rep) {
-  if (!(M.ledgerFresh && M.ledgerAdd && M.ledgerUndo && M.ledgerRedo && M.placesOf)) { rep.missing('the persona runs: the model has no ledgerFresh / ledgerRedo (LEDGER_DESIGN.md)'); return; }
+function tools(M, rep) {
   const OWED = { card: 1, paylater: 1, loan: 1 }, ASSET = { bank: 1, cash: 1, ewallet: 1, wallet: 1, owedToYou: 1 };
 
   /* what one event does to the accounts, in cents, written from LEDGER_DESIGN.md "Kinds", independent of the model */
@@ -64,6 +63,12 @@ module.exports = function (M, rep) {
     return p;
   }
 
+  return { acctDelta, oracle, identities, OWED, ASSET };
+}
+
+module.exports = function (M, rep) {
+  if (!(M.ledgerFresh && M.ledgerAdd && M.ledgerUndo && M.ledgerRedo && M.placesOf)) { rep.missing('the persona runs: the model has no ledgerFresh / ledgerRedo (LEDGER_DESIGN.md)'); return; }
+  const { oracle, identities } = tools(M, rep);
   for (const P of PERSONAS) {
     let S = M.ledgerFresh(P.setup); const done = [], undone = [], backups = {};
     let openSnap = null;
@@ -119,3 +124,4 @@ module.exports = function (M, rep) {
     rep.ok(typeof S.ledgerV === 'number' && S.ledgerV >= 1, `${tag}: no ledger version (older pages must refuse to overwrite it)`);
   }
 };
+module.exports.tools = tools;

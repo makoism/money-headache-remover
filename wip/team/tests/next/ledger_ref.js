@@ -20,7 +20,7 @@ const reserveOf = id => 'card:' + id;
 /* a fresh state. setup: { cur, mode: 'track'|'wallet', accounts: [{ id, name, type, cur, inFull, payDay, tracked }] } */
 function ledgerFresh(setup) {
   setup = setup || {};
-  const S = { ui: { freeMode: setup.mode || 'track', cur: setup.cur || 'PHP' }, accounts: [], ledger: [], undone: [], ledgerV: LEDGER_V, nextId: 1 };
+  const S = { ui: { freeMode: setup.mode || 'track', cur: setup.cur || 'PHP', payDays: setup.payDays || [1] }, accounts: [], ledger: [], undone: [], ledgerV: LEDGER_V, nextId: 1 };
   const accts = setup.accounts || [{ id: 'bank', name: 'Bank', type: 'bank' }, { id: 'wallet', name: 'Wallet', type: 'wallet', tracked: false }];
   accts.forEach(a => S.accounts.push(Object.assign({ cur: S.ui.cur, tracked: a.type !== 'wallet', inFull: a.type === 'card' }, a)));
   return S;
@@ -89,7 +89,9 @@ function effect(S, e) {
       add(A, e.acct, -c); add(A, e.acct2, e.c2); if (inTotal(S, a2)) add(P, e.place || 'waiting', e.c2); break;
     case 'repay':         /* card payment, pay-later instalment, loan payment: account down, owed down */
       add(A, e.acct, -c); add(A, e.acct2, -c);
-      if (inTotal(S, a1)) add(P, e.place || (a2 && a2.type === 'card' && a2.inFull ? reserveOf(a2.id) : 'bills'), -c);
+      /* a card paid in full is always paid out of "for the card" (found by ledger_fuzz.js). Paying it from another place is a move into
+         "for the card" first, so the line always equals what is on the card */
+      if (inTotal(S, a1)) add(P, a2 && a2.type === 'card' && a2.inFull ? reserveOf(a2.id) : (e.place || 'bills'), -c);
       break;
     case 'adjust':        /* after check your bank: the person accepts the difference. c is signed */
       if (a1 && OWED[a1.type]) { add(A, e.acct, c); if (a1.type === 'card' && a1.inFull) { add(P, e.place || 'free', -c); add(P, reserveOf(a1.id), c); } }
@@ -100,6 +102,14 @@ function effect(S, e) {
   return { A, P };
 }
 
+/* a check compares with the events dated on or before its day, wherever they sit in the list (a statement imported later can hold
+   older events). An event or a check without a date falls back to list order. */
+function balanceAt(S, L, chk, acct) {
+  const ci = L.indexOf(chk); let b = 0;
+  L.forEach((raw, i) => { if (raw === chk) return; const e = norm(S, raw); if (!e || e.k === 'check') return;
+    const counts = raw.date && chk.date ? raw.date <= chk.date : i < ci; if (counts) b += effect(S, e).A[acct] || 0; });
+  return b;
+}
 /* balances are always worked out from the ledger, never stored */
 function balances(S, upto) {
   const A = {}, P = {}; let unexplained = null, checks = {};
@@ -107,7 +117,7 @@ function balances(S, upto) {
   const L = upto == null ? S.ledger : S.ledger.slice(0, upto);
   for (const raw of L) {
     const e = norm(S, raw); if (!e) continue;
-    if (e.k === 'check') { const u = e.typed - (A[e.acct] || 0); checks[e.acct] = { typed: e.typed, unexplained: u, date: e.date }; if (e.acct === 'bank' || unexplained === null) unexplained = u; continue; }
+    if (e.k === 'check') { const u = e.typed - balanceAt(S, L, raw, e.acct); checks[e.acct] = { typed: e.typed, unexplained: u, date: e.date }; if (e.acct === 'bank' || unexplained === null) unexplained = u; continue; }
     const f = effect(S, e);
     for (const k in f.A) A[k] = (A[k] || 0) + f.A[k];
     for (const k in f.P) P[k] = (P[k] || 0) + f.P[k];
@@ -132,7 +142,7 @@ function placesOf(S) {
     if (inTotal(S, a)) have += b; else if (OWED[a.type]) owed += b; else if (!isHome(S, a)) foreign[a.cur] = fromC((toC(foreign[a.cur] || 0)) + b);
   });
   /* L4: in Wallet mode Free to spend shows what was handed to the wallet since the last pay day */
-  let handed = 0; for (const raw of S.ledger) { const e = norm(S, raw); if (!e) continue; if (e.k === 'in' && e.sub === 'pay') handed = 0; if (e.k === 'hand') handed += e.c; }
+  let handed = 0; for (const raw of S.ledger) { const e = norm(S, raw); if (!e) continue; if (e.k === 'in' && e.sub === 'pay' && e.startsPeriod !== false) handed = 0; if (e.k === 'hand') handed += e.c; }
   const ch = {}; for (const k in checks) ch[k] = { typed: fromC(checks[k].typed), unexplained: fromC(checks[k].unexplained) };
   return {
     chest: fromC(waiting), waiting: fromC(waiting), bills: fromC(bills), billsOnly: fromC(P.bills || 0), forCards: fromC(reserve), cards,
@@ -141,6 +151,35 @@ function placesOf(S) {
     thisMonth: fromC(thisMonth), total: fromC(total), have: fromC(have), owed: fromC(owed), foreign, accounts,
     unexplained: unexplained == null ? null : fromC(unexplained), checks: ch,
   };
+}
+
+/* MONTHS WITHOUT A FIXED WINDOW. The ledger is never trimmed; a month is only a view over dated events.
+   A month runs from one pay day to the next (S.ui.payDays, for example [10] or [15, 30]; default [1], the calendar month).
+   periodOf(S, 'YYYY-MM-DD') gives { from, to } (to is the next pay day, not included). flows(S, from, to) adds up only the events
+   dated in that span: what came in, what went out, and Total and Owed at both ends. Any span works, years back or ahead. */
+const pad2 = n => (n < 10 ? '0' : '') + n;
+const ymd = (y, m, d) => { const t = new Date(Date.UTC(y, m - 1, 1)); const last = new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth() + 1, 0)).getUTCDate();
+  return t.getUTCFullYear() + '-' + pad2(t.getUTCMonth() + 1) + '-' + pad2(Math.min(d, last)); };
+function periodOf(S, date) {
+  const days = (S.ui.payDays && S.ui.payDays.length ? S.ui.payDays : [1]).slice().sort((a, b) => a - b);
+  const [y, m] = date.split('-').map(Number);
+  const starts = [];
+  for (const dm of [-1, 0, 1]) days.forEach(d => starts.push(ymd(y, m + dm, d)));
+  starts.sort();
+  let from = starts[0], to = null;
+  for (let i = 0; i < starts.length; i++) if (starts[i] <= date) { from = starts[i]; to = starts[i + 1]; }
+  return { from, to };
+}
+function flows(S, from, to) {
+  const inSpan = e => e.date >= from && (to == null || e.date < to);
+  const before = { ledger: S.ledger.filter(e => e.date < from) }, upto = { ledger: S.ledger.filter(e => to == null || e.date < to) };
+  const T = L => placesOf(Object.assign({}, S, L));
+  let cameIn = 0, wentOut = 0;
+  for (const raw of S.ledger) { if (!inSpan(raw)) continue; const e = norm(S, raw); if (!e || e.k === 'check' || e.k === 'move') continue;
+    const f = effect(S, e); let d = 0; S.accounts.forEach(a => { if (inTotal(S, a)) d += f.A[a.id] || 0; });
+    if (d > 0) cameIn += d; else wentOut -= d; }
+  const a = T(before), b = T(upto);
+  return { from, to, cameIn: fromC(cameIn), wentOut: fromC(wentOut), totalStart: a.total, totalEnd: b.total, owedStart: a.owed, owedEnd: b.owed };
 }
 
 /* add one event. Returns false (and records nothing) only for an event the design cannot read */
@@ -180,4 +219,4 @@ function migrate3831(old, today) {
 }
 
 /* when loaded with require() too */
-if (typeof module !== 'undefined' && module.exports) module.exports = { LEDGER_V, ledgerFresh, freshState, setFreeMode, ledgerAdd, ledgerUndo, ledgerRedo, placesOf, balances, effect, migrate3831, toC, fromC };
+if (typeof module !== 'undefined' && module.exports) module.exports = { periodOf, flows, LEDGER_V, ledgerFresh, freshState, setFreeMode, ledgerAdd, ledgerUndo, ledgerRedo, placesOf, balances, effect, migrate3831, toC, fromC };
