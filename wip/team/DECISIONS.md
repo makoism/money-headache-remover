@@ -163,3 +163,9 @@ Recorded in full in NORTH_STAR.md, "Why this exists", so every agent and session
 ## v1 must be fully usable (Mako, 2026-11-19)
 Art is paused. v1 is for Mako to use for his real money, so everything must work and be clear through the UI alone. The art may not be pretty, but it must never get in the way: nothing covers a control or a number, nothing makes the page lag, nothing distracts from reading the money. Where existing art disrupts use, tone it down or hide it in v1 (that is a fix, not new art). The art work itself waits for the art step.
 
+## Mako's own money, the shape v1 must fit (Mako, 2026-11-19; no amounts, the repo is public)
+- One main bank account. Two credit cards, paid off in full on the 10th and the 11th. Pay: two incomes that land on the same day, the 10th, entered as one number. Android phone.
+- "I would stop using it if it didn't give me clarity."
+- What follows for v1: almost all spending goes on the cards and leaves the bank only on the 10th and 11th, right when pay lands. So the bank balance alone is not the truth mid-month: card spending is already spent but still in the bank. v1 must show it plainly: what is on each card now (typed, like the bank figure), when it is paid, and what the bank will hold after the cards are paid. The month should follow his pay day (the 10th), not the calendar, where that changes what is safe to spend.
+- Testing: Android (Chrome, installed to the home screen) is the phone tested hardest. Test profiles use this shape with made-up numbers.
+
