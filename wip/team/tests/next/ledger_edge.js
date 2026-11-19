@@ -458,4 +458,36 @@ const all = (tag, p, want) => { for (const k in want) eq(`${tag} ${k}`, k.includ
     const S = fresh('PHP', [UB, { id: 'ubc', name: 'Card', type: 'card', payDay: 7 }]); add('card', S, { k: 'open', acct: 'ubc', a: 12480, date: '2026-11-19' });
     due(S, '2026-11-20', { onCard: 12480, due: 12480, later: 0 }, 'no cut-off day'); }
 }
+{ /* THE OPENINGS MADE BY THE MOVE FROM 38.31 ARE NOT UNDONE. They are the figures the person typed in the old app; taking one out
+     would lose it. A wrong figure is corrected with check your bank (ledgerAccept), which can itself be undone */
+  const t = 'moved openings', TODAY = '2026-11-20';
+  const old = { cur: 'PHP', freeMode: 'track', payDays: [15, 30], bankStart: 42300, bankAt: '2026-11-18', cards: [{ id: 'rcbc', name: 'RCBC card', owed: 14600, payDay: 12, at: '2026-11-17' }],
+    goals: [{ id: 'emergency', start: 5000 }], debts: [{ id: 'd1', name: 'Loan from Tita', kind: 'loan', owed: 8000 }, { id: 'd2', name: 'rcbc  CARD', kind: 'card', owed: 3300 }] };
+  const S = L.migrate3831(JSON.parse(J(old)), TODAY); rep.ok(!!S && S.ledger.length === 4 && S.ledger.every(e => e.k === 'open' && e.src === 'migration'), t + ': the move makes four openings');
+  const p0 = J(L.placesOf(S)), led0 = J(S.ledger);
+  refused(t + ' undo right after the move', S, 'nothing', () => L.ledgerUndo(S));
+  S.ledger.map(e => e.id).forEach(id => refused(t + ' undo by id of opening ' + id, S, 'moved-open', () => L.ledgerUndo(S, id)));
+  /* things done after the move are undone as always, one by one, and then undo stops at the openings */
+  const sp = add('spend', S, { k: 'spend', acct: 'bank', a: 250, place: 'waiting', date: TODAY }), mv = add('place', S, { k: 'move', place: 'waiting', place2: 'bills', a: 9000, date: TODAY });
+  refused(t + ' an opening by id, with newer events after it', S, 'moved-open', () => L.ledgerUndo(S, S.ledger[0].id));
+  rep.ok(!!L.ledgerUndo(S) && !!L.ledgerUndo(S) && J(S.ledger) === led0 && J(L.placesOf(S)) === p0, t + ': the two steps after the move are undone');
+  refused(t + ' undo stops at the openings', S, 'nothing', () => L.ledgerUndo(S));
+  rep.ok(!!L.ledgerRedo(S) && !!L.ledgerRedo(S) && S.ledger.length === 6, t + ': redo still works'); L.ledgerUndo(S); L.ledgerUndo(S);
+  /* the answer "another card" opens the debt that waited: that opening is from the move too. Plain undo passes over it and takes
+     the step before it; it never takes the opening */
+  add('spend again', S, { k: 'spend', acct: 'bank', a: 250, place: 'waiting', date: TODAY });
+  const q = L.ledgerSameCard(S, S.oldFigures.questions[0].acct, false), opened = S.ledger[S.ledger.length - 1];
+  rep.ok(!!q && opened.k === 'open' && opened.src === 'migration' && c(L.placesOf(S).accounts[q.acct]) === c(3300), t + ': "another card" opens the debt with 3,300');
+  refused(t + ' the opening made by the answer, by id', S, 'moved-open', () => L.ledgerUndo(S, opened.id));
+  const u = L.ledgerUndo(S); rep.ok(!!u && u.length === 1 && u[0].k === 'spend' && S.ledger.some(e => e.id === opened.id) && c(L.placesOf(S).accounts[q.acct]) === c(3300), t + ': plain undo takes the spend before it and leaves the opening');
+  refused(t + ' nothing else to undo', S, 'nothing', () => L.ledgerUndo(S)); proof(t, S);
+  /* the way to correct a moved figure: check your bank. That step can be undone */
+  rep.ok(!!L.ledgerAccept(S, 'bank', 41000, TODAY) && c(L.placesOf(S).accounts.bank) === c(41000), t + ': the bank corrected to 41,000 with check your bank');
+  rep.ok(!!L.ledgerUndo(S) && c(L.placesOf(S).accounts.bank) === c(42300), t + ': the correction is undone, the moved figure is back'); proof(t + ' end', S);
+  /* an opening typed by hand in the new app is an ordinary step: it can be undone, as before */
+  const N = fresh('PHP', [BANK]); add('typed opening', N, { k: 'open', acct: 'bank', a: 500, date: TODAY, src: 'typed' }); rep.ok(!!L.ledgerUndo(N) && N.ledger.length === 0, t + ': an opening typed by hand is undone as before');
+  /* a saved copy in which a moved opening was undone before this rule: nothing is lost, it loads and redo puts it back */
+  const R = L.migrate3831(JSON.parse(J(old)), TODAY), ev = R.ledger.pop(); R.undone.push({ items: [{ e: ev, at: R.ledger.length }] });
+  const R2 = JSON.parse(J(R)); rep.ok(L.ledgerClean(R2).ok && R2.undone.length === 1 && !!L.ledgerRedo(R2) && R2.ledger.length === 4, t + ': an opening undone by an older page is kept and redo puts it back');
+}
 rep.end();
