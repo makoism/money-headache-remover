@@ -426,7 +426,7 @@ function phLeaks(text) {
    dates, no balances, no account, and digits removed. One line per merchant: name, how many times, total, direction. */
 function phAskList(rows, limit) {
   const m = {};
-  rows.forEach(r => { if (r.already || r.pair || r.rev || r.conf >= 0.6) return; const k = phNorm(phMask(r.text).text.replace(/\[[^\]]*\]/g, ' ')).split(' ').slice(0, 4).join(' '); if (!k) return; const key = k + '|' + r.dir; m[key] = m[key] || { k, dir: r.dir, n: 0, c: 0 }; m[key].n++; m[key].c += r.c; });
+  rows.forEach(r => { if (r.already || r.pair || r.rev || r.conf >= 0.6 || /person/.test(r.sub || '')) return; const k = phNorm(phMask(r.text).text.replace(/\[[^\]]*\]/g, ' ')).split(' ').slice(0, 4).join(' '); if (!k) return; const key = k + '|' + r.dir; m[key] = m[key] || { k, dir: r.dir, n: 0, c: 0 }; m[key].n++; m[key].c += r.c; });
   return Object.values(m).sort((x, y) => y.c - x.c).slice(0, limit || 160).map(x => ({ k: x.k, dir: x.dir, n: x.n, total: x.c / 100 }));
 }
 /* a read in the shape stmt.js works with today (what stmtCleanRows returns), so stmtNumbers and the review can take it as is */

@@ -32,8 +32,11 @@ ok(one('BDO\nStatement\n08/01/2026 TRANSFER FROM LIZA M SORIANO 500.00 900.00', 
 ok(one('08/01/2026 SM CITY NORTH EDSA QUEZON CITY 500.00 900.00').indexOf('QUEZON CITY') > 0, 'a city inside a row is a merchant place, kept');
 const f = P.phMask(fs.readFileSync(path.join(dir, 'maya_savings_2026-08.txt'), 'utf8')).found; ok(f.name === 1 && f.address === 1 && f.phone === 1 && f.account >= 1, 'found counts for the screen: ' + JSON.stringify(f));
 /* what the AI gets when the device read the statement itself: merchant names only */
-const reads = files.map(x => P.phRead(fs.readFileSync(path.join(dir, x), 'utf8'), { file: x })), prep = P.phPrepare(reads, [], []), ask = P.phAskList(prep.rows), js = JSON.stringify(ask);
-ok(ask.length > 0 && ask.length < prep.rows.length / 3, `only the unplaced names are asked about: ${ask.length} of ${prep.rows.length} lines`);
+const reads = files.map(x => P.phRead(fs.readFileSync(path.join(dir, x), 'utf8'), { file: x })), prep = P.phPrepare(reads, [], []);
+ok(P.phAskList(prep.rows).length === 0, 'in the fixtures every line is placed on the phone, and lines about people are never asked about');
+const odd = P.phRead('GCash Transaction History\nDate and Time Description Reference No. Debit Credit Balance\nSTARTING BALANCE 1,000.00\n2026-08-01 09:00 Payment to Kusina ni Aling Nena 09175550142 7012345600201 150.00 850.00\n2026-08-02 09:00 Payment to Kusina ni Aling Nena 7012345600202 150.00 700.00\n2026-08-03 09:00 Send Money to PEDRO R. 7012345600203 100.00 600.00\nENDING BALANCE 600.00');
+ok(odd.ok, 'odd read: ' + odd.why); prep.rows = prep.rows.concat(odd.rows);
+const ask = P.phAskList(prep.rows), js = JSON.stringify(ask); ok(ask.length === 1 && ask[0].n === 2 && ask[0].total === 300 && /kusina/.test(ask[0].k), 'one unknown shop, asked once: ' + js);
 ok(!/\d{3}/.test(js.replace(/"(n|total)":[\d.]+/g, '')) && !/juana|cruz|\*/i.test(js), 'the ask list has no digits, no name: ' + js.slice(0, 200));
 ok(ask.every(a => a.k && (a.dir === 'in' || a.dir === 'out') && a.n >= 1 && a.total > 0 && !('date' in a)), 'ask list shape: name, direction, count, total; no dates, no balances');
 console.log(`${n} checks`); console.log(bad ? 'STMT PH PRIVACY FAIL ' + bad : 'STMT PH PRIVACY PASS'); process.exit(bad ? 1 : 0);
