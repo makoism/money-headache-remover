@@ -139,3 +139,12 @@ Three documents were kept in the Claude project and should be copied into the re
 3. **The 3D world is part of the art step:** one small stylized walkable world where every app action can be done. See WORLD_3D.md.
 4. **One source of context.** Mako talks to one coordinating session; it records his decisions here and passes them to every working session. A working session never takes a direction from anywhere else.
 
+## After the concept review (Mako, 2026-11-19)
+
+1. **Launch checklist.** Every point the reviews found is in LAUNCH_CHECKLIST.md with the step that fixes it. v1 is for Mako alone (at least a week); the team test needs every "team" point and the 95% sweep; wider launch needs every point done or moved later by Mako in writing. Aim: covers about 95% of people and their situations before anyone else uses it.
+2. **Several banks and accounts are core,** including pay-later apps. The major ones in the Philippines, Japan and France come first; other countries later.
+3. **One simple door for many situations:** "Money came in" and "Money went out", each with a short list of kinds and a line on what each is for (pay, borrowed, paid back, family support...). Keep it simple.
+4. **"What is in your bank right now" ships in v1,** as the reviews recommend.
+5. **Mako is the final check.** Where the answer is a preference with no objective best, the team picks a default and adds a note for Mako with the first version that has the function; he decides by using it. Do not send him questions without the app in front of him.
+6. **The 3D world** is decided when the art step comes. It stays on the list.
+

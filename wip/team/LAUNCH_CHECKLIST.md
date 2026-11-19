@@ -1,0 +1,96 @@
+# The Burrow: launch checklist
+
+Mako, 2026-11-19: "I want to make sure all of these problems are addressed before we launch it... so it covers like 95% of the people and their situations."
+Every point the reviews found is here, with the step that fixes it. Nothing is crossed off without a test or Mako's own check. Add new points the same day they are found.
+
+## The three gates
+- **v1, for Mako alone** (at least a week with his own numbers): every point marked **v1** is done.
+- **Team test** (Mako plus two teammates, four weeks from a pay day): every point marked **team** is done, and the 95% sweep below has run.
+- **Wider launch:** every point is done, or Mako has moved it to later in writing.
+
+Sources: the five concept reviews of 2026-11-19 (north star, new user, money and data, product, efficiency), the phone check (side D), the script checks (side A), the after-v1 tests (side C).
+
+## A. The picture is true
+| # | Point | Fix | Gate |
+|---|---|---|---|
+| A1 | v1 shows planned figures that read like real money ("Total ₱35,700, planned" after typing ₱3,000) | "What is in your bank right now": Home asks for the balance the bank app shows, shows it first, and labels every number "now" or "planned" | v1 |
+| A2 | Money sits in several places (several banks, e-wallets, cash, cards, pay-later apps) but the plan knows one "bank" | Accounts in the ledger: every event names a place (what it is for) and an account (where it sits); check each account on its own; account presets for the Philippines, Japan and France (names only, no bank connection) | team |
+| A3 | Money paid toward a "Pay off a debt" goal counted as savings in Saved and Total (bug) | Debt goals stay out of Saved and Total | v1 |
+| A4 | What is owed is not in the picture | v1: one line "You owe X" when cards, loans or debt goals exist. Ledger: an owed side; spending on a card raises what is owed; paying the card moves money from the bank to the card and leaves Total the same | v1 line, team full |
+| A5 | Card spending paid next month is not modelled | the owed side (A4) | team |
+| A6 | Safe to spend ignores timing: bills due before the next pay, pay in two halves | Safe to spend until next pay day, with bills on their dates | team |
+| A7 | When was the balance entered | "Balance you entered on 18 Nov" (decision 1) | v1 |
+| A8 | Double counting: a bill drains on its date and its receipt is logged; a statement repeats check-ins | one event per bill (the receipt replaces the drain); import review flags "already logged" | team |
+| A9 | Currency: a switch relabels amounts; money in two currencies (USD via Wise or Payoneer) | lock the currency once events exist; each account has its own currency | later (Mako decides) |
+| A10 | Percents add to 81% in a month where spending past plan used pay (side A) | that row gets its percent | v1 |
+
+## B. People come back
+| # | Point | Fix | Gate |
+|---|---|---|---|
+| B1 | The weekly check-in is in step C | a 60-second weekly check-in: what did you spend, what does the bank say | team |
+| B2 | No nudge | the weekly calendar reminder at the end of setup; Mako's "pay sent, open the Burrow" message to the team | team |
+| B3 | A missed week or month makes catching up feel like homework | "Start fresh from today": type today's balances, past gaps are not failures | team |
+| B4 | Pay day is not an event yet | the pay day ritual (step B2) | team |
+| B5 | Nothing new after three months | the streak back where it is seen; goals reached celebrated; then the art step | later |
+
+## C. Real life (one simple door for many situations)
+One "Money came in" and one "Money went out", each with a short list of kinds and a line saying what each is for. The kind decides what it does to the numbers.
+| # | Situation | Kind | Gate |
+|---|---|---|---|
+| C1 | Sending money to family (most of the team, monthly and surprise asks) | out: "Family support" (its own line in Bills and basics, not Giving) | team |
+| C2 | Freelance pay that changes each month, or a zero month | pay day asks "how much landed?" and the month is planned from that | team |
+| C3 | Late pay | pay day on the day it lands; bills before it shown as waiting | team |
+| C4 | Pay in two halves (15th and 30th) | two pay days, each placing its half | team |
+| C5 | Borrowed from family, pay-later apps (SPayLater, GGives, BillEase; Japan and France equivalents) | in: "Borrowed" creates an amount owed (A4) | team |
+| C6 | Shared costs, paying for a friend and being paid back | in: "Paid back"; out: "Lent" | team |
+| C7 | Refunds, gifts received, sold something | in: "Refund", "Gift", "Other money in" | team |
+
+## D. Setup
+| # | Point | Fix | Gate |
+|---|---|---|---|
+| D1 | Yen is first for a peso user | the team link opens in pesos (a link setting); currency asked plainly | team |
+| D2 | Sample numbers before anything is typed ("¥130,000 of the sample pay not placed") | no sample money in sentences during setup | v1 |
+| D3 | Emergency fund step: "take it out of that number so it is not counted twice" | plain wording | v1 |
+| D4 | First open order: video, statements or AI prompt, then only what statements cannot answer, then place the money (decision 8) not in the short setup | setup order | team |
+| D5 | Philippine statements (GCash, BDO, BPI, often password-protected PDFs) | test the statement reader with them; ask for the password on the device only | team |
+| D6 | Step counter "of 5" becomes "of 6" | step name and dots only (decision 7) | v1 |
+
+## E. Nobody loses data
+| # | Point | Fix | Gate |
+|---|---|---|---|
+| E1 | Cloud copy: "newer" decided by the device clock, "Keep mine" overwrites, the server keeps one previous copy | server keeps dated versions (for example 7 daily); a local snapshot before any restore or cloud load; warn when a copy is older than the one in use | team |
+| E2 | iPhone Safari can delete a site's data after 7 days unused unless it is on the home screen | ask to add to home screen; backup reminder | team |
+| E3 | A lost or changed phone, recovery code never set up | setup ends by offering the cloud copy, in two taps | team |
+| E4 | Two people on one browser share one plan | a warning; profiles later | later |
+| E5 | Moving to the ledger | start from today's balance in each account; the old plan's figures shown once beside it; a frozen copy kept; a version number older pages refuse to overwrite | team |
+| E6 | The rolling month window would drop months on load (cleanOnce, cleanItems, cleanRecurring, statement import) | the window is a view only; nothing is trimmed | team |
+| E7 | Statements with names and account numbers go through the AI relay; the recovery code can delete everything | strip account numbers on the device before sending; deleted copies kept for a while on the server | team |
+| E8 | The 3D world could run against a newer data shape | version check before it opens; it only calls ACT | later |
+
+## F. Phone (side D, measured)
+| # | Point | Gate |
+|---|---|---|
+| F1 | Corner squirrel never plays on phones (squirrel.js:125); under Ask and Help on 38.28 | v1 |
+| F2 | Page dots cover the squirrel at the burrow door on small screens | v1 |
+| F3 | "A newer version is ready" pops after an update already applied | v1 |
+| F4 | Tapping Add freezes 0.2 to 0.35 s on a slow phone | v1 |
+| F5 | The Home forest keeps animating behind a burrow | v1 |
+| F6 | Light theme contrast below 4.5:1 in six places; five controls under 44px (side A) | v1 |
+
+## G. Process
+| # | Point | Gate |
+|---|---|---|
+| G1 | Papers disagree: one world or one per burrow; "Chest" for waiting pay in HANDOFF, PLAN and side C tests; "check your bank" in both B1 and C | v1 (docs) |
+| G2 | Know whether it works: weekly opens without being chased, logging under 60 seconds, the gap between the app's bank figure and the real one, one decision changed, setup under 10 minutes, nothing lost | team |
+| G3 | The 3D world: decided by Mako when the art step comes; usage data from the team test informs it | later |
+
+## The 95% sweep (before the team test)
+Fresh agents walk the app as real people, each with made-up numbers: a Philippine freelance editor paid per project who sends money home and uses GCash and two banks; a Philippine salaried editor paid on the 15th and 30th with a pay-later habit; a salaried person in Japan with a card paid next month; a student in France with a Revolut account and shared rent; someone who misses a month; someone whose phone is replaced. Every "how do I do this?" becomes a point here.
+
+## Notes for Mako (preferences with no objective best answer)
+Shipped with v1 as a short list to look at while using it, not as questions in advance:
+- How owed money looks in the picture.
+- The account presets for each country.
+- The kinds in "Money came in" and "Money went out".
+- Whether Wallet or Track is the default for Free to spend.
+- The 13 design questions from side C (window, ledger, migration), each with the default that will be used.

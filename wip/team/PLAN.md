@@ -2,6 +2,8 @@
 
 Written after reading every .md file at the repo root and in wip/team, the commit history of wip-38.30 and wip-38.31, all of `model.js`, `check.sh`, the head of every file in `tests/qc`, and what Mako pasted into this chat (the handoff with the bird's-eye design, DECISIONS.md, and the old chat's QC panel). File names are given for every important claim. "Inferred" marks anything I worked out rather than read.
 
+**Launch checklist (Mako, 2026-11-19):** every finding is in LAUNCH_CHECKLIST.md with its gate (v1 for Mako alone, team test, wider launch). A step is not done until its checklist points are.
+
 **Version one (Mako, 2026-11-18, standing):** v1 is the picture, the four numbers and one next action, with everything else hidden until needed. Mako tests it with his own numbers. No new art, music or video work until v1 is working. Added as step 7b below.
 
 **Process change (Mako, 2026-11-18, DECISIONS.md "Process change"):** v1 = 38.31 shipped, then Mako uses it with his real numbers while step B is built. verify.sh after every commit; the two gates on release candidates only; the panel when screens or wording changed, and once before v1; agents get screenshots and extracted screen text. Steps 1 and 2 are time-boxed: keep tests that protect numbers, data safety and the real-numbers scenario, retire the rest with a written reason, never to hide a failure. Step B splits into B1 (ledger, check your bank; ships alone first) and B2 (Chest, pay day ritual). No new art, music or video until v1 is in use, so step D waits. A fresh session per step, with a short handoff in RESUME.md.
