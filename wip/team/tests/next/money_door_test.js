@@ -212,8 +212,8 @@ D.DOOR.forEach(k => {
   rep.ok(f.below.includes('free'), t + ': Free to spend below zero is shown in amber, never refused');
   rep.ok(D.doorChoices(S, 'moved').to.length === 1 && D.doorApply(S, 'moved', { amount: 1, account: 'bank', to: 'bank' }, TODAY).code === 'acct-kind', t + ': with one account there is nothing to move between');
   for (let i = 0; i < n; i++) rep.ok(!!D.doorUndo(S), `${t}: undo ${i + 1} of ${n} refused`);
-  const p = L.placesOf(S); delete p.accounts[ken.made.id]; delete p.accounts[dad.made.id];
-  rep.ok(J({ p, led: S.ledger }) === s0, t + ': every step undone, the picture is not exactly day one');
+  rep.ok(snap(S) === s0, t + ': every step undone, the picture is not exactly day one');
+  rep.ok(!S.accounts.some(a => a.id === ken.made.id || a.id === dad.made.id), t + ': every step undone, the accounts made for Ken and Dad are gone too');
   figs(t + ' undone', S, { total: start.total, free: start.free, bills: start.bills, saved: start.saved, owed: start.owed });
 }
 

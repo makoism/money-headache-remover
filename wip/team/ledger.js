@@ -404,12 +404,14 @@ function ledPush(S, e, grp) {
 }
 const ledNextId = S => { let m = 0; const see = e => { if (e && Number.isSafeInteger(e.id) && e.id > m) m = e.id; };
   (S.ledger || []).forEach(see); (S.undone || []).forEach(u => (u && u.items || []).forEach(it => see(it.e))); (S.removed || []).forEach(see); return m + 1; };
-/* a new event ends redo (L2). The undone events are not thrown away: they move to S.removed, outside every sum */
+/* a new event ends redo (L2). The undone events are not thrown away: they move to S.removed, outside every sum. An account that
+   left with an undone step is kept there too, as { what: 'account', it: <the account> } */
 function ledEndRedo(S) {
   if (!Array.isArray(S.undone)) S.undone = [];
   if (!S.undone.length) return;
   if (!Array.isArray(S.removed)) S.removed = [];
-  S.undone.forEach(u => (u && u.items || []).forEach(it => { if (it.e) S.removed.push(it.e); }));
+  S.undone.forEach(u => { (u && u.accounts || []).forEach(q => { if (q && q.a) S.removed.push({ what: 'account', it: q.a }); });
+    (u && u.items || []).forEach(it => { if (it.e) S.removed.push(it.e); }); });
   S.undone = [];
 }
 /* record one event. Returns the stored event, or false with nothing recorded (ledgerWhy says why) */
@@ -420,24 +422,36 @@ function ledgerAdd(S, ev, today) {
   return e;
 }
 /* record several events as one step: all of them or none. They share a group mark (grp), so one undo takes them all back.
+   more.accounts (optional): accounts to make with the step, for example the person money is lent to for the first time. They are
+   added first, all or none with the events, and each carries madeBy: <id of the step's first event>. Such an account leaves with
+   the undo that takes out the last event naming it, and comes back with the redo (ledgerUndo, ledgerRedo).
    Returns the stored events or false */
-function ledgerAddMany(S, evs, today) {
+function ledgerAddMany(S, evs, today, more) {
   if (!Array.isArray(evs) || !evs.length) return ledFail(ledNo('not-event'));
   if (!S || !Array.isArray(S.ledger)) return ledFail(ledNo('no-ledger'));
-  const n0 = S.ledger.length, next0 = S.ledgerNext, out = [];
+  const n0 = S.ledger.length, next0 = S.ledgerNext, out = [], made = [];
+  const back = () => { S.ledger.length = n0; S.ledgerNext = next0; made.forEach(a => { const i = S.accounts.indexOf(a); if (i >= 0) S.accounts.splice(i, 1); }); return false; };
+  if (more && more.accounts != null) {
+    if (!Array.isArray(more.accounts)) return ledFail(ledNo('acct-new', 'accounts is not a list'));
+    for (const acct of more.accounts) { const a = ledgerAddAccount(S, acct); if (!a) return back(); made.push(a); }   /* ledgerAddAccount has said why */
+  }
   let grp = null;
   for (const ev of evs) {
     const r = ledgerTry(S, ev, today);
-    if (!r.ok) { S.ledger.length = n0; S.ledgerNext = next0; return ledFail(r); }
+    if (!r.ok) { back(); return ledFail(r); }
     const e = ledPush(S, r.e); if (grp === null) grp = e.id;
     if (evs.length > 1) e.grp = grp;
     out.push(e);
   }
+  made.forEach(a => { a.madeBy = grp; });
   ledEndRedo(S); LED_LAST = null;
   return out;
 }
 /* undo: the last event (or the one with this id) leaves the ledger and is kept in S.undone, which is saved with the ledger, so undo
-   and redo survive closing the page and a restore. Events recorded as one step leave together. Returns the events taken out, or false */
+   and redo survive closing the page and a restore. Events recorded as one step leave together. An account that was made with a step
+   (madeBy) and that no event left in the ledger names leaves too, kept in the undone step: { items, accounts: [{ a, at }] }. So the
+   list of accounts is exactly as it was before that step. An account added on its own is never taken out.
+   Returns the events taken out, or false */
 function ledgerUndo(S, id) {
   if (!S || !Array.isArray(S.ledger)) return ledFail(ledNo('no-ledger'));
   if ((+S.ledgerV || 0) > LEDGER_V) return ledFail(ledNo('newer'));
@@ -449,22 +463,30 @@ function ledgerUndo(S, id) {
   if (grp != null) L.forEach((e, j) => { if (e && e.grp === grp) idx.push(j); }); else idx.push(i);
   const items = idx.map(j => ({ e: L[j], at: j }));
   for (let j = idx.length - 1; j >= 0; j--) L.splice(idx[j], 1);
+  const step = { items }, gone = [], A = Array.isArray(S.accounts) ? S.accounts : [];
+  for (let j = A.length - 1; j >= 0; j--) { const a = A[j];
+    if (a && a.madeBy != null && !L.some(e => e && (e.acct === a.id || e.acct2 === a.id))) { gone.unshift({ a, at: j }); A.splice(j, 1); } }
+  if (gone.length) step.accounts = gone;
   if (!Array.isArray(S.undone)) S.undone = [];
-  S.undone.push({ items }); LED_LAST = null;
+  S.undone.push(step); LED_LAST = null;
   return items.map(it => it.e);
 }
-/* redo: the last undone step goes back where it was. Returns the events put back, or false */
+/* redo: the last undone step goes back where it was: first the accounts that left with it, then its events. Refused, with nothing
+   changed, when the id of such an account is in use again ('acct-new'). Returns the events put back, or false */
 function ledgerRedo(S) {
   if (!S || !Array.isArray(S.ledger)) return ledFail(ledNo('no-ledger'));
   if ((+S.ledgerV || 0) > LEDGER_V) return ledFail(ledNo('newer'));
   if (!Array.isArray(S.undone) || !S.undone.length) return ledFail(ledNo('no-redo'));
   const u = S.undone[S.undone.length - 1], items = (u && u.items || []).filter(it => it && it.e), x = ledCtx(S);
+  const accts = (u && Array.isArray(u.accounts) ? u.accounts : []).filter(q => q && q.a && typeof q.a.id === 'string'), own = Object.create(null);
+  for (const q of accts) { if (x.by[q.a.id] || own[q.a.id]) return ledFail(ledNo('acct-new', 'id in use: ' + q.a.id)); own[q.a.id] = 1; }
   for (const it of items) {
     const e = it.e;
-    if ((e.acct != null && !x.by[e.acct]) || (e.acct2 != null && !x.by[e.acct2])) return ledFail(ledNo('acct'));
+    if ((e.acct != null && !x.by[e.acct] && !own[e.acct]) || (e.acct2 != null && !x.by[e.acct2] && !own[e.acct2])) return ledFail(ledNo('acct'));
     for (const src of ledSrcs(e)) if (ledLogged(S, src)) return ledFail(ledNo('already', src));
   }
   S.undone.pop();
+  accts.slice().sort((p, q) => p.at - q.at).forEach(q => { S.accounts.splice(Math.min(Number.isSafeInteger(q.at) && q.at >= 0 ? q.at : S.accounts.length, S.accounts.length), 0, q.a); });
   items.slice().sort((p, q) => p.at - q.at).forEach(it => { S.ledger.splice(Math.min(it.at, S.ledger.length), 0, it.e); });
   LED_LAST = null;
   return items.map(it => it.e);
@@ -722,19 +744,29 @@ function ledgerClean(S) {
     return true;
   });
   const ids = Object.create(null), int = v => Number.isSafeInteger(v);
-  const readable = e => {
+  /* known: the accounts an event may name. For the ledger: S.accounts. For an undone step also the accounts that left with an undo */
+  const readable = (e, known) => {
     if (!e || typeof e !== 'object' || LED_KINDS[e.k] !== 1 || !Object.prototype.hasOwnProperty.call(LED_KINDS, e.k)) return 'kind';
     if (!ledDayOk(e.date)) return 'date';
-    if (e.k !== 'move' && !seen[e.acct]) return 'acct';
-    if (LED_TWO[e.k] === 1 && !seen[e.acct2]) return 'acct2';
+    if (e.k !== 'move' && !known[e.acct]) return 'acct';
+    if (LED_TWO[e.k] === 1 && !known[e.acct2]) return 'acct2';
     if (e.k === 'check' ? !int(e.typed) : !int(e.c)) return 'amount';
     if (e.k === 'convert' && !int(e.c2)) return 'amount';
     if (e.k === 'move' && (!ledIdOk(e.place) || !ledIdOk(e.place2))) return 'place';
     if (e.place != null && !ledIdOk(e.place)) return 'place';
     return '';
   };
-  S.ledger = (Array.isArray(S.ledger) ? S.ledger : []).filter(e => { const why = readable(e); if (why) { bad.push({ what: 'event', why, it: e }); moved++; return false; } return true; });
-  S.undone = (Array.isArray(S.undone) ? S.undone : []).filter(u => u && Array.isArray(u.items) && u.items.length && u.items.every(it => it && !readable(it.e) && int(it.at)));
+  S.ledger = (Array.isArray(S.ledger) ? S.ledger : []).filter(e => { const why = readable(e, seen); if (why) { bad.push({ what: 'event', why, it: e }); moved++; return false; } return true; });
+  /* UNDONE STEPS. An account made with a step leaves S.accounts when the step is undone and waits inside an undone step (accounts:
+     [{ a, at }]). The events of the undone steps still name it, so those accounts count as known here. Without this the step would be
+     thrown away on load and redo would be lost. A step that still cannot be read is set aside in S.ledgerBad, never dropped */
+  const und = Array.isArray(S.undone) ? S.undone : [], out = Object.create(null);
+  const acctOk = q => !!q && int(q.at) && !!q.a && typeof q.a === 'object' && ledIdOk(q.a.id) && Object.prototype.hasOwnProperty.call(LED_TYPES, q.a.type) && !seen[q.a.id];
+  const shape = u => !!u && Array.isArray(u.items) && u.items.length > 0 && (u.accounts == null || (Array.isArray(u.accounts) && u.accounts.every(acctOk)));
+  und.forEach(u => { if (shape(u)) (u.accounts || []).forEach(q => { out[q.a.id] = 1; }); });
+  const known = Object.assign(Object.create(null), seen, out);
+  S.undone = und.filter(u => { const ok = shape(u) && u.items.every(it => it && !readable(it.e, known) && int(it.at));
+    if (!ok) { bad.push({ what: 'undone', why: 'step', it: u }); moved++; } return ok; });
   if (!Array.isArray(S.removed)) S.removed = [];
   let next = ledNextId(S);
   S.ledger.forEach(e => { if (!int(e.id) || ids[e.id]) e.id = next++; ids[e.id] = 1; });

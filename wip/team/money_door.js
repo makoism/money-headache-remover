@@ -438,15 +438,10 @@ function doorApply(S, kindId, ans, today) {
   ans = ans || {};
   const twins = doorSeen(S, plan, ans.src).map(e => e.id);
   if (twins.length && typeof ans.src === 'string' && DOOR_SRC_FREE[ans.src] !== 1 && ans.sure !== true) return Object.assign(doorNo('seen'), { seen: twins });
-  let made = null;
-  if (plan.make) { made = doorL.ledgerAddAccount(S, plan.make); if (!made) { const w = doorL.ledgerWhy() || {}; return { ok: false, code: w.code, ask: 'who', why: w.why, from: 'ledger' }; } }
-  const before = doorFigures(S), out = doorL.ledgerAddMany(S, plan.events, today);
-  if (!out) {
-    const w = doorL.ledgerWhy() || {};
-    if (made) S.accounts.splice(S.accounts.indexOf(made), 1);   /* the account made a moment ago goes too: a refusal leaves nothing behind */
-    return { ok: false, code: w.code, ask: null, why: w.why, from: 'ledger' };
-  }
-  const after = doorFigures(S);
+  /* the account for a new "who" is made by the ledger together with the events: all or none, and one undo takes both out */
+  const before = doorFigures(S), out = doorL.ledgerAddMany(S, plan.events, today, plan.make ? { accounts: [plan.make] } : null);
+  if (!out) { const w = doorL.ledgerWhy() || {}; return { ok: false, code: w.code, ask: w.code === 'acct-new' ? 'who' : null, why: w.why, from: 'ledger' }; }
+  const made = plan.make ? S.accounts.find(a => a && a.id === plan.make.id) || null : null, after = doorFigures(S);
   return { ok: true, kind: plan.kind, events: out, parts: plan.parts, made, before, after, moved: doorDiff(before, after), seen: twins };
 }
 /* "Yes, it is the same money": after a 'seen' refusal, the event with this id also remembers the line (src) that was refused.
@@ -460,7 +455,8 @@ function doorSame(S, id, src) {
 /* what a kind would do, without recording it: the same answer as doorApply, worked out on a copy */
 function doorPreview(S, kindId, ans, today) { return doorApply(JSON.parse(JSON.stringify(S)), kindId, ans, today); }
 /* undo and redo are the ledger's own: one step of the door is one step there, however many events it holds.
-   An account made for a new "who" stays, empty, so redo still works; it holds nothing and can be closed. */
+   An account made for a new "who" leaves with the undo of its step and comes back with the redo (the ledger keeps it in the undone
+   step); it stays while another event still names it. */
 function doorUndo(S, id) { return id == null ? doorL.ledgerUndo(S) : doorL.ledgerUndo(S, id); }
 function doorRedo(S) { return doorL.ledgerRedo(S); }
 
