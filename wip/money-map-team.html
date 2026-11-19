@@ -1885,6 +1885,8 @@ p.hs-more .link { padding-top: 12px; padding-bottom: 12px; margin-top: -12px; ma
 .mp-cards { list-style: none; margin: 8px 0 4px; padding: 0; }
 .mp-cards li { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 2px 0; }
 .mp-cards small { color: var(--ink2); }
+.mp-cards li > span { min-width: 0; }
+.mp-cards li > .link { flex: none; white-space: nowrap; }   /* H1: "Update" broke into two lines on a phone */
 .mp-after { margin: 6px 0; }
 .mp-after b.bad { color: var(--bad); }
 .mp-cardf label { display: block; font-weight: 600; margin: 8px 0 2px; }
