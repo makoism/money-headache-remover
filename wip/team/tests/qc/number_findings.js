@@ -25,14 +25,14 @@ const relook=async p=>{await L.tab(p,'tab-month');await L.tab(p,'tab-home');};
   await addRc(p,[['2026-11-03',40.25],['2026-11-09',47.25]]);await relook(p);
   const one=await p.evaluate(()=>{const C=__t.calcAll(__t.S);return C.byYm['2026-11'].pendLeft;});
   const c0=await card(p);
-  ck(`[${how}] the offer names the model's unspent amount to the cent (m.pendLeft ${one})`,one===212.5&&/\$212\.50 of free to spend is not logged/.test(c0),c0);
+  ck(`[${how}] the offer names the model's unspent amount to the cent (m.pendLeft ${one})`,one===212.5&&/\$212\.50 of Free to spend isn't logged/.test(c0),c0);
   await p.evaluate(h=>document.querySelector(h==='bank'?'[data-sweepbank]':'[data-sweep]').click(),how);await w(600);
   const c1=await card(p);
   ck(`[${how}] the answer card says the full amount`,how==='bank'?/\$212\.50 counted in the bank/.test(c1):/\$212\.50 put toward Trip/.test(c1),c1);
   /* S3 (38.30 gate): Plan says where the answered money went, for that month */
   { await L.tab(p,'tab-month');await p.evaluate(()=>{const e=document.getElementById('monthSel');e.value='2026-11';e.dispatchEvent(new Event('change',{bubbles:true}));});await w(500);
     const t=await p.evaluate(()=>{const e=document.getElementById('outCounted');return e&&!e.hidden?e.innerText.replace(/\s+/g,' '):'(none)';});
-    ck(`[${how}] Plan for November says where the money went`,how==='bank'?/\$212\.50 of this month's Free to spend was not spent\. It came back to the bank/.test(t):/\$212\.50 went to Trip/.test(t),t);
+    ck(`[${how}] Plan for November says where the money went`,how==='bank'?/\$212\.50 of this month's Free to spend wasn't spent\. It came back to the bank/.test(t):/\$212\.50 went to Trip/.test(t),t);
     await L.tab(p,'tab-home'); }
   await addRc(p,[['2026-11-20',100]]);await relook(p);
   const c2=await card(p),m2=await p.evaluate(()=>{const m=__t.calcAll(__t.S).byYm['2026-11'];return [m.counted,m.topup&&m.topup.used];});
