@@ -13,14 +13,14 @@ const L=require('./lib_r12.js');const R=L.R;const w=R.w;
  const before=await nums();
  const change=()=>p.evaluate(()=>{const S=__t.S;S.plan.goals.find(g=>g.emergency).start=0;S.steps.a=[{from:'2026-11',v:2000}];__t.persist();});
  /* 1. open from Settings, change, close: Undo is offered and works */
- await L.settings(p);await p.evaluate(()=>document.getElementById('setupOpen').click());await w(300);await p.evaluate(()=>document.getElementById('setupOpen').click());await w(900);
+ await L.settings(p);await p.evaluate(()=>document.getElementById('setupOpen').click());await w(700);await p.evaluate(()=>document.getElementById('setupOpen').click());await w(900);
  await change();await p.evaluate(()=>document.getElementById('tourSkip').click());await w(900);
  const bar=await p.evaluate(()=>{const e=document.getElementById('undoBar');return e&&!e.hidden?document.getElementById('undoTxt').textContent:'(none)';});
  ck(`closing setup offers Undo ("${bar}")`,/Setup changed your plan/.test(bar));
  await p.evaluate(()=>document.getElementById('undoGo').click());await w(900);
  ck('Undo brings back the saved amount, the pay and the bank',await nums()===before,await nums());
  /* 2. open, change, then the page closes part-way: Undo after the reload */
- await L.settings(p);await p.evaluate(()=>document.getElementById('setupOpen').click());await w(300);await p.evaluate(()=>document.getElementById('setupOpen').click());await w(900);
+ await L.settings(p);await p.evaluate(()=>document.getElementById('setupOpen').click());await w(700);await p.evaluate(()=>document.getElementById('setupOpen').click());await w(900);
  await change();await w(1200);
  await p.reload();await p.waitForFunction(()=>window.__t&&__t.S&&__t.S.ui&&__t.S.ui.cleared===true,{timeout:15000}).catch(()=>{});await w(1500);
  const bar2=await p.evaluate(()=>{const e=document.getElementById('undoBar');return e&&!e.hidden?document.getElementById('undoTxt').textContent:'(none)';});
