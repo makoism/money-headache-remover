@@ -1,7 +1,12 @@
 # Lane: ledger core (side N). Handoff
 
 Branch `side/ledger-core`, made from `side/ledger-design`. Finished 2026-11-19. Made-up numbers only.
-Nothing that existed was changed. New files only:
+
+**Second pass (side N2, 2026-11-19), see "Second pass" at the end:** the reference and the tests now take the check with the latest day, the
+reference keeps the one rule in the five cases it used to break, and the differential test covers them. `LEDGER_DESIGN.md` records all of it,
+`cutDay`, instalments and the storage key.
+
+First pass: nothing that existed was changed. New files only:
 
 | File | What it is |
 |---|---|
@@ -14,20 +19,22 @@ Nothing that existed was changed. New files only:
 (`tests/next/` is `wip/team/tests/next/`.)
 
 ## Proof
-`bash wip/team/tests/next/ledger_core_all.sh` from any folder, about 20 seconds. Last run:
+`bash wip/team/tests/next/ledger_core_all.sh` from any folder, about 70 seconds. It stops at the first failing test (pipefail). Last run:
 
 | Test | Result |
 |---|---|
 | `MODEL=tests/next/ledger_core_model.js node tests/next/ledger_conservation.js` | PASS, 113,531 checks (400 lists, 8 personas, 2 migrations) |
-| `MODEL=ledger.js node tests/next/ledger_fuzz.js` | PASS, 240,864 checks (300 people) |
-| `node tests/next/ledger_diff.js` | PASS, 389,257 checks (3,000 people, 71,608 events through both models, 600 migrations) |
-| `node tests/next/ledger_edge.js` | PASS, 464 checks |
+| `MODEL=ledger.js node tests/next/ledger_fuzz.js` | PASS, 531,456 checks (600 people: 300 as before, 300 with the new cases). Was 240,864 |
+| `node tests/next/ledger_diff.js` | PASS, 691,210 checks (4,500 people: 3,000 as before with the same 71,608 events, 1,500 with the new cases; 108,161 events through both models, 600 migrations). Was 389,257 |
+| `node tests/next/ledger_edge.js` | PASS, 476 checks |
+| `MODEL=tests/next/ledger_ref.js node tests/next/ledger_fuzz.js` | PASS, 531,456 checks (the reference under the same fuzz) |
+| `MODEL=tests/next/ledger_ref.js node tests/next/ledger_conservation.js` | PASS, 113,531 checks |
 | name clash check | 68 top-level names in `ledger.js`, 63 page files, no clash |
 
 - `ledger_fuzz.js` loads `ledger.js` directly. `ledger_conservation.js` needs the adapter, because `lib.js` asks for `freshState` and
   `setFreeMode`, and `freshState` belongs to `model.js` in the page. The adapter also turns side C's event shape into the design's
   shape and gives a day to the test events that have none (one day after the latest event). It changes no figure.
-- No existing test was edited or loosened.
+- First pass: no existing test was edited. Second pass: `ledger_fuzz.js` I7 was changed and made stricter (see "Second pass"); nothing was loosened and no check was removed.
 
 ## The saved shape
 `ledgerFresh` returns `{ ui: { freeMode, cur, payDays }, accounts: [], ledger: [], undone: [], removed: [], ledgerV: 1, ledgerNext: 1 }`.
@@ -76,9 +83,23 @@ In the app these sit on `S` beside what is there now (no name is in use today): 
 3. **Saving** (`flush` in `ui0.js`): before `localStorage.setItem`, read the stored copy and skip the write when `ledgerMayWrite(stored)` is false, the same
    way `storedIsNewer()` is used. The same test belongs in the vault upload and in "other tab" merges. **Pages already shipped (38.31 and older) do not know
    `ledgerV`.** They do keep the `rev` rule, so they will not overwrite a newer `rev`, but an old page opened later can still save with a higher `rev` and it
-   rebuilds `S` in `normalize`, which may drop the ledger fields. The safe way: save ledger copies under a new storage key and leave the old key as the frozen copy.
+   rebuilds `S` in `normalize`, which may drop the ledger fields. **Decided (N2, recorded in LEDGER_DESIGN.md "Storage"): the ledger is saved under a new
+   storage key and the old key is left alone.** The cloud copy needs both halves too: the same `ledgerMayWrite` guard on the copy on the server before an upload
+   replaces it, and a place on the server that a 38.31 page would not download as its own save. The vault lane must hear this.
 4. **The move**: on the first load of a copy with no `ledgerV`, call `migrate3831(savedCopy, todayYmd)` and copy its fields onto `S`. It reads `cfg.bankNow` and
    `cfg.bankNowAt`, `S.cards` (`id, name, owed, payDay, at`), `plan.goals` (`id, start`), `plan.debts`, `ui.cur`, `ui.freeMode`, `ui.payDays`. The whole saved copy is in `S.frozen`.
+   **Before this step, a wiring check that is not written yet (it waits for the main session's storage shape; do not guess the field names before that):**
+   write `tests/next/ledger_migrate_real.js`. It must
+   - load a saved copy made by the **v1 candidate page** itself (open the candidate in the page test, set up a made-up person with a bank figure, two cards,
+     goal starts and at least one debt of every kind the screens can make, save, and read the stored copy back; made-up numbers only, never a real copy);
+   - run it through `migrate3831(copy, today)`;
+   - **fail on any field it cannot read**: every figure a person typed in the saved copy (the bank figure and its date, each card's balance, pay day and date,
+     each goal start, each debt's balance and pay day) must be found again in the new ledger, to the cent, in the account it belongs to; any key under
+     `cfg`, `cards[]`, `plan.goals[]` and `plan.debts[]` that the script does not list by name as "read" or "known, not money" is a failure, so a renamed or
+     new field cannot pass silently; `S.oldFigures.notes` must be empty; and a debt of kind card must not also arrive as a card from `S.cards` (owed twice);
+   - end with a PASS line and be added to `ledger_core_all.sh`.
+   Today `ledgerRead3831` tries `owed`, `bal`, `balance`, `start` for a debt's balance, in that order, and reads no date for a debt. These names were
+   not checked against a real copy. When the script names the real fields, replace the guess list with them.
 5. **ACT** (`actions.js`): one new group of actions, each a thin call, each inside `ACT.tx` for the redraw and save:
    `ACT.moneyIn / moneyOut / place / transfer / payCard / check / accept / startFresh` call `ledgerAdd`, `ledgerAccept`, `ledgerStartFresh` with today's day.
    On false, show the words for `ledgerWhy().code`. **Undo for ledger events is `ledgerUndo` and `ledgerRedo`, not the snapshot stack**: add the ledger fields to
@@ -119,6 +140,8 @@ Each choice is the safer one for "nobody loses data" and "no coin counted twice"
 13. **Ids** are a counter (`S.ledgerNext`). Two devices adding at once would clash; merging two copies is not handled here.
 
 ## Where ledger.js differs from the reference, and what I believe is wrong in the design
+**Points 1 to 7 are closed by the second pass:** the reference, the fuzz and the design text now say what `ledger.js` does, and the differential test
+draws these cases. They are left here as the record of what was found. Points 8 and 9 are still open.
 The differential test stays inside what both read the same way. These cases are tested alone in `ledger_edge.js`.
 1. **"The check added last" should be "the latest day".** `ledger_fuzz.js` I7 and the reference take the check added last for each account. Failing case: check
    the bank on 2026-12-09, then import an older statement that holds a check dated 2026-10-01: the screen would now show the October gap as the current one.
@@ -144,6 +167,41 @@ Each has a made-up event list in `ledger_edge.js` and holds the one rule.
 | **13th month pay** | `in`, sub `pay`, `startsPeriod: false`. It waits in Waiting to be placed. | None in the ledger. Asking about it in November is a screen matter. |
 | **Loan paid out of pay before it lands** | A negative `adjust` on the loan: owed falls, no account moves. | Works, but it reads as a correction. Proposed: a `sub` word for it, or record gross pay and a `repay`. |
 | **Two people, three pay days** | `payDays: [5, 15, 30]` | None. |
+
+## Second pass (side N2, 2026-11-19)
+Two commits, in this order: `12d144b` holds only tests, failing (fuzz on the reference 42,142 fail, fuzz on `ledger.js` 4,427, diff 81,690); `06a28bf` is the fix.
+
+**Found**
+1. The reference and I7 took the check added last. `ledger.js` followed I7, so it had the same fault.
+2. The reference broke Total or a card line in the five listed cases, and in two more that came up while writing the tests: a card paid in full **in another
+   currency** got a "for the card" line in home places, and owed money in another currency was added into Owed. `ledger.js` already kept both apart.
+3. `ledger_core_all.sh` could not fail: every test was piped through `tail`, so a failing test still ended in "LEDGER CORE ALL PASS".
+
+**Done**
+- **I7, stricter.** Per account the check shown must be the one with the latest day (same day: the one added last), and its date must be shown. Two asserts
+  where there was one. Where "added last" is also the latest day, the old assert is still made unchanged.
+- **I12, new** in the fuzz: handed to the wallet since pay day goes by day, worked out in the test.
+- **A second block of people** in the fuzz (300, seed + 1000) and in the diff (1,500, seed + 1000) draws: money sent abroad, cash on a card, a card paid from
+  the wallet, `free` in Wallet mode, a card refund or an adjust with no place, and in the diff a card in another currency. The first block is the same list
+  as before, event for event, so the old checks are all still made.
+- **The diff** compares each check with its day, compares handed to the wallet straight (no re-sorting), compares `foreignOwed`, and asserts on its own that
+  `ledger.js` shows the check with the latest day.
+- **`ledger_ref.js`** fixed in all of the above. **`ledger.js`**: one change, `placesOf().checks` picks the latest day.
+- **`ledger_core_all.sh`** uses pipefail, prints the counts, and runs the fuzz on the reference too.
+- **`LEDGER_DESIGN.md`**: the kinds table, a new section "The one rule, case by case", the latest-day check, `cutDay` and `of`, the cut-off day and
+  instalments, the storage key and the guard, and the wrong note 6 corrected.
+
+**Choices made without asking**
+- Same day, two checks: the one added last is shown.
+- The reference was also brought in line on the two extra cases above, because the differential test could not draw a card in another currency otherwise.
+- The `ledger.js` change went into the fix commit, not a commit of its own, so no commit after the test commit leaves the diff red.
+- `DECISIONS.md` on this branch has no section "The ledger design: defaults taken"; it was read from `origin/wip-38.31`. Nothing here goes against it.
+
+**Still open**
+- Still outside the differential test: an event dated before its account's opening (refused by `ledger.js`, recorded by the reference). Tested alone in `ledger_edge.js`.
+- Points 8 and 9 above (undo the adjust when a late statement arrives; history before the first typed balance).
+- The `plan.debts` wiring check (step 4 above), waiting for the main session's storage shape.
+- A kind `shift` for moving owed money between two owed accounts (instalments use two adjusts in one step today).
 
 ## Not done
 - `tests/next/migration_fixtures.js` (the 19 old builds in the real page) needs the page wired, so it is for the main session. Its hook reads `e.t === 'open'`; ledger events use `e.k === 'open'`, so `PAGE_HOOK` in `lib.js` needs that one word changed when the page is wired.
