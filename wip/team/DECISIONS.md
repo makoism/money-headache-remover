@@ -169,3 +169,21 @@ Art is paused. v1 is for Mako to use for his real money, so everything must work
 - What follows for v1: almost all spending goes on the cards and leaves the bank only on the 10th and 11th, right when pay lands. So the bank balance alone is not the truth mid-month: card spending is already spent but still in the bank. v1 must show it plainly: what is on each card now (typed, like the bank figure), when it is paid, and what the bank will hold after the cards are paid. The month should follow his pay day (the 10th), not the calendar, where that changes what is safe to spend.
 - Testing: Android (Chrome, installed to the home screen) is the phone tested hardest. Test profiles use this shape with made-up numbers.
 
+## Team test about the team; lighter QC (Mako agreed, 2026-11-19)
+1. **The team test is built for the people in it.** Mako asks his two teammates the same shape questions he answered (where their money sits, how they are paid, cards and pay-later, phone; no amounts), and the team gate is set by what their shapes need. Moved to the wider-launch gate: the Japan and France account presets, password-protected statements (D5), the full one-question-per-screen flows (H3), and the full 95% sweep. Every "nobody loses data" point (section E) stays at the team gate.
+2. **QC on the v1 candidate:** both gates in full; the panel reviews only the screens changed since round 4 plus a beginner walk of Home and setup. After v1, Mako's real use is the panel; a fix needs `check.sh full` plus the two gates.
+3. **The ledger is designed on paper first** (side/ledger-design, LEDGER_DESIGN.md), proved with made-up event lists, before any ledger code. The rolling window folds into B1, except the fix that stops months being dropped on load (E6), which ships first because it loses data.
+4. **The coordinator hands off too** at about 150k tokens: COORDINATOR.md holds the handoff, and Mako gets a new chat link.
+
+## Pace: use the full allowance (Mako, 2026-11-19)
+Mako has one usage reset token that expires at the end of November. Plan: use the whole weekly allowance by Sunday 22 Nov (or finish first), then again by Wednesday 25 or Thursday 26 Nov, when he uses the reset. So: run as many useful lanes in parallel as the safety rules allow (one session on app files of the release branch; side lanes on their own branches and named files), and never idle while useful work exists. Never spend for the sake of spending: no repeated QC rounds, no busywork. Every session keeps a resume timer so work restarts by itself after a limit. Sessions cannot see the weekly meter exactly; Mako can check it under Settings, Usage.
+
+## The team's shape, answered by Mako (2026-11-19)
+Mako answered the five shape questions himself. Do not wait for the teammates and do not ask again. The team gate is built for this:
+1. **Where money sits:** what is standard in the Philippines: the usual banks, e-wallets such as GCash and Maya, cash, pay-later apps. Looked up by web search, then used for the account presets and the team gate.
+2. **Pay:** monthly pay is the default. Separate pay is also supported (two incomes, or pay in two parts).
+3. **Cards:** assume everyone has a card. Cards are core, not a special case.
+4. **Phones:** it must work on both iPhone and Android.
+5. **What would make them stop:** not answered for the team; use Mako's own: "if it didn't give me clarity".
+(This replaces "Mako asks his two teammates" in "Team test about the team" point 1; the rest of that point stays.)
+
