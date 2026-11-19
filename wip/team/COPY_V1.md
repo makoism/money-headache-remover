@@ -169,11 +169,17 @@ The lines that would put Mako off most, worst first. They are ordinary rows and 
 + The video didn't load, so skip it and carry on.
 @@ A-013 | ui45.js | AI: no | Mako: no A13 | Next: yes
 - The first setup is short: pay, rent, food and one goal.
-+ The first setup is short, just pay, rent, food and one goal.
++ The first setup is short, just your pay, rent, food and an emergency fund. Finish later at the top stops here and keeps what you typed, and Guided setup under Help opens it again.
+# H1 walk, finding 9: the one goal setup asks about is the emergency fund, and Finish later now says what it does (ui45.js leaveTour saves and closes, Help has Guided setup)
 @@ A-015 | ui45.js | AI: no | Mako: no A13 B2 | Next: yes
 - Receipts keeps this true: log what you spend, or upload each month's statement. What is left of Free to spend at month end can go toward a goal. Help, bottom right, has the video and this setup.
-+ To keep this true you log what you spend in Receipts or upload each month's statement, and whatever is left of Free to spend at the end of the month can go into a goal. Help at the bottom right has the video and this setup.
++ After setup, the Receipts tab at the top is where you log what you spend or upload each month's statement, and that keeps these numbers true. Whatever is left of Free to spend at the end of the month can go into a goal. The ? button at the bottom right of every screen is Help, it has the video and this setup.
+# H1 walk, finding 5: says where Receipts and Help are
 # UNSURE: "keeps this true" is the team's phrase, not checked against how he'd say it
+@@ A-015b | ui45.js | AI: no | Mako: yes | Next: yes
+- , <b>+${fmt2(dep)}</b> a month
++ so far, and your plan adds <b>${fmt2(dep)}</b> a month
+# H1 walk, finding 5: "+X a month" read as money already saved. Reads after "X of Y": "X of Y so far, and your plan adds Z a month."
 @@ A-016 | ui45.js | AI: no | Mako: no B14 B13 | Next: yes
 - Pay skipped. Everything is zero until you add numbers.
 + You skipped pay, so everything is zero until you add numbers.
@@ -338,13 +344,15 @@ The lines that would put Mako off most, worst first. They are ordinary rows and 
 + If you're not sure leave it blank and add it later on Plan
 @@ B-002 | ui45s.js | AI: no | Mako: no B13 B4 | Next: yes
 - Full amount, even if someone shares it. Put their share under Money in.
-+ Put the full amount even if someone shares it, and put their share under Money in
++ Put the full amount even if someone shares it. Their share counts as pay, so tap Back and add it to Other pay each month on the Your money step
+# H1 walk, finding 6: Money in is a name not met yet in setup. Other pay each month is the field setup already showed (its note says a partner's share goes there)
 @@ B-003 | ui45s.js | AI: no | Mako: no C full stop | Next: n/a
 - Electricity, gas and water.
 + Electricity, gas and water
 @@ B-004 | ui45s.js | AI: no | Mako: no B13 | Next: yes
 - Groceries and everyday meals. Eating out for fun goes under Free to spend.
-+ Groceries and everyday meals - eating out for fun goes under Free to spend
++ Groceries and everyday meals. Eating out for fun isn't a bill - it comes out of Free to spend, your money for fun
+# H1 walk, finding 6: Free to spend is said in plain words the first time it comes up
 @@ B-005 | ui45s.js | AI: no | Mako: no B3 | Next: n/a
 - Home internet, or the data plan if that is how you connect.
 + Home internet, or your data plan if that's how you get online
@@ -360,7 +368,8 @@ The lines that would put Mako off most, worst first. They are ordinary rows and 
 + If you're self-employed include your own SSS, PhilHealth and Pag-IBIG too.
 @@ B-009 | ui45s.js | AI: no | Mako: no B13 | Next: yes
 - Tick what applies. Rough numbers are fine.
-+ Tick the ones you pay, rough numbers are fine
++ A few are ticked to get you started. Tick the ones you pay and untick the ones you don't, rough numbers are fine
+# H1 walk, finding 6: says why some arrive ticked
 @@ B-010 | ui45s.js | AI: yes A8 | Mako: no B13 | Next: yes
 - Missing one? Add lines later.
 + If one's missing you can add lines later
@@ -1017,6 +1026,18 @@ The lines that would put Mako off most, worst first. They are ordinary rows and 
 @@ F-048 | ui7.js | AI: no | Mako: no C toast | Next: n/a
 - repeating payments.
 + repeating payments
+@@ F-049 | ui8.js | AI: no | Mako: yes | Next: yes
+- planned: safe to spend in
++ planned: yours to spend over the whole of
+# H1 walk, finding 7: the tile is the month's plan, not what is safe today. A month name follows. clear wins: "planned" stays first
+@@ F-050 | ui8.js | AI: no | Mako: yes | Next: n/a
+- planned: in your burrows by the end of
++ planned: what your burrows will hold by the end of
+# H1 walk, finding 7: read as money already there. A month name follows, then ", with this month's saving"
+@@ F-051 | ui8.js | AI: no | Mako: yes | Next: yes
+- Bank after the cards are paid:
++ What's on the cards is already spent. Bank after the cards are paid:
+# H1 walk, finding 7: says the card amount is not money to spend
 ```
 
 # Notes from the listing, part by part
