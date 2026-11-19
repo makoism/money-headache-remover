@@ -195,3 +195,14 @@ Mako read a sample of the written help texts and said: "this copy example you se
 4. The older priority "wording like a manual or like him" now reads: like him. Plain is still right; manual-like is not.
 (Voice guide: wip/team/VOICE.md. Agent: .claude/agents/qc-voice.md. No personal details or real figures from his messages go into the repo; the guide describes the style.)
 
+## The ledger design: defaults taken, as notes for Mako (team, 2026-11-19)
+LEDGER_DESIGN.md (branch side/ledger-design) is the design for step B1, proved on made-up event lists. These are the team's defaults, not Mako's decisions; he changes any of them by using the app (rule: Mako is the final check).
+- Two lists, one rule: accounts are where money sits, places are what it is for; every coin is in exactly one place, so accounts = places = Total. What is owed sits in owed accounts, never in a place. Nothing is stored as a balance; everything adds up from dated events; the ledger is never trimmed.
+- Cards are core: card spending moves the amount into a "for that card" line inside Bills left. Total stays, Free to spend drops. A card with an older balance shows two lines (this month's, and the older balance held like a loan).
+- Pay-later buys touch no place; the instalments are bills. Borrowed money is owed. Money lent is still yours ("owed to you"), inside Total.
+- Money in another currency sits beside Total until converted.
+- A month runs from one pay day to the next. A second income on the same day does not start a new month.
+- A place can go below zero, shown in amber, never refused.
+- Moving a 38.31 copy: only typed figures move; the old plan is shown once beside them; a frozen copy is kept. A3 debt goals become loan accounts.
+- Words until Mako picks: "Waiting" (new pay not yet placed), "for the card", "owed to you".
+
