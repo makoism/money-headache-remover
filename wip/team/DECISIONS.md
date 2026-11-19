@@ -151,3 +151,12 @@ Three documents were kept in the Claude project and should be copied into the re
 ## Why this exists (Mako, 2026-11-19)
 Recorded in full in NORTH_STAR.md, "Why this exists", so every agent and session reads it: built for Mako first as the money calculator he uses for life; money as a place that feels like home, not a form; it teaches the mindset as well as the numbers, for people who never learned to save; first impression "money management is this simple, I upload my stuff and it does it for me"; it holds your hand every step, one thing at a time (Typeform), every screen obvious or explaining itself on the spot (mindset first, then function), question marks with short videos by Mako (written words first).
 
+## How Mako works with the team (Mako, 2026-11-19)
+
+1. **Mako is visual and checks everything on his phone.** Every update to Mako comes with screenshots he can see in the chat, and with the link to click and try the app right there. Never a link-less or picture-less report.
+2. **Previews before deploy:** a session that wants Mako to see a build publishes it as a private preview (the Artifact tool) and sends the link to the coordinating session with screenshots; the coordinating session passes both to Mako. After a deploy: the live link, https://the-burrow.mako-162.workers.dev, plus screenshots.
+3. **Art: designs first, then build.** In the art step, the first thing Mako gets is designs (mockups or screenshots of options) on his phone. He and the team work on the designs together, and only then is anything implemented. No more building art first and correcting it after.
+4. **Feedback comes from real use, not abstract questions.** Mako tests by using the app with his own money in real situations. Do not send him lists of questions without the app; send the app, with short notes of what to look at, and he brings things up from use.
+5. **Several banks:** confirmed (LAUNCH_CHECKLIST.md A2).
+6. **Cost rules 7 and 8 (Mako agreed to the efficiency review's proposals):** while art is frozen, the art director agent runs only when art files change; the regression runner agent is replaced by the pasted output of `./check.sh full` (everything on its list is already a script). That is 2 of 9 agents saved on every QC run.
+

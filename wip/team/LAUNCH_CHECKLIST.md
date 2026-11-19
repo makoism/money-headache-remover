@@ -14,7 +14,7 @@ Sources: the five concept reviews of 2026-11-19 (north star, new user, money and
 | # | Point | Fix | Gate |
 |---|---|---|---|
 | A1 | v1 shows planned figures that read like real money ("Total ₱35,700, planned" after typing ₱3,000) | "What is in your bank right now": Home asks for the balance the bank app shows, shows it first, and labels every number "now" or "planned" | v1 |
-| A2 | Money sits in several places (several banks, e-wallets, cash, cards, pay-later apps) but the plan knows one "bank" | Accounts in the ledger: every event names a place (what it is for) and an account (where it sits); check each account on its own; account presets for the Philippines, Japan and France (names only, no bank connection) | team |
+| A2 | (Decided by Mako: several banks.) Money sits in several places (several banks, e-wallets, cash, cards, pay-later apps) but the plan knows one "bank" | Accounts in the ledger: every event names a place (what it is for) and an account (where it sits); check each account on its own; account presets for the Philippines, Japan and France (names only, no bank connection) | team |
 | A3 | Money paid toward a "Pay off a debt" goal counted as savings in Saved and Total (bug) | Debt goals stay out of Saved and Total | v1 |
 | A4 | What is owed is not in the picture | v1: one line "You owe X" when cards, loans or debt goals exist. Ledger: an owed side; spending on a card raises what is owed; paying the card moves money from the bank to the card and leaves Total the same | v1 line, team full |
 | A5 | Card spending paid next month is not modelled | the owed side (A4) | team |
