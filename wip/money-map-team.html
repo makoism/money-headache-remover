@@ -15212,7 +15212,7 @@ async function vaultPush(force) {
 /* on opening: if a newer copy sits in the cloud (another device wrote it), load it when this page has nothing of its own, otherwise ask */
 async function vaultCheck() {
   if (vaultChecked) return; vaultChecked = true;
-  if (!vault.on) { paintVault(); return; }
+  if (!vault.on) { paintVault(); relayHealth().then(() => { paintVault(); if (tab === 'home' && typeof renderBackupNudge === 'function') renderBackupNudge(); }).catch(() => { /* no server here */ }); return; }   /* a return visit still learns that the cloud copy is on offer; nothing about the person is sent */
   await relayHealth(); if (!vaultAvailable()) { paintVault(); if (vault.failAt && tab === 'home') renderBackupNudge(); return; }
   try {
     const k = await keysFor(vault.code), r = await vaultReq(k, 'GET');
