@@ -284,7 +284,7 @@ const homeView = () => (HV = viewOf(S, C, nowYm(), ymd(new Date())));
 function purposeFor(g) { if (!g) return ''; const w = S.ui && S.ui.win && S.ui.win[g.id]; return w && w.n === g.name && typeof w.t === 'string' && w.t ? w.t : purposeOf(S, g); }
 const monthsText = r => dwr(r, monthsText0(r));
 const monthsText0 = r => r.pct >= 100 ? 'Full' : r.reached ? (r.months <= 0 ? 'Full this month' : plural(r.months, 'month') + ' to go') : 'No date at this pace';
-const monthsShort = r => r.state === 'paid' ? 'Paid' : r.state === 'short' ? 'Short' : r.state === 'unset' ? 'No amount' : r.pct >= 100 ? 'Done' : r.reached ? (r.months <= 0 ? 'This month' : plural(r.months, 'month')) : 'Over ' + SPAN;
+const monthsShort = r => r.state === 'paid' ? 'Paid' : r.state === 'short' ? 'Short' : r.state === 'unset' ? 'No amount' : r.pct >= 100 ? 'Done' : r.reached ? (r.months <= 0 ? 'This month' : plural(r.months, 'month')) : r.grows === false ? 'Not growing' : 'Over ' + SPAN;
 const fracOf = r => (r.target > 0 ? Math.min(1, Math.max(0, r.saved / r.target)) : 0);
 function renderHero() {
   const el = $('#hHero'), r = HV.main;
@@ -462,7 +462,7 @@ function renderBand() {
   const el = $('#mgBand'); if (!el) return;
   const V = HV, r = V && V.main;
   if (!r || tab === 'home' || tab === 'basics') { el.hidden = true; return; }
-  const g = goalById(S, r.id), p = V.play, when = dwr(r, r.pct >= 100 ? 'Full' : r.reached ? (r.months <= 0 ? 'This month' : plural(r.months, 'month') + ' to go') : 'Over ' + SPAN);
+  const g = goalById(S, r.id), p = V.play, when = dwr(r, r.pct >= 100 ? 'Full' : r.reached ? (r.months <= 0 ? 'This month' : plural(r.months, 'month') + ' to go') : r.grows === false ? 'Not growing: nothing goes in' : 'Over ' + SPAN);
   if (!g) { el.hidden = true; return; }
   const purpose = g.why || g.name;
   put(el, `<span class="mg-l" style="--c:var(--c${g.slot})"><i class="dot"></i><b>${esc(purpose)}</b><em>${when}</em></span><span class="mg-bar" aria-hidden="true" style="--c:var(--c${g.slot})"><i style="width:${fracOf(r) * 100}%"></i></span><span class="mg-s">${sampleOn() ? 'Sample numbers. ' : ''}${V.map.free < 0 ? 'Free to spend: ' + fmt2(V.cells.freeOver) + ' over' : 'Free to spend: ' + fmt2(V.map.free) + ' left'}, ${monthLabel(V.ym, true)}</span>`);

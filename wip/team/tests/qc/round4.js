@@ -23,4 +23,14 @@ const L=require('./lib_r12.js');const R=L.R;const w=R.w;
   await p.evaluate(()=>{const s=document.getElementById('tourSkip');s&&s.click();});await w(400);
   ck('(2) on a desktop both Ask and Help stay',await p.evaluate(()=>getComputedStyle(document.getElementById('askBtn')).display!=='none'));
   ck('no page errors',errs.length===0,errs.join(' | '));await b.close(); }
+ /* (3) north-star round 4: a goal that gets nothing reads "Not growing", never "Over 2 years" */
+ { const {b,p,errs}=await R.phone({w:390,h:844,dpr:1,mobile:true});
+  await p.goto('file://'+(process.env.BUILD||'/home/claude/work/money-map-team.html')+'?sfxtest');await w(1300);
+  await p.evaluate(()=>{const s=document.getElementById('tourSkip');s&&s.click();});await w(400);await p.evaluate(()=>{const s=document.getElementById('coSkip');s&&s.click();});await w(400);
+  await L.zero(p);await p.evaluate(()=>{__t.S.ui.cur='$';});
+  await L.base(p,{pay:3000,bank:1200,min:0,defs:{'bill:rent':1100,'bill:food':400,envelope:300,education:0,invest:0,give:0},tT:0,tM:0,eT:5000,eS:1000,eM:0,noTrip:true});
+  const r=await p.evaluate(()=>{const S=__t.S;S.ui.done={pay:true,bills:true,goals:true};S.ui.sampleHidden=true;const g=S.plan.goals.find(x=>x.emergency);g.monthly=0;__t.persist();__t.restructure();const C=__t.calcAll(S);return [C.months[0].bal[g.id],C.months[C.months.length-1].bal[g.id]];});
+  await L.tab(p,'tab-goals');await w(800);const t=await p.evaluate(()=>document.body.innerText.replace(/\s+/g,' '));
+  ck('(3) a goal with nothing going in ('+r.join(' to ')+') reads "Not growing", never "Over 2 years"',r[0]===r[1]&&/Not growing/.test(t)&&!/Over 2 years/.test(t),(t.match(/Emergency fund.{0,120}/g)||[]).slice(0,4).join(' || '));
+  ck('no page errors',errs.length===0,errs.join(' | '));await b.close(); }
  console.log(bad?'FAILED '+bad:'ALL PASS');process.exit(bad?1:0);})();

@@ -2896,7 +2896,9 @@ function goalRows(S, C, ym) {
   return S.plan.goals.map(g => {
     const gi = goalInfo(S, C, g.id, ym), live = g.target > 0 && gi.state !== 'paid' && gi.state !== 'short';
     return { id: g.id, name: g.name, slot: g.slot, kind: kindOfGoal(S, g), emergency: !!g.emergency, target: capOf(g), saved: gi.bal, togo: Math.max(0, capOf(g) - gi.bal), pct: wholePct(gi.bal, capOf(g)), state: gi.state,
-      reached: gi.reached, months: gi.reached ? Math.max(0, ymIdx(gi.reached) - ix) : null, need: gi.need, slack: gi.slack, due: g.due || null, readyBy: gi.readyBy, had: gi.had, live };
+      reached: gi.reached, months: gi.reached ? Math.max(0, ymIdx(gi.reached) - ix) : null, need: gi.need, slack: gi.slack, due: g.due || null, readyBy: gi.readyBy, had: gi.had, live,
+      /* does anything go in before the plan ends? A goal getting nothing is "not growing", never "over 2 years" (38.31 north-star round 4) */
+      grows: ((C.months[C.months.length - 1] || { bal: {} }).bal[g.id] || 0) > gi.bal + 0.004 };
   });
 }
 /* the one main goal: the person's pick if it is still being saved for, otherwise the nearest one (the emergency fund goes last, a finished goal after that) */
@@ -15819,7 +15821,7 @@ const homeView = () => (HV = viewOf(S, C, nowYm(), ymd(new Date())));
 function purposeFor(g) { if (!g) return ''; const w = S.ui && S.ui.win && S.ui.win[g.id]; return w && w.n === g.name && typeof w.t === 'string' && w.t ? w.t : purposeOf(S, g); }
 const monthsText = r => dwr(r, monthsText0(r));
 const monthsText0 = r => r.pct >= 100 ? 'Full' : r.reached ? (r.months <= 0 ? 'Full this month' : plural(r.months, 'month') + ' to go') : 'No date at this pace';
-const monthsShort = r => r.state === 'paid' ? 'Paid' : r.state === 'short' ? 'Short' : r.state === 'unset' ? 'No amount' : r.pct >= 100 ? 'Done' : r.reached ? (r.months <= 0 ? 'This month' : plural(r.months, 'month')) : 'Over ' + SPAN;
+const monthsShort = r => r.state === 'paid' ? 'Paid' : r.state === 'short' ? 'Short' : r.state === 'unset' ? 'No amount' : r.pct >= 100 ? 'Done' : r.reached ? (r.months <= 0 ? 'This month' : plural(r.months, 'month')) : r.grows === false ? 'Not growing' : 'Over ' + SPAN;
 const fracOf = r => (r.target > 0 ? Math.min(1, Math.max(0, r.saved / r.target)) : 0);
 function renderHero() {
   const el = $('#hHero'), r = HV.main;
@@ -15997,7 +15999,7 @@ function renderBand() {
   const el = $('#mgBand'); if (!el) return;
   const V = HV, r = V && V.main;
   if (!r || tab === 'home' || tab === 'basics') { el.hidden = true; return; }
-  const g = goalById(S, r.id), p = V.play, when = dwr(r, r.pct >= 100 ? 'Full' : r.reached ? (r.months <= 0 ? 'This month' : plural(r.months, 'month') + ' to go') : 'Over ' + SPAN);
+  const g = goalById(S, r.id), p = V.play, when = dwr(r, r.pct >= 100 ? 'Full' : r.reached ? (r.months <= 0 ? 'This month' : plural(r.months, 'month') + ' to go') : r.grows === false ? 'Not growing: nothing goes in' : 'Over ' + SPAN);
   if (!g) { el.hidden = true; return; }
   const purpose = g.why || g.name;
   put(el, `<span class="mg-l" style="--c:var(--c${g.slot})"><i class="dot"></i><b>${esc(purpose)}</b><em>${when}</em></span><span class="mg-bar" aria-hidden="true" style="--c:var(--c${g.slot})"><i style="width:${fracOf(r) * 100}%"></i></span><span class="mg-s">${sampleOn() ? 'Sample numbers. ' : ''}${V.map.free < 0 ? 'Free to spend: ' + fmt2(V.cells.freeOver) + ' over' : 'Free to spend: ' + fmt2(V.map.free) + ' left'}, ${monthLabel(V.ym, true)}</span>`);
