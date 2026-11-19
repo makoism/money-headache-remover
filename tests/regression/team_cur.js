@@ -94,7 +94,7 @@ const puppeteer = require('/home/claude/work/tools/node_modules/puppeteer-core')
   ok('old copy where a bill was edited is left alone', (await pay()) === '¥360,000' && (await q('#ra-nec')) !== '¥110,000');
   await tab('basics'); await p.select('#curSel', '€'); await w(300); await tab('month');
   ok('...and switching currency on it only changes the symbol', (await pay()) === '€360,000' && (await q('#ra-nec')) !== '€910');
-  await tab('basics'); ok('...with the note saying so', (await note()) === 'Amounts unchanged. Only the symbol changed.');
+  await tab('basics'); ok('...with the note saying so', (await note()) === "The amounts didn't change, only the symbol did.");
   await seed('{"ui":{"cur":"£"}}');
   ok('old copy in pounds starts at zero, not with peso-sized bills', (await pay()) === '£0' && (await q('#ra-nec')) === '£0');
 
