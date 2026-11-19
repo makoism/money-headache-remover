@@ -1,6 +1,6 @@
 # Vault lane (side G): the server half of the cloud copy
 
-Branch `side/vault-server`, made from `wip-38.31`. Written 2026-11-19. Server only. Nothing here is live until this branch is merged to main, and that happens only after v1 is deployed and Mako says go.
+Branch `side/vault-server`, made from `wip-38.31`. Written 2026-11-19. Server only (the vault, and from part 2 the AI relay). Nothing here is live until this branch is merged to main, and that happens only after v1 is deployed and Mako says go.
 
 ## What changed, in one paragraph
 The server now keeps older copies of each cloud copy, a delete can be undone for 30 days, and "which copy is newer" is decided by the server's own counter and clock, not by a phone's clock. The 38.28 and 38.31 pages keep working with no change. The database only gained things: one new table and two new columns with defaults.
@@ -12,6 +12,7 @@ The server now keeps older copies of each cloud copy, a delete can be undone for
 - `tests/vault_clients.test.js`: the real cloud code of the 38.28 and 38.31 pages run as two devices against the server, 28 checks.
 - `tests/vault_d1_shim.js`: a stand-in database for those two tests (node's own SQLite). `tests/vault_fixtures/`: the two frozen page files.
 - `tests/page_vault.js`: 3 checks added after "Turn off" (kept for a while, listed, undo).
+- `functions/api/ai.js`: the relay (part 2, see "The relay" below). `tests/relay_security.test.js`, `tests/relay_clients.test.js`, `tests/relay_harness.js`, `tests/relay_fixtures/`.
 
 ## The database (add only)
 - New table `vault_versions (id, ver, blob, iv, rev, saved_at, day, size, kind)`, key `(id, ver)`.
@@ -79,7 +80,38 @@ Against the 38.31 server, before any change, the same tests gave:
 
 Not taken, and why:
 - **L1** (answer only our own origin): the downloaded-file copy and the Claude mirror questions are open (S9), so this waits.
-- **RELAY fixes (S6, S10, S11, S12, L5)**: `COORDINATOR.md` on wip-38.31 says side G now owns `functions/api/ai.js`, but my brief says not to touch it. I did not touch it. Tell me directly and I will take them.
+
+Switching on the invite word for a first cloud save: do it only when every page in use sends it. Steps: (1) the page adds `invite: inviteCode()` to the body of its vault PUT (ui42.js `vaultPush`, the same word the relay already gets); (2) that page is deployed and people have reloaded, so no 38.28 or 38.31 page is still open; (3) Mako sets `VAULT_NEW_NEEDS_INVITE = 1` on the Worker. Only the first save of a new code needs the word. Until then the daily limits on new copies are the guard.
+
+## The relay (functions/api/ai.js), added in part 2
+The coordinator gave this lane `functions/api/ai.js` on 2026-11-19. The page sends the same requests as before and gets the same answers; nothing changes for 38.28 and 38.31 pages in normal use.
+
+What changed:
+- **S6** The per-minute counter now runs before the invite check, so refused calls count. Wrong invite words are counted per address: after 10 in a day (`INVITE_WRONG_PER_DAY`) that address gets 429 until the next day, right word or not. A call with no word at all is refused with 401 as before and is not counted as a guess. Side effect to know: ten wrong tries on one office network lock the AI for that office for the day.
+- **S5 and S11** The limits no longer fail open. With no invite word set, a call is served only if the counters work; with no database, or a failing one, the answer is 503 `relay_unconfigured`. With an invite word set, an invited caller is still served. New: a daily cap per address, 1000 calls (`IP_DAILY_CALLS`), which holds even when the browser id changes. The reviewer's example was 300; 1000 because a team shares one office address and a statement import is several calls.
+- **S10** Every call is counted before Claude is asked (one call and a rough size) and corrected to the real numbers after the answer. A stream dropped half way stays counted. A call Claude refused is taken back, as before.
+- **S12** Messages, content blocks and tools are rebuilt from the checked fields only; extra fields a caller adds are left behind. `max_tokens` is capped at 24000, the most the page asks for (it was 32768). The `system` size limit is unchanged (80000 characters): I did not measure what the page really sends.
+- **L2** A body announced as larger than 36 MB is refused with 413 `prompt_too_large` before it is read.
+- **L5** `ANTHROPIC_BASE_URL` is honoured only together with `RELAY_TEST=1`. If it is set without the flag the relay refuses every call and sends the key nowhere. Both stay unset on the live Worker. The two test settings files (`tests/wrangler.dev.toml`, `tests/wrangler.invite.toml`) now carry the flag.
+- `_lib.js`: the "tables are ready" memo is now kept per database, not once per process (needed for tests, harmless live).
+
+Relay tests (a fake Anthropic only; the harness stops any request that is not to this machine):
+```
+node tests/relay_security.test.js   # 26 pass. Before the fix: 12 pass, 14 fail.
+node tests/relay_clients.test.js    # 27 pass, before and after: the real relay code of the 38.28 and 38.31 pages
+```
+`relay_clients` covers, for each page: a plain question, a streamed answer, a JSON answer, a tool round trip, a statement as text, a statement as PDF, a photo, the busy and too-large errors, and the invite word.
+On the local Cloudflare runtime with the shipped 38.28 page in a browser: `relay.test.js` 46 pass, `page_relay.js` 11, `page_vault.js` 28, `page_cam.js` 11. Two things not from this lane: `page_assistant.js` has 1 fail ("Home shows goals first"), the same with and without the relay change; `page_import.js` could not run here because its spreadsheet fixture (`/tmp/v28/wallet.xlsx`) is not in the repo and the note it points to (`tests/README`) does not exist. Someone who has that file should run it once before the merge.
+
+For the deploy session (files this lane may not touch):
+- **L3** `worker/index.js` lines 21, 23, 25: the 405, 500 and 404 answers carry no CORS headers, so a page on another origin sees "No connection" in place of the real error. Fix: build them with `fail()` from `functions/_lib.js`.
+- `wrangler.toml`: nothing needed. Do not add `ANTHROPIC_BASE_URL` or `RELAY_TEST` there.
+- Before the deploy, check in the dashboard that the live Worker has no `ANTHROPIC_BASE_URL` variable. If it had one, the relay would now refuse every call.
+- After the deploy, `/api/health` must say `vault: true`. If the database binding were ever missing and no invite word were set, the relay now answers 503 for everyone.
+
+For the main session, relay side:
+- 429 now has three more causes with their own messages (network daily limit, too many wrong code words, as well as the old ones). The page already shows the server's message for `rate_limited`; check it reads well.
+- A wrong saved invite word: after a 401 the page should ask for the word again and not resend the wrong one on every call, or ten calls lock the network for the day.
 
 ## Things to know before the merge
 - **A push to main deploys this.** The first vault request after the deploy adds the table and the two columns. No step for Mako.

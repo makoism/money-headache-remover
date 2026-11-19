@@ -29,7 +29,7 @@ export const clientIp = req => {
 export const num = (v, def) => { const n = parseInt(v, 10); return isFinite(n) && n >= 0 ? n : def; };
 
 /* ---- D1: the tables are created on first use, so no migration step is needed ---- */
-let schemaReady = null;
+const schemaReady = new WeakMap(); /* one promise per database binding */
 /* Columns added to the vault table after 38.28. Only ever added, each with a default, so rows written by an older server stay valid
    and an older server can still read the table. SQLite has no "ADD COLUMN IF NOT EXISTS", so the list of columns is read first. */
 const VAULT_ADDED = [['ver', 'INTEGER NOT NULL DEFAULT 0'], ['deleted_at', 'INTEGER']];
@@ -43,7 +43,7 @@ async function addVaultColumns(db) {
 }
 export async function ensureSchema(db) {
   if (!db) return false;
-  if (!schemaReady) schemaReady = db.batch([
+  if (!schemaReady.has(db)) schemaReady.set(db, db.batch([
     db.prepare(`CREATE TABLE IF NOT EXISTS usage (day TEXT NOT NULL, k TEXT NOT NULL, calls INTEGER NOT NULL DEFAULT 0, tokens INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (day, k))`),
     db.prepare(`CREATE TABLE IF NOT EXISTS vault (id TEXT PRIMARY KEY, token_hash TEXT NOT NULL, blob TEXT NOT NULL, iv TEXT NOT NULL, rev INTEGER NOT NULL, updated_at INTEGER NOT NULL, created_at INTEGER NOT NULL, prev_blob TEXT, prev_iv TEXT, prev_rev INTEGER, size INTEGER NOT NULL DEFAULT 0, writes_day TEXT, writes INTEGER NOT NULL DEFAULT 0)`),
     /* older copies of a vault: ver is the copy's own number, saved_at the server time it was stored, day its UTC day,
@@ -52,8 +52,8 @@ export async function ensureSchema(db) {
   ]).then(() => addVaultColumns(db))
     /* the counters are only ever read for today: clear rows older than a week, so the table neither grows for ever nor keeps a history */
     .then(() => db.prepare(`DELETE FROM usage WHERE day < ?1`).bind(dayKey(new Date(Date.now() - 7 * 86400000))).run().catch(() => {}))
-    .then(() => true).catch(e => { schemaReady = null; throw e; });
-  return schemaReady;
+    .then(() => true).catch(e => { schemaReady.delete(db); throw e; }));
+  return schemaReady.get(db);
 }
 
 /* count one event under a key for today and return the new totals */

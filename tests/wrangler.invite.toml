@@ -16,6 +16,8 @@ database_id = "local-dev2"
 [vars]
 ANTHROPIC_API_KEY = "test-key"
 ANTHROPIC_BASE_URL = "http://127.0.0.1:8790"
+# the relay honours ANTHROPIC_BASE_URL only together with this flag (tests only)
+RELAY_TEST = "1"
 IP_PER_MINUTE = "500"
 # dummy codes for local tests only; real codes live only in the Cloudflare dashboard
 INVITE_CODES = "local-test-invite,fam"

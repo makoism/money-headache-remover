@@ -16,5 +16,7 @@ database_id = "local-dev"
 [vars]
 ANTHROPIC_API_KEY = "test-key"
 ANTHROPIC_BASE_URL = "http://127.0.0.1:8790"
+# the relay honours ANTHROPIC_BASE_URL only together with this flag (tests only)
+RELAY_TEST = "1"
 IP_PER_MINUTE = "500"
 USER_DAILY_CALLS = "50"
