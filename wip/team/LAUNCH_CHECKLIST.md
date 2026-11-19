@@ -12,7 +12,7 @@ Every point the reviews found is here, with the step that fixes it. Nothing is c
 
 **The team's shape (Mako, 2026-11-19, DECISIONS.md "The team's shape"):** no waiting for teammates' answers. Team gate assumes: the standard Philippine places for money (usual banks, GCash, Maya, cash, pay-later apps; A2 presets from a web search); monthly pay by default, with two incomes or pay in two parts supported (C4, A6); everyone has a card, so cards are core (A4 and A5 full); iPhone and Android both tested (E2, section F); clarity on day one is what keeps people.
 
-Sources: the five concept reviews of 2026-11-19 (north star, new user, money and data, product, efficiency), the phone check (side D), the script checks (side A), the after-v1 tests (side C).
+Sources: SECURITY_REVIEW.md (branch side/security-review, 2026-11-19), the five concept reviews of 2026-11-19 (north star, new user, money and data, product, efficiency), the phone check (side D), the script checks (side A), the after-v1 tests (side C).
 
 ## A. The picture is true
 | # | Point | Fix | Gate |
@@ -70,6 +70,11 @@ One "Money came in" and one "Money went out", each with a short list of kinds an
 | E6 | The rolling month window would drop months on load (cleanOnce, cleanItems, cleanRecurring, statement import) | the window is a view only; nothing is trimmed | team |
 | E7 | Statements with names and account numbers go through the AI relay; the recovery code can delete everything | strip account numbers on the device before sending; deleted copies kept for a while on the server | team |
 | E8 | The 3D world could run against a newer data shape | version check before it opens; it only calls ACT | later |
+| E9 | A failed cloud save is silent; Settings still says On (security review B3) | say the cloud copy is behind and since when; clear on the next success | v1 |
+| E10 | The service worker stores and replays cloud copy answers; an old copy can load over current numbers (S1) | never cache /api/; refuse a copy that is not newer unless asked | v1 |
+| E11 | One delete erases both server copies; "Turn off" always deletes; the previous copy is replaced on every save and cannot be loaded (B1, B2) | server: daily previous copies, soft delete 30 days (vault lane); client: "load an earlier copy", "stop on this device" | team |
+| E12 | The relay could be open to strangers: invite word, spend ceiling, database binding (B4, S2, S6) | Mako checks the Cloudflare and Anthropic settings; the server counts wrong invites and limits new vaults | team (Mako's check: now) |
+| E13 | Privacy lines say statements stay on the device, but whole statements go through the relay; no content policy; the downloaded-file copy talks to the old site (S7, S9, SECURITY_REVIEW.md) | honest privacy lines; content policy in the build; one live address | team |
 
 ## F. Phone (side D, measured)
 | # | Point | Gate |

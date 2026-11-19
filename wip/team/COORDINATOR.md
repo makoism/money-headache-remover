@@ -12,6 +12,8 @@ Mako's pace decision (DECISIONS.md "Pace: use the full allowance") came in by re
 - SIDE J, session_01BFpKEYZQZpQ22MNxiJLAcX, side/e6-window-test: tests/qc/e6_window.js, LANE_e6.md. The fix itself is main's first job after v1.
 - SIDE K, session_01BFpKEZfHa8YdLHcGF1waB8, side/help-texts (faster model): HELP_TEXTS.md, the written "?" words (H2). Not wired in.
 - SIDE L, session_01BFpKEVHFdyreLUouSjKDqY, side/ph-accounts: PH_ACCOUNTS.md (web research), presets_ph.json, PERSONAS_PH.md. Started after Mako's shape answers.
+- Done: SIDE K (HELP_TEXTS.md, 28 entries; uses "Rainy Day" where the app says "Emergency fund", pick one when wiring). SIDE F (SECURITY_REVIEW.md; VAULT and RELAY fixes given to SIDE G, which now also owns functions/api/ai.js; service worker fix to PHONE; B3 and the rev guard to MAIN 2 for v1; checklist E9 to E13). SIDE E's design is done (LEDGER_DESIGN.md), it continues with ledger tests; MAIN 2 told to store cards as {name, owed, payDay} and the bank as cfg.bankStart plus cfg.bankAt.
+- For Mako (told 2026-11-19): security B4, dashboard checks only he can do (INVITE_CODES set as a long phrase, auto-reload off in the Anthropic console, a monthly spend limit, /api/health says vault true).
 
 Rules from the efficiency review:
 - No side lane touches wip/money-map-team.html, check.sh, tests/verify.sh, tests/qc/script_known.txt, tests/qc/lib_r12.js, tests/qc/golden/*, RESUME.md, DECISIONS.md, LAUNCH_CHECKLIST.md. Each lane's handoff is its own LANE_<name>.md. stmt.js is an app file (in the bundle).
