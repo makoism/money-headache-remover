@@ -38,6 +38,9 @@ Coordinator 2 (session_01BFpKEXXUx4uUjZGJny9MyJ) passed the 150k mark and handed
 - MAIN 3 reported E6 fixes 1 to 5 landed (04:45 UTC). Look at the commit at the check-in.
 - Running now: MAIN 3, M3, H, N2.
 
+- SIDE N2 is done (side/ledger-core a4df93e): reference and I7 fixed, failing tests committed first (12d144b), fix 06a28bf; two more wrong cases found (card and owed money in another currency); ledger_core_all.sh could not fail before (piped through tail), now it can. Counts by its report: diff 691,210, fuzz 531,456, edge 476, conservation 113,531. LEDGER_DESIGN.md and LANE_ledger_core.md updated. For the ledger step's cloud wiring (LEDGER_DESIGN.md "Storage" and LANE_vault.md): new storage key, the ledger's cloud copy must not sit where a 38.31 page downloads it as its own, and every write or upload asks ledgerMayWrite on the copy it would replace. Left: plan.debts wiring check (needs the v1 candidate), open design points 8 and 9 in the handoff.
+- Running now: MAIN 3, M3, H.
+
 ### Mako today (all recorded in DECISIONS.md, last eight sections; read them)
 Pace (use the full allowance by Sunday 22 Nov, again by Wed 25 or Thu 26). The team's shape answered by him (standard Philippine accounts, monthly pay with separate pay supported, cards core, iPhone and Android). The copy must not sound like AI and must sound like him (few full stops, his space hyphen space, joined sentences, normal conversation); all copy in one batch at the end, then ONE pass with him on the preview. The cloud copy must explain itself step by step (E15, v1). Yen stays default. He likes short updates: what was found, what was done. He said: ask him when context is needed. He dictates by voice; messages can cut off.
 
