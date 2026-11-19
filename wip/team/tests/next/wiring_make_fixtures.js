@@ -87,6 +87,9 @@ const SHAPES = [
     () => person('₱').name('Aiko').clearSampleGoals().pay(41000).bankSetupNoDay(23400).goalStart('rainy', 6100).goalStart('travel', 2750).receipt('2026-11-05', 120, 'bill:food').receipt('2026-11-05', 350, 'bill:food')],
   ['setupday', 'A balance typed in setup with its day, never checked on Home since. No cards.',
     () => person('¥').name('Ken').clearSampleGoals().pay(250000).bankSetup(143000, '2026-11-03').goalStart('travel', 40000)],
+  ['samecard', 'W5: one card typed in both places under one name: on Home as a card paid in full, and in Cards and loans as a card with interest, with another figure. The copy does not say whether they are one card. A second card debt with a name of its own.',
+    () => person('₱').name('Dan').clearSampleGoals().pay(52000).bankNow(31900.75, '2026-11-19').card('BDO Card', 9200.5, 10, '2026-11-18')
+      .debt(' bdo card', 'card', 68400, 36, 3400).debt('Metrobank card', 'card', 24750, 42, 1200)],
   ['sample', 'The sample plan, untouched but for one thing: the bank typed on Home. The sample has an invented emergency fund start; nobody typed it.',
     () => person('¥').bankNow(87000, '2026-11-19')],
 ];
@@ -101,6 +104,9 @@ for (const [name, about, build] of SHAPES) {
   /* what the v1 Home "now" block shows for it, from the model's own nowOf: the first screen the ledger takes over */
   const now = M.nowOf(saved), sampleStill = !!M.planIsSample(saved);
   if (sampleStill !== p.typed.sampleOnly) die(name + ': the page says planIsSample is ' + sampleStill + ' but the script expected ' + p.typed.sampleOnly);
+  /* a debt of kind card that has the name of a card typed on Home: the copy cannot say whether it is the same card (W5) */
+  const nm = v => String(v == null ? '' : v).trim().toLowerCase();
+  p.typed.loans.forEach(l => { const k = l.kind === 'card' && nm(l.name) ? p.typed.cards.find(q => nm(q.name) === nm(l.name)) : null; if (k) l.askSame = k.id; });
   const fx = { made: { by: 'wiring_make_fixtures.js', from: DIR ? 'dir ' + DIR : REF, commit, version }, name, about, today: TODAY, key: M.KEY,
     saved, typed: p.typed, homeNow: { bank: now.bank, bankAt: now.bankAt, cardsOwed: now.cardsOwed, afterCards: now.afterCards } };
   fs.writeFileSync(path.join(OUT, name + '.json'), JSON.stringify(fx, null, 1) + '\n'); made++;

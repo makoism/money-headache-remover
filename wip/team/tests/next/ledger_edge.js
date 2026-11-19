@@ -244,6 +244,30 @@ const all = (tag, p, want) => { for (const k in want) eq(`${tag} ${k}`, k.includ
   rep.ok(c(L.placesOf(L.migrate3831(JSON.parse(J(saved)), '2026-11-20', null, { planIsSample: 'yes' })).total) === c(227000), 'W2 only a plain true skips the plan figures');
 }
 
+{ /* W5 (wiring lane): a card debt in Cards and loans and a card typed on Home under one name. The same card or two? The copy
+     cannot say and the move does not guess: it asks, and until the answer only the card typed on Home counts */
+  const saved = { v: 1, rev: 2, ui: { cur: '₱' }, cfg: { bankNow: 31900.75, bankNowAt: '2026-11-19' },
+    cards: [{ id: 'k1', name: 'BDO Card', owed: 9200.5, payDay: 10, at: '2026-11-18' }, { id: 'k2', name: 'Visa', owed: 300, payDay: 4, at: '2026-11-18' }],
+    plan: { lines: [], goals: [], debts: [{ id: 'd1', name: ' bdo  card', kind: 'card', balance: 68400, apr: 36, min: 3400, extra: 0 }, { id: 'd2', name: 'Visa', kind: 'loan', balance: 1000, apr: 0, min: 0, extra: 0 },
+      { id: 'd3', name: 'Metrobank card', kind: 'card', balance: 24750, apr: 42, min: 1200, extra: 0 }, { id: 'd4', name: 'VISA', kind: 'card', balance: 300, apr: 30, min: 50, extra: 0 }] } };
+  const mk = () => L.migrate3831(JSON.parse(J(saved)), '2026-11-20'), S = mk(), p = proof('W5 asked', S), qs = S.oldFigures.questions;
+  rep.ok(Array.isArray(qs) && qs.length === 2 && qs.every(q => q.code === 'same-card' && q.answer === null), 'W5 two questions: the card debts named like a card typed on Home (spaces and capitals do not matter)');
+  rep.ok(J(qs.map(q => [q.debt, q.acct, q.card, q.held, q.cardOwed])) === J([['d1', 'd1', 'k1', 68400, 9200.5], ['d4', 'd4', 'k2', 300, 300]]), 'W5 each question names the debt, its account, the card and both figures');
+  all('W5 until answered', p, { owed: 9200.5 + 300 + 1000 + 24750, total: 31900.75, forCards: 9500.5, 'accounts.d1': 0, 'accounts.d4': 0, 'accounts.d2': 1000, 'accounts.d3': 24750 });
+  rep.ok(S.accounts.find(a => a.id === 'd1').confirm === true && S.accounts.find(a => a.id === 'd1').debt === 'd1' && !S.accounts.find(a => a.id === 'd3').confirm, 'W5 the waiting debt has its account, marked to be confirmed; a loan named like a card, or a card debt with its own name, is not asked about');
+  rep.ok(S.oldFigures.notes.length === 0, 'W5 a question is not a figure left out');
+  refused('W5 no such question', S, 'no-question', () => L.ledgerSameCard(S, 'd3', true)); refused('W5 an answer must be yes or no', S, 'no-question', () => L.ledgerSameCard(S, 'd1', 'maybe'));
+  const A = mk(); rep.ok(!!L.ledgerSameCard(A, 'd1', true), 'W5 answer: the same card'); const pa = proof('W5 same', A), a1 = A.accounts.find(a => a.id === 'd1');
+  all('W5 the same card', pa, { owed: p.owed, total: 31900.75, 'accounts.d1': 0, 'accounts.k1': 9200.5 }); rep.ok(a1.of === 'k1' && !a1.confirm && A.oldFigures.questions[0].answer === 'same' && A.ledger.length === S.ledger.length, 'W5 the same card: owed once, the figure typed on Home stays, the debt account is tied to the card and no event is added');
+  rep.ok(L.ledgerCardLines(A).find(l => l.id === 'k1').olderIds.indexOf('d1') >= 0, 'W5 the same card: the debt account is that card\'s older balance line');
+  refused('W5 answered once', A, 'no-question', () => L.ledgerSameCard(A, 'd1', false));
+  const B = mk(); rep.ok(!!L.ledgerSameCard(B, 'd1', false), 'W5 answer: another card'); const pb = proof('W5 other', B), e = B.ledger[B.ledger.length - 1];
+  all('W5 another card', pb, { owed: p.owed + 68400, total: 31900.75, 'accounts.d1': 68400, 'accounts.k1': 9200.5, forCards: 9500.5 });
+  rep.ok(e.k === 'open' && e.acct === 'd1' && e.date === '2026-11-20' && e.src === 'migration' && B.oldFigures.questions[0].answer === 'other' && !B.accounts.find(a => a.id === 'd1').confirm && B.oldFigures.questions[1].answer === null, 'W5 another card: the debt opens on the day of the move; the other question still waits');
+  const R = JSON.parse(J(S)); rep.ok(L.ledgerClean(R).ok && J(R.oldFigures) === J(S.oldFigures) && !!L.ledgerSameCard(R, 'd4', false) && c(L.placesOf(R).owed) === c(p.owed + 300), 'W5 the question survives saving and loading');
+  rep.ok(mk().oldFigures.questions.length === 2 && L.migrate3831({ cur: 'PHP', bankStart: 5 }, '2026-11-20').oldFigures.questions.length === 0, 'W5 questions is always a list');
+}
+
 /* ===== Philippine shapes (side L). How each is written with the kinds the design has ===== */
 { /* card cut-off day (Mika, thing 8): spent after the cut-off is owed and set aside, but not in the bill due next */
   const S = fresh('PHP', [{ id: 'ub', name: 'UnionBank', type: 'bank' }, { id: 'ubc', name: 'UnionBank card', type: 'card', payDay: 7, cutDay: 17 }]);

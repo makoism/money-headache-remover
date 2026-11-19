@@ -31,7 +31,7 @@ let pass = 0, fail = 0; const fails = [];
 const ok = (cond, fx, what, more) => { if (cond) { pass++; if (VERBOSE) console.log('  ok   ' + fx + ': ' + what); } else { fail++; fails.push(fx + ': ' + what + (more ? '  [' + more + ']' : '')); } return !!cond; };
 
 const files = fs.existsSync(DIR) ? fs.readdirSync(DIR).filter(f => /\.json$/.test(f)).sort() : [];
-if (files.length < 6) { console.log('FAIL: fewer than 6 fixtures in ' + DIR + '. Run: node wip/team/tests/next/wiring_make_fixtures.js'); process.exit(1); }
+if (files.length < 9) { console.log('FAIL: fewer than 9 fixtures in ' + DIR + '. Run: node wip/team/tests/next/wiring_make_fixtures.js'); process.exit(1); }
 
 for (const f of files) {
   const fx = JSON.parse(fs.readFileSync(path.join(DIR, f), 'utf8')), n = fx.name, saved = fx.saved, T = fx.typed, today = fx.today;
@@ -88,9 +88,27 @@ for (const f of files) {
 
   /* what is owed: Cards and loans (plan.debts), and debt goals (A3) */
   const carries = (a, id) => a.id === id || Object.keys(a).some(k => k !== 'name' && a[k] === id);
+  const asked = (S.oldFigures && S.oldFigures.questions) || [];
   T.loans.forEach(d => {
-    const a = S.accounts.find(q => L.placesOf(S).accounts[q.id] !== undefined && ['loan', 'card', 'paylater'].indexOf(q.type) >= 0 && q.name === d.name);
+    const a = S.accounts.find(q => L.placesOf(S).accounts[q.id] !== undefined && ['loan', 'card', 'paylater'].indexOf(q.type) >= 0 && q.name === d.name.trim());
     if (!ok(!!a, n, 'debt "' + d.name + '" (' + d.kind + ') arrives as an owed account')) return;
+    if (d.askSame) {
+      /* W5: a card debt with the name of a card typed on Home. The move does not guess: it asks, and until the answer the debt waits */
+      const q = asked.find(x => x && x.code === 'same-card' && x.debt === d.id);
+      ok(c(P.accounts[a.id]) === 0 && a.confirm === true, n, 'debt "' + d.name + '" has the name of a card typed on Home: nothing is counted for it until the person answers', String(P.accounts[a.id]));
+      ok(!!q && q.card === d.askSame && q.acct === a.id && q.answer === null && c(q.held) === c(d.owed), n, 'debt "' + d.name + '": the move returns the question "is this the same card?" with both figures', JSON.stringify(asked));
+      if (q && typeof L.ledgerSameCard === 'function') {
+        const no = J(S), yes = J(S), owed0 = c(P.owed), total0 = c(P.total);
+        const r1 = L.ledgerSameCard(no, a.id, false), p1 = L.placesOf(no);
+        ok(!!r1 && c(p1.owed) === owed0 + c(d.owed) && c(p1.accounts[a.id]) === c(d.owed) && c(p1.total) === total0 && L.ledgerProof(no).ok, n, 'answer "another card": the debt is owed beside the Home card, once each', p1.owed + ' vs ' + (owed0 + c(d.owed)) / 100);
+        ok(no.oldFigures.questions.find(x => x.debt === d.id).answer === 'other' && !no.accounts.find(x => x.id === a.id).confirm, n, 'answer "another card": the question is closed');
+        const r2 = L.ledgerSameCard(yes, a.id, true), p2 = L.placesOf(yes), a2 = yes.accounts.find(x => x.id === a.id);
+        ok(!!r2 && c(p2.owed) === owed0 && c(p2.accounts[a.id]) === 0 && a2.of === d.askSame && !a2.confirm && L.ledgerProof(yes).ok, n, 'answer "the same card": it is owed once, and the debt account is tied to that card', p2.owed + ', of ' + a2.of);
+        ok(L.ledgerSameCard(yes, a.id, false) === false && L.ledgerSameCard(no, a.id, true) === false && c(L.placesOf(no).owed) === owed0 + c(d.owed), n, 'a question is answered once');
+      } else ok(false, n, 'the question can be answered (ledgerSameCard)');
+      ok(carries(a, d.id), n, 'debt "' + d.name + '": the account can be traced to plan.debts[].id (' + d.id + ')');
+      return;
+    }
     ok(c(P.accounts[a.id]) === c(d.owed), n, 'debt "' + d.name + '": plan.debts[].balance is what is owed, to the cent', P.accounts[a.id] + ' vs ' + d.owed);
     ok(!(a.type === 'card' && a.inFull), n, 'debt "' + d.name + '" is not a card paid in full (nothing is set aside for it)');
     ok(carries(a, d.id), n, 'debt "' + d.name + '": the account can be traced to plan.debts[].id (' + d.id + '), so the plan and the ledger name the same debt', 'account ' + JSON.stringify(a));
@@ -99,7 +117,8 @@ for (const f of files) {
     const a = S.accounts.find(q => ['loan', 'paylater'].indexOf(q.type) >= 0 && carries(q, g.id));
     ok(!!a && c(P.accounts[a.id]) === c(g.owed), n, 'debt goal "' + g.name + '" arrives as a loan of target less paid (' + g.owed + '), traced to the goal id', a ? String(P.accounts[a.id]) : 'no owed account carries ' + g.id);
   });
-  const owedWant = T.cards.reduce((t, k) => t + c(k.owed), 0) + T.loans.reduce((t, d) => t + c(d.owed), 0) + T.debtGoals.reduce((t, g) => t + c(g.owed), 0);
+  ok(asked.length === T.loans.filter(d => d.askSame).length, n, 'the move asks only about a card debt that has the name of a card typed on Home', JSON.stringify(asked));
+  const owedWant = T.cards.reduce((t, k) => t + c(k.owed), 0) + T.loans.reduce((t, d) => t + (d.askSame ? 0 : c(d.owed)), 0) + T.debtGoals.reduce((t, g) => t + c(g.owed), 0);
   ok(c(P.owed) === owedWant, n, 'Owed is the cards, the debts and the debt goals, each once', P.owed + ' vs ' + owedWant / 100);
   const totalWant = c(T.bank || 0) + Object.keys(wantB).reduce((t, k) => t + c(wantB[k]), 0);
   ok(c(P.total) === totalWant, n, 'Total is the bank figure plus the typed goal starts, nothing else', P.total + ' vs ' + totalWant / 100);
