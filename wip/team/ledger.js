@@ -76,6 +76,7 @@ const LED_WORDS = {
   'cur-locked': 'The home currency cannot change once there are events.',
   'missing-accounts': 'Start fresh needs a typed balance for every account.',
   'old-copy': 'The saved copy to move is missing or unreadable.',
+  'no-question': 'There is no open question for this account, or the answer is not yes or no.',
 };
 let LED_LAST = null;   /* the last refusal, for ledgerWhy() */
 
@@ -767,9 +768,12 @@ function migrate3831(old, today, figures, more) {
     ledgerAddAccount(S, { id: 'oldsavings', name: 'Savings from your old plan', type: 'bank', confirm: true });
     const seen = {}; goals.forEach(g => { if (seen[g.id]) { notes.push('goal ' + g.id + ': listed twice, the second is left out'); return; } seen[g.id] = 1; add({ k: 'open', acct: 'oldsavings', c: g.c, place: g.id, date: today }); });
   }
+  /* names compared for "is this the same card?": spaces at the ends, runs of spaces and capitals do not matter */
+  const nameKey = v => (typeof v === 'string' ? v.trim().replace(/\s+/g, ' ').toLowerCase() : ''), homeCards = [], questions = [];
   list(old.cards).forEach((cd, i) => {
     const id = ledIdOk(cd.id) && !S.accounts.some(q => q.id === cd.id) ? cd.id : 'card' + (i + 1), a = { id, name: typeof cd.name === 'string' && cd.name ? cd.name : 'Card ' + (i + 1), type: 'card', inFull: true }; if (payDay(cd.payDay)) a.payDay = cd.payDay;
     ledgerAddAccount(S, a); const c = amt(cd.owed, a.name); if (c) add({ k: 'open', acct: id, c, place: 'waiting', date: dayOr(cd.at) });
+    homeCards.push({ key: nameKey(cd.name), id, c });
   });
   /* an owed account for a debt of the old plan. It keeps the plan's own id (as its account id when that is free and usable, and
      always in the field named by key), so the plan, which keeps the rate and the payments, and the ledger name the same debt */
@@ -790,16 +794,43 @@ function migrate3831(old, today, figures, more) {
   });
   list(old.debts).forEach(d => {
     const more = {}; if (payDay(d.payDay)) more.payDay = d.payDay; if (typeof d.kind === 'string' && d.kind) more.kind = d.kind;
-    const a = owedAcct('debt', d.id, 'loan', d.name, more), c = amt(d.owed, a.name); if (c) add({ k: 'open', acct: a.id, c, date: dayOr(d.at) });
+    /* IS THIS THE SAME CARD? A debt of kind card (a card with interest, in Cards and loans) and a card typed on Home (paid in full)
+       can be one card typed in two places. The old model does not link them, so the move does not guess. When the two share a name
+       it asks: the question goes to S.oldFigures.questions for the once-screen, and until it is answered (ledgerSameCard) only the
+       card typed on Home counts, because that figure has a day. The debt has its account, empty and marked confirm, so it is not
+       owed twice and the plan's debt still has its place in the ledger */
+    const twin = d.kind === 'card' && nameKey(d.name) ? homeCards.find(k => k.key === nameKey(d.name)) : null, c0 = twin ? amt(d.owed, typeof d.name === 'string' ? d.name : 'debt') : 0;
+    if (twin && c0) more.confirm = true;
+    const a = owedAcct('debt', d.id, 'loan', d.name, more);
+    if (twin && c0) { questions.push({ code: 'same-card', debt: d.id == null ? null : d.id, acct: a.id, card: twin.id, name: a.name, held: c0 / 100, cardOwed: twin.c / 100, day: today, answer: null }); return; }
+    const c = twin ? 0 : amt(d.owed, a.name); if (c) add({ k: 'open', acct: a.id, c, date: dayOr(d.at) });
   });
   debtGoals();
-  S.oldFigures = { shownOnce: false, plan: planFigures == null ? null : ledCopy(planFigures), notes, sample };
+  S.oldFigures = { shownOnce: false, plan: planFigures == null ? null : ledCopy(planFigures), notes, sample, questions };
   S.undone = []; LED_LAST = null;
   return S;
+}
+
+/* The answer to "is this the same card?" (a question migrate3831 left in S.oldFigures.questions). acctId: the debt's account.
+     same === true    one card typed twice. It is owed once: the figure typed on Home stays, the figure from Cards and loans is not
+                      added. The debt's account is tied to the card (of: <card id>), so it is that card's older balance line, empty
+                      until the person carries a balance (ledgerCarryOver uses it)
+     same === false   two cards. The debt opens with the figure that waited, on the day of the move
+   A question is answered once. Returns the question, or false */
+function ledgerSameCard(S, acctId, same) {
+  if (!S || !Array.isArray(S.accounts) || !Array.isArray(S.ledger)) return ledFail(ledNo('no-ledger'));
+  if ((+S.ledgerV || 0) > LEDGER_V) return ledFail(ledNo('newer'));
+  const qs = S.oldFigures && Array.isArray(S.oldFigures.questions) ? S.oldFigures.questions : [];
+  const q = qs.find(x => x && x.code === 'same-card' && x.acct === acctId && x.answer == null), a = S.accounts.find(x => x && x.id === acctId);
+  if (!q || !a || (same !== true && same !== false)) return ledFail(ledNo('no-question'));
+  if (same) a.of = q.card;
+  else if (!ledgerAdd(S, { k: 'open', acct: acctId, a: q.held, date: q.day, src: 'migration' })) return false;
+  delete a.confirm; q.answer = same ? 'same' : 'other'; LED_LAST = null;
+  return q;
 }
 
 /* when loaded with require() too (tests); in the page this line does nothing */
 if (typeof module !== 'undefined' && module.exports) module.exports = { LEDGER_V, ledgerFresh, ledgerAdd, ledgerAddMany, ledgerTry, ledgerWhy, ledgerUndo, ledgerRedo, ledgerHas,
   placesOf, ledgerProof, ledgerCardLines, periodOf, flows, ledgerUnexplained, ledgerCheck, ledgerAccept, ledgerStartFresh, ledgerCarryOver,
   ledgerAddAccount, ledgerEditAccount, ledgerCloseAccount, ledgerReopenAccount, ledgerSetMode, ledgerSetPayDays, ledgerMayWrite, ledgerClean, ledgerRead3831, migrate3831,
-  ledgerCardDue, ledgerInstalment };
+  ledgerCardDue, ledgerInstalment, ledgerSameCard };
