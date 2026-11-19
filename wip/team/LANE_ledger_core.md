@@ -2,7 +2,7 @@
 
 Branch `side/ledger-core`, made from `side/ledger-design`. Made-up numbers only.
 
-**Third pass (side N3) is handed off unfinished: 8 of 10 lane gaps fixed, G3 and G5 and the docs remain. Read "Third pass" near the end first.**
+**Fourth pass (side N4) finished what the third pass left: G3, G5, the moved openings and the docs. All 10 lane gaps are fixed. Read "Fourth pass" at the end first.**
 
 **Second pass (side N2, 2026-11-19), see "Second pass" at the end:** the reference and the tests now take the check with the latest day, the
 reference keeps the one rule in the five cases it used to break, and the differential test covers them. `LEDGER_DESIGN.md` records all of it,
@@ -28,7 +28,7 @@ First pass: nothing that existed was changed. New files only:
 | `MODEL=tests/next/ledger_core_model.js node tests/next/ledger_conservation.js` | PASS, 113,531 checks (400 lists, 8 personas, 2 migrations) |
 | `MODEL=ledger.js node tests/next/ledger_fuzz.js` | PASS, 531,456 checks (600 people: 300 as before, 300 with the new cases). Was 240,864 |
 | `node tests/next/ledger_diff.js` | PASS, 691,210 checks (4,500 people: 3,000 as before with the same 71,608 events, 1,500 with the new cases; 108,161 events through both models, 600 migrations). Was 389,257 |
-| `node tests/next/ledger_edge.js` | PASS, 476 checks |
+| `node tests/next/ledger_edge.js` | PASS, 476 checks (801 after the fourth pass; the current counts of every test are under "Fourth pass") |
 | `MODEL=tests/next/ledger_ref.js node tests/next/ledger_fuzz.js` | PASS, 531,456 checks (the reference under the same fuzz) |
 | `MODEL=tests/next/ledger_ref.js node tests/next/ledger_conservation.js` | PASS, 113,531 checks |
 | name clash check | 68 top-level names in `ledger.js`, 63 page files, no clash |
@@ -40,6 +40,7 @@ First pass: nothing that existed was changed. New files only:
 
 ## The saved shape
 `ledgerFresh` returns `{ ui: { freeMode, cur, payDays }, accounts: [], ledger: [], undone: [], removed: [], ledgerV: 1, ledgerNext: 1 }`.
+An undone step is `{ items: [{ e, at }], accounts: [{ a, at }] }` (`accounts` only when an account left with it). `S.removed` holds events, and `{ what: 'account', it }` for an account whose redo ended.
 In the app these sit on `S` beside what is there now (no name is in use today): `S.accounts`, `S.ledger`, `S.undone`, `S.removed`,
 `S.ledgerV`, `S.ledgerNext`, and after a move `S.frozen` and `S.oldFigures`; `S.ui.freeMode` and `S.ui.payDays` are new, `S.ui.cur` is the one the app has.
 - A stored event: `{ id, k, date, c, c2, typed, acct, acct2, place, place2, sub, startsPeriod, src, note, grp }`. Amounts are stored
@@ -53,12 +54,13 @@ In the app these sit on `S` beside what is there now (no name is in use today): 
 | `ledgerFresh(setup)` | A new empty ledger from `{ cur, mode, payDays, accounts }`. False when the setup is not usable. |
 | `ledgerTry(S, ev, today)` | Reads one event without recording it: `{ ok, e }` or `{ ok: false, code, why }`. |
 | `ledgerAdd(S, ev, today)` | Records one event. Returns the stored event, or false with nothing recorded. |
-| `ledgerAddMany(S, evs, today)` | Records several events as one step: all or none, undone together. |
+| `ledgerAddMany(S, evs, today, more)` | Records several events as one step: all or none, undone together. `more.accounts`: accounts made with the step (all or none too); they leave with its undo and come back with redo. |
 | `ledgerWhy()` | Why the last call returned false: `{ code, why }`. The screens write their own words from `code`. |
-| `ledgerUndo(S)` / `ledgerUndo(S, id)` | Takes out the last step, or the step holding that id. Kept in `S.undone`, saved with the ledger. |
-| `ledgerRedo(S)` | Puts the last undone step back where it was. |
-| `ledgerHas(S, src)` | True when a statement line or receipt is already logged (A8). |
-| `placesOf(S, day)` | Every figure, added up from the events (as of `day` when given). Names are listed above the function. |
+| `ledgerUndo(S)` / `ledgerUndo(S, id)` | Takes out the last step, or the step holding that id. Kept in `S.undone`, saved with the ledger. An account made with a step leaves when no event left names it. An opening made by the move is never taken out: by id it is refused (`moved-open`), plain undo passes over it. |
+| `ledgerRedo(S)` | Puts the last undone step back where it was, with the accounts that left with it. |
+| `ledgerHas(S, src)` | True when a statement line or receipt is already logged (A8), as an event's `src` or in its `srcs`. |
+| `ledgerAlso(S, id, src)` | The event with this id also remembers this statement line or receipt (`srcs`). Adds no event, moves no figure. |
+| `placesOf(S, day)` | Every figure, added up from the events (as of `day` when given). Names are listed above the function. `lent` is what people owe you: inside `total`, outside `saved` and `burrows`. |
 | `ledgerProof(S)` | The one rule checked: Total = tracked accounts, every "for the card" line = its card. For `check.sh` and a guard in the page. |
 | `ledgerCardLines(S, day)` | Each card as one card with two lines: `now` and `older`. |
 | `periodOf(S, date)` | The month holding a day: `{ from, to }`, pay day to pay day. |
@@ -68,14 +70,15 @@ In the app these sit on `S` beside what is there now (no name is in use today): 
 | `ledgerAccept(S, acct, typedA, day, place)` | A check plus an adjust for the difference, one step. |
 | `ledgerStartFresh(S, typed, day, place)` | A check and an adjust on every account, one step. |
 | `ledgerCarryOver(S, cardId, amount, day, place)` | Part of a card becomes its older balance (a loan account with `of: cardId`). |
-| `ledgerCardDue(S, cardId, day)` | Extension: with `cutDay` on the card, what is due on the next pay day and what is due a month later. |
+| `ledgerCardDue(S, cardId, day)` | Extension: with `cutDay` on the card, what is due on the next pay day and what is due a month later. A balance typed after the cut-off counts as due. |
 | `ledgerInstalment(S, planId, cardId, amount, day, place)` | Extension: this month's part of a card instalment moves from the plan onto the card. |
 | `ledgerAddAccount`, `ledgerEditAccount`, `ledgerCloseAccount`, `ledgerReopenAccount` | Accounts. Never deleted. Type, currency, `inFull` and `tracked` lock once an account has events. |
 | `ledgerSetMode(S, mode)`, `ledgerSetPayDays(S, days)` | Track or Wallet; the pay days. |
 | `ledgerMayWrite(stored)` | False when the stored copy has a higher `ledgerV`. |
-| `ledgerClean(S)` | Makes a loaded copy safe to add up. Unreadable events move to `S.ledgerBad`, kept, outside every sum. Leaves a newer copy alone. |
+| `ledgerClean(S)` | Makes a loaded copy safe to add up. Unreadable events, and undone steps that cannot be read, move to `S.ledgerBad`, kept, outside every sum. Leaves a newer copy alone. |
 | `ledgerRead3831(saved)` | Reads the typed figures out of a real 38.31 copy. |
-| `migrate3831(old, today)` | Moves a 38.31 copy into a new ledger (E5). |
+| `migrate3831(old, today, figures, more)` | Moves a 38.31 copy into a new ledger (E5). `figures`: the old plan's figures to show once. `more.planIsSample`: the plan is the untouched sample, so no goal or debt moves. |
+| `ledgerSameCard(S, acctId, same)` | The answer to "is this the same card?", a question the move leaves in `S.oldFigures.questions`. |
 
 ## Wiring it in (main session, after v1)
 1. **build.sh**: change `cat model.js stmt.js` to `cat model.js ledger.js stmt.js`. `ledger.js` uses nothing from `model.js` and no name of it
@@ -90,8 +93,9 @@ In the app these sit on `S` beside what is there now (no name is in use today): 
    replaces it, and a place on the server that a 38.31 page would not download as its own save. The vault lane must hear this.
 4. **The move**: on the first load of a copy with no `ledgerV`, call `migrate3831(savedCopy, todayYmd)` and copy its fields onto `S`. It reads `cfg.bankNow` and
    `cfg.bankNowAt`, `S.cards` (`id, name, owed, payDay, at`), `plan.goals` (`id, start`), `plan.debts`, `ui.cur`, `ui.freeMode`, `ui.payDays`. The whole saved copy is in `S.frozen`.
-   **Before this step, a wiring check that is not written yet (it waits for the main session's storage shape; do not guess the field names before that):**
-   write `tests/next/ledger_migrate_real.js`. It must
+   **The wiring check asked for here now exists: `tests/next/wiring_migrate.js`** (side P; 300 checks on 9 saved copies, in `ledger_core_all.sh`). The call is
+   `migrate3831(savedCopy, todayYmd, figures, { planIsSample })`. The list below is kept as the record of what was asked; refresh the fixtures from the v1 candidate
+   before step 5 (`wiring_make_fixtures.js <git ref>`). What was asked of it: it must
    - load a saved copy made by the **v1 candidate page** itself (open the candidate in the page test, set up a made-up person with a bank figure, two cards,
      goal starts and at least one debt of every kind the screens can make, save, and read the stored copy back; made-up numbers only, never a real copy);
    - run it through `migrate3831(copy, today)`;
@@ -100,8 +104,7 @@ In the app these sit on `S` beside what is there now (no name is in use today): 
      `cfg`, `cards[]`, `plan.goals[]` and `plan.debts[]` that the script does not list by name as "read" or "known, not money" is a failure, so a renamed or
      new field cannot pass silently; `S.oldFigures.notes` must be empty; and a debt of kind card must not also arrive as a card from `S.cards` (owed twice);
    - end with a PASS line and be added to `ledger_core_all.sh`.
-   Today `ledgerRead3831` tries `owed`, `bal`, `balance`, `start` for a debt's balance, in that order, and reads no date for a debt. These names were
-   not checked against a real copy. When the script names the real fields, replace the guess list with them.
+   Done in the third pass: `ledgerRead3831` reads a debt's balance from `balance` only (the real field, `model.js` `cleanDebts`); a debt has no pay day and no date.
 5. **ACT** (`actions.js`): one new group of actions, each a thin call, each inside `ACT.tx` for the redraw and save:
    `ACT.moneyIn / moneyOut / place / transfer / payCard / check / accept / startFresh` call `ledgerAdd`, `ledgerAccept`, `ledgerStartFresh` with today's day.
    On false, show the words for `ledgerWhy().code`. **Undo for ledger events is `ledgerUndo` and `ledgerRedo`, not the snapshot stack**: add the ledger fields to
@@ -138,7 +141,7 @@ Each choice is the safer one for "nobody loses data" and "no coin counted twice"
 9. **Statement lines once.** A `src` other than `typed` or `migration` can be logged once.
 10. **Closed accounts.** Only an account with nothing in it can be closed. Events dated after the closing day are refused; late lines from before it are taken. Its events stay in every sum.
 11. **Start fresh** needs a typed figure for every open tracked account, so no account is left with an old gap.
-12. **Migration never stops on odd figures.** A figure that cannot be read is left out and listed in `S.oldFigures.notes`. Without `cfg.bankNow` it uses `cfg.bankStart` and marks the bank `confirm`. `plan.debts` field names were not checked against a real copy (`owed`, `bal`, `balance`, `start` are tried in that order); debts of kind card may repeat a card in `S.cards`. Check both before E5.
+12. **Migration never stops on odd figures.** A figure that cannot be read is left out and listed in `S.oldFigures.notes`. Without `cfg.bankNow` it uses `cfg.bankStart` and marks the bank `confirm`. (Out of date since the third pass, both closed: the debt fields are checked against real copies by `wiring_migrate.js`, and a debt of kind card named like a card in `S.cards` is asked about, not owed twice.)
 13. **Ids** are a counter (`S.ledgerNext`). Two devices adding at once would clash; merging two copies is not handled here.
 
 ## Where ledger.js differs from the reference, and what I believe is wrong in the design
@@ -205,7 +208,7 @@ Two commits, in this order: `12d144b` holds only tests, failing (fuzz on the ref
 - The `plan.debts` wiring check (step 4 above), waiting for the main session's storage shape.
 - A kind `shift` for moving owed money between two owed accounts (instalments use two adjusts in one step today).
 
-## Third pass (side N3, 2026-11-19): the gaps the two lanes found. HANDED OFF, NOT FINISHED
+## Third pass (side N3, 2026-11-19): the gaps the two lanes found. Finished by the fourth pass
 `side/ledger-wiring` and `side/money-door` are merged in (new files only, clean). Each gap got a commit holding only its failing test, then a commit with the fix.
 Stopped at the token limit after 8 of 10 gaps. **A fresh session takes G3, G5 and the docs.** Start here.
 
@@ -219,8 +222,8 @@ Stopped at the token limit after 8 of 10 gaps. **A fresh session takes G3, G5 an
 | G2 lent counted in Saved | fixed | `(G2)` | `Fix G2` | The place `lent` is reserved: `placesOf().lent`, inside Total, outside `saved` and `burrows`. Total = waiting + thisMonth + saved + lent. Ledger and reference. `doorFigures` reads it. |
 | G4 put back from the wallet | fixed | `(G4)` | `Fix G4` | A transfer from the wallet that is not tracked into a bank, e-wallet or cash account in Total lowers handed out since pay day, by day, never below zero. Ledger and reference. The door has the way `back`. |
 | G1 one src per event | fixed | `(G1)` | `Fix G1` | `srcs: []` on an event, `ledgerAlso(S, id, src)`, read by `ledgerHas`, the `already` refusal and redo. Door: `doorSame(S, id, src)` after a `seen` refusal. |
-| **G3 undo leaves the made account** | **open** | none yet | none | Still printed as `GAP` by `money_door_test.js`. Plan below. |
-| **G5 card typed after the cut-off** | **open** | none yet | none | Still printed as `GAP`. Plan below. |
+| G3 undo leaves the made account | fixed (fourth pass) | `1924ff4` | `cb5e86b` | See "Fourth pass". |
+| G5 card typed after the cut-off | fixed (fourth pass) | `--grep "(G5)"` | `--grep "Fix G5"` | See "Fourth pass". |
 
 **Defaults chosen without asking (the coordinator may flip any):**
 - W5: until the question is answered only the card typed on Home counts (its figure has a day); the debt waits with nothing owed. "Same card": owed once, the Home figure stays, the debt account gets `of: <card id>` and is that card's older balance line. "Another card": the debt opens with the waiting figure on the day of the move. A question is answered once. A debt with nothing owed is not asked about.
@@ -235,14 +238,40 @@ conservation 113,693 (was 113,531) on both models; fuzz 864,672 (was 531,456) on
 money door 335,784 pass with two GAP lines (G3, G5); wiring_migrate 300 of 300 on 9 copies (was 240 on 8, 18 failing); wiring_store against its sketch 95; 74 names, no clash.
 `ledger_core_all.sh` now also runs `money_door_test.js`, `wiring_migrate.js` and `wiring_store.js` with `STORE=tests/next/wiring_store_sketch.js`. `wiring_page.js` stays out.
 
-**What the next session does, in order**
+**What the third pass left for the next session (all done in the fourth pass; kept as the record)**
 1. **G3, test first.** In `money_door_test.js` turn the G3 `gap(...)` into `rep.ok`: after `doorApply` lent to a new person and `doorUndo`, `S.accounts` is as before byte for byte; `doorRedo` brings the account and the events back; undo again takes both out. Add edge cases to `ledger_edge.js`. Planned fix: `ledgerAddMany(S, evs, today, { accounts: [acct] })` adds the accounts and the events all or none; `ledgerUndo` removes an account made with the step when no event left in `S.ledger` names it and keeps it in the undone step (`{ items, accounts: [{ a, at }] }`); `ledgerRedo` puts it back first; `ledEndRedo` keeps such an account in `S.removed`. **Watch `ledgerClean`**: it drops an undone step whose event names an unknown account, so it must count the step's own accounts as known. The door then passes `plan.make` that way and drops its own splice. The sweep in `money_door_test.js` already checks figures and events after undo; add `S.accounts`.
 2. **G5, test first.** Turn the G5 `gap(...)` into `rep.ok` (due 12,480, later 2,600) and add an edge case. Planned fix in `ledgerCardDue`: a typed balance dated after the cut-off counts as the statement, not as spending after it. That is an `open`, and an `adjust` that is not sub `instalment` (wiring step 5 types card balances through `ledgerAccept`). Reason: never show less due than there may be. `ledger_edge.js` has a case where `ledgerInstalment` after the cut-off counts as later; it must stay.
 3. **Docs, not done yet.** `LEDGER_DESIGN.md`: `lent` in the places and in "How the numbers are read"; put-backs under Wallet mode; `srcs` in the event fields and under A8; the move section (debt goals, debts keep ids, `planIsSample`, the same-card question, the four arguments); and the two text-only points: a moved ledger starts on the calendar month so the pay day is asked once at the move, and "bank after the cards" at wiring is `accounts[bank]` less `forCards`. The function table above needs `ledgerAlso`, `ledgerSameCard`, `placesOf().lent` and the new `migrate3831` arguments. Choice 12 above ("plan.debts field names were not checked") and "Wiring it in" step 4 are out of date: `wiring_migrate.js` is that check. In `LANE_ledger_wiring.md`, `LEDGER_WIRING.md` (step 0, the test table, `lsMove` should pass figures and `planIsSample` through), `LANE_money_door.md` and `MONEY_DOOR.md` (G1, G2, G4 closed, the way `back`, "What fits no kind" last row) say what is true now.
 4. `ledger_ref.js` `migrate3831` was left as it was (plain shape only). The differential test still compares 600 plain migrations and passes.
 5. Run `ledger_core_all.sh`, then report to the coordinator (now session_01BFpKEXvqtaKqkyg3aNk3hU).
 
-**Noticed, not fixed:** `ledgerUndo` can take out an opening event made by the move (also the one `ledgerSameCard` adds). The move clears `S.undone` but the events stay undoable. The screens should not offer undo for `src: 'migration'` events, or the ledger should refuse it.
+**Noticed, fixed in the fourth pass:** `ledgerUndo` can take out an opening event made by the move (also the one `ledgerSameCard` adds). The move clears `S.undone` but the events stay undoable. The screens should not offer undo for `src: 'migration'` events, or the ledger should refuse it.
+
+## Fourth pass (side N4, 2026-11-19): G3, G5, the moved openings, the docs. FINISHED
+Each fix has a commit holding only its failing tests, then the fix. Find them with `git log --grep "(G3)"`, `"Fix G3"`, `"(G5)"`, `"Fix G5"`, `"undo must not"`, `"ledgerUndo never"`.
+
+| What | Tests failing before | What was done |
+|---|---|---|
+| **G3** undo leaves the account made for a new person | edge 24, door 103 | `ledgerAddMany(S, evs, today, { accounts: [...] })` adds the accounts and the events all or none; each such account carries `madeBy` (the id of the step's first event). `ledgerUndo` takes out an account with `madeBy` when no event left in `S.ledger` names it and keeps it in the undone step (`accounts: [{ a, at }]`). `ledgerRedo` puts it back first, in its old position; it refuses with `acct-new` when the id is in use again. A new event ends redo: the account goes to `S.removed` as `{ what: 'account', it }`. The door passes `plan.make` this way and no longer adds or splices the account itself. |
+| **The trap in `ledgerClean`** | in the G3 tests | The accounts held by the undone steps count as known when the undone steps are read, so a saved copy keeps the step and redo works after a reload. A step that still cannot be read is no longer dropped: it moves to `S.ledgerBad` as `{ what: 'undone', why: 'step', it }`. |
+| **G5** a card balance typed after the cut-off shows due 0 | edge 14, door 3 | In `ledgerCardDue` an `open`, and an `adjust` whose sub is not `instalment`, dated after the cut-off count as the statement. Mika: due 12,480, later 2,600. An instalment after the cut-off stays later (tested). No figure of `placesOf` changes, so `ledger_ref.js` (which has no cut-off day) is unchanged. |
+| **Undo of an opening made by the move** | edge 16 | `ledgerUndo(S, id)` refuses such an event with the new code `moved-open`, nothing changed. Plain `ledgerUndo(S)` passes over these openings to the last step that may be undone, and answers `nothing` when only they are left. This covers the opening `ledgerSameCard` adds. A wrong moved figure is corrected with `ledgerAccept`, which can be undone. |
+| **Docs** | | `LEDGER_DESIGN.md` (lent, put-backs, `srcs` and A8, undo, the cut-off rule, the move point by point, and the two text-only points: pay day asked once at the move, bank after the cards at wiring); the function table and the stale notes above; `LANE_ledger_wiring.md`, `LEDGER_WIRING.md`, `LANE_money_door.md`, `MONEY_DOOR.md` say what is true now. |
+
+**Defaults chosen without asking (the coordinator may flip any):**
+- G3: the rule is "an account made with a step lives while some event in the ledger names it", not "it leaves with its own step only". So with two loans to Lea, undoing the first by id keeps her account, and undoing the second takes it out. A check on the account counts as an event naming it.
+- G3: `money_door.js` was edited (five lines in `doorApply`, one comment). It is not in the list of files named for this lane, but the plan asked for it and the door test cannot pass without it.
+- G3: `ledgerCarryOver` still adds its "older balance" account on its own, so that account stays after an undo, empty. Left as it was.
+- G5: every typed balance after the cut-off is due in full (an opening, an accepted check, start fresh), also when part of it may be newer than the statement. Reason: never show less due than there may be. A typed balance below what the events say gives the same figures as before.
+- Moved openings: plain undo passes over them (it does not stop there), so a step done before the same-card answer can still be undone. An opening typed by hand in the new app (`src: 'typed'`) is undone as before. A saved copy in which an older page already undid a moved opening loads, and redo puts it back.
+- `ledgerClean` setting an unreadable undone step aside in `S.ledgerBad` instead of dropping it is new behaviour for old copies. Nothing is lost that was kept before.
+
+**Last full run** (`bash wip/team/tests/next/ledger_core_all.sh`, about 30 seconds, ends in LEDGER CORE ALL PASS, no GAP line):
+conservation 113,693 on both models; fuzz 864,672 on both models; diff 1,484,978; edge 801 (was 650); money door 337,129 (was 335,784 with two GAP lines);
+wiring_migrate 300 of 300 on 9 copies; wiring_store against its sketch 95; 75 names in `ledger.js` (was 74: `ledMovedOpen`), no clash.
+
+**Still open (none blocks the wiring):** points 8 and 9 above (undo the adjust when a late statement arrives; history before the first typed balance); a kind `shift`;
+`ledger_ref.js` `migrate3831` still takes the plain shape only; an event dated before its account's opening stays outside the differential test.
 
 ## Not done
 - `tests/next/migration_fixtures.js` (the 19 old builds in the real page) needs the page wired, so it is for the main session. Its hook reads `e.t === 'open'`; ledger events use `e.k === 'open'`, so `PAGE_HOOK` in `lib.js` needs that one word changed when the page is wired.

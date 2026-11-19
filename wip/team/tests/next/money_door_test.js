@@ -11,7 +11,7 @@
    3. The lines, in numbers: each kind on Mako's shape with the amounts written out by hand.
    4. The people: what each persona tries, and the situations of LAUNCH_CHECKLIST.md section C, each through its kind.
    5. Nothing counted twice (A8): a bill and its receipt, a transfer seen on two statements, a card payment seen on two.
-   6. Gaps: what the ledger lacks today. They print as GAP and do not fail the run (LANE_money_door.md lists them). */
+   6. The five gaps the door found in the ledger (LANE_money_door.md). All are closed: each is a hard check, and no GAP line is printed. */
 const path = require('path');
 const { Report, cents } = require('./lib');
 const L = require(path.join(__dirname, '..', '..', 'ledger.js'));

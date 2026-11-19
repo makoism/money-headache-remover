@@ -8,8 +8,8 @@ New files only. `ledger.js`, `ledger_ref.js`, the existing ledger tests and ever
 | `wip/team/LEDGER_WIRING.md` | The wiring as ordered steps, one commit each: files and functions, the test that fails before and passes after, what the person sees. The figure table. What is left out. |
 | `tests/next/wiring_make_fixtures.js` | Makes saved 38.31 copies with the real `model.js` and the page's own `normalize` from a git ref. One command to refresh. |
 | `tests/next/fixtures/wiring/*.json` | 8 saved copies, each with what the person typed and what v1 Home showed. |
-| `tests/next/wiring_migrate.js` | The 8 copies through `migrate3831`. Fails on any field it cannot read. **Today: FAIL, 18 of 240.** |
-| `tests/next/wiring_store.js` | The new key, the guard, the move on first load, against `lstore.js`. **Today: FAIL, NOT BUILT.** |
+| `tests/next/wiring_migrate.js` | The 8 copies through `migrate3831`. Fails on any field it cannot read. **Today: PASS, 300 checks on 9 copies** (was FAIL, 18 of 240, until the ledger core lane fixed the gaps below; it added the fixture `samecard`). Runs in `ledger_core_all.sh`. |
+| `tests/next/wiring_store.js` | The new key, the guard, the move on first load, against `lstore.js`. **Today: FAIL, NOT BUILT** (`lstore.js` is wiring step 2). Against its sketch it passes, 95 checks, and runs that way in `ledger_core_all.sh`. |
 | `tests/next/wiring_store_sketch.js` | A storage glue that passes `wiring_store.js` (86 checks). Tests only; a starting point for `lstore.js`. |
 | `tests/next/wiring_page.js` | Source checks per wiring step (`node wiring_page.js 3` runs step 3). **Today: FAIL, 31 of 31.** |
 
@@ -44,8 +44,12 @@ Other shape facts the move depends on, all read from real saved copies:
 - The kind of a goal is in `ui.gk[goalId]` (`'debt'` for A3), not on the goal.
 - Whether the plan is still the untouched sample is not in the copy as a field; the page works it out (`planIsSample` in `ui0.js`).
 
-## Gaps in ledger.js (not fixed here; one later session fixes them)
-Each has a failing case in `wiring_migrate.js`. Fix them before wiring step 5.
+## Gaps in ledger.js: all fixed by the ledger core lane (third pass, on `side/ledger-core`)
+Each had a failing case in `wiring_migrate.js`; all pass now. The four points below are kept as the record of what was found. What was done:
+1 (W1): a debt goal becomes a loan account of target less paid, with the goal's id; no burrow. 2 (W2): the caller passes `more.planIsSample === true`
+and nothing of `plan.goals` and `plan.debts` moves. 3 (W3): the loan account id is the debt id (the field `debt` always holds it). 4 (W4): the call is
+`migrate3831(saved, today, figures, more)`; the saved copy is frozen whole. A fifth, found on the way (W5): a debt of kind card named like a card typed
+on Home is asked about (`S.oldFigures.questions`, `ledgerSameCard`), not owed twice. Details: `LANE_ledger_core.md` "Third pass" and `LEDGER_DESIGN.md`.
 
 1. **A debt goal is moved as savings.** A goal with `ui.gk[id] === 'debt'`, target 30,000, start 12,000 (paid so far): `migrate3831` opens a burrow holding 12,000 in "Savings from your old plan". Total is 12,000 too high (33,300 instead of 21,300) and Owed is 0 instead of 18,000. DECISIONS.md says A3 debt goals become loan accounts. `ledgerRead3831` does not read `ui.gk`. Expected by the test: no burrow; a loan of target less start, traceable to the goal id. Fixture `debtgoal`.
 2. **The sample's invented emergency fund is moved as if typed.** A person who opened the app, kept the sample plan and typed only the bank (87,000): the sample goal `rainy` has `start: 140000` in yen, so Total becomes 227,000. "Only typed figures move." The copy cannot say this by itself; the page can (`planIsSample(saved)`). Smallest fix: `migrate3831` takes a flag (for example `old.goalsAreSample`), set by the caller, and skips goal starts; or `lsMove` blanks them. The test expects no burrow. Fixture `sample`.

@@ -1,6 +1,6 @@
 # The money door: one way in for everything that happens to your money
 
-Side Q, 2026-11-19. Logic and tests only, no screens. Code: `wip/team/money_door.js`. Proof: `node wip/team/tests/next/money_door_test.js` (335,741 checks, PASS). Handoff: `LANE_money_door.md`. Made-up numbers only.
+Side Q, 2026-11-19. Logic and tests only, no screens. Code: `wip/team/money_door.js`. Proof: `node wip/team/tests/next/money_door_test.js` (337,129 checks, PASS, no GAP line). Handoff: `LANE_money_door.md`. Made-up numbers only.
 
 Mako's decision (DECISIONS.md, "After the concept review" point 3): two buttons, **Money came in** and **Money went out**, each with a short list of kinds and one line saying what each is for. You pick the kind and the kind decides what happens to the numbers. The labels and lines below are first drafts in plain words for the voice lane to go over.
 
@@ -59,6 +59,7 @@ The columns show the usual way: paid from or into a bank, e-wallet or cash, with
 | Moved | to your wallet in Wallet mode | down | this is handing yourself spending money: Free to spend (handed out) up |
 | Moved | dollars brought home | up | Total rises by what landed. It asks "how much landed", never a rate |
 | Moved | sent into another currency | down | Total falls by what left, it now sits beside Total |
+| Moved | from your wallet back into the bank, GCash or cash in Wallet mode | up | money put back: it is inside Total again, and Free to spend (handed out since pay day) goes down by it, never below zero |
 
 ## Two figures beside the five
 - **Waiting**: pay that has no job yet. Pay, Gift, Sold, Other and Borrowed land here.
@@ -75,10 +76,10 @@ Total = Waiting + Bills left + Free to spend + Saved + Lent, and that equals the
 6. **Refund goes back to Free to spend** unless you say what it was for.
 7. **Paid a card pays what is on the card first**, then the card's older balance (the ledger's loan account for it), as one step with one undo. A person who carries a balance just says "I paid 3,400 to my card".
 8. **Paid back** needs somebody who owes you. Money back from someone you never logged as lent is a Refund.
-9. **A new person** (Borrowed from, Lent to) needs only a name. The door makes the account: a loan, or "owed to you".
+9. **A new person** (Borrowed from, Lent to) needs only a name. The door makes the account: a loan, or "owed to you". Undoing that step takes the account out again and redo brings it back; it stays while another event still names it.
 10. **Moved to the wallet in Wallet mode is the ledger's "hand"**, so it counts as Free to spend handed out.
 11. **Saved to a burrow** can also move the money between two accounts in the same step (bank to a savings account), with one undo.
-12. **Nothing twice (A8).** A line from a statement or a receipt that looks like money already logged (same amount, same account, same day, or within 3 days when it moves between two accounts) is not recorded: the door answers "seen" with the event it would repeat, and the person can say "it is another one". Two equal lines inside one statement are two things. A line typed by hand is always recorded, with a hint.
+12. **Nothing twice (A8).** A line from a statement or a receipt that looks like money already logged (same amount, same account, same day, or within 3 days when it moves between two accounts) is not recorded: the door answers "seen" with the event it would repeat, and the person can say "it is another one". Two equal lines inside one statement are two things. A line typed by hand is always recorded, with a hint. When the person says "yes, it is the same money", `doorSame` makes the event remember that line too, so importing the same file again does not ask again.
 13. **Extra pay** (13th month, a bonus, a second income) is Pay with "extra" ticked: it waits to be placed and does not start a new month.
 14. Events carry `door: <kind>` and a `sub` word, so history can show the kind the person picked.
 
@@ -133,5 +134,4 @@ The people of PERSONAS_PH.md and the habits of PH_ACCOUNTS.md:
 | Owed money moved between two owed accounts (a balance transfer, a loan that pays off a card) | no kind and no ledger kind either | the ledger's proposed `shift` |
 | Interest added to what you owe | it fits "Bill, paid with the loan" but nobody thinks of interest as paying with a loan | a small "Interest" entry on the card or loan screen that records the same event |
 | A wage advance from the employer | it is Borrowed, then Paid back a loan "taken out of your pay". Two entries that a person may not think of | fine as is; a hint on the pay day screen |
-| Money put back from the wallet into the bank in Wallet mode | recorded by Moved, and Total is right, but "handed out since pay day" does not go down (ledger gap G4) | the ledger |
 | One payment split over cash and a card | two entries | fine as is |

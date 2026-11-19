@@ -11,8 +11,8 @@ File and function names below are those of `origin/wip-38.31` at `9916cde`. Made
 
 | Test | Today | What it needs |
 |---|---|---|
-| `node tests/next/wiring_migrate.js` | FAIL, 18 of 240 | the four gaps of `ledger.js` fixed (step 0) |
-| `node tests/next/wiring_store.js` | FAIL, NOT BUILT `lstore.js` | step 2 |
+| `node tests/next/wiring_migrate.js` | PASS, 300 checks on 9 copies (was FAIL, 18 of 240) | nothing: the gaps of `ledger.js` are fixed (step 0). It runs in `ledger_core_all.sh` |
+| `node tests/next/wiring_store.js` | FAIL, NOT BUILT `lstore.js` (against its sketch: PASS, 95 checks, in `ledger_core_all.sh`) | step 2 |
 | `node tests/next/wiring_page.js [step]` | FAIL, 31 of 31 | steps 1 to 8, one step at a time |
 
 ## Three decisions this plan rests on (taken here, flip any of them before step 5)
@@ -28,8 +28,9 @@ File and function names below are those of `origin/wip-38.31` at `9916cde`. Made
 - **Touches:** `tests/next/fixtures/wiring/*.json` (refreshed), and `ledger.js` (by the session that fixes ledger gaps, not during wiring).
 - **Do:** `node wip/team/tests/next/wiring_make_fixtures.js <git ref of what shipped>` then `node wip/team/tests/next/wiring_migrate.js`.
   The maker loads the real `model.js` and the page's own `normalize` from that ref. If the shipped page has a field the test does not list by name, it fails with the field's name: decide READ or KNOWN in `FIELDS` at the top of `wiring_migrate.js`.
-- **Fails before:** 18 checks, four causes, all in `LANE_ledger_wiring.md` "Gaps in ledger.js": a debt goal arrives as savings; the sample's invented emergency fund is moved as if typed; a debt loses its `plan.debts[].id`; handing over the old plan figures adds a key to the frozen copy.
-- **Passes after:** `PASS wiring_migrate: 8 saved 38.31 copies`. Add it to `ledger_core_all.sh`.
+- **State: the ledger half is done** (ledger core lane, third pass). The test passes on the fixtures made from `origin/wip-38.31`, and it is in `ledger_core_all.sh`. What is left of this step is to refresh the fixtures from the v1 candidate and run it again.
+- **Failed before the fix:** 18 checks, four causes, all in `LANE_ledger_wiring.md` "Gaps in ledger.js": a debt goal arrives as savings; the sample's invented emergency fund is moved as if typed; a debt loses its `plan.debts[].id`; handing over the old plan figures adds a key to the frozen copy.
+- **Passes now:** `PASS wiring_migrate: 9 saved 38.31 copies, 300 checks` (the ninth, `samecard`, is one card typed on Home and in Cards and loans).
 - **The person sees:** nothing.
 
 ## Step 1. The ledger is in the page
@@ -46,7 +47,7 @@ File and function names below are those of `origin/wip-38.31` at `9916cde`. Made
 | `LEDGER_KEY` | `'burrow-ledger-v1'` |
 | `lsLoad(store, today, figuresOf)` | `{ from, copy }`. `ledger`: read from the new key and cleaned with `ledgerClean`. `moved`: no new key, the old key read once and moved, nothing written. `none`: a new person. `newer`: the stored ledger is from a newer page. `damaged`: the stored text cannot be read; it is kept, not moved over. |
 | `lsSave(store, S)` | `'saved'`, or `'newer'` (`ledgerMayWrite(stored)` said no), `'behind'` (a higher `rev` is stored), `'damaged'`, `'error'`. Writes the new key only. Never saves a copy with no ledger. |
-| `lsMove(saved, today, figures)` | A 38.31 copy becomes a ledger copy: every field it had stays, the ledger fields from `migrate3831` are added, `frozen` is the saved copy whole, `oldFigures.plan` is `figures`. |
+| `lsMove(saved, today, figures, more)` | A 38.31 copy becomes a ledger copy: every field it had stays, the ledger fields from `migrate3831` are added, `frozen` is the saved copy whole, `oldFigures.plan` is `figures`. It passes `figures` and `more` straight through: `migrate3831(saved, today, figures, more)`, with `more.planIsSample` from the page's `planIsSample(saved)`. The ledger now freezes the saved copy whole by itself, so `lsMove` no longer has to set `frozen` (the sketch still does). |
 | `lsMayTake(copy)` | For any whole copy that arrives: `'ok'`, `'old'` (a 38.31 copy: run it through `lsMove` first), `'newer'` (refuse, say "update the app"), `'bad'`. |
 | `lsMayUpload(serverCopy)` | `ledgerMayWrite` on the decrypted copy on the server. False: do not upload, not with `force` either. |
 
@@ -72,6 +73,7 @@ The page is still a 38.31-shape page on the old key. This step makes pages in th
 
 ## Step 4. The ledger actions
 - **Touches:** `actions.js`: one new group, each a thin call inside `ACT.tx` for the one save and redraw: `ACT.moneyIn`, `moneyOut`, `place`, `transfer`, `payCard`, `check`, `accept`, `startFresh` (calling `ledgerAdd`, `ledgerCheck`, `ledgerAccept`, `ledgerStartFresh` with today's day), `ACT.ledgerUndo`, `ACT.ledgerRedo`. On false, the words come from `ledgerWhy().code`.
+- **Ledger undo, two things to know:** an opening made by the move is never undone (`ledgerUndo(S, id)` answers false with `moved-open`; plain `ledgerUndo(S)` passes over it and answers `nothing` when only such openings are left, so the button is off right after the move). An account made with a step (`doorApply` for a new person) leaves `S.accounts` with the undo and comes back with redo.
 - **Rule:** `snapState` and `restoreState` must not hold `accounts`, `ledger`, `undone`, `removed`, `ledgerNext`. An undo of a plan change must never roll money events back. The 3-day kept copy (`snapNoCopy`, `keepCopy`) is a whole copy and does hold them; that is right, it replaces everything.
 - **Test:** `node tests/next/wiring_page.js 4`. **Node test to write** (`tests/next/wiring_actions.js`): load `model.js`, `ledger.js`, `actions.js` in one scope with a stub `render` and `persist`; add a spend through `ACT.moneyOut`, change a bill through `ACT.setLine`, `ACT.undo()`: the bill is back and the spend is still there; `ACT.ledgerUndo()`: the spend is gone and the bill change is not touched.
 - **The person sees:** nothing. No screen calls them yet.
@@ -84,7 +86,7 @@ This is the one step people notice. It must land whole.
   - Every door of step 3: a copy that is `'old'` now goes through `lsMove` before it replaces anything (an old backup file, an old cloud copy, the mirror, a link).
   - `ui42.js`: a ledger copy is stored in the cloud where a 38.31 page with the same code will not find it. **Chosen:** `keysFor` derives a second vault id for ledger copies (the code plus a fixed suffix before hashing), so no server change is needed; on a new phone the page looks for the ledger place first, then the old place (and moves what it finds). The server-side format number in `LANE_vault.md` can be added on top; it is not needed for this.
   - `actions.js` `ACT.setBankNow` and `ACT.setCard`, `removeCard`: they now also write the ledger, so both sides stay equal until step 6: the bank through `ledgerAccept('bank', v, today)`; a card through `ledgerAccept(cardId, owed, today)`, with `ledgerAddAccount` for a new one and `ledgerEditAccount` for name and pay day; a removed card is accepted to zero and closed with `ledgerCloseAccount`.
-  - One screen, shown once (`S.oldFigures.shownOnce`): the old plan's figures beside the new ones, and the two questions the move leaves open: accounts marked `confirm` ("Is this still what your bank shows?", "Where do these savings sit?").
+  - One screen, shown once (`S.oldFigures.shownOnce`): the old plan's figures beside the new ones, and the questions the move leaves open: accounts marked `confirm` ("Is this still what your bank shows?", "Where do these savings sit?"), each entry of `S.oldFigures.questions` ("Is this the same card?", answered with `ledgerSameCard`), and the pay day (a moved ledger starts on the calendar month; set it with `ledgerSetPayDays`).
 - **Only typed figures move:** the bank figure with its day, each card typed on Home, goal starts a person typed, Cards and loans balances, debt goals as loans. Never a sample figure, never a planned figure. Old receipts stay as history (M5); the ledger starts on the day of the move.
 - **Tests:** `wiring_migrate.js` and `wiring_store.js` in `check.sh`; `wiring_page.js 5`. **Page test to write** (`tests/qc/ledger_move.js`): for each file in `tests/next/fixtures/wiring/`, put `saved` under the old key, open the page, and check: the once-screen shows `oldFigures.plan` beside the new figures; the Home now block shows the same bank, cards and "bank after the cards" as `homeNow` in the fixture; the old key is byte for byte the same; the new key holds a copy whose `frozen` is the old copy; reload: no second move, the once-screen is gone; type a new bank figure: `placesOf(S).accounts.bank` and the screen agree. Then `tests/next/migration_fixtures.js` (the 19 old builds) with `PAGE_HOOK` in `lib.js` reading `e.k === 'open'`.
 - **The person sees:** once, "Your numbers moved" with the old plan beside the new picture, and at most two questions. Home looks the same as before.
