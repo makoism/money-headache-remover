@@ -103,6 +103,7 @@ One "Money came in" and one "Money went out", each with a short list of kinds an
 | # | Point | Fix | Gate |
 |---|---|---|---|
 | H1 | Every screen obvious to someone who never learned about money | a fresh novice agent walks every screen and lists each place it would give up; each becomes a fix | v1 for Home and setup, team for the rest |
+| H7 | The copy sounds like AI ("slop"); Mako would stop using the app over it | the voice checker agent (VOICE.md, qc-voice) checks all copy: not like AI, and like Mako, with little punctuation; rewrites applied screen by screen | v1 for the screens v1 shows, team for the rest |
 | H2 | Anything not obvious explains itself on the spot | a "?" beside it: the mindset first (why it matters, how to think about it), then the function (what to tap). Written words now | team |
 | H3 | One thing at a time | setup, pay day, the weekly check-in and "check your bank" as one-question-per-screen flows (Typeform style) | team |
 | H4 | "I upload my stuff and it does it all for me" | statements (or the any-AI prompt) are the front door of setup; typing is the fallback | team |

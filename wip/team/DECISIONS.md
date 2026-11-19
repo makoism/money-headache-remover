@@ -187,3 +187,11 @@ Mako answered the five shape questions himself. Do not wait for the teammates an
 5. **What would make them stop:** not answered for the team; use Mako's own: "if it didn't give me clarity".
 (This replaces "Mako asks his two teammates" in "Team test about the team" point 1; the rest of that point stays.)
 
+## The copy must not sound like AI, and must sound like Mako (Mako, 2026-11-19)
+Mako read a sample of the written help texts and said: "this copy example you sent is way too AI, and that really deters me from using the app. It's like, damn, this is just slop."
+1. **Two things, both required:** the copy does not sound like AI, and it sounds like Mako: talks like him, skips things like him, uses less punctuation (he does not use much).
+2. **A new agent, the voice checker,** checks all of the copy in the app and every text written for it. It is built from (a) research online on what people have found makes writing sound like AI and how to avoid it, and (b) a proper analysis of how Mako talks, from his own messages. Mako can paste more of his chats and voice messages if needed; start with what exists.
+3. **This is a reason he would stop using the app,** so it counts for v1: the screens he sees in v1 are checked and fixed first.
+4. The older priority "wording like a manual or like him" now reads: like him. Plain is still right; manual-like is not.
+(Voice guide: wip/team/VOICE.md. Agent: .claude/agents/qc-voice.md. No personal details or real figures from his messages go into the repo; the guide describes the style.)
+
