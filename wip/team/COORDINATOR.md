@@ -14,6 +14,10 @@ Coordinator 2 (session_01BFpKEXXUx4uUjZGJny9MyJ) passed the 150k mark and handed
 - Ask Mako once, when he next looks at copy: two or three messages he typed by hand with his " - " in them (ten typed to a friend would settle hyphen, full stops and capitals). None of the 37 messages read had one.
 - Restart messages were sent at 04:32 UTC to SIDE N, O, G; confirm each restarted (new commits on side/ledger-core, side/statements-ph, side/vault-server) or replace it from its branch and LANE file.
 
+### Coordinator 3 took over (04:37 UTC)
+- Coordinator 3 is session_01BFpKEWbWX57dzJueLvseiT. MAIN 2, M2, G, H, N and O were each told to report there. All six were running at 04:36 UTC (N and O pushed after the restart; G and H show working, no new commit yet). Six running is the pacing limit; start nothing new until one finishes.
+- Check-in timer trig_01N8bcnmJRzxwhGKXzAJhakJ fires 05:02 UTC in coordinator 3.
+
 ### Mako today (all recorded in DECISIONS.md, last eight sections; read them)
 Pace (use the full allowance by Sunday 22 Nov, again by Wed 25 or Thu 26). The team's shape answered by him (standard Philippine accounts, monthly pay with separate pay supported, cards core, iPhone and Android). The copy must not sound like AI and must sound like him (few full stops, his space hyphen space, joined sentences, normal conversation); all copy in one batch at the end, then ONE pass with him on the preview. The cloud copy must explain itself step by step (E15, v1). Yen stays default. He likes short updates: what was found, what was done. He said: ask him when context is needed. He dictates by voice; messages can cut off.
 
