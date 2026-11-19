@@ -83,7 +83,7 @@ function asstCheck(raw) {
     const amt = amtOf(a.amount);
     if (d === 'set_pay') { if (!(amt >= 0)) return dropped.push(d); push(`Salary: ${f(val(S, 'a', ym))} to ${f(amt)} a month`, T => { setVal(T, 'a', ym, amt, 'after'); if (amt > 0) markDoneOn(T, 'pay'); }); }
     else if (d === 'set_other_income') { if (!(amt >= 0)) return dropped.push(d); push(`Second pay: ${f(val(S, 'b', ym))} to ${f(amt)} a month`, T => setVal(T, 'b', ym, amt, 'after')); }
-    else if (d === 'set_balance') { if (!(amt >= 0)) return dropped.push(d); push(`Money today: ${f(cfg(S, 'bankStart'))} to ${f(amt)}`, T => { setBankBalance(T, Math.round(amt)); }); }
+    else if (d === 'set_balance') { if (!(amt >= 0)) return dropped.push(d); push(`Money today: ${f(cfg(S, 'bankStart'))} to ${f(amt)}`, T => { setBankBalance(T, clampBank(amt, T)); }); }   /* cents kept, yen whole (decision 1); was Math.round */
     else if (d === 'set_min_balance') { if (!(amt >= 0)) return dropped.push(d); push(`Minimum balance: ${f(cfg(S, 'minBank'))} to ${f(amt)}`, T => { T.cfg.minBank = Math.round(amt); }); }
     else if (d === 'set_line') { const l = lineOf(S, a.key); if (!l || !(amt >= 0)) return dropped.push(d + ' ' + (a.key || '')); push(`${l.name}: ${f(val(S, l.key, ym))} to ${f(amt)} a month${since}`, T => { setVal(T, l.key, ym, amt, scope); if (l.jar === 'nec') markDoneOn(T, 'bills'); }); }
     else if (d === 'set_jar') { const jar = String(a.jar || ''); const ls = S.plan.lines.filter(l => l.jar === jar); if (['play', 'edu', 'ffa', 'give'].indexOf(jar) < 0 || !ls.length || !(amt >= 0)) return dropped.push(d); const others = ls.slice(1).reduce((x, l) => x + val(S, l.key, ym), 0), now = ls.reduce((x, l) => x + val(S, l.key, ym), 0); push(`${JAR_WORD[jar]} jar: ${f(now)} to ${f(amt)} a month${since}`, T => setVal(T, ls[0].key, ym, Math.max(0, round2(amt - others)), scope)); }
@@ -195,3 +195,5 @@ function asstAfter(bot, text, truncated) {
   asstCard(card, chk); sfx('next');
   $('#askLog').scrollTop = $('#askLog').scrollHeight;
 }
+/* test hook (only with ?sfxtest): the assistant's checked actions, so a test can run one on a copy */
+if (/[?&]sfxtest\b/.test(location.search)) window.__asst = { asstCheck, runActions };

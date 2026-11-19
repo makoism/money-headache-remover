@@ -1881,6 +1881,28 @@ p .link, li .link, span .link, .cap .link { min-height: 0; position: relative; p
 p.hs-more .link { padding-top: 12px; padding-bottom: 12px; margin-top: -12px; margin-bottom: -12px; }
 /* F6: a goal's "full" mark in All months kept the goal colour as 12px text (1.84:1 for the yellow goal in light): the words mix toward the ink */
 .mt-g > span { color: color-mix(in srgb, var(--c) 45%, var(--ink)); }
+/* A5: the cards in the now block */
+.mp-cards { list-style: none; margin: 8px 0 4px; padding: 0; }
+.mp-cards li { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 2px 0; }
+.mp-cards small { color: var(--ink2); }
+.mp-after { margin: 6px 0; }
+.mp-after b.bad { color: var(--bad); }
+.mp-cardf label { display: block; font-weight: 600; margin: 8px 0 2px; }
+.mp-cardf .txt { width: 100%; box-sizing: border-box; min-height: 44px; }
+
+/* the cloud copy steps (LAUNCH_CHECKLIST E15): one panel, one step at a time */
+.vault-flow { margin: 10px 0 12px; padding: 14px 14px 12px; border: 1px solid var(--hair); border-radius: 14px; background: var(--track); }
+.vault-flow h5 { margin: 0 0 8px; font-size: 16px; line-height: 1.3; outline: none; }
+.vault-flow p, .vault-flow li { font-size: 14.5px; line-height: 1.5; margin: 0 0 8px; }
+.vault-flow ol { margin: 0 0 8px; padding-left: 22px; }
+.vault-flow .row-btns { margin-top: 10px; }
+.vf-dots { display: flex; gap: 6px; margin: 0 0 10px; }
+.vf-dots i { width: 8px; height: 8px; border-radius: 50%; background: var(--track2); }
+.vf-dots i.on { background: var(--accent); }
+.vf-warn { color: var(--warn); }
+.vf-sent { font-weight: 600; }
+ol.steps { margin: 4px 0 10px; padding-left: 22px; }
+ol.steps li { margin: 0 0 4px; }
 </style>
 </head>
 <body>
@@ -2228,19 +2250,19 @@ p.hs-more .link { padding-top: 12px; padding-bottom: 12px; margin-top: -12px; ma
           <button type="button" class="btn small" id="bkCopy">Copy text</button>
         </div>
         <p class="cap" id="bkWhen" role="status"></p>
-        <p class="cap">Back up regularly, and before clearing or resetting. Keep the file somewhere safe or paste the text into a note.</p>
+        <p class="cap">A backup file holds all your numbers and receipts as they are at the moment you save it. It does not update by itself.</p>
+        <ol class="cap steps" id="bkSteps"><li>Tap <b>Save file</b>. The file lands in your downloads. Or tap <b>Copy text</b> and paste it into a note.</li><li>Keep it somewhere that is not only this device: your drive, or an email to yourself.</li><li>Save a new one now and then, and before clearing or resetting.</li></ol>
         <h4>Spreadsheet</h4>
         <div class="row-btns"><button type="button" class="btn small" id="bkCsv">Export spreadsheet</button></div>
         <p class="cap">Every plan month as one table: pay, places, goals, balance. Opens in Sheets or Excel. Read-only: edits there do not change this page.</p>
         <div id="vaultBox" hidden>
-          <h4>Cloud backup</h4>
+          <h4>Cloud copy</h4>
           <p class="cap" id="vaultState" role="status"></p>
-          <div class="row-btns"><button type="button" class="btn small solid" id="vaultOn">Turn on</button><button type="button" class="btn small" id="vaultShow" hidden>Show code</button><button type="button" class="btn small solid" id="vaultLoadNewer" hidden>Load the newer copy</button><button type="button" class="btn small" id="vaultKeepMine" hidden>Keep mine</button><button type="button" class="btn small" id="vaultOff" hidden>Turn off</button></div>
+          <p class="cap vf-warn" id="vaultBehind" role="status" hidden></p>
+          <div class="row-btns" id="vaultMain"><button type="button" class="btn small solid" id="vaultOn">Keep a copy in the cloud</button><button type="button" class="btn small" id="vaultHave">I have a code</button><button type="button" class="btn small solid" id="vaultRetry" hidden>Send now</button><button type="button" class="btn small" id="vaultShow" hidden>Show code</button><button type="button" class="btn small" id="vaultHow" hidden>Use it on another device</button><button type="button" class="btn small solid" id="vaultLoadNewer" hidden>Load the newer copy</button><button type="button" class="btn small" id="vaultKeepMine" hidden>Keep mine</button><button type="button" class="btn small" id="vaultOff" hidden>Turn off</button></div>
           <div id="vaultCode" hidden></div>
-          <p class="cap">Encrypted on this device with a recovery code before anything is sent. Nobody else can open it, including the person who shared this page. New phone, or browser cleared: enter the code and the numbers come back.</p>
-          <h4>Use a recovery code</h4>
-          <div class="row-btns inv-row"><input class="txt" id="vaultIn" type="text" autocomplete="off" spellcheck="false" placeholder="MHR-XXXX-XXXX-XXXX-XXXX-XXXX" aria-label="Recovery code" maxlength="40"><button type="button" class="btn small" id="vaultUse">Load</button><span class="msg" id="vaultMsg" role="status"></span></div>
-          <p class="cap">Loading replaces the numbers here with the cloud copy and keeps this device in sync with it.</p>
+          <div id="vaultFlow" class="vault-flow" hidden></div>
+          <p class="cap">For a new phone, another browser, or a cleared one. Locked on this device with a code only you have, before anything is sent.</p>
         </div>
         <h4>Restore</h4>
         <textarea id="bk" aria-label="Your saved numbers" spellcheck="false" placeholder="Paste the backup text here"></textarea>
@@ -2250,8 +2272,9 @@ p.hs-more .link { padding-top: 12px; padding-bottom: 12px; margin-top: -12px; ma
           <input type="file" id="bkFile" accept=".json,application/json,text/plain" hidden>
           <span class="msg" id="bkMsg" role="status"></span>
         </div>
-        <p class="cap">Restore replaces the numbers and receipts here with the copy. Back up first to keep what is here.<span id="zeroHint"> To start from zero use <b>Set all to zero</b>.</span></p>
-        <p class="cap">If numbers look empty after clearing the browser or switching devices, restore your latest copy.</p>
+        <p class="cap">To get your numbers back from a backup file, on this device or a new one:</p>
+        <ol class="cap steps" id="rsSteps"><li>Tap <b>Choose file</b> and pick your backup file. Or paste the backup text in the box above and tap <b>Load text</b>.</li><li>It asks before it replaces anything.</li><li>The numbers that were here are kept for 3 days, with Undo, in case it was the wrong file.</li></ol>
+        <p class="cap">If numbers look empty after clearing the browser or switching devices, this is how they come back.<span id="zeroHint"> To start from zero use <b>Set all to zero</b>.</span></p>
       </div>
     </section>
   </div>
@@ -2351,6 +2374,9 @@ const pad2 = n => (n < 10 ? '0' : '') + n;
 /* the day a person typed their bank balance (Mako, 2026-11-19: Home says "Balance you entered on 18 Nov"). Only set when a balance is entered;
    a copy saved before this has no date and Home shows none, never a guessed one. */
 const BANK_AT_FORM = /^\d{4}-\d{2}-\d{2}$/;
+/* the bank now (LAUNCH_CHECKLIST A1): what the bank app shows today, typed on Home, with the day. Kept apart from bankStart (the bank at the
+   start of the first month), so typing it mid-month changes no planned figure and nothing already past this month is counted twice */
+const setBankNow = (T, v, now) => { const d = now || new Date(); T.cfg.bankNow = v; T.cfg.bankNowAt = d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); };
 const setBankBalance = (T, v, now) => { const d = now || new Date(); T.cfg.bankStart = v; T.cfg.bankAt = d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); };
 const round2 = x => Math.round(x * 100) / 100;
 /* round down to whole yen, or to cents for other currencies, so the unspent amount is counted to the last cent */
@@ -3216,8 +3242,9 @@ function cleanSteps(raw) {
 }
 function cleanOnce(raw) {
   const out = {}; if (!isMap(raw)) return out;
-  Object.keys(raw).forEach(ym => {
-    if (MONTHS.indexOf(ym) < 0 || !isMap(raw[ym])) return;
+  Object.keys(raw).slice(0, 2400).forEach(ym => {
+    /* E6: the month window is a view only. A month outside it is kept, never trimmed */
+    if (!YM_FORM.test(ym) || !isMap(raw[ym])) return;
     const o = {}; Object.keys(raw[ym]).slice(0, 150).forEach(k => { if (!SAFE_KEY.test(k)) return; const v = cleanAmt(raw[ym][k]); if (v !== null) o[k] = v; });
     if (Object.keys(o).length) out[ym] = o;
   });
@@ -3225,8 +3252,8 @@ function cleanOnce(raw) {
 }
 function cleanItems(raw) {
   const out = {}; if (!isMap(raw)) return out;
-  Object.keys(raw).forEach(ym => {
-    if (MONTHS.indexOf(ym) < 0 || !Array.isArray(raw[ym])) return;
+  Object.keys(raw).slice(0, 2400).forEach(ym => {
+    if (!YM_FORM.test(ym) || !Array.isArray(raw[ym])) return;
     const list = [], used = new Set();
     raw[ym].slice(0, 60).forEach((it, i) => {
       if (!isMap(it)) return; const amount = cleanAmt(it.amount); if (amount === null) return;
@@ -3243,7 +3270,7 @@ function cleanItems(raw) {
 }
 const CFG_AMOUNTS = ['bankStart', 'minBank', 'ceiling', 'moveTarget', 'moveStart', 'travelTarget', 'travelStart', 'carTarget', 'carStart', 'rainyStart', 'rainyTarget', 'rainyStretch'];
 /* every setting this version knows; anything else in a saved copy is a newer version's and is kept untouched by the page (ui0.js) */
-const CFG_KNOWN = new Set(CFG_AMOUNTS.concat(['loanLast', 'redirectLoan', 'moveMonth', 'carDue', 'aims']));
+const CFG_KNOWN = new Set(CFG_AMOUNTS.concat(['bankNow', 'bankNowAt', 'loanLast', 'redirectLoan', 'moveMonth', 'carDue', 'aims']));
 function cleanCfg(raw) {
   const out = {}; if (!isMap(raw)) return out;
   CFG_AMOUNTS.forEach(k => { const v = k === 'bankStart' ? cleanSigned(raw[k]) : cleanAmt(raw[k]); if (v !== null) out[k] = v; });
@@ -3252,8 +3279,29 @@ function cleanCfg(raw) {
   if (typeof raw.moveMonth === 'string' && YM_FORM.test(raw.moveMonth)) out.moveMonth = raw.moveMonth;
   if (typeof raw.carDue === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw.carDue)) out.carDue = raw.carDue;
   if (typeof raw.bankAt === 'string' && BANK_AT_FORM.test(raw.bankAt)) out.bankAt = raw.bankAt;
+  { const v = cleanSigned(raw.bankNow); if (v !== null) out.bankNow = v; }
+  if (typeof raw.bankNowAt === 'string' && BANK_AT_FORM.test(raw.bankNowAt)) out.bankNowAt = raw.bankNowAt;
   if (isMap(raw.aims)) { const a = {}; JARS.forEach(j => { const v = raw.aims[j.id]; if (typeof v === 'number' && isFinite(v) && v >= 0 && v <= 1) a[j.id] = v; }); if (Object.keys(a).length) out.aims = a; }
   return out;
+}
+
+/* A5: pay-in-full cards, what is on each now (typed, with the day) and the day it is paid. Not the interest-bearing debts in Cards and loans.
+   Shape agreed with the ledger lane: S.cards = [{ id, name, owed, payDay, at }] */
+const MAX_CARDS = 12;
+function cleanCards(raw) {
+  if (!Array.isArray(raw)) return [];
+  const out = [], seen = new Set();
+  raw.forEach(c => { if (!isMap(c) || out.length >= MAX_CARDS) return; const id = typeof c.id === 'string' && /^[\w-]{1,24}$/.test(c.id) && !seen.has(c.id) ? c.id : 'k' + (out.length + 1) + '_' + seen.size;
+    seen.add(id); const owed = cleanAmt(typeof c.owed === 'string' && c.owed.trim() !== '' && isFinite(+c.owed) ? +c.owed : c.owed), pd = Math.round(+c.payDay);
+    out.push({ id, name: String(c.name || '').replace(/\s+/g, ' ').trim().slice(0, 40) || 'Card', owed: owed === null ? 0 : owed, payDay: pd >= 1 && pd <= 31 ? pd : null, at: typeof c.at === 'string' && BANK_AT_FORM.test(c.at) ? c.at : null }); });
+  return out;
+}
+/* the "now" block on Home: the bank as typed (bank now, or else the balance typed in setup, each with its day), the cards, and the bank after the
+   cards are paid. Typed figures only: nothing planned is mixed in. bank is null when no balance with a day was ever typed */
+function nowOf(S) {
+  const c = S.cfg || {}, hasNow = typeof c.bankNow === 'number', bank = hasNow ? c.bankNow : (c.bankAt ? cfg(S, 'bankStart') : null), bankAt = hasNow ? (c.bankNowAt || null) : (c.bankAt || null);
+  const cards = cleanCards(S.cards), cardsOwed = round2(sum(cards.map(k => k.owed)));
+  return { bank, bankAt, typedNow: hasNow, cards, cardsOwed, afterCards: bank === null ? null : round2(bank - cardsOwed) };
 }
 
 /* ---- cleaning up anything loaded from a saved copy ---- */
@@ -3313,8 +3361,8 @@ function cleanRecurring(raw) {
     const a = typeof r.a === 'number' ? round2(r.a) : 0; if (!(a > 0) || a > 1e9) return;
     const every = r.every === 'week' ? 'week' : r.every === 'month' ? 'month' : null; if (!every) return;
     const on = Math.round(+r.on); if (every === 'week' ? !(on >= 0 && on <= 6) : !(on >= 1 && on <= 28)) return;
-    /* a start before the first month the page covers begins at the first day it covers */
-    const from = typeof r.from === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(r.from) && r.from < MONTHS[0] + '-01' ? MONTHS[0] + '-01' : r.from;
+    /* E6: a start before the first month the page covers is kept as typed */
+    const from = r.from;
     if (!validDate(from)) return;
     seen.add(r.id);
     const c = typeof r.c === 'string' && /^[A-Za-z0-9:_-]{1,40}$/.test(r.c) ? r.c : 'other';
@@ -3421,7 +3469,8 @@ function applyRecurring(S, today) {
   let n = 0;
   rec.forEach(r => {
     const ds = dueDates(r, null, today);
-    ds.forEach(d => { if (d.slice(0, 7) < START || d.slice(0, 7) > END) return; if (addReceipt(S, d, r.a, r.c, r.n)) n++; });
+    /* E6: a due date outside the months shown is logged too, never skipped and marked done */
+    ds.forEach(d => { if (addReceipt(S, d, r.a, r.c, r.n)) n++; });
     if (ds.length) r.last = ds[ds.length - 1];
   });
   return n;
@@ -3697,6 +3746,7 @@ function normalize(d) {
   f.ui.cur = '₱'; /* a saved copy without a currency is an old peso copy; new copies start in yen */
   /* every amount in a saved or imported copy is checked: a text, a negative number or a broken list never reaches the sums */
   f.steps = cleanSteps(d.steps); f.once = cleanOnce(d.once); f.items = cleanItems(d.items); f.cfg = cleanCfg(d.cfg);
+  if (Array.isArray(d.cards)) f.cards = cleanCards(d.cards);   /* A5: pay-in-full cards typed on Home */
   if (d.ui && typeof d.ui === 'object') f.ui = Object.assign(f.ui, d.ui);
   const u = f.ui;
   if (!(d.ui && typeof d.ui.preset === 'string') || Object.keys(SAMPLES).concat(['blank', 'legacy']).indexOf(u.preset) < 0) u.preset = 'legacy';
@@ -4329,10 +4379,10 @@ let txDepth = 0, txTouched = false, undoStack = [];
 const clone = v => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
 function snapState() {
   const ui = {}; UI_SNAP.forEach(k => { if (S.ui[k] !== undefined) ui[k] = clone(S.ui[k]); });
-  return { steps: clone(S.steps), once: clone(S.once), items: clone(S.items), cfg: clone(S.cfg), plan: clone(S.plan), ui, receipts: clone(S.receipts || []), ids: new Set((S.receipts || []).map(r => r.id)) };
+  return { steps: clone(S.steps), once: clone(S.once), items: clone(S.items), cfg: clone(S.cfg), plan: clone(S.plan), cards: clone(S.cards), ui, receipts: clone(S.receipts || []), ids: new Set((S.receipts || []).map(r => r.id)) };
 }
 function restoreState(snap, postIds) {
-  S.steps = clone(snap.steps); S.once = clone(snap.once); S.items = clone(snap.items); S.cfg = clone(snap.cfg); S.plan = clone(snap.plan);
+  S.steps = clone(snap.steps); S.once = clone(snap.once); S.items = clone(snap.items); S.cfg = clone(snap.cfg); S.plan = clone(snap.plan); if (snap.cards === undefined) delete S.cards; else S.cards = clone(snap.cards);
   UI_SNAP.forEach(k => { if (snap.ui[k] !== undefined) S.ui[k] = clone(snap.ui[k]); else delete S.ui[k]; });
   /* receipts logged after the transaction stay */
   const later = (S.receipts || []).filter(r => !postIds.has(r.id));
@@ -4345,7 +4395,7 @@ const ACT = {
     const before = snapState(); txDepth = 1; txTouched = false; let out;
     try { out = fn(); } finally { txDepth = 0; }
     const postIds = new Set((S.receipts || []).map(r => r.id));
-    const changed = JSON.stringify([S.steps, S.once, S.items, S.cfg, S.plan, S.receipts]) !== JSON.stringify([before.steps, before.once, before.items, before.cfg, before.plan, before.receipts])
+    const changed = JSON.stringify([S.steps, S.once, S.items, S.cfg, S.plan, S.receipts, S.cards]) !== JSON.stringify([before.steps, before.once, before.items, before.cfg, before.plan, before.receipts, before.cards])
       || UI_SNAP.some(k => JSON.stringify(S.ui[k]) !== JSON.stringify(before.ui[k]));
     if (changed) { undoStack.push({ label: String(label || 'change'), before, postIds, at: Date.now() }); if (undoStack.length > UNDO_MAX) undoStack.shift(); }
     ACT.commit();
@@ -4369,6 +4419,13 @@ const ACT = {
     return ACT.tx('income', () => { setVal(S, key, ym || START, clampAmt(amount, S), scope === 'month' ? 'month' : 'after'); if (key === 'a' && clampAmt(amount, S) > 0) markDone('pay', true); });
   },
   setBalance(v) { return ACT.tx('balance', () => { setBankBalance(S, clampBank(v, S)); }); },   /* a bank balance may be below zero (overdrawn), as in Settings */
+  /* A1: what the bank app shows today, kept apart from bankStart (model.js setBankNow) */
+  setBankNow(v) { return ACT.tx('bank now', () => { setBankNow(S, clampBank(v, S)); }); },
+  /* A5: a pay-in-full card, what is on it now and the day it is paid; id null adds one */
+  setCard(id, o) { return ACT.tx('card', () => { const list = cleanCards(S.cards); const d = new Date(), at = d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+    const row = { id: id || ('k' + Date.now().toString(36)), name: o.name, owed: clampAmt(o.owed, S), payDay: o.payDay, at };
+    const i = list.findIndex(k => k.id === id); if (i >= 0) list[i] = row; else list.push(row); S.cards = cleanCards(list); }); },
+  removeCard(id) { return ACT.tx('remove card', () => { S.cards = cleanCards(S.cards).filter(k => k.id !== id); }); },
   setMinBalance(v) { return ACT.tx('minimum balance', () => { S.cfg.minBank = clampAmt(v, S); }); },
   setCeiling(v) { return ACT.tx('spending ceiling', () => { S.cfg.ceiling = clampAmt(v, S); }); },
 
@@ -13458,7 +13515,7 @@ function wireTx(v) {
 
 /* the recovery-code link on the first screen: shows only where a cloud copy can exist; a code loads the numbers and closes the setup */
 const restoreHTML = () => `<p class="cap tour-restore" id="tourRestore" hidden>Used this before on another phone? <button type="button" class="link" id="tourRestoreBtn">Enter your recovery code</button></p>
-      <div class="tour-restore-in" id="tourRestoreIn" hidden><div class="row-btns inv-row"><input class="txt" id="tourVaultIn" type="text" autocomplete="off" spellcheck="false" placeholder="MHR-XXXX-XXXX-XXXX-XXXX-XXXX" aria-label="Recovery code" maxlength="40"><button type="button" class="btn small solid" id="tourVaultUse">Load</button></div><p class="cap" id="tourVaultMsg" role="status"></p></div>`;
+      <div class="tour-restore-in" id="tourRestoreIn" hidden><div class="row-btns inv-row"><input class="txt" id="tourVaultIn" type="text" autocomplete="off" spellcheck="false" placeholder="MHR-XXXX-XXXX-XXXX-XXXX-XXXX" aria-label="Recovery code" maxlength="40"><button type="button" class="btn small solid" id="tourVaultUse">Load my numbers</button></div><p class="cap" id="tourVaultMsg" role="status"></p></div>`;
 function wireRestore() {
   relayHealth().then(h => { const p = $('#tourRestore'); if (p && h && h.vault && tourMode === 'full' && pristine()) p.hidden = false; });
   const b = $('#tourRestoreBtn'); if (b) b.addEventListener('click', () => { $('#tourRestoreIn').hidden = false; $('#tourRestore').hidden = true; $('#tourVaultIn').focus(); });
@@ -13517,8 +13574,8 @@ const TOUR = [
         const ok = f.st === 'even' || f.st === 'spare';
         /* on the app's own address: one tap keeps an encrypted copy in the cloud, so a lost phone does not mean lost numbers */
         const cloud = typeof vaultAvailable === 'function' && vaultAvailable() && !(vault && vault.on)
-          ? `<div class="tour-cloud" id="tourCloud">${LOCK}<div><b>Keep a copy in the cloud</b><p class="cap">Your numbers live in this browser. Cloud backup keeps an encrypted copy that only your recovery code can open. New phone, or browser cleared: enter the code and the numbers come back.</p>
-            <div class="row-btns"><button type="button" class="btn small solid" id="tourVaultOn">Turn on cloud backup</button><span class="cap">Later: Settings, Cloud backup.</span></div><div class="tour-vault-code" id="tourVaultCode"></div></div></div>` : '';
+          ? `<div class="tour-cloud" id="tourCloud">${LOCK}<div><b>Keep a copy in the cloud</b><p class="cap">Your numbers live in this browser. A cloud copy keeps a second one, locked with a recovery code only you have. New phone, or browser cleared: enter the code and the numbers come back.</p>
+            <div class="row-btns"><button type="button" class="btn small solid" id="tourVaultOn">Keep a copy in the cloud</button><span class="cap">Later: Settings, Cloud copy.</span></div><div class="tour-vault-code" id="tourVaultCode"></div></div></div>` : '';
         return `${homeScene()}${ok ? (f.st === 'spare' ? `<p class="tour-st"><span class="chip tight">${IC.warn}Pay not placed</span></p>` : `<p class="tour-st"><span class="chip good">${IC.ok}On plan</span></p>`) : ''}${goal}<p>Your month:</p>${ledgerHTML(f)}<p>${line}</p>
         <p>Receipts keeps this true: log what you spend, or upload each month's statement. What is left of Free to spend at month end can go toward a goal. Help, bottom right, has the video and this setup.</p>${cloud}`;
       }
@@ -13751,7 +13808,7 @@ THE PAGE
 - Plan, Burrows: each burrow is a savings bucket with an amount and, optionally, a date. With a date, the page spreads what is missing over the months before it. Without a date it aims to fill the goal in about a year. Edit goal renames, resizes, dates or removes it, and has a Why line: the reason in the person's words, shown with the goal on Home, here and on the last setup screen. Change monthly amount sets the monthly saving. Add goal starts the three-step flow. Forecast shows each goal month by month as a chart, and Table switches to numbers. The emergency fund is the one goal that can be borrowed from in a short month.
 - Plan, Month: the whole plan for one month. A Choose a month list, the big Free to spend number with a weekly amount, a status chip (On plan, Tight or Short), the pay split by jar as a coloured bar, and Details: Money in (Salary, Second income, Side income), Money out (Bills and basics, One-time costs, Long-Term Savings for Spending, Free to spend, Education, Investing, Give) and Left. Tap an amount to type a new one: it changes that month only, and Keep for later months makes it the new usual. Open a jar and tap Rename, remove or add lines to change its list. Reset month and Undo all revert edits. A Short month offers one-tap fixes: spend less, or borrow from the emergency fund. All months shows a table of every month.
 - Where to put a paycheck: Plan, Month, open Salary under Money in, and type the monthly take-home pay (after tax). If paid twice a month, add both together.
-- Settings: Name, Currency, Sound, Look (Auto, Light or Dark), Balance (Money today, Minimum balance, Monthly spending ceiling), Six places (the usual percentages, shown as a guide; Re-split pay reruns the split), Reset and setup (Set all to zero, Restore samples, Show first steps, Guided setup), and Saved data: Backup with Save file or Copy text, Spreadsheet with Export spreadsheet (every month as one table to check in Google Sheets or Excel), Cloud backup (Turn on; an encrypted copy that only the recovery code opens, which also moves the numbers to another phone), and Restore with Load text or Choose file.
+- Settings: Name, Currency, Sound, Look (Auto, Light or Dark), Balance (Money today, Minimum balance, Monthly spending ceiling), Six places (the usual percentages, shown as a guide; Re-split pay reruns the split), Reset and setup (Set all to zero, Restore samples, Show first steps, Guided setup), and Saved data: Backup with Save file or Copy text, Spreadsheet with Export spreadsheet (every month as one table to check in Google Sheets or Excel), Cloud copy (Keep a copy in the cloud walks through four steps: what it is, the recovery code, what happens on this device, what to do on another phone or browser; I have a code brings the numbers to this device; it says when the cloud copy is behind), and Restore with Load text or Choose file.
 - Setup: Guided setup (Help, Guided setup) opens with Mako's video, then the currency, then Your statements: 2 or 3 months of bank, e-wallet or card statements (CSV, Excel, PDF or screenshots) are read by Claude into rows, the page works out the monthly numbers, and a review with tick boxes follows (categories can be corrected; the rows become receipts). Type the numbers instead asks pay, balance and bills one by one. Then the split of what is left, goals, and free to spend. Each step saves as you type.
 - Yen, pesos and euros start with sample numbers made up for one salary (about 200,000 yen, 30,000 pesos or 1,650 euros a month), with every bill and goal worked out from it. Any other currency starts at zero. Samples should be replaced with real numbers. Changing the currency in Settings swaps the sample to match, but only while the numbers are untouched. Once someone has typed their own numbers, only the symbol changes.
 - Filling the page from files: in this chat there is a paperclip button. A person can add photos or screenshots of receipts, credit card statements or bank statements, or a CSV file from their bank (PDFs cannot be read here: use a screenshot of each page, or the CSV). Then they press Send. Claude reads the files and lists what it found: receipts, monthly pay, bill amounts and the money they have today. Nothing on the page changes until the person taps Add to my page, and Undo is offered right after. The files go to the person's own Claude account only when they press Send, and this page does not keep them. Only dates from November 2026 on can be added. Never say you changed anything yourself: changes happen only through that button.
@@ -13944,12 +14001,13 @@ function askClean(raw) {
   const num = v => (typeof v === 'number' && isFinite(v) ? v : typeof v === 'string' && /^-?\d+(\.\d+)?$/.test(v.replace(/[,\s]/g, '')) ? +v.replace(/[,\s]/g, '') : NaN);
   const txt = (v, n) => (typeof v === 'string' ? v.replace(/[\u0000-\u001f<>]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, n) : '');
   const keys = new Set(S.plan.lines.map(l => l.key)), ym = fromYm();
-  const out = { summary: txt(o.summary, 300), receipts: [], pay: null, balance: null, bills: [], skipped: [], dropped: 0, outside: 0 };
+  const out = { summary: txt(o.summary, 300), receipts: [], pay: null, balance: null, bills: [], skipped: [], dropped: 0, outside: 0, away: 0 };
   (Array.isArray(o.receipts) ? o.receipts : []).slice(0, 300).forEach(r => {
     r = r && typeof r === 'object' ? r : {};
     const a = round2(num(r.amount)), d = r.date;
     if (!(a > 0) || a > 1e9 || !validDate(d)) { out.dropped++; return; }
-    if (MONTHS.indexOf(d.slice(0, 7)) < 0) { out.outside++; return; }
+    /* E6: a row from a month not on screen is kept and counted, so the review can say so */
+    if (MONTHS.indexOf(d.slice(0, 7)) < 0) out.away++;
     out.receipts.push({ d, a, c: typeof r.category === 'string' && keys.has(r.category) ? r.category : 'other', n: txt(r.note, 80), dup: (S.receipts || []).some(x => x.d === d && Math.abs(x.a - a) < 0.005) });
   });
   const pa = num(o.pay && o.pay.amount); if (pa > 0 && pa < 1e9) out.pay = Math.round(pa);
@@ -14018,6 +14076,7 @@ function askCard(bot, p, clipped, ctx) {
   if (plan.length) { const g = el('div', 'grp'), head = el('div', 'rv-h'); head.append(el('b', '', 'Numbers')); g.append(head); plan.forEach(x => g.append(x.t.l)); bot.append(g); }
   const left = [];
   if (p.outside) left.push(`${p.outside} receipt${p.outside === 1 ? '' : 's'} dated outside ${monthLabel(START)} to ${monthLabel(END)}.`);
+  if (p.away) left.push(`${p.away} receipt${p.away === 1 ? ' is' : 's are'} from outside ${monthLabel(START)} to ${monthLabel(END)}. ${p.away === 1 ? 'It is' : 'They are'} kept in your saved copy, but no month on screen shows ${p.away === 1 ? 'it' : 'them'} yet.`);
   if (p.dropped) left.push(`${p.dropped} row${p.dropped === 1 ? '' : 's'} unreadable.`);
   if (clipped) left.push('Long file: only the first part was read.');
   p.skipped.forEach(x => left.push(x));
@@ -14257,7 +14316,7 @@ function asstCheck(raw) {
     const amt = amtOf(a.amount);
     if (d === 'set_pay') { if (!(amt >= 0)) return dropped.push(d); push(`Salary: ${f(val(S, 'a', ym))} to ${f(amt)} a month`, T => { setVal(T, 'a', ym, amt, 'after'); if (amt > 0) markDoneOn(T, 'pay'); }); }
     else if (d === 'set_other_income') { if (!(amt >= 0)) return dropped.push(d); push(`Second pay: ${f(val(S, 'b', ym))} to ${f(amt)} a month`, T => setVal(T, 'b', ym, amt, 'after')); }
-    else if (d === 'set_balance') { if (!(amt >= 0)) return dropped.push(d); push(`Money today: ${f(cfg(S, 'bankStart'))} to ${f(amt)}`, T => { setBankBalance(T, Math.round(amt)); }); }
+    else if (d === 'set_balance') { if (!(amt >= 0)) return dropped.push(d); push(`Money today: ${f(cfg(S, 'bankStart'))} to ${f(amt)}`, T => { setBankBalance(T, clampBank(amt, T)); }); }   /* cents kept, yen whole (decision 1); was Math.round */
     else if (d === 'set_min_balance') { if (!(amt >= 0)) return dropped.push(d); push(`Minimum balance: ${f(cfg(S, 'minBank'))} to ${f(amt)}`, T => { T.cfg.minBank = Math.round(amt); }); }
     else if (d === 'set_line') { const l = lineOf(S, a.key); if (!l || !(amt >= 0)) return dropped.push(d + ' ' + (a.key || '')); push(`${l.name}: ${f(val(S, l.key, ym))} to ${f(amt)} a month${since}`, T => { setVal(T, l.key, ym, amt, scope); if (l.jar === 'nec') markDoneOn(T, 'bills'); }); }
     else if (d === 'set_jar') { const jar = String(a.jar || ''); const ls = S.plan.lines.filter(l => l.jar === jar); if (['play', 'edu', 'ffa', 'give'].indexOf(jar) < 0 || !ls.length || !(amt >= 0)) return dropped.push(d); const others = ls.slice(1).reduce((x, l) => x + val(S, l.key, ym), 0), now = ls.reduce((x, l) => x + val(S, l.key, ym), 0); push(`${JAR_WORD[jar]} jar: ${f(now)} to ${f(amt)} a month${since}`, T => setVal(T, ls[0].key, ym, Math.max(0, round2(amt - others)), scope)); }
@@ -14369,6 +14428,8 @@ function asstAfter(bot, text, truncated) {
   asstCard(card, chk); sfx('next');
   $('#askLog').scrollTop = $('#askLog').scrollHeight;
 }
+/* test hook (only with ?sfxtest): the assistant's checked actions, so a test can run one on a copy */
+if (/[?&]sfxtest\b/.test(location.search)) window.__asst = { asstCheck, runActions };
 
 /* ---------- date and month pickers ----------
    The native pickers are replaced by one calendar that opens straight away, picks on a single tap and never waits for the field to lose focus.
@@ -14997,9 +15058,9 @@ async function xlsxToCsv(buf) {
    not this page's author, nobody. Losing the code means the cloud copy cannot be opened; the numbers on the device are not affected.
    Available only when the page is served from its own address (see relayBase in ui41.js). Nothing here touches the money model. */
 const VAULT_KEY = 'mhr-vault', VAULT_SALT = 'mhr2000-vault-v1', CODE_ALPHA = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
-let vault = { code: '', rev: 0, on: false }, vaultTimer = 0, vaultBusy = false, vaultAgain = false, vaultKeys = null, vaultNote = null, vaultChecked = false;
-function vaultLoadLocal() { try { const v = JSON.parse(localStorage.getItem(VAULT_KEY) || 'null'); if (v && typeof v.code === 'string' && v.code) vault = { code: v.code, rev: +v.rev || 0, on: true }; } catch (e) { /* none */ } }
-function vaultSaveLocal() { try { if (vault.on) localStorage.setItem(VAULT_KEY, JSON.stringify({ code: vault.code, rev: vault.rev })); else localStorage.removeItem(VAULT_KEY); } catch (e) { /* no storage */ } }
+let vault = { code: '', rev: 0, on: false, failAt: 0 }, vaultTimer = 0, vaultBusy = false, vaultAgain = false, vaultKeys = null, vaultNote = null, vaultChecked = false;
+function vaultLoadLocal() { try { const v = JSON.parse(localStorage.getItem(VAULT_KEY) || 'null'); if (v && typeof v.code === 'string' && v.code) vault = { code: v.code, rev: +v.rev || 0, on: true, failAt: +v.failAt || 0 }; } catch (e) { /* none */ } }
+function vaultSaveLocal() { try { if (vault.on) localStorage.setItem(VAULT_KEY, JSON.stringify(Object.assign({ code: vault.code, rev: vault.rev }, vault.failAt ? { failAt: vault.failAt } : {}))); else localStorage.removeItem(VAULT_KEY); } catch (e) { /* no storage */ } }
 const vaultAvailable = () => !!(relayInfo && relayInfo.vault);
 /* MHR-XXXX-XXXX-XXXX-XXXX-XXXX: 20 letters and digits that are hard to misread, about 99 bits */
 function newCode() { const b = crypto.getRandomValues(new Uint8Array(20)); let s = ''; for (let i = 0; i < 20; i++) s += CODE_ALPHA[b[i] % CODE_ALPHA.length]; return s; }
@@ -15029,48 +15090,58 @@ async function vaultReq(k, method, body, query) {
   return { status: r.status, ok: r.ok, j: j || {} };
 }
 /* write the current numbers to the cloud. Called after every save, a few seconds later; one write at a time. */
-function vaultQueue(soon) { if (!vault.on || !vaultAvailable()) return; clearTimeout(vaultTimer); vaultTimer = setTimeout(vaultPush, soon ? 50 : 3000); }
+function vaultQueue(soon) { if (!vault.on) return; clearTimeout(vaultTimer); vaultTimer = setTimeout(vaultPush, soon ? 50 : 3000); }
+/* LAUNCH_CHECKLIST E9: a save that did not reach the cloud is never silent. failAt is when the cloud copy first fell behind; it is kept
+   with the code, so it is still said after a reload, and it is cleared by the next save that works. */
+function vaultBehind() { if (!vault.failAt) vault.failAt = Date.now(); vaultSaveLocal(); paintVault(); if (tab === 'home') renderBackupNudge(); }
+function vaultCaughtUp() { const was = vault.failAt; vault.failAt = 0; return !!was; }
 async function vaultPush(force) {
-  if (!vault.on || !vaultAvailable()) return;
+  if (!vault.on) return;
   if (vaultBusy) { vaultAgain = true; return; }
   vaultBusy = true;
   try {
     const rev = S.rev || Date.now(); if (!force && rev <= vault.rev) return;
+    if (!vaultAvailable()) { await relayHealth(true); if (!vaultAvailable()) { vaultBehind(); return; } }
     const k = await keysFor(vault.code), enc = await vaultEncrypt(k, JSON.stringify(S));
     const r = await vaultReq(k, 'PUT', Object.assign({ blob: enc.blob, iv: enc.iv, rev }, force ? { force: true } : {}));
-    if (r.ok) { vault.rev = rev; vaultNote = null; vaultSaveLocal(); paintVault(); }
+    if (r.ok) { vault.rev = rev; vaultNote = null; const was = vaultCaughtUp(); vaultSaveLocal(); paintVault(); if (was && tab === 'home') renderBackupNudge(); }
     else if (r.status === 409) { vaultNote = { kind: 'newer', rev: r.j.rev, when: r.j.updated }; paintVault(); if (tab === 'home') renderBackupNudge(); }
     else if (r.status === 403) { vaultNote = { kind: 'bad' }; paintVault(); }
-  } catch (e) { /* offline: the next save tries again */ }
+    else vaultBehind();
+  } catch (e) { vaultBehind(); /* no connection: the next save tries again, and the screen says the cloud copy is behind */ }
   finally { vaultBusy = false; if (vaultAgain) { vaultAgain = false; vaultQueue(); } }
 }
 /* on opening: if a newer copy sits in the cloud (another device wrote it), load it when this page has nothing of its own, otherwise ask */
 async function vaultCheck() {
   if (vaultChecked) return; vaultChecked = true;
   if (!vault.on) { paintVault(); return; }
-  await relayHealth(); if (!vaultAvailable()) { paintVault(); return; }
+  await relayHealth(); if (!vaultAvailable()) { paintVault(); if (vault.failAt && tab === 'home') renderBackupNudge(); return; }
   try {
     const k = await keysFor(vault.code), r = await vaultReq(k, 'GET');
-    if (r.status === 404) { vaultQueue(true); return; }
-    if (r.status === 403) { vaultNote = { kind: 'bad' }; paintVault(); return; }
-    if (!r.ok) return;
+    if (r.status === 404) vaultQueue(true);
+    else if (r.status === 403) vaultNote = { kind: 'bad' };
+    else if (r.ok) {
     const srv = r.j;
     if (srv.rev > (S.rev || 0)) {
       if (pristine()) { await vaultApply(k, srv); bkNote = null; }
       else { vaultNote = { kind: 'newer', rev: srv.rev, when: srv.updated }; if (tab === 'home') renderBackupNudge(); }
     } else if (srv.rev < (S.rev || 0)) vaultQueue(true);
-    else vault.rev = srv.rev;
+    else { vault.rev = srv.rev; vaultCaughtUp(); }
     vaultSaveLocal();
+    }
   } catch (e) { /* offline */ }
-  paintVault();
+  paintVault(); if (tab === 'home') renderBackupNudge();
 }
-async function vaultApply(k, srv) {
+/* asked: the person chose this copy on a screen that said what it is. Without that, a copy that is not newer than the numbers on this
+   device is refused (LAUNCH_CHECKLIST E10: an old answer replayed by the browser, or a wrong clock, must not load over current numbers). */
+async function vaultApply(k, srv, asked) {
+  if (!asked && !pristine() && !(srv.rev > (S.rev || 0))) throw new Error('older');
   const d = JSON.parse(await vaultDecrypt(k, srv.blob, srv.iv));
   if (!okBackup(d)) throw new Error('bad');
   /* the numbers on this device are kept as a local copy, with Undo, before the cloud copy replaces them (LAUNCH_CHECKLIST E1): the device
      clock decides "newer", so the copy loaded can be the wrong one */
   const old = S, oldSnap = snapNoCopy(); S = upgradeLegacy(normalize(d)); S.ui = Object.assign({}, S.ui, { sampleHidden: true }); if (!Array.isArray(d.receipts)) S.receipts = old.receipts;
-  S.rev = srv.rev; vault.rev = srv.rev; vaultNote = null;
+  S.rev = srv.rev; vault.rev = srv.rev; vaultNote = null; vaultCaughtUp();
   keepCopy(oldSnap, 'The cloud copy replaced the numbers on this device.');
   editRow = null; editGoal = null; editRc = null; itemsSig = '';
   if (tourIsOpen) closeTour(false); else { flush(); restructure(); }
@@ -15079,73 +15150,143 @@ async function vaultApply(k, srv) {
 }
 async function vaultLoadNewer() {
   if (!vaultNote || vaultNote.kind !== 'newer') return;
-  try { const k = await keysFor(vault.code), r = await vaultReq(k, 'GET'); if (r.ok) { await vaultApply(k, r.j); cheer('Loaded the newer copy.'); sfx('next'); } }
-  catch (e) { cheer('Could not load the cloud copy.'); }
+  try { const k = await keysFor(vault.code), r = await vaultReq(k, 'GET'); if (r.ok) { await vaultApply(k, r.j); cheer('Loaded the newer copy.'); sfx('next'); } else cheer('Could not reach the cloud copy. Nothing was changed.'); }
+  catch (e) { if (e && e.message === 'older') { vaultNote = null; cheer('The copy in the cloud is not newer than the numbers here, so nothing was loaded.'); } else cheer('Could not load the cloud copy. Nothing was changed.'); }
   paintVault(); if (tab === 'home') renderBackupNudge();
 }
 /* turn on: a new code, shown once; the person must say they saved it */
 async function vaultTurnOn() {
-  const code = newCode(); vault = { code, rev: 0, on: true }; vaultKeys = null; vaultSaveLocal();
+  const code = newCode(); vault = { code, rev: 0, on: true, failAt: 0 }; vaultKeys = null; vaultSaveLocal();
   S.ui.vaultSeen = false; persist(); paintVault(); vaultQueue(true);
   return code;
 }
 async function vaultTurnOff(deleteCloud) {
   if (deleteCloud && vault.on) { try { const k = await keysFor(vault.code); await vaultReq(k, 'DELETE'); } catch (e) { /* best effort */ } }
-  vault = { code: '', rev: 0, on: false }; vaultKeys = null; vaultNote = null; vaultSaveLocal(); delete S.ui.vaultSeen; persist(); paintVault();
+  vault = { code: '', rev: 0, on: false, failAt: 0 }; vaultKeys = null; vaultNote = null; vaultSaveLocal(); delete S.ui.vaultSeen; persist(); paintVault();
 }
-/* restore with a code typed in: used on a new phone, or after losing the numbers */
-async function vaultRestore(raw, msgEl) {
-  const code = codeClean(raw); if (!codeValid(code)) { msgEl.textContent = 'The code is 20 letters and digits, like MHR-XXXX-XXXX-XXXX-XXXX-XXXX.'; return false; }
-  await relayHealth(); if (!vaultAvailable()) { msgEl.textContent = 'Cloud backup is not available from here.'; return false; }
-  msgEl.textContent = 'Checking…';
+/* look for the cloud copy a typed code opens, and open it, without changing anything on this device.
+   Gives { err } with a plain sentence, or { code, k, srv, n (receipts in it), older (it is not newer than the numbers here) } */
+async function vaultFind(raw) {
+  const code = codeClean(raw); if (!codeValid(code)) return { err: 'The code is 20 letters and digits, like MHR-XXXX-XXXX-XXXX-XXXX-XXXX. Check that none is missing.' };
+  await relayHealth(true); if (!vaultAvailable()) return { err: 'The cloud cannot be reached from here right now. Check the connection and try again.' };
   try {
     const k = await keysFor(code), r = await vaultReq(k, 'GET');
-    if (r.status === 404) { msgEl.textContent = 'No cloud copy for this code. Check every character.'; return false; }
-    if (!r.ok) { msgEl.textContent = 'Could not reach the cloud copy. Try again.'; return false; }
-    vault = { code, rev: 0, on: true }; vaultKeys = k;
-    await vaultApply(k, r.j); vaultSaveLocal(); msgEl.textContent = 'Loaded.'; sfx('next'); return true;
-  } catch (e) { vault = { code: '', rev: 0, on: false }; vaultKeys = null; vaultSaveLocal(); msgEl.textContent = 'That copy could not be opened with this code.'; return false; }
+    if (r.status === 404) return { err: 'No cloud copy for this code. Check every character against the code on your other device.' };
+    if (!r.ok) return { err: 'Could not reach the cloud copy. Try again.' };
+    let d; try { d = JSON.parse(await vaultDecrypt(k, r.j.blob, r.j.iv)); } catch (e) { d = null; }
+    if (!d || !okBackup(d)) return { err: 'That copy could not be opened with this code.' };
+    return { code, k, srv: r.j, n: Array.isArray(d.receipts) ? d.receipts.length : 0, older: !pristine() && !(r.j.rev > (S.rev || 0)) };
+  } catch (e) { return { err: 'Could not reach the cloud copy. Try again.' }; }
+}
+/* load a found copy and tie this device to it */
+async function vaultUse(f, asked) {
+  const before = vault;
+  try { vault = { code: f.code, rev: 0, on: true, failAt: 0 }; vaultKeys = f.k; await vaultApply(f.k, f.srv, asked); vaultSaveLocal(); return true; }
+  catch (e) { vault = before; vaultKeys = null; vaultSaveLocal(); throw e; }
+}
+/* restore with a code typed in the first-open setup: used on a new phone, or after losing the numbers */
+async function vaultRestore(raw, msgEl) {
+  msgEl.textContent = 'Checking…';
+  const f = await vaultFind(raw); if (f.err) { msgEl.textContent = f.err; return false; }
+  if (f.older) { msgEl.textContent = 'The cloud copy is older than the numbers on this device, so nothing was loaded. To load it anyway: Settings, Cloud copy, I have a code.'; return false; }
+  try { await vaultUse(f, false); msgEl.textContent = 'Loaded.'; sfx('next'); return true; }
+  catch (e) { msgEl.textContent = 'That copy could not be opened with this code.'; return false; }
 }
 /* ---------- what Settings shows ---------- */
 const SAVED_LOCAL = 'Data is stored in this browser on this device only. Your numbers are sent only when you use Ask and tick the box to include them. A second copy is kept here in case the first goes missing, and is loaded on its own if so. It does not move to other devices. Clearing site data removes both, so only a backup file survives that. A backup is your own copy of numbers and receipts.';
-const SAVED_CLOUD = 'Data is stored in this browser, with a second copy here in case the first goes missing, and an encrypted cloud copy (Cloud backup below) that follows every save. Clearing site data removes the two copies on this device; the recovery code brings the cloud copy back. A backup file is your own copy of numbers and receipts.';
+const SAVED_CLOUD = 'Data is stored in this browser, with a second copy here in case the first goes missing, and an encrypted cloud copy (Cloud copy below) that follows every save. Clearing site data removes the two copies on this device; the recovery code brings the cloud copy back. A backup file is your own copy of numbers and receipts.';
+const vaultWhen = t => t ? new Date(t).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
+/* one sentence on whether the cloud copy has everything; the same words in Settings, in the steps and on Home */
+function vaultBehindText() { return vault.failAt ? `The cloud copy is behind. Changes made since ${vaultWhen(vault.failAt)} are on this device only. It tries again by itself on your next change, or tap Send now.` : ''; }
+function vaultSentText() { return vault.failAt ? vaultBehindText() : vault.rev ? `Sent ${vaultWhen(vault.rev)}. The cloud copy has everything on this device.` : 'Sending the first copy…'; }
 function paintVault() {
   const box = $('#vaultBox'); if (!box) return;
   const can = vaultAvailable();
   box.hidden = !can && !vault.on;
   const cap = $('#savedCap'); if (cap) { const t = vault.on ? SAVED_CLOUD : SAVED_LOCAL; if (cap.textContent !== t) cap.textContent = t; }
   if (box.hidden) return;
-  const st = $('#vaultState'), code = $('#vaultCode');
+  const st = $('#vaultState'), code = $('#vaultCode'), behind = $('#vaultBehind'), newer = !!(vaultNote && vaultNote.kind === 'newer');
   if (!vault.on) { st.textContent = 'Off. Your numbers live on this device only.'; code.hidden = true; }
   else {
-    const when = vault.rev ? new Date(vault.rev).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
+    const when = vaultWhen(vault.rev);
     st.textContent = vaultNote && vaultNote.kind === 'bad' ? 'The cloud copy does not accept this code any more. Turn off and on again to start a new one.'
-      : vaultNote && vaultNote.kind === 'newer' ? 'A newer copy is in the cloud (from another device).'
-      : !can ? 'On, but the cloud cannot be reached from here right now.'
-      : when ? `On. Last sent ${when}.` : 'On. Sending the first copy…';
+      : newer ? `A newer copy is in the cloud (from another device${vaultNote.when ? ', saved ' + vaultWhen(vaultNote.when) : ''}). Load it here, or keep the numbers on this device and send them over it. Whichever you pick, the other is kept for ${KEEP_DAYS} days when it is replaced here.`
+      : !can && !vault.failAt ? 'On, but the cloud cannot be reached from here right now.'
+      : when ? `On. Last sent ${when}.` : vault.failAt ? 'On. The first copy has not been sent yet.' : 'On. Sending the first copy…';
     code.hidden = false;
   }
-  $('#vaultOn').hidden = vault.on; $('#vaultOff').hidden = !vault.on; $('#vaultShow').hidden = !vault.on; $('#vaultLoadNewer').hidden = !(vaultNote && vaultNote.kind === 'newer');
-  $('#vaultKeepMine').hidden = !(vaultNote && vaultNote.kind === 'newer');
+  const bt = vault.on && !newer ? vaultBehindText() : ''; behind.hidden = !bt; if (behind.textContent !== bt) behind.textContent = bt;
+  const flow = $('#vaultFlow'), open = !flow.hidden;
+  $('#vaultOn').hidden = vault.on || open; $('#vaultHave').hidden = vault.on || open;
+  $('#vaultOff').hidden = !vault.on; $('#vaultShow').hidden = !vault.on; $('#vaultHow').hidden = !vault.on; $('#vaultRetry').hidden = !bt;
+  $('#vaultLoadNewer').hidden = !newer; $('#vaultKeepMine').hidden = !newer;
+  const sent = $('[data-vf-sent]', flow); if (sent) { const t = vaultSentText(); if (sent.textContent !== t) sent.textContent = t; }
 }
 function vaultShowCode(el, code) {
-  el.innerHTML = `<p class="vault-code" id="vaultCodeTxt">${esc(codeShow(code))}</p><p class="cap">This code is the only way to open your cloud copy on another phone or after losing this one. Save it in your notes or password app. It cannot be recovered.</p><div class="row-btns"><button type="button" class="btn small solid" id="vaultCopy">Copy code</button><button type="button" class="btn small" id="vaultSaved">I saved it</button><span class="msg" id="vaultCopyMsg" role="status"></span></div>`;
+  el.innerHTML = `<p class="vault-code" id="vaultCodeTxt">${esc(codeShow(code))}</p><p class="cap">This code is the key to your cloud copy. You type it once on every other phone or browser. It cannot be looked up again if you lose it and lose this device, so save it now: paste it in your notes or password app, or send it to yourself.</p><div class="row-btns"><button type="button" class="btn small solid" id="vaultCopy">Copy code</button><button type="button" class="btn small" id="vaultSaved">I saved it</button><span class="msg" id="vaultCopyMsg" role="status"></span></div>`;
   $('#vaultCopy', el).addEventListener('click', () => copyText(codeShow(code), $('#vaultCopyMsg', el), 'Copied.'));
-  $('#vaultSaved', el).addEventListener('click', () => { S.ui.vaultSeen = true; persist(); el.innerHTML = '<p class="cap">Code saved. Show code brings it back.</p>'; if (tab === 'home') renderBackupNudge(); sfx('tap'); });
+  $('#vaultSaved', el).addEventListener('click', () => { S.ui.vaultSeen = true; persist(); sfx('tap'); if (el.dataset.vfStep) { vaultFlow('here'); return; } el.innerHTML = '<p class="cap">Code saved. Show code brings it back.</p>'; if (tab === 'home') renderBackupNudge(); });
+}
+/* ---------- LAUNCH_CHECKLIST E15: the cloud copy explains itself, one step at a time ----------
+   Two ways in. Keep a copy: what it is, the code, what happens on this device, what to do on another phone or browser.
+   I have a code: type it, see what was found before anything is replaced, done. Each step is one panel in #vaultFlow. */
+let vaultFound = null;
+const VF_STEPS = { on: ['what', 'code', 'here', 'other'], have: ['enter', 'found', 'loaded'] };
+function vaultFlowClose() { const f = $('#vaultFlow'); if (!f) return; f.hidden = true; f.innerHTML = ''; vaultFound = null; paintVault(); }
+function vaultFlow(step, solo) {
+  const f = $('#vaultFlow'); if (!f) return;
+  const path = VF_STEPS.on.indexOf(step) >= 0 ? VF_STEPS.on : VF_STEPS.have, dots = solo ? '' : `<p class="vf-dots" aria-hidden="true">${path.map(x => `<i${x === step ? ' class="on"' : ''}></i>`).join('')}</p>`;
+  const here = !pristine(), mine = S.rev ? vaultWhen(S.rev) : '';
+  const body = {
+    what: () => `<h5>What the cloud copy is</h5><p>A second copy of your numbers, kept on the Burrow's server, so they are not only on this device.</p><p>It is locked with a code that only you get. Nobody else can read it, not even the person who shared this app with you.</p><p>You use it to get your numbers onto a new phone or another browser, or to get them back if this one is cleared or lost.</p><div class="row-btns"><button type="button" class="btn small solid" data-vf-next>Next: get my code</button><button type="button" class="link" data-vf-cancel>Not now</button></div>`,
+    code: () => `<h5>Your recovery code</h5><div data-vf-code data-vf-step-code></div>`,
+    here: () => `<h5>On this device: nothing more to do</h5><p>Every change you make is sent to the cloud copy by itself, a few seconds later. Settings always shows when it was last sent, and says so if a send did not go through.</p><p class="vf-sent" data-vf-sent role="status"></p><div class="row-btns"><button type="button" class="btn small solid" data-vf-next>Next: another phone or browser</button></div>`,
+    other: () => `<h5>To get your numbers on another phone or browser</h5><ol><li>Open the Burrow there${/^https?:$/.test(location.protocol) ? `: <b>${esc(location.host)}</b>` : ''}.</li><li>On the welcome screen tap <b>Enter your recovery code</b>. If the welcome screen is gone: Settings (the gear), Cloud copy, <b>I have a code</b>.</li><li>Type or paste your code, then tap <b>Find my copy</b>.</li><li>It shows what it found. Tap <b>Load</b>, and your numbers are there.</li></ol><p>From then on both devices share the one copy. A change on one shows up on the other the next time you open it there. If both changed, the app asks which to keep, and keeps the other for ${KEEP_DAYS} days.</p><div class="row-btns"><button type="button" class="btn small solid" data-vf-done>Done</button></div>`,
+    enter: () => `<h5>Bring your numbers to this device</h5><p>You need the recovery code from the device that already has your numbers. On that device: Settings, Cloud copy, <b>Show code</b>.</p><div class="row-btns inv-row"><input class="txt" id="vaultIn" type="text" autocomplete="off" spellcheck="false" placeholder="MHR-XXXX-XXXX-XXXX-XXXX-XXXX" aria-label="Recovery code" maxlength="40"><button type="button" class="btn small solid" id="vaultUse">Find my copy</button></div><p class="msg" id="vaultMsg" role="status"></p><p class="cap">Nothing on this device changes yet. The next step shows what was found first.</p><div class="row-btns"><button type="button" class="link" data-vf-cancel>Cancel</button></div>`,
+    found: () => { const v = vaultFound, n = v.n;
+      return `<h5>Found your copy</h5><p data-vf-found>It was saved ${esc(vaultWhen(v.srv.updated || v.srv.rev))} and has ${n} receipt${n === 1 ? '' : 's'} in it.</p>`
+        + (v.older ? `<p class="vf-warn" data-vf-older><b>Careful: this cloud copy is older than the numbers on this device</b>${mine ? ' (last changed ' + esc(mine) + ')' : ''}. Loading it takes this device back to that older copy.</p>`
+          : here ? `<p>Loading it replaces the numbers on this device${mine ? ' (last changed ' + esc(mine) + ')' : ''}.</p>` : '<p>This device has no numbers of its own yet, so nothing is replaced.</p>')
+        + (here ? `<p>The numbers that are here now are kept for ${KEEP_DAYS} days, with Undo, in case this is not what you wanted.</p>` : '')
+        + `<div class="row-btns"><button type="button" class="btn small${v.older ? '' : ' solid'}" id="vaultLoad">${v.older ? 'Load the older copy anyway' : 'Load'}</button>${here ? `<button type="button" class="btn small${v.older ? ' solid' : ''}" id="vaultKeepHere">Keep what is here</button>` : '<button type="button" class="link" data-vf-cancel>Cancel</button>'}<span class="msg" id="vaultLoadMsg" role="status"></span></div>`; },
+    loaded: () => `<h5>Done. Your numbers are on this device</h5><p>This device now shares the cloud copy. Every change here is sent by itself, and changes from your other device show up when you open the app.</p><p>Your code stays the same. <b>Show code</b> brings it back.</p><div class="row-btns"><button type="button" class="btn small solid" data-vf-done>Done</button></div>`
+  }[step];
+  if (!body) return;
+  $('#vaultCode').innerHTML = '';
+  f.innerHTML = `<div class="vf-step" data-vf-step="${step}">${dots}${body()}</div>`; f.hidden = false;
+  const on = (sel, fn) => { const e = $(sel, f); if (e) e.addEventListener('click', fn); };
+  if (step === 'code') { const el = $('[data-vf-code]', f); el.dataset.vfStep = '1'; vaultShowCode(el, vault.code); }
+  on('[data-vf-cancel]', () => { vaultFlowClose(); sfx('back'); });
+  on('[data-vf-done]', () => { vaultFlowClose(); sfx('tap'); });
+  on('[data-vf-next]', async () => {
+    if (step === 'what') { if (!vault.on) await vaultTurnOn(); vaultFlow('code'); sfx('next'); return; }
+    vaultFlow(path[path.indexOf(step) + 1]); sfx('next');
+  });
+  if (step === 'enter') {
+    const go = async () => { const m = $('#vaultMsg'); m.textContent = 'Looking…'; const r = await vaultFind($('#vaultIn').value); if (!$('#vaultMsg')) return; if (r.err) { m.textContent = r.err; return; } vaultFound = r; vaultFlow('found'); sfx('next'); };
+    on('#vaultUse', go); $('#vaultIn', f).addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); go(); } });
+  }
+  on('#vaultKeepHere', () => { vaultFlowClose(); cheer('Nothing was changed. Your numbers here stay as they are.'); sfx('back'); });
+  on('#vaultLoad', async () => { try { await vaultUse(vaultFound, true); vaultFlow('loaded'); sfx('next'); } catch (e) { const m = $('#vaultLoadMsg'); if (m) m.textContent = 'That copy could not be loaded. Nothing was changed.'; } });
+  paintVault();
+  /* bring the step into view; the heading takes focus so a screen reader reads the new step */
+  const h = $('h5', f); if (h) { h.tabIndex = -1; try { h.focus({ preventScroll: true }); } catch (e) { /* older browsers */ } }
+  requestAnimationFrame(() => { try { f.scrollIntoView({ block: 'nearest' }); } catch (e) { /* none */ } });
 }
 function wireVault() {
   vaultLoadLocal();
   const box = $('#vaultBox'); if (!box) return;
-  $('#vaultOn').addEventListener('click', async () => { const code = await vaultTurnOn(); vaultShowCode($('#vaultCode'), code); sfx('next'); });
-  $('#vaultShow').addEventListener('click', () => { const c = $('#vaultCode'); if (c.querySelector('#vaultCodeTxt')) { c.innerHTML = ''; return; } vaultShowCode(c, vault.code); });
+  $('#vaultOn').addEventListener('click', () => { vaultFlow('what'); sfx('next'); });
+  $('#vaultHave').addEventListener('click', () => { vaultFlow('enter'); sfx('next'); const i = $('#vaultIn'); if (i) i.focus(); });
+  $('#vaultHow').addEventListener('click', () => { const f = $('#vaultFlow'); if (!f.hidden && $('[data-vf-step="other"]', f)) { vaultFlowClose(); return; } vaultFlow('other', true); });
+  $('#vaultRetry').addEventListener('click', () => { vaultPush(); sfx('tap'); });
+  $('#vaultShow').addEventListener('click', () => { const c = $('#vaultCode'); if (!$('#vaultFlow').hidden) vaultFlowClose(); if (c.querySelector('#vaultCodeTxt')) { c.innerHTML = ''; return; } vaultShowCode(c, vault.code); });
   $('#vaultOff').addEventListener('click', async () => {
     const b = $('#vaultOff'); if (b.dataset.armed !== '1') { b.dataset.armed = '1'; b.textContent = 'Tap again: delete the cloud copy'; setTimeout(() => { b.dataset.armed = ''; b.textContent = 'Turn off'; }, 4000); return; }
-    b.dataset.armed = ''; b.textContent = 'Turn off'; await vaultTurnOff(true); $('#vaultCode').innerHTML = ''; cheer('Cloud copy deleted. Numbers stay on this device.'); sfx('back');
+    b.dataset.armed = ''; b.textContent = 'Turn off'; vaultFlowClose(); await vaultTurnOff(true); $('#vaultCode').innerHTML = ''; cheer('Cloud copy deleted. Numbers stay on this device.'); sfx('back');
   });
   $('#vaultLoadNewer').addEventListener('click', vaultLoadNewer);
   $('#vaultKeepMine').addEventListener('click', () => { vaultNote = null; vaultPush(true); paintVault(); if (tab === 'home') renderBackupNudge(); });
-  $('#vaultUse').addEventListener('click', async () => { const ok = await vaultRestore($('#vaultIn').value, $('#vaultMsg')); if (ok) { $('#vaultIn').value = ''; paintVault(); } });
-  $('#vaultIn').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('#vaultUse').click(); } });
 }
 /* test hook (only with ?sfxtest): the cloud copy functions, so a test can apply a made-up record without reaching the cloud */
 if (/[?&]sfxtest\b/.test(location.search)) window.__vault = { keysFor, vaultEncrypt, vaultApply };
@@ -15541,6 +15682,9 @@ function renderBackupNudge() {
   } else if (vaultNote && vaultNote.kind === 'newer') {
     const when = vaultNote.when ? new Date(vaultNote.when).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
     html = `<div class="hn-t"><b>Newer copy in the cloud</b><span>Saved from another device${when ? ' on ' + when : ''}. Load it here, or keep this device's numbers and overwrite it.</span></div><div class="hn-b"><button type="button" class="btn small solid" data-vault-load>Load it</button><button type="button" class="link" data-vault-keep>Keep mine</button></div>`;
+  } else if (vault.on && vault.failAt) {
+    /* LAUNCH_CHECKLIST E9: a cloud save that failed is said on Home too, until a save works */
+    html = `<div class="hn-t"><b>The cloud copy is behind</b><span>Changes made since ${vaultWhen(vault.failAt)} are on this device only. It tries again by itself on your next change.</span></div><div class="hn-b"><button type="button" class="btn small solid" data-vault-retry>Send now</button></div>`;
   } else if (vault.on && cloud && !S.ui.vaultSeen && !bkNote) {
     html = `<div class="hn-t"><b>Save your recovery code</b><span>Your numbers are backed up to the cloud, encrypted. This code is the only way to open them on another phone.</span></div><div class="vault-wrap" data-vault-code></div>`;
   } else if (bkNote) {
@@ -15550,10 +15694,14 @@ function renderBackupNudge() {
     const a = bkAge();
     {
       html = cloud
-        ? `<div class="hn-t"><b>Back up your numbers</b><span>They live on this device only. Cloud backup keeps an encrypted copy that only you can open.</span></div><div class="hn-b"><button type="button" class="btn small solid" data-vault-on>Turn on cloud backup</button><button type="button" class="link" data-bk-now>Save a file instead</button><button type="button" class="link" data-bk-later>Later</button></div>`
+        ? `<div class="hn-t"><b>Back up your numbers</b><span>They live on this device only. A cloud copy keeps them safe, locked with a code only you have.</span></div><div class="hn-b"><button type="button" class="btn small solid" data-vault-on>Keep a copy in the cloud</button><button type="button" class="link" data-bk-now>Save a file instead</button><button type="button" class="link" data-bk-later>Later</button></div>`
         : `<div class="hn-t"><b>${a === null ? 'Back up your numbers' : `Last backup: ${a} days ago`}</b><span>They live in this browser only. Save a file copy so nothing is lost.</span></div><div class="hn-b"><button type="button" class="btn small solid" data-bk-now>Save a copy</button><button type="button" class="link" data-bk-later>Later</button></div>`;
     }
   }
+  /* a notice about the saved numbers themselves (arrived, newer in the cloud, cloud behind, restored) is never left behind another Home action */
+  const urgent = !!(moveIn || (vaultNote && vaultNote.kind === 'newer') || (vault.on && vault.failAt) || bkNote);
+  if (urgent && html) el.dataset.urgent = '1'; else delete el.dataset.urgent;
+  if (el.hidden !== !html || urgent) setTimeout(() => { try { if (tab === 'home' && typeof homeV1 === 'function') homeV1(); } catch (e) { /* drawn on the next render */ } }, 0);
   el.hidden = !html; if (html) { put(el, html); const w = $('[data-vault-code]', el); if (w && !w.children.length) vaultShowCode(w, vault.code); }
 }
 /* the install hint: only where the page has an address of its own, and not once it already runs as an installed app */
@@ -15570,7 +15718,9 @@ function wireSafe() {
     if (e.target.closest('[data-bk-ok]')) { bkNote = null; renderBackupNudge(); return; }
     if (e.target.closest('[data-move-load]')) { moveApply(); renderBackupNudge(); return; }
     if (e.target.closest('[data-move-no]')) { moveIn = null; renderBackupNudge(); return; }
-    if (e.target.closest('[data-vault-on]')) { await vaultTurnOn(); sfx('next'); renderBackupNudge(); return; }
+    if (e.target.closest('[data-vault-retry]')) { vaultPush(); sfx('tap'); return; }
+    /* the cloud copy is turned on in Settings, where it explains itself one step at a time (E15) */
+    if (e.target.closest('[data-vault-on]')) { switchTab('basics'); vaultFlow('what'); sfx('next'); return; }
     if (e.target.closest('[data-vault-load]')) { await vaultLoadNewer(); return; }
     if (e.target.closest('[data-vault-keep]')) { vaultNote = null; vaultPush(true); paintVault(); renderBackupNudge(); return; }
     if (e.target.closest('[data-bk-now]')) {
@@ -16115,7 +16265,7 @@ let HOME_ALL = false, QUICK_OPEN = false;
 const V1_EXTRA = ['hHero', 'hSpend', 'hGoals', 'hDebts', 'hLimits', 'hBuckets', 'hMore'];
 function homeV1() {
   const panel = $('#p-home'); if (!panel) return;
-  const nx = $('#hNext'), acts = [$('#moveBanner'), nx && nx.dataset.v1 === 'now' ? nx : null, $('#hBk')].filter(e => e && !e.hidden);
+  const nx = $('#hNext'), bk = $('#hBk'), acts = [$('#moveBanner'), bk && bk.dataset.urgent ? bk : null, nx && nx.dataset.v1 === 'now' ? nx : null, bk].filter(e => e && !e.hidden);
   const action = acts[0] || null, logIsNext = !action;
   ['moveBanner', 'hBk', 'hNext'].forEach(id => { const e = $('#' + id); if (e) e.classList.toggle('v1x', e !== action && !(HOME_ALL && e.dataset.v1 === 'later')); });
   /* the Log spend card sits right under the action place, above the burrows, whenever it is the action or was opened */
@@ -16820,13 +16970,23 @@ function renderMap() {
   const wkey = (M.bankEnd < 0 ? `<li class="mp-neg"><i style="background:var(--bad)"></i>In the bank <b>${fmt2(M.bankEnd)}</b> (short)</li>` : '') + parts.map(x => `<li><i style="background:${x.c}"></i>${esc(x.name)} <b>${fmt2(x.amount)}</b></li>`).join('');
   /* every Home figure says whether it is what the bank shows now or what the plan expects (LAUNCH_CHECKLIST A1) */
   const PLN = '<em class="ntag plan">planned</em>', NOW = '<em class="ntag now">now</em>';
-  /* the bank now, first: what the bank app showed when the person last typed it, and the question to type it again (A1) */
-  const at = S.cfg && S.cfg.bankAt, smpOn = typeof sampleOn === 'function' && sampleOn(), asking = renderMap.ask || !at || smpOn;
-  const atTxt = at ? `${+at.slice(8, 10)} ${MONTH_NAMES[+at.slice(5, 7) - 1]}${+at.slice(0, 4) !== new Date().getFullYear() ? ' ' + at.slice(0, 4) : ''}` : '';
-  const nowCard = `<div class="mp-now"><p class="mp-now-h">In your bank now ${NOW}</p>${at && !smpOn ? `<b class="mp-now-v${cfg(S, 'bankStart') < 0 ? ' bad' : ''}">${fmt2(cfg(S, 'bankStart'))}</b><p class="cap mp-fresh">Balance you entered on ${atTxt}.</p>` : ''}
-    ${asking ? `<div class="mp-ask"><label for="mpBankIn">What does your bank app show today?</label><p class="cap">Open your bank app and type the balance it shows. Add any cash you keep at home. Everything below is planned from this.</p>
-      <div class="mp-askrow"><div class="inp"><span class="yen cs"></span><input id="mpBankIn" type="number" inputmode="text" data-neg="ok" step="any" placeholder="0" value="${at && !smpOn ? esc(String(cfg(S, 'bankStart'))) : ''}"></div><button type="button" class="btn solid small" id="mpBankSave">Save</button></div>${at && !smpOn ? '<button type="button" class="link" id="mpBankNo">Keep the old balance</button>' : ''}</div>`
-    : `<p class="mp-act"><button type="button" class="btn small" id="mpCheck">Check your bank</button></p>`}</div>`;
+  /* the now block, first (LAUNCH_CHECKLIST A1 and A5): the bank as typed, with its day, the cards and what is on them, and the bank after the
+     cards are paid. Typed figures only, from model.js nowOf; the question to type the bank again; a card can be added or updated */
+  const NW = nowOf(S), smpOn = typeof sampleOn === 'function' && sampleOn(), hasBank = NW.bank !== null && !smpOn, asking = renderMap.ask || !hasBank;
+  const dayTxt = at => at ? `${+at.slice(8, 10)} ${MONTH_NAMES[+at.slice(5, 7) - 1]}${+at.slice(0, 4) !== new Date().getFullYear() ? ' ' + at.slice(0, 4) : ''}` : '';
+  const ce = renderMap.card, cEdit = ce && ce !== 'new' ? NW.cards.find(k => k.id === ce) : null;
+  const cardForm = ce ? `<div class="mp-ask mp-cardf"><p class="mp-now-h">${cEdit ? 'Update ' + esc(cEdit.name) : 'Add a card'}</p>
+      <label for="mpCardName">Card name</label><input class="txt" id="mpCardName" type="text" maxlength="40" value="${cEdit ? esc(cEdit.name) : ''}" placeholder="Card">
+      <label for="mpCardOwed">What is on the card now</label><p class="cap">Open the card's app and type the full amount it shows, not only the minimum.</p><div class="inp"><span class="yen cs"></span><input id="mpCardOwed" type="number" inputmode="decimal" min="0" step="any" placeholder="0" value="${cEdit ? esc(String(cEdit.owed)) : ''}"></div>
+      <label for="mpCardDay">Day of the month you pay it</label><input class="txt" id="mpCardDay" type="number" inputmode="numeric" min="1" max="31" step="1" placeholder="10" value="${cEdit && cEdit.payDay ? cEdit.payDay : ''}">
+      <div class="mp-askrow"><button type="button" class="btn solid small" id="mpCardSave">Save</button><button type="button" class="btn small" id="mpCardNo">Cancel</button>${cEdit ? '<button type="button" class="btn small" id="mpCardDel">Remove</button>' : ''}</div></div>` : '';
+  const cardRows = NW.cards.length && !smpOn ? `<ul class="mp-cards">${NW.cards.map(k => `<li><span><b>${esc(k.name)}</b>: ${fmt2(k.owed)} on it${k.payDay ? `, paid on the ${ordinal(k.payDay)}` : ''}${k.at ? ` <small>(entered ${dayTxt(k.at)})</small>` : ''}</span><button type="button" class="link" data-card="${esc(k.id)}">Update</button></li>`).join('')}</ul>
+      ${hasBank ? `<p class="mp-after">Bank after the cards are paid: <b class="${NW.afterCards < 0 ? 'bad' : ''}">${fmt2(NW.afterCards)}</b></p>` : ''}` : '';
+  const nowCard = `<div class="mp-now"><p class="mp-now-h">In your bank now ${NOW}</p>${hasBank ? `<b class="mp-now-v${NW.bank < 0 ? ' bad' : ''}">${fmt2(NW.bank)}</b>${NW.bankAt ? `<p class="cap mp-fresh">Balance you entered on ${dayTxt(NW.bankAt)}.</p>` : ''}` : ''}
+    ${asking ? `<div class="mp-ask"><label for="mpBankIn">What does your bank app show today?</label><p class="cap">Open your bank app and type the balance it shows. Add any cash you keep at home.</p>
+      <div class="mp-askrow"><div class="inp"><span class="yen cs"></span><input id="mpBankIn" type="number" inputmode="text" data-neg="ok" step="any" placeholder="0" value="${hasBank ? esc(String(NW.bank)) : ''}"></div><button type="button" class="btn solid small" id="mpBankSave">Save</button></div>${hasBank ? '<button type="button" class="link" id="mpBankNo">Keep the old balance</button>' : ''}</div>` : ''}
+    ${cardRows}${cardForm}
+    ${!asking || !ce ? `<p class="mp-act">${asking ? '' : '<button type="button" class="btn small" id="mpCheck">Check your bank</button>'}${ce || smpOn ? '' : ` <button type="button" class="btn small" id="mpCardAdd">${NW.cards.length ? 'Add another card' : 'Add a card you pay in full'}</button>`}</p>` : ''}</div>`;
   /* what is owed, in one line, only when something is (A4) */
   const oweLine = M.owed > 0 ? `<p class="cap mp-owe">You owe ${fmt2(M.owed)} at the end of ${esc(mon)} ${PLN}: cards, loans and debt burrows.</p>` : '';
   const smp = '';   /* the one sample notice is the status line at the top of Home */
@@ -16848,8 +17008,16 @@ function renderMap() {
   { const ck = $('#mpCheck'); if (ck) ck.onclick = () => { renderMap.ask = true; sfx('tap'); renderMap(); const i = $('#mpBankIn'); if (i) i.focus(); };
     const no = $('#mpBankNo'); if (no) no.onclick = () => { renderMap.ask = false; renderMap(); };
     const sv = $('#mpBankSave'), inp = $('#mpBankIn');
-    if (sv && inp) { const go = () => { if (inp.value === '' || !isFinite(+inp.value)) { cheer('Type the balance your bank app shows, in numbers.'); inp.focus(); return; } renderMap.ask = false; ACT.setBalance(inp.value); sfx('tap'); cheer('Saved. Everything planned now starts from ' + fmt2(cfg(S, 'bankStart')) + '.'); };
+    if (sv && inp) { const go = () => { if (inp.value === '' || !isFinite(+inp.value)) { cheer('Type the balance your bank app shows, in numbers.'); inp.focus(); return; } renderMap.ask = false; ACT.setBankNow(inp.value); sfx('tap'); cheer('Saved: ' + fmt2(nowOf(S).bank) + ' in your bank today.'); };
       sv.onclick = go; inp.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); go(); } }; } }
+  { const ad = $('#mpCardAdd'); if (ad) ad.onclick = () => { renderMap.card = 'new'; renderMap(); const i = $('#mpCardName'); if (i) i.focus(); };
+    el.querySelectorAll('[data-card]').forEach(b => { b.onclick = () => { renderMap.card = b.dataset.card; renderMap(); const i = $('#mpCardOwed'); if (i) i.focus(); }; });
+    const cn = $('#mpCardNo'); if (cn) cn.onclick = () => { renderMap.card = null; renderMap(); };
+    const cd = $('#mpCardDel'); if (cd) cd.onclick = () => { const id = renderMap.card; renderMap.card = null; ACT.removeCard(id); cheer('Card removed.'); };
+    const cs = $('#mpCardSave'); if (cs) cs.onclick = () => { const o = $('#mpCardOwed'), dy = $('#mpCardDay'), nm = $('#mpCardName');
+      if (o.value === '' || !isFinite(+o.value) || +o.value < 0) { cheer('Type what is on the card now, in numbers.'); o.focus(); return; }
+      const pd = dy.value === '' ? null : Math.round(+dy.value); if (pd !== null && !(pd >= 1 && pd <= 31)) { cheer('The pay day is a day of the month, 1 to 31.'); dy.focus(); return; }
+      const id = renderMap.card === 'new' ? null : renderMap.card; renderMap.card = null; ACT.setCard(id, { name: nm.value, owed: o.value, payDay: pd }); sfx('tap'); cheer('Card saved.'); }; }
   { const dp = el.querySelector('.mp-pay'); if (dp) dp.ontoggle = () => { renderMap.payOpen = dp.open; }; }
   requestAnimationFrame(fitFour);
   BUR.dropCoins(el.querySelector('.mp-split'));

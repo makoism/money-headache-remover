@@ -13,6 +13,9 @@ const pad2 = n => (n < 10 ? '0' : '') + n;
 /* the day a person typed their bank balance (Mako, 2026-11-19: Home says "Balance you entered on 18 Nov"). Only set when a balance is entered;
    a copy saved before this has no date and Home shows none, never a guessed one. */
 const BANK_AT_FORM = /^\d{4}-\d{2}-\d{2}$/;
+/* the bank now (LAUNCH_CHECKLIST A1): what the bank app shows today, typed on Home, with the day. Kept apart from bankStart (the bank at the
+   start of the first month), so typing it mid-month changes no planned figure and nothing already past this month is counted twice */
+const setBankNow = (T, v, now) => { const d = now || new Date(); T.cfg.bankNow = v; T.cfg.bankNowAt = d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); };
 const setBankBalance = (T, v, now) => { const d = now || new Date(); T.cfg.bankStart = v; T.cfg.bankAt = d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); };
 const round2 = x => Math.round(x * 100) / 100;
 /* round down to whole yen, or to cents for other currencies, so the unspent amount is counted to the last cent */
@@ -878,8 +881,9 @@ function cleanSteps(raw) {
 }
 function cleanOnce(raw) {
   const out = {}; if (!isMap(raw)) return out;
-  Object.keys(raw).forEach(ym => {
-    if (MONTHS.indexOf(ym) < 0 || !isMap(raw[ym])) return;
+  Object.keys(raw).slice(0, 2400).forEach(ym => {
+    /* E6: the month window is a view only. A month outside it is kept, never trimmed */
+    if (!YM_FORM.test(ym) || !isMap(raw[ym])) return;
     const o = {}; Object.keys(raw[ym]).slice(0, 150).forEach(k => { if (!SAFE_KEY.test(k)) return; const v = cleanAmt(raw[ym][k]); if (v !== null) o[k] = v; });
     if (Object.keys(o).length) out[ym] = o;
   });
@@ -887,8 +891,8 @@ function cleanOnce(raw) {
 }
 function cleanItems(raw) {
   const out = {}; if (!isMap(raw)) return out;
-  Object.keys(raw).forEach(ym => {
-    if (MONTHS.indexOf(ym) < 0 || !Array.isArray(raw[ym])) return;
+  Object.keys(raw).slice(0, 2400).forEach(ym => {
+    if (!YM_FORM.test(ym) || !Array.isArray(raw[ym])) return;
     const list = [], used = new Set();
     raw[ym].slice(0, 60).forEach((it, i) => {
       if (!isMap(it)) return; const amount = cleanAmt(it.amount); if (amount === null) return;
@@ -905,7 +909,7 @@ function cleanItems(raw) {
 }
 const CFG_AMOUNTS = ['bankStart', 'minBank', 'ceiling', 'moveTarget', 'moveStart', 'travelTarget', 'travelStart', 'carTarget', 'carStart', 'rainyStart', 'rainyTarget', 'rainyStretch'];
 /* every setting this version knows; anything else in a saved copy is a newer version's and is kept untouched by the page (ui0.js) */
-const CFG_KNOWN = new Set(CFG_AMOUNTS.concat(['loanLast', 'redirectLoan', 'moveMonth', 'carDue', 'aims']));
+const CFG_KNOWN = new Set(CFG_AMOUNTS.concat(['bankNow', 'bankNowAt', 'loanLast', 'redirectLoan', 'moveMonth', 'carDue', 'aims']));
 function cleanCfg(raw) {
   const out = {}; if (!isMap(raw)) return out;
   CFG_AMOUNTS.forEach(k => { const v = k === 'bankStart' ? cleanSigned(raw[k]) : cleanAmt(raw[k]); if (v !== null) out[k] = v; });
@@ -914,8 +918,29 @@ function cleanCfg(raw) {
   if (typeof raw.moveMonth === 'string' && YM_FORM.test(raw.moveMonth)) out.moveMonth = raw.moveMonth;
   if (typeof raw.carDue === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw.carDue)) out.carDue = raw.carDue;
   if (typeof raw.bankAt === 'string' && BANK_AT_FORM.test(raw.bankAt)) out.bankAt = raw.bankAt;
+  { const v = cleanSigned(raw.bankNow); if (v !== null) out.bankNow = v; }
+  if (typeof raw.bankNowAt === 'string' && BANK_AT_FORM.test(raw.bankNowAt)) out.bankNowAt = raw.bankNowAt;
   if (isMap(raw.aims)) { const a = {}; JARS.forEach(j => { const v = raw.aims[j.id]; if (typeof v === 'number' && isFinite(v) && v >= 0 && v <= 1) a[j.id] = v; }); if (Object.keys(a).length) out.aims = a; }
   return out;
+}
+
+/* A5: pay-in-full cards, what is on each now (typed, with the day) and the day it is paid. Not the interest-bearing debts in Cards and loans.
+   Shape agreed with the ledger lane: S.cards = [{ id, name, owed, payDay, at }] */
+const MAX_CARDS = 12;
+function cleanCards(raw) {
+  if (!Array.isArray(raw)) return [];
+  const out = [], seen = new Set();
+  raw.forEach(c => { if (!isMap(c) || out.length >= MAX_CARDS) return; const id = typeof c.id === 'string' && /^[\w-]{1,24}$/.test(c.id) && !seen.has(c.id) ? c.id : 'k' + (out.length + 1) + '_' + seen.size;
+    seen.add(id); const owed = cleanAmt(typeof c.owed === 'string' && c.owed.trim() !== '' && isFinite(+c.owed) ? +c.owed : c.owed), pd = Math.round(+c.payDay);
+    out.push({ id, name: String(c.name || '').replace(/\s+/g, ' ').trim().slice(0, 40) || 'Card', owed: owed === null ? 0 : owed, payDay: pd >= 1 && pd <= 31 ? pd : null, at: typeof c.at === 'string' && BANK_AT_FORM.test(c.at) ? c.at : null }); });
+  return out;
+}
+/* the "now" block on Home: the bank as typed (bank now, or else the balance typed in setup, each with its day), the cards, and the bank after the
+   cards are paid. Typed figures only: nothing planned is mixed in. bank is null when no balance with a day was ever typed */
+function nowOf(S) {
+  const c = S.cfg || {}, hasNow = typeof c.bankNow === 'number', bank = hasNow ? c.bankNow : (c.bankAt ? cfg(S, 'bankStart') : null), bankAt = hasNow ? (c.bankNowAt || null) : (c.bankAt || null);
+  const cards = cleanCards(S.cards), cardsOwed = round2(sum(cards.map(k => k.owed)));
+  return { bank, bankAt, typedNow: hasNow, cards, cardsOwed, afterCards: bank === null ? null : round2(bank - cardsOwed) };
 }
 
 /* ---- cleaning up anything loaded from a saved copy ---- */
@@ -975,8 +1000,8 @@ function cleanRecurring(raw) {
     const a = typeof r.a === 'number' ? round2(r.a) : 0; if (!(a > 0) || a > 1e9) return;
     const every = r.every === 'week' ? 'week' : r.every === 'month' ? 'month' : null; if (!every) return;
     const on = Math.round(+r.on); if (every === 'week' ? !(on >= 0 && on <= 6) : !(on >= 1 && on <= 28)) return;
-    /* a start before the first month the page covers begins at the first day it covers */
-    const from = typeof r.from === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(r.from) && r.from < MONTHS[0] + '-01' ? MONTHS[0] + '-01' : r.from;
+    /* E6: a start before the first month the page covers is kept as typed */
+    const from = r.from;
     if (!validDate(from)) return;
     seen.add(r.id);
     const c = typeof r.c === 'string' && /^[A-Za-z0-9:_-]{1,40}$/.test(r.c) ? r.c : 'other';
@@ -1083,7 +1108,8 @@ function applyRecurring(S, today) {
   let n = 0;
   rec.forEach(r => {
     const ds = dueDates(r, null, today);
-    ds.forEach(d => { if (d.slice(0, 7) < START || d.slice(0, 7) > END) return; if (addReceipt(S, d, r.a, r.c, r.n)) n++; });
+    /* E6: a due date outside the months shown is logged too, never skipped and marked done */
+    ds.forEach(d => { if (addReceipt(S, d, r.a, r.c, r.n)) n++; });
     if (ds.length) r.last = ds[ds.length - 1];
   });
   return n;

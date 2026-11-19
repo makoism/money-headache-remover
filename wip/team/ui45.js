@@ -175,7 +175,7 @@ function wireTx(v) {
 
 /* the recovery-code link on the first screen: shows only where a cloud copy can exist; a code loads the numbers and closes the setup */
 const restoreHTML = () => `<p class="cap tour-restore" id="tourRestore" hidden>Used this before on another phone? <button type="button" class="link" id="tourRestoreBtn">Enter your recovery code</button></p>
-      <div class="tour-restore-in" id="tourRestoreIn" hidden><div class="row-btns inv-row"><input class="txt" id="tourVaultIn" type="text" autocomplete="off" spellcheck="false" placeholder="MHR-XXXX-XXXX-XXXX-XXXX-XXXX" aria-label="Recovery code" maxlength="40"><button type="button" class="btn small solid" id="tourVaultUse">Load</button></div><p class="cap" id="tourVaultMsg" role="status"></p></div>`;
+      <div class="tour-restore-in" id="tourRestoreIn" hidden><div class="row-btns inv-row"><input class="txt" id="tourVaultIn" type="text" autocomplete="off" spellcheck="false" placeholder="MHR-XXXX-XXXX-XXXX-XXXX-XXXX" aria-label="Recovery code" maxlength="40"><button type="button" class="btn small solid" id="tourVaultUse">Load my numbers</button></div><p class="cap" id="tourVaultMsg" role="status"></p></div>`;
 function wireRestore() {
   relayHealth().then(h => { const p = $('#tourRestore'); if (p && h && h.vault && tourMode === 'full' && pristine()) p.hidden = false; });
   const b = $('#tourRestoreBtn'); if (b) b.addEventListener('click', () => { $('#tourRestoreIn').hidden = false; $('#tourRestore').hidden = true; $('#tourVaultIn').focus(); });
@@ -234,8 +234,8 @@ const TOUR = [
         const ok = f.st === 'even' || f.st === 'spare';
         /* on the app's own address: one tap keeps an encrypted copy in the cloud, so a lost phone does not mean lost numbers */
         const cloud = typeof vaultAvailable === 'function' && vaultAvailable() && !(vault && vault.on)
-          ? `<div class="tour-cloud" id="tourCloud">${LOCK}<div><b>Keep a copy in the cloud</b><p class="cap">Your numbers live in this browser. Cloud backup keeps an encrypted copy that only your recovery code can open. New phone, or browser cleared: enter the code and the numbers come back.</p>
-            <div class="row-btns"><button type="button" class="btn small solid" id="tourVaultOn">Turn on cloud backup</button><span class="cap">Later: Settings, Cloud backup.</span></div><div class="tour-vault-code" id="tourVaultCode"></div></div></div>` : '';
+          ? `<div class="tour-cloud" id="tourCloud">${LOCK}<div><b>Keep a copy in the cloud</b><p class="cap">Your numbers live in this browser. A cloud copy keeps a second one, locked with a recovery code only you have. New phone, or browser cleared: enter the code and the numbers come back.</p>
+            <div class="row-btns"><button type="button" class="btn small solid" id="tourVaultOn">Keep a copy in the cloud</button><span class="cap">Later: Settings, Cloud copy.</span></div><div class="tour-vault-code" id="tourVaultCode"></div></div></div>` : '';
         return `${homeScene()}${ok ? (f.st === 'spare' ? `<p class="tour-st"><span class="chip tight">${IC.warn}Pay not placed</span></p>` : `<p class="tour-st"><span class="chip good">${IC.ok}On plan</span></p>`) : ''}${goal}<p>Your month:</p>${ledgerHTML(f)}<p>${line}</p>
         <p>Receipts keeps this true: log what you spend, or upload each month's statement. What is left of Free to spend at month end can go toward a goal. Help, bottom right, has the video and this setup.</p>${cloud}`;
       }

@@ -1874,3 +1874,25 @@ p .link, li .link, span .link, .cap .link { min-height: 0; position: relative; p
 p.hs-more .link { padding-top: 12px; padding-bottom: 12px; margin-top: -12px; margin-bottom: -12px; }
 /* F6: a goal's "full" mark in All months kept the goal colour as 12px text (1.84:1 for the yellow goal in light): the words mix toward the ink */
 .mt-g > span { color: color-mix(in srgb, var(--c) 45%, var(--ink)); }
+/* A5: the cards in the now block */
+.mp-cards { list-style: none; margin: 8px 0 4px; padding: 0; }
+.mp-cards li { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 2px 0; }
+.mp-cards small { color: var(--ink2); }
+.mp-after { margin: 6px 0; }
+.mp-after b.bad { color: var(--bad); }
+.mp-cardf label { display: block; font-weight: 600; margin: 8px 0 2px; }
+.mp-cardf .txt { width: 100%; box-sizing: border-box; min-height: 44px; }
+
+/* the cloud copy steps (LAUNCH_CHECKLIST E15): one panel, one step at a time */
+.vault-flow { margin: 10px 0 12px; padding: 14px 14px 12px; border: 1px solid var(--hair); border-radius: 14px; background: var(--track); }
+.vault-flow h5 { margin: 0 0 8px; font-size: 16px; line-height: 1.3; outline: none; }
+.vault-flow p, .vault-flow li { font-size: 14.5px; line-height: 1.5; margin: 0 0 8px; }
+.vault-flow ol { margin: 0 0 8px; padding-left: 22px; }
+.vault-flow .row-btns { margin-top: 10px; }
+.vf-dots { display: flex; gap: 6px; margin: 0 0 10px; }
+.vf-dots i { width: 8px; height: 8px; border-radius: 50%; background: var(--track2); }
+.vf-dots i.on { background: var(--accent); }
+.vf-warn { color: var(--warn); }
+.vf-sent { font-weight: 600; }
+ol.steps { margin: 4px 0 10px; padding-left: 22px; }
+ol.steps li { margin: 0 0 4px; }

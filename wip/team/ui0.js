@@ -80,6 +80,7 @@ function normalize(d) {
   f.ui.cur = '₱'; /* a saved copy without a currency is an old peso copy; new copies start in yen */
   /* every amount in a saved or imported copy is checked: a text, a negative number or a broken list never reaches the sums */
   f.steps = cleanSteps(d.steps); f.once = cleanOnce(d.once); f.items = cleanItems(d.items); f.cfg = cleanCfg(d.cfg);
+  if (Array.isArray(d.cards)) f.cards = cleanCards(d.cards);   /* A5: pay-in-full cards typed on Home */
   if (d.ui && typeof d.ui === 'object') f.ui = Object.assign(f.ui, d.ui);
   const u = f.ui;
   if (!(d.ui && typeof d.ui.preset === 'string') || Object.keys(SAMPLES).concat(['blank', 'legacy']).indexOf(u.preset) < 0) u.preset = 'legacy';

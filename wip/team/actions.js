@@ -10,10 +10,10 @@ let txDepth = 0, txTouched = false, undoStack = [];
 const clone = v => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
 function snapState() {
   const ui = {}; UI_SNAP.forEach(k => { if (S.ui[k] !== undefined) ui[k] = clone(S.ui[k]); });
-  return { steps: clone(S.steps), once: clone(S.once), items: clone(S.items), cfg: clone(S.cfg), plan: clone(S.plan), ui, receipts: clone(S.receipts || []), ids: new Set((S.receipts || []).map(r => r.id)) };
+  return { steps: clone(S.steps), once: clone(S.once), items: clone(S.items), cfg: clone(S.cfg), plan: clone(S.plan), cards: clone(S.cards), ui, receipts: clone(S.receipts || []), ids: new Set((S.receipts || []).map(r => r.id)) };
 }
 function restoreState(snap, postIds) {
-  S.steps = clone(snap.steps); S.once = clone(snap.once); S.items = clone(snap.items); S.cfg = clone(snap.cfg); S.plan = clone(snap.plan);
+  S.steps = clone(snap.steps); S.once = clone(snap.once); S.items = clone(snap.items); S.cfg = clone(snap.cfg); S.plan = clone(snap.plan); if (snap.cards === undefined) delete S.cards; else S.cards = clone(snap.cards);
   UI_SNAP.forEach(k => { if (snap.ui[k] !== undefined) S.ui[k] = clone(snap.ui[k]); else delete S.ui[k]; });
   /* receipts logged after the transaction stay */
   const later = (S.receipts || []).filter(r => !postIds.has(r.id));
@@ -26,7 +26,7 @@ const ACT = {
     const before = snapState(); txDepth = 1; txTouched = false; let out;
     try { out = fn(); } finally { txDepth = 0; }
     const postIds = new Set((S.receipts || []).map(r => r.id));
-    const changed = JSON.stringify([S.steps, S.once, S.items, S.cfg, S.plan, S.receipts]) !== JSON.stringify([before.steps, before.once, before.items, before.cfg, before.plan, before.receipts])
+    const changed = JSON.stringify([S.steps, S.once, S.items, S.cfg, S.plan, S.receipts, S.cards]) !== JSON.stringify([before.steps, before.once, before.items, before.cfg, before.plan, before.receipts, before.cards])
       || UI_SNAP.some(k => JSON.stringify(S.ui[k]) !== JSON.stringify(before.ui[k]));
     if (changed) { undoStack.push({ label: String(label || 'change'), before, postIds, at: Date.now() }); if (undoStack.length > UNDO_MAX) undoStack.shift(); }
     ACT.commit();
@@ -50,6 +50,13 @@ const ACT = {
     return ACT.tx('income', () => { setVal(S, key, ym || START, clampAmt(amount, S), scope === 'month' ? 'month' : 'after'); if (key === 'a' && clampAmt(amount, S) > 0) markDone('pay', true); });
   },
   setBalance(v) { return ACT.tx('balance', () => { setBankBalance(S, clampBank(v, S)); }); },   /* a bank balance may be below zero (overdrawn), as in Settings */
+  /* A1: what the bank app shows today, kept apart from bankStart (model.js setBankNow) */
+  setBankNow(v) { return ACT.tx('bank now', () => { setBankNow(S, clampBank(v, S)); }); },
+  /* A5: a pay-in-full card, what is on it now and the day it is paid; id null adds one */
+  setCard(id, o) { return ACT.tx('card', () => { const list = cleanCards(S.cards); const d = new Date(), at = d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+    const row = { id: id || ('k' + Date.now().toString(36)), name: o.name, owed: clampAmt(o.owed, S), payDay: o.payDay, at };
+    const i = list.findIndex(k => k.id === id); if (i >= 0) list[i] = row; else list.push(row); S.cards = cleanCards(list); }); },
+  removeCard(id) { return ACT.tx('remove card', () => { S.cards = cleanCards(S.cards).filter(k => k.id !== id); }); },
   setMinBalance(v) { return ACT.tx('minimum balance', () => { S.cfg.minBank = clampAmt(v, S); }); },
   setCeiling(v) { return ACT.tx('spending ceiling', () => { S.cfg.ceiling = clampAmt(v, S); }); },
 

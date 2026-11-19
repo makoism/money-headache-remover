@@ -533,7 +533,7 @@ let HOME_ALL = false, QUICK_OPEN = false;
 const V1_EXTRA = ['hHero', 'hSpend', 'hGoals', 'hDebts', 'hLimits', 'hBuckets', 'hMore'];
 function homeV1() {
   const panel = $('#p-home'); if (!panel) return;
-  const nx = $('#hNext'), acts = [$('#moveBanner'), nx && nx.dataset.v1 === 'now' ? nx : null, $('#hBk')].filter(e => e && !e.hidden);
+  const nx = $('#hNext'), bk = $('#hBk'), acts = [$('#moveBanner'), bk && bk.dataset.urgent ? bk : null, nx && nx.dataset.v1 === 'now' ? nx : null, bk].filter(e => e && !e.hidden);
   const action = acts[0] || null, logIsNext = !action;
   ['moveBanner', 'hBk', 'hNext'].forEach(id => { const e = $('#' + id); if (e) e.classList.toggle('v1x', e !== action && !(HOME_ALL && e.dataset.v1 === 'later')); });
   /* the Log spend card sits right under the action place, above the burrows, whenever it is the action or was opened */

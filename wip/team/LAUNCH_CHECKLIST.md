@@ -27,6 +27,7 @@ Sources: SECURITY_REVIEW.md (branch side/security-review, 2026-11-19), the five 
 | A8 | Double counting: a bill drains on its date and its receipt is logged; a statement repeats check-ins | one event per bill (the receipt replaces the drain); import review flags "already logged" | team |
 | A9 | Currency: a switch relabels amounts; money in two currencies (USD via Wise or Payoneer) | team: lock the currency once real data exists; later (Mako decides): each account has its own currency | team lock, later rest |
 | A10 | Percents add to 81% in a month where spending past plan used pay (side A) | that row gets its percent | v1 |
+| A11 | On Plan, Month, "Bills and basics" shows two amounts: the list of places includes card and loan payments, Money out does not (side H, tests/qc/label_agree.js) | one figure, or two different names | v1 |
 
 ## B. People come back
 | # | Point | Fix | Gate |
@@ -67,13 +68,13 @@ One "Money came in" and one "Money went out", each with a short list of kinds an
 | E3 | A lost or changed phone, recovery code never set up | setup ends by offering the cloud copy, in two taps | team |
 | E4 | Two people on one browser share one plan | a warning; profiles later | later |
 | E5 | Moving to the ledger | start from today's balance in each account; the old plan's figures shown once beside it; a frozen copy kept; a version number older pages refuse to overwrite | team |
-| E6 | Months, items and imported rows outside the window are dropped on load and on import. Live today: an import drops every row dated before Nov 2026 (side J, tests/qc/e6_window.js on side/e6-window-test, 47 losses) | the window is a view only; nothing is trimmed. LANE_e6.md fixes 1 to 5 (no number changes) in v1, because Mako imports his statements; fixes 6 and 7 (goal date, loan end) after v1 | v1 fixes 1 to 5, team rest |
+| E6 | Months, items and imported rows outside the window are dropped on load and on import. Live today: an import drops every row dated before Nov 2026 (side J, tests/qc/e6_window.js on side/e6-window-test, 47 losses) | the window is a view only; nothing is trimmed. LANE_e6.md fixes 1 to 5 (no number changes) in v1, because Mako imports his statements; fixes 6 and 7 (goal date, loan end) after v1 | v1 fixes 1 to 5 DONE (tests/qc/e6_window.js in check.sh), team rest |
 | E7 | Statements with names and account numbers go through the AI relay; the recovery code can delete everything | strip account numbers on the device before sending; deleted copies kept for a while on the server | team |
 | E8 | The 3D world could run against a newer data shape | version check before it opens; it only calls ACT | later |
-| E15 | The cloud copy does not explain itself (Mako: "I don't know how that even works. Do I paste it in a new browser? There's not enough steps") | step by step, one at a time: what it is, what the code is for, what to do here, what to do on another phone or browser to get the numbers back; the same for the backup file, restore and every data-loss message; walked by a novice agent who must move a plan from one browser to another using only the screen | v1 |
+| E15 | The cloud copy does not explain itself (Mako: "I don't know how that even works. Do I paste it in a new browser? There's not enough steps") | step by step, one at a time: what it is, what the code is for, what to do here, what to do on another phone or browser to get the numbers back; the same for the backup file, restore and every data-loss message; walked by a novice agent who must move a plan from one browser to another using only the screen | v1: DONE on the screens (tests/qc/cloud_move.js: a plan moved between browser profiles through the screens only); the novice agent walk runs in the v1 QC round |
 | E14 | Only the first 5,000 receipts are kept on load, so the newest would go (side J) | no cap that drops data; the ledger is never trimmed | team |
-| E9 | A failed cloud save is silent; Settings still says On (security review B3) | say the cloud copy is behind and since when; clear on the next success | v1 |
-| E10 | The service worker stores and replays cloud copy answers; an old copy can load over current numbers (S1) | never cache /api/; refuse a copy that is not newer unless asked | v1 |
+| E9 | A failed cloud save is silent; Settings still says On (security review B3) | say the cloud copy is behind and since when; clear on the next success | v1: DONE (tests/qc/cloud_fail.js) |
+| E10 | The service worker stores and replays cloud copy answers; an old copy can load over current numbers (S1) | never cache /api/; refuse a copy that is not newer unless asked | v1: client part DONE (tests/qc/cloud_fail.js); /api/ caching comes with side/phone-fixes |
 | E11 | One delete erases both server copies; "Turn off" always deletes; the previous copy is replaced on every save and cannot be loaded (B1, B2) | server: daily previous copies, soft delete 30 days (vault lane); client: "load an earlier copy", "stop on this device" | team |
 | E12 | The relay could be open to strangers: invite word, spend ceiling, database binding (B4, S2, S6) | Mako checks the Cloudflare and Anthropic settings; the server counts wrong invites and limits new vaults | team (Mako's check: now) |
 | E13 | Privacy lines say statements stay on the device, but whole statements go through the relay; no content policy; the downloaded-file copy talks to the old site (S7, S9, SECURITY_REVIEW.md) | honest privacy lines; content policy in the build; one live address | team |
@@ -99,7 +100,7 @@ One "Money came in" and one "Money went out", each with a short list of kinds an
 |---|---|---|
 | G1 | Papers disagree: one world or one per burrow; "Chest" for waiting pay in HANDOFF, PLAN and side C tests; "check your bank" in both B1 and C | v1 (docs) |
 | G2 | Know whether it works: weekly opens without being chased, logging under 60 seconds, the gap between the app's bank figure and the real one, one decision changed, setup under 10 minutes, nothing lost | team |
-| G3 | The 3D world: decided by Mako when the art step comes; usage data from the team test informs it | later |
+| G3 | The 3D world: desktop only, the phone app stays as it is (Mako, 2026-11-19); the rest decided by Mako when the art step comes; usage data from the team test informs it | later |
 
 ## H. It holds your hand (Mako, 2026-11-19, NORTH_STAR.md "Why this exists")
 | # | Point | Fix | Gate |

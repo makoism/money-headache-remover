@@ -342,19 +342,19 @@
           <button type="button" class="btn small" id="bkCopy">Copy text</button>
         </div>
         <p class="cap" id="bkWhen" role="status"></p>
-        <p class="cap">Back up regularly, and before clearing or resetting. Keep the file somewhere safe or paste the text into a note.</p>
+        <p class="cap">A backup file holds all your numbers and receipts as they are at the moment you save it. It does not update by itself.</p>
+        <ol class="cap steps" id="bkSteps"><li>Tap <b>Save file</b>. The file lands in your downloads. Or tap <b>Copy text</b> and paste it into a note.</li><li>Keep it somewhere that is not only this device: your drive, or an email to yourself.</li><li>Save a new one now and then, and before clearing or resetting.</li></ol>
         <h4>Spreadsheet</h4>
         <div class="row-btns"><button type="button" class="btn small" id="bkCsv">Export spreadsheet</button></div>
         <p class="cap">Every plan month as one table: pay, places, goals, balance. Opens in Sheets or Excel. Read-only: edits there do not change this page.</p>
         <div id="vaultBox" hidden>
-          <h4>Cloud backup</h4>
+          <h4>Cloud copy</h4>
           <p class="cap" id="vaultState" role="status"></p>
-          <div class="row-btns"><button type="button" class="btn small solid" id="vaultOn">Turn on</button><button type="button" class="btn small" id="vaultShow" hidden>Show code</button><button type="button" class="btn small solid" id="vaultLoadNewer" hidden>Load the newer copy</button><button type="button" class="btn small" id="vaultKeepMine" hidden>Keep mine</button><button type="button" class="btn small" id="vaultOff" hidden>Turn off</button></div>
+          <p class="cap vf-warn" id="vaultBehind" role="status" hidden></p>
+          <div class="row-btns" id="vaultMain"><button type="button" class="btn small solid" id="vaultOn">Keep a copy in the cloud</button><button type="button" class="btn small" id="vaultHave">I have a code</button><button type="button" class="btn small solid" id="vaultRetry" hidden>Send now</button><button type="button" class="btn small" id="vaultShow" hidden>Show code</button><button type="button" class="btn small" id="vaultHow" hidden>Use it on another device</button><button type="button" class="btn small solid" id="vaultLoadNewer" hidden>Load the newer copy</button><button type="button" class="btn small" id="vaultKeepMine" hidden>Keep mine</button><button type="button" class="btn small" id="vaultOff" hidden>Turn off</button></div>
           <div id="vaultCode" hidden></div>
-          <p class="cap">Encrypted on this device with a recovery code before anything is sent. Nobody else can open it, including the person who shared this page. New phone, or browser cleared: enter the code and the numbers come back.</p>
-          <h4>Use a recovery code</h4>
-          <div class="row-btns inv-row"><input class="txt" id="vaultIn" type="text" autocomplete="off" spellcheck="false" placeholder="MHR-XXXX-XXXX-XXXX-XXXX-XXXX" aria-label="Recovery code" maxlength="40"><button type="button" class="btn small" id="vaultUse">Load</button><span class="msg" id="vaultMsg" role="status"></span></div>
-          <p class="cap">Loading replaces the numbers here with the cloud copy and keeps this device in sync with it.</p>
+          <div id="vaultFlow" class="vault-flow" hidden></div>
+          <p class="cap">For a new phone, another browser, or a cleared one. Locked on this device with a code only you have, before anything is sent.</p>
         </div>
         <h4>Restore</h4>
         <textarea id="bk" aria-label="Your saved numbers" spellcheck="false" placeholder="Paste the backup text here"></textarea>
@@ -364,8 +364,9 @@
           <input type="file" id="bkFile" accept=".json,application/json,text/plain" hidden>
           <span class="msg" id="bkMsg" role="status"></span>
         </div>
-        <p class="cap">Restore replaces the numbers and receipts here with the copy. Back up first to keep what is here.<span id="zeroHint"> To start from zero use <b>Set all to zero</b>.</span></p>
-        <p class="cap">If numbers look empty after clearing the browser or switching devices, restore your latest copy.</p>
+        <p class="cap">To get your numbers back from a backup file, on this device or a new one:</p>
+        <ol class="cap steps" id="rsSteps"><li>Tap <b>Choose file</b> and pick your backup file. Or paste the backup text in the box above and tap <b>Load text</b>.</li><li>It asks before it replaces anything.</li><li>The numbers that were here are kept for 3 days, with Undo, in case it was the wrong file.</li></ol>
+        <p class="cap">If numbers look empty after clearing the browser or switching devices, this is how they come back.<span id="zeroHint"> To start from zero use <b>Set all to zero</b>.</span></p>
       </div>
     </section>
   </div>
