@@ -131,7 +131,7 @@ One round: qc-numbers PASS, E15 two-browser move DONE, bank comparison PASS, qc-
 | Q9 | The receipts list sits under a big Scan receipts explainer | open | team |
 | Q10 | qc-numbers should-fix (7): Home status line follows the month picked on Plan and survives reload; "Keep saving" on a longer emergency goal changes months already over; a borrow stays after the plan stops needing it; month-end "Put it toward the goal" preselects the goal with least room and shows no amount; the rest in the QC report | open | v1 for the first, team for the rest |
 | Q11 | Voice: the remaining lines of the 46 flagged, with rewrites, in wip/team/COPY_QC8_FOR_MAKO.md | waits for Mako's copy pass | v1 |
-| Q12 | Process: QC subagents could not write report files for three roles, reports came back in chat only | open | process |
+| Q12 | Process: QC subagents could not write report files for three roles, reports came back in chat only | done 7f3d333 (agents told to write to /tmp/qc/<role>/REPORT.md) | process |
 
 ## The 95% sweep (before the team test)
 Fresh agents walk the app as real people, each with made-up numbers: a Philippine freelance editor paid per project who sends money home and uses GCash and two banks; a Philippine salaried editor paid on the 15th and 30th with a pay-later habit; a salaried person in Japan with a card paid next month; a student in France with a Revolut account and shared rent; someone who misses a month; someone whose phone is replaced. Every "how do I do this?" becomes a point here.
