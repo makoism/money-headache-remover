@@ -46,6 +46,14 @@ Coordinator 2 (session_01BFpKEXXUx4uUjZGJny9MyJ) passed the 150k mark and handed
 - SIDE H is done (side/act-keep-checks 68b59aa, tests only): label_agree.js (65 comparisons pass; one finding: on Plan, Month, "Bills and basics" shows two amounts, with and without card and loan payments) and act_keep.js (8 pass, 25 fail until the ACT.tx fix; setBankNow, setCard, removeCard included). Both given to MAIN 3 for v1, with the check.sh lines. H told to stop.
 - Running now: MAIN 3 (building), M3 (waiting for E15). Slots are free; nothing else is unblocked before the v1 candidate.
 
+- Check-in 05:02 UTC: MAIN 3 working (E6 fixes 1 to 5 landed, 4175751), M3 idle waiting for the E15 word. Efficiency review of what to run in the free slots: start three, keep one slot free for MAIN 3's QC run, hold the setup design until Mako has reacted to v1, skip password PDFs (wider launch). Started:
+  - SIDE P, session_01BFpKEXPU11hrSQ376QmQyP, side/ledger-wiring (from side/ledger-core): LEDGER_WIRING.md, failing wiring tests, migration fixtures from the real model.js (settles plan.debts names), LANE_ledger_wiring.md. Does not edit ledger.js.
+  - SIDE Q, session_01BFpKEZU77DCnabQJ3t9zWm, side/money-door (from side/ledger-core): money_door.js (the kinds of "Money came in" and "Money went out" as logic), its test, MONEY_DOOR.md. Does not edit ledger.js; gaps are written down.
+  - SIDE R, session_01BFpKEXux4kCEyeo4LkFhue (faster model), side/deploy-prep: DEPLOY_RUNBOOK.md brought up to date (two deploys, the vault "before this merges" list, a section "Only Mako can do these", the old address list).
+  - Not started, next when a slot frees: persona walk scripts written as tasks, run on the candidate; pdf.js size and speed note on side/statements-ph.
+- Next check-in timer trig_014KVDibgLeH912eBK5JHPXR, 05:30 UTC.
+- Running now: MAIN 3, M3 (waiting), P, Q, R.
+
 ### Mako today (all recorded in DECISIONS.md, last eight sections; read them)
 Pace (use the full allowance by Sunday 22 Nov, again by Wed 25 or Thu 26). The team's shape answered by him (standard Philippine accounts, monthly pay with separate pay supported, cards core, iPhone and Android). The copy must not sound like AI and must sound like him (few full stops, his space hyphen space, joined sentences, normal conversation); all copy in one batch at the end, then ONE pass with him on the preview. The cloud copy must explain itself step by step (E15, v1). Yen stays default. He likes short updates: what was found, what was done. He said: ask him when context is needed. He dictates by voice; messages can cut off.
 
