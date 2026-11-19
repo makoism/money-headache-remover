@@ -220,6 +220,15 @@ function renderNext() {
   const tail = swept ? '' : month && month.left > 0 ? `<button type="button" class="link" data-mcok="${month.pm}">It was not spent</button><button type="button" class="link" data-hidemonth="${month.pm}">Hide</button>` : sweep ? `${sw.main ? `<button type="button" class="link" data-sweep="${sw.pm}">${sw.goals.length === 1 ? 'Put it toward ' + esc(sw.main.name) : 'Put it toward the goal'}</button>` : ''}<button type="button" class="link" data-closego="${sw.pm}">Open ${FULL[+sw.pm.slice(5) - 1]} receipts</button><button type="button" class="link" data-sweephide="${sw.pm}">Decide later</button>` : `<button type="button" class="link" ${month ? `data-hidemonth="${month.pm}"` : exact ? 'data-hideexact' : step[3] === 'data-remindgo' ? 'data-hideremind' : step[5] || 'data-hidenext'}>${step[5] === 'data-stretch="no"' ? 'Stop here' : 'Hide'}</button>`;
   put(el, `<div class="hn-t"><b>${step[0]}</b><span>${step[1]}${month || exact || sweep || swept || step[5] || step[3] === 'data-remindgo' ? '' : ' ' + (left === 1 ? '1 step left.' : left + ' steps left.')}</span></div><div class="hn-b">${step[4] || ''}<button type="button" class="btn small ${swept ? '' : 'solid'}" ${step[3]}>${step[2]}</button>${tail}</div>`);
 }
+/* an answer was just given. With no other month waiting, the card says so with Undo, as before. With another month still waiting
+   (Home says its money is "left out until you answer the question on Home"), that question takes the card straight away, as it does
+   after a reload, and the answer just given is said in the Undo bar instead, so it can still be taken back */
+function sweptSay(sw, msg, big) {
+  C = calcAll(S);
+  if (!sweepOffer() || !window.offerUndoG) { SWEPT = sw; if (big) celebrate('med', msg); else cheer(msg); return; }
+  SWEPT = null;
+  window.offerUndoG('sweep', msg, () => { if (S.ui.sweep) { delete S.ui.sweep[sw.pm]; if (!Object.keys(S.ui.sweep).length) delete S.ui.sweep; } });
+}
 /* put last month's unspent free to spend toward the chosen goal: one undoable change, then the new date is said out loud */
 function doSweep(pm) {
   const o = sweepOffer(); if (!o || o.pm !== pm || !o.main) { render(); return; }
@@ -233,8 +242,8 @@ function doSweep(pm) {
   if (gi.pct >= 1) note = dw(S, g, `${g.name} is full.`);
   else if (after && before && after < before) { const n = ymIdx(before) - ymIdx(after); note = `Full ${monthLabel(after)}, ${plural(n, 'month')} sooner.`; }
   else note = dw(S, g, `${fmt(gi.togo)} to go.${after ? ` Full ${monthLabel(after)}.` : ''}`);
-  SWEPT = { pm, id, amt: moved, note: `${note}${g.why ? ' ' + g.why + '.' : ''}` };
-  sfx('coin'); celebrate('med', `${g.name}: +${fmt(moved)}. ${note}`); SQ.stash();
+  sfx('coin'); SQ.stash();
+  sweptSay({ pm, id, amt: moved, note: `${note}${g.why ? ' ' + g.why + '.' : ''}` }, `${g.name}: +${fmt(moved)}. ${note}`, true);
   render();
 }
 /* last month's unspent free to spend kept in the bank, or added to this month's free to spend: one undoable change, said out loud */
@@ -242,8 +251,7 @@ function doRelease(pm) {
   const o = sweepOffer(); if (!o || o.pm !== pm) { render(); return; }
   S.ui.sweep = Object.assign({}, S.ui.sweep, { [pm]: { amt: o.left, to: 'bank', t: Date.now() } }); persist();
   const nm = FULL[+pm.slice(5) - 1];
-  SWEPT = { pm, id: null, to: 'bank', amt: o.left, note: `From ${nm}'s free to spend. The bank figure now includes it.` };
-  sfx('coin'); cheer(`${fmt2(o.left)} counted in the bank.`); render();
+  sfx('coin'); sweptSay({ pm, id: null, to: 'bank', amt: o.left, note: `From ${nm}'s free to spend. The bank figure now includes it.` }, `${fmt2(o.left)} counted in the bank.`); render();
 }
 function undoSweep() {
   if (!SWEPT) return; const pm = SWEPT.pm;

@@ -120,6 +120,7 @@ function render() {
   $('#whereTitle').textContent = m.draw > 0 ? `${fmt2(PC.pay)} pay and ${fmt2(m.draw)} borrowed, by place` : `${fmt2(m.pool.in)} pay, by place`;
   paintBar($('#bar'), m, true); paintBar($('#dockBar'), m, false); paintLegend(m); $('#jarNote').innerHTML = jarNote(m);
   const el = $('#endline'); el.hidden = !(m.pool.out > PC.pay); if (!el.hidden) el.style.left = (PC.pay / m.pool.out * 100) + '%';   /* "Pay ends" marks the pay itself; borrowed money is not pay (38.31 north-star round 4) */
+  $('#dock').hidden = tab !== 'month';   /* this line is Plan's own summary of the month picked on Plan: on Home and every other tab it is not part of the page at all (it used to sit above them, slid out of sight, and read as Home's first line) */
   const dw = m.draw || 0, Ld = PC.dock;   /* borrowed money is not pay, and pay that spending past plan already used is not left (model.js planCells) */
   const bankOnly = pin <= 0 && L >= 0 && m.bankEnd < 0;   /* spending with no pay entered: the bank shortfall still shows */
   const allPlaced = pin > 0 && !bankOnly && Math.abs(Ld) < 0.005;   /* every coin placed: say so, not "$0 not placed yet" (38.31 novice round 3) */
