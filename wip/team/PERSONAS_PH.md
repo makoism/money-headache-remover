@@ -8,7 +8,11 @@ The reasons behind the shapes are in `PH_ACCOUNTS.md`. Account names and types m
 1. A fresh agent gets one persona and the build, nothing else. It sets up as that person, then tries the listed things in order, as that person would on a phone.
 2. For each thing: could I do it without asking anyone? Did the picture say the truth after? Every "how do I do this?" goes on the launch checklist.
 3. Each persona has a **day one picture**: the figures the app should show once the accounts are typed in. If the app shows other figures, that is a finding for the numbers gate.
-4. "Today" in every persona is Thursday 19 November 2026. Monday 30 November is a holiday (Bonifacio Day), so pay that is due on the 30th lands on Friday the 27th. That is on purpose: it tests pay that lands early (C3).
+4. **The rules every figure follows** (corrected 2026-11-19, LAUNCH_CHECKLIST A4): **Total** is the money the person has, summed over the places it sits.
+   - Using a card (or buying on pay-later): what is owed goes up. Total stays the same. Free to spend and "bank after the cards" go down by the amount.
+   - Paying a card (or a pay-later part or a loan part) from an account: that account goes down and what is owed goes down by the same amount. So Total goes down. Free to spend and "bank after the cards" stay the same.
+   - Moving money between the person's own places (bank to GCash, ATM to cash): Total stays the same.
+5. "Today" in every persona is Thursday 19 November 2026. Monday 30 November is a holiday (Bonifacio Day), so pay that is due on the 30th lands on Friday the 27th. That is on purpose: it tests pay that lands early (C3).
 
 | | Who | Pay | Main test |
 |---|---|---|---|
@@ -91,11 +95,11 @@ The reasons behind the shapes are in `PH_ACCOUNTS.md`. Account names and types m
 2. Add SPayLater and GGives with what is left, the monthly part and the due day.
 3. See, on the 19th, everything that is due before his next pay in one place.
 4. Cash in 1,300 from BDO to GCash for GGives and see it as a move, not spending.
-5. Pay the GGives part and see what he owes go down by 2,150.
-6. Buy a 2,400 pair of shoes on SPayLater in 3 parts and see that no pile shrinks today but what he owes grows.
+5. Pay the GGives part from GCash and see what he owes go down by 2,150 and GCash go down by 2,150. His Total goes down by 2,150 too; Free to spend does not change.
+6. Buy a 2,400 pair of shoes on SPayLater in 3 parts and see that no pile shrinks today and Total stays the same, but what he owes grows by 2,400 and Free to spend goes down by 2,400.
 7. Get paid on Friday the 27th instead of the 30th, pay rent, and place what is left.
 8. See which bills belong to the 15th pay and which to the 30th pay.
-9. Pay the Metrobank card on 3 December and see that his total stays the same while the bank goes down.
+9. Pay the Metrobank card on 3 December and see the bank go down by 9,800, what he owes go down by 9,800, and so his Total go down by 9,800. Free to spend and the bank after the cards stay the same.
 10. Ask "how much do I owe in all, and when is it gone?"
 
 ---
@@ -133,10 +137,10 @@ The reasons behind the shapes are in `PH_ACCOUNTS.md`. Account names and types m
 2. Add both cards with the cut-off day and the due day, paid in full.
 3. See "bank after the cards are paid" before she decides on a 9,000 weekend trip.
 4. Add the laptop instalment so she sees what is still to come.
-5. Pay the BPI card on the 26th from UnionBank and see the total stay the same.
+5. Pay the BPI card on the 26th from UnionBank and see UnionBank and what she owes both go down by 31,900, and so her Total go down by 31,900. Free to spend and the bank after the cards stay the same.
 6. Get paid on the 27th and watch the pay split into her places.
 7. Pay the 25,000 tuition and choose where it comes from.
-8. Spend 2,600 on the UnionBank card on the 18th, after the cut-off, and see that it is owed but not in the bill due on 7 December.
+8. Spend 2,600 on the UnionBank card on the 18th, after the cut-off, and see that it is owed (Total stays the same, UnionBank after the cards goes down by 2,600) but not in the bill due on 7 December.
 9. Upload a BPI card statement PDF that needs a password.
 10. Open the app on her iPhone a week later and find everything still there; add it to the home screen when asked.
 
@@ -175,7 +179,7 @@ The reasons behind the shapes are in `PH_ACCOUNTS.md`. Account names and types m
 3. Add the Home Credit plan with nine parts left and the 12th as the day.
 4. Take 5,000 out at the ATM and see it move from BDO to cash, with the total the same.
 5. Log a week of market and fare spending in cash in under a minute, without listing each item.
-6. Put in 2,000 for the paluwagan on the 30th and find the right kind for it.
+6. Put in 2,000 for the paluwagan on the 30th and find the right kind for it. It is a bill: money out, Total goes down by 2,000.
 7. Give 4,000 in cash to Jun's mother as family support.
 8. See what is safe to spend until Jun's next pay, with the bills between now and then.
 9. Count the cash: the app says 2,900, the box holds 2,350. Accept the 550 without having to explain it.
@@ -216,8 +220,8 @@ The reasons behind the shapes are in `PH_ACCOUNTS.md`. Account names and types m
 2. Add GCash first, because that is where her money is, and the bank second.
 3. Upload her GCash history and see where the last month went.
 4. Add the 5,000 she borrowed from an officemate, with no due date.
-5. See the GLoan part leave GCash on the 20th without typing it again.
-6. Use the card for the first time for 890 and understand that it is not "free" until December.
+5. See the GLoan part leave GCash on the 20th without typing it again: GCash and what she owes both go down by 1,480, so Total goes down by 1,480.
+6. Use the card for the first time for 890 and understand that it is not "free" until December: Total stays the same, what she owes grows by 890, Free to spend goes down by 890.
 7. Skip the app for nine days, come back, and start fresh from today's balances without redoing the gap.
 8. Get paid on the 28th (a Saturday, so it lands on Friday the 27th), send 5,000 home, move 15,000 to GCash.
 9. Tell the app about the 13th month pay and decide ahead where it goes: the officemate first.
@@ -256,7 +260,7 @@ The reasons behind the shapes are in `PH_ACCOUNTS.md`. Account names and types m
 **What he tries in his first two weeks**
 1. Add a card he does not pay in full and say what he pays each month.
 2. See all he owes in one place, without red and without a lecture.
-3. Pay 3,400 to the BDO card, then see next month's statement show 66,950 because 1,950 of interest was added (3% of the 65,000 left), entered as interest on the older balance.
+3. Pay 3,400 to the BDO card from Metrobank (his Total and what he owes both go down by 3,400), then see next month's statement show 66,950 because 1,950 of interest was added (3% of the 65,000 left), entered as interest on the older balance.
 4. Get paid on Friday the 27th and see, by date, what leaves in the next ten days: rent on the 1st, the Metrobank card on the 2nd, the loan on the 5th, the BDO card on the 10th.
 5. Find what is really safe to spend after all of that.
 6. Decide to put 2,000 more a month on the BDO card and see when it would be gone.
