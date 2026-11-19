@@ -34,6 +34,9 @@ const CALLS = {
   setPay: { call: A => A.setPay(3100) },
   setIncome: { call: A => A.setIncome('side', 90) },
   setBalance: { call: A => A.setBalance(1800) },
+  setBankNow: { call: A => A.setBankNow(1900) },
+  setCard: { call: A => A.setCard('c1', { name: 'Card one', owed: 610, payDay: 10 }) },
+  removeCard: { call: A => A.removeCard('c2') },
   setMinBalance: { call: A => A.setMinBalance(350) },
   setCeiling: { call: A => A.setCeiling(1500) },
   setLine: { call: A => A.setLine('bill:rent', 1250) },
@@ -138,6 +141,8 @@ async function makeSeed() {
       const A = __ak.ACT, S = __ak.S;
       S.ui.done = { pay: true, bills: true, goals: true, receipts: true }; S.ui.sampleHidden = true; S.ui.toured = true;
       A.addLine('nec', 'Phone plan', 45); A.setIncome('side', 150); A.setCeiling(2000); A.setName('Sam'); A.setHome(['play', 'goal', 'log', 'jars']);
+      if (A.setBankNow) A.setBankNow(2400);
+      if (A.setCard) { A.setCard('c1', { name: 'Card one', owed: 840, payDay: 10 }); A.setCard('c2', { name: 'Card two', owed: 375, payDay: 11 }); }
       A.updateGoal('trip1', { start: 120 }); A.setLine('bill:rent', 1200); A.setLine('envelope', 300); A.setGoalSaving('trip1', 40);
       __ak.S.once['2026-11'] = Object.assign({}, __ak.S.once['2026-11'], { envelope: 300, 'goal:trip1': 40 });   /* last month already has its own figures */
       A.addReceipts([{ d: '2026-11-05', a: 31.5, c: 'envelope', n: 'made up' }, { d: '2026-11-21', a: 12, c: 'envelope', n: 'made up' }, { d: '2026-12-01', a: 8, c: 'envelope', n: 'made up' }]);

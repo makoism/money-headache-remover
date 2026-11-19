@@ -46,6 +46,8 @@ Every failing action has the same two gaps: **no copy in the saved data**, and *
 | sweep, unsweep, release | last month's figures for Free to spend and the goal | exact |
 | undo | the change that was undone (there is no redo) | no Undo at all |
 
+**Update on 4175751 (33 actions): 8 pass, 25 fail.** The three new actions were caught as UNKNOWN on the first run, as intended, and now have calls. They fail the same way: `setBankNow` (the earlier bank figure), `setCard` (the card's earlier amount owed), `removeCard` (the whole card). Undo in the same visit is exact for all three; no copy is saved and after a reload no Undo is offered. `removeCard` belongs with the removals in point 1 below.
+
 ## What I suggest (the main session decides)
 
 1. **Fix, one place: `ACT.tx` in actions.js lines 23 to 31.** When `changed` is true, keep the before copy the way the screens do: take `snapNoCopy()` before `fn()` runs, then `keepCopy(thatSnap, label)` and `offerUndoG`. That alone turns copy and reload green for every action, and it matters most for the paths people use today: the assistant's Apply (ui4a.js line 164), setup from statements (ui45u.js line 265), Add money on a burrow (burrows.js line 156, `ACT.sweep`), and any removal.
