@@ -1,0 +1,250 @@
+{
+ "made": {
+  "by": "wiring_make_fixtures.js",
+  "from": "origin/wip-38.31",
+  "commit": "9916cde",
+  "version": "38.31"
+ },
+ "name": "mako",
+ "about": "One bank typed on Home, two cards paid in full on the 10th and the 11th, pay on one day, yen. The shape v1 must fit.",
+ "today": "2026-11-20",
+ "key": "money-map-template-v2",
+ "saved": {
+  "v": 1,
+  "rev": 1795000000000,
+  "steps": {
+   "a": [
+    {
+     "from": "2026-11",
+     "v": 412000
+    }
+   ]
+  },
+  "once": {},
+  "items": {},
+  "cfg": {
+   "bankStart": 298000,
+   "bankAt": "2026-11-01",
+   "bankNow": 352340,
+   "bankNowAt": "2026-11-18"
+  },
+  "ui": {
+   "cur": "¥",
+   "preset": "¥",
+   "name": "Mika",
+   "cleared": true
+  },
+  "plan": {
+   "lines": [
+    {
+     "id": "rent",
+     "key": "bill:rent",
+     "jar": "nec",
+     "name": "Rent or mortgage",
+     "def": 40000,
+     "note": "Biggest bill. Use the full amount, even if someone shares it (put their share under Money in)."
+    },
+    {
+     "id": "util",
+     "key": "bill:util",
+     "jar": "nec",
+     "name": "Utilities",
+     "def": 10000,
+     "note": "Electricity and water. Hot and rainy months can cost more."
+    },
+    {
+     "id": "food",
+     "key": "bill:food",
+     "jar": "nec",
+     "name": "Food and groceries",
+     "def": 31000,
+     "note": "Groceries and everyday meals. Eating out for fun goes under Free to spend."
+    },
+    {
+     "id": "net",
+     "key": "bill:net",
+     "jar": "nec",
+     "name": "Internet",
+     "def": 7000
+    },
+    {
+     "id": "phone",
+     "key": "bill:phone",
+     "jar": "nec",
+     "name": "Phone",
+     "def": 3000,
+     "note": "Postpaid plan, or the prepaid top-up you usually buy in a month."
+    },
+    {
+     "id": "ins",
+     "key": "bill:ins",
+     "jar": "nec",
+     "name": "Insurance and contributions",
+     "def": 5500,
+     "note": "Health or life insurance. Not on payroll: include your own SSS, PhilHealth and Pag-IBIG payments. Monthly amount."
+    },
+    {
+     "id": "subs",
+     "key": "bill:subs",
+     "jar": "nec",
+     "name": "Subscriptions",
+     "def": 3000,
+     "note": "Streaming, apps, software, gym."
+    },
+    {
+     "id": "gas",
+     "key": "bill:gas",
+     "jar": "nec",
+     "name": "Transport",
+     "def": 10500,
+     "note": "Commute, Grab, fuel, parking, tolls."
+    },
+    {
+     "id": "loan",
+     "key": "bill:loan",
+     "jar": "nec",
+     "name": "Loan or debt payment",
+     "def": 0,
+     "note": "Car loan, personal loan, card installments. Pick the last payment month; its money can then move to your emergency fund."
+    },
+    {
+     "id": "card",
+     "key": "card",
+     "jar": "nec",
+     "name": "Other card spending",
+     "def": 0,
+     "note": "Optional. Card spending not already in a line above, like shopping or household items. Fun spending goes under Free to spend."
+    },
+    {
+     "id": "spend",
+     "key": "envelope",
+     "jar": "play",
+     "name": "Free to spend",
+     "def": 20000
+    },
+    {
+     "id": "learn",
+     "key": "education",
+     "jar": "edu",
+     "name": "Courses and books",
+     "def": 20000
+    },
+    {
+     "id": "invest",
+     "key": "invest",
+     "jar": "ffa",
+     "name": "Investing",
+     "def": 20000
+    },
+    {
+     "id": "give",
+     "key": "give",
+     "jar": "give",
+     "name": "Giving",
+     "def": 10000
+    }
+   ],
+   "goals": [
+    {
+     "id": "moving",
+     "name": "Home or move",
+     "target": 90000,
+     "start": 0,
+     "due": "2028-03-01",
+     "slot": 4
+    },
+    {
+     "id": "travel",
+     "name": "Trip",
+     "target": 40000,
+     "start": 0,
+     "due": "",
+     "slot": 5,
+     "monthly": 2500
+    },
+    {
+     "id": "car",
+     "name": "Yearly cost",
+     "target": 20000,
+     "start": 0,
+     "due": "2027-06-15",
+     "slot": 6
+    },
+    {
+     "id": "rainy",
+     "name": "Emergency fund",
+     "target": 330000,
+     "start": 180000,
+     "due": "",
+     "slot": 7,
+     "monthly": 8900,
+     "emergency": true,
+     "stretch": 660000
+    }
+   ]
+  },
+  "receipts": [
+   {
+    "id": "r9pc00",
+    "d": "2026-11-12",
+    "a": 3480,
+    "c": "bill:food",
+    "cn": "Food and groceries",
+    "n": ""
+   }
+  ],
+  "cards": [
+   {
+    "id": "kmwn3b3ma",
+    "name": "Card A",
+    "owed": 61200,
+    "payDay": 10,
+    "at": "2026-11-18"
+   },
+   {
+    "id": "kmwn3b3mb",
+    "name": "Card B",
+    "owed": 23450,
+    "payDay": 11,
+    "at": "2026-11-17"
+   }
+  ]
+ },
+ "typed": {
+  "cur": "¥",
+  "bank": 352340,
+  "bankAt": "2026-11-18",
+  "bankKind": "now",
+  "cards": [
+   {
+    "id": "kmwn3b3ma",
+    "name": "Card A",
+    "owed": 61200,
+    "payDay": 10,
+    "at": "2026-11-18"
+   },
+   {
+    "id": "kmwn3b3mb",
+    "name": "Card B",
+    "owed": 23450,
+    "payDay": 11,
+    "at": "2026-11-17"
+   }
+  ],
+  "burrows": [
+   {
+    "id": "rainy",
+    "start": 180000
+   }
+  ],
+  "loans": [],
+  "debtGoals": [],
+  "sampleOnly": false
+ },
+ "homeNow": {
+  "bank": 352340,
+  "bankAt": "2026-11-18",
+  "cardsOwed": 84650,
+  "afterCards": 267690
+ }
+}

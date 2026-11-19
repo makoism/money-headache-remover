@@ -1,0 +1,245 @@
+{
+ "made": {
+  "by": "wiring_make_fixtures.js",
+  "from": "origin/wip-38.31",
+  "commit": "9916cde",
+  "version": "38.31"
+ },
+ "name": "euro",
+ "about": "Another currency with cents everywhere, and a bank below zero (overdrawn).",
+ "today": "2026-11-20",
+ "key": "money-map-template-v2",
+ "saved": {
+  "v": 1,
+  "rev": 1795000000000,
+  "steps": {
+   "a": [
+    {
+     "from": "2026-11",
+     "v": 1845.5
+    }
+   ]
+  },
+  "once": {},
+  "items": {},
+  "cfg": {
+   "bankNow": -212.37,
+   "bankNowAt": "2026-11-18"
+  },
+  "ui": {
+   "cur": "€",
+   "preset": "€",
+   "name": "Lou",
+   "cleared": true
+  },
+  "plan": {
+   "lines": [
+    {
+     "id": "rent",
+     "key": "bill:rent",
+     "jar": "nec",
+     "name": "Rent or mortgage",
+     "def": 330,
+     "note": "Biggest bill. Use the full amount, even if someone shares it (put their share under Money in)."
+    },
+    {
+     "id": "util",
+     "key": "bill:util",
+     "jar": "nec",
+     "name": "Utilities",
+     "def": 85,
+     "note": "Electricity and water. Hot and rainy months can cost more."
+    },
+    {
+     "id": "food",
+     "key": "bill:food",
+     "jar": "nec",
+     "name": "Food and groceries",
+     "def": 260,
+     "note": "Groceries and everyday meals. Eating out for fun goes under Free to spend."
+    },
+    {
+     "id": "net",
+     "key": "bill:net",
+     "jar": "nec",
+     "name": "Internet",
+     "def": 55
+    },
+    {
+     "id": "phone",
+     "key": "bill:phone",
+     "jar": "nec",
+     "name": "Phone",
+     "def": 25,
+     "note": "Postpaid plan, or the prepaid top-up you usually buy in a month."
+    },
+    {
+     "id": "ins",
+     "key": "bill:ins",
+     "jar": "nec",
+     "name": "Insurance and contributions",
+     "def": 45,
+     "note": "Health or life insurance. Not on payroll: include your own SSS, PhilHealth and Pag-IBIG payments. Monthly amount."
+    },
+    {
+     "id": "subs",
+     "key": "bill:subs",
+     "jar": "nec",
+     "name": "Subscriptions",
+     "def": 25,
+     "note": "Streaming, apps, software, gym."
+    },
+    {
+     "id": "gas",
+     "key": "bill:gas",
+     "jar": "nec",
+     "name": "Transport",
+     "def": 85,
+     "note": "Commute, Grab, fuel, parking, tolls."
+    },
+    {
+     "id": "loan",
+     "key": "bill:loan",
+     "jar": "nec",
+     "name": "Loan or debt payment",
+     "def": 0,
+     "note": "Car loan, personal loan, card installments. Pick the last payment month; its money can then move to your emergency fund."
+    },
+    {
+     "id": "card",
+     "key": "card",
+     "jar": "nec",
+     "name": "Other card spending",
+     "def": 0,
+     "note": "Optional. Card spending not already in a line above, like shopping or household items. Fun spending goes under Free to spend."
+    },
+    {
+     "id": "spend",
+     "key": "envelope",
+     "jar": "play",
+     "name": "Free to spend",
+     "def": 165
+    },
+    {
+     "id": "learn",
+     "key": "education",
+     "jar": "edu",
+     "name": "Courses and books",
+     "def": 165
+    },
+    {
+     "id": "invest",
+     "key": "invest",
+     "jar": "ffa",
+     "name": "Investing",
+     "def": 165
+    },
+    {
+     "id": "give",
+     "key": "give",
+     "jar": "give",
+     "name": "Giving",
+     "def": 85
+    }
+   ],
+   "goals": [
+    {
+     "id": "moving",
+     "name": "Home or move",
+     "target": 750,
+     "start": 0,
+     "due": "2028-03-01",
+     "slot": 4
+    },
+    {
+     "id": "travel",
+     "name": "Trip",
+     "target": 250,
+     "start": 0,
+     "due": "",
+     "slot": 5,
+     "monthly": 15
+    },
+    {
+     "id": "car",
+     "name": "Yearly cost",
+     "target": 150,
+     "start": 0,
+     "due": "2027-06-15",
+     "slot": 6
+    },
+    {
+     "id": "rainy",
+     "name": "Emergency fund",
+     "target": 2730,
+     "start": 1250,
+     "due": "",
+     "slot": 7,
+     "monthly": 70,
+     "emergency": true,
+     "stretch": 5460
+    }
+   ],
+   "debts": [
+    {
+     "id": "d9tyo6",
+     "name": "Prêt auto",
+     "kind": "loan",
+     "balance": 6400,
+     "apr": 3.9,
+     "min": 180,
+     "extra": 0
+    }
+   ]
+  },
+  "receipts": [],
+  "cards": [
+   {
+    "id": "kmwn3b3mg",
+    "name": "Carte",
+    "owed": 78.9,
+    "payDay": 4,
+    "at": "2026-11-18"
+   }
+  ]
+ },
+ "typed": {
+  "cur": "€",
+  "bank": -212.37,
+  "bankAt": "2026-11-18",
+  "bankKind": "now",
+  "cards": [
+   {
+    "id": "kmwn3b3mg",
+    "name": "Carte",
+    "owed": 78.9,
+    "payDay": 4,
+    "at": "2026-11-18"
+   }
+  ],
+  "burrows": [
+   {
+    "id": "rainy",
+    "start": 1250
+   }
+  ],
+  "loans": [
+   {
+    "id": "d9tyo6",
+    "name": "Prêt auto",
+    "kind": "loan",
+    "owed": 6400,
+    "apr": 3.9,
+    "min": 180
+   }
+  ],
+  "debtGoals": [],
+  "sampleOnly": false
+ },
+ "homeNow": {
+  "bank": -212.37,
+  "bankAt": "2026-11-18",
+  "cardsOwed": 78.9,
+  "afterCards": -291.27
+ }
+}
