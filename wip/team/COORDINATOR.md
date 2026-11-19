@@ -30,6 +30,10 @@ Coordinator 2 (session_01BFpKEXXUx4uUjZGJny9MyJ) passed the 150k mark and handed
 - Mako was shown the cloud copy help text (entry 20) in chat at 04:40 UTC; no reaction yet.
 - Running now: MAIN 2, M2, H, N2 (G finishing one small change).
 
+- MAIN 2 handed off at 3e6ebe0 (A1 with cfg.bankNow, A5 simple with S.cards, verify OK, check.sh ALL GOOD by its report). MAIN 3 is session_01BFpKEZkCVKqMnkUeTtg2j5, the only session editing app files on wip-38.31; its prompt carries the order of work, the act_keep finding, the QC brief jobs and the two vault points. MAIN 2 was told to stop. M2 was told Home has landed; Settings and the saving screens wait for E15 (MAIN 3 sends a line).
+- SIDE G finished its last change (side/vault-server 9d0f1da, cap default 300, "Before this merges" list in LANE_vault.md). For the ledger step: G suggests the server itself refuses a save from an older page (a format number per save); take it, it fits "nobody loses data".
+- Running now: MAIN 3, M2, H, N2.
+
 ### Mako today (all recorded in DECISIONS.md, last eight sections; read them)
 Pace (use the full allowance by Sunday 22 Nov, again by Wed 25 or Thu 26). The team's shape answered by him (standard Philippine accounts, monthly pay with separate pay supported, cards core, iPhone and Android). The copy must not sound like AI and must sound like him (few full stops, his space hyphen space, joined sentences, normal conversation); all copy in one batch at the end, then ONE pass with him on the preview. The cloud copy must explain itself step by step (E15, v1). Yen stays default. He likes short updates: what was found, what was done. He said: ask him when context is needed. He dictates by voice; messages can cut off.
 
