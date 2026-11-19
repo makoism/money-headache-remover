@@ -113,6 +113,13 @@ For the main session, relay side:
 - 429 now has three more causes with their own messages (network daily limit, too many wrong code words, as well as the old ones). The page already shows the server's message for `rate_limited`; check it reads well.
 - A wrong saved invite word: after a 401 the page should ask for the word again and not resend the wrong one on every call, or ten calls lock the network for the day.
 
+## Wiring point for the ledger step (from coordinator 3, 2026-11-19)
+The ledger (after v1) will use a new storage key, because shipped 38.31 pages cannot know its version. Rule: anything on the page that uploads to the vault must pass the same guard as local saves (`ledgerMayWrite`), so an older page never overwrites a ledger copy. In ui42.js that means `vaultPush` (also with `force`, so "Keep mine" too) and the load of an earlier copy followed by a forced save.
+
+What the server gives today: an older page that overwrites a ledger copy does not destroy it. With `base`, or with the old `rev` rule, the save is refused with 409 unless the person taps "Keep mine"; if they do, the ledger copy stays as a kept version and can be loaded back.
+
+Not built, a possible server half if wanted at the ledger step: the page sends a format number with each save (for example `fmt: 2`), the server stores it, and refuses with 409 any save that carries a lower one or none, `force` included. Old pages would then be unable to overwrite a ledger copy at all. It needs one more added column with a default, and a decision on what the old page shows, since its "Load it" would then try to load a ledger copy it cannot read.
+
 ## Things to know before the merge
 - **A push to main deploys this.** The first vault request after the deploy adds the table and the two columns. No step for Mako.
 - **Rollback.** The old server can read the upgraded table. Two effects if the server is rolled back after people used it: a copy deleted in the meantime shows up as live again to the old server, and the counter stops moving until the new server is back. No data is lost either way.
