@@ -789,6 +789,8 @@ function moneyTyped(el, ev) {
   let at = pos; if (ev && ev.data === ',' && raw.charAt(pos - 1) === ',') { const dec = COMMA_DEC.indexOf(sym()) >= 0; raw = raw.slice(0, pos - 1) + (dec ? '.' : '') + raw.slice(pos); if (!dec) at = pos - 1; }
   const sig = t => t.replace(/[^\d.]/g, '');
   let all = sig(raw), n = sig(raw.slice(0, at)).length;
+  /* a third digit after the point, or a second point, is never cut off in silence: 1.234,56 typed in euros became 1.23 (38.31 money accuracy round 4) */
+  { const d1 = all.indexOf('.'); if (d1 >= 0 && (all.indexOf('.', d1 + 1) >= 0 || all.length - d1 - 1 > 2)) { try { cheer(`Only two digits after the point. For thousands, leave the separator out: 1234${COMMA_DEC.indexOf(sym()) >= 0 ? ',' : '.'}56.`); } catch (x) { } NATIVE_VALUE.set.call(el, el._mnyPrev !== undefined ? el._mnyPrev : ''); return; } }
   const dot = all.indexOf('.');
   if (dot >= 0) all = all.slice(0, dot) + '.' + all.slice(dot + 1).replace(/\./g, '').slice(0, 2);
   n = Math.min(n, all.length);
