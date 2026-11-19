@@ -303,21 +303,21 @@ The one warning the check prints is H-023, which adds a bold button name on purp
 + Enter the statement total, then the part of it that is bills you already listed, like rent, food or subscriptions. The rest is card spending.
 @@ J-021 | ui45s.js | AI: no | Mako: no B13, C brackets | Next: yes
 - A card is paid a month late. This month you pay last month's bill, so put that bill under One-time costs for this month (Plan, then Month). The amount above is what you expect to put on the card from now on.
-+ A card is paid a month late, so this month you pay last month's bill. Put that bill under One-time costs for this month, which is in Plan and then Month. The amount above is what you expect to put on the card from now on.
++ A card is paid a month late, so this month you pay last month's bill. You can add that bill as a one-time cost for this month once setup is done. The amount above is what you expect to put on the card from now on.
 @@ J-022 | ui45s.js | AI: yes A8 | Mako: no A13 colon | Next: yes
 - No credit card: go back and untick it. Owe on a card or loan? Add it under Cards and loans on the Goals tab.
-+ If you have no credit card go back and untick it. If you owe on a card or loan, add it under Cards and loans on the Goals tab.
++ If you have no credit card go back and untick it. If you carry a balance from month to month, add it under Cards and loans once setup is done.
 @@ J-023 | ui45s.js | AI: yes A8 | Mako: no B13 | Next: yes
 - Unsure? Keep the emergency fund. Owe on a card or loan? Add it after setup, under Cards and loans on the Goals tab. It works out the interest and the payoff date.
-+ If you're not sure, keep the emergency fund. If you owe on a card or loan, add it after setup under Cards and loans on the Goals tab and it works out the interest and the payoff date.
++ If you're not sure, keep the emergency fund. If you owe on a card or loan, add it after setup under Cards and loans in Plan under Burrows and it works out the interest and the payoff date.
 # two question then answer pairs in a row (A8)
 @@ J-024 | ui45s.js | AI: yes A8 | Mako: no B3 | Next: yes
 - </div><p class="cap">Is this money in the same account as the balance you typed before? Then lower that balance by this amount, so the same money is not counted in two places.
-+ </div><p class="cap">If this money is in the same account as the balance you typed before, lower that balance by this amount so the same money isn't counted in two places.
++ </div><p class="cap">If this money is in the same account as the balance you typed before, tap Back to the Your money step and lower that balance by this amount, so the same money isn't counted in two places.
 # this text is in the file twice. The row carries the tags in front so it is found once, and J-025 then finds the other one
 @@ J-025 | ui45s.js | AI: yes A8 | Mako: no B3 | Next: yes
 - Is this money in the same account as the balance you typed before? Then lower that balance by this amount, so the same money is not counted in two places.
-+ If this money is in the same account as the balance you typed before, lower that balance by this amount so the same money isn't counted in two places.
++ If this money is in the same account as the balance you typed before, tap Back to the Your money step and lower that balance by this amount, so the same money isn't counted in two places.
 # must come after J-024
 @@ J-026 | ui45s.js | AI: no | Mako: no B2 B13 | Next: yes
 - Name the debt and how much you owe in total. The smallest payment you must make stays in Bills and basics. This burrow is for the extra you pay on top, so the debt shrinks faster.
@@ -327,7 +327,7 @@ The one warning the check prints is H-023, which adds a bold button name on purp
 + The bills you listed cover the whole statement so there's nothing extra to count
 @@ J-028 | ui45x.js | AI: yes A8 | Mako: no | Next: yes
 - Owe a total, like a card balance? Switch to Total, or add it later under Cards and loans on the Goals tab.
-+ If you owe a total, like a card balance, switch to Total or add it later under Cards and loans on the Goals tab.
++ If you owe a total, like a card balance, switch to Total or add it later under Cards and loans in Plan under Burrows.
 # the sentence before it ("Monthly is the payment you make each month, not what you owe in total.") is a real mix-up put right (A3 allows it) and stays
 @@ J-029 | ui1.js | AI: yes A8 | Mako: no B3 B13 B14 | Next: yes
 - What you have right now. It is the start of the first month in the plan. Update when you check. Overdrawn? Type a minus, like -400.
