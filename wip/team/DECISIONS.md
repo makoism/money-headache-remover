@@ -212,3 +212,8 @@ LEDGER_DESIGN.md (branch side/ledger-design) is the design for step B1, proved o
 3. **The default currency is Japanese yen.** (It already is; it stays. The team link opening in pesos, checklist D1, is a link setting on top of that.)
 4. Mako likes the updates in this form (short, what was found, what was done). If context is needed at any point, ask him.
 
+## One copy pass with Mako, near the end (Mako, 2026-11-19)
+1. For the smaller details (onboarding, copy, the help in the UI) **the north star check and the voice checker can be combined** into one review, and it can run near the end. That is fine.
+2. **All the copy details are done in one pass with Mako.** He keeps his eye on it, and the team tweaks with him until the wording and all of the UI help are correct. Not screen by screen across many rounds.
+How the team does it (coordinator's reading): the voice lane's rewrite is applied in one batch as the best first version; Mako gets the preview and reads the app itself; his notes are applied in quick rounds on the copy only (strings, hints, help; no logic), each round checked by the script and the combined copy check, until he says it is right. The two full gates still judge numbers and the north star on the candidate.
+
