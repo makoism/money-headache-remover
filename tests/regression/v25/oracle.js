@@ -10,6 +10,23 @@ const M = ctx.__M;
 const PAY_OF = { '₱': 30000, '¥': 200000, '€': 1650 };
 const mIdx = ym => +ym.slice(0, 4) * 12 + (+ym.slice(5, 7) - 1);
 const ceilDiv = (a, b) => Math.floor((a + b - 1) / b);           // whole numbers only
+const ymOf = i => Math.floor(i / 12) + '-' + String(i % 12 + 1).padStart(2, '0');
+/* Cards and loans (38.26), recounted from the plain rules in whole numbers.
+   Each month: interest is added to what is owed, then the payment comes off.
+   - The yearly rate is a percent with at most two decimals, so it is counted here in hundredths of a percent (A = rate x 100, a whole number).
+     A month's interest is owed x rate / 12 / 100 = owed x A / 120000, rounded to the nearest whole amount (a half rounds up). Nothing owed, no interest.
+   - The payment is the minimum plus the month's extra (the extra is the plan's extra, or a change for this month or from a month on; never below 0),
+     but never more than what is owed after interest.
+   - What is owed at the end is what was owed + interest - payment.
+   - The payments are part of Bills and basics (money that leaves), but not of the bills total (the bill lines).
+   Pay-off month: the first month the balance is 0. If that is past the page's months, the last month's extra keeps going, month by month,
+   for at most 50 years; a month whose payment does not beat its interest means it is never paid off. */
+const debtMonth = (owed, A, min, extra) => {
+  const interest = owed > 0 ? Math.floor((2 * owed * A + 120000) / 240000) : 0;
+  const pay = Math.min(owed + interest, min + extra);
+  return { start: owed, interest, extra, pay, bal: owed + interest - pay };
+};
+const rateA = d => Math.round(d.apr * 100);
 function oracle(S) {
   const months = M.MONTHS, first = months[0];
   const preset = (S.ui && S.ui.preset) || 'legacy';
@@ -39,6 +56,8 @@ function oracle(S) {
   const bal = {}; goals.forEach(g => { bal[g.id] = g.start; });
   const reached = {}; const out = [];
   const freedLines = lines.filter(l => l.ends && l.redirect).map(l => ({ ends: l.ends, amt: lineValue(l, l.ends) }));
+  const debts = (S.plan && Array.isArray(S.plan.debts)) ? S.plan.debts : [], owed = {};
+  debts.forEach(d => { owed[d.id] = d.balance; });
   months.forEach(ym => {
     const r = { ym };
     r.a = valueOf('a', ym, () => payDefault); r.b = valueOf('b', ym, () => 0); r.side = valueOf('side', ym, () => 0);
@@ -49,6 +68,16 @@ function oracle(S) {
     r.bills = r.jar.nec;
     r.items = (S.items[ym] || []).reduce((s, i) => s + (+i.amount || 0), 0);
     r.jar.nec += r.items;
+    r.debts = {}; r.debtPay = 0; r.debtInterest = 0; r.debtStart = 0; r.debtMin = 0;
+    debts.forEach(d => {
+      const x = debtMonth(owed[d.id], rateA(d), d.min, Math.max(0, valueOf('debt:' + d.id, ym, () => d.extra)));
+      /* how much of the first balance is paid off by the end of this month, as a whole percent (a half rounds up), never below 0; nothing owed at first counts as all paid */
+      x.paidPctWhole = d.balance > 0 ? Math.max(0, Math.min(100, Math.floor((200 * (d.balance - x.bal) + d.balance) / (2 * d.balance)))) : 100;
+      owed[d.id] = x.bal; r.debts[d.id] = x;
+      r.debtPay += x.pay; r.debtInterest += x.interest; r.debtStart += x.start; r.debtMin += Math.min(d.min, x.start + x.interest);
+    });
+    r.debtOwed = debts.reduce((a, d) => a + owed[d.id], 0); r.debtExtra = r.debtPay - r.debtMin;
+    r.jar.nec += r.debtPay;
     const freed = freedLines.reduce((s, f) => s + (ym > f.ends ? f.amt : 0), 0);
     r.before = Object.assign({}, bal); r.g = {}; r.goalsTotal = 0;
     goals.forEach(g => {
@@ -69,7 +98,29 @@ function oracle(S) {
     r.bal = Object.assign({}, bal); out.push(r);
   });
   oracleOverspend(S, out, lines);
-  return { rows: out, reached, lastSave, dueM, cap };
+  return { rows: out, reached, lastSave, dueM, cap, debtRows: oracleDebtRows(debts, out, months) };
+}
+/* each card or loan: pay-off month, never, interest and payments up to the pay-off, and which one to pay first */
+function oracleDebtRows(debts, rows, months) {
+  const res = debts.map(d => {
+    let payoffYm = null, interest = 0, paid = 0, never = false;
+    for (const r of rows) { const x = r.debts[d.id]; interest += x.interest; paid += x.pay; if (x.bal === 0) { payoffYm = r.ym; break; } }
+    if (payoffYm === null) {
+      const lx = rows[rows.length - 1].debts[d.id], A = rateA(d); let bal = lx.bal, i = mIdx(months[months.length - 1]), n = 0;
+      while (bal > 0) {
+        if (n >= 600) { never = true; break; }
+        const x = debtMonth(bal, A, d.min, lx.extra);
+        if (x.pay <= x.interest) { never = true; break; }
+        interest += x.interest; paid += x.pay; bal = x.bal; i++; n++;
+      }
+      if (!never) payoffYm = ymOf(i);
+    }
+    return { id: d.id, payoffYm, never, totalInterest: interest, totalPaid: paid, first: false, done: d.balance <= 0 };
+  });
+  /* pay first: the highest rate; the same rate, the smaller balance; then the id. Only said when two or more are still owed. */
+  const open = res.map((x, k) => [x, debts[k]]).filter(([x]) => !x.done).sort(([, a], [, b]) => rateA(b) - rateA(a) || a.balance - b.balance || (a.id < b.id ? -1 : 1));
+  if (open.length > 1) open[0][0].first = true;
+  return res;
 }
 /* 38.30 rule, recounted from the plain words and in whole cents: money spent past what a month planned comes out of the bank and stays out in every later month.
    Only when at least one receipt exists. Per month:
@@ -129,7 +180,7 @@ function oraclePercents(vals, base) {
 let seed = +(process.env.SEED || 1);
 const rnd = () => (seed = (seed * 1664525 + 1013904223) % 4294967296) / 4294967296;
 const pick = a => a[Math.floor(rnd() * a.length)], ri = (a, b) => a + Math.floor(rnd() * (b - a + 1));
-function randomState() {
+function randomState(opt) {
   const cur = pick(['₱', '¥', '€', '$', '£', '₱', '¥', '€']), S = M.presetState(cur, rnd() < .1);
   const scale = M.SAMPLES[cur] ? M.SAMPLES[cur].pay : pick([800, 3000, 12000, 90000]);
   const pay = Math.round((0.1 + rnd() * 3) * scale);
@@ -157,6 +208,19 @@ function randomState() {
   if (rnd() < .4) S.items[pick(M.MONTHS)] = [{ id: 'i1', label: 'x', amount: ri(0, pay) }, { id: 'i2', label: 'y', amount: ri(0, Math.round(pay / 3)) }];
   if (rnd() < .4) M.setVal(S, 'draw', pick(M.MONTHS), ri(0, pay * 2), 'once');
   if (rnd() < .2) M.setVal(S, 'draw', pick(M.MONTHS), ri(0, pay * 2), 'once');
+  /* cards and loans (made-up numbers): only when asked, so the plans other tests draw (and the golden screens) stay the same */
+  if (opt && opt.debts && rnd() < .6) {
+    S.plan.debts = [];
+    const nd = ri(1, 4);
+    for (let i = 0; i < nd; i++) {
+      const bal = pick([0, ri(1, 99), ri(100, pay), ri(pay, pay * 12), 20000 * ri(1, 40), 40000, ri(1, 1e9)]);
+      const apr = pick([0, 0, 1.5, 12, 12.99, 17.25, 19.9, 24, 29.99, 36, 60, 99.99, 100, ri(1, 9999) / 100]);
+      const min = pick([0, ri(1, 50), ri(0, Math.round(pay * .2)), Math.round(bal * apr / 1200), Math.round(bal / ri(1, 30))]);
+      S.plan.debts.push({ id: 'd' + i, name: 'Debt ' + i, kind: pick(['card', 'loan', 'personal']), balance: bal, apr, min, extra: pick([0, 0, ri(1, Math.round(pay * .2) + 1)]) });
+      if (rnd() < .4) M.setVal(S, 'debt:d' + i, pick(M.MONTHS), pick([0, ri(0, Math.round(pay * .5))]), rnd() < .5 ? 'once' : 'after');
+      if (rnd() < .2) M.setVal(S, 'debt:d' + i, pick(M.MONTHS), ri(0, pay), 'after');
+    }
+  }
   return S;
 }
 
@@ -167,7 +231,7 @@ let fails = [], checks = 0;
 const eq = (ctxMsg, a, b) => { checks++; if (a !== b && !(Number.isNaN(a) && Number.isNaN(b))) { if (fails.length < 40) fails.push(ctxMsg + ': app ' + JSON.stringify(a) + ' vs independent ' + JSON.stringify(b)); else fails.length++; } };
 const N = +(process.env.N || 3000); const DBG = process.env.DBG ? process.env.DBG.split(',') : [];
 for (let t = 0; t < N; t++) {
-  const S = randomState(), tag = '#' + t + ' ' + S.ui.cur;
+  const S = randomState({ debts: true }), tag = '#' + t + ' ' + S.ui.cur;
   if (t % 5 === 3) S.cfg.bankStart = -(1 + (t * 7919) % 250000);   /* every fifth plan starts overdrawn (38.31); kept out of randomState so the golden screens draw the same plans */
   const stab = o => JSON.stringify(o, (k, v) => v && typeof v === 'object' && !Array.isArray(v) ? Object.keys(v).sort().reduce((a, x) => (a[x] = v[x], a), {}) : v);
   const sortSteps = o => { const r = {}; Object.keys(o).forEach(k => { r[k] = o[k].slice().sort((a, b) => (a.from < b.from ? -1 : 1)); }); return r; };
@@ -177,6 +241,8 @@ for (let t = 0; t < N; t++) {
   O.rows.forEach((r, i) => {
     const m = C.months[i], p = tag + ' ' + r.ym + ' ';
     ['a', 'b', 'side', 'draw', 'inflow', 'goalsTotal', 'left', 'bankStart', 'bankEnd'].forEach(k => eq(p + k, m[k], r[k]));
+    ['debtPay', 'debtInterest', 'debtOwed', 'debtStart', 'debtMin', 'debtExtra'].forEach(k => eq(p + k, m[k] === undefined ? 0 : m[k], r[k]));
+    (S.plan.debts || []).forEach(d => ['start', 'interest', 'extra', 'pay', 'bal', 'paidPctWhole'].forEach(k => eq(p + d.id + ' debt ' + k, m.debts[d.id][k], r.debts[d.id][k])));
     eq(p + 'out', m.out, r.outflow); eq(p + 'billsTotal', m.billsTotal, r.bills); eq(p + 'itemsTotal', m.itemsTotal, r.items);
     ['nec', 'play', 'edu', 'ffa', 'give'].forEach(j => eq(p + 'jar ' + j, m.jar[j], r.jar[j]));
     S.plan.goals.forEach(g => {
@@ -207,6 +273,10 @@ for (let t = 0; t < N; t++) {
     checks++; if (base > 0 && sumAll < base && sumPct > 100) { if (fails.length < 40) fails.push(p + 'percents add to ' + sumPct + ' with less than the base placed'); }
     eq(p + 'placed pct', J.placedPct, sumPct - pc[6]);
   });
+  /* cards and loans: pay-off month, never, totals, and which to pay first */
+  const DR = M.debtRows(S, C);
+  eq(tag + ' debt rows', DR.length, O.debtRows.length);
+  O.debtRows.forEach((o, k) => { const a = DR[k] || {}; ['id', 'payoffYm', 'never', 'totalInterest', 'totalPaid', 'first', 'done'].forEach(f => eq(tag + ' ' + o.id + ' row ' + f, a[f], o[f])); });
   /* the bank rolls forward exactly by what is left each month */
   let b = M.cfg(S, 'bankStart'); C.months.forEach(m => { b += m.left; }); eq(tag + ' final bank', C.months[C.months.length - 1].bankEnd, b);
   /* nothing is created or lost inside the goals: start + saved - withdrawn - spent = what is left */
