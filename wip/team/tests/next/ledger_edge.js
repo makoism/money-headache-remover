@@ -213,6 +213,23 @@ const all = (tag, p, want) => { for (const k in want) eq(`${tag} ${k}`, k.includ
   rep.ok(new Set(S.accounts.map(a => a.id)).size === S.accounts.length, 'W3 no two accounts share an id');
 }
 
+{ /* W1 (wiring lane): a goal of kind "pay off a debt" (ui.gk[id] === 'debt', A3) is a loan of target less paid, never savings */
+  const saved = { v: 1, rev: 2, ui: { cur: '₱', gk: { g9sf44: 'debt', g9t6w5: 'travel', gdone: 'debt', gover: 'debt' } }, cfg: { bankNow: 15200, bankNowAt: '2026-11-16' }, plan: { lines: [], goals: [
+    { id: 'g9sf44', name: 'Laptop loan', target: 30000, start: 12000 }, { id: 'g9t6w5', name: 'Trip', target: 20000, start: 6100 },
+    { id: 'gdone', name: 'All paid', target: 5000, start: 5000 }, { id: 'gover', name: 'Paid more than the target', target: 1000, start: 1500.5 }] } };
+  const S = L.migrate3831(JSON.parse(J(saved)), '2026-11-20'), p = proof('W1 debt goal', S), a = S.accounts.find(q => q.goal === 'g9sf44') || {};
+  rep.ok(a.type === 'loan' && a.id === 'g9sf44' && a.name === 'Laptop loan', 'W1 the debt goal is a loan account that carries the goal id');
+  all('W1 debt goal', p, { owed: 18000, total: 21300, saved: 6100, waiting: 15200, 'accounts.g9sf44': 18000, 'burrows.g9t6w5': 6100 });
+  rep.ok(!('g9sf44' in p.burrows) && !('gdone' in p.burrows) && !('gover' in p.burrows), 'W1 what was paid toward a debt is not a burrow: it is not in Saved and not in Total');
+  rep.ok(c(p.accounts[(S.accounts.find(q => q.goal === 'gdone') || {}).id]) === 0 && c(p.accounts[(S.accounts.find(q => q.goal === 'gover') || {}).id]) === 0, 'W1 a debt goal paid in full, or past its target, is a loan with nothing owed');
+  rep.ok(c(p.accounts.oldsavings) === c(6100) && S.oldFigures.notes.length === 0, 'W1 only real savings sit in the savings account');
+  rep.ok(S.ledger.find(e => e.acct === 'g9sf44').date === '2026-11-20' && S.ledger.find(e => e.acct === 'g9sf44').place == null, 'W1 the loan opens on the day of the move and touches no place');
+  const plain = L.migrate3831({ cur: 'PHP', bankStart: 100, goals: [{ id: 'd1', kind: 'debt', target: 900, start: 250.25 }, { id: 's1', start: 40 }] }, '2026-11-20');
+  all('W1 the plain shape', proof('W1 plain', plain), { owed: 649.75, total: 140, saved: 40 });
+  const odd = L.migrate3831({ cur: 'PHP', bankStart: 100, goals: [{ id: 'd1', kind: 'debt', target: 'lots', start: 250 }] }, '2026-11-20');
+  rep.ok(c(L.placesOf(odd).owed) === 0 && c(L.placesOf(odd).total) === c(100) && odd.oldFigures.notes.length === 1, 'W1 a debt goal with no usable target is noted and nothing is guessed');
+}
+
 /* ===== Philippine shapes (side L). How each is written with the kinds the design has ===== */
 { /* card cut-off day (Mika, thing 8): spent after the cut-off is owed and set aside, but not in the bill due next */
   const S = fresh('PHP', [{ id: 'ub', name: 'UnionBank', type: 'bank' }, { id: 'ubc', name: 'UnionBank card', type: 'card', payDay: 7, cutDay: 17 }]);
