@@ -6,6 +6,9 @@
    What it reads:
      node tests/qc/voice_lint.js                 the app's source strings: every .js part named in build.sh, plus body.html
      node tests/qc/voice_lint.js --text F...     plain text or markdown files, one finding per line (help texts, screen pack .txt files)
+     --since OLD.tsv     only strings that are not in an earlier --tsv listing (what was added since COPY_V1.md was made)
+   Known findings: tests/qc/voice_known.txt, one pattern per line (a regular expression matched against "file: text"), # for a reason.
+   A known finding is printed as KNOWN and never counts for --strict.
    Options: --all (also the weak hints: long sentences, a missing contraction, a full stop on a one-line note), --strict, --quiet (counts only),
             --tsv (file, line, kind, text: the strings it would check, nothing else; used to build COPY_V1.md)
    Needs acorn for the source strings (bash tests/setup_env.sh installs it); without it, it says so and checks body.html only.
@@ -92,6 +95,13 @@ function lint(text, kind) {
   }
   let run = 0, worst = 0; for (const s of S) { if (words(s).length <= 4) { run++; worst = Math.max(worst, run); } else run = 0; }
   if (worst >= 3) add('weak', 'A5', worst + ' short fragments in a row');
+  else { run = 0; worst = 0; for (const s of S) { if (words(s).length <= 7) { run++; worst = Math.max(worst, run); } else run = 0; }
+    if (worst >= 3) add('weak', 'B13', worst + ' short sentences in a row: join the ones that belong together'); }
+  /* Mako's own dash is a plain hyphen with a space each side. It must never sit next to a number, where it reads as a minus */
+  const tn = t.replace(/\{…\}/g, '9');
+  if (/[\d%]\s-\s|\s-\s[\d$¥₱€£]/.test(tn)) add('strong', 'C', 'spaced hyphen next to a number reads as a minus: use "so" or "and"');
+  if ((tn.match(/\s-\s/g) || []).length > 1) add('weak', 'C', 'more than one spaced hyphen in a line');
+  if (/\s-\s/.test(tn) && (kind === 'button' || kind === 'label')) add('weak', 'C', 'spaced hyphen in a ' + kind);
   const hedges = (t.match(HEDGES) || []).length; if (hedges >= 2) add('weak', 'A12', hedges + ' hedges in one string');
   if ((m = UNCONTRACTED.exec(t))) add('hint', 'B3', 'no contraction: "' + m[1] + '"');
   /* Part C, by where the string sits */
@@ -193,17 +203,22 @@ function selftest() {
 const stBad = selftest();
 if (SELF) { console.log(stBad ? 'VOICE LINT SELFTEST FAILED' : 'VOICE LINT SELFTEST OK'); process.exit(stBad ? 1 : 0); }
 const ti = args.indexOf('--text');
-const rows = ti >= 0 ? textStrings(args.slice(ti + 1).filter(a => !a.startsWith('--'))) : sourceStrings();
+let rows = ti >= 0 ? textStrings(args.slice(ti + 1).filter(a => !a.startsWith('--'))) : sourceStrings();
+const si = args.indexOf('--since');
+if (si >= 0) { const old = new Set(fs.readFileSync(args[si + 1], 'utf8').split('\n').map(l => { const c = l.split('\t'); return c[0] + '\t' + c[3]; })); rows = rows.filter(r => !old.has(r[0] + '\t' + r[3])); }
+const KNOWN_FILE = path.join(__dirname, 'voice_known.txt');
+const KNOWN = fs.existsSync(KNOWN_FILE) ? fs.readFileSync(KNOWN_FILE, 'utf8').split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('#')).map(l => new RegExp(l)) : [];
 if (TSV) { const seen = new Set(); for (const r of rows) { const k = r[0] + '\t' + r[3]; if (!seen.has(k)) { seen.add(k); console.log(r.join('\t')); } } process.exit(0); }
-const seen = new Set(); const byRule = {}; let strong = 0, weak = 0, hint = 0, flagged = 0, checked = 0; const lines = [];
+const seen = new Set(); const byRule = {}; let strong = 0, weak = 0, hint = 0, known = 0, flagged = 0, checked = 0; const lines = [];
 for (const [file, line, kind, text] of rows) {
   const key = file + '|' + text; if (seen.has(key)) continue; seen.add(key); checked++;
   const f = lint(text, kind).filter(x => ALL || x[0] !== 'hint'); if (!f.length) continue; flagged++;
-  for (const [lvl, rule, msg] of f) { byRule[rule] = (byRule[rule] || 0) + 1; if (lvl === 'strong') strong++; else if (lvl === 'weak') weak++; else hint++;
+  const kn = KNOWN.some(re => re.test(file + ': ' + text));
+  for (let [lvl, rule, msg] of f) { if (kn) lvl = 'known'; byRule[rule] = (byRule[rule] || 0) + 1; if (lvl === 'known') known++; else if (lvl === 'strong') strong++; else if (lvl === 'weak') weak++; else hint++;
     lines.push(`${lvl.toUpperCase().padEnd(6)} ${rule.padEnd(3)} ${file}:${line}  ${msg}\n         | ${text.length > 220 ? text.slice(0, 220) + ' ...' : text}`); }
 }
-const order = { STRONG: 0, 'WEAK  ': 1, 'HINT  ': 2 };
+const order = { STRONG: 0, 'WEAK  ': 1, 'HINT  ': 2, 'KNOWN ': 3 };
 if (!QUIET) lines.sort((a, b) => order[a.slice(0, 6)] - order[b.slice(0, 6)]).forEach(l => console.log(l));
 console.log('by rule: ' + (Object.keys(byRule).sort().map(r => r + ' ' + byRule[r]).join(', ') || 'none'));
-console.log(`VOICE LINT: ${checked} strings read, ${flagged} flagged: ${strong} strong, ${weak} weak` + (ALL ? `, ${hint} hints` : ' (--all adds the hints)') + '. Pointers only, the qc-voice agent judges. Not a gate.' + (stBad ? ' SELFTEST FAILED.' : ''));
+console.log(`VOICE LINT: ${checked} strings read, ${flagged} flagged: ${strong} strong, ${weak} weak, ${known} known` + (ALL ? `, ${hint} hints` : ' (--all adds the hints)') + '. Pointers only, the qc-voice agent judges. Not a gate.' + (stBad ? ' SELFTEST FAILED.' : ''));
 process.exit(STRICT && strong ? 1 : 0);

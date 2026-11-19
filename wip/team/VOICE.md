@@ -2,16 +2,19 @@
 
 Mako, 2026-11-19: "I want it to not sound like AI, and I also want it to sound like me. And talk like me and skip things like me. I want it to use less like punctuation."
 
-This file is the whole brief for the voice checker (`.claude/agents/qc-voice.md`) and for anyone who writes a word a person will read in the app. Every line of copy gets two separate answers.
+This file is the whole brief for the voice checker (`.claude/agents/qc-voice.md`) and for anyone who writes a word a person will read in the app. Every line of copy gets three separate answers.
 
 1. Does it sound like AI? Part A.
 2. Does it sound like Mako? Part B.
+3. Does the person know what this means, why it matters to them and what to do next? Part E.
+
+The one test for every line (Mako, 2026-11-19): read it out loud. Does it sound like someone talking to you in a normal conversation?
 
 Part C is punctuation and layout. Part D is where style has to stop because the money has to be exact.
 
 The voice in one line: Mako telling a friend how his money app works. He's sure of it, he says it once, he uses small words, and he doesn't comfort you.
 
-What it rests on: his own typed and dictated messages to the team (counts in LANE_voice.md) and a web search on what editors and researchers have found about AI writing (sources at the end, with how far each can be trusted). Dictation adds "um" and "I don't know" and run-ons. Those are speech, they stay out. The app sounds like him talking, cleaned up, never like a transcript.
+What it rests on: his own typed and dictated messages to the team (counts in LANE_voice.md), the transcript of his welcome video and a web search on what editors and researchers have found about AI writing (sources at the end, with how far each can be trusted). Dictation adds "um" and "I don't know" and run-ons. Those are speech, they stay out. The app sounds like him talking, cleaned up, never like a transcript.
 
 ---
 
@@ -233,22 +236,61 @@ Typed, he's very short ("thats good", "whats the ETA"). Explaining something he 
 
 ---
 
+### B13. Join the thoughts, don't chop them (Mako, 2026-11-19, on the first samples)
+"Less periods, less separated sentences. You can just combine a few sentences if it just makes sense." Thoughts that belong together go in one sentence, joined with and, so, because, but, or his hyphen (Part C). Three short sentences in a row is a finding.
+
+- Before: Free to spend ₱4,000. Dinner with friends ₱350. Now it's ₱3,650.
+- After: Say Free to spend is ₱4,000 and you go to dinner with friends for ₱350, now it's ₱3,650.
+
+### B14. Words in full, sentences in full
+"Less abbreviation." Copy that leaves words out to be short reads like a form. Say the whole sentence the way you'd say it out loud. No vs, approx, e.g., no symbols standing in for words.
+
+- Before: Pay, bills and burrows, about five minutes.
+- After: put in your pay, bills and burrows, it takes about five minutes
+
+This is not about buttons and labels. "Log spend" is a whole thing to say.
+
+### B15. How he explains a process
+One step at a time, in order: what you do, then what you see. He said about the cloud copy "I don't know how that even works. Do I paste it in a new browser? There's not enough steps there." So anything about saving, the cloud copy, the code, backup, restore, or data that could be lost names every tap by the word on the button, and ends with what happens.
+
+- Before: New phone, or browser cleared: enter the code and the numbers come back.
+- After: on a new phone you open the burrow, tap Enter your recovery code, type it in and your numbers come back
+
+### B16. How he explains an idea (from his welcome video)
+The transcript in the app (ui45t.js) is him explaining money out loud, and it's the model for any help text about the mindset. He says what he used to think, what changed, and what he does now, about himself ("for me", "to me"), then "so that's the first thing". He leaves the choice with you: "if you're fine with that, you're fine with that". He doesn't tell you how to feel.
+
+He also says "it is not a goal, it is the thing that helps you get to your goals", which is the A3 shape. So A3 is not a ban. Once, for a real change of mind, in his words, it's him. On every paragraph it's AI.
+
 ## Part C. Punctuation and layout
 
-He asked for less punctuation. Typed, he often drops the full stop, the apostrophe and the capital. The app keeps capitals and apostrophes (reasons in Part D) and drops the rest wherever a line break can do the job.
+He asked for less punctuation, and then for fewer full stops. Typed, he often drops the full stop, the apostrophe and the capital. The app keeps capitals and apostrophes (reasons in Part D) and drops the rest wherever a join or a line break can do the job.
+
+### His hyphen
+His words: "I don't use periods in my sentence a lot. I do a space and then a hyphen and then a space again."
+
+- It is a plain hyphen with a space on each side: ` - `. Never an em dash or an en dash, those stay banned and the lint tells them apart.
+- It goes where a full stop would go between two thoughts that belong together.
+- The next word stays lowercase.
+- One per line. Two in one sentence reads like an aside in brackets.
+- Never next to an amount or between two numbers, where it reads as a minus. Use "so" or "and" there. Clear wins.
+- Not in buttons or labels.
+
+Example: These numbers are made up - do the step below to put yours in
+
+What this rule rests on: what he said. None of his messages we could read has the hyphen in it (they were dictated or very short), so where exactly he puts it and whether he capitalises after it is still a guess. See LANE_voice.md.
 
 | Where | Rule | Example |
 |---|---|---|
 | Buttons | 1 to 3 words, starts with a verb, no punctuation at all | Log spend |
 | Labels, headings, tabs | No full stop, no colon at the end, sentence case | Bills left |
 | One line notes (one sentence under a number or a field) | No full stop at the end. Commas only if it can't be read without one | still to pay in Nov |
-| Notes with two or more sentences | Full stops between and at the end, so nobody thinks it was cut off | These numbers are made up. Do the step below to put yours in. |
-| Help text | Normal sentences with full stops. Few commas. Break a long one with "and", "so" or a new sentence, never with a semicolon or a dash | |
+| Notes with two thoughts | Join them with and, so, because or his hyphen and it becomes one line with no full stop | These numbers are made up - do the step below to put yours in |
+| Longer notes and help text | Few full stops. Join what belongs together. A full stop only where you'd stop talking, and then at the end too. Never a semicolon | |
 | Errors and warnings | What happened, then what to do. Two short sentences at most | That amount is too big. The most is 1,000,000,000. |
 | Toasts | One line, no full stop | Saved |
 
 Everywhere:
-- No em dashes, no en dashes as punctuation, no semicolons.
+- No em dashes, no en dashes as punctuation, no semicolons. His spaced hyphen is the only dash.
 - No exclamation marks. He would not.
 - No brackets for side notes. If it matters give it its own line, if not cut it. A bracket around a unit or format is fine: "(optional)" becomes its own small label.
 - No colon to set up a reveal. A colon before a number or a list is fine.
@@ -276,6 +318,22 @@ Style never changes what the money says. When clear and "like Mako" pull apart, 
 9. **Screen reader text** (aria labels, alt text) follows the same rules but keeps full stops, because a reader pauses on them.
 10. **Legal and privacy lines** ("Not financial advice", what is sent where) are exact first. Make them plain, don't make them casual.
 
+11. **Glossary and button words are not rewritten at all,** even if one sounds off. Tests rely on them. If a glossary word itself sounds wrong, the checker lists it separately for Mako.
+
+---
+
+## Part E. Does the person know what to do
+
+The reader never learned about money (NORTH_STAR.md, "How to judge any change" and "It holds your hand"). For each screen's text, and for each line that asks for something:
+
+1. Do I know what this means, without knowing any money words?
+2. Do I know why it matters to me?
+3. Do I know what to do next, and what will happen when I do it?
+
+Mindset first, then the function. Lines about saving data, the cloud copy, the recovery code, backup and restore are checked hardest (B15): every step named, nothing left to guess.
+
+A line that sounds exactly like Mako and leaves the person stuck still fails.
+
 ---
 
 ## How the checker answers
@@ -286,6 +344,7 @@ For each line: `PASS`, or
 LINE: the exact text
 AI: yes or no, and why (the A number)
 MAKO: yes or no, and why (the B or C number)
+NEXT: yes or no, does the person know what it means and what to do (Part E). "n/a" for a plain label
 REWRITE: the new line
 NOTE: only if Part D applied ("clear wins: kept 'in Nov'")
 ```

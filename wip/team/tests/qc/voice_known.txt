@@ -1,0 +1,2 @@
+# Known voice findings that are accepted for now. One regular expression per line, matched against "file: text".
+# Give the reason on the line above each pattern. Empty until the main session applies COPY_V1.md and decides what stays.
