@@ -129,7 +129,7 @@ One round: qc-numbers PASS, E15 two-browser move DONE, bank comparison PASS, qc-
 | Q7 | After Load on a second phone the "Cloud copy loaded" message runs off the right edge, shows no Undo, stays across tabs; the typed code is cut off in its box | open | v1 |
 | Q8 | Setup split moves only in whole percents (40,400 not 40,000); the first goal is fixed as Emergency fund | open | team |
 | Q9 | The receipts list sits under a big Scan receipts explainer | open | team |
-| Q10 | qc-numbers should-fix (7): Home status line follows the month picked on Plan and survives reload; "Keep saving" on a longer emergency goal changes months already over; a borrow stays after the plan stops needing it; month-end "Put it toward the goal" preselects the goal with least room and shows no amount; the rest in the QC report | open | v1 for the first, team for the rest |
+| Q10 | qc-numbers should-fix (7): Home status line follows the month picked on Plan and survives reload; "Keep saving" on a longer emergency goal changes months already over; a borrow stays after the plan stops needing it; month-end "Put it toward the goal" preselects the goal with least room and shows no amount; the rest in the QC report | SF2, SF1, SF3 done 8787fdf (tests/qc/qc9_home_status.js); rest open | v1 for the first, team for the rest |
 | Q11 | Voice: the remaining lines of the 46 flagged, with rewrites, in wip/team/COPY_QC8_FOR_MAKO.md | waits for Mako's copy pass | v1 |
 | Q12 | Process: QC subagents could not write report files for three roles, reports came back in chat only | done 7f3d333 (agents told to write to /tmp/qc/<role>/REPORT.md) | process |
 
