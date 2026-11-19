@@ -31,14 +31,14 @@ The one warning the check prints is H-023, which adds a bold button name on purp
 + Your numbers from before are kept and you can undo for
 @@ H-002 | ui42.js | AI: no | Mako: no B3 | Next: yes
 - Could not reach the cloud copy. Nothing was changed.
-+ Couldn't reach the cloud copy. Nothing was changed.
++ Couldn't reach the cloud copy so nothing was changed. Check the connection and try again.
 @@ H-003 | ui42.js | AI: no | Mako: no B3 B7 | Next: yes
 - The copy in the cloud is not newer than the numbers here, so nothing was loaded.
 + The cloud copy isn't newer than the numbers here, so nothing was loaded.
 # one name, cloud copy
 @@ H-004 | ui42.js | AI: no | Mako: no B3 | Next: yes
 - Could not load the cloud copy. Nothing was changed.
-+ Couldn't load the cloud copy. Nothing was changed.
++ Couldn't load the cloud copy so nothing was changed. Try again, or tap Keep mine to keep the numbers on this device.
 @@ H-005 | ui42.js | AI: no | Mako: no B3 | Next: yes
 - The cloud cannot be reached from here right now. Check the connection and try again.
 + The cloud can't be reached from here right now. Check the connection and try again.
@@ -111,7 +111,7 @@ The one warning the check prints is H-023, which adds a bold button name on purp
 + Tap <b>Show code</b> to see it again.
 @@ H-028 | ui42.js | AI: no | Mako: no B3 | Next: yes
 - That copy could not be loaded. Nothing was changed.
-+ That copy couldn't be loaded. Nothing was changed.
++ That copy couldn't be loaded so nothing was changed. Try again, or load a backup file under Restore below.
 @@ H-029 | ui42.js | AI: no | Mako: no B14 | Next: n/a
 - Cloud copy deleted. Numbers stay on this device.
 + Cloud copy deleted. Your numbers stay on this device.
@@ -185,7 +185,7 @@ The one warning the check prints is H-023, which adds a bold button name on purp
 + . Tap Save a copy to keep a backup file as well.
 @@ H-050 | ui43.js | AI: no | Mako: yes | Next: no, "Settings has Copy text" doesn't say what to do
 - Not saved. Settings has Copy text.
-+ Not saved. Go to Settings and tap Copy text instead.
++ Not saved. Go to Settings, tap Copy text and paste it into a note instead.
 @@ H-051 | ui45.js | AI: no | Mako: no B13 | Next: n/a
 - Data stays in this browser. Nobody else can see it.
 + Your data stays in this browser and nobody else can see it.
@@ -259,25 +259,26 @@ The one warning the check prints is H-023, which adds a bold button name on purp
 @@ J-009 | ui5.js | AI: no | Mako: no B2 unavailable | Next: yes
 - Downloads are unavailable in this view.
 + This view can't download files.
-# the code adds " Use Copy text." after it
+# the code adds " Use Copy text." after it for Save file. For Export spreadsheet the code adds nothing and no other way out is on that screen, so no step is named (needs a code change, not a copy row)
 @@ J-010 | ui5.js | AI: no | Mako: no B14 clipped | Next: yes
 - Save failed.
-+ The save didn't work.
++ The save didn't work so try it again.
 # the code adds " Use Copy text." after it
 @@ J-011 | ui5.js | AI: no | Mako: no B14 clipped | Next: yes
 - File not saved by this browser.
-+ This browser didn't save the file.
++ This browser didn't save the file so try it again.
+# the code adds " Use Copy text." after it for Save file
 @@ J-012 | ui5.js | AI: no | Mako: no B3 | Next: no
 - Spreadsheet could not be built.
-+ The spreadsheet couldn't be made.
-# UNSURE: no next step, and I could not tell from the code what would fix it
++ The spreadsheet couldn't be made. Try again - if it still won't, Save file above still backs up your numbers.
+# the table builder threw. Save file is the button above it in Settings and does not use the table builder
 @@ J-013 | ui5.js | AI: no | Mako: no B14 clipped | Next: yes
 - File too large for a backup.
 + That file is too big to be a backup.
 @@ J-014 | ui5.js | AI: no | Mako: no B14 clipped | Next: yes
 - File unreadable. Try Copy text.
-+ That file couldn't be read. Try Copy text.
-# UNSURE: "Try Copy text" on the loading side must mean copy the text on the other device and paste it here. If so the line should say that
++ That file couldn't be read. Tap Choose file and pick it again, or paste the backup text in the box and tap Load text.
+# Copy text is the saving side. On the loading side the buttons are Choose file and Load text, and the box is right above them
 @@ J-015 | ui5.js | AI: no | Mako: no B14 | Next: yes
 - File read. Tap Load text, then tap again, to replace your numbers with it.
 + The file is read. Tap Load text, then tap it again to replace the numbers here with what's in the file.

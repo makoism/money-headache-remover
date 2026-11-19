@@ -124,7 +124,7 @@ Rows are applied in the order they stand. Three pairs depend on it: G-041 before
 # the rewrite VOICE.md B3 gives for this line
 @@ G-027 | ui49.js | AI: no | Mako: no B14 | Next: yes
 - Reading photos needs a signed-in Claude and your permission. Open this page from its Claude link, or use an AI app below.
-+ To read photos you have to be signed in to Claude and say yes when it asks. Open this page from its Claude link or use an AI app below.
++ To read photos here you have to be signed in to Claude and say yes when it asks. Sign in and open this page again, or use your own AI with the steps below.
 @@ G-028 | ui49.js | AI: no | Mako: no B3 | Next: yes
 - Claude could not be reached. Try again, or use an AI app below.
 + Claude couldn't be reached. Try again or use an AI app below.
@@ -212,7 +212,7 @@ Rows are applied in the order they stand. Three pairs depend on it: G-041 before
 + That code word didn't work. Ask the person who shared this page for the current one.
 @@ G-054 | ui46.js | AI: no | Mako: no B2 unavailable | Next: yes
 - Ask Claude needs permission to use your Claude account and is unavailable here. The tour is still under Help.
-+ Ask Claude needs permission to use your Claude account and it doesn't have that here. The tour is still under Help.
++ Ask Claude needs permission to use your Claude account and it doesn't have that here. Sign in to Claude and tap Try again. The tour is still under Help.
 @@ G-055 | ui46.js | AI: no | Mako: no B2 B14 | Next: yes
 - No answer produced. Rephrase the question.
 + No answer came back. Ask it another way.
@@ -277,11 +277,10 @@ Rows are applied in the order they stand. Three pairs depend on it: G-041 before
 +  couldn't be read.
 @@ G-074 | ui46.js | AI: no | Mako: no A13 colon, B14 | Next: n/a
 - Long file: only the first part was read.
-+ It's a long file so only the first part was read.
++ It's a long file so only the first part was read. Send it one month at a time to get the rest.
 @@ G-075 | ui46.js | AI: no | Mako: no B2 unavailable | Next: no
 - Reading files needs permission to use your Claude account and is unavailable here.
-+ Reading files needs permission to use your Claude account and it doesn't have that here.
-# UNSURE: neither line says what to do. If the app's own address works here, the line could send you there
++ Reading files needs permission to use your Claude account and it doesn't have that here. Sign in to Claude and say yes when it asks, then send the files again.
 @@ G-076 | ui46.js | AI: no | Mako: no B3 | Next: yes
 - Photos cannot be sent from here. A CSV from your bank still works.
 + Photos can't be sent from here. A CSV from your bank still works.
