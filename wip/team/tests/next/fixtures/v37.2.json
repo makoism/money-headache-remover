@@ -1,0 +1,35 @@
+{
+ "build": "37.2",
+ "from": "tests/fixtures/old_builds.txt",
+ "key": "money-map-template-v2",
+ "made": "2026-11-19 by tests/next/make_fixtures.js",
+ "typed": {
+  "name": "Aiko",
+  "pay": 41000,
+  "receipts": [
+   350,
+   80
+  ],
+  "bankStart": 23400,
+  "goals": [
+   {
+    "id": "moving",
+    "name": "Home or move",
+    "start": 6100
+   },
+   {
+    "id": "travel",
+    "name": "Trip",
+    "start": 2750
+   }
+  ],
+  "once": {
+   "key": "bill:food",
+   "ym": "2027-02",
+   "v": 4321
+  },
+  "resavedByOldBuild": true
+ },
+ "pageErrors": [],
+ "saved": "{\"v\":1,\"rev\":1795050877169,\"steps\":{},\"once\":{\"2026-11\":{\"a\":41000},\"2027-02\":{\"bill:food\":4321}},\"items\":{},\"cfg\":{\"bankStart\":23400},\"ui\":{\"cur\":\"₱\",\"preset\":\"₱\",\"bd\":{\"payin\":true,\"rcpt1\":true},\"ms\":{\"car\":0},\"tourAt\":\"video\",\"toured\":true,\"name\":\"Aiko\",\"done\":{\"pay\":true,\"receipts\":true},\"rcCat\":\"envelope\",\"wk\":[\"2026-11-16\"]},\"plan\":{\"lines\":[{\"id\":\"rent\",\"key\":\"bill:rent\",\"jar\":\"nec\",\"name\":\"Rent or mortgage\",\"def\":6000,\"note\":\"Biggest bill. Use the full amount, even if someone shares it (put their share under Money in).\"},{\"id\":\"util\",\"key\":\"bill:util\",\"jar\":\"nec\",\"name\":\"Utilities\",\"def\":1500,\"note\":\"Electricity and water. Hot and rainy months can cost more.\"},{\"id\":\"food\",\"key\":\"bill:food\",\"jar\":\"nec\",\"name\":\"Food and groceries\",\"def\":4650,\"note\":\"Groceries and everyday meals. Eating out for fun goes under Play.\"},{\"id\":\"net\",\"key\":\"bill:net\",\"jar\":\"nec\",\"name\":\"Internet\",\"def\":1050},{\"id\":\"phone\",\"key\":\"bill:phone\",\"jar\":\"nec\",\"name\":\"Phone\",\"def\":450,\"note\":\"Postpaid plan, or the load you usually buy in a month.\"},{\"id\":\"ins\",\"key\":\"bill:ins\",\"jar\":\"nec\",\"name\":\"Insurance and contributions\",\"def\":850,\"note\":\"Health or life insurance. Not on payroll: include your own SSS, PhilHealth and Pag-IBIG payments. Monthly amount.\"},{\"id\":\"subs\",\"key\":\"bill:subs\",\"jar\":\"nec\",\"name\":\"Subscriptions\",\"def\":450,\"note\":\"Streaming, apps, software, gym.\"},{\"id\":\"gas\",\"key\":\"bill:gas\",\"jar\":\"nec\",\"name\":\"Transport\",\"def\":1550,\"note\":\"Commute, Grab, fuel, parking, tolls.\"},{\"id\":\"loan\",\"key\":\"bill:loan\",\"jar\":\"nec\",\"name\":\"Loan or debt payment\",\"def\":0,\"note\":\"Car loan, personal loan, card installments. Pick the last payment month; its money can then move to your emergency fund.\"},{\"id\":\"card\",\"key\":\"card\",\"jar\":\"nec\",\"name\":\"Other card spending\",\"def\":0,\"note\":\"Optional. Card spending not already in a line above, like shopping or household items. Fun spending goes under Play.\"},{\"id\":\"spend\",\"key\":\"envelope\",\"jar\":\"play\",\"name\":\"Play money\",\"def\":3000},{\"id\":\"learn\",\"key\":\"education\",\"jar\":\"edu\",\"name\":\"Courses and books\",\"def\":3000},{\"id\":\"invest\",\"key\":\"invest\",\"jar\":\"ffa\",\"name\":\"Investing\",\"def\":3000},{\"id\":\"give\",\"key\":\"give\",\"jar\":\"give\",\"name\":\"Giving\",\"def\":1500}],\"goals\":[{\"id\":\"moving\",\"name\":\"Home or move\",\"target\":15000,\"start\":6100,\"due\":\"2028-03-01\",\"slot\":4},{\"id\":\"travel\",\"name\":\"Trip\",\"target\":5000,\"start\":2750,\"due\":\"\",\"slot\":5,\"monthly\":300},{\"id\":\"car\",\"name\":\"Yearly cost\",\"target\":3000,\"start\":0,\"due\":\"2027-06-15\",\"slot\":6},{\"id\":\"rainy\",\"name\":\"Emergency fund\",\"target\":49500,\"start\":21000,\"due\":\"\",\"slot\":7,\"monthly\":1200,\"emergency\":true,\"stretch\":99000}]},\"receipts\":[{\"id\":\"rxyej0\",\"d\":\"2026-11-19\",\"a\":350,\"c\":\"envelope\",\"cn\":\"Play money\",\"n\":\"\"},{\"id\":\"rxyqn1\",\"d\":\"2026-11-19\",\"a\":80,\"c\":\"envelope\",\"cn\":\"Play money\",\"n\":\"\"}]}"
+}
