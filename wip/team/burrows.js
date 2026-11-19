@@ -155,13 +155,13 @@ const BUR = (() => {
     const before = Math.min(1, r.saved / r.target); let moved = 0;
     try { moved = ACT.sweep(nowYm(), r.id, v); } catch (e) { moved = 0; }
     if (!(moved > 0)) { const m = pop.querySelector('.bv-msg'); if (m) m.textContent = 'That could not be added.'; return; }
-    /* no render() here: the save inside ACT.sweep already redrew the page behind (ACT.commit, restructure, render); a second one doubled the tap's long task on a slow phone */
+    /* no render() here: the save inside ACT.sweep worked the numbers out; the hidden page behind is redrawn a moment later or when the burrow closes (ACT.commit, F4) */
     const r2 = rows().find(x => x.id === r.id) || r, to = Math.min(1, r2.saved / r2.target), n = Math.max(2, Math.min(5, Math.round(1 + (to - before) * 10)));
     pop.innerHTML = `<h2>${esc(r.name)}</h2><p class="bv-n"><b>+${fmt(moved)}</b></p><p class="bv-s">Going in.</p>`;
     if (reduced()) { fill(); return; }
     anim = { from: before, to, t0: performance.now(), n, shown: before, landed: 0, moved, full: to >= 1, id: r.id };
   }
-  function undoAdd() { try { ACT.undo(); } catch (e) { /* nothing to undo */ } fill(); }   /* ACT.undo saves and redraws the page itself */
+  function undoAdd() { try { ACT.undo(); } catch (e) { /* nothing to undo */ } fill(); }   /* ACT.undo saves; the hidden page is redrawn a moment later (ACT.commit, F4) */
   /* ---------- the stage: sizes, geometry, the loop ---------- */
   function build() {
     el = document.createElement('section'); el.id = 'burrowView'; el.setAttribute('aria-label', 'Burrow');
@@ -329,7 +329,7 @@ const BUR = (() => {
     if (!el) build(); anim = null; cur = id; const f = fill(); if (!f) { cur = null; return; }
     document.body.classList.add('bv-on'); el.hidden = false; pop.hidden = false; t0 = performance.now(); layout(); loop();
   }
-  function close() { cur = null; clearTimeout(tm); if (el) el.hidden = true; document.body.classList.remove('bv-on'); try { SCENE.look(''); SCENE.wake(); } catch (e) { } }
+  function close() { cur = null; clearTimeout(tm); try { ACT.drawNow(); } catch (e) { /* the page keeps its last picture */ } if (el) el.hidden = true; document.body.classList.remove('bv-on'); try { SCENE.look(''); SCENE.wake(); } catch (e) { } }
   /* the squirrel stocks the burrow: call this after money has gone into the burrow */
   function stock(style) { if (!cur) return; stockT = performance.now(); stockStyle = style || 'A'; pulseAt = stockT + SQ.T.crouch + 700; }
   /* ---------- Home: one picture with a burrow for each savings bucket, how full it is, a short note and the play money number ---------- */

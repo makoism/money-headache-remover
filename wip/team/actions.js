@@ -22,7 +22,7 @@ function restoreKept(snap, added) {
   const later = (S.receipts || []).filter(r => !had.has(r.id) && !own.has(r.id));
   S = d; S.receipts = (S.receipts || []).concat(later); undoStack = [];
 }
-let txDepth = 0, txTouched = false, undoStack = [];
+let txDepth = 0, txTouched = false, undoStack = [], drawOwed = false, drawTimer = 0;
 const clone = v => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
 function snapState() {
   const ui = {}; UI_SNAP.forEach(k => { if (S.ui[k] !== undefined) ui[k] = clone(S.ui[k]); });
@@ -59,7 +59,15 @@ const ACT = {
     return out;
   },
   /* save and redraw once. Inside a transaction the outer call does it. */
-  commit() { if (txDepth) { txTouched = true; return; } editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); },
+  commit() {
+    if (txDepth) { txTouched = true; return; } editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist();
+    /* F4: while a burrow's own screen covers the page, the page behind is hidden, so its redraw (most of a tap's work on a slow phone) waits.
+       The numbers are worked out now (the burrow screen reads C); the hidden page is redrawn a moment later, or at the latest when the burrow closes. */
+    if (document.body.classList.contains('bv-on')) { C = calcAll(S); drawOwed = true; clearTimeout(drawTimer); drawTimer = setTimeout(ACT.drawNow, 1500); return; }
+    drawOwed = false; clearTimeout(drawTimer); restructure();
+  },
+  /* redraw the page now if a redraw was put off (burrows.js calls this when a burrow closes) */
+  drawNow() { clearTimeout(drawTimer); if (!drawOwed) return false; drawOwed = false; restructure(); return true; },
   canUndo() { return undoStack.length > 0; },
   lastLabel() { return undoStack.length ? undoStack[undoStack.length - 1].label : ''; },
   undo() {
