@@ -84,6 +84,16 @@ One "Money came in" and one "Money went out", each with a short list of kinds an
 | G2 | Know whether it works: weekly opens without being chased, logging under 60 seconds, the gap between the app's bank figure and the real one, one decision changed, setup under 10 minutes, nothing lost | team |
 | G3 | The 3D world: decided by Mako when the art step comes; usage data from the team test informs it | later |
 
+## H. It holds your hand (Mako, 2026-11-19, NORTH_STAR.md "Why this exists")
+| # | Point | Fix | Gate |
+|---|---|---|---|
+| H1 | Every screen obvious to someone who never learned about money | a fresh novice agent walks every screen and lists each place it would give up; each becomes a fix | v1 for Home and setup, team for the rest |
+| H2 | Anything not obvious explains itself on the spot | a "?" beside it: the mindset first (why it matters, how to think about it), then the function (what to tap). Written words now | team |
+| H3 | One thing at a time | setup, pay day, the weekly check-in and "check your bank" as one-question-per-screen flows (Typeform style) | team |
+| H4 | "I upload my stuff and it does it all for me" | statements (or the any-AI prompt) are the front door of setup; typing is the fallback | team |
+| H5 | Short videos by Mako on the mindset | Mako records them; the "?" panels show the written version until then; captions and transcript with each | later (Mako records) |
+| H6 | The app is for life | the rolling month window, so the app never stops at a date (now E6, before the ledger) | team |
+
 ## The 95% sweep (before the team test)
 Fresh agents walk the app as real people, each with made-up numbers: a Philippine freelance editor paid per project who sends money home and uses GCash and two banks; a Philippine salaried editor paid on the 15th and 30th with a pay-later habit; a salaried person in Japan with a card paid next month; a student in France with a Revolut account and shared rent; someone who misses a month; someone whose phone is replaced. Every "how do I do this?" becomes a point here.
 

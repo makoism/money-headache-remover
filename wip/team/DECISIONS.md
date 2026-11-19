@@ -148,3 +148,6 @@ Three documents were kept in the Claude project and should be copied into the re
 5. **Mako is the final check.** Where the answer is a preference with no objective best, the team picks a default and adds a note for Mako with the first version that has the function; he decides by using it. Do not send him questions without the app in front of him.
 6. **The 3D world** is decided when the art step comes. It stays on the list.
 
+## Why this exists (Mako, 2026-11-19)
+Recorded in full in NORTH_STAR.md, "Why this exists", so every agent and session reads it: built for Mako first as the money calculator he uses for life; money as a place that feels like home, not a form; it teaches the mindset as well as the numbers, for people who never learned to save; first impression "money management is this simple, I upload my stuff and it does it for me"; it holds your hand every step, one thing at a time (Typeform), every screen obvious or explaining itself on the spot (mindset first, then function), question marks with short videos by Mako (written words first).
+

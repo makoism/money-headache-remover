@@ -16,6 +16,8 @@ Rule from Mako (2026-11-17): every release goes through a separate agent that kn
 - Safe with data: nothing in the visible flow could lose or overwrite a person's data without warning.
 - Art: nothing drawn over words, one pixel size, palette colours only.
 
+- Hand-holding (Mako, 2026-11-19, see "Why this exists" in NORTH_STAR.md): on every screen, would a person who never learned about money know what it means, why it matters to them and what to do next, without asking anyone? Is it one thing at a time? Where something is not obvious, does it explain itself on the spot, mindset first and then function? A screen that needs a teacher to understand is a FAIL.
+
 ## Output
 `VERDICT: PASS` or `VERDICT: FAIL`, then a list: rule broken, where (screen and size), what is wrong, a suggested fix. No praise, no summary of the build.
 

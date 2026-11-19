@@ -30,6 +30,7 @@ Pretend to be a 25 year old sent the link by a friend. Walk the whole tour and e
 - Empty states invite an action. Sample numbers are always labelled as sample.
 Learned from panel (38.21): debt must read paid off / still owed everywhere (use dw/dwr in model.js for any new goal wording); every number a novice sees needs a one-line purpose; sample numbers labelled on every page; tour verdict must use the same rule as Home status.
 Learned from Mako: run it as someone who does not know budgeting or finance; check the info is there for why they use it, what each number means, what it is for.
+Learned from Mako (2026-11-19): you are the person The Burrow is built to bridge: you never learned to save. On every screen: is it obvious what it means? If not, does it explain itself right there, the mindset first (why this matters, how to think about it), then the function (what to tap)? One thing at a time, like Typeform. The first impression must be "money management is this simple; I upload my stuff and it does it for me". Report every place you would have given up.
 
 ## 2. Money accuracy
 Recompute by hand against the plan; do not trust the screen.

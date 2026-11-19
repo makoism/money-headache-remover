@@ -6,6 +6,21 @@ The one purpose of The Burrow:
 
 Everything else serves that: ease of use, getting people to keep using it, the setup, the art, the assistant, the checks.
 
+## Why this exists (Mako, 2026-11-19, in his words as closely as possible)
+- **Mako builds it for himself first: the end-all money calculator he will use for the rest of his life**, to get his own finances in order. Spreadsheets and systems work, but he has to build them, keep them up and fix the maths when it is wrong. The Burrow does that for him. If it is perfect for him and he uses it every week, other people will likely love it too.
+- **Money as a place, not a form.** Everything lives online now, and almost nothing feels like home. Money apps skip that and go straight to function. The Burrow joins the two: an actual place where your money lives, that feels alive, cute and warm (the art, and later the 3D world), on top of maths that is never wrong.
+- **It teaches the mindset, not only the numbers.** Many people never learned how to think about money. A screen full of correct numbers does not help someone who does not know what the numbers mean or what to do with them: they get discouraged and stop. Mako grew up with saving; most of the people he builds this for did not. The Burrow bridges that gap.
+- **The first impression: "Money management is this simple."** "I can upload all my stuff here and it does it all for me." Statements in, the picture out, very little to type or keep up.
+- **It holds your hand every step of the way.**
+  - One thing at a time, like Typeform: one question or one idea per screen, never a wall.
+  - Every screen is obvious at a glance. If something is not obvious, it explains itself right there: first the mindset (why this matters, how to think about it), then the function (what to tap).
+  - A question mark next to anything that needs it, with a short video of Mako explaining the mindset (recorded later; the written words first, so Help is never empty).
+  - Copy written with care: plain, warm, like a person who has their money handled, never like a manual nobody reads and never "too AI".
+  - The setup tour is a start, not enough. The hand-holding goes on inside the app, wherever a new person could get lost.
+
+## How to judge any change against this
+Ask, as a person who never learned about money: do I know what this screen means, why it matters to me, and what to do next, without asking anyone? Does it feel like a place I would want to come back to? Would it let Mako stop keeping a spreadsheet? If not, it is not done.
+
 ## How to use it
 - Check every instruction and every feature against it before building. Ask: does this make the money picture clearer, truer or easier to keep up? If not, say so and push back.
 - The picture must tie to reality: what the app shows adds up to what is really in the person's accounts, and it says how fresh that is.
