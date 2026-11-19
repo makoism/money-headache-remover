@@ -60,7 +60,7 @@ function renderMap() {
       ${hasBank ? `<p class="mp-after">What's on the cards is already spent. Bank after the cards are paid: <b class="${NW.afterCards < 0 ? 'bad' : ''}">${fmt2(NW.afterCards)}</b></p>` : ''}` : '';
   const nowCard = `<div class="mp-now"><p class="mp-now-h">In your bank now ${NOW}</p>${hasBank ? `<b class="mp-now-v${NW.bank < 0 ? ' bad' : ''}">${fmt2(NW.bank)}</b>${NW.bankAt ? `<p class="cap mp-fresh">Balance you entered on ${dayTxt(NW.bankAt)}</p>` : ''}` : ''}
     ${asking ? `<div class="mp-ask"><label for="mpBankIn">What does your bank app show today?</label><p class="cap">Open your bank app and type the balance it shows, plus any cash you keep at home</p>
-      <div class="mp-askrow"><div class="inp"><span class="yen cs"></span><input id="mpBankIn" type="number" inputmode="text" data-neg="ok" step="any" placeholder="0" value="${hasBank ? esc(String(NW.bank)) : ''}"></div><button type="button" class="btn solid small" id="mpBankSave">Save</button></div>${hasBank ? '<button type="button" class="link" id="mpBankNo">Keep the old balance</button>' : ''}</div>` : ''}
+      <div class="mp-askrow"><div class="inp"><span class="yen cs"></span><input id="mpBankIn" type="number" inputmode="text" data-neg="ok" step="any" placeholder="${hasBank ? esc(NW.bank.toLocaleString('en-US', { maximumFractionDigits: 2 })) : '0'}" value=""></div><button type="button" class="btn solid small" id="mpBankSave">Save</button></div>${hasBank ? '<button type="button" class="link" id="mpBankNo">Keep the old balance</button>' : ''}</div>` : ''}
     ${cardRows}${cardForm}
     ${!asking || !ce ? `<p class="mp-act">${asking ? '' : '<button type="button" class="btn small" id="mpCheck">Check your bank</button>'}${ce || smpOn ? '' : ` <button type="button" class="btn small" id="mpCardAdd">${NW.cards.length ? 'Add another card' : 'Add a card you pay in full'}</button>`}</p>` : ''}</div>`;
   /* what is owed, in one line, only when something is (A4) */
@@ -84,7 +84,8 @@ function renderMap() {
   { const ck = $('#mpCheck'); if (ck) ck.onclick = () => { renderMap.ask = true; sfx('tap'); renderMap(); const i = $('#mpBankIn'); if (i) i.focus(); };
     const no = $('#mpBankNo'); if (no) no.onclick = () => { renderMap.ask = false; renderMap(); };
     const sv = $('#mpBankSave'), inp = $('#mpBankIn');
-    if (sv && inp) { const go = () => { if (inp.value === '' || !isFinite(+inp.value)) { cheer('Type the balance your bank app shows, in numbers'); inp.focus(); return; } renderMap.ask = false; ACT.setBankNow(inp.value); sfx('tap'); cheer('Saved: ' + fmt2(nowOf(S).bank) + ' in your bank today'); };
+    if (sv && inp) { /* the box opens empty with the balance as its grey hint (a filled box turned 1200 plus a typed 1150 into 12001150); saving it empty keeps that balance, checked today */
+      const go = () => { const keep = inp.value === '' && hasBank && !(inp.validity && inp.validity.badInput); if (!keep && (inp.value === '' || !isFinite(+inp.value))) { cheer('Type the balance your bank app shows, in numbers'); inp.focus(); return; } renderMap.ask = false; ACT.setBankNow(keep ? NW.bank : inp.value); sfx('tap'); cheer('Saved: ' + fmt2(nowOf(S).bank) + ' in your bank today'); };
       sv.onclick = go; inp.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); go(); } }; } }
   { const ad = $('#mpCardAdd'); if (ad) ad.onclick = () => { renderMap.card = 'new'; renderMap(); const i = $('#mpCardName'); if (i) i.focus(); };
     el.querySelectorAll('[data-card]').forEach(b => { b.onclick = () => { renderMap.card = b.dataset.card; renderMap(); const i = $('#mpCardOwed'); if (i) i.focus(); }; });
