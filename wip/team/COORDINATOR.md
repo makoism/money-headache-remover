@@ -22,6 +22,10 @@ The five-hour limit stopped every session from about 05:45 to 09:30 UTC. At 10:2
 ### Mako
 He has not written in this chat since handoff 3. When he writes: greet him in two lines with where things stand. Everything in "Open with Mako" of handoff 3 below still stands. Add for his copy pass: "Monthly bills" (new Plan row name) and "Bank at month end" (new name for the planned bank on Home) are labels he has not seen. Add for the preview note: the two page tests not run here; Help is not reachable inside a burrow.
 
+### Coordinator 5 took over (10:26 UTC)
+- Coordinator 5 is session_01BFpKEX9xQF894VPk3euyZi. Check-in timer trig_013sGA6xUrWiqVV14v3WBqDs (10:56 UTC).
+- MAIN 5 handed off at b28c788 (10:41 UTC): H1 fixes landed (Home, setup, Help on a solid shelf on phones, word fixes as copy rows; copy_apply --check 458 rows clean). MAIN 6 is session_01BFpKEXnaZGxZyFuv3TFwST, the only session on app files: 5 copy rows in COPY_V1C.md, J-009, Help in setup, screen_pack_panels.js, the copy batch, check.sh full, candidate, ONE QC run, preview. Owed by it: whether the welcome "Enter your recovery code" link shows on the preview.
+
 ### Timers
 Coordinator 4's check-in trig_01EYU5mUN12uruSbrdXpeN5r (10:55 UTC) fires into coordinator 4, which only forwards. Set your own.
 
