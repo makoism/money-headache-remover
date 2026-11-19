@@ -1,0 +1,2831 @@
+model.js	2	label	Jan
+model.js	2	label	Feb
+model.js	2	label	Mar
+model.js	2	label	Apr
+model.js	2	label	May
+model.js	2	label	Jun
+model.js	2	label	Jul
+model.js	2	label	Aug
+model.js	2	label	Sep
+model.js	2	label	Oct
+model.js	2	label	Nov
+model.js	2	label	Dec
+model.js	10	label	{…} years
+model.js	10	label	{…} months
+model.js	33	label	Bills and basics
+model.js	33	note	Rent, food, utilities and every other bill.
+model.js	34	label	Goal burrows
+model.js	34	text	Saved now, spent later: a big purchase, a trip, a rainy day, a surprise. Your burrows live here.
+model.js	35	label	Free to spend
+model.js	35	text	Fun for you and your family, no guilt. What is left at month end can go to a goal.
+model.js	36	label	Education
+model.js	36	note	Courses, books, coaching, skill building.
+model.js	37	label	Investing
+model.js	37	text	Never spent. It grows over time.
+model.js	38	label	Giving
+model.js	38	note	Charity, donations and gifts.
+model.js	44	label	Bills
+model.js	44	label	Saving toward a goal
+model.js	44	label	Fun, no guilt
+model.js	44	label	Courses and books
+model.js	44	label	Never spent
+model.js	44	label	Charity and gifts
+model.js	48	label	Rent or mortgage
+model.js	48	text	Biggest bill. Use the full amount, even if someone shares it (put their share under Money in).
+model.js	49	label	Utilities
+model.js	49	text	Electricity and water. Hot and rainy months can cost more.
+model.js	50	label	Food and groceries
+model.js	50	text	Groceries and everyday meals. Eating out for fun goes under Free to spend.
+model.js	51	label	Internet
+model.js	52	label	Phone
+model.js	52	note	Postpaid plan, or the prepaid top-up you usually buy in a month.
+model.js	53	label	Insurance and contributions
+model.js	53	text	Health or life insurance. Not on payroll: include your own SSS, PhilHealth and Pag-IBIG payments. Monthly amount.
+model.js	54	label	Subscriptions
+model.js	54	note	Streaming, apps, software, gym.
+model.js	55	label	Transport
+model.js	55	note	Commute, Grab, fuel, parking, tolls.
+model.js	56	label	Loan or debt payment
+model.js	56	text	Car loan, personal loan, card installments. Pick the last payment month; its money can then move to your emergency fund.
+model.js	57	label	Other card spending
+model.js	57	text	Optional. Card spending not already in a line above, like shopping or household items. Fun spending goes under Free to spend.
+model.js	66	label	Home or move
+model.js	67	label	Trip
+model.js	68	label	Yearly cost
+model.js	69	label	Emergency fund
+model.js	99	label	Spending on credit cards
+model.js	99	text	Optional. Anything you put on a credit card and pay off each month that is not already in a line above. Fun spending belongs under Free to spend.
+model.js	159	label	Credit card
+model.js	159	label	Loan
+model.js	159	label	Owed to a person
+model.js	248	label	New line
+model.js	269	label	New goal
+model.js	537	label	Other
+model.js	569	label	Big purchase
+model.js	569	label	Pay off debt
+model.js	569	label	Something else
+model.js	571	label	Saving for emergencies
+model.js	571	label	Saving for a trip
+model.js	571	label	Saving for a move
+model.js	571	note	Saving to pay in cash
+model.js	571	note	Saving for a yearly bill
+model.js	571	label	Paying off a debt
+model.js	577	label	Not paid off
+model.js	577	label	not paid off
+model.js	577	label	Paid off
+model.js	577	label	Paying
+model.js	577	label	Paid off so far
+model.js	577	label	paid off of
+model.js	583	label	Paying off
+model.js	585	label	Saving for a goal
+model.js	586	label	Saving to
+model.js	587	label	Saving for
+model.js	664	label	left to pay
+model.js	665	label	safe to spend
+model.js	667	label	courses and books
+model.js	667	label	charity and gifts
+model.js	786	label	Month
+model.js	786	label	Money in
+model.js	786	label	Savings goals
+model.js	786	label	Play
+model.js	786	label	Money out
+model.js	786	label	Left over
+model.js	786	label	Balance at start
+model.js	786	label	Balance at end
+model.js	801	label	Sunday
+model.js	801	label	Monday
+model.js	801	label	Tuesday
+model.js	801	label	Wednesday
+model.js	801	label	Thursday
+model.js	801	label	Friday
+model.js	801	label	Saturday
+model.js	802	label	Every day
+model.js	802	label	Every week
+model.js	802	label	Every two weeks
+model.js	802	label	Every month
+model.js	828	label	FREQ=DAILY
+model.js	831	label	today’s
+model.js	831	label	this week’s
+model.js	831	label	the last two weeks’
+model.js	831	label	this month’s
+model.js	834	label	RRULE:
+model.js	851	label	BEGIN:VCALENDAR
+model.js	851	note	VERSION:2.0
+model.js	851	label	PRODID:-//The Burrow//EN
+model.js	851	label	CALSCALE:GREGORIAN
+model.js	851	label	BEGIN:VEVENT
+model.js	852	label	UID:receipts-
+model.js	852	label	@mhr2000
+model.js	852	label	DTSTAMP:
+model.js	852	label	DTSTART:
+model.js	852	label	DTEND:
+model.js	853	label	SUMMARY:
+model.js	853	label	DESCRIPTION:
+model.js	854	label	BEGIN:VALARM
+model.js	854	label	ACTION:DISPLAY
+model.js	854	label	TRIGGER:PT0M
+model.js	854	label	END:VALARM
+model.js	854	label	END:VEVENT
+model.js	854	label	END:VCALENDAR
+model.js	900	label	One-time cost
+model.js	934	label	Card
+model.js	957	label	Untitled
+stmt.js	9	label	Pay
+stmt.js	9	label	Other income
+stmt.js	9	label	Own money in
+stmt.js	9	label	Rent
+stmt.js	9	label	Utilities
+stmt.js	9	label	Food
+stmt.js	9	label	Internet
+stmt.js	9	label	Phone
+stmt.js	9	label	Insurance
+stmt.js	9	label	Subscription
+stmt.js	9	label	Transport
+stmt.js	9	label	Loan
+stmt.js	9	label	Card payment
+stmt.js	9	label	Transfer out
+stmt.js	9	label	Cash
+stmt.js	9	label	Play money
+stmt.js	9	label	Other
+stmt.js	146	note	twice a month, around the {…} and the {…}
+stmt.js	147	note	once a month, around the {…}
+stmt.js	164	note	Is the {…} sent to {…} each month something you want counted in your budget?
+stmt.js	166	note	Is the {…} from {…} regular income?
+stmt.js	169	note	{…} covers only part of a month ({…} to {…}); its numbers come from that part.
+stmt.js	169	note	{…}: no transactions could be read.
+stmt.js	170	label	part of a month
+stmt.js	170	note	{…} files are one account ({…}): their months were put together, {…}, and averaged.
+stmt.js	171	note	{…} repeated {…} counted once.
+stmt.js	175	label	Jan
+stmt.js	175	label	Feb
+stmt.js	175	label	Mar
+stmt.js	175	label	Apr
+stmt.js	175	label	May
+stmt.js	175	label	Jun
+stmt.js	175	label	Jul
+stmt.js	175	label	Aug
+stmt.js	175	label	Sep
+stmt.js	175	label	Oct
+stmt.js	175	label	Nov
+stmt.js	175	label	Dec
+stmt.js	178	note	Monthly amounts are the average over {…}.
+stmt.js	178	note	Monthly amounts are the average over the months each account covers: {…}.
+stmt.js	179	note	{…}, {…} {…} ({…}{…}){…}: {…} transactions.
+stmt.js	179	note	Pay {…}.
+stmt.js	179	note	No pay was found.
+ui0.js	20	text	This part hit a snag and is resting. The rest of the page works. If it keeps happening, Help has Report a problem.
+ui0.js	28	label	See where it goes
+ui0.js	28	note	see where your money goes
+ui0.js	28	label	Save for a goal
+ui0.js	28	label	save for a goal
+ui0.js	28	label	Less money stress
+ui0.js	28	label	feel calm about money
+ui0.js	28	label	Pay down debt
+ui0.js	28	label	pay down debt
+ui0.js	32	label	January
+ui0.js	32	label	February
+ui0.js	32	label	March
+ui0.js	32	label	April
+ui0.js	32	label	May
+ui0.js	32	label	June
+ui0.js	32	label	July
+ui0.js	32	label	August
+ui0.js	32	label	September
+ui0.js	32	label	October
+ui0.js	32	label	November
+ui0.js	32	label	December
+ui0.js	145	label	Spending money
+ui0.js	145	label	Play money
+ui0.js	145	label	Free to spend
+ui0.js	159	note	include your own SSS, PhilHealth and Pag-IBIG payments
+ui0.js	159	note	include your own public pension and health insurance payments
+ui0.js	160	label	Commute, Grab, fuel
+ui0.js	160	label	Commute, taxis, fuel
+ui0.js	161	note	Pag-IBIG MP2, a UITF, an index fund, any retirement plan
+ui0.js	161	note	An index fund, any retirement plan
+ui0.js	162	note	E-wallets: the history in GCash, Maya or similar.
+ui0.js	162	note	E-wallets: the history in your wallet app.
+ui0.js	215	label	#themeSeg [data-theme-set]
+ui0.js	229	label	Saved
+ui0.js	229	label	Saving…
+ui0.js	229	label	Saved in this browser
+ui0.js	229	text	Not saved. Save a copy in Settings.
+ui0.js	267	note	Updated from another tab.
+ui1.js	4	label	Salary
+ui1.js	4	text	Monthly take-home pay, after tax. Paid twice a month: add both.
+ui1.js	5	label	Second pay
+ui1.js	5	text	Optional. A partner’s share, a second job, benefits: anything regular.
+ui1.js	6	label	Side pay
+ui1.js	6	text	Optional. Freelance, gig or cash work that changes month to month. Enter the lowest month you expect, so the plan still works in a slow one. Extra that comes in is a bonus.
+ui1.js	12	label	Bills and basics
+ui1.js	12	note	Rent, food, utilities, every other monthly bill.
+ui1.js	13	label	One-time costs
+ui1.js	14	label	Cards and loans
+ui1.js	14	note	Minimum payments plus extra.
+ui1.js	15	label	Goal burrows
+ui1.js	15	note	Burrows with a goal: big purchases, rainy day fund, trips, surprises.
+ui1.js	16	label	Free to spend
+ui1.js	16	text	Eating out, hobbies, treats, fun. Groceries go under Bills and basics.
+ui1.js	17	label	Education
+ui1.js	17	note	Courses, books, coaching, skill building.
+ui1.js	18	label	Investing
+ui1.js	18	text	Money you never spend: index fund, retirement plan. Put away regularly, leave alone.
+ui1.js	19	label	Giving
+ui1.js	19	note	Charity, donations, gifts.
+ui1.js	29	label	Extra on
+ui1.js	38	label	No end
+ui1.js	43	note	Name of this line
+ui1.js	44	label	This month
+ui1.js	46	note	Then move its money to the emergency fund
+ui1.js	45	label	Last payment
+ui1.js	45	button	Remove
+ui1.js	50	note	Your ceiling
+ui1.js	50	note	{…} slider
+ui1.js	48	button	Keep for later months
+ui1.js	48	button	Undo
+ui1.js	48	note	{…}, this month
+ui1.js	57	button	Add cost
+ui1.js	57	note	What is it for?
+ui1.js	57	note	One-time cost name
+ui1.js	57	note	One-time cost amount
+ui1.js	64	note	No lines.
+ui1.js	65	button	Edit burrows
+ui1.js	66	button	Edit cards and loans
+ui1.js	68	button	Add line
+ui1.js	68	button	Done
+ui1.js	68	note	New line, e.g. Pet food
+ui1.js	68	note	Name of the new line
+ui1.js	68	note	Monthly amount
+ui1.js	68	note	Monthly amount of the new line
+ui1.js	72	button	Rename, remove or add lines
+ui1.js	88	label	Total owed
+ui1.js	88	label	Goal amount
+ui1.js	89	label	Already paid off
+ui1.js	89	label	Already saved
+ui1.js	90	label	Paid off by
+ui1.js	90	label	Needed by
+ui1.js	90	button	Remove date
+ui1.js	91	label	Emergency fund
+ui1.js	91	text	The one goal you can borrow from in a short month. A finished payment can send its money here.
+ui1.js	92	label	Long-term goal
+ui1.js	92	text	Usual advice: three to six months of necessities. The goal amount above is the first stop; this is the larger one.
+ui1.js	93	note	Monthly amount set by you.
+ui1.js	93	button	Use suggested amount
+ui1.js	93	text	Monthly amount is computed. To change it, open Burrows under Plan.
+ui1.js	85	label	Name
+ui1.js	85	label	Why (optional)
+ui1.js	85	note	Shows with the goal, so the reason stays in view.
+ui1.js	85	text	With a date, the amount left is spread over the months before it. Without one, it is planned over about a year.{…}
+ui1.js	85	button	Remove goal
+ui1.js	85	note	Why it matters, in your words
+ui1.js	104	label	Close
+ui1.js	104	label	Edit goal
+ui1.js	98	button	Change monthly amount
+ui1.js	98	note	{…} progress
+ui1.js	109	text	No burrows. Add one below.
+ui1.js	111	note	Limit: {…} burrows.
+ui1.js	126	label	Other
+ui1.js	126	label	+ Add category
+ui1.js	135	label	Category name
+ui1.js	135	label	Jar
+ui1.js	135	button	Add category
+ui1.js	135	button	Cancel
+ui1.js	135	note	Pet food
+ui1.js	140	label	New
+ui1.js	140	label	Cat
+ui1.js	142	label	Note
+ui1.js	146	note	Enter a category name.
+ui1.js	147	text	That name exists. Pick it from the list.
+ui1.js	149	note	Limit: {…} categories.
+ui1.js	153	label	Msg
+ui1.js	153	text	Added “{…}” under {…}. No monthly amount yet: set one in Plan to compare.
+ui1.js	154	label	Amt
+ui1.js	166	label	Enter
+ui1.js	168	label	₱ Philippine peso
+ui1.js	168	label	$ Dollar
+ui1.js	168	label	€ Euro
+ui1.js	168	label	£ Pound
+ui1.js	168	label	¥ Yen or yuan
+ui1.js	168	label	₹ Rupee
+ui1.js	168	label	₩ Won
+ui1.js	168	label	R$ Real
+ui1.js	168	label	A$ Australian dollar
+ui1.js	168	label	C$ Canadian dollar
+ui1.js	168	label	S$ Singapore dollar
+ui1.js	168	label	NZ$ New Zealand dollar
+ui1.js	168	label	CHF Swiss franc
+ui1.js	168	label	kr Krona or krone
+ui1.js	168	label	R Rand
+ui1.js	168	label	zł Zloty
+ui1.js	168	label	No symbol
+ui1.js	170	note	Money today (bank plus cash)
+ui1.js	170	text	What you have right now. It is the start of the first month in the plan. Update when you check. Overdrawn? Type a minus, like -400.
+ui1.js	171	label	Minimum balance
+ui1.js	171	note	Warns when a month would end below this.
+ui1.js	172	label	Free to spend cap
+ui1.js	172	text	The most you want Free to spend to be in a month. A mark on the Free to spend bar in Plan shows it.
+ui1.js	180	label	Balance
+ui1.js	188	label	Borrowed from emergency fund
+ui2.js	7	label	[data-k="{…}"]
+ui2.js	9	label	{…}% of pay
+ui2.js	15	label	{…} not placed yet
+ui2.js	15	label	({…}% of pay)
+ui2.js	15	note	{…}% of pay, not placed yet
+ui2.js	16	note	{…} used for spending past plan
+ui2.js	17	note	{…} borrowed from the emergency fund
+ui2.js	18	label	Left {…}
+ui2.js	19	label	Left
+ui2.js	20	label	{…} pay{…}, by place:
+ui2.js	27	label	and {…} more
+ui2.js	29	label	Not placed yet
+ui2.js	29	label	stays in the bank
+ui2.js	30	note	Used for spending past plan
+ui2.js	30	note	came out of pay with no place
+ui2.js	31	label	Borrowed
+ui2.js	31	note	of it stays in the bank
+ui2.js	33	label	Still over after borrowing
+ui2.js	33	label	Over pay by
+ui2.js	33	label	Short by
+ui2.js	33	note	borrowed from the emergency fund
+ui2.js	33	label	Your balance covers it
+ui2.js	33	label	Plan exceeds pay
+ui2.js	38	text	. {…} of that comes from your emergency fund
+ui2.js	38	text	Your plan spends {…} more than your pay{…}. Lower a bill or another place.
+ui2.js	41	text	Your places add up to {…}% of your pay, because {…} of this plan is borrowed from your emergency fund.
+ui2.js	44	text	No bills planned yet. Add rent, food and the rest under Money out.
+ui2.js	45	note	Lower a bill or add pay.
+ui2.js	45	note	Bills and basics cost more than all of your pay this month.{…}
+ui2.js	46	note	Keep the other places going, even small: the habit matters more than the exact percent.
+ui2.js	46	note	Nothing is left for the other places this month.
+ui2.js	46	note	Bills and basics are {…}% of pay, above the usual {…}%.{…}
+ui2.js	47	text	Bills and basics are {…}% of pay, under the usual {…}%. More room for the other places.
+ui2.js	48	note	Bills and basics are {…}% of pay, about the usual {…}% many people aim for.
+ui2.js	51	text	Each slider sets that goal’s amount this month. Leave them alone to use the computed amounts (from goal amounts and dates). Up takes from Left; down returns to Left.
+ui2.js	54	text	Sample numbers for one salary. Replace them with yours. Data stays in this browser.
+ui2.js	55	note	Name, currency, balance, look, saved data.
+ui2.js	56	text	Amounts are samples for one salary. Start at zero or type over them. Saved in this browser only. Nobody else sees it, including whoever shared this page.
+ui2.js	58	label	Enter pay
+ui2.js	58	note	Type monthly take-home pay under Salary.
+ui2.js	58	label	Go to Salary
+ui2.js	59	label	Check bills
+ui2.js	59	text	Set each Bills and basics line to the real amount. Rename, remove or add lines.
+ui2.js	59	label	Open Bills and basics
+ui2.js	60	label	Set up burrows
+ui2.js	60	note	Name each goal, its cost and its date.
+ui2.js	60	label	Go to Goals
+ui2.js	61	label	Log receipts
+ui2.js	61	text	Add what you spent. Set a calendar reminder to make it a habit.
+ui2.js	61	label	Go to Receipts
+ui2.js	68	text	These are your numbers. Change them any time. Saved in this browser only; nobody else sees them.
+ui2.js	68	text	Everything starts at zero. Type over it. Saved in this browser only.
+ui2.js	70	label	Restore samples
+ui2.js	70	label	Clear my plan
+ui2.js	71	label	Tour
+ui2.js	71	label	Guided setup
+ui2.js	92	note	Planned {…} this month, about {…} a week.
+ui2.js	92	note	Planned: about {…} a week across the whole month.
+ui2.js	93	button	Log spend
+ui2.js	94	label	went to a goal
+ui2.js	94	note	not logged as spent yet, Home asks where it goes
+ui2.js	94	label	safe to spend
+ui2.js	94	note	Receipts: {…} spent, {…}.
+ui2.js	94	button	See receipts
+ui2.js	95	note	Receipts: {…} spent from Free to spend, which has no plan this month.
+ui2.js	96	note	Receipts: nothing spent from Free to spend.
+ui2.js	100	label	Over free to spend
+ui2.js	100	label	Over plan
+ui2.js	102	label	On plan
+ui2.js	102	label	Tight month
+ui2.js	102	label	Short
+ui2.js	105	note	Enter monthly take-home pay: tap Salary below.
+ui2.js	106	note	All pay is placed.
+ui2.js	106	note	{…} of pay not placed yet.
+ui2.js	106	note	Raise a goal or another place to use it, or keep it as a cushion.
+ui2.js	107	label	of it borrowed
+ui2.js	107	text	Month spends {…} more than your pay{…}. Balance covers it and ends at {…}, at or above the {…} minimum balance (change it in Settings).
+ui2.js	108	note	Balance would end at {…}, {…} under the {…} minimum balance (change it in Settings).
+ui2.js	108	note	Balance would end at {…}, below zero.
+ui2.js	108	label	Pick a fix:
+ui2.js	108	note	Lower a cost or add pay to fix it.
+ui2.js	109	note	{…} is borrowed from the emergency fund.
+ui2.js	113	button	Spend {…} instead
+ui2.js	114	button	Borrow {…} from emergency fund
+ui2.js	116	button	Undo borrow
+ui2.js	120	note	{…} pay and {…} borrowed, by place
+ui2.js	120	label	{…} pay, by place
+ui2.js	128	note	planned with no pay entered in
+ui2.js	128	text	. Add your pay in Plan.
+ui2.js	128	note	below zero in the bank at the end of
+ui2.js	128	text	No plan yet. Add your pay in Plan.
+ui2.js	128	note	more planned than the sample pay in
+ui2.js	128	note	more planned than your pay in
+ui2.js	128	note	borrowed from your emergency fund
+ui2.js	128	note	All of the sample pay has a place in
+ui2.js	128	note	All of your pay has a place in
+ui2.js	128	note	of the sample pay not placed yet in
+ui2.js	128	note	of your pay not placed yet in
+ui2.js	128	label	Place it on Plan
+ui2.js	128	label	Tight
+ui2.js	133	note	came back to the bank
+ui2.js	133	label	{…} went to {…}{…}
+ui2.js	133	note	It came back to the bank
+ui2.js	133	text	{…} of this month's Free to spend was not spent. {…}, so the bank ends higher than the figures above.
+ui2.js	136	note	Bank ends at {…}: {…} planned, less {…} spent over plan so far.
+ui2.js	136	note	Bank stays at {…} this month.
+ui2.js	136	note	Bank goes from {…} to {…} this month.
+ui2.js	150	label	Back to
+ui2.js	150	label	Usual:
+ui2.js	150	text	Edited for {…} only. {…}
+ui2.js	150	label	{…} {…} (usual {…})
+ui2.js	152	label	Borrowed {…} from emergency fund
+ui2.js	153	label	One-time costs edited
+ui2.js	155	note	Edited for {…}: {…}.
+ui2.js	155	note	{…} goes back to normal.
+ui2.js	156	note	Tap an amount to edit it for {…} only.
+ui2.js	156	note	Tap a name to open.
+ui2.js	174	text	Minimum {…} is already included. This month it pays {…}{…}. Owed after: {…}.
+ui2.js	176	note	Last payment {…}.
+ui2.js	176	note	Paid off.
+ui2.js	177	note	Above the {…} ceiling.
+ui2.js	177	note	Mark = {…} ceiling.
+ui2.js	183	note	Set the goal amount under Plan, Goals.
+ui2.js	184	note	Needs only {…} this month.
+ui2.js	186	note	Paid in {…}.
+ui2.js	187	text	Date passed {…}. Had {…} of {…}.
+ui2.js	189	note	Due {…}.
+ui2.js	190	label	Full {…}{…}
+ui2.js	190	note	Needs about {…} a month.
+ui2.js	191	label	not full within
+ui2.js	191	text	At this pace: {…}. Too late.
+ui2.js	195	note	Past {…}{…}.
+ui2.js	195	note	Reaches {…} {…}{…}.
+ui2.js	195	note	Not at {…} within {…} at this pace.
+ui2.js	196	note	Full {…}.
+ui2.js	196	note	Not full within {…} at this pace.
+ui2.js	198	label	{…} = {…} months of necessities
+ui2.js	199	note	Includes {…} from an ended payment.
+ui2.js	206	label	Goals get {…} this month
+ui2.js	206	text	No burrows. Add one to see when it is reached.
+ui2.js	214	label	{…}: {…}% of {…}
+ui2.js	216	label	{…} of {…}
+ui2.js	216	label	No goal amount yet
+ui2.js	218	label	On track
+ui2.js	218	label	Full {…}
+ui2.js	219	label	Behind
+ui2.js	219	label	Needs {…} a month
+ui2.js	219	label	Not ready in time
+ui2.js	220	label	Full
+ui2.js	221	label	Paid
+ui2.js	221	label	Due {…}
+ui2.js	222	label	Had {…} of {…} by {…}
+ui2.js	223	label	Filling
+ui2.js	224	label	Slow
+ui2.js	224	label	Not full within {…}
+ui2.js	225	label	Unset
+ui2.js	225	note	Edit goal to add an amount
+ui2.js	229	label	Saved so far
+ui2.js	229	note	Plan adds {…} in {…}.
+ui2.js	229	note	Plan adds nothing in {…}.
+ui2.js	229	note	{…} from unspent Free to spend, as you chose.
+ui2.js	229	note	{…} borrowed in {…}.
+ui2.js	235	text	One-time costs in {…}. Taken from that month’s money.
+ui2.js	238	button	Remove
+ui2.js	238	note	Name
+ui2.js	238	note	Amount
+ui2.js	238	note	Remove {…}
+ui2.js	240	note	None this month.
+ui2.js	246	label	Untitled
+ui2.js	261	label	{…}{…} full
+ui2.js	261	note	{…} full
+ui2.js	268	label	Month
+ui2.js	268	label	Not placed
+ui2.js	268	label	Bank, month end
+ui2.js	268	label	Status
+ui3.js	9	text	No burrows to chart. Give a burrow a goal amount and it plots here.
+ui3.js	20	label	The road ahead
+ui3.js	20	note	Line chart of your burrows from {…} to {…}. A table view is available.
+ui3.js	35	label	Month
+ui3.js	81	note	.row[data-id="{…}"]
+world.js	53	label	Streak
+world.js	53	label	Music
+world.js	53	label	Sound
+world.js	53	label	Settings
+world.js	58	label	Tap the light
+world.js	58	note	Controls
+world.js	58	note	Open the orb: streak, music, sound, settings, ask, help
+world.js	63	label	Escape
+world.js	75	label	Home
+world.js	75	label	Receipts
+world.js	75	label	Plan
+world.js	76	label	Ask
+world.js	76	label	Help
+world.js	112	label	Off
+ui4.js	8	label	Log spend
+ui4.js	14	label	Title (required)
+ui4.js	14	label	Note
+ui4.js	15	label	Vet bill
+ui4.js	15	label	Where or what
+ui4.js	24	text	{…} is in the future. Tap again to log it anyway, or change the date.
+ui4.js	33	text	{…} is more than all of your pay in {…} ({…}). Tap again to log it anyway, or check the amount.
+ui4.js	40	note	You already logged this receipt (
+ui4.js	40	text	). Tap again to log it twice, or change it.
+ui4.js	46	label	over {…}
+ui4.js	47	label	from the pile {…}
+ui4.js	53	label	Receipts,
+ui4.js	54	note	{…} spent, {…} receipt{…}.
+ui4.js	54	note	No receipts this month.
+ui4.js	55	note	Free to spend: {…} planned, {…} spent,
+ui4.js	55	note	{…} over.
+ui4.js	55	label	went to a goal
+ui4.js	55	note	came back to the bank
+ui4.js	55	note	{…} not spent: {…}.
+ui4.js	55	note	{…} not logged as spent yet; Home asks where it goes.
+ui4.js	55	note	{…} safe to spend.
+ui4.js	62	label	Other
+ui4.js	63	label	Category
+ui4.js	63	label	Plan
+ui4.js	63	label	Spent
+ui4.js	63	label	Left to spend
+ui4.js	63	note	Lines without receipts are not listed.
+ui4.js	65	label	Other:
+ui4.js	65	button	Edit
+ui4.js	65	button	Delete
+ui4.js	80	note	Date must be {…} to {…}.
+ui4.js	81	text	Type the amount without a minus sign. A receipt is money you spent. For a refund, lower or delete the receipt it pays back.
+ui4.js	82	note	Enter an amount.
+ui4.js	83	text	That amount is too large. The most is 1,000,000,000.
+ui4.js	88	note	Add the new category, or pick one from the list.
+ui4.js	89	text	Add a short title, e.g. “Vet bill”.
+ui4.js	108	label	Save changes
+ui4.js	111	label	Tap again: delete {…}
+ui4.js	112	note	Deleted {…}.
+ui44.js	6	note	Pay entered.
+ui44.js	7	note	Bills checked.
+ui44.js	8	note	Goal set.
+ui44.js	9	note	First receipt logged.
+ui44.js	62	text	Setup complete. All four steps done.
+ui45s.js	5	label	Welcome
+ui45s.js	5	label	Money
+ui45s.js	5	label	Bills
+ui45s.js	5	label	Split
+ui45s.js	5	label	Burrows
+ui45s.js	5	label	Free to spend
+ui45s.js	8	label	Amount
+ui45s.js	9	label	placeholder="{…}"
+ui45s.js	37	label	Your money
+ui45s.js	41	label	Monthly take-home pay
+ui45s.js	41	label	All paychecks
+ui45s.js	41	note	Other pay each month (optional)
+ui45s.js	41	label	None
+ui45s.js	41	label	Balance now
+ui45s.js	41	text	Rough is fine. Overdrawn? Type a minus
+ui45s.js	40	text	Take-home pay after tax, each month. Paid twice a month: add both. Other pay is a second job, a partner s share, benefits. Balance is bank accounts plus cash; rough is fine.
+ui45s.js	40	text	Not sure? Leave it blank and add it later on Plan.
+ui45s.js	58	label	Rent or mortgage
+ui45s.js	58	label	Utilities
+ui45s.js	58	label	Food and groceries
+ui45s.js	58	label	Internet
+ui45s.js	58	label	Phone
+ui45s.js	58	label	Insurance
+ui45s.js	58	label	Subscriptions
+ui45s.js	58	label	Transport
+ui45s.js	58	label	Loan or debt payment
+ui45s.js	58	label	Credit card
+ui45s.js	60	text	Full amount, even if someone shares it. Put their share under Money in.
+ui45s.js	61	note	Electricity, gas and water.
+ui45s.js	62	text	Groceries and everyday meals. Eating out for fun goes under Free to spend.
+ui45s.js	63	note	Home internet, or the data plan if that is how you connect.
+ui45s.js	64	note	Your monthly plan, or what you usually spend on top-ups.
+ui45s.js	65	text	Health, life, car or home. Use the monthly amount.
+ui45s.js	65	text	Self-employed? Include your own SSS, PhilHealth and Pag-IBIG.
+ui45s.js	66	label	Commute,
+ui45s.js	66	label	Grab
+ui45s.js	76	label	Monthly bills
+ui45s.js	79	text	Tick what applies. Rough numbers are fine.
+ui45s.js	79	text	Missing one? Add lines later.
+ui45s.js	79	note	Your monthly bills
+ui45s.js	85	note	#tourBody input[name=tourBill]:checked
+ui45s.js	108	label	Add another
+ui45s.js	108	label	Add something else
+ui45s.js	109	label	Total each month
+ui45s.js	103	text	Tick each one, then enter the monthly cost. The grey line is a typical price, as a check only.
+ui45s.js	103	label	Something else
+ui45s.js	103	note	Not in the list: add a name and amount.
+ui45s.js	103	text	Typical prices, Nov 2026. Each grey line names its country. Plan and billing change them: use your own bill.
+ui45s.js	116	label	Card spending, each month
+ui45s.js	119	label	Statement total, each month
+ui45s.js	119	note	Of that, bills already listed
+ui45s.js	119	label	Optional
+ui45s.js	115	text	What goes on the card each month apart from the bills you already listed: shopping, eating out, online orders, rides. A rough number is fine.
+ui45s.js	115	note	I only know the statement total
+ui45s.js	115	text	Enter the statement total, then the part of it that is bills you already listed (rent, food, subscriptions). The rest is card spending.
+ui45s.js	115	button	Use this amount
+ui45s.js	115	text	A card is paid a month late. This month you pay last month's bill, so put that bill under One-time costs for this month (Plan, then Month). The amount above is what you expect to put on the card from now on.
+ui45s.js	115	text	No credit card: go back and untick it. Owe on a card or loan? Add it under Cards and loans on the Goals tab.
+ui45s.js	126	label	Name
+ui45s.js	126	label	Each month
+ui45s.js	141	label	Goal burrows
+ui45s.js	141	label	Education
+ui45s.js	141	label	Investing
+ui45s.js	141	label	Giving
+ui45s.js	142	label	Savings
+ui45s.js	142	label	Freedom
+ui45s.js	142	label	Give
+ui45s.js	169	button	Spread it
+ui45s.js	169	label	Give it to
+ui45s.js	169	note	Give the part not placed yet to one
+ui45s.js	171	note	{…}, share of your pay
+ui45s.js	212	label	Split the rest
+ui45s.js	215	text	No bills listed, so the other five places would share all of your pay. If that is wrong, go back and add bills.
+ui45s.js	215	note	If you truly have none, continue and split below.
+ui45s.js	217	note	Bills exceed pay by {…}, so
+ui45s.js	217	note	Bills take all of it, so
+ui45s.js	217	text	Bills {…}, pay {…}. {…} nothing is left for the other five places: no free to spend and nothing for burrows, for now.
+ui45s.js	217	text	You can still add burrows next. They start filling once bills drop below pay. To lower a bill, go back. Otherwise continue and adjust under Plan later.
+ui45s.js	219	text	Bills and basics take {…}, {…}% of pay. The other {…}% ({…}) is yours to split between the five places below, starting at the usual proportions.
+ui45s.js	225	note	Where your pay goes, in short
+ui45s.js	225	text	Every month, your pay is split into six places, each with one job. Bills and basics and Free to spend are for this month. Your goals, Education, Giving and Investing fill burrows that pile up over months. Free to spend is what you spend on fun without guilt. Usual shares of take-home pay:
+ui45s.js	225	note	The shares are a guide, not a rule.
+ui45s.js	229	button	Use the usual amounts
+ui45s.js	236	label	Emergency fund
+ui45s.js	236	label	Cushion for surprises
+ui45s.js	237	label	Trip
+ui45s.js	237	label	A trip
+ui45s.js	237	label	Flights, stay, food
+ui45s.js	237	note	Flights, stay, food.
+ui45s.js	238	label	Home or move
+ui45s.js	238	note	A home or a move
+ui45s.js	238	label	Deposit, movers, furniture
+ui45s.js	238	note	Deposit, movers, furniture.
+ui45s.js	239	label	Big purchase
+ui45s.js	239	label	A big purchase
+ui45s.js	239	label	Laptop, car, wedding
+ui45s.js	239	note	The price, or your best guess.
+ui45s.js	240	label	Yearly cost
+ui45s.js	240	label	A yearly cost
+ui45s.js	240	label	Insurance, taxes, holidays
+ui45s.js	240	note	Full amount for the year, not per month.
+ui45s.js	241	label	Pay off debt
+ui45s.js	241	label	Pay off a debt
+ui45s.js	241	note	A balance with no interest
+ui45s.js	241	text	What you still owe in total. For a card or loan with interest, use Cards and loans on the Goals tab instead.
+ui45s.js	242	label	Anything with a price
+ui45s.js	242	label	Goal
+ui45s.js	245	text	Burrows hold money you build up: a cushion, a trip, a big purchase, or paying off a debt. Tick what you are working toward. Add more later.
+ui45s.js	245	text	Unsure? Keep the emergency fund. Owe on a card or loan? Add it after setup, under Cards and loans on the Goals tab. It works out the interest and the payoff date.
+ui45s.js	248	note	#tourBody input[name=tourGoalPick]:checked
+ui45s.js	265	note	{…} month{…} of your bills is {…}.
+ui45s.js	267	label	#tourGCost, #tourGSaved
+ui45s.js	268	label	Your next {…}
+ui45s.js	268	label	Your goal
+ui45s.js	278	label	Already saved
+ui45s.js	274	text	A cushion for surprises. You can borrow from it in a short month. Usual advice: three to six months of bills.
+ui45s.js	274	note	Months of bills to cover
+ui45s.js	274	text	Is this money in the same account as the balance you typed before? Then lower that balance by this amount, so the same money is not counted in two places.
+ui45s.js	281	text	A cushion for surprises. How much do you want to hold? Usual advice: three to six months of bills.
+ui45s.js	281	text	Name the debt and how much you owe in total. The smallest payment you must make stays in Bills and basics. This burrow is for the extra you pay on top, so the debt shrinks faster.
+ui45s.js	281	note	Name, cost, a date if there is one, and the reason in your words.
+ui45s.js	284	label	Why (optional)
+ui45s.js	284	note	Shows with the goal, so the reason stays in view.
+ui45s.js	284	note	Why it matters, in your words
+ui45s.js	285	label	Total owed
+ui45s.js	285	label	How much to hold
+ui45s.js	285	label	Cost
+ui45s.js	286	label	Already paid off
+ui45s.js	287	label	Paid off by
+ui45s.js	287	label	Needed by
+ui45s.js	287	note	With a date, the monthly amount is worked out for you.
+ui45s.js	289	button	Add another {…}
+ui45s.js	293	label	input[name=tourEm]
+ui45s.js	294	label	input[name=tourEm]:checked
+ui45s.js	359	note	No cost set.
+ui45s.js	360	note	{…} to go.
+ui45s.js	361	note	Already full.
+ui45s.js	362	note	Nothing goes into this one.
+ui45s.js	365	note	Date is this month or passed.
+ui45s.js	366	note	{…}Full {…}, ahead of {…}.
+ui45s.js	367	note	{…}Needs about {…} a month for {…}.
+ui45s.js	367	note	Not ready in time.
+ui45s.js	368	note	{…}Full {…}.
+ui45s.js	369	note	{…}Not full within {…} at this pace.
+ui45s.js	376	note	{…}, share of your goal money
+ui45s.js	383	text	{…} of this is not placed yet: your burrows cannot take more now. Add a burrow or raise a cost.
+ui45s.js	388	label	Split goal money
+ui45s.js	388	label	Goal money
+ui45s.js	391	text	Burrows get {…}% of pay, {…} a month, shared between your goals. A goal with a date gets what it needs first. Each slider moves on its own; what you take away waits as not placed yet.
+ui45s.js	392	note	This goal is filled first.
+ui45s.js	392	note	All of it goes to this goal.
+ui45s.js	392	text	Burrows get {…}% of pay, {…} a month. {…}
+ui45s.js	396	button	Reset to suggested split
+ui45s.js	404	label	class="{…}"
+ui45s.js	406	label	Pay in
+ui45s.js	406	label	Bills and basics
+ui45s.js	408	label	Education, Investing and Giving
+ui45s.js	410	label	Short by
+ui45s.js	410	label	Left, not placed yet
+ui45s.js	417	label	misses its date
+ui45s.js	417	label	miss their dates
+ui45s.js	417	text	{…} {…} at this pace. Under Plan, Burrows: move the date, lower the amount or give it more pay.
+ui45s.js	422	label	Plan exceeds pay
+ui45s.js	427	text	Free to spend is money for fun: what is left after bills and burrows. It needs your pay to work it out, so there is no figure yet.
+ui45s.js	427	note	Tap Back to type your pay, or add it later under Plan, Month, Details, Money in.
+ui45s.js	431	note	Nothing left, so no free to spend yet.
+ui45s.js	433	note	Free to spend appears as soon as there is room.
+ui45s.js	430	label	{…}short a month
+ui45s.js	430	note	Under Plan: lower a bill or add income.{…}
+ui45s.js	436	label	Left {…}%
+ui45s.js	435	note	Pay by jar
+ui45s.js	437	label	{…}a month{…}
+ui45s.js	440	note	Bills take {…}% of pay, so almost nothing is left for free to spend.
+ui45s.js	440	note	Nothing is set aside for free to spend.
+ui45s.js	441	note	To add some, raise the Free to spend line under Plan or lower a bill.
+ui45s.js	440	note	{…} About 10% of pay is a common amount to keep for it.
+ui45s.js	443	text	{…} of pay is not placed yet. Raise a goal or add to free to spend.
+ui45s.js	443	text	Bills take most of pay, so the month is tight. Lowering a bill is the easiest fix.
+ui45s.js	443	note	All pay is placed.
+ui45s.js	444	text	Bills are paid and every other place has its share: this is yours to spend on fun, no guilt. Split of {…} pay:
+ui45u.js	8	text	{"summary":"one or two plain sentences","pay":{"amount":35000,"how":"twice a month, 15th and 30th"},"other_income":0,"balance":{"amount":12400,"date":"2026-11-10"},"bills":[{"id":"rent","amount":8000,"note":"5th each month, LANDLORD NAME"}],"subscriptions":[{"name":"Netflix","amount":279}],"loans":[{"name":"Home Credit","amount":2500,"ends":"2027-06"}],"card_other":1500,"questions":[{"text":"Is the 8,000 on the 5th your rent?","relates":"rent"}],"skipped":["one line per thing left out"]}
+ui45u.js	27	note	the currency of the files
+ui45u.js	35	note	(screenshots, photos or PDF statements)
+ui45u.js	36	label	----- FILE: {…} ----- {…}
+ui45u.js	62	label	Loan
+ui45u.js	74	label	Bank
+ui45u.js	74	label	Card
+ui45u.js	74	label	Wallet
+ui45u.js	75	label	BPI savings, Resona, Chase
+ui45u.js	75	label	Mercari Card, BDO Visa
+ui45u.js	75	label	GCash, Maya, PayPay
+ui45u.js	85	label	Bank account
+ui45u.js	98	note	{…}: not a readable PDF.
+ui45u.js	98	label	PDFs,
+ui45u.js	98	note	{…}: only CSV or Excel files, {…}screenshots and photos.
+ui45u.js	99	text	{…} is too large. Export fewer months, or take screenshots of the pages.
+ui45u.js	100	text	Up to {…} PDFs at a time. 2 or 3 months of statements is plenty.
+ui45u.js	101	note	{…} is too large.
+ui45u.js	102	note	{…} files at a time.
+ui45u.js	121	button	Remove this account
+ui45u.js	109	note	Statements of this account go here.
+ui45u.js	109	button	Choose files
+ui45u.js	109	note	CSV, Excel, PDF or screenshots
+ui45u.js	109	note	Kind of account
+ui45u.js	109	note	Name of this account
+ui45u.js	109	note	Name it: {…}
+ui45u.js	128	label	[data-acct="{…}"]
+ui45u.js	129	label	[data-acctfiles="{…}"]
+ui45u.js	130	note	Remove {…}
+ui45u.js	132	label	Name it:
+ui45u.js	137	label	Read {…} files
+ui45u.js	137	label	Read file
+ui45u.js	146	text	GCash: Profile, Transaction History, export by email. Maya: Account, Statements. BPI, BDO, UnionBank, GoTyme: the account page has Download or Export.
+ui45u.js	147	text	Japanese banks: 入出金明細 then CSVダウンロード. Card apps: 利用明細 then screenshots of each month.
+ui45u.js	143	note	How to get your statements
+ui45u.js	143	text	Any bank or e-wallet app: open the account, find Statements, Transaction history or Export, and choose the last 2 or 3 months. A CSV or Excel export, or a PDF statement, is best. If the app only shows a list, take screenshots of each page instead.
+ui45u.js	143	text	A PDF that asks for a password (GCash sends these) has to be opened with the password first, then saved or printed as a new PDF, or screenshotted.
+ui45u.js	143	text	Credit cards: the last statement (CSV or screenshots). Cash spending: add it on the review screen.
+ui45u.js	143	text	Nothing is stored. Files go to Claude once, the numbers come back, the files are forgotten.
+ui45u.js	152	label	Your statements
+ui45u.js	152	label	Not now
+ui45u.js	152	label	Type numbers instead
+ui45u.js	175	note	A question first?
+ui45u.js	175	button	Back to the questions
+ui45u.js	176	note	No statements at hand?
+ui45u.js	176	button	Type the numbers instead
+ui45u.js	176	text	. Receipts takes statements any time, so this can wait.
+ui45u.js	154	text	One box per account: your bank, each card, each wallet. Name each the way you say it, and the app will too. Put in the last 2 or 3 months of each: PDF, CSV or Excel exports, or screenshots of the transaction list. The numbers come out exact, and your history fills in.
+ui45u.js	154	button	+ Add another account (a card, a wallet)
+ui45u.js	154	button	Read files
+ui45u.js	154	button	Stop
+ui45u.js	154	text	Prefer your own AI? Use it instead
+ui45u.js	154	text	An alternative to the upload above, with the same result. If you would rather not send statements through this page, or you like ChatGPT, Gemini or the Claude app better: copy one message, paste it into that AI with your statements, answer its questions, and paste its final answer back here. It is checked and reviewed the same way.
+ui45u.js	154	button	Copy message
+ui45u.js	154	button	Check it
+ui45u.js	154	note	The AI's answer
+ui45u.js	154	note	Paste the answer here
+ui45u.js	183	label	CSV, Excel or screenshots
+ui45u.js	184	label	PDFs: open
+ui45u.js	188	label	Use your own AI
+ui45u.js	189	text	Bring in the last 2 or 3 months of each account: PDF, CSV or Excel exports, or screenshots of the transaction list. An AI app reads them for you, and the numbers come out exact. Your history fills in.
+ui45u.js	191	label	Or use
+ui45u.js	191	label	Use
+ui45u.js	191	text	Your files go to the AI app, not to this page. {…} any AI: copy one message, paste it into ChatGPT, Gemini or the Claude app with your statements, answer its questions, and paste its final answer below.
+ui45u.js	197	label	[data-acctfile="{…}"]
+ui45u.js	203	label	input[name^="acctKind-"]
+ui45u.js	206	label	Files
+ui45u.js	208	label	[data-acctname="{…}"]
+ui45u.js	214	text	Copied. Paste it into your AI with your files.
+ui45u.js	216	note	Paste the answer first.
+ui45u.js	228	label	Monthly pay
+ui45u.js	229	label	Other pay
+ui45u.js	230	label	Balance now
+ui45u.js	232	label	Subscription
+ui45u.js	234	label	Card: other spending
+ui45u.js	234	note	Shopping, eating out, not counted above
+ui45u.js	237	label	Check what was found
+ui45u.js	237	label	Use these numbers
+ui45u.js	240	label	Yes
+ui45u.js	241	note	Here is what the statements show.
+ui45u.js	242	note	{…}, amount each month
+ui45u.js	243	label	Left out: {…}
+ui45u.js	241	text	{…} Tick what is right, fix any amount. Unticked lines are left out.
+ui45u.js	241	text	Missing a bill? Tick it and type the amount. Anything can be changed later in Plan.
+ui45u.js	255	label	input[name^=impq]
+ui45u.js	255	label	[data-impck="{…}"]
+ui45u.js	263	label	[data-impa="{…}"]
+ui45u.js	265	label	setup from statements
+ui45u.js	298	text	Numbers exact. {…} receipts kept.
+ui45u.js	298	note	Numbers exact.
+ui45u.js	298	text	Numbers in. {…} receipts kept.
+ui45u.js	298	note	Numbers in.
+ui45v.js	10	note	ISO code or symbol of the amounts
+ui45v.js	16	label	a positive number
+ui45v.js	18	text	up to two short notes, only about rows that could not be read or had to be left out; otherwise an empty list. Nothing about the currency, the balance or the file itself
+ui45v.js	25	note	the key exactly as given
+ui45v.js	38	label	the currency printed
+ui45v.js	39	label	a bank account
+ui45v.js	39	note	It belongs to the account the person calls "{…}" ({…}).
+ui45v.js	40	label	----- FILE: {…} ----- {…}
+ui45v.js	40	label	FILE NAME: {…}
+ui45v.js	55	label	{…} screenshots
+ui45v.js	75	label	{…} (part {…} of {…})
+ui45v.js	80	label	PDF statement
+ui45v.js	80	note	screenshot or photo of a statement
+ui45v.js	80	text	part {…} of {…} of one statement file (the first lines are the file's title and column names; no note is needed about it being a part)
+ui45v.js	84	note	The transaction rows of one statement file.
+ui45v.js	111	note	too long for one read; split it, or fewer pages
+ui45v.js	112	label	could not be read
+ui45v.js	113	note	too much for one read
+ui45v.js	114	note	too many requests right now; try again in a minute
+ui45v.js	115	label	needs the code word
+ui45v.js	139	text	- key={…} | seen {…} {…}, in {…}, out {…}, months {…} | e.g. {…}
+ui45v.js	140	note	One category per merchant key.
+ui45v.js	140	label	the local currency
+ui45v.js	140	text	Give each merchant one category. Amounts are in {…}. {…} MERCHANTS {…}
+ui45v.js	159	label	{…}: waiting
+ui45v.js	159	label	{…}: reading
+ui45v.js	159	label	{…}: {…} rows{…}
+ui45v.js	159	label	{…}: no transactions found
+ui45v.js	167	label	msg ai wait
+ui45v.js	179	text	Nothing could be read. The line above says why.
+ui45v.js	179	text	Nothing could be read. Each file's line above says why.
+ui45v.js	179	text	No transactions were found in these files. Try a screenshot of the transaction list, or a CSV, PDF or Excel export.
+ui45v.js	183	note	Sorting {…} {…} into categories.
+ui45v.js	191	note	Use any AI below, or type the numbers in.
+ui45v.js	191	text	Claude cannot be reached from this copy of the page. Use any AI below, or type the numbers in.
+ui45v.js	199	label	{…}: {…} rows{…}{…}
+ui45v.js	201	label	part of a month
+ui45v.js	202	label	Card
+ui45v.js	202	label	Wallet
+ui45v.js	202	label	Account
+ui45v.js	202	label	{…}{…}: {…} {…}, {…} rows{…}
+ui45v.js	204	note	Category for {…}
+ui45v.js	208	note	Keep the {…} spending {…} as receipts, so Receipts and the assistant know where the money went
+ui45v.js	206	label	What was read ({…} rows)
+ui45v.js	206	text	Categories ({…}). Fix any that are wrong; the numbers follow.
+ui45v.js	206	note	Tap a name to see its rows as printed.
+ui45v.js	217	note	{…} rows in total; the newest 12 are shown.
+ui45v.js	226	label	[data-impck="{…}"]
+ui45v.js	226	label	[data-impa="{…}"]
+ui45c.js	7	label	Bank account
+ui45c.js	7	label	Credit card
+ui45c.js	7	label	Mostly cash
+ui45c.js	9	label	GCash, Maya
+ui45c.js	9	label	PayPay, Suica
+ui45c.js	9	label	PayPal, Venmo, Revolut
+ui45c.js	11	note	Some of my bills are paid in cash
+ui45c.js	11	text	Statements only show what went through an account. After the upload, the check screen lists every bill and has Add a line: put the cash ones there. Day-to-day cash spending goes in Receipts any time.
+ui45c.js	12	note	I have an expense that is not on any statement
+ui45c.js	12	text	Add it on the check screen after the upload (Add a line), or later on the Plan tab if it comes every month. A one-off goes in Receipts, Log spend.
+ui45c.js	13	note	What if something gets the wrong category?
+ui45c.js	13	text	The check screen shows every shop with its category. Tap one and pick another. The app remembers it, so next month it is already right.
+ui45c.js	14	note	Is it safe to upload my statements?
+ui45c.js	14	text	The files are sent once to Claude to be read and this app does not keep them. Only the numbers stay, in this browser. Nobody else can see them, Mako included.
+ui45c.js	15	note	My bank sends PDFs with a password
+ui45c.js	15	text	Open the PDF with its password, then save or print it as a new PDF without one, or take screenshots of the pages. Both work.
+ui45c.js	16	note	I have no statements at hand
+ui45c.js	16	text	Tap Type numbers instead on the next screen. It takes about five minutes. Statements can go in later from Receipts, and the numbers become exact then.
+ui45c.js	17	note	I share an account with someone
+ui45c.js	17	text	Upload it like any other. On the check screen, untick what is not yours, or change an amount to your share.
+ui45c.js	44	label	Card
+ui45c.js	48	note	Hi {…}.
+ui45c.js	48	note	{…}Before the uploads, a few quick questions so the right upload boxes are ready for you.
+ui45c.js	49	text	Where does your money come in and go out? Pick all that apply.
+ui45c.js	52	label	None of these
+ui45c.js	55	text	Then there are no statements to upload, and that is fine. On the next screen tap Type numbers instead: pay, bills and burrows, about five minutes.
+ui45c.js	56	text	Day-to-day cash goes in Receipts. Log it as you spend, or once a week.
+ui45c.js	59	note	How many of each?
+ui45c.js	62	label	Resona
+ui45c.js	62	label	Chase
+ui45c.js	62	label	BDO Visa
+ui45c.js	62	label	Rakuten Card
+ui45c.js	62	label	Amex
+ui45c.js	62	text	What do you call them? Use your own words, for example {…}. The app will use these names everywhere. Optional.
+ui45c.js	64	label	Skip names
+ui45c.js	65	text	Here are your upload boxes: {…}. Each takes the last 2 or 3 months, as PDF, CSV or Excel exports, or screenshots of the transaction list.
+ui45c.js	66	text	Cash does not show on statements. The check screen after the upload has a line for it, and Receipts takes cash any time.
+ui45c.js	72	text	Why statements: they already know where your money went, so there is nothing to guess or remember, and the numbers come out exact.
+ui45c.js	73	text	What happens: each file is sent once to Claude, an AI, which turns its rows into a table (date, description, amount). This app then does all the arithmetic itself: your pay, each bill as a monthly average, your balance. The files are not kept.
+ui45c.js	74	text	How it is sorted: every shop and payee gets a category, like rent, food, transport, subscriptions or play. The next screen shows every number and category before anything is used. Tap one to change it, and the app remembers your choice for next month.
+ui45c.js	76	text	Any questions before you start? Tap one below or type your own.
+ui45c.js	84	label	That is all
+ui45c.js	83	note	Where your money goes
+ui45c.js	85	note	How many {…}
+ui45c.js	85	button	Next
+ui45c.js	85	button	Change
+ui45c.js	87	note	Name of {…}
+ui45c.js	87	button	Done
+ui45c.js	87	button	Skip
+ui45c.js	90	button	Ask
+ui45c.js	90	button	Start over
+ui45c.js	90	note	Type a question
+ui45c.js	90	note	Your question
+ui45c.js	96	label	Working…
+ui45c.js	101	label	Go to the uploads
+ui45c.js	101	label	Skip to uploads
+ui45c.js	108	text	Typed questions need Claude, which this copy of the page cannot reach. The Ask button on Home answers anything once setup is done, or tap one of the questions below.
+ui45c.js	113	text	Their currency: {…}. Question:
+ui45c.js	116	text	No answer came back. Try again, or tap one of the questions below.
+ui45c.js	117	text	That did not go through. Try again in a moment, or tap one of the questions below.
+ui45c.js	126	label	Before the uploads
+ui45x.js	161	label	Google Calendar
+ui45x.js	162	label	Apple Calendar
+ui45x.js	164	label	Microsoft 365
+ui45x.js	165	label	Yahoo Calendar
+ui45x.js	166	label	Samsung, Proton, other
+ui45x.js	173	label	[data-cal="{…}"]
+ui45x.js	183	label	every day at {…}
+ui45x.js	183	label	the last day
+ui45x.js	183	label	{…} of every month at {…}
+ui45x.js	184	label	every other {…} at {…}
+ui45x.js	184	label	every {…} at {…}
+ui45x.js	186	label	Repeats
+ui45x.js	191	note	Update my receipts in The Burrow
+ui45x.js	191	note	Add {…} receipts to The Burrow: cash, card and e-wallet.
+ui45x.js	200	label	Last day
+ui45x.js	197	label	How often
+ui45x.js	197	label	On the
+ui45x.js	208	label	Freq
+ui45x.js	209	label	Day
+ui45x.js	210	label	Dom
+ui45x.js	223	text	No calendar file can be saved here. In your calendar app, add an event, set the same repeat, and paste this in.
+ui45x.js	223	button	Copy event text
+ui45x.js	223	note	Calendar event text
+ui45x.js	235	note	Press Ctrl+C (Cmd+C) to copy the selected text.
+ui45x.js	253	text	Saved receipts-reminder.ics. Open it to add the repeating event. If nothing happens, open it from your downloads.
+ui45x.js	253	text	File not created here. Use the copy-text option.
+ui45x.js	262	label	Netflix
+ui45x.js	262	note	$8.99 with ads, $19.99 Standard, $26.99 Premium
+ui45x.js	262	note	¥890 with ads, ¥1,590 Standard, ¥2,290 Premium
+ui45x.js	262	text	₱169 Mobile, ₱279 Basic. Standard and Premium cost more
+ui45x.js	263	label	Disney+
+ui45x.js	263	note	$12.49 with ads, $21.49 no ads
+ui45x.js	263	label	¥1,250 Standard, ¥1,670 Premium
+ui45x.js	263	label	₱289 Basic, ₱599 Premium
+ui45x.js	264	label	Hulu
+ui45x.js	264	note	Not sold in the Philippines
+ui45x.js	265	label	HBO Max
+ui45x.js	265	note	$10.99 Basic, $18.49 Standard, $22.99 Premium
+ui45x.js	265	label	¥1,000 Standard, ¥1,400 Premium
+ui45x.js	265	note	₱149 Mobile, ₱269 Standard, ₱399 Ultimate
+ui45x.js	266	label	Amazon Prime
+ui45x.js	266	note	$14.99, or $139 a year
+ui45x.js	266	note	¥600, or ¥5,900 a year
+ui45x.js	266	note	₱249 for Prime Video, or ₱1,669 a year
+ui45x.js	267	label	Apple TV
+ui45x.js	268	label	Paramount+
+ui45x.js	268	note	$8.99 Essential, $13.99 Premium
+ui45x.js	268	note	Ended in Japan in March 2026
+ui45x.js	269	label	YouTube Premium
+ui45x.js	269	note	$15.99 Individual, $26.99 Family
+ui45x.js	269	label	¥1,280 Individual, ¥2,280 Family
+ui45x.js	269	note	From ₱189 Individual, ₱379 Family
+ui45x.js	270	label	Spotify
+ui45x.js	270	note	$12.99 Individual, $21.99 Family
+ui45x.js	270	label	¥1,080 Individual, ¥1,880 Family
+ui45x.js	270	label	₱169 Individual, ₱279 Family
+ui45x.js	271	label	Apple Music
+ui45x.js	271	note	$11.99 Individual, $19.99 Family
+ui45x.js	271	label	¥1,180 Individual, ¥1,980 Family
+ui45x.js	271	label	₱169 Individual
+ui45x.js	272	label	$8 Go, $20 Plus
+ui45x.js	272	label	¥1,400 Go, ¥3,000 Plus
+ui45x.js	272	label	₱300 Go, ₱999 Plus
+ui45x.js	273	label	Claude
+ui45x.js	273	note	$20 Pro, or $17 a month if paid yearly
+ui45x.js	273	note	$20 Pro, billed in dollars plus 10% tax, about ¥3,300
+ui45x.js	274	note	$9.99 Personal, $12.99 Family
+ui45x.js	274	label	¥2,130 Personal, ¥2,740 Family
+ui45x.js	275	label	iCloud+
+ui45x.js	275	note	$0.99 for 50GB, $2.99 for 200GB, $9.99 for 2TB
+ui45x.js	275	note	¥180 for 50GB, ¥540 for 200GB, ¥1,800 for 2TB
+ui45x.js	275	note	₱59 for 50GB, ₱199 for 200GB, ₱699 for 2TB
+ui45x.js	276	label	Google One
+ui45x.js	276	note	$1.99 for 100GB, $9.99 for 2TB
+ui45x.js	276	note	¥290 for 100GB, ¥1,450 for 2TB
+ui45x.js	276	note	₱119 for 100GB, ₱599 for 2TB
+ui45x.js	277	label	Xbox Game Pass
+ui45x.js	277	note	$9.99 Essential, $14.99 Premium, $22.99 Ultimate
+ui45x.js	277	note	¥850 Essential, ¥1,300 Premium, ¥1,550 Ultimate
+ui45x.js	277	text	₱225 PC Game Pass. Ultimate is about ₱1,300
+ui45x.js	278	label	PlayStation Plus
+ui45x.js	278	note	$10.99 Essential, $16.99 Extra, $19.99 Premium
+ui45x.js	278	note	¥850 Essential, ¥1,300 Extra, ¥1,550 Premium
+ui45x.js	279	label	Switch Online
+ui45x.js	279	note	$19.99 a year, or $49.99 with Expansion Pack
+ui45x.js	279	note	¥3,000 a year, or ¥5,900 with Expansion Pack
+ui45x.js	279	text	New in the Philippines in Nov 2026. Check the shop for the price
+ui45x.js	280	label	Adobe Creative Cloud
+ui45x.js	280	note	$19.99 Photography, $54.99 Standard, $69.99 Pro
+ui45x.js	280	note	¥2,380 Photography, ¥6,480 Standard, ¥9,080 Pro
+ui45x.js	286	label	Japan
+ui45x.js	286	label	Philippines
+ui45x.js	286	label	US {…}
+ui45x.js	298	label	Subscriptions
+ui45x.js	301	label	Other
+ui45x.js	308	note	{…}, monthly cost
+ui45x.js	308	note	Monthly cost
+ui45x.js	312	label	Name
+ui45x.js	312	label	Monthly
+ui45x.js	312	button	Remove
+ui45x.js	312	note	Amount
+ui45x.js	316	note	#subsOthers .sub-o
+ui45x.js	320	note	#subsOthers .cs
+ui45x.js	321	label	Add another
+ui45x.js	321	label	Add something else
+ui45x.js	322	note	#subsOthers .so-n
+ui45x.js	329	note	#tourBody input[name=tourSub]:checked
+ui45x.js	329	label	#tourBody input[data-subamt="{…}"]
+ui45x.js	330	note	#subsOthers .so-a
+ui45x.js	352	note	The listed bills cover the whole statement: nothing extra to count.
+ui45x.js	352	note	Card spending: {…} a month.
+ui45x.js	353	label	Use {…}
+ui45x.js	353	label	Use 0
+ui45x.js	382	label	Total left
+ui45x.js	375	label	Total
+ui45x.js	375	label	Last payment
+ui45x.js	375	note	Enter total instead of monthly amount
+ui45x.js	387	text	Monthly is the payment you make each month, not what you owe in total. Owe a total, like a card balance? Switch to Total, or add it later under Cards and loans on the Goals tab. Set the last payment month and the other value is filled in.
+ui45x.js	394	note	{…} payment{…}, {…} in all.
+ui45x.js	394	note	Set the last payment month to get the total.
+ui45x.js	397	note	{…} payment{…} of about {…}{…}.
+ui45x.js	398	note	Set the last payment month to get the monthly amount.
+ui45x.js	429	note	Add another loan or debt
+ui45x.js	429	label	Loan or debt
+ui45x.js	429	note	Next loan or debt payment
+ui45x.js	429	label	Add another insurance
+ui45x.js	429	label	Insurance
+ui45x.js	429	label	Next insurance
+ui45x.js	440	label	home or move
+ui45x.js	463	text	{…} can only take what is not placed yet, and nothing is. Lower another one first.
+ui45x.js	464	text	: all that was not placed yet. To go further, lower another one.
+ui45x.js	464	text	. Not placed yet now {…}%{…}.
+ui45x.js	465	text	Each slider moves on its own. Lower one and the difference waits as not placed yet; raise one and it takes from there. Shares total {…}%.
+ui45x.js	468	note	{…}, percent of pay
+ui45x.js	484	label	Not placed yet {…}% · {…}
+ui45x.js	484	note	All of it is given out.
+ui45x.js	500	label	[data-jrow="{…}"]
+ui45x.js	501	label	[data-grow="{…}"]
+ui45x.js	519	text	Bills and essentials. Paid first.
+ui45x.js	519	note	Saved now, spent later.
+ui45x.js	519	text	Spend freely. No guilt.
+ui45x.js	520	note	Books, courses, skills.
+ui45x.js	520	text	Invested. Not spent.
+ui45x.js	520	note	Gifts and donations.
+squirrel.js	10	label	Classic
+squirrel.js	11	label	Chibi
+squirrel.js	12	label	Grey
+burrows.js	127	label	url({…})
+burrows.js	142	note	This burrow is full.
+burrows.js	142	note	No free-to-spend money left this month to move here.
+burrows.js	142	button	Back
+burrows.js	143	label	Add to {…}
+burrows.js	143	note	From free to spend: {…} left this month
+burrows.js	145	label	Amount
+burrows.js	146	button	Add
+burrows.js	150	note	Enter an amount from 1 to {…}.
+burrows.js	151	label	Enter
+burrows.js	157	note	That could not be added.
+burrows.js	160	note	Going in.
+burrows.js	167	label	Burrow
+burrows.js	168	note	Back home
+burrows.js	168	note	Previous burrow
+burrows.js	168	note	Next burrow
+burrows.js	168	note	Burrows
+burrows.js	175	label	Escape
+burrows.js	272	label	Add a payment
+burrows.js	272	label	Add money
+burrows.js	272	note	{…} percent {…}
+burrows.js	288	button	Undo
+burrows.js	341	note	{…} is paid off.
+burrows.js	341	note	{…} is full.
+burrows.js	341	note	{…} is the most {…}, {…}%.
+burrows.js	341	note	No burrow has money in it yet.
+burrows.js	342	note	You logged receipts this week.
+burrows.js	342	note	No receipts logged this week yet.
+burrows.js	343	note	{…}, {…}, {…} percent {…}. Open
+burrows.js	344	note	{…}, {…}, {…}. How it is worked out
+burrows.js	345	text	Money that piles up over months: goals, Education, Giving and Investing. The numbers include what you plan to add this month.
+realm.js	7	label	Fairy Woods
+realm.js	7	note	Moss, lantern light and a hidden stream
+realm.js	8	label	Crystal Deep
+realm.js	8	note	Old stone, quiet crystal and the pale ones
+realm.js	9	label	The Underwater Dynasty
+realm.js	9	note	A drowned court that speaks in light
+realm.js	10	label	The Green
+realm.js	10	note	Every blade of grass is listening
+realm.js	11	label	Chiba, After
+realm.js	11	note	The cats kept the lights on
+realm.js	12	label	Rune Wood
+realm.js	12	note	The old trees remember what is written on them
+realm.js	13	label	Elder Grove
+realm.js	13	note	Two old trees and everything in their light
+realm.js	14	label	Hearth Hollow
+realm.js	14	note	A warm den under the stones
+realm.js	15	label	Frost Hollow
+realm.js	15	note	Snow on the pines and one light in the window
+realm.js	16	label	The Dreaming
+realm.js	16	note	You were here before you knew it
+life.js	27	label	Fairy Wood
+life.js	30	label	Meadow rabbit
+life.js	31	label	Hedgehog
+life.js	32	label	Pond frog
+life.js	33	label	Hollow owl
+life.js	34	label	Red squirrel
+life.js	35	label	Lantern moth
+life.js	36	label	Wood fairies
+life.js	37	label	Spirit stag
+life.js	39	label	Bluebell
+life.js	39	label	Foxglove
+life.js	39	label	Toadstool
+life.js	39	label	Moss
+life.js	39	label	Cattail
+life.js	39	label	Daisy
+life.js	39	label	Bramble
+life.js	42	label	Ember Hollow
+life.js	45	label	Red fox
+life.js	46	label	Ash crow
+life.js	47	label	Cinder tortoise
+life.js	48	label	Hearth mouse
+life.js	49	label	Ember newt
+life.js	50	label	Cinder owl
+life.js	51	label	Flame wisp
+life.js	52	label	Ember stag
+life.js	53	label	Ember sprites
+life.js	55	label	Ashgrass
+life.js	55	label	Ember lily
+life.js	55	label	Cinder fern
+life.js	55	label	Lava bloom
+life.js	55	label	Smouldering stump
+life.js	55	label	Red cap
+life.js	55	label	Thornbush
+life.js	55	label	Smoke reed
+life.js	58	label	Frostglass
+life.js	61	label	Snow hare
+life.js	62	label	Snowy owl
+life.js	63	label	Ermine
+life.js	64	label	Reindeer fawn
+life.js	65	label	Snow bunting
+life.js	66	label	Aurora moth
+life.js	67	label	Ice wisp
+life.js	68	label	Ice stag
+life.js	69	label	Frost sprites
+life.js	71	label	Frost fern
+life.js	71	label	Ice crystal
+life.js	71	label	Snowdrop
+life.js	71	label	Snow pine
+life.js	71	label	Rime spire
+life.js	71	label	Winterberry
+life.js	71	label	Blue lichen
+life.js	71	label	Frozen reed
+life.js	74	label	Violet Deep
+life.js	77	label	Lantern snail
+life.js	78	label	Mire toad
+life.js	79	label	Cave bat
+life.js	80	label	Cap mouse
+life.js	81	label	Shroomling
+life.js	82	label	Glow jelly
+life.js	83	label	Spore moth
+life.js	84	label	Violet stag
+life.js	85	label	Spore sprites
+life.js	87	label	Glowcap
+life.js	87	label	Glow moss
+life.js	87	label	Bubble pod
+life.js	87	label	Spore flower
+life.js	87	label	Glow fern
+life.js	87	label	Amethyst
+life.js	87	label	Dream bell
+life.js	87	label	Lantern reed
+life.js	90	label	Golden Glade
+life.js	93	label	Meadow butterflies
+life.js	94	label	Honey bees
+life.js	95	label	Goldfinch
+life.js	96	label	Pond heron
+life.js	97	label	Golden hare
+life.js	98	label	Sun fawn
+life.js	99	label	Honey sprite
+life.js	100	label	Sun stag
+life.js	101	label	Glade fairies
+life.js	103	label	Sunflower
+life.js	103	label	Wheat grass
+life.js	103	label	Buttercup
+life.js	103	label	Honey blossom
+life.js	103	label	Golden fern
+life.js	103	label	Lavender
+life.js	103	label	Dandelion
+life.js	103	label	Wind chime bloom
+life.js	407	label	Hollow tree
+life.js	407	label	Tiny house
+life.js	407	label	Burrow
+life.js	409	label	Fairy
+life.js	410	label	Your house
+vista.js	84	label	translate3d({…}px,{…}px,0)
+nook_realm.js	82	label	Your home
+nook_realm.js	83	label	The store
+nook_realm.js	96	label	Streak
+nook_realm.js	96	label	Sound
+nook_realm.js	96	label	Music
+nook_realm.js	96	label	Settings
+nook_realm.js	96	label	Ask
+nook_realm.js	96	label	Help
+nook_realm.js	116	label	Light sprite
+vs_wood_forest.js	304	label	Dew fairy
+vs_wood_forest.js	305	label	Lantern fairy
+vs_wood_forest.js	306	label	Berry fairy
+vs_wood_forest.js	307	label	Old Moss fairy
+vs_wood_forest.js	310	label	Your toadstool cottage
+vs_wood_forest.js	310	label	The pantry log
+vs_wood_forest.js	365	label	The Whisper Willow
+vs_wood_forest.js	373	label	Fern
+vs_wood_forest.js	373	label	Foxglove
+vs_wood_forest.js	373	label	Lily of the valley
+vs_wood_forest.js	374	label	Primroses
+vs_wood_forest.js	374	label	Clover
+vs_wood_forest.js	374	label	Bluebells
+vs_wood_forest.js	374	label	Moonflower
+vs_wood_forest.js	377	label	Fox
+vs_wood_forest.js	377	label	Hedgehog
+vs_wood_forest.js	378	label	Rabbit
+vs_wood_forest.js	379	label	Toad
+vs_wood_forest.js	379	label	Snail
+vs_wood_forest.js	380	label	Blossom fawn
+vs_wood_forest.js	381	label	Luna moth
+vs_wood_forest.js	382	label	Firefly
+vs_chiba.js	230	label	Pampas grass
+vs_chiba.js	230	label	Cosmos
+vs_chiba.js	230	label	Hydrangea
+vs_chiba.js	230	label	Spider lily
+vs_chiba.js	230	label	Lotus
+vs_chiba.js	230	label	Morning glory
+vs_chiba.js	230	label	Bamboo
+vs_chiba.js	230	label	Persimmon tree
+vs_chiba.js	230	label	Dandelion
+vs_chiba.js	255	label	The Great Cat
+vs_chiba.js	258	label	Utility pole
+vs_chiba.js	261	label	Konbini
+vs_chiba.js	262	label	Vending machine
+vs_chiba.js	263	label	Torii
+vs_chiba.js	265	label	Your house
+vs_chiba.js	317	label	Mochi, melting
+vs_chiba.js	322	label	Noodle
+vs_chiba.js	330	label	Upside-down cat
+vs_chiba.js	344	label	Cat tower
+vs_chiba.js	349	label	Moon kitten
+vs_chiba.js	354	label	Cat and shadow
+vs_chiba.js	358	label	Drifting cat
+vs_chiba.js	364	label	Crow
+vs_chiba.js	369	label	Koi
+vs_chiba.js	374	label	Heron
+vs_chiba.js	378	label	Tanuki
+vs_chiba.js	381	label	Dragonfly
+vs_sea.js	151	label	Kelp
+vs_sea.js	151	label	Sea fan
+vs_sea.js	151	label	Brain coral
+vs_sea.js	151	label	Anemone
+vs_sea.js	151	label	Feather worms
+vs_sea.js	151	label	Eelgrass
+vs_sea.js	151	label	Glow lily
+vs_sea.js	151	label	Staghorn coral
+vs_sea.js	151	label	Lantern weed
+vs_sea.js	151	label	Bubble pods
+vs_sea.js	167	label	The Old Jelly
+vs_sea.js	173	label	Your pavilion
+vs_sea.js	175	label	Dragon gate
+vs_sea.js	176	label	Stone lantern
+vs_sea.js	178	label	Giant clam
+vs_sea.js	179	label	Old urn
+vs_sea.js	180	label	Bronze bell
+vs_sea.js	206	label	Lantern jelly
+vs_sea.js	206	label	Rose jelly
+vs_sea.js	206	label	Violet jelly
+vs_sea.js	206	label	Moon jelly
+vs_sea.js	212	label	Comb jelly
+vs_sea.js	216	label	Chain jelly
+vs_sea.js	220	label	Old turtle
+vs_sea.js	225	label	Seahorse
+vs_sea.js	228	label	Bell crab
+vs_sea.js	232	label	Urn octopus
+vs_sea.js	235	label	Golden carp
+vs_sea.js	239	label	Manta
+vs_shire_forest.js	106	label	Carrots
+vs_shire_forest.js	106	label	Radishes
+vs_shire_forest.js	106	label	Cabbages
+vs_shire_forest.js	106	label	Bean poles
+vs_shire_forest.js	106	label	Daisies
+vs_shire_forest.js	106	label	Sunflower
+vs_shire_forest.js	106	label	Lavender
+vs_shire_forest.js	106	label	Glow berries
+vs_shire_forest.js	106	label	Tulips
+vs_shire_forest.js	106	label	Pumpkins
+vs_shire_forest.js	106	label	Spore mushrooms
+vs_shire_forest.js	106	label	Fiddlehead ferns
+vs_shire_forest.js	188	label	Your burrow
+vs_shire_forest.js	188	label	The larder
+vs_shire_forest.js	245	label	The Heart Tree
+vs_shire_forest.js	248	label	Mouse door
+vs_shire_forest.js	248	label	Tree door
+vs_shire_forest.js	258	label	Pond toad
+vs_shire_forest.js	259	label	Prism snail
+vs_shire_forest.js	260	label	Blue songbird
+vs_shire_forest.js	261	label	Honey bee
+vs_shire_forest.js	262	label	Mandala butterfly
+vs_shire_forest.js	263	label	Glowworm curtain
+vs_shire_forest.js	266	label	Mouse gardener
+vs_shire_forest.js	267	label	Mole waterer
+vs_shire_forest.js	268	label	Rabbit picker
+vs_shire_forest.js	269	label	Old hedgehog
+vs_shire_forest.js	271	label	Light sprite
+vs_extra.js	133	label	Your stone cabin
+vs_extra.js	133	label	The rune cache
+vs_extra.js	137	label	The Rune Oak
+vs_extra.js	139	label	Rune lantern
+vs_extra.js	142	label	Glowcap mushrooms
+vs_extra.js	142	label	Bluebells
+vs_extra.js	142	label	Moonflower
+vs_extra.js	143	label	Toadstools
+vs_extra.js	143	label	Foxglove
+vs_extra.js	143	label	Fern
+vs_extra.js	143	label	Lily of the valley
+vs_extra.js	144	label	Bramble
+vs_extra.js	144	label	Primroses
+vs_extra.js	144	label	Hanging vine
+vs_extra.js	144	label	Clover
+vs_extra.js	147	label	Rune wolf
+vs_extra.js	148	label	Rune stag
+vs_extra.js	149	label	Hare
+vs_extra.js	149	label	Owl
+vs_extra.js	150	label	Toad
+vs_extra.js	150	label	Prism snail
+vs_extra.js	151	label	Light moth
+vs_extra.js	152	label	Firefly
+vs_extra.js	155	label	Water keeper
+vs_extra.js	156	label	Lantern keeper
+vs_extra.js	157	label	Old rune keeper
+vs_extra.js	159	label	Rune wisp
+vs_crystal_forest.js	75	label	Glow ferns
+vs_crystal_forest.js	75	label	Crystal blooms
+vs_crystal_forest.js	75	label	Glass reeds
+vs_crystal_forest.js	75	label	Bellcap mushrooms
+vs_crystal_forest.js	75	label	Ghost orchids
+vs_crystal_forest.js	75	label	Lantern thorn
+vs_crystal_forest.js	75	label	Moonmoss
+vs_crystal_forest.js	75	label	Spore pods
+vs_crystal_forest.js	75	label	Relic ivy
+vs_crystal_forest.js	156	label	Your crystal home
+vs_crystal_forest.js	156	label	The reliquary
+vs_crystal_forest.js	201	label	The Singing Spire
+vs_crystal_forest.js	203	label	Shard lantern
+vs_crystal_forest.js	210	label	Crystal stag
+vs_crystal_forest.js	211	label	Glow salamander
+vs_crystal_forest.js	212	label	Shard beetle
+vs_crystal_forest.js	213	label	Cave bat
+vs_crystal_forest.js	214	label	Ghost moth
+vs_crystal_forest.js	215	label	Glow slug
+vs_crystal_forest.js	216	label	Lantern spider
+vs_crystal_forest.js	219	label	Pale gardener
+vs_crystal_forest.js	220	label	Pale keeper of light
+vs_crystal_forest.js	221	label	Pale gatherer
+vs_crystal_forest.js	222	label	Elder of the Pale
+vs_crystal_forest.js	224	label	Shard wisp
+vs_dream.js	90	label	Moon lilies
+vs_dream.js	90	label	Clock flowers
+vs_dream.js	90	label	Feather grass
+vs_dream.js	90	label	Lantern pods
+vs_dream.js	90	label	Star tree
+vs_dream.js	90	label	Glass tulips
+vs_dream.js	90	label	Ribbon vine
+vs_dream.js	90	label	Dream caps
+vs_dream.js	90	label	Whisper reeds
+vs_dream.js	108	label	The Sleeper
+vs_dream.js	114	label	Your house
+vs_dream.js	126	label	Moon whale
+vs_dream.js	130	label	Paper crane
+vs_dream.js	134	label	Clock owl
+vs_dream.js	136	label	Glass fawn
+vs_dream.js	139	label	Cloud sheep
+vs_dream.js	142	label	Umbrella frog
+vs_dream.js	144	label	Lamp snail
+scene.js	26	label	Asia/Tokyo
+scene.js	26	label	Asia/Seoul
+scene.js	26	label	Asia/Manila
+scene.js	26	label	Asia/Singapore
+scene.js	26	label	Asia/Hong_Kong
+scene.js	26	label	Asia/Shanghai
+scene.js	26	label	Asia/Taipei
+scene.js	27	label	Asia/Bangkok
+scene.js	27	label	Asia/Jakarta
+scene.js	27	label	Asia/Kolkata
+scene.js	27	label	Asia/Calcutta
+scene.js	27	label	Asia/Dubai
+scene.js	27	label	Asia/Karachi
+scene.js	27	label	Asia/Dhaka
+scene.js	27	label	Asia/Kuala_Lumpur
+scene.js	27	label	Asia/Ho_Chi_Minh
+scene.js	28	label	Australia/Sydney
+scene.js	28	label	Australia/Melbourne
+scene.js	28	label	Australia/Brisbane
+scene.js	28	label	Australia/Perth
+scene.js	28	label	Pacific/Auckland
+scene.js	29	label	Europe/London
+scene.js	29	label	Europe/Dublin
+scene.js	29	label	Europe/Paris
+scene.js	29	label	Europe/Berlin
+scene.js	29	label	Europe/Madrid
+scene.js	29	label	Europe/Rome
+scene.js	29	label	Europe/Amsterdam
+scene.js	29	label	Europe/Stockholm
+scene.js	29	label	Europe/Moscow
+scene.js	29	label	Europe/Istanbul
+scene.js	29	label	Europe/Lisbon
+scene.js	30	label	Africa/Cairo
+scene.js	30	label	Africa/Lagos
+scene.js	30	label	Africa/Johannesburg
+scene.js	30	label	Africa/Nairobi
+scene.js	31	label	America/New_York
+scene.js	31	label	America/Chicago
+scene.js	31	label	America/Denver
+scene.js	31	label	America/Los_Angeles
+scene.js	31	label	America/Toronto
+scene.js	31	label	America/Vancouver
+scene.js	31	label	America/Mexico_City
+scene.js	31	label	America/Sao_Paulo
+scene.js	31	label	America/Argentina/Buenos_Aires
+scene.js	31	label	America/Bogota
+scene.js	31	label	Pacific/Honolulu
+scene.js	885	label	url({…})
+dj.js	34	text	Your browser held the music back. Tap play once more.
+dj.js	71	label	Pause
+dj.js	71	label	Play
+dj.js	75	text	Sound off. Tap to turn on
+dj.js	75	text	Sound on. Tap to mute
+dj.js	76	text	Sound off. Open sound and music
+dj.js	76	label	Sound and music
+dj.js	78	label	Sound off
+dj.js	78	label	Sound on
+dj.js	82	text	{…} by {…}, plays in Bandcamp's own player below. Press play there. Its volume is separate from the slider above.
+dj.js	85	note	Streams the official release from YouTube, with no video shown.
+dj.js	85	note	Previous track
+dj.js	85	note	Next track
+dj.js	113	label	#dj, #djBtn
+dj.js	114	label	Escape
+ui45.js	9	note	A small house on a green hill, with a tree beside it
+ui45.js	30	label	#tourBody input[name=tourCur]
+ui45.js	99	label	from Mako
+ui45.js	99	note	From Mako
+ui45.js	103	label	src="{…}"
+ui45.js	103	note	Getting the video ready 0%
+ui45.js	103	note	A short hello video
+ui45.js	103	note	Play the video
+ui45.js	103	label	Speed{…}
+ui45.js	103	note	Playback speed
+ui45.js	106	note	Watch the videoOpens in a new tab
+ui45.js	107	text	Video did not load. Skip it and continue.
+ui45.js	134	label	#tourSpeed button
+ui45.js	149	label	{…} class="tx-l" data-t="{…}" data-i="{…}">{…}
+ui45.js	151	label	Transcript
+ui45.js	151	button	Back to now
+ui45.js	177	note	Used this before on another phone?
+ui45.js	177	button	Enter your recovery code
+ui45.js	177	button	Load
+ui45.js	177	note	Recovery code
+ui45.js	182	note	Welcome back.
+ui45.js	183	label	Enter
+ui45.js	187	label	Welcome
+ui45.js	187	label	Next
+ui45.js	192	text	Six minutes from Mako, who made this. Also under Help.
+ui45.js	192	text	Not playing? Open on Google Drive.
+ui45.js	193	text	Six minutes from Mako, who made this. Come back here when done, or skip. Also under Help.
+ui45.js	190	text	Put in your pay and bills. The burrow shows how much is really free to spend, and saves toward the things you want.
+ui45.js	198	label	Currency
+ui45.js	205	note	The first setup is short: pay, rent, food and one goal.
+ui45.js	205	button	Use the longer setup
+ui45.js	205	note	Longer setup is on: every bill and goal.
+ui45.js	201	label	Other currency
+ui45.js	201	label	Choose currency
+ui45.js	201	label	First name (optional)
+ui45.js	201	text	Data stays in this browser. Nobody else can see it.
+ui45.js	201	note	First name
+ui45.js	217	label	Setup done, {…}
+ui45.js	217	label	Setup done
+ui45.js	218	label	Done
+ui45.js	218	label	Go to bills
+ui45.js	222	note	Free to spend is {…}, but the month still comes up short.
+ui45.js	222	note	Nothing is free to spend yet.
+ui45.js	222	note	Plan exceeds pay by {…}.{…} Under Plan: lower a bill or a goal, or add income.
+ui45.js	223	text	Nothing is free to spend in the plan. Raise the Free to spend line under Plan.
+ui45.js	224	text	Free to spend {…} a month. {…} of pay is not placed yet: raise a goal or add to free to spend.
+ui45.js	225	text	Free to spend {…} a month, to spend without guilt. All other pay is placed.
+ui45.js	228	note	Full this month.
+ui45.js	228	note	Full {…}, {…} from now.
+ui45.js	228	label	Not full within
+ui45.js	231	label	Main goal
+ui45.js	231	text	{…} of {…}{…}. {…}
+ui45.js	231	note	{…} percent
+ui45.js	237	note	Keep a copy in the cloud
+ui45.js	237	text	Your numbers live in this browser. Cloud backup keeps an encrypted copy that only your recovery code can open. New phone, or browser cleared: enter the code and the numbers come back.
+ui45.js	237	button	Turn on cloud backup
+ui45.js	237	note	Later: Settings, Cloud backup.
+ui45.js	239	label	{…}Pay not placed
+ui45.js	239	label	{…}On plan
+ui45.js	239	label	Your month:
+ui45.js	239	text	Receipts keeps this true: log what you spend, or upload each month's statement. What is left of Free to spend at month end can go toward a goal. Help, bottom right, has the video and this setup.
+ui45.js	245	text	Pay skipped. Everything is zero until you add numbers.
+ui45.js	245	text	No pay yet, so the numbers are samples. Add yours on Plan: Month, Details, Money in, Salary. Or Help, Guided setup, to come back here.
+ui45.js	246	text	Pay entered. {…} is not placed yet: raise a goal or add to free to spend.
+ui45.js	247	note	because bills are still samples
+ui45.js	247	note	Lower a bill under Plan.
+ui45.js	247	note	Enter your real bills next.
+ui45.js	247	text	Pay entered. The {…} exceeds pay by {…}{…}. {…}
+ui45.js	248	text	Pay entered. All of it is assigned.
+ui45.js	249	text	Bills and burrows are empty. Open Plan, Bills and basics, and enter what you pay.
+ui45.js	250	text	Your bills are in. Any line left at zero can be set under Plan, Bills and basics.
+ui45.js	250	text	Your bills are all at zero so far. Set each line under Plan, Bills and basics.
+ui45.js	251	text	Bills and burrows are still samples. Open Plan, Bills and basics, and set each line. Or use Set all to zero in Settings.
+ui45.js	252	note	Help (bottom right) has the video and the setup.
+ui45.js	292	label	{…}, setup progress
+ui45.js	299	label	Finish later
+ui45.js	299	label	Skip
+ui45.js	314	text	Sound on. Turn off
+ui45.js	314	text	Sound off. Turn on
+ui45.js	314	label	Sound on
+ui45.js	314	label	Sound off
+ui45.js	315	label	Off
+ui45.js	322	note	#tourArt .art
+ui45.js	333	text	Music on. Turn off
+ui45.js	333	text	Music off. Turn on
+ui45.js	333	label	Music on
+ui45.js	333	label	Music off
+ui45.js	366	note	Setup changed your plan.
+ui45.js	366	text	Setup changed your plan. You can undo for {…} days.
+ui45.js	407	note	This is yours to spend.
+ui45.js	427	label	#tourBody input[name=tourEm]
+ui45.js	433	label	Escape
+ui45.js	434	note	[data-subamt], .so-n, .so-a, #tourCardT, #tourCardB
+ui45.js	437	note	#tourBody input:not([type=range]):not([type=checkbox]):not([type=radio])
+ui45.js	438	label	Tab
+ui46.js	34	label	The Burrow problem report
+ui46.js	36	label	Device: {…}
+ui46.js	37	note	Screen: {…}x{…}, pixel ratio {…}, look {…}{…}, {…}, {…}
+ui46.js	38	note	Page: {…}, setup {…}, numbers from {…}, currency {…}
+ui46.js	39	note	Plan: {…} goals, {…} lines, {…} receipts, {…} edited months
+ui46.js	40	label	Storage: {…}, backup {…}
+ui46.js	41	label	Errors ({…}):
+ui46.js	43	label	What I was doing:
+ui46.js	49	note	Where is my money going?
+ui46.js	49	note	What would bring my goal closer?
+ui46.js	49	note	What can I realistically save each month?
+ui46.js	49	note	Help me plan a trip
+ui46.js	49	note	Cut my free to spend a little
+ui46.js	49	note	I spent 300 on lunch today
+ui46.js	52	label	On plan
+ui46.js	52	label	Tight
+ui46.js	52	label	Short
+ui46.js	54	label	- Left over: {…} - Status: {…} - Goals: {…}
+ui46.js	61	text	Ask anything about your money or this page. I can see your plan and can propose changes; nothing changes until you tap Apply.
+ui46.js	61	note	The paperclip adds receipts or statements to read.
+ui46.js	68	text	That code word was not accepted. Ask the person who shared this page for the current one.
+ui46.js	68	note	This page needs the code word from the person who shared it.
+ui46.js	70	label	Code word
+ui46.js	71	label	btn small solid
+ui46.js	71	label	Continue
+ui46.js	73	label	Enter
+ui46.js	79	note	The AI is not switched on for this page yet.
+ui46.js	81	text	Ask Claude needs permission to use your Claude account and is unavailable here. The tour is still under Help.
+ui46.js	82	text	Too many requests, or your Claude usage limit is reached. Try again later.
+ui46.js	83	text	Signed out of Claude. Sign in again, then ask again.
+ui46.js	84	text	No answer produced. Rephrase the question.
+ui46.js	85	text	Conversation too long. Use New chat to start fresh.
+ui46.js	86	text	Request failed. Your question is back in the box. Try again.
+ui46.js	87	label	(Interrupted)
+ui46.js	101	label	Working…
+ui46.js	106	label	Working out a change…
+ui46.js	113	note	Explain how this page works and where I should start.
+ui46.js	114	label	My question:
+ui46.js	118	text	Copied. Paste it into your AI app.
+ui46.js	124	text	Runs on your Claude account; you approve access first. Your numbers go with each question while the box is ticked. Nothing is kept.
+ui46.js	125	text	Answered by Claude through this page. Your numbers go with each question while the box is ticked. Nothing is kept.
+ui46.js	128	label	Jan
+ui46.js	128	label	Feb
+ui46.js	128	label	Mar
+ui46.js	128	label	Apr
+ui46.js	128	label	May
+ui46.js	128	label	Jun
+ui46.js	128	label	Jul
+ui46.js	128	label	Aug
+ui46.js	128	label	Sep
+ui46.js	128	label	Oct
+ui46.js	128	label	Nov
+ui46.js	128	label	Dec
+ui46.js	132	text	{…}: old Excel format. Open it and save as CSV or .xlsx.
+ui46.js	132	text	{…}: this browser cannot open Excel files here. Save it as CSV.
+ui46.js	136	text	Open the app's own address, where PDFs, Excel files and screenshots are read for everyone, no sign-in.
+ui46.js	142	label	This PDF cannot
+ui46.js	142	label	PDFs cannot
+ui46.js	142	note	{…} be read here: {…}.
+ui46.js	142	note	The link above opens the address where they can.
+ui46.js	142	note	Use a screenshot of each page, or a CSV from your bank.
+ui46.js	150	note	Remove {…}
+ui46.js	152	text	Optional note, e.g. "October card statement"
+ui46.js	152	label	Ask how something works
+ui46.js	153	text	Files go to Claude when you press Send. This page keeps none of them.
+ui46.js	153	text	Files go to your own Claude account when you press Send. This page does not keep them.
+ui46.js	153	note	Nothing changes until you tap Add to my page.
+ui46.js	159	note	{…}: only photos, screenshots{…}, CSV and Excel files can be read.
+ui46.js	160	text	{…} is too large. Try one month at a time.
+ui46.js	161	text	{…} is too large. Export fewer months, or take screenshots of the pages.
+ui46.js	162	text	Up to {…} PDFs at a time. 2 or 3 months is plenty.
+ui46.js	163	text	{…} is too large. Use a screenshot instead of the original photo.
+ui46.js	164	note	Maximum {…} CSV or Excel files at a time.
+ui46.js	165	text	Maximum {…} photos at a time. Add the rest after these.
+ui46.js	172	text	{…} could not be read as a spreadsheet. Save it as CSV and try again.
+ui46.js	180	label	{…} | {…} | {…} | usual monthly amount {…}
+ui46.js	206	note	(photos, screenshots or PDF statements)
+ui46.js	207	label	----- FILE: {…} ----- {…}
+ui46.js	259	label	Open Receipts
+ui46.js	261	note	They are in the Receipts tab.
+ui46.js	265	label	msg ai card rv
+ui46.js	270	label	{…} new receipt{…}
+ui46.js	270	label	No new receipts
+ui46.js	270	note	All already on your page.
+ui46.js	273	label	Other
+ui46.js	275	label	Already added
+ui46.js	277	label	Category for
+ui46.js	283	label	Salary: {…} → {…} a month
+ui46.js	284	label	Bill
+ui46.js	284	label	{…}: {…} → {…} a month
+ui46.js	285	label	Money today: {…} → {…}
+ui46.js	286	label	Numbers
+ui46.js	288	note	{…} receipt{…} dated outside {…} to {…}.
+ui46.js	289	note	{…} row{…} unreadable.
+ui46.js	290	note	Long file: only the first part was read.
+ui46.js	292	label	Left out:
+ui46.js	293	label	btn solid small
+ui46.js	293	label	Add to my page
+ui46.js	293	label	Not now
+ui46.js	294	label	Close
+ui46.js	296	note	Nothing changed.
+ui46.js	300	note	Tick at least one item.
+ui46.js	302	label	{…} receipt{…}
+ui46.js	303	label	{…} bill amount{…}
+ui46.js	304	label	msg ai card
+ui46.js	305	label	Added
+ui46.js	305	label	and $1
+ui46.js	306	label	Undo
+ui46.js	308	text	Undone. Page restored.
+ui46.js	319	note	Reading files needs permission to use your Claude account and is unavailable here.
+ui46.js	320	text	Photos cannot be sent from here. A CSV from your bank still works.
+ui46.js	321	text	A photo could not be read. Try a clearer one, or a screenshot.
+ui46.js	322	note	A file could not be read.
+ui46.js	322	note	Remove it, then send again.
+ui46.js	323	text	Files too long. Add fewer files, fewer pages, or one month at a time.
+ui46.js	325	text	Signed out of Claude. Sign in again, then send the files again.
+ui46.js	326	text	The answer was cut short: too much for one read. Fewer files at a time (2 or 3 months is plenty).
+ui46.js	327	note	Claude answered in words instead of numbers: "{…}" Try fewer files, or one month at a time.
+ui46.js	328	text	No entries could be made from those files. Try a clearer photo, or one file at a time.
+ui46.js	329	text	Request failed. Your files are still attached. Try again.
+ui46.js	347	label	Files:
+ui46.js	348	label	Reading files…
+ui46.js	355	note	Nothing new found to add.
+ui46.js	355	note	Try a clearer photo, or one file at a time.
+ui46.js	361	button	Fill the page from receipts or statements
+ui46.js	372	text	This copy of the page cannot reach Claude. Downloaded files behave this way.
+ui46.js	373	note	Permission not granted, or not signed in to Claude in this browser.
+ui46.js	374	note	Claude could not be reached from this view.
+ui46.js	375	note	At the app's own address it works for everyone.
+ui46.js	375	note	Open the web link, not a downloaded file, and the chat works.
+ui46.js	376	note	Open it and move my numbers
+ui46.js	376	label	Open the app
+ui46.js	418	text	Copied. Send it to Mako.
+ui46.js	432	label	Files
+ui46.js	437	label	Escape
+ui46.js	442	label	Ask about my money
+ui4a.js	36	label	Bills and basics
+ui4a.js	36	label	Long-term savings
+ui4a.js	36	label	Free to spend
+ui4a.js	36	label	Education
+ui4a.js	36	label	Investing
+ui4a.js	36	label	Giving
+ui4a.js	43	label	| last payment
+ui4a.js	44	label	| for:
+ui4a.js	44	label	not full within
+ui4a.js	44	label	| main goal
+ui4a.js	44	label	{…} | {…}{…}{…} | goal {…} | saved {…} | {…} a month | {…} | {…}{…}
+ui4a.js	50	label	On plan
+ui4a.js	50	label	Tight
+ui4a.js	50	label	Short
+ui4a.js	56	label	no short month
+ui4a.js	57	label	{…} {…} ({…}%, usual {…}%)
+ui4a.js	64	note	no receipts logged before this month
+ui4a.js	66	label	none named yet
+ui4a.js	67	label	numbers came from statements
+ui4a.js	67	note	typed in the guided setup
+ui4a.js	81	label	for {…} only
+ui4a.js	84	label	Salary: {…} to {…} a month
+ui4a.js	85	note	Second pay: {…} to {…} a month
+ui4a.js	86	label	Money today: {…} to {…}
+ui4a.js	87	label	Minimum balance: {…} to {…}
+ui4a.js	88	label	{…}: {…} to {…} a month{…}
+ui4a.js	89	label	{…} jar: {…} to {…} a month{…}
+ui4a.js	90	note	New line {…} under {…}: {…} a month
+ui4a.js	91	label	Remove the line {…}
+ui4a.js	96	label	New goal {…}: {…}{…}{…}{…}{…}
+ui4a.js	100	label	name to {…}
+ui4a.js	101	label	goal {…} to {…}
+ui4a.js	102	label	saved {…} to {…}
+ui4a.js	103	label	date to {…}
+ui4a.js	104	label	reason: {…}
+ui4a.js	108	label	Remove the goal {…}
+ui4a.js	109	note	{…}: back to the suggested monthly amount
+ui4a.js	110	label	Home leads with {…}
+ui4a.js	111	label	free to spend
+ui4a.js	111	label	streak and badges
+ui4a.js	111	label	Home shows: {…}{…}
+ui4a.js	112	label	Name: {…}
+ui4a.js	117	label	Other
+ui4a.js	117	label	Log {…}, {…}{…}{…}
+ui4a.js	131	label	Free to spend left
+ui4a.js	131	label	Left over
+ui4a.js	132	label	Balance, end of {…}
+ui4a.js	132	label	Status
+ui4a.js	135	label	{…}, {…}/mo
+ui4a.js	144	label	Proposed change{…}
+ui4a.js	150	label	btn small solid
+ui4a.js	151	label	Not now
+ui4a.js	153	note	Left out (not understood): {…}.
+ui4a.js	158	label	Apply
+ui4a.js	158	label	Apply {…} changes
+ui4a.js	161	note	Not applied.
+ui4a.js	167	label	Undo
+ui4a.js	170	text	(The person applied the proposed change. The picture below is now current.)
+ui4a.js	176	label	```mhr
+ui4a.js	182	text	PICTURE: the person chose not to share their numbers for this question. Answer in general terms and offer no proposal.
+ui4a.js	182	note	PAGE GUIDE (for where-to-tap questions)
+ui4a.js	182	label	THE PAGE
+ui4a.js	182	text	The conversation starts below. Answer only the latest message.
+ui4a.js	188	note	Here is a change you can apply.
+ui4a.js	188	text	(Cut short. Ask for less at a time.)
+ui4a.js	192	text	The proposed change could not be read. Ask again in other words.
+ui4a.js	194	text	Nothing in that proposal matched the page. Ask again in other words.
+ui47.js	17	label	Pick a date
+ui47.js	17	label	No date
+ui47.js	18	label	Today
+ui47.js	29	label	label[for="{…}"]
+ui47.js	44	label	Enter
+ui47.js	50	label	Choose a month
+ui47.js	78	label	{…}px {…}
+ui47.js	86	label	Escape
+ui47.js	108	label	Choose a date
+ui47.js	115	note	Previous year
+ui47.js	115	note	Next year
+ui47.js	122	note	Previous month
+ui47.js	122	note	Choose month and year
+ui47.js	122	note	Next month
+ui47.js	149	label	[data-d="{…}"]
+ui48.js	6	label	Where you stand
+ui48.js	6	text	Read this first. On plan: this month fits your pay and your balance stays above your minimum.
+ui48.js	7	label	Main goal
+ui48.js	7	text	Your reason, in your words, with what this month adds and the months left. Tap Forecast for the graph.
+ui48.js	8	label	Free to spend
+ui48.js	8	text	The money you use this month. The big number is free to spend on fun, no guilt. Below it: are your necessities covered, and what is left for learning and giving. What is left at month end can go toward a goal.
+ui48.js	9	label	Log spend
+ui48.js	9	text	Enter an amount, pick a category, tap Log. Do it as you spend or weekly.
+ui48.js	10	label	Burrows
+ui48.js	10	text	Tap a burrow to open it. Edit it or make it your main burrow.
+ui48.js	11	label	Investing
+ui48.js	11	text	Money you invest and never spend. It only grows. Goals and debt live in the burrows at the top.
+ui48.js	12	label	Ask
+ui48.js	12	text	Any money question, any time. It knows your plan and can make changes you approve.
+ui48.js	15	label	Scan receipts
+ui48.js	15	text	Claude reads receipt photos and files each one. You review before anything is added.
+ui48.js	16	label	Manual entry
+ui48.js	16	text	Date, amount, category. Unsure of the category? Pick Other and change it later.
+ui48.js	17	label	Plan vs spend
+ui48.js	17	note	Per category: planned, spent, left.
+ui48.js	18	label	Reminder
+ui48.js	18	note	Pick a schedule, then add a repeating calendar event.
+ui48.js	21	note	#goalCards .gcard
+ui48.js	21	label	Goal
+ui48.js	21	text	Bar = how full by plan. Edit goal changes name, amount or date.
+ui48.js	22	label	Add a burrow
+ui48.js	22	note	Three steps: type, goal amount, date.
+ui48.js	23	label	Forecast
+ui48.js	23	text	Every goal, month by month. Hover or tap to read a month.
+ui48.js	26	note	The big number is this month’s free to spend: yours to spend, no guilt.
+ui48.js	27	label	Pay by place
+ui48.js	27	text	Six places. Hover or tap a colour for the amount.
+ui48.js	28	label	Details
+ui48.js	28	text	Tap a row to open it and enter a new amount. Applies to this month only, until you choose Keep for later months.
+ui48.js	31	label	All months
+ui48.js	31	text	Tap a month to open it. Short = balance falls under the minimum.
+ui48.js	34	label	Balance
+ui48.js	34	text	Current balance. Warns when a month would end under the minimum.
+ui48.js	35	label	Look
+ui48.js	35	text	Light, Dark or Auto (follows the device). This browser only.
+ui48.js	36	label	Six places
+ui48.js	36	text	The usual split, as a guide. Your real split comes from the amounts in each place.
+ui48.js	37	label	Saved data
+ui48.js	37	text	Numbers live in this browser only. Save a file copy regularly. Restore it here or on another device.
+ui48.js	46	button	Skip
+ui48.js	46	button	Back
+ui48.js	46	button	Next
+ui48.js	56	label	Escape
+ui48.js	58	label	Tab
+ui48.js	66	note	Nothing to show on this tab yet.
+ui48.js	79	label	{…} of {…}
+ui48.js	80	label	Done
+ui41.js	9	label	@@RELAY@@
+ui41.js	38	note	Only JPEG, PNG, WebP or GIF.
+ui41.js	50	text	{…} is too large. Export fewer months, or take screenshots of the pages.
+ui41.js	52	label	%PDF
+ui41.js	52	note	{…} is not a PDF.
+ui41.js	53	text	{…} asks for a password. Open it with the password, then save or print it as a new PDF, or take screenshots of its pages.
+ui41.js	66	text	Up to {…} PDFs at a time. 2 or 3 months of statements is plenty.
+ui41.js	67	text	About {…} pages in {…} PDFs is too much for one read. Pick fewer months: 2 or 3 is plenty.
+ui41.js	91	note	No connection.
+ui41.js	97	note	Stopped before sending.
+ui41.js	99	note	Unknown modelTier.
+ui41.js	116	label	Error: unknown tool
+ui41.js	117	label	Error:
+ui41.js	125	note	No text came back.
+ui41.js	146	note	The connection dropped.
+ui41.js	162	note	Return the result.
+ui41.js	166	text	{…} Answer by calling the {…} tool once, with every field filled in. No words outside the tool call.
+ui41.js	173	note	The answer was cut short.
+ui41.js	173	note	No result came back.
+ui41.js	197	note	Open it and move my numbers
+ui41.js	197	label	Open it
+ui41.js	197	text	The app has its own addressWorks without a Claude account: reading statements, receipts and the assistant are on for everyone there.
+ui41.js	197	button	Not now
+ui41.js	217	note	Your numbers are here.
+ui4b.js	16	label	not a zip
+ui4b.js	31	label	bad zip entry
+ui4b.js	92	note	xl/sharedStrings.xml
+ui4b.js	102	label	# Sheet:
+ui42.js	81	note	The cloud copy replaced the numbers on this device.
+ui42.js	85	text	Cloud copy loaded. Your numbers from before are kept: you can undo for {…} days.
+ui42.js	89	note	Loaded the newer copy.
+ui42.js	90	note	Could not load the cloud copy.
+ui42.js	105	note	The code is 20 letters and digits, like MHR-XXXX-XXXX-XXXX-XXXX-XXXX.
+ui42.js	106	note	Cloud backup is not available from here.
+ui42.js	107	label	Checking…
+ui42.js	110	text	No cloud copy for this code. Check every character.
+ui42.js	111	text	Could not reach the cloud copy. Try again.
+ui42.js	114	note	That copy could not be opened with this code.
+ui42.js	117	text	Data is stored in this browser on this device only. Your numbers are sent only when you use Ask and tick the box to include them. A second copy is kept here in case the first goes missing, and is loaded on its own if so. It does not move to other devices. Clearing site data removes both, so only a backup file survives that. A backup is your own copy of numbers and receipts.
+ui42.js	118	text	Data is stored in this browser, with a second copy here in case the first goes missing, and an encrypted cloud copy (Cloud backup below) that follows every save. Clearing site data removes the two copies on this device; the recovery code brings the cloud copy back. A backup file is your own copy of numbers and receipts.
+ui42.js	126	text	Off. Your numbers live on this device only.
+ui42.js	129	text	The cloud copy does not accept this code any more. Turn off and on again to start a new one.
+ui42.js	130	note	A newer copy is in the cloud (from another device).
+ui42.js	131	note	On, but the cloud cannot be reached from here right now.
+ui42.js	132	text	On. Last sent {…}.
+ui42.js	132	text	On. Sending the first copy…
+ui42.js	139	text	This code is the only way to open your cloud copy on another phone or after losing this one. Save it in your notes or password app. It cannot be recovered.
+ui42.js	139	button	Copy code
+ui42.js	139	button	I saved it
+ui42.js	141	text	Code saved. Show code brings it back.
+ui42.js	149	note	Tap again: delete the cloud copy
+ui42.js	149	label	Turn off
+ui42.js	150	text	Cloud copy deleted. Numbers stay on this device.
+ui42.js	155	label	Enter
+ui49.js	34	text	Send receipts to an AI app, then paste its reply here. Items are sorted into your categories and listed for review before anything is added.
+ui49.js	34	note	Take a photo, or choose pictures, a bank CSV, Excel or PDF statement.
+ui49.js	34	note	Take a photo, or choose pictures or a bank CSV.
+ui49.js	34	text	Claude reads and sorts them into your categories. You review before anything is added.
+ui49.js	37	text	Reading photos is not available here. Use an AI app below.
+ui49.js	38	text	Reading photos needs a signed-in Claude and your permission. Open this page from its Claude link, or use an AI app below.
+ui49.js	39	text	Claude could not be reached. Try again, or use an AI app below.
+ui49.js	40	label	Try again
+ui49.js	44	label	#scanApp > summary
+ui49.js	44	note	#scanApp > p.cap
+ui49.js	45	label	Use your own AI
+ui49.js	45	text	Prefer your own AI? Use it instead
+ui49.js	46	text	Copy one message, paste it into ChatGPT, Gemini or the Claude app with the photos, and paste its reply back here. It is checked and listed for review the same way.
+ui49.js	47	text	An alternative to the buttons above, with the same result. If you would rather not send receipts through this page, or you like ChatGPT, Gemini or the Claude app better: copy one message, paste it into that AI with the photos, and paste its reply back here. It is checked and listed for review the same way.
+ui49.js	65	label	Remove
+ui49.js	69	label	Read {…} photo{…}
+ui49.js	69	label	Read {…} file{…}
+ui49.js	69	label	Read my receipts
+ui49.js	80	text	{…} is too large. Try one month at a time.
+ui49.js	81	note	Maximum {…} CSV or Excel files at a time.
+ui49.js	86	text	{…} is too large. Export fewer months, or take screenshots of the pages.
+ui49.js	87	text	Up to {…} PDFs at a time. One month per read keeps the review short.
+ui49.js	90	note	{…}: only photos, screenshots, CSV and Excel files can be read.
+ui49.js	91	text	Photos cannot be sent from here. Use an AI app below, or a CSV from your bank.
+ui49.js	92	text	Maximum {…} photos at a time. Read these first, then add the rest.
+ui49.js	94	text	{…}: photo format not supported. Use a screenshot instead.
+ui49.js	95	text	{…} is too large. Use a screenshot instead of the original photo.
+ui49.js	104	label	See receipts
+ui49.js	104	note	They are in the list below.
+ui49.js	120	label	msg ai wait
+ui49.js	120	text	Reading receipts. A few seconds.
+ui49.js	127	note	Nothing new found to add.
+ui49.js	127	note	{…} receipt{…} dated outside {…} to {…}.
+ui49.js	127	note	Try a clearer photo with the whole receipt in view.
+ui49.js	139	label	Other
+ui49.js	139	note	the same currency as the page
+ui49.js	215	text	Copy blocked by the browser. Select the text and copy it by hand.
+ui49.js	219	label	Claude
+ui49.js	219	label	Gemini
+ui49.js	219	label	Copilot
+ui49.js	219	label	Perplexity
+ui49.js	219	label	Grok
+ui49.js	220	label	Open your AI:
+ui49.js	223	text	Copied. Paste it into your AI app.
+ui49.js	228	note	Paste the reply first.
+ui49.js	231	note	Those receipts are dated outside {…} to {…}.
+ui49.js	231	text	No receipts found. Paste the whole reply: one line per receipt, as date, amount, category, note.
+ui49.js	234	label	msg ai card
+ui49.js	249	label	Starting the camera…
+ui49.js	253	text	Hold the receipt flat in the frame, then take the photo. Take as many as you need.
+ui49.js	255	note	The camera was not allowed.
+ui49.js	255	note	No camera was found on this computer.
+ui49.js	255	note	The camera could not be started.
+ui49.js	256	note	Choose files instead.
+ui49.js	274	note	photo-{…}.jpg
+ui49.js	275	text	{…} photo{…} added. Take another, or Done.
+ui49.js	284	label	Escape
+ui49.js	302	label	Files
+ui43.js	64	note	Last backup: never.
+ui43.js	64	note	Last backup: today.
+ui43.js	64	note	Last backup: {…} ago.
+ui43.js	77	text	This page already has numbers of its own. Replace them with the ones that just arrived?
+ui43.js	77	note	Load them here?
+ui43.js	77	note	Replace with the arrived numbers
+ui43.js	77	label	Load them
+ui43.js	77	note	Numbers arrived from the Claude link{…}
+ui43.js	77	button	Keep what is here
+ui43.js	80	text	Newer copy in the cloudSaved from another device{…}. Load it here, or keep this device's numbers and overwrite it.
+ui43.js	80	button	Load it
+ui43.js	80	button	Keep mine
+ui43.js	82	text	Save your recovery codeYour numbers are backed up to the cloud, encrypted. This code is the only way to open them on another phone.
+ui43.js	85	text	Numbers restoredThis page had lost its saved numbers. It loaded the copy kept in this browser{…}. Save a backup file to be safe.
+ui43.js	85	button	Save a copy
+ui43.js	90	text	Back up your numbersThey live on this device only. Cloud backup keeps an encrypted copy that only you can open.
+ui43.js	90	button	Turn on cloud backup
+ui43.js	90	button	Save a file instead
+ui43.js	90	button	Later
+ui43.js	91	label	Back up your numbers
+ui43.js	91	label	Last backup: {…} days ago
+ui43.js	91	text	{…}They live in this browser only. Save a file copy so nothing is lost.
+ui43.js	115	note	Backup saved.
+ui43.js	115	text	Not saved. Settings has Copy text.
+ui6.js	57	label	Free to spend
+ui6.js	57	label	Bills and basics
+ui6.js	57	note	Over plan this month.
+ui6.js	61	text	Logged. Streak: week 1.
+ui6.js	61	text	Logged. Streak: {…} weeks.
+ui6.js	68	label	First receipt
+ui6.js	68	note	Log a receipt.
+ui6.js	69	label	Pay set
+ui6.js	69	note	Enter your pay.
+ui6.js	70	label	First burrow
+ui6.js	70	note	Add a burrow with a goal amount.
+ui6.js	71	label	On track
+ui6.js	71	note	A goal is on track.
+ui6.js	72	label	Halfway
+ui6.js	72	note	A goal reaches 50%.
+ui6.js	73	note	Log 10 receipts.
+ui6.js	74	note	Log 4 weeks running.
+ui6.js	75	note	Log 12 weeks running.
+ui6.js	76	label	Goal full
+ui6.js	76	note	A goal reaches its amount.
+ui6.js	77	note	Put unspent free to spend toward a goal.
+ui6.js	87	note	Badge: {…}.
+ui6.js	87	note	{…} badges: {…}.
+ui6.js	109	label	not full within
+ui6.js	109	label	{…} progress
+ui6.js	109	note	{…}: {…} saved at the start of {…}, {…}, goal {…}
+ui6.js	110	label	Goal {…}
+ui6.js	111	label	Needed by
+ui6.js	113	label	Start of {…}
+ui6.js	114	label	Full {…} {…}
+ui6.js	126	label	No pay entered
+ui6.js	126	text	Your plan spends {…} in {…} and no pay is entered, so your bank would end at {…}. Add your monthly pay under Plan.
+ui6.js	126	text	You logged spending in {…} with no pay entered, so your bank would end at {…}. Add your monthly pay under Plan.
+ui6.js	126	label	No plan yet
+ui6.js	126	note	Add your monthly pay to start.
+ui6.js	127	label	Sample numbers
+ui6.js	127	text	Pay and bills are yours. The burrows are still invented. Add a burrow below.
+ui6.js	127	text	Invented figures for now. Finish the step below to make them yours.
+ui6.js	128	label	Over free to spend
+ui6.js	128	label	You are okay
+ui6.js	128	note	Bills and basics are {…} over.
+ui6.js	128	note	{…} is free to spend.
+ui6.js	128	note	Free to spend is {…} over.
+ui6.js	128	note	Free to spend is used up.
+ui6.js	128	text	{…} of your pay has no place yet. Bills are covered. Give it a goal or a place, or keep it as a cushion.{…}
+ui6.js	128	text	Bills use all of your pay. Nothing is set aside yet.
+ui6.js	128	note	Bills went past the plan.{…}
+ui6.js	128	note	Bills are covered and burrows are planned for.{…}
+ui6.js	128	label	Other
+ui6.js	128	label	Investing
+ui6.js	128	label	Education
+ui6.js	128	label	Giving
+ui6.js	128	note	{…} is {…} over.
+ui6.js	129	label	Over plan
+ui6.js	131	label	Tight month
+ui6.js	131	note	of it from your emergency fund
+ui6.js	131	text	Plans {…} more than your pay{…}. Your balance covers it, ending {…} at {…}.
+ui6.js	136	note	{…} plans {…} more than comes in
+ui6.js	137	note	{…} went past the plan this month
+ui6.js	138	label	Below zero
+ui6.js	139	note	Your bank ends {…} at {…}.
+ui6.js	140	note	It starts the month at {…}{…}.
+ui6.js	140	note	Spending past the plan in earlier months took {…}.
+ui6.js	142	note	Open Plan to see the month.
+ui6.js	144	label	Building your cushion
+ui6.js	144	text	Your bank is under your safety minimum of {…}, but {…} adds to it. It will end at {…}. You can change the minimum in Settings.
+ui6.js	145	label	Short
+ui6.js	145	text	Not enough for {…}. Your bank would end at {…}, under your safety minimum of {…}. Change it in Settings, or open Plan to fix the month.
+ui6.js	146	note	{…} went past the plan this month and came out of your bank.
+ui6.js	148	note	You logged receipts this week.
+ui6.js	148	text	This week: nothing logged yet. Log by Sunday.
+ui6.js	153	label	ends below zero
+ui6.js	153	label	ends under your minimum
+ui6.js	153	label	{…} is tight
+ui6.js	154	label	Coming up:
+ui6.js	154	text	. Open Plan to see why.
+ui6.js	154	note	The next 3 months look fine.
+ui6.js	156	button	How is this worked out?
+ui6.js	180	label	{…} is full
+ui6.js	180	text	It reached {…}. Keep saving toward your long-term goal of {…}?
+ui6.js	180	label	Keep saving
+ui6.js	182	label	Next: enter pay
+ui6.js	182	note	The plan starts from monthly pay.
+ui6.js	182	label	Enter pay
+ui6.js	183	label	Next: check bills
+ui6.js	183	note	Set each bill to the real amount.
+ui6.js	183	label	Open bills
+ui6.js	184	label	Next: add a burrow
+ui6.js	184	note	Pick something to save for.
+ui6.js	184	label	Add a burrow
+ui6.js	185	label	Next: log spend
+ui6.js	185	note	Enter an amount in Log spend, then tap Log.
+ui6.js	185	label	Log spend
+ui6.js	185	label	data-focus="hAmt"
+ui6.js	194	note	The bank figure now includes it.
+ui6.js	194	note	From {…}'s free to spend.{…}
+ui6.js	198	note	{…} is full.
+ui6.js	198	note	Full {…}.
+ui6.js	198	note	{…} to go.{…}
+ui6.js	198	note	The other {…} stays in the bank.
+ui6.js	199	text	From {…}'s free to spend. {…} had no room left, so it stays in the bank.
+ui6.js	200	text	From {…}'s free to spend. The bank figure now includes it.
+ui6.js	201	label	{…} put toward {…}
+ui6.js	201	label	{…} counted in the bank
+ui6.js	201	label	Undo
+ui6.js	206	note	Which goal
+ui6.js	207	note	{…}: {…} of free to spend is not logged as spent
+ui6.js	207	label	No receipts are logged
+ui6.js	207	note	Only 1 receipt is logged
+ui6.js	207	label	Only {…} receipts are logged
+ui6.js	207	text	Your bank figure does not include it yet. {…}Count it in the bank, or put it toward a goal. You can undo.
+ui6.js	207	label	Count {…} in the bank
+ui6.js	207	label	data-sweepbank="{…}"
+ui6.js	209	label	Make it exact
+ui6.js	209	text	Upload 2 or 3 months of statements (screenshots of the bank app work). The numbers become exact and your history fills in.
+ui6.js	209	text	Bring in 2 or 3 months of statements with an AI app (screenshots of the bank app work). The numbers become exact and your history fills in.
+ui6.js	209	label	Upload
+ui6.js	209	label	Use an AI app
+ui6.js	210	note	Next: add your other bills
+ui6.js	210	text	Utilities, internet, phone, transport. Rough numbers are fine.
+ui6.js	211	note	Next: do you owe on a card or loan?
+ui6.js	211	text	Add it and the burrow works out the interest, the payoff date and which to pay first.
+ui6.js	211	note	Add a card or loan
+ui6.js	212	label	Set a weekly reminder
+ui6.js	212	text	A calendar reminder keeps this a habit. Logging a few minutes each week keeps the numbers true.
+ui6.js	212	label	Set reminder
+ui6.js	220	button	It was not spent
+ui6.js	220	button	Hide
+ui6.js	220	label	Put it toward
+ui6.js	220	note	Put it toward the goal
+ui6.js	220	button	Open {…} receipts
+ui6.js	220	button	Decide later
+ui6.js	220	label	data-hidemonth="{…}"
+ui6.js	220	label	Stop here
+ui6.js	226	label	#hNext [data-sweepgoal]
+ui6.js	229	note	Nothing to move.
+ui6.js	234	note	Full {…}, {…} sooner.
+ui6.js	246	note	{…} counted in the bank.
+ui6.js	256	label	Logged
+ui6.js	256	label	Shield used
+ui6.js	256	label	Missed
+ui6.js	256	label	This week
+ui6.js	257	label	No streak yet
+ui6.js	257	label	{…}Week of {…}: {…}
+ui6.js	257	note	Week of {…}: {…}
+ui6.js	261	text	Week done. Streak: {…} weeks.
+ui6.js	261	text	Week done. Log next week to extend.
+ui6.js	262	text	Streak: {…} wk. Log by Sunday.
+ui6.js	262	note	Last day.
+ui6.js	262	note	{…} left.
+ui6.js	263	text	No streak. Log one receipt this week to start.
+ui6.js	264	text	{…}Shield ready. Covers one missed week.
+ui6.js	264	note	{…}{…} to the next shield.
+ui6.js	267	button	Nothing to log
+ui6.js	267	label	Best: {…}
+ui6.js	265	label	Streak
+ui6.js	265	note	Last 8 weeks
+ui6.js	274	note	This week is logged.
+ui6.js	274	note	Log a receipt this week to keep it.
+ui6.js	274	text	Streak: {…}. {…}
+ui6.js	274	label	This week is logged
+ui6.js	274	note	Log a receipt this week to keep it
+ui6.js	274	note	Log one receipt this week to start a streak
+ui6.js	278	label	Earned
+ui6.js	278	label	Badges
+ui6.js	278	label	{…} of {…}
+ui6.js	286	label	Full
+ui6.js	286	label	Full this month
+ui6.js	286	note	No date at this pace
+ui6.js	287	label	Paid
+ui6.js	287	label	No amount
+ui6.js	287	label	Done
+ui6.js	287	label	This month
+ui6.js	287	label	Not growing
+ui6.js	287	label	Over
+ui6.js	293	label	card hwin empty
+ui6.js	296	label	{…} has no amount yet
+ui6.js	296	note	Set the amount to see what each month adds and when it is full.
+ui6.js	296	button	Set amount
+ui6.js	297	label	No burrow yet
+ui6.js	297	note	Add a burrow to see what it unlocks and when.
+ui6.js	306	note	On time.
+ui6.js	306	text	Needed by {…}. {…}
+ui6.js	307	label	Behind
+ui6.js	307	note	Needed by {…}.
+ui6.js	307	note	Save about {…} a month.
+ui6.js	307	button	Change monthly amount
+ui6.js	308	label	Slow
+ui6.js	308	note	Raise the monthly amount to finish sooner.
+ui6.js	309	note	Full this month.
+ui6.js	309	text	{…} to go. Full {…}.
+ui6.js	309	label	Not full within
+ui6.js	313	note	+{…} this month.
+ui6.js	315	label	Main goal: {…}
+ui6.js	315	label	{…} of {…}{…}%
+ui6.js	315	label	Forecast
+ui6.js	315	button	Edit burrows
+ui6.js	315	note	{…} percent of {…} saved
+ui6.js	325	note	{…}: full.{…}
+ui6.js	351	label	Rough total
+ui6.js	357	text	Money for anything you like this month. It starts fresh each month.
+ui6.js	358	text	Add your monthly pay and this shows what is free to spend, and whether your bills are covered.
+ui6.js	358	button	Add pay
+ui6.js	363	text	Nothing logged for {…} days. Spent something? Add a rough total.
+ui6.js	363	button	Add
+ui6.js	363	note	Rough total spent since {…}
+ui6.js	364	button	Extra money came in?
+ui6.js	368	text	Bills and basicsOver{…} past what a bill was planned for in {…}. {…}{…} logged of {…} planned.
+ui6.js	368	label	Covered
+ui6.js	368	note	Bills fit in your pay, but the whole month is short.
+ui6.js	368	note	Bills fit in your pay, but spending past plan leaves the bank below zero.
+ui6.js	368	note	Your pay is enough for
+ui6.js	368	note	Your pay and money borrowed from the emergency fund cover
+ui6.js	368	text	. {…} logged.
+ui6.js	368	label	{…} {…} of bills in {…}{…}
+ui6.js	368	note	borrowed from the emergency fund
+ui6.js	368	note	Pay is {…} under the bills{…}.
+ui6.js	368	label	Bills and basics{…}{…}
+ui6.js	370	note	For courses and books.
+ui6.js	370	note	For charity and gifts.
+ui6.js	374	note	{…} more than the {…} for {…}.
+ui6.js	374	note	All of it came from the pile.
+ui6.js	374	note	{…} came from the pile, {…} is over and comes out of the bank.
+ui6.js	374	note	It comes out of the bank.
+ui6.js	374	label	left of the
+ui6.js	376	text	{…} logged as Other. Not taken from a pot.
+ui6.js	377	label	Free to spend in {…}
+ui6.js	377	note	No free to spend planned for {…}.
+ui6.js	377	button	Set in Plan
+ui6.js	380	note	{…} a week to stay inside it for the {…} left.
+ui6.js	381	label	{…}Over
+ui6.js	381	label	{…}Ahead of pace
+ui6.js	381	label	{…}On pace
+ui6.js	384	note	Over free to spend in
+ui6.js	384	label	Free to spend in
+ui6.js	386	note	Spent {…} of {…}.
+ui6.js	386	text	Nothing logged yet. {…} planned.
+ui6.js	386	note	About {…} a day.
+ui6.js	386	text	{…} came out of your bank. Spend nothing more from Free to spend this month.
+ui6.js	386	text	{…} is held back. Your bank would end under your {…} minimum, so it is not safe to spend.
+ui6.js	386	note	What is left at month end can go toward {…}.
+ui6.js	386	note	Bills and burrows are planned for, so this part is free to spend.{…}
+ui6.js	384	text	The bar is what you have spent. The mark is how far through the month you are.
+ui6.js	384	note	{…} of {…} spent
+ui6.js	394	label	Paid off
+ui6.js	394	label	Paying
+ui6.js	394	label	Filling
+ui6.js	394	label	Unset
+ui6.js	395	label	Paid {…}
+ui6.js	395	label	Had {…} of {…}
+ui6.js	395	label	Full {…}
+ui6.js	395	label	Not full in {…}
+ui6.js	400	label	Main goal
+ui6.js	401	button	Set as main goal
+ui6.js	398	label	{…} of {…}{…}
+ui6.js	398	button	Edit goal
+ui6.js	398	note	{…} percent
+ui6.js	405	label	Burrows
+ui6.js	405	text	No goals. Add one to list it here.
+ui6.js	424	label	Now
+ui6.js	425	note	Share of each goal saved, month by month:
+ui6.js	425	label	All your goals
+ui6.js	435	note	See every goal on one graph
+ui6.js	439	label	#hGGraph svg
+ui6.js	446	label	{…} {…} of {…} ({…})
+ui6.js	450	label	#hGGraph circle[id^="ggD"]
+ui6.js	458	note	{…} planned in total so far.
+ui6.js	458	note	Sample numbers.
+ui6.js	458	text	Planned this month. Invested and never spent.
+ui6.js	458	note	{…}It only grows, and one day it pays you.
+ui6.js	465	note	Not growing: nothing goes in
+ui6.js	468	label	Free to spend:
+ui6.js	469	text	Main goal: {…}{…}. {…}. {…}. Tap for Home.
+ui6.js	517	text	Not financial advice. Sample numbers are invented. Replace them with yours.
+ui6.js	517	note	Not financial advice.
+ui6.js	546	note	#hBur .hb-h
+ui6.js	550	label	Show less
+ui6.js	550	note	More: Free to spend, goals, cards, streak
+ui6.js	555	label	No date
+ui6.js	560	note	Enter the cost to see the monthly amount.
+ui6.js	561	note	Already paid off in full.
+ui6.js	561	text	Already saved in full. Shows as full.
+ui6.js	564	text	Too soon to save anything by then. Pick a later date.
+ui6.js	565	label	Pay about
+ui6.js	565	label	Save about
+ui6.js	565	label	Ready
+ui6.js	565	text	{…} {…} a month for {…}. {…} by {…}.
+ui6.js	567	text	No date: plan assumes 12 months. About {…} a month.
+ui6.js	570	note	Limit: {…} burrows.
+ui6.js	577	label	Escape
+ui6.js	578	label	Enter
+ui6.js	579	label	Tab
+ui6.js	594	note	Step {…} of {…}
+ui6.js	595	label	Next
+ui6.js	597	label	Goal type
+ui6.js	599	label	Name it
+ui6.js	599	label	Japan trip
+ui6.js	598	label	Name
+ui6.js	598	label	Why (optional)
+ui6.js	598	note	Shows with the goal, so the reason stays in view.
+ui6.js	598	note	Why it matters, in your words
+ui6.js	602	label	Amount
+ui6.js	603	label	Total owed
+ui6.js	603	label	Total cost
+ui6.js	604	label	Already paid off
+ui6.js	604	label	Already saved
+ui6.js	606	label	Plan
+ui6.js	606	label	Date
+ui6.js	607	label	Paid off by
+ui6.js	607	note	Quick dates
+ui6.js	614	button	Back
+ui6.js	611	note	Close
+ui6.js	625	note	Pick a goal type first.
+ui6.js	625	note	Give the goal a name.
+ui6.js	626	note	Enter how much you owe.
+ui6.js	626	note	Enter the total cost.
+ui6.js	627	note	Change the date or the amount first.
+ui6.js	654	text	Goal added. {…}: full {…}.
+ui6.js	654	note	Goal added.
+ui6.js	679	text	Type the amount without a minus sign. A receipt is money you spent. For a refund, lower or delete the receipt it pays back.
+ui6.js	680	note	Enter an amount.
+ui6.js	681	text	That amount is too large. The most is 1,000,000,000.
+ui6.js	682	note	Date must be {…} to {…}.
+ui6.js	684	note	Add the new category, or pick one from the list.
+ui6.js	687	text	Add a short title, e.g. “Vet bill”.
+ui6.js	691	note	Logged {…}: {…}.
+ui6.js	706	label	#goalCards [data-gid="{…}"]
+ui6.js	707	text	Checked in. Streak: {…} weeks.
+ui6.js	707	text	Checked in. Streak: week 1.
+ui6.js	727	label	#hGraph svg
+ui6.js	737	note	Main goal set.
+ui6.js	782	text	Numbers only: "{…}" was not added. Check the amount.
+ui6.js	787	text	Amounts take no minus sign. The old amount stays.
+ui6.js	788	note	The old amount stays.
+ui6.js	788	note	Type it again.
+ui6.js	788	text	That amount is too large. The most is 1,000,000,000. {…}
+ui6.js	795	text	Only two digits after the point. For thousands, leave the separator out: 1234{…}56.
+ui6.js	826	text	That sum does not work out to an amount. The old amount stays.
+ui7.js	16	button	Add
+ui7.js	16	button	Cancel
+ui7.js	17	button	Done
+ui7.js	17	button	Remove
+ui7.js	8	label	Name
+ui7.js	8	label	Type
+ui7.js	8	label	Owed now
+ui7.js	8	label	Interest rate, %
+ui7.js	8	text	Cards often show it per month (like 3.5) or per year (like 42). Pick what your statement says. Use 0 for money owed to a person.
+ui7.js	8	label	Minimum a month
+ui7.js	8	text	The least you must pay. It is part of Bills and basics.
+ui7.js	8	label	Extra a month
+ui7.js	8	text	On top of the minimum. It goes straight off what you owe, so interest drops.
+ui7.js	8	note	e.g. BPI card
+ui7.js	8	note	Interest rate is per
+ui7.js	23	label	Paid off
+ui7.js	23	note	Nothing owed.
+ui7.js	24	label	Not paid off
+ui7.js	24	text	The payment does not cover the interest. Pay at least {…} a month.
+ui7.js	25	label	On the way
+ui7.js	25	label	About
+ui7.js	25	note	Paid off {…}.{…}
+ui7.js	30	label	({…} of it interest)
+ui7.js	31	text	Put extra money here first. It has the highest rate.
+ui7.js	32	label	Close
+ui7.js	32	label	Edit
+ui7.js	26	label	{…}{…} owed
+ui7.js	26	text	{…}{…}. Pays {…} in {…}{…}.
+ui7.js	26	note	{…}: {…}% paid by the end of {…}
+ui7.js	46	note	Finish the first steps, then add your cards and loans here.
+ui7.js	47	text	None. Add a card or loan to see when each is paid off and how much interest it costs.
+ui7.js	48	label	New card or loan
+ui7.js	50	note	Limit: {…}.
+ui7.js	54	text	Cards and loans with interest. Their payments are part of Bills and basics.
+ui7.js	55	label	Debt free
+ui7.js	55	note	One of them is not being paid off.
+ui7.js	55	text	{…} owed at the start of {…}. {…}{…}
+ui7.js	58	text	{…} minimums{…}. Extra goes straight off what you owe.
+ui7.js	61	label	[data-d="{…}"]
+ui7.js	73	note	Give it a name.
+ui7.js	74	note	Enter how much is owed.
+ui7.js	82	label	This card or loan
+ui7.js	83	text	Tap again: removes {…} and its payments. You can undo for {…} days.
+ui7.js	84	note	{…} was removed.
+ui7.js	84	text	{…} removed. You can undo for {…} days.
+ui7.js	110	note	You pay {…} this month{…}.
+ui7.js	110	note	Debt free {…}.
+ui7.js	110	text	{…} is not being paid off. Pay at least {…} a month.
+ui7.js	111	text	Extra money goes to {…} first. It has the highest rate.
+ui7.js	109	label	Cards and loans
+ui7.js	109	note	Owed at the start of {…}
+ui7.js	109	button	See details
+ui7.js	119	note	Keep it as a cushion
+ui7.js	121	label	Pay toward
+ui7.js	121	label	Add to
+ui7.js	122	label	Pay down
+ui7.js	123	note	Spend it, free to spend
+ui7.js	124	label	Investing
+ui7.js	128	note	Finish the first steps first.
+ui7.js	134	label	Escape
+ui7.js	142	note	Enter the amount.
+ui7.js	146	note	That cannot take extra money.
+ui7.js	147	text	{…} goes to: {…}. {…} stays in the balance.
+ui7.js	147	note	All {…} goes to: {…}.
+ui7.js	152	label	Extra money came in
+ui7.js	152	text	A bonus, a 13th month pay, a refund, a good freelance month. It is added to {…} only.
+ui7.js	152	label	Amount
+ui7.js	152	label	Month
+ui7.js	152	note	Where should it go?
+ui7.js	171	text	Added. The rest stays in the balance.
+ui7.js	176	label	Once a month
+ui7.js	176	label	Twice a month
+ui7.js	176	label	Every two weeks
+ui7.js	176	label	Every week
+ui7.js	189	note	Work out your monthly pay
+ui7.js	189	text	The plan works in months. Say how often you are paid and how much each time.
+ui7.js	189	note	How often are you paid?
+ui7.js	189	note	How much each time?
+ui7.js	189	text	If your pay changes from month to month, put in the least you usually get. When more comes in, use "Extra money came in" and choose where it goes.
+ui7.js	189	button	Use as my monthly pay
+ui7.js	199	text	Some months you are paid an extra time. Plan with this number and treat that month as extra money.
+ui7.js	199	note	That is about {…} a month.{…}
+ui7.js	205	label	Monthly pay set to
+ui7.js	216	label	{…} over
+ui7.js	216	label	{…} left
+ui7.js	216	label	{…}{…}{…} of {…}
+ui7.js	216	note	{…}: {…} of {…}
+ui7.js	217	note	{…} logged as Other has no limit.
+ui7.js	215	label	Spending limits
+ui7.js	215	note	Each line against what you logged in {…}
+ui7.js	226	label	Bills and basics
+ui7.js	226	label	Free to spend
+ui7.js	226	label	Education
+ui7.js	226	label	Giving
+ui7.js	231	label	{…} by {…}
+ui7.js	231	note	Over the plan: {…}.
+ui7.js	231	note	Nothing went over its plan.
+ui7.js	232	note	{…} went to goals.
+ui7.js	232	note	{…} went to cards and loans, {…} of it interest.
+ui7.js	228	label	Last month, {…}
+ui7.js	228	text	{…} {…}, {…} logged. The balance went {…} {…}, from {…} to {…}.
+ui7.js	228	label	Planned
+ui7.js	228	label	Spent
+ui7.js	237	label	Sunday
+ui7.js	237	label	Monday
+ui7.js	237	label	Tuesday
+ui7.js	237	label	Wednesday
+ui7.js	237	label	Thursday
+ui7.js	237	label	Friday
+ui7.js	237	label	Saturday
+ui7.js	244	label	Other
+ui7.js	244	label	Every
+ui7.js	244	label	On day
+ui7.js	244	label	of the month
+ui7.js	244	button	Stop
+ui7.js	249	note	None yet.
+ui7.js	250	label	Every month
+ui7.js	250	button	Repeat
+ui7.js	250	note	Category
+ui7.js	250	note	Note (optional)
+ui7.js	250	note	Note
+ui7.js	250	note	How often
+ui7.js	250	note	Day
+ui7.js	257	button	Add repeating spending
+ui7.js	248	label	Repeating spending
+ui7.js	248	text	A gym fee, a weekly top-up. It is logged for you on its day.
+ui7.js	258	label	Day {…}
+ui7.js	266	label	Tap again to stop
+ui7.js	270	note	Enter an amount.
+ui7.js	274	text	Repeating. Today's was logged.
+ui7.js	288	label	Planned for {…}
+ui7.js	288	label	Logged so far
+ui7.js	288	note	Logged past a bill's plan, still due
+ui7.js	288	label	Left to pay
+ui7.js	289	text	Rent, bills, food, card payments and one-time costs. Logged is every receipt in a Bills and basics line this month.
+ui7.js	294	note	Planned since the start of your plan
+ui7.js	295	label	Logged
+ui7.js	296	label	Logged more than planned
+ui7.js	296	label	In this burrow
+ui7.js	297	text	Money you invest and never spend. It only grows.
+ui7.js	297	text	Money that piles up. What you log here comes out of the pile, and it does not touch your monthly bills.
+ui7.js	301	note	Free to spend planned for {…}
+ui7.js	301	note	Logged in Free to spend ({…} {…})
+ui7.js	302	note	Held back so the balance stays above your minimum
+ui7.js	304	note	Per week for the {…} left
+ui7.js	305	label	Per day
+ui7.js	306	text	Planned is the Free to spend total on the Plan page. Logged is every receipt in Free to spend this month.
+ui7.js	308	label	Where you stand in
+ui7.js	309	note	Pay and other money in
+ui7.js	309	note	Bills, one-time costs and card payments
+ui7.js	309	label	Goal burrows
+ui7.js	309	note	Free to spend, Education, Investing, Giving
+ui7.js	309	label	Left in the month
+ui7.js	309	label	Balance at the start
+ui7.js	309	label	Balance at the end
+ui7.js	309	label	Your minimum balance
+ui7.js	310	note	The balance ends under your minimum, so the month is short.
+ui7.js	310	note	The month spends more than comes in, but the balance covers it.
+ui7.js	310	note	Everything planned fits in your pay.
+ui7.js	326	label	Off
+ui7.js	346	note	Logged 1 repeating payment.
+ui8.js	9	note	is borrowed from your emergency fund
+ui8.js	9	label	Your bank cannot cover
+ui8.js	9	label	The bank covers
+ui8.js	14	note	#hMap .mp-four b
+ui8.js	25	label	numbers off by
+ui8.js	30	label	Bills and basics
+ui8.js	30	label	Free to spend
+ui8.js	30	label	Education
+ui8.js	30	label	Giving
+ui8.js	30	label	Investing
+ui8.js	37	note	Not placed yet, stays in the bank
+ui8.js	38	note	Used for spending past plan
+ui8.js	43	label	In the bank
+ui8.js	45	label	In the bank {…} (short)
+ui8.js	53	label	Update
+ui8.js	53	label	Add a card
+ui8.js	57	button	Remove
+ui8.js	53	label	Card name
+ui8.js	53	note	What is on the card now
+ui8.js	53	note	Open the card's app and type the full amount it shows, not only the minimum.
+ui8.js	53	note	Day of the month you pay it
+ui8.js	53	button	Save
+ui8.js	53	button	Cancel
+ui8.js	53	note	Card
+ui8.js	58	label	(entered {…})
+ui8.js	58	label	{…}: {…} on it{…}{…}
+ui8.js	59	note	Bank after the cards are paid: {…}
+ui8.js	60	note	Balance you entered on {…}.
+ui8.js	62	button	Keep the old balance
+ui8.js	61	note	What does your bank app show today?
+ui8.js	61	text	Open your bank app and type the balance it shows. Add any cash you keep at home.
+ui8.js	64	button	Check your bank
+ui8.js	64	label	Add another card
+ui8.js	64	note	Add a card you pay in full
+ui8.js	60	label	In your bank now {…}
+ui8.js	66	note	You owe {…} at the end of {…} {…}: cards, loans and debt burrows.
+ui8.js	68	note	It starts the month {…} below zero.
+ui8.js	68	note	Your plan is bigger than your pay.
+ui8.js	68	note	Spending is past what you planned.
+ui8.js	68	note	Open Plan to see the month.
+ui8.js	68	note	Keep Free to spend to the {…} shown, or open Plan to pick a fix.
+ui8.js	68	note	Spend nothing more from Free to spend until you check your plan.
+ui8.js	68	text	Your bank would end {…} below zero in {…}. {…} {…} This bank figure counts the planned Free to spend as spent.
+ui8.js	68	note	Free to spend is lowered to match.
+ui8.js	68	note	Open Plan to pick a fix.
+ui8.js	68	text	Your bank ends at {…} in {…}, under your safety minimum of {…}. {…}
+ui8.js	69	label	Sample numbers
+ui8.js	73	note	Planned past your pay {…}
+ui8.js	74	label	Past your pay {…}
+ui8.js	74	text	Your plan places {…} more than your pay. {…}
+ui8.js	79	label	Total
+ui8.js	79	note	planned for the end of
+ui8.js	79	label	Bills left
+ui8.js	79	label	Saved
+ui8.js	80	note	of free to spend is left out until you answer
+ui8.js	80	note	(Home asks again next time).
+ui8.js	80	note	the question on Home.
+ui8.js	81	text	These numbers do not add up. They are off by {…}. Nothing you entered is lost. Please tell Mako.
+ui8.js	69	label	Your burrow{…}
+ui8.js	69	note	Where your money is: your bank now, then this month, then your burrows.
+ui8.js	69	label	This month {…}
+ui8.js	69	note	Your pay in {…}, and where it goes
+ui8.js	69	button	Watch where your pay goes
+ui8.js	69	note	Where your money sits at the end of {…}: the bank and your burrows {…}
+ui8.js	69	note	Bank {…} + burrows {…} = {…} at the end of {…}.{…}
+ui8.js	69	note	Your pay in {…} splits into: {…}
+ui8.js	69	note	Your four numbers
+ui8.js	86	note	Type the balance your bank app shows, in numbers.
+ui8.js	86	label	Saved:
+ui8.js	87	label	Enter
+ui8.js	91	note	Card removed.
+ui8.js	93	note	Type what is on the card now, in numbers.
+ui8.js	94	note	The pay day is a day of the month, 1 to 31.
+ui8.js	95	note	Card saved.
+ui8.js	108	label	Pay day
+ui8.js	111	note	Sample numbers Sample pay of
+ui8.js	111	text	. Enter your pay to see yours. Each coin
+ui8.js	111	label	Your pay of
+ui8.js	111	text	. Each coin
+ui8.js	111	label	Your plan places
+ui8.js	114	button	Enter pay
+ui8.js	111	note	{…} goes where your plan sends it.{…}
+ui8.js	111	button	Watch again
+ui8.js	111	button	Done
+ui8.js	129	label	Your plan is
+ui8.js	129	note	Every coin has a home.
+ui8.js	132	label	Escape
+ui8.js	145	label	url({…})
+ui8.js	152	label	translate({…}px, {…}px)
+ui5.js	20	text	All amounts zeroed for this currency. Enter your own.
+ui5.js	20	note	Sample amounts now match this currency.
+ui5.js	21	text	Sample bills and burrows zeroed for this currency. Pay and receipts unchanged.
+ui5.js	21	text	Sample bills and burrows now match this currency. Pay and receipts unchanged.
+ui5.js	22	text	Amounts unchanged. Only the symbol changed.
+ui5.js	35	label	Enter
+ui5.js	42	text	Amounts take no minus sign. The old amount stays.
+ui5.js	42	text	That amount is too large. The most is 1,000,000,000. The old amount stays.
+ui5.js	48	text	That sum does not work out to an amount. The old amount stays.
+ui5.js	51	note	Saved as the usual amount for every month.
+ui5.js	61	label	This line
+ui5.js	61	text	Tap again: removes {…} from every month. You can undo for {…} days.
+ui5.js	61	note	{…} was removed.
+ui5.js	61	text	{…} removed. You can undo for {…} days.
+ui5.js	75	label	[data-lname="{…}"]
+ui5.js	80	label	One-time cost
+ui5.js	82	label	#addItem button[type=submit]
+ui5.js	86	text	Tap again: removes the edits you made for this month. Receipts stay. You can undo for {…} days.
+ui5.js	86	note	Month reset.
+ui5.js	86	note	{…} was reset.
+ui5.js	105	label	This goal
+ui5.js	105	label	and its {…} saved
+ui5.js	106	text	Tap again: removes {…}. You can undo for {…} days.
+ui5.js	137	text	Tap again: opens the setup steps. They can replace your goals and saved amounts. You can undo for {…} days.
+ui5.js	142	note	Press Ctrl+C (Cmd+C) to copy the selected text.
+ui5.js	152	text	Backup loaded. You can undo for {…} days.
+ui5.js	152	note	A backup replaced your numbers.
+ui5.js	155	text	Not a valid backup. Use the whole file, or paste all of the copied text.
+ui5.js	161	note	Downloads are unavailable in this view.
+ui5.js	163	note	Not saved.
+ui5.js	163	note	Save failed.
+ui5.js	168	note	Saved to downloads.
+ui5.js	169	note	File not saved by this browser.
+ui5.js	173	note	mhr2000-{…}.json
+ui5.js	173	note	Use Copy text.
+ui5.js	175	note	Spreadsheet could not be built.
+ui5.js	175	note	mhr2000-plan-{…}.csv
+ui5.js	179	note	File too large for a backup.
+ui5.js	180	text	File unreadable. Try Copy text.
+ui5.js	181	text	File read. Tap Load text, then tap again, to replace your numbers with it. You can undo for {…} days.
+ui5.js	197	note	Setup was changing your plan.
+ui5.js	199	note	Your numbers changed.
+ui5.js	199	note	{…} You can undo until {…}.
+ui5.js	200	note	Your numbers are back.
+ui5.js	201	text	All numbers zeroed. You can undo for {…} days.
+ui5.js	201	note	Your numbers were set to zero.
+ui5.js	201	text	All zero. Start with salary.
+ui5.js	202	text	Tap again: clears pay, bills, goals, saved amounts and your balance. Receipts stay. You can undo for {…} days.
+ui5.js	204	text	Tap again: replaces your pay, bills, goals and receipts with this copy. You can undo for {…} days.
+ui5.js	205	text	Tap again: setup can change your pay, bills, goals and saved amounts. You can undo for {…} days.
+ui5.js	208	text	Tap again: puts the sample pay, bills and burrows in place of yours. Receipts stay. You can undo for {…} days.
+ui5.js	208	text	Tap again: clears your pay, bills, goals and balance. Receipts stay. You can undo for {…} days.
+ui5.js	208	label	Samples restored
+ui5.js	208	label	Plan cleared
+ui5.js	208	text	{…}. You can undo for {…} days.
+ui5.js	208	note	Samples replaced your numbers.
+ui5.js	208	note	Your plan was cleared.
+ui5.js	208	note	Samples restored.
+ui5.js	208	note	Plan cleared.
+ui5.js	224	label	Show as chart
+ui5.js	224	label	Show as table
+ui5.js	249	note	Your numbers are here.
+body.html	9	note	Streak
+body.html	10	label	the burrowfor money freedom
+body.html	11	label	Loading
+body.html	11	note	Mute
+body.html	11	note	Sound and music
+body.html	12	note	Settings
+body.html	15	note	Pages
+body.html	16	button	Home
+body.html	17	button	Receipts
+body.html	18	button	Burrows
+body.html	19	button	Plan
+body.html	25	button	Close
+body.html	25	note	Close the page and look at the world
+body.html	29	note	Your burrow
+body.html	30	note	Where you stand
+body.html	31	note	Next step
+body.html	32	note	Backup
+body.html	33	note	New address
+body.html	35	note	Main goal
+body.html	36	note	Free to spend
+body.html	38	label	Log spend
+body.html	40	label	Amount
+body.html	41	label	Category
+body.html	44	label	Date, note
+body.html	46	label	Date
+body.html	47	label	Note
+body.html	47	note	Where or what
+body.html	52	button	Scan receipt
+body.html	54	note	Goals
+body.html	55	note	Cards and loans
+body.html	56	note	Spending limits
+body.html	57	note	Investing
+body.html	59	label	Streak, badges, pages
+body.html	61	note	Weekly streak
+body.html	62	note	Badges
+body.html	63	note	Other pages
+body.html	66	button	Month plan
+body.html	67	button	All months
+body.html	78	button	Month
+body.html	78	note	Plan pages
+body.html	80	label	Setup: 4 steps
+body.html	81	text	Sample numbers for one salary. Replace them with yours. Data stays in this browser.
+body.html	83	button	Clear sample
+body.html	83	button	Guided setup
+body.html	83	button	Hide
+body.html	85	note	This month at a glance
+body.html	87	note	Previous month
+body.html	88	label	Choose a month
+body.html	90	note	Next month
+body.html	97	button	Change
+body.html	109	label	Pay ends
+body.html	117	label	Details
+body.html	119	button	Undo all
+body.html	122	label	Money in
+body.html	124	button	Extra money came in
+body.html	124	button	Paid weekly or twice a month?
+body.html	127	label	Money out
+body.html	131	label	Left
+body.html	133	button	Reset month
+body.html	143	note	Tap a month to open.
+body.html	159	button	Add a burrow
+body.html	167	button	Add card or loan
+body.html	170	label	Forecast
+body.html	170	note	Each goal at month end, if the plan holds.
+body.html	171	button	Table
+body.html	182	label	Scan receipts
+body.html	183	text	Claude reads receipt photos and statements and files each item by category. You review before anything is added.
+body.html	187	button	Camera
+body.html	188	button	Choose files
+body.html	194	button	Read
+body.html	195	button	Stop
+body.html	196	button	Clear
+body.html	200	text	One receipt per photo, flat, well lit. A bank CSV, Excel or PDF statement lists a whole month. Files go to Claude on Read; this page keeps none.
+body.html	204	text	Prefer your own AI? Use it instead
+body.html	205	text	An alternative to the buttons above, with the same result. If you would rather not send receipts through this page, or you like ChatGPT, Gemini or the Claude app better: copy one message, paste it into that AI with the photos, and paste its reply back here. It is checked and listed for review the same way.
+body.html	207	note	Tap Copy message.
+body.html	208	note	Paste it into your AI app, attach the photos, send.
+body.html	209	note	Paste the reply below and tap Check.
+body.html	212	button	Copy message
+body.html	216	text	Attachments go to that AI company under its own privacy terms. This page never sees them.
+body.html	217	label	Reply
+body.html	217	note	Paste reply
+body.html	218	button	Check
+body.html	225	note	Log as you spend, or all at once later.
+body.html	225	button	Set reminder
+body.html	233	button	Cancel
+body.html	249	label	Reminder
+body.html	250	note	Pick a schedule, then a calendar.
+body.html	255	text	Set for . Google Calendar and Apple Calendar (the downloaded file) repeat on their own. Outlook, Microsoft 365 and Yahoo open once: set Repeat there.
+body.html	257	label	Event text
+body.html	258	note	Text for your calendar event
+body.html	259	button	Copy event text
+body.html	270	note	Name, currency, balance, look, saved data.
+body.html	273	label	Name
+body.html	277	label	Currency
+body.html	283	label	Off
+body.html	284	text	Shows each line against what you logged, on Home. A line that goes over its plan turns red.
+body.html	287	label	Sound
+body.html	289	text	Wind, leaves and water drops as feedback. This browser only.
+body.html	292	label	Music
+body.html	294	text	A quiet piece, made in the browser while the app is open. Starts at your first tap.
+body.html	297	label	World layout
+body.html	299	text	The pages open on a scroll in the scenery. Off: the plain page. This browser only.
+body.html	302	note	Start with the pages open
+body.html	304	note	Off: the app opens on the world and you tap a sign.
+body.html	307	label	Look
+body.html	309	button	Auto
+body.html	310	button	Light
+body.html	311	button	Dark
+body.html	313	text	Dark is the forest look. Light is the pale version. Auto follows the device. This browser only.
+body.html	317	label	Where your pay goes
+body.html	318	text	Your pay is split into places, each with one job. The percents are a common split, shown as a guide. Your actual split is on Plan and follows your bills and burrows.
+body.html	320	button	Re-split pay
+body.html	323	label	Reset and setup
+body.html	324	text	Amounts are samples for one salary. Start at zero or type over them. Saved in this browser only. Nobody else sees it, including whoever shared this page.
+body.html	326	button	Set all to zero
+body.html	327	button	Restore samples
+body.html	328	button	Show first steps
+body.html	333	label	On your phone
+body.html	334	text	Open this address in Safari or Chrome on the phone. iPhone: Share, then Add to Home Screen. Android: the browser menu, then Add to Home screen or Install app. It then opens full screen, like an app, and works without a connection. Same numbers: the icon opens this same browser copy.
+body.html	337	label	Saved data
+body.html	338	text	Data is stored in this browser on this device only. Your numbers are sent only when you use Ask and tick the box to include them. A second copy is kept here in case the first goes missing, and is loaded on its own if so. It does not move to other devices. Clearing site data removes both, so only a backup file survives that. A backup is your own copy of numbers and receipts.
+body.html	341	button	Save file
+body.html	342	button	Copy text
+body.html	345	text	Back up regularly, and before clearing or resetting. Keep the file somewhere safe or paste the text into a note.
+body.html	346	label	Spreadsheet
+body.html	347	button	Export spreadsheet
+body.html	348	text	Every plan month as one table: pay, places, goals, balance. Opens in Sheets or Excel. Read-only: edits there do not change this page.
+body.html	350	label	Cloud backup
+body.html	352	button	Turn on
+body.html	352	button	Show code
+body.html	352	button	Load the newer copy
+body.html	352	button	Keep mine
+body.html	352	button	Turn off
+body.html	354	text	Encrypted on this device with a recovery code before anything is sent. Nobody else can open it, including the person who shared this page. New phone, or browser cleared: enter the code and the numbers come back.
+body.html	355	label	Use a recovery code
+body.html	356	button	Load
+body.html	356	note	Recovery code
+body.html	357	text	Loading replaces the numbers here with the cloud copy and keeps this device in sync with it.
+body.html	359	label	Restore
+body.html	360	note	Your saved numbers
+body.html	360	note	Paste the backup text here
+body.html	362	button	Load text
+body.html	363	button	Choose file
+body.html	367	text	Restore replaces the numbers and receipts here with the copy. Back up first to keep what is here. To start from zero use Set all to zero.
+body.html	368	note	If numbers look empty after clearing the browser or switching devices, restore your latest copy.
+body.html	373	text	Not financial advice. Sample numbers are invented. Replace them with yours.
+body.html	374	label	Version @@VER@@
+body.html	382	button	Music on
+body.html	382	button	Sound on
+body.html	382	button	Skip tour
+body.html	388	button	Back
+body.html	388	button	Go to my month
+body.html	388	button	Next
+body.html	394	text	Hold the receipt flat in the frame, then take the photo. Take as many as you need.
+body.html	395	button	Take photo
+body.html	395	button	Done
+body.html	395	button	Choose files instead
+body.html	398	note	Music and volume
+body.html	399	label	Volume
+body.html	401	button	Forest
+body.html	405	label	Scenery in the background
+body.html	407	text	Tap the cover to start. Browsers need a tap on the player itself.
+body.html	407	note	Previous track
+body.html	407	note	Play
+body.html	407	note	Next track
+body.html	407	note	Hide the player and stop
+body.html	408	button	Undo
+body.html	409	note	A newer version is ready.
+body.html	409	button	Reload
+body.html	412	label	Report a problem
+body.html	413	text	Copy this and send it to Mako with what you were doing. It names the version, the device and the last errors. It holds none of your numbers.
+body.html	415	button	Copy
+body.html	423	button	Ask about my money
+body.html	424	button	Explain this tab
+body.html	426	button	Intro video
+body.html	430	button	Ask
+body.html	430	button	?Help
+body.html	433	button	New chat
+body.html	434	label	Connecting to Claude
+body.html	435	note	Open the page in Claude
+body.html	435	button	Try again
+body.html	439	note	Let Claude see my numbers
+body.html	442	button	Send
+body.html	442	note	Add photos or files
+body.html	442	note	Add photos, screenshots or a CSV file
+body.html	442	note	Ask about the page
+body.html	442	note	Your question
+body.html	443	text	Runs on your Claude account; you approve access first. Only what you type is sent, plus the numbers if ticked.
+body.html	446	label	Other AI
+body.html	447	text	Chat runs on Claude. For another AI, copy your question with a short page guide and paste it there.
+body.html	448	button	Copy question

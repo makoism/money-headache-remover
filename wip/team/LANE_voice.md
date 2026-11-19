@@ -1,6 +1,6 @@
 # SIDE M, the voice lane: handoff
 
-Written 2026-11-19 by the first SIDE M session at its 150k handoff. Branch `side/voice`, taken from `wip-38.31` at 47e6bf6. No app file is changed.
+Written 2026-11-19 by the first SIDE M session at its 150k handoff, updated the same day by the second (SIDE M2) at its own. Branch `side/voice`, taken from `wip-38.31` at 47e6bf6. No app file is changed.
 
 ## What is done
 
@@ -11,20 +11,27 @@ Written 2026-11-19 by the first SIDE M session at its 150k handoff. Branch `side
 | `wip/team/tests/qc/voice_lint.js` | Done and self-tested. Reads the source strings, prints findings, never fails the build. `--strict`, `--all`, `--text`, `--tsv`, `--since`, known file `voice_known.txt` |
 | Samples for Mako | Sent twice to the coordinator. The second set has his notes in it. No reaction on the second set yet |
 
+## Second session (SIDE M2, 2026-11-19): what it added
+
+| File | State |
+|---|---|
+| `wip/team/HELP_TEXTS_V2.md` | Done. 28 entries, glossary words that sound off listed at the end. Entry 20 (cloud copy, four steps) was shown to Mako, no reaction yet. It must be checked again against the real buttons when the cloud copy steps (E15) land |
+| `wip/team/tests/qc/copy_apply.js` | Done, `--self` passes. Applies a table, fails and writes nothing unless each old string is there exactly once, keeps `${...}`, compares the code token for token, lists test files that quote an old string, takes follow-up tables in order |
+| `wip/team/COPY_V1.md` | First batch: 275 rows for setup, Plan, Receipts, Help text in body.html, Home and More, messages in model.js, stmt.js, ui0.js. Proved on a scratch copy of origin/wip-38.31 at 77a8f0a: applied, built, the built script parses. Lint before 34 strong and 202 weak, after 16 strong and 187 weak. The 275 new lines on their own: 0 strong |
+| `wip/team/tests/qc/voice_strings_20538e3.tsv` | The listing COPY_V1.md was made from. `node tests/qc/voice_lint.js --since tests/qc/voice_strings_20538e3.tsv` shows strings added after it |
+
+Reports go to coordinator 3, session_01BFpKEWbWX57dzJueLvseiT.
+
 ## What is not done (the next SIDE M session starts here)
 
-1. **COPY_V1.md and `tests/qc/copy_apply.js`.** Not started. How to do it:
-   - `git fetch origin wip-38.31 && git merge origin/wip-38.31` first, as late as possible, the main session is still adding screens (bank now, cards, owed line, the cloud copy flow E15).
-   - `cd wip/team && bash tests/setup_env.sh`, then `node tests/qc/voice_lint.js --tsv > /tmp/strings.tsv` gives every string with file, line and kind (about 2,800). Keep that file's commit hash in COPY_V1.md so `--since` can list what was added later.
-   - v1 screens only: Home with More (ui6.js, ui8.js, ui7.js), setup (ui45.js, ui45c.js, ui45s.js, ui45x.js, ui45u.js), Receipts and Plan (body.html, ui1.js, ui2.js, ui4.js), Settings (body.html, ui42.js, ui5.js), messages and errors (model.js, ui6.js toasts). Skip the art files (life.js, vs_*.js, realm.js), prompts sent to Claude (ui45v.js, ui46.js, ui4a.js mostly) and ui45t.js (his own video transcript).
-   - The table is exact: file, old string (as it is in the source, so it can be found), new string. Verdict column: AI, Mako, next step. 20 worst at the top. Strings about saving, the cloud copy, the code, backup, restore come first and are judged hardest (VOICE.md B15).
-   - Never rename a glossary word or a button word tests rely on ("Free to spend", "Bills left", "Saved", "Total", "Burrows", "Undo" and the rest). If one sounds wrong, list it apart for Mako.
-   - A button or label rewrite is never longer than the original.
-   - copy_apply.js applies the table, fails unless each old string is in its file exactly once, lists every test file that quotes an old string (grep `tests/` and `../../tests/`), and must take a small follow-up table on top of the first batch (Mako's copy rounds on the preview).
-   - Then run the real qc-voice agent on the rewrites (fresh, only the new strings) before handing in.
-2. **HELP_TEXTS_V2.md.** Not started. Source: `git show origin/side/help-texts:wip/team/HELP_TEXTS.md`, 28 entries. Same ideas, new words. Three are already rewritten in the second sample (Free to spend, Card spending, A missed week), take those as the pattern. Drop the same three-box shape where an entry doesn't need it (VOICE.md A10). `node tests/qc/voice_lint.js --text` on the old file gives 28 strong findings to start from.
-3. **The lint's first run on the app** says 34 strong and 200 weak in about 2,800 strings. The strong ones are mostly semicolons, "no guilt" (10 places), "many people", "unlocks". These go into COPY_V1.md. Some strings from prompts still slip in (ui45v.js), tighten `looksLikeProse` or add them to voice_known.txt with the reason.
-4. **More of his messages.** See below.
+1. **A fresh qc-voice agent has not read the 275 new lines.** I read parts A to E line by line myself, part F (ui7.js, ui8.js, 47 rows) only through its maker's own reread. Run qc-voice on `grep "^+ " COPY_V1.md` (only the new lines, with VOICE.md and NORTH_STAR.md) and fix what it finds in COPY_V1.md itself, since the batch is not applied yet. Rerun `copy_apply.js --check` after any edit.
+2. **Settings and everything about saving** (the cloud copy, recovery code, backup, restore, the snapshot before a load, data that could be lost): not started, waits for coordinator 3 to say E15 has landed. Files: body.html lines 267 to 390, ui5.js, ui42.js, ui43.js, and the LATE lists at the end of COPY_V1.md (about 36 strings in setup, Plan, Home). Judge these hardest (VOICE.md B15): every tap named by its button word, then what you see.
+3. **Dialogs and smaller files not listed yet:** ui41.js, ui47.js, ui48.js, ui49.js, ui4b.js, ui44.js, ui3.js, world.js, and the lines a person sees in ui46.js and ui4a.js (most of those two is prompt text for Claude, leave that). The remaining strong lint findings sit in ui45v.js 6, ui46.js 3, ui48.js 2, ui42.js 1 and one each in model.js, ui0.js, ui2.js, ui45s.js. Check each: a row, or a line in voice_known.txt with the reason.
+4. **Refetch before handing in.** The table was listed at 20538e3 and applied clean at 77a8f0a. The main session keeps changing screens, so run `--check` against the newest origin/wip-38.31 and `--since` for new strings each time.
+5. **Hand edits the script cannot do** are listed in COPY_V1.md (two strings that are in a file twice, one semicolon made by code, two labels left alone).
+6. **Mako's notes** come back as a few rows at a time: write them as a small follow-up table (same row format, old strings as COPY_V1 left them) and follow "How a note from Mako becomes a rule" below.
+
+How the rows were made, if you do it again: the session forked itself once per group of files, each fork wrote rows into a scratch file and ran `copy_apply.js --check` on it, and one small script joined them. Old strings never include the quotes around them. A fork per 250 to 350 strings worked.
 
 ## For the main session
 
