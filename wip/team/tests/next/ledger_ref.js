@@ -32,6 +32,9 @@ function setFreeMode(S, mode) { S.ui.freeMode = mode; }
 const acctOf = (S, id) => S.accounts.find(a => a.id === id) || null;
 const isHome = (S, a) => a && a.cur === S.ui.cur;
 const inTotal = (S, a) => a && ASSET[a.type] && a.tracked !== false && isHome(S, a);
+/* a card paid in full, in the home currency: the only kind of account with a "for the card" line. A card in another currency is
+   owed beside Total (like a loan abroad), so it has no line in the home places */
+const cardFull = (S, a) => !!a && a.type === 'card' && !!a.inFull && isHome(S, a);
 
 /* side C's event shape ({ t, a, to, from }) is read as the design's shape, so their random lists run unchanged */
 function norm(S, e) {
@@ -51,30 +54,39 @@ function norm(S, e) {
   return null;
 }
 
-/* what one event does: account deltas and place deltas, in cents. The whole design is this one function. */
+/* what one event does: account deltas and place deltas, in cents. The whole design is this one function.
+   THE ONE RULE holds for every event: the place changes add up to the change in the tracked home accounts, and a "for the card"
+   line changes by exactly what its card changes. In Wallet mode there is no Free to spend place (that money is handed out), so
+   'free' is read as 'waiting'. */
 function effect(S, e) {
-  const A = {}, P = {}, add = (o, k, v) => { if (v) o[k] = (o[k] || 0) + v; };
+  const A = {}, P = {}, wallet = S.ui.freeMode === 'wallet';
+  const add = (o, k, v) => { if (!v) return; if (o === P && wallet && k === 'free') k = 'waiting'; o[k] = (o[k] || 0) + v; };
   const a1 = acctOf(S, e.acct), a2 = acctOf(S, e.acct2), c = e.c || 0;
   switch (e.k) {
     case 'open':          /* a typed balance becomes an opening balance. Owed accounts: what is owed now */
       add(A, e.acct, c);
       if (inTotal(S, a1)) add(P, e.place || 'waiting', c);
-      else if (a1 && a1.type === 'card' && a1.inFull) { add(P, e.place || 'waiting', -c); add(P, reserveOf(a1.id), c); }
+      else if (cardFull(S, a1)) { add(P, e.place || 'waiting', -c); add(P, reserveOf(a1.id), c); }
       break;
     case 'in':            /* pay, refund, gift, paid back to you, other money in */
       if (a1 && OWED[a1.type]) {   /* a refund onto a card or pay-later lowers what is owed (found by the Japan persona) */
         add(A, e.acct, -c);
-        if (a1.type === 'card' && a1.inFull) { add(P, reserveOf(a1.id), -c); add(P, e.place || 'free', c); }
+        if (cardFull(S, a1)) { add(P, reserveOf(a1.id), -c); add(P, e.place || 'free', c); }
       } else { add(A, e.acct, c); if (inTotal(S, a1)) add(P, e.place || 'waiting', c); }
       break;
     case 'borrow':        /* borrowed money lands in an account and is owed */
-      add(A, e.acct, c); add(A, e.acct2, c); if (inTotal(S, a1)) add(P, e.place || 'waiting', c); break;
+      add(A, e.acct, c); add(A, e.acct2, c);
+      if (cardFull(S, a2)) {   /* cash taken on a card paid in full: set aside for the card bill at once, so the line still equals the card.
+                                  Landing in Total it nets out there; landing outside Total (the wallet) it comes out of the place */
+        add(P, reserveOf(a2.id), c); if (!inTotal(S, a1)) add(P, e.place || 'waiting', -c);
+      } else if (inTotal(S, a1)) add(P, e.place || 'waiting', c);
+      break;
     case 'move':          /* place to place: no account moves, Total stays */
       add(P, e.place, -c); add(P, e.place2, c); break;
     case 'spend':         /* spend, bill, family support, take out of a burrow; paid with acct */
       if (a1 && OWED[a1.type]) {
         add(A, e.acct, c);
-        if (a1.type === 'card' && a1.inFull) { add(P, e.place, -c); add(P, reserveOf(a1.id), c); }   /* money set aside for the card bill */
+        if (cardFull(S, a1)) { add(P, e.place, -c); add(P, reserveOf(a1.id), c); }   /* money set aside for the card bill */
         /* pay-later and loans: bought with borrowed money, no place had it; the instalments are bills later */
       } else { add(A, e.acct, -c); if (inTotal(S, a1)) add(P, e.place, -c); }
       break;
@@ -85,16 +97,22 @@ function effect(S, e) {
       if (inTotal(S, a1) && !inTotal(S, a2)) add(P, e.place || 'waiting', -c);
       if (!inTotal(S, a1) && inTotal(S, a2)) add(P, e.place || 'waiting', c);
       break;
-    case 'convert':       /* foreign account to home account: c leaves in the foreign currency, c2 lands at home */
-      add(A, e.acct, -c); add(A, e.acct2, e.c2); if (inTotal(S, a2)) add(P, e.place || 'waiting', e.c2); break;
+    case 'convert':       /* one currency to another: c leaves the first account, c2 lands in the second. Coming home it lands in a
+                             place; sent abroad it leaves the place it came from, so Total falls with the account */
+      add(A, e.acct, -c); add(A, e.acct2, e.c2);
+      if (inTotal(S, a1)) add(P, e.place || 'waiting', -c);
+      if (inTotal(S, a2)) add(P, e.place || 'waiting', e.c2);
+      break;
     case 'repay':         /* card payment, pay-later instalment, loan payment: account down, owed down */
       add(A, e.acct, -c); add(A, e.acct2, -c);
-      /* a card paid in full is always paid out of "for the card" (found by ledger_fuzz.js). Paying it from another place is a move into
-         "for the card" first, so the line always equals what is on the card */
-      if (inTotal(S, a1)) add(P, a2 && a2.type === 'card' && a2.inFull ? reserveOf(a2.id) : (e.place || 'bills'), -c);
+      /* a card paid in full is always paid out of "for the card" (found by ledger_fuzz.js), whatever place is named and whichever
+         account pays, so the line always equals what is on the card. Paid from outside Total (the wallet that is not tracked): the
+         money set aside in the bank is not needed any more and goes back to a place */
+      if (cardFull(S, a2)) { add(P, reserveOf(a2.id), -c); if (!inTotal(S, a1)) add(P, e.place || 'waiting', c); }
+      else if (inTotal(S, a1)) add(P, e.place || 'bills', -c);
       break;
     case 'adjust':        /* after check your bank: the person accepts the difference. c is signed */
-      if (a1 && OWED[a1.type]) { add(A, e.acct, c); if (a1.type === 'card' && a1.inFull) { add(P, e.place || 'free', -c); add(P, reserveOf(a1.id), c); } }
+      if (a1 && OWED[a1.type]) { add(A, e.acct, c); if (cardFull(S, a1)) { add(P, e.place || 'free', -c); add(P, reserveOf(a1.id), c); } }
       else { add(A, e.acct, c); if (inTotal(S, a1)) add(P, e.place || 'free', c); }
       break;
     case 'check': break;   /* moves no money */
@@ -112,16 +130,27 @@ function balanceAt(S, L, chk, acct) {
 }
 /* balances are always worked out from the ledger, never stored */
 function balances(S, upto) {
-  const A = {}, P = {}; let unexplained = null, checks = {};
+  const A = {}, P = {}; let first = null; const shown = {}, checks = {};
   S.accounts.forEach(a => { A[a.id] = 0; });
   const L = upto == null ? S.ledger : S.ledger.slice(0, upto);
   for (const raw of L) {
     const e = norm(S, raw); if (!e) continue;
-    if (e.k === 'check') { const u = e.typed - balanceAt(S, L, raw, e.acct); checks[e.acct] = { typed: e.typed, unexplained: u, date: e.date }; if (e.acct === 'bank' || unexplained === null) unexplained = u; continue; }
+    if (e.k === 'check') {
+      /* the check shown for an account is the one with the LATEST DAY (same day: the one added last), never just the one added
+         last: a statement imported later can hold an older check, and that old gap must not show as today's. A check without a
+         date falls back to list order */
+      const cur = shown[e.acct]; if (!cur || !e.date || !cur.e.date || e.date >= cur.e.date) shown[e.acct] = { raw, e };
+      if (!first) first = { raw, e };
+      continue;
+    }
     const f = effect(S, e);
     for (const k in f.A) A[k] = (A[k] || 0) + f.A[k];
     for (const k in f.P) P[k] = (P[k] || 0) + f.P[k];
   }
+  const gap = q => q.e.typed - balanceAt(S, L, q.raw, q.e.acct);
+  for (const k in shown) checks[k] = { typed: shown[k].e.typed, unexplained: gap(shown[k]), date: shown[k].e.date };
+  /* side C's one figure: the bank's check, or the first check added when the bank has none */
+  const unexplained = shown.bank ? checks.bank.unexplained : first ? gap(first) : null;
   return { A, P, unexplained, checks };
 }
 
@@ -136,19 +165,26 @@ function placesOf(S) {
   const waiting = P.waiting || 0, bills = (P.bills || 0) + reserve, free = mode === 'track' ? (P.free || 0) : 0;
   const saved = Object.values(burrows).reduce((a, b) => a + b, 0);
   const thisMonth = bills + free, total = waiting + thisMonth + saved;
-  let have = 0, owed = 0; const foreign = {}, accounts = {};
+  let have = 0, owed = 0; const foreign = {}, foreignOwed = {}, accounts = {};
   S.accounts.forEach(a => {
     const b = A[a.id] || 0; accounts[a.id] = fromC(b);
-    if (inTotal(S, a)) have += b; else if (OWED[a.type]) owed += b; else if (!isHome(S, a)) foreign[a.cur] = fromC((toC(foreign[a.cur] || 0)) + b);
+    if (inTotal(S, a)) have += b;
+    else if (OWED[a.type]) { if (isHome(S, a)) owed += b; else foreignOwed[a.cur] = fromC(toC(foreignOwed[a.cur] || 0) + b); }   /* owed in another currency: beside Owed, never in it */
+    else if (!isHome(S, a)) foreign[a.cur] = fromC((toC(foreign[a.cur] || 0)) + b);
   });
-  /* L4: in Wallet mode Free to spend shows what was handed to the wallet since the last pay day */
-  let handed = 0; for (const raw of S.ledger) { const e = norm(S, raw); if (!e) continue; if (e.k === 'in' && e.sub === 'pay' && e.startsPeriod !== false) handed = 0; if (e.k === 'hand') handed += e.c; }
-  const ch = {}; for (const k in checks) ch[k] = { typed: fromC(checks[k].typed), unexplained: fromC(checks[k].unexplained) };
+  /* L4: in Wallet mode Free to spend shows what was handed to the wallet since the last pay day. By the DAY of each event (same
+     day, or no date: the order added), never by the order added alone: a late line "handed 700 on the 8th" belongs before the
+     pay of the 10th and must not count as handed since then */
+  let handed = 0;
+  const hp = []; S.ledger.forEach((raw, i) => { const e = norm(S, raw); if (e && (e.k === 'hand' || (e.k === 'in' && e.sub === 'pay' && e.startsPeriod !== false))) hp.push([e, i, raw.date || '']); });
+  hp.sort((p, q) => (p[2] && q[2] && p[2] !== q[2] ? (p[2] < q[2] ? -1 : 1) : p[1] - q[1]));
+  hp.forEach(p => { if (p[0].k === 'hand') handed += p[0].c; else handed = 0; });
+  const ch = {}; for (const k in checks) ch[k] = { typed: fromC(checks[k].typed), unexplained: fromC(checks[k].unexplained), date: checks[k].date };
   return {
     chest: fromC(waiting), waiting: fromC(waiting), bills: fromC(bills), billsOnly: fromC(P.bills || 0), forCards: fromC(reserve), cards,
     free: mode === 'track' ? fromC(P.free || 0) : fromC(handed), wallet: fromC(handed),
     burrows: Object.fromEntries(Object.entries(burrows).map(([k, v]) => [k, fromC(v)])), saved: fromC(saved),
-    thisMonth: fromC(thisMonth), total: fromC(total), have: fromC(have), owed: fromC(owed), foreign, accounts,
+    thisMonth: fromC(thisMonth), total: fromC(total), have: fromC(have), owed: fromC(owed), foreign, foreignOwed, accounts,
     unexplained: unexplained == null ? null : fromC(unexplained), checks: ch,
   };
 }

@@ -86,15 +86,15 @@ function figures(p, skipHanded) {
   const c = v => cents(v || 0), o = {}, flat = (name, obj) => Object.keys(obj || {}).sort().forEach(k => { if (c(obj[k])) o[name + '.' + k] = c(obj[k]); });
   ['waiting', 'bills', 'billsOnly', 'forCards', 'saved', 'thisMonth', 'total', 'have', 'owed'].forEach(k => { o[k] = c(p[k]); });
   if (!skipHanded) { o.free = c(p.free); o.wallet = c(p.wallet); }
-  flat('burrow', p.burrows); flat('card', p.cards); flat('acct', p.accounts); flat('foreign', p.foreign);
+  flat('burrow', p.burrows); flat('card', p.cards); flat('acct', p.accounts); flat('foreign', p.foreign); flat('foreignOwed', p.foreignOwed);
   Object.keys(p.checks || {}).sort().forEach(k => { o['check.' + k] = [c(p.checks[k].typed), c(p.checks[k].unexplained), p.checks[k].date]; });
   return o;
 }
 function firstDiff(a, b) { for (const k of Object.keys(Object.assign({}, a, b))) if (J(a[k]) !== J(b[k])) return `${k}: ledger.js ${J(a[k])}, reference ${J(b[k])}`; return ''; }
 
-let events = 0, people = 0;
+let events = 0, people = 0, events1 = 0;
 for (let block = 0; block < 2; block++) {
-if (block === 1) { R = Rand(SEED + 1000); EXT = true; }
+if (block === 1) { R = Rand(SEED + 1000); EXT = true; events1 = events; }
 for (let t = 0; t < (EXT ? Math.ceil(N / 2) : N); t++) {
   people++;
   const setup = person(), tag0 = `${EXT ? 'x' : ''}#${t} ${setup.cur} ${setup.mode}`, mk = maker(setup);
@@ -151,5 +151,5 @@ for (let t = 0; t < Math.max(200, N / 5); t++) {
   rep.ok(a.ledger.length === b.ledger.length && a.ledger.every(e => e.k === 'open'), `${tag}: not the same opening balances`);
   rep.ok(J(Object.assign({}, a.frozen, { frozenAt: undefined })) === J(old), `${tag}: the frozen copy is not the saved copy unchanged`);
 }
-console.log(`${people} people, ${events} events through both models`);
+console.log(`${people} people, ${events} events through both models (first block: ${N} people, ${events1} events, the same list as before the second block was added)`);
 rep.end();

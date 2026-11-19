@@ -466,7 +466,7 @@ function ledgerHas(S, src) { return typeof src === 'string' && LED_SRC_FREE[src]
      burrows { id: amount }, saved, thisMonth, total, have (the tracked home accounts added up; always equal to total),
      owed (cards + pay-later + loans in the home currency), afterCards (have less every "for the card" line),
      foreign { cur: amount } and foreignOwed { cur: amount } (kept beside Total, never in it), accounts { id: balance },
-     checks { acctId: { typed, unexplained, date, id } } (the check added last for that account),
+     checks { acctId: { typed, unexplained, date, id } } (that account's check with the latest day; same day: the one added last),
      below [place ids under zero, to show in amber], mode */
 function placesOf(S, day) {
   const x = ledCtx(S), keep = day != null ? (e => ledDate(e) <= day) : null, L = S.ledger || [];
@@ -498,9 +498,11 @@ function placesOf(S, day) {
     order.sort((p, q) => (ledDate(p[0]) < ledDate(q[0]) ? -1 : ledDate(p[0]) > ledDate(q[0]) ? 1 : p[1] - q[1]));
     order.forEach(p => { if (p[0].k === 'hand') handed += Number.isSafeInteger(p[0].c) ? p[0].c : 0; else handed = 0; });
   }
-  /* check your bank, per account: the typed balance less that account's events dated on or before the check's day */
+  /* check your bank, per account: the typed balance less that account's events dated on or before the check's day. The check
+     shown is the one with the latest day (same day: the one added last), never just the one added last: a statement imported
+     later can hold an older check, and that old gap must not show as today's */
   const last = Object.create(null), checks = {};
-  L.forEach(e => { if (e && e.k === 'check' && typeof e.acct === 'string' && (!keep || keep(e))) last[e.acct] = e; });
+  L.forEach(e => { if (e && e.k === 'check' && typeof e.acct === 'string' && (!keep || keep(e)) && (!last[e.acct] || ledDate(e) >= ledDate(last[e.acct]))) last[e.acct] = e; });
   for (const id in last) { const e = last[id], t = Number.isSafeInteger(e.typed) ? e.typed : 0;
     checks[id] = { typed: t / 100, unexplained: (t - ledBalanceOn(S, x, id, ledDate(e))) / 100, date: ledDate(e), id: e.id }; }
   return {

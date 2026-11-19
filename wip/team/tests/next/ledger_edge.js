@@ -91,6 +91,19 @@ const all = (tag, p, want) => { for (const k in want) eq(`${tag} ${k}`, k.includ
   rep.ok(S.removed.length === 1 && S.removed[0].k === 'spend', 'the undone event is kept in S.removed, outside every sum'); all('after', proof('removed', S), { total: 705 });
   refused('undo an id that is not there', S, 'no-id', () => L.ledgerUndo(S, 999));
 }
+{ /* the check shown is the one with the latest day, not the one added last (a statement imported late holds an older check) */
+  const S = fresh('PHP', [BANK]);
+  add('open', S, { k: 'open', acct: 'bank', a: 9000, place: 'waiting', date: '2026-09-01' });
+  add('spend', S, { k: 'spend', acct: 'bank', a: 1200, place: 'waiting', date: '2026-11-20' });
+  L.ledgerCheck(S, 'bank', 7650, '2026-12-09');
+  let p = proof('check in December', S); eq('December gap', p.checks.bank.unexplained, -150); rep.ok(p.checks.bank.date === '2026-12-09', 'the December check is shown');
+  L.ledgerCheck(S, 'bank', 8600, '2026-10-01', { src: 'stmt:oct:9' });
+  p = proof('older check added later', S); eq('still the December gap', p.checks.bank.unexplained, -150); rep.ok(p.checks.bank.date === '2026-12-09', 'an older check added later does not replace the latest day');
+  eq('as of October the October check is shown', L.placesOf(S, '2026-10-31').checks.bank.unexplained, -400);
+  L.ledgerCheck(S, 'bank', 7800, '2026-12-09');
+  p = proof('second check on the same day', S); eq('same day: the one added last', p.checks.bank.unexplained, 0);
+  L.ledgerUndo(S); eq('undo brings the first December check back', L.placesOf(S).checks.bank.unexplained, -150);
+}
 { /* the bank below zero, check your bank, start fresh */
   const S = fresh('PHP', [BANK, CARD, { id: 'wallet', name: 'Wallet', type: 'wallet', tracked: false }]);
   add('below zero', S, { k: 'open', acct: 'bank', a: -2400.5, date: '2026-11-01' }); add('card', S, { k: 'open', acct: 'card', a: 1000, date: '2026-11-01' });
