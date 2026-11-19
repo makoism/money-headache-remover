@@ -628,6 +628,39 @@ function ledgerCarryOver(S, cardId, amount, day, place) {
   return { ok: true, account: old, events: out };
 }
 
+/* ===== two small extensions for real cards (LANE_ledger_core.md "Design gaps"). They read or use what is already there and change
+   no figure placesOf gives ===== */
+/* THE CUT-OFF DAY. A card may carry cutDay (the statement day of the month) beside payDay. On a day, what is on the card splits in two:
+     due    what the last statement asked for (everything on the card up to the last cut-off) less what was paid or refunded since
+     later  spent after the cut-off: owed and set aside already, but due a month later
+   due + later is always what is on the card. Without cutDay everything is due. Returns { ok, onCard, due, later, cutoff } in money
+   units (cutoff: the last statement day, or null), or false. */
+function ledgerCardDue(S, cardId, day) {
+  const a = S && Array.isArray(S.accounts) ? S.accounts.find(q => q && q.id === cardId) : null;
+  if (!a || !ledOwed(a)) return ledFail(ledNo('acct-type', 'a card'));
+  if (!ledDayOk(day)) return ledFail(ledNo('date'));
+  const x = ledCtx(S), now = ledBalanceOn(S, x, cardId, day); LED_LAST = null;
+  if (!(Number.isInteger(a.cutDay) && a.cutDay >= 1 && a.cutDay <= 31)) return { ok: true, onCard: now / 100, due: now / 100, later: 0, cutoff: null };
+  const y = +day.slice(0, 4), m = +day.slice(5, 7); let cut = ledYmd(y, m, a.cutDay); if (cut > day) cut = ledYmd(y, m - 1, a.cutDay);
+  /* since the cut-off: what was added to the card (later), and what took it down (paid or refunded, which meets the statement first) */
+  let up = 0, down = 0;
+  for (const e of S.ledger) { if (!e || e.k === 'check' || !(ledDate(e) > cut && ledDate(e) <= day)) continue;
+    const A = Object.create(null); ledApply(x, e, A, Object.create(null)); const d = A[cardId] || 0; if (d > 0) up += d; else down -= d; }
+  const statement = now - up + down, due = Math.max(0, statement - down) + Math.min(0, statement), later = now - due;
+  return { ok: true, onCard: now / 100, due: due / 100, later: later / 100, cutoff: cut };
+}
+/* AN INSTALMENT ON A CARD. The plan is its own owed account (type paylater, of: <card id>) that holds the months still to come; the
+   buy is a spend on it, which touches no place. Each month this moves one part from the plan onto the card, where it is set aside
+   like any card spending (default from Bills left). What is owed in all does not change. One step. Returns the events or false. */
+function ledgerInstalment(S, planId, cardId, amount, day, place) {
+  const c = ledCents(amount); if (c === null || !(c > 0)) return ledFail(ledNo('amount-sign'));
+  const x = ledCtx(S || {}), p = x.by[planId], card = x.by[cardId];
+  if (!p || !card || !ledOwed(p) || card.type !== 'card' || p === card) return ledFail(ledNo('acct-type', 'a plan and its card'));
+  return ledgerAddMany(S, [
+    { k: 'adjust', sub: 'instalment', acct: planId, c: -c, date: day, src: 'typed' },
+    { k: 'adjust', sub: 'instalment', acct: cardId, c, place: place || 'bills', date: day, src: 'typed' }]);
+}
+
 /* ===== a saved copy ===== */
 /* May this page write over a stored copy? Never when the stored ledger is of a newer shape than this file knows. */
 function ledgerMayWrite(stored) { return !(stored && typeof stored === 'object' && (+stored.ledgerV || 0) > LEDGER_V); }
@@ -675,22 +708,39 @@ function ledgerClean(S) {
 }
 
 /* ===== moving a saved 38.31 copy (E5) ===== */
-/* old: the typed figures of the 38.31 copy, in this shape (the caller reads them out of the saved copy):
-     { cur, freeMode, payDays, bankStart, bankAt, cards: [{ name, owed, payDay, at }], goals: [{ id, start }],
+/* The typed figures of a real 38.31 saved copy (the app's S), read into the plain shape migrate3831 works from. Nothing is worked
+   out: only figures a person typed are read. The bank is cfg.bankNow on cfg.bankNowAt ("bank now"). A copy without it falls back to
+   cfg.bankStart on cfg.bankAt (the bank at the start of the first month) and marks the bank account confirm, so the first check
+   asks. Cards are S.cards [{ id, name, owed, payDay, at }]; goal starts are plan.goals [{ id, start }]; plan.debts become loans. */
+function ledgerRead3831(saved) {
+  const cfg = saved.cfg && typeof saved.cfg === 'object' ? saved.cfg : {}, ui = saved.ui && typeof saved.ui === 'object' ? saved.ui : {}, plan = saved.plan && typeof saved.plan === 'object' ? saved.plan : {};
+  const now = cfg.bankNow != null, arr = v => (Array.isArray(v) ? v.filter(q => q && typeof q === 'object') : []);
+  const first = (o, keys) => { for (const k of keys) if (o[k] != null) return o[k]; return 0; };
+  return { cur: ui.cur, freeMode: ui.freeMode, payDays: ui.payDays,
+    bankStart: now ? cfg.bankNow : cfg.bankStart, bankAt: now ? cfg.bankNowAt : cfg.bankAt, bankConfirm: !now,
+    cards: arr(saved.cards).map(c => ({ id: c.id, name: c.name, owed: c.owed, payDay: c.payDay, at: c.at })),
+    goals: arr(plan.goals).map(g => ({ id: g.id, start: g.start })),
+    debts: arr(plan.debts).map(d => ({ name: d.name, owed: first(d, ['owed', 'bal', 'balance', 'start']), payDay: d.payDay })) };
+}
+/* migrate3831(old, today). old is a real 38.31 saved copy (it has cfg or plan; read by ledgerRead3831), or the plain shape:
+     { cur, freeMode, payDays, bankStart, bankAt, cards: [{ id, name, owed, payDay, at }], goals: [{ id, start }],
        debts: [{ name, owed, payDay }], planFigures }
    today: the day of the move. Only typed figures move: the bank figure (with its date) opens the bank; each typed card balance opens
    that card and sets the same amount aside for it; goal starts open their burrows in "Savings from your old plan", an account the
-   first check asks the person to confirm; debts open loan accounts. S.frozen is a copy of old that is never written again, and
-   S.oldFigures holds the old plan's figures to show once. A figure that cannot be read is left out and listed in S.oldFigures.notes,
-   never guessed. Returns the new ledger state, or false. */
+   first check asks the person to confirm; debts open loan accounts. S.frozen is a copy of old, whole, that is never written again,
+   and S.oldFigures holds the old plan's figures to show once. A figure that cannot be read is left out and listed in
+   S.oldFigures.notes, never guessed. Returns the new ledger state, or false. */
 function migrate3831(old, today) {
   if (!old || typeof old !== 'object' || Array.isArray(old)) return ledFail(ledNo('old-copy'));
   if (!ledDayOk(today)) return ledFail(ledNo('date', 'the day of the move'));
+  const whole3831 = old; let planFigures = old.planFigures;
+  if ((old.cfg && typeof old.cfg === 'object') || (old.plan && typeof old.plan === 'object')) { old = ledgerRead3831(old); old.planFigures = planFigures; }
   const cur = typeof old.cur === 'string' && old.cur ? old.cur : null;
   if (!cur) return ledFail(ledNo('old-copy', 'no currency'));
   const S = ledgerFresh({ cur, mode: old.freeMode === 'wallet' ? 'wallet' : 'track', payDays: ledPayDays(old.payDays) || [1], accounts: [{ id: 'bank', name: 'Bank', type: 'bank' }] });
   if (!S) return false;
-  S.frozen = ledCopy(old); S.frozen.frozenAt = today;
+  S.frozen = ledCopy(whole3831); S.frozen.frozenAt = today;
+  if (old.bankConfirm) S.accounts[0].confirm = true;
   const notes = [], whole = LED_WHOLE[cur] === 1;
   const amt = (v, what) => { let c = ledCents(v == null ? 0 : v); if (c === null) { notes.push(what + ': not a usable amount, left out'); return 0; }
     if (whole && c % 100 !== 0) { c = Math.round(c / 100) * 100; notes.push(what + ': cents dropped, this currency has none'); } return c; };
@@ -705,7 +755,7 @@ function migrate3831(old, today) {
     const seen = {}; goals.forEach(g => { if (seen[g.id]) { notes.push('goal ' + g.id + ': listed twice, the second is left out'); return; } seen[g.id] = 1; add({ k: 'open', acct: 'oldsavings', c: g.c, place: g.id, date: today }); });
   }
   list(old.cards).forEach((cd, i) => {
-    const id = 'card' + (i + 1), a = { id, name: typeof cd.name === 'string' && cd.name ? cd.name : 'Card ' + (i + 1), type: 'card', inFull: true }; if (payDay(cd.payDay)) a.payDay = cd.payDay;
+    const id = ledIdOk(cd.id) && !S.accounts.some(q => q.id === cd.id) ? cd.id : 'card' + (i + 1), a = { id, name: typeof cd.name === 'string' && cd.name ? cd.name : 'Card ' + (i + 1), type: 'card', inFull: true }; if (payDay(cd.payDay)) a.payDay = cd.payDay;
     ledgerAddAccount(S, a); const c = amt(cd.owed, a.name); if (c) add({ k: 'open', acct: id, c, place: 'waiting', date: dayOr(cd.at) });
   });
   list(old.debts).forEach((d, i) => {
@@ -720,4 +770,5 @@ function migrate3831(old, today) {
 /* when loaded with require() too (tests); in the page this line does nothing */
 if (typeof module !== 'undefined' && module.exports) module.exports = { LEDGER_V, ledgerFresh, ledgerAdd, ledgerAddMany, ledgerTry, ledgerWhy, ledgerUndo, ledgerRedo, ledgerHas,
   placesOf, ledgerProof, ledgerCardLines, periodOf, flows, ledgerUnexplained, ledgerCheck, ledgerAccept, ledgerStartFresh, ledgerCarryOver,
-  ledgerAddAccount, ledgerEditAccount, ledgerCloseAccount, ledgerReopenAccount, ledgerSetMode, ledgerSetPayDays, ledgerMayWrite, ledgerClean, migrate3831 };
+  ledgerAddAccount, ledgerEditAccount, ledgerCloseAccount, ledgerReopenAccount, ledgerSetMode, ledgerSetPayDays, ledgerMayWrite, ledgerClean, ledgerRead3831, migrate3831,
+  ledgerCardDue, ledgerInstalment };
