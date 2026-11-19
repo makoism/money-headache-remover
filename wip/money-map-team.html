@@ -7278,16 +7278,35 @@ const SQ = (() => {
     for (let i = 0; i < coins; i++) { const x = cx - 4 + (i % 4) * 2 + (i > 3 ? 1 : 0), y = base - 2 - Math.floor(i / 4) * 2; p(x, y, HC.coin); p(x + 1, y, HC.coin); p(x, y + 1, HC.coinD); p(x + 1, y + 1, HC.coinD); }
     g.fillStyle = HC.dirt; g.fillRect(0, base + 2, 400, 3);
   }
+  /* the panel never sits over a number or a control (DECISIONS "v1 must be fully usable"). What is on screen is measured once: every visible control and every
+     piece of text with a digit. The first free spot wins: bottom left, bottom right, top left, top right, at full size and then one step smaller. No free spot: no panel. */
+  function spot(w, h) {
+    const vis = e => !e.checkVisibility || e.checkVisibility({ visibilityProperty: true, opacityProperty: true }), on = q => q.width > 0 && q.height > 0 && q.bottom > 0 && q.top < innerHeight && q.right > 0 && q.left < innerWidth;
+    const busy = [];
+    document.querySelectorAll('button, a[href], input, select, textarea, [role=button], summary').forEach(e => { const q = e.getBoundingClientRect(); if (on(q) && vis(e)) busy.push(q); });
+    const tw = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, { acceptNode: n => /\d/.test(n.nodeValue) ? 1 : 3 }), rg = document.createRange();
+    for (let n = tw.nextNode(); n; n = tw.nextNode()) { const pe = n.parentElement; if (!pe || pe.closest('script, style, [hidden]')) continue; rg.selectNodeContents(n); const q = rg.getBoundingClientRect(); if (on(q) && vis(pe)) busy.push(q); }
+    const sb = 'env(safe-area-inset-bottom,0px)', st = 'env(safe-area-inset-top,0px)';
+    for (const k of [1, .5]) {
+      const W = Math.round(w * k), H = Math.round(h * k);
+      const at = [[10, innerHeight - 8 - H, `left:10px;bottom:calc(8px + ${sb})`], [innerWidth - 10 - W, innerHeight - 8 - H, `right:10px;bottom:calc(8px + ${sb})`], [10, 8, `left:10px;top:calc(8px + ${st})`], [innerWidth - 10 - W, 8, `right:10px;top:calc(8px + ${st})`]];
+      for (const [x, y, css] of at) { if (x < 0 || y < 0) continue; const hit = busy.some(q => q.left < x + W + 4 && q.right > x - 4 && q.top < y + H + 4 && q.bottom > y - 4); if (!hit) return { css, W, H }; }
+    }
+    return null;
+  }
   /* the corner moment for a big step elsewhere in the app */
   let last = 0, busy = false, nShown = 0;
   const reduced = () => !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
   function stash(style) {
-    const now = Date.now(); if (busy || reduced() || window.innerWidth < 1260 || now - last < 150000) return false; last = now; busy = true; const n = nShown++;
+    const now = Date.now(); if (busy || reduced() || now - last < 150000) return false; last = now; busy = true; const n = nShown++;
     setTimeout(() => {
       const W = STAGE.W, H = STAGE.H, sc = window.innerWidth < 1400 ? 2 : 3, cv = document.createElement('canvas'); cv.width = W; cv.height = H; const g = cv.getContext('2d'); if (!g) { busy = false; return; }
-      cv.setAttribute('aria-hidden', 'true'); cv.style.cssText = `position:fixed;left:10px;bottom:calc(8px + env(safe-area-inset-bottom,0px));width:${W * sc}px;height:${H * sc}px;image-rendering:pixelated;pointer-events:none;z-index:70;background:var(--card,#2a3a2a);border-radius:14px;box-shadow:0 2px 10px rgba(0,0,0,.25)`;
+      const at = spot(W * sc, H * sc); if (!at) { busy = false; return; }   /* nothing free on this screen: the moment is still marked by the coins in the burrow */
+      cv.setAttribute('aria-hidden', 'true'); cv.style.cssText = `position:fixed;${at.css};width:${at.W}px;height:${at.H}px;image-rendering:pixelated;pointer-events:none;z-index:70;background:var(--card,#2a3a2a);border-radius:14px;box-shadow:0 2px 10px rgba(0,0,0,.25)`;
+      /* the page scrolls under a fixed panel: if the person scrolls while it plays, it leaves rather than cover what comes under it */
+      const gone = () => cv.remove(); addEventListener('scroll', gone, { once: true, passive: true });
       document.body.append(cv); const t0 = performance.now(); let coined = false, ph = 0;
-      const tick = () => { const t = performance.now() - t0; if (t > END + 200 || !cv.isConnected) { cv.remove(); busy = false; return; }
+      const tick = () => { const t = performance.now() - t0; if (t > END + 200 || !cv.isConnected) { cv.remove(); removeEventListener('scroll', gone); busy = false; return; }
         if (!coined && t > T.crouch + 700) { coined = true; try { sfx('coin'); } catch (e) { /* sound is a bonus */ } }
         const a = Math.min(1, t / 300) * (t > END - 300 ? Math.max(0, 1 - (t - (END - 300)) / 300) : 1);
         g.clearRect(0, 0, W, H); cv.style.opacity = a; g.globalAlpha = 1; const base = H - 5, cx = 26, landed = t > T.crouch + 700;
@@ -7484,13 +7503,13 @@ const BUR = (() => {
     const before = Math.min(1, r.saved / r.target); let moved = 0;
     try { moved = ACT.sweep(nowYm(), r.id, v); } catch (e) { moved = 0; }
     if (!(moved > 0)) { const m = pop.querySelector('.bv-msg'); if (m) m.textContent = 'That could not be added.'; return; }
-    try { render(); } catch (e) { /* the page behind redraws on its own */ }
+    /* no render() here: the save inside ACT.sweep already redrew the page behind (ACT.commit, restructure, render); a second one doubled the tap's long task on a slow phone */
     const r2 = rows().find(x => x.id === r.id) || r, to = Math.min(1, r2.saved / r2.target), n = Math.max(2, Math.min(5, Math.round(1 + (to - before) * 10)));
     pop.innerHTML = `<h2>${esc(r.name)}</h2><p class="bv-n"><b>+${fmt(moved)}</b></p><p class="bv-s">Going in.</p>`;
     if (reduced()) { fill(); return; }
     anim = { from: before, to, t0: performance.now(), n, shown: before, landed: 0, moved, full: to >= 1, id: r.id };
   }
-  function undoAdd() { try { ACT.undo(); render(); } catch (e) { /* nothing to undo */ } fill(); }
+  function undoAdd() { try { ACT.undo(); } catch (e) { /* nothing to undo */ } fill(); }   /* ACT.undo saves and redraws the page itself */
   /* ---------- the stage: sizes, geometry, the loop ---------- */
   function build() {
     el = document.createElement('section'); el.id = 'burrowView'; el.setAttribute('aria-label', 'Burrow');
@@ -7591,7 +7610,7 @@ const BUR = (() => {
     if (L.fx) L.fx.init(k);
     placeGround(L);
     /* a look with its own world covers the forest scene; the clouds drift on a picture twice as wide */
-    const has = !!L.bg; el.classList.toggle('has-bg', has);
+    const has = !!L.bg; el.classList.toggle('has-bg', has); try { SCENE.wake(); } catch (e) { /* the forest is a bonus */ }
     if (has) { bg0.width = Wf; bg0.height = Hf; bg0.style.width = Wf * S + 'px'; bg0.style.height = Hf * S + 'px'; bgc.width = Wf; bgc.height = Hf; bgc.style.width = Wf * S + 'px'; bgc.style.height = Hf * S + 'px'; clc.width = Wf * 2; clc.height = Hf; clc.style.width = Wf * 2 * S + 'px'; clc.style.height = Hf * S + 'px'; clc.parentNode.style.setProperty('--cw', Wf * S + 'px'); bgPct = -1; }
   }
   let LK = 'plain';
@@ -7658,7 +7677,7 @@ const BUR = (() => {
     if (!el) build(); anim = null; cur = id; const f = fill(); if (!f) { cur = null; return; }
     document.body.classList.add('bv-on'); el.hidden = false; pop.hidden = false; t0 = performance.now(); layout(); loop();
   }
-  function close() { cur = null; clearTimeout(tm); if (el) el.hidden = true; document.body.classList.remove('bv-on'); try { SCENE.look(''); } catch (e) { } }
+  function close() { cur = null; clearTimeout(tm); if (el) el.hidden = true; document.body.classList.remove('bv-on'); try { SCENE.look(''); SCENE.wake(); } catch (e) { } }
   /* the squirrel stocks the burrow: call this after money has gone into the burrow */
   function stock(style) { if (!cur) return; stockT = performance.now(); stockStyle = style || 'A'; pulseAt = stockT + SQ.T.crouch + 700; }
   /* ---------- Home: one picture with a burrow for each savings bucket, how full it is, a short note and the play money number ---------- */
@@ -13109,7 +13128,9 @@ const SCENE = (() => {
     sk.width = W; sk.height = H; st.width = W; st.height = H; vl.width = W; vl.height = H; mood = pickMood(); T = TOD[mood]; document.documentElement.dataset.tod = mood;
     paint(); paintLights(); paintVeil(); draw();
   }
-  function loop() { clearTimeout(timer); if (still || document.hidden || !(cv || bot)) return; if (bot) drawBot(); else draw(); timer = setTimeout(loop, 166); }
+  /* a burrow with its own world (burrows.js, the rainy look) covers the whole forest: no drawing nobody can see. burrows.js calls wake() when it closes or changes look */
+  const covered = () => !!document.querySelector('#burrowView.has-bg:not([hidden])');
+  function loop() { clearTimeout(timer); if (still || document.hidden || !(cv || bot) || covered()) return; if (bot) drawBot(); else draw(); timer = setTimeout(loop, 166); }
   let rsT = 0;
   function start() {
     if (cv || bot || !on()) return;
@@ -13127,7 +13148,7 @@ const SCENE = (() => {
   document.addEventListener('visibilitychange', () => { if (!document.hidden && (cv || bot)) { if (pickMood() !== mood) (bot ? buildPhone() : build()); loop(); } });
   setInterval(() => { if ((cv || bot) && !document.hidden && pickMood() !== mood) (bot ? buildPhone() : build()); }, 60000);
   if (/[?&]scenetest\b/.test(location.search)) window.__scene = { squirrel: (c, x, y, up, side, ph, m, look) => squirrel(c, x, y, up, side, ph, m, T, look), dragon: (c, x, y, f, dir, night) => dragon(c, x, y, f, dir, night), get: () => ({ L, W, H, PX, mood }) };
-  return { progress() { }, flare() { }, look(m) { m = m || ''; if (m === look) return; look = m; if (cv) build(); else if (bot) buildPhone(); }, start, stop, sync: () => (on() ? (cv ? build() : bot ? buildPhone() : start()) : stop()), mood: () => mood, set(v) { if (v) delete S.ui.scene; else S.ui.scene = false; persist(); this.sync(); }, on };
+  return { progress() { }, flare() { }, wake: () => loop(), look(m) { m = m || ''; if (m === look) return; look = m; if (cv) build(); else if (bot) buildPhone(); }, start, stop, sync: () => (on() ? (cv ? build() : bot ? buildPhone() : start()) : stop()), mood: () => mood, set(v) { if (v) delete S.ui.scene; else S.ui.scene = false; persist(); this.sync(); }, on };
 })();
 /* ---------- realm title card ----------
    Each time the app opens, the realm it opens in announces itself: its name, one line, a short fade in and out.
