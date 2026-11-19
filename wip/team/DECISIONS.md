@@ -132,3 +132,10 @@ Three documents were kept in the Claude project and should be copied into the re
 7. **Setup step count (Claude's call):** no "of N" that can change mid-setup. Show the step's name and the progress dots only.
 8. **The phone:** the squirrel did not show when money was added, and the burrow felt laggy (maybe the rain). The phone and the desktop must run the same build and work the same. Investigated before v1.
 
+## The art step and the 3D world (Mako, 2026-11-19)
+
+1. **All steam ahead on the base functionality and the base UI.** Nothing changes today. When the bare bones work, Mako uses the app for his own money and tests whether it is usable.
+2. **Art comes last, and Mako is part of it closely.** No session starts any art work (pictures, the 3D world, the creature, lighting, sound design) without asking Mako first. When the base is ready, tell Mako that the art step can start.
+3. **The 3D world is part of the art step:** one small stylized walkable world where every app action can be done. See WORLD_3D.md.
+4. **One source of context.** Mako talks to one coordinating session; it records his decisions here and passes them to every working session. A working session never takes a direction from anywhere else.
+
