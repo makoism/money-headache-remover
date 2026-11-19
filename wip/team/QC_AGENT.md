@@ -11,7 +11,7 @@ Rule from Mako (2026-11-17): every release goes through a separate agent that kn
 - North star: in 10 seconds can a stranger see where all the money is, where it stocks up, what is safe to spend? Does the picture add up and say how fresh it is?
 - Visual first: is any number or sentence doing a job a picture should do? Does it work as a picture a kid could read?
 - Fresh eyes: a person who knows nothing about budgeting: do they know why this exists, what each number means, and what to do next?
-- Wording: plain, like a manual, no jargon, no em dashes, the agreed words only (Chest, This month, Bills and basics, Free to spend, Burrows, Investing, Giving, Pay day, Take out).
+- Wording: plain, like a manual, no jargon, no em dashes, the agreed words only (Burrow for any place money piles up, goal for the amount it aims for, Chest only as the Free to spend picture, This month, Bills and basics, Free to spend, Burrows, Investing, Giving, Pay day, Take out).
 - Nothing lies or breaks: no clickable thing that does nothing, no overlap or cut-off text on phone and desktop, no visible error, no number that contradicts another number on the same screen.
 - Safe with data: nothing in the visible flow could lose or overwrite a person's data without warning.
 - Art: nothing drawn over words, one pixel size, palette colours only.

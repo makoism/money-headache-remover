@@ -12,9 +12,10 @@ Two fresh agents run at the same time on the same finished build. Both must pass
 2. Number-logic agent (QC_NUMBERS.md in the repo): its only job is that every number is correct in every situation (typos, wrong or duplicate receipts, overspending, negative bank, blanks, no input, dates, currency, undo and reload). It drives the real app, recomputes the numbers itself and compares every screen.
 
 ## Shared glossary (one word per thing, everywhere)
-- Burrow: money that piles up over months (emergency fund, trip, home, yearly cost, debt). Never "goal card" in user text except on the Goals list.
-- Chest: only where new pay waits on pay day, before it is placed. Empty the rest of the time; loose coins in it mean money not placed yet (Mako, 2026-11-18, DECISIONS.md decision 4).
-- This month: Bills and basics plus Free to spend, the money set aside for this month. Separate from the Chest.
+- Burrow: any place money piles up over months: goals (emergency fund, trip, home, yearly cost), Education, Giving and Investing. Giving is a burrow: you save for gifts or charity and spend from the stock (Mako, 2026-11-19).
+- Goal: the amount a burrow is aiming for ("Trip: 1,200 goal"). Home, Plan and setup use burrow and goal the same way (Mako, 2026-11-19).
+- Chest: only the treasure chest picture of Free to spend. No screen uses "Chest" as the name of anything else; the place where new pay waits on pay day gets its own word when it is built later (Mako, 2026-11-19, replaces decision 4's naming).
+- This month: Bills and basics plus Free to spend, the money set aside for this month.
 - Free to spend: say "Free to spend" everywhere; the old "play money" wording is retired.
 - Investing: invested and never spent. Only grows.
 - Paid off / still owed for debt. Full / saved for everything else.
@@ -24,7 +25,7 @@ Two fresh agents run at the same time on the same finished build. Both must pass
 Pretend to be a 25 year old sent the link by a friend. Walk the whole tour and every page.
 - Within 10 seconds: what is this for, and what do I do first?
 - Every term explained where it first appears. Every number says what it means and what to do next.
-- Burrows vs chest is obvious. No leftover words from older cards.
+- Burrows (money that piles up) vs This month (money for now) is obvious. No leftover words from older cards.
 - No dead ends, no screen where the only way forward is a term they do not know.
 - Empty states invite an action. Sample numbers are always labelled as sample.
 Learned from panel (38.21): debt must read paid off / still owed everywhere (use dw/dwr in model.js for any new goal wording); every number a novice sees needs a one-line purpose; sample numbers labelled on every page; tour verdict must use the same rule as Home status.
