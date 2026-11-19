@@ -12,7 +12,7 @@ Written by the voice lane (SIDE M2), 2026-11-19. The 28 ideas of HELP_TEXTS.md (
 
 **Notes for the build**
 - Entries 14, 22 and 23 describe things that come with the ledger and the Wallet and Track switch. Show them only when that part exists.
-- Entry 20 names buttons (Cloud backup, Turn on, Enter your recovery code) as the app has them on 2026-11-19. The cloud copy screens are being rebuilt as steps. When that lands, the words in entry 20 must match the buttons exactly, so check it again then.
+- Entry 20 was checked on 2026-11-19 against the cloud copy steps after they landed (ui42.js, body.html, ui45.js). Its button names are the ones on the screens: Keep a copy in the cloud, Next: get my code, Copy code, I saved it, Enter your recovery code, Load my numbers, I have a code, Find my copy, Load, Show code. If a button is renamed, entry 20 changes with it.
 - Entry 25 names a button "Start fresh from today" that is not in the app yet. Entry 18 names "Decide later", which is.
 - Entry 13 is titled "What you owe". The Home line is "You owe". Pick one when this is wired in.
 
@@ -134,10 +134,14 @@ Example: the bank would be ₱1,200 below zero on the 8th and pay comes on the 1
 
 Your numbers live in this browser on this phone, so if you lose the phone or clear the browser they're gone unless there's a copy somewhere else. The cloud copy is that copy, and it's locked so only your recovery code opens it.
 
-1. In Settings find Cloud backup and tap Turn on
-2. The burrow shows you a recovery code. Save it in your notes or password app, somewhere other than this phone, because nobody can get it back for you if you lose it
-3. From then on every save goes to the cloud copy too, you don't have to do anything
-4. On a new phone or another browser you open the burrow, tap Enter your recovery code on the first screen, type the code in and your numbers come back
+1. In Settings find Cloud copy and tap Keep a copy in the cloud
+2. It tells you what the cloud copy is, then you tap Next: get my code
+3. The burrow shows you your recovery code. Tap Copy code and paste it in your notes or password app, somewhere other than this phone, because nobody can get it back for you if you lose it. Then tap I saved it
+4. From then on every change goes to the cloud copy by itself, you don't have to do anything. Settings shows when it was last sent
+5. On a new phone or another browser you open the burrow, tap Enter your recovery code on the welcome screen, type the code in and tap Load my numbers, and your numbers come back
+6. If the welcome screen is gone you go to Settings, find Cloud copy, tap I have a code, type the code in and tap Find my copy. It shows what it found, then you tap Load
+
+If you need the code again it's in Settings under Cloud copy, tap Show code.
 
 ## 21. A backup file
 
@@ -196,7 +200,7 @@ Example: ₱2,500 not placed yet, you put ₱1,500 in your trip burrow and ₱1,
 ## Glossary words that sound off to me (for Mako, nothing renamed)
 
 - **"Not placed yet"** as a name. It reads fine in a sentence ("pay you haven't placed yet") and stiff as a label.
-- **"Cloud backup" and "the cloud copy"** are two names for one thing. The button says Cloud backup, the text says cloud copy. One word per thing would be better here than anywhere, since this is the part he said was unclear.
+- **"Cloud backup"** is gone, the app says cloud copy everywhere now. What is left: "Find my copy" in Settings and "Load my numbers" on the welcome screen are two words for the same tap.
 - **"Bills and basics"** next to **"Bills left"**. Close enough to mix up when read fast.
 - **"Education"** is the one burrow name he wouldn't say out loud. "Learning" is closer to how he talks.
 - **"Emergency fund" or "Rainy Day"**. The app has both, Emergency fund on the screens and "rainy" underneath. Emergency fund is the money word a beginner has heard before. Rainy Day sounds more like a place. His call.
