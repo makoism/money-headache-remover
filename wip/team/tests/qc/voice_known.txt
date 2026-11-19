@@ -1,2 +1,9 @@
 # Known voice findings that are accepted for now. One regular expression per line, matched against "file: text".
 # Give the reason on the line above each pattern. Empty until the main session applies COPY_V1.md and decides what stays.
+# text sent to Claude (what to put in each field of its answer), a person never reads it
+^ui45v\.js: up to two short notes, only about rows
+^ui45v\.js: part .* of one statement file
+# the picture of the plan that is sent to Claude with a question, a list with a hyphen in front of each line, a person never reads it
+^ui46\.js: - Left over:
+# the hope the person picked in setup, said back to them. It is their own choice of words, not a comfort line
+^ui0\.js: feel calm about money
