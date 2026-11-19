@@ -462,7 +462,7 @@ function spWhy(kind, names, vals, total, moneyOf) {
   const f = SPF[kind], m = f.last, sd = splitDraft(vals, total, f.from, m), free = sd.free;   /* model.js splitDraft */
   if (m >= 0 && f.hit && vals[m] === f.from) return `<b>${esc(names[m])}</b> can only take what is not placed yet, and nothing is. Lower another one first.`;
   if (m >= 0 && vals[m] !== f.from) { return `<b>${esc(names[m])}</b> ${sd.up ? '+' : '−'}${sd.moved}%${f.hit ? ': all that was not placed yet. To go further, lower another one.' : `. Not placed yet now <b>${free}%</b>${free > 0 ? ` (${moneyOf(free)})` : ''}.`}`; }
-  return `Each slider moves on its own. Lower one and the difference waits as not placed yet; raise one and it takes from there. Shares total <b>${total}%</b>.`;
+  return `Each slider moves on its own. Lower one and the difference waits as not placed yet; raise one and it takes from there. ${kind === 'jar' ? `The five places share <b>${total}%</b> of your pay, the part your bills leave.` : `Your goals share <b>${total}%</b> of the goal money.`}`;
 }
 const PENCIL = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M13.6 3.4a1.8 1.8 0 0 1 2.6 2.6L7.4 14.8 4 15.6l.8-3.4z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>';
 const pctPill = (attr, i, label, max) => `<label class="pctp"><input type="number" inputmode="numeric" min="0" max="${max}" step="1" data-${attr}="${i}" aria-label="${esc(label)}, percent of pay"><b>%</b>${PENCIL}</label>`;
@@ -481,7 +481,7 @@ function spPaint(kind, o) {
   });
   const pot = $(o.pot); if (pot) { $$('i', pot).forEach((seg, i) => { seg.style.flexGrow = Math.max(i < o.vals.length ? o.vals[i] : free, 0.0001); }); }
   const pool = $(o.pool);
-  if (pool) { pool.classList.toggle('has', free > 0); $('.pool-t', pool).innerHTML = free > 0 ? `Not placed yet <b>${free}%</b> · ${o.moneyOf(free)}` : 'All of it is given out.'; }
+  if (pool) { pool.classList.toggle('has', free > 0); $('.pool-t', pool).innerHTML = free > 0 ? `Not placed yet <b>${free}%</b> · ${o.moneyOf(free)}` : kind === 'jar' ? `All <b>${o.total}%</b> of your pay here is given out.` : 'All of it is given out.'; }
   const why = $(o.why); if (why) why.innerHTML = spWhy(kind, o.names, o.vals, o.total, o.moneyOf);
 }
 /* a short bump on the share that moved, a flash on the pool line, and a few leaves from the thumb being dragged */

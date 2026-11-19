@@ -726,6 +726,7 @@ svg.tour-scene { width: 100%; max-width: 440px; height: auto; }
 .split-h .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--c); flex: none; }
 .split-h b { font-size: 17px; font-weight: 600; letter-spacing: -.01em; flex: 1 1 auto; min-width: 0; }
 .split-h em { font-style: normal; font-weight: 600; color: var(--ink); font-size: 19px; font-variant-numeric: tabular-nums; }
+.tour-body .split-d { margin: 2px 0 2px 20px; font-size: 14px; max-width: none; }
 .tour-body .split-m { margin: 0 0 0 20px; font-size: 14px; color: var(--ink2); font-variant-numeric: tabular-nums; max-width: none; }
 .split-row .rng { margin-top: 0; }
 /* the pool line under the pot: what is still unassigned, with Spread it and Give it to; the pot's hatched end is the same part */

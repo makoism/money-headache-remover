@@ -113,6 +113,7 @@ const billStep = id => ({ id: 'bill-' + id, part: PART.bills, setup: true, focus
       /* one plain question; the statement arithmetic is there for those who only know the statement total */
       const saved = val(S, l.key, START), c = cardModel(saved), calc = c.b > 0;
       return `<p>What goes on the card each month apart from the bills you already listed: shopping, eating out, online orders, rides. A rough number is fine.</p>
+      <p class="cap" data-card-full>Pay the card off in full every month? You can leave this at 0 and tap Next. What's on the card right now goes on Home once setup is done - tap Add a card you pay in full there and Home shows your bank after the cards are paid.</p>
       <div class="tour-fields">${moneyField('tourAmt', 'Card spending, each month', saved)}</div>
       <details class="src-how"${calc ? ' open' : ''}><summary>I only know the statement total</summary><div class="src-how-in">
         <p class="cap">Enter the statement total, then the part of it that is bills you already listed (rent, food, subscriptions). The rest is card spending.</p>
@@ -120,7 +121,8 @@ const billStep = id => ({ id: 'bill-' + id, part: PART.bills, setup: true, focus
         <div class="row-btns"><span class="cap" id="cardCap" aria-live="polite"></span><button type="button" class="btn small solid" id="cardUse" hidden>Use this amount</button></div>
       </div></details>
       <p class="cap">A card is paid a month late. This month you pay last month's bill, so put that bill under One-time costs for this month (Plan, then Month). The amount above is what you expect to put on the card from now on.</p>
-      <p class="cap">No credit card: go back and untick it. Owe on a card or loan? Add it under Cards and loans on the Goals tab.</p>`;
+      <p class="cap">No credit card: go back and untick it. Owe on a card or loan? Add it under Cards and loans on the Goals tab.</p>
+      <p class="cap" data-card-later>You do both of those after setup, so there's nothing more to type here. One-time costs is on the Plan tab under Month - it's for things you pay once. Cards and loans is on the Plan tab under Burrows - it's for a balance you carry from month to month.</p>`;
     }
     return `${note ? `<p>${esc(note())}</p>` : ''}
     <div class="tour-fields">${named ? textField('tourLName', 'Name', l.name) : ''}${moneyField('tourAmt', 'Each month', val(S, l.key, START))}</div>${b === 'ins' ? moreBtn('ins') : ''}`;
@@ -139,7 +141,8 @@ const moreBtn = kind => `<div class="row-btns"><button type="button" class="btn 
 /* ----- where the rest of the pay goes: the five other jars share what the bills leave ----- */
 const JAR5 = ['lts', 'play', 'edu', 'ffa', 'give'];
 const JAR_LABEL = { lts: 'Goal burrows', play: 'Free to spend', edu: 'Education', ffa: 'Investing', give: 'Giving' };
-const JAR_SHORT = { lts: 'Savings', play: 'Free to spend', edu: 'Education', ffa: 'Freedom', give: 'Give' };
+/* one plain line under each of the five on the split step, so no name is met unexplained (H1 walk, finding 3) */
+const JAR_WHAT = { lts: 'Saving for your goals, like the emergency fund or a trip', play: 'Yours for fun, spend it on whatever you want', edu: 'Books, courses, anything that teaches you a skill', ffa: 'Money you invest and leave to grow', give: 'Gifts and donations' };
 let jarVals = null, jarRest = 0, jarNec = 0;
 /* the share of the pay the bills leave for the other five jars, in whole percents; 0 when the bills use all of it */
 const restPct = () => { const pay = payNow(); return pay > 0 && necTotal() < pay ? Math.max(0, 100 - Math.min(100, Math.round(necTotal() / pay * 100))) : 0; };
@@ -168,7 +171,7 @@ const potHTML = (id, cols, vals, total) => `<div class="pot" id="${id}" aria-hid
 /* the line under the pot: how much is not placed yet, with Spread it and Give it to */
 const poolHTML = (kind, names) => `<div class="pool" id="${kind}Pool" aria-live="polite"><span class="pool-t"></span><span class="pool-acts"><button type="button" class="link" data-spread="${kind}">Spread it</button><label class="pool-give">Give it to <select class="inp sm" data-give="${kind}" aria-label="Give the part not placed yet to one"><option value="">…</option>${names.map((n, i) => `<option value="${i}">${esc(n)}</option>`).join('')}</select></label></span></div>`;
 function jarRows() {
-  return JAR5.map((j, i) => `<div class="split-row" data-jrow="${i}"><div class="split-h"><i class="dot" style="--c:${JARVAR[j]}"></i><b>${JAR_LABEL[j]}</b><span class="dlt"></span>${pctPill('jpct', i, JAR_LABEL[j], jarRest)}</div><p class="split-m"></p>
+  return JAR5.map((j, i) => `<div class="split-row" data-jrow="${i}"><div class="split-h"><i class="dot" style="--c:${JARVAR[j]}"></i><b>${JAR_LABEL[j]}</b><span class="dlt"></span>${pctPill('jpct', i, JAR_LABEL[j], jarRest)}</div><p class="cap split-d">${JAR_WHAT[j]}</p><p class="split-m"></p>
     <div class="rng" style="--c:${JARVAR[j]}"><input type="range" min="0" max="${jarRest}" step="1" value="${jarVals[i]}" data-jar="${i}" aria-label="${JAR_LABEL[j]}, share of your pay"></div></div>`).join('');
 }
 function paintJars() { if (!jarVals || jarRest <= 0 || !$('#jarSplit')) return; spPaint('jar', SPLIT_SPEC.jar()); }
@@ -226,7 +229,8 @@ const jarsFold = () => `<details class="src-how"><summary>Where your pay goes, i
     <p>Every month, your pay is split into six places, each with one job. Bills and basics and Free to spend are for this month. Your goals, Education, Giving and Investing fill <b>burrows</b> that pile up over months. Free to spend is what you spend on fun without guilt. Usual shares of take-home pay:</p>
     <ul class="jar-lines">${JARS.map(j => `<li><i class="dot" style="--c:${JARVAR[j.id]}"></i><span><b>${esc(j.name)}</b> ${j.usualPct}%. ${esc(JAR_LINES[j.id])}</span></li>`).join('')}</ul>
     <p class="cap">The shares are a guide, not a rule.</p></div></details>`;
-const jarSplitHTML = () => `${potHTML('jarPot', JAR5.map(j => JARVAR[j]), jarVals, jarRest)}${poolHTML('jar', JAR5.map(j => JAR_SHORT[j]))}
+const jarSplitHTML = () => `<p class="cap" id="jarCan" data-split-can>These shares are only a start. Drag a slider or tap a percent to change it, and you can change them again later under Plan.</p>
+    ${potHTML('jarPot', JAR5.map(j => JARVAR[j]), jarVals, jarRest)}${poolHTML('jar', JAR5.map(j => JAR_LABEL[j]))}
     <div class="split" id="jarSplit">${jarRows()}</div>
     <p class="why" id="jarWhy" aria-live="polite"></p>
     <div class="row-btns"><button type="button" class="link" id="jarReset">Use the usual amounts</button></div>`;
