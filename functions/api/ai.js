@@ -11,7 +11,7 @@
      DAILY_TOKEN_CAP     default 3000000  tokens a day across everyone (in + out); the relay stops at the cap
      USER_DAILY_CALLS    default 150      calls a day for one browser
      IP_PER_MINUTE       default 30       calls a minute from one network address
-     IP_DAILY_CALLS      default 1000     calls a day from one network address, whatever browser id is sent
+     IP_DAILY_CALLS      default 300      calls a day from one network address, whatever browser id is sent
      INVITE_CODES        optional "word1, word2": when set, a call must carry a matching invite
      INVITE_WRONG_PER_DAY default 10      wrong invite words a day from one address; after that the address waits until tomorrow
      ANTHROPIC_BASE_URL  tests only: honoured only together with RELAY_TEST=1, and refused without it, so a stray setting
@@ -73,7 +73,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
   if (counting) {
     try {
       const perDay = await bump(db, `d:${ip}`, 1, 0, day);
-      if (perDay.calls > num(env.IP_DAILY_CALLS, 1000)) return fail(429, 'rate_limited', 'Daily limit for this network reached. Try again tomorrow.');
+      if (perDay.calls > num(env.IP_DAILY_CALLS, 300)) return fail(429, 'rate_limited', 'Daily limit for this network reached. Try again tomorrow.');
       const user = await readUsage(db, `u:${body.anon}`, day);
       if (user.calls >= num(env.USER_DAILY_CALLS, 150)) return fail(429, 'rate_limited', 'Daily limit for this browser reached. Try again tomorrow.');
       const all = await readUsage(db, 'all', day);

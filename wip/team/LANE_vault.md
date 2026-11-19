@@ -88,7 +88,7 @@ The coordinator gave this lane `functions/api/ai.js` on 2026-11-19. The page sen
 
 What changed:
 - **S6** The per-minute counter now runs before the invite check, so refused calls count. Wrong invite words are counted per address: after 10 in a day (`INVITE_WRONG_PER_DAY`) that address gets 429 until the next day, right word or not. A call with no word at all is refused with 401 as before and is not counted as a guess. Side effect to know: ten wrong tries on one office network lock the AI for that office for the day.
-- **S5 and S11** The limits no longer fail open. With no invite word set, a call is served only if the counters work; with no database, or a failing one, the answer is 503 `relay_unconfigured`. With an invite word set, an invited caller is still served. New: a daily cap per address, 1000 calls (`IP_DAILY_CALLS`), which holds even when the browser id changes. The reviewer's example was 300; 1000 because a team shares one office address and a statement import is several calls.
+- **S5 and S11** The limits no longer fail open. With no invite word set, a call is served only if the counters work; with no database, or a failing one, the answer is 503 `relay_unconfigured`. With an invite word set, an invited caller is still served. New: a daily cap per address, 300 calls by default (`IP_DAILY_CALLS`, the reviewer's figure, right for about 10 users and safer for the prepaid credit), which holds even when the browser id changes. A whole team on one office address shares these 300; raise the setting in the dashboard if that is too tight.
 - **S10** Every call is counted before Claude is asked (one call and a rough size) and corrected to the real numbers after the answer. A stream dropped half way stays counted. A call Claude refused is taken back, as before.
 - **S12** Messages, content blocks and tools are rebuilt from the checked fields only; extra fields a caller adds are left behind. `max_tokens` is capped at 24000, the most the page asks for (it was 32768). The `system` size limit is unchanged (80000 characters): I did not measure what the page really sends.
 - **L2** A body announced as larger than 36 MB is refused with 413 `prompt_too_large` before it is read.
@@ -119,6 +119,15 @@ The ledger (after v1) will use a new storage key, because shipped 38.31 pages ca
 What the server gives today: an older page that overwrites a ledger copy does not destroy it. With `base`, or with the old `rev` rule, the save is refused with 409 unless the person taps "Keep mine"; if they do, the ledger copy stays as a kept version and can be loaded back.
 
 Not built, a possible server half if wanted at the ledger step: the page sends a format number with each save (for example `fmt: 2`), the server stores it, and refuses with 409 any save that carries a lower one or none, `force` included. Old pages would then be unable to overwrite a ledger copy at all. It needs one more added column with a default, and a decision on what the old page shows, since its "Load it" would then try to load a ledger copy it cannot read.
+
+## Before this merges
+1. `tests/page_import.js` must run and pass against this branch. It could not run in this lane: its fixture `/tmp/v28/wallet.xlsx` is not in the repo. The fixture question is with the main session.
+2. The one failing check in `tests/page_assistant.js` ("Home shows goals first") is with the main session. It fails the same with and without this branch.
+3. L3: `worker/index.js` lines 21, 23, 25 should answer through `fail()` from `functions/_lib.js`, so errors carry CORS headers (deploy session).
+4. The live Worker must have no `ANTHROPIC_BASE_URL` variable. With one set, the relay refuses every call.
+5. After the deploy `/api/health` must say `vault: true`. With no database and no invite word the relay now answers 503.
+6. Ledger step: every vault upload on the page passes `ledgerMayWrite` (see "Wiring point for the ledger step").
+7. v1 is deployed and Mako has said go.
 
 ## Things to know before the merge
 - **A push to main deploys this.** The first vault request after the deploy adds the table and the two columns. No step for Mako.

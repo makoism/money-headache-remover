@@ -48,6 +48,13 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
   for (let i = 0; i < 5; i++) codes.push((await post(env, msg('n' + i), { ip: '203.0.113.9' })).status);
   ok(codes.join() === '200,200,200,429,429', 'limits: a daily cap per address holds even when the browser id changes every call: ' + codes.join(' '));
 
+  /* with no setting the cap is 300 a day per address: the 300 are put in the counter by hand, then one more call is made */
+  env = baseEnv(); await post(env, msg('first'), { ip: '203.0.113.10' });
+  const dk = env.DB.raw.prepare("SELECT day, k FROM usage WHERE k LIKE 'd:%'").get();
+  env.DB.raw.prepare('UPDATE usage SET calls = 299 WHERE k = ?').run(dk.k);
+  const c300 = await post(env, msg('call 300'), { ip: '203.0.113.10' }), c301 = await post(env, msg('call 301'), { ip: '203.0.113.10' });
+  ok(c300.status === 200 && c301.status === 429, 'limits: with no setting, call 300 from one address passes and call 301 is refused: ' + c300.status + ' ' + c301.status);
+
   /* ---- S10: usage is counted before the call, so a stream dropped half way still counts ---- */
   env = baseEnv(); let a = anon();
   r = await post(env, msg('count me', { anon: a }));
