@@ -18,7 +18,7 @@ module.exports = async (BUILD, OUT) => {
     'two-step-tap-again-remove-goal', 'undo-bar-after-remove-goal', 'undo-notice-after-reload', 'two-step-tap-again-set-all-to-zero',
     'help-open', 'ask-open', 'ask-reply-with-apply', 'ask-applied-with-undo', 'ask-undone',
     'tour-welcome-recovery-code-box', 'tour-currency', 'tour-your-money', 'tour-monthly-bills', 'tour-rent-or-mortgage', 'tour-food-and-groceries',
-    'tour-emergency-fund', 'tour-free-to-spend', 'tour-setup-done-cloud-offer', 'tour-cloud-offer-code-shown',
+    'tour-split-the-rest', 'tour-emergency-fund', 'tour-free-to-spend', 'tour-setup-done-cloud-offer', 'tour-cloud-offer-code-shown',
     'home-more-open', 'home-check-your-bank', 'home-card-editor',
     'burrow-screen', 'burrow-add-money',
     'plan-goal-editor', 'plan-bill-line-editor', 'receipts-edit-form',
@@ -70,6 +70,7 @@ module.exports = async (BUILD, OUT) => {
     await L.zero(p); await p.evaluate(() => { __t.S.ui.cur = '¥'; });
     await L.base(p, { pay: 280000, bank: 412000, min: 50000, defs: { 'bill:rent': 95000, 'bill:food': 45000, envelope: 30000, education: 0, invest: 10000, give: 0 }, tT: 120000, tM: 15000, eT: 300000, eS: 60000, eM: 20000 });
     await p.evaluate(o => { const S = __t.S; S.ui.done = { pay: true, bills: true, goals: true, receipts: true }; S.ui.sampleHidden = true; delete S.ui.keep;
+      S.ui.setup = true; delete S.ui.cleared;      /* as after a person's own setup, not as after Set all to zero */
       S.receipts = [];
       const r = (id, d, c, a, n) => { const l = S.plan.lines.find(x => x.key === c); S.receipts.push({ id, d, a, c, cn: l ? l.name : 'Other', n }); };
       (o.receipts || [['qp1', '2026-11-04', 'bill:food', 3840, 'Made-up grocer'], ['qp2', '2026-11-11', 'envelope', 2600, 'Made-up cinema']]).forEach(x => r(...x));
@@ -79,6 +80,9 @@ module.exports = async (BUILD, OUT) => {
     if (!o.stay) await reload(p);
     await tab(p, 'tab-home');
   };
+  /* A page that opens with a plan already saved does not ask the server what it offers until Ask is opened (or the cloud copy is on),
+     and until then Settings shows no Cloud copy box. So Help, Ask is opened and closed once, as a person might. */
+  const wake = async p => { await tap(p, '#helpBtn'); await tap(p, '#helpAsk'); await w(1200); await p.evaluate(() => document.getElementById('askClose').click()); await w(400); };
   const filePage = 'file://' + BUILD + '?sfxtest';
   const openFile = async (opt = {}) => { const o = await R.phone(Object.assign({ w: PW, h: PH, dpr: 1, mobile: true, keep: true }, opt)); if (opt.before) await opt.before(o.p); await o.p.goto(filePage); await w(1500); await C.skipTour(o.p); return o; };
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'qc-pack-'));
@@ -91,7 +95,7 @@ module.exports = async (BUILD, OUT) => {
   await session(['cloud-step-1-what', 'cloud-step-2-code', 'cloud-step-3-here', 'cloud-step-4-other', 'settings-cloud-copy-off', 'settings-cloud-copy-on', 'home-notice-save-your-code', 'settings-cloud-copy-behind', 'home-notice-cloud-copy-behind',
     'cloud-code-step-1-enter', 'cloud-code-step-2-found', 'cloud-code-step-2-found-older-copy-warning', 'cloud-code-step-3-loaded', 'home-notice-back-up', 'home-notice-numbers-restored', 'home-notice-newer-copy-in-cloud', 'settings-cloud-newer-copy'],
   () => C.profile(srv.url), async p => {
-    await plan(p);
+    await plan(p); await wake(p);
     /* phone A turns the cloud copy on, one step at a time */
     await panel(['settings-cloud-copy-off', 'cloud-step-1-what'], async () => { await L.settings(p); await need(p, '#vaultOn'); await snap(p, 'settings-cloud-copy-off', cloudBox); await tap(p, '#vaultOn'); await need(p, '#vaultFlow [data-vf-step="what"]'); await snap(p, 'cloud-step-1-what', cloudBox); });
     await panel('cloud-step-2-code', async () => { await tap(p, '#vaultFlow [data-vf-next]'); await need(p, '#vaultCodeTxt'); code = await text(p, '#vaultCodeTxt'); await snap(p, 'cloud-step-2-code', cloudBox); });
@@ -115,7 +119,7 @@ module.exports = async (BUILD, OUT) => {
 
     /* phone B has numbers of its own, newer than the cloud copy: Home asks for a backup, and "I have a code" warns the cloud copy is older */
     await session(['home-notice-back-up', 'cloud-code-step-1-enter', 'cloud-code-step-2-found-older-copy-warning', 'home-notice-numbers-restored'], () => C.profile(srv.url), async q => {
-      await plan(q); await L.rc(q, 700, 'envelope', null, 'Made-up B only');
+      await plan(q); await wake(q); await L.rc(q, 700, 'envelope', null, 'Made-up B only');
       await panel('home-notice-back-up', async () => { await tab(q, 'tab-home'); await need(q, '#hBk [data-bk-later]'); await snap(q, 'home-notice-back-up', { sel: '#hBk' }); });
       await panel('cloud-code-step-1-enter', async () => { await L.settings(q); await tap(q, '#vaultHave'); await need(q, '#vaultIn'); await snap(q, 'cloud-code-step-1-enter', cloudBox); });
       await panel('cloud-code-step-2-found-older-copy-warning', async () => { await q.evaluate(() => { document.getElementById('vaultIn').value = ''; }); await q.type('#vaultIn', code); await tap(q, '#vaultUse'); await need(q, '#vaultFlow [data-vf-step="found"]', 12000); await need(q, '#vaultFlow [data-vf-older]');
@@ -161,7 +165,8 @@ module.exports = async (BUILD, OUT) => {
     await o.p.goto(srv.url); await w(1500); await C.skipTour(o.p); return o;
   }, async p => {
     await plan(p);
-    await panel('ask-open', async () => { await tap(p, '#askBtn'); await need(p, '#askIn'); await w(400); await snap(p, 'ask-open', { sel: '#ask' }); });
+    /* on a phone the Ask button is inside Help */
+    await panel('ask-open', async () => { await tap(p, '#helpBtn'); await tap(p, '#helpAsk'); await need(p, '#askIn'); await w(400); await snap(p, 'ask-open', { sel: '#ask' }); });
     await panel('ask-reply-with-apply', async () => { await p.type('#askIn', 'Can I spend less on food?'); await tap(p, '#askSend'); await need(p, '#askLog .asst-row', 12000); await w(500); await snap(p, 'ask-reply-with-apply', { sel: '#ask' }); });
     const btn = (p, t) => p.evaluate(t => { const b = [...document.querySelectorAll('#askLog button')].reverse().find(b => b.offsetParent && b.innerText.trim().indexOf(t) === 0); if (!b) return false; b.scrollIntoView({ block: 'center' }); b.click(); return true; }, t);
     await panel('ask-applied-with-undo', async () => { if (!(await btn(p, 'Apply'))) throw new Error('no Apply button in the reply'); await w(2600); await snap(p, 'ask-applied-with-undo', { sel: '#ask' }); });
@@ -183,7 +188,7 @@ module.exports = async (BUILD, OUT) => {
 
   /* ================= 6: the setup tour, every step after the welcome screen =================
      Opened from the made-up server so the welcome screen offers "Enter your recovery code" and the last step offers the cloud copy. */
-  const TOUR = ['tour-welcome-recovery-code-box', 'tour-currency', 'tour-your-money', 'tour-monthly-bills', 'tour-rent-or-mortgage', 'tour-food-and-groceries', 'tour-emergency-fund', 'tour-free-to-spend', 'tour-setup-done-cloud-offer', 'tour-cloud-offer-code-shown'];
+  const TOUR = ['tour-welcome-recovery-code-box', 'tour-currency', 'tour-your-money', 'tour-monthly-bills', 'tour-rent-or-mortgage', 'tour-food-and-groceries', 'tour-split-the-rest', 'tour-emergency-fund', 'tour-free-to-spend', 'tour-setup-done-cloud-offer', 'tour-cloud-offer-code-shown'];
   await session(TOUR, () => C.profile(srv.url, { tour: true }), async p => {
     await need(p, '#tourNext');
     await panel('tour-welcome-recovery-code-box', async () => { await tap(p, '#tourRestoreBtn'); await need(p, '#tourVaultIn'); await snap(p, 'tour-welcome-recovery-code-box', { sel: '#tour' }); });
@@ -225,8 +230,9 @@ module.exports = async (BUILD, OUT) => {
     await panel('undo-notice-after-reload', async () => { await reload(p); await need(p, '#undoBar'); await snap(p, 'undo-notice-after-reload', { sel: '#undoBar' }); });
     try { await tap(p, '#undoGo', 3000); } catch (e) { /* no bar: nothing to take back */ }
     await panel('plan-bill-line-editor', async () => { await sub(p, 'month');
-      await p.evaluate(() => { const b = document.querySelector('#rowsOut [data-edit]'); if (b && !(b.offsetParent || b.getClientRects().length)) { const d = b.closest('details'); if (d) d.open = true; } });
-      await tap(p, '#rowsOut [data-edit]'); await need(p, '#rowsOut [data-ldel]'); await snap(p, 'plan-bill-line-editor', { sel: '#rowsOut [data-ldel]' }); await p.evaluate(() => { const b = [...document.querySelectorAll('#rowsOut [data-edit]')].find(b => /Done/.test(b.innerText)); b && b.click(); }); await w(400); });
+      if (!(await seen(p, '#rb-nec [data-edit]'))) await tap(p, '#rt-nec');                 /* open the Monthly bills row */
+      if (!(await seen(p, '#rb-nec [data-ldel]'))) await tap(p, '#rb-nec [data-edit]');      /* Rename, remove or add lines */
+      await need(p, '#rb-nec [data-ldel]'); await snap(p, 'plan-bill-line-editor', { sel: '#rb-nec', full: true }); await p.evaluate(() => { const b = [...document.querySelectorAll('#rb-nec [data-edit]')].find(b => /Done/.test(b.innerText)); b && b.click(); }); await w(400); });
     await panel('receipts-edit-form', async () => { await tab(p, 'tab-receipts'); await tap(p, '#rcList [data-rcedit]'); await need(p, '#rcCancel'); await snap(p, 'receipts-edit-form', { sel: '#rcForm' }); await tap(p, '#rcCancel'); });
     await panel('help-open', async () => { await tab(p, 'tab-home'); await tap(p, '#helpBtn'); await need(p, '#helpMenu'); await snap(p, 'help-open', { top: true }); await tap(p, '#helpBtn'); });
     await panel('two-step-tap-again-set-all-to-zero', async () => { await L.settings(p); await tap(p, '#blankBtn'); await snap(p, 'two-step-tap-again-set-all-to-zero', { sel: '#blankBtn' }); await w(4300); });
