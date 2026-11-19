@@ -40,6 +40,30 @@ while read -r ver sha; do
   git -C "$REPO" cat-file -e "$sha^{commit}" 2>/dev/null || git -C "$REPO" fetch -q --depth=1 origin "$sha" 2>/dev/null || true
   if git -C "$REPO" show "$sha:public/index.html" > "$out" 2>/dev/null && [ -s "$out" ]; then OLDN=$((OLDN+1)); else rm -f "$out"; OLDBAD=$((OLDBAD+1)); fi
 done < "$TEAM/tests/fixtures/old_builds.txt"
+# a made-up e-wallet workbook for tests/page_import.js (four rows of October 2026, closing balance 3,850; no real figures).
+# Written with python's zipfile only, so nothing has to be installed. Dates and words are text cells, amounts are numbers.
+mkdir -p /tmp/v28 && python3 - <<'PYEOF'
+import zipfile
+rows = [("Date", "Description", "Debit", "Credit", "Balance"),
+        ("2026-10-01", "CASH IN VIA BPI ONLINE", None, 2000, 3530),
+        ("2026-10-03", "GRAB PHILIPPINES", 180, None, 3350),
+        ("2026-10-18", "CASH IN VIA BPI ONLINE", None, 300, 3650),
+        ("2026-10-27", "REFUND FROM LAZADA", None, 200, 3850)]
+def cell(c, r, v):
+    ref = "ABCDE"[c] + str(r)
+    if v is None: return ""
+    if isinstance(v, str): return '<c r="%s" t="inlineStr"><is><t>%s</t></is></c>' % (ref, v)
+    return '<c r="%s"><v>%s</v></c>' % (ref, v)
+sheet = '<?xml version="1.0" encoding="UTF-8"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>' + "".join(
+    '<row r="%d">%s</row>' % (i + 1, "".join(cell(c, i + 1, v) for c, v in enumerate(row))) for i, row in enumerate(rows)) + '</sheetData></worksheet>'
+z = zipfile.ZipFile("/tmp/v28/wallet.xlsx", "w", zipfile.ZIP_DEFLATED)
+z.writestr("[Content_Types].xml", '<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>')
+z.writestr("_rels/.rels", '<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>')
+z.writestr("xl/workbook.xml", '<?xml version="1.0" encoding="UTF-8"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Wallet" sheetId="1" r:id="rId1"/></sheets></workbook>')
+z.writestr("xl/_rels/workbook.xml.rels", '<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/></Relationships>')
+z.writestr("xl/worksheets/sheet1.xml", sheet)
+z.close()
+PYEOF
 # saved copies from older builds (for team_cur.js), kept in the repo
 for f in "$TEAM"/tests/fixtures/*.json; do [ -f "$f" ] && cp "$f" /tmp/; done
 echo "setup ok: chrome $( [ -x /usr/bin/google-chrome ] && echo yes || echo MISSING ), puppeteer $( [ -d "$WORK/tools/node_modules/puppeteer-core" ] && echo yes || echo MISSING ), page $( [ -f "$WORK/money-map-team.html" ] && echo linked || echo MISSING ), old builds $OLDN$( [ $OLDBAD -gt 0 ] && echo " ($OLDBAD MISSING)" )"

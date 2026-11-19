@@ -68,7 +68,8 @@ const state = p => p.evaluate(() => JSON.parse(localStorage.getItem('money-map-t
   await p.evaluate(() => { const cs = document.querySelectorAll('#askLog .msg.ai.card'); cs[cs.length - 1].querySelector('.asst-foot .btn').click(); }); await w(800);
   await p.click('#askClose'); await w(300);
   const order = await p.evaluate(() => Array.from(document.querySelectorAll('#p-home > section, #p-home > details')).filter(e => !e.hidden && ['hHero', 'hSpend', 'hQuick', 'hGoals', 'hBuckets', 'hMore'].indexOf(e.id) >= 0).map(e => e.id));
-  ok(order.join() === 'hGoals,hHero,hSpend,hQuick', 'Home shows goals first, jars and more hidden: ' + order.join());
+  /* v1 Home (ui6.js homeV1) keeps the Log spend card right under the action place, so it is first whatever the layout says; the other cards follow the layout */
+  ok(order.join() === 'hQuick,hGoals,hHero,hSpend', 'Home shows goals first after the Log spend card, jars and more hidden: ' + order.join());
   ok((await state(p)).ui.home.join() === 'goals,goal,play,log', 'the layout is stored');
   ok(errs.length === 0, 'no page errors ' + JSON.stringify(errs.slice(0, 3)));
   await b.close();
