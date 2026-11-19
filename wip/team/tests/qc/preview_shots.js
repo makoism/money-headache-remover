@@ -28,7 +28,7 @@ const seen = (p, re) => p.evaluate(src => { const m = document.body.innerText.re
 const note = (name, s) => console.log(name + ': ' + s);
 const tabTo = async (p, id) => { await tap(p, '#' + id); await w(500); await top(p); };
 /* the short setup, by taps and typing: currency, pay, balance, rent, food, emergency fund */
-const setup = async (p, o) => { try { await setup0(p, o); } catch (e) { if (process.env.DBG) { console.log(await p.evaluate(() => document.getElementById('tour').innerText)); await p.screenshot({ path: process.env.DBG }); } throw e; } };
+const setup = async (p, o) => { try { await setup0(p, o); } catch (e) { if (process.env.DBG) { console.log(await p.evaluate(() => [...document.querySelectorAll('#tour button')].map(e => e.id + '|' + e.innerText + '|' + e.getClientRects().length + '|' + getComputedStyle(e).visibility + '|' + JSON.stringify(e.getBoundingClientRect())).join('\n'))); await p.screenshot({ path: process.env.DBG }); } throw e; } };
 const setup0 = async (p, o) => {
   await tap(p, '#tourNext');
   const cur = await p.evaluateHandle(c => { const r = [...document.querySelectorAll('#tour input[type=radio]')].find(i => i.value === c); return r ? (r.closest('label') || r) : null; }, o.cur);
@@ -36,13 +36,13 @@ const setup0 = async (p, o) => {
   /* walk the steps: type into whichever boxes the step shows (rent and food are ticked already), then Next, until setup says it is done */
   const amts = [o.rent, o.food]; const here = sel => p.$(sel).then(h => h ? h.evaluate(e => e.getClientRects().length > 0) : false);
   for (let i = 0; i < 14; i++) {
-    if (await byText(p, /^Go to my month$/)) break;
+    if (await p.$eval('#tourNext', e => /^Done$/.test(e.innerText.trim()))) break;        /* Setup done */
     if (await here('#tourPay')) { await type(p, '#tourPay', o.pay); await type(p, '#tourBank', o.bank); }
     else if (await here('#tourAmt')) { if (!amts.length) throw new Error('setup asked for a bill the script has no number for'); await type(p, '#tourAmt', amts.shift()); }
     else if (await here('#tourGCost')) { await type(p, '#tourGCost', o.hold); await type(p, '#tourGSaved', o.saved); }
     await tap(p, '#tourNext');
   }
-  await tapText(p, /^Go to my month$/); await w(900);
+  await tap(p, '#tourNext'); await w(1200);                   /* Done */
   for (let i = 0; i < 3; i++) { const h = await p.$('#coSkip'); if (h && await h.evaluate(e => e.getClientRects().length > 0)) { await h.tap(); await w(500); } }
 };
 const tryShot = async (name, fn) => { try { await fn(); } catch (e) { skipped.push(name + ' (' + e.message.slice(0, 120) + ')'); console.log('SKIPPED ' + name + ': ' + e.message); } };
@@ -80,12 +80,16 @@ const tryShot = async (name, fn) => { try { await fn(); } catch (e) { skipped.pu
   await tryShot('07-plan-after-borrow.png', async () => {
     o = await open(); p = o.p;
     await setup(p, { cur: '$', pay: 1200, bank: 100, rent: 1000, food: 400, hold: 3000, saved: 800 });
+    /* with bills over pay the short setup has no emergency fund step, so say what is already saved under Plan, Burrows, Edit goal */
+    await tabTo(p, 'tab-month'); await tapText(p, /^Burrows$/); await tapText(p, /^Edit goal$/);
+    await tap(p, '[data-g="start"]'); await p.keyboard.down('Control'); await p.keyboard.press('a'); await p.keyboard.up('Control'); await p.keyboard.type('800', { delay: 35 }); await tap(p, '[data-gdone]'); await w(700);
     let h = null; for (const t of ['tab-month', 'tab-home']) { await tabTo(p, t); if (t === 'tab-month') await tapText(p, /^Month$/).catch(() => {}); h = await byText(p, /^Borrow .* from (the |your )?emergency fund/); if (h) break; }
+    if (!h && process.env.DBG) console.log(await p.evaluate(() => document.body.innerText.slice(0, 2500) + '\n##' + [...document.querySelectorAll('[data-fx]')].map(e => e.outerHTML).join('\n')));
     if (!h) throw new Error('no "Borrow ... from emergency fund" button offered');
     const label = await h.evaluate(e => e.innerText.trim()); await tapEl(p, h); await w(1500);
     await tabTo(p, 'tab-month'); await tapText(p, /^Month$/);
     const t = await toLine(p, /Your places add up to/, 0.75); if (!t) throw new Error('no "Your places add up to" sentence after the borrow');
-    await shot(p, '07-plan-after-borrow.png'); note('07', 'tapped "' + label + '" || ' + t + ' || ' + (await p.evaluate(() => [...document.querySelectorAll('body *')].filter(e => !e.children.length && /Borrowed/.test(e.innerText || '')).map(e => (e.closest('tr, li, .row, div') || e).innerText.replace(/\s+/g, ' ')).join(' ; ').slice(0, 400))));
+    await shot(p, '07-plan-after-borrow.png'); note('07', 'tapped "' + label + '" || ' + t + ' || ' + (await p.evaluate(() => [...document.querySelectorAll('body *')].filter(e => !e.children.length && !/SCRIPT|STYLE/.test(e.tagName) && e.getClientRects().length && /Borrowed/.test(e.innerText || '')).map(e => (e.closest('tr, li, .row, div') || e).innerText.replace(/\s+/g, ' ')).join(' ; ').slice(0, 400))));
     await o.b.close(); });
   console.log('made ' + made.length + ': ' + made.sort().join(', ')); console.log(skipped.length ? 'skipped: ' + skipped.join('; ') : 'skipped: none');
   process.exit(0);
