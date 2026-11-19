@@ -13,6 +13,8 @@ const CONF = { parts: [], raf: 0, last: 0, tick: 0, cheerT: 0 };
 const leafColors = () => { const cs = getComputedStyle(document.documentElement), v = n => cs.getPropertyValue(n).trim(); return [v('--accent'), v('--accent-h'), v('--good'), '#5db98a', '#3a9a68', v('--warn')].filter(Boolean); };
 function cheer(msg) {
   const el = $('#cheer'); if (!el || !msg) return;
+  /* in setup the message sits just above Back, Next or Done, however tall that row is (H1 walk, finding 11) */
+  { const ft = document.body.classList.contains('touring') && $('.tour-foot'), r = ft && ft.getBoundingClientRect(); el.style.bottom = r && r.height ? Math.round(innerHeight - r.top + 8) + 'px' : ''; }
   el.textContent = msg; el.classList.add('on'); CONF.cheerAt = Date.now(); clearTimeout(CONF.cheerT);
   CONF.cheerT = setTimeout(() => { el.classList.remove('on'); CONF.cheerT = setTimeout(() => { if (!el.classList.contains('on')) el.textContent = ''; }, 500); }, 3400);
 }
@@ -64,3 +66,11 @@ function afterDone(k) {
 }
 /* any tap puts a message away, so it never sits over words someone is reading; the message itself never takes a tap meant for a button under it (38.31 north-star round 3) */
 document.addEventListener('pointerdown', () => { const el = document.getElementById('cheer'); if (el && el.classList.contains('on') && Date.now() - (CONF.cheerAt || 0) > 600) { el.classList.remove('on'); clearTimeout(CONF.cheerT); } }, true);
+/* setup: whatever gets the focus is moved clear of the faded strip above Back and Next, and of the top edge (H1 walk, finding 11).
+   The strip is 80px (style.css .tour-scroll mask); a field taller than the room is left alone */
+document.addEventListener('focusin', e => {
+  const sc = document.getElementById('tourScroll'), t = e.target; if (!sc || !t || !sc.contains(t) || !t.getBoundingClientRect) return;
+  const fix = () => { const q = t.getBoundingClientRect(), s = sc.getBoundingClientRect(), low = s.bottom - 88; if (q.height > low - s.top) return;
+    if (q.bottom > low) sc.scrollTop += Math.ceil(q.bottom - low); else if (q.top < s.top + 4) sc.scrollTop -= Math.ceil(s.top + 4 - q.top); };
+  fix(); setTimeout(fix, 120);
+});

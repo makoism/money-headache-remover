@@ -1899,3 +1899,12 @@ p.hs-more .link { padding-top: 12px; padding-bottom: 12px; margin-top: -12px; ma
 .vf-sent { font-weight: 600; }
 ol.steps { margin: 4px 0 10px; padding-left: 22px; }
 ol.steps li { margin: 0 0 4px; }
+
+/* ---------- H1 walk, finding 11: nothing covers a control or a number (checklist U2) ---------- */
+/* phones: Help sits on a solid shelf along the bottom, so it never floats over a card, a tile or a row. The page already ends 150px clear (.wrap) */
+@media (max-width: 520px) {
+  .help-row::before { content: ''; position: fixed; left: 0; right: 0; bottom: 0; height: calc(max(16px, env(safe-area-inset-bottom) + 10px) + 54px); background: var(--bg); box-shadow: 0 -1px 0 var(--hair); z-index: -1; }
+}
+/* setup: a field that gets the focus scrolls clear of the faded strip above Back and Next */
+.tour-scroll { scroll-padding-bottom: 104px; scroll-padding-top: 12px; }
+.mp-from { margin-top: 8px; }
