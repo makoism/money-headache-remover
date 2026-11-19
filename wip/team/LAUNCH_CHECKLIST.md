@@ -115,6 +115,24 @@ One "Money came in" and one "Money went out", each with a short list of kinds an
 | H5 | Short videos by Mako on the mindset | Mako records them; the "?" panels show the written version until then; captions and transcript with each | later (Mako records) |
 | H6 | The app is for life | the rolling month window, so the app never stops at a date (now E6, before the ledger) | team |
 
+## Q. Found by the v1 QC run (MAIN 8, 2026-11-19, candidate 11c1e7e)
+One round: qc-numbers PASS, E15 two-browser move DONE, bank comparison PASS, qc-north-star FAIL (4 blockers), qc-voice FAIL (copy). Fixed the same day in a209449: Backup and Restore steps, cloud date order, setup offer button names, iPhone note. Open:
+
+| # | Point | State | When |
+|---|---|---|---|
+| Q1 | Home never shows the "They add up" line, only the bank plus burrows sum | open, Mako judges on the preview | v1 |
+| Q2 | After Check your bank and a card, the top of Home and the lower "Bank at month end" and Plan "Bank stays at" show different bank figures with nothing tying them | open, Mako judges on the preview | v1 |
+| Q3 | Plan after a borrow: rows read 117% plus Borrowed 17%, the sentence says "add up to 117%", two rows both named "Borrowed" (maths correct, reading is not) | open, Mako judges on the preview | v1 |
+| Q4 | Home first screen at 412x915 is text and numbers, the picture starts below the fold | open, Mako judges on the preview | v1 |
+| Q5 | Check your bank field opens pre-filled and typing appends (1,200 then 1150 gave 12,001,150) | MAIN 8 fixing before the preview | v1 |
+| Q6 | Pay day: no field anywhere, the month always runs 1st to last, so days left and weekly figures are wrong for someone paid on the 10th | open, feature gap | team |
+| Q7 | After Load on a second phone the "Cloud copy loaded" message runs off the right edge, shows no Undo, stays across tabs; the typed code is cut off in its box | open | v1 |
+| Q8 | Setup split moves only in whole percents (40,400 not 40,000); the first goal is fixed as Emergency fund | open | team |
+| Q9 | The receipts list sits under a big Scan receipts explainer | open | team |
+| Q10 | qc-numbers should-fix (7): Home status line follows the month picked on Plan and survives reload; "Keep saving" on a longer emergency goal changes months already over; a borrow stays after the plan stops needing it; month-end "Put it toward the goal" preselects the goal with least room and shows no amount; the rest in the QC report | open | v1 for the first, team for the rest |
+| Q11 | Voice: the remaining lines of the 46 flagged, with rewrites, in wip/team/COPY_QC8_FOR_MAKO.md | waits for Mako's copy pass | v1 |
+| Q12 | Process: QC subagents could not write report files for three roles, reports came back in chat only | open | process |
+
 ## The 95% sweep (before the team test)
 Fresh agents walk the app as real people, each with made-up numbers: a Philippine freelance editor paid per project who sends money home and uses GCash and two banks; a Philippine salaried editor paid on the 15th and 30th with a pay-later habit; a salaried person in Japan with a card paid next month; a student in France with a Revolut account and shared rent; someone who misses a month; someone whose phone is replaced. Every "how do I do this?" becomes a point here.
 
