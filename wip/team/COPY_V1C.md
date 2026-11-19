@@ -45,13 +45,13 @@ The one warning the check prints is H-023, which adds a bold button name on purp
 @@ H-006 | ui42.js | AI: no | Mako: no B14 | Next: yes
 - No cloud copy for this code. Check every character against the code on your other device.
 + There's no cloud copy for this code. Check every character against the code you saved, or on your other device go to Settings, find Cloud copy and tap Show code.
-@@ H-007 | ui42.js | AI: no | Mako: no A13 colon | Next: no, a path with no verb
+@@ H-007 | ui45.js | AI: no | Mako: no A13 colon | Next: no, a path with no verb
 - To load it anyway: Settings, Cloud copy, I have a code.
 + To load it anyway go to Settings, find Cloud copy and tap I have a code.
 # every tap named (B15)
 @@ H-008 | ui42.js | AI: no | Mako: no B2 stored, B3 | Next: yes
 - Data is stored in this browser on this device only. Your numbers are sent only when you use Ask and tick the box to include them. A second copy is kept here in case the first goes missing, and is loaded on its own if so. It does not move to other devices. Clearing site data removes both, so only a backup file survives that. A backup is your own copy of numbers and receipts.
-+ Your numbers are saved in this browser on this device only. They're only sent anywhere when you use Ask and tick the box to include them. A second copy is kept here in case the first goes missing, and it loads by itself if that happens. Neither one moves to other devices. Clearing site data removes both, so only a backup file survives that. A backup is your own copy of your numbers and receipts.
++ Your numbers are saved in this browser on this device only. They only leave it when you ask for that - Ask sends them with your question while the box is ticked, and reading a statement or a receipt photo sends that file to Claude. A second copy is kept here in case the first goes missing, and it loads by itself if that happens. Neither one moves to other devices. Clearing site data removes both, so only a backup file survives that. A backup is your own copy of your numbers and receipts and you make one with Save file below.
 # clear wins (Part D 4, 10): every fact kept, full stops kept. The same text is in body.html (H-031), keep the two the same
 @@ H-009 | ui42.js | AI: no | Mako: no B2 stored, C brackets, semicolon | Next: yes
 - Data is stored in this browser, with a second copy here in case the first goes missing, and an encrypted cloud copy (Cloud copy below) that follows every save. Clearing site data removes the two copies on this device; the recovery code brings the cloud copy back. A backup file is your own copy of numbers and receipts.
@@ -97,13 +97,6 @@ The one warning the check prints is H-023, which adds a bold button name on purp
 @@ H-021 | ui42.js | AI: no | Mako: no A13 colon, C brackets | Next: no, a path with no verbs
 - If the welcome screen is gone: Settings (the gear), Cloud copy, <b>I have a code</b>.
 + If the welcome screen is gone, tap the gear for Settings, find Cloud copy and tap <b>I have a code</b>.
-@@ H-022 | ui42.js | AI: no | Mako: yes | Next: no, the welcome screen has no Find my copy button
-- Type or paste your code, then tap <b>Find my copy</b>.
-+ Type or paste your code. On the welcome screen you then tap <b>Load my numbers</b> and they're there.
-# FOR THE MAIN SESSION: the old steps 3 and 4 only fit the Settings way in. On the welcome screen the button is Load my numbers (ui45.js) and it loads straight away, with no "what it found" step. The two rows say both ways. If the welcome screen gets the same Find my copy and Load steps, drop H-022 and H-023
-@@ H-023 | ui42.js | AI: no | Mako: yes | Next: no, see H-022
-- It shows what it found. Tap <b>Load</b>, and your numbers are there.
-+ In Settings you tap <b>Find my copy</b> instead, it shows what it found, then you tap <b>Load</b> and your numbers are there.
 @@ H-024 | ui42.js | AI: no | Mako: no B13 | Next: yes
 - From then on both devices share the one copy. A change on one shows up on the other the next time you open it there. If both changed, the app asks which to keep, and keeps the other for
 + From then on both devices share the one copy, so a change on one shows up on the other the next time you open it there. If both changed the app asks which to keep and keeps the other for
@@ -129,7 +122,7 @@ The one warning the check prints is H-023, which adds a bold button name on purp
 # clear wins (Part D 10): where the data stays is its own sentence. FOR THE MAIN SESSION: ui2.js lines 54 to 68 write other text into this same place (the LATE list in COPY_V1.md), keep them in step
 @@ H-031 | body.html | AI: no | Mako: no B2 stored, B3 | Next: yes
 - Data is stored in this browser on this device only. Your numbers are sent only when you use Ask and tick the box to include them. A second copy is kept here in case the first goes missing, and is loaded on its own if so. It does not move to other devices. Clearing site data removes both, so only a backup file survives that. A backup is your own copy of numbers and receipts.
-+ Your numbers are saved in this browser on this device only. They're only sent anywhere when you use Ask and tick the box to include them. A second copy is kept here in case the first goes missing, and it loads by itself if that happens. Neither one moves to other devices. Clearing site data removes both, so only a backup file survives that. A backup is your own copy of your numbers and receipts.
++ Your numbers are saved in this browser on this device only. They only leave it when you ask for that - Ask sends them with your question while the box is ticked, and reading a statement or a receipt photo sends that file to Claude. A second copy is kept here in case the first goes missing, and it loads by itself if that happens. Neither one moves to other devices. Clearing site data removes both, so only a backup file survives that. A backup is your own copy of your numbers and receipts and you make one with Save file below.
 # word for word the same as H-008
 @@ H-032 | body.html | AI: no | Mako: no B13 | Next: n/a
 - Shows each line against what you logged, on Home. A line that goes over its plan turns red.
@@ -156,7 +149,7 @@ The one warning the check prints is H-023, which adds a bold button name on purp
 # clear wins (Part D 10): who can see it is kept in full. FOR THE MAIN SESSION: ui2.js line 56 has this same text (the LATE list in COPY_V1.md), keep them the same
 @@ H-039 | body.html | AI: no | Mako: no A13 colons, B14 clipped | Next: no, no verbs on the taps
 - Open this address in Safari or Chrome on the phone. iPhone: Share, then Add to Home Screen. Android: the browser menu, then Add to Home screen or Install app. It then opens full screen, like an app, and works without a connection. Same numbers: the icon opens this same browser copy.
-+ Open this address in Safari or Chrome on your phone. On iPhone tap Share, then Add to Home Screen. On Android open the browser menu, then tap Add to Home screen or Install app. After that it opens full screen like an app and works without a connection. The numbers are the same because the icon opens this same page in this browser.
++ Open this address in Safari or Chrome on your phone. On iPhone tap Share, then Add to Home Screen. On Android open the browser menu, then tap Add to Home screen or Install app. After that it opens full screen like an app and works without a connection. On Android the icon opens the same numbers. On iPhone the Home Screen app can start empty because it keeps its own storage, so turn on the cloud copy first and then enter your recovery code there.
 @@ H-040 | body.html | AI: no | Mako: no B3 | Next: yes
 - It does not update by itself.
 + It doesn't update by itself.

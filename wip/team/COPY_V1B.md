@@ -224,8 +224,12 @@ Rows are applied in the order they stand. Three pairs depend on it: G-041 before
 + That didn't go through. Your question is back in the box so try again.
 @@ G-058 | ui46.js | AI: yes A13 semicolon | Mako: no | Next: yes
 - Runs on your Claude account; you approve access first. Your numbers go with each question while the box is ticked. Nothing is kept.
-+ Runs on your Claude account and you approve access first. Your numbers go with each question while the box is ticked. Nothing is kept.
++ Runs on your Claude account and you approve access first. Your numbers go with each question while the box is ticked. This page doesn't keep the chat.
 # clear wins (Part D 10): a privacy line, only the semicolon is gone
+@@ G-058b | ui46.js | AI: no | Mako: no | Next: n/a
+- Answered by Claude through this page. Your numbers go with each question while the box is ticked. Nothing is kept.
++ Answered by Claude through this page. Your numbers go with each question while the box is ticked. This page doesn't keep the chat.
+# MAIN 4: 'Nothing is kept' could not be promised for Claude's side, the page itself keeps no chat (checked: the ask log is never saved)
 @@ G-059 | ui46.js | AI: no | Mako: no B14 clipped | Next: yes
 - : old Excel format. Open it and save as CSV or .xlsx.
 +  is in the old Excel format. Open it and save it as CSV or .xlsx.

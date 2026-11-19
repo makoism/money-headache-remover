@@ -293,7 +293,7 @@ The lines that would put Mako off most, worst first. They are ordinary rows and 
 # the fresh check (M3): "review screen" was a second name for the check screen, so this now says check screen like the setup chat. For the main session: say if they are two screens
 @@ A-052 | ui45u.js | AI: yes A5 A4 | Mako: no B13 | Next: yes
 - Nothing is stored. Files go to Claude once, the numbers come back, the files are forgotten.
-+ Your files go to Claude once and the numbers come back - the files aren't kept
++ Your files go to Claude once to be read and the numbers come back - The Burrow doesn't keep the files
 # clear wins (Part D 10). The fresh check (M3): "Nothing is stored" read as untrue next to "the numbers stay in this browser", so the line now only says what happens to the files. For the main session: a privacy line, check it
 @@ A-053 | ui45u.js | AI: no | Mako: no A13 B13 | Next: yes
 - One box per account: your bank, each card, each wallet. Name each the way you say it, and the app will too. Put in the last 2 or 3 months of each: PDF, CSV or Excel exports, or screenshots of the transaction list. The numbers come out exact, and your history fills in.
