@@ -66,6 +66,9 @@ function maker(setup) {
   /* the third block only (third pass): what the money door lane found. Money lent has the place 'lent' (G2) */
   const third = d => {
     const r = R.rnd(), p = pick(places);
+    /* G4: money put back from the wallet into a tracked account, between hand-outs and pay days */
+    if (wal.length && chance(.5)) return chance(.55) ? { k: 'transfer', sub: 'put back', acct: 'wallet', acct2: pick(home).id, a: amt(), date: d, place: chance(.5) ? p : undefined }
+      : chance(.6) ? { k: 'hand', acct: pick(home).id, acct2: 'wallet', a: amt(), date: d, place: p } : { k: 'in', sub: 'pay', acct: pick(home).id, a: amt(), date: d, place: 'waiting' };
     if (r < .45) return { k: 'move', sub: 'lent', a: amt(), date: d, place: p, place2: 'lent' };
     if (r < .8) return { k: 'move', sub: 'paid back', a: amt(), date: d, place: 'lent', place2: p };
     const h = pick(home).id; return chance(.5) ? { k: 'in', sub: 'paid back', acct: h, a: amt(h), date: d, place: 'lent' } : { k: 'spend', sub: 'spend', acct: h, a: amt(h), date: d, place: 'lent' };

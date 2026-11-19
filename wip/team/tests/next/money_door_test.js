@@ -434,8 +434,16 @@ D.DOOR.forEach(k => {
   { const S = PICTURES.mika();   /* her UnionBank card: cut-off the 17th, 12,480 typed on the 19th, then 2,600 spent on the 20th */
     D.doorApply(S, 'spent', { amount: 2600, account: 'ubcard', date: '2026-11-20' }, TODAY); const due = L.ledgerCardDue(S, 'ubcard', '2026-11-20');
     gap('G5 a card balance typed after the cut-off day counts as spent after it: due on the 7th shows ' + due.due + ' (should be 12,480, with 2,600 later)', c(due.due) === c(12480) && c(due.later) === c(2600)); }
-  { const S = PICTURES.wallet();
+  { const S = PICTURES.wallet(), t0 = c(D.doorFigures(S).total), free = () => c(D.doorFigures(S).free);   /* G4, closed by the ledger core third pass: hard checks now */
     D.doorApply(S, 'moved', { amount: 1500, account: 'wallet', to: 'bank', date: '2026-11-25' }, TODAY);
-    gap('G4 Wallet mode: 4,000 handed out, 1,500 put back in the bank, Free to spend still says 4,000 handed out (should be 2,500)', c(D.doorFigures(S).free) === c(2500)); }
+    rep.ok(free() === c(2500), 'G4 Wallet mode: 4,000 handed out, 1,500 put back in the bank: Free to spend (handed out since pay day) is 2,500, shows ' + free() / 100);
+    rep.ok(c(D.doorFigures(S).total) === t0 + 150000 && c(L.placesOf(S).wallet) === c(2500), 'G4 the money put back is inside Total again');
+    D.doorUndo(S); rep.ok(free() === c(4000), 'G4 undo of the put-back: 4,000 handed out again'); D.doorRedo(S); rep.ok(free() === c(2500), 'G4 redo: 2,500');
+    D.doorApply(S, 'moved', { amount: 3000, account: 'wallet', to: 'gcash', date: '2026-11-26' }, TODAY);
+    rep.ok(free() === 0, 'G4 more put back than was handed out since pay day: handed out shows 0, never below');
+    D.doorApply(S, 'moved', { amount: 800, account: 'bank', to: 'wallet', date: '2026-11-27' }, TODAY);
+    rep.ok(free() === c(800), 'G4 a later hand-out counts in full: 800, shows ' + free() / 100);
+    D.doorApply(S, 'moved', { amount: 200, account: 'wallet', to: 'bank', date: '2026-11-18' }, TODAY);
+    rep.ok(free() === c(800), 'G4 a late line: money put back before the last pay day does not touch what was handed out since'); }
 }
 rep.end();

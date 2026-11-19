@@ -77,6 +77,10 @@ function extraEvent(setup) {
 function thirdEvent(setup) {
   const places = ['waiting', 'bills', 'emergency', 'trip', 'give'].concat(setup.mode === 'track' ? ['free'] : []);
   const date = randDate(), a = amt();
+  /* G4: money handed to the wallet, and money put back from the wallet into a tracked account */
+  const home = setup.accounts.filter(q => ['bank', 'ewallet', 'cash'].includes(q.type) && q.cur == null && q.tracked !== false);
+  if (setup.accounts.some(q => q.id === 'wallet') && chance(.5)) return chance(.55) ? { k: 'transfer', sub: 'put back', acct: 'wallet', acct2: pick(home).id, a, date, place: chance(.5) ? pick(places) : undefined }
+    : chance(.6) ? { k: 'hand', acct: pick(home).id, acct2: 'wallet', a, date, place: pick(places) } : { k: 'in', sub: 'pay', acct: pick(home).id, a, date, place: 'waiting' };
   return chance(.6) ? { k: 'move', sub: 'lent', a, date, place: pick(places), place2: 'lent' } : { k: 'move', sub: 'paid back', a, date, place: 'lent', place2: pick(places) };
 }
 function randomEvent(setup) {
@@ -107,11 +111,15 @@ function checkBal(setup, list, chk, accts) {
   return b;
 }
 
-/* I12 worked out here: handed to the wallet since the last pay that started a month, by day (same day: in the order added) */
-function handedByDay(list) {
-  const order = []; list.forEach((e, i) => { if (e.k === 'hand' || (e.k === 'in' && e.sub === 'pay' && e.startsPeriod !== false)) order.push([e, i]); });
+/* I12 worked out here: handed to the wallet since the last pay that started a month, by day (same day: in the order added).
+   Money put back from the wallet (a transfer from the wallet that is not tracked into a tracked account) takes away from it,
+   never below zero (G4) */
+function handedByDay(list, accts) {
+  const inT = id => { const a = accts[id]; return !!a && a.cur == null && a.tracked !== false && ['bank', 'ewallet', 'cash', 'owedToYou'].includes(a.type); };
+  const back = e => e.k === 'transfer' && accts[e.acct] && accts[e.acct].tracked === false && accts[e.acct].cur == null && inT(e.acct2);
+  const order = []; list.forEach((e, i) => { if (e.k === 'hand' || back(e) || (e.k === 'in' && e.sub === 'pay' && e.startsPeriod !== false)) order.push([e, i]); });
   order.sort((p, q) => (p[0].date < q[0].date ? -1 : p[0].date > q[0].date ? 1 : p[1] - q[1]));
-  let h = 0; order.forEach(p => { if (p[0].k === 'hand') h += cents(p[0].a); else h = 0; });
+  let h = 0; order.forEach(p => { if (p[0].k === 'hand') h += cents(p[0].a); else if (p[0].k === 'transfer') h = Math.max(0, h - cents(p[0].a)); else h = 0; });
   return h;
 }
 
@@ -162,7 +170,7 @@ for (let t = 0; t < N; t++) {
     /* I13: money lent is its own figure, outside Saved and outside the burrows, inside Total (I3) */
     rep.ok(cents(p.lent || 0) === lentByMoves(mine), `${tag}: I13 owed to you (the place lent) shows ${p.lent}, the moves give ${lentByMoves(mine) / 100}`);
     /* I12: handed to the wallet since pay day, by day */
-    const hb = handedByDay(mine);
+    const hb = handedByDay(mine, setup.accounts.reduce((o, q) => { o[q.id] = q; return o; }, {}));
     rep.ok(cents(p.wallet) === hb && (setup.mode !== 'wallet' || cents(p.free) === hb), `${tag}: I12 handed to the wallet since pay day shows ${p.wallet}, by day it is ${hb / 100}`);
   }
   /* I11: months as views. Walk pay day periods from before the first event to after the last */

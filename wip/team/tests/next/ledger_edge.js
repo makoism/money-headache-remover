@@ -268,6 +268,24 @@ const all = (tag, p, want) => { for (const k in want) eq(`${tag} ${k}`, k.includ
   rep.ok(mk().oldFigures.questions.length === 2 && L.migrate3831({ cur: 'PHP', bankStart: 5 }, '2026-11-20').oldFigures.questions.length === 0, 'W5 questions is always a list');
 }
 
+{ /* G4 (money door lane): Wallet mode. Money put back from the wallet lowers "handed out since pay day", by day, never below zero */
+  const S = fresh('PHP', [BANK, { id: 'gcash', name: 'GCash', type: 'ewallet' }, { id: 'wallet', name: 'Wallet', type: 'wallet' }, { id: 'usd', name: 'Dollars', type: 'bank', cur: 'USD' }], { mode: 'wallet', payDays: [15] });
+  add('G4 open', S, { k: 'open', acct: 'bank', a: 30000, date: '2026-11-01' }); add('G4 pay', S, { k: 'in', sub: 'pay', acct: 'bank', a: 20000, date: '2026-11-15' });
+  add('G4 hand', S, { k: 'hand', acct: 'bank', acct2: 'wallet', a: 4000, date: '2026-11-15' });
+  const back = add('G4 put back', S, { k: 'transfer', acct: 'wallet', acct2: 'bank', a: 1500, date: '2026-11-25' });
+  all('G4 put back', proof('G4', S), { free: 2500, wallet: 2500, total: 47500, 'accounts.wallet': 2500, 'accounts.bank': 47500, waiting: 47500 });
+  all('G4 as of the day before', L.placesOf(S, '2026-11-24'), { free: 4000, wallet: 4000, total: 46000 });
+  const big = add('G4 into the e-wallet', S, { k: 'transfer', acct: 'wallet', acct2: 'gcash', a: 9000, date: '2026-11-26' }); all('G4 more back than handed', proof('G4', S), { free: 0, wallet: 0, total: 56500 });
+  add('G4 hand again', S, { k: 'hand', acct: 'gcash', acct2: 'wallet', a: 700, date: '2026-11-27' }); all('G4 a later hand-out counts in full', proof('G4', S), { free: 700 });
+  add('G4 late line', S, { k: 'transfer', acct: 'wallet', acct2: 'bank', a: 300, date: '2026-11-10' }); all('G4 put back before pay day does not count since pay day', proof('G4', S), { free: 700 });
+  add('G4 same day, added later', S, { k: 'transfer', acct: 'wallet', acct2: 'bank', a: 100, date: '2026-11-27' }); all('G4 same day: in the order added', proof('G4', S), { free: 600 });
+  add('G4 bank to e-wallet', S, { k: 'transfer', acct: 'bank', acct2: 'gcash', a: 50, date: '2026-11-28' }); all('G4 a transfer between tracked accounts is not a put-back', proof('G4', S), { free: 600 });
+  L.ledgerUndo(S, big.id); all('G4 the large put-back undone', proof('G4', S), { free: 3100 }); L.ledgerRedo(S); all('G4 and redone', proof('G4', S), { free: 600 });
+  L.ledgerUndo(S, back.id); all('G4 the first put-back undone: the large one still empties it', proof('G4', S), { free: 600 }); L.ledgerRedo(S);
+  add('G4 next pay', S, { k: 'in', sub: 'pay', acct: 'bank', a: 20000, date: '2026-12-15' }); all('G4 a new pay day starts from nothing handed', proof('G4', S), { free: 0, wallet: 0 });
+  L.ledgerSetMode(S, 'track'); all('G4 Track mode: handed is still worked out, Free to spend is the place', L.placesOf(S, '2026-12-01'), { wallet: 600, free: 0 });
+}
+
 /* ===== Philippine shapes (side L). How each is written with the kinds the design has ===== */
 { /* card cut-off day (Mika, thing 8): spent after the cut-off is owed and set aside, but not in the bill due next */
   const S = fresh('PHP', [{ id: 'ub', name: 'UnionBank', type: 'bank' }, { id: 'ubc', name: 'UnionBank card', type: 'card', payDay: 7, cutDay: 17 }]);
