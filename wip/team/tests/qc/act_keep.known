@@ -1,0 +1,4 @@
+# Known findings of tests/qc/act_keep.js. Each line is one pattern (a JavaScript regular expression) matched against a FAIL line.
+# A listed failure does not fail the run. A listed line that no longer matches any failure DOES fail the run, so take it out when the app is fixed.
+# Empty on purpose: the main session decides which findings in LANE_act_keep.md are fixed and which are named here.
+# Example:  ^FAIL setName: REPLACES
