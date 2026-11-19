@@ -12,7 +12,7 @@ function paintBar(el, m, withLabels) {
   const r = $('[data-k="rest"]', el); r.hidden = rest <= 0; r.style.flexGrow = rest;
   /* the Left piece: pay with no place, what spending past plan already used of it, and borrowed money, each the model's own amount (jarsOf) */
   const tipL = [];
-  if (J.unplacedNet >= 0.5) tipL.push(J.restCover > 0 || J.usedOver >= 0.5 ? `${fmt2(J.unplacedNet)} not placed yet` + (J.usedOver < 0.5 ? ` (${J.restPct}% of pay)` : '') : J.income > 0 ? `${J.restPct}% of pay, not placed yet` : '');
+  if (J.unplacedNet >= 0.5) tipL.push(J.restCover > 0 || J.usedOver >= 0.5 ? `${fmt2(J.unplacedNet)} not placed yet` + (J.income > 0 ? ` (${J.restPct}% of pay)` : '') : J.income > 0 ? `${J.restPct}% of pay, not placed yet` : '');
   if (J.usedOver >= 0.5) tipL.push(`${fmt2(J.usedOver)} used for spending past plan`);
   if (J.restCover > 0) tipL.push(J.unplaced >= 0.5 ? `${fmt2(J.restCover)} borrowed from the emergency fund` : J.restKept > 0 ? 'borrowed from the emergency fund, kept in the bank' : 'borrowed money, used for spending past plan');
   r.dataset.tip = `<b>Left</b> ${fmt2(rest)}` + tipL.filter(Boolean).map(x => '<br>' + x).join(''); r.setAttribute('aria-label', `Left ${fmt2(rest)}`);
@@ -26,8 +26,8 @@ function paintLegend(m) {
   const live = S.plan.goals.filter(g => g.target > 0 && m.g[g.id] && m.g[g.id].actual > 0).map(g => g.name);
   const ltsTag = live.length ? esc(live.slice(0, 2).join(', ') + (live.length > 2 ? ` and ${live.length - 2} more` : '')) : JARTAG.lts;
   $('#legend').innerHTML = J.list.map(j => row(JARCLS[j.id], j.name, j.id === 'lts' ? ltsTag : JARTAG[j.id], j.v, has ? j.pct + '%' : '')).join('')
-    + (J.unplacedNet >= 0.5 ? row('rest', 'Not placed yet', J.restCover > 0 || J.usedOver > 0 ? 'stays in the bank' : '', J.unplacedNet, has && J.usedOver < 0.5 ? J.restPct + '%' : '') : '')
-    + (J.usedOver >= 0.5 ? row('rest', 'Used for spending past plan', 'came out of pay with no place', J.usedOver, '') : '')
+    + (J.unplacedNet >= 0.5 ? row('rest', 'Not placed yet', J.restCover > 0 || J.usedOver > 0 ? 'stays in the bank' : '', J.unplacedNet, has ? J.restPct + '%' : '') : '')
+    + (J.usedOver >= 0.5 ? row('rest', 'Used for spending past plan', 'came out of pay with no place', J.usedOver, has ? J.usedOverPct + '%' : '') : '')
     + (J.rest > 0 && J.restCover > 0 ? row('rest', 'Borrowed', J.restKept > 0 ? (J.restKept < J.restCover - 0.5 ? fmt2(J.restKept) + ' of it stays in the bank' : 'from the emergency fund, stays in the bank') : 'from the emergency fund, used for spending past plan', J.restCover, '') : '')
     + (J.borrowUsed >= 0.5 ? row('rest', 'Borrowed', 'from the emergency fund, pays for part of this plan', J.borrowUsed, has && J.borrowUsedPct > 0 ? J.borrowUsedPct + '%' : '') : '')
     + (J.short > 0 ? row('rest', J.draw > 0 ? 'Still over after borrowing' : st0 === 'tight' ? 'Over pay by' : 'Short by', J.draw > 0 ? fmt2(J.draw) + ' borrowed from the emergency fund' + (st0 === 'tight' ? ', your balance covers the rest' : '') : st0 === 'tight' ? 'Your balance covers it' : 'Plan exceeds pay', J.short, '', true) : '');

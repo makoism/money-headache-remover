@@ -6,5 +6,3 @@
 ^FAIL light, Receipts: text contrast
 ^FAIL light, Plan / Month: text contrast
 ^FAIL light, Plan / All months: text contrast
-^FAIL tenths: Plan places' percents add to 100
-^FAIL tenths: when percents show, every part of the pay has one

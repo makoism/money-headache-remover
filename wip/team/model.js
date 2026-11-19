@@ -420,15 +420,15 @@ function jarsOf(S, m) {
   const dw0 = m.draw || 0, inn = m.pool.in, out = m.pool.out, rest = Math.max(0, inn - out), short = Math.max(0, out - inn), base = short > 0 ? out : (dw0 > 0 && inn - dw0 > 0 ? inn - dw0 : inn);   /* percents are shares of real pay, never of borrowed money */
   const restCover = Math.min(rest, m.draw || 0), unpR = Math.max(0, rest - restCover), usedOver = Math.min(unpR, m.overNow || 0), restKept = Math.max(0, restCover - Math.max(0, (m.overNow || 0) - unpR));   /* borrowed money not used up by spending past plan stays in the bank */   /* borrowed money that went to overspending, not pay left over */
   const vals = { nec: m.jar.nec, lts: m.goalsTotal, play: m.jar.play, edu: m.jar.edu, ffa: m.jar.ffa, give: m.jar.give };
-  const pcts = wholePercents(JARS.map(j => vals[j.id]).concat([rest - restCover]), base);
+  const pcts = wholePercents(JARS.map(j => vals[j.id]).concat([rest - restCover - usedOver, usedOver]), base);   /* not placed and used for spending past plan each get their percent, so the shown set adds to 100 (side A, 2026-11-19) */
   /* borrowed money that pays for part of the plan. The places are shown as shares of real pay, so with borrowed money in the plan they add up to more
      than 100: placedPct says how much, and borrowUsedPct is the part past 100. Places + not placed = 100 + borrowed, always. */
-  const realPay = inn - dw0, borrowUsed = short > 0 ? 0 : Math.max(0, dw0 - restCover), sumPct = pcts.reduce((a, b) => a + b, 0);
+  const realPay = inn - dw0, borrowUsed = short > 0 ? 0 : Math.max(0, dw0 - restCover), sumPct = pcts.reduce((a, b) => a + b, 0), restAll = pcts[6] + pcts[7];
   const borrowUsedPct = borrowUsed > 0 && base === realPay ? Math.max(0, sumPct - 100) : 0;
   /* named amounts the screens show (they never work these out themselves) */
   const unplaced = Math.max(0, rest - restCover), unplacedNet = round2(rest - restCover - usedOver), exceedsBy = short + dw0;
-  return { income: base, inn, out, rest, restCover, restKept, usedOver, short, draw: m.draw || 0, over: short > 0, restPct: pcts[6],
-    realPay, borrowUsed, borrowUsedPct, placedPct: sumPct - pcts[6], unplaced, unplacedNet, exceedsBy,
+  return { income: base, inn, out, rest, restCover, restKept, usedOver, short, draw: m.draw || 0, over: short > 0, restPct: pcts[6], usedOverPct: pcts[7],
+    realPay, borrowUsed, borrowUsedPct, placedPct: sumPct - restAll, unplaced, unplacedNet, exceedsBy,
     list: JARS.map((j, i) => ({ id: j.id, name: j.name, usual: Math.round(j.usual * 100), v: vals[j.id], pct: pcts[i] })) };
 }
 
