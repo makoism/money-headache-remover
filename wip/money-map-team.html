@@ -15,10 +15,10 @@
   color-scheme: light;
   --bg: #eef4ef; --panel: rgba(255, 255, 255, .62); --card: rgba(255, 255, 255, .62); --field: #ffffff; --seg-on: #ffffff; --float: rgba(255, 255, 255, .86);
   --ink: #122018; --ink2: #3d5749; --ink3: #44594b; --hair: rgba(18, 32, 24, .1); --track: rgba(18, 32, 24, .07); --track2: rgba(18, 32, 24, .11);
-  --accent: #1f7a52; --on-accent: #ffffff; --accent-h: #27895d; --link: #145c3c;
+  --accent: #1f7a52; --on-accent: #ffffff; --accent-h: #196744; --link: #145c3c;   /* F6: hover darker, so white text keeps 4.5:1 (was #27895d, 4.35:1) */
   --c1: #b8512e; --c2: #2c6db5; --c3: #3e8e2b; --c4: #d6568a; --c5: #d99a12; --c6: #7e3f96; --c7: #0b8fa8; --cp: #d4e04f; --cl: #b9c6d2; --cg: #e8dcc0;
-  --good: #1f7a52; --good-bg: rgba(31, 122, 82, .12); --warn: #9a6a00; --warn-bg: rgba(154, 106, 0, .12); --bad: #b8352e; --bad-bg: rgba(184, 53, 46, .1);
-  --warn-on: #c98500; --bad-on: #e0524b; --ok-dot: #a9bdb2;
+  --good: #166240; --good-bg: rgba(31, 122, 82, .12); --warn: #7a5300; --warn-bg: rgba(154, 106, 0, .12); --bad: #b8352e; --bad-bg: rgba(184, 53, 46, .1);
+  --warn-on: #c98500; --bad-on: #e0524b; --ok-dot: #a9bdb2;   /* F6 (side A finding 2): --good was #1f7a52 (3.85:1 on its tint) and --warn #9a6a00 (3.48:1) as text */
   --leaf: rgba(31, 122, 82, .34); --glass-hi: rgba(255, 255, 255, .5);
   --acc-tint: rgba(31, 122, 82, .08); --acc-tint2: rgba(31, 122, 82, .2); --acc-glow: rgba(31, 122, 82, .25); --acc-ring: rgba(31, 122, 82, .65);
   --aurora: radial-gradient(60% 45% at 85% -5%, rgba(143, 217, 176, .5) 0%, rgba(143, 217, 176, 0) 70%), radial-gradient(70% 50% at -10% 60%, rgba(95, 185, 138, .22) 0%, rgba(95, 185, 138, 0) 70%), radial-gradient(50% 40% at 60% 110%, rgba(255, 255, 255, .7) 0%, rgba(255, 255, 255, 0) 70%);
@@ -1858,6 +1858,29 @@ p .link, li .link, span .link, .cap .link { min-height: 0; position: relative; p
 /* 320 wide: an open goal editor no longer pushes every goal card into the panel's padding (38.31 layout round 4) */
 .gcard { min-width: 0; } .gform, .gform .field, .gform .inp, .gform input, .gform select { min-width: 0; max-width: 100%; }
 #djBtn, #gearBtn { min-width: 44px; flex-shrink: 0; }
+/* "now" and "planned" on every Home figure (LAUNCH_CHECKLIST A1) */
+.ntag { display: inline-block; vertical-align: middle; margin-left: 6px; padding: 1px 8px; border-radius: 999px; font-style: normal; font-size: var(--t-micro); font-weight: 600; letter-spacing: 0; border: 1px solid var(--line, rgba(0,0,0,.2)); color: var(--ink2); background: transparent; }
+.ntag.now { color: var(--ink); border-color: var(--good, currentColor); }
+.mp-now { margin: 10px 0 14px; padding: 12px 14px; border-radius: 14px; background: var(--card); border: 1px solid var(--line, rgba(0,0,0,.2)); }
+.mp-now-h { margin: 0 0 4px; font-weight: 600; }
+.mp-now-v { display: block; font-size: 1.6em; line-height: 1.2; }
+.mp-now-v.bad { color: var(--bad); }
+.mp-now .mp-fresh { margin: 2px 0 6px; }
+.mp-ask label { display: block; font-weight: 600; margin: 6px 0 2px; }
+.mp-askrow { display: flex; gap: 8px; align-items: stretch; margin-top: 6px; }
+.mp-askrow .inp { flex: 1; min-width: 0; }
+.mp-askrow .btn, .mp-now .btn, .mp-now .link { min-height: 44px; }
+.mp-owe { margin: 6px 0 10px; }
+/* F2 (LAUNCH_CHECKLIST, phone check): on screens under 700px tall the page dots sat on the squirrel at the burrow door. There they move to the
+   top strip, above the card; and on every screen they step aside while a coin trip runs (the card then shows "Going in." and no buttons) */
+@media (max-height: 699px) { .bv-dots { top: max(6px, env(safe-area-inset-top)); bottom: auto; } }
+#burrowView:has(.bv-pop:not([hidden]) > .bv-n):not(:has(.bv-pop button)) .bv-dots { visibility: hidden; }
+/* F6 (LAUNCH_CHECKLIST, side A finding 1): five controls on Home were under 44px with More open. Each folding summary is 44px tall, and the
+   two small links in the status and Free to spend lines get a 44px touch box (the negative margin keeps the line where it was) */
+#hQuick .hmore > summary, .hw-more > summary, .gg-wrap > summary { min-height: 44px; display: flex; align-items: center; box-sizing: border-box; }
+p.hs-more .link { padding-top: 12px; padding-bottom: 12px; margin-top: -12px; margin-bottom: -12px; }
+/* F6: a goal's "full" mark in All months kept the goal colour as 12px text (1.84:1 for the yellow goal in light): the words mix toward the ink */
+.mt-g > span { color: color-mix(in srgb, var(--c) 45%, var(--ink)); }
 </style>
 </head>
 <body>
@@ -2882,6 +2905,7 @@ const GOAL_DEFAULT_NAME = { rainy: 'Emergency fund', travel: 'Trip', moving: 'Ho
 /* what each kind of goal is for, said as an aim, never as if it were done (38.31 wording round 3: "Emergencies covered" showed at 31%) */
 const PURPOSE_OF_KIND = { rainy: 'Saving for emergencies', travel: 'Saving for a trip', moving: 'Saving for a move', buy: 'Saving to pay in cash', car: 'Saving for a yearly bill', debt: 'Paying off a debt', other: '' };
 const PURPOSE_VERBS = /^(buy|get|build|start|take|go|pay|visit|learn|fix|move|plan|book|host|open|join|make|finish|upgrade|replace|renew|fund|cover|see|send|adopt|rent|own|throw|celebrate|travel|clear|write|launch|hire|support|invest|surf|ride|run|swim|climb|dive|drive|fly|marry|study|train|enrol|enroll|treat|gift|surprise|retire|quit)\b/i;
+const isDebtGoal = (S, id) => { const g = goalById(S, id); return !!g && kindOfGoal(S, g) === 'debt'; };
 const kindOfGoal = (S, g) => { if (g.emergency) return 'rainy'; const gk = (S.ui && S.ui.gk) || {}; return gk[g.id] || (Object.prototype.hasOwnProperty.call(PURPOSE_OF_KIND, g.id) ? g.id : 'other'); };
 /* the plain sentence under a goal: what the money will let the person do. Built-in wording here; a line written by Claude for a custom goal replaces it on screen. */
 /* a debt reads as paid off and still owed, never full or to go (money); times stay as they are */
@@ -2923,7 +2947,7 @@ function viewOf(S, C, ym, today) {
   const play = { planned: planPlay, spent: spentPlay, left: leftPlay, over: leftPlay < 0, overBy: leftPlay < 0 ? round2(-leftPlay) : 0, count: rs.count, daysLeft, dim, dayN,
     frac: planPlay > 0 ? Math.min(1, spentPlay / planPlay) : 1, dayFrac: Math.min(1, dayN / dim), ahead: leftPlay >= 0 && spentPlay > pace * 1.15 + 1,
     perWeek: daysLeft >= 4 ? Math.max(0, leftPlay) / (daysLeft / 7) : null };
-  const goalsSaved = sum(Object.keys(m.bal).map(id => m.bal[id]));
+  const goalsSaved = sum(Object.keys(m.bal).filter(id => !isDebtGoal(S, id)).map(id => m.bal[id]));   /* a debt goal is money paid away, not saved (LAUNCH_CHECKLIST A3) */
   let ffaSoFar = 0; for (const x of MONTHS) { if (x > ym) break; ffaSoFar += C.byYm[x].jar.ffa; }
   const buckets = JARS.map(j => {
     if (j.id === 'lts') return { id: j.id, name: j.name, kind: 'save', planned: m.goalsTotal, spent: 0, left: null, total: goalsSaved };
@@ -2984,14 +3008,17 @@ function mapOf(S, C, ym, V0) {
   /* the pile in every room is drawn against the biggest room, so a bigger pile means more money (square root, so the small ones still show) */
   const maxA = Math.max(1, ...month.map(r => r.amount), ...burrows.map(r => r.amount));
   month.concat(burrows).forEach(r => { r.fill = r.amount > 0 ? Math.min(1, Math.sqrt(r.amount / maxA)) : 0; });
-  const goalsSaved = round2(sum(Object.keys(m.bal).map(id => m.bal[id]))), saved = round2(goalsSaved + sum(burrows.map(r => r.amount)));
+  /* money put toward a "Pay off a debt" goal has left: it is paid off, not saved, so it is not in Saved or Total (LAUNCH_CHECKLIST A3) */
+  const goalsSaved = round2(sum(Object.keys(m.bal).filter(id => !isDebtGoal(S, id)).map(id => m.bal[id]))), saved = round2(goalsSaved + sum(burrows.map(r => r.amount)));
+  /* what is owed at the end of the month: cards and loans still owed, plus what every debt goal still has to pay (LAUNCH_CHECKLIST A4) */
+  const owed = round2(sum(Object.keys(m.debts || {}).map(id => Math.max(0, m.debts[id].bal))) + sum((V0.goals || []).filter(g => g.kind === 'debt').map(g => g.togo)));
   /* spending past what was planned comes out of the bank, so the bank and the total stay true to the receipts */
   const overspent = m.over || 0, bankEnd = m.bankEnd;
   /* the pay strip: real pay against what the plan places. Pay with no place is its own piece (less what spending past plan already used); a plan bigger than the pay says by how much */
   const payReal = Math.max(0, m.inflow - (m.draw || 0)), placed = m.out, gap0 = round2(payReal - placed), usedOver = Math.min(Math.max(0, gap0), m.overNow || 0), payGap = round2(gap0 - usedOver), planOver = payGap < -0.5 ? round2(-payGap) : 0;
-  return { ym, free: fo.free, held: fo.held, overspent, billsLeft, billsPlanned: planNec, goalsSaved, saved, bankEnd, bankBelow: bankEnd < 0 ? round2(-bankEnd) : 0, total: round2(bankEnd + saved), month, burrows,
+  return { ym, free: fo.free, held: fo.held, overspent, billsLeft, billsPlanned: planNec, goalsSaved, saved, bankEnd, bankBelow: bankEnd < 0 ? round2(-bankEnd) : 0, total: round2(bankEnd + saved), owed, month, burrows,
     payReal, placed, payGap, usedOver, planOver,
-    goalParts: (V0.goals || []).filter(g => g.live !== false || ((m.g[g.id] && m.g[g.id].actual) || 0) > 0).map(g => ({ id: g.id, name: g.name, slot: g.slot, saved: g.saved, plan: (m.g[g.id] && m.g[g.id].actual) || 0 })),
+    goalParts: (V0.goals || []).filter(g => g.live !== false || ((m.g[g.id] && m.g[g.id].actual) || 0) > 0).map(g => ({ id: g.id, name: g.name, slot: g.slot, debt: g.kind === 'debt', saved: g.saved, plan: (m.g[g.id] && m.g[g.id].actual) || 0 })),
     split: ['nec', 'lts', 'play', 'edu', 'ffa', 'give'].map(id => ({ id, amount: id === 'lts' ? (m.goalsTotal || 0) : (m.jar[id] || 0) })).filter(x => x.amount > 0) };
 }
 /* the goal wizard's suggestion: what is still missing, spread evenly over n months and rounded up to the plan's unit (the same rule as evenSave) */
@@ -3061,7 +3088,8 @@ function planCells(S, C, ym) {
    from the emergency fund only moves. If the two sides differ, a number on a screen is wrong, and the page says so instead of showing it as true. */
 function proofOf(S, C, ym, map0) {
   const c = x => Math.round((+x || 0) * 100), goals = goalsOf(S), has = (S.receipts || []).length > 0;
-  const part = { start: c(cfg(S, 'bankStart')) + goals.reduce((a, g) => a + c(g.start), 0), pay: 0, planned: 0, past: 0, free: 0, back: 0, piles: 0, goals: 0 };
+  /* a debt goal's "already paid off" was never money held, and what is put toward it leaves (paid to the lender, LAUNCH_CHECKLIST A3) */
+  const part = { start: c(cfg(S, 'bankStart')) + goals.filter(g => !isDebtGoal(S, g.id)).reduce((a, g) => a + c(g.start), 0), debtGoals: 0, pay: 0, planned: 0, past: 0, free: 0, back: 0, piles: 0, goals: 0 };
   let pend = 0; const pendMonths = [];
   for (const x of MONTHS) {
     if (x > ym) break;
@@ -3075,14 +3103,16 @@ function proofOf(S, C, ym, map0) {
     part.past += necPast + Math.max(0, (byJar.other || 0) - items) + Math.max(0, (byJar.play || 0) - playPlan);
     part.free += playPlan; part.back += c(m.counted);
     part.piles += (byJar.edu || 0) + (byJar.give || 0);
-    goals.forEach(g => { part.goals += c(m.spent[g.id]); });
+    goals.forEach(g => { if (!isDebtGoal(S, g.id)) part.goals += c(m.spent[g.id]); else part.debtGoals += c(m.spent[g.id]); });
     if (m.pendLeft > 0) { pend += c(m.pendLeft); pendMonths.push(x); }
   }
-  const came = part.start + part.pay - part.planned - part.past - part.free + part.back - part.piles - part.goals;
+  /* paid toward debt goals: everything that went in after "already paid off" (what is there now, less the start, plus anything taken out on its date) */
+  goals.forEach(g => { if (isDebtGoal(S, g.id)) part.debtGoals += c(C.byYm[ym].bal[g.id]) - c(g.start); });
+  const came = part.start + part.pay - part.planned - part.past - part.free + part.back - part.piles - part.goals - part.debtGoals;
   const map = map0 || viewOf(S, C, ym).map, sits = c(map.total), sitsParts = c(map.bankEnd) + c(map.goalsSaved) + map.burrows.reduce((a, b) => a + c(b.amount), 0);
   const off = sits - came;
   return { ok: off === 0 && sitsParts === sits, off: off / 100, offBy: Math.abs(off) / 100, sits: sits / 100, came: came / 100, partsOk: sitsParts === sits,
-    start: part.start / 100, pay: part.pay / 100, left: (part.planned + part.past + part.free - part.back + part.piles + part.goals) / 100,
+    start: part.start / 100, pay: part.pay / 100, left: (part.planned + part.past + part.free - part.back + part.piles + part.goals + part.debtGoals) / 100,
     pendAmount: pend / 100, pendMonths };
 }
 
@@ -4338,7 +4368,7 @@ const ACT = {
     if (['a', 'b', 'side'].indexOf(key) < 0) throw new Error('unknown income ' + key);
     return ACT.tx('income', () => { setVal(S, key, ym || START, clampAmt(amount, S), scope === 'month' ? 'month' : 'after'); if (key === 'a' && clampAmt(amount, S) > 0) markDone('pay', true); });
   },
-  setBalance(v) { return ACT.tx('balance', () => { setBankBalance(S, clampAmt(v, S)); }); },
+  setBalance(v) { return ACT.tx('balance', () => { setBankBalance(S, clampBank(v, S)); }); },   /* a bank balance may be below zero (overdrawn), as in Settings */
   setMinBalance(v) { return ACT.tx('minimum balance', () => { S.cfg.minBank = clampAmt(v, S); }); },
   setCeiling(v) { return ACT.tx('spending ceiling', () => { S.cfg.ceiling = clampAmt(v, S); }); },
 
@@ -5551,7 +5581,7 @@ const goalStep = id => ({ id: 'goal-' + id, part: PART.goals, setup: true,
       <div class="field tour-q1"><span class="l" id="tourEmL">Months of bills to cover</span>
       <div class="tour-chips" role="radiogroup" aria-labelledby="tourEmL">${EM_MONTHS.map(x => chip('tourEm', String(x[0]), String(x[0]), x[1], x[0] === m)).join('')}</div></div>
       <p class="cap" id="tourEmCap">${emCap(m)}</p>
-      <div class="tour-fields">${moneyField('tourGSaved', 'Already saved', g.start)}</div><p class="cap">If this money is already in your bank balance above, take it out of that number so it is not counted twice.</p>`;
+      <div class="tour-fields">${moneyField('tourGSaved', 'Already saved', g.start)}</div><p class="cap">Is this money in the same account as the balance you typed before? Then lower that balance by this amount, so the same money is not counted in two places.</p>`;
     }
     const dbt = !!k.debt;
     return `<p>${g.emergency ? 'A cushion for surprises. How much do you want to hold? Usual advice: three to six months of bills.' : dbt ? 'Name the debt and how much you owe in total. The smallest payment you must make stays in Bills and basics. This burrow is for the extra you pay on top, so the debt shrinks faster.' : 'Name, cost, a date if there is one, and the reason in your words.'}</p>
@@ -5559,7 +5589,7 @@ const goalStep = id => ({ id: 'goal-' + id, part: PART.goals, setup: true,
       ${g.emergency ? '' : textField('tourGName', 'Name', k.name && g.name === k.name ? '' : g.name, 60, k.name)}
       ${g.emergency ? '' : `<div class="field"><label for="tourGWhy">Why (optional)</label><div class="inp"><input id="tourGWhy" type="text" maxlength="80" spellcheck="false" value="${esc(g.why || '')}" placeholder="Why it matters, in your words"></div><p class="cap">Shows with the goal, so the reason stays in view.</p></div>`}
       <div class="field">${moneyField('tourGCost', dbt ? 'Total owed' : g.emergency ? 'How much to hold' : 'Cost', g.target).replace(/^<div class="field">|<\/div>$/g, '')}${k.cost ? `<p class="cap">${k.cost}</p>` : ''}</div>
-      ${moneyField('tourGSaved', dbt ? 'Already paid off' : 'Already saved', g.start)}${dbt ? '' : `<p class="cap">If this money is already in your bank balance above, take it out of that number so it is not counted twice.</p>`}
+      ${moneyField('tourGSaved', dbt ? 'Already paid off' : 'Already saved', g.start)}${dbt ? '' : `<p class="cap">Is this money in the same account as the balance you typed before? Then lower that balance by this amount, so the same money is not counted in two places.</p>`}
       ${g.emergency ? '' : `<div class="field"><label for="tourGDue">${dbt ? 'Paid off by' : 'Needed by'}</label><input type="date" id="tourGDue" min="${lo}" max="${hi}" value="${esc(g.due)}"><p class="cap">With a date, the monthly amount is worked out for you.</p></div>`}
     </div>
     ${k.k && !k.em && S.plan.goals.length < MAX_GOALS ? `<div class="row-btns"><button type="button" class="btn small more" data-moreg="${esc(id)}">Add another ${GOAL_NOUN[k.k] || 'goal'}</button></div>` : ''}`;
@@ -5699,8 +5729,10 @@ const STEP_REVEAL = { id: 'reveal', part: PART.spend, art: 'branch',
   show: () => { if (tourMode === 'full' && S.ui.done && S.ui.done.pay && S.ui.done.bills && S.ui.done.goals) { S.ui.setup = true; persist(); } },
   body: () => {
     const f = planFacts(), play = f.play, wk = weekOf(play), seg = (cls, v) => (v > 0 ? `<div class="seg-b ${cls}" style="flex-grow:${v}"></div>` : '');
-    if (f.st === 'nopay') return `${chestImg(0.5)}<div class="tour-reveal"><b>${fmt2(play)}</b><span>a month, sample</span></div>
-      <p>No pay entered, so every number here is a sample. Free to spend is for fun, worked out after bills and burrows. Add your pay under Plan, Month, Details, Money in, or tap Back to enter it here.</p>`;
+    /* no sample money in setup sentences (LAUNCH_CHECKLIST D2): with no pay there is no figure to show yet, only what to do */
+    if (f.st === 'nopay') return `${chestImg(0.2)}
+      <p>Free to spend is money for fun: what is left after bills and burrows. It needs your pay to work it out, so there is no figure yet.</p>
+      <p>Tap Back to type your pay, or add it later under Plan, Month, Details, Money in.</p>`;
     if (f.st === 'over') return `<div class="tour-reveal neg"><b>${fmt2(f.shortBy)}</b><span>short a month</span></div>
       <p>Plan spends <b>${fmt2(f.J.out)}</b>; pay is <b>${fmt2(f.inc)}</b>.${play > 0 ? '' : ' Nothing left, so no free to spend yet.'}</p>
       ${ledgerHTML(f)}
@@ -15035,11 +15067,15 @@ async function vaultCheck() {
 async function vaultApply(k, srv) {
   const d = JSON.parse(await vaultDecrypt(k, srv.blob, srv.iv));
   if (!okBackup(d)) throw new Error('bad');
-  const old = S; S = upgradeLegacy(normalize(d)); S.ui = Object.assign({}, S.ui, { sampleHidden: true }); if (!Array.isArray(d.receipts)) S.receipts = old.receipts;
+  /* the numbers on this device are kept as a local copy, with Undo, before the cloud copy replaces them (LAUNCH_CHECKLIST E1): the device
+     clock decides "newer", so the copy loaded can be the wrong one */
+  const old = S, oldSnap = snapNoCopy(); S = upgradeLegacy(normalize(d)); S.ui = Object.assign({}, S.ui, { sampleHidden: true }); if (!Array.isArray(d.receipts)) S.receipts = old.receipts;
   S.rev = srv.rev; vault.rev = srv.rev; vaultNote = null;
+  keepCopy(oldSnap, 'The cloud copy replaced the numbers on this device.');
   editRow = null; editGoal = null; editRc = null; itemsSig = '';
   if (tourIsOpen) closeTour(false); else { flush(); restructure(); }
   S.ui.bk = Date.now(); delete S.ui.bkLater;
+  if (window.offerUndoG) window.offerUndoG(oldSnap, `Cloud copy loaded. Your numbers from before are kept: you can undo for ${KEEP_DAYS} days.`);
 }
 async function vaultLoadNewer() {
   if (!vaultNote || vaultNote.kind !== 'newer') return;
@@ -15111,6 +15147,8 @@ function wireVault() {
   $('#vaultUse').addEventListener('click', async () => { const ok = await vaultRestore($('#vaultIn').value, $('#vaultMsg')); if (ok) { $('#vaultIn').value = ''; paintVault(); } });
   $('#vaultIn').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('#vaultUse').click(); } });
 }
+/* test hook (only with ?sfxtest): the cloud copy functions, so a test can apply a made-up record without reaching the cloud */
+if (/[?&]sfxtest\b/.test(location.search)) window.__vault = { keysFor, vaultEncrypt, vaultApply };
 /* ---------- Scan receipts: the card at the top of the Receipts tab ----------
    Take a photo or pick pictures, Claude reads them through the viewer's own Claude account, the page checks every field and shows
    what it found with a category picker on each line, and nothing is added until the person taps "Add to my page".
@@ -16086,6 +16124,8 @@ function homeV1() {
   if (q) q.classList.toggle('v1x', !(logIsNext || QUICK_OPEN || HOME_ALL));
   V1_EXTRA.forEach(id => { const e = $('#' + id); if (e) e.classList.toggle('v1x', !HOME_ALL); });
   const st = $('#hStatus'); if (st) st.classList.toggle('v1x', !HOME_ALL && !!st.querySelector('.chip.good'));
+  /* the burrow amounts include this month's planned saving: say so on the heading, as every Home figure does (LAUNCH_CHECKLIST A1) */
+  const bh = $('#hBur .hb-h'); if (bh && !bh.querySelector('.ntag')) bh.insertAdjacentHTML('beforeend', ' <em class="ntag plan">planned</em>');
   let mb = $('#hMoreBtn');
   if (!mb) { mb = document.createElement('button'); mb.type = 'button'; mb.id = 'hMoreBtn'; mb.className = 'btn hv1-more'; mb.addEventListener('click', () => { HOME_ALL = !HOME_ALL; sfx('tap'); renderHome(); }); }
   if (bur && mb.previousElementSibling !== bur) bur.after(mb);
@@ -16775,25 +16815,41 @@ function renderMap() {
   const seg = split.map(x => `<i class="mp-seg" data-drop="pay:${esc(x.id)}" style="flex:${x.amount};--c:${x.c}" title="${esc(x.name)} ${esc(fmt(x.amount))}"></i>`).join('');
   const key = split.map(x => `<li><i style="background:${x.c}"></i>${esc(x.name)} <b>${fmt(x.amount)}</b></li>`).join('');
   const pb = M.bankEnd > 0 ? M.bankEnd : 0;
-  const parts = [{ name: 'In the bank', amount: pb, c: 'var(--bankc)' }].concat(M.goalParts.map(g => ({ name: g.name, amount: Math.max(0, g.saved), c: gcol(g) })), M.burrows.map(r => ({ name: r.name, amount: r.amount, c: col(r.id) }))).filter(x => x.amount > 0);
+  const parts = [{ name: 'In the bank', amount: pb, c: 'var(--bankc)' }].concat(M.goalParts.filter(g => !g.debt).map(g => ({ name: g.name, amount: Math.max(0, g.saved), c: gcol(g) }))   /* a debt goal is paid away, not a pile (LAUNCH_CHECKLIST A3) */, M.burrows.map(r => ({ name: r.name, amount: r.amount, c: col(r.id) }))).filter(x => x.amount > 0);
   const wseg = parts.map(x => `<i style="flex:${x.amount};--c:${x.c}" title="${esc(x.name)} ${esc(fmt(x.amount))}"></i>`).join('');
   const wkey = (M.bankEnd < 0 ? `<li class="mp-neg"><i style="background:var(--bad)"></i>In the bank <b>${fmt2(M.bankEnd)}</b> (short)</li>` : '') + parts.map(x => `<li><i style="background:${x.c}"></i>${esc(x.name)} <b>${fmt2(x.amount)}</b></li>`).join('');
+  /* every Home figure says whether it is what the bank shows now or what the plan expects (LAUNCH_CHECKLIST A1) */
+  const PLN = '<em class="ntag plan">planned</em>', NOW = '<em class="ntag now">now</em>';
+  /* the bank now, first: what the bank app showed when the person last typed it, and the question to type it again (A1) */
+  const at = S.cfg && S.cfg.bankAt, smpOn = typeof sampleOn === 'function' && sampleOn(), asking = renderMap.ask || !at || smpOn;
+  const atTxt = at ? `${+at.slice(8, 10)} ${MONTH_NAMES[+at.slice(5, 7) - 1]}${+at.slice(0, 4) !== new Date().getFullYear() ? ' ' + at.slice(0, 4) : ''}` : '';
+  const nowCard = `<div class="mp-now"><p class="mp-now-h">In your bank now ${NOW}</p>${at && !smpOn ? `<b class="mp-now-v${cfg(S, 'bankStart') < 0 ? ' bad' : ''}">${fmt2(cfg(S, 'bankStart'))}</b><p class="cap mp-fresh">Balance you entered on ${atTxt}.</p>` : ''}
+    ${asking ? `<div class="mp-ask"><label for="mpBankIn">What does your bank app show today?</label><p class="cap">Open your bank app and type the balance it shows. Add any cash you keep at home. Everything below is planned from this.</p>
+      <div class="mp-askrow"><div class="inp"><span class="yen cs"></span><input id="mpBankIn" type="number" inputmode="text" data-neg="ok" step="any" placeholder="0" value="${at && !smpOn ? esc(String(cfg(S, 'bankStart'))) : ''}"></div><button type="button" class="btn solid small" id="mpBankSave">Save</button></div>${at && !smpOn ? '<button type="button" class="link" id="mpBankNo">Keep the old balance</button>' : ''}</div>`
+    : `<p class="mp-act"><button type="button" class="btn small" id="mpCheck">Check your bank</button></p>`}</div>`;
+  /* what is owed, in one line, only when something is (A4) */
+  const oweLine = M.owed > 0 ? `<p class="cap mp-owe">You owe ${fmt2(M.owed)} at the end of ${esc(mon)} ${PLN}: cards, loans and debt burrows.</p>` : '';
   const smp = '';   /* the one sample notice is the status line at the top of Home */
   const minB = cfg(S, 'minBank'), warn = !(M.bankEnd < minB) ? '' : M.bankEnd < 0 ? `<p class="mp-warn" role="status">Your bank would end ${fmt2(M.bankBelow)} below zero in ${esc(mon)}. ${(() => { const z = (V.month && V.month.belowZero) || {}, why = [];   /* only the causes the model knows: a start below zero is not "a plan bigger than pay" (38.31 money accuracy round 4) */ if (z.startBelow > 0) why.push(`It starts the month ${fmt2(z.startBelow)} below zero.`); if (z.planGap > 0) why.push('Your plan is bigger than your pay.'); if (M.overspent > 0) why.push('Spending is past what you planned.'); return why.join(' ') || 'Open Plan to see the month.'; })()} ${(() => { const pl = (M.month || []).find(x => x.id === 'play'); return pl && pl.amount > 0.004 ? `Keep Free to spend to the ${fmt2(pl.amount)} shown, or open Plan to pick a fix.` : 'Spend nothing more from Free to spend until you check your plan.'; })()} This bank figure counts the planned Free to spend as spent.</p>` : `<p class="mp-warn" role="status">Your bank ends at ${fmt2(M.bankEnd)} in ${esc(mon)}, under your safety minimum of ${fmt(minB)}. ${(() => { const pl = (M.month || []).find(x => x.id === 'play'); return pl && pl.amount < pl.planned - 0.5 ? 'Free to spend is lowered to match.' : 'Open Plan to pick a fix.'; })()}</p>`;
-  put(el, `<h2 class="hb-h">Your burrow${typeof sampleOn === 'function' && sampleOn() ? ' <span class="smp-tag">Sample numbers</span>' : ''}</h2><p class="cap hb-what">Where your money is: this month first, your burrows after it.</p>${smp}
-    <h3 class="mp-h">This month</h3><div class="hb-scene mp-rooms" id="mpRooms"></div>
+  put(el, `<h2 class="hb-h">Your burrow${typeof sampleOn === 'function' && sampleOn() ? ' <span class="smp-tag">Sample numbers</span>' : ''}</h2><p class="cap hb-what">Where your money is: your bank now, then this month, then your burrows.</p>${smp}
+    ${nowCard}
+    <h3 class="mp-h">This month ${PLN}</h3><div class="hb-scene mp-rooms" id="mpRooms"></div>
     <details class="mp-pay"${renderMap.payOpen ? ' open' : ''}><summary class="mp-cap">Your pay in ${esc(mon)}, and where it goes</summary>
     <div class="mp-split" role="img" aria-label="Your pay in ${esc(mon)} splits into: ${esc(split.map(x => x.name + ' ' + fmt(x.amount)).join(', '))}">${seg}${planOver && placed > 0 ? `<b class="mp-past" style="width:${Math.min(100, planOver / placed * 100)}%" title="Planned past your pay ${esc(fmt(planOver))}"></b>` : ''}</div>
     <ul class="mp-key">${key}${planOver ? `<li><i style="background:var(--bad)"></i>Past your pay <b>${fmt(planOver)}</b></li>` : ''}</ul>${planOver ? `<p class="cap">Your plan places ${fmt(planOver)} more than your pay. ${coverText(planOver, dwn, M.bankEnd, cfg(S, 'minBank'), M.bankBelow)}</p>` : ''}
     <p class="mp-act"><button type="button" class="btn small" id="mpPay">Watch where your pay goes</button></p></details>
-    <p class="mp-cap">Where your money sits at the end of ${esc(mon)}: the bank and your burrows</p>
+    <p class="mp-cap mp-where-h">Where your money sits at the end of ${esc(mon)}: the bank and your burrows ${PLN}</p>
     <div class="mp-where" role="img" aria-label="${esc(parts.map(x => x.name + ' ' + fmt(x.amount)).join(', '))}">${wseg}</div>
-    <ul class="mp-key">${wkey}</ul>${(() => { const at = S.cfg && S.cfg.bankAt; if (!at || typeof sampleOn === 'function' && sampleOn()) return ''; const y = +at.slice(0, 4);   /* how fresh the bank figure is (Mako, 2026-11-19); no date stored, no line */
-      return `<p class="cap mp-fresh">Balance you entered on ${+at.slice(8, 10)} ${MONTH_NAMES[+at.slice(5, 7) - 1]}${y !== new Date().getFullYear() ? ' ' + y : ''}: ${fmt2(cfg(S, 'bankStart'))}.</p>`; })()}
-    <ul class="mp-nums mp-four" aria-label="Your four numbers">${n4('Total', fmt2(M.total), 'planned for the end of ' + mon + ': bank and burrows', M.total < 0 ? 'bad' : '')}${(M.free < 0 ? n4('Free to spend', fmt2(M.free), 'over in ' + mon, 'bad') : n4('Free to spend', fmt2(M.month.find(r => r.id === 'play').amount), 'safe to spend in ' + mon))   /* one figure, as the chest below shows it (38.31 north-star round 2) */}${n4('Bills left', fmt2(M.billsLeft), 'still to pay in ' + mon)}${n4('Saved', fmt2(M.saved), 'in your burrows by the end of ' + mon + ', with this month\'s saving')}</ul>
+    <ul class="mp-key">${wkey}</ul>${oweLine}
+    <ul class="mp-nums mp-four" aria-label="Your four numbers">${n4('Total', fmt2(M.total), 'planned for the end of ' + mon + ': bank and burrows', M.total < 0 ? 'bad' : '')}${(M.free < 0 ? n4('Free to spend', fmt2(M.free), 'planned: over in ' + mon, 'bad') : n4('Free to spend', fmt2(M.month.find(r => r.id === 'play').amount), 'planned: safe to spend in ' + mon))   /* one figure, as the chest below shows it (38.31 north-star round 2) */}${n4('Bills left', fmt2(M.billsLeft), 'planned: still to pay in ' + mon)}${n4('Saved', fmt2(M.saved), 'planned: in your burrows by the end of ' + mon + ', with this month\'s saving')}</ul>
     <p class="cap mp-proof">Bank ${fmt2(M.bankEnd)} + burrows ${fmt2(M.saved)} = <b>${fmt2(M.total)}</b> at the end of ${esc(mon)}.${PF.pendAmount > 0 ? ' ' + fmt2(PF.pendAmount) + ' of free to spend is left out until you answer' + (typeof SWEEP_LATER !== 'undefined' && SWEEP_LATER && PF.pendMonths.every(q => SWEEP_LATER[q]) ? ' (Home asks again next time).' : ' the question on Home.') : ''}</p>
     ${PF.ok ? '' : `<p class="cap mp-bad" role="alert">These numbers do not add up. They are off by ${fmt2(PF.offBy)}. Nothing you entered is lost. Please tell Mako.</p>`}
     ${warn}`);
+  { const ck = $('#mpCheck'); if (ck) ck.onclick = () => { renderMap.ask = true; sfx('tap'); renderMap(); const i = $('#mpBankIn'); if (i) i.focus(); };
+    const no = $('#mpBankNo'); if (no) no.onclick = () => { renderMap.ask = false; renderMap(); };
+    const sv = $('#mpBankSave'), inp = $('#mpBankIn');
+    if (sv && inp) { const go = () => { if (inp.value === '' || !isFinite(+inp.value)) { cheer('Type the balance your bank app shows, in numbers.'); inp.focus(); return; } renderMap.ask = false; ACT.setBalance(inp.value); sfx('tap'); cheer('Saved. Everything planned now starts from ' + fmt2(cfg(S, 'bankStart')) + '.'); };
+      sv.onclick = go; inp.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); go(); } }; } }
   { const dp = el.querySelector('.mp-pay'); if (dp) dp.ontoggle = () => { renderMap.payOpen = dp.open; }; }
   requestAnimationFrame(fitFour);
   BUR.dropCoins(el.querySelector('.mp-split'));
