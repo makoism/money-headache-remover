@@ -1838,8 +1838,8 @@ body.scene-on .card, body.scene-on .gw-card, body.scene-on .hnext, body.scene-on
    touch area around it. Links inside a sentence keep the line height and get the same invisible touch area. */
 .subnav button { min-height: 44px; }
 .link { min-height: 44px; }
-p .link, li .link, span .link, .cap .link { min-height: 0; position: relative; }
-p .link::after, li .link::after, span .link::after, .cap .link::after { content: ''; position: absolute; left: -4px; right: -4px; top: 50%; height: 44px; transform: translateY(-50%); }
+/* round 4: the link's own box is 44px tall (padding), and an equal negative margin keeps the line where it was, so the touch area is the box itself */
+p .link, li .link, span .link, .cap .link { min-height: 0; position: relative; padding-top: 11px; padding-bottom: 11px; margin-top: -11px; margin-bottom: -11px; }
 .sw { position: relative; }
 .sw::after { content: ''; position: absolute; left: -4px; right: -4px; top: 50%; height: 44px; transform: translateY(-50%); }
 /* phones: the Ask and Help pills are smaller, so they cover less of the cards behind them (38.31 QC rounds 2 and 3) */
@@ -1847,6 +1847,17 @@ p .link::after, li .link::after, span .link::after, .cap .link::after { content:
 /* phones: one small round Help button instead of two pills, so less of the page sits under it; Ask stays first in the Help menu (38.31 QC round 4: four reviewers saw the pills cover text) */
 @media (max-width: 520px) { #askBtn { display: none; } #helpBtn { font-size: 0; gap: 0; padding: 0 6px; min-width: 44px; justify-content: center; } #helpBtn .q { font-size: 16px; } }
 .bv-dots[hidden] { display: none; }
+/* the rest of the round 4 list: every control at least 44px in both directions */
+#tour summary, details.rem-evt > summary, .rcrem summary { min-height: 44px; display: flex; align-items: center; }
+.dp-pick { min-height: 44px; }
+#prevM, #nextM { min-width: 44px; }
+.amt-in { min-height: 44px; }
+.sw { height: 44px; border-radius: 22px; }
+.ctext > summary { min-height: 44px; display: flex; align-items: center; }
+.link { min-width: 44px; }
+/* 320 wide: an open goal editor no longer pushes every goal card into the panel's padding (38.31 layout round 4) */
+.gcard { min-width: 0; } .gform, .gform .field, .gform .inp, .gform input, .gform select { min-width: 0; max-width: 100%; }
+#djBtn, #gearBtn { min-width: 44px; flex-shrink: 0; }
 </style>
 </head>
 <body>
@@ -4711,7 +4722,7 @@ function render() {
   /* where it goes */
   $('#whereTitle').textContent = m.draw > 0 ? `${fmt2(PC.pay)} pay and ${fmt2(m.draw)} borrowed, by place` : `${fmt2(m.pool.in)} pay, by place`;
   paintBar($('#bar'), m, true); paintBar($('#dockBar'), m, false); paintLegend(m); $('#jarNote').innerHTML = jarNote(m);
-  const el = $('#endline'); el.hidden = !(m.pool.out > m.pool.in); if (!el.hidden) el.style.left = (m.pool.in / m.pool.out * 100) + '%';
+  const el = $('#endline'); el.hidden = !(m.pool.out > PC.pay); if (!el.hidden) el.style.left = (PC.pay / m.pool.out * 100) + '%';   /* "Pay ends" marks the pay itself; borrowed money is not pay (38.31 north-star round 4) */
   const dw = m.draw || 0, Ld = PC.dock;   /* borrowed money is not pay, and pay that spending past plan already used is not left (model.js planCells) */
   const bankOnly = pin <= 0 && L >= 0 && m.bankEnd < 0;   /* spending with no pay entered: the bank shortfall still shows */
   const allPlaced = pin > 0 && !bankOnly && Math.abs(Ld) < 0.005;   /* every coin placed: say so, not "$0 not placed yet" (38.31 novice round 3) */
