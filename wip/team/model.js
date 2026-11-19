@@ -467,12 +467,12 @@ const niceStepFor = x => (x >= 20000 ? 1000 : x >= 3000 ? 100 : 10);
 function fixes(S, m) {
   const out = []; const floor = cfg(S, 'minBank'), play = m.jar.play;
   const gap = Math.max(0, floor - m.bankEnd);
-  const st = niceStepFor(Math.max(play, gap));
   /* lowering the plan can only fix the part of the gap the plan causes; money already spent past the plan stays spent */
   /* earlier months' spending past plan is already in this month's starting bank and cannot be undone either: only this month's own past-plan
      spending is added back (38.31 number gate: it added back every month's, so "Spend 235,000 instead" left the bank under the minimum) */
   const planGap = Math.max(0, floor - (m.bankEnd + (m.overNow || 0)));
-  if (planGap > 0) { const ne = Math.floor((play - planGap) / st) * st; if (ne >= 0 && ne < play) out.push({ id: 'trim', amount: ne }); }
+  /* the exact amount that keeps the bank at the minimum: the same figure Home shows as safe to spend, not a rounder one beside it (38.31 number gate round 4: Home said 88,500, the fix 88,000) */
+  if (planGap > 0) { const ne = round2(play - planGap); if (ne >= 0 && ne < play) out.push({ id: 'trim', amount: ne }); }
   const eg = emergencyGoal(S), room = eg ? Math.max(0, m.balBefore[eg.id] - m.draw) : 0;
   if (gap > 0 && room > 0) out.push({ id: 'borrow', amount: round2(Math.min(room, gap)) });
   return out;
