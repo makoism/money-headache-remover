@@ -22,6 +22,20 @@ Written 2026-11-19 by the first SIDE M session at its 150k handoff, updated the 
 
 Reports go to coordinator 3, session_01BFpKEWbWX57dzJueLvseiT.
 
+## Third session (SIDE M3, 2026-11-19): what it added
+
+| File | State |
+|---|---|
+| `wip/team/COPY_V1.md` | Now 274 rows. Three fresh qc-voice agents read all 275 new lines: 38 failed, 32 rewritten, 6 kept with the reason written at the top of the table. The row for "Every coin has a home." is out, the line stays and is flagged for Mako |
+| `wip/team/COPY_V1B.md` | New, 91 rows: the tour (ui48.js), scanning receipts (ui49.js), file errors (ui41.js, ui45v.js), the assistant's messages (ui46.js, ui4a.js), ui3.js, ui44.js, one tag in model.js. A fresh qc-voice read its 90 lines: 19 failed, 3 rewritten, 16 kept with reasons at the top of the table. It has its own LATE list, hand edits and words for Mako |
+| `wip/team/tests/qc/voice_known.txt` | Four patterns, each with its reason (text sent to Claude, the hope the person picked) |
+
+Proved on a scratch copy of origin/wip-38.31 at 8369a5e: `copy_apply.js COPY_V1.md COPY_V1B.md` applies 364 rows in 23 files with 0 warnings, the build runs, and the lint goes from 34 strong to 3. The 3 left are semicolons in ui2.js 68, ui45s.js 40 and ui42.js 118, all saving or Settings strings on the LATE lists.
+
+Test files that quote an old string (copy_apply.js prints the rows): tests/regression/team_month.js, tests/fixtures/model_3828.js, and in tests/qc: home_dom.js, leftover_choice.js, leftover_thin.js, mako_answers.js, number_gate3.js, script_lib.js, v1_home.js, zero_safe.js, plus the golden screen files (regenerate) and the old page copies under tests/regression/v31 to v35 (not assertions on this build).
+
+**What the next session starts with:** points 1 and 3 of the list below are done. Still open: point 2 (Settings and saving, waits for the coordinator's word that E15 has landed, then merge origin/wip-38.31 into side/voice, write the rows as COPY_V1C.md or into COPY_V1B.md against the new screens, recheck HELP_TEXTS_V2.md entry 20), and point 4 each time the main branch moves.
+
 ## What is not done (the next SIDE M session starts here)
 
 1. **A fresh qc-voice agent has not read the 275 new lines.** I read parts A to E line by line myself, part F (ui7.js, ui8.js, 47 rows) only through its maker's own reread. Run qc-voice on `grep "^+ " COPY_V1.md` (only the new lines, with VOICE.md and NORTH_STAR.md) and fix what it finds in COPY_V1.md itself, since the batch is not applied yet. Rerun `copy_apply.js --check` after any edit.

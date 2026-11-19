@@ -8,6 +8,13 @@ Voice lane (SIDE M3), 2026-11-19. Same row format as COPY_V1.md. It is a follow-
 
 **What is not in:** Settings and everything about saving (the LATE list at the end, it waits for the coordinator's word like the LATE list in COPY_V1.md). Prompt text that is sent to Claude. Buttons, labels, tabs and glossary words.
 
+**Checked by a fresh voice checker (2026-11-19):** one qc-voice agent that had not seen the lines read all 90 new lines with only VOICE.md and NORTH_STAR.md. 19 failed (2 for sounding like AI, 3 for not sounding like Mako, 18 for not saying what to do next). 3 rows were rewritten (G-003, G-011, G-061). The other 16 were kept, for these reasons:
+- The code puts the fix right after the piece: G-022 and G-078 ("Remove it, then send again."), G-043 and G-044 ("Choose files instead."), G-083, G-084 and G-085 ("Open the web link, not a downloaded file, and the chat works."), G-073 (one line in a "Left out" list).
+- The numbered steps under G-029 and G-030 name the buttons, and G-030 has to stay word for word the same as D-007.
+- G-058 is a privacy line and only lost its semicolon. For the main session: the checker asks who keeps nothing, this page or Claude. If that can be said exactly, say it.
+- G-027, G-054, G-074 and G-075 say what is wrong and the checker wants a fix named. I could not confirm a fix from the code (where "its Claude link" is, whether the rest of a long file can be added as a second file), so nothing was made up. For the main session to fill in.
+- G-091 is the small tag under the place name Free to spend, next to tags like "Bills" and "Never spent", not a second name for the place.
+
 ## How to apply
 
 ```
@@ -36,7 +43,7 @@ Rows are applied in the order they stand. Three pairs depend on it: G-041 before
 + Your reason in your own words, with what this month adds and how many months are left. Tap Forecast for the graph.
 @@ G-003 | ui48.js | AI: yes A1 | Mako: no B3 A13, retired word necessities | Next: yes
 - The money you use this month. The big number is free to spend on fun, no guilt. Below it: are your necessities covered, and what is left for learning and giving. What is left at month end can go toward a goal.
-+ The money you use this month. The big number is Free to spend and it's yours to spend on whatever you want. Under it you can see if your Bills and basics are covered and what's left for Education and Giving. What's left at month end can go toward a goal.
++ The money you use this month. The big number is Free to spend and it's yours to spend on whatever you want. Under it you can see if your Bills and basics are covered and what's left for Education and Giving, and whatever's left at the end of the month can go into a goal.
 # WORST: "no guilt" in the tour, the line Mako called slop. UNSURE: "learning and giving" became the two place names, Education and Giving. If the card shows something else under the big number, say what
 @@ G-004 | ui48.js | AI: no | Mako: no B14 | Next: yes
 - Enter an amount, pick a category, tap Log. Do it as you spend or weekly.
@@ -63,8 +70,8 @@ Rows are applied in the order they stand. Three pairs depend on it: G-041 before
 + What you planned, what you spent and what's left in each category
 @@ G-011 | ui48.js | AI: no | Mako: no B14, a symbol for a word | Next: yes
 - Bar = how full by plan. Edit goal changes name, amount or date.
-+ The bar is how full the plan says it is by now. Edit goal changes the name, amount or date.
-# UNSURE: I read "how full by plan" as "how full the plan says it is", not what is really saved
++ The bar shows how full it should be by now if you stick to the plan. Edit goal changes the name, amount or date.
+# UNSURE: I read "how full by plan" as how full the plan says it should be, not what is really saved. If the bar is the real money this row is wrong
 @@ G-012 | ui48.js | AI: no | Mako: no B14 clipped | Next: yes
 - Three steps: type, goal amount, date.
 + Three steps - you pick the type, the goal amount and the date
@@ -227,7 +234,8 @@ Rows are applied in the order they stand. Three pairs depend on it: G-041 before
 +  can't be opened because this browser can't read Excel files here. Save it as CSV.
 @@ G-061 | ui46.js | AI: no | Mako: no B14 | Next: yes
 - , where PDFs, Excel files and screenshots are read for everyone, no sign-in.
-+ , where PDFs, Excel files and screenshots are read for everyone without signing in.
++ , where anyone can get PDFs, Excel files and screenshots read without signing in.
+# the fresh check: "read for everyone" could sound like your files are open to everyone
 @@ G-062 | ui46.js | AI: no | Mako: no B3 | Next: n/a
 - This PDF cannot
 + This PDF can't
