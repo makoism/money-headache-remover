@@ -150,6 +150,59 @@ For the statements lane (D5, H4). "Locked" means the PDF needs a password to ope
 | PayPal | Reports: activity download, up to 12 months per request, 7 years back; monthly statements | CSV, PDF (also TAB, Quicken, QuickBooks) | No | | paypal.com/cshelp article help145 [checked] |
 | Payoneer | Transactions export; monthly statement | PDF or CSV | No | | Payoneer help answer 27046 [checked] |
 
+### What a line looks like, provider by provider
+Looked up on 2026-11-19 (second pass, for the statements lane). Honest state: only GCash is well described in public. For the banks, the public sources are converter sites and copies people uploaded, which agree on the general shape but not on exact headers. **Nothing below replaces opening one real statement of each kind.** Maps to the ledger's event fields: `date` from the line (never the file name), `a` from the amount columns, `src` = the statement plus the line's reference number, which is what lets an import say "already logged" (A8).
+
+**GCash wallet history (PDF, locked)** [checked: two open-source readers and several uploaded copies agree]
+| Thing | What it is |
+|---|---|
+| Columns, in order | `Date and Time`, `Description`, `Reference No.` (with the full stop), `Debit`, `Credit`, `Balance` |
+| Date | Year first, 24-hour time, like `2025-10-02 08:22` (seen in one copy; confirm on a real file) |
+| Amounts | Two columns. Debit is money out, Credit is money in. One of the two is empty on each line. |
+| Running balance | A `Balance` column on every line: the wallet balance after that line |
+| First and last rows | A `STARTING BALANCE` row before the first line and an `ENDING BALANCE` row after the last. They are not transactions. |
+| Line id | The reference number, one per line. Long descriptions wrap onto extra lines; readers anchor each line on its reference number. |
+| Self-check | Starting balance plus credits less debits equals the ending balance, and each line's balance follows from the one before. A gap is shown to the person, never fixed quietly. |
+| What descriptions say | Plain phrases for cash-in, send money, bills, and the GGives or GLoan deduction. The words that tell a transfer from spending have to be read from a real file. [not found] |
+
+**BDO deposit account (PDF)** [thin: converter sites and a student-made sample]
+- General shape: a date column, a description, money out, money in, and a running balance. Some BDO layouts have separate debit and credit columns; others have one amount column with a sign. A reader must tell which one it has.
+- When there is one date column it is the posting date (the day the bank recorded it), which can be a day or more after the day the person paid.
+- Exact headers, date format and whether the file is locked: [not found]. CSV is confirmed only for BDO Business Online.
+
+**BPI deposit account (PDF from the app)** [thin: uploaded copies and converter sites]
+- Columns reported: `Date`, `Description`, `Ref`, `Details`, `Debit Amount`, `Credit Amount`, `Balance`. A previous balance at the top and an ending balance at the bottom.
+- **Known trap: some BPI layouts print the date without the year.** The year has to come from the statement period in the header, and a statement that runs across New Year needs care.
+- The header carries the branch, account type, period and account number. The account number must be stripped on the device before anything is sent (E7).
+
+**Credit card statements: BDO, BPI, Metrobank, UnionBank, RCBC, Security Bank (PDF, locked, monthly by email)** [thin on layout; the summary box is checked by law and by issuer pages]
+- Every card statement has a summary box with: statement date (the cut-off), payment due date, total amount due, minimum amount due, credit limit. These map straight to the card account: `payDay` from the due date, the opening balance from the total amount due.
+- The lines usually carry two dates, the day of the purchase and the day it was posted, then a description and one amount. Payments and refunds show as a minus or with "CR". The event's `date` should be the purchase day.
+- **There is no running balance per line.** The check is: previous balance, less payments, plus purchases and charges, equals the total amount due.
+- Instalments show as one line per month ("3/12" style) for this month's part only; the rest is not in the total. Interest and late fees are their own lines (the "interest" spend in the ledger).
+- Purchases in dollars show the peso amount charged, with the foreign amount in the description.
+- Exact headers and date formats per issuer: [not found].
+
+**Maya, Metrobank, UnionBank, Landbank, GoTyme, MariBank** [not found]
+- Maya Savings gives a monthly statement PDF; Metrobank's app offers a download with a choice of formats; UnionBank's website gives PDF or Excel with a password the person picks. No trustworthy public description of the columns for any of them.
+
+**Wise (CSV, one file per currency)** [checked through two integration write-ups]
+- Headers: `TransferWise ID`, `Date`, `Amount`, `Currency`, `Description`, `Payment Reference`, `Running Balance`, `Exchange Rate`, `Total fees`, then payer and card fields.
+- One signed amount (minus is out), a running balance on every line, and an id per line. Date format: day first with dashes, like `19-11-2026` [known, not searched; confirm on a real file].
+
+**PayPal (CSV)** [the Balance column is from a guide found today; the other column names are known, not searched]
+- The activity download has date, time, time zone, name, type, status, currency, gross, fee, net and, when "balance affecting" is chosen, a `Balance` column at the far right. Each line has a transaction id. The date format follows the account's region. One payment can show as several lines (the payment, the fee, the conversion).
+
+**Payoneer (CSV or PDF)** [thin]: the monthly statement has a running balance and all completed transactions. Headers: [not found].
+
+**To settle with one real file each (ten minutes with Mako or a teammate, no amounts leave their phone):**
+1. Is the file locked, and does the hint above open it?
+2. The exact header row, and the date format of the first line.
+3. One column for amounts or two, and how money out is marked.
+4. Is there a balance on every line, or only at the top and bottom?
+5. Is there a reference number per line?
+6. The words used for moves between the person's own accounts (cash-in, transfer, card payment), so they are not counted as spending.
+
 What follows for the statements lane:
 1. **PDF is the format to solve.** GCash, the cards and the bank apps all give PDFs. CSV exists for Wise, PayPal and Payoneer and for UnionBank (Excel).
 2. **Ask for the password on the device, with the hint for that provider.** GCash: "your last name in small letters and the last 4 digits of your number". BDO card: "your birthday, like Jan081985, or 08Jan1985 for statements before June 2025". BPI card: "it is in the email the statement came in". UnionBank: "the password you typed when you downloaded it". The password never leaves the phone (D5, E7).
@@ -159,12 +212,12 @@ What follows for the statements lane:
 6. **Still to find, by someone with real statements in hand:** the Maya, Metrobank and BPI password rules, and whether the bank apps' PDFs are locked at all. Mako or a teammate opening one statement each answers this faster than any search.
 
 ## 5. Open points for the ledger and the coordinator
-1. **Card fields.** LEDGER_DESIGN.md gives a card "paid in full (with its pay day)". Philippine cards need two more things: the cut-off day, and a way to say "I do not pay it in full" (then nothing is set aside "for the card" beyond what the person chooses to pay). Persona Dan tests this.
+1. **Card cut-off day.** The finished ledger design (commit 22d5b83) covers a card that is not paid in full: its older balance is held like a loan, with interest as a spend. Persona Dan tests that. What is still missing is the cut-off day: a card has `payDay` only. Spending after the cut-off is on the card but is not in the bill due on the next `payDay`; it is due a month later. With "for the card" equal to everything on the card, "bank after the cards are paid" is safe but too low in the days between cut-off and due date. Persona Mika tests this (thing 8).
 2. **Card instalments.** The remaining months of a 0% instalment are owed but are not in the statement balance. Typing only the statement balance understates what is owed. Persona Mika tests this.
 3. **Paluwagan.** It does not fit one kind: it is "owed to you" before your turn and a loan after. Simplest default: the contribution is a bill each pay day, and the payout is "Other money in". A person who wants it exact can add an "owed to you" account. Not a preset; the personas use the simple default. A note for Mako with the first build.
 4. **GCash is four things.** Wallet (e-wallet), GSave (bank), GGives and GCredit (pay-later), GLoan (loan). The presets list them apart, grouped by the name the person sees in their app.
 5. **Pay taken before it lands** (SSS and Pag-IBIG loans): owed, but never an "out" the person makes. Typed as a loan whose balance drops each pay day without touching the bank. Left for later unless a teammate has one.
 6. **Dollars waiting in Wise, Payoneer or PayPal** are presets with currency USD, shown beside Total (A9).
 
-## What I assumed about account fields
-From LEDGER_DESIGN.md on side/ledger-design (read 2026-11-19): an account has a name, a type and a currency; types are bank, card paid in full (with its pay day), wallet or cash, e-wallet, pay-later, loan, and "owed to you". The presets use the six kinds the brief named (bank, e-wallet, cash, card, pay-later, loan) and add `side` (holds or owed), `currency`, and an optional `statement` hint. "Owed to you" has no preset: it is made by the "Lent" event with a person's name.
+## How the presets fit the ledger design
+`presets_ph.json` uses the fields of the finished LEDGER_DESIGN.md (side/ledger-design, commit 22d5b83, read 2026-11-19): `id` like `ph.gcash`, `name`, `type` (bank, card, ewallet, cash, paylater, loan), `cur`, and for cards `inFull` (true) and `payDay` (empty: it differs per person, so the app asks). Extra fields the design does not have and can ignore: `owed`, `first`, `other`, `for`, `statement`. No preset for `wallet` (made by Wallet mode), `owedToYou` (made by "Lent") or a card's older balance (made when the person says they do not pay in full).

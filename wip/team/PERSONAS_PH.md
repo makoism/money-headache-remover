@@ -2,7 +2,7 @@
 
 Side L, 2026-11-19. For the persona walks before the team test (LAUNCH_CHECKLIST "The 95% sweep" and the team's shape in DECISIONS.md).
 Everyone here is invented. The names, the amounts and the accounts are made up; they match no real person. All amounts are in pesos unless marked.
-The reasons behind the shapes are in `PH_ACCOUNTS.md`. Account names match `presets_ph.json`.
+The reasons behind the shapes are in `PH_ACCOUNTS.md`. Account names and types match `presets_ph.json` and the fields of LEDGER_DESIGN.md. How these six sit beside the ledger's own test personas is at the end.
 
 ## How to use a persona
 1. A fresh agent gets one persona and the build, nothing else. It sets up as that person, then tries the listed things in order, as that person would on a phone.
@@ -25,16 +25,16 @@ The reasons behind the shapes are in `PH_ACCOUNTS.md`. Account names match `pres
 **Pay.** Per project from clients abroad, in US dollars, into Wise. She brings it home to BPI when rent is due or the rate is good. What landed in pesos over the last four months: 61,000, then 23,500, then nothing, then 47,200. No fixed pay day.
 
 **Where her money sits today**
-| Account | Kind | Amount |
+| Account | Type | Amount |
 |---|---|---|
 | BPI | bank | 42,300 |
 | UnionBank | bank | 8,150 |
-| GCash | e-wallet | 3,480 |
+| GCash | ewallet | 3,480 |
 | Cash on hand | cash | 1,200 |
-| Wise | e-wallet, USD | USD 310 (not in the peso total) |
+| Wise | ewallet, USD | USD 310 (not in the peso total) |
 
 **What she owes**
-| Account | Kind | Amount | Days |
+| Account | Type | Amount | Days |
 |---|---|---|---|
 | RCBC card | card, paid in full | 14,600 | cut-off 22nd, due 12th, paid from BPI |
 
@@ -64,18 +64,18 @@ The reasons behind the shapes are in `PH_ACCOUNTS.md`. Account names match `pres
 **Pay.** BDO payroll, twice a month: 16,400 on the 15th and 17,100 on the 30th (33,500 a month after deductions). When the day is a weekend it lands the Friday before.
 
 **Where his money sits today**
-| Account | Kind | Amount |
+| Account | Type | Amount |
 |---|---|---|
 | BDO | bank | 6,240 |
-| GCash | e-wallet | 910 |
+| GCash | ewallet | 910 |
 | Cash on hand | cash | 650 |
 
 **What he owes**
-| Account | Kind | Amount | Days |
+| Account | Type | Amount | Days |
 |---|---|---|---|
 | Metrobank card | card, paid in full so far | 9,800 | cut-off 13th, due 3rd |
-| SPayLater | pay-later | 5,430 (1,810 x 3) | due the 5th |
-| GGives (a phone) | pay-later | 15,050 (2,150 x 7) | due the 20th, taken from GCash by itself |
+| SPayLater | paylater | 5,430 (1,810 x 3) | due the 5th |
+| GGives (a phone) | paylater | 15,050 (2,150 x 7) | due the 20th, taken from GCash by itself |
 
 **Family.** 3,000 to his parents on each 15th, by bank transfer.
 **Other fixed things.** Room rent 7,500 on the 30th. Phone plan 1,299 on the 8th. Electricity about 1,900 around the 18th.
@@ -104,16 +104,16 @@ The reasons behind the shapes are in `PH_ACCOUNTS.md`. Account names match `pres
 **Pay.** Monthly, 78,000 into UnionBank on the last working day (this month: Friday the 27th, because the 30th is a holiday).
 
 **Where her money sits today**
-| Account | Kind | Amount |
+| Account | Type | Amount |
 |---|---|---|
 | UnionBank | bank | 96,400 |
 | Maya Savings (emergency fund) | bank | 150,000 |
 | GoTyme (travel) | bank | 12,750 |
-| GCash | e-wallet | 2,300 |
+| GCash | ewallet | 2,300 |
 | Cash on hand | cash | 3,000 |
 
 **What she owes**
-| Account | Kind | Amount | Days |
+| Account | Type | Amount | Days |
 |---|---|---|---|
 | BPI card | card, paid in full | 31,900 | cut-off 5th, due 26th |
 | UnionBank card | card, paid in full | 12,480 | cut-off 17th, due 7th |
@@ -146,18 +146,18 @@ The reasons behind the shapes are in `PH_ACCOUNTS.md`. Account names match `pres
 **Pay.** Two incomes, three pay days. Jun (warehouse supervisor): 13,200 on the 15th and 13,200 on the 30th into Landbank. Tess (clinic secretary): 29,500 on the 5th into BDO. Together 55,900 a month.
 
 **Where their money sits today**
-| Account | Kind | Amount |
+| Account | Type | Amount |
 |---|---|---|
 | Landbank (Jun) | bank | 4,870 |
 | BDO (Tess) | bank | 18,300 |
-| GCash (Tess) | e-wallet | 1,640 |
+| GCash (Tess) | ewallet | 1,640 |
 | Cash at home | cash | 7,500 |
 
 **What they owe**
-| Account | Kind | Amount | Days |
+| Account | Type | Amount | Days |
 |---|---|---|---|
 | Security Bank card | card, paid in full | 6,900 | cut-off 8th, due 29th |
-| Home Credit (a refrigerator) | pay-later | 17,775 (1,975 x 9) | due the 12th, paid over the counter in cash |
+| Home Credit (a refrigerator) | paylater | 17,775 (1,975 x 9) | due the 12th, paid over the counter in cash |
 
 **Paluwagan.** Ten people at Tess's work, 2,000 each on the 15th and the 30th, pot 20,000. Tess is seventh. Four rounds are done, so she has put in 8,000 and gets 20,000 on 15 January. In the app, by the default in PH_ACCOUNTS.md: the 2,000 is a bill each round and the 20,000 is "Other money in". The 8,000 is not in their total.
 **Family.** 4,000 in cash to Jun's mother each month, when they visit.
@@ -187,15 +187,15 @@ The reasons behind the shapes are in `PH_ACCOUNTS.md`. Account names match `pres
 **Pay.** Monthly, 24,800 into BPI on the 28th. She started in June. On pay day she moves most of it to GCash and spends from there.
 
 **Where her money sits today**
-| Account | Kind | Amount |
+| Account | Type | Amount |
 |---|---|---|
 | BPI | bank | 1,050 |
-| GCash | e-wallet | 6,720 |
-| Maya | e-wallet | 500 |
+| GCash | ewallet | 6,720 |
+| Maya | ewallet | 500 |
 | Cash on hand | cash | 2,400 |
 
 **What she owes**
-| Account | Kind | Amount | Days |
+| Account | Type | Amount | Days |
 |---|---|---|---|
 | BPI card (new, first statement not out yet) | card | 3,260 | cut-off 25th, due 16th |
 | GLoan | loan | 7,400 (1,480 x 5) | due the 20th, taken from GCash by itself |
@@ -229,17 +229,18 @@ The reasons behind the shapes are in `PH_ACCOUNTS.md`. Account names match `pres
 **Pay.** Monthly, 52,000 into Metrobank on the 30th.
 
 **Where his money sits today**
-| Account | Kind | Amount |
+| Account | Type | Amount |
 |---|---|---|
 | Metrobank | bank | 11,900 |
 | MariBank (SeaBank) | bank | 20,000 |
-| GCash | e-wallet | 1,150 |
+| GCash | ewallet | 1,150 |
 | Cash on hand | cash | 800 |
 
 **What he owes**
-| Account | Kind | Amount | Days |
+| Account | Type | Amount | Days |
 |---|---|---|---|
-| BDO card | card, not paid in full | 68,400; he pays about the minimum, 3,400, and interest is added each month | cut-off 20th, due 10th |
+| BDO card | card (new spending) | 0 new this month | cut-off 20th, due 10th |
+| BDO card, older balance | loan, as the ledger design holds it | 68,400; he pays about the minimum, 3,400, and interest is added each month | due 10th |
 | Metrobank card | card, paid in full | 24,750 | cut-off 12th, due 2nd |
 | Bank loan | loan | 95,900 (6,850 x 14) | the 5th, taken from Metrobank by itself |
 
@@ -250,12 +251,12 @@ The reasons behind the shapes are in `PH_ACCOUNTS.md`. Account names match `pres
 - Money he has: 33,850 (11,900 + 20,000 + 1,150 + 800).
 - He owes: 189,050 (68,400 + 24,750 + 95,900).
 - Metrobank after the card he pays in full (24,750): below zero today, minus 12,850; the card is due on 2 December, after pay day. Amber, no shame, and never "bills unpaid".
-- The BDO card must not set aside 68,400 "for the card": he pays 3,400 this month. The app has to ask how he pays it.
+- The BDO card must not set aside 68,400 "for the card": he pays 3,400 this month. The app asks whether he pays it all each month; when he says no, the 68,400 becomes the card's older balance, held like a loan, and the screen still shows one card with two lines.
 
 **What he tries in his first two weeks**
 1. Add a card he does not pay in full and say what he pays each month.
 2. See all he owes in one place, without red and without a lecture.
-3. Pay 3,400 to the BDO card, then see next month's statement show 66,950 because 1,950 of interest was added (3% of the 65,000 left). He needs a kind for that interest.
+3. Pay 3,400 to the BDO card, then see next month's statement show 66,950 because 1,950 of interest was added (3% of the 65,000 left), entered as interest on the older balance.
 4. Get paid on Friday the 27th and see, by date, what leaves in the next ten days: rent on the 1st, the Metrobank card on the 2nd, the loan on the 5th, the BDO card on the 10th.
 5. Find what is really safe to spend after all of that.
 6. Decide to put 2,000 more a month on the BDO card and see when it would be gone.
@@ -285,4 +286,21 @@ The reasons behind the shapes are in `PH_ACCOUNTS.md`. Account names match `pres
 | E2 iPhone | 3, 5 |
 | E3 lost or changed phone | 6 |
 | E4 two people, one phone | 4 |
-| Not in the checklist yet | card not paid in full and its interest (6); card instalment (3); paluwagan (4); 13th month pay (5); loan repaid by itself from a wallet (2, 5) |
+| Not in the checklist yet | card cut-off day (3); card instalment (3); paluwagan (4); 13th month pay (5); loan repaid by itself from a wallet (2, 5). Card not paid in full (6) is now in the ledger design. |
+
+## Beside the ledger's own test personas
+The ledger design (side/ledger-design, `tests/next/ledger_personas.js`, commit 22d5b83) has eight test personas. Three are Philippine. Those prove the sums; these six are for walking the screens. They use the same account types and the same kinds, so nothing here needs a shape the ledger does not have, except where marked "differs".
+
+| Ledger test persona | Nearest here | Agrees | Where real habits differ from the test persona |
+|---|---|---|---|
+| PH_TEAM: two banks, GCash, Maya, cash, a card paid in full, a card with an older balance, SPayLater, monthly pay on the 15th plus a side income, family support | No single one. Mika has the two cards paid in full and monthly pay; Dan has the older balance held as a loan; Rina has GCash, Maya and cash; Carlo has SPayLater. | Account types, the older balance as a loan with interest as a spend, family support as a bill, a second income that does not start a new month (Bea's small jobs, Tess beside Jun). | Monthly pay usually lands at the end of the month (the 28th to the 30th), or on the 5th or 10th at some employers. The 15th is nearly always one half of twice-a-month pay. Fine as a test of the sums; the walks use end of month. |
+| PH_FREELANCER: paid per project in dollars through Payoneer, BDO and BPI, GCash, Wallet mode, sends money home, lends to a friend | Bea | Dollars kept beside Total and brought home by "convert" with both amounts; family support from GCash, planned and surprise; uneven pay; checking GCash and accepting a small gap. | (1) The test persona has no card. Mako says to assume one, so Bea has an RCBC card paid in full. (2) Payoneer is typed `bank` there and Wise is `ewallet` in the presets; the numbers are the same. (3) Bea is in Track mode with cash as an account, so the walk covers both; the test covers Wallet mode. |
+| PH_SALARIED: paid on the 15th and 30th, SPayLater and GGives, borrowed from an aunt, BPI and GCash | Carlo (and Rina for borrowing from a person) | Two pay days; a pay-later buy touches no place and its instalments are bills; instalments paid from GCash after a transfer from the bank. | (1) No card in the test persona; Carlo has one. (2) GGives and GLoan take the instalment out of GCash by themselves on the due date, so the walk asks for a reminder to cash in first. (3) SPayLater is due on the 5th or the 15th only. (4) Pay due on a weekend or holiday lands the working day before: 30 November 2026 is a holiday. |
+| MAKO, MISSED, NEW_PHONE (not Philippine) | Mika (cards in full), Rina (missed week, start fresh), Dan (new phone) | Same events: check and adjust on every account for a fresh start; backup and restore with undo kept. | None in shape. |
+
+Shapes here that no ledger test persona has yet, for the ledger lane to decide on:
+1. **Card cut-off day** (Mika, thing 8): spending after the cut-off is owed but not due on the next `payDay`.
+2. **Instalment on a card** (Mika): the months still to come are owed but are not on the card's bill.
+3. **Paluwagan** (Jun and Tess): a bill each round and "Other money in" at the payout, by the simple default.
+4. **A loan repaid out of pay before it lands** (noted in PH_ACCOUNTS.md, no persona): the owed amount falls with no money leaving an account.
+5. **Two people, one plan, three pay days** (Jun and Tess): `payDays` of 5, 15 and 30, with Tess's pay starting the month or not. The walk should find out which reads better.
