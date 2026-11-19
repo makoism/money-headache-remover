@@ -2,7 +2,35 @@
 
 The coordinator is the one session Mako talks to. It records his decisions in DECISIONS.md (and NORTH_STAR.md, LAUNCH_CHECKLIST.md), starts and messages working sessions, and brings their results back to him. Working sessions take direction from nowhere else. The coordinator hands off at about 150k tokens of history, like every session.
 
-## 2026-11-19, handoff 2 (coordinator 2 to coordinator 3) READ THIS FIRST
+## 2026-11-19, handoff 3 (coordinator 3 to coordinator 4) READ THIS FIRST
+
+Coordinator 3 (session_01BFpKEWbWX57dzJueLvseiT) passed the 150k mark at 05:31 UTC and handed off. Its running log is the section "handoff 2" below ("Coordinator 3 took over" and the bullets after it); this is the state.
+
+### Usage
+At 05:31 UTC the five-hour window showed a warning (near its limit); it resets at 09:30 UTC. Keep the count low: MAIN 3 always, at most one or two lanes. Every session keeps a resume timer. If the limit stops everything, check after 09:30 UTC that MAIN 3 restarted (new commits on wip-38.31) and message or replace it.
+
+### Running sessions (tell each your session id first)
+- MAIN 3, session_01BFpKEZkCVKqMnkUeTtg2j5, wip-38.31, the only one editing app files. Landed: E6 fixes 1 to 5, E9, E10 client, E15 (one name: "cloud copy"). On now: A11 (two amounts for "Bills and basics" on Plan) and the act_keep fix (one place in ACT.tx keeps a 3-day copy; exact Undo for removeGoal, tx, setBalance; setBankNow, setCard, removeCard covered). Then F4, U1, U2, H1, QC brief jobs and screen pack panels (it owes the list of panels never in the pack), merges (side/phone-fixes ea880b0, side/act-keep-checks 68b59aa with check.sh lines for act_keep.js and label_agree.js), a made-up wallet.xlsx in setup_env.sh, the page_assistant.js "Home shows goals first" fail to judge. It HAS the word to apply the copy batch after its last v1 point and the merges (copy_apply.js COPY_V1.md COPY_V1B.md COPY_V1C.md from side/voice c0465fb, 455 rows), after settling four things: privacy lines exactly true (A-052, G-058, H-008, H-031), no iPhone Home Screen promise (H-039), the welcome screen gets the same find, show, load steps as Settings, eight errors say what to do. Then golden re-record, verify.sh, ONE check.sh full, one candidate, ONE QC run (both gates, qc-voice in place of qc-wording, beginner walk with jobs), then a private preview link, 412x915 screenshots and the STEP8_COMPARE.md summary to the coordinator. If it hands off (150k), start a fresh main session from RESUME.md section 0 with a prompt like MAIN 3's (see git history of this file's neighbours or write one: only session on app files, report to the coordinator, tests first, resume timer, never push to main).
+- SIDE N3, session_01BFpKEVCMiQwhmZ4kzJtBF8, side/ledger-core: merged side/ledger-wiring and side/money-door in; fixing W1 to W5 (migrate3831; W1 to W5 done by 05:26 UTC) and G1 to G5 (money door gaps), failing tests first. When it reports, side/ledger-core is the one ledger branch for after v1.
+
+### Done lanes, branches kept, nothing merges before v1
+side/statements-ph (O: reader, fixtures, date-order proof; layouts invented, needs real statements), side/vault-server 9d0f1da (G: vault and relay; merges only after v1 is deployed and Mako says go; "Before this merges" list in LANE_vault.md), side/act-keep-checks 68b59aa (H), side/voice c0465fb (M3: three copy tables, HELP_TEXTS_V2.md, VOICE.md, qc-voice; M3 is at its size limit with a timer at 06:58 UTC; start a fresh voice session from LANE_voice.md only when Mako gives copy notes or main moves the strings), side/ledger-wiring 09ce61b (P), side/money-door 814620c (Q), side/deploy-prep 1f8af90 (R: DEPLOY_RUNBOOK.md parts A to E), side/phone-fixes ea880b0, side/e6-window-test, side/security-review, side/help-texts, side/ph-accounts, side/ledger-design.
+
+### Mako in this chat (all recorded in DECISIONS.md, last two sections)
+- The 3D world is desktop only; the phone app stays as it is.
+- The coordinator picks the model for each session (strongest for app code, numbers, data safety, ledger, gates, copy; faster model for docs, research, runbooks, light reviews). He keeps his chat on the strongest model at medium.
+- He was shown: help entry 20, six before and after copy pairs, the cloud copy steps as a person reads them. No reaction to any of them yet; do not chase.
+- He asked for progress as a percentage with dates. Told him (estimates): whole plan about 35%; v1 about 80% built, preview 19 to 20 Nov; team test about 25%, ready two to three weeks after v1, test from the 10 Dec pay day; wider launch about 10%, January to February; art and 3D 0% on purpose, four to seven weeks once he starts it.
+
+### Open with Mako
+- Security, only he can do it: the seven phone steps in DEPLOY_RUNBOOK.md part C on side/deploy-prep (INVITE_CODES phrase with no commas, auto-reload off, monthly spend limit, no ANTHROPIC_BASE_URL, /api/health, and the OLD Worker money-headache-remover, which may still hold the key with no invite phrase). He was told the short version at 05:09 UTC and offered the steps ("send the steps"); else they go with the v1 preview. Labels are from memory, not seen live.
+- With the v1 preview: the link, screenshots, what to try, STEP8_COMPARE.md summary, the ledger notes, the list of real statements to send (LANE_statements.md on side/statements-ph, one per bank, blacked out), export a backup before the deploy, "Every coin has a home" (kept; his call), the list of glossary words that sound off (in the copy tables), and once: two or three messages he typed by hand with his " - " in them.
+- Then the ONE copy pass with him on the preview; copy-only rounds need no new gate run.
+
+### Next lanes (run the efficiency agent first; keep one slot for MAIN 3's QC run)
+Persona walk scripts written as tasks, faster model, run on the candidate (correct PERSONAS_PH.md: paying a card lowers Total); pdf.js size and speed note on side/statements-ph; the setup redesign on paper only after Mako has reacted to v1; G2 measures after v1 deploys; wiring HELP_TEXTS_V2.md after v1. After v1 on the main line: the ledger by LEDGER_WIRING.md (refresh fixtures from the shipped v1 first; confirm P's choices: one copy under key burrow-ledger-v1, lstore.js, ledger cloud copies under a second vault id, and G's server-side refusal of an older page's save).
+
+## 2026-11-19, handoff 2 (coordinator 2 to coordinator 3), then coordinator 3's running log
 
 Coordinator 2 (session_01BFpKEXXUx4uUjZGJny9MyJ) passed the 150k mark and handed off. The sections below it are its running log; this is the state.
 
