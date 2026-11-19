@@ -9,7 +9,8 @@
         A renamed or new field is a failure until someone decides which list it belongs to.
      2. every figure in the fixture's "typed" block (written by the fixture maker from its own inputs) must be found again in the
         new ledger, to the cent, in the account or place it belongs to, and nothing else may arrive.
-   Expected today: FAIL. The failing checks are the gaps listed in LANE_ledger_wiring.md "Gaps in ledger.js". */
+   The gaps of LANE_ledger_wiring.md "Gaps in ledger.js" are fixed (ledger core, third pass): this must PASS, and it is run by
+   ledger_core_all.sh. */
 const fs = require('fs'), path = require('path');
 const L = require(path.join(__dirname, '..', '..', 'ledger.js'));
 const DIR = path.join(__dirname, 'fixtures', 'wiring'), VERBOSE = process.argv.includes('-v');
@@ -46,7 +47,9 @@ for (const f of files) {
   ok(!unk.length, n, 'every saved field is listed as READ or KNOWN', unk.join(', '));
 
   /* 2. the move */
-  const before = JSON.stringify(saved), S = L.migrate3831(J(saved), today);
+  /* whether the plan is still the untouched sample is not in the copy; the page works it out (planIsSample) and hands it over */
+  const more = { planIsSample: T.sampleOnly === true };
+  const before = JSON.stringify(saved), S = L.migrate3831(J(saved), today, null, more);
   if (!ok(S && typeof S === 'object', n, 'migrate3831 gives a ledger', L.ledgerWhy() && L.ledgerWhy().why)) continue;
   ok(JSON.stringify(saved) === before, n, 'the saved copy is not changed by the move');
   const P = L.placesOf(S), proof = L.ledgerProof(S), acct = id => S.accounts.find(a => a.id === id), opens = id => S.ledger.filter(e => e.k === 'open' && e.acct === id);
@@ -113,13 +116,14 @@ for (const f of files) {
   ok(same(fr, saved), n, 'the frozen copy is the saved copy, whole and unchanged');
   ok(S.oldFigures && S.oldFigures.shownOnce === false, n, 'the old figures are still to be shown once');
   const figures = { total: 1234.5, saved: 600, free: 34.5, billsLeft: 600 };
-  const withFig = J(saved); withFig.planFigures = figures; const S2 = L.migrate3831(withFig, today), S3 = L.migrate3831(J(saved), today, figures);
+  const withFig = J(saved); withFig.planFigures = figures; const S2 = L.migrate3831(withFig, today, null, more), S3 = L.migrate3831(J(saved), today, figures, more);
   const got = [S2, S3].find(q => q && q.oldFigures && same(q.oldFigures.plan, figures));
   ok(!!got, n, 'the old plan figures the page hands over are kept to show once');
   if (got) { const f2 = J(got.frozen); delete f2.frozenAt; ok(same(f2, saved), n, 'handing over the old plan figures does not change the frozen copy', 'extra keys: ' + Object.keys(f2).filter(k => !(k in saved)).join()); }
 
   /* safe to store and load */
-  ok(same(L.migrate3831(J(saved), today), S), n, 'the move gives the same ledger every time');
+  ok(same(L.migrate3831(J(saved), today, null, more), S), n, 'the move gives the same ledger every time');
+  ok(S.oldFigures.sample === T.sampleOnly, n, 'the ledger records whether the plan was still the sample');
   const R = J(S), cl = L.ledgerClean(R);
   ok(cl.ok && cl.moved === 0 && same(L.placesOf(R), P), n, 'stored and loaded again, every figure is the same');
   ok(L.ledgerMayWrite(S) === true && S.ledgerV === L.LEDGER_V, n, 'the ledger carries its version number');

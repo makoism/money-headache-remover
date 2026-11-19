@@ -230,6 +230,20 @@ const all = (tag, p, want) => { for (const k in want) eq(`${tag} ${k}`, k.includ
   rep.ok(c(L.placesOf(odd).owed) === 0 && c(L.placesOf(odd).total) === c(100) && odd.oldFigures.notes.length === 1, 'W1 a debt goal with no usable target is noted and nothing is guessed');
 }
 
+{ /* W2 (wiring lane): the sample plan's invented figures never move. The copy cannot say it is still the sample; the page can
+     (planIsSample), so the move takes that as an input */
+  const saved = { v: 1, rev: 2, ui: { cur: '¥', gk: { car: 'debt' } }, cfg: { bankNow: 87000, bankNowAt: '2026-11-19' }, cards: [{ id: 'c_a', name: 'Card A', owed: 4000, payDay: 10, at: '2026-11-19' }],
+    plan: { lines: [], goals: [{ id: 'rainy', name: 'Emergency fund', target: 600000, start: 140000 }, { id: 'car', name: 'Car loan', target: 90000, start: 10000 }], debts: [{ id: 'd1', name: 'Sample loan', kind: 'loan', balance: 50000, apr: 3, min: 1000, extra: 0 }] } };
+  const S = L.migrate3831(JSON.parse(J(saved)), '2026-11-20', null, { planIsSample: true }), p = proof('W2 sample', S);
+  all('W2 sample', p, { total: 87000, saved: 0, owed: 4000, waiting: 83000, forCards: 4000, 'accounts.bank': 87000, 'accounts.c_a': 4000 });
+  rep.ok(Object.keys(p.burrows).length === 0 && S.accounts.length === 2 && !S.accounts.some(a => a.id === 'oldsavings' || a.type === 'loan'), 'W2 still the sample: no burrow, no savings account, no loan; the bank and the cards typed on Home move');
+  rep.ok(S.oldFigures.notes.length === 0 && S.oldFigures.sample === true, 'W2 it is recorded that the plan was still the sample, and nothing is listed as left out');
+  const fr = JSON.parse(J(S.frozen)); delete fr.frozenAt; rep.ok(J(fr) === J(saved), 'W2 the frozen copy still holds the sample plan, whole');
+  const T = L.migrate3831(JSON.parse(J(saved)), '2026-11-20'), q = proof('W2 typed', T);
+  all('W2 the same copy when the page says the plan is the person\'s own', q, { total: 227000, saved: 140000, owed: 134000 }); rep.ok(T.oldFigures.sample === false, 'W2 not the sample: recorded as such');
+  rep.ok(c(L.placesOf(L.migrate3831(JSON.parse(J(saved)), '2026-11-20', null, { planIsSample: 'yes' })).total) === c(227000), 'W2 only a plain true skips the plan figures');
+}
+
 /* ===== Philippine shapes (side L). How each is written with the kinds the design has ===== */
 { /* card cut-off day (Mika, thing 8): spent after the cut-off is owed and set aside, but not in the bill due next */
   const S = fresh('PHP', [{ id: 'ub', name: 'UnionBank', type: 'bank' }, { id: 'ubc', name: 'UnionBank card', type: 'card', payDay: 7, cutDay: 17 }]);
