@@ -418,10 +418,25 @@ D.DOOR.forEach(k => {
 /* ---------- 6. gaps: what the ledger lacks today (LANE_money_door.md). Not failures of the door ---------- */
 {
   const gap = (name, closed) => console.log((closed ? 'GAP CLOSED, update LANE_money_door.md: ' : 'GAP (open, expected): ') + name);
-  { const S = PICTURES.bea();
-    D.doorApply(S, 'moved', { amount: 5000, account: 'bpi', to: 'gcash', date: '2026-12-05', src: 'stmt:bpi-dec:9' }, TODAY);
-    D.doorApply(S, 'moved', { amount: 5000, account: 'bpi', to: 'gcash', date: '2026-12-06', src: 'stmt:gcash-dec:21' }, TODAY);
-    gap('G1 an event holds one src, so the second statement line of a transfer is not known as logged (ledgerHas is false, the next import asks again)', L.ledgerHas(S, 'stmt:gcash-dec:21')); }
+  { const S = PICTURES.bea(), t = 'G1', n0 = S.ledger.length, B = 'stmt:bpi-dec:9', G = 'stmt:gcash-dec:21';   /* G1, closed by the ledger core third pass: hard checks now */
+    const first = D.doorApply(S, 'moved', { amount: 5000, account: 'bpi', to: 'gcash', date: '2026-12-05', src: B }, TODAY), f0 = J(D.doorFigures(S));
+    const second = refused(t + ' the GCash line of the same transfer', S, 'seen', () => D.doorApply(S, 'moved', { amount: 5000, account: 'bpi', to: 'gcash', date: '2026-12-06', src: G }, TODAY));
+    rep.ok(L.ledgerHas(S, G) === false && second.seen.length === 1 && second.seen[0] === first.events[0].id, t + ': a refusal records nothing; it names the event that holds this money');
+    /* the person (or the import) says: yes, the same money. The event now remembers both statement lines */
+    const same = typeof D.doorSame === 'function' ? D.doorSame(S, second.seen[0], G) : null;
+    rep.ok(!!same && same.ok === true && L.ledgerHas(S, G) === true && L.ledgerHas(S, B) === true, t + ': the second statement line of the transfer is remembered as logged');
+    rep.ok(S.ledger.length === n0 + 1 && J(D.doorFigures(S)) === f0, t + ': remembering a line adds no event and moves no figure');
+    refused(t + ' the GCash file imported again, the same line', S, 'already', () => D.doorApply(S, 'moved', { amount: 5000, account: 'bpi', to: 'gcash', date: '2026-12-06', src: G }, TODAY));
+    refused(t + ' the same line read as money in', S, 'already', () => D.doorApply(S, 'otherin', { amount: 5000, account: 'gcash', date: '2026-12-06', src: G }, TODAY));
+    refused(t + ' the BPI file imported again', S, 'already', () => D.doorApply(S, 'moved', { amount: 5000, account: 'bpi', to: 'gcash', date: '2026-12-05', src: B }, TODAY));
+    if (typeof D.doorSame === 'function') { refused(t + ' remembered twice', S, 'already', () => D.doorSame(S, second.seen[0], G)); refused(t + ' no such event', S, 'no-id', () => D.doorSame(S, 987654, 'stmt:gcash-dec:22')); refused(t + ' a typed line has no source to remember', S, 'src', () => D.doorSame(S, second.seen[0], 'typed')); }
+    /* another line of the GCash file with the same amount two days on is another thing: the transfer already has its GCash line */
+    step(t + ' a second, real transfer on the GCash statement', S, 'moved', { amount: 5000, account: 'bpi', to: 'gcash', date: '2026-12-07', src: 'stmt:gcash-dec:22' }, {});
+    D.doorUndo(S);
+    /* undo takes the event out with both of its lines; redo brings both back */
+    D.doorUndo(S, first.events[0].id); rep.ok(L.ledgerHas(S, G) === false && L.ledgerHas(S, B) === false, t + ': with the transfer undone neither line counts as logged');
+    D.doorRedo(S); rep.ok(L.ledgerHas(S, G) === true && L.ledgerHas(S, B) === true && J(D.doorFigures(S)) === f0, t + ': redo brings the transfer back with both lines');
+    const R = JSON.parse(J(S)); rep.ok(L.ledgerClean(R).ok && L.ledgerHas(R, G) === true, t + ': saved and loaded, the second line is still known'); }
   { const S = PICTURES.bea(), saved = L.placesOf(S).saved;
     D.doorApply(S, 'lent', { amount: 390, account: 'bpi', who: { name: 'Lea' }, date: '2026-12-05' }, TODAY);
     const p = L.placesOf(S), f = D.doorFigures(S);   /* G2, closed by the ledger core third pass: a hard check now */

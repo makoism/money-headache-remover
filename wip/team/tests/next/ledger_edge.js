@@ -288,6 +288,33 @@ const all = (tag, p, want) => { for (const k in want) eq(`${tag} ${k}`, k.includ
   L.ledgerSetMode(S, 'track'); all('G4 Track mode: handed is still worked out, Free to spend is the place', L.placesOf(S, '2026-12-01'), { wallet: 600, free: 0 });
 }
 
+{ /* G1 (money door lane): one event, two statement lines. A transfer shows on the bank statement and on the e-wallet statement */
+  const S = fresh('PHP', [BANK, { id: 'gcash', name: 'GCash', type: 'ewallet' }]);
+  add('G1 open', S, { k: 'open', acct: 'bank', a: 9000, date: '2026-12-01' });
+  const tr = add('G1 transfer', S, { k: 'transfer', acct: 'bank', acct2: 'gcash', a: 5000, date: '2026-12-05', src: 'stmt:bpi-dec:9' }), sp = add('G1 spend', S, { k: 'spend', acct: 'gcash', a: 120, place: 'waiting', date: '2026-12-06', src: 'typed' });
+  rep.ok(typeof L.ledgerAlso === 'function', 'G1 ledgerAlso is there'); const also = L.ledgerAlso || (() => false), before = J(L.placesOf(S));
+  const e = also(S, tr.id, 'stmt:gcash-dec:21');
+  rep.ok(!!e && e.id === tr.id && J(e.srcs) === J(['stmt:gcash-dec:21']) && e.src === 'stmt:bpi-dec:9', 'G1 the event keeps its first source and lists the second in srcs');
+  rep.ok(L.ledgerHas(S, 'stmt:gcash-dec:21') && L.ledgerHas(S, 'stmt:bpi-dec:9') && !L.ledgerHas(S, 'stmt:gcash-dec:22') && J(L.placesOf(S)) === before, 'G1 both lines are known as logged and no figure moved');
+  refused('G1 the second line again as a new event', S, 'already', () => L.ledgerAdd(S, { k: 'in', acct: 'gcash', a: 5000, date: '2026-12-06', src: 'stmt:gcash-dec:21' }));
+  refused('G1 the same source twice on one event', S, 'already', () => also(S, tr.id, 'stmt:gcash-dec:21')); refused('G1 a source another event holds', S, 'already', () => also(S, sp.id, 'stmt:bpi-dec:9'));
+  refused('G1 no such event', S, 'no-id', () => also(S, 999, 'stmt:x:1')); refused('G1 typed is not a source to remember', S, 'src', () => also(S, tr.id, 'typed')); refused('G1 a source must be text', S, 'src', () => also(S, tr.id, 7)); refused('G1 an empty source', S, 'src', () => also(S, tr.id, ''));
+  rep.ok(!!also(S, sp.id, 'receipt:r77') && !!also(S, sp.id, 'stmt:gcash-dec:30') && J(sp.srcs) === J(['receipt:r77', 'stmt:gcash-dec:30']) && sp.src === 'typed', 'G1 a line typed by hand can later be tied to its receipt and its statement line');
+  refused('G1 a new event that lists a source already logged', S, 'already', () => L.ledgerAdd(S, { k: 'in', acct: 'bank', a: 1, date: '2026-12-07', src: 'stmt:bpi-dec:10', srcs: ['receipt:r77'] }));
+  refused('G1 srcs must be a list of sources', S, 'src', () => L.ledgerAdd(S, { k: 'in', acct: 'bank', a: 1, date: '2026-12-07', srcs: 'receipt:r78' }));
+  const two = add('G1 an event given with two sources at once', S, { k: 'in', sub: 'gift', acct: 'bank', a: 1, date: '2026-12-07', src: 'stmt:bpi-dec:10', srcs: ['receipt:r78', 'typed'] }); rep.ok(L.ledgerHas(S, 'receipt:r78') && !L.ledgerHas(S, 'typed'), 'G1 both are known; typed never counts as logged');
+  L.ledgerUndo(S, tr.id); rep.ok(!L.ledgerHas(S, 'stmt:gcash-dec:21') && !L.ledgerHas(S, 'stmt:bpi-dec:9'), 'G1 undone: neither line is logged');
+  add('G1 the e-wallet line logged on its own meanwhile', S, { k: 'in', acct: 'gcash', a: 5000, date: '2026-12-06', src: 'stmt:gcash-dec:21' });
+  rep.ok(S.removed.some(q => q.id === tr.id && J(q.srcs) === J(['stmt:gcash-dec:21'])), 'G1 the undone transfer is kept with its sources, outside every sum');
+  const S2 = fresh('PHP', [BANK, { id: 'gcash', name: 'GCash', type: 'ewallet' }]); add('G1 open', S2, { k: 'open', acct: 'bank', a: 9000, date: '2026-12-01' });
+  const t2 = add('G1 transfer', S2, { k: 'transfer', acct: 'bank', acct2: 'gcash', a: 5000, date: '2026-12-05', src: 'stmt:bpi-dec:9' }); also(S2, t2.id, 'stmt:gcash-dec:21');
+  L.ledgerUndo(S2); const mid = J(S2); S2.ledger.push({ id: 50, k: 'in', acct: 'gcash', c: 500000, date: '2026-12-06', src: 'stmt:gcash-dec:21' });
+  rep.ok(L.ledgerRedo(S2) === false && L.ledgerWhy().code === 'already', 'G1 redo is refused when a second source of the step was logged meanwhile'); S2.ledger.pop(); rep.ok(J(S2) === mid, 'G1 the refused redo changed nothing');
+  rep.ok(!!L.ledgerRedo(S2) && L.ledgerHas(S2, 'stmt:gcash-dec:21'), 'G1 redo brings the event back with both sources');
+  const R = JSON.parse(J(S2)); rep.ok(L.ledgerClean(R).ok && L.ledgerHas(R, 'stmt:gcash-dec:21') && J(R.ledger) === J(S2.ledger), 'G1 saved, loaded and cleaned: the sources are kept');
+  proof('G1', S); proof('G1', S2);
+}
+
 /* ===== Philippine shapes (side L). How each is written with the kinds the design has ===== */
 { /* card cut-off day (Mika, thing 8): spent after the cut-off is owed and set aside, but not in the bill due next */
   const S = fresh('PHP', [{ id: 'ub', name: 'UnionBank', type: 'bank' }, { id: 'ubc', name: 'UnionBank card', type: 'card', payDay: 7, cutDay: 17 }]);
