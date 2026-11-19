@@ -34,7 +34,11 @@ Proved on a scratch copy of origin/wip-38.31 at 8369a5e: `copy_apply.js COPY_V1.
 
 Test files that quote an old string (copy_apply.js prints the rows): tests/regression/team_month.js, tests/fixtures/model_3828.js, and in tests/qc: home_dom.js, leftover_choice.js, leftover_thin.js, mako_answers.js, number_gate3.js, script_lib.js, v1_home.js, zero_safe.js, plus the golden screen files (regenerate) and the old page copies under tests/regression/v31 to v35 (not assertions on this build).
 
-**What the next session starts with:** points 1 and 3 of the list below are done. Still open: point 2 (Settings and saving, waits for the coordinator's word that E15 has landed, then merge origin/wip-38.31 into side/voice, write the rows as COPY_V1C.md or into COPY_V1B.md against the new screens, recheck HELP_TEXTS_V2.md entry 20), and point 4 each time the main branch moves.
+| `wip/team/COPY_V1C.md` | New, 91 rows, written after the coordinator's word that E15 landed (main branch merged into side/voice at 7123b75): cloud copy steps, recovery code, backup, restore, Settings, and every string from the two LATE lists. A fresh qc-voice read them: 25 failed, 9 rewritten, the rest are questions only the main session can answer, listed at the top of the table. HELP_TEXTS_V2.md entry 20 now uses the real button words |
+
+All three tables: `node tests/qc/copy_apply.js --check COPY_V1.md COPY_V1B.md COPY_V1C.md` gives 455 rows in 26 files, 1 warning (H-023, on purpose). Applied to a throwaway copy the build runs and the lint has 0 strong findings.
+
+**What the next session starts with:** steps 1, 2, 3 and 5 of the brief are done. Open: step 4 (each time origin/wip-38.31 moves, merge it, re-run the check above and `voice_lint.js --since`, fix rows whose old string changed), and Mako's notes when they come (see "How a note from Mako becomes a rule").
 
 ## What is not done (the next SIDE M session starts here)
 

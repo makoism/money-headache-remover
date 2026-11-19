@@ -14,6 +14,15 @@ node tests/qc/copy_apply.js COPY_V1.md COPY_V1B.md COPY_V1C.md
 
 The one warning the check prints is H-023, which adds a bold button name on purpose.
 
+**Checked by a fresh voice checker (2026-11-19):** one qc-voice agent that had not seen the lines read all 91 with only VOICE.md and NORTH_STAR.md. 25 failed (3 for sounding like AI, 8 for not sounding like Mako, 23 for not saying what to do next). 9 rows were rewritten with words the code confirms (H-006, H-012, H-039, H-044, H-046, H-053, J-015, J-017, J-038). The rest were kept because the fix the checker wants is something only the main session can confirm. **For the main session, in order of weight:**
+- H-039 promises that the Home Screen icon opens the same numbers. On iPhone an app added to the Home Screen can keep its own storage apart from Safari. Test it on an iPhone before the line promises it.
+- H-008 and H-031 (the long saved data note) say your numbers are only sent anywhere when you use Ask. Reading statements and receipts sends them too. One of the two is not exact. It also never names the tap that makes a backup file.
+- H-013: after Keep mine, which copy is kept for the days, and is there an Undo on that notice?
+- Errors that stop at what went wrong (H-002, H-004, H-028, J-009, J-010, J-011, J-012, H-050): is "try again" or Copy text the real fix in each place? J-014 says "Try Copy text" on the loading side, which may be the wrong button.
+- J-034 and J-019 disagree on whether shopping and eating out go on the card line or under Free to spend.
+- J-008 gives keyboard keys only. Does that line ever show on a phone?
+- J-037 doesn't name the button that loads a backup file.
+
 ## Part A: the cloud copy, the recovery code, backup, restore, Settings (ui42.js, body.html, ui43.js, ui45.js)
 
 ```copy
@@ -35,7 +44,7 @@ The one warning the check prints is H-023, which adds a bold button name on purp
 + The cloud can't be reached from here right now. Check the connection and try again.
 @@ H-006 | ui42.js | AI: no | Mako: no B14 | Next: yes
 - No cloud copy for this code. Check every character against the code on your other device.
-+ There's no cloud copy for this code. Check every character against the code on your other device.
++ There's no cloud copy for this code. Check every character against the code you saved, or on your other device go to Settings, find Cloud copy and tap Show code.
 @@ H-007 | ui42.js | AI: no | Mako: no A13 colon | Next: no, a path with no verb
 - To load it anyway: Settings, Cloud copy, I have a code.
 + To load it anyway go to Settings, find Cloud copy and tap I have a code.
@@ -57,7 +66,7 @@ The one warning the check prints is H-023, which adds a bold button name on purp
 + There's a newer copy in the cloud from another device
 @@ H-012 | ui42.js | AI: no | Mako: no C brackets | Next: no, the buttons are not named
 - ). Load it here, or keep the numbers on this device and send them over it. Whichever you pick, the other is kept for
-+ . Tap Load the newer copy to load it here, or Keep mine to keep the numbers on this device and send them over it. Whichever you pick, the other one is kept for
++ . Tap Load the newer copy to load it here, or Keep mine to keep the numbers on this device and send them to the cloud in its place. Whichever you pick, the other one is kept for
 # the two buttons under this line are Load the newer copy and Keep mine
 @@ H-013 | ui42.js | AI: no | Mako: no B3 | Next: n/a
 - days when it is replaced here.
@@ -147,7 +156,7 @@ The one warning the check prints is H-023, which adds a bold button name on purp
 # clear wins (Part D 10): who can see it is kept in full. FOR THE MAIN SESSION: ui2.js line 56 has this same text (the LATE list in COPY_V1.md), keep them the same
 @@ H-039 | body.html | AI: no | Mako: no A13 colons, B14 clipped | Next: no, no verbs on the taps
 - Open this address in Safari or Chrome on the phone. iPhone: Share, then Add to Home Screen. Android: the browser menu, then Add to Home screen or Install app. It then opens full screen, like an app, and works without a connection. Same numbers: the icon opens this same browser copy.
-+ Open this address in Safari or Chrome on your phone. On iPhone tap Share, then Add to Home Screen. On Android open the browser menu, then tap Add to Home screen or Install app. After that it opens full screen like an app and works without a connection. The numbers are the same because the icon opens this same browser copy.
++ Open this address in Safari or Chrome on your phone. On iPhone tap Share, then Add to Home Screen. On Android open the browser menu, then tap Add to Home screen or Install app. After that it opens full screen like an app and works without a connection. The numbers are the same because the icon opens this same page in this browser.
 @@ H-040 | body.html | AI: no | Mako: no B3 | Next: yes
 - It does not update by itself.
 + It doesn't update by itself.
@@ -163,14 +172,14 @@ The one warning the check prints is H-023, which adds a bold button name on purp
 + Every plan month as one table with pay, places, goals and balance. It opens in Sheets or Excel. Edits you make there don't change this page.
 @@ H-044 | body.html | AI: no | Mako: no B14, no subject | Next: yes
 - For a new phone, another browser, or a cleared one. Locked on this device with a code only you have, before anything is sent.
-+ For a new phone, another browser or one that got cleared. It's locked on this device with a code only you have before anything is sent.
++ For a new phone, another browser or one that got cleared. Before anything is sent it's locked on this device with a code only you have.
 # clear wins (Part D 10): locked before it is sent, kept exact
 @@ H-045 | body.html | AI: no | Mako: no B4 | Next: yes
 - If numbers look empty after clearing the browser or switching devices, this is how they come back.
 + If your numbers look empty after clearing the browser or switching devices, this is how you get them back.
 @@ H-046 | ui43.js | AI: no | Mako: yes | Next: no, the buttons are not named and "overwrite" is a computer word
 - . Load it here, or keep this device's numbers and overwrite it.
-+ . Tap Load it to load it here, or Keep mine to keep this device's numbers and send them over it.
++ . Tap Load it to load it here, or Keep mine to keep this device's numbers and send them to the cloud in its place.
 # the two buttons on this notice are Load it and Keep mine. "send them over it" is what Settings says
 @@ H-047 | ui43.js | AI: no | Mako: no B7 "backed up to the cloud" is a second name | Next: yes
 - Your numbers are backed up to the cloud, encrypted. This code is the only way to open them on another phone.
@@ -194,7 +203,7 @@ The one warning the check prints is H-023, which adds a bold button name on purp
 # WORST: the line Mako meant with "Do I paste it in a new browser? There's not enough steps there." Every tap by its button word
 @@ H-053 | ui45.js | AI: no | Mako: no A13 colon, B14 | Next: yes
 - Later: Settings, Cloud copy.
-+ Or do it later in Settings under Cloud copy
++ Or do it later in Settings, find Cloud copy and tap Keep a copy in the cloud
 ```
 
 ### Hand edits the script cannot do (the same string twice in one file)
@@ -278,7 +287,7 @@ The one warning the check prints is H-023, which adds a bold button name on purp
 # UNSURE: "Try Copy text" on the loading side must mean copy the text on the other device and paste it here. If so the line should say that
 @@ J-015 | ui5.js | AI: no | Mako: no B14 | Next: yes
 - File read. Tap Load text, then tap again, to replace your numbers with it.
-+ The file is read. Tap Load text and then tap it again to replace your numbers with it.
++ The file is read. Tap Load text, then tap it again to replace the numbers here with what's in the file.
 # clear wins (Part D 4): the undo sentence after it is unchanged
 @@ J-016 | ui5.js | AI: no | Mako: no B2 zeroed | Next: yes
 - All numbers zeroed.
@@ -286,7 +295,7 @@ The one warning the check prints is H-023, which adds a bold button name on purp
 # the undo sentence after it is unchanged
 @@ J-017 | ui5.js | AI: no | Mako: no A5 B14 | Next: yes
 - All zero. Start with salary.
-+ Everything is at zero now, start with your salary
++ Everything is at zero now, start with your pay
 @@ J-018 | ui45s.js | AI: yes A13 semicolon | Mako: no B14 clipped | Next: yes
 - Take-home pay after tax, each month. Paid twice a month: add both. Other pay is a second job, a partner&rsquo;s share, benefits. Balance is bank accounts plus cash; rough is fine.
 + Your take-home pay is what you get each month after tax, and if you're paid twice a month add both. Other pay is a second job, a partner&rsquo;s share or benefits. Balance is your bank accounts plus cash and a rough number is fine.
@@ -359,7 +368,7 @@ The one warning the check prints is H-023, which adds a bold button name on purp
 # VOICE.md B2 uses this very line ("regularly"). The button is named (Save file). UNSURE: "only" is dropped because the cloud copy now exists, and the line does not mention the cloud copy
 @@ J-038 | ui41.js | AI: no | Mako: no A13 colon | Next: yes
 - Works without a Claude account: reading statements, receipts and the assistant are on for everyone there.
-+ It works without a Claude account, so reading statements, receipts and the assistant are on for everyone there.
++ It works without a Claude account, so reading statements and receipts and the assistant are on for everyone there.
 ```
 
 ### Hand edits the script cannot do
