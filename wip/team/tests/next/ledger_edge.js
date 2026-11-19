@@ -185,6 +185,15 @@ const all = (tag, p, want) => { for (const k in want) eq(`${tag} ${k}`, k.includ
   const odd = L.migrate3831({ cur: '¥', bankStart: 100.4, cards: [{ name: 'X', owed: 'abc' }], goals: [{ id: 'a b', start: 5 }, null] }, '2026-11-20');
   rep.ok(odd && L.ledgerProof(odd).ok && odd.oldFigures.notes.length === 2 && c(L.placesOf(odd).total) === c(105), 'odd figures never stop the move: they are noted, not guessed');
   rep.ok(L.migrate3831(null, '2026-11-20') === false && L.migrate3831(saved, 'today') === false, 'no copy or no day: refused');
+  /* W4 (wiring lane): the old plan's figures are handed over as a third argument, so the frozen copy stays the saved copy byte for byte */
+  { const fig = { total: 161190, saved: 8850, free: 0, billsLeft: 600.5 }, S4 = L.migrate3831(JSON.parse(J(saved)), '2026-11-20', fig), fr = JSON.parse(J(S4.frozen)); delete fr.frozenAt;
+    rep.ok(J(S4.oldFigures.plan) === J(fig), 'W4 the figures handed over as the third argument are kept to show once');
+    rep.ok(J(fr) === J(saved), 'W4 handing the figures over adds no key to the frozen copy');
+    fig.total = 1; rep.ok((S4.oldFigures.plan || {}).total === 161190, 'W4 the kept figures are a copy, not the object handed over');
+    const withKey = JSON.parse(J(saved)); withKey.planFigures = { total: 7 }; const S5 = L.migrate3831(JSON.parse(J(withKey)), '2026-11-20', { total: 9 }), f5 = JSON.parse(J(S5.frozen)); delete f5.frozenAt;
+    rep.ok(J(f5) === J(withKey) && (S5.oldFigures.plan || {}).total === 9, 'W4 a saved copy is frozen whole whatever keys it has, and the third argument is what is shown');
+    rep.ok(L.migrate3831(JSON.parse(J(saved)), '2026-11-20').oldFigures.plan === null, 'W4 no figures handed over: none kept');
+    const plain = L.migrate3831({ cur: 'PHP', bankStart: 10, planFigures: { bankEnd: 5 } }, '2026-11-20'); rep.ok(plain.oldFigures.plan.bankEnd === 5, 'W4 the plain shape still carries its own planFigures'); }
 }
 
 /* ===== Philippine shapes (side L). How each is written with the kinds the design has ===== */
