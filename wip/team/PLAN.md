@@ -1,5 +1,14 @@
 # The Burrow: the plan (written 2026-11-18, on branch wip-38.31)
 
+> **Read this first (2026-11-19).** Some words and ideas below were changed later by Mako; DECISIONS.md wins wherever they differ:
+> - **"Chest"** now means only the Free to spend treasure chest picture. The place where new pay waits on pay day has no name yet (it gets one in step B2). Read "the Chest" below as "the waiting place".
+> - **The proof:** Total = waiting place + This month + Burrows. Free to spend is inside This month and never counted twice (tests/qc/proof_formula.js).
+> - **Burrows:** any place money piles up (goals, Education, Giving, Investing); "goal" is the amount a burrow aims for.
+> - **Worlds:** one small 3D world for everything (WORLD_3D.md), not one world per burrow; it is part of the art step, the very last layer, done with Mako.
+> - **"Check your bank"** belongs to the ledger step (B1), with several accounts. The weekly check-in (step C) uses it.
+> - **Launch:** everything still to do is in LAUNCH_CHECKLIST.md, with its gate.
+
+
 Written after reading every .md file at the repo root and in wip/team, the commit history of wip-38.30 and wip-38.31, all of `model.js`, `check.sh`, the head of every file in `tests/qc`, and what Mako pasted into this chat (the handoff with the bird's-eye design, DECISIONS.md, and the old chat's QC panel). File names are given for every important claim. "Inferred" marks anything I worked out rather than read.
 
 **Launch checklist (Mako, 2026-11-19):** every finding is in LAUNCH_CHECKLIST.md with its gate (v1 for Mako alone, team test, wider launch). A step is not done until its checklist points are.
@@ -204,7 +213,7 @@ The order follows one rule: **first make the eyes trustworthy, then make the num
 | 10 | Deploy: build the site, commit to `main`, push, check that Cloudflare deployed, check the live page, then send Mako the link and an honest report. Update RESUME.md and HANDOFF.md | Only now | People get the true picture | Live version stamp, /api/health, a walk of the live page | Everything above |
 | 11 | The rolling month window, right after 38.31 ships and before step B (Mako, 2026-11-18) | The ledger and its migration need the month list; the app stops at Oct 2028 | Nothing unknown about future months | Oracle and fuzz over a moved window | Same |
 | 12 | Step B, split (process change): B1 = the ledger, real balances and "check your bank", shipped alone first; B2 = the Chest and the Pay day ritual. Adjusted from what Mako finds using v1 with his real numbers. Migration test first, from every stored version since 38.2x. The proof formula test (`tests/qc/proof_formula.js`, Wallet and Track) is written first. When Mako pastes the design documents, add what is missing here: Wallet as the default for Free to spend with Track as a switch; tabs Home, Pay day, Spend, Burrows, Plan, Settings behind the gear; the This month flow strip and the extra Next actions; the six jars as a usual split suggested on pay day; migration (goal starts and the bank start become opening balances, the rest starts as Chest money to place); setup ending by placing the money already there; the Help panel and six video scripts, re-read after steps B and C; the intro video reshoot | The design's next step, on a deployed base | "Where all of it is" becomes literally true | Conservation tests, migration from all 19 old builds, oracle extended | Steps 8 to 10 again |
-| 13 | Step C: week check-in, Take out, Check your bank, the "checked N days ago" honesty | Needs the ledger | Ties the picture to the real bank | Same | Same |
+| 13 | Step C: week check-in (it uses "check your bank" from B1), Take out, the "checked N days ago" honesty | Needs the ledger | Ties the picture to the real bank | Same | Same |
 | 14 | Step D, the art step, the very last layer (ask Mako before starting; he works on it closely): the art pass, and the 3D world (WORLD_3D.md): one small stylized walkable world where every action of the app can be done (the cutaway, coin flows, Elthen's squirrel on pay day) | Art last, so it decorates true numbers | Visual first, once the numbers are real | `artcheck.sh`, art director, Mako | Same |
 
 The Claude artifact mirror still works (checked 2026-11-18, serves 38.28), so each deploy also updates it. It is retired once it stops working (DECISIONS.md decision 10).

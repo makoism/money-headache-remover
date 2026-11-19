@@ -1,5 +1,14 @@
 # The Burrow: full handoff for a new session (written 2026-11-18)
 
+> **Read this first (2026-11-19).** Some words and ideas below were changed later by Mako; DECISIONS.md wins wherever they differ:
+> - **"Chest"** now means only the Free to spend treasure chest picture. The place where new pay waits on pay day has no name yet (it gets one in step B2). Read "the Chest" below as "the waiting place".
+> - **The proof:** Total = waiting place + This month + Burrows. Free to spend is inside This month and never counted twice (tests/qc/proof_formula.js).
+> - **Burrows:** any place money piles up (goals, Education, Giving, Investing); "goal" is the amount a burrow aims for.
+> - **Worlds:** one small 3D world for everything (WORLD_3D.md), not one world per burrow; it is part of the art step, the very last layer, done with Mako.
+> - **"Check your bank"** belongs to the ledger step (B1), with several accounts. The weekly check-in (step C) uses it.
+> - **Launch:** everything still to do is in LAUNCH_CHECKLIST.md, with its gate.
+
+
 INSTRUCTION TO THE SESSION READING THIS: save this file as HANDOFF.md in the repo root (makoism/money-headache-remover), commit it on branch wip-38.30, and push. Then work through "What to do next". Mako has said: do not ask about small things, keep going, do not wait on him, send each tested version as it goes live, and be honest in reports. Never use em dashes anywhere (code comments, app text, reports).
 
 ## 1. What this is

@@ -37,7 +37,7 @@ If something can be shown visually instead of as numbers or text, and that makes
 ## How the app is laid out
 
 - Burrows (2026-11-16): one burrow per savings bucket or goal. Spending jars are not burrows. Home is one picture with a small burrow icon per bucket showing how full it is, plus a short note. Tapping one opens that burrow's own full-screen world: art only, with a default pop-up of stats and an add-receipt button. The coins in the door must match the real percentage.
-- Each burrow gets a completely different world. Mako wants to design each one together with Claude, who asks him at the start of each. The first is Rainy Day: rain outside, safe, cozy, dark evening, lit, magic, creatures and life everywhere, all animated.
+- Each burrow gets a completely different world. Mako wants to design each one together with Claude, who asks him at the start of each. (Superseded 2026-11-19: one small 3D world for everything, see WORLD_3D.md; designs with Mako first, in the art step.) The first is Rainy Day: rain outside, safe, cozy, dark evening, lit, magic, creatures and life everywhere, all animated.
 - Treasure chest (approved 2026-11-16): a second section under the burrows for the more fluid money. An easy overview of everything other than the burrows: necessities paid and allocated this month, play money for the month, plus education, financial freedom and give if people fund them.
 - Education and Give should also be burrows, because they stock up (2026-11-17).
 - He logs weekly. Play money is not tracked in detail; it stays a small number.
