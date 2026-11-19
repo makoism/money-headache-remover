@@ -19,6 +19,8 @@ Mako's pace decision (DECISIONS.md "Pace: use the full allowance") came in by re
 - SIDE N, session_01BFpKEZZgy2d3mworAzNt5F, side/ledger-core from side/ledger-design: wip/team/ledger.js as a new file proved against the ledger tests, not wired in; main wires it after v1.
 - Next lane to start: statements (when SIDE L reports the Philippine statement formats).
 - Copy batch (efficiency review 2): the voice lane delivers COPY_V1.md as an exact table plus tests/qc/copy_apply.js; glossary terms are not renamed; MAIN 2 applies it in one commit after its last v1 point (tests old to new string, voice_lint in the script tier, golden re-recorded), then verify.sh once and the single check.sh full; qc-voice replaces qc-wording in the panel. Mako sees 10 to 15 before and after pairs first; if he has not reacted by the time MAIN 2 is ready, ask him once in two lines.
+- Done: SIDE J (side/e6-window-test 5564814; found live data loss on import; MAIN 2 told to put fixes 1 to 5 into v1; checklist E6 and E14). SIDE L (side/ph-accounts 0f87594: PH_ACCOUNTS.md, presets_ph.json with 50 names, PERSONAS_PH.md; ledger gaps: card cut-off day, cards not paid in full, instalments, paluwagan, 13th month, sent to SIDE N).
+- SIDE O, session_01BFpKEWGt66FAVwvxiYaZMt, side/statements-ph: made-up Philippine statement fixtures, stmt_ph.js as a new file, on-device masking, STATEMENTS_DESIGN.md. Not wired in.
 
 Rules from the efficiency review:
 - No side lane touches wip/money-map-team.html, check.sh, tests/verify.sh, tests/qc/script_known.txt, tests/qc/lib_r12.js, tests/qc/golden/*, RESUME.md, DECISIONS.md, LAUNCH_CHECKLIST.md. Each lane's handoff is its own LANE_<name>.md. stmt.js is an app file (in the bundle).
