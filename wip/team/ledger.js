@@ -720,13 +720,14 @@ function ledgerRead3831(saved) {
   return { cur: ui.cur, freeMode: ui.freeMode, payDays: ui.payDays,
     bankStart: now ? cfg.bankNow : cfg.bankStart, bankAt: now ? cfg.bankNowAt : cfg.bankAt, bankConfirm: !now,
     cards: arr(saved.cards).map(c => ({ id: c.id, name: c.name, owed: c.owed, payDay: c.payDay, at: c.at })),
-    goals: arr(plan.goals).map(g => ({ id: g.id, start: g.start })),
+    /* the kind of a goal is in ui.gk[goalId], not on the goal. A goal of kind 'debt' (A3) is money owed: target less what was paid */
+    goals: arr(plan.goals).map(g => ({ id: g.id, start: g.start, target: g.target, name: g.name, kind: ui.gk && typeof ui.gk === 'object' ? ui.gk[g.id] : undefined })),
     /* Cards and loans. The real fields are { id, name, kind, balance, apr, min, extra } (model.js cleanDebts): the balance is
        balance, there is no pay day and no date. apr, min and extra stay with the plan */
     debts: arr(plan.debts).map(d => ({ id: d.id, name: d.name, kind: d.kind, owed: d.balance })) };
 }
 /* migrate3831(old, today). old is a real 38.31 saved copy (it has cfg or plan; read by ledgerRead3831), or the plain shape:
-     { cur, freeMode, payDays, bankStart, bankAt, cards: [{ id, name, owed, payDay, at }], goals: [{ id, start }],
+     { cur, freeMode, payDays, bankStart, bankAt, cards: [{ id, name, owed, payDay, at }], goals: [{ id, start, target, name, kind }],
        debts: [{ id, name, kind, owed, payDay, at }], planFigures }
    today: the day of the move. Only typed figures move: the bank figure (with its date) opens the bank; each typed card balance opens
    that card and sets the same amount aside for it; goal starts open their burrows in "Savings from your old plan", an account the
@@ -755,7 +756,8 @@ function migrate3831(old, today, figures) {
   const add = ev => { if (!ledgerAdd(S, Object.assign({ src: 'migration' }, ev))) notes.push((ev.acct || '') + ': ' + (LED_LAST ? LED_LAST.why : 'refused')); };
   const bank = amt(old.bankStart, 'bank');
   if (bank) add({ k: 'open', acct: 'bank', c: bank, place: 'waiting', date: dayOr(old.bankAt) });
-  const goals = list(old.goals).map((g, i) => ({ id: ledIdOk(g.id) ? g.id : 'goal' + (i + 1), c: amt(g.start, 'goal ' + g.id) })).filter(g => g.c);
+  const allGoals = list(old.goals).map((g, i) => Object.assign({}, g, { i, debt: g.kind === 'debt' }));
+  const goals = allGoals.filter(g => !g.debt).map(g => ({ id: ledIdOk(g.id) ? g.id : 'goal' + (g.i + 1), c: amt(g.start, 'goal ' + g.id) })).filter(g => g.c);
   if (goals.length) {
     ledgerAddAccount(S, { id: 'oldsavings', name: 'Savings from your old plan', type: 'bank', confirm: true });
     const seen = {}; goals.forEach(g => { if (seen[g.id]) { notes.push('goal ' + g.id + ': listed twice, the second is left out'); return; } seen[g.id] = 1; add({ k: 'open', acct: 'oldsavings', c: g.c, place: g.id, date: today }); });
@@ -773,10 +775,19 @@ function migrate3831(old, today, figures) {
     if (planId != null) a[key] = planId;
     return ledgerAddAccount(S, a);
   };
+  /* a goal of kind "pay off a debt" (A3) is not savings: it is a loan of its target less what was paid so far. Both were typed.
+     Nothing is set aside for it and it touches no place, so it is in Owed and never in Saved or Total */
+  const debtGoals = () => allGoals.filter(g => g.debt).forEach(g => {
+    const what = 'debt goal ' + g.id, t = ledCents(g.target == null ? NaN : g.target);
+    const a = owedAcct('goal', g.id, 'goal', g.name);
+    if (t === null) { notes.push(what + ': no usable target, left out'); return; }
+    const c = Math.max(0, amt(g.target, what) - amt(g.start, what)); if (c) add({ k: 'open', acct: a.id, c, date: today });
+  });
   list(old.debts).forEach(d => {
     const more = {}; if (payDay(d.payDay)) more.payDay = d.payDay; if (typeof d.kind === 'string' && d.kind) more.kind = d.kind;
     const a = owedAcct('debt', d.id, 'loan', d.name, more), c = amt(d.owed, a.name); if (c) add({ k: 'open', acct: a.id, c, date: dayOr(d.at) });
   });
+  debtGoals();
   S.oldFigures = { shownOnce: false, plan: planFigures == null ? null : ledCopy(planFigures), notes };
   S.undone = []; LED_LAST = null;
   return S;
