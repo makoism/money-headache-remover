@@ -15,6 +15,7 @@ Mako's pace decision (DECISIONS.md "Pace: use the full allowance") came in by re
 Rules from the efficiency review:
 - No side lane touches wip/money-map-team.html, check.sh, tests/verify.sh, tests/qc/script_known.txt, tests/qc/lib_r12.js, tests/qc/golden/*, RESUME.md, DECISIONS.md, LAUNCH_CHECKLIST.md. Each lane's handoff is its own LANE_<name>.md. stmt.js is an app file (in the bundle).
 - Into the v1 candidate: only side/phone-fixes and act_keep.js if it passes. MAIN 2 merges them in one batch, verify.sh once, before its single check.sh full. Everything else merges after v1.
+- Mako answered the five shape questions himself (DECISIONS.md "The team's shape"): nothing waits on the teammates any more.
 - Waiting, each with its trigger: same-name figure checks (A1 lands); statements and account presets (LEDGER_DESIGN.md plus the security report; D5 is at wider launch; stripping account numbers needs a design choice because PDFs and images go to the relay raw); persona walks (the teammates' answers and a team build); G2 measures (after v1 deploys). Ledger tests stay with SIDE E on its branch.
 
 ## 2026-11-19, handoff 1

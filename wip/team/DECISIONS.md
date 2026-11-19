@@ -178,3 +178,12 @@ Art is paused. v1 is for Mako to use for his real money, so everything must work
 ## Pace: use the full allowance (Mako, 2026-11-19)
 Mako has one usage reset token that expires at the end of November. Plan: use the whole weekly allowance by Sunday 22 Nov (or finish first), then again by Wednesday 25 or Thursday 26 Nov, when he uses the reset. So: run as many useful lanes in parallel as the safety rules allow (one session on app files of the release branch; side lanes on their own branches and named files), and never idle while useful work exists. Never spend for the sake of spending: no repeated QC rounds, no busywork. Every session keeps a resume timer so work restarts by itself after a limit. Sessions cannot see the weekly meter exactly; Mako can check it under Settings, Usage.
 
+## The team's shape, answered by Mako (2026-11-19)
+Mako answered the five shape questions himself. Do not wait for the teammates and do not ask again. The team gate is built for this:
+1. **Where money sits:** what is standard in the Philippines: the usual banks, e-wallets such as GCash and Maya, cash, pay-later apps. Looked up by web search, then used for the account presets and the team gate.
+2. **Pay:** monthly pay is the default. Separate pay is also supported (two incomes, or pay in two parts).
+3. **Cards:** assume everyone has a card. Cards are core, not a special case.
+4. **Phones:** it must work on both iPhone and Android.
+5. **What would make them stop:** not answered for the team; use Mako's own: "if it didn't give me clarity".
+(This replaces "Mako asks his two teammates" in "Team test about the team" point 1; the rest of that point stays.)
+
