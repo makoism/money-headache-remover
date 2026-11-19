@@ -57,14 +57,35 @@ Every failing action has the same two gaps: **no copy in the saved data**, and *
 3. **Two small exactness fixes** (each fails on its own even after point 1): add `ms` to `UI_SNAP` (actions.js line 8) or stop the redraw writing `ui.ms.rainy` when a goal goes; and find what writes `cfg.bankAt` again after `restoreState` on undo of setBalance.
 4. `undo` itself: suggest a named expected failure unless Mako wants a redo.
 
-## Part 2 plan (not started; waiting for the coordinator's word that A1 has landed)
+## Part 2: label_agree (done; 65 pass, 1 finding seen in 3 situations, on b5c51e3)
 
-Aim: a figure with the same name shows the same amount on Home, Plan, Receipts and All months.
+- `tests/qc/label_agree.js`: a figure with the same name shows the same amount wherever it is written. Every amount is read off the screen (Home with More open, Plan Month, Plan Burrows, Plan All months, Receipts, and the boxes in Settings), never from storage, so it survives the move to `cfg.bankNow` and `S.cards`.
+- `tests/qc/label_agree.known`: named expected failures, empty.
 
-Already covered, not to be repeated: "not placed" is one figure on Plan and All months (number_gate2, numbers_round4, number_findings); a goal's percent is one figure everywhere (goal_agree); bank, burrows and total on the Home map against the recount, and the on-screen sum (home_map); Home numbers against the model (home_dom); the short-month fix equals Home's safe to spend (numbers_round4).
+Run: `node tests/qc/label_agree.js` (about 1 minute). Line for check.sh, full tier:
 
-The gap: no script compares amounts by their label across all four screens on many plans. Plan for `tests/qc/label_agree.js`:
-1. On about 20 seeded random plans (the oracle's `randomState`, as home_map does), read each screen's text and collect (label, month, now or planned, amount) from every line that has a money amount. The now and planned tags come from A1, which is why this waits.
-2. Group by label, month and tag. A group with two different amounts fails and names both screens.
-3. Leave out the labels the scripts above own. Print labels seen on one screen only as a NOTE, so a renamed label is noticed.
-4. A label the script cannot tag as now or planned prints UNKNOWN and fails, like act_keep.
+```
+qc tests/qc/label_agree.js;
+```
+
+Four made-up situations: dollars with one card and two receipts; yen, spent past the plan and overdrawn; Mako's shape (one bank, two cards, the day before pay day); euros with cents, four months in. Result: 65 comparisons pass, 3 fail, all the one finding below.
+
+Names compared: Bank now (Home and Settings), Bank at the end of this month (Home, Plan Month, All months), Free to spend safe to spend, planned and spent (Home, Plan, Receipts, the line under the tabs), Bills and basics planned, Bills left to pay, Saved in burrows, Total, Goal burrows this month, Owed at the start of this month, Card and loan payments this month, Interest this month, and each burrow's amount (Home map, Home Burrows, Plan Burrows).
+
+Not repeated: "not placed" (number_gate2, numbers_round4, number_findings), goal percents (goal_agree), bank plus burrows against the recount (home_map), Home against the model (home_dom), the now and planned labels themselves (v1_home).
+
+Limits, said plainly:
+- The names are a table of wordings (`NAMES` in the script), not found by themselves. A name written once only prints a NOTE; a name found nowhere in any situation fails, so moved wording is noticed. A brand new figure is not picked up until a line is added.
+- Mako's shape: the build has no pay day or card pay day to set yet, so the two cards are card debts and the made-up day is the 9th. The script already writes `S.cards` in the shape the coordinator gave when the app has that list; add its wordings ("bank after the cards are paid") to `NAMES` when they land.
+- A burrow's monthly amount on Plan (for example Education) is not compared with its piled-up amount on Home: same word, different figure by design. Worth a look by the wording role: one word for two figures.
+- `LA_SHOW=bank node tests/qc/label_agree.js` prints every line with that word on every screen, for reading a finding.
+
+### The finding: "Bills and basics" is two amounts on Plan, Month
+
+In the list of places, "Bills and basics" includes card and loan payments (1,560 in the dollar situation), and Home agrees ("enough for 1,560 of bills"). Under Money out on the same screen, "Bills and basics" is 1,500, with Cards and loans 60 on its own row. Same name, two amounts, one screen. It shows in every situation that has a card or loan (dollars 1,560 and 1,500; Mako's shape 181,538 and 180,000; euros 1,410.25 and 1,300.25).
+
+Fix in the app: give the Money out row its own name (for example "Bills"), or show cards and loans inside it. Or name it as expected in `tests/qc/label_agree.known`:
+
+```
+Bills and basics, planned: 2 different amounts
+```
