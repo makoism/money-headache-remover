@@ -45,13 +45,23 @@ function renderMap() {
   const wkey = (M.bankEnd < 0 ? `<li class="mp-neg"><i style="background:var(--bad)"></i>In the bank <b>${fmt2(M.bankEnd)}</b> (short)</li>` : '') + parts.map(x => `<li><i style="background:${x.c}"></i>${esc(x.name)} <b>${fmt2(x.amount)}</b></li>`).join('');
   /* every Home figure says whether it is what the bank shows now or what the plan expects (LAUNCH_CHECKLIST A1) */
   const PLN = '<em class="ntag plan">planned</em>', NOW = '<em class="ntag now">now</em>';
-  /* the bank now, first: what the bank app showed when the person last typed it, and the question to type it again (A1) */
-  const at = S.cfg && S.cfg.bankAt, smpOn = typeof sampleOn === 'function' && sampleOn(), asking = renderMap.ask || !at || smpOn;
-  const atTxt = at ? `${+at.slice(8, 10)} ${MONTH_NAMES[+at.slice(5, 7) - 1]}${+at.slice(0, 4) !== new Date().getFullYear() ? ' ' + at.slice(0, 4) : ''}` : '';
-  const nowCard = `<div class="mp-now"><p class="mp-now-h">In your bank now ${NOW}</p>${at && !smpOn ? `<b class="mp-now-v${cfg(S, 'bankStart') < 0 ? ' bad' : ''}">${fmt2(cfg(S, 'bankStart'))}</b><p class="cap mp-fresh">Balance you entered on ${atTxt}.</p>` : ''}
-    ${asking ? `<div class="mp-ask"><label for="mpBankIn">What does your bank app show today?</label><p class="cap">Open your bank app and type the balance it shows. Add any cash you keep at home. Everything below is planned from this.</p>
-      <div class="mp-askrow"><div class="inp"><span class="yen cs"></span><input id="mpBankIn" type="number" inputmode="text" data-neg="ok" step="any" placeholder="0" value="${at && !smpOn ? esc(String(cfg(S, 'bankStart'))) : ''}"></div><button type="button" class="btn solid small" id="mpBankSave">Save</button></div>${at && !smpOn ? '<button type="button" class="link" id="mpBankNo">Keep the old balance</button>' : ''}</div>`
-    : `<p class="mp-act"><button type="button" class="btn small" id="mpCheck">Check your bank</button></p>`}</div>`;
+  /* the now block, first (LAUNCH_CHECKLIST A1 and A5): the bank as typed, with its day, the cards and what is on them, and the bank after the
+     cards are paid. Typed figures only, from model.js nowOf; the question to type the bank again; a card can be added or updated */
+  const NW = nowOf(S), smpOn = typeof sampleOn === 'function' && sampleOn(), hasBank = NW.bank !== null && !smpOn, asking = renderMap.ask || !hasBank;
+  const dayTxt = at => at ? `${+at.slice(8, 10)} ${MONTH_NAMES[+at.slice(5, 7) - 1]}${+at.slice(0, 4) !== new Date().getFullYear() ? ' ' + at.slice(0, 4) : ''}` : '';
+  const ce = renderMap.card, cEdit = ce && ce !== 'new' ? NW.cards.find(k => k.id === ce) : null;
+  const cardForm = ce ? `<div class="mp-ask mp-cardf"><p class="mp-now-h">${cEdit ? 'Update ' + esc(cEdit.name) : 'Add a card'}</p>
+      <label for="mpCardName">Card name</label><input class="txt" id="mpCardName" type="text" maxlength="40" value="${cEdit ? esc(cEdit.name) : ''}" placeholder="Card">
+      <label for="mpCardOwed">What is on the card now</label><p class="cap">Open the card's app and type the full amount it shows, not only the minimum.</p><div class="inp"><span class="yen cs"></span><input id="mpCardOwed" type="number" inputmode="decimal" min="0" step="any" placeholder="0" value="${cEdit ? esc(String(cEdit.owed)) : ''}"></div>
+      <label for="mpCardDay">Day of the month you pay it</label><input class="txt" id="mpCardDay" type="number" inputmode="numeric" min="1" max="31" step="1" placeholder="10" value="${cEdit && cEdit.payDay ? cEdit.payDay : ''}">
+      <div class="mp-askrow"><button type="button" class="btn solid small" id="mpCardSave">Save</button><button type="button" class="btn small" id="mpCardNo">Cancel</button>${cEdit ? '<button type="button" class="btn small" id="mpCardDel">Remove</button>' : ''}</div></div>` : '';
+  const cardRows = NW.cards.length && !smpOn ? `<ul class="mp-cards">${NW.cards.map(k => `<li><span><b>${esc(k.name)}</b>: ${fmt2(k.owed)} on it${k.payDay ? `, paid on the ${ordinal(k.payDay)}` : ''}${k.at ? ` <small>(entered ${dayTxt(k.at)})</small>` : ''}</span><button type="button" class="link" data-card="${esc(k.id)}">Update</button></li>`).join('')}</ul>
+      ${hasBank ? `<p class="mp-after">Bank after the cards are paid: <b class="${NW.afterCards < 0 ? 'bad' : ''}">${fmt2(NW.afterCards)}</b></p>` : ''}` : '';
+  const nowCard = `<div class="mp-now"><p class="mp-now-h">In your bank now ${NOW}</p>${hasBank ? `<b class="mp-now-v${NW.bank < 0 ? ' bad' : ''}">${fmt2(NW.bank)}</b>${NW.bankAt ? `<p class="cap mp-fresh">Balance you entered on ${dayTxt(NW.bankAt)}.</p>` : ''}` : ''}
+    ${asking ? `<div class="mp-ask"><label for="mpBankIn">What does your bank app show today?</label><p class="cap">Open your bank app and type the balance it shows. Add any cash you keep at home.</p>
+      <div class="mp-askrow"><div class="inp"><span class="yen cs"></span><input id="mpBankIn" type="number" inputmode="text" data-neg="ok" step="any" placeholder="0" value="${hasBank ? esc(String(NW.bank)) : ''}"></div><button type="button" class="btn solid small" id="mpBankSave">Save</button></div>${hasBank ? '<button type="button" class="link" id="mpBankNo">Keep the old balance</button>' : ''}</div>` : ''}
+    ${cardRows}${cardForm}
+    ${!asking || !ce ? `<p class="mp-act">${asking ? '' : '<button type="button" class="btn small" id="mpCheck">Check your bank</button>'}${ce || smpOn ? '' : ` <button type="button" class="btn small" id="mpCardAdd">${NW.cards.length ? 'Add another card' : 'Add a card you pay in full'}</button>`}</p>` : ''}</div>`;
   /* what is owed, in one line, only when something is (A4) */
   const oweLine = M.owed > 0 ? `<p class="cap mp-owe">You owe ${fmt2(M.owed)} at the end of ${esc(mon)} ${PLN}: cards, loans and debt burrows.</p>` : '';
   const smp = '';   /* the one sample notice is the status line at the top of Home */
@@ -73,8 +83,16 @@ function renderMap() {
   { const ck = $('#mpCheck'); if (ck) ck.onclick = () => { renderMap.ask = true; sfx('tap'); renderMap(); const i = $('#mpBankIn'); if (i) i.focus(); };
     const no = $('#mpBankNo'); if (no) no.onclick = () => { renderMap.ask = false; renderMap(); };
     const sv = $('#mpBankSave'), inp = $('#mpBankIn');
-    if (sv && inp) { const go = () => { if (inp.value === '' || !isFinite(+inp.value)) { cheer('Type the balance your bank app shows, in numbers.'); inp.focus(); return; } renderMap.ask = false; ACT.setBalance(inp.value); sfx('tap'); cheer('Saved. Everything planned now starts from ' + fmt2(cfg(S, 'bankStart')) + '.'); };
+    if (sv && inp) { const go = () => { if (inp.value === '' || !isFinite(+inp.value)) { cheer('Type the balance your bank app shows, in numbers.'); inp.focus(); return; } renderMap.ask = false; ACT.setBankNow(inp.value); sfx('tap'); cheer('Saved: ' + fmt2(nowOf(S).bank) + ' in your bank today.'); };
       sv.onclick = go; inp.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); go(); } }; } }
+  { const ad = $('#mpCardAdd'); if (ad) ad.onclick = () => { renderMap.card = 'new'; renderMap(); const i = $('#mpCardName'); if (i) i.focus(); };
+    el.querySelectorAll('[data-card]').forEach(b => { b.onclick = () => { renderMap.card = b.dataset.card; renderMap(); const i = $('#mpCardOwed'); if (i) i.focus(); }; });
+    const cn = $('#mpCardNo'); if (cn) cn.onclick = () => { renderMap.card = null; renderMap(); };
+    const cd = $('#mpCardDel'); if (cd) cd.onclick = () => { const id = renderMap.card; renderMap.card = null; ACT.removeCard(id); cheer('Card removed.'); };
+    const cs = $('#mpCardSave'); if (cs) cs.onclick = () => { const o = $('#mpCardOwed'), dy = $('#mpCardDay'), nm = $('#mpCardName');
+      if (o.value === '' || !isFinite(+o.value) || +o.value < 0) { cheer('Type what is on the card now, in numbers.'); o.focus(); return; }
+      const pd = dy.value === '' ? null : Math.round(+dy.value); if (pd !== null && !(pd >= 1 && pd <= 31)) { cheer('The pay day is a day of the month, 1 to 31.'); dy.focus(); return; }
+      const id = renderMap.card === 'new' ? null : renderMap.card; renderMap.card = null; ACT.setCard(id, { name: nm.value, owed: o.value, payDay: pd }); sfx('tap'); cheer('Card saved.'); }; }
   { const dp = el.querySelector('.mp-pay'); if (dp) dp.ontoggle = () => { renderMap.payOpen = dp.open; }; }
   requestAnimationFrame(fitFour);
   BUR.dropCoins(el.querySelector('.mp-split'));

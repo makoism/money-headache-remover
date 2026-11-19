@@ -38,13 +38,31 @@ const setup = async (p, extra) => {
   const q = await p.evaluate(() => { const i = document.getElementById('mpBankIn'), l = i && document.querySelector('label[for="mpBankIn"]'); return l ? l.innerText : ''; });
   ck('A1 "Check your bank" asks "What does your bank app show today?"', /What does your bank app show today\?/.test(q), q);
   await L.typeIn(p, '#mpBankIn', '1640.5'); await p.evaluate(() => document.getElementById('mpBankSave').click()); await w(700);
-  const st = await p.evaluate(() => ({ v: __t.S.cfg.bankStart, at: __t.S.cfg.bankAt, today: (d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'))(new Date()), t: (document.querySelector('#hMap .mp-now') || {}).innerText || '' }));
-  ck('A1 the typed balance is saved with today\'s date (' + st.v + ', ' + st.at + ')', st.v === 1640.5 && st.at === st.today, JSON.stringify(st));
+  const st = await p.evaluate(() => ({ v: __t.S.cfg.bankNow, at: __t.S.cfg.bankNowAt, start: __t.S.cfg.bankStart, startAt: __t.S.cfg.bankAt, today: (d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'))(new Date()), t: (document.querySelector('#hMap .mp-now') || {}).innerText || '' }));
+  ck('A1 the typed balance is saved as bank now with today\'s date (' + st.v + ', ' + st.at + ')', st.v === 1640.5 && st.at === st.today, JSON.stringify(st));
+  ck('A1 the start balance of the plan is not touched (bankStart ' + st.start + ', ' + st.startAt + ')', st.start === 1500 && st.startAt === '2026-11-18', JSON.stringify(st));
   ck('A1 the card shows the new balance', /\$1,640\.50/.test(st.t), st.t);
   /* a minus balance is allowed (overdrawn), letters are refused by the shared amount rule */
   await p.evaluate(() => document.getElementById('mpCheck').click()); await w(300);
   await L.typeIn(p, '#mpBankIn', '-120'); await p.evaluate(() => document.getElementById('mpBankSave').click()); await w(600);
-  ck('A1 an overdrawn balance can be typed', await p.evaluate(() => __t.S.cfg.bankStart) === -120);
+  ck('A1 an overdrawn balance can be typed', await p.evaluate(() => __t.S.cfg.bankNow) === -120);
+  /* A5: a card typed through the screen, with its pay day; the bank after the cards are paid */
+  await p.evaluate(() => document.getElementById('mpCheck').click()); await w(300); await L.typeIn(p, '#mpBankIn', '200000'); await p.evaluate(() => document.getElementById('mpBankSave').click()); await w(600);
+  for (const [nm, owed, day] of [['Card A', '48200.75', '10'], ['Card B', '12000', '11']]) {
+    await p.evaluate(() => document.getElementById('mpCardAdd').click()); await w(400);
+    await L.typeIn(p, '#mpCardName', nm); await L.typeIn(p, '#mpCardOwed', owed); await L.typeIn(p, '#mpCardDay', day);
+    await p.evaluate(() => document.getElementById('mpCardSave').click()); await w(600);
+  }
+  const cs = await p.evaluate(() => ({ cards: __t.S.cards, t: (document.querySelector('#hMap .mp-now') || {}).innerText || '' }));
+  ck('A5 two cards saved through the screen', cs.cards && cs.cards.length === 2 && cs.cards[0].owed === 48200.75 && cs.cards[1].payDay === 11, JSON.stringify(cs.cards));
+  ck('A5 the now block lists each card with what is on it and its pay day', /Card A: \$48,200\.75 on it, paid on the 10th/.test(cs.t) && /Card B: \$12,000 on it, paid on the 11th/.test(cs.t), cs.t);
+  ck('A5 bank after the cards are paid = 200,000 - 60,200.75 = $139,799.25', /Bank after the cards are paid: \$139,799\.25/.test(cs.t), cs.t);
+  await p.evaluate(() => document.querySelector('[data-card]').click()); await w(400); await L.typeIn(p, '#mpCardOwed', '1000'); await p.evaluate(() => document.getElementById('mpCardSave').click()); await w(600);
+  ck('A5 a card can be updated', await p.evaluate(() => __t.S.cards[0].owed) === 1000);
+  await p.evaluate(() => document.querySelector('[data-card]').click()); await w(400); await p.evaluate(() => document.getElementById('mpCardDel').click()); await w(600);
+  ck('A5 a card can be removed', await p.evaluate(() => __t.S.cards.length) === 1);
+  await p.reload(); await w(1600); await p.evaluate(() => { const s = document.getElementById('tourSkip'); s && s.click(); }); await w(300);
+  ck('A5 the cards and bank now survive a reload', await p.evaluate(() => __t.S.cards.length === 1 && __t.S.cards[0].name === 'Card B' && __t.S.cfg.bankNow === 200000));
   /* no balance typed yet: Home asks at once (a fresh page: after the saves above, Set all to zero's kept copy can bring the dated balance back) */
   await b.close();
   ({ b, p, errs } = await L.start({ w: 390, h: 844, dpr: 1, mobile: true, keep: true }));

@@ -1874,3 +1874,11 @@ p .link, li .link, span .link, .cap .link { min-height: 0; position: relative; p
 p.hs-more .link { padding-top: 12px; padding-bottom: 12px; margin-top: -12px; margin-bottom: -12px; }
 /* F6: a goal's "full" mark in All months kept the goal colour as 12px text (1.84:1 for the yellow goal in light): the words mix toward the ink */
 .mt-g > span { color: color-mix(in srgb, var(--c) 45%, var(--ink)); }
+/* A5: the cards in the now block */
+.mp-cards { list-style: none; margin: 8px 0 4px; padding: 0; }
+.mp-cards li { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 2px 0; }
+.mp-cards small { color: var(--ink2); }
+.mp-after { margin: 6px 0; }
+.mp-after b.bad { color: var(--bad); }
+.mp-cardf label { display: block; font-weight: 600; margin: 8px 0 2px; }
+.mp-cardf .txt { width: 100%; box-sizing: border-box; min-height: 44px; }

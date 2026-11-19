@@ -1881,6 +1881,14 @@ p .link, li .link, span .link, .cap .link { min-height: 0; position: relative; p
 p.hs-more .link { padding-top: 12px; padding-bottom: 12px; margin-top: -12px; margin-bottom: -12px; }
 /* F6: a goal's "full" mark in All months kept the goal colour as 12px text (1.84:1 for the yellow goal in light): the words mix toward the ink */
 .mt-g > span { color: color-mix(in srgb, var(--c) 45%, var(--ink)); }
+/* A5: the cards in the now block */
+.mp-cards { list-style: none; margin: 8px 0 4px; padding: 0; }
+.mp-cards li { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 2px 0; }
+.mp-cards small { color: var(--ink2); }
+.mp-after { margin: 6px 0; }
+.mp-after b.bad { color: var(--bad); }
+.mp-cardf label { display: block; font-weight: 600; margin: 8px 0 2px; }
+.mp-cardf .txt { width: 100%; box-sizing: border-box; min-height: 44px; }
 </style>
 </head>
 <body>
@@ -2351,6 +2359,9 @@ const pad2 = n => (n < 10 ? '0' : '') + n;
 /* the day a person typed their bank balance (Mako, 2026-11-19: Home says "Balance you entered on 18 Nov"). Only set when a balance is entered;
    a copy saved before this has no date and Home shows none, never a guessed one. */
 const BANK_AT_FORM = /^\d{4}-\d{2}-\d{2}$/;
+/* the bank now (LAUNCH_CHECKLIST A1): what the bank app shows today, typed on Home, with the day. Kept apart from bankStart (the bank at the
+   start of the first month), so typing it mid-month changes no planned figure and nothing already past this month is counted twice */
+const setBankNow = (T, v, now) => { const d = now || new Date(); T.cfg.bankNow = v; T.cfg.bankNowAt = d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); };
 const setBankBalance = (T, v, now) => { const d = now || new Date(); T.cfg.bankStart = v; T.cfg.bankAt = d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); };
 const round2 = x => Math.round(x * 100) / 100;
 /* round down to whole yen, or to cents for other currencies, so the unspent amount is counted to the last cent */
@@ -3243,7 +3254,7 @@ function cleanItems(raw) {
 }
 const CFG_AMOUNTS = ['bankStart', 'minBank', 'ceiling', 'moveTarget', 'moveStart', 'travelTarget', 'travelStart', 'carTarget', 'carStart', 'rainyStart', 'rainyTarget', 'rainyStretch'];
 /* every setting this version knows; anything else in a saved copy is a newer version's and is kept untouched by the page (ui0.js) */
-const CFG_KNOWN = new Set(CFG_AMOUNTS.concat(['loanLast', 'redirectLoan', 'moveMonth', 'carDue', 'aims']));
+const CFG_KNOWN = new Set(CFG_AMOUNTS.concat(['bankNow', 'bankNowAt', 'loanLast', 'redirectLoan', 'moveMonth', 'carDue', 'aims']));
 function cleanCfg(raw) {
   const out = {}; if (!isMap(raw)) return out;
   CFG_AMOUNTS.forEach(k => { const v = k === 'bankStart' ? cleanSigned(raw[k]) : cleanAmt(raw[k]); if (v !== null) out[k] = v; });
@@ -3252,8 +3263,29 @@ function cleanCfg(raw) {
   if (typeof raw.moveMonth === 'string' && YM_FORM.test(raw.moveMonth)) out.moveMonth = raw.moveMonth;
   if (typeof raw.carDue === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw.carDue)) out.carDue = raw.carDue;
   if (typeof raw.bankAt === 'string' && BANK_AT_FORM.test(raw.bankAt)) out.bankAt = raw.bankAt;
+  { const v = cleanSigned(raw.bankNow); if (v !== null) out.bankNow = v; }
+  if (typeof raw.bankNowAt === 'string' && BANK_AT_FORM.test(raw.bankNowAt)) out.bankNowAt = raw.bankNowAt;
   if (isMap(raw.aims)) { const a = {}; JARS.forEach(j => { const v = raw.aims[j.id]; if (typeof v === 'number' && isFinite(v) && v >= 0 && v <= 1) a[j.id] = v; }); if (Object.keys(a).length) out.aims = a; }
   return out;
+}
+
+/* A5: pay-in-full cards, what is on each now (typed, with the day) and the day it is paid. Not the interest-bearing debts in Cards and loans.
+   Shape agreed with the ledger lane: S.cards = [{ id, name, owed, payDay, at }] */
+const MAX_CARDS = 12;
+function cleanCards(raw) {
+  if (!Array.isArray(raw)) return [];
+  const out = [], seen = new Set();
+  raw.forEach(c => { if (!isMap(c) || out.length >= MAX_CARDS) return; const id = typeof c.id === 'string' && /^[\w-]{1,24}$/.test(c.id) && !seen.has(c.id) ? c.id : 'k' + (out.length + 1) + '_' + seen.size;
+    seen.add(id); const owed = cleanAmt(typeof c.owed === 'string' && c.owed.trim() !== '' && isFinite(+c.owed) ? +c.owed : c.owed), pd = Math.round(+c.payDay);
+    out.push({ id, name: String(c.name || '').replace(/\s+/g, ' ').trim().slice(0, 40) || 'Card', owed: owed === null ? 0 : owed, payDay: pd >= 1 && pd <= 31 ? pd : null, at: typeof c.at === 'string' && BANK_AT_FORM.test(c.at) ? c.at : null }); });
+  return out;
+}
+/* the "now" block on Home: the bank as typed (bank now, or else the balance typed in setup, each with its day), the cards, and the bank after the
+   cards are paid. Typed figures only: nothing planned is mixed in. bank is null when no balance with a day was ever typed */
+function nowOf(S) {
+  const c = S.cfg || {}, hasNow = typeof c.bankNow === 'number', bank = hasNow ? c.bankNow : (c.bankAt ? cfg(S, 'bankStart') : null), bankAt = hasNow ? (c.bankNowAt || null) : (c.bankAt || null);
+  const cards = cleanCards(S.cards), cardsOwed = round2(sum(cards.map(k => k.owed)));
+  return { bank, bankAt, typedNow: hasNow, cards, cardsOwed, afterCards: bank === null ? null : round2(bank - cardsOwed) };
 }
 
 /* ---- cleaning up anything loaded from a saved copy ---- */
@@ -3697,6 +3729,7 @@ function normalize(d) {
   f.ui.cur = '₱'; /* a saved copy without a currency is an old peso copy; new copies start in yen */
   /* every amount in a saved or imported copy is checked: a text, a negative number or a broken list never reaches the sums */
   f.steps = cleanSteps(d.steps); f.once = cleanOnce(d.once); f.items = cleanItems(d.items); f.cfg = cleanCfg(d.cfg);
+  if (Array.isArray(d.cards)) f.cards = cleanCards(d.cards);   /* A5: pay-in-full cards typed on Home */
   if (d.ui && typeof d.ui === 'object') f.ui = Object.assign(f.ui, d.ui);
   const u = f.ui;
   if (!(d.ui && typeof d.ui.preset === 'string') || Object.keys(SAMPLES).concat(['blank', 'legacy']).indexOf(u.preset) < 0) u.preset = 'legacy';
@@ -4329,10 +4362,10 @@ let txDepth = 0, txTouched = false, undoStack = [];
 const clone = v => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
 function snapState() {
   const ui = {}; UI_SNAP.forEach(k => { if (S.ui[k] !== undefined) ui[k] = clone(S.ui[k]); });
-  return { steps: clone(S.steps), once: clone(S.once), items: clone(S.items), cfg: clone(S.cfg), plan: clone(S.plan), ui, receipts: clone(S.receipts || []), ids: new Set((S.receipts || []).map(r => r.id)) };
+  return { steps: clone(S.steps), once: clone(S.once), items: clone(S.items), cfg: clone(S.cfg), plan: clone(S.plan), cards: clone(S.cards), ui, receipts: clone(S.receipts || []), ids: new Set((S.receipts || []).map(r => r.id)) };
 }
 function restoreState(snap, postIds) {
-  S.steps = clone(snap.steps); S.once = clone(snap.once); S.items = clone(snap.items); S.cfg = clone(snap.cfg); S.plan = clone(snap.plan);
+  S.steps = clone(snap.steps); S.once = clone(snap.once); S.items = clone(snap.items); S.cfg = clone(snap.cfg); S.plan = clone(snap.plan); if (snap.cards === undefined) delete S.cards; else S.cards = clone(snap.cards);
   UI_SNAP.forEach(k => { if (snap.ui[k] !== undefined) S.ui[k] = clone(snap.ui[k]); else delete S.ui[k]; });
   /* receipts logged after the transaction stay */
   const later = (S.receipts || []).filter(r => !postIds.has(r.id));
@@ -4345,7 +4378,7 @@ const ACT = {
     const before = snapState(); txDepth = 1; txTouched = false; let out;
     try { out = fn(); } finally { txDepth = 0; }
     const postIds = new Set((S.receipts || []).map(r => r.id));
-    const changed = JSON.stringify([S.steps, S.once, S.items, S.cfg, S.plan, S.receipts]) !== JSON.stringify([before.steps, before.once, before.items, before.cfg, before.plan, before.receipts])
+    const changed = JSON.stringify([S.steps, S.once, S.items, S.cfg, S.plan, S.receipts, S.cards]) !== JSON.stringify([before.steps, before.once, before.items, before.cfg, before.plan, before.receipts, before.cards])
       || UI_SNAP.some(k => JSON.stringify(S.ui[k]) !== JSON.stringify(before.ui[k]));
     if (changed) { undoStack.push({ label: String(label || 'change'), before, postIds, at: Date.now() }); if (undoStack.length > UNDO_MAX) undoStack.shift(); }
     ACT.commit();
@@ -4369,6 +4402,13 @@ const ACT = {
     return ACT.tx('income', () => { setVal(S, key, ym || START, clampAmt(amount, S), scope === 'month' ? 'month' : 'after'); if (key === 'a' && clampAmt(amount, S) > 0) markDone('pay', true); });
   },
   setBalance(v) { return ACT.tx('balance', () => { setBankBalance(S, clampBank(v, S)); }); },   /* a bank balance may be below zero (overdrawn), as in Settings */
+  /* A1: what the bank app shows today, kept apart from bankStart (model.js setBankNow) */
+  setBankNow(v) { return ACT.tx('bank now', () => { setBankNow(S, clampBank(v, S)); }); },
+  /* A5: a pay-in-full card, what is on it now and the day it is paid; id null adds one */
+  setCard(id, o) { return ACT.tx('card', () => { const list = cleanCards(S.cards); const d = new Date(), at = d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+    const row = { id: id || ('k' + Date.now().toString(36)), name: o.name, owed: clampAmt(o.owed, S), payDay: o.payDay, at };
+    const i = list.findIndex(k => k.id === id); if (i >= 0) list[i] = row; else list.push(row); S.cards = cleanCards(list); }); },
+  removeCard(id) { return ACT.tx('remove card', () => { S.cards = cleanCards(S.cards).filter(k => k.id !== id); }); },
   setMinBalance(v) { return ACT.tx('minimum balance', () => { S.cfg.minBank = clampAmt(v, S); }); },
   setCeiling(v) { return ACT.tx('spending ceiling', () => { S.cfg.ceiling = clampAmt(v, S); }); },
 
@@ -14257,7 +14297,7 @@ function asstCheck(raw) {
     const amt = amtOf(a.amount);
     if (d === 'set_pay') { if (!(amt >= 0)) return dropped.push(d); push(`Salary: ${f(val(S, 'a', ym))} to ${f(amt)} a month`, T => { setVal(T, 'a', ym, amt, 'after'); if (amt > 0) markDoneOn(T, 'pay'); }); }
     else if (d === 'set_other_income') { if (!(amt >= 0)) return dropped.push(d); push(`Second pay: ${f(val(S, 'b', ym))} to ${f(amt)} a month`, T => setVal(T, 'b', ym, amt, 'after')); }
-    else if (d === 'set_balance') { if (!(amt >= 0)) return dropped.push(d); push(`Money today: ${f(cfg(S, 'bankStart'))} to ${f(amt)}`, T => { setBankBalance(T, Math.round(amt)); }); }
+    else if (d === 'set_balance') { if (!(amt >= 0)) return dropped.push(d); push(`Money today: ${f(cfg(S, 'bankStart'))} to ${f(amt)}`, T => { setBankBalance(T, clampBank(amt, T)); }); }   /* cents kept, yen whole (decision 1); was Math.round */
     else if (d === 'set_min_balance') { if (!(amt >= 0)) return dropped.push(d); push(`Minimum balance: ${f(cfg(S, 'minBank'))} to ${f(amt)}`, T => { T.cfg.minBank = Math.round(amt); }); }
     else if (d === 'set_line') { const l = lineOf(S, a.key); if (!l || !(amt >= 0)) return dropped.push(d + ' ' + (a.key || '')); push(`${l.name}: ${f(val(S, l.key, ym))} to ${f(amt)} a month${since}`, T => { setVal(T, l.key, ym, amt, scope); if (l.jar === 'nec') markDoneOn(T, 'bills'); }); }
     else if (d === 'set_jar') { const jar = String(a.jar || ''); const ls = S.plan.lines.filter(l => l.jar === jar); if (['play', 'edu', 'ffa', 'give'].indexOf(jar) < 0 || !ls.length || !(amt >= 0)) return dropped.push(d); const others = ls.slice(1).reduce((x, l) => x + val(S, l.key, ym), 0), now = ls.reduce((x, l) => x + val(S, l.key, ym), 0); push(`${JAR_WORD[jar]} jar: ${f(now)} to ${f(amt)} a month${since}`, T => setVal(T, ls[0].key, ym, Math.max(0, round2(amt - others)), scope)); }
@@ -14369,6 +14409,8 @@ function asstAfter(bot, text, truncated) {
   asstCard(card, chk); sfx('next');
   $('#askLog').scrollTop = $('#askLog').scrollHeight;
 }
+/* test hook (only with ?sfxtest): the assistant's checked actions, so a test can run one on a copy */
+if (/[?&]sfxtest\b/.test(location.search)) window.__asst = { asstCheck, runActions };
 
 /* ---------- date and month pickers ----------
    The native pickers are replaced by one calendar that opens straight away, picks on a single tap and never waits for the field to lose focus.
@@ -16820,13 +16862,23 @@ function renderMap() {
   const wkey = (M.bankEnd < 0 ? `<li class="mp-neg"><i style="background:var(--bad)"></i>In the bank <b>${fmt2(M.bankEnd)}</b> (short)</li>` : '') + parts.map(x => `<li><i style="background:${x.c}"></i>${esc(x.name)} <b>${fmt2(x.amount)}</b></li>`).join('');
   /* every Home figure says whether it is what the bank shows now or what the plan expects (LAUNCH_CHECKLIST A1) */
   const PLN = '<em class="ntag plan">planned</em>', NOW = '<em class="ntag now">now</em>';
-  /* the bank now, first: what the bank app showed when the person last typed it, and the question to type it again (A1) */
-  const at = S.cfg && S.cfg.bankAt, smpOn = typeof sampleOn === 'function' && sampleOn(), asking = renderMap.ask || !at || smpOn;
-  const atTxt = at ? `${+at.slice(8, 10)} ${MONTH_NAMES[+at.slice(5, 7) - 1]}${+at.slice(0, 4) !== new Date().getFullYear() ? ' ' + at.slice(0, 4) : ''}` : '';
-  const nowCard = `<div class="mp-now"><p class="mp-now-h">In your bank now ${NOW}</p>${at && !smpOn ? `<b class="mp-now-v${cfg(S, 'bankStart') < 0 ? ' bad' : ''}">${fmt2(cfg(S, 'bankStart'))}</b><p class="cap mp-fresh">Balance you entered on ${atTxt}.</p>` : ''}
-    ${asking ? `<div class="mp-ask"><label for="mpBankIn">What does your bank app show today?</label><p class="cap">Open your bank app and type the balance it shows. Add any cash you keep at home. Everything below is planned from this.</p>
-      <div class="mp-askrow"><div class="inp"><span class="yen cs"></span><input id="mpBankIn" type="number" inputmode="text" data-neg="ok" step="any" placeholder="0" value="${at && !smpOn ? esc(String(cfg(S, 'bankStart'))) : ''}"></div><button type="button" class="btn solid small" id="mpBankSave">Save</button></div>${at && !smpOn ? '<button type="button" class="link" id="mpBankNo">Keep the old balance</button>' : ''}</div>`
-    : `<p class="mp-act"><button type="button" class="btn small" id="mpCheck">Check your bank</button></p>`}</div>`;
+  /* the now block, first (LAUNCH_CHECKLIST A1 and A5): the bank as typed, with its day, the cards and what is on them, and the bank after the
+     cards are paid. Typed figures only, from model.js nowOf; the question to type the bank again; a card can be added or updated */
+  const NW = nowOf(S), smpOn = typeof sampleOn === 'function' && sampleOn(), hasBank = NW.bank !== null && !smpOn, asking = renderMap.ask || !hasBank;
+  const dayTxt = at => at ? `${+at.slice(8, 10)} ${MONTH_NAMES[+at.slice(5, 7) - 1]}${+at.slice(0, 4) !== new Date().getFullYear() ? ' ' + at.slice(0, 4) : ''}` : '';
+  const ce = renderMap.card, cEdit = ce && ce !== 'new' ? NW.cards.find(k => k.id === ce) : null;
+  const cardForm = ce ? `<div class="mp-ask mp-cardf"><p class="mp-now-h">${cEdit ? 'Update ' + esc(cEdit.name) : 'Add a card'}</p>
+      <label for="mpCardName">Card name</label><input class="txt" id="mpCardName" type="text" maxlength="40" value="${cEdit ? esc(cEdit.name) : ''}" placeholder="Card">
+      <label for="mpCardOwed">What is on the card now</label><p class="cap">Open the card's app and type the full amount it shows, not only the minimum.</p><div class="inp"><span class="yen cs"></span><input id="mpCardOwed" type="number" inputmode="decimal" min="0" step="any" placeholder="0" value="${cEdit ? esc(String(cEdit.owed)) : ''}"></div>
+      <label for="mpCardDay">Day of the month you pay it</label><input class="txt" id="mpCardDay" type="number" inputmode="numeric" min="1" max="31" step="1" placeholder="10" value="${cEdit && cEdit.payDay ? cEdit.payDay : ''}">
+      <div class="mp-askrow"><button type="button" class="btn solid small" id="mpCardSave">Save</button><button type="button" class="btn small" id="mpCardNo">Cancel</button>${cEdit ? '<button type="button" class="btn small" id="mpCardDel">Remove</button>' : ''}</div></div>` : '';
+  const cardRows = NW.cards.length && !smpOn ? `<ul class="mp-cards">${NW.cards.map(k => `<li><span><b>${esc(k.name)}</b>: ${fmt2(k.owed)} on it${k.payDay ? `, paid on the ${ordinal(k.payDay)}` : ''}${k.at ? ` <small>(entered ${dayTxt(k.at)})</small>` : ''}</span><button type="button" class="link" data-card="${esc(k.id)}">Update</button></li>`).join('')}</ul>
+      ${hasBank ? `<p class="mp-after">Bank after the cards are paid: <b class="${NW.afterCards < 0 ? 'bad' : ''}">${fmt2(NW.afterCards)}</b></p>` : ''}` : '';
+  const nowCard = `<div class="mp-now"><p class="mp-now-h">In your bank now ${NOW}</p>${hasBank ? `<b class="mp-now-v${NW.bank < 0 ? ' bad' : ''}">${fmt2(NW.bank)}</b>${NW.bankAt ? `<p class="cap mp-fresh">Balance you entered on ${dayTxt(NW.bankAt)}.</p>` : ''}` : ''}
+    ${asking ? `<div class="mp-ask"><label for="mpBankIn">What does your bank app show today?</label><p class="cap">Open your bank app and type the balance it shows. Add any cash you keep at home.</p>
+      <div class="mp-askrow"><div class="inp"><span class="yen cs"></span><input id="mpBankIn" type="number" inputmode="text" data-neg="ok" step="any" placeholder="0" value="${hasBank ? esc(String(NW.bank)) : ''}"></div><button type="button" class="btn solid small" id="mpBankSave">Save</button></div>${hasBank ? '<button type="button" class="link" id="mpBankNo">Keep the old balance</button>' : ''}</div>` : ''}
+    ${cardRows}${cardForm}
+    ${!asking || !ce ? `<p class="mp-act">${asking ? '' : '<button type="button" class="btn small" id="mpCheck">Check your bank</button>'}${ce || smpOn ? '' : ` <button type="button" class="btn small" id="mpCardAdd">${NW.cards.length ? 'Add another card' : 'Add a card you pay in full'}</button>`}</p>` : ''}</div>`;
   /* what is owed, in one line, only when something is (A4) */
   const oweLine = M.owed > 0 ? `<p class="cap mp-owe">You owe ${fmt2(M.owed)} at the end of ${esc(mon)} ${PLN}: cards, loans and debt burrows.</p>` : '';
   const smp = '';   /* the one sample notice is the status line at the top of Home */
@@ -16848,8 +16900,16 @@ function renderMap() {
   { const ck = $('#mpCheck'); if (ck) ck.onclick = () => { renderMap.ask = true; sfx('tap'); renderMap(); const i = $('#mpBankIn'); if (i) i.focus(); };
     const no = $('#mpBankNo'); if (no) no.onclick = () => { renderMap.ask = false; renderMap(); };
     const sv = $('#mpBankSave'), inp = $('#mpBankIn');
-    if (sv && inp) { const go = () => { if (inp.value === '' || !isFinite(+inp.value)) { cheer('Type the balance your bank app shows, in numbers.'); inp.focus(); return; } renderMap.ask = false; ACT.setBalance(inp.value); sfx('tap'); cheer('Saved. Everything planned now starts from ' + fmt2(cfg(S, 'bankStart')) + '.'); };
+    if (sv && inp) { const go = () => { if (inp.value === '' || !isFinite(+inp.value)) { cheer('Type the balance your bank app shows, in numbers.'); inp.focus(); return; } renderMap.ask = false; ACT.setBankNow(inp.value); sfx('tap'); cheer('Saved: ' + fmt2(nowOf(S).bank) + ' in your bank today.'); };
       sv.onclick = go; inp.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); go(); } }; } }
+  { const ad = $('#mpCardAdd'); if (ad) ad.onclick = () => { renderMap.card = 'new'; renderMap(); const i = $('#mpCardName'); if (i) i.focus(); };
+    el.querySelectorAll('[data-card]').forEach(b => { b.onclick = () => { renderMap.card = b.dataset.card; renderMap(); const i = $('#mpCardOwed'); if (i) i.focus(); }; });
+    const cn = $('#mpCardNo'); if (cn) cn.onclick = () => { renderMap.card = null; renderMap(); };
+    const cd = $('#mpCardDel'); if (cd) cd.onclick = () => { const id = renderMap.card; renderMap.card = null; ACT.removeCard(id); cheer('Card removed.'); };
+    const cs = $('#mpCardSave'); if (cs) cs.onclick = () => { const o = $('#mpCardOwed'), dy = $('#mpCardDay'), nm = $('#mpCardName');
+      if (o.value === '' || !isFinite(+o.value) || +o.value < 0) { cheer('Type what is on the card now, in numbers.'); o.focus(); return; }
+      const pd = dy.value === '' ? null : Math.round(+dy.value); if (pd !== null && !(pd >= 1 && pd <= 31)) { cheer('The pay day is a day of the month, 1 to 31.'); dy.focus(); return; }
+      const id = renderMap.card === 'new' ? null : renderMap.card; renderMap.card = null; ACT.setCard(id, { name: nm.value, owed: o.value, payDay: pd }); sfx('tap'); cheer('Card saved.'); }; }
   { const dp = el.querySelector('.mp-pay'); if (dp) dp.ontoggle = () => { renderMap.payOpen = dp.open; }; }
   requestAnimationFrame(fitFour);
   BUR.dropCoins(el.querySelector('.mp-split'));
