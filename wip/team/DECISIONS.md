@@ -175,3 +175,6 @@ Art is paused. v1 is for Mako to use for his real money, so everything must work
 3. **The ledger is designed on paper first** (side/ledger-design, LEDGER_DESIGN.md), proved with made-up event lists, before any ledger code. The rolling window folds into B1, except the fix that stops months being dropped on load (E6), which ships first because it loses data.
 4. **The coordinator hands off too** at about 150k tokens: COORDINATOR.md holds the handoff, and Mako gets a new chat link.
 
+## Pace: use the full allowance (Mako, 2026-11-19)
+Mako has one usage reset token that expires at the end of November. Plan: use the whole weekly allowance by Sunday 22 Nov (or finish first), then again by Wednesday 25 or Thursday 26 Nov, when he uses the reset. So: run as many useful lanes in parallel as the safety rules allow (one session on app files of the release branch; side lanes on their own branches and named files), and never idle while useful work exists. Never spend for the sake of spending: no repeated QC rounds, no busywork. Every session keeps a resume timer so work restarts by itself after a limit. Sessions cannot see the weekly meter exactly; Mako can check it under Settings, Usage.
+
