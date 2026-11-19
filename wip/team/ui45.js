@@ -175,11 +175,25 @@ function wireTx(v) {
 
 /* the recovery-code link on the first screen: shows only where a cloud copy can exist; a code loads the numbers and closes the setup */
 const restoreHTML = () => `<p class="cap tour-restore" id="tourRestore" hidden>Used this before on another phone? <button type="button" class="link" id="tourRestoreBtn">Enter your recovery code</button></p>
-      <div class="tour-restore-in" id="tourRestoreIn" hidden><div class="row-btns inv-row"><input class="txt" id="tourVaultIn" type="text" autocomplete="off" spellcheck="false" placeholder="MHR-XXXX-XXXX-XXXX-XXXX-XXXX" aria-label="Recovery code" maxlength="40"><button type="button" class="btn small solid" id="tourVaultUse">Load my numbers</button></div><p class="cap" id="tourVaultMsg" role="status"></p></div>`;
+      <div class="tour-restore-in" id="tourRestoreIn" hidden><div class="row-btns inv-row"><input class="txt" id="tourVaultIn" type="text" autocomplete="off" spellcheck="false" placeholder="MHR-XXXX-XXXX-XXXX-XXXX-XXXX" aria-label="Recovery code" maxlength="40"><button type="button" class="btn small solid" id="tourVaultUse">Find my copy</button></div><p class="cap" id="tourVaultMsg" role="status"></p><div class="tour-found" id="tourVaultFound" hidden></div></div>`;
 function wireRestore() {
   relayHealth().then(h => { const p = $('#tourRestore'); if (p && h && h.vault && tourMode === 'full' && pristine()) p.hidden = false; });
   const b = $('#tourRestoreBtn'); if (b) b.addEventListener('click', () => { $('#tourRestoreIn').hidden = false; $('#tourRestore').hidden = true; $('#tourVaultIn').focus(); });
-  const go = async () => { const ok = await vaultRestore($('#tourVaultIn').value, $('#tourVaultMsg')); if (ok) cheer('Welcome back.'); };
+  /* the same two steps as Settings, Cloud copy, I have a code (ui42.js vaultFlow): find the copy and show what was found, then load it */
+  const go = async () => {
+    const m = $('#tourVaultMsg'), box = $('#tourVaultFound'); box.hidden = true; box.innerHTML = ''; m.textContent = 'Looking…';
+    const f = await vaultFind($('#tourVaultIn').value); if (!$('#tourVaultMsg')) return;
+    if (f.err) { m.textContent = f.err; return; }
+    if (f.older) { m.textContent = 'The cloud copy is older than the numbers on this device, so nothing was loaded. To load it anyway: Settings, Cloud copy, I have a code.'; return; }
+    m.textContent = '';
+    box.innerHTML = `<p data-vf-found>${vaultFoundLine(f)}</p><p>This device has no numbers of its own yet, so nothing is replaced.</p><div class="row-btns"><button type="button" class="btn small solid" id="tourVaultLoad">Load</button><button type="button" class="link" id="tourVaultNo">Cancel</button></div>`; box.hidden = false;
+    $('#tourVaultNo').addEventListener('click', () => { box.hidden = true; box.innerHTML = ''; });
+    $('#tourVaultLoad').addEventListener('click', async () => {
+      try { await vaultUse(f, false); m.textContent = 'Loaded.'; box.hidden = true; sfx('next'); cheer('Welcome back.'); }
+      catch (e) { m.textContent = 'That copy could not be loaded. Nothing was changed.'; }
+    });
+    sfx('next');
+  };
   const u = $('#tourVaultUse'); if (u) { u.addEventListener('click', go); $('#tourVaultIn').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); go(); } }); }
 }
 const TOUR = [

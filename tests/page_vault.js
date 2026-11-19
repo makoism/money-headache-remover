@@ -54,7 +54,10 @@ const decrypt = async (k, j) => JSON.parse(new TextDecoder().decode(await subtle
   const { p: b2, errs: errsB } = await fresh(bB);
   await b2.goto(BASE + '/?b=1#2026-11', { waitUntil: 'load' }); await w(1200);
   await b2.click('#tourRestoreBtn'); await w(200);
-  await b2.type('#tourVaultIn', 'mhr-' + codeTxt.slice(4).toLowerCase()); await b2.click('#tourVaultUse'); await w(4000);
+  await b2.type('#tourVaultIn', 'mhr-' + codeTxt.slice(4).toLowerCase()); await b2.click('#tourVaultUse'); await w(2500);
+  /* the welcome screen now shows what it found first, then loads on a second tap (the same two steps as Settings) */
+  ok(await b2.evaluate(() => { const e = document.querySelector('#tourRestoreIn [data-vf-found]'); return !!e && /\d/.test(e.textContent) && !JSON.stringify(localStorage.getItem('money-map-template-v2')).includes('777'); }), 'browser B shows what was found before anything is loaded');
+  await b2.click('#tourVaultLoad'); await w(4000);
   const stB = await b2.evaluate(() => ({ tour: document.querySelector('#tour').hidden, name: document.body.innerText.includes('Aiko'), has777: JSON.stringify(localStorage.getItem('money-map-template-v2')).includes('777'), code: !!localStorage.getItem('mhr-vault') }));
   ok(stB.tour && stB.name && stB.has777, 'browser B loads the copy from a lower-case code with spaces: setup closed, name and receipt present ' + JSON.stringify(stB));
   ok(stB.code, 'browser B now keeps the code and stays in sync');

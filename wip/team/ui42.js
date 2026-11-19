@@ -130,14 +130,8 @@ async function vaultUse(f, asked) {
   try { vault = { code: f.code, rev: 0, on: true, failAt: 0 }; vaultKeys = f.k; await vaultApply(f.k, f.srv, asked); vaultSaveLocal(); return true; }
   catch (e) { vault = before; vaultKeys = null; vaultSaveLocal(); throw e; }
 }
-/* restore with a code typed in the first-open setup: used on a new phone, or after losing the numbers */
-async function vaultRestore(raw, msgEl) {
-  msgEl.textContent = 'Checking…';
-  const f = await vaultFind(raw); if (f.err) { msgEl.textContent = f.err; return false; }
-  if (f.older) { msgEl.textContent = 'The cloud copy is older than the numbers on this device, so nothing was loaded. To load it anyway: Settings, Cloud copy, I have a code.'; return false; }
-  try { await vaultUse(f, false); msgEl.textContent = 'Loaded.'; sfx('next'); return true; }
-  catch (e) { msgEl.textContent = 'That copy could not be opened with this code.'; return false; }
-}
+/* one sentence on a copy that vaultFind found: when it was saved and how much is in it (Settings and the welcome screen both show it before loading) */
+function vaultFoundLine(v) { const n = v.n; return `It was saved ${esc(vaultWhen(v.srv.updated || v.srv.rev))} and has ${n} receipt${n === 1 ? '' : 's'} in it.`; }
 /* ---------- what Settings shows ---------- */
 const SAVED_LOCAL = 'Data is stored in this browser on this device only. Your numbers are sent only when you use Ask and tick the box to include them. A second copy is kept here in case the first goes missing, and is loaded on its own if so. It does not move to other devices. Clearing site data removes both, so only a backup file survives that. A backup is your own copy of numbers and receipts.';
 const SAVED_CLOUD = 'Data is stored in this browser, with a second copy here in case the first goes missing, and an encrypted cloud copy (Cloud copy below) that follows every save. Clearing site data removes the two copies on this device; the recovery code brings the cloud copy back. A backup file is your own copy of numbers and receipts.';
@@ -189,8 +183,8 @@ function vaultFlow(step, solo) {
     here: () => `<h5>On this device: nothing more to do</h5><p>Every change you make is sent to the cloud copy by itself, a few seconds later. Settings always shows when it was last sent, and says so if a send did not go through.</p><p class="vf-sent" data-vf-sent role="status"></p><div class="row-btns"><button type="button" class="btn small solid" data-vf-next>Next: another phone or browser</button></div>`,
     other: () => `<h5>To get your numbers on another phone or browser</h5><ol><li>Open the Burrow there${/^https?:$/.test(location.protocol) ? `: <b>${esc(location.host)}</b>` : ''}.</li><li>On the welcome screen tap <b>Enter your recovery code</b>. If the welcome screen is gone: Settings (the gear), Cloud copy, <b>I have a code</b>.</li><li>Type or paste your code, then tap <b>Find my copy</b>.</li><li>It shows what it found. Tap <b>Load</b>, and your numbers are there.</li></ol><p>From then on both devices share the one copy. A change on one shows up on the other the next time you open it there. If both changed, the app asks which to keep, and keeps the other for ${KEEP_DAYS} days.</p><div class="row-btns"><button type="button" class="btn small solid" data-vf-done>Done</button></div>`,
     enter: () => `<h5>Bring your numbers to this device</h5><p>You need the recovery code from the device that already has your numbers. On that device: Settings, Cloud copy, <b>Show code</b>.</p><div class="row-btns inv-row"><input class="txt" id="vaultIn" type="text" autocomplete="off" spellcheck="false" placeholder="MHR-XXXX-XXXX-XXXX-XXXX-XXXX" aria-label="Recovery code" maxlength="40"><button type="button" class="btn small solid" id="vaultUse">Find my copy</button></div><p class="msg" id="vaultMsg" role="status"></p><p class="cap">Nothing on this device changes yet. The next step shows what was found first.</p><div class="row-btns"><button type="button" class="link" data-vf-cancel>Cancel</button></div>`,
-    found: () => { const v = vaultFound, n = v.n;
-      return `<h5>Found your copy</h5><p data-vf-found>It was saved ${esc(vaultWhen(v.srv.updated || v.srv.rev))} and has ${n} receipt${n === 1 ? '' : 's'} in it.</p>`
+    found: () => { const v = vaultFound;
+      return `<h5>Found your copy</h5><p data-vf-found>${vaultFoundLine(v)}</p>`
         + (v.older ? `<p class="vf-warn" data-vf-older><b>Careful: this cloud copy is older than the numbers on this device</b>${mine ? ' (last changed ' + esc(mine) + ')' : ''}. Loading it takes this device back to that older copy.</p>`
           : here ? `<p>Loading it replaces the numbers on this device${mine ? ' (last changed ' + esc(mine) + ')' : ''}.</p>` : '<p>This device has no numbers of its own yet, so nothing is replaced.</p>')
         + (here ? `<p>The numbers that are here now are kept for ${KEEP_DAYS} days, with Undo, in case this is not what you wanted.</p>` : '')

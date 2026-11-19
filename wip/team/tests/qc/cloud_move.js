@@ -61,9 +61,13 @@ const receipts = p => p.evaluate(() => document.getElementById('tab-receipts').c
   /* ---------- phone C: a fresh browser, the code typed in the first-open setup ---------- */
   const D = await C.profile(srv.url, { tour: true });
   if (await until(() => seen(D.p, '#tourRestoreBtn'), 6000)) {
-    await tap(D.p, '#tourRestoreBtn'); await D.p.type('#tourVaultIn', code); await tap(D.p, '#tourVaultGo, #tourVaultUse, #tourRestoreIn button');
+    await tap(D.p, '#tourRestoreBtn'); await D.p.type('#tourVaultIn', code);
+    ck('C: the welcome screen has the same first tap as Settings (' + await text(D.p, '#tourVaultUse') + ')', (await text(D.p, '#tourVaultUse')) === 'Find my copy');
+    await tap(D.p, '#tourVaultUse');
+    ck('C: it shows what was found and when it was saved, before anything is loaded', !!(await until(() => seen(D.p, '#tourRestoreIn [data-vf-found]'))) && /\d/.test(await text(D.p, '#tourRestoreIn [data-vf-found]')) && !/Made-up/.test(await D.p.evaluate(() => JSON.stringify(__t.S.receipts))), await text(D.p, '#tourRestoreIn'));
+    await tap(D.p, '#tourVaultLoad');
     await until(async () => /Made-up bus/.test(await D.p.evaluate(() => JSON.stringify(__t.S.receipts))), 8000);
-    ck('C: the first-open setup takes the code and brings both receipts back', /Made-up bus/.test(await receipts(D.p)) && /Made-up noodles/.test(await L.txt(D.p)));
+    ck('C: Load brings both receipts back', /Made-up bus/.test(await receipts(D.p)) && /Made-up noodles/.test(await L.txt(D.p)));
   } else ck('C: the first-open setup offers "enter your recovery code"', false);
   ck('no page errors', A.errs.concat(B.errs, D.errs).length === 0, A.errs.concat(B.errs, D.errs).join(' | '));
   await A.b.close(); await B.b.close(); await D.b.close(); srv.close();
