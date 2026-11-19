@@ -717,16 +717,17 @@ function ledgerClean(S) {
 function ledgerRead3831(saved) {
   const cfg = saved.cfg && typeof saved.cfg === 'object' ? saved.cfg : {}, ui = saved.ui && typeof saved.ui === 'object' ? saved.ui : {}, plan = saved.plan && typeof saved.plan === 'object' ? saved.plan : {};
   const now = cfg.bankNow != null, arr = v => (Array.isArray(v) ? v.filter(q => q && typeof q === 'object') : []);
-  const first = (o, keys) => { for (const k of keys) if (o[k] != null) return o[k]; return 0; };
   return { cur: ui.cur, freeMode: ui.freeMode, payDays: ui.payDays,
     bankStart: now ? cfg.bankNow : cfg.bankStart, bankAt: now ? cfg.bankNowAt : cfg.bankAt, bankConfirm: !now,
     cards: arr(saved.cards).map(c => ({ id: c.id, name: c.name, owed: c.owed, payDay: c.payDay, at: c.at })),
     goals: arr(plan.goals).map(g => ({ id: g.id, start: g.start })),
-    debts: arr(plan.debts).map(d => ({ name: d.name, owed: first(d, ['owed', 'bal', 'balance', 'start']), payDay: d.payDay })) };
+    /* Cards and loans. The real fields are { id, name, kind, balance, apr, min, extra } (model.js cleanDebts): the balance is
+       balance, there is no pay day and no date. apr, min and extra stay with the plan */
+    debts: arr(plan.debts).map(d => ({ id: d.id, name: d.name, kind: d.kind, owed: d.balance })) };
 }
 /* migrate3831(old, today). old is a real 38.31 saved copy (it has cfg or plan; read by ledgerRead3831), or the plain shape:
      { cur, freeMode, payDays, bankStart, bankAt, cards: [{ id, name, owed, payDay, at }], goals: [{ id, start }],
-       debts: [{ name, owed, payDay }], planFigures }
+       debts: [{ id, name, kind, owed, payDay, at }], planFigures }
    today: the day of the move. Only typed figures move: the bank figure (with its date) opens the bank; each typed card balance opens
    that card and sets the same amount aside for it; goal starts open their burrows in "Savings from your old plan", an account the
    first check asks the person to confirm; debts open loan accounts. S.frozen is a copy of old, whole, that is never written again,
@@ -763,9 +764,18 @@ function migrate3831(old, today, figures) {
     const id = ledIdOk(cd.id) && !S.accounts.some(q => q.id === cd.id) ? cd.id : 'card' + (i + 1), a = { id, name: typeof cd.name === 'string' && cd.name ? cd.name : 'Card ' + (i + 1), type: 'card', inFull: true }; if (payDay(cd.payDay)) a.payDay = cd.payDay;
     ledgerAddAccount(S, a); const c = amt(cd.owed, a.name); if (c) add({ k: 'open', acct: id, c, place: 'waiting', date: dayOr(cd.at) });
   });
-  list(old.debts).forEach((d, i) => {
-    const id = 'loan' + (i + 1), a = { id, name: typeof d.name === 'string' && d.name ? d.name : 'Loan ' + (i + 1), type: 'loan' }; if (payDay(d.payDay)) a.payDay = d.payDay;
-    ledgerAddAccount(S, a); const c = amt(d.owed, a.name); if (c) add({ k: 'open', acct: id, c, date: dayOr(d.at) });
+  /* an owed account for a debt of the old plan. It keeps the plan's own id (as its account id when that is free and usable, and
+     always in the field named by key), so the plan, which keeps the rate and the payments, and the ledger name the same debt */
+  const used = id => S.accounts.some(q => q.id === id);
+  const owedAcct = (key, planId, stem, name, more) => {
+    let id = planId; if (!ledIdOk(id) || used(id)) { let n = 1; while (used(stem + n)) n++; id = stem + n; }
+    const a = Object.assign({ id, name: typeof name === 'string' && name ? name : 'Loan ' + id, type: 'loan' }, more || {});
+    if (planId != null) a[key] = planId;
+    return ledgerAddAccount(S, a);
+  };
+  list(old.debts).forEach(d => {
+    const more = {}; if (payDay(d.payDay)) more.payDay = d.payDay; if (typeof d.kind === 'string' && d.kind) more.kind = d.kind;
+    const a = owedAcct('debt', d.id, 'loan', d.name, more), c = amt(d.owed, a.name); if (c) add({ k: 'open', acct: a.id, c, date: dayOr(d.at) });
   });
   S.oldFigures = { shownOnce: false, plan: planFigures == null ? null : ledCopy(planFigures), notes };
   S.undone = []; LED_LAST = null;
