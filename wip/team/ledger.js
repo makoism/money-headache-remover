@@ -690,7 +690,8 @@ function ledgerCarryOver(S, cardId, amount, day, place) {
 /* ===== two small extensions for real cards (LANE_ledger_core.md "Design gaps"). They read or use what is already there and change
    no figure placesOf gives ===== */
 /* THE CUT-OFF DAY. A card may carry cutDay (the statement day of the month) beside payDay. On a day, what is on the card splits in two:
-     due    what the last statement asked for (everything on the card up to the last cut-off) less what was paid or refunded since
+     due    what the last statement asked for (everything on the card up to the last cut-off, and any balance typed since) less what
+            was paid or refunded since
      later  spent after the cut-off: owed and set aside already, but due a month later
    due + later is always what is on the card. Without cutDay everything is due. Returns { ok, onCard, due, later, cutoff } in money
    units (cutoff: the last statement day, or null), or false. */
@@ -701,9 +702,14 @@ function ledgerCardDue(S, cardId, day) {
   const x = ledCtx(S), now = ledBalanceOn(S, x, cardId, day); LED_LAST = null;
   if (!(Number.isInteger(a.cutDay) && a.cutDay >= 1 && a.cutDay <= 31)) return { ok: true, onCard: now / 100, due: now / 100, later: 0, cutoff: null };
   const y = +day.slice(0, 4), m = +day.slice(5, 7); let cut = ledYmd(y, m, a.cutDay); if (cut > day) cut = ledYmd(y, m - 1, a.cutDay);
-  /* since the cut-off: what was added to the card (later), and what took it down (paid or refunded, which meets the statement first) */
+  /* since the cut-off: what was added to the card (later), and what took it down (paid or refunded, which meets the statement first).
+     A TYPED BALANCE dated after the cut-off is the statement, not spending after it: an opening balance, and an adjust (the
+     difference accepted at a check, start fresh, a part moved to the older balance). The person typed what the card showed, and
+     how much of it is newer than the statement is not known, so all of it counts as due: never show less due than there may be.
+     Only the adjust of an instalment (sub 'instalment') is new on the card: this month's part arriving */
   let up = 0, down = 0;
   for (const e of S.ledger) { if (!e || e.k === 'check' || !(ledDate(e) > cut && ledDate(e) <= day)) continue;
+    if (e.k === 'open' || (e.k === 'adjust' && e.sub !== 'instalment')) continue;
     const A = Object.create(null); ledApply(x, e, A, Object.create(null)); const d = A[cardId] || 0; if (d > 0) up += d; else down -= d; }
   const statement = now - up + down, due = Math.max(0, statement - down) + Math.min(0, statement), later = now - due;
   return { ok: true, onCard: now / 100, due: due / 100, later: later / 100, cutoff: cut };
