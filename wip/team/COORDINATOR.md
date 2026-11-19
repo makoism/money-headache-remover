@@ -26,6 +26,10 @@ He has not written in this chat since handoff 3. When he writes: greet him in tw
 - Coordinator 5 is session_01BFpKEX9xQF894VPk3euyZi. Check-in timer trig_013sGA6xUrWiqVV14v3WBqDs (10:56 UTC).
 - MAIN 5 handed off at b28c788 (10:41 UTC): H1 fixes landed (Home, setup, Help on a solid shelf on phones, word fixes as copy rows; copy_apply --check 458 rows clean). MAIN 6 is session_01BFpKEXnaZGxZyFuv3TFwST, the only session on app files: 5 copy rows in COPY_V1C.md, J-009, Help in setup, screen_pack_panels.js, the copy batch, check.sh full, candidate, ONE QC run, preview. Owed by it: whether the welcome "Enter your recovery code" link shows on the preview.
 
+- MAIN 6 stopped at 1d53316 (12:17 UTC, 177k tokens in 55 minutes): copy rows, J-009 (export copies the table when no download), the copy batch applied (ad3b8fc, 458 rows), screen pack run (57 panels), cloud copy box on a return visit fixed (checklist E16). Help in setup is not small: after v1 (checklist H8). Tests that quote old wording are half followed up (list in RESUME section 0).
+- MAIN 7 is session_01BFpKEYdf3wtxeW7meT1A14, the only session on app files: tests follow the copy, re-record, verify.sh, ONE check.sh full, candidate, ONE QC run, preview. Told to push every 15 minutes and use helpers for size.
+- Mako wrote in MAIN 6's chat at about 11:56 UTC (how far along; "full steam ahead"). No new decision. Do not list a main session's result events: one page is very large.
+
 ### Timers
 Coordinator 4's check-in trig_01EYU5mUN12uruSbrdXpeN5r (10:55 UTC) fires into coordinator 4, which only forwards. Set your own.
 
