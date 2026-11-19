@@ -6,7 +6,8 @@
    Two lists and one rule.
      S.accounts   where money sits: bank, cash, ewallet, wallet, owedToYou (yours) and card, paylater, loan (owed)
      S.ledger     dated events, in the order they were added. It is never trimmed and never rewritten.
-     places       what money is for: 'waiting', 'bills', 'free', one 'card:<id>' line per card paid in full, and every burrow id
+     places       what money is for: 'waiting', 'bills', 'free', 'lent' (owed to you), one 'card:<id>' line per card paid in full,
+                  and every burrow id
    Every coin in a tracked account in the home currency is in exactly one place, so those accounts added up and the places added up
    are the same number: Total. What is owed sits in owed accounts, never in a place.
    NOTHING IS STORED AS A BALANCE. Every figure is added up from the events each time it is asked for.
@@ -33,6 +34,7 @@ const LED_WHOLE = { JPY: 1, '¥': 1, KRW: 1, '₩': 1, VND: 1, '₫': 1 };      
 const LED_MAX_C = 1e13;                       /* the largest single amount, in cents (100 billion units). Sums stay exact far past this */
 const LED_ID = /^[A-Za-z0-9_-]{1,24}$/;       /* account ids and place ids */
 const LED_DAY = /^\d{4}-\d{2}-\d{2}$/;
+const LED_LENT = 'lent';                        /* the place that holds money lent ("owed to you"). Reserved: it is never a burrow */
 const LED_SRC_FREE = { typed: 1, migration: 1 };   /* sources that may repeat. Any other src (a statement line, a receipt) is logged once only */
 const LED_LOCKED = ['id', 'type', 'cur', 'inFull', 'tracked'];   /* account fields that cannot change once the account has events */
 const LED_WORDS = {
@@ -464,7 +466,9 @@ function ledgerHas(S, src) { return typeof src === 'string' && LED_SRC_FREE[src]
    Amounts are in money units. The same names as the reference model, plus afterCards, foreignOwed, below and mode:
      waiting, bills (Bills left, with every "for the card" line), billsOnly, forCards, cards { cardId: set aside },
      free (Track: the place. Wallet: handed to the wallet since the last pay that started a month), wallet (handed, in both modes),
-     burrows { id: amount }, saved, thisMonth, total, have (the tracked home accounts added up; always equal to total),
+     burrows { id: amount }, saved, lent (the place 'lent': money lent, "owed to you". Inside Total, a line of its own, never in
+     saved or burrows), thisMonth, total (= waiting + thisMonth + saved + lent), have (the tracked home accounts added up; always
+     equal to total),
      owed (cards + pay-later + loans in the home currency), afterCards (have less every "for the card" line),
      foreign { cur: amount } and foreignOwed { cur: amount } (kept beside Total, never in it), accounts { id: balance },
      checks { acctId: { typed, unexplained, date, id } } (that account's check with the latest day; same day: the one added last),
@@ -487,11 +491,12 @@ function placesOf(S, day) {
   const burrows = {}, below = []; let saved = 0;
   Object.keys(P).sort().forEach(k => {
     if (P[k] < 0) below.push(k);
-    if (k === 'waiting' || k === 'bills' || k === 'free' || k.indexOf('card:') === 0) return;
+    if (k === 'waiting' || k === 'bills' || k === 'free' || k === LED_LENT || k.indexOf('card:') === 0) return;
     burrows[k] = P[k] / 100; saved += P[k];
   });
+  const lent = P[LED_LENT] || 0;   /* owed to you: yours and inside Total, but not Saved and not Free to spend */
   const waiting = P.waiting || 0, billsOnly = P.bills || 0, bills = billsOnly + reserve, freeP = x.wallet ? 0 : (P.free || 0);
-  const thisMonth = bills + freeP, total = waiting + thisMonth + saved;
+  const thisMonth = bills + freeP, total = waiting + thisMonth + saved + lent;
   /* handed to the wallet since the last pay that started a month, by day (same day: in the order added) */
   let handed = 0;
   if (L.some(e => e && e.k === 'hand')) {
@@ -508,7 +513,7 @@ function placesOf(S, day) {
     checks[id] = { typed: t / 100, unexplained: (t - ledBalanceOn(S, x, id, ledDate(e))) / 100, date: ledDate(e), id: e.id }; }
   return {
     waiting: waiting / 100, bills: bills / 100, billsOnly: billsOnly / 100, forCards: reserve / 100, cards,
-    free: (x.wallet ? handed : freeP) / 100, wallet: handed / 100, burrows, saved: saved / 100,
+    free: (x.wallet ? handed : freeP) / 100, wallet: handed / 100, burrows, saved: saved / 100, lent: lent / 100,
     thisMonth: thisMonth / 100, total: total / 100, have: have / 100, owed: owed / 100, afterCards: (have - reserve) / 100,
     foreign, foreignOwed, accounts, checks, below, mode: x.wallet ? 'wallet' : 'track',
   };

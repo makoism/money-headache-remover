@@ -6,7 +6,7 @@
 
    Two lists, one rule:
      accounts  where money sits (bank, card paid in full, wallet or cash, e-wallet, pay-later, loan, owed to you), each with a currency
-     places    what money is for (waiting, bills, free, one "for the card" line per card paid in full, every burrow)
+     places    what money is for (waiting, bills, free, lent (owed to you), one "for the card" line per card paid in full, every burrow)
    Every coin in a tracked home-currency account is in exactly one place:  sum of those accounts = sum of places = Total.
    Owed money (cards, pay-later, loans) is held as owed accounts, never as a place. */
 
@@ -160,11 +160,12 @@ function placesOf(S) {
   let reserve = 0, cards = {}; const burrows = {};
   for (const k in P) {
     if (k.startsWith('card:')) { reserve += P[k]; cards[k.slice(5)] = fromC(P[k]); }
-    else if (!['waiting', 'bills', 'free'].includes(k)) burrows[k] = P[k];
+    else if (!['waiting', 'bills', 'free', 'lent'].includes(k)) burrows[k] = P[k];   /* 'lent' (owed to you) is its own line, never a burrow */
   }
   const waiting = P.waiting || 0, bills = (P.bills || 0) + reserve, free = mode === 'track' ? (P.free || 0) : 0;
   const saved = Object.values(burrows).reduce((a, b) => a + b, 0);
-  const thisMonth = bills + free, total = waiting + thisMonth + saved;
+  const lent = P.lent || 0;   /* money lent: yours and inside Total, not Saved and not Free to spend */
+  const thisMonth = bills + free, total = waiting + thisMonth + saved + lent;
   let have = 0, owed = 0; const foreign = {}, foreignOwed = {}, accounts = {};
   S.accounts.forEach(a => {
     const b = A[a.id] || 0; accounts[a.id] = fromC(b);
@@ -183,7 +184,7 @@ function placesOf(S) {
   return {
     chest: fromC(waiting), waiting: fromC(waiting), bills: fromC(bills), billsOnly: fromC(P.bills || 0), forCards: fromC(reserve), cards,
     free: mode === 'track' ? fromC(P.free || 0) : fromC(handed), wallet: fromC(handed),
-    burrows: Object.fromEntries(Object.entries(burrows).map(([k, v]) => [k, fromC(v)])), saved: fromC(saved),
+    burrows: Object.fromEntries(Object.entries(burrows).map(([k, v]) => [k, fromC(v)])), saved: fromC(saved), lent: fromC(lent),
     thisMonth: fromC(thisMonth), total: fromC(total), have: fromC(have), owed: fromC(owed), foreign, foreignOwed, accounts,
     unexplained: unexplained == null ? null : fromC(unexplained), checks: ch,
   };

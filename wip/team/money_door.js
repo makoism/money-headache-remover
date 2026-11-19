@@ -254,14 +254,13 @@ function doorWayMoves(w, c, place, place2, mode) {
 }
 
 /* ---- the figures ---- */
-/* The five figures and what sits beside them, in money units, from placesOf(). Saved leaves out what is lent.
+/* The five figures and what sits beside them, in money units, from placesOf(). Saved does not hold what is lent.
    Track: total = waiting + bills + free + saved + lent. Wallet: free is what was handed out since pay day (outside Total),
    so total = waiting + bills + saved + lent. */
 function doorFigures(S, day) {
-  const p = doorL.placesOf(S, day), lentC = Math.round(((p.burrows || {})[DOOR_LENT] || 0) * 100), burrows = {};
-  Object.keys(p.burrows || {}).forEach(id => { if (id !== DOOR_LENT) burrows[id] = p.burrows[id]; });
-  return { total: p.total, free: p.free, bills: p.bills, saved: (Math.round(p.saved * 100) - lentC) / 100, owed: p.owed,
-    waiting: p.waiting, lent: lentC / 100, forCards: p.forCards, afterCards: p.afterCards, burrows, cards: p.cards,
+  const p = doorL.placesOf(S, day);   /* the ledger gives Lent its own figure (placesOf().lent), outside Saved and the burrows */
+  return { total: p.total, free: p.free, bills: p.bills, saved: p.saved, owed: p.owed,
+    waiting: p.waiting, lent: p.lent, forCards: p.forCards, afterCards: p.afterCards, burrows: p.burrows, cards: p.cards,
     beside: p.foreign, owedBeside: p.foreignOwed, accounts: p.accounts, below: p.below, mode: p.mode };
 }
 const DOOR_FIG = ['total', 'free', 'bills', 'saved', 'owed', 'waiting', 'lent'];
