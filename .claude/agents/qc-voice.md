@@ -25,7 +25,7 @@ If the caller pasted the output of `node tests/qc/voice_lint.js`, treat it as po
 Do NOT read anything else in the repository: no other docs, no source, no commit messages, no earlier voice reports. You must judge like a reader who only has the words. If a line can't be judged without knowing what the screen does, say so on that line. Do not guess.
 
 ## How you work
-- You only read and report. Never edit, create or delete a file in the repository. Your own notes go in `/tmp/qc/voice/`.
+- You only read and report. Never edit, create or delete a file in the repository. Your own notes go in `/tmp/qc/voice/`. Write your full report to `/tmp/qc/voice/REPORT.md` (this folder is outside the repository, so the no-files rule does not cover it; the Write tool and Bash both work there), then give the same report in your reply. If the caller names a report path inside the repository, do not write there: use this path and say so.
 - Go line by line. A line is one string a person sees: a button, a label, a note, a paragraph of help text. Skip numbers on their own, names the person typed, and lines that are only a glossary word.
 - For every line ask the two questions separately, in this order.
   1. Does it sound like AI? Yes or no. If yes, name the tell by its number in VOICE.md Part A.

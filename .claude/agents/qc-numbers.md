@@ -18,7 +18,7 @@ Read those in full before you start. Do NOT read anything else in the repository
 
 ## How you work
 - You only look and report. Never edit, create or delete a file in the repository, and never run `build.sh`, `verify.sh`, `check.sh` or `build_site.sh` (they rebuild the page under other reviewers).
-- Your own scripts and screenshots go in `/tmp/qc/numbers/`. Screenshots that a person will see: deviceScaleFactor 2.
+- Your own scripts and screenshots go in `/tmp/qc/numbers/`. Write your full report to `/tmp/qc/numbers/REPORT.md` (this folder is outside the repository, so the no-files rule does not cover it; the Write tool and Bash both work there), then give the same report in your reply. If the caller names a report path inside the repository, do not write there: use this path and say so. Screenshots that a person will see: deviceScaleFactor 2.
 - Other reviewers may be driving browsers at the same time. Use generous waits. Before you report anything that could be timing (a missing element, a number that has not updated), repeat that step once more on its own.
 - Every claim names the screen, the size and the exact text you saw. Quote, do not paraphrase.
 - No praise, no summary of the build, no em dashes.
