@@ -734,7 +734,7 @@ function ledgerRead3831(saved) {
    first check asks the person to confirm; debts open loan accounts. S.frozen is a copy of old, whole, that is never written again,
    and S.oldFigures holds the old plan's figures to show once. A figure that cannot be read is left out and listed in
    S.oldFigures.notes, never guessed. Returns the new ledger state, or false. */
-function migrate3831(old, today, figures) {
+function migrate3831(old, today, figures, more) {
   if (!old || typeof old !== 'object' || Array.isArray(old)) return ledFail(ledNo('old-copy'));
   if (!ledDayOk(today)) return ledFail(ledNo('date', 'the day of the move'));
   /* the old plan's figures come in beside the copy (figures), never inside it: a real saved copy is frozen whole, byte for byte,
@@ -742,6 +742,11 @@ function migrate3831(old, today, figures) {
   const whole3831 = old, real = (old.cfg && typeof old.cfg === 'object') || (old.plan && typeof old.plan === 'object');
   const planFigures = figures != null ? figures : (real ? null : old.planFigures);
   if (real) old = ledgerRead3831(old);
+  /* ONLY TYPED FIGURES MOVE. A plan that is still the untouched sample holds invented figures (the sample emergency fund start, the
+     sample debts). The copy cannot say so by itself; the page can (planIsSample in ui0.js) and hands it over as more.planIsSample.
+     Then nothing of plan.goals and plan.debts moves. The bank figure and the cards typed on Home are not part of the plan: they move */
+  const sample = !!more && more.planIsSample === true;
+  if (sample) old = Object.assign({}, old, { goals: [], debts: [] });
   const cur = typeof old.cur === 'string' && old.cur ? old.cur : null;
   if (!cur) return ledFail(ledNo('old-copy', 'no currency'));
   const S = ledgerFresh({ cur, mode: old.freeMode === 'wallet' ? 'wallet' : 'track', payDays: ledPayDays(old.payDays) || [1], accounts: [{ id: 'bank', name: 'Bank', type: 'bank' }] });
@@ -788,7 +793,7 @@ function migrate3831(old, today, figures) {
     const a = owedAcct('debt', d.id, 'loan', d.name, more), c = amt(d.owed, a.name); if (c) add({ k: 'open', acct: a.id, c, date: dayOr(d.at) });
   });
   debtGoals();
-  S.oldFigures = { shownOnce: false, plan: planFigures == null ? null : ledCopy(planFigures), notes };
+  S.oldFigures = { shownOnce: false, plan: planFigures == null ? null : ledCopy(planFigures), notes, sample };
   S.undone = []; LED_LAST = null;
   return S;
 }
