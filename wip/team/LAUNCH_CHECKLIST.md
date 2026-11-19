@@ -77,6 +77,12 @@ One "Money came in" and one "Money went out", each with a short list of kinds an
 | F5 | The Home forest keeps animating behind a burrow | v1 |
 | F6 | Light theme contrast below 4.5:1 in six places; five controls under 44px (side A) | v1 |
 
+## U. Usable without the art (Mako, 2026-11-19)
+| # | Point | Fix | Gate |
+|---|---|---|---|
+| U1 | Every task in v1 can be done and understood through the UI alone | the novice walk of Home, setup, Receipts and Plan finds no place that depends on the art to make sense | v1 |
+| U2 | Art never gets in the way: no picture, animation or decoration covers a control or number, slows the page, or distracts from reading the money | anything that does is toned down or hidden in v1 (a fix, not new art); checked at 390x844, 320 wide and desktop | v1 |
+
 ## G. Process
 | # | Point | Gate |
 |---|---|---|

@@ -160,3 +160,6 @@ Recorded in full in NORTH_STAR.md, "Why this exists", so every agent and session
 5. **Several banks:** confirmed (LAUNCH_CHECKLIST.md A2).
 6. **Cost rules 7 and 8 (Mako agreed to the efficiency review's proposals):** while art is frozen, the art director agent runs only when art files change; the regression runner agent is replaced by the pasted output of `./check.sh full` (everything on its list is already a script). That is 2 of 9 agents saved on every QC run.
 
+## v1 must be fully usable (Mako, 2026-11-19)
+Art is paused. v1 is for Mako to use for his real money, so everything must work and be clear through the UI alone. The art may not be pretty, but it must never get in the way: nothing covers a control or a number, nothing makes the page lag, nothing distracts from reading the money. Where existing art disrupts use, tone it down or hide it in v1 (that is a fix, not new art). The art work itself waits for the art step.
+
