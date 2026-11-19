@@ -732,11 +732,14 @@ function ledgerRead3831(saved) {
    first check asks the person to confirm; debts open loan accounts. S.frozen is a copy of old, whole, that is never written again,
    and S.oldFigures holds the old plan's figures to show once. A figure that cannot be read is left out and listed in
    S.oldFigures.notes, never guessed. Returns the new ledger state, or false. */
-function migrate3831(old, today) {
+function migrate3831(old, today, figures) {
   if (!old || typeof old !== 'object' || Array.isArray(old)) return ledFail(ledNo('old-copy'));
   if (!ledDayOk(today)) return ledFail(ledNo('date', 'the day of the move'));
-  const whole3831 = old; let planFigures = old.planFigures;
-  if ((old.cfg && typeof old.cfg === 'object') || (old.plan && typeof old.plan === 'object')) { old = ledgerRead3831(old); old.planFigures = planFigures; }
+  /* the old plan's figures come in beside the copy (figures), never inside it: a real saved copy is frozen whole, byte for byte,
+     and none of its keys is read as the figures. Only the plain shape may still carry its own planFigures */
+  const whole3831 = old, real = (old.cfg && typeof old.cfg === 'object') || (old.plan && typeof old.plan === 'object');
+  const planFigures = figures != null ? figures : (real ? null : old.planFigures);
+  if (real) old = ledgerRead3831(old);
   const cur = typeof old.cur === 'string' && old.cur ? old.cur : null;
   if (!cur) return ledFail(ledNo('old-copy', 'no currency'));
   const S = ledgerFresh({ cur, mode: old.freeMode === 'wallet' ? 'wallet' : 'track', payDays: ledPayDays(old.payDays) || [1], accounts: [{ id: 'bank', name: 'Bank', type: 'bank' }] });
@@ -764,7 +767,7 @@ function migrate3831(old, today) {
     const id = 'loan' + (i + 1), a = { id, name: typeof d.name === 'string' && d.name ? d.name : 'Loan ' + (i + 1), type: 'loan' }; if (payDay(d.payDay)) a.payDay = d.payDay;
     ledgerAddAccount(S, a); const c = amt(d.owed, a.name); if (c) add({ k: 'open', acct: id, c, date: dayOr(d.at) });
   });
-  S.oldFigures = { shownOnce: false, plan: old.planFigures == null ? null : ledCopy(old.planFigures), notes };
+  S.oldFigures = { shownOnce: false, plan: planFigures == null ? null : ledCopy(planFigures), notes };
   S.undone = []; LED_LAST = null;
   return S;
 }
