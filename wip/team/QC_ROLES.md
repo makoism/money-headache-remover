@@ -32,6 +32,17 @@ Learned from panel (38.21): debt must read paid off / still owed everywhere (use
 Learned from Mako: run it as someone who does not know budgeting or finance; check the info is there for why they use it, what each number means, what it is for.
 Learned from Mako (2026-11-19): you are the person The Burrow is built to bridge: you never learned to save. On every screen: is it obvious what it means? If not, does it explain itself right there, the mindset first (why this matters, how to think about it), then the function (what to tap)? One thing at a time, like Typeform. The first impression must be "money management is this simple; I upload my stuff and it does it for me". Report every place you would have given up.
 
+### Jobs to finish (Novice)
+Passing every screen is not enough: a real job must be finishable. Do each job below in a browser, through the screens only: look, tap, type. No console, no reading code, no editing storage, no test hooks. You are a person who never learned about money. Start job 1 on empty storage and type your own made-up numbers (sample numbers do not count). Getting stuck anywhere is a finding: name the screen and quote the words on it where you gave up. The first lines of your report list each job as DONE or STUCK.
+1. "Get me set up." From the first open to a finished setup: pay, rent, food. Finished when: Home shows your numbers, not sample ones, and you can say what you typed for each.
+2. "What is safe to spend today?" Finished when: you can state one figure from Home and say in your own words why it is that much.
+3. "Does this match my bank?" On Home, use Check your bank: type what the bank app shows today. Finished when: Home shows that figure with the day it was entered, every figure near it has one name only, and no other figure on Home contradicts it.
+4. "I have a credit card I pay in full." On Home, add the card: its name, what is on it now, the day you pay it. Finished when: you can state from the screen what the bank holds after the cards are paid, and it is the bank minus the card.
+5. "I just bought lunch." Log one spend in under 60 seconds from Home (time it). Find it again in Receipts. Then fix a typo in its amount with Edit. Finished when: Receipts shows the corrected amount once, and Free to spend moved by the corrected amount.
+6. "Oops, I did not mean that." Make a mistake (a wrong spend, or a wrong amount in Plan) and take it back with Undo. Finished when: every figure is back to what it was before the mistake.
+7. "I want to save for a trip." Add a burrow with a goal amount (Plan, Burrows). Finished when: it shows on Home, and you can say what it did to Free to spend and why.
+8. "I am lost, help." From each tab, Settings, an open burrow and inside setup, find Help. Finished when: you reached Help from each, or you name each screen that has no way to Help.
+
 ## 2. Money accuracy
 Recompute by hand against the plan; do not trust the screen.
 - Pay, bills, jars, goal monthly amounts, chest numbers, burrow saved/percent, status sentence all agree with each other and with Plan and Month pages.
@@ -51,6 +62,18 @@ Learned from Mako (2026-11-17): a separate number-logic agent checks every numbe
 - Undo works for money moves. Backup and restore round-trip. Re-split pay keeps a copy and offers Undo, even after a reload.
 - Deleting anything asks first and says what is lost.
 - Nothing writes the API key anywhere; INVITE_CODES stays a dashboard variable; repo is PUBLIC so no secrets in it.
+
+### Jobs to finish (Data safety)
+Do each job in a browser, through the screens only: look, tap, type. No console, no reading code, no editing storage, no test hooks (the recovery code is read off the screen of phone A). You are a person who never learned about money, with made-up numbers. Getting stuck anywhere is a finding: name the screen and quote the words on it where you gave up. The first lines of your report list each job as DONE or STUCK.
+1. "Move my numbers to another phone." Phone A: Settings, Cloud copy, turn it on and walk its four steps (what it is, the code, this device, another device). Phone B (empty): get the numbers back from the welcome screen (enter the recovery code, find the copy, load). Finished when: pay, bank, every bill, every burrow, Free to spend and the receipts on B match A, figure by figure.
+2. "The other phone is gone from the welcome screen." Same as 1, but B has skipped setup: Settings, Cloud copy, the button for a code you already have (enter, found, loaded). Finished when: the same figures match.
+3. "My second phone already has numbers." B has its own plan, changed after A's last send. Enter A's code on B. Finished when: B warned in plain words which copy is older or newer before loading, and after loading you can bring B's old numbers back with Undo, also after a reload (the copy kept for 3 days).
+4. "Save a backup and get it back." Settings, Backup: save the file. Change some numbers. Settings, Restore: choose the file. Finished when: it asked before replacing, every figure matches the moment of the backup, and Undo brings the changed numbers back.
+5. "I lost my recovery code." Finished when: you can state, from the screens only, how to see the code again on a device that still has the numbers, and what the app says happens if the code and the device are both gone. If the app never says, that is a finding.
+6. "The send failed." Make a change while the server refuses (see below). Finished when: Home and Settings both say the cloud copy is behind and since when, also after a reload, a retry button is on screen, and after the server is back the line goes away.
+7. "I reset by mistake." Settings, Reset and setup: set all to zero (and, in a second run, restore samples). Finished when: it asked first and said what is lost, and Undo brings back every figure, also after a reload.
+
+Two phones and the made-up server. The cloud copy needs a server, so a `file://` page cannot do jobs 1, 2, 3 and 6. `tests/qc/cloud_lib.js` has a made-up local one (it serves the build and keeps copies in memory; nothing leaves the machine). In your own script in `/tmp/qc/data/`: `process.env.BUILD = '<build path>'; const C = require('<repo>/wip/team/tests/qc/cloud_lib.js'); const srv = await C.server();` then open `srv.url`. `srv.st.mode = 'drop'` (no signal) or `'500'` makes sends fail; `'ok'` brings it back. A second phone is a separate browser profile with its own empty storage: `await C.profile(srv.url, { tour: true })` (puppeteer, 412x915; without `tour` it skips setup for you), or with Playwright (`require('playwright')` works, chromium is installed): `const b = await chromium.launch(); const A = await b.newContext({ viewport: { width: 412, height: 915 }, isMobile: true, hasTouch: true }); const B = await b.newContext({...});` then `newPage()` on each. One context is one phone; never share a context between A and B. Also run, from `wip/team`, `BUILD=<build path> node tests/qc/cloud_move.js` and the same for `cloud_fail.js`, and paste their last line, but they do not replace walking the screens yourself.
 
 ## 4. Layout and touch (phone 390x844 and desktop 1300x900, also 320 wide)
 - No overflow, clipping, overlap. Fixed Ask and Help pills never hide a button or text the person must reach (leave bottom padding).

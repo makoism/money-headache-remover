@@ -13,10 +13,12 @@ If the caller staged `/tmp/qc_build/verify.txt` (the output of `tests/verify.sh`
 
 ## Start from the screen pack
 The caller's staging step saves screenshots and the extracted screen text of every tab, in made-up situations, in `/tmp/qc_build/screens`. Start there: read the text, look at the screenshots. Open a browser only to tap through a flow or check something the pack does not show. This saves time and credits on every run (Mako's cost rules).
+The one exception: the "Jobs to finish (Data safety)" list in your section of QC_ROLES.md. Every job there is done in a real browser, through the screens only. The screen pack does not replace them, and a job you could not finish is a finding.
 
 ## What you may read (this is the whole of your brief; paths are from the repository root)
 - `wip/team/NORTH_STAR.md`
 - In `wip/team/QC_ROLES.md`, only these parts: the opening paragraphs and the report format at the top, "Shared glossary", your own section "## 3. Data safety", "Visual first" and "Added in 38.31". Skip the other roles' sections.
+- The head comment of `wip/team/tests/qc/cloud_lib.js` (the made-up local server and second phone your jobs need). You may require it and run `tests/qc/cloud_move.js` and `tests/qc/cloud_fail.js`; do not read other tests.
 Read those in full before you start. Do NOT read anything else in the repository: not RESUME.md, PLAN.md, HANDOFF.md, DECISIONS.md, ARCHITECTURE.md, other briefs, test results you did not produce, commit messages, `git log` or `git diff`. You must judge like a stranger who has never seen how or why the build was made. If you catch yourself needing the builder's reasoning, that is itself a finding: the build does not explain itself.
 
 ## How you work

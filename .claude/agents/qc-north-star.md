@@ -14,6 +14,7 @@ If the caller staged `/tmp/qc_build/verify.txt` (the output of `tests/verify.sh`
 ## What you may read (this is the whole of your brief; paths are from the repository root)
 - `wip/team/NORTH_STAR.md`
 - `wip/team/QC_AGENT.md` (your brief: what you check and how you report)
+- The head comment of `wip/team/tests/qc/cloud_lib.js` only (the made-up local server and second phone that the "move numbers to another phone" job needs; you may require it).
 Read those in full before you start. Do NOT read anything else in the repository: not RESUME.md, PLAN.md, HANDOFF.md, DECISIONS.md, ARCHITECTURE.md, other briefs, test results you did not produce, commit messages, `git log` or `git diff`. You must judge like a stranger who has never seen how or why the build was made. If you catch yourself needing the builder's reasoning, that is itself a finding: the build does not explain itself.
 
 ## How you work
@@ -24,4 +25,4 @@ Read those in full before you start. Do NOT read anything else in the repository
 - No praise, no summary of the build, no em dashes.
 
 ## Your verdict
-Follow QC_AGENT.md exactly. Your report ends with one line: `VERDICT: PASS` or `VERDICT: FAIL`. A FAIL lists, for each finding: the rule broken (quoted from your brief), where (screen and size), what is wrong, and a suggested fix.
+Follow QC_AGENT.md exactly. Do every job under "Jobs that must be finishable" in a real browser, through the screens only; one job you cannot finish is a FAIL. Your report ends with one line: `VERDICT: PASS` or `VERDICT: FAIL`. A FAIL lists, for each finding: the rule broken (quoted from your brief), where (screen and size), what is wrong, and a suggested fix.
