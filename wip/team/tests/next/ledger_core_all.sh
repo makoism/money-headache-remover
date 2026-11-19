@@ -9,6 +9,11 @@ node tests/next/ledger_edge.js | tail -2
 # the reference must still prove the design
 MODEL=tests/next/ledger_ref.js node tests/next/ledger_conservation.js | tail -2
 MODEL=tests/next/ledger_ref.js node tests/next/ledger_fuzz.js | tail -2
+# the two lanes built on the ledger: the money door, and the move of saved 38.31 copies (wiring_page.js stays out: it fails by
+# design until the page is wired; wiring_store.js runs against its sketch until lstore.js exists)
+node tests/next/money_door_test.js | tail -4
+node tests/next/wiring_migrate.js | tail -2
+STORE=tests/next/wiring_store_sketch.js node tests/next/wiring_store.js | tail -2
 # no top-level name of ledger.js may already be used by a file build.sh puts in the page
 node -e '
 const fs=require("fs");const src=fs.readFileSync("ledger.js","utf8");
