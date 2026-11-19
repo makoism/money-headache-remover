@@ -256,7 +256,7 @@ D.DOOR.forEach(k => {
   const f = figs(t + ' day one', S, { total: 264450, saved: 162750, owed: 75880, forCards: 44380, 'accounts.laptop': 31500 });
   rep.ok(c(f.accounts.ub) - c(f.forCards) === c(52020), t + ': UnionBank after the cards are paid is 52,020');
   step(t + ' 8 card after the cut-off', S, 'spent', { amount: 2600, account: 'ubcard', date: '2026-11-20' }, { free: -2600, bills: 2600, owed: 2600 });
-  rep.ok(c(L.ledgerCardDue(S, 'ubcard', '2026-11-20').onCard) === c(15080), t + ' 8: owed now (what is due on the 7th is gap G5 below)');
+  rep.ok(c(L.ledgerCardDue(S, 'ubcard', '2026-11-20').onCard) === c(15080) && c(L.ledgerCardDue(S, 'ubcard', '2026-11-20').due) === c(12480), t + ' 8: owed now 15,080, of which 12,480 is due on the 7th');
   step(t + ' 5 pays the BPI card', S, 'paidcard', { amount: 31900, account: 'ub', who: 'bpicard', date: '2026-11-26' }, { total: -31900, bills: -31900, owed: -31900 });
   step(t + ' 6 pay', S, 'pay', { amount: 78000, account: 'ub', date: '2026-11-27' }, { total: 78000, waiting: 78000 });
   step(t + ' family on pay day', S, 'family', { amount: 10000, account: 'ub', date: '2026-11-27' }, { total: -10000, bills: -10000 });
@@ -413,9 +413,8 @@ D.DOOR.forEach(k => {
   refused(t + ' BPI statement: 16,950 in', S, 'seen', () => D.doorApply(S, 'pay', { amount: 16950, account: 'bpi', date: '2026-12-16', src: 'stmt:bpi-dec:41' }, TODAY));
 }
 
-/* ---------- 6. gaps: what the ledger lacks today (LANE_money_door.md). Not failures of the door ---------- */
+/* ---------- 6. the gaps the door found in the ledger (LANE_money_door.md). All five are closed: every one is a hard check ---------- */
 {
-  const gap = (name, closed) => console.log((closed ? 'GAP CLOSED, update LANE_money_door.md: ' : 'GAP (open, expected): ') + name);
   { const S = PICTURES.bea(), t = 'G1', n0 = S.ledger.length, B = 'stmt:bpi-dec:9', G = 'stmt:gcash-dec:21';   /* G1, closed by the ledger core third pass: hard checks now */
     const first = D.doorApply(S, 'moved', { amount: 5000, account: 'bpi', to: 'gcash', date: '2026-12-05', src: B }, TODAY), f0 = J(D.doorFigures(S));
     const second = refused(t + ' the GCash line of the same transfer', S, 'seen', () => D.doorApply(S, 'moved', { amount: 5000, account: 'bpi', to: 'gcash', date: '2026-12-06', src: G }, TODAY));
@@ -468,9 +467,13 @@ D.DOOR.forEach(k => {
     /* borrowed from somebody new: the same for a loan account */
     const S2 = PICTURES.bea(), a0 = J(S2.accounts), b = D.doorApply(S2, 'borrowed', { amount: 1000, account: 'bpi', who: { name: 'Tita Mila' }, date: '2026-12-05' }, TODAY);
     rep.ok(b.ok && !!b.made && !!D.doorUndo(S2) && J(S2.accounts) === a0, t + ': undoing "Borrowed" from a new person takes her loan account out too'); }
-  { const S = PICTURES.mika();   /* her UnionBank card: cut-off the 17th, 12,480 typed on the 19th, then 2,600 spent on the 20th */
-    D.doorApply(S, 'spent', { amount: 2600, account: 'ubcard', date: '2026-11-20' }, TODAY); const due = L.ledgerCardDue(S, 'ubcard', '2026-11-20');
-    gap('G5 a card balance typed after the cut-off day counts as spent after it: due on the 7th shows ' + due.due + ' (should be 12,480, with 2,600 later)', c(due.due) === c(12480) && c(due.later) === c(2600)); }
+  { const S = PICTURES.mika(), t = 'G5';   /* G5, closed by the ledger core fourth pass: hard checks now. Her UnionBank card: cut-off the 17th, 12,480 typed on the 19th */
+    let due = L.ledgerCardDue(S, 'ubcard', '2026-11-19');
+    rep.ok(c(due.due) === c(12480) && c(due.later) === 0, t + ' a card balance typed after the cut-off day is the statement: due on the 7th is 12,480, shows ' + due.due);
+    D.doorApply(S, 'spent', { amount: 2600, account: 'ubcard', date: '2026-11-20' }, TODAY); due = L.ledgerCardDue(S, 'ubcard', '2026-11-20');
+    rep.ok(c(due.due) === c(12480) && c(due.later) === c(2600) && c(due.onCard) === c(15080), t + ' then 2,600 spent on the 20th: due on the 7th is 12,480 with 2,600 later, shows ' + due.due + ' and ' + due.later);
+    D.doorApply(S, 'paidcard', { amount: 12480, account: 'ub', who: 'ubcard', date: '2026-12-07' }, TODAY); due = L.ledgerCardDue(S, 'ubcard', '2026-12-08');
+    rep.ok(c(due.due) === 0 && c(due.later) === c(2600), t + ' the bill paid on the 7th: nothing due, 2,600 later, shows ' + due.due + ' and ' + due.later); }
   { const S = PICTURES.wallet(), t0 = c(D.doorFigures(S).total), free = () => c(D.doorFigures(S).free);   /* G4, closed by the ledger core third pass: hard checks now */
     D.doorApply(S, 'moved', { amount: 1500, account: 'wallet', to: 'bank', date: '2026-11-25' }, TODAY);
     rep.ok(free() === c(2500), 'G4 Wallet mode: 4,000 handed out, 1,500 put back in the bank: Free to spend (handed out since pay day) is 2,500, shows ' + free() / 100);

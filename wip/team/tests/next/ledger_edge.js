@@ -424,4 +424,38 @@ const all = (tag, p, want) => { for (const k in want) eq(`${tag} ${k}`, k.includ
   const V = JSON.parse(s0); V.undone = [{ items: [{ e: { id: 77, k: 'spend', acct: 'ghost', c: 100, place: 'waiting', date: '2026-12-02' }, at: 1 }] }];
   rep.ok(L.ledgerClean(V).ok && V.undone.length === 0 && Array.isArray(V.ledgerBad) && V.ledgerBad.some(b => b.what === 'undone'), t + ': an unreadable undone step moves to S.ledgerBad, kept');
 }
+{ /* G5: a card balance typed after the cut-off day is the statement, not spending after it. Never show less due than there may be */
+  const t = 'G5', UB = { id: 'ub', name: 'UnionBank', type: 'bank' }, UBC = { id: 'ubc', name: 'UnionBank card', type: 'card', payDay: 7, cutDay: 17 };
+  const due = (S, day, want, tag) => { const d = L.ledgerCardDue(S, 'ubc', day); all(t + ' ' + tag, d, want); eq(t + ' ' + tag + ': due and later make what is on the card', d.due + d.later, d.onCard); return d; };
+  { /* the opening balance typed on the 19th, two days after the cut-off */
+    const S = fresh('PHP', [UB, UBC]); add('bank', S, { k: 'open', acct: 'ub', a: 96400, date: '2026-11-19' }); add('card', S, { k: 'open', acct: 'ubc', a: 12480, date: '2026-11-19' });
+    due(S, '2026-11-19', { onCard: 12480, due: 12480, later: 0 }, 'typed on the 19th');
+    add('spent after', S, { k: 'spend', acct: 'ubc', a: 2600, place: 'waiting', date: '2026-11-20' }); due(S, '2026-11-20', { onCard: 15080, due: 12480, later: 2600 }, 'then 2,600 spent');
+    add('a refund', S, { k: 'in', sub: 'refund', acct: 'ubc', a: 480, date: '2026-11-25' }); due(S, '2026-11-25', { onCard: 14600, due: 12000, later: 2600 }, 'a refund meets the statement first');
+    add('bill paid', S, { k: 'repay', acct: 'ub', acct2: 'ubc', a: 12000, date: '2026-12-07' }); due(S, '2026-12-08', { onCard: 2600, due: 0, later: 2600 }, 'the bill paid');
+    due(S, '2026-12-17', { due: 2600, later: 0 }, 'at the next cut-off the rest is due'); proof(t + ' opening', S); }
+  { /* check your bank on the card after the cut-off (wiring step 5 types card balances through ledgerAccept): the difference is the statement */
+    const S = fresh('PHP', [UB, UBC]); add('bank', S, { k: 'open', acct: 'ub', a: 96400, date: '2026-11-01' }); add('card', S, { k: 'open', acct: 'ubc', a: 9000, date: '2026-11-01' });
+    rep.ok(!!L.ledgerAccept(S, 'ubc', 12480, '2026-11-19'), t + ': the card balance typed on the 19th and accepted');
+    due(S, '2026-11-19', { onCard: 12480, due: 12480, later: 0 }, 'accepted on the 19th');
+    add('spent after', S, { k: 'spend', acct: 'ubc', a: 2600, place: 'waiting', date: '2026-11-20' }); due(S, '2026-11-20', { onCard: 15080, due: 12480, later: 2600 }, 'accepted, then 2,600 spent');
+    proof(t + ' accepted', S); }
+  { /* a spend after the cut-off, then a typed balance below what the events say: the spend stays later, the statement is the rest */
+    const S = fresh('PHP', [UB, UBC]); add('bank', S, { k: 'open', acct: 'ub', a: 96400, date: '2026-11-01' }); add('card', S, { k: 'open', acct: 'ubc', a: 9000, date: '2026-11-01' });
+    add('spent after', S, { k: 'spend', acct: 'ubc', a: 2600, place: 'waiting', date: '2026-11-18' }); rep.ok(!!L.ledgerAccept(S, 'ubc', 11000, '2026-11-19'), t + ': typed 11,000, 600 less than the events');
+    due(S, '2026-11-19', { onCard: 11000, due: 8400, later: 2600 }, 'a lower typed balance');
+    /* start fresh after the cut-off: the same, a typed balance */
+    rep.ok(!!L.ledgerStartFresh(S, { ub: 96400, ubc: 13000 }, '2026-11-21'), t + ': start fresh on the 21st'); due(S, '2026-11-21', { onCard: 13000, due: 10400, later: 2600 }, 'start fresh');
+    /* part of the card becomes its older balance after the cut-off: it comes off what is due */
+    rep.ok(!!L.ledgerCarryOver(S, 'ubc', 5000, '2026-11-22'), t + ': 5,000 carried over'); due(S, '2026-11-22', { onCard: 8000, due: 5400, later: 2600 }, 'carried over');
+    proof(t + ' lower', S); }
+  { /* this month's part of an instalment arriving after the cut-off is new on the card: it stays later (not a typed balance) */
+    const S = fresh('PHP', [UB, UBC, { id: 'phone', name: 'Phone on the card', type: 'paylater', of: 'ubc' }]);
+    add('bank', S, { k: 'open', acct: 'ub', a: 96400, date: '2026-11-01' }); add('card', S, { k: 'open', acct: 'ubc', a: 9000, date: '2026-11-01' }); add('plan', S, { k: 'open', acct: 'phone', a: 18000, date: '2026-11-01' });
+    rep.ok(!!L.ledgerInstalment(S, 'phone', 'ubc', 3000, '2026-11-18'), t + ': a part arrives on the 18th'); due(S, '2026-11-19', { onCard: 12000, due: 9000, later: 3000 }, 'an instalment after the cut-off');
+    proof(t + ' instalment', S); }
+  { /* without a cut-off day everything is due, as before */
+    const S = fresh('PHP', [UB, { id: 'ubc', name: 'Card', type: 'card', payDay: 7 }]); add('card', S, { k: 'open', acct: 'ubc', a: 12480, date: '2026-11-19' });
+    due(S, '2026-11-20', { onCard: 12480, due: 12480, later: 0 }, 'no cut-off day'); }
+}
 rep.end();
