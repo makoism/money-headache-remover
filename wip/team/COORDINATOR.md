@@ -2,7 +2,35 @@
 
 The coordinator is the one session Mako talks to. It records his decisions in DECISIONS.md (and NORTH_STAR.md, LAUNCH_CHECKLIST.md), starts and messages working sessions, and brings their results back to him. Working sessions take direction from nowhere else. The coordinator hands off at about 150k tokens of history, like every session.
 
-## 2026-11-19, handoff 5 (coordinator 5 to coordinator 6) READ THIS FIRST
+## 2026-11-19, handoff 6 (coordinator 6 to coordinator 7) READ THIS FIRST
+
+Coordinator 6 (session_01BFpKEZRNfExnGehHucxHPi) was at 153k tokens at 15:15 UTC after 2.25 hours and handed off. Same rules as handoff 5: every turn costs, answer in two lines, never list_events on a main session, do not read NORTH_STAR, DECISIONS or the checklist in full.
+
+### Session depth: a limit is close
+get_session shows lineage depth 5 of limit 8 for coordinator 6. Each coordinator started by the last one is one deeper, and a main session is one deeper than its coordinator. Coordinator 7 is depth 6, its main sessions depth 7. Coordinator 8 would be depth 7 and its main sessions depth 8, the last. Check "lineage" in your own get_session. Before the limit stops you, tell Mako in one line: he must open a fresh chat himself and paste a coordinator prompt (write it for him in wip/team/COORDINATOR_PROMPT.md). To save depth, hand off as late as is safe (160k to 170k is fine).
+
+### Mako
+He wrote in MAIN 8's chat about 15:00 UTC (relayed, recorded in DECISIONS d9d5221): he checks in the morning; work goes on non-stop; use the credits by Sunday; when the strongest model runs out use the next best. He has NOT seen the preview yet. When he writes here: greet him in two lines, tell him once the weekly meter shows a warning (resets about Sun 22 Nov 00:00 UTC), then give him:
+- The preview link (private): https://claude.ai/artifact/LHoWd8xZ5Zg1nYfJHQtgVj (Save file works, Ask does not). MAIN 9 republishes it to the same link after the overnight fixes.
+- Screenshots in wip/team/preview/ (02 is Q4, 03 is Q1, 05 and 06 are Q2, 07 is Q3; after-fix ones go in wip/team/preview/after/). He reads on his phone: send pictures with SendUserFile, not paths.
+- What to try: setup with made-up numbers; Check your bank with a new figure; add a card; log a receipt and undo it; Settings, Backup, Save file.
+- His calls: Q1 (Home never shows "They add up"), Q4 (picture below the fold on the first screen), the copy rows in wip/team/COPY_QC8_FOR_MAKO.md, the pay day design (wip/team/PAYDAY_DESIGN.md on side/payday-design 6ceff7c, seven choices with defaults), labels he has not seen ("Monthly bills", "Bank at month end"), and "Open with Mako" in handoff 3.
+- QC note: page_import, page_assistant, page_vault tests not run (no wrangler); team_cur.js stale; Help not reachable in setup, inside a burrow or the world view.
+- The bank comparison: STEP8_COMPARE.md refreshed, COMPARE PASS.
+Nothing deploys and nothing goes to main until he has seen these and said go.
+
+### Running
+- MAIN 9, session_01BFpKEWwQbkaVd618gWHwiX, started 15:13 UTC on 92c963d, the only session on app files. Overnight queue (efficiency reviewed): SF2 with SF1 and SF3; Q3 (also check the button $220 against the sentence $200); Q2; Q7; SF4; then SF5 and SF6 if time. Test first, one item per commit, check.sh fast after each. At the end: ONE check.sh full, Q12 fix, a fix-round of qc-numbers and a narrow qc-north-star (Q1 and Q4 marked waiting for Mako), preview republished to the same link, screenshots refreshed. Not tonight: Q9, SF7. It hands off at about 120k: start MAIN 10 from RESUME section 0 top entry with the same prompt and the queue that remains. It sends one line per finished item: mark it in checklist section Q.
+- When the queue is done and Mako is still away: next useful work that needs no taste is the remaining "v1" rows of the checklist (grep "| v1 |" and "open"), each through the efficiency agent first. Do not build Q1, Q4, copy rows, pay day, art, the 3D world.
+- Stopped, do not message: MAIN 3 to 8 (MAIN 8 is session_01BFpKEWndkfnpHBaNQqMhEE), the pay day lane (session_01BFpKEYXaSTjG5RkcsXJnk8), all older lanes.
+
+### Models
+Strongest for the main session while it lasts; if a session cannot start or is refused on it, use claude-opus-5-5 (Mako's rule). Docs lanes on claude-opus-5-5 or faster.
+
+### Timers
+Coordinator 6's are deleted. Set your own (about 45 minutes).
+
+## 2026-11-19, handoff 5 (coordinator 5 to coordinator 6)
 
 Coordinator 5 (session_01BFpKEX9xQF894VPk3euyZi) was at 176k tokens at 13:00 UTC after 2.5 hours and handed off. The fixed load is large: every turn costs. Do not read NORTH_STAR, DECISIONS and the checklist in full unless Mako gives a decision; this entry and "Open with Mako" in handoff 3 are enough to run. NEVER call list_events on a main session (one page is 20k tokens); use git log and get_session only. Answer check-ins in two lines.
 
