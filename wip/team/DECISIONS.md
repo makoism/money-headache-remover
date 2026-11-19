@@ -112,3 +112,10 @@ Three documents were kept in the Claude project and should be copied into the re
 - **Version one is: the picture, the four numbers and one next action. Everything else is hidden until it is needed.** Mako tests it himself with his own numbers.
 - No new art, music or video work until version one is working (this replaces "until v1 is in use" above; same intent, the trigger is v1 working).
 
+## Cost and speed rules (Mako, 2026-11-19)
+
+1. **QC rounds have a stopping rule.** If the same finding fails two rounds, it goes to Mako in two lines instead of a third fix round. Only BLOCKERs stop a release; the panel's CONFUSING and POLISH items go on a list for after v1. (Gate failures are still never an exception, except S4 as decided above.)
+2. **Each agent runs on the model that fits its job.** The two gates, money accuracy and data safety use the strongest model; novice, wording, layout, art and regression use a faster one (set in `.claude/agents/*.md`, `model:`). Fix rounds re-run only the agents whose reports failed.
+3. **A finding that comes back becomes a script.** Anything a script can check (an amount written two ways, cents, tap targets under 44px, contrast) goes into `tests/verify.sh` or `check.sh`, so it is caught free on every commit and agents only look for what scripts cannot see.
+4. **A session hands off when it gets large**, at about 150,000 tokens of history, not only at the end of a step. A short handoff in RESUME.md section 0 every time.
+
