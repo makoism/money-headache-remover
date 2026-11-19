@@ -184,7 +184,15 @@ function report(hits, log) {
   if (!hits.length) { log('No test file quotes an old string.'); return; }
   log('Test files that quote an old string (fix these in the same batch):');
   const by = {}; hits.forEach(h => (by[h.file] = by[h.file] || []).push(h));
-  for (const f of Object.keys(by).sort()) { log('  ' + f); by[f].forEach(h => log('      line ' + h.line + ', row ' + h.id + ': ' + h.piece.slice(0, 70))); }
+  /* files with the same rows (the golden screen files) share one line */
+  const groups = {};
+  for (const f of Object.keys(by).sort()) { const k = by[f].map(h => h.id).sort().join(' '); (groups[k] = groups[k] || []).push(f); }
+  for (const k of Object.keys(groups)) {
+    const fs_ = groups[k], first = by[fs_[0]];
+    log('  ' + (fs_.length > 3 ? fs_[0] + ' and ' + (fs_.length - 1) + ' more like it (to ' + path.basename(fs_[fs_.length - 1]) + ')' : fs_.join(', ')));
+    if (/\.json$/.test(fs_[0]) || first.length > 12) log('      rows ' + k);
+    else first.forEach(h => log('      line ' + h.line + ', row ' + h.id + ': ' + h.piece.slice(0, 70)));
+  }
 }
 
 /* ---------- self test ---------- */
