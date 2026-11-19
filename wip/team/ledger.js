@@ -68,6 +68,7 @@ const LED_WORDS = {
   'src': 'A source must be the id of a statement line or a receipt.',
   'nothing': 'There is nothing to undo.',
   'no-id': 'There is no event with that id.',
+  'moved-open': 'This is a balance brought over from your old plan. It cannot be undone. Use check your bank to correct it.',
   'no-redo': 'There is nothing to put back.',
   'acct-new': 'The account needs an id (letters, digits, - or _), a type and a currency, and its id must not be in use.',
   'acct-locked': 'The type, currency and the way an account is counted cannot change once it has events.',
@@ -447,6 +448,11 @@ function ledgerAddMany(S, evs, today, more) {
   ledEndRedo(S); LED_LAST = null;
   return out;
 }
+/* AN OPENING MADE BY THE MOVE FROM 38.31 (migrate3831, and the one ledgerSameCard adds) is never undone: it is a figure the person
+   typed in the old app, and nothing else in the ledger holds it. Undo by id refuses it ('moved-open'); plain undo passes over it
+   to the last step that may be undone, and says 'nothing' when only such openings are left. A wrong figure is corrected with check
+   your bank (ledgerAccept), which is an ordinary step. An opening typed by hand in the new app is undone like any event */
+const ledMovedOpen = e => !!e && e.k === 'open' && e.src === 'migration';
 /* undo: the last event (or the one with this id) leaves the ledger and is kept in S.undone, which is saved with the ledger, so undo
    and redo survive closing the page and a restore. Events recorded as one step leave together. An account that was made with a step
    (madeBy) and that no event left in the ledger names leaves too, kept in the undone step: { items, accounts: [{ a, at }] }. So the
@@ -457,10 +463,12 @@ function ledgerUndo(S, id) {
   if ((+S.ledgerV || 0) > LEDGER_V) return ledFail(ledNo('newer'));
   const L = S.ledger;
   let i = L.length - 1;
-  if (id != null) { i = L.findIndex(e => e && e.id === id); if (i < 0) return ledFail(ledNo('no-id', String(id))); }
+  if (id != null) { i = L.findIndex(e => e && e.id === id); if (i < 0) return ledFail(ledNo('no-id', String(id))); if (ledMovedOpen(L[i])) return ledFail(ledNo('moved-open')); }
+  else while (i >= 0 && ledMovedOpen(L[i])) i--;   /* the last step that may be undone */
   if (i < 0) return ledFail(ledNo('nothing'));
   const grp = L[i] && L[i].grp, idx = [];
   if (grp != null) L.forEach((e, j) => { if (e && e.grp === grp) idx.push(j); }); else idx.push(i);
+  if (idx.some(j => ledMovedOpen(L[j]))) return ledFail(ledNo('moved-open'));
   const items = idx.map(j => ({ e: L[j], at: j }));
   for (let j = idx.length - 1; j >= 0; j--) L.splice(idx[j], 1);
   const step = { items }, gone = [], A = Array.isArray(S.accounts) ? S.accounts : [];
