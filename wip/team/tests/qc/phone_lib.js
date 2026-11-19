@@ -11,6 +11,8 @@ const DEVS = {
   pixel5: { w: 393, h: 851, dpr: 2.75, mobile: true },
   big: { w: 430, h: 932, dpr: 3, mobile: true },
   tablet: { w: 768, h: 1024, dpr: 2, mobile: true },
+  land: { w: 844, h: 390, dpr: 3, mobile: true },
+  land8: { w: 667, h: 375, dpr: 2, mobile: true },
   desktop: { w: 1440, h: 900, dpr: 1, mobile: false },
 };
 async function open(o = {}) {
@@ -22,12 +24,13 @@ async function open(o = {}) {
   const feats = [{ name: 'prefers-color-scheme', value: 'dark' }]; if (o.reduced) feats.push({ name: 'prefers-reduced-motion', value: 'reduce' });
   await p.emulateMediaFeatures(feats);
   await p.evaluateOnNewDocument(() => { const real = Date, fixed = new real('2026-11-17T10:00:00').getTime(), start = real.now(); class D extends real { constructor(...a) { if (!a.length) super(fixed + (real.now() - start)); else super(...a); } static now() { return fixed + (real.now() - start); } } window.Date = D; window.confirm = () => false; window.alert = () => { }; });
-  /* the first load writes the set-up sample plan, then the page loads again with it */
-  await p.evaluateOnNewDocument(k => { try { if (!localStorage.getItem(k + '__t')) { localStorage.clear(); localStorage.setItem(k + '__t', '1'); } } catch (e) { } }, KEY);
+  /* the plan is made by the app itself (presetState) in a throwaway tab, then written before the app starts in the tab under test, so the app's own save never overwrites it */
   const url = 'file://' + PAGE + (o.query ? '?' + o.query : '') + '#2026-11';
-  await p.goto(url); await w(600);
-  await p.evaluate(k => { const s = presetState('¥'); s.ui = Object.assign(s.ui || {}, { toured: true, setup: true, sampleHidden: true, done: { pay: true, bills: true, goals: true, receipts: true }, seen: { home: true, month: true, goals: true, receipts: true, basics: true } }); localStorage.setItem(k, JSON.stringify(s)); }, KEY);
-  await p.reload(); await w(1500);
+  const p0 = await b.newPage(); await p0.goto('file://' + PAGE + '#2026-11'); await w(300);
+  const st = await p0.evaluate(() => { const s = presetState('¥'); s.ui = Object.assign(s.ui || {}, { toured: true, setup: true, sampleHidden: true, done: { pay: true, bills: true, goals: true, receipts: true }, seen: { home: true, month: true, goals: true, receipts: true, basics: true } }); return JSON.stringify(s); });
+  await p0.close();
+  await p.evaluateOnNewDocument((k, s) => { try { localStorage.clear(); indexedDB.deleteDatabase('money-map-safe'); localStorage.setItem(k, s); } catch (e) { } }, KEY, st);
+  await p.goto(url); await w(1500);
   const cdp = await p.createCDPSession();
   if (o.cpu) await cdp.send('Emulation.setCPUThrottlingRate', { rate: o.cpu });
   return { b, p, errs, cdp };

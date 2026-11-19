@@ -118,15 +118,25 @@ const SQ = (() => {
     for (let i = 0; i < coins; i++) { const x = cx - 4 + (i % 4) * 2 + (i > 3 ? 1 : 0), y = base - 2 - Math.floor(i / 4) * 2; p(x, y, HC.coin); p(x + 1, y, HC.coin); p(x, y + 1, HC.coinD); p(x + 1, y + 1, HC.coinD); }
     g.fillStyle = HC.dirt; g.fillRect(0, base + 2, 400, 3);
   }
+  /* the corner panel never sits on a control that stays on screen (Ask, Help, a bar): if one is under it, the panel moves up above it. Measured once when it shows. */
+  function clear(cv) {
+    const fixed = e => { for (let n = e; n && n !== document.body; n = n.parentElement) { const ps = getComputedStyle(n).position; if (ps === 'fixed' || ps === 'sticky') return true; } return false; };
+    for (let i = 0; i < 4; i++) {
+      const a = cv.getBoundingClientRect(); let top = Infinity;
+      document.querySelectorAll('button, a[href], input, select, textarea, [role=button]').forEach(e => { if (cv.contains(e)) return; const q = e.getBoundingClientRect(); if (!q.width || !q.height || q.left >= a.right || q.right <= a.left || q.top >= a.bottom || q.bottom <= a.top) return; if (getComputedStyle(e).visibility === 'hidden' || !fixed(e)) return; top = Math.min(top, q.top); });
+      if (top === Infinity) return; const lift = Math.round(a.bottom - top + 8); if (a.top - lift < 0) return;   /* no room above: leave it where it was designed */
+      cv.style.bottom = `calc(${Math.round(innerHeight - a.bottom + lift)}px)`;
+    }
+  }
   /* the corner moment for a big step elsewhere in the app */
   let last = 0, busy = false, nShown = 0;
   const reduced = () => !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
   function stash(style) {
-    const now = Date.now(); if (busy || reduced() || window.innerWidth < 1260 || now - last < 150000) return false; last = now; busy = true; const n = nShown++;
+    const now = Date.now(); if (busy || reduced() || now - last < 150000) return false; last = now; busy = true; const n = nShown++;
     setTimeout(() => {
       const W = STAGE.W, H = STAGE.H, sc = window.innerWidth < 1400 ? 2 : 3, cv = document.createElement('canvas'); cv.width = W; cv.height = H; const g = cv.getContext('2d'); if (!g) { busy = false; return; }
       cv.setAttribute('aria-hidden', 'true'); cv.style.cssText = `position:fixed;left:10px;bottom:calc(8px + env(safe-area-inset-bottom,0px));width:${W * sc}px;height:${H * sc}px;image-rendering:pixelated;pointer-events:none;z-index:70;background:var(--card,#2a3a2a);border-radius:14px;box-shadow:0 2px 10px rgba(0,0,0,.25)`;
-      document.body.append(cv); const t0 = performance.now(); let coined = false, ph = 0;
+      document.body.append(cv); clear(cv); const t0 = performance.now(); let coined = false, ph = 0;
       const tick = () => { const t = performance.now() - t0; if (t > END + 200 || !cv.isConnected) { cv.remove(); busy = false; return; }
         if (!coined && t > T.crouch + 700) { coined = true; try { sfx('coin'); } catch (e) { /* sound is a bonus */ } }
         const a = Math.min(1, t / 300) * (t > END - 300 ? Math.max(0, 1 - (t - (END - 300)) / 300) : 1);
