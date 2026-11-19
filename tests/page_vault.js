@@ -74,6 +74,16 @@ const decrypt = async (k, j) => JSON.parse(new TextDecoder().decode(await subtle
   await a.click('#vaultOff'); await w(200); await a.click('#vaultOff'); await w(2000);
   v = await getVault(k); ok(v.status === 404, 'Turn off (two taps) deletes the cloud copy');
   ok(await a.evaluate(() => !localStorage.getItem('mhr-vault')), 'the code is forgotten on this device');
+  // the server keeps a deleted copy for a while, and the code can bring it back (side G, LANE_vault.md)
+  const vh = { 'x-vault-token': k.token, 'content-type': 'application/json' };
+  const delInfo = await (await fetch(BASE + '/api/vault/' + k.id, { headers: vh })).json();
+  ok(!!delInfo.deleted && delInfo.deleted.until > Date.now(), 'the server keeps the deleted copy for a while');
+  const vlist = await (await fetch(BASE + '/api/vault/' + k.id + '?versions=1', { headers: vh })).json();
+  ok(Array.isArray(vlist.versions) && vlist.versions.length >= 1 && vlist.versions.every(x => x.blob === undefined), 'older copies are listed, without content: ' + (vlist.versions || []).length);
+  const un = await (await fetch(BASE + '/api/vault/' + k.id, { method: 'POST', headers: vh, body: JSON.stringify({ action: 'undelete' }) })).json();
+  v = await getVault(k); d = v.j ? await decrypt(k, v.j) : null;
+  ok(un.restored === true && !!d && d.receipts.some(r => r.a === 888), 'undo brings the deleted copy back, the 888 receipt included');
+  await fetch(BASE + '/api/vault/' + k.id, { method: 'DELETE', headers: vh });
   ok(errsA.length === 0 && errsB.length === 0, 'no page errors ' + JSON.stringify(errsA.concat(errsB).slice(0, 3)));
   // the Setup done screen offers the cloud copy in one tap
   const bC = await puppeteer.launch({ executablePath: '/usr/bin/google-chrome', headless: 'new', args: ['--no-sandbox', '--disable-gpu'] });
