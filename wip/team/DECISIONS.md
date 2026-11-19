@@ -236,3 +236,12 @@ How the coordinator uses it (its own rule, built on cost rule 2):
 - Strongest model: the main session (app code, numbers, data safety), the ledger and its tests, the two QC gates, money accuracy and data safety reviews, and the voice and copy work (the copy is a reason he would stop using the app).
 - Faster, cheaper model: docs-only lanes, research, runbooks, persona walk scripts, novice, layout and regression reviews.
 - How many sessions run at once matters more than the model: about five or six at most, fewer when nothing useful is unblocked; if Mako says the usage meter is running hot, cut to the main session plus one lane.
+
+## Work goes on overnight, use the credits by Sunday, next best model when the strongest runs out (Mako, 2026-11-19, about 15:00 UTC)
+Typed in MAIN 8's chat and relayed to the coordinator (not seen by the coordinator first hand): "when fable runs out make sure to use the next best model and switch. it's at 96% capacity" and "I'll check in the morning so make sure you are continuing work nonstop and just continue with the app until you hit the limits. I want to spend all of the credits by Sunday".
+How the coordinator uses it:
+- He does not look at the preview tonight. Work does not wait for him: the overnight queue is the QC findings that do not need his taste (checklist Q2, Q3, Q7, Q9, Q10), then one full check, a fix-round re-run of the gates, and the preview republished to the same link.
+- Still his to judge, nothing built: Q1 (the "They add up" line), Q4 (the picture above the fold), every copy row, the pay day field, art and the 3D world.
+- The earlier pacing rule (main session plus at most one lane, no extra QC rounds) is lifted as far as budget goes until the weekly reset on Sunday. One session at a time on app files stays.
+- Models: the strongest while it lasts; when it runs out, new sessions and helpers start on the next best one.
+- Unchanged: nothing deploys, nothing goes to main until he has seen the preview and the bank comparison and said go.
