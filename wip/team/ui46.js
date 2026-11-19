@@ -212,12 +212,13 @@ function askClean(raw) {
   const num = v => (typeof v === 'number' && isFinite(v) ? v : typeof v === 'string' && /^-?\d+(\.\d+)?$/.test(v.replace(/[,\s]/g, '')) ? +v.replace(/[,\s]/g, '') : NaN);
   const txt = (v, n) => (typeof v === 'string' ? v.replace(/[\u0000-\u001f<>]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, n) : '');
   const keys = new Set(S.plan.lines.map(l => l.key)), ym = fromYm();
-  const out = { summary: txt(o.summary, 300), receipts: [], pay: null, balance: null, bills: [], skipped: [], dropped: 0, outside: 0 };
+  const out = { summary: txt(o.summary, 300), receipts: [], pay: null, balance: null, bills: [], skipped: [], dropped: 0, outside: 0, away: 0 };
   (Array.isArray(o.receipts) ? o.receipts : []).slice(0, 300).forEach(r => {
     r = r && typeof r === 'object' ? r : {};
     const a = round2(num(r.amount)), d = r.date;
     if (!(a > 0) || a > 1e9 || !validDate(d)) { out.dropped++; return; }
-    if (MONTHS.indexOf(d.slice(0, 7)) < 0) { out.outside++; return; }
+    /* E6: a row from a month not on screen is kept and counted, so the review can say so */
+    if (MONTHS.indexOf(d.slice(0, 7)) < 0) out.away++;
     out.receipts.push({ d, a, c: typeof r.category === 'string' && keys.has(r.category) ? r.category : 'other', n: txt(r.note, 80), dup: (S.receipts || []).some(x => x.d === d && Math.abs(x.a - a) < 0.005) });
   });
   const pa = num(o.pay && o.pay.amount); if (pa > 0 && pa < 1e9) out.pay = Math.round(pa);
@@ -286,6 +287,7 @@ function askCard(bot, p, clipped, ctx) {
   if (plan.length) { const g = el('div', 'grp'), head = el('div', 'rv-h'); head.append(el('b', '', 'Numbers')); g.append(head); plan.forEach(x => g.append(x.t.l)); bot.append(g); }
   const left = [];
   if (p.outside) left.push(`${p.outside} receipt${p.outside === 1 ? '' : 's'} dated outside ${monthLabel(START)} to ${monthLabel(END)}.`);
+  if (p.away) left.push(`${p.away} receipt${p.away === 1 ? ' is' : 's are'} from outside ${monthLabel(START)} to ${monthLabel(END)}. ${p.away === 1 ? 'It is' : 'They are'} kept in your saved copy, but no month on screen shows ${p.away === 1 ? 'it' : 'them'} yet.`);
   if (p.dropped) left.push(`${p.dropped} row${p.dropped === 1 ? '' : 's'} unreadable.`);
   if (clipped) left.push('Long file: only the first part was read.');
   p.skipped.forEach(x => left.push(x));

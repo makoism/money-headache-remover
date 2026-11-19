@@ -881,8 +881,9 @@ function cleanSteps(raw) {
 }
 function cleanOnce(raw) {
   const out = {}; if (!isMap(raw)) return out;
-  Object.keys(raw).forEach(ym => {
-    if (MONTHS.indexOf(ym) < 0 || !isMap(raw[ym])) return;
+  Object.keys(raw).slice(0, 2400).forEach(ym => {
+    /* E6: the month window is a view only. A month outside it is kept, never trimmed */
+    if (!YM_FORM.test(ym) || !isMap(raw[ym])) return;
     const o = {}; Object.keys(raw[ym]).slice(0, 150).forEach(k => { if (!SAFE_KEY.test(k)) return; const v = cleanAmt(raw[ym][k]); if (v !== null) o[k] = v; });
     if (Object.keys(o).length) out[ym] = o;
   });
@@ -890,8 +891,8 @@ function cleanOnce(raw) {
 }
 function cleanItems(raw) {
   const out = {}; if (!isMap(raw)) return out;
-  Object.keys(raw).forEach(ym => {
-    if (MONTHS.indexOf(ym) < 0 || !Array.isArray(raw[ym])) return;
+  Object.keys(raw).slice(0, 2400).forEach(ym => {
+    if (!YM_FORM.test(ym) || !Array.isArray(raw[ym])) return;
     const list = [], used = new Set();
     raw[ym].slice(0, 60).forEach((it, i) => {
       if (!isMap(it)) return; const amount = cleanAmt(it.amount); if (amount === null) return;
@@ -999,8 +1000,8 @@ function cleanRecurring(raw) {
     const a = typeof r.a === 'number' ? round2(r.a) : 0; if (!(a > 0) || a > 1e9) return;
     const every = r.every === 'week' ? 'week' : r.every === 'month' ? 'month' : null; if (!every) return;
     const on = Math.round(+r.on); if (every === 'week' ? !(on >= 0 && on <= 6) : !(on >= 1 && on <= 28)) return;
-    /* a start before the first month the page covers begins at the first day it covers */
-    const from = typeof r.from === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(r.from) && r.from < MONTHS[0] + '-01' ? MONTHS[0] + '-01' : r.from;
+    /* E6: a start before the first month the page covers is kept as typed */
+    const from = r.from;
     if (!validDate(from)) return;
     seen.add(r.id);
     const c = typeof r.c === 'string' && /^[A-Za-z0-9:_-]{1,40}$/.test(r.c) ? r.c : 'other';
@@ -1107,7 +1108,8 @@ function applyRecurring(S, today) {
   let n = 0;
   rec.forEach(r => {
     const ds = dueDates(r, null, today);
-    ds.forEach(d => { if (d.slice(0, 7) < START || d.slice(0, 7) > END) return; if (addReceipt(S, d, r.a, r.c, r.n)) n++; });
+    /* E6: a due date outside the months shown is logged too, never skipped and marked done */
+    ds.forEach(d => { if (addReceipt(S, d, r.a, r.c, r.n)) n++; });
     if (ds.length) r.last = ds[ds.length - 1];
   });
   return n;

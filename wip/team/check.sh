@@ -17,6 +17,7 @@ step "main suite (test_team)"; OUT=$(node test_team.js 2>&1); echo "$OUT" | tail
 cp tests/qc/real.js /tmp/v39/real.js 2>/dev/null; cp ../../tests/regression/v25/oracle.js /tmp/v25/oracle.js 2>/dev/null
 step "independent oracle (a second calculation written apart from the app, in whole numbers)"; OUT=$(N=1500 node /tmp/v25/oracle.js 2>&1); echo "$OUT" | head -4 | cut -c1-200; echo "$OUT" | head -1 | grep -q "mismatches 0$" || { echo "ORACLE DISAGREES WITH THE APP"; BAD=1; }
 step "the proof (where the money sits = where it came from, to the cent)"; OUT=$(node tests/qc/proof_fuzz.js 800 21 2>&1); echo "$OUT" | grep "^FAIL" | head -4 | cut -c1-220; echo "$OUT" | tail -1; echo "$OUT" | grep -q "PROOF PASS" || BAD=1
+step "E6: the month window is a view only (nothing trimmed on load, save or import)"; OUT=$(node tests/qc/e6_window.js 2>&1); echo "$OUT" | grep "^LOSS\|^FAIL" | head -8 | cut -c1-220; echo "$OUT" | tail -1; echo "$OUT" | grep -q "E6 WINDOW PASS" || BAD=1
 step "launch checklist v1 points on the model (debt goals are not savings, what is owed)"; OUT=$(node tests/qc/v1_model.js 2>&1); echo "$OUT" | grep "^FAIL" | head -6; echo "$OUT" | tail -1; echo "$OUT" | grep -q "V1 MODEL PASS" || BAD=1
 OUT=$(node tests/qc/v1_now.js 2>&1); echo "$OUT" | grep "^FAIL" | head -6; echo "$OUT" | tail -1; echo "$OUT" | grep -q "V1 NOW PASS" || BAD=1
 step "screens do no money maths (the count may only go down; the goal is 0)"; OUT=$(node tests/qc/display_math.js 2>&1); echo "$OUT" | tail -2 | head -1

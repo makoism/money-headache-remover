@@ -3227,8 +3227,9 @@ function cleanSteps(raw) {
 }
 function cleanOnce(raw) {
   const out = {}; if (!isMap(raw)) return out;
-  Object.keys(raw).forEach(ym => {
-    if (MONTHS.indexOf(ym) < 0 || !isMap(raw[ym])) return;
+  Object.keys(raw).slice(0, 2400).forEach(ym => {
+    /* E6: the month window is a view only. A month outside it is kept, never trimmed */
+    if (!YM_FORM.test(ym) || !isMap(raw[ym])) return;
     const o = {}; Object.keys(raw[ym]).slice(0, 150).forEach(k => { if (!SAFE_KEY.test(k)) return; const v = cleanAmt(raw[ym][k]); if (v !== null) o[k] = v; });
     if (Object.keys(o).length) out[ym] = o;
   });
@@ -3236,8 +3237,8 @@ function cleanOnce(raw) {
 }
 function cleanItems(raw) {
   const out = {}; if (!isMap(raw)) return out;
-  Object.keys(raw).forEach(ym => {
-    if (MONTHS.indexOf(ym) < 0 || !Array.isArray(raw[ym])) return;
+  Object.keys(raw).slice(0, 2400).forEach(ym => {
+    if (!YM_FORM.test(ym) || !Array.isArray(raw[ym])) return;
     const list = [], used = new Set();
     raw[ym].slice(0, 60).forEach((it, i) => {
       if (!isMap(it)) return; const amount = cleanAmt(it.amount); if (amount === null) return;
@@ -3345,8 +3346,8 @@ function cleanRecurring(raw) {
     const a = typeof r.a === 'number' ? round2(r.a) : 0; if (!(a > 0) || a > 1e9) return;
     const every = r.every === 'week' ? 'week' : r.every === 'month' ? 'month' : null; if (!every) return;
     const on = Math.round(+r.on); if (every === 'week' ? !(on >= 0 && on <= 6) : !(on >= 1 && on <= 28)) return;
-    /* a start before the first month the page covers begins at the first day it covers */
-    const from = typeof r.from === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(r.from) && r.from < MONTHS[0] + '-01' ? MONTHS[0] + '-01' : r.from;
+    /* E6: a start before the first month the page covers is kept as typed */
+    const from = r.from;
     if (!validDate(from)) return;
     seen.add(r.id);
     const c = typeof r.c === 'string' && /^[A-Za-z0-9:_-]{1,40}$/.test(r.c) ? r.c : 'other';
@@ -3453,7 +3454,8 @@ function applyRecurring(S, today) {
   let n = 0;
   rec.forEach(r => {
     const ds = dueDates(r, null, today);
-    ds.forEach(d => { if (d.slice(0, 7) < START || d.slice(0, 7) > END) return; if (addReceipt(S, d, r.a, r.c, r.n)) n++; });
+    /* E6: a due date outside the months shown is logged too, never skipped and marked done */
+    ds.forEach(d => { if (addReceipt(S, d, r.a, r.c, r.n)) n++; });
     if (ds.length) r.last = ds[ds.length - 1];
   });
   return n;
@@ -13984,12 +13986,13 @@ function askClean(raw) {
   const num = v => (typeof v === 'number' && isFinite(v) ? v : typeof v === 'string' && /^-?\d+(\.\d+)?$/.test(v.replace(/[,\s]/g, '')) ? +v.replace(/[,\s]/g, '') : NaN);
   const txt = (v, n) => (typeof v === 'string' ? v.replace(/[\u0000-\u001f<>]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, n) : '');
   const keys = new Set(S.plan.lines.map(l => l.key)), ym = fromYm();
-  const out = { summary: txt(o.summary, 300), receipts: [], pay: null, balance: null, bills: [], skipped: [], dropped: 0, outside: 0 };
+  const out = { summary: txt(o.summary, 300), receipts: [], pay: null, balance: null, bills: [], skipped: [], dropped: 0, outside: 0, away: 0 };
   (Array.isArray(o.receipts) ? o.receipts : []).slice(0, 300).forEach(r => {
     r = r && typeof r === 'object' ? r : {};
     const a = round2(num(r.amount)), d = r.date;
     if (!(a > 0) || a > 1e9 || !validDate(d)) { out.dropped++; return; }
-    if (MONTHS.indexOf(d.slice(0, 7)) < 0) { out.outside++; return; }
+    /* E6: a row from a month not on screen is kept and counted, so the review can say so */
+    if (MONTHS.indexOf(d.slice(0, 7)) < 0) out.away++;
     out.receipts.push({ d, a, c: typeof r.category === 'string' && keys.has(r.category) ? r.category : 'other', n: txt(r.note, 80), dup: (S.receipts || []).some(x => x.d === d && Math.abs(x.a - a) < 0.005) });
   });
   const pa = num(o.pay && o.pay.amount); if (pa > 0 && pa < 1e9) out.pay = Math.round(pa);
@@ -14058,6 +14061,7 @@ function askCard(bot, p, clipped, ctx) {
   if (plan.length) { const g = el('div', 'grp'), head = el('div', 'rv-h'); head.append(el('b', '', 'Numbers')); g.append(head); plan.forEach(x => g.append(x.t.l)); bot.append(g); }
   const left = [];
   if (p.outside) left.push(`${p.outside} receipt${p.outside === 1 ? '' : 's'} dated outside ${monthLabel(START)} to ${monthLabel(END)}.`);
+  if (p.away) left.push(`${p.away} receipt${p.away === 1 ? ' is' : 's are'} from outside ${monthLabel(START)} to ${monthLabel(END)}. ${p.away === 1 ? 'It is' : 'They are'} kept in your saved copy, but no month on screen shows ${p.away === 1 ? 'it' : 'them'} yet.`);
   if (p.dropped) left.push(`${p.dropped} row${p.dropped === 1 ? '' : 's'} unreadable.`);
   if (clipped) left.push('Long file: only the first part was read.');
   p.skipped.forEach(x => left.push(x));
