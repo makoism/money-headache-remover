@@ -7,17 +7,24 @@
    account in another currency, Wallet or Track mode, and every kind of event on random dates over four years, added in any order
    (statements imported late), with undo of the last event or of any event by id, redo, and save and reopen. After every step:
      I1 to I6 (ledger_personas_run.js): accounts, Total from both sides, This month, Owed, "for the card" = the card, other currencies
-     I7  each account's last check: unexplained = typed - that account's events dated on or before the check's day
+     I7  each account's check with the latest day (same day: the one added last) is the one shown, with its date:
+         unexplained = typed - that account's events dated on or before the check's day. A check added later for an older day
+         (a late statement) never replaces it
      I8  a move between places, a check, or a transfer between two accounts in Total never changes Total
      I9  undo and redo put every number back exactly; a saved and reopened copy shows the same numbers; the ledger holds exactly the
          events this test added and did not undo (nothing trimmed, nothing doubled)
      I11 months without a fixed window: pay day periods chain end to start with no gap, and each period's Total moves by exactly
          what came in minus what went out in it, years back or ahead (the ledger is never trimmed; a month is only a view)
+     I12 handed to the wallet since pay day goes by the day of each event, not by the order they were added
+   A second block of people (same count, its own seed) adds the cases the first block never draws, so I2, I5 and I8 meet them:
+     money sent abroad (convert from a home account), cash taken on a card paid in full (borrow onto it), a card paid in full paid
+     from the wallet that is not tracked, and the place 'free' used in Wallet mode.
    Months dropped on load (E6) are tested by the E6 lane on side/e6-window-test, not here. */
 const { loadModel, Report, Rand, cents } = require('./lib');
 const { tools } = require('./ledger_personas_run');
-const N = +(process.argv[2] || 300), R = Rand(+(process.argv[3] || 11));
-const { ri, pick, chance } = R;
+const N = +(process.argv[2] || 300), SEED = +(process.argv[3] || 11);
+let R = Rand(SEED), EXT = false;   /* EXT: the second block, with the extra cases */
+const ri = (a, b) => R.ri(a, b), pick = a => R.pick(a), chance = p => R.chance(p);
 const rep = Report('ledger fuzz');
 const M = loadModel();
 const J = JSON.stringify;
@@ -41,11 +48,30 @@ function person(t) {
   n(() => ({ id: 'loan', name: 'Loan', type: 'loan' }), 0, 1);
   n(() => ({ id: 'otu', name: 'Owed to me', type: 'owedToYou' }), 0, 1);
   n(() => ({ id: 'usd', name: 'Payoneer', type: 'bank', cur: 'USD' }), 0, 1);
-  if (mode === 'wallet') A.push({ id: 'wallet', name: 'Wallet', type: 'wallet', tracked: false });
+  if (mode === 'wallet' || (EXT && chance(.5))) A.push({ id: 'wallet', name: 'Wallet', type: 'wallet', tracked: false });
   return { cur: 'PHP', mode, accounts: A, payDays: pick([[1], [10], [15, 30], [25], [5, 20]]) };
 }
 
+/* the second block only: the cases where Total or a card line can break. null when this person has no account for the case drawn */
+function extraEvent(setup) {
+  const A = setup.accounts, of = (...ts) => A.filter(a => ts.includes(a.type) && a.cur == null && a.tracked !== false);
+  const home = of('bank', 'ewallet', 'cash'), cards = of('card'), usd = A.filter(a => a.cur === 'USD'), wal = A.filter(a => a.id === 'wallet');
+  const places = ['waiting', 'bills', 'emergency', 'trip', 'give', 'free'];
+  const date = randDate(), a = amt(), r = R.rnd(), maybe = () => (chance(.5) ? pick(places) : undefined);
+  if (r < .25) return usd.length ? { k: 'convert', acct: pick(home).id, acct2: usd[0].id, a, a2: amt(), date, place: maybe() } : null;   /* money sent abroad */
+  if (r < .5) return cards.length ? { k: 'borrow', acct: pick(home.concat(wal)).id, acct2: pick(cards).id, a, date, place: maybe() } : null;   /* cash on a card */
+  if (r < .75) return cards.length && wal.length ? { k: 'repay', acct: 'wallet', acct2: pick(cards).id, a, date, place: maybe() } : null;   /* card paid from the wallet */
+  if (setup.mode !== 'wallet') return null;
+  const q = R.rnd();                                                                              /* 'free' in Wallet mode */
+  if (q < .3) return { k: 'move', a, date, place: pick(places.slice(0, 5)), place2: 'free' };
+  if (q < .5) return { k: 'move', a, date, place: 'free', place2: pick(places.slice(0, 5)) };
+  if (q < .7) return { k: 'in', sub: 'gift', acct: pick(home).id, a, date, place: 'free' };
+  if (q < .85) return { k: 'spend', sub: 'spend', acct: pick(home).id, a, date, place: 'free' };
+  if (cards.length) return { k: 'in', sub: 'refund', acct: pick(cards).id, a, date };             /* no place: lands in Free to spend */
+  return { k: 'adjust', acct: pick(home).id, a: a * (chance(.5) ? -1 : 1), date };
+}
 function randomEvent(setup) {
+  if (EXT && chance(.35)) { const x = extraEvent(setup); if (x) return x; }
   const A = setup.accounts, of = (...ts) => A.filter(a => ts.includes(a.type) && a.cur == null && a.tracked !== false);
   const home = of('bank', 'ewallet', 'cash'), inTot = of('bank', 'ewallet', 'cash', 'owedToYou'), owed = of('card', 'paylater', 'loan');
   const cards = of('card'), loans = of('paylater', 'loan'), usd = A.filter(a => a.cur === 'USD');
@@ -71,8 +97,18 @@ function checkBal(setup, list, chk, accts) {
   return b;
 }
 
+/* I12 worked out here: handed to the wallet since the last pay that started a month, by day (same day: in the order added) */
+function handedByDay(list) {
+  const order = []; list.forEach((e, i) => { if (e.k === 'hand' || (e.k === 'in' && e.sub === 'pay' && e.startsPeriod !== false)) order.push([e, i]); });
+  order.sort((p, q) => (p[0].date < q[0].date ? -1 : p[0].date > q[0].date ? 1 : p[1] - q[1]));
+  let h = 0; order.forEach(p => { if (p[0].k === 'hand') h += cents(p[0].a); else h = 0; });
+  return h;
+}
+
+for (let block = 0; block < 2; block++) {
+if (block === 1) { R = Rand(SEED + 1000); EXT = true; }
 for (let t = 0; t < N; t++) {
-  const setup = person(t), tag0 = `#${t} ${setup.mode} ${setup.accounts.map(a => a.id).join(',')}`;
+  const setup = person(t), tag0 = `${EXT ? 'x' : ''}#${t} ${setup.mode} ${setup.accounts.map(a => a.id).join(',')}`;
   let S = M.ledgerFresh(setup); S.ui.payDays = setup.payDays;
   const mine = [], redo = [];   /* what this test added, in ledger order, and what it undid */
   setup.accounts.forEach(a => { if (chance(.8)) { const e = { k: 'open', acct: a.id, a: amt(), date: '2026-01-01', place: 'waiting' }; if (M.ledgerAdd(S, e)) mine.push(e); } });
@@ -102,10 +138,16 @@ for (let t = 0; t < N; t++) {
     /* the ledger holds exactly what was added and not undone */
     rep.ok(S.ledger.length === mine.length && S.ledger.every((x, i) => x.k === mine[i].k && x.date === mine[i].date && cents(x.a || x.c / 100 || 0) === cents(mine[i].a || 0) || (x.c != null && x.c === cents(mine[i].a || 0))), `${tag}: I9 the ledger is not exactly the events added and not undone`);
     identities(tag, setup, S, mine);
-    /* I7: the last check on each account */
+    /* I7: on each account, the check with the latest day (same day: the one added last), never just the one added last */
     const p = M.placesOf(S), last = {};
-    mine.forEach(e => { if (e.k === 'check') last[e.acct] = e; });
-    for (const id in last) rep.ok(cents(p.checks[id].unexplained) === cents(last[id].typedA) - checkBal(setup, mine, last[id], accts), `${tag}: I7 ${id} unexplained ${p.checks[id].unexplained} is not typed - its events up to ${last[id].date}`);
+    mine.forEach(e => { if (e.k === 'check' && (!last[e.acct] || e.date >= last[e.acct].date)) last[e.acct] = e; });
+    for (const id in last) {
+      rep.ok(p.checks[id].date === last[id].date, `${tag}: I7 ${id} shows the check of ${p.checks[id].date}, the latest day checked is ${last[id].date}`);
+      rep.ok(cents(p.checks[id].unexplained) === cents(last[id].typedA) - checkBal(setup, mine, last[id], accts), `${tag}: I7 ${id} unexplained ${p.checks[id].unexplained} is not typed - its events up to ${last[id].date}`);
+    }
+    /* I12: handed to the wallet since pay day, by day */
+    const hb = handedByDay(mine);
+    rep.ok(cents(p.wallet) === hb && (setup.mode !== 'wallet' || cents(p.free) === hb), `${tag}: I12 handed to the wallet since pay day shows ${p.wallet}, by day it is ${hb / 100}`);
   }
   /* I11: months as views. Walk pay day periods from before the first event to after the last */
   const dates = mine.map(e => e.date).filter(Boolean).sort();
@@ -126,5 +168,6 @@ for (let t = 0; t < N; t++) {
   /* undo everything: back to nothing but the opening balances, then to nothing at all */
   while (mine.length && mine[mine.length - 1].k !== 'open') { M.ledgerUndo(S); mine.pop(); }
   identities(tag0 + ' after undoing every event but the openings', setup, S, mine);
+}
 }
 rep.end();
