@@ -1,0 +1,10 @@
+# Known failures of the script_*.js checks on wip-38.31 (2026-11-19). Each is a real finding, written up in SIDE_A_FINDINGS.md.
+# One grep -E pattern per line, matched against a FAIL line. Remove a line when the app is fixed; script_run.sh then guards it.
+# A failure not listed here makes script_run.sh fail.
+^FAIL (390|320) wide, Home \(More open\): no control under 44px
+^FAIL light, Home \(More open\): text contrast
+^FAIL light, Receipts: text contrast
+^FAIL light, Plan / Month: text contrast
+^FAIL light, Plan / All months: text contrast
+^FAIL tenths: Plan places' percents add to 100
+^FAIL tenths: when percents show, every part of the pay has one
