@@ -8,3 +8,5 @@
 ^FAIL (setPay|setIncome|setBalance|setBankNow|setCard|setMinBalance|setCeiling|setLine|renameLine|setLineEnds|updateGoal|setGoalSaving|setAims|setName|setCurrency|setHome): (REPLACES|REMOVES) .*NO COPY in the saved data; Undo now is exact
 # Undo itself has no redo. Named until Mako asks for one.
 ^FAIL undo: REPLACES
+# MAIN 7, 2026-11-19: drawNow (7424a46, F4) only repaints the page that was held back while a burrow is open. It changes no saved data, so there is no copy to keep and no call that would show an effect.
+^FAIL drawNow: UNKNOWN
