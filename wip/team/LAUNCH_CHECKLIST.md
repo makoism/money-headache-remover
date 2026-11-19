@@ -21,7 +21,7 @@ Sources: the five concept reviews of 2026-11-19 (north star, new user, money and
 | A6 | Safe to spend ignores timing: bills due before the next pay, pay in two halves | Safe to spend until next pay day, with bills on their dates | team |
 | A7 | When was the balance entered | "Balance you entered on 18 Nov" (decision 1) | v1 |
 | A8 | Double counting: a bill drains on its date and its receipt is logged; a statement repeats check-ins | one event per bill (the receipt replaces the drain); import review flags "already logged" | team |
-| A9 | Currency: a switch relabels amounts; money in two currencies (USD via Wise or Payoneer) | lock the currency once events exist; each account has its own currency | later (Mako decides) |
+| A9 | Currency: a switch relabels amounts; money in two currencies (USD via Wise or Payoneer) | team: lock the currency once real data exists; later (Mako decides): each account has its own currency | team lock, later rest |
 | A10 | Percents add to 81% in a month where spending past plan used pay (side A) | that row gets its percent | v1 |
 
 ## B. People come back
@@ -58,7 +58,7 @@ One "Money came in" and one "Money went out", each with a short list of kinds an
 ## E. Nobody loses data
 | # | Point | Fix | Gate |
 |---|---|---|---|
-| E1 | Cloud copy: "newer" decided by the device clock, "Keep mine" overwrites, the server keeps one previous copy | server keeps dated versions (for example 7 daily); a local snapshot before any restore or cloud load; warn when a copy is older than the one in use | team |
+| E1 | Cloud copy: "newer" decided by the device clock, "Keep mine" overwrites, the server keeps one previous copy | v1: a local snapshot before any restore or cloud load (Mako uses phone and desktop). Team: the server keeps dated versions (for example 7 daily); warn when a copy is older than the one in use | v1 snapshot, team rest |
 | E2 | iPhone Safari can delete a site's data after 7 days unused unless it is on the home screen | ask to add to home screen; backup reminder | team |
 | E3 | A lost or changed phone, recovery code never set up | setup ends by offering the cloud copy, in two taps | team |
 | E4 | Two people on one browser share one plan | a warning; profiles later | later |
