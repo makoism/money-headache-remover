@@ -121,3 +121,14 @@ Three documents were kept in the Claude project and should be copied into the re
 5. **Parallel sessions, safely (Mako, 2026-11-19).** Split the work into as many sessions as helps, as long as nothing overlaps: only one session at a time changes app files on the release branch; side sessions work on their own branches and touch only files no one else is changing (new tests, the oracle, docs); the main line merges them. Burning credits faster is fine; safety and data integrity come first.
 6. **The efficiency agent** (`.claude/agents/efficiency.md`) reviews every new implementation plan and the current process, and its findings go to Mako.
 
+## Answers on the eight open points (Mako, 2026-11-19)
+
+1. **Freshness, in v1:** under the bank figure, say when the balance was entered, for example "Balance you entered on 18 Nov".
+2. **Chest: change the word, keep one meaning per word everywhere.** The treasure chest picture is Free to spend (as Mako asked on 2026-11-17), so "Chest" is no longer the name for new pay waiting on pay day; that place gets its own word when it is built in step B2. Until then no screen uses "Chest" for anything but the Free to spend picture. (Supersedes decision 4's naming; the idea of a waiting place stays.)
+3. **Giving piles up.** You save for gifts or charity and spend from the stock, so Giving is a burrow like Education and Investing. **Words (Claude's call, from Mako's "keep it consistent"):** a burrow is any place money piles up (goals, Education, Giving, Investing); "goal" means the amount a burrow is aiming for. Home, Plan and setup use the same words.
+4. **Art comes last.** One art pass at the end, once the underlying structure (steps B and C) is complete. The sprinkles come last.
+5. **Version one Home (Claude's call):** the picture, the four numbers and one next action, as decided. The pay split stays behind "Show" (it is this month's flow, not where the money is); the long "They add up" paragraph becomes the one proof line; the four numbers stay as the version one definition asks.
+6. **Percents: keep as they are.** Places round to whole percents that add to 100; a goal's fill rounds down, so it never says full before it is.
+7. **Setup step count (Claude's call):** no "of N" that can change mid-setup. Show the step's name and the progress dots only.
+8. **The phone:** the squirrel did not show when money was added, and the burrow felt laggy (maybe the rain). The phone and the desktop must run the same build and work the same. Investigated before v1.
+
