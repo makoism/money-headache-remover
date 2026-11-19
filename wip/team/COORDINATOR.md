@@ -2,6 +2,21 @@
 
 The coordinator is the one session Mako talks to. It records his decisions in DECISIONS.md (and NORTH_STAR.md, LAUNCH_CHECKLIST.md), starts and messages working sessions, and brings their results back to him. Working sessions take direction from nowhere else. The coordinator hands off at about 150k tokens of history, like every session.
 
+## 2026-11-19, coordinator 2 (session_01BFpKEXXUx4uUjZGJny9MyJ): six more lanes (pace decision)
+
+Mako's pace decision (DECISIONS.md "Pace: use the full allowance") came in by relay. The efficiency agent reviewed the lane set. Started, each on its own branch, each told to report here:
+- SIDE F, session_01BFpKEXjBATB2WYTLpkuMoN, side/security-review: SECURITY_REVIEW.md, read only (AI relay, cloud copy). Its vault fixes go to SIDE G, client fixes to main.
+- SIDE G, session_01BFpKEV1EjMmi3kqEvVfG9f, side/vault-server: functions/api/vault/[id].js, functions/_lib.js, tests/page_vault.js, LANE_vault.md. Dated versions, soft delete, server-side "newer". Merged only after v1 is deployed and Mako says go (a push to main deploys the server).
+- SIDE H, session_01BFpKEYXsoMWMPZT6wAnhGo, side/act-keep-checks: tests/qc/act_keep.js, LANE_act_keep.md. Part 2 (same-name figures agree across screens) waits: tell it when A1 has landed.
+- SIDE I, session_01BFpKEZ7X7m9xsVmbWMFUZD, side/deploy-prep: build_site.sh, a dry-run script, DEPLOY_RUNBOOK.md. Deploys nothing.
+- SIDE J, session_01BFpKEYZQZpQ22MNxiJLAcX, side/e6-window-test: tests/qc/e6_window.js, LANE_e6.md. The fix itself is main's first job after v1.
+- SIDE K, session_01BFpKEZfHa8YdLHcGF1waB8, side/help-texts (faster model): HELP_TEXTS.md, the written "?" words (H2). Not wired in.
+
+Rules from the efficiency review:
+- No side lane touches wip/money-map-team.html, check.sh, tests/verify.sh, tests/qc/script_known.txt, tests/qc/lib_r12.js, tests/qc/golden/*, RESUME.md, DECISIONS.md, LAUNCH_CHECKLIST.md. Each lane's handoff is its own LANE_<name>.md. stmt.js is an app file (in the bundle).
+- Into the v1 candidate: only side/phone-fixes and act_keep.js if it passes. MAIN 2 merges them in one batch, verify.sh once, before its single check.sh full. Everything else merges after v1.
+- Waiting, each with its trigger: same-name figure checks (A1 lands); statements and account presets (LEDGER_DESIGN.md plus the security report; D5 is at wider launch; stripping account numbers needs a design choice because PDFs and images go to the relay raw); persona walks (the teammates' answers and a team build); G2 measures (after v1 deploys). Ledger tests stay with SIDE E on its branch.
+
 ## 2026-11-19, handoff 1
 
 ### How Mako works (read DECISIONS.md "How Mako works with the team" in full)
