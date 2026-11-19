@@ -152,7 +152,9 @@ const debtById = (S, id) => debtsOf(S).find(d => d.id === id);
 const DEBT_KIND_NAME = { card: 'Credit card', loan: 'Loan', personal: 'Owed to a person' };
 /* one month: interest is added to what is owed, then the payment comes off. Whole amounts only. */
 function debtStep(d, bal, extra) {
-  const interest = bal > 0 ? Math.round(bal * d.apr / 1200) : 0;
+  /* owed x rate / 12 / 100, to the nearest whole amount, a half rounding up. The rate is counted in hundredths of a percent as a whole number,
+     so an exact half stays exact (20000 at 90.21% is 1503.5, so 1504; in floating point it came out 1503.4999 and rounded down; side B, 2026-11-19) */
+  const A = Math.round(d.apr * 100), interest = bal > 0 ? Math.floor((2 * bal * A + 120000) / 240000) : 0;
   const pay = Math.min(bal + interest, d.min + Math.max(0, extra));
   return { start: bal, interest, extra: Math.max(0, extra), pay, bal: bal + interest - pay };
 }
@@ -328,7 +330,7 @@ function calcAll(S) {
     m.items = itemsFor(S, ym); m.itemsTotal = sum(m.items.map(i => +i.amount || 0));
     m.debts = {}; m.debtPay = 0; m.debtInterest = 0;
     debts.forEach(d => { const st = debtStep(d, dbal[d.id], val(S, 'debt:' + d.id, ym)); dbal[d.id] = st.bal; m.debts[d.id] = st; m.debtPay += st.pay; m.debtInterest += st.interest;
-      st.paidPct = d.balance > 0 ? Math.max(0, Math.min(1, 1 - st.bal / d.balance)) : 1; st.paidPctWhole = Math.round(st.paidPct * 100); });   /* how much of the debt is paid off by the end of this month */
+      st.paidPct = d.balance > 0 ? Math.max(0, Math.min(1, 1 - st.bal / d.balance)) : 1; st.paidPctWhole = d.balance > 0 ? Math.max(0, Math.min(100, Math.floor((200 * (d.balance - st.bal) + d.balance) / (2 * d.balance)))) : 100; });   /* 100 x (first - owed) / first, a half rounding up, worked out in whole numbers (40000 first, 36200 owed is 9.5%, so 10%; side B) */   /* how much of the debt is paid off by the end of this month */
     m.debtOwed = sum(debts.map(d => dbal[d.id]));
     /* named amounts for the cards and loans screens: owed at the start of the month, the minimum payments, and what is paid on top of them */
     m.debtStart = sum(debts.map(d => m.debts[d.id].start)); m.debtMin = sum(debts.map(d => Math.min(d.min, m.debts[d.id].start + m.debts[d.id].interest))); m.debtExtra = m.debtPay - m.debtMin;

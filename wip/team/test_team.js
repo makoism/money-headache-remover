@@ -419,5 +419,16 @@ eq('default rounding step follows the size of the pay', [roundUnit(presetState('
   eq('burrow overBy is the part the pile cannot cover', eb ? eb.overBy : null, 1000);
 }
 
+/* ---------- cards and loans: an exact half rounds up (side B oracle findings, 2026-11-19) ---------- */
+{
+  const D = freshState(); D.plan.debts = [{ id: 'd0', name: 'Card', kind: 'card', balance: 20000, apr: 90.21, min: 0, extra: 0 }];
+  const m = calcAll(D).byYm['2026-11'];
+  eq('interest of exactly a half rounds up: 20000 at 90.21% is 1503.5, so 1504', m.debts.d0.interest, 1504);
+  eq('and the owed amount carries it: 21504', m.debts.d0.bal, 21504);
+  const P = freshState(); P.plan.debts = [{ id: 'd1', name: 'Loan', kind: 'loan', balance: 40000, apr: 0, min: 3800, extra: 0 }];
+  const mp = calcAll(P).byYm['2026-11'];
+  eq('percent paid of exactly a half rounds up: 36200 owed of 40000 is 9.5%, so 10%', [mp.debts.d1.bal, mp.debts.d1.paidPctWhole], [36200, 10]);
+}
+
 console.log(fails ? fails + ' FAILED' : 'ALL PASS');
 process.exit(fails ? 1 : 0);
