@@ -152,6 +152,6 @@ After tapping Add, the extra cost is the whole page behind the burrow redrawing 
 
 - Reduced motion skips the coin trips (`feed()` goes straight to the result) and slows the burrow loop to 400 ms.
 - The corner squirrel's 150 s limit and its "not when overspent" rule (receipt moments only, `ui6.js` lines 62 and 63). Neither affects the burrow coin trips.
-- The rainy burrow at about 15 frames a second. Smoother rain would roughly double the burrow's CPU (to about 55% at 6x). If Mako wants it, do B6 first and keep the still parts (puddles, stones, the burrow when nothing changes) on a canvas painted once, which together are about 40% of the burrow's cost.
+- The rainy burrow at about 15 frames a second. The frame rate is part of the art, which comes last and only with Mako, so no change is proposed here. Making the same animation cheaper is fine: after B6, the parts that do not move between frames (puddles, stones, the burrow when nothing changes) could be painted once onto their own canvas instead of every frame. Those parts are about 40% of the burrow's cost, and the picture would not change.
 - The Home forest animating at 1.3 to 1.7% CPU (1x), visible and at the guard's limit.
 - An app left on screen through a deploy keeps the old version until it is hidden and shown again, or reopened.
