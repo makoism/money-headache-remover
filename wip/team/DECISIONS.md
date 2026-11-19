@@ -169,3 +169,9 @@ Art is paused. v1 is for Mako to use for his real money, so everything must work
 - What follows for v1: almost all spending goes on the cards and leaves the bank only on the 10th and 11th, right when pay lands. So the bank balance alone is not the truth mid-month: card spending is already spent but still in the bank. v1 must show it plainly: what is on each card now (typed, like the bank figure), when it is paid, and what the bank will hold after the cards are paid. The month should follow his pay day (the 10th), not the calendar, where that changes what is safe to spend.
 - Testing: Android (Chrome, installed to the home screen) is the phone tested hardest. Test profiles use this shape with made-up numbers.
 
+## Team test about the team; lighter QC (Mako agreed, 2026-11-19)
+1. **The team test is built for the people in it.** Mako asks his two teammates the same shape questions he answered (where their money sits, how they are paid, cards and pay-later, phone; no amounts), and the team gate is set by what their shapes need. Moved to the wider-launch gate: the Japan and France account presets, password-protected statements (D5), the full one-question-per-screen flows (H3), and the full 95% sweep. Every "nobody loses data" point (section E) stays at the team gate.
+2. **QC on the v1 candidate:** both gates in full; the panel reviews only the screens changed since round 4 plus a beginner walk of Home and setup. After v1, Mako's real use is the panel; a fix needs `check.sh full` plus the two gates.
+3. **The ledger is designed on paper first** (side/ledger-design, LEDGER_DESIGN.md), proved with made-up event lists, before any ledger code. The rolling window folds into B1, except the fix that stops months being dropped on load (E6), which ships first because it loses data.
+4. **The coordinator hands off too** at about 150k tokens: COORDINATOR.md holds the handoff, and Mako gets a new chat link.
+

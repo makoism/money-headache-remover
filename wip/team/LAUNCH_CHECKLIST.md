@@ -8,6 +8,8 @@ Every point the reviews found is here, with the step that fixes it. Nothing is c
 - **Team test** (Mako plus two teammates, four weeks from a pay day): every point marked **team** is done, and the 95% sweep below has run.
 - **Wider launch:** every point is done, or Mako has moved it to later in writing.
 
+**Gate changes (Mako, 2026-11-19, DECISIONS.md "Team test about the team"):** the team gate is set by Mako's and his two teammates' real shapes. Moved to wider launch: Japan and France presets (part of A2), D5, the full flows of H3, and the full 95% sweep (before the team test, only the teammates' own shapes are walked). Section E stays at the team gate.
+
 Sources: the five concept reviews of 2026-11-19 (north star, new user, money and data, product, efficiency), the phone check (side D), the script checks (side A), the after-v1 tests (side C).
 
 ## A. The picture is true
