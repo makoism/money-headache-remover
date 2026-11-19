@@ -17,7 +17,7 @@ const REF = require('./ledger_ref');
 const NAMES = ['ledgerFresh', 'ledgerAdd', 'ledgerUndo', 'ledgerRedo', 'placesOf', 'periodOf', 'flows', 'migrate3831', 'ledgerWhy', 'ledgerProof'];
 const APP = new Function(fs.readFileSync(process.env.LEDGER_FILE || path.join(__dirname, '..', '..', 'ledger.js'), 'utf8') + ';\nreturn {' + NAMES.map(n => n + ': ' + n).join(', ') + '};')();
 const N = +(process.argv[2] || 3000), SEED = +(process.argv[3] || 23);
-let R = Rand(SEED), EXT = false;   /* EXT: the second block, with the cases left out before */
+let R = Rand(SEED), EXT = false, EXT3 = false;   /* EXT: the second block, with the cases left out before */
 const ri = (a, b) => R.ri(a, b), pick = a => R.pick(a), chance = p => R.chance(p), J = JSON.stringify, rep = Report('ledger diff');
 const pad = n => (n < 10 ? '0' : '') + n;
 
@@ -63,8 +63,16 @@ function maker(setup) {
     const p = pick(places.filter(q => q !== 'free'));
     return chance(.5) ? { k: 'move', a: amt(), date: d, place: p, place2: 'free' } : { k: 'move', a: amt(), date: d, place: 'free', place2: p };
   };
+  /* the third block only (third pass): what the money door lane found. Money lent has the place 'lent' (G2) */
+  const third = d => {
+    const r = R.rnd(), p = pick(places);
+    if (r < .45) return { k: 'move', sub: 'lent', a: amt(), date: d, place: p, place2: 'lent' };
+    if (r < .8) return { k: 'move', sub: 'paid back', a: amt(), date: d, place: 'lent', place2: p };
+    const h = pick(home).id; return chance(.5) ? { k: 'in', sub: 'paid back', acct: h, a: amt(h), date: d, place: 'lent' } : { k: 'spend', sub: 'spend', acct: h, a: amt(h), date: d, place: 'lent' };
+  };
   const event = () => {
     const d = date(), r = R.rnd(), sgn = () => (chance(.4) ? -1 : 1);
+    if (EXT3 && chance(.25)) { const x = third(d); if (x) return x; }
     if (EXT && chance(.35)) { const x = extra(d); if (x) return x; }
     if (r < .13) { const a = pick(home.concat(usd, wal)).id; return { k: 'in', sub: pick(['pay', 'pay', 'refund', 'gift']), acct: a, a: amt(a), date: d, place: pick(places), startsPeriod: chance(.2) ? false : undefined }; }
     if (r < .19 && cards.length) { const a = pick(cards).id; return { k: 'in', sub: 'refund', acct: a, a: amt(a), date: d, place: pick(places) }; }
@@ -84,7 +92,7 @@ function maker(setup) {
 /* every figure both models give, in cents, in one fixed order */
 function figures(p, skipHanded) {
   const c = v => cents(v || 0), o = {}, flat = (name, obj) => Object.keys(obj || {}).sort().forEach(k => { if (c(obj[k])) o[name + '.' + k] = c(obj[k]); });
-  ['waiting', 'bills', 'billsOnly', 'forCards', 'saved', 'thisMonth', 'total', 'have', 'owed'].forEach(k => { o[k] = c(p[k]); });
+  ['waiting', 'bills', 'billsOnly', 'forCards', 'saved', 'lent', 'thisMonth', 'total', 'have', 'owed'].forEach(k => { o[k] = c(p[k]); });
   if (!skipHanded) { o.free = c(p.free); o.wallet = c(p.wallet); }
   flat('burrow', p.burrows); flat('card', p.cards); flat('acct', p.accounts); flat('foreign', p.foreign); flat('foreignOwed', p.foreignOwed);
   Object.keys(p.checks || {}).sort().forEach(k => { o['check.' + k] = [c(p.checks[k].typed), c(p.checks[k].unexplained), p.checks[k].date]; });
@@ -93,11 +101,12 @@ function figures(p, skipHanded) {
 function firstDiff(a, b) { for (const k of Object.keys(Object.assign({}, a, b))) if (J(a[k]) !== J(b[k])) return `${k}: ledger.js ${J(a[k])}, reference ${J(b[k])}`; return ''; }
 
 let events = 0, people = 0, events1 = 0;
-for (let block = 0; block < 2; block++) {
+for (let block = 0; block < 3; block++) {
 if (block === 1) { R = Rand(SEED + 1000); EXT = true; events1 = events; }
+if (block === 2) { R = Rand(SEED + 2000); EXT = true; EXT3 = true; }
 for (let t = 0; t < (EXT ? Math.ceil(N / 2) : N); t++) {
   people++;
-  const setup = person(), tag0 = `${EXT ? 'x' : ''}#${t} ${setup.cur} ${setup.mode}`, mk = maker(setup);
+  const setup = person(), tag0 = `${EXT3 ? 'y' : EXT ? 'x' : ''}#${t} ${setup.cur} ${setup.mode}`, mk = maker(setup);
   let a = APP.ledgerFresh(setup), b = REF.ledgerFresh(JSON.parse(J(setup))); b.ui.payDays = setup.payDays;
   if (!a) { rep.ok(false, `${tag0}: ledger.js refused the setup: ${J(APP.ledgerWhy())}`); continue; }
   const same = tag => {
@@ -110,6 +119,11 @@ for (let t = 0; t < (EXT ? Math.ceil(N / 2) : N); t++) {
     const late = {}; a.ledger.forEach(e => { if (e.k === 'check' && (!late[e.acct] || e.date > late[e.acct])) late[e.acct] = e.date; });
     rep.ok(Object.keys(late).every(k => pa.checks[k] && pa.checks[k].date === late[k]), `${tag}: an account does not show its check with the latest day`);
     rep.ok(a.ledger.length === b.ledger.length && a.ledger.every((e, i) => e.id === b.ledger[i].id && e.k === b.ledger[i].k && e.c === b.ledger[i].c), `${tag}: the two ledgers do not hold the same events in the same order`);
+    /* money lent: its own figure in both models, never a burrow, and Total is waiting + This month + Saved + lent */
+    for (const [who, q] of [['ledger.js', pa], ['the reference', pb]]) {
+      rep.ok(!('lent' in q.burrows), `${tag}: ${who} shows the place "lent" among the burrows`);
+      rep.ok(cents(q.total) === cents(q.waiting) + cents(q.thisMonth) + cents(q.saved) + cents(q.lent || 0), `${tag}: ${who}: Total is not waiting + This month + Saved + owed to you`);
+    }
     const pr = APP.ledgerProof(a); rep.ok(pr.ok, `${tag}: ledgerProof says the one rule is broken ${J(pr)}`);
   };
   const both = (tag, e) => { const ra = APP.ledgerAdd(a, e), rb = REF.ledgerAdd(b, JSON.parse(J(e))); events++;

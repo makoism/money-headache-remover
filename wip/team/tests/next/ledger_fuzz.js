@@ -16,14 +16,17 @@
      I11 months without a fixed window: pay day periods chain end to start with no gap, and each period's Total moves by exactly
          what came in minus what went out in it, years back or ahead (the ledger is never trimmed; a month is only a view)
      I12 handed to the wallet since pay day goes by the day of each event, not by the order they were added
+     I13 money lent ("owed to you") sits in the place 'lent': a figure of its own, inside Total, never in Saved or the burrows
    A second block of people (same count, its own seed) adds the cases the first block never draws, so I2, I5 and I8 meet them:
      money sent abroad (convert from a home account), cash taken on a card paid in full (borrow onto it), a card paid in full paid
      from the wallet that is not tracked, and the place 'free' used in Wallet mode.
+   A third block (same count, its own seed; ledger core third pass) adds what the money door lane found: moves into and out of
+     the place 'lent' (G2), and money put back from the wallet into a tracked account (G4).
    Months dropped on load (E6) are tested by the E6 lane on side/e6-window-test, not here. */
 const { loadModel, Report, Rand, cents } = require('./lib');
 const { tools } = require('./ledger_personas_run');
 const N = +(process.argv[2] || 300), SEED = +(process.argv[3] || 11);
-let R = Rand(SEED), EXT = false;   /* EXT: the second block, with the extra cases */
+let R = Rand(SEED), EXT = false, EXT3 = false;   /* EXT: the second block, with the extra cases. EXT3: the third block (also EXT) */
 const ri = (a, b) => R.ri(a, b), pick = a => R.pick(a), chance = p => R.chance(p);
 const rep = Report('ledger fuzz');
 const M = loadModel();
@@ -70,7 +73,14 @@ function extraEvent(setup) {
   if (cards.length) return { k: 'in', sub: 'refund', acct: pick(cards).id, a, date };             /* no place: lands in Free to spend */
   return { k: 'adjust', acct: pick(home).id, a: a * (chance(.5) ? -1 : 1), date };
 }
+/* the third block only (ledger core, third pass): money lent has its own place 'lent' (G2). null when nothing fits */
+function thirdEvent(setup) {
+  const places = ['waiting', 'bills', 'emergency', 'trip', 'give'].concat(setup.mode === 'track' ? ['free'] : []);
+  const date = randDate(), a = amt();
+  return chance(.6) ? { k: 'move', sub: 'lent', a, date, place: pick(places), place2: 'lent' } : { k: 'move', sub: 'paid back', a, date, place: 'lent', place2: pick(places) };
+}
 function randomEvent(setup) {
+  if (EXT3 && chance(.25)) { const x = thirdEvent(setup); if (x) return x; }
   if (EXT && chance(.35)) { const x = extraEvent(setup); if (x) return x; }
   const A = setup.accounts, of = (...ts) => A.filter(a => ts.includes(a.type) && a.cur == null && a.tracked !== false);
   const home = of('bank', 'ewallet', 'cash'), inTot = of('bank', 'ewallet', 'cash', 'owedToYou'), owed = of('card', 'paylater', 'loan');
@@ -105,10 +115,14 @@ function handedByDay(list) {
   return h;
 }
 
-for (let block = 0; block < 2; block++) {
+/* I13 worked out here: what the place 'lent' holds, from the moves into it and out of it */
+function lentByMoves(list) { let v = 0; list.forEach(e => { if (e.k === 'move') { if (e.place2 === 'lent') v += cents(e.a); if (e.place === 'lent') v -= cents(e.a); } }); return v; }
+
+for (let block = 0; block < 3; block++) {
 if (block === 1) { R = Rand(SEED + 1000); EXT = true; }
+if (block === 2) { R = Rand(SEED + 2000); EXT = true; EXT3 = true; }
 for (let t = 0; t < N; t++) {
-  const setup = person(t), tag0 = `${EXT ? 'x' : ''}#${t} ${setup.mode} ${setup.accounts.map(a => a.id).join(',')}`;
+  const setup = person(t), tag0 = `${EXT3 ? 'y' : EXT ? 'x' : ''}#${t} ${setup.mode} ${setup.accounts.map(a => a.id).join(',')}`;
   let S = M.ledgerFresh(setup); S.ui.payDays = setup.payDays;
   const mine = [], redo = [];   /* what this test added, in ledger order, and what it undid */
   setup.accounts.forEach(a => { if (chance(.8)) { const e = { k: 'open', acct: a.id, a: amt(), date: '2026-01-01', place: 'waiting' }; if (M.ledgerAdd(S, e)) mine.push(e); } });
@@ -145,6 +159,8 @@ for (let t = 0; t < N; t++) {
       rep.ok(p.checks[id].date === last[id].date, `${tag}: I7 ${id} shows the check of ${p.checks[id].date}, the latest day checked is ${last[id].date}`);
       rep.ok(cents(p.checks[id].unexplained) === cents(last[id].typedA) - checkBal(setup, mine, last[id], accts), `${tag}: I7 ${id} unexplained ${p.checks[id].unexplained} is not typed - its events up to ${last[id].date}`);
     }
+    /* I13: money lent is its own figure, outside Saved and outside the burrows, inside Total (I3) */
+    rep.ok(cents(p.lent || 0) === lentByMoves(mine), `${tag}: I13 owed to you (the place lent) shows ${p.lent}, the moves give ${lentByMoves(mine) / 100}`);
     /* I12: handed to the wallet since pay day, by day */
     const hb = handedByDay(mine);
     rep.ok(cents(p.wallet) === hb && (setup.mode !== 'wallet' || cents(p.free) === hb), `${tag}: I12 handed to the wallet since pay day shows ${p.wallet}, by day it is ${hb / 100}`);

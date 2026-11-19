@@ -54,7 +54,9 @@ function tools(M, rep) {
     for (const k in O.bal) rep.ok(c(p.accounts[k] || 0) === O.bal[k], `${tag}: I1 account ${k} shows ${p.accounts[k]}, its events give ${O.bal[k] / 100}`);
     rep.ok(c(p.total) === O.total, `${tag}: I2 Total ${p.total} is not the tracked accounts added up (${O.total / 100})`);
     const saved = Object.values(p.burrows).reduce((a, b) => a + c(b), 0);
-    rep.ok(c(p.total) === c(p.waiting) + c(p.thisMonth) + saved, `${tag}: I3 Total ${p.total} is not waiting + This month + Burrows`);
+    /* money lent ("owed to you") is inside Total in a line of its own: the place 'lent' is never a burrow and never in Saved */
+    rep.ok(c(p.total) === c(p.waiting) + c(p.thisMonth) + saved + c(p.lent || 0), `${tag}: I3 Total ${p.total} is not waiting + This month + Burrows + owed to you`);
+    rep.ok(!('lent' in p.burrows), `${tag}: I3 the place "lent" is shown among the burrows, so it is counted as Saved`);
     rep.ok(c(p.thisMonth) === c(p.bills) + (S.ui.freeMode === 'track' ? c(p.free) : 0), `${tag}: I3 This month is not Bills left + Free to spend`);
     rep.ok(c(p.saved) === saved, `${tag}: I3 Saved is not the burrows added up`);
     rep.ok(c(p.owed) === O.owed, `${tag}: I4 Owed ${p.owed} is not the cards and loans added up (${O.owed / 100})`);

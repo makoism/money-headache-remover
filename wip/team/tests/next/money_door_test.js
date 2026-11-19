@@ -424,7 +424,10 @@ D.DOOR.forEach(k => {
     gap('G1 an event holds one src, so the second statement line of a transfer is not known as logged (ledgerHas is false, the next import asks again)', L.ledgerHas(S, 'stmt:gcash-dec:21')); }
   { const S = PICTURES.bea(), saved = L.placesOf(S).saved;
     D.doorApply(S, 'lent', { amount: 390, account: 'bpi', who: { name: 'Lea' }, date: '2026-12-05' }, TODAY);
-    gap('G2 placesOf counts the place "lent" among the burrows, so its Saved rises by 390 when 390 is lent (doorFigures takes it out)', c(L.placesOf(S).saved) === c(saved)); }
+    const p = L.placesOf(S), f = D.doorFigures(S);   /* G2, closed by the ledger core third pass: a hard check now */
+    rep.ok(c(p.saved) === c(saved) && !('lent' in p.burrows), 'G2 placesOf: 390 lent is not in Saved and not among the burrows');
+    rep.ok(c(p.lent) === 39000 && c(p.total) === c(p.waiting) + c(p.thisMonth) + c(p.saved) + c(p.lent), 'G2 placesOf: what is lent is a figure of its own, inside Total');
+    rep.ok(c(f.lent) === c(p.lent) && c(f.saved) === c(p.saved) && J(f.burrows) === J(p.burrows) && c(f.lent) === c(p.accounts.lent_lea), 'G2 the door shows the ledger\'s own figures, and Lent is what Lea owes'); }
   { const S = PICTURES.bea(), n = S.accounts.length;
     D.doorApply(S, 'lent', { amount: 390, account: 'bpi', who: { name: 'Lea' }, date: '2026-12-05' }, TODAY); D.doorUndo(S);
     gap('G3 the ledger can not take back an account: after undoing the first "Lent" to Lea her empty account stays', S.accounts.length === n); }
