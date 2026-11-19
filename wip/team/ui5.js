@@ -18,7 +18,7 @@ function wire() {
   $('#curSel').addEventListener('change', e => {
     const r = changeCurrency(e.target.value), z = presetKey(S) === 'blank';
     $('#curNote').textContent = r === 'all' ? (z ? 'All amounts zeroed for this currency. Enter your own.' : 'Sample amounts now match this currency.')
-      : r === 'plan' ? (z ? 'Sample bills and goals zeroed for this currency. Pay and receipts unchanged.' : 'Sample bills and goals now match this currency. Pay and receipts unchanged.')
+      : r === 'plan' ? (z ? 'Sample bills and burrows zeroed for this currency. Pay and receipts unchanged.' : 'Sample bills and burrows now match this currency. Pay and receipts unchanged.')
       : 'Amounts unchanged. Only the symbol changed.';
     if (r) restructure(); else render();
   });
@@ -205,7 +205,7 @@ function wire() {
   twoStep($('#setupOpen'), `Tap again: setup can change your pay, bills, goals and saved amounts. You can undo for ${KEEP_DAYS} days.`, () => openSetupWithCopy(undefined, 'full'));   /* both ask first, and keep a copy (38.31 data safety round 2) */
   /* only some currencies have samples; for the rest this button clears the plan, and every word says so (38.31 data safety round 3) */
   const hasSamples = () => !!SAMPLES[(S.ui && S.ui.cur) || '₱'];
-  twoStep($('#bkReset'), () => hasSamples() ? `Tap again: puts the sample pay, bills and goals in place of yours. Receipts stay. You can undo for ${KEEP_DAYS} days.` : `Tap again: clears your pay, bills, goals and balance. Receipts stay. You can undo for ${KEEP_DAYS} days.`, () => { const smp = hasSamples(), sn0 = snapNoCopy(); offerUndo(sn0, `${smp ? 'Samples restored' : 'Plan cleared'}. You can undo for ${KEEP_DAYS} days.`); const old = S, u = S.ui; S = presetState(u.cur); S.ui = Object.assign({}, u, { preset: S.ui.preset, sampleHidden: false, done: {} }); delete S.ui.cleared; delete S.ui.setup; delete S.ui.gset; delete S.ui.sb; delete S.ui.tourAt; delete S.ui.src; delete S.ui.imp; S.receipts = old.receipts; keepCopy(sn0, smp ? 'Samples replaced your numbers.' : 'Your plan was cleared.'); editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = smp ? 'Samples restored.' : 'Plan cleared.'; });
+  twoStep($('#bkReset'), () => hasSamples() ? `Tap again: puts the sample pay, bills and burrows in place of yours. Receipts stay. You can undo for ${KEEP_DAYS} days.` : `Tap again: clears your pay, bills, goals and balance. Receipts stay. You can undo for ${KEEP_DAYS} days.`, () => { const smp = hasSamples(), sn0 = snapNoCopy(); offerUndo(sn0, `${smp ? 'Samples restored' : 'Plan cleared'}. You can undo for ${KEEP_DAYS} days.`); const old = S, u = S.ui; S = presetState(u.cur); S.ui = Object.assign({}, u, { preset: S.ui.preset, sampleHidden: false, done: {} }); delete S.ui.cleared; delete S.ui.setup; delete S.ui.gset; delete S.ui.sb; delete S.ui.tourAt; delete S.ui.src; delete S.ui.imp; S.receipts = old.receipts; keepCopy(sn0, smp ? 'Samples replaced your numbers.' : 'Your plan was cleared.'); editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = smp ? 'Samples restored.' : 'Plan cleared.'; });
   wireReceipts(); safe(() => BUR.boot(), null, 'burrow'); wireTour(); wireHelp(); wireHome(); wireScan(); wireAskAi(); wireSafe(); wireVault(); safe(() => DJ.wire(), null, 'dj'); safe(() => SCENE.start(), null, 'scene'); safe(() => WORLD.wire(), null, 'world');
 
   /* tooltips */

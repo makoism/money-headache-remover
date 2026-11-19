@@ -20,7 +20,7 @@ const L=require('./lib_r12.js');const R=L.R;const w=R.w;
    document.querySelectorAll('#hBur .hb-b,[aria-label*="percent full"]').forEach(e=>{const m=/^(.+?), .*?(\d+) percent full/.exec(e.getAttribute('aria-label')||'');if(m)add(m[1],'home',m[2]);});
    document.querySelectorAll('[aria-label*="percent of"]').forEach(e=>{const m=/(\d+) percent of (.+?) saved/.exec(e.getAttribute('aria-label')||'');if(m)add(m[2],'main',m[1]);});
    return o;});
-  await L.tab(p,'tab-month');await L.clickText(p,'Goals');await w(600);
+  await L.tab(p,'tab-month');await L.clickText(p,'Burrows')   /* the Plan page is called Burrows (Mako, 2026-11-19) */;await w(600);
   const plan=await p.evaluate(()=>{const o={};document.querySelectorAll('[aria-label*="% of"],.gbar').forEach(e=>{const m=/^(.+?): (\d+)% of/.exec(e.getAttribute('aria-label')||e.innerText||'');if(m)o[m[1]]=m[2];});return o;});
   Object.keys(plan).forEach(k=>{(got[k]=got[k]||[]).push('plan:'+plan[k]);});
   await L.tab(p,'tab-home');await w(400);

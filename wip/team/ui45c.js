@@ -52,7 +52,7 @@ function onbScript() {
   me(ks.length ? ks.map(x => x[1]).join(', ') : 'None of these');
   const acc = ['bank', 'card', 'wallet'].filter(k => o.k[k]);
   if (!acc.length) {
-    ai('Then there are no statements to upload, and that is fine. On the next screen tap Type numbers instead: pay, bills and goals, about five minutes.');
+    ai('Then there are no statements to upload, and that is fine. On the next screen tap Type numbers instead: pay, bills and burrows, about five minutes.');
     if (o.k.cash) ai('Day-to-day cash goes in Receipts. Log it as you spend, or once a week.');
     return onbTail(m, o);
   }

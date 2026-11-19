@@ -246,9 +246,9 @@ const TOUR = [
         : L > 0 ? `Pay entered. <b>${fmt2(L)}</b> is not placed yet: raise a goal or add to free to spend.`
         : L < 0 ? `Pay entered. The ${billsIn ? 'plan' : 'sample plan'} exceeds pay by <b>${fmt2(PF.shortBy)}</b>${billsIn ? '' : ' because bills are still samples'}. ${billsIn ? 'Lower a bill under Plan.' : 'Enter your real bills next.'}`
         : 'Pay entered. All of it is assigned.';
-      const bills = zero && !(necTotal() > 0) ? 'Bills and goals are empty. Open Plan, Bills and basics, and enter what you pay.'
+      const bills = zero && !(necTotal() > 0) ? 'Bills and burrows are empty. Open Plan, Bills and basics, and enter what you pay.'
         : billsIn ? (necTotal() > 0 ? 'Your bills are in. Any line left at zero can be set under Plan, Bills and basics.' : 'Your bills are all at zero so far. Set each line under Plan, Bills and basics.')
-        : 'Bills and goals are still samples. Open Plan, Bills and basics, and set each line. Or use <b>Set all to zero</b> in Settings.';
+        : 'Bills and burrows are still samples. Open Plan, Bills and basics, and set each line. Or use <b>Set all to zero</b> in Settings.';
       return `${homeScene()}<p>${msg}</p>
       <p>${bills}</p>
       <p>Help (bottom right) has the video and the setup.</p>`;
@@ -287,9 +287,9 @@ function renderTour(dir) {
   const pend = same.some((x, i) => x.pick && i >= first) || (t.id === 'pay' && !payNow());
   const keys = Object.values(PART).filter(k => TS.some(x => x.part === k)), at = Math.max(0, keys.indexOf(t.part));   /* only parts this setup has, so the count never skips a number (38.31 wording and layout round 3) */
   /* one count for the whole setup, the same as the progress bar: one segment per part */
-  $('#tourPart').textContent = `Step ${at + 1} of ${keys.length}: ${t.part}`;
+  $('#tourPart').textContent = t.part;   /* no "of N": the count could change mid-setup (Mako, 2026-11-19); the dots show progress */
   $('#tourDots').innerHTML = keys.map((k, i) => `<i class="${i < at ? 'past' : i === at ? 'on' : ''}"><b style="width:${i < at ? 100 : i > at ? 0 : Math.round((first + 1) / count * 100)}%"></b></i>`).join('');
-  $('#tourDots').setAttribute('aria-label', pend ? `${t.part}, step ${at + 1} of ${keys.length}` : `${t.part}, step ${at + 1} of ${keys.length}`);
+  $('#tourDots').setAttribute('aria-label', `${t.part}, setup progress`);
   tourTouched = false;
   const body = $('#tourBody'); body.innerHTML = `<h2 id="tourTitle" tabindex="-1">${title}</h2>${t.body()}`;
   const kind = typeof t.art === 'function' ? t.art() : t.art !== undefined ? t.art : ART_BY_PART[t.part]; $('#tourArt').innerHTML = kind ? art(kind) : '';

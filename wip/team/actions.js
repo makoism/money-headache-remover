@@ -49,7 +49,7 @@ const ACT = {
     if (['a', 'b', 'side'].indexOf(key) < 0) throw new Error('unknown income ' + key);
     return ACT.tx('income', () => { setVal(S, key, ym || START, clampAmt(amount, S), scope === 'month' ? 'month' : 'after'); if (key === 'a' && clampAmt(amount, S) > 0) markDone('pay', true); });
   },
-  setBalance(v) { return ACT.tx('balance', () => { S.cfg.bankStart = clampAmt(v, S); }); },
+  setBalance(v) { return ACT.tx('balance', () => { setBankBalance(S, clampAmt(v, S)); }); },
   setMinBalance(v) { return ACT.tx('minimum balance', () => { S.cfg.minBank = clampAmt(v, S); }); },
   setCeiling(v) { return ACT.tx('spending ceiling', () => { S.cfg.ceiling = clampAmt(v, S); }); },
 

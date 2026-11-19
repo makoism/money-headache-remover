@@ -10,6 +10,10 @@ const MONTHS = []; for (let i = ymIdx(START); i <= ymIdx(END); i++) MONTHS.push(
 const SPAN = MONTHS.length % 12 === 0 ? `${MONTHS.length / 12} years` : `${MONTHS.length} months`;
 const monthLabel = (ym, short) => { const p = ym.split('-'); return MONTH_NAMES[+p[1] - 1] + (short ? '' : ' ' + p[0]); };
 const pad2 = n => (n < 10 ? '0' : '') + n;
+/* the day a person typed their bank balance (Mako, 2026-11-19: Home says "Balance you entered on 18 Nov"). Only set when a balance is entered;
+   a copy saved before this has no date and Home shows none, never a guessed one. */
+const BANK_AT_FORM = /^\d{4}-\d{2}-\d{2}$/;
+const setBankBalance = (T, v, now) => { const d = now || new Date(); T.cfg.bankStart = v; T.cfg.bankAt = d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); };
 const round2 = x => Math.round(x * 100) / 100;
 /* round down to whole yen, or to cents for other currencies, so the unspent amount is counted to the last cent */
 const flrCur = (S, x) => ((S.ui && S.ui.cur) === '¥' ? Math.floor(x + 1e-9) : Math.floor(x * 100 + 1e-6) / 100);
@@ -24,7 +28,7 @@ const CFG = {
 /* ---- The six jars (T. Harv Eker's system). "usual" is Eker's usual share of pay for each jar. It is only a guide: the page never shows it as a target, and the shares it does show always come from the real amounts. ---- */
 const JARS = [
   { id: 'nec',  name: 'Bills and basics',                    usual: 0.55, about: 'Rent, food, utilities and every other bill.' },
-  { id: 'lts',  name: 'Goals', usual: 0.10, about: 'Saved now, spent later: a big purchase, a trip, a rainy day, a surprise. Your burrows live here.' },
+  { id: 'lts',  name: 'Goal burrows', usual: 0.10, about: 'Saved now, spent later: a big purchase, a trip, a rainy day, a surprise. Your burrows live here.' },
   { id: 'play', name: 'Free to spend',                         usual: 0.10, about: 'Fun for you and your family, no guilt. What is left at month end can go to a goal.' },
   { id: 'edu',  name: 'Education',                      usual: 0.10, about: 'Courses, books, coaching, skill building.' },
   { id: 'ffa',  name: 'Investing',              usual: 0.10, about: 'Never spent. It grows over time.' },
@@ -34,7 +38,7 @@ const JARS = [
 JARS.forEach(j => { j.usualPct = Math.round(j.usual * 100); });
 const LINE_JARS = ['nec', 'play', 'edu', 'ffa', 'give'];
 /* a few words for each jar, shown under its name wherever the split is listed */
-const JARTAG = { nec: 'Bills', lts: 'Goals', play: 'Fun, no guilt', edu: 'Courses and books', ffa: 'Never spent', give: 'Charity and gifts' };
+const JARTAG = { nec: 'Bills', lts: 'Saving toward a goal', play: 'Fun, no guilt', edu: 'Courses and books', ffa: 'Never spent', give: 'Charity and gifts' };
 
 /* ---- The starting plan: lines you pay every month, and savings goals. All of it can be renamed, removed or added to. ---- */
 const LINE_DEFS = [
@@ -902,6 +906,7 @@ function cleanCfg(raw) {
   if (typeof raw.redirectLoan === 'boolean') out.redirectLoan = raw.redirectLoan;
   if (typeof raw.moveMonth === 'string' && YM_FORM.test(raw.moveMonth)) out.moveMonth = raw.moveMonth;
   if (typeof raw.carDue === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw.carDue)) out.carDue = raw.carDue;
+  if (typeof raw.bankAt === 'string' && BANK_AT_FORM.test(raw.bankAt)) out.bankAt = raw.bankAt;
   if (isMap(raw.aims)) { const a = {}; JARS.forEach(j => { const v = raw.aims[j.id]; if (typeof v === 'number' && isFinite(v) && v >= 0 && v <= 1) a[j.id] = v; }); if (Object.keys(a).length) out.aims = a; }
   return out;
 }

@@ -40,7 +40,7 @@ const openAt = async (b, iso, keep) => { const p = await b.newPage(); const errs
   // a new goal from the wizard does not take over as main goal
   await p.evaluate(() => document.querySelector('[data-tab="home"]').click()); await w(400);
   const mainBefore = await p.$eval('#hHero .hw-k', e => e.textContent).catch(() => '');
-  await p.evaluate(() => { const b = [...document.querySelectorAll('#hGoals button')].find(b => /^Add goal$/.test(b.textContent.trim())); b.click(); }); await w(400);
+  await p.evaluate(() => { const b = [...document.querySelectorAll('#hGoals button')].find(b => /^Add a burrow$/.test(b.textContent.trim()) /* was Add goal (Mako, 2026-11-19 words) */); b.click(); }); await w(400);
   await p.evaluate(() => document.querySelector('#gwNext').click()); await w(200);
   ok(/Pick a goal type first/.test(await p.$eval('#gwHint', e => e.textContent)), 'wizard: a tap too early says what is missing');
   await p.evaluate(() => document.querySelector('[data-kind="car"]').click()); await w(150); await p.evaluate(() => document.querySelector('#gwNext').click()); await w(300);

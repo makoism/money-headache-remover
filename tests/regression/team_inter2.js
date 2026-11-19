@@ -34,11 +34,11 @@ const PESO = (() => { const src = require('fs').readFileSync(process.env.MODEL |
   ok('page behind the tour is inert', await p.$eval('.wrap', e => e.inert));
   ok('dialog is labelled and modal', await p.$eval('#tour', e => e.getAttribute('role') === 'dialog' && e.getAttribute('aria-modal') === 'true'));
   ok('focus lands on the tour title', await p.evaluate(() => document.activeElement.id === 'tourTitle'));
-  ok('screen 1 is the video and nothing else', (await q('#tourTitle')) === 'Welcome' && /^Step 1 of \d+: Welcome$/.test(await q('#tourPart')) /* step labels since the 38.26 shorter setup */ && (await p.$$eval('#tourBody .tour-vframe, #tourBody .tour-video', e => e.length)) >= 1 && !(await p.$('#tourName')) && (await p.$$eval('#tourBody .tour-fields, #tourBody .tour-get', e => e.length)) === 0);
+  ok('screen 1 is the video and nothing else', (await q('#tourTitle')) === 'Welcome' && (await q('#tourPart')) === 'Welcome' /* the step name only, no "of N" (Mako, 2026-11-19) */ && (await p.$$eval('#tourBody .tour-vframe, #tourBody .tour-video', e => e.length)) >= 1 && !(await p.$('#tourName')) && (await p.$$eval('#tourBody .tour-fields, #tourBody .tour-get', e => e.length)) === 0);
   ok('...with one way on', (await q('#tourNext')) === 'Next' && !(await p.$eval('#tourNext', e => e.hidden)));
   ok('no back button on screen 1', await p.$eval('#tourBack', e => e.hidden));
   await p.click('#tourNext'); await w(250);
-  ok('screen 2 asks for the currency and what to call you', (await q('#tourTitle')) === 'Currency' && /^Step 1 of \d+: Welcome$/.test(await q('#tourPart')) && (await val('#tourName')) === '');
+  ok('screen 2 asks for the currency and what to call you', (await q('#tourTitle')) === 'Currency' && (await q('#tourPart')) === 'Welcome' && (await val('#tourName')) === '');
   ok('...and a promise that it stays private', (await tourText()).includes('stays in this browser') && (await tourText()).includes('Nobody else can see it'));
   await p.type('#tourName', '  Mara ');
   ok('six currency chips, yen preselected', (await p.$$eval('input[name=tourCur]', e => e.length)) === 6 && (await p.$eval('input[name=tourCur]:checked', e => e.value)) === '¥');
@@ -116,7 +116,7 @@ const PESO = (() => { const src = require('fs').readFileSync(process.env.MODEL |
   /* ============ THE PAGE ============ */
   await seed(PESO); await skipTour(); await tab('month'); await w(300); /* the page checks below were written for the peso sample, so seed that copy (the default is yen since 38.28) */
   const lg = await p.$$eval('#legend .lg', e => e.map(x => x.innerText.replace(/\s+/g, ' ').trim()));
-  ok('legend shows six jars in order', lg.length === 6 && ['Bills and basics', 'Goals', 'Free to spend', 'Education', 'Investing', 'Giving'] /* 38.29 words */.every((n, i) => lg[i].startsWith(n)));
+  ok('legend shows six jars in order', lg.length === 6 && ['Bills and basics', 'Goal burrows', 'Free to spend', 'Education', 'Investing', 'Giving'] /* 38.29 words; Goals became Goal burrows (Mako, 2026-11-19) */.every((n, i) => lg[i].startsWith(n)));
   ok('necessities 55%, give 5%', lg[0].includes('₱16,500') && lg[0].includes('55%') && lg[5].includes('₱1,500') && lg[5].includes('5%'));
   ok('jar note in line', (await q('#jarNote')).startsWith('Bills and basics are 55% of pay'));
   ok('hero is the play money', (await q('#heroNum')) === '₱3,000');

@@ -15,7 +15,7 @@
   <div class="tabs" role="tablist" aria-label="Pages">
     <button type="button" role="tab" id="tab-home" aria-controls="p-home" aria-selected="true" data-tab="home" data-cap="How you are doing">Home</button>
     <button type="button" role="tab" id="tab-receipts" aria-controls="p-receipts" aria-selected="false" data-tab="receipts" tabindex="-1" data-cap="Log what you spent">Receipts</button>
-    <button type="button" role="tab" id="tab-goals" aria-controls="p-goals" aria-selected="false" data-tab="goals" tabindex="-1" hidden>Goals</button>
+    <button type="button" role="tab" id="tab-goals" aria-controls="p-goals" aria-selected="false" data-tab="goals" tabindex="-1" hidden>Burrows</button>
     <button type="button" role="tab" id="tab-month" aria-controls="p-month" aria-selected="false" data-tab="month" tabindex="-1" data-cap="Months and goals">Plan</button>
     <button type="button" role="tab" id="tab-basics" aria-controls="p-basics" aria-selected="false" data-tab="basics" tabindex="-1" hidden>Settings</button>
   </div>
@@ -65,7 +65,7 @@
           <div class="hdeep-l">
             <button type="button" class="btn" data-tab-go="month">Month plan</button>
             <button type="button" class="btn" data-tab-go="months">All months</button>
-            <button type="button" class="btn" data-tab-go="goals">Goals</button>
+            <button type="button" class="btn" data-tab-go="goals">Burrows</button>
             <button type="button" class="btn" data-tab-go="basics">Settings</button>
           </div>
         </section>
@@ -75,7 +75,7 @@
 
   <!-- THIS MONTH -->
   <div id="p-month" role="tabpanel" aria-labelledby="tab-month" hidden>
-    <div class="plan-top"><div class="subnav" role="group" aria-label="Plan pages"><button type="button" data-tab-go="month" data-sub="month">Month</button><button type="button" data-tab-go="goals" data-sub="goals">Goals</button><button type="button" data-tab-go="months" data-sub="months">All months</button></div></div>
+    <div class="plan-top"><div class="subnav" role="group" aria-label="Plan pages"><button type="button" data-tab-go="month" data-sub="month">Month</button><button type="button" data-tab-go="goals" data-sub="goals">Burrows</button><button type="button" data-tab-go="months" data-sub="months">All months</button></div></div>
     <section class="start" id="start" aria-labelledby="startTitle" hidden>
       <h2 id="startTitle">Setup: 4 steps</h2>
       <p class="cap" id="startSub">Sample numbers for one salary. Replace them with yours. Data stays in this browser.</p>
@@ -136,7 +136,7 @@
 
   <!-- ALL MONTHS -->
   <div id="p-months" role="tabpanel" aria-labelledby="tab-months" hidden>
-    <div class="plan-top"><div class="subnav" role="group" aria-label="Plan pages"><button type="button" data-tab-go="month" data-sub="month">Month</button><button type="button" data-tab-go="goals" data-sub="goals">Goals</button><button type="button" data-tab-go="months" data-sub="months">All months</button></div></div>
+    <div class="plan-top"><div class="subnav" role="group" aria-label="Plan pages"><button type="button" data-tab-go="month" data-sub="month">Month</button><button type="button" data-tab-go="goals" data-sub="goals">Burrows</button><button type="button" data-tab-go="months" data-sub="months">All months</button></div></div>
     <section class="card sect">
       <div class="head">
         <h2>All months</h2>
@@ -148,15 +148,15 @@
 
   <!-- GOALS -->
   <div id="p-goals" role="tabpanel" aria-labelledby="tab-goals" hidden>
-    <div class="plan-top"><div class="subnav" role="group" aria-label="Plan pages"><button type="button" data-tab-go="month" data-sub="month">Month</button><button type="button" data-tab-go="goals" data-sub="goals">Goals</button><button type="button" data-tab-go="months" data-sub="months">All months</button></div></div>
+    <div class="plan-top"><div class="subnav" role="group" aria-label="Plan pages"><button type="button" data-tab-go="month" data-sub="month">Month</button><button type="button" data-tab-go="goals" data-sub="goals">Burrows</button><button type="button" data-tab-go="months" data-sub="months">All months</button></div></div>
     <section class="card sect" id="secGoals">
       <div class="head">
-        <h2>Goals</h2>
+        <h2>Burrows</h2>
         <p class="sub2" id="goalsSub"></p>
         <p class="sub2" id="goalsSub2" hidden></p>
       </div>
       <div class="goals" id="goalCards"></div>
-      <div class="row-btns"><button type="button" class="btn small solid" id="addGoalBtn">Add goal</button><span class="msg" id="goalMsg" role="status"></span></div>
+      <div class="row-btns"><button type="button" class="btn small solid" id="addGoalBtn">Add a burrow</button><span class="msg" id="goalMsg" role="status"></span></div>
     </section>
     <section class="card sect" id="secDebts">
       <div class="head">
@@ -315,7 +315,7 @@
       <div class="sets" id="sets"></div>
       <div class="backup" id="jarGuide">
         <h3>Where your pay goes</h3>
-        <p class="cap">Your pay is split into places, each with one job. The percents are a common split, shown as a guide. Your actual split is on Plan and follows your bills and goals.</p>
+        <p class="cap">Your pay is split into places, each with one job. The percents are a common split, shown as a guide. Your actual split is on Plan and follows your bills and burrows.</p>
         <div class="jlist" id="jarList"></div>
         <div class="row-btns"><button type="button" class="btn small" id="redivide" hidden>Re-split pay</button></div>
       </div>

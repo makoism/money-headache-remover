@@ -7,7 +7,7 @@ const COACH = {
     ['#hHero', 'Main goal', 'Your reason, in your words, with what this month adds and the months left. Tap Forecast for the graph.'],
     ['#hSpend', 'Free to spend', 'The money you use this month. The big number is free to spend on fun, no guilt. Below it: are your necessities covered, and what is left for learning and giving. What is left at month end can go toward a goal.'],
     ['#hQuick', 'Log spend', 'Enter an amount, pick a category, tap Log. Do it as you spend or weekly.'],
-    ['#hGoals', 'Goals', 'Tap a goal to open it. Edit it or set it as main goal.'],
+    ['#hGoals', 'Burrows', 'Tap a burrow to open it. Edit it or make it your main burrow.'],
     ['#hBuckets', 'Investing', 'Money you invest and never spend. It only grows. Goals and debt live in the burrows at the top.'],
     ['#askBtn', 'Ask', 'Any money question, any time. It knows your plan and can make changes you approve.'],
   ],
@@ -19,7 +19,7 @@ const COACH = {
   ],
   goals: [
     ['#goalCards .gcard', 'Goal', 'Bar = how full by plan. Edit goal changes name, amount or date.'],
-    ['#addGoalBtn', 'Add goal', 'Three steps: type, amount, date.'],
+    ['#addGoalBtn', 'Add a burrow', 'Three steps: type, goal amount, date.'],
     ['#chartbox', 'Forecast', 'Every goal, month by month. Hover or tap to read a month.'],
   ],
   month: [

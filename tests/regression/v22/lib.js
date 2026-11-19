@@ -40,7 +40,7 @@ exports.runTour = async (p, pr, shot) => {
       const key = Object.keys(map).find(k=>t.includes(k)); const id=map[key];
       if (id && pr.amt[id]!==undefined) await type('#tourAmt', pr.amt[id]);
     }
-    else if (title.startsWith('What are you saving') || title === 'Goals') {
+    else if (title.startsWith('What are you saving') || title === 'Goals' || title === 'Burrows') {
       const ids = await p.$$eval('input[name=tourGoalPick]', els => els.map(e=>[e.value,e.checked]));
       for (const [id,ck] of ids) { const want = pr.goals.includes(id); if (want!==ck) await p.click(`input[name=tourGoalPick][value=${id}]`); }
     }

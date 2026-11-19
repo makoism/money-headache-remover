@@ -25,7 +25,7 @@ exports.base=async(p,o={})=>{await p.evaluate(o=>{const S=__t.S;
  __t.persist();__t.restructure();},o);
  await exports.tab(p,'tab-month');await exports.tab(p,'tab-home');};
 exports.dump=async(p,tag)=>{let out='';for(const t of ['tab-home','tab-month','tab-receipts']){await exports.tab(p,t);out+=`\n===== ${tag} ${t}\n`+await exports.txt(p);}
- for(const sub of ['Goals','All months']){await exports.tab(p,'tab-month');await exports.clickText(p,sub);await exports.R.w(500);out+=`\n===== ${tag} plan/${sub}\n`+await exports.txt(p);}
+ for(const sub of ['Burrows','All months'])   /* Plan's Goals page is called Burrows (Mako, 2026-11-19) */{await exports.tab(p,'tab-month');await exports.clickText(p,sub);await exports.R.w(500);out+=`\n===== ${tag} plan/${sub}\n`+await exports.txt(p);}
  await exports.tab(p,'tab-month');await exports.clickText(p,'Month');await exports.R.w(300);
  return out;};
 exports.rc=async(p,amt,cat='envelope',date=null,note='',opts={})=>{await exports.tab(p,'tab-receipts');

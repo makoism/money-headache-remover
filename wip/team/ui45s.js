@@ -2,7 +2,7 @@
 /* ---------- the guided setup: one question at a time, written straight into the plan ----------
    Every screen saves as you type, so closing the tour half way loses nothing.
    Nothing here invents a number: a field you leave empty stays empty. */
-const PART = { welcome: 'Welcome', money: 'Money', bills: 'Bills', jars: 'Split', goals: 'Goals', spend: 'Free to spend' };
+const PART = { welcome: 'Welcome', money: 'Money', bills: 'Bills', jars: 'Split', goals: 'Burrows', spend: 'Free to spend' };
 
 const inum = id => { const el = document.getElementById(id); return el ? num0(el.value) : 0; };
 const moneyField = (id, label, v, hint) => `<div class="field"><label for="${id}">${label}</label><div class="inp"><span class="yen cs"></span><input id="${id}" type="number" inputmode="decimal" min="0" step="any" aria-describedby="tourTitle" placeholder="${hint || 'Amount'}" value="${v > 0 ? v : ''}"></div></div>`;
@@ -45,7 +45,7 @@ const STEP_MONEY = { id: 'money', part: PART.money, setup: true, focus: '#tourPa
     const pay = $('#tourPay'), extra = $('#tourExtra'), bank = $('#tourBank'); if (!pay) return;
     if (pay.value !== '' || tourTouched) { const v = num0(pay.value); setVal(S, 'a', START, v, 'after'); if (v > 0) markDone('pay'); }
     if (extra && (extra.value !== '' || tourTouched || S.steps.b)) setVal(S, 'b', START, num0(extra.value), 'after');
-    if (bank && bank.value !== '' && isFinite(+bank.value)) S.cfg.bankStart = clampBank(bank.value, S);
+    if (bank && bank.value !== '' && isFinite(+bank.value)) { const nb = clampBank(bank.value, S); if (nb !== S.cfg.bankStart || !S.cfg.bankAt) setBankBalance(S, nb); }   /* the date moves only when the balance is typed, not when setup is walked again */
     if (S.cfg.minBank === undefined && payNow() > 0) S.cfg.minBank = toUnit(payNow() * 0.1); /* the safety line: a tenth of pay unless Settings says otherwise */
     persist();
   } };
@@ -138,7 +138,7 @@ const moreBtn = kind => `<div class="row-btns"><button type="button" class="btn 
 
 /* ----- where the rest of the pay goes: the five other jars share what the bills leave ----- */
 const JAR5 = ['lts', 'play', 'edu', 'ffa', 'give'];
-const JAR_LABEL = { lts: 'Goals', play: 'Free to spend', edu: 'Education', ffa: 'Investing', give: 'Giving' };
+const JAR_LABEL = { lts: 'Goal burrows', play: 'Free to spend', edu: 'Education', ffa: 'Investing', give: 'Giving' };
 const JAR_SHORT = { lts: 'Savings', play: 'Free to spend', edu: 'Education', ffa: 'Freedom', give: 'Give' };
 let jarVals = null, jarRest = 0, jarNec = 0;
 /* the share of the pay the bills leave for the other five jars, in whole percents; 0 when the bills use all of it */
@@ -214,8 +214,8 @@ const STEP_JARS = { id: 'jars', part: PART.jars, setup: true, when: havePay,
     jarInit(); const pay = payNow(), nec = necTotal();
     if (nec <= 0) return `<p>No bills listed, so the other five places would share all of your pay. If that is wrong, go back and add bills.</p>
     <p class="cap">If you truly have none, continue and split below.</p>${jarSplitHTML()}`;
-    if (jarRest <= 0) return `<p>Bills <b>${fmt2(nec)}</b>, pay <b>${fmt2(pay)}</b>. ${nec > pay ? `Bills exceed pay by <b>${fmt2(setupCells(S).billsOverPay)}</b>, so` : 'Bills take all of it, so'} nothing is left for the other five places: no free to spend and nothing for goals, for now.</p>
-    <p>You can still add goals next. They start filling once bills drop below pay. To lower a bill, go back. Otherwise continue and adjust under Plan later.</p>`;
+    if (jarRest <= 0) return `<p>Bills <b>${fmt2(nec)}</b>, pay <b>${fmt2(pay)}</b>. ${nec > pay ? `Bills exceed pay by <b>${fmt2(setupCells(S).billsOverPay)}</b>, so` : 'Bills take all of it, so'} nothing is left for the other five places: no free to spend and nothing for burrows, for now.</p>
+    <p>You can still add burrows next. They start filling once bills drop below pay. To lower a bill, go back. Otherwise continue and adjust under Plan later.</p>`;
     return `<p>Bills and basics take <b>${fmt2(nec)}</b>, <b>${jarNec}%</b> of pay. The other <b>${jarRest}%</b> (${fmt2(setupCells(S).payOverBills)}) is yours to split between the five places below, starting at the usual proportions.</p>
     ${jarsFold()}${jarSplitHTML()}`;
   },
@@ -241,9 +241,9 @@ const GOAL_KINDS = [
   { k: 'debt', id: 'debt', name: 'Pay off debt', slot: 3, debt: true, pick: 'Pay off a debt', hint: 'A balance with no interest', title: 'Pay off debt', cost: 'What you still owe in total. For a card or loan with interest, use Cards and loans on the Goals tab instead.' },
   { k: 'other', id: 'other', name: 'Something else', slot: 2, pick: 'Something else', hint: 'Anything with a price', title: 'Goal', cost: '' },
 ];
-const STEP_TOOLPICK = { id: 'goals-pick', part: PART.goals, setup: true, pick: true, skipIf: () => quickSetup(), title: 'Goals', art: 'sprout',
+const STEP_TOOLPICK = { id: 'goals-pick', part: PART.goals, setup: true, pick: true, skipIf: () => quickSetup(), title: 'Burrows', art: 'sprout',
   body: () => `<p>Burrows hold money you build up: a cushion, a trip, a big purchase, or paying off a debt. Tick what you are working toward. Add more later.</p>
-    <div class="tour-chips two" role="group" aria-label="Goals">${GOAL_KINDS.map(k => { const on = S.ui.gset ? !!goalById(S, k.id) : k.k === 'rainy'; return `<label class="chip multi${on ? ' on' : ''}"><input type="checkbox" name="tourGoalPick" value="${k.k}"${on ? ' checked' : ''}><b>${k.pick}</b><span>${k.hint}</span></label>`; }).join('')}</div>
+    <div class="tour-chips two" role="group" aria-label="Burrows">${GOAL_KINDS.map(k => { const on = S.ui.gset ? !!goalById(S, k.id) : k.k === 'rainy'; return `<label class="chip multi${on ? ' on' : ''}"><input type="checkbox" name="tourGoalPick" value="${k.k}"${on ? ' checked' : ''}><b>${k.pick}</b><span>${k.hint}</span></label>`; }).join('')}</div>
     <p class="cap">Unsure? Keep the emergency fund. Owe on a card or loan? Add it after setup, under Cards and loans on the Goals tab. It works out the interest and the payoff date.</p>`,
   leave: d => { if (d <= 0) return; applyGoalPick($$('#tourBody input[name=tourGoalPick]:checked').map(i => i.value), true); } };
 function applyGoalPick(picked, mark) {
@@ -380,7 +380,7 @@ const unusedOf = () => Math.max(0, round2(gsBudget - S.plan.goals.reduce((a, g, 
 function paintSplit() {
   if (!$('#goalSplit')) return;
   applySplit(); splitC2 = calcAll(S);
-  { const u = unusedOf(), el = $('#splitUnused'); if (el) el.textContent = u > 0 ? `${fmt2(u)} of this is not placed yet: goals cannot take more now. Add a goal or raise a cost.` : ''; }
+  { const u = unusedOf(), el = $('#splitUnused'); if (el) el.textContent = u > 0 ? `${fmt2(u)} of this is not placed yet: your burrows cannot take more now. Add a burrow or raise a cost.` : ''; }
   if (S.plan.goals.length === 1) { const row = $('[data-grow="0"]'); if (row) { $('.split-m', row).textContent = fmt2(splitMoney(0)) + ' a month'; $('.split-s', row).textContent = splitNoteFor(0); } return; }
   spPaint('goal', SPLIT_SPEC.goal());
 }
@@ -404,7 +404,7 @@ function planFacts() { const C = calcAll(S); return Object.assign({ C }, planFac
 const ledgerRow = (k, v, cls) => `<div${cls ? ` class="${cls}"` : ''}><dt>${k}</dt><dd>${v}</dd></div>`;
 function ledgerHTML(f) {
   const rows = [ledgerRow('Pay in', fmt2(f.inc)), ledgerRow('Bills and basics', fmt2(f.bills))];
-  if (f.goals > 0) rows.push(ledgerRow('Goals', fmt2(f.goals)));
+  if (f.goals > 0) rows.push(ledgerRow('Goal burrows', fmt2(f.goals)));
   if (f.other > 0) rows.push(ledgerRow('Education, Investing and Giving', fmt2(f.other)));
   rows.push(ledgerRow('Free to spend', fmt2(f.play), 'play'));
   if (f.st === 'over') rows.push(ledgerRow('Short by', fmt2(f.shortBy), 'neg')); else if (f.st === 'spare') rows.push(ledgerRow('Left, not placed yet', fmt2(f.L)));
@@ -414,7 +414,7 @@ const behindGoals = () => (tourMode === 'full' && havePay() ? S.plan.goals.filte
 const behindText = () => {
   const b = behindGoals(); if (!b.length) return '';
   const names = b.map(g => `<b>${esc(g.name)}</b>`).join(' and ');
-  return `${names} ${b.length === 1 ? 'misses its date' : 'miss their dates'} at this pace. Under Plan, Goals: move the date, lower the amount or give it more pay.`;
+  return `${names} ${b.length === 1 ? 'misses its date' : 'miss their dates'} at this pace. Under Plan, Burrows: move the date, lower the amount or give it more pay.`;
 };
 /* the same pixel chest used on Home and Plan, as a small picture above the figure (visual first) */
 const chestImg = fill => { try { const c = document.createElement('canvas'); c.width = 24; c.height = 18; BUR.LOOKS.room.paint(c.getContext('2d'), fill, 'play', 3); return `<img class="tour-chest" alt="" aria-hidden="true" width="96" height="72" src="${c.toDataURL()}">`; } catch (e) { return ''; } };
@@ -424,7 +424,7 @@ const STEP_REVEAL = { id: 'reveal', part: PART.spend, art: 'branch',
   body: () => {
     const f = planFacts(), play = f.play, wk = weekOf(play), seg = (cls, v) => (v > 0 ? `<div class="seg-b ${cls}" style="flex-grow:${v}"></div>` : '');
     if (f.st === 'nopay') return `${chestImg(0.5)}<div class="tour-reveal"><b>${fmt2(play)}</b><span>a month, sample</span></div>
-      <p>No pay entered, so every number here is a sample. Free to spend is for fun, worked out after bills and goals. Add your pay under Plan, Month, Details, Money in, or tap Back to enter it here.</p>`;
+      <p>No pay entered, so every number here is a sample. Free to spend is for fun, worked out after bills and burrows. Add your pay under Plan, Month, Details, Money in, or tap Back to enter it here.</p>`;
     if (f.st === 'over') return `<div class="tour-reveal neg"><b>${fmt2(f.shortBy)}</b><span>short a month</span></div>
       <p>Plan spends <b>${fmt2(f.J.out)}</b>; pay is <b>${fmt2(f.inc)}</b>.${play > 0 ? '' : ' Nothing left, so no free to spend yet.'}</p>
       ${ledgerHTML(f)}

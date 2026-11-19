@@ -16,7 +16,7 @@ THE PAGE
 - On every page except Home and Settings, a slim bar under the tabs shows the main goal, months to go and free to spend left. Tap it to go Home. It updates as receipts are logged.
 - The main goal is the nearest goal still being saved for, unless the person picks one with Set as main goal.
 - Receipts: at the top is Scan receipts. When Claude can be reached, tap Camera or Choose files (photos, screenshots, a bank CSV or a PDF statement), then Read. Claude sorts the receipts into categories and lists what it found, with a category picker on each line, before anything is added. Tap Add to my page to add them, and Undo is offered afterwards. When the page cannot reach Claude, the card shows Other AI app: tap Copy message, paste it into an AI app with the receipt photos, paste the reply into Reply and tap Check. Below that: the form with Date, Amount, Category, Note and Log receipt, a Month picker with the receipts of that month, plan against spent for each category, and a Reminder card that adds a repeating event to Google, Apple, Outlook.com, Microsoft 365, Yahoo or other calendars, or copies the event text.
-- Plan, Goals: each goal is a savings bucket with an amount and, optionally, a date. With a date, the page spreads what is missing over the months before it. Without a date it aims to fill the goal in about a year. Edit goal renames, resizes, dates or removes it, and has a Why line: the reason in the person's words, shown with the goal on Home, here and on the last setup screen. Change monthly amount sets the monthly saving. Add goal starts the three-step flow. Forecast shows each goal month by month as a chart, and Table switches to numbers. The emergency fund is the one goal that can be borrowed from in a short month.
+- Plan, Burrows: each burrow is a savings bucket with an amount and, optionally, a date. With a date, the page spreads what is missing over the months before it. Without a date it aims to fill the goal in about a year. Edit goal renames, resizes, dates or removes it, and has a Why line: the reason in the person's words, shown with the goal on Home, here and on the last setup screen. Change monthly amount sets the monthly saving. Add goal starts the three-step flow. Forecast shows each goal month by month as a chart, and Table switches to numbers. The emergency fund is the one goal that can be borrowed from in a short month.
 - Plan, Month: the whole plan for one month. A Choose a month list, the big Free to spend number with a weekly amount, a status chip (On plan, Tight or Short), the pay split by jar as a coloured bar, and Details: Money in (Salary, Second income, Side income), Money out (Bills and basics, One-time costs, Long-Term Savings for Spending, Free to spend, Education, Investing, Give) and Left. Tap an amount to type a new one: it changes that month only, and Keep for later months makes it the new usual. Open a jar and tap Rename, remove or add lines to change its list. Reset month and Undo all revert edits. A Short month offers one-tap fixes: spend less, or borrow from the emergency fund. All months shows a table of every month.
 - Where to put a paycheck: Plan, Month, open Salary under Money in, and type the monthly take-home pay (after tax). If paid twice a month, add both together.
 - Settings: Name, Currency, Sound, Look (Auto, Light or Dark), Balance (Money today, Minimum balance, Monthly spending ceiling), Six places (the usual percentages, shown as a guide; Re-split pay reruns the split), Reset and setup (Set all to zero, Restore samples, Show first steps, Guided setup), and Saved data: Backup with Save file or Copy text, Spreadsheet with Export spreadsheet (every month as one table to check in Google Sheets or Excel), Cloud backup (Turn on; an encrypted copy that only the recovery code opens, which also moves the numbers to another phone), and Restore with Load text or Choose file.
@@ -240,7 +240,7 @@ function askApply(ch) {
   if (u.ids.length) markDone('receipts', true);
   if (ch.pay != null) { step('a', ch.pay); markDone('pay', true); }
   ch.bills.forEach(b => step(b.key, b.amount)); if (ch.bills.length) markDone('bills', true);
-  if (ch.balance != null) { u.bankSet = true; u.hadBank = S.cfg.bankStart !== undefined; u.bank = S.cfg.bankStart; S.cfg.bankStart = ch.balance; }
+  if (ch.balance != null) { u.bankSet = true; u.hadBank = S.cfg.bankStart !== undefined; u.bank = S.cfg.bankStart; u.bankAt = S.cfg.bankAt; setBankBalance(S, ch.balance); }
   persist(); itemsSig = ''; restructure();
   if (u.ids.length) afterLog((S.receipts || []).length === u.ids.length, u.ids.length); else sfx('coin');
   return u;
@@ -248,7 +248,7 @@ function askApply(ch) {
 function askUndoApply(u) {
   S.receipts = (S.receipts || []).filter(r => u.ids.indexOf(r.id) < 0);
   Object.keys(u.steps).forEach(k => { if (u.steps[k] === null) delete S.steps[k]; else S.steps[k] = u.steps[k]; });
-  if (u.bankSet) { if (u.hadBank) S.cfg.bankStart = u.bank; else delete S.cfg.bankStart; }
+  if (u.bankSet) { if (u.hadBank) S.cfg.bankStart = u.bank; else delete S.cfg.bankStart; if (u.bankAt) S.cfg.bankAt = u.bankAt; else delete S.cfg.bankAt; }
   persist(); itemsSig = ''; restructure();
 }
 /* the card in the chat: what Claude found, each item with a tick box, and the button that adds it */

@@ -57,7 +57,7 @@ const MAKE_CAP = 'Amounts are samples for one salary. Start at zero or type over
 const START_STEPS = [
   ['pay', 'Enter pay', 'Type monthly take-home pay under Salary.', 'Go to Salary', 'data-open="a"'],
   ['bills', 'Check bills', 'Set each Bills and basics line to the real amount. Rename, remove or add lines.', 'Open Bills and basics', 'data-open="nec"'],
-  ['goals', 'Set goals', 'Name each goal, its cost and its date.', 'Go to Goals', 'data-tab-go="goals"'],
+  ['goals', 'Set up burrows', 'Name each goal, its cost and its date.', 'Go to Goals', 'data-tab-go="goals"'],
   ['receipts', 'Log receipts', 'Add what you spent. Set a calendar reminder to make it a habit.', 'Go to Receipts', 'data-tab-go="receipts"'],
 ];
 function renderStart() {
@@ -203,7 +203,7 @@ function goalNote(gid, m) {
 
 function renderGoals(m) {
   const J = jarsOf(S, m), lj = J.list.find(x => x.id === 'lts'), inc = J.income, gs = S.plan.goals;
-  $('#goalsSub').textContent = gs.length ? `Goals get ${fmt(lj.v)} this month` + (inc > 0 && !J.over ? `, ${lj.pct}% of pay.` : '.') : 'No goals. Add one to see when it is reached.';
+  $('#goalsSub').textContent = gs.length ? `Goals get ${fmt(lj.v)} this month` + (inc > 0 && !J.over ? `, ${lj.pct}% of pay.` : '.') : 'No burrows. Add one to see when it is reached.';
   
   $('#secRoad').hidden = !gs.length;
   gs.forEach(g => {
