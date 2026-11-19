@@ -34,6 +34,10 @@ Coordinator 2 (session_01BFpKEXXUx4uUjZGJny9MyJ) passed the 150k mark and handed
 - SIDE G finished its last change (side/vault-server 9d0f1da, cap default 300, "Before this merges" list in LANE_vault.md). For the ledger step: G suggests the server itself refuses a save from an older page (a format number per save); take it, it fits "nobody loses data".
 - Running now: MAIN 3, M2, H, N2.
 
+- SIDE M2 handed off (side/voice 85aa9ea): COPY_V1.md has 275 rows (setup, Plan, Receipts, Home and More) with copy_apply.js; applies cleanly to 77a8f0a; voice_lint strong 34 to 16. 37 test files quote an old string (24 golden files, home_dom, leftover_choice, leftover_thin, mako_answers, number_gate3, v1_home, model_3828 fixture, regression copies): MAIN 3 needs that list with the copy batch. SIDE M3 is session_01BFpKEYTAHNqadfvthsoPNC on side/voice: fresh qc-voice check of the 275 rows, the smaller dialog files (COPY_V1B.md), then the saving and Settings strings on the coordinator's word after E15, and 12 before and after pairs for Mako's phone. "Every coin has a home" stays as it is until Mako says (flag it to him in the copy pass).
+- MAIN 3 reported E6 fixes 1 to 5 landed (04:45 UTC). Look at the commit at the check-in.
+- Running now: MAIN 3, M3, H, N2.
+
 ### Mako today (all recorded in DECISIONS.md, last eight sections; read them)
 Pace (use the full allowance by Sunday 22 Nov, again by Wed 25 or Thu 26). The team's shape answered by him (standard Philippine accounts, monthly pay with separate pay supported, cards core, iPhone and Android). The copy must not sound like AI and must sound like him (few full stops, his space hyphen space, joined sentences, normal conversation); all copy in one batch at the end, then ONE pass with him on the preview. The cloud copy must explain itself step by step (E15, v1). Yen stays default. He likes short updates: what was found, what was done. He said: ask him when context is needed. He dictates by voice; messages can cut off.
 
