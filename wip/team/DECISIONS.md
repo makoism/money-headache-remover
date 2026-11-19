@@ -222,3 +222,10 @@ How the team does it (coordinator's reading): the voice lane's rewrite is applie
 - Fewer full stops, fewer short separate sentences, less abbreviation. Join a few sentences where it makes sense.
 - "I want it to sound more like someone talking to you in normal conversation."
 
+
+## The 3D world is desktop only (Mako, 2026-11-19)
+Mako: "I don't see how it would work on mobile, nicely... I don't really want to add a joystick and stuff. It's just going to be a bad user experience exploring a 3D world on mobile. Also the processing speed would be different, so I think we just do it on the desktop version."
+1. **The phone app stays as it is.** No 3D world, no joystick, no walking controls on phones.
+2. **On desktop you can enter the world.** It is an extra way in, never the only way: every action still works in the normal app on every device.
+3. The rest is unchanged: the world is part of the art step, designs with Mako first, nothing starts before he says so.
+What follows (coordinator's reading, agreed with him in chat as the team's view): the world's "phones and QC" week in WORLD_3D.md shrinks to desktop checks; the phone needs its own warmth from the 2D art in the art step, since the phone is where he and the team use the app most; "desktop" is decided by a pointer and keyboard and a wide screen, not by the browser's name.

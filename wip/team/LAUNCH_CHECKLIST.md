@@ -99,7 +99,7 @@ One "Money came in" and one "Money went out", each with a short list of kinds an
 |---|---|---|
 | G1 | Papers disagree: one world or one per burrow; "Chest" for waiting pay in HANDOFF, PLAN and side C tests; "check your bank" in both B1 and C | v1 (docs) |
 | G2 | Know whether it works: weekly opens without being chased, logging under 60 seconds, the gap between the app's bank figure and the real one, one decision changed, setup under 10 minutes, nothing lost | team |
-| G3 | The 3D world: decided by Mako when the art step comes; usage data from the team test informs it | later |
+| G3 | The 3D world: desktop only, the phone app stays as it is (Mako, 2026-11-19); the rest decided by Mako when the art step comes; usage data from the team test informs it | later |
 
 ## H. It holds your hand (Mako, 2026-11-19, NORTH_STAR.md "Why this exists")
 | # | Point | Fix | Gate |

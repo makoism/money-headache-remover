@@ -2,6 +2,8 @@
 
 Status: part of the art step, the very last layer. Nothing is built for it until the base app works and Mako has used it with his own numbers. No session starts any of this without asking Mako first.
 
+**Desktop only (Mako, 2026-11-19, DECISIONS.md "The 3D world is desktop only"):** the phone app stays as it is, no joystick or walking controls; on desktop you can enter the world. Every action still works in the normal app everywhere. Where this file says phones, read desktop checks only.
+
 ## The idea
 One small, walkable, stylized 3D world inside the app: a little town (smaller than one Minecraft chunk, about the size of the tiny planet in Messenger by Abeto). Mako's references: Mistwood Cottage and Messenger by Abeto. Stylized and a bit weird, not realistic. CPU and GPU can be spent on style, within what a mid-range phone runs smoothly.
 
