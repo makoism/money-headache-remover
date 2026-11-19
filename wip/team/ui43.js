@@ -78,6 +78,9 @@ function renderBackupNudge() {
   } else if (vaultNote && vaultNote.kind === 'newer') {
     const when = vaultNote.when ? new Date(vaultNote.when).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
     html = `<div class="hn-t"><b>Newer copy in the cloud</b><span>Saved from another device${when ? ' on ' + when : ''}. Load it here, or keep this device's numbers and overwrite it.</span></div><div class="hn-b"><button type="button" class="btn small solid" data-vault-load>Load it</button><button type="button" class="link" data-vault-keep>Keep mine</button></div>`;
+  } else if (vault.on && vault.failAt) {
+    /* LAUNCH_CHECKLIST E9: a cloud save that failed is said on Home too, until a save works */
+    html = `<div class="hn-t"><b>The cloud copy is behind</b><span>Changes made since ${vaultWhen(vault.failAt)} are on this device only. It tries again by itself on your next change.</span></div><div class="hn-b"><button type="button" class="btn small solid" data-vault-retry>Send now</button></div>`;
   } else if (vault.on && cloud && !S.ui.vaultSeen && !bkNote) {
     html = `<div class="hn-t"><b>Save your recovery code</b><span>Your numbers are backed up to the cloud, encrypted. This code is the only way to open them on another phone.</span></div><div class="vault-wrap" data-vault-code></div>`;
   } else if (bkNote) {
@@ -87,10 +90,14 @@ function renderBackupNudge() {
     const a = bkAge();
     {
       html = cloud
-        ? `<div class="hn-t"><b>Back up your numbers</b><span>They live on this device only. Cloud backup keeps an encrypted copy that only you can open.</span></div><div class="hn-b"><button type="button" class="btn small solid" data-vault-on>Turn on cloud backup</button><button type="button" class="link" data-bk-now>Save a file instead</button><button type="button" class="link" data-bk-later>Later</button></div>`
+        ? `<div class="hn-t"><b>Back up your numbers</b><span>They live on this device only. A cloud copy keeps them safe, locked with a code only you have.</span></div><div class="hn-b"><button type="button" class="btn small solid" data-vault-on>Keep a copy in the cloud</button><button type="button" class="link" data-bk-now>Save a file instead</button><button type="button" class="link" data-bk-later>Later</button></div>`
         : `<div class="hn-t"><b>${a === null ? 'Back up your numbers' : `Last backup: ${a} days ago`}</b><span>They live in this browser only. Save a file copy so nothing is lost.</span></div><div class="hn-b"><button type="button" class="btn small solid" data-bk-now>Save a copy</button><button type="button" class="link" data-bk-later>Later</button></div>`;
     }
   }
+  /* a notice about the saved numbers themselves (arrived, newer in the cloud, cloud behind, restored) is never left behind another Home action */
+  const urgent = !!(moveIn || (vaultNote && vaultNote.kind === 'newer') || (vault.on && vault.failAt) || bkNote);
+  if (urgent && html) el.dataset.urgent = '1'; else delete el.dataset.urgent;
+  if (el.hidden !== !html || urgent) setTimeout(() => { try { if (tab === 'home' && typeof homeV1 === 'function') homeV1(); } catch (e) { /* drawn on the next render */ } }, 0);
   el.hidden = !html; if (html) { put(el, html); const w = $('[data-vault-code]', el); if (w && !w.children.length) vaultShowCode(w, vault.code); }
 }
 /* the install hint: only where the page has an address of its own, and not once it already runs as an installed app */
@@ -107,7 +114,9 @@ function wireSafe() {
     if (e.target.closest('[data-bk-ok]')) { bkNote = null; renderBackupNudge(); return; }
     if (e.target.closest('[data-move-load]')) { moveApply(); renderBackupNudge(); return; }
     if (e.target.closest('[data-move-no]')) { moveIn = null; renderBackupNudge(); return; }
-    if (e.target.closest('[data-vault-on]')) { await vaultTurnOn(); sfx('next'); renderBackupNudge(); return; }
+    if (e.target.closest('[data-vault-retry]')) { vaultPush(); sfx('tap'); return; }
+    /* the cloud copy is turned on in Settings, where it explains itself one step at a time (E15) */
+    if (e.target.closest('[data-vault-on]')) { switchTab('basics'); vaultFlow('what'); sfx('next'); return; }
     if (e.target.closest('[data-vault-load]')) { await vaultLoadNewer(); return; }
     if (e.target.closest('[data-vault-keep]')) { vaultNote = null; vaultPush(true); paintVault(); renderBackupNudge(); return; }
     if (e.target.closest('[data-bk-now]')) {
