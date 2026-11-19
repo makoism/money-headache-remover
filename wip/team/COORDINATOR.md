@@ -54,6 +54,10 @@ Coordinator 2 (session_01BFpKEXXUx4uUjZGJny9MyJ) passed the 150k mark and handed
 - Next check-in timer trig_014KVDibgLeH912eBK5JHPXR, 05:30 UTC.
 - Running now: MAIN 3, M3 (waiting), P, Q, R.
 
+- MAIN 3: E15, E9, E10 client part landed (05:03 UTC); one name now, "cloud copy". M3 was given the word and the file list; it reports back with the cloud copy steps as a person reads them (show those to Mako).
+- SIDE R is done (side/deploy-prep 1f8af90, docs only): DEPLOY_RUNBOOK.md parts A (v1), B (vault and relay), C ("Only Mako can do these", 7 steps for his phone), D (old address list), E (checks per device). Findings: the deploy scripts and runbook live only on side/deploy-prep (runbook step A1 merges it first); deploy_dry_run.sh cannot pass for the vault merge by design; L3 fix written out; INVITE_CODES is comma separated, so no commas in the phrase; the OLD Worker (money-headache-remover, frozen at 38.10) may still hold the Anthropic key with no invite phrase, which would be an open relay: in Mako's step 7. Dashboard labels are from memory, not seen live. Told Mako the short version at 05:09 UTC; the full steps go to him when he asks or with the v1 preview.
+- Running now: MAIN 3, M3, P, Q.
+
 ### Mako today (all recorded in DECISIONS.md, last eight sections; read them)
 Pace (use the full allowance by Sunday 22 Nov, again by Wed 25 or Thu 26). The team's shape answered by him (standard Philippine accounts, monthly pay with separate pay supported, cards core, iPhone and Android). The copy must not sound like AI and must sound like him (few full stops, his space hyphen space, joined sentences, normal conversation); all copy in one batch at the end, then ONE pass with him on the preview. The cloud copy must explain itself step by step (E15, v1). Yen stays default. He likes short updates: what was found, what was done. He said: ask him when context is needed. He dictates by voice; messages can cut off.
 
