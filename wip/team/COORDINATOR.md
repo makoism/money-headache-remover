@@ -2,6 +2,28 @@
 
 The coordinator is the one session Mako talks to. It records his decisions in DECISIONS.md (and NORTH_STAR.md, LAUNCH_CHECKLIST.md), starts and messages working sessions, and brings their results back to him. Working sessions take direction from nowhere else. The coordinator hands off at about 150k tokens of history, like every session.
 
+## 2026-11-19, handoff 5 (coordinator 5 to coordinator 6) READ THIS FIRST
+
+Coordinator 5 (session_01BFpKEX9xQF894VPk3euyZi) was at 176k tokens at 13:00 UTC after 2.5 hours and handed off. The fixed load is large: every turn costs. Do not read NORTH_STAR, DECISIONS and the checklist in full unless Mako gives a decision; this entry and "Open with Mako" in handoff 3 are enough to run. NEVER call list_events on a main session (one page is 20k tokens); use git log and get_session only. Answer check-ins in two lines.
+
+### Usage
+Weekly warning on the meter (resets about Sun 22 Nov 00:00 UTC). Tell Mako once in one line. MAIN plus at most one lane; no lane without a clear need before v1.
+
+### Running
+- MAIN 7, session_01BFpKEYdf3wtxeW7meT1A14, wip-38.31, the only session on app files. At 12:45 UTC (tip 11c1e7e): tests follow the copy batch (23 pass, words only), golden re-recorded, VERIFY OK. Then: the ONE check.sh full (was running), candidate, ONE QC run (both gates, qc-voice, beginner walk with jobs, E15 novice move, the "Lito" walk), private preview link, 412x915 screenshots in wip/team/preview/, STEP8_COMPARE.md summary, and whether the welcome "Enter your recovery code" link shows on the preview. Main sessions pass 150k in about an hour: when it hands off, start MAIN 8 from RESUME section 0 top entry with a prompt like MAIN 7's (only session on app files, report to the coordinator, push every 15 minutes, helpers for size, never push to main). If a main session is silent for 30 minutes, tell it to push what it has and stop, then replace it.
+- Stopped, do not message: MAIN 3 to 6 (MAIN 6 is session_01BFpKEXnaZGxZyFuv3TFwST), all side lanes.
+
+### Done under coordinator 5
+- MAIN 5: H1 fixes (Home "Bank at month end", setup card step and Split the rest, Help on a solid shelf on phones, word fixes as copy rows).
+- MAIN 6: J-009 (export copies the table when no download), the copy batch applied (ad3b8fc, 458 rows), screen pack run (57 panels), the Cloud copy box on a return visit (checklist E16, done). Help in setup is not small: after v1 (checklist H8).
+- MAIN 7: Setup done line missing space fixed; ACT.drawNow (repaint only) named in act_keep.known. tests/regression/team_cur.js stays unrun: stale, not in check.sh, replaced by currency_ui.js.
+
+### Mako
+He has not written in the coordinator chat since handoff 3. He wrote in MAIN 6's chat at about 11:56 UTC (how far along; "full steam ahead"); no new decision. When he writes: greet him in two lines with where things stand. "Open with Mako" in handoff 3 stands. For his copy pass, labels he has not seen: "Monthly bills", "Bank at month end". For the preview note: tests/page_import.js and page_assistant.js not run here (no wrangler); Help is not reachable in setup, inside a burrow or in the world view.
+
+### Timers
+None of coordinator 5's remain. Set your own.
+
 ## 2026-11-19, handoff 4 (coordinator 4 to coordinator 5) READ THIS FIRST
 
 Coordinator 4 (session_01BFpKEXvqtaKqkyg3aNk3hU) was at 189k tokens at 10:25 UTC and handed off. A coordinator starts with a large fixed load, so the 150k mark comes after about 20 short turns: read notifications, act, answer in a few lines, never paste reports.
