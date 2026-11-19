@@ -19,7 +19,7 @@
    2. The old string sits inside a string or a template in a .js part, or anywhere in body.html. Not in a comment.
    3. Every ${...} in the old string is in the new string, the same number of times.
    4. No em dash, en dash, exclamation mark or semicolon in the new string that was not in the old one.
-   5. After all rows, every changed .js part still parses.
+   5. After all rows, the code of every changed .js part is the same token for token. Only the inside of strings and templates differs.
    Warnings (printed, not failures): the numbers in the new string are not the numbers in the old one, an HTML tag was dropped or added.
    The new string is written the way a person reads it. Apostrophes and quotes are escaped for you to fit where the string sits
    ('don't' inside a single quoted string becomes 'don\'t', a " inside an HTML attribute becomes &quot;).
@@ -119,7 +119,7 @@ function testsQuoting(rows, team, self) {
   const tt = path.join(team, 'test_team.js'); if (fs.existsSync(tt)) files.push(tt);
   const hits = [];
   for (const f of files) {
-    if (path.resolve(f) === path.resolve(self)) continue;
+    if (path.resolve(f) === path.resolve(self) || /voice_lint\.js$|voice_known\.txt$/.test(f)) continue; /* the voice lane's own files */
     let src; try { src = fs.readFileSync(f, 'utf8'); } catch (e) { continue; }
     for (const r of rows) for (const p of pieces(r.old)) {
       const i = src.indexOf(p);
@@ -164,8 +164,12 @@ function run(team, tables, o) {
     mem[r.file] = src.slice(0, at) + escFor(r.neu, ctx) + src.slice(at + r.old.length);
     changed.add(r.file); ok++;
   }
+  /* the shape of the code must be untouched: the same tokens in the same order, only what is inside strings and templates may differ.
+     (Some parts do not parse on their own, ui0.js opens a block that ui5.js closes, so this compares tokens and does not parse.) */
+  const shape = src => { const out = []; for (const tk of acorn.tokenizer(src, { ecmaVersion: 'latest' })) out.push(tk.type.label === 'string' || tk.type.label === 'template' ? tk.type.label : tk.type.label + ':' + src.slice(tk.start, tk.end)); return out.join('\u0001'); };
   if (acorn) for (const f of changed) if (f.endsWith('.js')) {
-    try { acorn.parse(mem[f], { ecmaVersion: 'latest' }); } catch (e) { errs.push(f + ' no longer parses after the rows are applied: ' + e.message); }
+    try { if (shape(fs.readFileSync(path.join(team, f), 'utf8')) !== shape(mem[f])) errs.push(f + ': the code around the strings changed after the rows were applied (a quote or a ${ that ends a string early?)'); }
+    catch (e) { errs.push(f + ' can no longer be read as code after the rows are applied: ' + e.message); }
   }
   warns.forEach(w => log('WARN  ' + w));
   errs.forEach(e => log('FAIL  ' + e));
