@@ -10,6 +10,11 @@ Coordinator 3 (session_01BFpKEWbWX57dzJueLvseiT) passed the 150k mark at 05:31 U
 - Coordinator 4 is session_01BFpKEXvqtaKqkyg3aNk3hU. MAIN 3 and SIDE N3 were told to report there; both alive (wip-38.31 ca5f036 with A11 and the act_keep fix; side/ledger-core e5299e2 with G2 and G4 fixed at 05:31 UTC).
 - Timers: check-in trig_01DH6Q6dBjNTKBWc4Ma8hnCQ at 05:58 UTC; after the usage reset trig_013WY5YLe49jxxpfy3acwMVo at 09:36 UTC.
 
+- The usage limit stopped everything from about 05:45 to 09:30 UTC (the coordinator too). After the reset both sessions were told to hand off (270k and 280k tokens).
+- MAIN 3 handed off at 6838e91 (side/phone-fixes merged, act_keep and A11 in; RESUME.md section 0 has the remaining order and the screen pack list). MAIN 4 is session_01BFpKEWy6YG3aHjgq823AHA, the only session on app files: F4, U1, U2, H1, QC briefs, screen pack, wallet.xlsx, copy batch (copy_apply.js --check first), check.sh full, candidate, QC run, preview. Coordinator's call: act_keep stays as built (16 single typed values named in act_keep.known; one copy slot must not let a small edit push out a big change's copy).
+- SIDE N3 stopped at side/ledger-core 0992eee: W1 to W5, G1, G2, G4 fixed; all pass by its report. SIDE N4, session_01BFpKEYfRxzbAN7La7p1sYa, does G3, G5, the ledgerUndo opening event point and the doc updates.
+- For Mako's copy pass: "Monthly bills" (the new Plan row name from A11) is a label he has not seen.
+
 ### Usage
 At 05:31 UTC the five-hour window showed a warning (near its limit); it resets at 09:30 UTC. Keep the count low: MAIN 3 always, at most one or two lanes. Every session keeps a resume timer. If the limit stops everything, check after 09:30 UTC that MAIN 3 restarted (new commits on wip-38.31) and message or replace it.
 
