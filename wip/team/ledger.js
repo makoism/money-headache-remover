@@ -35,7 +35,7 @@ const LED_MAX_C = 1e13;                       /* the largest single amount, in c
 const LED_ID = /^[A-Za-z0-9_-]{1,24}$/;       /* account ids and place ids */
 const LED_DAY = /^\d{4}-\d{2}-\d{2}$/;
 const LED_LENT = 'lent';                        /* the place that holds money lent ("owed to you"). Reserved: it is never a burrow */
-const LED_SRC_FREE = { typed: 1, migration: 1 };   /* sources that may repeat. Any other src (a statement line, a receipt) is logged once only */
+const LED_SRC_FREE = { typed: 1, migration: 1 };   /* sources that may repeat. Any other source (a statement line, a receipt; in src or srcs) is logged once only */
 const LED_LOCKED = ['id', 'type', 'cur', 'inFull', 'tracked'];   /* account fields that cannot change once the account has events */
 const LED_WORDS = {
   'no-ledger': 'There is no ledger here.',
@@ -65,6 +65,7 @@ const LED_WORDS = {
   'open-day': 'An account has one opening day. This opening balance has another date than the first.',
   'open-late': 'This account already has events before that day. Use check your bank instead of an opening balance.',
   'already': 'This line is already logged.',
+  'src': 'A source must be the id of a statement line or a receipt.',
   'nothing': 'There is nothing to undo.',
   'no-id': 'There is no event with that id.',
   'no-redo': 'There is nothing to put back.',
@@ -117,6 +118,11 @@ function ledAmount(ev, unitsKey, centsKey) {
   return hasU ? u : (c === 0 ? 0 : c);
 }
 const ledCopy = v => JSON.parse(JSON.stringify(v));
+/* ONE EVENT, SEVERAL SOURCES. A transfer shows on two statements, a spend on its receipt and on the statement. An event holds its
+   first source in src and any further ones in srcs: []. All of them count as logged (A8); 'typed' and 'migration' never do. */
+const ledSrcs = e => { const out = []; if (!e) return out; if (typeof e.src === 'string' && LED_SRC_FREE[e.src] !== 1) out.push(e.src);
+  if (Array.isArray(e.srcs)) e.srcs.forEach(s => { if (typeof s === 'string' && LED_SRC_FREE[s] !== 1) out.push(s); }); return out; };
+const ledLogged = (S, src) => (S.ledger || []).some(q => q && (q.src === src || (Array.isArray(q.srcs) && q.srcs.indexOf(src) >= 0)));
 
 /* ---- how the accounts are read ---- */
 function ledCtx(S) {
@@ -378,7 +384,8 @@ function ledgerTry(S, ev, today) {
   } else if (touched.length) {
     for (const q of L) if (q && q.k === 'open' && date < ledDate(q) && touched.some(a => a.id === q.acct)) return ledNo('before-open', q.acct);
   }
-  if (typeof ev.src === 'string' && LED_SRC_FREE[ev.src] !== 1 && L.some(q => q && q.src === ev.src)) return ledNo('already', ev.src);
+  if (ev.srcs != null && !(Array.isArray(ev.srcs) && ev.srcs.every(q => typeof q === 'string' && q))) return ledNo('src');
+  for (const src of ledSrcs(ev)) if (ledLogged(S, src)) return ledNo('already', src);
 
   /* the event as stored: every field given is kept (also ones this version does not know), amounts in cents only */
   const e = ledCopy(ev);
@@ -455,15 +462,31 @@ function ledgerRedo(S) {
   for (const it of items) {
     const e = it.e;
     if ((e.acct != null && !x.by[e.acct]) || (e.acct2 != null && !x.by[e.acct2])) return ledFail(ledNo('acct'));
-    if (typeof e.src === 'string' && LED_SRC_FREE[e.src] !== 1 && S.ledger.some(q => q && q.src === e.src)) return ledFail(ledNo('already', e.src));
+    for (const src of ledSrcs(e)) if (ledLogged(S, src)) return ledFail(ledNo('already', src));
   }
   S.undone.pop();
   items.slice().sort((p, q) => p.at - q.at).forEach(it => { S.ledger.splice(Math.min(it.at, S.ledger.length), 0, it.e); });
   LED_LAST = null;
   return items.map(it => it.e);
 }
-/* true when a line from a statement or a receipt (its src) is already in the ledger (A8: "already logged") */
-function ledgerHas(S, src) { return typeof src === 'string' && LED_SRC_FREE[src] !== 1 && (S.ledger || []).some(q => q && q.src === src); }
+/* true when a line from a statement or a receipt (its src) is already in the ledger (A8: "already logged"), as the first source
+   of an event or as one of its further sources */
+function ledgerHas(S, src) { return typeof src === 'string' && LED_SRC_FREE[src] !== 1 && ledLogged(S || {}, src); }
+/* "This line is the same money as that event": the event with this id also remembers src, in srcs. No money moves and no event is
+   added; from now on ledgerHas(S, src) is true and the line is refused as 'already' if it comes again. It is the one way an
+   event in the ledger is changed, and it changes no figure. Undoing the event takes its sources out with it; redo brings them back.
+   Returns the event, or false: 'no-id', 'src' (not a statement line or receipt id), 'already' (some event holds it) */
+function ledgerAlso(S, id, src) {
+  if (!S || !Array.isArray(S.ledger)) return ledFail(ledNo('no-ledger'));
+  if ((+S.ledgerV || 0) > LEDGER_V) return ledFail(ledNo('newer'));
+  if (typeof src !== 'string' || !src || LED_SRC_FREE[src] === 1) return ledFail(ledNo('src'));
+  const e = S.ledger.find(q => q && q.id === id);
+  if (!e) return ledFail(ledNo('no-id', String(id)));
+  if (ledLogged(S, src)) return ledFail(ledNo('already', src));
+  if (!Array.isArray(e.srcs)) e.srcs = [];
+  e.srcs.push(src); LED_LAST = null;
+  return e;
+}
 
 /* ===== reading the numbers ===== */
 /* Every figure, added up from the ledger. day (optional): only events dated on or before it count ("as of that day").
@@ -841,7 +864,7 @@ function ledgerSameCard(S, acctId, same) {
 }
 
 /* when loaded with require() too (tests); in the page this line does nothing */
-if (typeof module !== 'undefined' && module.exports) module.exports = { LEDGER_V, ledgerFresh, ledgerAdd, ledgerAddMany, ledgerTry, ledgerWhy, ledgerUndo, ledgerRedo, ledgerHas,
+if (typeof module !== 'undefined' && module.exports) module.exports = { LEDGER_V, ledgerFresh, ledgerAdd, ledgerAddMany, ledgerTry, ledgerWhy, ledgerUndo, ledgerRedo, ledgerHas, ledgerAlso,
   placesOf, ledgerProof, ledgerCardLines, periodOf, flows, ledgerUnexplained, ledgerCheck, ledgerAccept, ledgerStartFresh, ledgerCarryOver,
   ledgerAddAccount, ledgerEditAccount, ledgerCloseAccount, ledgerReopenAccount, ledgerSetMode, ledgerSetPayDays, ledgerMayWrite, ledgerClean, ledgerRead3831, migrate3831,
   ledgerCardDue, ledgerInstalment, ledgerSameCard };

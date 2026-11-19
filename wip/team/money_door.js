@@ -33,7 +33,7 @@
    Every name here starts with door or DOOR, so the file can sit in the page after ledger.js. */
 
 const doorL = (typeof ledgerAddMany === 'function' && typeof placesOf === 'function')
-  ? { ledgerAddMany, ledgerAddAccount, ledgerUndo, ledgerRedo, ledgerWhy, placesOf }   /* in the page: ledger.js is in the same script */
+  ? { ledgerAddMany, ledgerAddAccount, ledgerUndo, ledgerRedo, ledgerWhy, ledgerAlso, placesOf }   /* in the page: ledger.js is in the same script */
   : require('./ledger.js');
 
 const DOOR_LENT = 'lent';                                   /* the place that holds what is owed to you */
@@ -407,13 +407,14 @@ function doorExpect(S, plan) {
 /* ---- A8: nothing counted twice ---- */
 /* Events already in the ledger that look like the same money as this plan: the same amount on the same account, on the same
    day (within 3 days when either one moves money between two accounts: two statements show one transfer on their own days).
-   A line from the same statement or receipt file (the same src up to its last ':') is never a twin of its neighbours. */
+   A line from the same statement or receipt file (the same src up to its last ':') is never a twin of its neighbours, and an
+   event that already holds a line of that file (as its first source or a further one, see doorSame) is not asked about again. */
 function doorSeen(S, plan, src) {
   const out = [], grp = typeof src === 'string' && DOOR_SRC_FREE[src] !== 1 ? doorSrcGroup(src) : null;
   const sides = e => { const s = []; if (e.acct != null) s.push([e.acct, e.c]); if (e.acct2 != null) s.push([e.acct2, e.k === 'convert' ? e.c2 : e.c]); return s; };
   for (const q of S.ledger || []) {
     if (!q || DOOR_MONEY_KINDS[q.k] !== 1 || typeof q.date !== 'string') continue;
-    if (grp !== null && typeof q.src === 'string' && DOOR_SRC_FREE[q.src] !== 1 && doorSrcGroup(q.src) === grp) continue;
+    if (grp !== null && [q.src].concat(Array.isArray(q.srcs) ? q.srcs : []).some(x => typeof x === 'string' && DOOR_SRC_FREE[x] !== 1 && doorSrcGroup(x) === grp)) continue;
     const qs = sides(q);
     const hit = plan.events.some(e => {
       if (DOOR_MONEY_KINDS[e.k] !== 1) return false;
@@ -448,6 +449,14 @@ function doorApply(S, kindId, ans, today) {
   const after = doorFigures(S);
   return { ok: true, kind: plan.kind, events: out, parts: plan.parts, made, before, after, moved: doorDiff(before, after), seen: twins };
 }
+/* "Yes, it is the same money": after a 'seen' refusal, the event with this id also remembers the line (src) that was refused.
+   Nothing is recorded and no figure moves, but the line now counts as logged, so importing that statement again does not ask
+   again (it is refused as 'already'). Returns { ok: true, event } or the ledger's refusal ('no-id', 'src', 'already') */
+function doorSame(S, id, src) {
+  const e = doorL.ledgerAlso(S, id, src);
+  if (!e) { const w = doorL.ledgerWhy() || {}; return { ok: false, code: w.code, ask: null, why: w.why, from: 'ledger' }; }
+  return { ok: true, event: e };
+}
 /* what a kind would do, without recording it: the same answer as doorApply, worked out on a copy */
 function doorPreview(S, kindId, ans, today) { return doorApply(JSON.parse(JSON.stringify(S)), kindId, ans, today); }
 /* undo and redo are the ledger's own: one step of the door is one step there, however many events it holds.
@@ -456,4 +465,4 @@ function doorUndo(S, id) { return id == null ? doorL.ledgerUndo(S) : doorL.ledge
 function doorRedo(S) { return doorL.ledgerRedo(S); }
 
 if (typeof module !== 'undefined' && module.exports) module.exports = { DOOR, DOOR_LENT, doorKinds, doorKind, doorChoices, doorSays, doorWayMoves, doorFigures,
-  doorPlan, doorExpect, doorSeen, doorApply, doorPreview, doorUndo, doorRedo };
+  doorPlan, doorExpect, doorSeen, doorApply, doorSame, doorPreview, doorUndo, doorRedo };
