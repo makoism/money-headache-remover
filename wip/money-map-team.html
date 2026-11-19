@@ -1878,7 +1878,7 @@ p .link, li .link, span .link, .cap .link { min-height: 0; position: relative; p
   <div class="tabs" role="tablist" aria-label="Pages">
     <button type="button" role="tab" id="tab-home" aria-controls="p-home" aria-selected="true" data-tab="home" data-cap="How you are doing">Home</button>
     <button type="button" role="tab" id="tab-receipts" aria-controls="p-receipts" aria-selected="false" data-tab="receipts" tabindex="-1" data-cap="Log what you spent">Receipts</button>
-    <button type="button" role="tab" id="tab-goals" aria-controls="p-goals" aria-selected="false" data-tab="goals" tabindex="-1" hidden>Goals</button>
+    <button type="button" role="tab" id="tab-goals" aria-controls="p-goals" aria-selected="false" data-tab="goals" tabindex="-1" hidden>Burrows</button>
     <button type="button" role="tab" id="tab-month" aria-controls="p-month" aria-selected="false" data-tab="month" tabindex="-1" data-cap="Months and goals">Plan</button>
     <button type="button" role="tab" id="tab-basics" aria-controls="p-basics" aria-selected="false" data-tab="basics" tabindex="-1" hidden>Settings</button>
   </div>
@@ -1928,7 +1928,7 @@ p .link, li .link, span .link, .cap .link { min-height: 0; position: relative; p
           <div class="hdeep-l">
             <button type="button" class="btn" data-tab-go="month">Month plan</button>
             <button type="button" class="btn" data-tab-go="months">All months</button>
-            <button type="button" class="btn" data-tab-go="goals">Goals</button>
+            <button type="button" class="btn" data-tab-go="goals">Burrows</button>
             <button type="button" class="btn" data-tab-go="basics">Settings</button>
           </div>
         </section>
@@ -1938,7 +1938,7 @@ p .link, li .link, span .link, .cap .link { min-height: 0; position: relative; p
 
   <!-- THIS MONTH -->
   <div id="p-month" role="tabpanel" aria-labelledby="tab-month" hidden>
-    <div class="plan-top"><div class="subnav" role="group" aria-label="Plan pages"><button type="button" data-tab-go="month" data-sub="month">Month</button><button type="button" data-tab-go="goals" data-sub="goals">Goals</button><button type="button" data-tab-go="months" data-sub="months">All months</button></div></div>
+    <div class="plan-top"><div class="subnav" role="group" aria-label="Plan pages"><button type="button" data-tab-go="month" data-sub="month">Month</button><button type="button" data-tab-go="goals" data-sub="goals">Burrows</button><button type="button" data-tab-go="months" data-sub="months">All months</button></div></div>
     <section class="start" id="start" aria-labelledby="startTitle" hidden>
       <h2 id="startTitle">Setup: 4 steps</h2>
       <p class="cap" id="startSub">Sample numbers for one salary. Replace them with yours. Data stays in this browser.</p>
@@ -1999,7 +1999,7 @@ p .link, li .link, span .link, .cap .link { min-height: 0; position: relative; p
 
   <!-- ALL MONTHS -->
   <div id="p-months" role="tabpanel" aria-labelledby="tab-months" hidden>
-    <div class="plan-top"><div class="subnav" role="group" aria-label="Plan pages"><button type="button" data-tab-go="month" data-sub="month">Month</button><button type="button" data-tab-go="goals" data-sub="goals">Goals</button><button type="button" data-tab-go="months" data-sub="months">All months</button></div></div>
+    <div class="plan-top"><div class="subnav" role="group" aria-label="Plan pages"><button type="button" data-tab-go="month" data-sub="month">Month</button><button type="button" data-tab-go="goals" data-sub="goals">Burrows</button><button type="button" data-tab-go="months" data-sub="months">All months</button></div></div>
     <section class="card sect">
       <div class="head">
         <h2>All months</h2>
@@ -2011,15 +2011,15 @@ p .link, li .link, span .link, .cap .link { min-height: 0; position: relative; p
 
   <!-- GOALS -->
   <div id="p-goals" role="tabpanel" aria-labelledby="tab-goals" hidden>
-    <div class="plan-top"><div class="subnav" role="group" aria-label="Plan pages"><button type="button" data-tab-go="month" data-sub="month">Month</button><button type="button" data-tab-go="goals" data-sub="goals">Goals</button><button type="button" data-tab-go="months" data-sub="months">All months</button></div></div>
+    <div class="plan-top"><div class="subnav" role="group" aria-label="Plan pages"><button type="button" data-tab-go="month" data-sub="month">Month</button><button type="button" data-tab-go="goals" data-sub="goals">Burrows</button><button type="button" data-tab-go="months" data-sub="months">All months</button></div></div>
     <section class="card sect" id="secGoals">
       <div class="head">
-        <h2>Goals</h2>
+        <h2>Burrows</h2>
         <p class="sub2" id="goalsSub"></p>
         <p class="sub2" id="goalsSub2" hidden></p>
       </div>
       <div class="goals" id="goalCards"></div>
-      <div class="row-btns"><button type="button" class="btn small solid" id="addGoalBtn">Add goal</button><span class="msg" id="goalMsg" role="status"></span></div>
+      <div class="row-btns"><button type="button" class="btn small solid" id="addGoalBtn">Add a burrow</button><span class="msg" id="goalMsg" role="status"></span></div>
     </section>
     <section class="card sect" id="secDebts">
       <div class="head">
@@ -2178,7 +2178,7 @@ p .link, li .link, span .link, .cap .link { min-height: 0; position: relative; p
       <div class="sets" id="sets"></div>
       <div class="backup" id="jarGuide">
         <h3>Where your pay goes</h3>
-        <p class="cap">Your pay is split into places, each with one job. The percents are a common split, shown as a guide. Your actual split is on Plan and follows your bills and goals.</p>
+        <p class="cap">Your pay is split into places, each with one job. The percents are a common split, shown as a guide. Your actual split is on Plan and follows your bills and burrows.</p>
         <div class="jlist" id="jarList"></div>
         <div class="row-btns"><button type="button" class="btn small" id="redivide" hidden>Re-split pay</button></div>
       </div>
@@ -2325,6 +2325,10 @@ const MONTHS = []; for (let i = ymIdx(START); i <= ymIdx(END); i++) MONTHS.push(
 const SPAN = MONTHS.length % 12 === 0 ? `${MONTHS.length / 12} years` : `${MONTHS.length} months`;
 const monthLabel = (ym, short) => { const p = ym.split('-'); return MONTH_NAMES[+p[1] - 1] + (short ? '' : ' ' + p[0]); };
 const pad2 = n => (n < 10 ? '0' : '') + n;
+/* the day a person typed their bank balance (Mako, 2026-11-19: Home says "Balance you entered on 18 Nov"). Only set when a balance is entered;
+   a copy saved before this has no date and Home shows none, never a guessed one. */
+const BANK_AT_FORM = /^\d{4}-\d{2}-\d{2}$/;
+const setBankBalance = (T, v, now) => { const d = now || new Date(); T.cfg.bankStart = v; T.cfg.bankAt = d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); };
 const round2 = x => Math.round(x * 100) / 100;
 /* round down to whole yen, or to cents for other currencies, so the unspent amount is counted to the last cent */
 const flrCur = (S, x) => ((S.ui && S.ui.cur) === '¥' ? Math.floor(x + 1e-9) : Math.floor(x * 100 + 1e-6) / 100);
@@ -2339,7 +2343,7 @@ const CFG = {
 /* ---- The six jars (T. Harv Eker's system). "usual" is Eker's usual share of pay for each jar. It is only a guide: the page never shows it as a target, and the shares it does show always come from the real amounts. ---- */
 const JARS = [
   { id: 'nec',  name: 'Bills and basics',                    usual: 0.55, about: 'Rent, food, utilities and every other bill.' },
-  { id: 'lts',  name: 'Goals', usual: 0.10, about: 'Saved now, spent later: a big purchase, a trip, a rainy day, a surprise. Your burrows live here.' },
+  { id: 'lts',  name: 'Goal burrows', usual: 0.10, about: 'Saved now, spent later: a big purchase, a trip, a rainy day, a surprise. Your burrows live here.' },
   { id: 'play', name: 'Free to spend',                         usual: 0.10, about: 'Fun for you and your family, no guilt. What is left at month end can go to a goal.' },
   { id: 'edu',  name: 'Education',                      usual: 0.10, about: 'Courses, books, coaching, skill building.' },
   { id: 'ffa',  name: 'Investing',              usual: 0.10, about: 'Never spent. It grows over time.' },
@@ -2349,7 +2353,7 @@ const JARS = [
 JARS.forEach(j => { j.usualPct = Math.round(j.usual * 100); });
 const LINE_JARS = ['nec', 'play', 'edu', 'ffa', 'give'];
 /* a few words for each jar, shown under its name wherever the split is listed */
-const JARTAG = { nec: 'Bills', lts: 'Goals', play: 'Fun, no guilt', edu: 'Courses and books', ffa: 'Never spent', give: 'Charity and gifts' };
+const JARTAG = { nec: 'Bills', lts: 'Saving toward a goal', play: 'Fun, no guilt', edu: 'Courses and books', ffa: 'Never spent', give: 'Charity and gifts' };
 
 /* ---- The starting plan: lines you pay every month, and savings goals. All of it can be renamed, removed or added to. ---- */
 const LINE_DEFS = [
@@ -2467,7 +2471,9 @@ const debtById = (S, id) => debtsOf(S).find(d => d.id === id);
 const DEBT_KIND_NAME = { card: 'Credit card', loan: 'Loan', personal: 'Owed to a person' };
 /* one month: interest is added to what is owed, then the payment comes off. Whole amounts only. */
 function debtStep(d, bal, extra) {
-  const interest = bal > 0 ? Math.round(bal * d.apr / 1200) : 0;
+  /* owed x rate / 12 / 100, to the nearest whole amount, a half rounding up. The rate is counted in hundredths of a percent as a whole number,
+     so an exact half stays exact (20000 at 90.21% is 1503.5, so 1504; in floating point it came out 1503.4999 and rounded down; side B, 2026-11-19) */
+  const A = Math.round(d.apr * 100), interest = bal > 0 ? Math.floor((2 * bal * A + 120000) / 240000) : 0;
   const pay = Math.min(bal + interest, d.min + Math.max(0, extra));
   return { start: bal, interest, extra: Math.max(0, extra), pay, bal: bal + interest - pay };
 }
@@ -2643,7 +2649,7 @@ function calcAll(S) {
     m.items = itemsFor(S, ym); m.itemsTotal = sum(m.items.map(i => +i.amount || 0));
     m.debts = {}; m.debtPay = 0; m.debtInterest = 0;
     debts.forEach(d => { const st = debtStep(d, dbal[d.id], val(S, 'debt:' + d.id, ym)); dbal[d.id] = st.bal; m.debts[d.id] = st; m.debtPay += st.pay; m.debtInterest += st.interest;
-      st.paidPct = d.balance > 0 ? Math.max(0, Math.min(1, 1 - st.bal / d.balance)) : 1; st.paidPctWhole = Math.round(st.paidPct * 100); });   /* how much of the debt is paid off by the end of this month */
+      st.paidPct = d.balance > 0 ? Math.max(0, Math.min(1, 1 - st.bal / d.balance)) : 1; st.paidPctWhole = d.balance > 0 ? Math.max(0, Math.min(100, Math.floor((200 * (d.balance - st.bal) + d.balance) / (2 * d.balance)))) : 100; });   /* 100 x (first - owed) / first, a half rounding up, worked out in whole numbers (40000 first, 36200 owed is 9.5%, so 10%; side B) */   /* how much of the debt is paid off by the end of this month */
     m.debtOwed = sum(debts.map(d => dbal[d.id]));
     /* named amounts for the cards and loans screens: owed at the start of the month, the minimum payments, and what is paid on top of them */
     m.debtStart = sum(debts.map(d => m.debts[d.id].start)); m.debtMin = sum(debts.map(d => Math.min(d.min, m.debts[d.id].start + m.debts[d.id].interest))); m.debtExtra = m.debtPay - m.debtMin;
@@ -3215,6 +3221,7 @@ function cleanCfg(raw) {
   if (typeof raw.redirectLoan === 'boolean') out.redirectLoan = raw.redirectLoan;
   if (typeof raw.moveMonth === 'string' && YM_FORM.test(raw.moveMonth)) out.moveMonth = raw.moveMonth;
   if (typeof raw.carDue === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw.carDue)) out.carDue = raw.carDue;
+  if (typeof raw.bankAt === 'string' && BANK_AT_FORM.test(raw.bankAt)) out.bankAt = raw.bankAt;
   if (isMap(raw.aims)) { const a = {}; JARS.forEach(j => { const v = raw.aims[j.id]; if (typeof v === 'number' && isFinite(v) && v >= 0 && v <= 1) a[j.id] = v; }); if (Object.keys(a).length) out.aims = a; }
   return out;
 }
@@ -3869,7 +3876,7 @@ function onSet(key, v) {
   else setVal(S, key, sel, v, 'once');
   markDone(doneFor(key)); persist(); schedule();
 }
-function onCfg(k, v) { S.cfg[k] = k === 'bankStart' ? clampBank(v, S) : clampAmt(v, S); persist(); schedule(); }
+function onCfg(k, v) { if (k === 'bankStart') setBankBalance(S, clampBank(v, S)); else S.cfg[k] = clampAmt(v, S); persist(); schedule(); }
 function select(ym) {
   sel = ym; itemsSig = ''; try { history.replaceState(null, '', '#' + ym); } catch (e) { /* sandboxed */ }
   render();
@@ -4331,7 +4338,7 @@ const ACT = {
     if (['a', 'b', 'side'].indexOf(key) < 0) throw new Error('unknown income ' + key);
     return ACT.tx('income', () => { setVal(S, key, ym || START, clampAmt(amount, S), scope === 'month' ? 'month' : 'after'); if (key === 'a' && clampAmt(amount, S) > 0) markDone('pay', true); });
   },
-  setBalance(v) { return ACT.tx('balance', () => { S.cfg.bankStart = clampAmt(v, S); }); },
+  setBalance(v) { return ACT.tx('balance', () => { setBankBalance(S, clampAmt(v, S)); }); },
   setMinBalance(v) { return ACT.tx('minimum balance', () => { S.cfg.minBank = clampAmt(v, S); }); },
   setCeiling(v) { return ACT.tx('spending ceiling', () => { S.cfg.ceiling = clampAmt(v, S); }); },
 
@@ -4426,7 +4433,7 @@ const JARROWS = [
   { id: 'nec', jar: 'nec', name: 'Bills and basics', cap: 'Rent, food, utilities, every other monthly bill.' },
   { id: 'items', jar: 'nec', name: 'One-time costs', kind: 'items' },
   { id: 'debts', jar: 'nec', name: 'Cards and loans', kind: 'debts', cap: 'Minimum payments plus extra.' },
-  { id: 'lts', jar: 'lts', name: 'Goals', kind: 'goals', cap: 'Savings goals: big purchases, rainy day fund, trips, surprises.' },
+  { id: 'lts', jar: 'lts', name: 'Goal burrows', kind: 'goals', cap: 'Burrows with a goal: big purchases, rainy day fund, trips, surprises.' },
   { id: 'play', jar: 'play', name: 'Free to spend', cap: 'Eating out, hobbies, treats, fun. Groceries go under Bills and basics.' },
   { id: 'edu', jar: 'edu', name: 'Education', cap: 'Courses, books, coaching, skill building.' },
   { id: 'ffa', jar: 'ffa', name: 'Investing', cap: 'Money you never spend: index fund, retirement plan. Put away regularly, leave alone.' },
@@ -4476,7 +4483,7 @@ function rowHTML(r, inRow) {
     const multi = r.kind === 'goals' || r.kind === 'debts' || fs.length !== 1;
     body = (inRow ? '' : `<p class="cap jcap" id="jcap-${r.id}"></p>`) + fs.map(f => fieldHTML(f, multi, editing)).join('');
     if (!inRow && !fs.length) body += '<p class="cap">No lines.</p>';
-    if (r.kind === 'goals') body += '<p class="cap"><button type="button" class="link" data-tab-go="goals">Edit goals</button></p>';
+    if (r.kind === 'goals') body += '<p class="cap"><button type="button" class="link" data-tab-go="goals">Edit burrows</button></p>';
     else if (r.kind === 'debts') body += '<p class="cap"><button type="button" class="link" data-tab-go="goals">Edit cards and loans</button></p>';
     else if (!inRow) body += editing
       ? `<form class="addrow" data-addline="${r.jar}" autocomplete="off"><input class="txt" type="text" placeholder="New line, e.g. Pet food" maxlength="60" aria-label="Name of the new line">
@@ -4504,7 +4511,7 @@ function goalFormHTML(g) {
     <div class="field"><label for="ge-${id}-due">${dbt ? 'Paid off by' : 'Needed by'}</label><input type="date" id="ge-${id}-due" data-g="due" min="${lo}" max="${hi}" value="${esc(g.due)}"><p class="cap">With a date, the amount left is spread over the months before it. Without one, it is planned over about a year.${g.due ? ' <button type="button" class="link" data-gnodate>Remove date</button>' : ''}</p></div>
     ${dbt ? '' : `<div class="field wide"><label class="check"><input type="checkbox" data-g="emergency"${g.emergency ? ' checked' : ''}><span>Emergency fund</span></label><p class="cap">The one goal you can borrow from in a short month. A finished payment can send its money here.</p></div>`}
     ${g.emergency ? `<div class="field"><label for="ge-${id}-stretch">Long-term goal</label><div class="inp"><span class="yen cs"></span><input id="ge-${id}-stretch" data-g="stretch" type="number" inputmode="numeric" min="0" step="1000" value="${g.stretch || 0}"></div><p class="cap">Usual advice: three to six months of necessities. The goal amount above is the first stop; this is the larger one.</p></div>` : ''}
-    ${own ? `<p class="cap wide">Monthly amount set by you. <button type="button" class="link" data-gauto>Use suggested amount</button></p>` : '<p class="cap wide">Monthly amount is computed. To change it, open Burrows (goals) under Month.</p>'}
+    ${own ? `<p class="cap wide">Monthly amount set by you. <button type="button" class="link" data-gauto>Use suggested amount</button></p>` : '<p class="cap wide">Monthly amount is computed. To change it, open Burrows under Plan.</p>'}
     <div class="row-btns wide"><button type="button" class="btn small solid" data-gdone>Done</button><button type="button" class="btn small warnbtn" data-gdel data-armkey="gdel-${id}">Remove goal</button></div></div>`;
 }
 function goalCardHTML(g) {
@@ -4520,9 +4527,9 @@ function goalCardHTML(g) {
 }
 function buildGoals() {
   const gs = S.plan.goals;
-  $('#goalCards').innerHTML = gs.length ? gs.map(goalCardHTML).join('') : '<p class="cap">No goals. Add one below.</p>';
+  $('#goalCards').innerHTML = gs.length ? gs.map(goalCardHTML).join('') : '<p class="cap">No burrows. Add one below.</p>';
   $('#roadLegend').innerHTML = gs.map(g => `<span><i style="--c:var(--c${g.slot})"></i>${esc(g.name)}</span>`).join('');
-  $('#addGoalBtn').hidden = gs.length >= MAX_GOALS; $('#goalMsg').textContent = gs.length >= MAX_GOALS ? `Limit: ${MAX_GOALS} goals.` : '';
+  $('#addGoalBtn').hidden = gs.length >= MAX_GOALS; $('#goalMsg').textContent = gs.length >= MAX_GOALS ? `Limit: ${MAX_GOALS} burrows.` : '';
 }
 function buildOut() {
   $('#rowsOut').innerHTML = JARROWS.map(r => rowHTML(r, false)).join('');
@@ -4662,7 +4669,7 @@ const MAKE_CAP = 'Amounts are samples for one salary. Start at zero or type over
 const START_STEPS = [
   ['pay', 'Enter pay', 'Type monthly take-home pay under Salary.', 'Go to Salary', 'data-open="a"'],
   ['bills', 'Check bills', 'Set each Bills and basics line to the real amount. Rename, remove or add lines.', 'Open Bills and basics', 'data-open="nec"'],
-  ['goals', 'Set goals', 'Name each goal, its cost and its date.', 'Go to Goals', 'data-tab-go="goals"'],
+  ['goals', 'Set up burrows', 'Name each goal, its cost and its date.', 'Go to Goals', 'data-tab-go="goals"'],
   ['receipts', 'Log receipts', 'Add what you spent. Set a calendar reminder to make it a habit.', 'Go to Receipts', 'data-tab-go="receipts"'],
 ];
 function renderStart() {
@@ -4808,7 +4815,7 @@ function goalNote(gid, m) {
 
 function renderGoals(m) {
   const J = jarsOf(S, m), lj = J.list.find(x => x.id === 'lts'), inc = J.income, gs = S.plan.goals;
-  $('#goalsSub').textContent = gs.length ? `Goals get ${fmt(lj.v)} this month` + (inc > 0 && !J.over ? `, ${lj.pct}% of pay.` : '.') : 'No goals. Add one to see when it is reached.';
+  $('#goalsSub').textContent = gs.length ? `Goals get ${fmt(lj.v)} this month` + (inc > 0 && !J.over ? `, ${lj.pct}% of pay.` : '.') : 'No burrows. Add one to see when it is reached.';
   
   $('#secRoad').hidden = !gs.length;
   gs.forEach(g => {
@@ -4880,7 +4887,7 @@ function drawRoad() {
   /* with nothing to draw, say so plainly instead of showing an empty chart */
   if (nothing) {
     geom = null; tg.hidden = true; $('#roadLegend').hidden = true; $('#roadTable').hidden = true; $('#roadTable').innerHTML = '';
-    const cb = $('#chartbox'); cb.hidden = false; cb.innerHTML = '<p class="cap">No goals to chart. Give a goal an amount and it plots here.</p>'; return;
+    const cb = $('#chartbox'); cb.hidden = false; cb.innerHTML = '<p class="cap">No burrows to chart. Give a burrow a goal amount and it plots here.</p>'; return;
   }
   const asTable = tg.getAttribute('aria-pressed') === 'true';
   tg.hidden = false; $('#roadLegend').hidden = asTable; $('#chartbox').hidden = asTable; $('#roadTable').hidden = !asTable;
@@ -4891,7 +4898,7 @@ function drawRoad() {
   const mx = Math.max(1, ...series.flatMap(s => s.v), ...gs.map(g => capOf(g)));
   const step = stepOf(mx / 4), top = Math.ceil(mx / step) * step;
   const X = i => L + i * (W - L - R) / (n - 1), Y = v => T + (1 - v / top) * (H - T - B);
-  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Line chart of your goals from ${monthLabel(START)} to ${monthLabel(END)}. A table view is available."><title>The road ahead</title>`;
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Line chart of your burrows from ${monthLabel(START)} to ${monthLabel(END)}. A table view is available."><title>The road ahead</title>`;
   for (let v = 0; v <= top; v += step) s += `<line class="${v === 0 ? 'axis-l' : 'grid-l'}" x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${L - 8}" y="${Y(v) + 4}" text-anchor="end">${fmtAxis(v)}</text>`;
   C.months.forEach((m, i) => { if (i % (small ? 6 : 3) === 0) s += `<text x="${X(i)}" y="${H - 8}" text-anchor="middle">${monthLabel(m.ym, true)}${m.ym.slice(5) === '01' || i === 0 ? ' ' + m.ym.slice(2, 4) : ''}</text>`; });
   const si = MONTHS.indexOf(sel); s += `<line x1="${X(si)}" x2="${X(si)}" y1="${T}" y2="${H - B}" stroke="var(--ink)" stroke-width="2" opacity=".35"/>`;
@@ -5271,7 +5278,7 @@ document.addEventListener('pointerdown', () => { const el = document.getElementB
 /* ---------- the guided setup: one question at a time, written straight into the plan ----------
    Every screen saves as you type, so closing the tour half way loses nothing.
    Nothing here invents a number: a field you leave empty stays empty. */
-const PART = { welcome: 'Welcome', money: 'Money', bills: 'Bills', jars: 'Split', goals: 'Goals', spend: 'Free to spend' };
+const PART = { welcome: 'Welcome', money: 'Money', bills: 'Bills', jars: 'Split', goals: 'Burrows', spend: 'Free to spend' };
 
 const inum = id => { const el = document.getElementById(id); return el ? num0(el.value) : 0; };
 const moneyField = (id, label, v, hint) => `<div class="field"><label for="${id}">${label}</label><div class="inp"><span class="yen cs"></span><input id="${id}" type="number" inputmode="decimal" min="0" step="any" aria-describedby="tourTitle" placeholder="${hint || 'Amount'}" value="${v > 0 ? v : ''}"></div></div>`;
@@ -5314,7 +5321,7 @@ const STEP_MONEY = { id: 'money', part: PART.money, setup: true, focus: '#tourPa
     const pay = $('#tourPay'), extra = $('#tourExtra'), bank = $('#tourBank'); if (!pay) return;
     if (pay.value !== '' || tourTouched) { const v = num0(pay.value); setVal(S, 'a', START, v, 'after'); if (v > 0) markDone('pay'); }
     if (extra && (extra.value !== '' || tourTouched || S.steps.b)) setVal(S, 'b', START, num0(extra.value), 'after');
-    if (bank && bank.value !== '' && isFinite(+bank.value)) S.cfg.bankStart = clampBank(bank.value, S);
+    if (bank && bank.value !== '' && isFinite(+bank.value)) { const nb = clampBank(bank.value, S); if (nb !== S.cfg.bankStart || !S.cfg.bankAt) setBankBalance(S, nb); }   /* the date moves only when the balance is typed, not when setup is walked again */
     if (S.cfg.minBank === undefined && payNow() > 0) S.cfg.minBank = toUnit(payNow() * 0.1); /* the safety line: a tenth of pay unless Settings says otherwise */
     persist();
   } };
@@ -5407,7 +5414,7 @@ const moreBtn = kind => `<div class="row-btns"><button type="button" class="btn 
 
 /* ----- where the rest of the pay goes: the five other jars share what the bills leave ----- */
 const JAR5 = ['lts', 'play', 'edu', 'ffa', 'give'];
-const JAR_LABEL = { lts: 'Goals', play: 'Free to spend', edu: 'Education', ffa: 'Investing', give: 'Giving' };
+const JAR_LABEL = { lts: 'Goal burrows', play: 'Free to spend', edu: 'Education', ffa: 'Investing', give: 'Giving' };
 const JAR_SHORT = { lts: 'Savings', play: 'Free to spend', edu: 'Education', ffa: 'Freedom', give: 'Give' };
 let jarVals = null, jarRest = 0, jarNec = 0;
 /* the share of the pay the bills leave for the other five jars, in whole percents; 0 when the bills use all of it */
@@ -5483,8 +5490,8 @@ const STEP_JARS = { id: 'jars', part: PART.jars, setup: true, when: havePay,
     jarInit(); const pay = payNow(), nec = necTotal();
     if (nec <= 0) return `<p>No bills listed, so the other five places would share all of your pay. If that is wrong, go back and add bills.</p>
     <p class="cap">If you truly have none, continue and split below.</p>${jarSplitHTML()}`;
-    if (jarRest <= 0) return `<p>Bills <b>${fmt2(nec)}</b>, pay <b>${fmt2(pay)}</b>. ${nec > pay ? `Bills exceed pay by <b>${fmt2(setupCells(S).billsOverPay)}</b>, so` : 'Bills take all of it, so'} nothing is left for the other five places: no free to spend and nothing for goals, for now.</p>
-    <p>You can still add goals next. They start filling once bills drop below pay. To lower a bill, go back. Otherwise continue and adjust under Plan later.</p>`;
+    if (jarRest <= 0) return `<p>Bills <b>${fmt2(nec)}</b>, pay <b>${fmt2(pay)}</b>. ${nec > pay ? `Bills exceed pay by <b>${fmt2(setupCells(S).billsOverPay)}</b>, so` : 'Bills take all of it, so'} nothing is left for the other five places: no free to spend and nothing for burrows, for now.</p>
+    <p>You can still add burrows next. They start filling once bills drop below pay. To lower a bill, go back. Otherwise continue and adjust under Plan later.</p>`;
     return `<p>Bills and basics take <b>${fmt2(nec)}</b>, <b>${jarNec}%</b> of pay. The other <b>${jarRest}%</b> (${fmt2(setupCells(S).payOverBills)}) is yours to split between the five places below, starting at the usual proportions.</p>
     ${jarsFold()}${jarSplitHTML()}`;
   },
@@ -5510,9 +5517,9 @@ const GOAL_KINDS = [
   { k: 'debt', id: 'debt', name: 'Pay off debt', slot: 3, debt: true, pick: 'Pay off a debt', hint: 'A balance with no interest', title: 'Pay off debt', cost: 'What you still owe in total. For a card or loan with interest, use Cards and loans on the Goals tab instead.' },
   { k: 'other', id: 'other', name: 'Something else', slot: 2, pick: 'Something else', hint: 'Anything with a price', title: 'Goal', cost: '' },
 ];
-const STEP_TOOLPICK = { id: 'goals-pick', part: PART.goals, setup: true, pick: true, skipIf: () => quickSetup(), title: 'Goals', art: 'sprout',
+const STEP_TOOLPICK = { id: 'goals-pick', part: PART.goals, setup: true, pick: true, skipIf: () => quickSetup(), title: 'Burrows', art: 'sprout',
   body: () => `<p>Burrows hold money you build up: a cushion, a trip, a big purchase, or paying off a debt. Tick what you are working toward. Add more later.</p>
-    <div class="tour-chips two" role="group" aria-label="Goals">${GOAL_KINDS.map(k => { const on = S.ui.gset ? !!goalById(S, k.id) : k.k === 'rainy'; return `<label class="chip multi${on ? ' on' : ''}"><input type="checkbox" name="tourGoalPick" value="${k.k}"${on ? ' checked' : ''}><b>${k.pick}</b><span>${k.hint}</span></label>`; }).join('')}</div>
+    <div class="tour-chips two" role="group" aria-label="Burrows">${GOAL_KINDS.map(k => { const on = S.ui.gset ? !!goalById(S, k.id) : k.k === 'rainy'; return `<label class="chip multi${on ? ' on' : ''}"><input type="checkbox" name="tourGoalPick" value="${k.k}"${on ? ' checked' : ''}><b>${k.pick}</b><span>${k.hint}</span></label>`; }).join('')}</div>
     <p class="cap">Unsure? Keep the emergency fund. Owe on a card or loan? Add it after setup, under Cards and loans on the Goals tab. It works out the interest and the payoff date.</p>`,
   leave: d => { if (d <= 0) return; applyGoalPick($$('#tourBody input[name=tourGoalPick]:checked').map(i => i.value), true); } };
 function applyGoalPick(picked, mark) {
@@ -5649,7 +5656,7 @@ const unusedOf = () => Math.max(0, round2(gsBudget - S.plan.goals.reduce((a, g, 
 function paintSplit() {
   if (!$('#goalSplit')) return;
   applySplit(); splitC2 = calcAll(S);
-  { const u = unusedOf(), el = $('#splitUnused'); if (el) el.textContent = u > 0 ? `${fmt2(u)} of this is not placed yet: goals cannot take more now. Add a goal or raise a cost.` : ''; }
+  { const u = unusedOf(), el = $('#splitUnused'); if (el) el.textContent = u > 0 ? `${fmt2(u)} of this is not placed yet: your burrows cannot take more now. Add a burrow or raise a cost.` : ''; }
   if (S.plan.goals.length === 1) { const row = $('[data-grow="0"]'); if (row) { $('.split-m', row).textContent = fmt2(splitMoney(0)) + ' a month'; $('.split-s', row).textContent = splitNoteFor(0); } return; }
   spPaint('goal', SPLIT_SPEC.goal());
 }
@@ -5673,7 +5680,7 @@ function planFacts() { const C = calcAll(S); return Object.assign({ C }, planFac
 const ledgerRow = (k, v, cls) => `<div${cls ? ` class="${cls}"` : ''}><dt>${k}</dt><dd>${v}</dd></div>`;
 function ledgerHTML(f) {
   const rows = [ledgerRow('Pay in', fmt2(f.inc)), ledgerRow('Bills and basics', fmt2(f.bills))];
-  if (f.goals > 0) rows.push(ledgerRow('Goals', fmt2(f.goals)));
+  if (f.goals > 0) rows.push(ledgerRow('Goal burrows', fmt2(f.goals)));
   if (f.other > 0) rows.push(ledgerRow('Education, Investing and Giving', fmt2(f.other)));
   rows.push(ledgerRow('Free to spend', fmt2(f.play), 'play'));
   if (f.st === 'over') rows.push(ledgerRow('Short by', fmt2(f.shortBy), 'neg')); else if (f.st === 'spare') rows.push(ledgerRow('Left, not placed yet', fmt2(f.L)));
@@ -5683,7 +5690,7 @@ const behindGoals = () => (tourMode === 'full' && havePay() ? S.plan.goals.filte
 const behindText = () => {
   const b = behindGoals(); if (!b.length) return '';
   const names = b.map(g => `<b>${esc(g.name)}</b>`).join(' and ');
-  return `${names} ${b.length === 1 ? 'misses its date' : 'miss their dates'} at this pace. Under Plan, Goals: move the date, lower the amount or give it more pay.`;
+  return `${names} ${b.length === 1 ? 'misses its date' : 'miss their dates'} at this pace. Under Plan, Burrows: move the date, lower the amount or give it more pay.`;
 };
 /* the same pixel chest used on Home and Plan, as a small picture above the figure (visual first) */
 const chestImg = fill => { try { const c = document.createElement('canvas'); c.width = 24; c.height = 18; BUR.LOOKS.room.paint(c.getContext('2d'), fill, 'play', 3); return `<img class="tour-chest" alt="" aria-hidden="true" width="96" height="72" src="${c.toDataURL()}">`; } catch (e) { return ''; } };
@@ -5693,7 +5700,7 @@ const STEP_REVEAL = { id: 'reveal', part: PART.spend, art: 'branch',
   body: () => {
     const f = planFacts(), play = f.play, wk = weekOf(play), seg = (cls, v) => (v > 0 ? `<div class="seg-b ${cls}" style="flex-grow:${v}"></div>` : '');
     if (f.st === 'nopay') return `${chestImg(0.5)}<div class="tour-reveal"><b>${fmt2(play)}</b><span>a month, sample</span></div>
-      <p>No pay entered, so every number here is a sample. Free to spend is for fun, worked out after bills and goals. Add your pay under Plan, Month, Details, Money in, or tap Back to enter it here.</p>`;
+      <p>No pay entered, so every number here is a sample. Free to spend is for fun, worked out after bills and burrows. Add your pay under Plan, Month, Details, Money in, or tap Back to enter it here.</p>`;
     if (f.st === 'over') return `<div class="tour-reveal neg"><b>${fmt2(f.shortBy)}</b><span>short a month</span></div>
       <p>Plan spends <b>${fmt2(f.J.out)}</b>; pay is <b>${fmt2(f.inc)}</b>.${play > 0 ? '' : ' Nothing left, so no free to spend yet.'}</p>
       ${ledgerHTML(f)}
@@ -5979,7 +5986,7 @@ function importApply() {
     const pay = get('pay'), other = get('other'), bal = get('bal');
     if (pay && pay.on && pay.a > 0) { setVal(S, 'a', START, pay.a, 'after'); markDone('pay', true); }
     if (other && other.on) setVal(S, 'b', START, other.a, 'after');
-    if (bal && bal.on) S.cfg.bankStart = bal.a;
+    if (bal && bal.on) setBankBalance(S, bal.a);
     if (S.cfg.minBank === undefined && payNow() > 0) S.cfg.minBank = toUnit(payNow() * 0.1);
     const subs = picked.filter(r => r.on && r.k.indexOf('sub:') === 0 && r.a > 0), loans = picked.filter(r => r.on && r.k.indexOf('loan:') === 0 && r.a > 0), card = get('card');
     const chosen = IMP_BILLS.filter(id => { const r = get('bill:' + id); return r && r.on && r.a > 0 && lineById(S, id); });
@@ -6312,7 +6319,7 @@ function onbScript() {
   me(ks.length ? ks.map(x => x[1]).join(', ') : 'None of these');
   const acc = ['bank', 'card', 'wallet'].filter(k => o.k[k]);
   if (!acc.length) {
-    ai('Then there are no statements to upload, and that is fine. On the next screen tap Type numbers instead: pay, bills and goals, about five minutes.');
+    ai('Then there are no statements to upload, and that is fine. On the next screen tap Type numbers instead: pay, bills and burrows, about five minutes.');
     if (o.k.cash) ai('Day-to-day cash goes in Receipts. Log it as you spend, or once a week.');
     return onbTail(m, o);
   }
@@ -13490,9 +13497,9 @@ const TOUR = [
         : L > 0 ? `Pay entered. <b>${fmt2(L)}</b> is not placed yet: raise a goal or add to free to spend.`
         : L < 0 ? `Pay entered. The ${billsIn ? 'plan' : 'sample plan'} exceeds pay by <b>${fmt2(PF.shortBy)}</b>${billsIn ? '' : ' because bills are still samples'}. ${billsIn ? 'Lower a bill under Plan.' : 'Enter your real bills next.'}`
         : 'Pay entered. All of it is assigned.';
-      const bills = zero && !(necTotal() > 0) ? 'Bills and goals are empty. Open Plan, Bills and basics, and enter what you pay.'
+      const bills = zero && !(necTotal() > 0) ? 'Bills and burrows are empty. Open Plan, Bills and basics, and enter what you pay.'
         : billsIn ? (necTotal() > 0 ? 'Your bills are in. Any line left at zero can be set under Plan, Bills and basics.' : 'Your bills are all at zero so far. Set each line under Plan, Bills and basics.')
-        : 'Bills and goals are still samples. Open Plan, Bills and basics, and set each line. Or use <b>Set all to zero</b> in Settings.';
+        : 'Bills and burrows are still samples. Open Plan, Bills and basics, and set each line. Or use <b>Set all to zero</b> in Settings.';
       return `${homeScene()}<p>${msg}</p>
       <p>${bills}</p>
       <p>Help (bottom right) has the video and the setup.</p>`;
@@ -13531,9 +13538,9 @@ function renderTour(dir) {
   const pend = same.some((x, i) => x.pick && i >= first) || (t.id === 'pay' && !payNow());
   const keys = Object.values(PART).filter(k => TS.some(x => x.part === k)), at = Math.max(0, keys.indexOf(t.part));   /* only parts this setup has, so the count never skips a number (38.31 wording and layout round 3) */
   /* one count for the whole setup, the same as the progress bar: one segment per part */
-  $('#tourPart').textContent = `Step ${at + 1} of ${keys.length}: ${t.part}`;
+  $('#tourPart').textContent = t.part;   /* no "of N": the count could change mid-setup (Mako, 2026-11-19); the dots show progress */
   $('#tourDots').innerHTML = keys.map((k, i) => `<i class="${i < at ? 'past' : i === at ? 'on' : ''}"><b style="width:${i < at ? 100 : i > at ? 0 : Math.round((first + 1) / count * 100)}%"></b></i>`).join('');
-  $('#tourDots').setAttribute('aria-label', pend ? `${t.part}, step ${at + 1} of ${keys.length}` : `${t.part}, step ${at + 1} of ${keys.length}`);
+  $('#tourDots').setAttribute('aria-label', `${t.part}, setup progress`);
   tourTouched = false;
   const body = $('#tourBody'); body.innerHTML = `<h2 id="tourTitle" tabindex="-1">${title}</h2>${t.body()}`;
   const kind = typeof t.art === 'function' ? t.art() : t.art !== undefined ? t.art : ART_BY_PART[t.part]; $('#tourArt').innerHTML = kind ? art(kind) : '';
@@ -13709,7 +13716,7 @@ THE PAGE
 - On every page except Home and Settings, a slim bar under the tabs shows the main goal, months to go and free to spend left. Tap it to go Home. It updates as receipts are logged.
 - The main goal is the nearest goal still being saved for, unless the person picks one with Set as main goal.
 - Receipts: at the top is Scan receipts. When Claude can be reached, tap Camera or Choose files (photos, screenshots, a bank CSV or a PDF statement), then Read. Claude sorts the receipts into categories and lists what it found, with a category picker on each line, before anything is added. Tap Add to my page to add them, and Undo is offered afterwards. When the page cannot reach Claude, the card shows Other AI app: tap Copy message, paste it into an AI app with the receipt photos, paste the reply into Reply and tap Check. Below that: the form with Date, Amount, Category, Note and Log receipt, a Month picker with the receipts of that month, plan against spent for each category, and a Reminder card that adds a repeating event to Google, Apple, Outlook.com, Microsoft 365, Yahoo or other calendars, or copies the event text.
-- Plan, Goals: each goal is a savings bucket with an amount and, optionally, a date. With a date, the page spreads what is missing over the months before it. Without a date it aims to fill the goal in about a year. Edit goal renames, resizes, dates or removes it, and has a Why line: the reason in the person's words, shown with the goal on Home, here and on the last setup screen. Change monthly amount sets the monthly saving. Add goal starts the three-step flow. Forecast shows each goal month by month as a chart, and Table switches to numbers. The emergency fund is the one goal that can be borrowed from in a short month.
+- Plan, Burrows: each burrow is a savings bucket with an amount and, optionally, a date. With a date, the page spreads what is missing over the months before it. Without a date it aims to fill the goal in about a year. Edit goal renames, resizes, dates or removes it, and has a Why line: the reason in the person's words, shown with the goal on Home, here and on the last setup screen. Change monthly amount sets the monthly saving. Add goal starts the three-step flow. Forecast shows each goal month by month as a chart, and Table switches to numbers. The emergency fund is the one goal that can be borrowed from in a short month.
 - Plan, Month: the whole plan for one month. A Choose a month list, the big Free to spend number with a weekly amount, a status chip (On plan, Tight or Short), the pay split by jar as a coloured bar, and Details: Money in (Salary, Second income, Side income), Money out (Bills and basics, One-time costs, Long-Term Savings for Spending, Free to spend, Education, Investing, Give) and Left. Tap an amount to type a new one: it changes that month only, and Keep for later months makes it the new usual. Open a jar and tap Rename, remove or add lines to change its list. Reset month and Undo all revert edits. A Short month offers one-tap fixes: spend less, or borrow from the emergency fund. All months shows a table of every month.
 - Where to put a paycheck: Plan, Month, open Salary under Money in, and type the monthly take-home pay (after tax). If paid twice a month, add both together.
 - Settings: Name, Currency, Sound, Look (Auto, Light or Dark), Balance (Money today, Minimum balance, Monthly spending ceiling), Six places (the usual percentages, shown as a guide; Re-split pay reruns the split), Reset and setup (Set all to zero, Restore samples, Show first steps, Guided setup), and Saved data: Backup with Save file or Copy text, Spreadsheet with Export spreadsheet (every month as one table to check in Google Sheets or Excel), Cloud backup (Turn on; an encrypted copy that only the recovery code opens, which also moves the numbers to another phone), and Restore with Load text or Choose file.
@@ -13933,7 +13940,7 @@ function askApply(ch) {
   if (u.ids.length) markDone('receipts', true);
   if (ch.pay != null) { step('a', ch.pay); markDone('pay', true); }
   ch.bills.forEach(b => step(b.key, b.amount)); if (ch.bills.length) markDone('bills', true);
-  if (ch.balance != null) { u.bankSet = true; u.hadBank = S.cfg.bankStart !== undefined; u.bank = S.cfg.bankStart; S.cfg.bankStart = ch.balance; }
+  if (ch.balance != null) { u.bankSet = true; u.hadBank = S.cfg.bankStart !== undefined; u.bank = S.cfg.bankStart; u.bankAt = S.cfg.bankAt; setBankBalance(S, ch.balance); }
   persist(); itemsSig = ''; restructure();
   if (u.ids.length) afterLog((S.receipts || []).length === u.ids.length, u.ids.length); else sfx('coin');
   return u;
@@ -13941,7 +13948,7 @@ function askApply(ch) {
 function askUndoApply(u) {
   S.receipts = (S.receipts || []).filter(r => u.ids.indexOf(r.id) < 0);
   Object.keys(u.steps).forEach(k => { if (u.steps[k] === null) delete S.steps[k]; else S.steps[k] = u.steps[k]; });
-  if (u.bankSet) { if (u.hadBank) S.cfg.bankStart = u.bank; else delete S.cfg.bankStart; }
+  if (u.bankSet) { if (u.hadBank) S.cfg.bankStart = u.bank; else delete S.cfg.bankStart; if (u.bankAt) S.cfg.bankAt = u.bankAt; else delete S.cfg.bankAt; }
   persist(); itemsSig = ''; restructure();
 }
 /* the card in the chat: what Claude found, each item with a tick box, and the button that adds it */
@@ -14218,7 +14225,7 @@ function asstCheck(raw) {
     const amt = amtOf(a.amount);
     if (d === 'set_pay') { if (!(amt >= 0)) return dropped.push(d); push(`Salary: ${f(val(S, 'a', ym))} to ${f(amt)} a month`, T => { setVal(T, 'a', ym, amt, 'after'); if (amt > 0) markDoneOn(T, 'pay'); }); }
     else if (d === 'set_other_income') { if (!(amt >= 0)) return dropped.push(d); push(`Second pay: ${f(val(S, 'b', ym))} to ${f(amt)} a month`, T => setVal(T, 'b', ym, amt, 'after')); }
-    else if (d === 'set_balance') { if (!(amt >= 0)) return dropped.push(d); push(`Money today: ${f(cfg(S, 'bankStart'))} to ${f(amt)}`, T => { T.cfg.bankStart = Math.round(amt); }); }
+    else if (d === 'set_balance') { if (!(amt >= 0)) return dropped.push(d); push(`Money today: ${f(cfg(S, 'bankStart'))} to ${f(amt)}`, T => { setBankBalance(T, Math.round(amt)); }); }
     else if (d === 'set_min_balance') { if (!(amt >= 0)) return dropped.push(d); push(`Minimum balance: ${f(cfg(S, 'minBank'))} to ${f(amt)}`, T => { T.cfg.minBank = Math.round(amt); }); }
     else if (d === 'set_line') { const l = lineOf(S, a.key); if (!l || !(amt >= 0)) return dropped.push(d + ' ' + (a.key || '')); push(`${l.name}: ${f(val(S, l.key, ym))} to ${f(amt)} a month${since}`, T => { setVal(T, l.key, ym, amt, scope); if (l.jar === 'nec') markDoneOn(T, 'bills'); }); }
     else if (d === 'set_jar') { const jar = String(a.jar || ''); const ls = S.plan.lines.filter(l => l.jar === jar); if (['play', 'edu', 'ffa', 'give'].indexOf(jar) < 0 || !ls.length || !(amt >= 0)) return dropped.push(d); const others = ls.slice(1).reduce((x, l) => x + val(S, l.key, ym), 0), now = ls.reduce((x, l) => x + val(S, l.key, ym), 0); push(`${JAR_WORD[jar]} jar: ${f(now)} to ${f(amt)} a month${since}`, T => setVal(T, ls[0].key, ym, Math.max(0, round2(amt - others)), scope)); }
@@ -14516,7 +14523,7 @@ const COACH = {
     ['#hHero', 'Main goal', 'Your reason, in your words, with what this month adds and the months left. Tap Forecast for the graph.'],
     ['#hSpend', 'Free to spend', 'The money you use this month. The big number is free to spend on fun, no guilt. Below it: are your necessities covered, and what is left for learning and giving. What is left at month end can go toward a goal.'],
     ['#hQuick', 'Log spend', 'Enter an amount, pick a category, tap Log. Do it as you spend or weekly.'],
-    ['#hGoals', 'Goals', 'Tap a goal to open it. Edit it or set it as main goal.'],
+    ['#hGoals', 'Burrows', 'Tap a burrow to open it. Edit it or make it your main burrow.'],
     ['#hBuckets', 'Investing', 'Money you invest and never spend. It only grows. Goals and debt live in the burrows at the top.'],
     ['#askBtn', 'Ask', 'Any money question, any time. It knows your plan and can make changes you approve.'],
   ],
@@ -14528,7 +14535,7 @@ const COACH = {
   ],
   goals: [
     ['#goalCards .gcard', 'Goal', 'Bar = how full by plan. Edit goal changes name, amount or date.'],
-    ['#addGoalBtn', 'Add goal', 'Three steps: type, amount, date.'],
+    ['#addGoalBtn', 'Add a burrow', 'Three steps: type, goal amount, date.'],
     ['#chartbox', 'Forecast', 'Every goal, month by month. Hover or tap to read a month.'],
   ],
   month: [
@@ -15604,7 +15611,7 @@ function afterLog(first, batch) {
 const BADGES = [
   { id: 'rcpt1', n: 'First receipt', h: 'Log a receipt.', i: 'receipt', ok: () => (S.receipts || []).length >= 1 },
   { id: 'payin', n: 'Pay set', h: 'Enter your pay.', i: 'coin', ok: () => !!(S.ui.done && S.ui.done.pay) },
-  { id: 'goal1', n: 'First goal', h: 'Add a goal with an amount.', i: 'target', ok: () => !!(S.ui.done && S.ui.done.goals) && S.plan.goals.some(g => g.target > 0) },
+  { id: 'goal1', n: 'First burrow', h: 'Add a burrow with a goal amount.', i: 'target', ok: () => !!(S.ui.done && S.ui.done.goals) && S.plan.goals.some(g => g.target > 0) },
   { id: 'track', n: 'On track', h: 'A goal is on track.', i: 'check', ok: () => !!(S.ui.done && S.ui.done.goals) && S.plan.goals.some(g => { const s = goalInfo(S, C, g.id, nowYm()).state; return s === 'ontrack' || s === 'full'; }) },
   { id: 'half', n: 'Halfway', h: 'A goal reaches 50%.', i: 'half', ok: () => !!(S.ui.done && S.ui.done.goals) && S.plan.goals.some(g => g.target > 0 && goalInfo(S, C, g.id, nowYm()).pct >= 0.5) },
   { id: 'rcpt10', n: '10 receipts', h: 'Log 10 receipts.', i: 'star', ok: () => (S.receipts || []).length >= 10 },
@@ -15661,8 +15668,8 @@ function renderStatus() {
   const u = roundUnit(S), mon = monthLabel(V.ym, true), floor = cfg(S, 'minBank');
   let cls, word, line;
   if (!(m.inflow > 0)) { if (m.left < 0 || m.bankEnd < 0) { cls = 'tight'; word = 'No pay entered';   /* amber, never red (decision 2) */ line = m.left < 0 ? `Your plan spends ${fmt(V.cells.planSpend)} in ${mon} and no pay is entered, so your bank would end at ${fmt(m.bankEnd)}. Add your monthly pay under Plan.` : `You logged spending in ${mon} with no pay entered, so your bank would end at ${fmt2(m.bankEnd)}. Add your monthly pay under Plan.`; } else { cls = ''; word = 'No plan yet'; line = 'Add your monthly pay to start.'; } }
-  else if (sampleOn()) { const d = S.ui.done || {}; cls = ''; word = 'Sample numbers'; line = d.pay && d.bills ? 'Pay and bills are yours. The goals are still invented. Add a goal below.' : 'Invented figures for now. Finish the step below to make them yours.'; }
-  else if (m.status === 'good') { cls = 'good'; word = V.play && V.play.planned > 0 && V.play.left < 0 ? 'Over free to spend' : 'You are okay'; if (word !== 'You are okay') cls = 'tight'; const nOv = V.map && V.map.month.find(r => r.id === 'nec'), nOvT = nOv && nOv.overBy > 0 ? ` Bills and basics are ${fmt2(nOv.overBy)} over.` : ''; const pl = nOvT + (V.play && V.play.planned > 0 ? (V.play.left > 0 ? ` ${fmt2(V.play.left)} is free to spend.` : V.play.left < 0 ? ` Free to spend is ${fmt2(V.play.overBy)} over.` : ' Free to spend is used up.') : ''); const unp = V.cells.unplaced; line = !nOvT && unp >= u ? `${fmt2(unp)} of your pay has no place yet. Bills are covered. Give it a goal or a place, or keep it as a cushion.${pl}` : m.left < u && ((C.byYm[V.ym] || {}).out - (C.byYm[V.ym] || { jar: {} }).jar.nec) <= 0 ? `Bills use all of your pay. Nothing is set aside yet.` : (nOvT ? `Bills went past the plan.${pl}` : `Bills are covered and goals are planned for.${pl}`); { const OB = (V.month && V.month.overBits) || {}, ON = { other: 'Other', ffa: 'Investing', edu: 'Education', give: 'Giving' }, ext = Object.keys(ON).filter(j => OB[j] > 0).map(j => ` ${ON[j]} is ${fmt2(OB[j])} over.`).join('');   /* every place past the plan is named, so the parts add up to what the bank is lowered by (38.31 number gate round 3) */
+  else if (sampleOn()) { const d = S.ui.done || {}; cls = ''; word = 'Sample numbers'; line = d.pay && d.bills ? 'Pay and bills are yours. The burrows are still invented. Add a burrow below.' : 'Invented figures for now. Finish the step below to make them yours.'; }
+  else if (m.status === 'good') { cls = 'good'; word = V.play && V.play.planned > 0 && V.play.left < 0 ? 'Over free to spend' : 'You are okay'; if (word !== 'You are okay') cls = 'tight'; const nOv = V.map && V.map.month.find(r => r.id === 'nec'), nOvT = nOv && nOv.overBy > 0 ? ` Bills and basics are ${fmt2(nOv.overBy)} over.` : ''; const pl = nOvT + (V.play && V.play.planned > 0 ? (V.play.left > 0 ? ` ${fmt2(V.play.left)} is free to spend.` : V.play.left < 0 ? ` Free to spend is ${fmt2(V.play.overBy)} over.` : ' Free to spend is used up.') : ''); const unp = V.cells.unplaced; line = !nOvT && unp >= u ? `${fmt2(unp)} of your pay has no place yet. Bills are covered. Give it a goal or a place, or keep it as a cushion.${pl}` : m.left < u && ((C.byYm[V.ym] || {}).out - (C.byYm[V.ym] || { jar: {} }).jar.nec) <= 0 ? `Bills use all of your pay. Nothing is set aside yet.` : (nOvT ? `Bills went past the plan.${pl}` : `Bills are covered and burrows are planned for.${pl}`); { const OB = (V.month && V.month.overBits) || {}, ON = { other: 'Other', ffa: 'Investing', edu: 'Education', give: 'Giving' }, ext = Object.keys(ON).filter(j => OB[j] > 0).map(j => ` ${ON[j]} is ${fmt2(OB[j])} over.`).join('');   /* every place past the plan is named, so the parts add up to what the bank is lowered by (38.31 number gate round 3) */
     if (ext) { line += ext; if (word !== 'You are okay') { cls = 'tight'; word = 'Over plan'; } } }   /* with nothing else over, the total and "came out of your bank" lead the line below */
     if (nOvT) { cls = 'tight'; word = 'Over plan'; } }
   else if (m.status === 'tight') { cls = 'tight'; word = 'Tight month'; const dw = ((C.byYm[V.ym] || {}).draw) || 0; line = `Plans ${fmt(V.cells.overPay)} more than your pay${dw > 0 ? ', ' + fmt(dw) + ' of it from your emergency fund' : ''}. Your balance covers it, ending ${mon} at ${fmt(m.bankEnd)}.`; }
@@ -15718,7 +15725,7 @@ function renderNext() {
   if (!S.ui.sampleHidden) {
     if (!d.pay) step = ['Next: enter pay', 'The plan starts from monthly pay.', 'Enter pay', 'data-open="a"'];
     else if (!d.bills) step = ['Next: check bills', 'Set each bill to the real amount.', 'Open bills', 'data-open="nec"'];
-    else if (!d.goals) step = ['Next: add a goal', 'Pick something to save for.', 'Add goal', 'data-gw'];
+    else if (!d.goals) step = ['Next: add a burrow', 'Pick something to save for.', 'Add a burrow', 'data-gw'];
     else if (!(S.receipts || []).length && !sweepOffer() && !SWEPT) step = ['Next: log spend', 'Enter an amount in Log spend, then tap Log.', 'Log spend', 'data-focus="hAmt"'];
   }
   /* a month to close comes first (it is timely); then, for typed numbers, the statements that make them exact */
@@ -15831,7 +15838,7 @@ function renderHero() {
     /* a goal that exists but has no amount yet (the setup was left early) is not "no goal": it asks for its amount */
     const unset = S.plan.goals.filter(g => !(g.target > 0));
     if (unset.length) put(el, `<div class="hw-empty"><h2>${esc(unset[0].name)} has no amount yet</h2><p>Set the amount to see what each month adds and when it is full.</p><button type="button" class="btn solid" data-gset="${esc(unset[0].id)}">Set amount</button></div>`);
-    else put(el, `<div class="hw-empty"><h2>No goal set</h2><p>Add a goal to see what it unlocks and when.</p><button type="button" class="btn solid" data-gw>Add goal</button></div>`);
+    else put(el, `<div class="hw-empty"><h2>No burrow yet</h2><p>Add a burrow to see what it unlocks and when.</p><button type="button" class="btn solid" data-gw>Add a burrow</button></div>`);
     return;
   }
   const g = goalById(S, r.id), pct = r.pct, fr = fracOf(r);
@@ -15855,7 +15862,7 @@ function renderHero() {
     <div class="hw-bar" role="img" aria-label="${pct} percent of ${esc(g.name)} saved" style="--c:var(--c${g.slot})"><i class="fill" style="width:${fr * 100}%"></i>${ms}</div>
     <div class="hw-nums"><span><b>${fmt(r.saved)}</b> of ${fmt(r.target)}</span><span>${pct}%</span></div>
     ${adds}${chip}
-    <details class="hw-more"><summary>Forecast</summary>${sub ? `<p class="hw-sub">${sub}</p>` : ''}${r.reached ? `<div class="hw-graph" id="hGraph">${heroGraph(g)}</div>` : ''}<div class="row-btns">${fix}<button type="button" class="btn small" data-tab-go="goals">Edit goals</button></div></details>`);
+    <details class="hw-more"><summary>Forecast</summary>${sub ? `<p class="hw-sub">${sub}</p>` : ''}${r.reached ? `<div class="hw-graph" id="hGraph">${heroGraph(g)}</div>` : ''}<div class="row-btns">${fix}<button type="button" class="btn small" data-tab-go="goals">Edit burrows</button></div></details>`);
   /* a milestone is celebrated once, the first time the plan passes it */
   const hit = pct >= 100 ? 4 : pct >= 75 ? 3 : pct >= 50 ? 2 : pct >= 25 ? 1 : 0, ms0 = S.ui.ms = S.ui.ms || {};
   if (ms0[g.id] === undefined) { ms0[g.id] = hit; persist(); }
@@ -15920,7 +15927,7 @@ const links = `<p class="cap hs-more"><button type="button" class="link" data-xm
   const free = !p.over && p.planned > 0 && m.status === 'good' && !sampleOn();
   put(el, `${head}<p class="hs-lbl">${p.over ? 'Over free to spend in ' : 'Free to spend in '}${monthLabel(ym)}</p><p class="hs-big${p.over ? ' neg' : ''}" style="--n:${fmt2(freeLeft).length}">${fmt2(freeLeft)}</p>
     <div class="hs-bar${p.over ? ' over' : ''}" role="img" aria-label="${fmt2(p.spent)} of ${fmt(p.planned)} spent"><i style="width:${p.frac * 100}%"></i><span class="pace" style="left:${p.dayFrac * 100}%"></span></div><p class="cap hs-key">The bar is what you have spent. The mark is how far through the month you are.</p>
-    <p class="hs-sub">${p.count ? `Spent ${fmt2(p.spent)} of ${fmt(p.planned)}.` : `Nothing logged yet. ${fmt(p.planned)} planned.`} ${p.over ? '' : wk}${!p.over && freeLeft > 0 && p.daysLeft > 0 ? ` About <b>${fmtAbout(V.cells.perDay)}</b> a day.` : ''}</p>${p.over && freeLeft < 0 ? `<p class="hs-ok warn">${fmt2(V.cells.freeOver)} came out of your bank. Spend nothing more from Free to spend this month.</p>` : ''}${held > 0 ? `<p class="hs-ok warn">${fmt(held)} is held back. Your bank would end under your ${fmt(cfg(S, 'minBank'))} minimum, so it is not safe to spend.</p>` : ''}${p.count || p.over ? chip : ''}${free ? `<p class="hs-ok">Bills and goals are planned for, so this part is free to spend.${V.main && V.main.live && V.main.pct < 100 ? ` What is left at month end can go toward ${esc(goalById(S, V.main.id).name)}.` : ''}</p>` : ''}${gapBox}${smp}${sampleOn() ? '' : links}${tiles}`);
+    <p class="hs-sub">${p.count ? `Spent ${fmt2(p.spent)} of ${fmt(p.planned)}.` : `Nothing logged yet. ${fmt(p.planned)} planned.`} ${p.over ? '' : wk}${!p.over && freeLeft > 0 && p.daysLeft > 0 ? ` About <b>${fmtAbout(V.cells.perDay)}</b> a day.` : ''}</p>${p.over && freeLeft < 0 ? `<p class="hs-ok warn">${fmt2(V.cells.freeOver)} came out of your bank. Spend nothing more from Free to spend this month.</p>` : ''}${held > 0 ? `<p class="hs-ok warn">${fmt(held)} is held back. Your bank would end under your ${fmt(cfg(S, 'minBank'))} minimum, so it is not safe to spend.</p>` : ''}${p.count || p.over ? chip : ''}${free ? `<p class="hs-ok">Bills and burrows are planned for, so this part is free to spend.${V.main && V.main.live && V.main.pct < 100 ? ` What is left at month end can go toward ${esc(goalById(S, V.main.id).name)}.` : ''}</p>` : ''}${gapBox}${smp}${sampleOn() ? '' : links}${tiles}`);
 }
 /* a row opens to show its details; which ones are open survives a redraw */
 const HOPEN = new Set();
@@ -15939,7 +15946,7 @@ function goalRowHtml(r) {
 }
 function renderGoalsHome() {
   const el = $('#hGoals'), rows = HV.goals, gs = S.plan.goals;
-  put(el, `<div class="hgl-h"><h2>Goals</h2>${gs.length < MAX_GOALS ? '<button type="button" class="btn small solid" data-gw>Add goal</button>' : ''}</div>` + (gs.length ? `<ul class="gdl">${rows.map(goalRowHtml).join('')}</ul>${goalsGraph()}` : '<p class="cap">No goals. Add one to list it here.</p>'));
+  put(el, `<div class="hgl-h"><h2>Burrows</h2>${gs.length < MAX_GOALS ? '<button type="button" class="btn small solid" data-gw>Add a burrow</button>' : ''}</div>` + (gs.length ? `<ul class="gdl">${rows.map(goalRowHtml).join('')}</ul>${goalsGraph()}` : '<p class="cap">No goals. Add one to list it here.</p>'));
 }
 /* one graph for every goal still being saved for: each line is the share of that goal saved by the plan, month by month, so a big goal and a small one share a graph.
    A line stops at the month its goal is full. */
@@ -16102,7 +16109,7 @@ function gwPlan() {
   return { txt: `No date: plan assumes 12 months. About <b>${fmt(wizardMonthly(S, GW.cost, GW.saved, 12))}</b> a month.`, ok: true };
 }
 function openGoalWizard() {
-  if (S.plan.goals.length >= MAX_GOALS) { cheer(`Limit: ${MAX_GOALS} goals.`); return; }
+  if (S.plan.goals.length >= MAX_GOALS) { cheer(`Limit: ${MAX_GOALS} burrows.`); return; }
   GW = { step: 0, kind: null, name: '', why: '', cost: '', saved: '', due: '', ret: document.activeElement, dir: 0 };
   let el = $('#gw');
   if (!el) {
@@ -16138,7 +16145,7 @@ function paintGW() {
     body = `<div class="field"><label for="gwCost">${k && k.debt ? 'Total owed' : 'Total cost'}</label><div class="inp"><span class="yen cs"></span><input id="gwCost" type="number" inputmode="numeric" min="0" step="any" value="${esc(g.cost)}" placeholder="0"></div>${k && k.cost ? `<p class="cap">${k.cost}</p>` : ''}</div>
       <div class="field"><label for="gwSaved">${k && k.debt ? 'Already paid off' : 'Already saved'}</label><div class="inp"><span class="yen cs"></span><input id="gwSaved" type="number" inputmode="numeric" min="0" step="any" value="${esc(g.saved)}" placeholder="0"></div></div>`;
   } else {
-    t = k && k.em ? 'Plan' : 'Date'; nextTxt = 'Add goal';
+    t = k && k.em ? 'Plan' : 'Date'; nextTxt = 'Add a burrow';
     body = (k && k.em ? '' : `<div class="field"><label for="gwDue">${k && k.debt ? 'Paid off by' : 'Needed by'}</label><input type="date" id="gwDue" value="${esc(g.due)}" min="${todayStr()}" max="${END}-28"></div>
       <div class="gw-quick" role="group" aria-label="Quick dates">${GW_QUICK.map(q => `<button type="button" class="chipbtn${(q[1] === 0 ? !g.due : g.due === gwDate(q[1])) ? ' on' : ''}" data-q="${q[1]}">${q[0]}</button>`).join('')}</div>`)
       + `<p class="gw-plan" id="gwPlan" aria-live="polite"></p>`;
@@ -16684,7 +16691,7 @@ function openWhy(kind) {
     foot = 'Planned is the Free to spend total on the Plan page. Logged is every receipt in Free to spend this month.';
   } else {
     title = 'Where you stand in ' + mon;
-    rows = [['Pay and other money in', fmt(m.inflow)], ['Bills, one-time costs and card payments', '−' + fmt(m.jar.nec)], ['Goals', '−' + fmt(m.goalsTotal)], ['Free to spend, Education, Investing, Giving', '−' + fmt(V.cells.otherPlaces)], ['Left in the month', (m.left < 0 ? '−' : '') + fmt(V.cells.leftAbs)], ['Balance at the start', fmt(m.bankStart)], ['Balance at the end', fmt(m.bankEnd)], ['Your minimum balance', fmt(floor)]];
+    rows = [['Pay and other money in', fmt(m.inflow)], ['Bills, one-time costs and card payments', '−' + fmt(m.jar.nec)], ['Goal burrows', '−' + fmt(m.goalsTotal)], ['Free to spend, Education, Investing, Giving', '−' + fmt(V.cells.otherPlaces)], ['Left in the month', (m.left < 0 ? '−' : '') + fmt(V.cells.leftAbs)], ['Balance at the start', fmt(m.bankStart)], ['Balance at the end', fmt(m.bankEnd)], ['Your minimum balance', fmt(floor)]];
     foot = m.bankEnd < floor ? 'The balance ends under your minimum, so the month is short.' : m.left < 0 ? 'The month spends more than comes in, but the balance covers it.' : 'Everything planned fits in your pay.';
   }
   let el = $('#why');
@@ -16781,9 +16788,10 @@ function renderMap() {
     <p class="mp-act"><button type="button" class="btn small" id="mpPay">Watch where your pay goes</button></p></details>
     <p class="mp-cap">Where your money sits at the end of ${esc(mon)}: the bank and your burrows</p>
     <div class="mp-where" role="img" aria-label="${esc(parts.map(x => x.name + ' ' + fmt(x.amount)).join(', '))}">${wseg}</div>
-    <ul class="mp-key">${wkey}</ul>
+    <ul class="mp-key">${wkey}</ul>${(() => { const at = S.cfg && S.cfg.bankAt; if (!at || typeof sampleOn === 'function' && sampleOn()) return ''; const y = +at.slice(0, 4);   /* how fresh the bank figure is (Mako, 2026-11-19); no date stored, no line */
+      return `<p class="cap mp-fresh">Balance you entered on ${+at.slice(8, 10)} ${MONTH_NAMES[+at.slice(5, 7) - 1]}${y !== new Date().getFullYear() ? ' ' + y : ''}: ${fmt2(cfg(S, 'bankStart'))}.</p>`; })()}
     <ul class="mp-nums mp-four" aria-label="Your four numbers">${n4('Total', fmt2(M.total), 'planned for the end of ' + mon + ': bank and burrows', M.total < 0 ? 'bad' : '')}${(M.free < 0 ? n4('Free to spend', fmt2(M.free), 'over in ' + mon, 'bad') : n4('Free to spend', fmt2(M.month.find(r => r.id === 'play').amount), 'safe to spend in ' + mon))   /* one figure, as the chest below shows it (38.31 north-star round 2) */}${n4('Bills left', fmt2(M.billsLeft), 'still to pay in ' + mon)}${n4('Saved', fmt2(M.saved), 'in your burrows by the end of ' + mon + ', with this month\'s saving')}</ul>
-    <p class="cap mp-proof">Bank ${fmt2(M.bankEnd)} + burrows ${fmt2(M.saved)} = <b>${fmt2(M.total)}</b> at the end of ${esc(mon)}. Burrow amounts include what you plan to add this month.${PF.pendAmount > 0 ? ' ' + fmt2(PF.pendAmount) + (PF.pendMonths.length === 1 ? ' of ' + FULL[+PF.pendMonths[0].slice(5) - 1] + "'s free to spend" : ' of free to spend from ' + PF.pendMonths.length + ' past months') + (typeof SWEEP_LATER !== 'undefined' && SWEEP_LATER && PF.pendMonths.every(q => SWEEP_LATER[q]) ? ' is left out until you answer. You chose Decide later, so Home asks again the next time you open the app.' : ' is left out until you answer the question on Home.') : ''}${M.overspent > 0 ? ' The bank is lowered by ' + fmt2(M.overspent) + ' you spent over plan.' : ''} These are your plan's and receipts' numbers, not yet compared with your bank.${PF.ok ? ' They add up: what you started with, plus your pay, less what is planned and spent, comes to the same total.' : ''}</p>
+    <p class="cap mp-proof">Bank ${fmt2(M.bankEnd)} + burrows ${fmt2(M.saved)} = <b>${fmt2(M.total)}</b> at the end of ${esc(mon)}.${PF.pendAmount > 0 ? ' ' + fmt2(PF.pendAmount) + ' of free to spend is left out until you answer' + (typeof SWEEP_LATER !== 'undefined' && SWEEP_LATER && PF.pendMonths.every(q => SWEEP_LATER[q]) ? ' (Home asks again next time).' : ' the question on Home.') : ''}</p>
     ${PF.ok ? '' : `<p class="cap mp-bad" role="alert">These numbers do not add up. They are off by ${fmt2(PF.offBy)}. Nothing you entered is lost. Please tell Mako.</p>`}
     ${warn}`);
   { const dp = el.querySelector('.mp-pay'); if (dp) dp.ontoggle = () => { renderMap.payOpen = dp.open; }; }
@@ -16871,7 +16879,7 @@ function wire() {
   $('#curSel').addEventListener('change', e => {
     const r = changeCurrency(e.target.value), z = presetKey(S) === 'blank';
     $('#curNote').textContent = r === 'all' ? (z ? 'All amounts zeroed for this currency. Enter your own.' : 'Sample amounts now match this currency.')
-      : r === 'plan' ? (z ? 'Sample bills and goals zeroed for this currency. Pay and receipts unchanged.' : 'Sample bills and goals now match this currency. Pay and receipts unchanged.')
+      : r === 'plan' ? (z ? 'Sample bills and burrows zeroed for this currency. Pay and receipts unchanged.' : 'Sample bills and burrows now match this currency. Pay and receipts unchanged.')
       : 'Amounts unchanged. Only the symbol changed.';
     if (r) restructure(); else render();
   });
@@ -17058,7 +17066,7 @@ function wire() {
   twoStep($('#setupOpen'), `Tap again: setup can change your pay, bills, goals and saved amounts. You can undo for ${KEEP_DAYS} days.`, () => openSetupWithCopy(undefined, 'full'));   /* both ask first, and keep a copy (38.31 data safety round 2) */
   /* only some currencies have samples; for the rest this button clears the plan, and every word says so (38.31 data safety round 3) */
   const hasSamples = () => !!SAMPLES[(S.ui && S.ui.cur) || '₱'];
-  twoStep($('#bkReset'), () => hasSamples() ? `Tap again: puts the sample pay, bills and goals in place of yours. Receipts stay. You can undo for ${KEEP_DAYS} days.` : `Tap again: clears your pay, bills, goals and balance. Receipts stay. You can undo for ${KEEP_DAYS} days.`, () => { const smp = hasSamples(), sn0 = snapNoCopy(); offerUndo(sn0, `${smp ? 'Samples restored' : 'Plan cleared'}. You can undo for ${KEEP_DAYS} days.`); const old = S, u = S.ui; S = presetState(u.cur); S.ui = Object.assign({}, u, { preset: S.ui.preset, sampleHidden: false, done: {} }); delete S.ui.cleared; delete S.ui.setup; delete S.ui.gset; delete S.ui.sb; delete S.ui.tourAt; delete S.ui.src; delete S.ui.imp; S.receipts = old.receipts; keepCopy(sn0, smp ? 'Samples replaced your numbers.' : 'Your plan was cleared.'); editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = smp ? 'Samples restored.' : 'Plan cleared.'; });
+  twoStep($('#bkReset'), () => hasSamples() ? `Tap again: puts the sample pay, bills and burrows in place of yours. Receipts stay. You can undo for ${KEEP_DAYS} days.` : `Tap again: clears your pay, bills, goals and balance. Receipts stay. You can undo for ${KEEP_DAYS} days.`, () => { const smp = hasSamples(), sn0 = snapNoCopy(); offerUndo(sn0, `${smp ? 'Samples restored' : 'Plan cleared'}. You can undo for ${KEEP_DAYS} days.`); const old = S, u = S.ui; S = presetState(u.cur); S.ui = Object.assign({}, u, { preset: S.ui.preset, sampleHidden: false, done: {} }); delete S.ui.cleared; delete S.ui.setup; delete S.ui.gset; delete S.ui.sb; delete S.ui.tourAt; delete S.ui.src; delete S.ui.imp; S.receipts = old.receipts; keepCopy(sn0, smp ? 'Samples replaced your numbers.' : 'Your plan was cleared.'); editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = smp ? 'Samples restored.' : 'Plan cleared.'; });
   wireReceipts(); safe(() => BUR.boot(), null, 'burrow'); wireTour(); wireHelp(); wireHome(); wireScan(); wireAskAi(); wireSafe(); wireVault(); safe(() => DJ.wire(), null, 'dj'); safe(() => SCENE.start(), null, 'scene'); safe(() => WORLD.wire(), null, 'world');
 
   /* tooltips */
