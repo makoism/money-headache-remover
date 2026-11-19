@@ -89,24 +89,26 @@ function phAccountTail(lines) {
 
 /* one statement with a running balance, as text lines: GCash, Maya, BDO, BPI and Metrobank accounts */
 function phReadTable(lines, det) {
-  const raw = [], unread = []; let hasRef = false, started = false, last = null;
-  const stop = /^(total|ending|closing|beginning|starting|opening|balance|page \d|end of|this is|\*)/i;
+  const raw = [], unread = []; let hasRef = false, started = false, last = null, periodEnd = '';
+  for (let i = 0; i < Math.min(lines.length, 25) && !periodEnd; i++) { if (/period|covered|date range|from .* to /i.test(lines[i])) { const ds = lines[i].split(/\s+(?:to|-|–)\s+/).map(x => phAnyDate(x)).filter(Boolean); if (ds.length) periodEnd = ds[ds.length - 1]; } }
+  const stop = /^(total|ending|closing|beginning|starting|opening|previous|balance|page \d|end of|this is|\*)/i;
   lines.forEach((line, n) => {
     const l = line.replace(/\s+/g, ' ').trim(); if (!l) return;
-    if (!started && /\b(debit|withdrawal)s?\b.*\b(credit|deposit)s?\b/i.test(l) && /balance/i.test(l)) { hasRef = /\bref/i.test(l); started = true; return; }
+    if (!started && /balance/i.test(l) && /\bdate\b/i.test(l) && !phTail(l).nums.length) { hasRef = /\bref/i.test(l); started = true; return; }
     const d = phLeadDate(l);
     if (d && !phTail(d.rest).nums.length) { last = null; return; } /* a date with no money: the period line, a heading */
-    if (!d || !d.iso) { if (d && d.md) unread.push({ n: n + 1, line: l }); else if (started && last && !stop.test(l) && !phTail(l).nums.length) last.text += ' ' + l; else last = null; return; }
+    if (d && d.md) { if (periodEnd) d.iso = phYearFor(d.md, periodEnd); else { unread.push({ n: n + 1, line: l }); last = null; return; } }
+    if (!d || !d.iso) { if (started && last && !stop.test(l) && !phTail(l).nums.length) last.text += ' ' + l; else last = null; return; }
     let rest = d.rest.replace(/^\s+\d{1,2}:\d{2}(?::\d{2})?(?:\s?[AP]M)?/i, m => { d.time = m.trim(); return ''; });
     const t = phTail(rest);
     if (t.nums.length < 2 || t.nums.length > 3) { unread.push({ n: n + 1, line: l }); last = null; return; }
     let ref = ''; if (hasRef) { const m = /\s([A-Za-z0-9-]*\d[A-Za-z0-9-]*)$/.exec(' ' + t.text); if (m && m[1].length >= 6) { ref = m[1]; t.text = t.text.slice(0, t.text.length - m[1].length).trim(); } }
     const r = { n: n + 1, date: d.iso, time: d.time || '', text: t.text.trim() || '(no description)', ref, bal: t.nums[t.nums.length - 1], c: 0, dir: '' };
     if (t.nums.length === 3) { if (t.nums[0] && !t.nums[1]) { r.c = Math.abs(t.nums[0]); r.dir = 'out'; } else if (t.nums[1] && !t.nums[0]) { r.c = Math.abs(t.nums[1]); r.dir = 'in'; } else { unread.push({ n: n + 1, line: l }); last = null; return; } }
-    else r.c = Math.abs(t.nums[0]);
+    else { r.c = Math.abs(t.nums[0]); if (t.nums[0] < 0) r.dir = 'out'; } /* one amount column with a sign */
     raw.push(r); last = r; started = true;
   });
-  const open = phLabel(lines, /^\s*(starting|beginning|opening) balance|balance (forwarded|brought forward)/i);
+  const open = phLabel(lines, /^\s*(starting|beginning|opening|previous) balance|balance (forwarded|brought forward)/i);
   const meta = { opening: open, closing: phLabel(lines, /^\s*(ending|closing) balance/i), totalOut: phLabel(lines, /^\s*total (debits?|withdrawals?)/i), totalIn: phLabel(lines, /^\s*total (credits?|deposits?)/i) };
   return phFinishTable(raw, unread, meta, det, lines);
 }
@@ -386,13 +388,13 @@ function phMask(text, opts) {
   const firstRow = (() => { const i = lines.findIndex(l => phLeadDate(l.trim()) && phTail(l).nums.length); return i < 0 ? Math.min(lines.length, 30) : i; })();
   const names = (opts.names || []).slice();
   lines.slice(0, firstRow).forEach((l, i) => {
-    const m = /(?:account name|cardholder(?: name)?|customer name|client name|name)\s*[:,]?\s+(.+)$/i.exec(l);
+    const m = /(?:account name|cardholder(?: name)?|customer name|client name|name)\s*[:,\s]\s*(.+)$/i.exec(l);
     if (m && !/\d/.test(m[1])) names.push(m[1]);
     else if (i < 6 && /^[A-ZÑ][A-ZÑ.,' -]{4,40}$/.test(l.trim()) && l.trim().split(/\s+/).length >= 2 && l.trim().split(/\s+/).length <= 5 && !PH_NAME_STOP.test(l)) names.push(l.trim());
   });
   const toks = Array.from(new Set(names.join(' ').toUpperCase().split(/[^A-ZÑ]+/).filter(Boolean)));
-  const nameRe = toks.filter(t => t.length > 1).length ? new RegExp('(?<![A-Za-zÑñ])(?:' + toks.join('|') + ')(?:[\\s,.]+(?:' + toks.join('|') + '))+(?![A-Za-zÑñ])\\.?', 'gi') : null;
-  const addr = /\b(blk|block|lot|brgy|barangay|street|st\.|ave|avenue|subd|subdivision|village|bldg|building|unit|purok|sitio|phase|city|province|metro manila)\b|\b\d{4}$/i;
+  const nameRe = toks.filter(t => t.length > 1).length ? new RegExp('(?<![A-Za-zÑñ])(?:' + toks.filter(t => t.length > 1).join('|') + ')(?:[\\s,.]+(?:' + toks.join('|') + '|[A-ZÑ](?![A-Za-zÑñ]))\\.?)+(?![A-Za-zÑñ])', 'gi') : null;
+  const addr = /\b(blk|block|lot|brgy|barangay|street|st\.|ave|avenue|subd|subdivision|village|bldg|building|unit|purok|sitio|phase|city|province|metro manila)\b|^[A-Za-zÑñ .,'-]+ \d{4}$/i;
   lines = lines.map((l, i) => {
     if (i < firstRow) {
       const a = /^(\s*(?:billing |mailing |home )?address\s*[:,]?\s*)(.+)$/i.exec(l);
@@ -409,13 +411,14 @@ function phMask(text, opts) {
   s = s.replace(/((?:account|card|acct)\s*(?:number|no\.?|#)\s*[:,]?\s*)([\dXx*][\dXx* -]{4,}[\dXx*])/gi, (m, a, b) => { found.account++; return a + '••' + phTailOf(b); });
   s = s.replace(/(with account ending in |ending in )\d{4}/gi, (m, a) => a + '••••');
   s = s.replace(/\b(send money to|sent gcash to|received gcash from|received money from|express send to)\s+(?!\[)([A-ZÑ][A-Za-zÑñ*]*\.?(?:\s+[A-ZÑ][A-Za-zÑñ*]*\.?){0,3})/gi, (m, a) => { found.person++; return a + ' [person]'; });
-  s = s.replace(/(?<![\d.,A-Za-z])\d{9,}(?![\d]|[.,]\d)/g, m => { found.account++; return '••' + m.slice(-4); });
+  s = s.replace(/(?<![\d.,A-Za-z])\d{9,}(?!\d|\.\d|,\d{3}(?!\d))/g, m => { found.account++; return '••' + m.slice(-4); });
+  s = s.replace(/(?<![A-Za-z0-9.])(?=[A-Za-z0-9-]*[A-Za-z])(?=(?:[A-Za-z-]*\d){6})[A-Za-z0-9-]{8,}(?![A-Za-z0-9]|\.\d)/g, m => { if (phLeadDate(m + ' ')) return m; found.ref = (found.ref || 0) + 1; return '[ref]'; });
   return { text: s, found };
 }
 /* a last look before sending: anything that still looks like a number that names a person or an account */
 function phLeaks(text) {
   const out = [], s = String(text || '');
-  (s.match(/(?<![\d.,])\d{7,}(?![\d]|[.,]\d)/g) || []).forEach(m => out.push(m));
+  (s.match(/(?<![\d.,])\d{6,}(?!\d|\.\d|,\d{3}(?!\d))/g) || []).forEach(m => out.push(m));
   (s.match(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g) || []).forEach(m => out.push(m));
   return out;
 }

@@ -1,0 +1,12 @@
+Bank of the Philippine Islands
+Statement of Account
+Account name: JUANA P DELA CRUZ
+Account number: 3149-0456-21
+Statement period: Dec 16, 2025 to Jan 15, 2026
+Previous balance: 9,100.00
+Date Description Ref Amount Balance
+Dec 29 Payroll Credit ACME BPO SERVICES PY251229001 14,250.00 23,350.00
+Dec 31 Tax Withheld TX251231001 -0.40 23,349.60
+Jan 02 Bills Payment Manila Water BP260102330 -612.35 22,737.25
+Jan 05 ATM Withdrawal Cubao AT260105071 -4,000.00 18,737.25
+Ending balance: 18,737.25
