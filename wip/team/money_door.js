@@ -139,7 +139,7 @@ const DOOR = [
       out:  { so: 'from your wallet, which was outside Total: what they owe you is inside it', total: 1, lent: 1 },
     } },
   { id: 'paidcard', side: 'out', label: 'Paid a card', sub: 'card payment',
-    line: 'You paid your credit card bill - the money was already set aside so nothing else changes',
+    line: 'You paid your credit card bill - the money was already set aside so Free to spend does not move',
     asks: ['amount', 'date', 'account', 'who'], maybe: ['place'], say: { account: 'Which account did you pay from', who: 'Which card', place: 'Where does it come from' },
     account: 'money', whoIs: 'card', place: 'bills',
     says: { total: 'down', free: 'same', bills: 'down', saved: 'same', owed: 'down' },
