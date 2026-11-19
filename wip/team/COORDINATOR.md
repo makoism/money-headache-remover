@@ -6,6 +6,10 @@ The coordinator is the one session Mako talks to. It records his decisions in DE
 
 Coordinator 3 (session_01BFpKEWbWX57dzJueLvseiT) passed the 150k mark at 05:31 UTC and handed off. Its running log is the section "handoff 2" below ("Coordinator 3 took over" and the bullets after it); this is the state.
 
+### Coordinator 4 took over (05:32 UTC)
+- Coordinator 4 is session_01BFpKEXvqtaKqkyg3aNk3hU. MAIN 3 and SIDE N3 were told to report there; both alive (wip-38.31 ca5f036 with A11 and the act_keep fix; side/ledger-core e5299e2 with G2 and G4 fixed at 05:31 UTC).
+- Timers: check-in trig_01DH6Q6dBjNTKBWc4Ma8hnCQ at 05:58 UTC; after the usage reset trig_013WY5YLe49jxxpfy3acwMVo at 09:36 UTC.
+
 ### Usage
 At 05:31 UTC the five-hour window showed a warning (near its limit); it resets at 09:30 UTC. Keep the count low: MAIN 3 always, at most one or two lanes. Every session keeps a resume timer. If the limit stops everything, check after 09:30 UTC that MAIN 3 restarted (new commits on wip-38.31) and message or replace it.
 
