@@ -2,13 +2,18 @@
    Opens the staged build in a few made-up situations, at a phone (390x844) and a small phone (320x640), and saves for every tab
    a full-page screenshot (PNG, 1x) and the screen text (TXT) in OUT (default /tmp/qc_build/screens), plus index.txt listing them.
    Agents may still open the build themselves; the pack saves them the walking.
+   Part 2, "panels": the screens no tab view shows (cloud copy steps, Home notices, Undo, Help, Ask, the setup tour, editors, a burrow's
+   own screen, import review, the month-end question, the light theme, desktop width). Shot at 412x915 (an Android phone) as
+   412-panel-<nn>-<name>.png/.txt, and at 1280x800 as 1280-panel-<nn>-<name>. A panel that cannot be reached is listed in index.txt as
+   "NOT CAPTURED <name>: <reason>" and does not fail the run (only page errors do).
    Made-up numbers only. Run: node tests/qc/screen_pack.js [OUT]   (BUILD=path overrides /tmp/qc_build/build.html) */
 const fs = require('fs');
 const L = require('./lib_r12.js'); const R = L.R; const w = R.w;
 const BUILD = process.env.BUILD || '/tmp/qc_build/build.html';
 const OUT = process.argv[2] || '/tmp/qc_build/screens';
 fs.mkdirSync(OUT, { recursive: true });
-const SIZES = [[390, 844], [320, 640]];
+const panels = () => require('./screen_pack_panels.js')(BUILD, OUT);   /* part 2, in its own file */
+const SIZES = [[390, 844], [320, 640], [412, 915]];   /* iPhone, small phone, Android phone */
 const VIEWS = [['home', 'tab-home'], ['spending', 'tab-receipts'], ['plan-month', 'tab-month', 'month'], ['plan-goals', 'tab-month', 'goals'], ['plan-all-months', 'tab-month', 'months'], ['burrows', 'tab-goals'], ['basics', 'tab-basics']];
 /* the situations: what a stranger sees first, a dollar plan with cents and some spending past the plan, a yen plan with a minus bank */
 const SITUATIONS = [
@@ -52,9 +57,15 @@ const SITUATIONS = [
     }
     errsAll = errsAll.concat(errs.map(e => tag + ': ' + e)); await b.close();
   }
+  const P = await panels().catch(e => ({ index: [], missed: ['NOT CAPTURED (all panels): ' + String(e && e.message || e).split('\n')[0]], errs: [] }));
+  errsAll = errsAll.concat(P.errs);
   fs.writeFileSync(`${OUT}/index.txt`, 'Screens of ' + BUILD + ' (PNG full page at 1x, TXT is the screen text). Made-up numbers.\n' +
     'Situations: first-open (fresh, sample plan), dollar-plan (cents, some spending past the plan), yen-overdrawn (bank below zero).\n' +
-    index.join('\n') + '\n' + (errsAll.length ? 'PAGE ERRORS:\n' + errsAll.join('\n') : 'no page errors') + '\n');
-  console.log(`screen pack: ${index.length} screens in ${OUT}` + (errsAll.length ? `, PAGE ERRORS ${errsAll.length}` : ', no page errors'));
+    index.join('\n') + '\n\nPanels\n' +
+    '412x915 (1280-... is desktop width 1280x800). PNG is what the phone shows (the whole page where the name ends in a long page), TXT is the screen text, the panel itself first.\n' +
+    'Plan: yen, pay 280,000, bank 412,000, two or three receipts, one goal (Trip), one pay-in-full card. A made-up server on this machine stands in for the cloud and for Claude.\n' +
+    P.index.join('\n') + '\n' + (P.missed.length ? P.missed.join('\n') + '\n' : '') + '\n' +
+    (errsAll.length ? 'PAGE ERRORS:\n' + errsAll.join('\n') : 'no page errors') + '\n');
+  console.log(`screen pack: ${index.length} screens and ${P.index.length} panels in ${OUT}` + (P.missed.length ? `, ${P.missed.length} panels not captured` : '') + (errsAll.length ? `, PAGE ERRORS ${errsAll.length}` : ', no page errors'));
   process.exit(errsAll.length ? 1 : 0);
 })();
