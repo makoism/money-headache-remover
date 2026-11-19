@@ -1043,7 +1043,9 @@ const SCENE = (() => {
     sk.width = W; sk.height = H; st.width = W; st.height = H; vl.width = W; vl.height = H; mood = pickMood(); T = TOD[mood]; document.documentElement.dataset.tod = mood;
     paint(); paintLights(); paintVeil(); draw();
   }
-  function loop() { clearTimeout(timer); if (still || document.hidden || !(cv || bot)) return; if (bot) drawBot(); else draw(); timer = setTimeout(loop, 166); }
+  /* a burrow with its own world (burrows.js, the rainy look) covers the whole forest: no drawing nobody can see. burrows.js calls wake() when it closes or changes look */
+  const covered = () => !!document.querySelector('#burrowView.has-bg:not([hidden])');
+  function loop() { clearTimeout(timer); if (still || document.hidden || !(cv || bot) || covered()) return; if (bot) drawBot(); else draw(); timer = setTimeout(loop, 166); }
   let rsT = 0;
   function start() {
     if (cv || bot || !on()) return;
@@ -1061,5 +1063,5 @@ const SCENE = (() => {
   document.addEventListener('visibilitychange', () => { if (!document.hidden && (cv || bot)) { if (pickMood() !== mood) (bot ? buildPhone() : build()); loop(); } });
   setInterval(() => { if ((cv || bot) && !document.hidden && pickMood() !== mood) (bot ? buildPhone() : build()); }, 60000);
   if (/[?&]scenetest\b/.test(location.search)) window.__scene = { squirrel: (c, x, y, up, side, ph, m, look) => squirrel(c, x, y, up, side, ph, m, T, look), dragon: (c, x, y, f, dir, night) => dragon(c, x, y, f, dir, night), get: () => ({ L, W, H, PX, mood }) };
-  return { progress() { }, flare() { }, look(m) { m = m || ''; if (m === look) return; look = m; if (cv) build(); else if (bot) buildPhone(); }, start, stop, sync: () => (on() ? (cv ? build() : bot ? buildPhone() : start()) : stop()), mood: () => mood, set(v) { if (v) delete S.ui.scene; else S.ui.scene = false; persist(); this.sync(); }, on };
+  return { progress() { }, flare() { }, wake: () => loop(), look(m) { m = m || ''; if (m === look) return; look = m; if (cv) build(); else if (bot) buildPhone(); }, start, stop, sync: () => (on() ? (cv ? build() : bot ? buildPhone() : start()) : stop()), mood: () => mood, set(v) { if (v) delete S.ui.scene; else S.ui.scene = false; persist(); this.sync(); }, on };
 })();
