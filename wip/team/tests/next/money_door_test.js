@@ -22,11 +22,9 @@ const TODAY = '2026-12-31', FIG = ['total', 'free', 'bills', 'saved', 'owed', 'w
 /* ---------- helpers ---------- */
 const must = (tag, r) => { rep.ok(!!r && r.ok !== false, `${tag}: refused ${J(r === false ? L.ledgerWhy() : r)}`); return r; };
 const led = (S, e) => must('setup ' + J(e), L.ledgerAdd(S, e));
-/* everything the ledger shows, plus the events. skip: the account a step made for a new "who". After an undo it stays, empty (gap G3),
-   so its own zero line is left out of the comparison; every figure must still be exactly as before */
-const snap = (S, skip) => { const p = L.placesOf(S);
-  if (skip) { delete p.accounts[skip]; for (const k in p.foreignOwed) if (p.foreignOwed[k] === 0) delete p.foreignOwed[k]; for (const k in p.foreign) if (p.foreign[k] === 0) delete p.foreign[k]; }
-  return J({ p, led: S.ledger }); };
+/* everything the ledger shows, plus the events and the accounts. An account a step made for a new "who" leaves with the undo of
+   that step and comes back with its redo (G3, closed), so the list of accounts is compared too, byte for byte */
+const snap = S => J({ p: L.placesOf(S), led: S.ledger, accts: S.accounts });
 /* the one rule and the door's own: Total from both sides, each card line, and Lent = the "owed to you" accounts */
 function rule(tag, S) {
   const pr = L.ledgerProof(S), f = D.doorFigures(S), p = L.placesOf(S);
@@ -158,15 +156,15 @@ function sweep(name, S) {
         else rep.ok(c(r.after.free) - c(handedBefore) === c(want.handed), `${tag}: handed out moved ${r.after.free - handedBefore}, the way says ${want.handed}`);
         rep.ok(r.events.length === plan.events.length && r.events.every(e => e.door === k.id), `${tag}: every event carries its kind`);
         rule(tag, S);
-        const made = r.made ? r.made.id : null, after = snap(S, made);
+        const made = r.made ? r.made.id : null, after = snap(S);
         rep.ok(!!D.doorUndo(S), `${tag}: undo refused`);
-        rep.ok(snap(S, made) === before, `${tag}: undo did not put everything back exactly`);
+        rep.ok(snap(S) === before, `${tag}: undo did not put everything back exactly`);
+        if (made) rep.ok(!S.accounts.some(a => a.id === made), `${tag}: undo left the account made for a new person`);
         rule(tag + ' after undo', S);
         rep.ok(!!D.doorRedo(S), `${tag}: redo refused`);
-        rep.ok(snap(S, made) === after, `${tag}: redo did not bring the step back exactly`);
-        rep.ok(!!D.doorUndo(S) && snap(S, made) === before, `${tag}: the second undo did not put everything back`);
-        /* test hygiene only: drop the empty account the step made and the undo history, so the next combination starts clean */
-        if (made) S.accounts.splice(S.accounts.findIndex(a => a.id === made), 1);
+        rep.ok(snap(S) === after, `${tag}: redo did not bring the step back exactly`);
+        rep.ok(!!D.doorUndo(S) && snap(S) === before, `${tag}: the second undo did not put everything back`);
+        /* test hygiene only: drop the undo history, so the next combination starts clean. No account is taken out by hand any more */
         S.undone.length = 0; S.ledgerNext = next;   /* the id counter moves on after an undo, as it should: ids are never used twice */
         rep.ok(J(S) === whole, `${tag}: the copy is not as it was before the step`);
       }
@@ -443,9 +441,33 @@ D.DOOR.forEach(k => {
     rep.ok(c(p.saved) === c(saved) && !('lent' in p.burrows), 'G2 placesOf: 390 lent is not in Saved and not among the burrows');
     rep.ok(c(p.lent) === 39000 && c(p.total) === c(p.waiting) + c(p.thisMonth) + c(p.saved) + c(p.lent), 'G2 placesOf: what is lent is a figure of its own, inside Total');
     rep.ok(c(f.lent) === c(p.lent) && c(f.saved) === c(p.saved) && J(f.burrows) === J(p.burrows) && c(f.lent) === c(p.accounts.lent_lea), 'G2 the door shows the ledger\'s own figures, and Lent is what Lea owes'); }
-  { const S = PICTURES.bea(), n = S.accounts.length;
-    D.doorApply(S, 'lent', { amount: 390, account: 'bpi', who: { name: 'Lea' }, date: '2026-12-05' }, TODAY); D.doorUndo(S);
-    gap('G3 the ledger can not take back an account: after undoing the first "Lent" to Lea her empty account stays', S.accounts.length === n); }
+  { const S = PICTURES.bea(), t = 'G3', LEA = { amount: 390, account: 'bpi', who: { name: 'Lea' }, date: '2026-12-05' };   /* G3, closed by the ledger core fourth pass: hard checks now */
+    const accts0 = J(S.accounts), led0 = J(S.ledger), f0 = J(D.doorFigures(S));
+    const r = D.doorApply(S, 'lent', LEA, TODAY), accts1 = J(S.accounts), led1 = J(S.ledger), f1 = J(D.doorFigures(S));
+    rep.ok(r.ok && !!r.made && r.made.id === 'lent_lea' && S.accounts.some(a => a.id === 'lent_lea') && accts1 !== accts0, t + ': lending to Lea, a new person, makes her account');
+    rep.ok(!!D.doorUndo(S), t + ': undo refused');
+    rep.ok(J(S.accounts) === accts0, t + ': after undoing the first "Lent" to Lea the accounts are as before, byte for byte (her empty account does not stay)');
+    rep.ok(J(S.ledger) === led0 && J(D.doorFigures(S)) === f0, t + ': undo puts the events and every figure back');
+    rule(t + ' undone', S);
+    /* saved and loaded with the step undone: the step and her account are still there to put back */
+    const R = JSON.parse(J(S)); rep.ok(L.ledgerClean(R).ok && R.undone.length === 1 && J(R.accounts) === accts0, t + ': saved and loaded, the undone step is kept');
+    rep.ok(!!D.doorRedo(R) && J(R.accounts) === accts1 && J(R.ledger) === led1 && J(D.doorFigures(R)) === f1, t + ': redo on the loaded copy brings Lea\'s account and the events back');
+    rep.ok(!!D.doorRedo(S) && J(S.accounts) === accts1 && J(S.ledger) === led1 && J(D.doorFigures(S)) === f1, t + ': redo brings Lea\'s account and the events back exactly');
+    rule(t + ' redone', S);
+    rep.ok(!!D.doorUndo(S) && J(S.accounts) === accts0 && J(S.ledger) === led0 && J(D.doorFigures(S)) === f0, t + ': undo again takes both out');
+    /* lend to Lea again after the undo: a new step. Nothing of the first try is lost, it is kept outside every sum */
+    const again = D.doorApply(S, 'lent', LEA, TODAY);
+    rep.ok(again.ok && J(D.doorFigures(S)) === f1 && S.undone.length === 0 && J(S.removed).includes('lent_lea'), t + ': lending again after the undo works, and the first try is kept in S.removed');
+    /* a second loan to the same person: her account stays while any event names it */
+    const two = D.doorApply(S, 'lent', { amount: 110, account: 'bpi', who: 'lent_lea', date: '2026-12-06' }, TODAY);
+    rep.ok(two.ok && !two.made, t + ': a second loan to Lea makes no account');
+    rep.ok(!!D.doorUndo(S, again.events[0].id) && S.accounts.some(a => a.id === 'lent_lea') && c(D.doorFigures(S).lent) === c(110), t + ': with the first loan undone by id, her account stays for the second (110 lent)');
+    rep.ok(!!D.doorUndo(S) && J(S.accounts) === accts0 && J(D.doorFigures(S)) === f0, t + ': with the second undone too, her account is gone and every figure is as at the start');
+    rep.ok(!!D.doorRedo(S) && !!D.doorRedo(S) && S.accounts.some(a => a.id === 'lent_lea') && c(D.doorFigures(S).lent) === c(500), t + ': two redos bring both loans back (500 lent)');
+    rule(t + ' end', S);
+    /* borrowed from somebody new: the same for a loan account */
+    const S2 = PICTURES.bea(), a0 = J(S2.accounts), b = D.doorApply(S2, 'borrowed', { amount: 1000, account: 'bpi', who: { name: 'Tita Mila' }, date: '2026-12-05' }, TODAY);
+    rep.ok(b.ok && !!b.made && !!D.doorUndo(S2) && J(S2.accounts) === a0, t + ': undoing "Borrowed" from a new person takes her loan account out too'); }
   { const S = PICTURES.mika();   /* her UnionBank card: cut-off the 17th, 12,480 typed on the 19th, then 2,600 spent on the 20th */
     D.doorApply(S, 'spent', { amount: 2600, account: 'ubcard', date: '2026-11-20' }, TODAY); const due = L.ledgerCardDue(S, 'ubcard', '2026-11-20');
     gap('G5 a card balance typed after the cut-off day counts as spent after it: due on the 7th shows ' + due.due + ' (should be 12,480, with 2,600 later)', c(due.due) === c(12480) && c(due.later) === c(2600)); }

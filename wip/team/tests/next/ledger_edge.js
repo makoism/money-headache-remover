@@ -380,4 +380,48 @@ const all = (tag, p, want) => { for (const k in want) eq(`${tag} ${k}`, k.includ
     const S2 = JSON.parse(J(S)); while (S2.ledger.length) L.ledgerUndo(S2); all(P.who + ' with everything undone', proof(P.who + ' undone', S2), { total: 0, owed: 0 });
   }
 }
+{ /* G3: an account made together with a step leaves with the undo of that step and comes back with its redo */
+  const t = 'G3', S = fresh('PHP', [BANK]); add('pay', S, { k: 'in', sub: 'pay', acct: 'bank', a: 9000, date: '2026-12-01' });
+  const LEA = { id: 'lea', name: 'Lea', type: 'owedToYou' }, lend = (a, d) => [{ k: 'transfer', acct: 'bank', acct2: 'lea', a, date: d }, { k: 'move', place: 'waiting', place2: 'lent', a, date: d }];
+  const s0 = J(S), accts0 = J(S.accounts), p0 = J(L.placesOf(S));
+  /* all or none */
+  refused(t + ' an event of the step is refused', S, 'amount-sign', () => L.ledgerAddMany(S, [{ k: 'transfer', acct: 'bank', acct2: 'lea', a: 0, date: '2026-12-02' }], undefined, { accounts: [LEA] }));
+  refused(t + ' the id of the new account is in use', S, 'acct-new', () => L.ledgerAddMany(S, lend(390, '2026-12-02'), undefined, { accounts: [{ id: 'bank', type: 'owedToYou' }] }));
+  refused(t + ' the second new account is not usable', S, 'acct-new', () => L.ledgerAddMany(S, lend(390, '2026-12-02'), undefined, { accounts: [LEA, { id: 'x y', type: 'loan' }] }));
+  refused(t + ' accounts is not a list', S, 'acct-new', () => L.ledgerAddMany(S, lend(390, '2026-12-02'), undefined, { accounts: LEA }));
+  const out = L.ledgerAddMany(S, lend(390, '2026-12-02'), undefined, { accounts: [LEA] }) || [{}];
+  rep.ok(out.length === 2 && S.accounts.length === 2 && S.accounts[1].id === 'lea', t + ': the account and the events are recorded as one step');
+  const accts1 = J(S.accounts), led1 = J(S.ledger); all(t + ' lent', proof(t + ' lent', S), { total: 9000, lent: 390, waiting: 8610, 'accounts.lea': 390 });
+  rep.ok(!!L.ledgerUndo(S) && J(S.accounts) === accts0 && J(L.placesOf(S)) === p0, t + ': undo takes the account out with the events; accounts and figures are as before');
+  proof(t + ' undone', S);
+  /* THE TRAP: saved and loaded with the step undone. Its events name an account that is not in S.accounts any more; the step must stay */
+  const R = JSON.parse(J(S)); rep.ok(L.ledgerClean(R).ok && R.undone.length === 1 && !R.ledgerBad, t + ': a loaded copy keeps the undone step whose account left with it');
+  rep.ok(!!L.ledgerRedo(R) && J(R.accounts) === accts1 && J(R.ledger) === led1, t + ': redo on the loaded copy puts the account and the events back');
+  rep.ok(!!L.ledgerRedo(S) && J(S.accounts) === accts1 && J(S.ledger) === led1, t + ': redo puts the account back where it was, then the events'); proof(t + ' redone', S);
+  /* a later event names the account: it stays until that one is undone too */
+  const more = L.ledgerAddMany(S, lend(110, '2026-12-03')) || [{}];
+  rep.ok(!!L.ledgerUndo(S, out[0].id) && S.accounts.some(a => a.id === 'lea'), t + ': the first loan undone by id, the account stays for the second'); all(t + ' one left', proof(t + ' one left', S), { lent: 110, 'accounts.lea': 110 });
+  rep.ok(!!L.ledgerUndo(S, more[0].id) && J(S.accounts) === accts0 && J(L.placesOf(S)) === p0, t + ': the second undone, the account leaves'); proof(t + ' none left', S);
+  const R2 = JSON.parse(J(S)); rep.ok(L.ledgerClean(R2).ok && R2.undone.length === 2, t + ': a loaded copy keeps both undone steps');
+  rep.ok(!!L.ledgerRedo(R2) && !!L.ledgerRedo(R2) && c(L.placesOf(R2).lent) === c(500), t + ': both redone on the loaded copy');
+  rep.ok(!!L.ledgerRedo(S) && !!L.ledgerRedo(S), t + ': both redone'); all(t + ' both back', proof(t + ' both back', S), { lent: 500, 'accounts.lea': 500, total: 9000 });
+  /* a check is an event too: an account somebody checked is not taken out */
+  L.ledgerUndo(S, more[0].id); rep.ok(!!L.ledgerCheck(S, 'lea', 390, '2026-12-04'), t + ': check Lea');
+  rep.ok(!!L.ledgerUndo(S, out[0].id) && S.accounts.some(a => a.id === 'lea'), t + ': an account with a check stays');
+  /* redo when the id was taken in the meantime: refused, nothing changed, the undone step is kept */
+  const T = fresh('PHP', [BANK]); add('pay', T, { k: 'in', sub: 'pay', acct: 'bank', a: 9000, date: '2026-12-01' });
+  L.ledgerAddMany(T, lend(390, '2026-12-02'), undefined, { accounts: [LEA] }); L.ledgerUndo(T);
+  rep.ok(!!L.ledgerAddAccount(T, { id: 'lea', name: 'Another Lea', type: 'loan' }), t + ': the id is free after the undo');
+  refused(t + ' redo when the id is in use again', T, 'acct-new', () => L.ledgerRedo(T));
+  /* a new event ends redo: the account that left is kept with its events in S.removed, outside every sum */
+  add('new', T, { k: 'spend', acct: 'bank', a: 100, place: 'waiting', date: '2026-12-03' });
+  rep.ok(T.undone.length === 0 && T.removed.some(q => q && q.what === 'account' && q.it && q.it.id === 'lea' && q.it.name === 'Lea') && T.removed.filter(q => q && q.k).length === 2, t + ': after a new event the undone account and its events are kept in S.removed');
+  proof(t + ' removed', T); const T2 = JSON.parse(J(T)); rep.ok(L.ledgerClean(T2).ok && J(L.placesOf(T2)) === J(L.placesOf(T)) && J(T2.removed) === J(T.removed), t + ': saved and loaded, S.removed is kept');
+  /* an account added on its own (not with a step) is never taken out by undo */
+  const U = fresh('PHP', [BANK]); add('pay', U, { k: 'in', sub: 'pay', acct: 'bank', a: 9000, date: '2026-12-01' }); L.ledgerAddAccount(U, LEA);
+  L.ledgerAddMany(U, lend(390, '2026-12-02')); L.ledgerUndo(U); rep.ok(U.accounts.some(a => a.id === 'lea'), t + ': an account added on its own stays after undo');
+  /* an undone step in a saved copy that names an account nobody knows is still not readable: it is set aside, not lost */
+  const V = JSON.parse(s0); V.undone = [{ items: [{ e: { id: 77, k: 'spend', acct: 'ghost', c: 100, place: 'waiting', date: '2026-12-02' }, at: 1 }] }];
+  rep.ok(L.ledgerClean(V).ok && V.undone.length === 0 && Array.isArray(V.ledgerBad) && V.ledgerBad.some(b => b.what === 'undone'), t + ': an unreadable undone step moves to S.ledgerBad, kept');
+}
 rep.end();
