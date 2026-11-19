@@ -155,13 +155,13 @@ const BUR = (() => {
     const before = Math.min(1, r.saved / r.target); let moved = 0;
     try { moved = ACT.sweep(nowYm(), r.id, v); } catch (e) { moved = 0; }
     if (!(moved > 0)) { const m = pop.querySelector('.bv-msg'); if (m) m.textContent = 'That could not be added.'; return; }
-    try { render(); } catch (e) { /* the page behind redraws on its own */ }
+    /* no render() here: the save inside ACT.sweep already redrew the page behind (ACT.commit, restructure, render); a second one doubled the tap's long task on a slow phone */
     const r2 = rows().find(x => x.id === r.id) || r, to = Math.min(1, r2.saved / r2.target), n = Math.max(2, Math.min(5, Math.round(1 + (to - before) * 10)));
     pop.innerHTML = `<h2>${esc(r.name)}</h2><p class="bv-n"><b>+${fmt(moved)}</b></p><p class="bv-s">Going in.</p>`;
     if (reduced()) { fill(); return; }
     anim = { from: before, to, t0: performance.now(), n, shown: before, landed: 0, moved, full: to >= 1, id: r.id };
   }
-  function undoAdd() { try { ACT.undo(); render(); } catch (e) { /* nothing to undo */ } fill(); }
+  function undoAdd() { try { ACT.undo(); } catch (e) { /* nothing to undo */ } fill(); }   /* ACT.undo saves and redraws the page itself */
   /* ---------- the stage: sizes, geometry, the loop ---------- */
   function build() {
     el = document.createElement('section'); el.id = 'burrowView'; el.setAttribute('aria-label', 'Burrow');
