@@ -48,11 +48,11 @@ const relook=async p=>{await L.tab(p,'tab-month');await L.tab(p,'tab-home');};
   await p.evaluate(()=>{const S=__t.S;S.ui.done={pay:true,bills:true,goals:true,receipts:true};S.ui.sampleHidden=true;S.receipts=[];__t.persist();__t.restructure();});
   await addRc(p,[['2026-11-03',40.25],['2026-11-09',47.25]]);await relook(p);
   const proof=()=>p.evaluate(()=>{const e=document.querySelector('.mp-proof');return e?e.innerText.replace(/\s+/g,' '):'(none)';});
-  const p0=await proof();ck('[later] before answering, the proof line says to answer the question on Home',/\$212\.50 of November's free to spend is left out until you answer the question on Home/.test(p0),p0);
+  const p0=await proof();ck('[later] before answering, the proof line says to answer the question on Home',/\$212\.50 of Free to spend is left out until you answer the question on Home/.test(p0),p0);
   await p.evaluate(()=>document.querySelector('[data-sweephide]').click());await w(600);
   const c=await card(p),p1=await proof();
-  ck('[later] after Decide later, no month-end question shows',!/not logged as spent/.test(c),c);
-  ck('[later] and the proof line says when it will be asked again, not "answer on Home"',/You chose Decide later, so Home asks again the next time you open the app/.test(p1)&&!/answer the question on Home/.test(p1),p1);
+  ck('[later] after Decide later, no month-end question shows',!/isn't logged as spent/.test(c),c);
+  ck('[later] and the proof line says when it will be asked again, not "answer on Home"',/left out until you answer and Home asks again next time/.test(p1)&&!/answer the question on Home/.test(p1),p1);
   ck('[later] no page errors',errs.length===0,errs.join(' | '));await b.close(); }
  /* ---- 2: spending past the plan uses the pay with no place ---- */
  for(const [spent,unpl] of [[0,820],[500,620],[1500,0]]){

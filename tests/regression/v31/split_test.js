@@ -16,7 +16,7 @@ const sum = a => a.reduce((x, y) => x + y, 0);
   const pool = () => p.$eval('#jarPool', e => ({ has: e.classList.contains('has'), t: e.textContent.replace(/\s+/g, ' ').trim() }));
   const slide = (i, v) => p.evaluate((i, v) => { const r = document.querySelectorAll('#jarSplit input[type=range]')[i]; r.value = v; r.dispatchEvent(new Event('input', { bubbles: true })); }, i, v);
   const v0 = await vals(); ok('starts with every share given out', sum(v0) === total && !(await pool()).has, { v0, pool: await pool() });
-  ok('pool says all given out', /All of it is given out/.test((await pool()).t));
+  ok('pool says all given out', /All \d+% of your pay here is given out/.test((await pool()).t));
   // lower one: only it changes, the difference becomes unassigned
   await slide(1, v0[1] - 5); await w(150); let v = await vals();
   ok('lowering one share changes only that share', v[1] === v0[1] - 5 && v.every((x, k) => k === 1 || x === v0[k]), { v0, v });

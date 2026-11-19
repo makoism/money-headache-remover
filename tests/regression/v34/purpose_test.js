@@ -58,7 +58,7 @@ const tab = (p, t) => p.evaluate(t => (document.querySelector(`[data-tab="${t}"]
   // ---- Month legend and All months marks
   await tab(p, 'month'); await w(400);
   const legend = await txt(p, '#legend');
-  ok(/Goals Japan trip/.test(legend) /* 38.29 words */, 'the Month legend names the goal under its jar: ' + legend.slice(0, 90));
+  ok(/Goal burrows Japan trip/.test(legend) /* 38.31 words */, 'the Month legend names the goal under its jar: ' + legend.slice(0, 90));
   await tab(p, 'months'); await w(400);
   const marks = await p.$$eval('#monthTable .mt-g', els => els.map(e => e.textContent.trim()));
   ok(marks.length === 1 && /Japan trip full/.test(marks[0]), 'All months marks the month the goal fills: ' + JSON.stringify(marks));
