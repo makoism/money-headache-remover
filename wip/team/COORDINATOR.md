@@ -24,6 +24,11 @@ He has not written in the coordinator chat since handoff 3. He wrote in MAIN 6's
 ### Timers
 None of coordinator 5's remain. Set your own.
 
+### Coordinator 6 took over (13:00 UTC)
+- Coordinator 6 is session_01BFpKEZRNfExnGehHucxHPi.
+- MAIN 7 stopped at 0b4919e (13:55 UTC, about 125k tokens): check.sh full ALL GOOD, candidate cut at 11c1e7e (VERIFY OK, 66 screens, 57 panels), A-015b space fix, drawNow in act_keep.known, golden baseline 3831x.json. Do not message it.
+- MAIN 8 is session_01BFpKEWndkfnpHBaNQqMhEE, the only session on app files: ONE QC run, small fixes, private preview, screenshots, STEP8_COMPARE summary. Told to hand off at about 120k.
+
 ## 2026-11-19, handoff 4 (coordinator 4 to coordinator 5) READ THIS FIRST
 
 Coordinator 4 (session_01BFpKEXvqtaKqkyg3aNk3hU) was at 189k tokens at 10:25 UTC and handed off. A coordinator starts with a large fixed load, so the 150k mark comes after about 20 short turns: read notifications, act, answer in a few lines, never paste reports.
