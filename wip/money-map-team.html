@@ -15267,13 +15267,15 @@ async function vaultApply(k, srv, asked) {
   if (!okBackup(d)) throw new Error('bad');
   /* the numbers on this device are kept as a local copy, with Undo, before the cloud copy replaces them (LAUNCH_CHECKLIST E1): the device
      clock decides "newer", so the copy loaded can be the wrong one */
+  const wasEmpty = pristine();   /* a phone with no numbers of its own has nothing to go back to: no Undo, so one tap can never send sample numbers over the only cloud copy (QC10 north-star F2) */
   const old = S, oldSnap = snapNoCopy(); S = upgradeLegacy(normalize(d)); S.ui = Object.assign({}, S.ui, { sampleHidden: true }); if (!Array.isArray(d.receipts)) S.receipts = old.receipts;
   S.rev = srv.rev; vault.rev = srv.rev; vaultNote = null; vaultCaughtUp();
-  keepCopy(oldSnap, 'The cloud copy replaced the numbers on this device.');
+  if (!wasEmpty) keepCopy(oldSnap, 'The cloud copy replaced the numbers on this device.');
   editRow = null; editGoal = null; editRc = null; itemsSig = '';
   if (tourIsOpen) closeTour(false); else { flush(); restructure(); }
   S.ui.bk = Date.now(); delete S.ui.bkLater;
-  if (window.offerUndoG) window.offerUndoG(oldSnap, `Cloud copy loaded. Your numbers from before are kept and you can undo for ${KEEP_DAYS} days.`);
+  if (wasEmpty) { try { cheer('Cloud copy loaded.'); } catch (e) { } }
+  else if (window.offerUndoG) window.offerUndoG(oldSnap, `Cloud copy loaded. The numbers this phone had are kept for ${KEEP_DAYS} days. Undo puts them back here and in the cloud copy.`);
 }
 async function vaultLoadNewer() {
   if (!vaultNote || vaultNote.kind !== 'newer') return;

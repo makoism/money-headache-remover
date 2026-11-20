@@ -61,6 +61,22 @@ const bar = p => p.evaluate(() => { const b = document.getElementById('undoBar')
   const r3 = await receipts(B2.p);
   ck('B2: Undo puts back the numbers from before the load', /Made-up rice/.test(r3) && !/Made-up noodles/.test(r3), r3);
 
+  /* ---------- phone E, 412 wide, no numbers of its own (QC10 north-star F2): the load offers no Undo, so one tap can never put the
+     sample numbers back and send them over the only cloud copy ---------- */
+  const E = await C.profile(srv.url);
+  ck('E: a fresh phone with no numbers of its own', await E.p.evaluate(() => !(__t.S.receipts || []).length));
+  await L.settings(E.p); await until(() => seen(E.p, '#vaultHave')); await tap(E.p, '#vaultHave');
+  await E.p.type('#vaultIn', code); await tap(E.p, '#vaultUse'); await until(() => seen(E.p, '#vaultLoad')); await tap(E.p, '#vaultLoad');
+  /* the cloud copy holds B2's numbers by now (B2 tapped Undo, which sends them up): rice, or noodles if that was not sent yet */
+  await until(async () => /Made-up (noodles|rice)/.test(await receipts(E.p)));
+  ck('E: the load brought the cloud copy', /Made-up (noodles|rice)/.test(await receipts(E.p)));
+  const e1 = await bar(E.p);
+  ck('E: no Undo offered after the load (there was nothing of its own to go back to)', !e1.shown, e1);
+  ck('E: it does not say numbers from before are kept', !/numbers from before/.test(await E.p.evaluate(() => document.body.innerText)));
+  await w(3000); ck('E: a few seconds later the loaded numbers are still there', /Made-up (noodles|rice)/.test(await receipts(E.p)));
+  /* a phone that had numbers: Undo says plainly that it also goes to the cloud copy */
+  ck('B2 earlier: the bar on a phone with its own numbers says Undo also changes the cloud copy', /cloud copy/.test(b3.text || '') && /Undo/.test(b3.text || ''), b3.text);
+
   /* ---------- phone C, 412 wide: the code typed on the first-open screen ---------- */
   const D = await C.profile(srv.url, { tour: true });
   if (await until(() => seen(D.p, '#tourRestoreBtn'), 6000)) {
@@ -69,8 +85,8 @@ const bar = p => p.evaluate(() => { const b = document.getElementById('undoBar')
     ck('C: the whole typed code shows in its box on the first-open screen (' + g.val + ')', g.ok, g);
   } else ck('C: the first-open screen offers "enter your recovery code"', false);
 
-  const errs = A.errs.concat(B.errs, B2.errs, D.errs);
+  const errs = A.errs.concat(B.errs, B2.errs, D.errs, E.errs);
   ck('no page errors', errs.length === 0, errs.slice(0, 3));
-  await A.b.close(); await B.b.close(); await B2.b.close(); await D.b.close(); srv.close();
+  await A.b.close(); await B.b.close(); await B2.b.close(); await D.b.close(); await E.b.close(); srv.close();
   console.log(bad ? `qc10_cloud_loaded: ${bad} FAIL` : 'qc10_cloud_loaded: ALL PASS'); process.exit(bad ? 1 : 0);
 })().catch(e => { console.log('crashed: ' + e.stack); console.log('qc10_cloud_loaded: FAIL'); process.exit(1); });
