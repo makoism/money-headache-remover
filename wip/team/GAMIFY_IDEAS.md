@@ -1,6 +1,6 @@
 # Rewards and keepsakes for the 3D world: ideas (draft 2 for Mako, 2026-11-20)
 
-Status: ideas only, nothing built or queued. The 3D world itself waits for Mako (WORLD_3D.md). Draft 1 went to seven reviewers (north star, beginner, money accuracy, data safety, art director, voice, efficiency); this draft takes in their notes. Their reports were in /tmp/qc/<role>/IDEAS_REPORT.md (not kept in the repo).
+Status: ideas only, nothing built or queued. The 3D world itself waits for Mako (WORLD_3D.md). Draft 1 went to seven reviewers, all seven answered (north star, beginner, money accuracy, data safety, art director, voice, efficiency); this draft takes in their notes. Their reports were in /tmp/qc/<role>/IDEAS_REPORT.md (not kept in the repo).
 
 ## The idea in one line
 
@@ -62,7 +62,19 @@ Scarf, lantern, small backpack, rug, plants, door colour, bench, lamp post, weat
 
 ## Money accuracy
 
-(The money accuracy reviewer's exact definition of weeks covered goes here.)
+**Weeks covered, exactly:** W = whole weeks of C / N, worked out once in model.js in whole cents (whole yen).
+- C = the Emergency fund at the end of the month Home shows (after any borrowing) plus that month's bank at month end above the safety minimum; never below 0.
+- N = a normal week: the month's planned Bills and basics plus minimum card and loan payments, times 12, divided by 52. Leaves out one-time costs, Free to spend, other goals, Investing, Education, Giving.
+- Pay is not used, so "no pay" still works. No bills yet: no number and "Add your bills to see weeks covered", never 0, Infinity or NaN.
+- It says it is planned, with the date the bank was last checked ("bank checked 18 Nov", or "bank not checked yet").
+
+**Other money rules for rewards:**
+- Check your bank counts for typing a figure dated today, once a week, the same for any value, never compared with the plan (so nobody is paid to copy the app's figure).
+- The beaver comes only when a goal was at 100 percent in a month already over, once per goal, never in a month its target was lowered.
+- One check-in per week counts, the same on plan or past it; editing or deleting a receipt never changes it, and a backdated receipt never lights a past lantern.
+- A leaf keeps the colour its month had on the day it was closed, using Home's own words: over, tight, on plan.
+- Pictures read the exact fields Home shows. A bank below zero is an empty pile next to Home's amber line, never a negative or hidden pile.
+- Weeks run Monday to Sunday on the phone's clock and count from the setup day, so a new person reads "1 of 1", never "1 of 13".
 
 ## Order, cheapest first (efficiency review)
 
