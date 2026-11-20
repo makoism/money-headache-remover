@@ -5734,7 +5734,7 @@ const GOAL_KINDS = [
   { k: 'moving', id: 'moving', name: 'Home or move', slot: 4, pick: 'A home or a move', hint: 'Deposit, movers, furniture', title: 'Home or move', cost: 'Deposit, movers, furniture.' },
   { k: 'buy', id: 'buy', name: 'Big purchase', slot: 1, pick: 'A big purchase', hint: 'Laptop, car, wedding', title: 'Big purchase', cost: 'The price, or your best guess.' },
   { k: 'car', id: 'car', name: 'Yearly cost', slot: 6, pick: 'A yearly cost', hint: 'Insurance, taxes, holidays', title: 'Yearly cost', cost: 'Full amount for the year, not per month.' },
-  { k: 'debt', id: 'debt', name: 'Pay off debt', slot: 3, debt: true, pick: 'Pay off a debt', hint: 'A balance with no interest', title: 'Pay off debt', cost: 'What you still owe in total. For a card or loan with interest, use Cards and loans on the Goals tab instead.' },
+  { k: 'debt', id: 'debt', name: 'Pay off debt', slot: 3, debt: true, pick: 'Pay off a debt', hint: 'A balance with no interest', title: 'Pay off debt', cost: 'What you still owe in total. For a card or loan with interest, use Add card or loan under Cards and loans on Plan, Burrows instead.' },
   { k: 'other', id: 'other', name: 'Something else', slot: 2, pick: 'Something else', hint: 'Anything with a price', title: 'Goal', cost: '' },
 ];
 const STEP_TOOLPICK = { id: 'goals-pick', part: PART.goals, setup: true, pick: true, skipIf: () => quickSetup(), title: 'Burrows', art: 'sprout',
@@ -14807,7 +14807,7 @@ const COACH = {
     ['#hStatus', 'Where you stand', 'Read this first. On plan means this month fits your pay and your balance stays above your minimum.'],
     ['#hHero', 'Main goal', 'Your reason in your own words, with what this month adds and how many months are left. Tap Forecast for the graph.'],
     ['#hSpend', 'Free to spend', 'The money you use this month. The big number is Free to spend and it\'s yours to spend on whatever you want. Under it you can see if your Bills and basics are covered and what\'s left for Education and Giving, and whatever\'s left at the end of the month can go into a goal.'],
-    ['#hQuick', 'Log spend', 'Enter an amount, pick a category and tap Log. Do it as you spend or once a week.'],
+    ['#hQuick', 'Log spend', 'Enter an amount, pick a category and tap Log spend. Do it as you spend or once a week.'],
     ['#hGoals', 'Burrows', 'Tap a burrow to open it, then you can edit it or make it your main burrow.'],
     ['#hBuckets', 'Investing', 'Money you invest and don\'t spend. Goals and debt live in the burrows at the top.'],
     ['#askBtn', 'Ask', 'Ask any money question here. It knows your plan and can make changes once you approve them.'],
@@ -16117,7 +16117,7 @@ function renderNext() {
     if (!d.pay) step = ['Next: enter pay', 'The plan starts from monthly pay.', 'Enter pay', 'data-open="a"'];
     else if (!d.bills) step = ['Next: check bills', 'Set each bill to the real amount.', 'Open bills', 'data-open="nec"'];
     else if (!d.goals) step = ['Next: add a burrow', 'Pick something to save for.', 'Add a burrow', 'data-gw'];
-    else if (!step && !(S.receipts || []).length && !sweepOffer() && !SWEPT) step = ['Next: log spend', 'Enter an amount in Log spend, then tap Log.', 'Log spend', 'data-focus="hAmt"'];
+    else if (!step && !(S.receipts || []).length && !sweepOffer() && !SWEPT) step = ['Next: log spend', 'Enter an amount, then tap Log spend.', 'Log spend', 'data-focus="hAmt"'];
   }
   /* a month to close comes first (it is timely); then, for typed numbers, the statements that make them exact */
   /* a sweep just made: say so, with Undo, until the next page load */
@@ -17413,7 +17413,7 @@ function wire() {
     if (e.target.closest('[data-gdone]')) { editGoal = null; buildGoals(); render(); }
     else if (e.target.closest('[data-gnodate]')) { updateGoal(S, id, { due: '' }); markDone('goals', true); persist(); buildGoals(); render(); }
     else if (e.target.closest('[data-gauto]')) { useSuggested(S, id); sfx('next'); persist(); buildGoals(); render(); }
-    else { const gd = e.target.closest('[data-gdel]'); if (gd) { const g0 = goalById(S, id), r0 = HV && HV.goals ? HV.goals.find(r => r.id === id) : null, nm = g0 ? g0.name : 'This goal', what = nm + (r0 && r0.saved > 0 ? ` and its ${fmt2(r0.saved)} saved` : '');   /* names what goes, keeps a copy (38.31 data safety round 3) */
+    else { const gd = e.target.closest('[data-gdel]'); if (gd) { const g0 = goalById(S, id), r0 = HV && HV.goals ? HV.goals.find(r => r.id === id) : null, nm = g0 ? g0.name : 'This goal', mg0 = HV && C.byYm[HV.ym] && C.byYm[HV.ym].g[id], plan0 = mg0 ? mg0.actual : 0, what = nm + (r0 && r0.savedNow > 0 ? `, its ${fmt2(r0.savedNow)} saved` : '') + (plan0 > 0 ? `${r0 && r0.savedNow > 0 ? ' and' : ' and its'} ${fmt2(plan0)} planned this month` : '');   /* saved now and planned apart (QC round 4 data safety 3) */   /* names what goes, keeps a copy (38.31 data safety round 3) */
       confirmClick(gd, `Tap again: removes ${what}. You can undo for ${KEEP_DAYS} days.`, () => { const sn = snapNoCopy(); removeGoal(S, id); keepCopy(sn, `${nm} was removed.`); offerUndo(sn, `${nm} removed. You can undo for ${KEEP_DAYS} days.`); markDone('goals', true); if (editGoal === id) editGoal = null; persist(); restructure(); }); } }
   });
   /* every keystroke saves; the page redraws on change so the cursor stays put while typing */

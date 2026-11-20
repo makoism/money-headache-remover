@@ -106,7 +106,7 @@ function wire() {
     if (e.target.closest('[data-gdone]')) { editGoal = null; buildGoals(); render(); }
     else if (e.target.closest('[data-gnodate]')) { updateGoal(S, id, { due: '' }); markDone('goals', true); persist(); buildGoals(); render(); }
     else if (e.target.closest('[data-gauto]')) { useSuggested(S, id); sfx('next'); persist(); buildGoals(); render(); }
-    else { const gd = e.target.closest('[data-gdel]'); if (gd) { const g0 = goalById(S, id), r0 = HV && HV.goals ? HV.goals.find(r => r.id === id) : null, nm = g0 ? g0.name : 'This goal', what = nm + (r0 && r0.saved > 0 ? ` and its ${fmt2(r0.saved)} saved` : '');   /* names what goes, keeps a copy (38.31 data safety round 3) */
+    else { const gd = e.target.closest('[data-gdel]'); if (gd) { const g0 = goalById(S, id), r0 = HV && HV.goals ? HV.goals.find(r => r.id === id) : null, nm = g0 ? g0.name : 'This goal', mg0 = HV && C.byYm[HV.ym] && C.byYm[HV.ym].g[id], plan0 = mg0 ? mg0.actual : 0, what = nm + (r0 && r0.savedNow > 0 ? `, its ${fmt2(r0.savedNow)} saved` : '') + (plan0 > 0 ? `${r0 && r0.savedNow > 0 ? ' and' : ' and its'} ${fmt2(plan0)} planned this month` : '');   /* saved now and planned apart (QC round 4 data safety 3) */   /* names what goes, keeps a copy (38.31 data safety round 3) */
       confirmClick(gd, `Tap again: removes ${what}. You can undo for ${KEEP_DAYS} days.`, () => { const sn = snapNoCopy(); removeGoal(S, id); keepCopy(sn, `${nm} was removed.`); offerUndo(sn, `${nm} removed. You can undo for ${KEEP_DAYS} days.`); markDone('goals', true); if (editGoal === id) editGoal = null; persist(); restructure(); }); } }
   });
   /* every keystroke saves; the page redraws on change so the cursor stays put while typing */
