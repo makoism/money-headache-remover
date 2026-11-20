@@ -478,6 +478,7 @@ const niceStepFor = x => (x >= 20000 ? 1000 : x >= 3000 ? 100 : 10);
 /* what to do when a month is short */
 function fixes(S, m) {
   const out = []; const floor = cfg(S, 'minBank'), play = m.jar.play;
+  if (m.a !== undefined && !((m.a || 0) + (m.b || 0) + (m.side || 0) > 0)) return out;   /* no pay entered: the fix is entering the pay, which the line above already asks for; a borrow here would empty the fund for a blank box (QC10 round 3 numbers should-fix 3) */
   const gap = Math.max(0, floor - m.bankEnd);
   /* lowering the plan can only fix the part of the gap the plan causes; money already spent past the plan stays spent */
   /* earlier months' spending past plan is already in this month's starting bank and cannot be undone either: only this month's own past-plan

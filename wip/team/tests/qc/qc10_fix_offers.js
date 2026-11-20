@@ -17,4 +17,8 @@ const mk = (play, spent) => { const S = M.presetState('¥'); M.setVal(S, 'envelo
 { const S = mk(120000, 40000), m = M.calcAll(S).byYm[NOV], f = M.fixes(S, m), trim = f.find(x => x.id === 'trim');
   if (trim) { M.setVal(S, 'envelope', NOV, trim.amount, 'once'); const m2 = M.calcAll(S).byYm[NOV]; ck('some spent: a trim that is offered really brings the bank to the minimum', Math.abs(m2.bankEnd - M.cfg(S, 'minBank')) < 0.01 && trim.amount >= 40000, { trim, end: m2.bankEnd }); }
   else ck('some spent: no trim offered only when none can fix it', true); }
+/* QC10 round 3 numbers should-fix 3: with no pay entered, Plan offered "Borrow 131,385 from emergency fund"; the fix is to enter the pay */
+{ const S = M.presetState('¥'); M.setVal(S, 'a', NOV, 0, 'once'); const m = M.calcAll(S).byYm[NOV], f = M.fixes(S, m);
+  ck('no pay entered: the month is short', m.bankEnd < M.cfg(S, 'minBank'), m.bankEnd);
+  ck('no pay entered: no borrow or trim is offered (enter the pay first)', f.length === 0, f); }
 console.log(bad ? `qc10_fix_offers: ${bad} FAIL` : 'qc10_fix_offers: ALL PASS'); process.exit(bad ? 1 : 0);
