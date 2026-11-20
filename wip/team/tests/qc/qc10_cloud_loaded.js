@@ -12,7 +12,8 @@ const fits = (p, sel) => p.evaluate(sel => { const e = document.querySelector(se
 const bar = p => p.evaluate(() => { const b = document.getElementById('undoBar'), t = document.getElementById('undoTxt'), g = document.getElementById('undoGo');
   if (!b || b.hidden || !b.getClientRects().length) return { shown: false };
   const r = b.getBoundingClientRect(), gr = g.getBoundingClientRect(), tr = t.getBoundingClientRect();
-  return { shown: true, text: t.innerText, inside: r.left >= 0 && r.right <= innerWidth, undoInside: gr.width > 0 && gr.left >= 0 && gr.right <= innerWidth && gr.bottom <= innerHeight,
+  const bg = getComputedStyle(b).backgroundColor, al = /rgba/.test(bg) ? +bg.replace(/.*,\s*([\d.]+)\)$/, '$1') : 1, ch = document.getElementById('cheer');
+  return { shown: true, solid: al === 1, bg, cheerOn: !!(ch && ch.classList.contains('on') && ch.textContent.trim()), text: t.innerText, inside: r.left >= 0 && r.right <= innerWidth, undoInside: gr.width > 0 && gr.left >= 0 && gr.right <= innerWidth && gr.bottom <= innerHeight,
     textInside: tr.left >= 0 && tr.right <= innerWidth && t.scrollWidth <= t.clientWidth + 1, r: [r.left, r.right], g: [gr.left, gr.right], vw: innerWidth }; });
 (async () => {
   const srv = await C.server();
@@ -41,6 +42,8 @@ const bar = p => p.evaluate(() => { const b = document.getElementById('undoBar')
   ck('B: "Cloud copy loaded" shows with Undo', b1.shown && /^Cloud copy loaded/.test(b1.text), b1);
   ck('B: the message stays inside the screen, 412 wide', b1.shown && b1.inside && b1.textInside, b1);
   ck('B: the Undo button is inside the screen', b1.shown && b1.undoInside, b1);
+  ck('B: the bar is solid, so page text never shows through it (QC10 north-star F5)', b1.shown && b1.solid, b1.bg);
+  ck('B: one message at a time: no other toast under the bar', b1.shown && !b1.cheerOn, b1);
   /* another tab: the message is about the load just made, not about the tab opened next */
   await B.p.evaluate(() => { const c = document.getElementById('setClose') || document.querySelector('#settings [data-close], #gearClose'); c && c.click(); }); await w(400);
   await L.tab(B.p, 'tab-receipts'); await w(400);
