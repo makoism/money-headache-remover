@@ -76,6 +76,8 @@ const bar = p => p.evaluate(() => { const b = document.getElementById('undoBar')
   const e1 = await bar(E.p);
   ck('E: no Undo offered after the load (there was nothing of its own to go back to)', !e1.shown, e1);
   ck('E: it does not say numbers from before are kept', !/numbers from before/.test(await E.p.evaluate(() => document.body.innerText)));
+  const bw = await E.p.evaluate(() => { if (typeof paintBk === 'function') paintBk(); const e = document.getElementById('bkWhen'); return e ? e.textContent : ''; });
+  ck('E: Settings does not say a backup file was saved today (none was; QC10 north-star F4)', /^Last backup/.test(bw) && !/today/.test(bw), bw);
   await w(3000); ck('E: a few seconds later the loaded numbers are still there', /Made-up (noodles|rice)/.test(await receipts(E.p)));
   /* a phone that had numbers: Undo says plainly that it also goes to the cloud copy */
   ck('B2 earlier: the bar on a phone with its own numbers says Undo also changes the cloud copy', /cloud copy/.test(b3.text || '') && /Undo/.test(b3.text || ''), b3.text);
