@@ -1,6 +1,7 @@
 /* An independent recomputation of the whole money model, written from the plain rules and NOT from the app's code.
-   It reads only the raw saved plan (lines, goals, steps, once, items, cfg) and works in whole numbers.
-   Then it compares everything the app's calcAll / goalInfo / jarsOf / receiptStats report. */
+   It reads only the raw saved plan (lines, goals, steps, once, items, cfg, debts, receipts) and works in whole numbers (receipts in whole cents).
+   Then it compares everything the app's calcAll / goalInfo / jarsOf / receiptStats report, including spending past plan (oracleOverspend).
+   Not recounted here yet: the piles Home draws, and the month-end answers (what happens to Free to spend left over in a past month). */
 const vm = require('vm'), fs = require('fs');
 const ctx = vm.createContext({ console, Math, JSON, Date });
 vm.runInContext(fs.readFileSync(process.env.MODEL || '/home/claude/work/team/model.js', 'utf8') + '\n;this.__M={debtRows,limitsOf,lookBack,addExtraMoney,debtsOf,presetState,calcAll,goalInfo,jarsOf,statusOf,receiptStats,addReceipt,setVal,addLine,addGoal,updateGoal,updateLine,emergencyGoal,MONTHS,START,SAVE_FROM,SAMPLES,SPAN,JARS,cfg,roundUnit,round2,lineByKey,wholePercents,cleanSteps,cleanOnce,cleanItems,cleanCfg,fixes,trimPlay,viewOf,sheetCsv,sheetRows,purposeOf,pickMain,kindOfGoal,goalRows,wholePct,PURPOSE_VERBS,setCurYm:typeof setCurYm!=="undefined"?setCurYm:null,proofOf:typeof proofOf!=="undefined"?proofOf:null,planCells:typeof planCells!=="undefined"?planCells:null};', ctx);
@@ -122,30 +123,54 @@ function oracleDebtRows(debts, rows, months) {
   if (open.length > 1) open[0][0].first = true;
   return res;
 }
-/* 38.30 rule, recounted from the plain words and in whole cents: money spent past what a month planned comes out of the bank and stays out in every later month.
-   Only when at least one receipt exists. Per month:
+/* Receipts and spending past plan (38.30 and 38.31 rules), recounted from the plain words. Every amount here is a whole number of cents; it is
+   turned back into money (cents / 100) only when it is handed over, so nothing can pick up a float error along the way.
+   Receipts:
+   - A receipt counts in the month of its date; one dated outside the page's months counts in no month.
+   - Its place is the line it was logged on. Logged as Other, or on a line that is no longer in the plan, it is Other.
+   - r.rs is what the month's receipts add up to: the total, how many, by line (as logged) and by place.
+   Spending past plan, only once at least one receipt exists (anywhere). Per month:
    - Bills and basics are judged line by line: what was logged on a line past that line's plan (a line that has ended plans 0).
+     A big grocery bill does not use up the rent that was not logged. (r.overNec)
    - Other: what was logged as Other past the month's one-time costs (a one-time cost is money already set aside for it).
-   - Free to spend and Investing: what was logged past the month's plan for them.
-   - Education and Giving are burrows that keep what is not spent: each holds the plans so far minus what was logged on it.
-     If a burrow would drop below zero, that part comes out of the bank and the burrow is empty, not negative.
-   r.bankPlanned keeps the bank before this rule; r.bankStart and r.bankEnd become the real bank. */
+   - Free to spend and Investing: what was logged past the month's plan for the place as a whole (all its lines together).
+   - Education and Giving keep what is not spent: each holds the plans so far minus what was logged on it, from the first month.
+     If one would drop below zero, that part comes out of the bank and it is empty, not negative. (r.ovB: the part the bank paid this month)
+   - r.overBits: the part past plan, place by place, only the places above zero; they add up to r.overNow.
+   - r.billsLeft: Bills and basics still to pay: each bill line's plan not yet logged (never below 0), the one-time costs not yet logged as
+     Other, and the card and loan payments (nothing is ever logged against those).
+   - Spending under plan changes nothing. Spending past plan comes out of the bank in its month and stays out in every later month:
+     r.overNow is this month's part, r.over the total so far, r.bankPlanned the bank the plan alone gives; r.bankStart and r.bankEnd become
+     the real bank (the plan's figure less everything past plan before this month, and up to and including it). */
 function oracleOverspend(S, rows, lines) {
-  const C = x => Math.round((+x || 0) * 100), rc = S.receipts || [];
-  rows.forEach(r => { r.bankPlanned = r.bankEnd; r.overNow = 0; r.over = 0; r.ovB = {}; });
-  if (!rc.length) return;
+  const C = x => Math.round((+x || 0) * 100), U = c => c / 100, rc = S.receipts || [], has = rc.length > 0;
+  const inMoney = o => Object.keys(o).reduce((a, k) => (a[k] = U(o[k]), a), {});
   const jarOfKey = k => { const l = lines.find(x => x.key === k); return l ? l.jar : 'other'; };
-  const stock = { edu: 0, give: 0 }; let cum = 0;
+  const kept = { edu: 0, give: 0 }; let cum = 0;
   rows.forEach(r => {
-    const byKey = {}, byJar = {};
-    rc.filter(x => String(x.d).slice(0, 7) === r.ym).forEach(x => { byKey[x.c] = (byKey[x.c] || 0) + C(x.a); const j = jarOfKey(x.c); byJar[j] = (byJar[j] || 0) + C(x.a); });
-    let inc = 0;
-    r.lineVals.filter(l => l.jar === 'nec').forEach(l => { inc += Math.max(0, (byKey[l.key] || 0) - C(l.v)); });
-    inc += Math.max(0, (byJar.other || 0) - C(r.items));
-    inc += Math.max(0, (byJar.play || 0) - C(r.jar.play));
-    inc += Math.max(0, (byJar.ffa || 0) - C(r.jar.ffa));
-    ['edu', 'give'].forEach(j => { stock[j] += C(r.jar[j]) - (byJar[j] || 0); if (stock[j] < 0) { inc += -stock[j]; r.ovB[j] = -stock[j] / 100; stock[j] = 0; } });   /* r.ovB: the part the bank paid this month */
-    r.bankStart = (C(r.bankStart) - cum) / 100; cum += inc; r.overNow = inc / 100; r.over = cum / 100; r.bankEnd = (C(r.bankEnd) - cum) / 100;
+    const byKey = {}, byJar = {}; let total = 0, count = 0;
+    rc.forEach(x => { if (String(x.d).slice(0, 7) !== r.ym) return; const a = C(x.a), j = jarOfKey(x.c); total += a; count++; byKey[x.c] = (byKey[x.c] || 0) + a; byJar[j] = (byJar[j] || 0) + a; });
+    r.rs = { total: U(total), count, byKey: inMoney(byKey), byJar: inMoney(byJar) };
+    const logged = j => byJar[j] || 0;
+    let now = 0; r.ovB = {};
+    if (has) {
+      const bills = r.lineVals.filter(l => l.jar === 'nec');
+      const parts = {
+        nec: bills.reduce((s, l) => s + Math.max(0, (byKey[l.key] || 0) - C(l.v)), 0),
+        other: Math.max(0, logged('other') - C(r.items)),
+        play: Math.max(0, logged('play') - C(r.jar.play)),
+        ffa: Math.max(0, logged('ffa') - C(r.jar.ffa)),
+        edu: 0, give: 0
+      };
+      ['edu', 'give'].forEach(j => { kept[j] += C(r.jar[j]) - logged(j); if (kept[j] < 0) { parts[j] = -kept[j]; r.ovB[j] = U(-kept[j]); kept[j] = 0; } });
+      now = Object.keys(parts).reduce((s, k) => s + parts[k], 0);
+      r.overNec = U(parts.nec);
+      r.overBits = {}; Object.keys(parts).forEach(k => { if (parts[k] > 0) r.overBits[k] = U(parts[k]); });
+      r.billsLeft = U(bills.reduce((s, l) => s + Math.max(0, C(l.v) - (byKey[l.key] || 0)), 0) + Math.max(0, C(r.items) - logged('other')) + C(r.debtPay));
+    }
+    const plannedEnd = C(r.bankEnd);
+    r.bankPlanned = U(plannedEnd); r.bankStart = U(C(r.bankStart) - cum);
+    cum += now; r.overNow = U(now); r.over = U(cum); r.bankEnd = U(plannedEnd - cum);
   });
 }
 /* the status of one goal in one month, again from the plain rules */
@@ -223,16 +248,60 @@ function randomState(opt) {
   }
   return S;
 }
+/* Random receipts for a plan, from their own random stream R (so the plans themselves, and every other test that draws plans, stay the same).
+   They are aimed at the plan as this file reads it: well under a plan, exactly at it, one cent (one yen) past it, past it, far past it,
+   several receipts that add up to exactly the plan, small amounts on lines that plan nothing, Other with and without one-time costs,
+   a line that is no longer in the plan, and a few dated outside the page's months. Logged with the app's own addReceipt, as a person would. */
+function randomReceipts(S, R) {
+  const rp = a => a[Math.floor(R() * a.length)], rr = (a, b) => a + Math.floor(R() * (b - a + 1));
+  const n = rp([0, 0, 1, 3, 6, 12, 25, 40]); if (!n) return 0;
+  const rows = oracle(S).rows, yen = S.ui && S.ui.cur === '¥', step = yen ? 100 : 1;
+  const months = []; for (let k = rr(1, 5); k > 0; k--) months.push(R() < .5 ? rp(M.MONTHS.slice(0, 4)) : rp(M.MONTHS));
+  const keys = S.plan.lines.map(l => l.key).concat(['other', 'other']);
+  const money = c => (yen ? Math.round(c / 100) : c / 100);
+  const log = (ym, c, cents) => {
+    cents = Math.max(step, Math.round(cents / step) * step);
+    const d = ym + '-' + String(rr(1, 28)).padStart(2, '0');
+    if (c === 'line:gone') { (S.receipts = S.receipts || []).push({ id: 'rg' + S.receipts.length, d, a: money(cents), c, cn: 'Gone', n: '' }); return; }
+    M.addReceipt(S, d, money(cents), c, R() < .3 ? 'note' : '');
+  };
+  /* a careful person: every receipt fits in what is still left of its plan that month (exactly all of it, sometimes), so nothing goes past plan */
+  const careful = R() < .35, left = {};
+  for (let i = 0; i < n; i++) {
+    const ym = rp(months), r = rows.find(x => x.ym === ym), c = R() < .06 ? 'line:gone' : rp(keys);
+    const lv = r.lineVals.find(x => x.key === c), plan = 100 * (lv ? lv.v : r.items);
+    if (careful) {
+      const k = ym + (lv ? c : 'other'), rem = left[k] === undefined ? plan : left[k];
+      if (rem < step) continue;
+      const a = R() < .3 ? rem : Math.max(step, Math.floor(rem * R() / step) * step);
+      left[k] = rem - a; log(ym, c, a); continue;
+    }
+    const mode = plan > 0 ? rp(['under', 'under', 'exact', 'cent', 'past', 'far', 'small', 'split']) : rp(['small', 'small', 'past']);
+    const odd = yen ? 0 : rr(0, 99);
+    if (mode === 'under') log(ym, c, Math.floor(plan * (.05 + R() * .9)) + odd);
+    else if (mode === 'exact') log(ym, c, plan);
+    else if (mode === 'cent') log(ym, c, plan + step);
+    else if (mode === 'past') log(ym, c, (plan > 0 ? Math.floor(plan * (1.05 + R() * .8)) : rr(1, 3000) * 100) + odd);
+    else if (mode === 'far') log(ym, c, Math.floor(plan * (2 + R() * 4)) + odd);
+    else if (mode === 'small') log(ym, c, rr(1, 5000) * step);
+    else { const k = rr(2, 3), each = Math.floor(plan / k / step) * step; for (let q = 1; q < k; q++) log(ym, c, each); log(ym, c, plan - each * (k - 1) + (R() < .5 ? step : 0)); }
+  }
+  if (R() < .15) log(rp(['2026-10', '2025-03', '2028-11', '2029-01']), rp(keys), rr(1, 90000) * step);   /* dated outside the page: counts nowhere */
+  return (S.receipts || []).length;
+}
+const rngOf = s => { let x = (s >>> 0) % 4294967296; return () => (x = (x * 1664525 + 1013904223) % 4294967296) / 4294967296; };
 
-module.exports = { M, oracle, oracleGoal, oraclePercents, randomState, rnd, pick, ri, setSeed: v => { seed = v; } };
+module.exports = { M, oracle, oracleGoal, oraclePercents, randomState, randomReceipts, rngOf, rnd, pick, ri, setSeed: v => { seed = v; } };
 if (require.main !== module) return;
 /* ---------- compare ---------- */
 let fails = [], checks = 0;
 const eq = (ctxMsg, a, b) => { checks++; if (a !== b && !(Number.isNaN(a) && Number.isNaN(b))) { if (fails.length < 40) fails.push(ctxMsg + ': app ' + JSON.stringify(a) + ' vs independent ' + JSON.stringify(b)); else fails.length++; } };
-const N = +(process.env.N || 3000); const DBG = process.env.DBG ? process.env.DBG.split(',') : [];
+const N = +(process.env.N || 3000), RC = { plans: 0, months: 0, underMonths: 0, overMonths: 0, pileMonths: 0, pileCovered: 0 }; const DBG = process.env.DBG ? process.env.DBG.split(',') : [];
 for (let t = 0; t < N; t++) {
   const S = randomState({ debts: true }), tag = '#' + t + ' ' + S.ui.cur;
   if (t % 5 === 3) S.cfg.bankStart = -(1 + (t * 7919) % 250000);   /* every fifth plan starts overdrawn (38.31); kept out of randomState so the golden screens draw the same plans */
+  const nRc = randomReceipts(S, rngOf(+(process.env.SEED || 1) * 1000003 + t * 7919 + 17));   /* most plans also get receipts, from their own random stream */
+  if (nRc) RC.plans++;
   const stab = o => JSON.stringify(o, (k, v) => v && typeof v === 'object' && !Array.isArray(v) ? Object.keys(v).sort().reduce((a, x) => (a[x] = v[x], a), {}) : v);
   const sortSteps = o => { const r = {}; Object.keys(o).forEach(k => { r[k] = o[k].slice().sort((a, b) => (a.from < b.from ? -1 : 1)); }); return r; };
   eq(tag + ' steps survive cleaning', stab(M.cleanSteps(S.steps)), stab(sortSteps(S.steps))); eq(tag + ' once survives cleaning', stab(M.cleanOnce(S.once)), stab(Object.fromEntries(Object.entries(S.once).filter(([k, v]) => Object.keys(v).length))));
@@ -241,6 +310,17 @@ for (let t = 0; t < N; t++) {
   O.rows.forEach((r, i) => {
     const m = C.months[i], p = tag + ' ' + r.ym + ' ';
     ['a', 'b', 'side', 'draw', 'inflow', 'goalsTotal', 'left', 'bankStart', 'bankEnd'].forEach(k => eq(p + k, m[k], r[k]));
+    /* receipts and spending past plan */
+    ['bankPlanned', 'overNow', 'over'].forEach(k => eq(p + k, m[k], r[k]));
+    const rs = M.receiptStats(S, r.ym);
+    eq(p + 'receipts total', rs.total, r.rs.total); eq(p + 'receipts count', rs.count, r.rs.count);
+    eq(p + 'receipts by line', stab(rs.byKey), stab(r.rs.byKey)); eq(p + 'receipts by place', stab(rs.byJar), stab(r.rs.byJar));
+    if (nRc) {
+      eq(p + 'bills past plan', m.overNec, r.overNec); eq(p + 'bills left', m.billsLeftM, r.billsLeft);
+      eq(p + 'past plan by place', stab(m.overBits), stab(r.overBits)); eq(p + 'bank paid for an empty pile', stab(m.ovB), stab(r.ovB));
+    }
+    if (r.overNow > 0) RC.overMonths++; if (r.rs.count) RC.months++; if (r.rs.count && r.overNow === 0) RC.underMonths++; if (Object.keys(r.ovB).length) RC.pileMonths++;
+    if (['edu', 'give'].some(j => (r.rs.byJar[j] || 0) > r.jar[j] && !r.ovB[j])) RC.pileCovered++;   /* past the month's plan, but what was kept from earlier months covered it */
     ['debtPay', 'debtInterest', 'debtOwed', 'debtStart', 'debtMin', 'debtExtra'].forEach(k => eq(p + k, m[k] === undefined ? 0 : m[k], r[k]));
     (S.plan.debts || []).forEach(d => ['start', 'interest', 'extra', 'pay', 'bal', 'paidPctWhole'].forEach(k => eq(p + d.id + ' debt ' + k, m.debts[d.id][k], r.debts[d.id][k])));
     eq(p + 'out', m.out, r.outflow); eq(p + 'billsTotal', m.billsTotal, r.bills); eq(p + 'itemsTotal', m.itemsTotal, r.items);
@@ -259,29 +339,39 @@ for (let t = 0; t < N; t++) {
     /* 38.30 rule: percents are shares of real pay, never of money borrowed from the emergency fund; borrowed money that is left over is not pay waiting to be placed */
     const J = M.jarsOf(S, m), inn = r.inflow, outv = r.outflow, rest = Math.max(0, inn - outv), short = Math.max(0, outv - inn), realPay = inn - r.draw, base = short > 0 ? outv : (r.draw > 0 && realPay > 0 ? realPay : inn);
     const borrowedLeft = Math.min(rest, r.draw);
+    /* spending past plan this month is paid first from pay that had no place (its own share, next to "not placed"), then from borrowed
+       emergency money still in the bank; borrowed money it does not use stays in the bank. Worked in whole cents (receipts carry cents). */
+    const cents = x => Math.round(x * 100), overC = cents(r.overNow), unplacedC = cents(rest) - cents(borrowedLeft), usedOverC = Math.min(unplacedC, overC);
+    const keptC = Math.max(0, cents(borrowedLeft) - Math.max(0, overC - unplacedC));
     const vals = [r.jar.nec, r.goalsTotal, r.jar.play, r.jar.edu, r.jar.ffa, r.jar.give, rest - borrowedLeft];
-    const pc = oraclePercents(vals, base);
+    const valsC = vals.slice(0, 6).map(cents).concat([unplacedC - usedOverC, usedOverC]);
+    const pc = oraclePercents(valsC, cents(base));
     J.list.forEach((j, k) => { eq(p + 'jar amount ' + j.id, j.v, vals[k]); eq(p + 'jar pct ' + j.id, j.pct, pc[k]); });
     eq(p + 'rest', J.rest, rest); eq(p + 'borrowed left', J.restCover, borrowedLeft); eq(p + 'restPct', J.restPct, pc[6]); eq(p + 'short', J.short, short);
-    if (DBG.indexOf(String(t) + ' ' + r.ym) >= 0) console.log('DBG', t, r.ym, JSON.stringify({ vals, base, inn, outv, rest, short, app: J.list.map(j => j.pct).concat([J.restPct]), orc: pc, appBase: J.income }));
+    eq(p + 'pay used past plan', cents(J.usedOver), usedOverC); eq(p + 'pay used past plan pct', J.usedOverPct, pc[7]);
+    eq(p + 'borrowed kept', cents(J.restKept), keptC); eq(p + 'borrowed spent past plan', cents(J.restSpent), cents(borrowedLeft) - keptC);
+    eq(p + 'not placed after spending past plan', cents(J.unplacedNet), unplacedC - usedOverC);
+    if (DBG.indexOf(String(t) + ' ' + r.ym) >= 0) console.log('DBG', t, r.ym, JSON.stringify({ vals, base, inn, outv, rest, short, app: J.list.map(j => j.pct).concat([J.restPct, J.usedOverPct]), orc: pc, appBase: J.income }));
     /* places + not placed = 100 + borrowed, always: the borrowed part is the emergency-fund money the plan uses up, as a whole percent of real pay */
     const borrowUsed = short > 0 ? 0 : Math.max(0, r.draw - borrowedLeft), sumPct = pc.reduce((a, b) => a + b, 0);
     const expBorrowPct = borrowUsed > 0 && base === realPay ? Math.floor((borrowUsed * 200 + base) / (2 * base)) : 0;
     eq(p + 'borrowed used', J.borrowUsed, borrowUsed); eq(p + 'borrowed used pct', J.borrowUsedPct, Math.max(0, sumPct - 100));
-    const sumAll = vals.reduce((a, b) => a + b, 0);
-    checks++; if (base > 0 && sumAll >= base && sumPct !== 100 + expBorrowPct) { if (fails.length < 40) fails.push(p + 'percents add to ' + sumPct + ', expected ' + (100 + expBorrowPct)); }
-    checks++; if (base > 0 && sumAll < base && sumPct > 100) { if (fails.length < 40) fails.push(p + 'percents add to ' + sumPct + ' with less than the base placed'); }
-    eq(p + 'placed pct', J.placedPct, sumPct - pc[6]);
+    const sumAll = valsC.reduce((a, b) => a + b, 0), baseC = cents(base);
+    checks++; if (base > 0 && sumAll >= baseC && sumPct !== 100 + expBorrowPct) { if (fails.length < 40) fails.push(p + 'percents add to ' + sumPct + ', expected ' + (100 + expBorrowPct)); }
+    checks++; if (base > 0 && sumAll < baseC && sumPct > 100) { if (fails.length < 40) fails.push(p + 'percents add to ' + sumPct + ' with less than the base placed'); }
+    eq(p + 'placed pct', J.placedPct, sumPct - pc[6] - pc[7]);
   });
   /* cards and loans: pay-off month, never, totals, and which to pay first */
   const DR = M.debtRows(S, C);
   eq(tag + ' debt rows', DR.length, O.debtRows.length);
   O.debtRows.forEach((o, k) => { const a = DR[k] || {}; ['id', 'payoffYm', 'never', 'totalInterest', 'totalPaid', 'first', 'done'].forEach(f => eq(tag + ' ' + o.id + ' row ' + f, a[f], o[f])); });
-  /* the bank rolls forward exactly by what is left each month */
-  let b = M.cfg(S, 'bankStart'); C.months.forEach(m => { b += m.left; }); eq(tag + ' final bank', C.months[C.months.length - 1].bankEnd, b);
+  /* the bank rolls forward exactly by what is left each month, less what was spent past plan (in whole cents) */
+  const cc = x => Math.round(x * 100), last = C.months[C.months.length - 1];
+  let b = cc(M.cfg(S, 'bankStart')), ov = 0; C.months.forEach(m => { b += cc(m.left) - cc(m.overNow); ov += cc(m.overNow); });
+  eq(tag + ' final bank', cc(last.bankEnd), b); eq(tag + ' spent past plan adds up', cc(last.over), ov);
   /* nothing is created or lost inside the goals: start + saved - withdrawn - spent = what is left */
   S.plan.goals.forEach(g => { let tot = g.start; C.months.forEach(m => { tot += m.g[g.id].actual - (g.emergency ? m.draw : 0) - m.spent[g.id]; }); eq(tag + ' ' + g.id + ' goal money conserved', C.months[C.months.length - 1].bal[g.id], tot); });
 }
-console.log('random plans', N, '| comparisons', checks, '| mismatches', fails.length);
+console.log('random plans', N, '(' + RC.plans + ' with receipts: ' + RC.months + ' months logged, ' + RC.underMonths + ' all within plan, ' + RC.overMonths + ' past plan, ' + RC.pileCovered + ' kept money covered, ' + RC.pileMonths + ' bank paid for an empty pile) | comparisons', checks, '| mismatches', fails.length);
 fails.slice(0, 40).forEach(f => console.log(' ', f));
 process.exit(fails.length ? 1 : 0);
