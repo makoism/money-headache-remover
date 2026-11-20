@@ -19,6 +19,9 @@ Q10 SF5 38b5d81, SF6 edb78d1; first full check.sh green on 38.31 (d3d86e5). Q13 
 - Watchdog: standing session session_01BFpKEYWd9Kcs4FkcwuNGo1, trigger trig_015mKtiUhZRgbkacuPYA8Ks6 at :33 hourly. It messages the coordinator (by finding the newest "Burrow coordinator" session) if it starts a replacement MAIN. Title your session "Burrow coordinator 9 (talk to this one)".
 - When the preview is republished and round 3 is clean: send Mako the after screenshots as files and the link, two percentages first, times in JST. That is the build for his full run.
 
+### Preview (07:49 UTC)
+QC round 3 on 53bb8cb failed; fixed b7c4719, 50ca3a8, 9a33833, 9a0d2fc; the rest wait for Mako's run (QC10_FIX_ROUND.md). The preview artifact at the old link cannot be updated: an update needs the whole 1.87 MB live page read first. MAIN 10 sent Mako the build file and 4 screenshots instead (preview/after, 2c65906). Idea to check: publishing to a NEW link (no url) needs no read of the old page.
+
 ### Timers
 Coordinator 8's timer trig_015XK4gUo2Uf1Qz1QBbsGvuZ (06:43 UTC) is deleted at handoff. Set your own (about 45 minutes).
 
