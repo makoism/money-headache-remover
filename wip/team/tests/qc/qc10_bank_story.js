@@ -68,6 +68,10 @@ const plan = async p => { await L.tab(p, 'tab-month'); await L.clickText(p, 'Mon
     await L.typeIn(p, '#mpBankIn', '100000'); await click(p, '#mpBankSave'); await w(500);
     const h = await home(p);
     ck('same figure: the note does not say the two can differ', /¥100,000/.test(h.note) && !/can differ/.test(h.note), h.note);
+    /* QC10 round 2 numbers should-fix 3: a card still shows in the note when the bank now equals the start figure */
+    await click(p, '#mpCardAdd'); await L.typeIn(p, '#mpCardName', 'Visa'); await L.typeIn(p, '#mpCardOwed', '95000'); await L.typeIn(p, '#mpCardDay', '25'); await click(p, '#mpCardSave'); await w(800);
+    const h2 = await home(p);
+    ck('same figure with a card: the note names the bank after the card, ¥5,000', /¥5,000 after the cards are paid/.test(h2.note), h2.note);
     errsAll = errsAll.concat(errs); await b.close(); }
 
   /* ---------- spending past plan: 50,000 of Free to spend logged against 40,000 planned ---------- */
