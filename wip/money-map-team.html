@@ -5335,7 +5335,7 @@ function renderReceipts() {
   const m = C.byYm[sel], rs = receiptStats(S, sel), playPlan = m.jar.play, playSpent = rs.byJar.play || 0;
   setIdle($('#rcMonth'), sel);
   $('#rcTitle').textContent = 'Receipts, ' + fullLabel(sel);
-  let sum = rs.count ? `${fmt2(rs.total)} spent, ${rs.count} receipt${rs.count === 1 ? '' : 's'}.` : 'No receipts this month.';
+  let sum = rs.count ? `${fmt2(rs.total)} spent, ${rs.count} receipt${rs.count === 1 ? '' : 's'}.` : sel === nowYm() ? 'No receipts this month.' : `No receipts in ${monthLabel(sel)}${sel > nowYm() ? ' yet' : ''}.`;   /* a picked month is named (QC round 4 north-star 1) */
   if (playPlan > 0 || playSpent > 0) sum += ` Free to spend: ${fmt2(playPlan)} planned, ${fmt2(playSpent)} spent, ` + (playSpent > playPlan ? `${fmt2(planCells(S, C, sel).playOver)} over.` : (m.counted > 0 ? `${fmt2(m.counted)} not spent: ${m.topup && m.topup.used > 0 ? fmt2(m.topup.used) + ' went to a goal' + (m.counted - m.topup.used > 0.004 ? ', ' + fmt2(m.credit) + ' came back to the bank' : '') : 'came back to the bank'}.` : m.pendLeft > 0 ? `${fmt2(m.pendLeft)} not logged as spent yet, and Home asks where it goes.` : `${fmt2(playSafeLeft(S, m, playSpent))}${playNotSafe(S, C, sel, ymd(new Date())) ? ' left, not safe to spend yet' : ' safe to spend'}.`));
   $('#rcSum').textContent = sum;
 
@@ -16971,7 +16971,7 @@ function renderLimits() {
 /* ---------- last month ---------- */
 function renderLookBack() {
   const el = $('#rcBack'); if (!el) return;
-  const ym = sel, pm = MONTHS[MONTHS.indexOf(ym) - 1]; if (!pm || sampleOn()) { el.hidden = true; return; }
+  const ym = sel, pm = MONTHS[MONTHS.indexOf(ym) - 1]; if (!pm || sampleOn() || !(pm < nowYm())) { el.hidden = true; return; }   /* only a month that has ended is looked back on (QC round 4 north-star 1) */
   const b = lookBack(S, C, pm); if (!b || !(b.inflow > 0) || !b.count) { el.hidden = true; return; }
   el.hidden = false;
   const names = { nec: 'Bills and basics', play: 'Free to spend', edu: 'Education', give: 'Giving' };

@@ -220,7 +220,7 @@ function renderLimits() {
 /* ---------- last month ---------- */
 function renderLookBack() {
   const el = $('#rcBack'); if (!el) return;
-  const ym = sel, pm = MONTHS[MONTHS.indexOf(ym) - 1]; if (!pm || sampleOn()) { el.hidden = true; return; }
+  const ym = sel, pm = MONTHS[MONTHS.indexOf(ym) - 1]; if (!pm || sampleOn() || !(pm < nowYm())) { el.hidden = true; return; }   /* only a month that has ended is looked back on (QC round 4 north-star 1) */
   const b = lookBack(S, C, pm); if (!b || !(b.inflow > 0) || !b.count) { el.hidden = true; return; }
   el.hidden = false;
   const names = { nec: 'Bills and basics', play: 'Free to spend', edu: 'Education', give: 'Giving' };
