@@ -70,3 +70,22 @@ Hard gates again all pass (oracle 3000 plans 0, proof 1500 plans 0, display math
 | N3-S2 | "Spend X instead" in a month that also has spending past plan does not fully fix the month | open |
 | N3-S3..S7 | Borrow offered with no pay entered; past month's swept Free to spend still leads; negative "Not placed" in All months; answer card skipped to the next month; "Lines with no receipts aren't listed" under a listed row | open |
 | process | verify.txt says VERIFY OK and also "FAIL the screens changed" (13 golden plans MISSING after the wording changes) | refresh the golden file once Mako's copy pass settles the words |
+
+## After round 3 (work queue to Sunday 09:00 JST)
+
+| id | state |
+| --- | --- |
+| N3-S3 no pay entered: borrow offered | fixed de0de9c (qc10_fix_offers.js) |
+| N3-S2 "Spend X instead" with spending past plan elsewhere | fixed fa1475a (covers the whole gap, stays above what is spent) |
+| NS3-4 no message after a welcome-screen load | fixed 131cc4f |
+| N3-S1 sample mode bank | fixed 11a6638 (sample rule moved to model.js sampleShown) |
+| N-S3 "0%" for a piece with money | fixed c6a8159 ("under 1%") |
+| N-S4 "this month" for a picked month | fixed 134cdf2 |
+| N3-S5 negative Not placed in All months | fixed 764f36b ("X past pay") |
+| N3-S7 Receipts note | fixed 077a508 |
+| N2-S9 Keep saving hidden until a receipt | fixed 3e9de7c |
+| N2-S4 Free to spend card vs not safe | fixed 51e40de |
+| N2-S5 "has a place" vs "no place" | fixed e36afd1 ("All of your pay is used") |
+| hyphens as dashes | fixed 0c99aba (22 places, qc10_no_hyphen_dash.js) |
+| Add a card Save under the Help bar | not reproduced at 412x915; guard test qc10_card_form.js |
+| F6 borrowed row percent (126) | for Mako's run (layout of the Q3 rows) |
