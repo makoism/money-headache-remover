@@ -5,8 +5,8 @@
    Available only when the page is served from its own address (see relayBase in ui41.js). Nothing here touches the money model. */
 const VAULT_KEY = 'mhr-vault', VAULT_SALT = 'mhr2000-vault-v1', CODE_ALPHA = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 let vault = { code: '', rev: 0, on: false, failAt: 0 }, vaultTimer = 0, vaultBusy = false, vaultAgain = false, vaultKeys = null, vaultNote = null, vaultChecked = false;
-function vaultLoadLocal() { try { const v = JSON.parse(localStorage.getItem(VAULT_KEY) || 'null'); if (v && typeof v.code === 'string' && v.code) vault = { code: v.code, rev: +v.rev || 0, on: true, failAt: +v.failAt || 0 }; } catch (e) { /* none */ } }
-function vaultSaveLocal() { try { if (vault.on) localStorage.setItem(VAULT_KEY, JSON.stringify(Object.assign({ code: vault.code, rev: vault.rev }, vault.failAt ? { failAt: vault.failAt } : {}))); else localStorage.removeItem(VAULT_KEY); } catch (e) { /* no storage */ } }
+function vaultLoadLocal() { try { const v = JSON.parse(localStorage.getItem(VAULT_KEY) || 'null'); if (v && typeof v.code === 'string' && v.code) vault = { code: v.code, rev: +v.rev || 0, on: true, failAt: +v.failAt || 0, local: +v.local || 0 }; } catch (e) { /* none */ } }
+function vaultSaveLocal() { try { if (vault.on) localStorage.setItem(VAULT_KEY, JSON.stringify(Object.assign({ code: vault.code, rev: vault.rev }, vault.failAt ? { failAt: vault.failAt } : {}, vault.local ? { local: vault.local } : {}))); else localStorage.removeItem(VAULT_KEY); } catch (e) { /* no storage */ } }
 const vaultAvailable = () => !!(relayInfo && relayInfo.vault);
 /* MHR-XXXX-XXXX-XXXX-XXXX-XXXX: 20 letters and digits that are hard to misread, about 99 bits */
 function newCode() { const b = crypto.getRandomValues(new Uint8Array(20)); let s = ''; for (let i = 0; i < 20; i++) s += CODE_ALPHA[b[i] % CODE_ALPHA.length]; return s; }
@@ -46,11 +46,11 @@ async function vaultPush(force) {
   if (vaultBusy) { vaultAgain = true; return; }
   vaultBusy = true;
   try {
-    const rev = S.rev || Date.now(); if (!force && rev <= vault.rev) return;
+    const rev = S.rev || Date.now(); if (!force && (rev <= vault.rev || rev === vault.local)) return;   /* local: the revision here that is the cloud copy as loaded; nothing to send */
     if (!vaultAvailable()) { await relayHealth(true); if (!vaultAvailable()) { vaultBehind(); return; } }
     const k = await keysFor(vault.code), enc = await vaultEncrypt(k, JSON.stringify(S));
     const r = await vaultReq(k, 'PUT', Object.assign({ blob: enc.blob, iv: enc.iv, rev }, vault.rev ? { base: vault.rev } : {}, force ? { force: true } : {}));   /* base: the cloud revision this device last loaded or sent; the server refuses the send when it holds another one, so a phone with an older copy never writes over a newer one without asking (QC round 4 north-star 5) */
-    if (r.ok) { vault.rev = rev; vaultNote = null; const was = vaultCaughtUp(); vaultSaveLocal(); paintVault(); if (was && tab === 'home') renderBackupNudge(); }
+    if (r.ok) { vault.rev = rev; vault.local = rev; vaultNote = null; const was = vaultCaughtUp(); vaultSaveLocal(); paintVault(); if (was && tab === 'home') renderBackupNudge(); }
     else if (r.status === 409) { vaultNote = { kind: 'newer', rev: r.j.rev, when: r.j.updated }; paintVault(); if (tab === 'home') renderBackupNudge(); }
     else if (r.status === 403) { vaultNote = { kind: 'bad' }; paintVault(); }
     else vaultBehind();
@@ -71,7 +71,8 @@ async function vaultCheck() {
     if (srv.rev > (S.rev || 0)) {
       if (pristine()) { await vaultApply(k, srv); bkNote = null; }
       else { vaultNote = { kind: 'newer', rev: srv.rev, when: srv.updated }; if (tab === 'home') renderBackupNudge(); }
-    } else if (srv.rev < (S.rev || 0)) vaultQueue(true);
+    } else if (srv.rev < (S.rev || 0) && !(srv.rev === vault.rev && S.rev === vault.local)) vaultQueue(true);
+    else if (srv.rev < (S.rev || 0)) vaultCaughtUp();   /* the numbers here are the cloud copy as loaded */
     else { vault.rev = srv.rev; vaultCaughtUp(); }
     vaultSaveLocal();
     }
@@ -90,7 +91,9 @@ async function vaultApply(k, srv, asked, prevVault) {
      page has it. Anything typed is kept with Undo (v1_cloud_keep E1: a typed balance alone must not be lost) */
   const wasEmpty = pristine() && !Object.keys(S.cfg || {}).length && !Object.keys(S.steps || {}).length && !Object.keys(S.once || {}).length && !Object.keys(S.items || {}).length && JSON.stringify(S.plan) === JSON.stringify(freshState().plan);   /* a phone with no numbers of its own has nothing to go back to: no Undo, so one tap can never send sample numbers over the only cloud copy (QC10 north-star F2) */
   const old = S, oldSnap = snapNoCopy(); S = upgradeLegacy(normalize(d)); S.ui = Object.assign({}, S.ui, { sampleHidden: true }); if (!Array.isArray(d.receipts)) S.receipts = old.receipts;
-  S.rev = srv.rev; vault.rev = srv.rev; vaultNote = null; vaultCaughtUp();
+  /* the local revision never goes back: the device's second copy holds the old numbers at their own revision, and a lower one here let it win
+     on the next open, then send the old numbers over the cloud copy (QC round 4 data safety 1). The cloud revision is kept apart in vault.rev */
+  S.rev = Math.max(srv.rev, (+old.rev || 0) + 1, (typeof LOADED_REV === 'number' ? LOADED_REV : 0) + 1); vault.rev = srv.rev; vault.local = S.rev; vaultNote = null; vaultCaughtUp();
   if (!wasEmpty) keepCopy(oldSnap, 'The cloud copy replaced the numbers on this device.');
   editRow = null; editGoal = null; editRc = null; itemsSig = '';
   if (tourIsOpen) closeTour(false); else { flush(); restructure(); }
