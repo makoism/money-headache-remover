@@ -46,7 +46,9 @@ export async function onRequestPut(ctx) {
   }
   const r = g.row;
   /* the copy on the server is newer: tell the page, which asks the person which one to keep */
-  if (rev <= r.rev && !b.force) return fail(409, 'conflict', 'The server has a newer copy.', { rev: r.rev, updated: r.updated_at });
+  /* or the page sent changes made on an older copy (base: the revision it last loaded or sent) while another device wrote since: ask too */
+  const base = Math.floor(+b.base || 0);
+  if (!b.force && (rev <= r.rev || (base > 0 && base !== r.rev))) return fail(409, 'conflict', 'The server has a newer copy.', { rev: r.rev, updated: r.updated_at });
   const writes = r.writes_day === today ? r.writes + 1 : 1;
   if (writes > num(ctx.env.VAULT_WRITES_PER_DAY, 400)) return fail(429, 'rate_limited', 'Too many saves today for this vault.');
   await db.prepare('UPDATE vault SET blob = ?2, iv = ?3, rev = ?4, updated_at = ?5, prev_blob = ?6, prev_iv = ?7, prev_rev = ?8, size = ?9, writes_day = ?10, writes = ?11 WHERE id = ?1')

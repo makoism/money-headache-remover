@@ -25,7 +25,7 @@ exports.server = () => new Promise(done => {
     if (req.method === 'PUT') {
       let body = ''; req.on('data', c => { body += c; }); req.on('end', () => {
         let b; try { b = JSON.parse(body); } catch (e) { return send(res, 400, { error: 'invalid_request' }); }
-        if (row && b.rev <= row.rev && !b.force) return send(res, 409, { error: 'conflict', rev: row.rev, updated: row.updated });
+        if (row && !b.force && (b.rev <= row.rev || (b.base && b.base !== row.rev))) return send(res, 409, { error: 'conflict', rev: row.rev, updated: row.updated });
         st.puts++; st.store[id] = { token, blob: b.blob, iv: b.iv, rev: b.rev, updated: Date.now() }; send(res, 200, { rev: b.rev, updated: Date.now(), created: !row });
       }); return;
     }

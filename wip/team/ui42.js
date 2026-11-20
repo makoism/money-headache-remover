@@ -49,7 +49,7 @@ async function vaultPush(force) {
     const rev = S.rev || Date.now(); if (!force && rev <= vault.rev) return;
     if (!vaultAvailable()) { await relayHealth(true); if (!vaultAvailable()) { vaultBehind(); return; } }
     const k = await keysFor(vault.code), enc = await vaultEncrypt(k, JSON.stringify(S));
-    const r = await vaultReq(k, 'PUT', Object.assign({ blob: enc.blob, iv: enc.iv, rev }, force ? { force: true } : {}));
+    const r = await vaultReq(k, 'PUT', Object.assign({ blob: enc.blob, iv: enc.iv, rev }, vault.rev ? { base: vault.rev } : {}, force ? { force: true } : {}));   /* base: the cloud revision this device last loaded or sent; the server refuses the send when it holds another one, so a phone with an older copy never writes over a newer one without asking (QC round 4 north-star 5) */
     if (r.ok) { vault.rev = rev; vaultNote = null; const was = vaultCaughtUp(); vaultSaveLocal(); paintVault(); if (was && tab === 'home') renderBackupNudge(); }
     else if (r.status === 409) { vaultNote = { kind: 'newer', rev: r.j.rev, when: r.j.updated }; paintVault(); if (tab === 'home') renderBackupNudge(); }
     else if (r.status === 403) { vaultNote = { kind: 'bad' }; paintVault(); }
@@ -107,7 +107,7 @@ async function vaultApply(k, srv, asked, prevVault) {
 }
 async function vaultLoadNewer() {
   if (!vaultNote || vaultNote.kind !== 'newer') return;
-  try { const k = await keysFor(vault.code), r = await vaultReq(k, 'GET'); if (r.ok) { await vaultApply(k, r.j); cheer('Loaded the newer copy.'); sfx('next'); } else cheer('Couldn\'t reach the cloud copy so nothing was changed. Check the connection and try again.'); }
+  try { const k = await keysFor(vault.code), r = await vaultReq(k, 'GET'); if (r.ok) { await vaultApply(k, r.j, true); cheer('Loaded the newer copy.'); sfx('next'); } else cheer('Couldn\'t reach the cloud copy so nothing was changed. Check the connection and try again.'); }
   catch (e) { if (e && e.message === 'older') { vaultNote = null; cheer('The cloud copy isn\'t newer than the numbers here, so nothing was loaded.'); } else cheer('Couldn\'t load the cloud copy so nothing was changed. Try again, or tap Keep mine to keep the numbers on this device.'); }
   paintVault(); if (tab === 'home') renderBackupNudge();
 }
