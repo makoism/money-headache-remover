@@ -126,7 +126,7 @@ One round: qc-numbers PASS, E15 two-browser move DONE, bank comparison PASS, qc-
 | Q4 | Home first screen at 412x915 is text and numbers, the picture starts below the fold | open, Mako judges on the preview | v1 |
 | Q5 | Check your bank field opens pre-filled and typing appends (1,200 then 1150 gave 12,001,150) | done 0b51e66: the field opens empty, tests/qc/qc8_bank_field.js | v1 |
 | Q6 | Pay day: no field anywhere, the month always runs 1st to last, so days left and weekly figures are wrong for someone paid on the 10th | open, feature gap; design with options in wip/team/PAYDAY_DESIGN.md on side/payday-design, waits for Mako | team |
-| Q7 | After Load on a second phone the "Cloud copy loaded" message runs off the right edge, shows no Undo, stays across tabs; the typed code is cut off in its box | open | v1 |
+| Q7 | After Load on a second phone the "Cloud copy loaded" message runs off the right edge, shows no Undo, stays across tabs; the typed code is cut off in its box | done a243bb4 (fits 412px, Undo shown, hides on tab change, full code shows; wip/team/tests/qc/qc10_cloud_loaded.js) | v1 |
 | Q8 | Setup split moves only in whole percents (40,400 not 40,000); the first goal is fixed as Emergency fund | open | team |
 | Q9 | The receipts list sits under a big Scan receipts explainer | open | team |
 | Q10 | qc-numbers should-fix (7): Home status line follows the month picked on Plan and survives reload; "Keep saving" on a longer emergency goal changes months already over; a borrow stays after the plan stops needing it; month-end "Put it toward the goal" preselects the goal with least room and shows no amount; the rest in the QC report | SF2, SF1, SF3 done 8787fdf (tests/qc/qc9_home_status.js); rest open | v1 for the first, team for the rest |
