@@ -86,7 +86,9 @@ async function vaultApply(k, srv, asked, prevVault) {
   if (!okBackup(d)) throw new Error('bad');
   /* the numbers on this device are kept as a local copy, with Undo, before the cloud copy replaces them (LAUNCH_CHECKLIST E1): the device
      clock decides "newer", so the copy loaded can be the wrong one */
-  const wasEmpty = pristine();   /* a phone with no numbers of its own has nothing to go back to: no Undo, so one tap can never send sample numbers over the only cloud copy (QC10 north-star F2) */
+  /* strictly nothing typed here: no receipts or setup (pristine), no settings, monthly or one-time amounts, and the plan as a fresh
+     page has it. Anything typed is kept with Undo (v1_cloud_keep E1: a typed balance alone must not be lost) */
+  const wasEmpty = pristine() && !Object.keys(S.cfg || {}).length && !Object.keys(S.steps || {}).length && !Object.keys(S.once || {}).length && !Object.keys(S.items || {}).length && JSON.stringify(S.plan) === JSON.stringify(freshState().plan);   /* a phone with no numbers of its own has nothing to go back to: no Undo, so one tap can never send sample numbers over the only cloud copy (QC10 north-star F2) */
   const old = S, oldSnap = snapNoCopy(); S = upgradeLegacy(normalize(d)); S.ui = Object.assign({}, S.ui, { sampleHidden: true }); if (!Array.isArray(d.receipts)) S.receipts = old.receipts;
   S.rev = srv.rev; vault.rev = srv.rev; vaultNote = null; vaultCaughtUp();
   if (!wasEmpty) keepCopy(oldSnap, 'The cloud copy replaced the numbers on this device.');
