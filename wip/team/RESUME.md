@@ -4,6 +4,25 @@ Written 2026-11-18 on branch `wip-38.31`. Read this whole file before touching a
 
 ## 0. Handoff (latest first)
 
+**Work queue until Sunday 09:00 JST (2026-11-22 00:00 UTC). Mako, 2026-11-21 00:45 JST: "full steam ahead, run non stop until 9am on Sunday".** Never end a turn to wait for Mako; his UX calls (marked "for Mako's run" in QC10_FIX_ROUND.md) wait for his own run, everything else goes ahead. A scheduled task "MAIN 10 keep going" (trig_01MsTYUWz5yhyBMMgDMiV7jw, hourly at :39) wakes the build session; the watchdog replaces it if it dies. Test first, one item per commit, `pkill -f chrome-linux64/chrome` then check.sh fast after each, report one line each to the coordinator. Tick items here as they are done.
+1. N3-S3 no fix offers when no pay is entered (in progress: model.js fixes guard, qc10_fix_offers.js).
+2. N3-S2 "Spend X instead" in a month that also has spending past plan: offer the amount that really brings the bank to the minimum (above what is spent), or none.
+3. NS3-4 a message after loading a cloud copy from the welcome screen (same words as Settings' Done step).
+4. N3-S1 sample mode: a saved bank balance is invisible but changes the Free to spend label (keep sample mode out of the bank-now rule, or show the figure).
+5. N-S3 a piece with money reads 0%: show "under 1%".
+6. N-S4 Burrows says "this month" for the month picked on Plan: name the month.
+7. N3-S5 All months shows a negative "Not placed": name it as planned past pay.
+8. N3-S7 Receipts "Lines with no receipts aren't listed" under a listed row.
+9. N2-S9 "Keep saving" hidden until a receipt exists.
+10. N2-S4 the More card's Free to spend sentence when Home says not safe to spend yet.
+11. N2-S5 "All of your pay has a place" next to "came out of pay with no place".
+12. F6 rest: the borrowed row's percent beside places that already pass 100.
+13. Hyphens used as dashes in setup ("isn't a bill - it comes out") and Settings ("for that - Ask sends").
+14. Add a card form: Save and Cancel open under the Help bar at 412x915.
+15. Then ONE `check.sh full` (background), stage_build, QC round 4: fresh qc-numbers and qc-north-star AND the seven-role panel (QC_ROLES.md), all Opus, in parallel; fix what has one right answer.
+16. Then RESUME section 5 known problems still open (leftover_reload waits on the save, reset_undo draft, whole cents in clampAmt, screen-maths items), and section 5 item 9: an independent recount (oracle) of receipts, spending past plan, piles and month-end answers.
+17. Keep going down QC10_FIX_ROUND.md open rows and LAUNCH_CHECKLIST open v1 rows that need no Mako judgement.
+
 **2026-11-20 (16:50 JST), MAIN 10 update.** Tip 2c65906. Three QC fix rounds done (findings, fixes and open items in `QC10_FIX_ROUND.md`); hard gates pass every round; the remaining open items are mostly for Mako's own run. `check.sh full` last run on 834b778 (one real failure, fixed 53bb8cb; two timing ones). **Leftover Chrome processes make the guard and timing tests fail: run `pkill -f chrome-linux64/chrome` before check.sh when nothing else is running.** The preview artifact cannot be republished: the Artifact tool requires reading every line of the 1.87 MB live page (about 800k tokens) first; `scratchpad` edits approach failed for that reason. Mako got the build file and screenshots (preview/after) by SendUserFile instead and will do his full run on it. Next: wait for Mako's feedback; meanwhile the small open items in QC10_FIX_ROUND.md (not the ones marked for Mako).
 
 **2026-11-20 (about 04:45 UTC), MAIN 10 state (still running; Mako said in MAIN 10's chat to use all the credits, so it did not hand off at 150k).** Report to coordinator 8, **session_01BFpKEXZxmzMuFVBB5UQxLE** (send_message). Tip 94e5be5 or later.
