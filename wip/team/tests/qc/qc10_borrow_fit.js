@@ -33,7 +33,7 @@ const food = async (p, v) => { await p.evaluate(v => { const S = __t.S; S.plan.l
   await food(p, 30050);
   s = await look(p);
   ck('food lowered: nothing changes on its own (still ¥22,050 borrowed)', s.draw === 22050, s);
-  ck('food lowered: Plan says the plan needs only ¥12,050 of the borrow now and ¥10,000 of it is not needed', /needs only ¥12,050 of the borrow now/.test(s.verdict) && /¥10,000 of it is not needed/.test(s.verdict) && !/stays in the bank/.test(s.verdict), s.verdict);   /* one name, one amount: the row "Borrowed, stays in the bank" is a different amount (QC10 numbers blocker 2) */
+  ck('food lowered: Plan says the plan needs only ¥12,050 of the borrow now and ¥10,000 of it is not needed', /needs only ¥12,050 of the borrow now to keep your bank at the ¥12,000 minimum/.test(s.verdict) && /¥10,000 of it is not needed/.test(s.verdict) && !/stays in the bank/.test(s.verdict), s.verdict);   /* one name, one amount: the row "Borrowed, stays in the bank" is a different amount (QC10 numbers blocker 2) */
   ck('food lowered: Plan offers "Borrow only ¥12,050"', s.btns.includes('Borrow only ¥12,050'), s.btns);
   await p.evaluate(() => document.querySelector('[data-fx="borrowfit"]').click()); await w(800);
   s = await look(p);
