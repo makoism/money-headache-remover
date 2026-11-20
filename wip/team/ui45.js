@@ -448,7 +448,7 @@ function wireTour() {
     if (e.key === 'Enter' && e.target.matches('[data-subamt], .so-n, .so-a, #tourCardT, #tourCardB')) { e.preventDefault(); e.target.blur(); return; }
     if (e.key === 'Enter' && e.target.matches('#onbIn')) { e.preventDefault(); const v = e.target.value; e.target.value = ''; onbAsk(v); return; }
     if (e.key === 'Enter' && e.target.matches('[data-onbname]')) { e.preventDefault(); const g = $('#onbGo'); if (g) g.click(); return; }
-    if (e.key === 'Enter' && e.target.matches('#tourBody input:not([type=range]):not([type=checkbox]):not([type=radio])')) { e.preventDefault(); tourStep(1); return; }
+    if (e.key === 'Enter' && e.target.matches('#tourBody input:not([type=range]):not([type=checkbox]):not([type=radio]):not(#tourVaultIn)')) { e.preventDefault(); tourStep(1); return; }   /* Enter in the recovery code box finds the copy, it does not move setup on (QC10 round 2) */
     if (e.key !== 'Tab') return;
     const f = tourFocusables(); if (!f.length) return;
     const first = f[0], last = f[f.length - 1];
