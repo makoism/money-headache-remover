@@ -88,7 +88,7 @@ const tryShot = async (name, fn) => { try { await fn(); } catch (e) { skipped.pu
     if (!h) throw new Error('no "Borrow ... from emergency fund" button offered');
     const label = await h.evaluate(e => e.innerText.trim()); await tapEl(p, h); await w(1500);
     await tabTo(p, 'tab-month'); await tapText(p, /^Month$/);
-    const t = await toLine(p, /Your places add up to/, 0.75); if (!t) throw new Error('no "Your places add up to" sentence after the borrow');
+    const t = await toLine(p, /Your pay is 100%/, 0.75); if (!t) throw new Error('no "Your pay is 100%" sentence after the borrow');
     await shot(p, '07-plan-after-borrow.png'); note('07', 'tapped "' + label + '" || ' + t + ' || ' + (await p.evaluate(() => [...document.querySelectorAll('body *')].filter(e => !e.children.length && !/SCRIPT|STYLE/.test(e.tagName) && e.getClientRects().length && /Borrowed/.test(e.innerText || '')).map(e => (e.closest('tr, li, .row, div') || e).innerText.replace(/\s+/g, ' ')).join(' ; ').slice(0, 400))));
     await o.b.close(); });
   console.log('made ' + made.length + ': ' + made.sort().join(', ')); console.log(skipped.length ? 'skipped: ' + skipped.join('; ') : 'skipped: none');

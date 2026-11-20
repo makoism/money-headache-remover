@@ -430,7 +430,8 @@ function jarsOf(S, m) {
   const borrowUsedPct = borrowUsed > 0 && base === realPay ? Math.max(0, sumPct - 100) : 0;
   /* named amounts the screens show (they never work these out themselves) */
   const unplaced = Math.max(0, rest - restCover), unplacedNet = round2(rest - restCover - usedOver), exceedsBy = short + dw0;
-  return { income: base, inn, out, rest, restCover, restKept, usedOver, short, draw: m.draw || 0, over: short > 0, restPct: pcts[6], usedOverPct: pcts[7],
+  const restSpent = round2(restCover - restKept);   /* borrowed money in the bank that spending past plan has used; restKept + restSpent + borrowUsed = all that was borrowed, each its own row on Plan */
+  return { income: base, inn, out, rest, restCover, restKept, restSpent, usedOver, short, draw: m.draw || 0, over: short > 0, restPct: pcts[6], usedOverPct: pcts[7],
     realPay, borrowUsed, borrowUsedPct, placedPct: sumPct - restAll, unplaced, unplacedNet, exceedsBy,
     list: JARS.map((j, i) => ({ id: j.id, name: j.name, usual: Math.round(j.usual * 100), v: vals[j.id], pct: pcts[i] })) };
 }
