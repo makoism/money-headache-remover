@@ -94,6 +94,11 @@ const bar = p => p.evaluate(() => { const b = document.getElementById('undoBar')
     await tap(D.p, '#tourRestoreBtn'); await D.p.type('#tourVaultIn', code);
     const g = await fits(D.p, '#tourVaultIn');
     ck('C: the whole typed code shows in its box on the first-open screen (' + g.val + ')', g.ok, g);
+    /* QC10 round 2 north-star finding 3: the first tap on Load must load (it did nothing, the second tap loaded) */
+    await D.p.focus('#tourVaultIn'); await D.p.keyboard.press('Enter'); await until(() => seen(D.p, '#tourVaultLoad'));   /* Find by the keyboard's Enter: the code box keeps the focus, as on a phone */
+    const h = await D.p.$('#tourVaultLoad'); await w(200); await h.tap(); await w(2500);   /* tapped where it sits, near the bottom of setup, as a person would */
+    const rD = await receipts(D.p);
+    ck('C: one tap on Load loads the copy', /Made-up/.test(rD), rD);
   } else ck('C: the first-open screen offers "enter your recovery code"', false);
 
   const errs = A.errs.concat(B.errs, B2.errs, D.errs, E.errs);

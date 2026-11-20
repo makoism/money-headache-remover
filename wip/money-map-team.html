@@ -5447,6 +5447,7 @@ document.addEventListener('pointerdown', () => { const el = document.getElementB
    The strip is 80px (style.css .tour-scroll mask); a field taller than the room is left alone */
 document.addEventListener('focusin', e => {
   const sc = document.getElementById('tourScroll'), t = e.target; if (!sc || !t || !sc.contains(t) || !t.getBoundingClientRect) return;
+  if (!t.matches('input, select, textarea') && !t.matches(':focus-visible')) return;   /* a button pressed by a finger is not moved under it: the move swallowed the first tap on Load (QC10 round 2) */
   const fix = () => { const q = t.getBoundingClientRect(), s = sc.getBoundingClientRect(), low = s.bottom - 88; if (q.height > low - s.top) return;
     if (q.bottom > low) sc.scrollTop += Math.ceil(q.bottom - low); else if (q.top < s.top + 4) sc.scrollTop -= Math.ceil(s.top + 4 - q.top); };
   fix(); setTimeout(fix, 120);
@@ -13903,7 +13904,7 @@ function wireTour() {
     if (e.key === 'Enter' && e.target.matches('[data-subamt], .so-n, .so-a, #tourCardT, #tourCardB')) { e.preventDefault(); e.target.blur(); return; }
     if (e.key === 'Enter' && e.target.matches('#onbIn')) { e.preventDefault(); const v = e.target.value; e.target.value = ''; onbAsk(v); return; }
     if (e.key === 'Enter' && e.target.matches('[data-onbname]')) { e.preventDefault(); const g = $('#onbGo'); if (g) g.click(); return; }
-    if (e.key === 'Enter' && e.target.matches('#tourBody input:not([type=range]):not([type=checkbox]):not([type=radio])')) { e.preventDefault(); tourStep(1); return; }
+    if (e.key === 'Enter' && e.target.matches('#tourBody input:not([type=range]):not([type=checkbox]):not([type=radio]):not(#tourVaultIn)')) { e.preventDefault(); tourStep(1); return; }   /* Enter in the recovery code box finds the copy, it does not move setup on (QC10 round 2) */
     if (e.key !== 'Tab') return;
     const f = tourFocusables(); if (!f.length) return;
     const first = f[0], last = f[f.length - 1];

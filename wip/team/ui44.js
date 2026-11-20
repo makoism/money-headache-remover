@@ -70,6 +70,7 @@ document.addEventListener('pointerdown', () => { const el = document.getElementB
    The strip is 80px (style.css .tour-scroll mask); a field taller than the room is left alone */
 document.addEventListener('focusin', e => {
   const sc = document.getElementById('tourScroll'), t = e.target; if (!sc || !t || !sc.contains(t) || !t.getBoundingClientRect) return;
+  if (!t.matches('input, select, textarea') && !t.matches(':focus-visible')) return;   /* a button pressed by a finger is not moved under it: the move swallowed the first tap on Load (QC10 round 2) */
   const fix = () => { const q = t.getBoundingClientRect(), s = sc.getBoundingClientRect(), low = s.bottom - 88; if (q.height > low - s.top) return;
     if (q.bottom > low) sc.scrollTop += Math.ceil(q.bottom - low); else if (q.top < s.top + 4) sc.scrollTop -= Math.ceil(s.top + 4 - q.top); };
   fix(); setTimeout(fix, 120);
