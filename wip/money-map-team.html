@@ -15275,7 +15275,7 @@ async function vaultApply(k, srv, asked) {
   if (!wasEmpty) keepCopy(oldSnap, 'The cloud copy replaced the numbers on this device.');
   editRow = null; editGoal = null; editRc = null; itemsSig = '';
   if (tourIsOpen) closeTour(false); else { flush(); restructure(); }
-  S.ui.bk = Date.now(); delete S.ui.bkLater;
+  /* a cloud load is not a backup file: "Last backup" stays what the copy says (QC10 north-star F4) */
   if (wasEmpty) { try { cheer('Cloud copy loaded.'); } catch (e) { } }
   else if (window.offerUndoG) window.offerUndoG(oldSnap, `Cloud copy loaded. The numbers this phone had are kept for ${KEEP_DAYS} days. Undo puts them back here and in the cloud copy.`);
 }
