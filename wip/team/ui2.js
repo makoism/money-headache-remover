@@ -140,7 +140,8 @@ function render() {
     oc.hidden = !(cn > 0); if (cn > 0) oc.textContent = `${fmt2(cn)} of this month's Free to spend wasn't spent. ${tu > 0 && tg ? `${fmt2(tu)} went to ${tg.name}${cn - tu > 0.004 ? ' and ' + fmt2(m.credit) + ' came back to the bank' : ''}` : 'It came back to the bank'}, so the bank ends higher than the numbers above.`; }
   const lt = $('#leftTotal'); lt.textContent = fmt2(L); lt.classList.toggle('neg', L < 0);
   const ovr = m.over || 0;
-  $('#bankLine').textContent = ovr > 0 ? `Bank ends at ${fmt2(m.bankEnd)}: ${fmt2(m.bankPlanned)} planned, less ${fmt2(ovr)} spent over plan so far.` : (Math.abs(m.bankStart - m.bankEnd) < 0.5 ? `Bank stays at ${fmt2(m.bankEnd)} this month.` : `Bank goes from ${fmt2(m.bankStart)} to ${fmt2(m.bankEnd)} this month.`);
+  /* one bank story (launch checklist Q2): the same name and figure as Home's "Bank at month end", and the start figure it is planned from */
+  $('#bankLine').textContent = ovr > 0 ? `Bank at month end: ${fmt2(m.bankEnd)}. ${fmt2(m.bankPlanned)} planned, less ${fmt2(ovr)} spent over plan so far.` : (Math.abs(m.bankStart - m.bankEnd) < 0.5 ? `Bank at month end: ${fmt2(m.bankEnd)} planned, the same as at the start of ${mon}.` : `Bank at month end: ${fmt2(m.bankEnd)} planned, from ${fmt2(m.bankStart)} at the start of ${mon}.`);
   $('#rowDraw').hidden = !(m.draw > 0); $('#ra-draw').textContent = fmt(m.draw);
   const amts = { a: m.a, b: m.b, side: m.side, nec: m.billsTotal, items: m.itemsTotal, debts: m.debtPay, lts: m.goalsTotal, play: m.jar.play, edu: m.jar.edu, ffa: m.jar.ffa, give: m.jar.give };
   const changed = {}, chgList = [], nextYm = MONTHS[MONTHS.indexOf(sel) + 1] || null;
