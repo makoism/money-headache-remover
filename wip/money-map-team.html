@@ -2865,7 +2865,9 @@ function fixes(S, m) {
   /* never below what is already spent from Free to spend this month: that money is gone, so a lower plan would not fix the month
      (QC10 round 2 numbers blocker 2) */
   const playSpent = (receiptStats(S, m.ym).byJar.play) || 0;
-  if (planGap > 0) { const ne = round2(play - planGap); if (ne >= 0 && ne < play && ne >= playSpent) out.push({ id: 'trim', amount: ne }); }
+  /* the trim makes up the whole gap, other places' spending past plan included, as long as it stays above what Free to spend has already
+     spent; that is the figure Home shows as safe to spend (QC10 round 3 numbers should-fix 2: it made up only the plan's part) */
+  if (planGap > 0) { const ne = round2(play - Math.max(planGap, gap)); if (ne >= 0 && ne < play && ne >= playSpent) out.push({ id: 'trim', amount: ne }); }
   const eg = emergencyGoal(S), room = eg ? Math.max(0, m.balBefore[eg.id] - m.draw) : 0;
   if (gap > 0 && room > 0) out.push({ id: 'borrow', amount: round2(Math.min(room, gap)) });
   return out;
@@ -13654,7 +13656,7 @@ function wireRestore() {
     box.innerHTML = `<p data-vf-found>${vaultFoundLine(f)}</p><p>This device has no numbers of its own yet, so nothing is replaced.</p><div class="row-btns"><button type="button" class="btn small solid" id="tourVaultLoad">Load</button><button type="button" class="link" id="tourVaultNo">Cancel</button></div>`; box.hidden = false;
     $('#tourVaultNo').addEventListener('click', () => { box.hidden = true; box.innerHTML = ''; });
     $('#tourVaultLoad').addEventListener('click', async () => {
-      try { await vaultUse(f, false); m.textContent = 'Loaded.'; box.hidden = true; sfx('next'); cheer('Welcome back.'); }
+      try { await vaultUse(f, false); m.textContent = 'Loaded.'; box.hidden = true; sfx('next'); setTimeout(() => cheer('Welcome back. Your numbers are here, and this phone now shares the cloud copy: every change is sent by itself.'), 400); }   /* said after setup closes, so it is seen (QC10 round 3 north-star 4) */
       catch (e) { m.textContent = 'That copy could not be loaded. Nothing was changed.'; }
     });
     sfx('next');

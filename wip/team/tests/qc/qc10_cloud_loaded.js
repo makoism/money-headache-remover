@@ -100,6 +100,9 @@ const bar = p => p.evaluate(() => { const b = document.getElementById('undoBar')
     const h = await D.p.$('#tourVaultLoad'); await w(200); await h.tap(); await w(2500);   /* tapped where it sits, near the bottom of setup, as a person would */
     const rD = await receipts(D.p);
     ck('C: one tap on Load loads the copy', /Made-up/.test(rD), rD);
+    /* QC10 round 3 north-star 4: after a load from the welcome screen a message says the numbers are here and that this phone now shares the copy */
+    const said = await D.p.evaluate(() => (window.__cheerLog || []).join(' | ') + ' | ' + ((document.getElementById('cheer') || {}).textContent || ''));
+    ck('C: a message says the numbers are here and this phone now shares the cloud copy', /shares the cloud copy/.test(said), said);
   } else ck('C: the first-open screen offers "enter your recovery code"', false);
 
   const errs = A.errs.concat(B.errs, B2.errs, D.errs, E.errs);
