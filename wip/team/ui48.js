@@ -6,7 +6,7 @@ const COACH = {
     ['#hStatus', 'Where you stand', 'Read this first. On plan means this month fits your pay and your balance stays above your minimum.'],
     ['#hHero', 'Main goal', 'Your reason in your own words, with what this month adds and how many months are left. Tap Forecast for the graph.'],
     ['#hSpend', 'Free to spend', 'The money you use this month. The big number is Free to spend and it\'s yours to spend on whatever you want. Under it you can see if your Bills and basics are covered and what\'s left for Education and Giving, and whatever\'s left at the end of the month can go into a goal.'],
-    ['#hQuick', 'Log spend', 'Enter an amount, pick a category and tap Log. Do it as you spend or once a week.'],
+    ['#hQuick', 'Log spend', 'Enter an amount, pick a category and tap Log spend. Do it as you spend or once a week.'],
     ['#hGoals', 'Burrows', 'Tap a burrow to open it, then you can edit it or make it your main burrow.'],
     ['#hBuckets', 'Investing', 'Money you invest and don\'t spend. Goals and debt live in the burrows at the top.'],
     ['#askBtn', 'Ask', 'Ask any money question here. It knows your plan and can make changes once you approve them.'],

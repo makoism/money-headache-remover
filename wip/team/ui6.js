@@ -185,7 +185,7 @@ function renderNext() {
     if (!d.pay) step = ['Next: enter pay', 'The plan starts from monthly pay.', 'Enter pay', 'data-open="a"'];
     else if (!d.bills) step = ['Next: check bills', 'Set each bill to the real amount.', 'Open bills', 'data-open="nec"'];
     else if (!d.goals) step = ['Next: add a burrow', 'Pick something to save for.', 'Add a burrow', 'data-gw'];
-    else if (!step && !(S.receipts || []).length && !sweepOffer() && !SWEPT) step = ['Next: log spend', 'Enter an amount in Log spend, then tap Log.', 'Log spend', 'data-focus="hAmt"'];
+    else if (!step && !(S.receipts || []).length && !sweepOffer() && !SWEPT) step = ['Next: log spend', 'Enter an amount, then tap Log spend.', 'Log spend', 'data-focus="hAmt"'];
   }
   /* a month to close comes first (it is timely); then, for typed numbers, the statements that make them exact */
   /* a sweep just made: say so, with Undo, until the next page load */
