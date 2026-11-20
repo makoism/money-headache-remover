@@ -27,3 +27,28 @@ Hard gates (qc-numbers): oracle 3000 plans 0 mismatches, proof_fuzz 1500 plans 0
 | F4 (Q7) | "Your numbers from before are kept" on a phone that had none; Settings "Last backup: today" after a cloud load with no file saved | fixed 311a766 and 94e5be5 (a cloud load no longer stamps the backup day) |
 | F5 (Q7) | Toast under the Undo bar; page text showed through the bar | bar made solid a60263c; toast overlap not reproduced in the test |
 | F6 (SF6) | "needs only X" next to a borrowed row with another amount; borrowed row's percent beside places that already pass 100 (126); Home does not say part of the month-end bank is borrowed | sentence now says what X is for 97e8d39; the 126 and Home wording open |
+
+# Round 2 on 94e5be5 (fresh agents, both FAIL)
+
+Hard gates again all pass (oracle 3000 plans 0, proof 1500 plans 0, display maths 0, home_dom 40 plans 0).
+
+| id | finding | state |
+| --- | --- | --- |
+| N2-B1 | "safe to spend" ignored the bills still to pay | fixed dbde166 (bank after cards must cover bills left plus Free to spend), qc10_bank_story.js |
+| N2-B2 / NS2-6 | "Spend X instead" offered below what is already spent | fixed 22bf5f6, qc10_fix_offers.js |
+| N2-S3 | Home note dropped the cards when the bank now equals the start figure | fixed 6de01cf |
+| N2-S6 | "Pick a fix: X is borrowed ..." | fixed 5fc2617 (guard check does not reach the state) |
+| NS2-1 | Undo after a cloud load on a phone with its own numbers sent them over the other phone's cloud copy and kept it linked | fixed 2a138e7: Undo restores this phone and how it shared before, sends nothing |
+| NS2-3 | First tap on Load on the welcome screen did nothing (setup moved the focused button 23 px under the finger) | fixed b692827; also Enter in the code box moved setup on (44e35f9) |
+| NS2-5 | Home kept "Logged $54" after the receipt was changed to $45 | fixed 834b778 |
+| NS2-2 | Undo is gone once you leave Settings; Restore promises Undo for 3 days (the kept copy is offered again on the next open) | open: needs a lasting "put back" button in Settings for the kept days; note it conflicts with Q7 "bar stays across tabs" |
+| NS2-4 | Settings "Money today" $2,500 vs Home "In your bank now" $2,180; "Your balance covers it" worked from the start figure | for Mako (same design question as F1: should Check your bank change the figure the plan starts from) |
+| NS2-7 | "older copy ... takes this device back" on a phone that never had that copy | open (copy) |
+| N2-S4 | More card "this part is free to spend" while Home says not safe to spend yet | open |
+| N2-S5 | "All of your pay has a place" next to "came out of pay with no place" | open |
+| N2-S7 | Month-end answer card skipped when an earlier month is still open (answer goes to the Undo bar by MAIN 9's SF1 design) | open, design |
+| N2-S8 | "Your bank balance doesn't include it yet" when a balance was typed after the month | open (copy) |
+| N2-S9 | "Keep saving" hidden until a receipt exists | open |
+| N2-S10 | In sample mode a saved bank balance shows nowhere | open |
+| N2-S11 | 12.345 logs as 12.34 (rounds half down) | open, within one cent, same everywhere |
+| notes | Add a card Save and Cancel under the Help bar at 412x915; two hyphens as dashes in setup and Settings; setup done screen "$1,325 of $4,800" counts this month's saving without saying so; borrowing from the fund while the same month still adds to it is not explained | open |
