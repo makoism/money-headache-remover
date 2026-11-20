@@ -4764,9 +4764,13 @@ function paintBar(el, m, withLabels) {
   const tipL = [];
   if (J.unplacedNet >= 0.5) tipL.push(J.restCover > 0 || J.usedOver >= 0.5 ? `${fmt2(J.unplacedNet)} not placed yet` + (J.income > 0 ? ` (${J.restPct}% of pay)` : '') : J.income > 0 ? `${J.restPct}% of pay, not placed yet` : '');
   if (J.usedOver >= 0.5) tipL.push(`${fmt2(J.usedOver)} used for spending past plan`);
-  if (J.restCover > 0) tipL.push(J.unplaced >= 0.5 ? `${fmt2(J.restCover)} borrowed from the emergency fund` : J.restKept > 0 ? 'borrowed from the emergency fund, stays in the bank' : 'borrowed money, used for spending past plan');
-  r.dataset.tip = `<b>Left</b> ${fmt2(rest)}` + tipL.filter(Boolean).map(x => '<br>' + x).join(''); r.setAttribute('aria-label', `Left ${fmt2(rest)}`);
-  if (rest > 0) names.push('Left ' + fmt2(rest));
+  /* borrowed money in this piece has the same name as its row on Plan (launch checklist Q3, SF6: it was "Borrowed" on the row and "Left" here) */
+  const bor = [[J.restKept, 'Borrowed, stays in the bank'], [J.restSpent, 'Borrowed, used for spending past plan']].filter(x => x[0] >= 0.005);
+  const one = bor.length === 1 && J.unplacedNet < 0.005 && J.usedOver < 0.005 ? bor[0] : null;   /* the whole piece is one kind of borrowed money: it is named as that */
+  if (!one) bor.forEach(([v, n]) => tipL.push(`${n} ${fmt2(v)}`));
+  const rn = one ? one[1] : 'Left', rv = one ? one[0] : rest;
+  r.dataset.tip = `<b>${rn}</b> ${fmt2(rv)}` + (one ? '<br>from the emergency fund' : '') + tipL.filter(Boolean).map(x => '<br>' + x).join(''); r.setAttribute('aria-label', `${rn} ${fmt2(rv)}`);
+  if (rest > 0) names.push(rn + ' ' + fmt2(rv));
   if (withLabels) el.setAttribute('aria-label', `${fmt2(J.realPay)} pay${J.draw > 0 ? ' and ' + fmt2(J.draw) + ' borrowed' : ''}, by place: ` + names.join(', '));   /* borrowed money is not pay (38.31 number gate round 2) */
 }
 function paintLegend(m) {
@@ -4790,7 +4794,7 @@ function jarNote(m) {
   if (J.over) return `Your plan spends ${fmt(J.exceedsBy)} more than your pay${J.draw > 0 ? `. ${fmt(J.draw)} of that comes from your emergency fund` : ''}. Lower a bill or another place.`;
   const nec = J.list[0], u = nec.usual;
   /* a plan paid partly with borrowed money: the pay is the 100, and the percent past it is the borrowed money (launch checklist Q3: never "add up to 117%") */
-  const borrowed = J.borrowUsedPct > 0 ? ` Your pay is 100%. The other ${J.borrowUsedPct}% is ${fmt(J.borrowUsed)} borrowed from your emergency fund.` : '';
+  const borrowed = J.borrowUsedPct > 0 ? ` Your pay is 100%. The other ${J.borrowUsedPct}% is the borrowed ${fmt(J.borrowUsed)} that pays for part of this plan.` : '';   /* the row's own words: this is the part of the borrow that pays for the plan, not all that was borrowed */
   const others = J.list.slice(1).some(j => j.v > 0);
   /* no bills in the plan is blank, not low: never praised as "under the usual" (38.31 number gate, wording and novice round 3) */
   if (!(nec.v > 0)) return 'No bills planned yet - add rent, food and the rest under Money out.' + borrowed;

@@ -3,9 +3,10 @@
        Each has its own name now, and the bar's tooltip uses the same words as the row.
    (b) The rows read 117% and "Borrowed 17%" and the sentence said the places "add up to 117%". Now the sentence says the pay is 100% and
        the other 17% is the borrowed money.
-   (c) The button borrows what brings the bank back up to the minimum balance. The part of it the plan needs and the part that stays in the bank
-       are two rows that add up to the amount on the button.
-   Run: node tests/qc/qc9_plan_borrow.js */
+   (c) The button borrows what brings the bank back up to the minimum balance (220.50 here). The part of it the plan needs (200.50, what the bills
+       are over the pay) and the part that stays in the bank (20) are two rows that add up to the amount on the button, and the sentence names
+       its amount as the part that pays for the plan, in the row's words.
+   Run: node tests/qc/qc9_plan_borrow.js   (PAGE=<built page> to run it on another build, for example the one before the fix) */
 const PAGE = process.env.PAGE || '/home/claude/work/money-map-team.html';
 process.env.BUILD = PAGE;
 const L = require('./lib_r12.js'); const R = L.R, w = R.w;
@@ -20,7 +21,8 @@ const look = p => p.evaluate(() => {
     rows: [...document.querySelectorAll('#legend .lg')].map(e => ({ name: e.querySelector('span').childNodes[0].textContent.trim(), sub: (e.querySelector('small') || {}).innerText || '', v: e.querySelector('b').innerText, pct: e.querySelector('em').innerText,
       left: Math.round(e.getBoundingClientRect().left), right: Math.round(e.getBoundingClientRect().right), cut: e.scrollWidth > e.clientWidth + 1 })),
     note: document.getElementById('jarNote').innerText, dock: document.getElementById('dockNum').innerText + ' ' + document.getElementById('dockTxt').innerText,
-    tip: r.dataset.tip.replace(/<br>/g, ' | ').replace(/<[^>]+>/g, ''), restAria: r.getAttribute('aria-label'), wide: document.documentElement.scrollWidth, vw: innerWidth };
+    tip: r.dataset.tip.replace(/<br>/g, ' | ').replace(/<[^>]+>/g, ''), tipHead: (r.dataset.tip.match(/<b>([^<]*)<\/b>/) || [])[1] || '', restAria: r.getAttribute('aria-label'), barAria: document.getElementById('bar').getAttribute('aria-label'),
+    page: document.getElementById('p-month').innerText, wide: document.documentElement.scrollWidth, vw: innerWidth };
 });
 (async () => {
   let errsAll = [];
@@ -57,12 +59,14 @@ const look = p => p.evaluate(() => {
     /* one piece, one name: the bar's tooltip for the same money uses the row's words */
     ck(T + 'the bar tooltip says "stays in the bank", the same words as the row', /stays in the bank/.test(s.tip) && !/kept in the bank/.test(s.tip), s.tip);
     ck(T + 'the bar piece is the same amount as the row that stays in the bank', near(num(s.restAria), kept), s.restAria);
+    ck(T + 'the bar piece and its tooltip are named as the row, not "Left"', !!keptRow && s.tipHead === keptRow.name && s.restAria.startsWith(keptRow.name + ' ') && !/\bLeft\b/.test(s.tip + ' ' + s.barAria), { tip: s.tip, aria: s.restAria, bar: s.barAria });
     /* (b) the percents reconcile: places are 100 + the borrowed part, and the sentence says which is which */
     const billsRow = s.rows.find(r => /^Bills/.test(r.name)), placed = s.rows.filter(r => !/borrow/i.test(r.name)).reduce((x, r) => x + (parseInt(r.pct) || 0), 0), bp = usedRow ? parseInt(usedRow.pct) || 0 : 0;
     ck(T + `the places (${placed}%) are 100% plus the borrowed row's percent (${bp}%)`, bp > 0 && placed === 100 + bp, s.rows.map(r => r.name + ' ' + r.pct));
     ck(T + 'the bills percent is the bills over the pay, within 1 point', !!billsRow && Math.abs(parseInt(billsRow.pct) - bills / pay * 100) < 1, billsRow);
-    ck(T + 'no sentence says the places "add up to" more than 100%', !/add(s)? up to 1\d\d%/.test(s.note), s.note);
+    ck(T + 'nothing on Plan says the places "add up to" more than 100%', !/add(s)? up to 1\d\d%/.test(s.page), s.note);
     ck(T + `the sentence says the pay is 100% and the other ${bp}% is borrowed`, /100%/.test(s.note) && new RegExp('\\b' + bp + '%').test(s.note) && /borrowed from your emergency fund/.test(s.note), s.note);
+    ck(T + 'the sentence says its amount is the part that pays for part of this plan, the row\'s own words', /pays for part of this plan/.test(s.note), s.note);
     ck(T + 'the amount in the sentence is the row that pays for part of this plan', (s.note.match(/[$¥][\d,.]*\d/g) || []).some(x => near(num(x), overPay)) && !(s.note.match(/[$¥][\d,.]*\d/g) || []).some(x => near(num(x), need)), s.note);
     ck(T + `the top line says ${overPay} more planned than pay and ${need} borrowed`, near(num((s.dock.match(/[$¥][\d,.]*\d/) || [])[0]), overPay) && near(num((s.dock.match(/, (\S+) borrowed/) || [])[1]), need), s.dock);
     ck(T + 'nothing is cut off or wider than the 412 wide phone', s.wide <= s.vw && s.rows.every(r => !r.cut && r.left >= 0 && r.right <= s.vw), { wide: s.wide, rows: s.rows.filter(r => r.cut || r.right > s.vw) });
@@ -75,6 +79,7 @@ const look = p => p.evaluate(() => {
     ck(T + 'after spending past plan: no two rows share a name and none is just "Borrowed"', new Set(on).size === on.length && !on.includes('Borrowed'), on);
     ck(T + `after spending past plan: ${kept - spent} still stays in the bank and ${spent} was used for spending past plan`, !!k2 && !!sp && near(num(k2.v), kept - spent) && near(num(sp.v), spent), o.rows.filter(r => /borrow/i.test(r.name)));
     const borSum = o.rows.filter(r => /borrow/i.test(r.name)).reduce((x, r) => x + num(r.v), 0);
+    ck(T + 'after spending past plan: the bar tooltip lists both borrowed pieces under their row names and amounts', !!k2 && !!sp && o.tip.includes(k2.name + ' ' + k2.v) && o.tip.includes(sp.name + ' ' + sp.v), o.tip);
     ck(T + `after spending past plan: the borrowed rows still add up to ${need}`, near(borSum, need), o.rows.filter(r => /borrow/i.test(r.name)));
     errsAll = errsAll.concat(errs); await b.close();
   }
