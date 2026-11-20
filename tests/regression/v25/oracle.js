@@ -51,7 +51,7 @@ function oracle(S) {
   const lineValue = (l, ym) => valueOf(l.key, ym, () => l.def);
   const eg = goals.find(g => g.emergency) || null;
   /* 38.30 rule: the Emergency fund stops at its target unless the person said yes to the longer goal (stretchOn) */
-  const cap = g => (g.emergency && g.stretchOn === true) ? Math.max(g.stretch || 0, g.target) : g.target;
+  const cap = (g, ym) => (g.emergency && g.stretchOn === true && !(ym && g.stretchFrom && ym < g.stretchFrom)) ? Math.max(g.stretch || 0, g.target) : g.target;   /* QC8 SF5: a yes counts from its month */
   let bank = M.cfg(S, 'bankStart');
   const bal = {}; goals.forEach(g => { bal[g.id] = g.start; });
   const reached = {}; const out = [];
@@ -83,7 +83,7 @@ function oracle(S) {
     goals.forEach(g => {
       const isE = !!(eg && g.id === eg.id);
       const planned = goalValue(g, ym) + (isE ? freed : 0);
-      const room = Math.max(0, cap(g) - bal[g.id]);
+      const room = Math.max(0, cap(g, ym) - bal[g.id]);
       const actual = Math.min(planned, room);
       r.g[g.id] = { planned, actual }; r.goalsTotal += actual;
     });
@@ -92,7 +92,7 @@ function oracle(S) {
     r.left = r.inflow - r.outflow;
     r.bankStart = bank; bank += r.left; r.bankEnd = bank;
     goals.forEach(g => { bal[g.id] += r.g[g.id].actual - (eg && g.id === eg.id ? r.draw : 0); });
-    goals.forEach(g => { if (g.target > 0 && reached[g.id] === undefined && bal[g.id] >= cap(g)) reached[g.id] = ym; });
+    goals.forEach(g => { if (g.target > 0 && reached[g.id] === undefined && bal[g.id] >= cap(g, ym)) reached[g.id] = ym; });
     r.spent = {};
     goals.forEach(g => { r.spent[g.id] = 0; if (g.due && g.target > 0 && ym === dueM(g)) { r.spent[g.id] = Math.min(bal[g.id], g.target); bal[g.id] -= r.spent[g.id]; } });
     r.bal = Object.assign({}, bal); out.push(r);
@@ -152,7 +152,7 @@ function oracleOverspend(S, rows, lines) {
 function oracleGoal(S, O, id, ym) {
   const g = S.plan.goals.find(x => x.id === id), row = O.rows.find(r => r.ym === ym);
   const reached = O.reached[id] || null, ls = O.lastSave(g), dm = O.dueM(g);
-  const T = O.cap(g);   /* 38.30 rule: every goal is judged against its cap (the target, or the longer goal once the person said yes) */
+  const T = O.cap(g, ym);   /* 38.30 rule: every goal is judged against its cap (the target, or the longer goal once the person said yes) */
   let state, need = null, slack = null, had = null;
   if (!(T > 0)) state = 'unset';
   else if (dm && ym >= dm) { had = O.rows.find(r => r.ym === dm).spent[id]; state = had >= T ? 'paid' : 'short'; }
@@ -200,7 +200,7 @@ function randomState(opt) {
     if (rnd() < .6) { g.target = ri(0, pay * 8); } if (rnd() < .6) { g.start = ri(0, Math.max(1, Math.round(g.target * 1.3))); }
     if (!g.emergency && rnd() < .5) { const ym = pick(M.MONTHS), d = pick([1, 10, 14, 15, 16, 17, 28]); g.due = ym + '-' + String(d).padStart(2, '0'); }
     else if (!g.emergency && rnd() < .4) g.due = '';
-    if (g.emergency) { g.stretch = rnd() < .5 ? ri(0, g.target * 3) : g.stretch; if (rnd() < .2) g.due = ''; if (rnd() < .5) g.stretchOn = true; }
+    if (g.emergency) { g.stretch = rnd() < .5 ? ri(0, g.target * 3) : g.stretch; if (rnd() < .2) g.due = ''; if (rnd() < .5) { g.stretchOn = true; if (rnd() < .5) g.stretchFrom = pick(M.MONTHS); } }
     if (!g.due && rnd() < .5) g.monthly = ri(0, Math.round(pay * .3));
     if (rnd() < .5) M.setVal(S, 'goal:' + g.id, pick(M.MONTHS), ri(0, Math.round(pay * .4)), rnd() < .6 ? 'after' : 'once');
     if (rnd() < .3) M.setVal(S, 'goal:' + g.id, pick(M.MONTHS), ri(0, Math.round(pay * .4)), 'after');

@@ -167,7 +167,7 @@ function sweepOffer() {
   for (let k = i - 1; k >= 0; k--) {
     const pm = MONTHS[k]; if (sweepAns(S, pm) || (SWEEP_LATER && SWEEP_LATER[pm])) continue;
     const m = C.byYm[pm], left = m.pendLeft || 0; if (!(left >= 0.01)) continue;
-    const goals = goalRows(S, C, pm).filter(r => r.live && r.pct < 100 && r.target > 0 && Math.max(0, capOf(goalById(S, r.id)) - r.saved) > 0);
+    const goals = goalRows(S, C, pm).filter(r => r.live && r.pct < 100 && r.target > 0 && r.togo > 0);
     const main = goals.length ? (pickMain(S, goals) || goals[0]) : null;
     return { pm, left, goals, main, now: MONTHS[i], n: receiptStats(S, pm).count };
   }
@@ -729,7 +729,7 @@ function wireHome() {
     if (e.target.closest('[data-remindgo]')) { S.ui.remindHidden = true; persist(); switchTab('receipts'); setTimeout(() => { const r = document.getElementById('rcRemind'); if (r) r.scrollIntoView({ block: 'start' }); }, 120); return; }
     const sh = e.target.closest('[data-sweephide]'); if (sh) { SWEEP_LATER = Object.assign({}, SWEEP_LATER, { [sh.dataset.sweephide]: true }); sfx('tap'); render(); return; }
     const sk = e.target.closest('[data-sweepbank]'); if (sk) { doRelease(sk.dataset.sweepbank); return; }
-    const stb = e.target.closest('[data-stretch]'); if (stb) { const eg = emergencyGoal(S); if (eg) { eg.stretchOn = stb.dataset.stretch === 'yes'; persist(); render(); } return; }
+    const stb = e.target.closest('[data-stretch]'); if (stb) { const eg = emergencyGoal(S); if (eg) { eg.stretchOn = stb.dataset.stretch === 'yes'; if (eg.stretchOn) eg.stretchFrom = nowYm(); else delete eg.stretchFrom; persist(); render(); }   /* a yes counts from this month (QC8 SF5) */ return; }
     const sb = e.target.closest('[data-sweep]'); if (sb) { doSweep(sb.dataset.sweep); return; }
     if (e.target.closest('[data-sweepundo]')) { undoSweep(); return; }
     if (e.target.closest('[data-exact]')) { impOnly = true; openTour('source', 'full'); return; }

@@ -13,7 +13,7 @@ function drawRoad() {
   const cw = $('#chartbox').clientWidth, W = Math.max(300, Math.min(720, cw || 720)), small = W < 520;
   const H = small ? 300 : 310, L = small ? 60 : 66, R = 14, T = 34, B = 30, n = C.months.length;
   /* the cap is the goal's real target, the longer one when it is on: the chart showed the emergency fund flat at the shorter target while the table beside it grew (38.31 number gate round 4) */
-  const series = gs.map(g => ({ g, v: C.months.map(m => Math.min(m.bal[g.id], capOf(g) > 0 ? capOf(g) : m.bal[g.id])) }));
+  const series = gs.map(g => ({ g, v: C.months.map(m => Math.min(m.bal[g.id], capOf(g, m.ym) > 0 ? capOf(g, m.ym) : m.bal[g.id])) }));
   const mx = Math.max(1, ...series.flatMap(s => s.v), ...gs.map(g => capOf(g)));
   const step = stepOf(mx / 4), top = Math.ceil(mx / step) * step;
   const X = i => L + i * (W - L - R) / (n - 1), Y = v => T + (1 - v / top) * (H - T - B);

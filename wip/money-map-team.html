@@ -2574,7 +2574,9 @@ function goalDefault(S, g, ym) {
   const u = roundUnit(S); return Math.ceil(rem / 12 / u) * u;
 }
 /* the Emergency fund stops at its target unless the person said yes to the longer goal (stretchOn) */
-const capOf = g => (g.emergency && g.stretchOn === true ? Math.max(g.stretch || 0, g.target) : g.target);
+/* a yes counts from the month it was said in (stretchFrom, QC8 SF5): months before it stay at the target, as they were. A yes saved
+   before this rule has no month and counts from the start, as it did. With no month given, the cap is the one in force now. */
+const capOf = (g, ym) => (g.emergency && g.stretchOn === true && !(ym && g.stretchFrom && ym < g.stretchFrom) ? Math.max(g.stretch || 0, g.target) : g.target);
 const BASE_DEF = { b: 0, side: 0, draw: 0 };
 function defOf(S, key, ym) {
   if (key === 'a') return payDef(S);
@@ -2724,7 +2726,7 @@ function calcAll(S) {
     const g = {};
     goals.forEach(gl => {
       const isE = !!(eg && gl.id === eg.id), planned0 = val(S, 'goal:' + gl.id, ym) + (isE ? freed : 0);
-      const room = Math.max(0, capOf(gl) - bal[gl.id]);
+      const room = Math.max(0, capOf(gl, ym) - bal[gl.id]);
       /* money from a month's unspent free to spend that was put toward this goal: only what the goal still has room for */
       const planned = planned0, up = m.topup && m.topup.id === gl.id ? round2(Math.max(0, Math.min(m.topup.amt, room - Math.min(planned0, room)))) : 0;
       if (up > 0) m.topup.used = up;
@@ -2742,7 +2744,7 @@ function calcAll(S) {
     m.credit = m.counted ? round2(m.counted - ((m.topup && m.topup.used) || 0)) : 0;   /* unspent free to spend the person answered for: what the goal did not take is counted in the bank */
     m.bankStart = bank; bank += m.left + m.credit; m.bankEnd = bank;
     goals.forEach(gl => { bal[gl.id] += g[gl.id].actual + (g[gl.id].up || 0) - (eg && gl.id === eg.id ? m.draw : 0); });
-    goals.forEach(gl => { if (gl.target > 0 && reached[gl.id] === undefined && bal[gl.id] >= capOf(gl)) reached[gl.id] = ym; });
+    goals.forEach(gl => { if (gl.target > 0 && reached[gl.id] === undefined && bal[gl.id] >= capOf(gl, ym)) reached[gl.id] = ym; });
     m.spent = {};
     goals.forEach(gl => {
       m.spent[gl.id] = 0;
@@ -2831,7 +2833,7 @@ function belowZeroOf(m) {
 const statusOf = (S, m) => (m.bankEnd < cfg(S, 'minBank') ? 'short' : (m.pool.left < 0 ? 'tight' : 'good'));
 
 function goalInfo(S, C, id, ym) {
-  const g = goalById(S, id), m = C.byYm[ym], target = capOf(g), bal = m.bal[id];
+  const g = goalById(S, id), m = C.byYm[ym], target = capOf(g, ym), bal = m.bal[id];
   const reached = C.reached[id] || null, rb = readyBy(g);
   let state = 'none', need = null, slack = null, had = null;
   const doneMonth = dueYm(g);
@@ -2876,7 +2878,7 @@ function sweepPlay(S, ym, goalId, amount) {
 }
 function sweepPlay0(S, ym, goalId, amount) {
   const g = goalById(S, goalId), m = calcAll(S).byYm[ym]; if (!g || !m) return 0;
-  const room = Math.max(0, capOf(g) - m.balBefore[g.id] - (m.g[g.id] ? m.g[g.id].actual : 0));
+  const room = Math.max(0, capOf(g, ym) - m.balBefore[g.id] - (m.g[g.id] ? m.g[g.id].actual : 0));
   let need = Math.max(0, Math.min(flrCur(S, +amount || 0), m.jar.play, room)); const moved = need; if (!(need > 0)) return 0;
   LAST_CUTS = [];
   m.lines.filter(x => x.jar === 'play' && x.on).forEach(x => { if (need <= 0) return; const cut = Math.min(x.v, need); if (cut > 0) LAST_CUTS.push({ key: x.key, cut }); setVal(S, x.key, ym, x.v - cut, 'once'); need -= cut; });
@@ -2968,7 +2970,7 @@ function goalRows(S, C, ym) {
   const ix = ymIdx(ym);
   return S.plan.goals.map(g => {
     const gi = goalInfo(S, C, g.id, ym), live = g.target > 0 && gi.state !== 'paid' && gi.state !== 'short';
-    return { id: g.id, name: g.name, slot: g.slot, kind: kindOfGoal(S, g), emergency: !!g.emergency, target: capOf(g), saved: gi.bal, togo: Math.max(0, capOf(g) - gi.bal), pct: wholePct(gi.bal, capOf(g)), state: gi.state,
+    return { id: g.id, name: g.name, slot: g.slot, kind: kindOfGoal(S, g), emergency: !!g.emergency, target: gi.target, saved: gi.bal, togo: Math.max(0, gi.target - gi.bal), pct: wholePct(gi.bal, gi.target), state: gi.state,
       reached: gi.reached, months: gi.reached ? Math.max(0, ymIdx(gi.reached) - ix) : null, need: gi.need, slack: gi.slack, due: g.due || null, readyBy: gi.readyBy, had: gi.had, live,
       /* does anything go in before the plan ends? A goal getting nothing is "not growing", never "over 2 years" (38.31 north-star round 4) */
       grows: ((C.months[C.months.length - 1] || { bal: {} }).bal[g.id] || 0) > gi.bal + 0.004 };
@@ -3097,7 +3099,7 @@ function planFactsOf(S, C, ym, hasPay) {
    for after that month's own saving. The same room rule calcAll applies to the stored answer, so the toast and the goal agree */
 function topupFit(S, C, pm, id) {
   const m = C.byYm[pm], g = goalById(S, id); if (!m || !g || !m.g[id]) return 0;
-  const room = Math.max(0, capOf(g) - m.balBefore[id] - m.g[id].actual);
+  const room = Math.max(0, capOf(g, pm) - m.balBefore[id] - m.g[id].actual);
   return Math.min(flrCur(S, m.pendLeft || 0), round2(room));
 }
 /* a split being made on a setup screen (percent shares that are not saved yet): the part not given out, and how far the share being moved has gone */
@@ -3322,7 +3324,7 @@ function nowOf(S) {
 }
 
 /* ---- cleaning up anything loaded from a saved copy ---- */
-const GOAL_KNOWN = new Set(['id', 'name', 'target', 'start', 'due', 'slot', 'monthly', 'why', 'emergency', 'stretch', 'stretchOn']);
+const GOAL_KNOWN = new Set(['id', 'name', 'target', 'start', 'due', 'slot', 'monthly', 'why', 'emergency', 'stretch', 'stretchOn', 'stretchFrom']);
 function cleanPlan(raw, legacy) {
   const base = basePlan(legacy);
   if (!raw || typeof raw !== 'object' || !Array.isArray(raw.lines) || !Array.isArray(raw.goals)) return base;
@@ -3346,7 +3348,7 @@ function cleanPlan(raw, legacy) {
     const o = { id: g.id, name: str(g.name, 60) || 'Untitled', target: num(g.target), start: num(g.start), due: validDue(g.due), slot };
     if (typeof g.monthly === 'number' && isFinite(g.monthly) && g.monthly >= 0) o.monthly = Math.min(MAX_AMT, round2(g.monthly));   /* cents kept (decision 1) */
     const why = str(g.why, WHY_MAX).replace(/\s+/g, ' ').trim(); if (why) o.why = why;
-    if (g.emergency && !hasE) { hasE = true; o.emergency = true; o.stretch = num(g.stretch); if (g.stretchOn === true || g.stretchOn === false) o.stretchOn = g.stretchOn; }
+    if (g.emergency && !hasE) { hasE = true; o.emergency = true; o.stretch = num(g.stretch); if (g.stretchOn === true || g.stretchOn === false) o.stretchOn = g.stretchOn; if (typeof g.stretchFrom === 'string' && /^\d{4}-(0[1-9]|1[0-2])$/.test(g.stretchFrom)) o.stretchFrom = g.stretchFrom; }
     /* a newer version's plain fields on a goal are kept, so restoring its backup here and saving loses nothing (38.31 data safety round 3) */
     Object.keys(g).filter(k => !(k in o) && !GOAL_KNOWN.has(k) && /^[A-Za-z][A-Za-z0-9_]{0,39}$/.test(k) && ['string', 'number', 'boolean'].indexOf(typeof g[k]) >= 0).slice(0, 12).forEach(k => { o[k] = typeof g[k] === 'string' ? g[k].slice(0, 200) : g[k]; });
     goals.push(o);
@@ -3432,7 +3434,7 @@ const EXTRA_DESTS = ['bank', 'goal', 'play', 'ffa', 'debt'];
 function addExtraMoney(S, ym, amount, dest) {
   amount = Math.round(+amount); if (!(amount > 0) || amount > MAX_AMT || MONTHS.indexOf(ym) < 0) return null;
   const C0 = calcAll(S), m0 = C0.byYm[ym]; let placed = 0, key = null, room = amount;
-  if (dest && dest.t === 'goal') { const g = goalById(S, dest.id); if (!g || g.target <= 0) return null; key = 'goal:' + g.id; room = Math.max(0, capOf(g) - m0.balBefore[g.id] - m0.g[g.id].actual); if (g.due && ym > readyBy(g)) room = 0; }
+  if (dest && dest.t === 'goal') { const g = goalById(S, dest.id); if (!g || g.target <= 0) return null; key = 'goal:' + g.id; room = Math.max(0, capOf(g, ym) - m0.balBefore[g.id] - m0.g[g.id].actual); if (g.due && ym > readyBy(g)) room = 0; }
   else if (dest && dest.t === 'play') { const l = S.plan.lines.find(x => x.jar === 'play'); if (!l) return null; key = l.key; }
   else if (dest && dest.t === 'ffa') { const l = S.plan.lines.find(x => x.jar === 'ffa'); if (!l) return null; key = l.key; }
   else if (dest && dest.t === 'debt') { const d = debtById(S, dest.id); if (!d) return null; key = 'debt:' + d.id; const st = m0.debts[d.id]; room = Math.max(0, st.start + st.interest - st.pay); }
@@ -4940,7 +4942,7 @@ function noteFor(f, m, v, on) {
 }
 function goalNote(gid, m) {
   const g = goalById(S, gid); if (!g) return '';
-  const gi = goalInfo(S, C, gid, sel), gm = m.g[gid], tg = g.target, cap = capOf(g); let t = '';
+  const gi = goalInfo(S, C, gid, sel), gm = m.g[gid], tg = g.target, cap = gi.target; let t = '';
   if (tg <= 0) return 'Open Plan, then Goals, and set the goal amount';
   if (gm && gm.actual < gm.planned && gm.planned > 0) t += `Needs only <b>${fmt(gm.actual)}</b> this month. `;
   if (g.due) {
@@ -4969,7 +4971,7 @@ function renderGoals(m) {
   $('#secRoad').hidden = !gs.length;
   gs.forEach(g => {
     const c = $('#jc-' + g.id); if (!c) return;
-    const gi = goalInfo(S, C, g.id, sel), cap = capOf(g);
+    const gi = goalInfo(S, C, g.id, sel), cap = gi.target;
     const pct = gi.pct, gb = $('.gbar', c);
     $('#jn-' + g.id).textContent = g.name; const jw = $('#jw-' + g.id); if (jw) jw.textContent = g.why || '';
     $('.fill', gb).style.width = (pct * 100) + '%'; gb.setAttribute('aria-label', `${g.name}: ${gi.pctWhole}% of ${fmt(cap)}`);
@@ -5043,7 +5045,7 @@ function drawRoad() {
   const cw = $('#chartbox').clientWidth, W = Math.max(300, Math.min(720, cw || 720)), small = W < 520;
   const H = small ? 300 : 310, L = small ? 60 : 66, R = 14, T = 34, B = 30, n = C.months.length;
   /* the cap is the goal's real target, the longer one when it is on: the chart showed the emergency fund flat at the shorter target while the table beside it grew (38.31 number gate round 4) */
-  const series = gs.map(g => ({ g, v: C.months.map(m => Math.min(m.bal[g.id], capOf(g) > 0 ? capOf(g) : m.bal[g.id])) }));
+  const series = gs.map(g => ({ g, v: C.months.map(m => Math.min(m.bal[g.id], capOf(g, m.ym) > 0 ? capOf(g, m.ym) : m.bal[g.id])) }));
   const mx = Math.max(1, ...series.flatMap(s => s.v), ...gs.map(g => capOf(g)));
   const step = stepOf(mx / 4), top = Math.ceil(mx / step) * step;
   const X = i => L + i * (W - L - R) / (n - 1), Y = v => T + (1 - v / top) * (H - T - B);
@@ -16004,7 +16006,7 @@ function sweepOffer() {
   for (let k = i - 1; k >= 0; k--) {
     const pm = MONTHS[k]; if (sweepAns(S, pm) || (SWEEP_LATER && SWEEP_LATER[pm])) continue;
     const m = C.byYm[pm], left = m.pendLeft || 0; if (!(left >= 0.01)) continue;
-    const goals = goalRows(S, C, pm).filter(r => r.live && r.pct < 100 && r.target > 0 && Math.max(0, capOf(goalById(S, r.id)) - r.saved) > 0);
+    const goals = goalRows(S, C, pm).filter(r => r.live && r.pct < 100 && r.target > 0 && r.togo > 0);
     const main = goals.length ? (pickMain(S, goals) || goals[0]) : null;
     return { pm, left, goals, main, now: MONTHS[i], n: receiptStats(S, pm).count };
   }
@@ -16566,7 +16568,7 @@ function wireHome() {
     if (e.target.closest('[data-remindgo]')) { S.ui.remindHidden = true; persist(); switchTab('receipts'); setTimeout(() => { const r = document.getElementById('rcRemind'); if (r) r.scrollIntoView({ block: 'start' }); }, 120); return; }
     const sh = e.target.closest('[data-sweephide]'); if (sh) { SWEEP_LATER = Object.assign({}, SWEEP_LATER, { [sh.dataset.sweephide]: true }); sfx('tap'); render(); return; }
     const sk = e.target.closest('[data-sweepbank]'); if (sk) { doRelease(sk.dataset.sweepbank); return; }
-    const stb = e.target.closest('[data-stretch]'); if (stb) { const eg = emergencyGoal(S); if (eg) { eg.stretchOn = stb.dataset.stretch === 'yes'; persist(); render(); } return; }
+    const stb = e.target.closest('[data-stretch]'); if (stb) { const eg = emergencyGoal(S); if (eg) { eg.stretchOn = stb.dataset.stretch === 'yes'; if (eg.stretchOn) eg.stretchFrom = nowYm(); else delete eg.stretchFrom; persist(); render(); }   /* a yes counts from this month (QC8 SF5) */ return; }
     const sb = e.target.closest('[data-sweep]'); if (sb) { doSweep(sb.dataset.sweep); return; }
     if (e.target.closest('[data-sweepundo]')) { undoSweep(); return; }
     if (e.target.closest('[data-exact]')) { impOnly = true; openTour('source', 'full'); return; }

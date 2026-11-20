@@ -187,7 +187,7 @@ function noteFor(f, m, v, on) {
 }
 function goalNote(gid, m) {
   const g = goalById(S, gid); if (!g) return '';
-  const gi = goalInfo(S, C, gid, sel), gm = m.g[gid], tg = g.target, cap = capOf(g); let t = '';
+  const gi = goalInfo(S, C, gid, sel), gm = m.g[gid], tg = g.target, cap = gi.target; let t = '';
   if (tg <= 0) return 'Open Plan, then Goals, and set the goal amount';
   if (gm && gm.actual < gm.planned && gm.planned > 0) t += `Needs only <b>${fmt(gm.actual)}</b> this month. `;
   if (g.due) {
@@ -216,7 +216,7 @@ function renderGoals(m) {
   $('#secRoad').hidden = !gs.length;
   gs.forEach(g => {
     const c = $('#jc-' + g.id); if (!c) return;
-    const gi = goalInfo(S, C, g.id, sel), cap = capOf(g);
+    const gi = goalInfo(S, C, g.id, sel), cap = gi.target;
     const pct = gi.pct, gb = $('.gbar', c);
     $('#jn-' + g.id).textContent = g.name; const jw = $('#jw-' + g.id); if (jw) jw.textContent = g.why || '';
     $('.fill', gb).style.width = (pct * 100) + '%'; gb.setAttribute('aria-label', `${g.name}: ${gi.pctWhole}% of ${fmt(cap)}`);
