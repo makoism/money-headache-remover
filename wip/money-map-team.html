@@ -1923,6 +1923,9 @@ ol.steps li { margin: 0 0 4px; }
    nothing to say so), and Plan > All months fits 320 wide with every figure whole and the Status column on screen */
 .lbt { min-width: 0; }
 @media (max-width: 360px) { #monthTable th, #monthTable td { padding: 10px 2px; font-size: 12px; letter-spacing: -.02em; } #monthTable td:last-child { white-space: normal; } }
+/* QC round 4 layout and touch (confusing 1): an amount in "Where your money sits" never breaks inside the number; only the name wraps */
+.mp-key b { white-space: nowrap; overflow-wrap: normal; }
+.mp-key li { flex-wrap: wrap; min-width: 0; }
 </style>
 </head>
 <body>
