@@ -52,3 +52,21 @@ Hard gates again all pass (oracle 3000 plans 0, proof 1500 plans 0, display math
 | N2-S10 | In sample mode a saved bank balance shows nowhere | open |
 | N2-S11 | 12.345 logs as 12.34 (rounds half down) | open, within one cent, same everywhere |
 | notes | Add a card Save and Cancel under the Help bar at 412x915; two hyphens as dashes in setup and Settings; setup done screen "$1,325 of $4,800" counts this month's saving without saying so; borrowing from the fund while the same month still adds to it is not explained | open |
+
+# Round 3 on 53bb8cb (fresh agents, both FAIL; hard gates all pass, the six number situations all agree)
+
+| id | finding | state |
+| --- | --- | --- |
+| N3-B1 | Home's Free to spend tile showed what is left as "planned: yours to spend over the whole of Nov" | fixed b7c4719 and 9a0d2fc: "planned: left to spend in Nov" (A1 keeps "planned") |
+| N3-B2 | "Logged X" stayed after Undo | fixed 50ca3a8 |
+| NS3-1 | After Undo of a cloud load the Settings panel still said "This device now shares the cloud copy" | fixed 9a33833 (panel closes, a message says what happened) |
+| NS3-7 | "In your bank now now" | fixed 9a0d2fc |
+| NS3-2 / NS2-2 | Undo for a cloud load is gone once you leave Settings (the copy is kept and offered again on the next open) | for Mako's run: a lasting "put back" in Settings, against Q7's "bar stays across tabs" |
+| NS3-3 | "older copy ... takes this device back" on a phone with different numbers | for Mako's run (copy) |
+| NS3-4 | No message after loading from the welcome screen | open |
+| NS3-5 | Short-month fixes cover one month only; "Lower a bill or another place" when every place is 0; "On plan" tick in a month that borrows | for Mako's run (how fixes should work across months) |
+| NS3-6 | "Short" means "spends more than pay" in setup and "ends under the minimum" on Plan | for Mako's run (copy, one word per thing) |
+| N3-S1 | Sample mode: a saved bank is invisible but changes the Free to spend label | open |
+| N3-S2 | "Spend X instead" in a month that also has spending past plan does not fully fix the month | open |
+| N3-S3..S7 | Borrow offered with no pay entered; past month's swept Free to spend still leads; negative "Not placed" in All months; answer card skipped to the next month; "Lines with no receipts aren't listed" under a listed row | open |
+| process | verify.txt says VERIFY OK and also "FAIL the screens changed" (13 golden plans MISSING after the wording changes) | refresh the golden file once Mako's copy pass settles the words |
