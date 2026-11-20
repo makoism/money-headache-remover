@@ -7698,7 +7698,20 @@ const BUR = (() => {
     return hit;
   }
   /* the invisible hit area goes exactly over the painted sign */
-  function placeSign() { const b = el.querySelector('.bv-sign'); if (!SIGNR || !k) { b.style.display = 'none'; return; } b.style.display = 'block'; b.style.left = SIGNR.x * k.S + 'px'; b.style.top = SIGNR.y * k.S + 'px'; b.style.width = SIGNR.w * k.S + 'px'; b.style.height = SIGNR.h * k.S + 'px'; }
+  function placeSign() { const b = el.querySelector('.bv-sign'); if (!SIGNR || !k) { b.style.display = 'none'; placeDots(); return; } b.style.display = 'block'; b.style.left = SIGNR.x * k.S + 'px'; b.style.top = SIGNR.y * k.S + 'px'; b.style.width = SIGNR.w * k.S + 'px'; b.style.height = SIGNR.h * k.S + 'px'; placeDots(); }
+  /* the page dots keep clear of the BACK HOME sign on every screen size: where they would meet it they sit just above it, so a tap on a
+     dot never goes home and the sign is never covered (QC round 4 layout and touch 1, art director 1) */
+  function placeDots() {
+    const d = el && el.querySelector('.bv-dots'), b = el && el.querySelector('.bv-sign'); if (!d) return;
+    d.style.bottom = ''; d.style.top = '';
+    if (d.hidden || !b || b.style.display === 'none') return;
+    const sr = b.getBoundingClientRect(), dr = d.getBoundingClientRect();
+    if (!(dr.width && sr.width) || !(dr.left < sr.right && sr.left < dr.right && dr.top < sr.bottom && sr.top < dr.bottom)) return;
+    /* under the burrow's card at the top: clear of the sign, the mound and the creatures; above the sign only when there is no card */
+    const er = el.getBoundingClientRect(), pc = el.querySelector('.bv-pop'), pr = pc && !pc.hidden ? pc.getBoundingClientRect() : null;
+    if (pr && pr.height) { d.style.top = Math.round(pr.bottom - er.top + 8) + 'px'; d.style.bottom = 'auto'; }
+    else d.style.bottom = Math.max(0, er.bottom - sr.top + 8) + 'px';
+  }
   function placeGround(L) { if (L.bg) { grc.style.display = 'none'; SIGNR = L.sign ? L.sign() : null; } else { grc.style.display = 'block'; grc.width = k.W; grc.height = k.H; grc.style.width = k.W * k.S + 'px'; grc.style.height = k.H * k.S + 'px'; SIGNR = groundPaint(grc.getContext('2d'), k); } placeSign(); }
   /* sizes: one art pixel is S screen pixels; the weather layer uses the same pixel. The burrow stands on the ground at 80% of the height. */
   function layout() {
@@ -7726,6 +7739,7 @@ const BUR = (() => {
     el.querySelector('.bv-dots').hidden = all.length < 2;   /* one burrow: no page dots that do nothing (38.31 north-star round 4) */
     el.querySelector('.bv-dots').innerHTML = all.map(x => `<button type="button" data-b="${esc(x.id)}" aria-label="${esc(x.name)}" aria-current="${x.id === cur}"></button>`).join('');
     el.querySelectorAll('.bv-dots button').forEach(b => b.addEventListener('click', () => open(b.dataset.b)));
+    placeDots();
     try { if (!LOOKS[LK].bg) SCENE.look(LOOKS[LK].mood || ''); } catch (e) { /* the world is a bonus */ }
     return { pct, r };
   }
