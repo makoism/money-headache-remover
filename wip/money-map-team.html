@@ -3045,8 +3045,11 @@ function freeOf(S, mv, p) {
 /* The burrow map Home draws, from the plan and the receipts (no bank balance yet; real balances come with pay day).
    Bills and basics and Free to spend are this month's money, shown as what is left. Every burrow is money that piles up: the goals, and
    Education, Giving and Investing as running totals from the start of the plan (planned in, minus what was logged). Totals include what is planned for this month. */
+/* the sample numbers are on screen until pay, bills and goals are the person's own (or they started blank); a bank typed then is not
+   theirs to compare with the sample plan (QC10 round 3 numbers should-fix 1) */
+const sampleShown = S => { const u = S.ui || {}, d = u.done || {}, zero = u.preset === 'blank' || !!u.cleared; return !zero && !(d.pay && d.bills && d.goals); };
 function mapOf(S, C, ym, V0) {
-  const m = C.byYm[ym], rs = receiptStats(S, ym), p = V0.play, fo = freeOf(S, V0.month, p), nw = nowOf(S);
+  const m = C.byYm[ym], rs = receiptStats(S, ym), p = V0.play, fo = freeOf(S, V0.month, p), nw = sampleShown(S) ? { afterCards: null } : nowOf(S);
   const planNec = m.jar.nec, billsLeft = m.billsLeftM != null ? m.billsLeftM : Math.max(0, round2(planNec - (rs.byJar.nec || 0)));
   /* money rule 3: Free to spend is safe only when the typed bank after the cards covers the bills still to pay and Free to spend
      (QC10 numbers blocker 3, round 2 blocker 1) */
@@ -15995,7 +15998,7 @@ function heroGraph(g) {
   return s;
 }
 /* the numbers are still the invented ones: pay, bills and goals have not all been set by the person, and the plan was not cleared */
-const sampleOn = () => { const d = S.ui.done || {}, zero = S.ui.preset === 'blank' || !!S.ui.cleared; return !zero && !(d.pay && d.bills && d.goals); };
+const sampleOn = () => sampleShown(S);   /* one rule, in model.js */
 /* the first thing on Home: where you stand this month, in one plain statement. Every figure comes from the month view; nothing is worked out here. */
 function renderStatus() {
   const el = $('#hStatus'), V = HV, m = V && V.month; if (!el || !m) return;
@@ -17169,7 +17172,7 @@ function renderMap() {
     const no = $('#mpBankNo'); if (no) no.onclick = () => { renderMap.ask = false; renderMap(); };
     const sv = $('#mpBankSave'), inp = $('#mpBankIn');
     if (sv && inp) { /* the box opens empty with the balance as its grey hint (a filled box turned 1200 plus a typed 1150 into 12001150); saving it empty keeps that balance, checked today */
-      const go = () => { const keep = inp.value === '' && hasBank && !(inp.validity && inp.validity.badInput); if (!keep && (inp.value === '' || !isFinite(+inp.value))) { cheer('Type the balance your bank app shows, in numbers'); inp.focus(); return; } renderMap.ask = false; ACT.setBankNow(keep ? NW.bank : inp.value); sfx('tap'); cheer('Saved: ' + fmt2(nowOf(S).bank) + ' in your bank today'); };
+      const go = () => { const keep = inp.value === '' && hasBank && !(inp.validity && inp.validity.badInput); if (!keep && (inp.value === '' || !isFinite(+inp.value))) { cheer('Type the balance your bank app shows, in numbers'); inp.focus(); return; } renderMap.ask = false; ACT.setBankNow(keep ? NW.bank : inp.value); sfx('tap'); cheer('Saved: ' + fmt2(nowOf(S).bank) + ' in your bank today.' + (smpOn ? ' It shows here once you use your own numbers.' : '')); };
       sv.onclick = go; inp.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); go(); } }; } }
   { const ad = $('#mpCardAdd'); if (ad) ad.onclick = () => { renderMap.card = 'new'; renderMap(); const i = $('#mpCardName'); if (i) i.focus(); };
     el.querySelectorAll('[data-card]').forEach(b => { b.onclick = () => { renderMap.card = b.dataset.card; renderMap(); const i = $('#mpCardOwed'); if (i) i.focus(); }; });

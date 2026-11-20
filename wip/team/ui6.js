@@ -117,7 +117,7 @@ function heroGraph(g) {
   return s;
 }
 /* the numbers are still the invented ones: pay, bills and goals have not all been set by the person, and the plan was not cleared */
-const sampleOn = () => { const d = S.ui.done || {}, zero = S.ui.preset === 'blank' || !!S.ui.cleared; return !zero && !(d.pay && d.bills && d.goals); };
+const sampleOn = () => sampleShown(S);   /* one rule, in model.js */
 /* the first thing on Home: where you stand this month, in one plain statement. Every figure comes from the month view; nothing is worked out here. */
 function renderStatus() {
   const el = $('#hStatus'), V = HV, m = V && V.month; if (!el || !m) return;

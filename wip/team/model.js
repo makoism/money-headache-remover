@@ -668,8 +668,11 @@ function freeOf(S, mv, p) {
 /* The burrow map Home draws, from the plan and the receipts (no bank balance yet; real balances come with pay day).
    Bills and basics and Free to spend are this month's money, shown as what is left. Every burrow is money that piles up: the goals, and
    Education, Giving and Investing as running totals from the start of the plan (planned in, minus what was logged). Totals include what is planned for this month. */
+/* the sample numbers are on screen until pay, bills and goals are the person's own (or they started blank); a bank typed then is not
+   theirs to compare with the sample plan (QC10 round 3 numbers should-fix 1) */
+const sampleShown = S => { const u = S.ui || {}, d = u.done || {}, zero = u.preset === 'blank' || !!u.cleared; return !zero && !(d.pay && d.bills && d.goals); };
 function mapOf(S, C, ym, V0) {
-  const m = C.byYm[ym], rs = receiptStats(S, ym), p = V0.play, fo = freeOf(S, V0.month, p), nw = nowOf(S);
+  const m = C.byYm[ym], rs = receiptStats(S, ym), p = V0.play, fo = freeOf(S, V0.month, p), nw = sampleShown(S) ? { afterCards: null } : nowOf(S);
   const planNec = m.jar.nec, billsLeft = m.billsLeftM != null ? m.billsLeftM : Math.max(0, round2(planNec - (rs.byJar.nec || 0)));
   /* money rule 3: Free to spend is safe only when the typed bank after the cards covers the bills still to pay and Free to spend
      (QC10 numbers blocker 3, round 2 blocker 1) */
