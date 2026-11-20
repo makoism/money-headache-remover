@@ -20,6 +20,12 @@ let bad = 0; const ck = (n, c, saw) => { console.log((c ? 'PASS ' : 'FAIL ') + n
   ck('no row with money in it reads 0%', zero.length === 0, zero);
   const used = rows.find(r => /spending past plan/i.test(r.name));
   ck('the $9.99 spent past plan reads "under 1%"', !!used && /9\.99/.test(used.v) && used.pct === 'under 1%', rows);
+  /* QC10 round 2 numbers should-fix 5: when spending past plan used up all the pay that had no place, Plan said "All of your pay has a
+     place" next to the row "came out of pay with no place" */
+  await p.evaluate(() => { const S = __t.S; S.receipts.push({ id: 'u3', d: '2026-11-06', a: 1100, c: 'envelope', cn: 'Free to spend', n: '' }); __t.persist(); __t.restructure(); });
+  await L.tab(p, 'tab-home'); await L.tab(p, 'tab-month'); await L.clickText(p, 'Month'); await w(500);
+  const words = await p.evaluate(() => document.getElementById('dockTxt').innerText + ' || ' + document.getElementById('verdict').innerText);
+  ck('pay with no place all used by spending past plan: Plan does not say it all has a place', !/has a place/.test(words) && !/All pay is placed/.test(words) && /used/.test(words), words);
   const e2 = errs.filter(e => !/favicon|net::ERR_FILE_NOT_FOUND|fonts/.test(e));
   ck('no page errors', e2.length === 0, e2.slice(0, 3));
   await b.close();
