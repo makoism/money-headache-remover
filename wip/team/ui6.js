@@ -308,7 +308,7 @@ function renderHero() {
     else put(el, `<div class="hw-empty"><h2>No burrow yet</h2><p>Add a burrow to see what each month adds and when it's full</p><button type="button" class="btn solid" data-gw>Add a burrow</button></div>`);
     return;
   }
-  const g = goalById(S, r.id), pct = r.pct, fr = fracOf(r);
+  const g = goalById(S, r.id), pct = r.pct, fr = fracOf(r);   /* the percent is the end of this month's, as on every Home figure (goal_agree); the amount is saved now (QC round 4 novice B1) */
   if (!g) return;
   try { SCENE.progress(pct); } catch (e) { /* the world is a bonus */ }
   const purpose = g.why || purposeFor(g); /* view and plan out of step for a moment (a goal just removed); the next restructure redraws */
@@ -321,13 +321,13 @@ function renderHero() {
   const ms = [25, 50, 75].map(p => `<span class="ms${pct >= p ? ' hit' : ''}" style="left:${p}%"></span>`).join('');
   /* what moves it: this month's deposit and what is still to go, so progress reads as motion, not a percent */
   const mg = C.byYm[HV.ym] && C.byYm[HV.ym].g[g.id], put1 = mg ? mg.actual : 0, togo = r.togo;
-  const adds = r.pct < 100 && r.live ? `<p class="hw-add">${put1 > 0 ? `<b>+${fmt(put1)}</b> this month. ` : ''}${dwr(r, fmt(togo) + ' to go.')}</p>` : '';
+  const adds = r.pct < 100 && r.live ? `<p class="hw-add">${put1 > 0 ? `<b>+${fmt(put1)}</b> planned this month. ` : ''}${dwr(r, fmt(togo) + ' to go.')}</p>` : '';
   el.className = 'card hwin';
   put(el, `<p class="hw-k">Main goal: ${esc(g.name)}</p>
     <h2 class="hw-p">${esc(purpose)}</h2>
     <p class="hw-when">${when}</p>
     <div class="hw-bar" role="img" aria-label="${pct} percent of ${esc(g.name)} saved" style="--c:var(--c${g.slot})"><i class="fill" style="width:${fr * 100}%"></i>${ms}</div>
-    <div class="hw-nums"><span><b>${fmt(r.saved)}</b> of ${fmt(r.target)}</span><span>${pct}%</span></div>
+    <div class="hw-nums"><span><b>${fmt(r.savedNow)}</b> ${r.kind === 'debt' ? 'paid off' : 'saved'} now, of ${fmt(r.target)}</span><span>${pct}%${r.saved !== r.savedNow ? ` at the end of ${monthLabel(HV.ym, true)}` : ''}</span></div>
     ${adds}${chip}
     <details class="hw-more"><summary>Forecast</summary>${sub ? `<p class="hw-sub">${sub}</p>` : ''}${r.reached ? `<div class="hw-graph" id="hGraph">${heroGraph(g)}</div>` : ''}<div class="row-btns">${fix}<button type="button" class="btn small" data-tab-go="goals">Edit burrows</button></div></details>`);
   /* a milestone is celebrated once, the first time the plan passes it */
