@@ -706,7 +706,11 @@ function wireHome() {
     el.addEventListener('keydown', e => { if ((e.key === '-' || e.key === '\u2212') && (el.selectionStart || 0) === 0) el.dataset.neg = '1'; });
     el.addEventListener('beforeinput', e => { if ((el.selectionStart || 0) === 0 && e.data) flag(e.data); });
     el.addEventListener('paste', e => { try { flag((e.clipboardData || window.clipboardData).getData('text')); } catch (x) { } });
-    el.addEventListener('input', e => { if (!NATIVE_VALUE.get.call(el).trim() && /^delete/.test(e.inputType || '')) delete el.dataset.neg; }); });
+    el.addEventListener('input', e => { if (!NATIVE_VALUE.get.call(el).trim() && /^delete/.test(e.inputType || '')) delete el.dataset.neg;
+      /* any change to the amount, even a refused paste that puts the same figure back, takes back a "Tap again" warning: only a tap made
+         after reading the warning about the figure in the box logs it (QC8_NUMBERS_SHOULD_FIX SF4) */
+      const armed = bigArm || (futureArm && futureArm.indexOf('dup') === 0); bigArm = null; clearTimeout(bigT); if (futureArm && futureArm.indexOf('dup') === 0) { futureArm = null; clearTimeout(futureT); }
+      const m = $(id === 'rcAmt' ? '#rcMsg' : '#hMsg'); if (armed && m && /Tap again/.test(m.textContent)) m.textContent = ''; }); });
   $('#hCat').addEventListener('change', () => { catPicked('h'); syncOtherTitle('hCat', 'hNote'); $('#hMsg').textContent = ''; if ($('#hCat').value === 'other') { const dt = $('.hmore'); if (dt) dt.open = true; const hn = $('#hNote'); if (hn) hn.focus(); } });
   $('#p-home').addEventListener('click', e => {
     if (e.target.closest('[data-gw]')) { openGoalWizard(); return; }
