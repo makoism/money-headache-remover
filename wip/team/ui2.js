@@ -278,7 +278,7 @@ function renderMonthTable() {
     const pcm = planCells(S, C, m.ym), np = m.pool.left < 0 ? m.pool.left : pcm.unplaced;   /* the Month card's own figure: pay with no place, less what spending past plan already used (38.31 number gate round 4) */
     const unp = !grew && st === 'good' && pcm.unplaced >= roundUnit(S);
     const wd = grew ? 'Over plan' : unp ? 'Not placed yet' : word[st];
-    return `<tr data-ym="${m.ym}" class="${m.ym === sel ? 'on' : ''}" tabindex="0" aria-label="${fullLabel(m.ym)}: ${wd}${gs.length ? ', ' + gs.map(g => g.name + ' full').join(', ') : ''}"><td>${monthLabel(m.ym)}${marks}</td><td class="${np < 0 ? 'neg' : ''}">${fmt2(np)}</td><td class="${bk < cfg(S, 'minBank') ? 'neg' : ''}">${fmt2(bk)}</td><td><span class="st ${unp ? 'tight' : st}">${unp ? IC.warn : icon[st]}<span class="stw">${wd}</span></span></td></tr>`;
+    return `<tr data-ym="${m.ym}" class="${m.ym === sel ? 'on' : ''}" tabindex="0" aria-label="${fullLabel(m.ym)}: ${wd}${gs.length ? ', ' + gs.map(g => g.name + ' full').join(', ') : ''}"><td>${monthLabel(m.ym)}${marks}</td><td class="${np < 0 ? 'neg' : ''}">${np < 0 ? fmt2(pcm.pastPay) + ' past pay' : fmt2(np)}</td><td class="${bk < cfg(S, 'minBank') ? 'neg' : ''}">${fmt2(bk)}</td><td><span class="st ${unp ? 'tight' : st}">${unp ? IC.warn : icon[st]}<span class="stw">${wd}</span></span></td></tr>`;
   }).join('');
   $('#monthTable').innerHTML = `<table><thead><tr><th>Month</th><th>Not placed</th><th>Bank, month end</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table>`;
 }

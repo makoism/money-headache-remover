@@ -761,7 +761,7 @@ function planCells(S, C, ym) {
   return {
     pay: m.pool.in - dw,                           /* real pay this month: what came in, less what was borrowed */
     unplaced: Math.max(0, (L - dw) - over),        /* pay with no place, less what spending past plan already took from it */
-    overPay: -(L - dw),                            /* how much more than the pay the month plans to spend (shown in a tight month) */
+    overPay: -(L - dw), pastPay: L < 0 ? round2(-L) : 0,   /* how far the plan goes past pay this month, for All months (QC10 round 3 numbers should-fix 5) */                            /* how much more than the pay the month plans to spend (shown in a tight month) */
     bankGap: Math.max(0, cfg(S, 'minBank') - m.bankEnd),   /* how far the bank ends under the safety minimum */
     bankBelowZero: -m.bankEnd,                     /* how far below zero the bank ends (shown only when it is) */
     dock, dockAbs: Math.abs(dock),                 /* the dock number: pay not placed yet, or (when negative) how much more is planned than the pay */

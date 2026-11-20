@@ -20,6 +20,11 @@ let bad = 0; const ck = (n, c, saw) => { console.log((c ? 'PASS ' : 'FAIL ') + n
   const goals = await p.evaluate(() => document.getElementById('goalsSub').innerText);
   ck('Plan, Month: the Free to spend line names November, not "this month"', /(in|of) Nov/.test(hero) && !/this month/.test(hero), hero);
   ck('Plan, Burrows: "Goals get X in Nov", not "this month"', /Goals get .* in Nov/.test(goals) && !/this month/.test(goals), goals);
+  /* QC10 round 3 numbers should-fix 5: with no pay, All months showed "−X" under "Not placed"; it is planned past pay and says so */
+  await p.evaluate(() => { const S = __t.S; S.steps = { a: [{ from: '2026-11', v: 0 }] }; __t.persist(); __t.restructure(); });
+  await L.tab(p, 'tab-home'); await L.tab(p, 'tab-month'); await L.clickText(p, 'All months'); await w(500);
+  const nov = await p.evaluate(() => { const r = document.querySelector('#monthTable tr[data-ym="2026-11"]'); return r ? r.cells[1].innerText.trim() : ''; });
+  ck('All months, no pay: November reads "X past pay", never a minus under Not placed', /past pay/.test(nov) && !/[−-]/.test(nov), nov);
   const e2 = errs.filter(e => !/favicon|net::ERR_FILE_NOT_FOUND|fonts/.test(e));
   ck('no page errors', e2.length === 0, e2.slice(0, 3));
   await b.close();
