@@ -113,12 +113,13 @@ function render() {
   if (pin <= 0) vt = 'Tap Salary below and type your monthly take-home pay';
   else if (st === 'good') vt = (Lun < 0.005 ? 'All pay is placed.' :   /* exact: a small amount not placed is named, never called placed (38.31 money accuracy round 3) */ `${fmt2(Lun)} of pay not placed yet.`) + (Lun >= pin * 0.08 ? ' Raise a goal or another place to use it, or leave it where it is.' : '');
   else if (st === 'tight') vt = `This month you spend ${fmt2(PC.overPay)} more than your pay${m.draw > 0 ? ', ' + fmt2(m.draw) + ' of it borrowed' : ''}. Your balance covers ${m.draw > 0 ? 'the other ' + fmt2(jarsOf(S, m).short) : 'it'} and ends at ${fmt2(m.bankEnd)}, so it doesn't go under your ${fmt2(floor)} minimum balance. You can change that in Settings.`;
-  else vt = (floor > 0 ? `Balance would end at ${fmt2(m.bankEnd)}, ${fmt2(gap)} under your ${fmt2(floor)} minimum balance. You can change that in Settings.` : `Balance would end at ${fmt2(m.bankEnd)}, below zero.`) + (fixes(S, m).length ? ' Pick a fix:' : ' Lower a cost or add pay to fix it.');
+  else vt = (floor > 0 ? `Balance would end at ${fmt2(m.bankEnd)}, ${fmt2(gap)} under your ${fmt2(floor)} minimum balance. You can change that in Settings.` : `Balance would end at ${fmt2(m.bankEnd)}, below zero.`);
+  const vtEnd = st === 'short' && pin > 0 ? (fixes(S, m).length ? ' Pick a fix:' : ' Lower a cost or add pay to fix it.') : '';   /* the last words, right before the buttons (QC10 round 2 numbers should-fix 6) */
   if (m.draw > 0) vt += ` ${fmt2(m.draw)} is borrowed from the emergency fund.`;
   /* a borrow bigger than the plan now needs is said, never changed on its own (QC8 SF6) */
   const DF = drawFit(S, m);
   if (DF.extra >= 0.005) vt += DF.need > 0 ? ` Your plan needs only ${fmt2(DF.need)} of the borrow now ${floor > 0 ? `to keep your bank at the ${fmt2(floor)} minimum` : 'to keep your bank from going below zero'}. ${fmt2(DF.extra)} of it is not needed.`   /* why it differs from the borrowed part that pays for the plan (QC10 north-star F6) */ : ` Your plan doesn't need the borrow now.`;   /* "stays in the bank" is the name of a row with another amount (QC10 numbers blocker 2) */
-  $('#verdict').textContent = vt;
+  $('#verdict').textContent = vt + vtEnd;
   let btns = '';
   if (st !== 'good') fixes(S, m).forEach(f => {
     btns += f.id === 'trim' ? `<button type="button" class="btn small" data-fx="trim" data-amt="${f.amount}">Spend ${fmt2(f.amount)} instead</button>`

@@ -59,6 +59,7 @@ const food = async (p, v) => { await p.evaluate(v => { const S = __t.S; S.plan.l
   s = await look(p);
   ck('covered: ¥7,050 borrowed, the bank ends at the ¥12,000 minimum', s.draw === 7050 && s.bankEnd === 12000, s);
   ck('covered: the note under the list does not ask to lower a bill when the balance covers the rest', !/Lower a bill/.test(s.note) && /your balance covers the other ¥3,000/i.test(s.note), s.note);
+  ck('every banner: "Pick a fix:" is the last words, right before the buttons (QC10 round 2 numbers should-fix 6)', !/Pick a fix:\s*\S/.test(s.verdict), s.verdict);
   ck('covered: the banner says the balance covers the other ¥3,000, not "it"', /covers the other ¥3,000/.test(s.verdict) && !/covers it\b/.test(s.verdict), s.verdict);
   const e2 = errs.filter(e => !/favicon|net::ERR_FILE_NOT_FOUND|fonts/.test(e));
   ck('no page errors', e2.length === 0, e2.slice(0, 3));
