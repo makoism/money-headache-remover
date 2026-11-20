@@ -268,3 +268,9 @@ Said in MAIN 10's chat and relayed to coordinator 8 (not seen first hand).
 ## Mako is in Japan: times in Japan time (2026-11-20, relayed by MAIN 10 at 05:55 UTC, 14:55 JST)
 - Give Mako every time in Japan time (JST, UTC+9).
 - Do not say "overnight" or "tonight" unless it is night in Japan.
+
+## Full steam until Sunday 09:00 JST, never pause again (Mako, 21 Nov 00:45 JST = 20 Nov 15:45 UTC)
+Said in MAIN 10's chat and relayed to coordinator 8 (not seen first hand).
+- "Full steam ahead, run non stop until 9am on Sunday" (Sunday 23 Nov 09:00 JST = 22 Nov 00:00 UTC).
+- About MAIN 10 pausing to wait for his feedback: "make sure this doesn't happen again. ever". No session waits on him while work remains; things for him go on the list for his full run.
+- How: repo CLAUDE.md holds the never-stop rules; RESUME has a work queue to Sunday 09:00 JST; every MAIN and every coordinator gets its own hourly keep-going wake-up (MAIN 10: trig_01MsTYUWz5yhyBMMgDMiV7jw).
