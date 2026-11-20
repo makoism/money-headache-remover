@@ -69,6 +69,10 @@ const tapSave = async (p, id) => { await p.evaluate(id => document.getElementByI
   await p.evaluate(() => document.getElementById('undoGo').click()); await w(800);
   const lg3 = await p.evaluate(() => document.getElementById('hMsg').innerText.trim());
   ck('Home: after Undo the "Logged ¥4,000" line is gone', !/Logged ¥4,000/.test(lg3), lg3);
+  /* QC10 round 3 numbers should-fix 7: the Receipts table always lists Free to spend, so its note says so */
+  await L.tab(p, 'tab-receipts'); await w(400);
+  const note = await p.evaluate(() => (document.getElementById('rcCats') || {}).innerText || '');
+  ck('Receipts: the note about unlisted lines does not contradict the Free to spend row', !/Lines with no receipts aren't listed\.?\s*$/m.test(note) || /except Free to spend/.test(note), note.slice(-200));
   const e2 = errs.filter(e => !/favicon|net::ERR_FILE_NOT_FOUND|fonts/.test(e));
   ck('no page errors', e2.length === 0, e2.slice(0, 3));
   await b.close();
