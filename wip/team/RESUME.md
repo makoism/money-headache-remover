@@ -280,4 +280,5 @@ The full list of Mako's decisions is in `DECISIONS.md`. Read it at the start of 
 - Plain words, like a manual. No em dashes anywhere in the app.
 - Do not ask many small questions. Keep building. Set a resume timer at the start of a big task where the tool exists.
 - Send the live link again whenever a piece of work is finished.
+- Every update Mako asks for starts with two rough percentages (first version ready for him to use, everything checked; and including the art and the 3D world) and what is being worked on right now (Mako, 2026-11-20). Last estimate: about 80% and about 45 to 50%.
 - After the org upgrade the in-app AI's credits may need claiming again by a Team owner. Check the assistant on the live site.
