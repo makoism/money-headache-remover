@@ -23,7 +23,7 @@ Q10 SF5 38b5d81, SF6 edb78d1; first full check.sh green on 38.31 (d3d86e5). Q13 
 QC round 3 on 53bb8cb failed; fixed b7c4719, 50ca3a8, 9a33833, 9a0d2fc; the rest wait for Mako's run (QC10_FIX_ROUND.md). The preview artifact at the old link cannot be updated: an update needs the whole 1.87 MB live page read first. MAIN 10 sent Mako the build file and 4 screenshots instead (preview/after, 2c65906). A new link does not work either: the tool only publishes a file the session wrote or read in full (~800k tokens). A tappable link needs a deploy (Mako's call, at his full run) or a smaller page. Do not work around the rule.
 
 ### Timers
-Coordinator 8's timer trig_015XK4gUo2Uf1Qz1QBbsGvuZ (06:43 UTC) is deleted at handoff. Set your own (about 45 minutes).
+Coordinator 8 keep-going: trig_01EkpvBTzbTaNXJts3nZUnuc (hourly at :41, into coordinator 8). When coordinator 9 starts: delete it and set your own. MAIN 10 keep-going: trig_01MsTYUWz5yhyBMMgDMiV7jw.
 
 ## 2026-11-20, handoff 7 (coordinator 7 to coordinator 8) READ THIS FIRST
 
