@@ -15,7 +15,7 @@ Coordinator 8 (session_01BFpKEXZxmzMuFVBB5UQxLE) handed off at about 155k tokens
 Q10 SF5 38b5d81, SF6 edb78d1; first full check.sh green on 38.31 (d3d86e5). Q13 (new row): QC10 round 1 on edb78d1 (9 findings) and round 2 on 94e5be5 (7 findings) all fixed test first; details in wip/team/QC10_FIX_ROUND.md.
 
 ### Running
-- MAIN 10, session_01BFpKEV8jRCDQnxRTVqiUZr, Opus, the only session on app files, about 433k of 1M. At 05:57 UTC: check.sh full done (one real fail fixed 53bb8cb); QC round 3 on 53bb8cb running, preview republish to https://claude.ai/artifact/LHoWd8xZ5Zg1nYfJHQtgVj, screenshots into wip/team/preview/after/. It does not hand off for size. Send it your session id first thing.
+- MAIN 10 is FINISHED (19:41 UTC; do not message it). Was: MAIN 10, session_01BFpKEV8jRCDQnxRTVqiUZr, Opus, the only session on app files, about 433k of 1M. At 05:57 UTC: check.sh full done (one real fail fixed 53bb8cb); QC round 3 on 53bb8cb running, preview republish to https://claude.ai/artifact/LHoWd8xZ5Zg1nYfJHQtgVj, screenshots into wip/team/preview/after/. It does not hand off for size. Send it your session id first thing.
 - Watchdog: standing session session_01BFpKEYWd9Kcs4FkcwuNGo1, trigger trig_015mKtiUhZRgbkacuPYA8Ks6 at :33 hourly. It messages the coordinator (by finding the newest "Burrow coordinator" session) if it starts a replacement MAIN. Title your session "Burrow coordinator 9 (talk to this one)".
 - When the preview is republished and round 3 is clean: send Mako the after screenshots as files and the link, two percentages first, times in JST. That is the build for his full run.
 
