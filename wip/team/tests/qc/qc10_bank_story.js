@@ -39,12 +39,14 @@ const plan = async p => { await L.tab(p, 'tab-month'); await L.clickText(p, 'Mon
     ck('before Check your bank: Home key says Bank at month end ¥150,000', /^Bank at month end ¥150,000/.test(h.key), h.key);
     ck('before Check your bank: Plan uses the same name and figure, "Bank at month end: ¥150,000"', /^Bank at month end: ¥150,000/.test(s), s);
     ck('before Check your bank: Plan names the start figure and month, "from ¥100,000 at the start of Nov"', /from ¥100,000 at the start of Nov/.test(s), s);
-    ck('before Check your bank: Home note names the start figure ¥100,000', /¥100,000/.test(h.note) && /start of Nov/.test(h.note), h.note);
+    ck('before Check your bank: Home note names the start figure ¥100,000', /¥100,000, the balance your plan starts Nov with/.test(h.note), h.note);
     ck('before Check your bank: Home note names no bank-now figure (none typed yet)', (h.note.match(/¥[\d,]+/g) || []).length === 1, h.note);
     await checkBankAndCard(p);
     h = await home(p); s = await plan(p);
     ck('after Check your bank: the top of Home shows ¥94,200 now and ¥68,200 after the card', yen(h.now) === '¥94,200' && /¥68,200/.test(h.after), h);
     ck('after Check your bank: Home note ties the two, start ¥100,000 and bank now ¥94,200', /¥100,000/.test(h.note) && /¥94,200/.test(h.note) && /bank now/.test(h.note), h.note);
+    ck('after the card: the note names the bank after the card too, ¥68,200 (QC10 north-star F1)', /¥68,200 after the cards are paid/.test(h.note), h.note);
+    ck('the note never calls a balance typed later "your bank at the start of Nov"', !/your bank at the start of/.test(h.note), h.note);
     ck('after Check your bank: Home key and Plan say the same Bank at month end figure', yen(h.key) === '¥150,000' && /^Bank at month end: ¥150,000/.test(s), { key: h.key, plan: s });
     ck('after Check your bank: the planned figure is still planned from the start, not from the bank now', /from ¥100,000 at the start of Nov/.test(s), s);
     errsAll = errsAll.concat(errs); await b.close(); }
@@ -57,6 +59,15 @@ const plan = async p => { await L.tab(p, 'tab-month'); await L.clickText(p, 'Mon
     ck('stays: Home key Bank at month end ¥100,000', yen(h.key) === '¥100,000', h.key);
     ck('stays: Plan says "Bank at month end: ¥100,000 planned, the same as at the start of Nov"', /^Bank at month end: ¥100,000 planned, the same as at the start of Nov\.$/.test(s), s);
     ck('stays: Home note names start ¥100,000 and bank now ¥94,200', /¥100,000/.test(h.note) && /¥94,200/.test(h.note), h.note);
+    errsAll = errsAll.concat(errs); await b.close(); }
+
+  /* ---------- the bank now typed as the same figure the plan starts from: nothing can differ, so nothing says it can (QC10 north-star F1) ---------- */
+  { const { b, p, errs } = await open();
+    await setup(p, {});
+    if (await p.$('#mpCheck')) await click(p, '#mpCheck');
+    await L.typeIn(p, '#mpBankIn', '100000'); await click(p, '#mpBankSave'); await w(500);
+    const h = await home(p);
+    ck('same figure: the note does not say the two can differ', /¥100,000/.test(h.note) && !/can differ/.test(h.note), h.note);
     errsAll = errsAll.concat(errs); await b.close(); }
 
   /* ---------- spending past plan: 50,000 of Free to spend logged against 40,000 planned ---------- */
