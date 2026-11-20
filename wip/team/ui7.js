@@ -310,7 +310,8 @@ function openWhy(kind) {
     title = 'Where you stand in ' + mon;
     rows = [['Pay and other money in', fmt(m.inflow)], ['Bills, one-time costs and card payments', '−' + fmt(m.jar.nec)], ['Goal burrows', '−' + fmt(m.goalsTotal)], ['Free to spend, Education, Investing, Giving', '−' + fmt(V.cells.otherPlaces)], ['Left in the month', (m.left < 0 ? '−' : '') + fmt2(V.cells.leftAbs)], ['Balance at the start', fmt2(m.bankStart)]].concat((m.overNow || 0) > 0.004 ? [['Spent past the plan so far', '−' + fmt2(m.overNow)]] : [], (m.credit || 0) > 0.004 ? [['Free to spend not spent, back in the bank', '+' + fmt2(m.credit)]] : [], [['Balance at the end', fmt2(m.bankEnd)], ['Your minimum balance', fmt(floor)]]);
     foot = m.bankEnd < floor ? 'The balance ends under your minimum, so the month is short.' : m.left < 0 ? 'The month spends more than comes in, but the balance covers it.' : 'Everything planned fits in your pay.';
-    if ((m.overNow || 0) > 0.004) foot += ' Spending past the plan came out of the bank.';   /* the rows add up: start + left + past the plan + back = end (QC round 4 numbers B2) */
+    if ((m.overNow || 0) > 0.004) foot += ' Spending past the plan came out of the bank.';
+    foot += ' Your minimum balance is the least you want in the bank: you get a warning when a month would end below it. Change it in Settings.';   /* QC round 4 novice C3 */   /* the rows add up: start + left + past the plan + back = end (QC round 4 numbers B2) */
   }
   let el = $('#why');
   if (!el) {
