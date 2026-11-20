@@ -56,6 +56,14 @@ const tapSave = async (p, id) => { await p.evaluate(id => document.getElementByI
     ck(`${tag}: and the next tap asks again instead of logging`, s.n === n0 + 1 && /Tap again to log it anyway/.test(s.msg), s);
     await p.evaluate(s => { const e = document.querySelector(s); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(e, ''); }, box);
   }
+  /* QC10 round 2 north-star 5: "Logged X" on Home stayed after the receipt was changed on Receipts; the line goes once the person leaves Home */
+  await L.tab(p, 'tab-home'); await w(300);
+  await p.focus('#hAmt'); await p.keyboard.type('540'); await tapSave(p, 'hSave');
+  const lg1 = await p.evaluate(() => document.getElementById('hMsg').innerText.trim());
+  await L.tab(p, 'tab-receipts'); await w(300); await L.tab(p, 'tab-home'); await w(300);
+  const lg2 = await p.evaluate(() => document.getElementById('hMsg').innerText.trim());
+  ck('Home: "Logged ¥540" shows after logging', /^Logged ¥540/.test(lg1), lg1);
+  ck('Home: after going to Receipts and back the old "Logged" line is gone', lg2 === '', lg2);
   const e2 = errs.filter(e => !/favicon|net::ERR_FILE_NOT_FOUND|fonts/.test(e));
   ck('no page errors', e2.length === 0, e2.slice(0, 3));
   await b.close();

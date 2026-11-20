@@ -60,6 +60,7 @@ const hideTip = () => $('#tip').classList.remove('on');
 function switchTab(t, focus) {
   WORLD.open();
   const prev = tab; tab = t; disarm();
+  if (prev !== t) { const hm = $('#hMsg'); if (hm) hm.textContent = ''; bigArm = null; if (futureArm && futureArm.indexOf('dup') === 0) futureArm = null; }   /* a line about the last log, or a Tap again warning, is about the screen just left (QC10 round 2 north-star 5) */
   /* a receipt logged for another month moved the open month so its list could be seen; the plan pages open on the month in hand again */
   if (selByReceipt && (t === 'home' || t === 'month' || t === 'months' || t === 'goals')) { selByReceipt = false; const ym = nowYm(); if (MONTHS.indexOf(ym) >= 0 && ym !== sel) { sel = ym; itemsSig = ''; try { history.replaceState(null, '', '#' + ym); } catch (e) { /* sandboxed */ } } }
   const lit = t === 'months' || t === 'goals' ? 'month' : t === 'basics' ? '' : t;
