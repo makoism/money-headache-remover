@@ -27,7 +27,7 @@ const checkBankAndCard = async p => {
 };
 const yen = s => { const m = String(s || '').match(/[−-]?¥[\d,]+/); return m ? m[0] : null; };
 const home = p => p.evaluate(() => { const t = e => e ? e.innerText.replace(/\s+/g, ' ').trim() : '';
-  return { key: t(document.querySelector('#hMap [data-part="bank"]')), note: t(document.querySelector('#hMap [data-planfrom]')), now: t(document.querySelector('#hMap .mp-now-v')), after: t(document.querySelector('#hMap .mp-after')) }; });
+  return { key: t(document.querySelector('#hMap [data-part="bank"]')), note: t(document.querySelector('#hMap [data-planfrom]')), now: t(document.querySelector('#hMap .mp-now-v')), nowHead: t(document.querySelector('#hMap .mp-now-h')), after: t(document.querySelector('#hMap .mp-after')) }; });
 const plan = async p => { await L.tab(p, 'tab-month'); await L.clickText(p, 'Month'); await w(400); const s = await p.evaluate(() => document.getElementById('bankLine').innerText.trim()); await L.tab(p, 'tab-home'); await w(400); return s; };
 
 (async () => {
@@ -38,7 +38,7 @@ const plan = async p => { await L.tab(p, 'tab-month'); await L.clickText(p, 'Mon
     let h = await home(p), s = await plan(p);
     /* QC10 round 3 numbers blocker 1: the Free to spend tile shows what is left, so it is never captioned as the monthly plan */
     const tile = await p.evaluate(() => { const li = [...document.querySelectorAll('#hMap .mp-four li')].find(x => /^Free to spend/.test(x.innerText)); return li ? li.innerText.replace(/\s+/g, ' ') : ''; });
-    ck('the Free to spend tile is captioned safe to spend, not planned', /safe to spend in Nov/.test(tile) && !/planned/.test(tile), tile);
+    ck('the Free to spend tile says it is what is left (still marked planned, launch checklist A1), not the whole monthly plan', /planned: left to spend in Nov/.test(tile) && !/whole of/.test(tile), tile);
     ck('before Check your bank: Home key says Bank at month end ¥150,000', /^Bank at month end ¥150,000/.test(h.key), h.key);
     ck('before Check your bank: Plan uses the same name and figure, "Bank at month end: ¥150,000"', /^Bank at month end: ¥150,000/.test(s), s);
     ck('before Check your bank: Plan names the start figure and month, "from ¥100,000 at the start of Nov"', /from ¥100,000 at the start of Nov/.test(s), s);
@@ -46,6 +46,7 @@ const plan = async p => { await L.tab(p, 'tab-month'); await L.clickText(p, 'Mon
     ck('before Check your bank: Home note names no bank-now figure (none typed yet)', (h.note.match(/¥[\d,]+/g) || []).length === 1, h.note);
     await checkBankAndCard(p);
     h = await home(p); s = await plan(p);
+    ck('the bank-now heading does not read "now now" (QC10 round 3 north-star 7)', !/now now/.test(h.nowHead), h.nowHead);
     ck('after Check your bank: the top of Home shows ¥94,200 now and ¥68,200 after the card', yen(h.now) === '¥94,200' && /¥68,200/.test(h.after), h);
     ck('after Check your bank: Home note ties the two, start ¥100,000 and bank now ¥94,200', /¥100,000/.test(h.note) && /¥94,200/.test(h.note) && /bank now/.test(h.note), h.note);
     ck('after the card: the note names the bank after the card too, ¥68,200 (QC10 north-star F1)', /¥68,200 after the cards are paid/.test(h.note), h.note);
