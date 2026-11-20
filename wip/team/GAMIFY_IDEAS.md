@@ -1,4 +1,50 @@
-# Rewards and keepsakes for the 3D world: ideas (draft 2 for Mako, 2026-11-20)
+# Rewards for keeping your money picture up to date (draft 3, the simple version, 2026-11-20)
+
+Status: ideas only, nothing built. Mako liked the approach (20 Nov) and asked for it simpler, so anyone with zero context gets it at first glance: what the prizes are, how to get them, and why. Draft 3 is the simple version on top; the reviewed details from draft 2 are kept underneath for whoever builds it.
+
+## The whole thing in three lines
+
+1. **Your burrow shows your real money.** More saved, more gold in the burrow. It goes down when money comes out, because it is the truth.
+2. **Lanterns show your weeks.** Each week you check in, one lantern on the path lights up.
+3. **Neighbours move in when you keep the habit.** Each one brings a gift for your burrow, and they stay for good.
+
+The prizes are for keeping your money picture up to date, never for how much money you have. Someone on a small pay gets every neighbour as fast as someone on a big one.
+
+## How a person with zero context finds out (no reading needed)
+
+- **Every prize shows how to get it, right where it will be.** An empty house next to the burrow has a little sign: "Someone moves in after 3 weekly check-ins. You have 1." Tap it to see who.
+- **The next lantern is the only unlit one, and it glows softly** until you check in this week. Tap it: "Check in once a week to light it. Logging receipts or tapping Nothing to log both count."
+- **The first time the world opens, one short line:** "This is your money as a place. The gold is your real money. The lanterns and neighbours are for checking in every week."
+- **When a neighbour arrives,** a light comes on in their window and one line says why: "A rabbit moved in. You checked in 3 weeks."
+
+## The only things that earn anything
+
+- **Check in once a week** (log receipts, or tap Nothing to log). This lights the lantern.
+- **Check your bank** (type what your bank says). Some neighbours want this one.
+Nothing else, to start. More habits (pay day, closing the month) can come later.
+
+## The neighbours (the prize list, in order)
+
+| Neighbour | Moves in when | Brings |
+|---|---|---|
+| Rabbit | 3 weekly check-ins | a lantern for your door |
+| Owl | your bank checked 4 weeks | a window for your burrow |
+| Beaver | a goal reached | a bench |
+| Hedgehog | 13 weekly check-ins | a garden patch |
+
+## What never happens
+
+- No shop, no points, nothing to buy, nothing for real money.
+- Nothing is taken away for a missed week. A missed week leaves one lantern dim (never red), and one missed week a month keeps it lit.
+- Prizes never change a money number, and nothing sits on top of the gold.
+
+## Later, only if people want more
+
+The month tree (a leaf for every month you close), more neighbours, and clothes for the squirrel. Weeks covered ("Your Emergency fund covers 3 weeks if pay stops") as the one number in the world, once it is defined in the money model.
+
+---
+
+# Details for the builders (draft 2, after seven reviewers)
 
 Status: ideas only, nothing built or queued. The 3D world itself waits for Mako (WORLD_3D.md). Draft 1 went to seven reviewers, all seven answered (north star, beginner, money accuracy, data safety, art director, voice, efficiency); this draft takes in their notes. Their reports were in /tmp/qc/<role>/IDEAS_REPORT.md (not kept in the repo).
 
