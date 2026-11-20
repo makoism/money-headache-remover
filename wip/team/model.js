@@ -366,7 +366,7 @@ function calcAll(S) {
     m.left = m.pool.left;
     m.credit = m.counted ? round2(m.counted - ((m.topup && m.topup.used) || 0)) : 0;   /* unspent free to spend the person answered for: what the goal did not take is counted in the bank */
     m.bankStart = bank; bank += m.left + m.credit; m.bankEnd = bank;
-    goals.forEach(gl => { bal[gl.id] += g[gl.id].actual + (g[gl.id].up || 0) - (eg && gl.id === eg.id ? m.draw : 0); });
+    goals.forEach(gl => { bal[gl.id] = round2(bal[gl.id] + g[gl.id].actual + (g[gl.id].up || 0) - (eg && gl.id === eg.id ? m.draw : 0)); });   /* whole cents: 10.74 + 64.21 + 25.05 must be exactly 100 (found by the oracle, 2026-11-21) */
     goals.forEach(gl => { if (gl.target > 0 && reached[gl.id] === undefined && capOf(gl, ym) === capOf(gl) && bal[gl.id] >= capOf(gl, ym)) reached[gl.id] = ym;   /* a full date counts only against the goal in force now (QC10 numbers blocker 1) */ });
     m.spent = {};
     goals.forEach(gl => {
