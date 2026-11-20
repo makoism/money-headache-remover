@@ -1,71 +1,81 @@
-# Rewards and cosmetics for the 3D world: ideas (draft for Mako, 2026-11-20)
+# Rewards and keepsakes for the 3D world: ideas (draft 2 for Mako, 2026-11-20)
 
-Status: ideas only. Nothing here is built or planned into a release. The 3D world itself waits for Mako (WORLD_3D.md). Reviewer notes are at the end.
+Status: ideas only, nothing built or queued. The 3D world itself waits for Mako (WORLD_3D.md). Draft 1 went to seven reviewers (north star, beginner, money accuracy, data safety, art director, voice, efficiency); this draft takes in their notes. Their reports were in /tmp/qc/<role>/IDEAS_REPORT.md (not kept in the repo).
 
-## The one idea: the winter store
+## The idea in one line
 
-The creature is a squirrel, and squirrels already do the money habit: gather a little every week, store it, and get through winter calm. The world runs on that.
+The squirrel gathers every week you check in, and the world fills up with real money and with neighbours who move in because of your habits. Nothing in the world is bought, and nothing that piles up is pretend money.
 
-- **Every week you check in, the squirrel goes on a gathering trip** and brings back acorns. Acorns are the only thing you spend in the world shop.
-- **Acorns come from habits, never from amounts of money.** The person on a small income earns exactly as many as the person on a big one.
-- **The world also mirrors your real money, honestly**: coin piles in each burrow, the winter store filling, a dark debt burrow lighting up as it is paid down. That part is a picture of the truth, not a reward, so it goes down when money goes down.
-- **Two rules keep these apart:** what you earned is never taken away; what mirrors your money is always true.
+## Two kinds of things in the world, never mixed
 
-## What to measure (the mindset part)
+- **Pictures of your real money, always true.** Gold coins in each burrow, the Emergency fund pile, a dark debt burrow with one window lit as it is paid down, goal burrows filling. They go down when money comes out, because they are the truth, not a prize.
+- **Keepsakes, earned by habits, never taken away.** Neighbours who move in, things for the squirrel and the burrows, leaves on the month tree. They arrive at habit milestones. There is no shop and no acorn count (reviewers: a second currency in a money app gets mixed up with savings, adds a number, and feels like a mobile game).
 
-The north star is "nothing is unknown". So the thing to reward is **keeping the picture true and coming back**, even when the news is bad.
+## What earns a keepsake: habits, never amounts
 
-| Habit (earns acorns) | Why it builds the mindset |
-|---|---|
-| Weekly check-in (log receipts or say "nothing to log") | The one habit everything else needs. Weekly, not daily: money is not a daily-streak thing. |
-| Check your bank (the app's figure matches the real account) | Teaches "know where it is". Earns the same whether the bank is high or low. |
-| Pay day: every coin gets a place | Paying yourself first, giving every coin a job. |
-| Answer the month-end question | Closing the month, looking back. |
-| Logging spending past plan | Honesty pays. Hiding a bad week must never be the better move. |
-| Using the emergency fund for a real emergency | The fund did its job. It earns a keepsake, it is not a failure. |
+The north star is "nothing is unknown", so what counts is keeping the picture true and coming back, even when the news is bad.
 
-**The one headline measure: weeks of calm.** How many weeks you could live if pay stopped (cushion divided by what a normal week costs). It works on any income, it is the real thing savings buy, and it pictures well: the winter store in the burrow, with a mark for each week it covers. If one number is shown in the world, it is this one.
+- **Start with two habits** (the beginner reviewer: six is too many at first): the weekly check-in (log receipts or tap "Nothing to log") and Check your bank.
+- **Later:** pay day with every coin given a place, and answering the month-end question.
+- Every honest log counts the same, over plan or under. No special reward for overspending, and no reward for using the Emergency fund (a one-time note "The fund did its job" instead, so nobody drains it to earn something).
+- Never for the amount of money you have: unfair across incomes, shaming in a hard month, and it tempts a bigger number than the truth.
 
-**Goals by percent, not by amount.** A burrow grows a new room at 25, 50, 75 and 100 percent of its own goal. A small goal is fine; a small goal reached is a good thing.
+## The headline number: weeks covered
 
-**Why not reward the amount of money you have:** it is unfair across incomes, it shames people in a hard month, it pushes people not to use an emergency fund when they should, and it invites typing a bigger number than the truth, which breaks the one promise the app makes. The world still shows the amounts as piles; it just never pays out for them.
+"Your Emergency fund covers 3 weeks if pay stops." Works on any income and is what savings really buy.
+- It is a money figure, so it lives in the money model with its own oracle test, never in screen code.
+- It says "not known yet" until enough weeks are logged to know what a normal week costs, says how fresh it is, and shows zero as an empty pile with a next step, never a bare "0 weeks".
+- Picture: the Emergency fund burrow with gold stacked in uneven rows, one row per week covered. You count by looking.
+- Exact definition: see "Money accuracy" below.
 
-## Streaks that do not punish
+## Streak that never punishes: the lantern road
 
-- A weekly streak shown as lanterns lit along the road to the burrow.
-- One rest week a month is free: the lantern stays lit.
-- A missed week leaves an unlit lantern, never a reset to zero and never red. Checking in again relights the road from there.
-- What counts is weeks checked in this season, not the longest run.
+- One lantern lit for each week you check in, on the road to the burrow, painted into the scene (never a strip or a counter on top).
+- Skip one week a month and the lantern stays lit.
+- A missed week leaves one lantern dim (never red) and never resets the count. What counts is weeks this season.
+- In the 2D app this is the existing week streak changed so a miss never resets it; the road is a picture for the 3D world.
 
-## The memory tree
+## Neighbours who move in (the strongest idea, per four reviewers)
 
-Each month you close gets a leaf on a tree by the burrow, its colour from how the month went (on plan, tight, over). A month not closed is a bare twig, and closing it later grows the leaf. Over a year the tree is a picture of your money year. Nothing is ever taken off it.
+Each arrives with a small moment (a light comes on in a window), then lives in the background, at most two or three in front.
+- A first neighbour early, after 3 check-ins, so there is something to come back for soon.
+- An owl after a month of Check your bank.
+- A beaver when a goal is reached (the goal burrow's fill can drop later; the beaver stays).
+- A hedgehog after 13 weeks checked in (a habit, not an amount).
 
-## What acorns buy (cosmetic only)
+## The month tree
 
-- For the squirrel: hats, scarves, a lantern, a little backpack.
-- For each burrow: furniture, a rug, a window, plants, a door colour.
-- For the town: a bench, a lamp post, a bridge, a garden patch, a weather vane.
-- Neighbours who move in at milestones and cannot be bought: an owl after your first month of checked banks, a beaver when a goal is reached, a hedgehog at three months of weeks of calm.
+A leaf for every month you close. Season colours only (green, gold, russet), never red or dead. A month not closed yet is a bare twig, and closing it later grows the leaf. Tapping a leaf opens that month. Nothing is ever taken off.
 
-**The shop teaches the habit too:** a big item (a lighthouse, a treehouse) costs more than a month of acorns, and the shop shows a small jar filling toward it, the same way a burrow fills toward a goal.
+## Things for the squirrel and the burrows
 
-## Hard lines
+Scarf, lantern, small backpack, rug, plants, door colour, bench, lamp post, weather vane: given at milestones, drawn on the sprite grid in the palette. Nothing given may cover a coin pile, the Emergency fund or the debt burrow.
 
-- Acorns are never bought with real money, and the app never sells anything in the world.
-- An acorn count never sits next to a money figure, never uses a currency sign, and is never part of a total.
-- Rewards never change a number. The world reads the same model as the 2D app and does no money maths (WORLD_3D.md).
-- Acorns and keepsakes are worked out from the logged history, so they come back with a backup or a cloud copy and cannot drift. Undoing an action within its Undo window also undoes its acorns; a keepsake already bought stays.
-- No pop-up rewards over the money screens. The coin moment plays only at the moments already agreed (DECISIONS.md).
-- Words: no game words from the voice list (no "unlock", no "level up"). Plain: "The squirrel brought back 3 acorns."
+## Data rules (data safety review)
 
-## Cheapest first step (only if Mako says go)
+- Everything lives inside the one saved copy (same key, backup file, restore and cloud copy), so money and world always come back together.
+- A small add-only log of habit events ({id, kind, week, at}) is written in the same step as the action; keepsakes are worked out from it, never stored as a counter. Deleting or editing a receipt later never removes a keepsake.
+- One event per kind per week, so two phones never double a week. Imported statements, samples and a changed clock earn nothing.
+- Older builds must keep fields they do not know when they save, so an old phone can never wipe the log.
+- "Zero all" clears money only. Leaf colours are worked out again from the model; only "month closed" is stored.
+- Kept private. Nothing is shared.
 
-Before any 3D: the weekly check-in, weeks of calm and the lantern road can live on Home in the 2D app as one small picture. If people come back more, the 3D world builds on what already works.
+## Money accuracy
 
-## Questions for Mako
+(The money accuracy reviewer's exact definition of weeks covered goes here.)
 
-1. Squirrel and acorns, or another creature and thing it gathers?
-2. A shop with acorns, or no shop: keepsakes only arrive at milestones (simpler, no second currency)?
-3. Is weeks of calm the right headline number for you?
-4. Should anything be shared with other people (show a friend your world), or keep it private?
+## Order, cheapest first (efficiency review)
+
+1. Now, free: once Mako uses v1, read his own backup after about 4 weeks to see whether he checks in weekly. No tracking that sends data out.
+2. Docs only, about 2 hours: define weeks covered on paper next to the ledger design, proved on made-up examples.
+3. After the ledger (B1), about 1 day: weeks covered in the money model with an oracle test. Mako judges it by using it.
+4. Step C, about half a day plus tests: the existing week streak stops resetting on a miss (weeks this season, one free skip a month), with a test that old saved weeks load the same.
+5. B2 or later, 1 to 2 days: milestone keepsakes worked out from the habit log, as a short 2D list.
+6. 3D only, and only if 1 to 4 show people coming back: lantern road, neighbours, month tree, things for the squirrel. About 1 to 2 weeks on top of the 4 to 7.
+Cut: the shop, acorns, sharing.
+
+## Questions for Mako (for the art step, with designs in front of him)
+
+1. Squirrel, or another creature?
+2. Which neighbours, and which milestones?
+3. Is weeks covered the number you would want to see?
