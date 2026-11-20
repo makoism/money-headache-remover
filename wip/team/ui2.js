@@ -113,12 +113,16 @@ function render() {
   else if (st === 'tight') vt = `This month you spend ${fmt2(PC.overPay)} more than your pay${m.draw > 0 ? ', ' + fmt2(m.draw) + ' of it borrowed' : ''}. Your balance covers it and ends at ${fmt2(m.bankEnd)}, so it doesn't go under your ${fmt2(floor)} minimum balance. You can change that in Settings.`;
   else vt = (floor > 0 ? `Balance would end at ${fmt2(m.bankEnd)}, ${fmt2(gap)} under your ${fmt2(floor)} minimum balance. You can change that in Settings.` : `Balance would end at ${fmt2(m.bankEnd)}, below zero.`) + (fixes(S, m).length ? ' Pick a fix:' : ' Lower a cost or add pay to fix it.');
   if (m.draw > 0) vt += ` ${fmt2(m.draw)} is borrowed from the emergency fund.`;
+  /* a borrow bigger than the plan now needs is said, never changed on its own (QC8 SF6) */
+  const DF = drawFit(S, m);
+  if (DF.extra >= 0.005) vt += DF.need > 0 ? ` Your plan needs only ${fmt2(DF.need)} of the borrow now. ${fmt2(DF.extra)} of it stays in the bank.` : ` Your plan doesn't need the borrow now. It stays in the bank.`;
   $('#verdict').textContent = vt;
   let btns = '';
   if (st !== 'good') fixes(S, m).forEach(f => {
     btns += f.id === 'trim' ? `<button type="button" class="btn small" data-fx="trim" data-amt="${f.amount}">Spend ${fmt2(f.amount)} instead</button>`
       : `<button type="button" class="btn small" data-fx="borrow" data-amt="${f.amount}">Borrow ${fmt2(f.amount)} from emergency fund</button>`;
   });
+  if (DF.extra >= 0.005 && DF.need > 0) btns += `<button type="button" class="btn small" data-fx="borrowfit" data-amt="${DF.need}">Borrow only ${fmt2(DF.need)}</button>`;
   if (m.draw > 0) btns += '<button type="button" class="btn small" data-fx="unborrow">Undo borrow</button>';
   $('#fixBtns').innerHTML = btns;
 

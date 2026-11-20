@@ -92,6 +92,7 @@ function wire() {
     if (f === 'trim') trimPlay(S, m, sel, +b.dataset.amt);
     else if (f === 'borrow') setVal(S, 'draw', sel, m.draw + (+b.dataset.amt), 'once');   /* what is already borrowed this month plus what is still missing */
     else if (f === 'unborrow') setVal(S, 'draw', sel, 0, 'once');
+    else if (f === 'borrowfit') setVal(S, 'draw', sel, +b.dataset.amt, 'once');   /* only what the plan needs now (QC8 SF6) */
     sfx(f === 'unborrow' ? 'back' : 'next');
     persist(); render();
   });

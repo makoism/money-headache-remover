@@ -489,6 +489,14 @@ function fixes(S, m) {
   if (gap > 0 && room > 0) out.push({ id: 'borrow', amount: round2(Math.min(room, gap)) });
   return out;
 }
+/* how much of this month's borrow from the emergency fund the plan still needs (QC8 SF6). By the rule the borrow offer uses (fixes above:
+   what brings the bank up to the minimum balance), the need is the gap the bank would have without the borrow. The rest only sits in the
+   bank. Nothing is changed here: Plan says it and offers to borrow only what is needed. */
+function drawFit(S, m) {
+  const draw = m.draw || 0; if (!(draw > 0)) return { draw: 0, need: 0, extra: 0 };
+  const need = round2(Math.min(draw, Math.max(0, cfg(S, 'minBank') - (m.bankEnd - draw))));
+  return { draw, need, extra: round2(draw - need) };
+}
 /* make the Play jar add up to "target" for one month, taking from the first line first */
 function trimPlay(S, m, ym, target) {
   let need = m.jar.play - target;
