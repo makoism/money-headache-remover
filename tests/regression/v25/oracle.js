@@ -1,10 +1,11 @@
 /* An independent recomputation of the whole money model, written from the plain rules and NOT from the app's code.
    It reads only the raw saved plan (lines, goals, steps, once, items, cfg, debts, receipts) and works in whole numbers (receipts in whole cents).
-   Then it compares everything the app's calcAll / goalInfo / jarsOf / receiptStats report, including spending past plan (oracleOverspend).
-   Not recounted here yet: the piles Home draws, and the month-end answers (what happens to Free to spend left over in a past month). */
+   Then it compares everything the app's calcAll / goalInfo / jarsOf / receiptStats report, including spending past plan (oracleOverspend),
+   the piles Home draws (oraclePiles), and the month-end answers: unspent Free to spend of a past month counted in the bank or put toward a goal.
+   The goal ledger and the bank are kept in whole cents, so a top-up that carries a receipt's cents can never pick up a float error. */
 const vm = require('vm'), fs = require('fs');
 const ctx = vm.createContext({ console, Math, JSON, Date });
-vm.runInContext(fs.readFileSync(process.env.MODEL || '/home/claude/work/team/model.js', 'utf8') + '\n;this.__M={debtRows,limitsOf,lookBack,addExtraMoney,debtsOf,presetState,calcAll,goalInfo,jarsOf,statusOf,receiptStats,addReceipt,setVal,addLine,addGoal,updateGoal,updateLine,emergencyGoal,MONTHS,START,SAVE_FROM,SAMPLES,SPAN,JARS,cfg,roundUnit,round2,lineByKey,wholePercents,cleanSteps,cleanOnce,cleanItems,cleanCfg,fixes,trimPlay,viewOf,sheetCsv,sheetRows,purposeOf,pickMain,kindOfGoal,goalRows,wholePct,PURPOSE_VERBS,setCurYm:typeof setCurYm!=="undefined"?setCurYm:null,proofOf:typeof proofOf!=="undefined"?proofOf:null,planCells:typeof planCells!=="undefined"?planCells:null};', ctx);
+vm.runInContext(fs.readFileSync(process.env.MODEL || '/home/claude/work/team/model.js', 'utf8') + '\n;this.__M={debtRows,limitsOf,lookBack,addExtraMoney,debtsOf,presetState,calcAll,goalInfo,jarsOf,statusOf,receiptStats,addReceipt,setVal,addLine,addGoal,updateGoal,updateLine,emergencyGoal,MONTHS,START,SAVE_FROM,SAMPLES,SPAN,JARS,cfg,roundUnit,round2,lineByKey,wholePercents,cleanSteps,cleanOnce,cleanItems,cleanCfg,fixes,trimPlay,sweepPlay,topupFit,removeGoal,viewOf,sheetCsv,sheetRows,purposeOf,pickMain,kindOfGoal,goalRows,wholePct,PURPOSE_VERBS,setCurYm:typeof setCurYm!=="undefined"?setCurYm:null,proofOf:typeof proofOf!=="undefined"?proofOf:null,planCells:typeof planCells!=="undefined"?planCells:null};', ctx);
 const M = ctx.__M;
 
 /* ---------- the oracle ---------- */
@@ -28,8 +29,22 @@ const debtMonth = (owed, A, min, extra) => {
   return { start: owed, interest, extra, pay, bal: owed + interest - pay };
 };
 const rateA = d => Math.round(d.apr * 100);
-function oracle(S) {
+/* Month-end answers (38.30 S1, QC8, QC10 rules), recounted from the plain words. opt.cur is the month the app takes as now.
+   - The question is asked only once pay, bills and goals are the person's own (ui.done) and at least one receipt is logged (anywhere), and
+     only about a month before now. Until then a past month's Free to spend is taken as spent, as planned.
+   - What is left: the month's Free to spend lines as planned (a line that has ended plans 0), less what was logged on them that month,
+     never below 0, rounded down to whole yen in yen (to the cent otherwise).
+   - No answer yet: that is the open question (r.pendLeftC). "Decide later and hide" (hide): nothing changes, as if no question was asked.
+   - Any other answer (counted in the bank, or put toward a goal): what is left NOW is counted (r.countedC). It is worked out again from the
+     receipts every time, so a receipt logged after the answer makes it smaller; the stored amount is not what is counted.
+   - Toward a goal: the stored amount (to the cent), but never more than what is left. The goal takes it only into the room it still has
+     after this month's own saving: room = its cap this month (the target, or the longer goal from the month the person said yes) less what
+     it held at the start of the month, less this month's deposit. A goal that is gone, or full, takes nothing. (r.topup.usedC)
+   - Whatever the goal did not take goes to the bank (r.creditC = counted - used), on top of the month's planned left over.
+   - The plan lines stay as planned: a top-up is extra money for the goal, not part of the month's goals total or money out. */
+function oracle(S, opt) {
   const months = M.MONTHS, first = months[0];
+  const C = x => Math.round((+x || 0) * 100), U = c => c / 100;
   const preset = (S.ui && S.ui.preset) || 'legacy';
   const payDefault = preset === 'blank' ? 0 : PAY_OF[preset] !== undefined ? PAY_OF[preset] : 35000;
   const valueOf = (key, ym, dflt) => {
@@ -53,16 +68,21 @@ function oracle(S) {
   const eg = goals.find(g => g.emergency) || null;
   /* 38.30 rule: the Emergency fund stops at its target unless the person said yes to the longer goal (stretchOn) */
   const cap = (g, ym) => (g.emergency && g.stretchOn === true && !(ym && g.stretchFrom && ym < g.stretchFrom)) ? Math.max(g.stretch || 0, g.target) : g.target;   /* QC8 SF5: a yes counts from its month */
-  let bank = M.cfg(S, 'bankStart');
-  const bal = {}; goals.forEach(g => { bal[g.id] = g.start; });
+  let bank = C(M.cfg(S, 'bankStart'));
+  const bal = {}; goals.forEach(g => { bal[g.id] = C(g.start); });   /* in cents */
   const reached = {}; const out = [];
-  const freedLines = lines.filter(l => l.ends && l.redirect).map(l => ({ ends: l.ends, amt: lineValue(l, l.ends) }));
+  const freedLines = lines.filter(l => l.ends && l.redirect).map(l => ({ ends: l.ends, amt: C(lineValue(l, l.ends)) }));
   const debts = (S.plan && Array.isArray(S.plan.debts)) ? S.plan.debts : [], owed = {};
   debts.forEach(d => { owed[d.id] = d.balance; });
+  /* month-end answers */
+  const done = (S.ui && S.ui.done) || {}, rcAll = S.receipts || [], yen = !!(S.ui && S.ui.cur === '¥'), answers = (S.ui && S.ui.sweep) || {};
+  const asks = !!(opt && opt.cur) && !!(done.pay && done.bills && done.goals) && rcAll.length > 0;
+  const jarOfKey = k => { const l = lines.find(x => x.key === k); return l ? l.jar : 'other'; };
   months.forEach(ym => {
     const r = { ym };
     r.a = valueOf('a', ym, () => payDefault); r.b = valueOf('b', ym, () => 0); r.side = valueOf('side', ym, () => 0);
-    r.draw = eg ? Math.min(valueOf('draw', ym, () => 0), Math.max(0, bal[eg.id])) : 0;
+    const drawC = eg ? Math.min(C(valueOf('draw', ym, () => 0)), Math.max(0, bal[eg.id])) : 0;
+    r.draw = U(drawC);
     r.jar = { nec: 0, play: 0, edu: 0, ffa: 0, give: 0 };
     r.lineVals = lines.map(l => { const on = !l.ends || ym <= l.ends; return { key: l.key, name: l.name, jar: l.jar, on, v: on ? lineValue(l, ym) : 0 }; });
     r.lineVals.forEach(x => { r.jar[x.jar] += x.v; });
@@ -79,26 +99,48 @@ function oracle(S) {
     });
     r.debtOwed = debts.reduce((a, d) => a + owed[d.id], 0); r.debtExtra = r.debtPay - r.debtMin;
     r.jar.nec += r.debtPay;
-    const freed = freedLines.reduce((s, f) => s + (ym > f.ends ? f.amt : 0), 0);
-    r.before = Object.assign({}, bal); r.g = {}; r.goalsTotal = 0;
+    /* the month-end answer for this month, if it is one the app asks about */
+    let topup = null;
+    if (asks && ym < opt.cur) {
+      const en = answers[ym] || null;
+      if (!(en && en.hide)) {
+        let leftC = r.lineVals.filter(x => x.jar === 'play').reduce((s, x) => s + C(x.v), 0)
+          - rcAll.filter(x => String(x.d).slice(0, 7) === ym && jarOfKey(x.c) === 'play').reduce((s, x) => s + C(x.a), 0);
+        if (yen) leftC = Math.floor(leftC / 100) * 100;
+        leftC = Math.max(0, leftC);
+        if (!en) r.pendLeftC = leftC;
+        else { r.countedC = leftC; if (en.id && leftC > 0) topup = { id: en.id, amtC: Math.min(C(en.amt), leftC), usedC: 0 }; }
+      }
+    }
+    const freedC = freedLines.reduce((s, f) => s + (ym > f.ends ? f.amt : 0), 0);
+    r.beforeC = Object.assign({}, bal); r.g = {}; let goalsTotalC = 0;
     goals.forEach(g => {
       const isE = !!(eg && g.id === eg.id);
-      const planned = goalValue(g, ym) + (isE ? freed : 0);
-      const room = Math.max(0, cap(g, ym) - bal[g.id]);
-      const actual = Math.min(planned, room);
-      r.g[g.id] = { planned, actual }; r.goalsTotal += actual;
+      const plannedC = C(goalValue(g, ym)) + (isE ? freedC : 0);
+      const roomC = Math.max(0, cap(g, ym) * 100 - bal[g.id]);
+      const actualC = Math.min(plannedC, roomC);
+      const upC = topup && topup.id === g.id ? Math.min(topup.amtC, roomC - actualC) : 0;   /* only the room left after this month's own saving */
+      if (upC > 0) topup.usedC = upC;
+      r.g[g.id] = { planned: U(plannedC), actual: U(actualC), up: U(upC), plannedC, actualC, upC }; goalsTotalC += actualC;
     });
+    r.goalsTotal = U(goalsTotalC);
     r.inflow = r.a + r.b + r.side + r.draw;
     r.outflow = r.jar.nec + r.jar.play + r.jar.edu + r.jar.ffa + r.jar.give + r.goalsTotal;
     r.left = r.inflow - r.outflow;
-    r.bankStart = bank; bank += r.left; r.bankEnd = bank;
-    goals.forEach(g => { bal[g.id] += r.g[g.id].actual - (eg && g.id === eg.id ? r.draw : 0); });
-    goals.forEach(g => { if (g.target > 0 && reached[g.id] === undefined && cap(g, ym) === cap(g) && bal[g.id] >= cap(g, ym)) reached[g.id] = ym; });
-    r.spent = {};
-    goals.forEach(g => { r.spent[g.id] = 0; if (g.due && g.target > 0 && ym === dueM(g)) { r.spent[g.id] = Math.min(bal[g.id], g.target); bal[g.id] -= r.spent[g.id]; } });
-    r.bal = Object.assign({}, bal); out.push(r);
+    r.topup = topup ? { id: topup.id, amt: U(topup.amtC), used: U(topup.usedC), amtC: topup.amtC, usedC: topup.usedC } : null;
+    r.creditC = r.countedC !== undefined ? r.countedC - (topup ? topup.usedC : 0) : 0;
+    r.pendLeft = r.pendLeftC === undefined ? undefined : U(r.pendLeftC); r.counted = r.countedC === undefined ? undefined : U(r.countedC); r.credit = U(r.creditC);
+    r.bankStart = U(bank); bank += C(r.left) + r.creditC; r.bankEnd = U(bank);
+    goals.forEach(g => { bal[g.id] += r.g[g.id].actualC + r.g[g.id].upC - (eg && g.id === eg.id ? drawC : 0); });
+    goals.forEach(g => { if (g.target > 0 && reached[g.id] === undefined && cap(g, ym) === cap(g) && bal[g.id] >= cap(g, ym) * 100) reached[g.id] = ym; });
+    r.spent = {}; r.spentC = {};
+    goals.forEach(g => { let s = 0; if (g.due && g.target > 0 && ym === dueM(g)) { s = Math.min(bal[g.id], g.target * 100); bal[g.id] -= s; } r.spentC[g.id] = s; r.spent[g.id] = U(s); });
+    r.balC = Object.assign({}, bal);
+    r.before = {}; r.bal = {}; goals.forEach(g => { r.before[g.id] = U(r.beforeC[g.id]); r.bal[g.id] = U(bal[g.id]); });
+    out.push(r);
   });
   oracleOverspend(S, out, lines);
+  oraclePiles(S, out, lines);
   return { rows: out, reached, lastSave, dueM, cap, debtRows: oracleDebtRows(debts, out, months) };
 }
 /* each card or loan: pay-off month, never, interest and payments up to the pay-off, and which one to pay first */
@@ -173,6 +215,33 @@ function oracleOverspend(S, rows, lines) {
     cum += now; r.overNow = U(now); r.over = U(cum); r.bankEnd = U(plannedEnd - cum);
   });
 }
+/* The piles Home draws for Education, Giving and Investing (mapOf's burrows), recounted from the plain words in whole cents.
+   Each is a running total from the first month up to and including the month shown:
+   - Education and Giving: what each month planned for the place goes in, what was logged on it comes out. A month that ends below zero was
+     paid from the bank in that month, so the pile starts the next month at zero (never taken twice). The month shown may be below zero:
+     then the pile shows 0 and says by how much it is over.
+   - Investing is money put in and never spent: a month adds its plan, or what was logged if that is more (logging is the plan being done;
+     anything past the plan came from the bank). It never goes below zero.
+   - planned and logged are the totals so far; loggedPast is logged less planned.
+   - A pile is listed when the month plans something for it or it holds money. */
+function oraclePiles(S, rows, lines) {
+  const C = x => Math.round((+x || 0) * 100), rc = S.receipts || [];
+  const jarOfKey = k => { const l = lines.find(x => x.key === k); return l ? l.jar : 'other'; };
+  const run = { edu: 0, ffa: 0, give: 0 }, pl = { edu: 0, ffa: 0, give: 0 }, lg = { edu: 0, ffa: 0, give: 0 };
+  rows.forEach(r => {
+    const logged = { edu: 0, ffa: 0, give: 0 };
+    rc.forEach(x => { if (String(x.d).slice(0, 7) !== r.ym) return; const j = jarOfKey(x.c); if (logged[j] !== undefined) logged[j] += C(x.a); });
+    r.piles = {};
+    ['edu', 'ffa', 'give'].forEach(j => {
+      const plan = C(r.jar[j]);
+      pl[j] += plan; lg[j] += logged[j];
+      run[j] += j === 'ffa' ? Math.max(plan, logged[j]) : plan - logged[j];
+      const now = run[j];
+      r.piles[j] = { amountC: Math.max(0, now), overByC: Math.max(0, -now), plannedC: pl[j], loggedC: lg[j], loggedPastC: lg[j] - pl[j], listed: plan > 0 || now > 0 };
+      if (now < 0) run[j] = 0;
+    });
+  });
+}
 /* the status of one goal in one month, again from the plain rules */
 function oracleGoal(S, O, id, ym) {
   const g = S.plan.goals.find(x => x.id === id), row = O.rows.find(r => r.ym === ym);
@@ -180,12 +249,13 @@ function oracleGoal(S, O, id, ym) {
   const T = O.cap(g, ym);   /* 38.30 rule: every goal is judged against its cap (the target, or the longer goal once the person said yes) */
   let state, need = null, slack = null, had = null;
   if (!(T > 0)) state = 'unset';
-  else if (dm && ym >= dm) { had = O.rows.find(r => r.ym === dm).spent[id]; state = had >= T ? 'paid' : 'short'; }
+  else if (dm && ym >= dm) { const sp = O.rows.find(r => r.ym === dm).spentC[id]; had = sp / 100; state = sp >= T * 100 ? 'paid' : 'short'; }
   else if (ls) {
-    state = reached && reached <= ls ? (row.bal[id] >= T ? 'full' : 'ontrack') : 'behind';
+    state = reached && reached <= ls ? (row.balC[id] >= T * 100 ? 'full' : 'ontrack') : 'behind';
     slack = reached ? mIdx(ls) - mIdx(reached) : null;
-    if (ym <= ls) need = Math.max(0, ceilDiv(Math.max(0, T - row.before[id]), mIdx(ls) - mIdx(ym) + 1));
-  } else state = row.bal[id] >= T ? 'full' : (reached ? 'eta' : 'noeta');
+    /* what is still missing, spread over the months left, rounded up to a whole amount (the balance can carry cents after a top-up) */
+    if (ym <= ls) need = Math.max(0, ceilDiv(Math.max(0, T * 100 - row.beforeC[id]), (mIdx(ls) - mIdx(ym) + 1) * 100));
+  } else state = row.balC[id] >= T * 100 ? 'full' : (reached ? 'eta' : 'noeta');
   return { state, need, slack, had, reached };
 }
 /* whole percents that add to 100, by integer arithmetic: floor each share, give spare points to the biggest remainders (lower position wins a tie) */
@@ -297,6 +367,133 @@ if (require.main !== module) return;
 let fails = [], checks = 0;
 const eq = (ctxMsg, a, b) => { checks++; if (a !== b && !(Number.isNaN(a) && Number.isNaN(b))) { if (fails.length < 40) fails.push(ctxMsg + ': app ' + JSON.stringify(a) + ' vs independent ' + JSON.stringify(b)); else fails.length++; } };
 const N = +(process.env.N || 3000), RC = { plans: 0, months: 0, underMonths: 0, overMonths: 0, pileMonths: 0, pileCovered: 0 }; const DBG = process.env.DBG ? process.env.DBG.split(',') : [];
+const ME = { plans: 0, open: 0, bank: 0, goal: 0, used: 0, cents: 0, stretch: 0, cut: 0, gone: 0, hide: 0, stale: 0, fits: 0, feeds: 0, feedsCut: 0, pileOver: 0, ffaPast: 0 };
+/* an app amount against the independent one in whole cents (undefined stays undefined: the app has no such figure that month); a mismatch is said in money */
+const ec = (msg, a, bC) => eq(msg, a === undefined || a === null ? undefined : Math.round(a * 100) / 100, bC === undefined || bC === null ? undefined : bC / 100);
+/* the piles Home draws for one month (mapOf's burrows, read through viewOf as Home reads them), field by field */
+function comparePiles(S, C, r, p) {
+  const B = M.viewOf(S, C, r.ym).map.burrows;
+  ['edu', 'ffa', 'give'].forEach(j => {
+    const a = B.find(x => x.id === j), o = r.piles[j], q = p + 'pile ' + j + ' ';
+    eq(q + 'listed', !!a, o.listed); if (!a || !o.listed) return;
+    ec(q + 'balance', a.amount, o.amountC); ec(q + 'over by', a.overBy, o.overByC); eq(q + 'over', a.over, o.overByC > 0);
+    ec(q + 'planned so far', a.planned, o.plannedC); ec(q + 'logged so far', a.logged, o.loggedC); ec(q + 'logged past plan', a.loggedPast, o.loggedPastC);
+    if (o.overByC > 0) ME.pileOver++; if (j === 'ffa' && o.loggedPastC > 0) ME.ffaPast++;
+  });
+}
+/* Month-end answers on a copy of the plan, from their own random stream R (the plans themselves stay the same).
+   1. Free to spend of a month moved into a burrow with the app's sweepPlay, as the burrow screen does; the amount moved is checked against
+      the rule (no more than asked, rounded down to the cent or whole yen; no more than the month's Free to spend as planned; no more than the
+      room the goal has after that month's own saving), and the plan after it against what the move promises.
+   2. A month the app takes as now, and the questions answered from the latest past month back, as Home asks them: some left open, some
+      counted in the bank, some put toward a goal with the amount the app's topupFit gives (checked against the rule), some hidden, and some
+      odd answers a saved copy may still hold (an amount that no longer fits, a goal that is gone, a month not yet past).
+   3. Changes after answering, so answers go stale: receipts logged later, the longer emergency goal said yes or no to (from a month or not),
+      a target lowered, a goal removed, every receipt deleted.
+   Then every month is compared: the open question, what was counted, the top-up (goal, amount, used), the credit to the bank, the bank,
+   every goal (deposit, top-up, balance before and after, spent, full date, status) and the piles.
+   Known app issue, left visible on purpose (found 2026-11-20, SEED=7 plan #264): the app adds goal money as floats and never rounds the
+   balance to the cent, so cents that do not add up exactly (10.74 + 64.21 + 25.05 into a goal of 100) leave it at 99.99999999999999:
+   never full, or full a month late. The same happens with typed savings in cents. */
+function monthEndCase(S0, R, tag) {
+  const rp = a => a[Math.floor(R() * a.length)], rr = (a, b) => a + Math.floor(R() * (b - a + 1)), cc = x => Math.round(x * 100);
+  const V = JSON.parse(JSON.stringify(S0)), MS = M.MONTHS, yen = V.ui.cur === '¥';
+  if (!(V.receipts || []).length && R() < .7) randomReceipts(V, R);
+  const ci = R() < .06 ? 0 : rr(1, MS.length - 1), cur = MS[ci];
+  V.ui.done = { pay: R() > .04, bills: R() > .04, goals: R() > .04 };
+  const sweepAt = (pm, e) => { V.ui.sweep = Object.assign({}, V.ui.sweep, { [pm]: e }); };
+  const playC = r => r.lineVals.filter(x => x.jar === 'play').reduce((s, x) => s + cc(x.v), 0);
+  const roomAfterC = (O, r, g, ym) => Math.max(0, O.cap(g, ym) * 100 - r.beforeC[g.id] - r.g[g.id].actualC);
+  /* 1. burrow feeds */
+  let Of = null;   /* the independent figures for the plan as it stands (each feed's "after" is the next one's "before") */
+  for (let f = rp([0, 0, 1, 2, 3]); f > 0; f--) {
+    const ym = R() < .5 ? cur : rp(MS.slice(0, ci + 1)), k = MS.indexOf(ym), O = Of || (Of = oracle(V)), r = O.rows[k];
+    const open = V.plan.goals.filter(g => g.target > 0 && !(g.due && ym >= O.dueM(g)));   /* the burrows the screen offers: set, and not yet spent on its date */
+    if (!open.length) continue;
+    const g = rp(open), pC = playC(r), roomC = roomAfterC(O, r, g, ym), q = tag + ' feed ' + ym + ' ' + g.id + ' ';
+    const how = rp(['room', 'play', 'under', 'under', 'over', 'cents', 'tiny', 'zero', 'neg', 'huge']);
+    const mil = how === 'room' ? roomC * 10 : how === 'play' ? pC * 10 : how === 'under' ? Math.floor(Math.min(roomC, pC) * R()) * 10 + (yen ? 0 : rr(0, 9))
+      : how === 'over' ? (Math.max(roomC, pC) + rr(1, 50000)) * 10 : how === 'cents' ? rr(1, 999999) * (yen ? 1000 : 10) + (yen ? 0 : rr(0, 9)) : how === 'tiny' ? rr(1, 15)
+      : how === 'zero' ? 0 : how === 'neg' ? -rr(1, 100000) : 1e15;   /* the amount asked, in thousandths */
+    const askedC = yen ? Math.floor(mil / 1000) * 100 : Math.floor(mil / 10), exp = Math.max(0, Math.min(askedC, pC, roomC));
+    const moved = M.sweepPlay(V, ym, g.id, mil / 1000);
+    ec(q + 'moved', moved, exp); ME.feeds++; if (exp < askedC && exp > 0) ME.feedsCut++;
+    Of = oracle(V); const r2 = Of.rows[k];
+    eq(q + 'free to spend after', playC(r2), pC - exp); eq(q + 'goal deposit after', r2.g[g.id].plannedC, r.g[g.id].plannedC + exp);
+    eq(q + 'goal saved after', r2.g[g.id].actualC, r.g[g.id].actualC + exp); eq(q + 'left over unchanged', cc(r2.left), cc(r.left));
+  }
+  M.setCurYm(() => cur);
+  try {
+    /* 2. the answers, latest past month first. An answer only changes its own month and the months after it, so the figures worked out
+       before the first answer still hold for every earlier month when its turn comes (they are all compared again at the end) */
+    const Cn = M.calcAll(V), On = oracle(V, { cur });
+    for (let k = ci - 1; k >= 0; k--) {
+      const pm = MS[k], kind = rp(['none', 'bank', 'bank', 'goal', 'goal', 'goal', 'goal', 'hide', 'odd']);
+      if (kind === 'none') continue;
+      if (kind === 'hide') { sweepAt(pm, { hide: true }); continue; }
+      const m = Cn.byYm[pm], O = On, r = O.rows[k];
+      ec(tag + ' ' + pm + ' left to answer (before)', m.pendLeft, r.pendLeftC);
+      if (kind === 'odd') {
+        const amt = yen ? rr(1, 999999) : rr(1, 9999999) / 100, gs = V.plan.goals;
+        const e = rp([{ amt, to: 'bank' }, { amt, id: 'gone' }].concat(gs.length ? [{ amt, id: rp(gs).id }, { amt: yen ? 1 : 0.01, id: rp(gs).id }, { amt: amt * 1000, id: rp(gs).id }] : []));
+        e.t = 1; sweepAt(R() < .2 ? rp(MS.slice(ci)) : pm, e); continue;
+      }
+      if (!(r.pendLeftC >= 1)) continue;   /* nothing is asked when nothing is left */
+      if (kind === 'bank') { sweepAt(pm, { amt: m.pendLeft, to: 'bank', t: 1 }); continue; }
+      /* the goals Home offers: set, not full at the end of that month, still being saved for; now and then any goal */
+      const open = V.plan.goals.filter(g => g.target > 0 && r.balC[g.id] < O.cap(g, pm) * 100 && !(g.due && pm >= O.dueM(g)));
+      const pool = open.length && R() < .9 ? open : V.plan.goals; if (!pool.length) continue;
+      const g = rp(pool), fit = M.topupFit(V, Cn, pm, g.id);
+      ec(tag + ' ' + pm + ' ' + g.id + ' top-up fits', fit, Math.min(r.pendLeftC, roomAfterC(O, r, g, pm))); ME.fits++;
+      if (fit > 0) sweepAt(pm, { amt: fit, id: g.id, t: 1 });
+    }
+    /* 3. changes after answering */
+    if (R() < .4 && ci > 0) for (let n = rr(1, 3), O3 = oracle(V); n > 0; n--) {
+      const pm = rp(MS.slice(0, ci)), keys = V.plan.lines.filter(l => l.jar === 'play').map(l => l.key).concat(['other']), r = O3.rows[MS.indexOf(pm)];
+      const a = rp([rr(1, 50), Math.max(1, Math.round(r.jar.play * R())), r.jar.play, r.jar.play * 2 + 1]) + (yen ? 0 : rr(0, 99) / 100);
+      M.addReceipt(V, pm + '-' + String(rr(1, 28)).padStart(2, '0'), a, rp(keys), '');
+    }
+    const eg = V.plan.goals.find(g => g.emergency);
+    if (eg && R() < .25) { const v = rp([true, true, false, undefined]); if (v === undefined) delete eg.stretchOn; else eg.stretchOn = v; if (R() < .6) eg.stretchFrom = rp(MS); else delete eg.stretchFrom; if (R() < .5) eg.stretch = rr(0, Math.max(1, eg.target * 3)); }
+    if (V.plan.goals.length && R() < .15) { const g = rp(V.plan.goals); M.updateGoal(V, g.id, { target: Math.floor(g.target * R()) }); }
+    if (V.plan.goals.length && R() < .08) M.removeGoal(V, rp(V.plan.goals).id);
+    if (R() < .04) V.receipts = [];
+    /* compare */
+    const C = M.calcAll(V), O = oracle(V, { cur }), last = C.months[C.months.length - 1];
+    if (O.rows.some(r => r.pendLeftC !== undefined || r.countedC !== undefined)) ME.plans++;
+    let bankC = cc(M.cfg(V, 'bankStart'));
+    O.rows.forEach((r, i) => {
+      const m = C.months[i], p = tag + ' now ' + cur + ', ' + r.ym + ' ', en = (V.ui.sweep || {})[r.ym];
+      ec(p + 'left to answer', m.pendLeft, r.pendLeftC); ec(p + 'counted', m.counted, r.countedC);
+      eq(p + 'top-up goal', m.topup ? m.topup.id : null, r.topup ? r.topup.id : null);
+      ec(p + 'top-up amount', m.topup ? m.topup.amt : undefined, r.topup ? r.topup.amtC : undefined); ec(p + 'top-up used', m.topup ? m.topup.used : 0, r.topup ? r.topup.usedC : 0);
+      ec(p + 'credit', m.credit, r.creditC);
+      ['draw', 'inflow', 'goalsTotal', 'left', 'bankStart', 'bankPlanned', 'bankEnd', 'overNow', 'over'].forEach(k => ec(p + k, m[k], cc(r[k])));
+      /* nothing is lost at month end: what was counted is what the goal took plus what went to the bank */
+      checks++; if (m.counted !== undefined && cc(m.counted) !== cc((m.topup && m.topup.used) || 0) + cc(m.credit)) { if (fails.length < 40) fails.push(p + 'counted is not used + credit'); }
+      bankC += cc(m.left) + cc(m.credit) - cc(m.overNow);
+      V.plan.goals.forEach(g => {
+        const a = m.g[g.id], o = r.g[g.id], q = p + g.id + ' ';
+        ec(q + 'planned', a.planned, o.plannedC); ec(q + 'actual', a.actual, o.actualC); ec(q + 'top-up', a.up || 0, o.upC);
+        ec(q + 'before', m.balBefore[g.id], r.beforeC[g.id]); ec(q + 'bal', m.bal[g.id], r.balC[g.id]); ec(q + 'spent', m.spent[g.id], r.spentC[g.id]);
+        const gi = M.goalInfo(V, C, g.id, r.ym), go = oracleGoal(V, O, g.id, r.ym);
+        eq(q + 'state', gi.state, go.state); eq(q + 'need', gi.need, go.need); eq(q + 'slack', gi.slack, go.slack); ec(q + 'had', gi.had, go.had === null ? undefined : cc(go.had)); eq(q + 'reached', gi.reached, go.reached);
+      });
+      eq(p + 'status', M.statusOf(V, m), r.bankEnd < M.cfg(V, 'minBank') ? 'short' : (r.left < 0 ? 'tight' : 'good'));
+      if (!S0.receipts || !S0.receipts.length) comparePiles(V, C, r, p);   /* the piles were compared on the plan itself; here only when this copy got its first receipts */
+      if (r.pendLeftC !== undefined) ME.open++; if (en && en.hide && r.ym < cur) ME.hide++;
+      if (r.countedC !== undefined && !r.topup) ME.bank++;
+      if (r.topup) {
+        const g = V.plan.goals.find(x => x.id === r.topup.id);
+        ME.goal++; if (r.topup.usedC > 0) ME.used++; if (r.topup.usedC % 100) ME.cents++; if (r.topup.usedC < r.topup.amtC) ME.cut++; if (!g) ME.gone++;
+        if (g && g.emergency && g.stretchOn === true && g.stretchFrom && O.cap(g, r.ym) !== O.cap(g)) ME.stretch++;   /* before the yes counts, the fund stops at its target */
+      }
+      if (r.countedC !== undefined && en && typeof en.amt === 'number' && r.countedC < cc(en.amt)) ME.stale++;
+    });
+    eq(tag + ' month-end final bank', cc(last.bankEnd), bankC);
+    V.plan.goals.forEach(g => { let tot = cc(g.start); C.months.forEach(m => { tot += cc(m.g[g.id].actual) + cc(m.g[g.id].up || 0) - (g.emergency ? cc(m.draw) : 0) - cc(m.spent[g.id]); }); eq(tag + ' ' + g.id + ' month-end goal money conserved', cc(last.bal[g.id]), tot); });
+  } finally { M.setCurYm(null); }
+}
 for (let t = 0; t < N; t++) {
   const S = randomState({ debts: true }), tag = '#' + t + ' ' + S.ui.cur;
   if (t % 5 === 3) S.cfg.bankStart = -(1 + (t * 7919) % 250000);   /* every fifth plan starts overdrawn (38.31); kept out of randomState so the golden screens draw the same plans */
@@ -335,6 +532,9 @@ for (let t = 0; t < N; t++) {
       eq(p + g.id + ' state', gi.state, go.state); eq(p + g.id + ' need', gi.need, go.need); eq(p + g.id + ' slack', gi.slack, go.slack); eq(p + g.id + ' had', gi.had, go.had); eq(p + g.id + ' reached', gi.reached, go.reached);
     });
     eq(p + 'status', M.statusOf(S, m), r.bankEnd < M.cfg(S, 'minBank') ? 'short' : (r.left < 0 ? 'tight' : 'good'));
+    /* the piles Home draws; and with no month taken as now, nothing is asked or counted at month end */
+    comparePiles(S, C, r, p);
+    eq(p + 'no month-end figures', [m.pendLeft, m.counted, m.topup, m.credit].join('|'), '|||0');
     /* the jars and their percents */
     /* 38.30 rule: percents are shares of real pay, never of money borrowed from the emergency fund; borrowed money that is left over is not pay waiting to be placed */
     const J = M.jarsOf(S, m), inn = r.inflow, outv = r.outflow, rest = Math.max(0, inn - outv), short = Math.max(0, outv - inn), realPay = inn - r.draw, base = short > 0 ? outv : (r.draw > 0 && realPay > 0 ? realPay : inn);
@@ -371,7 +571,11 @@ for (let t = 0; t < N; t++) {
   eq(tag + ' final bank', cc(last.bankEnd), b); eq(tag + ' spent past plan adds up', cc(last.over), ov);
   /* nothing is created or lost inside the goals: start + saved - withdrawn - spent = what is left */
   S.plan.goals.forEach(g => { let tot = g.start; C.months.forEach(m => { tot += m.g[g.id].actual - (g.emergency ? m.draw : 0) - m.spent[g.id]; }); eq(tag + ' ' + g.id + ' goal money conserved', C.months[C.months.length - 1].bal[g.id], tot); });
+  /* month-end answers and burrow feeds, on a copy, from their own random stream */
+  monthEndCase(S, rngOf(+(process.env.SEED || 1) * 2000029 + t * 104729 + 91), tag);
 }
+/* the first line ends with the mismatch count (verify.sh reads it there) */
 console.log('random plans', N, '(' + RC.plans + ' with receipts: ' + RC.months + ' months logged, ' + RC.underMonths + ' all within plan, ' + RC.overMonths + ' past plan, ' + RC.pileCovered + ' kept money covered, ' + RC.pileMonths + ' bank paid for an empty pile) | comparisons', checks, '| mismatches', fails.length);
+console.log('piles: ' + ME.pileOver + ' months a pile is over, ' + ME.ffaPast + ' months Investing logged past plan | burrow feeds ' + ME.feeds + ' (' + ME.feedsCut + ' cut to fit) | month-end: ' + ME.plans + ' plans asked, ' + ME.open + ' months open, ' + ME.bank + ' counted in the bank, ' + ME.goal + ' toward a goal (' + ME.used + ' used, ' + ME.cents + ' with cents, ' + ME.stretch + ' before a longer-goal yes counts, ' + ME.cut + ' cut by the room, ' + ME.gone + ' goal gone), ' + ME.hide + ' hidden, ' + ME.stale + ' less left than answered, ' + ME.fits + ' top-up fits checked');
 fails.slice(0, 40).forEach(f => console.log(' ', f));
 process.exit(fails.length ? 1 : 0);
