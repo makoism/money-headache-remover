@@ -1919,6 +1919,10 @@ ol.steps li { margin: 0 0 4px; }
 /* setup: a field that gets the focus scrolls clear of the faded strip above Back and Next */
 .tour-scroll { scroll-padding-bottom: 104px; scroll-padding-top: 12px; }
 .mp-from { margin-top: 8px; }
+/* QC round 4 north-star 2: the Last month table on Receipts fits a phone (it had the 600px table minimum and scrolled sideways with
+   nothing to say so), and Plan > All months fits 320 wide with every figure whole and the Status column on screen */
+.lbt { min-width: 0; }
+@media (max-width: 360px) { #monthTable th, #monthTable td { padding: 10px 2px; font-size: 12px; letter-spacing: -.02em; } #monthTable td:last-child { white-space: normal; } }
 </style>
 </head>
 <body>
