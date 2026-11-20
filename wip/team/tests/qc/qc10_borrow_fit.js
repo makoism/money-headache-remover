@@ -33,7 +33,7 @@ const food = async (p, v) => { await p.evaluate(v => { const S = __t.S; S.plan.l
   await food(p, 30050);
   s = await look(p);
   ck('food lowered: nothing changes on its own (still ¥22,050 borrowed)', s.draw === 22050, s);
-  ck('food lowered: Plan says the plan needs only ¥12,050 of the borrow now and ¥10,000 of it stays in the bank', /needs only ¥12,050 of the borrow now/.test(s.verdict) && /¥10,000 of it stays in the bank/.test(s.verdict), s.verdict);
+  ck('food lowered: Plan says the plan needs only ¥12,050 of the borrow now and ¥10,000 of it is not needed', /needs only ¥12,050 of the borrow now/.test(s.verdict) && /¥10,000 of it is not needed/.test(s.verdict) && !/stays in the bank/.test(s.verdict), s.verdict);   /* one name, one amount: the row "Borrowed, stays in the bank" is a different amount (QC10 numbers blocker 2) */
   ck('food lowered: Plan offers "Borrow only ¥12,050"', s.btns.includes('Borrow only ¥12,050'), s.btns);
   await p.evaluate(() => document.querySelector('[data-fx="borrowfit"]').click()); await w(800);
   s = await look(p);
@@ -44,7 +44,7 @@ const food = async (p, v) => { await p.evaluate(v => { const S = __t.S; S.plan.l
   await food(p, 10050);
   s = await look(p);
   ck('food lowered again: still ¥12,050 borrowed until a tap', s.draw === 12050, s);
-  ck('food lowered again: Plan says the plan does not need the borrow now', /doesn't need the borrow now/.test(s.verdict), s.verdict);
+  ck('food lowered again: Plan says the plan does not need the borrow now', /doesn't need the borrow now/.test(s.verdict) && !/stays in the bank/.test(s.verdict), s.verdict);
   ck('food lowered again: Undo borrow is offered and no "Borrow only"', s.btns.includes('Undo borrow') && !s.btns.some(t => /^Borrow only/.test(t)), s.btns);
   await p.evaluate(() => document.querySelector('[data-fx="unborrow"]').click()); await w(800);
   s = await look(p);

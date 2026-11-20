@@ -115,7 +115,7 @@ function render() {
   if (m.draw > 0) vt += ` ${fmt2(m.draw)} is borrowed from the emergency fund.`;
   /* a borrow bigger than the plan now needs is said, never changed on its own (QC8 SF6) */
   const DF = drawFit(S, m);
-  if (DF.extra >= 0.005) vt += DF.need > 0 ? ` Your plan needs only ${fmt2(DF.need)} of the borrow now. ${fmt2(DF.extra)} of it stays in the bank.` : ` Your plan doesn't need the borrow now. It stays in the bank.`;
+  if (DF.extra >= 0.005) vt += DF.need > 0 ? ` Your plan needs only ${fmt2(DF.need)} of the borrow now. ${fmt2(DF.extra)} of it is not needed.` : ` Your plan doesn't need the borrow now.`;   /* "stays in the bank" is the name of a row with another amount (QC10 numbers blocker 2) */
   $('#verdict').textContent = vt;
   let btns = '';
   if (st !== 'good') fixes(S, m).forEach(f => {
