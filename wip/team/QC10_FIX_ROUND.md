@@ -24,6 +24,6 @@ Hard gates (qc-numbers): oracle 3000 plans 0 mismatches, proof_fuzz 1500 plans 0
 | F1 (Q2) | Home note called a balance typed on 20 Nov "your bank at the start of Nov", left out the card, said "can differ" when equal | fixed eb81d42 (note names the cards, quiet when equal). Left for Mako: should Check your bank reset the figure the plan starts from; count a card in the month it is paid |
 | F2 (Q7) | Undo after a cloud load on an empty phone put back sample numbers and sent them over the only cloud copy | fixed 311a766: no Undo on a phone with no numbers; on a phone with numbers the bar says Undo also changes the cloud copy |
 | F3 (Q3) | "Your balance covers it" next to "Lower a bill or another place" | fixed ba67d44 |
-| F4 (Q7) | "Your numbers from before are kept" on a phone that had none; Settings "Last backup: today" after a cloud load with no file saved | first half fixed 311a766; "Last backup" after a cloud load open |
+| F4 (Q7) | "Your numbers from before are kept" on a phone that had none; Settings "Last backup: today" after a cloud load with no file saved | fixed 311a766 and 94e5be5 (a cloud load no longer stamps the backup day) |
 | F5 (Q7) | Toast under the Undo bar; page text showed through the bar | bar made solid a60263c; toast overlap not reproduced in the test |
 | F6 (SF6) | "needs only X" next to a borrowed row with another amount; borrowed row's percent beside places that already pass 100 (126); Home does not say part of the month-end bank is borrowed | sentence now says what X is for 97e8d39; the 126 and Home wording open |
