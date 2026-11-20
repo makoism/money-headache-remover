@@ -4661,7 +4661,7 @@ function fieldHTML(f, multi, editing) {
     <button type="button" class="btn small warnbtn" data-ldel="${esc(l.id)}" data-armkey="ldel-${esc(l.id)}">Remove</button></div>` : '';
   return `<div class="ed" id="e-${f.fid}"><div class="ed-top">${head}
     <div class="inp sm"><span class="yen cs"></span><input id="i-${f.fid}" data-k="${esc(f.key)}" type="number" inputmode="decimal" min="0" step="any" aria-label="${esc(f.label)}, this month"></div></div>
-    ${f.sl ? `<div class="rng" style="--c:${f.color}"><input type="range" id="r-${f.fid}" data-k="${esc(f.key)}" min="0" max="100" step="1" aria-label="${esc(f.label)} slider">${f.sl.mark ? `<span class="mark" id="m-${f.fid}" title="Your ceiling"></span>` : ''}</div>` : ''}
+    ${f.sl ? `<div class="rng" style="--c:${f.color}"><input type="range" id="r-${f.fid}" data-k="${esc(f.key)}" min="0" max="100" step="1" aria-label="${esc(f.label)} slider">${f.sl.mark ? `<span class="mark" id="m-${f.fid}" title="Your Free to spend cap"></span>` : ''}</div>` : ''}
     <p class="nt" id="n-${f.fid}"></p>
     <p class="keep" id="k-${f.fid}" hidden><span id="kt-${f.fid}"></span><button type="button" class="link" data-keep="${esc(f.key)}">Keep for later months</button><button type="button" class="link" data-undo="${esc(f.key)}">Undo</button></p>${edit}</div>`;
 }
@@ -4997,7 +4997,7 @@ function noteFor(f, m, v, on) {
   if (f.kind === 'debt') { const d = debtById(S, f.did), x = d && m.debts[d.id]; return x ? `Minimum ${fmt(d.min)} is already included. This month it pays ${fmt(x.pay)}${x.interest > 0 ? `, ${fmt(x.interest)} of it interest` : ''}. Owed after: ${fmt(x.bal)}.` : ''; }
   let t = f.note ? esc(localize(f.note)) + ' ' : '';
   if (f.ends) t += on ? (v > 0 ? `Last payment ${monthLabel(f.ends)}.` : '') : 'Paid off.';
-  if (f.sl && f.sl.mark) { const ceil = cfg(S, 'ceiling'); if (ceil > 0) t += (m.jar.play > ceil ? ` <b>Above the ${fmt(ceil)} ceiling.</b>` : ` The mark is your ${fmt(ceil)} ceiling.`); }
+  if (f.sl && f.sl.mark) { const ceil = cfg(S, 'ceiling'); if (ceil > 0) t += (m.jar.play > ceil ? ` <b>Above your ${fmt(ceil)} Free to spend cap.</b>` : ` The mark is your ${fmt(ceil)} Free to spend cap (Settings).`); }
   return t.trim();
 }
 function goalNote(gid, m) {
@@ -14485,7 +14485,7 @@ function asstPicture(T) {
   return `PICTURE (today ${todayStr()}, currency ${cur}, amounts per month, month in view ${monthLabel(ym)})
 Name: ${T.ui.name || '(not given)'}
 Income: salary ${n(val(T, 'a', ym))}, second income ${n(val(T, 'b', ym))}, side income ${n(val(T, 'side', ym))}; total in ${n(m.pool.in)}
-Money today ${n(cfg(T, 'bankStart'))}; minimum balance ${n(cfg(T, 'minBank'))}; spending ceiling ${n(cfg(T, 'ceiling'))}
+Money today ${n(cfg(T, 'bankStart'))}; minimum balance ${n(cfg(T, 'minBank'))}; Free to spend cap ${n(cfg(T, 'ceiling'))}
 This month: left over ${n(m.pool.left)}, balance ends ${monthLabel(ym, true)} at ${n(m.bankEnd)}, status ${st[statusOf(T, m)]}. Next 12 months: ${shorts.length ? 'short in ' + shorts.map(x => monthLabel(x, true) + ' ' + x.slice(2, 4)).join(', ') : 'no short month'}${tights.length ? '; tight in ' + tights.length + ' month' + (tights.length === 1 ? '' : 's') : ''}.
 Jars (amount, share of pay, usual share): ${J.list.map(j => `${j.name} ${n(j.v)} (${j.pct}%, usual ${j.usual}%)`).join('; ')}${J.rest > 0 ? `; unassigned ${n(J.rest)} (${J.restPct}%)` : ''}${J.over ? '; the plan spends more than the pay' : ''}
 Free to spend this month: planned ${n(V.play.planned)}, spent ${n(V.play.spent)}, left ${n(V.play.left)}, ${V.play.daysLeft} days left${V.play.perWeek != null ? ', about ' + n(V.play.perWeek) + ' a week' : ''}
@@ -16841,13 +16841,13 @@ function renderDebts() {
   const ds = debtsOf(S), m = C.byYm[sel], rows = ds.length ? debtRows(S, C) : [];
   const sample = sampleOn();
   sec.hidden = false;
-  const sig = JSON.stringify([ds, DEBT_EDIT, DEBT_DRAFT, sel, sample, m.debts, rows.map(r => [r.payoffYm, r.never, r.totalInterest, r.first])]);
+  const sig = JSON.stringify([ds, DEBT_EDIT, DEBT_DRAFT, sel, sample, nowOf(S).cards.length, m.debts, rows.map(r => [r.payoffYm, r.never, r.totalInterest, r.first])]);
   const holding = sec.contains(document.activeElement) && document.activeElement.matches('input, select') && (DEBT_EDIT !== null || DEBT_DRAFT !== null);
   if (sig !== debtSig && !holding) {
     debtSig = sig;
     const cards = $('#debtCards');
     if (sample) cards.innerHTML = '<p class="cap">Finish the first steps, then add your cards and loans here.</p>';
-    else cards.innerHTML = (ds.length ? ds.map((d, i) => debtCardHTML(d, rows[i], m.debts[d.id], i, rows[i].first)).join('') : '<p class="cap">Nothing here yet: add a card or loan to see when each is paid off and how much interest it costs</p>')
+    else cards.innerHTML = (ds.length ? ds.map((d, i) => debtCardHTML(d, rows[i], m.debts[d.id], i, rows[i].first)).join('') : `<p class="cap">Nothing here yet: add a card or loan to see when each is paid off and how much interest it costs.${nowOf(S).cards.length ? ' Cards you pay in full are on Home, under your bank.' : ''}</p>`)   /* QC round 4 novice C6: a card added on Home is not missing */
       + (DEBT_DRAFT ? `<div class="gcard dcard" data-did="new"><div class="jhead"><span class="jarn"><span>New card or loan</span></span></div>${debtFormHTML(DEBT_DRAFT, true)}</div>` : '');
     $('#addDebtBtn').hidden = sample || DEBT_DRAFT !== null || ds.length >= MAX_DEBTS;
     $('#debtMsg').textContent = ds.length >= MAX_DEBTS ? `You can have ${MAX_DEBTS} cards and loans at most, so remove one to add another` : '';

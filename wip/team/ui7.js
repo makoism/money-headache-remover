@@ -38,13 +38,13 @@ function renderDebts() {
   const ds = debtsOf(S), m = C.byYm[sel], rows = ds.length ? debtRows(S, C) : [];
   const sample = sampleOn();
   sec.hidden = false;
-  const sig = JSON.stringify([ds, DEBT_EDIT, DEBT_DRAFT, sel, sample, m.debts, rows.map(r => [r.payoffYm, r.never, r.totalInterest, r.first])]);
+  const sig = JSON.stringify([ds, DEBT_EDIT, DEBT_DRAFT, sel, sample, nowOf(S).cards.length, m.debts, rows.map(r => [r.payoffYm, r.never, r.totalInterest, r.first])]);
   const holding = sec.contains(document.activeElement) && document.activeElement.matches('input, select') && (DEBT_EDIT !== null || DEBT_DRAFT !== null);
   if (sig !== debtSig && !holding) {
     debtSig = sig;
     const cards = $('#debtCards');
     if (sample) cards.innerHTML = '<p class="cap">Finish the first steps, then add your cards and loans here.</p>';
-    else cards.innerHTML = (ds.length ? ds.map((d, i) => debtCardHTML(d, rows[i], m.debts[d.id], i, rows[i].first)).join('') : '<p class="cap">Nothing here yet: add a card or loan to see when each is paid off and how much interest it costs</p>')
+    else cards.innerHTML = (ds.length ? ds.map((d, i) => debtCardHTML(d, rows[i], m.debts[d.id], i, rows[i].first)).join('') : `<p class="cap">Nothing here yet: add a card or loan to see when each is paid off and how much interest it costs.${nowOf(S).cards.length ? ' Cards you pay in full are on Home, under your bank.' : ''}</p>`)   /* QC round 4 novice C6: a card added on Home is not missing */
       + (DEBT_DRAFT ? `<div class="gcard dcard" data-did="new"><div class="jhead"><span class="jarn"><span>New card or loan</span></span></div>${debtFormHTML(DEBT_DRAFT, true)}</div>` : '');
     $('#addDebtBtn').hidden = sample || DEBT_DRAFT !== null || ds.length >= MAX_DEBTS;
     $('#debtMsg').textContent = ds.length >= MAX_DEBTS ? `You can have ${MAX_DEBTS} cards and loans at most, so remove one to add another` : '';
