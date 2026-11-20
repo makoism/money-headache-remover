@@ -64,6 +64,11 @@ const tapSave = async (p, id) => { await p.evaluate(id => document.getElementByI
   const lg2 = await p.evaluate(() => document.getElementById('hMsg').innerText.trim());
   ck('Home: "Logged ¥540" shows after logging', /^Logged ¥540/.test(lg1), lg1);
   ck('Home: after going to Receipts and back the old "Logged" line is gone', lg2 === '', lg2);
+  /* QC10 round 3 numbers blocker 2: Undo after a quick log takes the "Logged X" line away too */
+  await p.focus('#hAmt'); await p.keyboard.type('4000'); await tapSave(p, 'hSave');
+  await p.evaluate(() => document.getElementById('undoGo').click()); await w(800);
+  const lg3 = await p.evaluate(() => document.getElementById('hMsg').innerText.trim());
+  ck('Home: after Undo the "Logged ¥4,000" line is gone', !/Logged ¥4,000/.test(lg3), lg3);
   const e2 = errs.filter(e => !/favicon|net::ERR_FILE_NOT_FOUND|fonts/.test(e));
   ck('no page errors', e2.length === 0, e2.slice(0, 3));
   await b.close();
