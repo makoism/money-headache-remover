@@ -53,6 +53,10 @@ const pick = (C, ym, id) => { const m = C.byYm[ym]; return { bal: m.bal[id], sav
   await p.evaluate(() => { const S = __t.S; S.ui.done = { pay: true, bills: true, goals: true, receipts: true }; S.ui.sampleHidden = true; S.ui.toured = true; const eg = S.plan.goals.find(g => g.emergency); eg.stretch = 600000; delete eg.stretchOn; __t.persist(); __t.restructure(); });
   await L.tab(p, 'tab-month'); await L.tab(p, 'tab-home'); await w(600);
   const bal = () => p.evaluate(() => { const C = __t.calcAll(__t.S), eg = __t.S.plan.goals.find(g => g.emergency); return ['2026-11', '2026-12', '2027-01', '2027-02'].map(ym => C.byYm[ym].bal[eg.id]); });
+  /* QC10 round 2 numbers should-fix 9: with no receipts yet, "Next: log spend" took the place of the question */
+  await p.evaluate(() => { __t.S.ui.sampleHidden = false; __t.S.receipts = []; __t.persist(); __t.restructure(); }); await L.tab(p, 'tab-month'); await L.tab(p, 'tab-home'); await w(500);
+  ck('no receipts yet: Home still asks "Keep saving" once the fund is full', await p.evaluate(() => !!document.querySelector('#hNext [data-stretch="yes"]')), await p.evaluate(() => (document.getElementById('hNext') || {}).innerText));
+  await p.evaluate(() => { __t.S.ui.sampleHidden = true; __t.persist(); __t.restructure(); }); await L.tab(p, 'tab-month'); await L.tab(p, 'tab-home'); await w(500);
   const b0 = await bal();
   const has = await p.evaluate(() => !!document.querySelector('#hNext [data-stretch="yes"]'));
   ck('Home asks "Keep saving" once the fund is full', has);
