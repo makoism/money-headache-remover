@@ -4,6 +4,22 @@ Written 2026-11-18 on branch `wip-38.31`. Read this whole file before touching a
 
 ## 0. Handoff (latest first)
 
+**2026-11-21 (04:00 JST), MAIN 10 hands off to MAIN 11 (size). Work queue continues until Sunday 09:00 JST; never stop and wait (see CLAUDE.md).** Report to the current Burrow coordinator (coordinator 8 is session_01BFpKEXZxmzMuFVBB5UQxLE until a "Burrow coordinator 9" messages you). Tip: see `git log`. First thing: create your own hourly keep-going scheduled task bound to your session (like trig_01MsTYUWz5yhyBMMgDMiV7jw for MAIN 10), ending 2026-11-22 00:00 UTC.
+QC round 4 ran on dd17a99 (fresh, Opus): the two gates and the seven-role panel. Reports are in `wip/team/qc_round4/` (four so far, all FAIL; MAIN 10 adds the other five there as they finish and messages you). Hard number gates pass. **Queue for MAIN 11, in this order, test first, one per commit, `pkill -f chrome-linux64/chrome` then check.sh fast after each:**
+A. Data safety (qc_north_star_gate.md 5): two phones sharing a cloud copy overwrite each other's newer changes without asking. Before sending, check the cloud copy is the revision this device last loaded or sent; if not, stop and ask (Settings promises "If both changed the app asks which to keep"). Use cloud_lib.js; extend qc10_cloud_loaded.js or a new test.
+B. qc_numbers_gate.md B1: Receipts and Plan > Month say "safe to spend" while Home says not safe (use model mapOf notCovered everywhere "safe to spend" is said; also the Free to spend popup per day/week, gate 4 and money_accuracy C1).
+C. qc_numbers_gate.md B2: the "How is this worked out?" panel leaves out spending past plan, so its rows do not add up; add "Spent past the plan so far".
+D. north_star_agent_check.md B1: picking Dollar after Back in setup keeps the yen minimum balance 20000; reset the default minimum on currency change unless typed.
+E. Setup done says "$385 of $4,500 so far" with nothing saved (two reviewers): "$0 saved now, $385 by the end of Nov".
+F. qc_north_star_gate.md 1: Receipts after picking Dec on Plan shows Dec and a "Last month" card for the current month.
+G. qc_north_star_gate.md 3: Home's "Coming up" line whenever a later month ends below zero or under the minimum.
+H. north_star_agent_check.md C4: "your bank after the cards" said with no card added (ui6 hSpend notSafe line; ui8 already checks cards).
+I. qc_north_star_gate.md 2: Receipts "Last month" table and All months at 320 and 412 wide cut or hide figures.
+J. money_accuracy.md B2: setup with pay 0 puts made-up amounts in Free to spend, Education, Investing, Giving.
+K. money_accuracy.md B3: a debt only planned to be paid off reads "paid off" and earns badges.
+L. money_accuracy.md B1: the plan always starts in Nov 2026 (START); a setup in Dec counts Nov as lived. Design the fix carefully (plan starts at the setup month), tests first, oracle too.
+Then the other reports' items, then the rest of the older queue below. Kept for Mako's run: the list in QC10_FIX_ROUND.md marked so.
+
 **Work queue until Sunday 09:00 JST (2026-11-22 00:00 UTC). Mako, 2026-11-21 00:45 JST: "full steam ahead, run non stop until 9am on Sunday".** Never end a turn to wait for Mako; his UX calls (marked "for Mako's run" in QC10_FIX_ROUND.md) wait for his own run, everything else goes ahead. A scheduled task "MAIN 10 keep going" (trig_01MsTYUWz5yhyBMMgDMiV7jw, hourly at :39) wakes the build session; the watchdog replaces it if it dies. Test first, one item per commit, `pkill -f chrome-linux64/chrome` then check.sh fast after each, report one line each to the coordinator. Tick items here as they are done.
 1. N3-S3 no fix offers when no pay is entered (in progress: model.js fixes guard, qc10_fix_offers.js).
 2. N3-S2 "Spend X instead" in a month that also has spending past plan: offer the amount that really brings the bank to the minimum (above what is spent), or none.
