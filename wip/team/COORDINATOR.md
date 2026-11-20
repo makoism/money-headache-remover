@@ -2,6 +2,26 @@
 
 The coordinator is the one session Mako talks to. It records his decisions in DECISIONS.md (and NORTH_STAR.md, LAUNCH_CHECKLIST.md), starts and messages working sessions, and brings their results back to him. Working sessions take direction from nowhere else. The coordinator hands off at about 150k tokens of history, like every session.
 
+## 2026-11-20, handoff 8 (coordinator 8 to coordinator 9) READ THIS FIRST
+
+Coordinator 8 (session_01BFpKEXZxmzMuFVBB5UQxLE) handed off at about 155k tokens, 06:00 UTC (15:00 JST). Coordinator 9 is started by Mako pasting wip/team/COORDINATOR_PROMPT.md into a fresh chat, so it starts at depth 0 and CAN start mains and later coordinators again. Rules as handoffs 5 to 7: two-line answers, never list_events on a main session.
+
+### Mako (new since handoff 7, all in DECISIONS.md)
+- About 05:50 UTC (MAIN 10's chat): Q1, Q4, "Check your bank vs plan start" and cards in their month wait for his own full run on the finished build; anything that needs him to judge the experience waits for that run; everything else the team decides without him. He gives all feedback at once after the full run. So do NOT send him questions before then.
+- Mako is in Japan: give him times in JST (UTC+9); no "overnight"/"tonight" unless it is night there.
+- He asked MAIN 10 to fix the watchdog (see "Watchdog" in handoff 7).
+
+### Done since handoff 7 (checklist marked)
+Q10 SF5 38b5d81, SF6 edb78d1; first full check.sh green on 38.31 (d3d86e5). Q13 (new row): QC10 round 1 on edb78d1 (9 findings) and round 2 on 94e5be5 (7 findings) all fixed test first; details in wip/team/QC10_FIX_ROUND.md.
+
+### Running
+- MAIN 10, session_01BFpKEV8jRCDQnxRTVqiUZr, Opus, the only session on app files, about 433k of 1M. At 05:57 UTC: check.sh full running; then QC round 3 with fresh agents, preview republish to https://claude.ai/artifact/LHoWd8xZ5Zg1nYfJHQtgVj, screenshots into wip/team/preview/after/. It does not hand off for size. Send it your session id first thing.
+- Watchdog: standing session session_01BFpKEYWd9Kcs4FkcwuNGo1, trigger trig_015mKtiUhZRgbkacuPYA8Ks6 at :33 hourly. It messages the coordinator (by finding the newest "Burrow coordinator" session) if it starts a replacement MAIN. Title your session "Burrow coordinator 9 (talk to this one)".
+- When the preview is republished and round 3 is clean: send Mako the after screenshots as files and the link, two percentages first, times in JST. That is the build for his full run.
+
+### Timers
+Coordinator 8's timer trig_015XK4gUo2Uf1Qz1QBbsGvuZ (06:43 UTC) is deleted at handoff. Set your own (about 45 minutes).
+
 ## 2026-11-20, handoff 7 (coordinator 7 to coordinator 8) READ THIS FIRST
 
 Coordinator 7 (session_01BFpKEVoXYw5eFafXtrmE55) handed off at 172k tokens at 02:55 UTC. Same rules as handoffs 5 and 6: two-line answers, never list_events on a main session, do not read NORTH_STAR, DECISIONS or the checklist in full.
