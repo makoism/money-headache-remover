@@ -257,3 +257,10 @@ Said in MAIN 10's chat and relayed to coordinator 7 (not seen first hand). Stand
 - Line 1: two rough percentages. First version ready for him with everything checked (about 80% at 02:45 UTC). Including art and the 3D world (about 45 to 50%).
 - Line 2: what is being worked on now.
 Also in RESUME section 7.
+
+## Experience calls wait for his full run; the rest, the team decides (Mako, 2026-11-20, about 05:50 UTC)
+Said in MAIN 10's chat and relayed to coordinator 8 (not seen first hand).
+- Q1 (the "They add up" line), Q4 (picture below the fold on Home), "Check your bank vs plan start" and cards in their month all wait until he uses the app himself.
+- Anything that needs him to judge the user experience waits for his full run on the finished build.
+- For everything else: do what the team thinks is best and do not wait for him.
+- When the build is ready he does one full run and gives all his feedback at once. So: no separate questions to him before that.

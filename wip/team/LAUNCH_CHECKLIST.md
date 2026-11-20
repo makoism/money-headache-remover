@@ -120,10 +120,10 @@ One round: qc-numbers PASS, E15 two-browser move DONE, bank comparison PASS, qc-
 
 | # | Point | State | When |
 |---|---|---|---|
-| Q1 | Home never shows the "They add up" line, only the bank plus burrows sum | open, Mako judges on the preview | v1 |
+| Q1 | Home never shows the "They add up" line, only the bank plus burrows sum | waits for Mako's full run on the finished build (DECISIONS 2026-11-20 05:50) | v1 |
 | Q2 | After Check your bank and a card, the top of Home and the lower "Bank at month end" and Plan "Bank stays at" show different bank figures with nothing tying them | done afd2464 (Plan names the start figure, Home note names start and now; wip/team/tests/qc/qc10_bank_story.js); Mako sees the after shot | v1 |
 | Q3 | Plan after a borrow: rows read 117% plus Borrowed 17%, the sentence says "add up to 117%", two rows both named "Borrowed" (maths correct, reading is not) | done 1b151c0 (three named borrow rows, tests/qc/qc9_plan_borrow.js; $220 vs $200 is borrow needed vs part paying the plan, not a mismatch); Mako sees the after shot | v1 |
-| Q4 | Home first screen at 412x915 is text and numbers, the picture starts below the fold | open, Mako judges on the preview | v1 |
+| Q4 | Home first screen at 412x915 is text and numbers, the picture starts below the fold | waits for Mako's full run on the finished build (DECISIONS 2026-11-20 05:50) | v1 |
 | Q5 | Check your bank field opens pre-filled and typing appends (1,200 then 1150 gave 12,001,150) | done 0b51e66: the field opens empty, tests/qc/qc8_bank_field.js | v1 |
 | Q6 | Pay day: no field anywhere, the month always runs 1st to last, so days left and weekly figures are wrong for someone paid on the 10th | open, feature gap; design with options in wip/team/PAYDAY_DESIGN.md on side/payday-design, waits for Mako | team |
 | Q7 | After Load on a second phone the "Cloud copy loaded" message runs off the right edge, shows no Undo, stays across tabs; the typed code is cut off in its box | done a243bb4 (fits 412px, Undo shown, hides on tab change, full code shows; wip/team/tests/qc/qc10_cloud_loaded.js) | v1 |
