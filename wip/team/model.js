@@ -367,7 +367,7 @@ function calcAll(S) {
     m.credit = m.counted ? round2(m.counted - ((m.topup && m.topup.used) || 0)) : 0;   /* unspent free to spend the person answered for: what the goal did not take is counted in the bank */
     m.bankStart = bank; bank += m.left + m.credit; m.bankEnd = bank;
     goals.forEach(gl => { bal[gl.id] += g[gl.id].actual + (g[gl.id].up || 0) - (eg && gl.id === eg.id ? m.draw : 0); });
-    goals.forEach(gl => { if (gl.target > 0 && reached[gl.id] === undefined && bal[gl.id] >= capOf(gl, ym)) reached[gl.id] = ym; });
+    goals.forEach(gl => { if (gl.target > 0 && reached[gl.id] === undefined && capOf(gl, ym) === capOf(gl) && bal[gl.id] >= capOf(gl, ym)) reached[gl.id] = ym;   /* a full date counts only against the goal in force now (QC10 numbers blocker 1) */ });
     m.spent = {};
     goals.forEach(gl => {
       m.spent[gl.id] = 0;

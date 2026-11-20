@@ -92,7 +92,7 @@ function oracle(S) {
     r.left = r.inflow - r.outflow;
     r.bankStart = bank; bank += r.left; r.bankEnd = bank;
     goals.forEach(g => { bal[g.id] += r.g[g.id].actual - (eg && g.id === eg.id ? r.draw : 0); });
-    goals.forEach(g => { if (g.target > 0 && reached[g.id] === undefined && bal[g.id] >= cap(g, ym)) reached[g.id] = ym; });
+    goals.forEach(g => { if (g.target > 0 && reached[g.id] === undefined && cap(g, ym) === cap(g) && bal[g.id] >= cap(g, ym)) reached[g.id] = ym; });
     r.spent = {};
     goals.forEach(g => { r.spent[g.id] = 0; if (g.due && g.target > 0 && ym === dueM(g)) { r.spent[g.id] = Math.min(bal[g.id], g.target); bal[g.id] -= r.spent[g.id]; } });
     r.bal = Object.assign({}, bal); out.push(r);

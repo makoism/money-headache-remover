@@ -24,7 +24,11 @@ const pick = (C, ym, id) => { const m = C.byYm[ym]; return { bal: m.bal[id], sav
   const gi = M.goalInfo(S, after, g.id, DEC), gj = M.goalInfo(S, after, g.id, JAN);
   ck('Dec is judged against the target, Jan against the longer goal', gi.target === g.target && gj.target === g.stretch, { dec: gi.target, jan: gj.target });
   let proofOk = true; try { for (const ym of [NOV, DEC, JAN, FEB]) { const pf = M.proofOf(S, after, ym); if (pf && pf.ok === false) proofOk = false; } } catch (e) { proofOk = 'error ' + e.message; }
-  ck('the proof still adds up in every month', proofOk === true, proofOk); }
+  ck('the proof still adds up in every month', proofOk === true, proofOk);
+  /* QC10 numbers blocker 1: the fund reached its first target in Nov; after the yes in Jan it is not "full Nov" any more, it is on its
+     way to the longer goal (a full date is only a month when the goal in force now is reached) */
+  ck('after the yes: no full date before the month of the yes', !after.reached[g.id] || after.reached[g.id] >= JAN, after.reached[g.id]);
+  ck('after the yes: Jan is not called full while it is under the longer goal', gj.state !== 'full' && gj.state !== 'paid', gj.state); }
 { const { S, g } = base(); g.stretchOn = true; const C = calcAll(S);
   ck('a copy saved before this rule (yes, no month): saves from the first month, as it did', C.byYm[NOV].bal[g.id] > g.target, C.byYm[NOV].bal[g.id]); }
 { const { S, g } = base(); g.stretchOn = true; g.stretchFrom = DEC;
