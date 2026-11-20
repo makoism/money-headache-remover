@@ -65,7 +65,7 @@ const look = p => p.evaluate(() => {
     ck(T + `the places (${placed}%) are 100% plus the borrowed row's percent (${bp}%)`, bp > 0 && placed === 100 + bp, s.rows.map(r => r.name + ' ' + r.pct));
     ck(T + 'the bills percent is the bills over the pay, within 1 point', !!billsRow && Math.abs(parseInt(billsRow.pct) - bills / pay * 100) < 1, billsRow);
     ck(T + 'nothing on Plan says the places "add up to" more than 100%', !/add(s)? up to 1\d\d%/.test(s.page), s.note);
-    ck(T + `the sentence says the pay is 100% and the other ${bp}% is borrowed`, /100%/.test(s.note) && new RegExp('\\b' + bp + '%').test(s.note) && /borrowed from your emergency fund/.test(s.note), s.note);
+    ck(T + `the sentence says the pay is 100% and the other ${bp}% is borrowed`, /100%/.test(s.note) && new RegExp('\\b' + bp + '%').test(s.note) && new RegExp('other ' + bp + '% is the borrowed ').test(s.note), s.note);
     ck(T + 'the sentence says its amount is the part that pays for part of this plan, the row\'s own words', /pays for part of this plan/.test(s.note), s.note);
     ck(T + 'the amount in the sentence is the row that pays for part of this plan', (s.note.match(/[$¥][\d,.]*\d/g) || []).some(x => near(num(x), overPay)) && !(s.note.match(/[$¥][\d,.]*\d/g) || []).some(x => near(num(x), need)), s.note);
     ck(T + `the top line says ${overPay} more planned than pay and ${need} borrowed`, near(num((s.dock.match(/[$¥][\d,.]*\d/) || [])[0]), overPay) && near(num((s.dock.match(/, (\S+) borrowed/) || [])[1]), need), s.dock);
