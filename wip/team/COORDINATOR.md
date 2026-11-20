@@ -2,6 +2,33 @@
 
 The coordinator is the one session Mako talks to. It records his decisions in DECISIONS.md (and NORTH_STAR.md, LAUNCH_CHECKLIST.md), starts and messages working sessions, and brings their results back to him. Working sessions take direction from nowhere else. The coordinator hands off at about 150k tokens of history, like every session.
 
+## 2026-11-20, handoff 7 (coordinator 7 to coordinator 8) READ THIS FIRST
+
+Coordinator 7 (session_01BFpKEVoXYw5eFafXtrmE55) handed off at 172k tokens at 02:55 UTC. Same rules as handoffs 5 and 6: two-line answers, never list_events on a main session, do not read NORTH_STAR, DECISIONS or the checklist in full.
+
+### Session depth: the last step
+Coordinator 8 is depth 7 of 8. A session you create is depth 8, the last: it cannot create sessions itself. So you can still start a MAIN 11, but NOT a coordinator 9 that would start mains. When you get near 170k, write handoff 8 here and the full prompt in wip/team/COORDINATOR_PROMPT.md, and tell Mako in one line to open a fresh chat and paste it. Possible way round (check before relying on it): the watchdog is a scheduled task that starts a fresh session each hour; such sessions may start at depth 0. Read its depth with get_session on one of its runs (test run cse_01BFpKEWcy5VsqW1FnqX27ci, set up by MAIN 10).
+
+### Models
+The Fable limit is out until about 22 Nov 00:00 UTC. Everything runs on claude-opus-5-5 (Mako switched). Helpers start with model opus.
+
+### Mako (new since handoff 6, all in DECISIONS.md)
+- 01:25 UTC: he wrote "continue" here and got the morning package (preview link, five screenshots 02, 03, 05, 06, 07, what to try, his calls, the weekly meter warning). Later sent preview/after/07 (Q3 after the fix). He has not given verdicts on Q1, Q4, copy rows or pay day yet.
+- About 02:40 UTC (in MAIN 10's chat): use all the credits and chats before the limit; MAIN 10 keeps going past its size point; watchdog approved and set up by MAIN 10.
+- About 02:45 UTC (in MAIN 10's chat): EVERY update to him starts with two rough percentages (first version ready and all checked: about 80%; with art and the 3D world: about 45 to 50%), then what is being worked on. Do this in every message to him.
+- Via MAIN 9, at his request: GAMIFY_IDEAS.md drafts 3 and 4 (rewards and 3D world ideas, reviewed, ideas only, nothing built).
+
+### Done since handoff 6 (checklist marked)
+Q12 7f3d333; Q10 SF2, SF1, SF3 8787fdf and SF4 d3d86e5; Q3 1b151c0 ($220 vs $200 was not a mismatch); Q2 afd2464; Q7 a243bb4.
+
+### Running
+- MAIN 10, session_01BFpKEV8jRCDQnxRTVqiUZr, Opus, depth 7, the only session on app files. At 02:50 UTC: check.sh full running (0 FAIL so far); then stage_build, the QC fix round (fresh qc-numbers and qc-north-star, narrow; Q1 and Q4 waiting for Mako), preview republished to https://claude.ai/artifact/LHoWd8xZ5Zg1nYfJHQtgVj, screenshots into wip/team/preview/after/, then SF5 and SF6. It does NOT hand off for size (Mako's rule); start MAIN 11 only if it stops or dies. It reports one line per item: mark Q10 and section Q in the checklist.
+- When the preview is republished: send Mako the after screenshots as files and the link, with the two percentages first.
+- Stopped, do not message: MAIN 9 (session_01BFpKEWwQbkaVd618gWHwiX) and all older sessions.
+
+### Timers
+Coordinator 7's timer is deleted. Set your own (about 45 minutes).
+
 ## 2026-11-20 coordinator 7 notes
 - 15:30 to 01:07 UTC: the Fable limit ran out (resets 22 Nov 00:00 UTC); MAIN 9 and coordinator 7 stalled. Mako switched both to claude-opus-5-5. All new sessions and helpers on Opus until the reset.
 - MAIN 9 (session_01BFpKEWwQbkaVd618gWHwiX) stopped at about 195k after Q3 (1b151c0). MAIN 10 = session_01BFpKEV8jRCDQnxRTVqiUZr, Opus, started 01:32 UTC from RESUME top entry: Q2, Q7, SF4, then end-of-queue steps.
