@@ -3785,6 +3785,8 @@ const payScale = () => Math.max(1000, val(S, 'a', sel) + val(S, 'b', sel) + val(
 const weekOf = (play, ym) => { ym = ym || (typeof sel === 'string' ? sel : START); return roundTo(play / (new Date(+ym.slice(0, 4), +ym.slice(5, 7), 0).getDate() / 7)); };
 /* what is really safe to spend of Free to spend: the plan left over, less anything the bank cannot cover (the one meaning of "left" on every screen) */
 const playSafeLeft = (S, m, spent) => freeOf(S, { left: m.left, bankStart: m.bankStart, bankEnd: m.bankEnd, over: m.over || 0, status: statusOf(S, m) }, { left: round2(m.jar.play - spent) }).free;
+/* a whole percent as said on screen: a place with money never reads 0% (QC10 numbers should-fix 3, QC round 4 money accuracy) */
+const pctSay = (p, v) => (+p === 0 && v >= 0.005 ? 'under 1%' : p + '%');
 const roundTo = x => { const u = x >= 1000 ? 100 : x >= 60 ? 10 : 1; return Math.round(x / u) * u; };
 const setIdle = (el, v) => { if (el && document.activeElement !== el) el.value = v; };
 const IC = {
@@ -4806,7 +4808,7 @@ function paintBar(el, m, withLabels) {
   J.list.forEach(j => {
     const d = $(`[data-k="${j.id}"]`, el);
     d.hidden = j.v <= 0; d.style.flexGrow = Math.max(j.v, 0);
-    d.dataset.tip = `<i style="--c:${JARVAR[j.id]}"></i><b>${j.name}</b> ${fmt2(j.v)}` + (J.income > 0 && !J.over ? `<br>${j.pct}% of pay` : '');
+    d.dataset.tip = `<i style="--c:${JARVAR[j.id]}"></i><b>${j.name}</b> ${fmt2(j.v)}` + (J.income > 0 && !J.over ? `<br>${pctSay(j.pct, j.v)} of pay` : '');
     d.setAttribute('aria-label', `${j.name} ${fmt2(j.v)}`); if (j.v > 0) names.push(`${j.name} ${fmt2(j.v)}`);
   });
   const r = $('[data-k="rest"]', el); r.hidden = rest <= 0; r.style.flexGrow = rest;
@@ -4851,9 +4853,9 @@ function jarNote(m) {
   /* no bills in the plan is blank, not low: never praised as "under the usual" (38.31 number gate, wording and novice round 3) */
   if (!(nec.v > 0)) return 'No bills planned yet: add rent, food and the rest under Money out.' + borrowed;
   const lead = nec.pct >= 100 ? `Bills and basics cost more than all of your pay this month.${borrowed ? '' : ' Lower a bill or add pay.'}`   /* 38.31 north-star round 2: never calm about this */
-    : nec.pct > u + 1 ? `Bills and basics are ${nec.pct}% of pay, above the usual ${u}%.${others ? ' Keep putting something in the other places, even a small amount.' : ' Nothing is left for the other places this month.'}`
-    : nec.pct < u - 1 ? `Bills and basics are ${nec.pct}% of pay, under the usual ${u}%, so there's more room for the other places.`
-    : `Bills and basics are ${nec.pct}% of pay, which is about the usual ${u}%.`;
+    : nec.pct > u + 1 ? `Bills and basics are ${pctSay(nec.pct, nec.v)} of pay, above the usual ${u}%.${others ? ' Keep putting something in the other places, even a small amount.' : ' Nothing is left for the other places this month.'}`
+    : nec.pct < u - 1 ? `Bills and basics are ${pctSay(nec.pct, nec.v)} of pay, under the usual ${u}%, so there's more room for the other places.`
+    : `Bills and basics are ${pctSay(nec.pct, nec.v)} of pay, which is about the usual ${u}%.`;
   return lead + borrowed;
 }
 const LTS_HINT = ' Each slider sets what goes into that goal this month, so sliding up takes from Left and sliding down gives it back. If you leave them alone the amounts are worked out from each goal’s amount and date.';
@@ -5021,7 +5023,7 @@ function goalNote(gid, m) {
 
 function renderGoals(m) {
   const J = jarsOf(S, m), lj = J.list.find(x => x.id === 'lts'), inc = J.income, gs = S.plan.goals;
-  $('#goalsSub').textContent = gs.length ? `Goals get ${fmt(lj.v)} in ${monthLabel(sel, true)}` + (inc > 0 && !J.over ? `, ${lj.pct}% of pay.` : '.') : 'No burrows yet: add one to see when you\'ll reach it';
+  $('#goalsSub').textContent = gs.length ? `Goals get ${fmt(lj.v)} in ${monthLabel(sel, true)}` + (inc > 0 && !J.over ? `, ${pctSay(lj.pct, lj.v)} of pay.` : '.') : 'No burrows yet: add one to see when you\'ll reach it';
   
   $('#secRoad').hidden = !gs.length;
   gs.forEach(g => {
@@ -5935,11 +5937,11 @@ const STEP_REVEAL = { id: 'reveal', part: PART.spend, art: 'branch',
       <p>Under Plan you can lower a bill or add more pay.${play > 0 ? '' : ' Free to spend shows up as soon as there\'s room.'}</p>`;
     const rest = f.J.rest;
     const bar = `${chestImg(play > 0 ? 0.75 : 0.1)}<div class="tour-fig"><div class="bar tour-bar" role="img" aria-label="Where your pay goes">${f.J.list.map(j => seg(JARCLS[j.id], j.v)).join('')}${seg('rest', rest)}</div>
-      <div class="legend">${f.J.list.map(j => (j.v > 0 ? `<span><i class="${JARCLS[j.id]}"></i>${j.name} ${j.pct}%</span>` : '')).join('')}${rest > 0 ? `<span><i class="rest"></i>Left ${f.J.restPct}%</span>` : ''}</div></div>`;
+      <div class="legend">${f.J.list.map(j => (j.v > 0 ? `<span><i class="${JARCLS[j.id]}"></i>${j.name} ${pctSay(j.pct, j.v)}</span>` : '')).join('')}${rest > 0 ? `<span><i class="rest"></i>Left ${f.J.restPct}%</span>` : ''}</div></div>`;
     const big = `<div class="tour-reveal"><b>${fmt2(play)}</b><span>a month${play > 0 ? `, about ${fmtAbout(wk)} a week` : ''}</span></div>`;
     if (play <= 0) {
       const all = f.billPct >= 0.95;
-      return `${big}<p>${all ? `Bills take <b>${f.J.list[0].pct}%</b> of pay, so almost nothing is left for Free to spend.` : 'Nothing is set aside for Free to spend.'} About 10% of pay is a common amount to keep for it.</p>
+      return `${big}<p>${all ? `Bills take <b>${pctSay(f.J.list[0].pct, f.J.list[0].v)}</b> of pay, so almost nothing is left for Free to spend.` : 'Nothing is set aside for Free to spend.'} About 10% of pay is a common amount to keep for it.</p>
       ${bar}<p>${behindText() || 'To add some, raise the Free to spend line under Plan or lower a bill.'}</p>`;
     }
     const msg = behindText() || (f.st === 'spare' ? `<b>${fmt2(f.L)}</b> of pay is not placed yet. Raise a goal or add it to Free to spend.` : f.billPct >= 0.9 ? 'Bills take most of your pay so the month is tight, and lowering a bill is the easiest fix.' : 'All pay is placed.');

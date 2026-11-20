@@ -441,11 +441,11 @@ const STEP_REVEAL = { id: 'reveal', part: PART.spend, art: 'branch',
       <p>Under Plan you can lower a bill or add more pay.${play > 0 ? '' : ' Free to spend shows up as soon as there\'s room.'}</p>`;
     const rest = f.J.rest;
     const bar = `${chestImg(play > 0 ? 0.75 : 0.1)}<div class="tour-fig"><div class="bar tour-bar" role="img" aria-label="Where your pay goes">${f.J.list.map(j => seg(JARCLS[j.id], j.v)).join('')}${seg('rest', rest)}</div>
-      <div class="legend">${f.J.list.map(j => (j.v > 0 ? `<span><i class="${JARCLS[j.id]}"></i>${j.name} ${j.pct}%</span>` : '')).join('')}${rest > 0 ? `<span><i class="rest"></i>Left ${f.J.restPct}%</span>` : ''}</div></div>`;
+      <div class="legend">${f.J.list.map(j => (j.v > 0 ? `<span><i class="${JARCLS[j.id]}"></i>${j.name} ${pctSay(j.pct, j.v)}</span>` : '')).join('')}${rest > 0 ? `<span><i class="rest"></i>Left ${f.J.restPct}%</span>` : ''}</div></div>`;
     const big = `<div class="tour-reveal"><b>${fmt2(play)}</b><span>a month${play > 0 ? `, about ${fmtAbout(wk)} a week` : ''}</span></div>`;
     if (play <= 0) {
       const all = f.billPct >= 0.95;
-      return `${big}<p>${all ? `Bills take <b>${f.J.list[0].pct}%</b> of pay, so almost nothing is left for Free to spend.` : 'Nothing is set aside for Free to spend.'} About 10% of pay is a common amount to keep for it.</p>
+      return `${big}<p>${all ? `Bills take <b>${pctSay(f.J.list[0].pct, f.J.list[0].v)}</b> of pay, so almost nothing is left for Free to spend.` : 'Nothing is set aside for Free to spend.'} About 10% of pay is a common amount to keep for it.</p>
       ${bar}<p>${behindText() || 'To add some, raise the Free to spend line under Plan or lower a bill.'}</p>`;
     }
     const msg = behindText() || (f.st === 'spare' ? `<b>${fmt2(f.L)}</b> of pay is not placed yet. Raise a goal or add it to Free to spend.` : f.billPct >= 0.9 ? 'Bills take most of your pay so the month is tight, and lowering a bill is the easiest fix.' : 'All pay is placed.');

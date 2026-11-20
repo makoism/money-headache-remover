@@ -6,7 +6,7 @@ function paintBar(el, m, withLabels) {
   J.list.forEach(j => {
     const d = $(`[data-k="${j.id}"]`, el);
     d.hidden = j.v <= 0; d.style.flexGrow = Math.max(j.v, 0);
-    d.dataset.tip = `<i style="--c:${JARVAR[j.id]}"></i><b>${j.name}</b> ${fmt2(j.v)}` + (J.income > 0 && !J.over ? `<br>${j.pct}% of pay` : '');
+    d.dataset.tip = `<i style="--c:${JARVAR[j.id]}"></i><b>${j.name}</b> ${fmt2(j.v)}` + (J.income > 0 && !J.over ? `<br>${pctSay(j.pct, j.v)} of pay` : '');
     d.setAttribute('aria-label', `${j.name} ${fmt2(j.v)}`); if (j.v > 0) names.push(`${j.name} ${fmt2(j.v)}`);
   });
   const r = $('[data-k="rest"]', el); r.hidden = rest <= 0; r.style.flexGrow = rest;
@@ -51,9 +51,9 @@ function jarNote(m) {
   /* no bills in the plan is blank, not low: never praised as "under the usual" (38.31 number gate, wording and novice round 3) */
   if (!(nec.v > 0)) return 'No bills planned yet: add rent, food and the rest under Money out.' + borrowed;
   const lead = nec.pct >= 100 ? `Bills and basics cost more than all of your pay this month.${borrowed ? '' : ' Lower a bill or add pay.'}`   /* 38.31 north-star round 2: never calm about this */
-    : nec.pct > u + 1 ? `Bills and basics are ${nec.pct}% of pay, above the usual ${u}%.${others ? ' Keep putting something in the other places, even a small amount.' : ' Nothing is left for the other places this month.'}`
-    : nec.pct < u - 1 ? `Bills and basics are ${nec.pct}% of pay, under the usual ${u}%, so there's more room for the other places.`
-    : `Bills and basics are ${nec.pct}% of pay, which is about the usual ${u}%.`;
+    : nec.pct > u + 1 ? `Bills and basics are ${pctSay(nec.pct, nec.v)} of pay, above the usual ${u}%.${others ? ' Keep putting something in the other places, even a small amount.' : ' Nothing is left for the other places this month.'}`
+    : nec.pct < u - 1 ? `Bills and basics are ${pctSay(nec.pct, nec.v)} of pay, under the usual ${u}%, so there's more room for the other places.`
+    : `Bills and basics are ${pctSay(nec.pct, nec.v)} of pay, which is about the usual ${u}%.`;
   return lead + borrowed;
 }
 const LTS_HINT = ' Each slider sets what goes into that goal this month, so sliding up takes from Left and sliding down gives it back. If you leave them alone the amounts are worked out from each goal’s amount and date.';
@@ -221,7 +221,7 @@ function goalNote(gid, m) {
 
 function renderGoals(m) {
   const J = jarsOf(S, m), lj = J.list.find(x => x.id === 'lts'), inc = J.income, gs = S.plan.goals;
-  $('#goalsSub').textContent = gs.length ? `Goals get ${fmt(lj.v)} in ${monthLabel(sel, true)}` + (inc > 0 && !J.over ? `, ${lj.pct}% of pay.` : '.') : 'No burrows yet: add one to see when you\'ll reach it';
+  $('#goalsSub').textContent = gs.length ? `Goals get ${fmt(lj.v)} in ${monthLabel(sel, true)}` + (inc > 0 && !J.over ? `, ${pctSay(lj.pct, lj.v)} of pay.` : '.') : 'No burrows yet: add one to see when you\'ll reach it';
   
   $('#secRoad').hidden = !gs.length;
   gs.forEach(g => {
