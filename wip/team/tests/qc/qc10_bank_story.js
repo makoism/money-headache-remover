@@ -70,6 +70,24 @@ const plan = async p => { await L.tab(p, 'tab-month'); await L.clickText(p, 'Mon
     ck('over: Plan starts with the same name and figure, then why', /^Bank at month end: ¥90,000\. ¥100,000 planned, less ¥10,000 spent over plan so far\.$/.test(s), s);
     errsAll = errsAll.concat(errs); await b.close(); }
 
+  /* ---------- QC10 numbers blocker 3: the bank after the cards cannot cover Free to spend (money rule 3) ---------- */
+  { const { b, p, errs } = await open();
+    await setup(p, {});
+    const chest = () => p.evaluate(() => { const t = e => e ? e.innerText.replace(/\s+/g, ' ').trim() : ''; const r = document.querySelector('#mpRooms [data-room="play"]');
+      return { chest: t(r && r.closest('.hb-b, li, div')) || (r ? r.getAttribute('aria-label') : ''), aria: r ? r.getAttribute('aria-label') : '', now: t(document.querySelector('#hMap .mp-now')) }; });
+    let c = await chest();
+    ck('no bank typed yet: Free to spend is safe to spend (the plan covers it)', /safe to spend/.test(c.aria), c);
+    if (await p.$('#mpCheck')) await click(p, '#mpCheck');
+    await L.typeIn(p, '#mpBankIn', '10000'); await click(p, '#mpBankSave');
+    await click(p, '#mpCardAdd'); await L.typeIn(p, '#mpCardName', 'Visa'); await L.typeIn(p, '#mpCardOwed', '15000'); await L.typeIn(p, '#mpCardDay', '25'); await click(p, '#mpCardSave'); await w(800);
+    c = await chest();
+    ck('bank after the card is −¥5,000: Free to spend is not called safe to spend', !/safe to spend/.test(c.aria) && /planned/.test(c.aria), c);
+    ck('the bank-now card says why: less than Free to spend, not safe to spend yet', /not safe to spend yet/.test(c.now), c.now);
+    await click(p, '#mpCheck'); await L.typeIn(p, '#mpBankIn', '200000'); await click(p, '#mpBankSave'); await w(600);
+    c = await chest();
+    ck('bank after the card covers it again (¥185,000): safe to spend comes back', /safe to spend/.test(c.aria) && !/not safe to spend yet/.test(c.now), c);
+    errsAll = errsAll.concat(errs); await b.close(); }
+
   const errs = errsAll.filter(e => !/favicon|net::ERR_FILE_NOT_FOUND|fonts/.test(e));
   ck('no page errors', errs.length === 0, errs.slice(0, 3));
   console.log(bad ? `qc10_bank_story: ${bad} FAIL` : 'qc10_bank_story: ALL PASS'); process.exit(bad ? 1 : 0);
