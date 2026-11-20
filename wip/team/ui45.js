@@ -262,7 +262,7 @@ const TOUR = [
       const PF = planFactsOf(S, calcAll(S), sel, true), pay = PF.pay, L = PF.L;   /* model.js */
       const zero = S.ui.preset === 'blank' || !!S.ui.cleared;
       const dn = S.ui.done || {}, billsIn = !!dn.bills || Array.isArray(S.ui.sb); /* the bill screens were answered (even if left at zero) */
-      const msg = !dn.pay || pay <= 0 ? (zero ? 'You skipped pay, so everything is zero until you add numbers.' : 'No pay yet, so the numbers are samples. To add yours go to Plan, then Month, Details, Money in and Salary, or tap Help and then Guided setup to come back here.')
+      const msg = !dn.pay || pay <= 0 ? (billsIn ? 'No pay yet, so Free to spend, the other places and the goals stay at 0 until you add it. To add it go to Plan, then Month, Details, Money in and Salary, or tap Help and then Guided setup to come back here.' : zero ? 'You skipped pay, so everything is zero until you add numbers.' : 'No pay yet, so the numbers are samples. To add yours go to Plan, then Month, Details, Money in and Salary, or tap Help and then Guided setup to come back here.')
         : L > 0 ? `Pay entered. <b>${fmt2(L)}</b> is not placed yet, so raise a goal or add to Free to spend.`
         : L < 0 ? `Pay entered. The ${billsIn ? 'plan' : 'sample plan'} is <b>${fmt2(PF.shortBy)}</b> more than your pay${billsIn ? '' : ' because bills are still samples'}. ${billsIn ? 'Lower a bill under Plan.' : 'Enter your real bills next.'}`
         : 'Pay entered. All of it is placed.';

@@ -183,7 +183,7 @@ function noRoom() {
   S.cfg.ceiling = 0;
 }
 function commitJars() {
-  if (!(payNow() > 0)) return;
+  if (!(payNow() > 0)) { noRoom(); persist(); return; }   /* no pay: no made-up amounts in Free to spend, Education, Investing, Giving or the goals (QC round 4 money accuracy B2) */
   if (restPct() <= 0) { noRoom(); persist(); return; }
   if (!jarVals || jarRest <= 0) return;
   const a = { nec: jarNec / 100 };
@@ -425,6 +425,9 @@ const chestImg = fill => { try { const c = document.createElement('canvas'); c.w
 const STEP_REVEAL = { id: 'reveal', part: PART.spend, art: 'branch',
   title: () => { const f = planFacts(); return f.st === 'over' ? 'Plan exceeds pay' : f.play > 0 ? 'Free to spend' : 'Free to spend'; },
   show: () => { if (tourMode === 'full' && S.ui.done && S.ui.done.pay && S.ui.done.bills && S.ui.done.goals) { S.ui.setup = true; persist(); } },
+  /* no pay: the split step is skipped, so the sample amounts would stay in Free to spend, Education, Investing, Giving and the goals next to
+     the person's own bills. Every place but the bills is 0 until pay is added (QC round 4 money accuracy B2) */
+  leave: () => { if (!(payNow() > 0)) { noRoom(); persist(); } },
   body: () => {
     const f = planFacts(), play = f.play, wk = weekOf(play), seg = (cls, v) => (v > 0 ? `<div class="seg-b ${cls}" style="flex-grow:${v}"></div>` : '');
     /* no sample money in setup sentences (LAUNCH_CHECKLIST D2): with no pay there is no figure to show yet, only what to do */
