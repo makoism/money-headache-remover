@@ -3,12 +3,15 @@
 function wire() {
   placeArt(); placePix(); GD.init();
   $$('[data-tab]').forEach(b => {
-    b.addEventListener('click', () => switchTab(b.dataset.tab));
+    /* a person changing tab is done with the message about what just happened: the Undo bar goes (launch checklist Q7). The copy from
+       before stays in Settings for its days. A tab opened by the app itself, right after a change, keeps the bar */
+    const byHand = () => { if (b.dataset.tab !== tab) $('#undoBar').hidden = true; };
+    b.addEventListener('click', () => { byHand(); switchTab(b.dataset.tab); });
     b.addEventListener('keydown', e => {
       const bar = TAB_BAR.filter(n => { const x = $('#tab-' + n); return x && !x.hidden; }); /* only the tabs you can see */
       const i = bar.indexOf(b.dataset.tab); let j = -1;
       if (e.key === 'ArrowRight') j = (i + 1) % bar.length; else if (e.key === 'ArrowLeft') j = (i + bar.length - 1) % bar.length;
-      if (i >= 0 && j >= 0) { e.preventDefault(); switchTab(bar[j], true); }
+      if (i >= 0 && j >= 0) { e.preventDefault(); $('#undoBar').hidden = true; switchTab(bar[j], true); }
     });
   });
   $('#monthSel').addEventListener('change', e => select(e.target.value));
