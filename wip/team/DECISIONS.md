@@ -245,3 +245,9 @@ How the coordinator uses it:
 - The earlier pacing rule (main session plus at most one lane, no extra QC rounds) is lifted as far as budget goes until the weekly reset on Sunday. One session at a time on app files stays.
 - Models: the strongest while it lasts; when it runs out, new sessions and helpers start on the next best one.
 - Unchanged: nothing deploys, nothing goes to main until he has seen the preview and the bank comparison and said go.
+
+## Use all the credits and chats before the limit; watchdog on (Mako, 2026-11-20, about 02:40 UTC)
+Said in MAIN 10's chat and relayed to coordinator 7 (not seen first hand):
+- Use all the credits and chats before the weekly limit. MAIN 10 keeps going past its size handoff point instead of stopping, and runs helpers in parallel where safe. One session at a time on app files stays.
+- The watchdog is approved: an hourly fresh session on Opus that pushes to his phone and starts a replacement main session if the current one dies on a limit. MAIN 10 fixed its prompt and fired a test run.
+- Unchanged: nothing deploys, nothing goes to main until he has seen the preview and the bank comparison and said go.
