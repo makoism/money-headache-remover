@@ -488,7 +488,9 @@ function fixes(S, m) {
   /* never below what is already spent from Free to spend this month: that money is gone, so a lower plan would not fix the month
      (QC10 round 2 numbers blocker 2) */
   const playSpent = (receiptStats(S, m.ym).byJar.play) || 0;
-  if (planGap > 0) { const ne = round2(play - planGap); if (ne >= 0 && ne < play && ne >= playSpent) out.push({ id: 'trim', amount: ne }); }
+  /* the trim makes up the whole gap, other places' spending past plan included, as long as it stays above what Free to spend has already
+     spent; that is the figure Home shows as safe to spend (QC10 round 3 numbers should-fix 2: it made up only the plan's part) */
+  if (planGap > 0) { const ne = round2(play - Math.max(planGap, gap)); if (ne >= 0 && ne < play && ne >= playSpent) out.push({ id: 'trim', amount: ne }); }
   const eg = emergencyGoal(S), room = eg ? Math.max(0, m.balBefore[eg.id] - m.draw) : 0;
   if (gap > 0 && room > 0) out.push({ id: 'borrow', amount: round2(Math.min(room, gap)) });
   return out;

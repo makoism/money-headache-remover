@@ -17,6 +17,16 @@ const mk = (play, spent) => { const S = M.presetState('¥'); M.setVal(S, 'envelo
 { const S = mk(120000, 40000), m = M.calcAll(S).byYm[NOV], f = M.fixes(S, m), trim = f.find(x => x.id === 'trim');
   if (trim) { M.setVal(S, 'envelope', NOV, trim.amount, 'once'); const m2 = M.calcAll(S).byYm[NOV]; ck('some spent: a trim that is offered really brings the bank to the minimum', Math.abs(m2.bankEnd - M.cfg(S, 'minBank')) < 0.01 && trim.amount >= 40000, { trim, end: m2.bankEnd }); }
   else ck('some spent: no trim offered only when none can fix it', true); }
+/* QC10 round 3 numbers should-fix 2: Free to spend plan 120,000 with 50,000 spent, and rent 10,000 over its plan: the trim must make up the
+   rent too, so the bank really ends at the minimum (it offered a trim that left it 10,000 under) */
+{ const S = mk(120000, 50000);
+  /* rent logged 10,000 over its plan */
+  const planRent = S.plan.lines.find(l => l.key === 'bill:rent').def;
+  M.addReceipt(S, NOV + '-03', planRent + 10000, 'bill:rent', '');
+  const m = M.calcAll(S).byYm[NOV], f = M.fixes(S, m), trim = f.find(x => x.id === 'trim');
+  if (m.bankEnd < M.cfg(S, 'minBank') && trim) { M.setVal(S, 'envelope', NOV, trim.amount, 'once'); const m2 = M.calcAll(S).byYm[NOV];
+    ck('rent over too: the trim that is offered brings the bank all the way to the minimum', Math.abs(m2.bankEnd - M.cfg(S, 'minBank')) < 0.01 && trim.amount >= 50000, { trim, end: m2.bankEnd, min: M.cfg(S, 'minBank') }); }
+  else ck('rent over too: the month is short and a trim is offered', false, { end: m.bankEnd, f }); }
 /* QC10 round 3 numbers should-fix 3: with no pay entered, Plan offered "Borrow 131,385 from emergency fund"; the fix is to enter the pay */
 { const S = M.presetState('¥'); M.setVal(S, 'a', NOV, 0, 'once'); const m = M.calcAll(S).byYm[NOV], f = M.fixes(S, m);
   ck('no pay entered: the month is short', m.bankEnd < M.cfg(S, 'minBank'), m.bankEnd);
