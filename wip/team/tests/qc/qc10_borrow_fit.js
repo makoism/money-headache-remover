@@ -9,7 +9,7 @@ process.env.BUILD = PAGE;
 const L = require('./lib_r12.js'); const R = L.R, w = R.w;
 let bad = 0; const ck = (n, c, saw) => { console.log((c ? 'PASS ' : 'FAIL ') + n); if (!c) { bad++; if (saw !== undefined) console.log('     saw ' + JSON.stringify(saw).slice(0, 500)); } };
 const skip = async p => { for (const id of ['tourSkip', 'coSkip']) { await p.evaluate(id => { const s = document.getElementById(id); if (s && s.offsetParent) s.click(); }, id); await w(350); } };
-const look = p => p.evaluate(() => ({ verdict: document.getElementById('verdict').innerText, btns: [...document.querySelectorAll('#fixBtns button')].map(b => b.innerText.trim()),
+const look = p => p.evaluate(() => ({ note: document.getElementById('jarNote').innerText, verdict: document.getElementById('verdict').innerText, btns: [...document.querySelectorAll('#fixBtns button')].map(b => b.innerText.trim()),
   draw: (() => { const C = __t.calcAll(__t.S); return C.byYm['2026-11'].draw; })(), bankEnd: __t.calcAll(__t.S).byYm['2026-11'].bankEnd }));
 const food = async (p, v) => { await p.evaluate(v => { const S = __t.S; S.plan.lines.find(l => l.key === 'bill:food').def = v; __t.persist(); __t.restructure(); }, v); await L.tab(p, 'tab-home'); await L.tab(p, 'tab-month'); await w(500); };
 (async () => {
@@ -49,6 +49,17 @@ const food = async (p, v) => { await p.evaluate(v => { const S = __t.S; S.plan.l
   await p.evaluate(() => document.querySelector('[data-fx="unborrow"]').click()); await w(800);
   s = await look(p);
   ck('after Undo borrow: nothing borrowed and nothing said about a borrow', s.draw === 0 && !/borrow/i.test(s.verdict), s);
+  /* QC10 north-star F3: part of the gap borrowed, the balance covers the rest. Start bank 15,000: the borrow is 17,050; food lowered by
+     10,000 and Borrow only 7,050: 3,000 of the 10,050 over pay is covered by the balance, the bank ends at the 12,000 minimum */
+  await p.evaluate(() => { const S = __t.S; S.cfg.bankStart = 15000; __t.persist(); __t.restructure(); }); await food(p, 40050);
+  s = await look(p);
+  if (s.btns.some(t => /^Borrow ¥17,050/.test(t))) { await p.evaluate(() => document.querySelector('[data-fx="borrow"]').click()); await w(800); }
+  await food(p, 30050); s = await look(p);
+  if (s.btns.includes('Borrow only ¥7,050')) { await p.evaluate(() => document.querySelector('[data-fx="borrowfit"]').click()); await w(800); }
+  s = await look(p);
+  ck('covered: ¥7,050 borrowed, the bank ends at the ¥12,000 minimum', s.draw === 7050 && s.bankEnd === 12000, s);
+  ck('covered: the note under the list does not ask to lower a bill when the balance covers the rest', !/Lower a bill/.test(s.note) && /your balance covers the other ¥3,000/i.test(s.note), s.note);
+  ck('covered: the banner says the balance covers the other ¥3,000, not "it"', /covers the other ¥3,000/.test(s.verdict) && !/covers it\b/.test(s.verdict), s.verdict);
   const e2 = errs.filter(e => !/favicon|net::ERR_FILE_NOT_FOUND|fonts/.test(e));
   ck('no page errors', e2.length === 0, e2.slice(0, 3));
   await b.close();

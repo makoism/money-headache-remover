@@ -4806,6 +4806,8 @@ function paintLegend(m) {
 /* one plain sentence under the table: how this month's bills sit against Eker's usual split, and whether every bit of pay has a purpose */
 function jarNote(m) {
   const J = jarsOf(S, m); if (J.inn <= 0) return '';
+  /* when the balance covers what the borrow does not, nothing needs lowering: say that once (QC10 north-star F3) */
+  if (J.over && statusOf(S, m) !== 'short') return `Your plan spends ${fmt(J.exceedsBy)} more than your pay. ${J.draw > 0 ? `${fmt(J.draw)} of that comes from your emergency fund and your balance covers the other ${fmt(J.short)}.` : 'Your balance covers it.'}`;
   if (J.over) return `Your plan spends ${fmt(J.exceedsBy)} more than your pay${J.draw > 0 ? `. ${fmt(J.draw)} of that comes from your emergency fund` : ''}. Lower a bill or another place.`;
   const nec = J.list[0], u = nec.usual;
   /* a plan paid partly with borrowed money: the pay is the 100, and the percent past it is the borrowed money (launch checklist Q3: never "add up to 117%") */
@@ -4875,7 +4877,7 @@ function render() {
   let vt;
   if (pin <= 0) vt = 'Tap Salary below and type your monthly take-home pay';
   else if (st === 'good') vt = (Lun < 0.005 ? 'All pay is placed.' :   /* exact: a small amount not placed is named, never called placed (38.31 money accuracy round 3) */ `${fmt2(Lun)} of pay not placed yet.`) + (Lun >= pin * 0.08 ? ' Raise a goal or another place to use it, or leave it where it is.' : '');
-  else if (st === 'tight') vt = `This month you spend ${fmt2(PC.overPay)} more than your pay${m.draw > 0 ? ', ' + fmt2(m.draw) + ' of it borrowed' : ''}. Your balance covers it and ends at ${fmt2(m.bankEnd)}, so it doesn't go under your ${fmt2(floor)} minimum balance. You can change that in Settings.`;
+  else if (st === 'tight') vt = `This month you spend ${fmt2(PC.overPay)} more than your pay${m.draw > 0 ? ', ' + fmt2(m.draw) + ' of it borrowed' : ''}. Your balance covers ${m.draw > 0 ? 'the other ' + fmt2(jarsOf(S, m).short) : 'it'} and ends at ${fmt2(m.bankEnd)}, so it doesn't go under your ${fmt2(floor)} minimum balance. You can change that in Settings.`;
   else vt = (floor > 0 ? `Balance would end at ${fmt2(m.bankEnd)}, ${fmt2(gap)} under your ${fmt2(floor)} minimum balance. You can change that in Settings.` : `Balance would end at ${fmt2(m.bankEnd)}, below zero.`) + (fixes(S, m).length ? ' Pick a fix:' : ' Lower a cost or add pay to fix it.');
   if (m.draw > 0) vt += ` ${fmt2(m.draw)} is borrowed from the emergency fund.`;
   /* a borrow bigger than the plan now needs is said, never changed on its own (QC8 SF6) */
