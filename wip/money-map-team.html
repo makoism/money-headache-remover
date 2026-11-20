@@ -5433,12 +5433,20 @@ const CHEERS = {
 const CONF = { parts: [], raf: 0, last: 0, tick: 0, cheerT: 0 };
 /* leaf colours follow the look: the greens of the current theme, two fixed mid greens and one gold leaf */
 const leafColors = () => { const cs = getComputedStyle(document.documentElement), v = n => cs.getPropertyValue(n).trim(); return [v('--accent'), v('--accent-h'), v('--good'), '#5db98a', '#3a9a68', v('--warn')].filter(Boolean); };
+/* one message at a time, each shown long enough to read: a message that comes while another one is fresh waits its turn (QC round 4
+   novice P1: "Badge: First receipt." was lost under "Logged. Streak: week 1.") */
+let CHEER_Q = [], CHEER_QT = 0;
 function cheer(msg) {
   const el = $('#cheer'); if (!el || !msg) return;
-  /* in setup the message sits just above Back, Next or Done, however tall that row is (H1 walk, finding 11) */
-  { const ft = document.body.classList.contains('touring') && $('.tour-foot'), r = ft && ft.getBoundingClientRect(); el.style.bottom = r && r.height ? Math.round(innerHeight - r.top + 8) + 'px' : ''; }
+  const fresh = el.classList.contains('on') && el.textContent && el.textContent !== msg && Date.now() - (CONF.cheerAt || 0) < 1800;
+  if (fresh) { if (CHEER_Q.indexOf(msg) < 0) CHEER_Q.push(msg); clearTimeout(CHEER_QT); CHEER_QT = setTimeout(() => { const n = CHEER_Q.shift(); if (n) { CONF.cheerAt = 0; cheer(n); } }, 1800 - (Date.now() - (CONF.cheerAt || 0))); return; }
+  /* in setup the message sits just above Back, Next or Done, however tall that row is (H1 walk, finding 11); while the Undo bar is up it
+     sits just above the bar, never behind it */
+  { const ft = document.body.classList.contains('touring') && $('.tour-foot'), r = ft && ft.getBoundingClientRect(), ub = $('#undoBar'), ur = ub && !ub.hidden && ub.getClientRects().length ? ub.getBoundingClientRect() : null;
+    el.style.bottom = r && r.height ? Math.round(innerHeight - r.top + 8) + 'px' : ur && ur.height ? Math.round(innerHeight - ur.top + 8) + 'px' : ''; }
   el.textContent = msg; el.classList.add('on'); CONF.cheerAt = Date.now(); clearTimeout(CONF.cheerT);
   CONF.cheerT = setTimeout(() => { el.classList.remove('on'); CONF.cheerT = setTimeout(() => { if (!el.classList.contains('on')) el.textContent = ''; }, 500); }, 3400);
+  if (CHEER_Q.length) { clearTimeout(CHEER_QT); CHEER_QT = setTimeout(() => { const n = CHEER_Q.shift(); if (n) { CONF.cheerAt = 0; cheer(n); } }, 1800); }
 }
 function celebrate(size, msg, from) {
   cheer(msg);

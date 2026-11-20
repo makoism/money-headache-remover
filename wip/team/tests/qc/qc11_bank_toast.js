@@ -21,7 +21,7 @@ const said = p => p.evaluate(() => (window.__cheerLog || []).slice(-1)[0] || (do
   ck('typed: "Bank updated: $1,450 today."', /Bank updated: \$1,450 today/.test(a) && !/^Saved:/.test(a), a);
   if (await p.$('#mpCheck')) await click(p, '#mpCheck');
   await click(p, '#mpBankSave');
-  const c = await said(p);
+  let c = ''; for (let i = 0; i < 20 && !/Kept/.test(c); i++) { await w(200); c = await said(p); }   /* a message right after another waits its turn */
   ck('left empty: it says the $1,450 was kept, not that one was saved', /\$1,450/.test(c) && /[Kk]ept/.test(c) && !/^Saved:/.test(c), c);
   const e2 = errs.filter(e => !/favicon|net::ERR_FILE_NOT_FOUND|fonts/.test(e));
   ck('no page errors', e2.length === 0, e2.slice(0, 3));
