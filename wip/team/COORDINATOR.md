@@ -19,6 +19,9 @@ Q10 SF5 38b5d81, SF6 edb78d1; first full check.sh green on 38.31 (d3d86e5). Q13 
 - Watchdog: standing session session_01BFpKEYWd9Kcs4FkcwuNGo1, trigger trig_015mKtiUhZRgbkacuPYA8Ks6 at :33 hourly. It messages the coordinator (by finding the newest "Burrow coordinator" session) if it starts a replacement MAIN. Title your session "Burrow coordinator 9 (talk to this one)".
 - When the preview is republished and round 3 is clean: send Mako the after screenshots as files and the link, two percentages first, times in JST. That is the build for his full run.
 
+### MAIN 11 (18:41 UTC = 03:41 JST 21 Nov)
+MAIN 10 handed off for size to MAIN 11, session_01BFpKEZGS9KN3eUX4L3Qhw4 (Opus, depth 8: it cannot start sessions; the watchdog or a fresh coordinator 9 must start any MAIN 12). Queue A to L from QC round 4 (4 of 9 reports in, all FAIL, wip/team/qc_round4/, 313589c); A first, a cloud-copy data-safety fix. Coordinator 8 sent it its id. The weekly limit showed a warning at 18:41 UTC.
+
 ### Preview (07:49 UTC)
 QC round 3 on 53bb8cb failed; fixed b7c4719, 50ca3a8, 9a33833, 9a0d2fc; the rest wait for Mako's run (QC10_FIX_ROUND.md). The preview artifact at the old link cannot be updated: an update needs the whole 1.87 MB live page read first. MAIN 10 sent Mako the build file and 4 screenshots instead (preview/after, 2c65906). A new link does not work either: the tool only publishes a file the session wrote or read in full (~800k tokens). A tappable link needs a deploy (Mako's call, at his full run) or a smaller page. Do not work around the rule.
 
