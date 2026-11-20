@@ -5,7 +5,7 @@
 const PART = { welcome: 'Welcome', money: 'Money', bills: 'Bills', jars: 'Split', goals: 'Burrows', spend: 'Free to spend' };
 
 const inum = id => { const el = document.getElementById(id); return el ? num0(el.value) : 0; };
-const moneyField = (id, label, v, hint) => `<div class="field"><label for="${id}">${label}</label><div class="inp"><span class="yen cs"></span><input id="${id}" type="number" inputmode="decimal" min="0" step="any" aria-describedby="tourTitle" placeholder="${hint || 'Amount'}" value="${v > 0 ? v : ''}"></div></div>`;
+const moneyField = (id, label, v, hint) => `<div class="field"><label for="${id}">${label}</label><div class="inp"><span class="yen cs"></span><input id="${id}" type="number" inputmode="decimal" min="0" step="any" aria-describedby="tourTitle" placeholder="${hint || 'Amount'}" value="${v !== '' && v != null && +v !== 0 && isFinite(+v) ? (Number.isInteger(+v) ? +v : (+v).toFixed(2)) : ''}"></div></div>`;   /* shows what was kept, as typed: a minus balance and the cents (QC round 4 money accuracy, data safety) */
 const textField = (id, label, v, max, ph) => `<div class="field"><label for="${id}">${label}</label><div class="inp"><input id="${id}" type="text" maxlength="${max || 60}" spellcheck="false" value="${esc(v)}"${ph ? ` placeholder="${esc(ph)}"` : ''}></div></div>`;
 const payNow = () => setupCells(S).pay;   /* model.js setupCells: the tour's figures are worked out there */
 const havePay = () => !!(S.ui.done && S.ui.done.pay) && payNow() > 0;
