@@ -47,7 +47,7 @@ function fieldHTML(f, multi, editing) {
     <button type="button" class="btn small warnbtn" data-ldel="${esc(l.id)}" data-armkey="ldel-${esc(l.id)}">Remove</button></div>` : '';
   return `<div class="ed" id="e-${f.fid}"><div class="ed-top">${head}
     <div class="inp sm"><span class="yen cs"></span><input id="i-${f.fid}" data-k="${esc(f.key)}" type="number" inputmode="decimal" min="0" step="any" aria-label="${esc(f.label)}, this month"></div></div>
-    ${f.sl ? `<div class="rng" style="--c:${f.color}"><input type="range" id="r-${f.fid}" data-k="${esc(f.key)}" min="0" max="100" step="1" aria-label="${esc(f.label)} slider">${f.sl.mark ? `<span class="mark" id="m-${f.fid}" title="Your ceiling"></span>` : ''}</div>` : ''}
+    ${f.sl ? `<div class="rng" style="--c:${f.color}"><input type="range" id="r-${f.fid}" data-k="${esc(f.key)}" min="0" max="100" step="1" aria-label="${esc(f.label)} slider">${f.sl.mark ? `<span class="mark" id="m-${f.fid}" title="Your Free to spend cap"></span>` : ''}</div>` : ''}
     <p class="nt" id="n-${f.fid}"></p>
     <p class="keep" id="k-${f.fid}" hidden><span id="kt-${f.fid}"></span><button type="button" class="link" data-keep="${esc(f.key)}">Keep for later months</button><button type="button" class="link" data-undo="${esc(f.key)}">Undo</button></p>${edit}</div>`;
 }

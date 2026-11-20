@@ -52,7 +52,7 @@ function asstPicture(T) {
   return `PICTURE (today ${todayStr()}, currency ${cur}, amounts per month, month in view ${monthLabel(ym)})
 Name: ${T.ui.name || '(not given)'}
 Income: salary ${n(val(T, 'a', ym))}, second income ${n(val(T, 'b', ym))}, side income ${n(val(T, 'side', ym))}; total in ${n(m.pool.in)}
-Money today ${n(cfg(T, 'bankStart'))}; minimum balance ${n(cfg(T, 'minBank'))}; spending ceiling ${n(cfg(T, 'ceiling'))}
+Money today ${n(cfg(T, 'bankStart'))}; minimum balance ${n(cfg(T, 'minBank'))}; Free to spend cap ${n(cfg(T, 'ceiling'))}
 This month: left over ${n(m.pool.left)}, balance ends ${monthLabel(ym, true)} at ${n(m.bankEnd)}, status ${st[statusOf(T, m)]}. Next 12 months: ${shorts.length ? 'short in ' + shorts.map(x => monthLabel(x, true) + ' ' + x.slice(2, 4)).join(', ') : 'no short month'}${tights.length ? '; tight in ' + tights.length + ' month' + (tights.length === 1 ? '' : 's') : ''}.
 Jars (amount, share of pay, usual share): ${J.list.map(j => `${j.name} ${n(j.v)} (${j.pct}%, usual ${j.usual}%)`).join('; ')}${J.rest > 0 ? `; unassigned ${n(J.rest)} (${J.restPct}%)` : ''}${J.over ? '; the plan spends more than the pay' : ''}
 Free to spend this month: planned ${n(V.play.planned)}, spent ${n(V.play.spent)}, left ${n(V.play.left)}, ${V.play.daysLeft} days left${V.play.perWeek != null ? ', about ' + n(V.play.perWeek) + ' a week' : ''}

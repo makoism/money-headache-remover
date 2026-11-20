@@ -192,7 +192,7 @@ function noteFor(f, m, v, on) {
   if (f.kind === 'debt') { const d = debtById(S, f.did), x = d && m.debts[d.id]; return x ? `Minimum ${fmt(d.min)} is already included. This month it pays ${fmt(x.pay)}${x.interest > 0 ? `, ${fmt(x.interest)} of it interest` : ''}. Owed after: ${fmt(x.bal)}.` : ''; }
   let t = f.note ? esc(localize(f.note)) + ' ' : '';
   if (f.ends) t += on ? (v > 0 ? `Last payment ${monthLabel(f.ends)}.` : '') : 'Paid off.';
-  if (f.sl && f.sl.mark) { const ceil = cfg(S, 'ceiling'); if (ceil > 0) t += (m.jar.play > ceil ? ` <b>Above the ${fmt(ceil)} ceiling.</b>` : ` The mark is your ${fmt(ceil)} ceiling.`); }
+  if (f.sl && f.sl.mark) { const ceil = cfg(S, 'ceiling'); if (ceil > 0) t += (m.jar.play > ceil ? ` <b>Above your ${fmt(ceil)} Free to spend cap.</b>` : ` The mark is your ${fmt(ceil)} Free to spend cap (Settings).`); }
   return t.trim();
 }
 function goalNote(gid, m) {
