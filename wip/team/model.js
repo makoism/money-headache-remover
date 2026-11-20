@@ -656,6 +656,13 @@ function viewOf(S, C, ym, today) {
   };
   return { ym, main, goals, live: goals.filter(r => r.live).length, play, buckets, otherSpent: rs.byJar.other || 0, month, map, cells };
 }
+/* Home's money rule 3 for one month, for every screen that says "safe to spend" (Receipts, Plan > Month, the Free to spend panel): only the
+   month of today is judged against the typed bank; the bank now says nothing about a later month (QC round 4 numbers B1) */
+function playNotSafe(S, C, ym, today) {
+  if (!today || today.slice(0, 7) !== ym || !C.byYm[ym]) return false;
+  const r = viewOf(S, C, ym, today).map.month.find(x => x.id === 'play');
+  return !!(r && r.notCovered);
+}
 const overspendUpTo = (S, C, ym) => (C.byYm[ym] ? C.byYm[ym].over : 0);
 /* Free to spend: the free to spend left, less what is held back so the balance stays above its minimum. One rule, used by every screen that shows the number. */
 function freeOf(S, mv, p) {

@@ -3033,6 +3033,13 @@ function viewOf(S, C, ym, today) {
   };
   return { ym, main, goals, live: goals.filter(r => r.live).length, play, buckets, otherSpent: rs.byJar.other || 0, month, map, cells };
 }
+/* Home's money rule 3 for one month, for every screen that says "safe to spend" (Receipts, Plan > Month, the Free to spend panel): only the
+   month of today is judged against the typed bank; the bank now says nothing about a later month (QC round 4 numbers B1) */
+function playNotSafe(S, C, ym, today) {
+  if (!today || today.slice(0, 7) !== ym || !C.byYm[ym]) return false;
+  const r = viewOf(S, C, ym, today).map.month.find(x => x.id === 'play');
+  return !!(r && r.notCovered);
+}
 const overspendUpTo = (S, C, ym) => (C.byYm[ym] ? C.byYm[ym].over : 0);
 /* Free to spend: the free to spend left, less what is held back so the balance stays above its minimum. One rule, used by every screen that shows the number. */
 function freeOf(S, mv, p) {
@@ -4876,7 +4883,7 @@ function render() {
   $('#heroNum').textContent = heroTxt; $('#heroNum').style.setProperty('--n', String(heroTxt.length)); $('#heroNum').style.color = heroShow < 0 ? 'var(--bad)' : '';
   $('#heroWk').textContent = (playSpent > 0 || heroShow !== play) ? `Planned ${fmt(play)} in ${mon}, about ${fmtAbout(wk)} a week.` : `Planned: about ${fmtAbout(wk)} a week across the whole of ${mon}.`;   /* names the month Plan shows (QC10 numbers should-fix 4) */
   $('#rcLine').innerHTML = !rs.count ? '<button type="button" class="link" data-tab-go="receipts">Log spend</button> to see what you really spent.'
-    : play > 0 ? `Receipts: ${fmt2(playSpent)} spent, ${playSpent > play ? fmt2(PC.playOver) + ' over' : (m.counted > 0 ? fmt2(m.counted) + ' not spent' + (m.topup && m.topup.used > 0 ? ', ' + fmt2(m.topup.used) + ' went to a goal' : ', came back to the bank') : m.pendLeft > 0 ? fmt2(m.pendLeft) + ' not logged as spent yet, Home asks where it goes' : fmt2(playSafeLeft(S, m, playSpent)) + ' safe to spend')}. <button type="button" class="link" data-tab-go="receipts">See receipts</button>`
+    : play > 0 ? `Receipts: ${fmt2(playSpent)} spent, ${playSpent > play ? fmt2(PC.playOver) + ' over' : (m.counted > 0 ? fmt2(m.counted) + ' not spent' + (m.topup && m.topup.used > 0 ? ', ' + fmt2(m.topup.used) + ' went to a goal' : ', came back to the bank') : m.pendLeft > 0 ? fmt2(m.pendLeft) + ' not logged as spent yet, Home asks where it goes' : fmt2(playSafeLeft(S, m, playSpent)) + (playNotSafe(S, C, sel, ymd(new Date())) ? ' left, not safe to spend yet' : ' safe to spend'))}. <button type="button" class="link" data-tab-go="receipts">See receipts</button>`
     : playSpent > 0 ? `Receipts: ${fmt2(playSpent)} spent from Free to spend, which has no plan this month. <button type="button" class="link" data-tab-go="receipts">See receipts</button>`
     : `Receipts: nothing spent from Free to spend. <button type="button" class="link" data-tab-go="receipts">See receipts</button>`;
   const Lun = PC.unplaced, JU = jarsOf(S, m), usedUp = JU.usedOver >= 0.5;   /* pay with no place that spending past plan used up is "used", not "placed" (QC10 round 2 numbers should-fix 5) */   /* pay with no place, less what spending past plan already took from it */
@@ -5328,7 +5335,7 @@ function renderReceipts() {
   setIdle($('#rcMonth'), sel);
   $('#rcTitle').textContent = 'Receipts, ' + fullLabel(sel);
   let sum = rs.count ? `${fmt2(rs.total)} spent, ${rs.count} receipt${rs.count === 1 ? '' : 's'}.` : 'No receipts this month.';
-  if (playPlan > 0 || playSpent > 0) sum += ` Free to spend: ${fmt2(playPlan)} planned, ${fmt2(playSpent)} spent, ` + (playSpent > playPlan ? `${fmt2(planCells(S, C, sel).playOver)} over.` : (m.counted > 0 ? `${fmt2(m.counted)} not spent: ${m.topup && m.topup.used > 0 ? fmt2(m.topup.used) + ' went to a goal' + (m.counted - m.topup.used > 0.004 ? ', ' + fmt2(m.credit) + ' came back to the bank' : '') : 'came back to the bank'}.` : m.pendLeft > 0 ? `${fmt2(m.pendLeft)} not logged as spent yet, and Home asks where it goes.` : `${fmt2(playSafeLeft(S, m, playSpent))} safe to spend.`));
+  if (playPlan > 0 || playSpent > 0) sum += ` Free to spend: ${fmt2(playPlan)} planned, ${fmt2(playSpent)} spent, ` + (playSpent > playPlan ? `${fmt2(planCells(S, C, sel).playOver)} over.` : (m.counted > 0 ? `${fmt2(m.counted)} not spent: ${m.topup && m.topup.used > 0 ? fmt2(m.topup.used) + ' went to a goal' + (m.counted - m.topup.used > 0.004 ? ', ' + fmt2(m.credit) + ' came back to the bank' : '') : 'came back to the bank'}.` : m.pendLeft > 0 ? `${fmt2(m.pendLeft)} not logged as spent yet, and Home asks where it goes.` : `${fmt2(playSafeLeft(S, m, playSpent))}${playNotSafe(S, C, sel, ymd(new Date())) ? ' left, not safe to spend yet' : ' safe to spend'}.`));
   $('#rcSum').textContent = sum;
 
   /* plan against spending, for every category that has a receipt (and the play money lines) */
@@ -17038,9 +17045,11 @@ function openWhy(kind) {
     rows = [[`Free to spend planned for ${mon}`, fmt(p.planned)], [`Logged in Free to spend (${p.count} ${p.count === 1 ? 'receipt' : 'receipts'})`, (p.spent > 0.004 ? '−' : '') + fmt2(p.spent)]];   /* no minus in front of zero (38.31 north-star round 4) */
     if (held > 0) rows.push(['Held back so the balance stays above your minimum', '−' + fmt(held)]);
     rows.push(['Free to spend', fmt2(freeLeft)]);
-    if (p.perWeek != null) rows.push([`Per week for the ${plural(p.daysLeft, 'day')} left`, fmtAbout(V.cells.perWeek)]);
-    if (p.daysLeft > 0 && freeLeft > 0) rows.push(['Per day', fmtAbout(V.cells.perDay)]);
-    foot = 'Planned is the Free to spend total on the Plan page. Logged is every receipt in Free to spend this month.';
+    const notSafe = playNotSafe(S, C, ym, ymd(new Date())) && !sampleOn();   /* the same rule as the top of Home: no per week or per day figure to spend while the bank cannot cover it (QC round 4 north-star 4) */
+    if (notSafe) rows.push(['Not safe to spend yet', 'Your bank is less than your bills still to pay and Free to spend']);
+    else if (p.perWeek != null) rows.push([`Per week for the ${plural(p.daysLeft, 'day')} left`, fmtAbout(V.cells.perWeek)]);
+    if (!notSafe && p.daysLeft > 0 && freeLeft > 0) rows.push(['Per day', fmtAbout(V.cells.perDay)]);
+    foot = (notSafe ? 'It becomes safe to spend when your pay lands: then tap Check your bank on Home and type the new balance. ' : '') + 'Planned is the Free to spend total on the Plan page. Logged is every receipt in Free to spend this month.';
   } else {
     title = 'Where you stand in ' + mon;
     rows = [['Pay and other money in', fmt(m.inflow)], ['Bills, one-time costs and card payments', '−' + fmt(m.jar.nec)], ['Goal burrows', '−' + fmt(m.goalsTotal)], ['Free to spend, Education, Investing, Giving', '−' + fmt(V.cells.otherPlaces)], ['Left in the month', (m.left < 0 ? '−' : '') + fmt(V.cells.leftAbs)], ['Balance at the start', fmt(m.bankStart)], ['Balance at the end', fmt(m.bankEnd)], ['Your minimum balance', fmt(floor)]];

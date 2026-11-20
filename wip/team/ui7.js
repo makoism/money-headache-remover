@@ -301,9 +301,11 @@ function openWhy(kind) {
     rows = [[`Free to spend planned for ${mon}`, fmt(p.planned)], [`Logged in Free to spend (${p.count} ${p.count === 1 ? 'receipt' : 'receipts'})`, (p.spent > 0.004 ? '−' : '') + fmt2(p.spent)]];   /* no minus in front of zero (38.31 north-star round 4) */
     if (held > 0) rows.push(['Held back so the balance stays above your minimum', '−' + fmt(held)]);
     rows.push(['Free to spend', fmt2(freeLeft)]);
-    if (p.perWeek != null) rows.push([`Per week for the ${plural(p.daysLeft, 'day')} left`, fmtAbout(V.cells.perWeek)]);
-    if (p.daysLeft > 0 && freeLeft > 0) rows.push(['Per day', fmtAbout(V.cells.perDay)]);
-    foot = 'Planned is the Free to spend total on the Plan page. Logged is every receipt in Free to spend this month.';
+    const notSafe = playNotSafe(S, C, ym, ymd(new Date())) && !sampleOn();   /* the same rule as the top of Home: no per week or per day figure to spend while the bank cannot cover it (QC round 4 north-star 4) */
+    if (notSafe) rows.push(['Not safe to spend yet', 'Your bank is less than your bills still to pay and Free to spend']);
+    else if (p.perWeek != null) rows.push([`Per week for the ${plural(p.daysLeft, 'day')} left`, fmtAbout(V.cells.perWeek)]);
+    if (!notSafe && p.daysLeft > 0 && freeLeft > 0) rows.push(['Per day', fmtAbout(V.cells.perDay)]);
+    foot = (notSafe ? 'It becomes safe to spend when your pay lands: then tap Check your bank on Home and type the new balance. ' : '') + 'Planned is the Free to spend total on the Plan page. Logged is every receipt in Free to spend this month.';
   } else {
     title = 'Where you stand in ' + mon;
     rows = [['Pay and other money in', fmt(m.inflow)], ['Bills, one-time costs and card payments', '−' + fmt(m.jar.nec)], ['Goal burrows', '−' + fmt(m.goalsTotal)], ['Free to spend, Education, Investing, Giving', '−' + fmt(V.cells.otherPlaces)], ['Left in the month', (m.left < 0 ? '−' : '') + fmt(V.cells.leftAbs)], ['Balance at the start', fmt(m.bankStart)], ['Balance at the end', fmt(m.bankEnd)], ['Your minimum balance', fmt(floor)]];
