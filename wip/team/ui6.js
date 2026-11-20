@@ -69,11 +69,11 @@ const BADGES = [
   { id: 'payin', n: 'Pay set', h: 'Enter your pay.', i: 'coin', ok: () => !!(S.ui.done && S.ui.done.pay) },
   { id: 'goal1', n: 'First burrow', h: 'Add a burrow with a goal amount.', i: 'target', ok: () => !!(S.ui.done && S.ui.done.goals) && S.plan.goals.some(g => g.target > 0) },
   { id: 'track', n: 'On track', h: 'A goal is on track.', i: 'check', ok: () => !!(S.ui.done && S.ui.done.goals) && S.plan.goals.some(g => { const s = goalInfo(S, C, g.id, nowYm()).state; return s === 'ontrack' || s === 'full'; }) },
-  { id: 'half', n: 'Halfway', h: 'A goal reaches 50%.', i: 'half', ok: () => !!(S.ui.done && S.ui.done.goals) && S.plan.goals.some(g => g.target > 0 && goalInfo(S, C, g.id, nowYm()).pct >= 0.5) },
+  { id: 'half', n: 'Halfway', h: 'A goal reaches 50%.', i: 'half', ok: () => !!(S.ui.done && S.ui.done.goals) && goalRows(S, C, nowYm()).some(r => r.target > 0 && r.pctNow >= 50) },   /* what the goal holds now, not what the month plans (QC round 4 money accuracy B3) */
   { id: 'rcpt10', n: '10 receipts', h: 'Log 10 receipts.', i: 'star', ok: () => (S.receipts || []).length >= 10 },
   { id: 'wk4', n: '4 weeks', h: 'Log 4 weeks running.', i: 'leaf', ok: () => streakInfo().best >= 4 },
   { id: 'wk12', n: '12 weeks', h: 'Log 12 weeks running.', i: 'shield', ok: () => streakInfo().best >= 12 },
-  { id: 'full', n: 'Goal full', h: 'A goal reaches its amount.', i: 'flower', ok: () => !!(S.ui.done && S.ui.done.goals) && S.plan.goals.some(g => g.target > 0 && goalInfo(S, C, g.id, nowYm()).pct >= 1) },
+  { id: 'full', n: 'Goal full', h: 'A goal reaches its amount.', i: 'flower', ok: () => !!(S.ui.done && S.ui.done.goals) && goalRows(S, C, nowYm()).some(r => r.target > 0 && r.pctNow >= 100) },
   { id: 'topup', n: 'Top-up', h: 'Put unspent free to spend toward a goal.', i: 'drop', ok: () => !!(S.ui.sweep && Object.keys(S.ui.sweep).some(k => S.ui.sweep[k] && S.ui.sweep[k].amt > 0)) },
 ];
 let badgeTimer = 0;
@@ -295,7 +295,7 @@ const homeView = () => (HV = viewOf(S, C, nowYm(), ymd(new Date())));
 function purposeFor(g) { if (!g) return ''; const w = S.ui && S.ui.win && S.ui.win[g.id]; return w && w.n === g.name && typeof w.t === 'string' && w.t ? w.t : purposeOf(S, g); }
 const monthsText = r => dwr(r, monthsText0(r));
 const monthsText0 = r => r.pct >= 100 ? 'Full' : r.reached ? (r.months <= 0 ? 'Full this month' : plural(r.months, 'month') + ' to go') : 'No date at this pace';
-const monthsShort = r => r.state === 'paid' ? 'Paid' : r.state === 'short' ? 'Short' : r.state === 'unset' ? 'No amount' : r.pct >= 100 ? 'Done' : r.reached ? (r.months <= 0 ? 'This month' : plural(r.months, 'month')) : r.grows === false ? 'Not growing' : 'Over ' + SPAN;
+const monthsShort = r => r.state === 'paid' ? 'Paid' : r.state === 'short' ? 'Short' : r.state === 'unset' ? 'No amount' : r.pct >= 100 ? (r.pctNow >= 100 ? 'Done' : 'This month') : r.reached ? (r.months <= 0 ? 'This month' : plural(r.months, 'month')) : r.grows === false ? 'Not growing' : 'Over ' + SPAN;
 const fracOf = r => (r.target > 0 ? Math.min(1, Math.max(0, r.saved / r.target)) : 0);
 function renderHero() {
   const el = $('#hHero'), r = HV.main;
