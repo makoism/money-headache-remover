@@ -771,7 +771,7 @@ function planCells(S, C, ym) {
 
 /* THE PROOF. Where the money sits must equal where the money came from, less what left. The two sides are worked out apart from each other:
      sits:  the bank + every goal + the Education, Giving and Investing piles at the end of the month (what the screens show, from mapOf)
-     came:  what there was at the start + all pay so far - everything that left, added up here from the plan and the raw receipts, in whole cents
+     came:  what there was at the start + all pay so far minus everything that left, added up here from the plan and the raw receipts, in whole cents
    What leaves: bills, one-time costs and debt payments as planned (taken as paid), anything logged past a bill or past the one-time costs,
    Free to spend as planned (taken as spent) plus anything logged past it, less unspent Free to spend the person has answered for (it went back
    to the bank or to a goal), what was logged from Education and Giving, and goal money spent on its date. Investing never leaves; money borrowed

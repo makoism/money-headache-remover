@@ -13,7 +13,7 @@ const JARROWS = [
   { id: 'items', jar: 'nec', name: 'One-time costs', kind: 'items' },
   { id: 'debts', jar: 'nec', name: 'Cards and loans', kind: 'debts', cap: 'The minimum payments plus anything extra you pay' },
   { id: 'lts', jar: 'lts', name: 'Goal burrows', kind: 'goals', cap: 'Burrows with a goal, like a trip, something big to buy or your Emergency fund' },
-  { id: 'play', jar: 'play', name: 'Free to spend', cap: 'Eating out, hobbies and fun stuff - groceries go under Bills and basics' },
+  { id: 'play', jar: 'play', name: 'Free to spend', cap: 'Eating out, hobbies and fun stuff: groceries go under Bills and basics' },
   { id: 'edu', jar: 'edu', name: 'Education', cap: 'Courses, books and anything else you learn from' },
   { id: 'ffa', jar: 'ffa', name: 'Investing', cap: 'Money you put away and don\'t spend, like an index fund or a retirement plan' },
   { id: 'give', jar: 'give', name: 'Giving', cap: 'Gifts and donations' },
@@ -106,7 +106,7 @@ function goalCardHTML(g) {
 }
 function buildGoals() {
   const gs = S.plan.goals;
-  $('#goalCards').innerHTML = gs.length ? gs.map(goalCardHTML).join('') : '<p class="cap">No burrows yet - add one below</p>';
+  $('#goalCards').innerHTML = gs.length ? gs.map(goalCardHTML).join('') : '<p class="cap">No burrows yet: add one below</p>';
   $('#roadLegend').innerHTML = gs.map(g => `<span><i style="--c:var(--c${g.slot})"></i>${esc(g.name)}</span>`).join('');
   $('#addGoalBtn').hidden = gs.length >= MAX_GOALS; $('#goalMsg').textContent = gs.length >= MAX_GOALS ? `You can have ${MAX_GOALS} burrows at most, so remove one to add another` : '';
 }

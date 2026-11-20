@@ -11,7 +11,7 @@ function debtFormHTML(d, isNew) {
     <div class="field"><label for="de-${id}-bal">Owed now</label><div class="inp"><span class="yen cs"></span><input id="de-${id}-bal" data-d="balance" type="number" inputmode="numeric" min="0" step="100" value="${d.balance === '' ? '' : d.balance}" placeholder="0"></div></div>
     <div class="field"><label for="de-${id}-apr">Interest rate, %</label><div class="rate"><input class="txt" id="de-${id}-apr" data-d="apr" type="text" inputmode="decimal" value="${d.apr === '' ? '' : esc(String(d.apr))}" placeholder="0" maxlength="6"><div class="selbox"><select id="de-${id}-per" data-per aria-label="Interest rate is per"><option value="year" selected>a year</option><option value="month">a month</option></select></div></div><p class="cap">Cards often show it per month, like 3.5, or per year, like 42, so pick what your statement says. Use 0 for money you owe a person.</p></div>
     <div class="field"><label for="de-${id}-min">Minimum a month</label><div class="inp"><span class="yen cs"></span><input id="de-${id}-min" data-d="min" type="number" inputmode="numeric" min="0" step="100" value="${d.min === '' ? '' : d.min}" placeholder="0"></div><p class="cap">The least you have to pay, and it's part of Bills and basics</p></div>
-    <div class="field"><label for="de-${id}-extra">Extra a month</label><div class="inp"><span class="yen cs"></span><input id="de-${id}-extra" data-d="extra" type="number" inputmode="numeric" min="0" step="100" value="${d.extra === '' ? '' : d.extra}" placeholder="0"></div><p class="cap">On top of the minimum - it goes straight off what you owe so the interest drops</p></div>
+    <div class="field"><label for="de-${id}-extra">Extra a month</label><div class="inp"><span class="yen cs"></span><input id="de-${id}-extra" data-d="extra" type="number" inputmode="numeric" min="0" step="100" value="${d.extra === '' ? '' : d.extra}" placeholder="0"></div><p class="cap">On top of the minimum: it goes straight off what you owe so the interest drops</p></div>
     <p class="cap wide" id="de-${id}-msg" role="status"></p>
     <div class="row-btns wide">${isNew ? '<button type="button" class="btn small solid" data-dsave>Add</button><button type="button" class="btn small" data-dcancel>Cancel</button>'
       : `<button type="button" class="btn small solid" data-ddone>Done</button><button type="button" class="btn small warnbtn" data-ddel data-armkey="ddel-${id}">Remove</button>`}</div></div>`;
@@ -44,7 +44,7 @@ function renderDebts() {
     debtSig = sig;
     const cards = $('#debtCards');
     if (sample) cards.innerHTML = '<p class="cap">Finish the first steps, then add your cards and loans here.</p>';
-    else cards.innerHTML = (ds.length ? ds.map((d, i) => debtCardHTML(d, rows[i], m.debts[d.id], i, rows[i].first)).join('') : '<p class="cap">Nothing here yet - add a card or loan to see when each is paid off and how much interest it costs</p>')
+    else cards.innerHTML = (ds.length ? ds.map((d, i) => debtCardHTML(d, rows[i], m.debts[d.id], i, rows[i].first)).join('') : '<p class="cap">Nothing here yet: add a card or loan to see when each is paid off and how much interest it costs</p>')
       + (DEBT_DRAFT ? `<div class="gcard dcard" data-did="new"><div class="jhead"><span class="jarn"><span>New card or loan</span></span></div>${debtFormHTML(DEBT_DRAFT, true)}</div>` : '');
     $('#addDebtBtn').hidden = sample || DEBT_DRAFT !== null || ds.length >= MAX_DEBTS;
     $('#debtMsg').textContent = ds.length >= MAX_DEBTS ? `You can have ${MAX_DEBTS} cards and loans at most, so remove one to add another` : '';
@@ -149,7 +149,7 @@ function xmPreview() {
 function xmPaint() {
   const el = $('#xm'); if (!el || !XM) return;
   const ds = xmDests(), mons = MONTHS.filter(x => x >= START).slice(0, MONTHS.length);
-  el.innerHTML = `<div class="gw-scrim" data-xmno></div><div class="gw-card"><h2 id="xmT">Extra money came in</h2><p class="cap">Like a bonus or a 13th month pay - it's only added to ${esc(monthLabel(XM.ym))}</p>
+  el.innerHTML = `<div class="gw-scrim" data-xmno></div><div class="gw-card"><h2 id="xmT">Extra money came in</h2><p class="cap">Like a bonus or a 13th month pay: it's only added to ${esc(monthLabel(XM.ym))}</p>
     <div class="field"><label for="xmAmt">Amount</label><div class="inp"><span class="yen cs"></span><input id="xmAmt" type="number" inputmode="numeric" min="0" step="100" value="${XM.amt}" placeholder="0"></div></div>
     <div class="field"><label for="xmMon">Month</label><div class="selbox"><select id="xmMon">${mons.map(x => `<option value="${x}"${x === XM.ym ? ' selected' : ''}>${esc(monthLabel(x))}</option>`).join('')}</select></div></div>
     <div class="field"><label for="xmDest">Where should it go?</label><div class="selbox"><select id="xmDest">${ds.map((d, i) => `<option value="${i}"${i === XM.dest ? ' selected' : ''}>${esc(d.label)}</option>`).join('')}</select></div></div>
@@ -245,7 +245,7 @@ function renderRecurring() {
   const sig = JSON.stringify([rs, REC_OPEN, cats.map(o => o.value + o.textContent)]); if (el.dataset.sig === sig) return;
   if (el.contains(document.activeElement) && document.activeElement.matches('input, select') && REC_OPEN) return;
   el.dataset.sig = sig;
-  el.innerHTML = `<div class="head"><h2>Repeating spending</h2><p class="sub2">Like a gym fee or a weekly top-up - it gets logged for you on its day</p></div>
+  el.innerHTML = `<div class="head"><h2>Repeating spending</h2><p class="sub2">Like a gym fee or a weekly top-up: it gets logged for you on its day</p></div>
     ${rs.length ? `<ul class="recl">${list}</ul>` : '<p class="cap">None yet.</p>'}
     ${REC_OPEN ? `<form class="addrow rec-form" id="recForm" autocomplete="off">
       <div class="inp sm"><span class="yen cs"></span><input id="recAmt" type="number" inputmode="decimal" min="0" step="any" placeholder="Amount" aria-label="Amount"></div>

@@ -2259,7 +2259,7 @@ ol.steps li { margin: 0 0 4px; }
       </div>
       <div class="backup" id="bkArea">
         <h3>Saved data</h3>
-        <p class="cap" id="savedCap">Your numbers are saved in this browser on this device only. They only leave it when you ask for that - Ask sends them with your question while the box is ticked, and reading a statement or a receipt photo sends that file to Claude. A second copy is kept here in case the first goes missing, and it loads by itself if that happens. Neither one moves to other devices. Clearing site data removes both, so only a backup file survives that. A backup is your own copy of your numbers and receipts and you make one with Save file below.</p>
+        <p class="cap" id="savedCap">Your numbers are saved in this browser on this device only. They only leave it when you ask for that: Ask sends them with your question while the box is ticked, and reading a statement or a receipt photo sends that file to Claude. A second copy is kept here in case the first goes missing, and it loads by itself if that happens. Neither one moves to other devices. Clearing site data removes both, so only a backup file survives that. A backup is your own copy of your numbers and receipts and you make one with Save file below.</p>
         <h4>Backup</h4>
         <div class="row-btns">
           <button type="button" class="btn small solid" id="bkSave">Save file</button>
@@ -3148,7 +3148,7 @@ function planCells(S, C, ym) {
 
 /* THE PROOF. Where the money sits must equal where the money came from, less what left. The two sides are worked out apart from each other:
      sits:  the bank + every goal + the Education, Giving and Investing piles at the end of the month (what the screens show, from mapOf)
-     came:  what there was at the start + all pay so far - everything that left, added up here from the plan and the raw receipts, in whole cents
+     came:  what there was at the start + all pay so far minus everything that left, added up here from the plan and the raw receipts, in whole cents
    What leaves: bills, one-time costs and debt payments as planned (taken as paid), anything logged past a bill or past the one-time costs,
    Free to spend as planned (taken as spent) plus anything logged past it, less unspent Free to spend the person has answered for (it went back
    to the bank or to a goal), what was logged from Education and Giving, and goal money spent on its date. Investing never leaves; money borrowed
@@ -4599,7 +4599,7 @@ const JARROWS = [
   { id: 'items', jar: 'nec', name: 'One-time costs', kind: 'items' },
   { id: 'debts', jar: 'nec', name: 'Cards and loans', kind: 'debts', cap: 'The minimum payments plus anything extra you pay' },
   { id: 'lts', jar: 'lts', name: 'Goal burrows', kind: 'goals', cap: 'Burrows with a goal, like a trip, something big to buy or your Emergency fund' },
-  { id: 'play', jar: 'play', name: 'Free to spend', cap: 'Eating out, hobbies and fun stuff - groceries go under Bills and basics' },
+  { id: 'play', jar: 'play', name: 'Free to spend', cap: 'Eating out, hobbies and fun stuff: groceries go under Bills and basics' },
   { id: 'edu', jar: 'edu', name: 'Education', cap: 'Courses, books and anything else you learn from' },
   { id: 'ffa', jar: 'ffa', name: 'Investing', cap: 'Money you put away and don\'t spend, like an index fund or a retirement plan' },
   { id: 'give', jar: 'give', name: 'Giving', cap: 'Gifts and donations' },
@@ -4692,7 +4692,7 @@ function goalCardHTML(g) {
 }
 function buildGoals() {
   const gs = S.plan.goals;
-  $('#goalCards').innerHTML = gs.length ? gs.map(goalCardHTML).join('') : '<p class="cap">No burrows yet - add one below</p>';
+  $('#goalCards').innerHTML = gs.length ? gs.map(goalCardHTML).join('') : '<p class="cap">No burrows yet: add one below</p>';
   $('#roadLegend').innerHTML = gs.map(g => `<span><i style="--c:var(--c${g.slot})"></i>${esc(g.name)}</span>`).join('');
   $('#addGoalBtn').hidden = gs.length >= MAX_GOALS; $('#goalMsg').textContent = gs.length >= MAX_GOALS ? `You can have ${MAX_GOALS} burrows at most, so remove one to add another` : '';
 }
@@ -4826,7 +4826,7 @@ function jarNote(m) {
   const borrowed = J.borrowUsedPct > 0 ? ` Your pay is 100%. The other ${J.borrowUsedPct}% is the borrowed ${fmt(J.borrowUsed)} that pays for part of this plan.` : '';   /* the row's own words: this is the part of the borrow that pays for the plan, not all that was borrowed */
   const others = J.list.slice(1).some(j => j.v > 0);
   /* no bills in the plan is blank, not low: never praised as "under the usual" (38.31 number gate, wording and novice round 3) */
-  if (!(nec.v > 0)) return 'No bills planned yet - add rent, food and the rest under Money out.' + borrowed;
+  if (!(nec.v > 0)) return 'No bills planned yet: add rent, food and the rest under Money out.' + borrowed;
   const lead = nec.pct >= 100 ? `Bills and basics cost more than all of your pay this month.${borrowed ? '' : ' Lower a bill or add pay.'}`   /* 38.31 north-star round 2: never calm about this */
     : nec.pct > u + 1 ? `Bills and basics are ${nec.pct}% of pay, above the usual ${u}%.${others ? ' Keep putting something in the other places, even a small amount.' : ' Nothing is left for the other places this month.'}`
     : nec.pct < u - 1 ? `Bills and basics are ${nec.pct}% of pay, under the usual ${u}%, so there's more room for the other places.`
@@ -4995,7 +4995,7 @@ function goalNote(gid, m) {
 
 function renderGoals(m) {
   const J = jarsOf(S, m), lj = J.list.find(x => x.id === 'lts'), inc = J.income, gs = S.plan.goals;
-  $('#goalsSub').textContent = gs.length ? `Goals get ${fmt(lj.v)} in ${monthLabel(sel, true)}` + (inc > 0 && !J.over ? `, ${lj.pct}% of pay.` : '.') : 'No burrows yet - add one to see when you\'ll reach it';
+  $('#goalsSub').textContent = gs.length ? `Goals get ${fmt(lj.v)} in ${monthLabel(sel, true)}` + (inc > 0 && !J.over ? `, ${lj.pct}% of pay.` : '.') : 'No burrows yet: add one to see when you\'ll reach it';
   
   $('#secRoad').hidden = !gs.length;
   gs.forEach(g => {
@@ -5527,7 +5527,7 @@ const BILL_Q = { rent: 'Rent or mortgage', util: 'Utilities', food: 'Food and gr
 const BILL_NOTE = {
   rent: () => 'Put the full amount even if someone shares it. Their share counts as pay, so tap Back and add it to Other pay each month on the Your money step',
   util: () => 'Electricity, gas and water',
-  food: () => 'Groceries and everyday meals. Eating out for fun isn\'t a bill - it comes out of Free to spend, your money for fun',
+  food: () => 'Groceries and everyday meals. Eating out for fun isn\'t a bill: it comes out of Free to spend, your money for fun',
   net: () => 'Home internet, or your data plan if that\'s how you get online',
   phone: () => 'Your monthly plan, or what you usually spend on top-ups',
   ins: () => 'Health, life, car or home. Put in what it costs a month.' + (S.ui.cur === '₱' ? ' If you\'re self-employed include your own SSS, PhilHealth and Pag-IBIG too.' : ''),
@@ -5581,7 +5581,7 @@ const billStep = id => ({ id: 'bill-' + id, part: PART.bills, setup: true, focus
       /* one plain question; the statement arithmetic is there for those who only know the statement total */
       const saved = val(S, l.key, START), c = cardModel(saved), calc = c.b > 0;
       return `<p>What you put on the card each month apart from the bills you already listed, like shopping, eating out or online orders. A rough number is fine.</p>
-      <p class="cap" data-card-full>Pay the card off in full every month? You can leave this at 0 and tap Next. What's on the card right now goes on Home once setup is done - tap Add a card you pay in full there and Home shows your bank after the cards are paid.</p>
+      <p class="cap" data-card-full>Pay the card off in full every month? You can leave this at 0 and tap Next. What's on the card right now goes on Home once setup is done: tap Add a card you pay in full there and Home shows your bank after the cards are paid.</p>
       <div class="tour-fields">${moneyField('tourAmt', 'Card spending, each month', saved)}</div>
       <details class="src-how"${calc ? ' open' : ''}><summary>I only know the statement total</summary><div class="src-how-in">
         <p class="cap">Enter the statement total, then the part of it that is bills you already listed, like rent, food or subscriptions. The rest is card spending.</p>
@@ -5590,7 +5590,7 @@ const billStep = id => ({ id: 'bill-' + id, part: PART.bills, setup: true, focus
       </div></details>
       <p class="cap">A card is paid a month late, so this month you pay last month's bill. You can add that bill as a one-time cost for this month once setup is done. The amount above is what you expect to put on the card from now on.</p>
       <p class="cap">If you have no credit card go back and untick it. If you carry a balance from month to month, add it under Cards and loans once setup is done.</p>
-      <p class="cap" data-card-later>You do both of those after setup, so there's nothing more to type here. One-time costs is on the Plan tab under Month - it's for things you pay once. Cards and loans is on the Plan tab under Burrows - it's for a balance you carry from month to month.</p>`;
+      <p class="cap" data-card-later>You do both of those after setup, so there's nothing more to type here. One-time costs is on the Plan tab under Month: it's for things you pay once. Cards and loans is on the Plan tab under Burrows: it's for a balance you carry from month to month.</p>`;
     }
     return `${note ? `<p>${esc(note())}</p>` : ''}
     <div class="tour-fields">${named ? textField('tourLName', 'Name', l.name) : ''}${moneyField('tourAmt', 'Each month', val(S, l.key, START))}</div>${b === 'ins' ? moreBtn('ins') : ''}`;
@@ -6064,7 +6064,7 @@ const IMP_HOW = () => `<details class="src-how"><summary>How to get your stateme
   ${sym() === '₱' ? '<p>GCash: Profile, Transaction History, export by email. Maya: Account, Statements. BPI, BDO, UnionBank, GoTyme: the account page has Download or Export.</p>' : ''}
   ${sym() === '¥' ? '<p>Japanese banks: 入出金明細 then CSVダウンロード. Card apps: 利用明細 then screenshots of each month.</p>' : ''}
   <p>For credit cards use the last statement as CSV or screenshots, and cash spending you add on the check screen.</p>
-  <p>Your files go to Claude once to be read and the numbers come back - The Burrow doesn't keep the files</p></div></details>`;
+  <p>Your files go to Claude once to be read and the numbers come back: The Burrow doesn't keep the files</p></div></details>`;
 /* the footer's own button is the way past this screen without statements: a plain "Type numbers instead" (or "Not now" when opened from Home),
    so nobody has to find the small link at the foot of a long screen. Reading files moves on by itself. */
 const STEP_SOURCE = { id: 'source', part: PART.money, setup: true, skipIf: () => quickSetup() && !impOnly, title: 'Your statements', next: () => (impOnly ? 'Not now' : 'Type numbers instead'), nextPlain: true,
@@ -6106,7 +6106,7 @@ const STEP_SOURCE = { id: 'source', part: PART.money, setup: true, skipIf: () =>
         $('#srcAiSum').textContent = up ? 'Prefer your own AI? Use it instead' : 'Use your own AI';
         { const it = $('#srcIntro'); if (it && !up) it.textContent = 'Bring in the last 2 or 3 months of each account as PDF, CSV or Excel exports or screenshots of the transaction list. An AI app reads them for you, so the numbers come out exact and your history fills in.'; }
         $('#srcAiLede').innerHTML = up ? 'Or use your own AI and get the same result. If you\'d rather not send statements through this page, or you like ChatGPT, Gemini or the Claude app better, you copy one message, paste it into that AI with your statements, answer its questions and paste its final answer back here. It gets checked the same way.'
-          : `Your files go to the AI app, not to this page. ${inArtifact() && RELAY_URL ? hereLink() + ' Or use' : 'Use'} any AI - copy one message, paste it into ChatGPT, Gemini or the Claude app with your statements, answer its questions and paste its final answer below.`;
+          : `Your files go to the AI app, not to this page. ${inArtifact() && RELAY_URL ? hereLink() + ' Or use' : 'Use'} any AI: copy one message, paste it into ChatGPT, Gemini or the Claude app with your statements, answer its questions and paste its final answer below.`;
       }
     };
     connectAsk().then(paintSrc);
@@ -6866,7 +6866,7 @@ document.addEventListener('click', e => {
   if (!root || !root.__cal) return;
   if (inArtifact()) { if (msg) msg.textContent = ''; calManual(root, root.__cal).querySelector('textarea').focus({ preventScroll: true }); return; }
   const ok = calDownload(root.__cal);
-  if (msg) msg.textContent = ok ? 'Saved receipts-reminder.ics - open it to add the repeating event, and if nothing happens open it from your downloads' : 'The file couldn\'t be made here, so add the event in your calendar app yourself';
+  if (msg) msg.textContent = ok ? 'Saved receipts-reminder.ics: open it to add the repeating event, and if nothing happens open it from your downloads' : 'The file couldn\'t be made here, so add the event in your calendar app yourself';
 });
 
 /* ===== subscriptions: tick what you pay and type what each one costs you =====
@@ -14772,7 +14772,7 @@ const COACH = {
   ],
   goals: [
     ['#goalCards .gcard', 'Goal', 'The bar shows how full it should be by now if you stick to the plan. Edit goal changes the name, amount or date.'],
-    ['#addGoalBtn', 'Add a burrow', 'Three steps - you pick the type, the goal amount and the date'],
+    ['#addGoalBtn', 'Add a burrow', 'Three steps: you pick the type, the goal amount and the date'],
     ['#chartbox', 'Forecast', 'This shows every goal month by month. Hover over a month or tap it to read it.'],
   ],
   month: [
@@ -15342,7 +15342,7 @@ async function vaultUse(f, asked) {
 /* one sentence on a copy that vaultFind found: when it was saved and how much is in it (Settings and the welcome screen both show it before loading) */
 function vaultFoundLine(v) { const n = v.n; return `It was saved ${esc(vaultWhen(v.srv.updated || v.srv.rev))} and has ${n} receipt${n === 1 ? '' : 's'} in it.`; }
 /* ---------- what Settings shows ---------- */
-const SAVED_LOCAL = 'Your numbers are saved in this browser on this device only. They only leave it when you ask for that - Ask sends them with your question while the box is ticked, and reading a statement or a receipt photo sends that file to Claude. A second copy is kept here in case the first goes missing, and it loads by itself if that happens. Neither one moves to other devices. Clearing site data removes both, so only a backup file survives that. A backup is your own copy of your numbers and receipts and you make one with Save file below.';
+const SAVED_LOCAL = 'Your numbers are saved in this browser on this device only. They only leave it when you ask for that: Ask sends them with your question while the box is ticked, and reading a statement or a receipt photo sends that file to Claude. A second copy is kept here in case the first goes missing, and it loads by itself if that happens. Neither one moves to other devices. Clearing site data removes both, so only a backup file survives that. A backup is your own copy of your numbers and receipts and you make one with Save file below.';
 const SAVED_CLOUD = 'Your numbers are saved in this browser, with a second copy here in case the first goes missing, and an encrypted cloud copy that follows every save. It\'s under Cloud copy below. Clearing site data removes the two copies on this device, and your recovery code brings the cloud copy back. A backup file is your own copy of your numbers and receipts.';
 const vaultWhen = t => { if (!t) return ''; const d = new Date(t); return d.getDate() + ' ' + d.toLocaleString('en-US', { month: 'short' }) + ', ' + d.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit' }); };   /* day then month, like every other date */
 /* one sentence on whether the cloud copy has everything; the same words in Settings, in the steps and on Home */
@@ -16005,7 +16005,7 @@ function renderStatus() {
   const u = roundUnit(S), mon = monthLabel(V.ym, true), floor = cfg(S, 'minBank');
   let cls, word, line;
   if (!(m.inflow > 0)) { if (m.left < 0 || m.bankEnd < 0) { cls = 'tight'; word = 'No pay entered';   /* amber, never red (decision 2) */ line = m.left < 0 ? `Your plan spends ${fmt(V.cells.planSpend)} in ${mon} and no pay is entered, so your bank would end at ${fmt(m.bankEnd)}. Add your monthly pay under Plan.` : `You logged spending in ${mon} with no pay entered, so your bank would end at ${fmt2(m.bankEnd)}. Add your monthly pay under Plan.`; } else { cls = ''; word = 'No plan yet'; line = 'Add your monthly pay to start.'; } }
-  else if (sampleOn()) { const d = S.ui.done || {}; cls = ''; word = 'Sample numbers'; line = d.pay && d.bills ? 'Pay and bills are yours but the burrows are still made up - add one below' : 'These numbers are made up - do the step below to put yours in'; }
+  else if (sampleOn()) { const d = S.ui.done || {}; cls = ''; word = 'Sample numbers'; line = d.pay && d.bills ? 'Pay and bills are yours but the burrows are still made up: add one below' : 'These numbers are made up: do the step below to put yours in'; }
   else if (m.status === 'good') { cls = 'good'; word = V.play && V.play.planned > 0 && V.play.left < 0 ? 'Over free to spend' : 'You are okay'; if (word !== 'You are okay') cls = 'tight'; const nOv = V.map && V.map.month.find(r => r.id === 'nec'), nOvT = nOv && nOv.overBy > 0 ? ` Bills and basics are ${fmt2(nOv.overBy)} over.` : ''; const pl = nOvT + (V.play && V.play.planned > 0 ? (V.play.left > 0 ? ` ${fmt2(V.play.left)} is free to spend.` : V.play.left < 0 ? ` Free to spend is ${fmt2(V.play.overBy)} over.` : ' Free to spend is used up.') : ''); const unp = V.cells.unplaced; line = !nOvT && unp >= u ? `${fmt2(unp)} of your pay is not placed yet and your bills are covered, so give it a goal or a place or just leave it in the bank.${pl}` : m.left < u && ((C.byYm[V.ym] || {}).out - (C.byYm[V.ym] || { jar: {} }).jar.nec) <= 0 ? `Bills use all of your pay so nothing is set aside yet` : (nOvT ? `Bills went past the plan.${pl}` : `Bills are covered and burrows are planned for.${pl}`); { const OB = (V.month && V.month.overBits) || {}, ON = { other: 'Other', ffa: 'Investing', edu: 'Education', give: 'Giving' }, ext = Object.keys(ON).filter(j => OB[j] > 0).map(j => ` ${ON[j]} is ${fmt2(OB[j])} over.`).join('');   /* every place past the plan is named, so the parts add up to what the bank is lowered by (38.31 number gate round 3) */
     if (ext) { line += ext; if (word !== 'You are okay') { cls = 'tight'; word = 'Over plan'; } } }   /* with nothing else over, the total and "came out of your bank" lead the line below */
     if (nOvT) { cls = 'tight'; word = 'Over plan'; } }
@@ -16088,7 +16088,7 @@ function renderNext() {
     step = [`${nm}: ${fmt2(sw.left)} of Free to spend isn't logged as spent`, `Your bank balance doesn't include it yet. ${sw.n < 4 ? (sw.n === 0 ? 'No receipts are logged' : sw.n === 1 ? 'Only 1 receipt is logged' : `Only ${sw.n} receipts are logged`) + ', so this may be spending you haven\'t logged yet. ' : ''}${sw.goals.length ? 'Count it in the bank or put it toward a goal, you can undo either one.' : 'Count it in the bank, you can undo it.'}`   /* no goal button when no goal has room, so no goal in the words (QC10 numbers should-fix 2) */, `Count ${fmt2(sw.left)} in the bank`, `data-sweepbank="${sw.pm}"`, pick];
   }
   if (!step && d.pay && d.bills && S.ui.src !== 'import' && !S.ui.exactHidden && !sampleOn()) { const can = typeof askFn !== 'undefined' && !!askFn; step = ['Make it exact', can ? 'Upload 2 or 3 months of statements, screenshots of the bank app work too, and the numbers become exact and your history fills in' : 'Bring in 2 or 3 months of statements with an AI app, screenshots of the bank app work too, and the numbers become exact and your history fills in', can ? 'Upload' : 'Use an AI app', 'data-exact']; }
-  if (!step && d.pay && d.bills && S.ui.full !== true && !S.ui.moreBillsHidden && !sampleOn() && necLines().filter(l => val(S, l.key, nowYm()) > 0).length < 4) step = ['Next: add your other bills', 'Utilities, internet, phone and transport - rough numbers are fine', 'Open bills', 'data-open="nec"', '', 'data-hidebills'];
+  if (!step && d.pay && d.bills && S.ui.full !== true && !S.ui.moreBillsHidden && !sampleOn() && necLines().filter(l => val(S, l.key, nowYm()) > 0).length < 4) step = ['Next: add your other bills', 'Utilities, internet, phone and transport: rough numbers are fine', 'Open bills', 'data-open="nec"', '', 'data-hidebills'];
   if (!step && d.pay && d.bills && !S.ui.noDebts && !(S.plan.debts && S.plan.debts.length) && !sampleOn() && !backupDue()) step = ['Next: do you owe on a card or loan?', 'Add it and the burrow works out the interest, the payoff date and which to pay first.', 'Add a card or loan', 'data-debtgo', '', 'data-nodebts'];
   if (!step && (S.receipts || []).length && !S.ui.remindHidden && !sampleOn() && !backupDue()) step = ['Set a weekly reminder', 'Put a reminder in your calendar so you log for a few minutes each week and the numbers stay right', 'Set reminder', 'data-remindgo'];
   /* version one (Mako, 2026-11-18): Home shows one next action. These suggestions are useful but never urgent, so they sit behind More and
@@ -16748,7 +16748,7 @@ function debtFormHTML(d, isNew) {
     <div class="field"><label for="de-${id}-bal">Owed now</label><div class="inp"><span class="yen cs"></span><input id="de-${id}-bal" data-d="balance" type="number" inputmode="numeric" min="0" step="100" value="${d.balance === '' ? '' : d.balance}" placeholder="0"></div></div>
     <div class="field"><label for="de-${id}-apr">Interest rate, %</label><div class="rate"><input class="txt" id="de-${id}-apr" data-d="apr" type="text" inputmode="decimal" value="${d.apr === '' ? '' : esc(String(d.apr))}" placeholder="0" maxlength="6"><div class="selbox"><select id="de-${id}-per" data-per aria-label="Interest rate is per"><option value="year" selected>a year</option><option value="month">a month</option></select></div></div><p class="cap">Cards often show it per month, like 3.5, or per year, like 42, so pick what your statement says. Use 0 for money you owe a person.</p></div>
     <div class="field"><label for="de-${id}-min">Minimum a month</label><div class="inp"><span class="yen cs"></span><input id="de-${id}-min" data-d="min" type="number" inputmode="numeric" min="0" step="100" value="${d.min === '' ? '' : d.min}" placeholder="0"></div><p class="cap">The least you have to pay, and it's part of Bills and basics</p></div>
-    <div class="field"><label for="de-${id}-extra">Extra a month</label><div class="inp"><span class="yen cs"></span><input id="de-${id}-extra" data-d="extra" type="number" inputmode="numeric" min="0" step="100" value="${d.extra === '' ? '' : d.extra}" placeholder="0"></div><p class="cap">On top of the minimum - it goes straight off what you owe so the interest drops</p></div>
+    <div class="field"><label for="de-${id}-extra">Extra a month</label><div class="inp"><span class="yen cs"></span><input id="de-${id}-extra" data-d="extra" type="number" inputmode="numeric" min="0" step="100" value="${d.extra === '' ? '' : d.extra}" placeholder="0"></div><p class="cap">On top of the minimum: it goes straight off what you owe so the interest drops</p></div>
     <p class="cap wide" id="de-${id}-msg" role="status"></p>
     <div class="row-btns wide">${isNew ? '<button type="button" class="btn small solid" data-dsave>Add</button><button type="button" class="btn small" data-dcancel>Cancel</button>'
       : `<button type="button" class="btn small solid" data-ddone>Done</button><button type="button" class="btn small warnbtn" data-ddel data-armkey="ddel-${id}">Remove</button>`}</div></div>`;
@@ -16781,7 +16781,7 @@ function renderDebts() {
     debtSig = sig;
     const cards = $('#debtCards');
     if (sample) cards.innerHTML = '<p class="cap">Finish the first steps, then add your cards and loans here.</p>';
-    else cards.innerHTML = (ds.length ? ds.map((d, i) => debtCardHTML(d, rows[i], m.debts[d.id], i, rows[i].first)).join('') : '<p class="cap">Nothing here yet - add a card or loan to see when each is paid off and how much interest it costs</p>')
+    else cards.innerHTML = (ds.length ? ds.map((d, i) => debtCardHTML(d, rows[i], m.debts[d.id], i, rows[i].first)).join('') : '<p class="cap">Nothing here yet: add a card or loan to see when each is paid off and how much interest it costs</p>')
       + (DEBT_DRAFT ? `<div class="gcard dcard" data-did="new"><div class="jhead"><span class="jarn"><span>New card or loan</span></span></div>${debtFormHTML(DEBT_DRAFT, true)}</div>` : '');
     $('#addDebtBtn').hidden = sample || DEBT_DRAFT !== null || ds.length >= MAX_DEBTS;
     $('#debtMsg').textContent = ds.length >= MAX_DEBTS ? `You can have ${MAX_DEBTS} cards and loans at most, so remove one to add another` : '';
@@ -16886,7 +16886,7 @@ function xmPreview() {
 function xmPaint() {
   const el = $('#xm'); if (!el || !XM) return;
   const ds = xmDests(), mons = MONTHS.filter(x => x >= START).slice(0, MONTHS.length);
-  el.innerHTML = `<div class="gw-scrim" data-xmno></div><div class="gw-card"><h2 id="xmT">Extra money came in</h2><p class="cap">Like a bonus or a 13th month pay - it's only added to ${esc(monthLabel(XM.ym))}</p>
+  el.innerHTML = `<div class="gw-scrim" data-xmno></div><div class="gw-card"><h2 id="xmT">Extra money came in</h2><p class="cap">Like a bonus or a 13th month pay: it's only added to ${esc(monthLabel(XM.ym))}</p>
     <div class="field"><label for="xmAmt">Amount</label><div class="inp"><span class="yen cs"></span><input id="xmAmt" type="number" inputmode="numeric" min="0" step="100" value="${XM.amt}" placeholder="0"></div></div>
     <div class="field"><label for="xmMon">Month</label><div class="selbox"><select id="xmMon">${mons.map(x => `<option value="${x}"${x === XM.ym ? ' selected' : ''}>${esc(monthLabel(x))}</option>`).join('')}</select></div></div>
     <div class="field"><label for="xmDest">Where should it go?</label><div class="selbox"><select id="xmDest">${ds.map((d, i) => `<option value="${i}"${i === XM.dest ? ' selected' : ''}>${esc(d.label)}</option>`).join('')}</select></div></div>
@@ -16982,7 +16982,7 @@ function renderRecurring() {
   const sig = JSON.stringify([rs, REC_OPEN, cats.map(o => o.value + o.textContent)]); if (el.dataset.sig === sig) return;
   if (el.contains(document.activeElement) && document.activeElement.matches('input, select') && REC_OPEN) return;
   el.dataset.sig = sig;
-  el.innerHTML = `<div class="head"><h2>Repeating spending</h2><p class="sub2">Like a gym fee or a weekly top-up - it gets logged for you on its day</p></div>
+  el.innerHTML = `<div class="head"><h2>Repeating spending</h2><p class="sub2">Like a gym fee or a weekly top-up: it gets logged for you on its day</p></div>
     ${rs.length ? `<ul class="recl">${list}</ul>` : '<p class="cap">None yet.</p>'}
     ${REC_OPEN ? `<form class="addrow rec-form" id="recForm" autocomplete="off">
       <div class="inp sm"><span class="yen cs"></span><input id="recAmt" type="number" inputmode="decimal" min="0" step="any" placeholder="Amount" aria-label="Amount"></div>
@@ -17433,7 +17433,7 @@ function wire() {
   /* the file save is shared with the reminder on Home (bkRun, ui43.js); a saved file counts as a backup */
   bkRun = async () => { const ok = await saveOut(`mhr2000-${stamp()}.json`, JSON.stringify(S), 'application/json', $('#bkMsg'), ' Use Copy text.'); if (ok) markBackup(); return ok; };
   $('#bkSave').addEventListener('click', () => { bkRun(); });
-  $('#bkCsv').addEventListener('click', () => { let t; try { t = sheetCsv(S, calcAll(S)); } catch (e) { $('#bkMsg').textContent = 'The spreadsheet couldn\'t be made. Try again - if it still won\'t, Save file above still backs up your numbers.'; return; } saveOut(`mhr2000-plan-${stamp()}.csv`, t, 'text/csv;charset=utf-8', $('#bkMsg'), csvCopy); });
+  $('#bkCsv').addEventListener('click', () => { let t; try { t = sheetCsv(S, calcAll(S)); } catch (e) { $('#bkMsg').textContent = 'The spreadsheet couldn\'t be made. Try again. If it still won\'t, Save file above still backs up your numbers.'; return; } saveOut(`mhr2000-plan-${stamp()}.csv`, t, 'text/csv;charset=utf-8', $('#bkMsg'), csvCopy); });
   $('#bkFileBtn').addEventListener('click', () => $('#bkFile').click());
   $('#bkFile').addEventListener('change', e => {
     const f = e.target.files && e.target.files[0], msg = $('#bkMsg'); e.target.value = ''; if (!f) return;

@@ -183,7 +183,7 @@ function wire() {
   /* the file save is shared with the reminder on Home (bkRun, ui43.js); a saved file counts as a backup */
   bkRun = async () => { const ok = await saveOut(`mhr2000-${stamp()}.json`, JSON.stringify(S), 'application/json', $('#bkMsg'), ' Use Copy text.'); if (ok) markBackup(); return ok; };
   $('#bkSave').addEventListener('click', () => { bkRun(); });
-  $('#bkCsv').addEventListener('click', () => { let t; try { t = sheetCsv(S, calcAll(S)); } catch (e) { $('#bkMsg').textContent = 'The spreadsheet couldn\'t be made. Try again - if it still won\'t, Save file above still backs up your numbers.'; return; } saveOut(`mhr2000-plan-${stamp()}.csv`, t, 'text/csv;charset=utf-8', $('#bkMsg'), csvCopy); });
+  $('#bkCsv').addEventListener('click', () => { let t; try { t = sheetCsv(S, calcAll(S)); } catch (e) { $('#bkMsg').textContent = 'The spreadsheet couldn\'t be made. Try again. If it still won\'t, Save file above still backs up your numbers.'; return; } saveOut(`mhr2000-plan-${stamp()}.csv`, t, 'text/csv;charset=utf-8', $('#bkMsg'), csvCopy); });
   $('#bkFileBtn').addEventListener('click', () => $('#bkFile').click());
   $('#bkFile').addEventListener('change', e => {
     const f = e.target.files && e.target.files[0], msg = $('#bkMsg'); e.target.value = ''; if (!f) return;

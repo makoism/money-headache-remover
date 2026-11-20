@@ -19,7 +19,7 @@ const COACH = {
   ],
   goals: [
     ['#goalCards .gcard', 'Goal', 'The bar shows how full it should be by now if you stick to the plan. Edit goal changes the name, amount or date.'],
-    ['#addGoalBtn', 'Add a burrow', 'Three steps - you pick the type, the goal amount and the date'],
+    ['#addGoalBtn', 'Add a burrow', 'Three steps: you pick the type, the goal amount and the date'],
     ['#chartbox', 'Forecast', 'This shows every goal month by month. Hover over a month or tap it to read it.'],
   ],
   month: [

@@ -59,7 +59,7 @@ const BILL_Q = { rent: 'Rent or mortgage', util: 'Utilities', food: 'Food and gr
 const BILL_NOTE = {
   rent: () => 'Put the full amount even if someone shares it. Their share counts as pay, so tap Back and add it to Other pay each month on the Your money step',
   util: () => 'Electricity, gas and water',
-  food: () => 'Groceries and everyday meals. Eating out for fun isn\'t a bill - it comes out of Free to spend, your money for fun',
+  food: () => 'Groceries and everyday meals. Eating out for fun isn\'t a bill: it comes out of Free to spend, your money for fun',
   net: () => 'Home internet, or your data plan if that\'s how you get online',
   phone: () => 'Your monthly plan, or what you usually spend on top-ups',
   ins: () => 'Health, life, car or home. Put in what it costs a month.' + (S.ui.cur === '₱' ? ' If you\'re self-employed include your own SSS, PhilHealth and Pag-IBIG too.' : ''),
@@ -113,7 +113,7 @@ const billStep = id => ({ id: 'bill-' + id, part: PART.bills, setup: true, focus
       /* one plain question; the statement arithmetic is there for those who only know the statement total */
       const saved = val(S, l.key, START), c = cardModel(saved), calc = c.b > 0;
       return `<p>What you put on the card each month apart from the bills you already listed, like shopping, eating out or online orders. A rough number is fine.</p>
-      <p class="cap" data-card-full>Pay the card off in full every month? You can leave this at 0 and tap Next. What's on the card right now goes on Home once setup is done - tap Add a card you pay in full there and Home shows your bank after the cards are paid.</p>
+      <p class="cap" data-card-full>Pay the card off in full every month? You can leave this at 0 and tap Next. What's on the card right now goes on Home once setup is done: tap Add a card you pay in full there and Home shows your bank after the cards are paid.</p>
       <div class="tour-fields">${moneyField('tourAmt', 'Card spending, each month', saved)}</div>
       <details class="src-how"${calc ? ' open' : ''}><summary>I only know the statement total</summary><div class="src-how-in">
         <p class="cap">Enter the statement total, then the part of it that is bills you already listed, like rent, food or subscriptions. The rest is card spending.</p>
@@ -122,7 +122,7 @@ const billStep = id => ({ id: 'bill-' + id, part: PART.bills, setup: true, focus
       </div></details>
       <p class="cap">A card is paid a month late, so this month you pay last month's bill. You can add that bill as a one-time cost for this month once setup is done. The amount above is what you expect to put on the card from now on.</p>
       <p class="cap">If you have no credit card go back and untick it. If you carry a balance from month to month, add it under Cards and loans once setup is done.</p>
-      <p class="cap" data-card-later>You do both of those after setup, so there's nothing more to type here. One-time costs is on the Plan tab under Month - it's for things you pay once. Cards and loans is on the Plan tab under Burrows - it's for a balance you carry from month to month.</p>`;
+      <p class="cap" data-card-later>You do both of those after setup, so there's nothing more to type here. One-time costs is on the Plan tab under Month: it's for things you pay once. Cards and loans is on the Plan tab under Burrows: it's for a balance you carry from month to month.</p>`;
     }
     return `${note ? `<p>${esc(note())}</p>` : ''}
     <div class="tour-fields">${named ? textField('tourLName', 'Name', l.name) : ''}${moneyField('tourAmt', 'Each month', val(S, l.key, START))}</div>${b === 'ins' ? moreBtn('ins') : ''}`;

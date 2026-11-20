@@ -250,7 +250,7 @@ document.addEventListener('click', e => {
   if (!root || !root.__cal) return;
   if (inArtifact()) { if (msg) msg.textContent = ''; calManual(root, root.__cal).querySelector('textarea').focus({ preventScroll: true }); return; }
   const ok = calDownload(root.__cal);
-  if (msg) msg.textContent = ok ? 'Saved receipts-reminder.ics - open it to add the repeating event, and if nothing happens open it from your downloads' : 'The file couldn\'t be made here, so add the event in your calendar app yourself';
+  if (msg) msg.textContent = ok ? 'Saved receipts-reminder.ics: open it to add the repeating event, and if nothing happens open it from your downloads' : 'The file couldn\'t be made here, so add the event in your calendar app yourself';
 });
 
 /* ===== subscriptions: tick what you pay and type what each one costs you =====

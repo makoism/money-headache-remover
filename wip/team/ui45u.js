@@ -146,7 +146,7 @@ const IMP_HOW = () => `<details class="src-how"><summary>How to get your stateme
   ${sym() === '₱' ? '<p>GCash: Profile, Transaction History, export by email. Maya: Account, Statements. BPI, BDO, UnionBank, GoTyme: the account page has Download or Export.</p>' : ''}
   ${sym() === '¥' ? '<p>Japanese banks: 入出金明細 then CSVダウンロード. Card apps: 利用明細 then screenshots of each month.</p>' : ''}
   <p>For credit cards use the last statement as CSV or screenshots, and cash spending you add on the check screen.</p>
-  <p>Your files go to Claude once to be read and the numbers come back - The Burrow doesn't keep the files</p></div></details>`;
+  <p>Your files go to Claude once to be read and the numbers come back: The Burrow doesn't keep the files</p></div></details>`;
 /* the footer's own button is the way past this screen without statements: a plain "Type numbers instead" (or "Not now" when opened from Home),
    so nobody has to find the small link at the foot of a long screen. Reading files moves on by itself. */
 const STEP_SOURCE = { id: 'source', part: PART.money, setup: true, skipIf: () => quickSetup() && !impOnly, title: 'Your statements', next: () => (impOnly ? 'Not now' : 'Type numbers instead'), nextPlain: true,
@@ -188,7 +188,7 @@ const STEP_SOURCE = { id: 'source', part: PART.money, setup: true, skipIf: () =>
         $('#srcAiSum').textContent = up ? 'Prefer your own AI? Use it instead' : 'Use your own AI';
         { const it = $('#srcIntro'); if (it && !up) it.textContent = 'Bring in the last 2 or 3 months of each account as PDF, CSV or Excel exports or screenshots of the transaction list. An AI app reads them for you, so the numbers come out exact and your history fills in.'; }
         $('#srcAiLede').innerHTML = up ? 'Or use your own AI and get the same result. If you\'d rather not send statements through this page, or you like ChatGPT, Gemini or the Claude app better, you copy one message, paste it into that AI with your statements, answer its questions and paste its final answer back here. It gets checked the same way.'
-          : `Your files go to the AI app, not to this page. ${inArtifact() && RELAY_URL ? hereLink() + ' Or use' : 'Use'} any AI - copy one message, paste it into ChatGPT, Gemini or the Claude app with your statements, answer its questions and paste its final answer below.`;
+          : `Your files go to the AI app, not to this page. ${inArtifact() && RELAY_URL ? hereLink() + ' Or use' : 'Use'} any AI: copy one message, paste it into ChatGPT, Gemini or the Claude app with your statements, answer its questions and paste its final answer below.`;
       }
     };
     connectAsk().then(paintSrc);
