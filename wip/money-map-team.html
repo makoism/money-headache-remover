@@ -16045,7 +16045,10 @@ function renderStatus() {
   let ahead = '';
   if (cls && !sampleOn()) {
     const i0 = MONTHS.indexOf(V.ym), bad = [];
-    for (let k = 1; k <= 3 && i0 >= 0 && i0 + k < MONTHS.length; k++) { const x = MONTHS[i0 + k], mx = C.byYm[x]; if (!mx) continue; const st = statusOf(S, mx); if (st === 'short') bad.push(`${monthLabel(x, true)} ${mx.bankEnd < 0 ? 'ends below zero' : mx.left < 0 ? 'is short' : 'ends under your minimum'}`); else if (st === 'tight') bad.push(`${monthLabel(x, true)} is tight`); }
+    const said = x => `${monthLabel(x, true)}${x.slice(0, 4) !== V.ym.slice(0, 4) && MONTHS.indexOf(x) - i0 > 3 ? ' ' + x.slice(0, 4) : ''}`;
+    for (let k = 1; k <= 3 && i0 >= 0 && i0 + k < MONTHS.length; k++) { const x = MONTHS[i0 + k], mx = C.byYm[x]; if (!mx) continue; const st = statusOf(S, mx); if (st === 'short') bad.push(`${said(x)} ${mx.bankEnd < 0 ? 'ends below zero' : mx.left < 0 ? 'is short' : 'ends under your minimum'}`); else if (st === 'tight') bad.push(`${said(x)} is tight`); }
+    /* nothing in the next three months: the first later month that ends below zero or under the minimum is still named (QC round 4 north-star 3) */
+    if (!bad.length && i0 >= 0) for (let k = 4; i0 + k < MONTHS.length; k++) { const x = MONTHS[i0 + k], mx = C.byYm[x]; if (mx && statusOf(S, mx) === 'short') { bad.push(`${said(x)} ${mx.bankEnd < 0 ? 'ends below zero' : mx.left < 0 ? 'is short' : 'ends under your minimum'}`); break; } }
     if (i0 >= 0 && i0 + 1 < MONTHS.length && !(m.over > 0.004 && !bad.length)) ahead = `<p class="hst-w${bad.length ? ' warn' : ' on'}">${bad.length ? 'Coming up: ' + bad.join(', ') + '. Open Plan to see why.' : 'The next 3 months look fine.'}</p>`;
   }
   put(el, `<span class="chip ${cls}">${cls === 'good' ? IC.ok : cls ? IC.warn : ''}${word}</span><p class="hst-l">${line}</p>${ahead}${wk}${m.inflow > 0 && !sampleOn() ? '<p class="cap hs-more"><button type="button" class="link" data-why="status">How is this worked out?</button></p>' : ''}`);
@@ -16445,7 +16448,7 @@ function homeV1() {
   if (q && bur && q.nextElementSibling !== bur) panel.insertBefore(q, bur);
   if (q) q.classList.toggle('v1x', !(logIsNext || QUICK_OPEN || HOME_ALL));
   V1_EXTRA.forEach(id => { const e = $('#' + id); if (e) e.classList.toggle('v1x', !HOME_ALL); });
-  const st = $('#hStatus'); if (st) st.classList.toggle('v1x', !HOME_ALL && !!st.querySelector('.chip.good'));
+  const st = $('#hStatus'); if (st) st.classList.toggle('v1x', !HOME_ALL && !!st.querySelector('.chip.good') && !st.querySelector('.hst-w.warn'));   /* a month coming up short keeps the card on Home (QC round 4 north-star 3) */
   /* the burrow amounts include this month's planned saving: say so on the heading, as every Home figure does (LAUNCH_CHECKLIST A1) */
   const bh = $('#hBur .hb-h'); if (bh && !bh.querySelector('.ntag')) bh.insertAdjacentHTML('beforeend', ' <em class="ntag plan">planned</em>');
   let mb = $('#hMoreBtn');
