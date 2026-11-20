@@ -251,3 +251,9 @@ Said in MAIN 10's chat and relayed to coordinator 7 (not seen first hand):
 - Use all the credits and chats before the weekly limit. MAIN 10 keeps going past its size handoff point instead of stopping, and runs helpers in parallel where safe. One session at a time on app files stays.
 - The watchdog is approved: an hourly fresh session on Opus that pushes to his phone and starts a replacement main session if the current one dies on a limit. MAIN 10 fixed its prompt and fired a test run.
 - Unchanged: nothing deploys, nothing goes to main until he has seen the preview and the bank comparison and said go.
+
+## Every update starts with two rough percentages (Mako, 2026-11-20, about 02:45 UTC)
+Said in MAIN 10's chat and relayed to coordinator 7 (not seen first hand). Standing rule for every update he asks for, from any session:
+- Line 1: two rough percentages. First version ready for him with everything checked (about 80% at 02:45 UTC). Including art and the 3D world (about 45 to 50%).
+- Line 2: what is being worked on now.
+Also in RESUME section 7.
