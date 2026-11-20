@@ -80,7 +80,7 @@ async function vaultCheck() {
 }
 /* asked: the person chose this copy on a screen that said what it is. Without that, a copy that is not newer than the numbers on this
    device is refused (LAUNCH_CHECKLIST E10: an old answer replayed by the browser, or a wrong clock, must not load over current numbers). */
-async function vaultApply(k, srv, asked) {
+async function vaultApply(k, srv, asked, prevVault) {
   if (!asked && !pristine() && !(srv.rev > (S.rev || 0))) throw new Error('older');
   const d = JSON.parse(await vaultDecrypt(k, srv.blob, srv.iv));
   if (!okBackup(d)) throw new Error('bad');
@@ -94,6 +94,13 @@ async function vaultApply(k, srv, asked) {
   if (tourIsOpen) closeTour(false); else { flush(); restructure(); }
   /* a cloud load is not a backup file: "Last backup" stays what the copy says (QC10 north-star F4) */
   if (wasEmpty) { try { cheer('Cloud copy loaded.'); } catch (e) { } }
+  else if (prevVault && prevVault.code !== vault.code && window.offerUndoG) {
+    /* this phone was not sharing this cloud copy before the load: Undo puts its own numbers back and goes back to how it was sharing (or
+       not) before, so nothing is ever sent over the other phone's copy (QC10 round 2 north-star finding 1) */
+    const pv = Object.assign({}, prevVault);
+    window.offerUndoG(oldSnap, `Cloud copy loaded. The numbers this phone had are kept for ${KEEP_DAYS} days. Undo puts them back on this phone and stops sharing the cloud copy here.`,
+      () => { clearTimeout(vaultTimer); vault = pv; vaultKeys = null; vaultNote = null; vaultSaveLocal(); S = normalize(JSON.parse(oldSnap)); paintVault(); });
+  }
   else if (window.offerUndoG) window.offerUndoG(oldSnap, `Cloud copy loaded. The numbers this phone had are kept for ${KEEP_DAYS} days. Undo puts them back here and in the cloud copy.`);
 }
 async function vaultLoadNewer() {
@@ -129,7 +136,7 @@ async function vaultFind(raw) {
 /* load a found copy and tie this device to it */
 async function vaultUse(f, asked) {
   const before = vault;
-  try { vault = { code: f.code, rev: 0, on: true, failAt: 0 }; vaultKeys = f.k; await vaultApply(f.k, f.srv, asked); vaultSaveLocal(); return true; }
+  try { vault = { code: f.code, rev: 0, on: true, failAt: 0 }; vaultKeys = f.k; await vaultApply(f.k, f.srv, asked, before); vaultSaveLocal(); return true; }
   catch (e) { vault = before; vaultKeys = null; vaultSaveLocal(); throw e; }
 }
 /* one sentence on a copy that vaultFind found: when it was saved and how much is in it (Settings and the welcome screen both show it before loading) */

@@ -60,9 +60,14 @@ const bar = p => p.evaluate(() => { const b = document.getElementById('undoBar')
   await until(async () => /Made-up noodles/.test(await receipts(B2.p)));
   const b3 = await bar(B2.p);
   ck('B2: Undo is on screen after Load', b3.shown && b3.undoInside, b3);
+  const puts0 = srv.st.puts;
   if (b3.shown) { await B2.p.evaluate(() => document.getElementById('undoGo').scrollIntoView({ block: 'center' })); await B2.p.tap('#undoGo'); await w(800); }
   const r3 = await receipts(B2.p);
   ck('B2: Undo puts back the numbers from before the load', /Made-up rice/.test(r3) && !/Made-up noodles/.test(r3), r3);
+  /* QC10 round 2 north-star finding 1: Undo on a phone that was not sharing a cloud copy before must leave the other phone's cloud copy alone */
+  await w(4000);
+  ck('B2: Undo sends nothing to the cloud copy (it belongs to phone A)', srv.st.puts === puts0, { before: puts0, after: srv.st.puts });
+  ck('B2: after Undo this phone no longer shares that cloud copy', await B2.p.evaluate(() => !JSON.parse(localStorage.getItem('mhr-vault') || '{}').code));
 
   /* ---------- phone E, 412 wide, no numbers of its own (QC10 north-star F2): the load offers no Undo, so one tap can never put the
      sample numbers back and send them over the only cloud copy ---------- */
@@ -70,9 +75,9 @@ const bar = p => p.evaluate(() => { const b = document.getElementById('undoBar')
   ck('E: a fresh phone with no numbers of its own', await E.p.evaluate(() => !(__t.S.receipts || []).length));
   await L.settings(E.p); await until(() => seen(E.p, '#vaultHave')); await tap(E.p, '#vaultHave');
   await E.p.type('#vaultIn', code); await tap(E.p, '#vaultUse'); await until(() => seen(E.p, '#vaultLoad')); await tap(E.p, '#vaultLoad');
-  /* the cloud copy holds B2's numbers by now (B2 tapped Undo, which sends them up): rice, or noodles if that was not sent yet */
-  await until(async () => /Made-up (noodles|rice)/.test(await receipts(E.p)));
-  ck('E: the load brought the cloud copy', /Made-up (noodles|rice)/.test(await receipts(E.p)));
+  /* the cloud copy still holds phone A's numbers: B2's Undo did not touch it */
+  await until(async () => /Made-up noodles/.test(await receipts(E.p)));
+  ck('E: the load brought phone A\'s copy (noodles), untouched by B2\'s Undo', /Made-up noodles/.test(await receipts(E.p)) && !/Made-up rice/.test(await receipts(E.p)));
   const e1 = await bar(E.p);
   ck('E: no Undo offered after the load (there was nothing of its own to go back to)', !e1.shown, e1);
   ck('E: it does not say numbers from before are kept', !/numbers from before/.test(await E.p.evaluate(() => document.body.innerText)));
@@ -81,7 +86,7 @@ const bar = p => p.evaluate(() => { const b = document.getElementById('undoBar')
   ck('E: Settings does not say a backup file was saved today (none was; QC10 north-star F4)', /^Last backup/.test(bw) && !/today/.test(bw), bw);
   await w(3000); ck('E: a few seconds later the loaded numbers are still there', /Made-up (noodles|rice)/.test(await receipts(E.p)));
   /* a phone that had numbers: Undo says plainly that it also goes to the cloud copy */
-  ck('B2 earlier: the bar on a phone with its own numbers says Undo also changes the cloud copy', /cloud copy/.test(b3.text || '') && /Undo/.test(b3.text || ''), b3.text);
+  ck('B2 earlier: the bar on a phone with its own numbers says Undo stops sharing the cloud copy here', /stops sharing the cloud copy/.test(b3.text || ''), b3.text);
 
   /* ---------- phone C, 412 wide: the code typed on the first-open screen ---------- */
   const D = await C.profile(srv.url, { tour: true });
