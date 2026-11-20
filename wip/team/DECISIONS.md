@@ -264,3 +264,7 @@ Said in MAIN 10's chat and relayed to coordinator 8 (not seen first hand).
 - Anything that needs him to judge the user experience waits for his full run on the finished build.
 - For everything else: do what the team thinks is best and do not wait for him.
 - When the build is ready he does one full run and gives all his feedback at once. So: no separate questions to him before that.
+
+## Mako is in Japan: times in Japan time (2026-11-20, relayed by MAIN 10 at 05:55 UTC, 14:55 JST)
+- Give Mako every time in Japan time (JST, UTC+9).
+- Do not say "overnight" or "tonight" unless it is night in Japan.
