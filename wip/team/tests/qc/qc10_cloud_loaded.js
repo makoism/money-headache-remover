@@ -67,6 +67,7 @@ const bar = p => p.evaluate(() => { const b = document.getElementById('undoBar')
   /* QC10 round 2 north-star finding 1: Undo on a phone that was not sharing a cloud copy before must leave the other phone's cloud copy alone */
   await w(4000);
   ck('B2: Undo sends nothing to the cloud copy (it belongs to phone A)', srv.st.puts === puts0, { before: puts0, after: srv.st.puts });
+  ck('B2: after Undo the Settings panel no longer says this device shares the cloud copy (QC10 round 3 north-star 1)', !/now shares the cloud copy/.test(await B2.p.evaluate(() => { const f = document.getElementById('vaultFlow'); return f && !f.hidden ? f.innerText : ''; })));
   ck('B2: after Undo this phone no longer shares that cloud copy', await B2.p.evaluate(() => !JSON.parse(localStorage.getItem('mhr-vault') || '{}').code));
 
   /* ---------- phone E, 412 wide, no numbers of its own (QC10 north-star F2): the load offers no Undo, so one tap can never put the

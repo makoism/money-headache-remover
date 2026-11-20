@@ -101,7 +101,7 @@ async function vaultApply(k, srv, asked, prevVault) {
        not) before, so nothing is ever sent over the other phone's copy (QC10 round 2 north-star finding 1) */
     const pv = Object.assign({}, prevVault);
     window.offerUndoG(oldSnap, `Cloud copy loaded. The numbers this phone had are kept for ${KEEP_DAYS} days. Undo puts them back on this phone and stops sharing the cloud copy here.`,
-      () => { clearTimeout(vaultTimer); vault = pv; vaultKeys = null; vaultNote = null; vaultSaveLocal(); S = normalize(JSON.parse(oldSnap)); paintVault(); });
+      () => { clearTimeout(vaultTimer); vault = pv; vaultKeys = null; vaultNote = null; vaultSaveLocal(); S = normalize(JSON.parse(oldSnap)); vaultFlowClose(); setTimeout(() => { try { cheer('Your own numbers are back. This phone no longer shares the cloud copy, and the cloud copy is unchanged.'); } catch (e) { } }, 50); });   /* the Done panel closes (QC10 round 3 north-star 1) */
   }
   else if (window.offerUndoG) window.offerUndoG(oldSnap, `Cloud copy loaded. The numbers this phone had are kept for ${KEEP_DAYS} days. Undo puts them back here and in the cloud copy.`);
 }
