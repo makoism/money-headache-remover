@@ -102,6 +102,9 @@ const plan = async p => { await L.tab(p, 'tab-month'); await L.clickText(p, 'Mon
     c = await chest();
     ck('bank after the card is −¥5,000: Free to spend is not called safe to spend', /not safe to spend yet/.test(c.aria), c);
     ck('the bank-now card says why: less than Free to spend, not safe to spend yet', /not safe to spend yet/.test(c.now), c.now);
+    /* QC10 round 2 numbers should-fix 4: the More card must not call it free to spend at the same time */
+    const more = await p.evaluate(() => { const d = document.getElementById('hSpend'); return d ? d.textContent.replace(/\s+/g, ' ') : ''; });
+    ck('the More card does not say "this part is free to spend" while it is not safe yet', !/this part is free to spend/.test(more) && /not safe to spend yet/i.test(more), more.slice(0, 300));
     /* QC10 round 2 numbers blocker 1: the bank must cover the bills still to pay (¥150,000) as well as Free to spend (¥40,000) */
     await click(p, '#mpCheck'); await L.typeIn(p, '#mpBankIn', '200000'); await click(p, '#mpBankSave'); await w(600);
     c = await chest();
