@@ -33,7 +33,7 @@ async function open(setup){const {b,p,errs}=await R.phone({w:390,h:844,dpr:1,mob
     S.plan.lines.find(l=>l.key==='bill:rent').def=1234.56;S.plan.lines.find(l=>l.key==='bill:food').def=400;S.plan.lines.find(l=>l.key==='envelope').def=300.44;
     S.receipts=[{id:'c1',d:'2026-11-05',a:0.01,c:'envelope',cn:'Free to spend',n:''},{id:'c2',d:'2026-11-06',a:19.99,c:'envelope',cn:'Free to spend',n:''}];__t.persist();__t.restructure();});
   const plan=await p.evaluate(()=>document.getElementById('p-month').innerText.replace(/\s+/g,' '));
-  ck('(5) Plan says "Planned $300.44 this month", never "$300"',/Planned \$300\.44 this month/.test(plan)&&!/Planned \$300 this month/.test(plan),plan.slice(0,200));
+  ck('(5) Plan says "Planned $300.44 in Nov", never "$300" (the month is named since QC10 should-fix 4)',/Planned \$300\.44 (this month|in [A-Z][a-z]{2})/.test(plan)&&!/Planned \$300 (this month|in [A-Z][a-z]{2})/.test(plan),plan.slice(0,200));
   ck('(5) Plan writes Bills and basics as $1,634.56, never $1,635',/\$1,634\.56/.test(plan)&&!/\$1,635\b/.test(plan));
   await L.tab(p,'tab-receipts');await w(600);
   const rc=await p.evaluate(()=>document.getElementById('p-receipts').innerText.replace(/\s+/g,' '));
