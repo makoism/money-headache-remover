@@ -182,15 +182,19 @@ const allKeys = S => ['a', 'b', 'side'].concat(S.plan.lines.map(l => l.key), S.p
 
 /* rounding step for default monthly amounts: whole tens for small currencies, hundreds for big ones */
 const roundUnit = S => { const pay = Math.max(0, ...MONTHS.map(ym => val(S, 'a', ym) + val(S, 'b', ym) + val(S, 'side', ym))); return pay >= 20000 ? 100 : pay >= 5000 ? 10 : 5; };
+/* the month the plan starts: the month of setup (S.cfg.planFrom), or START for a plan made before this rule or in the first month.
+   Months before it are not lived in the plan: no pay, no bills, no goal money, and the balance typed in setup is the bank at the start
+   of that month (QC round 4 money accuracy B1) */
+const planFromOf = S => { const f = S && S.cfg && S.cfg.planFrom; return typeof f === 'string' && MONTHS.indexOf(f) >= 0 ? f : START; };
 /* a goal with a date: spread what is still missing evenly over the months before it */
 function evenSave(S, g, ym) {
   const t = Math.max(0, g.target - g.start); if (t <= 0) return 0;
   const rb = readyBy(g); if (ym > rb) return 0;
-  const n = ymCount(SAVE_FROM, rb); if (n < 1) return 0;
+  const n = ymCount(planFromOf(S), rb); if (n < 1) return 0;
   const u = roundUnit(S); return Math.ceil(t / n / u) * u;
 }
 function goalDefault(S, g, ym) {
-  if (ym < SAVE_FROM) return 0;
+  if (ym < SAVE_FROM || ym < planFromOf(S)) return 0;
   if (g.due) return evenSave(S, g, ym);
   if (typeof g.monthly === 'number') return g.monthly;
   const rem = Math.max(0, capOf(g) - g.start); if (rem <= 0) return 0;
@@ -315,11 +319,13 @@ function calcAll(S) {
   const bal = {}; goals.forEach(g => { bal[g.id] = g.start; });
   const debts = debtsOf(S), dbal = {}; debts.forEach(d => { dbal[d.id] = d.balance; });
   const redirects = lines.filter(l => l.ends && l.redirect).map(l => ({ l, amt: val(S, l.key, l.ends) }));
+  const pf = planFromOf(S);
   for (const ym of MONTHS) {
-    const m = { ym };
-    m.a = val(S, 'a', ym); m.b = val(S, 'b', ym); m.side = val(S, 'side', ym);
-    m.draw = eg ? Math.min(val(S, 'draw', ym), Math.max(0, bal[eg.id])) : 0;
-    m.lines = lines.map(l => { const on = !l.ends || ym <= l.ends; return { id: l.id, key: l.key, jar: l.jar, name: l.name, on, v: on ? val(S, l.key, ym) : 0 }; });
+    const m = { ym }, off = ym < pf;   /* a month before the plan starts counts nothing */
+    if (off) m.before = true;
+    m.a = off ? 0 : val(S, 'a', ym); m.b = off ? 0 : val(S, 'b', ym); m.side = off ? 0 : val(S, 'side', ym);
+    m.draw = eg && !off ? Math.min(val(S, 'draw', ym), Math.max(0, bal[eg.id])) : 0;
+    m.lines = lines.map(l => { const on = !l.ends || ym <= l.ends; return { id: l.id, key: l.key, jar: l.jar, name: l.name, on, v: on && !off ? val(S, l.key, ym) : 0 }; });
     /* free to spend left unspent in a past month: nothing changes until the person answers (m.pendLeft is the open question).
        After "keep it in the bank" or a move to a goal, whatever is still unspent counts in the bank, so the figures match the real bank */
     /* S1 (gate, 38.30): no question before the first receipt is logged. Until then the person has not started logging, so a past month's
@@ -336,9 +342,9 @@ function calcAll(S) {
     m.jar = { nec: 0, play: 0, edu: 0, ffa: 0, give: 0 };
     m.lines.forEach(x => { m.jar[x.jar] += x.v; });
     m.billsTotal = m.jar.nec;
-    m.items = itemsFor(S, ym); m.itemsTotal = sum(m.items.map(i => +i.amount || 0));
+    m.items = off ? [] : itemsFor(S, ym); m.itemsTotal = sum(m.items.map(i => +i.amount || 0));
     m.debts = {}; m.debtPay = 0; m.debtInterest = 0;
-    debts.forEach(d => { const st = debtStep(d, dbal[d.id], val(S, 'debt:' + d.id, ym)); dbal[d.id] = st.bal; m.debts[d.id] = st; m.debtPay += st.pay; m.debtInterest += st.interest;
+    debts.forEach(d => { const st = off ? { start: dbal[d.id], interest: 0, extra: 0, pay: 0, bal: dbal[d.id] } : debtStep(d, dbal[d.id], val(S, 'debt:' + d.id, ym)); dbal[d.id] = st.bal; m.debts[d.id] = st; m.debtPay += st.pay; m.debtInterest += st.interest;
       st.paidPct = d.balance > 0 ? Math.max(0, Math.min(1, 1 - st.bal / d.balance)) : 1; st.paidPctWhole = d.balance > 0 ? Math.max(0, Math.min(100, Math.floor((200 * (d.balance - st.bal) + d.balance) / (2 * d.balance)))) : 100; });   /* 100 x (first - owed) / first, a half rounding up, worked out in whole numbers (40000 first, 36200 owed is 9.5%, so 10%; side B) */   /* how much of the debt is paid off by the end of this month */
     m.debtOwed = sum(debts.map(d => dbal[d.id]));
     /* named amounts for the cards and loans screens: owed at the start of the month, the minimum payments, and what is paid on top of them */
@@ -348,7 +354,7 @@ function calcAll(S) {
     const freed = redirects.reduce((acc, r) => acc + (ym > r.l.ends ? r.amt : 0), 0);
     const g = {};
     goals.forEach(gl => {
-      const isE = !!(eg && gl.id === eg.id), planned0 = val(S, 'goal:' + gl.id, ym) + (isE ? freed : 0);
+      const isE = !!(eg && gl.id === eg.id), planned0 = off ? 0 : val(S, 'goal:' + gl.id, ym) + (isE ? freed : 0);
       const room = Math.max(0, capOf(gl, ym) - bal[gl.id]);
       /* money from a month's unspent free to spend that was put toward this goal: only what the goal still has room for */
       const planned = planned0, up = m.topup && m.topup.id === gl.id ? round2(Math.max(0, Math.min(m.topup.amt, room - Math.min(planned0, room)))) : 0;
@@ -384,8 +390,8 @@ function calcAll(S) {
 function applyOverspend(S, months) {
   const st = { edu: 0, give: 0, ffa: 0 }, has = (S.receipts || []).length > 0; let cum = 0;
   for (const m of months) {
-    let inc = 0;
-    if (has) {
+    let inc = 0; if (has && m.before) m.ovB = {};
+    if (has && !m.before) {   /* a receipt dated before the plan starts is already in the balance typed at setup (QC round 4 money accuracy B1) */
       const rsm = receiptStats(S, m.ym), by = rsm.byJar;
       /* bills are judged line by line: a big grocery bill does not use up the rent that was not logged */
       const nl = (m.lines || []).filter(l => l.jar === 'nec');
@@ -943,11 +949,12 @@ function cleanItems(raw) {
 }
 const CFG_AMOUNTS = ['bankStart', 'minBank', 'ceiling', 'moveTarget', 'moveStart', 'travelTarget', 'travelStart', 'carTarget', 'carStart', 'rainyStart', 'rainyTarget', 'rainyStretch'];
 /* every setting this version knows; anything else in a saved copy is a newer version's and is kept untouched by the page (ui0.js) */
-const CFG_KNOWN = new Set(CFG_AMOUNTS.concat(['bankAt', 'bankNow', 'bankNowAt', 'loanLast', 'redirectLoan', 'moveMonth', 'carDue', 'aims']));   /* a known field the page took away on purpose (an Undo) is never carried back in from the stored copy */
+const CFG_KNOWN = new Set(CFG_AMOUNTS.concat(['planFrom', 'bankAt', 'bankNow', 'bankNowAt', 'loanLast', 'redirectLoan', 'moveMonth', 'carDue', 'aims']));   /* a known field the page took away on purpose (an Undo) is never carried back in from the stored copy */
 function cleanCfg(raw) {
   const out = {}; if (!isMap(raw)) return out;
   CFG_AMOUNTS.forEach(k => { const v = k === 'bankStart' ? cleanSigned(raw[k]) : cleanAmt(raw[k]); if (v !== null) out[k] = v; });
   if (typeof raw.loanLast === 'string' && MONTHS.indexOf(raw.loanLast) >= 0) out.loanLast = raw.loanLast;
+  if (typeof raw.planFrom === 'string' && MONTHS.indexOf(raw.planFrom) >= 0) out.planFrom = raw.planFrom;
   if (typeof raw.redirectLoan === 'boolean') out.redirectLoan = raw.redirectLoan;
   if (typeof raw.moveMonth === 'string' && YM_FORM.test(raw.moveMonth)) out.moveMonth = raw.moveMonth;
   if (typeof raw.carDue === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw.carDue)) out.carDue = raw.carDue;

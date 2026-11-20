@@ -572,7 +572,7 @@ function gwPlan() {
   if (!(cost > 0)) return { txt: 'Enter the cost to see the monthly amount.' };
   if (rem <= 0) return { txt: GW.kind && GW.kind.debt ? 'Already paid off in full.' : 'Already saved in full. Shows as full.', ok: true };
   if (GW.due && !GW.kind.em) {
-    const rb = readyBy({ due: GW.due }), n = rb ? ymCount(SAVE_FROM, rb) : 0;
+    const rb = readyBy({ due: GW.due }), n = rb ? ymCount(planFromOf(S), rb) : 0;
     if (n < 1) return { txt: 'Too soon to save anything by then. Pick a later date.', bad: true };
     return { txt: `${GW.kind && GW.kind.debt ? 'Pay about' : 'Save about'} <b>${fmt(wizardMonthly(S, GW.cost, GW.saved, n))}</b> a month for ${plural(n, 'month')}. ${GW.kind && GW.kind.debt ? 'Paid off' : 'Ready'} by ${dateLabel(GW.due)}.`, ok: true };
   }

@@ -270,7 +270,7 @@ function renderSettings() {
 function renderMonthTable() {
   const word = { good: 'On plan', tight: 'Tight', short: 'Short' }, icon = { good: IC.ok, tight: IC.warn, short: IC.bad };
   const fullIn = {}; S.plan.goals.forEach(g => { const r = C.reached[g.id]; if (g.target > 0 && r) (fullIn[r] = fullIn[r] || []).push(g); });
-  const rows = C.months.map(m => {
+  const rows = C.months.filter(m => !m.before).map(m => {   /* months before the plan starts are not part of it (QC round 4 money accuracy B1) */
     const bk = m.bankEnd, grew = (m.overNow || 0) > 0.004;
     const st = grew ? 'short' : statusOf(S, m), gs = fullIn[m.ym] || [];
     const marks = gs.map(g => `<span class="mt-g" style="--c:var(--c${g.slot})" title="${esc(g.name)} full">${HI.leaf}<span>${esc(g.name)} full</span></span>`).join('');

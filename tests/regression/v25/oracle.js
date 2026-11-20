@@ -42,8 +42,12 @@ const rateA = d => Math.round(d.apr * 100);
      it held at the start of the month, less this month's deposit. A goal that is gone, or full, takes nothing. (r.topup.usedC)
    - Whatever the goal did not take goes to the bank (r.creditC = counted - used), on top of the month's planned left over.
    - The plan lines stay as planned: a top-up is extra money for the goal, not part of the month's goals total or money out. */
+/* The plan's first month (QC round 4 money accuracy B1): cfg.planFrom when it is one of the page's months, otherwise the page's first
+   month. A month before it is not lived in the plan: no pay, no other pay, no money from the emergency fund, every line 0, no one-time
+   costs, no debt payment and no interest (what is owed stays as typed), no goal money, no month-end question. The balance typed is the
+   bank at the start of the plan's first month, and a goal with a date spreads what it still needs from that month. */
 function oracle(S, opt) {
-  const months = M.MONTHS, first = months[0];
+  const months = M.MONTHS, pf = (S.cfg && typeof S.cfg.planFrom === 'string' && months.indexOf(S.cfg.planFrom) >= 0) ? S.cfg.planFrom : months[0], first = pf;
   const C = x => Math.round((+x || 0) * 100), U = c => c / 100;
   const preset = (S.ui && S.ui.preset) || 'legacy';
   const payDefault = preset === 'blank' ? 0 : PAY_OF[preset] !== undefined ? PAY_OF[preset] : 35000;
@@ -79,19 +83,19 @@ function oracle(S, opt) {
   const asks = !!(opt && opt.cur) && !!(done.pay && done.bills && done.goals) && rcAll.length > 0;
   const jarOfKey = k => { const l = lines.find(x => x.key === k); return l ? l.jar : 'other'; };
   months.forEach(ym => {
-    const r = { ym };
-    r.a = valueOf('a', ym, () => payDefault); r.b = valueOf('b', ym, () => 0); r.side = valueOf('side', ym, () => 0);
-    const drawC = eg ? Math.min(C(valueOf('draw', ym, () => 0)), Math.max(0, bal[eg.id])) : 0;
+    const r = { ym }, before = ym < pf; if (before) r.notLived = true;
+    r.a = before ? 0 : valueOf('a', ym, () => payDefault); r.b = before ? 0 : valueOf('b', ym, () => 0); r.side = before ? 0 : valueOf('side', ym, () => 0);
+    const drawC = eg && !before ? Math.min(C(valueOf('draw', ym, () => 0)), Math.max(0, bal[eg.id])) : 0;
     r.draw = U(drawC);
     r.jar = { nec: 0, play: 0, edu: 0, ffa: 0, give: 0 };
-    r.lineVals = lines.map(l => { const on = !l.ends || ym <= l.ends; return { key: l.key, name: l.name, jar: l.jar, on, v: on ? lineValue(l, ym) : 0 }; });
+    r.lineVals = lines.map(l => { const on = !l.ends || ym <= l.ends; return { key: l.key, name: l.name, jar: l.jar, on, v: on && !before ? lineValue(l, ym) : 0 }; });
     r.lineVals.forEach(x => { r.jar[x.jar] += x.v; });
     r.bills = r.jar.nec;
-    r.items = (S.items[ym] || []).reduce((s, i) => s + (+i.amount || 0), 0);
+    r.items = before ? 0 : (S.items[ym] || []).reduce((s, i) => s + (+i.amount || 0), 0);
     r.jar.nec += r.items;
     r.debts = {}; r.debtPay = 0; r.debtInterest = 0; r.debtStart = 0; r.debtMin = 0;
     debts.forEach(d => {
-      const x = debtMonth(owed[d.id], rateA(d), d.min, Math.max(0, valueOf('debt:' + d.id, ym, () => d.extra)));
+      const x = before ? { start: owed[d.id], interest: 0, extra: 0, pay: 0, bal: owed[d.id] } : debtMonth(owed[d.id], rateA(d), d.min, Math.max(0, valueOf('debt:' + d.id, ym, () => d.extra)));
       /* how much of the first balance is paid off by the end of this month, as a whole percent (a half rounds up), never below 0; nothing owed at first counts as all paid */
       x.paidPctWhole = d.balance > 0 ? Math.max(0, Math.min(100, Math.floor((200 * (d.balance - x.bal) + d.balance) / (2 * d.balance)))) : 100;
       owed[d.id] = x.bal; r.debts[d.id] = x;
@@ -116,7 +120,7 @@ function oracle(S, opt) {
     r.beforeC = Object.assign({}, bal); r.g = {}; let goalsTotalC = 0;
     goals.forEach(g => {
       const isE = !!(eg && g.id === eg.id);
-      const plannedC = C(goalValue(g, ym)) + (isE ? freedC : 0);
+      const plannedC = before ? 0 : C(goalValue(g, ym)) + (isE ? freedC : 0);
       const roomC = Math.max(0, cap(g, ym) * 100 - bal[g.id]);
       const actualC = Math.min(plannedC, roomC);
       const upC = topup && topup.id === g.id ? Math.min(topup.amtC, roomC - actualC) : 0;   /* only the room left after this month's own saving */
@@ -195,7 +199,7 @@ function oracleOverspend(S, rows, lines) {
     r.rs = { total: U(total), count, byKey: inMoney(byKey), byJar: inMoney(byJar) };
     const logged = j => byJar[j] || 0;
     let now = 0; r.ovB = {};
-    if (has) {
+    if (has && !r.notLived) {   /* a month before the plan's first month: its receipts were spent before the balance was typed, so nothing is past plan */
       const bills = r.lineVals.filter(l => l.jar === 'nec');
       const parts = {
         nec: bills.reduce((s, l) => s + Math.max(0, (byKey[l.key] || 0) - C(l.v)), 0),
@@ -496,7 +500,8 @@ function monthEndCase(S0, R, tag) {
 }
 for (let t = 0; t < N; t++) {
   const S = randomState({ debts: true }), tag = '#' + t + ' ' + S.ui.cur;
-  if (t % 5 === 3) S.cfg.bankStart = -(1 + (t * 7919) % 250000);   /* every fifth plan starts overdrawn (38.31); kept out of randomState so the golden screens draw the same plans */
+  if (t % 5 === 3) S.cfg.bankStart = -(1 + (t * 7919) % 250000);
+  if (t % 4 === 1) S.cfg.planFrom = M.MONTHS[1 + (t * 31) % 6];   /* a quarter of the plans start after the first month (setup in a later month) */   /* every fifth plan starts overdrawn (38.31); kept out of randomState so the golden screens draw the same plans */
   const nRc = randomReceipts(S, rngOf(+(process.env.SEED || 1) * 1000003 + t * 7919 + 17));   /* most plans also get receipts, from their own random stream */
   if (nRc) RC.plans++;
   const stab = o => JSON.stringify(o, (k, v) => v && typeof v === 'object' && !Array.isArray(v) ? Object.keys(v).sort().reduce((a, x) => (a[x] = v[x], a), {}) : v);

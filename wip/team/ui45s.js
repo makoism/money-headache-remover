@@ -46,6 +46,7 @@ const STEP_MONEY = { id: 'money', part: PART.money, setup: true, focus: '#tourPa
     if (pay.value !== '' || tourTouched) { const v = num0(pay.value); setVal(S, 'a', START, v, 'after'); if (v > 0) markDone('pay'); }
     if (extra && (extra.value !== '' || tourTouched || S.steps.b)) setVal(S, 'b', START, num0(extra.value), 'after');
     if (bank && bank.value !== '' && isFinite(+bank.value)) { const nb = clampBank(bank.value, S); if (nb !== S.cfg.bankStart || !S.cfg.bankAt) setBankBalance(S, nb); }   /* the date moves only when the balance is typed, not when setup is walked again */
+    if (S.cfg.planFrom === undefined && nowYm() > START) S.cfg.planFrom = nowYm();   /* the plan starts in the month of setup (QC round 4 money accuracy B1) */
     if (S.cfg.minBank === undefined && payNow() > 0) { S.cfg.minBank = toUnit(payNow() * 0.1); S.ui.minAuto = S.cfg.minBank; } /* the safety line: a tenth of pay unless Settings says otherwise */
     persist();
   } };
@@ -332,7 +333,7 @@ function splitInit() {
   SPF.goal.last = -1; SPF.goal.hit = false;
   const amts = gs.map(g => val(S, 'goal:' + g.id, START)), sa = amts.reduce((a, b) => a + b, 0);
   if (gs.length && gs.every(g => hasOwnMonthly(S, g.id)) && sa > 0) { gsPct = lr(amts, 100); return; }
-  const B = gsBudget, needs = gs.map(g => (g.due && g.target > g.start ? goalDefault(S, g, SAVE_FROM) : 0)), open = gs.map(g => g.target > g.start), tn = needs.reduce((a, b) => a + b, 0);
+  const B = gsBudget, needs = gs.map(g => (g.due && g.target > g.start ? goalDefault(S, g, planFromOf(S)) : 0)), open = gs.map(g => g.target > g.start), tn = needs.reduce((a, b) => a + b, 0);
   let w;
   if (B > 0 && tn >= B) {
     /* more is wanted than there is: the dated goals share it by what they need, but a quarter always goes to the emergency fund */
