@@ -25,7 +25,7 @@ function paintBar(el, m, withLabels) {
 }
 function paintLegend(m) {
   const st0 = statusOf(S, m), J = jarsOf(S, m), has = J.income > 0 && !J.over;
-  const row = (cls, name, sub, v, p, neg) => `<div class="lg${neg ? ' neg' : ''}"><i class="${cls}"></i><span>${name}${sub ? `<small>${sub}</small>` : ''}</span><b>${fmt2(v)}</b><em>${p}</em></div>`;
+  const row = (cls, name, sub, v, p, neg) => `<div class="lg${neg ? ' neg' : ''}"><i class="${cls}"></i><span>${name}${sub ? `<small>${sub}</small>` : ''}</span><b>${fmt2(v)}</b><em>${p === '0%' && v >= 0.005 ? 'under 1%' : p}</em></div>`;   /* a piece with money never reads 0% (QC10 numbers should-fix 3) */
   $('#legend').classList.toggle('nopct', !has);
   const live = S.plan.goals.filter(g => g.target > 0 && m.g[g.id] && m.g[g.id].actual > 0).map(g => g.name);
   const ltsTag = live.length ? esc(live.slice(0, 2).join(', ') + (live.length > 2 ? ` and ${live.length - 2} more` : '')) : JARTAG.lts;
