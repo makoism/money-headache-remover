@@ -94,9 +94,13 @@ const plan = async p => { await L.tab(p, 'tab-month'); await L.clickText(p, 'Mon
     c = await chest();
     ck('bank after the card is −¥5,000: Free to spend is not called safe to spend', !/safe to spend/.test(c.aria) && /planned/.test(c.aria), c);
     ck('the bank-now card says why: less than Free to spend, not safe to spend yet', /not safe to spend yet/.test(c.now), c.now);
+    /* QC10 round 2 numbers blocker 1: the bank must cover the bills still to pay (¥150,000) as well as Free to spend (¥40,000) */
     await click(p, '#mpCheck'); await L.typeIn(p, '#mpBankIn', '200000'); await click(p, '#mpBankSave'); await w(600);
     c = await chest();
-    ck('bank after the card covers it again (¥185,000): safe to spend comes back', /safe to spend/.test(c.aria) && !/not safe to spend yet/.test(c.now), c);
+    ck('bank after the card ¥185,000 covers Free to spend but not the ¥150,000 of bills as well: still not safe to spend', !/safe to spend/.test(c.aria) && /not safe to spend yet/.test(c.now) && /bills still to pay/.test(c.now), c);
+    await click(p, '#mpCheck'); await L.typeIn(p, '#mpBankIn', '215000'); await click(p, '#mpBankSave'); await w(600);
+    c = await chest();
+    ck('bank after the card ¥200,000 covers bills ¥150,000 and Free to spend ¥40,000: safe to spend comes back', /safe to spend/.test(c.aria) && !/not safe to spend yet/.test(c.now), c);
     errsAll = errsAll.concat(errs); await b.close(); }
 
   const errs = errsAll.filter(e => !/favicon|net::ERR_FILE_NOT_FOUND|fonts/.test(e));

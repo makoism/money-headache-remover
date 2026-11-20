@@ -666,8 +666,11 @@ function freeOf(S, mv, p) {
    Bills and basics and Free to spend are this month's money, shown as what is left. Every burrow is money that piles up: the goals, and
    Education, Giving and Investing as running totals from the start of the plan (planned in, minus what was logged). Totals include what is planned for this month. */
 function mapOf(S, C, ym, V0) {
-  const m = C.byYm[ym], rs = receiptStats(S, ym), p = V0.play, fo = freeOf(S, V0.month, p), nw = nowOf(S), notCovered = nw.afterCards !== null && fo.free > 0 && nw.afterCards < fo.free;
+  const m = C.byYm[ym], rs = receiptStats(S, ym), p = V0.play, fo = freeOf(S, V0.month, p), nw = nowOf(S);
   const planNec = m.jar.nec, billsLeft = m.billsLeftM != null ? m.billsLeftM : Math.max(0, round2(planNec - (rs.byJar.nec || 0)));
+  /* money rule 3: Free to spend is safe only when the typed bank after the cards covers the bills still to pay and Free to spend
+     (QC10 numbers blocker 3, round 2 blocker 1) */
+  const needNow = round2(billsLeft + Math.max(0, fo.free)), notCovered = nw.afterCards !== null && fo.free > 0 && nw.afterCards < needNow;
   const st = { edu: 0, give: 0, ffa: 0 }, pl = { edu: 0, give: 0, ffa: 0 }, lg = { edu: 0, give: 0, ffa: 0 };
   for (const x of MONTHS) {
     if (x > ym) break;

@@ -3043,8 +3043,11 @@ function freeOf(S, mv, p) {
    Bills and basics and Free to spend are this month's money, shown as what is left. Every burrow is money that piles up: the goals, and
    Education, Giving and Investing as running totals from the start of the plan (planned in, minus what was logged). Totals include what is planned for this month. */
 function mapOf(S, C, ym, V0) {
-  const m = C.byYm[ym], rs = receiptStats(S, ym), p = V0.play, fo = freeOf(S, V0.month, p), nw = nowOf(S), notCovered = nw.afterCards !== null && fo.free > 0 && nw.afterCards < fo.free;
+  const m = C.byYm[ym], rs = receiptStats(S, ym), p = V0.play, fo = freeOf(S, V0.month, p), nw = nowOf(S);
   const planNec = m.jar.nec, billsLeft = m.billsLeftM != null ? m.billsLeftM : Math.max(0, round2(planNec - (rs.byJar.nec || 0)));
+  /* money rule 3: Free to spend is safe only when the typed bank after the cards covers the bills still to pay and Free to spend
+     (QC10 numbers blocker 3, round 2 blocker 1) */
+  const needNow = round2(billsLeft + Math.max(0, fo.free)), notCovered = nw.afterCards !== null && fo.free > 0 && nw.afterCards < needNow;
   const st = { edu: 0, give: 0, ffa: 0 }, pl = { edu: 0, give: 0, ffa: 0 }, lg = { edu: 0, give: 0, ffa: 0 };
   for (const x of MONTHS) {
     if (x > ym) break;
@@ -17135,7 +17138,7 @@ function renderMap() {
   const nowCard = `<div class="mp-now"><p class="mp-now-h">In your bank now ${NOW}</p>${hasBank ? `<b class="mp-now-v${NW.bank < 0 ? ' bad' : ''}">${fmt2(NW.bank)}</b>${NW.bankAt ? `<p class="cap mp-fresh">Balance you entered on ${dayTxt(NW.bankAt)}</p>` : ''}` : ''}
     ${asking ? `<div class="mp-ask"><label for="mpBankIn">What does your bank app show today?</label><p class="cap">Open your bank app and type the balance it shows, plus any cash you keep at home</p>
       <div class="mp-askrow"><div class="inp"><span class="yen cs"></span><input id="mpBankIn" type="number" inputmode="text" data-neg="ok" step="any" placeholder="${hasBank ? esc(NW.bank.toLocaleString('en-US', { maximumFractionDigits: 2 })) : '0'}" value=""></div><button type="button" class="btn solid small" id="mpBankSave">Save</button></div>${hasBank ? '<button type="button" class="link" id="mpBankNo">Keep the old balance</button>' : ''}</div>` : ''}
-    ${cardRows}${notSafe ? `<p class="mp-after">Your bank${NW.cards.length ? ' after the cards' : ''} is less than Free to spend, so Free to spend is planned, not safe to spend yet.</p>` : ''}${cardForm}
+    ${cardRows}${notSafe ? `<p class="mp-after">Your bank${NW.cards.length ? ' after the cards' : ''} is less than your bills still to pay and Free to spend, so Free to spend is planned, not safe to spend yet.</p>` : ''}${cardForm}
     ${!asking || !ce ? `<p class="mp-act">${asking ? '' : '<button type="button" class="btn small" id="mpCheck">Check your bank</button>'}${ce || smpOn ? '' : ` <button type="button" class="btn small" id="mpCardAdd">${NW.cards.length ? 'Add another card' : 'Add a card you pay in full'}</button>`}</p>` : ''}</div>`;
   /* what is owed, in one line, only when something is (A4) */
   const oweLine = M.owed > 0 ? `<p class="cap mp-owe">You owe ${fmt2(M.owed)} at the end of ${esc(mon)} ${PLN}: cards, loans and debt burrows.</p>` : '';
