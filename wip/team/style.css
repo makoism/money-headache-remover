@@ -1919,3 +1919,5 @@ ol.steps li { margin: 0 0 4px; }
 /* QC round 4 layout and touch (confusing 1): an amount in "Where your money sits" never breaks inside the number; only the name wraps */
 .mp-key b { white-space: nowrap; overflow-wrap: normal; }
 .mp-key li { flex-wrap: wrap; min-width: 0; }
+/* the Put them back link in Settings is a full tap target (44px) */
+#keepBack { min-height: 44px; display: inline-flex; align-items: center; }

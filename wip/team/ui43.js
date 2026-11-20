@@ -62,6 +62,10 @@ function markBackup() { S.ui.bk = Date.now(); delete S.ui.bkLater; persist(); pa
 function paintBk() {
   const el = $('#bkWhen'); if (!el) return; const a = bkAge();
   el.textContent = a === null ? 'Last backup: never.' : a === 0 ? 'Last backup: today.' : `Last backup: ${a === 1 ? '1 day' : a + ' days'} ago.`;
+  /* the numbers from before a big change stay one tap away here for as long as they are kept, after the Undo bar has gone (QC round 4
+     data safety 5, north-star agent check C8) */
+  const kl = $('#keepLine'), k = S.ui && S.ui.keep, ok = !!(k && typeof k.snap === 'string' && +k.t > 0 && Date.now() - k.t <= KEEP_DAYS * 864e5);
+  if (kl) { kl.hidden = !ok; if (ok) $('#keepTxt').textContent = `${k.why || 'Your numbers changed.'} The numbers from before are kept until ${dateLabel(ymd(new Date(+k.t + KEEP_DAYS * 864e5)))}.`; }
 }
 /* a backup is due: numbers in, no cloud copy, none saved for three weeks, and Later not pressed this week */
 function backupDue() {
