@@ -2,6 +2,12 @@
 
 The coordinator is the one session Mako talks to. It records his decisions in DECISIONS.md (and NORTH_STAR.md, LAUNCH_CHECKLIST.md), starts and messages working sessions, and brings their results back to him. Working sessions take direction from nowhere else. The coordinator hands off at about 150k tokens of history, like every session.
 
+## 2026-11-20 coordinator 7 notes
+- 15:30 to 01:07 UTC: the Fable limit ran out (resets 22 Nov 00:00 UTC); MAIN 9 and coordinator 7 stalled. Mako switched both to claude-opus-5-5. All new sessions and helpers on Opus until the reset.
+- MAIN 9 (session_01BFpKEWwQbkaVd618gWHwiX) stopped at about 195k after Q3 (1b151c0). MAIN 10 = session_01BFpKEV8jRCDQnxRTVqiUZr, Opus, started 01:32 UTC from RESUME top entry: Q2, Q7, SF4, then end-of-queue steps.
+- Watchdog (hourly fresh session that restarts a MAIN stuck on a limit) waits for Mako's OK.
+- Mako got the morning package at 01:25 UTC (link, five screenshots, what to try, his calls).
+
 ## 2026-11-19, handoff 6 (coordinator 6 to coordinator 7) READ THIS FIRST
 
 Coordinator 6 (session_01BFpKEZRNfExnGehHucxHPi) was at 153k tokens at 15:15 UTC after 2.25 hours and handed off. Same rules as handoff 5: every turn costs, answer in two lines, never list_events on a main session, do not read NORTH_STAR, DECISIONS or the checklist in full.
