@@ -4,6 +4,8 @@ Written 2026-11-18 on branch `wip-38.31`. Read this whole file before touching a
 
 ## 0. Handoff (latest first)
 
+**2026-11-20 (16:50 JST), MAIN 10 update.** Tip 2c65906. Three QC fix rounds done (findings, fixes and open items in `QC10_FIX_ROUND.md`); hard gates pass every round; the remaining open items are mostly for Mako's own run. `check.sh full` last run on 834b778 (one real failure, fixed 53bb8cb; two timing ones). **Leftover Chrome processes make the guard and timing tests fail: run `pkill -f chrome-linux64/chrome` before check.sh when nothing else is running.** The preview artifact cannot be republished: the Artifact tool requires reading every line of the 1.87 MB live page (about 800k tokens) first; `scratchpad` edits approach failed for that reason. Mako got the build file and screenshots (preview/after) by SendUserFile instead and will do his full run on it. Next: wait for Mako's feedback; meanwhile the small open items in QC10_FIX_ROUND.md (not the ones marked for Mako).
+
 **2026-11-20 (about 04:45 UTC), MAIN 10 state (still running; Mako said in MAIN 10's chat to use all the credits, so it did not hand off at 150k).** Report to coordinator 8, **session_01BFpKEXZxmzMuFVBB5UQxLE** (send_message). Tip 94e5be5 or later.
 Done by MAIN 10 (test first, one item per commit, check.sh fast ALL GOOD after each):
 - **Q2** afd2464 (qc10_bank_story.js), **Q7** a243bb4 (qc10_cloud_loaded.js), **SF4** d3d86e5 (qc10_paste_confirm.js), **SF5** 38b5d81 (qc10_stretch_from.js; the oracle got the same rule, 0 mismatches), **SF6** 5a800d4 and edb78d1 (qc10_borrow_fit.js).
