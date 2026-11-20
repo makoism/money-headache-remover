@@ -33,7 +33,7 @@ const tab = (p, t) => p.evaluate(t => (document.querySelector(`[data-tab="${t}"]
   });
   await w(1200); await coach(p);
   ok(/Main goal Japan trip A week in Hokkaido with Mum/.test(seenDone), 'Setup done leads with the goal and the reason: ' + seenDone.slice(0, 160));
-  ok(/of ¥300,000 so far, and your plan adds ¥[\d,]+ a month\. Full/.test(seenDone), 'Setup done says what each month adds and when it is full');
+  ok(/saved now(, ¥[\d,]+ by the end of [A-Z][a-z]{2})?, of ¥300,000\. Your plan adds ¥[\d,]+ a month\. Full/.test(seenDone), 'Setup done says what each month adds and when it is full');
   /* RETIRED 2026-11-18: 'Setup done mentions where leftover play money can go' described the v34 top-up; since 38.30 the month end asks instead (wording, not numbers or data) */
   // ---- Home hero
   let hero = await txt(p, '#hHero');

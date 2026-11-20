@@ -250,7 +250,7 @@ const TOUR = [
         const dep = r ? f.C.byYm[nowYm()].g[r.id].actual : 0;
         const goal = mg ? `<div class="tour-goal" style="--c:var(--c${mg.slot})"><p class="tour-goal-k">Main goal</p><p class="tour-goal-n">${esc(mg.name)}</p>${mg.why ? `<p class="tour-goal-w">${esc(mg.why)}</p>` : ''}
           <div class="hg-b" role="img" aria-label="${r.pct} percent"><i style="width:${Math.min(100, r.pct)}%"></i></div>
-          <p class="tour-goal-l"><b>${fmt2(r.saved)}</b> of ${fmt2(r.target)}${dep > 0 && r.pct < 100 ? ` so far, and your plan adds <b>${fmt2(dep)}</b> a month` : ''}. ${when}</p></div>` : '';
+          <p class="tour-goal-l"><b>${fmt2(r.savedNow)}</b> saved now${r.saved !== r.savedNow ? `, <b>${fmt2(r.saved)}</b> by the end of ${monthLabel(nowYm(), true)}` : ''}, of ${fmt2(r.target)}.${dep > 0 && r.pct < 100 ? ` Your plan adds <b>${fmt2(dep)}</b> a month.` : ''} ${when}</p></div>` : '';
         const ok = f.st === 'even' || f.st === 'spare';
         /* on the app's own address: one tap keeps an encrypted copy in the cloud, so a lost phone does not mean lost numbers */
         const cloud = typeof vaultAvailable === 'function' && vaultAvailable() && !(vault && vault.on)
