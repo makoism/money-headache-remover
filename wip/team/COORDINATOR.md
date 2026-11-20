@@ -26,6 +26,9 @@ Q12 7f3d333; Q10 SF2, SF1, SF3 8787fdf and SF4 d3d86e5; Q3 1b151c0 ($220 vs $200
 - When the preview is republished: send Mako the after screenshots as files and the link, with the two percentages first.
 - Stopped, do not message: MAIN 9 (session_01BFpKEWwQbkaVd618gWHwiX) and all older sessions.
 
+### Watchdog (03:18 UTC, Mako asked MAIN 10 to fix it)
+Old trig_01AWkE9jZF9o2wj3jnzCPzNh deleted (fresh scheduled sessions could not load session tools). New: standing session "Burrow watchdog (standing, hourly)" session_01BFpKEYWd9Kcs4FkcwuNGo1, fired at :33 each hour by trig_015mKtiUhZRgbkacuPYA8Ks6 (checked). It pushes to Mako only when something is stuck and may start one replacement MAIN if the build session dies; it messages the coordinator when it does.
+
 ### Timers
 Coordinator 7's timer is deleted. Set your own (about 45 minutes).
 
