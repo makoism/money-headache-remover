@@ -46,7 +46,7 @@ const STEP_MONEY = { id: 'money', part: PART.money, setup: true, focus: '#tourPa
     if (pay.value !== '' || tourTouched) { const v = num0(pay.value); setVal(S, 'a', START, v, 'after'); if (v > 0) markDone('pay'); }
     if (extra && (extra.value !== '' || tourTouched || S.steps.b)) setVal(S, 'b', START, num0(extra.value), 'after');
     if (bank && bank.value !== '' && isFinite(+bank.value)) { const nb = clampBank(bank.value, S); if (nb !== S.cfg.bankStart || !S.cfg.bankAt) setBankBalance(S, nb); }   /* the date moves only when the balance is typed, not when setup is walked again */
-    if (S.cfg.minBank === undefined && payNow() > 0) S.cfg.minBank = toUnit(payNow() * 0.1); /* the safety line: a tenth of pay unless Settings says otherwise */
+    if (S.cfg.minBank === undefined && payNow() > 0) { S.cfg.minBank = toUnit(payNow() * 0.1); S.ui.minAuto = S.cfg.minBank; } /* the safety line: a tenth of pay unless Settings says otherwise */
     persist();
   } };
 

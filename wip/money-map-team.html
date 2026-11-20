@@ -4511,7 +4511,7 @@ const ACT = {
     const row = { id: id || ('k' + Date.now().toString(36)), name: o.name, owed: clampAmt(o.owed, S), payDay: o.payDay, at };
     const i = list.findIndex(k => k.id === id); if (i >= 0) list[i] = row; else list.push(row); S.cards = cleanCards(list); }); },
   removeCard(id) { return ACT.tx('remove card', () => { S.cards = cleanCards(S.cards).filter(k => k.id !== id); }); },
-  setMinBalance(v) { return one('minimum balance', () => { S.cfg.minBank = clampAmt(v, S); }); },
+  setMinBalance(v) { return one('minimum balance', () => { S.cfg.minBank = clampAmt(v, S); if (S.ui) delete S.ui.minAuto; }); },   /* typed: kept when the currency changes */
   setCeiling(v) { return one('spending ceiling', () => { S.cfg.ceiling = clampAmt(v, S); }); },
 
   /* ---- lines (bills and the other jars) ---- */
@@ -5521,7 +5521,7 @@ const STEP_MONEY = { id: 'money', part: PART.money, setup: true, focus: '#tourPa
     if (pay.value !== '' || tourTouched) { const v = num0(pay.value); setVal(S, 'a', START, v, 'after'); if (v > 0) markDone('pay'); }
     if (extra && (extra.value !== '' || tourTouched || S.steps.b)) setVal(S, 'b', START, num0(extra.value), 'after');
     if (bank && bank.value !== '' && isFinite(+bank.value)) { const nb = clampBank(bank.value, S); if (nb !== S.cfg.bankStart || !S.cfg.bankAt) setBankBalance(S, nb); }   /* the date moves only when the balance is typed, not when setup is walked again */
-    if (S.cfg.minBank === undefined && payNow() > 0) S.cfg.minBank = toUnit(payNow() * 0.1); /* the safety line: a tenth of pay unless Settings says otherwise */
+    if (S.cfg.minBank === undefined && payNow() > 0) { S.cfg.minBank = toUnit(payNow() * 0.1); S.ui.minAuto = S.cfg.minBank; } /* the safety line: a tenth of pay unless Settings says otherwise */
     persist();
   } };
 
@@ -6192,7 +6192,7 @@ function importApply() {
     if (pay && pay.on && pay.a > 0) { setVal(S, 'a', START, pay.a, 'after'); markDone('pay', true); }
     if (other && other.on) setVal(S, 'b', START, other.a, 'after');
     if (bal && bal.on) setBankBalance(S, bal.a);
-    if (S.cfg.minBank === undefined && payNow() > 0) S.cfg.minBank = toUnit(payNow() * 0.1);
+    if (S.cfg.minBank === undefined && payNow() > 0) { S.cfg.minBank = toUnit(payNow() * 0.1); S.ui.minAuto = S.cfg.minBank; }
     const subs = picked.filter(r => r.on && r.k.indexOf('sub:') === 0 && r.a > 0), loans = picked.filter(r => r.on && r.k.indexOf('loan:') === 0 && r.a > 0), card = get('card');
     const chosen = IMP_BILLS.filter(id => { const r = get('bill:' + id); return r && r.on && r.a > 0 && lineById(S, id); });
     if (subs.length && lineById(S, 'subs')) chosen.push('subs');
@@ -13507,7 +13507,13 @@ function syncTourCur() {
   $$('#tourBody input[name=tourCur]').forEach(i => { i.checked = i.value === cur; i.closest('.chip').classList.toggle('on', i.checked); });
   const more = $('#tourCurMore'); if (more) more.value = TOUR_CURS.indexOf(cur) < 0 ? cur : '';
 }
-function setTourCur(v) { if (!CURS.some(c => c[0] === v)) return; if (changeCurrency(v)) restructure(); syncTourCur(); $$('#tour .cs').forEach(e => { e.textContent = sym(); }); }
+function setTourCur(v) { if (!CURS.some(c => c[0] === v)) return;
+  /* the minimum setup made by itself from the pay (a tenth) is made again from the pay in the new currency; one the person typed is kept
+     (QC round 4 north-star agent check B1: Back, then Dollar, kept the yen 20000) */
+  const autoMin = v !== S.ui.cur && S.ui.minAuto !== undefined && S.cfg.minBank === S.ui.minAuto;
+  const changed = changeCurrency(v);
+  if (autoMin && S.ui.cur === v) { delete S.cfg.minBank; delete S.ui.minAuto; persist(); }
+  if (changed) restructure(); syncTourCur(); $$('#tour .cs').forEach(e => { e.textContent = sym(); }); }
 
 /* The welcome video. HELLO_FILE is a small copy that sits next to the page and plays right on the screen, with HELLO_POSTER as its cover.
    HELLO_VIDEO is the full version on Google Drive (a Drive file link or a Loom share link both work): it is the "does not play?" link, and the

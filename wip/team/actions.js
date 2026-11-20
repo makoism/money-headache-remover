@@ -94,7 +94,7 @@ const ACT = {
     const row = { id: id || ('k' + Date.now().toString(36)), name: o.name, owed: clampAmt(o.owed, S), payDay: o.payDay, at };
     const i = list.findIndex(k => k.id === id); if (i >= 0) list[i] = row; else list.push(row); S.cards = cleanCards(list); }); },
   removeCard(id) { return ACT.tx('remove card', () => { S.cards = cleanCards(S.cards).filter(k => k.id !== id); }); },
-  setMinBalance(v) { return one('minimum balance', () => { S.cfg.minBank = clampAmt(v, S); }); },
+  setMinBalance(v) { return one('minimum balance', () => { S.cfg.minBank = clampAmt(v, S); if (S.ui) delete S.ui.minAuto; }); },   /* typed: kept when the currency changes */
   setCeiling(v) { return one('spending ceiling', () => { S.cfg.ceiling = clampAmt(v, S); }); },
 
   /* ---- lines (bills and the other jars) ---- */

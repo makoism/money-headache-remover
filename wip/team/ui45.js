@@ -30,7 +30,13 @@ function syncTourCur() {
   $$('#tourBody input[name=tourCur]').forEach(i => { i.checked = i.value === cur; i.closest('.chip').classList.toggle('on', i.checked); });
   const more = $('#tourCurMore'); if (more) more.value = TOUR_CURS.indexOf(cur) < 0 ? cur : '';
 }
-function setTourCur(v) { if (!CURS.some(c => c[0] === v)) return; if (changeCurrency(v)) restructure(); syncTourCur(); $$('#tour .cs').forEach(e => { e.textContent = sym(); }); }
+function setTourCur(v) { if (!CURS.some(c => c[0] === v)) return;
+  /* the minimum setup made by itself from the pay (a tenth) is made again from the pay in the new currency; one the person typed is kept
+     (QC round 4 north-star agent check B1: Back, then Dollar, kept the yen 20000) */
+  const autoMin = v !== S.ui.cur && S.ui.minAuto !== undefined && S.cfg.minBank === S.ui.minAuto;
+  const changed = changeCurrency(v);
+  if (autoMin && S.ui.cur === v) { delete S.cfg.minBank; delete S.ui.minAuto; persist(); }
+  if (changed) restructure(); syncTourCur(); $$('#tour .cs').forEach(e => { e.textContent = sym(); }); }
 
 /* The welcome video. HELLO_FILE is a small copy that sits next to the page and plays right on the screen, with HELLO_POSTER as its cover.
    HELLO_VIDEO is the full version on Google Drive (a Drive file link or a Loom share link both work): it is the "does not play?" link, and the

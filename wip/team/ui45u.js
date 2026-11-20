@@ -267,7 +267,7 @@ function importApply() {
     if (pay && pay.on && pay.a > 0) { setVal(S, 'a', START, pay.a, 'after'); markDone('pay', true); }
     if (other && other.on) setVal(S, 'b', START, other.a, 'after');
     if (bal && bal.on) setBankBalance(S, bal.a);
-    if (S.cfg.minBank === undefined && payNow() > 0) S.cfg.minBank = toUnit(payNow() * 0.1);
+    if (S.cfg.minBank === undefined && payNow() > 0) { S.cfg.minBank = toUnit(payNow() * 0.1); S.ui.minAuto = S.cfg.minBank; }
     const subs = picked.filter(r => r.on && r.k.indexOf('sub:') === 0 && r.a > 0), loans = picked.filter(r => r.on && r.k.indexOf('loan:') === 0 && r.a > 0), card = get('card');
     const chosen = IMP_BILLS.filter(id => { const r = get('bill:' + id); return r && r.on && r.a > 0 && lineById(S, id); });
     if (subs.length && lineById(S, 'subs')) chosen.push('subs');
