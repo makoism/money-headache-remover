@@ -3085,6 +3085,8 @@ function viewOf(S, C, ym, today) {
     perWeek: play.perWeek != null ? Math.max(0, map.free) / (play.daysLeft / 7) : null,   /* safe Free to spend a week for the days left */
     perDay: map.free > 0 && play.daysLeft > 0 ? map.free / play.daysLeft : null,
     edu: tileOf('edu'), give: tileOf('give'),
+    pay: pcl.pay, borrowCover: pcl.borrowCover,           /* real pay (no borrowed money in it) and, in a month covered by borrowing, the borrow and how far the plan passes the pay */
+    billsPassPay: !!(pcl.borrowCover && nec.planned - pcl.pay >= pcl.borrowCover.gap - 0.004),   /* the bills alone pass the pay by all of that gap */
     otherPlaces: m.jar.play + m.jar.edu + m.jar.ffa + m.jar.give, leftAbs: Math.abs(m.left)   /* for the window that explains the month */
   };
   return { ym, main, goals, live: goals.filter(r => r.live).length, play, buckets, otherSpent: rs.byJar.other || 0, month, map, cells };
@@ -3220,6 +3222,9 @@ function planCells(S, C, ym) {
   return {
     pay: m.pool.in - dw,                           /* real pay this month: what came in, less what was borrowed */
     unplaced: Math.max(0, (L - dw) - over),        /* pay with no place, less what spending past plan already took from it */
+    /* a month that balances only by borrowing from the emergency fund: the plan spends more than the pay and the borrow covers the rest. It is not
+       on plan, whatever the balance (QC round 8 north-star gate 1). gap: how far the plan passes the pay; draw: what was borrowed */
+    borrowCover: dw > 0 && L > -0.005 && L - dw < -0.004 ? { draw: dw, gap: round2(dw - L) } : null,
     overPay: -(L - dw), pastPay: L < 0 ? round2(-L) : 0,   /* how far the plan goes past pay this month, for All months (QC10 round 3 numbers should-fix 5) */                            /* how much more than the pay the month plans to spend (shown in a tight month) */
     bankGap: Math.max(0, cfg(S, 'minBank') - m.bankEnd),   /* how far the bank ends under the safety minimum */
     bankBelowZero: -m.bankEnd,                     /* how far below zero the bank ends (shown only when it is) */
@@ -4984,6 +4989,7 @@ function render() {
   const overFree = playSpent > play && play >= 0 && rs.count > 0, overAny = !overFree && (m.overNow || 0) > 0.004;
   if (overFree || overAny) { chip.className = 'chip short'; chip.innerHTML = IC.bad + (overFree && !((m.overNec || 0) > 0.004) ? 'Over Free to spend' : 'Over plan'); }
   else if (Lun >= roundUnit(S) && st === 'good') { chip.className = 'chip tight'; chip.innerHTML = IC.warn + 'Not placed yet'; }
+  else if (st === 'good' && PC.borrowCover) { chip.className = 'chip tight'; chip.innerHTML = IC.warn + 'Tight month'; }   /* balances only by borrowing: the model's tight words, never "On plan" (QC round 8 north-star gate 1) */
   else chip.innerHTML = st === 'good' ? IC.ok + 'On plan' : st === 'tight' ? IC.warn + 'Tight month' : IC.bad + 'Short';
   const gap = PC.bankGap;
   let vt;
@@ -5017,7 +5023,7 @@ function render() {
   const covered = Ld < 0 && dw > 0 && dw >= -Ld - 0.004;   /* more planned than pay, all of it borrowed from the emergency fund: on plan, so not alarm red (38.31 north-star round 3) */
   $('#dockNum').textContent = allPlaced ? '' : bankOnly ? fmt2(PC.bankBelowZero) : pin > 0 || L < 0 ? fmt2(PC.dockAbs) : ''; $('#dockNum').style.color = (Ld < 0 && !covered) || bankOnly ? 'var(--bad)' : covered ? 'var(--warn)' : '';
   const dockS = pin <= 0 ? null : `${Ld < 0 ? (sampleOn() && !(S.ui.done || {}).pay ? 'more planned than the sample pay in ' : 'more planned than your pay in ') + mon + (dw > 0 ? ', ' + fmt(dw) + ' borrowed from your emergency fund' : '') : (allPlaced ? (sampleOn() && !(S.ui.done || {}).pay ? 'All of the sample pay has a place in ' : usedUp ? 'All of your pay is used in ' : 'All of your pay has a place in ') : sampleOn() && !(S.ui.done || {}).pay ? 'of the sample pay not placed yet in ' : 'of your pay not placed yet in ') + mon}`;   /* S6: one word, "not placed yet" (38.29 glossary) */
-  const dockSt = overFree && !((m.overNec || 0) > 0.004) ? 'Over Free to spend' : overFree || overAny ? 'Over plan' : Ld >= roundUnit(S) && st === 'good' ? 'Not placed yet' : st === 'good' ? 'On plan' : st === 'tight' ? 'Tight' : 'Short';
+  const dockSt = overFree && !((m.overNec || 0) > 0.004) ? 'Over Free to spend' : overFree || overAny ? 'Over plan' : Ld >= roundUnit(S) && st === 'good' ? 'Not placed yet' : st === 'good' && PC.borrowCover ? 'Tight' : st === 'good' ? 'On plan' : st === 'tight' ? 'Tight' : 'Short';
   $('#dockTxt').textContent = pin <= 0 ? (L < 0 ? 'planned with no pay entered in ' + mon + '. Add your pay in Plan.' : bankOnly ? 'below zero in the bank at the end of ' + mon + ', with no pay entered. Add your pay in Plan.' : 'No plan yet. Add your pay in Plan.') : dockS + (dockS.toLowerCase().includes(dockSt.toLowerCase()) ? '' : ' · ' + dockSt);   /* the status word is left out when the sentence already says it, never "not placed yet in Nov · Not placed yet" (QC round 6 wording 7) */
 
   /* the details */
@@ -16241,6 +16247,10 @@ function renderStatus() {
   else { cls = 'short'; word = 'Short'; line = `Not enough for ${mon}. Your bank would end at ${fmt(m.bankEnd)}, under your minimum balance of ${fmt(floor)}. Change it in Settings, or open Plan to fix the month.`; }
   if (nowNeg && m.status !== 'good' && m.inflow > 0 && !sampleOn()) line = nowLead + ' ' + line;   /* a tight, short or below-zero month says the bank today first */
   if (m.status === 'good' && word === 'You are okay' && (m.overNow || 0) > 0.004) { word = 'Over plan'; cls = 'tight'; line = `${fmt2(m.overNow)} went past the plan this month and came out of your bank. ` + line; }
+  { const bc = m.status === 'good' && !sampleOn() && V.cells.borrowCover; if (bc) {   /* a month that balances only by borrowing from the emergency fund is never "You are okay" (QC round 8 north-star gate 1) */
+    const bw = `Covered this month by ${fmt2(bc.draw)} from your emergency fund. ${V.cells.billsPassPay ? 'Your bills are' : 'Your plan spends'} ${fmt2(bc.gap)} more than your pay.`;
+    line = /^(Bills are covered|Your bills fit in your pay) and burrows are planned for\./.test(line) ? line.replace(/^(Bills are covered|Your bills fit in your pay) and burrows are planned for\./, bw) : bw + ' ' + line;
+    if (word === 'You are okay') { word = 'Tight month'; cls = 'tight'; } } }
   let wk = '';
   if (cls && $('#hNext').hidden) wk = streakInfo().done ? '<p class="hst-w on">You logged receipts this week.</p>' : '<p class="hst-w">Nothing logged this week yet, log by Sunday</p>';
   /* the next three months, so one tight month ahead is never a surprise */
@@ -17285,8 +17295,9 @@ function openWhy(kind) {
     foot = (notSafe ? 'Not safe to spend yet: your bank is less than your bills still to pay and Free to spend. It becomes safe to spend when your pay lands: then tap Check your bank on Home and type the new balance. ' : '') + 'Planned is the Free to spend total on the Plan page. Logged is every receipt in Free to spend this month.';
   } else {
     title = 'Where you stand in ' + mon;
-    rows = [['Pay and other money in', fmt(m.inflow)], ['Bills, one-time costs and card payments', MINUS + fmt(m.jar.nec)], ['Goal burrows', MINUS + fmt(m.goalsTotal)], ['Free to spend, Education, Investing, Giving', MINUS + fmt(V.cells.otherPlaces)], ['Left in the month', (m.left < 0 ? MINUS : '') + fmt2(V.cells.leftAbs)], ['Balance at the start', fmt2(m.bankStart)]].concat((m.overNow || 0) > 0.004 ? [[`Spent past the plan in ${mon}`, MINUS + fmt2(m.overNow)]] : [], (m.credit || 0) > 0.004 ? [['Free to spend not spent, back in the bank', '+' + fmt2(m.credit)]] : [], [['Balance at the end', fmt2(m.bankEnd)], ['Your minimum balance', fmt(floor)]]);
-    foot = m.bankEnd < floor ? 'The balance ends under your minimum, so the month is short.' : m.left < 0 ? 'The month spends more than comes in, but the balance covers it.' : 'Everything planned fits in your pay.';
+    const bc = V.cells.borrowCover;   /* pay and money borrowed from the emergency fund on their own rows, never added together as pay (QC round 8 north-star gate 1) */
+    rows = ((m.draw || 0) > 0.004 ? [['Pay and other money in', fmt(V.cells.pay)], ['Borrowed from your emergency fund', fmt2(m.draw)]] : [['Pay and other money in', fmt(m.inflow)]]).concat([['Bills, one-time costs and card payments', MINUS + fmt(m.jar.nec)], ['Goal burrows', MINUS + fmt(m.goalsTotal)], ['Free to spend, Education, Investing, Giving', MINUS + fmt(V.cells.otherPlaces)], ['Left in the month', (m.left < 0 ? MINUS : '') + fmt2(V.cells.leftAbs)], ['Balance at the start', fmt2(m.bankStart)]].concat((m.overNow || 0) > 0.004 ? [[`Spent past the plan in ${mon}`, MINUS + fmt2(m.overNow)]] : [], (m.credit || 0) > 0.004 ? [['Free to spend not spent, back in the bank', '+' + fmt2(m.credit)]] : [], [['Balance at the end', fmt2(m.bankEnd)], ['Your minimum balance', fmt(floor)]]));
+    foot = m.bankEnd < floor ? 'The balance ends under your minimum, so the month is short.' : m.left < 0 ? 'The month spends more than comes in, but the balance covers it.' : bc ? `The month spends ${fmt2(bc.gap)} more than your pay. The ${fmt2(bc.draw)} borrowed from your emergency fund covers it.` : 'Everything planned fits in your pay.';
     if ((m.overNow || 0) > 0.004) foot += ' Spending past the plan came out of the bank.';
     if (playNotSafe(S, C, ym, ymd(new Date())) && !sampleOn()) foot += ' Not safe to spend yet: your bank is less than your bills still to pay and Free to spend. It becomes safe to spend when your pay lands: then tap Check your bank on Home and type the new balance.';   /* the model's flag, the same sentence as the Free to spend sheet (QC round 7 novice C2) */
     foot += ' Your minimum balance is the least you want in the bank: you get a warning when a month would end below it. Change it in Settings.';   /* QC round 4 novice C3 */   /* the rows add up: start + left + past the plan + back = end (QC round 4 numbers B2) */

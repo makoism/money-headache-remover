@@ -111,6 +111,7 @@ function render() {
   const overFree = playSpent > play && play >= 0 && rs.count > 0, overAny = !overFree && (m.overNow || 0) > 0.004;
   if (overFree || overAny) { chip.className = 'chip short'; chip.innerHTML = IC.bad + (overFree && !((m.overNec || 0) > 0.004) ? 'Over Free to spend' : 'Over plan'); }
   else if (Lun >= roundUnit(S) && st === 'good') { chip.className = 'chip tight'; chip.innerHTML = IC.warn + 'Not placed yet'; }
+  else if (st === 'good' && PC.borrowCover) { chip.className = 'chip tight'; chip.innerHTML = IC.warn + 'Tight month'; }   /* balances only by borrowing: the model's tight words, never "On plan" (QC round 8 north-star gate 1) */
   else chip.innerHTML = st === 'good' ? IC.ok + 'On plan' : st === 'tight' ? IC.warn + 'Tight month' : IC.bad + 'Short';
   const gap = PC.bankGap;
   let vt;
@@ -144,7 +145,7 @@ function render() {
   const covered = Ld < 0 && dw > 0 && dw >= -Ld - 0.004;   /* more planned than pay, all of it borrowed from the emergency fund: on plan, so not alarm red (38.31 north-star round 3) */
   $('#dockNum').textContent = allPlaced ? '' : bankOnly ? fmt2(PC.bankBelowZero) : pin > 0 || L < 0 ? fmt2(PC.dockAbs) : ''; $('#dockNum').style.color = (Ld < 0 && !covered) || bankOnly ? 'var(--bad)' : covered ? 'var(--warn)' : '';
   const dockS = pin <= 0 ? null : `${Ld < 0 ? (sampleOn() && !(S.ui.done || {}).pay ? 'more planned than the sample pay in ' : 'more planned than your pay in ') + mon + (dw > 0 ? ', ' + fmt(dw) + ' borrowed from your emergency fund' : '') : (allPlaced ? (sampleOn() && !(S.ui.done || {}).pay ? 'All of the sample pay has a place in ' : usedUp ? 'All of your pay is used in ' : 'All of your pay has a place in ') : sampleOn() && !(S.ui.done || {}).pay ? 'of the sample pay not placed yet in ' : 'of your pay not placed yet in ') + mon}`;   /* S6: one word, "not placed yet" (38.29 glossary) */
-  const dockSt = overFree && !((m.overNec || 0) > 0.004) ? 'Over Free to spend' : overFree || overAny ? 'Over plan' : Ld >= roundUnit(S) && st === 'good' ? 'Not placed yet' : st === 'good' ? 'On plan' : st === 'tight' ? 'Tight' : 'Short';
+  const dockSt = overFree && !((m.overNec || 0) > 0.004) ? 'Over Free to spend' : overFree || overAny ? 'Over plan' : Ld >= roundUnit(S) && st === 'good' ? 'Not placed yet' : st === 'good' && PC.borrowCover ? 'Tight' : st === 'good' ? 'On plan' : st === 'tight' ? 'Tight' : 'Short';
   $('#dockTxt').textContent = pin <= 0 ? (L < 0 ? 'planned with no pay entered in ' + mon + '. Add your pay in Plan.' : bankOnly ? 'below zero in the bank at the end of ' + mon + ', with no pay entered. Add your pay in Plan.' : 'No plan yet. Add your pay in Plan.') : dockS + (dockS.toLowerCase().includes(dockSt.toLowerCase()) ? '' : ' · ' + dockSt);   /* the status word is left out when the sentence already says it, never "not placed yet in Nov · Not placed yet" (QC round 6 wording 7) */
 
   /* the details */
