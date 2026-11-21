@@ -339,6 +339,12 @@ function calcAll(S) {
         else { m.counted = need; if (en.id && need > 0) m.topup = { id: en.id, amt: Math.min(round2(+en.amt || 0), need), used: 0 }; }   /* the plan lines stay as planned; the answered money is credited to the bank and the goal below */
       }
     }
+    /* an ended month with no question and no answer (sample numbers, or before the first receipt): the plan counted its Free to spend as
+       spent, so what is left is "not logged as spent yet", never "safe to spend" (38.31 number gate round 8, finding 1). Words only: the bank is unchanged */
+    if (!VIRT_OFF && CUR_YM && !off && ym < CUR_YM() && m.pendLeft == null && m.counted == null) {
+      const rs = receiptStats(S, ym);
+      m.pastLeft = Math.max(0, flrCur(S, sum(m.lines.filter(x => x.jar === 'play' && x.on).map(x => x.v)) - (rs.byJar.play || 0)));
+    }
     m.jar = { nec: 0, play: 0, edu: 0, ffa: 0, give: 0 };
     m.lines.forEach(x => { m.jar[x.jar] += x.v; });
     m.billsTotal = m.jar.nec;
