@@ -160,6 +160,11 @@ When the same question came from several reviewers, it is one entry here and the
 - **Question.** Should Plan's verdict also lead with the shortfall (bills more than pay), or is "all pay is placed" right for the Plan tab?
 - **Sources.** `qc_round8/qc_north_star_gate.md` 1, commit 465a32b.
 
+### 1.22 Sample numbers on: should Home's status name the places past the plan?
+- **Now.** With sample numbers on, the message after logging names every place past the plan, but Home's status box only says the numbers are made up (by design: every verdict line is off in sample mode). Other's overspend is then named nowhere on Home.
+- **Choices.** A. Keep the sample box as only the sample notice. B. Add the over list to it.
+- **Sources.** `qc_round9/helper_sample_status.md`.
+
 ## 2. Words and glossary
 
 Your earlier copy pass list still stands: `COPY_QC8_FOR_MAKO.md` has about 40 lines with a rewrite each. Say which ones you want. The questions below are the "one word per thing" choices on top of that.
