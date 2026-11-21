@@ -144,6 +144,17 @@ When the same question came from several reviewers, it is one entry here and the
 
 ---
 
+### 1.19 Start balance when no bank figure was typed
+- **Now.** Once your own pay is typed, the sample start, minimum and cap stop counting. With no bank figure typed, the plan now starts from 0, not from the sample start.
+- **Question.** Is 0 the right start, or should Home ask for the bank figure before showing the plan?
+- **Choices.** A. Keep 0 and the bank question on Home, as now. B. Ask for the bank figure in setup before the plan shows.
+- **Sources.** `qc_round8/money_accuracy.md` 2, commit 0d762a2.
+
+### 1.20 A percent label that changes while its amount does not
+- **Now.** On Plan > Month, a goal of 1,500 reads "1%", then "under 1%" after a large Free to spend receipt, then "1%" again. Each bar adds up; the label moves because the bar's total moves.
+- **Choices.** A. Percent of pay, fixed for the month. B. Percent of what the bar shows, as now. (Linked to 1.14, equal amounts with different percents.)
+- **Sources.** `qc_round8/qc_numbers_gate.md` should-fix 5.
+
 ## 2. Words and glossary
 
 Your earlier copy pass list still stands: `COPY_QC8_FOR_MAKO.md` has about 40 lines with a rewrite each. Say which ones you want. The questions below are the "one word per thing" choices on top of that.
