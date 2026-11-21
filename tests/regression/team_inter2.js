@@ -152,7 +152,9 @@ const PESO = (() => { const src = require('fs').readFileSync(process.env.MODEL |
   await p.click('#rb-nec form[data-addline] button[type=submit]'); await w(400);
   ok('new line appears', (await p.$$eval('#rb-nec [data-lname]', e => e.length)) === 11 && (await p.$$eval('#rb-nec [data-lname]', e => e.some(x => x.value === 'Pet food'))));
   ok('necessities total grew by 600', (await q('#ra-nec')) === '₱17,100');
-  ok('left over went negative, month is tight', (await q('#leftTotal')) === '−₱600' && (await q('#chip')).includes('Tight'));
+  /* the pay typed above is the person's own, so the sample start no longer counts and no bank was typed: the start is 0 and
+     planning 600 more than pay ends the month below zero, which is Short, not Tight (0d762a2, MAKO_RUN 1.19) */
+  ok('left over went negative, month is short', (await q('#leftTotal')) === '−₱600' && (await q('#chip')).includes('Short'));
   ok('new line steps carry to later months', await (async () => { await p.click('#nextM'); await w(250); const r = (await q('#ra-nec')) === '₱17,100'; await p.click('#prevM'); await w(200); return r; })());
   await w(900); ok('bills are marked done', !!(await p.evaluate(() => { try { return JSON.parse(localStorage.getItem('money-map-template-v2')).ui.done || {}; } catch (e) { return {}; } })).bills);
   await p.select('#rb-nec [data-lends="loan"]', '2027-03'); await w(350);
