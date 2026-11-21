@@ -1,7 +1,7 @@
 const fs = require('fs');
 const src = fs.readFileSync(__dirname + '/model.js', 'utf8');
-const api = new Function(src + ';return {lookBack,sweepPlay,releasePlay,cleanSteps,cleanOnce,cleanItems,cleanCfg,validDue,wholePercents,presetState,sampleOf,SAMPLES,presetKey,roundUnit,MONTHS,JARS,jarsOf,calcAll,freshState,blankState,setVal,val,goalInfo,statusOf,fixes,cfg,resetMonth,aimsOf,basePlan,cleanPlan,cleanReceipts,addLine,removeLine,updateLine,addGoal,removeGoal,updateGoal,useSuggested,hasOwnMonthly,trimPlay,undoOnce,receiptStats,receiptsFor,addReceipt,updateReceipt,removeReceipt,catName,nextWeekday,gcalUrl,outlookUrl,reminderTimes,allKeys,emergencyGoal,lineByKey,goalById,MAX_GOALS,MAX_LINES,readyBy,viewOf,mapOf,freeOf,playNotSafe};')();
-const { lookBack, viewOf, mapOf, freeOf, playNotSafe, sweepPlay, releasePlay, cleanSteps, cleanOnce, cleanItems, cleanCfg, validDue, wholePercents, readyBy, presetState, sampleOf, SAMPLES, presetKey, roundUnit, MONTHS, JARS, jarsOf, calcAll, freshState: modelFresh, blankState, setVal, val, goalInfo, statusOf, fixes, cfg, aimsOf, basePlan, cleanPlan, cleanReceipts, addLine, removeLine, updateLine, addGoal, removeGoal, updateGoal, useSuggested, hasOwnMonthly, trimPlay, receiptStats, addReceipt, updateReceipt, removeReceipt, catName, nextWeekday, gcalUrl, outlookUrl, reminderTimes, allKeys, emergencyGoal, lineByKey, goalById, MAX_GOALS } = api;
+const api = new Function(src + ';return {lookBack,sweepPlay,releasePlay,cleanSteps,cleanOnce,cleanItems,cleanCfg,validDue,wholePercents,presetState,sampleOf,SAMPLES,presetKey,roundUnit,MONTHS,JARS,jarsOf,calcAll,freshState,blankState,setVal,val,goalInfo,statusOf,fixes,cfg,resetMonth,aimsOf,basePlan,cleanPlan,cleanReceipts,addLine,removeLine,updateLine,addGoal,removeGoal,updateGoal,useSuggested,hasOwnMonthly,trimPlay,undoOnce,receiptStats,receiptsFor,addReceipt,updateReceipt,removeReceipt,catName,nextWeekday,gcalUrl,outlookUrl,reminderTimes,allKeys,emergencyGoal,lineByKey,goalById,MAX_GOALS,MAX_LINES,readyBy,viewOf,mapOf,freeOf,playNotSafe,setBankNow};')();
+const { lookBack, viewOf, mapOf, freeOf, playNotSafe, setBankNow, sweepPlay, releasePlay, cleanSteps, cleanOnce, cleanItems, cleanCfg, validDue, wholePercents, readyBy, presetState, sampleOf, SAMPLES, presetKey, roundUnit, MONTHS, JARS, jarsOf, calcAll, freshState: modelFresh, blankState, setVal, val, goalInfo, statusOf, fixes, cfg, aimsOf, basePlan, cleanPlan, cleanReceipts, addLine, removeLine, updateLine, addGoal, removeGoal, updateGoal, useSuggested, hasOwnMonthly, trimPlay, receiptStats, addReceipt, updateReceipt, removeReceipt, catName, nextWeekday, gcalUrl, outlookUrl, reminderTimes, allKeys, emergencyGoal, lineByKey, goalById, MAX_GOALS } = api;
 /* the older 35,000 sample, kept working for saved copies from before the per-currency samples. The checks below were written for it. */
 const freshState = () => { const f = modelFresh(); f.ui.preset = 'legacy'; f.plan = basePlan({}); return f; };
 let fails = 0; const round2x = n => Math.round(n * 100) / 100;
@@ -495,6 +495,28 @@ eq('default rounding step follows the size of the pay', [roundUnit(presetState('
   eq('heap: every burrow on Home has one between the minimum and full', on.every(r => r.heap >= 0.08 && r.heap <= 1), true);
   eq('heap: the largest burrow on Home is full', on.filter(r => r.saved === top).every(r => r.heap === 1), true);
   eq('heap: money against the largest', on.every(r => Math.abs(r.heap - Math.max(0.08, r.saved / top)) < 1e-9), true);
+}
+
+/* ---------- Check your bank to a figure below zero (QC round 8 money accuracy blocker 1) ----------
+   The plan starts from 300,000 and the bank today is -500,000: the Free to spend row says how far below zero the bank is today and gives the
+   figure itself, so Home says it without a sum. The plan's start figure is not changed. Made-up numbers. */
+{
+  const T = blankState(presetState('¥')); T.ui.done = { pay: true, bills: true, goals: true, receipts: true }; T.ui.sampleHidden = true; T.ui.cur = '¥';
+  T.steps.a = [{ from: MONTHS[0], v: 250000 }]; T.plan.lines.find(l => l.id === 'rent').def = 100000; T.plan.lines.find(l => l.id === 'spend').def = 30000;
+  T.cfg.bankStart = 300000; T.cfg.minBank = 0; T.cfg.bankAt = MONTHS[0] + '-01';
+  const ym = MONTHS[0], today = ym + '-19', playOf = X => viewOf(X, calcAll(X), ym, today).map.month.find(x => x.id === 'play');
+  setBankNow(T, -500000, new Date(2026, 10, 19));
+  const p = playOf(T);
+  eq('bank today -500,000: Free to spend is not safe to spend yet', p.notCovered, true);
+  eq('bank today -500,000: the row says the bank today is below zero, with the figure', [p.nowBelow, p.nowBank, p.nowCards], [true, -500000, false]);
+  eq('bank today -500,000: the plan still starts from 300,000', cfg(T, 'bankStart'), 300000);
+  setBankNow(T, 10000, new Date(2026, 10, 19)); T.cards = [{ id: 'k1', name: 'Card', owed: 25000 }];
+  const q = playOf(T);
+  eq('bank 10,000 with a 25,000 card: below zero after the cards, the figure after the cards', [q.nowBelow, q.nowBank, q.nowCards], [true, -15000, true]);
+  T.cards = []; setBankNow(T, 290000, new Date(2026, 10, 19));
+  eq('bank today 290,000: not below zero', playOf(T).nowBelow, false);
+  setBankNow(T, 0, new Date(2026, 10, 19));
+  eq('bank today at zero: not below zero', playOf(T).nowBelow, false);
 }
 
 console.log(fails ? fails + ' FAILED' : 'ALL PASS');
