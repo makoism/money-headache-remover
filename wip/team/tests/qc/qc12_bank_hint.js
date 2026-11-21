@@ -4,6 +4,6 @@
 const s = require('fs').readFileSync(__dirname + '/../../ui45s.js', 'utf8');
 let bad = 0; const ck = (n, c) => { console.log((c ? 'PASS ' : 'FAIL ') + n); if (!c) bad++; };
 ck('no long placeholder on Balance now', !/'Rough is fine\. Overdrawn\? Type a minus'/.test(s));
-ck('the placeholder is "Rough is fine"', /moneyField\('tourBank', 'Balance now', [^)]*\), 'Rough is fine'\)/.test(s) || /'Balance now', S\.cfg\.bankStart !== undefined \? S\.cfg\.bankStart : '', 'Rough is fine'\)/.test(s));
+ck('the placeholder is "Rough is fine"', /moneyField\('tourBank', 'Balance now', [^\n]*?, 'Rough is fine'\)/.test(s));   /* the value expression changed in 0d762a2 (a sample start is not shown as the person's own); only the placeholder is checked here */
 ck('a line under the box says how to type an overdrawn balance', /id="tourBankCap"[^>]*>Overdrawn\? Type a minus first, like −200\.</.test(s));
 console.log(bad ? `qc12_bank_hint: ${bad} FAIL` : 'qc12_bank_hint: ALL PASS'); process.exit(bad ? 1 : 0);
