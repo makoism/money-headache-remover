@@ -1,6 +1,6 @@
 # What changes for someone already using 38.28 (for Mako, before any deploy)
 
-Written 2026-11-18 for PLAN step 8; run again 2026-11-19 on the v1 candidate, and once more after the QC run fixes (COMPARE PASS, same result: every bank difference is spending past the plan, to the yen). Made-up numbers only. Run it yourself: `node tests/qc/compare_3828.js` from `wip/team`.
+Written 2026-11-18 for PLAN step 8; run again 2026-11-19 on the v1 candidate, and once more after the QC run fixes (COMPARE PASS, same result: every bank difference is spending past the plan, to the yen). Run again 2026-11-21 (about 19:45 JST) on b34490a, after the QC round 5 and 6 fixes: COMPARE PASS, the same table to the yen, and every goal balance the same. Made-up numbers only. Run it yourself: `node tests/qc/compare_3828.js` from `wip/team`.
 
 ## How it was checked
 
