@@ -7173,7 +7173,7 @@ function spPaint(kind, o) {
   });
   const pot = $(o.pot); if (pot) { $$('i', pot).forEach((seg, i) => { seg.style.flexGrow = Math.max(i < o.vals.length ? o.vals[i] : free, 0.0001); }); }
   const pool = $(o.pool);
-  if (pool) { pool.classList.toggle('has', free > 0); $('.pool-t', pool).innerHTML = free > 0 ? `Not placed yet <b>${free}%</b> · ${o.moneyOf(free)}` : kind === 'jar' ? `All <b>${o.total}%</b> of your pay here is given out.` : 'All of it is given out.'; }
+  if (pool) { pool.classList.toggle('has', free > 0); $('.pool-t', pool).innerHTML = free > 0 ? `Not placed yet <b>${free}%</b> · ${o.moneyOf(free)}` : kind === 'jar' ? `All of this <b>${o.total}%</b> is placed.` : 'All of it is given out.'; }
   const why = $(o.why); if (why) why.innerHTML = spWhy(kind, o.names, o.vals, o.total, o.moneyOf);
 }
 /* a short bump on the share that moved, a flash on the pool line, and a few leaves from the thumb being dragged */
