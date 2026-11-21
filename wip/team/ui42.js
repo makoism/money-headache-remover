@@ -171,6 +171,7 @@ function paintVault() {
   const can = vaultAvailable();
   box.hidden = !can && !vault.on;
   const cap = $('#savedCap'); if (cap) { const t = vault.on ? SAVED_CLOUD : can ? SAVED_LOCAL_OFF : SAVED_LOCAL; if (cap.textContent !== t) cap.textContent = t; }
+  if (typeof renderStart === 'function' && paintVault.on !== vault.on) { paintVault.on = vault.on; renderStart(); }   /* Reset and setup says where the numbers are saved: it follows the cloud copy turning on or off */
   if (box.hidden) return;
   const st = $('#vaultState'), code = $('#vaultCode'), behind = $('#vaultBehind'), newer = !!(vaultNote && vaultNote.kind === 'newer');
   if (!vault.on) { st.textContent = 'Off. Your numbers live on this device only.'; code.hidden = true; }

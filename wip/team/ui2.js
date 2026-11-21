@@ -76,7 +76,8 @@ function renderStart() {
   const mine = !!S.ui.setup && !S.ui.cleared, zero = (S.ui.preset === 'blank' || !!S.ui.cleared) && empty;
   const bm = $('#bkMsg'); if (bm && !empty && /^Everything is at zero now/.test(bm.textContent)) bm.textContent = '';
   $('#basicsSub').textContent = BASICS_SUB;
-  $('#makeCap').textContent = mine || ((S.ui.preset === 'blank' || !!S.ui.cleared) && !empty) ? 'These are your numbers and you can change them any time. They\'re saved in this browser only and nobody else sees them.' : zero ? 'Everything starts at zero, so type over it. It\'s saved in this browser only.' : MAKE_CAP;
+  let cloudOn = false; try { cloudOn = !!vault.on; } catch (e) { /* the cloud copy code is not loaded yet */ }   /* with the cloud copy on, "this browser only" is untrue (QC round 7 data safety confusing 1) */
+  $('#makeCap').textContent = mine || ((S.ui.preset === 'blank' || !!S.ui.cleared) && !empty) ? (cloudOn ? 'These are your numbers and you can change them any time. They\'re saved in this browser and in your locked cloud copy. Nobody else can read them.' : 'These are your numbers and you can change them any time. They\'re saved in this browser only and nobody else sees them.') : zero ? 'Everything starts at zero, so type over it. It\'s saved in this browser only.' : MAKE_CAP;
   { const so = typeof sampleOn === 'function' && sampleOn(); ['#payBtn', '#xmBtn'].forEach(s => { const b = $(s); if (b) b.hidden = so; }); }
   { const rb = $('#bkReset'); if (rb && !rb.dataset.armed) rb.textContent = SAMPLES[(S.ui && S.ui.cur) || '₱'] ? 'Restore samples' : 'Clear my plan'; }
   $('#blankBtn').hidden = zero; { const zh = $('#zeroHint'); if (zh) zh.hidden = zero; } $('#showStart').hidden = !(S.ui.sampleHidden || S.ui.exactHidden); /* Set all to zero stays while there is anything to zero: Restore names it as the way to start over. Show first steps brings back a hidden Next card */ $('#tourOpen2').textContent = mine ? 'Tour' : 'Guided setup';
