@@ -25,6 +25,14 @@ const meet = (a, b) => !!(a && b && a.l < b.r && b.l < a.r && a.t < b.b && b.t <
         const r2 = await rects(p);
         ck(`${W}x${H} ${id}: a tap on a dot opens that burrow, not Home`, r2.open && r2.cur === k, r2);
       }
+      /* QC round 5 art director 1: Add money makes the card taller; the dots must move with it, clear of the Amount box (MAIN 12) */
+      if (await p.evaluate(() => { const a = document.querySelector('#burrowView .bv-add'); if (a && a.offsetParent) { a.click(); return true; } return false; })) {
+        await w(700);
+        const q = await p.evaluate(() => { const r = e => { if (!e || !e.offsetParent) return null; const b = e.getBoundingClientRect(); return { l: b.left, t: b.top, r: b.right, b: b.bottom }; };
+          const d = document.querySelector('#burrowView .bv-dots'); return { dots: d && !d.hidden ? r(d) : null, amt: r(document.querySelector('#burrowView .bv-amt input')), go: r(document.querySelector('#burrowView .bv-go')), pop: r(document.querySelector('#burrowView .bv-pop')) }; });
+        ck(`${W}x${H} ${id}: after Add money the page dots stay clear of the add form`, !q.dots || (!meet(q.dots, q.amt) && !meet(q.dots, q.go) && !meet(q.dots, q.pop)), q);
+        await p.evaluate(() => { const n = document.querySelector('#burrowView .bv-no'); n && n.click(); }); await w(500);
+      }
       await p.evaluate(() => { const s = document.querySelector('.bv-sign'); s && s.click(); }); await w(800);
     }
     const e2 = errs.filter(e => !/favicon|net::ERR_FILE_NOT_FOUND|fonts/.test(e));
