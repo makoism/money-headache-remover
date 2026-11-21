@@ -43,8 +43,8 @@ const isDupRc = (d, a, c, n) => (S.receipts || []).some(r => r.d === d && r.a ==
 /* the part of an overspend the burrow's own pile covers, and the part that comes out of the bank */
 const overCell = (r, m) => {
   const O = overParts(m, r.jar, r.spent, r.plan), pile = O.pile, bank = O.bank;   /* the split is worked out in model.js */
-  if (!O.soft) return `<span class="over">over ${fmt2(O.over)}</span>`;
-  return (pile > 0 ? `<span class="pile">from the pile ${fmt2(O.pile)}</span>` : '') + (pile > 0 && bank > 0 ? ', ' : '') + (bank > 0 ? `<span class="over">${pile > 0 ? '' : 'over '}${fmt2(O.bank)}${pile > 0 ? ' over' : ''}</span>` : '');
+  if (!O.soft) return `<span class="over">${fmt2(O.over)} over</span>`;   /* "¥5,000 over" on every screen (38.31 number gate round 8, finding 2) */
+  return (pile > 0 ? `<span class="pile">from the pile ${fmt2(O.pile)}</span>` : '') + (pile > 0 && bank > 0 ? ', ' : '') + (bank > 0 ? `<span class="over">${fmt2(O.bank)} over</span>` : '');
 };
 const pileOk = jar => { const b = HV && HV.map && HV.map.burrows.find(x => x.id === jar); return !!b && !b.over; };
 function renderReceipts() {
@@ -60,7 +60,7 @@ function renderReceipts() {
   m.lines.forEach(x => { known.add(x.key); const sp = rs.byKey[x.key] || 0; if (sp > 0 || (x.jar === 'play' && x.on)) rows.push({ name: shownLine(x.name), jar: x.jar, plan: x.on ? x.v : 0, spent: sp, safe: x.key === 'envelope' && x.on ? playSafeLeft(S, m, rs.byJar.play || 0) : null }); });
   /* Other is planned by the month's one-time costs (money already set aside, model.js applyOverspend): only spending past them is over */
   Object.keys(rs.byKey).forEach(k => { if (!known.has(k)) { const r = rs.list.find(q => q.c === k), it = k === 'other' && m.itemsTotal > 0 ? m.itemsTotal : null; rows.push({ name: r ? catName(S, r) : 'Other', jar: 'other', plan: it, spent: rs.byKey[k] }); } });
-  $('#rcCats').innerHTML = rs.count ? `<table class="plain"><thead><tr><th>Category</th><th>Plan</th><th>Spent</th><th>Left to spend</th></tr></thead><tbody>${rows.map(r => `<tr><td>${esc(r.name)}</td><td>${r.plan == null ? '' : fmt(r.plan)}</td><td>${fmt2(r.spent)}</td><td>${r.plan == null ? `<span class="over">over ${fmt2(r.spent)}</span>` : r.spent > r.plan ? overCell(r, m) : (r.safe != null ? fmt2(r.safe) : r.jar === 'ffa' ? 'saved' : fmt2(leftOfPlan(r.plan, r.spent)))}</td></tr>`).join('')}</tbody></table><p class="cap tnote">Lines with no receipts aren't listed, except Free to spend.</p>` : '';
+  $('#rcCats').innerHTML = rs.count ? `<table class="plain"><thead><tr><th>Category</th><th>Plan</th><th>Spent</th><th>Left to spend</th></tr></thead><tbody>${rows.map(r => `<tr><td>${esc(r.name)}</td><td>${r.plan == null ? '' : fmt(r.plan)}</td><td>${fmt2(r.spent)}</td><td>${r.plan == null ? `<span class="over">${fmt2(r.spent)} over</span>` : r.spent > r.plan ? overCell(r, m) : (r.safe != null ? fmt2(r.safe) : r.jar === 'ffa' ? 'saved' : fmt2(leftOfPlan(r.plan, r.spent)))}</td></tr>`).join('')}</tbody></table><p class="cap tnote">Lines with no receipts aren't listed, except Free to spend.</p>` : '';
 
   $('#rcList').innerHTML = rs.list.map(r => `<div class="rc${editRc === r.id ? ' on' : ''}" data-id="${esc(r.id)}"><div class="rc-main"><b>${fmt2(r.a)}</b><span class="rc-cat">${esc(r.c === 'other' && r.n ? 'Other: ' + r.n : catName(S, r))}</span></div>
     <div class="rc-sub"><span>${dateLabel(r.d)}</span>${r.n && r.c !== 'other' ? `<span class="rc-note">${esc(r.n)}</span>` : ''}${r.s ? `<span class="rc-acct">${esc(r.s)}</span>` : ''}</div>
