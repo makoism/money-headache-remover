@@ -2321,7 +2321,7 @@ ol.steps li { margin: 0 0 4px; }
           <span class="msg" id="bkMsg" role="status"></span>
         </div>
         <p class="cap">To get your numbers back from a backup file, on this device or a new one:</p>
-        <ol class="cap howto" id="rsSteps"><li>Tap <b>Choose file</b> and pick your backup file. Or paste the backup text in the box above and tap <b>Load text</b>.</li><li>It asks before it replaces anything.</li><li>The numbers that were here are kept for 3 days, with Undo, in case it was the wrong file.</li></ol>
+        <ol class="cap howto" id="rsSteps"><li>Tap <b>Choose file</b> and pick your backup file, then tap <b>Load text</b> twice. Or paste the backup text in the box above, then tap <b>Load text</b> twice.</li><li>It asks before it replaces anything.</li><li>The numbers that were here are kept for 3 days, with Undo, in case it was the wrong file.</li></ol>
         <p class="cap">If your numbers look empty after clearing the browser or switching devices, this is how you get them back.<span id="zeroHint"> To start from zero use <b>Set all to zero</b>.</span></p>
       </div>
     </section>
@@ -13818,7 +13818,7 @@ function wireRestore() {
     box.innerHTML = `<p data-vf-found>${vaultFoundLine(f)}</p><p>This device has no numbers of its own yet, so nothing is replaced.</p><div class="row-btns"><button type="button" class="btn small solid" id="tourVaultLoad">Load</button><button type="button" class="link" id="tourVaultNo">Cancel</button></div>`; box.hidden = false;
     $('#tourVaultNo').addEventListener('click', () => { box.hidden = true; box.innerHTML = ''; });
     $('#tourVaultLoad').addEventListener('click', async () => {
-      try { await vaultUse(f, false); m.textContent = 'Loaded.'; box.hidden = true; sfx('next'); setTimeout(() => cheer('Welcome back. Your numbers are here, and this phone now shares the cloud copy: every change is sent by itself.'), 400); }   /* said after setup closes, so it is seen (QC10 round 3 north-star 4) */
+      try { await vaultUse(f, false); m.textContent = 'Loaded.'; box.hidden = true; sfx('next'); setTimeout(() => cheer('Welcome back. Your numbers are here, and this device now shares the cloud copy: every change is sent by itself.'), 400); }   /* said after setup closes, so it is seen (QC10 round 3 north-star 4) */
       catch (e) { m.textContent = 'That copy could not be loaded. Nothing was changed.'; }
     });
     sfx('next');
@@ -14670,8 +14670,8 @@ function asstDelta(steps) {
   const ym = nowYm(), CA = calcAll(S), CB = calcAll(T), a = CA.byYm[ym], b = CB.byYm[ym], st = { good: 'On plan', tight: 'Tight', short: 'Short' };
   const today = ymd(new Date()), VA = viewOf(S, CA, ym, today), VB = viewOf(T, CB, ym, today);
   const rows = [
-    ['Free to spend', fmt(a.jar.play), fmt(b.jar.play)], ['Free to spend left', fmt(VA.play.left), fmt(VB.play.left)], ['Left over', fmt(a.pool.left), fmt(b.pool.left)],
-    [`Balance, end of ${monthLabel(ym, true)}`, fmt(a.bankEnd), fmt(b.bankEnd)], ['Status', st[statusOf(S, a)], st[statusOf(T, b)]],
+    ['Free to spend', fmt(a.jar.play), fmt(b.jar.play)], ['Free to spend left', fmt(VA.play.left), fmt(VB.play.left)], ['Not placed yet', fmt(a.pool.left), fmt(b.pool.left)],
+    ['Bank at month end', fmt(a.bankEnd), fmt(b.bankEnd)], ['Status', st[statusOf(S, a)], st[statusOf(T, b)]],
   ];
   const gA = goalRows(S, CA, ym), gB = goalRows(T, CB, ym);
   gB.forEach(r => { const o = gA.find(x => x.id === r.id); const was = o ? (o.pct >= 100 ? 'full' : o.reached ? monthLabel(o.reached) : 'over ' + SPAN) : 'new'; const now = r.pct >= 100 ? 'full' : r.reached ? monthLabel(r.reached) : 'over ' + SPAN; if (!o || was !== now || (o && val(S, 'goal:' + r.id, ym) !== val(T, 'goal:' + r.id, ym))) rows.push([r.name, o ? `${was}, ${fmt(val(S, 'goal:' + r.id, ym))}/mo` : 'new', `${now}, ${fmt(val(T, 'goal:' + r.id, ym))}/mo`]); });
@@ -14738,7 +14738,7 @@ function asstAfter(bot, text, truncated) {
   $('#askLog').scrollTop = $('#askLog').scrollHeight;
 }
 /* test hook (only with ?sfxtest): the assistant's checked actions, so a test can run one on a copy */
-if (/[?&]sfxtest\b/.test(location.search)) window.__asst = { asstCheck, runActions };
+if (/[?&]sfxtest\b/.test(location.search)) window.__asst = { asstCheck, runActions, asstDelta };
 
 /* ---------- date and month pickers ----------
    The native pickers are replaced by one calendar that opens straight away, picks on a single tap and never waits for the field to lose focus.
@@ -15424,7 +15424,8 @@ function vaultQueue(soon) { if (!vault.on) return; clearTimeout(vaultTimer); vau
 /* triedAt: when a Send now tap last failed, so the tap shows on screen (QC round 7 data safety confusing 2). Kept in memory only */
 let vaultTapped = false;
 function vaultRetryNow() { vaultTapped = true; vaultPush(); }
-function vaultBehind() { if (!vault.failAt) { vault.failAt = Date.now(); vault.triedAt = 0; } if (vaultTapped) { vaultTapped = false; vault.triedAt = Date.now(); } vaultSaveLocal(); paintVault(); if (tab === 'home') renderBackupNudge(); }
+/* refused: the server answered but did not take the copy (a server error), so the tap says "Still not sent.", not "Still no connection." (QC round 8 data safety confusing 3) */
+function vaultBehind(refused) { if (!vault.failAt) { vault.failAt = Date.now(); vault.triedAt = 0; } if (vaultTapped) { vaultTapped = false; vault.triedAt = Date.now(); vault.triedRefused = !!refused; } vaultSaveLocal(); paintVault(); if (tab === 'home') renderBackupNudge(); }
 function vaultCaughtUp() { const was = vault.failAt; vault.failAt = 0; vault.triedAt = 0; vaultTapped = false; return !!was; }
 async function vaultPush(force) {
   if (!vault.on) return;
@@ -15438,7 +15439,7 @@ async function vaultPush(force) {
     if (r.ok) { vault.rev = rev; vault.local = rev; vaultNote = null; const was = vaultCaughtUp(); vaultSaveLocal(); paintVault(); if (was && tab === 'home') renderBackupNudge(); }
     else if (r.status === 409) { vaultNote = { kind: 'newer', rev: r.j.rev, when: r.j.updated }; paintVault(); if (tab === 'home') renderBackupNudge(); }
     else if (r.status === 403) { vaultNote = { kind: 'bad' }; paintVault(); }
-    else vaultBehind();
+    else vaultBehind(true);
   } catch (e) { vaultBehind(); /* no connection: the next save tries again, and the screen says the cloud copy is behind */ }
   finally { vaultBusy = false; if (vaultAgain) { vaultAgain = false; vaultQueue(); } }
 }
@@ -15493,10 +15494,10 @@ async function vaultApply(k, srv, asked, prevVault) {
     /* this phone was not sharing this cloud copy before the load: Undo puts its own numbers back and goes back to how it was sharing (or
        not) before, so nothing is ever sent over the other phone's copy (QC10 round 2 north-star finding 1) */
     const pv = Object.assign({}, prevVault);
-    window.offerUndoG(oldSnap, `Cloud copy loaded. The numbers this phone had are kept for ${KEEP_DAYS} days. Undo puts them back on this phone and stops sharing the cloud copy here.`,
-      () => { clearTimeout(vaultTimer); vault = pv; vaultKeys = null; vaultNote = null; vaultSaveLocal(); S = normalize(JSON.parse(oldSnap)); vaultFlowClose(); setTimeout(() => { try { cheer('Your own numbers are back. This phone no longer shares the cloud copy, and the cloud copy is unchanged.'); } catch (e) { } }, 50); });   /* the Done panel closes (QC10 round 3 north-star 1) */
+    window.offerUndoG(oldSnap, `Cloud copy loaded. The numbers this device had are kept for ${KEEP_DAYS} days. Undo puts them back on this device and stops sharing the cloud copy here.`,
+      () => { clearTimeout(vaultTimer); vault = pv; vaultKeys = null; vaultNote = null; vaultSaveLocal(); S = normalize(JSON.parse(oldSnap)); vaultFlowClose(); setTimeout(() => { try { cheer('Your own numbers are back. This device no longer shares the cloud copy, and the cloud copy is unchanged.'); } catch (e) { } }, 50); });   /* the Done panel closes (QC10 round 3 north-star 1) */
   }
-  else if (window.offerUndoG) window.offerUndoG(oldSnap, `Cloud copy loaded. The numbers this phone had are kept for ${KEEP_DAYS} days. Undo puts them back here and in the cloud copy.`);
+  else if (window.offerUndoG) window.offerUndoG(oldSnap, `Cloud copy loaded. The numbers this device had are kept for ${KEEP_DAYS} days. Undo puts them back here and in the cloud copy.`);
 }
 /* Undo of a cloud load from the kept copy: back to how this phone was sharing before the load (or not sharing), then its own numbers */
 function vaultUndoLoad() {
@@ -15550,7 +15551,7 @@ const SAVED_CLOUD = 'Your numbers are saved in this browser, with a second copy 
 const vaultWhen = (t, sec) => { if (!t) return ''; const d = new Date(t); return d.getDate() + ' ' + d.toLocaleString('en-US', { month: 'short' }) + ', ' + d.toLocaleString('en-US', Object.assign({ hour: 'numeric', minute: '2-digit' }, sec ? { second: '2-digit' } : {})); };   /* day then month, like every other date. sec: with seconds, for two times in the same minute */
 /* one sentence on whether the cloud copy has everything; the same words in Settings, in the steps and on Home */
 const vaultClock = t => new Date(t).toLocaleString('en-US', { hour: 'numeric', minute: '2-digit' });   /* the time part of vaultWhen */
-const vaultTriedText = () => vault.triedAt ? `Tried again at ${vaultClock(vault.triedAt)}. Still no connection. Your numbers are safe on this device.` : '';
+const vaultTriedText = () => vault.triedAt ? `Tried again at ${vaultClock(vault.triedAt)}. ${vault.triedRefused ? 'Still not sent.' : 'Still no connection.'} Your numbers are safe on this device.` : '';
 function vaultBehindText() { return vault.failAt ? `The cloud copy is behind. Changes made since ${vaultWhen(vault.failAt)} are on this device only. ${vaultTriedText() || 'It tries again by itself on your next change, or tap Send now.'}` : ''; }
 function vaultSentText() { return vault.failAt ? vaultBehindText() : vault.rev ? `Sent ${vaultWhen(vault.rev)}. The cloud copy has everything on this device.` : 'Sending the first copy…'; }
 function paintVault() {
@@ -17728,7 +17729,7 @@ function wire() {
   /* the setup steps were opened by Re-split pay and the page was closed part-way: the copy from before is still one tap away */
   if (S.ui && S.ui.preSplit && !tourIsOpen) { const sn = S.ui.preSplit; delete S.ui.preSplit; keepCopy(sn, 'Setup was changing your plan.'); persist(); }
   /* the copy from before a big change is offered again on every open for 3 days, then let go */
-  if (S.ui && S.ui.keep) { const k = S.ui.keep; if (!(typeof k.snap === 'string' && +k.t > 0) || Date.now() - k.t > KEEP_DAYS * 864e5) { delete S.ui.keep; persist(); } else offerUndo(k.snap, `${k.why || 'Your numbers changed.'} You can undo until ${dateLabel(ymd(new Date(+k.t + KEEP_DAYS * 864e5)))}.${k.cloud && !k.act ? ' Undo also stops sharing the cloud copy on this phone.' : ''}`, k.act ? () => restoreKept(k.snap, k.added) : k.cloud ? () => { vaultUndoLoad(); S = normalize(JSON.parse(k.snap)); } : null); }   /* a copy an action kept: Undo keeps the receipts logged since (actions.js restoreKept) */
+  if (S.ui && S.ui.keep) { const k = S.ui.keep; if (!(typeof k.snap === 'string' && +k.t > 0) || Date.now() - k.t > KEEP_DAYS * 864e5) { delete S.ui.keep; persist(); } else offerUndo(k.snap, `${k.why || 'Your numbers changed.'} You can undo until ${dateLabel(ymd(new Date(+k.t + KEEP_DAYS * 864e5)))}.${k.cloud && !k.act ? ' Undo also stops sharing the cloud copy on this device.' : ''}`, k.act ? () => restoreKept(k.snap, k.added) : k.cloud ? () => { vaultUndoLoad(); S = normalize(JSON.parse(k.snap)); } : null); }   /* a copy an action kept: Undo keeps the receipts logged since (actions.js restoreKept) */
   $('#keepBack').addEventListener('click', () => {
     const k = S.ui && S.ui.keep; if (!(k && typeof k.snap === 'string')) return;
     const cur = snapNoCopy(); undoHide();
