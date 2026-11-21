@@ -86,7 +86,7 @@ const plan = async p => { await L.tab(p, 'tab-month'); await L.clickText(p, 'Mon
     await checkBankAndCard(p);
     const h = await home(p), s = await plan(p);
     ck('over: Home key Bank at month end ¥90,000', yen(h.key) === '¥90,000', h.key);
-    ck('over: Plan starts with the same name and figure, then why', /^Bank at month end: ¥90,000\. ¥100,000 planned, less ¥10,000 spent over plan so far\.$/.test(s), s);
+    ck('over: Plan starts with the same name and figure, then why', /^Bank at month end: ¥90,000\. ¥100,000 planned, less ¥10,000 spent over plan since your plan started\.$/ /* QC round 5: says what it covers */.test(s), s);
     errsAll = errsAll.concat(errs); await b.close(); }
 
   /* ---------- QC10 numbers blocker 3: the bank after the cards cannot cover Free to spend (money rule 3) ---------- */

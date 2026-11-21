@@ -151,7 +151,7 @@ function render() {
   const lt = $('#leftTotal'); lt.textContent = fmt2(L); lt.classList.toggle('neg', L < 0);
   const ovr = m.over || 0;
   /* one bank story (launch checklist Q2): the same name and figure as Home's "Bank at month end", and the start figure it is planned from */
-  $('#bankLine').textContent = ovr > 0 ? `Bank at month end: ${fmt2(m.bankEnd)}. ${fmt2(m.bankPlanned)} planned, less ${fmt2(ovr)} spent over plan so far.` : (Math.abs(m.bankStart - m.bankEnd) < 0.5 ? `Bank at month end: ${fmt2(m.bankEnd)} planned, the same as at the start of ${mon}.` : `Bank at month end: ${fmt2(m.bankEnd)} planned, from ${fmt2(m.bankStart)} at the start of ${mon}.`);
+  $('#bankLine').textContent = ovr > 0 ? `Bank at month end: ${fmt2(m.bankEnd)}. ${fmt2(m.bankPlanned)} planned, less ${fmt2(ovr)} spent over plan since your plan started.`   /* all months so far; Home's panel names this month's part (QC round 5 money accuracy C1) */ : (Math.abs(m.bankStart - m.bankEnd) < 0.5 ? `Bank at month end: ${fmt2(m.bankEnd)} planned, the same as at the start of ${mon}.` : `Bank at month end: ${fmt2(m.bankEnd)} planned, from ${fmt2(m.bankStart)} at the start of ${mon}.`);
   $('#rowDraw').hidden = !(m.draw > 0); $('#ra-draw').textContent = fmt(m.draw);
   const amts = { a: m.a, b: m.b, side: m.side, nec: m.billsTotal, items: m.itemsTotal, debts: m.debtPay, lts: m.goalsTotal, play: m.jar.play, edu: m.jar.edu, ffa: m.jar.ffa, give: m.jar.give };
   const changed = {}, chgList = [], nextYm = MONTHS[MONTHS.indexOf(sel) + 1] || null;

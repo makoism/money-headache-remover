@@ -16,7 +16,7 @@ const panel = async p => {
   return rows;
 };
 const adds = rows => { const g = k => { const r = rows.find(x => x[0] === k); return r ? num(r[1]) : 0; };
-  const start = g('Balance at the start'), left = g('Left in the month'), over = g('Spent past the plan so far'), back = g('Free to spend not spent, back in the bank'), end = g('Balance at the end');
+  const start = g('Balance at the start'), left = g('Left in the month'), over = g('Spent past the plan in Nov'), back = g('Free to spend not spent, back in the bank'), end = g('Balance at the end');
   return { ok: Math.abs(start + left + over + back - end) < 0.005, start, left, over, back, end }; };
 (async () => {
   const { b, p, errs } = await R.phone({ w: 412, h: 915, dpr: 1, mobile: true, keep: true });
@@ -31,7 +31,7 @@ const adds = rows => { const g = k => { const r = rows.find(x => x[0] === k); re
   await L.rc(p, 450.25, 'bill:food', '2026-11-19', 'Made-up shop');
   await L.rc(p, 12.34, 'other', '2026-11-19', 'Made-up thing');
   const r1 = await panel(p), a1 = adds(r1);
-  ck('past the plan: the panel names "Spent past the plan so far" −$72.59', r1.some(r => r[0] === 'Spent past the plan so far' && /^−\$72\.59$/.test(r[1])), r1);
+  ck('past the plan: the panel names "Spent past the plan in Nov" −$72.59 (QC round 5: it covers this month only)', r1.some(r => r[0] === 'Spent past the plan in Nov' && /^−\$72\.59$/.test(r[1])), r1);
   ck('past the plan: start + left + past the plan = end, to the cent', a1.ok, a1);
   const e2 = errs.filter(e => !/favicon|net::ERR_FILE_NOT_FOUND|fonts/.test(e));
   ck('no page errors', e2.length === 0, e2.slice(0, 3));
