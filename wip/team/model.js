@@ -871,7 +871,7 @@ function rruleOf(o) {
   return f === 'daily' ? 'FREQ=DAILY' : f === 'monthly' ? 'FREQ=MONTHLY;BYMONTHDAY=' + (o.dom === DOM_LAST ? DOM_LAST : o.dom || 1)
     : f === 'biweekly' ? 'FREQ=WEEKLY;INTERVAL=2;BYDAY=' + DAY_CODES[o.day] : 'FREQ=WEEKLY;BYDAY=' + DAY_CODES[o.day];
 }
-const REMIND_SPAN = { daily: 'today’s', weekly: 'this week’s', biweekly: 'the last two weeks’', monthly: 'this month’s' };
+const REMIND_SPAN = { daily: 'today\'s', weekly: 'this week\'s', biweekly: 'the last two weeks\'', monthly: 'this month\'s' };
 function gcalUrl(o) {
   const t = reminderTimesFor(o), enc = encodeURIComponent;
   return 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=' + enc(o.title) + '&details=' + enc(o.details) + '&dates=' + t.start + '/' + t.end + '&recur=' + enc('RRULE:' + rruleOf(o));

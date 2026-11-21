@@ -56,7 +56,7 @@ function jarNote(m) {
     : `Bills and basics are ${pctSay(nec.pct, nec.v)} of pay, about the usual share.`;   /* the percent once (QC round 5 wording 13) */
   return lead + borrowed;
 }
-const LTS_HINT = ' Each slider sets what goes into that goal this month, so sliding up takes from Left and sliding down gives it back. If you leave them alone the amounts are worked out from each goal’s amount and date.';
+const LTS_HINT = ' Each slider sets what goes into that goal this month, so sliding up takes from Left and sliding down gives it back. If you leave them alone the amounts are worked out from each goal\'s amount and date.';
 
 /* ---------- the first-steps card ---------- */
 const START_SUB = 'These are sample numbers for one salary, replace them with yours. Your data stays in this browser.';
@@ -250,7 +250,7 @@ function renderGoals(m) {
 
 function renderItems(m) {
   const list = m.items, sig = sel + '|' + list.map(i => i.id).join(',');
-  $('#itemsSub').textContent = `One-time costs in ${monthLabel(sel)}, taken out of that month’s money`;
+  $('#itemsSub').textContent = `One-time costs in ${monthLabel(sel)}, taken out of that month\'s money`;
   if (sig !== itemsSig) {
     itemsSig = sig;
     $('#items').innerHTML = list.length ? list.map(i => `<div class="item" data-id="${esc(i.id)}"><input class="txt" type="text" value="${esc(i.label)}" aria-label="Name" maxlength="60">

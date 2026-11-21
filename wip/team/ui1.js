@@ -2,7 +2,7 @@
 /* ---------- what is on the page ---------- */
 const IN_ROWS = [
   { id: 'a', name: 'Salary', key: 'a', note: 'Your monthly take-home pay after tax, and if you get paid twice a month add both' },
-  { id: 'b', name: 'Second pay', key: 'b', note: 'Only if you have one, like a partner’s share or a second job that pays every month' },
+  { id: 'b', name: 'Second pay', key: 'b', note: 'Only if you have one, like a partner\'s share or a second job that pays every month' },
   { id: 'side', name: 'Side pay', key: 'side', note: 'Only if you have it. This is freelance, gig or cash work that changes month to month, so put in the lowest month you expect and the plan still works in a slow one' },
 ];
 const JARCLS = { nec: 'g-nec', lts: 'g-lts', play: 'g-play', edu: 'g-edu', ffa: 'g-ffa', give: 'g-give' };

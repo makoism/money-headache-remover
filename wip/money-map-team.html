@@ -3266,7 +3266,7 @@ function rruleOf(o) {
   return f === 'daily' ? 'FREQ=DAILY' : f === 'monthly' ? 'FREQ=MONTHLY;BYMONTHDAY=' + (o.dom === DOM_LAST ? DOM_LAST : o.dom || 1)
     : f === 'biweekly' ? 'FREQ=WEEKLY;INTERVAL=2;BYDAY=' + DAY_CODES[o.day] : 'FREQ=WEEKLY;BYDAY=' + DAY_CODES[o.day];
 }
-const REMIND_SPAN = { daily: 'today’s', weekly: 'this week’s', biweekly: 'the last two weeks’', monthly: 'this month’s' };
+const REMIND_SPAN = { daily: 'today\'s', weekly: 'this week\'s', biweekly: 'the last two weeks\'', monthly: 'this month\'s' };
 function gcalUrl(o) {
   const t = reminderTimesFor(o), enc = encodeURIComponent;
   return 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=' + enc(o.title) + '&details=' + enc(o.details) + '&dates=' + t.start + '/' + t.end + '&recur=' + enc('RRULE:' + rruleOf(o));
@@ -4627,7 +4627,7 @@ const ACT = {
 /* ---------- what is on the page ---------- */
 const IN_ROWS = [
   { id: 'a', name: 'Salary', key: 'a', note: 'Your monthly take-home pay after tax, and if you get paid twice a month add both' },
-  { id: 'b', name: 'Second pay', key: 'b', note: 'Only if you have one, like a partner’s share or a second job that pays every month' },
+  { id: 'b', name: 'Second pay', key: 'b', note: 'Only if you have one, like a partner\'s share or a second job that pays every month' },
   { id: 'side', name: 'Side pay', key: 'side', note: 'Only if you have it. This is freelance, gig or cash work that changes month to month, so put in the lowest month you expect and the plan still works in a slow one' },
 ];
 const JARCLS = { nec: 'g-nec', lts: 'g-lts', play: 'g-play', edu: 'g-edu', ffa: 'g-ffa', give: 'g-give' };
@@ -4872,7 +4872,7 @@ function jarNote(m) {
     : `Bills and basics are ${pctSay(nec.pct, nec.v)} of pay, about the usual share.`;   /* the percent once (QC round 5 wording 13) */
   return lead + borrowed;
 }
-const LTS_HINT = ' Each slider sets what goes into that goal this month, so sliding up takes from Left and sliding down gives it back. If you leave them alone the amounts are worked out from each goal’s amount and date.';
+const LTS_HINT = ' Each slider sets what goes into that goal this month, so sliding up takes from Left and sliding down gives it back. If you leave them alone the amounts are worked out from each goal\'s amount and date.';
 
 /* ---------- the first-steps card ---------- */
 const START_SUB = 'These are sample numbers for one salary, replace them with yours. Your data stays in this browser.';
@@ -5066,7 +5066,7 @@ function renderGoals(m) {
 
 function renderItems(m) {
   const list = m.items, sig = sel + '|' + list.map(i => i.id).join(',');
-  $('#itemsSub').textContent = `One-time costs in ${monthLabel(sel)}, taken out of that month’s money`;
+  $('#itemsSub').textContent = `One-time costs in ${monthLabel(sel)}, taken out of that month\'s money`;
   if (sig !== itemsSig) {
     itemsSig = sig;
     $('#items').innerHTML = list.length ? list.map(i => `<div class="item" data-id="${esc(i.id)}"><input class="txt" type="text" value="${esc(i.label)}" aria-label="Name" maxlength="60">
@@ -14854,7 +14854,7 @@ const COACH = {
     ['#chartbox', 'Forecast', 'This shows every goal month by month. Hover over a month or tap it to read it.'],
   ],
   month: [
-    ['#hero', 'Free to spend', 'The big number is this month’s Free to spend and it’s yours to spend on whatever you want'],
+    ['#hero', 'Free to spend', 'The big number is this month\'s Free to spend and it\'s yours to spend on whatever you want'],
     ['#where', 'Pay by place', 'Your pay split into six places. Hover over a colour or tap it to see the amount.'],
     ['#ledger', 'Details', 'Tap a row to open it and enter a new amount. It only changes this month unless you choose Keep for later months.'],
   ],
