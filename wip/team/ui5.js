@@ -207,11 +207,11 @@ function wire() {
   /* the setup steps were opened by Re-split pay and the page was closed part-way: the copy from before is still one tap away */
   if (S.ui && S.ui.preSplit && !tourIsOpen) { const sn = S.ui.preSplit; delete S.ui.preSplit; keepCopy(sn, 'Setup was changing your plan.'); persist(); }
   /* the copy from before a big change is offered again on every open for 3 days, then let go */
-  if (S.ui && S.ui.keep) { const k = S.ui.keep; if (!(typeof k.snap === 'string' && +k.t > 0) || Date.now() - k.t > KEEP_DAYS * 864e5) { delete S.ui.keep; persist(); } else offerUndo(k.snap, `${k.why || 'Your numbers changed.'} You can undo until ${dateLabel(ymd(new Date(+k.t + KEEP_DAYS * 864e5)))}.`, k.act ? () => restoreKept(k.snap, k.added) : null); }   /* a copy an action kept: Undo keeps the receipts logged since (actions.js restoreKept) */
+  if (S.ui && S.ui.keep) { const k = S.ui.keep; if (!(typeof k.snap === 'string' && +k.t > 0) || Date.now() - k.t > KEEP_DAYS * 864e5) { delete S.ui.keep; persist(); } else offerUndo(k.snap, `${k.why || 'Your numbers changed.'} You can undo until ${dateLabel(ymd(new Date(+k.t + KEEP_DAYS * 864e5)))}.`, k.act ? () => restoreKept(k.snap, k.added) : k.cloud ? () => { vaultUndoLoad(); S = normalize(JSON.parse(k.snap)); } : null); }   /* a copy an action kept: Undo keeps the receipts logged since (actions.js restoreKept) */
   $('#keepBack').addEventListener('click', () => {
     const k = S.ui && S.ui.keep; if (!(k && typeof k.snap === 'string')) return;
     const cur = snapNoCopy(); clearTimeout(undoT); $('#undoBar').hidden = true; undoSnap = null; undoFn = null;
-    if (k.act) restoreKept(k.snap, k.added); else S = normalize(JSON.parse(k.snap));
+    if (k.act) restoreKept(k.snap, k.added); else { if (k.cloud) vaultUndoLoad(); S = normalize(JSON.parse(k.snap)); }   /* a cloud load: stop sharing first (QC round 5 data safety B1) */
     keepCopy(cur, 'You put back the numbers from before.');   /* what was there is kept in its place, so this can be undone too */
     editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = ''; sfx('back');
     cheer(`Your numbers from before are back. What was there is kept for ${KEEP_DAYS} days.`);

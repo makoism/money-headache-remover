@@ -3967,7 +3967,7 @@ function setTheme(t) { try { localStorage.setItem(THEME_KEY, t === 'light' || t 
 /* what loadLocal found: 'ok' (saved numbers read), 'none' (nothing saved yet) or 'bad' (storage blocked or the saved text is damaged). Anything but 'ok' lets ui43.js look for the second copy. */
 let LS_STATE = 'none';
 let LOADED_REV = null;   /* the rev of the copy this page loaded, so the second copy can tell whether anything changed since */
-function loadLocal() { applyTheme(); try { const raw = localStorage.getItem(KEY); if (raw) { S = upgradeLegacy(normalize(JSON.parse(raw))); LS_STATE = 'ok'; LOADED_REV = +S.rev || 0; } } catch (e) { LS_STATE = 'bad'; /* no storage, or damaged */ } }
+function loadLocal() { applyTheme(); try { const raw = localStorage.getItem(KEY); if (raw) { S = upgradeLegacy(normalize(JSON.parse(raw))); LS_STATE = 'ok'; LOADED_REV = +S.rev || 0; seenRev = LOADED_REV; }   /* this page has read this copy: only receipts another tab saves after it are merged in (an Undo after a reload brought removed receipts back, QC round 5 data safety B1) */ } catch (e) { LS_STATE = 'bad'; /* no storage, or damaged */ } }
 function setSave(kind) {
   const el = $('#save'), t = $('#saveTxt'); el.className = 'save ' + (kind === 'ok' ? 'ok' : kind === 'busy' ? 'busy' : '');
   t.textContent = { ok: 'Saved', busy: 'Saving…', device: 'Saved in this browser', error: 'Not saved. Save a copy in Settings.' }[kind] || '';
@@ -15369,6 +15369,9 @@ async function vaultApply(k, srv, asked, prevVault) {
      on the next open, then send the old numbers over the cloud copy (QC round 4 data safety 1). The cloud revision is kept apart in vault.rev */
   S.rev = Math.max(srv.rev, (+old.rev || 0) + 1, (typeof LOADED_REV === 'number' ? LOADED_REV : 0) + 1); vault.rev = srv.rev; vault.local = S.rev; vaultNote = null; vaultCaughtUp();
   if (!wasEmpty) keepCopy(oldSnap, 'The cloud copy replaced the numbers on this device.');
+  /* a phone that was not sharing this cloud copy: how it was sharing before is kept on this device (never in the numbers, which are sent),
+     so an Undo after a reload, or Put them back, stops sharing the cloud copy like the Undo right after the load (QC round 5 data safety B1) */
+  if (!wasEmpty && prevVault && prevVault.code !== vault.code) { S.ui.keep.cloud = 1; try { localStorage.setItem(VAULT_KEY + '-before', JSON.stringify(prevVault.on && prevVault.code ? { code: prevVault.code, rev: prevVault.rev || 0, local: prevVault.local || 0 } : {})); } catch (e) { /* no storage */ } }
   editRow = null; editGoal = null; editRc = null; itemsSig = '';
   if (tourIsOpen) closeTour(false); else { flush(); restructure(); }
   /* a cloud load is not a backup file: "Last backup" stays what the copy says (QC10 north-star F4) */
@@ -15381,6 +15384,12 @@ async function vaultApply(k, srv, asked, prevVault) {
       () => { clearTimeout(vaultTimer); vault = pv; vaultKeys = null; vaultNote = null; vaultSaveLocal(); S = normalize(JSON.parse(oldSnap)); vaultFlowClose(); setTimeout(() => { try { cheer('Your own numbers are back. This phone no longer shares the cloud copy, and the cloud copy is unchanged.'); } catch (e) { } }, 50); });   /* the Done panel closes (QC10 round 3 north-star 1) */
   }
   else if (window.offerUndoG) window.offerUndoG(oldSnap, `Cloud copy loaded. The numbers this phone had are kept for ${KEEP_DAYS} days. Undo puts them back here and in the cloud copy.`);
+}
+/* Undo of a cloud load from the kept copy: back to how this phone was sharing before the load (or not sharing), then its own numbers */
+function vaultUndoLoad() {
+  let pv = null; try { pv = JSON.parse(localStorage.getItem(VAULT_KEY + '-before') || 'null'); localStorage.removeItem(VAULT_KEY + '-before'); } catch (e) { /* no storage */ }
+  clearTimeout(vaultTimer); vault = pv && pv.code ? { code: pv.code, rev: +pv.rev || 0, on: true, failAt: 0, local: +pv.local || 0 } : { code: '', rev: 0, on: false, failAt: 0 };
+  vaultKeys = null; vaultNote = null; vaultSaveLocal();
 }
 async function vaultLoadNewer() {
   if (!vaultNote || vaultNote.kind !== 'newer') return;
@@ -17555,11 +17564,11 @@ function wire() {
   /* the setup steps were opened by Re-split pay and the page was closed part-way: the copy from before is still one tap away */
   if (S.ui && S.ui.preSplit && !tourIsOpen) { const sn = S.ui.preSplit; delete S.ui.preSplit; keepCopy(sn, 'Setup was changing your plan.'); persist(); }
   /* the copy from before a big change is offered again on every open for 3 days, then let go */
-  if (S.ui && S.ui.keep) { const k = S.ui.keep; if (!(typeof k.snap === 'string' && +k.t > 0) || Date.now() - k.t > KEEP_DAYS * 864e5) { delete S.ui.keep; persist(); } else offerUndo(k.snap, `${k.why || 'Your numbers changed.'} You can undo until ${dateLabel(ymd(new Date(+k.t + KEEP_DAYS * 864e5)))}.`, k.act ? () => restoreKept(k.snap, k.added) : null); }   /* a copy an action kept: Undo keeps the receipts logged since (actions.js restoreKept) */
+  if (S.ui && S.ui.keep) { const k = S.ui.keep; if (!(typeof k.snap === 'string' && +k.t > 0) || Date.now() - k.t > KEEP_DAYS * 864e5) { delete S.ui.keep; persist(); } else offerUndo(k.snap, `${k.why || 'Your numbers changed.'} You can undo until ${dateLabel(ymd(new Date(+k.t + KEEP_DAYS * 864e5)))}.`, k.act ? () => restoreKept(k.snap, k.added) : k.cloud ? () => { vaultUndoLoad(); S = normalize(JSON.parse(k.snap)); } : null); }   /* a copy an action kept: Undo keeps the receipts logged since (actions.js restoreKept) */
   $('#keepBack').addEventListener('click', () => {
     const k = S.ui && S.ui.keep; if (!(k && typeof k.snap === 'string')) return;
     const cur = snapNoCopy(); clearTimeout(undoT); $('#undoBar').hidden = true; undoSnap = null; undoFn = null;
-    if (k.act) restoreKept(k.snap, k.added); else S = normalize(JSON.parse(k.snap));
+    if (k.act) restoreKept(k.snap, k.added); else { if (k.cloud) vaultUndoLoad(); S = normalize(JSON.parse(k.snap)); }   /* a cloud load: stop sharing first (QC round 5 data safety B1) */
     keepCopy(cur, 'You put back the numbers from before.');   /* what was there is kept in its place, so this can be undone too */
     editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = ''; sfx('back');
     cheer(`Your numbers from before are back. What was there is kept for ${KEEP_DAYS} days.`);

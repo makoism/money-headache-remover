@@ -95,6 +95,9 @@ async function vaultApply(k, srv, asked, prevVault) {
      on the next open, then send the old numbers over the cloud copy (QC round 4 data safety 1). The cloud revision is kept apart in vault.rev */
   S.rev = Math.max(srv.rev, (+old.rev || 0) + 1, (typeof LOADED_REV === 'number' ? LOADED_REV : 0) + 1); vault.rev = srv.rev; vault.local = S.rev; vaultNote = null; vaultCaughtUp();
   if (!wasEmpty) keepCopy(oldSnap, 'The cloud copy replaced the numbers on this device.');
+  /* a phone that was not sharing this cloud copy: how it was sharing before is kept on this device (never in the numbers, which are sent),
+     so an Undo after a reload, or Put them back, stops sharing the cloud copy like the Undo right after the load (QC round 5 data safety B1) */
+  if (!wasEmpty && prevVault && prevVault.code !== vault.code) { S.ui.keep.cloud = 1; try { localStorage.setItem(VAULT_KEY + '-before', JSON.stringify(prevVault.on && prevVault.code ? { code: prevVault.code, rev: prevVault.rev || 0, local: prevVault.local || 0 } : {})); } catch (e) { /* no storage */ } }
   editRow = null; editGoal = null; editRc = null; itemsSig = '';
   if (tourIsOpen) closeTour(false); else { flush(); restructure(); }
   /* a cloud load is not a backup file: "Last backup" stays what the copy says (QC10 north-star F4) */
@@ -107,6 +110,12 @@ async function vaultApply(k, srv, asked, prevVault) {
       () => { clearTimeout(vaultTimer); vault = pv; vaultKeys = null; vaultNote = null; vaultSaveLocal(); S = normalize(JSON.parse(oldSnap)); vaultFlowClose(); setTimeout(() => { try { cheer('Your own numbers are back. This phone no longer shares the cloud copy, and the cloud copy is unchanged.'); } catch (e) { } }, 50); });   /* the Done panel closes (QC10 round 3 north-star 1) */
   }
   else if (window.offerUndoG) window.offerUndoG(oldSnap, `Cloud copy loaded. The numbers this phone had are kept for ${KEEP_DAYS} days. Undo puts them back here and in the cloud copy.`);
+}
+/* Undo of a cloud load from the kept copy: back to how this phone was sharing before the load (or not sharing), then its own numbers */
+function vaultUndoLoad() {
+  let pv = null; try { pv = JSON.parse(localStorage.getItem(VAULT_KEY + '-before') || 'null'); localStorage.removeItem(VAULT_KEY + '-before'); } catch (e) { /* no storage */ }
+  clearTimeout(vaultTimer); vault = pv && pv.code ? { code: pv.code, rev: +pv.rev || 0, on: true, failAt: 0, local: +pv.local || 0 } : { code: '', rev: 0, on: false, failAt: 0 };
+  vaultKeys = null; vaultNote = null; vaultSaveLocal();
 }
 async function vaultLoadNewer() {
   if (!vaultNote || vaultNote.kind !== 'newer') return;
