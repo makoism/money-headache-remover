@@ -206,7 +206,7 @@ function renderNext() {
   if (!step && SWEPT) {
     const g = SWEPT.id ? goalById(S, SWEPT.id) : null, mm = C.byYm[SWEPT.pm] || {}, used = (mm.topup && mm.topup.used) || 0, cnt = mm.counted || 0, rest = mm.credit || 0, nm = FULL[+SWEPT.pm.slice(5) - 1];
     let body;
-    if (g && used > 0) { let gi = null; try { gi = goalInfo(S, C, g.id, nowYm()); } catch (e) { } const rd = C.reached[g.id]; body = gi ? (gi.pct >= 1 ? dw(S, g, `${g.name} is full.`) : dw(S, g, `${fmt(gi.togo)} to go.${rd ? ` Full ${monthLabel(rd)}.` : ''}`)) : ''; body += (g.why ? ' ' + g.why + '.' : '') + (rest > 0.004 ? ` The other ${fmt2(rest)} stays in the bank.` : ''); }
+    if (g && used > 0) { let gi = null; try { gi = goalInfo(S, C, g.id, nowYm()); } catch (e) { } const rd = C.reached[g.id]; body = gi ? (gi.pct >= 1 ? dw(S, g, `${g.name} is full.`) : dw(S, g, `${fmt(gi.togo)} to go.${rd ? ` Full ${monthLabel(rd)}.` : ''}`)) : ''; body += (g.why ? ' ' + g.why + '.' : '') + (rest > 0.004 ? (mm.topup.full ? ` ${nm}'s goal was full at ${fmt(mm.topup.cap)}, so the other ${fmt2(rest)} stays in the bank.` : ` The other ${fmt2(rest)} stays in the bank.`) : ''); }   /* why the rest did not go in (QC round 6 numbers gate 2) */
     else if (g) body = `From ${nm}'s Free to spend. ${g.name} had no room left, so it stays in the bank.`;
     else body = `From ${nm}'s Free to spend. The bank figure now includes it.`;
     step = [g && used > 0 ? `${fmt2(used)} put toward ${g.name}` : `${fmt2(cnt)} counted in the bank`, body, 'Undo', 'data-sweepundo'];

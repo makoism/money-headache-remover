@@ -359,6 +359,7 @@ function calcAll(S) {
       /* money from a month's unspent free to spend that was put toward this goal: only what the goal still has room for */
       const planned = planned0, up = m.topup && m.topup.id === gl.id ? round2(Math.max(0, Math.min(m.topup.amt, room - Math.min(planned0, room)))) : 0;
       if (up > 0) m.topup.used = up;
+      if (m.topup && m.topup.id === gl.id) m.topup.cap = capOf(gl, ym);   /* the goal in force that month: what the top-up could fill up to (QC round 6 numbers gate 2) */
       /* money borrowed from the emergency fund this month is never put straight back: a deposit only fills the room the fund had before the draw */
       g[gl.id] = { planned, actual: Math.min(planned, room), up };
       if (isE) g[gl.id].loan = freed;
@@ -372,6 +373,7 @@ function calcAll(S) {
     m.left = m.pool.left;
     m.credit = m.counted ? round2(m.counted - ((m.topup && m.topup.used) || 0)) : 0;   /* unspent free to spend the person answered for: what the goal did not take is counted in the bank */
     m.bankStart = bank; bank += m.left + m.credit; m.bankEnd = bank;
+    if (m.topup && g[m.topup.id]) m.topup.full = round2(bal[m.topup.id] + g[m.topup.id].actual + (g[m.topup.id].up || 0)) >= m.topup.cap - 0.004;   /* the goal was full that month, so the rest of the answered money stays in the bank */
     goals.forEach(gl => { bal[gl.id] = round2(bal[gl.id] + g[gl.id].actual + (g[gl.id].up || 0) - (eg && gl.id === eg.id ? m.draw : 0)); });   /* whole cents: 10.74 + 64.21 + 25.05 must be exactly 100 (found by the oracle, 2026-11-21) */
     goals.forEach(gl => { if (gl.target > 0 && reached[gl.id] === undefined && capOf(gl, ym) === capOf(gl) && bal[gl.id] >= capOf(gl, ym)) reached[gl.id] = ym;   /* a full date counts only against the goal in force now (QC10 numbers blocker 1) */ });
     m.spent = {};
