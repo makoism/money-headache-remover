@@ -39,8 +39,11 @@ async function vaultReq(k, method, body, query) {
 function vaultQueue(soon) { if (!vault.on) return; clearTimeout(vaultTimer); vaultTimer = setTimeout(vaultPush, soon ? 50 : 3000); }
 /* LAUNCH_CHECKLIST E9: a save that did not reach the cloud is never silent. failAt is when the cloud copy first fell behind; it is kept
    with the code, so it is still said after a reload, and it is cleared by the next save that works. */
-function vaultBehind() { if (!vault.failAt) vault.failAt = Date.now(); vaultSaveLocal(); paintVault(); if (tab === 'home') renderBackupNudge(); }
-function vaultCaughtUp() { const was = vault.failAt; vault.failAt = 0; return !!was; }
+/* triedAt: when a Send now tap last failed, so the tap shows on screen (QC round 7 data safety confusing 2). Kept in memory only */
+let vaultTapped = false;
+function vaultRetryNow() { vaultTapped = true; vaultPush(); }
+function vaultBehind() { if (!vault.failAt) { vault.failAt = Date.now(); vault.triedAt = 0; } if (vaultTapped) { vaultTapped = false; vault.triedAt = Date.now(); } vaultSaveLocal(); paintVault(); if (tab === 'home') renderBackupNudge(); }
+function vaultCaughtUp() { const was = vault.failAt; vault.failAt = 0; vault.triedAt = 0; vaultTapped = false; return !!was; }
 async function vaultPush(force) {
   if (!vault.on) return;
   if (vaultBusy) { vaultAgain = true; return; }
@@ -164,7 +167,9 @@ const SAVED_LOCAL_OFF = 'Your numbers are saved in this browser on this device o
 const SAVED_CLOUD = 'Your numbers are saved in this browser, with a second copy here in case the first goes missing, and an encrypted cloud copy that follows every save. It\'s under Cloud copy below. Clearing site data removes the two copies on this device, and your recovery code brings the cloud copy back. A backup file is your own copy of your numbers and receipts.';
 const vaultWhen = t => { if (!t) return ''; const d = new Date(t); return d.getDate() + ' ' + d.toLocaleString('en-US', { month: 'short' }) + ', ' + d.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit' }); };   /* day then month, like every other date */
 /* one sentence on whether the cloud copy has everything; the same words in Settings, in the steps and on Home */
-function vaultBehindText() { return vault.failAt ? `The cloud copy is behind. Changes made since ${vaultWhen(vault.failAt)} are on this device only. It tries again by itself on your next change, or tap Send now.` : ''; }
+const vaultClock = t => new Date(t).toLocaleString('en-US', { hour: 'numeric', minute: '2-digit' });   /* the time part of vaultWhen */
+const vaultTriedText = () => vault.triedAt ? `Tried again at ${vaultClock(vault.triedAt)}. Still no connection. Your numbers are safe on this device.` : '';
+function vaultBehindText() { return vault.failAt ? `The cloud copy is behind. Changes made since ${vaultWhen(vault.failAt)} are on this device only. ${vaultTriedText() || 'It tries again by itself on your next change, or tap Send now.'}` : ''; }
 function vaultSentText() { return vault.failAt ? vaultBehindText() : vault.rev ? `Sent ${vaultWhen(vault.rev)}. The cloud copy has everything on this device.` : 'Sending the first copy…'; }
 function paintVault() {
   const box = $('#vaultBox'); if (!box) return;
@@ -247,7 +252,7 @@ function wireVault() {
   $('#vaultOn').addEventListener('click', () => { vaultFlow('what'); sfx('next'); });
   $('#vaultHave').addEventListener('click', () => { vaultFlow('enter'); sfx('next'); const i = $('#vaultIn'); if (i) i.focus(); });
   $('#vaultHow').addEventListener('click', () => { const f = $('#vaultFlow'); if (!f.hidden && $('[data-vf-step="other"]', f)) { vaultFlowClose(); return; } vaultFlow('other', true); });
-  $('#vaultRetry').addEventListener('click', () => { vaultPush(); sfx('tap'); });
+  $('#vaultRetry').addEventListener('click', () => { vaultRetryNow(); sfx('tap'); });
   $('#vaultShow').addEventListener('click', () => { const c = $('#vaultCode'); if (!$('#vaultFlow').hidden) vaultFlowClose(); if (c.querySelector('#vaultCodeTxt')) { c.innerHTML = ''; return; } vaultShowCode(c, vault.code); });
   $('#vaultOff').addEventListener('click', async () => {
     const b = $('#vaultOff'); if (b.dataset.armed !== '1') { b.dataset.armed = '1'; b.textContent = 'Tap again: delete the cloud copy'; setTimeout(() => { b.dataset.armed = ''; b.textContent = 'Turn off'; }, 4000); return; }

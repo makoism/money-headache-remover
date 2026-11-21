@@ -84,7 +84,7 @@ function renderBackupNudge() {
     html = `<div class="hn-t"><b>Newer copy in the cloud</b><span>Saved from another device${when ? ' on ' + when : ''}. Tap Load it to load it here, or Keep mine to keep this device's numbers and send them to the cloud in its place.</span></div><div class="hn-b"><button type="button" class="btn small solid" data-vault-load>Load it</button><button type="button" class="link" data-vault-keep>Keep mine</button></div>`;
   } else if (vault.on && vault.failAt) {
     /* LAUNCH_CHECKLIST E9: a cloud save that failed is said on Home too, until a save works */
-    html = `<div class="hn-t"><b>The cloud copy is behind</b><span>Changes made since ${vaultWhen(vault.failAt)} are on this device only. It tries again by itself on your next change.</span></div><div class="hn-b"><button type="button" class="btn small solid" data-vault-retry>Send now</button></div>`;
+    html = `<div class="hn-t"><b>The cloud copy is behind</b><span>Changes made since ${vaultWhen(vault.failAt)} are on this device only. ${vaultTriedText() || 'It tries again by itself on your next change.'}</span></div><div class="hn-b"><button type="button" class="btn small solid" data-vault-retry>Send now</button></div>`;
   } else if (vault.on && cloud && !S.ui.vaultSeen && !bkNote) {
     html = `<div class="hn-t"><b>Save your recovery code</b><span>Your numbers have an encrypted cloud copy now. This code is the only way to open it on another phone.</span></div><div class="vault-wrap" data-vault-code></div>`;
   } else if (bkNote) {
@@ -118,7 +118,7 @@ function wireSafe() {
     if (e.target.closest('[data-bk-ok]')) { bkNote = null; renderBackupNudge(); return; }
     if (e.target.closest('[data-move-load]')) { moveApply(); renderBackupNudge(); return; }
     if (e.target.closest('[data-move-no]')) { moveIn = null; renderBackupNudge(); return; }
-    if (e.target.closest('[data-vault-retry]')) { vaultPush(); sfx('tap'); return; }
+    if (e.target.closest('[data-vault-retry]')) { vaultRetryNow(); sfx('tap'); return; }
     /* the cloud copy is turned on in Settings, where it explains itself one step at a time (E15) */
     if (e.target.closest('[data-vault-on]')) { switchTab('basics'); vaultFlow('what'); sfx('next'); return; }
     if (e.target.closest('[data-vault-load]')) { await vaultLoadNewer(); return; }
