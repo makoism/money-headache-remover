@@ -396,6 +396,8 @@ function applyOverspend(S, months) {
       /* bills are judged line by line: a big grocery bill does not use up the rent that was not logged */
       const nl = (m.lines || []).filter(l => l.jar === 'nec');
       m.overNec = round2(nl.reduce((a, l) => a + Math.max(0, (rsm.byKey[l.key] || 0) - (l.on ? l.v : 0)), 0));
+      /* the same amounts line by line, so Home can name the bill that went over (QC round 5 north-star 2, wording 3) */
+      m.overLines = nl.map(l => ({ name: l.name, by: round2(Math.max(0, (rsm.byKey[l.key] || 0) - (l.on ? l.v : 0))) })).filter(x => x.by > 0.004);
       /* a one-time cost is money already set aside in the plan: what is logged as Other is that cost being paid, and only the part past it is spent past plan */
       const it = m.itemsTotal || 0, otherOver = Math.max(0, (by.other || 0) - it), itemsLeft = Math.max(0, it - (by.other || 0));
       m.billsLeftM = round2(nl.reduce((a, l) => a + Math.max(0, (l.on ? l.v : 0) - (rsm.byKey[l.key] || 0)), 0) + itemsLeft + (m.debtPay || 0));

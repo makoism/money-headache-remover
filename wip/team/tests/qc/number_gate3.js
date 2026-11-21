@@ -20,7 +20,7 @@ const txt=p=>p.evaluate(()=>document.body.innerText.replace(/\s+/g,' '));
   ck('(1) the model splits ¥23,200 past plan into bills 5,000, Free to spend 11,200, Other 7,000',v.overNow===23200&&JSON.stringify(v.overBits)===JSON.stringify({nec:5000,play:11200,other:7000}),JSON.stringify([v.overNow,v.overBits]));
   const t=await txt(p);
   ck('(1) Home names Other as ¥7,000 over',/Other is ¥7,000 over\./.test(t),(t.match(/Over plan.{0,200}/)||[''])[0]);
-  ck('(1) and still names bills and Free to spend',/Bills and basics are ¥5,000 over\./.test(t)&&/Free to spend is ¥11,200 over\./.test(t));
+  ck('(1) and names the bill line that went over (QC round 5) and Free to spend',/Rent( or mortgage)? is ¥5,000 over\./.test(t)&&!/Bills and basics are ¥5,000 over/.test(t)&&/Free to spend is ¥11,200 over\./.test(t),(t.match(/.{0,120}¥5,000 over.{0,40}/)||[''])[0]);
   ck('no page errors',errs.length===0,errs.join(' | '));await b.close(); }
  /* 2: Education spent past its pile */
  { const {b,p,errs}=await open(()=>{const S=__t.S;S.ui.done={pay:true,bills:true,goals:true,receipts:true};S.ui.sampleHidden=true;S.plan.lines.find(l=>l.key==='education').def=38700;
