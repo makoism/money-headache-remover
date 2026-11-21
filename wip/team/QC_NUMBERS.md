@@ -51,7 +51,7 @@ Then check by hand, on the built page, with at least these six situations. For e
 In every situation these must hold:
 
 - The same amount is written the same way everywhere on the screen. 26,535 in one card and 26,534.51 in another is a FAIL.
-- Home's line "Bank X + burrows Y = Z" is followed by "They add up: ..." and the page does not say "These numbers do not add up".
+- Home shows "Bank X + burrows Y = Z at the end of Nov." (the month named is the one shown), and X + Y really is Z. The page checks its own total out of sight and adds no sentence when it holds. When it fails it says "These numbers do not add up. They are off by X. Nothing you entered is lost. Please tell Mako." Seeing that is a FAIL.
 - A set of percents shown together adds up to what the screen says it adds up to.
 - No amount on a screen was worked out by the screen. If you find one the scanner missed, that is a FAIL and the scanner must be taught to catch it.
 - A wrong or missing input (blank box, a typo of one extra zero, a receipt in a month with no plan) never produces NaN, undefined, a negative zero, or a number that contradicts another one.
