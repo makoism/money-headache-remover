@@ -28,8 +28,8 @@ const yen = v => '¥' + Math.round(v).toLocaleString('en-US');
   const m = await p.evaluate(() => { const C = __t.calcAll(__t.S), mm = C.byYm['2026-11']; return { used: mm.topup && mm.topup.used, rest: mm.credit, cap: mm.topup && mm.topup.cap, full: mm.topup && mm.topup.full }; });
   ck('the model says November\'s goal was full at ¥360,000 and some money stays in the bank', m.cap === 360000 && m.full === true && m.rest > 0 && m.used > 0, m);
   ck('the card says the amount put toward the Emergency fund', c.includes(yen(m.used) + ' put toward Emergency fund'), c);
-  ck('the card says why the rest stays: "November\'s goal was full at ¥360,000, so the other ' + yen(m.rest) + ' stays in the bank."',
-    c.includes(`November's goal was full at ${yen(m.cap)}, so the other ${yen(m.rest)} stays in the bank.`), c);
+  ck('the card says why the rest stays: "Nov\'s goal was full at ¥360,000, so the other ' + yen(m.rest) + ' stays in the bank."',
+    c.includes(`Nov's goal was full at ${yen(m.cap)}, so the other ${yen(m.rest)} stays in the bank.`), c);
   ck('the old line with no reason is gone', !/to go\.[^.]*\. The other ¥[\d,]+ stays in the bank\./.test(c) && !/Full [A-Z][a-z]+ \d{4}\. The other/.test(c), c);
   const e2 = errs.filter(e => !/favicon|net::ERR_FILE_NOT_FOUND|fonts/.test(e));
   ck('no page errors', e2.length === 0, e2.slice(0, 3));

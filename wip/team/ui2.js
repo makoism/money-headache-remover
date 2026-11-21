@@ -173,8 +173,8 @@ function render() {
   if (m.draw > 0) chgList.push(`Borrowed ${fmt(m.draw)} from emergency fund`);
   if (S.items[sel] !== undefined) chgList.push('One-time costs edited');
   const cs = $('#chgSum'); cs.hidden = !chgList.length;
-  if (chgList.length) $('#chgTxt').textContent = `Edited for ${fullLabel(sel)}: ${chgList.join(', ')}.` + (nextYm ? ` ${FULL[+nextYm.slice(5) - 1]} goes back to normal.` : '');
-  $('#ledgerSub').textContent = `Tap an amount to edit it for ${fullLabel(sel)} only.` + (nextYm ? ` ${FULL[+nextYm.slice(5) - 1]} goes back to normal.` : '') + ' Tap a name to open it.';
+  if (chgList.length) $('#chgTxt').textContent = `Edited for ${monthLabel(sel)}: ${chgList.join(', ')}.` + (nextYm ? ` ${MONTH_NAMES[+nextYm.slice(5) - 1]} goes back to normal.` : '');
+  $('#ledgerSub').textContent = `Tap an amount to edit it for ${monthLabel(sel)} only.` + (nextYm ? ` ${MONTH_NAMES[+nextYm.slice(5) - 1]} goes back to normal.` : '') + ' Tap a name to open it.';
   [...IN_ROWS, ...JARROWS].forEach(r => {
     const a = $('#ra-' + r.id) || $('#h-' + r.id); if (a.tagName === 'INPUT') setIdle(a, fmt2(amts[r.id]));   /* a typed amount shows its cents (decision 1) */ else a.textContent = fmt(amts[r.id]);
     a.classList.toggle('zero', !amts[r.id]);
@@ -285,7 +285,7 @@ function renderMonthTable() {
     const pcm = planCells(S, C, m.ym), np = m.pool.left < 0 ? m.pool.left : pcm.unplaced;   /* the Month card's own figure: pay with no place, less what spending past plan already used (38.31 number gate round 4) */
     const unp = !grew && st === 'good' && pcm.unplaced >= roundUnit(S);
     const wd = grew ? 'Over plan' : unp ? 'Not placed yet' : word[st];
-    return `<tr data-ym="${m.ym}" class="${m.ym === sel ? 'on' : ''}" tabindex="0" aria-label="${fullLabel(m.ym)}: ${wd}${gs.length ? ', ' + gs.map(g => g.name + ' ' + fw(g)).join(', ') : ''}"><td>${monthLabel(m.ym)}${marks}</td><td class="${np < 0 ? 'neg' : ''}">${np < 0 ? fmt2(pcm.pastPay) + ' past pay' : fmt2(np)}</td><td class="${bk < cfg(S, 'minBank') ? 'neg' : ''}">${fmt2(bk)}</td><td><span class="st ${unp ? 'tight' : st}">${unp ? IC.warn : icon[st]}<span class="stw">${wd}</span></span></td></tr>`;
+    return `<tr data-ym="${m.ym}" class="${m.ym === sel ? 'on' : ''}" tabindex="0" aria-label="${monthLabel(m.ym)}: ${wd}${gs.length ? ', ' + gs.map(g => g.name + ' ' + fw(g)).join(', ') : ''}"><td>${monthLabel(m.ym)}${marks}</td><td class="${np < 0 ? 'neg' : ''}">${np < 0 ? fmt2(pcm.pastPay) + ' past pay' : fmt2(np)}</td><td class="${bk < cfg(S, 'minBank') ? 'neg' : ''}">${fmt2(bk)}</td><td><span class="st ${unp ? 'tight' : st}">${unp ? IC.warn : icon[st]}<span class="stw">${wd}</span></span></td></tr>`;
   }).join('');
   $('#monthTable').innerHTML = `<table><thead><tr><th>Month</th><th>Not placed</th><th>Bank, month end</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table>`;
 }

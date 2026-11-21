@@ -20,7 +20,7 @@ const card = p => p.evaluate(() => { const e = document.getElementById('hNext');
       S.receipts = [{ id: 'w1', d: '2026-11-04', a: 15000, c: 'envelope', cn: 'Free to spend', n: '' }, { id: 'w2', d: '2026-11-12', a: 10000, c: 'envelope', cn: 'Free to spend', n: '' }]; __t.persist(); __t.restructure(); });
     await L.tab(p, 'tab-month'); await L.tab(p, 'tab-home'); await w(600);
     const c = await card(p), T = room ? 'a goal with room: ' : 'no goal with room: ';
-    ck(T + 'the card asks about November\'s ¥15,000', /November: ¥15,000 of Free to spend/.test(c.text) && c.bank, c);
+    ck(T + 'the card asks about November\'s ¥15,000', /Nov: ¥15,000 of Free to spend/.test(c.text) && c.bank, c);
     if (room) ck(T + 'it offers a goal and says so', c.goal && /put it toward a goal/.test(c.text), c);
     else ck(T + 'no goal button, and the words do not promise one', !c.goal && !/toward a goal/.test(c.text) && /Keep it in the bank/.test(c.text), c);
     errsAll = errsAll.concat(errs); await b.close();

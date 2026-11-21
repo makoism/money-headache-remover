@@ -56,7 +56,7 @@ const pileOk = jar => { const b = HV && HV.map && HV.map.burrows.find(x => x.id 
 function renderReceipts() {
   const m = C.byYm[sel], rs = receiptStats(S, sel), playPlan = m.jar.play, playSpent = rs.byJar.play || 0;
   setIdle($('#rcMonth'), sel);
-  $('#rcTitle').textContent = 'Receipts, ' + fullLabel(sel);
+  $('#rcTitle').textContent = 'Receipts, ' + monthLabel(sel);
   let sum = rs.count ? `${fmt2(rs.total)} spent, ${rs.count} receipt${rs.count === 1 ? '' : 's'}.` : sel === nowYm() ? 'No receipts this month.' : `No receipts in ${monthLabel(sel)}${sel > nowYm() ? ' yet' : ''}.`;   /* a picked month is named (QC round 4 north-star 1) */
   if (playPlan > 0 || playSpent > 0) sum += ` Free to spend: ${fmt2(playPlan)} planned, ${fmt2(playSpent)} spent, ` + (playSpent > playPlan ? `${fmt2(planCells(S, C, sel).playOver)} over.` : (m.counted > 0 ? `${fmt2(m.counted)} not spent: ${m.topup && m.topup.used > 0 ? fmt2(m.topup.used) + ' went to a goal' + (m.counted - m.topup.used > 0.004 ? ', ' + fmt2(m.credit) + ' came back to the bank' : '') : 'came back to the bank'}.` : m.pendLeft > 0 ? `${fmt2(m.pendLeft)} not logged as spent yet, and Home asks where it goes.` : `${fmt2(playSafeLeft(S, m, playSpent))}${playNotSafe(S, C, sel, ymd(new Date())) ? ' left, not safe to spend yet' : ' safe to spend'}.`));
   $('#rcSum').textContent = sum;

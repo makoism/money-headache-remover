@@ -63,9 +63,9 @@ const openAt = async (b, iso, keep) => { const p = await b.newPage(); const errs
   const n0 = await p.evaluate(() => JSON.parse(localStorage.getItem('money-map-template-v2')).receipts.length);
   await p.evaluate(() => document.querySelector('#rcSave').click()); await w(800);
   ok((await p.evaluate(() => JSON.parse(localStorage.getItem('money-map-template-v2')).receipts.length)) === n0 + 1, 'the second tap logs it');
-  ok((await p.$eval('#rcTitle', e => e.textContent)) === 'Receipts, March 2027', 'the receipts list follows it to March 2027');
+  ok((await p.$eval('#rcTitle', e => e.textContent)) === 'Receipts, Mar 2027', 'the receipts list follows it to March 2027');
   await p.evaluate(() => document.querySelector('[data-tab="month"]').click()); await w(400);
-  ok((await p.$eval('#monthTxt', e => e.textContent)) === 'November 2026', 'Plan opens on November, the month in hand');
+  ok((await p.$eval('#monthTxt', e => e.textContent)) === 'Nov 2026', 'Plan opens on November, the month in hand');
   await p.evaluate(() => document.querySelector('[data-tab="receipts"]').click()); await w(300);
   ok((await p.$eval('#rcSave', e => e.textContent)) === 'Log spend', 'the button still says Log spend');
   // euro: a typed comma is a decimal point

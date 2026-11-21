@@ -33,5 +33,5 @@ await p.evaluate(()=>{const S=__t.S;delete S.once['2026-11'].envelope;__t.persis
 await p.evaluate(()=>{const S=__t.S;S.ui.sweep={};S.once={};S.receipts=[];__t.persist();__t.restructure();});await w(400);
 const c3=await card();ck('with no receipts at all there is no month-end question yet (S1)',!/isn't logged as spent/.test(c3));
 await p.evaluate(()=>{const S=__t.S;S.receipts=[{id:'rdec',d:'2026-12-02',a:500,c:'envelope',cn:'Free to spend',n:''}];__t.persist();__t.restructure();});await w(400);
-const c4=await card();ck('after the first receipt, a November with none of its own is asked, saying so (decision 3)',/November: .* isn't logged as spent/.test(c4)&&/No receipts are logged, so this may be spending you haven't logged yet/.test(c4));
+const c4=await card();ck('after the first receipt, a November with none of its own is asked, saying so (decision 3)',/Nov: .* isn't logged as spent/.test(c4)&&/No receipts are logged, so this may be spending you haven't logged yet/.test(c4));
 ck('no page errors',errs.length===0);await b.close();console.log(bad?'FAILED '+bad:'ALL PASS');process.exit(bad?1:0);})();

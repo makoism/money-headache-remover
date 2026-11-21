@@ -265,7 +265,7 @@ const SUBS = [
   ['hbo', 'HBO Max', '$10.99 Basic, $18.49 Standard, $22.99 Premium', '¥1,000 Standard, ¥1,400 Premium', '₱149 Mobile, ₱269 Standard, ₱399 Ultimate'],
   ['prime', 'Amazon Prime', '$14.99, or $139 a year', '¥600, or ¥5,900 a year', '₱249 for Prime Video, or ₱1,669 a year'],
   ['appletv', 'Apple TV', '$14.99', '¥1,200'],
-  ['paramount', 'Paramount+', '$8.99 Essential, $13.99 Premium', 'Ended in Japan in March 2026'],
+  ['paramount', 'Paramount+', '$8.99 Essential, $13.99 Premium', 'Ended in Japan in Mar 2026'],
   ['youtube', 'YouTube Premium', '$15.99 Individual, $26.99 Family', '¥1,280 Individual, ¥2,280 Family', 'From ₱189 Individual, ₱379 Family'],
   ['spotify', 'Spotify', '$12.99 Individual, $21.99 Family', '¥1,080 Individual, ¥1,880 Family', '₱169 Individual, ₱279 Family'],
   ['applemusic', 'Apple Music', '$11.99 Individual, $19.99 Family', '¥1,180 Individual, ¥1,980 Family', '₱169 Individual'],

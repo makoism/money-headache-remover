@@ -210,9 +210,9 @@ function renderNext() {
   /* receipts logged later can use up the money the answer was about: then there is nothing left to report (the same rule as after a reload), never "0 counted" */
   if (SWEPT && C && !((C.byYm[SWEPT.pm] || {}).counted > 0)) SWEPT = null;
   /* after a reload, an answer made in the last 3 days still shows with Undo */
-  if (!SWEPT && S.ui.sweep && !sweepOffer()) { const k = Object.keys(S.ui.sweep).filter(q => S.ui.sweep[q].t && Date.now() - S.ui.sweep[q].t < 3 * 864e5 && C.byYm[q] && C.byYm[q].counted > 0).sort().pop(); if (k) { const e = S.ui.sweep[k]; SWEPT = { pm: k, id: e.id || null, to: e.id ? undefined : 'bank', amt: e.amt, note: `From ${FULL[+k.slice(5) - 1]}'s Free to spend.${e.id ? '' : ' The bank figure now includes it.'}` }; } }
+  if (!SWEPT && S.ui.sweep && !sweepOffer()) { const k = Object.keys(S.ui.sweep).filter(q => S.ui.sweep[q].t && Date.now() - S.ui.sweep[q].t < 3 * 864e5 && C.byYm[q] && C.byYm[q].counted > 0).sort().pop(); if (k) { const e = S.ui.sweep[k]; SWEPT = { pm: k, id: e.id || null, to: e.id ? undefined : 'bank', amt: e.amt, note: `From ${MONTH_NAMES[+k.slice(5) - 1]}'s Free to spend.${e.id ? '' : ' The bank figure now includes it.'}` }; } }
   if (!step && SWEPT) {
-    const g = SWEPT.id ? goalById(S, SWEPT.id) : null, mm = C.byYm[SWEPT.pm] || {}, used = (mm.topup && mm.topup.used) || 0, cnt = mm.counted || 0, rest = mm.credit || 0, nm = FULL[+SWEPT.pm.slice(5) - 1];
+    const g = SWEPT.id ? goalById(S, SWEPT.id) : null, mm = C.byYm[SWEPT.pm] || {}, used = (mm.topup && mm.topup.used) || 0, cnt = mm.counted || 0, rest = mm.credit || 0, nm = MONTH_NAMES[+SWEPT.pm.slice(5) - 1];
     let body;
     if (g && used > 0) { let gi = null; try { gi = goalInfo(S, C, g.id, nowYm()); } catch (e) { } const rd = C.reached[g.id]; body = gi ? (gi.pct >= 1 ? dw(S, g, `${g.name} is full.`) : dw(S, g, `${fmt(gi.togo)} to go.${rd ? ` Full ${monthLabel(rd)}.` : ''}`)) : ''; body += (g.why ? ' ' + g.why + '.' : '') + (rest > 0.004 ? (mm.topup.full ? ` ${nm}'s goal was full at ${fmt(mm.topup.cap)}, so the other ${fmt2(rest)} stays in the bank.` : ` The other ${fmt2(rest)} stays in the bank.`) : ''); }   /* why the rest did not go in (QC round 6 numbers gate 2) */
     else if (g) body = `From ${nm}'s Free to spend. ${g.name} had no room left, so it stays in the bank.`;
@@ -221,7 +221,7 @@ function renderNext() {
   }
   let sw = null;
   if (!step && (sw = sweepOffer())) {
-    const nm = FULL[+sw.pm.slice(5) - 1], one = sw.goals.length === 1, nowNm = FULL[+sw.now.slice(5) - 1];
+    const nm = MONTH_NAMES[+sw.pm.slice(5) - 1], one = sw.goals.length === 1, nowNm = MONTH_NAMES[+sw.now.slice(5) - 1];
     const pick = sw.goals.length > 1 ? `<select class="inp sm" data-sweepgoal aria-label="Which goal">${sw.goals.map(r => `<option value="${esc(r.id)}"${r.id === sw.main.id ? ' selected' : ''}>${esc(r.name)}</option>`).join('')}</select>` : '';
     step = [`${nm}: ${fmt2(sw.left)} of Free to spend isn't logged as spent`, `The plan counted it as spent. ${sw.n < 4 ? (sw.n === 0 ? 'No receipts are logged' : sw.n === 1 ? 'Only 1 receipt is logged' : `Only ${sw.n} receipts are logged`) + ', so this may be spending you haven\'t logged yet. ' : ''}${sw.goals.length ? 'Keep it in the bank or put it toward a goal. You can undo either one.' : 'Keep it in the bank. You can undo it.'}`   /* no goal button when no goal has room, so no goal in the words (QC10 numbers should-fix 2) */, `Keep ${fmt2(sw.left)} in the bank`, `data-sweepbank="${sw.pm}"`, pick];
   }
@@ -236,7 +236,7 @@ function renderNext() {
   const left = ['pay', 'bills', 'goals', 'receipts'].filter(k => !d[k]).length;
   const exact = step[3] === 'data-exact';
   const swept = step[3] === 'data-sweepundo', sweep = !!sw && step[3].indexOf('data-sweepbank=') === 0;
-  const tail = swept ? '' : month && month.left > 0 ? `<button type="button" class="link" data-mcok="${month.pm}">It was not spent</button><button type="button" class="link" data-hidemonth="${month.pm}">Hide</button>` : sweep ? `${sw.main ? `<button type="button" class="link" data-sweep="${sw.pm}">${sw.goals.length === 1 ? 'Put it toward ' + esc(sw.main.name) : 'Put it toward a goal'}</button>` : ''}<button type="button" class="link" data-closego="${sw.pm}">Open ${FULL[+sw.pm.slice(5) - 1]} receipts</button><button type="button" class="link" data-sweephide="${sw.pm}">Decide later</button>` : `<button type="button" class="link" ${month ? `data-hidemonth="${month.pm}"` : exact ? 'data-hideexact' : step[3] === 'data-remindgo' ? 'data-hideremind' : step[5] || 'data-hidenext'}>${step[5] === 'data-stretch="no"' ? 'Stop here' : 'Hide'}</button>`;
+  const tail = swept ? '' : month && month.left > 0 ? `<button type="button" class="link" data-mcok="${month.pm}">It was not spent</button><button type="button" class="link" data-hidemonth="${month.pm}">Hide</button>` : sweep ? `${sw.main ? `<button type="button" class="link" data-sweep="${sw.pm}">${sw.goals.length === 1 ? 'Put it toward ' + esc(sw.main.name) : 'Put it toward a goal'}</button>` : ''}<button type="button" class="link" data-closego="${sw.pm}">Open ${MONTH_NAMES[+sw.pm.slice(5) - 1]} receipts</button><button type="button" class="link" data-sweephide="${sw.pm}">Decide later</button>` : `<button type="button" class="link" ${month ? `data-hidemonth="${month.pm}"` : exact ? 'data-hideexact' : step[3] === 'data-remindgo' ? 'data-hideremind' : step[5] || 'data-hidenext'}>${step[5] === 'data-stretch="no"' ? 'Stop here' : 'Hide'}</button>`;
   put(el, `<div class="hn-t"><b>${step[0]}</b><span>${step[1]}${month || exact || sweep || swept || step[5] || step[3] === 'data-remindgo' ? '' : ' ' + (left === 1 ? '1 step left.' : left + ' steps left.')}</span></div><div class="hn-b">${step[4] || ''}<button type="button" class="btn small ${swept ? '' : 'solid'}" ${step[3]}>${step[2]}</button>${tail}</div>`);
 }
 /* an answer was just given. With no other month waiting, the card says so with Undo, as before. With another month still waiting
@@ -269,7 +269,7 @@ function doSweep(pm) {
 function doRelease(pm) {
   const o = sweepOffer(); if (!o || o.pm !== pm) { render(); return; }
   S.ui.sweep = Object.assign({}, S.ui.sweep, { [pm]: { amt: o.left, to: 'bank', t: Date.now() } }); persist();
-  const nm = FULL[+pm.slice(5) - 1];
+  const nm = MONTH_NAMES[+pm.slice(5) - 1];
   sfx('coin'); sweptSay({ pm, id: null, to: 'bank', amt: o.left, note: `From ${nm}'s Free to spend. The bank figure now includes it.` }, `${fmt2(o.left)} counted in the bank.`); render();
 }
 function undoSweep() {
@@ -333,7 +333,7 @@ function renderHero() {
   else if (r.state === 'ontrack') { chip = '<span class="chip good">' + IC.ok + 'On track</span>'; sub = `Needed by ${dateLabel(g.due)}. ${r.slack === 0 ? 'On time.' : plural(r.slack, 'month') + ' spare.'}`; }
   else if (r.state === 'behind') { chip = '<span class="chip tight">' + IC.warn + 'Behind</span>'; sub = `Needed by ${dateLabel(g.due)}.` + (r.need != null ? ` Save about ${fmt(r.need)} a month.` : ''); fix = '<button type="button" class="btn small" data-open="lts">Change monthly amount</button>'; }
   else if (r.state === 'noeta') { chip = '<span class="chip tight">' + IC.warn + 'Slow</span>'; sub = 'Raise the monthly amount to finish sooner.'; fix = '<button type="button" class="btn small" data-open="lts">Change monthly amount</button>'; }
-  const when = dwr(r, r.pct >= 100 ? 'Full.' : r.reached ? (r.months <= 0 ? 'Full <b>this month</b>.' : `<b>${plural(r.months, 'month')}</b> to go. Full ${fullLabel(r.reached)}.`) : 'Not full within ' + SPAN + ' at this pace.');
+  const when = dwr(r, r.pct >= 100 ? 'Full.' : r.reached ? (r.months <= 0 ? 'Full <b>this month</b>.' : `<b>${plural(r.months, 'month')}</b> to go. Full ${monthLabel(r.reached)}.`) : 'Not full within ' + SPAN + ' at this pace.');
   const ms = [25, 50, 75].map(p => `<span class="ms${pct >= p ? ' hit' : ''}" style="left:${p}%"></span>`).join('');
   /* what moves it: this month's deposit and what is still to go, so progress reads as motion, not a percent */
   const mg = C.byYm[HV.ym] && C.byYm[HV.ym].g[g.id], put1 = mg ? mg.actual : 0, togo = r.togo;

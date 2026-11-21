@@ -78,13 +78,13 @@ const tap = async (p, sel) => { await p.evaluate(s => { const e = document.query
   for (const how of ['bank', 'goal']) { const { b, p, errs } = await open('2027-01-10T10:00:00');
     await mine(p, [['2026-11-03', 9000], ['2026-11-09', 8000], ['2026-11-15', 4000], ['2026-11-21', 4000], ['2026-12-03', 9000], ['2026-12-09', 8000], ['2026-12-15', 4000], ['2026-12-21', 4000]]);   /* 25,000 of 40,000 each month: 15,000 left in each */
     const c0 = await card(p);
-    ck(`SF1 ${how}: Home first asks about December`, c0.bank === '2026-12' && /December/.test(c0.text) && /15,000/.test(c0.text), c0);
+    ck(`SF1 ${how}: Home first asks about December`, c0.bank === '2026-12' && /\bDec\b/.test(c0.text) && /15,000/.test(c0.text), c0);
     ck(`SF1 ${how}: and says 30,000 is left out until the question is answered`, /¥30,000 of Free to spend is left out until you answer the question on Home/.test(c0.proof), c0.proof);
     await tap(p, how === 'bank' ? '#hNext [data-sweepbank]' : '#hNext [data-sweep]');
     const c1 = await card(p);
     ck(`SF1 ${how}: December is answered`, c1.ans === '2026-12', c1);
     ck(`SF1 ${how}: Home still says 15,000 is left out until the question is answered`, /¥15,000 of Free to spend is left out until you answer the question on Home/.test(c1.proof), c1.proof);
-    ck(`SF1 ${how}: and November's question shows straight away, with no reload`, c1.bank === '2026-11' && /November/.test(c1.text), c1);
+    ck(`SF1 ${how}: and November's question shows straight away, with no reload`, c1.bank === '2026-11' && /\bNov\b/.test(c1.text), c1);
     ck(`SF1 ${how}: the December answer can still be undone`, !!c1.undo || (/Undo/.test(c1.bar) && (how === 'bank' ? /¥15,000 counted in the bank/ : /Trip: \+¥15,000/).test(c1.bar)), c1);
     /* undo it: December is asked again */
     await p.evaluate(() => { const u = document.querySelector('#hNext [data-sweepundo]') || document.getElementById('undoGo'); u.click(); });   /* whichever Undo carries the December answer (checked just above) */ await w(700);
