@@ -4,14 +4,16 @@
      node tests/qc/golden_screens.js compare /tmp/golden_before.json     after the change (on the new build)
    compare prints every place the screen text differs and exits 1 if there is any. A difference is either a bug or an intended
    change; an intended change is listed in the release notes and the baseline is recorded again.
-   Env: N (plans, default 14), SEED (default 7), PAGE (the built page). Needs tests/setup_env.sh to have run. */
-const fs = require('fs');
+   Env: N (plans, default 14), SEED (default 7), PAGE (the built page, default this checkout's wip/money-map-team.html), MODEL (default this checkout's model.js). Needs tests/setup_env.sh to have run. */
+const fs = require('fs'), path = require('path');
+/* this worktree's model and page, not whatever /home/claude/work points at (another checkout's build gave other plans and other screens) */
+process.env.MODEL = process.env.MODEL || path.resolve(__dirname, '../../model.js');
 const { phone, w } = require('/tmp/v39/real.js');
 const { M, randomState, setSeed, pick, ri } = require('/tmp/v25/oracle.js');
 const MODE = process.argv[2], FILE = process.argv[3];
 if (!/^(record|compare)$/.test(MODE || '') || !FILE) { console.log('usage: golden_screens.js record|compare <file>'); process.exit(2); }
 const N = +(process.env.N || 14); setSeed(+(process.env.SEED || 7));
-const PAGE = process.env.PAGE || '/home/claude/work/money-map-team.html';
+const PAGE = process.env.PAGE || path.resolve(__dirname, '../../../money-map-team.html');
 const TABS = ['home', 'receipts', 'goals', 'month', 'months', 'basics'];
 
 function makeState(t) {

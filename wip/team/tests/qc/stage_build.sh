@@ -10,7 +10,7 @@
 cd "$(dirname "$0")/../.." || exit 1
 TEAM=$(pwd); REPO=$(cd ../.. && pwd)
 rm -rf /tmp/qc_build /tmp/qc && mkdir -p /tmp/qc_build /tmp/qc
-bash tests/verify.sh tests/qc/golden/$(ls tests/qc/golden | sort | tail -1) > /tmp/qc_build/verify.txt 2>&1; RC=$?
+bash tests/verify.sh $(ls tests/qc/golden/*.json | sort | tail -1) > /tmp/qc_build/verify.txt 2>&1; RC=$?
 cp ../money-map-team.html /tmp/qc_build/build.html
 [ -d "$REPO/public/fonts" ] && cp -r "$REPO/public/fonts" /tmp/qc_build/fonts
 cmp -s ../money-map-team.html /tmp/qc_build/build.html || { echo "STAGE FAILED: the copy differs from the build"; exit 1; }

@@ -299,7 +299,7 @@ function randomState(opt) {
     if (rnd() < .6) { g.target = ri(0, pay * 8); } if (rnd() < .6) { g.start = ri(0, Math.max(1, Math.round(g.target * 1.3))); }
     if (!g.emergency && rnd() < .5) { const ym = pick(M.MONTHS), d = pick([1, 10, 14, 15, 16, 17, 28]); g.due = ym + '-' + String(d).padStart(2, '0'); }
     else if (!g.emergency && rnd() < .4) g.due = '';
-    if (g.emergency) { g.stretch = rnd() < .5 ? ri(0, g.target * 3) : g.stretch; if (rnd() < .2) g.due = ''; if (rnd() < .5) { g.stretchOn = true; if (rnd() < .5) g.stretchFrom = pick(M.MONTHS); } }
+    if (g.emergency) { g.stretch = rnd() < .5 ? ri(0, g.target * 3) : g.stretch; if (rnd() < .2) g.due = ''; if (rnd() < .5) { g.stretchOn = true; const r2 = rngOf(seed * 7 + 13); if (r2() < .5) g.stretchFrom = M.MONTHS[Math.floor(r2() * M.MONTHS.length)]; } }   /* stretchFrom from its own stream: drawing it from rnd() shifted every later plan, so the golden screens drew new plans (13 of 14 MISSING) */
     if (!g.due && rnd() < .5) g.monthly = ri(0, Math.round(pay * .3));
     if (rnd() < .5) M.setVal(S, 'goal:' + g.id, pick(M.MONTHS), ri(0, Math.round(pay * .4)), rnd() < .6 ? 'after' : 'once');
     if (rnd() < .3) M.setVal(S, 'goal:' + g.id, pick(M.MONTHS), ri(0, Math.round(pay * .4)), 'after');
