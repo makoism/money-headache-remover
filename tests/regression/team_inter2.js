@@ -39,7 +39,7 @@ const PESO = (() => { const src = require('fs').readFileSync(process.env.MODEL |
   ok('no back button on screen 1', await p.$eval('#tourBack', e => e.hidden));
   await p.click('#tourNext'); await w(250);
   ok('screen 2 asks for the currency and what to call you', (await q('#tourTitle')) === 'Currency' && (await q('#tourPart')) === 'Welcome' && (await val('#tourName')) === '');
-  ok('...and a promise that it stays private', (await tourText()).includes('stays in this browser') && (await tourText()).includes('nobody else can see it'));
+  ok('...and a promise that it stays private', /stays? in this browser/.test(await tourText()) && /nobody else can see (it|them)/.test(await tourText()));
   await p.type('#tourName', '  Mara ');
   ok('six currency chips, yen preselected', (await p.$$eval('input[name=tourCur]', e => e.length)) === 6 && (await p.$eval('input[name=tourCur]:checked', e => e.value)) === '¥');
   await p.click('input[name=tourCur][value="$"]'); await w(150);

@@ -1,6 +1,6 @@
 /* ---------- Scan receipts: the card at the top of the Receipts tab ----------
    Take a photo or pick pictures, Claude reads them through the viewer's own Claude account, the page checks every field and shows
-   what it found with a category picker on each line, and nothing is added until the person taps "Add to my page".
+   what it found with a category picker on each line, and nothing is added until the person taps the Add button ("Add 3 receipts").
    If this copy of the page cannot reach Claude, the same card offers the Claude app: copy one message, paste Claude's answer back. */
 let scanFiles = [], scanBusy = false, scanCtl = null, scanTried = false, scanSettled = false, scanConn = null, scanOpened = false, scanUrls = [], scanKeep = null;
 const SCAN_MAX_PX = 2400;

@@ -41,7 +41,7 @@ const fs = require('fs');
         if (k === 'csv') {
           await p.evaluate(() => document.querySelector('#scanOut2').scrollIntoView({ block: 'center' })); await w(250);
           await p.screenshot({ path: `/tmp/v22/scanD_${vw}.png` });
-          await p.evaluate(() => [...document.querySelectorAll('#scanOut2 .msg.card button')].find(x => /Add to my page/.test(x.textContent)).click()); await w(800);
+          await p.evaluate(() => [...document.querySelectorAll('#scanOut2 .msg.card button')].find(x => /Add to my page|^Add \d+ receipt/.test(x.textContent)).click()); await w(800);
           console.log('after add:', (await p.$eval('#scanOut2', e => e.innerText)).replace(/\n/g, ' | '));
           console.log('list:', (await p.$eval('#rcList', e => e.innerText)).replace(/\n/g, ' | ').slice(0, 200));
         }

@@ -86,7 +86,7 @@ function renderBackupNudge() {
     /* LAUNCH_CHECKLIST E9: a cloud save that failed is said on Home too, until a save works */
     html = `<div class="hn-t"><b>The cloud copy is behind</b><span>Changes made since ${vaultWhen(vault.failAt)} are on this device only. ${vaultTriedText() || 'It tries again by itself on your next change.'}</span></div><div class="hn-b"><button type="button" class="btn small solid" data-vault-retry>Send now</button></div>`;
   } else if (vault.on && cloud && !S.ui.vaultSeen && !bkNote) {
-    html = `<div class="hn-t"><b>Save your recovery code</b><span>Your numbers have an encrypted cloud copy now. This code is the only way to open it on another phone.</span></div><div class="vault-wrap" data-vault-code></div>`;
+    html = `<div class="hn-t"><b>Save your recovery code</b><span>Your numbers have a locked cloud copy now. This code is the only way to open it on another phone.</span></div><div class="vault-wrap" data-vault-code></div>`;
   } else if (bkNote) {
     const when = bkNote.t ? vaultWhen(bkNote.t).split(',')[0] : '';
     html = `<div class="hn-t"><b>Numbers restored</b><span>This page lost its saved numbers so it loaded the copy kept in this browser${when ? ' from ' + when : ''}. Tap Save file to keep a backup as well.</span></div><div class="hn-b"><button type="button" class="btn small solid" data-bk-now>Save file</button><button type="button" class="link" data-bk-ok>OK</button></div>`;

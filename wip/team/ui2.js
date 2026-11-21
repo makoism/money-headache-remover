@@ -59,7 +59,7 @@ function jarNote(m) {
 const LTS_HINT = ' Each slider sets what goes into that goal this month, so sliding up takes from Left and sliding down gives it back. If you leave them alone the amounts are worked out from each goal\'s amount and date.';
 
 /* ---------- the first-steps card ---------- */
-const START_SUB = 'These are sample numbers for one salary, replace them with yours. Your data stays in this browser.';
+const START_SUB = 'These are sample numbers for one salary, replace them with yours. Your numbers stay in this browser.';
 const BASICS_SUB = 'Name, currency, balance, look, saved data.';
 const MAKE_CAP = 'The amounts are samples for one salary, so start at zero or type over them. They\'re saved in this browser only and nobody else sees them, including whoever shared this page.';
 const START_STEPS = [

@@ -70,7 +70,7 @@ process.on('unhandledRejection', e => { console.log('UNHANDLED', e && e.message)
   await p.evaluate(() => { const s = document.querySelectorAll('#scanOut select.catsel'); s[1].value = [...s[1].options].find(o => o.value !== 'other' && o.value !== s[1].value).value; s[1].dispatchEvent(new Event('change')); document.querySelectorAll('#scanOut .msg.card li input')[2].click(); });
   const chosenCat = await p.evaluate(() => document.querySelectorAll('#scanOut select.catsel')[1].value);
   const streak0 = await p.evaluate(() => (document.querySelector('#hStreak') || {}).innerText || '');
-  await p.evaluate(() => [...document.querySelectorAll('#scanOut .msg.card button')].find(x => /Add to my page/.test(x.textContent)).click()); await w(900);
+  await p.evaluate(() => [...document.querySelectorAll('#scanOut .msg.card button')].find(x => /Add to my page|^Add \d+ receipt/.test(x.textContent)).click()); await w(900);
   const done = await p.evaluate(() => document.querySelector('#scanOut .msg.card').innerText);
   ok(/Added 2 receipts/.test(done), 'added the 2 ticked receipts: ' + done.replace(/\n/g, ' | '));
   const list = await p.evaluate(() => document.querySelector('#rcList').innerText);
