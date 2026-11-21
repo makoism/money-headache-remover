@@ -159,6 +159,10 @@ function normalize(d) {
    Once someone has typed their own, only the symbol changes. */
 const stable = o => JSON.stringify(o, (k, v) => v && typeof v === 'object' && !Array.isArray(v) ? Object.keys(v).sort().reduce((a, x) => (a[x] = v[x], a), {}) : v);
 const dataSig = x => stable({ plan: x.plan, steps: x.steps, once: x.once, items: x.items, cfg: x.cfg, receipts: x.receipts });
+/* the numbers as one short code. The kept copy from before a big change remembers it at the first save after that change, so Settings
+   can tell when anything was typed since (QC round 8 wording confusing 3) */
+const numsHash = x => { const t = dataSig(x); let h = 2166136261; for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36) + '.' + t.length; };
+const keptChanged = k => !!(k && k.sig && k.sig !== numsHash(S));
 /* a few of the examples are Philippine, so they show only when the currency is the peso */
 const LOCAL_SWAPS = [
   ['include your own SSS, PhilHealth and Pag-IBIG payments', 'include your own public pension and health insurance payments'],
@@ -249,7 +253,7 @@ function keepUnknown() {
     if (Array.isArray(d.receipts) && Array.isArray(S.receipts)) { const by = new Map(d.receipts.filter(r => r && typeof r.id === 'string').map(r => [r.id, r])); S.receipts.forEach(r => { const o = by.get(r.id); if (o) Object.keys(o).forEach(k => { if (!(k in r) && !RC_KNOWN.has(k) && PLAIN_KEY.test(k) && ['string', 'number', 'boolean'].indexOf(typeof o[k]) >= 0) r[k] = o[k]; }); }); }
   } catch (e) { /* the stored copy is unreadable: nothing to carry over */ }
 }
-function flush() { saveTimer = null; let ok = true; try { mergedN = 0; mergeOtherReceipts(); keepUnknown(); if (mergedN > 0) setTimeout(() => { try { render(); } catch (e) { } }, 0); if (!storedIsNewer()) { localStorage.setItem(KEY, JSON.stringify(S)); seenRev = +S.rev || 0; } } catch (e) { ok = false; } setSave(ok ? 'device' : 'error'); mirrorOut(m => { if (!ok && m) setSave('device'); }); vaultQueue(); }
+function flush() { saveTimer = null; let ok = true; try { mergedN = 0; mergeOtherReceipts(); keepUnknown(); if (S.ui && S.ui.keep && S.ui.keep.sig == null) S.ui.keep.sig = numsHash(S); if (mergedN > 0) setTimeout(() => { try { render(); } catch (e) { } }, 0); if (!storedIsNewer()) { localStorage.setItem(KEY, JSON.stringify(S)); seenRev = +S.rev || 0; } } catch (e) { ok = false; } setSave(ok ? 'device' : 'error'); mirrorOut(m => { if (!ok && m) setSave('device'); }); vaultQueue(); }
 /* another tab saved a newer copy than this tab holds (only possible with two tabs open): then this tab must not write over it */
 function storedIsNewer() { try { const raw = localStorage.getItem(KEY); if (!raw) return false; const i = raw.indexOf('"rev":'); if (i < 0) return false; const r = parseInt(raw.slice(i + 6), 10); return r > +(S.rev || 0); } catch (e) { return false; } }
 /* two tabs of the app in one browser: when the other tab saves, this one takes its numbers instead of writing over them later.

@@ -65,7 +65,11 @@ function paintBk() {
   /* the numbers from before a big change stay one tap away here for as long as they are kept, after the Undo bar has gone (QC round 4
      data safety 5, north-star agent check C8) */
   const kl = $('#keepLine'), k = S.ui && S.ui.keep, ok = !!(k && typeof k.snap === 'string' && +k.t > 0 && Date.now() - k.t <= KEEP_DAYS * 864e5);
-  if (kl) { kl.hidden = !ok; if (ok) $('#keepTxt').textContent = `${k.why || 'Your numbers changed.'} The numbers from before are kept until ${dateLabel(ymd(new Date(+k.t + KEEP_DAYS * 864e5)))}.`; }
+  if (kl) { kl.hidden = !ok; if (ok) {
+    /* once anything was typed after the change, Put them back would replace that too: say from when the kept numbers are and what the tap replaces */
+    const until = dateLabel(ymd(new Date(+k.t + KEEP_DAYS * 864e5))), ch = keptChanged(k), at = ymd(new Date(+k.t)), from = at.slice(0, 4) === todayStr().slice(0, 4) ? dateLabel(at).replace(/ \d{4}$/, '') : dateLabel(at);
+    $('#keepTxt').textContent = ch ? `Numbers from before ${from} are kept until ${until}.` : `${k.why || 'Your numbers changed.'} The numbers from before are kept until ${until}.`;
+    $('#keepBack').textContent = ch ? 'Put them back (replaces what is here now)' : 'Put them back'; } }
 }
 /* a backup is due: numbers in, no cloud copy, none saved for three weeks, and Later not pressed this week */
 function backupDue() {
