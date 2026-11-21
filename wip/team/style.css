@@ -1623,6 +1623,7 @@ body.bv-on .wrap, body.bv-on #mgBand { visibility: hidden; }
 .hb-n { font-size: 14px; font-weight: 600; text-align: center; line-height: 1.2; }
 .hb-bar { width: 84px; height: 5px; border-radius: 4px; background: rgba(255, 255, 255, .16); overflow: hidden; }
 .hb-bar i { display: block; height: 100%; background: #f6c945; }
+.hb-held .hb-p { max-width: 120px; text-align: center; } /* "left after it was paid" wraps under the picture instead of widening its tile (QC round 8 art director polish 10) */
 .hb-bar.hb-slot { visibility: hidden; } /* a held burrow has no goal to fill: the bar's room is kept so its text lines up with the row */
 .hb-p { font-size: 12px; opacity: .8; }
 .hb-note { margin: 12px 4px 0; font-size: 15px; line-height: 1.4; color: var(--ink2); }
