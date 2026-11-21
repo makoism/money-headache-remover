@@ -17339,7 +17339,7 @@ function renderMap() {
     if (sv && inp) { /* the box opens empty with the balance as its grey hint (a filled box turned 1200 plus a typed 1150 into 12001150); saving it empty keeps that balance, checked today */
       const go = () => { const keep = inp.value === '' && hasBank && !(inp.validity && inp.validity.badInput); if (!keep && (inp.value === '' || !isFinite(+inp.value))) { cheer('Type the balance your bank app shows, in numbers'); inp.focus(); return; } renderMap.ask = false; ACT.setBankNow(keep ? NW.bank : inp.value); sfx('tap'); cheer((keep ? 'Kept: ' + fmt2(nowOf(S).bank) + ' in your bank, checked today.' : 'Bank updated: ' + fmt2(nowOf(S).bank) + ' today.') + (smpOn ? ' It shows here once you use your own numbers.' : '')); };
       sv.onclick = go; inp.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); go(); } }; } }
-  { const ad = $('#mpCardAdd'); if (ad) ad.onclick = () => { renderMap.card = 'new'; renderMap(); const i = $('#mpCardName'); if (i) i.focus(); };
+  { const ad = $('#mpCardAdd'); if (ad) ad.onclick = () => { renderMap.card = 'new'; renderMap(); const i = $('#mpCardName'); if (i) i.focus(); const sv = $('#mpCardSave'); if (sv) sv.scrollIntoView({ block: 'nearest' }); };   /* Save in sight too, clear of the Help strip and an Undo bar */
     el.querySelectorAll('[data-card]').forEach(b => { b.onclick = () => { renderMap.card = b.dataset.card; renderMap(); const i = $('#mpCardOwed'); if (i) i.focus(); }; });
     const cn = $('#mpCardNo'); if (cn) cn.onclick = () => { renderMap.card = null; renderMap(); };
     const cd = $('#mpCardDel'); if (cd) cd.onclick = () => { const id = renderMap.card; renderMap.card = null; ACT.removeCard(id); cheer('Card removed'); };
@@ -17625,6 +17625,10 @@ function wire() {
     { const c = $('#cheer'), r = u.getBoundingClientRect(); if (c && c.classList.contains('on') && r.height && !document.body.classList.contains('touring')) c.style.bottom = Math.round(innerHeight - r.top + 8) + 'px'; }   /* a message already up moves above the bar, however tall the bar is */
     if (!ms && snap !== 'receipt' && snap !== 'sweep') { u.dataset.stay = '1'; return; }
     delete u.dataset.stay; undoT = setTimeout(() => { u.hidden = true; undoSnap = null; undoFn = null; }, ms || 30000); };
+  /* while the Undo bar is up, a box or button that scrolls itself into view stays clear of it as well as of the Help strip (the bar of a
+     big change stays across tabs, so it can sit over a form: the Add a card Save, QC round 6 merge) */
+  { const ub = $('#undoBar'), pad = () => { const r = !ub.hidden && ub.getClientRects().length ? ub.getBoundingClientRect() : null; document.documentElement.style.scrollPaddingBottom = r && r.height ? Math.round(innerHeight - r.top + 8) + 'px' : ''; };
+    new MutationObserver(pad).observe(ub, { attributes: true, attributeFilter: ['hidden'] }); addEventListener('resize', pad); }
   const undoHide = () => { clearTimeout(undoT); const u = $('#undoBar'); u.hidden = true; delete u.dataset.stay; undoSnap = null; undoFn = null; };
   $('#undoX').addEventListener('click', undoHide);   /* Close: the copy from before stays in Settings, Put them back, for its days */
   window.offerUndoG = offerUndo;
