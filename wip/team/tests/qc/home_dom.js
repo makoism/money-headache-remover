@@ -57,7 +57,9 @@ const monShort = ym => MON[+ym.slice(5) - 1], monLong = ym => monShort(ym) + ' '
       /* QC round 6: that month is more than 3 months away, so it reads "Later on", not "Coming up" */
       let later = false;
       if (!bad.length) for (let k = 4; i0 + k < M.MONTHS.length; k++) { const x = M.MONTHS[i0 + k], mx = C.byYm[x]; if (mx.bankEnd < floor) { later = true; bad.push(monShort(x) + (x.slice(0, 4) !== ym.slice(0, 4) ? ' ' + x.slice(0, 4) : '') + (mx.bankEnd < 0 ? ' ends below zero' : mx.left < 0 ? ' is short' : ' ends under your minimum')); break; } }
-      if (i0 + 1 < M.MONTHS.length && !(V.month.over > 0.004 && !bad.length)) has(tag + ' status ahead', T.st, bad.length ? (later ? 'Later on: ' : 'Coming up: ') + bad.join(', ') + '. Open Plan to see why.' : 'The next 3 months look fine.');
+      /* QC round 7 wording, confusing 1: a month that starts below zero with Free to spend held back never says the next 3 months look fine */
+      const pR = V.map.month.find(x => x.id === 'play'), negStart = stat === 'good' && !!(pR && pR.notCovered) && (pR.startBelow > 0 || V.month.bankStart < -0.004);
+      if (i0 + 1 < M.MONTHS.length && !(V.month.over > 0.004 && !bad.length) && !(negStart && !bad.length)) has(tag + ' status ahead', T.st, bad.length ? (later ? 'Later on: ' : 'Coming up: ') + bad.join(', ') + '. Open Plan to see why.' : 'The next 3 months look fine.');
       if (bad.length) lacks(tag + ' status ahead word', T.st, later ? 'Coming up' : 'Later on'); }
     /* ---- treasure chest ---- */
     const p0 = V.play;

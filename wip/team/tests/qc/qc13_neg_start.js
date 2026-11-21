@@ -31,7 +31,7 @@ const setBank = async (p, v, at) => { await p.evaluate((v, at) => { const S = __
   ck('no day: the status box says not safe to spend yet', /not safe to spend yet/i.test(a.st), a.st);
   ck('no day: the status box warns the plan starts below zero', /below zero/.test(a.st) && /−¥15,000|-¥15,000/.test(a.st), a.st);
   ck('no day: the status box never says the bills are covered next to "not safe"', !/bills are covered|Bills are covered/.test(a.st), a.st);
-  ck('no day: the status box says the bills fit in the pay', /Your bills fit in your pay/.test(a.st), a.st);
+  ck('no day: the status box says the bank starts the month below zero', /Your bank starts the month below zero/.test(a.st), a.st);   /* QC round 7 wording, confusing 1 */
   await L.tab(p, 'tab-receipts'); await w(500); const rc = await txt(p);
   ck('no day: Receipts says not safe to spend yet', /not safe to spend yet/.test(rc) && !safeAlone(rc), rc.match(/.{60}safe to spend.{20}/g));
   await L.tab(p, 'tab-month'); await L.clickText(p, 'Month'); await w(500); const pm = await txt(p);
