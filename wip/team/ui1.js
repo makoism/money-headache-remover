@@ -84,7 +84,7 @@ function goalFormHTML(g) {
   const own = hasOwnMonthly(S, g.id), id = esc(g.id), lo = START + '-01', hi = END + '-28';
   return `<div class="gform" data-gid="${id}">
     <div class="field"><label for="ge-${id}-name">Name</label><input class="txt" id="ge-${id}-name" data-g="name" type="text" value="${esc(g.name)}" maxlength="60"></div>
-    <div class="field wide"><label for="ge-${id}-why">Why (optional)</label><input class="txt" id="ge-${id}-why" data-g="why" type="text" value="${esc(g.why || '')}" maxlength="80" placeholder="Why it matters, in your words"><p class="cap">This shows next to the goal so you keep seeing why</p></div>
+    <div class="field wide"><label for="ge-${id}-why">Why (optional)</label><input class="txt" id="ge-${id}-why" data-g="why" type="text" value="${esc(g.why || '')}" maxlength="80" placeholder="Why it matters, in your words"><p class="cap">This shows next to the goal so you keep seeing why.</p></div>
     <div class="field"><label for="ge-${id}-target">${dbt ? 'Total owed' : 'Goal amount'}</label><div class="inp"><span class="yen cs"></span><input id="ge-${id}-target" data-g="target" type="number" inputmode="numeric" min="0" step="100" value="${g.target}"></div></div>
     <div class="field"><label for="ge-${id}-start">${dbt ? 'Already paid off' : 'Already saved'}</label><div class="inp"><span class="yen cs"></span><input id="ge-${id}-start" data-g="start" type="number" inputmode="numeric" min="0" step="100" value="${g.start}"></div></div>
     <div class="field"><label for="ge-${id}-due">${dbt ? 'Paid off by' : 'Needed by'}</label><input type="date" id="ge-${id}-due" data-g="due" min="${lo}" max="${hi}" value="${esc(g.due)}"><p class="cap">With a date the amount left gets spread over the months before it, and without one it's planned over about a year.${g.due ? ' <button type="button" class="link" data-gnodate>Remove date</button>' : ''}</p></div>
@@ -169,7 +169,7 @@ const CURS = [['₱', '₱ Philippine peso'], ['$', '$ Dollar'], ['€', '€ Eu
 const SETF = [
   { k: 'bankStart', label: 'Money today (bank plus cash)', hint: 'What you have right now, which is where the first month in the plan starts. Update it whenever you check your bank. If you\'re overdrawn type a minus, like -400.' },
   { k: 'minBank', label: 'Minimum balance', hint: 'You get a warning when a month would end below this.' },
-  { k: 'ceiling', label: 'Free to spend cap', hint: 'The most you want Free to spend to be in a month, shown as a mark on the Free to spend bar in Plan' },
+  { k: 'ceiling', label: 'Free to spend cap', hint: 'The most you want Free to spend to be in a month, shown as a mark on the Free to spend bar in Plan.' },
 ];
 function buildStatic() {
   $('#curSel').innerHTML = CURS.map(c => `<option value="${esc(c[0])}">${esc(c[1])}</option>`).join('');

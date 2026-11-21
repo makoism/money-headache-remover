@@ -51,7 +51,7 @@ function renderDebts() {
   }
   const owed = (m.debts && ds.length ? m.debtStart : 0) || 0;
   const free = rows.length && rows.every(r => !r.never) ? rows.reduce((a, r) => (r.payoffYm > a ? r.payoffYm : a), '') : '';
-  $('#debtSub').textContent = !ds.length ? 'Cards and loans with interest, and their payments are part of Bills and basics'
+  $('#debtSub').textContent = !ds.length ? 'Cards and loans with interest, and their payments are part of Bills and basics.'
     : `${fmt(owed)} owed at the start of ${monthLabel(sel, true)}. ${m.debtInterest > 0 ? fmt(m.debtInterest) + ' interest this month. ' : ''}${free ? 'Debt free ' + monthLabel(free) + '.' : rows.some(r => r.never) ? 'One of them isn\'t being paid off.' : ''}`;
   /* the Plan row */
   const row = document.querySelector('.row[data-id="debts"]'); if (row) row.hidden = !ds.length;
@@ -245,7 +245,7 @@ function renderRecurring() {
   const sig = JSON.stringify([rs, REC_OPEN, cats.map(o => o.value + o.textContent)]); if (el.dataset.sig === sig) return;
   if (el.contains(document.activeElement) && document.activeElement.matches('input, select') && REC_OPEN) return;
   el.dataset.sig = sig;
-  el.innerHTML = `<div class="head"><h2>Repeating spending</h2><p class="sub2">Like a gym fee or a weekly top-up: it gets logged for you on its day</p></div>
+  el.innerHTML = `<div class="head"><h2>Repeating spending</h2><p class="sub2">Like a gym fee or a weekly top-up: it gets logged for you on its day.</p></div>
     ${rs.length ? `<ul class="recl">${list}</ul>` : '<p class="cap">None yet.</p>'}
     ${REC_OPEN ? `<form class="addrow rec-form" id="recForm" autocomplete="off">
       <div class="inp sm"><span class="yen cs"></span><input id="recAmt" type="number" inputmode="decimal" min="0" step="any" placeholder="Amount" aria-label="Amount"></div>
