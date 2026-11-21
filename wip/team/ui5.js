@@ -3,15 +3,15 @@
 function wire() {
   placeArt(); placePix(); GD.init();
   $$('[data-tab]').forEach(b => {
-    /* a person changing tab is done with the message about what just happened: the Undo bar goes (launch checklist Q7). The copy from
-       before stays in Settings for its days. A tab opened by the app itself, right after a change, keeps the bar */
-    const byHand = () => { if (b.dataset.tab !== tab) $('#undoBar').hidden = true; };
+    /* a person changing tab is done with a small message about what just happened: that Undo bar goes (launch checklist Q7). The Undo
+       of a big change (a 3-day copy) stays until it is tapped, closed or replaced by another Undo (QC round 6 data safety B1) */
+    const byHand = () => { const u = $('#undoBar'); if (b.dataset.tab !== tab && !u.dataset.stay) u.hidden = true; };
     b.addEventListener('click', () => { byHand(); switchTab(b.dataset.tab); });
     b.addEventListener('keydown', e => {
       const bar = TAB_BAR.filter(n => { const x = $('#tab-' + n); return x && !x.hidden; }); /* only the tabs you can see */
       const i = bar.indexOf(b.dataset.tab); let j = -1;
       if (e.key === 'ArrowRight') j = (i + 1) % bar.length; else if (e.key === 'ArrowLeft') j = (i + bar.length - 1) % bar.length;
-      if (i >= 0 && j >= 0) { e.preventDefault(); $('#undoBar').hidden = true; switchTab(bar[j], true); }
+      if (i >= 0 && j >= 0) { e.preventDefault(); { const u = $('#undoBar'); if (!u.dataset.stay) u.hidden = true; } switchTab(bar[j], true); }
     });
   });
   $('#monthSel').addEventListener('change', e => select(e.target.value));
@@ -205,21 +205,28 @@ function wire() {
   /* Set all to zero and Restore samples replace every number: a copy of before is kept for KEEP_DAYS days */
   let undoSnap = null, undoT = 0;
   let undoFn = null;
-  const offerUndo = (snap, txt, fn, ms) => { undoFn = fn || null; undoSnap = snap; $('#undoTxt').textContent = txt; $('#undoBar').hidden = false; clearTimeout(undoT); undoT = setTimeout(() => { $('#undoBar').hidden = true; undoSnap = null; }, ms || 30000); };
+  /* a big change (a copy of before, or a month reset) keeps its Undo bar until it is tapped, closed or replaced by another Undo, also
+     across tab changes; a small one (a receipt, an answer about last month's money) goes by itself (QC round 6 data safety B1) */
+  const offerUndo = (snap, txt, fn, ms) => { undoFn = fn || null; undoSnap = snap; $('#undoTxt').textContent = txt; const u = $('#undoBar'); u.hidden = false; clearTimeout(undoT);
+    { const c = $('#cheer'), r = u.getBoundingClientRect(); if (c && c.classList.contains('on') && r.height && !document.body.classList.contains('touring')) c.style.bottom = Math.round(innerHeight - r.top + 8) + 'px'; }   /* a message already up moves above the bar, however tall the bar is */
+    if (!ms && snap !== 'receipt' && snap !== 'sweep') { u.dataset.stay = '1'; return; }
+    delete u.dataset.stay; undoT = setTimeout(() => { u.hidden = true; undoSnap = null; undoFn = null; }, ms || 30000); };
+  const undoHide = () => { clearTimeout(undoT); const u = $('#undoBar'); u.hidden = true; delete u.dataset.stay; undoSnap = null; undoFn = null; };
+  $('#undoX').addEventListener('click', undoHide);   /* Close: the copy from before stays in Settings, Put them back, for its days */
   window.offerUndoG = offerUndo;
   /* the setup steps were opened by Re-split pay and the page was closed part-way: the copy from before is still one tap away */
   if (S.ui && S.ui.preSplit && !tourIsOpen) { const sn = S.ui.preSplit; delete S.ui.preSplit; keepCopy(sn, 'Setup was changing your plan.'); persist(); }
   /* the copy from before a big change is offered again on every open for 3 days, then let go */
-  if (S.ui && S.ui.keep) { const k = S.ui.keep; if (!(typeof k.snap === 'string' && +k.t > 0) || Date.now() - k.t > KEEP_DAYS * 864e5) { delete S.ui.keep; persist(); } else offerUndo(k.snap, `${k.why || 'Your numbers changed.'} You can undo until ${dateLabel(ymd(new Date(+k.t + KEEP_DAYS * 864e5)))}.`, k.act ? () => restoreKept(k.snap, k.added) : k.cloud ? () => { vaultUndoLoad(); S = normalize(JSON.parse(k.snap)); } : null); }   /* a copy an action kept: Undo keeps the receipts logged since (actions.js restoreKept) */
+  if (S.ui && S.ui.keep) { const k = S.ui.keep; if (!(typeof k.snap === 'string' && +k.t > 0) || Date.now() - k.t > KEEP_DAYS * 864e5) { delete S.ui.keep; persist(); } else offerUndo(k.snap, `${k.why || 'Your numbers changed.'} You can undo until ${dateLabel(ymd(new Date(+k.t + KEEP_DAYS * 864e5)))}.${k.cloud && !k.act ? ' Undo also stops sharing the cloud copy on this phone.' : ''}`, k.act ? () => restoreKept(k.snap, k.added) : k.cloud ? () => { vaultUndoLoad(); S = normalize(JSON.parse(k.snap)); } : null); }   /* a copy an action kept: Undo keeps the receipts logged since (actions.js restoreKept) */
   $('#keepBack').addEventListener('click', () => {
     const k = S.ui && S.ui.keep; if (!(k && typeof k.snap === 'string')) return;
-    const cur = snapNoCopy(); clearTimeout(undoT); $('#undoBar').hidden = true; undoSnap = null; undoFn = null;
+    const cur = snapNoCopy(); undoHide();
     if (k.act) restoreKept(k.snap, k.added); else { if (k.cloud) vaultUndoLoad(); S = normalize(JSON.parse(k.snap)); }   /* a cloud load: stop sharing first (QC round 5 data safety B1) */
     keepCopy(cur, 'You put back the numbers from before.');   /* what was there is kept in its place, so this can be undone too */
     editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = ''; sfx('back');
     cheer(`Your numbers from before are back. What was there is kept for ${KEEP_DAYS} days.`);
   });
-  $('#undoGo').addEventListener('click', () => { if (!undoSnap) return; clearTimeout(undoT); $('#undoBar').hidden = true; if (undoFn) { undoFn(); undoFn = null; } else S = normalize(JSON.parse(undoSnap)); undoSnap = null; editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = ''; sfx('back'); cheer('Your numbers are back.'); });
+  $('#undoGo').addEventListener('click', () => { if (!undoSnap) return; const fn = undoFn, sn = undoSnap; undoHide(); if (fn) fn(); else S = normalize(JSON.parse(sn)); editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = ''; sfx('back'); cheer('Your numbers are back.'); });
   const blank = () => { const sn0 = snapNoCopy(); offerUndo(sn0, `All your numbers are set to zero. You can undo for ${KEEP_DAYS} days.`); S = blankState(S, sampleOn()); S.ui.cleared = true; delete S.ui.setup; delete S.ui.src; delete S.ui.imp; keepCopy(sn0, 'Your numbers were set to zero.'); editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = 'Everything is at zero now, start with your pay';   /* a 3-day copy like every other big change (38.31 data safety round 4) */ select(START); if (tab !== 'month') switchTab('month'); };
   twoStep($('#blankBtn'), `Tap again: clears pay, bills, goals, saved amounts and your balance. Receipts stay. You can undo for ${KEEP_DAYS} days.`, blank);
   twoStep($('#blankTop'), `Tap again: clears pay, bills, goals, saved amounts and your balance. Receipts stay. You can undo for ${KEEP_DAYS} days.`, blank);

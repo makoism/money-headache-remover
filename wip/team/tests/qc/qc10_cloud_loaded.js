@@ -44,11 +44,14 @@ const bar = p => p.evaluate(() => { const b = document.getElementById('undoBar')
   ck('B: the Undo button is inside the screen', b1.shown && b1.undoInside, b1);
   ck('B: the bar is solid, so page text never shows through it (QC10 north-star F5)', b1.shown && b1.solid, b1.bg);
   ck('B: one message at a time: no other toast under the bar', b1.shown && !b1.cheerOn, b1);
-  /* another tab: the message is about the load just made, not about the tab opened next */
+  /* another tab: the Undo of a load stays until it is tapped or closed (QC round 6 data safety B1); Close takes it away */
   await B.p.evaluate(() => { const c = document.getElementById('setClose') || document.querySelector('#settings [data-close], #gearClose'); c && c.click(); }); await w(400);
   await L.tab(B.p, 'tab-receipts'); await w(400);
-  const b2 = await bar(B.p);
-  ck('B: after opening another tab the message is gone', !b2.shown, b2);
+  let b2 = await bar(B.p);
+  ck('B: after opening another tab the Undo of the load is still there', b2.shown && /^Cloud copy loaded/.test(b2.text), b2);
+  await B.p.evaluate(() => document.getElementById('undoX').click()); await w(400);
+  b2 = await bar(B.p);
+  ck('B: Close takes the message away', !b2.shown, b2);
   ck('B: what was on B before is still kept as a copy (Settings, for days)', await B.p.evaluate(() => !!__t.S.ui.keep));
   ck('B: the receipt from A is still there after changing tab (nothing was undone by hiding)', /Made-up noodles/.test(await receipts(B.p)));
 

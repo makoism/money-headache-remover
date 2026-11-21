@@ -118,6 +118,7 @@ function vaultUndoLoad() {
   let pv = null; try { pv = JSON.parse(localStorage.getItem(VAULT_KEY + '-before') || 'null'); localStorage.removeItem(VAULT_KEY + '-before'); } catch (e) { /* no storage */ }
   clearTimeout(vaultTimer); vault = pv && pv.code ? { code: pv.code, rev: +pv.rev || 0, on: true, failAt: 0, local: +pv.local || 0 } : { code: '', rev: 0, on: false, failAt: 0 };
   vaultKeys = null; vaultNote = null; vaultSaveLocal();
+  paintVault();   /* Settings says Off right away, not after another reload (QC round 6 data safety confusing 1) */
 }
 async function vaultLoadNewer() {
   if (!vaultNote || vaultNote.kind !== 'newer') return;
