@@ -16165,7 +16165,12 @@ function afterLog(first, batch) {
   const r = markWeek(); persist(); render();
   /* a receipt that takes free to spend past its plan is not a moment to celebrate: the Over state on Home says it, and the log line stays plain */
   let over = false; try { const mm = HV && HV.map; over = !!(mm && mm.overspent > 0); } catch (e) { }
-  if (over) { sfx('coin'); { const mm = HV.map, pl = mm.month.find(x => x.id === 'play'), bu = mm.burrows.find(x => x.over); const names = []; if (pl && pl.overBy > 0) names.push('Free to spend'); const nc = mm.month.find(x => x.id === 'nec'); if (nc && nc.overBy > 0) names.push('Bills and basics'); mm.burrows.filter(x => x.over).forEach(x => names.push(x.name)); cheer('Logged. ' + (names.length ? names.map(n => n + (n === 'Bills and basics' ? ' are' : ' is') + ' over').join(', ') + ' for this month.' : 'Over plan this month.')); }; return; }
+  /* every place that went past the plan is named with its amount, from the model's overBits, so the parts add up to what went past the plan
+     this month: Other and Investing too (38.31 number gate round 8, finding 3). A pile that covered its own overspend is named without an amount */
+  if (over) { sfx('coin'); { const mm = HV.map, OB = (HV.month && HV.month.overBits) || {}, nameOf = id => id === 'other' ? 'Other' : ((mm.month.find(x => x.id === id) || mm.burrows.find(x => x.id === id) || {}).name || ''), said = [];
+    ['play', 'nec', 'other', 'ffa', 'edu', 'give'].forEach(id => { if (OB[id] > 0 && nameOf(id)) said.push(nameOf(id) + (id === 'nec' ? ' are ' : ' is ') + fmt2(OB[id]) + ' over'); });
+    mm.burrows.filter(x => x.over && !(OB[x.id] > 0)).forEach(x => said.push(x.name + ' is over'));
+    cheer('Logged. ' + (said.length ? said.join(', ') + ' for this month.' : 'Over plan this month.')); }; return; }
   if (r) {
     const big = WK_MILE.indexOf(r.n) >= 0 && r.n > 1;
     sfx(big ? 'fanfare' : 'sparkle');
