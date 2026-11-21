@@ -676,6 +676,8 @@ function viewOf(S, C, ym, today) {
     perWeek: play.perWeek != null ? Math.max(0, map.free) / (play.daysLeft / 7) : null,   /* safe Free to spend a week for the days left */
     perDay: map.free > 0 && play.daysLeft > 0 ? map.free / play.daysLeft : null,
     edu: tileOf('edu'), give: tileOf('give'),
+    pay: pcl.pay, borrowCover: pcl.borrowCover,           /* real pay (no borrowed money in it) and, in a month covered by borrowing, the borrow and how far the plan passes the pay */
+    billsPassPay: !!(pcl.borrowCover && nec.planned - pcl.pay >= pcl.borrowCover.gap - 0.004),   /* the bills alone pass the pay by all of that gap */
     otherPlaces: m.jar.play + m.jar.edu + m.jar.ffa + m.jar.give, leftAbs: Math.abs(m.left)   /* for the window that explains the month */
   };
   return { ym, main, goals, live: goals.filter(r => r.live).length, play, buckets, otherSpent: rs.byJar.other || 0, month, map, cells };
@@ -797,6 +799,9 @@ function planCells(S, C, ym) {
   return {
     pay: m.pool.in - dw,                           /* real pay this month: what came in, less what was borrowed */
     unplaced: Math.max(0, (L - dw) - over),        /* pay with no place, less what spending past plan already took from it */
+    /* a month that balances only by borrowing from the emergency fund: the plan spends more than the pay and the borrow covers the rest. It is not
+       on plan, whatever the balance (QC round 8 north-star gate 1). gap: how far the plan passes the pay; draw: what was borrowed */
+    borrowCover: dw > 0 && L > -0.005 && L - dw < -0.004 ? { draw: dw, gap: round2(dw - L) } : null,
     overPay: -(L - dw), pastPay: L < 0 ? round2(-L) : 0,   /* how far the plan goes past pay this month, for All months (QC10 round 3 numbers should-fix 5) */                            /* how much more than the pay the month plans to spend (shown in a tight month) */
     bankGap: Math.max(0, cfg(S, 'minBank') - m.bankEnd),   /* how far the bank ends under the safety minimum */
     bankBelowZero: -m.bankEnd,                     /* how far below zero the bank ends (shown only when it is) */

@@ -144,6 +144,10 @@ function renderStatus() {
   else if (m.status === 'short' && m.bankChange > 0.004) { cls = 'tight'; word = 'Building your cushion';   /* only when the month really adds (38.31 round: it said "adds to it" when it added nothing) */ line = `Your bank is under your minimum balance of ${fmt(floor)}, but ${mon} adds to it. It will end at ${fmt(m.bankEnd)}. You can change the minimum in Settings.`; }
   else { cls = 'short'; word = 'Short'; line = `Not enough for ${mon}. Your bank would end at ${fmt(m.bankEnd)}, under your minimum balance of ${fmt(floor)}. Change it in Settings, or open Plan to fix the month.`; }
   if (m.status === 'good' && word === 'You are okay' && (m.overNow || 0) > 0.004) { word = 'Over plan'; cls = 'tight'; line = `${fmt2(m.overNow)} went past the plan this month and came out of your bank. ` + line; }
+  { const bc = m.status === 'good' && !sampleOn() && V.cells.borrowCover; if (bc) {   /* a month that balances only by borrowing from the emergency fund is never "You are okay" (QC round 8 north-star gate 1) */
+    const bw = `Covered this month by ${fmt2(bc.draw)} from your emergency fund. ${V.cells.billsPassPay ? 'Your bills are' : 'Your plan spends'} ${fmt2(bc.gap)} more than your pay.`;
+    line = /^(Bills are covered|Your bills fit in your pay) and burrows are planned for\./.test(line) ? line.replace(/^(Bills are covered|Your bills fit in your pay) and burrows are planned for\./, bw) : bw + ' ' + line;
+    if (word === 'You are okay') { word = 'Tight month'; cls = 'tight'; } } }
   let wk = '';
   if (cls && $('#hNext').hidden) wk = streakInfo().done ? '<p class="hst-w on">You logged receipts this week.</p>' : '<p class="hst-w">Nothing logged this week yet, log by Sunday</p>';
   /* the next three months, so one tight month ahead is never a surprise */
