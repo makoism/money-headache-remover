@@ -94,7 +94,7 @@ function wireReceipts() {
     resetRcForm(); persist();
     if (d.slice(0, 7) !== sel) { select(d.slice(0, 7)); selByReceipt = true; } else render(); /* the list follows the receipt, so it can be seen where it went; Plan goes back to this month on its own */
     $('#rcAmt').focus();
-    if (!wasEdit) { afterLog(firstRc); rcUndo(rid, msg.textContent); }   /* one tap takes this receipt back out (38.31 data safety round) */
+    if (!wasEdit) { rcUndo(rid, msg.textContent); afterLog(firstRc); }   /* one tap takes this receipt back out (38.31 data safety round) */
   });
   $('#rcCat').addEventListener('change', () => { catPicked('rc'); syncOtherTitle('rcCat', 'rcNote'); $('#rcMsg').textContent = ''; });
   $('#rcCancel').addEventListener('click', () => { resetRcForm(); $('#rcMsg').textContent = ''; render(); });

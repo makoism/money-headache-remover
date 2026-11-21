@@ -5412,7 +5412,7 @@ function wireReceipts() {
     resetRcForm(); persist();
     if (d.slice(0, 7) !== sel) { select(d.slice(0, 7)); selByReceipt = true; } else render(); /* the list follows the receipt, so it can be seen where it went; Plan goes back to this month on its own */
     $('#rcAmt').focus();
-    if (!wasEdit) { afterLog(firstRc); rcUndo(rid, msg.textContent); }   /* one tap takes this receipt back out (38.31 data safety round) */
+    if (!wasEdit) { rcUndo(rid, msg.textContent); afterLog(firstRc); }   /* one tap takes this receipt back out (38.31 data safety round) */
   });
   $('#rcCat').addEventListener('change', () => { catPicked('rc'); syncOtherTitle('rcCat', 'rcNote'); $('#rcMsg').textContent = ''; });
   $('#rcCancel').addEventListener('click', () => { resetRcForm(); $('#rcMsg').textContent = ''; render(); });
@@ -16684,8 +16684,9 @@ function wireHome() {
     const rid = addReceipt(S, d, a, c, n); S.ui.rcCat = c; markDone('receipts', true);
     $('#hAmt').value = ''; delete $('#hAmt').dataset.neg; $('#hNote').value = ''; syncOtherTitle('hCat', 'hNote'); $('#hDate').value = todayStr(); if (typeof dpSync === 'function') dpSync($('#hQuick'));
     msg.textContent = `Logged ${fmt2(wholeAmt(S, a))}: ${nm}.`;
-    persist(); render(); afterLog(first); $('#hAmt').focus();
-    rcUndo(rid, `Logged ${fmt2(wholeAmt(S, a))}: ${nm}.`);   /* one tap takes this receipt back out (38.31 data safety round) */
+    persist(); render();
+    rcUndo(rid, `Logged ${fmt2(wholeAmt(S, a))}: ${nm}.`);   /* one tap takes this receipt back out (38.31 data safety round); the bar comes first so the message after sits above it (QC round 5 north-star 6) */
+    afterLog(first); $('#hAmt').focus();
   });
   $('#hAmt').addEventListener('input', () => { $('#hMsg').textContent = ''; });
   /* a minus sign typed first is refused with a plain reason, never quietly turned into spending */

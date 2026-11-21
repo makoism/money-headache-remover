@@ -709,8 +709,9 @@ function wireHome() {
     const rid = addReceipt(S, d, a, c, n); S.ui.rcCat = c; markDone('receipts', true);
     $('#hAmt').value = ''; delete $('#hAmt').dataset.neg; $('#hNote').value = ''; syncOtherTitle('hCat', 'hNote'); $('#hDate').value = todayStr(); if (typeof dpSync === 'function') dpSync($('#hQuick'));
     msg.textContent = `Logged ${fmt2(wholeAmt(S, a))}: ${nm}.`;
-    persist(); render(); afterLog(first); $('#hAmt').focus();
-    rcUndo(rid, `Logged ${fmt2(wholeAmt(S, a))}: ${nm}.`);   /* one tap takes this receipt back out (38.31 data safety round) */
+    persist(); render();
+    rcUndo(rid, `Logged ${fmt2(wholeAmt(S, a))}: ${nm}.`);   /* one tap takes this receipt back out (38.31 data safety round); the bar comes first so the message after sits above it (QC round 5 north-star 6) */
+    afterLog(first); $('#hAmt').focus();
   });
   $('#hAmt').addEventListener('input', () => { $('#hMsg').textContent = ''; });
   /* a minus sign typed first is refused with a plain reason, never quietly turned into spending */
