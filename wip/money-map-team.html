@@ -17505,6 +17505,8 @@ function wire() {
   };
   $('#rcCopy').addEventListener('click', () => copyBox($('#rcEventText'), $('#rcCopyMsg')));
   $('#bkCopy').addEventListener('click', () => { const ta = $('#bk'); ta.value = JSON.stringify(S); copyBox(ta, $('#bkMsg')).then(ok => { if (ok) markBackup(); }); });
+  /* the text is checked before anything asks to replace the numbers (QC round 5 wording B1) */
+  const BK_BAD = "This isn't a backup. Paste the whole text from Copy text, or tap Choose file.", bkOK = t => { try { const d = JSON.parse(t); return !!(d && typeof d === 'object' && d.steps && d.once && d.cfg); } catch (e) { return false; } };
   const loadBackup = () => {
     const msg = $('#bkMsg');
     try {
@@ -17513,7 +17515,7 @@ function wire() {
       const old = S, oldSnap = snapNoCopy(); offerUndo(oldSnap, `Backup loaded. You can undo for ${KEEP_DAYS} days.`); S = upgradeLegacy(normalize(d)); S.ui = Object.assign({}, old.ui, S.ui, { sampleHidden: true }); keepCopy(oldSnap, 'A backup replaced your numbers.');
       if (!Array.isArray(d.receipts)) S.receipts = old.receipts;
       editRow = null; editGoal = null; editRc = null; itemsSig = ''; S.ui.bk = Date.now(); delete S.ui.bkLater; persist(); restructure(); msg.textContent = 'Loaded.'; sfx('next');
-    } catch (e) { msg.textContent = 'Not a valid backup. Use the whole file, or paste all of the copied text.'; }
+    } catch (e) { msg.textContent = BK_BAD; }
   };
   /* a file for the person to keep. In the Claude viewer plain downloads are blocked, so the viewer's own save prompt is used there; elsewhere the browser downloads it. */
   const saveOut = async (name, text, mime, msg, alt0) => {
@@ -17546,11 +17548,12 @@ function wire() {
     const f = e.target.files && e.target.files[0], msg = $('#bkMsg'); e.target.value = ''; if (!f) return;
     if (f.size > 20e6) { msg.textContent = 'That file is too big to be a backup.'; return; }
     const r = new FileReader(); r.onerror = () => { msg.textContent = 'That file couldn\'t be read. Tap Choose file and pick it again, or paste the backup text in the box and tap Load text.'; };
-    r.onload = () => { const t = String(r.result || ''); $('#bk').value = t; let ok = false; try { const d = JSON.parse(t); ok = !!(d && typeof d === 'object' && d.steps && d.once && d.cfg); } catch (e) { } $('#bkMsg').textContent = ok ? `The file is read. Tap Load text, then tap it again to replace the numbers here with what's in the file. You can undo for ${KEEP_DAYS} days.` : 'Not a valid backup. Use the whole file, or paste all of the copied text.'; }; r.readAsText(f);   /* a picked file never replaces anything on its own (38.31 data safety round 2) */
+    r.onload = () => { const t = String(r.result || ''); $('#bk').value = t; let ok = false; try { const d = JSON.parse(t); ok = !!(d && typeof d === 'object' && d.steps && d.once && d.cfg); } catch (e) { } $('#bkMsg').textContent = ok ? `The file is read. Tap Load text, then tap it again to replace the numbers here with what's in the file. You can undo for ${KEEP_DAYS} days.` : "That file isn't a backup. Pick the file Save file made, or paste the whole text from Copy text."; }; r.readAsText(f);   /* a picked file never replaces anything on its own (38.31 data safety round 2) */
   });
-  const twoStep = (b, armedText, run) => {
+  const twoStep = (b, armedText, run, check) => {
     let t = 0, orig = '', armedAt = 0;
     b.addEventListener('click', () => {
+      if (!t && check && check() === false) return;   /* nothing to ask about: check() said why */
       if (t && Date.now() - armedAt < 600) return;   /* a double tap never confirms: the warning gets read first (38.31 data safety round 4) */
       if (!t) { armedAt = Date.now(); orig = b.textContent; b.dataset.armed = '1'; t = setTimeout(() => { t = 0; b.textContent = orig; delete b.dataset.armed; }, 4000); b.textContent = typeof armedText === 'function' ? armedText() : armedText; return; }
       clearTimeout(t); t = 0; b.textContent = orig; delete b.dataset.armed; run();
@@ -17577,7 +17580,7 @@ function wire() {
   const blank = () => { const sn0 = snapNoCopy(); offerUndo(sn0, `All your numbers are set to zero. You can undo for ${KEEP_DAYS} days.`); S = blankState(S, sampleOn()); S.ui.cleared = true; delete S.ui.setup; delete S.ui.src; delete S.ui.imp; keepCopy(sn0, 'Your numbers were set to zero.'); editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = 'Everything is at zero now, start with your pay';   /* a 3-day copy like every other big change (38.31 data safety round 4) */ select(START); if (tab !== 'month') switchTab('month'); };
   twoStep($('#blankBtn'), `Tap again: clears pay, bills, goals, saved amounts and your balance. Receipts stay. You can undo for ${KEEP_DAYS} days.`, blank);
   twoStep($('#blankTop'), `Tap again: clears pay, bills, goals, saved amounts and your balance. Receipts stay. You can undo for ${KEEP_DAYS} days.`, blank);
-  twoStep($('#bkLoad'), `Tap again: replaces your pay, bills, goals and receipts with this copy. You can undo for ${KEEP_DAYS} days.`, loadBackup);
+  twoStep($('#bkLoad'), `Tap again: replaces your pay, bills, goals and receipts with this copy. You can undo for ${KEEP_DAYS} days.`, loadBackup, () => { if (bkOK($('#bk').value)) return true; $('#bkMsg').textContent = BK_BAD; return false; });
   twoStep($('#setupOpen'), `Tap again: setup can change your pay, bills, goals and saved amounts. You can undo for ${KEEP_DAYS} days.`, () => openSetupWithCopy(undefined, 'full'));   /* both ask first, and keep a copy (38.31 data safety round 2) */
   /* only some currencies have samples; for the rest this button clears the plan, and every word says so (38.31 data safety round 3) */
   const hasSamples = () => !!SAMPLES[(S.ui && S.ui.cur) || '₱'];

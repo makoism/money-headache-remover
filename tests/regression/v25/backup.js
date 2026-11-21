@@ -49,7 +49,7 @@ const KEYS = ['steps', 'once', 'items', 'cfg', 'receipts', 'plan'];
       const bf = '/tmp/v25/bk_bad.json'; fs.writeFileSync(bf, body); await inp.uploadFile(bf); await w(500); await waitSaved();
       const C = await read(), m2 = await p.evaluate(() => document.querySelector('#bkMsg').textContent);
       ok(cur + ' bad file (' + name + ') leaves numbers alone', KEYS.every(k => JSON.stringify(C[k]) === JSON.stringify(A[k])));
-      ok(cur + ' bad file (' + name + ') says so', /Not a valid backup/.test(m2), m2);
+      ok(cur + ' bad file (' + name + ') says so', /isn't a backup/.test(m2) /* words since QC round 5 wording B1 */, m2);
     }
     /* paste route */
     await p.evaluate(async () => { document.querySelector('#blankBtn').click(); await new Promise(r => setTimeout(r, 700)); document.querySelector('#blankBtn').click(); }); await w(500); await waitSaved();
