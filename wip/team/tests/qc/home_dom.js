@@ -41,7 +41,7 @@ const monShort = ym => MON[+ym.slice(5) - 1], monLong = ym => monShort(ym) + ' '
     const stat = m.inflow > 0 ? M.statusOf(S, m) : 'none';
     /* no pay entered: 'No pay entered' when the plan or logged spending takes the bank below zero (ui6.js renderStatus says why), otherwise 'No plan yet' */
     if (stat === 'none') has(tag + ' status', T.st || '', m.left < 0 || m.bankEnd < 0 ? 'No pay entered' : 'No plan yet');
-    else if (stat === 'good') { { const nO = V.map.month.find(x => x.id === 'nec'), necOver = !!(nO && nO.overBy > 0), playOver = V.play.planned > 0 && V.play.left < 0; has(tag + ' status', T.st, necOver ? 'Over plan' : playOver ? 'Over free to spend' : V.month.overNow > 0.004 ? 'Over plan' : 'You are okay'); if (!necOver && !playOver && V.month.overNow > 0.004) has(tag + ' status past plan', T.st, F2(V.month.overNow) + ' went past the plan this month'); } if (V.play.planned > 0) { if (V.play.left > 0) has(tag + ' status free', T.st, F2(V.play.left) + ' is free to spend'); else if (V.play.left < 0) has(tag + ' status over', T.st, 'Free to spend is ' + F2(V.play.overBy) + ' over'); } }
+    else if (stat === 'good') { { const nO = V.map.month.find(x => x.id === 'nec'), necOver = !!(nO && nO.overBy > 0), playOver = V.play.planned > 0 && V.play.left < 0; has(tag + ' status', T.st, necOver ? 'Over plan' : playOver ? 'Over Free to spend' : V.month.overNow > 0.004 ? 'Over plan' : 'You are okay'); if (!necOver && !playOver && V.month.overNow > 0.004) has(tag + ' status past plan', T.st, F2(V.month.overNow) + ' went past the plan this month'); } if (V.play.planned > 0) { if (V.play.left > 0) has(tag + ' status free', T.st, F2(V.play.left) + ' is free to spend'); else if (V.play.left < 0) has(tag + ' status over', T.st, 'Free to spend is ' + F2(V.play.overBy) + ' over'); } }
     else if (stat === 'tight') { has(tag + ' status', T.st, 'Tight month'); has(tag + ' status', T.st, 'Plans ' + F(V.cells.overPay) + ' more than your pay'); has(tag + ' status', T.st, 'ending ' + monShort(ym) + ' at ' + F(m.bankEnd)); }
     /* decision 2 (Mako, 2026-11-18): below zero is one amber line with the month, the amount and its causes; this replaced "Building your cushion" and "Short" there */
     else if (m.bankEnd < -0.004) { has(tag + ' status', T.st, 'Below zero'); has(tag + ' status', T.st, 'Your bank ends ' + monShort(ym) + ' at ' + F2(m.bankEnd) + '.');
@@ -55,10 +55,10 @@ const monShort = ym => MON[+ym.slice(5) - 1], monLong = ym => monShort(ym) + ' '
     /* ---- treasure chest ---- */
     const p0 = V.play;
     if (!(m.inflow > 0)) has(tag + ' chest', T.sp || '', 'Add your monthly pay');
-    else if (p0.planned <= 0 && p0.spent <= 0) { has(tag + ' chest', T.sp, 'Free to spend in ' + monLong(ym)); has(tag + ' chest', T.sp, 'No free to spend planned'); }
+    else if (p0.planned <= 0 && p0.spent <= 0) { has(tag + ' chest', T.sp, 'Free to spend in ' + monLong(ym)); has(tag + ' chest', T.sp, 'No Free to spend planned'); }
     else {
       const held = V.map.held, freeLeft = V.map.free;   /* one rule for every screen: model.js freeOf, through the map */
-      has(tag + ' chest label', T.sp, (p0.over ? 'Over free to spend in ' : 'Free to spend in ') + monLong(ym));
+      has(tag + ' chest label', T.sp, (p0.over ? 'Over Free to spend in ' : 'Free to spend in ') + monLong(ym));
       has(tag + ' chest big', T.sp, F2(freeLeft));
       has(tag + ' chest spent', T.sp, p0.count ? 'Spent ' + F2(p0.spent) + ' of ' + F(p0.planned) : 'Nothing logged yet. ' + F(p0.planned) + ' planned');
       if (!p0.over) {

@@ -120,7 +120,7 @@ function xmDests() {
   const live = S.plan.goals.filter(g => g.target > 0);
   live.forEach(g => out.push({ t: 'goal', id: g.id, label: (kindOfGoal(S, g) === 'debt' ? 'Pay toward ' : 'Add to ') + g.name }));
   debtsOf(S).forEach(d => { if (d.balance > 0) out.push({ t: 'debt', id: d.id, label: 'Pay down ' + d.name }); });
-  if (S.plan.lines.some(l => l.jar === 'play')) out.push({ t: 'play', label: 'Spend it, free to spend' });
+  if (S.plan.lines.some(l => l.jar === 'play')) out.push({ t: 'play', label: 'Spend it, Free to spend' });
   if (S.plan.lines.some(l => l.jar === 'ffa')) out.push({ t: 'ffa', label: 'Investing' });
   return out;
 }

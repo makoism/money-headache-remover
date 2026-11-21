@@ -47,7 +47,7 @@ function reportText() {
 }
 function openReport() { const r = $('#rep'); $('#repText').value = reportText(); $('#repMsg').textContent = ''; r.hidden = false; sfx('whoosh'); $('#repCopy').focus({ preventScroll: true }); }
 function closeReport() { $('#rep').hidden = true; sfx('back'); $('#helpBtn').focus({ preventScroll: true }); }
-const ASK_SUGGEST = ['Where is my money going?', 'What would bring my goal closer?', 'What can I realistically save each month?', 'Help me plan a trip', 'Cut my free to spend a little', 'I spent 300 on lunch today'];
+const ASK_SUGGEST = ['Where is my money going?', 'What would bring my goal closer?', 'What can I realistically save each month?', 'Help me plan a trip', 'Cut my Free to spend a little', 'I spent 300 on lunch today'];
 
 function askNumbers() {
   const c = calcAll(S), m = c.byYm[sel], J = jarsOf(S, m), st = { good: 'On plan', tight: 'Tight', short: 'Short' }[statusOf(S, m)], cur = sym() || 'none';
