@@ -53,7 +53,7 @@ function jarNote(m) {
   const lead = nec.pct >= 100 ? `Bills and basics cost more than all of your pay this month.${borrowed ? '' : ' Lower a bill or add pay.'}`   /* 38.31 north-star round 2: never calm about this */
     : nec.pct > u + 1 ? `Bills and basics are ${pctSay(nec.pct, nec.v)} of pay, above the usual ${u}%.${others ? ' Keep putting something in the other places, even a small amount.' : ' Nothing is left for the other places this month.'}`
     : nec.pct < u - 1 ? `Bills and basics are ${pctSay(nec.pct, nec.v)} of pay, under the usual ${u}%, so there's more room for the other places.`
-    : `Bills and basics are ${pctSay(nec.pct, nec.v)} of pay, which is about the usual ${u}%.`;
+    : `Bills and basics are ${pctSay(nec.pct, nec.v)} of pay, about the usual share.`;   /* the percent once (QC round 5 wording 13) */
   return lead + borrowed;
 }
 const LTS_HINT = ' Each slider sets what goes into that goal this month, so sliding up takes from Left and sliding down gives it back. If you leave them alone the amounts are worked out from each goal’s amount and date.';
