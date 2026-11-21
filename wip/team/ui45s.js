@@ -143,7 +143,7 @@ const moreBtn = kind => `<div class="row-btns"><button type="button" class="btn 
 const JAR5 = ['lts', 'play', 'edu', 'ffa', 'give'];
 const JAR_LABEL = { lts: 'Goal burrows', play: 'Free to spend', edu: 'Education', ffa: 'Investing', give: 'Giving' };
 /* one plain line under each of the five on the split step, so no name is met unexplained (H1 walk, finding 3) */
-const JAR_WHAT = { lts: 'Saving for your goals, like the emergency fund or a trip', play: 'Yours for fun, spend it on whatever you want', edu: 'Books, courses, anything that teaches you a skill', ffa: 'Money you invest and leave to grow', give: 'Gifts and donations' };
+const JAR_WHAT = { lts: 'Saving for your goals, like the emergency fund or a trip', play: 'Yours for fun. Spend it on whatever you want.', edu: 'Books, courses, anything that teaches you a skill', ffa: 'Money you invest and leave to grow', give: 'Gifts and donations' };
 let jarVals = null, jarRest = 0, jarNec = 0;
 /* the share of the pay the bills leave for the other five jars, in whole percents; 0 when the bills use all of it */
 const restPct = () => { const pay = payNow(); return pay > 0 && necTotal() < pay ? Math.max(0, 100 - Math.min(100, Math.round(necTotal() / pay * 100))) : 0; };

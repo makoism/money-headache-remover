@@ -167,7 +167,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Enter' && /^(h|rc)New
 
 const CURS = [['₱', '₱ Philippine peso'], ['$', '$ Dollar'], ['€', '€ Euro'], ['£', '£ Pound'], ['¥', '¥ Yen or yuan'], ['₹', '₹ Rupee'], ['₩', '₩ Won'], ['R$', 'R$ Real'], ['A$', 'A$ Australian dollar'], ['C$', 'C$ Canadian dollar'], ['S$', 'S$ Singapore dollar'], ['NZ$', 'NZ$ New Zealand dollar'], ['CHF', 'CHF Swiss franc'], ['kr', 'kr Krona or krone'], ['R', 'R Rand'], ['zł', 'zł Zloty'], ['none', 'No symbol']];
 const SETF = [
-  { k: 'bankStart', label: 'Money today (bank plus cash)', hint: 'What you have right now, which is where the first month in the plan starts. Update it whenever you check your bank. If you\'re overdrawn type a minus, like -400.' },
+  { k: 'bankStart', label: 'Money today (bank plus cash)', hint: 'What you have right now, which is where the first month in the plan starts. Update it whenever you check your bank. Overdrawn? Type a minus first, like −400.' },
   { k: 'minBank', label: 'Minimum balance', hint: 'You get a warning when a month would end below this.' },
   { k: 'ceiling', label: 'Free to spend cap', hint: 'The most you want Free to spend to be in a month, shown as a mark on the Free to spend bar in Plan.' },
 ];

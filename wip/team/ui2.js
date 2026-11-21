@@ -173,7 +173,7 @@ function render() {
   if (S.items[sel] !== undefined) chgList.push('One-time costs edited');
   const cs = $('#chgSum'); cs.hidden = !chgList.length;
   if (chgList.length) $('#chgTxt').textContent = `Edited for ${fullLabel(sel)}: ${chgList.join(', ')}.` + (nextYm ? ` ${FULL[+nextYm.slice(5) - 1]} goes back to normal.` : '');
-  $('#ledgerSub').textContent = `Tap an amount to edit it for ${fullLabel(sel)} only.` + (nextYm ? ` ${FULL[+nextYm.slice(5) - 1]} goes back to normal.` : '') + ' Tap a name to open.';
+  $('#ledgerSub').textContent = `Tap an amount to edit it for ${fullLabel(sel)} only.` + (nextYm ? ` ${FULL[+nextYm.slice(5) - 1]} goes back to normal.` : '') + ' Tap a name to open it.';
   [...IN_ROWS, ...JARROWS].forEach(r => {
     const a = $('#ra-' + r.id) || $('#h-' + r.id); if (a.tagName === 'INPUT') setIdle(a, fmt2(amts[r.id]));   /* a typed amount shows its cents (decision 1) */ else a.textContent = fmt(amts[r.id]);
     a.classList.toggle('zero', !amts[r.id]);

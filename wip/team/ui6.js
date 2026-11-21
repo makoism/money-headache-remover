@@ -219,7 +219,7 @@ function renderNext() {
     const pick = sw.goals.length > 1 ? `<select class="inp sm" data-sweepgoal aria-label="Which goal">${sw.goals.map(r => `<option value="${esc(r.id)}"${r.id === sw.main.id ? ' selected' : ''}>${esc(r.name)}</option>`).join('')}</select>` : '';
     step = [`${nm}: ${fmt2(sw.left)} of Free to spend isn't logged as spent`, `The plan counted it as spent. ${sw.n < 4 ? (sw.n === 0 ? 'No receipts are logged' : sw.n === 1 ? 'Only 1 receipt is logged' : `Only ${sw.n} receipts are logged`) + ', so this may be spending you haven\'t logged yet. ' : ''}${sw.goals.length ? 'Keep it in the bank or put it toward a goal. You can undo either one.' : 'Keep it in the bank. You can undo it.'}`   /* no goal button when no goal has room, so no goal in the words (QC10 numbers should-fix 2) */, `Keep ${fmt2(sw.left)} in the bank`, `data-sweepbank="${sw.pm}"`, pick];
   }
-  if (!step && d.pay && d.bills && S.ui.src !== 'import' && !S.ui.exactHidden && !sampleOn()) { const can = typeof askFn !== 'undefined' && !!askFn; step = ['Make it exact', can ? 'Upload 2 or 3 months of statements, screenshots of the bank app work too, and the numbers become exact and your history fills in' : 'Bring in 2 or 3 months of statements with an AI app, screenshots of the bank app work too, and the numbers become exact and your history fills in', can ? 'Upload' : 'Use an AI app', 'data-exact']; }
+  if (!step && d.pay && d.bills && S.ui.src !== 'import' && !S.ui.exactHidden && !sampleOn()) { const can = typeof askFn !== 'undefined' && !!askFn; step = ['Make it exact', can ? 'Upload 2 or 3 months of statements. Screenshots of the bank app work too. The numbers become exact and your history fills in.' : 'Bring in 2 or 3 months of statements with an AI app. Screenshots of the bank app work too. The numbers become exact and your history fills in.', can ? 'Upload' : 'Use an AI app', 'data-exact']; }
   if (!step && d.pay && d.bills && S.ui.full !== true && !S.ui.moreBillsHidden && !sampleOn() && necLines().filter(l => val(S, l.key, nowYm()) > 0).length < 4) step = ['Next: add your other bills', 'Utilities, internet, phone and transport: rough numbers are fine', 'Open bills', 'data-open="nec"', '', 'data-hidebills'];
   if (!step && d.pay && d.bills && !S.ui.noDebts && !(S.plan.debts && S.plan.debts.length) && !sampleOn() && !backupDue()) step = ['Next: do you owe on a card or loan?', 'Add it and the burrow works out the interest, the payoff date and which to pay first.', 'Add a card or loan', 'data-debtgo', '', 'data-nodebts'];
   if (!step && (S.receipts || []).length && !S.ui.remindHidden && !sampleOn() && !backupDue()) step = ['Set a weekly reminder', 'Put a reminder in your calendar so you log for a few minutes each week and the numbers stay right', 'Set reminder', 'data-remindgo'];
@@ -281,7 +281,7 @@ function renderStreak() {
   let line;
   if (s.done) line = s.n > 1 ? `Week done. Streak: ${s.n} weeks.` : 'Week done. Log next week to extend.';
   else if (s.n > 0) line = `Streak: week ${s.n}, log by Sunday.` + (toSun <= 1 ? ' Last day.' : ` ${plural(toSun + 1, 'day')} left.`);
-  else line = 'No streak yet, log one receipt this week to start one';
+  else line = 'No streak yet. Log one receipt this week to start one.';
   const sh = s.shield ? `<p class="hst-sh on">${HI.shield}<span>Shield ready, it covers one missed week</span></p>` : s.n > 0 || s.run > 0 ? `<p class="hst-sh">${HI.shield}<span>${plural(toShield, 'week')} to the next shield.</span></p>` : '';
   put(el, `<h2>Streak</h2><div class="hst-top"><span class="hst-fl${s.n > 0 ? ' lit' : ''}" aria-hidden="true">${HI.leaf}</span><p class="hst-n"><b>${s.n}</b><span>${s.n === 1 ? 'week' : 'weeks'}</span></p></div>
     <p class="hst-line">${line}</p><ol class="wdots" aria-label="Last 8 weeks">${dots}</ol>${sh}
@@ -375,7 +375,7 @@ function chestArt(gold) {
 function renderSpend() {
   const el = $('#hSpend'), p = HV.play, ym = HV.ym, V = HV, m = V.month, b = id => V.buckets.find(x => x.id === id);
   const art0 = `<img class="chest-art" alt="" aria-hidden="true" src="${chestArt(p.left > 0)}">`;
-  const head = `${art0}<h2>Free to spend</h2><p class="cap chest-what">Spend this on whatever you want, it starts fresh each month</p>`;
+  const head = `${art0}<h2>Free to spend</h2><p class="cap chest-what">Spend this on whatever you want. It starts fresh each month.</p>`;
   if (!(m.inflow > 0)) { put(el, `${head}<p class="hs-ok">Add your monthly pay and this shows what's free to spend and whether your bills are covered.</p><div class="row-btns"><button type="button" class="btn small" data-open="a">Add pay</button></div>`); return; }
   const smp = '';   /* the one sample notice is the status line at the top of Home */
   /* a few quiet days: one box to add a rough total, so a gap never makes the numbers lie */
