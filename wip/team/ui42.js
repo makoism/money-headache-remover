@@ -173,7 +173,7 @@ function paintVault() {
   else {
     const when = vaultWhen(vault.rev);
     st.textContent = vaultNote && vaultNote.kind === 'bad' ? 'The cloud copy doesn\'t accept this code any more. Tap Turn off, then Keep a copy in the cloud to start a new one.'
-      : newer ? `There's a newer copy in the cloud from another device${vaultNote.when ? ', saved ' + vaultWhen(vaultNote.when) : ''}. Tap Load the newer copy to load it here, or Keep mine to keep the numbers on this device and send them to the cloud in its place. Whichever you pick, the other one is kept for ${KEEP_DAYS} days when it's replaced here.`
+      : newer ? `There's a newer copy in the cloud from another device${vaultNote.when ? ', saved ' + vaultWhen(vaultNote.when) : ''}. Tap Load the newer copy to load it here, or Keep mine to keep the numbers on this device and send them to the cloud in its place. If you load it, the numbers here are kept for ${KEEP_DAYS} days and Undo brings them back. If you keep yours, they replace the cloud copy, and the other device asks before it loads them.`
       : !can && !vault.failAt ? 'On, but the cloud can\'t be reached from here right now.'
       : when ? `On. Last sent ${when}.` : vault.failAt ? 'On. The first copy hasn\'t been sent yet.' : 'On. Sending the first copy…';
     code.hidden = false;
