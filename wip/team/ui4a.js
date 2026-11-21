@@ -128,8 +128,8 @@ function asstDelta(steps) {
   const ym = nowYm(), CA = calcAll(S), CB = calcAll(T), a = CA.byYm[ym], b = CB.byYm[ym], st = { good: 'On plan', tight: 'Tight', short: 'Short' };
   const today = ymd(new Date()), VA = viewOf(S, CA, ym, today), VB = viewOf(T, CB, ym, today);
   const rows = [
-    ['Free to spend', fmt(a.jar.play), fmt(b.jar.play)], ['Free to spend left', fmt(VA.play.left), fmt(VB.play.left)], ['Left over', fmt(a.pool.left), fmt(b.pool.left)],
-    [`Balance, end of ${monthLabel(ym, true)}`, fmt(a.bankEnd), fmt(b.bankEnd)], ['Status', st[statusOf(S, a)], st[statusOf(T, b)]],
+    ['Free to spend', fmt(a.jar.play), fmt(b.jar.play)], ['Free to spend left', fmt(VA.play.left), fmt(VB.play.left)], ['Not placed yet', fmt(a.pool.left), fmt(b.pool.left)],
+    ['Bank at month end', fmt(a.bankEnd), fmt(b.bankEnd)], ['Status', st[statusOf(S, a)], st[statusOf(T, b)]],
   ];
   const gA = goalRows(S, CA, ym), gB = goalRows(T, CB, ym);
   gB.forEach(r => { const o = gA.find(x => x.id === r.id); const was = o ? (o.pct >= 100 ? 'full' : o.reached ? monthLabel(o.reached) : 'over ' + SPAN) : 'new'; const now = r.pct >= 100 ? 'full' : r.reached ? monthLabel(r.reached) : 'over ' + SPAN; if (!o || was !== now || (o && val(S, 'goal:' + r.id, ym) !== val(T, 'goal:' + r.id, ym))) rows.push([r.name, o ? `${was}, ${fmt(val(S, 'goal:' + r.id, ym))}/mo` : 'new', `${now}, ${fmt(val(T, 'goal:' + r.id, ym))}/mo`]); });
@@ -196,4 +196,4 @@ function asstAfter(bot, text, truncated) {
   $('#askLog').scrollTop = $('#askLog').scrollHeight;
 }
 /* test hook (only with ?sfxtest): the assistant's checked actions, so a test can run one on a copy */
-if (/[?&]sfxtest\b/.test(location.search)) window.__asst = { asstCheck, runActions };
+if (/[?&]sfxtest\b/.test(location.search)) window.__asst = { asstCheck, runActions, asstDelta };
