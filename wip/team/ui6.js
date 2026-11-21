@@ -194,13 +194,13 @@ function renderNext() {
   /* receipts logged later can use up the money the answer was about: then there is nothing left to report (the same rule as after a reload), never "0 counted" */
   if (SWEPT && C && !((C.byYm[SWEPT.pm] || {}).counted > 0)) SWEPT = null;
   /* after a reload, an answer made in the last 3 days still shows with Undo */
-  if (!SWEPT && S.ui.sweep && !sweepOffer()) { const k = Object.keys(S.ui.sweep).filter(q => S.ui.sweep[q].t && Date.now() - S.ui.sweep[q].t < 3 * 864e5 && C.byYm[q] && C.byYm[q].counted > 0).sort().pop(); if (k) { const e = S.ui.sweep[k]; SWEPT = { pm: k, id: e.id || null, to: e.id ? undefined : 'bank', amt: e.amt, note: `From ${FULL[+k.slice(5) - 1]}'s free to spend.${e.id ? '' : ' The bank figure now includes it.'}` }; } }
+  if (!SWEPT && S.ui.sweep && !sweepOffer()) { const k = Object.keys(S.ui.sweep).filter(q => S.ui.sweep[q].t && Date.now() - S.ui.sweep[q].t < 3 * 864e5 && C.byYm[q] && C.byYm[q].counted > 0).sort().pop(); if (k) { const e = S.ui.sweep[k]; SWEPT = { pm: k, id: e.id || null, to: e.id ? undefined : 'bank', amt: e.amt, note: `From ${FULL[+k.slice(5) - 1]}'s Free to spend.${e.id ? '' : ' The bank figure now includes it.'}` }; } }
   if (!step && SWEPT) {
     const g = SWEPT.id ? goalById(S, SWEPT.id) : null, mm = C.byYm[SWEPT.pm] || {}, used = (mm.topup && mm.topup.used) || 0, cnt = mm.counted || 0, rest = mm.credit || 0, nm = FULL[+SWEPT.pm.slice(5) - 1];
     let body;
     if (g && used > 0) { let gi = null; try { gi = goalInfo(S, C, g.id, nowYm()); } catch (e) { } const rd = C.reached[g.id]; body = gi ? (gi.pct >= 1 ? dw(S, g, `${g.name} is full.`) : dw(S, g, `${fmt(gi.togo)} to go.${rd ? ` Full ${monthLabel(rd)}.` : ''}`)) : ''; body += (g.why ? ' ' + g.why + '.' : '') + (rest > 0.004 ? ` The other ${fmt2(rest)} stays in the bank.` : ''); }
-    else if (g) body = `From ${nm}'s free to spend. ${g.name} had no room left, so it stays in the bank.`;
-    else body = `From ${nm}'s free to spend. The bank figure now includes it.`;
+    else if (g) body = `From ${nm}'s Free to spend. ${g.name} had no room left, so it stays in the bank.`;
+    else body = `From ${nm}'s Free to spend. The bank figure now includes it.`;
     step = [g && used > 0 ? `${fmt2(used)} put toward ${g.name}` : `${fmt2(cnt)} counted in the bank`, body, 'Undo', 'data-sweepundo'];
   }
   let sw = null;
@@ -254,7 +254,7 @@ function doRelease(pm) {
   const o = sweepOffer(); if (!o || o.pm !== pm) { render(); return; }
   S.ui.sweep = Object.assign({}, S.ui.sweep, { [pm]: { amt: o.left, to: 'bank', t: Date.now() } }); persist();
   const nm = FULL[+pm.slice(5) - 1];
-  sfx('coin'); sweptSay({ pm, id: null, to: 'bank', amt: o.left, note: `From ${nm}'s free to spend. The bank figure now includes it.` }, `${fmt2(o.left)} counted in the bank.`); render();
+  sfx('coin'); sweptSay({ pm, id: null, to: 'bank', amt: o.left, note: `From ${nm}'s Free to spend. The bank figure now includes it.` }, `${fmt2(o.left)} counted in the bank.`); render();
 }
 function undoSweep() {
   if (!SWEPT) return; const pm = SWEPT.pm;
