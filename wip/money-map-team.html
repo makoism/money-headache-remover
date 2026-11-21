@@ -17673,7 +17673,15 @@ function wire() {
   const blank = () => { const sn0 = snapNoCopy(); offerUndo(sn0, `All your numbers are set to zero. You can undo for ${KEEP_DAYS} days.`); S = blankState(S, sampleOn()); S.ui.cleared = true; delete S.ui.setup; delete S.ui.src; delete S.ui.imp; keepCopy(sn0, 'Your numbers were set to zero.'); editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = 'Everything is at zero now, start with your pay';   /* a 3-day copy like every other big change (38.31 data safety round 4) */ select(START); if (tab !== 'month') switchTab('month'); };
   twoStep($('#blankBtn'), `Tap again: clears pay, bills, goals, saved amounts and your balance. Receipts stay. You can undo for ${KEEP_DAYS} days.`, blank);
   twoStep($('#blankTop'), `Tap again: clears pay, bills, goals, saved amounts and your balance. Receipts stay. You can undo for ${KEEP_DAYS} days.`, blank);
-  twoStep($('#bkLoad'), `Tap again: replaces your pay, bills, goals and receipts with this copy. You can undo for ${KEEP_DAYS} days.`, loadBackup, () => { if (bkOK($('#bk').value)) return true; $('#bkMsg').textContent = BK_BAD; return false; });
+  /* the confirm says how old the backup is and what is in it, from its own saved time and receipts (QC round 7 data safety confusing 3) */
+  const bkAsk = () => {
+    let d = null; try { d = JSON.parse($('#bk').value); } catch (e) { d = null; }
+    const t = d && +d.rev > 946684800000 ? new Date(+d.rev) : null, n = d && Array.isArray(d.receipts) ? d.receipts.length : -1;
+    const day = t ? ' from ' + t.getDate() + ' ' + t.toLocaleString('en-US', { month: 'short' }) + (t.getFullYear() !== new Date().getFullYear() ? ' ' + t.getFullYear() : '') : '';
+    const has = n < 0 ? '' : n === 0 ? ', which has no receipts' : `, which has ${n} receipt${n === 1 ? '' : 's'}`;
+    return `Tap again: replaces your numbers here with the backup${day}${has}. You can undo for ${KEEP_DAYS} days.`;
+  };
+  twoStep($('#bkLoad'), bkAsk, loadBackup, () => { if (bkOK($('#bk').value)) return true; $('#bkMsg').textContent = BK_BAD; return false; });
   twoStep($('#setupOpen'), `Tap again: setup can change your pay, bills, goals and saved amounts. You can undo for ${KEEP_DAYS} days.`, () => openSetupWithCopy(undefined, 'full'));   /* both ask first, and keep a copy (38.31 data safety round 2) */
   /* only some currencies have samples; for the rest this button clears the plan, and every word says so (38.31 data safety round 3) */
   const hasSamples = () => !!SAMPLES[(S.ui && S.ui.cur) || '₱'];
