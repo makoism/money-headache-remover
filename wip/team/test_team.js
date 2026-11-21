@@ -287,6 +287,9 @@ eq('default rounding step follows the size of the pay', [roundUnit(presetState('
   /* 38.31 money accuracy round: a short month holds back Free to spend unless the month really adds to the bank */
   eq('a short month that adds nothing holds Free to spend back', (() => { const S = presetState('$'); S.cfg.minBank = 125; const f = freeOf(S, { left: 0, bankStart: 50, bankEnd: 50, over: 0, status: 'short' }, { left: 50 }); return [f.held, f.free]; })(), [50, 0]);
   eq('a short month that adds to the bank does not', (() => { const S = presetState('$'); S.cfg.minBank = 125; const f = freeOf(S, { left: 10, bankStart: 50, bankEnd: 60, over: 0, status: 'short' }, { left: 50 }); return [f.held, f.free]; })(), [0, 50]);
+  /* QC round 7 numbers gate should-fix 1: the shown percent of a place is rounded so the bar adds to 100 and can move with unrelated
+     receipts (53% or 54% for the same bills); the advice must follow the real share, which the model gives beside the rounded one */
+  eq('jarsOf gives each place its real share of pay beside the rounded percent', (() => { const S = presetState('$'); setVal(S, 'a', '2026-11', 3000); setVal(S, 'bill:rent', '2026-11', 1600); const C = calcAll(S), m = C.byYm['2026-11']; const J = jarsOf(S, m), n = J.list.find(x => x.id === 'nec'); return [J.income, n.v, Math.round(n.share * 100) / 100]; })(), [3000, 1600, 53.33]);
   /* QC round 5 numbers gate 1: a month that adds to the bank but still ends below zero is not safe to spend: Free to spend is held back
      to what keeps the bank at zero (bank −100,000, +250,000 pay, −180,000 spent, ¥20,000 Free to spend left: ends −50,000, so ¥0 is safe) */
   eq('a month that ends below zero holds Free to spend back even when it adds to the bank', (() => { const S = presetState('¥'); S.cfg.minBank = 0; const f = freeOf(S, { left: 0, bankStart: -100000, bankEnd: -50000, over: 0, status: 'short' }, { left: 20000 }); return [f.held, f.free]; })(), [20000, 0]);

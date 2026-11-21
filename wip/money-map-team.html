@@ -2846,7 +2846,7 @@ function jarsOf(S, m) {
   const restSpent = round2(restCover - restKept);   /* borrowed money in the bank that spending past plan has used; restKept + restSpent + borrowUsed = all that was borrowed, each its own row on Plan */
   return { income: base, inn, out, rest, restCover, restKept, restSpent, usedOver, short, draw: m.draw || 0, over: short > 0, restPct: pcts[6], usedOverPct: pcts[7],
     realPay, borrowUsed, borrowUsedPct, placedPct: sumPct - restAll, unplaced, unplacedNet, exceedsBy,
-    list: JARS.map((j, i) => ({ id: j.id, name: j.name, usual: Math.round(j.usual * 100), v: vals[j.id], pct: pcts[i] })) };
+    list: JARS.map((j, i) => ({ id: j.id, name: j.name, usual: Math.round(j.usual * 100), v: vals[j.id], pct: pcts[i], share: base > 0 ? vals[j.id] / base * 100 : 0 })) };   /* share: the real percent of pay, for advice (pct is rounded so the bar adds to 100, QC round 7 numbers should-fix 1) */
 }
 
 /* Decision 2 (Mako, 2026-11-18): when the bank ends a month below zero, Home says so in one plain amber line, naming the month, the amount and the
@@ -4884,8 +4884,8 @@ function jarNote(m) {
   /* no bills in the plan is blank, not low: never praised as "under the usual" (38.31 number gate, wording and novice round 3) */
   if (!(nec.v > 0)) return 'No bills planned yet: add rent, food and the rest under Money out.' + borrowed;
   const lead = nec.pct >= 100 ? `Bills and basics cost more than all of your pay this month.${borrowed ? '' : ' Lower a bill or add pay.'}`   /* 38.31 north-star round 2: never calm about this */
-    : nec.pct > u + 1 ? `Bills and basics are ${pctSay(nec.pct, nec.v)} of pay, above the usual ${u}%.${others ? ' Keep putting something in the other places, even a small amount.' : ' Nothing is left for the other places this month.'}`
-    : nec.pct < u - 1 ? `Bills and basics are ${pctSay(nec.pct, nec.v)} of pay, under the usual ${u}%, so there's more room for the other places.`
+    : nec.share > u + 1 ? `Bills and basics are ${pctSay(nec.pct, nec.v)} of pay, above the usual ${u}%.${others ? ' Keep putting something in the other places, even a small amount.' : ' Nothing is left for the other places this month.'}`
+    : nec.share < u - 1 ? `Bills and basics are ${pctSay(nec.pct, nec.v)} of pay, under the usual ${u}%, so there's more room for the other places.`
     : `Bills and basics are ${pctSay(nec.pct, nec.v)} of pay, about the usual share.`;   /* the percent once (QC round 5 wording 13) */
   return lead + borrowed;
 }

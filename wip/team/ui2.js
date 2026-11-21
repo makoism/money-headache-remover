@@ -51,8 +51,8 @@ function jarNote(m) {
   /* no bills in the plan is blank, not low: never praised as "under the usual" (38.31 number gate, wording and novice round 3) */
   if (!(nec.v > 0)) return 'No bills planned yet: add rent, food and the rest under Money out.' + borrowed;
   const lead = nec.pct >= 100 ? `Bills and basics cost more than all of your pay this month.${borrowed ? '' : ' Lower a bill or add pay.'}`   /* 38.31 north-star round 2: never calm about this */
-    : nec.pct > u + 1 ? `Bills and basics are ${pctSay(nec.pct, nec.v)} of pay, above the usual ${u}%.${others ? ' Keep putting something in the other places, even a small amount.' : ' Nothing is left for the other places this month.'}`
-    : nec.pct < u - 1 ? `Bills and basics are ${pctSay(nec.pct, nec.v)} of pay, under the usual ${u}%, so there's more room for the other places.`
+    : nec.share > u + 1 ? `Bills and basics are ${pctSay(nec.pct, nec.v)} of pay, above the usual ${u}%.${others ? ' Keep putting something in the other places, even a small amount.' : ' Nothing is left for the other places this month.'}`
+    : nec.share < u - 1 ? `Bills and basics are ${pctSay(nec.pct, nec.v)} of pay, under the usual ${u}%, so there's more room for the other places.`
     : `Bills and basics are ${pctSay(nec.pct, nec.v)} of pay, about the usual share.`;   /* the percent once (QC round 5 wording 13) */
   return lead + borrowed;
 }

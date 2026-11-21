@@ -445,7 +445,7 @@ function jarsOf(S, m) {
   const restSpent = round2(restCover - restKept);   /* borrowed money in the bank that spending past plan has used; restKept + restSpent + borrowUsed = all that was borrowed, each its own row on Plan */
   return { income: base, inn, out, rest, restCover, restKept, restSpent, usedOver, short, draw: m.draw || 0, over: short > 0, restPct: pcts[6], usedOverPct: pcts[7],
     realPay, borrowUsed, borrowUsedPct, placedPct: sumPct - restAll, unplaced, unplacedNet, exceedsBy,
-    list: JARS.map((j, i) => ({ id: j.id, name: j.name, usual: Math.round(j.usual * 100), v: vals[j.id], pct: pcts[i] })) };
+    list: JARS.map((j, i) => ({ id: j.id, name: j.name, usual: Math.round(j.usual * 100), v: vals[j.id], pct: pcts[i], share: base > 0 ? vals[j.id] / base * 100 : 0 })) };   /* share: the real percent of pay, for advice (pct is rounded so the bar adds to 100, QC round 7 numbers should-fix 1) */
 }
 
 /* Decision 2 (Mako, 2026-11-18): when the bank ends a month below zero, Home says so in one plain amber line, naming the month, the amount and the

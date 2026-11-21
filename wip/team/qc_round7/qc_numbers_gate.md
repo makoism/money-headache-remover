@@ -1,0 +1,6 @@
+# QC round 7, final gate 2 (numbers): PASS
+
+Saved by MAIN 12 from the agent's reply. Hard gates: oracle N=3000 mismatches 0 (15,078,185 comparisons); proof_fuzz 1500 PROOF PASS (24,000 months); display_math 0 open; home_dom 40 13 mismatches 0 (1,520 checks; two earlier runs crashed from other sessions' browser load). Six situations (past plan in three places, borrowing from the emergency fund, Education and Giving past their piles, month-end answers both ways, cents and bad inputs, no pay) all recomputed and agree; also below zero under the minimum, 29 Feb and 31 Jan receipts, dates outside the plan, delete and Undo, Keep saving, two tabs, the screen pack. No NaN, undefined, Infinity, −0; no page errors.
+
+## Should-fix
+1. The same bills share shows 53% or 54% and the advice flips with unrelated receipts. $ pay 3,000, bills 1,600 (53.33%): no receipts "Bills $1,600 53%" and "Bills and basics are 53% of pay, under the usual 55%, so there's more room for the other places."; after logging Free to spend 350, Food 480, Other 120: "Bills $1,600 54%" and "about the usual share". The bar's largest-remainder rounding gives Bills the spare point in a tie; the sentence reads the adjusted figure. Right answer: the verdict follows the real share (53.33% is under the usual 55%) in both states.
