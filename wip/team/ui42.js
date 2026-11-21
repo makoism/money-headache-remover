@@ -159,6 +159,7 @@ async function vaultUse(f, asked) {
 function vaultFoundLine(v) { const n = v.n; return `It was saved ${esc(vaultWhen(v.srv.updated || v.srv.rev))} and has ${n} receipt${n === 1 ? '' : 's'} in it.`; }
 /* ---------- what Settings shows ---------- */
 const SAVED_LOCAL = 'Your numbers are saved in this browser on this device only. They only leave it when you ask for that: Ask sends them with your question while the box is ticked, and reading a statement or a receipt photo sends that file to Claude. A second copy is kept here in case the first goes missing, and it loads by itself if that happens. Neither one moves to other devices. Clearing site data removes both, so only a backup file survives that. A backup is your own copy of your numbers and receipts and you make one with Save file below.';
+const SAVED_LOCAL_OFF = 'Your numbers are saved in this browser on this device only. They only leave it when you ask for that: Ask sends them with your question while the box is ticked, and reading a statement or a receipt photo sends that file to Claude. A second copy is kept here in case the first goes missing, and it loads by itself if that happens. Neither one moves to other devices unless you turn on Cloud copy below. Clearing site data removes both, so only a backup file survives that. A backup is your own copy of your numbers and receipts and you make one with Save file below.';   /* cloud copy off but it can be turned on: point at it (QC round 6 data safety C3) */
 const SAVED_CLOUD = 'Your numbers are saved in this browser, with a second copy here in case the first goes missing, and an encrypted cloud copy that follows every save. It\'s under Cloud copy below. Clearing site data removes the two copies on this device, and your recovery code brings the cloud copy back. A backup file is your own copy of your numbers and receipts.';
 const vaultWhen = t => { if (!t) return ''; const d = new Date(t); return d.getDate() + ' ' + d.toLocaleString('en-US', { month: 'short' }) + ', ' + d.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit' }); };   /* day then month, like every other date */
 /* one sentence on whether the cloud copy has everything; the same words in Settings, in the steps and on Home */
@@ -168,7 +169,7 @@ function paintVault() {
   const box = $('#vaultBox'); if (!box) return;
   const can = vaultAvailable();
   box.hidden = !can && !vault.on;
-  const cap = $('#savedCap'); if (cap) { const t = vault.on ? SAVED_CLOUD : SAVED_LOCAL; if (cap.textContent !== t) cap.textContent = t; }
+  const cap = $('#savedCap'); if (cap) { const t = vault.on ? SAVED_CLOUD : can ? SAVED_LOCAL_OFF : SAVED_LOCAL; if (cap.textContent !== t) cap.textContent = t; }
   if (box.hidden) return;
   const st = $('#vaultState'), code = $('#vaultCode'), behind = $('#vaultBehind'), newer = !!(vaultNote && vaultNote.kind === 'newer');
   if (!vault.on) { st.textContent = 'Off. Your numbers live on this device only.'; code.hidden = true; }
