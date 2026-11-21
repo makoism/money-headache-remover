@@ -99,7 +99,9 @@ async function vaultApply(k, srv, asked, prevVault) {
      so an Undo after a reload, or Put them back, stops sharing the cloud copy like the Undo right after the load (QC round 5 data safety B1) */
   if (!wasEmpty && prevVault && prevVault.code !== vault.code) { S.ui.keep.cloud = 1; try { localStorage.setItem(VAULT_KEY + '-before', JSON.stringify(prevVault.on && prevVault.code ? { code: prevVault.code, rev: prevVault.rev || 0, local: prevVault.local || 0 } : {})); } catch (e) { /* no storage */ } }
   editRow = null; editGoal = null; editRc = null; itemsSig = '';
-  if (tourIsOpen) closeTour(false); else { flush(); restructure(); }
+  /* closing setup saves (a new revision) but changes nothing of the loaded copy: that revision is still the cloud copy, so it is not sent
+     back as a newer one (QC round 6 north-star 3: the first phone was then offered its own older numbers, and Load it dropped its latest change) */
+  if (tourIsOpen) { closeTour(false); vault.local = S.rev; vaultSaveLocal(); } else { flush(); restructure(); }
   /* a cloud load is not a backup file: "Last backup" stays what the copy says (QC10 north-star F4) */
   if (wasEmpty) { try { cheer('Cloud copy loaded.'); } catch (e) { } }
   else if (prevVault && prevVault.code !== vault.code && window.offerUndoG) {
