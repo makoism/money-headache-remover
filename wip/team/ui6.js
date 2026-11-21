@@ -153,8 +153,10 @@ function renderStatus() {
     const said = x => `${monthLabel(x, true)}${x.slice(0, 4) !== V.ym.slice(0, 4) && MONTHS.indexOf(x) - i0 > 3 ? ' ' + x.slice(0, 4) : ''}`;
     for (let k = 1; k <= 3 && i0 >= 0 && i0 + k < MONTHS.length; k++) { const x = MONTHS[i0 + k], mx = C.byYm[x]; if (!mx) continue; const st = statusOf(S, mx); if (st === 'short') bad.push(`${said(x)} ${mx.bankEnd < 0 ? 'ends below zero' : mx.left < 0 ? 'is short' : 'ends under your minimum'}`); else if (st === 'tight') bad.push(`${said(x)} is tight`); }
     /* nothing in the next three months: the first later month that ends below zero or under the minimum is still named (QC round 4 north-star 3) */
-    if (!bad.length && i0 >= 0) for (let k = 4; i0 + k < MONTHS.length; k++) { const x = MONTHS[i0 + k], mx = C.byYm[x]; if (mx && statusOf(S, mx) === 'short') { bad.push(`${said(x)} ${mx.bankEnd < 0 ? 'ends below zero' : mx.left < 0 ? 'is short' : 'ends under your minimum'}`); break; } }
-    if (i0 >= 0 && i0 + 1 < MONTHS.length && !(m.over > 0.004 && !bad.length)) ahead = `<p class="hst-w${bad.length ? ' warn' : ' on'}">${bad.length ? 'Coming up: ' + bad.join(', ') + '. Open Plan to see why.' : 'The next 3 months look fine.'}</p>`;
+    /* a month more than three months away reads "Later on", not "Coming up" (QC round 6 regression, confusing 1: Jun 2028 under "You are okay" read as soon) */
+    let later = false;
+    if (!bad.length && i0 >= 0) for (let k = 4; i0 + k < MONTHS.length; k++) { const x = MONTHS[i0 + k], mx = C.byYm[x]; if (mx && statusOf(S, mx) === 'short') { later = true; bad.push(`${said(x)} ${mx.bankEnd < 0 ? 'ends below zero' : mx.left < 0 ? 'is short' : 'ends under your minimum'}`); break; } }
+    if (i0 >= 0 && i0 + 1 < MONTHS.length && !(m.over > 0.004 && !bad.length)) ahead = `<p class="hst-w${bad.length ? ' warn' : ' on'}">${bad.length ? (later ? 'Later on: ' : 'Coming up: ') + bad.join(', ') + '. Open Plan to see why.' : 'The next 3 months look fine.'}</p>`;
   }
   put(el, `<span class="chip ${cls}">${cls === 'good' ? IC.ok : cls ? IC.warn : ''}${word}</span><p class="hst-l">${line}</p>${ahead}${wk}${m.inflow > 0 && !sampleOn() ? '<p class="cap hs-more"><button type="button" class="link" data-why="status">How is this worked out?</button></p>' : ''}`);
   el.hidden = false;
