@@ -169,7 +169,7 @@ const CURS = [['₱', '₱ Philippine peso'], ['$', '$ Dollar'], ['€', '€ Eu
 const SETF = [
   { k: 'bankStart', label: 'Money today (bank plus cash)', hint: 'What you have right now, which is where the first month in the plan starts. Update it whenever you check your bank. Overdrawn? Type a minus first, like −400.' },
   { k: 'minBank', label: 'Minimum balance', hint: 'You get a warning when a month would end below this.' },
-  { k: 'ceiling', label: 'Free to spend cap', hint: 'The most you want Free to spend to be in a month, shown as a mark on the Free to spend bar in Plan.' },
+  { k: 'ceiling', label: 'Free to spend cap', hint: 'The most you want Free to spend to be in a month, shown as the cap line on the Free to spend bar in Plan.' },
 ];
 function buildStatic() {
   $('#curSel').innerHTML = CURS.map(c => `<option value="${esc(c[0])}">${esc(c[1])}</option>`).join('');
