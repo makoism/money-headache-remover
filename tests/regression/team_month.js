@@ -20,9 +20,13 @@ const coach = async p => { for (let i = 0; i < 12; i++) { const vis = await p.ev
 const nextCard = p => p.evaluate(() => { const e = document.querySelector('#hNext'); return { hid: e.hidden, t: e.textContent.replace(/\s+/g, ' ') }; });
 (async () => {
   const b = await puppeteer.launch({ executablePath: '/usr/bin/google-chrome', headless: 'new', args: ['--no-sandbox', '--disable-gpu'] });
-  let { p, errs } = await open(b, '2026-12-03T10:00:00');
-  ok(await p.evaluate(() => document.body.textContent.includes('Dec')), 'the page runs on the faked date (December)');
+  /* Since 69a9e13 (L) the plan starts in the setup month, so setup runs in late November and the page is reopened in December:
+     November is then a lived month the question can ask about (MAIN 12). */
+  let { p, errs } = await open(b, '2026-11-25T10:00:00');
   await runTour(p, P.a); await w(1200); await coach(p);
+  await p.close();
+  ({ p, errs } = await open(b, '2026-12-03T10:00:00', true)); await coach(p);
+  ok(await p.evaluate(() => document.body.textContent.includes('Dec')), 'the page runs on the faked date (December)');
   let c = await nextCard(p); ok(!c.hid && /log (a receipt|spend)/.test(c.t), 'before any receipt, the first-steps card still leads: ' + c.t.slice(0, 50));
   await p.type('#hAmt', '350'); await p.click('#hLog').catch(async () => { await p.keyboard.press('Enter'); }); await w(900);
   /* 38.30 replaced the "finish last month" nudge with the month-end question (DECISIONS.md: unspent money is a question, never assumed).
