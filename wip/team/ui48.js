@@ -2,13 +2,31 @@
 /* ===== coach marks: a short spotlight tour of a tab, pointing at the real parts of the page =====
    Only when asked for: Help, "Explain this tab". Skippable at any step. */
 const COACH = {
+  /* Home, card by card: why it matters first, then what to tap. The walk goes top to bottom as the page has them, and a card that is
+     not on screen is skipped (QC round 6 north-star gate 4: it showed only Log spend) */
   home: [
-    ['#hStatus', 'Where you stand', 'Read this first. On plan means this month fits your pay and your balance stays above your minimum.'],
-    ['#hHero', 'Main goal', 'Your reason in your own words, with what this month adds and how many months are left. Tap Forecast for the graph.'],
-    ['#hSpend', 'Free to spend', 'The money you use this month. The big number is Free to spend and it\'s yours to spend on whatever you want. Under it you can see if your Bills and basics are covered and what\'s left for Education and Giving, and whatever\'s left at the end of the month can go into a goal.'],
-    ['#hQuick', 'Log spend', 'Enter an amount, pick a category and tap Log spend. Do it as you spend or once a week.'],
-    ['#hGoals', 'Burrows', 'Tap a burrow to open it, then you can edit it or make it your main burrow.'],
+    ['#hMap .mp-now', 'In your bank now', 'This is the one number that\'s real today. Everything else on Home is planned from it, so keep it fresh. Open your bank app and type what it shows. After that, tap Check your bank once a week.'],
+    ['#mpRooms', 'This month', 'This month\'s money, split by what it\'s for. Bills and basics come first. Free to spend is what\'s left for you. Tap a room to see how its number is worked out.'],
+    ['#hMap .mp-where', 'Where your money sits', 'All your money at the end of the month in one bar: the bank and each burrow. A bigger piece holds more. The list under it gives each amount.'],
+    ['#hMap .mp-four li:nth-child(1)', 'Total', 'Everything you\'ll have at the end of the month, bank and burrows together. Planned means it\'s what your plan expects, not what\'s there today. If Total grows each month, you\'re getting ahead.'],
+    ['#hMap .mp-four li:nth-child(2)', 'Free to spend', 'What\'s left this month for whatever you want. Bills and saving are already taken out. Planned means the plan has room for it. Safe to spend means your bank has the money now too. If it says not safe to spend yet, wait for your pay or check your bank.'],
+    ['#hMap .mp-four li:nth-child(3)', 'Bills left', 'Bills you still have to pay this month, from your plan. Keep this much in the bank until they go out.'],
+    ['#hMap .mp-four li:nth-child(4)', 'Saved', 'What your burrows will hold at the end of the month, with this month\'s saving added. This money already has a job, so it\'s not for spending.'],
+    ['#hMap .mp-proof', 'How it adds up', 'Bank plus burrows makes the Total. You can check the sum yourself. If it ever doesn\'t add up, Home tells you right here.'],
+    ['#hStatus', 'Where you stand', 'One line on how this month is going. If something\'s off, it says what to do about it.'],
+    ['#moveBanner', 'New address', 'The app has its own address. Tap the button to open it there and bring your numbers along. Not now hides this.'],
+    ['#hBk', 'Keep your numbers', 'A note about where your numbers are kept, like a backup or a copy on another device. Read it and tap its button if it fits.'],
+    ['#hNext', 'Next step', 'The one thing worth doing now to make the plan match your real money. Tap its button and it walks you through it.'],
+    ['#hQuick', 'Log spend', 'Logging what you spend keeps the plan true to your real money. Type the amount, pick a category and tap Log spend. Do it as you spend or once a week.'],
+    ['#hBur', 'Burrows', 'A burrow is money with a job, like a trip or an emergency fund. It piles up month by month and the bar shows how full it is. Tap a burrow to open it.'],
+    ['#hMoreBtn', 'More', 'Home shows what matters today and keeps the rest out of the way. Tap More to see your main goal, Free to spend, your goals, cards and your streak. Show less hides them again.'],
+    ['#hHero', 'Main goal', 'The one thing you\'re saving for most, in your own words. It shows what this month adds and how many months are left. Tap Forecast for the graph.'],
+    ['#hSpend', 'Free to spend', 'The money you use this month. The big number is yours to spend on whatever you want. Under it you can see if Bills and basics are covered and what\'s left for Education and Giving. Whatever\'s left at the end of the month can go into a goal.'],
+    ['#hGoals', 'Your goals', 'Each goal and how far along it is. Tap a burrow to open it. From there you can edit it or make it your main burrow.'],
+    ['#hDebts', 'Cards and loans', 'What you owe and the month you\'re debt free if you keep paying. Extra money goes to the highest rate first. Tap See details for each one.'],
+    ['#hLimits', 'Spending limits', 'Each line of your plan against what you logged this month. A full bar means that line is used up.'],
     ['#hBuckets', 'Investing', 'Money you invest and don\'t spend. Goals and debt live in the burrows at the top.'],
+    ['#hMore', 'Streak, badges, pages', 'Your weekly streak, your badges and links to the other pages. Tap it to open.'],
     ['#askBtn', 'Ask', 'Ask any money question here. It knows your plan and can make changes once you approve them.'],
   ],
   receipts: [
@@ -63,6 +81,7 @@ function coBuild() {
 }
 function openTabTour(t) {
   const list = (COACH[t] || []).map(x => ({ el: $(x[0]), t: x[1], b: x[2] })).filter(s => coVisible(s.el));
+  if (t === 'home') list.sort((a, b) => a.el.compareDocumentPosition(b.el) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1);   /* Home moves its cards around (Log spend, More, the order Ask sets): walk them as they sit */
   if (!list.length || CO.open) { if (!list.length) cheer('Nothing to show on this tab yet.'); return; }
   const el = coBuild(); CO.steps = list; CO.i = 0; CO.open = true; CO.tab = t; CO.ret = document.activeElement; CO.y0 = scrollY;
   el.hidden = false; el.classList.remove('on'); document.body.classList.add('co-open');
