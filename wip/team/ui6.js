@@ -64,10 +64,11 @@ function afterLog(first, batch) {
 }
 
 /* ---------- badges ---------- */
+/* h: how to get it, shown until it is earned; e: the line once earned, where "Earned" alone read as the next tile's line (QC round 8 wording polish) */
 const BADGES = [
   { id: 'rcpt1', n: 'First receipt', h: 'Log a receipt.', i: 'receipt', ok: () => (S.receipts || []).length >= 1 },
   { id: 'payin', n: 'Pay set', h: 'Enter your pay.', i: 'coin', ok: () => !!(S.ui.done && S.ui.done.pay) },
-  { id: 'goal1', n: 'First burrow', h: 'Add a burrow with a goal amount.', i: 'target', ok: () => !!(S.ui.done && S.ui.done.goals) && S.plan.goals.some(g => g.target > 0) },
+  { id: 'goal1', n: 'First burrow', h: 'Add a burrow with a goal amount.', e: 'You started your first burrow.', i: 'target', ok: () => !!(S.ui.done && S.ui.done.goals) && S.plan.goals.some(g => g.target > 0) },
   { id: 'track', n: 'On track', h: 'A goal is on track.', i: 'check', ok: () => !!(S.ui.done && S.ui.done.goals) && S.plan.goals.some(g => { const s = goalInfo(S, C, g.id, nowYm()).state; return s === 'ontrack' || s === 'full'; }) },
   { id: 'half', n: 'Halfway', h: 'A goal reaches 50%.', i: 'half', ok: () => !!(S.ui.done && S.ui.done.goals) && goalRows(S, C, nowYm()).some(r => r.target > 0 && r.pctNow >= 50) },   /* what the goal holds now, not what the month plans (QC round 4 money accuracy B3) */
   { id: 'rcpt10', n: '10 receipts', h: 'Log 10 receipts.', i: 'star', ok: () => (S.receipts || []).length >= 10 },
@@ -296,7 +297,7 @@ function paintTopStreak(s) {
 }
 function renderBadges() {
   const el = $('#hBadges'), bd = S.ui.bd || {}, n = BADGES.filter(b => bd[b.id]).length;
-  put(el, `<div class="hgl-h"><h2>Badges</h2><span class="hb-n">${n} of ${BADGES.length}</span></div><ul class="hbs">${BADGES.map(b => { const on = !!bd[b.id]; return `<li class="hb${on ? ' on' : ''}"><span class="hb-i" aria-hidden="true">${on ? HI[b.i] : HI.lock}</span><b>${b.n}</b><span>${on ? 'Earned' : b.h}</span></li>`; }).join('')}</ul>`);
+  put(el, `<div class="hgl-h"><h2>Badges</h2><span class="hb-n">${n} of ${BADGES.length}</span></div><ul class="hbs">${BADGES.map(b => { const on = !!bd[b.id]; return `<li class="hb${on ? ' on' : ''}"><span class="hb-i" aria-hidden="true">${on ? HI[b.i] : HI.lock}</span><b>${b.n}</b><span>${on ? b.e || 'Earned' : b.h}</span></li>`; }).join('')}</ul>`);
 }
 /* ---------- what the screens show: one view of the numbers (viewOf in the model), drawn here ---------- */
 let HV = null;
