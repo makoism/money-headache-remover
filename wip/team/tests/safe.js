@@ -109,7 +109,7 @@ const strip = j => { const o = JSON.parse(j); return JSON.stringify(canon({ step
   { const o = JSON.parse(await p.evaluate(k => localStorage.getItem(k), KEY)); o.ui.bk = Date.now() - 30 * 864e5; delete o.ui.bkLater; await lose(p, JSON.stringify(o)); } await reload(p);
   v = await vis(); ck(!v.hid && /30 days ago/.test(v.t), 'a 30-day-old backup shows the reminder: ' + v.t.slice(0, 50));
   await tapMid(p, '#hBk [data-bk-now]'); await w(1500);
-  v = await vis(); ck(v.hid, 'Save a copy on Home saves and hides the reminder');
+  v = await vis(); ck(v.hid, 'Save file on Home saves and hides the reminder');
   ck(await p.evaluate(() => /Backup saved/.test(document.querySelector('#cheer').textContent)), 'Home shows a confirmation');
   const files = require('fs').existsSync('/tmp/v28/dl') ? require('fs').readdirSync('/tmp/v28/dl').filter(f => f.endsWith('.json')) : [];
   ck(files.length >= 1, 'a backup file was written: ' + files.join(','));

@@ -89,13 +89,13 @@ function renderBackupNudge() {
     html = `<div class="hn-t"><b>Save your recovery code</b><span>Your numbers have an encrypted cloud copy now. This code is the only way to open it on another phone.</span></div><div class="vault-wrap" data-vault-code></div>`;
   } else if (bkNote) {
     const when = bkNote.t ? vaultWhen(bkNote.t).split(',')[0] : '';
-    html = `<div class="hn-t"><b>Numbers restored</b><span>This page lost its saved numbers so it loaded the copy kept in this browser${when ? ' from ' + when : ''}. Tap Save a copy to keep a backup file as well.</span></div><div class="hn-b"><button type="button" class="btn small solid" data-bk-now>Save a copy</button><button type="button" class="link" data-bk-ok>OK</button></div>`;
+    html = `<div class="hn-t"><b>Numbers restored</b><span>This page lost its saved numbers so it loaded the copy kept in this browser${when ? ' from ' + when : ''}. Tap Save file to keep a backup as well.</span></div><div class="hn-b"><button type="button" class="btn small solid" data-bk-now>Save file</button><button type="button" class="link" data-bk-ok>OK</button></div>`;
   } else if (backupDue() && $('#hNext').hidden) {
     const a = bkAge();
     {
       html = cloud
-        ? `<div class="hn-t"><b>Back up your numbers</b><span>They live on this device only. A cloud copy keeps them safe, locked with a code only you have.</span></div><div class="hn-b"><button type="button" class="btn small solid" data-vault-on>Keep a copy in the cloud</button><button type="button" class="link" data-bk-now>Save a file instead</button><button type="button" class="link" data-bk-later>Later</button></div>`
-        : `<div class="hn-t"><b>${a === null ? 'Back up your numbers' : `Last backup: ${a} days ago`}</b><span>They live in this browser only. Save a file copy so nothing is lost.</span></div><div class="hn-b"><button type="button" class="btn small solid" data-bk-now>Save a copy</button><button type="button" class="link" data-bk-later>Later</button></div>`;
+        ? `<div class="hn-t"><b>Back up your numbers</b><span>They live on this device only. A cloud copy keeps them safe, locked with a code only you have.</span></div><div class="hn-b"><button type="button" class="btn small solid" data-vault-on>Keep a copy in the cloud</button><button type="button" class="link" data-bk-now>Save file</button><button type="button" class="link" data-bk-later>Later</button></div>`
+        : `<div class="hn-t"><b>${a === null ? 'Back up your numbers' : `Last backup: ${a} days ago`}</b><span>They live in this browser only. Save a file copy so nothing is lost.</span></div><div class="hn-b"><button type="button" class="btn small solid" data-bk-now>Save file</button><button type="button" class="link" data-bk-later>Later</button></div>`;
     }
   }
   /* a notice about the saved numbers themselves (arrived, newer in the cloud, cloud behind, restored) is never left behind another Home action */
