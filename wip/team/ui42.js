@@ -112,10 +112,10 @@ async function vaultApply(k, srv, asked, prevVault) {
     /* this phone was not sharing this cloud copy before the load: Undo puts its own numbers back and goes back to how it was sharing (or
        not) before, so nothing is ever sent over the other phone's copy (QC10 round 2 north-star finding 1) */
     const pv = Object.assign({}, prevVault);
-    window.offerUndoG(oldSnap, `Cloud copy loaded. The numbers this phone had are kept for ${KEEP_DAYS} days. Undo puts them back on this phone and stops sharing the cloud copy here.`,
-      () => { clearTimeout(vaultTimer); vault = pv; vaultKeys = null; vaultNote = null; vaultSaveLocal(); S = normalize(JSON.parse(oldSnap)); vaultFlowClose(); setTimeout(() => { try { cheer('Your own numbers are back. This phone no longer shares the cloud copy, and the cloud copy is unchanged.'); } catch (e) { } }, 50); });   /* the Done panel closes (QC10 round 3 north-star 1) */
+    window.offerUndoG(oldSnap, `Cloud copy loaded. The numbers this device had are kept for ${KEEP_DAYS} days. Undo puts them back on this device and stops sharing the cloud copy here.`,
+      () => { clearTimeout(vaultTimer); vault = pv; vaultKeys = null; vaultNote = null; vaultSaveLocal(); S = normalize(JSON.parse(oldSnap)); vaultFlowClose(); setTimeout(() => { try { cheer('Your own numbers are back. This device no longer shares the cloud copy, and the cloud copy is unchanged.'); } catch (e) { } }, 50); });   /* the Done panel closes (QC10 round 3 north-star 1) */
   }
-  else if (window.offerUndoG) window.offerUndoG(oldSnap, `Cloud copy loaded. The numbers this phone had are kept for ${KEEP_DAYS} days. Undo puts them back here and in the cloud copy.`);
+  else if (window.offerUndoG) window.offerUndoG(oldSnap, `Cloud copy loaded. The numbers this device had are kept for ${KEEP_DAYS} days. Undo puts them back here and in the cloud copy.`);
 }
 /* Undo of a cloud load from the kept copy: back to how this phone was sharing before the load (or not sharing), then its own numbers */
 function vaultUndoLoad() {

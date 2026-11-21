@@ -195,7 +195,7 @@ function wireRestore() {
     box.innerHTML = `<p data-vf-found>${vaultFoundLine(f)}</p><p>This device has no numbers of its own yet, so nothing is replaced.</p><div class="row-btns"><button type="button" class="btn small solid" id="tourVaultLoad">Load</button><button type="button" class="link" id="tourVaultNo">Cancel</button></div>`; box.hidden = false;
     $('#tourVaultNo').addEventListener('click', () => { box.hidden = true; box.innerHTML = ''; });
     $('#tourVaultLoad').addEventListener('click', async () => {
-      try { await vaultUse(f, false); m.textContent = 'Loaded.'; box.hidden = true; sfx('next'); setTimeout(() => cheer('Welcome back. Your numbers are here, and this phone now shares the cloud copy: every change is sent by itself.'), 400); }   /* said after setup closes, so it is seen (QC10 round 3 north-star 4) */
+      try { await vaultUse(f, false); m.textContent = 'Loaded.'; box.hidden = true; sfx('next'); setTimeout(() => cheer('Welcome back. Your numbers are here, and this device now shares the cloud copy: every change is sent by itself.'), 400); }   /* said after setup closes, so it is seen (QC10 round 3 north-star 4) */
       catch (e) { m.textContent = 'That copy could not be loaded. Nothing was changed.'; }
     });
     sfx('next');

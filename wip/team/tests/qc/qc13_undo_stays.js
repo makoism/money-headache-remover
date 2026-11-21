@@ -96,7 +96,7 @@ const tabs = async p => { const seen = []; for (const t of ['tab-home', 'tab-rec
   await until(async () => /noodles/.test(await B.p.evaluate(() => JSON.stringify(__t.S.receipts))));
   await w(6000); await B.p.reload(); await w(4000);
   t = await bar(B.p);
-  ck('after a reload the cloud Undo bar says Undo also stops sharing the cloud copy', /The cloud copy replaced the numbers on this device\..*Undo also stops sharing the cloud copy on this phone\./.test(t), t);
+  ck('after a reload the cloud Undo bar says Undo also stops sharing the cloud copy', /The cloud copy replaced the numbers on this device\..*Undo also stops sharing the cloud copy on this device\./.test(t), t);
   await L.settings(B.p); await w(400);
   const on0 = await text(B.p, '#vaultState');
   ck('before Undo Settings says the cloud copy is On', /^On/.test(on0), on0);
