@@ -325,15 +325,82 @@ Where the named values live in `model.js`:
 
 ## 4. What changed for people in 38.31 (for the release notes)
 
-- Months paid partly with emergency-fund money: the split now reconciles. Places + not placed = 100 + borrowed. New "Borrowed" row and a sentence that says why. Before, the percents added to 116, 129, even 312 with no explanation.
+Nothing here is shipped yet: nothing has been deployed. Amounts below are made up.
+
+### Money and numbers
+
+- Months paid partly with emergency-fund money: the split now adds up. Places plus not placed equals 100% plus what was borrowed. A new "Borrowed" row and a sentence say why. Before, the percents could add to 116, 129, even 312 with no explanation.
 - Home's proof line now really checks the total, and warns if the numbers do not add up.
-- Home could never say "Building your cushion", and could never say that spending went past the plan this month. Two values were missing from `viewOf().month`. Both states work now.
-- The bills amount still to pay shows cents in both Home cards (it showed 26,535 in one and 26,534.51 in the other).
+- Home can now say "Building your cushion", and can say that spending went past the plan this month. Before, it never could.
+- The plan starts in the month you set it up. Before, it always started in November, so a setup in December counted November as lived, and a setup in late January could start the bank below zero.
+- When the bank ends a month below zero, Home says so in one amber line with the month, the amount and the causes (the month started below zero, the plan spends more than comes in, spending went past the plan). It never says "Building your cushion" for that, and is never red.
+- Home also warns about a later month that ends below zero or under your minimum balance, even when this month is fine. The next three months read "Coming up". A month further away reads "Later on", so it does not sound like soon.
+- One rule for "safe to spend" everywhere. Home, the status box, Receipts, Plan > Month, Plan's top bar and the Free to spend panel all say "left, not safe to spend yet" at the same time. Then the panel gives no per week or per day figure and says what makes it safe (pay lands, then Check your bank).
+- A month that would end below zero holds Free to spend back, even when the month adds to the bank. A starting balance below zero is never safe to spend, and the status box says why ("Wait for pay before spending it").
+- The "Where you stand" panel names spending past the plan, so its rows add up to the cent. Plan's figure says "since your plan started" and the panel's says which month, so the two are not mixed up.
+- When a bill line goes over plan, Home names the line ("Food and groceries is 62.75 over"), one sentence per line.
+- Goals say what is saved now and what this month's plan adds ("0 saved now, of 4,500" and "385 by the end of Nov, as planned"). Setup's last step says the same.
+- A goal or loan only planned to be done reads "as planned" and earns no badge until the month has really happened.
+- A goal holding more than its amount says how much over. All months marks only the month a goal first fills.
+- The month-end card says why the rest stays in the bank when the goal was already full that month.
+- Setup with no pay leaves no sample amounts in the places. They stay at 0 until pay is added, and setup says so.
+- Changing currency in setup makes the default minimum balance again. A minimum you typed yourself is kept.
+- The first pay or bill amount a person enters becomes the usual amount for every month (it says so). Later edits are for the month shown, as before. Before, entering pay from Home's "Enter pay" card set only that month.
+- Plan amounts keep cents (dollars, euros, pesos and the rest). Yen stays whole. Before, a typed 49.99 was saved as 50 without saying so. Plans saved by older versions load exactly as they were.
+- The bills amount still to pay shows cents in both Home cards. Before, one card rounded it and the other did not.
+- A place with a little money says "under 1% of pay", never 0%, in every sentence and tip.
+- Receipts looks back only on a month that has ended, and a picked month reads "No receipts in Dec yet". When the balance did not move, Last month says it stayed the same, not "went up by 0".
 - The percent in a goal's screen-reader label is rounded down like every other goal percent.
+
+### Your data and the cloud copy
+
+- A phone with an older cloud copy no longer sends it over a newer one. It asks: Load the newer copy, or Keep mine. The note says what each button keeps. (This needs the server change, which goes live only with a deploy, with Mako.)
+- A cloud copy loaded from Settings stays after a reload and is not sent back. The same for a copy loaded from the welcome screen.
+- Undo of a cloud load, even after a reload, puts back exactly this phone's numbers and stops sharing the cloud copy on this phone. Settings shows Off at once.
+- After a big change (Set all to zero, a backup or cloud copy loaded, a goal or line removed, a month reset), the Undo bar stays across tabs until you tap it, close it or something replaces it. Settings also offers the numbers from before, with Put them back, for as long as they are kept (3 days).
+- Load text checks the pasted text first. Text that is not a backup gets a message saying what to do, instead of a "Tap again: replaces..." question. After Choose file, Restore says the file's text is in the box.
+- Remove goal says what goes: what is saved now and what is planned this month. It says the saved money stops being counted, and to move it to another burrow first if you still have it.
+- The recovery code note says what losing it means and where to see it again (Settings, Cloud copy, Show code).
+- Settings says neither copy moves to other devices unless you turn on Cloud copy, when it is off.
+- Check your bank says what happened: "Bank updated" when you typed a balance, "Kept ... checked today" when you left it empty.
+- Settings says the plan is at zero only while it really is.
+- Setup's balance box shows what was kept after Back, including a minus balance and cents.
+
+### Words and help
+
 - Version one Home: the picture of where the money is, four numbers (Total, Free to spend, Bills left, Saved) and one next action. Everything else (main goal, Free to spend details, goals, cards and loans, limits, streak, pages) is one tap away under More. Nothing was removed.
-- When the bank ends a month below zero, Home says so in one amber line with the month, the amount and the causes (the month started below zero, the plan spends more than comes in, spending went past the plan). It never says "Building your cushion" for that any more, and is never red.
-- The first pay or bill amount a person enters becomes the usual amount for every month (it says so). Later edits are for the month shown, as before. Before, entering pay from Home's "Enter pay" card set only that month, and later months fell back to the sample pay.
-- Plan amounts keep cents (dollars, euros, pesos and the rest); yen stays whole. Before, a typed 49.99 was saved as 50 without saying so. Plans saved by older versions load exactly as they were.
+- Explain this tab on Home walks through every card on screen, the idea first, then what to tap.
+- The open Emergency fund burrow says what it is for: money for surprises.
+- One name for each thing: "minimum balance" everywhere (and the panel says what it is), "Free to spend cap", "Save file" for the backup button, "Log spend", and Free to spend with capitals where it names the place.
+- Help texts name buttons that really exist. The Ask guide uses today's screens and names.
+- Plan no longer tells you to go to Plan. Goal burrows reads "Your goals are in here", and the emergency fund tick box says what ticking it does.
+- Plan > Burrows says where cards paid in full are (on Home, under your bank).
+- Add a burrow says when the new goal needs more than the pay not placed yet, and what to do.
+- The month-end question says the plan counted the money as spent (it is still in the bank).
+- Setup's bills step says you type the amounts next. The Balance now box says under it how to type an overdrawn balance. The Your money step says to add the balance later on Home.
+- "Bills and basics are 55% of pay, about the usual share" says the percent once. Plan's sticky line does not repeat "Not placed yet". Plan > Month says how to use money not placed.
+- Every sentence ends with a full stop, run-on sentences are split in two, and apostrophes are all straight.
+- Messages take turns, so a badge no longer covers a message about what you just did, and messages sit above the Undo bar.
+
+### Layout
+
+- Receipts' Last month table and Plan > All months show every figure whole on phones, with nothing hidden off the side.
+- Amounts in Where your money sits never break in the middle of the number.
+- Goal names on Home > More wrap to two lines instead of being cut.
+- Small buttons and links are at least 44px tall, so they are easy to tap. The thin Plan bar pieces are no longer Tab stops.
+- On phones the keyboard focus scrolls clear of the Help shelf, and forms scroll clear of an Undo bar that stays.
+- The burrow page dots keep clear of the BACK HOME sign and move with the card when Add money makes it taller.
+- The Free to spend sheet fits the phone when it is not safe to spend yet.
+- Home has its vines again, with the purple wisteria over the burrows.
+
+### Waiting for Mako's run
+
+Not in these notes until Mako decides. The lists are in section 0, not copied here:
+
+- "For Mako's run, added" under MAIN 12 progress 4 (the top entry).
+- "Added to For Mako's run by MAIN 12" under MAIN 12 progress 3.
+- "For Mako's run (collected by MAIN 11; do not build)" under "MAIN 11 hands off to MAIN 12", and "For Mako's run (added by MAIN 11)" under MAIN 11 progress 2.
+- The art director list, which waits for Mako.
 
 ## 5. Known problems, in the order to do them
 
