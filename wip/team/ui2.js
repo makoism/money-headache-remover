@@ -1,7 +1,7 @@
 
 /* ---------- bar and legend (hero and dock): the six jars ---------- */
 function paintBar(el, m, withLabels) {
-  if (!el.children.length) el.innerHTML = JARS.map(j => `<div class="seg-b ${JARCLS[j.id]}" data-k="${j.id}" ${withLabels ? 'tabindex="0"' : ''}></div>`).join('') + `<div class="seg-b rest" data-k="rest" ${withLabels ? 'tabindex="0"' : ''}></div>`;
+  if (!el.children.length) el.innerHTML = JARS.map(j => `<div class="seg-b ${JARCLS[j.id]}" data-k="${j.id}"></div>`).join('') + `<div class="seg-b rest" data-k="rest"></div>`;
   const J = jarsOf(S, m), rest = J.rest, names = [];
   J.list.forEach(j => {
     const d = $(`[data-k="${j.id}"]`, el);

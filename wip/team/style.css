@@ -1924,3 +1924,8 @@ ol.steps li { margin: 0 0 4px; }
 /* QC round 4 layout and touch (confusing 1): on phones a control that gets the keyboard focus scrolls clear of the Help shelf along the
    bottom (70px) and of the Plan summary at the top */
 @media (max-width: 520px) { html { scroll-padding-bottom: 84px; scroll-padding-top: 64px; } }
+/* QC round 4 layout and touch (confusing 2): every one of these is a full 44px tap target */
+.hn-b select.inp.sm { min-height: 44px; }
+.bv-chips .chip { min-height: 44px; }
+.ask-x { width: 44px; height: 44px; }
+#tourFull { min-height: 44px; display: inline-flex; align-items: center; }
