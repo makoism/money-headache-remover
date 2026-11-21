@@ -1111,7 +1111,7 @@ body.gw-open, body.co-open.gw-open { overflow: hidden; }
 @media (max-width: 560px) { .hform { grid-template-columns: minmax(0, .8fr) minmax(0, 1.3fr); } }
 
 @media (max-width: 560px) {
-  .hform { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "amt add" "cat cat" "more more" "msg msg"; align-items: end; }
+  .hform { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "amt add" "cat cat" "msg msg" "more more"; align-items: end; }
   .hform .hamt { grid-area: amt; } .hform .hcat { grid-area: cat; } .hform .hadd { grid-area: add; grid-column: auto; padding: 0 26px; }
   .hform .hmore { grid-area: more; } .hform .hmsg { grid-area: msg; }
 }
@@ -1170,7 +1170,10 @@ body.gw-open, body.co-open.gw-open { overflow: hidden; }
 .scan-app > * + * { margin-top: 16px; }
 .scan-steps { margin: 0; padding-left: 22px; display: grid; gap: 6px; font-size: 16px; line-height: 1.45; color: var(--ink2); }
 .scan-app textarea { width: 100%; border: 0; border-radius: var(--r-ctl); background: var(--field); box-shadow: inset 0 0 0 1px var(--hair); padding: 12px 14px; font-size: 16px; color: var(--ink); resize: vertical; min-height: 110px; }
-.hscan { margin-top: 6px; justify-self: start; }
+/* QC round 8 layout polish 3: Scan receipt is the same kind of link as "Add a date or a note" just above it, so it has the same size,
+   the same left edge (no side padding) and sits close under it; an empty message row takes no room */
+.hscan { margin-top: -12px; justify-self: start; font-size: 15px; padding-left: 0; padding-right: 0; }
+.hform .hmsg:empty { min-height: 0; margin-top: -14px; }
 
 .scan-out .msg.card .grp { font-size: 16px; margin: 0; padding: 0; border: 0; }
 .scan-out .msg.card .grp > b { font-size: 17px; font-weight: 600; color: var(--ink); }
