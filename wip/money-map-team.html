@@ -1118,7 +1118,7 @@ body.gw-open, body.co-open.gw-open { overflow: hidden; }
 @media (max-width: 560px) { .hform { grid-template-columns: minmax(0, .8fr) minmax(0, 1.3fr); } }
 
 @media (max-width: 560px) {
-  .hform { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "amt add" "cat cat" "more more" "msg msg"; align-items: end; }
+  .hform { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "amt add" "cat cat" "msg msg" "more more"; align-items: end; }
   .hform .hamt { grid-area: amt; } .hform .hcat { grid-area: cat; } .hform .hadd { grid-area: add; grid-column: auto; padding: 0 26px; }
   .hform .hmore { grid-area: more; } .hform .hmsg { grid-area: msg; }
 }
@@ -1177,7 +1177,10 @@ body.gw-open, body.co-open.gw-open { overflow: hidden; }
 .scan-app > * + * { margin-top: 16px; }
 .scan-steps { margin: 0; padding-left: 22px; display: grid; gap: 6px; font-size: 16px; line-height: 1.45; color: var(--ink2); }
 .scan-app textarea { width: 100%; border: 0; border-radius: var(--r-ctl); background: var(--field); box-shadow: inset 0 0 0 1px var(--hair); padding: 12px 14px; font-size: 16px; color: var(--ink); resize: vertical; min-height: 110px; }
-.hscan { margin-top: 6px; justify-self: start; }
+/* QC round 8 layout polish 3: Scan receipt is the same kind of link as "Add a date or a note" just above it, so it has the same size,
+   the same left edge (no side padding) and sits close under it; an empty message row takes no room */
+.hscan { margin-top: -12px; justify-self: start; font-size: 15px; padding-left: 0; padding-right: 0; }
+.hform .hmsg:empty { min-height: 0; margin-top: -14px; }
 
 .scan-out .msg.card .grp { font-size: 16px; margin: 0; padding: 0; border: 0; }
 .scan-out .msg.card .grp > b { font-size: 17px; font-weight: 600; color: var(--ink); }
@@ -1812,6 +1815,11 @@ body.scene-on .card, body.scene-on .why, body.scene-on .gw-card { background: co
 
 /* QC 38.30: a small solid tag so invented figures are never read as the person's own */
 .smp-tag { display: inline-block; vertical-align: middle; margin-left: 8px; padding: 2px 10px; border-radius: 999px; background: var(--card); border: 1px solid var(--line, rgba(0,0,0,.2)); font-size: var(--t-micro); font-weight: 600; color: var(--ink2); letter-spacing: 0; }
+/* QC round 8 layout polish 6: a pill never sits alone on a line. The Sample numbers pill on Your burrow uses the space before it as its gap
+   (so it fits at 320, and starts at the heading's left edge if it ever wraps) and is lifted to the middle of the heading's line; a
+   "planned" pill at the end of a sentence keeps the last word with it */
+.hb-h .smp-tag { margin-left: 0; position: relative; top: -3px; }
+.ntag-keep { white-space: nowrap; }
 .pdv-purse.empty canvas { opacity: .2; }
 .tour-chest { display: block; margin: 0 auto 6px; width: 96px; height: 72px; image-rendering: pixelated; }
 .gw-card .cap { margin-bottom: 14px; }
@@ -3824,8 +3832,7 @@ const HOPES = { see: ['See where it goes', 'see where your money goes'], save: [
 const cleanName = v => String(v == null ? '' : v).replace(/[\u0000-\u001f\u007f<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, 24);
 const cleanSubName = v => String(v == null ? '' : v).replace(/[\u0000-\u001f\u007f<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, 30);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const FULL = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-const fullLabel = ym => FULL[+ym.slice(5) - 1] + ' ' + ym.slice(0, 4);
+/* months are written short everywhere on screen, "Jun 2026" and "3 Jun" (QC round 8 wording polish; VOICE.md dates), with monthLabel and MONTH_NAMES */
 const TABS = ['home', 'month', 'months', 'goals', 'receipts', 'basics'];
 /* the tab bar, in the order people reach for them; 'months' is opened from a link */
 const TAB_BAR = ['home', 'receipts', 'goals', 'month', 'basics'];
@@ -3865,7 +3872,7 @@ const IC = {
   chev: '<svg class="chev" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M5 8l5 5 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
 };
 const dateLabel = d => (+d.slice(8, 10)) + ' ' + MONTH_NAMES[+d.slice(5, 7) - 1] + ' ' + d.slice(0, 4);
-const timeLabel = t => { const c = clockParts(t), h = c.h % 12 || 12; return h + ':' + pad2(c.mi) + (c.h < 12 ? ' am' : ' pm'); };
+const timeLabel = t => { const c = clockParts(t), h = c.h % 12 || 12; return h + ':' + pad2(c.mi) + (c.h < 12 ? ' AM' : ' PM'); };   /* "6:00 PM", the same as the cloud copy times (QC round 8 wording polish) */
 /* today as YYYY-MM-DD, kept inside the months the page covers */
 function todayStr() {
   const d = new Date(), s = d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
@@ -4856,11 +4863,11 @@ const CURS = [['₱', '₱ Philippine peso'], ['$', '$ Dollar'], ['€', '€ Eu
 const SETF = [
   { k: 'bankStart', label: 'Money today (bank plus cash)', hint: 'What you have right now, which is where the first month in the plan starts. Update it whenever you check your bank. Overdrawn? Type a minus first, like −400.' },
   { k: 'minBank', label: 'Minimum balance', hint: 'You get a warning when a month would end below this.' },
-  { k: 'ceiling', label: 'Free to spend cap', hint: 'The most you want Free to spend to be in a month, shown as a mark on the Free to spend bar in Plan.' },
+  { k: 'ceiling', label: 'Free to spend cap', hint: 'The most you want Free to spend to be in a month, shown as the cap line on the Free to spend bar in Plan.' },
 ];
 function buildStatic() {
   $('#curSel').innerHTML = CURS.map(c => `<option value="${esc(c[0])}">${esc(c[1])}</option>`).join('');
-  const opts = MONTHS.map(ym => `<option value="${ym}">${fullLabel(ym)}</option>`).join('');
+  const opts = MONTHS.map(ym => `<option value="${ym}">${monthLabel(ym)}</option>`).join('');
   $('#monthSel').innerHTML = opts; $('#rcMonth').innerHTML = opts;
   $('#rcFields').innerHTML = remindFieldsHTML('rc');
   $('#jarList').innerHTML = JARS.map(j => `<div class="j"><i class="${JARCLS[j.id]}"></i><span class="jn">${j.name}<small>${j.about}</small></span><b class="jp">${j.usualPct}%</b></div>`).join('');
@@ -5052,8 +5059,8 @@ function render() {
   if (m.draw > 0) chgList.push(`Borrowed ${fmt(m.draw)} from emergency fund`);
   if (S.items[sel] !== undefined) chgList.push('One-time costs edited');
   const cs = $('#chgSum'); cs.hidden = !chgList.length;
-  if (chgList.length) $('#chgTxt').textContent = `Edited for ${fullLabel(sel)}: ${chgList.join(', ')}.` + (nextYm ? ` ${FULL[+nextYm.slice(5) - 1]} goes back to normal.` : '');
-  $('#ledgerSub').textContent = `Tap an amount to edit it for ${fullLabel(sel)} only.` + (nextYm ? ` ${FULL[+nextYm.slice(5) - 1]} goes back to normal.` : '') + ' Tap a name to open it.';
+  if (chgList.length) $('#chgTxt').textContent = `Edited for ${monthLabel(sel)}: ${chgList.join(', ')}.` + (nextYm ? ` ${MONTH_NAMES[+nextYm.slice(5) - 1]} goes back to normal.` : '');
+  $('#ledgerSub').textContent = `Tap an amount to edit it for ${monthLabel(sel)} only.` + (nextYm ? ` ${MONTH_NAMES[+nextYm.slice(5) - 1]} goes back to normal.` : '') + ' Tap a name to open it.';
   [...IN_ROWS, ...JARROWS].forEach(r => {
     const a = $('#ra-' + r.id) || $('#h-' + r.id); if (a.tagName === 'INPUT') setIdle(a, fmt2(amts[r.id]));   /* a typed amount shows its cents (decision 1) */ else a.textContent = fmt(amts[r.id]);
     a.classList.toggle('zero', !amts[r.id]);
@@ -5074,7 +5081,7 @@ function noteFor(f, m, v, on) {
   if (f.kind === 'debt') { const d = debtById(S, f.did), x = d && m.debts[d.id]; return x ? `Minimum ${fmt(d.min)} is already included. This month it pays ${fmt(x.pay)}${x.interest > 0 ? `, ${fmt(x.interest)} of it interest` : ''}. Owed after: ${fmt(x.bal)}.` : ''; }
   let t = f.note ? esc(localize(f.note)) + ' ' : '';
   if (f.ends) t += on ? (v > 0 ? `Last payment ${monthLabel(f.ends)}.` : '') : 'Paid off.';
-  if (f.sl && f.sl.mark) { const ceil = cfg(S, 'ceiling'); if (ceil > 0) t += (m.jar.play > ceil ? ` <b>Above your ${fmt(ceil)} Free to spend cap.</b>` : ` The mark is your ${fmt(ceil)} Free to spend cap (Settings).`); }
+  if (f.sl && f.sl.mark) { const ceil = cfg(S, 'ceiling'); if (ceil > 0) t += (m.jar.play > ceil ? ` <b>Above your ${fmt(ceil)} Free to spend cap.</b>` : ` The cap line is your ${fmt(ceil)} Free to spend cap (Settings).`); }
   return t.trim();
 }
 function goalNote(gid, m) {
@@ -5164,7 +5171,7 @@ function renderMonthTable() {
     const pcm = planCells(S, C, m.ym), np = m.pool.left < 0 ? m.pool.left : pcm.unplaced;   /* the Month card's own figure: pay with no place, less what spending past plan already used (38.31 number gate round 4) */
     const unp = !grew && st === 'good' && pcm.unplaced >= roundUnit(S);
     const wd = grew ? 'Over plan' : unp ? 'Not placed yet' : word[st];
-    return `<tr data-ym="${m.ym}" class="${m.ym === sel ? 'on' : ''}" tabindex="0" aria-label="${fullLabel(m.ym)}: ${wd}${gs.length ? ', ' + gs.map(g => g.name + ' ' + fw(g)).join(', ') : ''}"><td>${monthLabel(m.ym)}${marks}</td><td class="${np < 0 ? 'neg' : ''}">${np < 0 ? fmt2(pcm.pastPay) + ' past pay' : fmt2(np)}</td><td class="${bk < cfg(S, 'minBank') ? 'neg' : ''}">${fmt2(bk)}</td><td><span class="st ${unp ? 'tight' : st}">${unp ? IC.warn : icon[st]}<span class="stw">${wd}</span></span></td></tr>`;
+    return `<tr data-ym="${m.ym}" class="${m.ym === sel ? 'on' : ''}" tabindex="0" aria-label="${monthLabel(m.ym)}: ${wd}${gs.length ? ', ' + gs.map(g => g.name + ' ' + fw(g)).join(', ') : ''}"><td>${monthLabel(m.ym)}${marks}</td><td class="${np < 0 ? 'neg' : ''}">${np < 0 ? fmt2(pcm.pastPay) + ' past pay' : fmt2(np)}</td><td class="${bk < cfg(S, 'minBank') ? 'neg' : ''}">${fmt2(bk)}</td><td><span class="st ${unp ? 'tight' : st}">${unp ? IC.warn : icon[st]}<span class="stw">${wd}</span></span></td></tr>`;
   }).join('');
   $('#monthTable').innerHTML = `<table><thead><tr><th>Month</th><th>Not placed</th><th>Bank, month end</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
@@ -5441,7 +5448,7 @@ const pileOk = jar => { const b = HV && HV.map && HV.map.burrows.find(x => x.id 
 function renderReceipts() {
   const m = C.byYm[sel], rs = receiptStats(S, sel), playPlan = m.jar.play, playSpent = rs.byJar.play || 0;
   setIdle($('#rcMonth'), sel);
-  $('#rcTitle').textContent = 'Receipts, ' + fullLabel(sel);
+  $('#rcTitle').textContent = 'Receipts, ' + monthLabel(sel);
   let sum = rs.count ? `${fmt2(rs.total)} spent, ${rs.count} receipt${rs.count === 1 ? '' : 's'}.` : sel === nowYm() ? 'No receipts this month.' : `No receipts in ${monthLabel(sel)}${sel > nowYm() ? ' yet' : ''}.`;   /* a picked month is named (QC round 4 north-star 1) */
   if (playPlan > 0 || playSpent > 0) sum += ` Free to spend: ${fmt2(playPlan)} planned, ${fmt2(playSpent)} spent, ` + (playSpent > playPlan ? `${fmt2(planCells(S, C, sel).playOver)} over.` : (m.counted > 0 ? `${fmt2(m.counted)} not spent: ${m.topup && m.topup.used > 0 ? fmt2(m.topup.used) + ' went to a goal' + (m.counted - m.topup.used > 0.004 ? ', ' + fmt2(m.credit) + ' came back to the bank' : '') : 'came back to the bank'}.` : m.pendLeft > 0 ? `${fmt2(m.pendLeft)} not logged as spent yet, and Home asks where it goes.` : `${fmt2(playSafeLeft(S, m, playSpent))}${playNotSafe(S, C, sel, ymd(new Date())) ? ' left, not safe to spend yet' : ' safe to spend'}.`));
   $('#rcSum').textContent = sum;
@@ -7012,7 +7019,7 @@ const SUBS = [
   ['hbo', 'HBO Max', '$10.99 Basic, $18.49 Standard, $22.99 Premium', '¥1,000 Standard, ¥1,400 Premium', '₱149 Mobile, ₱269 Standard, ₱399 Ultimate'],
   ['prime', 'Amazon Prime', '$14.99, or $139 a year', '¥600, or ¥5,900 a year', '₱249 for Prime Video, or ₱1,669 a year'],
   ['appletv', 'Apple TV', '$14.99', '¥1,200'],
-  ['paramount', 'Paramount+', '$8.99 Essential, $13.99 Premium', 'Ended in Japan in March 2026'],
+  ['paramount', 'Paramount+', '$8.99 Essential, $13.99 Premium', 'Ended in Japan in Mar 2026'],
   ['youtube', 'YouTube Premium', '$15.99 Individual, $26.99 Family', '¥1,280 Individual, ¥2,280 Family', 'From ₱189 Individual, ₱379 Family'],
   ['spotify', 'Spotify', '$12.99 Individual, $21.99 Family', '¥1,080 Individual, ¥1,880 Family', '₱169 Individual, ₱279 Family'],
   ['applemusic', 'Apple Music', '$11.99 Individual, $19.99 Family', '¥1,180 Individual, ¥1,980 Family', '₱169 Individual'],
@@ -13868,7 +13875,7 @@ const TOUR = [
           : `Free to spend <b>${fmt2(f.play)}</b> a month, and it's yours to spend on whatever you want. All your other pay is placed.`;
         const V = viewOf(S, f.C, nowYm(), ymd(new Date())), r = V.main, mg = r ? goalById(S, r.id) : null;
         /* the last screen lands on the destination: the goal, the reason in the person's words, when it is full and what each month adds */
-        const when0 = r ? (r.pct >= 100 ? 'Full.' : r.reached ? (r.months <= 0 ? 'Full <b>this month</b>.' : `Full <b>${fullLabel(r.reached)}</b>, ${plural(r.months, 'month')} from now.`) : 'Not full within ' + SPAN + ' at this pace.') : '';
+        const when0 = r ? (r.pct >= 100 ? 'Full.' : r.reached ? (r.months <= 0 ? 'Full <b>this month</b>.' : `Full <b>${monthLabel(r.reached)}</b>, ${plural(r.months, 'month')} from now.`) : 'Not full within ' + SPAN + ' at this pace.') : '';
         const when = mg ? dw(S, mg, when0) : when0;
         const dep = r ? f.C.byYm[nowYm()].g[r.id].actual : 0;
         const goal = mg ? `<div class="tour-goal" style="--c:var(--c${mg.slot})"><p class="tour-goal-k">Main goal</p><p class="tour-goal-n">${esc(mg.name)}</p>${mg.why ? `<p class="tour-goal-w">${esc(mg.why)}</p>` : ''}
@@ -14861,7 +14868,7 @@ function openDate(inp, anchor) {
     for (let i = 0; i < 42; i++) { const dt = new Date(vy, vm, 1 - lead + i); cells.push(dt); }
     const week = []; for (let i = 0; i < 7; i++) week.push(DP_DOW[(DP_FIRST + i) % 7]);
     pop.innerHTML = `<div class="dp-h"><button type="button" class="dp-n" data-m="-1" aria-label="Previous month"><svg viewBox="0 0 20 20" width="18" height="18" fill="none"><path d="M12.5 4.5L7 10l5.5 5.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-      <button type="button" class="dp-t" data-pickm aria-label="Choose month and year">${FULL[vm]} ${vy}${DP_CHEV}</button>
+      <button type="button" class="dp-t" data-pickm aria-label="Choose month and year">${MONTH_NAMES[vm]} ${vy}${DP_CHEV}</button>
       <button type="button" class="dp-n" data-m="1" aria-label="Next month"><svg viewBox="0 0 20 20" width="18" height="18" fill="none"><path d="M7.5 4.5L13 10l-5.5 5.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
       <div class="dp-w">${week.map(w => `<span>${w}</span>`).join('')}</div>
       <div class="dp-g${dir > 0 ? ' sl-l' : dir < 0 ? ' sl-r' : ''}" role="grid">${cells.map(dt => { const iso = dpIso(dt.getFullYear(), dt.getMonth(), dt.getDate()), out = dt.getMonth() !== vm, ok = inRange(iso);
@@ -16312,9 +16319,9 @@ function renderNext() {
   /* receipts logged later can use up the money the answer was about: then there is nothing left to report (the same rule as after a reload), never "0 counted" */
   if (SWEPT && C && !((C.byYm[SWEPT.pm] || {}).counted > 0)) SWEPT = null;
   /* after a reload, an answer made in the last 3 days still shows with Undo */
-  if (!SWEPT && S.ui.sweep && !sweepOffer()) { const k = Object.keys(S.ui.sweep).filter(q => S.ui.sweep[q].t && Date.now() - S.ui.sweep[q].t < 3 * 864e5 && C.byYm[q] && C.byYm[q].counted > 0).sort().pop(); if (k) { const e = S.ui.sweep[k]; SWEPT = { pm: k, id: e.id || null, to: e.id ? undefined : 'bank', amt: e.amt, note: `From ${FULL[+k.slice(5) - 1]}'s Free to spend.${e.id ? '' : ' The bank figure now includes it.'}` }; } }
+  if (!SWEPT && S.ui.sweep && !sweepOffer()) { const k = Object.keys(S.ui.sweep).filter(q => S.ui.sweep[q].t && Date.now() - S.ui.sweep[q].t < 3 * 864e5 && C.byYm[q] && C.byYm[q].counted > 0).sort().pop(); if (k) { const e = S.ui.sweep[k]; SWEPT = { pm: k, id: e.id || null, to: e.id ? undefined : 'bank', amt: e.amt, note: `From ${MONTH_NAMES[+k.slice(5) - 1]}'s Free to spend.${e.id ? '' : ' The bank figure now includes it.'}` }; } }
   if (!step && SWEPT) {
-    const g = SWEPT.id ? goalById(S, SWEPT.id) : null, mm = C.byYm[SWEPT.pm] || {}, used = (mm.topup && mm.topup.used) || 0, cnt = mm.counted || 0, rest = mm.credit || 0, nm = FULL[+SWEPT.pm.slice(5) - 1];
+    const g = SWEPT.id ? goalById(S, SWEPT.id) : null, mm = C.byYm[SWEPT.pm] || {}, used = (mm.topup && mm.topup.used) || 0, cnt = mm.counted || 0, rest = mm.credit || 0, nm = MONTH_NAMES[+SWEPT.pm.slice(5) - 1];
     let body;
     if (g && used > 0) { let gi = null; try { gi = goalInfo(S, C, g.id, nowYm()); } catch (e) { } const rd = C.reached[g.id]; body = gi ? (gi.pct >= 1 ? dw(S, g, `${g.name} is full.`) : dw(S, g, `${fmt(gi.togo)} to go.${rd ? ` Full ${monthLabel(rd)}.` : ''}`)) : ''; body += (g.why ? ' ' + g.why + '.' : '') + (rest > 0.004 ? (mm.topup.full ? ` ${nm}'s goal was full at ${fmt(mm.topup.cap)}, so the other ${fmt2(rest)} stays in the bank.` : ` The other ${fmt2(rest)} stays in the bank.`) : ''); }   /* why the rest did not go in (QC round 6 numbers gate 2) */
     else if (g) body = `From ${nm}'s Free to spend. ${g.name} had no room left, so it stays in the bank.`;
@@ -16323,7 +16330,7 @@ function renderNext() {
   }
   let sw = null;
   if (!step && (sw = sweepOffer())) {
-    const nm = FULL[+sw.pm.slice(5) - 1], one = sw.goals.length === 1, nowNm = FULL[+sw.now.slice(5) - 1];
+    const nm = MONTH_NAMES[+sw.pm.slice(5) - 1], one = sw.goals.length === 1, nowNm = MONTH_NAMES[+sw.now.slice(5) - 1];
     const pick = sw.goals.length > 1 ? `<select class="inp sm" data-sweepgoal aria-label="Which goal">${sw.goals.map(r => `<option value="${esc(r.id)}"${r.id === sw.main.id ? ' selected' : ''}>${esc(r.name)}</option>`).join('')}</select>` : '';
     step = [`${nm}: ${fmt2(sw.left)} of Free to spend isn't logged as spent`, `The plan counted it as spent. ${sw.n < 4 ? (sw.n === 0 ? 'No receipts are logged' : sw.n === 1 ? 'Only 1 receipt is logged' : `Only ${sw.n} receipts are logged`) + ', so this may be spending you haven\'t logged yet. ' : ''}${sw.goals.length ? 'Keep it in the bank or put it toward a goal. You can undo either one.' : 'Keep it in the bank. You can undo it.'}`   /* no goal button when no goal has room, so no goal in the words (QC10 numbers should-fix 2) */, `Keep ${fmt2(sw.left)} in the bank`, `data-sweepbank="${sw.pm}"`, pick];
   }
@@ -16338,7 +16345,7 @@ function renderNext() {
   const left = ['pay', 'bills', 'goals', 'receipts'].filter(k => !d[k]).length;
   const exact = step[3] === 'data-exact';
   const swept = step[3] === 'data-sweepundo', sweep = !!sw && step[3].indexOf('data-sweepbank=') === 0;
-  const tail = swept ? '' : month && month.left > 0 ? `<button type="button" class="link" data-mcok="${month.pm}">It was not spent</button><button type="button" class="link" data-hidemonth="${month.pm}">Hide</button>` : sweep ? `${sw.main ? `<button type="button" class="link" data-sweep="${sw.pm}">${sw.goals.length === 1 ? 'Put it toward ' + esc(sw.main.name) : 'Put it toward a goal'}</button>` : ''}<button type="button" class="link" data-closego="${sw.pm}">Open ${FULL[+sw.pm.slice(5) - 1]} receipts</button><button type="button" class="link" data-sweephide="${sw.pm}">Decide later</button>` : `<button type="button" class="link" ${month ? `data-hidemonth="${month.pm}"` : exact ? 'data-hideexact' : step[3] === 'data-remindgo' ? 'data-hideremind' : step[5] || 'data-hidenext'}>${step[5] === 'data-stretch="no"' ? 'Stop here' : 'Hide'}</button>`;
+  const tail = swept ? '' : month && month.left > 0 ? `<button type="button" class="link" data-mcok="${month.pm}">It was not spent</button><button type="button" class="link" data-hidemonth="${month.pm}">Hide</button>` : sweep ? `${sw.main ? `<button type="button" class="link" data-sweep="${sw.pm}">${sw.goals.length === 1 ? 'Put it toward ' + esc(sw.main.name) : 'Put it toward a goal'}</button>` : ''}<button type="button" class="link" data-closego="${sw.pm}">Open ${MONTH_NAMES[+sw.pm.slice(5) - 1]} receipts</button><button type="button" class="link" data-sweephide="${sw.pm}">Decide later</button>` : `<button type="button" class="link" ${month ? `data-hidemonth="${month.pm}"` : exact ? 'data-hideexact' : step[3] === 'data-remindgo' ? 'data-hideremind' : step[5] || 'data-hidenext'}>${step[5] === 'data-stretch="no"' ? 'Stop here' : 'Hide'}</button>`;
   put(el, `<div class="hn-t"><b>${step[0]}</b><span>${step[1]}${month || exact || sweep || swept || step[5] || step[3] === 'data-remindgo' ? '' : ' ' + (left === 1 ? '1 step left.' : left + ' steps left.')}</span></div><div class="hn-b">${step[4] || ''}<button type="button" class="btn small ${swept ? '' : 'solid'}" ${step[3]}>${step[2]}</button>${tail}</div>`);
 }
 /* an answer was just given. With no other month waiting, the card says so with Undo, as before. With another month still waiting
@@ -16371,7 +16378,7 @@ function doSweep(pm) {
 function doRelease(pm) {
   const o = sweepOffer(); if (!o || o.pm !== pm) { render(); return; }
   S.ui.sweep = Object.assign({}, S.ui.sweep, { [pm]: { amt: o.left, to: 'bank', t: Date.now() } }); persist();
-  const nm = FULL[+pm.slice(5) - 1];
+  const nm = MONTH_NAMES[+pm.slice(5) - 1];
   sfx('coin'); sweptSay({ pm, id: null, to: 'bank', amt: o.left, note: `From ${nm}'s Free to spend. The bank figure now includes it.` }, `${fmt2(o.left)} counted in the bank.`); render();
 }
 function undoSweep() {
@@ -16435,7 +16442,7 @@ function renderHero() {
   else if (r.state === 'ontrack') { chip = '<span class="chip good">' + IC.ok + 'On track</span>'; sub = `Needed by ${dateLabel(g.due)}. ${r.slack === 0 ? 'On time.' : plural(r.slack, 'month') + ' spare.'}`; }
   else if (r.state === 'behind') { chip = '<span class="chip tight">' + IC.warn + 'Behind</span>'; sub = `Needed by ${dateLabel(g.due)}.` + (r.need != null ? ` Save about ${fmt(r.need)} a month.` : ''); fix = '<button type="button" class="btn small" data-open="lts">Change monthly amount</button>'; }
   else if (r.state === 'noeta') { chip = '<span class="chip tight">' + IC.warn + 'Slow</span>'; sub = 'Raise the monthly amount to finish sooner.'; fix = '<button type="button" class="btn small" data-open="lts">Change monthly amount</button>'; }
-  const when = dwr(r, r.pct >= 100 ? 'Full.' : r.reached ? (r.months <= 0 ? 'Full <b>this month</b>.' : `<b>${plural(r.months, 'month')}</b> to go. Full ${fullLabel(r.reached)}.`) : 'Not full within ' + SPAN + ' at this pace.');
+  const when = dwr(r, r.pct >= 100 ? 'Full.' : r.reached ? (r.months <= 0 ? 'Full <b>this month</b>.' : `<b>${plural(r.months, 'month')}</b> to go. Full ${monthLabel(r.reached)}.`) : 'Not full within ' + SPAN + ' at this pace.');
   const ms = [25, 50, 75].map(p => `<span class="ms${pct >= p ? ' hit' : ''}" style="left:${p}%"></span>`).join('');
   /* what moves it: this month's deposit and what is still to go, so progress reads as motion, not a percent */
   const mg = C.byYm[HV.ym] && C.byYm[HV.ym].g[g.id], put1 = mg ? mg.actual : 0, togo = r.togo;
@@ -17420,7 +17427,7 @@ function renderMap() {
     <div class="mp-split" role="img" aria-label="Your pay in ${esc(mon)} splits into: ${esc(split.map(x => x.name + ' ' + fmt(x.amount)).join(', '))}">${seg}${planOver && placed > 0 ? `<b class="mp-past" style="width:${Math.min(100, planOver / placed * 100)}%" title="Planned past your pay ${esc(fmt(planOver))}"></b>` : ''}</div>
     <ul class="mp-key">${key}${planOver ? `<li><i style="background:var(--bad)"></i>Past your pay <b>${fmt(planOver)}</b></li>` : ''}</ul>${planOver ? `<p class="cap">Your plan is ${fmt(planOver)} more than your pay. ${coverText(planOver, dwn, M.bankEnd, cfg(S, 'minBank'), M.bankBelow)}</p>` : ''}
     <p class="mp-act"><button type="button" class="btn small" id="mpPay">Watch where your pay goes</button></p></details>
-    <p class="mp-cap mp-where-h">Where your money sits at the end of ${esc(mon)}: the bank and your burrows ${PLN}</p>
+    <p class="mp-cap mp-where-h">Where your money sits at the end of ${esc(mon)}: the bank and your <span class="ntag-keep">burrows ${PLN}</span></p>
     <div class="mp-where" role="img" aria-label="${esc(parts.map(x => x.name + ' ' + fmt(x.amount)).join(', '))}">${wseg}</div>
     <ul class="mp-key">${wkey}</ul><p class="cap mp-from" data-planfrom>${BANK_END} is planned from ${fmt2(V.month.bankStart)}, the balance your plan starts ${esc(mon)} with.${hasBank && (NW.bank !== V.month.bankStart || NW.cards.length) ? ` Your bank now is ${fmt2(NW.bank)}${NW.cards.length ? `, ${fmt2(NW.afterCards)} after the cards are paid` : ''}${(NW.cards.length ? NW.afterCards : NW.bank) !== V.month.bankStart ? ', so the two can differ' : ''}.` : ''}</p>${oweLine}
     <ul class="mp-nums mp-four" aria-label="Your four numbers">${n4('Total', fmt2(M.total), 'planned for the end of ' + mon + ': bank and burrows', M.total < 0 ? 'bad' : '')}${(M.free < 0 ? n4('Free to spend', fmt2(M.free), 'over in ' + mon   /* spent past the plan already: real money, so not called planned */, 'bad') : n4('Free to spend', fmt2(M.month.find(r => r.id === 'play').amount), ((M.month.find(r => r.id === 'play') || {}).notCovered ? 'planned: left in ' + mon + ', not safe to spend yet' : 'planned: left to spend in ' + mon)   /* what is left, not the monthly plan (QC10 round 3 numbers blocker 1) */))   /* one figure, as the chest below shows it (38.31 north-star round 2) */}${n4('Bills left', fmt2(M.billsLeft), 'planned: still to pay in ' + mon)}${n4('Saved', fmt2(M.saved), 'planned: what your burrows will hold by the end of ' + mon + ', with this month\'s saving')}</ul>
@@ -17594,7 +17601,7 @@ function wire() {
     }
   });
   $('#rowsOut').addEventListener('change', e => { if (e.target.closest('#items')) { S.items[sel] = readItems(); persist(); render(); } });
-  $('#resetMonth').addEventListener('click', e => confirmClick(e.currentTarget, `Tap again: removes the edits you made for this month. Receipts stay. You can undo for ${KEEP_DAYS} days.`, () => { const snR = snapNoCopy(); { const ym0 = sel, o0 = S.once[ym0] ? JSON.parse(JSON.stringify(S.once[ym0])) : undefined, i0 = S.items[ym0] !== undefined ? JSON.parse(JSON.stringify(S.items[ym0])) : undefined; offerUndo('reset', 'Month reset.', () => { if (o0 !== undefined) S.once[ym0] = o0; else delete S.once[ym0]; if (i0 !== undefined) S.items[ym0] = i0; else delete S.items[ym0]; }); } resetMonth(S, sel); keepCopy(snR, `${fullLabel(sel)} was reset.`); itemsSig = ''; persist(); render(); }));   /* a 3-day copy like every other big change (38.31 data safety round 4) */
+  $('#resetMonth').addEventListener('click', e => confirmClick(e.currentTarget, `Tap again: removes the edits you made for this month. Receipts stay. You can undo for ${KEEP_DAYS} days.`, () => { const snR = snapNoCopy(); { const ym0 = sel, o0 = S.once[ym0] ? JSON.parse(JSON.stringify(S.once[ym0])) : undefined, i0 = S.items[ym0] !== undefined ? JSON.parse(JSON.stringify(S.items[ym0])) : undefined; offerUndo('reset', 'Month reset.', () => { if (o0 !== undefined) S.once[ym0] = o0; else delete S.once[ym0]; if (i0 !== undefined) S.items[ym0] = i0; else delete S.items[ym0]; }); } resetMonth(S, sel); keepCopy(snR, `${monthLabel(sel)} was reset.`); itemsSig = ''; persist(); render(); }));   /* a 3-day copy like every other big change (38.31 data safety round 4) */
   $('#fixBtns').addEventListener('click', e => {
     const b = e.target.closest('[data-fx]'); if (!b) return; const f = b.dataset.fx, m = C.byYm[sel];
     if (f === 'trim') trimPlay(S, m, sel, +b.dataset.amt);
