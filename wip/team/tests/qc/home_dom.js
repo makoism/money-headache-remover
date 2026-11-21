@@ -84,7 +84,7 @@ const monShort = ym => MON[+ym.slice(5) - 1], monLong = ym => monShort(ym) + ' '
     eq(tag + ' ffa card retired', T.bu, null);
     /* ---- Your burrow (38.29): the four numbers and the proof line come from the model's map ---- */
     if (!(m.inflow > 0)) eq(tag + ' map hidden', T.mp, null);
-    else { const M = V.map; has(tag + ' map free', T.mp, F2(M.free)); has(tag + ' map bills left', T.mp, F2(M.billsLeft)); has(tag + ' map saved', T.mp, F2(M.saved)); has(tag + ' map bank', T.mp, F2(M.bankEnd)); has(tag + ' map total', T.mp, F2(M.total)); has(tag + ' proof', T.mp, 'Bank ' + F2(M.bankEnd) + ' + burrows ' + F2(M.saved) + ' = ' + F2(M.total))   /* the one proof line (Mako, 2026-11-19): the long "They add up" note became the sum itself */; lacks(tag + ' proof', T.mp, 'do not add up'); }
+    else { const M = V.map; has(tag + ' map free', T.mp, M.free < 0 ? F2(-M.free) + ' over' : F2(M.free));   /* past the plan: "5,000 over", no minus with the word over (38.31 number gate round 8, finding 2) */ has(tag + ' map bills left', T.mp, F2(M.billsLeft)); has(tag + ' map saved', T.mp, F2(M.saved)); has(tag + ' map bank', T.mp, F2(M.bankEnd)); has(tag + ' map total', T.mp, F2(M.total)); has(tag + ' proof', T.mp, 'Bank ' + F2(M.bankEnd) + ' + burrows ' + F2(M.saved) + ' = ' + F2(M.total))   /* the one proof line (Mako, 2026-11-19): the long "They add up" note became the sum itself */; lacks(tag + ' proof', T.mp, 'do not add up'); }
     /* ---- goals list ---- */
     V.goals.forEach(r => { const g = S.plan.goals.find(x => x.id === r.id); if (r.target > 0 && !g.why) { const pp = T.go.indexOf(g.name.replace(/\s+/g, ' ').trim()); checks++; if (pp < 0) fails.push(tag + ' goals home: ' + g.name + ' missing'); } });
     /* ---- cards and loans on Home ---- */
