@@ -207,7 +207,7 @@ const TOUR = [
   { id: 'video', part: PART.welcome, title: 'Welcome', next: 'Next', skipIf: () => !hasHello, art: () => '',
     body: () => {
       const player = helloFileOk && !helloFailed;
-      return `<p class="tour-what">Put in your pay and bills and the burrow shows you how much is really free to spend and saves up for the things you want.</p>${player ? helloPlayer() : helloCard()}
+      return `<p class="tour-what">Put in your pay and bills. The Burrow shows what is free to spend and helps you save for the things you want.</p>${player ? helloPlayer() : helloCard()}
       <p class="cap">${player
         ? 'Six minutes from Mako, who made this. It\'s under Help too.' + (helloVideo ? ` <a id="tourVideo" target="_blank" rel="noopener noreferrer" href="${esc(helloVideo.watch)}">Not playing? Open on Google Drive.</a>` : '')
         : 'Six minutes from Mako, who made this. Come back here when you\'re done or skip it. It\'s under Help too.'}</p>
