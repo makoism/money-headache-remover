@@ -8,8 +8,8 @@ const pairs = [
   ['Fun for you and your family, spend it', 'Fun for you and your family. Spend it on whatever you want.'],
   ['You never spend this, it grows', 'You never spend this. It grows over time.'],
   ['is Help, it has the video', 'The ? button at the bottom right of every screen is Help. It has the video and this setup.'],
-  ['put it toward a goal, you can undo either one', 'Count it in the bank or put it toward a goal. You can undo either one.'],
-  ['in the bank, you can undo it', 'Count it in the bank. You can undo it.'],
+  ['put it toward a goal, you can undo either one', 'Keep it in the bank or put it toward a goal. You can undo either one.'],
+  ['in the bank, you can undo it', 'Keep it in the bank. You can undo it.'],
 ];
 for (const [old, now] of pairs) { ck('gone: "' + old + '"', !src.includes(old)); ck('now: "' + now + '"', src.includes(now)); }
 console.log(bad ? `qc13_comma_splices: ${bad} FAIL` : 'qc13_comma_splices: ALL PASS'); process.exit(bad ? 1 : 0);
