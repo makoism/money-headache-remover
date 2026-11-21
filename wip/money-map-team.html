@@ -1612,6 +1612,7 @@ body.bv-on .wrap, body.bv-on #mgBand { visibility: hidden; }
 .bv-pop[hidden] { display: none; }
 .bv-pop h2 { margin: 0 0 4px; font-size: 18px; font-weight: 600; }
 .bv-n { margin: 0 0 8px; font-size: 15px; }
+.bv-why { margin: 0 0 8px; font-size: 13px; opacity: .85; }   /* what the emergency fund is for (QC round 6 novice C2) */
 .bv-bar { height: 8px; border-radius: 6px; background: color-mix(in srgb, var(--ink) 16%, transparent); overflow: hidden; }
 .bv-bar i { display: block; height: 100%; background: var(--accent); }
 .bv-s { margin: 6px 0 12px; font-size: 13px; opacity: .8; }
@@ -7785,7 +7786,7 @@ const BUR = (() => {
   function fill() {
     const all = rows(), r = all.find(x => x.id === cur) || all[0]; if (!r) return;
     cur = r.id; const pct = Math.min(1, r.saved / r.target); LK = LOOKS[lookOf(r)] ? lookOf(r) : 'plain';
-    pop.innerHTML = `<h2>${esc(r.name)}</h2><p class="bv-n"><b>${fmt(r.savedNow)}</b> ${r.kind === 'debt' ? 'paid off' : 'saved'} now, of ${fmt(r.target)}${r.overNow > 0 ? `, ${fmt(r.overNow)} over the goal` : ''}</p><div class="bv-bar" role="img" aria-label="${r.pct} percent ${r.kind === 'debt' ? 'paid off' : 'full'}"><i style="width:${r.pct}%"></i></div><p class="bv-s">${r.saved !== r.savedNow ? `${fmt(r.saved)} by the end of ${monthLabel(nowYm(), true)}, as planned: ` : ''}${r.pct}% ${r.kind === 'debt' ? 'paid off. ' + fmt(r.togo) + ' still owed' : 'full'}</p><button type="button" class="btn bv-add">${r.kind === 'debt' ? 'Add a payment' : 'Add money'}</button>`;
+    pop.innerHTML = `<h2>${esc(r.name)}</h2>${r.emergency ? `<p class="bv-why">Money for surprises, so a broken phone or a vet bill isn't a crisis.</p>` : ''}<p class="bv-n"><b>${fmt(r.savedNow)}</b> ${r.kind === 'debt' ? 'paid off' : 'saved'} now, of ${fmt(r.target)}${r.overNow > 0 ? `, ${fmt(r.overNow)} over the goal` : ''}</p><div class="bv-bar" role="img" aria-label="${r.pct} percent ${r.kind === 'debt' ? 'paid off' : 'full'}"><i style="width:${r.pct}%"></i></div><p class="bv-s">${r.saved !== r.savedNow ? `${fmt(r.saved)} by the end of ${monthLabel(nowYm(), true)}, as planned: ` : ''}${r.pct}% ${r.kind === 'debt' ? 'paid off. ' + fmt(r.togo) + ' still owed' : 'full'}</p><button type="button" class="btn bv-add">${r.kind === 'debt' ? 'Add a payment' : 'Add money'}</button>`;
     pop.querySelector('.bv-add').addEventListener('click', e => { e.stopPropagation(); addPanel(r); });
     el.querySelector('.bv-dots').hidden = all.length < 2;   /* one burrow: no page dots that do nothing (38.31 north-star round 4) */
     el.querySelector('.bv-dots').innerHTML = all.map(x => `<button type="button" data-b="${esc(x.id)}" aria-label="${esc(x.name)}" aria-current="${x.id === cur}"></button>`).join('');
