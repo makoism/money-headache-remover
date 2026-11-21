@@ -12,7 +12,12 @@ const open = async (init, vw = 390) => {
   await p.goto(PAGE + '?s=1#2026-11', { waitUntil: 'load' }); await w(800); return { b, p, errs };
 };
 const idbRec = p => p.evaluate(() => new Promise(res => { const rq = indexedDB.open('money-map-safe'); rq.onerror = () => res(null); rq.onsuccess = () => { try { const g = rq.result.transaction('kv').objectStore('kv').get('state'); g.onsuccess = () => res(g.result || null); g.onerror = () => res(null); } catch (e) { res(null); } }; }));
-const lose = (p, val) => p.evaluate((k, v) => { const o = Storage.prototype.setItem; Storage.prototype.setItem = function () {}; if (v === null) localStorage.removeItem(k); else o.call(localStorage, k, v); }, KEY, val);
+/* wait until a pending save has reached both copies (same revision), so a change made here is not beaten on reload by a second copy
+   written a moment later (MAIN 12: the flake inside check.sh) */
+const settle = async p => { for (let i = 0; i < 40; i++) { const ok = await p.evaluate(k => new Promise(res => { let m = null; try { m = JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { } const rq = indexedDB.open('money-map-safe'); rq.onerror = () => res(true); rq.onsuccess = () => { try { const g = rq.result.transaction('kv').objectStore('kv').get('state'); g.onsuccess = () => { const r = g.result; let j = null; try { j = r && JSON.parse(r.json); } catch (e) { } res(!m || !j || +j.rev === +m.rev); }; g.onerror = () => res(true); } catch (e) { res(true); } }; }), KEY); if (ok) return; await w(250); } };
+/* a tap on a button the fixed strip at the bottom of the screen may cover: bring it to the middle first */
+const tapMid = async (p, sel) => { await p.$eval(sel, e => e.scrollIntoView({ block: 'center' })); await w(200); await p.click(sel); };
+const lose = async (p, val) => { await settle(p); await w(300); return p.evaluate((k, v) => { const o = Storage.prototype.setItem; Storage.prototype.setItem = function () {}; if (v === null) localStorage.removeItem(k); else o.call(localStorage, k, v); }, KEY, val); };
 const reload = async p => { await p.reload({ waitUntil: 'load' }); await w(1800); };
 const coach = async p => { for (let i = 0; i < 12; i++) { const vis = await p.evaluate(() => { const c = document.querySelector('#co'); return !!c && !c.hidden && getComputedStyle(c).display !== 'none' && c.getBoundingClientRect().width > 0; }); if (!vis) return; await p.click('#coNext').catch(() => {}); await w(450); } };
 const keep = p => p.evaluate(() => sessionStorage.setItem('__k', '1'));
@@ -32,6 +37,7 @@ const strip = j => { const o = JSON.parse(j); return JSON.stringify(canon({ step
   ck(rec && strip(rec.json) === strip(before), 'second copy has the same numbers as the main copy');
   // 2. main copy removed -> restored
   await lose(p, null); await reload(p);
+  for (let i = 0; i < 32; i++) { if (await p.evaluate(k => !!localStorage.getItem(k), KEY)) break; await w(250); } await w(500);   /* the restore from the second copy is async: wait for it under load */
   ck(!(await tourOpen(p)), 'main copy missing: setup does not reopen');
   let after = await p.evaluate(k => localStorage.getItem(k), KEY);
   ck(!!after && strip(after) === strip(before), 'main copy missing: numbers restored exactly');
@@ -42,6 +48,7 @@ const strip = j => { const o = JSON.parse(j); return JSON.stringify(canon({ step
   ck(await p.evaluate(() => document.querySelector('#hBk').hidden), 'OK dismisses the notice');
   // 3. damaged main copy -> restored
   await lose(p, '{broken'); await reload(p);
+  for (let i = 0; i < 32; i++) { if (await p.evaluate(k => { try { JSON.parse(localStorage.getItem(k)); return true; } catch (e) { return false; } }, KEY)) break; await w(250); } await w(500);
   after = await p.evaluate(k => localStorage.getItem(k), KEY);
   ck(!(await tourOpen(p)) && after && strip(after) === strip(before), 'damaged main copy: restored from the second copy');
   // 4. a normal reload does nothing special
@@ -96,11 +103,12 @@ const strip = j => { const o = JSON.parse(j); return JSON.stringify(canon({ step
   await reload(p); ck((await vis()).hid, 'Later still hidden after a reload (snoozed a week)');
   await p.evaluate(() => document.querySelector('[data-tab="basics"]').click()); await w(400);
   ck(/Last backup: never/.test(await p.$eval('#bkWhen', e => e.textContent)), 'Settings says: last backup never');
-  await p.click('#bkSave'); await w(1500);
-  ck(/Last backup: today/.test(await p.$eval('#bkWhen', e => e.textContent)), 'Save file marks the backup: ' + await p.$eval('#bkWhen', e => e.textContent));
+  await tapMid(p, '#bkSave'); await w(1500);
+  for (let i = 0; i < 34; i++) { if (/today/.test(await p.$eval('#bkWhen', e => e.textContent))) break; await w(250); }
+  ck(/Last backup: today/.test(await p.$eval('#bkWhen', e => e.textContent)), 'Save file marks the backup: ' + await p.$eval('#bkWhen', e => e.textContent) + ' msg: ' + await p.$eval('#bkMsg', e => e.textContent) + ' active: ' + await p.evaluate(() => (document.activeElement || {}).id));
   { const o = JSON.parse(await p.evaluate(k => localStorage.getItem(k), KEY)); o.ui.bk = Date.now() - 30 * 864e5; delete o.ui.bkLater; await lose(p, JSON.stringify(o)); } await reload(p);
   v = await vis(); ck(!v.hid && /30 days ago/.test(v.t), 'a 30-day-old backup shows the reminder: ' + v.t.slice(0, 50));
-  await p.click('#hBk [data-bk-now]'); await w(1500);
+  await tapMid(p, '#hBk [data-bk-now]'); await w(1500);
   v = await vis(); ck(v.hid, 'Save a copy on Home saves and hides the reminder');
   ck(await p.evaluate(() => /Backup saved/.test(document.querySelector('#cheer').textContent)), 'Home shows a confirmation');
   const files = require('fs').existsSync('/tmp/v28/dl') ? require('fs').readdirSync('/tmp/v28/dl').filter(f => f.endsWith('.json')) : [];
