@@ -10,7 +10,7 @@
   --ink: #122018; --ink2: #3d5749; --ink3: #44594b; --hair: rgba(18, 32, 24, .1); --track: rgba(18, 32, 24, .07); --track2: rgba(18, 32, 24, .11);
   --accent: #1f7a52; --on-accent: #ffffff; --accent-h: #196744; --link: #145c3c;   /* F6: hover darker, so white text keeps 4.5:1 (was #27895d, 4.35:1) */
   --c1: #b8512e; --c2: #2c6db5; --c3: #3e8e2b; --c4: #d6568a; --c5: #d99a12; --c6: #7e3f96; --c7: #0b8fa8; --cp: #d4e04f; --cl: #b9c6d2; --cg: #e8dcc0;
-  --good: #166240; --good-bg: rgba(31, 122, 82, .12); --warn: #7a5300; --warn-bg: rgba(154, 106, 0, .12); --bad: #b8352e; --bad-bg: rgba(184, 53, 46, .1);
+  --good: #166240; --good-bg: rgba(31, 122, 82, .12); --warn: #7a5300; --warn-bg: rgba(154, 106, 0, .12); --bad: #b8352e; --bad-bg: rgba(184, 53, 46, .1); --bad-btn: #a52f28;
   --warn-on: #c98500; --bad-on: #e0524b; --ok-dot: #a9bdb2;   /* F6 (side A finding 2): --good was #1f7a52 (3.85:1 on its tint) and --warn #9a6a00 (3.48:1) as text */
   --leaf: rgba(31, 122, 82, .34); --glass-hi: rgba(255, 255, 255, .5);
   --acc-tint: rgba(31, 122, 82, .08); --acc-tint2: rgba(31, 122, 82, .2); --acc-glow: rgba(31, 122, 82, .25); --acc-ring: rgba(31, 122, 82, .65);
@@ -37,7 +37,7 @@
     --ink: #e9f3ee; --ink2: #a9c4b7; --ink3: #7f998d; --hair: rgba(255, 255, 255, .1); --track: rgba(255, 255, 255, .08); --track2: rgba(255, 255, 255, .14);
     --accent: #8fd9b0; --on-accent: #0b1813; --accent-h: #a5e4c2; --link: #9ad8b8;
     --c1: #d95926; --c2: #3987e5; --c3: #3fa03c; --c4: #d55181; --c5: #c98500; --c6: #a266c9; --c7: #1a9dad; --cp: #d4e04f; --cl: #b9c6d2; --cg: #e8dcc0;
-    --good: #8fd9b0; --good-bg: rgba(143, 217, 176, .16); --warn: #e8c37a; --warn-bg: rgba(232, 195, 122, .16); --bad: #ef8f8f; --bad-bg: rgba(239, 143, 143, .16);
+    --good: #8fd9b0; --good-bg: rgba(143, 217, 176, .16); --warn: #e8c37a; --warn-bg: rgba(232, 195, 122, .16); --bad: #ef8f8f; --bad-bg: rgba(239, 143, 143, .16); --bad-btn: #ef8f8f;
     --warn-on: #e8c37a; --bad-on: #ef8f8f; --ok-dot: #4f6a5c;
     --leaf: rgba(143, 217, 176, .42); --glass-hi: rgba(255, 255, 255, .06);
     --acc-tint: rgba(143, 217, 176, .1); --acc-tint2: rgba(143, 217, 176, .22); --acc-glow: rgba(143, 217, 176, .28); --acc-ring: rgba(143, 217, 176, .65);
@@ -50,7 +50,7 @@
     --ink: #e9f3ee; --ink2: #a9c4b7; --ink3: #7f998d; --hair: rgba(255, 255, 255, .1); --track: rgba(255, 255, 255, .08); --track2: rgba(255, 255, 255, .14);
     --accent: #8fd9b0; --on-accent: #0b1813; --accent-h: #a5e4c2; --link: #9ad8b8;
     --c1: #d95926; --c2: #3987e5; --c3: #3fa03c; --c4: #d55181; --c5: #c98500; --c6: #a266c9; --c7: #1a9dad; --cp: #d4e04f; --cl: #b9c6d2; --cg: #e8dcc0;
-    --good: #8fd9b0; --good-bg: rgba(143, 217, 176, .16); --warn: #e8c37a; --warn-bg: rgba(232, 195, 122, .16); --bad: #ef8f8f; --bad-bg: rgba(239, 143, 143, .16);
+    --good: #8fd9b0; --good-bg: rgba(143, 217, 176, .16); --warn: #e8c37a; --warn-bg: rgba(232, 195, 122, .16); --bad: #ef8f8f; --bad-bg: rgba(239, 143, 143, .16); --bad-btn: #ef8f8f;
     --warn-on: #e8c37a; --bad-on: #ef8f8f; --ok-dot: #4f6a5c;
     --leaf: rgba(143, 217, 176, .42); --glass-hi: rgba(255, 255, 255, .06);
     --acc-tint: rgba(143, 217, 176, .1); --acc-tint2: rgba(143, 217, 176, .22); --acc-glow: rgba(143, 217, 176, .28); --acc-ring: rgba(143, 217, 176, .65);
@@ -160,7 +160,7 @@ b, strong { font-weight: 600; }
 .btn:active { transform: scale(.97); }
 .btn.solid { background: var(--accent); color: var(--on-accent); } .btn.solid:hover { background: var(--accent-h); }
 .btn.small { min-height: var(--btn-h-s); padding: 0 18px; font-size: var(--t-sm); }
-.btn.warnbtn { color: var(--bad); }
+.btn.warnbtn { color: var(--bad-btn, var(--bad)); }   /* red text on a grey button, a shade darker than --bad in the light theme so it stays 4.5:1 when hovered (QC round 7 layout polish 1) */
 
 /* where it goes */
 .where { position: relative; margin-top: 48px; display: grid; gap: 0; }
