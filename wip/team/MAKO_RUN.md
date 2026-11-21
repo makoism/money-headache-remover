@@ -155,6 +155,11 @@ When the same question came from several reviewers, it is one entry here and the
 - **Choices.** A. Percent of pay, fixed for the month. B. Percent of what the bar shows, as now. (Linked to 1.14, equal amounts with different percents.)
 - **Sources.** `qc_round8/qc_numbers_gate.md` should-fix 5.
 
+### 1.21 Plan's verdict in a month covered by borrowing
+- **Now.** Home says "Tight month" and the sheet lists pay and the borrow apart, but Plan's verdict still says "All pay is placed. $400 is borrowed from the emergency fund."
+- **Question.** Should Plan's verdict also lead with the shortfall (bills more than pay), or is "all pay is placed" right for the Plan tab?
+- **Sources.** `qc_round8/qc_north_star_gate.md` 1, commit 465a32b.
+
 ## 2. Words and glossary
 
 Your earlier copy pass list still stands: `COPY_QC8_FOR_MAKO.md` has about 40 lines with a rewrite each. Say which ones you want. The questions below are the "one word per thing" choices on top of that.
