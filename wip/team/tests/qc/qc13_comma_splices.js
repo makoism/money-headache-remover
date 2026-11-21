@@ -7,7 +7,7 @@ const pairs = [
   ['made up, replace them with yours.', 'The sample numbers are made up. Replace them with yours.'],
   ['Fun for you and your family, spend it', 'Fun for you and your family. Spend it on whatever you want.'],
   ['You never spend this, it grows', 'You never spend this. It grows over time.'],
-  ['is Help, it has the video', 'The ? button at the bottom right of every screen is Help. It has the video and this setup.'],
+  ['is Help, it has the video', 'The ? button at the bottom right of Home, Receipts, Plan and Settings is Help. It has the video and this setup.'],
   ['put it toward a goal, you can undo either one', 'Keep it in the bank or put it toward a goal. You can undo either one.'],
   ['in the bank, you can undo it', 'Keep it in the bank. You can undo it.'],
 ];
