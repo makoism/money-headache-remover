@@ -1928,6 +1928,9 @@ ol.steps li { margin: 0 0 4px; }
 .mp-key li { flex-wrap: wrap; min-width: 0; }
 /* the Put them back link in Settings is a full tap target (44px) */
 #keepBack { min-height: 44px; display: inline-flex; align-items: center; }
+/* QC round 4 layout and touch (confusing 1): on phones a control that gets the keyboard focus scrolls clear of the Help shelf along the
+   bottom (70px) and of the Plan summary at the top */
+@media (max-width: 520px) { html { scroll-padding-bottom: 84px; scroll-padding-top: 64px; } }
 </style>
 </head>
 <body>
