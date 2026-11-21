@@ -41,10 +41,13 @@ function dupOk(d, a, c, n, msg, btn) {
 }
 const isDupRc = (d, a, c, n) => (S.receipts || []).some(r => r.d === d && r.a === wholeAmt(S, a) && r.c === (lineByKey(S, c) ? c : 'other') && (r.n || '') === (n || '').trim().slice(0, 80));
 /* the part of an overspend the burrow's own pile covers, and the part that comes out of the bank */
-const overCell = (r, m) => {
+const overCell = (r, m, f = fmt2) => {
   const O = overParts(m, r.jar, r.spent, r.plan), pile = O.pile, bank = O.bank;   /* the split is worked out in model.js */
-  if (!O.soft) return `<span class="over">${fmt2(O.over)} over</span>`;   /* "¥5,000 over" on every screen (38.31 number gate round 8, finding 2) */
-  return (pile > 0 ? `<span class="pile">from the pile ${fmt2(O.pile)}</span>` : '') + (pile > 0 && bank > 0 ? ', ' : '') + (bank > 0 ? `<span class="over">${fmt2(O.bank)} over</span>` : '');
+  if (!O.soft) return `<span class="over">${f(O.over)} over</span>`;   /* "¥5,000 over" on every screen (38.31 number gate round 8, finding 2) */
+  return (pile > 0 ? `<span class="pile">from the pile ${f(O.pile)}</span>` : '') + (pile > 0 && bank > 0 ? ', ' : '') + (bank > 0 ? `<span class="over">${f(O.bank)} over</span>` : '');
+};
+/* one row, one way of writing its amounts: all with cents when any has cents (38.31 number gate round 8, finding 4) */
+const rowFmt = (r, m) => { const O = r.plan != null && r.spent > r.plan ? overParts(m, r.jar, r.spent, r.plan) : {}; return fmtSet(r.plan, r.spent, r.safe, r.plan != null ? leftOfPlan(r.plan, r.spent) : 0, O.over, O.pile, O.bank);
 };
 const pileOk = jar => { const b = HV && HV.map && HV.map.burrows.find(x => x.id === jar); return !!b && !b.over; };
 function renderReceipts() {
@@ -52,7 +55,11 @@ function renderReceipts() {
   setIdle($('#rcMonth'), sel);
   $('#rcTitle').textContent = 'Receipts, ' + fullLabel(sel);
   let sum = rs.count ? `${fmt2(rs.total)} spent, ${rs.count} receipt${rs.count === 1 ? '' : 's'}.` : sel === nowYm() ? 'No receipts this month.' : `No receipts in ${monthLabel(sel)}${sel > nowYm() ? ' yet' : ''}.`;   /* a picked month is named (QC round 4 north-star 1) */
-  if (playPlan > 0 || playSpent > 0) sum += ` Free to spend: ${fmt2(playPlan)} planned, ${fmt2(playSpent)} spent, ` + (playSpent > playPlan ? `${fmt2(planCells(S, C, sel).playOver)} over.` : (m.counted > 0 ? `${fmt2(m.counted)} not spent: ${m.topup && m.topup.used > 0 ? fmt2(m.topup.used) + ' went to a goal' + (m.counted - m.topup.used > 0.004 ? ', ' + fmt2(m.credit) + ' came back to the bank' : '') : 'came back to the bank'}.` : m.pendLeft > 0 ? `${fmt2(m.pendLeft)} not logged as spent yet, and Home asks where it goes.` : m.pastLeft != null ? `${fmt2(m.pastLeft)} not logged as spent yet.`   /* an ended month is never safe to spend (38.31 number gate round 8, finding 1) */ : `${fmt2(playSafeLeft(S, m, playSpent))}${playNotSafe(S, C, sel, ymd(new Date())) ? ' left, not safe to spend yet' : ' safe to spend'}.`));
+  if (playPlan > 0 || playSpent > 0) {
+    /* the third amount of the sentence, and the goal part, so every amount in it is written the same way (finding 4) */
+    const third = playSpent > playPlan ? planCells(S, C, sel).playOver : m.counted > 0 ? m.counted : m.pendLeft > 0 ? m.pendLeft : m.pastLeft != null ? m.pastLeft : playSafeLeft(S, m, playSpent), f = fmtSet(rs.total, playPlan, playSpent, third, m.topup ? m.topup.used : 0, m.credit);
+    sum = (rs.count ? `${f(rs.total)} spent, ${rs.count} receipt${rs.count === 1 ? '' : 's'}.` : sum) + ` Free to spend: ${f(playPlan)} planned, ${f(playSpent)} spent, ` + (playSpent > playPlan ? `${f(third)} over.` : (m.counted > 0 ? `${f(third)} not spent: ${m.topup && m.topup.used > 0 ? f(m.topup.used) + ' went to a goal' + (m.counted - m.topup.used > 0.004 ? ', ' + f(m.credit) + ' came back to the bank' : '') : 'came back to the bank'}.` : m.pendLeft > 0 ? `${f(third)} not logged as spent yet, and Home asks where it goes.` : m.pastLeft != null ? `${f(third)} not logged as spent yet.`   /* an ended month is never safe to spend (38.31 number gate round 8, finding 1) */ : `${f(third)}${playNotSafe(S, C, sel, ymd(new Date())) ? ' left, not safe to spend yet' : ' safe to spend'}.`));
+  }
   $('#rcSum').textContent = sum;
 
   /* plan against spending, for every category that has a receipt (and the play money lines) */
@@ -60,7 +67,7 @@ function renderReceipts() {
   m.lines.forEach(x => { known.add(x.key); const sp = rs.byKey[x.key] || 0; if (sp > 0 || (x.jar === 'play' && x.on)) rows.push({ name: shownLine(x.name), jar: x.jar, plan: x.on ? x.v : 0, spent: sp, safe: x.key === 'envelope' && x.on ? playSafeLeft(S, m, rs.byJar.play || 0) : null }); });
   /* Other is planned by the month's one-time costs (money already set aside, model.js applyOverspend): only spending past them is over */
   Object.keys(rs.byKey).forEach(k => { if (!known.has(k)) { const r = rs.list.find(q => q.c === k), it = k === 'other' && m.itemsTotal > 0 ? m.itemsTotal : null; rows.push({ name: r ? catName(S, r) : 'Other', jar: 'other', plan: it, spent: rs.byKey[k] }); } });
-  $('#rcCats').innerHTML = rs.count ? `<table class="plain"><thead><tr><th>Category</th><th>Plan</th><th>Spent</th><th>Left to spend</th></tr></thead><tbody>${rows.map(r => `<tr><td>${esc(r.name)}</td><td>${r.plan == null ? '' : fmt(r.plan)}</td><td>${fmt2(r.spent)}</td><td>${r.plan == null ? `<span class="over">${fmt2(r.spent)} over</span>` : r.spent > r.plan ? overCell(r, m) : (r.safe != null ? fmt2(r.safe) : r.jar === 'ffa' ? 'saved' : fmt2(leftOfPlan(r.plan, r.spent)))}</td></tr>`).join('')}</tbody></table><p class="cap tnote">Lines with no receipts aren't listed, except Free to spend.</p>` : '';
+  $('#rcCats').innerHTML = rs.count ? `<table class="plain"><thead><tr><th>Category</th><th>Plan</th><th>Spent</th><th>Left to spend</th></tr></thead><tbody>${rows.map(r => { const f = rowFmt(r, m); return `<tr><td>${esc(r.name)}</td><td>${r.plan == null ? '' : f(r.plan)}</td><td>${f(r.spent)}</td><td>${r.plan == null ? `<span class="over">${f(r.spent)} over</span>` : r.spent > r.plan ? overCell(r, m, f) : (r.safe != null ? f(r.safe) : r.jar === 'ffa' ? 'saved' : f(leftOfPlan(r.plan, r.spent)))}</td></tr>`; }).join('')}</tbody></table><p class="cap tnote">Lines with no receipts aren't listed, except Free to spend.</p>` : '';
 
   $('#rcList').innerHTML = rs.list.map(r => `<div class="rc${editRc === r.id ? ' on' : ''}" data-id="${esc(r.id)}"><div class="rc-main"><b>${fmt2(r.a)}</b><span class="rc-cat">${esc(r.c === 'other' && r.n ? 'Other: ' + r.n : catName(S, r))}</span></div>
     <div class="rc-sub"><span>${dateLabel(r.d)}</span>${r.n && r.c !== 'other' ? `<span class="rc-note">${esc(r.n)}</span>` : ''}${r.s ? `<span class="rc-acct">${esc(r.s)}</span>` : ''}</div>

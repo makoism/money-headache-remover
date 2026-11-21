@@ -50,6 +50,10 @@ function fmtAbout(n) { n = Math.round(n); const neg = n < 0, a = Math.abs(n); re
    on every screen, so fmt and fmt2 are the same (38.31 number gate rounds 1 to 3 found the same amount rounded in one place, exact in another) */
 function fmt(n) { return fmt2(n); }
 function fmt2(n) { if (Math.abs(n - Math.round(n)) < 0.005) return fmtAbout(n); return (n < 0 ? MINUS : '') + pre() + Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+/* one sentence or one row, one way of writing amounts: when any amount in it shows cents, every amount shows two decimals, so a whole
+   amount reads €20.00 beside €80.01, never €20 (38.31 number gate round 8, finding 4). A line of whole amounts stays whole */
+function fmtCents(n) { return (n < 0 ? MINUS : '') + pre() + Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+const fmtSet = (...ns) => (ns.some(n => typeof n === 'number' && Math.abs(n - Math.round(n)) >= 0.005) ? fmtCents : fmt2);
 function fmtAxis(n) { return n >= 1e6 ? +(n / 1e6).toFixed(2) + 'M' : n >= 1000 ? n.toLocaleString('en-US') : String(n); }
 const niceUp = x => { if (x <= 0) return 1; const p = Math.pow(10, Math.floor(Math.log10(x))); for (const k of [1, 1.5, 2, 3, 4, 5, 6, 8, 10]) if (k * p >= x - 1e-9) return k * p; return 10 * p; };
 const stepOf = x => { const p = Math.pow(10, Math.floor(Math.log10(Math.max(x, 1)))); for (const k of [1, 2, 5, 10]) if (k * p >= x) return k * p; return 10 * p; };

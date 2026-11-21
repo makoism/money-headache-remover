@@ -37,6 +37,6 @@ async function open(setup){const {b,p,errs}=await R.phone({w:390,h:844,dpr:1,mob
   ck('(5) Plan writes Bills and basics as $1,634.56, never $1,635',/\$1,634\.56/.test(plan)&&!/\$1,635\b/.test(plan));
   await L.tab(p,'tab-receipts');await w(600);
   const rc=await p.evaluate(()=>document.getElementById('p-receipts').innerText.replace(/\s+/g,' '));
-  ck('(5) the Receipts row for Free to spend reads $300.44, $20, $280.44',/Free to spend \$300\.44 \$20 \$280\.44/.test(rc),(rc.match(/Free to spend \$[^A-Z]{0,40}/g)||[]).join(' | '));
+  ck('(5) the Receipts row for Free to spend reads $300.44, $20.00, $280.44 (one row, all with cents: 38.31 number gate round 8, finding 4)',/Free to spend \$300\.44 \$20\.00 \$280\.44/.test(rc),(rc.match(/Free to spend \$[^A-Z]{0,40}/g)||[]).join(' | '));
   ck('no page errors',errs.length===0,errs.join(' | '));await b.close(); }
  console.log(bad?'FAILED '+bad:'ALL PASS');process.exit(bad?1:0);})();
