@@ -177,10 +177,18 @@ function sweepOffer() {
   return null;
 }
 let SWEEP_LATER = null;   /* "decide later": asked again on the next page load */
+/* the Emergency fund is full and the longer goal is not answered yet: Home asks this before the month-end question, so the map's
+   "left out until you answer" sentence says the month-end question comes after it (QC round 6 numbers gate 1) */
+function stretchAsk() {
+  if (!HV || !C) return null;
+  const eg = emergencyGoal(S); if (!(eg && eg.stretchOn === undefined && eg.stretch > eg.target && eg.target > 0)) return null;
+  let gi = null; try { gi = goalInfo(S, C, eg.id, HV.ym); } catch (e) { }
+  return gi && gi.state === 'full' ? eg : null;
+}
 function renderNext() {
   const el = $('#hNext'), d = S.ui.done || {}; let step = null, month = null;
   /* the Emergency fund is full: ask once whether to keep saving toward the longer goal */
-  if (!step && HV && C) { const eg = emergencyGoal(S); if (eg && eg.stretchOn === undefined && eg.stretch > eg.target && eg.target > 0) { let gi = null; try { gi = goalInfo(S, C, eg.id, HV.ym); } catch (e) { } if (gi && gi.state === 'full') step = [`${eg.name} is full`, `It reached ${fmt(eg.target)}. Keep saving toward your long-term goal of ${fmt(eg.stretch)}?`, 'Keep saving', 'data-stretch="yes"', '', 'data-stretch="no"']; } }
+  { const eg = stretchAsk(); if (eg) step = [`${eg.name} is full`, `It reached ${fmt(eg.target)}. Keep saving toward your long-term goal of ${fmt(eg.stretch)}?`, 'Keep saving', 'data-stretch="yes"', '', 'data-stretch="no"']; }
   if (!S.ui.sampleHidden) {
     if (!d.pay) step = ['Next: enter pay', 'The plan starts from monthly pay.', 'Enter pay', 'data-open="a"'];
     else if (!d.bills) step = ['Next: check bills', 'Set each bill to the real amount.', 'Open bills', 'data-open="nec"'];
