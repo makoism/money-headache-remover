@@ -37,7 +37,7 @@ const spreadFree = (vals, total) => { const free = total - sumOf(vals); if (free
 const STEP_MONEY = { id: 'money', part: PART.money, setup: true, focus: '#tourPay', title: 'Your money', skipIf: () => importApplied() && havePay(),
   body: () => {
     const pay = S.ui.done && S.ui.done.pay ? val(S, 'a', START) : '';
-    return `<p>Your take-home pay is what you get each month after tax, and if you're paid twice a month add both. Other pay is a second job, a partner&rsquo;s share or benefits. Balance is your bank accounts plus cash and a rough number is fine.</p>
+    return `<p>Your take-home pay is what you get each month after tax, and if you're paid twice a month add both. Other pay is a second job, a partner's share or benefits. Balance is your bank accounts plus cash and a rough number is fine.</p>
     <div class="tour-fields">${moneyField('tourPay', 'Monthly take-home pay', pay, 'All paychecks')}${moneyField('tourExtra', 'Other pay each month <span class="opt">(optional)</span>', val(S, 'b', START), 'None')}${moneyField('tourBank', 'Balance now', S.cfg.bankStart !== undefined ? S.cfg.bankStart : '', 'Rough is fine').replace('<input ', '<input data-neg="ok" aria-describedby="tourBankCap" ').replace(' inputmode="decimal" min="0"', ' inputmode="text"')}<p class="cap" id="tourBankCap">Overdrawn? Type a minus first, like −200.</p></div>
     <p class="cap">If you're not sure leave it blank and add it later on Plan</p>`;
   },
