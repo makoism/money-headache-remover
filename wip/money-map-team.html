@@ -437,6 +437,7 @@ details.how li b { color: var(--ink); font-weight: 600; }
 /* ---- receipts ---- */
 .rcform { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; }
 .rcform .rcbtns { grid-column: 1 / -1; }
+.rcform .rc-changing { grid-column: 1 / -1; margin: 0; font-weight: 600; }
 .rcform input[type=date], .remind-fields input[type=time] { border: 0; box-shadow: inset 0 0 0 1px var(--hair); background: var(--field); border-radius: var(--r-ctl); min-height: var(--ctl-h); padding: 0 16px; font-weight: 500; font-size: 17px; width: 100%; outline: none; }
 .rcform input[type=date]:focus, .remind-fields input[type=time]:focus { box-shadow: inset 0 0 0 2px var(--accent), 0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent); }
 .rcform .selbox select, .remind-fields .selbox select, .rcmonth select { border: 0; box-shadow: inset 0 0 0 1px var(--hair); background: var(--field); border-radius: var(--r-ctl); min-height: var(--ctl-h); padding: 0 16px; font-weight: 500; font-size: 17px; width: 100%; outline: none; }
@@ -1827,6 +1828,10 @@ body.scene-on .card, body.scene-on .why, body.scene-on .gw-card { background: co
 .mp-pay > summary::after { content: 'Show'; white-space: nowrap; flex: none; margin-left: auto; color: var(--acc, var(--ink)); font-weight: 600; font-size: 14px; }
 .mp-pay[open] > summary::after { content: 'Hide'; }
 .hv1-more { display: block; width: 100%; margin: 4px 0 16px; }   /* the standard button height (look_test: one or two heights only) */
+/* text sits on solid panels (QC round 8 layout polish 1): the card colour laid over the page colour, so the words never sit on the forest,
+   and a 12px gap from the burrows panel above */
+.hv1-more { margin-top: 12px; background: linear-gradient(var(--card), var(--card)), var(--bg); box-shadow: inset 0 0 0 1px var(--hair); }
+.hv1-more:hover { background: linear-gradient(var(--track2), var(--track2)), linear-gradient(var(--card), var(--card)), var(--bg); }
 /* the four numbers never break inside a number (art director, 38.31 round): one line, a size that fits four across on a laptop */
 .mp-four .mp-n b { overflow-wrap: normal; white-space: nowrap; font-size: clamp(20px, 2.1vw + 12px, 28px); }
 @media (min-width: 720px) { .mp-four .mp-n b { font-size: clamp(18px, 1.6vw, 26px); } }
@@ -2027,7 +2032,7 @@ ol.steps li { margin: 0 0 4px; }
     <div class="plan-top"><div class="subnav" role="group" aria-label="Plan pages"><button type="button" data-tab-go="month" data-sub="month">Month</button><button type="button" data-tab-go="goals" data-sub="goals">Burrows</button><button type="button" data-tab-go="months" data-sub="months">All months</button></div></div>
     <section class="start" id="start" aria-labelledby="startTitle" hidden>
       <h2 id="startTitle">Setup: 4 steps</h2>
-      <p class="cap" id="startSub">These are sample numbers for one salary, replace them with yours. Your data stays in this browser.</p>
+      <p class="cap" id="startSub">These are sample numbers for one salary, replace them with yours. Your numbers stay in this browser.</p>
       <ol class="steps" id="startSteps"></ol>
       <div class="row-btns"><button type="button" class="btn small" id="blankTop">Clear sample</button><button type="button" class="link" id="tourOpen2">Guided setup</button><button type="button" class="link" id="hideSample">Hide</button></div>
     </section>
@@ -2174,6 +2179,7 @@ ol.steps li { margin: 0 0 4px; }
         <p class="sub2">Log as you spend, or all at once later. <button type="button" class="link" data-scroll="rcRemind">Set reminder</button></p>
       </div>
       <form class="rcform" id="rcForm" autocomplete="off" novalidate>
+        <p class="rc-changing" id="rcChanging" hidden></p>
         <div class="field"><label for="rcDate">Date</label><input type="date" id="rcDate" required></div>
         <div class="field"><label for="rcAmt">Amount</label><div class="inp"><span class="yen cs"></span><input id="rcAmt" type="number" inputmode="decimal" min="0" step="any" placeholder="0" required></div></div>
         <div class="field"><label for="rcCat">Category</label><div class="selbox"><select id="rcCat"></select></div></div>
@@ -3929,6 +3935,10 @@ function normalize(d) {
    Once someone has typed their own, only the symbol changes. */
 const stable = o => JSON.stringify(o, (k, v) => v && typeof v === 'object' && !Array.isArray(v) ? Object.keys(v).sort().reduce((a, x) => (a[x] = v[x], a), {}) : v);
 const dataSig = x => stable({ plan: x.plan, steps: x.steps, once: x.once, items: x.items, cfg: x.cfg, receipts: x.receipts });
+/* the numbers as one short code. The kept copy from before a big change remembers it at the first save after that change, so Settings
+   can tell when anything was typed since (QC round 8 wording confusing 3) */
+const numsHash = x => { const t = dataSig(x); let h = 2166136261; for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36) + '.' + t.length; };
+const keptChanged = k => !!(k && k.sig && k.sig !== numsHash(S));
 /* a few of the examples are Philippine, so they show only when the currency is the peso */
 const LOCAL_SWAPS = [
   ['include your own SSS, PhilHealth and Pag-IBIG payments', 'include your own public pension and health insurance payments'],
@@ -4019,7 +4029,7 @@ function keepUnknown() {
     if (Array.isArray(d.receipts) && Array.isArray(S.receipts)) { const by = new Map(d.receipts.filter(r => r && typeof r.id === 'string').map(r => [r.id, r])); S.receipts.forEach(r => { const o = by.get(r.id); if (o) Object.keys(o).forEach(k => { if (!(k in r) && !RC_KNOWN.has(k) && PLAIN_KEY.test(k) && ['string', 'number', 'boolean'].indexOf(typeof o[k]) >= 0) r[k] = o[k]; }); }); }
   } catch (e) { /* the stored copy is unreadable: nothing to carry over */ }
 }
-function flush() { saveTimer = null; let ok = true; try { mergedN = 0; mergeOtherReceipts(); keepUnknown(); if (mergedN > 0) setTimeout(() => { try { render(); } catch (e) { } }, 0); if (!storedIsNewer()) { localStorage.setItem(KEY, JSON.stringify(S)); seenRev = +S.rev || 0; } } catch (e) { ok = false; } setSave(ok ? 'device' : 'error'); mirrorOut(m => { if (!ok && m) setSave('device'); }); vaultQueue(); }
+function flush() { saveTimer = null; let ok = true; try { mergedN = 0; mergeOtherReceipts(); keepUnknown(); if (S.ui && S.ui.keep && S.ui.keep.sig == null) S.ui.keep.sig = numsHash(S); if (mergedN > 0) setTimeout(() => { try { render(); } catch (e) { } }, 0); if (!storedIsNewer()) { localStorage.setItem(KEY, JSON.stringify(S)); seenRev = +S.rev || 0; } } catch (e) { ok = false; } setSave(ok ? 'device' : 'error'); mirrorOut(m => { if (!ok && m) setSave('device'); }); vaultQueue(); }
 /* another tab saved a newer copy than this tab holds (only possible with two tabs open): then this tab must not write over it */
 function storedIsNewer() { try { const raw = localStorage.getItem(KEY); if (!raw) return false; const i = raw.indexOf('"rev":'); if (i < 0) return false; const r = parseInt(raw.slice(i + 6), 10); return r > +(S.rev || 0); } catch (e) { return false; } }
 /* two tabs of the app in one browser: when the other tab saves, this one takes its numbers instead of writing over them later.
@@ -4907,7 +4917,7 @@ function jarNote(m) {
 const LTS_HINT = ' Each slider sets what goes into that goal this month, so sliding up takes from Left and sliding down gives it back. If you leave them alone the amounts are worked out from each goal\'s amount and date.';
 
 /* ---------- the first-steps card ---------- */
-const START_SUB = 'These are sample numbers for one salary, replace them with yours. Your data stays in this browser.';
+const START_SUB = 'These are sample numbers for one salary, replace them with yours. Your numbers stay in this browser.';
 const BASICS_SUB = 'Name, currency, balance, look, saved data.';
 const MAKE_CAP = 'The amounts are samples for one salary, so start at zero or type over them. They\'re saved in this browser only and nobody else sees them, including whoever shared this page.';
 const START_STEPS = [
@@ -5360,6 +5370,12 @@ function prepareReceiptForm() {
 }
 function resetRcForm() {
   editRc = null; $('#rcAmt').value = ''; delete $('#rcAmt').dataset.neg; $('#rcNote').value = ''; syncOtherTitle('rcCat', 'rcNote'); $('#rcSave').textContent = 'Log spend'; $('#rcCancel').hidden = true;
+  const ch = $('#rcChanging'); if (ch) { ch.hidden = true; ch.textContent = ''; }
+}
+/* the Edit form says which receipt it changes (QC round 8 novice confusing 1): amount, category, date; the year only when it is not this year */
+function rcChangingText(r) {
+  const yr = r.d.slice(0, 4) === todayStr().slice(0, 4);
+  return `Changing: ${fmt2(r.a)}, ${catName(S, r)}, ${yr ? (+r.d.slice(8, 10)) + ' ' + MONTH_NAMES[+r.d.slice(5, 7) - 1] : dateLabel(r.d)}.`;
 }
 /* choosing "Other" asks for a title, so the receipt can say what it was; every other category keeps the optional note */
 function syncOtherTitle(catId, noteId) {
@@ -5460,6 +5476,7 @@ function wireReceipts() {
       editRc = r.id; $('#rcDate').value = r.d; $('#rcAmt').value = r.a; $('#rcNote').value = r.n;
       const cat = $('#rcCat'); cat.value = Array.from(cat.options).some(o => o.value === r.c) ? r.c : 'other';
       syncOtherTitle('rcCat', 'rcNote'); $('#rcSave').textContent = 'Save changes'; $('#rcCancel').hidden = false; $('#rcMsg').textContent = '';
+      { const ch = $('#rcChanging'); if (ch) { ch.textContent = rcChangingText(r); ch.hidden = false; } }
       render(); $('#rcForm').scrollIntoView({ behavior: 'smooth', block: 'center' }); $('#rcAmt').focus();
     } else if (del) { const r0 = (S.receipts || []).find(x => x.id === del.dataset.rcdel), copy = r0 ? JSON.parse(JSON.stringify(r0)) : null, what = r0 ? `${fmt2(r0.a)}, ${r0.c === 'other' ? 'Other' : (lineByKey(S, r0.c) || { name: r0.cn || 'Other' }).name}, ${dateLabel(r0.d)}` : 'this receipt';
       confirmClick(del, `Tap again: delete ${what}`, () => { if (editRc === del.dataset.rcdel) resetRcForm(); removeReceipt(S, del.dataset.rcdel);
@@ -13806,8 +13823,8 @@ const TOUR = [
       return `${hasHello ? '' : homeScene()}<div class="tour-chips" role="radiogroup" aria-label="Currency">${pick.map(c => chip('tourCur', c[0], c[0], curName(c), c[0] === cur)).join('')}</div>
       <div class="field tour-more"><label for="tourCurMore">Other currency</label><div class="selbox"><select id="tourCurMore"><option value="">Choose currency</option>${rest.map(c => `<option value="${esc(c[0])}"${c[0] === cur ? ' selected' : ''}>${esc(c[1])}</option>`).join('')}</select></div></div>
       <div class="tour-fields"><div class="field"><label for="tourName">First name <span class="opt">(optional)</span></label><div class="inp"><input id="tourName" type="text" maxlength="24" autocomplete="given-name" spellcheck="false" placeholder="First name" value="${esc(firstName())}"></div></div></div>
-      <p class="cap">Your data stays in this browser and nobody else can see it.</p>
-      <p class="cap">${quickSetup() ? 'The first setup is short, just your pay, rent, food and an emergency fund. Finish later at the top stops here and keeps what you typed, and Guided setup under Help opens it again. <button type="button" class="link" id="tourFull">Use the longer setup</button>' : 'Longer setup is on: every bill and goal.'}</p>
+      <p class="cap">Your numbers stay in this browser and nobody else can see them.</p>
+      <p class="cap">${quickSetup() ? 'The first setup is short, just your pay, rent, food and an emergency fund. Tap Finish later at the top to stop. What you typed is kept. Guided setup in Help opens it again. <button type="button" class="link" id="tourFull">Use the longer setup</button>' : 'Longer setup is on: every bill and goal.'}</p>
       ${hasHello ? '' : restoreHTML()}`;
     },
     after: () => { if (!hasHello) wireRestore(); const f = $('#tourFull'); if (f) f.addEventListener('click', () => { S.ui.full = true; persist(); buildSteps(); f.replaceWith(document.createTextNode('Longer setup is on: every bill and goal.')); }); },
@@ -14070,14 +14087,14 @@ THE PAGE
 - Everything else on Home is one tap away under More (Show less folds it again): the main goal card (its reason in the person's words, months to go, a progress bar, and Forecast for details and a graph), Free to spend with details, the Burrows list (one row per goal; tap a row for amount saved, status, Edit goal and Set as main goal; Add a burrow starts a new one, and See every goal on one graph draws them together), Cards and loans, Spending limits when switched on in Settings, and the folded section Streak, badges, pages, which holds the weekly streak, badges and the Pages links (Month plan, All months, Burrows, Settings).
 - On every page except Home and Settings, a slim bar under the tabs shows the main goal and the Free to spend left. Tap it to go Home.
 - The main goal is the nearest goal still being saved for, unless the person picks one with Set as main goal.
-- Receipts: at the top is Scan receipts. Tap Camera or Choose files (photos, screenshots, a bank CSV, Excel or PDF statement), then Read. Claude lists what it found, with a category picker on each line, before anything is added. Tap Add to my page to add them, and Undo is offered afterwards. To use another AI instead, open Prefer your own AI? Use it instead: tap Copy message, paste it into that AI app with the photos, paste the reply into Reply and tap Check. Below that: the form with Date, Amount, Category, Note and Log spend, a Month picker with the receipts of that month and plan against spent for each category, and a Reminder card that adds a repeating event to a calendar (Google, Apple, Outlook, Microsoft 365 or Yahoo), or Copy event text.
+- Receipts: at the top is Scan receipts. Tap Camera or Choose files (photos, screenshots, a bank CSV, Excel or PDF statement), then Read. Claude lists what it found, with a category picker on each line, before anything is added. Tap the Add button under the list to add them (it says how many, like Add 3 receipts), and Undo is offered afterwards. To use another AI instead, open Prefer your own AI? Use it instead: tap Copy message, paste it into that AI app with the photos, paste the reply into Reply and tap Check. Below that: the form with Date, Amount, Category, Note and Log spend, a Month picker with the receipts of that month and plan against spent for each category, and a Reminder card that adds a repeating event to a calendar (Google, Apple, Outlook, Microsoft 365 or Yahoo), or Copy event text.
 - Plan, Burrows: each burrow is a goal with an amount and, if wanted, a Needed by date. With a date, the page spreads what is missing over the months before it. Edit goal changes Name, Why (optional), Goal amount, Already saved and Needed by, or removes it with Remove goal. The Why is the reason in the person's words, shown with the goal. Change monthly amount sets the monthly saving. Add a burrow asks what, how much and by when. Cards and loans lists what is still owed, with Add card or loan. Forecast shows each goal month by month as a chart, and Table switches to numbers. The emergency fund is the one goal that can be borrowed from in a short month.
 - Plan, Month: the whole plan for one month. A Choose a month list, the big Free to spend number with a weekly amount and Change, a status chip (On plan, Tight, Short, Over plan or Not placed yet), the pay split by place as a coloured bar, and Details: Money in (Salary, Second pay, Side pay, plus Extra money came in and Paid weekly or twice a month?), Money out (Monthly bills, One-time costs, Cards and loans when there are any, Goal burrows, Free to spend, Education, Investing, Giving) and Left. Tap an amount to type a new one: it changes that month only, and Keep for later months makes it the new usual. Open a place and tap Rename, remove or add lines to change its list. Undo all and Reset month revert edits. A Short month offers fixes with one tap: spend less, or borrow from the emergency fund. All months shows a table of every month: tap a month to open it.
 - Where to put pay: Plan, Month, open Salary under Money in, and type the monthly take-home pay (after tax). If paid twice a month, add both together.
 - Settings: Name, Currency, Spending limits, Sound, Music, Start with the pages open, Look (Auto, Light or Dark), Balance (Money today (bank plus cash), Minimum balance, Free to spend cap), Where your pay goes (the six places, Bills and basics, Goal burrows, Free to spend, Education, Investing and Giving, with a common split shown as a guide), Reset and setup (Set all to zero, Restore samples, Show first steps, Guided setup), and Saved data: Backup with Save file or Copy text, Spreadsheet with Export spreadsheet (every month as one table for Sheets or Excel), Cloud copy when offered (Keep a copy in the cloud, or I have a code to bring the numbers to this device), and Restore with Load text or Choose file.
 - Setup: Guided setup (Help, Guided setup) starts with a welcome, then the currency, then Your statements: 2 or 3 months of bank, e-wallet or card statements are read by Claude, and Check what was found lets the person correct them before they are used. Type numbers instead asks pay, balance and bills one by one. Then bills, burrows and Free to spend. Each step saves as you type.
 - Yen, pesos and euros start with sample numbers made up for one salary (about 200,000 yen, 30,000 pesos or 1,650 euros a month), with every bill and goal worked out from it. Any other currency starts at zero. Samples should be replaced with real numbers. Changing the currency in Settings swaps the sample to match, but only while the numbers are untouched. Once someone has typed their own numbers, only the symbol changes.
-- Filling the page from files: in this chat there is a paperclip button. A person can add photos or screenshots of receipts, card statements or bank statements, or a CSV file from their bank (if a PDF cannot be read here, use a screenshot of each page, or the CSV). Then they press Send. Claude reads the files and lists what it found: receipts, monthly pay, bill amounts and the money they have today. Nothing on the page changes until the person taps Add to my page, and Undo is offered right after. The files go to the person's own Claude account only when they press Send, and this page does not keep them. Only dates from November 2026 on can be added. Never say you changed anything yourself: changes happen only through that button.
+- Filling the page from files: in this chat there is a paperclip button. A person can add photos or screenshots of receipts, card statements or bank statements, or a CSV file from their bank (if a PDF cannot be read here, use a screenshot of each page, or the CSV). Then they press Send. Claude reads the files and lists what it found: receipts, monthly pay, bill amounts and the money they have today. Nothing on the page changes until the person taps the Add button under the list (it says how many, like Add 3 receipts), and Undo is offered right after. The files go to the person's own Claude account only when they press Send, and this page does not keep them. Only dates from November 2026 on can be added. Never say you changed anything yourself: changes happen only through that button.
 - The page works in any currency. The currency is chosen in setup or under Settings.`;
 /* the problem report: what a fix needs and nothing private. Version, device, look, the page open, how the numbers came in, how much is
    in the plan (counts only), and the last errors this device logged */
@@ -14174,7 +14191,7 @@ function wireAskAi() {
 }
 /* ---------- fill the page from photos, screenshots and CSV files ----------
    The files go to the person's own Claude account only when they press Send. Claude answers with data, the page checks every field,
-   shows what it found, and changes nothing until the person taps "Add to my page". One tap undoes it. */
+   shows what it found, and changes nothing until the person taps the Add button ("Add 3 receipts"). One tap undoes it. */
 let askFiles = [], askCanAttach = false, askImg = null, askDoc = null; /* askDoc: PDF limits, only on the relay route */
 const ASK_CAP_OWN = 'Runs on your Claude account and you approve access first. Your numbers go with each question while the box is ticked. This page doesn\'t keep the chat.';
 const ASK_CAP_RELAY = 'Answered by Claude through this page. Your numbers go with each question while the box is ticked. This page doesn\'t keep the chat.';
@@ -14205,7 +14222,7 @@ function renderAskFiles() {
   box.innerHTML = askFiles.map((f, i) => `<span class="fchip"><span>${esc(f.file.name)} (${sizeLabel(f.file.size)})</span><button type="button" data-rmf="${i}" aria-label="Remove ${esc(f.file.name)}">&times;</button></span>`).join('');
   $('#askSug').hidden = askFiles.length > 0 || $('#askLog').children.length > 1;
   $('#askIn').placeholder = askFiles.length ? 'A note if you want, like "October card statement"' : 'Ask how something works';
-  $('#askCap').textContent = askFiles.length ? (viaRelay() ? 'Files go to Claude when you press Send. This page keeps none of them.' : 'Files go to your own Claude account when you press Send. This page does not keep them.') + ' Nothing changes until you tap Add to my page.' : askCap();
+  $('#askCap').textContent = askFiles.length ? (viaRelay() ? 'Files go to Claude when you press Send. This page keeps none of them.' : 'Files go to your own Claude account when you press Send. This page does not keep them.') + ' Nothing changes until you tap Add under what Claude found.' : askCap();
 }
 function askAddFiles(list) {
   const notes = [], maxImg = Math.min(askImg ? askImg.maxCount : 0, 10);
@@ -14347,7 +14364,12 @@ function askCard(bot, p, clipped, ctx) {
   if (clipped) left.push('It\'s a long file so only the first part was read. Send it one month at a time to get the rest.');
   p.skipped.forEach(x => left.push(x));
   if (left.length) bot.append(el('p', 'left', 'Left out: ' + left.join(' ')));
-  const btns = el('div', 'row-btns'), go = el('button', 'btn solid small', 'Add to my page'), no = el('button', 'btn small', 'Not now'); go.type = no.type = 'button';
+  const btns = el('div', 'row-btns'), go = el('button', 'btn solid small', 'Add'), no = el('button', 'btn small', 'Not now'); go.type = no.type = 'button';
+  /* the button says what it adds, with the real count, and follows the tick boxes (QC round 8 wording polish: was "Add to my page") */
+  const goLabel = () => { const n = rows.filter(x => x.i.checked).length, m = plan.filter(x => x.t.i.checked).length, parts = [];
+    if (n) parts.push(plural(n, 'receipt')); if (m) parts.push(plural(m, 'number'));
+    go.textContent = parts.length ? 'Add ' + parts.join(' and ') : 'Add'; };
+  goLabel(); rows.forEach(x => x.i.addEventListener('change', goLabel)); plan.forEach(x => x.t.i.addEventListener('change', goLabel));
   if (!rows.some(x => !x.r.dup) && !plan.length) { go.hidden = true; no.textContent = 'Close'; }
   btns.append(go, no); bot.append(btns);
   no.addEventListener('click', () => { bot.className = 'msg ai'; bot.textContent = 'Nothing changed.'; });
@@ -15503,7 +15525,7 @@ function vaultFoundLine(v, sec) { const n = v.n; return `It was saved ${esc(vaul
 /* ---------- what Settings shows ---------- */
 const SAVED_LOCAL = 'Your numbers are saved in this browser on this device only. They only leave it when you ask for that: Ask sends them with your question while the box is ticked, and reading a statement or a receipt photo sends that file to Claude. A second copy is kept here in case the first goes missing, and it loads by itself if that happens. Neither one moves to other devices. Clearing site data removes both, so only a backup file survives that. A backup is your own copy of your numbers and receipts and you make one with Save file below.';
 const SAVED_LOCAL_OFF = 'Your numbers are saved in this browser on this device only. They only leave it when you ask for that: Ask sends them with your question while the box is ticked, and reading a statement or a receipt photo sends that file to Claude. A second copy is kept here in case the first goes missing, and it loads by itself if that happens. Neither one moves to other devices unless you turn on Cloud copy below. Clearing site data removes both, so only a backup file survives that. A backup is your own copy of your numbers and receipts and you make one with Save file below.';   /* cloud copy off but it can be turned on: point at it (QC round 6 data safety C3) */
-const SAVED_CLOUD = 'Your numbers are saved in this browser, with a second copy here in case the first goes missing, and an encrypted cloud copy that follows every save. It\'s under Cloud copy below. Clearing site data removes the two copies on this device, and your recovery code brings the cloud copy back. A backup file is your own copy of your numbers and receipts.';
+const SAVED_CLOUD = 'Your numbers are saved in this browser, with a second copy here in case the first goes missing, and a locked cloud copy that follows every save. It\'s under Cloud copy below. Clearing site data removes the two copies on this device, and your recovery code brings the cloud copy back. A backup file is your own copy of your numbers and receipts.';
 const vaultWhen = (t, sec) => { if (!t) return ''; const d = new Date(t); return d.getDate() + ' ' + d.toLocaleString('en-US', { month: 'short' }) + ', ' + d.toLocaleString('en-US', Object.assign({ hour: 'numeric', minute: '2-digit' }, sec ? { second: '2-digit' } : {})); };   /* day then month, like every other date. sec: with seconds, for two times in the same minute */
 /* one sentence on whether the cloud copy has everything; the same words in Settings, in the steps and on Home */
 const vaultClock = t => new Date(t).toLocaleString('en-US', { hour: 'numeric', minute: '2-digit' });   /* the time part of vaultWhen */
@@ -15606,7 +15628,7 @@ function wireVault() {
 if (/[?&]sfxtest\b/.test(location.search)) window.__vault = { keysFor, vaultEncrypt, vaultApply };
 /* ---------- Scan receipts: the card at the top of the Receipts tab ----------
    Take a photo or pick pictures, Claude reads them through the viewer's own Claude account, the page checks every field and shows
-   what it found with a category picker on each line, and nothing is added until the person taps "Add to my page".
+   what it found with a category picker on each line, and nothing is added until the person taps the Add button ("Add 3 receipts").
    If this copy of the page cannot reach Claude, the same card offers the Claude app: copy one message, paste Claude's answer back. */
 let scanFiles = [], scanBusy = false, scanCtl = null, scanTried = false, scanSettled = false, scanConn = null, scanOpened = false, scanUrls = [], scanKeep = null;
 const SCAN_MAX_PX = 2400;
@@ -15983,7 +16005,11 @@ function paintBk() {
   /* the numbers from before a big change stay one tap away here for as long as they are kept, after the Undo bar has gone (QC round 4
      data safety 5, north-star agent check C8) */
   const kl = $('#keepLine'), k = S.ui && S.ui.keep, ok = !!(k && typeof k.snap === 'string' && +k.t > 0 && Date.now() - k.t <= KEEP_DAYS * 864e5);
-  if (kl) { kl.hidden = !ok; if (ok) $('#keepTxt').textContent = `${k.why || 'Your numbers changed.'} The numbers from before are kept until ${dateLabel(ymd(new Date(+k.t + KEEP_DAYS * 864e5)))}.`; }
+  if (kl) { kl.hidden = !ok; if (ok) {
+    /* once anything was typed after the change, Put them back would replace that too: say from when the kept numbers are and what the tap replaces */
+    const until = dateLabel(ymd(new Date(+k.t + KEEP_DAYS * 864e5))), ch = keptChanged(k), at = ymd(new Date(+k.t)), from = at.slice(0, 4) === todayStr().slice(0, 4) ? dateLabel(at).replace(/ \d{4}$/, '') : dateLabel(at);
+    $('#keepTxt').textContent = ch ? `Numbers from before ${from} are kept until ${until}.` : `${k.why || 'Your numbers changed.'} The numbers from before are kept until ${until}.`;
+    $('#keepBack').textContent = ch ? 'Put them back (replaces what is here now)' : 'Put them back'; } }
 }
 /* a backup is due: numbers in, no cloud copy, none saved for three weeks, and Later not pressed this week */
 function backupDue() {
@@ -16004,7 +16030,7 @@ function renderBackupNudge() {
     /* LAUNCH_CHECKLIST E9: a cloud save that failed is said on Home too, until a save works */
     html = `<div class="hn-t"><b>The cloud copy is behind</b><span>Changes made since ${vaultWhen(vault.failAt)} are on this device only. ${vaultTriedText() || 'It tries again by itself on your next change.'}</span></div><div class="hn-b"><button type="button" class="btn small solid" data-vault-retry>Send now</button></div>`;
   } else if (vault.on && cloud && !S.ui.vaultSeen && !bkNote) {
-    html = `<div class="hn-t"><b>Save your recovery code</b><span>Your numbers have an encrypted cloud copy now. This code is the only way to open it on another phone.</span></div><div class="vault-wrap" data-vault-code></div>`;
+    html = `<div class="hn-t"><b>Save your recovery code</b><span>Your numbers have a locked cloud copy now. This code is the only way to open it on another phone.</span></div><div class="vault-wrap" data-vault-code></div>`;
   } else if (bkNote) {
     const when = bkNote.t ? vaultWhen(bkNote.t).split(',')[0] : '';
     html = `<div class="hn-t"><b>Numbers restored</b><span>This page lost its saved numbers so it loaded the copy kept in this browser${when ? ' from ' + when : ''}. Tap Save file to keep a backup as well.</span></div><div class="hn-b"><button type="button" class="btn small solid" data-bk-now>Save file</button><button type="button" class="link" data-bk-ok>OK</button></div>`;
@@ -16114,10 +16140,11 @@ function afterLog(first, batch) {
 }
 
 /* ---------- badges ---------- */
+/* h: how to get it, shown until it is earned; e: the line once earned, where "Earned" alone read as the next tile's line (QC round 8 wording polish) */
 const BADGES = [
   { id: 'rcpt1', n: 'First receipt', h: 'Log a receipt.', i: 'receipt', ok: () => (S.receipts || []).length >= 1 },
   { id: 'payin', n: 'Pay set', h: 'Enter your pay.', i: 'coin', ok: () => !!(S.ui.done && S.ui.done.pay) },
-  { id: 'goal1', n: 'First burrow', h: 'Add a burrow with a goal amount.', i: 'target', ok: () => !!(S.ui.done && S.ui.done.goals) && S.plan.goals.some(g => g.target > 0) },
+  { id: 'goal1', n: 'First burrow', h: 'Add a burrow with a goal amount.', e: 'You started your first burrow.', i: 'target', ok: () => !!(S.ui.done && S.ui.done.goals) && S.plan.goals.some(g => g.target > 0) },
   { id: 'track', n: 'On track', h: 'A goal is on track.', i: 'check', ok: () => !!(S.ui.done && S.ui.done.goals) && S.plan.goals.some(g => { const s = goalInfo(S, C, g.id, nowYm()).state; return s === 'ontrack' || s === 'full'; }) },
   { id: 'half', n: 'Halfway', h: 'A goal reaches 50%.', i: 'half', ok: () => !!(S.ui.done && S.ui.done.goals) && goalRows(S, C, nowYm()).some(r => r.target > 0 && r.pctNow >= 50) },   /* what the goal holds now, not what the month plans (QC round 4 money accuracy B3) */
   { id: 'rcpt10', n: '10 receipts', h: 'Log 10 receipts.', i: 'star', ok: () => (S.receipts || []).length >= 10 },
@@ -16346,7 +16373,7 @@ function paintTopStreak(s) {
 }
 function renderBadges() {
   const el = $('#hBadges'), bd = S.ui.bd || {}, n = BADGES.filter(b => bd[b.id]).length;
-  put(el, `<div class="hgl-h"><h2>Badges</h2><span class="hb-n">${n} of ${BADGES.length}</span></div><ul class="hbs">${BADGES.map(b => { const on = !!bd[b.id]; return `<li class="hb${on ? ' on' : ''}"><span class="hb-i" aria-hidden="true">${on ? HI[b.i] : HI.lock}</span><b>${b.n}</b><span>${on ? 'Earned' : b.h}</span></li>`; }).join('')}</ul>`);
+  put(el, `<div class="hgl-h"><h2>Badges</h2><span class="hb-n">${n} of ${BADGES.length}</span></div><ul class="hbs">${BADGES.map(b => { const on = !!bd[b.id]; return `<li class="hb${on ? ' on' : ''}"><span class="hb-i" aria-hidden="true">${on ? HI[b.i] : HI.lock}</span><b>${b.n}</b><span>${on ? b.e || 'Earned' : b.h}</span></li>`; }).join('')}</ul>`);
 }
 /* ---------- what the screens show: one view of the numbers (viewOf in the model), drawn here ---------- */
 let HV = null;
