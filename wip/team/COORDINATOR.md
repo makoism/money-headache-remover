@@ -22,6 +22,9 @@ Q10 SF5 38b5d81, SF6 edb78d1; first full check.sh green on 38.31 (d3d86e5). Q13 
 ### MAIN 11 (18:41 UTC = 03:41 JST 21 Nov)
 MAIN 10 handed off for size to MAIN 11, session_01BFpKEZGS9KN3eUX4L3Qhw4 (Opus, depth 8: it cannot start sessions; the watchdog or a fresh coordinator 9 must start any MAIN 12). Queue A to L from QC round 4 (4 of 9 reports in, all FAIL, wip/team/qc_round4/, 313589c); A first, a cloud-copy data-safety fix. Coordinator 8 sent it its id and made its keep-going task trig_01XEhfwfz8NAH89GFWyYTtdQ (hourly at :41; delete after Sunday 09:00 JST). The coordinator starts MAIN 12 when MAIN 11 writes its handoff. The weekly limit showed a warning at 18:41 UTC.
 
+### MAIN 12 (02:18 UTC = 11:18 JST 21 Nov)
+MAIN 11 stopped after handoff 0810d28 (its keep-going task deleted). Coordinator 8 started MAIN 12, session_01BFpKEXH5H4JMxrjVQZkHyQ (Opus, depth 8), with an hourly keep-going task bound to it. Its next list: purpose_test Why field, team_month.js setup month, check.sh full, stage_build, QC round 5. Art waits for Mako.
+
 ### Preview (07:49 UTC)
 QC round 3 on 53bb8cb failed; fixed b7c4719, 50ca3a8, 9a33833, 9a0d2fc; the rest wait for Mako's run (QC10_FIX_ROUND.md). The preview artifact at the old link cannot be updated: an update needs the whole 1.87 MB live page read first. MAIN 10 sent Mako the build file and 4 screenshots instead (preview/after, 2c65906). A new link does not work either: the tool only publishes a file the session wrote or read in full (~800k tokens). A tappable link needs a deploy (Mako's call, at his full run) or a smaller page. Do not work around the rule.
 
