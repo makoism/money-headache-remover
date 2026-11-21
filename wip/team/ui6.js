@@ -57,7 +57,8 @@ function afterLog(first, batch) {
   /* every place that went past the plan is named with its amount, from the model's overBits, so the parts add up to what went past the plan
      this month: Other and Investing too (38.31 number gate round 8, finding 3). A pile that covered its own overspend is named without an amount */
   if (over) { sfx('coin'); { const mm = HV.map, OB = (HV.month && HV.month.overBits) || {}, nameOf = id => id === 'other' ? 'Other' : ((mm.month.find(x => x.id === id) || mm.burrows.find(x => x.id === id) || {}).name || ''), said = [];
-    ['play', 'nec', 'other', 'ffa', 'edu', 'give'].forEach(id => { if (OB[id] > 0 && nameOf(id)) said.push(nameOf(id) + (id === 'nec' ? ' are ' : ' is ') + fmt2(OB[id]) + ' over'); });
+    const f = fmtSet(...Object.values(OB));   /* one sentence, one way of writing amounts (finding 4) */
+    ['play', 'nec', 'other', 'ffa', 'edu', 'give'].forEach(id => { if (OB[id] > 0 && nameOf(id)) said.push(nameOf(id) + (id === 'nec' ? ' are ' : ' is ') + f(OB[id]) + ' over'); });
     mm.burrows.filter(x => x.over && !(OB[x.id] > 0)).forEach(x => said.push(x.name + ' is over'));
     cheer('Logged. ' + (said.length ? said.join(', ') + ' for this month.' : 'Over plan this month.')); }; return; }
   if (r) {
