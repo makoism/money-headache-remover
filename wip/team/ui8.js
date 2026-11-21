@@ -88,7 +88,7 @@ function renderMap() {
     if (sv && inp) { /* the box opens empty with the balance as its grey hint (a filled box turned 1200 plus a typed 1150 into 12001150); saving it empty keeps that balance, checked today */
       const go = () => { const keep = inp.value === '' && hasBank && !(inp.validity && inp.validity.badInput); if (!keep && (inp.value === '' || !isFinite(+inp.value))) { cheer('Type the balance your bank app shows, in numbers'); inp.focus(); return; } renderMap.ask = false; ACT.setBankNow(keep ? NW.bank : inp.value); sfx('tap'); cheer((keep ? 'Kept: ' + fmt2(nowOf(S).bank) + ' in your bank, checked today.' : 'Bank updated: ' + fmt2(nowOf(S).bank) + ' today.') + (smpOn ? ' It shows here once you use your own numbers.' : '')); };
       sv.onclick = go; inp.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); go(); } }; } }
-  { const ad = $('#mpCardAdd'); if (ad) ad.onclick = () => { renderMap.card = 'new'; renderMap(); const i = $('#mpCardName'); if (i) i.focus(); };
+  { const ad = $('#mpCardAdd'); if (ad) ad.onclick = () => { renderMap.card = 'new'; renderMap(); const i = $('#mpCardName'); if (i) i.focus(); const sv = $('#mpCardSave'); if (sv) sv.scrollIntoView({ block: 'nearest' }); };   /* Save in sight too, clear of the Help strip and an Undo bar */
     el.querySelectorAll('[data-card]').forEach(b => { b.onclick = () => { renderMap.card = b.dataset.card; renderMap(); const i = $('#mpCardOwed'); if (i) i.focus(); }; });
     const cn = $('#mpCardNo'); if (cn) cn.onclick = () => { renderMap.card = null; renderMap(); };
     const cd = $('#mpCardDel'); if (cd) cd.onclick = () => { const id = renderMap.card; renderMap.card = null; ACT.removeCard(id); cheer('Card removed'); };

@@ -96,7 +96,7 @@ const monShort = ym => MON[+ym.slice(5) - 1], monLong = ym => monShort(ym) + ' '
     }
     /* ---- burrows percents, matched by goal id (names can repeat) ---- */
     const BP = await p.evaluate(() => { const o = {}; document.querySelectorAll('#hBur .hb-b').forEach(x => { o[x.dataset.b] = (x.querySelector('.hb-p') || {}).textContent; }); return o; });
-    V.goals.filter(r => r.live && r.target > 0).forEach(r => eq(tag + ' burrow pct ' + r.id, BP[r.id], F(r.saved) + ', ' + r.pct + '% ' + (r.kind === 'debt' ? 'paid off' : 'full')));
+    V.goals.filter(r => r.live && r.target > 0).forEach(r => eq(tag + ' burrow pct ' + r.id, BP[r.id], F(r.saved) + ', ' + (r.kind !== 'debt' && r.saved - r.target > 0.004 ? F(Math.round((r.saved - r.target) * 100) / 100) + ' over the goal' : r.pct + '% ' + (r.kind === 'debt' ? 'paid off' : 'full'))));   /* a goal holding more than its amount says by how much (QC round 6 money accuracy polish 7), worked out here from saved and target */
     await b.close();
   }
   console.log('plans on screen', N, '| screen checks', checks, '| mismatches', fails.length);

@@ -211,6 +211,10 @@ function wire() {
     { const c = $('#cheer'), r = u.getBoundingClientRect(); if (c && c.classList.contains('on') && r.height && !document.body.classList.contains('touring')) c.style.bottom = Math.round(innerHeight - r.top + 8) + 'px'; }   /* a message already up moves above the bar, however tall the bar is */
     if (!ms && snap !== 'receipt' && snap !== 'sweep') { u.dataset.stay = '1'; return; }
     delete u.dataset.stay; undoT = setTimeout(() => { u.hidden = true; undoSnap = null; undoFn = null; }, ms || 30000); };
+  /* while the Undo bar is up, a box or button that scrolls itself into view stays clear of it as well as of the Help strip (the bar of a
+     big change stays across tabs, so it can sit over a form: the Add a card Save, QC round 6 merge) */
+  { const ub = $('#undoBar'), pad = () => { const r = !ub.hidden && ub.getClientRects().length ? ub.getBoundingClientRect() : null; document.documentElement.style.scrollPaddingBottom = r && r.height ? Math.round(innerHeight - r.top + 8) + 'px' : ''; };
+    new MutationObserver(pad).observe(ub, { attributes: true, attributeFilter: ['hidden'] }); addEventListener('resize', pad); }
   const undoHide = () => { clearTimeout(undoT); const u = $('#undoBar'); u.hidden = true; delete u.dataset.stay; undoSnap = null; undoFn = null; };
   $('#undoX').addEventListener('click', undoHide);   /* Close: the copy from before stays in Settings, Put them back, for its days */
   window.offerUndoG = offerUndo;
