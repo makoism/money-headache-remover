@@ -17079,7 +17079,7 @@ function renderLookBack() {
   const names = { nec: 'Bills and basics', play: 'Free to spend', edu: 'Education', give: 'Giving' };
   const rows = b.jars.filter(j => j.planned > 0 || j.spent > 0).map(j => `<tr><th scope="row">${names[j.id]}</th><td>${fmt(j.planned)}</td><td>${j.spent > 0 ? fmt2(j.spent) : j.id === 'nec' ? 'in plan' : fmt(0)}</td></tr>`).join('');
   put(el, `<h2>Last month, ${esc(monthLabel(pm))}</h2>
-    <p class="cap">${b.count} ${b.count === 1 ? 'receipt' : 'receipts'}, ${fmt2(b.logged)} logged. The balance went ${b.left >= 0 ? 'up' : 'down'} ${fmt2(b.change)}, from ${fmt2(b.bankStart)} to ${fmt2(b.bankEnd)}.</p>
+    <p class="cap">${b.count} ${b.count === 1 ? 'receipt' : 'receipts'}, ${fmt2(b.logged)} logged. ${fmt2(b.change) === fmt2(0) ? `The balance stayed at ${fmt2(b.bankEnd)}.` : `The balance went ${b.left >= 0 ? 'up' : 'down'} ${fmt2(b.change)}, from ${fmt2(b.bankStart)} to ${fmt2(b.bankEnd)}.`}</p>
     <div class="tablewrap"><table class="lbt"><thead><tr><th scope="col"></th><th scope="col">Planned</th><th scope="col">Spent</th></tr></thead><tbody>${rows}</tbody></table></div>
     ${b.over.length ? `<p class="cap">Over the plan: ${b.over.slice(0, 3).map(r => `${esc(r.name)} by ${fmt2(r.overBy)}`).join(', ')}.</p>` : '<p class="cap">Nothing went over its plan.</p>'}
     <p class="cap">${b.goalsAdded > 0 ? `${fmt(b.goalsAdded)} went to goals. ` : ''}${b.debtPaid > 0 ? `${fmt(b.debtPaid)} went to cards and loans, ${fmt(b.interest)} of it interest. ` : ''}</p>`);
