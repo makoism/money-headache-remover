@@ -58,9 +58,9 @@ const quickSetup = () => !(S.ui && S.ui.full === true);
 const BILLS_QUICK = ['rent', 'food'];
 const BILL_Q = { rent: 'Rent or mortgage', util: 'Utilities', food: 'Food and groceries', net: 'Internet', phone: 'Phone', ins: 'Insurance', subs: 'Subscriptions', gas: 'Transport', loan: 'Loan or debt payment', card: 'Credit card' };
 const BILL_NOTE = {
-  rent: () => 'Put the full amount even if someone shares it. Their share counts as pay, so tap Back and add it to Other pay each month on the Your money step',
+  rent: () => 'Put the full amount even if someone shares it. Their share counts as pay, so tap Back and add it to Other pay each month on the Your money step.',
   util: () => 'Electricity, gas and water',
-  food: () => 'Groceries and everyday meals. Eating out for fun isn\'t a bill: it comes out of Free to spend, your money for fun',
+  food: () => 'Groceries and everyday meals. Eating out for fun isn\'t a bill: it comes out of Free to spend, your money for fun.',
   net: () => 'Home internet, or your data plan if that\'s how you get online',
   phone: () => 'Your monthly plan, or what you usually spend on top-ups',
   ins: () => 'Health, life, car or home. Put in what it costs a month.' + (S.ui.cur === '₱' ? ' If you\'re self-employed include your own SSS, PhilHealth and Pag-IBIG too.' : ''),
@@ -79,7 +79,7 @@ const STEP_BILLS = { id: 'bills-pick', part: PART.bills, setup: true, pick: true
     const on = chosenBills();
     return `<p>A few are ticked to get you started. Tick the ones you pay and untick the ones you don't. You type a rough amount for each one next.</p>
     <div class="tour-chips two" role="group" aria-label="Your monthly bills">${necLines().filter(l => !moreKind(l.id)).map(l => `<label class="chip multi${on.indexOf(l.id) >= 0 ? ' on' : ''}"><input type="checkbox" name="tourBill" value="${esc(l.id)}"${on.indexOf(l.id) >= 0 ? ' checked' : ''}><span>${esc(l.name)}</span></label>`).join('')}</div>
-    <p class="cap">If one's missing you can add lines later</p>`;
+    <p class="cap">If one's missing you can add lines later.</p>`;
   },
   leave: d => {
     if (d <= 0) return;
