@@ -4,6 +4,12 @@ Written 2026-11-18 on branch `wip-38.31`. Read this whole file before touching a
 
 ## 0. Handoff (latest first)
 
+**2026-11-22 06:36 JST, MAIN 13 (state while QC round 9 runs). Work window ends 09:00 JST. Coordinator: session_01BFpKEXZxmzMuFVBB5UQxLE.**
+**Done since MAIN 12:** all four round 8 helper branches merged, each test first (helper/borrow-status, helper/numbers-r8 from MAIN 12; helper/r8-safety-words, helper/r8-polish from MAIN 13). One quiet `./check.sh full` on 2857cfd: all green but two stale tests from intended changes (qc12_bank_hint, team_inter2), fixed and rerun green; GUARD ALL PASS with Home idle 1.12% (pasted in qc_round8/regression.md). artcheck PASS. Golden 3831zb recorded (wording only, every number the same; README_3831zb.md). Staged 377733e, VERIFY OK. MAKO_RUN 1.19 to 1.21 added.
+**Running:** QC round 9, nine fresh Opus agents on /tmp/qc_build/build.html (377733e). Reports go to wip/team/qc_round9/.
+**Open, small:** with sample numbers on, the Home status names nothing after logging past the plan (numbers-r8 note). Numbers should-fix 5 is MAKO_RUN 1.20.
+**Next:** save the nine reports, fix every one-right-answer finding test first (helpers in worktrees for files that do not overlap), one full check, golden 3831zc if screens change, stage, QC round 10.
+
 **2026-11-22 (about 04:00 JST... see the commit time), MAIN 12 hands off to MAIN 13 (size). Work continues until Sunday 09:00 JST (2026-11-22 00:00 UTC); Mako: "use all of the credits possible". Never stop and wait.** Coordinator: session_01BFpKEXZxmzMuFVBB5UQxLE.
 **QC round 8** ran on 7521da3 (reports in wip/team/qc_round8/): PASS numbers, wording, layout, data safety, novice, regression (condition: ONE `./check.sh full` on the final build ending "GUARD ALL PASS" and "ALL GOOD", output pasted into qc_round8/regression.md); FAIL north star (a month covered only by borrowing says "You are okay" and "Everything planned fits in your pay"), money accuracy (fixed: 0d762a2), art (fixed: tiles' coins follow the money, ea9acea; the rest is Mako's).
 **Merged since round 8 (each test first):** held burrow tiles (heap from the model, aligned, same width); round 8 words and the solid More panel; bank below zero today gets the plain line; own pay ends the sample start, minimum and cap (with no bank typed the start is now 0, not the sample 85,500: note for Mako).
