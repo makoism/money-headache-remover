@@ -29,8 +29,7 @@ const HOPES = { see: ['See where it goes', 'see where your money goes'], save: [
 const cleanName = v => String(v == null ? '' : v).replace(/[\u0000-\u001f\u007f<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, 24);
 const cleanSubName = v => String(v == null ? '' : v).replace(/[\u0000-\u001f\u007f<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, 30);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const FULL = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-const fullLabel = ym => FULL[+ym.slice(5) - 1] + ' ' + ym.slice(0, 4);
+/* months are written short everywhere on screen, "Jun 2026" and "3 Jun" (QC round 8 wording polish; VOICE.md dates), with monthLabel and MONTH_NAMES */
 const TABS = ['home', 'month', 'months', 'goals', 'receipts', 'basics'];
 /* the tab bar, in the order people reach for them; 'months' is opened from a link */
 const TAB_BAR = ['home', 'receipts', 'goals', 'month', 'basics'];
@@ -70,7 +69,7 @@ const IC = {
   chev: '<svg class="chev" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M5 8l5 5 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
 };
 const dateLabel = d => (+d.slice(8, 10)) + ' ' + MONTH_NAMES[+d.slice(5, 7) - 1] + ' ' + d.slice(0, 4);
-const timeLabel = t => { const c = clockParts(t), h = c.h % 12 || 12; return h + ':' + pad2(c.mi) + (c.h < 12 ? ' am' : ' pm'); };
+const timeLabel = t => { const c = clockParts(t), h = c.h % 12 || 12; return h + ':' + pad2(c.mi) + (c.h < 12 ? ' AM' : ' PM'); };   /* "6:00 PM", the same as the cloud copy times (QC round 8 wording polish) */
 /* today as YYYY-MM-DD, kept inside the months the page covers */
 function todayStr() {
   const d = new Date(), s = d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());

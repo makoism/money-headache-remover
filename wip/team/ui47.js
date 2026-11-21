@@ -120,7 +120,7 @@ function openDate(inp, anchor) {
     for (let i = 0; i < 42; i++) { const dt = new Date(vy, vm, 1 - lead + i); cells.push(dt); }
     const week = []; for (let i = 0; i < 7; i++) week.push(DP_DOW[(DP_FIRST + i) % 7]);
     pop.innerHTML = `<div class="dp-h"><button type="button" class="dp-n" data-m="-1" aria-label="Previous month"><svg viewBox="0 0 20 20" width="18" height="18" fill="none"><path d="M12.5 4.5L7 10l5.5 5.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-      <button type="button" class="dp-t" data-pickm aria-label="Choose month and year">${FULL[vm]} ${vy}${DP_CHEV}</button>
+      <button type="button" class="dp-t" data-pickm aria-label="Choose month and year">${MONTH_NAMES[vm]} ${vy}${DP_CHEV}</button>
       <button type="button" class="dp-n" data-m="1" aria-label="Next month"><svg viewBox="0 0 20 20" width="18" height="18" fill="none"><path d="M7.5 4.5L13 10l-5.5 5.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
       <div class="dp-w">${week.map(w => `<span>${w}</span>`).join('')}</div>
       <div class="dp-g${dir > 0 ? ' sl-l' : dir < 0 ? ' sl-r' : ''}" role="grid">${cells.map(dt => { const iso = dpIso(dt.getFullYear(), dt.getMonth(), dt.getDate()), out = dt.getMonth() !== vm, ok = inRange(iso);

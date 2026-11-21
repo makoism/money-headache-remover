@@ -11,7 +11,7 @@ await p.evaluate(()=>{const S=__t.S;S.ui.done={pay:true,bills:true,goals:true,re
 await L.tab(p,'tab-month');await L.tab(p,'tab-home');
 const card=()=>p.evaluate(()=>{const e=document.getElementById('hNext');return e&&!e.hidden?e.innerText.replace(/\s+/g,' '):'(none)'});
 const bank=()=>p.evaluate(()=>{const C=__t.calcAll(__t.S);return JSON.stringify(C.months.slice(0,3).map(m=>[m.ym,m.bankEnd,m.jar.play]))});
-const c0=await card();ck('card asks about November',/November: ¥30,000 of Free to spend isn't logged as spent/.test(c0)&&/Keep ¥30,000 in the bank/.test(c0)&&/put it toward/i.test(c0));ck('no card error',!(await p.evaluate(()=>window.__errs&&window.__errs.length)));const b0=JSON.parse(await bank());ck('before any answer the bank figure is unchanged',b0[0][1]===150000);
+const c0=await card();ck('card asks about November',/Nov: ¥30,000 of Free to spend isn't logged as spent/.test(c0)&&/Keep ¥30,000 in the bank/.test(c0)&&/put it toward/i.test(c0));ck('no card error',!(await p.evaluate(()=>window.__errs&&window.__errs.length)));const b0=JSON.parse(await bank());ck('before any answer the bank figure is unchanged',b0[0][1]===150000);
 await p.evaluate(()=>document.querySelector('[data-sweepbank]').click());await w(500);
 ck('counting it says so',/¥30,000 counted in the bank/.test(await card()));const bC=JSON.parse(await bank());ck('the bank figure rises by it only after the answer',bC[0][1]===b0[0][1]+30000&&bC[1][1]===b0[1][1]+30000);const b1=JSON.parse(await bank());
 await p.evaluate(()=>document.querySelector('[data-sweepundo]').click());await w(500);

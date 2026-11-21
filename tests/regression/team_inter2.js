@@ -250,7 +250,7 @@ const PESO = (() => { const src = require('fs').readFileSync(process.env.MODEL |
   await set('#rcDate', '2026-12-02', 'change'); await p.type('#rcAmt', '90'); await p.select('#rcCat', 'other'); await p.type('#rcNote', 'Vet bill'); await p.click('#rcSave'); await w(300);
   ok('a date after today asks first', (await q('#rcMsg')).includes('in the future') && (await p.$$eval('#rcList .rc', e => e.length)) === 2);
   await p.click('#rcSave'); await w(450);
-  ok('a receipt in another month jumps to that month', (await q('#rcTitle')) === 'Receipts, December 2026' && (await p.$$eval('#rcList .rc', e => e.length)) === 1);
+  ok('a receipt in another month jumps to that month', (await q('#rcTitle')) === 'Receipts, Dec 2026' && (await p.$$eval('#rcList .rc', e => e.length)) === 1);
   ok('Other is a valid category and keeps its title', (await q('#rcList .rc')).includes('Other') && (await q('#rcList .rc')).includes('Vet bill'));
   await p.select('#rcMonth', '2026-11'); await w(300);
   ok('month switch lists November', (await p.$$eval('#rcList .rc', e => e.length)) === 2);
@@ -283,12 +283,12 @@ const PESO = (() => { const src = require('fs').readFileSync(process.env.MODEL |
   ok('Apple, Samsung and other calendars are buttons, not download links', (await p.$$eval('#rcCal button[data-cal]', e => e.length)) >= 2);
   ok('the copy-paste text starts closed', !(await p.$eval('.ctext', e => e.open)));
   await p.click('.ctext summary'); await w(200);
-  ok('copy text holds the event name, schedule and link', (await val('#rcEventText')).includes('Update my receipts in The Burrow') && (await val('#rcEventText')).includes('Repeats every Sunday at 6:00 pm') && (await val('#rcEventText')).includes('claude.ai/artifact/Ksf1kNTW7KRsd7ZHmiVC1w'));
+  ok('copy text holds the event name, schedule and link', (await val('#rcEventText')).includes('Update my receipts in The Burrow') && (await val('#rcEventText')).includes('Repeats every Sunday at 6:00 PM') && (await val('#rcEventText')).includes('claude.ai/artifact/Ksf1kNTW7KRsd7ZHmiVC1w'));
   await p.click('#rcCopy'); await w(250);
   ok('Copy gives feedback', (await q('#rcCopyMsg')).length > 0);
   await p.select('#rcDay', '3'); await set('#rcTime', '07:30', 'change'); await w(300);
   const g2 = await p.$eval('#rcCal a[href*="calendar.google.com"]', e => decodeURIComponent(e.href)), ic2 = await p.$eval('#rcCal a[href*="outlook.live.com"]', e => decodeURIComponent(e.href)), et2 = await val('#rcEventText');
-  ok('day and time change every link and the copy text', g2.includes('BYDAY=WE') && /dates=\d{8}T073000\//.test(g2) && /startdt=\d{4}-\d{2}-\d{2}T07:30:00/.test(ic2) && et2.includes('Repeats every Wednesday at 7:30 am') && (await q('#rcWhen')) === 'every Wednesday at 7:30 am');
+  ok('day and time change every link and the copy text', g2.includes('BYDAY=WE') && /dates=\d{8}T073000\//.test(g2) && /startdt=\d{4}-\d{2}-\d{2}T07:30:00/.test(ic2) && et2.includes('Repeats every Wednesday at 7:30 AM') && (await q('#rcWhen')) === 'every Wednesday at 7:30 AM');
   ok('the jump link scrolls to the reminder', (await p.$$eval('[data-scroll="rcRemind"]', e => e.length)) === 1);
 
   // ----- progress flags -----

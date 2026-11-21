@@ -173,7 +173,7 @@ const SETF = [
 ];
 function buildStatic() {
   $('#curSel').innerHTML = CURS.map(c => `<option value="${esc(c[0])}">${esc(c[1])}</option>`).join('');
-  const opts = MONTHS.map(ym => `<option value="${ym}">${fullLabel(ym)}</option>`).join('');
+  const opts = MONTHS.map(ym => `<option value="${ym}">${monthLabel(ym)}</option>`).join('');
   $('#monthSel').innerHTML = opts; $('#rcMonth').innerHTML = opts;
   $('#rcFields').innerHTML = remindFieldsHTML('rc');
   $('#jarList').innerHTML = JARS.map(j => `<div class="j"><i class="${JARCLS[j.id]}"></i><span class="jn">${j.name}<small>${j.about}</small></span><b class="jp">${j.usualPct}%</b></div>`).join('');
