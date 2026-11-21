@@ -5447,7 +5447,10 @@ let CHEER_Q = [], CHEER_QT = 0;
 function cheer(msg) {
   const el = $('#cheer'); if (!el || !msg) return;
   const fresh = el.classList.contains('on') && el.textContent && el.textContent !== msg && Date.now() - (CONF.cheerAt || 0) < 1800;
-  if (fresh) { if (CHEER_Q.indexOf(msg) < 0) CHEER_Q.push(msg); clearTimeout(CHEER_QT); CHEER_QT = setTimeout(() => { const n = CHEER_Q.shift(); if (n) { CONF.cheerAt = 0; cheer(n); } }, 1800 - (Date.now() - (CONF.cheerAt || 0))); return; }
+  const isBadge = t => /^(Badge: |\d+ badges: )/.test(t || '');
+  /* only a badge waits its turn; a message about what the person just did shows at once, and a badge on screen waits instead */
+  if (fresh && !isBadge(msg) && isBadge(el.textContent)) { if (CHEER_Q.indexOf(el.textContent) < 0) CHEER_Q.unshift(el.textContent); }
+  else if (fresh && isBadge(msg)) { if (CHEER_Q.indexOf(msg) < 0) CHEER_Q.push(msg); clearTimeout(CHEER_QT); CHEER_QT = setTimeout(() => { const n = CHEER_Q.shift(); if (n) { CONF.cheerAt = 0; cheer(n); } }, 1800 - (Date.now() - (CONF.cheerAt || 0))); return; }
   /* in setup the message sits just above Back, Next or Done, however tall that row is (H1 walk, finding 11); while the Undo bar is up it
      sits just above the bar, never behind it */
   { const ft = document.body.classList.contains('touring') && $('.tour-foot'), r = ft && ft.getBoundingClientRect(), ub = $('#undoBar'), ur = ub && !ub.hidden && ub.getClientRects().length ? ub.getBoundingClientRect() : null;

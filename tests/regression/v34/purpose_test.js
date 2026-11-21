@@ -38,7 +38,7 @@ const tab = (p, t) => p.evaluate(t => (document.querySelector(`[data-tab="${t}"]
   // ---- Home hero
   let hero = await txt(p, '#hHero');
   ok(hero.includes(WHY), 'the hero headline is the reason: ' + hero.slice(0, 120));
-  ok(/\+¥[\d,]+ this month\. ¥[\d,]+ to go\./.test(hero), 'the hero says what this month adds and what is to go');
+  ok(/\+¥[\d,]+ planned this month\. ¥[\d,]+ to go\./.test(hero), 'the hero says what this month adds and what is to go');
   ok(!/covered/.test(hero), 'no generated "covered" phrase when a reason is given');
   const play = await txt(p, '#hSpend');
   ok(/What's left at month end can go toward Japan trip/.test(play), 'the play money card says where what is left can go: ' + play.slice(-80));
