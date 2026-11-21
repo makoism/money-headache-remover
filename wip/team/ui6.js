@@ -393,7 +393,7 @@ const links = `<p class="cap hs-more"><button type="button" class="link" data-xm
   const pileCovers = x => x.left < 0 && bankPart(x) < 0.005;
   const tile = x0 => { const x = x0, T = (V.cells && V.cells[x.id]) || { over: 0, bank: 0, pile: 0 }, o = T.over, bk = T.bank, pl = T.pile, mon = monthLabel(ym, true);
     const sub = x.planned <= 0 ? '' : o > 0 ? `${fmt(o)} more than the ${fmt(x.planned)} for ${mon}. ` + (bk < 0.005 ? 'All of it came from the pile. ' : pl > 0 ? `${fmt(pl)} came from the pile, ${fmt2(bk)} is over and comes out of the bank. ` : `It comes out of the bank. `) : 'left of the ' + fmt(x.planned) + ' for ' + mon + '. ';
-    return `<li class="bk${bk >= 0.005 ? ' over' : ''}" style="--c:${JARVAR[x.id]}"><span class="bk-n"><i></i>${esc(x.name)}</span><b>${o > 0 ? (bk >= 0.005 ? '−' + fmt2(bk) : fmt2(0)) : fmt2(x.left)}</b><span class="bk-s">${sub}${WHAT[x.id] || ''}</span></li>`; };
+    return `<li class="bk${bk >= 0.005 ? ' over' : ''}" style="--c:${JARVAR[x.id]}"><span class="bk-n"><i></i>${esc(x.name)}</span><b>${o > 0 ? (bk >= 0.005 ? MINUS + fmt2(bk) : fmt2(0)) : fmt2(x.left)}</b><span class="bk-s">${sub}${WHAT[x.id] || ''}</span></li>`; };
   const tiles = `<ul class="bkl chl">${necTile}${tile(b('edu'))}${tile(b('give'))}</ul>${V.otherSpent > 0 ? `<p class="cap">${fmt2(V.otherSpent)} logged as Other, so it didn't come out of a pile</p>` : ''}`;
   if (p.planned <= 0 && p.spent <= 0) { put(el, `${head}<p class="hs-lbl">Free to spend in ${monthLabel(ym)}</p><p class="hs-big zero">${fmt(0)}</p><p class="cap">No Free to spend planned for ${monthLabel(ym)}.</p><div class="row-btns"><button type="button" class="btn small" data-open="play">Set in Plan</button></div>${smp}${sampleOn() ? '' : links}${tiles}`); return; }
   /* free to spend can never be more than the plan can afford: when the month would end under the safety minimum, that gap is held back */
@@ -785,7 +785,7 @@ const withCommas = s => { s = String(s == null ? '' : s); const m = s.match(/^(-
 /* sums typed in an amount box: 1200+300, 500*2, 2,400/3. Plain arithmetic only, never run as code. A trailing sign is ignored while typing. */
 const MONEY_OP = /[+*\/x\u00d7\u2212-]/;
 function evalMoney(src) {
-  const t = String(src).replace(/,/g, '').replace(/\s+/g, '').replace(/[x\u00d7]/gi, '*').replace(/\u2212/g, '-').replace(/[+\-*\/.]+$/, '');
+  const t = String(src).replace(/[,\u2060]/g, '').replace(/\s+/g, '').replace(/[x\u00d7]/gi, '*').replace(/\u2212/g, '-').replace(/[+\-*\/.]+$/, '');
   if (!t || !/^[0-9.+\-*\/()]+$/.test(t)) return null;
   let i = 0;
   const num = () => { const m = /^\d*\.?\d+|^\d+\.?/.exec(t.slice(i)); if (!m) throw 0; i += m[0].length; return parseFloat(m[0]); };
@@ -844,13 +844,13 @@ document.addEventListener('focusin', e => { const el = e.target; if (el && el.da
 /* the value before each edit, so a refused entry can put it back */
 document.addEventListener('beforeinput', e => { const el = e.target; if (el && el.dataset && el.dataset.mny && !(el._refuse && Date.now() < el._refuse)) el._mnyPrev = NATIVE_VALUE.get.call(el); }, true);
 /* a Japanese keyboard types full-width digits, signs and points: read them as the plain ones */
-const FULLW = s => String(s).replace(/[\uFF10-\uFF19]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFF10 + 48)).replace(/\uFF0E/g, '.').replace(/\uFF0C/g, ',').replace(/\uFF0B/g, '+').replace(/[\uFF0A\u2217]/g, '*').replace(/[\uFF0F\u00F7\u2215]/g, '/').replace(/\uFF08/g, '(').replace(/\uFF09/g, ')').replace(/\uFF58/g, 'x').replace(/[\u2212\u2013\uFF0D\u30FC\u2010-\u2015]/g, '-');
+const FULLW = s => String(s).replace(/\u2060/g, '').replace(/[\uFF10-\uFF19]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFF10 + 48)).replace(/\uFF0E/g, '.').replace(/\uFF0C/g, ',').replace(/\uFF0B/g, '+').replace(/[\uFF0A\u2217]/g, '*').replace(/[\uFF0F\u00F7\u2215]/g, '/').replace(/\uFF08/g, '(').replace(/\uFF09/g, ')').replace(/\uFF58/g, 'x').replace(/[\u2212\u2013\uFF0D\u30FC\u2010-\u2015]/g, '-');
 function normFull(el) {
   if (!el || el.tagName !== 'INPUT' || el.disabled || (el.type !== 'text' && el.type !== 'number' && el.type !== 'search')) return;
   const mny = !!(el.dataset && el.dataset.mny), amt = el.classList && el.classList.contains('amt-in'), rc = el.id === 'rcAmt' || el.id === 'hAmt';
   if (!mny && !amt && !rc) return;
   const cur = mny ? NATIVE_VALUE.get.call(el) : el.value;
-  if (!/[\uFF10-\uFF19\uFF0E\uFF0C\uFF0B\uFF0A\u2217\uFF0F\u00F7\u2215\uFF08\uFF09\uFF58\u2212\u2013\uFF0D\u30FC\u2010-\u2015]/.test(cur)) return;
+  if (!/[\u2060\uFF10-\uFF19\uFF0E\uFF0C\uFF0B\uFF0A\u2217\uFF0F\u00F7\u2215\uFF08\uFF09\uFF58\u2212\u2013\uFF0D\u30FC\u2010-\u2015]/.test(cur)) return;
   const nv = FULLW(cur), pos = el.selectionStart;
   if (rc && /^\s*-/.test(nv)) el.dataset.neg = '1';
   if (mny) NATIVE_VALUE.set.call(el, nv); else el.value = nv;

@@ -14,7 +14,7 @@ const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /* ---- the named figures. Each pattern has one (M): the amount. X.mon is "Nov", X.month is "Nov 2026". ---- */
 const NAMES = X => {
-  const M = '([-−]?' + esc(X.cur) + '[\\d,]+(?:\\.\\d+)?)', m = '[-−]?' + esc(X.cur) + '[\\d,]+(?:\\.\\d+)?';
+  const M = '((?:[-−]\u2060?)?' + esc(X.cur) + '[\\d,]+(?:\\.\\d+)?)', m = '(?:[-−]\u2060?)?' + esc(X.cur) + '[\\d,]+(?:\\.\\d+)?';
   const r = (s, f) => new RegExp(s.replace(/\(M\)/g, M).replace(/@/g, m), f || 'm');   /* (M) is the amount read, @ is any other amount */
   const names = {
     'Bank now': [r('^In your bank now(?: now)?\\n(M)$'), r('^Money today[^\\n]*= (M)$')],

@@ -10,7 +10,7 @@
    (5) Home: Bank at month end plus every burrow tile equals Total, and the burrow tiles add to Saved; every "$A + $B = $C" sentence adds up.
    Run: node tests/qc/script_percents.js */
 const K = require('./script_lib.js'); const { ck, done } = K.report();
-const num = t => { const m = String(t).match(/([−-]?)\$([\d,]+(?:\.\d+)?)/); return m ? +m[2].replace(/,/g, '') * (m[1] ? -1 : 1) : NaN; };
+const num = t => { const m = String(t).match(/([−-]?)\u2060?\$([\d,]+(?:\.\d+)?)/); return m ? +m[2].replace(/,/g, '') * (m[1] ? -1 : 1) : NaN; };
 const near = (a, b) => Math.abs(a - b) < 0.005;
 const screen = name => K.SCREENS.find(s => s[0] === name)[1];
 (async () => {
@@ -58,13 +58,13 @@ const screen = name => K.SCREENS.find(s => s[0] === name)[1];
     const i0 = lines.indexOf('Bank at month end'), i1 = lines.indexOf('Total', i0);
     if (i0 >= 0 && i1 > i0) {
       let sum = 0, tiles = 0; const parts = [];
-      for (let i = i0; i < i1; i++) if (/^[−-]?\$/.test(lines[i])) { sum += num(lines[i]); parts.push(lines[i - 1] + ' ' + lines[i]); if (i > i0 + 1) tiles += num(lines[i]); }
+      for (let i = i0; i < i1; i++) if (/^(?:[−-]\u2060?)?\$/.test(lines[i])) { sum += num(lines[i]); parts.push(lines[i - 1] + ' ' + lines[i]); if (i > i0 + 1) tiles += num(lines[i]); }
       ck(`${st}: Home bank plus burrows (${parts.join(', ')}) = Total ${lines[i1 + 1]}`, near(sum, num(lines[i1 + 1])), sum.toFixed(2));
       const sv = lines.indexOf('Saved'); if (sv > 0) ck(`${st}: Home burrow tiles add to Saved ${lines[sv + 1]} (${tiles.toFixed(2)})`, near(tiles, num(lines[sv + 1])));
     } else ck(`${st}: Home shows Bank at month end ... Total`, false, 'not found');
     for (const s of K.SCREENS) {
       await s[1](p); const t = await p.evaluate(() => document.body.innerText);
-      for (const m of t.matchAll(/([−-]?\$[\d,.]+) \+ [a-z ]*([−-]?\$[\d,.]+) = ([−-]?\$[\d,.]+)/g)) ck(`${st}, ${s[0]}: "${m[0]}" adds up`, near(num(m[1]) + num(m[2]), num(m[3])));
+      for (const m of t.matchAll(/((?:[−-]\u2060?)?\$[\d,.]+) \+ [a-z ]*((?:[−-]\u2060?)?\$[\d,.]+) = ((?:[−-]\u2060?)?\$[\d,.]+)/g)) ck(`${st}, ${s[0]}: "${m[0]}" adds up`, near(num(m[1]) + num(m[2]), num(m[3])));
     }
   }
   /* (4) Settings guide */

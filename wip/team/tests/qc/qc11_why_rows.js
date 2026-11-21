@@ -7,7 +7,7 @@ const L = require('./lib_r12.js'); const R = L.R, w = R.w;
 let bad = 0; const ck = (n, c, saw) => { console.log((c ? 'PASS ' : 'FAIL ') + n); if (!c) { bad++; if (saw !== undefined) console.log('     saw ' + JSON.stringify(saw).slice(0, 600)); } };
 const clock = (p, iso) => p.evaluateOnNewDocument(iso => { const real = Date, fixed = new real(iso).getTime(), start = real.now(); class D extends real { constructor(...a) { if (!a.length) super(fixed + (real.now() - start)); else super(...a); } static now() { return fixed + (real.now() - start); } } window.Date = D; }, iso);
 const skip = async p => { for (const id of ['tourSkip', 'coSkip']) { await p.evaluate(id => { const s = document.getElementById(id); if (s && s.offsetParent) s.click(); }, id); await w(350); } };
-const num = s => { const m = String(s).replace(/,/g, '').match(/(−|-)?\$?([\d.]+)/); return m ? (m[1] ? -1 : 1) * +m[2] : NaN; };
+const num = s => { const m = String(s).replace(/,/g, '').match(/(−|-)?\u2060?\$?([\d.]+)/); return m ? (m[1] ? -1 : 1) * +m[2] : NaN; };
 const panel = async p => {
   await L.tab(p, 'tab-home'); await w(300);
   await p.evaluate(() => { const x = document.createElement('button'); x.dataset.why = 'month'; document.body.appendChild(x); x.click(); x.remove(); }); await w(500);
@@ -31,7 +31,7 @@ const adds = rows => { const g = k => { const r = rows.find(x => x[0] === k); re
   await L.rc(p, 450.25, 'bill:food', '2026-11-19', 'Made-up shop');
   await L.rc(p, 12.34, 'other', '2026-11-19', 'Made-up thing');
   const r1 = await panel(p), a1 = adds(r1);
-  ck('past the plan: the panel names "Spent past the plan in Nov" −$72.59 (QC round 5: it covers this month only)', r1.some(r => r[0] === 'Spent past the plan in Nov' && /^−\$72\.59$/.test(r[1])), r1);
+  ck('past the plan: the panel names "Spent past the plan in Nov" −$72.59 (QC round 5: it covers this month only)', r1.some(r => r[0] === 'Spent past the plan in Nov' && /^−\u2060?\$72\.59$/.test(r[1])), r1);
   ck('past the plan: start + left + past the plan = end, to the cent', a1.ok, a1);
   const e2 = errs.filter(e => !/favicon|net::ERR_FILE_NOT_FOUND|fonts/.test(e));
   ck('no page errors', e2.length === 0, e2.slice(0, 3));

@@ -16,9 +16,9 @@ const monShort = ym => MON[+ym.slice(5) - 1], monLong = ym => monShort(ym) + ' '
     const S = randomState();
     if (t % 5 === 1) S.ui.cur = '¥'; if (t % 7 === 3) S.ui.cur = 'CHF'; if (t % 11 === 5) S.ui.cur = 'none';
     const cur = S.ui.cur, pre = cur === 'none' ? '' : (/^[A-Za-z]{2,}$/.test(cur) ? cur + ' ' : cur);
-    const F0 = n => { n = Math.round(n); return (n < 0 ? '−' : '') + pre + Math.abs(n).toLocaleString('en-US'); };
+    const F0 = n => { n = Math.round(n); return (n < 0 ? '−\u2060' : '') + pre + Math.abs(n).toLocaleString('en-US'); };
     /* 38.31 number gate round 3: the page writes every amount whole when whole, else to the cent; F and F2 are now the same rule */
-    const F2 = n => (Math.abs(n - Math.round(n)) < 0.005 ? F0(n) : (n < 0 ? '−' : '') + pre + Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+    const F2 = n => (Math.abs(n - Math.round(n)) < 0.005 ? F0(n) : (n < 0 ? '−\u2060' : '') + pre + Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
     const F = F2;
     const ym = pick(M.MONTHS.slice(0, 12)), day = pick([1, 3, 10, 15, 22, 27, 28]), today = ym + '-' + String(day).padStart(2, '0');
     /* receipts: some in the month on screen, play and other jars, with cents */
@@ -77,7 +77,7 @@ const monShort = ym => MON[+ym.slice(5) - 1], monLong = ym => monShort(ym) + ' '
       if (held > 0) has(tag + ' chest held', T.sp, F(held) + ' is held back');
       const nec = V.buckets.find(x => x.id === 'nec'), covered = m.inflow >= nec.planned;
       has(tag + ' chest nec', T.sp, 'Bills and basics'); { const nR = V.map.month.find(x => x.id === 'nec'); has(tag + ' chest nec', T.sp, nR && nR.overBy > 0 ? 'Over' : covered ? 'Covered' : 'Short'); }
-      ['edu', 'give'].forEach(id => { const x = V.buckets.find(q => q.id === id), T2 = V.cells[id]; has(tag + ' chest ' + id, T.sp, x.left < 0 ? (T2.bank >= 0.005 ? '−' + F2(T2.bank) : F2(0)) : F2(x.left)); if (x.planned > 0) has(tag + ' chest ' + id, T.sp, (x.left < 0 ? F(T2.over) + ' more than the ' + F(x.planned) + ' for ' + monShort(ym) : 'left of the ' + F(x.planned) + ' for ' + monShort(ym))); });
+      ['edu', 'give'].forEach(id => { const x = V.buckets.find(q => q.id === id), T2 = V.cells[id]; has(tag + ' chest ' + id, T.sp, x.left < 0 ? (T2.bank >= 0.005 ? '−\u2060' + F2(T2.bank) : F2(0)) : F2(x.left)); if (x.planned > 0) has(tag + ' chest ' + id, T.sp, (x.left < 0 ? F(T2.over) + ' more than the ' + F(x.planned) + ' for ' + monShort(ym) : 'left of the ' + F(x.planned) + ' for ' + monShort(ym))); });
       if (V.otherSpent > 0) has(tag + ' chest other', T.sp, F2(V.otherSpent) + ' logged as Other');
     }
     /* ---- Investing: its own card is retired (38.29); it is a room in the Burrows section and a share of the pay strip ---- */

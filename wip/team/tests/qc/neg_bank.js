@@ -26,9 +26,9 @@ const L=require('./lib_r12.js');const R=L.R;const w=R.w;const PAGE=process.env.B
   /* 3. Home's bank figure is lower by exactly the balance change */
   await L.tab(p,'tab-home');await w(800);
   const home=await p.evaluate(()=>document.body.innerText.replace(/\s+/g,' '));
-  const bankShown=(home.match(/Bank (−?\$[\d,.]+) \+ burrows/)||[])[1];
+  const bankShown=(home.match(/Bank (−?\u2060?\$[\d,.]+) \+ burrows/)||[])[1];
   const want=await p.evaluate(()=>{const v=__t.viewOf?__t.viewOf(__t.S,'2026-11'):null;return __t.calcAll(__t.S).byYm['2026-11'].bankEnd;});
-  ck('Home names the bank as the model works it out ('+want+')',!!bankShown&&+bankShown.replace(/[−$,]/g,'')*(bankShown[0]==='−'?-1:1)===want,bankShown+' vs '+want+' (before '+before+')');
+  ck('Home names the bank as the model works it out ('+want+')',!!bankShown&&+bankShown.replace(/[−\u2060$,]/g,'')*(bankShown[0]==='−'?-1:1)===want,bankShown+' vs '+want+' (before '+before+')');
   ck('no NaN, undefined or Infinity on Home',!/NaN|undefined|Infinity/.test(home));
   /* 4. reload keeps it */
   const saved=await p.evaluate(()=>localStorage.getItem('money-map-template-v2'));

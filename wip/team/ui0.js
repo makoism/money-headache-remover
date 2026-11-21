@@ -41,12 +41,15 @@ let saveTimer = null, raf = 0, itemsSig = '', geom = null, FIELDS = [];
 /* ---------- small helpers ---------- */
 const sym = () => { const c = (S.ui && S.ui.cur) || '₱'; return c === 'none' ? '' : c; };
 const pre = () => { const c = sym(); return /^[A-Za-z]{2,}$/.test(c) ? c + ' ' : c; };
+/* the minus sign in front of an amount, joined to it by a word joiner (U+2060, no width, no break) so a line never ends on "−" with
+   "¥15,000" on the next line (QC round 7 layout and touch, confusing 1). Screen readers and copy and paste skip the joiner. */
+const MINUS = '\u2212\u2060';
 /* a rough figure ("about 80 a week"): whole units only */
-function fmtAbout(n) { n = Math.round(n); const neg = n < 0, a = Math.abs(n); return (neg ? '−' : '') + pre() + a.toLocaleString('en-US'); }
+function fmtAbout(n) { n = Math.round(n); const neg = n < 0, a = Math.abs(n); return (neg ? MINUS : '') + pre() + a.toLocaleString('en-US'); }
 /* every amount: whole units when it is whole, otherwise to the cent. Since decision 1 (plan amounts keep cents) one amount must read the same
    on every screen, so fmt and fmt2 are the same (38.31 number gate rounds 1 to 3 found the same amount rounded in one place, exact in another) */
 function fmt(n) { return fmt2(n); }
-function fmt2(n) { if (Math.abs(n - Math.round(n)) < 0.005) return fmtAbout(n); return (n < 0 ? '−' : '') + pre() + Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+function fmt2(n) { if (Math.abs(n - Math.round(n)) < 0.005) return fmtAbout(n); return (n < 0 ? MINUS : '') + pre() + Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 function fmtAxis(n) { return n >= 1e6 ? +(n / 1e6).toFixed(2) + 'M' : n >= 1000 ? n.toLocaleString('en-US') : String(n); }
 const niceUp = x => { if (x <= 0) return 1; const p = Math.pow(10, Math.floor(Math.log10(x))); for (const k of [1, 1.5, 2, 3, 4, 5, 6, 8, 10]) if (k * p >= x - 1e-9) return k * p; return 10 * p; };
 const stepOf = x => { const p = Math.pow(10, Math.floor(Math.log10(Math.max(x, 1)))); for (const k of [1, 2, 5, 10]) if (k * p >= x) return k * p; return 10 * p; };

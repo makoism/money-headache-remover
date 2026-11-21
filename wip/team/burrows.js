@@ -366,7 +366,7 @@ const BUR = (() => {
   /* This month's two rooms for the top of Home: Bills and basics, and Free to spend. Same tiles as the burrows, one panel. */
   function monthRooms(el) {
     const M = HV && HV.map; if (!el || !M) return;
-    const txt = r => { const f = r.id === 'nec' || r.id === 'play' ? fmt2 : fmt; return r.overBy && r.amount > 0 ? [f(r.amount), r.sub + ', ' + f(r.overBy) + ' over'] : r.overBy ? ['−' + f(r.overBy), 'over'] : [f(r.amount), r.sub]; };
+    const txt = r => { const f = r.id === 'nec' || r.id === 'play' ? fmt2 : fmt; return r.overBy && r.amount > 0 ? [f(r.amount), r.sub + ', ' + f(r.overBy) + ' over'] : r.overBy ? [MINUS + f(r.overBy), 'over'] : [f(r.amount), r.sub]; };
     el.innerHTML = M.month.map(r => { const t = txt(r); return `<button type="button" class="hb-b${r.overBy ? ' is-over' : ''}" data-drop="room:${esc(r.id)}" data-room="${esc(r.id)}" aria-label="${esc(r.name)}, ${esc(t[0])}, ${esc(t[1])}. How it is worked out"><canvas width="24" height="18" aria-hidden="true"></canvas><span class="hb-n">${esc(r.name)}</span><span class="hb-p">${t[0]}</span><span class="hb-p">${esc(t[1])}</span></button>`; }).join('');
     el.querySelectorAll('.hb-b[data-room]').forEach(bt => { const r = M.month.find(x => x.id === bt.dataset.room); if (r) roomCv(bt, r, r.id); });
     dropCoins(el);

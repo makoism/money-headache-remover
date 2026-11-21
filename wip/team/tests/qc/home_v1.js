@@ -3,7 +3,7 @@
    every other card and nothing is lost; the four numbers are the model's own (mapOf). Made-up numbers only. Run: node tests/qc/home_v1.js */
 let bad=0;const ck=(n,c,x)=>{console.log(c?'PASS':'FAIL',n,c?'':(x||''));if(!c)bad++;};
 const L=require('./lib_r12.js');const R=L.R;const w=R.w;
-const f2=(n,s)=>(n<0?'−':'')+s+Math.abs(n).toLocaleString('en-US',Math.abs(n-Math.round(n))<0.005?{}:{minimumFractionDigits:2,maximumFractionDigits:2});
+const f2=(n,s)=>(n<0?'−\u2060':'')+s+Math.abs(n).toLocaleString('en-US',Math.abs(n-Math.round(n))<0.005?{}:{minimumFractionDigits:2,maximumFractionDigits:2});
 const ACTIONS=['moveBanner','hNext','hBk','hQuick'],EXTRA=['hHero','hSpend','hGoals','hDebts','hLimits','hBuckets','hMore'];
 const CASES=[
  {name:'a month-end question is open',date:'2026-12-10',rc:[['2026-12-02',42.5],['2026-12-06',18]],once:{},action:'hNext',status:false},

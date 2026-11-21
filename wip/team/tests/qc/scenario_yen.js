@@ -39,7 +39,7 @@ const read = p => p.evaluate(() => {
      Food past plan 2,500 comes out of the bank: 13,500. That is above the 10,000 minimum, so nothing is held back:
      Free to spend safe = 28,000 - 3,000 = 25,000. */
   { const { b, p, errs } = await open(plan(300000)); const R = await read(p);
-    ck('tight month: left over is -36,000', R.left === '−¥36,000', R.left);
+    ck('tight month: left over is -36,000', R.left.replace(/\u2060/g, '') === '−¥36,000', R.left);
     ck('tight month: the bank ends at 13,500 (16,000 planned, less 2,500 spent past the food plan)', R.mapBank === '¥13,500', R.mapBank);
     ck('tight month: Free to spend still safe is 25,000', R.hero === '¥25,000', R.hero);
     ck('tight month: the proof holds (no "do not add up")', !R.proofBad, R.proofBad);

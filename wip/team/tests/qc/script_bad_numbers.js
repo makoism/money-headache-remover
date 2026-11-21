@@ -4,7 +4,7 @@
    view, Home with More open and Settings, in four made-up months: one with cents, one overspent with the bank short, one where every
    number is 0, and one with nothing entered at all. Run: node tests/qc/script_bad_numbers.js */
 const K = require('./script_lib.js'); const { ck, done } = K.report();
-const BAD = /\bNaN\b|\bundefined\b|\bnull\b|Infinity|\[object|(^|[^\w.,])[−-]\s?[$¥€£]?0(\.0+)?%?(?![\d.,])|[$¥€£]\s?[−-]/;
+const BAD = /\bNaN\b|\bundefined\b|\bnull\b|Infinity|\[object|(^|[^\w.,])[−-]\u2060?\s?[$¥€£]?0(\.0+)?%?(?![\d.,])|[$¥€£]\s?[−-]/;
 const grab = p => p.evaluate(() => {
   const out = document.body.innerText.split('\n');
   document.querySelectorAll('[aria-label],[title],[placeholder],[data-tip]').forEach(e => ['aria-label', 'title', 'placeholder', 'data-tip'].forEach(a => { const v = e.getAttribute(a); if (v) out.push(a + ': ' + v.replace(/<[^>]+>/g, ' ')); }));

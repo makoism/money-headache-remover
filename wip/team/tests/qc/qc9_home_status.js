@@ -66,12 +66,12 @@ const tap = async (p, sel) => { await p.evaluate(s => { const e = document.query
     await mine(p, [['2026-11-03', 20000], ['2026-11-09', 15000], ['2026-11-15', 10000]]);   /* 45,000 spent of 40,000 planned */
     const free = a => a.four.find(x => /^Free to spend/.test(x)) || '';
     const a = await look(p);
-    ck('SF3 start: Free to spend is 5,000 over on Home', /−¥5,000/.test(free(a)) && /over/.test(free(a)), a.four);
+    ck('SF3 start: Free to spend is 5,000 over on Home', /−\u2060?¥5,000/.test(free(a)) && /over/.test(free(a)), a.four);
     ck('SF3 money already overspent is not called planned', !/planned/i.test(free(a)), free(a));
     ck('SF3 the other three numbers are still marked planned', a.four.filter(x => /planned/.test(x)).length === 3, a.four);
     await L.tab(p, 'tab-month'); await p.select('#monthSel', '2027-01'); await w(700); await L.tab(p, 'tab-home'); await w(500);
     for (const tag of ['after picking January', 'after one reload', 'after two reloads']) { if (tag !== 'after picking January') await reload(p); const h = await look(p);
-      ck(`SF2 own numbers, ${tag}: Home says November's overspend and nothing about Jan being on plan`, h.homeOpen && /−¥5,000/.test(free(h)) && !h.lineShown && h.line === '' && h.status.length === 0 && !/Jan/.test(h.four.join(' ')), { four: h.four, line: h.line, status: h.status }); }
+      ck(`SF2 own numbers, ${tag}: Home says November's overspend and nothing about Jan being on plan`, h.homeOpen && /−\u2060?¥5,000/.test(free(h)) && !h.lineShown && h.line === '' && h.status.length === 0 && !/Jan/.test(h.four.join(' ')), { four: h.four, line: h.line, status: h.status }); }
     errsAll = errsAll.concat(errs); await b.close(); }
 
   /* ---------- SF1: the clock in January 2027, November and December both have Free to spend not logged as spent ---------- */

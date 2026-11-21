@@ -5,7 +5,7 @@
    (a) no amount is written with one decimal, with ".00", or above 999 without its comma; (b) no rounded amount sits beside an amount
    with cents that it is the rounding of (pace hints excepted). Made-up numbers. Run: node tests/qc/script_two_ways.js */
 const K = require('./script_lib.js'); const { ck, done } = K.report();
-const MONEY = /([−-]?)\$(\d[\d,]*)(\.\d+)?/g;
+const MONEY = /([−-]?)\u2060?\$(\d[\d,]*)(\.\d+)?/g;
 const scan = text => {
   const fmtBad = [], whole = [], cents = [];
   for (const line of text.split('\n')) {

@@ -58,6 +58,8 @@ function makeState(t) {
     out[key].errors = errs.join(' | ');
     await b.close();
   }
+  /* the word joiner that keeps a minus sign on its amount's line (QC round 7) is not a change people see: leave it out of the words */
+  Object.values(out).forEach(o => Object.keys(o).forEach(k => { if (typeof o[k] === 'string') o[k] = o[k].replace(/\u2060/g, ''); }));
   if (MODE === 'record') { fs.writeFileSync(FILE, JSON.stringify(out, null, 1)); console.log('recorded', Object.keys(out).length, 'plans x', TABS.length + 1, 'screens to', FILE); process.exit(0); }
   const base = JSON.parse(fs.readFileSync(FILE, 'utf8')); let diffs = 0, shown = 0;
   Object.keys(base).forEach(k => {

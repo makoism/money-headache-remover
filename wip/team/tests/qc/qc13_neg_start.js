@@ -29,7 +29,7 @@ const setBank = async (p, v, at) => { await p.evaluate((v, at) => { const S = __
   ck('no day: Home never calls Free to spend "safe to spend"', !safeAlone(a.all), a.all.match(/.{60}safe to spend.{20}/g));
   ck('no day: the status box does not say "You are okay"', !/You are okay/.test(a.st), a.st);
   ck('no day: the status box says not safe to spend yet', /not safe to spend yet/i.test(a.st), a.st);
-  ck('no day: the status box warns the plan starts below zero', /below zero/.test(a.st) && /−¥15,000|-¥15,000/.test(a.st), a.st);
+  ck('no day: the status box warns the plan starts below zero', /below zero/.test(a.st) && /−\u2060?¥15,000|-¥15,000/.test(a.st), a.st);
   ck('no day: the status box never says the bills are covered next to "not safe"', !/bills are covered|Bills are covered/.test(a.st), a.st);
   ck('no day: the status box says the bank starts the month below zero', /Your bank starts the month below zero/.test(a.st), a.st);   /* QC round 7 wording, confusing 1 */
   await L.tab(p, 'tab-receipts'); await w(500); const rc = await txt(p);

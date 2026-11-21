@@ -285,21 +285,21 @@ function openWhy(kind) {
     const M = V.map, rsn = receiptStats(S, ym).byJar.nec || 0;
     title = 'Bills and basics';
     const nr = M.month.find(x => x.id === 'nec'), ov = nr && nr.overBy > 0 ? nr.overBy : 0;
-    rows = [[`Planned for ${mon}`, fmt(M.billsPlanned)], ['Logged so far', (rsn > 0.004 ? '−' : '') + fmt2(rsn)]]; if (ov) rows.push(['Logged past a bill\'s plan, still due', '+' + fmt2(ov)]); rows.push(['Left to pay', fmt(M.billsLeft)]);
+    rows = [[`Planned for ${mon}`, fmt(M.billsPlanned)], ['Logged so far', (rsn > 0.004 ? MINUS : '') + fmt2(rsn)]]; if (ov) rows.push(['Logged past a bill\'s plan, still due', '+' + fmt2(ov)]); rows.push(['Left to pay', fmt(M.billsLeft)]);
     foot = 'Rent, bills, food, card payments and one-time costs. Logged is every receipt in a Bills and basics line this month.';
   } else if (/^room:(edu|give|ffa)$/.test(kind)) {
     const r = V.map.burrows.find(x => 'room:' + x.id === kind);
     if (!r) return;
     title = r.name;
     rows = [[`Planned for ${mon}`, fmt(r.monthly)], ['Planned since the start of your plan', fmt(r.planned)]];
-    if (r.id !== 'ffa' || r.logged > 0) rows.push(['Logged', (r.logged > 0 ? '−' : '') + fmt2(r.logged)]);
+    if (r.id !== 'ffa' || r.logged > 0) rows.push(['Logged', (r.logged > 0 ? MINUS : '') + fmt2(r.logged)]);
     rows.push([r.over ? 'Logged more than planned' : 'In this burrow', r.over ? fmt2(r.loggedPast) : fmt(r.amount)]);
     foot = r.id === 'ffa' ? 'Money you invest and don\'t spend' : 'Money that piles up. What you log here comes out of the pile and doesn\'t touch your monthly bills.';
   } else if (kind === 'free') {
     const fo = freeOf(S, V.month, p), held = fo.held, freeLeft = fo.free;
     title = 'Free to spend';
-    rows = [[`Free to spend planned for ${mon}`, fmt(p.planned)], [`Logged in Free to spend (${p.count} ${p.count === 1 ? 'receipt' : 'receipts'})`, (p.spent > 0.004 ? '−' : '') + fmt2(p.spent)]];   /* no minus in front of zero (38.31 north-star round 4) */
-    if (held > 0) rows.push(['Held back so the balance stays above your minimum', '−' + fmt(held)]);
+    rows = [[`Free to spend planned for ${mon}`, fmt(p.planned)], [`Logged in Free to spend (${p.count} ${p.count === 1 ? 'receipt' : 'receipts'})`, (p.spent > 0.004 ? MINUS : '') + fmt2(p.spent)]];   /* no minus in front of zero (38.31 north-star round 4) */
+    if (held > 0) rows.push(['Held back so the balance stays above your minimum', MINUS + fmt(held)]);
     rows.push(['Free to spend', fmt2(freeLeft)]);
     const notSafe = playNotSafe(S, C, ym, ymd(new Date())) && !sampleOn();   /* the same rule as the top of Home: no per week or per day figure to spend while the bank cannot cover it (QC round 4 north-star 4) */
     if (notSafe) { /* a sentence, not an amount: it goes in the note, where it wraps (QC round 5 novice B2) */ }
@@ -308,7 +308,7 @@ function openWhy(kind) {
     foot = (notSafe ? 'Not safe to spend yet: your bank is less than your bills still to pay and Free to spend. It becomes safe to spend when your pay lands: then tap Check your bank on Home and type the new balance. ' : '') + 'Planned is the Free to spend total on the Plan page. Logged is every receipt in Free to spend this month.';
   } else {
     title = 'Where you stand in ' + mon;
-    rows = [['Pay and other money in', fmt(m.inflow)], ['Bills, one-time costs and card payments', '−' + fmt(m.jar.nec)], ['Goal burrows', '−' + fmt(m.goalsTotal)], ['Free to spend, Education, Investing, Giving', '−' + fmt(V.cells.otherPlaces)], ['Left in the month', (m.left < 0 ? '−' : '') + fmt2(V.cells.leftAbs)], ['Balance at the start', fmt2(m.bankStart)]].concat((m.overNow || 0) > 0.004 ? [[`Spent past the plan in ${mon}`, '−' + fmt2(m.overNow)]] : [], (m.credit || 0) > 0.004 ? [['Free to spend not spent, back in the bank', '+' + fmt2(m.credit)]] : [], [['Balance at the end', fmt2(m.bankEnd)], ['Your minimum balance', fmt(floor)]]);
+    rows = [['Pay and other money in', fmt(m.inflow)], ['Bills, one-time costs and card payments', MINUS + fmt(m.jar.nec)], ['Goal burrows', MINUS + fmt(m.goalsTotal)], ['Free to spend, Education, Investing, Giving', MINUS + fmt(V.cells.otherPlaces)], ['Left in the month', (m.left < 0 ? MINUS : '') + fmt2(V.cells.leftAbs)], ['Balance at the start', fmt2(m.bankStart)]].concat((m.overNow || 0) > 0.004 ? [[`Spent past the plan in ${mon}`, MINUS + fmt2(m.overNow)]] : [], (m.credit || 0) > 0.004 ? [['Free to spend not spent, back in the bank', '+' + fmt2(m.credit)]] : [], [['Balance at the end', fmt2(m.bankEnd)], ['Your minimum balance', fmt(floor)]]);
     foot = m.bankEnd < floor ? 'The balance ends under your minimum, so the month is short.' : m.left < 0 ? 'The month spends more than comes in, but the balance covers it.' : 'Everything planned fits in your pay.';
     if ((m.overNow || 0) > 0.004) foot += ' Spending past the plan came out of the bank.';
     if (playNotSafe(S, C, ym, ymd(new Date())) && !sampleOn()) foot += ' Not safe to spend yet: your bank is less than your bills still to pay and Free to spend. It becomes safe to spend when your pay lands: then tap Check your bank on Home and type the new balance.';   /* the model's flag, the same sentence as the Free to spend sheet (QC round 7 novice C2) */

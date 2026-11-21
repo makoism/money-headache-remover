@@ -25,7 +25,7 @@ const checkBankAndCard = async p => {
   await click(p, '#mpCardAdd'); await L.typeIn(p, '#mpCardName', 'Visa'); await L.typeIn(p, '#mpCardOwed', '26000'); await L.typeIn(p, '#mpCardDay', '27');
   await click(p, '#mpCardSave'); await w(800);
 };
-const yen = s => { const m = String(s || '').match(/[−-]?¥[\d,]+/); return m ? m[0] : null; };
+const yen = s => { const m = String(s || '').match(/(?:[−-]\u2060?)?¥[\d,]+/); return m ? m[0] : null; };
 const home = p => p.evaluate(() => { const t = e => e ? e.innerText.replace(/\s+/g, ' ').trim() : '';
   return { key: t(document.querySelector('#hMap [data-part="bank"]')), note: t(document.querySelector('#hMap [data-planfrom]')), now: t(document.querySelector('#hMap .mp-now-v')), nowHead: t(document.querySelector('#hMap .mp-now-h')), after: t(document.querySelector('#hMap .mp-after')) }; });
 const plan = async p => { await L.tab(p, 'tab-month'); await L.clickText(p, 'Month'); await w(400); const s = await p.evaluate(() => document.getElementById('bankLine').innerText.trim()); await L.tab(p, 'tab-home'); await w(400); return s; };

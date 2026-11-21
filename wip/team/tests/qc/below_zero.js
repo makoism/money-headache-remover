@@ -3,7 +3,7 @@
    Made-up numbers only. Run: node tests/qc/below_zero.js */
 let bad=0;const ck=(n,c,x)=>{console.log(c?'PASS':'FAIL',n,c?'':(x||''));if(!c)bad++;};
 const L=require('./lib_r12.js');const R=L.R;const w=R.w;
-const f2=n=>(n<0?'−':'')+'$'+Math.abs(n).toLocaleString('en-US',Math.abs(n-Math.round(n))<0.005?{}:{minimumFractionDigits:2,maximumFractionDigits:2});
+const f2=n=>(n<0?'−\u2060':'')+'$'+Math.abs(n).toLocaleString('en-US',Math.abs(n-Math.round(n))<0.005?{}:{minimumFractionDigits:2,maximumFractionDigits:2});
 const CASES=[
  {name:'starts below zero, the month adds',once:{'2026-11':{'bill:rent':4000}},rc:[],want:z=>z.startBelow>0&&z.adds>0,
   must:z=>[`It starts the month at ${f2(-z.startBelow)}, and Dec adds ${f2(z.adds)}.`]},
