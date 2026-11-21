@@ -243,7 +243,7 @@ const PESO = (() => { const src = require('fs').readFileSync(process.env.MODEL |
   await p.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'no-preference' }]);
   await p.$$eval('#rcList .rc [data-rcdel]', b => b[0] && b[0].click()); await w(100); await p.$$eval('#rcList .rc [data-rcdel]', b => b[0] && b[0].click()); await w(300);
   ok('category table lists plan and spent', (await p.$eval('#rcCats', e => e.innerText)).includes('Free to spend') /* "play money" is retired */ && (await p.$eval('#rcCats', e => e.innerText)).includes('₱1,200'));
-  ok('play receipts are measured against spending money', (await q('#rcSum')).includes('Free to spend: ₱3,800 planned, ₱1,200 spent, ₱2,600 safe to spend'));
+  ok('play receipts are measured against spending money', (await q('#rcSum')).includes('Free to spend: ₱3,800.00 planned, ₱1,200.00 spent, ₱2,600.00 safe to spend') /* the line also holds ₱1,450.50, so every amount in it has cents (number gate round 8, finding 4) */);
   await p.click('#rcSave'); await w(200);
   ok('empty amount is refused', (await q('#rcMsg')).includes('amount') && (await p.$$eval('#rcList .rc', e => e.length)) === 2);
   await set('#rcDate', '2020-01-01', 'change'); await p.type('#rcAmt', '5'); await p.click('#rcSave'); await w(200);
