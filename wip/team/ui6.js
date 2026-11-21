@@ -335,7 +335,7 @@ function renderHero() {
     <h2 class="hw-p">${esc(purpose)}</h2>
     <p class="hw-when">${when}</p>
     <div class="hw-bar" role="img" aria-label="${pct} percent of ${esc(g.name)} saved" style="--c:var(--c${g.slot})"><i class="fill" style="width:${fr * 100}%"></i>${ms}</div>
-    <div class="hw-nums"><span><b>${fmt(r.savedNow)}</b> ${r.kind === 'debt' ? 'paid off' : 'saved'} now, of ${fmt(r.target)}</span><span>${pct}%${r.saved !== r.savedNow ? ` at the end of ${monthLabel(HV.ym, true)}` : ''}</span></div>
+    <div class="hw-nums"><span><b>${fmt(r.savedNow)}</b> ${r.kind === 'debt' ? 'paid off' : 'saved'} now, of ${fmt(r.target)}${r.overNow > 0 ? `, ${fmt(r.overNow)} over the goal` : ''}</span><span>${pct}%${r.saved !== r.savedNow ? ` at the end of ${monthLabel(HV.ym, true)}` : ''}</span></div>
     ${adds}${chip}
     <details class="hw-more"><summary>Forecast</summary>${sub ? `<p class="hw-sub">${sub}</p>` : ''}${r.reached ? `<div class="hw-graph" id="hGraph">${heroGraph(g)}</div>` : ''}<div class="row-btns">${fix}<button type="button" class="btn small" data-tab-go="goals">Edit burrows</button></div></details>`);
   /* a milestone is celebrated once, the first time the plan passes it */
@@ -417,7 +417,7 @@ function goalRowHtml(r) {
   const pp = purposeFor(g), small = g.why || (pp.toLowerCase().indexOf(String(g.name).toLowerCase()) === 0 && r.target > 0 ? `${fmt(r.saved)} of ${fmt(r.target)}` : pp);
   return `<li class="gd"><details data-hgid="${esc(r.id)}"${HOPEN.has(r.id) ? ' open' : ''} style="--c:var(--c${g.slot})"><summary><i class="dot"></i><span class="gd-t"><b>${esc(g.name)}</b><small>${esc(small)}</small></span><span class="gd-m${main ? ' main' : ''}">${esc(monthsShort(r))}</span></summary>
     <div class="gd-b"><div class="hg-b" role="img" aria-label="${r.pct} percent"><i style="width:${fracOf(r) * 100}%"></i></div>
-    <p class="gd-n"><span>${fmt(r.saved)} of ${fmt(r.target)}</span><span>${esc(eta)}</span></p>${stw ? `<p class="gd-c"><em class="${st}">${stw}</em>${main ? '<span class="gd-main">Main goal</span>' : ''}</p>` : (main ? '<p class="gd-c"><span class="gd-main">Main goal</span></p>' : '')}
+    <p class="gd-n"><span>${fmt(r.saved)} of ${fmt(r.target)}${r.over > 0 ? `, ${fmt(r.over)} over the goal` : ''}</span><span>${esc(eta)}</span></p>${stw ? `<p class="gd-c"><em class="${st}">${stw}</em>${main ? '<span class="gd-main">Main goal</span>' : ''}</p>` : (main ? '<p class="gd-c"><span class="gd-main">Main goal</span></p>' : '')}
     <div class="row-btns"><button type="button" class="btn small" data-tab-go="goals">Edit goal</button>${!main && r.live ? `<button type="button" class="btn small" data-main="${esc(r.id)}">Set as main goal</button>` : ''}</div></div></details></li>`;
 }
 function renderGoalsHome() {

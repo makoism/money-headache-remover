@@ -477,7 +477,9 @@ function goalInfo(S, C, id, ym) {
   } else state = bal >= target ? 'full' : (reached ? 'eta' : 'noeta');
   /* pctWhole is the one whole percent shown for a goal anywhere: rounded down, and 100 only when it is really full.
      togo counts to the same target as pct (the longer emergency goal once the person said yes to it), so every screen says one amount */
-  return { id, target, bal, pct: target > 0 ? Math.min(1, bal / target) : 0, pctWhole: wholePct(bal, target), togo: Math.max(0, target - bal), reached, readyBy: rb, state, need, slack, had };
+  /* over: how much the goal holds past its amount (a debt is never over); shown as "X over the goal", never worked out on screen (QC round 6 money accuracy polish 7) */
+  const over = target > 0 && kindOfGoal(S, g) !== 'debt' ? Math.max(0, round2(bal - target)) : 0;
+  return { id, target, bal, pct: target > 0 ? Math.min(1, bal / target) : 0, pctWhole: wholePct(bal, target), togo: Math.max(0, target - bal), over, reached, readyBy: rb, state, need, slack, had };
 }
 
 /* a rounding step that fits the size of the number */
@@ -615,7 +617,7 @@ function goalRows(S, C, ym) {
   const ix = ymIdx(ym);
   return S.plan.goals.map(g => {
     const gi = goalInfo(S, C, g.id, ym), live = g.target > 0 && gi.state !== 'paid' && gi.state !== 'short';
-    return { id: g.id, name: g.name, slot: g.slot, kind: kindOfGoal(S, g), emergency: !!g.emergency, target: gi.target, saved: gi.bal, savedNow: round2(((C.byYm[ym] || {}).balBefore || {})[g.id] !== undefined ? C.byYm[ym].balBefore[g.id] : (g.start || 0)), pctNow: wholePct(round2(((C.byYm[ym] || {}).balBefore || {})[g.id] !== undefined ? C.byYm[ym].balBefore[g.id] : (g.start || 0)), gi.target), togo: Math.max(0, gi.target - gi.bal), pct: wholePct(gi.bal, gi.target), state: gi.state,
+    return { id: g.id, name: g.name, slot: g.slot, kind: kindOfGoal(S, g), emergency: !!g.emergency, target: gi.target, saved: gi.bal, savedNow: round2(((C.byYm[ym] || {}).balBefore || {})[g.id] !== undefined ? C.byYm[ym].balBefore[g.id] : (g.start || 0)), pctNow: wholePct(round2(((C.byYm[ym] || {}).balBefore || {})[g.id] !== undefined ? C.byYm[ym].balBefore[g.id] : (g.start || 0)), gi.target), over: gi.over, overNow: gi.target > 0 && kindOfGoal(S, g) !== 'debt' ? Math.max(0, round2((((C.byYm[ym] || {}).balBefore || {})[g.id] !== undefined ? C.byYm[ym].balBefore[g.id] : (g.start || 0)) - gi.target)) : 0, togo: Math.max(0, gi.target - gi.bal), pct: wholePct(gi.bal, gi.target), state: gi.state,
       reached: gi.reached, months: gi.reached ? Math.max(0, ymIdx(gi.reached) - ix) : null, need: gi.need, slack: gi.slack, due: g.due || null, readyBy: gi.readyBy, had: gi.had, live,
       /* does anything go in before the plan ends? A goal getting nothing is "not growing", never "over 2 years" (38.31 north-star round 4) */
       /* savedNow, pctNow: in the goal at the start of the month, before this month's planned deposit (saved and pct are after it; QC round 4

@@ -233,7 +233,7 @@ function renderGoals(m) {
     $('#jn-' + g.id).textContent = g.name; const jw = $('#jw-' + g.id); if (jw) jw.textContent = g.why || '';
     $('.fill', gb).style.width = (pct * 100) + '%'; gb.setAttribute('aria-label', `${g.name}: ${gi.pctWhole}% of ${fmt(cap)}`);
     const tick = $('.gtick', gb); if (g.emergency && cap > gi.target && gi.target > 0) { tick.style.left = `calc(${gi.target / cap * 100}% - 1px)`; tick.hidden = false; } else tick.hidden = true;
-    $('#jv-' + g.id).innerHTML = gi.target > 0 ? dw(S, g, `<b>${fmt(gi.bal)}</b> of ${fmt(gi.target)} by the end of ${monthLabel(sel, true)}`) : '<b>No goal amount yet</b>';
+    $('#jv-' + g.id).innerHTML = gi.target > 0 ? dw(S, g, `<b>${fmt(gi.bal)}</b> of ${fmt(gi.target)} by the end of ${monthLabel(sel, true)}${gi.over > 0 ? `, ${fmt(gi.over)} over the goal` : ''}`) : '<b>No goal amount yet</b>';
     const js = $('#js-' + g.id); let cls = 'plain', ic = IC.clock, tx = '', note = '';
     if (gi.state === 'ontrack') { cls = 'good'; ic = IC.ok; tx = 'On track'; note = `Full ${monthLabel(gi.reached)}`; }
     else if (gi.state === 'behind') { cls = 'warn'; ic = IC.warn; tx = 'Behind'; note = gi.need != null ? `Needs ${fmt(gi.need)} a month` : 'Not ready in time'; }
@@ -274,7 +274,7 @@ function renderSettings() {
 
 function renderMonthTable() {
   const word = { good: 'On plan', tight: 'Tight', short: 'Short' }, icon = { good: IC.ok, tight: IC.warn, short: IC.bad };
-  const fullIn = {}; S.plan.goals.forEach(g => { const r = C.reached[g.id]; if (g.target > 0 && r) (fullIn[r] = fullIn[r] || []).push(g); });
+  const fullIn = {}; S.plan.goals.forEach(g => { const r = C.reached[g.id], m0 = r && C.byYm[r]; if (g.target > 0 && r && !(m0 && m0.balBefore[g.id] >= capOf(g, r))) (fullIn[r] = fullIn[r] || []).push(g); });   /* only the month it first fills: a goal already full before it is not marked (QC round 6 money accuracy polish 7) */
   const rows = C.months.filter(m => !m.before).map(m => {   /* months before the plan starts are not part of it (QC round 4 money accuracy B1) */
     const bk = m.bankEnd, grew = (m.overNow || 0) > 0.004;
     const st = grew ? 'short' : statusOf(S, m), gs = fullIn[m.ym] || [];

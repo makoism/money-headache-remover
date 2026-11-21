@@ -2877,7 +2877,9 @@ function goalInfo(S, C, id, ym) {
   } else state = bal >= target ? 'full' : (reached ? 'eta' : 'noeta');
   /* pctWhole is the one whole percent shown for a goal anywhere: rounded down, and 100 only when it is really full.
      togo counts to the same target as pct (the longer emergency goal once the person said yes to it), so every screen says one amount */
-  return { id, target, bal, pct: target > 0 ? Math.min(1, bal / target) : 0, pctWhole: wholePct(bal, target), togo: Math.max(0, target - bal), reached, readyBy: rb, state, need, slack, had };
+  /* over: how much the goal holds past its amount (a debt is never over); shown as "X over the goal", never worked out on screen (QC round 6 money accuracy polish 7) */
+  const over = target > 0 && kindOfGoal(S, g) !== 'debt' ? Math.max(0, round2(bal - target)) : 0;
+  return { id, target, bal, pct: target > 0 ? Math.min(1, bal / target) : 0, pctWhole: wholePct(bal, target), togo: Math.max(0, target - bal), over, reached, readyBy: rb, state, need, slack, had };
 }
 
 /* a rounding step that fits the size of the number */
@@ -3015,7 +3017,7 @@ function goalRows(S, C, ym) {
   const ix = ymIdx(ym);
   return S.plan.goals.map(g => {
     const gi = goalInfo(S, C, g.id, ym), live = g.target > 0 && gi.state !== 'paid' && gi.state !== 'short';
-    return { id: g.id, name: g.name, slot: g.slot, kind: kindOfGoal(S, g), emergency: !!g.emergency, target: gi.target, saved: gi.bal, savedNow: round2(((C.byYm[ym] || {}).balBefore || {})[g.id] !== undefined ? C.byYm[ym].balBefore[g.id] : (g.start || 0)), pctNow: wholePct(round2(((C.byYm[ym] || {}).balBefore || {})[g.id] !== undefined ? C.byYm[ym].balBefore[g.id] : (g.start || 0)), gi.target), togo: Math.max(0, gi.target - gi.bal), pct: wholePct(gi.bal, gi.target), state: gi.state,
+    return { id: g.id, name: g.name, slot: g.slot, kind: kindOfGoal(S, g), emergency: !!g.emergency, target: gi.target, saved: gi.bal, savedNow: round2(((C.byYm[ym] || {}).balBefore || {})[g.id] !== undefined ? C.byYm[ym].balBefore[g.id] : (g.start || 0)), pctNow: wholePct(round2(((C.byYm[ym] || {}).balBefore || {})[g.id] !== undefined ? C.byYm[ym].balBefore[g.id] : (g.start || 0)), gi.target), over: gi.over, overNow: gi.target > 0 && kindOfGoal(S, g) !== 'debt' ? Math.max(0, round2((((C.byYm[ym] || {}).balBefore || {})[g.id] !== undefined ? C.byYm[ym].balBefore[g.id] : (g.start || 0)) - gi.target)) : 0, togo: Math.max(0, gi.target - gi.bal), pct: wholePct(gi.bal, gi.target), state: gi.state,
       reached: gi.reached, months: gi.reached ? Math.max(0, ymIdx(gi.reached) - ix) : null, need: gi.need, slack: gi.slack, due: g.due || null, readyBy: gi.readyBy, had: gi.had, live,
       /* does anything go in before the plan ends? A goal getting nothing is "not growing", never "over 2 years" (38.31 north-star round 4) */
       /* savedNow, pctNow: in the goal at the start of the month, before this month's planned deposit (saved and pct are after it; QC round 4
@@ -5061,7 +5063,7 @@ function renderGoals(m) {
     $('#jn-' + g.id).textContent = g.name; const jw = $('#jw-' + g.id); if (jw) jw.textContent = g.why || '';
     $('.fill', gb).style.width = (pct * 100) + '%'; gb.setAttribute('aria-label', `${g.name}: ${gi.pctWhole}% of ${fmt(cap)}`);
     const tick = $('.gtick', gb); if (g.emergency && cap > gi.target && gi.target > 0) { tick.style.left = `calc(${gi.target / cap * 100}% - 1px)`; tick.hidden = false; } else tick.hidden = true;
-    $('#jv-' + g.id).innerHTML = gi.target > 0 ? dw(S, g, `<b>${fmt(gi.bal)}</b> of ${fmt(gi.target)} by the end of ${monthLabel(sel, true)}`) : '<b>No goal amount yet</b>';
+    $('#jv-' + g.id).innerHTML = gi.target > 0 ? dw(S, g, `<b>${fmt(gi.bal)}</b> of ${fmt(gi.target)} by the end of ${monthLabel(sel, true)}${gi.over > 0 ? `, ${fmt(gi.over)} over the goal` : ''}`) : '<b>No goal amount yet</b>';
     const js = $('#js-' + g.id); let cls = 'plain', ic = IC.clock, tx = '', note = '';
     if (gi.state === 'ontrack') { cls = 'good'; ic = IC.ok; tx = 'On track'; note = `Full ${monthLabel(gi.reached)}`; }
     else if (gi.state === 'behind') { cls = 'warn'; ic = IC.warn; tx = 'Behind'; note = gi.need != null ? `Needs ${fmt(gi.need)} a month` : 'Not ready in time'; }
@@ -5102,7 +5104,7 @@ function renderSettings() {
 
 function renderMonthTable() {
   const word = { good: 'On plan', tight: 'Tight', short: 'Short' }, icon = { good: IC.ok, tight: IC.warn, short: IC.bad };
-  const fullIn = {}; S.plan.goals.forEach(g => { const r = C.reached[g.id]; if (g.target > 0 && r) (fullIn[r] = fullIn[r] || []).push(g); });
+  const fullIn = {}; S.plan.goals.forEach(g => { const r = C.reached[g.id], m0 = r && C.byYm[r]; if (g.target > 0 && r && !(m0 && m0.balBefore[g.id] >= capOf(g, r))) (fullIn[r] = fullIn[r] || []).push(g); });   /* only the month it first fills: a goal already full before it is not marked (QC round 6 money accuracy polish 7) */
   const rows = C.months.filter(m => !m.before).map(m => {   /* months before the plan starts are not part of it (QC round 4 money accuracy B1) */
     const bk = m.bankEnd, grew = (m.overNow || 0) > 0.004;
     const st = grew ? 'short' : statusOf(S, m), gs = fullIn[m.ym] || [];
@@ -7781,7 +7783,7 @@ const BUR = (() => {
   function fill() {
     const all = rows(), r = all.find(x => x.id === cur) || all[0]; if (!r) return;
     cur = r.id; const pct = Math.min(1, r.saved / r.target); LK = LOOKS[lookOf(r)] ? lookOf(r) : 'plain';
-    pop.innerHTML = `<h2>${esc(r.name)}</h2><p class="bv-n"><b>${fmt(r.savedNow)}</b> ${r.kind === 'debt' ? 'paid off' : 'saved'} now, of ${fmt(r.target)}</p><div class="bv-bar" role="img" aria-label="${r.pct} percent ${r.kind === 'debt' ? 'paid off' : 'full'}"><i style="width:${r.pct}%"></i></div><p class="bv-s">${r.saved !== r.savedNow ? `${fmt(r.saved)} by the end of ${monthLabel(nowYm(), true)}, as planned: ` : ''}${r.pct}% ${r.kind === 'debt' ? 'paid off. ' + fmt(r.togo) + ' still owed' : 'full'}</p><button type="button" class="btn bv-add">${r.kind === 'debt' ? 'Add a payment' : 'Add money'}</button>`;
+    pop.innerHTML = `<h2>${esc(r.name)}</h2><p class="bv-n"><b>${fmt(r.savedNow)}</b> ${r.kind === 'debt' ? 'paid off' : 'saved'} now, of ${fmt(r.target)}${r.overNow > 0 ? `, ${fmt(r.overNow)} over the goal` : ''}</p><div class="bv-bar" role="img" aria-label="${r.pct} percent ${r.kind === 'debt' ? 'paid off' : 'full'}"><i style="width:${r.pct}%"></i></div><p class="bv-s">${r.saved !== r.savedNow ? `${fmt(r.saved)} by the end of ${monthLabel(nowYm(), true)}, as planned: ` : ''}${r.pct}% ${r.kind === 'debt' ? 'paid off. ' + fmt(r.togo) + ' still owed' : 'full'}</p><button type="button" class="btn bv-add">${r.kind === 'debt' ? 'Add a payment' : 'Add money'}</button>`;
     pop.querySelector('.bv-add').addEventListener('click', e => { e.stopPropagation(); addPanel(r); });
     el.querySelector('.bv-dots').hidden = all.length < 2;   /* one burrow: no page dots that do nothing (38.31 north-star round 4) */
     el.querySelector('.bv-dots').innerHTML = all.map(x => `<button type="button" data-b="${esc(x.id)}" aria-label="${esc(x.name)}" aria-current="${x.id === cur}"></button>`).join('');
@@ -7853,7 +7855,7 @@ const BUR = (() => {
     const pc = r => Math.min(1, r.saved / r.target), full = all.find(r => pc(r) >= 1), near = all.filter(r => pc(r) < 1).sort((a, b) => pc(b) - pc(a))[0];
     const dw = r => r.kind === 'debt' ? 'paid off' : 'full'; let note = full ? `${full.name} is ${dw(full)}${full.pctNow >= 100 ? '' : ` at the end of ${monthLabel(nowYm(), true)}, as planned`}.` :   /* a planned payment is not a paid one (QC round 4 money accuracy B3) */ near && near.pct > 0 ? `${near.name} is the most ${dw(near)}, ${near.pct}%.` : near ? 'No burrow has money in it yet.' : '';   /* never "the most full, 0%" (38.31 money accuracy round 4) */
     let wk = ''; try { wk = streakInfo().done ? 'You logged receipts this week.' : 'No receipts logged this week yet.'; } catch (e) { }
-    const goalTile = r => `<button type="button" class="hb-b" data-b="${esc(r.id)}" aria-label="${esc(r.name)}, ${fmt(r.saved)}, ${r.pct} percent ${dw(r)}. Open"><canvas width="24" height="18" aria-hidden="true"></canvas><span class="hb-n">${esc(r.name)}</span><span class="hb-bar"><i style="width:${Math.round(pc(r) * 100)}%"></i></span><span class="hb-p">${fmt(r.saved)}, ${r.pct}% ${dw(r)}</span></button>`;
+    const goalTile = r => `<button type="button" class="hb-b" data-b="${esc(r.id)}" aria-label="${esc(r.name)}, ${fmt(r.saved)}, ${r.over > 0 ? fmt(r.over) + ' over the goal' : r.pct + ' percent ' + dw(r)}. Open"><canvas width="24" height="18" aria-hidden="true"></canvas><span class="hb-n">${esc(r.name)}</span><span class="hb-bar"><i style="width:${Math.round(pc(r) * 100)}%"></i></span><span class="hb-p">${fmt(r.saved)}, ${r.over > 0 ? fmt(r.over) + ' over the goal' : r.pct + '% ' + dw(r)}</span></button>`;
     const roomTile = r => `<button type="button" class="hb-b" data-drop="room:${esc(r.id)}" data-room="${esc(r.id)}" aria-label="${esc(r.name)}, ${fmt(r.amount)}, ${esc(r.sub)}. How it is worked out"><canvas width="24" height="18" aria-hidden="true"></canvas><span class="hb-n">${esc(r.name)}</span><span class="hb-p">${fmt(r.amount)}</span><span class="hb-p">${esc(r.sub)}</span></button>`;
     el0.innerHTML = '<h2 class="hb-h">Burrows</h2><p class="cap hb-what">Money that piles up over months: goals, Education, Giving and Investing. The numbers include what you plan to add this month.</p><div class="hb-scene">' + all.map(goalTile).join('') + rooms.map(roomTile).join('') + '</div>'
       + `<p class="hb-note">${esc(note)} ${esc(wk)}</p>`;
@@ -16347,7 +16349,7 @@ function renderHero() {
     <h2 class="hw-p">${esc(purpose)}</h2>
     <p class="hw-when">${when}</p>
     <div class="hw-bar" role="img" aria-label="${pct} percent of ${esc(g.name)} saved" style="--c:var(--c${g.slot})"><i class="fill" style="width:${fr * 100}%"></i>${ms}</div>
-    <div class="hw-nums"><span><b>${fmt(r.savedNow)}</b> ${r.kind === 'debt' ? 'paid off' : 'saved'} now, of ${fmt(r.target)}</span><span>${pct}%${r.saved !== r.savedNow ? ` at the end of ${monthLabel(HV.ym, true)}` : ''}</span></div>
+    <div class="hw-nums"><span><b>${fmt(r.savedNow)}</b> ${r.kind === 'debt' ? 'paid off' : 'saved'} now, of ${fmt(r.target)}${r.overNow > 0 ? `, ${fmt(r.overNow)} over the goal` : ''}</span><span>${pct}%${r.saved !== r.savedNow ? ` at the end of ${monthLabel(HV.ym, true)}` : ''}</span></div>
     ${adds}${chip}
     <details class="hw-more"><summary>Forecast</summary>${sub ? `<p class="hw-sub">${sub}</p>` : ''}${r.reached ? `<div class="hw-graph" id="hGraph">${heroGraph(g)}</div>` : ''}<div class="row-btns">${fix}<button type="button" class="btn small" data-tab-go="goals">Edit burrows</button></div></details>`);
   /* a milestone is celebrated once, the first time the plan passes it */
@@ -16429,7 +16431,7 @@ function goalRowHtml(r) {
   const pp = purposeFor(g), small = g.why || (pp.toLowerCase().indexOf(String(g.name).toLowerCase()) === 0 && r.target > 0 ? `${fmt(r.saved)} of ${fmt(r.target)}` : pp);
   return `<li class="gd"><details data-hgid="${esc(r.id)}"${HOPEN.has(r.id) ? ' open' : ''} style="--c:var(--c${g.slot})"><summary><i class="dot"></i><span class="gd-t"><b>${esc(g.name)}</b><small>${esc(small)}</small></span><span class="gd-m${main ? ' main' : ''}">${esc(monthsShort(r))}</span></summary>
     <div class="gd-b"><div class="hg-b" role="img" aria-label="${r.pct} percent"><i style="width:${fracOf(r) * 100}%"></i></div>
-    <p class="gd-n"><span>${fmt(r.saved)} of ${fmt(r.target)}</span><span>${esc(eta)}</span></p>${stw ? `<p class="gd-c"><em class="${st}">${stw}</em>${main ? '<span class="gd-main">Main goal</span>' : ''}</p>` : (main ? '<p class="gd-c"><span class="gd-main">Main goal</span></p>' : '')}
+    <p class="gd-n"><span>${fmt(r.saved)} of ${fmt(r.target)}${r.over > 0 ? `, ${fmt(r.over)} over the goal` : ''}</span><span>${esc(eta)}</span></p>${stw ? `<p class="gd-c"><em class="${st}">${stw}</em>${main ? '<span class="gd-main">Main goal</span>' : ''}</p>` : (main ? '<p class="gd-c"><span class="gd-main">Main goal</span></p>' : '')}
     <div class="row-btns"><button type="button" class="btn small" data-tab-go="goals">Edit goal</button>${!main && r.live ? `<button type="button" class="btn small" data-main="${esc(r.id)}">Set as main goal</button>` : ''}</div></div></details></li>`;
 }
 function renderGoalsHome() {
