@@ -21,7 +21,7 @@ const tabs = async p => { const seen = []; for (const t of ['tab-home', 'tab-rec
   const before = await goal(p);
 
   /* Set all to zero: the bar stays across every tab, and past 30 seconds */
-  await L.zero(p); await w(500);
+  await L.zero(p, { keepBar: true }); await w(500);   /* this test is about the bar the reset leaves */
   let t = await bar(p);
   ck('Set all to zero offers Undo', /set to zero\. You can undo for 3 days/.test(t), t);
   let seen = await tabs(p);
@@ -35,7 +35,7 @@ const tabs = async p => { const seen = []; for (const t of ['tab-home', 'tab-rec
   ck('the bar goes once Undo is tapped', (await bar(p)) === '', await bar(p));
 
   /* Close: the bar goes, Settings still offers Put them back */
-  await L.zero(p); await w(500);
+  await L.zero(p, { keepBar: true }); await w(500);   /* this test is about the bar the reset leaves */
   const x = await p.evaluate(() => { const e = document.getElementById('undoX'); if (!e || !e.getClientRects().length) return ''; e.click(); return e.textContent.trim() || e.getAttribute('aria-label'); }); await w(400);
   ck(`the bar has a Close button ("${x}")`, /close/i.test(x || ''), x);
   ck('Close takes the bar away', (await bar(p)) === '', await bar(p));
