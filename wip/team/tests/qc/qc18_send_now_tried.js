@@ -4,7 +4,8 @@
    Run: node tests/qc/qc18_send_now_tried.js */
 const C = require('./cloud_lib.js'), { L, w, seen, text, tap, until } = C;
 let bad = 0; const ck = (n, c, x) => { console.log((c ? 'PASS ' : 'FAIL ') + n); if (!c) { bad++; if (x !== undefined) console.log('     saw ' + JSON.stringify(x).slice(0, 400)); } };
-const TRIED = /Tried again at (\d{1,2}:\d\d [AP]M)\. Still no connection\. Your numbers are safe on this device\./;
+/* a refused send (server error) says "Still not sent." since QC round 8 (qc25_still_not_sent.js); a lost connection says "Still no connection." */
+const TRIED = /Tried again at (\d{1,2}:\d\d [AP]M)\. Still (?:no connection|not sent)\. Your numbers are safe on this device\./;
 const clock = p => p.evaluate(() => new Date().toLocaleString('en-US', { hour: 'numeric', minute: '2-digit' }));
 (async () => {
   const srv = await C.server();
