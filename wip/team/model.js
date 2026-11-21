@@ -617,7 +617,7 @@ function purposeOf(S, g) {
 }
 function goalRows(S, C, ym) {
   const ix = ymIdx(ym);
-  return S.plan.goals.map(g => {
+  const rows = S.plan.goals.map(g => {
     const gi = goalInfo(S, C, g.id, ym), live = g.target > 0 && gi.state !== 'paid' && gi.state !== 'short';
     return { id: g.id, name: g.name, slot: g.slot, kind: kindOfGoal(S, g), emergency: !!g.emergency, target: gi.target, saved: gi.bal, savedNow: round2(((C.byYm[ym] || {}).balBefore || {})[g.id] !== undefined ? C.byYm[ym].balBefore[g.id] : (g.start || 0)), pctNow: wholePct(round2(((C.byYm[ym] || {}).balBefore || {})[g.id] !== undefined ? C.byYm[ym].balBefore[g.id] : (g.start || 0)), gi.target), over: gi.over, overNow: gi.target > 0 && kindOfGoal(S, g) !== 'debt' ? Math.max(0, round2((((C.byYm[ym] || {}).balBefore || {})[g.id] !== undefined ? C.byYm[ym].balBefore[g.id] : (g.start || 0)) - gi.target)) : 0, togo: Math.max(0, gi.target - gi.bal), pct: wholePct(gi.bal, gi.target), state: gi.state,
       reached: gi.reached, months: gi.reached ? Math.max(0, ymIdx(gi.reached) - ix) : null, need: gi.need, slack: gi.slack, due: g.due || null, readyBy: gi.readyBy, had: gi.had, live,
@@ -629,7 +629,14 @@ function goalRows(S, C, ym) {
          since that money counts in Saved (QC round 7 money accuracy blocker 1). A debt's money is paid away and never counts in Saved. */
       onHome: live || (kindOfGoal(S, g) !== 'debt' && gi.bal > 0) };
   });
+  /* heap: how full Home draws the coin heap of a burrow with no goal amount to measure against (no goal yet, or money left after it was paid):
+     its money against the largest burrow on Home, never past full, and a few coins at least when it holds money (ART_GUIDE 9: coins equal the
+     money; QC round 8 art director blocker 1) */
+  const top = Math.max(0, ...rows.filter(r => r.onHome).map(r => r.saved));
+  rows.forEach(r => { r.heap = r.saved > 0 && top > 0 ? Math.max(HEAP_MIN, Math.min(1, r.saved / top)) : 0; });
+  return rows;
 }
+const HEAP_MIN = .08;   /* the smallest heap that still draws a row of coins in the 24 x 18 mound */
 /* the one main goal: the person's pick if it is still being saved for, otherwise the nearest one (the emergency fund goes last, a finished goal after that) */
 function pickMain(S, rows) {
   const all = rows.filter(r => r.target > 0); if (!all.length) return null;

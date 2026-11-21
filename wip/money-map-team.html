@@ -3018,7 +3018,7 @@ function purposeOf(S, g) {
 }
 function goalRows(S, C, ym) {
   const ix = ymIdx(ym);
-  return S.plan.goals.map(g => {
+  const rows = S.plan.goals.map(g => {
     const gi = goalInfo(S, C, g.id, ym), live = g.target > 0 && gi.state !== 'paid' && gi.state !== 'short';
     return { id: g.id, name: g.name, slot: g.slot, kind: kindOfGoal(S, g), emergency: !!g.emergency, target: gi.target, saved: gi.bal, savedNow: round2(((C.byYm[ym] || {}).balBefore || {})[g.id] !== undefined ? C.byYm[ym].balBefore[g.id] : (g.start || 0)), pctNow: wholePct(round2(((C.byYm[ym] || {}).balBefore || {})[g.id] !== undefined ? C.byYm[ym].balBefore[g.id] : (g.start || 0)), gi.target), over: gi.over, overNow: gi.target > 0 && kindOfGoal(S, g) !== 'debt' ? Math.max(0, round2((((C.byYm[ym] || {}).balBefore || {})[g.id] !== undefined ? C.byYm[ym].balBefore[g.id] : (g.start || 0)) - gi.target)) : 0, togo: Math.max(0, gi.target - gi.bal), pct: wholePct(gi.bal, gi.target), state: gi.state,
       reached: gi.reached, months: gi.reached ? Math.max(0, ymIdx(gi.reached) - ix) : null, need: gi.need, slack: gi.slack, due: g.due || null, readyBy: gi.readyBy, had: gi.had, live,
@@ -3030,7 +3030,14 @@ function goalRows(S, C, ym) {
          since that money counts in Saved (QC round 7 money accuracy blocker 1). A debt's money is paid away and never counts in Saved. */
       onHome: live || (kindOfGoal(S, g) !== 'debt' && gi.bal > 0) };
   });
+  /* heap: how full Home draws the coin heap of a burrow with no goal amount to measure against (no goal yet, or money left after it was paid):
+     its money against the largest burrow on Home, never past full, and a few coins at least when it holds money (ART_GUIDE 9: coins equal the
+     money; QC round 8 art director blocker 1) */
+  const top = Math.max(0, ...rows.filter(r => r.onHome).map(r => r.saved));
+  rows.forEach(r => { r.heap = r.saved > 0 && top > 0 ? Math.max(HEAP_MIN, Math.min(1, r.saved / top)) : 0; });
+  return rows;
 }
+const HEAP_MIN = .08;   /* the smallest heap that still draws a row of coins in the 24 x 18 mound */
 /* the one main goal: the person's pick if it is still being saved for, otherwise the nearest one (the emergency fund goes last, a finished goal after that) */
 function pickMain(S, rows) {
   const all = rows.filter(r => r.target > 0); if (!all.length) return null;
@@ -7874,11 +7881,11 @@ const BUR = (() => {
     const roomTile = r => `<button type="button" class="hb-b" data-drop="room:${esc(r.id)}" data-room="${esc(r.id)}" aria-label="${esc(r.name)}, ${fmt(r.amount)}, ${esc(r.sub)}. How it is worked out"><canvas width="24" height="18" aria-hidden="true"></canvas><span class="hb-n">${esc(r.name)}</span><span class="hb-p">${fmt(r.amount)}</span><span class="hb-p">${esc(r.sub)}</span></button>`;
     /* a burrow that holds money but is not being filled: no goal amount yet (tap to set one), or money left after a goal was paid */
     const heldWord = r => r.state === 'paid' ? 'left after it was paid' : 'no goal yet';
-    const heldTile = r => `<button type="button" class="hb-b hb-held" ${r.target > 0 ? 'data-tab-go="goals"' : `data-gset="${esc(r.id)}"`} data-h="${esc(r.id)}" aria-label="${esc(r.name)}, ${fmt(r.saved)}, ${heldWord(r)}. ${r.target > 0 ? 'Open Burrows' : 'Set a goal amount'}"><canvas width="24" height="18" aria-hidden="true"></canvas><span class="hb-n">${esc(r.name)}</span><span class="hb-p">${fmt(r.saved)}, ${heldWord(r)}</span></button>`;
+    const heldTile = r => `<button type="button" class="hb-b hb-held" ${r.target > 0 ? 'data-tab-go="goals"' : `data-gset="${esc(r.id)}"`} data-h="${esc(r.id)}" data-fill="${r.heap}" aria-label="${esc(r.name)}, ${fmt(r.saved)}, ${heldWord(r)}. ${r.target > 0 ? 'Open Burrows' : 'Set a goal amount'}"><canvas width="24" height="18" aria-hidden="true"></canvas><span class="hb-n">${esc(r.name)}</span><span class="hb-p">${fmt(r.saved)}, ${heldWord(r)}</span></button>`;
     el0.innerHTML = '<h2 class="hb-h">Burrows</h2><p class="cap hb-what">Money that piles up over months: goals, Education, Giving and Investing. The numbers include what you plan to add this month.</p><div class="hb-scene">' + all.map(goalTile).join('') + held.map(heldTile).join('') + rooms.map(roomTile).join('') + '</div>'
       + `<p class="hb-note">${esc(note)} ${esc(wk)}</p>`;
     el0.querySelectorAll('.hb-b[data-b]').forEach(bt => { const r = all.find(x => x.id === bt.dataset.b); if (r) LOOKS.plain.paint(bt.querySelector('canvas').getContext('2d'), pc(r), 0, null, lookOf(r) === 'rainy', seedOf(r.id)); });
-    el0.querySelectorAll('.hb-b[data-h]').forEach(bt => { const r = held.find(x => x.id === bt.dataset.h); if (r) LOOKS.plain.paint(bt.querySelector('canvas').getContext('2d'), .3, 0, null, lookOf(r) === 'rainy', seedOf(r.id)); });   /* some coins, no goal to measure them against */
+    el0.querySelectorAll('.hb-b[data-h]').forEach(bt => { const r = held.find(x => x.id === bt.dataset.h); if (r) LOOKS.plain.paint(bt.querySelector('canvas').getContext('2d'), r.heap, 0, null, lookOf(r) === 'rainy', seedOf(r.id)); });   /* the coins follow the money: the model sizes the heap against the largest burrow on Home */
     el0.querySelectorAll('.hb-b[data-room]').forEach(bt => { const r = rooms.find(x => x.id === bt.dataset.room); if (r) roomCv(bt, r, r.id); });
     dropCoins(el0);
     if (!el0._w) { el0._w = 1; el0.addEventListener('click', e => { const bt = e.target.closest('.hb-b'); if (!bt || bt.dataset.h) return;   /* a held burrow's tile goes to its editor (data-gset, data-tab-go) */ if (bt.dataset.room) { try { openWhy('room:' + bt.dataset.room); } catch (x) { } return; } open(bt.dataset.b); }); }

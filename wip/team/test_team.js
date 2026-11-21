@@ -489,6 +489,12 @@ eq('default rounding step follows the size of the pay', [roundUnit(presetState('
   check('unset with $1 (bills of $0.02)', unsetFund(1, [0.01, 0.01]));
   const T0 = unsetFund(0), r0 = viewOf(T0, calcAll(T0), ym, today).goals.find(r => r.id === emergencyGoal(T0).id);
   eq('unset with nothing in it: not on Home (nothing to show)', r0.onHome, false);
+  eq('unset with nothing in it: no coin heap', r0.heap, 0);
+  /* the coin heap of a held burrow follows its money against the largest burrow on Home (QC round 8 art director blocker 1) */
+  const T1 = unsetFund(200), V1 = viewOf(T1, calcAll(T1), ym, today), on = V1.goals.filter(r => r.onHome), top = Math.max(...on.map(r => r.saved));
+  eq('heap: every burrow on Home has one between the minimum and full', on.every(r => r.heap >= 0.08 && r.heap <= 1), true);
+  eq('heap: the largest burrow on Home is full', on.filter(r => r.saved === top).every(r => r.heap === 1), true);
+  eq('heap: money against the largest', on.every(r => Math.abs(r.heap - Math.max(0.08, r.saved / top)) < 1e-9), true);
 }
 
 console.log(fails ? fails + ' FAILED' : 'ALL PASS');
