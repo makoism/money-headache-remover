@@ -276,7 +276,7 @@ const goalStep = id => ({ id: 'goal-' + id, part: PART.goals, setup: true,
     const k = goalKindOf(id) || {}, em = !!g.emergency && necTotal() > 0, lo = START + '-01', hi = END + '-28';
     if (em) {
       const m = emMonths(g);
-      return `<p>Money for surprises, and you can borrow from it in a short month. The usual advice is three to six months of bills.</p>
+      return `<p>Money for surprises, and you can borrow from it when a month runs short. The usual advice is three to six months of bills.</p>
       <div class="field tour-q1"><span class="l" id="tourEmL">Months of bills to cover</span>
       <div class="tour-chips" role="radiogroup" aria-labelledby="tourEmL">${EM_MONTHS.map(x => chip('tourEm', String(x[0]), String(x[0]), x[1], x[0] === m)).join('')}</div></div>
       <p class="cap" id="tourEmCap">${emCap(m)}</p>
