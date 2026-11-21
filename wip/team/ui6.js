@@ -567,6 +567,14 @@ let GW = null;
 const GW_QUICK = [['6 months', 6], ['1 year', 12], ['2 years', 23], ['No date', 0]];
 const gwKinds = () => GOAL_KINDS.filter(k => !(k.em && S.plan.goals.some(g => g.emergency)));
 function gwDate(months) { const d = new Date(); d.setMonth(d.getMonth() + months); let s = ymd(d); const hi = END + '-28'; if (s > hi) s = hi; return s; }
+/* where a new goal's monthly money comes from: when it is more than the pay not placed yet, say so before it is added (QC round 4 novice C1:
+   the month quietly became "Tight month ... Plans $95 more than your pay") */
+function gwRoom(monthly) {
+  const m = C && C.byYm[nowYm()]; if (!m || !(monthly > 0) || !(m.inflow > 0) || sampleOn()) return '';
+  const free = jarsOf(S, m).unplacedNet;
+  if (monthly <= free + 0.004) return '';
+  return ` ${free >= 0.5 ? `Only ${fmt2(free)} of your pay is not placed yet` : 'All of your pay has a place'}, so with this goal the plan would spend more than your pay. Lower another place, or pick a later date.`;
+}
 function gwPlan() {
   const cost = clampAmt(GW.cost), saved = clampAmt(GW.saved), rem = Math.max(0, cost - saved), u = roundUnit(S);
   if (!(cost > 0)) return { txt: 'Enter the cost to see the monthly amount.' };
@@ -574,9 +582,9 @@ function gwPlan() {
   if (GW.due && !GW.kind.em) {
     const rb = readyBy({ due: GW.due }), n = rb ? ymCount(planFromOf(S), rb) : 0;
     if (n < 1) return { txt: 'Too soon to save anything by then. Pick a later date.', bad: true };
-    return { txt: `${GW.kind && GW.kind.debt ? 'Pay about' : 'Save about'} <b>${fmt(wizardMonthly(S, GW.cost, GW.saved, n))}</b> a month for ${plural(n, 'month')}. ${GW.kind && GW.kind.debt ? 'Paid off' : 'Ready'} by ${dateLabel(GW.due)}.`, ok: true };
+    return { txt: `${GW.kind && GW.kind.debt ? 'Pay about' : 'Save about'} <b>${fmt(wizardMonthly(S, GW.cost, GW.saved, n))}</b> a month for ${plural(n, 'month')}. ${GW.kind && GW.kind.debt ? 'Paid off' : 'Ready'} by ${dateLabel(GW.due)}.` + gwRoom(wizardMonthly(S, GW.cost, GW.saved, n)), ok: true };
   }
-  return { txt: `No date, so the plan assumes 12 months. About <b>${fmt(wizardMonthly(S, GW.cost, GW.saved, 12))}</b> a month.`, ok: true };
+  return { txt: `No date, so the plan assumes 12 months. About <b>${fmt(wizardMonthly(S, GW.cost, GW.saved, 12))}</b> a month.` + gwRoom(wizardMonthly(S, GW.cost, GW.saved, 12)), ok: true };
 }
 function openGoalWizard() {
   if (S.plan.goals.length >= MAX_GOALS) { cheer(`Limit: ${MAX_GOALS} burrows.`); return; }
