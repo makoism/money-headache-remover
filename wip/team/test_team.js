@@ -446,6 +446,7 @@ eq('default rounding step follows the size of the pay', [roundUnit(presetState('
   eq('start -15,000 with no day: Free to spend is not safe to spend yet', [p1.notCovered, p1.sub], [true, 'left, not safe to spend yet']);
   eq('start -15,000 with no day: the amount left is still shown (30,000)', p1.amount, 30000);
   eq('start -15,000 with no day: the row says how far below zero the start is', p1.startBelow, 15000);
+  eq('start -15,000 with no day: the row gives the starting balance itself, so no screen does the sum', p1.startBank, -15000);
   eq('start -15,000 with no day: Receipts and Plan > Month read the same answer', playNotSafe(T1, calcAll(T1), ym, today), true);
   eq('a later month is not judged by today (as with a dated balance)', playNotSafe(T1, calcAll(T1), MONTHS[1], today), false);
   const T2 = neg(-15000, ym + '-10'), p2 = playOf(T2);
