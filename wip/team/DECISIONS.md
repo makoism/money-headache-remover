@@ -274,3 +274,6 @@ Said in MAIN 10's chat and relayed to coordinator 8 (not seen first hand).
 - "Full steam ahead, run non stop until 9am on Sunday" (Sunday 23 Nov 09:00 JST = 22 Nov 00:00 UTC).
 - About MAIN 10 pausing to wait for his feedback: "make sure this doesn't happen again. ever". No session waits on him while work remains; things for him go on the list for his full run.
 - How: repo CLAUDE.md holds the never-stop rules; RESUME has a work queue to Sunday 09:00 JST; every MAIN and every coordinator gets its own hourly keep-going wake-up (MAIN 10: trig_01MsTYUWz5yhyBMMgDMiV7jw).
+
+## Use all the credits before the reset (Mako, 21 Nov about 19:00 JST)
+Said in MAIN 12's chat and relayed to coordinator 8 (not seen first hand): "use all of the credits possible. the reset is at 9am tomorrow." (Sunday 22 Nov 09:00 JST = 22 Nov 00:00 UTC, the same end as the non-stop window.)
