@@ -430,6 +430,7 @@ details.how li b { color: var(--ink); font-weight: 600; }
 /* ---- receipts ---- */
 .rcform { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; }
 .rcform .rcbtns { grid-column: 1 / -1; }
+.rcform .rc-changing { grid-column: 1 / -1; margin: 0; font-weight: 600; }
 .rcform input[type=date], .remind-fields input[type=time] { border: 0; box-shadow: inset 0 0 0 1px var(--hair); background: var(--field); border-radius: var(--r-ctl); min-height: var(--ctl-h); padding: 0 16px; font-weight: 500; font-size: 17px; width: 100%; outline: none; }
 .rcform input[type=date]:focus, .remind-fields input[type=time]:focus { box-shadow: inset 0 0 0 2px var(--accent), 0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent); }
 .rcform .selbox select, .remind-fields .selbox select, .rcmonth select { border: 0; box-shadow: inset 0 0 0 1px var(--hair); background: var(--field); border-radius: var(--r-ctl); min-height: var(--ctl-h); padding: 0 16px; font-weight: 500; font-size: 17px; width: 100%; outline: none; }

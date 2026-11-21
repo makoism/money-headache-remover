@@ -225,6 +225,7 @@
         <p class="sub2">Log as you spend, or all at once later. <button type="button" class="link" data-scroll="rcRemind">Set reminder</button></p>
       </div>
       <form class="rcform" id="rcForm" autocomplete="off" novalidate>
+        <p class="rc-changing" id="rcChanging" hidden></p>
         <div class="field"><label for="rcDate">Date</label><input type="date" id="rcDate" required></div>
         <div class="field"><label for="rcAmt">Amount</label><div class="inp"><span class="yen cs"></span><input id="rcAmt" type="number" inputmode="decimal" min="0" step="any" placeholder="0" required></div></div>
         <div class="field"><label for="rcCat">Category</label><div class="selbox"><select id="rcCat"></select></div></div>

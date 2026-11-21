@@ -6,6 +6,12 @@ function prepareReceiptForm() {
 }
 function resetRcForm() {
   editRc = null; $('#rcAmt').value = ''; delete $('#rcAmt').dataset.neg; $('#rcNote').value = ''; syncOtherTitle('rcCat', 'rcNote'); $('#rcSave').textContent = 'Log spend'; $('#rcCancel').hidden = true;
+  const ch = $('#rcChanging'); if (ch) { ch.hidden = true; ch.textContent = ''; }
+}
+/* the Edit form says which receipt it changes (QC round 8 novice confusing 1): amount, category, date; the year only when it is not this year */
+function rcChangingText(r) {
+  const yr = r.d.slice(0, 4) === todayStr().slice(0, 4);
+  return `Changing: ${fmt2(r.a)}, ${catName(S, r)}, ${yr ? (+r.d.slice(8, 10)) + ' ' + MONTH_NAMES[+r.d.slice(5, 7) - 1] : dateLabel(r.d)}.`;
 }
 /* choosing "Other" asks for a title, so the receipt can say what it was; every other category keeps the optional note */
 function syncOtherTitle(catId, noteId) {
@@ -106,6 +112,7 @@ function wireReceipts() {
       editRc = r.id; $('#rcDate').value = r.d; $('#rcAmt').value = r.a; $('#rcNote').value = r.n;
       const cat = $('#rcCat'); cat.value = Array.from(cat.options).some(o => o.value === r.c) ? r.c : 'other';
       syncOtherTitle('rcCat', 'rcNote'); $('#rcSave').textContent = 'Save changes'; $('#rcCancel').hidden = false; $('#rcMsg').textContent = '';
+      { const ch = $('#rcChanging'); if (ch) { ch.textContent = rcChangingText(r); ch.hidden = false; } }
       render(); $('#rcForm').scrollIntoView({ behavior: 'smooth', block: 'center' }); $('#rcAmt').focus();
     } else if (del) { const r0 = (S.receipts || []).find(x => x.id === del.dataset.rcdel), copy = r0 ? JSON.parse(JSON.stringify(r0)) : null, what = r0 ? `${fmt2(r0.a)}, ${r0.c === 'other' ? 'Other' : (lineByKey(S, r0.c) || { name: r0.cn || 'Other' }).name}, ${dateLabel(r0.d)}` : 'this receipt';
       confirmClick(del, `Tap again: delete ${what}`, () => { if (editRc === del.dataset.rcdel) resetRcForm(); removeReceipt(S, del.dataset.rcdel);
