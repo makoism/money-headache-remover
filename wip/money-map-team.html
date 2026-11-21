@@ -7658,7 +7658,7 @@ const BUR = (() => {
   function feed(r, v) {
     const before = Math.min(1, r.saved / r.target); let moved = 0;
     try { moved = ACT.sweep(nowYm(), r.id, v); } catch (e) { moved = 0; }
-    if (!(moved > 0)) { const m = pop.querySelector('.bv-msg'); if (m) m.textContent = 'That could not be added.'; return; }
+    if (!(moved > 0)) { const m = pop.querySelector('.bv-msg'); if (m) m.textContent = 'That could not be added. Try again.'; return; }
     /* no render() here: the save inside ACT.sweep worked the numbers out; the hidden page behind is redrawn a moment later or when the burrow closes (ACT.commit, F4) */
     const r2 = rows().find(x => x.id === r.id) || r, to = Math.min(1, r2.saved / r2.target), n = Math.max(2, Math.min(5, Math.round(1 + (to - before) * 10)));
     pop.innerHTML = `<h2>${esc(r.name)}</h2><p class="bv-n"><b>+${fmt(moved)}</b></p><p class="bv-s">Going in.</p>`;
@@ -15078,7 +15078,7 @@ function relayFn() {
   const base = relayBase();
   const call = async (body, signal) => {
     let r; try { r = await fetch(base + '/api/ai', { method: 'POST', headers: { 'content-type': 'application/json', 'x-app': 'mhr2000' }, body: JSON.stringify(body), signal }); }
-    catch (e) { if (signal && signal.aborted) throw { code: 'cancelled', message: 'Stopped.' }; throw { code: 'upstream_error', message: 'No connection.' }; }
+    catch (e) { if (signal && signal.aborted) throw { code: 'cancelled', message: 'Stopped.' }; throw { code: 'upstream_error', message: 'No connection. Check the internet and try again.' }; }
     if (!r.ok) throw await relayError(r);
     return r;
   };
@@ -15112,7 +15112,7 @@ function relayFn() {
         res = null;
       }
       const text = texts.join('\n\n');
-      if (!text) throw { code: 'empty_completion', message: 'No text came back.' };
+      if (!text) throw { code: 'empty_completion', message: 'No text came back. Try again.' };
       if (opts.onText) opts.onText({ text, delta: text });
       return { text, truncated: !!(res && res.truncated), modelTierApplied: tier };
     }
@@ -15134,12 +15134,12 @@ function relayFn() {
           }
         }
       } catch (e) { if (e && e.code) throw e; if (opts.signal && opts.signal.aborted) throw { code: 'cancelled', message: 'Stopped.', text }; throw { code: 'upstream_error', message: 'The connection dropped.', text }; }
-      if (!text) throw { code: 'empty_completion', message: 'No text came back.' };
+      if (!text) throw { code: 'empty_completion', message: 'No text came back. Try again.' };
       if (key) relayCache.set(key, { t: Date.now(), text, truncated: !!(fin && fin.truncated) });
       return { text, truncated: !!(fin && fin.truncated), modelTierApplied: tier };
     }
     const j = await (await call(Object.assign({}, body, { messages }), opts.signal)).json();
-    if (!j.text) throw { code: 'empty_completion', message: 'No text came back.' };
+    if (!j.text) throw { code: 'empty_completion', message: 'No text came back. Try again.' };
     if (key) relayCache.set(key, { t: Date.now(), text: j.text, truncated: !!j.truncated });
     return { text: j.text, truncated: !!j.truncated, modelTierApplied: tier };
   };
@@ -15165,7 +15165,7 @@ function relayFn() {
   fn.json = async (input, opts) => {
     const r = await fn(input, Object.assign({}, opts || {}, { __json: true }));
     const p = parseLoose(r.text);
-    if (!p.ok || r.truncated) { try { console.warn('[mhr] the answer was not usable JSON' + (r.truncated ? ' (cut short)' : '') + ':', String(r.text).slice(0, 3000)); } catch (e) {} throw { code: 'invalid_json', message: r.truncated ? 'The answer was cut short.' : 'No JSON in the answer.', text: r.text }; }
+    if (!p.ok || r.truncated) { try { console.warn('[mhr] the answer was not usable JSON' + (r.truncated ? ' (cut short)' : '') + ':', String(r.text).slice(0, 3000)); } catch (e) {} throw { code: 'invalid_json', message: r.truncated ? 'The answer was cut short.' : 'The answer had no numbers in it. Try again.', text: r.text }; }
     return p.value;
   };
   fn.limits = async () => ({ maxPromptBytes: 262144, images: { maxCount: 10, maxInputBytes: 20000000, mediaTypes: IMG_TYPES.slice() }, documents: Object.assign({}, DOC_LIMITS, { mediaTypes: DOC_LIMITS.mediaTypes.slice() }), tools: { maxCount: 16 }, modelTiers: ['quick', 'default', 'complex'] });
@@ -15460,7 +15460,7 @@ async function vaultFind(raw) {
     if (r.status === 404) return { err: 'There\'s no cloud copy for this code. Check every character against the code you saved, or on your other device go to Settings, find Cloud copy and tap Show code.' };
     if (!r.ok) return { err: 'Could not reach the cloud copy. Try again.' };
     let d; try { d = JSON.parse(await vaultDecrypt(k, r.j.blob, r.j.iv)); } catch (e) { d = null; }
-    if (!d || !okBackup(d)) return { err: 'That copy could not be opened with this code.' };
+    if (!d || !okBackup(d)) return { err: 'That copy could not be opened with this code. Check the code for a typo and try again.' };
     return { code, k, srv: r.j, n: Array.isArray(d.receipts) ? d.receipts.length : 0, older: !pristine() && !(r.j.rev > (S.rev || 0)) };
   } catch (e) { return { err: 'Could not reach the cloud copy. Try again.' }; }
 }

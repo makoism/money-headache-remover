@@ -154,7 +154,7 @@ const BUR = (() => {
   function feed(r, v) {
     const before = Math.min(1, r.saved / r.target); let moved = 0;
     try { moved = ACT.sweep(nowYm(), r.id, v); } catch (e) { moved = 0; }
-    if (!(moved > 0)) { const m = pop.querySelector('.bv-msg'); if (m) m.textContent = 'That could not be added.'; return; }
+    if (!(moved > 0)) { const m = pop.querySelector('.bv-msg'); if (m) m.textContent = 'That could not be added. Try again.'; return; }
     /* no render() here: the save inside ACT.sweep worked the numbers out; the hidden page behind is redrawn a moment later or when the burrow closes (ACT.commit, F4) */
     const r2 = rows().find(x => x.id === r.id) || r, to = Math.min(1, r2.saved / r2.target), n = Math.max(2, Math.min(5, Math.round(1 + (to - before) * 10)));
     pop.innerHTML = `<h2>${esc(r.name)}</h2><p class="bv-n"><b>+${fmt(moved)}</b></p><p class="bv-s">Going in.</p>`;

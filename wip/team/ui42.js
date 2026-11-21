@@ -146,7 +146,7 @@ async function vaultFind(raw) {
     if (r.status === 404) return { err: 'There\'s no cloud copy for this code. Check every character against the code you saved, or on your other device go to Settings, find Cloud copy and tap Show code.' };
     if (!r.ok) return { err: 'Could not reach the cloud copy. Try again.' };
     let d; try { d = JSON.parse(await vaultDecrypt(k, r.j.blob, r.j.iv)); } catch (e) { d = null; }
-    if (!d || !okBackup(d)) return { err: 'That copy could not be opened with this code.' };
+    if (!d || !okBackup(d)) return { err: 'That copy could not be opened with this code. Check the code for a typo and try again.' };
     return { code, k, srv: r.j, n: Array.isArray(d.receipts) ? d.receipts.length : 0, older: !pristine() && !(r.j.rev > (S.rev || 0)) };
   } catch (e) { return { err: 'Could not reach the cloud copy. Try again.' }; }
 }

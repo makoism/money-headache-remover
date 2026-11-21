@@ -88,7 +88,7 @@ function relayFn() {
   const base = relayBase();
   const call = async (body, signal) => {
     let r; try { r = await fetch(base + '/api/ai', { method: 'POST', headers: { 'content-type': 'application/json', 'x-app': 'mhr2000' }, body: JSON.stringify(body), signal }); }
-    catch (e) { if (signal && signal.aborted) throw { code: 'cancelled', message: 'Stopped.' }; throw { code: 'upstream_error', message: 'No connection.' }; }
+    catch (e) { if (signal && signal.aborted) throw { code: 'cancelled', message: 'Stopped.' }; throw { code: 'upstream_error', message: 'No connection. Check the internet and try again.' }; }
     if (!r.ok) throw await relayError(r);
     return r;
   };
@@ -122,7 +122,7 @@ function relayFn() {
         res = null;
       }
       const text = texts.join('\n\n');
-      if (!text) throw { code: 'empty_completion', message: 'No text came back.' };
+      if (!text) throw { code: 'empty_completion', message: 'No text came back. Try again.' };
       if (opts.onText) opts.onText({ text, delta: text });
       return { text, truncated: !!(res && res.truncated), modelTierApplied: tier };
     }
@@ -144,12 +144,12 @@ function relayFn() {
           }
         }
       } catch (e) { if (e && e.code) throw e; if (opts.signal && opts.signal.aborted) throw { code: 'cancelled', message: 'Stopped.', text }; throw { code: 'upstream_error', message: 'The connection dropped.', text }; }
-      if (!text) throw { code: 'empty_completion', message: 'No text came back.' };
+      if (!text) throw { code: 'empty_completion', message: 'No text came back. Try again.' };
       if (key) relayCache.set(key, { t: Date.now(), text, truncated: !!(fin && fin.truncated) });
       return { text, truncated: !!(fin && fin.truncated), modelTierApplied: tier };
     }
     const j = await (await call(Object.assign({}, body, { messages }), opts.signal)).json();
-    if (!j.text) throw { code: 'empty_completion', message: 'No text came back.' };
+    if (!j.text) throw { code: 'empty_completion', message: 'No text came back. Try again.' };
     if (key) relayCache.set(key, { t: Date.now(), text: j.text, truncated: !!j.truncated });
     return { text: j.text, truncated: !!j.truncated, modelTierApplied: tier };
   };
@@ -175,7 +175,7 @@ function relayFn() {
   fn.json = async (input, opts) => {
     const r = await fn(input, Object.assign({}, opts || {}, { __json: true }));
     const p = parseLoose(r.text);
-    if (!p.ok || r.truncated) { try { console.warn('[mhr] the answer was not usable JSON' + (r.truncated ? ' (cut short)' : '') + ':', String(r.text).slice(0, 3000)); } catch (e) {} throw { code: 'invalid_json', message: r.truncated ? 'The answer was cut short.' : 'No JSON in the answer.', text: r.text }; }
+    if (!p.ok || r.truncated) { try { console.warn('[mhr] the answer was not usable JSON' + (r.truncated ? ' (cut short)' : '') + ':', String(r.text).slice(0, 3000)); } catch (e) {} throw { code: 'invalid_json', message: r.truncated ? 'The answer was cut short.' : 'The answer had no numbers in it. Try again.', text: r.text }; }
     return p.value;
   };
   fn.limits = async () => ({ maxPromptBytes: 262144, images: { maxCount: 10, maxInputBytes: 20000000, mediaTypes: IMG_TYPES.slice() }, documents: Object.assign({}, DOC_LIMITS, { mediaTypes: DOC_LIMITS.mediaTypes.slice() }), tools: { maxCount: 16 }, modelTiers: ['quick', 'default', 'complex'] });
