@@ -278,7 +278,7 @@ function adoptOther(d) {
 /* when the typing is done, a copy that arrived meanwhile is taken */
 addEventListener('focusout', () => { if (pendingOther && !saveTimer && !tourIsOpen) setTimeout(() => { if (pendingOther && !saveTimer) adoptOther(pendingOther); }, 400); });
 /* first steps the page walks a new person through; each ticks off when they do it */
-function markDone(k, quiet) { if (!k) return; const d = S.ui.done = S.ui.done || {}, was = !!d[k]; d[k] = true; if (!was && !quiet) afterDone(k); }
+function markDone(k, quiet) { if (!k) return; const d = S.ui.done = S.ui.done || {}, was = !!d[k]; d[k] = true; if (!was && k === 'pay') ownStart(S); if (!was && !quiet) afterDone(k); }   /* the first pay ends the sample start, minimum and cap (model.js ownStart) */
 const doneFor = key => (key === 'a' || key === 'b' || key === 'side' ? 'pay' : key.slice(0, 5) === 'goal:' ? 'goals' : (lineByKey(S, key) && lineByKey(S, key).jar === 'nec' ? 'bills' : null));
 
 /* ---------- edits ---------- */
@@ -297,7 +297,8 @@ function onSet(key, v) {
   v = clampAmt(v, S);
   if (FIRST_EDIT === key || isFirstEntry(key)) { FIRST_EDIT = key; setVal(S, key, START, v, 'after'); }
   else setVal(S, key, sel, v, 'once');
-  markDone(doneFor(key)); persist(); schedule();
+  markDone(doneFor(key)); if (key === 'a' && FIRST_EDIT === 'a') ownStart(S);   /* the minimum made from the pay follows it while it is first typed */
+  persist(); schedule();
 }
 function onCfg(k, v) { if (k === 'bankStart') setBankBalance(S, clampBank(v, S)); else S.cfg[k] = clampAmt(v, S); persist(); schedule(); }
 function select(ym) {

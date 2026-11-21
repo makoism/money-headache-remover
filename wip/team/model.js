@@ -703,6 +703,19 @@ function freeOf(S, mv, p) {
 /* the sample numbers are on screen until pay, bills and goals are the person's own (or they started blank); a bank typed then is not
    theirs to compare with the sample plan (QC10 round 3 numbers should-fix 1) */
 const sampleShown = S => { const u = S.ui || {}, d = u.done || {}, zero = u.preset === 'blank' || !!u.cleared; return !zero && !(d.pay && d.bills && d.goals); };
+/* the person's own numbers start with their first pay (QC round 8 money accuracy blocker 2): the sample's start balance, minimum balance and
+   Free to spend cap stop being used, the same as after setup. The minimum is a tenth of the pay (setup's rule, followed while the pay is first
+   typed); a bank typed on Home while the samples showed becomes the balance, as its message promised; with none, the start is zero, not the
+   sample's. A balance, minimum or cap the person set is kept. Runs only once pay is entered on a sample plan; once every sample is replaced
+   nothing here changes again (a later Check your bank never moves the start, MAKO_RUN 1.1). */
+function ownStart(T) {
+  const u = T.ui || {}, c = T.cfg = T.cfg || {};
+  if (!SAMPLES[presetKey(T)] || u.cleared || !(u.done && u.done.pay)) return;
+  if (typeof c.bankNow === 'number' && !c.bankAt && sampleShown(T)) { c.bankStart = c.bankNow; if (c.bankNowAt) c.bankAt = c.bankNowAt; }
+  else if (c.bankStart === undefined) c.bankStart = 0;
+  if (c.minBank === undefined || (u.minAuto !== undefined && c.minBank === u.minAuto && sampleShown(T))) { const r = roundUnit(T); c.minBank = Math.max(0, Math.round(setupCells(T).pay * 0.1 / r) * r); u.minAuto = c.minBank; }
+  if (c.ceiling === undefined) c.ceiling = 0;
+}
 function mapOf(S, C, ym, V0) {
   const m = C.byYm[ym], rs = receiptStats(S, ym), p = V0.play, fo = freeOf(S, V0.month, p), nw = sampleShown(S) ? { afterCards: null } : nowOf(S);
   const planNec = m.jar.nec, billsLeft = m.billsLeftM != null ? m.billsLeftM : Math.max(0, round2(planNec - (rs.byJar.nec || 0)));

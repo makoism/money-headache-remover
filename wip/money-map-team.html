@@ -3112,6 +3112,19 @@ function freeOf(S, mv, p) {
 /* the sample numbers are on screen until pay, bills and goals are the person's own (or they started blank); a bank typed then is not
    theirs to compare with the sample plan (QC10 round 3 numbers should-fix 1) */
 const sampleShown = S => { const u = S.ui || {}, d = u.done || {}, zero = u.preset === 'blank' || !!u.cleared; return !zero && !(d.pay && d.bills && d.goals); };
+/* the person's own numbers start with their first pay (QC round 8 money accuracy blocker 2): the sample's start balance, minimum balance and
+   Free to spend cap stop being used, the same as after setup. The minimum is a tenth of the pay (setup's rule, followed while the pay is first
+   typed); a bank typed on Home while the samples showed becomes the balance, as its message promised; with none, the start is zero, not the
+   sample's. A balance, minimum or cap the person set is kept. Runs only once pay is entered on a sample plan; once every sample is replaced
+   nothing here changes again (a later Check your bank never moves the start, MAKO_RUN 1.1). */
+function ownStart(T) {
+  const u = T.ui || {}, c = T.cfg = T.cfg || {};
+  if (!SAMPLES[presetKey(T)] || u.cleared || !(u.done && u.done.pay)) return;
+  if (typeof c.bankNow === 'number' && !c.bankAt && sampleShown(T)) { c.bankStart = c.bankNow; if (c.bankNowAt) c.bankAt = c.bankNowAt; }
+  else if (c.bankStart === undefined) c.bankStart = 0;
+  if (c.minBank === undefined || (u.minAuto !== undefined && c.minBank === u.minAuto && sampleShown(T))) { const r = roundUnit(T); c.minBank = Math.max(0, Math.round(setupCells(T).pay * 0.1 / r) * r); u.minAuto = c.minBank; }
+  if (c.ceiling === undefined) c.ceiling = 0;
+}
 function mapOf(S, C, ym, V0) {
   const m = C.byYm[ym], rs = receiptStats(S, ym), p = V0.play, fo = freeOf(S, V0.month, p), nw = sampleShown(S) ? { afterCards: null } : nowOf(S);
   const planNec = m.jar.nec, billsLeft = m.billsLeftM != null ? m.billsLeftM : Math.max(0, round2(planNec - (rs.byJar.nec || 0)));
@@ -4055,7 +4068,7 @@ function adoptOther(d) {
 /* when the typing is done, a copy that arrived meanwhile is taken */
 addEventListener('focusout', () => { if (pendingOther && !saveTimer && !tourIsOpen) setTimeout(() => { if (pendingOther && !saveTimer) adoptOther(pendingOther); }, 400); });
 /* first steps the page walks a new person through; each ticks off when they do it */
-function markDone(k, quiet) { if (!k) return; const d = S.ui.done = S.ui.done || {}, was = !!d[k]; d[k] = true; if (!was && !quiet) afterDone(k); }
+function markDone(k, quiet) { if (!k) return; const d = S.ui.done = S.ui.done || {}, was = !!d[k]; d[k] = true; if (!was && k === 'pay') ownStart(S); if (!was && !quiet) afterDone(k); }   /* the first pay ends the sample start, minimum and cap (model.js ownStart) */
 const doneFor = key => (key === 'a' || key === 'b' || key === 'side' ? 'pay' : key.slice(0, 5) === 'goal:' ? 'goals' : (lineByKey(S, key) && lineByKey(S, key).jar === 'nec' ? 'bills' : null));
 
 /* ---------- edits ---------- */
@@ -4074,7 +4087,8 @@ function onSet(key, v) {
   v = clampAmt(v, S);
   if (FIRST_EDIT === key || isFirstEntry(key)) { FIRST_EDIT = key; setVal(S, key, START, v, 'after'); }
   else setVal(S, key, sel, v, 'once');
-  markDone(doneFor(key)); persist(); schedule();
+  markDone(doneFor(key)); if (key === 'a' && FIRST_EDIT === 'a') ownStart(S);   /* the minimum made from the pay follows it while it is first typed */
+  persist(); schedule();
 }
 function onCfg(k, v) { if (k === 'bankStart') setBankBalance(S, clampBank(v, S)); else S.cfg[k] = clampAmt(v, S); persist(); schedule(); }
 function select(ym) {
@@ -4580,7 +4594,7 @@ const ACT = {
   },
   setBalance(v) { return one('balance', () => { setBankBalance(S, clampBank(v, S)); }); },   /* a bank balance may be below zero (overdrawn), as in Settings */
   /* A1: what the bank app shows today, kept apart from bankStart (model.js setBankNow) */
-  setBankNow(v) { return one('bank now', () => { setBankNow(S, clampBank(v, S)); }); },
+  setBankNow(v) { return one('bank now', () => { setBankNow(S, clampBank(v, S)); if (sampleShown(S)) ownStart(S); }); },   /* with pay in and the samples still showing, a bank typed before any balance is the balance (model.js ownStart) */
   /* A5: a pay-in-full card, what is on it now and the day it is paid; id null adds one */
   setCard(id, o) { return one('card', () => { const list = cleanCards(S.cards); const d = new Date(), at = d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
     const row = { id: id || ('k' + Date.now().toString(36)), name: o.name, owed: clampAmt(o.owed, S), payDay: o.payDay, at };
@@ -5613,7 +5627,7 @@ const STEP_MONEY = { id: 'money', part: PART.money, setup: true, focus: '#tourPa
   body: () => {
     const pay = S.ui.done && S.ui.done.pay ? val(S, 'a', START) : '';
     return `<p>Your take-home pay is what you get each month after tax, and if you're paid twice a month add both. Other pay is a second job, a partner's share or benefits. Balance is your bank accounts plus cash and a rough number is fine.</p>
-    <div class="tour-fields">${moneyField('tourPay', 'Monthly take-home pay', pay, 'All paychecks')}${moneyField('tourExtra', 'Other pay each month <span class="opt">(optional)</span>', val(S, 'b', START), 'None')}${moneyField('tourBank', 'Balance now', S.cfg.bankStart !== undefined ? S.cfg.bankStart : '', 'Rough is fine').replace('<input ', '<input data-neg="ok" aria-describedby="tourBankCap" ').replace(' inputmode="decimal" min="0"', ' inputmode="text"')}<p class="cap" id="tourBankCap">Overdrawn? Type a minus first, like −200.</p></div>
+    <div class="tour-fields">${moneyField('tourPay', 'Monthly take-home pay', pay, 'All paychecks')}${moneyField('tourExtra', 'Other pay each month <span class="opt">(optional)</span>', val(S, 'b', START), 'None')}${moneyField('tourBank', 'Balance now', S.cfg.bankStart !== undefined && (S.cfg.bankAt || S.cfg.bankStart !== 0) ? S.cfg.bankStart : '', 'Rough is fine').replace('<input ', '<input data-neg="ok" aria-describedby="tourBankCap" ').replace(' inputmode="decimal" min="0"', ' inputmode="text"')}<p class="cap" id="tourBankCap">Overdrawn? Type a minus first, like −200.</p></div>
     <p class="cap">Not sure? Leave it blank and add it later on Home.</p>`;
   },
   leave: () => {

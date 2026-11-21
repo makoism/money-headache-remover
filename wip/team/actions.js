@@ -88,7 +88,7 @@ const ACT = {
   },
   setBalance(v) { return one('balance', () => { setBankBalance(S, clampBank(v, S)); }); },   /* a bank balance may be below zero (overdrawn), as in Settings */
   /* A1: what the bank app shows today, kept apart from bankStart (model.js setBankNow) */
-  setBankNow(v) { return one('bank now', () => { setBankNow(S, clampBank(v, S)); }); },
+  setBankNow(v) { return one('bank now', () => { setBankNow(S, clampBank(v, S)); if (sampleShown(S)) ownStart(S); }); },   /* with pay in and the samples still showing, a bank typed before any balance is the balance (model.js ownStart) */
   /* A5: a pay-in-full card, what is on it now and the day it is paid; id null adds one */
   setCard(id, o) { return one('card', () => { const list = cleanCards(S.cards); const d = new Date(), at = d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
     const row = { id: id || ('k' + Date.now().toString(36)), name: o.name, owed: clampAmt(o.owed, S), payDay: o.payDay, at };

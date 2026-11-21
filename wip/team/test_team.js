@@ -1,7 +1,7 @@
 const fs = require('fs');
 const src = fs.readFileSync(__dirname + '/model.js', 'utf8');
-const api = new Function(src + ';return {lookBack,sweepPlay,releasePlay,cleanSteps,cleanOnce,cleanItems,cleanCfg,validDue,wholePercents,presetState,sampleOf,SAMPLES,presetKey,roundUnit,MONTHS,JARS,jarsOf,calcAll,freshState,blankState,setVal,val,goalInfo,statusOf,fixes,cfg,resetMonth,aimsOf,basePlan,cleanPlan,cleanReceipts,addLine,removeLine,updateLine,addGoal,removeGoal,updateGoal,useSuggested,hasOwnMonthly,trimPlay,undoOnce,receiptStats,receiptsFor,addReceipt,updateReceipt,removeReceipt,catName,nextWeekday,gcalUrl,outlookUrl,reminderTimes,allKeys,emergencyGoal,lineByKey,goalById,MAX_GOALS,MAX_LINES,readyBy,viewOf,mapOf,freeOf,playNotSafe,setBankNow};')();
-const { lookBack, viewOf, mapOf, freeOf, playNotSafe, setBankNow, sweepPlay, releasePlay, cleanSteps, cleanOnce, cleanItems, cleanCfg, validDue, wholePercents, readyBy, presetState, sampleOf, SAMPLES, presetKey, roundUnit, MONTHS, JARS, jarsOf, calcAll, freshState: modelFresh, blankState, setVal, val, goalInfo, statusOf, fixes, cfg, aimsOf, basePlan, cleanPlan, cleanReceipts, addLine, removeLine, updateLine, addGoal, removeGoal, updateGoal, useSuggested, hasOwnMonthly, trimPlay, receiptStats, addReceipt, updateReceipt, removeReceipt, catName, nextWeekday, gcalUrl, outlookUrl, reminderTimes, allKeys, emergencyGoal, lineByKey, goalById, MAX_GOALS } = api;
+const api = new Function(src + ';return {lookBack,sweepPlay,releasePlay,cleanSteps,cleanOnce,cleanItems,cleanCfg,validDue,wholePercents,presetState,sampleOf,SAMPLES,presetKey,roundUnit,MONTHS,JARS,jarsOf,calcAll,freshState,blankState,setVal,val,goalInfo,statusOf,fixes,cfg,resetMonth,aimsOf,basePlan,cleanPlan,cleanReceipts,addLine,removeLine,updateLine,addGoal,removeGoal,updateGoal,useSuggested,hasOwnMonthly,trimPlay,undoOnce,receiptStats,receiptsFor,addReceipt,updateReceipt,removeReceipt,catName,nextWeekday,gcalUrl,outlookUrl,reminderTimes,allKeys,emergencyGoal,lineByKey,goalById,MAX_GOALS,MAX_LINES,readyBy,viewOf,mapOf,freeOf,playNotSafe,setBankNow,ownStart};')();
+const { lookBack, viewOf, mapOf, freeOf, playNotSafe, setBankNow, ownStart, sweepPlay, releasePlay, cleanSteps, cleanOnce, cleanItems, cleanCfg, validDue, wholePercents, readyBy, presetState, sampleOf, SAMPLES, presetKey, roundUnit, MONTHS, JARS, jarsOf, calcAll, freshState: modelFresh, blankState, setVal, val, goalInfo, statusOf, fixes, cfg, aimsOf, basePlan, cleanPlan, cleanReceipts, addLine, removeLine, updateLine, addGoal, removeGoal, updateGoal, useSuggested, hasOwnMonthly, trimPlay, receiptStats, addReceipt, updateReceipt, removeReceipt, catName, nextWeekday, gcalUrl, outlookUrl, reminderTimes, allKeys, emergencyGoal, lineByKey, goalById, MAX_GOALS } = api;
 /* the older 35,000 sample, kept working for saved copies from before the per-currency samples. The checks below were written for it. */
 const freshState = () => { const f = modelFresh(); f.ui.preset = 'legacy'; f.plan = basePlan({}); return f; };
 let fails = 0; const round2x = n => Math.round(n * 100) / 100;
@@ -517,6 +517,38 @@ eq('default rounding step follows the size of the pay', [roundUnit(presetState('
   eq('bank today 290,000: not below zero', playOf(T).nowBelow, false);
   setBankNow(T, 0, new Date(2026, 10, 19));
   eq('bank today at zero: not below zero', playOf(T).nowBelow, false);
+}
+
+/* ---------- the person's own numbers start: the sample's start balance, minimum and cap do not carry over (QC round 8 money accuracy blocker 2) ----------
+   Finish later, a bank typed on Home while the samples showed, then pay entered: the plan started from the sample's 85,500 with the sample's
+   17,000 minimum and 28,500 cap. ownStart runs when the first pay is entered and agrees with setup: the minimum is a tenth of the pay, a
+   bank typed while the samples showed is the balance, and no sample figure is kept. Made-up numbers. */
+{
+  const own = (bankNow, pay) => { const T = presetState('¥'); if (bankNow !== undefined) setBankNow(T, bankNow, new Date(2026, 10, 19)); setVal(T, 'a', MONTHS[0], pay, 'after'); T.ui.done = { pay: true }; ownStart(T); return T; };
+  eq('the sample start, minimum and cap are what the page used before (85,500, 17,000, 28,500)', (() => { const T = presetState('¥'); return [cfg(T, 'bankStart'), cfg(T, 'minBank'), cfg(T, 'ceiling')]; })(), [85500, 17000, 28500]);
+  const A = own(50000, 100000);
+  eq('bank typed while samples showed, then pay 100,000: start 50,000 with its day, minimum 10,000, no cap', [cfg(A, 'bankStart'), A.cfg.bankAt, cfg(A, 'minBank'), cfg(A, 'ceiling')], [50000, '2026-11-19', 10000, 0]);
+  const B = own(undefined, 100000);
+  eq('no bank typed: the start is zero (not the sample), with no day', [cfg(B, 'bankStart'), B.cfg.bankAt, cfg(B, 'minBank'), cfg(B, 'ceiling')], [0, undefined, 10000, 0]);
+  /* pay first, then a bank typed while the samples still show */
+  setBankNow(B, 50000, new Date(2026, 10, 19)); ownStart(B);
+  eq('pay first, then a bank typed while samples show: that bank is the start', [cfg(B, 'bankStart'), B.cfg.bankAt], [50000, '2026-11-19']);
+  /* the pay typed key by key: the minimum follows the pay while it is the one made from it */
+  const K = own(undefined, 1); setVal(K, 'a', MONTHS[0], 100000, 'after'); ownStart(K);
+  eq('pay typed 1 then 100,000: the minimum made from it follows (10,000)', cfg(K, 'minBank'), 10000);
+  /* what the person set stays */
+  const P = presetState('¥'); P.cfg.minBank = 5000; P.cfg.ceiling = 9000; P.cfg.bankStart = 70000; P.cfg.bankAt = '2026-11-02'; setBankNow(P, 50000, new Date(2026, 10, 19));
+  setVal(P, 'a', MONTHS[0], 100000, 'after'); P.ui.done = { pay: true }; ownStart(P);
+  eq('a balance, minimum and cap the person set are kept', [cfg(P, 'bankStart'), P.cfg.bankAt, cfg(P, 'minBank'), cfg(P, 'ceiling')], [70000, '2026-11-02', 5000, 9000]);
+  /* a plan that started at zero has no sample to drop */
+  const Z = blankState(presetState('¥')); Z.ui.cleared = true; Z.ui.done = { pay: true }; const zc = JSON.stringify(Z.cfg); ownStart(Z);
+  eq('a plan set to zero is not changed', JSON.stringify(Z.cfg), zc);
+  /* once every sample is replaced, a later call changes nothing (the minimum made from the pay stays) */
+  const F = own(undefined, 100000); F.ui.done = { pay: true, bills: true, goals: true }; setVal(F, 'a', MONTHS[0], 300000, 'after'); ownStart(F);
+  eq('own numbers everywhere: the minimum stays 10,000 after a pay change', cfg(F, 'minBank'), 10000);
+  /* the samples are still on screen until pay is entered: nothing changes before then */
+  const N = presetState('¥'); setBankNow(N, 50000, new Date(2026, 10, 19)); ownStart(N);
+  eq('before pay is entered the sample figures stay (a typed bank waits)', [cfg(N, 'bankStart'), N.cfg.bankAt, cfg(N, 'minBank')], [85500, undefined, 17000]);
 }
 
 console.log(fails ? fails + ' FAILED' : 'ALL PASS');
