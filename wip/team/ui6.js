@@ -485,8 +485,10 @@ function renderBand() {
   const g = goalById(S, r.id), p = V.play, when = dwr(r, r.pct >= 100 ? 'Full' : r.reached ? (r.months <= 0 ? 'This month' : plural(r.months, 'month') + ' to go') : r.grows === false ? 'Not growing: nothing goes in' : 'Over ' + SPAN);
   if (!g) { el.hidden = true; return; }
   const purpose = g.why || g.name;
-  put(el, `<span class="mg-l" style="--c:var(--c${g.slot})"><i class="dot"></i><b>${esc(purpose)}</b><em>${when}</em></span><span class="mg-bar" aria-hidden="true" style="--c:var(--c${g.slot})"><i style="width:${fracOf(r) * 100}%"></i></span><span class="mg-s">${sampleOn() ? 'Sample numbers. ' : ''}${V.map.free < 0 ? 'Free to spend: ' + fmt2(V.cells.freeOver) + ' over' : 'Free to spend: ' + fmt2(V.map.free) + ' left'}, ${monthLabel(V.ym, true)}</span>`);
-  el.setAttribute('aria-label', `Main goal: ${g.name}${g.why ? ', ' + g.why : ''}. ${when}. ${V.map.free < 0 ? 'Free to spend ' + fmt2(V.cells.freeOver) + ' over' : 'Free to spend ' + fmt2(V.map.free) + ' left'}. Tap for Home.`);
+  /* the words for what is left come from the model's map ("safe to spend", or "left, not safe to spend yet"), as on Receipts (QC round 6 numbers gate 3) */
+  const playRm = ((V.map && V.map.month) || []).find(x => x.id === 'play'), freeSay = V.map.free < 0 ? fmt2(V.cells.freeOver) + ' over' : fmt2(V.map.free) + ' ' + ((playRm && playRm.sub) || 'safe to spend');
+  put(el, `<span class="mg-l" style="--c:var(--c${g.slot})"><i class="dot"></i><b>${esc(purpose)}</b><em>${when}</em></span><span class="mg-bar" aria-hidden="true" style="--c:var(--c${g.slot})"><i style="width:${fracOf(r) * 100}%"></i></span><span class="mg-s">${sampleOn() ? 'Sample numbers. ' : ''}Free to spend: ${freeSay}, ${monthLabel(V.ym, true)}</span>`);
+  el.setAttribute('aria-label', `Main goal: ${g.name}${g.why ? ', ' + g.why : ''}. ${when}. Free to spend ${freeSay}. Tap for Home.`);
   el.hidden = false;
 }
 /* A custom goal gets a line of its own from Claude ("You can go surfing") when this page is open from its Claude link. Only the goal's name is sent.
