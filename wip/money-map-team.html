@@ -1630,6 +1630,7 @@ body.bv-on .wrap, body.bv-on #mgBand { visibility: hidden; }
 .hb-n { font-size: 14px; font-weight: 600; text-align: center; line-height: 1.2; }
 .hb-bar { width: 84px; height: 5px; border-radius: 4px; background: rgba(255, 255, 255, .16); overflow: hidden; }
 .hb-bar i { display: block; height: 100%; background: #f6c945; }
+.hb-bar.hb-slot { visibility: hidden; } /* a held burrow has no goal to fill: the bar's room is kept so its text lines up with the row */
 .hb-p { font-size: 12px; opacity: .8; }
 .hb-note { margin: 12px 4px 0; font-size: 15px; line-height: 1.4; color: var(--ink2); }
 .hb-play { margin: 4px 4px 0; font-size: 14px; color: var(--ink2); }
@@ -7881,7 +7882,7 @@ const BUR = (() => {
     const roomTile = r => `<button type="button" class="hb-b" data-drop="room:${esc(r.id)}" data-room="${esc(r.id)}" aria-label="${esc(r.name)}, ${fmt(r.amount)}, ${esc(r.sub)}. How it is worked out"><canvas width="24" height="18" aria-hidden="true"></canvas><span class="hb-n">${esc(r.name)}</span><span class="hb-p">${fmt(r.amount)}</span><span class="hb-p">${esc(r.sub)}</span></button>`;
     /* a burrow that holds money but is not being filled: no goal amount yet (tap to set one), or money left after a goal was paid */
     const heldWord = r => r.state === 'paid' ? 'left after it was paid' : 'no goal yet';
-    const heldTile = r => `<button type="button" class="hb-b hb-held" ${r.target > 0 ? 'data-tab-go="goals"' : `data-gset="${esc(r.id)}"`} data-h="${esc(r.id)}" data-fill="${r.heap}" aria-label="${esc(r.name)}, ${fmt(r.saved)}, ${heldWord(r)}. ${r.target > 0 ? 'Open Burrows' : 'Set a goal amount'}"><canvas width="24" height="18" aria-hidden="true"></canvas><span class="hb-n">${esc(r.name)}</span><span class="hb-p">${fmt(r.saved)}, ${heldWord(r)}</span></button>`;
+    const heldTile = r => `<button type="button" class="hb-b hb-held" ${r.target > 0 ? 'data-tab-go="goals"' : `data-gset="${esc(r.id)}"`} data-h="${esc(r.id)}" data-fill="${r.heap}" aria-label="${esc(r.name)}, ${fmt(r.saved)}, ${heldWord(r)}. ${r.target > 0 ? 'Open Burrows' : 'Set a goal amount'}"><canvas width="24" height="18" aria-hidden="true"></canvas><span class="hb-n">${esc(r.name)}</span><span class="hb-bar hb-slot" aria-hidden="true"></span><span class="hb-p">${fmt(r.saved)}, ${heldWord(r)}</span></button>`;   /* the empty slot keeps the row's amount lines level with the goal tiles' (QC round 8 art director confusing 6) */
     el0.innerHTML = '<h2 class="hb-h">Burrows</h2><p class="cap hb-what">Money that piles up over months: goals, Education, Giving and Investing. The numbers include what you plan to add this month.</p><div class="hb-scene">' + all.map(goalTile).join('') + held.map(heldTile).join('') + rooms.map(roomTile).join('') + '</div>'
       + `<p class="hb-note">${esc(note)} ${esc(wk)}</p>`;
     el0.querySelectorAll('.hb-b[data-b]').forEach(bt => { const r = all.find(x => x.id === bt.dataset.b); if (r) LOOKS.plain.paint(bt.querySelector('canvas').getContext('2d'), pc(r), 0, null, lookOf(r) === 'rainy', seedOf(r.id)); });
