@@ -1877,6 +1877,8 @@ p .link, li .link, span .link, .cap .link { min-height: 0; position: relative; p
    two small links in the status and Free to spend lines get a 44px touch box (the negative margin keeps the line where it was) */
 #hQuick .hmore > summary, .hw-more > summary, .gg-wrap > summary { min-height: 44px; display: flex; align-items: center; box-sizing: border-box; }
 p.hs-more .link { padding-top: 12px; padding-bottom: 12px; margin-top: -12px; margin-bottom: -12px; }
+/* QC round 6 layout 3: Plan > Monthly bills, "Rename, remove or add lines" was 42px tall; 12px above and below makes it 44 */
+.cap .link[data-edit] { padding-top: 12px; padding-bottom: 12px; margin-top: -12px; margin-bottom: -12px; }
 /* F6: a goal's "full" mark in All months kept the goal colour as 12px text (1.84:1 for the yellow goal in light): the words mix toward the ink */
 .mt-g > span { color: color-mix(in srgb, var(--c) 45%, var(--ink)); }
 /* A5: the cards in the now block */
