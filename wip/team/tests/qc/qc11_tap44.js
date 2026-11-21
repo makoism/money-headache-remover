@@ -1,7 +1,7 @@
 /* QC round 4 layout and touch (confusing 2): controls under 44px: the month-end "Which goal" picker (select.inp.sm in .hn-b, 34px), the
    burrow Add money chips (42px), the Add a burrow window's close x (40x40), setup's "Use the longer setup" link (42px); and the Plan
    bar pieces (16px tall) were Tab stops for numbers the rows below already list. Each control is built in its real container and
-   measured; the bar pieces are out of the Tab order. QC round 6 layout 3: Plan > Details > Monthly bills, "Rename, remove or add lines"
+   measured; the bar pieces are out of the Tab order. QC round 7 layout polish 2: the Ask panel's "Other AI" row (272x40) at 320 and 390. QC round 6 layout 3: Plan > Details > Monthly bills, "Rename, remove or add lines"
    was 182x42; it is measured where it really sits, at 390 and 1300 wide. Sample numbers.  Run: node tests/qc/qc11_tap44.js */
 const PAGE = process.env.PAGE || '/home/claude/work/money-map-team.html';
 process.env.BUILD = PAGE;
@@ -34,6 +34,14 @@ const skip = async p => { for (const id of ['tourSkip', 'coSkip']) { await p.eva
   await p.setViewport({ width: 412, height: 915, deviceScaleFactor: 1, isMobile: true, hasTouch: true }); await w(900); await skip(p); await L.tab(p, 'tab-month'); await w(400);
   const tabs = await p.evaluate(() => [...document.querySelectorAll('#bar .seg-b')].filter(e => e.tabIndex >= 0).length);
   ck('the Plan bar pieces are not Tab stops (the rows below list the same numbers)', tabs === 0, tabs);
+  /* QC round 7 layout and touch polish 2: the Ask panel's "Other AI" row was 272x40 at 320 and 390 */
+  for (const vw of [320, 390]) {
+    await p.setViewport({ width: vw, height: vw === 320 ? 640 : 844, deviceScaleFactor: 1, isMobile: true, hasTouch: true }); await w(900); await skip(p);
+    await p.evaluate(() => { const a = document.getElementById('ask'); if (a && a.hidden) document.getElementById('askBtn').click(); }); await w(1500);
+    const ai = await p.evaluate(() => { const e = document.querySelector('#askAi > summary'); if (!e || !e.getClientRects().length) return null; e.scrollIntoView({ block: 'center' }); const q = e.getBoundingClientRect(); return [Math.round(q.width), Math.round(q.height)]; });
+    ck(`Ask panel: the "Other AI" row is at least 44px tall at ${vw}`, !!ai && ai[1] >= 44, ai);
+    await p.evaluate(() => { const a = document.getElementById('ask'); if (a && !a.hidden) { const x = a.querySelector('.ask-x'); x && x.click(); } }); await w(400);
+  }
   const e2 = errs.filter(e => !/favicon|net::ERR_FILE_NOT_FOUND|fonts/.test(e));
   ck('no page errors', e2.length === 0, e2.slice(0, 3));
   await b.close();
