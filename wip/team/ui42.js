@@ -42,7 +42,8 @@ function vaultQueue(soon) { if (!vault.on) return; clearTimeout(vaultTimer); vau
 /* triedAt: when a Send now tap last failed, so the tap shows on screen (QC round 7 data safety confusing 2). Kept in memory only */
 let vaultTapped = false;
 function vaultRetryNow() { vaultTapped = true; vaultPush(); }
-function vaultBehind() { if (!vault.failAt) { vault.failAt = Date.now(); vault.triedAt = 0; } if (vaultTapped) { vaultTapped = false; vault.triedAt = Date.now(); } vaultSaveLocal(); paintVault(); if (tab === 'home') renderBackupNudge(); }
+/* refused: the server answered but did not take the copy (a server error), so the tap says "Still not sent.", not "Still no connection." (QC round 8 data safety confusing 3) */
+function vaultBehind(refused) { if (!vault.failAt) { vault.failAt = Date.now(); vault.triedAt = 0; } if (vaultTapped) { vaultTapped = false; vault.triedAt = Date.now(); vault.triedRefused = !!refused; } vaultSaveLocal(); paintVault(); if (tab === 'home') renderBackupNudge(); }
 function vaultCaughtUp() { const was = vault.failAt; vault.failAt = 0; vault.triedAt = 0; vaultTapped = false; return !!was; }
 async function vaultPush(force) {
   if (!vault.on) return;
@@ -56,7 +57,7 @@ async function vaultPush(force) {
     if (r.ok) { vault.rev = rev; vault.local = rev; vaultNote = null; const was = vaultCaughtUp(); vaultSaveLocal(); paintVault(); if (was && tab === 'home') renderBackupNudge(); }
     else if (r.status === 409) { vaultNote = { kind: 'newer', rev: r.j.rev, when: r.j.updated }; paintVault(); if (tab === 'home') renderBackupNudge(); }
     else if (r.status === 403) { vaultNote = { kind: 'bad' }; paintVault(); }
-    else vaultBehind();
+    else vaultBehind(true);
   } catch (e) { vaultBehind(); /* no connection: the next save tries again, and the screen says the cloud copy is behind */ }
   finally { vaultBusy = false; if (vaultAgain) { vaultAgain = false; vaultQueue(); } }
 }
@@ -168,7 +169,7 @@ const SAVED_CLOUD = 'Your numbers are saved in this browser, with a second copy 
 const vaultWhen = (t, sec) => { if (!t) return ''; const d = new Date(t); return d.getDate() + ' ' + d.toLocaleString('en-US', { month: 'short' }) + ', ' + d.toLocaleString('en-US', Object.assign({ hour: 'numeric', minute: '2-digit' }, sec ? { second: '2-digit' } : {})); };   /* day then month, like every other date. sec: with seconds, for two times in the same minute */
 /* one sentence on whether the cloud copy has everything; the same words in Settings, in the steps and on Home */
 const vaultClock = t => new Date(t).toLocaleString('en-US', { hour: 'numeric', minute: '2-digit' });   /* the time part of vaultWhen */
-const vaultTriedText = () => vault.triedAt ? `Tried again at ${vaultClock(vault.triedAt)}. Still no connection. Your numbers are safe on this device.` : '';
+const vaultTriedText = () => vault.triedAt ? `Tried again at ${vaultClock(vault.triedAt)}. ${vault.triedRefused ? 'Still not sent.' : 'Still no connection.'} Your numbers are safe on this device.` : '';
 function vaultBehindText() { return vault.failAt ? `The cloud copy is behind. Changes made since ${vaultWhen(vault.failAt)} are on this device only. ${vaultTriedText() || 'It tries again by itself on your next change, or tap Send now.'}` : ''; }
 function vaultSentText() { return vault.failAt ? vaultBehindText() : vault.rev ? `Sent ${vaultWhen(vault.rev)}. The cloud copy has everything on this device.` : 'Sending the first copy…'; }
 function paintVault() {
