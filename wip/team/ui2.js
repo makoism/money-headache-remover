@@ -114,7 +114,7 @@ function render() {
   const gap = PC.bankGap;
   let vt;
   if (pin <= 0) vt = 'Tap Salary below and type your monthly take-home pay';
-  else if (st === 'good') vt = (Lun < 0.005 ? (usedUp ? `All pay is used: ${fmt2(JU.usedOver)} that had no place went to spending past plan.` : 'All pay is placed.') :   /* exact: a small amount not placed is named, never called placed (38.31 money accuracy round 3) */ `${fmt2(Lun)} of pay not placed yet.`) + (Lun >= pin * 0.08 ? ' Raise a goal or another place to use it, or leave it where it is.' : '');
+  else if (st === 'good') vt = (Lun < 0.005 ? (usedUp ? `All pay is used: ${fmt2(JU.usedOver)} that had no place went to spending past plan.` : 'All pay is placed.') :   /* exact: a small amount not placed is named, never called placed (38.31 money accuracy round 3) */ `${fmt2(Lun)} of pay not placed yet.`) + (Lun >= pin * 0.08 ? ' To use it, raise a goal or another place. Or leave it in the bank.' : '');
   else if (st === 'tight') vt = `This month you spend ${fmt2(PC.overPay)} more than your pay${m.draw > 0 ? ', ' + fmt2(m.draw) + ' of it borrowed' : ''}. Your balance covers ${m.draw > 0 ? 'the other ' + fmt2(jarsOf(S, m).short) : 'it'} and ends at ${fmt2(m.bankEnd)}, so it doesn't go under your ${fmt2(floor)} minimum balance. You can change that in Settings.`;
   else vt = (floor > 0 ? `Balance would end at ${fmt2(m.bankEnd)}, ${fmt2(gap)} under your ${fmt2(floor)} minimum balance. You can change that in Settings.` : `Balance would end at ${fmt2(m.bankEnd)}, below zero.`);
   const vtEnd = st === 'short' && pin > 0 ? (fixes(S, m).length ? ' Pick a fix:' : ' Lower a cost or add pay to fix it.') : '';   /* the last words, right before the buttons (QC10 round 2 numbers should-fix 6) */
