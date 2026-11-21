@@ -624,7 +624,10 @@ function goalRows(S, C, ym) {
       /* does anything go in before the plan ends? A goal getting nothing is "not growing", never "over 2 years" (38.31 north-star round 4) */
       /* savedNow, pctNow: in the goal at the start of the month, before this month's planned deposit (saved and pct are after it; QC round 4
          north-star 6). Done, paid off and the badges go by these: a planned payment is not a paid one (money accuracy B3) */
-      grows: ((C.months[C.months.length - 1] || { bal: {} }).bal[g.id] || 0) > gi.bal + 0.004 };
+      grows: ((C.months[C.months.length - 1] || { bal: {} }).bal[g.id] || 0) > gi.bal + 0.004,
+      /* onHome: Home's bar and Burrows grid show it: a goal still being saved for, or any burrow that holds money (one with no goal amount yet too),
+         since that money counts in Saved (QC round 7 money accuracy blocker 1). A debt's money is paid away and never counts in Saved. */
+      onHome: live || (kindOfGoal(S, g) !== 'debt' && gi.bal > 0) };
   });
 }
 /* the one main goal: the person's pick if it is still being saved for, otherwise the nearest one (the emergency fund goes last, a finished goal after that) */
@@ -734,7 +737,7 @@ function mapOf(S, C, ym, V0) {
   const payReal = Math.max(0, m.inflow - (m.draw || 0)), placed = m.out, gap0 = round2(payReal - placed), usedOver = Math.min(Math.max(0, gap0), m.overNow || 0), payGap = round2(gap0 - usedOver), planOver = payGap < -0.5 ? round2(-payGap) : 0;
   return { ym, free: fo.free, held: fo.held, overspent, billsLeft, billsPlanned: planNec, goalsSaved, saved, bankEnd, bankBelow: bankEnd < 0 ? round2(-bankEnd) : 0, total: round2(bankEnd + saved), owed, month, burrows,
     payReal, placed, payGap, usedOver, planOver,
-    goalParts: (V0.goals || []).filter(g => g.live !== false || ((m.g[g.id] && m.g[g.id].actual) || 0) > 0).map(g => ({ id: g.id, name: g.name, slot: g.slot, debt: g.kind === 'debt', saved: g.saved, plan: (m.g[g.id] && m.g[g.id].actual) || 0 })),
+    goalParts: (V0.goals || []).filter(g => g.live !== false || g.onHome || ((m.g[g.id] && m.g[g.id].actual) || 0) > 0).map(g => ({ id: g.id, name: g.name, slot: g.slot, debt: g.kind === 'debt', saved: g.saved, noGoal: !(g.target > 0), plan: (m.g[g.id] && m.g[g.id].actual) || 0 })),
     split: ['nec', 'lts', 'play', 'edu', 'ffa', 'give'].map(id => ({ id, amount: id === 'lts' ? (m.goalsTotal || 0) : (m.jar[id] || 0) })).filter(x => x.amount > 0) };
 }
 /* the goal wizard's suggestion: what is still missing, spread evenly over n months and rounded up to the plan's unit (the same rule as evenSave) */

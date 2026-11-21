@@ -41,9 +41,9 @@ function renderMap() {
   const key = split.map(x => `<li><i style="background:${x.c}"></i>${esc(x.name)} <b>${fmt(x.amount)}</b></li>`).join('');
   const pb = M.bankEnd > 0 ? M.bankEnd : 0;
   const BANK_END = 'Bank at month end';   /* its own name: "In your bank now" is the typed figure, this one is the plan's (H1 walk, finding 1) */
-  const parts = [{ name: BANK_END, amount: pb, c: 'var(--bankc)', part: 'bank' }].concat(M.goalParts.filter(g => !g.debt).map(g => ({ name: g.name, amount: Math.max(0, g.saved), c: gcol(g) }))   /* a debt goal is paid away, not a pile (LAUNCH_CHECKLIST A3) */, M.burrows.map(r => ({ name: r.name, amount: r.amount, c: col(r.id) }))).filter(x => x.amount > 0);
+  const parts = [{ name: BANK_END, amount: pb, c: 'var(--bankc)', part: 'bank' }].concat(M.goalParts.filter(g => !g.debt).map(g => ({ name: g.name, amount: Math.max(0, g.saved), c: gcol(g), note: g.noGoal ? ' (no goal yet)' : '' }))   /* a debt goal is paid away, not a pile (LAUNCH_CHECKLIST A3) */, M.burrows.map(r => ({ name: r.name, amount: r.amount, c: col(r.id) }))).filter(x => x.amount > 0);
   const wseg = parts.map(x => `<i style="flex:${x.amount};--c:${x.c}" title="${esc(x.name)} ${esc(fmt(x.amount))}"></i>`).join('');
-  const wkey = (M.bankEnd < 0 ? `<li class="mp-neg" data-part="bank"><i style="background:var(--bad)"></i>${BANK_END} <b>${fmt2(M.bankEnd)}</b> (short)</li>` : '') + parts.map(x => `<li${x.part ? ` data-part="${x.part}"` : ''}><i style="background:${x.c}"></i>${esc(x.name)} <b>${fmt2(x.amount)}</b></li>`).join('');
+  const wkey = (M.bankEnd < 0 ? `<li class="mp-neg" data-part="bank"><i style="background:var(--bad)"></i>${BANK_END} <b>${fmt2(M.bankEnd)}</b> (short)</li>` : '') + parts.map(x => `<li${x.part ? ` data-part="${x.part}"` : ''}><i style="background:${x.c}"></i>${esc(x.name)} <b>${fmt2(x.amount)}</b>${x.note || ''}</li>`).join('');
   /* every Home figure says whether it is what the bank shows now or what the plan expects (LAUNCH_CHECKLIST A1) */
   const PLN = '<em class="ntag plan">planned</em>', NOW = '<em class="ntag now">now</em>';
   /* the now block, first (LAUNCH_CHECKLIST A1 and A5): the bank as typed, with its day, the cards and what is on them, and the bank after the

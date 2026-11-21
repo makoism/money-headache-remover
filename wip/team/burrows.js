@@ -348,20 +348,28 @@ const BUR = (() => {
   function stock(style) { if (!cur) return; stockT = performance.now(); stockStyle = style || 'A'; pulseAt = stockT + SQ.T.crouch + 700; }
   /* ---------- Home: one picture with a burrow for each savings bucket, how full it is, a short note and the play money number ---------- */
   function home() {
-    const el0 = document.querySelector('#hBur'); if (!el0) return; const all = rows().slice().sort((a, b) => (b.emergency ? 1 : 0) - (a.emergency ? 1 : 0)); /* the emergency fund is always first */
+    const el0 = document.querySelector('#hBur'); if (!el0) return;
+    /* every burrow the model puts on Home: the goals still being saved for, and any burrow that holds money, one with no goal amount yet too,
+       since its money counts in Saved (QC round 7 money accuracy blocker 1). Only the live ones open the burrow screen. */
+    let shown = []; try { shown = goalRows(S, C, nowYm()).filter(r => r.onHome); } catch (e) { shown = []; }
+    const all = shown.filter(r => r.live && r.target > 0).sort((a, b) => (b.emergency ? 1 : 0) - (a.emergency ? 1 : 0)), held = shown.filter(r => !(r.live && r.target > 0)).sort((a, b) => (b.emergency ? 1 : 0) - (a.emergency ? 1 : 0)); /* the emergency fund is always first */
     const rooms = (typeof HV !== 'undefined' && HV && HV.map && HV.map.burrows) || [];
-    if (!all.length && !rooms.length) { el0.hidden = true; return; } el0.hidden = false;
+    if (!all.length && !held.length && !rooms.length) { el0.hidden = true; return; } el0.hidden = false;
     const pc = r => Math.min(1, r.saved / r.target), full = all.find(r => pc(r) >= 1), near = all.filter(r => pc(r) < 1).sort((a, b) => pc(b) - pc(a))[0];
     const dw = r => r.kind === 'debt' ? 'paid off' : 'full'; let note = full ? `${full.name} is ${dw(full)}${full.pctNow >= 100 ? '' : ` at the end of ${monthLabel(nowYm(), true)}, as planned`}.` :   /* a planned payment is not a paid one (QC round 4 money accuracy B3) */ near && near.pct > 0 ? `${near.name} is the most ${dw(near)}, ${near.pct}%${near.saved !== near.savedNow ? ` by the end of ${monthLabel(nowYm(), true)}, as planned` : ''}.` :   /* the percent counts this month's planned saving, so it says when (QC round 7 novice C5) */ near ? 'No burrow has money in it yet.' : '';   /* never "the most full, 0%" (38.31 money accuracy round 4) */
     let wk = ''; try { wk = streakInfo().done ? 'You logged receipts this week.' : 'No receipts logged this week yet.'; } catch (e) { }
     const goalTile = r => `<button type="button" class="hb-b" data-b="${esc(r.id)}" aria-label="${esc(r.name)}, ${fmt(r.saved)}, ${r.over > 0 ? fmt(r.over) + ' over the goal' : r.pct + ' percent ' + dw(r)}. Open"><canvas width="24" height="18" aria-hidden="true"></canvas><span class="hb-n">${esc(r.name)}</span><span class="hb-bar"><i style="width:${Math.round(pc(r) * 100)}%"></i></span><span class="hb-p">${fmt(r.saved)}, ${r.over > 0 ? fmt(r.over) + ' over the goal' : r.pct + '% ' + dw(r)}</span></button>`;
     const roomTile = r => `<button type="button" class="hb-b" data-drop="room:${esc(r.id)}" data-room="${esc(r.id)}" aria-label="${esc(r.name)}, ${fmt(r.amount)}, ${esc(r.sub)}. How it is worked out"><canvas width="24" height="18" aria-hidden="true"></canvas><span class="hb-n">${esc(r.name)}</span><span class="hb-p">${fmt(r.amount)}</span><span class="hb-p">${esc(r.sub)}</span></button>`;
-    el0.innerHTML = '<h2 class="hb-h">Burrows</h2><p class="cap hb-what">Money that piles up over months: goals, Education, Giving and Investing. The numbers include what you plan to add this month.</p><div class="hb-scene">' + all.map(goalTile).join('') + rooms.map(roomTile).join('') + '</div>'
+    /* a burrow that holds money but is not being filled: no goal amount yet (tap to set one), or money left after a goal was paid */
+    const heldWord = r => r.state === 'paid' ? 'left after it was paid' : 'no goal yet';
+    const heldTile = r => `<button type="button" class="hb-b hb-held" ${r.target > 0 ? 'data-tab-go="goals"' : `data-gset="${esc(r.id)}"`} data-h="${esc(r.id)}" aria-label="${esc(r.name)}, ${fmt(r.saved)}, ${heldWord(r)}. ${r.target > 0 ? 'Open Burrows' : 'Set a goal amount'}"><canvas width="24" height="18" aria-hidden="true"></canvas><span class="hb-n">${esc(r.name)}</span><span class="hb-p">${fmt(r.saved)}, ${heldWord(r)}</span></button>`;
+    el0.innerHTML = '<h2 class="hb-h">Burrows</h2><p class="cap hb-what">Money that piles up over months: goals, Education, Giving and Investing. The numbers include what you plan to add this month.</p><div class="hb-scene">' + all.map(goalTile).join('') + held.map(heldTile).join('') + rooms.map(roomTile).join('') + '</div>'
       + `<p class="hb-note">${esc(note)} ${esc(wk)}</p>`;
     el0.querySelectorAll('.hb-b[data-b]').forEach(bt => { const r = all.find(x => x.id === bt.dataset.b); if (r) LOOKS.plain.paint(bt.querySelector('canvas').getContext('2d'), pc(r), 0, null, lookOf(r) === 'rainy', seedOf(r.id)); });
+    el0.querySelectorAll('.hb-b[data-h]').forEach(bt => { const r = held.find(x => x.id === bt.dataset.h); if (r) LOOKS.plain.paint(bt.querySelector('canvas').getContext('2d'), .3, 0, null, lookOf(r) === 'rainy', seedOf(r.id)); });   /* some coins, no goal to measure them against */
     el0.querySelectorAll('.hb-b[data-room]').forEach(bt => { const r = rooms.find(x => x.id === bt.dataset.room); if (r) roomCv(bt, r, r.id); });
     dropCoins(el0);
-    if (!el0._w) { el0._w = 1; el0.addEventListener('click', e => { const bt = e.target.closest('.hb-b'); if (!bt) return; if (bt.dataset.room) { try { openWhy('room:' + bt.dataset.room); } catch (x) { } return; } open(bt.dataset.b); }); }
+    if (!el0._w) { el0._w = 1; el0.addEventListener('click', e => { const bt = e.target.closest('.hb-b'); if (!bt || bt.dataset.h) return;   /* a held burrow's tile goes to its editor (data-gset, data-tab-go) */ if (bt.dataset.room) { try { openWhy('room:' + bt.dataset.room); } catch (x) { } return; } open(bt.dataset.b); }); }
   }
   /* This month's two rooms for the top of Home: Bills and basics, and Free to spend. Same tiles as the burrows, one panel. */
   function monthRooms(el) {

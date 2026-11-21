@@ -3025,7 +3025,10 @@ function goalRows(S, C, ym) {
       /* does anything go in before the plan ends? A goal getting nothing is "not growing", never "over 2 years" (38.31 north-star round 4) */
       /* savedNow, pctNow: in the goal at the start of the month, before this month's planned deposit (saved and pct are after it; QC round 4
          north-star 6). Done, paid off and the badges go by these: a planned payment is not a paid one (money accuracy B3) */
-      grows: ((C.months[C.months.length - 1] || { bal: {} }).bal[g.id] || 0) > gi.bal + 0.004 };
+      grows: ((C.months[C.months.length - 1] || { bal: {} }).bal[g.id] || 0) > gi.bal + 0.004,
+      /* onHome: Home's bar and Burrows grid show it: a goal still being saved for, or any burrow that holds money (one with no goal amount yet too),
+         since that money counts in Saved (QC round 7 money accuracy blocker 1). A debt's money is paid away and never counts in Saved. */
+      onHome: live || (kindOfGoal(S, g) !== 'debt' && gi.bal > 0) };
   });
 }
 /* the one main goal: the person's pick if it is still being saved for, otherwise the nearest one (the emergency fund goes last, a finished goal after that) */
@@ -3135,7 +3138,7 @@ function mapOf(S, C, ym, V0) {
   const payReal = Math.max(0, m.inflow - (m.draw || 0)), placed = m.out, gap0 = round2(payReal - placed), usedOver = Math.min(Math.max(0, gap0), m.overNow || 0), payGap = round2(gap0 - usedOver), planOver = payGap < -0.5 ? round2(-payGap) : 0;
   return { ym, free: fo.free, held: fo.held, overspent, billsLeft, billsPlanned: planNec, goalsSaved, saved, bankEnd, bankBelow: bankEnd < 0 ? round2(-bankEnd) : 0, total: round2(bankEnd + saved), owed, month, burrows,
     payReal, placed, payGap, usedOver, planOver,
-    goalParts: (V0.goals || []).filter(g => g.live !== false || ((m.g[g.id] && m.g[g.id].actual) || 0) > 0).map(g => ({ id: g.id, name: g.name, slot: g.slot, debt: g.kind === 'debt', saved: g.saved, plan: (m.g[g.id] && m.g[g.id].actual) || 0 })),
+    goalParts: (V0.goals || []).filter(g => g.live !== false || g.onHome || ((m.g[g.id] && m.g[g.id].actual) || 0) > 0).map(g => ({ id: g.id, name: g.name, slot: g.slot, debt: g.kind === 'debt', saved: g.saved, noGoal: !(g.target > 0), plan: (m.g[g.id] && m.g[g.id].actual) || 0 })),
     split: ['nec', 'lts', 'play', 'edu', 'ffa', 'give'].map(id => ({ id, amount: id === 'lts' ? (m.goalsTotal || 0) : (m.jar[id] || 0) })).filter(x => x.amount > 0) };
 }
 /* the goal wizard's suggestion: what is still missing, spread evenly over n months and rounded up to the plan's unit (the same rule as evenSave) */
@@ -7855,20 +7858,28 @@ const BUR = (() => {
   function stock(style) { if (!cur) return; stockT = performance.now(); stockStyle = style || 'A'; pulseAt = stockT + SQ.T.crouch + 700; }
   /* ---------- Home: one picture with a burrow for each savings bucket, how full it is, a short note and the play money number ---------- */
   function home() {
-    const el0 = document.querySelector('#hBur'); if (!el0) return; const all = rows().slice().sort((a, b) => (b.emergency ? 1 : 0) - (a.emergency ? 1 : 0)); /* the emergency fund is always first */
+    const el0 = document.querySelector('#hBur'); if (!el0) return;
+    /* every burrow the model puts on Home: the goals still being saved for, and any burrow that holds money, one with no goal amount yet too,
+       since its money counts in Saved (QC round 7 money accuracy blocker 1). Only the live ones open the burrow screen. */
+    let shown = []; try { shown = goalRows(S, C, nowYm()).filter(r => r.onHome); } catch (e) { shown = []; }
+    const all = shown.filter(r => r.live && r.target > 0).sort((a, b) => (b.emergency ? 1 : 0) - (a.emergency ? 1 : 0)), held = shown.filter(r => !(r.live && r.target > 0)).sort((a, b) => (b.emergency ? 1 : 0) - (a.emergency ? 1 : 0)); /* the emergency fund is always first */
     const rooms = (typeof HV !== 'undefined' && HV && HV.map && HV.map.burrows) || [];
-    if (!all.length && !rooms.length) { el0.hidden = true; return; } el0.hidden = false;
+    if (!all.length && !held.length && !rooms.length) { el0.hidden = true; return; } el0.hidden = false;
     const pc = r => Math.min(1, r.saved / r.target), full = all.find(r => pc(r) >= 1), near = all.filter(r => pc(r) < 1).sort((a, b) => pc(b) - pc(a))[0];
     const dw = r => r.kind === 'debt' ? 'paid off' : 'full'; let note = full ? `${full.name} is ${dw(full)}${full.pctNow >= 100 ? '' : ` at the end of ${monthLabel(nowYm(), true)}, as planned`}.` :   /* a planned payment is not a paid one (QC round 4 money accuracy B3) */ near && near.pct > 0 ? `${near.name} is the most ${dw(near)}, ${near.pct}%${near.saved !== near.savedNow ? ` by the end of ${monthLabel(nowYm(), true)}, as planned` : ''}.` :   /* the percent counts this month's planned saving, so it says when (QC round 7 novice C5) */ near ? 'No burrow has money in it yet.' : '';   /* never "the most full, 0%" (38.31 money accuracy round 4) */
     let wk = ''; try { wk = streakInfo().done ? 'You logged receipts this week.' : 'No receipts logged this week yet.'; } catch (e) { }
     const goalTile = r => `<button type="button" class="hb-b" data-b="${esc(r.id)}" aria-label="${esc(r.name)}, ${fmt(r.saved)}, ${r.over > 0 ? fmt(r.over) + ' over the goal' : r.pct + ' percent ' + dw(r)}. Open"><canvas width="24" height="18" aria-hidden="true"></canvas><span class="hb-n">${esc(r.name)}</span><span class="hb-bar"><i style="width:${Math.round(pc(r) * 100)}%"></i></span><span class="hb-p">${fmt(r.saved)}, ${r.over > 0 ? fmt(r.over) + ' over the goal' : r.pct + '% ' + dw(r)}</span></button>`;
     const roomTile = r => `<button type="button" class="hb-b" data-drop="room:${esc(r.id)}" data-room="${esc(r.id)}" aria-label="${esc(r.name)}, ${fmt(r.amount)}, ${esc(r.sub)}. How it is worked out"><canvas width="24" height="18" aria-hidden="true"></canvas><span class="hb-n">${esc(r.name)}</span><span class="hb-p">${fmt(r.amount)}</span><span class="hb-p">${esc(r.sub)}</span></button>`;
-    el0.innerHTML = '<h2 class="hb-h">Burrows</h2><p class="cap hb-what">Money that piles up over months: goals, Education, Giving and Investing. The numbers include what you plan to add this month.</p><div class="hb-scene">' + all.map(goalTile).join('') + rooms.map(roomTile).join('') + '</div>'
+    /* a burrow that holds money but is not being filled: no goal amount yet (tap to set one), or money left after a goal was paid */
+    const heldWord = r => r.state === 'paid' ? 'left after it was paid' : 'no goal yet';
+    const heldTile = r => `<button type="button" class="hb-b hb-held" ${r.target > 0 ? 'data-tab-go="goals"' : `data-gset="${esc(r.id)}"`} data-h="${esc(r.id)}" aria-label="${esc(r.name)}, ${fmt(r.saved)}, ${heldWord(r)}. ${r.target > 0 ? 'Open Burrows' : 'Set a goal amount'}"><canvas width="24" height="18" aria-hidden="true"></canvas><span class="hb-n">${esc(r.name)}</span><span class="hb-p">${fmt(r.saved)}, ${heldWord(r)}</span></button>`;
+    el0.innerHTML = '<h2 class="hb-h">Burrows</h2><p class="cap hb-what">Money that piles up over months: goals, Education, Giving and Investing. The numbers include what you plan to add this month.</p><div class="hb-scene">' + all.map(goalTile).join('') + held.map(heldTile).join('') + rooms.map(roomTile).join('') + '</div>'
       + `<p class="hb-note">${esc(note)} ${esc(wk)}</p>`;
     el0.querySelectorAll('.hb-b[data-b]').forEach(bt => { const r = all.find(x => x.id === bt.dataset.b); if (r) LOOKS.plain.paint(bt.querySelector('canvas').getContext('2d'), pc(r), 0, null, lookOf(r) === 'rainy', seedOf(r.id)); });
+    el0.querySelectorAll('.hb-b[data-h]').forEach(bt => { const r = held.find(x => x.id === bt.dataset.h); if (r) LOOKS.plain.paint(bt.querySelector('canvas').getContext('2d'), .3, 0, null, lookOf(r) === 'rainy', seedOf(r.id)); });   /* some coins, no goal to measure them against */
     el0.querySelectorAll('.hb-b[data-room]').forEach(bt => { const r = rooms.find(x => x.id === bt.dataset.room); if (r) roomCv(bt, r, r.id); });
     dropCoins(el0);
-    if (!el0._w) { el0._w = 1; el0.addEventListener('click', e => { const bt = e.target.closest('.hb-b'); if (!bt) return; if (bt.dataset.room) { try { openWhy('room:' + bt.dataset.room); } catch (x) { } return; } open(bt.dataset.b); }); }
+    if (!el0._w) { el0._w = 1; el0.addEventListener('click', e => { const bt = e.target.closest('.hb-b'); if (!bt || bt.dataset.h) return;   /* a held burrow's tile goes to its editor (data-gset, data-tab-go) */ if (bt.dataset.room) { try { openWhy('room:' + bt.dataset.room); } catch (x) { } return; } open(bt.dataset.b); }); }
   }
   /* This month's two rooms for the top of Home: Bills and basics, and Free to spend. Same tiles as the burrows, one panel. */
   function monthRooms(el) {
@@ -17296,9 +17307,9 @@ function renderMap() {
   const key = split.map(x => `<li><i style="background:${x.c}"></i>${esc(x.name)} <b>${fmt(x.amount)}</b></li>`).join('');
   const pb = M.bankEnd > 0 ? M.bankEnd : 0;
   const BANK_END = 'Bank at month end';   /* its own name: "In your bank now" is the typed figure, this one is the plan's (H1 walk, finding 1) */
-  const parts = [{ name: BANK_END, amount: pb, c: 'var(--bankc)', part: 'bank' }].concat(M.goalParts.filter(g => !g.debt).map(g => ({ name: g.name, amount: Math.max(0, g.saved), c: gcol(g) }))   /* a debt goal is paid away, not a pile (LAUNCH_CHECKLIST A3) */, M.burrows.map(r => ({ name: r.name, amount: r.amount, c: col(r.id) }))).filter(x => x.amount > 0);
+  const parts = [{ name: BANK_END, amount: pb, c: 'var(--bankc)', part: 'bank' }].concat(M.goalParts.filter(g => !g.debt).map(g => ({ name: g.name, amount: Math.max(0, g.saved), c: gcol(g), note: g.noGoal ? ' (no goal yet)' : '' }))   /* a debt goal is paid away, not a pile (LAUNCH_CHECKLIST A3) */, M.burrows.map(r => ({ name: r.name, amount: r.amount, c: col(r.id) }))).filter(x => x.amount > 0);
   const wseg = parts.map(x => `<i style="flex:${x.amount};--c:${x.c}" title="${esc(x.name)} ${esc(fmt(x.amount))}"></i>`).join('');
-  const wkey = (M.bankEnd < 0 ? `<li class="mp-neg" data-part="bank"><i style="background:var(--bad)"></i>${BANK_END} <b>${fmt2(M.bankEnd)}</b> (short)</li>` : '') + parts.map(x => `<li${x.part ? ` data-part="${x.part}"` : ''}><i style="background:${x.c}"></i>${esc(x.name)} <b>${fmt2(x.amount)}</b></li>`).join('');
+  const wkey = (M.bankEnd < 0 ? `<li class="mp-neg" data-part="bank"><i style="background:var(--bad)"></i>${BANK_END} <b>${fmt2(M.bankEnd)}</b> (short)</li>` : '') + parts.map(x => `<li${x.part ? ` data-part="${x.part}"` : ''}><i style="background:${x.c}"></i>${esc(x.name)} <b>${fmt2(x.amount)}</b>${x.note || ''}</li>`).join('');
   /* every Home figure says whether it is what the bank shows now or what the plan expects (LAUNCH_CHECKLIST A1) */
   const PLN = '<em class="ntag plan">planned</em>', NOW = '<em class="ntag now">now</em>';
   /* the now block, first (LAUNCH_CHECKLIST A1 and A5): the bank as typed, with its day, the cards and what is on them, and the bank after the

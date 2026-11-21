@@ -467,5 +467,29 @@ eq('default rounding step follows the size of the pay', [roundUnit(presetState('
   eq('sample numbers on screen: a typed start is not judged against them', playOf(T6).notCovered, false);
 }
 
+/* ---------- a burrow that holds money but has no goal amount still shows on Home (QC round 7 money accuracy blocker 1) ----------
+   Emergency fund with $200 saved, then its goal amount cleared: its $200 counts in Saved, so Home's bar and grid show it too. Made-up numbers. */
+{
+  const unsetFund = (start, bills) => { const T = blankState(presetState('$')); T.ui.done = { pay: true, bills: true, goals: true, receipts: true }; T.ui.sampleHidden = true; T.ui.cur = '$';
+    T.steps.a = [{ from: MONTHS[0], v: 2000 }]; T.cfg.bankStart = 3000; T.cfg.minBank = 0;
+    const set = (id, v) => { T.plan.lines.find(l => l.id === id).def = v; };
+    set('rent', bills ? bills[0] : 900); set('food', bills ? bills[1] : 300); set('learn', 180); set('invest', 180); set('give', 80);
+    const eg = emergencyGoal(T); eg.target = 0; eg.start = start; return T; };
+  const ym = MONTHS[0], today = ym + '-19';
+  const check = (tag, T) => {
+    const V = viewOf(T, calcAll(T), ym, today), eg = emergencyGoal(T), row = V.goals.find(r => r.id === eg.id), part = V.map.goalParts.find(g => g.id === eg.id);
+    eq(tag + ': the goal is unset and not live', [row.state, row.live], ['unset', false]);
+    eq(tag + ': the model says it shows on Home, since it holds money', row.onHome, true);
+    eq(tag + ': it is a piece of the bar, with what it holds', part ? part.saved : null, row.saved);
+    const shown = round2x(V.map.goalParts.filter(g => !g.debt).reduce((a, g) => a + Math.max(0, g.saved), 0) + V.map.burrows.reduce((a, r) => a + r.amount, 0));
+    eq(tag + ': the bar pieces add up to Saved', shown, V.map.saved);
+    eq(tag + ': every goal with money is on Home', V.goals.filter(r => r.kind !== 'debt' && r.saved > 0 && !r.onHome).map(r => r.id), []);
+  };
+  check('unset with $200', unsetFund(200));
+  check('unset with $1 (bills of $0.02)', unsetFund(1, [0.01, 0.01]));
+  const T0 = unsetFund(0), r0 = viewOf(T0, calcAll(T0), ym, today).goals.find(r => r.id === emergencyGoal(T0).id);
+  eq('unset with nothing in it: not on Home (nothing to show)', r0.onHome, false);
+}
+
 console.log(fails ? fails + ' FAILED' : 'ALL PASS');
 process.exit(fails ? 1 : 0);
