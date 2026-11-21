@@ -77,7 +77,7 @@ function chosenBills() {
 const STEP_BILLS = { id: 'bills-pick', part: PART.bills, setup: true, pick: true, skipIf: () => importApplied(), title: 'Monthly bills',
   body: () => {
     const on = chosenBills();
-    return `<p>A few are ticked to get you started. Tick the ones you pay and untick the ones you don't, rough numbers are fine</p>
+    return `<p>A few are ticked to get you started. Tick the ones you pay and untick the ones you don't. You type a rough amount for each one next.</p>
     <div class="tour-chips two" role="group" aria-label="Your monthly bills">${necLines().filter(l => !moreKind(l.id)).map(l => `<label class="chip multi${on.indexOf(l.id) >= 0 ? ' on' : ''}"><input type="checkbox" name="tourBill" value="${esc(l.id)}"${on.indexOf(l.id) >= 0 ? ' checked' : ''}><span>${esc(l.name)}</span></label>`).join('')}</div>
     <p class="cap">If one's missing you can add lines later</p>`;
   },
