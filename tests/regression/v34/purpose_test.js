@@ -48,6 +48,7 @@ const tab = (p, t) => p.evaluate(t => (document.querySelector(`[data-tab="${t}"]
   // ---- Goals tab card and editor
   await tab(p, 'goals'); await w(400);
   ok((await txt(p, '#goalCards')).includes(WHY), 'the Goals tab card shows the reason');
+  await p.$eval('[data-gedit]', e => e.scrollIntoView({ block: 'center' })); await w(200); /* the button can sit under the Help row at the screen bottom (MAIN 12) */
   await p.click('[data-gedit]'); await w(300);
   const whyIn = await p.$('[data-g="why"]'); ok(!!whyIn, 'the goal editor has a Why field');
   await p.$eval('[data-g="why"]', e => { e.value = ''; }); await p.type('[data-g="why"]', 'Snow, onsen, Mum'); await p.$eval('[data-g="why"]', e => e.dispatchEvent(new Event('change', { bubbles: true }))); await w(400);
