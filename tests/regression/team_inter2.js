@@ -16,7 +16,7 @@ const PESO = (() => { const src = require('fs').readFileSync(process.env.MODEL |
   const _click = p.click.bind(p); p.click = async (sel, o) => { try { await p.$eval(sel, e => e.scrollIntoView({ block: 'center' })); } catch (e) { /* not on the page */ } return _click(sel, o); };
   const confettiPx = () => p.$eval('#confetti', c => { const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 3; i < d.length; i += 16) if (d[i] > 0) n++; return n; });
   const cheerOn = () => p.$eval('#cheer', e => e.classList.contains('on') ? e.textContent : '');
-  const q = async s => p.$eval(s, e => e.textContent.trim()).catch(() => 'MISSING:' + s);
+  const q = async s => p.$eval(s, e => e.textContent.replace(/\u2060/g, '').trim()).catch(() => 'MISSING:' + s);   /* the minus is joined to its amount with U+2060 (QC round 7): read the visible text */
   const val = async s => p.$eval(s, e => e.value).catch(() => 'MISSING:' + s);
   const set = async (s, v, ev) => p.$eval(s, (el, v, ev) => { el.value = v; el.dispatchEvent(new Event(ev || 'input', { bubbles: true })); }, v, ev);
   const log = (k, v) => console.log(k.padEnd(40), v);
