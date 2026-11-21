@@ -4246,9 +4246,12 @@ const GD = (() => {
     leaves: { leaf: ['g', 'l', 'g', 'G'], big: .8, tend: 0, end: ['leaf'], bloom: [], bp: 0, edges: ['top', 'right'] },
     clover: { leaf: ['g', 'l'], big: 0, tend: .3, end: ['leaf'], bloom: ['p', 'w', 'q'], bp: .4, clover: true, edges: ['bottom', 'top'] },
   };
-  /* corner: tl, tr, bl, br. The wisteria on Goals is the one the person loves and stays exactly as it was (hanging from the top edge). */
+  /* corner: tl, tr, bl, br. The wisteria on Goals is the one the person loves and stays exactly as it was (hanging from the top edge).
+     Version one Home hides hHero and hGoals (0x0) and draws as the card hMap and the burrows section hBur, so their vines moved there
+     (QC round 6 art director 1): the leaves from the old top card onto hMap, the wisteria from Goals onto the burrows, grown from the
+     same seed it always had (as: 'hGoals'). Investing (hBuckets) is hidden on Home for now, so its ivy waits there. */
   const PLAN = {
-    hHero: { vine: 'leaves', corner: 'tr' }, hGoals: { vine: 'wisteria', old: true }, hBuckets: { vine: 'ivy', corner: 'tr' },
+    hMap: { vine: 'leaves', corner: 'tr' }, hBur: { vine: 'wisteria', old: true, as: 'hGoals' }, hBuckets: { vine: 'ivy', corner: 'tr' },
     scan: { vine: 'fern', corner: 'tr' }, rcMonthCard: { vine: 'glory', corner: 'br' }, where: { vine: 'bramble', corner: 'br' },
   };
   const planFor = key => PLAN[key] || {};
@@ -4344,7 +4347,7 @@ const GD = (() => {
     const out = []; const w = document.querySelector('.wrap'); if (!w) return out;
     const top = w.querySelector(':scope > header.top'), tabs = w.querySelector(':scope > .tabs');
     if (top) out.push({ el: top, key: 'header' }); if (tabs) out.push({ el: tabs, key: 'tabs' });
-    $$('.wrap [role=tabpanel]').forEach(pg => { pg.querySelectorAll('.card, .hnext').forEach((c, i) => { if (c.parentElement.closest('.card, .hnext')) return; out.push({ el: c, key: c.id || (pg.id + ':' + i) }); }); });
+    $$('.wrap [role=tabpanel]').forEach(pg => { pg.querySelectorAll('.card, .hnext, .hbur').forEach((c, i) => { if (c.parentElement.closest('.card, .hnext')) return; out.push({ el: c, key: c.id || (pg.id + ':' + i) }); }); });
     ['dj', 'cam', 'rep'].forEach(id => { const e = document.getElementById(id); if (e) out.push({ el: e, key: id, dlg: true }); });
     return out;
   };
@@ -4377,7 +4380,7 @@ const GD = (() => {
       for (const e of order) {
         if (e === 'top' && gap.up < (lite ? 4 : 8)) continue; if (e === 'bottom' && gap.down < (lite ? 4 : 8)) continue;
         const av = profile(o, e), N = av.length, mean = av.reduce((a, b) => a + b, 0) / N; if (N < 16 || (!lite && mean < 2.2)) continue;
-        const vk = h.key + '|' + e + (lite ? '|b' : ''), vr = rng(hash('vine-' + vk)), span0 = Math.round(N * (lite ? .2 + vr() * .24 : .34 + vr() * .26)), u0 = Math.floor(vr() * Math.max(1, N - span0 - 2)), u1 = u0 + span0;
+        const vk = (plan.as || h.key) + '|' + e + (lite ? '|b' : ''), vr = rng(hash('vine-' + vk)), span0 = Math.round(N * (lite ? .2 + vr() * .24 : .34 + vr() * .26)), u0 = Math.floor(vr() * Math.max(1, N - span0 - 2)), u1 = u0 + span0;
         const grid = vineStrip(vr, N, av, u0, u1, vsp, 0, lite), sc = stripCanvas(grid, N, e); if (!sc) continue;
         const cv = sc.c; cv.className = 'gv gv-' + e; cv.dataset.vk = vk; cv.dataset.sp = spn; cv.style.width = sc.cw * S + 'px'; cv.style.height = sc.ch * S + 'px';
         const Z = (D + OV) * S;
