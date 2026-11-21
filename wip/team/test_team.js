@@ -1,7 +1,7 @@
 const fs = require('fs');
 const src = fs.readFileSync(__dirname + '/model.js', 'utf8');
-const api = new Function(src + ';return {lookBack,sweepPlay,releasePlay,cleanSteps,cleanOnce,cleanItems,cleanCfg,validDue,wholePercents,presetState,sampleOf,SAMPLES,presetKey,roundUnit,MONTHS,JARS,jarsOf,calcAll,freshState,blankState,setVal,val,goalInfo,statusOf,fixes,cfg,resetMonth,aimsOf,basePlan,cleanPlan,cleanReceipts,addLine,removeLine,updateLine,addGoal,removeGoal,updateGoal,useSuggested,hasOwnMonthly,trimPlay,undoOnce,receiptStats,receiptsFor,addReceipt,updateReceipt,removeReceipt,catName,nextWeekday,gcalUrl,outlookUrl,reminderTimes,allKeys,emergencyGoal,lineByKey,goalById,MAX_GOALS,MAX_LINES,readyBy,viewOf,mapOf,freeOf};')();
-const { lookBack, viewOf, mapOf, freeOf, sweepPlay, releasePlay, cleanSteps, cleanOnce, cleanItems, cleanCfg, validDue, wholePercents, readyBy, presetState, sampleOf, SAMPLES, presetKey, roundUnit, MONTHS, JARS, jarsOf, calcAll, freshState: modelFresh, blankState, setVal, val, goalInfo, statusOf, fixes, cfg, aimsOf, basePlan, cleanPlan, cleanReceipts, addLine, removeLine, updateLine, addGoal, removeGoal, updateGoal, useSuggested, hasOwnMonthly, trimPlay, receiptStats, addReceipt, updateReceipt, removeReceipt, catName, nextWeekday, gcalUrl, outlookUrl, reminderTimes, allKeys, emergencyGoal, lineByKey, goalById, MAX_GOALS } = api;
+const api = new Function(src + ';return {lookBack,sweepPlay,releasePlay,cleanSteps,cleanOnce,cleanItems,cleanCfg,validDue,wholePercents,presetState,sampleOf,SAMPLES,presetKey,roundUnit,MONTHS,JARS,jarsOf,calcAll,freshState,blankState,setVal,val,goalInfo,statusOf,fixes,cfg,resetMonth,aimsOf,basePlan,cleanPlan,cleanReceipts,addLine,removeLine,updateLine,addGoal,removeGoal,updateGoal,useSuggested,hasOwnMonthly,trimPlay,undoOnce,receiptStats,receiptsFor,addReceipt,updateReceipt,removeReceipt,catName,nextWeekday,gcalUrl,outlookUrl,reminderTimes,allKeys,emergencyGoal,lineByKey,goalById,MAX_GOALS,MAX_LINES,readyBy,viewOf,mapOf,freeOf,playNotSafe};')();
+const { lookBack, viewOf, mapOf, freeOf, playNotSafe, sweepPlay, releasePlay, cleanSteps, cleanOnce, cleanItems, cleanCfg, validDue, wholePercents, readyBy, presetState, sampleOf, SAMPLES, presetKey, roundUnit, MONTHS, JARS, jarsOf, calcAll, freshState: modelFresh, blankState, setVal, val, goalInfo, statusOf, fixes, cfg, aimsOf, basePlan, cleanPlan, cleanReceipts, addLine, removeLine, updateLine, addGoal, removeGoal, updateGoal, useSuggested, hasOwnMonthly, trimPlay, receiptStats, addReceipt, updateReceipt, removeReceipt, catName, nextWeekday, gcalUrl, outlookUrl, reminderTimes, allKeys, emergencyGoal, lineByKey, goalById, MAX_GOALS } = api;
 /* the older 35,000 sample, kept working for saved copies from before the per-currency samples. The checks below were written for it. */
 const freshState = () => { const f = modelFresh(); f.ui.preset = 'legacy'; f.plan = basePlan({}); return f; };
 let fails = 0; const round2x = n => Math.round(n * 100) / 100;
@@ -432,6 +432,35 @@ eq('default rounding step follows the size of the pay', [roundUnit(presetState('
   const P = freshState(); P.plan.debts = [{ id: 'd1', name: 'Loan', kind: 'loan', balance: 40000, apr: 0, min: 3800, extra: 0 }];
   const mp = calcAll(P).byYm['2026-11'];
   eq('percent paid of exactly a half rounds up: 36200 owed of 40000 is 9.5%, so 10%', [mp.debts.d1.bal, mp.debts.d1.paidPctWhole], [36200, 10]);
+}
+
+
+/* ---------- a starting balance below zero with no saved day (QC round 6 money accuracy blocker 1) ----------
+   Older saved data has no cfg.bankAt. -15,000 with no day gave "safe to spend", the same -15,000 with a day "not safe to spend yet". One fact, one answer. */
+{
+  const neg = (b, at) => { const T = blankState(presetState('¥')); T.ui.done = { pay: true, bills: true, goals: true, receipts: true }; T.ui.sampleHidden = true; T.ui.cur = '¥';
+    T.steps.a = [{ from: MONTHS[0], v: 280000 }]; T.plan.lines.find(l => l.id === 'rent').def = 140000; T.plan.lines.find(l => l.id === 'spend').def = 30000;
+    T.cfg.bankStart = b; T.cfg.minBank = 0; if (at) T.cfg.bankAt = at; else delete T.cfg.bankAt; return T; };
+  const ym = MONTHS[0], today = ym + '-19', playOf = T => viewOf(T, calcAll(T), ym, today).map.month.find(x => x.id === 'play');
+  const T1 = neg(-15000), p1 = playOf(T1);
+  eq('start -15,000 with no day: Free to spend is not safe to spend yet', [p1.notCovered, p1.sub], [true, 'left, not safe to spend yet']);
+  eq('start -15,000 with no day: the amount left is still shown (30,000)', p1.amount, 30000);
+  eq('start -15,000 with no day: the row says how far below zero the start is', p1.startBelow, 15000);
+  eq('start -15,000 with no day: Receipts and Plan > Month read the same answer', playNotSafe(T1, calcAll(T1), ym, today), true);
+  eq('a later month is not judged by today (as with a dated balance)', playNotSafe(T1, calcAll(T1), MONTHS[1], today), false);
+  const T2 = neg(-15000, ym + '-10'), p2 = playOf(T2);
+  eq('start -15,000 with a day: the same answer as before (not safe)', [p2.notCovered, p2.sub], [true, 'left, not safe to spend yet']);
+  eq('start -15,000 with a day: the dated rule is the reason, not the undated start', p2.startBelow, 0);
+  const T3 = neg(15000), p3 = playOf(T3);
+  eq('start 15,000 with no day: safe to spend, as before', [p3.notCovered, p3.sub, p3.startBelow], [false, 'safe to spend', 0]);
+  const T4 = neg(0), p4 = playOf(T4);
+  eq('start at zero with no day: safe to spend (zero is not below zero)', p4.notCovered, false);
+  const T5 = neg(-15000); T5.cards = [{ id: 'k1', name: 'Card', owed: 5000 }];
+  eq('start -15,000 with no day and a card: still not safe', playOf(T5).notCovered, true);
+  const T6 = neg(-15000); T6.ui.done = {}; delete T6.ui.preset; delete T6.ui.cleared;
+  const sh = (() => { const u = T6.ui, d = u.done || {}; return !(u.preset === 'blank' || u.cleared) && !(d.pay && d.bills && d.goals); })();
+  eq('this plan shows the sample numbers', sh, true);
+  eq('sample numbers on screen: a typed start is not judged against them', playOf(T6).notCovered, false);
 }
 
 console.log(fails ? fails + ' FAILED' : 'ALL PASS');

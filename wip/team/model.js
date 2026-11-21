@@ -694,7 +694,11 @@ function mapOf(S, C, ym, V0) {
   const planNec = m.jar.nec, billsLeft = m.billsLeftM != null ? m.billsLeftM : Math.max(0, round2(planNec - (rs.byJar.nec || 0)));
   /* money rule 3: Free to spend is safe only when the typed bank after the cards covers the bills still to pay and Free to spend
      (QC10 numbers blocker 3, round 2 blocker 1) */
-  const needNow = round2(billsLeft + Math.max(0, fo.free)), notCovered = nw.afterCards !== null && fo.free > 0 && nw.afterCards < needNow;
+  /* a starting balance below zero with no saved day (older saved data) is still a bank below zero: judged the same way as the same balance
+     with a day, so one fact gives one answer (QC round 6 money accuracy blocker 1) */
+  const b0 = cfg(S, 'bankStart'), startBelow = nw.afterCards === null && !sampleShown(S) && b0 < -0.004 ? round2(-b0) : 0;
+  const judged = nw.afterCards !== null ? nw.afterCards : startBelow > 0 ? round2(b0 - (nw.cardsOwed || 0)) : null;
+  const needNow = round2(billsLeft + Math.max(0, fo.free)), notCovered = judged !== null && fo.free > 0 && judged < needNow;
   const st = { edu: 0, give: 0, ffa: 0 }, pl = { edu: 0, give: 0, ffa: 0 }, lg = { edu: 0, give: 0, ffa: 0 };
   for (const x of MONTHS) {
     if (x > ym) break;
@@ -705,7 +709,7 @@ function mapOf(S, C, ym, V0) {
     { id: 'nec', name: 'Bills and basics', amount: billsLeft, sub: 'left to pay', planned: planNec, fill: planNec > 0 ? Math.min(1, billsLeft / planNec) : 0, overBy: m.overNec != null ? m.overNec : round2(Math.max(0, (rs.byJar.nec || 0) - planNec)) },
     /* money rule 3: nothing is called safe to spend that the bank cannot cover. When a typed bank after the cards is less than Free to
        spend, it is planned, not safe yet (QC10 numbers blocker 3) */
-    { id: 'play', name: 'Free to spend', amount: Math.max(0, fo.free), sub: notCovered ? 'left, not safe to spend yet' : 'safe to spend', notCovered,   /* what is left, so never called the plan (QC10 round 3 numbers blocker 1) */ planned: m.jar.play, fill: m.jar.play > 0 ? Math.max(0, Math.min(1, fo.free / m.jar.play)) : 0, over: fo.free < 0, overBy: fo.free < 0 ? round2(-fo.free) : 0 }
+    { id: 'play', name: 'Free to spend', amount: Math.max(0, fo.free), sub: notCovered ? 'left, not safe to spend yet' : 'safe to spend', notCovered, startBelow: notCovered ? startBelow : 0,   /* how far below zero an undated starting balance is, when that is why */   /* what is left, so never called the plan (QC10 round 3 numbers blocker 1) */ planned: m.jar.play, fill: m.jar.play > 0 ? Math.max(0, Math.min(1, fo.free / m.jar.play)) : 0, over: fo.free < 0, overBy: fo.free < 0 ? round2(-fo.free) : 0 }
   ];
   const names = { edu: 'Education', give: 'Giving', ffa: 'Investing' }, subs = { edu: 'courses and books', give: 'charity and gifts', ffa: 'never spent' };
   const burrows = ['edu', 'ffa', 'give'].map(id => {
