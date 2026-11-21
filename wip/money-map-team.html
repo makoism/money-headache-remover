@@ -16948,7 +16948,7 @@ function renderDebts() {
   }
   const owed = (m.debts && ds.length ? m.debtStart : 0) || 0;
   const free = rows.length && rows.every(r => !r.never) ? rows.reduce((a, r) => (r.payoffYm > a ? r.payoffYm : a), '') : '';
-  $('#debtSub').textContent = !ds.length ? 'Cards and loans with interest, and their payments are part of Bills and basics.'
+  $('#debtSub').textContent = !ds.length ? 'Cards and loans that charge interest. Their monthly payments are part of Bills and basics.'
     : `${fmt(owed)} owed at the start of ${monthLabel(sel, true)}. ${m.debtInterest > 0 ? fmt(m.debtInterest) + ' interest this month. ' : ''}${free ? 'Debt free ' + monthLabel(free) + '.' : rows.some(r => r.never) ? 'One of them isn\'t being paid off.' : ''}`;
   /* the Plan row */
   const row = document.querySelector('.row[data-id="debts"]'); if (row) row.hidden = !ds.length;
