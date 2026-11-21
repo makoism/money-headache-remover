@@ -25,6 +25,9 @@ MAIN 10 handed off for size to MAIN 11, session_01BFpKEZGS9KN3eUX4L3Qhw4 (Opus, 
 ### MAIN 12 (02:18 UTC = 11:18 JST 21 Nov)
 MAIN 11 stopped after handoff 0810d28 (its keep-going task deleted). Coordinator 8 started MAIN 12, session_01BFpKEXH5H4JMxrjVQZkHyQ (Opus, depth 8), with an hourly keep-going task bound to it. Its next list: purpose_test Why field, team_month.js setup month, check.sh full, stage_build, QC round 5. Art waits for Mako.
 
+### MAIN 13 (18:43 UTC 21 Nov = 03:43 JST 22 Nov)
+MAIN 12 stopped editing after handoff 45a0b98 (its keep-going task deleted); it stays only to push two helper branches (helper/<name>) when its helpers finish. Coordinator 8 started MAIN 13, session_01BFpKEWo34ssfTxnTsQ2qUD, with an hourly keep-going task. Next: merge helpers, one quiet check.sh full, artcheck, golden, stage, QC round 9. MAKO_RUN.md is the one list for Mako.
+
 ### Preview (07:49 UTC)
 QC round 3 on 53bb8cb failed; fixed b7c4719, 50ca3a8, 9a33833, 9a0d2fc; the rest wait for Mako's run (QC10_FIX_ROUND.md). The preview artifact at the old link cannot be updated: an update needs the whole 1.87 MB live page read first. MAIN 10 sent Mako the build file and 4 screenshots instead (preview/after, 2c65906). A new link does not work either: the tool only publishes a file the session wrote or read in full (~800k tokens). A tappable link needs a deploy (Mako's call, at his full run) or a smaller page. Do not work around the rule.
 
