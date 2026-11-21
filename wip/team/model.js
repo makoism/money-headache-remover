@@ -32,9 +32,9 @@ const CFG = {
 const JARS = [
   { id: 'nec',  name: 'Bills and basics',                    usual: 0.55, about: 'Rent, food, utilities and every other bill.' },
   { id: 'lts',  name: 'Goal burrows', usual: 0.10, about: 'Money you save now and spend later, on a big purchase, a trip or a surprise. Your goals are in here.' },
-  { id: 'play', name: 'Free to spend',                         usual: 0.10, about: 'Fun for you and your family, spend it on whatever you want. What\'s left at month end can go to a goal.' },
+  { id: 'play', name: 'Free to spend',                         usual: 0.10, about: 'Fun for you and your family. Spend it on whatever you want. What\'s left at month end can go to a goal.' },
   { id: 'edu',  name: 'Education',                      usual: 0.10, about: 'Courses, books, coaching, skill building.' },
-  { id: 'ffa',  name: 'Investing',              usual: 0.10, about: 'You never spend this, it grows over time.' },
+  { id: 'ffa',  name: 'Investing',              usual: 0.10, about: 'You never spend this. It grows over time.' },
   { id: 'give', name: 'Giving',                         usual: 0.05, about: 'Charity, donations and gifts.' },
 ];
 /* the usual share of each place as a whole percent, for the screens that name it (they never work it out) */

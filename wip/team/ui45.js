@@ -210,7 +210,7 @@ const TOUR = [
       return `<p class="tour-what">Put in your pay and bills and the burrow shows you how much is really free to spend and saves up for the things you want.</p>${player ? helloPlayer() : helloCard()}
       <p class="cap">${player
         ? 'Six minutes from Mako, who made this. It\'s under Help too.' + (helloVideo ? ` <a id="tourVideo" target="_blank" rel="noopener noreferrer" href="${esc(helloVideo.watch)}">Not playing? Open on Google Drive.</a>` : '')
-        : 'Six minutes from Mako, who made this. Come back here when you\'re done or skip it, it\'s under Help too.'}</p>
+        : 'Six minutes from Mako, who made this. Come back here when you\'re done or skip it. It\'s under Help too.'}</p>
       ${txHTML(player)}
       ${restoreHTML()}`;
     },
@@ -257,7 +257,7 @@ const TOUR = [
           ? `<div class="tour-cloud" id="tourCloud">${LOCK}<div><b>Keep a copy in the cloud</b><p class="cap">Your numbers live in this browser. A cloud copy keeps a second one, locked with a recovery code only you have. On a new phone or after the browser is cleared you open the Burrow, tap Enter your recovery code, type the code in, tap Find my copy, then tap Load and they come back.</p>
             <div class="row-btns"><button type="button" class="btn small solid" id="tourVaultOn">Keep a copy in the cloud</button><span class="cap">Or do it later in Settings, find Cloud copy and tap Keep a copy in the cloud</span></div><div class="tour-vault-code" id="tourVaultCode"></div></div></div>` : '';
         return `${homeScene()}${ok ? (f.st === 'spare' ? `<p class="tour-st"><span class="chip tight">${IC.warn}Pay not placed</span></p>` : `<p class="tour-st"><span class="chip good">${IC.ok}On plan</span></p>`) : ''}${goal}<p>Your month:</p>${ledgerHTML(f)}<p>${line}</p>
-        <p>After setup, the Receipts tab at the top is where you log what you spend or upload each month's statement, and that keeps these numbers true. Whatever is left of Free to spend at the end of the month can go into a goal. The ? button at the bottom right of every screen is Help, it has the video and this setup.</p>${cloud}`;
+        <p>After setup, the Receipts tab at the top is where you log what you spend or upload each month's statement, and that keeps these numbers true. Whatever is left of Free to spend at the end of the month can go into a goal. The ? button at the bottom right of every screen is Help. It has the video and this setup.</p>${cloud}`;
       }
       const PF = planFactsOf(S, calcAll(S), sel, true), pay = PF.pay, L = PF.L;   /* model.js */
       const zero = S.ui.preset === 'blank' || !!S.ui.cleared;

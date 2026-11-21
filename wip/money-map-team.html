@@ -2427,9 +2427,9 @@ const CFG = {
 const JARS = [
   { id: 'nec',  name: 'Bills and basics',                    usual: 0.55, about: 'Rent, food, utilities and every other bill.' },
   { id: 'lts',  name: 'Goal burrows', usual: 0.10, about: 'Money you save now and spend later, on a big purchase, a trip or a surprise. Your goals are in here.' },
-  { id: 'play', name: 'Free to spend',                         usual: 0.10, about: 'Fun for you and your family, spend it on whatever you want. What\'s left at month end can go to a goal.' },
+  { id: 'play', name: 'Free to spend',                         usual: 0.10, about: 'Fun for you and your family. Spend it on whatever you want. What\'s left at month end can go to a goal.' },
   { id: 'edu',  name: 'Education',                      usual: 0.10, about: 'Courses, books, coaching, skill building.' },
-  { id: 'ffa',  name: 'Investing',              usual: 0.10, about: 'You never spend this, it grows over time.' },
+  { id: 'ffa',  name: 'Investing',              usual: 0.10, about: 'You never spend this. It grows over time.' },
   { id: 'give', name: 'Giving',                         usual: 0.05, about: 'Charity, donations and gifts.' },
 ];
 /* the usual share of each place as a whole percent, for the screens that name it (they never work it out) */
@@ -13758,7 +13758,7 @@ const TOUR = [
       return `<p class="tour-what">Put in your pay and bills and the burrow shows you how much is really free to spend and saves up for the things you want.</p>${player ? helloPlayer() : helloCard()}
       <p class="cap">${player
         ? 'Six minutes from Mako, who made this. It\'s under Help too.' + (helloVideo ? ` <a id="tourVideo" target="_blank" rel="noopener noreferrer" href="${esc(helloVideo.watch)}">Not playing? Open on Google Drive.</a>` : '')
-        : 'Six minutes from Mako, who made this. Come back here when you\'re done or skip it, it\'s under Help too.'}</p>
+        : 'Six minutes from Mako, who made this. Come back here when you\'re done or skip it. It\'s under Help too.'}</p>
       ${txHTML(player)}
       ${restoreHTML()}`;
     },
@@ -13805,7 +13805,7 @@ const TOUR = [
           ? `<div class="tour-cloud" id="tourCloud">${LOCK}<div><b>Keep a copy in the cloud</b><p class="cap">Your numbers live in this browser. A cloud copy keeps a second one, locked with a recovery code only you have. On a new phone or after the browser is cleared you open the Burrow, tap Enter your recovery code, type the code in, tap Find my copy, then tap Load and they come back.</p>
             <div class="row-btns"><button type="button" class="btn small solid" id="tourVaultOn">Keep a copy in the cloud</button><span class="cap">Or do it later in Settings, find Cloud copy and tap Keep a copy in the cloud</span></div><div class="tour-vault-code" id="tourVaultCode"></div></div></div>` : '';
         return `${homeScene()}${ok ? (f.st === 'spare' ? `<p class="tour-st"><span class="chip tight">${IC.warn}Pay not placed</span></p>` : `<p class="tour-st"><span class="chip good">${IC.ok}On plan</span></p>`) : ''}${goal}<p>Your month:</p>${ledgerHTML(f)}<p>${line}</p>
-        <p>After setup, the Receipts tab at the top is where you log what you spend or upload each month's statement, and that keeps these numbers true. Whatever is left of Free to spend at the end of the month can go into a goal. The ? button at the bottom right of every screen is Help, it has the video and this setup.</p>${cloud}`;
+        <p>After setup, the Receipts tab at the top is where you log what you spend or upload each month's statement, and that keeps these numbers true. Whatever is left of Free to spend at the end of the month can go into a goal. The ? button at the bottom right of every screen is Help. It has the video and this setup.</p>${cloud}`;
       }
       const PF = planFactsOf(S, calcAll(S), sel, true), pay = PF.pay, L = PF.L;   /* model.js */
       const zero = S.ui.preset === 'blank' || !!S.ui.cleared;
@@ -16191,7 +16191,7 @@ function renderNext() {
   if (!step && (sw = sweepOffer())) {
     const nm = FULL[+sw.pm.slice(5) - 1], one = sw.goals.length === 1, nowNm = FULL[+sw.now.slice(5) - 1];
     const pick = sw.goals.length > 1 ? `<select class="inp sm" data-sweepgoal aria-label="Which goal">${sw.goals.map(r => `<option value="${esc(r.id)}"${r.id === sw.main.id ? ' selected' : ''}>${esc(r.name)}</option>`).join('')}</select>` : '';
-    step = [`${nm}: ${fmt2(sw.left)} of Free to spend isn't logged as spent`, `The plan counted it as spent. ${sw.n < 4 ? (sw.n === 0 ? 'No receipts are logged' : sw.n === 1 ? 'Only 1 receipt is logged' : `Only ${sw.n} receipts are logged`) + ', so this may be spending you haven\'t logged yet. ' : ''}${sw.goals.length ? 'Count it in the bank or put it toward a goal, you can undo either one.' : 'Count it in the bank, you can undo it.'}`   /* no goal button when no goal has room, so no goal in the words (QC10 numbers should-fix 2) */, `Count ${fmt2(sw.left)} in the bank`, `data-sweepbank="${sw.pm}"`, pick];
+    step = [`${nm}: ${fmt2(sw.left)} of Free to spend isn't logged as spent`, `The plan counted it as spent. ${sw.n < 4 ? (sw.n === 0 ? 'No receipts are logged' : sw.n === 1 ? 'Only 1 receipt is logged' : `Only ${sw.n} receipts are logged`) + ', so this may be spending you haven\'t logged yet. ' : ''}${sw.goals.length ? 'Count it in the bank or put it toward a goal. You can undo either one.' : 'Count it in the bank. You can undo it.'}`   /* no goal button when no goal has room, so no goal in the words (QC10 numbers should-fix 2) */, `Count ${fmt2(sw.left)} in the bank`, `data-sweepbank="${sw.pm}"`, pick];
   }
   if (!step && d.pay && d.bills && S.ui.src !== 'import' && !S.ui.exactHidden && !sampleOn()) { const can = typeof askFn !== 'undefined' && !!askFn; step = ['Make it exact', can ? 'Upload 2 or 3 months of statements, screenshots of the bank app work too, and the numbers become exact and your history fills in' : 'Bring in 2 or 3 months of statements with an AI app, screenshots of the bank app work too, and the numbers become exact and your history fills in', can ? 'Upload' : 'Use an AI app', 'data-exact']; }
   if (!step && d.pay && d.bills && S.ui.full !== true && !S.ui.moreBillsHidden && !sampleOn() && necLines().filter(l => val(S, l.key, nowYm()) > 0).length < 4) step = ['Next: add your other bills', 'Utilities, internet, phone and transport: rough numbers are fine', 'Open bills', 'data-open="nec"', '', 'data-hidebills'];
@@ -16510,7 +16510,7 @@ function applyHomeOrder() {
   HOME_SECTIONS.forEach(id => { const el = $('#' + HOME_EL[id]); if (el) el.hidden = order.indexOf(id) < 0; });
   order.forEach(id => { const el = $('#' + HOME_EL[id]); if (el) panel.append(el); });
 }
-const FOOT_SAMPLE = 'Not financial advice. The sample numbers are made up, replace them with yours.', FOOT_OWN = 'Not financial advice.';
+const FOOT_SAMPLE = 'Not financial advice. The sample numbers are made up. Replace them with yours.', FOOT_OWN = 'Not financial advice.';
 function paintFoot() { const el = $('#footNote'); if (!el) return; const t = sampleOn() ? FOOT_SAMPLE : FOOT_OWN; if (el.textContent !== t) el.textContent = t; }
 function renderHome() {
   if (!C) return;
