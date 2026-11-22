@@ -2306,6 +2306,7 @@ ol.steps li { margin: 0 0 4px; }
         </div>
         <p class="cap" id="bkWhen" role="status"></p>
         <p class="cap" id="keepLine" hidden><span id="keepTxt"></span> <button type="button" class="link" id="keepBack">Put them back</button></p>
+        <div id="keepMore" hidden></div>
         <p class="cap">A backup file holds all your numbers and receipts as they are at the moment you save it. It doesn't update by itself.</p>
         <ol class="cap howto" id="bkSteps"><li>Tap <b>Save file</b>. The file lands in your downloads. Or tap <b>Copy text</b> and paste it into a note.</li><li>Keep it somewhere other than this device too, like your drive or an email to yourself.</li><li>Save a new one every now and then, and always before you clear or reset anything.</li></ol>
         <h4>Spreadsheet</h4>
@@ -4538,13 +4539,14 @@ const UNDO_MAX = 12, UI_SNAP = ['sb', 'subs', 'subP', 'subO', 'cardT', 'cardB', 
    screens keep (S.ui.keep, ui45.js keepCopy), so Undo is still there after a reload: ACT.tx called from outside (the assistant's Apply,
    setup from statements), every removal, and the top-up family (Add money on a burrow). An action that sets ONE typed value passes ONE
    and keeps no copy: its Undo lasts for the visit, and a small edit never pushes out the copy of a big change (there is one slot).
-   The copy remembers which receipts the action itself added, so a late Undo keeps every receipt logged after it. */
+   The copy remembers what the action changed (ui45.js keepCopy), so a late Undo puts back only that and keeps everything done since. */
 const ONE = { one: true };
 const KEEP_WHY = { assistant: 'Ask changed your plan.', 'setup from statements': 'Setup from your statements changed your plan.', 'remove goal': 'A burrow was removed.', 'remove line': 'A line was removed from your plan.',
   'remove receipts': 'Receipts were deleted.', 'remove card': 'A card was removed.', 'top-up': 'Unspent money was moved.', 'undo top-up': 'Money was taken back out of a burrow.' };
 /* these have their own Undo on the screen they are used on, so the bar does not also show in the same visit (it does after a reload) */
 const KEEP_QUIET = { assistant: 1, 'top-up': 1, 'undo top-up': 1 };
-/* Undo from a copy an action kept: the numbers from before it, plus every receipt logged since that the action did not add itself */
+/* Undo from a copy alone (one that does not know what its change did): the numbers from before it, plus every receipt logged since that
+   the change did not add itself */
 function restoreKept(snap, added) {
   const d = normalize(JSON.parse(snap)), had = new Set((d.receipts || []).map(r => r.id)), own = new Set(added || []);
   const later = (S.receipts || []).filter(r => !had.has(r.id) && !own.has(r.id));
@@ -4569,17 +4571,18 @@ const ACT = {
   tx(label, fn, one, whyText) {
     if (txDepth) { txDepth++; try { return fn(); } finally { txDepth--; } }
     const keeps = one !== ONE && typeof snapNoCopy === 'function', kept = keeps ? snapNoCopy() : null;
+    const slots = keeps ? JSON.stringify({ keep: S.ui.keep, keeps: S.ui.keeps }) : null;   /* the kept changes as they were, for an Undo in this visit */
     const before = snapState(); txDepth = 1; txTouched = false; let out;
     try { out = fn(); } finally { txDepth = 0; }
     const postIds = new Set((S.receipts || []).map(r => r.id));
     const changed = JSON.stringify([S.steps, S.once, S.items, S.cfg, S.plan, S.receipts, S.cards]) !== JSON.stringify([before.steps, before.once, before.items, before.cfg, before.plan, before.receipts, before.cards])
       || UI_SNAP.some(k => JSON.stringify(S.ui[k]) !== JSON.stringify(before.ui[k]));
     if (changed) {
-      const u = { label: String(label || 'change'), before, postIds, at: Date.now() };
+      const u = { label: String(label || 'change'), before, postIds, at: Date.now(), slots };
       if (keeps) {
         const had = before.ids, added = (S.receipts || []).filter(r => !had.has(r.id)).map(r => r.id), why = whyText || KEEP_WHY[label] || 'Your plan was changed.';
         keepCopy(kept, why); S.ui.keep.act = 1; if (added.length) S.ui.keep.added = added; u.keptAt = S.ui.keep.t;
-        if (!KEEP_QUIET[label] && window.offerUndoG) window.offerUndoG(kept, `${why} You can undo for ${KEEP_DAYS} days.`, () => restoreKept(kept, added));
+        if (!KEEP_QUIET[label] && window.offerUndoG) window.offerUndoG(kept, `${why} You can undo for ${KEEP_DAYS} days.`);   /* Undo puts back only what this changed (ui45.js keepUndo) */
       }
       undoStack.push(u); if (undoStack.length > UNDO_MAX) undoStack.shift();
     }
@@ -4602,7 +4605,15 @@ const ACT = {
     const u = undoStack.pop(); if (!u) return false;
     restoreState(u.before, u.postIds);
     /* the copy that action kept is let go with it, so a change already taken back is not offered again after a reload */
-    if (u.keptAt && S.ui.keep && S.ui.keep.t === u.keptAt) delete S.ui.keep;
+    /* while this change is still the newest kept, the kept changes go back to how they were before it (the one before is the newest again,
+       with its full copy); otherwise only this one is let go */
+    if (u.keptAt) {
+      if (S.ui.keep && S.ui.keep.t === u.keptAt && u.slots) {
+        const was = JSON.parse(u.slots), live = new Set(keepAll().map(e => e.t));
+        if (was.keep && live.has(was.keep.t)) S.ui.keep = was.keep; else delete S.ui.keep;
+        const ks = (was.keeps || []).filter(e => live.has(e.t)); if (ks.length) S.ui.keeps = ks; else delete S.ui.keeps;
+      } else keepDrop({ t: u.keptAt });
+    }
     ACT.commit(); return true;
   },
   /* forget the undo history, for example after a restore from a backup */
@@ -5507,12 +5518,18 @@ function wireReceipts() {
     if (needTitle(c, n)) { msg.textContent = 'Add a short title, like “Vet bill”'; $('#rcNote').focus(); return; }
     S.ui.rcCat = c; const wasEdit = !!editRc;
     const firstRc = !(S.ui.done && S.ui.done.receipts);
+    const was = wasEdit ? JSON.parse(JSON.stringify((S.receipts || []).find(x => x.id === editRc) || null)) : null;   /* the receipt as it was, for the edit's own Undo */
     let rid = null; if (wasEdit) updateReceipt(S, editRc, d, a, c, n); else { rid = addReceipt(S, d, a, c, n); markDone('receipts', true); }
     msg.textContent = (wasEdit ? 'Saved. ' : 'Logged. ') + fmt2(wholeAmt(S, a)) + ': ' + (c === 'other' ? 'Other' : (lineByKey(S, c) || { name: 'Other' }).name) + '.';
     resetRcForm(); persist();
     if (d.slice(0, 7) !== sel) { select(d.slice(0, 7)); selByReceipt = true; } else render(); /* the list follows the receipt, so it can be seen where it went; Plan goes back to this month on its own */
     $('#rcAmt').focus();
     if (!wasEdit) { rcUndo(rid, msg.textContent); afterLog(firstRc); }   /* one tap takes this receipt back out (38.31 data safety round) */
+    /* QC round 10 numbers should-fix 8: after an edit the bar of an earlier "Logged" (which would remove the receipt) is replaced. It names
+       what Undo does now: puts the receipt back as it was before the edit, and the receipt stays */
+    else if (was && window.offerUndoG) { const now = wholeAmt(S, a), same = Math.abs((+was.a || 0) - now) < 0.005;
+      window.offerUndoG('receipt', `Saved ${fmt2(now)}: ${c === 'other' ? 'Other' : (lineByKey(S, c) || { name: 'Other' }).name}. Undo puts back ${same ? 'the receipt as it was' : fmt2(+was.a || 0)}.`,
+        () => { const i = (S.receipts || []).findIndex(x => x.id === was.id); if (i >= 0) S.receipts[i] = was; ['#hMsg', '#rcMsg'].forEach(q => { const e = $(q); if (e && /^Saved/.test(e.textContent)) e.textContent = ''; }); }, 8000); }
   });
   $('#rcCat').addEventListener('change', () => { catPicked('rc'); syncOtherTitle('rcCat', 'rcNote'); $('#rcMsg').textContent = ''; });
   $('#rcCancel').addEventListener('click', () => { resetRcForm(); $('#rcMsg').textContent = ''; render(); });
@@ -14017,10 +14034,162 @@ let RESPLIT_SNAP = null;   /* the copy taken when Re-split pay opens the setup s
 /* Guided setup run again over a plan the person already has (38.31 data safety round: it changed pay and saved amounts with no copy and no Undo):
    the same copy as Re-split pay, kept in the saved plan too, so Undo is offered when setup closes, or after a reload if the page was closed part-way */
 /* a copy of the numbers from before a big change (setup run again, a backup loaded), kept in the saved plan for 3 days so Undo survives a reload
-   (38.31 data safety round 2). Only the newest is kept, and a copy never holds an older copy inside it */
-const KEEP_DAYS = 3;
-function snapNoCopy() { const c = JSON.parse(JSON.stringify(S)); if (c.ui) { delete c.ui.keep; delete c.ui.preSplit; } return JSON.stringify(c); }
-function keepCopy(snap, why) { S.ui.keep = { snap, t: Date.now(), why }; }
+   (38.31 data safety round 2). A copy never holds an older copy inside it.
+   NOBODY LOSES DATA (QC round 10 data safety blocker 1). Undo used to put the whole copy back, so a receipt logged after the change was
+   silently deleted. Now each kept change also remembers exactly what it changed (d: the value before and after, path by path; lists with
+   ids are read by id). Undo puts back only those values, and only where they still are as the change left them: everything done since
+   stays. Where something done since would have to go (a value changed again since, or a receipt the change itself added and that was
+   edited since), Undo asks first and names it. */
+const KEEP_DAYS = 3, KEEP_MAX = 30;
+function snapNoCopy() { const c = JSON.parse(JSON.stringify(S)); if (c.ui) { delete c.ui.keep; delete c.ui.keeps; delete c.ui.preSplit; } return JSON.stringify(c); }
+const KEEP_PARTS = ['plan', 'steps', 'once', 'items', 'cfg', 'cards', 'receipts'], KEEP_UI_SKIP = { keep: 1, keeps: 1, preSplit: 1 };
+const kObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
+const kIdArr = v => Array.isArray(v) && v.every(e => kObj(e) && typeof e.id === 'string') && new Set(v.map(e => e.id)).size === v.length;
+const kEq = (a, b) => a === b || (a !== undefined && b !== undefined && stable(a) === stable(b));
+const kClone = v => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
+const kKeys = (...os) => { const ks = []; os.forEach(o => { if (o) Object.keys(o).forEach(k => { if (ks.indexOf(k) < 0) ks.push(k); }); }); return ks; };
+const kMap = arr => { const m = {}; (arr || []).forEach(e => { m[e.id] = e; }); return m; };
+const kHash = t => { let h = 2166136261; for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36) + '.' + t.length; };
+/* the parts of the saved numbers a change can touch: the numbers, and the page's own settings (never the kept copies themselves) */
+function kParts(x) { const o = {}; KEEP_PARTS.forEach(k => { if (x[k] !== undefined) o[k] = x[k]; }); const u = {}; Object.keys(x.ui || {}).forEach(k => { if (!KEEP_UI_SKIP[k]) u[k] = x.ui[k]; }); o.ui = u; return o; }
+/* a step into a list with ids: the id, and its neighbours in the list before the change (where it goes back when it comes back) */
+function kSeg(b, id) { const i = (b || []).findIndex(e => e.id === id); return { id, prev: i > 0 ? b[i - 1].id : null, next: i >= 0 && i + 1 < b.length ? b[i + 1].id : null }; }
+/* where an element that comes back goes: after the one before it, or else before the one after it, or else first if it was first */
+function kAt(ids, s) { const p = s.prev === null ? -1 : ids.indexOf(s.prev), n = s.next === null || s.next === undefined ? -1 : ids.indexOf(s.next); return p >= 0 ? p + 1 : n >= 0 ? n : s.prev === null ? 0 : ids.length; }
+/* what a change did, as small steps: {p: path, b: before, a: after}; a step into a list with ids is kSeg; {p, o, ao} is an order */
+function keepDiff(B, A) { const out = [], pb = kParts(B), pa = kParts(A); kKeys(pb, pa).forEach(k => kDiff(pb[k], pa[k], [k], out)); return out; }
+function kDiff(b, a, path, out) {
+  if (kEq(b, a)) return;
+  if (kObj(b) && kObj(a)) { kKeys(b, a).forEach(k => kDiff(b[k], a[k], path.concat(k), out)); return; }
+  if (kIdArr(b) && kIdArr(a)) {
+    const bm = kMap(b), am = kMap(a);
+    kKeys(bm, am).forEach(id => kDiff(bm[id], am[id], path.concat(kSeg(b, id)), out));
+    const o = b.map(e => e.id).filter(id => am[id]), ao = a.map(e => e.id).filter(id => bm[id]);
+    if (o.join('\n') !== ao.join('\n')) out.push({ p: path, o, ao });
+    return;
+  }
+  const op = { p: path }; if (b !== undefined) op.b = kClone(b); if (a !== undefined) op.a = kClone(a); out.push(op);
+}
+function kGet(root, path) { let v = root; for (const s of path) { if (v === undefined || v === null) return undefined; v = typeof s === 'object' ? (Array.isArray(v) ? v.find(e => e && e.id === s.id) : undefined) : v[s]; } return v; }
+function kSet(root, path, v) {
+  let o = root;
+  for (let i = 0; i < path.length - 1; i++) {
+    const s = path[i], nx = path[i + 1];
+    if (typeof s === 'object') { o = Array.isArray(o) ? o.find(e => e && e.id === s.id) : undefined; if (!o) return; continue; }
+    if (o[s] === undefined || o[s] === null) { if (v === undefined) return; o[s] = typeof nx === 'object' ? [] : {}; }
+    o = o[s];
+  }
+  const s = path[path.length - 1];
+  if (typeof s !== 'object') { if (v === undefined) delete o[s]; else o[s] = v; return; }
+  if (!Array.isArray(o)) return;
+  const i = o.findIndex(e => e && e.id === s.id);
+  if (v === undefined) { if (i >= 0) o.splice(i, 1); return; }
+  if (i >= 0) { o[i] = v; return; }
+  o.splice(kAt(o.map(e => e && e.id), s), 0, v);
+}
+/* one value back: b before the change, a after it, c now. Untouched since: b. Already b, or never touched by the change: c. Both changed:
+   a conflict, named to the person first (keepSince). The page's own settings keep what is there now; something gone since comes back */
+function kM3(b, a, c, path, out) {
+  if (kEq(a, c)) return kClone(b);
+  if (kEq(b, c) || kEq(b, a)) return c;
+  const inList = path.length > 0 && typeof path[path.length - 1] === 'object';
+  if (!(inList && (b === undefined || c === undefined)) && [b, a, c].every(v => v === undefined || kObj(v))) {
+    const r = {}; kKeys(b, a, c).forEach(k => { const v = kM3(b && b[k], a && a[k], c && c[k], path.concat(k), out); if (v !== undefined) r[k] = v; });
+    return b === undefined && !Object.keys(r).length ? undefined : r;
+  }
+  if ([b, a, c].every(v => v === undefined || kIdArr(v))) {
+    const bm = kMap(b), am = kMap(a), cm = kMap(c), res = {};
+    kKeys(bm, am, cm).forEach(id => { const v = kM3(bm[id], am[id], cm[id], path.concat(kSeg(b, id)), out); if (v !== undefined) res[id] = v; });
+    const list = (c || []).map(e => e.id).filter(id => res[id]);
+    (b || []).forEach(e => { if (res[e.id] && list.indexOf(e.id) < 0) list.splice(kAt(list, kSeg(b, e.id)), 0, e.id); });
+    Object.keys(res).forEach(id => { if (list.indexOf(id) < 0) list.push(id); });
+    return b === undefined && !list.length ? undefined : list.map(id => res[id]);
+  }
+  if (path[0] === 'ui') return c;
+  if (c === undefined) return kClone(b);
+  out.push({ p: path, b, c }); return kClone(b);
+}
+function kOrder(root, op) {
+  const arr = kGet(root, op.p); if (!Array.isArray(arr)) return;
+  const want = op.o.filter(id => arr.some(e => e && e.id === id)), set = new Set(want), pos = []; arr.forEach((e, i) => { if (e && set.has(e.id)) pos.push(i); });
+  if (pos.map(i => arr[i].id).join('\n') !== op.ao.filter(id => set.has(id)).join('\n')) return;   /* put in another order since: that order stays */
+  const by = kMap(pos.map(i => arr[i])); pos.forEach((i, j) => { arr[i] = by[want[j]]; });
+}
+/* the numbers as they would be after this Undo (T), and what done since it would take away (out; empty: nothing done since is touched) */
+function keepMerge(e) {
+  const T = JSON.parse(JSON.stringify(S)), out = [];
+  if (!e || !Array.isArray(e.d)) return { T, out, none: true };
+  e.d.forEach(op => { if (op.o) kOrder(T, op); else kSet(T, op.p, kM3(op.b, op.a, kGet(T, op.p), op.p, out)); });
+  return { T, out };
+}
+const keepLive = e => !!(e && +e.t > 0 && Date.now() - e.t <= KEEP_DAYS * 864e5 && (Array.isArray(e.d) || typeof e.snap === 'string'));
+/* QC round 10 data safety blocker 2: a second removal no longer ends the first one's Undo. Every kept change keeps its own Undo until its
+   own date: the newest is S.ui.keep (with its full copy, for Settings), the ones before it are S.ui.keeps (what they changed only, so they
+   stay small). Newest first. */
+function keepAll() { const u = (S && S.ui) || {}; return [u.keep].concat(Array.isArray(u.keeps) ? u.keeps : []).filter(keepLive); }
+function keepFind(sn) { if (typeof sn !== 'string') return null; const t = /^keep:(\d+)$/.exec(sn), h = t ? '' : kHash(sn); return keepAll().find(e => (t ? String(e.t) === t[1] : e.snap === sn || e.sh === h)) || null; }
+function keepDrop(e) {
+  if (!e || !S.ui) return;
+  if (S.ui.keep && S.ui.keep.t === e.t) delete S.ui.keep;
+  if (Array.isArray(S.ui.keeps)) { S.ui.keeps = S.ui.keeps.filter(x => x && x.t !== e.t); if (!S.ui.keep && S.ui.keeps.length) S.ui.keep = S.ui.keeps.shift(); if (!S.ui.keeps.length) delete S.ui.keeps; }   /* the next newest is the newest again */
+}
+function keepCopy(snap, why) {
+  const all = keepAll(), t = Math.max(Date.now(), all.length ? +all[0].t + 1 : 0);
+  let d = null; try { d = keepDiff(JSON.parse(snap), S); } catch (er) { d = null; }
+  /* the changes kept before this one keep their Undo until their own date; only what they changed is kept for them, not their full copy */
+  const older = all.map(e => { if (!Array.isArray(e.d)) return e; const o = Object.assign({}, e); delete o.snap; delete o.sig; return o; });
+  if (older.length) S.ui.keeps = older.slice(0, KEEP_MAX - 1); else delete S.ui.keeps;
+  S.ui.keep = { snap, t, why, sh: kHash(snap) }; if (d) S.ui.keep.d = d;
+  try { S.ui.keep.msb = Object.keys((JSON.parse(snap).ui || {}).ms || {}); } catch (er) { /* no milestone list */ }
+}
+/* a backup or a cloud copy loaded over the numbers here: the kept changes are this device's own, never the ones inside the loaded copy */
+function keepOwn(old) { ['keep', 'keeps'].forEach(k => { if (old && old.ui && old.ui[k] !== undefined) S.ui[k] = old.ui[k]; else delete S.ui[k]; }); }
+/* only past KEEP_MAX changes in 3 days does one more push the oldest out: a removal's confirm says so first */
+function keepEnds() { const all = keepAll(); return all.length >= KEEP_MAX ? ` This ends the Undo for: ${all[all.length - 1].why || 'an earlier change'}` : ''; }
+/* a copy kept by an older version knows only the numbers from before: what it changed is worked out from the numbers now, and the
+   receipts logged since (any the copy does not have, except those the change added itself) always stay */
+function keepTidy() {
+  if (!S.ui) return false; let ch = false;
+  const k = S.ui.keep;
+  if (k && !keepLive(k)) { delete S.ui.keep; ch = true; }
+  else if (k && !Array.isArray(k.d) && typeof k.snap === 'string') {
+    try { const own = new Set(k.added || []); k.d = keepDiff(JSON.parse(k.snap), S).filter(op => !(op.p[0] === 'receipts' && op.p.length === 2 && op.b === undefined && !own.has(op.p[1].id))); if (keptChanged(k)) k.unsure = 1; k.sh = kHash(k.snap); k.msb = Object.keys((JSON.parse(k.snap).ui || {}).ms || {}); ch = true; } catch (er) { /* Undo falls back to the copy itself, keeping the receipts */ } }
+  if (Array.isArray(S.ui.keeps)) { const n = S.ui.keeps.length; S.ui.keeps = S.ui.keeps.filter(e => keepLive(e) && Array.isArray(e.d)); if (n !== S.ui.keeps.length) ch = true; if (!S.ui.keeps.length) delete S.ui.keeps; }
+  return ch;
+}
+/* the words for what an Undo would also take away, or '' when nothing done since is touched */
+function keepSince(e) {
+  const m = keepMerge(e); if (m.none) return e && keptChanged(e) ? 'Undo also removes what you did since: the numbers you changed since then. Receipts stay.' : '';
+  const rc = [], names = [];
+  const keyName = key => key === 'a' ? 'your pay' : key === 'b' ? 'Second pay' : key === 'side' ? 'Side pay' : key.slice(0, 5) === 'goal:' ? ((goalById(S, key.slice(5)) || {}).name || 'a burrow') : key.slice(0, 5) === 'debt:' ? 'a card or loan' : ((lineByKey(S, key) || {}).name || 'an amount');
+  m.out.forEach(x => {
+    const p = x.p, s1 = p[1], s2 = p[2]; let n = 'your plan';
+    if (p[0] === 'receipts' && s1 && typeof s1 === 'object') { if (!rc.some(r => r.id === s1.id)) rc.push({ id: s1.id, a: +(kGet(S, p.slice(0, 2)) || {}).a || 0 }); return; }
+    if (p[0] === 'plan' && (s1 === 'lines' || s1 === 'goals') && s2 && typeof s2 === 'object') n = (kGet(S, p.slice(0, 3)) || {}).name || n;
+    else if (p[0] === 'steps' && s1) n = keyName(s1);
+    else if ((p[0] === 'once' || p[0] === 'items') && s1 && MONTHS.indexOf(s1) >= 0) n = (p[0] === 'once' && s2 ? keyName(s2) + ' for ' : 'your changes for ') + monthLabel(s1);
+    else if (p[0] === 'cfg') n = { bankStart: 'your bank balance', bankNow: 'your bank balance', bankAt: 'your bank balance', minBank: 'your minimum balance', ceiling: 'your spending ceiling', aims: 'how your pay is split' }[s1] || 'a setting';
+    else if (p[0] === 'cards') n = s1 && typeof s1 === 'object' ? ((kGet(S, p.slice(0, 2)) || {}).name || 'a card') : 'your cards';
+    if (names.indexOf(n) < 0) names.push(n);
+  });
+  const parts = [];
+  if (rc.length) parts.push(`${rc.length} receipt${rc.length === 1 ? '' : 's'} (${rc.slice(0, 3).map(r => fmt2(r.a)).join(', ')}${rc.length > 3 ? ' and more' : ''})`);
+  if (names.length) { const ns = names.length > 4 ? names.slice(0, 3).concat(`${names.length - 3} more`) : names; parts.push('your changes to ' + (ns.length > 1 ? ns.slice(0, -1).join(', ') + ' and ' + ns[ns.length - 1] : ns[0])); }
+  if (!parts.length && e.unsure) parts.push('numbers you changed since then');
+  return parts.length ? `Undo also removes what you did since: ${parts.join(' and ')}.` : '';
+}
+/* Undo of one kept change: only what it changed comes back and everything done since stays (except what keepSince named, once the person
+   said yes). Its copy is let go, so it is not offered again */
+function keepUndo(e) {
+  const m = keepMerge(e), had = (S.receipts || []).map(r => r.id), keep = {}; ['keep', 'keeps', 'preSplit'].forEach(k => { if (S.ui[k] !== undefined) keep[k] = S.ui[k]; });
+  if (m.none) { if (typeof e.snap === 'string') { restoreKept(e.snap, e.added); S.ui = Object.assign(S.ui || {}, keep); } }   /* only the copy is known: it comes back with every receipt logged since */
+  else { KEEP_PARTS.forEach(k => { if (m.T[k] === undefined) delete S[k]; else S[k] = m.T[k]; }); S.ui = Object.assign(m.T.ui || {}, keep); }
+  had.forEach(id => { if (!(S.receipts || []).some(r => r.id === id)) RM_IDS.add(id); });
+  /* a burrow's milestone is first noted when Home first draws it (ui6.js): one noted only because the change put another burrow on Home
+     is let go, so the Undo is exact. Noting it again later celebrates nothing */
+  if (Array.isArray(e.msb) && S.ui.ms) { Object.keys(S.ui.ms).forEach(id => { if (e.msb.indexOf(id) < 0) delete S.ui.ms[id]; }); if (!Object.keys(S.ui.ms).length) delete S.ui.ms; }
+  keepDrop(e);
+}
 function openSetupWithCopy(at, mode) {
   if (typeof hasData === 'function' && hasData(S) && !RESPLIT_SNAP) { RESPLIT_SNAP = snapNoCopy(); S.ui.preSplit = RESPLIT_SNAP; persist(); }
   openTour(at, mode);
@@ -15508,6 +15677,7 @@ async function vaultApply(k, srv, asked, prevVault) {
   /* the local revision never goes back: the device's second copy holds the old numbers at their own revision, and a lower one here let it win
      on the next open, then send the old numbers over the cloud copy (QC round 4 data safety 1). The cloud revision is kept apart in vault.rev */
   S.rev = Math.max(srv.rev, (+old.rev || 0) + 1, (typeof LOADED_REV === 'number' ? LOADED_REV : 0) + 1); vault.rev = srv.rev; vault.local = S.rev; vaultNote = null; vaultCaughtUp();
+  keepOwn(old);   /* the kept changes are this device's own, never the other device's inside the cloud copy */
   if (!wasEmpty) keepCopy(oldSnap, 'The cloud copy replaced the numbers on this device.');
   /* a phone that was not sharing this cloud copy: how it was sharing before is kept on this device (never in the numbers, which are sent),
      so an Undo after a reload, or Put them back, stops sharing the cloud copy like the Undo right after the load (QC round 5 data safety B1) */
@@ -15523,7 +15693,7 @@ async function vaultApply(k, srv, asked, prevVault) {
        not) before, so nothing is ever sent over the other phone's copy (QC10 round 2 north-star finding 1) */
     const pv = Object.assign({}, prevVault);
     window.offerUndoG(oldSnap, `Cloud copy loaded. The numbers this device had are kept for ${KEEP_DAYS} days. Undo puts them back on this device and stops sharing the cloud copy here.`,
-      () => { clearTimeout(vaultTimer); vault = pv; vaultKeys = null; vaultNote = null; vaultSaveLocal(); S = normalize(JSON.parse(oldSnap)); vaultFlowClose(); setTimeout(() => { try { cheer('Your own numbers are back. This device no longer shares the cloud copy, and the cloud copy is unchanged.'); } catch (e) { } }, 50); });   /* the Done panel closes (QC10 round 3 north-star 1) */
+      () => { clearTimeout(vaultTimer); vault = pv; vaultKeys = null; vaultNote = null; vaultSaveLocal(); if (!keepFind(oldSnap)) S = normalize(JSON.parse(oldSnap)); vaultFlowClose(); setTimeout(() => { try { cheer('Your own numbers are back. This device no longer shares the cloud copy, and the cloud copy is unchanged.'); } catch (e) { } }, 50); });   /* the Done panel closes (QC10 round 3 north-star 1) */
   }
   else if (window.offerUndoG) window.offerUndoG(oldSnap, `Cloud copy loaded. The numbers this device had are kept for ${KEEP_DAYS} days. Undo puts them back here and in the cloud copy.`);
 }
@@ -16058,12 +16228,17 @@ function paintBk() {
   el.textContent = a === null ? 'Last backup: never.' : a === 0 ? 'Last backup: today.' : `Last backup: ${a === 1 ? '1 day' : a + ' days'} ago.`;
   /* the numbers from before a big change stay one tap away here for as long as they are kept, after the Undo bar has gone (QC round 4
      data safety 5, north-star agent check C8) */
-  const kl = $('#keepLine'), k = S.ui && S.ui.keep, ok = !!(k && typeof k.snap === 'string' && +k.t > 0 && Date.now() - k.t <= KEEP_DAYS * 864e5);
+  const kl = $('#keepLine'), k = keepAll()[0], ok = !!k;
   if (kl) { kl.hidden = !ok; if (ok) {
-    /* once anything was typed after the change, Put them back would replace that too: say from when the kept numbers are and what the tap replaces */
-    const until = dateLabel(ymd(new Date(+k.t + KEEP_DAYS * 864e5))), ch = keptChanged(k), at = ymd(new Date(+k.t)), from = at.slice(0, 4) === todayStr().slice(0, 4) ? dateLabel(at).replace(/ \d{4}$/, '') : dateLabel(at);
+    /* Put them back keeps everything done since (QC round 10 data safety B1). Only when something done since would have to go does it say so:
+       from when the kept numbers are and that the tap replaces some of what is here (the tap then names it before anything changes) */
+    const ckey = k.t + '|' + S.rev + '|' + keepAll().length; if (ckey !== paintBk.key) { paintBk.key = ckey; paintBk.ch = !!keepSince(k); }   /* worked out once per saved change, not on every redraw */
+    const until = dateLabel(ymd(new Date(+k.t + KEEP_DAYS * 864e5))), ch = paintBk.ch, at = ymd(new Date(+k.t)), from = at.slice(0, 4) === todayStr().slice(0, 4) ? dateLabel(at).replace(/ \d{4}$/, '') : dateLabel(at);
     $('#keepTxt').textContent = ch ? `Numbers from before ${from} are kept until ${until}.` : `${k.why || 'Your numbers changed.'} The numbers from before are kept until ${until}.`;
     $('#keepBack').textContent = ch ? 'Put them back (replaces what is here now)' : 'Put them back'; } }
+  /* every change kept before the newest keeps its own Undo until its own date (QC round 10 data safety B2), newest first */
+  const km = $('#keepMore'); if (km) { const more = keepAll().slice(1); km.hidden = !more.length;
+    put(km, more.map(e => `<p class="cap">${esc(e.why || 'Your numbers changed.')} You can undo until ${dateLabel(ymd(new Date(+e.t + KEEP_DAYS * 864e5)))}. <button type="button" class="link" data-keep-t="${+e.t}" data-armkey="keep-${+e.t}">Undo</button></p>`).join('')); }
 }
 /* a backup is due: numbers in, no cloud copy, none saved for three weeks, and Later not pressed this week */
 function backupDue() {
@@ -17109,10 +17284,11 @@ function debtsInit() {
     if (t.hasAttribute('data-ddel')) {
       const id = t.closest('.dform').dataset.did;
       const d0 = debtsOf(S).find(d => d.id === id), dn = d0 ? d0.name : 'This card or loan';
-      confirmClick(t, `Tap again: removes ${dn} and its payments. You can undo for ${KEEP_DAYS} days.`, () => {
-        const sn = snapNoCopy(); keepCopy(sn, `${dn} was removed.`); if (window.offerUndoG) window.offerUndoG(sn, `${dn} removed. You can undo for ${KEEP_DAYS} days.`);   /* 38.31 data safety round 3 */
+      confirmClick(t, `Tap again: removes ${dn} and its payments. You can undo for ${KEEP_DAYS} days.${keepEnds()}`, () => {
+        const sn = snapNoCopy();
         S.plan.debts = debtsOf(S).filter(d => d.id !== id); if (!S.plan.debts.length) delete S.plan.debts;
         delete S.steps['debt:' + id]; Object.keys(S.once).forEach(ym => { delete S.once[ym]['debt:' + id]; if (!Object.keys(S.once[ym]).length) delete S.once[ym]; });
+        keepCopy(sn, `${dn} was removed.`); if (window.offerUndoG) window.offerUndoG(sn, `${dn} removed. You can undo for ${KEEP_DAYS} days.`);   /* 38.31 data safety round 3; kept after the change, so it knows what the change did (QC round 10 data safety B1) */
         DEBT_EDIT = null; debtSig = ''; persist(); restructure();
       });
     }
@@ -17610,7 +17786,7 @@ function wire() {
   });
   led.addEventListener('click', e => {
     const ed = e.target.closest('[data-edit]'); if (ed) { editRow = editRow === ed.dataset.edit ? null : ed.dataset.edit; openId = ed.dataset.edit; restructure(); return; }
-    const ld = e.target.closest('[data-ldel]'); if (ld) { const l0 = lineById(S, ld.dataset.ldel), ln = l0 ? l0.name : 'This line'; confirmClick(ld, `Tap again: removes ${ln} from every month. You can undo for ${KEEP_DAYS} days.`, () => { const sn = snapNoCopy(); keepCopy(sn, `${ln} was removed.`); offerUndo(sn, `${ln} removed. You can undo for ${KEEP_DAYS} days.`); const l = lineById(S, ld.dataset.ldel); if (l && l.jar === 'nec') markDone('bills', true); removeLine(S, ld.dataset.ldel); persist(); restructure(); }); return; }
+    const ld = e.target.closest('[data-ldel]'); if (ld) { const l0 = lineById(S, ld.dataset.ldel), ln = l0 ? l0.name : 'This line'; confirmClick(ld, `Tap again: removes ${ln} from every month. You can undo for ${KEEP_DAYS} days.${keepEnds()}`, () => { const sn = snapNoCopy(); const l = lineById(S, ld.dataset.ldel); if (l && l.jar === 'nec') markDone('bills', true); removeLine(S, ld.dataset.ldel); keepCopy(sn, `${ln} was removed.`); offerUndo(sn, `${ln} removed. You can undo for ${KEEP_DAYS} days.`); persist(); restructure(); });   /* the copy is kept after the change, so it knows what the change did (QC round 10 data safety B1) */ return; }
     const h = e.target.closest('.row-h'); if (h && !e.target.closest('input')) { const id = h.closest('.row').dataset.id; setOpen(openId === id ? null : id); return; }
     const kp = e.target.closest('[data-keep]'); if (kp) { const o = S.once[sel]; if (o && o[kp.dataset.keep] !== undefined) setVal(S, kp.dataset.keep, sel, o[kp.dataset.keep], 'after'); persist(); render(); return; }
     const ua = e.target.closest('#undoAll'); if (ua) { delete S.once[sel]; persist(); render(); return; }
@@ -17635,7 +17811,7 @@ function wire() {
     }
   });
   $('#rowsOut').addEventListener('change', e => { if (e.target.closest('#items')) { S.items[sel] = readItems(); persist(); render(); } });
-  $('#resetMonth').addEventListener('click', e => confirmClick(e.currentTarget, `Tap again: removes the edits you made for this month. Receipts stay. You can undo for ${KEEP_DAYS} days.`, () => { const snR = snapNoCopy(); { const ym0 = sel, o0 = S.once[ym0] ? JSON.parse(JSON.stringify(S.once[ym0])) : undefined, i0 = S.items[ym0] !== undefined ? JSON.parse(JSON.stringify(S.items[ym0])) : undefined; offerUndo('reset', 'Month reset.', () => { if (o0 !== undefined) S.once[ym0] = o0; else delete S.once[ym0]; if (i0 !== undefined) S.items[ym0] = i0; else delete S.items[ym0]; }); } resetMonth(S, sel); keepCopy(snR, `${monthLabel(sel)} was reset.`); itemsSig = ''; persist(); render(); }));   /* a 3-day copy like every other big change (38.31 data safety round 4) */
+  $('#resetMonth').addEventListener('click', e => confirmClick(e.currentTarget, `Tap again: removes the edits you made for this month. Receipts stay. You can undo for ${KEEP_DAYS} days.`, () => { const snR = snapNoCopy(); resetMonth(S, sel); keepCopy(snR, `${monthLabel(sel)} was reset.`); offerUndo(snR, 'Month reset.');   /* Undo puts back only this month's edits and lets the kept copy go (QC round 10 data safety B1) */ itemsSig = ''; persist(); render(); }));   /* a 3-day copy like every other big change (38.31 data safety round 4) */
   $('#fixBtns').addEventListener('click', e => {
     const b = e.target.closest('[data-fx]'); if (!b) return; const f = b.dataset.fx, m = C.byYm[sel];
     if (f === 'trim') trimPlay(S, m, sel, +b.dataset.amt);
@@ -17656,7 +17832,7 @@ function wire() {
     else if (e.target.closest('[data-gnodate]')) { updateGoal(S, id, { due: '' }); markDone('goals', true); persist(); buildGoals(); render(); }
     else if (e.target.closest('[data-gauto]')) { useSuggested(S, id); sfx('next'); persist(); buildGoals(); render(); }
     else { const gd = e.target.closest('[data-gdel]'); if (gd) { const g0 = goalById(S, id), r0 = HV && HV.goals ? HV.goals.find(r => r.id === id) : null, nm = g0 ? g0.name : 'This goal', mg0 = HV && C.byYm[HV.ym] && C.byYm[HV.ym].g[id], plan0 = mg0 ? mg0.actual : 0, saved0 = r0 && r0.savedNow > 0 ? r0.savedNow : 0, what = nm + (plan0 > 0 ? ` and its ${fmt2(plan0)} planned this month` : '');   /* saved now and planned apart (QC round 4 data safety 3); the saved money stops being counted, so it says so (QC round 6 data safety C2) */   /* names what goes, keeps a copy (38.31 data safety round 3) */
-      confirmClick(gd, `Tap again: removes ${what}.${saved0 > 0 ? ` Its ${fmt2(saved0)} saved stops being counted. Move it to another burrow first if you still have it.` : ''} You can undo for ${KEEP_DAYS} days.`, () => { const sn = snapNoCopy(); removeGoal(S, id); keepCopy(sn, `${nm} was removed.`); offerUndo(sn, `${nm} removed. You can undo for ${KEEP_DAYS} days.`); markDone('goals', true); if (editGoal === id) editGoal = null; persist(); restructure(); }); } }
+      confirmClick(gd, `Tap again: removes ${what}.${saved0 > 0 ? ` Its ${fmt2(saved0)} saved stops being counted. Move it to another burrow first if you still have it.` : ''} You can undo for ${KEEP_DAYS} days.${keepEnds()}`, () => { const sn = snapNoCopy(); removeGoal(S, id); keepCopy(sn, `${nm} was removed.`); offerUndo(sn, `${nm} removed. You can undo for ${KEEP_DAYS} days.`); markDone('goals', true); if (editGoal === id) editGoal = null; persist(); restructure(); }); } }
   });
   /* every keystroke saves; the page redraws on change so the cursor stays put while typing */
   const goalEdit = t => {
@@ -17704,8 +17880,9 @@ function wire() {
     try {
       const d = JSON.parse($('#bk').value);
       if (!d || typeof d !== 'object' || !d.steps || !d.once || !d.cfg) throw new Error('bad');
-      const old = S, oldSnap = snapNoCopy(); offerUndo(oldSnap, `Backup loaded. You can undo for ${KEEP_DAYS} days.`); S = upgradeLegacy(normalize(d)); S.ui = Object.assign({}, old.ui, S.ui, { sampleHidden: true }); keepCopy(oldSnap, 'A backup replaced your numbers.');
+      const old = S, oldSnap = snapNoCopy(); S = upgradeLegacy(normalize(d)); S.ui = Object.assign({}, old.ui, S.ui, { sampleHidden: true }); keepOwn(old);
       if (!Array.isArray(d.receipts)) S.receipts = old.receipts;
+      keepCopy(oldSnap, 'A backup replaced your numbers.'); offerUndo(oldSnap, `Backup loaded. You can undo for ${KEEP_DAYS} days.`);
       editRow = null; editGoal = null; editRc = null; itemsSig = ''; S.ui.bk = Date.now(); delete S.ui.bkLater; persist(); restructure(); msg.textContent = 'Loaded.'; sfx('next');
     } catch (e) { msg.textContent = BK_BAD; }
   };
@@ -17753,10 +17930,10 @@ function wire() {
   };
   /* Set all to zero and Restore samples replace every number: a copy of before is kept for KEEP_DAYS days */
   let undoSnap = null, undoT = 0;
-  let undoFn = null;
+  let undoFn = null, undoAsk = 0, undoChain = false;
   /* a big change (a copy of before, or a month reset) keeps its Undo bar until it is tapped, closed or replaced by another Undo, also
      across tab changes; a small one (a receipt, an answer about last month's money) goes by itself (QC round 6 data safety B1) */
-  const offerUndo = (snap, txt, fn, ms) => { undoFn = fn || null; undoSnap = snap; $('#undoTxt').textContent = txt; const u = $('#undoBar'); u.hidden = false; clearTimeout(undoT);
+  const offerUndo = (snap, txt, fn, ms) => { undoFn = fn || null; undoSnap = snap; undoAsk = 0; undoChain = false; $('#undoTxt').textContent = txt; const u = $('#undoBar'); u.hidden = false; clearTimeout(undoT);
     { const c = $('#cheer'), r = u.getBoundingClientRect(); if (c && c.classList.contains('on') && r.height && !document.body.classList.contains('touring')) c.style.bottom = Math.round(innerHeight - r.top + 8) + 'px'; }   /* a message already up moves above the bar, however tall the bar is */
     if (!ms && snap !== 'receipt' && snap !== 'sweep') { u.dataset.stay = '1'; return; }
     delete u.dataset.stay; undoT = setTimeout(() => { u.hidden = true; undoSnap = null; undoFn = null; }, ms || 30000); };
@@ -17764,23 +17941,49 @@ function wire() {
      big change stays across tabs, so it can sit over a form: the Add a card Save, QC round 6 merge) */
   { const ub = $('#undoBar'), pad = () => { const r = !ub.hidden && ub.getClientRects().length ? ub.getBoundingClientRect() : null; document.documentElement.style.scrollPaddingBottom = r && r.height ? Math.round(innerHeight - r.top + 8) + 'px' : ''; };
     new MutationObserver(pad).observe(ub, { attributes: true, attributeFilter: ['hidden'] }); addEventListener('resize', pad); }
-  const undoHide = () => { clearTimeout(undoT); const u = $('#undoBar'); u.hidden = true; delete u.dataset.stay; undoSnap = null; undoFn = null; };
+  const undoHide = () => { clearTimeout(undoT); const u = $('#undoBar'); u.hidden = true; delete u.dataset.stay; undoSnap = null; undoFn = null; undoAsk = 0; };
   $('#undoX').addEventListener('click', undoHide);   /* Close: the copy from before stays in Settings, Put them back, for its days */
   window.offerUndoG = offerUndo;
   /* the setup steps were opened by Re-split pay and the page was closed part-way: the copy from before is still one tap away */
   if (S.ui && S.ui.preSplit && !tourIsOpen) { const sn = S.ui.preSplit; delete S.ui.preSplit; keepCopy(sn, 'Setup was changing your plan.'); persist(); }
   /* the copy from before a big change is offered again on every open for 3 days, then let go */
-  if (S.ui && S.ui.keep) { const k = S.ui.keep; if (!(typeof k.snap === 'string' && +k.t > 0) || Date.now() - k.t > KEEP_DAYS * 864e5) { delete S.ui.keep; persist(); } else offerUndo(k.snap, `${k.why || 'Your numbers changed.'} You can undo until ${dateLabel(ymd(new Date(+k.t + KEEP_DAYS * 864e5)))}.${k.cloud && !k.act ? ' Undo also stops sharing the cloud copy on this device.' : ''}`, k.act ? () => restoreKept(k.snap, k.added) : k.cloud ? () => { vaultUndoLoad(); S = normalize(JSON.parse(k.snap)); } : null); }   /* a copy an action kept: Undo keeps the receipts logged since (actions.js restoreKept) */
-  $('#keepBack').addEventListener('click', () => {
-    const k = S.ui && S.ui.keep; if (!(k && typeof k.snap === 'string')) return;
-    const cur = snapNoCopy(); undoHide();
-    if (k.act) restoreKept(k.snap, k.added); else { if (k.cloud) vaultUndoLoad(); S = normalize(JSON.parse(k.snap)); }   /* a cloud load: stop sharing first (QC round 5 data safety B1) */
-    keepCopy(cur, 'You put back the numbers from before.');   /* what was there is kept in its place, so this can be undone too */
-    editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = ''; sfx('back');
-    cheer(`Your numbers from before are back. What was there is kept for ${KEEP_DAYS} days.`);
+  /* the Undo bar for a kept change, with the day it is kept until. Undo puts back only what that change changed (ui45.js keepUndo) */
+  /* with more than one kept, it says how many earlier ones can be undone after it, and each Undo offers the next (QC round 10 data safety B2) */
+  const offerKept = k => { const n = keepAll().length - 1; offerUndo('keep:' + k.t, `${k.why || 'Your numbers changed.'} You can undo until ${dateLabel(ymd(new Date(+k.t + KEEP_DAYS * 864e5)))}.${k.cloud && !k.act ? ' Undo also stops sharing the cloud copy on this device.' : ''}${n > 0 ? ` ${n} earlier change${n === 1 ? '' : 's'} can be undone after it.` : ''}`, k.cloud ? () => vaultUndoLoad() : null); undoChain = true; };
+  if (S.ui) { if (keepTidy()) persist(); const k = keepAll()[0]; if (k) offerKept(k); }
+  $('#keepBack').addEventListener('click', e => {
+    const k = keepAll()[0]; if (!k) return;
+    const go = () => {
+      const cur = snapNoCopy(); undoHide();
+      if (k.cloud) vaultUndoLoad();   /* a cloud load: stop sharing first (QC round 5 data safety B1) */
+      keepUndo(k);   /* only what that change changed comes back: receipts and everything else done since stay (QC round 10 data safety B1) */
+      keepCopy(cur, 'You put back the numbers from before.');   /* what was there is kept in its place, so this can be undone too */
+      editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = ''; sfx('back');
+      cheer(`Your numbers from before are back. What was there is kept for ${KEEP_DAYS} days.`);
+    };
+    const q = keepSince(k); if (q) confirmClick(e.currentTarget, `Tap again: ${q}`, go); else go();   /* something done since would go: it is named first */
   });
-  $('#undoGo').addEventListener('click', () => { if (!undoSnap) return; const fn = undoFn, sn = undoSnap; undoHide(); if (fn) fn(); else S = normalize(JSON.parse(sn)); editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = ''; sfx('back'); cheer('Your numbers are back.'); });
-  const blank = () => { const sn0 = snapNoCopy(); offerUndo(sn0, `All your numbers are set to zero. You can undo for ${KEEP_DAYS} days.`); S = blankState(S, sampleOn()); S.ui.cleared = true; delete S.ui.setup; delete S.ui.src; delete S.ui.imp; keepCopy(sn0, 'Your numbers were set to zero.'); editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = 'Everything is at zero now, start with your pay';   /* a 3-day copy like every other big change (38.31 data safety round 4) */ select(START); if (tab !== 'month') switchTab('month'); };
+  /* Undo of a kept change asks first when it would also take away something done since, and names it; the second tap goes ahead */
+  $('#undoGo').addEventListener('click', () => {
+    if (!undoSnap) return;
+    const ent = keepFind(undoSnap);
+    if (ent && !undoAsk) { const q = keepSince(ent); if (q) { undoAsk = Date.now(); clearTimeout(undoT); $('#undoBar').dataset.stay = '1'; $('#undoTxt').textContent = `${q} Tap Undo again to go ahead.`; return; } }
+    if (undoAsk && Date.now() - undoAsk < 600) return;   /* a double tap never says yes: the words get read first */
+    const fn = undoFn, sn = undoSnap, chain = undoChain; undoHide();
+    if (ent) { if (fn) fn(); keepUndo(ent); }
+    else if (fn) fn();
+    else if (!/^keep:/.test(sn)) { const kk = { keep: S.ui.keep, keeps: S.ui.keeps }; restoreKept(sn, []); keepOwn({ ui: kk }); }   /* a copy no longer kept: it comes back with every receipt logged since */
+    editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = ''; sfx('back'); cheer('Your numbers are back.');
+    if (ent && chain) { const nx = keepAll()[0]; if (nx) offerKept(nx); }   /* the next kept change, newest first */
+  });
+  /* Settings: an earlier kept change undone on its own. Only what it changed comes back; anything done since that would go is named first */
+  $('#keepMore').addEventListener('click', e => {
+    const b = e.target.closest('[data-keep-t]'); if (!b) return; const k = keepFind('keep:' + b.dataset.keepT); if (!k) { paintBk(); return; }
+    const go = () => { const showing = keepFind(undoSnap), wasChain = undoChain; if (showing === k) undoHide(); if (k.cloud) vaultUndoLoad(); keepUndo(k); editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = ''; sfx('back'); cheer('Your numbers are back.');
+      if (showing && showing !== k && wasChain) offerKept(showing); };   /* the bar's count of earlier changes stays true */
+    const q = keepSince(k); if (q) confirmClick(b, `Tap again: ${q}`, go); else go();
+  });
+  const blank = () => { const sn0 = snapNoCopy(); S = blankState(S, sampleOn()); S.ui.cleared = true; delete S.ui.setup; delete S.ui.src; delete S.ui.imp; keepCopy(sn0, 'Your numbers were set to zero.'); offerUndo(sn0, `All your numbers are set to zero. You can undo for ${KEEP_DAYS} days.`); editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = 'Everything is at zero now, start with your pay';   /* a 3-day copy like every other big change (38.31 data safety round 4) */ select(START); if (tab !== 'month') switchTab('month'); };
   twoStep($('#blankBtn'), `Tap again: clears pay, bills, goals, saved amounts and your balance. Receipts stay. You can undo for ${KEEP_DAYS} days.`, blank);
   twoStep($('#blankTop'), `Tap again: clears pay, bills, goals, saved amounts and your balance. Receipts stay. You can undo for ${KEEP_DAYS} days.`, blank);
   /* the confirm says how old the backup is and what is in it, from its own saved time and receipts (QC round 7 data safety confusing 3) */
@@ -17795,7 +17998,7 @@ function wire() {
   twoStep($('#setupOpen'), `Tap again: setup can change your pay, bills, goals and saved amounts. You can undo for ${KEEP_DAYS} days.`, () => openSetupWithCopy(undefined, 'full'));   /* both ask first, and keep a copy (38.31 data safety round 2) */
   /* only some currencies have samples; for the rest this button clears the plan, and every word says so (38.31 data safety round 3) */
   const hasSamples = () => !!SAMPLES[(S.ui && S.ui.cur) || '₱'];
-  twoStep($('#bkReset'), () => hasSamples() ? `Tap again: puts the sample pay, bills and burrows in place of yours. Receipts stay. You can undo for ${KEEP_DAYS} days.` : `Tap again: clears your pay, bills, goals and balance. Receipts stay. You can undo for ${KEEP_DAYS} days.`, () => { const smp = hasSamples(), sn0 = snapNoCopy(); offerUndo(sn0, `${smp ? 'Samples restored' : 'Plan cleared'}. You can undo for ${KEEP_DAYS} days.`); const old = S, u = S.ui; S = presetState(u.cur); S.ui = Object.assign({}, u, { preset: S.ui.preset, sampleHidden: false, done: {} }); delete S.ui.cleared; delete S.ui.setup; delete S.ui.gset; delete S.ui.sb; delete S.ui.tourAt; delete S.ui.src; delete S.ui.imp; S.receipts = old.receipts; keepCopy(sn0, smp ? 'Samples replaced your numbers.' : 'Your plan was cleared.'); editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = smp ? 'Samples restored.' : 'Plan cleared.'; });
+  twoStep($('#bkReset'), () => hasSamples() ? `Tap again: puts the sample pay, bills and burrows in place of yours. Receipts stay. You can undo for ${KEEP_DAYS} days.` : `Tap again: clears your pay, bills, goals and balance. Receipts stay. You can undo for ${KEEP_DAYS} days.`, () => { const smp = hasSamples(), sn0 = snapNoCopy(); const old = S, u = S.ui; S = presetState(u.cur); S.ui = Object.assign({}, u, { preset: S.ui.preset, sampleHidden: false, done: {} }); delete S.ui.cleared; delete S.ui.setup; delete S.ui.gset; delete S.ui.sb; delete S.ui.tourAt; delete S.ui.src; delete S.ui.imp; S.receipts = old.receipts; keepCopy(sn0, smp ? 'Samples replaced your numbers.' : 'Your plan was cleared.'); offerUndo(sn0, `${smp ? 'Samples restored' : 'Plan cleared'}. You can undo for ${KEEP_DAYS} days.`); editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = smp ? 'Samples restored.' : 'Plan cleared.'; });
   wireReceipts(); safe(() => BUR.boot(), null, 'burrow'); wireTour(); wireHelp(); wireHome(); wireScan(); wireAskAi(); wireSafe(); wireVault(); safe(() => DJ.wire(), null, 'dj'); safe(() => SCENE.start(), null, 'scene'); safe(() => WORLD.wire(), null, 'world');
 
   /* tooltips */
