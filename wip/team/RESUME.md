@@ -9,8 +9,9 @@ Written 2026-11-18 on branch `wip-38.31`. Read this whole file before touching a
 **Running:** three read-only reviews: life walks (salaried), life walks (irregular, shared, cash), real banking behaviour. Save each into foundation_review/. A quiet check.sh full on 6ed02e3 (scratchpad full3.txt) from before the pause.
 **Mako said go (23 Nov, DECISIONS "The new foundation"):** rebuild before v1; Home names the stretch by its dates; goal money can stay in the bank (default) or its own account; he does not know his cards' close days (setup asks, "not sure" = all due on the next payment day).
 **Done since:** RECOMMENDATION.md (corrected after qc-foundation plan review 1, plus the coordinator's efficiency review), SCHEMA.md draft (step 1, the saved shape).
-**Running:** qc-foundation review of SCHEMA.md; a helper writing life scenarios with hand-worked answers (foundation_review/scenarios/, worktree branch, cherry-pick when done).
-**Next:** fix SCHEMA.md from its review until PASS; then stage 0 (saved-data safety) test first; then the failing scenario scripts; then two helper lanes in new files only (ledger port + schedules + look ahead; second checker from the written rules), engine beside the old one behind a switch.
+**Since (23 Nov afternoon JST):** schema reviews 1 and 2 (both FAIL, folded in); sweep 2 (experience, repeats, platform, requirements) all in foundation_review/sweep2_*.md; LESSONS.md lessons 1 and 2 (CLAUDE.md points to it); DECISIONS_ROUND2.md (A check-in and filler, B exact safe to spend, C screen shared pieces, D platform, E requirements, F the 24 scenario rule questions; new date 14 to 19 Dec); scenarios/ (8 lives, 180 hand-worked asks, check_specs.js) merged.
+**Running:** a helper in a worktree writing SCHEMA_V3.md (one consistent shape) and ref/lookahead_ref.js (runnable money rules) with ref/run_scenarios.js; cherry-pick its commits when done.
+**Next:** qc-foundation on SCHEMA_V3 plus the reference model and scenarios, until PASS; ask Mako M1 (minimum balance, recommendation: ask once, blank, skip = none); then the failing tests (E10) and the engine lanes per RECOMMENDATION 5b.
 
 
 **2026-11-23 (morning JST), MAIN 15 state. Coordinator: session_01BFpKEXZxmzMuFVBB5UQxLE.**
