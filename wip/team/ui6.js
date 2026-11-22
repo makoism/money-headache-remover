@@ -702,7 +702,7 @@ function gwFinish() {
   closeGoalWizard(true); editGoal = null; restructure(); queueWins(true);
   const gi = goalInfo(S, C, id, nowYm());
   sfx('fanfare');
-  celebrate('big', gi.reached ? `Goal added. ${S.plan.goals.find(x => x.id === id).name}: full ${monthLabel(gi.reached)}.` : 'Goal added.');
+  celebrate('big', gi.reached ? `Goal added. ${S.plan.goals.find(x => x.id === id).name}: ${isDebtGoal(S, id) ? 'paid off' : 'full'} ${monthLabel(gi.reached)}.` : 'Goal added.');   /* a debt is paid off, not full (QC round 10 money accuracy blocker 2) */
   if (tab !== 'home' && tab !== 'goals') switchTab('home');
 }
 function gwClick(e) {
