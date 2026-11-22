@@ -227,7 +227,7 @@ function wire() {
   /* the copy from before a big change is offered again on every open for 3 days, then let go */
   /* the Undo bar for a kept change, with the day it is kept until. Undo puts back only what that change changed (ui45.js keepUndo) */
   /* with more than one kept, it says how many earlier ones can be undone after it, and each Undo offers the next (QC round 10 data safety B2) */
-  const offerKept = k => { const n = keepAll().length - 1; offerUndo('keep:' + k.t, `${k.why || 'Your numbers changed.'} You can undo until ${dateLabel(ymd(new Date(+k.t + KEEP_DAYS * 864e5)))}.${k.cloud && !k.act ? ' Undo also stops sharing the cloud copy on this device.' : ''}${n > 0 ? ` ${n} earlier change${n === 1 ? '' : 's'} can be undone after it.` : ''}`, k.cloud ? () => vaultUndoLoad() : null); undoChain = true; };
+  const offerKept = k => { const n = keepAll().length - 1; offerUndo('keep:' + k.t, `${k.why || 'Your numbers changed.'} You can undo until ${dateLabel(ymd(new Date(+k.t + KEEP_DAYS * 864e5)))}.${k.cloud && !k.act ? ' Undo puts your old numbers back here. The cloud copy stays as it is, and this device stops using it.' : ''}${n > 0 ? ` ${n} earlier change${n === 1 ? '' : 's'} can be undone after it.` : ''}`, k.cloud ? () => vaultUndoLoad() : null); undoChain = true; };
   if (S.ui) { if (keepTidy()) persist(); const k = keepAll()[0]; if (k) offerKept(k); }
   $('#keepBack').addEventListener('click', e => {
     const k = keepAll()[0]; if (!k) return;

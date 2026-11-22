@@ -14,7 +14,7 @@ for (const f of files) {
 }
 ck('no "this phone" in screen words', hits.length === 0, hits);
 const all = files.map(f => fs.readFileSync(d + f, 'utf8')).join('\n');
-ck('the cloud Undo words say "this device"', /The numbers this device had are kept for/.test(all) && /Undo also stops sharing the cloud copy on this device\./.test(all) && /This device no longer shares the cloud copy/.test(all), null);
+ck('the cloud Undo words say "this device"', /The numbers this device had are kept for/.test(all) && /Undo puts your old numbers back here\. The cloud copy stays as it is, and this device stops using it\./.test(all) && /This device no longer shares the cloud copy/.test(all), null);
 ck('the welcome back words say "this device now shares the cloud copy"', /this device now shares the cloud copy/.test(all));
 (async () => {
   const L = require('./lib_r12.js'), w = L.R.w;
