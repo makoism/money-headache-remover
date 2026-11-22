@@ -33,6 +33,8 @@ const relook=async p=>{await L.tab(p,'tab-month');await L.tab(p,'tab-home');};
   { await L.tab(p,'tab-month');await p.evaluate(()=>{const e=document.getElementById('monthSel');e.value='2026-11';e.dispatchEvent(new Event('change',{bubbles:true}));});await w(500);
     const t=await p.evaluate(()=>{const e=document.getElementById('outCounted');return e&&!e.hidden?e.innerText.replace(/\s+/g,' '):'(none)';});
     ck(`[${how}] Plan for November says where the money went`,how==='bank'?/\$212\.50 of this month's Free to spend wasn't spent\. It came back to the bank/.test(t):/\$212\.50 went to Trip/.test(t),t);
+    /* QC round 12 numbers gate should-fix 1: all of it went to the goal, so the bank is not higher; the line says the bank ends as planned */
+    if(how==='goal')ck('[goal] all of it went to the goal: the line never says the bank ends higher, it says the bank ends as planned',!/bank ends higher/.test(t)&&/the bank ends as planned/.test(t),t);
     await L.tab(p,'tab-home'); }
   await addRc(p,[['2026-11-20',100]]);await relook(p);
   const c2=await card(p),m2=await p.evaluate(()=>{const m=__t.calcAll(__t.S).byYm['2026-11'];return [m.counted,m.topup&&m.topup.used];});

@@ -151,7 +151,7 @@ function render() {
   /* the details */
   $('#inTotal').textContent = fmt2(m.pool.in); $('#outTotal').textContent = fmt2(m.pool.out);
   { const oc = $('#outCounted'); const cn = m.counted || 0, tu = (m.topup && m.topup.used) || 0, tg = tu > 0 ? goalById(S, m.topup.id) : null;
-    oc.hidden = !(cn > 0); if (cn > 0) oc.textContent = `${fmt2(cn)} of this month's Free to spend wasn't spent. ${tu > 0 && tg ? `${fmt2(tu)} went to ${tg.name}${cn - tu > 0.004 ? ' and ' + fmt2(m.credit) + ' came back to the bank' : ''}` : 'It came back to the bank'}, so the bank ends higher than the numbers above.`; }
+    oc.hidden = !(cn > 0); if (cn > 0) oc.textContent = `${fmt2(cn)} of this month's Free to spend wasn't spent. ${tu > 0 && tg ? `${fmt2(tu)} went to ${tg.name}${cn - tu > 0.004 ? ' and ' + fmt2(m.credit) + ' came back to the bank' : ''}` : 'It came back to the bank'}${tu > 0 && tg && cn - tu <= 0.004 ? ', so the bank ends as planned' : ', so the bank ends higher than the numbers above'}.`; }   /* all of it went to the goal: the bank is not higher (QC round 12 numbers gate should-fix 1) */
   const lt = $('#leftTotal'); lt.textContent = fmt2(L); lt.classList.toggle('neg', L < 0);
   const ovr = m.over || 0;
   /* one bank story (launch checklist Q2): the same name and figure as Home's "Bank at month end", and the start figure it is planned from */

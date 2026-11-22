@@ -103,6 +103,7 @@ When the same question came from several reviewers, it is one entry here and the
 - **Choices.** A. Round goal amounts too, as now. B. Keep cents.
 - **Screens.** Plan Burrows, goal editor.
 - **Sources.** `qc_round5/money_accuracy.md` polish 1, `RESUME.md` section 0 (21 Nov lists).
+- **Done for now as B (MAIN 15, 2026-11-23, 17c4b0c).** The QC round 12 numbers gate made it a blocker (Home's total was off by the lost cents), and decision 1 keeps cents in plan boxes, so goals now keep typed cents too; yen stays whole. Say A and it goes back to whole amounts.
 
 ### 1.12 Pay of $0 next to real bills
 - **Question.** With pay left at $0, should the app stop calling the numbers "Sample numbers"?
