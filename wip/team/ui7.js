@@ -224,8 +224,9 @@ function renderLookBack() {
   const ym = sel, pm = MONTHS[MONTHS.indexOf(ym) - 1]; if (!pm || sampleOn() || !(pm < nowYm())) { el.hidden = true; return; }   /* only a month that has ended is looked back on (QC round 4 north-star 1) */
   const b = lookBack(S, C, pm); if (!b || !(b.inflow > 0) || !b.count) { el.hidden = true; return; }
   el.hidden = false;
-  const names = { nec: 'Bills and basics', play: 'Free to spend', edu: 'Education', give: 'Giving' };
-  const rows = b.jars.filter(j => j.planned > 0 || j.spent > 0).map(j => `<tr><th scope="row">${names[j.id]}</th><td>${fmt(j.planned)}</td><td>${j.spent > 0 ? fmt2(j.spent) : j.id === 'nec' ? 'in plan' : fmt(0)}</td></tr>`).join('');
+  const names = { nec: 'Bills and basics', play: 'Free to spend', edu: 'Education', give: 'Giving', ffa: 'Investing' };
+  /* the Spent column holds amounts only: a line with nothing logged says 0, never "in plan" (QC round 12 numbers gate should-fix 6) */
+  const rows = b.jars.filter(j => j.planned > 0 || j.spent > 0).map(j => `<tr><th scope="row">${names[j.id]}</th><td>${fmt(j.planned)}</td><td>${j.spent > 0 ? fmt2(j.spent) : fmt(0)}</td></tr>`).join('');
   put(el, `<h2>Last month, ${esc(monthLabel(pm))}</h2>
     <p class="cap">${b.count} ${b.count === 1 ? 'receipt' : 'receipts'}, ${fmt2(b.logged)} logged. ${fmt2(b.change) === fmt2(0) ? `The balance stayed at ${fmt2(b.bankEnd)}.` : `The balance went ${b.left >= 0 ? 'up' : 'down'} ${fmt2(b.change)}, from ${fmt2(b.bankStart)} to ${fmt2(b.bankEnd)}.`}</p>
     <div class="tablewrap"><table class="lbt"><thead><tr><th scope="col"></th><th scope="col">Planned</th><th scope="col">Spent</th></tr></thead><tbody>${rows}</tbody></table></div>

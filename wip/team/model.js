@@ -1190,7 +1190,7 @@ function limitsOf(S, C, ym) {
 function lookBack0(S, C, ym) {
   const m = C.byYm[ym]; if (!m) return null;
   const rs = receiptStats(S, ym), lim = limitsOf(S, C, ym);
-  const jars = ['nec', 'play', 'edu', 'give'].map(j => ({ id: j, planned: m.jar[j], spent: rs.byJar[j] || 0, left: round2(m.jar[j] - (rs.byJar[j] || 0)) }));
+  const jars = ['nec', 'play', 'edu', 'give', 'ffa'].map(j =>   /* Investing too, so the table holds every place (QC round 12 numbers gate should-fix 6) */ ({ id: j, planned: m.jar[j], spent: rs.byJar[j] || 0, left: round2(m.jar[j] - (rs.byJar[j] || 0)) }));
   return { ym, inflow: m.inflow, out: m.out, left: round2(m.bankEnd - m.bankStart), planLeft: m.left, bankStart: m.bankStart, bankEnd: m.bankEnd, count: rs.count, logged: rs.total, other: rs.byJar.other || 0, jars,
     over: lim.rows.map(r => (r.jar === 'edu' || r.jar === 'give') && r.over ? Object.assign({}, r, { left: -Math.min(-r.left, (m.ovB || {})[r.jar] || 0) }) : r).filter(r => r.over && r.left < -0.004).concat((rs.byJar.other || 0) - (m.itemsTotal || 0) > 0.004 ? [{ name: 'Other', left: -round2((rs.byJar.other || 0) - (m.itemsTotal || 0)), over: true }] : []).sort((a, b) => a.left - b.left), goalsAdded: round2(m.goalsTotal + ((m.topup && m.topup.used) || 0)), debtPaid: m.debtPay, interest: m.debtInterest, owed: m.debtOwed };
 }
