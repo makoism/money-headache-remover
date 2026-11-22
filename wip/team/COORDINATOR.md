@@ -2,6 +2,15 @@
 
 The coordinator is the one session Mako talks to. It records his decisions in DECISIONS.md (and NORTH_STAR.md, LAUNCH_CHECKLIST.md), starts and messages working sessions, and brings their results back to him. Working sessions take direction from nowhere else. The coordinator hands off at about 150k tokens of history, like every session.
 
+## 2026-11-22, handoff 9 (coordinator 8 to coordinator 9) READ THIS FIRST
+
+Coordinator 8 (session_01BFpKEXZxmzMuFVBB5UQxLE) stopped at about 770k tokens, 00:25 JST 23 Nov. Start coordinator 9 by pasting wip/team/COORDINATOR_PROMPT.md into a fresh chat (it points at MAIN 15). Handoff 8 below is older; read only its "Watchdog" note.
+
+- Build: MAIN 15, session_01BFpKEWd1ZWnpSgfqXk8WbV, the only session on app files, no keep-going task. QC round 12 fixes and should-fix items are in; next: one full check.sh, golden 3831zf, stage, QC round 13 (all nine). Checklist rows Q13 to Q21 hold the history; RESUME section 0 has MAIN 15's own state.
+- Mako: back since 09:57 JST 22 Nov; the non-stop window (until 09:00 JST 22 Nov) is over. His open decisions are all in wip/team/MAKO_RUN.md (item 1.1, the two money-today figures, keeps coming back from the QC agents). Bank comparison PASS (030f5eb). Q14: the cloud conflict fix needs the server function deployed with the page at his go.
+- Scheduled tasks: coordinator 8's keep-going deleted; MAIN 13's keep-going disabled (could not delete, permission); watchdog trig_015mKtiUhZRgbkacuPYA8Ks6 still hourly at :33. Deleting scheduled tasks is often refused by the permission check here: disable with update_trigger instead.
+- Lessons: helpers in worktrees must push branches to GitHub or their work is lost at handoff; a MAIN at depth 8 cannot start sessions or scheduled tasks, the coordinator does it; split QC rounds into two waves to stay under the usage limit.
+
 ## 2026-11-20, handoff 8 (coordinator 8 to coordinator 9) READ THIS FIRST
 
 Coordinator 8 (session_01BFpKEXZxmzMuFVBB5UQxLE) handed off at about 155k tokens, 06:00 UTC (15:00 JST). Coordinator 9 is started by Mako pasting wip/team/COORDINATOR_PROMPT.md into a fresh chat, so it starts at depth 0 and CAN start mains and later coordinators again. Rules as handoffs 5 to 7: two-line answers, never list_events on a main session.
