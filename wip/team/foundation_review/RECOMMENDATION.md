@@ -40,7 +40,16 @@ What stays: the screens' layout and pictures, burrows, the six places, Receipts,
 - **Version one for Mako (stage 1a): about 5 to 8 Dec (JST).** Stage 1b for the team test: mid to late December. Both firm up after the shape is reviewed and the first engine lane lands. These are estimates.
 - The 25 Nov date given earlier was for the old base and is withdrawn.
 
+## 5b. How it is built (from the coordinator's efficiency review, efficiency_review.md)
+- The new engine is built beside the old one behind a switch and changed over in one commit, so the checks never go red or get weakened on the way. Extra check: a plan paid on the 1st with no cards must give the old engine's month-end figures.
+- After the saved shape is frozen, two helpers work in new files only on their own branches: the ledger port with the schedules and look ahead, and a second independent checker written from the written rules. model.js, the screens, check.sh and the golden files stay with the main session.
+- Mako's shape and the eight reviewed lives become failing scripts first.
+- Old calendar-month tests are retired from a written keep, replace or retire list signed by the regression reviewer. No test is ever edited just to pass.
+- During engine work only the two gates and qc-foundation run; the full panel runs once at the end of stage 1a.
+- Stage 1a on its own: about 150 to 190 hours (shape and safety 16, engine port, schedules and look ahead 45, second checker 20, data move 15, screens 35, tests and retiring 20, gates and fixes 15). That is about 9 to 11 days at the pace of the last week, which is where 5 to 8 Dec comes from.
+
 ## 6. Mako's choices (only these; everything else follows from the north star)
 1. **Rebuild the base before version one?** Recommended: yes. On the old base the app is wrong for Mako's own month (pay on the 10th, cards on the 10th and 11th).
 2. **What Home calls the current period.** Recommended: its dates, "10 Nov to 9 Dec", with the month name only in history. The other way: name it by the month the pay lands in.
 3. **Goal money.** Recommended: both "moved to its own account" and "kept in my bank, set aside" are allowed; the second is the default, and Home shows the bank figure with the set-aside part marked. The other way: only money in a separate account counts as saved.
+4. **Your cards' statement close days** (the day each card's statement is cut, no amounts). The payment days (10th and 11th) are already noted. With no answer, the app asks in setup and the test uses made-up close days.
