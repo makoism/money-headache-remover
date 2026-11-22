@@ -91,6 +91,7 @@ function wireReceipts() {
     e.preventDefault();
     const d = $('#rcDate').value, a = +$('#rcAmt').value, c = $('#rcCat').value, n = $('#rcNote').value, msg = $('#rcMsg');
     if (!validDate(d) || MONTHS.indexOf(d.slice(0, 7)) < 0) { msg.textContent = `Pick a date from ${monthLabel(START)} to ${monthLabel(END)}`; $('#rcDate').focus(); return; }
+    { const bad = amtBad($('#rcAmt')); if (bad) { msg.textContent = bad; $('#rcAmt').focus(); return; } }   /* "1o0" is refused and stays in the box (QC round 10 numbers gate should-fix 1) */
     if ($('#rcAmt').dataset.neg) { msg.textContent = 'Type the amount without a minus sign, because a receipt is money you spent. For a refund, lower or delete the receipt it pays back.'; $('#rcAmt').value = ''; delete $('#rcAmt').dataset.neg; $('#rcAmt').focus(); return; }
     if (!(wholeAmt(S, a) > 0)) { msg.textContent = 'Type an amount'; $('#rcAmt').focus(); return; }
     if (wholeAmt(S, a) > 1e9) { msg.textContent = 'That amount is too big. The most is 1,000,000,000.'; $('#rcAmt').focus(); return; }

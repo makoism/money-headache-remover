@@ -728,6 +728,7 @@ function wireHome() {
   $('#hForm').addEventListener('submit', e => {
     e.preventDefault();
     const d = $('#hDate').value || todayStr(), a = +$('#hAmt').value, c = $('#hCat').value, n = $('#hNote').value, msg = $('#hMsg');
+    { const bad = amtBad($('#hAmt')); if (bad) { msg.textContent = bad; $('#hAmt').focus(); sfx('off'); return; } }   /* "1o0" is refused and stays in the box (QC round 10 numbers gate should-fix 1) */
     if ($('#hAmt').dataset.neg) { msg.textContent = 'Type the amount without a minus sign because a receipt is money you spent. For a refund, lower or delete the receipt it pays back.'; $('#hAmt').value = ''; delete $('#hAmt').dataset.neg; $('#hAmt').focus(); sfx('off'); return; }
     if (!(wholeAmt(S, a) > 0)) { msg.textContent = 'Enter an amount.'; $('#hAmt').focus(); sfx('off'); return; }
     if (wholeAmt(S, a) > 1e9) { msg.textContent = 'That amount is too big. The most is 1,000,000,000.'; $('#hAmt').focus(); sfx('off'); return; }
@@ -831,12 +832,23 @@ function moneyUp(el) {
   Object.defineProperty(el, 'value', { configurable: true, get() { const r = NATIVE_VALUE.get.call(this); if (hasMoneyOp(r)) { const v = evalMoney(r); return v === null ? (this._mnyOK !== undefined ? this._mnyOK : '') : String(v); } return r.replace(/,/g, ''); }, set(x) { const n = +x; NATIVE_VALUE.set.call(this, withCommas(x !== '' && x != null && isFinite(n) && Math.abs(n - Math.round(n)) >= 0.005 ? n.toFixed(2) : x)); } });   /* an amount the page puts in a box shows its cents as two digits, 400.50 not 400.5 (decision 1) */
   NATIVE_VALUE.set.call(el, withCommas(v));
 }
+/* a receipt amount with a letter or a second point in it: Log spend refuses it with these words and the box keeps what was typed, so it is
+   never read as another number ("1o0" as 10, "12.3.4" as 12.34). Sums are checked when the box is left (QC round 10 numbers gate should-fix 1) */
+function amtBad(el) {
+  const raw = String(NATIVE_VALUE.get.call(el) || '').trim();
+  if (!raw || hasMoneyOp(raw)) return '';
+  if (/[A-Za-z]/.test(raw)) return `"${raw}" is not an amount: it has a letter in it. Type numbers only, then log it again.`;
+  if ((raw.match(/\./g) || []).length > 1) return `"${raw}" is not an amount: it has more than one point. Fix it, then log it again.`;
+  return '';
+}
 function moneyUpAll(root) { $$('input[type=number]', root || document).forEach(el => { if (isMoneyBox(el)) moneyUp(el); }); }
 function moneyTyped(el, ev) {
   if (el._refuse && Date.now() < el._refuse) { NATIVE_VALUE.set.call(el, el._mnyPrev !== undefined ? el._mnyPrev : ''); return; }   /* after a refused minus, the rest of that typing is ignored until the person leaves the box */
   let raw = NATIVE_VALUE.get.call(el); if (hasMoneyOp(raw)) return;
   /* a letter is never dropped in silence (12O typed for 120 would become 12): the box keeps what it had and says why (38.31 QC round 2) */
-  { const lt = /[A-Za-z]/.exec(raw); if (lt) { try { cheer(`Numbers only: "${lt[0]}" wasn't added, check the amount`); } catch (x) { } NATIVE_VALUE.set.call(el, el._mnyPrev !== undefined ? el._mnyPrev : ''); return; } }
+  /* a receipt box keeps the letter in sight and Log spend refuses the amount, so "1o0" is fixed by the person, never logged as 10 (QC round 10 numbers gate should-fix 1) */
+  const rcBox = el.id === 'rcAmt' || el.id === 'hAmt';
+  { const lt = /[A-Za-z]/.exec(raw); if (lt) { try { cheer(rcBox ? `Numbers only: "${lt[0]}" is not part of an amount. Fix it before you log it.` : `Numbers only: "${lt[0]}" wasn't added, check the amount`); } catch (x) { } if (!rcBox) NATIVE_VALUE.set.call(el, el._mnyPrev !== undefined ? el._mnyPrev : ''); return; } }
   /* a minus sign is never kept; the person is told, so a refund typed as -500 is not quietly turned into +500 (receipt boxes refuse it themselves) */
   const negOK = el.dataset.neg === 'ok' || el.id === 'rcAmt' || el.id === 'hAmt';   /* a receipt box keeps a typed minus in sight, so Log can say why it is refused instead of logging +500 (38.31 number gate round 3) */
   if ((el.id === 'rcAmt' || el.id === 'hAmt')) { if (/^\s*[-\u2212\u2013\uFF0D\u30FC\u2010-\u2015]/.test(raw)) el.dataset.neg = '1'; else delete el.dataset.neg; }   /* the bank balance box takes a minus: an overdrawn account (38.31 QC round 3) */
@@ -849,6 +861,7 @@ function moneyTyped(el, ev) {
   const sig = t => t.replace(/[^\d.]/g, '');
   let all = sig(raw), n = sig(raw.slice(0, at)).length;
   /* a third digit after the point, or a second point, is never cut off in silence: 1.234,56 typed in euros became 1.23 (38.31 money accuracy round 4) */
+  if (rcBox && (all.match(/\./g) || []).length > 1) { try { cheer('One point only in an amount. Fix it before you log it.'); } catch (x) { } if (raw !== NATIVE_VALUE.get.call(el)) NATIVE_VALUE.set.call(el, raw); return; }   /* "12.3.4" stays in sight and Log spend refuses it, never 12.34 (QC round 10 numbers gate should-fix 1) */
   { const d1 = all.indexOf('.'); if (d1 >= 0 && (all.indexOf('.', d1 + 1) >= 0 || all.length - d1 - 1 > 2)) { try { cheer(`Only two digits after the point. For thousands, leave the separator out: 1234${COMMA_DEC.indexOf(sym()) >= 0 ? ',' : '.'}56.`); } catch (x) { } NATIVE_VALUE.set.call(el, el._mnyPrev !== undefined ? el._mnyPrev : ''); return; } }
   const dot = all.indexOf('.');
   if (dot >= 0) all = all.slice(0, dot) + '.' + all.slice(dot + 1).replace(/\./g, '').slice(0, 2);
