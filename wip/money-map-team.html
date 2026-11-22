@@ -15567,7 +15567,7 @@ async function vaultFind(raw) {
 /* load a found copy and tie this device to it */
 async function vaultUse(f, asked) {
   const before = vault;
-  try { vault = { code: f.code, rev: 0, on: true, failAt: 0 }; vaultKeys = f.k; await vaultApply(f.k, f.srv, asked, before); vaultSaveLocal(); return true; }
+  try { vault = { code: f.code, rev: 0, on: true, failAt: 0 }; vaultKeys = f.k; await vaultApply(f.k, f.srv, asked, before); vaultSaveLocal(); paintVault(); return true; }   /* Settings says On at once after a load by code, not Off until a reload (QC round 10 north-star F3) */
   catch (e) { vault = before; vaultKeys = null; vaultSaveLocal(); throw e; }
 }
 /* one sentence on a copy that vaultFind found: when it was saved and how much is in it (Settings and the welcome screen both show it before loading) */
