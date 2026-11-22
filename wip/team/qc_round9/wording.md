@@ -28,3 +28,9 @@ Saved by MAIN 13 from the agent's reply. Build 377733e, VERIFY OK, golden 0 diff
 19. Visual first: Home's four tiles and "Bank ¥477,000 + burrows ¥105,000 = ¥582,000" repeat the bar.
 
 Files: /tmp/qc/wording/ (welcome-390.png, w.js).
+
+## What MAIN 13 did (2026-11-22 morning)
+- Blocker 1: Settings Saved data was already right (with the cloud copy on it shows "...a locked cloud copy that follows every save", screen pack panel 10; panel 53 has the cloud copy off). The two lines that were really wrong with the cloud copy on (Reset and setup while samples or zeros show; setup Currency step) now name the locked cloud copy. 6b5be75, test qc28_cloud_where.js.
+- 9: not a bug. "Enter your recovery code" shows on the welcome screen only when the cloud server answers (relayHealth), the setup is the full first run and the browser is fresh. The agent ran the page as a file with no server, where there are no cloud steps either. cloud_move.js taps the same button against a made-up server and passes.
+- 10: restore steps say "Then tap Load text, and tap it again to confirm." 16: "Add a card or loan". 17: the two full stops. Test qc28_small_words.js.
+- 2 to 8, 11 to 15, 18, 19: glossary, layout and visual choices for Mako's run (several already in MAKO_RUN.md).
