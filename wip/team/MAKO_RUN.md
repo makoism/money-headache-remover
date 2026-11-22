@@ -255,6 +255,11 @@ Your earlier copy pass list still stands: `COPY_QC8_FOR_MAKO.md` has about 40 li
 - "older copy ... takes this device back" on a phone that never had that copy.
 - **Sources.** `qc_round7/wording.md` polish, `qc_round5/wording.md` 14 and 16, `QC10_FIX_ROUND.md` round 3.
 
+### 2.13 "Monthly bills" inside Bills and basics
+- **Now.** Plan Details lists Money out as Monthly bills, One-time costs, Cards and loans. All three together make Bills and basics, the name used everywhere else. The setup step is also called Monthly bills.
+- **Choices.** Keep it. Or call the row "Regular bills" or "Bills every month". Renaming it to "Bills and basics" was tried and undone, because the part and the whole then had the same name with two different amounts.
+- **Sources.** `qc_round12/qc_north_star_gate.md` smaller 5, commit e0b943f.
+
 ---
 
 ## 3. Layout and look
