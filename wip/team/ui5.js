@@ -208,7 +208,10 @@ function wire() {
   let undoFn = null, undoAsk = 0, undoChain = false;
   /* a big change (a copy of before, or a month reset) keeps its Undo bar until it is tapped, closed or replaced by another Undo, also
      across tab changes; a small one (a receipt, an answer about last month's money) goes by itself (QC round 6 data safety B1) */
-  const offerUndo = (snap, txt, fn, ms) => { undoFn = fn || null; undoSnap = snap; undoAsk = 0; undoChain = false; $('#undoTxt').textContent = txt; const u = $('#undoBar'); u.hidden = false; clearTimeout(undoT);
+  /* the Undo bar never sits over a Log spend button: a tap meant for the next receipt hit the bar (QC round 11 numbers 1). It moves to the top of the screen while it would */
+  const undoPlace = () => { const u = $('#undoBar'); if (!u || u.hidden) return; u.classList.remove('undo-top'); const a = u.getBoundingClientRect(); const hit = ['#rcSave', '#hSave'].some(q => { const e = $(q); if (!e || !e.getClientRects().length) return false; const r = e.getBoundingClientRect(); return r.bottom > a.top && r.top < a.bottom && r.right > a.left && r.left < a.right; }); u.classList.toggle('undo-top', hit); };
+  window.addEventListener('scroll', undoPlace, { passive: true }); window.addEventListener('resize', undoPlace);
+  const offerUndo = (snap, txt, fn, ms) => { undoFn = fn || null; undoSnap = snap; undoAsk = 0; undoChain = false; $('#undoTxt').textContent = txt; const u = $('#undoBar'); u.hidden = false; undoPlace(); clearTimeout(undoT);
     { const c = $('#cheer'), r = u.getBoundingClientRect(); if (c && c.classList.contains('on') && r.height && !document.body.classList.contains('touring')) c.style.bottom = Math.round(innerHeight - r.top + 8) + 'px'; }   /* a message already up moves above the bar, however tall the bar is */
     if (!ms && snap !== 'receipt' && snap !== 'sweep') { u.dataset.stay = '1'; return; }
     delete u.dataset.stay; undoT = setTimeout(() => { u.hidden = true; undoSnap = null; undoFn = null; }, ms || 30000); };

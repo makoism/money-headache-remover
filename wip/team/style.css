@@ -1950,3 +1950,5 @@ ol.steps li { margin: 0 0 4px; }
 /* QC round 6 layout and touch 6: a goal name on Home > More wraps to a second line instead of being cut ("Emergenc..." at 320 while
    "21 months" had room); a very long name stops at two lines */
 .gd-t b { white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; line-height: 1.25; overflow-wrap: normal; }
+
+body .upd.undo-bar.undo-top { top: calc(10px + env(safe-area-inset-top, 0px)); bottom: auto; }   /* over a Log spend button it moves to the top (QC round 11 numbers 1) */
