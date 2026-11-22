@@ -4,6 +4,12 @@ Written 2026-11-18 on branch `wip-38.31`. Read this whole file before touching a
 
 ## 0. Handoff (latest first)
 
+**2026-11-22 09:45 JST, MAIN 13 at the end of the work window. Coordinator: session_01BFpKEXZxmzMuFVBB5UQxLE.**
+**QC round 9 did not finish.** About 06:45 JST the account hit its weekly usage limit (resets 09:00 JST). Two reports are in: wording FAIL (blocker: "saved in this browser only" lines are false with the cloud copy on; qc_round9/wording.md) and art PASS (qc_round9/art_director.md). The north-star gate, numbers gate, novice, money accuracy, data safety, layout and regression agents were cut off with no report. Their work is lost: run all seven again as fresh agents.
+**helper/r9-words** (the wording blocker, the hidden "Enter your recovery code" button on the welcome screen, restore steps, "Add a card or loan", two full stops) was also cut off before its first commit. Redo it from qc_round9/wording.md items 1, 9, 10, 16, 17.
+**Next, in order:** 1 redo the wording fixes, test first. 2 one quiet ./check.sh full. 3 golden 3831zc if screens changed, stage_build. 4 QC round 10 with all nine fresh agents (the build changed, so the seven unfinished round 9 roles run on it too). Start fewer agents at once if the usage limit is close.
+**Build on wip-38.31 now:** app files as staged for round 9 (377733e); only reports and notes since.
+
 **2026-11-22 06:36 JST, MAIN 13 (state while QC round 9 runs). Work window ends 09:00 JST. Coordinator: session_01BFpKEXZxmzMuFVBB5UQxLE.**
 **Done since MAIN 12:** all four round 8 helper branches merged, each test first (helper/borrow-status, helper/numbers-r8 from MAIN 12; helper/r8-safety-words, helper/r8-polish from MAIN 13). One quiet `./check.sh full` on 2857cfd: all green but two stale tests from intended changes (qc12_bank_hint, team_inter2), fixed and rerun green; GUARD ALL PASS with Home idle 1.12% (pasted in qc_round8/regression.md). artcheck PASS. Golden 3831zb recorded (wording only, every number the same; README_3831zb.md). Staged 377733e, VERIFY OK. MAKO_RUN 1.19 to 1.21 added.
 **Running:** QC round 9, nine fresh Opus agents on /tmp/qc_build/build.html (377733e). Reports go to wip/team/qc_round9/.
