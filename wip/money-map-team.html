@@ -3231,6 +3231,9 @@ function splitDraft(vals, total, from, i) {
 function planCells(S, C, ym) {
   const m = C.byYm[ym], rs = receiptStats(S, ym), dw = m.draw || 0, L = m.pool.left, over = m.overNow || 0;
   const play = m.jar.play, playSpent = rs.byJar.play || 0;
+  /* Free to spend for this month: what is left of the plan, what is held back for the minimum, and the safe part, so Plan > Month shows the
+     same planned figure and the same safe figure as Home (QC round 10 numbers gate blocker 1) */
+  const playLeft = round2(play - playSpent), fo = freeOf(S, { left: m.left, bankStart: m.bankStart, bankEnd: m.bankEnd, over: m.over || 0, status: statusOf(S, m) }, { left: playLeft });
   let dock = dw > 0 ? L - dw : L;                  /* money borrowed from the emergency fund is not pay */
   if (dock > 0) dock = Math.max(0, dock - over);   /* and pay with no place that spending past plan already used is not left */
   return {
@@ -3239,12 +3242,27 @@ function planCells(S, C, ym) {
     /* a month that balances only by borrowing from the emergency fund: the plan spends more than the pay and the borrow covers the rest. It is not
        on plan, whatever the balance (QC round 8 north-star gate 1). gap: how far the plan passes the pay; draw: what was borrowed */
     borrowCover: dw > 0 && L > -0.005 && L - dw < -0.004 ? { draw: dw, gap: round2(dw - L) } : null,
-    overPay: -(L - dw), pastPay: L < 0 ? round2(-L) : 0,   /* how far the plan goes past pay this month, for All months (QC10 round 3 numbers should-fix 5) */                            /* how much more than the pay the month plans to spend (shown in a tight month) */
+    overPay: -(L - dw), pastPay: L - dw < -0.004 ? round2(dw - L) : 0,   /* how far the plan goes past pay this month, for All months (QC10 round 3 numbers should-fix 5): real pay, so money borrowed from the emergency fund is part of it, the same figure the month view gives (QC round 10 numbers gate blocker 2) */                            /* how much more than the pay the month plans to spend (shown in a tight month) */
     bankGap: Math.max(0, cfg(S, 'minBank') - m.bankEnd),   /* how far the bank ends under the safety minimum */
     bankBelowZero: -m.bankEnd,                     /* how far below zero the bank ends (shown only when it is) */
     dock, dockAbs: Math.abs(dock),                 /* the dock number: pay not placed yet, or (when negative) how much more is planned than the pay */
-    playOver: round2(playSpent - play)             /* Free to spend logged past its plan (shown only when it is) */
+    playOver: round2(playSpent - play),            /* Free to spend logged past its plan (shown only when it is) */
+    playLeft, playHeld: fo.held > 0.004 ? fo.held : 0, playSafe: fo.free   /* left of the plan, held back for the minimum, and the safe part (or below zero when over) */
   };
+}
+
+/* One status per month, in the same words on every screen that names it: Plan's chip, the line under the month, All months and the
+   assistant's change table (QC round 10 numbers gate should-fix 6: Plan said "Tight month" and All months "On plan" for a month that
+   balances only by borrowing). cls is good, tight or short. */
+function monthStatus(S, C, ym) {
+  const m = C.byYm[ym]; if (!m) return { cls: 'good', word: 'On plan' };
+  const st = statusOf(S, m), PC = planCells(S, C, ym), rs = receiptStats(S, ym), playSpent = rs.byJar.play || 0;
+  const overFree = playSpent > m.jar.play && m.jar.play >= 0 && rs.count > 0, overAny = !overFree && (m.overNow || 0) > 0.004;
+  if (overFree) return { cls: 'short', word: (m.overNec || 0) > 0.004 ? 'Over plan' : 'Over Free to spend' };
+  if (overAny) return { cls: 'short', word: 'Over plan' };
+  if (st === 'good' && PC.unplaced >= roundUnit(S)) return { cls: 'tight', word: 'Not placed yet' };   /* pay with no place is never "On plan" (38.31 novice round 4) */
+  if (st === 'good' && PC.borrowCover) return { cls: 'tight', word: 'Tight month' };   /* balances only by borrowing (QC round 8 north-star gate 1) */
+  return { cls: st, word: { good: 'On plan', tight: 'Tight month', short: 'Short' }[st] };
 }
 
 /* THE PROOF. Where the money sits must equal where the money came from, less what left. The two sides are worked out apart from each other:
@@ -4995,9 +5013,10 @@ function render() {
   const PC = planCells(S, C, sel);   /* the worked-out amounts for this screen come from the model */
   const pin = m.pool.in, play = m.jar.play, wk = weekOf(play);
   try { const mr = HV && HV.map && HV.map.month.find(r => r.id === 'play'); if (mr) BUR.roomCv($('#heroRoomW'), mr, 'play'); } catch (e) { /* the number still shows */ }
-  const rs = receiptStats(S, sel), playSpent = rs.byJar.play || 0, playLeft = round2(play - playSpent), heroShow = freeOf(S, { left: m.left, bankStart: m.bankStart, bankEnd: m.bankEnd, over: m.over || 0, status: st }, { left: playLeft }).free, heroTxt = (playSpent > 0 || heroShow !== play) ? fmt2(heroShow) : fmt(heroShow);
+  /* part held back for the minimum: the headline is the planned figure left, and the line says how much of it is safe, in Home's words (QC round 10 numbers gate blocker 1) */
+  const rs = receiptStats(S, sel), playSpent = rs.byJar.play || 0, heldP = PC.playHeld > 0, heroShow = heldP ? PC.playLeft : PC.playSafe, heroTxt = (heldP || playSpent > 0 || heroShow !== play) ? fmt2(heroShow) : fmt(heroShow);
   $('#heroNum').textContent = heroTxt; $('#heroNum').style.setProperty('--n', String(heroTxt.length)); $('#heroNum').style.color = heroShow < 0 ? 'var(--bad)' : '';
-  $('#heroWk').textContent = (playSpent > 0 || heroShow !== play) ? `Planned ${fmt(play)} in ${mon}, about ${fmtAbout(wk)} a week.` : `Planned: about ${fmtAbout(wk)} a week across the whole of ${mon}.`;   /* names the month Plan shows (QC10 numbers should-fix 4) */
+  $('#heroWk').textContent = heldP ? `Planned ${fmt(play)} in ${mon}, ${fmt2(PC.playSafe)} safe to spend.` : (playSpent > 0 || heroShow !== play) ? `Planned ${fmt(play)} in ${mon}, about ${fmtAbout(wk)} a week.` : `Planned: about ${fmtAbout(wk)} a week across the whole of ${mon}.`;   /* names the month Plan shows (QC10 numbers should-fix 4) */
   /* the line's amounts, all written the same way: with cents when any has cents (38.31 number gate round 8, finding 4) */
   const rcSafe = playSafeLeft(S, m, playSpent), rf = fmtSet(playSpent, PC.playOver, m.counted, m.topup ? m.topup.used : 0, m.pendLeft, m.pastLeft, rcSafe);
   $('#rcLine').innerHTML = !rs.count ? '<button type="button" class="link" data-tab-go="receipts">Log spend</button> to see what you really spent.'
@@ -5005,12 +5024,8 @@ function render() {
     : playSpent > 0 ? `Receipts: ${fmt2(playSpent)} spent from Free to spend, which has no plan this month. <button type="button" class="link" data-tab-go="receipts">See receipts</button>`
     : `Receipts: nothing spent from Free to spend. <button type="button" class="link" data-tab-go="receipts">See receipts</button>`;
   const Lun = PC.unplaced, JU = jarsOf(S, m), usedUp = JU.usedOver >= 0.5;   /* pay with no place that spending past plan used up is "used", not "placed" (QC10 round 2 numbers should-fix 5) */   /* pay with no place, less what spending past plan already took from it */
-  const chip = $('#chip'); chip.className = 'chip ' + st; chip.hidden = pin <= 0;
-  const overFree = playSpent > play && play >= 0 && rs.count > 0, overAny = !overFree && (m.overNow || 0) > 0.004;
-  if (overFree || overAny) { chip.className = 'chip short'; chip.innerHTML = IC.bad + (overFree && !((m.overNec || 0) > 0.004) ? 'Over Free to spend' : 'Over plan'); }
-  else if (Lun >= roundUnit(S) && st === 'good') { chip.className = 'chip tight'; chip.innerHTML = IC.warn + 'Not placed yet'; }
-  else if (st === 'good' && PC.borrowCover) { chip.className = 'chip tight'; chip.innerHTML = IC.warn + 'Tight month'; }   /* balances only by borrowing: the model's tight words, never "On plan" (QC round 8 north-star gate 1) */
-  else chip.innerHTML = st === 'good' ? IC.ok + 'On plan' : st === 'tight' ? IC.warn + 'Tight month' : IC.bad + 'Short';
+  /* one status per month, the same words in All months and on the line under the month (model.js monthStatus; QC round 10 numbers gate should-fix 6) */
+  const MS = monthStatus(S, C, sel), chip = $('#chip'); chip.className = 'chip ' + MS.cls; chip.hidden = pin <= 0; chip.innerHTML = { good: IC.ok, tight: IC.warn, short: IC.bad }[MS.cls] + MS.word;
   const gap = PC.bankGap;
   let vt;
   if (pin <= 0) vt = 'Tap Salary below and type your monthly take-home pay';
@@ -5043,7 +5058,7 @@ function render() {
   const covered = Ld < 0 && dw > 0 && dw >= -Ld - 0.004;   /* more planned than pay, all of it borrowed from the emergency fund: on plan, so not alarm red (38.31 north-star round 3) */
   $('#dockNum').textContent = allPlaced ? '' : bankOnly ? fmt2(PC.bankBelowZero) : pin > 0 || L < 0 ? fmt2(PC.dockAbs) : ''; $('#dockNum').style.color = (Ld < 0 && !covered) || bankOnly ? 'var(--bad)' : covered ? 'var(--warn)' : '';
   const dockS = pin <= 0 ? null : `${Ld < 0 ? (sampleOn() && !(S.ui.done || {}).pay ? 'more planned than the sample pay in ' : 'more planned than your pay in ') + mon + (dw > 0 ? ', ' + fmt(dw) + ' borrowed from your emergency fund' : '') : (allPlaced ? (sampleOn() && !(S.ui.done || {}).pay ? 'All of the sample pay has a place in ' : usedUp ? 'All of your pay is used in ' : 'All of your pay has a place in ') : sampleOn() && !(S.ui.done || {}).pay ? 'of the sample pay not placed yet in ' : 'of your pay not placed yet in ') + mon}`;   /* S6: one word, "not placed yet" (38.29 glossary) */
-  const dockSt = overFree && !((m.overNec || 0) > 0.004) ? 'Over Free to spend' : overFree || overAny ? 'Over plan' : Ld >= roundUnit(S) && st === 'good' ? 'Not placed yet' : st === 'good' && PC.borrowCover ? 'Tight' : st === 'good' ? 'On plan' : st === 'tight' ? 'Tight' : 'Short';
+  const dockSt = MS.word;   /* the chip's own status (model.js monthStatus) */
   $('#dockTxt').textContent = pin <= 0 ? (L < 0 ? 'planned with no pay entered in ' + mon + '. Add your pay in Plan.' : bankOnly ? 'below zero in the bank at the end of ' + mon + ', with no pay entered. Add your pay in Plan.' : 'No plan yet. Add your pay in Plan.') : dockS + (dockS.toLowerCase().includes(dockSt.toLowerCase()) ? '' : ' · ' + dockSt);   /* the status word is left out when the sentence already says it, never "not placed yet in Nov · Not placed yet" (QC round 6 wording 7) */
 
   /* the details */
@@ -5173,18 +5188,15 @@ function renderSettings() {
 }
 
 function renderMonthTable() {
-  const word = { good: 'On plan', tight: 'Tight', short: 'Short' }, icon = { good: IC.ok, tight: IC.warn, short: IC.bad };
+  const icon = { good: IC.ok, tight: IC.warn, short: IC.bad };
   const fullIn = {}; S.plan.goals.forEach(g => { const r = C.reached[g.id], m0 = r && C.byYm[r]; if (g.target > 0 && r && !(m0 && m0.balBefore[g.id] >= capOf(g, r))) (fullIn[r] = fullIn[r] || []).push(g); });   /* only the month it first fills: a goal already full before it is not marked (QC round 6 money accuracy polish 7) */
   const rows = C.months.filter(m => !m.before).map(m => {   /* months before the plan starts are not part of it (QC round 4 money accuracy B1) */
-    const bk = m.bankEnd, grew = (m.overNow || 0) > 0.004;
-    const st = grew ? 'short' : statusOf(S, m), gs = fullIn[m.ym] || [];
+    const bk = m.bankEnd, gs = fullIn[m.ym] || [];
     const fw = g => kindOfGoal(S, g) === 'debt' ? 'paid off' : 'full';   /* a debt is paid off, never full, as on Plan > Burrows (QC round 7 money accuracy blocker 2) */
     const marks = gs.map(g => `<span class="mt-g" style="--c:var(--c${g.slot})" title="${esc(g.name)} ${fw(g)}">${HI.leaf}<span>${esc(g.name)} ${fw(g)}</span></span>`).join('');
-    /* the same verdict as this month's own Plan view: pay with no place is "Not placed yet", never "On plan" (38.31 novice round 4) */
-    const pcm = planCells(S, C, m.ym), np = m.pool.left < 0 ? m.pool.left : pcm.unplaced;   /* the Month card's own figure: pay with no place, less what spending past plan already used (38.31 number gate round 4) */
-    const unp = !grew && st === 'good' && pcm.unplaced >= roundUnit(S);
-    const wd = grew ? 'Over plan' : unp ? 'Not placed yet' : word[st];
-    return `<tr data-ym="${m.ym}" class="${m.ym === sel ? 'on' : ''}" tabindex="0" aria-label="${monthLabel(m.ym)}: ${wd}${gs.length ? ', ' + gs.map(g => g.name + ' ' + fw(g)).join(', ') : ''}"><td>${monthLabel(m.ym)}${marks}</td><td class="${np < 0 ? 'neg' : ''}">${np < 0 ? fmt2(pcm.pastPay) + ' past pay' : fmt2(np)}</td><td class="${bk < cfg(S, 'minBank') ? 'neg' : ''}">${fmt2(bk)}</td><td><span class="st ${unp ? 'tight' : st}">${unp ? IC.warn : icon[st]}<span class="stw">${wd}</span></span></td></tr>`;
+    const pcm = planCells(S, C, m.ym), past = pcm.pastPay > 0;   /* past pay counts money borrowed from the emergency fund as past pay, as the month says it (QC round 10 numbers gate blocker 2) */   /* the Month card's own figure: pay with no place, less what spending past plan already used (38.31 number gate round 4) */
+    const MS = monthStatus(S, C, m.ym), wd = MS.word;   /* the same status, in the same words, as this month's own Plan view (model.js monthStatus; QC round 10 numbers gate should-fix 6) */
+    return `<tr data-ym="${m.ym}" class="${m.ym === sel ? 'on' : ''}" tabindex="0" aria-label="${monthLabel(m.ym)}: ${wd}${gs.length ? ', ' + gs.map(g => g.name + ' ' + fw(g)).join(', ') : ''}"><td>${monthLabel(m.ym)}${marks}</td><td class="${past && !pcm.borrowCover ? 'neg' : ''}">${past ? fmt2(pcm.pastPay) + ' past pay' : fmt2(pcm.unplaced)}</td><td class="${bk < cfg(S, 'minBank') ? 'neg' : ''}">${fmt2(bk)}</td><td><span class="st ${MS.cls}">${icon[MS.cls]}<span class="stw">${wd}</span></span></td></tr>`;
   }).join('');
   $('#monthTable').innerHTML = `<table><thead><tr><th>Month</th><th>Not placed</th><th>Bank, month end</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
@@ -5496,6 +5508,7 @@ function wireReceipts() {
     e.preventDefault();
     const d = $('#rcDate').value, a = +$('#rcAmt').value, c = $('#rcCat').value, n = $('#rcNote').value, msg = $('#rcMsg');
     if (!validDate(d) || MONTHS.indexOf(d.slice(0, 7)) < 0) { msg.textContent = `Pick a date from ${monthLabel(START)} to ${monthLabel(END)}`; $('#rcDate').focus(); return; }
+    { const bad = amtBad($('#rcAmt')); if (bad) { msg.textContent = bad; $('#rcAmt').focus(); return; } }   /* "1o0" is refused and stays in the box (QC round 10 numbers gate should-fix 1) */
     if ($('#rcAmt').dataset.neg) { msg.textContent = 'Type the amount without a minus sign, because a receipt is money you spent. For a refund, lower or delete the receipt it pays back.'; $('#rcAmt').value = ''; delete $('#rcAmt').dataset.neg; $('#rcAmt').focus(); return; }
     if (!(wholeAmt(S, a) > 0)) { msg.textContent = 'Type an amount'; $('#rcAmt').focus(); return; }
     if (wholeAmt(S, a) > 1e9) { msg.textContent = 'That amount is too big. The most is 1,000,000,000.'; $('#rcAmt').focus(); return; }
@@ -14143,7 +14156,7 @@ THE PAGE
 - The main goal is the nearest goal still being saved for, unless the person picks one with Set as main goal.
 - Receipts: at the top is Scan receipts. Tap Camera or Choose files (photos, screenshots, a bank CSV, Excel or PDF statement), then Read. Claude lists what it found, with a category picker on each line, before anything is added. Tap the Add button under the list to add them (it says how many, like Add 3 receipts), and Undo is offered afterwards. To use another AI instead, open Prefer your own AI? Use it instead: tap Copy message, paste it into that AI app with the photos, paste the reply into Reply and tap Check. Below that: the form with Date, Amount, Category, Note and Log spend, a Month picker with the receipts of that month and plan against spent for each category, and a Reminder card that adds a repeating event to a calendar (Google, Apple, Outlook, Microsoft 365 or Yahoo), or Copy event text.
 - Plan, Burrows: each burrow is a goal with an amount and, if wanted, a Needed by date. With a date, the page spreads what is missing over the months before it. Edit goal changes Name, Why (optional), Goal amount, Already saved and Needed by, or removes it with Remove goal. The Why is the reason in the person's words, shown with the goal. Change monthly amount sets the monthly saving. Add a burrow asks what, how much and by when. Cards and loans lists what is still owed, with Add a card or loan. Forecast shows each goal month by month as a chart, and Table switches to numbers. The emergency fund is the one goal that can be borrowed from in a short month.
-- Plan, Month: the whole plan for one month. A Choose a month list, the big Free to spend number with a weekly amount and Change, a status chip (On plan, Tight, Short, Over plan or Not placed yet), the pay split by place as a coloured bar, and Details: Money in (Salary, Second pay, Side pay, plus Extra money came in and Paid weekly or twice a month?), Money out (Monthly bills, One-time costs, Cards and loans when there are any, Goal burrows, Free to spend, Education, Investing, Giving) and Left. Tap an amount to type a new one: it changes that month only, and Keep for later months makes it the new usual. Open a place and tap Rename, remove or add lines to change its list. Undo all and Reset month revert edits. A Short month offers fixes with one tap: spend less, or borrow from the emergency fund. All months shows a table of every month: tap a month to open it.
+- Plan, Month: the whole plan for one month. A Choose a month list, the big Free to spend number with a weekly amount and Change, a status chip (On plan, Tight month, Short, Over plan, Over Free to spend or Not placed yet; All months uses the same words), the pay split by place as a coloured bar, and Details: Money in (Salary, Second pay, Side pay, plus Extra money came in and Paid weekly or twice a month?), Money out (Monthly bills, One-time costs, Cards and loans when there are any, Goal burrows, Free to spend, Education, Investing, Giving) and Left. Tap an amount to type a new one: it changes that month only, and Keep for later months makes it the new usual. Open a place and tap Rename, remove or add lines to change its list. Undo all and Reset month revert edits. A Short month offers fixes with one tap: spend less, or borrow from the emergency fund. All months shows a table of every month: tap a month to open it.
 - Where to put pay: Plan, Month, open Salary under Money in, and type the monthly take-home pay (after tax). If paid twice a month, add both together.
 - Settings: Name, Currency, Spending limits, Sound, Music, Start with the pages open, Look (Auto, Light or Dark), Balance (Money today (bank plus cash), Minimum balance, Free to spend cap), Where your pay goes (the six places, Bills and basics, Goal burrows, Free to spend, Education, Investing and Giving, with a common split shown as a guide), Reset and setup (Set all to zero, Restore samples, Show first steps, Guided setup), and Saved data: Backup with Save file or Copy text, Spreadsheet with Export spreadsheet (every month as one table for Sheets or Excel), Cloud copy when offered (Keep a copy in the cloud, or I have a code to bring the numbers to this device), and Restore with Load text or Choose file.
 - Setup: Guided setup (Help, Guided setup) starts with a welcome, then the currency, then Your statements: 2 or 3 months of bank, e-wallet or card statements are read by Claude, and Check what was found lets the person correct them before they are used. Type numbers instead asks pay, balance and bills one by one. Then bills, burrows and Free to spend. Each step saves as you type.
@@ -14175,7 +14188,7 @@ function closeReport() { $('#rep').hidden = true; sfx('back'); $('#helpBtn').foc
 const ASK_SUGGEST = ['Where is my money going?', 'What would bring my goal closer?', 'What can I realistically save each month?', 'Help me plan a trip', 'Cut my Free to spend a little', 'I spent 300 on lunch today'];
 
 function askNumbers() {
-  const c = calcAll(S), m = c.byYm[sel], J = jarsOf(S, m), st = { good: 'On plan', tight: 'Tight', short: 'Short' }[statusOf(S, m)], cur = sym() || 'none';
+  const c = calcAll(S), m = c.byYm[sel], J = jarsOf(S, m), st = monthStatus(S, c, sel).word, cur = sym() || 'none';
   return `MY NUMBERS FOR ${monthLabel(sel).toUpperCase()} (currency symbol: ${cur}; shared only for this question)\n- Money in: ${J.inn}\n` +
     J.list.map(j => `- ${j.name}: ${j.v}`).join('\n') + `\n- Left over: ${m.pool.left}\n- Status: ${st}\n- Goals: ${S.plan.goals.map(g => `${g.name} (${g.target}${g.due ? ', by ' + g.due : ''})`).join('; ') || 'none yet'}`;
 }
@@ -14622,13 +14635,12 @@ function asstPicture(T) {
   /* the last three months with receipts: what was logged against what was planned, so "what is realistic" has data behind it */
   const past = MONTHS.filter(x => x < ym).slice(-3).map(x => { const r = receiptStats(T, x), mm = C2.byYm[x]; if (!r.count || !mm) return null; return `${monthLabel(x, true)} ${x.slice(2, 4)}: ${r.count} receipts, ${n(r.total)} logged; play ${n(r.byJar.play || 0)} of ${n(mm.jar.play)} planned, necessities ${n(r.byJar.nec || 0)} of ${n(mm.jar.nec)} planned`; }).filter(Boolean);
   const ahead = MONTHS.filter(x => x > ym).slice(0, 12), shorts = ahead.filter(x => statusOf(T, C2.byYm[x]) === 'short'), tights = ahead.filter(x => statusOf(T, C2.byYm[x]) === 'tight');
-  const st = { good: 'On plan', tight: 'Tight', short: 'Short' };
   const home = (Array.isArray(T.ui.home) && T.ui.home.length ? T.ui.home : HOME_SECTIONS).join(', ');
   return `PICTURE (today ${todayStr()}, currency ${cur}, amounts per month, month in view ${monthLabel(ym)})
 Name: ${T.ui.name || '(not given)'}
 Income: salary ${n(val(T, 'a', ym))}, second income ${n(val(T, 'b', ym))}, side income ${n(val(T, 'side', ym))}; total in ${n(m.pool.in)}
 Money today ${n(cfg(T, 'bankStart'))}; minimum balance ${n(cfg(T, 'minBank'))}; Free to spend cap ${n(cfg(T, 'ceiling'))}
-This month: left over ${n(m.pool.left)}, balance ends ${monthLabel(ym, true)} at ${n(m.bankEnd)}, status ${st[statusOf(T, m)]}. Next 12 months: ${shorts.length ? 'short in ' + shorts.map(x => monthLabel(x, true) + ' ' + x.slice(2, 4)).join(', ') : 'no short month'}${tights.length ? '; tight in ' + tights.length + ' month' + (tights.length === 1 ? '' : 's') : ''}.
+This month: left over ${n(m.pool.left)}, balance ends ${monthLabel(ym, true)} at ${n(m.bankEnd)}, status ${monthStatus(T, C2, ym).word}. Next 12 months: ${shorts.length ? 'short in ' + shorts.map(x => monthLabel(x, true) + ' ' + x.slice(2, 4)).join(', ') : 'no short month'}${tights.length ? '; tight in ' + tights.length + ' month' + (tights.length === 1 ? '' : 's') : ''}.
 Places (amount, share of pay, usual share): ${J.list.map(j => `${j.name} ${n(j.v)} (${j.pct}%, usual ${j.usual}%)`).join('; ')}${J.rest > 0 ? `; not placed yet ${n(J.rest)} (${J.restPct}%)` : ''}${J.over ? '; the plan spends more than the pay' : ''}
 Free to spend this month: planned ${n(V.play.planned)}, spent ${n(V.play.spent)}, left ${n(V.play.left)}, ${V.play.daysLeft} days left${V.play.perWeek != null ? ', about ' + n(V.play.perWeek) + ' a week' : ''}
 Lines (key | name | jar | amount):
@@ -14700,11 +14712,11 @@ const runActions = (T, steps) => { steps.forEach(s => { if (s.on) s.run(T); }); 
 /* the numbers that matter, before and after, worked out on a copy */
 function asstDelta(steps) {
   const T = JSON.parse(JSON.stringify(S)); runActions(T, steps);
-  const ym = nowYm(), CA = calcAll(S), CB = calcAll(T), a = CA.byYm[ym], b = CB.byYm[ym], st = { good: 'On plan', tight: 'Tight', short: 'Short' };
+  const ym = nowYm(), CA = calcAll(S), CB = calcAll(T), a = CA.byYm[ym], b = CB.byYm[ym];
   const today = ymd(new Date()), VA = viewOf(S, CA, ym, today), VB = viewOf(T, CB, ym, today);
   const rows = [
     ['Free to spend', fmt(a.jar.play), fmt(b.jar.play)], ['Free to spend left', fmt(VA.play.left), fmt(VB.play.left)], ['Not placed yet', fmt(a.pool.left), fmt(b.pool.left)],
-    ['Bank at month end', fmt(a.bankEnd), fmt(b.bankEnd)], ['Status', st[statusOf(S, a)], st[statusOf(T, b)]],
+    ['Bank at month end', fmt(a.bankEnd), fmt(b.bankEnd)], ['Status', monthStatus(S, CA, ym).word, monthStatus(T, CB, ym).word]   /* the words Plan shows (QC round 10 numbers gate should-fix 6) */,
   ];
   const gA = goalRows(S, CA, ym), gB = goalRows(T, CB, ym);
   gB.forEach(r => { const o = gA.find(x => x.id === r.id); const was = o ? (o.pct >= 100 ? 'full' : o.reached ? monthLabel(o.reached) : 'over ' + SPAN) : 'new'; const now = r.pct >= 100 ? 'full' : r.reached ? monthLabel(r.reached) : 'over ' + SPAN; if (!o || was !== now || (o && val(S, 'goal:' + r.id, ym) !== val(T, 'goal:' + r.id, ym))) rows.push([r.name, o ? `${was}, ${fmt(val(S, 'goal:' + r.id, ym))}/mo` : 'new', `${now}, ${fmt(val(T, 'goal:' + r.id, ym))}/mo`]); });
@@ -16549,14 +16561,15 @@ const links = `<p class="cap hs-more"><button type="button" class="link" data-xm
   if (p.planned <= 0 && p.spent <= 0) { put(el, `${head}<p class="hs-lbl">Free to spend in ${monthLabel(ym)}</p><p class="hs-big zero">${fmt(0)}</p><p class="cap">No Free to spend planned for ${monthLabel(ym)}.</p><div class="row-btns"><button type="button" class="btn small" data-open="play">Set in Plan</button></div>${smp}${sampleOn() ? '' : links}${tiles}`); return; }
   /* free to spend can never be more than the plan can afford: when the month would end under the safety minimum, that gap is held back */
   const fo = freeOf(S, m, p), held = fo.held, freeLeft = fo.free;
-  const wk = p.perWeek != null && freeLeft > 0 ? `<b>${fmtAbout(V.cells.perWeek)}</b> a week to stay inside it for the ${plural(p.daysLeft, 'day')} left.` : `${plural(p.daysLeft, 'day')} left.`;
+  const wk = p.perWeek != null && freeLeft > 0 ? `<b>${fmtAbout(V.cells.perWeek)}</b> a week to stay inside ${held > 0 ? 'the safe part' : 'it'} for the ${plural(p.daysLeft, 'day')} left.` : `${plural(p.daysLeft, 'day')} left.`;
   const chip = p.over ? `<span class="chip short">${IC.bad}Over</span>` : p.ahead ? `<span class="chip tight">${IC.warn}Ahead of pace</span>` : `<span class="chip good">${IC.ok}On pace</span>`;
 
   const playRm = ((V.map && V.map.month) || []).find(r => r.id === 'play'), notSafe = !!(playRm && playRm.notCovered && !sampleOn());   /* the same rule as the top of Home (QC10 round 2 numbers should-fix 4) */
   const free = !p.over && p.planned > 0 && m.status === 'good' && !sampleOn() && !notSafe;
-  put(el, `${head}<p class="hs-lbl">${p.over ? 'Over Free to spend in ' : 'Free to spend in '}${monthLabel(ym)}</p><p class="hs-big${p.over ? ' neg' : ''}" style="--n:${fmt2(freeLeft).length}">${fmt2(freeLeft)}</p>
+  const bigAmt = held > 0 && playRm ? playRm.planLeft : freeLeft;   /* part held back for the minimum: the planned figure left, as on the Home tile, and the safe part under it (QC round 10 numbers gate blocker 1) */
+  put(el, `${head}<p class="hs-lbl">${p.over ? 'Over Free to spend in ' : 'Free to spend in '}${monthLabel(ym)}</p><p class="hs-big${p.over ? ' neg' : ''}" style="--n:${fmt2(bigAmt).length}">${fmt2(bigAmt)}</p>
     <div class="hs-bar${p.over ? ' over' : ''}" role="img" aria-label="${fmt2(p.spent)} of ${fmt(p.planned)} spent"><i style="width:${p.frac * 100}%"></i><span class="pace" style="left:${p.dayFrac * 100}%"></span></div><p class="cap hs-key">The bar is what you've spent and the mark is how far through the month you are</p>
-    <p class="hs-sub">${p.count ? `Spent ${fmt2(p.spent)} of ${fmt(p.planned)}.` : `Nothing logged yet. ${fmt(p.planned)} planned.`} ${p.over ? '' : wk}${!p.over && freeLeft > 0 && p.daysLeft > 0 ? ` About <b>${fmtAbout(V.cells.perDay)}</b> a day.` : ''}</p>${p.over && freeLeft < 0 ? `<p class="hs-ok warn">${fmt2(V.cells.freeOver)} came out of your bank, so don't spend any more from Free to spend this month.</p>` : ''}${held > 0 ? `<p class="hs-ok warn">${fmt(held)} is held back because spending it would leave your bank under your ${fmt(cfg(S, 'minBank'))} minimum.</p>` : ''}${p.count || p.over ? chip : ''}${notSafe ? `<p class="hs-sub">Not safe to spend yet: your bank${nowOf(S).cards.length ? ' after the cards' : ''} is less than your bills still to pay and Free to spend.</p>` : ''}${free ? `<p class="hs-ok">Bills and burrows are planned for, so this part is free to spend.${V.main && V.main.live && V.main.pct < 100 ? ` What's left at month end can go toward ${esc(goalById(S, V.main.id).name)}.` : ''}</p>` : ''}${gapBox}${smp}${sampleOn() ? '' : links}${tiles}`);
+    <p class="hs-sub">${p.count ? `Spent ${fmt2(p.spent)} of ${fmt(p.planned)}.` : `Nothing logged yet. ${fmt(p.planned)} planned.`} ${p.over ? '' : wk}${!p.over && freeLeft > 0 && p.daysLeft > 0 ? ` About <b>${fmtAbout(V.cells.perDay)}</b> a day.` : ''}</p>${p.over && freeLeft < 0 ? `<p class="hs-ok warn">${fmt2(V.cells.freeOver)} came out of your bank, so don't spend any more from Free to spend this month.</p>` : ''}${held > 0 ? `<p class="hs-ok warn">${fmt2(freeLeft)} of it is safe to spend. ${fmt(held)} is held back because spending it would leave your bank under your ${fmt(cfg(S, 'minBank'))} minimum.</p>` : ''}${p.count || p.over ? chip : ''}${notSafe ? `<p class="hs-sub">Not safe to spend yet: your bank${nowOf(S).cards.length ? ' after the cards' : ''} is less than your bills still to pay and Free to spend.</p>` : ''}${free ? `<p class="hs-ok">Bills and burrows are planned for, so this part is free to spend.${V.main && V.main.live && V.main.pct < 100 ? ` What's left at month end can go toward ${esc(goalById(S, V.main.id).name)}.` : ''}</p>` : ''}${gapBox}${smp}${sampleOn() ? '' : links}${tiles}`);
 }
 /* a row opens to show its details; which ones are open survives a redraw */
 const HOPEN = new Set();
@@ -16639,7 +16652,7 @@ function renderBand() {
   if (!g) { el.hidden = true; return; }
   const purpose = g.why || g.name;
   /* the words for what is left come from the model's map ("safe to spend", or "left, not safe to spend yet"), as on Receipts (QC round 6 numbers gate 3) */
-  const playRm = ((V.map && V.map.month) || []).find(x => x.id === 'play'), freeSay = V.map.free < 0 ? fmt2(V.cells.freeOver) + ' over' : fmt2(V.map.free) + ' ' + ((playRm && playRm.sub) || 'safe to spend');
+  const playRm = ((V.map && V.map.month) || []).find(x => x.id === 'play'), freeSay = V.map.free < 0 ? fmt2(V.cells.freeOver) + ' over' : playRm && playRm.held > 0 ? fmt2(playRm.planLeft) + ' planned, ' + fmt2(playRm.amount) + ' safe to spend'   /* held back for the minimum: the planned figure and the safe part, as on Home (QC round 10 numbers gate blocker 1) */ : fmt2(V.map.free) + ' ' + ((playRm && playRm.sub) || 'safe to spend');
   put(el, `<span class="mg-l" style="--c:var(--c${g.slot})"><i class="dot"></i><b>${esc(purpose)}</b><em>${when}</em></span><span class="mg-bar" aria-hidden="true" style="--c:var(--c${g.slot})"><i style="width:${fracOf(r) * 100}%"></i></span><span class="mg-s">${sampleOn() ? 'Sample numbers. ' : ''}Free to spend: ${freeSay}, ${monthLabel(V.ym, true)}</span>`);
   el.setAttribute('aria-label', `Main goal: ${g.name}${g.why ? ', ' + g.why : ''}. ${when}. Free to spend ${freeSay}. Tap for Home.`);
   el.hidden = false;
@@ -16862,6 +16875,7 @@ function wireHome() {
   $('#hForm').addEventListener('submit', e => {
     e.preventDefault();
     const d = $('#hDate').value || todayStr(), a = +$('#hAmt').value, c = $('#hCat').value, n = $('#hNote').value, msg = $('#hMsg');
+    { const bad = amtBad($('#hAmt')); if (bad) { msg.textContent = bad; $('#hAmt').focus(); sfx('off'); return; } }   /* "1o0" is refused and stays in the box (QC round 10 numbers gate should-fix 1) */
     if ($('#hAmt').dataset.neg) { msg.textContent = 'Type the amount without a minus sign because a receipt is money you spent. For a refund, lower or delete the receipt it pays back.'; $('#hAmt').value = ''; delete $('#hAmt').dataset.neg; $('#hAmt').focus(); sfx('off'); return; }
     if (!(wholeAmt(S, a) > 0)) { msg.textContent = 'Enter an amount.'; $('#hAmt').focus(); sfx('off'); return; }
     if (wholeAmt(S, a) > 1e9) { msg.textContent = 'That amount is too big. The most is 1,000,000,000.'; $('#hAmt').focus(); sfx('off'); return; }
@@ -16965,12 +16979,23 @@ function moneyUp(el) {
   Object.defineProperty(el, 'value', { configurable: true, get() { const r = NATIVE_VALUE.get.call(this); if (hasMoneyOp(r)) { const v = evalMoney(r); return v === null ? (this._mnyOK !== undefined ? this._mnyOK : '') : String(v); } return r.replace(/,/g, ''); }, set(x) { const n = +x; NATIVE_VALUE.set.call(this, withCommas(x !== '' && x != null && isFinite(n) && Math.abs(n - Math.round(n)) >= 0.005 ? n.toFixed(2) : x)); } });   /* an amount the page puts in a box shows its cents as two digits, 400.50 not 400.5 (decision 1) */
   NATIVE_VALUE.set.call(el, withCommas(v));
 }
+/* a receipt amount with a letter or a second point in it: Log spend refuses it with these words and the box keeps what was typed, so it is
+   never read as another number ("1o0" as 10, "12.3.4" as 12.34). Sums are checked when the box is left (QC round 10 numbers gate should-fix 1) */
+function amtBad(el) {
+  const raw = String(NATIVE_VALUE.get.call(el) || '').trim();
+  if (!raw || hasMoneyOp(raw)) return '';
+  if (/[A-Za-z]/.test(raw)) return `"${raw}" is not an amount: it has a letter in it. Type numbers only, then log it again.`;
+  if ((raw.match(/\./g) || []).length > 1) return `"${raw}" is not an amount: it has more than one point. Fix it, then log it again.`;
+  return '';
+}
 function moneyUpAll(root) { $$('input[type=number]', root || document).forEach(el => { if (isMoneyBox(el)) moneyUp(el); }); }
 function moneyTyped(el, ev) {
   if (el._refuse && Date.now() < el._refuse) { NATIVE_VALUE.set.call(el, el._mnyPrev !== undefined ? el._mnyPrev : ''); return; }   /* after a refused minus, the rest of that typing is ignored until the person leaves the box */
   let raw = NATIVE_VALUE.get.call(el); if (hasMoneyOp(raw)) return;
   /* a letter is never dropped in silence (12O typed for 120 would become 12): the box keeps what it had and says why (38.31 QC round 2) */
-  { const lt = /[A-Za-z]/.exec(raw); if (lt) { try { cheer(`Numbers only: "${lt[0]}" wasn't added, check the amount`); } catch (x) { } NATIVE_VALUE.set.call(el, el._mnyPrev !== undefined ? el._mnyPrev : ''); return; } }
+  /* a receipt box keeps the letter in sight and Log spend refuses the amount, so "1o0" is fixed by the person, never logged as 10 (QC round 10 numbers gate should-fix 1) */
+  const rcBox = el.id === 'rcAmt' || el.id === 'hAmt';
+  { const lt = /[A-Za-z]/.exec(raw); if (lt) { try { cheer(rcBox ? `Numbers only: "${lt[0]}" is not part of an amount. Fix it before you log it.` : `Numbers only: "${lt[0]}" wasn't added, check the amount`); } catch (x) { } if (!rcBox) NATIVE_VALUE.set.call(el, el._mnyPrev !== undefined ? el._mnyPrev : ''); return; } }
   /* a minus sign is never kept; the person is told, so a refund typed as -500 is not quietly turned into +500 (receipt boxes refuse it themselves) */
   const negOK = el.dataset.neg === 'ok' || el.id === 'rcAmt' || el.id === 'hAmt';   /* a receipt box keeps a typed minus in sight, so Log can say why it is refused instead of logging +500 (38.31 number gate round 3) */
   if ((el.id === 'rcAmt' || el.id === 'hAmt')) { if (/^\s*[-\u2212\u2013\uFF0D\u30FC\u2010-\u2015]/.test(raw)) el.dataset.neg = '1'; else delete el.dataset.neg; }   /* the bank balance box takes a minus: an overdrawn account (38.31 QC round 3) */
@@ -16983,6 +17008,7 @@ function moneyTyped(el, ev) {
   const sig = t => t.replace(/[^\d.]/g, '');
   let all = sig(raw), n = sig(raw.slice(0, at)).length;
   /* a third digit after the point, or a second point, is never cut off in silence: 1.234,56 typed in euros became 1.23 (38.31 money accuracy round 4) */
+  if (rcBox && (all.match(/\./g) || []).length > 1) { try { cheer('One point only in an amount. Fix it before you log it.'); } catch (x) { } if (raw !== NATIVE_VALUE.get.call(el)) NATIVE_VALUE.set.call(el, raw); return; }   /* "12.3.4" stays in sight and Log spend refuses it, never 12.34 (QC round 10 numbers gate should-fix 1) */
   { const d1 = all.indexOf('.'); if (d1 >= 0 && (all.indexOf('.', d1 + 1) >= 0 || all.length - d1 - 1 > 2)) { try { cheer(`Only two digits after the point. For thousands, leave the separator out: 1234${COMMA_DEC.indexOf(sym()) >= 0 ? ',' : '.'}56.`); } catch (x) { } NATIVE_VALUE.set.call(el, el._mnyPrev !== undefined ? el._mnyPrev : ''); return; } }
   const dot = all.indexOf('.');
   if (dot >= 0) all = all.slice(0, dot) + '.' + all.slice(dot + 1).replace(/\./g, '').slice(0, 2);
@@ -17334,7 +17360,7 @@ function openWhy(kind) {
     title = 'Free to spend';
     rows = [[`Free to spend planned for ${mon}`, fmt(p.planned)], [`Logged in Free to spend (${p.count} ${p.count === 1 ? 'receipt' : 'receipts'})`, (p.spent > 0.004 ? MINUS : '') + fmt2(p.spent)]];   /* no minus in front of zero (38.31 north-star round 4) */
     if (held > 0) rows.push(['Held back so the balance stays above your minimum', MINUS + fmt(held)]);
-    rows.push(['Free to spend', fmt2(freeLeft)]);
+    rows.push([held > 0 ? 'Safe to spend' : 'Free to spend', fmt2(freeLeft)]);   /* what is left after the held part is the safe part, never a second Free to spend figure (QC round 10 numbers gate blocker 1) */
     const notSafe = playNotSafe(S, C, ym, ymd(new Date())) && !sampleOn();   /* the same rule as the top of Home: no per week or per day figure to spend while the bank cannot cover it (QC round 4 north-star 4) */
     if (notSafe) { /* a sentence, not an amount: it goes in the note, where it wraps (QC round 5 novice B2) */ }
     else if (p.perWeek != null) rows.push([`Per week for the ${plural(p.daysLeft, 'day')} left`, fmtAbout(V.cells.perWeek)]);
@@ -17458,7 +17484,7 @@ function renderMap() {
   /* what is owed, in one line, only when something is (A4) */
   const oweLine = M.owed > 0 ? `<p class="cap mp-owe">You owe ${fmt2(M.owed)} at the end of ${esc(mon)} ${PLN}: cards, loans and debt burrows.</p>` : '';
   const smp = '';   /* the one sample notice is the status line at the top of Home */
-  const minB = cfg(S, 'minBank'), warn = !(M.bankEnd < minB) ? '' : M.bankEnd < 0 ? `<p class="mp-warn" role="status">Your bank would end ${fmt2(M.bankBelow)} below zero in ${esc(mon)}. ${(() => { const z = (V.month && V.month.belowZero) || {}, why = [];   /* only the causes the model knows: a start below zero is not "a plan bigger than pay" (38.31 money accuracy round 4) */ if (z.startBelow > 0) why.push(`It starts the month ${fmt2(z.startBelow)} below zero.`); if (z.planGap > 0) why.push('Your plan is bigger than your pay.'); if (M.overspent > 0) why.push('You\'ve spent more than you planned.'); return why.join(' ') || 'Open Plan to see the month.'; })()} ${(() => { const pl = (M.month || []).find(x => x.id === 'play'); return pl && pl.amount > 0.004 ? `Keep Free to spend to the ${fmt2(pl.amount)} shown, or open Plan to pick a fix.` : 'Don\'t spend any more from Free to spend until you check your plan.'; })()}${(((M.month || []).find(x => x.id === 'play') || {}).planned > 0) ? ' This counts your planned Free to spend as already spent.' : ''}</p>`   /* only when some is planned (QC round 7 money accuracy polish 2) */ : `<p class="mp-warn" role="status">Your bank ends at ${fmt2(M.bankEnd)} in ${esc(mon)}, under your minimum balance of ${fmt(minB)}. ${(() => { const pl = (M.month || []).find(x => x.id === 'play'); return pl && pl.amount < pl.planned - 0.5 ? 'Free to spend is lowered to match.' : 'Open Plan to pick a fix.'; })()}</p>`;
+  const minB = cfg(S, 'minBank'), warn = !(M.bankEnd < minB) ? '' : M.bankEnd < 0 ? `<p class="mp-warn" role="status">Your bank would end ${fmt2(M.bankBelow)} below zero in ${esc(mon)}. ${(() => { const z = (V.month && V.month.belowZero) || {}, why = [];   /* only the causes the model knows: a start below zero is not "a plan bigger than pay" (38.31 money accuracy round 4) */ if (z.startBelow > 0) why.push(`It starts the month ${fmt2(z.startBelow)} below zero.`); if (z.planGap > 0) why.push('Your plan is bigger than your pay.'); if (M.overspent > 0) why.push('You\'ve spent more than you planned.'); return why.join(' ') || 'Open Plan to see the month.'; })()} ${(() => { const pl = (M.month || []).find(x => x.id === 'play'); return pl && pl.amount > 0.004 ? `Keep Free to spend to the ${fmt2(pl.amount)} ${pl.held > 0 ? 'that is safe to spend' : 'shown'}, or open Plan to pick a fix.` : 'Don\'t spend any more from Free to spend until you check your plan.'; })()}${(((M.month || []).find(x => x.id === 'play') || {}).planned > 0) ? ' This counts your planned Free to spend as already spent.' : ''}</p>`   /* only when some is planned (QC round 7 money accuracy polish 2) */ : `<p class="mp-warn" role="status">Your bank ends at ${fmt2(M.bankEnd)} in ${esc(mon)}, under your minimum balance of ${fmt(minB)}. ${(() => { const pl = (M.month || []).find(x => x.id === 'play'); return pl && pl.held > 0 ? (pl.amount > 0.004 ? `Keep Free to spend to the ${fmt2(pl.amount)} that is safe to spend, so your bank does not go under your minimum.` : 'None of Free to spend is safe to spend. Open Plan to pick a fix.') : 'Open Plan to pick a fix.'; })()}</p>`;   /* what is safe, in the Free to spend tile's words; never "lowered" when nothing was (QC round 10 numbers gate blocker 1) */
   put(el, `<h2 class="hb-h">Your burrow${typeof sampleOn === 'function' && sampleOn() ? ' <span class="smp-tag">Sample numbers</span>' : ''}</h2><p class="cap hb-what">Where your money is. Your bank now, then this month, then your burrows.</p>${smp}
     ${nowCard}
     <h3 class="mp-h">This month ${PLN}</h3><div class="hb-scene mp-rooms" id="mpRooms"></div>
