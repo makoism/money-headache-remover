@@ -9,9 +9,9 @@ const L=require('./lib_r12.js');const R=L.R;const w=R.w;
  await p.goto('file://'+(process.env.BUILD||'/home/claude/work/money-map-team.html')+'?sfxtest');await w(1300);
  await p.evaluate(()=>{const s=document.getElementById('tourSkip');s&&s.click();});await w(400);await p.evaluate(()=>{const s=document.getElementById('coSkip');s&&s.click();});await w(400);
  await L.zero(p);await p.evaluate(()=>{__t.S.ui.cur='¥';});
- await L.base(p,{pay:300000,bank:50000,min:30000,defs:{'bill:rent':90000,'bill:food':40000,envelope:38800,education:0,invest:0,give:0},eT:390000,eS:20000,eM:151200,noTrip:true});
+ await L.base(p,{pay:300000,bank:50000,min:30000,defs:{'bill:rent':90000,'bill:food':40000,envelope:38800,education:0,invest:0,give:0},eT:390000,eS:20000,eM:131200,noTrip:true});
  await p.evaluate(()=>{const S=__t.S;S.ui.done={pay:true,bills:true,goals:true,receipts:true};S.ui.sampleHidden=true;delete S.cfg.bankNow;S.cfg.bankAt='2026-11-20';__t.persist();__t.restructure();});
- await L.rc(p,30000,'envelope','2026-11-10');await L.rc(p,45000,'bill:food','2026-11-11');
+ await L.rc(p,30000,'envelope','2026-11-10');await L.rc(p,45000,'bill:food','2026-11-11');await L.rc(p,20000,'other','2026-11-12','Vet bill');
  const T={};
  for(const [k,t] of [['home','tab-home'],['plan','tab-month'],['rc','tab-receipts']]){await L.tab(p,t);await w(600);T[k]=await p.evaluate(()=>document.body.innerText.replace(/⁠/g,''));}
  const all=T.home+'\n'+T.plan+'\n'+T.rc;
@@ -23,5 +23,7 @@ const L=require('./lib_r12.js');const R=L.R;const w=R.w;
  ck('Receipts says ¥8,800 left, not safe to spend yet',/¥8,800 left, not safe to spend yet/.test(T.rc),(T.rc.match(/.{0,60}left.{0,30}/g)||[]).join(' | '));
  ck('Plan > Month receipts line says ¥8,800 left, not safe to spend yet',/¥8,800 left, not safe to spend yet/.test(T.plan),(T.plan.match(/Receipts:.{0,80}/g)||[]).join(' | '));
  ck('Receipts table Free to spend row left is ¥8,800',/Free to spend\s+¥38,800\s+¥30,000\s+¥8,800/.test(T.rc),(T.rc.match(/Free to spend\s+¥[\d,]+\s+¥[\d,]+\s+¥[\d,]+/g)||[]).join(' | '));
+ /* QC round 12 numbers gate should-fix 5: the Other row's Plan cell was empty; nothing is planned for it, so it says ¥0 */
+ ck('Receipts table Other row says ¥0 planned',/Other\s+¥0\s+¥20,000/.test(T.rc),(T.rc.match(/Other.{0,40}/g)||[]).join(' | '));
  ck('no page errors',errs.length===0,errs.join(' | '));
  await b.close();console.log(bad?'qc32_left_one: '+bad+' FAIL':'qc32_left_one: ALL PASS');process.exit(bad?1:0);})().catch(e=>{console.log('crashed '+e.stack);console.log('qc32_left_one: FAIL');process.exit(1);});
