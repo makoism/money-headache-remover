@@ -15930,7 +15930,7 @@ function paintScan() {
   /* without the buttons, the own-AI route is the way, not an alternative: its heading and first line say so */
   const sum = $('#scanApp > summary'), lede = $('#scanApp > p.cap');
   if (sum) sum.textContent = off ? 'Use your own AI' : 'Prefer your own AI? Use it instead';
-  if (lede) lede.textContent = off ? 'Copy one message, paste it into ChatGPT, Gemini or the Claude app with the photos and paste its reply back here. The reply gets checked and listed for you to go through the same way.'
+  if (lede) lede.textContent = off ? 'Copy one message, paste it into ChatGPT, Gemini or the Claude app with the photos and paste its reply back here. The reply gets checked and listed for you to go through.'
     : 'This does the same thing as the buttons above. If you don\'t want to send receipts through this page, or you like ChatGPT, Gemini or the Claude app better, you copy one message, paste it into that AI with the photos and paste its reply back here. The reply gets checked and listed for you to go through the same way.';
   $('#scanCam').disabled = $('#scanPick').disabled = scanBusy;
 }
