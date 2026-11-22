@@ -20,20 +20,25 @@ Now in place or about to be:
 5. **A day-by-day look ahead from the latest check.** A period runs from one pay to the next. Safe to spend = the lowest point the bank reaches before the next pay, less the minimum balance. "Days left" means days to the next pay.
 6. **The plan is what you expect,** set beside what happened. Goals hold money really set aside (moved to an account, or marked as kept in your bank). Past periods are built from what happened, so a plan change never rewrites the past.
 7. **No end date.** The window moves with today; dates are never dropped. A wrong phone clock is caught before anything is written.
-8. **Saved data that cannot be damaged:** a version stamp that older pages refuse, ids unique per device (phone and desktop), cents kept everywhere, no cap on receipts.
+8. **Saved data that cannot be damaged:** a version stamp that older pages refuse, ids unique per device (phone and desktop), undo kept as a "removed" mark (never deleted, so phone and desktop can be merged later), a changed-at stamp on each plan item, cents kept everywhere, no cap on receipts.
+9. **What was expected is tied to what happened** (plan review F1). Each schedule has a weekend and holiday rule (move earlier, move later, none) and a holiday table per country. Each expected item has an id (its schedule and its date); the event that settles it carries that id. The look ahead counts only items not yet settled; one past its date and not seen shows "not seen yet", never assumed paid. This is what stops pay or a bill being counted twice when it lands early or the app is not opened for weeks.
+10. **One rule for safe to spend, by account and by place** (plan review F2). What is set aside for the cards and for goals kept in the bank is taken off first. The look ahead reaches the next time each bill falls due, not only the next pay (rent paid monthly by someone paid every two weeks, yearly costs). Each schedule says which account it comes from, so an e-wallet going below zero is seen.
+11. **Pay is a list of income streams** (plan review F3), each with an account, an owner, a currency, whether it starts a new period, its own schedule, an amount per pay that can be changed one at a time, and an end. Plan amounts take a "from this date", not a calendar month key. Receipts and spending events are one list, never two.
+12. **Cards open with two dated figures** (plan review F5): the last statement balance and what is on the card now. Imported lines keep the posting date beside the buy date. The minimum balance belongs to each account; owner and currency are on accounts, income streams and goals.
 
 What stays: the screens' layout and pictures, burrows, the six places, Receipts, the cloud copy, backup, Undo, wording work, the art plan. They read from the new base instead of the old one.
 
 ## 4. Stages
-- **Stage 0, saved-data safety (about 1 day, first).** Version stamp and refusal, ids unique per device, dates outside the window kept, receipt cap removed, debt cents kept, currency code saved. Plus the failing tests on Mako's shape and on six reviewed lives.
-- **Stage 1, the new base (version one).** Items 1 to 8 above for one or more bank, cash, e-wallet and card accounts; pay schedules; bills with due days and frequency; cards with a statement close day and a payment day; the look ahead and the new safe to spend; the move of existing saved data; Home, Plan, Receipts and setup reading from it. Setup asks: what your bank shows today, how and when you are paid, each bill's day.
-- **Stage 2, after version one.** Cards and loans with interest on what is carried over and a minimum as a percent; instalments; the "money lasts about N weeks" view for people with no fixed pay day; couples' own views; a second currency.
-The saved-data shape for stage 2 goes in during stage 1, so nothing needs moving later.
+- **Step 1, the full saved shape first (about 1 day).** Every field for stage 1 and stage 2 written out with a test that proves an old 38.31 copy moves into it with nothing lost, reviewed by qc-foundation before any engine code. This is what makes stage 2 need no data move.
+- **Stage 0, saved-data safety (about 1 day, alongside step 1).** Version stamp and refusal, ids unique per device, dates outside the window kept, receipt cap removed, debt cents kept, currency code saved. Plus the failing tests on Mako's shape and on the reviewed lives.
+- **Stage 1a, version one for Mako's own shape, end to end.** One bank, two cards paid in full with statement and payment days, pay on the 10th (two incomes, one day), bills with due days and frequency, goals set aside in the bank, the look ahead and the new safe to spend, the move of existing saved data, and Home, Plan, Receipts and setup reading from it.
+- **Stage 1b, the other lives on the same shape.** Twice a month, every two weeks, weekly, no fixed pay day (counts no future pay), cash and e-wallets, statement import with the statement's own dates.
+- **Stage 2, after.** Interest on what is carried over, minimum as a percent, instalments, the "money lasts about N weeks" view, couples' own views, a second currency. Fields only; no data move.
 
-## 5. Size and date
-- Stage 0: about 8 hours. Stage 1: about 130 to 170 working hours, run as parallel lanes (engine and schedules; an independent checker written from the rules, not from the code; the move of saved data; screens; tests), each lane with its own worktree.
-- Running non-stop with helpers: **version one in the first week of December, around 3 Dec (JST).** This is an estimate. It firms up after qc-foundation reviews the stage 1 plan and the first lane lands.
-- The 23 Nov to 25 Nov date given earlier was for the old base and is withdrawn.
+## 5. Size and date (corrected after the plan review)
+- The first figure (130 to 170 hours, 3 Dec) was too low. The review puts the whole of stage 1 at **200 to 280 working hours**. The path is mostly in sequence (shape, engine, move and screens, then the review gates), so helpers shorten it less than hoped.
+- **Version one for Mako (stage 1a): about 5 to 8 Dec (JST).** Stage 1b for the team test: mid to late December. Both firm up after the shape is reviewed and the first engine lane lands. These are estimates.
+- The 25 Nov date given earlier was for the old base and is withdrawn.
 
 ## 6. Mako's choices (only these; everything else follows from the north star)
 1. **Rebuild the base before version one?** Recommended: yes. On the old base the app is wrong for Mako's own month (pay on the 10th, cards on the 10th and 11th).
