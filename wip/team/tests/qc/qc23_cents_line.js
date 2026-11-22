@@ -36,7 +36,7 @@ const look = async p => { await L.tab(p, 'tab-receipts'); await w(300); const rs
   ck('Receipts over: "€100.01 planned, €105.02 spent, €5.01 over"', /€100\.01 planned, €105\.02 spent, €5\.01 over/.test(o.rs), o.rs);
   const oth = await p.evaluate(() => { const r = [...document.querySelectorAll('#rcCats tr')].find(x => /^Other/.test(x.innerText)); return r ? [...r.cells].map(c => c.textContent).join(' ').replace(/\u2060/g, '').replace(/\s+/g, ' ').trim() : ''; });
   /* QC round 11 numbers 3: one table writes every amount one way, so a whole row next to rows with cents shows cents too */
-  ck('Receipts: a whole row in a table with cents shows cents like the rest: "Other €3.00 €3.00 over"', /^Other €3\.00 €3\.00 over$/.test(oth), oth);
+  ck('Receipts: a whole row in a table with cents shows cents like the rest: "Other €0.00 €3.00 €3.00 over" (Plan cell 0 since round 12 numbers should-fix 5)', /^Other €0\.00 €3\.00 €3\.00 over$/.test(oth), oth);
   /* whole amounts only: no decimals */
   await setup(p, 100);
   await L.rc(p, 20, 'envelope', '2026-11-12', 'Made-up d');
