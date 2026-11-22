@@ -278,7 +278,7 @@ function addGoal(S, name) {
 function removeGoal(S, id) { const g = goalById(S, id); if (!g) return false; S.plan.goals = S.plan.goals.filter(x => x.id !== id); forgetKey(S, 'goal:' + id); return true; }
 function updateGoal(S, id, patch) {
   const g = goalById(S, id); if (!g) return false;
-  const n = v => Math.max(0, Math.min(1e9, Math.round(+v || 0)));
+  const n = v => Math.max(0, Math.min(1e9, wholeAmt(S, +v || 0)));   /* keeps typed cents, yen whole, like the bank and receipts (QC round 12 numbers gate B2) */
   if (typeof patch.name === 'string') g.name = patch.name.trim().slice(0, 60) || g.name;
   if (patch.target !== undefined) g.target = n(patch.target);
   if (patch.start !== undefined) g.start = n(patch.start);
