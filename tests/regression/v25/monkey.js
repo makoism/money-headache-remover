@@ -7,7 +7,8 @@ setSeed(+(process.env.SEED || 1));
 const w = ms => new Promise(r => setTimeout(r, ms));
 const SESSIONS = +(process.env.N || 6), ACTIONS = +(process.env.ACTIONS || 70), PAGE = process.env.PAGE || '/home/claude/work/money-map-team.html';
 const fails = []; let checks = 0, acts = 0;
-const eq = (m, a, b) => { checks++; if (a !== b && fails.length < 40) fails.push(m + ': screen ' + JSON.stringify(a) + ' vs independent ' + JSON.stringify(b)); };
+/* the app joins a minus sign to its amount with a word joiner (U+2060, no width); it is not part of the words or the number */
+const eq = (m, a, b) => { checks++; if (typeof a === 'string') a = a.replace(/\u2060/g, ''); if (a !== b && fails.length < 40) fails.push(m + ': screen ' + JSON.stringify(a) + ' vs independent ' + JSON.stringify(b)); };
 const TEXTS = process.env.TEXTS ? JSON.parse(process.env.TEXTS) : ['0', '1', '5', '99', '1200', '45000', '123456', '9999999', '-5', '12.5', '', 'abc', '0.0', '1e3', '  7 ', '１２３', '5,000', '$40', '2147483648', '99999999999999'];
 
 async function compare(p, tag) {
@@ -23,7 +24,7 @@ async function compare(p, tag) {
   const D = await p.evaluate(() => { const q = s => (document.querySelector(s) || {}).textContent; return { where: q('#whereTitle'), dock: q('#dockNum'), inT: q('#inTotal'), outT: q('#outTotal'), left: q('#leftTotal'), bank: q('#bankLine'), hero: q('#heroNum'),
     legend: [...document.querySelectorAll('#legend .lg')].map(x => [x.querySelector('span').firstChild.textContent, x.querySelector('b').textContent, x.querySelector('em').textContent]) }; });
   const pt = tag + ' ' + ym + ' ', X = require('/tmp/v25/expect_month.js')({ S, O, r, ym, M, oraclePercents, F, F2 });   /* 38.29 to 38.31 rules, shared with display.js */
-  eq(pt + 'where', D.where, X.where); eq(pt + 'dock', D.dock, X.dock); eq(pt + 'in', D.inT, F(r.inflow)); eq(pt + 'out', D.outT, F(r.outflow)); eq(pt + 'left', D.left, F(r.left));
+  eq(pt + 'where', D.where, X.where); eq(pt + 'dock', D.dock, X.dock); eq(pt + 'in', D.inT, F2(r.inflow)); eq(pt + 'out', D.outT, F2(r.outflow)); eq(pt + 'left', D.left, F2(r.left));   /* to the cent, as the screen writes them */
   eq(pt + 'bank', D.bank, X.bank); eq(pt + 'play', D.hero, X.hero);
   const exp = X.legend;
   eq(pt + 'legend', JSON.stringify(D.legend), JSON.stringify(exp));
