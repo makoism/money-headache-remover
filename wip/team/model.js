@@ -1090,7 +1090,7 @@ function cleanPlan(raw, legacy) {
 function cleanDebts(raw, gids, lids) {
   if (!Array.isArray(raw)) return [];
   const seen = new Set(), out = [], str = (v, n) => (typeof v === 'string' ? v.replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, n) : '');
-  const whole = v => (typeof v === 'number' && isFinite(v) && v >= 0 ? Math.min(Math.round(v), 1e9) : 0);
+  const whole = v => (typeof v === 'number' && isFinite(v) && v >= 0 ? Math.min(Math.round(v * 100) / 100, 1e9) : 0);   /* cents kept on load (foundation stage 0; decision 1) */
   raw.slice(0, MAX_DEBTS).forEach(d => {
     if (!d || typeof d !== 'object' || typeof d.id !== 'string' || !SAFE_ID.test(d.id) || seen.has(d.id)) return;
     seen.add(d.id);

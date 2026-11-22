@@ -18,7 +18,7 @@ for (let t = 0; t < N; t++) {
   const cl = M.cleanPlan(JSON.parse(JSON.stringify(S.plan)), {});
   ok(id, JSON.stringify(cl.debts || []) === JSON.stringify(S.plan.debts || []), 'cleanPlan changes valid debts');
   const dirty = M.cleanDebts([{ id: '<x>', balance: 5 }, { id: 'a', name: 5, balance: -3, apr: 1e6, min: NaN, extra: 'x', kind: 'zzz' }, null, { id: 'a' }, { id: 'b', balance: 12.6, apr: -4 }]);
-  ok(id, dirty.length === 2 && dirty[0].balance === 0 && dirty[0].apr === 100 && dirty[0].min === 0 && dirty[0].kind === 'loan' && dirty[1].balance === 13 && dirty[1].apr === 0, 'cleanDebts of junk ' + JSON.stringify(dirty));
+  ok(id, dirty.length === 2 && dirty[0].balance === 0 && dirty[0].apr === 100 && dirty[0].min === 0 && dirty[0].kind === 'loan' && dirty[1].balance === 12.6 &&  dirty[1].apr === 0, 'cleanDebts of junk ' + JSON.stringify(dirty));   /* 12.6 keeps its cents since the foundation stage 0 (decision 1); it was rounded to 13 before */
   for (let i = 0; i < ri(0, 6); i++) { const ym = pick(M.MONTHS), d = pick(S.plan.debts || [{ id: 'zz' }]); M.setVal(S, 'debt:' + d.id, ym, pick([0, 100, ri(0, 50000)]), pick(['once', 'after'])); }
   const C = M.calcAll(S), eq = (m, a, b) => ok(id + ' ' + m, a === b, a + ' vs ' + b);
   const bal = {}; (S.plan.debts || []).forEach(d => { bal[d.id] = d.balance; });
