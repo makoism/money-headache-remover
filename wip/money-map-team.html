@@ -3235,12 +3235,12 @@ function splitDraft(vals, total, from, i) {
   return { free, moved: Math.abs(d), up: d > 0, down: d < 0 };
 }
 /* ---- PLAN CELLS: every worked-out amount the Plan tab and the dock at the foot of the page show. Screens read these; they never do the sum. ---- */
-function planCells(S, C, ym) {
+function planCells(S, C, ym, today) {
   const m = C.byYm[ym], rs = receiptStats(S, ym), dw = m.draw || 0, L = m.pool.left, over = m.overNow || 0;
   const play = m.jar.play, playSpent = rs.byJar.play || 0;
   /* Free to spend for this month: what is left of the plan, what is held back for the minimum, and the safe part, so Plan > Month shows the
      same planned figure and the same safe figure as Home (QC round 10 numbers gate blocker 1) */
-  const playLeft = round2(play - playSpent), fo = freeOf(S, { left: m.left, bankStart: m.bankStart, bankEnd: m.bankEnd, over: m.over || 0, status: statusOf(S, m) }, { left: playLeft });
+  const playLeft = round2(play - playSpent), fo = freeOf(S, { left: m.left, bankStart: m.bankStart, bankEnd: m.bankEnd, over: m.over || 0, status: statusOf(S, m) }, { left: playLeft }), ns = playNotSafe(S, C, ym, today);
   let dock = dw > 0 ? L - dw : L;                  /* money borrowed from the emergency fund is not pay */
   if (dock > 0) dock = Math.max(0, dock - over);   /* and pay with no place that spending past plan already used is not left */
   return {
@@ -3254,7 +3254,10 @@ function planCells(S, C, ym) {
     bankBelowZero: -m.bankEnd,                     /* how far below zero the bank ends (shown only when it is) */
     dock, dockAbs: Math.abs(dock),                 /* the dock number: pay not placed yet, or (when negative) how much more is planned than the pay */
     playOver: round2(playSpent - play),            /* Free to spend logged past its plan (shown only when it is) */
-    playLeft, playHeld: fo.held > 0.004 ? fo.held : 0, playSafe: fo.free   /* left of the plan, held back for the minimum, and the safe part (or below zero when over) */
+    /* with today given: a bank that does not cover the bills and Free to spend means no part is safe and nothing is held, so the figure is the
+       plan left, with "not safe to spend yet" (QC round 12 numbers gate B1: Plan said 3,800 safe and Receipts 3,800 left when 8,800 was left) */
+    playNotSafe: ns,
+    playLeft, playHeld: !ns && fo.held > 0.004 ? fo.held : 0, playSafe: ns ? playLeft : fo.free   /* left of the plan, held back for the minimum, and the safe part (or below zero when over) */
   };
 }
 
@@ -3893,8 +3896,9 @@ const stepOf = x => { const p = Math.pow(10, Math.floor(Math.log10(Math.max(x, 1
 const payScale = () => Math.max(1000, val(S, 'a', sel) + val(S, 'b', sel) + val(S, 'side', sel));
 /* one weekly figure for the whole app: the plan for a month, spread over that month's weeks (days in the open month / 7) */
 const weekOf = (play, ym) => { ym = ym || (typeof sel === 'string' ? sel : START); return roundTo(play / (new Date(+ym.slice(0, 4), +ym.slice(5, 7), 0).getDate() / 7)); };
-/* what is really safe to spend of Free to spend: the plan left over, less anything the bank cannot cover (the one meaning of "left" on every screen) */
-const playSafeLeft = (S, m, spent) => freeOf(S, { left: m.left, bankStart: m.bankStart, bankEnd: m.bankEnd, over: m.over || 0, status: statusOf(S, m) }, { left: round2(m.jar.play - spent) }).free;
+/* what is really safe to spend of Free to spend: the plan left over, less anything the bank cannot cover (the one meaning of "left" on every screen).
+   When the bank does not cover the month nothing is safe and nothing is held: the plan left, said as not safe to spend yet (QC round 12 numbers gate B1) */
+const playSafeLeft = (S, m, spent) => playNotSafe(S, C, m.ym, ymd(new Date())) ? round2(m.jar.play - spent) : freeOf(S, { left: m.left, bankStart: m.bankStart, bankEnd: m.bankEnd, over: m.over || 0, status: statusOf(S, m) }, { left: round2(m.jar.play - spent) }).free;
 /* a whole percent as said on screen: a place with money never reads 0% (QC10 numbers should-fix 3, QC round 4 money accuracy) */
 const pctSay = (p, v) => (+p === 0 && v >= 0.005 ? 'under 1%' : p + '%');
 const roundTo = x => { const u = x >= 1000 ? 100 : x >= 60 ? 10 : 1; return Math.round(x / u) * u; };
@@ -5027,7 +5031,7 @@ function render() {
   $('#payTxt').hidden = true;
 
   /* hero: free to spend, then one verdict */
-  const PC = planCells(S, C, sel);   /* the worked-out amounts for this screen come from the model */
+  const PC = planCells(S, C, sel, ymd(new Date()));   /* the worked-out amounts for this screen come from the model */
   const pin = m.pool.in, play = m.jar.play, wk = weekOf(play);
   try { const mr = HV && HV.map && HV.map.month.find(r => r.id === 'play'); if (mr) BUR.roomCv($('#heroRoomW'), mr, 'play'); } catch (e) { /* the number still shows */ }
   /* part held back for the minimum: the headline is the planned figure left, and the line says how much of it is safe, in Home's words (QC round 10 numbers gate blocker 1) */
@@ -16844,7 +16848,7 @@ function renderBand() {
   if (!g) { el.hidden = true; return; }
   const purpose = g.why || g.name;
   /* the words for what is left come from the model's map ("safe to spend", or "left, not safe to spend yet"), as on Receipts (QC round 6 numbers gate 3) */
-  const playRm = ((V.map && V.map.month) || []).find(x => x.id === 'play'), freeSay = V.map.free < 0 ? fmt2(V.cells.freeOver) + ' over' : playRm && playRm.held > 0 ? fmt2(playRm.planLeft) + ' planned, ' + fmt2(playRm.amount) + ' safe to spend'   /* held back for the minimum: the planned figure and the safe part, as on Home (QC round 10 numbers gate blocker 1) */ : fmt2(V.map.free) + ' ' + ((playRm && playRm.sub) || 'safe to spend');
+  const playRm = ((V.map && V.map.month) || []).find(x => x.id === 'play'), freeSay = V.map.free < 0 ? fmt2(V.cells.freeOver) + ' over' : playRm && playRm.held > 0 ? fmt2(playRm.planLeft) + ' planned, ' + fmt2(playRm.amount) + ' safe to spend'   /* held back for the minimum: the planned figure and the safe part, as on Home (QC round 10 numbers gate blocker 1) */ : fmt2(playRm ? playRm.amount : V.map.free) + ' ' + ((playRm && playRm.sub) || 'safe to spend');   /* the row's own figure: the plan left when not covered (QC round 12 numbers gate B1) */
   put(el, `<span class="mg-l" style="--c:var(--c${g.slot})"><i class="dot"></i><b>${esc(purpose)}</b><em>${when}</em></span><span class="mg-bar" aria-hidden="true" style="--c:var(--c${g.slot})"><i style="width:${fracOf(r) * 100}%"></i></span><span class="mg-s">${sampleOn() ? 'Sample numbers. ' : ''}Free to spend: ${freeSay}, ${monthLabel(V.ym, true)}</span>`);
   el.setAttribute('aria-label', `Main goal: ${g.name}${g.why ? ', ' + g.why : ''}. ${when}. Free to spend ${freeSay}. Tap for Home.`);
   el.hidden = false;
