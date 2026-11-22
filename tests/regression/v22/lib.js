@@ -30,7 +30,7 @@ exports.runTour = async (p, pr, shot) => {
     else if (await has('#tourPay')) { await type('#tourPay', pr.pay); if (await has('#tourExtra')) await type('#tourExtra', pr.extra||''); if (await has('#tourBank')) await type('#tourBank', pr.bank); }
     else if (await has('#tourExtra')) await type('#tourExtra', pr.extra||'');
     else if (await has('#tourBank')) await type('#tourBank', pr.bank);
-    else if (title.startsWith('Which of these') || title === 'Monthly bills') {
+    else if (title.startsWith('Which of these') || title === 'Bills and basics') {
       const ids = await p.$$eval('input[name=tourBill]', els => els.map(e=>[e.value,e.checked]));
       for (const [id,ck] of ids) { const want = pr.bills.includes(id); if (want!==ck) await p.click(`input[name=tourBill][value=${id}]`); }
     }

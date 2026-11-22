@@ -34,11 +34,11 @@ const PESO = (() => { const src = require('fs').readFileSync(process.env.MODEL |
   ok('page behind the tour is inert', await p.$eval('.wrap', e => e.inert));
   ok('dialog is labelled and modal', await p.$eval('#tour', e => e.getAttribute('role') === 'dialog' && e.getAttribute('aria-modal') === 'true'));
   ok('focus lands on the tour title', await p.evaluate(() => document.activeElement.id === 'tourTitle'));
-  ok('screen 1 is the video and nothing else', (await q('#tourTitle')) === 'Welcome' && (await q('#tourPart')) === 'Welcome' /* the step name only, no "of N" (Mako, 2026-11-19) */ && (await p.$$eval('#tourBody .tour-vframe, #tourBody .tour-video', e => e.length)) >= 1 && !(await p.$('#tourName')) && (await p.$$eval('#tourBody .tour-fields, #tourBody .tour-get', e => e.length)) === 0);
+  ok('screen 1 is the video and nothing else', (await q('#tourTitle')) === 'Welcome' && (await q('#tourPart')) === 'Start' /* the step name only, no "of N" (Mako, 2026-11-19) */ && (await p.$$eval('#tourBody .tour-vframe, #tourBody .tour-video', e => e.length)) >= 1 && !(await p.$('#tourName')) && (await p.$$eval('#tourBody .tour-fields, #tourBody .tour-get', e => e.length)) === 0);
   ok('...with one way on', (await q('#tourNext')) === 'Next' && !(await p.$eval('#tourNext', e => e.hidden)));
   ok('no back button on screen 1', await p.$eval('#tourBack', e => e.hidden));
   await p.click('#tourNext'); await w(250);
-  ok('screen 2 asks for the currency and what to call you', (await q('#tourTitle')) === 'Currency' && (await q('#tourPart')) === 'Welcome' && (await val('#tourName')) === '');
+  ok('screen 2 asks for the currency and what to call you', (await q('#tourTitle')) === 'Currency' && (await q('#tourPart')) === 'Start' && (await val('#tourName')) === '');
   ok('...and a promise that it stays private', /stays? in this browser/.test(await tourText()) && /nobody else can see (it|them)/.test(await tourText()));
   await p.type('#tourName', '  Mara ');
   ok('six currency chips, yen preselected', (await p.$$eval('input[name=tourCur]', e => e.length)) === 6 && (await p.$eval('input[name=tourCur]:checked', e => e.value)) === '¥');
