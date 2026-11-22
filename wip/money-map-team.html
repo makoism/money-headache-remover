@@ -13893,6 +13893,7 @@ const TOUR = [
           : f.play <= 0 ? 'There\'s nothing in Free to spend in the plan, so raise the Free to spend line under Plan.'
           : f.st === 'spare' ? `Free to spend <b>${fmt2(f.play)}</b> a month. <b>${fmt2(f.L)}</b> of pay is not placed yet, so raise a goal or add to Free to spend.`
           : `Free to spend <b>${fmt2(f.play)}</b> a month, and it's yours to spend on whatever you want. All your other pay is placed.`;
+        const lineNow = () => `Free to spend is <b>${fmt2(f.play)}</b> a month in the plan. Right now <b>${fmt2(pr.amount)}</b> of it is safe to spend${pr.startBelow > 0 || pr.nowBelow ? ', because your bank starts the month below zero' : pr.held > 0 ? ', so your bank stays above your minimum balance' : ''}. Home shows why and what to do.`;
         const V = viewOf(S, f.C, nowYm(), ymd(new Date())), r = V.main, mg = r ? goalById(S, r.id) : null;
         /* the last screen lands on the destination: the goal, the reason in the person's words, when it is full and what each month adds */
         const when0 = r ? (r.pct >= 100 ? 'Full.' : r.reached ? (r.months <= 0 ? 'Full <b>this month</b>.' : `Full <b>${monthLabel(r.reached)}</b>, ${plural(r.months, 'month')} from now.`) : 'Not full within ' + SPAN + ' at this pace.') : '';
@@ -13902,11 +13903,15 @@ const TOUR = [
           <div class="hg-b" role="img" aria-label="${r.pct} percent"><i style="width:${Math.min(100, r.pct)}%"></i></div>
           <p class="tour-goal-l"><b>${fmt2(r.savedNow)}</b> saved now${r.saved !== r.savedNow ? `, <b>${fmt2(r.saved)}</b> by the end of ${monthLabel(nowYm(), true)}` : ''}, of ${fmt2(r.target)}.${dep > 0 && r.pct < 100 ? ` Your plan adds <b>${fmt2(dep)}</b> a month.` : ''} ${when}</p></div>` : '';
         const ok = f.st === 'even' || f.st === 'spare';
+        /* the plan can fit the pay and still not be safe this month: a bank below zero, or Free to spend held back for the minimum. Setup
+           done then says what Home will say, from the model's own figures, never "On plan" or "yours to spend" (QC round 10 north-star F1) */
+        const pr = ((V.map && V.map.month) || []).find(x => x.id === 'play'), mst = statusOf(S, f.C.byYm[nowYm()]);
+        const notNow = ok && f.play > 0 && !!pr && (pr.notCovered || pr.held > 0 || mst === 'short');
         /* on the app's own address: one tap keeps an encrypted copy in the cloud, so a lost phone does not mean lost numbers */
         const cloud = typeof vaultAvailable === 'function' && vaultAvailable() && !(vault && vault.on)
           ? `<div class="tour-cloud" id="tourCloud">${LOCK}<div><b>Keep a copy in the cloud</b><p class="cap">Your numbers live in this browser. A cloud copy keeps a second one, locked with a recovery code only you have. On a new phone or after the browser is cleared you open the Burrow, tap Enter your recovery code, type the code in, tap Find my copy, then tap Load and they come back.</p>
             <div class="row-btns"><button type="button" class="btn small solid" id="tourVaultOn">Keep a copy in the cloud</button><span class="cap">Or do it later in Settings, find Cloud copy and tap Keep a copy in the cloud.</span></div><div class="tour-vault-code" id="tourVaultCode"></div></div></div>` : '';
-        return `${homeScene()}${ok ? (f.st === 'spare' ? `<p class="tour-st"><span class="chip tight">${IC.warn}Pay not placed</span></p>` : `<p class="tour-st"><span class="chip good">${IC.ok}On plan</span></p>`) : ''}${goal}<p>Your month:</p>${ledgerHTML(f)}<p>${line}</p>
+        return `${homeScene()}${notNow ? `<p class="tour-st"><span class="chip ${mst === 'short' ? 'short' : 'tight'}">${mst === 'short' ? IC.bad + 'Short' : IC.warn + 'Not safe to spend yet'}</span></p>` : ok ? (f.st === 'spare' ? `<p class="tour-st"><span class="chip tight">${IC.warn}Pay not placed</span></p>` : `<p class="tour-st"><span class="chip good">${IC.ok}On plan</span></p>`) : ''}${goal}<p>Your month:</p>${ledgerHTML(f)}<p>${notNow ? lineNow() : line}</p>
         <p>After setup, the Receipts tab at the top is where you log what you spend or upload each month's statement, and that keeps these numbers true. Whatever is left of Free to spend at the end of the month can go into a goal. The ? button at the bottom right of Home, Receipts, Plan and Settings is Help. It has the video and this setup.</p>${cloud}`;
       }
       const PF = planFactsOf(S, calcAll(S), sel, true), pay = PF.pay, L = PF.L;   /* model.js */
