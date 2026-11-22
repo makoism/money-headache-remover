@@ -1,5 +1,6 @@
 /* QC round 5 north-star 6: logging a spend that goes over plan showed "Logged. ... over for this month." and then the Undo bar
    ("Logged $12.50: Transport. Undo") came up on top of it. The message sits above the Undo bar, on Home and on Receipts.
+   Since QC round 11 the Undo bar itself says what went over (one message, qc31_one_message); a toast, when one shows, still sits clear of it.
    Made-up numbers.  Run: node tests/qc/qc12_over_toast.js */
 const PAGE = process.env.PAGE || '/home/claude/work/money-map-team.html';
 process.env.BUILD = PAGE;
@@ -18,6 +19,8 @@ const skip = async p => { for (const id of ['tourSkip', 'coSkip']) { await p.eva
   await p.focus('#hAmt'); await p.keyboard.type('125'); await p.evaluate(() => document.getElementById('hSave').click());
   let seen = null;
   for (let i = 0; i < 35 && !seen; i++) { await w(200); seen = await p.evaluate(() => { const c = document.getElementById('cheer'), u = document.getElementById('undoBar');
+    /* QC round 11 novice: one message. The Undo bar now says what went over itself; that counts as shown, not behind anything */
+    if (u && !u.hidden && u.getClientRects().length && /over/.test(u.textContent)) { const r = u.getBoundingClientRect(); return { text: u.textContent, bar: true, clear: true, inside: r.top >= 0 && r.bottom <= innerHeight, inBar: true }; }
     if (!c || !c.classList.contains('on') || !/over/.test(c.textContent)) return null; const cr = c.getBoundingClientRect(), ur = u && !u.hidden && u.getClientRects().length ? u.getBoundingClientRect() : null;
     return { text: c.textContent, bar: !!ur, clear: !ur || cr.bottom <= ur.top + 0.5 || cr.top >= ur.bottom - 0.5, inside: cr.top >= 0 && cr.bottom <= innerHeight, c: [cr.top, cr.bottom], u: ur && [ur.top, ur.bottom] }; }); }
   ck('the over message shows', !!seen, seen);

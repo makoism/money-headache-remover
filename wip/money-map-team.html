@@ -1961,6 +1961,7 @@ ol.steps li { margin: 0 0 4px; }
 body .upd.undo-bar.undo-top { top: calc(10px + env(safe-area-inset-top, 0px)); bottom: auto; }   /* over a Log spend button it moves to the top (QC round 11 numbers 1) */
 .gw-quick .chipbtn { min-height: 44px; }   /* tap targets 44px (QC round 11 layout 1) */
 #monthTable tr[data-ym] > td { height: 44px; }   /* All months rows at 320 were 42px (QC round 11 layout 1) */
+.sr-now { position: absolute !important; width: 1px !important; height: 1px !important; min-width: 0 !important; min-height: 0 !important; padding: 0 !important; margin: -1px !important; border: 0 !important; overflow: hidden !important; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }   /* said by the Undo bar already (QC round 11 novice) */
 </style>
 </head>
 <body>
@@ -16387,7 +16388,9 @@ function afterLog(first, batch) {
     const f = fmtSet(...Object.values(OB));   /* one sentence, one way of writing amounts (finding 4) */
     ['play', 'nec', 'other', 'ffa', 'edu', 'give'].forEach(id => { if (OB[id] > 0 && nameOf(id)) said.push(nameOf(id) + (id === 'nec' ? ' are ' : ' is ') + f(OB[id]) + ' over'); });
     mm.burrows.filter(x => x.over && !(OB[x.id] > 0)).forEach(x => said.push(x.name + ' is over'));
-    cheer('Logged. ' + (said.length ? said.join(', ') + ' for this month.' : 'Over plan this month.')); }; return; }
+    const ovT = said.length ? said.join(', ') + ' for this month.' : 'Over plan this month.', ub = $('#undoBar'), ut = $('#undoTxt');
+    /* one message: the Undo bar that says what was logged also says what went over, instead of a toast on top of it (QC round 11 novice) */
+    if (ub && !ub.hidden && ut && /^Logged /.test(ut.textContent)) ut.textContent = ut.textContent.replace(/\s*$/, ' ') + ovT; else cheer('Logged. ' + ovT); }; return; }
   if (r) {
     const big = WK_MILE.indexOf(r.n) >= 0 && r.n > 1;
     sfx(big ? 'fanfare' : 'sparkle');
@@ -16510,7 +16513,10 @@ function renderStatus() {
 /* last month's unspent free to spend: once the month is logged (four receipts or more, or a statement), what was not spent can go toward a goal.
    One offer per month, kept until the person answers it or the month after has gone by. */
 /* a receipt just logged can be taken back out with one tap, for as long as the Undo bar shows (38.31 data safety round). Only that receipt goes */
-function rcUndo(id, txt) { if (id && window.offerUndoG) window.offerUndoG('receipt', txt, () => { removeReceipt(S, id); ['#hMsg', '#rcMsg'].forEach(q => { const e = $(q); if (e && /^Logged/.test(e.textContent)) e.textContent = ''; }); }, 8000); }   /* the Logged line goes with the receipt (QC10 round 3 numbers blocker 2) */   /* 8 seconds: it sits over the numbers that just changed */
+/* while the Undo bar says "Logged ...", the same line under the form is for screen readers only, so one message shows (QC round 11 novice) */
+function logDupHide() { const u = $('#undoBar'); ['#hMsg', '#rcMsg'].forEach(q => { const e = $(q); if (e) e.classList.toggle('sr-now', !!(u && !u.hidden) && /^Logged /.test(e.textContent)); }); }
+document.addEventListener('DOMContentLoaded', () => { const u = $('#undoBar'); if (u) new MutationObserver(logDupHide).observe(u, { attributes: true, attributeFilter: ['hidden'] }); });
+function rcUndo(id, txt) { setTimeout(logDupHide, 0); if (id && window.offerUndoG) window.offerUndoG('receipt', txt, () => { removeReceipt(S, id); ['#hMsg', '#rcMsg'].forEach(q => { const e = $(q); if (e && /^Logged/.test(e.textContent)) e.textContent = ''; }); }, 8000); }   /* the Logged line goes with the receipt (QC10 round 3 numbers blocker 2) */   /* 8 seconds: it sits over the numbers that just changed */
 let SWEPT = null;
 function sweepOffer() {
   const d = S.ui.done || {}; if (!(d.pay && d.bills && d.goals) || sampleOn()) return null;
