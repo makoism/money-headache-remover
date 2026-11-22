@@ -71,7 +71,7 @@ const monShort = ym => MON[+ym.slice(5) - 1], monLong = ym => monShort(ym) + ' '
       has(tag + ' chest big', T.sp, F2(freeLeft));
       has(tag + ' chest spent', T.sp, p0.count ? 'Spent ' + F2(p0.spent) + ' of ' + F(p0.planned) : 'Nothing logged yet. ' + F(p0.planned) + ' planned');
       if (!p0.over) {
-        if (p0.perWeek != null && freeLeft > 0) has(tag + ' chest week', T.sp, F0(V.cells.perWeek) + ' a week to stay inside it for the ' + p0.daysLeft + (p0.daysLeft === 1 ? ' day' : ' days') + ' left');
+        if (p0.perWeek != null && freeLeft > 0) has(tag + ' chest week', T.sp, F0(V.cells.perWeek) + ' a week to stay inside ' + (held > 0 ? 'the safe part' : 'it') + ' for the '   /* the safe part when some is held back for the minimum (QC round 13 regression 2) */ + p0.daysLeft + (p0.daysLeft === 1 ? ' day' : ' days') + ' left');
         if (freeLeft > 0 && p0.daysLeft > 0) has(tag + ' chest day', T.sp, 'About ' + F0(V.cells.perDay) + ' a day');
       }
       if (held > 0) has(tag + ' chest held', T.sp, F(held) + ' is held back');
