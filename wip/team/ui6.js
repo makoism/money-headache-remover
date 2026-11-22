@@ -421,11 +421,13 @@ const links = `<p class="cap hs-more"><button type="button" class="link" data-xm
   const tiles = `<ul class="bkl chl">${necTile}${tile(b('edu'))}${tile(b('give'))}</ul>${V.otherSpent > 0 ? `<p class="cap">${fmt2(V.otherSpent)} logged as Other, so it didn't come out of a pile</p>` : ''}`;
   if (p.planned <= 0 && p.spent <= 0) { put(el, `${head}<p class="hs-lbl">Free to spend in ${monthLabel(ym)}</p><p class="hs-big zero">${fmt(0)}</p><p class="cap">No Free to spend planned for ${monthLabel(ym)}.</p><div class="row-btns"><button type="button" class="btn small" data-open="play">Set in Plan</button></div>${smp}${sampleOn() ? '' : links}${tiles}`); return; }
   /* free to spend can never be more than the plan can afford: when the month would end under the safety minimum, that gap is held back */
-  const fo = freeOf(S, m, p), held = fo.held, freeLeft = fo.free;
+  const playRm = ((V.map && V.map.month) || []).find(r => r.id === 'play');
+  /* the held part follows the map row: when the bank does not cover the month nothing is safe, so there is no safe part to speak of (QC round 13 regression 2) */
+  const fo = freeOf(S, m, p), held = playRm ? playRm.held : fo.held, freeLeft = fo.free;
   const wk = p.perWeek != null && freeLeft > 0 ? `<b>${fmtAbout(V.cells.perWeek)}</b> a week to stay inside ${held > 0 ? 'the safe part' : 'it'} for the ${plural(p.daysLeft, 'day')} left.` : `${plural(p.daysLeft, 'day')} left.`;
   const chip = p.over ? `<span class="chip short">${IC.bad}Over</span>` : p.ahead ? `<span class="chip tight">${IC.warn}Ahead of pace</span>` : `<span class="chip good">${IC.ok}On pace</span>`;
 
-  const playRm = ((V.map && V.map.month) || []).find(r => r.id === 'play'), notSafe = !!(playRm && playRm.notCovered && !sampleOn());   /* the same rule as the top of Home (QC10 round 2 numbers should-fix 4) */
+  const notSafe = !!(playRm && playRm.notCovered && !sampleOn());   /* the same rule as the top of Home (QC10 round 2 numbers should-fix 4) */
   const free = !p.over && p.planned > 0 && m.status === 'good' && !sampleOn() && !notSafe;
   const bigAmt = held > 0 && playRm ? playRm.planLeft : freeLeft;   /* part held back for the minimum: the planned figure left, as on the Home tile, and the safe part under it (QC round 10 numbers gate blocker 1) */
   put(el, `${head}<p class="hs-lbl">${p.over ? 'Over Free to spend in ' : 'Free to spend in '}${monthLabel(ym)}</p><p class="hs-big${p.over ? ' neg' : ''}" style="--n:${fmt2(bigAmt).length}">${fmt2(bigAmt)}</p>
