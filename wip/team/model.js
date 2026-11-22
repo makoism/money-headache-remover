@@ -811,12 +811,12 @@ function splitDraft(vals, total, from, i) {
   return { free, moved: Math.abs(d), up: d > 0, down: d < 0 };
 }
 /* ---- PLAN CELLS: every worked-out amount the Plan tab and the dock at the foot of the page show. Screens read these; they never do the sum. ---- */
-function planCells(S, C, ym) {
+function planCells(S, C, ym, today) {
   const m = C.byYm[ym], rs = receiptStats(S, ym), dw = m.draw || 0, L = m.pool.left, over = m.overNow || 0;
   const play = m.jar.play, playSpent = rs.byJar.play || 0;
   /* Free to spend for this month: what is left of the plan, what is held back for the minimum, and the safe part, so Plan > Month shows the
      same planned figure and the same safe figure as Home (QC round 10 numbers gate blocker 1) */
-  const playLeft = round2(play - playSpent), fo = freeOf(S, { left: m.left, bankStart: m.bankStart, bankEnd: m.bankEnd, over: m.over || 0, status: statusOf(S, m) }, { left: playLeft });
+  const playLeft = round2(play - playSpent), fo = freeOf(S, { left: m.left, bankStart: m.bankStart, bankEnd: m.bankEnd, over: m.over || 0, status: statusOf(S, m) }, { left: playLeft }), ns = playNotSafe(S, C, ym, today);
   let dock = dw > 0 ? L - dw : L;                  /* money borrowed from the emergency fund is not pay */
   if (dock > 0) dock = Math.max(0, dock - over);   /* and pay with no place that spending past plan already used is not left */
   return {
@@ -830,7 +830,10 @@ function planCells(S, C, ym) {
     bankBelowZero: -m.bankEnd,                     /* how far below zero the bank ends (shown only when it is) */
     dock, dockAbs: Math.abs(dock),                 /* the dock number: pay not placed yet, or (when negative) how much more is planned than the pay */
     playOver: round2(playSpent - play),            /* Free to spend logged past its plan (shown only when it is) */
-    playLeft, playHeld: fo.held > 0.004 ? fo.held : 0, playSafe: fo.free   /* left of the plan, held back for the minimum, and the safe part (or below zero when over) */
+    /* with today given: a bank that does not cover the bills and Free to spend means no part is safe and nothing is held, so the figure is the
+       plan left, with "not safe to spend yet" (QC round 12 numbers gate B1: Plan said 3,800 safe and Receipts 3,800 left when 8,800 was left) */
+    playNotSafe: ns,
+    playLeft, playHeld: !ns && fo.held > 0.004 ? fo.held : 0, playSafe: ns ? playLeft : fo.free   /* left of the plan, held back for the minimum, and the safe part (or below zero when over) */
   };
 }
 

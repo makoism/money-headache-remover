@@ -97,7 +97,7 @@ function render() {
   $('#payTxt').hidden = true;
 
   /* hero: free to spend, then one verdict */
-  const PC = planCells(S, C, sel);   /* the worked-out amounts for this screen come from the model */
+  const PC = planCells(S, C, sel, ymd(new Date()));   /* the worked-out amounts for this screen come from the model */
   const pin = m.pool.in, play = m.jar.play, wk = weekOf(play);
   try { const mr = HV && HV.map && HV.map.month.find(r => r.id === 'play'); if (mr) BUR.roomCv($('#heroRoomW'), mr, 'play'); } catch (e) { /* the number still shows */ }
   /* part held back for the minimum: the headline is the planned figure left, and the line says how much of it is safe, in Home's words (QC round 10 numbers gate blocker 1) */

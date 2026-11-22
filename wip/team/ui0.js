@@ -59,8 +59,9 @@ const stepOf = x => { const p = Math.pow(10, Math.floor(Math.log10(Math.max(x, 1
 const payScale = () => Math.max(1000, val(S, 'a', sel) + val(S, 'b', sel) + val(S, 'side', sel));
 /* one weekly figure for the whole app: the plan for a month, spread over that month's weeks (days in the open month / 7) */
 const weekOf = (play, ym) => { ym = ym || (typeof sel === 'string' ? sel : START); return roundTo(play / (new Date(+ym.slice(0, 4), +ym.slice(5, 7), 0).getDate() / 7)); };
-/* what is really safe to spend of Free to spend: the plan left over, less anything the bank cannot cover (the one meaning of "left" on every screen) */
-const playSafeLeft = (S, m, spent) => freeOf(S, { left: m.left, bankStart: m.bankStart, bankEnd: m.bankEnd, over: m.over || 0, status: statusOf(S, m) }, { left: round2(m.jar.play - spent) }).free;
+/* what is really safe to spend of Free to spend: the plan left over, less anything the bank cannot cover (the one meaning of "left" on every screen).
+   When the bank does not cover the month nothing is safe and nothing is held: the plan left, said as not safe to spend yet (QC round 12 numbers gate B1) */
+const playSafeLeft = (S, m, spent) => playNotSafe(S, C, m.ym, ymd(new Date())) ? round2(m.jar.play - spent) : freeOf(S, { left: m.left, bankStart: m.bankStart, bankEnd: m.bankEnd, over: m.over || 0, status: statusOf(S, m) }, { left: round2(m.jar.play - spent) }).free;
 /* a whole percent as said on screen: a place with money never reads 0% (QC10 numbers should-fix 3, QC round 4 money accuracy) */
 const pctSay = (p, v) => (+p === 0 && v >= 0.005 ? 'under 1%' : p + '%');
 const roundTo = x => { const u = x >= 1000 ? 100 : x >= 60 ? 10 : 1; return Math.round(x / u) * u; };
