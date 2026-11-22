@@ -68,9 +68,13 @@ function paintBk() {
   if (kl) { kl.hidden = !ok; if (ok) {
     /* Put them back keeps everything done since (QC round 10 data safety B1). Only when something done since would have to go does it say so:
        from when the kept numbers are and that the tap replaces some of what is here (the tap then names it before anything changes) */
-    const until = dateLabel(ymd(new Date(+k.t + KEEP_DAYS * 864e5))), ch = !!keepSince(k), at = ymd(new Date(+k.t)), from = at.slice(0, 4) === todayStr().slice(0, 4) ? dateLabel(at).replace(/ \d{4}$/, '') : dateLabel(at);
+    const ckey = k.t + '|' + S.rev + '|' + keepAll().length; if (ckey !== paintBk.key) { paintBk.key = ckey; paintBk.ch = !!keepSince(k); }   /* worked out once per saved change, not on every redraw */
+    const until = dateLabel(ymd(new Date(+k.t + KEEP_DAYS * 864e5))), ch = paintBk.ch, at = ymd(new Date(+k.t)), from = at.slice(0, 4) === todayStr().slice(0, 4) ? dateLabel(at).replace(/ \d{4}$/, '') : dateLabel(at);
     $('#keepTxt').textContent = ch ? `Numbers from before ${from} are kept until ${until}.` : `${k.why || 'Your numbers changed.'} The numbers from before are kept until ${until}.`;
     $('#keepBack').textContent = ch ? 'Put them back (replaces what is here now)' : 'Put them back'; } }
+  /* every change kept before the newest keeps its own Undo until its own date (QC round 10 data safety B2), newest first */
+  const km = $('#keepMore'); if (km) { const more = keepAll().slice(1); km.hidden = !more.length;
+    put(km, more.map(e => `<p class="cap">${esc(e.why || 'Your numbers changed.')} You can undo until ${dateLabel(ymd(new Date(+e.t + KEEP_DAYS * 864e5)))}. <button type="button" class="link" data-keep-t="${+e.t}" data-armkey="keep-${+e.t}">Undo</button></p>`).join('')); }
 }
 /* a backup is due: numbers in, no cloud copy, none saved for three weeks, and Later not pressed this week */
 function backupDue() {
