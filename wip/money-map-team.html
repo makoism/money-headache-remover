@@ -13957,9 +13957,10 @@ function renderTour(dir) {
   const pend = same.some((x, i) => x.pick && i >= first) || (t.id === 'pay' && !payNow());
   const keys = Object.values(PART).filter(k => TS.some(x => x.part === k)), at = Math.max(0, keys.indexOf(t.part));   /* only parts this setup has, so the count never skips a number (38.31 wording and layout round 3) */
   /* one count for the whole setup, the same as the progress bar: one segment per part */
-  $('#tourPart').textContent = t.part;   /* no "of N": the count could change mid-setup (Mako, 2026-11-19); the dots show progress */
+  const partName = t.last ? 'Done' : t.part;   /* the Setup done step is not part of Free to spend (QC round 10 regression polish); its dot stays the last one */
+  $('#tourPart').textContent = partName;   /* no "of N": the count could change mid-setup (Mako, 2026-11-19); the dots show progress */
   $('#tourDots').innerHTML = keys.map((k, i) => `<i class="${i < at ? 'past' : i === at ? 'on' : ''}"><b style="width:${i < at ? 100 : i > at ? 0 : Math.round((first + 1) / count * 100)}%"></b></i>`).join('');
-  $('#tourDots').setAttribute('aria-label', `${t.part}, setup progress`);
+  $('#tourDots').setAttribute('aria-label', `${partName}, setup progress`);
   tourTouched = false;
   const body = $('#tourBody'); body.innerHTML = `<h2 id="tourTitle" tabindex="-1">${title}</h2>${t.body()}`;
   const kind = typeof t.art === 'function' ? t.art() : t.art !== undefined ? t.art : ART_BY_PART[t.part]; $('#tourArt').innerHTML = kind ? art(kind) : '';
