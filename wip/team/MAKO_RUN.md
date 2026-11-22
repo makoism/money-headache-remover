@@ -165,6 +165,12 @@ When the same question came from several reviewers, it is one entry here and the
 - **Choices.** A. Keep the sample box as only the sample notice. B. Add the over list to it.
 - **Sources.** `qc_round9/helper_sample_status.md`.
 
+### 1.23 A bank that starts below zero, seen from setup, Home and Plan (QC round 10)
+- **Now.** Setup with bank −5,000, pay 300,000, bills 130,000: setup says Free to spend ¥38,800 a month and Setup done says "On plan"; Home says ¥3,800, not safe to spend yet (the ¥35,000 gap is the ¥30,000 minimum from 1.6 plus the 5,000); Plan says "All of your pay has a place in Nov · Short". The red box and the Below zero card under it say the same thing twice. The month-end bar draws nothing for the bank below zero.
+- **Suggested.** Home: "Your bank starts Nov ¥5,000 below zero, and you keep at least ¥30,000 in it (change this in Settings). To get there, spend only ¥3,800 of Free to spend this month." Setup done: "Your emergency fund is on plan. Your bank starts below zero, so wait for pay before you spend Free to spend." Plan: "Nov is short: your bank ends under your minimum." A red stub left of the bar for money below zero.
+- **Also.** A first name of only digits ("250000") is accepted and greeted. Warn, or leave.
+- **Sources.** `qc_round10/regression.md`.
+
 ## 2. Words and glossary
 
 Your earlier copy pass list still stands: `COPY_QC8_FOR_MAKO.md` has about 40 lines with a rewrite each. Say which ones you want. The questions below are the "one word per thing" choices on top of that.
