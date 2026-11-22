@@ -277,3 +277,8 @@ Said in MAIN 10's chat and relayed to coordinator 8 (not seen first hand).
 
 ## Use all the credits before the reset (Mako, 21 Nov about 19:00 JST)
 Said in MAIN 12's chat and relayed to coordinator 8 (not seen first hand): "use all of the credits possible. the reset is at 9am tomorrow." (Sunday 22 Nov 09:00 JST = 22 Nov 00:00 UTC, the same end as the non-stop window.)
+
+## 2026-11-23 08:16 JST (relayed by MAIN 15): foundation, pay-to-pay
+- Mako flagged that the engine plans in calendar months from a month-start balance, but people are paid on any day and in many cycles. The pay day and ledger designs (side/payday-design, side/ledger-design) already said pay-to-pay; the main build never took it in.
+- MAIN 15 paused QC round 15 and is doing a foundation review: every calendar-month assumption, a pay-to-pay model anchored to today's bank, its size, and other likely setbacks. It goes to Mako as one recommendation.
+- No polish work on top of the month model until Mako decides. The efficiency agent runs on the plan when it comes.
