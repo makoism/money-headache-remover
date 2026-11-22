@@ -1,4 +1,5 @@
 /* QC round 7 data safety, confusing 3 (the part with one right answer): the Restore confirm said "replaces your pay, bills, goals and
+   QC round 12 data safety 2: it also says how many receipts on this device are replaced ("your numbers and 1 receipt here").
    receipts with this copy" without saying how old the backup is or what is in it. Now: "Tap again: replaces your numbers here with the
    backup from 21 Nov, which has 1 receipt. You can undo for 3 days." The date is the backup's own saved time (rev); a backup with no
    time leaves the date out. The flow is unchanged: the second tap loads it. Made-up numbers. Run: node tests/qc/qc18_restore_age.js */
@@ -19,11 +20,11 @@ const OLD = new Date(new Date().getFullYear() - 1, 2, 4, 9, 0, 0).getTime();   /
   };
   const yr = new Date(OLD).getFullYear();
   const cases = [
-    ['from 21 Nov with 1 receipt', Object.assign({}, base, { rev: REV, receipts: rc(1) }), 'Tap again: replaces your numbers here with the backup from 21 Nov, which has 1 receipt. You can undo for 3 days.'],
-    ['from 21 Nov with 2 receipts', Object.assign({}, base, { rev: REV, receipts: rc(2) }), 'Tap again: replaces your numbers here with the backup from 21 Nov, which has 2 receipts. You can undo for 3 days.'],
-    ['no receipts in it', Object.assign({}, base, { rev: REV, receipts: [] }), 'Tap again: replaces your numbers here with the backup from 21 Nov, which has no receipts. You can undo for 3 days.'],
-    ['from last year: the year is said', Object.assign({}, base, { rev: OLD, receipts: rc(1) }), `Tap again: replaces your numbers here with the backup from 4 Mar ${yr}, which has 1 receipt. You can undo for 3 days.`],
-    ['no saved time: no date', Object.assign({}, base, { rev: undefined, receipts: rc(1) }), 'Tap again: replaces your numbers here with the backup, which has 1 receipt. You can undo for 3 days.'],
+    ['from 21 Nov with 1 receipt', Object.assign({}, base, { rev: REV, receipts: rc(1) }), 'Tap again: replaces your numbers and 1 receipt here with the backup from 21 Nov, which has 1 receipt. You can undo for 3 days.'],
+    ['from 21 Nov with 2 receipts', Object.assign({}, base, { rev: REV, receipts: rc(2) }), 'Tap again: replaces your numbers and 1 receipt here with the backup from 21 Nov, which has 2 receipts. You can undo for 3 days.'],
+    ['no receipts in it', Object.assign({}, base, { rev: REV, receipts: [] }), 'Tap again: replaces your numbers and 1 receipt here with the backup from 21 Nov, which has no receipts. You can undo for 3 days.'],
+    ['from last year: the year is said', Object.assign({}, base, { rev: OLD, receipts: rc(1) }), `Tap again: replaces your numbers and 1 receipt here with the backup from 4 Mar ${yr}, which has 1 receipt. You can undo for 3 days.`],
+    ['no saved time: no date', Object.assign({}, base, { rev: undefined, receipts: rc(1) }), 'Tap again: replaces your numbers and 1 receipt here with the backup, which has 1 receipt. You can undo for 3 days.'],
   ];
   for (const [name, d, want] of cases) {
     const got = await arm(d);

@@ -270,7 +270,8 @@ function wire() {
     const t = d && +d.rev > 946684800000 ? new Date(+d.rev) : null, n = d && Array.isArray(d.receipts) ? d.receipts.length : -1;
     const day = t ? ' from ' + t.getDate() + ' ' + t.toLocaleString('en-US', { month: 'short' }) + (t.getFullYear() !== new Date().getFullYear() ? ' ' + t.getFullYear() : '') : '';
     const has = n < 0 ? '' : n === 0 ? ', which has no receipts' : `, which has ${n} receipt${n === 1 ? '' : 's'}`;
-    return `Tap again: replaces your numbers here with the backup${day}${has}. You can undo for ${KEEP_DAYS} days.`;
+    const mine = (S.receipts || []).length, here = mine > 0 ? ` and ${mine} receipt${mine === 1 ? '' : 's'}` : '';   /* what this device loses, not only what the backup has (QC round 12 data safety 2) */
+    return `Tap again: replaces your numbers${here} here with the backup${day}${has}. You can undo for ${KEEP_DAYS} days.`;
   };
   twoStep($('#bkLoad'), bkAsk, loadBackup, () => { if (bkOK($('#bk').value)) return true; $('#bkMsg').textContent = $('#bk').value.trim() ? BK_BAD : 'Paste a backup first, or tap Choose file.'; return false; });   /* an empty box gets its own words (QC round 10 wording polish) */
   twoStep($('#setupOpen'), `Tap again: setup can change your pay, bills, goals and saved amounts. You can undo for ${KEEP_DAYS} days.`, () => openSetupWithCopy(undefined, 'full'));   /* both ask first, and keep a copy (38.31 data safety round 2) */
