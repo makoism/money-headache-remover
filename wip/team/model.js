@@ -825,7 +825,7 @@ function planCells(S, C, ym) {
     /* a month that balances only by borrowing from the emergency fund: the plan spends more than the pay and the borrow covers the rest. It is not
        on plan, whatever the balance (QC round 8 north-star gate 1). gap: how far the plan passes the pay; draw: what was borrowed */
     borrowCover: dw > 0 && L > -0.005 && L - dw < -0.004 ? { draw: dw, gap: round2(dw - L) } : null,
-    overPay: -(L - dw), pastPay: L < 0 ? round2(-L) : 0,   /* how far the plan goes past pay this month, for All months (QC10 round 3 numbers should-fix 5) */                            /* how much more than the pay the month plans to spend (shown in a tight month) */
+    overPay: -(L - dw), pastPay: L - dw < -0.004 ? round2(dw - L) : 0,   /* how far the plan goes past pay this month, for All months (QC10 round 3 numbers should-fix 5): real pay, so money borrowed from the emergency fund is part of it, the same figure the month view gives (QC round 10 numbers gate blocker 2) */                            /* how much more than the pay the month plans to spend (shown in a tight month) */
     bankGap: Math.max(0, cfg(S, 'minBank') - m.bankEnd),   /* how far the bank ends under the safety minimum */
     bankBelowZero: -m.bankEnd,                     /* how far below zero the bank ends (shown only when it is) */
     dock, dockAbs: Math.abs(dock),                 /* the dock number: pay not placed yet, or (when negative) how much more is planned than the pay */
