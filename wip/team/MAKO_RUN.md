@@ -18,7 +18,12 @@ When the same question came from several reviewers, it is one entry here and the
 
 ## 1. Money questions (and your data)
 
-### 1.1 Check your bank vs the plan's start figure (top 1)
+### 1.1 Check your bank vs the plan's start figure (top 1): the root cause, rethought 23 Nov
+- **Why it happens.** The app plans each month from a point nobody can see: the bank on the 1st, before that month's pay. A person can only see what their bank app shows today. Setup asks "Balance now" (today) and uses it as "the 1st, before pay"; if pay already landed it is counted twice. Check your bank asks the same question again later and gets a second number the month-start plan cannot take in, so Home shows both.
+- **The question for Mako.** Build the month around today instead: one bank figure (what the bank shows, with the day it was typed); month end = that figure + pay still to come this month - bills still to pay - spending still planned. Setup and Check your bank become the same question. It needs one new setup question, "What day does your pay come in?", which also answers 1.2 (Home can say when Free to spend turns safe). Cost: the largest model change so far (month chain, oracle, tests), about 1 to 2 days. Or keep the month-start plan for version one and do this after.
+
+(The older wording of 1.1, kept for its sources:)
+- Older choices
 - **Question.** When someone taps Check your bank and types what the bank shows, should the plan start from that figure?
 - **Now.** Setup says $1,200. Check your bank says $2,600. Home shows "In your bank now $2,600" and also "Bank at month end ... planned from $1,200. Your bank now is $2,600, so the two can differ." Settings still says $1,200. "Bank" names two figures on one screen.
 - **Choices.**
@@ -200,7 +205,7 @@ When the same question came from several reviewers, it is one entry here and the
 
 ### 1.27 New from QC round 14
 - **Already here, raised again.** Percents (1.14, 1.20, 1.25, 1.26): money accuracy calls it a blocker again, the numbers gate a should-fix; north star adds the setup "Split the rest" sliders (three read 12% with $365, $365 and $360). Cents written two ways ($180 next to $180.00 in one Receipts card, 1.12). Check your bank vs the plan's start figure (1.1): north star blocker this round, "so the two can differ" says neither which to trust nor what to do.
-- **A loan counted twice.** Setup has a bill line "Loan or debt payment" and Cards and loans has the same loan's minimum; both go into Bills and basics. Choices: A. when a loan is added under Cards and loans, offer to set the bill line to 0. B. a warning when both are set. C. drop the bill line.
+- **A loan counted twice: the root cause, rethought 23 Nov.** Setup asks for bills as category lines, and one line is "Loan or debt payment". A separate debt list (Cards and loans, with what is owed and the interest) was added later and also puts its payments into Bills and basics, but the old line was never taken out. One debt can be typed in two places and the app cannot tell they are the same. The question for Mako: one home for every loan. Setup drops the loan line and asks once, "Do you pay off any loans or cards with interest?"; yes goes to the one debt list, whose payments count in Bills and basics. Cards paid in full stay as they are (money already spent). Cost: about half a day.
 - **Home status card: why, but not what to do.** "Not safe to spend yet: your bank is less than ..." The next step ("wait for pay, then Check your bank") is only in the sheet. Put it on the card? And when it is safe, keep a short "Safe to spend: $X" line on Home?
 - **Receipts is one long page.** Scan with AI comes first, then the log form, the list, Repeating spending and Reminder. Two reviewers ask for the log form and the list first, the rest folded. Your call on order.
 - **Help inside setup and the burrow scene.** There is no Help button in setup or the open burrow. Add one?
