@@ -1,4 +1,4 @@
-/* QC round 5 wording B1: Settings > Restore, paste text that is not a backup, tap Load text: the button asked "Tap again: replaces your
+/* QC round 5 wording B1: Settings > Restore, paste text that is not a backup, tap Load backup: the button asked "Tap again: replaces your
    pay, bills, goals and receipts..." before checking the text, and after the second tap nothing could be seen. The text is checked first:
    the button does not arm, and a message in sight says what to do. A real backup still asks first.  Made-up numbers.
    Run: node tests/qc/qc12_bad_backup.js */

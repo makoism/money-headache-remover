@@ -39,7 +39,7 @@ const L=require('./lib_r12.js');const R=L.R;const w=R.w;
  const other=await p.evaluate(()=>{const c=JSON.parse(JSON.stringify(__t.S));c.cfg.bankStart=500000;c.receipts=[];delete c.ui.keep;return JSON.stringify(c);});
  await L.settings(p);await p.evaluate(t=>{document.getElementById('bk').value=t;},other);
  const r1=await p.evaluate(()=>{const b=document.getElementById('bkLoad');b.click();return [b.textContent,__t.S.cfg.bankStart];});
- ck(`one tap on Load text only asks ("${r1[0].slice(0,50)}") and changes nothing`,/^Tap again/.test(r1[0])&&r1[1]===2500);
+ ck(`one tap on Load backup only asks ("${r1[0].slice(0,50)}") and changes nothing`,/^Tap again/.test(r1[0])&&r1[1]===2500);
  await w(700);await p.evaluate(()=>document.getElementById('bkLoad').click());await w(900);
  ck('the second tap loads the copy',await p.evaluate(()=>__t.S.cfg.bankStart)===500000);
  await w(1500);await p.reload();await p.waitForFunction(()=>window.__t&&__t.S&&__t.S.ui,{timeout:15000}).catch(()=>{});await w(1800);

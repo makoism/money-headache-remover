@@ -191,8 +191,8 @@ function wire() {
   $('#bkFile').addEventListener('change', e => {
     const f = e.target.files && e.target.files[0], msg = $('#bkMsg'); e.target.value = ''; if (!f) return;
     if (f.size > 20e6) { msg.textContent = 'That file is too big to be a backup.'; return; }
-    const r = new FileReader(); r.onerror = () => { msg.textContent = 'That file couldn\'t be read. Tap Choose file and pick it again, or paste the backup text in the box and tap Load text.'; };
-    r.onload = () => { const t = String(r.result || ''); $('#bk').value = t; let ok = false; try { const d = JSON.parse(t); ok = !!(d && typeof d === 'object' && d.steps && d.once && d.cfg); } catch (e) { } $('#bkMsg').textContent = ok ? `The file is read and its text is in the box above. Tap Load text, then tap it again to replace the numbers here with what's in the file. You can undo for ${KEEP_DAYS} days.` : "That file isn't a backup. Pick the file Save file made, or paste the whole text from Copy text."; }; r.readAsText(f);   /* a picked file never replaces anything on its own (38.31 data safety round 2) */
+    const r = new FileReader(); r.onerror = () => { msg.textContent = 'That file couldn\'t be read. Tap Choose file and pick it again, or paste the backup text in the box and tap Load backup.'; };
+    r.onload = () => { const t = String(r.result || ''); $('#bk').value = t; let ok = false; try { const d = JSON.parse(t); ok = !!(d && typeof d === 'object' && d.steps && d.once && d.cfg); } catch (e) { } $('#bkMsg').textContent = ok ? `The file is read and its text is in the box above. Tap Load backup, then tap it again to replace the numbers here with what's in the file. You can undo for ${KEEP_DAYS} days.` : "That file isn't a backup. Pick the file Save file made, or paste the whole text from Copy text."; }; r.readAsText(f);   /* a picked file never replaces anything on its own (38.31 data safety round 2) */
   });
   const twoStep = (b, armedText, run, check) => {
     let t = 0, orig = '', armedAt = 0;
