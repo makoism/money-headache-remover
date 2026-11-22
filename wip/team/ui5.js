@@ -205,10 +205,10 @@ function wire() {
   };
   /* Set all to zero and Restore samples replace every number: a copy of before is kept for KEEP_DAYS days */
   let undoSnap = null, undoT = 0;
-  let undoFn = null, undoAsk = 0;
+  let undoFn = null, undoAsk = 0, undoChain = false;
   /* a big change (a copy of before, or a month reset) keeps its Undo bar until it is tapped, closed or replaced by another Undo, also
      across tab changes; a small one (a receipt, an answer about last month's money) goes by itself (QC round 6 data safety B1) */
-  const offerUndo = (snap, txt, fn, ms) => { undoFn = fn || null; undoSnap = snap; undoAsk = 0; $('#undoTxt').textContent = txt; const u = $('#undoBar'); u.hidden = false; clearTimeout(undoT);
+  const offerUndo = (snap, txt, fn, ms) => { undoFn = fn || null; undoSnap = snap; undoAsk = 0; undoChain = false; $('#undoTxt').textContent = txt; const u = $('#undoBar'); u.hidden = false; clearTimeout(undoT);
     { const c = $('#cheer'), r = u.getBoundingClientRect(); if (c && c.classList.contains('on') && r.height && !document.body.classList.contains('touring')) c.style.bottom = Math.round(innerHeight - r.top + 8) + 'px'; }   /* a message already up moves above the bar, however tall the bar is */
     if (!ms && snap !== 'receipt' && snap !== 'sweep') { u.dataset.stay = '1'; return; }
     delete u.dataset.stay; undoT = setTimeout(() => { u.hidden = true; undoSnap = null; undoFn = null; }, ms || 30000); };
@@ -223,7 +223,8 @@ function wire() {
   if (S.ui && S.ui.preSplit && !tourIsOpen) { const sn = S.ui.preSplit; delete S.ui.preSplit; keepCopy(sn, 'Setup was changing your plan.'); persist(); }
   /* the copy from before a big change is offered again on every open for 3 days, then let go */
   /* the Undo bar for a kept change, with the day it is kept until. Undo puts back only what that change changed (ui45.js keepUndo) */
-  const offerKept = k => offerUndo('keep:' + k.t, `${k.why || 'Your numbers changed.'} You can undo until ${dateLabel(ymd(new Date(+k.t + KEEP_DAYS * 864e5)))}.${k.cloud && !k.act ? ' Undo also stops sharing the cloud copy on this device.' : ''}`, k.cloud ? () => vaultUndoLoad() : null);
+  /* with more than one kept, it says how many earlier ones can be undone after it, and each Undo offers the next (QC round 10 data safety B2) */
+  const offerKept = k => { const n = keepAll().length - 1; offerUndo('keep:' + k.t, `${k.why || 'Your numbers changed.'} You can undo until ${dateLabel(ymd(new Date(+k.t + KEEP_DAYS * 864e5)))}.${k.cloud && !k.act ? ' Undo also stops sharing the cloud copy on this device.' : ''}${n > 0 ? ` ${n} earlier change${n === 1 ? '' : 's'} can be undone after it.` : ''}`, k.cloud ? () => vaultUndoLoad() : null); undoChain = true; };
   if (S.ui) { if (keepTidy()) persist(); const k = keepAll()[0]; if (k) offerKept(k); }
   $('#keepBack').addEventListener('click', e => {
     const k = keepAll()[0]; if (!k) return;
@@ -243,11 +244,19 @@ function wire() {
     const ent = keepFind(undoSnap);
     if (ent && !undoAsk) { const q = keepSince(ent); if (q) { undoAsk = Date.now(); clearTimeout(undoT); $('#undoBar').dataset.stay = '1'; $('#undoTxt').textContent = `${q} Tap Undo again to go ahead.`; return; } }
     if (undoAsk && Date.now() - undoAsk < 600) return;   /* a double tap never says yes: the words get read first */
-    const fn = undoFn, sn = undoSnap; undoHide();
+    const fn = undoFn, sn = undoSnap, chain = undoChain; undoHide();
     if (ent) { if (fn) fn(); keepUndo(ent); }
     else if (fn) fn();
     else if (!/^keep:/.test(sn)) { const kk = { keep: S.ui.keep, keeps: S.ui.keeps }; restoreKept(sn, []); keepOwn({ ui: kk }); }   /* a copy no longer kept: it comes back with every receipt logged since */
     editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = ''; sfx('back'); cheer('Your numbers are back.');
+    if (ent && chain) { const nx = keepAll()[0]; if (nx) offerKept(nx); }   /* the next kept change, newest first */
+  });
+  /* Settings: an earlier kept change undone on its own. Only what it changed comes back; anything done since that would go is named first */
+  $('#keepMore').addEventListener('click', e => {
+    const b = e.target.closest('[data-keep-t]'); if (!b) return; const k = keepFind('keep:' + b.dataset.keepT); if (!k) { paintBk(); return; }
+    const go = () => { const showing = keepFind(undoSnap), wasChain = undoChain; if (showing === k) undoHide(); if (k.cloud) vaultUndoLoad(); keepUndo(k); editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = ''; sfx('back'); cheer('Your numbers are back.');
+      if (showing && showing !== k && wasChain) offerKept(showing); };   /* the bar's count of earlier changes stays true */
+    const q = keepSince(k); if (q) confirmClick(b, `Tap again: ${q}`, go); else go();
   });
   const blank = () => { const sn0 = snapNoCopy(); S = blankState(S, sampleOn()); S.ui.cleared = true; delete S.ui.setup; delete S.ui.src; delete S.ui.imp; keepCopy(sn0, 'Your numbers were set to zero.'); offerUndo(sn0, `All your numbers are set to zero. You can undo for ${KEEP_DAYS} days.`); editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = 'Everything is at zero now, start with your pay';   /* a 3-day copy like every other big change (38.31 data safety round 4) */ select(START); if (tab !== 'month') switchTab('month'); };
   twoStep($('#blankBtn'), `Tap again: clears pay, bills, goals, saved amounts and your balance. Receipts stay. You can undo for ${KEEP_DAYS} days.`, blank);

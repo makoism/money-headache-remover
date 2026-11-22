@@ -390,14 +390,18 @@ const kMap = arr => { const m = {}; (arr || []).forEach(e => { m[e.id] = e; }); 
 const kHash = t => { let h = 2166136261; for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36) + '.' + t.length; };
 /* the parts of the saved numbers a change can touch: the numbers, and the page's own settings (never the kept copies themselves) */
 function kParts(x) { const o = {}; KEEP_PARTS.forEach(k => { if (x[k] !== undefined) o[k] = x[k]; }); const u = {}; Object.keys(x.ui || {}).forEach(k => { if (!KEEP_UI_SKIP[k]) u[k] = x.ui[k]; }); o.ui = u; return o; }
-/* what a change did, as small steps: {p: path, b: before, a: after}; a step into a list with ids is {id, prev}; {p, o, ao} is an order */
+/* a step into a list with ids: the id, and its neighbours in the list before the change (where it goes back when it comes back) */
+function kSeg(b, id) { const i = (b || []).findIndex(e => e.id === id); return { id, prev: i > 0 ? b[i - 1].id : null, next: i >= 0 && i + 1 < b.length ? b[i + 1].id : null }; }
+/* where an element that comes back goes: after the one before it, or else before the one after it, or else first if it was first */
+function kAt(ids, s) { const p = s.prev === null ? -1 : ids.indexOf(s.prev), n = s.next === null || s.next === undefined ? -1 : ids.indexOf(s.next); return p >= 0 ? p + 1 : n >= 0 ? n : s.prev === null ? 0 : ids.length; }
+/* what a change did, as small steps: {p: path, b: before, a: after}; a step into a list with ids is kSeg; {p, o, ao} is an order */
 function keepDiff(B, A) { const out = [], pb = kParts(B), pa = kParts(A); kKeys(pb, pa).forEach(k => kDiff(pb[k], pa[k], [k], out)); return out; }
 function kDiff(b, a, path, out) {
   if (kEq(b, a)) return;
   if (kObj(b) && kObj(a)) { kKeys(b, a).forEach(k => kDiff(b[k], a[k], path.concat(k), out)); return; }
   if (kIdArr(b) && kIdArr(a)) {
-    const bm = kMap(b), am = kMap(a), pv = {}; b.forEach((e, i) => { pv[e.id] = i ? b[i - 1].id : null; });
-    kKeys(bm, am).forEach(id => kDiff(bm[id], am[id], path.concat({ id, prev: pv[id] === undefined ? null : pv[id] }), out));
+    const bm = kMap(b), am = kMap(a);
+    kKeys(bm, am).forEach(id => kDiff(bm[id], am[id], path.concat(kSeg(b, id)), out));
     const o = b.map(e => e.id).filter(id => am[id]), ao = a.map(e => e.id).filter(id => bm[id]);
     if (o.join('\n') !== ao.join('\n')) out.push({ p: path, o, ao });
     return;
@@ -419,7 +423,7 @@ function kSet(root, path, v) {
   const i = o.findIndex(e => e && e.id === s.id);
   if (v === undefined) { if (i >= 0) o.splice(i, 1); return; }
   if (i >= 0) { o[i] = v; return; }
-  const at = s.prev === null ? 0 : o.findIndex(e => e && e.id === s.prev) + 1; o.splice(at > 0 || s.prev === null ? at : o.length, 0, v);
+  o.splice(kAt(o.map(e => e && e.id), s), 0, v);
 }
 /* one value back: b before the change, a after it, c now. Untouched since: b. Already b, or never touched by the change: c. Both changed:
    a conflict, named to the person first (keepSince). The page's own settings keep what is there now; something gone since comes back */
@@ -432,10 +436,10 @@ function kM3(b, a, c, path, out) {
     return b === undefined && !Object.keys(r).length ? undefined : r;
   }
   if ([b, a, c].every(v => v === undefined || kIdArr(v))) {
-    const bm = kMap(b), am = kMap(a), cm = kMap(c), res = {}, pv = {}; (b || []).forEach((e, i) => { pv[e.id] = i ? b[i - 1].id : null; });
-    kKeys(bm, am, cm).forEach(id => { const v = kM3(bm[id], am[id], cm[id], path.concat({ id, prev: pv[id] === undefined ? null : pv[id] }), out); if (v !== undefined) res[id] = v; });
+    const bm = kMap(b), am = kMap(a), cm = kMap(c), res = {};
+    kKeys(bm, am, cm).forEach(id => { const v = kM3(bm[id], am[id], cm[id], path.concat(kSeg(b, id)), out); if (v !== undefined) res[id] = v; });
     const list = (c || []).map(e => e.id).filter(id => res[id]);
-    (b || []).forEach((e, i) => { if (res[e.id] && list.indexOf(e.id) < 0) { const p = i ? b[i - 1].id : null, j = p === null ? 0 : list.indexOf(p) + 1; list.splice(j > 0 || p === null ? j : list.length, 0, e.id); } });
+    (b || []).forEach(e => { if (res[e.id] && list.indexOf(e.id) < 0) list.splice(kAt(list, kSeg(b, e.id)), 0, e.id); });
     Object.keys(res).forEach(id => { if (list.indexOf(id) < 0) list.push(id); });
     return b === undefined && !list.length ? undefined : list.map(id => res[id]);
   }
@@ -466,7 +470,9 @@ function keepDrop(e) { if (!e || !S.ui) return; if (S.ui.keep && S.ui.keep.t ===
 function keepCopy(snap, why) {
   const all = keepAll(), t = Math.max(Date.now(), all.length ? +all[0].t + 1 : 0);
   let d = null; try { d = keepDiff(JSON.parse(snap), S); } catch (er) { d = null; }
-  delete S.ui.keeps;
+  /* the changes kept before this one keep their Undo until their own date; only what they changed is kept for them, not their full copy */
+  const older = all.map(e => { if (!Array.isArray(e.d)) return e; const o = Object.assign({}, e); delete o.snap; delete o.sig; return o; });
+  if (older.length) S.ui.keeps = older.slice(0, KEEP_MAX - 1); else delete S.ui.keeps;
   S.ui.keep = { snap, t, why, sh: kHash(snap) }; if (d) S.ui.keep.d = d;
   try { S.ui.keep.msb = Object.keys((JSON.parse(snap).ui || {}).ms || {}); } catch (er) { /* no milestone list */ }
 }
