@@ -24,5 +24,6 @@ module.exports = function expectMonth({ S, O, r, ym, M, oraclePercents, F, F2 })
   if (short > 0) legend.push([r.draw > 0 ? 'Still over after borrowing' : st === 'tight' ? 'Over pay by' : 'Short by', F2(short), '']);
   const pctMustBe100 = showPct && !(r.draw > 0) && usedOver < 0.5;
   const goalAmount = g => (g.target > 0 ? `${F(r.bal[g.id])} of ${F(O.cap(g))}` : 'No goal amount yet');
-  return { st, safe, where, dock, bank, hero: F2(safe), legend, pctMustBe100, goalAmount };
+  /* QC round 10 numbers gate blocker 1: when part is held back, the big figure is the plan left (the line under it gives the safe part) */
+  return { st, safe, where, dock, bank, hero: F2(held > 0.004 ? pLeft : safe), legend, pctMustBe100, goalAmount };
 };
