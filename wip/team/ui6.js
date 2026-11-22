@@ -93,7 +93,7 @@ function checkBadges() {
   const fresh = earned.filter(b => !S.ui.bd[b.id]); if (!fresh.length) return;
   fresh.forEach(b => { S.ui.bd[b.id] = true; });
   persist(); clearTimeout(badgeTimer);
-  badgeTimer = setTimeout(() => { const bm = C && C.byYm[nowYm()]; if ((HV && HV.map && HV.map.overspent > 0) || (bm && (bm.bankEnd < 0 || statusOf(S, bm) === 'short'))) { if (tab === 'home') renderBadges(); return; }   /* no cheering while the month is short or below zero: the badge waits in the list (38.31 north-star round 3) */ sfx('fanfare'); celebrate('med', fresh.length === 1 ? `Badge: ${fresh[0].n}.` : `${fresh.length} badges: ${fresh.map(b => b.n).join(', ')}.`); if (tab === 'home') renderBadges(); }, 900);
+  const badgeGo = () => { if (document.body.classList.contains('touring')) { badgeTimer = setTimeout(badgeGo, 800); return; }   /* during setup a badge waits until it closes: it covered Setup done's rows (QC round 11 north-star S7) */ const bm = C && C.byYm[nowYm()]; if ((HV && HV.map && HV.map.overspent > 0) || (bm && (bm.bankEnd < 0 || statusOf(S, bm) === 'short'))) { if (tab === 'home') renderBadges(); return; }   /* no cheering while the month is short or below zero: the badge waits in the list (38.31 north-star round 3) */ sfx('fanfare'); celebrate('med', fresh.length === 1 ? `Badge: ${fresh[0].n}.` : `${fresh.length} badges: ${fresh.map(b => b.n).join(', ')}.`); if (tab === 'home') renderBadges(); }; badgeTimer = setTimeout(badgeGo, 900);
 }
 
 /* ---------- next win ---------- */
