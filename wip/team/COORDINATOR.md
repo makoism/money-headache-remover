@@ -28,6 +28,9 @@ MAIN 11 stopped after handoff 0810d28 (its keep-going task deleted). Coordinator
 ### MAIN 13 (18:43 UTC 21 Nov = 03:43 JST 22 Nov)
 MAIN 12 stopped editing after handoff 45a0b98 (its keep-going task deleted); it stays only to push two helper branches (helper/<name>) when its helpers finish. Coordinator 8 started MAIN 13, session_01BFpKEWo34ssfTxnTsQ2qUD, with an hourly keep-going task. Next: merge helpers, one quiet check.sh full, artcheck, golden, stage, QC round 9. MAKO_RUN.md is the one list for Mako.
 
+### Window end (09:41 JST 22 Nov)
+The weekly limit stopped MAIN 13 at about 06:45 JST during QC round 9 (2 of 9 reports saved; helper r9-words lost). The non-stop window (until 09:00 JST 22 Nov) is over. Coordinator 8's keep-going task is deleted; MAIN 13's (trig_014tBxAqVmTBtpXRea81VBNX, hourly at :43) could not be deleted from here (permission), so it may wake MAIN 13 now that the limit has reset: Mako decides. Watchdog trig_015mKtiUhZRgbkacuPYA8Ks6 still runs.
+
 ### Preview (07:49 UTC)
 QC round 3 on 53bb8cb failed; fixed b7c4719, 50ca3a8, 9a33833, 9a0d2fc; the rest wait for Mako's run (QC10_FIX_ROUND.md). The preview artifact at the old link cannot be updated: an update needs the whole 1.87 MB live page read first. MAIN 10 sent Mako the build file and 4 screenshots instead (preview/after, 2c65906). A new link does not work either: the tool only publishes a file the session wrote or read in full (~800k tokens). A tappable link needs a deploy (Mako's call, at his full run) or a smaller page. Do not work around the rule.
 
