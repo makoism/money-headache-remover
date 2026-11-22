@@ -242,7 +242,7 @@ function wire() {
     const has = n < 0 ? '' : n === 0 ? ', which has no receipts' : `, which has ${n} receipt${n === 1 ? '' : 's'}`;
     return `Tap again: replaces your numbers here with the backup${day}${has}. You can undo for ${KEEP_DAYS} days.`;
   };
-  twoStep($('#bkLoad'), bkAsk, loadBackup, () => { if (bkOK($('#bk').value)) return true; $('#bkMsg').textContent = BK_BAD; return false; });
+  twoStep($('#bkLoad'), bkAsk, loadBackup, () => { if (bkOK($('#bk').value)) return true; $('#bkMsg').textContent = $('#bk').value.trim() ? BK_BAD : 'Paste a backup first, or tap Choose file.'; return false; });   /* an empty box gets its own words (QC round 10 wording polish) */
   twoStep($('#setupOpen'), `Tap again: setup can change your pay, bills, goals and saved amounts. You can undo for ${KEEP_DAYS} days.`, () => openSetupWithCopy(undefined, 'full'));   /* both ask first, and keep a copy (38.31 data safety round 2) */
   /* only some currencies have samples; for the rest this button clears the plan, and every word says so (38.31 data safety round 3) */
   const hasSamples = () => !!SAMPLES[(S.ui && S.ui.cur) || '₱'];
