@@ -17317,10 +17317,12 @@ function renderDebts() {
   const row = document.querySelector('.row[data-id="debts"]'); if (row) row.hidden = !ds.length;
   const note = $('#jcap-debts'); if (note) note.textContent = ds.length ? `${fmt(m.debtMin)} minimums${m.debtExtra > 0 ? ' and ' + fmt(m.debtExtra) + ' extra' : ''}. Extra goes straight off what you owe.` : '';
 }
+/* a rate over 100% a year is refused with these words, never cut to 100 in silence (QC round 12 money accuracy 9) */
+const APR_OVER = 'That rate is more than 100% a year. Check your statement: if it gives the rate per month, pick "a month".';
 function debtRead(form) {
   const g = k => form.querySelector(`[data-d="${k}"]`), num = k => { const v = Math.round(+g(k).value || 0); return Math.max(0, Math.min(1e9, v)); };
   const per = form.querySelector('[data-per]'), apr = parseFloat(String(g('apr').value).replace(',', '.')) * (per && per.value === 'month' ? 12 : 1);
-  return { name: g('name').value.trim().slice(0, 60), kind: g('kind').value, balance: num('balance'), apr: isFinite(apr) ? Math.max(0, Math.min(100, Math.round(apr * 100) / 100)) : 0, min: num('min'), extra: num('extra') };
+  return { name: g('name').value.trim().slice(0, 60), kind: g('kind').value, balance: num('balance'), apr: isFinite(apr) ? Math.max(0, Math.min(100, Math.round(apr * 100) / 100)) : 0, aprOver: isFinite(apr) && apr > 100, min: num('min'), extra: num('extra') };
 }
 function debtsInit() {
   const sec = $('#secDebts'); if (!sec) return;
@@ -17332,6 +17334,7 @@ function debtsInit() {
       const form = t.closest('.dform'), v = debtRead(form), msg = $('#de-new-msg');
       if (!v.name) { msg.textContent = 'Give it a name.'; return; }
       if (!(v.balance > 0)) { msg.textContent = 'Enter how much is owed.'; return; }
+      if (v.aprOver) { msg.textContent = APR_OVER; return; }
       const d = { id: newId(S, 'd', x => debtsOf(S).some(q => q.id === x)), name: v.name, kind: v.kind, balance: v.balance, apr: v.apr, min: v.min, extra: v.extra };
       S.plan.debts = debtsOf(S).concat([d]); DEBT_DRAFT = null; DEBT_EDIT = null; debtSig = ''; persist(); restructure(); cheer('Added.'); return;
     }
@@ -17352,9 +17355,16 @@ function debtsInit() {
   /* an existing debt saves when a box is left; a new one waits for Add */
   sec.addEventListener('change', e => {
     const form = e.target.closest('.dform'); if (!form) return;
-    if (form.dataset.did === 'new') { DEBT_DRAFT = Object.assign({}, DEBT_DRAFT, debtRead(form)); return; }
+    /* "a year" / "a month" converts the number in the box first, so the same rate is shown either way and a saved rate never changes
+       (it used to save before the box was converted: 24 a year became 288; QC round 12 money accuracy 9) */
+    const ps = e.target.closest('[data-per]');
+    if (ps) { const box = form.querySelector('[data-d="apr"]'), v0 = box ? parseFloat(String(box.value).replace(',', '.')) : NaN; if (isFinite(v0)) box.value = String(Math.round((ps.value === 'month' ? v0 / 12 : v0 * 12) * 100) / 100); }
+    if (form.dataset.did === 'new') { const v = debtRead(form); if (v.aprOver) v.apr = Math.round(parseFloat(String(form.querySelector('[data-d="apr"]').value).replace(',', '.')) * (form.querySelector('[data-per]').value === 'month' ? 12 : 1) * 100) / 100; delete v.aprOver; DEBT_DRAFT = Object.assign({}, DEBT_DRAFT, v); return; }   /* a draft keeps a rate over 100 as typed, so a redraw never turns it into 100; Add refuses it */
     const d = debtById(S, form.dataset.did); if (!d) return;
+    if (ps) return;   /* only the way the rate is written changed */
     const v = debtRead(form); if (!v.name) v.name = d.name;
+    if (v.aprOver) { cheer(APR_OVER); delete v.apr; }   /* the saved rate stays */
+    delete v.aprOver;
     Object.assign(d, v); persist(); setTimeout(() => restructure(), 80);
   });
 }
@@ -17599,13 +17609,7 @@ function paintLim() { const b = $('#setLim'); if (!b) return; const on = S.ui.li
     const w = e.target.closest('[data-why]'); if (w) openWhy(w.dataset.why);
   });
   const lim = $('#setLim'); if (lim) lim.addEventListener('click', () => { if (S.ui.limits === true) delete S.ui.limits; else S.ui.limits = true; persist(); render(); });
-  /* switching "a year" / "a month" converts the number in the box, so the same rate is shown either way */
-  document.addEventListener('change', e => {
-    const s = e.target.closest && e.target.closest('[data-per]'); if (!s) return;
-    const f = s.closest('.dform'), box = f && f.querySelector('[data-d="apr"]'); if (!box) return;
-    const v = parseFloat(String(box.value).replace(',', '.')); if (!isFinite(v)) return;
-    box.value = String(Math.round((s.value === 'month' ? v / 12 : v * 12) * 100) / 100);
-  });
+  /* switching "a year" / "a month" converts the box in the cards and loans form's own change handler (debtsInit), before anything is saved */
   debtsInit(); recurringInit();
   /* repeating spending that came due since the last visit is logged when the page opens and when it comes back to the front */
   const due = () => {
