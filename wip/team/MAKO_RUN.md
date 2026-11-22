@@ -195,7 +195,8 @@ When the same question came from several reviewers, it is one entry here and the
 - **Yearly cost.** Once full (May 2027) the plan stops saving for it; it comes back every year. Start again for next year?
 - **Art (blockers for the art director).** Coin piles on Home burrows are the same height for different amounts (ART_GUIDE 9). Two drawing styles side by side (goal mounds vs flat frames for Education, Investing, Giving, Bills and basics), no ground or shadows, same silhouette for every goal. Plus polish: glow dither, blurred vine shadow, wisteria close to the Burrows heading, dark Welcome, artcheck sky at 6.1% off palette passes against a 5% line.
 - **Wording (pass, confusing).** Scan receipts says photos cannot be read here while Ask can read them; the card line "Your bank now is ¥412,000, ¥393,600 after the cards are paid, so the two can differ"; "Bank at month end is planned from ¥85,500" next to a bank box of ¥0; "On track" and "Filling" for two goals full the same month.
-- **Sources.** `qc_round13/money_accuracy.md`, `qc_round13/art_director.md`, `qc_round13/wording.md`.
+- **Layout at 320 (round 13).** Plan > All months breaks the goal chip inside a word ("Emergenc" / "y fund full"). Keeping words whole makes the table wider than the screen, even with a smaller chip (tried and undone). Choices: shorter chip words ("Fund full"), or the chip on its own line across the row. Also: after Log spend at 320 the toast and the Undo bar cover the form for a few seconds; a 50-letter goal name with no spaces pushes Home sideways; Plan > Month at 320 squeezes names to one or two words per line.
+- **Sources.** `qc_round13/money_accuracy.md`, `qc_round13/art_director.md`, `qc_round13/wording.md`, `qc_round13/layout_touch.md`.
 
 ## 2. Words and glossary
 
