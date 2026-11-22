@@ -15872,7 +15872,7 @@ function wireVault() {
   $('#vaultRetry').addEventListener('click', () => { vaultRetryNow(); sfx('tap'); });
   $('#vaultShow').addEventListener('click', () => { const c = $('#vaultCode'); if (!$('#vaultFlow').hidden) vaultFlowClose(); if (c.querySelector('#vaultCodeTxt')) { c.innerHTML = ''; return; } vaultShowCode(c, vault.code); });
   $('#vaultOff').addEventListener('click', async () => {
-    const b = $('#vaultOff'); if (b.dataset.armed !== '1') { b.dataset.armed = '1'; b.textContent = 'Tap again: delete the cloud copy'; setTimeout(() => { b.dataset.armed = ''; b.textContent = 'Turn off'; }, 4000); return; }
+    const b = $('#vaultOff'); if (b.dataset.armed !== '1') { b.dataset.armed = '1'; b.textContent = 'Tap again: delete the cloud copy, so its code stops working. Your numbers here stay';   /* say what is lost before the second tap (QC round 13 data safety 1) */ setTimeout(() => { b.dataset.armed = ''; b.textContent = 'Turn off'; }, 4000); return; }
     b.dataset.armed = ''; b.textContent = 'Turn off'; vaultFlowClose(); await vaultTurnOff(true); $('#vaultCode').innerHTML = ''; cheer('Cloud copy deleted. Your numbers stay on this device.'); sfx('back');
   });
   $('#vaultLoadNewer').addEventListener('click', vaultLoadNewer);
