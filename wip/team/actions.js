@@ -42,13 +42,14 @@ const ACT = {
   tx(label, fn, one, whyText) {
     if (txDepth) { txDepth++; try { return fn(); } finally { txDepth--; } }
     const keeps = one !== ONE && typeof snapNoCopy === 'function', kept = keeps ? snapNoCopy() : null;
+    const slots = keeps ? JSON.stringify({ keep: S.ui.keep, keeps: S.ui.keeps }) : null;   /* the kept changes as they were, for an Undo in this visit */
     const before = snapState(); txDepth = 1; txTouched = false; let out;
     try { out = fn(); } finally { txDepth = 0; }
     const postIds = new Set((S.receipts || []).map(r => r.id));
     const changed = JSON.stringify([S.steps, S.once, S.items, S.cfg, S.plan, S.receipts, S.cards]) !== JSON.stringify([before.steps, before.once, before.items, before.cfg, before.plan, before.receipts, before.cards])
       || UI_SNAP.some(k => JSON.stringify(S.ui[k]) !== JSON.stringify(before.ui[k]));
     if (changed) {
-      const u = { label: String(label || 'change'), before, postIds, at: Date.now() };
+      const u = { label: String(label || 'change'), before, postIds, at: Date.now(), slots };
       if (keeps) {
         const had = before.ids, added = (S.receipts || []).filter(r => !had.has(r.id)).map(r => r.id), why = whyText || KEEP_WHY[label] || 'Your plan was changed.';
         keepCopy(kept, why); S.ui.keep.act = 1; if (added.length) S.ui.keep.added = added; u.keptAt = S.ui.keep.t;
@@ -75,7 +76,15 @@ const ACT = {
     const u = undoStack.pop(); if (!u) return false;
     restoreState(u.before, u.postIds);
     /* the copy that action kept is let go with it, so a change already taken back is not offered again after a reload */
-    if (u.keptAt) keepDrop({ t: u.keptAt });
+    /* while this change is still the newest kept, the kept changes go back to how they were before it (the one before is the newest again,
+       with its full copy); otherwise only this one is let go */
+    if (u.keptAt) {
+      if (S.ui.keep && S.ui.keep.t === u.keptAt && u.slots) {
+        const was = JSON.parse(u.slots), live = new Set(keepAll().map(e => e.t));
+        if (was.keep && live.has(was.keep.t)) S.ui.keep = was.keep; else delete S.ui.keep;
+        const ks = (was.keeps || []).filter(e => live.has(e.t)); if (ks.length) S.ui.keeps = ks; else delete S.ui.keeps;
+      } else keepDrop({ t: u.keptAt });
+    }
     ACT.commit(); return true;
   },
   /* forget the undo history, for example after a restore from a backup */
