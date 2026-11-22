@@ -287,10 +287,10 @@ function renderMonthTable() {
     const fw = g => kindOfGoal(S, g) === 'debt' ? 'paid off' : 'full';   /* a debt is paid off, never full, as on Plan > Burrows (QC round 7 money accuracy blocker 2) */
     const marks = gs.map(g => `<span class="mt-g" style="--c:var(--c${g.slot})" title="${esc(g.name)} ${fw(g)}">${HI.leaf}<span>${esc(g.name)} ${fw(g)}</span></span>`).join('');
     /* the same verdict as this month's own Plan view: pay with no place is "Not placed yet", never "On plan" (38.31 novice round 4) */
-    const pcm = planCells(S, C, m.ym), np = m.pool.left < 0 ? m.pool.left : pcm.unplaced;   /* the Month card's own figure: pay with no place, less what spending past plan already used (38.31 number gate round 4) */
+    const pcm = planCells(S, C, m.ym), past = pcm.pastPay > 0;   /* past pay counts money borrowed from the emergency fund as past pay, as the month says it (QC round 10 numbers gate blocker 2) */   /* the Month card's own figure: pay with no place, less what spending past plan already used (38.31 number gate round 4) */
     const unp = !grew && st === 'good' && pcm.unplaced >= roundUnit(S);
     const wd = grew ? 'Over plan' : unp ? 'Not placed yet' : word[st];
-    return `<tr data-ym="${m.ym}" class="${m.ym === sel ? 'on' : ''}" tabindex="0" aria-label="${monthLabel(m.ym)}: ${wd}${gs.length ? ', ' + gs.map(g => g.name + ' ' + fw(g)).join(', ') : ''}"><td>${monthLabel(m.ym)}${marks}</td><td class="${np < 0 ? 'neg' : ''}">${np < 0 ? fmt2(pcm.pastPay) + ' past pay' : fmt2(np)}</td><td class="${bk < cfg(S, 'minBank') ? 'neg' : ''}">${fmt2(bk)}</td><td><span class="st ${unp ? 'tight' : st}">${unp ? IC.warn : icon[st]}<span class="stw">${wd}</span></span></td></tr>`;
+    return `<tr data-ym="${m.ym}" class="${m.ym === sel ? 'on' : ''}" tabindex="0" aria-label="${monthLabel(m.ym)}: ${wd}${gs.length ? ', ' + gs.map(g => g.name + ' ' + fw(g)).join(', ') : ''}"><td>${monthLabel(m.ym)}${marks}</td><td class="${past && !pcm.borrowCover ? 'neg' : ''}">${past ? fmt2(pcm.pastPay) + ' past pay' : fmt2(pcm.unplaced)}</td><td class="${bk < cfg(S, 'minBank') ? 'neg' : ''}">${fmt2(bk)}</td><td><span class="st ${unp ? 'tight' : st}">${unp ? IC.warn : icon[st]}<span class="stw">${wd}</span></span></td></tr>`;
   }).join('');
   $('#monthTable').innerHTML = `<table><thead><tr><th>Month</th><th>Not placed</th><th>Bank, month end</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
