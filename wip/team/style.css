@@ -618,7 +618,7 @@ svg.tour-scene { width: 100%; max-width: 440px; height: auto; }
 .msg.wait { color: var(--ink2); } .msg.note { color: var(--warn); background: var(--warn-bg); }
 .ask-sug { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 16px 10px; }
 /* on a phone the suggestions are one swipeable row, so the chat itself keeps the room (the first message stays readable on opening) */
-@media (max-width: 520px) { .ask-sug { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; padding-bottom: 12px; -webkit-overflow-scrolling: touch; } .ask-sug::-webkit-scrollbar { display: none; } .ask-sug .sugg { flex: 0 0 auto; white-space: nowrap; } .ask-log { min-height: 170px; } }
+@media (max-width: 520px) { .ask-sug { flex-wrap: nowrap; overflow-x: auto; -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent); scrollbar-width: none; padding-bottom: 12px; padding-right: 40px; -webkit-overflow-scrolling: touch; } .ask-sug::-webkit-scrollbar { display: none; } .ask-sug .sugg { flex: 0 0 auto; white-space: nowrap; } .ask-log { min-height: 170px; } }
 .sugg { border: 0; background: var(--track); border-radius: 980px; min-height: 38px; padding: 0 14px; font-size: 15px; cursor: pointer; text-align: left; }
 .sugg:hover { background: var(--track2); }
 .ask-form { padding: 10px 16px 14px; border-top: .5px solid var(--hair); display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
