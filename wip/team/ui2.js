@@ -62,6 +62,7 @@ const LTS_HINT = ' Each slider sets what goes into that goal this month, so slid
 const START_SUB = 'These are sample numbers for one salary, replace them with yours. Your numbers stay in this browser.';
 const BASICS_SUB = 'Name, currency, balance, look, saved data.';
 const MAKE_CAP = 'The amounts are samples for one salary, so start at zero or type over them. They\'re saved in this browser only and nobody else sees them, including whoever shared this page.';
+const MAKE_CAP_CLOUD = 'The amounts are samples for one salary, so start at zero or type over them. They\'re saved in this browser and in your locked cloud copy. Nobody else can read them, including whoever shared this page.';
 const START_STEPS = [
   ['pay', 'Enter pay', 'Type your monthly take-home pay under Salary', 'Go to Salary', 'data-open="a"'],
   ['bills', 'Check bills', 'Put your real amount on each Monthly bills line, and rename, remove or add lines as you go', 'Open Monthly bills', 'data-open="nec"'],
@@ -77,7 +78,7 @@ function renderStart() {
   const bm = $('#bkMsg'); if (bm && !empty && /^Everything is at zero now/.test(bm.textContent)) bm.textContent = '';
   $('#basicsSub').textContent = BASICS_SUB;
   let cloudOn = false; try { cloudOn = !!vault.on; } catch (e) { /* the cloud copy code is not loaded yet */ }   /* with the cloud copy on, "this browser only" is untrue (QC round 7 data safety confusing 1) */
-  $('#makeCap').textContent = mine || ((S.ui.preset === 'blank' || !!S.ui.cleared) && !empty) ? (cloudOn ? 'These are your numbers and you can change them any time. They\'re saved in this browser and in your locked cloud copy. Nobody else can read them.' : 'These are your numbers and you can change them any time. They\'re saved in this browser only and nobody else sees them.') : zero ? 'Everything starts at zero, so type over it. It\'s saved in this browser only.' : MAKE_CAP;
+  $('#makeCap').textContent = mine || ((S.ui.preset === 'blank' || !!S.ui.cleared) && !empty) ? (cloudOn ? 'These are your numbers and you can change them any time. They\'re saved in this browser and in your locked cloud copy. Nobody else can read them.' : 'These are your numbers and you can change them any time. They\'re saved in this browser only and nobody else sees them.') : zero ? (cloudOn ? 'Everything starts at zero, so type over it. It\'s saved in this browser and in your locked cloud copy.' : 'Everything starts at zero, so type over it. It\'s saved in this browser only.') : cloudOn ? MAKE_CAP_CLOUD : MAKE_CAP;   /* every branch follows the cloud copy (QC round 9 wording blocker 1) */
   { const so = typeof sampleOn === 'function' && sampleOn(); ['#payBtn', '#xmBtn'].forEach(s => { const b = $(s); if (b) b.hidden = so; }); }
   { const rb = $('#bkReset'); if (rb && !rb.dataset.armed) rb.textContent = SAMPLES[(S.ui && S.ui.cur) || '₱'] ? 'Restore samples' : 'Clear my plan'; }
   $('#blankBtn').hidden = zero; { const zh = $('#zeroHint'); if (zh) zh.hidden = zero; } $('#showStart').hidden = !(S.ui.sampleHidden || S.ui.exactHidden); /* Set all to zero stays while there is anything to zero: Restore names it as the way to start over. Show first steps brings back a hidden Next card */ $('#tourOpen2').textContent = mine ? 'Tour' : 'Guided setup';

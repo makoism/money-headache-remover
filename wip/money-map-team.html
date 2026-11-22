@@ -4957,6 +4957,7 @@ const LTS_HINT = ' Each slider sets what goes into that goal this month, so slid
 const START_SUB = 'These are sample numbers for one salary, replace them with yours. Your numbers stay in this browser.';
 const BASICS_SUB = 'Name, currency, balance, look, saved data.';
 const MAKE_CAP = 'The amounts are samples for one salary, so start at zero or type over them. They\'re saved in this browser only and nobody else sees them, including whoever shared this page.';
+const MAKE_CAP_CLOUD = 'The amounts are samples for one salary, so start at zero or type over them. They\'re saved in this browser and in your locked cloud copy. Nobody else can read them, including whoever shared this page.';
 const START_STEPS = [
   ['pay', 'Enter pay', 'Type your monthly take-home pay under Salary', 'Go to Salary', 'data-open="a"'],
   ['bills', 'Check bills', 'Put your real amount on each Monthly bills line, and rename, remove or add lines as you go', 'Open Monthly bills', 'data-open="nec"'],
@@ -4972,7 +4973,7 @@ function renderStart() {
   const bm = $('#bkMsg'); if (bm && !empty && /^Everything is at zero now/.test(bm.textContent)) bm.textContent = '';
   $('#basicsSub').textContent = BASICS_SUB;
   let cloudOn = false; try { cloudOn = !!vault.on; } catch (e) { /* the cloud copy code is not loaded yet */ }   /* with the cloud copy on, "this browser only" is untrue (QC round 7 data safety confusing 1) */
-  $('#makeCap').textContent = mine || ((S.ui.preset === 'blank' || !!S.ui.cleared) && !empty) ? (cloudOn ? 'These are your numbers and you can change them any time. They\'re saved in this browser and in your locked cloud copy. Nobody else can read them.' : 'These are your numbers and you can change them any time. They\'re saved in this browser only and nobody else sees them.') : zero ? 'Everything starts at zero, so type over it. It\'s saved in this browser only.' : MAKE_CAP;
+  $('#makeCap').textContent = mine || ((S.ui.preset === 'blank' || !!S.ui.cleared) && !empty) ? (cloudOn ? 'These are your numbers and you can change them any time. They\'re saved in this browser and in your locked cloud copy. Nobody else can read them.' : 'These are your numbers and you can change them any time. They\'re saved in this browser only and nobody else sees them.') : zero ? (cloudOn ? 'Everything starts at zero, so type over it. It\'s saved in this browser and in your locked cloud copy.' : 'Everything starts at zero, so type over it. It\'s saved in this browser only.') : cloudOn ? MAKE_CAP_CLOUD : MAKE_CAP;   /* every branch follows the cloud copy (QC round 9 wording blocker 1) */
   { const so = typeof sampleOn === 'function' && sampleOn(); ['#payBtn', '#xmBtn'].forEach(s => { const b = $(s); if (b) b.hidden = so; }); }
   { const rb = $('#bkReset'); if (rb && !rb.dataset.armed) rb.textContent = SAMPLES[(S.ui && S.ui.cur) || '₱'] ? 'Restore samples' : 'Clear my plan'; }
   $('#blankBtn').hidden = zero; { const zh = $('#zeroHint'); if (zh) zh.hidden = zero; } $('#showStart').hidden = !(S.ui.sampleHidden || S.ui.exactHidden); /* Set all to zero stays while there is anything to zero: Restore names it as the way to start over. Show first steps brings back a hidden Next card */ $('#tourOpen2').textContent = mine ? 'Tour' : 'Guided setup';
@@ -13870,7 +13871,7 @@ const TOUR = [
       return `${hasHello ? '' : homeScene()}<div class="tour-chips" role="radiogroup" aria-label="Currency">${pick.map(c => chip('tourCur', c[0], c[0], curName(c), c[0] === cur)).join('')}</div>
       <div class="field tour-more"><label for="tourCurMore">Other currency</label><div class="selbox"><select id="tourCurMore"><option value="">Choose currency</option>${rest.map(c => `<option value="${esc(c[0])}"${c[0] === cur ? ' selected' : ''}>${esc(c[1])}</option>`).join('')}</select></div></div>
       <div class="tour-fields"><div class="field"><label for="tourName">First name <span class="opt">(optional)</span></label><div class="inp"><input id="tourName" type="text" maxlength="24" autocomplete="given-name" spellcheck="false" placeholder="First name" value="${esc(firstName())}"></div></div></div>
-      <p class="cap">Your numbers stay in this browser and nobody else can see them.</p>
+      <p class="cap">${cloudSaved() ? 'Your numbers are saved in this browser and in your locked cloud copy. Nobody else can read them.' : 'Your numbers stay in this browser and nobody else can see them.'}</p>
       <p class="cap">${quickSetup() ? 'The first setup is short, just your pay, rent, food and an emergency fund. Tap Finish later at the top to stop. What you typed is kept. Guided setup in Help opens it again. <button type="button" class="link" id="tourFull">Use the longer setup</button>' : 'Longer setup is on: every bill and goal.'}</p>
       ${hasHello ? '' : restoreHTML()}`;
     },
@@ -15673,7 +15674,11 @@ function wireVault() {
   $('#vaultKeepMine').addEventListener('click', () => { vaultNote = null; vaultPush(true); paintVault(); if (tab === 'home') renderBackupNudge(); });
 }
 /* test hook (only with ?sfxtest): the cloud copy functions, so a test can apply a made-up record without reaching the cloud */
+/* is the cloud copy on: the lines that say where the numbers are saved follow it (QC round 9 wording blocker 1) */
+function cloudSaved() { return !!vault.on; }
 if (/[?&]sfxtest\b/.test(location.search)) window.__vault = { keysFor, vaultEncrypt, vaultApply };
+/* test hook (only with ?sfxtest): switch the cloud copy flag and read the two lines that say where the numbers are saved */
+if (/[?&]sfxtest\b/.test(location.search)) window.__cloudWhere = { set: (on, cleared) => { vault.on = !!on; if (cleared !== undefined) S.ui.cleared = !!cleared; renderStart(); }, read: () => { const d = document.createElement('div'); d.innerHTML = TOUR.find(x => x.id === 'currency').body(); return { make: $('#makeCap').textContent, tour: [...d.querySelectorAll('p.cap')].map(x => x.textContent).find(x => /browser|cloud/.test(x)) || '' }; } };
 /* ---------- Scan receipts: the card at the top of the Receipts tab ----------
    Take a photo or pick pictures, Claude reads them through the viewer's own Claude account, the page checks every field and shows
    what it found with a category picker on each line, and nothing is added until the person taps the Add button ("Add 3 receipts").

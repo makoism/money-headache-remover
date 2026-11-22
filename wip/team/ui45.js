@@ -221,7 +221,7 @@ const TOUR = [
       return `${hasHello ? '' : homeScene()}<div class="tour-chips" role="radiogroup" aria-label="Currency">${pick.map(c => chip('tourCur', c[0], c[0], curName(c), c[0] === cur)).join('')}</div>
       <div class="field tour-more"><label for="tourCurMore">Other currency</label><div class="selbox"><select id="tourCurMore"><option value="">Choose currency</option>${rest.map(c => `<option value="${esc(c[0])}"${c[0] === cur ? ' selected' : ''}>${esc(c[1])}</option>`).join('')}</select></div></div>
       <div class="tour-fields"><div class="field"><label for="tourName">First name <span class="opt">(optional)</span></label><div class="inp"><input id="tourName" type="text" maxlength="24" autocomplete="given-name" spellcheck="false" placeholder="First name" value="${esc(firstName())}"></div></div></div>
-      <p class="cap">Your numbers stay in this browser and nobody else can see them.</p>
+      <p class="cap">${cloudSaved() ? 'Your numbers are saved in this browser and in your locked cloud copy. Nobody else can read them.' : 'Your numbers stay in this browser and nobody else can see them.'}</p>
       <p class="cap">${quickSetup() ? 'The first setup is short, just your pay, rent, food and an emergency fund. Tap Finish later at the top to stop. What you typed is kept. Guided setup in Help opens it again. <button type="button" class="link" id="tourFull">Use the longer setup</button>' : 'Longer setup is on: every bill and goal.'}</p>
       ${hasHello ? '' : restoreHTML()}`;
     },

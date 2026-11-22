@@ -265,4 +265,8 @@ function wireVault() {
   $('#vaultKeepMine').addEventListener('click', () => { vaultNote = null; vaultPush(true); paintVault(); if (tab === 'home') renderBackupNudge(); });
 }
 /* test hook (only with ?sfxtest): the cloud copy functions, so a test can apply a made-up record without reaching the cloud */
+/* is the cloud copy on: the lines that say where the numbers are saved follow it (QC round 9 wording blocker 1) */
+function cloudSaved() { return !!vault.on; }
 if (/[?&]sfxtest\b/.test(location.search)) window.__vault = { keysFor, vaultEncrypt, vaultApply };
+/* test hook (only with ?sfxtest): switch the cloud copy flag and read the two lines that say where the numbers are saved */
+if (/[?&]sfxtest\b/.test(location.search)) window.__cloudWhere = { set: (on, cleared) => { vault.on = !!on; if (cleared !== undefined) S.ui.cleared = !!cleared; renderStart(); }, read: () => { const d = document.createElement('div'); d.innerHTML = TOUR.find(x => x.id === 'currency').body(); return { make: $('#makeCap').textContent, tour: [...d.querySelectorAll('p.cap')].map(x => x.textContent).find(x => /browser|cloud/.test(x)) || '' }; } };
