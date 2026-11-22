@@ -5,7 +5,7 @@ const { w, P, launch, runTour } = require('/tmp/v22/lib.js');
     let got = null;
     const rr = await runTour(p, pr, async () => {
       if (got) return;
-      const ttl = await p.$eval('#tourTitle', e => e.textContent); if (ttl === 'Bills and basics') { await p.evaluate(() => { const el = document.querySelector('input[name=tourBill][value=subs]'); if (el && !el.checked) el.click(); }); await w(150); }
+      const ttl = await p.$eval('#tourTitle', e => e.textContent); if (ttl === 'Monthly bills') { await p.evaluate(() => { const el = document.querySelector('input[name=tourBill][value=subs]'); if (el && !el.checked) el.click(); }); await w(150); }
       if (await p.$('.subs-list')) {
         got = await p.$$eval('.sub-row .chip span', els => els.map(e => e.textContent));
         const intro = await p.$eval('#tourBody p', e => e.textContent); got.unshift('INTRO: ' + intro);

@@ -75,7 +75,7 @@ function chosenBills() {
   base.forEach(id => { out.push(id); all.forEach(l => { if (moreKind(l.id) === id) out.push(l.id); }); });
   return out;
 }
-const STEP_BILLS = { id: 'bills-pick', part: PART.bills, setup: true, pick: true, skipIf: () => importApplied(), title: 'Bills and basics',
+const STEP_BILLS = { id: 'bills-pick', part: PART.bills, setup: true, pick: true, skipIf: () => importApplied(), title: 'Monthly bills',
   body: () => {
     const on = chosenBills();
     return `<p>A few are ticked to get you started. Tick the ones you pay and untick the ones you don't. You type a rough amount for each one next.</p>

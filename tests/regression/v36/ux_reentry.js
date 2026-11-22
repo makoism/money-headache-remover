@@ -6,7 +6,7 @@ const fs = require('fs'); let n = 0;
   const title = () => p.$eval('#tourTitle', e => e.textContent).catch(() => null);
   const go = async (t) => { await p.evaluate(t => { const b = document.querySelector(`[data-tab="${t}"]`) || document.querySelector(`[data-tab-go="${t}"]`); b && b.click(); }, t); await w(450); };
   // 1. finish later at the bills step
-  let hit = false; await runTour(p, P.a, async () => { if ((await title()) === 'Bills and basics') { hit = true; throw new Error('stop'); } }).catch(() => {});
+  let hit = false; await runTour(p, P.a, async () => { if ((await title()) === 'Monthly bills') { hit = true; throw new Error('stop'); } }).catch(() => {});
   await p.evaluate(() => document.querySelector('#tourSkip').click()); await w(700);
   console.log('after Finish later: tour hidden', await p.evaluate(() => document.querySelector('#tour').hidden), 'tab', await p.evaluate(() => [...document.querySelectorAll('[role=tab]')].find(t => t.getAttribute('aria-selected') === 'true').textContent));
   await shot('finish-later-landing');

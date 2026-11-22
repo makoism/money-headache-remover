@@ -9,7 +9,7 @@ const JARCLS = { nec: 'g-nec', lts: 'g-lts', play: 'g-play', edu: 'g-edu', ffa: 
 const JARVAR = { nec: 'var(--c1)', lts: 'var(--cl)', play: 'var(--cp)', edu: 'var(--c2)', ffa: 'var(--c3)', give: 'var(--cg)' };
 const JARNAME = {}; JARS.forEach(j => { JARNAME[j.id] = j.name; });
 const JARROWS = [
-  { id: 'nec', jar: 'nec', name: 'Bills and basics', cap: 'Rent, food, utilities and every other monthly bill' },
+  { id: 'nec', jar: 'nec', name: 'Monthly bills', cap: 'Rent, food, utilities and every other monthly bill' },
   { id: 'items', jar: 'nec', name: 'One-time costs', kind: 'items' },
   { id: 'debts', jar: 'nec', name: 'Cards and loans', kind: 'debts', cap: 'The minimum payments plus anything extra you pay' },
   { id: 'lts', jar: 'lts', name: 'Goal burrows', kind: 'goals', cap: 'Burrows with a goal, like a trip, something big to buy or your Emergency fund' },

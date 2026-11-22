@@ -86,7 +86,7 @@ const openAt = async (b, iso, keep) => { const p = await b.newPage(); const errs
   await b.close();
   // ---- E. ticking bills is not entering them: Finish later at the tick screen leaves "check bills" as the next step
   ({ b, p, errs } = await L.launch(390, 844, 'dark'));
-  hit = false; await runTour(p, P.a, async () => { if ((await title(p)) === 'Bills and basics') { hit = true; throw new Error('stop'); } }).catch(() => {});
+  hit = false; await runTour(p, P.a, async () => { if ((await title(p)) === 'Monthly bills') { hit = true; throw new Error('stop'); } }).catch(() => {});
   await p.evaluate(() => document.querySelector('#tourSkip').click()); await w(600);
   ok(/Next: check bills/.test(await p.$eval('#hNext', e => e.innerText)), 'Finish later at the bills tick screen: Home says Next: check bills');
   await b.close();

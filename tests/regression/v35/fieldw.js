@@ -9,7 +9,7 @@ const { w } = require('/tmp/v22/lib.js');
     const f = await p.evaluate(() => { const f = document.querySelector('.tour-fields'); if (!f) return null; const r = f.getBoundingClientRect(); return { w: Math.round(r.width), parent: f.parentElement.className, pw: Math.round(f.parentElement.getBoundingClientRect().width), disp: getComputedStyle(f.parentElement).display, ai: getComputedStyle(f.parentElement).alignItems, tag: f.parentElement.tagName }; });
     if (f) console.log(t, JSON.stringify(f));
     if (/Setup done/.test(t)) break;
-    if (t === 'Bills and basics') { const ids = await p.$$eval('input[name=tourBill]', els => els.map(e => [e.value, e.checked])); for (const [id, ck] of ids) if (!ck && ['rent', 'util', 'food', 'net', 'phone', 'transport'].includes(id)) await p.click(`input[name=tourBill][value=${id}]`); }
+    if (t === 'Monthly bills') { const ids = await p.$$eval('input[name=tourBill]', els => els.map(e => [e.value, e.checked])); for (const [id, ck] of ids) if (!ck && ['rent', 'util', 'food', 'net', 'phone', 'transport'].includes(id)) await p.click(`input[name=tourBill][value=${id}]`); }
     if (await p.$eval('#tourNext', e => e.hidden)) { await p.evaluate(() => document.querySelector('#srcSkip').scrollIntoView({ block: 'center' })); await p.click('#srcSkip'); } else await p.click('#tourNext');
     await w(250);
   }
