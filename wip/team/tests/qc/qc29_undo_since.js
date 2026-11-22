@@ -16,7 +16,7 @@ const BUILD = process.env.BUILD || process.env.PAGE || '/home/claude/work/money-
   await L.base(p, { pay: 300000, bank: 250000, min: 20000, eT: 200000, eS: 50000, eM: 10000 });
   await p.evaluate(() => { const S = __t.S; S.ui.done = { pay: true, bills: true, goals: true, receipts: true }; S.ui.sampleHidden = true; S.ui.toured = true; delete S.ui.keep; delete S.ui.keeps; __t.persist(); __t.restructure(); }); await w(900);
   /* the plan's numbers, receipts left out */
-  const plan = () => p.evaluate(() => { const S = __t.S; return JSON.stringify([S.plan.lines.map(l => [l.id, l.def]), S.plan.goals.map(g => [g.id, g.start, g.target]), S.steps, S.once, S.cfg.bankStart, S.cfg.minBank, (S.cards || []).map(k => k.id)]); });
+  const plan = () => p.evaluate(() => { const S = __t.S; return JSON.stringify([S.plan.lines.map(l => [l.id, l.def]), S.plan.goals.map(g => [g.id, g.start, g.target]), S.steps, S.once, S.cfg.bankStart, S.cfg.minBank, (S.cards || []).map(k => k.id), (S.plan.debts || []).map(d => d.id)]); });
   const rcs = () => p.evaluate(() => (__t.S.receipts || []).map(r => r.a));
   const bar = () => p.evaluate(() => { const e = document.getElementById('undoBar'); return e && !e.hidden ? document.getElementById('undoTxt').textContent : ''; });
   const tapUndo = async () => { await p.evaluate(() => document.getElementById('undoGo').click()); await w(900); };
@@ -115,6 +115,17 @@ const BUILD = process.env.BUILD || process.env.PAGE || '/home/claude/work/money-
     ck(`ACT ${name}: the pay typed since stays 290,000`, await p.evaluate(() => JSON.stringify(__t.S.steps.a)) === JSON.stringify([{ from: '2026-11', v: 290000 }]));
     ck(`ACT ${name}: the receipt logged since stays`, await p.evaluate(n => __t.S.receipts.some(r => r.n === n), 'Made-up after ' + name));
   }
+
+  /* 7c. a card or loan removed from Plan, Burrows: the copy is kept after the removal, so Undo knows what to bring back */
+  await clean();
+  await p.evaluate(() => { __t.S.plan.debts = [{ id: 'dz1', name: 'Made-up loan', balance: 60000, apr: 12, min: 3000 }]; __t.persist(); __t.restructure(); }); await w(500);
+  await lateUndo('loan removed', 2626, async () => {
+    await L.tab(p, 'tab-month'); await L.clickText(p, 'Burrows'); await w(500);
+    await p.evaluate(() => document.querySelector('[data-dedit="dz1"]').click()); await w(500);
+    await p.evaluate(() => document.querySelector('.dform [data-ddel]').click()); await w(300); await p.evaluate(() => document.querySelector('.dform [data-ddel]').click());
+  }, /Made-up loan was removed\. You can undo until/);
+  ck('loan removed: the loan is back', await p.evaluate(() => (__t.S.plan.debts || []).some(d => d.id === 'dz1')));
+  await L.tab(p, 'tab-month'); await L.clickText(p, 'Month'); await w(300);
 
   /* 8. a receipt the change added itself, edited since: Undo asks and names it before taking it out */
   await clean();
