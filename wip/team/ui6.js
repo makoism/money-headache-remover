@@ -601,6 +601,8 @@ function homeV1() {
 
 /* ---------- add a goal: what, how much, by when ---------- */
 let GW = null;
+/* a name stops at 60 letters: from 50 on the box says how many, so a long name is never cut without a word (QC round 11 layout 2) */
+const gwNameCount = v => { const n = String(v || '').length; return n >= 60 ? '60 of 60 letters. The name is full.' : n >= 50 ? `${n} of 60 letters.` : ''; };
 const GW_QUICK = [['6 months', 6], ['1 year', 12], ['2 years', 23], ['No date', 0]];
 const gwKinds = () => GOAL_KINDS.filter(k => !(k.em && S.plan.goals.some(g => g.emergency)));
 function gwDate(months) { const d = new Date(); d.setMonth(d.getMonth() + months); let s = ymd(d); const hi = END + '-28'; if (s > hi) s = hi; return s; }
@@ -653,7 +655,7 @@ function paintGW() {
   if (g.step === 0) {
     t = 'Goal type';
     body = `<div class="gw-chips" role="group" aria-label="Goal type">${gwKinds().map(x => `<button type="button" class="gw-chip${k && k.k === x.k ? ' on' : ''}" data-kind="${x.k}" aria-pressed="${!!(k && k.k === x.k)}"><b>${x.pick}</b><span>${x.hint}</span></button>`).join('')}</div>
-      <div class="field"><label for="gwName">Name</label><input class="txt" id="gwName" type="text" maxlength="60" value="${esc(g.name)}" placeholder="${esc(S.plan.goals.some(x => /japan trip/i.test(x.name)) ? 'Name it' : 'Japan trip')}"></div>
+      <div class="field"><label for="gwName">Name</label><input class="txt" id="gwName" type="text" maxlength="60" aria-describedby="gwNameN" value="${esc(g.name)}" placeholder="${esc(S.plan.goals.some(x => /japan trip/i.test(x.name)) ? 'Name it' : 'Japan trip')}"><p class="cap" id="gwNameN" aria-live="polite">${gwNameCount(g.name)}</p></div>
       <div class="field"><label for="gwWhy">Why (optional)</label><input class="txt" id="gwWhy" type="text" maxlength="80" value="${esc(g.why)}" placeholder="Why it matters, in your words"><p class="cap">It shows with the goal so you keep seeing why.</p></div>`;
   } else if (g.step === 1) {
     t = 'Amount';
@@ -691,7 +693,7 @@ function gwRefresh() {
 document.addEventListener('focusin', e => { const t = e.target, g = GW; if (!t || t.id !== 'gwName' || !g || !g.kind || t.value !== g.kind.name) return; t.select();   /* at once too, so typing that starts with the focus replaces it (QC round 11 novice) */ setTimeout(() => { if (document.activeElement === t && t.value === g.kind.name) t.select(); }, 0); });
 function gwInput(e) {
   const g = GW, t = e.target; if (!g) return;
-  if (t.id === 'gwName') g.name = t.value; else if (t.id === 'gwWhy') g.why = t.value; else if (t.id === 'gwCost') g.cost = t.value; else if (t.id === 'gwSaved') g.saved = t.value;
+  if (t.id === 'gwName') { g.name = t.value; const nc = $('#gwNameN'); if (nc) nc.textContent = gwNameCount(t.value); } else if (t.id === 'gwWhy') g.why = t.value; else if (t.id === 'gwCost') g.cost = t.value; else if (t.id === 'gwSaved') g.saved = t.value;
   else if (t.id === 'gwDue') { g.due = t.value; $$('.gw-quick .chipbtn').forEach(b => { const q = +b.dataset.q; b.classList.toggle('on', q === 0 ? !g.due : g.due === gwDate(q)); }); }
   gwRefresh();
 }
