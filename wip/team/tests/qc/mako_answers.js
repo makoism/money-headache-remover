@@ -18,7 +18,7 @@ const allText = p => p.evaluate(() => document.body.innerText);
     for (let i = 0; i < 4; i++) { labels.push(await p.evaluate(() => { const t = document.getElementById('tourPart'), d = document.getElementById('tourDots'); return (t ? t.textContent : '') + ' | ' + (d ? d.getAttribute('aria-label') : ''); }));
       await p.evaluate(() => { const n = document.getElementById('tourNext'); n && n.click(); }); await w(700); }
     ck('(7) setup labels never say "of N" (' + labels.join(' / ') + ')', labels.every(s => s.trim() !== '|' && !/\bof \d/.test(s)), labels.join(' / '));
-    ck('(7) the step name is still shown', /Welcome/.test(labels[0]), labels[0]);
+    ck('(7) the step name is still shown', /Start/.test(labels[0]), labels[0]);
     ck('no page errors (setup)', errs.length === 0, errs.join(' | ')); await b.close(); }
 
   /* (1) (2) (3) (5) on a made-up dollar plan */

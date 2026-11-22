@@ -5664,7 +5664,8 @@ document.addEventListener('focusin', e => {
 /* ---------- the guided setup: one question at a time, written straight into the plan ----------
    Every screen saves as you type, so closing the tour half way loses nothing.
    Nothing here invents a number: a field you leave empty stays empty. */
-const PART = { welcome: 'Welcome', money: 'Money', bills: 'Bills', jars: 'Split', goals: 'Burrows', spend: 'Free to spend' };
+const PART = { welcome: 'Start',   /* not Welcome: the first step is titled Welcome, so the label never repeats it (QC round 12 novice 8) */
+   money: 'Money', bills: 'Bills', jars: 'Split', goals: 'Burrows', spend: 'Free to spend' };
 
 const inum = id => { const el = document.getElementById(id); return el ? num0(el.value) : 0; };
 const moneyField = (id, label, v, hint) => `<div class="field"><label for="${id}">${label}</label><div class="inp"><span class="yen cs"></span><input id="${id}" type="number" inputmode="decimal" min="0" step="any" aria-describedby="tourTitle" placeholder="${hint || 'Amount'}" value="${v !== '' && v != null && +v !== 0 && isFinite(+v) ? (Number.isInteger(+v) ? +v : (+v).toFixed(2)) : ''}"></div></div>`;   /* shows what was kept, as typed: a minus balance and the cents (QC round 4 money accuracy, data safety) */
