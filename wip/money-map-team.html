@@ -14158,6 +14158,8 @@ function keepDrop(e) {
   if (Array.isArray(S.ui.keeps)) { S.ui.keeps = S.ui.keeps.filter(x => x && x.t !== e.t); if (!S.ui.keep && S.ui.keeps.length) S.ui.keep = S.ui.keeps.shift(); if (!S.ui.keeps.length) delete S.ui.keeps; }   /* the next newest is the newest again */
 }
 function keepCopy(snap, why) {
+  /* the numbers are being replaced: a "Logged ..." line from before no longer matches them (QC round 11 data safety polish 2) */
+  ['#hMsg', '#rcMsg'].forEach(q => { const e = document.querySelector(q); if (e && /^Logged/.test(e.textContent)) e.textContent = ''; });
   const all = keepAll(), t = Math.max(Date.now(), all.length ? +all[0].t + 1 : 0);
   let d = null; try { d = keepDiff(JSON.parse(snap), S); } catch (er) { d = null; }
   /* the changes kept before this one keep their Undo until their own date; only what they changed is kept for them, not their full copy */
@@ -15144,7 +15146,7 @@ const COACH = {
      not on screen is skipped (QC round 6 north-star gate 4: it showed only Log spend) */
   home: [
     ['#hMap .mp-now', 'In your bank now', 'This is the one number that\'s real today. The rest of Home is your plan, worked out from the balance you gave in setup. Open your bank app and type what it shows. After that, tap Check your bank once a week.'],
-    ['#mpRooms', 'This month', 'This month\'s money, split by what it\'s for. Bills and basics come first. Free to spend is what\'s left for you. Tap a room to see how its number is worked out.'],
+    ['#mpRooms', 'This month', 'This month\'s money, split by what it\'s for. Bills and basics come first. Free to spend is what\'s left for you. Tap Bills and basics or Free to spend to see how it is worked out.'],
     ['#hMap .mp-where', 'Where your money sits', 'All your money at the end of the month in one bar: the bank and each burrow. A bigger piece holds more. The list under it gives each amount.'],
     ['#hMap .mp-four li:nth-child(1)', 'Total', 'Everything you\'ll have at the end of the month, bank and burrows together. Planned means it\'s what your plan expects, not what\'s there today. If Total grows each month, you\'re getting ahead.'],
     ['#hMap .mp-four li:nth-child(2)', 'Free to spend', 'What\'s left this month for whatever you want. Bills and saving are already taken out. Planned means the plan has room for it. Safe to spend means your bank has the money now too. If it says not safe to spend yet, wait for your pay or check your bank.'],
@@ -15169,19 +15171,19 @@ const COACH = {
   ],
   receipts: [
     ['#scan', 'Scan receipts', 'Send your receipt photos to an AI app, paste its reply here, and check each one before it is added.'],
-    ['#rcForm', 'Manual entry', 'Type the date, amount and category. If you\'re not sure of the category pick Other and change it later.'],
-    ['#rcMonthCard', 'Plan vs spend', 'What you planned, what you spent and what\'s left in each category'],
+    ['#rcForm', 'Log spend', 'Type the date, amount and category. If you\'re not sure of the category pick Other and change it later.'],
+    ['#rcMonthCard', 'Plan and spending', 'What you planned, what you spent and what\'s left in each category.'],
     ['#rcRemind', 'Reminder', 'Pick a schedule, then add a repeating calendar event.'],
   ],
   goals: [
     ['#goalCards .gcard', 'Goal', 'The bar shows how full it should be by now if you stick to the plan. Edit goal changes the name, amount or date.'],
-    ['#addGoalBtn', 'Add a burrow', 'Three steps: you pick the type, the goal amount and the date'],
-    ['#chartbox', 'Forecast', 'This shows every goal month by month. Hover over a month or tap it to read it.'],
+    ['#addGoalBtn', 'Add a burrow', 'Three steps: you pick the type, the goal amount and the date.'],
+    ['#chartbox', 'Forecast', 'This shows every goal month by month. Tap a month to read it.'],
   ],
   month: [
     ['#hero', 'Free to spend', 'The big number is this month\'s Free to spend and it\'s yours to spend on whatever you want'],
-    ['#where', 'Pay by place', 'Your pay split into six places. Hover over a colour or tap it to see the amount.'],
-    ['#ledger', 'Details', 'Tap a row to open it and enter a new amount. It only changes this month unless you choose Keep for later months.'],
+    ['#where', 'Pay by place', 'Your pay split by place. Tap a colour to see its amount.'],
+    ['#ledger', 'Details', 'Tap an amount to change it for this month only. Tap a name to open it.'],
   ],
   months: [
     ['#monthTable', 'All months', 'Tap a month to open it. Short means your balance falls under the minimum that month.'],

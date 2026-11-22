@@ -473,6 +473,8 @@ function keepDrop(e) {
   if (Array.isArray(S.ui.keeps)) { S.ui.keeps = S.ui.keeps.filter(x => x && x.t !== e.t); if (!S.ui.keep && S.ui.keeps.length) S.ui.keep = S.ui.keeps.shift(); if (!S.ui.keeps.length) delete S.ui.keeps; }   /* the next newest is the newest again */
 }
 function keepCopy(snap, why) {
+  /* the numbers are being replaced: a "Logged ..." line from before no longer matches them (QC round 11 data safety polish 2) */
+  ['#hMsg', '#rcMsg'].forEach(q => { const e = document.querySelector(q); if (e && /^Logged/.test(e.textContent)) e.textContent = ''; });
   const all = keepAll(), t = Math.max(Date.now(), all.length ? +all[0].t + 1 : 0);
   let d = null; try { d = keepDiff(JSON.parse(snap), S); } catch (er) { d = null; }
   /* the changes kept before this one keep their Undo until their own date; only what they changed is kept for them, not their full copy */
