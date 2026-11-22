@@ -171,6 +171,11 @@ When the same question came from several reviewers, it is one entry here and the
 - **Also.** A first name of only digits ("250000") is accepted and greeted. Warn, or leave.
 - **Sources.** `qc_round10/regression.md`.
 
+### 1.24 New Undo words (QC round 10 data safety fixes)
+- **Now.** Undo after a reload brings back only what the change changed and keeps everything done since. When something done since would have to go, the first tap asks: "Undo also removes what you did since: 1 receipt (¥4,000). Tap Undo again to go ahead." Each kept change keeps its own Undo until its own date; the bar adds "2 earlier changes can be undone after it." and Settings lists each with its own Undo. After a receipt edit: "Saved ¥5,000: Free to spend. Undo puts back ¥50,000."
+- **Check on your run.** Are these words clear? Open notes: an in-visit Undo on Add money or the assistant still restores its fields as a whole (receipts stay); past 30 kept changes in 3 days the oldest is pushed out, and only line, burrow and card removals warn.
+- **Sources.** `qc_round10/data_safety.md`, helper/r10-undo.
+
 ## 2. Words and glossary
 
 Your earlier copy pass list still stands: `COPY_QC8_FOR_MAKO.md` has about 40 lines with a rewrite each. Say which ones you want. The questions below are the "one word per thing" choices on top of that.
