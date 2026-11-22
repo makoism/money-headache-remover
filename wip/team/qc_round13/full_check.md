@@ -7,3 +7,23 @@ Run on f7ce6e6. Result: SOMETHING FAILED. Each failure, its cause and what was d
 - qc23_cents_line: the Receipts Other row now shows a Plan cell of 0 (round 12 numbers should-fix 5). Expectation updated in 27f9990. All pass.
 - act_keep: different action each run ("tx", then "removeLine"), with the note "the clock could not be moved on for a reload". Timing. All pass on rerun.
 - guard: idle CPU on goals 1.56% against a 1.5% limit. Timing. Fast check passes (ALL GOOD on e0b943f).
+
+## Full check 2 on 36b6a5d (after round 13 fixes), raw tail
+```
+PASS lines: 494
+== installable app (service worker, offline, update offer)
+PASS service worker is active
+PASS Chrome finds nothing blocking install
+PASS manifest parses with name and icons
+PASS your name was saved before going offline
+PASS page loads with no network
+PASS your saved data is still there offline
+PASS and the tour does not come back
+PASS a newer version offers a reload (the page is not forced)
+PASS after Reload the page is up and the offer is gone
+PASS no page errors
+
+ALL GOOD
+EXIT 0
+```
+ART CHECK PASS (artcheck.sh on 36b6a5d)
