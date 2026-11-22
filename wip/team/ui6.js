@@ -165,13 +165,15 @@ function renderStatus() {
   /* the next three months, so one tight month ahead is never a surprise */
   let ahead = '';
   if (cls && !sampleOn()) {
-    const i0 = MONTHS.indexOf(V.ym), bad = [];
+    const i0 = MONTHS.indexOf(V.ym), bad = []; let zAhead = null;
     const said = x => `${monthLabel(x, true)}${x.slice(0, 4) !== V.ym.slice(0, 4) && MONTHS.indexOf(x) - i0 > 3 ? ' ' + x.slice(0, 4) : ''}`;
-    for (let k = 1; k <= 3 && i0 >= 0 && i0 + k < MONTHS.length; k++) { const x = MONTHS[i0 + k], mx = C.byYm[x]; if (!mx) continue; const st = statusOf(S, mx); if (st === 'short') bad.push(`${said(x)} ${mx.bankEnd < 0 ? 'ends below zero' : mx.left < 0 ? 'is short' : 'ends under your minimum'}`); else if (st === 'tight') bad.push(`${said(x)} is tight`); }
+    for (let k = 1; k <= 3 && i0 >= 0 && i0 + k < MONTHS.length; k++) { const x = MONTHS[i0 + k], mx = C.byYm[x]; if (!mx) continue; const st = statusOf(S, mx); if (st === 'short') { bad.push(`${said(x)} ${mx.bankEnd < 0 ? 'ends below zero' : mx.left < 0 ? 'is short' : 'ends under your minimum'}`); if (mx.bankEnd < 0 && !zAhead) zAhead = { name: said(x), end: mx.bankEnd }; } else if (st === 'tight') bad.push(`${said(x)} is tight`); }
     /* nothing in the next three months: the first later month that ends below zero or under the minimum is still named (QC round 4 north-star 3) */
     /* a month more than three months away reads "Later on", not "Coming up" (QC round 6 regression, confusing 1: Jun 2028 under "You are okay" read as soon) */
     let later = false;
     if (!bad.length && i0 >= 0) for (let k = 4; i0 + k < MONTHS.length; k++) { const x = MONTHS[i0 + k], mx = C.byYm[x]; if (mx && statusOf(S, mx) === 'short') { later = true; bad.push(`${said(x)} ${mx.bankEnd < 0 ? 'ends below zero' : mx.left < 0 ? 'is short' : 'ends under your minimum'}`); break; } }
+    /* a month in the next three that ends below zero: this month is never "You are okay" above it (QC round 11 north-star B2) */
+    if (zAhead && word === 'You are okay') { word = `${zAhead.name} ends below zero`; cls = 'tight'; line = `${mon} is covered, but your bank would end ${zAhead.name} at ${fmt2(zAhead.end)}. Money spent now leaves less for ${zAhead.name}. ` + line; }
     if (i0 >= 0 && i0 + 1 < MONTHS.length && !(m.over > 0.004 && !bad.length) && !(negStart && !bad.length) && !(nowNeg && !bad.length)) ahead = `<p class="hst-w${bad.length ? ' warn' : ' on'}">${bad.length ? (later ? 'Later on: ' : 'Coming up: ') + bad.join(', ') + '. Open Plan to see why.' : 'The next 3 months look fine.'}</p>`;
   }
   put(el, `<span class="chip ${cls}">${cls === 'good' ? IC.ok : cls ? IC.warn : ''}${word}</span><p class="hst-l">${line}</p>${ahead}${wk}${m.inflow > 0 && !sampleOn() ? '<p class="cap hs-more"><button type="button" class="link" data-why="status">How is this worked out?</button></p>' : ''}`);
