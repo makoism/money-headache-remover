@@ -97,6 +97,25 @@ const BUILD = process.env.BUILD || process.env.PAGE || '/home/claude/work/money-
     ck('ACT removal: the pay typed since stays 280,000', JSON.stringify(s.pay) === JSON.stringify([{ from: '2026-11', v: 280000 }]), s.pay);
     ck('ACT removal: the receipt logged since stays', (await rcs()).indexOf(2323) >= 0, await rcs()); }
 
+  /* 7b. the other removals through the ACT door (act_keep.js lists them): each, then a new pay and a receipt, a reload, Undo */
+  for (const [name, setup, call, back] of [
+    ['removeCard', () => __t.ACT.setCard(null, { name: 'Made-up card', owed: 42000, payDay: 10 }), () => __t.ACT.removeCard(__t.S.cards[0].id), () => (__t.S.cards || []).some(k => k.name === 'Made-up card')],
+    ['removeReceipts', () => __t.ACT.addReceipts([{ d: '2026-11-10', a: 8888, c: 'envelope', n: 'Made-up to delete' }]), () => __t.ACT.removeReceipts([__t.S.receipts.find(r => r.n === 'Made-up to delete').id]), () => __t.S.receipts.some(r => r.n === 'Made-up to delete')],
+    ['removeGoal', () => 0, () => __t.ACT.removeGoal('trip1'), () => __t.S.plan.goals.some(g => g.id === 'trip1')],
+  ]) {
+    await clean();
+    await p.evaluate(setup.toString().replace(/^\(\) => /, '')); await w(300); await clean();
+    await p.evaluate(call.toString().replace(/^\(\) => /, '')); await w(300); await closeBar();
+    await p.evaluate(() => __t.ACT.setPay(290000)); await L.rc(p, 1717, 'envelope', null, 'Made-up after ' + name);
+    await reload();
+    ck(`ACT ${name}: after a reload Undo is offered`, !!(await bar()), await bar());
+    await tapUndo();
+    const s = await p.evaluate(back.toString().replace(/^\(\) => /, ''));
+    ck(`ACT ${name}: Undo brings it back`, s === true, s);
+    ck(`ACT ${name}: the pay typed since stays 290,000`, await p.evaluate(() => JSON.stringify(__t.S.steps.a)) === JSON.stringify([{ from: '2026-11', v: 290000 }]));
+    ck(`ACT ${name}: the receipt logged since stays`, await p.evaluate(n => __t.S.receipts.some(r => r.n === n), 'Made-up after ' + name));
+  }
+
   /* 8. a receipt the change added itself, edited since: Undo asks and names it before taking it out */
   await clean();
   { await p.evaluate(() => __t.ACT.tx('assistant', () => { __t.ACT.addReceipts([{ d: '2026-11-20', a: 4444, c: 'envelope', n: 'Made-up from Ask' }]); __t.ACT.setLine('bill:food', 45000); })); await w(400);
