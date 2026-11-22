@@ -1,0 +1,126 @@
+{
+  "life": "couple_cash",
+  "title": "Jun and Tess: a couple on one phone, three pay days, a joint bank, her e-wallet and household cash",
+  "story": "Jun and Tess live in the Philippines and share one phone for the app. Tess is paid 15,000 on the 10th into her own e-wallet. Jun is paid 10,000 on the 15th and 10,000 on the 30th (last day in a short month) into their joint bank. Pay moves to the working day before. Rent comes from the joint bank, power is paid in cash at a payment centre, Tess's phone from her e-wallet. Jun has a card closing on the 5th and paid in full from the joint bank on the 25th of the same month. In January a savings circle (paluwagan) pays out 6,000 in cash: money in, but not pay. Set up on Tue 1 Dec 2026, after the 1 Dec rent went out. Every amount is made up.",
+  "currency": "PHP",
+  "window": { "from": "2026-12-01", "to": "2027-02-28" },
+  "holidays": {
+    "country": "PH",
+    "dates": [
+      { "date": "2026-12-08", "name": "Feast of the Immaculate Conception" },
+      { "date": "2026-12-24", "name": "Christmas Eve" },
+      { "date": "2026-12-25", "name": "Christmas Day" },
+      { "date": "2026-12-30", "name": "Rizal Day" },
+      { "date": "2026-12-31", "name": "Last day of the year" },
+      { "date": "2027-01-01", "name": "New Year's Day" }
+    ],
+    "bank_closed": []
+  },
+  "accounts": [
+    { "id": "joint", "name": "Joint bank", "kind": "bank", "currency": "PHP", "owner": ["Jun", "Tess"], "minimum": 1000,
+      "opening": { "date": "2026-12-01", "amount": 25000, "note": "The 1 Dec rent already went out." } },
+    { "id": "tess_wallet", "name": "Tess's e-wallet", "kind": "ewallet", "currency": "PHP", "owner": "Tess", "minimum": 0, "opening": { "date": "2026-12-01", "amount": 3000 } },
+    { "id": "cash", "name": "Household cash", "kind": "cash", "currency": "PHP", "owner": ["Jun", "Tess"], "minimum": 0, "opening": { "date": "2026-12-01", "amount": 4000 } },
+    { "id": "jun_card", "name": "Jun's card", "kind": "card", "currency": "PHP", "owner": "Jun",
+      "statement_close_day": 5,
+      "payment": { "day": 25, "months_after_close": 0, "from": "joint", "pays": "in full", "weekend_holiday": "move later" },
+      "opening": { "date": "2026-12-01",
+        "statement": { "closed": "2026-11-05", "amount": 4000, "payment_item": "jun_card@2026-11-25", "paid": true },
+        "current": 3500, "note": "November's statement was paid 25 Nov. 3,500 posted since 6 Nov." } }
+  ],
+  "income": [
+    { "id": "tess_pay", "name": "Tess's pay", "account": "tess_wallet", "owner": "Tess", "currency": "PHP", "amount": 15000,
+      "schedule": { "frequency": "monthly", "day": 10 }, "weekend_holiday": "move earlier", "starts_period": true },
+    { "id": "jun_pay", "name": "Jun's pay", "account": "joint", "owner": "Jun", "currency": "PHP",
+      "schedule": { "frequency": "monthly", "days": [15, 30], "short_month": "last day" },
+      "amount_by_day": { "15": 10000, "30": 10000 },
+      "weekend_holiday": "move earlier", "starts_period": true }
+  ],
+  "bills": [
+    { "id": "rent", "name": "Rent", "account": "joint", "amount": 9000, "schedule": { "frequency": "monthly", "day": 1 }, "weekend_holiday": "move later" },
+    { "id": "power", "name": "Power (paid in cash)", "account": "cash", "amount": 2000, "schedule": { "frequency": "monthly", "day": 20 }, "weekend_holiday": "move later" },
+    { "id": "tess_phone", "name": "Tess's phone", "account": "tess_wallet", "amount": 800, "owner": "Tess", "schedule": { "frequency": "monthly", "day": 12 }, "weekend_holiday": "none" }
+  ],
+  "goals": [],
+  "landing_dates": {
+    "tess_pay": { "2026-12-10": "2026-12-10", "2027-01-10": "2027-01-08", "2027-02-10": "2027-02-10" },
+    "jun_pay": { "2026-12-15": "2026-12-15", "2026-12-30": "2026-12-29", "2027-01-15": "2027-01-15", "2027-01-30": "2027-01-29", "2027-02-15": "2027-02-15", "2027-02-28": "2027-02-26" },
+    "rent": { "2027-01-01": "2027-01-04", "2027-02-01": "2027-02-01" },
+    "power": { "2026-12-20": "2026-12-21", "2027-01-20": "2027-01-20", "2027-02-20": "2027-02-22" },
+    "tess_phone": { "2026-12-12": "2026-12-12", "2027-01-12": "2027-01-12", "2027-02-12": "2027-02-12" },
+    "jun_card": { "2026-12-25": "2026-12-28", "2027-01-25": "2027-01-25", "2027-02-25": "2027-02-25" }
+  },
+  "events": [
+    { "id": "j01", "date": "2026-12-03", "kind": "spend", "account": "cash", "amount": 1500, "owner": "Tess" },
+    { "id": "j02", "date": "2026-12-04", "kind": "spend", "account": "jun_card", "amount": 2000, "owner": "Jun" },
+    { "id": "j03", "date": "2026-12-10", "kind": "pay_in", "account": "tess_wallet", "amount": 15000, "settles": "tess_pay@2026-12-10" },
+    { "id": "j04", "date": "2026-12-11", "kind": "transfer", "from": "tess_wallet", "to": "joint", "amount": 10000, "note": "Tess's share of the household money" },
+    { "id": "j05", "date": "2026-12-12", "kind": "bill_paid", "account": "tess_wallet", "amount": 800, "settles": "tess_phone@2026-12-12" },
+    { "id": "j06", "date": "2026-12-15", "kind": "pay_in", "account": "joint", "amount": 10000, "settles": "jun_pay@2026-12-15" },
+    { "id": "j07", "date": "2026-12-16", "kind": "transfer", "from": "joint", "to": "cash", "amount": 4000, "note": "ATM" },
+    { "id": "j08", "date": "2026-12-21", "kind": "bill_paid", "account": "cash", "amount": 2000, "settles": "power@2026-12-20", "note": "20 Dec is a Sunday" },
+    { "id": "j09", "date": "2026-12-24", "kind": "spend", "account": "jun_card", "amount": 3000, "owner": "Jun" },
+    { "id": "j10", "date": "2026-12-28", "kind": "card_payment", "from": "joint", "card": "jun_card", "amount": 5500, "settles": "jun_card@2026-12-25", "note": "25 Dec holiday, then a weekend" },
+    { "id": "j11", "date": "2026-12-29", "kind": "pay_in", "account": "joint", "amount": 10000, "settles": "jun_pay@2026-12-30", "note": "30 Dec is Rizal Day" },
+    { "id": "j12", "date": "2027-01-04", "kind": "bill_paid", "account": "joint", "amount": 9000, "settles": "rent@2027-01-01" },
+    { "id": "j13", "date": "2027-01-08", "kind": "pay_in", "account": "tess_wallet", "amount": 15000, "settles": "tess_pay@2027-01-10", "note": "10 Jan is a Sunday" },
+    { "id": "j14", "date": "2027-01-09", "kind": "money_in", "account": "cash", "amount": 6000, "note": "savings circle payout; not a pay" },
+    { "id": "j15", "date": "2027-01-12", "kind": "bill_paid", "account": "tess_wallet", "amount": 800, "settles": "tess_phone@2027-01-12" },
+    { "id": "j16", "date": "2027-01-15", "kind": "pay_in", "account": "joint", "amount": 10000, "settles": "jun_pay@2027-01-15" },
+    { "id": "j17", "date": "2027-01-20", "kind": "bill_paid", "account": "cash", "amount": 2000, "settles": "power@2027-01-20" },
+    { "id": "j18", "date": "2027-01-25", "kind": "card_payment", "from": "joint", "card": "jun_card", "amount": 3000, "settles": "jun_card@2027-01-25" },
+    { "id": "j19", "date": "2027-01-29", "kind": "pay_in", "account": "joint", "amount": 10000, "settles": "jun_pay@2027-01-30" },
+    { "id": "j20", "date": "2027-02-01", "kind": "bill_paid", "account": "joint", "amount": 9000, "settles": "rent@2027-02-01" },
+    { "id": "j21", "date": "2027-02-10", "kind": "pay_in", "account": "tess_wallet", "amount": 15000, "settles": "tess_pay@2027-02-10" },
+    { "id": "j22", "date": "2027-02-12", "kind": "bill_paid", "account": "tess_wallet", "amount": 800, "settles": "tess_phone@2027-02-12" },
+    { "id": "j23", "date": "2027-02-15", "kind": "pay_in", "account": "joint", "amount": 10000, "settles": "jun_pay@2027-02-15" },
+    { "id": "j24", "date": "2027-02-22", "kind": "bill_paid", "account": "cash", "amount": 2000, "settles": "power@2027-02-20" }
+  ],
+  "card_statements": {
+    "jun_card": [
+      { "closed": "2026-12-05", "amount": 5500, "why": "3,500 (posted 6 Nov to 1 Dec) + 2,000 (4 Dec) = 5,500", "payment_lands": "2026-12-28" },
+      { "closed": "2027-01-05", "amount": 3000, "why": "3,000 (24 Dec) = 3,000", "payment_lands": "2027-01-25" },
+      { "closed": "2027-02-05", "amount": 0, "why": "none = 0", "payment_lands": "2027-02-25" }
+    ]
+  },
+  "asks": [
+    { "id": "couple-01", "date": "2026-12-01", "question": "bank_today", "account": "joint", "expected": 25000, "why": "25,000 (opening) = 25,000" },
+    { "id": "couple-02", "date": "2026-12-01", "question": "bank_today", "account": "tess_wallet", "expected": 3000, "why": "3,000 (opening) = 3,000" },
+    { "id": "couple-03", "date": "2026-12-01", "question": "bank_today", "account": "cash", "expected": 4000, "why": "4,000 (opening) = 4,000" },
+    { "id": "couple-04", "date": "2026-12-01", "question": "total", "expected": 32000, "why": "25,000 (joint) + 3,000 (Tess's e-wallet) + 4,000 (cash) = 32,000", "rule_questions": ["Q10", "Q12"] },
+    { "id": "couple-05", "date": "2026-12-01", "question": "days_to_next_pay", "expected": { "days": 9, "next_pay": "2026-12-10", "item": "tess_pay@2026-12-10" },
+      "why": "2026-12-10 - 2026-12-01 = 9", "note": "Both streams start a period, so the next pay is whichever lands first: Tess's.", "rule_questions": ["Q12"] },
+    { "id": "couple-06", "date": "2026-12-01", "question": "safe_to_spend", "account": "joint", "expected": 20500,
+      "why": "25,000 (joint) - 3,500 (Jun's card owed, paid from the joint bank) - 1,000 (minimum) = 20,500",
+      "note": "The joint bank's walk is bounded by the next pay into it (Jun, 15 Dec) and reaches rent on 4 Jan; Jun's 15 and 29 Dec pays land before rent, so the lowest point is today.", "rule_questions": ["Q12", "Q9"] },
+    { "id": "couple-07", "date": "2026-12-01", "question": "safe_to_spend", "account": "cash", "expected": 2000,
+      "why": "4,000 (cash) - 2,000 (power, due Sun 20 Dec, lands Mon 21 Dec) - 0 (minimum) = 2,000", "rule_questions": ["Q9"] },
+    { "id": "couple-08", "date": "2026-12-01", "question": "due_before_next_pay", "expected": { "items": [], "total": 0 }, "why": "none = 0",
+      "note": "Nothing from any account lands 1 to 9 Dec. The 1 Dec rent is in the opening.", "rule_questions": ["Q12"] },
+    { "id": "couple-09", "date": "2026-12-01", "question": "card_due", "account": "jun_card", "expected": { "amount": 3500, "payment_date": "2026-12-28", "statement": "open", "closes_on": "2026-12-05" },
+      "why": "3,500 (posted so far this cycle) = 3,500", "note": "Due Fri 25 Dec, a holiday, then a weekend: lands Mon 28 Dec.", "rule_questions": ["Q7"] },
+
+    { "id": "couple-10", "date": "2026-12-16", "question": "total", "expected": 54700,
+      "why": "41,000 (joint: 25,000 + 10,000 from Tess + 10,000 Jun's pay - 4,000 ATM) + 7,200 (Tess's e-wallet: 3,000 + 15,000 - 10,000 - 800) + 6,500 (cash: 4,000 - 1,500 + 4,000) = 54,700", "rule_questions": ["Q10"] },
+    { "id": "couple-11", "date": "2026-12-16", "question": "bank_today", "account": "joint", "expected": 41000, "why": "25,000 (opening) + 10,000 (from Tess 11 Dec) + 10,000 (Jun's pay 15 Dec) - 4,000 (ATM 16 Dec) = 41,000" },
+    { "id": "couple-12", "date": "2026-12-16", "question": "days_to_next_pay", "expected": { "days": 13, "next_pay": "2026-12-29", "item": "jun_pay@2026-12-30" },
+      "why": "2026-12-29 - 2026-12-16 = 13", "note": "30 Dec is Rizal Day; Jun's pay lands Tue 29 Dec, before Tess's (8 Jan).", "rule_questions": ["Q12"] },
+    { "id": "couple-13", "date": "2026-12-16", "question": "due_before_next_pay",
+      "expected": { "items": [
+        { "item": "power@2026-12-20", "lands": "2026-12-21", "amount": 2000, "account": "cash" },
+        { "item": "jun_card@2026-12-25", "lands": "2026-12-28", "amount": 5500, "account": "joint" } ], "total": 7500 },
+      "why": "2,000 (power, cash) + 5,500 (Jun's card, joint bank) = 7,500", "rule_questions": ["Q21"] },
+    { "id": "couple-14", "date": "2026-12-16", "question": "safe_to_spend", "account": "joint", "expected": 34500,
+      "why": "41,000 (joint) - 5,500 (Jun's card owed: the 5 Dec statement) - 1,000 (minimum) = 34,500",
+      "note": "Rent on 4 Jan comes after Jun's 29 Dec pay, so the lowest point is today.", "rule_questions": ["Q12", "Q9"] },
+    { "id": "couple-15", "date": "2026-12-16", "question": "card_due", "account": "jun_card", "expected": { "amount": 5500, "payment_date": "2026-12-28", "statement": "closed", "closed_on": "2026-12-05" },
+      "why": "3,500 (posted 6 Nov to 1 Dec) + 2,000 (4 Dec) = 5,500" },
+
+    { "id": "couple-16", "date": "2027-01-09", "question": "total", "expected": 69200,
+      "why": "36,500 (joint: 41,000 - 5,500 card + 10,000 Jun's pay - 9,000 rent) + 22,200 (Tess's e-wallet: 7,200 + 15,000) + 10,500 (cash: 6,500 - 2,000 power + 6,000 payout) = 69,200",
+      "note": "The savings circle payout is money in, so it is in the total, but it is not a pay and starts no period.", "rule_questions": ["Q10"] },
+    { "id": "couple-17", "date": "2027-01-09", "question": "days_to_next_pay", "expected": { "days": 6, "next_pay": "2027-01-15", "item": "jun_pay@2027-01-15" },
+      "why": "2027-01-15 - 2027-01-09 = 6", "note": "Tess's pay for 10 Jan landed Fri 8 Jan and is settled.", "rule_questions": ["Q12"] },
+    { "id": "couple-18", "date": "2027-01-09", "question": "not_seen_yet", "expected": { "items": [], "money_in": 0, "money_out": 0 }, "why": { "money_in": "none = 0", "money_out": "none = 0" } }
+  ]
+}

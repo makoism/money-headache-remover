@@ -1,0 +1,113 @@
+{
+  "life": "freelancer",
+  "title": "Bea: freelancer with no fixed pay day, a zero month, four accounts including dollars in an e-wallet",
+  "story": "Bea is a freelancer in the Philippines. Clients pay when they pay: some in pesos into her bank, some in dollars into a dollar e-wallet (Wise style), which she converts when she needs to. January brings nothing at all. Money sits in four places: bank (pesos), e-wallet (pesos, GCash style), cash, and the dollar e-wallet. Rent comes from the bank, internet from the peso e-wallet. One card, closing on the 25th and paid in full from the bank on the 15th of the next month. Set up on Tue 1 Dec 2026. Dollar amounts have cents; peso amounts here are whole. Every amount is made up.",
+  "currency": "PHP",
+  "window": { "from": "2026-12-01", "to": "2027-02-28" },
+  "holidays": {
+    "country": "PH",
+    "dates": [
+      { "date": "2026-12-08", "name": "Feast of the Immaculate Conception" },
+      { "date": "2026-12-24", "name": "Christmas Eve" },
+      { "date": "2026-12-25", "name": "Christmas Day" },
+      { "date": "2026-12-30", "name": "Rizal Day" },
+      { "date": "2026-12-31", "name": "Last day of the year" },
+      { "date": "2027-01-01", "name": "New Year's Day" }
+    ],
+    "bank_closed": []
+  },
+  "accounts": [
+    { "id": "bank", "name": "Bank", "kind": "bank", "currency": "PHP", "owner": "Bea", "minimum": 2000, "opening": { "date": "2026-12-01", "amount": 30000 } },
+    { "id": "ewallet", "name": "E-wallet (pesos)", "kind": "ewallet", "currency": "PHP", "owner": "Bea", "minimum": 0, "opening": { "date": "2026-12-01", "amount": 2000 } },
+    { "id": "cash", "name": "Cash", "kind": "cash", "currency": "PHP", "owner": "Bea", "minimum": 0, "opening": { "date": "2026-12-01", "amount": 3000 } },
+    { "id": "usd_wallet", "name": "Dollar e-wallet", "kind": "ewallet", "currency": "USD", "owner": "Bea", "minimum": 0, "opening": { "date": "2026-12-01", "amount": 500.00 } },
+    { "id": "card", "name": "Card", "kind": "card", "currency": "PHP", "owner": "Bea",
+      "statement_close_day": 25,
+      "payment": { "day": 15, "months_after_close": 1, "from": "bank", "pays": "in full", "weekend_holiday": "move later" },
+      "opening": { "date": "2026-12-01",
+        "statement": { "closed": "2026-11-25", "amount": 4000, "payment_item": "card@2026-12-15", "paid": false },
+        "current": 5000, "note": "4,000 statement plus 1,000 posted 26 Nov to 1 Dec." } }
+  ],
+  "income": [
+    { "id": "clients", "name": "Client work", "account": "any", "owner": "Bea", "currency": "PHP or USD",
+      "schedule": { "frequency": "none" }, "weekend_holiday": "none", "starts_period": false,
+      "note": "No fixed day and no fixed amount. The app expects no future pay from it. Money from it is recorded as money_in events with no item to settle." }
+  ],
+  "bills": [
+    { "id": "rent", "name": "Rent", "account": "bank", "amount": 10000, "schedule": { "frequency": "monthly", "day": 5 }, "weekend_holiday": "move later" },
+    { "id": "internet", "name": "Internet", "account": "ewallet", "amount": 1500, "schedule": { "frequency": "monthly", "day": 12 }, "weekend_holiday": "none" }
+  ],
+  "goals": [],
+  "landing_dates": {
+    "rent": { "2026-12-05": "2026-12-07", "2027-01-05": "2027-01-05", "2027-02-05": "2027-02-05" },
+    "internet": { "2026-12-12": "2026-12-12", "2027-01-12": "2027-01-12", "2027-02-12": "2027-02-12" },
+    "card": { "2026-12-15": "2026-12-15", "2027-01-15": "2027-01-15", "2027-02-15": "2027-02-15" }
+  },
+  "events": [
+    { "id": "f01", "date": "2026-12-03", "kind": "convert", "from": "usd_wallet", "to": "bank", "amount_out": 300.00, "amount_in": 17400, "note": "made-up rate, 58 pesos a dollar" },
+    { "id": "f02", "date": "2026-12-07", "kind": "bill_paid", "account": "bank", "amount": 10000, "settles": "rent@2026-12-05", "note": "5 Dec is a Saturday" },
+    { "id": "f03", "date": "2026-12-08", "kind": "transfer", "from": "bank", "to": "ewallet", "amount": 2000 },
+    { "id": "f04", "date": "2026-12-10", "kind": "spend", "account": "card", "amount": 3000 },
+    { "id": "f05", "date": "2026-12-12", "kind": "bill_paid", "account": "ewallet", "amount": 1500, "settles": "internet@2026-12-12" },
+    { "id": "f06", "date": "2026-12-15", "kind": "card_payment", "from": "bank", "card": "card", "amount": 4000, "settles": "card@2026-12-15" },
+    { "id": "f07", "date": "2026-12-18", "kind": "money_in", "account": "bank", "amount": 23500, "note": "a client pays in pesos" },
+    { "id": "f08", "date": "2026-12-20", "kind": "transfer", "from": "bank", "to": "cash", "amount": 5000, "note": "ATM" },
+    { "id": "f09", "date": "2026-12-22", "kind": "spend", "account": "cash", "amount": 4000 },
+    { "id": "f10", "date": "2026-12-26", "kind": "spend", "account": "card", "amount": 2000 },
+    { "id": "f11", "date": "2027-01-05", "kind": "bill_paid", "account": "bank", "amount": 10000, "settles": "rent@2027-01-05" },
+    { "id": "f12", "date": "2027-01-10", "kind": "spend", "account": "cash", "amount": 1000 },
+    { "id": "f13", "date": "2027-01-12", "kind": "bill_paid", "account": "ewallet", "amount": 1500, "settles": "internet@2027-01-12" },
+    { "id": "f14", "date": "2027-01-15", "kind": "card_payment", "from": "bank", "card": "card", "amount": 4000, "settles": "card@2027-01-15" },
+    { "id": "f15", "date": "2027-01-20", "kind": "refund", "account": "ewallet", "amount": 500, "note": "an online order sent back" },
+    { "id": "f16", "date": "2027-02-03", "kind": "money_in", "account": "usd_wallet", "amount": 600.00, "note": "a client pays in dollars" },
+    { "id": "f17", "date": "2027-02-05", "kind": "bill_paid", "account": "bank", "amount": 10000, "settles": "rent@2027-02-05" },
+    { "id": "f18", "date": "2027-02-12", "kind": "bill_paid", "account": "ewallet", "amount": 1500, "settles": "internet@2027-02-12" },
+    { "id": "f19", "date": "2027-02-15", "kind": "card_payment", "from": "bank", "card": "card", "amount": 2000, "settles": "card@2027-02-15" },
+    { "id": "f20", "date": "2027-02-20", "kind": "convert", "from": "usd_wallet", "to": "bank", "amount_out": 400.00, "amount_in": 23200, "note": "made-up rate, 58 pesos a dollar" }
+  ],
+  "card_statements": {
+    "card": [
+      { "closed": "2026-11-25", "amount": 4000, "why": "opening statement", "payment_lands": "2026-12-15" },
+      { "closed": "2026-12-25", "amount": 4000, "why": "1,000 (posted 26 Nov to 1 Dec) + 3,000 (10 Dec) = 4,000", "payment_lands": "2027-01-15" },
+      { "closed": "2027-01-25", "amount": 2000, "why": "2,000 (26 Dec) = 2,000", "payment_lands": "2027-02-15" }
+    ]
+  },
+  "asks": [
+    { "id": "freelance-01", "date": "2026-12-01", "question": "bank_today", "account": "bank", "expected": 30000, "why": "30,000 (opening) = 30,000" },
+    { "id": "freelance-02", "date": "2026-12-01", "question": "bank_today", "account": "ewallet", "expected": 2000, "why": "2,000 (opening) = 2,000" },
+    { "id": "freelance-03", "date": "2026-12-01", "question": "bank_today", "account": "cash", "expected": 3000, "why": "3,000 (opening) = 3,000" },
+    { "id": "freelance-04", "date": "2026-12-01", "question": "bank_today", "account": "usd_wallet", "expected": 500.00, "why": "500.00 (opening, dollars) = 500.00" },
+    { "id": "freelance-05", "date": "2026-12-01", "question": "total", "expected": 35000, "beside": { "USD": 500.00 },
+      "why": "30,000 (bank) + 2,000 (e-wallet) + 3,000 (cash) = 35,000", "note": "The 500.00 dollars are shown beside the total, not added in.", "rule_questions": ["Q10", "Q11"] },
+    { "id": "freelance-06", "date": "2026-12-01", "question": "days_to_next_pay", "expected": { "days": null }, "why": "no income stream has a date, so there is no next pay to count to", "rule_questions": ["Q13"] },
+    { "id": "freelance-07", "date": "2026-12-01", "question": "safe_to_spend", "account": "bank", "expected": 13000,
+      "why": "30,000 (bank) - 5,000 (card owed) - 10,000 (rent, due Sat 5 Dec, lands Mon 7 Dec) - 2,000 (minimum) = 13,000",
+      "note": "No pay is expected, so the walk runs only to each bank bill's next date (rent, 7 Dec) and counts no money in.", "rule_questions": ["Q13", "Q9"] },
+    { "id": "freelance-08", "date": "2026-12-01", "question": "safe_to_spend", "account": "ewallet", "expected": 500,
+      "why": "2,000 (e-wallet) - 1,500 (internet 12 Dec) - 0 (minimum) = 500", "rule_questions": ["Q13", "Q9"] },
+    { "id": "freelance-09", "date": "2026-12-01", "question": "card_due", "account": "card", "expected": { "amount": 4000, "payment_date": "2026-12-15", "statement": "closed", "closed_on": "2026-11-25" }, "why": "4,000 (statement closed 25 Nov) = 4,000" },
+
+    { "id": "freelance-10", "date": "2026-12-21", "question": "bank_today", "account": "bank", "expected": 49900,
+      "why": "30,000 (opening) + 17,400 (from dollars 3 Dec) - 10,000 (rent 7 Dec) - 2,000 (to the e-wallet 8 Dec) - 4,000 (card 15 Dec) + 23,500 (client 18 Dec) - 5,000 (ATM 20 Dec) = 49,900" },
+    { "id": "freelance-11", "date": "2026-12-21", "question": "total", "expected": 60400, "beside": { "USD": 200.00 },
+      "why": "49,900 (bank) + 2,500 (e-wallet: 2,000 + 2,000 - 1,500) + 8,000 (cash: 3,000 + 5,000) = 60,400", "rule_questions": ["Q10", "Q11"] },
+    { "id": "freelance-12", "date": "2026-12-21", "question": "safe_to_spend", "account": "bank", "expected": 33900,
+      "why": "49,900 (bank) - 4,000 (card owed: 1,000 + 3,000, statement not closed yet) - 10,000 (rent 5 Jan) - 2,000 (minimum) = 33,900", "rule_questions": ["Q13", "Q9"] },
+
+    { "id": "freelance-13", "date": "2027-01-31", "question": "total", "expected": 40400, "beside": { "USD": 200.00 },
+      "why": "35,900 (bank: 49,900 - 10,000 rent - 4,000 card) + 1,500 (e-wallet: 2,500 - 1,500 + 500 refund) + 3,000 (cash: 8,000 - 4,000 - 1,000) = 40,400",
+      "note": "Nothing came in during January.", "rule_questions": ["Q10", "Q11"] },
+    { "id": "freelance-14", "date": "2027-01-31", "question": "not_seen_yet", "expected": { "items": [], "money_in": 0, "money_out": 0 }, "why": { "money_in": "none = 0", "money_out": "none = 0" },
+      "note": "A month with no pay is not a missing pay: no pay was expected." },
+    { "id": "freelance-15", "date": "2027-01-31", "question": "safe_to_spend", "account": "bank", "expected": 21900,
+      "why": "35,900 (bank) - 2,000 (card owed: the 25 Jan statement) - 10,000 (rent 5 Feb) - 2,000 (minimum) = 21,900", "rule_questions": ["Q13", "Q9"] },
+    { "id": "freelance-16", "date": "2027-01-31", "question": "safe_to_spend", "account": "ewallet", "expected": 0,
+      "why": "1,500 (e-wallet) - 1,500 (internet 12 Feb) - 0 (minimum) = 0", "rule_questions": ["Q13", "Q9"] },
+    { "id": "freelance-17", "date": "2027-01-31", "question": "card_due", "account": "card", "expected": { "amount": 2000, "payment_date": "2027-02-15", "statement": "closed", "closed_on": "2027-01-25" }, "why": "2,000 (26 Dec) = 2,000" },
+    { "id": "freelance-18", "date": "2027-01-31", "question": "days_to_next_pay", "expected": { "days": null }, "why": "no income stream has a date", "rule_questions": ["Q13"] },
+
+    { "id": "freelance-19", "date": "2027-02-04", "question": "bank_today", "account": "usd_wallet", "expected": 800.00, "why": "500.00 (opening) - 300.00 (converted 3 Dec) + 600.00 (client 3 Feb) = 800.00" },
+    { "id": "freelance-20", "date": "2027-02-04", "question": "total", "expected": 40400, "beside": { "USD": 800.00 },
+      "why": "35,900 (bank) + 1,500 (e-wallet) + 3,000 (cash) = 40,400", "note": "Dollars that came in do not change the peso total until converted.", "rule_questions": ["Q10", "Q11"] }
+  ]
+}

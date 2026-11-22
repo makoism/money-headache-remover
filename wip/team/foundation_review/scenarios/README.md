@@ -1,0 +1,108 @@
+# Scenario specs: eight lives, worked by hand
+
+These files describe real-looking money lives and what the app should say on given days. They name no code, no saved fields and no functions, so any engine can be tested against them: load the accounts, schedules and events the app would know by the ask date, ask the question, compare with `expected`.
+
+Every amount is made up. Sums are kept round so each one can be checked by hand; the `why` on each ask shows the sum.
+
+Written 23 Nov 2026 from foundation_review/RECOMMENDATION.md, life_walks_salaried.md, life_walks_irregular.md, banking_reality.md, plan_review_1.md and DECISIONS.md ("Mako's own money").
+
+## Files
+
+| File | Life | Currency | Asks |
+|---|---|---|---|
+| mako_shape.json | Mako's shape: one bank, two cards paid in full on the 10th and 11th, two incomes on the 10th, a goal kept in the bank. Set up 20 Nov with pay in. January: pay Fri 8th, cards Tue 12th. | JPY | 42 |
+| halves_paylater.json | Carlo: paid 15th and 30th in unequal halves, a pay-later plan taken from his e-wallet, one pay paid early. | PHP | 32 |
+| every_two_weeks.json | Sam: paid every other Thursday, three pays in December, rent once a month bigger than a pay, insurance every three months. Cents. | USD | 21 |
+| weekly.json | Ramil: paid every Friday into an e-wallet, cash for spending, Christmas and New Year pays land early. | PHP | 18 |
+| freelancer.json | Bea: no fixed pay day, nothing in January, bank, e-wallet, cash and a dollar e-wallet. | PHP (+USD) | 20 |
+| setup_mid_month.json | Nell: sets up on the 20th after pay, rent and the card payment already went through. Deferred-debit card. Cents. | EUR | 15 |
+| couple_cash.json | Jun and Tess: one phone, three pay days across two people, joint bank, her e-wallet, household cash, a savings circle payout. | PHP | 18 |
+| away_three_weeks.json | Rina: does not open the app for three weeks; confirms what happened, then checks bank and card. | PHP | 14 |
+| check_specs.js | Checks every file's shape and that every `why` adds up to its expected figure. `node check_specs.js` | | |
+
+Total: 180 asks.
+
+## How to read a file
+
+- **accounts**: where money sits (bank, cash, e-wallet) and cards. Each has a currency, an owner and a minimum (the lowest the person wants it to go). Each has an **opening**: an amount on a date. A card opens with two figures: its last statement (closed on a date, amount, paid or not) and what is owed now in total.
+- **income** and **bills**: things that repeat. Each has an account, an amount, a schedule (day of month, days of month, every N weeks from a date, weekly, every N months, or none) and a weekend and holiday rule: move earlier, move later, or none. Income says whether it starts a new period.
+- **cards** also repeat: a statement close day (a day or "last") and a payment day, N months after the close, paid in full from an account, with the same weekend and holiday rule.
+- **holidays**: the holidays used, listed in the file so no table is needed. `bank_closed` days count as non-working too.
+- **landing_dates**: for each expected item, the day it is due (the item's name) and the day it really lands after the weekend and holiday rule. Worked out by hand; an engine should get the same.
+- **events**: what really happened, in date order: pay in, other money in, spends, refunds, bills paid, card payments, moves between own accounts, conversions, money set aside for a goal, and checks ("the bank shows X today"). An event that is an expected item names it in `settles`. If an event has `told`, the app only hears of it on that date (null: never).
+- **card_statements**: each card's statements worked out by hand, for checking. Not an input.
+- **asks**: a date, a question, the expected answer and a `why` sum. `at` is "end of day" unless it says "start of day". `rule_questions` points at the open questions below that the answer depends on. `alt` gives the answer under the other reading, where it differs.
+
+Item names are `<schedule>@<due date>`, using the due date before any move: the January card A payment is `card_a@2027-01-10` even though it lands on 12 Jan.
+
+## The questions asked
+
+- **bank_today** (per account): what the account holds at the ask time, from the latest check or opening plus the events since that the app knows of.
+- **safe_to_spend** (per account): see rule 9.
+- **days_to_next_pay**: days from the ask date to the landing date of the next pay that starts a period.
+- **due_before_next_pay**: expected bills and card payments, from any account, not yet settled, landing from the ask date up to the day before the next pay.
+- **not_seen_yet**: expected items (pay, bills, card payments) whose landing date is before the ask date and that nothing has settled. Money in and money out are added separately.
+- **card_due** (per card): the amount of the card's next payment and the day it lands. "closed" if the statement has closed; "open" with the amount posted so far if not.
+- **total**: everything held in the home currency, across non-card accounts. Other currencies are listed `beside` it.
+- **not_explained** (per account): the gap between what a check shows and what the app worked out from what it knew.
+
+## Rules used to work out the expected figures
+
+1. **Ask time.** An ask is at the end of its day, after every event dated that day, unless it says start of day.
+2. **Openings cover the past.** An opening amount on a date includes everything on or before that date. Expected items due on or before the opening date are settled by it: never late, never counted again.
+3. **Weekend and holiday rule.** Move earlier: the last working day before. Move later: the next working day after. None: stays. A working day is not a Saturday, Sunday, listed holiday or listed bank-closed day.
+4. **Settling.** An expected item is settled only by an event that names it. Landing early (Carlo's 23 Dec pay, Mako's 8 Jan pay) settles it; it is not expected again.
+5. **Bank today.** Latest check (or opening) plus the money in and out since, as far as the app has been told. Nothing expected is assumed to have happened.
+6. **A check** sets the account to the figure shown on its date. Any gap is "not explained"; it settles nothing.
+7. **Card statements.** A card line goes on the statement by its posting date (the buy date unless `posted` says otherwise). A statement closing on day C holds the lines posted after the last close up to and including C. A refund posted in a cycle lowers that cycle's statement. The close day never moves for weekends or holidays.
+8. **Card owed now** is the unpaid statement plus everything posted since its close.
+9. **Safe to spend, for one account:**
+   - start from bank today for that account;
+   - take off goal money kept in it;
+   - take off everything owed now on the cards paid from it (statement and new spending);
+   - then walk day by day from today to the latest of: the day before the next pay into this account, and the next landing date of each bill from this account. On the walk, count expected pay into the account (pay first on a day with both) and expected bills from it. Card payments are not walked again (they were taken off above). Planned goal set-asides are not walked;
+   - take the lowest point of the walk (today's starting point counts) and take off the account's minimum.
+   - The answer can be below zero: that is how short the account will be.
+10. **Late items** (past their landing date, not settled): a late bill still counts as going out on the first day of the walk; a late pay is not counted as coming in until it lands.
+11. **No fixed pay day.** No future pay is expected. The walk runs to each bill's next landing date only. Days to next pay has no answer.
+12. **Several accounts.** Safe to spend is given account by account. No single headline figure is given (see Q9).
+13. **Total** does not take off what is owed on cards. Card spending moves no money until the card is paid (as in the ledger design: "Total stays, Free to spend drops").
+14. **Other currencies** sit beside the total and are not added in until converted.
+
+## Open rule questions
+
+The expected figures use the reading in rules 1 to 14. Where the rule could reasonably go the other way, the question is below; asks that depend on it name it in `rule_questions`, and where the other reading gives a different figure the ask has an `alt`.
+
+- **Q1. Pay and a bill on the same day.** Does the walk count the pay before the bill (used), or the bill first? No expected figure in these files changes with it, but Ramil's 18 Dec pay and power bill share a day.
+- **Q2. Walking past the next pay to reach a bill.** When a bill's next date is after the next pay (rent for someone paid every two weeks or weekly, a bill every three months), are all pays on the way counted (used), or only the next one? Changes Sam on 4 Dec (904.25 or 384.25) and 15 Jan (1,848.75 or 1,503.25), and Ramil on 21 Nov (800 or -400). Under the second reading a bill three months away makes safe to spend fall now.
+- **Q3. A late pay.** Mako's side pay due 10 Feb has not landed by the 11th. Is it left out of safe to spend until it lands (used), or still counted as coming? 404,000 or 454,000.
+- **Q4. When is an item "not seen yet"?** The day after its landing date (used), or after a grace of one or two working days for bank posting lag? On 11 Feb, a holiday, Mako's side pay is one day late but no working day has passed. Rina's items are weeks late, so they are late either way.
+- **Q5. A card refund after the statement closed.** Does it go on the next statement (used), or lower the payment already due? Mako's card A on 18 Dec (45,000 or 41,000); Sam's card on 15 Jan (180.00 or 160.00).
+- **Q6. Statement close on a weekend or holiday.** Never moves (used), or moves like a payment? Sam's card closes on 25 Dec, Mako's card B on Sun 31 Jan.
+- **Q7. A payment whose statement has not closed yet.** Show the amount posted so far, marked open (used), show nothing until the close, or show an estimate? Also: should "due before next pay" include that open amount (used for Nell on 20 Dec: 1,035.50; without it 885.50)?
+- **Q8. A pay that lands before its rule date.** Carlo's 30 Dec pay lands 23 Dec. It settles the 30 Dec item (used). Does the new period start on the 23rd, the day the money came, or on the 29th, the rule date? Days to next pay is the same either way; what Home calls the current period is not.
+- **Q9. One figure or one per account.** Carlo's bank is fine but his e-wallet will be short for the pay-later part. Is safe to spend shown per account with a warning (used here, no headline given), as one sum across accounts, or as the pay account only? Same for Bea, Ramil (e-wallet and cash) and Jun and Tess.
+- **Q10. Total and cards.** Total does not take off card debt (used, ledger design). Should Home also show a figure after the cards?
+- **Q11. Other currencies.** Dollars sit beside the total, not added in (used). Should the app ever show a converted figure, and at what rate?
+- **Q12. Couples.** All three of Jun and Tess's pays start a period (used), so "days to next pay" is the next of any. Each account's walk is bounded by the next pay into that account. Should a couple pick one pay that starts the household period instead? Whose pay does Home count to?
+- **Q13. No fixed pay day.** Bea has no next pay. Used: days to next pay has no answer; the walk reaches each bill's next date with no money in. What should "due before the next pay" mean for her (left out here): the next 30 days, the next 14 days, or until the money runs out? This is the stage 2 "lasts about N weeks" view.
+- **Q14. Setting aside the card when pays land before its payment day.** Everything owed is taken off now (used: Mako's pay and cards fall together). For Ramil, paid weekly, two pays land before his card payment, so this says his e-wallet is 700 short on 2 Dec when it is not. The other reading walks a closed statement on its payment day and takes off only new spending now: Ramil 1,300 instead of -700; Carlo on 16 Nov 16,000 instead of 13,000. Which should it be, or should it depend on whether a pay lands before the payment?
+- **Q15. A check that disagrees.** The gap is shown as "not explained" and settles nothing (used). Should the app offer to record it as spending, and from which place?
+- **Q16. A bill that lands at a different amount.** Mako's January power bill was 12,000, plan 10,000. It settles the item at the real amount; later months keep the plan amount (used). Should a real amount change the next estimate?
+- **Q17. Bank-closed days that are not holidays.** Japan's banks close 31 Dec to 3 Jan. They count as non-working for the move rules (used), so Mako's 1 Jan gym lands Mon 4 Jan. Should they be in the country's holiday table or a separate bank table?
+- **Q18. Buy date and posting date.** Statements go by posting date (used). Between the buy and the posting (Mako's 14 Dec buy, posted 16 Dec), does "card owed now" include it? No ask here lands between the two.
+- **Q19. Pay-later plans.** The buy moves no money and each part is a bill from the e-wallet (used, ledger design). Should the parts still to come be shown as owed somewhere, and does a pay-later plan need its own account like a card?
+- **Q20. A bill dated before setup that goes out after it.** Rule 2 says the opening covers it. If a debit dated before setup actually leaves after (a late debit), it would be counted nowhere. Should setup ask "has this gone out yet?" for items in the last few days?
+- **Q21. Due before next pay, across accounts.** It lists items from every account (used: Carlo's pay-later part from his e-wallet, Jun and Tess's cash power bill). Or only the account the pay lands in?
+- **Q22. Planned goal set-asides on the walk.** Only money already set aside is taken off; the 20,000 Mako plans to set aside each pay day is not walked (used). Should it be, when the walk crosses a pay day?
+- **Q23. Items landing today.** At end of day, an item that lands today and has not been seen is "due" (in due before next pay), not "not seen yet" (used). Bank debits in some countries post late in the day or the next morning, so this is linked to Q4.
+- **Q24. Bank today after a long gap.** Rina opens the app after three weeks. Bank today stays at the last figure with nothing assumed (used), shown with its age, and the late items are asked about. Should the app instead show a projected figure that assumes the late bills went out?
+
+## Running the checker
+
+```
+node wip/team/foundation_review/scenarios/check_specs.js            # every file
+node wip/team/foundation_review/scenarios/check_specs.js file.json  # one file
+```
+
+It checks the shape (accounts, schedules, events in date order, references, decimals for each currency) and that each `why` adds up and ends in the expected figure, including every `alt`. Labels in a `why` go in brackets; the checker ignores them. It does not run the app.

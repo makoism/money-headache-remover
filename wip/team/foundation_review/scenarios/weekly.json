@@ -1,0 +1,120 @@
+{
+  "life": "weekly",
+  "title": "Ramil: paid every Friday into his e-wallet, cash for daily spending, rent once a month",
+  "story": "Ramil is a shift worker in the Philippines. 4,000 lands in his e-wallet every Friday, moved to the working day before on holidays. Christmas (Fri 25 Dec) and New Year (Fri 1 Jan) are holidays with holidays before them, so those pays land Wed 23 Dec and Tue 29 Dec. He moves money to cash for daily spending. Rent (6,000, more than a week's pay) and power are paid from the e-wallet on set days, any day of the week. A small card closes on the 20th and is paid in full from the e-wallet on the 15th of the next month. Set up on Sat 21 Nov 2026, the day after a pay. Every amount is made up.",
+  "currency": "PHP",
+  "window": { "from": "2026-11-21", "to": "2027-02-20" },
+  "holidays": {
+    "country": "PH",
+    "dates": [
+      { "date": "2026-11-30", "name": "Bonifacio Day" },
+      { "date": "2026-12-08", "name": "Feast of the Immaculate Conception" },
+      { "date": "2026-12-24", "name": "Christmas Eve" },
+      { "date": "2026-12-25", "name": "Christmas Day" },
+      { "date": "2026-12-30", "name": "Rizal Day" },
+      { "date": "2026-12-31", "name": "Last day of the year" },
+      { "date": "2027-01-01", "name": "New Year's Day" }
+    ],
+    "bank_closed": []
+  },
+  "accounts": [
+    { "id": "ewallet", "name": "E-wallet", "kind": "ewallet", "currency": "PHP", "owner": "Ramil", "minimum": 200,
+      "opening": { "date": "2026-11-21", "amount": 5000, "note": "Includes the 20 Nov pay." } },
+    { "id": "cash", "name": "Cash", "kind": "cash", "currency": "PHP", "owner": "Ramil", "minimum": 0,
+      "opening": { "date": "2026-11-21", "amount": 1000 } },
+    { "id": "card", "name": "Card", "kind": "card", "currency": "PHP", "owner": "Ramil",
+      "statement_close_day": 20,
+      "payment": { "day": 15, "months_after_close": 1, "from": "ewallet", "pays": "in full", "weekend_holiday": "move later" },
+      "opening": { "date": "2026-11-21",
+        "statement": { "closed": "2026-11-20", "amount": 2000, "payment_item": "card@2026-12-15", "paid": false },
+        "current": 2000, "note": "The statement closed yesterday; nothing posted since." } }
+  ],
+  "income": [
+    { "id": "pay", "name": "Weekly wage", "account": "ewallet", "owner": "Ramil", "currency": "PHP", "amount": 4000,
+      "schedule": { "frequency": "weekly", "weekday": "Fri" }, "weekend_holiday": "move earlier", "starts_period": true }
+  ],
+  "bills": [
+    { "id": "rent", "name": "Rent", "account": "ewallet", "amount": 6000, "schedule": { "frequency": "monthly", "day": 1 }, "weekend_holiday": "none" },
+    { "id": "power", "name": "Power", "account": "ewallet", "amount": 1200, "schedule": { "frequency": "monthly", "day": 18 }, "weekend_holiday": "none" }
+  ],
+  "goals": [],
+  "landing_dates": {
+    "pay": { "2026-11-27": "2026-11-27", "2026-12-04": "2026-12-04", "2026-12-11": "2026-12-11", "2026-12-18": "2026-12-18", "2026-12-25": "2026-12-23", "2027-01-01": "2026-12-29", "2027-01-08": "2027-01-08", "2027-01-15": "2027-01-15", "2027-01-22": "2027-01-22", "2027-01-29": "2027-01-29", "2027-02-05": "2027-02-05", "2027-02-12": "2027-02-12", "2027-02-19": "2027-02-19" },
+    "rent": { "2026-12-01": "2026-12-01", "2027-01-01": "2027-01-01", "2027-02-01": "2027-02-01" },
+    "power": { "2026-12-18": "2026-12-18", "2027-01-18": "2027-01-18", "2027-02-18": "2027-02-18" },
+    "card": { "2026-12-15": "2026-12-15", "2027-01-15": "2027-01-15", "2027-02-15": "2027-02-15" }
+  },
+  "events": [
+    { "id": "w01", "date": "2026-11-22", "kind": "spend", "account": "cash", "amount": 800 },
+    { "id": "w02", "date": "2026-11-27", "kind": "pay_in", "account": "ewallet", "amount": 4000, "settles": "pay@2026-11-27" },
+    { "id": "w03", "date": "2026-11-28", "kind": "transfer", "from": "ewallet", "to": "cash", "amount": 1500, "note": "cash out at a store" },
+    { "id": "w04", "date": "2026-12-01", "kind": "bill_paid", "account": "ewallet", "amount": 6000, "settles": "rent@2026-12-01" },
+    { "id": "w05", "date": "2026-12-03", "kind": "spend", "account": "card", "amount": 1000 },
+    { "id": "w06", "date": "2026-12-04", "kind": "pay_in", "account": "ewallet", "amount": 4000, "settles": "pay@2026-12-04" },
+    { "id": "w07", "date": "2026-12-05", "kind": "spend", "account": "cash", "amount": 1200 },
+    { "id": "w08", "date": "2026-12-11", "kind": "pay_in", "account": "ewallet", "amount": 4000, "settles": "pay@2026-12-11" },
+    { "id": "w09", "date": "2026-12-15", "kind": "card_payment", "from": "ewallet", "card": "card", "amount": 2000, "settles": "card@2026-12-15" },
+    { "id": "w10", "date": "2026-12-18", "kind": "pay_in", "account": "ewallet", "amount": 4000, "settles": "pay@2026-12-18" },
+    { "id": "w11", "date": "2026-12-18", "kind": "bill_paid", "account": "ewallet", "amount": 1200, "settles": "power@2026-12-18" },
+    { "id": "w12", "date": "2026-12-19", "kind": "transfer", "from": "ewallet", "to": "cash", "amount": 2000 },
+    { "id": "w13", "date": "2026-12-23", "kind": "pay_in", "account": "ewallet", "amount": 4000, "settles": "pay@2026-12-25", "note": "25 and 24 Dec are holidays" },
+    { "id": "w14", "date": "2026-12-26", "kind": "spend", "account": "cash", "amount": 1500 },
+    { "id": "w15", "date": "2026-12-29", "kind": "pay_in", "account": "ewallet", "amount": 4000, "settles": "pay@2027-01-01", "note": "1 Jan, 31 Dec and 30 Dec are holidays" },
+    { "id": "w16", "date": "2027-01-01", "kind": "bill_paid", "account": "ewallet", "amount": 6000, "settles": "rent@2027-01-01", "note": "rule none: paid on the holiday" },
+    { "id": "w17", "date": "2027-01-08", "kind": "pay_in", "account": "ewallet", "amount": 4000, "settles": "pay@2027-01-08" },
+    { "id": "w18", "date": "2027-01-09", "kind": "transfer", "from": "ewallet", "to": "cash", "amount": 2000 },
+    { "id": "w19", "date": "2027-01-12", "kind": "spend", "account": "card", "amount": 1500 },
+    { "id": "w20", "date": "2027-01-15", "kind": "pay_in", "account": "ewallet", "amount": 4000, "settles": "pay@2027-01-15" },
+    { "id": "w21", "date": "2027-01-15", "kind": "card_payment", "from": "ewallet", "card": "card", "amount": 1000, "settles": "card@2027-01-15" },
+    { "id": "w22", "date": "2027-01-18", "kind": "bill_paid", "account": "ewallet", "amount": 1200, "settles": "power@2027-01-18" },
+    { "id": "w23", "date": "2027-01-22", "kind": "pay_in", "account": "ewallet", "amount": 4000, "settles": "pay@2027-01-22" },
+    { "id": "w24", "date": "2027-01-29", "kind": "pay_in", "account": "ewallet", "amount": 4000, "settles": "pay@2027-01-29" },
+    { "id": "w25", "date": "2027-02-01", "kind": "bill_paid", "account": "ewallet", "amount": 6000, "settles": "rent@2027-02-01" },
+    { "id": "w26", "date": "2027-02-05", "kind": "pay_in", "account": "ewallet", "amount": 4000, "settles": "pay@2027-02-05" },
+    { "id": "w27", "date": "2027-02-12", "kind": "pay_in", "account": "ewallet", "amount": 4000, "settles": "pay@2027-02-12" },
+    { "id": "w28", "date": "2027-02-15", "kind": "card_payment", "from": "ewallet", "card": "card", "amount": 1500, "settles": "card@2027-02-15" },
+    { "id": "w29", "date": "2027-02-18", "kind": "bill_paid", "account": "ewallet", "amount": 1200, "settles": "power@2027-02-18" },
+    { "id": "w30", "date": "2027-02-19", "kind": "pay_in", "account": "ewallet", "amount": 4000, "settles": "pay@2027-02-19" }
+  ],
+  "card_statements": {
+    "card": [
+      { "closed": "2026-11-20", "amount": 2000, "why": "opening statement", "payment_lands": "2026-12-15" },
+      { "closed": "2026-12-20", "amount": 1000, "why": "1,000 (3 Dec) = 1,000", "payment_lands": "2027-01-15" },
+      { "closed": "2027-01-20", "amount": 1500, "why": "1,500 (12 Jan) = 1,500", "payment_lands": "2027-02-15" }
+    ]
+  },
+  "asks": [
+    { "id": "weekly-01", "date": "2026-11-21", "question": "bank_today", "account": "ewallet", "expected": 5000, "why": "5,000 (opening) = 5,000" },
+    { "id": "weekly-02", "date": "2026-11-21", "question": "bank_today", "account": "cash", "expected": 1000, "why": "1,000 (opening) = 1,000" },
+    { "id": "weekly-03", "date": "2026-11-21", "question": "total", "expected": 6000, "why": "5,000 (e-wallet) + 1,000 (cash) = 6,000", "rule_questions": ["Q10"] },
+    { "id": "weekly-04", "date": "2026-11-21", "question": "days_to_next_pay", "expected": { "days": 6, "next_pay": "2026-11-27", "item": "pay@2026-11-27" }, "why": "2026-11-27 - 2026-11-21 = 6" },
+    { "id": "weekly-05", "date": "2026-11-21", "question": "safe_to_spend", "account": "ewallet", "expected": 800,
+      "why": "5,000 (e-wallet) - 2,000 (card owed) + 4,000 (pay 27 Nov) - 6,000 (rent 1 Dec) - 200 (minimum) = 800",
+      "note": "Rent is more than one pay. The walk runs to power on 18 Dec and counts each weekly pay on the way; the lowest point is 1 Dec, after rent.", "rule_questions": ["Q2", "Q9"],
+      "alt": { "Q2": { "expected": -400, "why": "5,000 (e-wallet) - 2,000 (card owed) + 4,000 (pay 27 Nov) - 6,000 (rent 1 Dec) - 1,200 (power 18 Dec) - 200 (minimum) = -400", "rule": "only the next pay is counted; pays after it are left out of the walk" } } },
+    { "id": "weekly-06", "date": "2026-11-21", "question": "due_before_next_pay", "expected": { "items": [], "total": 0 }, "why": "none = 0" },
+    { "id": "weekly-07", "date": "2026-11-21", "question": "card_due", "account": "card", "expected": { "amount": 2000, "payment_date": "2026-12-15", "statement": "closed", "closed_on": "2026-11-20" }, "why": "2,000 (statement closed 20 Nov) = 2,000" },
+
+    { "id": "weekly-08", "date": "2026-12-02", "question": "bank_today", "account": "ewallet", "expected": 1500, "why": "5,000 (opening) + 4,000 (pay 27 Nov) - 1,500 (to cash 28 Nov) - 6,000 (rent 1 Dec) = 1,500" },
+    { "id": "weekly-09", "date": "2026-12-02", "question": "total", "expected": 3200, "why": "1,500 (e-wallet) + 1,700 (cash: 1,000 - 800 + 1,500) = 3,200", "rule_questions": ["Q10"] },
+    { "id": "weekly-10", "date": "2026-12-02", "question": "days_to_next_pay", "expected": { "days": 2, "next_pay": "2026-12-04", "item": "pay@2026-12-04" }, "why": "2026-12-04 - 2026-12-02 = 2" },
+    { "id": "weekly-11", "date": "2026-12-02", "question": "safe_to_spend", "account": "ewallet", "expected": -700,
+      "why": "1,500 (e-wallet) - 2,000 (card owed, all set aside now) - 200 (minimum) = -700",
+      "note": "Two pays land before the card is paid on 15 Dec, but the whole card is set aside today, so the e-wallet shows 700 short.", "rule_questions": ["Q14", "Q9"],
+      "alt": { "Q14": { "expected": 1300, "why": "1,500 (e-wallet) - 200 (minimum) = 1,300", "rule": "a closed card statement is walked on its payment day (15 Dec, after the 4 and 11 Dec pays) instead of set aside now; the lowest point is then today" } } },
+
+    { "id": "weekly-12", "date": "2026-12-30", "question": "bank_today", "account": "ewallet", "expected": 16300,
+      "why": "1,500 (2 Dec) + 4,000 (4 Dec) + 4,000 (11 Dec) - 2,000 (card 15 Dec) + 4,000 (18 Dec) - 1,200 (power 18 Dec) - 2,000 (to cash 19 Dec) + 4,000 (23 Dec) + 4,000 (29 Dec) = 16,300" },
+    { "id": "weekly-13", "date": "2026-12-30", "question": "total", "expected": 17300, "why": "16,300 (e-wallet) + 1,000 (cash: 1,700 - 1,200 + 2,000 - 1,500) = 17,300", "rule_questions": ["Q10"] },
+    { "id": "weekly-14", "date": "2026-12-30", "question": "days_to_next_pay", "expected": { "days": 9, "next_pay": "2027-01-08", "item": "pay@2027-01-08" },
+      "why": "2027-01-08 - 2026-12-30 = 9", "note": "The pay for Fri 1 Jan already landed Tue 29 Dec. It must not be expected again on 1 Jan." },
+    { "id": "weekly-15", "date": "2026-12-30", "question": "not_seen_yet", "expected": { "items": [], "money_in": 0, "money_out": 0 }, "why": { "money_in": "none = 0", "money_out": "none = 0" } },
+    { "id": "weekly-16", "date": "2026-12-30", "question": "due_before_next_pay",
+      "expected": { "items": [ { "item": "rent@2027-01-01", "lands": "2027-01-01", "amount": 6000 } ], "total": 6000 },
+      "why": "6,000 (rent, paid on the holiday, rule none) = 6,000" },
+    { "id": "weekly-17", "date": "2026-12-30", "question": "safe_to_spend", "account": "ewallet", "expected": 9100,
+      "why": "16,300 (e-wallet) - 1,000 (card owed: the 20 Dec statement) - 6,000 (rent 1 Jan) - 200 (minimum) = 9,100",
+      "note": "The walk runs to power on 18 Jan; the 8 and 15 Jan pays come before it.", "rule_questions": ["Q9"] },
+    { "id": "weekly-18", "date": "2026-12-30", "question": "card_due", "account": "card", "expected": { "amount": 1000, "payment_date": "2027-01-15", "statement": "closed", "closed_on": "2026-12-20" }, "why": "1,000 (3 Dec) = 1,000" }
+  ]
+}

@@ -1,0 +1,114 @@
+{
+  "life": "away_three_weeks",
+  "title": "Rina: does not open the app from 3 Dec to 24 Dec",
+  "story": "Rina is in the Philippines, paid 20,000 on the 25th into her bank (moved to the working day before; in December the 25th and 24th are holidays, so it lands Wed 23 Dec). Rent on the 1st and a loan payment on the 10th come from the bank. One card closes on the 15th and is paid in full from the bank on the 5th of the next month. She sets up on Tue 1 Dec 2026, logs a couple of things, then does not open the app until Thu 24 Dec. Meanwhile the card payment, the loan, a grocery run and a card buy all happen, and her pay lands. On the 24th she confirms the card payment, the loan and the pay, then checks her bank and her card. Events carry a \"told\" date: the day the app first hears of them (null: never told). Every amount is made up.",
+  "currency": "PHP",
+  "window": { "from": "2026-12-01", "to": "2027-02-28" },
+  "holidays": {
+    "country": "PH",
+    "dates": [
+      { "date": "2026-12-08", "name": "Feast of the Immaculate Conception" },
+      { "date": "2026-12-24", "name": "Christmas Eve" },
+      { "date": "2026-12-25", "name": "Christmas Day" },
+      { "date": "2026-12-30", "name": "Rizal Day" },
+      { "date": "2026-12-31", "name": "Last day of the year" },
+      { "date": "2027-01-01", "name": "New Year's Day" }
+    ],
+    "bank_closed": []
+  },
+  "accounts": [
+    { "id": "bank", "name": "Bank", "kind": "bank", "currency": "PHP", "owner": "Rina", "minimum": 500,
+      "opening": { "date": "2026-12-01", "amount": 12000, "note": "The 25 Nov pay is in it and the 1 Dec rent is out of it." } },
+    { "id": "card", "name": "Card", "kind": "card", "currency": "PHP", "owner": "Rina",
+      "statement_close_day": 15,
+      "payment": { "day": 5, "months_after_close": 1, "from": "bank", "pays": "in full", "weekend_holiday": "move later" },
+      "opening": { "date": "2026-12-01",
+        "statement": { "closed": "2026-11-15", "amount": 3000, "payment_item": "card@2026-12-05", "paid": false },
+        "current": 4000, "note": "3,000 statement plus 1,000 posted 16 Nov to 1 Dec." } }
+  ],
+  "income": [
+    { "id": "pay", "name": "Salary", "account": "bank", "owner": "Rina", "currency": "PHP", "amount": 20000,
+      "schedule": { "frequency": "monthly", "day": 25 }, "weekend_holiday": "move earlier", "starts_period": true }
+  ],
+  "bills": [
+    { "id": "rent", "name": "Rent", "account": "bank", "amount": 7000, "schedule": { "frequency": "monthly", "day": 1 }, "weekend_holiday": "move later" },
+    { "id": "loan", "name": "Loan payment", "account": "bank", "amount": 2500, "schedule": { "frequency": "monthly", "day": 10 }, "weekend_holiday": "move later" }
+  ],
+  "goals": [],
+  "landing_dates": {
+    "pay": { "2026-12-25": "2026-12-23", "2027-01-25": "2027-01-25", "2027-02-25": "2027-02-25" },
+    "rent": { "2027-01-01": "2027-01-04", "2027-02-01": "2027-02-01" },
+    "loan": { "2026-12-10": "2026-12-10", "2027-01-10": "2027-01-11", "2027-02-10": "2027-02-10" },
+    "card": { "2026-12-05": "2026-12-07", "2027-01-05": "2027-01-05", "2027-02-05": "2027-02-05" }
+  },
+  "events": [
+    { "id": "r01", "date": "2026-12-02", "told": "2026-12-02", "kind": "spend", "account": "card", "amount": 1000 },
+    { "id": "r02", "date": "2026-12-03", "told": "2026-12-03", "kind": "spend", "account": "bank", "amount": 500, "note": "last time she opens the app until the 24th" },
+    { "id": "r03", "date": "2026-12-07", "told": "2026-12-24", "kind": "card_payment", "from": "bank", "card": "card", "amount": 3000, "settles": "card@2026-12-05", "note": "5 Dec is a Saturday. She confirms it on the 24th." },
+    { "id": "r04", "date": "2026-12-10", "told": "2026-12-24", "kind": "bill_paid", "account": "bank", "amount": 2500, "settles": "loan@2026-12-10", "note": "confirmed on the 24th" },
+    { "id": "r05", "date": "2026-12-12", "told": null, "kind": "spend", "account": "card", "amount": 1000, "note": "never logged" },
+    { "id": "r06", "date": "2026-12-14", "told": null, "kind": "spend", "account": "bank", "amount": 1500, "note": "groceries, never logged" },
+    { "id": "r07", "date": "2026-12-23", "told": "2026-12-24", "kind": "pay_in", "account": "bank", "amount": 20000, "settles": "pay@2026-12-25", "note": "confirmed on the 24th" },
+    { "id": "r08", "date": "2026-12-24", "told": "2026-12-24", "kind": "check", "account": "bank", "amount": 24500 },
+    { "id": "r09", "date": "2026-12-24", "told": "2026-12-24", "kind": "card_check", "account": "card", "statement": { "closed": "2026-12-15", "amount": 3000 }, "current": 3000, "note": "her card app shows the 15 Dec statement and what is owed now" },
+    { "id": "r10", "date": "2027-01-04", "kind": "bill_paid", "account": "bank", "amount": 7000, "settles": "rent@2027-01-01", "note": "1 Jan holiday, then a weekend" },
+    { "id": "r11", "date": "2027-01-05", "kind": "card_payment", "from": "bank", "card": "card", "amount": 3000, "settles": "card@2027-01-05" },
+    { "id": "r12", "date": "2027-01-08", "kind": "spend", "account": "card", "amount": 1200 },
+    { "id": "r13", "date": "2027-01-11", "kind": "bill_paid", "account": "bank", "amount": 2500, "settles": "loan@2027-01-10", "note": "10 Jan is a Sunday" },
+    { "id": "r14", "date": "2027-01-25", "kind": "pay_in", "account": "bank", "amount": 20000, "settles": "pay@2027-01-25" },
+    { "id": "r15", "date": "2027-02-01", "kind": "bill_paid", "account": "bank", "amount": 7000, "settles": "rent@2027-02-01" },
+    { "id": "r16", "date": "2027-02-05", "kind": "card_payment", "from": "bank", "card": "card", "amount": 1200, "settles": "card@2027-02-05" },
+    { "id": "r17", "date": "2027-02-10", "kind": "bill_paid", "account": "bank", "amount": 2500, "settles": "loan@2027-02-10" }
+  ],
+  "card_statements": {
+    "card": [
+      { "closed": "2026-11-15", "amount": 3000, "why": "opening statement", "payment_lands": "2026-12-07" },
+      { "closed": "2026-12-15", "amount": 3000, "why": "1,000 (posted 16 Nov to 1 Dec) + 1,000 (2 Dec) + 1,000 (12 Dec, never logged) = 3,000", "payment_lands": "2027-01-05" },
+      { "closed": "2027-01-15", "amount": 1200, "why": "1,200 (8 Jan) = 1,200", "payment_lands": "2027-02-05" }
+    ]
+  },
+  "asks": [
+    { "id": "away-01", "date": "2026-12-03", "question": "bank_today", "account": "bank", "expected": 11500, "why": "12,000 (opening) - 500 (3 Dec) = 11,500" },
+    { "id": "away-02", "date": "2026-12-03", "question": "days_to_next_pay", "expected": { "days": 20, "next_pay": "2026-12-23", "item": "pay@2026-12-25" },
+      "why": "2026-12-23 - 2026-12-03 = 20", "note": "25 Dec and 24 Dec are holidays; the pay lands Wed 23 Dec." },
+    { "id": "away-03", "date": "2026-12-03", "question": "due_before_next_pay",
+      "expected": { "items": [
+        { "item": "card@2026-12-05", "lands": "2026-12-07", "amount": 3000 },
+        { "item": "loan@2026-12-10", "lands": "2026-12-10", "amount": 2500 } ], "total": 5500 },
+      "why": "3,000 (card, due Sat 5 Dec, lands Mon 7 Dec) + 2,500 (loan) = 5,500" },
+    { "id": "away-04", "date": "2026-12-03", "question": "safe_to_spend", "account": "bank", "expected": 3500,
+      "why": "11,500 (bank) - 5,000 (card owed: 3,000 statement + 2,000 since) - 2,500 (loan 10 Dec) - 500 (minimum) = 3,500",
+      "note": "The walk reaches rent on 4 Jan; the pay on 23 Dec comes first." },
+
+    { "id": "away-05", "date": "2026-12-24", "at": "start of day", "question": "bank_today", "account": "bank", "expected": 11500,
+      "why": "12,000 (opening) - 500 (3 Dec, the last thing logged) = 11,500",
+      "note": "Before she confirms anything. The app does not assume the card payment, the loan or the pay happened. It shows how old the figure is.", "rule_questions": ["Q24"] },
+    { "id": "away-06", "date": "2026-12-24", "at": "start of day", "question": "not_seen_yet",
+      "expected": { "items": [
+        { "item": "card@2026-12-05", "lands": "2026-12-07", "amount": 3000, "direction": "out" },
+        { "item": "loan@2026-12-10", "lands": "2026-12-10", "amount": 2500, "direction": "out" },
+        { "item": "pay@2026-12-25", "lands": "2026-12-23", "amount": 20000, "direction": "in" } ], "money_in": 20000, "money_out": 5500 },
+      "why": { "money_in": "20,000 (pay, lands Wed 23 Dec) = 20,000", "money_out": "3,000 (card 7 Dec) + 2,500 (loan 10 Dec) = 5,500" },
+      "note": "Each is asked about once (did this happen?), never assumed paid and never counted twice.", "rule_questions": ["Q4"] },
+
+    { "id": "away-07", "date": "2026-12-24", "question": "bank_today", "account": "bank", "expected": 24500, "why": "24,500 (her check today) = 24,500" },
+    { "id": "away-08", "date": "2026-12-24", "question": "not_explained", "account": "bank", "expected": 1500,
+      "why": "11,500 (3 Dec) - 3,000 (card 7 Dec, confirmed) - 2,500 (loan 10 Dec, confirmed) + 20,000 (pay 23 Dec, confirmed) - 24,500 (the bank shows) = 1,500",
+      "note": "1,500 more went out than the app knows of (the groceries she never logged). It is shown, it settles no bill.", "rule_questions": ["Q15"] },
+    { "id": "away-09", "date": "2026-12-24", "question": "not_explained", "account": "card", "expected": 1000,
+      "why": "3,000 (owed, her card app shows) - 4,000 (opening owed) - 1,000 (2 Dec) + 3,000 (payment 7 Dec) = 1,000",
+      "note": "1,000 more owed on the card than the app knows of (the 12 Dec buy).", "rule_questions": ["Q15"] },
+    { "id": "away-10", "date": "2026-12-24", "question": "not_seen_yet", "expected": { "items": [], "money_in": 0, "money_out": 0 }, "why": { "money_in": "none = 0", "money_out": "none = 0" } },
+    { "id": "away-11", "date": "2026-12-24", "question": "card_due", "account": "card", "expected": { "amount": 3000, "payment_date": "2027-01-05", "statement": "closed", "closed_on": "2026-12-15" },
+      "why": "3,000 (statement closed 15 Dec, from her card check) = 3,000" },
+    { "id": "away-12", "date": "2026-12-24", "question": "days_to_next_pay", "expected": { "days": 32, "next_pay": "2027-01-25", "item": "pay@2027-01-25" }, "why": "2027-01-25 - 2026-12-24 = 32" },
+    { "id": "away-13", "date": "2026-12-24", "question": "due_before_next_pay",
+      "expected": { "items": [
+        { "item": "rent@2027-01-01", "lands": "2027-01-04", "amount": 7000 },
+        { "item": "card@2027-01-05", "lands": "2027-01-05", "amount": 3000 },
+        { "item": "loan@2027-01-10", "lands": "2027-01-11", "amount": 2500 } ], "total": 12500 },
+      "why": "7,000 (rent, 1 Jan holiday, lands Mon 4 Jan) + 3,000 (card) + 2,500 (loan, 10 Jan Sunday, lands Mon 11 Jan) = 12,500" },
+    { "id": "away-14", "date": "2026-12-24", "question": "safe_to_spend", "account": "bank", "expected": 11500,
+      "why": "24,500 (bank) - 3,000 (card owed) - 7,000 (rent 4 Jan) - 2,500 (loan 11 Jan) - 500 (minimum) = 11,500" }
+  ]
+}

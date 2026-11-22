@@ -1,0 +1,252 @@
+{
+  "life": "mako_shape",
+  "title": "Mako's shape: one bank, two cards paid in full on the 10th and 11th, pay on the 10th",
+  "story": "One main bank. Two cards paid in full from the bank: card A closes on the 15th and is paid on the 10th of the next month, card B closes at month end and is paid on the 11th of the next month (close days made up). Two incomes land on the 10th. Bills come out of the bank on due days. A trip goal is kept in the bank, set aside, and grows by 20,000 each pay day. Set up on Fri 20 Nov 2026, after the November pay and the November card payments went through. January 2027: the 10th is a Sunday so pay lands Fri the 8th; the 11th is Coming of Age Day so both cards are taken Tue the 12th. February: the side pay is two days late. Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2026-11-20", "to": "2027-02-20" },
+  "holidays": {
+    "country": "JP",
+    "dates": [
+      { "date": "2026-11-23", "name": "Labour Thanksgiving Day" },
+      { "date": "2027-01-01", "name": "New Year's Day" },
+      { "date": "2027-01-11", "name": "Coming of Age Day" },
+      { "date": "2027-02-11", "name": "National Foundation Day" },
+      { "date": "2027-02-23", "name": "Emperor's Birthday" }
+    ],
+    "bank_closed": [
+      { "date": "2026-12-31", "name": "banks closed for the New Year" },
+      { "date": "2027-01-02", "name": "banks closed for the New Year" },
+      { "date": "2027-01-03", "name": "banks closed for the New Year" }
+    ]
+  },
+  "accounts": [
+    {
+      "id": "bank", "name": "Main bank", "kind": "bank", "currency": "JPY", "owner": "Mako", "minimum": 20000,
+      "opening": { "date": "2026-11-20", "amount": 400000, "note": "Already includes the 10 Nov pay and the 10 and 11 Nov card payments." }
+    },
+    {
+      "id": "card_a", "name": "Card A", "kind": "card", "currency": "JPY", "owner": "Mako",
+      "statement_close_day": 15,
+      "payment": { "day": 10, "months_after_close": 1, "from": "bank", "pays": "in full", "weekend_holiday": "move later" },
+      "opening": {
+        "date": "2026-11-20",
+        "statement": { "closed": "2026-11-15", "amount": 60000, "payment_item": "card_a@2026-12-10", "paid": false },
+        "current": 75000,
+        "note": "Current is everything owed now: the 60,000 statement plus 15,000 posted 16 to 20 Nov."
+      }
+    },
+    {
+      "id": "card_b", "name": "Card B", "kind": "card", "currency": "JPY", "owner": "Mako",
+      "statement_close_day": "last",
+      "payment": { "day": 11, "months_after_close": 1, "from": "bank", "pays": "in full", "weekend_holiday": "move later" },
+      "opening": {
+        "date": "2026-11-20",
+        "statement": { "closed": "2026-10-31", "amount": 40000, "payment_item": "card_b@2026-11-11", "paid": true },
+        "current": 30000,
+        "note": "The October statement was paid on 11 Nov, before setup. Current is the 30,000 posted 1 to 20 Nov."
+      }
+    }
+  ],
+  "income": [
+    {
+      "id": "pay_main", "name": "Main job", "account": "bank", "owner": "Mako", "currency": "JPY", "amount": 250000,
+      "schedule": { "frequency": "monthly", "day": 10 }, "weekend_holiday": "move earlier", "starts_period": true
+    },
+    {
+      "id": "pay_side", "name": "Side job", "account": "bank", "owner": "Mako", "currency": "JPY", "amount": 50000,
+      "schedule": { "frequency": "monthly", "day": 10 }, "weekend_holiday": "move earlier", "starts_period": false,
+      "note": "Lands the same day as the main pay. Mako enters both as one number today; kept as two streams so one can be late."
+    }
+  ],
+  "bills": [
+    { "id": "rent", "name": "Rent", "account": "bank", "amount": 80000, "schedule": { "frequency": "monthly", "day": 27 }, "weekend_holiday": "move later" },
+    { "id": "gym", "name": "Gym", "account": "bank", "amount": 8000, "schedule": { "frequency": "monthly", "day": 1 }, "weekend_holiday": "move later" },
+    { "id": "utilities", "name": "Power and water", "account": "bank", "amount": 10000, "amount_kind": "estimate", "schedule": { "frequency": "monthly", "day": 5 }, "weekend_holiday": "move later" }
+  ],
+  "goals": [
+    { "id": "trip", "name": "Trip", "kept_in": "bank", "owner": "Mako", "opening": { "date": "2026-11-20", "amount": 100000 }, "plan": "set aside 20,000 on each main pay day" }
+  ],
+  "landing_dates": {
+    "note": "Where each expected item lands after the weekend and holiday rule. Items before 20 Nov are covered by the opening figures.",
+    "pay_main": { "2026-12-10": "2026-12-10", "2027-01-10": "2027-01-08", "2027-02-10": "2027-02-10", "2027-03-10": "2027-03-10" },
+    "pay_side": { "2026-12-10": "2026-12-10", "2027-01-10": "2027-01-08", "2027-02-10": "2027-02-10" },
+    "card_a": { "2026-12-10": "2026-12-10", "2027-01-10": "2027-01-12", "2027-02-10": "2027-02-10", "2027-03-10": "2027-03-10" },
+    "card_b": { "2026-12-11": "2026-12-11", "2027-01-11": "2027-01-12", "2027-02-11": "2027-02-12" },
+    "rent": { "2026-11-27": "2026-11-27", "2026-12-27": "2026-12-28", "2027-01-27": "2027-01-27", "2027-02-27": "2027-03-01" },
+    "gym": { "2026-12-01": "2026-12-01", "2027-01-01": "2027-01-04", "2027-02-01": "2027-02-01", "2027-03-01": "2027-03-01" },
+    "utilities": { "2026-12-05": "2026-12-07", "2027-01-05": "2027-01-05", "2027-02-05": "2027-02-05", "2027-03-05": "2027-03-05" }
+  },
+  "events": [
+    { "id": "m01", "date": "2026-11-21", "kind": "spend", "account": "card_a", "amount": 10000, "note": "food shop" },
+    { "id": "m02", "date": "2026-11-25", "kind": "spend", "account": "card_b", "amount": 20000, "note": "shopping" },
+    { "id": "m03", "date": "2026-11-27", "kind": "bill_paid", "account": "bank", "amount": 80000, "settles": "rent@2026-11-27" },
+    { "id": "m04", "date": "2026-12-01", "kind": "bill_paid", "account": "bank", "amount": 8000, "settles": "gym@2026-12-01" },
+    { "id": "m05", "date": "2026-12-02", "kind": "spend", "account": "card_b", "amount": 10000 },
+    { "id": "m06", "date": "2026-12-05", "kind": "spend", "account": "card_a", "amount": 20000, "note": "a coat" },
+    { "id": "m07", "date": "2026-12-07", "kind": "bill_paid", "account": "bank", "amount": 10000, "settles": "utilities@2026-12-05", "note": "due Sat 5 Dec, taken Mon 7 Dec" },
+    { "id": "m08", "date": "2026-12-10", "kind": "pay_in", "account": "bank", "amount": 250000, "settles": "pay_main@2026-12-10" },
+    { "id": "m09", "date": "2026-12-10", "kind": "pay_in", "account": "bank", "amount": 50000, "settles": "pay_side@2026-12-10" },
+    { "id": "m10", "date": "2026-12-10", "kind": "card_payment", "from": "bank", "card": "card_a", "amount": 60000, "settles": "card_a@2026-12-10" },
+    { "id": "m11", "date": "2026-12-10", "kind": "set_aside", "goal": "trip", "account": "bank", "amount": 20000 },
+    { "id": "m12", "date": "2026-12-11", "kind": "card_payment", "from": "bank", "card": "card_b", "amount": 50000, "settles": "card_b@2026-12-11" },
+    { "id": "m13", "date": "2026-12-12", "kind": "check", "account": "bank", "amount": 492000, "note": "matches what the app worked out" },
+    { "id": "m14", "date": "2026-12-14", "kind": "spend", "account": "card_a", "amount": 9000, "posted": "2026-12-16", "note": "bought before the 15 Dec close, posted after it, so it goes on the January statement" },
+    { "id": "m15", "date": "2026-12-15", "kind": "spend", "account": "bank", "amount": 5000, "note": "bank transfer to a friend for a dinner" },
+    { "id": "m16", "date": "2026-12-17", "kind": "refund", "account": "card_a", "amount": 4000, "posted": "2026-12-17", "note": "part of the 5 Dec coat back; posted after the 15 Dec close" },
+    { "id": "m17", "date": "2026-12-20", "kind": "spend", "account": "card_a", "amount": 15000 },
+    { "id": "m18", "date": "2026-12-24", "kind": "spend", "account": "card_b", "amount": 30000 },
+    { "id": "m19", "date": "2026-12-28", "kind": "refund", "account": "card_b", "amount": 5000, "posted": "2026-12-28", "note": "posted before the 31 Dec close" },
+    { "id": "m20", "date": "2026-12-28", "kind": "bill_paid", "account": "bank", "amount": 80000, "settles": "rent@2026-12-27", "note": "due Sun 27 Dec, taken Mon 28 Dec" },
+    { "id": "m21", "date": "2027-01-03", "kind": "spend", "account": "card_a", "amount": 12000 },
+    { "id": "m22", "date": "2027-01-04", "kind": "bill_paid", "account": "bank", "amount": 8000, "settles": "gym@2027-01-01", "note": "1 Jan holiday, 2 and 3 Jan banks closed, taken Mon 4 Jan" },
+    { "id": "m23", "date": "2027-01-05", "kind": "bill_paid", "account": "bank", "amount": 12000, "settles": "utilities@2027-01-05", "note": "real amount 12,000, plan said 10,000" },
+    { "id": "m24", "date": "2027-01-08", "kind": "pay_in", "account": "bank", "amount": 250000, "settles": "pay_main@2027-01-10", "note": "10 Jan is a Sunday, pay lands Fri 8 Jan" },
+    { "id": "m25", "date": "2027-01-08", "kind": "pay_in", "account": "bank", "amount": 50000, "settles": "pay_side@2027-01-10" },
+    { "id": "m26", "date": "2027-01-08", "kind": "set_aside", "goal": "trip", "account": "bank", "amount": 20000 },
+    { "id": "m27", "date": "2027-01-09", "kind": "check", "account": "bank", "amount": 687000, "note": "Mako checks the day after pay landed; the pay must not be counted again on the 10th" },
+    { "id": "m28", "date": "2027-01-10", "kind": "spend", "account": "card_b", "amount": 6000 },
+    { "id": "m29", "date": "2027-01-12", "kind": "card_payment", "from": "bank", "card": "card_a", "amount": 45000, "settles": "card_a@2027-01-10", "note": "10 Jan Sunday, 11 Jan holiday, taken Tue 12 Jan" },
+    { "id": "m30", "date": "2027-01-12", "kind": "card_payment", "from": "bank", "card": "card_b", "amount": 35000, "settles": "card_b@2027-01-11", "note": "11 Jan holiday, taken Tue 12 Jan" },
+    { "id": "m31", "date": "2027-01-20", "kind": "spend", "account": "card_a", "amount": 10000 },
+    { "id": "m32", "date": "2027-01-25", "kind": "spend", "account": "card_b", "amount": 14000 },
+    { "id": "m33", "date": "2027-01-27", "kind": "bill_paid", "account": "bank", "amount": 80000, "settles": "rent@2027-01-27" },
+    { "id": "m34", "date": "2027-02-01", "kind": "bill_paid", "account": "bank", "amount": 8000, "settles": "gym@2027-02-01" },
+    { "id": "m35", "date": "2027-02-01", "kind": "spend", "account": "card_a", "amount": 8000 },
+    { "id": "m36", "date": "2027-02-05", "kind": "bill_paid", "account": "bank", "amount": 10000, "settles": "utilities@2027-02-05" },
+    { "id": "m37", "date": "2027-02-05", "kind": "spend", "account": "card_b", "amount": 7000 },
+    { "id": "m38", "date": "2027-02-10", "kind": "pay_in", "account": "bank", "amount": 250000, "settles": "pay_main@2027-02-10" },
+    { "id": "m39", "date": "2027-02-10", "kind": "card_payment", "from": "bank", "card": "card_a", "amount": 32000, "settles": "card_a@2027-02-10" },
+    { "id": "m40", "date": "2027-02-10", "kind": "set_aside", "goal": "trip", "account": "bank", "amount": 20000 },
+    { "id": "m41", "date": "2027-02-12", "kind": "card_payment", "from": "bank", "card": "card_b", "amount": 20000, "settles": "card_b@2027-02-11", "note": "11 Feb holiday, taken Fri 12 Feb" },
+    { "id": "m42", "date": "2027-02-12", "kind": "pay_in", "account": "bank", "amount": 50000, "settles": "pay_side@2027-02-10", "note": "side pay two days late" },
+    { "id": "m43", "date": "2027-02-15", "kind": "check", "account": "bank", "amount": 757000 }
+  ],
+  "card_statements": {
+    "note": "Worked out by hand from the opening and the events, by posting date. For checking the asks, not an input.",
+    "card_a": [
+      { "closed": "2026-11-15", "amount": 60000, "why": "opening statement", "payment_lands": "2026-12-10" },
+      { "closed": "2026-12-15", "amount": 45000, "why": "15,000 (posted 16 to 20 Nov) + 10,000 (21 Nov) + 20,000 (5 Dec) = 45,000", "payment_lands": "2027-01-12" },
+      { "closed": "2027-01-15", "amount": 32000, "why": "9,000 (bought 14 Dec, posted 16 Dec) - 4,000 (refund 17 Dec) + 15,000 (20 Dec) + 12,000 (3 Jan) = 32,000", "payment_lands": "2027-02-10" },
+      { "closed": "2027-02-15", "amount": 18000, "why": "10,000 (20 Jan) + 8,000 (1 Feb) = 18,000", "payment_lands": "2027-03-10" }
+    ],
+    "card_b": [
+      { "closed": "2026-11-30", "amount": 50000, "why": "30,000 (posted 1 to 20 Nov) + 20,000 (25 Nov) = 50,000", "payment_lands": "2026-12-11" },
+      { "closed": "2026-12-31", "amount": 35000, "why": "10,000 (2 Dec) + 30,000 (24 Dec) - 5,000 (refund 28 Dec) = 35,000", "payment_lands": "2027-01-12" },
+      { "closed": "2027-01-31", "amount": 20000, "why": "6,000 (10 Jan) + 14,000 (25 Jan) = 20,000", "payment_lands": "2027-02-12" }
+    ]
+  },
+  "asks": [
+    { "id": "mako-01", "date": "2026-11-20", "question": "bank_today", "account": "bank", "expected": 400000, "why": "400,000 (opening 20 Nov) = 400,000" },
+    { "id": "mako-02", "date": "2026-11-20", "question": "safe_to_spend", "account": "bank", "expected": 77000,
+      "why": "400,000 (bank) - 100,000 (trip, kept in the bank) - 75,000 (card A owed) - 30,000 (card B owed) - 80,000 (rent 27 Nov) - 8,000 (gym 1 Dec) - 10,000 (power and water, due Sat 5 Dec, lands Mon 7 Dec) - 20,000 (minimum) = 77,000",
+      "note": "Next pay lands Thu 10 Dec; every bill's next date is before it, so the walk ends 9 Dec. The 10 Nov pay is in the opening figure and must not be counted again." },
+    { "id": "mako-03", "date": "2026-11-20", "question": "days_to_next_pay", "expected": { "days": 20, "next_pay": "2026-12-10", "item": "pay_main@2026-12-10" }, "why": "2026-12-10 - 2026-11-20 = 20" },
+    { "id": "mako-04", "date": "2026-11-20", "question": "due_before_next_pay",
+      "expected": { "items": [
+        { "item": "rent@2026-11-27", "lands": "2026-11-27", "amount": 80000 },
+        { "item": "gym@2026-12-01", "lands": "2026-12-01", "amount": 8000 },
+        { "item": "utilities@2026-12-05", "lands": "2026-12-07", "amount": 10000 } ], "total": 98000 },
+      "why": "80,000 (rent) + 8,000 (gym) + 10,000 (power and water) = 98,000",
+      "note": "The card payments on 10 and 11 Dec land on or after the pay, so they are not before it." },
+    { "id": "mako-05", "date": "2026-11-20", "question": "not_seen_yet", "expected": { "items": [], "money_in": 0, "money_out": 0 },
+      "why": { "money_in": "none = 0", "money_out": "none = 0" },
+      "note": "The 10 Nov pay, the 10 and 11 Nov card payments and the October bills are all before the opening, so they are covered by it." },
+    { "id": "mako-06", "date": "2026-11-20", "question": "card_due", "account": "card_a", "expected": { "amount": 60000, "payment_date": "2026-12-10", "statement": "closed", "closed_on": "2026-11-15" }, "why": "60,000 (statement closed 15 Nov) = 60,000" },
+    { "id": "mako-07", "date": "2026-11-20", "question": "card_due", "account": "card_b", "expected": { "amount": 30000, "payment_date": "2026-12-11", "statement": "open", "closes_on": "2026-11-30" },
+      "why": "30,000 (posted so far this cycle) = 30,000", "rule_questions": ["Q7"] },
+    { "id": "mako-08", "date": "2026-11-20", "question": "total", "expected": 400000, "why": "400,000 (bank) = 400,000", "rule_questions": ["Q10"] },
+
+    { "id": "mako-09", "date": "2026-12-05", "question": "bank_today", "account": "bank", "expected": 312000, "why": "400,000 (opening) - 80,000 (rent 27 Nov) - 8,000 (gym 1 Dec) = 312,000" },
+    { "id": "mako-10", "date": "2026-12-05", "question": "safe_to_spend", "account": "bank", "expected": 17000,
+      "why": "312,000 (bank) - 100,000 (trip) - 105,000 (card A owed: 60,000 statement + 45,000 since) - 60,000 (card B owed: 50,000 statement + 10,000 since) - 10,000 (power and water, lands Mon 7 Dec) - 20,000 (minimum) = 17,000",
+      "note": "The walk reaches rent (28 Dec) and gym (4 Jan) too, but the 10 Dec pay lands first, so the lowest point is 9 Dec." },
+    { "id": "mako-11", "date": "2026-12-05", "question": "days_to_next_pay", "expected": { "days": 5, "next_pay": "2026-12-10", "item": "pay_main@2026-12-10" }, "why": "2026-12-10 - 2026-12-05 = 5" },
+    { "id": "mako-12", "date": "2026-12-05", "question": "due_before_next_pay",
+      "expected": { "items": [ { "item": "utilities@2026-12-05", "lands": "2026-12-07", "amount": 10000 } ], "total": 10000 },
+      "why": "10,000 (power and water, Mon 7 Dec) = 10,000" },
+    { "id": "mako-13", "date": "2026-12-05", "question": "not_seen_yet", "expected": { "items": [], "money_in": 0, "money_out": 0 },
+      "why": { "money_in": "none = 0", "money_out": "none = 0" },
+      "note": "Power and water is due today, a Saturday, but lands Monday, so it is not late." },
+    { "id": "mako-14", "date": "2026-12-05", "question": "card_due", "account": "card_a", "expected": { "amount": 60000, "payment_date": "2026-12-10", "statement": "closed", "closed_on": "2026-11-15" }, "why": "60,000 (statement closed 15 Nov) = 60,000" },
+    { "id": "mako-15", "date": "2026-12-05", "question": "card_due", "account": "card_b", "expected": { "amount": 50000, "payment_date": "2026-12-11", "statement": "closed", "closed_on": "2026-11-30" }, "why": "30,000 (posted 1 to 20 Nov) + 20,000 (25 Nov) = 50,000" },
+    { "id": "mako-16", "date": "2026-12-05", "question": "total", "expected": 312000, "why": "312,000 (bank) = 312,000", "rule_questions": ["Q10"] },
+
+    { "id": "mako-17", "date": "2026-12-16", "question": "card_due", "account": "card_a", "expected": { "amount": 45000, "payment_date": "2027-01-12", "statement": "closed", "closed_on": "2026-12-15" },
+      "why": "15,000 (posted 16 to 20 Nov) + 10,000 (21 Nov) + 20,000 (5 Dec) = 45,000",
+      "note": "The 9,000 bought 14 Dec posted 16 Dec, after the close, so it is on the next statement. Due Sun 10 Jan, 11 Jan is a holiday, so it lands Tue 12 Jan.", "rule_questions": ["Q18"] },
+    { "id": "mako-18", "date": "2026-12-18", "question": "card_due", "account": "card_a", "expected": { "amount": 45000, "payment_date": "2027-01-12", "statement": "closed", "closed_on": "2026-12-15" },
+      "why": "45,000 (statement closed 15 Dec) = 45,000",
+      "note": "The 4,000 refund posted 17 Dec, after the close; it goes on the next statement.", "rule_questions": ["Q5"],
+      "alt": { "Q5": { "expected": { "amount": 41000, "payment_date": "2027-01-12", "statement": "closed", "closed_on": "2026-12-15" }, "why": "45,000 (statement) - 4,000 (refund 17 Dec) = 41,000", "rule": "a refund after the close lowers the payment already due" } } },
+
+    { "id": "mako-19", "date": "2027-01-02", "question": "not_seen_yet", "expected": { "items": [], "money_in": 0, "money_out": 0 },
+      "why": { "money_in": "none = 0", "money_out": "none = 0" },
+      "note": "Gym is due 1 Jan, a holiday; 2 and 3 Jan the banks are closed; it lands Mon 4 Jan, so it is not late.", "rule_questions": ["Q17"] },
+    { "id": "mako-20", "date": "2027-01-02", "question": "due_before_next_pay",
+      "expected": { "items": [
+        { "item": "gym@2027-01-01", "lands": "2027-01-04", "amount": 8000 },
+        { "item": "utilities@2027-01-05", "lands": "2027-01-05", "amount": 10000 } ], "total": 18000 },
+      "why": "8,000 (gym, Mon 4 Jan) + 10,000 (power and water, Tue 5 Jan, planned) = 18,000",
+      "note": "Next pay lands Fri 8 Jan. The card payments land Tue 12 Jan, after it.", "rule_questions": ["Q17"] },
+
+    { "id": "mako-21", "date": "2027-01-09", "question": "bank_today", "account": "bank", "expected": 687000,
+      "why": "492,000 (check 12 Dec) - 5,000 (15 Dec) - 80,000 (rent 28 Dec) - 8,000 (gym 4 Jan) - 12,000 (power and water 5 Jan) + 250,000 (main pay 8 Jan) + 50,000 (side pay 8 Jan) = 687,000",
+      "note": "The 9 Jan check says 687,000 too, so nothing is unexplained." },
+    { "id": "mako-22", "date": "2027-01-09", "question": "safe_to_spend", "account": "bank", "expected": 317000,
+      "why": "687,000 (bank) - 140,000 (trip: 100,000 + 20,000 + 20,000) - 77,000 (card A owed: 45,000 statement + 32,000 since) - 35,000 (card B owed: statement) - 80,000 (rent 27 Jan) - 8,000 (gym 1 Feb) - 10,000 (power and water 5 Feb, planned) - 20,000 (minimum) = 317,000",
+      "note": "The pay for 10 Jan already landed on the 8th and is settled; the next pay is Wed 10 Feb. Counting the January pay again would add 300,000.", "rule_questions": ["Q16"] },
+    { "id": "mako-23", "date": "2027-01-09", "question": "days_to_next_pay", "expected": { "days": 32, "next_pay": "2027-02-10", "item": "pay_main@2027-02-10" }, "why": "2027-02-10 - 2027-01-09 = 32" },
+    { "id": "mako-24", "date": "2027-01-09", "question": "due_before_next_pay",
+      "expected": { "items": [
+        { "item": "card_a@2027-01-10", "lands": "2027-01-12", "amount": 45000 },
+        { "item": "card_b@2027-01-11", "lands": "2027-01-12", "amount": 35000 },
+        { "item": "rent@2027-01-27", "lands": "2027-01-27", "amount": 80000 },
+        { "item": "gym@2027-02-01", "lands": "2027-02-01", "amount": 8000 },
+        { "item": "utilities@2027-02-05", "lands": "2027-02-05", "amount": 10000 } ], "total": 178000 },
+      "why": "45,000 (card A) + 35,000 (card B) + 80,000 (rent) + 8,000 (gym) + 10,000 (power and water) = 178,000" },
+    { "id": "mako-25", "date": "2027-01-09", "question": "not_seen_yet", "expected": { "items": [], "money_in": 0, "money_out": 0 },
+      "why": { "money_in": "none = 0", "money_out": "none = 0" } },
+    { "id": "mako-26", "date": "2027-01-09", "question": "card_due", "account": "card_a", "expected": { "amount": 45000, "payment_date": "2027-01-12", "statement": "closed", "closed_on": "2026-12-15" }, "why": "45,000 (statement closed 15 Dec) = 45,000" },
+    { "id": "mako-27", "date": "2027-01-09", "question": "card_due", "account": "card_b", "expected": { "amount": 35000, "payment_date": "2027-01-12", "statement": "closed", "closed_on": "2026-12-31" },
+      "why": "10,000 (2 Dec) + 30,000 (24 Dec) - 5,000 (refund 28 Dec) = 35,000" },
+    { "id": "mako-28", "date": "2027-01-09", "question": "total", "expected": 687000, "why": "687,000 (bank) = 687,000", "rule_questions": ["Q10"] },
+
+    { "id": "mako-29", "date": "2027-01-11", "question": "bank_today", "account": "bank", "expected": 687000, "why": "687,000 (check 9 Jan, nothing in or out of the bank since) = 687,000" },
+    { "id": "mako-30", "date": "2027-01-11", "question": "not_seen_yet", "expected": { "items": [], "money_in": 0, "money_out": 0 },
+      "why": { "money_in": "none = 0", "money_out": "none = 0" },
+      "note": "Card A is due Sun 10 Jan and card B on Mon 11 Jan, a holiday. Both land Tue 12 Jan, so neither is late. The 10 Jan pay landed on the 8th." },
+    { "id": "mako-31", "date": "2027-01-11", "question": "safe_to_spend", "account": "bank", "expected": 311000,
+      "why": "687,000 (bank) - 140,000 (trip) - 77,000 (card A owed) - 41,000 (card B owed: 35,000 statement + 6,000 on 10 Jan) - 80,000 (rent 27 Jan) - 8,000 (gym 1 Feb) - 10,000 (power and water 5 Feb) - 20,000 (minimum) = 311,000" },
+    { "id": "mako-32", "date": "2027-01-11", "question": "days_to_next_pay", "expected": { "days": 30, "next_pay": "2027-02-10", "item": "pay_main@2027-02-10" }, "why": "2027-02-10 - 2027-01-11 = 30" },
+
+    { "id": "mako-33", "date": "2027-02-11", "question": "bank_today", "account": "bank", "expected": 727000,
+      "why": "687,000 (check 9 Jan) - 80,000 (cards 12 Jan: 45,000 + 35,000) - 80,000 (rent 27 Jan) - 8,000 (gym 1 Feb) - 10,000 (power and water 5 Feb) + 250,000 (main pay 10 Feb) - 32,000 (card A 10 Feb) = 727,000" },
+    { "id": "mako-34", "date": "2027-02-11", "question": "not_seen_yet",
+      "expected": { "items": [ { "item": "pay_side@2027-02-10", "lands": "2027-02-10", "amount": 50000, "direction": "in" } ], "money_in": 50000, "money_out": 0 },
+      "why": { "money_in": "50,000 (side pay, due Wed 10 Feb) = 50,000", "money_out": "none = 0" },
+      "note": "Today is a holiday. With a one working day grace the side pay would not be flagged until Fri 12 Feb.", "rule_questions": ["Q4"] },
+    { "id": "mako-35", "date": "2027-02-11", "question": "safe_to_spend", "account": "bank", "expected": 404000,
+      "why": "727,000 (bank) - 160,000 (trip: 100,000 + 3 x 20,000) - 18,000 (card A owed: 10,000 + 8,000 since the 15 Jan close) - 27,000 (card B owed: 20,000 statement + 7,000 since) - 80,000 (rent, due Sat 27 Feb, lands Mon 1 Mar) - 8,000 (gym 1 Mar) - 10,000 (power and water 5 Mar) - 20,000 (minimum) = 404,000",
+      "note": "The late side pay is not counted as coming in until it lands. Next main pay Wed 10 Mar.", "rule_questions": ["Q3"],
+      "alt": { "Q3": { "expected": 454000, "why": "404,000 (as above) + 50,000 (side pay counted as arriving today) = 454,000", "rule": "a pay that is late still counts as coming in" } } },
+    { "id": "mako-36", "date": "2027-02-11", "question": "days_to_next_pay", "expected": { "days": 27, "next_pay": "2027-03-10", "item": "pay_main@2027-03-10" },
+      "why": "2027-03-10 - 2027-02-11 = 27", "note": "The side pay does not start a period, so it does not count here even though it is late." },
+    { "id": "mako-37", "date": "2027-02-11", "question": "due_before_next_pay",
+      "expected": { "items": [
+        { "item": "card_b@2027-02-11", "lands": "2027-02-12", "amount": 20000 },
+        { "item": "rent@2027-02-27", "lands": "2027-03-01", "amount": 80000 },
+        { "item": "gym@2027-03-01", "lands": "2027-03-01", "amount": 8000 },
+        { "item": "utilities@2027-03-05", "lands": "2027-03-05", "amount": 10000 } ], "total": 118000 },
+      "why": "20,000 (card B, 11 Feb holiday, lands Fri 12 Feb) + 80,000 (rent) + 8,000 (gym) + 10,000 (power and water) = 118,000",
+      "note": "Card A's next payment lands on the pay day, 10 Mar, so it is not before the pay." },
+    { "id": "mako-38", "date": "2027-02-11", "question": "card_due", "account": "card_a", "expected": { "amount": 18000, "payment_date": "2027-03-10", "statement": "open", "closes_on": "2027-02-15" },
+      "why": "10,000 (20 Jan) + 8,000 (1 Feb) = 18,000", "rule_questions": ["Q7"] },
+    { "id": "mako-39", "date": "2027-02-11", "question": "card_due", "account": "card_b", "expected": { "amount": 20000, "payment_date": "2027-02-12", "statement": "closed", "closed_on": "2027-01-31" },
+      "why": "6,000 (10 Jan) + 14,000 (25 Jan) = 20,000", "note": "The statement closed on Sun 31 Jan; the close day does not move.", "rule_questions": ["Q6"] },
+    { "id": "mako-40", "date": "2027-02-11", "question": "total", "expected": 727000, "why": "727,000 (bank) = 727,000", "rule_questions": ["Q10"] },
+
+    { "id": "mako-41", "date": "2027-02-13", "question": "bank_today", "account": "bank", "expected": 757000, "why": "727,000 (11 Feb) - 20,000 (card B 12 Feb) + 50,000 (side pay 12 Feb) = 757,000" },
+    { "id": "mako-42", "date": "2027-02-13", "question": "not_seen_yet", "expected": { "items": [], "money_in": 0, "money_out": 0 },
+      "why": { "money_in": "none = 0", "money_out": "none = 0" }, "note": "The late side pay landed on the 12th and settles the 10 Feb item." }
+  ]
+}

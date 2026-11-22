@@ -1,0 +1,130 @@
+{
+  "life": "every_two_weeks",
+  "title": "Sam: paid every two weeks on Thursday, a three-pay December, rent once a month",
+  "story": "Sam is in the United States. Pay of 980.00 lands in checking every other Thursday from 5 Nov 2026, so December has three pays (3, 17 and 31 Dec). Rent of 1,200.00 is taken on the 1st, more than one pay. Phone on the 15th, car insurance every three months from 10 Jan. One card, closing on the 25th and paid in full from checking on the 20th of the next month. Set up on Fri 20 Nov 2026, the day after a pay. Amounts have cents. Every amount is made up.",
+  "currency": "USD",
+  "window": { "from": "2026-11-20", "to": "2027-02-20" },
+  "holidays": {
+    "country": "US",
+    "dates": [
+      { "date": "2026-11-26", "name": "Thanksgiving" },
+      { "date": "2026-12-25", "name": "Christmas Day" },
+      { "date": "2027-01-01", "name": "New Year's Day" },
+      { "date": "2027-01-18", "name": "Martin Luther King Jr. Day" },
+      { "date": "2027-02-15", "name": "Presidents' Day" }
+    ],
+    "bank_closed": []
+  },
+  "accounts": [
+    { "id": "checking", "name": "Checking", "kind": "bank", "currency": "USD", "owner": "Sam", "minimum": 100.00,
+      "opening": { "date": "2026-11-20", "amount": 1500.00, "note": "Includes the 19 Nov pay, the 1 Nov rent and the 20 Nov card payment." } },
+    { "id": "card", "name": "Card", "kind": "card", "currency": "USD", "owner": "Sam",
+      "statement_close_day": 25,
+      "payment": { "day": 20, "months_after_close": 1, "from": "checking", "pays": "in full", "weekend_holiday": "move later" },
+      "opening": { "date": "2026-11-20",
+        "statement": { "closed": "2026-10-25", "amount": 400.00, "payment_item": "card@2026-11-20", "paid": true },
+        "current": 150.00, "note": "The October statement was paid on 20 Nov. 150.00 posted since." } }
+  ],
+  "income": [
+    { "id": "pay", "name": "Wages", "account": "checking", "owner": "Sam", "currency": "USD", "amount": 980.00,
+      "schedule": { "frequency": "every_n_weeks", "n": 2, "weekday": "Thu", "from": "2026-11-05" },
+      "weekend_holiday": "move earlier", "starts_period": true }
+  ],
+  "bills": [
+    { "id": "rent", "name": "Rent", "account": "checking", "amount": 1200.00, "schedule": { "frequency": "monthly", "day": 1 }, "weekend_holiday": "move later" },
+    { "id": "phone", "name": "Phone", "account": "checking", "amount": 45.50, "schedule": { "frequency": "monthly", "day": 15 }, "weekend_holiday": "move later" },
+    { "id": "insurance", "name": "Car insurance", "account": "checking", "amount": 300.00, "schedule": { "frequency": "every_n_months", "n": 3, "day": 10, "from": "2027-01-10" }, "weekend_holiday": "move later" }
+  ],
+  "goals": [],
+  "landing_dates": {
+    "pay": { "2026-12-03": "2026-12-03", "2026-12-17": "2026-12-17", "2026-12-31": "2026-12-31", "2027-01-14": "2027-01-14", "2027-01-28": "2027-01-28", "2027-02-11": "2027-02-11", "2027-02-25": "2027-02-25", "2027-03-11": "2027-03-11", "2027-03-25": "2027-03-25", "2027-04-08": "2027-04-08" },
+    "rent": { "2026-12-01": "2026-12-01", "2027-01-01": "2027-01-04", "2027-02-01": "2027-02-01", "2027-03-01": "2027-03-01", "2027-04-01": "2027-04-01" },
+    "phone": { "2026-12-15": "2026-12-15", "2027-01-15": "2027-01-15", "2027-02-15": "2027-02-16", "2027-03-15": "2027-03-15" },
+    "insurance": { "2027-01-10": "2027-01-11", "2027-04-10": "2027-04-12" },
+    "card": { "2026-12-20": "2026-12-21", "2027-01-20": "2027-01-20", "2027-02-20": "2027-02-22" }
+  },
+  "events": [
+    { "id": "s01", "date": "2026-11-22", "kind": "spend", "account": "card", "amount": 80.25, "note": "groceries" },
+    { "id": "s02", "date": "2026-12-01", "kind": "bill_paid", "account": "checking", "amount": 1200.00, "settles": "rent@2026-12-01" },
+    { "id": "s03", "date": "2026-12-03", "kind": "pay_in", "account": "checking", "amount": 980.00, "settles": "pay@2026-12-03" },
+    { "id": "s04", "date": "2026-12-05", "kind": "spend", "account": "card", "amount": 60.00 },
+    { "id": "s05", "date": "2026-12-15", "kind": "bill_paid", "account": "checking", "amount": 45.50, "settles": "phone@2026-12-15" },
+    { "id": "s06", "date": "2026-12-17", "kind": "pay_in", "account": "checking", "amount": 980.00, "settles": "pay@2026-12-17" },
+    { "id": "s07", "date": "2026-12-21", "kind": "card_payment", "from": "checking", "card": "card", "amount": 230.25, "settles": "card@2026-12-20", "note": "20 Dec is a Sunday" },
+    { "id": "s08", "date": "2026-12-22", "kind": "spend", "account": "card", "amount": 120.00, "note": "Christmas" },
+    { "id": "s09", "date": "2026-12-27", "kind": "refund", "account": "card", "amount": 20.00, "posted": "2026-12-27", "note": "posted after the 25 Dec close" },
+    { "id": "s10", "date": "2026-12-31", "kind": "pay_in", "account": "checking", "amount": 980.00, "settles": "pay@2026-12-31", "note": "the third pay in December" },
+    { "id": "s11", "date": "2027-01-04", "kind": "bill_paid", "account": "checking", "amount": 1200.00, "settles": "rent@2027-01-01", "note": "1 Jan holiday, then a weekend" },
+    { "id": "s12", "date": "2027-01-10", "kind": "spend", "account": "card", "amount": 70.00 },
+    { "id": "s13", "date": "2027-01-11", "kind": "bill_paid", "account": "checking", "amount": 300.00, "settles": "insurance@2027-01-10", "note": "10 Jan is a Sunday" },
+    { "id": "s14", "date": "2027-01-14", "kind": "pay_in", "account": "checking", "amount": 980.00, "settles": "pay@2027-01-14" },
+    { "id": "s15", "date": "2027-01-15", "kind": "bill_paid", "account": "checking", "amount": 45.50, "settles": "phone@2027-01-15" },
+    { "id": "s16", "date": "2027-01-20", "kind": "card_payment", "from": "checking", "card": "card", "amount": 180.00, "settles": "card@2027-01-20" },
+    { "id": "s17", "date": "2027-01-28", "kind": "pay_in", "account": "checking", "amount": 980.00, "settles": "pay@2027-01-28" },
+    { "id": "s18", "date": "2027-02-01", "kind": "bill_paid", "account": "checking", "amount": 1200.00, "settles": "rent@2027-02-01" },
+    { "id": "s19", "date": "2027-02-11", "kind": "pay_in", "account": "checking", "amount": 980.00, "settles": "pay@2027-02-11" },
+    { "id": "s20", "date": "2027-02-16", "kind": "bill_paid", "account": "checking", "amount": 45.50, "settles": "phone@2027-02-15", "note": "15 Feb is a holiday" },
+    { "id": "s21", "date": "2027-02-20", "kind": "check", "account": "checking", "amount": 2933.25 }
+  ],
+  "card_statements": {
+    "card": [
+      { "closed": "2026-11-25", "amount": 230.25, "why": "150.00 (posted 26 Oct to 20 Nov) + 80.25 (22 Nov) = 230.25", "payment_lands": "2026-12-21" },
+      { "closed": "2026-12-25", "amount": 180.00, "why": "60.00 (5 Dec) + 120.00 (22 Dec) = 180.00", "payment_lands": "2027-01-20" },
+      { "closed": "2027-01-25", "amount": 50.00, "why": "70.00 (10 Jan) - 20.00 (refund 27 Dec) = 50.00", "payment_lands": "2027-02-22" }
+    ]
+  },
+  "asks": [
+    { "id": "biweekly-01", "date": "2026-11-20", "question": "bank_today", "account": "checking", "expected": 1500.00, "why": "1,500.00 (opening 20 Nov) = 1,500.00" },
+    { "id": "biweekly-02", "date": "2026-11-20", "question": "safe_to_spend", "account": "checking", "expected": 50.00,
+      "why": "1,500.00 (checking) - 150.00 (card owed) - 1,200.00 (rent 1 Dec) - 100.00 (minimum) = 50.00",
+      "note": "The walk runs to the insurance on 11 Jan, the furthest next bill. Lowest point is 1 Dec, after rent and before the 3 Dec pay.", "rule_questions": ["Q2"] },
+    { "id": "biweekly-03", "date": "2026-11-20", "question": "days_to_next_pay", "expected": { "days": 13, "next_pay": "2026-12-03", "item": "pay@2026-12-03" }, "why": "2026-12-03 - 2026-11-20 = 13" },
+    { "id": "biweekly-04", "date": "2026-11-20", "question": "due_before_next_pay",
+      "expected": { "items": [ { "item": "rent@2026-12-01", "lands": "2026-12-01", "amount": 1200.00 } ], "total": 1200.00 },
+      "why": "1,200.00 (rent) = 1,200.00" },
+    { "id": "biweekly-05", "date": "2026-11-20", "question": "card_due", "account": "card", "expected": { "amount": 150.00, "payment_date": "2026-12-21", "statement": "open", "closes_on": "2026-11-25" },
+      "why": "150.00 (posted so far this cycle) = 150.00", "rule_questions": ["Q7"] },
+    { "id": "biweekly-06", "date": "2026-11-20", "question": "total", "expected": 1500.00, "why": "1,500.00 (checking) = 1,500.00", "rule_questions": ["Q10"] },
+
+    { "id": "biweekly-07", "date": "2026-12-04", "question": "bank_today", "account": "checking", "expected": 1280.00, "why": "1,500.00 (opening) - 1,200.00 (rent 1 Dec) + 980.00 (pay 3 Dec) = 1,280.00" },
+    { "id": "biweekly-08", "date": "2026-12-04", "question": "safe_to_spend", "account": "checking", "expected": 904.25,
+      "why": "1,280.00 (checking) - 230.25 (card owed: the 25 Nov statement) - 45.50 (phone 15 Dec) - 100.00 (minimum) = 904.25",
+      "note": "Next rent is 4 Jan (1 Jan holiday), so the walk runs to 11 Jan and crosses the pays of 17 Dec and 31 Dec. With both counted, the lowest point is 15 Dec.", "rule_questions": ["Q2"],
+      "alt": { "Q2": { "expected": 384.25, "why": "1,280.00 (checking) - 230.25 (card) - 45.50 (phone 15 Dec) + 980.00 (pay 17 Dec) - 1,200.00 (rent 4 Jan) - 300.00 (insurance 11 Jan) - 100.00 (minimum) = 384.25", "rule": "only the next pay is counted; pays after it are left out of the walk" } } },
+    { "id": "biweekly-09", "date": "2026-12-04", "question": "days_to_next_pay", "expected": { "days": 13, "next_pay": "2026-12-17", "item": "pay@2026-12-17" }, "why": "2026-12-17 - 2026-12-04 = 13" },
+    { "id": "biweekly-10", "date": "2026-12-04", "question": "due_before_next_pay",
+      "expected": { "items": [ { "item": "phone@2026-12-15", "lands": "2026-12-15", "amount": 45.50 } ], "total": 45.50 },
+      "why": "45.50 (phone) = 45.50" },
+    { "id": "biweekly-11", "date": "2026-12-04", "question": "card_due", "account": "card", "expected": { "amount": 230.25, "payment_date": "2026-12-21", "statement": "closed", "closed_on": "2026-11-25" },
+      "why": "150.00 (posted 26 Oct to 20 Nov) + 80.25 (22 Nov) = 230.25", "note": "Due Sun 20 Dec, lands Mon 21 Dec." },
+
+    { "id": "biweekly-12", "date": "2027-01-01", "question": "bank_today", "account": "checking", "expected": 2964.25,
+      "why": "1,280.00 (4 Dec) - 45.50 (phone 15 Dec) + 980.00 (pay 17 Dec) - 230.25 (card 21 Dec) + 980.00 (pay 31 Dec) = 2,964.25" },
+    { "id": "biweekly-13", "date": "2027-01-01", "question": "safe_to_spend", "account": "checking", "expected": 1204.25,
+      "why": "2,964.25 (checking) - 180.00 (card statement 25 Dec) + 20.00 (refund 27 Dec, on the card) - 1,200.00 (rent 4 Jan) - 300.00 (insurance 11 Jan) - 100.00 (minimum) = 1,204.25",
+      "note": "The third December pay is what covers January's rent. The walk runs to the phone bill on 15 Jan; the 14 Jan pay comes before it." },
+    { "id": "biweekly-14", "date": "2027-01-01", "question": "days_to_next_pay", "expected": { "days": 13, "next_pay": "2027-01-14", "item": "pay@2027-01-14" }, "why": "2027-01-14 - 2027-01-01 = 13" },
+    { "id": "biweekly-15", "date": "2027-01-01", "question": "due_before_next_pay",
+      "expected": { "items": [
+        { "item": "rent@2027-01-01", "lands": "2027-01-04", "amount": 1200.00 },
+        { "item": "insurance@2027-01-10", "lands": "2027-01-11", "amount": 300.00 } ], "total": 1500.00 },
+      "why": "1,200.00 (rent, due Fri 1 Jan, a holiday, lands Mon 4 Jan) + 300.00 (insurance, due Sun 10 Jan, lands Mon 11 Jan) = 1,500.00" },
+    { "id": "biweekly-16", "date": "2027-01-01", "question": "not_seen_yet", "expected": { "items": [], "money_in": 0, "money_out": 0 }, "why": { "money_in": "none = 0", "money_out": "none = 0" },
+      "note": "Rent is due today but lands Mon 4 Jan." },
+    { "id": "biweekly-17", "date": "2027-01-01", "question": "card_due", "account": "card", "expected": { "amount": 180.00, "payment_date": "2027-01-20", "statement": "closed", "closed_on": "2026-12-25" },
+      "why": "60.00 (5 Dec) + 120.00 (22 Dec) = 180.00", "note": "The statement closed on 25 Dec, a holiday; the close day does not move.", "rule_questions": ["Q6"] },
+
+    { "id": "biweekly-18", "date": "2027-01-15", "question": "safe_to_spend", "account": "checking", "expected": 1848.75,
+      "why": "2,398.75 (checking) - 180.00 (card statement 25 Dec) - 50.00 (card since: 70.00 less the 20.00 refund) + 980.00 (pay 28 Jan) - 1,200.00 (rent 1 Feb) - 100.00 (minimum) = 1,848.75",
+      "note": "Here the lowest point comes after the next pay: rent on 1 Feb is more than the 28 Jan pay. A walk that stops before the next pay would say 2,068.75. The walk runs on to the insurance on 12 Apr and never goes lower.", "rule_questions": ["Q2"],
+      "alt": { "Q2": { "expected": 1503.25, "why": "2,398.75 (checking) - 230.00 (card owed) + 980.00 (pay 28 Jan) - 1,200.00 (rent 1 Feb) - 45.50 (phone 16 Feb) - 300.00 (insurance 12 Apr) - 100.00 (minimum) = 1,503.25", "rule": "only the next pay is counted; pays after it are left out of the walk" } } },
+    { "id": "biweekly-19", "date": "2027-01-15", "question": "bank_today", "account": "checking", "expected": 2398.75,
+      "why": "2,964.25 (1 Jan) - 1,200.00 (rent 4 Jan) - 300.00 (insurance 11 Jan) + 980.00 (pay 14 Jan) - 45.50 (phone 15 Jan) = 2,398.75" },
+    { "id": "biweekly-20", "date": "2027-01-15", "question": "due_before_next_pay",
+      "expected": { "items": [ { "item": "card@2027-01-20", "lands": "2027-01-20", "amount": 180.00 } ], "total": 180.00 },
+      "why": "180.00 (card) = 180.00", "note": "Phone due today was paid today." },
+    { "id": "biweekly-21", "date": "2027-01-15", "question": "card_due", "account": "card", "expected": { "amount": 180.00, "payment_date": "2027-01-20", "statement": "closed", "closed_on": "2026-12-25" },
+      "why": "180.00 (statement closed 25 Dec) = 180.00", "note": "The 20.00 refund posted 27 Dec, after the close, so it is on the next statement.", "rule_questions": ["Q5"],
+      "alt": { "Q5": { "expected": { "amount": 160.00, "payment_date": "2027-01-20", "statement": "closed", "closed_on": "2026-12-25" }, "why": "180.00 (statement) - 20.00 (refund 27 Dec) = 160.00", "rule": "a refund after the close lowers the payment already due" } } }
+  ]
+}

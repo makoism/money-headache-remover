@@ -1,0 +1,109 @@
+{
+  "life": "setup_mid_month",
+  "title": "Nell: sets up on the 20th, after this month's pay and rent already went through",
+  "story": "Nell is in a euro country (holidays listed below are made up for the test: 25 and 26 Dec and 1 Jan). Pay of 2,500.00 lands on the 15th, moved to the working day before. Rent of 800.00 goes on the 3rd, moved to the working day after. Power (an estimate of 60.00) on the 22nd and phone on the 28th. One card with a deferred debit: it closes on the last day of the month and the whole statement is taken from the bank on the 5th of the next month. She sets up on Sun 20 Dec 2026, after the 15 Dec pay, the 3 Dec rent and the 5 Dec card payment. The figure she types already has all of those in it. Amounts have cents. Every amount is made up.",
+  "currency": "EUR",
+  "window": { "from": "2026-12-20", "to": "2027-03-20" },
+  "holidays": {
+    "country": "made-up euro country",
+    "dates": [
+      { "date": "2026-12-25", "name": "Christmas Day" },
+      { "date": "2026-12-26", "name": "Second day of Christmas" },
+      { "date": "2027-01-01", "name": "New Year's Day" }
+    ],
+    "bank_closed": []
+  },
+  "accounts": [
+    { "id": "bank", "name": "Bank", "kind": "bank", "currency": "EUR", "owner": "Nell", "minimum": 100.00,
+      "opening": { "date": "2026-12-20", "amount": 2000.00, "note": "Already has the 15 Dec pay in it and the 3 Dec rent and 5 Dec card payment out of it." } },
+    { "id": "card", "name": "Card", "kind": "card", "currency": "EUR", "owner": "Nell",
+      "statement_close_day": "last",
+      "payment": { "day": 5, "months_after_close": 1, "from": "bank", "pays": "in full", "weekend_holiday": "move later" },
+      "opening": { "date": "2026-12-20",
+        "statement": { "closed": "2026-11-30", "amount": 300.00, "payment_item": "card@2026-12-05", "paid": true },
+        "current": 150.00, "note": "The November statement was taken on 5 Dec. 150.00 posted since 1 Dec." } }
+  ],
+  "income": [
+    { "id": "pay", "name": "Salary", "account": "bank", "owner": "Nell", "currency": "EUR", "amount": 2500.00,
+      "schedule": { "frequency": "monthly", "day": 15 }, "weekend_holiday": "move earlier", "starts_period": true }
+  ],
+  "bills": [
+    { "id": "rent", "name": "Rent", "account": "bank", "amount": 800.00, "schedule": { "frequency": "monthly", "day": 3 }, "weekend_holiday": "move later" },
+    { "id": "power", "name": "Power", "account": "bank", "amount": 60.00, "amount_kind": "estimate", "schedule": { "frequency": "monthly", "day": 22 }, "weekend_holiday": "move later" },
+    { "id": "phone", "name": "Phone", "account": "bank", "amount": 25.50, "schedule": { "frequency": "monthly", "day": 28 }, "weekend_holiday": "move later" }
+  ],
+  "goals": [],
+  "landing_dates": {
+    "pay": { "2027-01-15": "2027-01-15", "2027-02-15": "2027-02-15", "2027-03-15": "2027-03-15" },
+    "rent": { "2027-01-03": "2027-01-04", "2027-02-03": "2027-02-03", "2027-03-03": "2027-03-03" },
+    "power": { "2026-12-22": "2026-12-22", "2027-01-22": "2027-01-22", "2027-02-22": "2027-02-22" },
+    "phone": { "2026-12-28": "2026-12-28", "2027-01-28": "2027-01-28", "2027-02-28": "2027-03-01" },
+    "card": { "2027-01-05": "2027-01-05", "2027-02-05": "2027-02-05", "2027-03-05": "2027-03-05" }
+  },
+  "events": [
+    { "id": "n01", "date": "2026-12-21", "kind": "spend", "account": "card", "amount": 200.00, "note": "gifts" },
+    { "id": "n02", "date": "2026-12-22", "kind": "bill_paid", "account": "bank", "amount": 60.00, "settles": "power@2026-12-22" },
+    { "id": "n03", "date": "2026-12-28", "kind": "bill_paid", "account": "bank", "amount": 25.50, "settles": "phone@2026-12-28" },
+    { "id": "n04", "date": "2026-12-30", "kind": "spend", "account": "bank", "amount": 100.00, "note": "debit card" },
+    { "id": "n05", "date": "2027-01-04", "kind": "bill_paid", "account": "bank", "amount": 800.00, "settles": "rent@2027-01-03", "note": "3 Jan is a Sunday" },
+    { "id": "n06", "date": "2027-01-05", "kind": "card_payment", "from": "bank", "card": "card", "amount": 350.00, "settles": "card@2027-01-05" },
+    { "id": "n07", "date": "2027-01-10", "kind": "spend", "account": "card", "amount": 120.00 },
+    { "id": "n08", "date": "2027-01-15", "kind": "pay_in", "account": "bank", "amount": 2500.00, "settles": "pay@2027-01-15" },
+    { "id": "n09", "date": "2027-01-20", "kind": "spend", "account": "card", "amount": 80.00 },
+    { "id": "n10", "date": "2027-01-22", "kind": "bill_paid", "account": "bank", "amount": 72.40, "settles": "power@2027-01-22", "note": "real bill higher than the 60.00 estimate" },
+    { "id": "n11", "date": "2027-01-28", "kind": "bill_paid", "account": "bank", "amount": 25.50, "settles": "phone@2027-01-28" },
+    { "id": "n12", "date": "2027-02-03", "kind": "bill_paid", "account": "bank", "amount": 800.00, "settles": "rent@2027-02-03" },
+    { "id": "n13", "date": "2027-02-05", "kind": "card_payment", "from": "bank", "card": "card", "amount": 200.00, "settles": "card@2027-02-05" },
+    { "id": "n14", "date": "2027-02-14", "kind": "spend", "account": "card", "amount": 90.00 },
+    { "id": "n15", "date": "2027-02-15", "kind": "pay_in", "account": "bank", "amount": 2500.00, "settles": "pay@2027-02-15" },
+    { "id": "n16", "date": "2027-02-22", "kind": "bill_paid", "account": "bank", "amount": 65.10, "settles": "power@2027-02-22" },
+    { "id": "n17", "date": "2027-03-01", "kind": "bill_paid", "account": "bank", "amount": 25.50, "settles": "phone@2027-02-28", "note": "28 Feb is a Sunday" },
+    { "id": "n18", "date": "2027-03-03", "kind": "bill_paid", "account": "bank", "amount": 800.00, "settles": "rent@2027-03-03" },
+    { "id": "n19", "date": "2027-03-05", "kind": "card_payment", "from": "bank", "card": "card", "amount": 90.00, "settles": "card@2027-03-05" },
+    { "id": "n20", "date": "2027-03-15", "kind": "pay_in", "account": "bank", "amount": 2500.00, "settles": "pay@2027-03-15" }
+  ],
+  "card_statements": {
+    "card": [
+      { "closed": "2026-12-31", "amount": 350.00, "why": "150.00 (posted 1 to 20 Dec) + 200.00 (21 Dec) = 350.00", "payment_lands": "2027-01-05" },
+      { "closed": "2027-01-31", "amount": 200.00, "why": "120.00 (10 Jan) + 80.00 (20 Jan) = 200.00", "payment_lands": "2027-02-05" },
+      { "closed": "2027-02-28", "amount": 90.00, "why": "90.00 (14 Feb) = 90.00", "payment_lands": "2027-03-05" }
+    ]
+  },
+  "asks": [
+    { "id": "midmonth-01", "date": "2026-12-20", "question": "bank_today", "account": "bank", "expected": 2000.00, "why": "2,000.00 (opening, typed at setup) = 2,000.00",
+      "note": "Not 2,000.00 + 2,500.00 pay - 800.00 rent: both already happened and are inside the typed figure." },
+    { "id": "midmonth-02", "date": "2026-12-20", "question": "days_to_next_pay", "expected": { "days": 26, "next_pay": "2027-01-15", "item": "pay@2027-01-15" }, "why": "2027-01-15 - 2026-12-20 = 26" },
+    { "id": "midmonth-03", "date": "2026-12-20", "question": "not_seen_yet", "expected": { "items": [], "money_in": 0, "money_out": 0 }, "why": { "money_in": "none = 0", "money_out": "none = 0" },
+      "note": "The 15 Dec pay, 3 Dec rent and 5 Dec card payment are dated before the opening, so the opening covers them. They are neither late nor still to come.", "rule_questions": ["Q20"] },
+    { "id": "midmonth-04", "date": "2026-12-20", "question": "due_before_next_pay",
+      "expected": { "items": [
+        { "item": "power@2026-12-22", "lands": "2026-12-22", "amount": 60.00 },
+        { "item": "phone@2026-12-28", "lands": "2026-12-28", "amount": 25.50 },
+        { "item": "rent@2027-01-03", "lands": "2027-01-04", "amount": 800.00 },
+        { "item": "card@2027-01-05", "lands": "2027-01-05", "amount": 150.00, "statement": "open" } ], "total": 1035.50 },
+      "why": "60.00 (power) + 25.50 (phone) + 800.00 (rent, due Sun 3 Jan, lands Mon 4 Jan) + 150.00 (card so far, statement closes 31 Dec) = 1,035.50", "rule_questions": ["Q7"] },
+    { "id": "midmonth-05", "date": "2026-12-20", "question": "safe_to_spend", "account": "bank", "expected": 864.50,
+      "why": "2,000.00 (bank) - 150.00 (card owed) - 60.00 (power 22 Dec) - 25.50 (phone 28 Dec) - 800.00 (rent 4 Jan) - 100.00 (minimum) = 864.50" },
+    { "id": "midmonth-06", "date": "2026-12-20", "question": "card_due", "account": "card", "expected": { "amount": 150.00, "payment_date": "2027-01-05", "statement": "open", "closes_on": "2026-12-31" },
+      "why": "150.00 (posted so far this cycle) = 150.00", "rule_questions": ["Q7"] },
+    { "id": "midmonth-07", "date": "2026-12-20", "question": "total", "expected": 2000.00, "why": "2,000.00 (bank) = 2,000.00", "rule_questions": ["Q10"] },
+
+    { "id": "midmonth-08", "date": "2027-01-02", "question": "bank_today", "account": "bank", "expected": 1814.50, "why": "2,000.00 (opening) - 60.00 (power 22 Dec) - 25.50 (phone 28 Dec) - 100.00 (30 Dec) = 1,814.50" },
+    { "id": "midmonth-09", "date": "2027-01-02", "question": "card_due", "account": "card", "expected": { "amount": 350.00, "payment_date": "2027-01-05", "statement": "closed", "closed_on": "2026-12-31" },
+      "why": "150.00 (posted 1 to 20 Dec) + 200.00 (21 Dec) = 350.00" },
+    { "id": "midmonth-10", "date": "2027-01-02", "question": "days_to_next_pay", "expected": { "days": 13, "next_pay": "2027-01-15", "item": "pay@2027-01-15" }, "why": "2027-01-15 - 2027-01-02 = 13" },
+    { "id": "midmonth-11", "date": "2027-01-02", "question": "due_before_next_pay",
+      "expected": { "items": [
+        { "item": "rent@2027-01-03", "lands": "2027-01-04", "amount": 800.00 },
+        { "item": "card@2027-01-05", "lands": "2027-01-05", "amount": 350.00 } ], "total": 1150.00 },
+      "why": "800.00 (rent) + 350.00 (card) = 1,150.00" },
+    { "id": "midmonth-12", "date": "2027-01-02", "question": "safe_to_spend", "account": "bank", "expected": 564.50,
+      "why": "1,814.50 (bank) - 350.00 (card owed) - 800.00 (rent 4 Jan) - 100.00 (minimum) = 564.50",
+      "note": "The walk runs on to the phone bill on 28 Jan, but the 15 Jan pay comes first, so the lowest point is 4 Jan." },
+
+    { "id": "midmonth-13", "date": "2027-01-16", "question": "bank_today", "account": "bank", "expected": 3164.50, "why": "1,814.50 (2 Jan) - 800.00 (rent 4 Jan) - 350.00 (card 5 Jan) + 2,500.00 (pay 15 Jan) = 3,164.50" },
+    { "id": "midmonth-14", "date": "2027-01-16", "question": "days_to_next_pay", "expected": { "days": 30, "next_pay": "2027-02-15", "item": "pay@2027-02-15" }, "why": "2027-02-15 - 2027-01-16 = 30" },
+    { "id": "midmonth-15", "date": "2027-01-16", "question": "safe_to_spend", "account": "bank", "expected": 2059.00,
+      "why": "3,164.50 (bank) - 120.00 (card owed) - 60.00 (power 22 Jan, estimate) - 25.50 (phone 28 Jan) - 800.00 (rent 3 Feb) - 100.00 (minimum) = 2,059.00" }
+  ]
+}
