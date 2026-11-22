@@ -461,7 +461,11 @@ const keepLive = e => !!(e && +e.t > 0 && Date.now() - e.t <= KEEP_DAYS * 864e5 
    stay small). Newest first. */
 function keepAll() { const u = (S && S.ui) || {}; return [u.keep].concat(Array.isArray(u.keeps) ? u.keeps : []).filter(keepLive); }
 function keepFind(sn) { if (typeof sn !== 'string') return null; const t = /^keep:(\d+)$/.exec(sn), h = t ? '' : kHash(sn); return keepAll().find(e => (t ? String(e.t) === t[1] : e.snap === sn || e.sh === h)) || null; }
-function keepDrop(e) { if (!e || !S.ui) return; if (S.ui.keep && S.ui.keep.t === e.t) delete S.ui.keep; if (Array.isArray(S.ui.keeps)) { S.ui.keeps = S.ui.keeps.filter(x => x && x.t !== e.t); if (!S.ui.keeps.length) delete S.ui.keeps; } }
+function keepDrop(e) {
+  if (!e || !S.ui) return;
+  if (S.ui.keep && S.ui.keep.t === e.t) delete S.ui.keep;
+  if (Array.isArray(S.ui.keeps)) { S.ui.keeps = S.ui.keeps.filter(x => x && x.t !== e.t); if (!S.ui.keep && S.ui.keeps.length) S.ui.keep = S.ui.keeps.shift(); if (!S.ui.keeps.length) delete S.ui.keeps; }   /* the next newest is the newest again */
+}
 function keepCopy(snap, why) {
   const all = keepAll(), t = Math.max(Date.now(), all.length ? +all[0].t + 1 : 0);
   let d = null; try { d = keepDiff(JSON.parse(snap), S); } catch (er) { d = null; }
