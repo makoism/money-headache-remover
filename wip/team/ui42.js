@@ -43,8 +43,8 @@ function vaultQueue(soon) { if (!vault.on) return; clearTimeout(vaultTimer); vau
 let vaultTapped = false;
 function vaultRetryNow() { vaultTapped = true; vaultPush(); }
 /* refused: the server answered but did not take the copy (a server error), so the tap says "Still not sent.", not "Still no connection." (QC round 8 data safety confusing 3) */
-function vaultBehind(refused) { if (!vault.failAt) { vault.failAt = Date.now(); vault.triedAt = 0; } if (vaultTapped) { vaultTapped = false; vault.triedAt = Date.now(); vault.triedRefused = !!refused; } vaultSaveLocal(); paintVault(); if (tab === 'home') renderBackupNudge(); }
-function vaultCaughtUp() { const was = vault.failAt; vault.failAt = 0; vault.triedAt = 0; vaultTapped = false; return !!was; }
+function vaultBehind(refused) { if (!vault.failAt) { vault.failAt = Date.now(); vault.triedAt = 0; } if (vaultTapped) { vaultTapped = false; vault.triedAt = Date.now(); vault.triedRefused = !!refused; } vaultSaveLocal(); paintVault(); saveHeadRefresh(); if (tab === 'home') renderBackupNudge(); }
+function vaultCaughtUp() { const was = vault.failAt; vault.failAt = 0; vault.triedAt = 0; vaultTapped = false; if (was) saveHeadRefresh(); return !!was; }
 async function vaultPush(force) {
   if (!vault.on) return;
   if (vaultBusy) { vaultAgain = true; return; }

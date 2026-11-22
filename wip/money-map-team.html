@@ -625,7 +625,7 @@ svg.tour-scene { width: 100%; max-width: 440px; height: auto; }
 .msg.wait { color: var(--ink2); } .msg.note { color: var(--warn); background: var(--warn-bg); }
 .ask-sug { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 16px 10px; }
 /* on a phone the suggestions are one swipeable row, so the chat itself keeps the room (the first message stays readable on opening) */
-@media (max-width: 520px) { .ask-sug { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; padding-bottom: 12px; -webkit-overflow-scrolling: touch; } .ask-sug::-webkit-scrollbar { display: none; } .ask-sug .sugg { flex: 0 0 auto; white-space: nowrap; } .ask-log { min-height: 170px; } }
+@media (max-width: 520px) { .ask-sug { flex-wrap: nowrap; overflow-x: auto; -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent); scrollbar-width: none; padding-bottom: 12px; padding-right: 40px; -webkit-overflow-scrolling: touch; } .ask-sug::-webkit-scrollbar { display: none; } .ask-sug .sugg { flex: 0 0 auto; white-space: nowrap; } .ask-log { min-height: 170px; } }
 .sugg { border: 0; background: var(--track); border-radius: 980px; min-height: 38px; padding: 0 14px; font-size: 15px; cursor: pointer; text-align: left; }
 .sugg:hover { background: var(--track2); }
 .ask-form { padding: 10px 16px 14px; border-top: .5px solid var(--hair); display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
@@ -4080,8 +4080,13 @@ let LOADED_REV = null;   /* the rev of the copy this page loaded, so the second 
 function loadLocal() { applyTheme(); try { const raw = localStorage.getItem(KEY); if (raw) { S = upgradeLegacy(normalize(JSON.parse(raw))); LS_STATE = 'ok'; LOADED_REV = +S.rev || 0; seenRev = LOADED_REV; }   /* this page has read this copy: only receipts another tab saves after it are merged in (an Undo after a reload brought removed receipts back, QC round 5 data safety B1) */ } catch (e) { LS_STATE = 'bad'; /* no storage, or damaged */ } }
 function setSave(kind) {
   const el = $('#save'), t = $('#saveTxt'); el.className = 'save ' + (kind === 'ok' ? 'ok' : kind === 'busy' ? 'busy' : '');
-  t.textContent = { ok: 'Saved', busy: 'Saving…', device: 'Saved in this browser', error: 'Not saved. Tap Save file in Settings.' }[kind] || '';
+  /* the cloud copy behind is said here too, at the top that is always on screen (QC round 14 data safety 1) */
+  const behind = (kind === 'ok' || kind === 'device') && typeof vault !== 'undefined' && vault.on && vault.failAt;
+  t.textContent = behind ? 'Saved here. Cloud copy behind' : { ok: 'Saved', busy: 'Saving…', device: 'Saved in this browser', error: 'Not saved. Tap Save file in Settings.' }[kind] || '';
+  el.dataset.kind = kind;
 }
+/* repaint the top line after the cloud copy falls behind or catches up, unless a save is in the middle */
+function saveHeadRefresh() { const el = $('#save'); if (el && (el.dataset.kind === 'ok' || el.dataset.kind === 'device')) setSave(el.dataset.kind); }
 /* the revision only ever goes up, whatever the device clock does (a clock set back must never make this tab refuse to save) */
 function persist() { S.rev = Math.max(Date.now(), (+S.rev || 0) + 1); setSave('busy'); clearTimeout(saveTimer); saveTimer = setTimeout(flush, 500); }
 /* receipts another tab saved since this tab last read are kept, never written over */
@@ -5559,6 +5564,10 @@ function wireReceipts() {
         () => { const i = (S.receipts || []).findIndex(x => x.id === was.id); if (i >= 0) S.receipts[i] = was; ['#hMsg', '#rcMsg'].forEach(q => { const e = $(q); if (e && /^Saved/.test(e.textContent)) e.textContent = ''; }); }, 8000); }
   });
   $('#rcCat').addEventListener('change', () => { catPicked('rc'); syncOtherTitle('rcCat', 'rcNote'); $('#rcMsg').textContent = ''; });
+  /* changing a receipt: a tap on Amount selects the old amount, so typing replaces it (QC round 14 novice 5: 12 then 15 saved 1,215) */
+  const rcAmtSel = t => { if (editRc && t.value !== '') try { t.select(); } catch (x) { } };
+  $('#rcAmt').addEventListener('focus', e => { e.target._fresh = true; rcAmtSel(e.target); });
+  $('#rcAmt').addEventListener('click', e => { if (e.target._fresh) { e.target._fresh = false; rcAmtSel(e.target); } });   /* the tap's own mouseup would clear a select made on focus */
   $('#rcCancel').addEventListener('click', () => { resetRcForm(); $('#rcMsg').textContent = ''; render(); });
   $('#rcMonth').addEventListener('change', e => select(e.target.value));
   $('#rcList').addEventListener('click', e => {
@@ -15657,8 +15666,8 @@ function vaultQueue(soon) { if (!vault.on) return; clearTimeout(vaultTimer); vau
 let vaultTapped = false;
 function vaultRetryNow() { vaultTapped = true; vaultPush(); }
 /* refused: the server answered but did not take the copy (a server error), so the tap says "Still not sent.", not "Still no connection." (QC round 8 data safety confusing 3) */
-function vaultBehind(refused) { if (!vault.failAt) { vault.failAt = Date.now(); vault.triedAt = 0; } if (vaultTapped) { vaultTapped = false; vault.triedAt = Date.now(); vault.triedRefused = !!refused; } vaultSaveLocal(); paintVault(); if (tab === 'home') renderBackupNudge(); }
-function vaultCaughtUp() { const was = vault.failAt; vault.failAt = 0; vault.triedAt = 0; vaultTapped = false; return !!was; }
+function vaultBehind(refused) { if (!vault.failAt) { vault.failAt = Date.now(); vault.triedAt = 0; } if (vaultTapped) { vaultTapped = false; vault.triedAt = Date.now(); vault.triedRefused = !!refused; } vaultSaveLocal(); paintVault(); saveHeadRefresh(); if (tab === 'home') renderBackupNudge(); }
+function vaultCaughtUp() { const was = vault.failAt; vault.failAt = 0; vault.triedAt = 0; vaultTapped = false; if (was) saveHeadRefresh(); return !!was; }
 async function vaultPush(force) {
   if (!vault.on) return;
   if (vaultBusy) { vaultAgain = true; return; }

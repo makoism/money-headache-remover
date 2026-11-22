@@ -239,8 +239,13 @@ let LOADED_REV = null;   /* the rev of the copy this page loaded, so the second 
 function loadLocal() { applyTheme(); try { const raw = localStorage.getItem(KEY); if (raw) { S = upgradeLegacy(normalize(JSON.parse(raw))); LS_STATE = 'ok'; LOADED_REV = +S.rev || 0; seenRev = LOADED_REV; }   /* this page has read this copy: only receipts another tab saves after it are merged in (an Undo after a reload brought removed receipts back, QC round 5 data safety B1) */ } catch (e) { LS_STATE = 'bad'; /* no storage, or damaged */ } }
 function setSave(kind) {
   const el = $('#save'), t = $('#saveTxt'); el.className = 'save ' + (kind === 'ok' ? 'ok' : kind === 'busy' ? 'busy' : '');
-  t.textContent = { ok: 'Saved', busy: 'Saving…', device: 'Saved in this browser', error: 'Not saved. Tap Save file in Settings.' }[kind] || '';
+  /* the cloud copy behind is said here too, at the top that is always on screen (QC round 14 data safety 1) */
+  const behind = (kind === 'ok' || kind === 'device') && typeof vault !== 'undefined' && vault.on && vault.failAt;
+  t.textContent = behind ? 'Saved here. Cloud copy behind' : { ok: 'Saved', busy: 'Saving…', device: 'Saved in this browser', error: 'Not saved. Tap Save file in Settings.' }[kind] || '';
+  el.dataset.kind = kind;
 }
+/* repaint the top line after the cloud copy falls behind or catches up, unless a save is in the middle */
+function saveHeadRefresh() { const el = $('#save'); if (el && (el.dataset.kind === 'ok' || el.dataset.kind === 'device')) setSave(el.dataset.kind); }
 /* the revision only ever goes up, whatever the device clock does (a clock set back must never make this tab refuse to save) */
 function persist() { S.rev = Math.max(Date.now(), (+S.rev || 0) + 1); setSave('busy'); clearTimeout(saveTimer); saveTimer = setTimeout(flush, 500); }
 /* receipts another tab saved since this tab last read are kept, never written over */
