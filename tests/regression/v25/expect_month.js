@@ -5,7 +5,8 @@ module.exports = function expectMonth({ S, O, r, ym, M, oraclePercents, F, F2 })
   const minBank = M.cfg(S, 'minBank'), st = r.bankEnd < minBank ? 'short' : (r.left < 0 ? 'tight' : 'good');
   let dk = r.left - r.draw; if (dk > 0) dk = Math.max(0, dk - r.overNow);
   const playSpentC = (S.receipts || []).filter(x => x.d.slice(0, 7) === ym && (S.plan.lines.find(q => q.key === x.c) || {}).jar === 'play').reduce((a, x) => a + cents(x.a), 0);
-  const pLeft = Math.round(r.jar.play * 100 - playSpentC) / 100, held = st === 'short' && !(Math.round((r.bankEnd - r.bankStart) * 100) > 0) ?   /* 38.31 money accuracy round: held unless the month really adds to the bank (it was: left < 0 or past plan, which let a month adding nothing show Free to spend next to Short) */  Math.min(Math.max(0, pLeft), Math.max(0, minBank - r.bankEnd)) : 0;
+  const pLeft = Math.round(r.jar.play * 100 - playSpentC) / 100, held = st === 'short' && !(Math.round((r.bankEnd - r.bankStart) * 100) > 0) ?   /* 38.31 money accuracy round: held unless the month really adds to the bank (it was: left < 0 or past plan, which let a month adding nothing show Free to spend next to Short) */  Math.min(Math.max(0, pLeft), Math.max(0, minBank - r.bankEnd))
+    : r.bankEnd < -0.004 ? Math.min(Math.max(0, pLeft), Math.round(-r.bankEnd * 100) / 100) : 0;   /* and a month that ends below zero is never safe to spend, even when it adds to the bank (the app's QC round 5 numbers 1 rule) */
   const safe = Math.max(pLeft < 0 ? pLeft : 0, Math.round((pLeft - held) * 100) / 100);
   const where = r.draw > 0 ? F2(r.inflow - r.draw) + ' pay and ' + F2(r.draw) + ' borrowed, by place' : F2(r.inflow) + ' pay, by place';   /* 38.31 number gate round 2: to the cent */
   /* with no pay entered and nothing planned past it, the dock shows how far below zero the bank ends, if it does */
