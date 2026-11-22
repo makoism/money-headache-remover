@@ -282,3 +282,9 @@ Said in MAIN 12's chat and relayed to coordinator 8 (not seen first hand): "use 
 - Mako flagged that the engine plans in calendar months from a month-start balance, but people are paid on any day and in many cycles. The pay day and ledger designs (side/payday-design, side/ledger-design) already said pay-to-pay; the main build never took it in.
 - MAIN 15 paused QC round 15 and is doing a foundation review: every calendar-month assumption, a pay-to-pay model anchored to today's bank, its size, and other likely setbacks. It goes to Mako as one recommendation.
 - No polish work on top of the month model until Mako decides. The efficiency agent runs on the plan when it comes.
+
+## The new foundation (Mako, 2026-11-23, answers to foundation_review/RECOMMENDATION.md)
+1. **Rebuild the base before version one: yes.** The engine moves to dated events with accounts, today's bank as the anchor, pay and bill schedules, and a look ahead (RECOMMENDATION.md section 3). Built beside the old engine and switched over in one step.
+2. **What Home calls the current stretch: Claude's recommendation.** Its dates, for example "10 Nov to 9 Dec". The month name only in history.
+3. **Goal money: both.** "Kept in my bank, set aside" is an option (the default), and "moved to its own account" too.
+4. **Card statement close days:** Mako does not know them. Setup asks for each card's statement close day with a plain explanation and a "not sure" answer; tests use made-up days.
