@@ -5905,7 +5905,7 @@ const STEP_JARS = { id: 'jars', part: PART.jars, setup: true, when: havePay,
 const jarsFold = () => `<details class="src-how"><summary>Where your pay goes, in short</summary><div class="src-how-in">
     <p>Every month your pay gets split into six places and each one has one job. Bills and basics and Free to spend are for this month. Your goals, Education, Giving and Investing fill <b>burrows</b> that pile up over months. Free to spend is yours to spend on whatever you want. Usual shares of take-home pay:</p>
     <ul class="jar-lines">${JARS.map(j => `<li><i class="dot" style="--c:${JARVAR[j.id]}"></i><span><b>${esc(j.name)}</b> ${j.usualPct}%. ${esc(JAR_LINES[j.id])}</span></li>`).join('')}</ul>
-    <p class="cap">These shares are a starting point, change them to fit you</p></div></details>`;
+    </div></details>`;
 const jarSplitHTML = () => `<p class="cap" id="jarCan" data-split-can>These shares are only a start. Drag a slider or tap a percent to change it, and you can change them again later under Plan.</p>
     ${potHTML('jarPot', JAR5.map(j => JARVAR[j]), jarVals, jarRest)}${poolHTML('jar', JAR5.map(j => JAR_LABEL[j]))}
     <div class="split" id="jarSplit">${jarRows()}</div>
