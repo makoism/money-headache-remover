@@ -176,6 +176,14 @@ When the same question came from several reviewers, it is one entry here and the
 - **Check on your run.** Are these words clear? Open notes: an in-visit Undo on Add money or the assistant still restores its fields as a whole (receipts stay); past 30 kept changes in 3 days the oldest is pushed out, and only line, burrow and card removals warn.
 - **Sources.** `qc_round10/data_safety.md`, helper/r10-undo.
 
+### 1.25 The balance box in Settings, and the cloud copy when it is behind (QC round 11)
+- **Now.** Settings "Money today (bank plus cash)" says "Update it whenever you check your bank", but it is the plan's start figure. Typing today's balance there (after pay landed) counts pay twice: Total went from $2,435 to $5,435 and the Dec warning softened. Check your bank on Home is the right place (part of 1.1).
+- **Suggested.** Rename it "Balance at the start of Nov, before pay" with a line saying not to type today's balance there, or show it read-only and point to Check your bank. The "Explain this tab" step "Your balance right now" to match.
+- **Also (data safety, confusing).** While the cloud copy is behind, Home's top label still says "Saved in this browser" with a grey dot and the warning card is two screens down; Settings says "On. Last sent ..." next to "behind". Suggested: "Cloud copy behind since 8:40 AM" with an amber dot at the top; Settings "On, but behind". The welcome code box has no heading and no Back.
+- **Also (novice).** Plan's only way back after a wrong amount is "Undo all"; a first-time user fears it wipes other edits. The currency step has ¥ chosen before anyone picks one.
+- **Also (money accuracy).** Percents follow two rules: burrow fill is cut down (12.5% shows 12%), pay shares are rounded to add up to 100 (10.77% shows 11%). Pick one, or keep both and write it down.
+- **Sources.** `qc_round11/qc_north_star_gate.md` B3, `qc_round11/data_safety.md`, `qc_round11/novice.md`, `qc_round11/money_accuracy.md`.
+
 ## 2. Words and glossary
 
 Your earlier copy pass list still stands: `COPY_QC8_FOR_MAKO.md` has about 40 lines with a rewrite each. Say which ones you want. The questions below are the "one word per thing" choices on top of that.
