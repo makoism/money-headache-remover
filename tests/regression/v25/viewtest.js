@@ -21,7 +21,7 @@ for (let t = 0; t < N; t++) {
     /* goals */
     const exp = S.plan.goals.map(g => {
       const og = oracleGoal(S, O, g.id, ym), bal = row.bal[g.id], reached = O.reached[g.id] || null;
-      const cap = O.cap(g);   /* 38.30: the Emergency fund's target is the longer goal once the person said yes to it (stretchOn) */
+      const cap = O.cap(g, ym);   /* 38.30: the Emergency fund's target is the longer goal once the person said yes to it (stretchOn) */
       return { id: g.id, saved: bal, pct: cap > 0 ? (bal >= cap ? 100 : Math.min(99, Math.floor(bal * 100 / cap))) : 0, state: og.state, need: og.need, slack: og.slack, had: og.had, reached, months: reached ? Math.max(0, mIdx(reached) - mIdx(ym)) : null, live: g.target > 0 && og.state !== 'paid' && og.state !== 'short', target: cap, emergency: !!g.emergency };
     });
     eq(pt + 'goals', V.goals.map(r => ({ id: r.id, saved: r.saved, pct: r.pct, state: r.state, need: r.need, slack: r.slack, had: r.had, reached: r.reached, months: r.months, live: r.live, target: r.target, emergency: r.emergency })), exp);
