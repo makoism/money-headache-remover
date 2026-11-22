@@ -10,13 +10,14 @@ const UNDO_MAX = 12, UI_SNAP = ['sb', 'subs', 'subP', 'subO', 'cardT', 'cardB', 
    screens keep (S.ui.keep, ui45.js keepCopy), so Undo is still there after a reload: ACT.tx called from outside (the assistant's Apply,
    setup from statements), every removal, and the top-up family (Add money on a burrow). An action that sets ONE typed value passes ONE
    and keeps no copy: its Undo lasts for the visit, and a small edit never pushes out the copy of a big change (there is one slot).
-   The copy remembers which receipts the action itself added, so a late Undo keeps every receipt logged after it. */
+   The copy remembers what the action changed (ui45.js keepCopy), so a late Undo puts back only that and keeps everything done since. */
 const ONE = { one: true };
 const KEEP_WHY = { assistant: 'Ask changed your plan.', 'setup from statements': 'Setup from your statements changed your plan.', 'remove goal': 'A burrow was removed.', 'remove line': 'A line was removed from your plan.',
   'remove receipts': 'Receipts were deleted.', 'remove card': 'A card was removed.', 'top-up': 'Unspent money was moved.', 'undo top-up': 'Money was taken back out of a burrow.' };
 /* these have their own Undo on the screen they are used on, so the bar does not also show in the same visit (it does after a reload) */
 const KEEP_QUIET = { assistant: 1, 'top-up': 1, 'undo top-up': 1 };
-/* Undo from a copy an action kept: the numbers from before it, plus every receipt logged since that the action did not add itself */
+/* Undo from a copy alone (one that does not know what its change did): the numbers from before it, plus every receipt logged since that
+   the change did not add itself */
 function restoreKept(snap, added) {
   const d = normalize(JSON.parse(snap)), had = new Set((d.receipts || []).map(r => r.id)), own = new Set(added || []);
   const later = (S.receipts || []).filter(r => !had.has(r.id) && !own.has(r.id));
@@ -51,7 +52,7 @@ const ACT = {
       if (keeps) {
         const had = before.ids, added = (S.receipts || []).filter(r => !had.has(r.id)).map(r => r.id), why = whyText || KEEP_WHY[label] || 'Your plan was changed.';
         keepCopy(kept, why); S.ui.keep.act = 1; if (added.length) S.ui.keep.added = added; u.keptAt = S.ui.keep.t;
-        if (!KEEP_QUIET[label] && window.offerUndoG) window.offerUndoG(kept, `${why} You can undo for ${KEEP_DAYS} days.`, () => restoreKept(kept, added));
+        if (!KEEP_QUIET[label] && window.offerUndoG) window.offerUndoG(kept, `${why} You can undo for ${KEEP_DAYS} days.`);   /* Undo puts back only what this changed (ui45.js keepUndo) */
       }
       undoStack.push(u); if (undoStack.length > UNDO_MAX) undoStack.shift();
     }
@@ -74,7 +75,7 @@ const ACT = {
     const u = undoStack.pop(); if (!u) return false;
     restoreState(u.before, u.postIds);
     /* the copy that action kept is let go with it, so a change already taken back is not offered again after a reload */
-    if (u.keptAt && S.ui.keep && S.ui.keep.t === u.keptAt) delete S.ui.keep;
+    if (u.keptAt) keepDrop({ t: u.keptAt });
     ACT.commit(); return true;
   },
   /* forget the undo history, for example after a restore from a backup */

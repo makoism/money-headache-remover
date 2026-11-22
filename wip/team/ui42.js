@@ -98,6 +98,7 @@ async function vaultApply(k, srv, asked, prevVault) {
   /* the local revision never goes back: the device's second copy holds the old numbers at their own revision, and a lower one here let it win
      on the next open, then send the old numbers over the cloud copy (QC round 4 data safety 1). The cloud revision is kept apart in vault.rev */
   S.rev = Math.max(srv.rev, (+old.rev || 0) + 1, (typeof LOADED_REV === 'number' ? LOADED_REV : 0) + 1); vault.rev = srv.rev; vault.local = S.rev; vaultNote = null; vaultCaughtUp();
+  keepOwn(old);   /* the kept changes are this device's own, never the other device's inside the cloud copy */
   if (!wasEmpty) keepCopy(oldSnap, 'The cloud copy replaced the numbers on this device.');
   /* a phone that was not sharing this cloud copy: how it was sharing before is kept on this device (never in the numbers, which are sent),
      so an Undo after a reload, or Put them back, stops sharing the cloud copy like the Undo right after the load (QC round 5 data safety B1) */
@@ -113,7 +114,7 @@ async function vaultApply(k, srv, asked, prevVault) {
        not) before, so nothing is ever sent over the other phone's copy (QC10 round 2 north-star finding 1) */
     const pv = Object.assign({}, prevVault);
     window.offerUndoG(oldSnap, `Cloud copy loaded. The numbers this device had are kept for ${KEEP_DAYS} days. Undo puts them back on this device and stops sharing the cloud copy here.`,
-      () => { clearTimeout(vaultTimer); vault = pv; vaultKeys = null; vaultNote = null; vaultSaveLocal(); S = normalize(JSON.parse(oldSnap)); vaultFlowClose(); setTimeout(() => { try { cheer('Your own numbers are back. This device no longer shares the cloud copy, and the cloud copy is unchanged.'); } catch (e) { } }, 50); });   /* the Done panel closes (QC10 round 3 north-star 1) */
+      () => { clearTimeout(vaultTimer); vault = pv; vaultKeys = null; vaultNote = null; vaultSaveLocal(); if (!keepFind(oldSnap)) S = normalize(JSON.parse(oldSnap)); vaultFlowClose(); setTimeout(() => { try { cheer('Your own numbers are back. This device no longer shares the cloud copy, and the cloud copy is unchanged.'); } catch (e) { } }, 50); });   /* the Done panel closes (QC10 round 3 north-star 1) */
   }
   else if (window.offerUndoG) window.offerUndoG(oldSnap, `Cloud copy loaded. The numbers this device had are kept for ${KEEP_DAYS} days. Undo puts them back here and in the cloud copy.`);
 }

@@ -61,7 +61,7 @@ function wire() {
   });
   led.addEventListener('click', e => {
     const ed = e.target.closest('[data-edit]'); if (ed) { editRow = editRow === ed.dataset.edit ? null : ed.dataset.edit; openId = ed.dataset.edit; restructure(); return; }
-    const ld = e.target.closest('[data-ldel]'); if (ld) { const l0 = lineById(S, ld.dataset.ldel), ln = l0 ? l0.name : 'This line'; confirmClick(ld, `Tap again: removes ${ln} from every month. You can undo for ${KEEP_DAYS} days.`, () => { const sn = snapNoCopy(); keepCopy(sn, `${ln} was removed.`); offerUndo(sn, `${ln} removed. You can undo for ${KEEP_DAYS} days.`); const l = lineById(S, ld.dataset.ldel); if (l && l.jar === 'nec') markDone('bills', true); removeLine(S, ld.dataset.ldel); persist(); restructure(); }); return; }
+    const ld = e.target.closest('[data-ldel]'); if (ld) { const l0 = lineById(S, ld.dataset.ldel), ln = l0 ? l0.name : 'This line'; confirmClick(ld, `Tap again: removes ${ln} from every month. You can undo for ${KEEP_DAYS} days.${keepEnds()}`, () => { const sn = snapNoCopy(); const l = lineById(S, ld.dataset.ldel); if (l && l.jar === 'nec') markDone('bills', true); removeLine(S, ld.dataset.ldel); keepCopy(sn, `${ln} was removed.`); offerUndo(sn, `${ln} removed. You can undo for ${KEEP_DAYS} days.`); persist(); restructure(); });   /* the copy is kept after the change, so it knows what the change did (QC round 10 data safety B1) */ return; }
     const h = e.target.closest('.row-h'); if (h && !e.target.closest('input')) { const id = h.closest('.row').dataset.id; setOpen(openId === id ? null : id); return; }
     const kp = e.target.closest('[data-keep]'); if (kp) { const o = S.once[sel]; if (o && o[kp.dataset.keep] !== undefined) setVal(S, kp.dataset.keep, sel, o[kp.dataset.keep], 'after'); persist(); render(); return; }
     const ua = e.target.closest('#undoAll'); if (ua) { delete S.once[sel]; persist(); render(); return; }
@@ -86,7 +86,7 @@ function wire() {
     }
   });
   $('#rowsOut').addEventListener('change', e => { if (e.target.closest('#items')) { S.items[sel] = readItems(); persist(); render(); } });
-  $('#resetMonth').addEventListener('click', e => confirmClick(e.currentTarget, `Tap again: removes the edits you made for this month. Receipts stay. You can undo for ${KEEP_DAYS} days.`, () => { const snR = snapNoCopy(); { const ym0 = sel, o0 = S.once[ym0] ? JSON.parse(JSON.stringify(S.once[ym0])) : undefined, i0 = S.items[ym0] !== undefined ? JSON.parse(JSON.stringify(S.items[ym0])) : undefined; offerUndo('reset', 'Month reset.', () => { if (o0 !== undefined) S.once[ym0] = o0; else delete S.once[ym0]; if (i0 !== undefined) S.items[ym0] = i0; else delete S.items[ym0]; }); } resetMonth(S, sel); keepCopy(snR, `${monthLabel(sel)} was reset.`); itemsSig = ''; persist(); render(); }));   /* a 3-day copy like every other big change (38.31 data safety round 4) */
+  $('#resetMonth').addEventListener('click', e => confirmClick(e.currentTarget, `Tap again: removes the edits you made for this month. Receipts stay. You can undo for ${KEEP_DAYS} days.`, () => { const snR = snapNoCopy(); resetMonth(S, sel); keepCopy(snR, `${monthLabel(sel)} was reset.`); offerUndo(snR, 'Month reset.');   /* Undo puts back only this month's edits and lets the kept copy go (QC round 10 data safety B1) */ itemsSig = ''; persist(); render(); }));   /* a 3-day copy like every other big change (38.31 data safety round 4) */
   $('#fixBtns').addEventListener('click', e => {
     const b = e.target.closest('[data-fx]'); if (!b) return; const f = b.dataset.fx, m = C.byYm[sel];
     if (f === 'trim') trimPlay(S, m, sel, +b.dataset.amt);
@@ -107,7 +107,7 @@ function wire() {
     else if (e.target.closest('[data-gnodate]')) { updateGoal(S, id, { due: '' }); markDone('goals', true); persist(); buildGoals(); render(); }
     else if (e.target.closest('[data-gauto]')) { useSuggested(S, id); sfx('next'); persist(); buildGoals(); render(); }
     else { const gd = e.target.closest('[data-gdel]'); if (gd) { const g0 = goalById(S, id), r0 = HV && HV.goals ? HV.goals.find(r => r.id === id) : null, nm = g0 ? g0.name : 'This goal', mg0 = HV && C.byYm[HV.ym] && C.byYm[HV.ym].g[id], plan0 = mg0 ? mg0.actual : 0, saved0 = r0 && r0.savedNow > 0 ? r0.savedNow : 0, what = nm + (plan0 > 0 ? ` and its ${fmt2(plan0)} planned this month` : '');   /* saved now and planned apart (QC round 4 data safety 3); the saved money stops being counted, so it says so (QC round 6 data safety C2) */   /* names what goes, keeps a copy (38.31 data safety round 3) */
-      confirmClick(gd, `Tap again: removes ${what}.${saved0 > 0 ? ` Its ${fmt2(saved0)} saved stops being counted. Move it to another burrow first if you still have it.` : ''} You can undo for ${KEEP_DAYS} days.`, () => { const sn = snapNoCopy(); removeGoal(S, id); keepCopy(sn, `${nm} was removed.`); offerUndo(sn, `${nm} removed. You can undo for ${KEEP_DAYS} days.`); markDone('goals', true); if (editGoal === id) editGoal = null; persist(); restructure(); }); } }
+      confirmClick(gd, `Tap again: removes ${what}.${saved0 > 0 ? ` Its ${fmt2(saved0)} saved stops being counted. Move it to another burrow first if you still have it.` : ''} You can undo for ${KEEP_DAYS} days.${keepEnds()}`, () => { const sn = snapNoCopy(); removeGoal(S, id); keepCopy(sn, `${nm} was removed.`); offerUndo(sn, `${nm} removed. You can undo for ${KEEP_DAYS} days.`); markDone('goals', true); if (editGoal === id) editGoal = null; persist(); restructure(); }); } }
   });
   /* every keystroke saves; the page redraws on change so the cursor stays put while typing */
   const goalEdit = t => {
@@ -155,8 +155,9 @@ function wire() {
     try {
       const d = JSON.parse($('#bk').value);
       if (!d || typeof d !== 'object' || !d.steps || !d.once || !d.cfg) throw new Error('bad');
-      const old = S, oldSnap = snapNoCopy(); offerUndo(oldSnap, `Backup loaded. You can undo for ${KEEP_DAYS} days.`); S = upgradeLegacy(normalize(d)); S.ui = Object.assign({}, old.ui, S.ui, { sampleHidden: true }); keepCopy(oldSnap, 'A backup replaced your numbers.');
+      const old = S, oldSnap = snapNoCopy(); S = upgradeLegacy(normalize(d)); S.ui = Object.assign({}, old.ui, S.ui, { sampleHidden: true }); keepOwn(old);
       if (!Array.isArray(d.receipts)) S.receipts = old.receipts;
+      keepCopy(oldSnap, 'A backup replaced your numbers.'); offerUndo(oldSnap, `Backup loaded. You can undo for ${KEEP_DAYS} days.`);
       editRow = null; editGoal = null; editRc = null; itemsSig = ''; S.ui.bk = Date.now(); delete S.ui.bkLater; persist(); restructure(); msg.textContent = 'Loaded.'; sfx('next');
     } catch (e) { msg.textContent = BK_BAD; }
   };
@@ -204,10 +205,10 @@ function wire() {
   };
   /* Set all to zero and Restore samples replace every number: a copy of before is kept for KEEP_DAYS days */
   let undoSnap = null, undoT = 0;
-  let undoFn = null;
+  let undoFn = null, undoAsk = 0;
   /* a big change (a copy of before, or a month reset) keeps its Undo bar until it is tapped, closed or replaced by another Undo, also
      across tab changes; a small one (a receipt, an answer about last month's money) goes by itself (QC round 6 data safety B1) */
-  const offerUndo = (snap, txt, fn, ms) => { undoFn = fn || null; undoSnap = snap; $('#undoTxt').textContent = txt; const u = $('#undoBar'); u.hidden = false; clearTimeout(undoT);
+  const offerUndo = (snap, txt, fn, ms) => { undoFn = fn || null; undoSnap = snap; undoAsk = 0; $('#undoTxt').textContent = txt; const u = $('#undoBar'); u.hidden = false; clearTimeout(undoT);
     { const c = $('#cheer'), r = u.getBoundingClientRect(); if (c && c.classList.contains('on') && r.height && !document.body.classList.contains('touring')) c.style.bottom = Math.round(innerHeight - r.top + 8) + 'px'; }   /* a message already up moves above the bar, however tall the bar is */
     if (!ms && snap !== 'receipt' && snap !== 'sweep') { u.dataset.stay = '1'; return; }
     delete u.dataset.stay; undoT = setTimeout(() => { u.hidden = true; undoSnap = null; undoFn = null; }, ms || 30000); };
@@ -215,23 +216,40 @@ function wire() {
      big change stays across tabs, so it can sit over a form: the Add a card Save, QC round 6 merge) */
   { const ub = $('#undoBar'), pad = () => { const r = !ub.hidden && ub.getClientRects().length ? ub.getBoundingClientRect() : null; document.documentElement.style.scrollPaddingBottom = r && r.height ? Math.round(innerHeight - r.top + 8) + 'px' : ''; };
     new MutationObserver(pad).observe(ub, { attributes: true, attributeFilter: ['hidden'] }); addEventListener('resize', pad); }
-  const undoHide = () => { clearTimeout(undoT); const u = $('#undoBar'); u.hidden = true; delete u.dataset.stay; undoSnap = null; undoFn = null; };
+  const undoHide = () => { clearTimeout(undoT); const u = $('#undoBar'); u.hidden = true; delete u.dataset.stay; undoSnap = null; undoFn = null; undoAsk = 0; };
   $('#undoX').addEventListener('click', undoHide);   /* Close: the copy from before stays in Settings, Put them back, for its days */
   window.offerUndoG = offerUndo;
   /* the setup steps were opened by Re-split pay and the page was closed part-way: the copy from before is still one tap away */
   if (S.ui && S.ui.preSplit && !tourIsOpen) { const sn = S.ui.preSplit; delete S.ui.preSplit; keepCopy(sn, 'Setup was changing your plan.'); persist(); }
   /* the copy from before a big change is offered again on every open for 3 days, then let go */
-  if (S.ui && S.ui.keep) { const k = S.ui.keep; if (!(typeof k.snap === 'string' && +k.t > 0) || Date.now() - k.t > KEEP_DAYS * 864e5) { delete S.ui.keep; persist(); } else offerUndo(k.snap, `${k.why || 'Your numbers changed.'} You can undo until ${dateLabel(ymd(new Date(+k.t + KEEP_DAYS * 864e5)))}.${k.cloud && !k.act ? ' Undo also stops sharing the cloud copy on this device.' : ''}`, k.act ? () => restoreKept(k.snap, k.added) : k.cloud ? () => { vaultUndoLoad(); S = normalize(JSON.parse(k.snap)); } : null); }   /* a copy an action kept: Undo keeps the receipts logged since (actions.js restoreKept) */
-  $('#keepBack').addEventListener('click', () => {
-    const k = S.ui && S.ui.keep; if (!(k && typeof k.snap === 'string')) return;
-    const cur = snapNoCopy(); undoHide();
-    if (k.act) restoreKept(k.snap, k.added); else { if (k.cloud) vaultUndoLoad(); S = normalize(JSON.parse(k.snap)); }   /* a cloud load: stop sharing first (QC round 5 data safety B1) */
-    keepCopy(cur, 'You put back the numbers from before.');   /* what was there is kept in its place, so this can be undone too */
-    editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = ''; sfx('back');
-    cheer(`Your numbers from before are back. What was there is kept for ${KEEP_DAYS} days.`);
+  /* the Undo bar for a kept change, with the day it is kept until. Undo puts back only what that change changed (ui45.js keepUndo) */
+  const offerKept = k => offerUndo('keep:' + k.t, `${k.why || 'Your numbers changed.'} You can undo until ${dateLabel(ymd(new Date(+k.t + KEEP_DAYS * 864e5)))}.${k.cloud && !k.act ? ' Undo also stops sharing the cloud copy on this device.' : ''}`, k.cloud ? () => vaultUndoLoad() : null);
+  if (S.ui) { if (keepTidy()) persist(); const k = keepAll()[0]; if (k) offerKept(k); }
+  $('#keepBack').addEventListener('click', e => {
+    const k = keepAll()[0]; if (!k) return;
+    const go = () => {
+      const cur = snapNoCopy(); undoHide();
+      if (k.cloud) vaultUndoLoad();   /* a cloud load: stop sharing first (QC round 5 data safety B1) */
+      keepUndo(k);   /* only what that change changed comes back: receipts and everything else done since stay (QC round 10 data safety B1) */
+      keepCopy(cur, 'You put back the numbers from before.');   /* what was there is kept in its place, so this can be undone too */
+      editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = ''; sfx('back');
+      cheer(`Your numbers from before are back. What was there is kept for ${KEEP_DAYS} days.`);
+    };
+    const q = keepSince(k); if (q) confirmClick(e.currentTarget, `Tap again: ${q}`, go); else go();   /* something done since would go: it is named first */
   });
-  $('#undoGo').addEventListener('click', () => { if (!undoSnap) return; const fn = undoFn, sn = undoSnap; undoHide(); if (fn) fn(); else S = normalize(JSON.parse(sn)); editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = ''; sfx('back'); cheer('Your numbers are back.'); });
-  const blank = () => { const sn0 = snapNoCopy(); offerUndo(sn0, `All your numbers are set to zero. You can undo for ${KEEP_DAYS} days.`); S = blankState(S, sampleOn()); S.ui.cleared = true; delete S.ui.setup; delete S.ui.src; delete S.ui.imp; keepCopy(sn0, 'Your numbers were set to zero.'); editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = 'Everything is at zero now, start with your pay';   /* a 3-day copy like every other big change (38.31 data safety round 4) */ select(START); if (tab !== 'month') switchTab('month'); };
+  /* Undo of a kept change asks first when it would also take away something done since, and names it; the second tap goes ahead */
+  $('#undoGo').addEventListener('click', () => {
+    if (!undoSnap) return;
+    const ent = keepFind(undoSnap);
+    if (ent && !undoAsk) { const q = keepSince(ent); if (q) { undoAsk = Date.now(); clearTimeout(undoT); $('#undoBar').dataset.stay = '1'; $('#undoTxt').textContent = `${q} Tap Undo again to go ahead.`; return; } }
+    if (undoAsk && Date.now() - undoAsk < 600) return;   /* a double tap never says yes: the words get read first */
+    const fn = undoFn, sn = undoSnap; undoHide();
+    if (ent) { if (fn) fn(); keepUndo(ent); }
+    else if (fn) fn();
+    else if (!/^keep:/.test(sn)) { const kk = { keep: S.ui.keep, keeps: S.ui.keeps }; restoreKept(sn, []); keepOwn({ ui: kk }); }   /* a copy no longer kept: it comes back with every receipt logged since */
+    editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = ''; sfx('back'); cheer('Your numbers are back.');
+  });
+  const blank = () => { const sn0 = snapNoCopy(); S = blankState(S, sampleOn()); S.ui.cleared = true; delete S.ui.setup; delete S.ui.src; delete S.ui.imp; keepCopy(sn0, 'Your numbers were set to zero.'); offerUndo(sn0, `All your numbers are set to zero. You can undo for ${KEEP_DAYS} days.`); editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = 'Everything is at zero now, start with your pay';   /* a 3-day copy like every other big change (38.31 data safety round 4) */ select(START); if (tab !== 'month') switchTab('month'); };
   twoStep($('#blankBtn'), `Tap again: clears pay, bills, goals, saved amounts and your balance. Receipts stay. You can undo for ${KEEP_DAYS} days.`, blank);
   twoStep($('#blankTop'), `Tap again: clears pay, bills, goals, saved amounts and your balance. Receipts stay. You can undo for ${KEEP_DAYS} days.`, blank);
   /* the confirm says how old the backup is and what is in it, from its own saved time and receipts (QC round 7 data safety confusing 3) */
@@ -246,7 +264,7 @@ function wire() {
   twoStep($('#setupOpen'), `Tap again: setup can change your pay, bills, goals and saved amounts. You can undo for ${KEEP_DAYS} days.`, () => openSetupWithCopy(undefined, 'full'));   /* both ask first, and keep a copy (38.31 data safety round 2) */
   /* only some currencies have samples; for the rest this button clears the plan, and every word says so (38.31 data safety round 3) */
   const hasSamples = () => !!SAMPLES[(S.ui && S.ui.cur) || '₱'];
-  twoStep($('#bkReset'), () => hasSamples() ? `Tap again: puts the sample pay, bills and burrows in place of yours. Receipts stay. You can undo for ${KEEP_DAYS} days.` : `Tap again: clears your pay, bills, goals and balance. Receipts stay. You can undo for ${KEEP_DAYS} days.`, () => { const smp = hasSamples(), sn0 = snapNoCopy(); offerUndo(sn0, `${smp ? 'Samples restored' : 'Plan cleared'}. You can undo for ${KEEP_DAYS} days.`); const old = S, u = S.ui; S = presetState(u.cur); S.ui = Object.assign({}, u, { preset: S.ui.preset, sampleHidden: false, done: {} }); delete S.ui.cleared; delete S.ui.setup; delete S.ui.gset; delete S.ui.sb; delete S.ui.tourAt; delete S.ui.src; delete S.ui.imp; S.receipts = old.receipts; keepCopy(sn0, smp ? 'Samples replaced your numbers.' : 'Your plan was cleared.'); editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = smp ? 'Samples restored.' : 'Plan cleared.'; });
+  twoStep($('#bkReset'), () => hasSamples() ? `Tap again: puts the sample pay, bills and burrows in place of yours. Receipts stay. You can undo for ${KEEP_DAYS} days.` : `Tap again: clears your pay, bills, goals and balance. Receipts stay. You can undo for ${KEEP_DAYS} days.`, () => { const smp = hasSamples(), sn0 = snapNoCopy(); const old = S, u = S.ui; S = presetState(u.cur); S.ui = Object.assign({}, u, { preset: S.ui.preset, sampleHidden: false, done: {} }); delete S.ui.cleared; delete S.ui.setup; delete S.ui.gset; delete S.ui.sb; delete S.ui.tourAt; delete S.ui.src; delete S.ui.imp; S.receipts = old.receipts; keepCopy(sn0, smp ? 'Samples replaced your numbers.' : 'Your plan was cleared.'); offerUndo(sn0, `${smp ? 'Samples restored' : 'Plan cleared'}. You can undo for ${KEEP_DAYS} days.`); editRow = null; editGoal = null; editRc = null; itemsSig = ''; persist(); restructure(); $('#bkMsg').textContent = smp ? 'Samples restored.' : 'Plan cleared.'; });
   wireReceipts(); safe(() => BUR.boot(), null, 'burrow'); wireTour(); wireHelp(); wireHome(); wireScan(); wireAskAi(); wireSafe(); wireVault(); safe(() => DJ.wire(), null, 'dj'); safe(() => SCENE.start(), null, 'scene'); safe(() => WORLD.wire(), null, 'world');
 
   /* tooltips */
