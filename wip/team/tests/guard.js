@@ -6,7 +6,7 @@ const PAGE = process.env.PAGE || '/home/claude/work/money-map-team.html';
   const { b, p, errs } = await launch(390, 844, 'light');
   /* the app's own relay (RELAY file) is ours, not an outside request */
   let relayHost = ''; try { relayHost = new URL(require('fs').readFileSync(__dirname + '/../RELAY', 'utf8').trim()).host; } catch (e) { relayHost = ''; }
-  const ext = []; p.on('request', r => { const u = r.url(); if (/^https?:/.test(u) && !/claude\.ai/.test(u) && !(relayHost && new URL(u).host === relayHost)) ext.push(u.slice(0, 80)); });
+  const ext = [], own = []; p.on('request', r => { const u = r.url(); if (!/^https?:/.test(u)) return; if (relayHost && new URL(u).host === relayHost) { own.push(r.method() + ' ' + new URL(u).pathname + (r.postData() ? ' with data' : '')); return; } if (!/claude\.ai/.test(u)) ext.push(u.slice(0, 80)); });
   await p.evaluateOnNewDocument(() => { window.__lt = []; try { new PerformanceObserver(l => l.getEntries().forEach(e => window.__lt.push(Math.round(e.duration)))).observe({ entryTypes: ['longtask'] }); } catch (e) {} });
   await p.goto('file://' + PAGE + '?guard=1#2026-11', { waitUntil: 'load' }); await w(700);
   const c = await p.target().createCDPSession(); await c.send('Performance.enable');
@@ -29,6 +29,8 @@ const PAGE = process.env.PAGE || '/home/claude/work/money-map-team.html';
   const lt = await p.evaluate(() => window.__lt.slice());
   check(lt.every(d => d < 200), `long tasks: ${JSON.stringify(lt)} (limit 200 ms each)`);
   check(ext.length === 0, `outside requests: ${ext.length ? ext.join(' ') : 'none'}`);
+  /* the app's own server is asked what it offers (GET /api/health, no numbers) on load; nothing else goes there unless the person turns on the cloud copy or asks (QC round 14 regression 1) */
+  check(own.every(x => x === 'GET /api/health'), `the app's own server: ${own.length ? [...new Set(own)].map(x => x + ' x' + own.filter(y => y === x).length).join(', ') : 'nothing'} (only GET /api/health allowed, never with data)`);
   check(errs.length === 0, `page errors: ${errs.length ? JSON.stringify(errs) : 'none'}`);
   await b.close(); console.log(fail ? `GUARD FAIL ${fail}` : 'GUARD ALL PASS'); process.exit(fail ? 1 : 0);
 })();
