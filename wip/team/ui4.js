@@ -117,6 +117,10 @@ function wireReceipts() {
         () => { const i = (S.receipts || []).findIndex(x => x.id === was.id); if (i >= 0) S.receipts[i] = was; ['#hMsg', '#rcMsg'].forEach(q => { const e = $(q); if (e && /^Saved/.test(e.textContent)) e.textContent = ''; }); }, 8000); }
   });
   $('#rcCat').addEventListener('change', () => { catPicked('rc'); syncOtherTitle('rcCat', 'rcNote'); $('#rcMsg').textContent = ''; });
+  /* changing a receipt: a tap on Amount selects the old amount, so typing replaces it (QC round 14 novice 5: 12 then 15 saved 1,215) */
+  const rcAmtSel = t => { if (editRc && t.value !== '') try { t.select(); } catch (x) { } };
+  $('#rcAmt').addEventListener('focus', e => { e.target._fresh = true; rcAmtSel(e.target); });
+  $('#rcAmt').addEventListener('click', e => { if (e.target._fresh) { e.target._fresh = false; rcAmtSel(e.target); } });   /* the tap's own mouseup would clear a select made on focus */
   $('#rcCancel').addEventListener('click', () => { resetRcForm(); $('#rcMsg').textContent = ''; render(); });
   $('#rcMonth').addEventListener('change', e => select(e.target.value));
   $('#rcList').addEventListener('click', e => {
