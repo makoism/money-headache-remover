@@ -372,10 +372,152 @@ let RESPLIT_SNAP = null;   /* the copy taken when Re-split pay opens the setup s
 /* Guided setup run again over a plan the person already has (38.31 data safety round: it changed pay and saved amounts with no copy and no Undo):
    the same copy as Re-split pay, kept in the saved plan too, so Undo is offered when setup closes, or after a reload if the page was closed part-way */
 /* a copy of the numbers from before a big change (setup run again, a backup loaded), kept in the saved plan for 3 days so Undo survives a reload
-   (38.31 data safety round 2). Only the newest is kept, and a copy never holds an older copy inside it */
-const KEEP_DAYS = 3;
-function snapNoCopy() { const c = JSON.parse(JSON.stringify(S)); if (c.ui) { delete c.ui.keep; delete c.ui.preSplit; } return JSON.stringify(c); }
-function keepCopy(snap, why) { S.ui.keep = { snap, t: Date.now(), why }; }
+   (38.31 data safety round 2). A copy never holds an older copy inside it.
+   NOBODY LOSES DATA (QC round 10 data safety blocker 1). Undo used to put the whole copy back, so a receipt logged after the change was
+   silently deleted. Now each kept change also remembers exactly what it changed (d: the value before and after, path by path; lists with
+   ids are read by id). Undo puts back only those values, and only where they still are as the change left them: everything done since
+   stays. Where something done since would have to go (a value changed again since, or a receipt the change itself added and that was
+   edited since), Undo asks first and names it. */
+const KEEP_DAYS = 3, KEEP_MAX = 30;
+function snapNoCopy() { const c = JSON.parse(JSON.stringify(S)); if (c.ui) { delete c.ui.keep; delete c.ui.keeps; delete c.ui.preSplit; } return JSON.stringify(c); }
+const KEEP_PARTS = ['plan', 'steps', 'once', 'items', 'cfg', 'cards', 'receipts'], KEEP_UI_SKIP = { keep: 1, keeps: 1, preSplit: 1 };
+const kObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
+const kIdArr = v => Array.isArray(v) && v.every(e => kObj(e) && typeof e.id === 'string') && new Set(v.map(e => e.id)).size === v.length;
+const kEq = (a, b) => a === b || (a !== undefined && b !== undefined && stable(a) === stable(b));
+const kClone = v => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
+const kKeys = (...os) => { const ks = []; os.forEach(o => { if (o) Object.keys(o).forEach(k => { if (ks.indexOf(k) < 0) ks.push(k); }); }); return ks; };
+const kMap = arr => { const m = {}; (arr || []).forEach(e => { m[e.id] = e; }); return m; };
+const kHash = t => { let h = 2166136261; for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36) + '.' + t.length; };
+/* the parts of the saved numbers a change can touch: the numbers, and the page's own settings (never the kept copies themselves) */
+function kParts(x) { const o = {}; KEEP_PARTS.forEach(k => { if (x[k] !== undefined) o[k] = x[k]; }); const u = {}; Object.keys(x.ui || {}).forEach(k => { if (!KEEP_UI_SKIP[k]) u[k] = x.ui[k]; }); o.ui = u; return o; }
+/* what a change did, as small steps: {p: path, b: before, a: after}; a step into a list with ids is {id, prev}; {p, o, ao} is an order */
+function keepDiff(B, A) { const out = [], pb = kParts(B), pa = kParts(A); kKeys(pb, pa).forEach(k => kDiff(pb[k], pa[k], [k], out)); return out; }
+function kDiff(b, a, path, out) {
+  if (kEq(b, a)) return;
+  if (kObj(b) && kObj(a)) { kKeys(b, a).forEach(k => kDiff(b[k], a[k], path.concat(k), out)); return; }
+  if (kIdArr(b) && kIdArr(a)) {
+    const bm = kMap(b), am = kMap(a), pv = {}; b.forEach((e, i) => { pv[e.id] = i ? b[i - 1].id : null; });
+    kKeys(bm, am).forEach(id => kDiff(bm[id], am[id], path.concat({ id, prev: pv[id] === undefined ? null : pv[id] }), out));
+    const o = b.map(e => e.id).filter(id => am[id]), ao = a.map(e => e.id).filter(id => bm[id]);
+    if (o.join('\n') !== ao.join('\n')) out.push({ p: path, o, ao });
+    return;
+  }
+  const op = { p: path }; if (b !== undefined) op.b = kClone(b); if (a !== undefined) op.a = kClone(a); out.push(op);
+}
+function kGet(root, path) { let v = root; for (const s of path) { if (v === undefined || v === null) return undefined; v = typeof s === 'object' ? (Array.isArray(v) ? v.find(e => e && e.id === s.id) : undefined) : v[s]; } return v; }
+function kSet(root, path, v) {
+  let o = root;
+  for (let i = 0; i < path.length - 1; i++) {
+    const s = path[i], nx = path[i + 1];
+    if (typeof s === 'object') { o = Array.isArray(o) ? o.find(e => e && e.id === s.id) : undefined; if (!o) return; continue; }
+    if (o[s] === undefined || o[s] === null) { if (v === undefined) return; o[s] = typeof nx === 'object' ? [] : {}; }
+    o = o[s];
+  }
+  const s = path[path.length - 1];
+  if (typeof s !== 'object') { if (v === undefined) delete o[s]; else o[s] = v; return; }
+  if (!Array.isArray(o)) return;
+  const i = o.findIndex(e => e && e.id === s.id);
+  if (v === undefined) { if (i >= 0) o.splice(i, 1); return; }
+  if (i >= 0) { o[i] = v; return; }
+  const at = s.prev === null ? 0 : o.findIndex(e => e && e.id === s.prev) + 1; o.splice(at > 0 || s.prev === null ? at : o.length, 0, v);
+}
+/* one value back: b before the change, a after it, c now. Untouched since: b. Already b, or never touched by the change: c. Both changed:
+   a conflict, named to the person first (keepSince). The page's own settings keep what is there now; something gone since comes back */
+function kM3(b, a, c, path, out) {
+  if (kEq(a, c)) return kClone(b);
+  if (kEq(b, c) || kEq(b, a)) return c;
+  const inList = path.length > 0 && typeof path[path.length - 1] === 'object';
+  if (!(inList && (b === undefined || c === undefined)) && [b, a, c].every(v => v === undefined || kObj(v))) {
+    const r = {}; kKeys(b, a, c).forEach(k => { const v = kM3(b && b[k], a && a[k], c && c[k], path.concat(k), out); if (v !== undefined) r[k] = v; });
+    return b === undefined && !Object.keys(r).length ? undefined : r;
+  }
+  if ([b, a, c].every(v => v === undefined || kIdArr(v))) {
+    const bm = kMap(b), am = kMap(a), cm = kMap(c), res = {}, pv = {}; (b || []).forEach((e, i) => { pv[e.id] = i ? b[i - 1].id : null; });
+    kKeys(bm, am, cm).forEach(id => { const v = kM3(bm[id], am[id], cm[id], path.concat({ id, prev: pv[id] === undefined ? null : pv[id] }), out); if (v !== undefined) res[id] = v; });
+    const list = (c || []).map(e => e.id).filter(id => res[id]);
+    (b || []).forEach((e, i) => { if (res[e.id] && list.indexOf(e.id) < 0) { const p = i ? b[i - 1].id : null, j = p === null ? 0 : list.indexOf(p) + 1; list.splice(j > 0 || p === null ? j : list.length, 0, e.id); } });
+    Object.keys(res).forEach(id => { if (list.indexOf(id) < 0) list.push(id); });
+    return b === undefined && !list.length ? undefined : list.map(id => res[id]);
+  }
+  if (path[0] === 'ui') return c;
+  if (c === undefined) return kClone(b);
+  out.push({ p: path, b, c }); return kClone(b);
+}
+function kOrder(root, op) {
+  const arr = kGet(root, op.p); if (!Array.isArray(arr)) return;
+  const want = op.o.filter(id => arr.some(e => e && e.id === id)), set = new Set(want), pos = []; arr.forEach((e, i) => { if (e && set.has(e.id)) pos.push(i); });
+  if (pos.map(i => arr[i].id).join('\n') !== op.ao.filter(id => set.has(id)).join('\n')) return;   /* put in another order since: that order stays */
+  const by = kMap(pos.map(i => arr[i])); pos.forEach((i, j) => { arr[i] = by[want[j]]; });
+}
+/* the numbers as they would be after this Undo (T), and what done since it would take away (out; empty: nothing done since is touched) */
+function keepMerge(e) {
+  const T = JSON.parse(JSON.stringify(S)), out = [];
+  if (!e || !Array.isArray(e.d)) return { T, out, none: true };
+  e.d.forEach(op => { if (op.o) kOrder(T, op); else kSet(T, op.p, kM3(op.b, op.a, kGet(T, op.p), op.p, out)); });
+  return { T, out };
+}
+const keepLive = e => !!(e && +e.t > 0 && Date.now() - e.t <= KEEP_DAYS * 864e5 && (Array.isArray(e.d) || typeof e.snap === 'string'));
+/* QC round 10 data safety blocker 2: a second removal no longer ends the first one's Undo. Every kept change keeps its own Undo until its
+   own date: the newest is S.ui.keep (with its full copy, for Settings), the ones before it are S.ui.keeps (what they changed only, so they
+   stay small). Newest first. */
+function keepAll() { const u = (S && S.ui) || {}; return [u.keep].concat(Array.isArray(u.keeps) ? u.keeps : []).filter(keepLive); }
+function keepFind(sn) { if (typeof sn !== 'string') return null; const t = /^keep:(\d+)$/.exec(sn), h = t ? '' : kHash(sn); return keepAll().find(e => (t ? String(e.t) === t[1] : e.snap === sn || e.sh === h)) || null; }
+function keepDrop(e) { if (!e || !S.ui) return; if (S.ui.keep && S.ui.keep.t === e.t) delete S.ui.keep; if (Array.isArray(S.ui.keeps)) { S.ui.keeps = S.ui.keeps.filter(x => x && x.t !== e.t); if (!S.ui.keeps.length) delete S.ui.keeps; } }
+function keepCopy(snap, why) {
+  const all = keepAll(), t = Math.max(Date.now(), all.length ? +all[0].t + 1 : 0);
+  let d = null; try { d = keepDiff(JSON.parse(snap), S); } catch (er) { d = null; }
+  delete S.ui.keeps;
+  S.ui.keep = { snap, t, why, sh: kHash(snap) }; if (d) S.ui.keep.d = d;
+  try { S.ui.keep.msb = Object.keys((JSON.parse(snap).ui || {}).ms || {}); } catch (er) { /* no milestone list */ }
+}
+/* a backup or a cloud copy loaded over the numbers here: the kept changes are this device's own, never the ones inside the loaded copy */
+function keepOwn(old) { ['keep', 'keeps'].forEach(k => { if (old && old.ui && old.ui[k] !== undefined) S.ui[k] = old.ui[k]; else delete S.ui[k]; }); }
+/* only past KEEP_MAX changes in 3 days does one more push the oldest out: a removal's confirm says so first */
+function keepEnds() { const all = keepAll(); return all.length >= KEEP_MAX ? ` This ends the Undo for: ${all[all.length - 1].why || 'an earlier change'}` : ''; }
+/* a copy kept by an older version knows only the numbers from before: what it changed is worked out from the numbers now, and the
+   receipts logged since (any the copy does not have, except those the change added itself) always stay */
+function keepTidy() {
+  if (!S.ui) return false; let ch = false;
+  const k = S.ui.keep;
+  if (k && !keepLive(k)) { delete S.ui.keep; ch = true; }
+  else if (k && !Array.isArray(k.d) && typeof k.snap === 'string') {
+    try { const own = new Set(k.added || []); k.d = keepDiff(JSON.parse(k.snap), S).filter(op => !(op.p[0] === 'receipts' && op.p.length === 2 && op.b === undefined && !own.has(op.p[1].id))); if (keptChanged(k)) k.unsure = 1; k.sh = kHash(k.snap); k.msb = Object.keys((JSON.parse(k.snap).ui || {}).ms || {}); ch = true; } catch (er) { /* Undo falls back to the copy itself, keeping the receipts */ } }
+  if (Array.isArray(S.ui.keeps)) { const n = S.ui.keeps.length; S.ui.keeps = S.ui.keeps.filter(e => keepLive(e) && Array.isArray(e.d)); if (n !== S.ui.keeps.length) ch = true; if (!S.ui.keeps.length) delete S.ui.keeps; }
+  return ch;
+}
+/* the words for what an Undo would also take away, or '' when nothing done since is touched */
+function keepSince(e) {
+  const m = keepMerge(e); if (m.none) return e && keptChanged(e) ? 'Undo also removes what you did since: the numbers you changed since then. Receipts stay.' : '';
+  const rc = [], names = [];
+  const keyName = key => key === 'a' ? 'your pay' : key === 'b' ? 'Second pay' : key === 'side' ? 'Side pay' : key.slice(0, 5) === 'goal:' ? ((goalById(S, key.slice(5)) || {}).name || 'a burrow') : key.slice(0, 5) === 'debt:' ? 'a card or loan' : ((lineByKey(S, key) || {}).name || 'an amount');
+  m.out.forEach(x => {
+    const p = x.p, s1 = p[1], s2 = p[2]; let n = 'your plan';
+    if (p[0] === 'receipts' && s1 && typeof s1 === 'object') { if (!rc.some(r => r.id === s1.id)) rc.push({ id: s1.id, a: +(kGet(S, p.slice(0, 2)) || {}).a || 0 }); return; }
+    if (p[0] === 'plan' && (s1 === 'lines' || s1 === 'goals') && s2 && typeof s2 === 'object') n = (kGet(S, p.slice(0, 3)) || {}).name || n;
+    else if (p[0] === 'steps' && s1) n = keyName(s1);
+    else if ((p[0] === 'once' || p[0] === 'items') && s1 && MONTHS.indexOf(s1) >= 0) n = (p[0] === 'once' && s2 ? keyName(s2) + ' for ' : 'your changes for ') + monthLabel(s1);
+    else if (p[0] === 'cfg') n = { bankStart: 'your bank balance', bankNow: 'your bank balance', bankAt: 'your bank balance', minBank: 'your minimum balance', ceiling: 'your spending ceiling', aims: 'how your pay is split' }[s1] || 'a setting';
+    else if (p[0] === 'cards') n = s1 && typeof s1 === 'object' ? ((kGet(S, p.slice(0, 2)) || {}).name || 'a card') : 'your cards';
+    if (names.indexOf(n) < 0) names.push(n);
+  });
+  const parts = [];
+  if (rc.length) parts.push(`${rc.length} receipt${rc.length === 1 ? '' : 's'} (${rc.slice(0, 3).map(r => fmt2(r.a)).join(', ')}${rc.length > 3 ? ' and more' : ''})`);
+  if (names.length) { const ns = names.length > 4 ? names.slice(0, 3).concat(`${names.length - 3} more`) : names; parts.push('your changes to ' + (ns.length > 1 ? ns.slice(0, -1).join(', ') + ' and ' + ns[ns.length - 1] : ns[0])); }
+  if (!parts.length && e.unsure) parts.push('numbers you changed since then');
+  return parts.length ? `Undo also removes what you did since: ${parts.join(' and ')}.` : '';
+}
+/* Undo of one kept change: only what it changed comes back and everything done since stays (except what keepSince named, once the person
+   said yes). Its copy is let go, so it is not offered again */
+function keepUndo(e) {
+  const m = keepMerge(e), had = (S.receipts || []).map(r => r.id), keep = {}; ['keep', 'keeps', 'preSplit'].forEach(k => { if (S.ui[k] !== undefined) keep[k] = S.ui[k]; });
+  if (m.none) { if (typeof e.snap === 'string') { restoreKept(e.snap, e.added); S.ui = Object.assign(S.ui || {}, keep); } }   /* only the copy is known: it comes back with every receipt logged since */
+  else { KEEP_PARTS.forEach(k => { if (m.T[k] === undefined) delete S[k]; else S[k] = m.T[k]; }); S.ui = Object.assign(m.T.ui || {}, keep); }
+  had.forEach(id => { if (!(S.receipts || []).some(r => r.id === id)) RM_IDS.add(id); });
+  /* a burrow's milestone is first noted when Home first draws it (ui6.js): one noted only because the change put another burrow on Home
+     is let go, so the Undo is exact. Noting it again later celebrates nothing */
+  if (Array.isArray(e.msb) && S.ui.ms) { Object.keys(S.ui.ms).forEach(id => { if (e.msb.indexOf(id) < 0) delete S.ui.ms[id]; }); if (!Object.keys(S.ui.ms).length) delete S.ui.ms; }
+  keepDrop(e);
+}
 function openSetupWithCopy(at, mode) {
   if (typeof hasData === 'function' && hasData(S) && !RESPLIT_SNAP) { RESPLIT_SNAP = snapNoCopy(); S.ui.preSplit = RESPLIT_SNAP; persist(); }
   openTour(at, mode);

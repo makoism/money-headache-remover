@@ -2,6 +2,8 @@
    24 Nov 2026. Put them back" while new numbers had been typed since, so Put them back read as harmless. Once anything changed after
    the reset it says "Numbers from before 21 Nov are kept until 24 Nov 2026." and the button "Put them back (replaces what is here now)".
    Right after the reset, and after a reload with nothing typed, it keeps the first wording. Made-up numbers.
+   QC round 10 data safety B1: Put them back now keeps everything done since, so a receipt logged since no longer counts as "changed";
+   a new pay does, and the tap names it first.
    Run: PAGE=/abs/money-map-team.html node tests/qc/qc21_keep_changed.js */
 const PAGE = process.env.PAGE || '/home/claude/work/money-map-team.html';
 process.env.BUILD = PAGE;
@@ -28,15 +30,23 @@ const FIRST = 'Your numbers were set to zero. The numbers from before are kept u
   const a2 = await keepLine(p);
   ck('after a reload with nothing typed: still the first wording', a2 && a2.txt === FIRST && a2.btn === 'Put them back', a2);
   await L.rc(p, 45, 'envelope', null, 'Made-up snack'); await w(400);   /* something typed after the reset */
+  /* QC round 10 data safety B1: Put them back now keeps what was done since, so a receipt logged since changes nothing here */
+  const c0 = await keepLine(p);
+  ck('after a new receipt: still the first wording, Put them back keeps the receipt', c0 && c0.txt === FIRST && c0.btn === 'Put them back', c0);
+  await p.evaluate(() => __t.ACT.setPay(2900)); await w(600);   /* a new pay typed after the reset: putting the old one back would replace it */
   const c = await keepLine(p);
-  ck('after a new receipt: "' + AFTER + '"', c && c.txt === AFTER, c);
-  ck('after a new receipt: the button says it replaces what is here now', c && c.btn === 'Put them back (replaces what is here now)', c);
+  ck('after a new pay: "' + AFTER + '"', c && c.txt === AFTER, c);
+  ck('after a new pay: the button says it replaces what is here now', c && c.btn === 'Put them back (replaces what is here now)', c);
   await reload(p);
   const c2 = await keepLine(p);
   ck('after a reload: still says it replaces what is here now', c2 && c2.txt === AFTER && c2.btn === 'Put them back (replaces what is here now)', c2);
+  const ask = await p.evaluate(() => { const k = document.getElementById('keepBack'); k.click(); return k.innerText.trim(); }); await w(800);
+  ck('the first tap names what it would replace ("' + ask + '")', /^Tap again: Undo also removes what you did since: your changes to your pay\./.test(ask), ask);
+  ck('...and changes nothing yet', await p.evaluate(() => __t.calcAll(__t.S).byYm['2026-11'].a) === 2900);
   await p.evaluate(() => { const k = document.getElementById('keepBack'); k && k.click(); }); await w(800);
-  const s = await p.evaluate(() => ({ pay: __t.calcAll(__t.S).byYm['2026-11'].a, kept: !!__t.S.ui.keep }));
+  const s = await p.evaluate(() => ({ pay: __t.calcAll(__t.S).byYm['2026-11'].a, kept: !!__t.S.ui.keep, rc: __t.S.receipts.map(r => r.a) }));
   ck('Put them back still brings the numbers back (pay 3,200)', s.pay === 3200, s);
+  ck('and both receipts stay (123 and 45)', s.rc.indexOf(123) >= 0 && s.rc.indexOf(45) >= 0, s);
   const e2 = errs.filter(e => !/favicon|net::ERR_FILE_NOT_FOUND|fonts/.test(e));
   ck('no page errors', e2.length === 0, e2.slice(0, 3));
   await b.close();
