@@ -17010,7 +17010,7 @@ function gwRefresh() {
 }
 /* the name the goal type suggests ("Trip") is selected when the Name box is tapped, so typing replaces it; a name the person typed is left as it is
    (QC round 10 novice B3: "TripLisbon trip") */
-document.addEventListener('focusin', e => { const t = e.target, g = GW; if (!t || t.id !== 'gwName' || !g || !g.kind || t.value !== g.kind.name) return; setTimeout(() => { if (document.activeElement === t && t.value === g.kind.name) t.select(); }, 0); });
+document.addEventListener('focusin', e => { const t = e.target, g = GW; if (!t || t.id !== 'gwName' || !g || !g.kind || t.value !== g.kind.name) return; t.select();   /* at once too, so typing that starts with the focus replaces it (QC round 11 novice) */ setTimeout(() => { if (document.activeElement === t && t.value === g.kind.name) t.select(); }, 0); });
 function gwInput(e) {
   const g = GW, t = e.target; if (!g) return;
   if (t.id === 'gwName') g.name = t.value; else if (t.id === 'gwWhy') g.why = t.value; else if (t.id === 'gwCost') g.cost = t.value; else if (t.id === 'gwSaved') g.saved = t.value;
@@ -17231,6 +17231,7 @@ document.addEventListener('focusout', e => { const el = e.target; if (el && el.d
   document.addEventListener('focusin', e => {
     const t = e.target; if (!t || t.tagName !== 'INPUT' || (t.type !== 'number' && t.type !== 'text')) return;
     if (pt && Date.now() - ptT < 700 && pt.nodeType === 1) { const lb = pt.closest && pt.closest('label'); if (t === pt || t.contains(pt) || (lb && lb.contains(t))) return; }
+    if (t.id === 'gwName' && typeof GW !== 'undefined' && GW && GW.kind && t.value === GW.kind.name) return;   /* the suggested goal name stays selected, so typing replaces it (QC round 11 novice: "TripLisbon trip") */
     caretEnd(t); requestAnimationFrame(() => { if (document.activeElement === t) caretEnd(t); });
   });
   if (document.body) {
