@@ -677,6 +677,9 @@ function gwRefresh() {
   const h = $('#gwHint'); if (h && !wait) h.textContent = '';
   if (typeof dpSync === 'function') dpSync(el);
 }
+/* the name the goal type suggests ("Trip") is selected when the Name box is tapped, so typing replaces it; a name the person typed is left as it is
+   (QC round 10 novice B3: "TripLisbon trip") */
+document.addEventListener('focusin', e => { const t = e.target, g = GW; if (!t || t.id !== 'gwName' || !g || !g.kind || t.value !== g.kind.name) return; setTimeout(() => { if (document.activeElement === t && t.value === g.kind.name) t.select(); }, 0); });
 function gwInput(e) {
   const g = GW, t = e.target; if (!g) return;
   if (t.id === 'gwName') g.name = t.value; else if (t.id === 'gwWhy') g.why = t.value; else if (t.id === 'gwCost') g.cost = t.value; else if (t.id === 'gwSaved') g.saved = t.value;
