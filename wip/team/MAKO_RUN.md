@@ -198,6 +198,18 @@ When the same question came from several reviewers, it is one entry here and the
 - **Layout at 320 (round 13).** Plan > All months breaks the goal chip inside a word ("Emergenc" / "y fund full"). Keeping words whole makes the table wider than the screen, even with a smaller chip (tried and undone). Choices: shorter chip words ("Fund full"), or the chip on its own line across the row. Also: after Log spend at 320 the toast and the Undo bar cover the form for a few seconds; a 50-letter goal name with no spaces pushes Home sideways; Plan > Month at 320 squeezes names to one or two words per line.
 - **Sources.** `qc_round13/money_accuracy.md`, `qc_round13/art_director.md`, `qc_round13/wording.md`, `qc_round13/layout_touch.md`.
 
+### 1.27 New from QC round 14
+- **Already here, raised again.** Percents (1.14, 1.20, 1.25, 1.26): money accuracy calls it a blocker again, the numbers gate a should-fix; north star adds the setup "Split the rest" sliders (three read 12% with $365, $365 and $360). Cents written two ways ($180 next to $180.00 in one Receipts card, 1.12). Check your bank vs the plan's start figure (1.1): north star blocker this round, "so the two can differ" says neither which to trust nor what to do.
+- **A loan counted twice.** Setup has a bill line "Loan or debt payment" and Cards and loans has the same loan's minimum; both go into Bills and basics. Choices: A. when a loan is added under Cards and loans, offer to set the bill line to 0. B. a warning when both are set. C. drop the bill line.
+- **Home status card: why, but not what to do.** "Not safe to spend yet: your bank is less than ..." The next step ("wait for pay, then Check your bank") is only in the sheet. Put it on the card? And when it is safe, keep a short "Safe to spend: $X" line on Home?
+- **Receipts is one long page.** Scan with AI comes first, then the log form, the list, Repeating spending and Reminder. Two reviewers ask for the log form and the list first, the rest folded. Your call on order.
+- **Help inside setup and the burrow scene.** There is no Help button in setup or the open burrow. Add one?
+- **Card form.** A line of why above the fields ("Spending on a card is money already gone from your bank") and what to do with a card you do not pay in full.
+- **Art (blocker for the art director).** Goal mounds and flat crates side by side (Education, Investing, Giving, Bills and basics), no ground or shadow, one silhouette for all goals. The phone bottom bar (a solid 70 px strip that only holds "?") hides the forest and clips text; the "?" ring is the brightest thing on screen. Plan > Burrows has no burrow picture and no wisteria. Polish: Giving's coin pile the same as Education's for half the money, mixed pixel sizes, pale mint vines, smooth halos, sky 6.1% off palette, CSS gradients behind pixel cards, light mode "This month" dark slab. Layout also asks for the "?" to float.
+- **Layout and touch (pass).** Burrow "Add" chips look disabled (grey) and the Add button is nearly see-through; intro text squeezed to the heading's width; vines within 6 to 16 px of text; Plan pay split at 320 wraps "Bills / and / basics" while the percent column has 50 px spare.
+- **Visual first ideas.** A bank line over the months on All months; debt as a hole that fills; the chest empty or cracked when Free to spend is over; a zero line on the bar when the bank starts below zero; a cloud with a tick for the cloud copy.
+- **Sources.** `qc_round14/*.md`.
+
 ## 2. Words and glossary
 
 Your earlier copy pass list still stands: `COPY_QC8_FOR_MAKO.md` has about 40 lines with a rewrite each. Say which ones you want. The questions below are the "one word per thing" choices on top of that.
