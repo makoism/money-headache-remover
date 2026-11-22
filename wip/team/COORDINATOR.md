@@ -28,6 +28,9 @@ MAIN 11 stopped after handoff 0810d28 (its keep-going task deleted). Coordinator
 ### MAIN 13 (18:43 UTC 21 Nov = 03:43 JST 22 Nov)
 MAIN 12 stopped editing after handoff 45a0b98 (its keep-going task deleted); it stays only to push two helper branches (helper/<name>) when its helpers finish. Coordinator 8 started MAIN 13, session_01BFpKEWo34ssfTxnTsQ2qUD, with an hourly keep-going task. Next: merge helpers, one quiet check.sh full, artcheck, golden, stage, QC round 9. MAKO_RUN.md is the one list for Mako.
 
+### MAIN 15 (23:08 JST 22 Nov)
+MAIN 14 stopped at its size limit after handoff d190de1 (QC round 12 wave 1 in, numbers gate B1/B2 open, wave 2 not started). Coordinator 8 started MAIN 15, session_01BFpKEWd1ZWnpSgfqXk8WbV, no keep-going task.
+
 ### MAIN 14 (15:33 JST 22 Nov)
 MAIN 13 stopped after handoff 01c77c6 (all round 10 fixes merged). Coordinator 8 started MAIN 14, session_01BFpKEWBF1fNHyG5QjQ72zS, without a keep-going task (the non-stop window is over; Mako to say if he wants one). MAIN 13's keep-going task is now disabled (paused, not deleted).
 
