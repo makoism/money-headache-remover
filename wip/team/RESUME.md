@@ -4,10 +4,12 @@ Written 2026-11-18 on branch `wip-38.31`. Read this whole file before touching a
 
 ## 0. Handoff (latest first)
 
-**2026-11-22 17:50 JST, MAIN 14 progress. Coordinator: session_01BFpKEXZxmzMuFVBB5UQxLE.**
-**Done:** setup_env; full check on 5f8631e all pass (qc_round10/full_check.md; numbers_round4 test read old Home warning words, fixed d703507); golden 3831zd (README_3831zd.md, every number checked); stage_build on 675841b VERIFY OK, script checks OK, screen pack 66 screens.
-**Running:** QC round 11 wave 1 (numbers, north star, money accuracy, data safety, novice), fresh Opus agents on /tmp/qc_build/build.html. Save each reply in qc_round11/<role>.md. **Next:** wave 2 (regression, wording, layout and touch, art director), then fix one-answer findings test first.
-**Tip:** a background job here stops after the timeout you give it (one hour was too short for check.sh full; give 7200000).
+**2026-11-22 21:30 JST, MAIN 14 progress. Coordinator: session_01BFpKEXZxmzMuFVBB5UQxLE.**
+**QC round 11 done on 675841b (reports in qc_round11/):** PASS numbers, data safety, wording, art, regression, layout; FAIL north star, money accuracy, novice, all on one blocker (Setup done "safe" under "Not safe to spend yet"), fixed e39abb2.
+**Fixed since, each test first (qc31_*.js, in check.sh's full list after qc30_one_status):** Home never "You are okay" above months ending below zero b7745e4; "Spending went past the plan"; Receipts table one format 382115f (qc23_cents_line updated to the table rule); Undo bar moves off Log spend 69a9f89; 44px date chips and All months rows d07d2b5; suggested goal name stays selected c7cab7f; one message after a spend (Undo bar says what went over; the line under the form is screen-reader only; qc12_over_toast updated) in progress.
+**Not bugs:** #mpPay and #rcCopy have text (hidden sections); a third decimal is refused with a message.
+**Next:** rest of the should-fix list (task list: long names cut at 60, Home tab focus ring after Finish later, stale Logged line after restore, toast over Setup done row at 385x730, wording confusing items with one answer), then one quiet check.sh full (timeout 7200000), golden 3831ze (Home status words changed), stage_build, QC round 12 in two waves.
+**Tip:** pressing stop in the app kills running checks and background QC agents; restart them fresh.
 
 **2026-11-22 15:35 JST, MAIN 13 stops (size). Handoff to MAIN 14. Coordinator: session_01BFpKEXZxmzMuFVBB5UQxLE.**
 **All round 10 fixes are merged on wip-38.31 (2fe2dbc and this commit):** helper/r10-undo (Undo brings back only what changed and keeps receipts done since, asks first when it cannot; each kept change keeps its own Undo, Settings lists them; undo bar after an edit; card removal copy after; tests qc29_undo_since, qc29_undo_each, qc29_undo_edit) on top of helper/r10-numbers and MAIN 13's own fixes (see the 13:50 and 12:55 entries). On the merged build: test_team ALL PASS, oracle 0, proof PASS, display_math 0, home_dom 0, act_keep 0 new, every undo, cloud and qc28/29/30 test green.
