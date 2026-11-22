@@ -182,6 +182,7 @@ When the same question came from several reviewers, it is one entry here and the
 - **Also (data safety, confusing).** While the cloud copy is behind, Home's top label still says "Saved in this browser" with a grey dot and the warning card is two screens down; Settings says "On. Last sent ..." next to "behind". Suggested: "Cloud copy behind since 8:40 AM" with an amber dot at the top; Settings "On, but behind". The welcome code box has no heading and no Back.
 - **Also (novice).** Plan's only way back after a wrong amount is "Undo all"; a first-time user fears it wipes other edits. The currency step has ¥ chosen before anyone picks one.
 - **Also (money accuracy).** Percents follow two rules: burrow fill is cut down (12.5% shows 12%), pay shares are rounded to add up to 100 (10.77% shows 11%). Pick one, or keep both and write it down.
+- **Also (art, round 11).** On phones, Help and Ask sit on a solid dark shelf along the bottom (an earlier fix, so Help never floats over a card). The art director calls it a flat bar that cuts the forest off, and wants it transparent or a stepped fade. A fade brings back Help over cards. Keep the shelf, or try the fade?
 - **Sources.** `qc_round11/qc_north_star_gate.md` B3, `qc_round11/data_safety.md`, `qc_round11/novice.md`, `qc_round11/money_accuracy.md`.
 
 ## 2. Words and glossary
