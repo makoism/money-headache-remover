@@ -23,8 +23,8 @@ const read = async p => { await L.tab(p, 'tab-month'); await w(400); const band 
   await L.rc(p, 1, 'bill:food', '2026-11-19', 'Made-up bread'); await w(400);
   const a = await read(p);
   ck('setup: Receipts says ¥0 safe to spend', /¥0 safe to spend\./.test(a.rc), a.rc);
-  ck('held back: the Plan bar says "¥40,000 planned, ¥0 safe to spend", as Receipts and the Home tile do (QC round 10 numbers gate blocker 1)', /Free to spend: ¥40,000 planned, ¥0 safe to spend, Nov/.test(a.band), a.band);
-  ck('held back: the Plan bar never says just "left"', !/¥[\d,]+ left,/.test(a.band), a.band);
+  ck('held back: the Plan bar says "¥40,000 left, ¥0 safe to spend", as the Home tile does (QC round 10 numbers gate blocker 1; left, not planned, since QC round 13 numbers gate B1)', /Free to spend: ¥40,000 left, ¥0 safe to spend, Nov/.test(a.band), a.band);
+  ck('held back: the Plan bar never says just "left" without the safe part', !/¥[\d,]+ left(?!, ¥[\d,]+ safe to spend)/.test(a.band), a.band);
   /* a typed bank lower than the bills still to pay and Free to spend: the map says "left, not safe to spend yet" */
   await L.base(p, { pay: 300000, bank: 300000, min: 0 }); await w(400); await skip(p);
   await p.evaluate(() => { const S = __t.S; S.ui.done = { pay: true, bills: true, goals: true, receipts: true }; S.ui.sampleHidden = true; S.ui.toured = true; __t.persist(); __t.restructure(); });

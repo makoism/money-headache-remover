@@ -38,7 +38,7 @@ const read = async p => {
   ck('held: Plan > Month headline is the planned ¥36,200, not the held ¥16,200', s.heroNum === '¥36,200', s.heroNum);
   ck('held: Plan > Month says ¥16,200 of it is safe to spend', /Planned ¥36,200 in Nov, ¥16,200 safe to spend\./.test(s.heroWk), s.heroWk);
   ck('held: Receipts summary says ¥36,200 planned and ¥16,200 safe to spend', /¥36,200 planned/.test(s.rcSum) && /¥16,200 safe to spend/.test(s.rcSum), s.rcSum);
-  ck('held: the strip under the tabs says ¥36,200 planned, ¥16,200 safe to spend', /Free to spend: ¥36,200 planned, ¥16,200 safe to spend/.test(s.band), s.band);
+  ck('held: the strip under the tabs says ¥36,200 left, ¥16,200 safe to spend (left since QC round 13 numbers gate B1)', /Free to spend: ¥36,200 left, ¥16,200 safe to spend/.test(s.band), s.band);
   ck('held: the Free to spend card on Home shows ¥36,200 and ¥16,200 safe to spend', /¥36,200/.test(s.spend) && /¥16,200 of it is safe to spend/.test(s.spend) && !/Free to spend in November ?¥16,200/.test(s.spend), s.spend);
   ck('held: the How is this worked out sheet ends on "Safe to spend ¥16,200", never "Free to spend ¥16,200"', /Safe to spend ?¥16,200/.test(s.sheet) && !/Free to spend ?¥16,200/.test(s.sheet), s.sheet);
   /* over: 40,000 logged in Free to spend, 3,800 past its plan; the bank ends at 6,200, under the minimum, and nothing was lowered */
