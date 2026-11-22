@@ -65,7 +65,7 @@ const MAKE_CAP = 'The amounts are samples for one salary, so start at zero or ty
 const MAKE_CAP_CLOUD = 'The amounts are samples for one salary, so start at zero or type over them. They\'re saved in this browser and in your locked cloud copy. Nobody else can read them, including whoever shared this page.';
 const START_STEPS = [
   ['pay', 'Enter pay', 'Type your monthly take-home pay under Salary', 'Go to Salary', 'data-open="a"'],
-  ['bills', 'Check bills', 'Put your real amount on each Monthly bills line, and rename, remove or add lines as you go', 'Open Monthly bills', 'data-open="nec"'],
+  ['bills', 'Check bills', 'Put your real amount on each Bills and basics line, and rename, remove or add lines as you go', 'Open Bills and basics', 'data-open="nec"'],
   ['goals', 'Set up burrows', 'Give each goal a name, what it costs and a date', 'Go to Goals', 'data-tab-go="goals"'],
   ['receipts', 'Log receipts', 'Add what you spent, and set a reminder in your calendar so you keep doing it', 'Go to Receipts', 'data-tab-go="receipts"'],
 ];

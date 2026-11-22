@@ -3614,7 +3614,7 @@ function limitsOf(S, C, ym) {
 function lookBack0(S, C, ym) {
   const m = C.byYm[ym]; if (!m) return null;
   const rs = receiptStats(S, ym), lim = limitsOf(S, C, ym);
-  const jars = ['nec', 'play', 'edu', 'give'].map(j => ({ id: j, planned: m.jar[j], spent: rs.byJar[j] || 0, left: round2(m.jar[j] - (rs.byJar[j] || 0)) }));
+  const jars = ['nec', 'play', 'edu', 'give', 'ffa'].map(j =>   /* Investing too, so the table holds every place (QC round 12 numbers gate should-fix 6) */ ({ id: j, planned: m.jar[j], spent: rs.byJar[j] || 0, left: round2(m.jar[j] - (rs.byJar[j] || 0)) }));
   return { ym, inflow: m.inflow, out: m.out, left: round2(m.bankEnd - m.bankStart), planLeft: m.left, bankStart: m.bankStart, bankEnd: m.bankEnd, count: rs.count, logged: rs.total, other: rs.byJar.other || 0, jars,
     over: lim.rows.map(r => (r.jar === 'edu' || r.jar === 'give') && r.over ? Object.assign({}, r, { left: -Math.min(-r.left, (m.ovB || {})[r.jar] || 0) }) : r).filter(r => r.over && r.left < -0.004).concat((rs.byJar.other || 0) - (m.itemsTotal || 0) > 0.004 ? [{ name: 'Other', left: -round2((rs.byJar.other || 0) - (m.itemsTotal || 0)), over: true }] : []).sort((a, b) => a.left - b.left), goalsAdded: round2(m.goalsTotal + ((m.topup && m.topup.used) || 0)), debtPaid: m.debtPay, interest: m.debtInterest, owed: m.debtOwed };
 }
@@ -4752,7 +4752,7 @@ const JARCLS = { nec: 'g-nec', lts: 'g-lts', play: 'g-play', edu: 'g-edu', ffa: 
 const JARVAR = { nec: 'var(--c1)', lts: 'var(--cl)', play: 'var(--cp)', edu: 'var(--c2)', ffa: 'var(--c3)', give: 'var(--cg)' };
 const JARNAME = {}; JARS.forEach(j => { JARNAME[j.id] = j.name; });
 const JARROWS = [
-  { id: 'nec', jar: 'nec', name: 'Monthly bills', cap: 'Rent, food, utilities and every other monthly bill' },
+  { id: 'nec', jar: 'nec', name: 'Bills and basics', cap: 'Rent, food, utilities and every other monthly bill' },
   { id: 'items', jar: 'nec', name: 'One-time costs', kind: 'items' },
   { id: 'debts', jar: 'nec', name: 'Cards and loans', kind: 'debts', cap: 'The minimum payments plus anything extra you pay' },
   { id: 'lts', jar: 'lts', name: 'Goal burrows', kind: 'goals', cap: 'Burrows with a goal, like a trip, something big to buy or your Emergency fund' },
@@ -4999,7 +4999,7 @@ const MAKE_CAP = 'The amounts are samples for one salary, so start at zero or ty
 const MAKE_CAP_CLOUD = 'The amounts are samples for one salary, so start at zero or type over them. They\'re saved in this browser and in your locked cloud copy. Nobody else can read them, including whoever shared this page.';
 const START_STEPS = [
   ['pay', 'Enter pay', 'Type your monthly take-home pay under Salary', 'Go to Salary', 'data-open="a"'],
-  ['bills', 'Check bills', 'Put your real amount on each Monthly bills line, and rename, remove or add lines as you go', 'Open Monthly bills', 'data-open="nec"'],
+  ['bills', 'Check bills', 'Put your real amount on each Bills and basics line, and rename, remove or add lines as you go', 'Open Bills and basics', 'data-open="nec"'],
   ['goals', 'Set up burrows', 'Give each goal a name, what it costs and a date', 'Go to Goals', 'data-tab-go="goals"'],
   ['receipts', 'Log receipts', 'Add what you spent, and set a reminder in your calendar so you keep doing it', 'Go to Receipts', 'data-tab-go="receipts"'],
 ];
@@ -5511,7 +5511,7 @@ function renderReceipts() {
   m.lines.forEach(x => { known.add(x.key); const sp = rs.byKey[x.key] || 0; if (sp > 0 || (x.jar === 'play' && x.on)) rows.push({ name: shownLine(x.name), jar: x.jar, plan: x.on ? x.v : 0, spent: sp, safe: x.key === 'envelope' && x.on ? playSafeLeft(S, m, rs.byJar.play || 0) : null }); });
   /* Other is planned by the month's one-time costs (money already set aside, model.js applyOverspend): only spending past them is over */
   Object.keys(rs.byKey).forEach(k => { if (!known.has(k)) { const r = rs.list.find(q => q.c === k), it = k === 'other' && m.itemsTotal > 0 ? m.itemsTotal : null; rows.push({ name: r ? catName(S, r) : 'Other', jar: 'other', plan: it, spent: rs.byKey[k] }); } });
-  $('#rcCats').innerHTML = rs.count ? `<table class="plain"><thead><tr><th>Category</th><th>Plan</th><th>Spent</th><th>Left to spend</th></tr></thead><tbody>${(() => { const tf = rows.some(r => rowFmt(r, m) === fmtCents) ? fmtCents : fmt2; return rows.map(r => { const f = tf;   /* one table, one way of writing amounts (QC round 11 numbers 3) */ return `<tr><td>${esc(r.name)}</td><td>${r.plan == null ? '' : f(r.plan)}</td><td>${f(r.spent)}</td><td>${r.plan == null ? `<span class="over">${f(r.spent)} over</span>` : r.spent > r.plan ? overCell(r, m, f) : (r.safe != null ? f(r.safe) : r.jar === 'ffa' ? 'saved' : f(leftOfPlan(r.plan, r.spent)))}</td></tr>`; }).join(''); })()}</tbody></table><p class="cap tnote">Lines with no receipts aren't listed, except Free to spend.</p>` : '';
+  $('#rcCats').innerHTML = rs.count ? `<table class="plain"><thead><tr><th>Category</th><th>Plan</th><th>Spent</th><th>Left to spend</th></tr></thead><tbody>${(() => { const tf = rows.some(r => rowFmt(r, m) === fmtCents) ? fmtCents : fmt2; return rows.map(r => { const f = tf;   /* one table, one way of writing amounts (QC round 11 numbers 3) */ return `<tr><td>${esc(r.name)}</td><td>${f(r.plan == null ? 0 : r.plan)}</td><td>${f(r.spent)}</td><td>${r.plan == null ? `<span class="over">${f(r.spent)} over</span>` : r.spent > r.plan ? overCell(r, m, f) : (r.safe != null ? f(r.safe) : r.jar === 'ffa' ? 'saved' : f(leftOfPlan(r.plan, r.spent)))}</td></tr>`; }).join(''); })()}</tbody></table><p class="cap tnote">Lines with no receipts aren't listed, except Free to spend.</p>` : '';
 
   $('#rcList').innerHTML = rs.list.map(r => `<div class="rc${editRc === r.id ? ' on' : ''}" data-id="${esc(r.id)}"><div class="rc-main"><b>${fmt2(r.a)}</b><span class="rc-cat">${esc(r.c === 'other' && r.n ? 'Other: ' + r.n : catName(S, r))}</span></div>
     <div class="rc-sub"><span>${dateLabel(r.d)}</span>${r.n && r.c !== 'other' ? `<span class="rc-note">${esc(r.n)}</span>` : ''}${r.s ? `<span class="rc-acct">${esc(r.s)}</span>` : ''}</div>
@@ -5736,7 +5736,7 @@ function chosenBills() {
   base.forEach(id => { out.push(id); all.forEach(l => { if (moreKind(l.id) === id) out.push(l.id); }); });
   return out;
 }
-const STEP_BILLS = { id: 'bills-pick', part: PART.bills, setup: true, pick: true, skipIf: () => importApplied(), title: 'Monthly bills',
+const STEP_BILLS = { id: 'bills-pick', part: PART.bills, setup: true, pick: true, skipIf: () => importApplied(), title: 'Bills and basics',
   body: () => {
     const on = chosenBills();
     return `<p>A few are ticked to get you started. Tick the ones you pay and untick the ones you don't. You type a rough amount for each one next.</p>
@@ -13962,9 +13962,9 @@ const TOUR = [
         : L > 0 ? `Pay entered. <b>${fmt2(L)}</b> is not placed yet, so raise a goal or add to Free to spend.`
         : L < 0 ? `Pay entered. The ${billsIn ? 'plan' : 'sample plan'} is <b>${fmt2(PF.shortBy)}</b> more than your pay${billsIn ? '' : ' because bills are still samples'}. ${billsIn ? 'Lower a bill under Plan.' : 'Enter your real bills next.'}`
         : 'Pay entered. All of it is placed.';
-      const bills = zero && !(necTotal() > 0) ? 'Bills and burrows are empty, so open Plan, go to Monthly bills and enter what you pay.'
-        : billsIn ? (necTotal() > 0 ? 'Your bills are in. If a line is still at zero you can set it under Plan in Monthly bills.' : 'Your bills are all at zero so far, so set each line under Plan in Monthly bills.')
-        : 'Bills and burrows are still samples. Open Plan, go to Monthly bills and set each line, or use <b>Set all to zero</b> in Settings.';
+      const bills = zero && !(necTotal() > 0) ? 'Bills and burrows are empty, so open Plan, go to Bills and basics and enter what you pay.'
+        : billsIn ? (necTotal() > 0 ? 'Your bills are in. If a line is still at zero you can set it under Plan in Bills and basics.' : 'Your bills are all at zero so far, so set each line under Plan in Bills and basics.')
+        : 'Bills and burrows are still samples. Open Plan, go to Bills and basics and set each line, or use <b>Set all to zero</b> in Settings.';
       return `${homeScene()}<p>${msg}</p>
       <p>${bills}</p>
       <p>Help at the bottom right has the video and the setup.</p>`;
@@ -14338,7 +14338,7 @@ THE PAGE
 - The main goal is the nearest goal still being saved for, unless the person picks one with Set as main goal.
 - Receipts: at the top is Scan receipts. Tap Camera or Choose files (photos, screenshots, a bank CSV, Excel or PDF statement), then Read. Claude lists what it found, with a category picker on each line, before anything is added. Tap the Add button under the list to add them (it says how many, like Add 3 receipts), and Undo is offered afterwards. To use another AI instead, open Prefer your own AI? Use it instead: tap Copy message, paste it into that AI app with the photos, paste the reply into Reply and tap Check. Below that: the form with Date, Amount, Category, Note and Log spend, a Month picker with the receipts of that month and plan against spent for each category, and a Reminder card that adds a repeating event to a calendar (Google, Apple, Outlook, Microsoft 365 or Yahoo), or Copy event text.
 - Plan, Burrows: each burrow is a goal with an amount and, if wanted, a Needed by date. With a date, the page spreads what is missing over the months before it. Edit goal changes Name, Why (optional), Goal amount, Already saved and Needed by, or removes it with Remove goal. The Why is the reason in the person's words, shown with the goal. Change monthly amount sets the monthly saving. Add a burrow asks what, how much and by when. Cards and loans lists what is still owed, with Add a card or loan. Forecast shows each goal month by month as a chart, and Table switches to numbers. The emergency fund is the one goal that can be borrowed from in a short month.
-- Plan, Month: the whole plan for one month. A Choose a month list, the big Free to spend number with a weekly amount and Change, a status chip (On plan, Tight month, Short, Over plan, Over Free to spend or Not placed yet; All months uses the same words), the pay split by place as a coloured bar, and Details: Money in (Salary, Second pay, Side pay, plus Extra money came in and Paid weekly or twice a month?), Money out (Monthly bills, One-time costs, Cards and loans when there are any, Goal burrows, Free to spend, Education, Investing, Giving) and Left. Tap an amount to type a new one: it changes that month only, and Keep for later months makes it the new usual. Open a place and tap Rename, remove or add lines to change its list. Undo all and Reset month revert edits. A Short month offers fixes with one tap: spend less, or borrow from the emergency fund. All months shows a table of every month: tap a month to open it.
+- Plan, Month: the whole plan for one month. A Choose a month list, the big Free to spend number with a weekly amount and Change, a status chip (On plan, Tight month, Short, Over plan, Over Free to spend or Not placed yet; All months uses the same words), the pay split by place as a coloured bar, and Details: Money in (Salary, Second pay, Side pay, plus Extra money came in and Paid weekly or twice a month?), Money out (Bills and basics, One-time costs, Cards and loans when there are any, Goal burrows, Free to spend, Education, Investing, Giving) and Left. Tap an amount to type a new one: it changes that month only, and Keep for later months makes it the new usual. Open a place and tap Rename, remove or add lines to change its list. Undo all and Reset month revert edits. A Short month offers fixes with one tap: spend less, or borrow from the emergency fund. All months shows a table of every month: tap a month to open it.
 - Where to put pay: Plan, Month, open Salary under Money in, and type the monthly take-home pay (after tax). If paid twice a month, add both together.
 - Settings: Name, Currency, Spending limits, Sound, Music, Start with the pages open, Look (Auto, Light or Dark), Balance (Money today (bank plus cash), Minimum balance, Free to spend cap), Where your pay goes (the six places, Bills and basics, Goal burrows, Free to spend, Education, Investing and Giving, with a common split shown as a guide), Reset and setup (Set all to zero, Restore samples, Show first steps, Guided setup), and Saved data: Backup with Save file or Copy text, Spreadsheet with Export spreadsheet (every month as one table for Sheets or Excel), Cloud copy when offered (Keep a copy in the cloud, or I have a code to bring the numbers to this device), and Restore with Load text or Choose file.
 - Setup: Guided setup (Help, Guided setup) starts with a welcome, then the currency, then Your statements: 2 or 3 months of bank, e-wallet or card statements are read by Claude, and Check what was found lets the person correct them before they are used. Type numbers instead asks pay, balance and bills one by one. Then bills, burrows and Free to spend. Each step saves as you type.
@@ -17483,8 +17483,9 @@ function renderLookBack() {
   const ym = sel, pm = MONTHS[MONTHS.indexOf(ym) - 1]; if (!pm || sampleOn() || !(pm < nowYm())) { el.hidden = true; return; }   /* only a month that has ended is looked back on (QC round 4 north-star 1) */
   const b = lookBack(S, C, pm); if (!b || !(b.inflow > 0) || !b.count) { el.hidden = true; return; }
   el.hidden = false;
-  const names = { nec: 'Bills and basics', play: 'Free to spend', edu: 'Education', give: 'Giving' };
-  const rows = b.jars.filter(j => j.planned > 0 || j.spent > 0).map(j => `<tr><th scope="row">${names[j.id]}</th><td>${fmt(j.planned)}</td><td>${j.spent > 0 ? fmt2(j.spent) : j.id === 'nec' ? 'in plan' : fmt(0)}</td></tr>`).join('');
+  const names = { nec: 'Bills and basics', play: 'Free to spend', edu: 'Education', give: 'Giving', ffa: 'Investing' };
+  /* the Spent column holds amounts only: a line with nothing logged says 0, never "in plan" (QC round 12 numbers gate should-fix 6) */
+  const rows = b.jars.filter(j => j.planned > 0 || j.spent > 0).map(j => `<tr><th scope="row">${names[j.id]}</th><td>${fmt(j.planned)}</td><td>${j.spent > 0 ? fmt2(j.spent) : fmt(0)}</td></tr>`).join('');
   put(el, `<h2>Last month, ${esc(monthLabel(pm))}</h2>
     <p class="cap">${b.count} ${b.count === 1 ? 'receipt' : 'receipts'}, ${fmt2(b.logged)} logged. ${fmt2(b.change) === fmt2(0) ? `The balance stayed at ${fmt2(b.bankEnd)}.` : `The balance went ${b.left >= 0 ? 'up' : 'down'} ${fmt2(b.change)}, from ${fmt2(b.bankStart)} to ${fmt2(b.bankEnd)}.`}</p>
     <div class="tablewrap"><table class="lbt"><thead><tr><th scope="col"></th><th scope="col">Planned</th><th scope="col">Spent</th></tr></thead><tbody>${rows}</tbody></table></div>

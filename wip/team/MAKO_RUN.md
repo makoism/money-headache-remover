@@ -109,7 +109,7 @@ When the same question came from several reviewers, it is one entry here and the
 - **Question.** With pay left at $0, should the app stop calling the numbers "Sample numbers"?
 - **Now.** Someone who typed their own bills and receipts but no pay sees "Sample numbers" and "The sample numbers are made up".
 - **Choices.** A. Drop the sample label once anything real is typed and only say pay is missing. B. Keep.
-- **Sources.** `qc_round6/qc_numbers_gate.md` 6, `RESUME.md` section 0.
+- **Sources.** `qc_round6/qc_numbers_gate.md` 6, `RESUME.md` section 0. Seen again in `qc_round12/qc_numbers_gate.md` should-fix 2 to 4 (same case: Home has no "In your bank now" and no total line; setup done with nothing typed then shows a sample Free to spend called safe).
 
 ### 1.13 "1 year" is 13 payments
 - **Question.** A goal "in 1 year" makes 13 payments while the More card says 12 months. Both counts are honest. Which should show?
