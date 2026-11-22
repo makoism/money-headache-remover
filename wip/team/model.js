@@ -834,6 +834,20 @@ function planCells(S, C, ym) {
   };
 }
 
+/* One status per month, in the same words on every screen that names it: Plan's chip, the line under the month, All months and the
+   assistant's change table (QC round 10 numbers gate should-fix 6: Plan said "Tight month" and All months "On plan" for a month that
+   balances only by borrowing). cls is good, tight or short. */
+function monthStatus(S, C, ym) {
+  const m = C.byYm[ym]; if (!m) return { cls: 'good', word: 'On plan' };
+  const st = statusOf(S, m), PC = planCells(S, C, ym), rs = receiptStats(S, ym), playSpent = rs.byJar.play || 0;
+  const overFree = playSpent > m.jar.play && m.jar.play >= 0 && rs.count > 0, overAny = !overFree && (m.overNow || 0) > 0.004;
+  if (overFree) return { cls: 'short', word: (m.overNec || 0) > 0.004 ? 'Over plan' : 'Over Free to spend' };
+  if (overAny) return { cls: 'short', word: 'Over plan' };
+  if (st === 'good' && PC.unplaced >= roundUnit(S)) return { cls: 'tight', word: 'Not placed yet' };   /* pay with no place is never "On plan" (38.31 novice round 4) */
+  if (st === 'good' && PC.borrowCover) return { cls: 'tight', word: 'Tight month' };   /* balances only by borrowing (QC round 8 north-star gate 1) */
+  return { cls: st, word: { good: 'On plan', tight: 'Tight month', short: 'Short' }[st] };
+}
+
 /* THE PROOF. Where the money sits must equal where the money came from, less what left. The two sides are worked out apart from each other:
      sits:  the bank + every goal + the Education, Giving and Investing piles at the end of the month (what the screens show, from mapOf)
      came:  what there was at the start + all pay so far minus everything that left, added up here from the plan and the raw receipts, in whole cents

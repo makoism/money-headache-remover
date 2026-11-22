@@ -111,12 +111,8 @@ function render() {
     : playSpent > 0 ? `Receipts: ${fmt2(playSpent)} spent from Free to spend, which has no plan this month. <button type="button" class="link" data-tab-go="receipts">See receipts</button>`
     : `Receipts: nothing spent from Free to spend. <button type="button" class="link" data-tab-go="receipts">See receipts</button>`;
   const Lun = PC.unplaced, JU = jarsOf(S, m), usedUp = JU.usedOver >= 0.5;   /* pay with no place that spending past plan used up is "used", not "placed" (QC10 round 2 numbers should-fix 5) */   /* pay with no place, less what spending past plan already took from it */
-  const chip = $('#chip'); chip.className = 'chip ' + st; chip.hidden = pin <= 0;
-  const overFree = playSpent > play && play >= 0 && rs.count > 0, overAny = !overFree && (m.overNow || 0) > 0.004;
-  if (overFree || overAny) { chip.className = 'chip short'; chip.innerHTML = IC.bad + (overFree && !((m.overNec || 0) > 0.004) ? 'Over Free to spend' : 'Over plan'); }
-  else if (Lun >= roundUnit(S) && st === 'good') { chip.className = 'chip tight'; chip.innerHTML = IC.warn + 'Not placed yet'; }
-  else if (st === 'good' && PC.borrowCover) { chip.className = 'chip tight'; chip.innerHTML = IC.warn + 'Tight month'; }   /* balances only by borrowing: the model's tight words, never "On plan" (QC round 8 north-star gate 1) */
-  else chip.innerHTML = st === 'good' ? IC.ok + 'On plan' : st === 'tight' ? IC.warn + 'Tight month' : IC.bad + 'Short';
+  /* one status per month, the same words in All months and on the line under the month (model.js monthStatus; QC round 10 numbers gate should-fix 6) */
+  const MS = monthStatus(S, C, sel), chip = $('#chip'); chip.className = 'chip ' + MS.cls; chip.hidden = pin <= 0; chip.innerHTML = { good: IC.ok, tight: IC.warn, short: IC.bad }[MS.cls] + MS.word;
   const gap = PC.bankGap;
   let vt;
   if (pin <= 0) vt = 'Tap Salary below and type your monthly take-home pay';
@@ -149,7 +145,7 @@ function render() {
   const covered = Ld < 0 && dw > 0 && dw >= -Ld - 0.004;   /* more planned than pay, all of it borrowed from the emergency fund: on plan, so not alarm red (38.31 north-star round 3) */
   $('#dockNum').textContent = allPlaced ? '' : bankOnly ? fmt2(PC.bankBelowZero) : pin > 0 || L < 0 ? fmt2(PC.dockAbs) : ''; $('#dockNum').style.color = (Ld < 0 && !covered) || bankOnly ? 'var(--bad)' : covered ? 'var(--warn)' : '';
   const dockS = pin <= 0 ? null : `${Ld < 0 ? (sampleOn() && !(S.ui.done || {}).pay ? 'more planned than the sample pay in ' : 'more planned than your pay in ') + mon + (dw > 0 ? ', ' + fmt(dw) + ' borrowed from your emergency fund' : '') : (allPlaced ? (sampleOn() && !(S.ui.done || {}).pay ? 'All of the sample pay has a place in ' : usedUp ? 'All of your pay is used in ' : 'All of your pay has a place in ') : sampleOn() && !(S.ui.done || {}).pay ? 'of the sample pay not placed yet in ' : 'of your pay not placed yet in ') + mon}`;   /* S6: one word, "not placed yet" (38.29 glossary) */
-  const dockSt = overFree && !((m.overNec || 0) > 0.004) ? 'Over Free to spend' : overFree || overAny ? 'Over plan' : Ld >= roundUnit(S) && st === 'good' ? 'Not placed yet' : st === 'good' && PC.borrowCover ? 'Tight' : st === 'good' ? 'On plan' : st === 'tight' ? 'Tight' : 'Short';
+  const dockSt = MS.word;   /* the chip's own status (model.js monthStatus) */
   $('#dockTxt').textContent = pin <= 0 ? (L < 0 ? 'planned with no pay entered in ' + mon + '. Add your pay in Plan.' : bankOnly ? 'below zero in the bank at the end of ' + mon + ', with no pay entered. Add your pay in Plan.' : 'No plan yet. Add your pay in Plan.') : dockS + (dockS.toLowerCase().includes(dockSt.toLowerCase()) ? '' : ' · ' + dockSt);   /* the status word is left out when the sentence already says it, never "not placed yet in Nov · Not placed yet" (QC round 6 wording 7) */
 
   /* the details */
@@ -279,18 +275,15 @@ function renderSettings() {
 }
 
 function renderMonthTable() {
-  const word = { good: 'On plan', tight: 'Tight', short: 'Short' }, icon = { good: IC.ok, tight: IC.warn, short: IC.bad };
+  const icon = { good: IC.ok, tight: IC.warn, short: IC.bad };
   const fullIn = {}; S.plan.goals.forEach(g => { const r = C.reached[g.id], m0 = r && C.byYm[r]; if (g.target > 0 && r && !(m0 && m0.balBefore[g.id] >= capOf(g, r))) (fullIn[r] = fullIn[r] || []).push(g); });   /* only the month it first fills: a goal already full before it is not marked (QC round 6 money accuracy polish 7) */
   const rows = C.months.filter(m => !m.before).map(m => {   /* months before the plan starts are not part of it (QC round 4 money accuracy B1) */
-    const bk = m.bankEnd, grew = (m.overNow || 0) > 0.004;
-    const st = grew ? 'short' : statusOf(S, m), gs = fullIn[m.ym] || [];
+    const bk = m.bankEnd, gs = fullIn[m.ym] || [];
     const fw = g => kindOfGoal(S, g) === 'debt' ? 'paid off' : 'full';   /* a debt is paid off, never full, as on Plan > Burrows (QC round 7 money accuracy blocker 2) */
     const marks = gs.map(g => `<span class="mt-g" style="--c:var(--c${g.slot})" title="${esc(g.name)} ${fw(g)}">${HI.leaf}<span>${esc(g.name)} ${fw(g)}</span></span>`).join('');
-    /* the same verdict as this month's own Plan view: pay with no place is "Not placed yet", never "On plan" (38.31 novice round 4) */
     const pcm = planCells(S, C, m.ym), past = pcm.pastPay > 0;   /* past pay counts money borrowed from the emergency fund as past pay, as the month says it (QC round 10 numbers gate blocker 2) */   /* the Month card's own figure: pay with no place, less what spending past plan already used (38.31 number gate round 4) */
-    const unp = !grew && st === 'good' && pcm.unplaced >= roundUnit(S);
-    const wd = grew ? 'Over plan' : unp ? 'Not placed yet' : word[st];
-    return `<tr data-ym="${m.ym}" class="${m.ym === sel ? 'on' : ''}" tabindex="0" aria-label="${monthLabel(m.ym)}: ${wd}${gs.length ? ', ' + gs.map(g => g.name + ' ' + fw(g)).join(', ') : ''}"><td>${monthLabel(m.ym)}${marks}</td><td class="${past && !pcm.borrowCover ? 'neg' : ''}">${past ? fmt2(pcm.pastPay) + ' past pay' : fmt2(pcm.unplaced)}</td><td class="${bk < cfg(S, 'minBank') ? 'neg' : ''}">${fmt2(bk)}</td><td><span class="st ${unp ? 'tight' : st}">${unp ? IC.warn : icon[st]}<span class="stw">${wd}</span></span></td></tr>`;
+    const MS = monthStatus(S, C, m.ym), wd = MS.word;   /* the same status, in the same words, as this month's own Plan view (model.js monthStatus; QC round 10 numbers gate should-fix 6) */
+    return `<tr data-ym="${m.ym}" class="${m.ym === sel ? 'on' : ''}" tabindex="0" aria-label="${monthLabel(m.ym)}: ${wd}${gs.length ? ', ' + gs.map(g => g.name + ' ' + fw(g)).join(', ') : ''}"><td>${monthLabel(m.ym)}${marks}</td><td class="${past && !pcm.borrowCover ? 'neg' : ''}">${past ? fmt2(pcm.pastPay) + ' past pay' : fmt2(pcm.unplaced)}</td><td class="${bk < cfg(S, 'minBank') ? 'neg' : ''}">${fmt2(bk)}</td><td><span class="st ${MS.cls}">${icon[MS.cls]}<span class="stw">${wd}</span></span></td></tr>`;
   }).join('');
   $('#monthTable').innerHTML = `<table><thead><tr><th>Month</th><th>Not placed</th><th>Bank, month end</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table>`;
 }

@@ -47,13 +47,12 @@ function asstPicture(T) {
   /* the last three months with receipts: what was logged against what was planned, so "what is realistic" has data behind it */
   const past = MONTHS.filter(x => x < ym).slice(-3).map(x => { const r = receiptStats(T, x), mm = C2.byYm[x]; if (!r.count || !mm) return null; return `${monthLabel(x, true)} ${x.slice(2, 4)}: ${r.count} receipts, ${n(r.total)} logged; play ${n(r.byJar.play || 0)} of ${n(mm.jar.play)} planned, necessities ${n(r.byJar.nec || 0)} of ${n(mm.jar.nec)} planned`; }).filter(Boolean);
   const ahead = MONTHS.filter(x => x > ym).slice(0, 12), shorts = ahead.filter(x => statusOf(T, C2.byYm[x]) === 'short'), tights = ahead.filter(x => statusOf(T, C2.byYm[x]) === 'tight');
-  const st = { good: 'On plan', tight: 'Tight', short: 'Short' };
   const home = (Array.isArray(T.ui.home) && T.ui.home.length ? T.ui.home : HOME_SECTIONS).join(', ');
   return `PICTURE (today ${todayStr()}, currency ${cur}, amounts per month, month in view ${monthLabel(ym)})
 Name: ${T.ui.name || '(not given)'}
 Income: salary ${n(val(T, 'a', ym))}, second income ${n(val(T, 'b', ym))}, side income ${n(val(T, 'side', ym))}; total in ${n(m.pool.in)}
 Money today ${n(cfg(T, 'bankStart'))}; minimum balance ${n(cfg(T, 'minBank'))}; Free to spend cap ${n(cfg(T, 'ceiling'))}
-This month: left over ${n(m.pool.left)}, balance ends ${monthLabel(ym, true)} at ${n(m.bankEnd)}, status ${st[statusOf(T, m)]}. Next 12 months: ${shorts.length ? 'short in ' + shorts.map(x => monthLabel(x, true) + ' ' + x.slice(2, 4)).join(', ') : 'no short month'}${tights.length ? '; tight in ' + tights.length + ' month' + (tights.length === 1 ? '' : 's') : ''}.
+This month: left over ${n(m.pool.left)}, balance ends ${monthLabel(ym, true)} at ${n(m.bankEnd)}, status ${monthStatus(T, C2, ym).word}. Next 12 months: ${shorts.length ? 'short in ' + shorts.map(x => monthLabel(x, true) + ' ' + x.slice(2, 4)).join(', ') : 'no short month'}${tights.length ? '; tight in ' + tights.length + ' month' + (tights.length === 1 ? '' : 's') : ''}.
 Places (amount, share of pay, usual share): ${J.list.map(j => `${j.name} ${n(j.v)} (${j.pct}%, usual ${j.usual}%)`).join('; ')}${J.rest > 0 ? `; not placed yet ${n(J.rest)} (${J.restPct}%)` : ''}${J.over ? '; the plan spends more than the pay' : ''}
 Free to spend this month: planned ${n(V.play.planned)}, spent ${n(V.play.spent)}, left ${n(V.play.left)}, ${V.play.daysLeft} days left${V.play.perWeek != null ? ', about ' + n(V.play.perWeek) + ' a week' : ''}
 Lines (key | name | jar | amount):
@@ -125,11 +124,11 @@ const runActions = (T, steps) => { steps.forEach(s => { if (s.on) s.run(T); }); 
 /* the numbers that matter, before and after, worked out on a copy */
 function asstDelta(steps) {
   const T = JSON.parse(JSON.stringify(S)); runActions(T, steps);
-  const ym = nowYm(), CA = calcAll(S), CB = calcAll(T), a = CA.byYm[ym], b = CB.byYm[ym], st = { good: 'On plan', tight: 'Tight', short: 'Short' };
+  const ym = nowYm(), CA = calcAll(S), CB = calcAll(T), a = CA.byYm[ym], b = CB.byYm[ym];
   const today = ymd(new Date()), VA = viewOf(S, CA, ym, today), VB = viewOf(T, CB, ym, today);
   const rows = [
     ['Free to spend', fmt(a.jar.play), fmt(b.jar.play)], ['Free to spend left', fmt(VA.play.left), fmt(VB.play.left)], ['Not placed yet', fmt(a.pool.left), fmt(b.pool.left)],
-    ['Bank at month end', fmt(a.bankEnd), fmt(b.bankEnd)], ['Status', st[statusOf(S, a)], st[statusOf(T, b)]],
+    ['Bank at month end', fmt(a.bankEnd), fmt(b.bankEnd)], ['Status', monthStatus(S, CA, ym).word, monthStatus(T, CB, ym).word]   /* the words Plan shows (QC round 10 numbers gate should-fix 6) */,
   ];
   const gA = goalRows(S, CA, ym), gB = goalRows(T, CB, ym);
   gB.forEach(r => { const o = gA.find(x => x.id === r.id); const was = o ? (o.pct >= 100 ? 'full' : o.reached ? monthLabel(o.reached) : 'over ' + SPAN) : 'new'; const now = r.pct >= 100 ? 'full' : r.reached ? monthLabel(r.reached) : 'over ' + SPAN; if (!o || was !== now || (o && val(S, 'goal:' + r.id, ym) !== val(T, 'goal:' + r.id, ym))) rows.push([r.name, o ? `${was}, ${fmt(val(S, 'goal:' + r.id, ym))}/mo` : 'new', `${now}, ${fmt(val(T, 'goal:' + r.id, ym))}/mo`]); });
