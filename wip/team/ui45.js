@@ -243,7 +243,8 @@ const TOUR = [
           : f.play <= 0 ? 'There\'s nothing in Free to spend in the plan, so raise the Free to spend line under Plan.'
           : f.st === 'spare' ? `Free to spend <b>${fmt2(f.play)}</b> a month. <b>${fmt2(f.L)}</b> of pay is not placed yet, so raise a goal or add to Free to spend.`
           : `Free to spend <b>${fmt2(f.play)}</b> a month, and it's yours to spend on whatever you want. All your other pay is placed.`;
-        const lineNow = () => `Free to spend is <b>${fmt2(f.play)}</b> a month in the plan. Right now <b>${fmt2(pr.amount)}</b> of it is safe to spend${pr.startBelow > 0 || pr.nowBelow ? ', because your bank starts the month below zero' : pr.held > 0 ? ', so your bank stays above your minimum balance' : ''}. Home shows why and what to do.`;
+        const lineNow = () => pr.notCovered && !(pr.startBelow > 0 || pr.nowBelow) ? `Free to spend is <b>${fmt2(f.play)}</b> a month in the plan. It is not safe to spend yet: your bank does not cover this month's bills and Free to spend. Home shows why and what to do.`   /* the bank does not cover the month: no safe figure, as Home says (QC round 11 novice blocker 1) */
+          : `Free to spend is <b>${fmt2(f.play)}</b> a month in the plan. Right now <b>${fmt2(pr.amount)}</b> of it is safe to spend${pr.startBelow > 0 || pr.nowBelow ? ', because your bank starts the month below zero' : pr.held > 0 ? ', so your bank stays above your minimum balance' : ''}. Home shows why and what to do.`;
         const V = viewOf(S, f.C, nowYm(), ymd(new Date())), r = V.main, mg = r ? goalById(S, r.id) : null;
         /* the last screen lands on the destination: the goal, the reason in the person's words, when it is full and what each month adds */
         const when0 = r ? (r.pct >= 100 ? 'Full.' : r.reached ? (r.months <= 0 ? 'Full <b>this month</b>.' : `Full <b>${monthLabel(r.reached)}</b>, ${plural(r.months, 'month')} from now.`) : 'Not full within ' + SPAN + ' at this pace.') : '';
