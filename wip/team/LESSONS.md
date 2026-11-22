@@ -47,3 +47,30 @@ About two weeks of the build schedule, a full engine rebuild, and Mako's trust t
 - A design or decision that exists somewhere but not in the main build.
 - A percentage of "done" going up while one gate keeps failing.
 - A plan built from "what the current build gets wrong" rather than "what the person needs".
+
+---
+
+## Lesson 2: Fixing the case, not the cause (found 23 Nov 2026, the same day)
+
+### What happened
+A sweep of every QC report from rounds 4 to 14 (foundation_review/sweep2_repeats.md) found eleven findings that came back in seven to eleven rounds each. Each time, the one case a reviewer saw was fixed, or the question was parked for Mako, and the next round found the same thing somewhere else:
+- screens giving different verdicts on the same money ("On plan" next to "not safe yet"), about 11 rounds;
+- one figure with several names and one name for several figures, about 10 rounds;
+- the same amount written two ways ("$180" and "$180.00"), 7 rounds;
+- messages piling up and covering buttons, about 10 rounds;
+- sample numbers mixing with the person's own, about 10 rounds;
+- typing into a box adding to the old value instead of replacing it, 4 rounds;
+- checks that printed a failure and still said "ALL GOOD", 7 rounds.
+
+### Why
+Each has one missing piece underneath: no single status that every screen reads; no table tying each label to the figure it names; no single amount formatter; no single message queue; no record of which values the person typed; no shared behaviour for input boxes; a check script that retries and summarises. Without the piece, every screen wrote its own version, and every fix was local.
+A second cause: most reviewer briefs forbid reading DECISIONS.md and MAKO_RUN.md, so every fresh reviewer raised the parked items again, and the parked list (about 50 entries) never reached Mako.
+
+### What changed
+- When a finding appears for the second time, the fix is the missing shared piece, never the case. The case gets a test; the piece gets built.
+- The screen layer of the new foundation includes those pieces (one status, a name table, one formatter, one message queue, typed-or-sample on every value, one input behaviour) before the screens are wired to the new engine.
+- Reviewer briefs say which decisions are settled, so a settled answer is not raised again as a finding.
+- A check run that prints a mismatch or a failure is a failure. No summary line may say otherwise.
+
+### Warning sign
+A fix commit that names one screen for a finding that was seen on another screen before.
