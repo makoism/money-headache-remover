@@ -2,6 +2,8 @@
 
 Read `wip/team/RESUME.md` section 0 (top entry) and section 7 before doing anything else.
 
+Then read `wip/team/LESSONS.md` (Mako, 2026-11-23: "keep this as reference ... to help ensure that this never happens again"). Before any plan or build step, check it against the warning signs there, and run the qc-foundation agent on the plan before building.
+
 ## Never stop and wait (Mako, 2026-11-21, "make sure this doesn't happen again. ever")
 
 - While there is work left in the RESUME work queue, a build or coordinator session never ends a turn to wait for Mako, for feedback, for a reply, or because a step is "done". Finishing one item means starting the next one in the same turn.
