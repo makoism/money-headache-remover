@@ -366,6 +366,8 @@ Nothing may ship until section 6 is done in full.
 
 ## 2. First ten minutes on a fresh session
 
+**Before building anything new (rule since 23 Nov):** read wip/team/foundation_review/ (RECOMMENDATION.md first), DECISIONS.md "Mako's own money", and any design for the area on side branches (`git branch -r | grep side/`, then `git show <branch>:<path>`). Run the qc-foundation agent on the plan before the first commit. Every fact Mako states about his own money becomes a failing test the same day; no build is a v1 candidate while one is red.
+
 ```
 git fetch && git checkout wip-38.31          # or: git fetch burrow-wip-38.31.bundle wip-38.31:wip-38.31
 cd wip/team
