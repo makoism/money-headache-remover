@@ -17,7 +17,7 @@ const NAMES = X => {
   const M = '((?:[-−]\u2060?)?' + esc(X.cur) + '[\\d,]+(?:\\.\\d+)?)', m = '(?:[-−]\u2060?)?' + esc(X.cur) + '[\\d,]+(?:\\.\\d+)?';
   const r = (s, f) => new RegExp(s.replace(/\(M\)/g, M).replace(/@/g, m), f || 'm');   /* (M) is the amount read, @ is any other amount */
   const names = {
-    'Bank now': [r('^In your bank now(?: now)?\\n(M)$'), r('^Money today[^\\n]*= (M)$')],
+    'Bank now': [r('^In your bank now(?: now)?\\n(M)$')],
     'Bank at the end of this month': [r('^Bank at month end\\n(M)$'), r('^Bank (M) \\+ burrows'), r('to (M) this month\\.$'), r('^(?:Your bank|Bank) ends at (M)[ :]'), r('^' + X.month + '\\t@\\t(M)$')],
     'Free to spend, safe to spend': [r('^Free to spend\\n(M)\\nsafe to spend$'), r('^Free to spend\\n(M)\\nplanned: yours to spend over the whole of'), r('^Free to spend in [A-Z][a-z]+ \\d+\\n(M)$'),
       r('^Free to spend: (M) left'), r('^(M)\\nFree to spend\\nPlanned'), r('(M) safe to spend\\. See receipts'), r('spent, (M) safe to spend\\.$'), r('^Free to spend\\t@\\t@\\t(M)$'), r('(M) is free to spend\\.')],

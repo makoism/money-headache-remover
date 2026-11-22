@@ -51,7 +51,7 @@ function asstPicture(T) {
   return `PICTURE (today ${todayStr()}, currency ${cur}, amounts per month, month in view ${monthLabel(ym)})
 Name: ${T.ui.name || '(not given)'}
 Income: salary ${n(val(T, 'a', ym))}, second income ${n(val(T, 'b', ym))}, side income ${n(val(T, 'side', ym))}; total in ${n(m.pool.in)}
-Money today ${n(cfg(T, 'bankStart'))}; minimum balance ${n(cfg(T, 'minBank'))}; Free to spend cap ${n(cfg(T, 'ceiling'))}
+Balance at the plan's start ${n(cfg(T, 'bankStart'))}; minimum balance ${n(cfg(T, 'minBank'))}; Free to spend cap ${n(cfg(T, 'ceiling'))}
 This month: left over ${n(m.pool.left)}, balance ends ${monthLabel(ym, true)} at ${n(m.bankEnd)}, status ${monthStatus(T, C2, ym).word}. Next 12 months: ${shorts.length ? 'short in ' + shorts.map(x => monthLabel(x, true) + ' ' + x.slice(2, 4)).join(', ') : 'no short month'}${tights.length ? '; tight in ' + tights.length + ' month' + (tights.length === 1 ? '' : 's') : ''}.
 Places (amount, share of pay, usual share): ${J.list.map(j => `${j.name} ${n(j.v)} (${j.pct}%, usual ${j.usual}%)`).join('; ')}${J.rest > 0 ? `; not placed yet ${n(J.rest)} (${J.restPct}%)` : ''}${J.over ? '; the plan spends more than the pay' : ''}
 Free to spend this month: planned ${n(V.play.planned)}, spent ${n(V.play.spent)}, left ${n(V.play.left)}, ${V.play.daysLeft} days left${V.play.perWeek != null ? ', about ' + n(V.play.perWeek) + ' a week' : ''}
@@ -82,7 +82,7 @@ function asstCheck(raw) {
     const amt = amtOf(a.amount);
     if (d === 'set_pay') { if (!(amt >= 0)) return dropped.push(d); push(`Salary: ${f(val(S, 'a', ym))} to ${f(amt)} a month`, T => { setVal(T, 'a', ym, amt, 'after'); if (amt > 0) markDoneOn(T, 'pay'); }); }
     else if (d === 'set_other_income') { if (!(amt >= 0)) return dropped.push(d); push(`Second pay: ${f(val(S, 'b', ym))} to ${f(amt)} a month`, T => setVal(T, 'b', ym, amt, 'after')); }
-    else if (d === 'set_balance') { if (!(amt >= 0)) return dropped.push(d); push(`Money today: ${f(cfg(S, 'bankStart'))} to ${f(amt)}`, T => { setBankBalance(T, clampBank(amt, T)); }); }   /* cents kept, yen whole (decision 1); was Math.round */
+    else if (d === 'set_balance') { if (!(amt >= 0)) return dropped.push(d); push(`Balance at the plan's start: ${f(cfg(S, 'bankStart'))} to ${f(amt)}`, T => { setBankBalance(T, clampBank(amt, T)); }); }   /* cents kept, yen whole (decision 1); was Math.round */
     else if (d === 'set_min_balance') { if (!(amt >= 0)) return dropped.push(d); push(`Minimum balance: ${f(cfg(S, 'minBank'))} to ${f(amt)}`, T => { T.cfg.minBank = Math.round(amt); }); }
     else if (d === 'set_line') { const l = lineOf(S, a.key); if (!l || !(amt >= 0)) return dropped.push(d + ' ' + (a.key || '')); push(`${l.name}: ${f(val(S, l.key, ym))} to ${f(amt)} a month${since}`, T => { setVal(T, l.key, ym, amt, scope); if (l.jar === 'nec') markDoneOn(T, 'bills'); }); }
     else if (d === 'set_jar') { const jar = String(a.jar || ''); const ls = S.plan.lines.filter(l => l.jar === jar); if (['play', 'edu', 'ffa', 'give'].indexOf(jar) < 0 || !ls.length || !(amt >= 0)) return dropped.push(d); const others = ls.slice(1).reduce((x, l) => x + val(S, l.key, ym), 0), now = ls.reduce((x, l) => x + val(S, l.key, ym), 0); push(`${JAR_WORD[jar]} jar: ${f(now)} to ${f(amt)} a month${since}`, T => setVal(T, ls[0].key, ym, Math.max(0, round2(amt - others)), scope)); }

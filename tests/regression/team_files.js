@@ -91,7 +91,7 @@ const PAYLOAD = {
     ok('only valid receipts are listed (4 of 8)', rows.length === 4);
     ok('a made-up category becomes Other', rows.some(r => r.t.includes('Other')) );
     ok('markup in a note is plain text', (await p.evaluate(() => window.__xss)) === undefined && (await p.$$eval('#askLog .card img', e => e.length)) === 0);
-    ok('the plan section offers pay, rent (once) and money today', await p.$eval('#askLog .card', e => { const t = e.textContent; return t.includes('Salary:') && t.includes('300,000') && (t.match(/Rent[^:]*:/g) || []).length === 1 && t.includes('Money today') && t.includes('123,456'); }));
+    ok('the plan section offers pay, rent (once) and money today', await p.$eval('#askLog .card', e => { const t = e.textContent; return t.includes('Salary:') && t.includes('300,000') && (t.match(/Rent[^:]*:/g) || []).length === 1 && t.includes("Balance at the plan's start") && t.includes('123,456'); }));
     ok('things left out are listed', await p.$eval('#askLog .card', e => e.textContent.includes('Left out') && e.textContent.includes('before Nov 2026') && e.textContent.includes('could not be read') && e.textContent.includes('blurry')));
     ok('nothing has changed yet', ((await H.state()) || { receipts: [] }).receipts.length === 0);
     await p.$eval('#askLog .card li input', e => e.click());   // untick the first receipt
