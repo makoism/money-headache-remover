@@ -300,7 +300,7 @@ function openWhy(kind) {
     title = 'Free to spend';
     rows = [[`Free to spend planned for ${mon}`, fmt(p.planned)], [`Logged in Free to spend (${p.count} ${p.count === 1 ? 'receipt' : 'receipts'})`, (p.spent > 0.004 ? MINUS : '') + fmt2(p.spent)]];   /* no minus in front of zero (38.31 north-star round 4) */
     if (held > 0) rows.push(['Held back so the balance stays above your minimum', MINUS + fmt(held)]);
-    rows.push(['Free to spend', fmt2(freeLeft)]);
+    rows.push([held > 0 ? 'Safe to spend' : 'Free to spend', fmt2(freeLeft)]);   /* what is left after the held part is the safe part, never a second Free to spend figure (QC round 10 numbers gate blocker 1) */
     const notSafe = playNotSafe(S, C, ym, ymd(new Date())) && !sampleOn();   /* the same rule as the top of Home: no per week or per day figure to spend while the bank cannot cover it (QC round 4 north-star 4) */
     if (notSafe) { /* a sentence, not an amount: it goes in the note, where it wraps (QC round 5 novice B2) */ }
     else if (p.perWeek != null) rows.push([`Per week for the ${plural(p.daysLeft, 'day')} left`, fmtAbout(V.cells.perWeek)]);

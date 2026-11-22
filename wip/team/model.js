@@ -814,6 +814,9 @@ function splitDraft(vals, total, from, i) {
 function planCells(S, C, ym) {
   const m = C.byYm[ym], rs = receiptStats(S, ym), dw = m.draw || 0, L = m.pool.left, over = m.overNow || 0;
   const play = m.jar.play, playSpent = rs.byJar.play || 0;
+  /* Free to spend for this month: what is left of the plan, what is held back for the minimum, and the safe part, so Plan > Month shows the
+     same planned figure and the same safe figure as Home (QC round 10 numbers gate blocker 1) */
+  const playLeft = round2(play - playSpent), fo = freeOf(S, { left: m.left, bankStart: m.bankStart, bankEnd: m.bankEnd, over: m.over || 0, status: statusOf(S, m) }, { left: playLeft });
   let dock = dw > 0 ? L - dw : L;                  /* money borrowed from the emergency fund is not pay */
   if (dock > 0) dock = Math.max(0, dock - over);   /* and pay with no place that spending past plan already used is not left */
   return {
@@ -826,7 +829,8 @@ function planCells(S, C, ym) {
     bankGap: Math.max(0, cfg(S, 'minBank') - m.bankEnd),   /* how far the bank ends under the safety minimum */
     bankBelowZero: -m.bankEnd,                     /* how far below zero the bank ends (shown only when it is) */
     dock, dockAbs: Math.abs(dock),                 /* the dock number: pay not placed yet, or (when negative) how much more is planned than the pay */
-    playOver: round2(playSpent - play)             /* Free to spend logged past its plan (shown only when it is) */
+    playOver: round2(playSpent - play),            /* Free to spend logged past its plan (shown only when it is) */
+    playLeft, playHeld: fo.held > 0.004 ? fo.held : 0, playSafe: fo.free   /* left of the plan, held back for the minimum, and the safe part (or below zero when over) */
   };
 }
 

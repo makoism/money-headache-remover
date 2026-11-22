@@ -100,9 +100,10 @@ function render() {
   const PC = planCells(S, C, sel);   /* the worked-out amounts for this screen come from the model */
   const pin = m.pool.in, play = m.jar.play, wk = weekOf(play);
   try { const mr = HV && HV.map && HV.map.month.find(r => r.id === 'play'); if (mr) BUR.roomCv($('#heroRoomW'), mr, 'play'); } catch (e) { /* the number still shows */ }
-  const rs = receiptStats(S, sel), playSpent = rs.byJar.play || 0, playLeft = round2(play - playSpent), heroShow = freeOf(S, { left: m.left, bankStart: m.bankStart, bankEnd: m.bankEnd, over: m.over || 0, status: st }, { left: playLeft }).free, heroTxt = (playSpent > 0 || heroShow !== play) ? fmt2(heroShow) : fmt(heroShow);
+  /* part held back for the minimum: the headline is the planned figure left, and the line says how much of it is safe, in Home's words (QC round 10 numbers gate blocker 1) */
+  const rs = receiptStats(S, sel), playSpent = rs.byJar.play || 0, heldP = PC.playHeld > 0, heroShow = heldP ? PC.playLeft : PC.playSafe, heroTxt = (heldP || playSpent > 0 || heroShow !== play) ? fmt2(heroShow) : fmt(heroShow);
   $('#heroNum').textContent = heroTxt; $('#heroNum').style.setProperty('--n', String(heroTxt.length)); $('#heroNum').style.color = heroShow < 0 ? 'var(--bad)' : '';
-  $('#heroWk').textContent = (playSpent > 0 || heroShow !== play) ? `Planned ${fmt(play)} in ${mon}, about ${fmtAbout(wk)} a week.` : `Planned: about ${fmtAbout(wk)} a week across the whole of ${mon}.`;   /* names the month Plan shows (QC10 numbers should-fix 4) */
+  $('#heroWk').textContent = heldP ? `Planned ${fmt(play)} in ${mon}, ${fmt2(PC.playSafe)} safe to spend.` : (playSpent > 0 || heroShow !== play) ? `Planned ${fmt(play)} in ${mon}, about ${fmtAbout(wk)} a week.` : `Planned: about ${fmtAbout(wk)} a week across the whole of ${mon}.`;   /* names the month Plan shows (QC10 numbers should-fix 4) */
   /* the line's amounts, all written the same way: with cents when any has cents (38.31 number gate round 8, finding 4) */
   const rcSafe = playSafeLeft(S, m, playSpent), rf = fmtSet(playSpent, PC.playOver, m.counted, m.topup ? m.topup.used : 0, m.pendLeft, m.pastLeft, rcSafe);
   $('#rcLine').innerHTML = !rs.count ? '<button type="button" class="link" data-tab-go="receipts">Log spend</button> to see what you really spent.'
