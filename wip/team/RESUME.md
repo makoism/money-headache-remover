@@ -4,6 +4,12 @@ Written 2026-11-18 on branch `wip-38.31`. Read this whole file before touching a
 
 ## 0. Handoff (latest first)
 
+**2026-11-23 (morning JST), MAIN 15 state. Coordinator: session_01BFpKEXZxmzMuFVBB5UQxLE.**
+**Done (all pushed, each with its own qc32 test in check.sh):** 99914eb numbers gate B1 (Free to spend left is the plan left on Plan, Receipts, the table and the strip when the bank does not cover the month; planCells takes today and gives playNotSafe; qc32_left_one); 17c4b0c B2 (goal saved and target keep typed cents, yen whole; MAKO_RUN 1.11 noted done as B; qc32_goal_cents); c514f96 NG should-fix 1 (all unspent went to a goal: "the bank ends as planned"); 11419e8 NG sf5 (Other row Plan cell 0); 21c6037 NG sf6 (Last month: no "in plan", Investing row; qc32_back_rows); cd097f3 Monthly bills is now Bills and basics everywhere (NS smaller 5; qc32_bills_name); a2a178d setup's first part is called Start (novice 8; qc32_setup_head; mako_answers updated); f7ce6e6 card rate a year / a month never changes a saved rate, over 100% a year refused with words (money accuracy 9; qc32_rate_switch).
+**Checked, no change:** money accuracy 8, the too-big message shows in Check your bank ("The last digit was not added"), like every money box. NG sf2 to 4 are MAKO_RUN 1.12. NG sf7 (cents written two ways between Receipts and Plan) and sf8 (borrow month percents) left for the round 13 gates to judge.
+**Watch:** /tmp/v28/safe.js (check.sh safety copy step) fails on timing about one run in three, a different line each time; it passes run alone.
+**Next:** one quiet check.sh full (running on f7ce6e6), golden 3831zf if screens changed, stage_build, QC round 13 all nine fresh (wave 2 roles never saw round 12 fixes).
+
 **2026-11-23 about 00:30 JST, MAIN 14 hands off (size). Coordinator: session_01BFpKEXZxmzMuFVBB5UQxLE.**
 **QC round 12 on 098d0ee, wave 1 done (qc_round12/):** PASS novice, north star, data safety; FAIL money accuracy (blocker 1 fixed df0b685; blocker 2 is MAKO_RUN 1.1), FAIL numbers gate (B1 and B2 below). Wave 2 (regression, wording, layout and touch, art director) NOT started yet.
 **Fixed in round 12 so far:** df0b685 no part of Free to spend is safe when the bank does not cover the month (model month row: held 0, amount = plan left; qc32_safe_low); 6ae8c40 Restore confirm says how many receipts on this device it replaces (qc18 updated).
