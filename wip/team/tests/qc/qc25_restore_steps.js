@@ -11,8 +11,10 @@ let bad = 0; const ck = (n, c, saw) => { console.log((c ? 'PASS ' : 'FAIL ') + n
   await L.settings(p); await w(400);
   const s = await p.evaluate(() => { const ol = document.getElementById('rsSteps'); return ol ? [...ol.children].map(li => li.textContent.replace(/\s+/g, ' ').trim()) : null; });
   ck('the restore steps are on Settings', !!s && s.length >= 2, s);
-  ck('step 1 says "Tap Choose file and pick your backup file, then tap Load text twice."', !!s && s[0].startsWith('Tap Choose file and pick your backup file, then tap Load text twice.'), s && s[0]);
-  ck('the paste way also says Load text twice', !!s && /paste the backup text in the box above, then tap Load text twice\./.test(s[0]), s && s[0]);
+  /* QC round 9 wording 10: "twice" was not explained, so the second tap says what it is for */
+  ck('step 1 says "Tap Choose file and pick your backup. Then tap Load text, and tap it again to confirm."', !!s && s[0].startsWith('Tap Choose file and pick your backup. Then tap Load text, and tap it again to confirm.'), s && s[0]);
+  ck('the paste way says the same', !!s && /paste the backup text in the box above, then tap Load text, and tap it again to confirm\./.test(s[0]), s && s[0]);
+  ck('no "twice" left', !!s && !/twice/.test(s[0]), s && s[0]);
   ck('no step reads as if Choose file alone restores', !!s && !/pick your backup file\. Or/.test(s.join(' ')), s);
   /* the flow the steps describe is still there: Choose file reads into the box, Load text asks, then replaces */
   const ok = await p.evaluate(() => !!document.getElementById('bkFile') && !!document.getElementById('bkLoad') && !!document.getElementById('bkFileBtn'));
