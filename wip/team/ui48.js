@@ -41,7 +41,7 @@ const COACH = {
     ['#chartbox', 'Forecast', 'This shows every goal month by month. Tap a month to read it.'],
   ],
   month: [
-    ['#hero', 'Free to spend', 'The big number is this month\'s Free to spend and it\'s yours to spend on whatever you want'],
+    ['#hero', 'Free to spend', 'The big number is this month\'s Free to spend and it\'s yours to spend on whatever you want.'],
     ['#where', 'Pay by place', 'Your pay split by place. Tap a colour to see its amount.'],
     ['#ledger', 'Details', 'Tap an amount to change it for this month only. Tap a name to open it.'],
   ],
