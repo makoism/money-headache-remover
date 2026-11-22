@@ -28,6 +28,9 @@ MAIN 11 stopped after handoff 0810d28 (its keep-going task deleted). Coordinator
 ### MAIN 13 (18:43 UTC 21 Nov = 03:43 JST 22 Nov)
 MAIN 12 stopped editing after handoff 45a0b98 (its keep-going task deleted); it stays only to push two helper branches (helper/<name>) when its helpers finish. Coordinator 8 started MAIN 13, session_01BFpKEWo34ssfTxnTsQ2qUD, with an hourly keep-going task. Next: merge helpers, one quiet check.sh full, artcheck, golden, stage, QC round 9. MAKO_RUN.md is the one list for Mako.
 
+### MAIN 14 (15:33 JST 22 Nov)
+MAIN 13 stopped after handoff 01c77c6 (all round 10 fixes merged). Coordinator 8 started MAIN 14, session_01BFpKEWBF1fNHyG5QjQ72zS, without a keep-going task (the non-stop window is over; Mako to say if he wants one). MAIN 13's keep-going task still exists (could not delete).
+
 ### Window end (09:41 JST 22 Nov)
 The weekly limit stopped MAIN 13 at about 06:45 JST during QC round 9 (2 of 9 reports saved; helper r9-words lost). The non-stop window (until 09:00 JST 22 Nov) is over. Coordinator 8's keep-going task is deleted; MAIN 13's (trig_014tBxAqVmTBtpXRea81VBNX, hourly at :43) could not be deleted from here (permission); Mako came back at 09:57 JST and work continues, so it stays for now. Watchdog trig_015mKtiUhZRgbkacuPYA8Ks6 still runs.
 
