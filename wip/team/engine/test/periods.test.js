@@ -111,4 +111,12 @@ t('an ended bill has no next occurrence after its end', () => {
   const b = base(x => { x.schedules[1].ends = '2027-01-31'; });
   eq(scheduleView(b, '2027-02-01').rent.next, null);
 });
+t('what happened is what the app had heard of by the day asked: dated in the period, told by then', () => {
+  // a bill paid dated 24 Dec but told on 30 Dec belongs to the first period by its date [section 9: a change regroups,
+  // it moves nothing], and is listed only once the app has heard of it, as the look ahead counts it
+  const b = base(x => { x.events.push({ id: 'late', k: 'spend', acct: 'bank', date: '2026-12-24', a: 1200, settles: [{ s: 'rent', due: '2026-11-27' }], told: '2026-12-30T09:00' + TZ }); });
+  const ids = (r, i) => r.past[i].billsPaid.items.map(x => x.id);
+  eq(ids(periods(b, '2026-12-28', opt), 0), []);
+  eq(ids(periods(b, '2026-12-30', opt), 0), ['late']);
+});
 done('periods.test.js');
