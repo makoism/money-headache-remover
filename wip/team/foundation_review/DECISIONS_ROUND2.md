@@ -492,3 +492,11 @@ Walk 3's scripts are kept in app3/walk/v3.
 NORTH_STAR asks that the screen say what the bank holds after the cards are paid. BB2 removed the old figure because it had no date and competed with safe to spend.
 BK1. The figure comes back as a dated result of the engine's own walk, per bank: "After your cards are paid on 10 and 11 Dec: Main bank ¥X". It says what it includes (a pay landing on or before that day), sits in the cards box only, and is never worded as spendable.
 BK2. Check your bank names any gap before and after saving ("¥850 more left your bank than you logged. It counts as spending"), and offers to log it.
+
+## BL. Numbers QC rerun (24 Nov early JST)
+BL1. In version one, setup and Plan refuse a pay of 0. No fixed pay comes in slice 6. Until then, a pay that exists always has an amount, and its check-in item can always be ticked.
+BL2. Setting money aside in a goal kept in a bank can never take more than that bank can spare: today's figure less what is already set aside there. The refusal says how much is possible.
+BL3. The "Short by" headline is the amount short before the next pay, which is the sum's own total. The first day the bank goes below zero or the minimum is named beside it. The headline and the sum never differ.
+BL4. One way of writing cents per screen (screens/money formatter), the sum lines included.
+BL5. A card paid more than it owed shows "in credit ¥1,500", never as owed.
+BL6. A card with a known close day, set up between that close day and its payment day, asks how much of the figure is on the statement just closed (RECOMMENDATION 3.12: two dated figures). That part is due on the coming payment day.
