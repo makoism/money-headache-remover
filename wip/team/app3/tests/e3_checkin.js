@@ -54,6 +54,13 @@ async function walk(p, bk) {
     ck('the next pay is in January', /Jan/.test(one('nextpay')[0].text), one('nextpay')[0].text);
     ck('the late bills are still not seen yet', (await p.$$('[data-card=notseen] li')).length === 3);
     await T.shot(p, 'home_after_checkin_' + DAY);
+    /* the check-in went through act3, the one write door: its Undo bar takes the whole check-in back */
+    const bar = await p.evaluate(() => { const m = document.querySelector('#a3Msg .burrow-msg'); return m ? { text: m.querySelector('span').textContent, button: (m.querySelector('button') || {}).textContent } : null; });
+    ck('the check-in has an Undo bar (act3)', bar && bar.button === 'Undo' && /[Bb]ank/.test(bar.text), JSON.stringify(bar));
+    await p.click('#a3Msg .burrow-msg button'); await T.w(400);
+    const back = (await T.figs(p)).filter(x => x.fig === 'bank');
+    ck('Undo takes the check-in back: the bank is the setup figure again', back.length === 1 && back[0].amt === 286000, JSON.stringify(back));
+    ck('and the items are on the list again', (await p.$$('[data-card=notseen] li')).length === 3 && /Next pay 10 Dec/.test(await p.$eval('[data-card=period]', e => e.textContent)));
     const stored = await p.evaluate(() => new Promise(res => indexedDB.databases ? indexedDB.databases().then(d => res({ dbs: d.map(x => x.name), ls: localStorage.length })) : res({ dbs: [], ls: localStorage.length })));
     ck('a try book writes nothing', !stored.dbs.includes('burrow3') && stored.ls === 0, JSON.stringify(stored));   // ?try=mako never opens the store
     ck('no page errors (try)', errs.length === 0, errs.join(' | '));

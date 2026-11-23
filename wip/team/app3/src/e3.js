@@ -75,13 +75,6 @@ const E3 = (() => {
   const occName = item => { const o = BurrowEngine.ids.occurrence(item); return o ? nameOf(o.schedule) : nameOf(item); };
   const curOf = id => { const a = (book.accounts || []).find(x => x.id === id); return a ? a.cur : BurrowEngine.ledger.homeOn(book, today()); };
   const home = () => BurrowEngine.ledger.homeOn(book, today());
-  async function write(out) {
-    const before = book;
-    book = BurrowEngine.checkin.apply(book, out);
-    const ok = await save();
-    if (!ok) book = before;
-    return ok;
-  }
   /* act3's save (src/act3.js, the one write door): the whole new book, kept or (on failure) the old one back */
   async function put(next) {
     const before = book;
@@ -92,6 +85,6 @@ const E3 = (() => {
   }
   /* is a the day before b (two YYYY-MM-DD days) */
   const dayBefore = (a, b) => BurrowEngine.dates.dayNum(b) - BurrowEngine.dates.dayNum(a) === 1;
-  return { today, setToday, useTry, start, told, dayBefore, newId, load, view, nameOf, occName, curOf, home, write, put,
+  return { today, setToday, useTry, start, told, dayBefore, newId, load, view, nameOf, occName, curOf, home, put,
     get book() { return book; }, get mode() { return mode; } };
 })();

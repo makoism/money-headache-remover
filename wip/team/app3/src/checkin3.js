@@ -54,8 +54,8 @@ async function saveCheck3() {
      reload then put the check before the pay and counted the pay twice. Until the writer or the store keeps that order,
      the check is told one second after the items it holds. */
   for (const e of out.events) if (e.k === 'check') { e.told = E3.told('01'); e.at = e.told; }
-  const ok = await E3.write(out);
-  if (!ok) { err.textContent = 'This could not be saved on this device. Nothing changed'; return; }
+  /* act3 is the only door: the check-in is one step, with its Undo bar */
+  const r = await ACT3.addRecords('Check your bank', out, { undo: E3.mode === 'try' ? 'Bank checked. Made-up numbers, so nothing is saved' : 'Bank checked' });
+  if (!r.ok) { err.textContent = r.text; return; }
   closeCheck3(); renderHome3();
-  msg3(E3.mode === 'try' ? 'Done. These are made-up numbers, so nothing is saved' : 'Saved');
 }
