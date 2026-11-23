@@ -526,3 +526,8 @@ On the next frozen-copy gate pair, only two kinds of finding get fixed: a figure
 
 ## BO. The build is ready for Mako (24 Nov about 05:30 JST)
 The last gate pair under BN: qc-north-star PASS. The one qc-numbers blocker, a card figure changing after a reload, is fixed at its cause (records are read in a fixed order) with reload tests in four time zones. The edit box appending to the old value is fixed in screens/inputs.js, with a test on every amount box. Every gate is green on 5bf4d32: check3 ALL GOOD, engine 18 runs, scenarios exit 0, rules 817. All other notes are in app3/FOR_MAKO.md.
+
+## BP. Slice 6 review (24 Nov morning JST)
+BP1. For pay every n weeks, the anchor is stepped back to a pay on or before the setup day, whichever pay the person types.
+BP2. I4 stays: a line added in the setup period counts its share from the setup day. Free to spend's share works the same way, and later periods count a line in full. Every line saves its `from` day, so this can change later in the engine alone. Mako may choose otherwise in his run.
+BP3. A rhythm change shows what the per-pay amounts mean per month and proposes the converted figure.
