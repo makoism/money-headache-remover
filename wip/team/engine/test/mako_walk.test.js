@@ -86,4 +86,12 @@ t('a pay left unticked at a check-in on its due day is not counted that day [BJ1
   // the next day it is late, and still not counted
   eq(w.on('2026-12-11').accounts[w.ids.bank].why.includes('Side job'), false);
 });
+t('on pay day safe to spend runs to the pay after it; a main pay left unticked at a check-in that day is named [S1, BJ1]', () => {
+  const w = life();
+  const r0 = w.on('2026-12-10');   // no check-in yet: the 10 Dec pay counts [G4]
+  eq([r0.safeToSpend.until, r0.safeToSpend.notCounting, r0.period.payToday], ['2027-01-08', null, true]);
+  w.ci('2026-12-10', ['pay_main']);
+  const r = w.on('2026-12-10');
+  eq([r.safeToSpend.until, r.safeToSpend.notCounting, r.period.payToday], ['2027-01-08', w.ids.pay_main + '@2026-12-10', false]);
+});
 done('mako_walk');

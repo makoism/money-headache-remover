@@ -143,14 +143,19 @@ t('the period carries its plan lines and Free to spend, with what is left of eac
 });
 t('the period while its next pay is due and not ticked runs to today and says it waits for the pay [AU4]', () => {
   const p = run(base(), '2026-12-25').period;
-  eq([p.start, p.end, p.waitingForPay], ['2026-11-25', '2026-12-25', true]);
+  eq([p.start, p.end, p.waitingForPay, p.payToday], ['2026-11-25', '2026-12-25', true, true]);
 });
 // [WIRING_PLAN F4, H8, F3, G4] the period's next pay: coming, late (inside its posting window, still counted) or not
 // seen (after the window, no longer counted); the period never ends before today and days to next pay is never below 0
 t("the period's next pay on 10 Dec before the pay is ticked: coming, today [G4]", () => {
   const r = lookahead(mako.book, '2026-12-10', Object.assign({}, mako.opts, { at: 'start of day' }));
   eq(r.period.nextPay, { occ: 'pay_main@2026-12-10', due: '2026-12-10', state: 'coming' });
-  eq([r.period.end, r.daysToNextPay.days], ['2026-12-10', 0]);
+  // [S1, QC numbers] the period still runs to today (what is logged today counts in it), and says the pay lands today,
+  // so no screen writes it as "10 Nov to 10 Dec"
+  eq([r.period.start, r.period.end, r.period.payToday, r.daysToNextPay.days], ['2026-11-10', '2026-12-10', true, 0]);
+  // [S1, G4] the pay due today is counted, so safe to spend runs to the pay after it (the January pay, early on Fri 8 Jan)
+  eq(r.safeToSpend.until, '2027-01-08');
+  eq(r.safeToSpend.untilPay, 'pay_main@2027-01-10');
 });
 t("the period's next pay one day late, inside its posting window: late, still counted [H8]", () => {
   const r = run(base(), '2026-12-26');

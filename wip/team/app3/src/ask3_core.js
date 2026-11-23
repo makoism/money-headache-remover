@@ -41,7 +41,7 @@
     const refs = {}, out = [];
     out.push(`Today is ${SN.dayLabel(today, true)}. Currency: ${home}. Amounts are written as the app writes them.`);
     const p = r.period, np = r.daysToNextPay || {};
-    if (p && p.start && p.end) out.push(`This pay period: ${SN.periodLabel(p.start, p.end)}.`);
+    if (p && p.start && p.end) out.push(`This pay period: ${SN.periodLabel(p.start, p.end)}${p.payToday ? ', and the next pay lands today' : ''}.`);
     if (np.next_pay) {
       const st = p && p.nextPay ? p.nextPay.state : null;
       out.push(`Next pay: ${day(np.next_pay, today)}${st === 'late' || np.late ? ', late' : st === 'notSeen' ? ', not seen in the bank yet' : ', in ' + np.days + ' days'}.`);

@@ -942,13 +942,15 @@
       // [F4, H8, F3, G4] its next pay: the first pay after the one that started it not ticked yet. Coming (today or
       // later), late (past its day, inside its posting window, still counted) or not seen (after the window, no longer
       // counted). While it is due, late or not seen the period runs to today: its end is never a day already past.
+      // [S1] On the day it is due and counted (G4) `payToday` says so, so the screens never write the period as "10 Nov
+      // to 10 Dec" beside a safe to spend that runs to the pay after it (safeToSpend.until).
       const next = pays.filter(o => !o.settled && (n.start === null || o.land > n.start)).sort((x, z) => x.land - z.land)[0];
       const waiting = !!next && next.land <= today;
       const state = !next ? null : next.land >= today ? 'coming' : nextPays.includes(next) ? 'late' : 'notSeen';
       res.period = {
         start: n.start === null ? null : dayStr(n.start),
         end: next ? dayStr(waiting ? today : next.land - 1) : n.end === null ? null : dayStr(Math.max(today, n.end - 1)),
-        startsWith: n.occ, waitingForPay: waiting,
+        startsWith: n.occ, waitingForPay: waiting, payToday: !!next && next.land === today && !leftToday(next),
         nextPay: next ? { occ: next.id, due: dayStr(next.due), state } : null,
         // [QC F5, B2] amount: the line's full amount a period; counts: the part that counts in this period (less when it
         // started mid-period); spent; left = counts - spent; over: how far past it, taken from safe to spend
@@ -1181,6 +1183,11 @@
     const until = after ? after.land : today + NO_PAY_DUE_DAYS;
     const due = items.filter(o => isOut(o) && !o.settled && o.land >= today && o.land < until && o.amount).sort((a, b) => a.land - b.land || (a.acct < b.acct ? -1 : 1));
     const byAccount = {}; for (const o of due) (byAccount[o.acct] = byAccount[o.acct] || []).push(o.id);
+    // [S1, G4, BH1] the pay safe to spend runs to: the next one, or on its day (counted) or while it is late, the one after
+    res.safeToSpend.until = after ? dayStr(after.land) : null;
+    res.safeToSpend.untilPay = after ? after.id : null;
+    // [BJ1] a pay due today left unticked at a check-in today is not counted: named so the heading can say so
+    res.safeToSpend.notCounting = np && leftToday(np) ? np.id : null;
     res.dueBeforeNextPay = { until: dayStr(until), byAccount, items: due.map(itemOut), total: due.filter(o => !o.otherCur).reduce((t, o) => t + o.amount, 0) };
 
     // ----- not seen yet, and still inside the posting window [F3, F4, F23, G3, H8, S6, W2, Z2] -----

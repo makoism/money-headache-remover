@@ -25,6 +25,12 @@ const SN = require('../../screens/names.js');
   const first = await (async () => { await p.goto(T.URL0 + '?try=mako&today=2026-11-23'); await T.w(200); return period(); })();
   ck('23 Nov reads 10 Nov to 9 Dec', first.text === '10 Nov to 9 Dec', first.text);
   await p.goto(T.URL0 + '?try=mako&today=2026-12-10'); await T.w(300);
+  {   /* [S1] on pay day, before the check: the pay counts today (G4), so safe to spend runs to the January pay (on
+         Tue 12 Jan in the try book), and the period running now is written as running to today's pay */
+    const got = await period(), head = await p.$eval('[data-card=safe] h2', e => e.textContent);
+    ck('10 Dec: the period runs to today\'s pay, never 10 Nov to 10 Dec', got.text === '10 Nov to today\'s pay', got.text);
+    ck('10 Dec: safe to spend runs to the next pay after today\'s', head === 'Safe to spend until next pay on 12 Jan 2027', head);   // the try book's January pay lands Tue 12 Jan (Sun 10, holiday Mon 11)
+  }
   await p.click('#a3CheckGo'); await T.w(200);
   const names = await p.$$eval('.a3-tick', rs => rs.map(r => [r.dataset.item, r.querySelector('label span').textContent]));
   for (const [it, nm] of names) if (!/job/.test(nm)) await p.click(`.a3-tick[data-item="${it}"] input[type=checkbox]`);

@@ -54,7 +54,7 @@
           e => ({ id: e.id, date: e.date, amount: e.a, card: e.acct2, acct: e.acct })),
       };
     }
-    const cur = Object.assign({ start: r.period.start, end: r.period.end, startsWith: r.period.startsWith },
+    const cur = Object.assign({ start: r.period.start, end: r.period.end, startsWith: r.period.startsWith, payToday: r.period.payToday },
       { lines: r.periodNow.lines, free: r.periodNow.free }, happened(r.period.start, null));
     const past = (r.periods || []).filter(p => !opts.from || p.end >= opts.from).map(p => Object.assign({}, p, happened(p.start, p.end))).reverse();
     return { current: cur, past };

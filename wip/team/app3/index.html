@@ -2919,13 +2919,15 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
       // [F4, H8, F3, G4] its next pay: the first pay after the one that started it not ticked yet. Coming (today or
       // later), late (past its day, inside its posting window, still counted) or not seen (after the window, no longer
       // counted). While it is due, late or not seen the period runs to today: its end is never a day already past.
+      // [S1] On the day it is due and counted (G4) `payToday` says so, so the screens never write the period as "10 Nov
+      // to 10 Dec" beside a safe to spend that runs to the pay after it (safeToSpend.until).
       const next = pays.filter(o => !o.settled && (n.start === null || o.land > n.start)).sort((x, z) => x.land - z.land)[0];
       const waiting = !!next && next.land <= today;
       const state = !next ? null : next.land >= today ? 'coming' : nextPays.includes(next) ? 'late' : 'notSeen';
       res.period = {
         start: n.start === null ? null : dayStr(n.start),
         end: next ? dayStr(waiting ? today : next.land - 1) : n.end === null ? null : dayStr(Math.max(today, n.end - 1)),
-        startsWith: n.occ, waitingForPay: waiting,
+        startsWith: n.occ, waitingForPay: waiting, payToday: !!next && next.land === today && !leftToday(next),
         nextPay: next ? { occ: next.id, due: dayStr(next.due), state } : null,
         // [QC F5, B2] amount: the line's full amount a period; counts: the part that counts in this period (less when it
         // started mid-period); spent; left = counts - spent; over: how far past it, taken from safe to spend
@@ -3158,6 +3160,11 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
     const until = after ? after.land : today + NO_PAY_DUE_DAYS;
     const due = items.filter(o => isOut(o) && !o.settled && o.land >= today && o.land < until && o.amount).sort((a, b) => a.land - b.land || (a.acct < b.acct ? -1 : 1));
     const byAccount = {}; for (const o of due) (byAccount[o.acct] = byAccount[o.acct] || []).push(o.id);
+    // [S1, G4, BH1] the pay safe to spend runs to: the next one, or on its day (counted) or while it is late, the one after
+    res.safeToSpend.until = after ? dayStr(after.land) : null;
+    res.safeToSpend.untilPay = after ? after.id : null;
+    // [BJ1] a pay due today left unticked at a check-in today is not counted: named so the heading can say so
+    res.safeToSpend.notCounting = np && leftToday(np) ? np.id : null;
     res.dueBeforeNextPay = { until: dayStr(until), byAccount, items: due.map(itemOut), total: due.filter(o => !o.otherCur).reduce((t, o) => t + o.amount, 0) };
 
     // ----- not seen yet, and still inside the posting window [F3, F4, F23, G3, H8, S6, W2, Z2] -----
@@ -3262,7 +3269,7 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
           e => ({ id: e.id, date: e.date, amount: e.a, card: e.acct2, acct: e.acct })),
       };
     }
-    const cur = Object.assign({ start: r.period.start, end: r.period.end, startsWith: r.period.startsWith },
+    const cur = Object.assign({ start: r.period.start, end: r.period.end, startsWith: r.period.startsWith, payToday: r.period.payToday },
       { lines: r.periodNow.lines, free: r.periodNow.free }, happened(r.period.start, null));
     const past = (r.periods || []).filter(p => !opts.from || p.end >= opts.from).map(p => Object.assign({}, p, happened(p.start, p.end))).reverse();
     return { current: cur, past };
@@ -7252,6 +7259,9 @@ function typed3(text, cur) { const r = SM.parse(text, cur); return r.ok ? r.mino
 /* '2026-12-10' as '10 Dec', with the year when it is not the shown day's year */
 const day3 = (s, thisYear) => (s ? SN.dayLabel(s, !!thisYear && s.slice(0, 4) !== thisYear) : '');
 const label3 = key => SN.label(key);
+/* [S1] a period by its dates; on the day its pay lands and counts (res.period.payToday) it runs "to today's pay", never
+   "10 Nov to 10 Dec" beside a safe to spend that already counts that pay */
+const period3 = p => (p.payToday ? SN.periodLabel(p.start, p.end).split(' to ')[0] + ' to today\'s pay' : SN.periodLabel(p.start, p.end));
 const esc3 = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 /* a figure on screen: its engine path (data-figure, checked by names and provenance), its amount (data-amt) */
 const fig3 = (path, minor, cur, tag) => `<${tag || 'span'} data-figure="${esc3(path)}" data-amt="${minor}">${money3(minor, cur)}</${tag || 'span'}>`;
@@ -8011,6 +8021,8 @@ function safeUntil3(r, yr) {
   const d = esc3(day3(n.day, yr));
   if (n.state === 'notSeen') return `, not counting the ${d} pay (not seen yet)`;
   if (n.state === 'late') return `, not counting the ${d} pay yet (late)`;
+  /* [S1] on its day the pay is counted (G4), so safe to spend runs to the pay after it: the engine's safeToSpend.until */
+  if (n.days === 0 && r.safeToSpend.until) return ` until next pay on ${esc3(day3(r.safeToSpend.until, yr))}${r.safeToSpend.notCounting ? ', not counting today\'s pay (not in at your check today)' : ''}`;
   return ` until next pay on ${d}`;
 }
 function nextPayWords3(r, yr) {
@@ -8069,7 +8081,7 @@ function renderHome3() {
     <p class="a3-big" data-fig="safe">${fig3('safeToSpend.headline', r.safeToSpend.headline, home)}</p>${short}${sums}${warns}</section>`);
   /* the period by its dates, and the next pay */
   const p = r.period;
-  const per = p && p.start && p.end ? `<p class="a3-mid" data-fig="period" data-start="${esc3(p.start)}" data-end="${esc3(p.end)}">${esc3(SN.periodLabel(p.start, p.end))}</p>` : '';
+  const per = p && p.start && p.end ? `<p class="a3-mid" data-fig="period" data-start="${esc3(p.start)}" data-end="${esc3(p.end)}">${esc3(period3(p))}</p>` : '';
   out.push(`<section class="a3-card" data-card="period"><h2>${esc3(label3('period'))}</h2>${per}${nextPayWords3(r, yr)}</section>`);
   /* due before next pay, by account */
   const due = r.dueBeforeNextPay;
@@ -8415,7 +8427,7 @@ function rcList3() {
   const rows = rcRows3().filter(e => (q ? text(e).includes(q) : !per || (e.date >= per.start && e.date <= per.end)))
     .sort((x, y) => (x.date !== y.date ? (x.date < y.date ? 1 : -1) : String(x.told) < String(y.told) ? 1 : -1));
   const head = q ? `<p class="a3-sub" data-fig="rc-period" data-search="1">Searching everything</p>`
-    : per ? `<div class="a3-pernav"><button type="button" class="a3-btn" id="rcOlder"${per.older ? '' : ' disabled'}>Earlier</button><p class="a3-mid a3-per" data-fig="rc-period" data-start="${esc3(per.start)}" data-end="${esc3(per.end)}">${esc3(SN.periodLabel(per.start, per.end))}</p><button type="button" class="a3-btn" id="rcNewer"${per.newer ? '' : ' disabled'}>Later</button></div>${rcSpent3(per)}`
+    : per ? `<div class="a3-pernav"><button type="button" class="a3-btn" id="rcOlder"${per.older ? '' : ' disabled'}>Earlier</button><p class="a3-mid a3-per" data-fig="rc-period" data-start="${esc3(per.start)}" data-end="${esc3(per.end)}">${esc3(period3(per))}</p><button type="button" class="a3-btn" id="rcNewer"${per.newer ? '' : ' disabled'}>Later</button></div>${rcSpent3(per)}`
     : `<p class="a3-sub" data-fig="rc-period">Everything</p>`;
   const li = rows.map(e => `<li data-rc="${esc3(e.id)}" data-k="${esc3(e.k)}"><button type="button" class="a3-rcrow" aria-label="Change ${esc3(rcWhat3(e))}, ${esc3(money3(e.a, E3.curOf(e.acct)))}"><span>${esc3(rcWhat3(e))}<br><span class="when">${esc3(day3(e.date, yr))}, ${esc3(E3.nameOf(e.acct))}${rcNote3(e) ? ', ' + esc3(rcNote3(e)) : ''}</span></span><span class="amt${e.k === 'in' ? ' a3-in-amt' : ''}">${e.k === 'in' ? 'back ' : ''}${money3(e.a, E3.curOf(e.acct))}</span></button></li>`).join('');
   host.innerHTML = `<h2>What you logged</h2>
@@ -8483,7 +8495,7 @@ function renderPlan3() {
     const fp = p.free && p.free.counts !== p.free.amount ? (f => `<br><span class="when" data-fig="free-part">Only the part for the days left in this pay period counts now: ${f(p.free.counts)} of ${f(p.free.amount)}</span>`)(SM.formatter(E3.home(), [p.free.counts, p.free.amount])) : '';
     const free = p.free ? plRow3('data-line="free"', `${esc3(label3('freeToSpendLeft'))}${fp}`, `<span data-fig="free-left">${plFig3('period.free.left', p.free.left)}</span> <span class="when">of <span data-fig="free-amount">${plFig3('period.free.counts', p.free.counts)}</span></span>`) : '';
     out.push(`<section class="a3-card" data-card="plan-period"><h2>${esc3(label3('period'))}</h2>
-      <p class="a3-mid" data-fig="plan-period" data-start="${esc3(p.start)}" data-end="${esc3(p.end)}">${esc3(SN.periodLabel(p.start, p.end))}</p>
+      <p class="a3-mid" data-fig="plan-period" data-start="${esc3(p.start)}" data-end="${esc3(p.end)}">${esc3(period3(p))}</p>
       ${lines.length || free ? `<ul class="a3-rows a3-rclist">${lines.join('')}${free}</ul>` : '<p class="a3-sub">No budget lines yet. A line keeps money for one thing, like food, each pay period</p>'}
       <div class="a3-actions"><button type="button" class="a3-btn" id="plAddLine">Add a line</button>${p.free ? '' : '<button type="button" class="a3-btn" id="plSetFree">Set Free to spend</button>'}</div></section>`);
   }
@@ -9848,7 +9860,7 @@ function stmt3Bar() {
     const refs = {}, out = [];
     out.push(`Today is ${SN.dayLabel(today, true)}. Currency: ${home}. Amounts are written as the app writes them.`);
     const p = r.period, np = r.daysToNextPay || {};
-    if (p && p.start && p.end) out.push(`This pay period: ${SN.periodLabel(p.start, p.end)}.`);
+    if (p && p.start && p.end) out.push(`This pay period: ${SN.periodLabel(p.start, p.end)}${p.payToday ? ', and the next pay lands today' : ''}.`);
     if (np.next_pay) {
       const st = p && p.nextPay ? p.nextPay.state : null;
       out.push(`Next pay: ${day(np.next_pay, today)}${st === 'late' || np.late ? ', late' : st === 'notSeen' ? ', not seen in the bank yet' : ', in ' + np.days + ' days'}.`);

@@ -58,6 +58,8 @@ function safeUntil3(r, yr) {
   const d = esc3(day3(n.day, yr));
   if (n.state === 'notSeen') return `, not counting the ${d} pay (not seen yet)`;
   if (n.state === 'late') return `, not counting the ${d} pay yet (late)`;
+  /* [S1] on its day the pay is counted (G4), so safe to spend runs to the pay after it: the engine's safeToSpend.until */
+  if (n.days === 0 && r.safeToSpend.until) return ` until next pay on ${esc3(day3(r.safeToSpend.until, yr))}${r.safeToSpend.notCounting ? ', not counting today\'s pay (not in at your check today)' : ''}`;
   return ` until next pay on ${d}`;
 }
 function nextPayWords3(r, yr) {
@@ -116,7 +118,7 @@ function renderHome3() {
     <p class="a3-big" data-fig="safe">${fig3('safeToSpend.headline', r.safeToSpend.headline, home)}</p>${short}${sums}${warns}</section>`);
   /* the period by its dates, and the next pay */
   const p = r.period;
-  const per = p && p.start && p.end ? `<p class="a3-mid" data-fig="period" data-start="${esc3(p.start)}" data-end="${esc3(p.end)}">${esc3(SN.periodLabel(p.start, p.end))}</p>` : '';
+  const per = p && p.start && p.end ? `<p class="a3-mid" data-fig="period" data-start="${esc3(p.start)}" data-end="${esc3(p.end)}">${esc3(period3(p))}</p>` : '';
   out.push(`<section class="a3-card" data-card="period"><h2>${esc3(label3('period'))}</h2>${per}${nextPayWords3(r, yr)}</section>`);
   /* due before next pay, by account */
   const due = r.dueBeforeNextPay;
