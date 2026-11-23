@@ -8,6 +8,8 @@
      A.logSpend({ date, a, acct, line | place, note })      a spend; `line: 'free'` (or none) is Free to spend
      A.refund({ date, a, acct, line, note })                money back: `in` with sub 'refund'; `line` gives it back
      A.moveMoney({ date, a, from, to, note })              money between two of your own accounts (`transfer`)
+     A.moneyIn({ date, a, acct, note })                    money in that is not a pay or a refund (a client payment, a
+                                                           gift): `in` with no `sub`, into one of your own accounts [slice 6]
      A.edit(id, { date, a, acct, acct2, line, place, note }) changes a record in place (null takes a field away)
      A.remove(id)                                          marks it gone, never deletes
      A.addRecords(label, { events, checkins })             records another writer built (a check-in), as one step
@@ -65,7 +67,8 @@
       account(book, e.acct, OWN, 'the money left');
       account(book, e.acct2, OWN, 'the money went to');
       if (e.acct === e.acct2) bad('Pick two different accounts');
-    } else account(book, e.acct, SPEND_FROM, e.k === 'in' ? 'the money came back to' : 'it was paid from');
+    } else if (e.k === 'in' && !e.sub) account(book, e.acct, OWN, 'the money came into');
+    else account(book, e.acct, SPEND_FROM, e.k === 'in' ? 'the money came back to' : 'it was paid from');
     if (e.line != null && e.place != null) bad('Pick a line or a place, not both');
     if (e.line != null && e.line !== 'free' && !((book.plan || {}).budgets || []).some(l => live(l) && l.id === e.line)) bad('That line is not in your plan any more. Pick another');
     if (e.place != null && !(book.places || []).some(g => live(g) && g.id === e.place)) bad('That place is not there any more. Pick another');
@@ -165,6 +168,12 @@
       checkEvent(w.book, e, w.today);
       return w.add('events', e);
     },
+    moneyIn: (w, x) => {
+      const e = { k: 'in', date: x.date, a: x.a, acct: x.acct, note: noteOf(x.note), src: typed() };
+      if (e.note === undefined) delete e.note;
+      checkEvent(w.book, e, w.today);
+      return w.add('events', e);
+    },
     moveMoney: (w, x) => {
       const e = { k: 'transfer', date: x.date, a: x.a, acct: x.from, acct2: x.to, note: noteOf(x.note), src: typed() };
       if (e.note === undefined) delete e.note;
@@ -193,8 +202,8 @@
     },
   };
 
-  const ARGS = { logSpend: 1, refund: 1, moveMoney: 1, edit: 2, remove: 1, addRecords: 2 };   // how many each takes
-  const LABELS = { logSpend: 'Spend logged', refund: 'Refund logged', moveMoney: 'Money moved', edit: 'Changed', remove: 'Removed' };
+  const ARGS = { logSpend: 1, refund: 1, moneyIn: 1, moveMoney: 1, edit: 2, remove: 1, addRecords: 2 };   // how many each takes
+  const LABELS = { logSpend: 'Spend logged', refund: 'Refund logged', moneyIn: 'Money in logged', moveMoney: 'Money moved', edit: 'Changed', remove: 'Removed' };
   function make(o) {
     const clock = C ? C.makeClock() : null;
     const nowAt = () => (clock ? clock.stamp() : new Date().toISOString());

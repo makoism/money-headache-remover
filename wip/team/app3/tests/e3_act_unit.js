@@ -143,6 +143,17 @@ const ev = (b, id) => b.events.find(e => e.id === id);
     eq(r1.period.lines[0].left, r0.period.lines[0].left + 1000, 'Food left');
     eq(r1.cards[cardA].owedNow, r0.cards[cardA].owedNow - 1000, 'card');
   });
+  await t('[slice 6] money in (a client payment, a gift) to the bank: `in` with no sub, the bank goes up by it; never onto a card', async () => {
+    const h = setup(), r0 = view(h.book);
+    const r = await h.A.moneyIn({ date: DAY, a: 25000, acct: bank, note: 'client payment' });
+    ok(r.ok, JSON.stringify(r));
+    const e = ev(h.book, r.step.added[0].id);
+    eq([e.k, e.sub, e.line, e.acct, e.a, e.note, e.src], ['in', undefined, undefined, bank, 25000, 'client payment', { type: 'typed' }]);
+    eq(view(h.book).accounts[bank].bank, r0.accounts[bank].bank + 25000, 'bank');
+    ok(h.posts.some(m => /Money in logged/.test(JSON.stringify(m))), JSON.stringify(h.posts));
+    const c = await h.A.moneyIn({ date: DAY, a: 500, acct: cardA });
+    ok(!c.ok && /can not be used/.test(c.text), JSON.stringify(c));
+  });
   await t('money moved from the bank to the wallet: a transfer; the bank goes down, the wallet up, Free to spend is the same', async () => {
     const h = setup(), r0 = view(h.book);
     const r = await h.A.moveMoney({ date: DAY, a: 4000, from: bank, to: WALLET });
