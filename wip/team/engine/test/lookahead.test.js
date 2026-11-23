@@ -213,4 +213,12 @@ t('a pay inside the opening that lands after the setup day: its period starts by
   // to Tue 23 Mar (20 Mar is a Saturday, 22 Mar the equinox's substitute holiday); Free to spend by days left: all of it
   eq(r.safeToSpend.headline, 50000);
 });
+t('in a life with a plan, a spend with no line counts against Free to spend; a bill paid does not [AU]', () => {
+  const b = base(x => {
+    x.schedules.push({ id: 'gym', kind: 'bill', name: 'Gym', acct: 'bank', cur: 'JPY', shift: 'none', rules: [{ rule: { every: 'month', days: [2] } }], steps: [{ amount: 7000 }] });
+    x.events.push({ id: 'n1', k: 'spend', acct: 'bank', date: '2026-12-02', a: 5000, told: '2026-12-02T12:00' + TZ },
+      { id: 'g1', k: 'spend', acct: 'bank', date: '2026-12-02', a: 7000, told: '2026-12-02T12:00' + TZ, settles: ['gym@2026-12-02'] });
+  });
+  eq(run(b, '2026-12-03').safeToSpend.headline, 45000);
+});
 done('lookahead');

@@ -806,13 +806,15 @@
       }
       // a line's opening split stays on the account it was typed on, also after the line moved (closing the main bank)
       const splitAt = lineId => Object.keys(openEv).find(id => { const sp = openEv[id].split; return sp && (lineId === 'free' ? sp.free != null : (sp.lines || {})[lineId] != null); });
+      // [AU] in a life with a plan, a spend with no line (not a bill paid, not from a place, not a fee) is Free to spend's
+      const lineOfSpend = e => (e.line ? e.line : e.k === 'spend' && freeSrc && !e.settles.length && !e.place && !isFeeRecord(e) ? 'free' : null);
       const leftOf = (lineId, acctId, amount) => {
         const sa = splitAt(lineId), moved = sa && sa !== acctId;
         const atOpening = moved ? (lineId === 'free' ? openEv[sa].split.free : openEv[sa].split.lines[lineId])
           : lineId === 'free' ? openingShares(acctId).free : openingShares(acctId).lines[lineId];
         const fromOpening = lastPay === null || lastPay <= openDay(moved ? sa : acctId);
         const start = fromOpening ? (atOpening != null ? atOpening : amount) : amount;
-        const inLine = e => e.line === lineId && e.account && openEv[e.account] && !inside(e, openingOf(e.account), e.account) && (fromOpening || e.day >= lastPay);
+        const inLine = e => lineOfSpend(e) === lineId && e.account && openEv[e.account] && !inside(e, openingOf(e.account), e.account) && (fromOpening || e.day >= lastPay);
         const counts = e => inLine(e) && cur(e.account) === cur(acctId);   // [T5] only spends in the line's own currency
         for (const e of live().filter(x => x.k === 'spend' && !isFeeRecord(x) && inLine(x) && cur(x.account) !== cur(acctId)))
           res.warnings.push({ account: e.account, code: 'spend_other_currency', line: lineId, event: e.id,
