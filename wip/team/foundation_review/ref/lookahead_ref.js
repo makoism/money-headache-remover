@@ -840,6 +840,7 @@ function lookahead(sc, asOf, opts = {}) {
       const land = cal.shift(due, pay.weekend_holiday);
       if (land <= openDay(id) || due <= openDay(id)) continue;
       // [AB3] Set up between its statement and its payment day and answered "paid": that payment was made before setup.
+      // "No" and [AD7] "dont_know" leave it expected: that month's usual payment on that payment day, not the whole balance.
       const ls = a.opening.statement;
       if (ls && ls.paid === true && ls.payment_day === dayStr(due)) continue;
       days.push({ due, land, iid: id + '@' + dayStr(due) });

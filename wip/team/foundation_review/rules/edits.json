@@ -1,7 +1,7 @@
 {
   "area": "edits",
   "title": "What setup and an edit may save: a schedule change never before its latest settled or named occurrence, a goal's own account in the home currency, setup's not-yet questions (X8, W3, X3)",
-  "written_in": "SCHEMA_V3 sections 4, 5 and 8 (the opening); DECISIONS_ROUND2 X3, X8, W3, AB3 (the last statement asked at setup) and AB with MAKO M1 (the minimum asked once, box empty)",
+  "written_in": "SCHEMA_V3 sections 4, 5 and 8 (the opening); DECISIONS_ROUND2 X3, X8, W3, AB3 (the last statement asked at setup; AD6 and AD7: \"no\" asks the amount with everything owed filled in, \"don't know\" on a loan or pay-later is that month's usual payment) and AB with MAKO M1 (the minimum asked once, box empty)",
   "notes": "Hand-worked cases for edit-time and setup rules that the reference model does not hold [H7]. All amounts and dates are made up.",
   "defaults": {},
   "cases": [
@@ -343,7 +343,7 @@
     {
       "id": "ed-14",
       "question": "statement_ask",
-      "title": "AB3: answered no, with the statement's amount: an unpaid statement",
+      "title": "AB3, AD6: answered no: the amount box opens with everything owed filled in; the person types the statement's amount",
       "input": {
         "setup": "2026-11-20",
         "answer": "no",
@@ -356,6 +356,7 @@
       },
       "expected": {
         "asked": true,
+        "filled": 50000,
         "saved": {
           "stmt": true,
           "stmtDate": "2026-10-31",
@@ -364,9 +365,10 @@
           "a": 30000
         }
       },
-      "why": "No, and the person types the October statement, 30,000: saved as an unpaid statement closed 31 Oct and paid 27 Nov [AB3, J5]. Of the 50,000 owed, 50,000 - 30,000 = 20,000 is November so far.",
+      "why": "No, not paid: setup asks the amount with everything owed, 50,000, filled in [AD6]; the person changes it to the October statement, 30,000: saved as an unpaid statement closed 31 Oct and paid 27 Nov [AB3, J5]. Of the 50,000 owed, 50,000 - 30,000 = 20,000 is November so far.",
       "decisions": [
         "AB3",
+        "AD6",
         "J5"
       ]
     },
@@ -462,18 +464,105 @@
         "MAKO M1",
         "O6"
       ]
+    },
+    {
+      "id": "ed-19",
+      "question": "statement_ask",
+      "title": "AD6: answered no and the filled-in amount left as it is: everything owed is that statement",
+      "input": {
+        "setup": "2026-11-20",
+        "answer": "no",
+        "amount": null,
+        "kind": "card",
+        "closeDay": "last",
+        "payDay": 27,
+        "monthsAfterClose": 1,
+        "owed": 50000
+      },
+      "expected": {
+        "asked": true,
+        "filled": 50000,
+        "saved": {
+          "stmt": true,
+          "stmtDate": "2026-10-31",
+          "stmtPay": "2026-11-27",
+          "paid": false,
+          "a": 50000
+        }
+      },
+      "why": "No, not paid: the amount box opens with everything owed, 50,000 [AD6]. The person leaves it, so the unpaid statement closed Sat 31 Oct holds 50,000, all due on Fri 27 Nov; 50,000 - 50,000 = 0 is November so far. Before AD6 a \"no\" with no amount typed saved no amount (ed-q1).",
+      "decisions": [
+        "AD6",
+        "AB3",
+        "J5"
+      ]
+    },
+    {
+      "id": "ed-20",
+      "question": "statement_ask",
+      "title": "AD7: a loan answered don't know: that month's usual payment is due on the next payment day, not the whole balance",
+      "input": {
+        "setup": "2026-11-20",
+        "answer": "dontKnow",
+        "kind": "loan",
+        "closeDay": "last",
+        "payDay": 27,
+        "monthsAfterClose": 1,
+        "owed": 400000,
+        "usual": 20000
+      },
+      "expected": {
+        "asked": true,
+        "saved": {
+          "stmt": true,
+          "stmtDate": "2026-10-31",
+          "stmtPay": "2026-11-27",
+          "paid": false,
+          "a": 20000
+        }
+      },
+      "why": "A loan of 400,000 paying 20,000 a month on the 27th, set up Fri 20 Nov, between its statement (Sat 31 Oct) and its payment day (Fri 27 Nov), so setup asks [AB3]. \"Don't know\" on a loan means that month's usual payment, 20,000, is due on Fri 27 Nov [AD7], not the whole 400,000 owed. 400,000 - 20,000 = 380,000 stays owed after it.",
+      "decisions": [
+        "AD7",
+        "AB3"
+      ]
+    },
+    {
+      "id": "ed-21",
+      "question": "statement_ask",
+      "title": "AD7: a pay-later answered don't know: that month's usual payment",
+      "input": {
+        "setup": "2026-11-20",
+        "answer": "dontKnow",
+        "kind": "paylater",
+        "closeDay": "last",
+        "payDay": 27,
+        "monthsAfterClose": 1,
+        "owed": 30000,
+        "usual": 10000
+      },
+      "expected": {
+        "asked": true,
+        "saved": {
+          "stmt": true,
+          "stmtDate": "2026-10-31",
+          "stmtPay": "2026-11-27",
+          "paid": false,
+          "a": 10000
+        }
+      },
+      "why": "A pay-later owing 30,000, paying 10,000 a month on the 27th, set up Fri 20 Nov: \"don't know\" means that month's usual payment, 10,000, is due on Fri 27 Nov [AD7]; 30,000 - 10,000 = 20,000 stays owed.",
+      "decisions": [
+        "AD7",
+        "AB3"
+      ]
     }
   ],
   "open": [
     {
-      "id": "ed-q1",
-      "question": "AB3: a card answered \"no, not paid\": does setup then ask the statement's amount, and if the person skips it, is everything owed that statement (as \"don't know\")?",
-      "ref_does": "Saves the amount typed (ed-14, card_between_close_pay cbp-03); with none typed it saves no amount. No case has \"no\" without an amount."
-    },
-    {
-      "id": "ed-q2",
-      "question": "AB3: \"don't know\" counts everything owed as due on the next payment day. For a loan or a pay-later account, everything owed is the whole balance (a loan of 400,000 paying 20,000 a month). Does \"don't know\" there mean the whole balance, or that month's usual payment?",
-      "ref_does": "Not modelled: a loan or pay-later takes only yes or no (loan_between_stmt_pay.json); the scenario checker refuses \"dont_know\" on them."
+      "id": "ed-q3",
+      "question": "AD6: \"No, not paid\" asks the amount with everything owed filled in. On a loan or a pay-later (everything owed is the whole balance, 400,000 on a loan paying 20,000 a month), is the amount asked too, and filled with what: everything owed, or that month's usual payment (as AD7 reads \"don't know\")?",
+      "ref_does": "AD6 only on a card. A loan or pay-later answered no saves the amount typed, with no box filled (the AB3 reading: \"no\" leaves that payment expected, its usual amount, loan_between_stmt_pay lbs-01). No case has it."
     }
   ]
 }

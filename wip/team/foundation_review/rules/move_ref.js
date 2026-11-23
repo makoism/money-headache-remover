@@ -1,5 +1,5 @@
 // Moving a saved copy from an older build (SCHEMA_V3 11 and 11.1; DECISIONS_ROUND2 E1, E4, E6, H9, I5, J2, K3, O, O watch,
-// X1, X9, X watch, Y1 to Y28, Z3, Z5, Z6, AA1 to AA13, AB1, AB2, AB rows, AC1 to AC8).
+// X1, X9, X watch, Y1 to Y28, Z3, Z5, Z6, AA1 to AA13, AB1, AB2, AB rows, AC1 to AC8, AD1, AD2, AD4, AD5).
 // A plain reference for the engine lane, checked by run_rules.js against rules/move.json. The field list it follows is
 // foundation_review/MOVE_FIELDS.md, which also names the `mv:` kinds. Where Y to AA leave a detail open, the reference
 // does the least it can and move.json names the open question.
@@ -169,6 +169,8 @@ function undatedFigure(copy, g, ym) {
   const u = roundUnit(copy);
   return Math.ceil(rem / 12 / u) * u;
 }
+// [AD1] The day from which 38.31 writes ui.minAuto with a minimum it fills in (and deletes it when the person types one).
+const MIN_AUTO_FROM = '2026-11-20';
 
 function move(input) {
   const raw = typeof input.raw === 'string' ? input.raw : JSON.stringify(madeCopy(input));
@@ -207,8 +209,15 @@ function move(input) {
   const bank = figures.length ? 'mv:acct:cfg' : null;
   if (!bank) asks.push({ q: 'bankFigure' });   // [Y19] asked at the first check-in; safe to spend shows nothing until then
   const home = { curs: [{ from: D0, cur }], minBank: null, mainBank: bank };   // [Y18] the typed bank figure is the main bank
-  // [11.1, MAKO M1] the minimum only when typed: one the app filled in itself (ui.minAuto) is dropped.
-  if (!sample && typeof cfg.minBank === 'number' && !(ui.minAuto !== undefined && cfg.minBank === ui.minAuto)) home.minBank = { a: amt(cfg.minBank, 'cfg.minBank'), cur };
+  // [11.1, MAKO M1] the minimum only when typed: one the app filled in itself (ui.minAuto) is dropped. [AD1] A build before
+  // 20 Nov filled it in without writing ui.minAuto, so there no ui.minAuto reads as automatic. Such a build is one whose
+  // `rev` is a count (38.28, the 25.0 builds) or a copy last saved before 20 Nov 2026 (early 38.31). A dropped minimum is
+  // asked anyway, "Keep at least ___ in your bank?" with the box empty (ed-17).
+  if (!sample && typeof cfg.minBank === 'number') {
+    const oldBuild = (typeof copy.rev === 'number' && copy.rev < 1e12) || savedDay < MIN_AUTO_FROM;
+    const auto = ui.minAuto !== undefined ? cfg.minBank === ui.minAuto : oldBuild;
+    if (auto) asks.push({ q: 'minBank' }); else home.minBank = { a: amt(cfg.minBank, 'cfg.minBank'), cur };
+  }
 
   const accounts = [], events = [], places = [], schedules = [], budgets = [], shares = [], debtAccts = [];
   if (bank) accounts.push({ id: bank, name: 'Bank', type: 'bank', cur, confirm: true });   // [Y26]
@@ -231,7 +240,7 @@ function move(input) {
 
   // ---- the plan, unless the sample is still shown (never moved as real, requirements 1c, Y16)
   const goalPlace = {}, lineOfKey = {}, ownAccount = {};
-  let loanAcct = null, loanPending = false;
+  let loanAcct = null, loanPending = false, loanAnswered = false, loanDropped = false;
   const pend = [];   // [AA5] what waits for a pay, bill or payment day: written by applyPending once that day is known
   if (!sample) {
     const gk = isMap(ui.gk) ? ui.gk : {};
@@ -318,6 +327,9 @@ function move(input) {
         const id = 'mv:bill:' + l.id, rule = (answers.billDay || {})[l.id], s = Object.assign({ id, kind: 'bill', name: l.name, cur, acct: bank, place: 'bills', steps: st }, extra);
         asks.push(Object.assign({ q: 'billDay', bill: id }, rule ? { answer: rule } : {}));   // [11.1] until answered, due on the period's first day
         if (rule) s.rules = [{ from: D0, rule }];
+        // [AD4] its 38.31 amount is a monthly total: answered with another rhythm than once a month it is per month like
+        // pay, and a one-month amount is spread over that month's payments (writePending).
+        if (rule && !(rule.every === 'month' && Array.isArray(rule.days) && rule.days.length === 1)) s.per = 'month';
         for (const ym of Object.keys(once).sort()) if (ym >= openYm && isMap(once[ym]) && typeof once[ym][key] === 'number')
           pend.push({ field: 'once.' + ym + '.' + key, waits: id, to: 'amounts', ym, a: amt(once[ym][key], 'once.' + ym + '.' + key) });   // [AA5]
         schedules.push(s);
@@ -341,6 +353,7 @@ function move(input) {
         asks.push({ q: 'loanLine', answer: ans });
         const acc = accounts.find(a => a.id === 'mv:debt:' + ans);
         if (ans !== 'drop' && acc) { fill(acc); loanAcct = acc.id; }
+        if (debts.length) { loanAnswered = true; loanDropped = ans === 'drop'; }   // [AD5] asked and answered at this move
       } else if (debts.length) { asks.push({ q: 'loanLine' }); loanPending = true; }
       else {
         const acc = fill({ id: 'mv:debt:plan.lines.loan', name: loanLine.l.name, type: 'loan', cur });
@@ -408,8 +421,10 @@ function move(input) {
       else if (base && k === 'draw' && fund) pend.push(Object.assign({ waits: PAY_A, to: 'move', place: fund }, base));
       else if (base && k.startsWith('debt:') && debtAccts.includes('mv:debt:' + k.slice(5))) pend.push(Object.assign({ waits: 'mv:debt:' + k.slice(5), to: 'amounts' }, base));   // [AC5] the whole payment
       // [AC7] the loan line's one-month amount: that month's payment `amounts` on the loan the line is; while the loan
-      // question is not answered it waits for it. Dropped, it has no target here (move.json mv-q51).
+      // question is not answered it waits for it. [AD2] The line dropped: the amount is dropped and listed in the move
+      // summary; [AD5] its entry, as a device without the answer holds it, is kept marked `gone`.
       else if (base && k === 'bill:loan' && (loanAcct || loanPending)) pend.push(Object.assign({ waits: loanAcct || 'loanLine', to: 'amounts' }, base));
+      else if (base && k === 'bill:loan' && loanDropped) { zero.push(field); pend.push(Object.assign({ waits: 'loanLine', to: 'amounts', done: true }, base)); }
       else unplaced.push(field);
     }
     // [11.1, H9, Y21, Y24] items[ym]: a once schedule on the month's first day; in the move month (the calendar month the
@@ -467,11 +482,14 @@ function move(input) {
     const note = n ? { note: n } : {};
     const base = { id: 'mv:rc:' + r.id, date: r.d, a: amt(r.a, 'receipts.' + r.id + '.a'), acct: acctS || bank };
     let e;
+    const waitRc = () => ({ field: 'receipts.' + r.id, waits: 'loanLine', to: 'repay', event: Object.assign({ id: base.id, k: 'repay', date: r.d, a: base.a, acct: base.acct }, note, { src: { type: 'move', id: r.id }, told: startOf(r.d, offset) }) });
     if (r.c === 'bill:loan' && loanPending) {   // [AC2] a repay whose loan is not known yet waits for the loan question
-      pend.push({ field: 'receipts.' + r.id, waits: 'loanLine', to: 'repay', event: Object.assign({ id: base.id, k: 'repay', date: r.d, a: base.a, acct: base.acct }, note, { src: { type: 'move', id: r.id }, told: startOf(r.d, offset) }) });
+      pend.push(waitRc());
       for (const k of Object.keys(r)) if (!RC_KNOWN.includes(k)) unplaced.push('receipts.' + r.id + '.' + k);
       continue;
     }
+    // [AD5] the loan question answered at this move: the entry a device without that answer holds is kept marked `gone`
+    if (r.c === 'bill:loan' && loanAnswered) pend.push(Object.assign(waitRc(), { done: true }));
     if (r.c === 'bill:loan' && loanAcct) e = Object.assign({ id: base.id, k: 'repay', date: r.d, a: base.a, acct: base.acct, acct2: loanAcct }, note);   // [Y20] a repay on the matched loan
     else if (r.c === 'bill:loan') e = Object.assign({ id: base.id, k: 'spend', date: r.d, a: base.a, acct: base.acct, place: 'bills', line: 'loan' }, { note: n ? n + ' ' + LOAN_GONE : LOAN_GONE });   // [AA7, AC6] no loan
     else e = Object.assign({ id: base.id, k: 'spend', date: r.d, a: base.a, acct: base.acct }, catOf(r.c, lineOfKey), note);
@@ -527,23 +545,26 @@ function ruleOf(out, id) {
 // [AA5, AB rows] `pendingMove`: each entry is a record `mv:pend:<field path>` [Y28] naming the 38.31 field it came from,
 // the schedule or account whose day it waits for (`waits`; `loanLine` for the loan question, AC2), and what it becomes
 // (`to`). Entries whose day is known are written, in field order; the rest are returned. Everything written has a built
-// id or lands on a keyed field, so a second device applying the same entry writes the same record [AB rows].
+// id or lands on a keyed field, so a second device applying the same entry writes the same record [AB rows]. [AD5] What
+// this move writes (and what an answer given at this move settles, `done`) is kept too, marked `gone` on the move day,
+// so a device that moved the same copy without that answer drops its waiting entry at the merge (same `at`: `gone` wins, H6).
 function applyPending(out, pend, moveDay) {
-  const left = [], evs = [];
+  const all = [], evs = [];
   for (const p of pend.slice().sort((x, y) => (x.field < y.field ? -1 : x.field > y.field ? 1 : 0))) {
+    if (p.done) { const q = Object.assign({}, p); delete q.done; all.push(Object.assign(q, { gone: moveDay })); continue; }
     const rule = ruleOf(out, p.waits);
-    if (!rule || !writePending(out, p, rule, evs, moveDay)) left.push(p);
+    all.push(rule && writePending(out, p, rule, evs, moveDay) ? Object.assign({}, p, { gone: moveDay }) : p);
   }
   if (evs.length) { const i = out.events.findIndex(e => /^mv:rc:/.test(e.id)); out.events.splice(i < 0 ? out.events.length : i, 0, ...evs); }
-  return left;
+  return all;
 }
 function writePending(out, p, rule, evs, moveDay) {
   if (p.to === 'amounts') {
     const rec = out.schedules.find(s => s.id === p.waits) || out.accounts.find(a => a.id === p.waits);
     const dues = duesIn(rule, p.ym); if (!dues.length) return false;
-    // [Y2, AB2] pay: the month's total, spread over that month's pays; [Y7] a bill's and [AC5, AC7] a debt's or the loan
-    // line's: that month's (first) occurrence, whole.
-    Object.assign(rec.amounts = rec.amounts || {}, rec.kind === 'income' ? spread(p.a, dues) : { [dues[0]]: p.a });
+    // [Y2, AB2] pay, and [AD4] a bill kept per month: the month's total, spread over that month's pays or payments; [Y7] a
+    // bill on one day a month and [AC5, AC7] a debt's or the loan line's: that month's (first) occurrence, whole.
+    Object.assign(rec.amounts = rec.amounts || {}, rec.kind === 'income' || rec.per === 'month' ? spread(p.a, dues) : { [dues[0]]: p.a });
     return true;
   }
   if (p.to === 'periodEnd') {   // [Y8, AA4] the period holding that month's last day; [AB2] only once it has ended at the move
@@ -592,7 +613,8 @@ function moveAnswer(input) {
     const b = listOf(before, path).find(x => x.id === r.id);
     if (b && canon(b) !== canon(r)) Object.assign(r, { at }, stampBy);
   }
-  const still = new Set(out.pendingMove.map(p => p.id));
+  const still = new Set(out.pendingMove.map(p => p.id)), wasLive = new Set(before.pendingMove.filter(p => !p.gone).map(p => p.id));
+  for (const p of out.pendingMove) if (p.gone && wasLive.has(p.id)) Object.assign(p, { gone: at.slice(0, 10), at }, stampBy);   // [AD5]
   for (const p of before.pendingMove) if (!still.has(p.id)) out.pendingMove.push(Object.assign({}, p, { gone: at.slice(0, 10), at }, stampBy));
   out.pendingMove.sort((x, y) => (x.field < y.field ? -1 : x.field > y.field ? 1 : 0));
   return out;
@@ -671,6 +693,46 @@ function moveLater({ phone, edits, desktop, cloud }) {
   return cloud ? adopt(p, d) : merge(p, d);
 }
 
+// [AD5] A day answered on a stored copy (one that may hold another device's records): each waiting entry whose day is now
+// known is applied only where the record it would change has an older `at` than the entry (or is not there yet);
+// otherwise it is skipped. Either way the entry is done: kept marked `gone` with the answer's day, `at` and `by`.
+// A record written from an entry is a moved record [AB1]: the entry's `at`, the applying device's `by`, and `told` the
+// first one the record had [H1]. `rules` gives each answered day by the schedule or account it belongs to.
+function applyWaiting({ copy, rules, moveDay, answeredAt, by }) {
+  const out = JSON.parse(JSON.stringify(copy)), before = JSON.parse(JSON.stringify(copy));
+  const ms = t => Date.parse(t), day = answeredAt.slice(0, 10);
+  for (const id of Object.keys(rules || {})) {   // the answer itself, an edit of its schedule or account
+    const s = (out.schedules || []).find(x => x.id === id), a = (out.accounts || []).find(x => x.id === id);
+    if (s) Object.assign(s, { rules: [{ from: (s.steps && s.steps[0] && s.steps[0].from) || moveDay, rule: rules[id] }], at: answeredAt, by });
+    else if (a && rules[id].every === 'month') Object.assign(a, { payDay: rules[id].days[0], at: answeredAt, by });
+  }
+  const newer = (rec, p) => rec && !(ms(rec.at) < ms(p.at));
+  for (const p of out.pendingMove || []) {
+    if (p.gone) continue;
+    const rule = ruleOf(out, p.waits); if (!rule) continue;
+    // what the entry would write, worked out on a scratch copy of the records as they were before the answer
+    const scratch = { schedules: JSON.parse(JSON.stringify(before.schedules || [])), accounts: JSON.parse(JSON.stringify(before.accounts || [])),
+      plan: JSON.parse(JSON.stringify(before.plan || { shares: [], budgets: [] })), events: [], saved: p.at };
+    const evs = [];
+    if (!writePending(scratch, p, rule, evs, moveDay)) continue;
+    for (const ev of evs) {
+      const old = (before.events || []).find(x => x.id === ev.id);
+      if (newer(old, p)) continue;
+      const rec = Object.assign({}, ev, { told: old ? old.told : ev.told || p.at, at: p.at, by });
+      const i = out.events.findIndex(x => x.id === ev.id);
+      if (i >= 0) out.events[i] = rec; else out.events.push(rec);
+    }
+    if (p.to === 'amounts') {
+      const old = (before.schedules || []).concat(before.accounts || []).find(x => x.id === p.waits);
+      const rec = (out.schedules || []).concat(out.accounts || []).find(x => x.id === p.waits);
+      const made = scratch.schedules.concat(scratch.accounts).find(x => x.id === p.waits);
+      if (!newer(old, p)) Object.assign(rec.amounts = rec.amounts || {}, made.amounts);
+    }
+    Object.assign(p, { gone: day, at: answeredAt, by });
+  }
+  return out;
+}
+
 function ids(out) {
   const all = [];
   for (const k of ['people', 'accounts', 'places', 'schedules', 'events']) for (const r of out[k] || []) all.push(r.id);
@@ -694,7 +756,8 @@ function ask(question, input) {
   if (question === 'move_two') return view(moveTwo(input), input);
   if (question === 'move_answer') return view(moveAnswer(input), input);
   if (question === 'move_later') return view(moveLater(input), input);
+  if (question === 'apply_waiting') return view(applyWaiting(input), input);
   throw new Error('unknown question ' + question);
 }
 
-module.exports = { ask, move, moveTwo, moveAnswer, moveLater, adopt, stamp, lastSave };
+module.exports = { ask, move, moveTwo, moveAnswer, moveLater, applyWaiting, adopt, stamp, lastSave };

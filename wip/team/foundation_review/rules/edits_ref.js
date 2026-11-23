@@ -35,7 +35,8 @@ function notYetAsks({ setup, lastPay, items }) {
 
 // [AB3] A card (or pay-later or loan) set up between a statement's close and its payment day: setup asks "Is the last
 // statement paid?" and saves the answer as a statement check [J5]: yes, paid (no amount asked); no, unpaid with the
-// amount typed; don't know, unpaid holding everything owed, so it is all due on the next payment day (as H4).
+// amount typed (on a card the box opens with everything owed filled in, AD6); don't know, unpaid holding everything
+// owed, so it is all due on the next payment day (as H4), or on a loan or pay-later that month's usual payment [AD7].
 // `closeDay` is a day of the month or 'last'; the payment is on `payDay`, `monthsAfterClose` months after the close.
 // Day `d` (or 'last') of month m of year y, as a day number; a day past the month's end is its last day.
 function dayOfMonth(y, m, d) {
@@ -43,7 +44,7 @@ function dayOfMonth(y, m, d) {
   const i = y * 12 + m - 1, first = dayNum(ym(i) + '-01'), last = dayNum(ym(i + 1) + '-01') - 1;
   return d === 'last' ? last : Math.min(first + Number(d) - 1, last);
 }
-function statementAsk({ setup, closeDay, payDay, monthsAfterClose, owed, answer, amount }) {
+function statementAsk({ setup, kind, closeDay, payDay, monthsAfterClose, owed, usual, answer, amount }) {
   const s = dayNum(setup), y = Number(setup.slice(0, 4)), m = Number(setup.slice(5, 7));
   let close = dayOfMonth(y, m, closeDay);
   if (close > s) close = dayOfMonth(m === 1 ? y - 1 : y, m === 1 ? 12 : m - 1, closeDay);   // the latest close on or before setup
@@ -51,9 +52,13 @@ function statementAsk({ setup, closeDay, payDay, monthsAfterClose, owed, answer,
   const pay = dayOfMonth(cy + Math.floor((cm - 1) / 12), ((cm - 1) % 12) + 1, payDay);
   if (!(s < pay)) return { asked: false };   // [X6] no statement waits for its payment day
   const st = { stmt: true, stmtDate: dayStr(close), stmtPay: dayStr(pay) };
+  const debt = kind === 'loan' || kind === 'paylater';
   if (answer === 'yes') return { asked: true, saved: Object.assign(st, { paid: true }) };
+  // [AD6] On a card "no, not paid" asks the amount with everything owed filled in; left as it is, that is the statement.
+  if (answer === 'no' && !debt) return { asked: true, filled: owed, saved: Object.assign(st, { paid: false, a: typeof amount === 'number' ? amount : owed }) };
   if (answer === 'no') return { asked: true, saved: Object.assign(st, { paid: false, a: amount }) };
-  if (answer === 'dontKnow') return { asked: true, saved: Object.assign(st, { paid: false, a: owed }) };
+  // [AD7] On a loan or pay-later "don't know" means that month's usual payment (`usual`) is due on the next payment day.
+  if (answer === 'dontKnow') return { asked: true, saved: Object.assign(st, { paid: false, a: debt ? usual : owed }) };
   return { asked: true };
 }
 // [AB, MAKO M1] Setup asks once, "Keep at least ___ in your bank?", the box empty; skipping means no minimum.

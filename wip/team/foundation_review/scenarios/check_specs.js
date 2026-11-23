@@ -224,9 +224,10 @@ function checkFile(fp) {
     if (a.kind === 'loan' || a.kind === 'paylater') {
       const p = a.payment || {};
       if (typeof a.opening.owed !== 'number' || !decimalsOk(a.opening.owed, d)) bad(file, w, 'opening.owed must be an amount');
-      // [AB3] Set up between its statement and its payment day: the answer to "Is the last statement paid?", naming that payment day.
+      // [AB3] Set up between its statement and its payment day: the answer to "Is the last statement paid?", naming that payment day;
+      // [AD7] "dont_know" is that month's usual payment, due on that payment day.
       const ls = a.opening.statement;
-      if (ls !== undefined && (!isDate(ls.payment_day) || typeof ls.paid !== 'boolean' || ls.payment_day <= a.opening.date)) bad(file, w, 'a loan or pay-later opening.statement needs payment_day (after the opening) and paid (true or false) [AB3]');
+      if (ls !== undefined && (!isDate(ls.payment_day) || !(typeof ls.paid === 'boolean' || ls.paid === 'dont_know') || ls.payment_day <= a.opening.date)) bad(file, w, 'a loan or pay-later opening.statement needs payment_day (after the opening) and paid (true, false or "dont_know") [AB3, AD7]');
       // [Q3] A plans list: each plan { id, amount, count, first }, its parts due from `first`, monthly.
       for (const pl of a.plans || []) if (!pl.id || typeof pl.amount !== 'number' || !decimalsOk(pl.amount, d) || !Number.isInteger(pl.count) || pl.count < 1 || !isDate(pl.first)) bad(file, w, 'each plan needs id, amount, count and first (a date) [Q3]');
       if (a.of !== undefined) {   // [Q3] a card instalment plan: its own pay-later account of the card, paid through the card

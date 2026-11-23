@@ -111,8 +111,13 @@ function leftovers({ periodTo, places, answers }) {
 }
 
 // [L period_end q5] Nothing left anywhere: one line, "nothing left this time", no question.
-function screen({ places }) {
-  return places.every(p => p.left === 0) ? { ask: false, line: 'nothing left this time' } : { ask: true };
+// [AD3] A month-end answer the move kept waiting for this period (`waiting`, in the answers' shape) is offered as the
+// default, capped at what its place holds (L q10, as capMoved; a capped one with nothing left is dropped). The person
+// confirms or changes it; what they confirm is their own answer.
+function screen({ places, waiting }) {
+  if (places.every(p => p.left === 0)) return { ask: false, line: 'nothing left this time' };
+  const offered = capMoved(places, (waiting || []).map(a => Object.assign({}, a, { moved: true }))).map(a => { const o = Object.assign({}, a); delete o.moved; return o; });
+  return offered.length ? { ask: true, offered } : { ask: true };
 }
 
 // [L period_end q6, q7] What a place holds in the new period: the new amount, plus what was kept (it adds on

@@ -248,7 +248,8 @@ function devices({ devices: devs, copy, steps, show }) {
 // next sync, so the restore writes: `gone` (the restore's day) with a new `at` for every record newer than the backup
 // (not in it), and the backup's records with a new `at`, so the merge keeps the restore. Inside a restored record the
 // `steps` and `rules` entries merge by their own `at` [L merge q2], so the backup's entries get the new `at` too and an
-// entry not in the backup is removed by its own `gone` [M3]. `told` stays the first one each record had [H1].
+// entry not in the backup is removed by its own `gone` [M3]. `told` stays the first one each record had [H1]. [AD8] The
+// shared `ui` keys (stamped per key in `ui.at` and `ui.by`) take the backup's values with a new `at` too.
 function restore({ current, backup, now, by }) {
   const day = String(now).slice(0, 10), stamp = { at: now, by };
   const restoreList = (cur, bak) => {
@@ -272,7 +273,11 @@ function restore({ current, backup, now, by }) {
       if (Array.isArray(a) || Array.isArray(b)) out[k] = restoreList(a, b);
       else if (k === 'plan') out[k] = walk(a, b);
       else if (b && typeof b === 'object' && typeof b.at === 'string') out[k] = Object.assign({}, b, stamp);   // home, plan.limits
-      else if (b !== undefined) out[k] = b;   // shared ui keys and the rest: the backup's as they are (merge.json open question mg-q12)
+      else if (k === 'ui' && b && typeof b === 'object') {   // [AD8] the shared ui keys: the backup's values, each with a new `at` and `by`
+        const keys = Object.keys(b).filter(x => x !== 'at' && x !== 'by' && x !== 'held');
+        out[k] = Object.assign({}, b, { at: Object.fromEntries(keys.map(x => [x, now])), by: Object.fromEntries(keys.map(x => [x, by])) });
+      }
+      else if (b !== undefined) out[k] = b;   // the rest: the backup's as it is
     }
     return out;
   };

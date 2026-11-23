@@ -1,0 +1,41 @@
+{
+  "life": "loan_stmt_dont_know",
+  "title": "A loan and a pay-later set up between their statement and their payment day, \"Is the last statement paid?\" answered don't know: that month's usual payment is due on the next payment day (decision AD7)",
+  "story": "Set up Fri 20 Nov 2026. The bank holds 300,000 and takes a pay of 250,000 on the 15th. A loan of 400,000 paying 20,000 a month and a pay-later owing 30,000 paying 10,000 a month are both paid from it on the 27th and both already billed for Fri 27 Nov when setup runs, so setup asks \"Is the last statement paid?\" and the person answers \"don't know\" for each. For a loan or a pay-later that means that month's usual payment is due on the next payment day (AD7), not the whole balance, which would have counted 430,000 as due before the next pay. Both are paid on 27 Nov. Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2026-11-20", "to": "2026-12-31" },
+  "holidays": { "country": "none", "dates": [], "bank_closed": [] },
+  "main_bank": "bank",
+  "accounts": [
+    { "id": "bank", "name": "Bank", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2026-11-20", "amount": 300000 } },
+    { "id": "loan_dk", "name": "Loan (don't know)", "kind": "loan", "currency": "JPY", "payment": { "day": 27, "from": "bank", "weekend_holiday": "none", "amount": 20000 },
+      "opening": { "date": "2026-11-20", "owed": 400000, "statement": { "payment_day": "2026-11-27", "paid": "dont_know" } } },
+    { "id": "pl_dk", "name": "Pay-later (don't know)", "kind": "paylater", "currency": "JPY", "payment": { "day": 27, "from": "bank", "weekend_holiday": "none", "amount": 10000 },
+      "opening": { "date": "2026-11-20", "owed": 30000, "statement": { "payment_day": "2026-11-27", "paid": "dont_know" } } }
+  ],
+  "income": [
+    { "id": "pay", "name": "Pay", "account": "bank", "amount": 250000, "schedule": { "frequency": "monthly", "day": 15 }, "weekend_holiday": "none", "starts_period": true }
+  ],
+  "bills": [],
+  "goals": [],
+  "events": [
+    { "id": "r1", "date": "2026-11-27", "told": "2026-11-27", "kind": "repay", "from": "bank", "to": "loan_dk", "amount": 20000, "settles": "loan_dk@2026-11-27" },
+    { "id": "r2", "date": "2026-11-27", "told": "2026-11-27", "kind": "repay", "from": "bank", "to": "pl_dk", "amount": 10000, "settles": "pl_dk@2026-11-27" },
+    { "id": "p1", "date": "2026-12-15", "told": "2026-12-15", "kind": "pay_in", "account": "bank", "amount": 250000, "settles": "pay@2026-12-15" }
+  ],
+  "asks": [
+    { "id": "ldk-01", "date": "2026-11-21", "question": "due_before_next_pay",
+      "expected": { "items": [ { "item": "loan_dk@2026-11-27", "lands": "2026-11-27", "amount": 20000 }, { "item": "pl_dk@2026-11-27", "lands": "2026-11-27", "amount": 10000 } ], "total": 30000 },
+      "why": "20,000 (Loan (don't know), the 27 Nov payment) + 10,000 (Pay-later (don't know), the 27 Nov payment) = 30,000",
+      "note": "Don't know is that month's usual payment on the next payment day (AD7). Read as the whole balance it would be 400,000 + 30,000 = 430,000." },
+    { "id": "ldk-02", "date": "2026-11-21", "question": "safe_to_spend", "account": "bank", "expected": 270000,
+      "why": "300,000 (Bank today) - 20,000 (Loan (don't know), Fri 27 Nov) - 10,000 (Pay-later (don't know), Fri 27 Nov) = 270,000",
+      "note": "The 27 Dec payments come after the Tue 15 Dec pay." },
+    { "id": "ldk-03", "date": "2026-11-21", "question": "owed_now", "account": "loan_dk", "expected": 400000,
+      "why": "400,000 (owed at setup; the 27 Nov payment is still to come) = 400,000" },
+    { "id": "ldk-04", "date": "2026-11-28", "question": "owed_now", "account": "loan_dk", "expected": 380000,
+      "why": "400,000 (owed at setup) - 20,000 (paid Fri 27 Nov) = 380,000" },
+    { "id": "ldk-05", "date": "2026-11-28", "question": "owed_now", "account": "pl_dk", "expected": 20000,
+      "why": "30,000 (owed at setup) - 10,000 (paid Fri 27 Nov) = 20,000" }
+  ]
+}

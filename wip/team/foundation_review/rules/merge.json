@@ -1,7 +1,7 @@
 {
   "area": "merge",
   "title": "Merging two copies: union by id, newest `at` per record, `gone` against the same or older `at` only, the hybrid clock, `told` never changing",
-  "written_in": "SCHEMA_V3 0 and 2.3; DECISIONS_ROUND2 D4, H1, H6, H9, L (merge q1 to q8), M3 to M5, N1, N2, O2, O3, Q5, Q7, S3, AB watch (restoring a backup with the cloud on)",
+  "written_in": "SCHEMA_V3 0 and 2.3; DECISIONS_ROUND2 D4, H1, H6, H9, L (merge q1 to q8), M3 to M5, N1, N2, O2, O3, Q5, Q7, S3, AB watch (restoring a backup with the cloud on), AD8 (the shared ui keys restored with a new at)",
   "notes": [
     "Every amount is made up and in whole minor units (yen).",
     "Times are hybrid clock values written as ISO with the time zone offset (section 0). They are compared as moments, never as text: 10:00+09:00 is 01:00 UTC, 02:30+01:00 is 01:30 UTC.",
@@ -3375,13 +3375,157 @@
         "M3",
         "H1"
       ]
+    },
+    {
+      "id": "mg-98",
+      "question": "restore",
+      "title": "AD8: a restore gives the shared `ui` keys a new `at` too",
+      "input": {
+        "current": {
+          "ui": {
+            "askNums": false,
+            "noDebts": true,
+            "at": {
+              "askNums": "2026-11-15T10:00:00.000+09:00",
+              "noDebts": "2026-11-10T10:00:00.000+09:00"
+            },
+            "by": {
+              "askNums": "dsk001",
+              "noDebts": "phn001"
+            }
+          }
+        },
+        "backup": {
+          "ui": {
+            "askNums": true,
+            "noDebts": true,
+            "at": {
+              "askNums": "2026-11-10T10:00:00.000+09:00",
+              "noDebts": "2026-11-10T10:00:00.000+09:00"
+            },
+            "by": {
+              "askNums": "phn001",
+              "noDebts": "phn001"
+            }
+          }
+        },
+        "now": "2026-11-21T09:00:00.000+09:00",
+        "by": "phn001"
+      },
+      "expected": {
+        "ui": {
+          "askNums": true,
+          "noDebts": true,
+          "at": {
+            "askNums": "2026-11-21T09:00:00.000+09:00",
+            "noDebts": "2026-11-21T09:00:00.000+09:00"
+          },
+          "by": {
+            "askNums": "phn001",
+            "noDebts": "phn001"
+          }
+        }
+      },
+      "why": "The backup (Tue 10 Nov) holds two shared screen answers, askNums true and noDebts true, each stamped 10 Nov 10:00 by the phone. After it the desktop changed askNums to false (15 Nov 10:00). On Sat 21 Nov 09:00 the phone restores the backup: each shared `ui` key takes the backup's value with a new `at`, 21 Nov 09:00, and `by` phn001 in `ui.at` and `ui.by` [AD8], as the records do [AB watch].",
+      "decisions": [
+        "AD8",
+        "AB",
+        "L merge q6"
+      ]
+    },
+    {
+      "id": "mg-99",
+      "question": "restore_merge",
+      "title": "AD8: the merge with the cloud copy keeps the restored `ui` keys, on either side",
+      "input": {
+        "current": {
+          "ui": {
+            "askNums": false,
+            "noDebts": true,
+            "at": {
+              "askNums": "2026-11-15T10:00:00.000+09:00",
+              "noDebts": "2026-11-10T10:00:00.000+09:00"
+            },
+            "by": {
+              "askNums": "dsk001",
+              "noDebts": "phn001"
+            }
+          }
+        },
+        "backup": {
+          "ui": {
+            "askNums": true,
+            "noDebts": true,
+            "at": {
+              "askNums": "2026-11-10T10:00:00.000+09:00",
+              "noDebts": "2026-11-10T10:00:00.000+09:00"
+            },
+            "by": {
+              "askNums": "phn001",
+              "noDebts": "phn001"
+            }
+          }
+        },
+        "now": "2026-11-21T09:00:00.000+09:00",
+        "by": "phn001",
+        "cloud": {
+          "ui": {
+            "askNums": false,
+            "noDebts": true,
+            "at": {
+              "askNums": "2026-11-15T10:00:00.000+09:00",
+              "noDebts": "2026-11-10T10:00:00.000+09:00"
+            },
+            "by": {
+              "askNums": "dsk001",
+              "noDebts": "phn001"
+            }
+          }
+        }
+      },
+      "expected": {
+        "mine_first": {
+          "ui": {
+            "askNums": true,
+            "noDebts": true,
+            "at": {
+              "askNums": "2026-11-21T09:00:00.000+09:00",
+              "noDebts": "2026-11-21T09:00:00.000+09:00"
+            },
+            "by": {
+              "askNums": "phn001",
+              "noDebts": "phn001"
+            }
+          }
+        },
+        "theirs_first": {
+          "ui": {
+            "askNums": true,
+            "noDebts": true,
+            "at": {
+              "askNums": "2026-11-21T09:00:00.000+09:00",
+              "noDebts": "2026-11-21T09:00:00.000+09:00"
+            },
+            "by": {
+              "askNums": "phn001",
+              "noDebts": "phn001"
+            }
+          }
+        }
+      },
+      "why": "The cloud copy still has askNums false at 15 Nov 10:00. The restored key is stamped 21 Nov 09:00, newer, so it wins per key [L merge q6, AD8]: askNums true. noDebts is true on both sides; the restored stamp (21 Nov 09:00) is the newer, so its `at` and `by` are kept. Merged either way round it is the restored `ui`. Before AD8 the restore kept the backup's old `at` (10 Nov), so the cloud's false came back at the next sync.",
+      "decisions": [
+        "AD8",
+        "L merge q6",
+        "D4"
+      ]
     }
   ],
   "open": [
     {
-      "id": "mg-q12",
-      "question": "AB watch: a restore writes `gone` and a new `at` for every record newer than the backup and gives the backup's records a new `at`. Shared `ui` keys are stamped per key (`ui.at`), not as records. Do they take the backup's values with a new `at` too, so the merge keeps them?",
-      "ref_does": "Takes the backup's `ui` as it is, with its old `ui.at` (so a newer key in the cloud wins at the merge). No case depends on it."
+      "id": "mg-q13",
+      "question": "AD8: a restore gives the shared `ui` keys a new `at`. A key set after the backup (in the cloud copy, not in the backup) has no `gone` of its own (ui keys are stamped per key, not records), so the merge brings it back. Should the restore remove it, and how (a `gone` per key, or the key set back to its value when the backup was made)?",
+      "ref_does": "Leaves it: the restored `ui` holds the backup's keys only, each with the new `at`; a key only in the cloud copy comes back at the merge with its own `at`. No case depends on it."
     }
   ]
 }

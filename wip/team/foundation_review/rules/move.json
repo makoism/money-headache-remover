@@ -1,17 +1,18 @@
 {
   "area": "move",
   "title": "Moving a saved copy from 38.31, 38.28 and the 25.0 to 38.26 builds into the new shape: every saved field to its target, or listed",
-  "written_in": "SCHEMA_V3 0, 2, 11 and 11.1; DECISIONS_ROUND2 E1, E6, H9, I5, J2, K3, O (and its watch items), X1, X9 and X watch, Y, Z, AA, AB and AC; foundation_review/MOVE_FIELDS.md (the field list per build)",
+  "written_in": "SCHEMA_V3 0, 2, 11 and 11.1; DECISIONS_ROUND2 E1, E6, H9, I5, J2, K3, O (and its watch items), X1, X9 and X watch, Y, Z, AA, AB, AC and AD; foundation_review/MOVE_FIELDS.md (the field list per build)",
   "notes": [
     "Every amount is made up. Amounts in a saved copy are major units with up to two decimals (every build); the moved records hold whole minor units [section 0]; an amount with more decimals than its currency is rounded half up and flagged in `rounded` [Y23].",
     "Question `move`: `copy` is the saved copy as an object, or `raw` the stored text itself (the move reads the raw text, never a cleaned copy [O]). `idb` is the IndexedDB second copy (`{ rev, t }`, `t` the moment of its save, a time or ms); `now` is the move's own moment, with the moving device's offset (X9), which is also `offset` unless given. The copy's last save is the later of `idb.t` and the stored `rev` when it is a time, either alone, else `now` [Y13, AA10]; its day is \"the copy's last saved day\" [H9, K3]. The move month is the calendar month of `now` [Y21]. `answers` holds the answers to the move's questions: `cur` (the currency code), `loanLine` (a plan.debts id, or `drop`), `pay` (`{ a, b, side }`: each a rule, SCHEMA_V3 5, any rhythm [AA4]), `billDay` (by 38.31 line id, a rule), `debtDay` (by debt id, or the field path of a loan the move made: the payment day), `goalMoney` (by goal id: `bank`, or `{ name, type }` for another account, type `bank` or `ewallet` [AA13]), `loanTerms` (by the id of a loan the move made: `{ apr, min }` or `dontKnow` [AA12]). `make.receipts` adds that many plain receipts to the copy (test help, so mv-35 can hold 5,002 receipts).",
-    "The answer is the moved copy: `v`, `home`, `people`, `accounts`, `places`, `schedules`, `events`, `plan` (`shares`, `budgets`, `limits`), `imports`, `ui` (the shared screen answers), `device` (`look`, `tour`, `opens`), `asks` (the move's questions, each answered one with its `answer`), `unplaced` (every saved field with no target, kept in frozen3831 or on the shared ui as 11.1 says, which the move test lists [11.1]), `pendingMove` (kept on the copy [AA5]: each one-month amount and month-end answer whose pay, bill or payment day is not answered yet, a month-end answer for a period not ended at the move [AB2], and a receipt on bill:loan while the loan question waits [AC2]; each a record `{ id: 'mv:pend:<field path>', field, waits, to, ... }` [AB rows], written when what it waits for is answered and then kept marked `gone`), `zero` (the move summary of lines and pay amounts that are 0 every month, not moved [Y25]), `rounded` [Y23], `sample`, `saved` (the copy's last save) and `frozen3831` (the raw text; the stored copy keeps it as the record `mv:frozen:<by>` in `frozen` [AB1]). `show` picks parts (`frozenIds` lists the `frozen` records' ids, `pendingMoveIds` the entries still waiting) (`plan.limits` picks one part of plan; `tally` counts the spends and adds them up; `ids` lists every record id; `payAmounts` gives each pay's amount on the days `payAt` names [AA4]); `pick` gives single fields as \"list id field\"; `omit` leaves a field out everywhere. Records carry `told` only on events; `at` and `by` are written by `move_two` and `move_later` (the copy's last save [AB1]) and by `move_answer` on what an answer changed (`answeredAt`). `move_two` with `cloud` and `move_later` with `cloud`: the desktop finds the phone's moved copy in the cloud and takes it, adding only the ids it lacks [AB1]; without, both copies meet in the merge.",
+    "The answer is the moved copy: `v`, `home`, `people`, `accounts`, `places`, `schedules`, `events`, `plan` (`shares`, `budgets`, `limits`), `imports`, `ui` (the shared screen answers), `device` (`look`, `tour`, `opens`), `asks` (the move's questions, `minBank` when a minimum is dropped as automatic [AD1], each answered one with its `answer`), `unplaced` (every saved field with no target, kept in frozen3831 or on the shared ui as 11.1 says, which the move test lists [11.1]), `pendingMove` (kept on the copy [AA5]: each one-month amount and month-end answer whose pay, bill or payment day is not answered yet, a month-end answer for a period not ended at the move [AB2], and a receipt on bill:loan while the loan question waits [AC2]; each a record `{ id: 'mv:pend:<field path>', field, waits, to, ... }` [AB rows], written when what it waits for is answered and then kept marked `gone`; what the move itself writes, or an answer given at the move settles, is kept marked `gone` on the move day [AD5]), `zero` (the move summary of what is not moved: lines and pay amounts that are 0 every month [Y25], and the loan line's one-month amounts when the line is dropped [AD2]), `rounded` [Y23], `sample`, `saved` (the copy's last save) and `frozen3831` (the raw text; the stored copy keeps it as the record `mv:frozen:<by>` in `frozen` [AB1]). `show` picks parts (`frozenIds` lists the `frozen` records' ids, `pendingMoveIds` the entries still waiting) (`plan.limits` picks one part of plan; `tally` counts the spends and adds them up; `ids` lists every record id; `payAmounts` gives each pay's amount on the days `payAt` names [AA4]); `pick` gives single fields as \"list id field\"; `omit` leaves a field out everywhere. Records carry `told` only on events; `at` and `by` are written by `move_two` and `move_later` (the copy's last save [AB1]) and by `move_answer` on what an answer changed (`answeredAt`). `move_two` with `cloud` and `move_later` with `cloud`: the desktop finds the phone's moved copy in the cloud and takes it, adding only the ids it lacks [AB1]; without, both copies meet in the merge.",
     "Ids [X1, Y28, Z]: `mv:<kind>:<38.31 id, key or field path>` with the kinds of MOVE_FIELDS.md section 7: acct, card, debt, place, bill, line, pay, auto, item, share, person, open, check, rc, and `move` for the Emergency fund draw's move out of its place (`mv:move:once.<month>.draw`, AA6, a reading). A month-end answer is the period-end record `pe:<occurrence>:free` [Y8].",
     "The opening [B6, B7, 11.1]: the oldest bank figure (bankStart or bankNow; on the same day bankNow [Y22]) opens the bank with an `open` and a `check` on its day; a newer figure is a later `check`. A figure's day with no time is told at the end of that day, or at the copy's last save when that is earlier [Y1]. The opening day is that figure's day, else the copy's last saved day. Goal money kept in the bank is the open's `split` [B6]; the rest of the split (budget lines and Free to spend left, Waiting) is the opening's own question [B2, I4] and is not written by the move.",
     "Question `move_two` [X1, Y12]: `phone` and `desktop` each hold a `move` input plus `by` (the device part). Each device moves its own copy and stamps every record with `told` (events keep their own), `at` (its `now`) and `by`; the two moved copies are merged with rules/merge_ref.js.",
     "Question `move_answer` [AA5]: the copy is moved with `answers`, then the days in `later` (`pay`, `billDay`, `debtDay`) are answered on the moved copy and what waits in `pendingMove` for them is written.",
+    "Question `apply_waiting` [AD5]: `copy` is a stored copy (records with `at` and `by`, `pendingMove` among them), `rules` the days answered now by schedule or account id, `moveDay` the move's day (it still decides which periods had ended, AB2), `answeredAt` and `by` the answer's stamp. Each waiting entry whose day is now known is applied only where the record it would change has an older `at` than the entry, or is not there yet; otherwise it is skipped. Either way it is kept marked `gone` with the answer's day, `at` and `by`.",
     "Sample data is never moved as real (requirements 1c): the sample shows while ui.done lacks pay, bills or goals, unless the copy is blank or cleared (every build's `sampleOn`). Receipts, cards and a typed bank figure are the person's and move as real [Y16].",
-    "The expected outputs of mv-01 to mv-45 were re-worked by hand from MOVE_FIELDS.md, SCHEMA_V3 11.1 and the decisions (Y and Z included), not taken from the reference; mv-46 to mv-67 were written by hand for Y and Z, and mv-68 and mv-69 for the coverage grid's move row (COVERAGE.md). Every open question below names what the reference does. mv-70 to mv-81 were written by hand for AA, and mv-07, mv-15, mv-33, mv-46, mv-49, mv-51, mv-52 and mv-65 re-worked by hand for it. Four cases show what the reference does on an open question AA leaves: mv-72 (mv-q45, the draw's move to Waiting; mv-q46, the debt's `amounts`), mv-75 and mv-76 (mv-q47, the receipt's own note); mv-73 leaves `per` (mv-q42) out of its view. mv-82 to mv-99 were written by hand for AB and AC (and the reviewer's d1; mv-97 to mv-99 for the coverage grid's new column L), and mv-09, mv-10, mv-15, mv-29, mv-33, mv-42, mv-46, mv-49, mv-52, mv-71, mv-72, mv-73, mv-75 and mv-76 re-worked by hand for them; AC answered mv-q42 to mv-q49."
+    "The expected outputs of mv-01 to mv-45 were re-worked by hand from MOVE_FIELDS.md, SCHEMA_V3 11.1 and the decisions (Y and Z included), not taken from the reference; mv-46 to mv-67 were written by hand for Y and Z, and mv-68 and mv-69 for the coverage grid's move row (COVERAGE.md). Every open question below names what the reference does. mv-70 to mv-81 were written by hand for AA, and mv-07, mv-15, mv-33, mv-46, mv-49, mv-51, mv-52 and mv-65 re-worked by hand for it. Four cases show what the reference does on an open question AA leaves: mv-72 (mv-q45, the draw's move to Waiting; mv-q46, the debt's `amounts`), mv-75 and mv-76 (mv-q47, the receipt's own note); mv-73 leaves `per` (mv-q42) out of its view. mv-82 to mv-99 were written by hand for AB and AC (and the reviewer's d1; mv-97 to mv-99 for the coverage grid's new column L), and mv-09, mv-10, mv-15, mv-29, mv-33, mv-42, mv-46, mv-49, mv-52, mv-71, mv-72, mv-73, mv-75 and mv-76 re-worked by hand for them; AC answered mv-q42 to mv-q49. mv-100 to mv-108 were written by hand for AD (AD1, AD2, AD4, AD5), and mv-09 (its why), mv-33, mv-46, mv-52, mv-73, mv-75, mv-89, mv-90, mv-94, mv-98 and mv-99 re-worked by hand for AD5 before the reference changed; mv-45 (a 25.0 copy with a minimum) was re-worked by hand for AD1 after the first run of the changed reference showed AD1 reaches it. AD answered mv-q50 to mv-q54; mv-q55 is what AD1 leaves."
   ],
   "defaults": {
     "idb": {
@@ -637,11 +638,12 @@
           "mainBank": null
         }
       },
-      "why": "cfg.minBank 50,000 was typed (no ui.minAuto), so it is `home.minBank` with its currency [11.1, O6]. No bank figure: no main bank. AB confirms Mako's answer: the move keeps a 38.31 minimum only when the person typed it.",
+      "why": "cfg.minBank 50,000 with no ui.minAuto, in a copy last saved on Tue 24 Nov (the second copy's `t`) with no `rev` count: a build from 20 Nov on, which deletes ui.minAuto when the person types a minimum, so it was typed and is `home.minBank` with its currency [11.1, O6, AB]. No bank figure: no main bank. A copy from a build before 20 Nov is mv-100 and mv-101 [AD1].",
       "decisions": [
         "11.1",
         "O6",
-        "AB"
+        "AB",
+        "AD1"
       ]
     },
     {
@@ -3069,12 +3071,60 @@
         ],
         "pendingMove": [
           {
+            "id": "mv:pend:once.2027-01.a",
+            "field": "once.2027-01.a",
+            "waits": "mv:pay:steps.a",
+            "to": "amounts",
+            "ym": "2027-01",
+            "a": 1000,
+            "gone": "2026-11-24"
+          },
+          {
+            "id": "mv:pend:once.2027-01.bill:food",
+            "field": "once.2027-01.bill:food",
+            "waits": "mv:pay:steps.a",
+            "to": "once",
+            "line": "mv:line:food",
+            "ym": "2027-01",
+            "a": 50000,
+            "gone": "2026-11-24"
+          },
+          {
+            "id": "mv:pend:once.2027-01.bill:rent",
+            "field": "once.2027-01.bill:rent",
+            "waits": "mv:bill:rent",
+            "to": "amounts",
+            "ym": "2027-01",
+            "a": 0,
+            "gone": "2026-11-24"
+          },
+          {
             "id": "mv:pend:once.2027-01.debt:car",
             "field": "once.2027-01.debt:car",
             "waits": "mv:debt:car",
             "to": "amounts",
             "ym": "2027-01",
             "a": 400
+          },
+          {
+            "id": "mv:pend:once.2027-01.envelope",
+            "field": "once.2027-01.envelope",
+            "waits": "mv:pay:steps.a",
+            "to": "shares",
+            "share": "free",
+            "ym": "2027-01",
+            "a": 25000,
+            "gone": "2026-11-24"
+          },
+          {
+            "id": "mv:pend:once.2027-01.goal:trip",
+            "field": "once.2027-01.goal:trip",
+            "waits": "mv:pay:steps.a",
+            "to": "shares",
+            "goal": "mv:place:trip",
+            "ym": "2027-01",
+            "a": 9000,
+            "gone": "2026-11-24"
           },
           {
             "id": "mv:pend:once.2027-01.side",
@@ -3108,7 +3158,7 @@
           }
         ]
       },
-      "why": "The pay is answered monthly on the 25th, so the first period starting in January starts with the pay due Mon 25 Jan 2027: the Food line's 50,000 is its `once` for that occurrence [11.1, T1, units-78]. a's 1,000 is that month's pay: `amounts` on the 25 Jan occurrence [Y2, AA4]. Rent is answered due on the 27th: its 0 for January is `amounts` on 27 Jan [Y7]. envelope's 25,000 (Free to spend) and goal:trip's 9,000 are `once` on the plan.shares entry of that period, keyed by the same occurrence: the entry in force on 25 Jan is the one from the opening [AA6]. That entry holds Free to spend's 15,000 and the trip's 100: the trip has no date and no monthly, so it takes 38.31's figure, a twelfth of what is missing rounded up to 38.31's unit: 1 - 0 = 1, 1 / 12 = 0.08, up to the unit 100 (the largest month's pay 250,000 is 20,000 or more) = 100 [AA11]. side has only a one-month amount, so it is a stream (0 from the opening) whose day is not answered: its January 30,000 waits in `pendingMove` for that answer [AA5]. debt:car's 400 is that month's payment occurrence `amounts` on the car loan [AA6]; its payment day is not answered, so it waits in `pendingMove` too [AA5]. The copy has no Emergency fund, so the draw of 20,000 has no fund to come out of and is listed. Each pay stream is `per: 'month'` [AB2, AC1]; with one pay a month a one-month amount spread over the month's one pay is the whole amount [AB2]. Each `pendingMove` entry is a record with its own id, `mv:pend:<field path>` [AB rows, Y28]. The debt's 400 is the whole January payment [AC5].",
+      "why": "The pay is answered monthly on the 25th, so the first period starting in January starts with the pay due Mon 25 Jan 2027: the Food line's 50,000 is its `once` for that occurrence [11.1, T1, units-78]. a's 1,000 is that month's pay: `amounts` on the 25 Jan occurrence [Y2, AA4]. Rent is answered due on the 27th: its 0 for January is `amounts` on 27 Jan [Y7]. envelope's 25,000 (Free to spend) and goal:trip's 9,000 are `once` on the plan.shares entry of that period, keyed by the same occurrence: the entry in force on 25 Jan is the one from the opening [AA6]. That entry holds Free to spend's 15,000 and the trip's 100: the trip has no date and no monthly, so it takes 38.31's figure, a twelfth of what is missing rounded up to 38.31's unit: 1 - 0 = 1, 1 / 12 = 0.08, up to the unit 100 (the largest month's pay 250,000 is 20,000 or more) = 100 [AA11]. side has only a one-month amount, so it is a stream (0 from the opening) whose day is not answered: its January 30,000 waits in `pendingMove` for that answer [AA5]. debt:car's 400 is that month's payment occurrence `amounts` on the car loan [AA6]; its payment day is not answered, so it waits in `pendingMove` too [AA5]. The copy has no Emergency fund, so the draw of 20,000 has no fund to come out of and is listed. Each pay stream is `per: 'month'` [AB2, AC1]; with one pay a month a one-month amount spread over the month's one pay is the whole amount [AB2]. Each `pendingMove` entry is a record with its own id, `mv:pend:<field path>` [AB rows, Y28]. The debt's 400 is the whole January payment [AC5]. The five one-month amounts written at the move (the salary's 1,000, Food's 50,000, the rent's 0, the free share's 25,000 and the trip's 9,000) are also kept in `pendingMove` marked `gone` on the move day, Tue 24 Nov, so a device that moved the same copy without these answers drops its waiting entries for them [AD5].",
       "decisions": [
         "11.1",
         "X",
@@ -3118,7 +3168,8 @@
         "AA11",
         "AB2",
         "AC1",
-        "AC5"
+        "AC5",
+        "AD5"
       ]
     },
     {
@@ -4167,10 +4218,7 @@
               "cur": "JPY"
             }
           ],
-          "minBank": {
-            "a": 30000,
-            "cur": "JPY"
-          },
+          "minBank": null,
           "mainBank": "mv:acct:cfg"
         },
         "places": [
@@ -4262,18 +4310,22 @@
             "answer": "JPY"
           },
           {
+            "q": "minBank"
+          },
+          {
             "q": "goalMoney",
             "place": "mv:place:rainy"
           }
         ],
         "unplaced": []
       },
-      "why": "The oldest builds save the same fields less the later ones (no receipt `s`, no ui.sweep, no debts, recurring or cards, whole goal amounts; MOVE_FIELDS.md), so the same rules apply: the 150,000 bankStart with no day opens the bank on the last saved day with the Emergency fund's 40,000 in its split [H9, B6]; the typed minimum is home.minBank; Food 30,000 (its step) is a budget line; \"Play money\" (the old name of Free to spend) is the `free` share, 12,000, with the fund's monthly 5,000; the cinema receipt is in Free to spend, its note \"cinema\" unchanged [Y14]. The fund has money, so the move asks where it is [Y17].",
+      "why": "The oldest builds save the same fields less the later ones (no receipt `s`, no ui.sweep, no debts, recurring or cards, whole goal amounts; MOVE_FIELDS.md), so the same rules apply: the 150,000 bankStart with no day opens the bank on the last saved day with the Emergency fund's 40,000 in its split [H9, B6]; the 30,000 minimum has no ui.minAuto and `rev` 9 is a count, so a build before 20 Nov saved it: treated as automatic and dropped, and the minimum is asked anyway [AD1]; Food 30,000 (its step) is a budget line; \"Play money\" (the old name of Free to spend) is the `free` share, 12,000, with the fund's monthly 5,000; the cinema receipt is in Free to spend, its note \"cinema\" unchanged [Y14]. The fund has money, so the move asks where it is [Y17].",
       "decisions": [
         "11.1",
         "E1",
         "H9",
-        "B6"
+        "B6",
+        "AD1"
       ]
     },
     {
@@ -4465,12 +4517,23 @@
           }
         ],
         "unplaced": [],
-        "pendingMove": []
+        "pendingMove": [
+          {
+            "id": "mv:pend:once.2027-01.a",
+            "field": "once.2027-01.a",
+            "waits": "mv:pay:steps.a",
+            "to": "amounts",
+            "ym": "2027-01",
+            "a": 300000,
+            "gone": "2026-11-24"
+          }
+        ]
       },
-      "why": "a: 240,000 (the October step) is in force at the opening, Tue 24 Nov, so it is the first step; 260,000 from 1 Apr 2027 [Y2, Y3]; answered monthly on the 25th, the rule is from the opening; January's 300,000 is `amounts` on the 25 Jan occurrence; October's once is before the opening and stays in frozen3831 only. b is a second stream and side a third, neither starting periods [Y2, F12]: b 30,000 from the opening; side has no step in force at the opening (0) and 15,000 from 1 Dec [Y3]. The days of b and side are asked. Every moved pay stream is `per: 'month'`: its steps are 38.31 monthly totals [AB2, AC1].",
+      "why": "a: 240,000 (the October step) is in force at the opening, Tue 24 Nov, so it is the first step; 260,000 from 1 Apr 2027 [Y2, Y3]; answered monthly on the 25th, the rule is from the opening; January's 300,000 is `amounts` on the 25 Jan occurrence; October's once is before the opening and stays in frozen3831 only. b is a second stream and side a third, neither starting periods [Y2, F12]: b 30,000 from the opening; side has no step in force at the opening (0) and 15,000 from 1 Dec [Y3]. The days of b and side are asked. Every moved pay stream is `per: 'month'`: its steps are 38.31 monthly totals [AB2, AC1]. January's 300,000, written at the move, is kept in `pendingMove` marked `gone` (24 Nov) [AD5].",
       "decisions": [
         "AB2",
-        "AC1"
+        "AC1",
+        "AD5"
       ]
     },
     {
@@ -5013,6 +5076,38 @@
         "unplaced": [],
         "pendingMove": [
           {
+            "id": "mv:pend:ui.sweep.2026-11",
+            "field": "ui.sweep.2026-11",
+            "waits": "mv:pay:steps.a",
+            "to": "periodEnd",
+            "ym": "2026-11",
+            "place": "free",
+            "moves": [
+              {
+                "to": "mv:place:trip",
+                "a": 1500
+              }
+            ],
+            "told": "2027-02-03T08:00:00.000+09:00",
+            "gone": "2027-02-03"
+          },
+          {
+            "id": "mv:pend:ui.sweep.2026-12",
+            "field": "ui.sweep.2026-12",
+            "waits": "mv:pay:steps.a",
+            "to": "periodEnd",
+            "ym": "2026-12",
+            "place": "free",
+            "moves": [
+              {
+                "to": "waiting",
+                "a": 3000
+              }
+            ],
+            "told": "2027-01-02T10:00:00.000+09:00",
+            "gone": "2027-02-03"
+          },
+          {
             "id": "mv:pend:ui.sweep.2027-01",
             "field": "ui.sweep.2027-01",
             "waits": "mv:pay:steps.a",
@@ -5029,11 +5124,13 @@
           }
         ]
       },
-      "why": "The opening is Sat 24 Oct; every answer here is for a month ending on or after it [P2]. The pay is monthly on the 25th. November's answer is the older shape `{ amt, id }`: that month's Free to spend put toward goal `trip`, for the period holding 30 Nov, the one starting with the pay due 25 Nov and ending Thu 24 Dec: `pe:mv:pay:steps.a@2026-11-25:free`, a move of 1,500 to the trip's place [AA3, AA4], told at the copy's last save (no `t`). December's \"bank\" answer is for the period holding 31 Dec, 25 Dec to Sun 24 Jan 2027: `pe:mv:pay:steps.a@2026-12-25:free`, 3,000 to Waiting [Y8, T1], told at its own time (`t`, 2 Jan 2027 10:00 +09:00). Each written answer names the 38.31 field it came from in `src`, so the period end can cap it at what the place holds [AB watch]. January's \"next\" is for the period holding 31 Jan, 25 Jan to Wed 24 Feb, which has not ended at the move on Wed 3 Feb: it is not written; it waits in `pendingMove` and that period's own question still comes [AB2, T1, A7]. October's `hide` writes nothing [Y8]. Nothing is listed.",
+      "why": "The opening is Sat 24 Oct; every answer here is for a month ending on or after it [P2]. The pay is monthly on the 25th. November's answer is the older shape `{ amt, id }`: that month's Free to spend put toward goal `trip`, for the period holding 30 Nov, the one starting with the pay due 25 Nov and ending Thu 24 Dec: `pe:mv:pay:steps.a@2026-11-25:free`, a move of 1,500 to the trip's place [AA3, AA4], told at the copy's last save (no `t`). December's \"bank\" answer is for the period holding 31 Dec, 25 Dec to Sun 24 Jan 2027: `pe:mv:pay:steps.a@2026-12-25:free`, 3,000 to Waiting [Y8, T1], told at its own time (`t`, 2 Jan 2027 10:00 +09:00). Each written answer names the 38.31 field it came from in `src`, so the period end can cap it at what the place holds [AB watch]. January's \"next\" is for the period holding 31 Jan, 25 Jan to Wed 24 Feb, which has not ended at the move on Wed 3 Feb: it is not written; it waits in `pendingMove` and that period's own question still comes [AB2, T1, A7]. October's `hide` writes nothing [Y8]. Nothing is listed. November's and December's answers, written at the move, are kept in `pendingMove` marked `gone` on the move day, 3 Feb [AD5]; January's still waits and is offered as the default, capped, when its period's own question comes [AD3].",
       "decisions": [
         "AA3",
         "AA4",
-        "AB2"
+        "AB2",
+        "AD5",
+        "AD3"
       ]
     },
     {
@@ -7677,14 +7774,51 @@
             }
           }
         ],
-        "pendingMove": []
+        "pendingMove": [
+          {
+            "id": "mv:pend:once.2027-01.a",
+            "field": "once.2027-01.a",
+            "waits": "mv:pay:steps.a",
+            "to": "amounts",
+            "ym": "2027-01",
+            "a": 300000,
+            "gone": "2027-02-10"
+          },
+          {
+            "id": "mv:pend:once.2027-01.bill:food",
+            "field": "once.2027-01.bill:food",
+            "waits": "mv:pay:steps.a",
+            "to": "once",
+            "line": "mv:line:food",
+            "ym": "2027-01",
+            "a": 50000,
+            "gone": "2027-02-10"
+          },
+          {
+            "id": "mv:pend:ui.sweep.2027-01",
+            "field": "ui.sweep.2027-01",
+            "waits": "mv:pay:steps.a",
+            "to": "periodEnd",
+            "ym": "2027-01",
+            "place": "free",
+            "moves": [
+              {
+                "to": "waiting",
+                "a": 2000
+              }
+            ],
+            "told": "2027-02-10T08:00:00.000+09:00",
+            "gone": "2027-02-10"
+          }
+        ]
       },
-      "why": "The person answers the salary's rhythm: every two weeks from Fri 27 Nov 2026 [AA4]. Its pays are due 27 Nov, 11 Dec, 25 Dec, 8 Jan, 22 Jan, 5 Feb, ... January's one-month pay of 300,000 replaces January's total and is spread over January's two pays [AB2]: 300,000 / 2 = 150,000, `amounts` on 2027-01-08 and on 2027-01-22. The Food line's January 50,000 is spread over the two periods starting in January, those its 8 Jan and 22 Jan pays start: 50,000 / 2 = 25,000 each [AB2]. January's month-end answer goes to the period holding 31 Jan: the last pay due on or before it is 22 Jan, and the next is 5 Feb, so that period ends Thu 4 Feb, before the move on Wed 10 Feb: `pe:mv:pay:steps.a@2027-01-22:free` moves 2,000 to Waiting [Y8, AA4], told at the copy's last save (no `t`), `src` naming ui.sweep.2027-01. The steps' amount is a monthly total (`per: 'month'`, left out of this view; mv-74).",
+      "why": "The person answers the salary's rhythm: every two weeks from Fri 27 Nov 2026 [AA4]. Its pays are due 27 Nov, 11 Dec, 25 Dec, 8 Jan, 22 Jan, 5 Feb, ... January's one-month pay of 300,000 replaces January's total and is spread over January's two pays [AB2]: 300,000 / 2 = 150,000, `amounts` on 2027-01-08 and on 2027-01-22. The Food line's January 50,000 is spread over the two periods starting in January, those its 8 Jan and 22 Jan pays start: 50,000 / 2 = 25,000 each [AB2]. January's month-end answer goes to the period holding 31 Jan: the last pay due on or before it is 22 Jan, and the next is 5 Feb, so that period ends Thu 4 Feb, before the move on Wed 10 Feb: `pe:mv:pay:steps.a@2027-01-22:free` moves 2,000 to Waiting [Y8, AA4], told at the copy's last save (no `t`), `src` naming ui.sweep.2027-01. The steps' amount is a monthly total (`per: 'month'`, left out of this view; mv-74). All three were written at the move, so `pendingMove` keeps them marked `gone` on the move day, Wed 10 Feb [AD5].",
       "decisions": [
         "AA4",
         "Y2",
         "Y8",
-        "AB2"
+        "AB2",
+        "AD5"
       ]
     },
     {
@@ -7870,12 +8004,34 @@
             "told": "2026-11-21T00:00:00.000+09:00"
           }
         ],
-        "pendingMove": []
+        "pendingMove": [
+          {
+            "id": "mv:pend:receipts.r1",
+            "field": "receipts.r1",
+            "waits": "loanLine",
+            "to": "repay",
+            "event": {
+              "id": "mv:rc:r1",
+              "k": "repay",
+              "date": "2026-11-21",
+              "a": 20000,
+              "acct": "mv:acct:cfg",
+              "note": "Nov",
+              "src": {
+                "type": "move",
+                "id": "r1"
+              },
+              "told": "2026-11-21T00:00:00.000+09:00"
+            },
+            "gone": "2026-11-24"
+          }
+        ]
       },
-      "why": "The person dropped the loan line [E6, Y4], so the receipt is no repay: it is a spend of 20,000 on place bills with line `loan`, and the move appends \"(moved: loan line removed)\" to its own note: \"Nov (moved: loan line removed)\" [AA7, AC6, Y14]. The car loan is still opened at its 300,000 [Y9]. Nothing waits.",
+      "why": "The person dropped the loan line [E6, Y4], so the receipt is no repay: it is a spend of 20,000 on place bills with line `loan`, and the move appends \"(moved: loan line removed)\" to its own note: \"Nov (moved: loan line removed)\" [AA7, AC6, Y14]. The car loan is still opened at its 300,000 [Y9]. The loan question was answered at the move (the copy has a debt, so it was asked): the receipt's waiting entry, as a device without the answer holds it (a repay waiting for the loan, its own note), is kept marked `gone` (24 Nov) [AD5, AC2].",
       "decisions": [
         "AA7",
-        "AC6"
+        "AC6",
+        "AD5"
       ]
     },
     {
@@ -10019,6 +10175,22 @@
         ],
         "pendingMove": [
           {
+            "id": "mv:pend:ui.sweep.2026-12",
+            "field": "ui.sweep.2026-12",
+            "waits": "mv:pay:steps.a",
+            "to": "periodEnd",
+            "ym": "2026-12",
+            "place": "free",
+            "moves": [
+              {
+                "to": "waiting",
+                "a": 3000
+              }
+            ],
+            "told": "2027-02-03T08:00:00.000+09:00",
+            "gone": "2027-02-03"
+          },
+          {
             "id": "mv:pend:ui.sweep.2027-01",
             "field": "ui.sweep.2027-01",
             "waits": "mv:pay:steps.a",
@@ -10035,12 +10207,14 @@
           }
         ]
       },
-      "why": "Pay on the 10th and the 25th; the move runs Wed 3 Feb 2027. December's answer is for the period holding 31 Dec: the last pay due on or before it is 25 Dec and the next 10 Jan, so it ended Sat 9 Jan, before the move: written, `pe:mv:pay:steps.a@2026-12-25:free`, 3,000 to Waiting [AA4, Y8], with `src` naming its field. January's is for the period holding 31 Jan, from 25 Jan to Tue 9 Feb, not ended at the move: it is not written (that would fix the period's end before it comes, T1); it waits in `pendingMove`, and that period's own question still comes [AB2, A7]. Both told at the copy's last save (no `t`).",
+      "why": "Pay on the 10th and the 25th; the move runs Wed 3 Feb 2027. December's answer is for the period holding 31 Dec: the last pay due on or before it is 25 Dec and the next 10 Jan, so it ended Sat 9 Jan, before the move: written, `pe:mv:pay:steps.a@2026-12-25:free`, 3,000 to Waiting [AA4, Y8], with `src` naming its field. January's is for the period holding 31 Jan, from 25 Jan to Tue 9 Feb, not ended at the move: it is not written (that would fix the period's end before it comes, T1); it waits in `pendingMove`, and that period's own question still comes [AB2, A7]. Both told at the copy's last save (no `t`). December's entry, written at the move, is kept marked `gone` (3 Feb) [AD5]; January's is offered at its period's own question [AD3].",
       "decisions": [
         "AB2",
         "AA4",
         "T1",
-        "A7"
+        "A7",
+        "AD5",
+        "AD3"
       ]
     },
     {
@@ -10141,13 +10315,32 @@
           }
         ],
         "unplaced": [],
-        "pendingMove": []
+        "pendingMove": [
+          {
+            "id": "mv:pend:ui.sweep.2026-12",
+            "field": "ui.sweep.2026-12",
+            "waits": "mv:pay:steps.a",
+            "to": "periodEnd",
+            "ym": "2026-12",
+            "place": "free",
+            "moves": [
+              {
+                "to": "waiting",
+                "a": 1500,
+                "toPlace": true
+              }
+            ],
+            "told": "2027-02-03T08:00:00.000+09:00",
+            "gone": "2027-02-03"
+          }
+        ]
       },
-      "why": "December's answer is the older `{ amt, id }`, 1,500 of Free to spend to goal `car`, but the plan has no goal `car` any more (removed, AA9). It moves to Waiting as \"to place\" [AC8]: the move carries `toPlace: true`, so the money stays out of safe to spend until the person places it [P1]. The period holding 31 Dec runs 25 Dec to Sun 24 Jan, ended before the move on 3 Feb: `pe:mv:pay:steps.a@2026-12-25:free`. Before AC8 the answer was listed and kept in the frozen text only.",
+      "why": "December's answer is the older `{ amt, id }`, 1,500 of Free to spend to goal `car`, but the plan has no goal `car` any more (removed, AA9). It moves to Waiting as \"to place\" [AC8]: the move carries `toPlace: true`, so the money stays out of safe to spend until the person places it [P1]. The period holding 31 Dec runs 25 Dec to Sun 24 Jan, ended before the move on 3 Feb: `pe:mv:pay:steps.a@2026-12-25:free`. Before AC8 the answer was listed and kept in the frozen text only. Written at the move, its entry is kept marked `gone` (3 Feb) [AD5].",
       "decisions": [
         "AC8",
         "AA3",
-        "P1"
+        "P1",
+        "AD5"
       ]
     },
     {
@@ -10640,13 +10833,24 @@
           }
         },
         "unplaced": [],
-        "pendingMove": []
+        "pendingMove": [
+          {
+            "id": "mv:pend:once.2027-01.bill:loan",
+            "field": "once.2027-01.bill:loan",
+            "waits": "mv:debt:car",
+            "to": "amounts",
+            "ym": "2027-01",
+            "a": 25000,
+            "gone": "2026-11-24"
+          }
+        ]
       },
-      "why": "The loan line is matched to the car loan, so its 20,000 is the loan's fixed minimum [Y4]. Its January one-month amount, 25,000, becomes that month's payment `amounts` on the car loan [AC7]: paid on the 27th, so on 2027-01-27, that month's whole payment [AC5]. Before AC7 it had no target and was listed.",
+      "why": "The loan line is matched to the car loan, so its 20,000 is the loan's fixed minimum [Y4]. Its January one-month amount, 25,000, becomes that month's payment `amounts` on the car loan [AC7]: paid on the 27th, so on 2027-01-27, that month's whole payment [AC5]. Before AC7 it had no target and was listed. Written at the move (the loan and its payment day answered there), its entry is kept marked `gone` (24 Nov), so a device that moved without the loan answer drops its waiting entry for it [AD5].",
       "decisions": [
         "AC7",
         "AC5",
-        "Y4"
+        "Y4",
+        "AD5"
       ]
     },
     {
@@ -11718,18 +11922,16 @@
           "mv:frozen:phn001"
         ],
         "pendingMoveIds": [
-          "mv:pend:once.2026-12.draw",
-          "mv:pend:receipts.r1",
-          "mv:pend:ui.sweep.2026-09",
           "mv:pend:ui.sweep.2026-11"
         ]
       },
-      "why": "The 38.31 copy (last saved Mon 23 Nov 20:00) opened the bank on Sun 20 Sep, has a bank figure of 23 Nov, a PayPay wallet, a card, a car loan with the loan line, a Food line, an Emergency fund with a December draw of 15,000, month-end answers for September (2,000 to the bank) and November (1,000 kept), and a receipt on the loan line. The phone moves on Tue 24 Nov at 09:00 and answers there: pay on the 25th, the loan line is the car loan, paid on the 27th. So it writes September's answer (its period, 25 Sep to 24 Oct, has ended), the draw (25 Dec) and the receipt as a repay on the car loan; November's answer waits (its period ends 24 Dec) [AB2]. On Wed 25 Nov at 08:00 the phone is used: the 23 Nov bank figure corrected to 185,000, September's answer changed to 1,500, Food renamed Groceries, the card's payment day 26, the loan's rate 3%, the wallet renamed, the draw lowered to 12,000 and the repay's note typed. On Tue 1 Dec at 21:00 the desktop moves the same copy and answers only the currency. The desktop moved offline, so the copies meet in the merge. Each moved record carries the copy's last save (23 Nov 20:00) on both devices [AB1]; each phone edit carries 25 Nov 08:00 and wins [D4]: the check 185,000, Groceries, payment day 26, rate 3, the wallet's name. September's answer, the draw and the repay exist only on the phone (the desktop does not know the pay day or the loan), so they are the phone's: 1,500 to Waiting, 12,000, \"November loan\" on the car loan. The two frozen texts are both kept. `pendingMove` is the union: November's answer (waiting on both, one record) and, from the desktop, the draw, the receipt and September's answer, which the phone had already written at its own move (open question mv-q54: what a device does when it applies one of those).",
+      "why": "The 38.31 copy (last saved Mon 23 Nov 20:00) opened the bank on Sun 20 Sep, has a bank figure of 23 Nov, a PayPay wallet, a card, a car loan with the loan line, a Food line, an Emergency fund with a December draw of 15,000, month-end answers for September (2,000 to the bank) and November (1,000 kept), and a receipt on the loan line. The phone moves on Tue 24 Nov at 09:00 and answers there: pay on the 25th, the loan line is the car loan, paid on the 27th. So it writes September's answer (its period, 25 Sep to 24 Oct, has ended), the draw (25 Dec) and the receipt as a repay on the car loan; November's answer waits (its period ends 24 Dec) [AB2]. On Wed 25 Nov at 08:00 the phone is used: the 23 Nov bank figure corrected to 185,000, September's answer changed to 1,500, Food renamed Groceries, the card's payment day 26, the loan's rate 3%, the wallet renamed, the draw lowered to 12,000 and the repay's note typed. On Tue 1 Dec at 21:00 the desktop moves the same copy and answers only the currency. The desktop moved offline, so the copies meet in the merge. Each moved record carries the copy's last save (23 Nov 20:00) on both devices [AB1]; each phone edit carries 25 Nov 08:00 and wins [D4]: the check 185,000, Groceries, payment day 26, rate 3, the wallet's name. September's answer, the draw and the repay exist only on the phone (the desktop does not know the pay day or the loan), so they are the phone's: 1,500 to Waiting, 12,000, \"November loan\" on the car loan. The two frozen texts are both kept. `pendingMove`: November's answer waits on both (one record). The phone wrote the draw, the receipt and September's answer at its own move, so it kept their entries marked `gone` (24 Nov) [AD5]; the desktop holds them waiting. Both carry the copy's last save as `at` (23 Nov 20:00), and on the same `at` the copy with `gone` wins [H6], so they are gone in the merge and the desktop never applies them. Before AD5 they came back waiting (mv-q54).",
       "decisions": [
         "AB1",
         "AB rows",
         "D4",
-        "AB2"
+        "AB2",
+        "AD5"
       ]
     },
     {
@@ -12133,44 +12335,950 @@
           "mv:frozen:phn001"
         ],
         "pendingMoveIds": [
-          "mv:pend:once.2026-12.draw",
-          "mv:pend:receipts.r1",
-          "mv:pend:ui.sweep.2026-09",
           "mv:pend:ui.sweep.2026-11"
         ]
       },
-      "why": "The 38.31 copy (last saved Mon 23 Nov 20:00) opened the bank on Sun 20 Sep, has a bank figure of 23 Nov, a PayPay wallet, a card, a car loan with the loan line, a Food line, an Emergency fund with a December draw of 15,000, month-end answers for September (2,000 to the bank) and November (1,000 kept), and a receipt on the loan line. The phone moves on Tue 24 Nov at 09:00 and answers there: pay on the 25th, the loan line is the car loan, paid on the 27th. So it writes September's answer (its period, 25 Sep to 24 Oct, has ended), the draw (25 Dec) and the receipt as a repay on the car loan; November's answer waits (its period ends 24 Dec) [AB2]. On Wed 25 Nov at 08:00 the phone is used: the 23 Nov bank figure corrected to 185,000, September's answer changed to 1,500, Food renamed Groceries, the card's payment day 26, the loan's rate 3%, the wallet renamed, the draw lowered to 12,000 and the repay's note typed. On Tue 1 Dec at 21:00 the desktop moves the same copy and answers only the currency. The desktop finds the phone's moved copy in the cloud, takes it and adds only the ids it lacks [AB1]: every edited record is the cloud's (185,000, 1,500 to Waiting, Groceries, payment day 26, rate 3, the wallet's name, 12,000, \"November loan\"). The ids it lacks are its frozen text, `mv:frozen:dsk001`, and three `pendingMove` entries the phone never held because it wrote them at its move: the draw, the receipt and September's answer (open question mv-q54). November's answer is in the cloud already.",
+      "why": "The 38.31 copy (last saved Mon 23 Nov 20:00) opened the bank on Sun 20 Sep, has a bank figure of 23 Nov, a PayPay wallet, a card, a car loan with the loan line, a Food line, an Emergency fund with a December draw of 15,000, month-end answers for September (2,000 to the bank) and November (1,000 kept), and a receipt on the loan line. The phone moves on Tue 24 Nov at 09:00 and answers there: pay on the 25th, the loan line is the car loan, paid on the 27th. So it writes September's answer (its period, 25 Sep to 24 Oct, has ended), the draw (25 Dec) and the receipt as a repay on the car loan; November's answer waits (its period ends 24 Dec) [AB2]. On Wed 25 Nov at 08:00 the phone is used: the 23 Nov bank figure corrected to 185,000, September's answer changed to 1,500, Food renamed Groceries, the card's payment day 26, the loan's rate 3%, the wallet renamed, the draw lowered to 12,000 and the repay's note typed. On Tue 1 Dec at 21:00 the desktop moves the same copy and answers only the currency. The desktop finds the phone's moved copy in the cloud, takes it and adds only the ids it lacks [AB1]: every edited record is the cloud's (185,000, 1,500 to Waiting, Groceries, payment day 26, rate 3, the wallet's name, 12,000, \"November loan\"). The only id it lacks is its frozen text, `mv:frozen:dsk001`: the phone kept the entries for the draw, the receipt and September's answer, which it wrote at its own move, marked `gone` [AD5], so the cloud has those ids and the desktop's waiting copies of them are not added. November's answer is in the cloud already, still waiting. Before AD5 the three came back as waiting entries (mv-q54).",
       "decisions": [
         "AB1",
-        "AB rows"
+        "AB rows",
+        "AD5"
+      ]
+    },
+    {
+      "id": "mv-100",
+      "question": "move",
+      "title": "AD1: a 38.28 copy (rev a count) with a minimum and no ui.minAuto: automatic, dropped; the minimum is asked",
+      "input": {
+        "copy": {
+          "v": 1,
+          "ui": {
+            "cur": "¥",
+            "preset": "¥",
+            "done": {
+              "pay": true,
+              "bills": true,
+              "goals": true
+            }
+          },
+          "plan": {
+            "lines": [],
+            "goals": []
+          },
+          "rev": 57,
+          "cfg": {
+            "minBank": 25000
+          }
+        },
+        "idb": {
+          "t": "2026-11-22T21:00:00.000+09:00"
+        },
+        "show": [
+          "home",
+          "asks"
+        ]
+      },
+      "expected": {
+        "home": {
+          "curs": [
+            {
+              "from": "2026-11-22",
+              "cur": "JPY"
+            }
+          ],
+          "minBank": null,
+          "mainBank": null
+        },
+        "asks": [
+          {
+            "q": "currency",
+            "answer": "JPY"
+          },
+          {
+            "q": "bankFigure"
+          },
+          {
+            "q": "minBank"
+          }
+        ]
+      },
+      "why": "`rev` 57 is a count, so the copy was saved by a build older than 38.31 (38.28 or a 25.0 build); those builds filled in cfg.minBank themselves, a tenth of pay, without writing ui.minAuto. A minimum saved by a build before 20 Nov with no ui.minAuto is treated as automatic and dropped (Mako: no minimum without the person choosing it) [AD1]: `home.minBank` is null, and the minimum is asked anyway, \"Keep at least ___ in your bank?\" with the box empty [AD1, AB, MAKO M1]. The copy's last save is the second copy's `t`, Sun 22 Nov (the count is not a time), so the home currency is from 22 Nov [Y13]. \"¥\" asks the currency [O]; no bank figure asks one [Y19].",
+      "decisions": [
+        "AD1",
+        "AB",
+        "MAKO M1",
+        "Y13"
+      ]
+    },
+    {
+      "id": "mv-101",
+      "question": "move",
+      "title": "AD1: an early 38.31 copy (last saved before 20 Nov) with a minimum and no ui.minAuto: dropped",
+      "input": {
+        "copy": {
+          "v": 1,
+          "ui": {
+            "cur": "¥",
+            "preset": "¥",
+            "done": {
+              "pay": true,
+              "bills": true,
+              "goals": true
+            }
+          },
+          "plan": {
+            "lines": [],
+            "goals": []
+          },
+          "rev": 1794963600000,
+          "cfg": {
+            "minBank": 30000
+          }
+        },
+        "idb": null,
+        "show": [
+          "home",
+          "asks"
+        ]
+      },
+      "expected": {
+        "home": {
+          "curs": [
+            {
+              "from": "2026-11-18",
+              "cur": "JPY"
+            }
+          ],
+          "minBank": null,
+          "mainBank": null
+        },
+        "asks": [
+          {
+            "q": "currency",
+            "answer": "JPY"
+          },
+          {
+            "q": "bankFigure"
+          },
+          {
+            "q": "minBank"
+          }
+        ]
+      },
+      "why": "`rev` 1,794,963,600,000 is a time: Wed 18 Nov 2026 10:00 +09:00 (20,775 days x 86,400,000 = 1,794,960,000,000, plus 1 hour = 3,600,000; 10:00 +09:00 is 01:00 UTC). There is no second copy, so that is the copy's last save [Y13, AA10]: saved by a 38.31 build before 20 Nov, which did not write ui.minAuto. Its 30,000 with no ui.minAuto is treated as automatic and dropped, and the minimum is asked [AD1].",
+      "decisions": [
+        "AD1",
+        "Y13",
+        "AA10"
+      ]
+    },
+    {
+      "id": "mv-102",
+      "question": "move",
+      "title": "AD1: a 38.31 copy last saved from 20 Nov on, with a minimum and no ui.minAuto: typed, kept, not asked",
+      "input": {
+        "copy": {
+          "v": 1,
+          "ui": {
+            "cur": "¥",
+            "preset": "¥",
+            "done": {
+              "pay": true,
+              "bills": true,
+              "goals": true
+            }
+          },
+          "plan": {
+            "lines": [],
+            "goals": []
+          },
+          "rev": 1795309200000,
+          "cfg": {
+            "minBank": 30000
+          }
+        },
+        "idb": null,
+        "show": [
+          "home",
+          "asks"
+        ]
+      },
+      "expected": {
+        "home": {
+          "curs": [
+            {
+              "from": "2026-11-22",
+              "cur": "JPY"
+            }
+          ],
+          "minBank": {
+            "a": 30000,
+            "cur": "JPY"
+          },
+          "mainBank": null
+        },
+        "asks": [
+          {
+            "q": "currency",
+            "answer": "JPY"
+          },
+          {
+            "q": "bankFigure"
+          }
+        ]
+      },
+      "why": "`rev` 1,795,309,200,000 is Sun 22 Nov 2026 10:00 +09:00 (1,794,963,600,000 + 4 days x 86,400,000 = 345,600,000). A build from 20 Nov on writes ui.minAuto with a minimum it fills in and deletes it when the person types one, so no ui.minAuto here means typed: kept as `home.minBank` 30,000 [AB, MAKO M1], and the minimum is not asked again.",
+      "decisions": [
+        "AD1",
+        "AB",
+        "MAKO M1"
+      ]
+    },
+    {
+      "id": "mv-103",
+      "question": "move",
+      "title": "AD2: the loan line dropped: its one-month amount is dropped and listed in the move summary",
+      "input": {
+        "copy": {
+          "v": 1,
+          "cfg": {
+            "bankStart": 200000
+          },
+          "ui": {
+            "cur": "¥",
+            "preset": "¥",
+            "done": {
+              "pay": true,
+              "bills": true,
+              "goals": true
+            }
+          },
+          "plan": {
+            "lines": [
+              {
+                "id": "loan",
+                "key": "bill:loan",
+                "jar": "nec",
+                "name": "Loan or debt payment",
+                "def": 20000
+              }
+            ],
+            "goals": [],
+            "debts": [
+              {
+                "id": "car",
+                "name": "Car loan",
+                "kind": "loan",
+                "balance": 300000,
+                "apr": 0,
+                "min": 20000,
+                "extra": 0
+              }
+            ]
+          },
+          "receipts": [],
+          "once": {
+            "2027-01": {
+              "bill:loan": 25000
+            }
+          }
+        },
+        "answers": {
+          "cur": "JPY",
+          "loanLine": "drop",
+          "debtDay": {
+            "car": 27
+          }
+        },
+        "pick": [
+          [
+            "accounts",
+            "mv:debt:car",
+            "amounts"
+          ],
+          [
+            "accounts",
+            "mv:debt:car",
+            "minRule"
+          ]
+        ],
+        "show": [
+          "zero",
+          "unplaced",
+          "pendingMove"
+        ]
+      },
+      "expected": {
+        "pick": {
+          "accounts mv:debt:car amounts": null,
+          "accounts mv:debt:car minRule": {
+            "fixed": 20000
+          }
+        },
+        "zero": [
+          "once.2027-01.bill:loan"
+        ],
+        "unplaced": [],
+        "pendingMove": [
+          {
+            "id": "mv:pend:once.2027-01.bill:loan",
+            "field": "once.2027-01.bill:loan",
+            "waits": "loanLine",
+            "to": "amounts",
+            "ym": "2027-01",
+            "a": 25000,
+            "gone": "2026-11-24"
+          }
+        ]
+      },
+      "why": "The person drops the loan line [E6, Y4], so it has no record and the car loan keeps its own minimum, 20,000. The line's January one-month amount, 25,000, has nowhere to go: it is dropped and listed in the move summary (`zero`, with what else the move did not move) [AD2], not put on the car loan (that would change a payment the person did not tie to the line) and not left as a field with no target. Before AD2 it was listed in `unplaced` (mv-q51). The loan question was answered at the move, so the entry a device without that answer would hold (waiting for the loan question) is kept marked `gone` (24 Nov) [AD5].",
+      "decisions": [
+        "AD2",
+        "E6",
+        "Y4",
+        "Y25",
+        "AD5"
+      ]
+    },
+    {
+      "id": "mv-104",
+      "question": "move",
+      "title": "AD4: a moved bill answered twice a month is per month, spread over its payments; a bill on one day a month stays as it was",
+      "input": {
+        "copy": {
+          "v": 1,
+          "cfg": {
+            "bankStart": 200000,
+            "bankAt": "2026-11-24"
+          },
+          "ui": {
+            "cur": "¥",
+            "preset": "¥",
+            "done": {
+              "pay": true,
+              "bills": true,
+              "goals": true
+            }
+          },
+          "plan": {
+            "lines": [
+              {
+                "id": "rent",
+                "key": "bill:rent",
+                "jar": "nec",
+                "name": "Rent",
+                "def": 80000
+              },
+              {
+                "id": "phone",
+                "key": "bill:phone",
+                "jar": "nec",
+                "name": "Phone",
+                "def": 6000
+              }
+            ],
+            "goals": []
+          },
+          "once": {
+            "2027-01": {
+              "bill:rent": 90000,
+              "bill:phone": 7000
+            }
+          }
+        },
+        "answers": {
+          "cur": "JPY",
+          "billDay": {
+            "rent": {
+              "every": "month",
+              "days": [
+                10,
+                25
+              ]
+            },
+            "phone": {
+              "every": "month",
+              "days": [
+                5
+              ]
+            }
+          }
+        },
+        "pick": [
+          [
+            "schedules",
+            "mv:bill:rent",
+            "per"
+          ],
+          [
+            "schedules",
+            "mv:bill:rent",
+            "amounts"
+          ],
+          [
+            "schedules",
+            "mv:bill:phone",
+            "per"
+          ],
+          [
+            "schedules",
+            "mv:bill:phone",
+            "amounts"
+          ]
+        ],
+        "show": [
+          "payAmounts"
+        ],
+        "payAt": {
+          "mv:bill:rent": [
+            "2026-12-10",
+            "2026-12-25",
+            "2027-01-10",
+            "2027-01-25",
+            "2027-02-10"
+          ],
+          "mv:bill:phone": [
+            "2026-12-05",
+            "2027-01-05"
+          ]
+        }
+      },
+      "expected": {
+        "pick": {
+          "schedules mv:bill:rent per": "month",
+          "schedules mv:bill:rent amounts": {
+            "2027-01-10": 45000,
+            "2027-01-25": 45000
+          },
+          "schedules mv:bill:phone per": null,
+          "schedules mv:bill:phone amounts": {
+            "2027-01-05": 7000
+          }
+        },
+        "payAmounts": {
+          "mv:bill:rent": {
+            "2026-12-10": 40000,
+            "2026-12-25": 40000,
+            "2027-01-10": 45000,
+            "2027-01-25": 45000,
+            "2027-02-10": 40000
+          },
+          "mv:bill:phone": {
+            "2026-12-05": 6000,
+            "2027-01-05": 7000
+          }
+        }
+      },
+      "why": "38.31's rent of 80,000 is a monthly total. Answered as paid on the 10th and the 25th, the moved bill is `per: 'month'` like pay [AD4, AB2]: each payment is 80,000 x 12 / 24 payments a year = 960,000 / 24 = 40,000 (no leftover). January's one-month amount, 90,000, replaces that month's total, spread over its two payments: 90,000 / 2 = 45,000 on 10 Jan and 45,000 on 25 Jan [AD4, AB2]. The phone bill is answered once a month (the 5th), so it keeps each occurrence's amount: 6,000, and its January 7,000 on its one January payment [Y7]; `per` is not written. Before AD4 the rent's 80,000 was each payment's amount (160,000 a month) and its 90,000 all on 10 Jan.",
+      "decisions": [
+        "AD4",
+        "AB2",
+        "Y7",
+        "AA4"
+      ]
+    },
+    {
+      "id": "mv-105",
+      "question": "move",
+      "title": "AD4: a moved bill answered every two weeks: per month, a one-month amount spread over that month's three payments",
+      "input": {
+        "copy": {
+          "v": 1,
+          "cfg": {
+            "bankStart": 200000,
+            "bankAt": "2026-11-24"
+          },
+          "ui": {
+            "cur": "¥",
+            "preset": "¥",
+            "done": {
+              "pay": true,
+              "bills": true,
+              "goals": true
+            }
+          },
+          "plan": {
+            "lines": [
+              {
+                "id": "net",
+                "key": "bill:net",
+                "jar": "nec",
+                "name": "Internet",
+                "def": 13000
+              }
+            ],
+            "goals": []
+          },
+          "once": {
+            "2027-04": {
+              "bill:net": 10000
+            }
+          }
+        },
+        "answers": {
+          "cur": "JPY",
+          "billDay": {
+            "net": {
+              "every": "weeks",
+              "n": 2,
+              "from": "2026-12-11"
+            }
+          }
+        },
+        "pick": [
+          [
+            "schedules",
+            "mv:bill:net",
+            "per"
+          ],
+          [
+            "schedules",
+            "mv:bill:net",
+            "amounts"
+          ]
+        ],
+        "show": [
+          "payAmounts"
+        ],
+        "payAt": {
+          "mv:bill:net": [
+            "2027-01-08",
+            "2027-01-22",
+            "2027-04-02",
+            "2027-04-16",
+            "2027-04-30"
+          ]
+        }
+      },
+      "expected": {
+        "pick": {
+          "schedules mv:bill:net per": "month",
+          "schedules mv:bill:net amounts": {
+            "2027-04-02": 3334,
+            "2027-04-16": 3333,
+            "2027-04-30": 3333
+          }
+        },
+        "payAmounts": {
+          "mv:bill:net": {
+            "2027-01-08": 6000,
+            "2027-01-22": 6000,
+            "2027-04-02": 3334,
+            "2027-04-16": 3333,
+            "2027-04-30": 3333
+          }
+        }
+      },
+      "why": "Every two weeks from Fri 11 Dec 2026: in 2027 the payments are 8 Jan and every 14 days after, the last 8 Jan + 25 x 14 = 24 Dec, so 26 a year. Per month like pay [AD4]: 13,000 x 12 / 26 = 156,000 / 26 = 6,000 each. April 2027 has three: 2, 16 and 30 Apr (8 Jan + 6 x 14 = 2 Apr). April's one-month amount, 10,000, is that month's total, spread: 10,000 / 3 = 3,333 each with 1 yen over, which goes to the earliest [AB2, confirmed AD]: 3,334 + 3,333 + 3,333 = 10,000.",
+      "decisions": [
+        "AD4",
+        "AB2",
+        "AA4"
+      ]
+    },
+    {
+      "id": "mv-106",
+      "question": "apply_waiting",
+      "title": "AD5: a waiting entry is skipped when the record it would change is newer than the entry (edited since)",
+      "input": {
+        "copy": {
+          "schedules": [
+            {
+              "id": "mv:pay:steps.a",
+              "kind": "income",
+              "name": "Salary",
+              "cur": "JPY",
+              "acct": "mv:acct:cfg",
+              "startsPeriod": true,
+              "per": "month",
+              "steps": [
+                {
+                  "from": "2026-09-20",
+                  "amount": 250000
+                }
+              ],
+              "told": "2026-11-23T20:00:00.000+09:00",
+              "at": "2026-11-23T20:00:00.000+09:00",
+              "by": "dsk001"
+            }
+          ],
+          "accounts": [],
+          "events": [
+            {
+              "id": "pe:mv:pay:steps.a@2026-09-25:free",
+              "k": "periodEnd",
+              "date": "2026-10-24",
+              "place": "free",
+              "moves": [
+                {
+                  "to": "waiting",
+                  "a": 1500
+                }
+              ],
+              "told": "2026-11-23T20:00:00.000+09:00",
+              "src": {
+                "type": "move",
+                "id": "ui.sweep.2026-09"
+              },
+              "at": "2026-11-25T08:00:00.000+09:00",
+              "by": "phn001"
+            }
+          ],
+          "plan": {
+            "shares": [],
+            "budgets": []
+          },
+          "pendingMove": [
+            {
+              "id": "mv:pend:ui.sweep.2026-09",
+              "field": "ui.sweep.2026-09",
+              "waits": "mv:pay:steps.a",
+              "to": "periodEnd",
+              "ym": "2026-09",
+              "place": "free",
+              "moves": [
+                {
+                  "to": "waiting",
+                  "a": 2000
+                }
+              ],
+              "told": "2026-11-23T20:00:00.000+09:00",
+              "at": "2026-11-23T20:00:00.000+09:00",
+              "by": "dsk001"
+            }
+          ]
+        },
+        "rules": {
+          "mv:pay:steps.a": {
+            "every": "month",
+            "days": [
+              25
+            ]
+          }
+        },
+        "moveDay": "2026-12-01",
+        "answeredAt": "2026-12-01T21:05:00.000+09:00",
+        "by": "dsk001",
+        "show": [
+          "events",
+          "pendingMove"
+        ]
+      },
+      "expected": {
+        "events": [
+          {
+            "id": "pe:mv:pay:steps.a@2026-09-25:free",
+            "k": "periodEnd",
+            "date": "2026-10-24",
+            "place": "free",
+            "moves": [
+              {
+                "to": "waiting",
+                "a": 1500
+              }
+            ],
+            "told": "2026-11-23T20:00:00.000+09:00",
+            "src": {
+              "type": "move",
+              "id": "ui.sweep.2026-09"
+            },
+            "at": "2026-11-25T08:00:00.000+09:00",
+            "by": "phn001"
+          }
+        ],
+        "pendingMove": [
+          {
+            "id": "mv:pend:ui.sweep.2026-09",
+            "field": "ui.sweep.2026-09",
+            "waits": "mv:pay:steps.a",
+            "to": "periodEnd",
+            "ym": "2026-09",
+            "place": "free",
+            "moves": [
+              {
+                "to": "waiting",
+                "a": 2000
+              }
+            ],
+            "told": "2026-11-23T20:00:00.000+09:00",
+            "at": "2026-12-01T21:05:00.000+09:00",
+            "by": "dsk001",
+            "gone": "2026-12-01"
+          }
+        ]
+      },
+      "why": "The desktop's copy holds September's month-end answer (2,000 to the bank) waiting in `pendingMove`, `at` the copy's last save, Mon 23 Nov 20:00; on Tue 1 Dec at 21:05 the person answers the pay day there: the 25th. September's answer is for the period holding 30 Sep, 25 Sep to Sat 24 Oct, which ended before the move (1 Dec), so the entry's day is known [AA4, AB2]: it would write `pe:mv:pay:steps.a@2026-09-25:free`, 2,000 to Waiting, dated 24 Oct [Y8]. That record is already in the copy, edited on the phone on Wed 25 Nov 08:00 (1,500), newer than the entry's 23 Nov 20:00, so the entry is skipped [AD5]: the 1,500 stays, `at` and `by` the phone's. The entry is done: kept marked `gone` (the answer's day, 1 Dec) with the answer's `at` and `by`, so other devices drop it too [AB rows].",
+      "decisions": [
+        "AD5",
+        "AB1",
+        "AB2",
+        "Y8"
+      ]
+    },
+    {
+      "id": "mv-107",
+      "question": "apply_waiting",
+      "title": "AD5: a waiting entry is applied when the record it would change has an older `at` than the entry",
+      "input": {
+        "copy": {
+          "schedules": [
+            {
+              "id": "mv:pay:steps.a",
+              "kind": "income",
+              "name": "Salary",
+              "cur": "JPY",
+              "acct": "mv:acct:cfg",
+              "startsPeriod": true,
+              "per": "month",
+              "steps": [
+                {
+                  "from": "2026-09-20",
+                  "amount": 250000
+                }
+              ],
+              "told": "2026-11-23T20:00:00.000+09:00",
+              "at": "2026-11-23T20:00:00.000+09:00",
+              "by": "dsk001"
+            }
+          ],
+          "accounts": [],
+          "events": [
+            {
+              "id": "pe:mv:pay:steps.a@2026-09-25:free",
+              "k": "periodEnd",
+              "date": "2026-10-24",
+              "place": "free",
+              "moves": [
+                {
+                  "to": "waiting",
+                  "a": 1000
+                }
+              ],
+              "told": "2026-11-23T09:00:00.000+09:00",
+              "src": {
+                "type": "move",
+                "id": "ui.sweep.2026-09"
+              },
+              "at": "2026-11-23T09:00:00.000+09:00",
+              "by": "phn001"
+            }
+          ],
+          "plan": {
+            "shares": [],
+            "budgets": []
+          },
+          "pendingMove": [
+            {
+              "id": "mv:pend:ui.sweep.2026-09",
+              "field": "ui.sweep.2026-09",
+              "waits": "mv:pay:steps.a",
+              "to": "periodEnd",
+              "ym": "2026-09",
+              "place": "free",
+              "moves": [
+                {
+                  "to": "waiting",
+                  "a": 2000
+                }
+              ],
+              "told": "2026-11-23T20:00:00.000+09:00",
+              "at": "2026-11-23T20:00:00.000+09:00",
+              "by": "dsk001"
+            }
+          ]
+        },
+        "rules": {
+          "mv:pay:steps.a": {
+            "every": "month",
+            "days": [
+              25
+            ]
+          }
+        },
+        "moveDay": "2026-12-01",
+        "answeredAt": "2026-12-01T21:05:00.000+09:00",
+        "by": "dsk001",
+        "show": [
+          "events",
+          "pendingMove"
+        ]
+      },
+      "expected": {
+        "events": [
+          {
+            "id": "pe:mv:pay:steps.a@2026-09-25:free",
+            "k": "periodEnd",
+            "date": "2026-10-24",
+            "place": "free",
+            "moves": [
+              {
+                "to": "waiting",
+                "a": 2000
+              }
+            ],
+            "told": "2026-11-23T09:00:00.000+09:00",
+            "src": {
+              "type": "move",
+              "id": "ui.sweep.2026-09"
+            },
+            "at": "2026-11-23T20:00:00.000+09:00",
+            "by": "dsk001"
+          }
+        ],
+        "pendingMove": [
+          {
+            "id": "mv:pend:ui.sweep.2026-09",
+            "field": "ui.sweep.2026-09",
+            "waits": "mv:pay:steps.a",
+            "to": "periodEnd",
+            "ym": "2026-09",
+            "place": "free",
+            "moves": [
+              {
+                "to": "waiting",
+                "a": 2000
+              }
+            ],
+            "told": "2026-11-23T20:00:00.000+09:00",
+            "at": "2026-12-01T21:05:00.000+09:00",
+            "by": "dsk001",
+            "gone": "2026-12-01"
+          }
+        ]
+      },
+      "why": "The desktop's copy holds September's month-end answer (2,000 to the bank) waiting in `pendingMove`, `at` the copy's last save, Mon 23 Nov 20:00; on Tue 1 Dec at 21:05 the person answers the pay day there: the 25th. September's answer is for the period holding 30 Sep, 25 Sep to Sat 24 Oct, which ended before the move (1 Dec), so the entry's day is known [AA4, AB2]: it would write `pe:mv:pay:steps.a@2026-09-25:free`, 2,000 to Waiting, dated 24 Oct [Y8]. The copy holds that record from an older 38.31 copy, `at` Mon 23 Nov 09:00, older than the entry's 20:00, so the entry is applied [AD5]: 2,000 to Waiting, `at` the entry's (a moved record carries the copy's last save, AB1), `by` the desktop; `told` stays the first one the record had, 23 Nov 09:00 [H1]. The entry is kept marked `gone` with the answer's day and `at`.",
+      "decisions": [
+        "AD5",
+        "AB1",
+        "AB2",
+        "Y8"
+      ]
+    },
+    {
+      "id": "mv-108",
+      "question": "apply_waiting",
+      "title": "AD5: a waiting entry with no record yet is written",
+      "input": {
+        "copy": {
+          "schedules": [
+            {
+              "id": "mv:pay:steps.a",
+              "kind": "income",
+              "name": "Salary",
+              "cur": "JPY",
+              "acct": "mv:acct:cfg",
+              "startsPeriod": true,
+              "per": "month",
+              "steps": [
+                {
+                  "from": "2026-09-20",
+                  "amount": 250000
+                }
+              ],
+              "told": "2026-11-23T20:00:00.000+09:00",
+              "at": "2026-11-23T20:00:00.000+09:00",
+              "by": "dsk001"
+            }
+          ],
+          "accounts": [],
+          "events": [],
+          "plan": {
+            "shares": [],
+            "budgets": []
+          },
+          "pendingMove": [
+            {
+              "id": "mv:pend:ui.sweep.2026-09",
+              "field": "ui.sweep.2026-09",
+              "waits": "mv:pay:steps.a",
+              "to": "periodEnd",
+              "ym": "2026-09",
+              "place": "free",
+              "moves": [
+                {
+                  "to": "waiting",
+                  "a": 2000
+                }
+              ],
+              "told": "2026-11-23T20:00:00.000+09:00",
+              "at": "2026-11-23T20:00:00.000+09:00",
+              "by": "dsk001"
+            }
+          ]
+        },
+        "rules": {
+          "mv:pay:steps.a": {
+            "every": "month",
+            "days": [
+              25
+            ]
+          }
+        },
+        "moveDay": "2026-12-01",
+        "answeredAt": "2026-12-01T21:05:00.000+09:00",
+        "by": "dsk001",
+        "show": [
+          "events",
+          "pendingMove"
+        ]
+      },
+      "expected": {
+        "events": [
+          {
+            "id": "pe:mv:pay:steps.a@2026-09-25:free",
+            "k": "periodEnd",
+            "date": "2026-10-24",
+            "place": "free",
+            "moves": [
+              {
+                "to": "waiting",
+                "a": 2000
+              }
+            ],
+            "told": "2026-11-23T20:00:00.000+09:00",
+            "src": {
+              "type": "move",
+              "id": "ui.sweep.2026-09"
+            },
+            "at": "2026-11-23T20:00:00.000+09:00",
+            "by": "dsk001"
+          }
+        ],
+        "pendingMove": [
+          {
+            "id": "mv:pend:ui.sweep.2026-09",
+            "field": "ui.sweep.2026-09",
+            "waits": "mv:pay:steps.a",
+            "to": "periodEnd",
+            "ym": "2026-09",
+            "place": "free",
+            "moves": [
+              {
+                "to": "waiting",
+                "a": 2000
+              }
+            ],
+            "told": "2026-11-23T20:00:00.000+09:00",
+            "at": "2026-12-01T21:05:00.000+09:00",
+            "by": "dsk001",
+            "gone": "2026-12-01"
+          }
+        ]
+      },
+      "why": "The desktop's copy holds September's month-end answer (2,000 to the bank) waiting in `pendingMove`, `at` the copy's last save, Mon 23 Nov 20:00; on Tue 1 Dec at 21:05 the person answers the pay day there: the 25th. September's answer is for the period holding 30 Sep, 25 Sep to Sat 24 Oct, which ended before the move (1 Dec), so the entry's day is known [AA4, AB2]: it would write `pe:mv:pay:steps.a@2026-09-25:free`, 2,000 to Waiting, dated 24 Oct [Y8]. No such record is in the copy, so the entry is written: `pe:mv:pay:steps.a@2026-09-25:free`, 2,000 to Waiting, told and `at` the entry's own (the copy's last save, 23 Nov 20:00) [AB1, AD5], `by` the desktop, with `src` naming its field so the period end can cap it [AB watch]. The entry is kept marked `gone` (1 Dec, the answer's `at`).",
+      "decisions": [
+        "AD5",
+        "AB1",
+        "AB2",
+        "Y8"
       ]
     }
   ],
   "open": [
     {
-      "id": "mv-q50",
-      "question": "AB keeps a 38.31 minimum only when the person typed it (`ui.minAuto` false). Builds before 20 Nov 2026 (38.28, the 25.0 builds and early 38.31 copies) filled in `cfg.minBank` themselves, a tenth of pay, without writing `ui.minAuto`. In such a copy, is a minimum with no `ui.minAuto` typed (kept) or automatic (dropped)?",
-      "ref_does": "Keeps it: no `ui.minAuto` reads as typed (mv-09). No new case depends on it."
-    },
-    {
-      "id": "mv-q51",
-      "question": "AC7 puts `once[ym].bill:loan` on the matched loan, \"else on the bill schedule\". The loan line never becomes a bill schedule (Y4, E6): matched or made from the line it is a loan account, and dropped (or 0 every month) it has no record. Where does it go when the person drops the loan line?",
-      "ref_does": "On the loan the line is (matched or made from the line, mv-94); while the loan question is not answered it waits in `pendingMove`; dropped, it is listed (kept in the frozen text)."
-    },
-    {
-      "id": "mv-q52",
-      "question": "AB2: a month-end answer for a period not ended at the move waits in `pendingMove`, and that period's own question still comes. When the question comes, what happens to the waiting answer: offered as the answer, applied with the cap (AB watch), or dropped?",
-      "ref_does": "It keeps waiting (mv-52, mv-89); nothing writes it."
-    },
-    {
-      "id": "mv-q53",
-      "question": "AB2 makes moved pay `per: 'month'`. A moved bill's 38.31 amount is a monthly total too. When its day is answered with a rhythm other than once a month (twice a month, every two weeks), is it `per: 'month'` as well, or each occurrence's amount?",
-      "ref_does": "Each occurrence's amount (unchanged; its one-month amount is `amounts` on that month's first occurrence, Y7). No case answers a bill with such a rhythm."
-    },
-    {
-      "id": "mv-q54",
-      "question": "AB1 and AB rows: a device that writes a one-month amount or a month-end answer at its own move (its day answered there) never holds a `pendingMove` entry for it. A second device that moves the same copy without that answer holds the entry, and the cloud takes it as an id it lacks (mv-98, mv-99). When a device later applies such an entry and the record (a draw, a `pe:` answer, a moved receipt, an `amounts` or `once` key) is already there, edited since: does applying overwrite it, or skip it because it is there (as AB1's \"never overwrites\")? Or should the first device keep a `gone` entry for everything it wrote at its move?",
-      "ref_does": "Keeps the entries (mv-98, mv-99); the reference applies waiting entries only inside the move and `move_answer`, never to a merged copy. A record written from an entry is a moved record stamped at the copy's last save, so an edit made after it wins at a merge, but a device writing into its own copy would replace it."
+      "id": "mv-q55",
+      "question": "AD1: a minimum saved by a build before 20 Nov with no `ui.minAuto` is automatic. The copy says nothing of the build that set the minimum, only of the last save: the reference reads a `rev` that is a count (38.28, the 25.0 builds) or a last save before 20 Nov as such a build. A copy last saved from 20 Nov on by 38.31, whose minimum an earlier build filled in (38.31 never adds `ui.minAuto` to a minimum already there), has no `ui.minAuto` either, like a typed one. Is it typed (kept) or automatic (dropped)?",
+      "ref_does": "Kept: read as typed (mv-09, mv-102). No case has a minimum known to come from an earlier build in such a copy."
     }
   ]
 }
