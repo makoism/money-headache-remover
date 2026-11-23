@@ -135,7 +135,10 @@ async function warns(bk, day) {
     const r = T.L.lookahead(bk, '2026-11-27'), over = r.safeToSpend.freeOver;
     ck('F: the engine says Free to spend is over', over > 0 && r.period.free.left === -over, JSON.stringify(r.safeToSpend));
     const { cap, errs } = await warns(bk, '2026-11-27');
-    ck('F: the sum on Home names the overspend', cap && cap.includes(`(Free to spend is ¥${over.toLocaleString("en")} over this period) = ¥0`), cap);
+    ck('F: the sum on Home names the overspend', cap && cap.includes(`over this period) = ¥0`), cap);
+    /* [BM3] each part names its own amount: the cap takes all of what the accounts can spare, so it says "all of it" */
+    const spare = r.safeToSpend.whyParts[0].amount.toLocaleString('en');
+    ck('F: BM3 the cap part says all of it, beside its own amount', cap === `¥${spare} (what your accounts can spare) \u2212 ¥${spare} (all of it: Free to spend is ¥${over.toLocaleString('en')} over this period) = ¥0`, cap);
     ck('F: no page errors', errs.length === 0, errs.join(' | '));
   }
   /* J. [BM2, numbers QC finding 2] Set up Thu 10 Dec with Main bank 359,000 (the pay of the 10th in), Pay 200,000 on the

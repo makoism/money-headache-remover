@@ -8401,7 +8401,10 @@ function drawHome3() {
   const until = safeUntil3(r, yr);
   /* [BJ5] when Free to spend caps the headline, the engine's sum ends with the cap, so the two figures agree */
   /* [S6] Free to spend over: that part says by how much (the engine's `over`), so the sum never hides the overspend */
-  const capParts = (r.safeToSpend.whyParts || []).map(x => (x.over ? Object.assign({}, x, { label: `Free to spend is ${money3(x.over, home)} over this period` }) : x));
+  /* [BM3] each part names its own amount: a cap that takes everything (the headline is 0) says "all of it" */
+  const all = r.safeToSpend.headline === 0 ? 'all of it: ' : '';
+  const capParts = (r.safeToSpend.whyParts || []).map((x, i) => (x.over ? Object.assign({}, x, { label: `${all}Free to spend is ${money3(x.over, home)} over this period` })
+    : i > 0 && all && r.period && r.period.free && r.period.free.left === 0 ? Object.assign({}, x, { label: `${all}Free to spend is used up this period` }) : x));
   const capLine = r.safeToSpend.whyParts ? `<p class="a3-sum" data-fig="cap">${esc3(sum3(capParts, r.safeToSpend.headline, home))}</p>` : '';
   const sums = `${ids.filter(id => r.accounts[id].spendFrom).map(id => `<p class="a3-sum" data-fig="why">${esc3(whyWords3(r.accounts[id]))}</p>`).join('')}${capLine}`;
   /* [BL3] short: the sum's own total, before the pay after its lowest point (only when one brings money), and the first
