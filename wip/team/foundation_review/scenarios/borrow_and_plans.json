@@ -1,0 +1,51 @@
+{
+  "life": "borrow_and_plans",
+  "title": "A loan drawn mid-year and pay-later buys on two plans at once: a borrow or a spend raises what is owed, each payment day asks the parts of every plan (final_review_2 S3, S3b, decision Q3)",
+  "story": "Set up Mon 4 Jan 2027: the bank holds 100,000. A credit line (a loan, no interest) is set up owing nothing; when owed, 25,000 is paid on the 27th from the bank. A pay-later account (no interest) is set up owing nothing, paid on the 20th from the bank; its plans are a list: a fridge of 30,000 in 3 parts of 10,000 from 20 Feb, and a phone of 30,000 in 6 parts of 5,000 from 20 Mar. On Fri 5 Feb the fridge is bought on the pay-later account. On Sat 20 Feb the first fridge part of 10,000 is paid (ticked). On Mon 1 Mar the person draws 500,000 on the credit line into the bank (a borrow); on Mon 8 Mar the bank statement is read and its 500,000 line in attaches to the borrow's bank side. On Fri 5 Mar the phone is bought on the pay-later account. No fixed pay, no Free to spend amount. Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2027-01-04", "to": "2027-03-31" },
+  "holidays": { "country": "none", "dates": [], "bank_closed": [] },
+  "accounts": [
+    { "id": "b", "name": "Bank", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2027-01-04", "amount": 100000 } },
+    { "id": "cl", "name": "Credit line", "kind": "loan", "currency": "JPY", "apr": 0,
+      "payment": { "day": 27, "from": "b", "amount": 25000, "weekend_holiday": "none" }, "opening": { "date": "2027-01-04", "owed": 0 } },
+    { "id": "pl", "name": "Pay-later", "kind": "paylater", "currency": "JPY", "apr": 0,
+      "payment": { "day": 20, "from": "b", "weekend_holiday": "none" }, "opening": { "date": "2027-01-04", "owed": 0 },
+      "plans": [
+        { "id": "fridge", "amount": 10000, "count": 3, "first": "2027-02-20" },
+        { "id": "phone", "amount": 5000, "count": 6, "first": "2027-03-20" }
+      ] }
+  ],
+  "income": [],
+  "bills": [],
+  "goals": [],
+  "events": [
+    { "id": "p1", "date": "2027-02-05", "told": "2027-02-05T12:00", "kind": "spend", "account": "pl", "amount": 30000, "note": "a fridge, 3 parts" },
+    { "id": "set:pl@2027-02-20", "date": "2027-02-20", "told": "2027-02-20T20:00", "kind": "repay", "from": "b", "to": "pl", "amount": 10000, "settles": "pl@2027-02-20", "note": "fridge part 1, ticked" },
+    { "id": "d1", "date": "2027-03-01", "told": "2027-03-01T12:00", "kind": "borrow", "from": "cl", "to": "b", "amount": 500000, "note": "drawn on the credit line" },
+    { "id": "i1", "date": "2027-03-01", "posted": "2027-03-01", "told": "2027-03-08T09:00", "kind": "money_in", "account": "b", "amount": 500000, "source": "statement", "note": "bank statement: 500,000 in from the credit line" },
+    { "id": "p2", "date": "2027-03-05", "told": "2027-03-05T12:00", "kind": "spend", "account": "pl", "amount": 30000, "note": "a phone, 6 parts" }
+  ],
+  "asks": [
+    { "id": "plan-01", "date": "2027-02-06", "question": "owed_now", "account": "pl", "expected": 30000,
+      "why": "0 (opening) + 30,000 (fridge bought Fri 5 Feb, a spend on the pay-later account) = 30,000",
+      "note": "Before Q3 the buy was ignored and the pay-later account owed 0." },
+    { "id": "plan-02", "date": "2027-02-06", "question": "due_before_next_pay",
+      "expected": { "items": [ { "item": "pl@2027-02-20", "lands": "2027-02-20", "amount": 10000 } ], "total": 10000 },
+      "why": "10,000 (Pay-later 20 Feb: fridge part 1 of 3) = 10,000",
+      "note": "No fixed pay: the next 30 days. The credit line owes nothing, so its 27 Feb payment day asks nothing." },
+    { "id": "plan-03", "date": "2027-03-08", "question": "bank_today", "account": "b", "expected": 590000,
+      "why": "100,000 (opening) - 10,000 (fridge part 1, Sat 20 Feb) + 500,000 (drawn on the credit line, Mon 1 Mar; the statement line attaches to the borrow's bank side) = 590,000" },
+    { "id": "plan-04", "date": "2027-03-08", "question": "owed_now", "account": "cl", "expected": 500000,
+      "why": "0 (opening) + 500,000 (drawn Mon 1 Mar, a borrow raises what is owed) = 500,000",
+      "note": "Before Q3 a borrow raised only a card, and the credit line still owed 0 (final_review_2 S3)." },
+    { "id": "plan-05", "date": "2027-03-08", "question": "owed_now", "account": "pl", "expected": 50000,
+      "why": "30,000 (fridge) - 10,000 (fridge part 1 paid) + 30,000 (phone bought Fri 5 Mar) = 50,000" },
+    { "id": "plan-06", "date": "2027-03-08", "question": "due_before_next_pay",
+      "expected": { "items": [ { "item": "pl@2027-03-20", "lands": "2027-03-20", "amount": 15000 }, { "item": "cl@2027-03-27", "lands": "2027-03-27", "amount": 25000 } ], "total": 40000 },
+      "why": "15,000 (Pay-later 20 Mar: fridge part 2 of 10,000 and phone part 1 of 5,000, the plans list) + 25,000 (Credit line 27 Mar, its usual payment) = 40,000" },
+    { "id": "plan-07", "date": "2027-03-08", "question": "safe_to_spend", "account": "b", "expected": 535000,
+      "why": "590,000 (Bank today) - 15,000 (Pay-later 20 Mar) - 25,000 (Credit line 27 Mar) - 15,000 (Pay-later 20 Apr: fridge part 3 and phone part 2) = 535,000",
+      "note": "No fixed pay: the walk runs to Thu 22 Apr (today + 45 days); the credit line's 27 Apr payment is after it." }
+  ]
+}

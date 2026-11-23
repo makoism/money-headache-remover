@@ -8,7 +8,8 @@ const path = require('path');
 
 const DIGITS = { JPY: 0, PHP: 2, USD: 2, EUR: 2 };
 const KINDS = ['bank', 'cash', 'ewallet', 'card', 'loan', 'paylater'];
-const EVENT_KINDS = ['pay_in', 'money_in', 'spend', 'refund', 'bill_paid', 'card_payment', 'transfer', 'convert', 'set_aside', 'check', 'card_check', 'skip', 'repay', 'borrow'];   // borrow: cash taken on a card [O5]
+const EVENT_KINDS = ['pay_in', 'money_in', 'spend', 'refund', 'bill_paid', 'card_payment', 'transfer', 'convert', 'set_aside', 'check', 'card_check', 'skip', 'repay', 'borrow',
+  'place_money', 'period_end_answer'];   // borrow: cash taken on a card [O5], or drawn on a loan [Q3]; place_money: money to place placed [R1]; period_end_answer: a pe: record with its moves [P2]
 const QUESTIONS = ['bank_today', 'safe_to_spend', 'days_to_next_pay', 'due_before_next_pay', 'not_seen_yet', 'card_due', 'total', 'not_explained',
   'check_in_list', 'may_still_post', 'owed_now', 'headline', 'place', 'warnings', 'total_after_cards'];
 const WE_RULES = ['move earlier', 'move later', 'none'];
@@ -198,8 +199,14 @@ function checkFile(fp) {
     if (a.kind === 'loan' || a.kind === 'paylater') {
       const p = a.payment || {};
       if (typeof a.opening.owed !== 'number' || !decimalsOk(a.opening.owed, d)) bad(file, w, 'opening.owed must be an amount');
-      if (!Number.isInteger(p.day) || !WE_RULES.includes(p.weekend_holiday) || !(s.accounts || []).some(x => x.id === p.from)) bad(file, w, 'payment needs day, weekend_holiday and from (an account)');
-      if (typeof p.amount !== 'number' && !p.min_rule) bad(file, w, 'payment needs amount or min_rule');
+      // [Q3] A plans list: each plan { id, amount, count, first }, its parts due from `first`, monthly.
+      for (const pl of a.plans || []) if (!pl.id || typeof pl.amount !== 'number' || !decimalsOk(pl.amount, d) || !Number.isInteger(pl.count) || pl.count < 1 || !isDate(pl.first)) bad(file, w, 'each plan needs id, amount, count and first (a date) [Q3]');
+      if (a.of !== undefined) {   // [Q3] a card instalment plan: its own pay-later account of the card, paid through the card
+        if (a.kind !== 'paylater' || !(s.accounts || []).some(x => x.id === a.of && x.kind === 'card') || !(a.plans || []).length || a.payment !== undefined) bad(file, w, 'of names a card; such a pay-later account has plans and no payment of its own [Q3]');
+      } else {
+        if (!Number.isInteger(p.day) || !WE_RULES.includes(p.weekend_holiday) || !(s.accounts || []).some(x => x.id === p.from)) bad(file, w, 'payment needs day, weekend_holiday and from (an account)');
+        if (typeof p.amount !== 'number' && !p.min_rule && !(a.plans || []).length) bad(file, w, 'payment needs amount, min_rule or plans');
+      }
     } else if (a.kind === 'card') {
       const notSure = a.statement_close_day === null;   // close day "not sure" [H4]
       if (!(Number.isInteger(a.statement_close_day) || a.statement_close_day === 'last' || notSure)) bad(file, w, 'statement_close_day must be a day, "last" or null (not sure)');
@@ -240,6 +247,7 @@ function checkFile(fp) {
       if (!WE_RULES.includes(x.weekend_holiday)) bad(file, w, `weekend_holiday must be one of ${WE_RULES}`);
       if (!(x.account in acc) && !(list === 'income' && x.account === 'any')) bad(file, w, `account ${x.account} not found`);
       if (list === 'income' && typeof x.starts_period !== 'boolean') bad(file, w, 'starts_period must be true or false');
+      if (x.fee !== undefined && !(list === 'bills' && x.kind === 'transfer' && typeof x.fee === 'number' && x.fee >= 0)) bad(file, w, 'fee is only on a transfer schedule [Q2]');
     }
   }
   const goals = new Set((s.goals || []).map(g => g.id));
@@ -273,7 +281,12 @@ function checkFile(fp) {
     if (e.moved === true && !(s.moved_copy && TOLD.test(s.moved_copy.saved || '') && s.moved_copy.saved.length > 10)) bad(file, w, 'a moved record needs the top-level moved_copy.saved (a date and time) [I5]');
     const amtAcc = acc[e.account || e.from || e.card];
     const d = amtAcc ? DIGITS[amtAcc.currency] : DIGITS[s.currency];
-    if (e.kind === 'skip') {
+    if (e.amount2 !== undefined && !(e.kind === 'pay_in' && typeof e.amount2 === 'number' && e.amount2 > 0)) bad(file, w, 'amount2 is the original amount of a pay in another currency, on pay_in only [Q4]');
+    if (e.kind === 'place_money' && !((e.into === 'free' || e.into === 'waiting') && goals.has(e.to_place_of))) bad(file, w, 'place_money needs to_place_of (a removed goal) and into (free or waiting; into a goal is a set_aside with to_place_of) [R1]');
+    if (e.kind === 'period_end_answer') {
+      if (!/^pe:\d{4}-\d{2}-\d{2}:[a-z0-9_]+$/.test(e.id) || e.id !== `pe:${e.date}:${e.place}` || !Array.isArray(e.moves) || !e.moves.length) bad(file, w, 'a period-end answer is the record pe:<period last day>:<place> holding its moves [P2, O2]');
+      for (const mv of e.moves || []) if (!(mv.to === 'free' || mv.to === 'waiting' || mv.to === e.place || goals.has(mv.to)) || typeof mv.amount !== 'number' || mv.amount <= 0) bad(file, w, 'each move needs to (a place) and a positive amount [P2]');
+    } else if (e.kind === 'skip') {
       if (e.settles === undefined) bad(file, w, 'a skip needs settles');
     } else if ('amount_out' in e || e.kind === 'convert') {
       if (typeof e.amount_out !== 'number' || typeof e.amount_in !== 'number') bad(file, w, 'convert needs amount_out and amount_in');

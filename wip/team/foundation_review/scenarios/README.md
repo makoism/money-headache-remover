@@ -49,9 +49,21 @@ Written 23 Nov 2026 from foundation_review/RECOMMENDATION.md, life_walks_salarie
 | check_gain.json | A check-in figure far above what the app had is asked about (O, watch item). | JPY | 3 |
 | goal_removed.json | A goal removed with money in it: the money waits in Waiting "to place" and stays out of safe to spend; placing it moves it (P1; final review S7). | JPY | 5 |
 | account_closed.json | An old bank closed: its money moved out by the transfer the closing asks for, its bill ends on the closing day (P6). | JPY | 7 |
+| import_two_sided.json | Statement lines meeting one side of an ATM transfer, an e-wallet top-up and a ticked card payment: each attaches to its side (`posted2` for the second), never a second record (Q1; final review 2 S1, S1b). | JPY | 6 |
+| import_read_as_repay.json | A statement line read as a card payment meets the ticked one on its bank side (Q1; final review 2 S1c). | JPY | 2 |
+| fees.json | A top-up that costs a fee: `a` and `a2` kept, the difference a spend on the fees line from Free to spend, a transfer schedule with `fee` (Q2; final review 2 S4). | PHP | 4 |
+| borrow_and_plans.json | A credit line drawn mid-year and two pay-later plans at once: a borrow or a spend raises what is owed; each payment day asks every plan's part (Q3; final review 2 S3, S3b). | JPY | 7 |
+| card_instalments.json | A 12-part card buy on its own pay-later account `of` the card: the card is due only the part posted each month (Q3; final review 2 S9). | JPY | 7 |
+| pay_other_currency.json | Pay in another currency than its account: not counted in the walk, warned; a settled pay keeps its original amount (Q4; final review 2 S5b, S5c). | JPY (+PHP) | 6 |
+| auto_removed.json | A self-logged spend removed: `skip:<occurrence>`, on one device and after a merge with a second device's copy (Q5; final review 2 S2). | JPY | 5 |
+| nearest_settle.json | The nearest line settles the pay, then the nearest amount; a later import in the same stretch moves the settle (Q6; final review 2 S8). | JPY | 6 |
+| to_place.json | Money to place put in Free to spend (counts) or kept in Waiting on purpose (does not); a period-end answer record's moves fill a place (R1, P2). | JPY | 5 |
+| closing_write_off.json | A dead e-wallet's last pesos written off at the closing, id `close:<account>` (Q7, Q watch). | PHP | 4 |
+| paid_by_someone_else.json | A card statement paid by a parent (a repay with no paying account) and a travel spend posted 8 working days late (Q watch; final review 2 S10, S6). | JPY | 5 |
+| pending_hold.json | A pending hold: a filler at the first check-in that the next one gives back (final review 2 S7, watch). | JPY | 6 |
 | check_specs.js | Checks every file's shape and that every `why` adds up to its expected figure. `node check_specs.js` | | |
 
-Total: 368 asks (the first eight files: 180; the H files: 64; the I files: 34; the J files: 21; the K, L and M files: 22; the O files: 35; the P files: 12).
+Total: 431 asks (the first eight files: 180; the H files: 64; the I files: 34; the J files: 21; the K, L and M files: 22; the O files: 35; the P files: 12; the Q and R files: 63).
 
 ### The review v3 situations and where each one is now
 
@@ -126,6 +138,38 @@ The reviewer's own scripts (final_review_1.md) are in `../ref/final_review_situa
 | An account closed | O (watch), P6 | account_closed close-01 to close-07; rules acc-01 to acc-06 |
 | The move's ₱ and the raw `frozen3831` | O (watch) | rules units-63 to units-66 |
 | A period started without the pay, on two phones | O2 | rules mg-53, mg-57 |
+
+### The final review 2 situations and where each one is now
+The reviewer's own scripts (final_review_2.md) are in `../ref/final_review2_situations/` (they name the main checkout's path; run them from a copy that points at this one). Each situation is now an ask or a rules case with a hand-worked answer:
+
+| Situation | Decision | Asks or cases |
+|---|---|---|
+| S1. ATM cash typed as a transfer, then the bank statement | Q1 | import_two_sided two-01, two-02, two-06; rules match-49 |
+| S1b. A ticked card payment, then the bank statement | Q1 | import_two_sided two-01, two-03; rules match-52 |
+| S1c. The statement line read as a card payment | Q1 | import_read_as_repay rrep-01, rrep-02 |
+| S1d. matching_ref replacing the transfer | Q1 | rules match-49 to match-55 (`posted2` and `src2`: match-50, match-51; two-04) |
+| S2. A self-logged spend removed (someone else paid) | Q5 | auto_removed auto-01 to auto-05; rules mg-64, mg-67, mg-69 |
+| S3. A credit line drawn mid-year | Q3 | borrow_and_plans plan-03, plan-04, plan-06, plan-07 |
+| S3b. A pay-later buy; two plans at once | Q3 | borrow_and_plans plan-01, plan-02, plan-05 to plan-07 |
+| S4. A top-up with a fee | Q2 | fees fee-01 to fee-04; rules match-54 |
+| S5, S5b, S5c. Pay in another currency | Q4 | pay_other_currency cur-01 to cur-06 |
+| S6. A travel spend on the home card, posted late | sound (Q watch) | paid_by_someone_else paid-02, paid-04, paid-05 |
+| S7. A pending hold | sound (watch) | pending_hold hold-01 to hold-06 |
+| S8, S8b. A returned deposit before pay | Q6 | nearest_settle near-01 to near-06; rules match-56 to match-58 |
+| S9. A card buy in 12 parts | Q3 | card_instalments inst-01 to inst-07 |
+| S10. A card paid by someone else | Q watch | paid_by_someone_else paid-01 to paid-03 |
+| S11. A goal removed on two devices | Q7 | rules mg-62, mg-65, mg-68 (and `close:` mg-63, mg-66, mg-70; acc-02, acc-07, acc-13) |
+| P2's record replacing move events; closing with a write-off | Q watch | to_place tp-05; closing_write_off woff-01 to woff-04; rules acc-07 |
+| R1 to R4 | R | to_place tp-01 to tp-04 (R1); rules units-70 to units-74 (R2), acc-08 to acc-11 (R3), acc-12 to acc-14 (R4) |
+
+### What the Q and R files add to the way a file is written
+- An imported line may meet one side of a `transfer`, `repay`, `borrow` or `convert`: a money-out line on the side money leaves, a money-in line on the side it reaches. It then attaches to that record (its `posted` becomes that side's posted date: `posted` for the leaving side, `posted2` for the reaching side) and is not counted again (Q1). An imported line that is itself two-sided names the statement it came from with `account`.
+- A `transfer` in one currency may carry `amount_out` and `amount_in` when they differ (Q2): the difference is a fee, a spend from the sending account on the fees line, from Free to spend. A transfer schedule may carry **fee**: the walk takes amount plus fee off the sending account and adds the amount to the other.
+- A loan or pay-later account may carry **plans** (`[ { id, amount, count, first } ]`): each payment day asks the part of every plan due that day, its parts monthly from `first`. A `borrow` from a loan or pay-later account, and a `spend` on it, raise what it owes (Q3). A pay-later account with **of** (a card's id) is a card instalment plan: it has no payment of its own, and each part is posted to the card on its day, lowering what the plan owes and raising the card.
+- An income schedule may carry **currency** different from its account's: it is not counted in the walk and is warned about (`income_other_currency`); a `pay_in` may carry **amount2**, the original amount in that currency (Q4).
+- A **skip** with the id `skip:<occurrence>` is what removing a self-logged spend writes; a self-logged spend whose occurrence has a live skip does not count (Q5).
+- **place_money** (`account`, `to_place_of` a removed goal, `into`: `free` or `waiting`, `amount`) places money to place in Free to spend, where it counts again, or keeps it in Waiting on purpose, where it does not (R1).
+- **period_end_answer** (id `pe:<period last day>:<place>`, `date` the period's last day, `place`, `moves: [ { to, amount } ]`) is P2's one record per place; a move to a goal fills that goal.
 
 ### What the P files add to the way a file is written
 - A goal may carry **removed** (a date): from that day it is no longer a place, and what it held waits in Waiting marked "to place", out of safe to spend (P1). A `set_aside` may carry **to_place_of** (the removed goal's id): it places that much of the money to place in its goal; a `set_aside` without it comes from the account's other money.

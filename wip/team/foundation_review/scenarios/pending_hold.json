@@ -1,0 +1,40 @@
+{
+  "life": "pending_hold",
+  "title": "A pending hold on the debit card: a filler at the first check-in that corrects itself at the next (final_review_2 S7, a watch item, sound)",
+  "story": "Set up Mon 25 Jan 2027, pay day: the bank holds 100,000. Pay of 200,000 lands on the 25th (moved earlier) and starts the period; Free to spend is 30,000 a month. On Sat 6 Feb a petrol station holds 15,000 on the debit card; the real fill is 4,200, typed that day from Free to spend. On Sun 7 Feb the check-in types the bank app's \"available\" figure, 80,800 (100,000 - 4,200 - the 15,000 hold). On Wed 10 Feb the hold has dropped and the bank shows 95,800. No gain question is asked and the filler corrects itself. Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2027-01-25", "to": "2027-02-28" },
+  "holidays": { "country": "none", "dates": [], "bank_closed": [] },
+  "main_bank": "b",
+  "accounts": [
+    { "id": "b", "name": "Bank", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2027-01-25", "amount": 100000 } }
+  ],
+  "income": [
+    { "id": "pay", "name": "Pay", "account": "b", "amount": 200000, "schedule": { "frequency": "monthly", "day": 25 }, "weekend_holiday": "move earlier", "starts_period": true }
+  ],
+  "bills": [],
+  "goals": [],
+  "plan": { "free": { "per": "month", "amount": 30000 } },
+  "events": [
+    { "id": "f1", "date": "2027-02-06", "told": "2027-02-06T10:00", "kind": "spend", "account": "b", "amount": 4200, "line": "free", "note": "petrol, the real fill" },
+    { "id": "k1", "date": "2027-02-07", "told": "2027-02-07T20:00", "kind": "check", "account": "b", "amount": 80800, "avail": "available", "note": "with the 15,000 hold off" },
+    { "id": "k2", "date": "2027-02-10", "told": "2027-02-10T20:00", "kind": "check", "account": "b", "amount": 95800, "avail": "available", "note": "the hold has dropped" }
+  ],
+  "asks": [
+    { "id": "hold-01", "date": "2027-02-08", "question": "bank_today", "account": "b", "expected": 80800,
+      "why": "80,800 (check, Sun 7 Feb, available: the hold already off) = 80,800" },
+    { "id": "hold-02", "date": "2027-02-08", "question": "not_explained", "account": "b", "expected": 15000, "on": "2027-02-07",
+      "why": "100,000 (opening) - 4,200 (petrol, Sat 6 Feb) - 80,800 (check, Sun 7 Feb) = 15,000",
+      "note": "The hold looks like 15,000 of spending not logged, for now." },
+    { "id": "hold-03", "date": "2027-02-10", "question": "not_explained", "account": "b", "expected": -15000,
+      "why": "80,800 (check, Sun 7 Feb) - 95,800 (check, Wed 10 Feb: the hold dropped) = -15,000",
+      "note": "The next filler gives it back, so the two add up to nothing." },
+    { "id": "hold-04", "date": "2027-02-10", "question": "bank_today", "account": "b", "expected": 95800,
+      "why": "95,800 (check, Wed 10 Feb) = 95,800" },
+    { "id": "hold-05", "date": "2027-02-10", "question": "headline", "expected": 25800,
+      "why": "30,000 (Free to spend for the period from Mon 25 Jan) - 4,200 (petrol) = 25,800",
+      "note": "Fillers are not spends from Free to spend, so the hold never lowered it." },
+    { "id": "hold-06", "date": "2027-02-10", "question": "warnings", "expected": [],
+      "why": "The 15,000 back is less than the period's Free to spend and less than 20% of what the app had, so no gain question is asked." }
+  ]
+}

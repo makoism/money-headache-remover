@@ -1,0 +1,46 @@
+{
+  "life": "import_two_sided",
+  "title": "A statement line meets one side of a transfer or a ticked card payment: it attaches to that side, never counted twice (final_review_2 S1, S1b, decision Q1)",
+  "story": "Set up Mon 4 Jan 2027: the bank holds 300,000, cash and an e-wallet nothing. A card closes on the 15th and is paid on the 10th of the next month (moved later) from the bank; its statement of 15 Dec holds 50,000, not paid yet. On Wed 6 Jan the person takes 10,000 cash from the ATM and types it as a transfer from the bank to cash. On Fri 8 Jan they top up the e-wallet with 1,000 from the bank and type it as a transfer; the money reaches the e-wallet on Mon 11 Jan. On Sat 9 Jan they type the e-wallet app's figure, 0 (nothing has arrived). On Mon 11 Jan the check-in ticks the card payment of 50,000 (it writes the repay set:c@2027-01-10). On Wed 13 Jan the bank statement is read: three plain lines out, the ATM 10,000 on 6 Jan, the top-up 1,000 on 8 Jan and the card company 50,000 on 11 Jan. The same morning the e-wallet statement is read: 1,000 in on Mon 11 Jan. Each line attaches to the side of the record it meets (the bank side sets its posted date and source; the e-wallet side sets `posted2` and `src2`) and is never a second record. Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2027-01-04", "to": "2027-01-31" },
+  "holidays": { "country": "none", "dates": [], "bank_closed": [] },
+  "accounts": [
+    { "id": "b", "name": "Bank", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2027-01-04", "amount": 300000 } },
+    { "id": "cash", "name": "Cash", "kind": "cash", "currency": "JPY", "minimum": 0, "opening": { "date": "2027-01-04", "amount": 0 } },
+    { "id": "g", "name": "E-wallet", "kind": "ewallet", "currency": "JPY", "minimum": 0, "opening": { "date": "2027-01-04", "amount": 0 } },
+    { "id": "c", "name": "Card", "kind": "card", "currency": "JPY", "statement_close_day": 15,
+      "payment": { "day": 10, "months_after_close": 1, "from": "b", "pays": "in full", "weekend_holiday": "move later" },
+      "opening": { "date": "2027-01-04", "statement": { "closed": "2026-12-15", "amount": 50000, "paid": false }, "current": 50000 } }
+  ],
+  "income": [],
+  "bills": [],
+  "goals": [],
+  "events": [
+    { "id": "t1", "date": "2027-01-06", "told": "2027-01-06T12:00", "kind": "transfer", "from": "b", "to": "cash", "amount": 10000, "note": "ATM, typed as a transfer" },
+    { "id": "i1", "date": "2027-01-06", "posted": "2027-01-06", "told": "2027-01-13T09:00", "kind": "spend", "account": "b", "amount": 10000, "source": "statement", "note": "bank statement: ATM 10,000 out" },
+    { "id": "top1", "date": "2027-01-08", "told": "2027-01-08T12:00", "kind": "transfer", "from": "b", "to": "g", "amount": 1000, "note": "e-wallet top-up, typed" },
+    { "id": "i2", "date": "2027-01-08", "posted": "2027-01-08", "told": "2027-01-13T09:00", "kind": "spend", "account": "b", "amount": 1000, "source": "statement", "note": "bank statement: top-up 1,000 out" },
+    { "id": "kg", "date": "2027-01-09", "told": "2027-01-09T10:00", "kind": "check", "account": "g", "amount": 0, "note": "the e-wallet app shows 0: the top-up has not arrived" },
+    { "id": "set:c@2027-01-10", "date": "2027-01-11", "told": "2027-01-11T20:00", "kind": "repay", "from": "b", "to": "c", "amount": 50000, "settles": "c@2027-01-10", "note": "ticked at the check-in" },
+    { "id": "i3", "date": "2027-01-11", "posted": "2027-01-11", "told": "2027-01-13T09:00", "kind": "spend", "account": "b", "amount": 50000, "source": "statement", "note": "bank statement: card company 50,000 out" },
+    { "id": "i4", "date": "2027-01-11", "posted": "2027-01-11", "told": "2027-01-13T09:30", "kind": "money_in", "account": "g", "amount": 1000, "source": "statement", "note": "e-wallet statement: top-up 1,000 in" }
+  ],
+  "asks": [
+    { "id": "two-01", "date": "2027-01-13", "question": "bank_today", "account": "b", "expected": 239000,
+      "why": "300,000 (opening) - 10,000 (ATM transfer to cash, Wed 6 Jan; the statement line attaches to its bank side) - 1,000 (top-up, Fri 8 Jan; the statement line attaches) - 50,000 (card payment ticked Mon 11 Jan; the statement line attaches) = 239,000",
+      "note": "Before Q1 each statement line was a second spend: 300,000 - 61,000 - 61,000 = 178,000." },
+    { "id": "two-02", "date": "2027-01-13", "question": "bank_today", "account": "cash", "expected": 10000,
+      "why": "0 (opening) + 10,000 (the ATM transfer's other side, kept) = 10,000" },
+    { "id": "two-03", "date": "2027-01-13", "question": "owed_now", "account": "c", "expected": 0,
+      "why": "50,000 (statement of 15 Dec) - 50,000 (the ticked payment, its bank side now posted 11 Jan) = 0" },
+    { "id": "two-04", "date": "2027-01-13", "question": "not_explained", "account": "g", "on": "2027-01-09", "expected": 0,
+      "why": "0 (opening) + 0 (the top-up reached the e-wallet Mon 11 Jan, its posted2, after the check) - 0 (check, Sat 9 Jan) = 0",
+      "note": "The e-wallet statement sets the transfer's second side's posted date (`posted2`), so the current check of Sat 9 Jan does not hold it. Before Q1 the typed top-up was inside the check and the gap of 1,000 was a filler." },
+    { "id": "two-05", "date": "2027-01-13", "question": "bank_today", "account": "g", "expected": 1000,
+      "why": "0 (check, Sat 9 Jan) + 1,000 (top-up, posted2 Mon 11 Jan; the e-wallet line attaches to it) = 1,000" },
+    { "id": "two-06", "date": "2027-01-13", "question": "total", "expected": 250000,
+      "why": "239,000 (Bank) + 10,000 (Cash) + 1,000 (E-wallet) = 250,000",
+      "note": "300,000 at the opening less the 50,000 paid to the card: the transfers move money between own accounts, so Total moves only by the card payment." }
+  ]
+}

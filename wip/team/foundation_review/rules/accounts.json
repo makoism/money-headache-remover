@@ -1,10 +1,15 @@
 {
   "area": "accounts",
-  "title": "Closing an account: only at zero or with its money moved out, and its schedules end on the closing day",
-  "written_in": "SCHEMA_V3 3, 5; DECISIONS_ROUND2 O (close, never delete), P6",
+  "title": "Closing an account: only at zero or with its money moved out or written off, owed accounts paid to zero first, links moved first, and its schedules end on the closing day",
+  "written_in": "SCHEMA_V3 3, 5; DECISIONS_ROUND2 O (close, never delete), P6, Q7, Q (write-off), R3, R4, R5",
   "notes": [
     "Every amount is made up and in whole minor units (yen).",
-    "Question `close` [P6]: closing `account` on `date` with its final figure `figure` (the final `check`). `transfers` are the transfers out that the closing asks for, `{ to, a }`. The account closes only when the figure less the transfers is zero; otherwise the closing is refused and `left` shows what is still in it. On a close the answer gives `closed` (the date), the events written (the final `check`, then each transfer, all dated the closing day) and `ends`: each schedule of the account (paid from it, landing in it, or a transfer into it) with its new `ends`, the closing day, unless it already ends on or before that day. Other schedules are untouched."
+    "Question `close` [P6]: closing `account` on `date` with its final figure `figure` (the final `check`). `transfers` are the transfers out that the closing asks for, `{ to, a }`. The account closes only when the figure less the transfers is zero; otherwise the closing is refused and `left` shows what is still in it. On a close the answer gives `closed` (the date), the events written (the final `check`, then each transfer, all dated the closing day) and `ends`: each schedule of the account (paid from it, landing in it, or a transfer into it) with its new `ends`, the closing day, unless it already ends on or before that day. Other schedules are untouched.",
+    "[Q7] The closing's transfer out, or its write-off, has the built id `close:<account>`, so the same closing written on two devices is one record (merge.json mg-70).",
+    "[Q watch item] Closing may write off a balance that cannot be moved out (a few pesos in a dead e-wallet): `writeOff` is that amount, written as a spend from the account dated the closing day, id `close:<account>`; with it the figure less the transfers less the write-off must be zero.",
+    "[R3] `kind` is the account's type (left out: bank). A card, loan or pay-later account whose `figure` (what it still owes) is above zero, or a bank whose figure is below zero, cannot be closed: the answer is refused with `owes` (an owed account) or `left` (a bank below zero) and `offer`, the payment that gets it to zero: a `repay` from the account's `payFrom` into it, or for a bank a `transfer` into it from an account the person picks (no `acct`).",
+    "[R4] `links` lists what hangs on the account: `cards` paid from it and `places` kept in it. Each needs a new account in `newLinks` (`{ <card or place id>: <account id> }`) before the closing goes on; without one the closing is refused with `needs`, the links still to move. A close answer with links gives `links`, each moved to its new account.",
+    "[R5] 38.31 has no closed accounts (one bank figure), so the move brings in nothing closed; there is no case for it."
   ],
   "defaults": {},
   "cases": [
@@ -39,12 +44,12 @@
         "closed": "2027-01-08",
         "events": [
           { "k": "check", "date": "2027-01-08", "acct": "old", "a": 30000 },
-          { "k": "transfer", "date": "2027-01-08", "acct": "old", "acct2": "b", "a": 30000 }
+          { "id": "close:old", "k": "transfer", "date": "2027-01-08", "acct": "old", "acct2": "b", "a": 30000 }
         ],
         "ends": { "gym": "2027-01-08" }
       },
-      "why": "30,000 (final figure) - 30,000 (moved to the main bank) = 0, so it closes [P6]. The final check holds the figure; the transfer moves it out on the same day. As scenarios/account_closed.json.",
-      "decisions": [ "P6", "O" ]
+      "why": "30,000 (final figure) - 30,000 (moved to the main bank) = 0, so it closes [P6]. The final check holds the figure; the transfer moves it out on the same day, with the built id `close:old` [Q7]. As scenarios/account_closed.json.",
+      "decisions": [ "P6", "O", "Q7" ]
     },
     {
       "id": "acc-03",
@@ -103,23 +108,309 @@
       },
       "why": "The gym (paid from it, ending 31 Dec), a side income landing in it and a top-up transfer into it from the main bank are its schedules: each ends on Fri 8 Jan [P6]. The phone already ended on 5 Jan, before the closing day, and keeps that end. The rent is paid from the main bank and is untouched.",
       "decisions": [ "P6" ]
+    },
+    {
+      "id": "acc-07",
+      "question": "close",
+      "title": "A dead e-wallet with 3.50 left that cannot be sent: written off as a spend, id close:<account>",
+      "input": {
+        "account": "g",
+        "kind": "ewallet",
+        "date": "2027-01-08",
+        "figure": 350,
+        "transfers": [],
+        "writeOff": 350,
+        "schedules": []
+      },
+      "expected": {
+        "closed": "2027-01-08",
+        "events": [
+          {
+            "k": "check",
+            "date": "2027-01-08",
+            "acct": "g",
+            "a": 350
+          },
+          {
+            "id": "close:g",
+            "k": "spend",
+            "date": "2027-01-08",
+            "acct": "g",
+            "a": 350
+          }
+        ],
+        "ends": {}
+      },
+      "why": "Pesos, in centavos. 3.50 (final figure) - 3.50 (written off) = 0.00, so it closes [P6 and the Q watch item]. The write-off is a spend from the e-wallet dated the closing day, with the built id `close:g` [Q7] (scenarios/closing_write_off.json).",
+      "decisions": [
+        "Q",
+        "Q7",
+        "P6"
+      ]
+    },
+    {
+      "id": "acc-08",
+      "question": "close",
+      "title": "A card that still owes 20,000: refused, and the payment that gets it to zero is offered",
+      "input": {
+        "account": "c",
+        "kind": "card",
+        "payFrom": "b",
+        "date": "2027-01-08",
+        "figure": 20000,
+        "transfers": [],
+        "schedules": []
+      },
+      "expected": {
+        "refused": {
+          "account": "c",
+          "owes": 20000,
+          "offer": {
+            "k": "repay",
+            "acct": "b",
+            "acct2": "c",
+            "a": 20000
+          }
+        }
+      },
+      "why": "A card that still owes money cannot be closed until it is at zero [R3]; the closing screen offers the payment that gets it there: 20,000 from its paying account, the main bank.",
+      "decisions": [
+        "R3"
+      ]
+    },
+    {
+      "id": "acc-09",
+      "question": "close",
+      "title": "A loan with 150,000 still owed: refused, its payment offered",
+      "input": {
+        "account": "car",
+        "kind": "loan",
+        "payFrom": "b",
+        "date": "2027-01-08",
+        "figure": 150000,
+        "transfers": [],
+        "schedules": []
+      },
+      "expected": {
+        "refused": {
+          "account": "car",
+          "owes": 150000,
+          "offer": {
+            "k": "repay",
+            "acct": "b",
+            "acct2": "car",
+            "a": 150000
+          }
+        }
+      },
+      "why": "A loan that still owes money cannot be closed until it is at zero [R3]: 150,000 from the account that pays it is offered.",
+      "decisions": [
+        "R3"
+      ]
+    },
+    {
+      "id": "acc-10",
+      "question": "close",
+      "title": "A bank 5,000 below zero: refused, a transfer in of 5,000 offered",
+      "input": {
+        "account": "old",
+        "kind": "bank",
+        "date": "2027-01-08",
+        "figure": -5000,
+        "transfers": [],
+        "schedules": []
+      },
+      "expected": {
+        "refused": {
+          "account": "old",
+          "left": -5000,
+          "offer": {
+            "k": "transfer",
+            "acct2": "old",
+            "a": 5000
+          }
+        }
+      },
+      "why": "A bank below zero cannot be closed until it is at zero [R3]: 5,000 moved into it gets it there, from an account the person picks.",
+      "decisions": [
+        "R3"
+      ]
+    },
+    {
+      "id": "acc-11",
+      "question": "close",
+      "title": "A card paid off to zero closes; its schedules end",
+      "input": {
+        "account": "c",
+        "kind": "card",
+        "payFrom": "b",
+        "date": "2027-01-08",
+        "figure": 0,
+        "transfers": [],
+        "schedules": [
+          {
+            "id": "netflix",
+            "acct": "c",
+            "ends": null
+          }
+        ]
+      },
+      "expected": {
+        "closed": "2027-01-08",
+        "events": [
+          {
+            "k": "check",
+            "date": "2027-01-08",
+            "acct": "c",
+            "a": 0
+          }
+        ],
+        "ends": {
+          "netflix": "2027-01-08"
+        }
+      },
+      "why": "The card owes nothing, so it closes [R3, P6]; a subscription paid on it ends on the closing day [P6].",
+      "decisions": [
+        "R3",
+        "P6"
+      ]
+    },
+    {
+      "id": "acc-12",
+      "question": "close",
+      "title": "The bank a card is paid from and a goal is kept in: refused until each has a new account",
+      "input": {
+        "account": "old",
+        "kind": "bank",
+        "date": "2027-01-08",
+        "figure": 0,
+        "transfers": [],
+        "schedules": [],
+        "links": {
+          "cards": [
+            "c"
+          ],
+          "places": [
+            "trip"
+          ]
+        }
+      },
+      "expected": {
+        "refused": {
+          "account": "old",
+          "needs": [
+            "c",
+            "trip"
+          ]
+        }
+      },
+      "why": "Closing the account a card is paid from, or a goal is kept in, first asks for the new account and moves the link; it cannot close until one is picked [R4]. Neither is picked yet.",
+      "decisions": [
+        "R4"
+      ]
+    },
+    {
+      "id": "acc-13",
+      "question": "close",
+      "title": "New accounts picked for the card and the goal: the links move, the money moves out, it closes",
+      "input": {
+        "account": "old",
+        "kind": "bank",
+        "date": "2027-01-08",
+        "figure": 30000,
+        "transfers": [
+          {
+            "to": "b2",
+            "a": 30000
+          }
+        ],
+        "schedules": [],
+        "links": {
+          "cards": [
+            "c"
+          ],
+          "places": [
+            "trip"
+          ]
+        },
+        "newLinks": {
+          "c": "b2",
+          "trip": "b2"
+        }
+      },
+      "expected": {
+        "closed": "2027-01-08",
+        "events": [
+          {
+            "k": "check",
+            "date": "2027-01-08",
+            "acct": "old",
+            "a": 30000
+          },
+          {
+            "id": "close:old",
+            "k": "transfer",
+            "date": "2027-01-08",
+            "acct": "old",
+            "acct2": "b2",
+            "a": 30000
+          }
+        ],
+        "ends": {},
+        "links": {
+          "c": "b2",
+          "trip": "b2"
+        }
+      },
+      "why": "The card is now paid from the new bank and the trip is kept in it [R4]. 30,000 (final figure, the trip's money included) - 30,000 (moved to the new bank, `close:old`) = 0, so it closes [P6, Q7].",
+      "decisions": [
+        "R4",
+        "P6",
+        "Q7"
+      ]
+    },
+    {
+      "id": "acc-14",
+      "question": "close",
+      "title": "A new account picked for the card only: still refused for the goal",
+      "input": {
+        "account": "old",
+        "kind": "bank",
+        "date": "2027-01-08",
+        "figure": 0,
+        "transfers": [],
+        "schedules": [],
+        "links": {
+          "cards": [
+            "c"
+          ],
+          "places": [
+            "trip"
+          ]
+        },
+        "newLinks": {
+          "c": "b2"
+        }
+      },
+      "expected": {
+        "refused": {
+          "account": "old",
+          "needs": [
+            "trip"
+          ]
+        }
+      },
+      "why": "The card has its new paying account; the trip has none yet, so the closing cannot go on [R4].",
+      "decisions": [
+        "R4"
+      ]
     }
   ],
   "open": [
     {
-      "id": "accounts-open-1",
-      "question": "A card, pay-later or loan closed while something is still owed on it, or a bank closed below zero: P6 speaks of a figure moved out by a transfer. Is closing refused until it is paid to zero, or does the closing ask for a payment into it?",
-      "ref_does": "`close` takes a final figure and transfers out only; no case closes an owed account."
-    },
-    {
-      "id": "accounts-open-2",
-      "question": "Closing the account a card is paid from (`payFrom`), or the account a goal or other kept place is kept in (`keptIn.acct`): does the closing ask for a new paying account and move the place's money, or is it refused?",
-      "ref_does": "`close` looks only at the account's figure and schedules; no case has a card or a place on the closing account."
-    },
-    {
-      "id": "accounts-open-3",
-      "question": "A 38.31 account that is already closed with a figure that is not zero, at the move: how is it brought in?",
-      "ref_does": "Nothing; the move (SCHEMA_V3 section 11) is not part of this file."
+      "id": "accounts-open-4",
+      "question": "A closing that writes more than one record (a transfer and a write-off, or transfers to two accounts): `close:<account>` [Q7] names one record. What are the ids of the others?",
+      "ref_does": "The built id goes on the closing's record only when there is exactly one (one transfer, or one write-off); with more, none gets it. No case has more than one."
     }
   ]
 }

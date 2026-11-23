@@ -1,0 +1,46 @@
+{
+  "life": "nearest_settle",
+  "title": "The line nearest the expected day settles an item, then the nearest amount; a later import in the same check-in stretch with a nearer line moves the settle (final_review_2 S8, decision Q6)",
+  "story": "Set up Mon 1 Mar 2027: the bank holds 100,000, of which 20,000 is kept in a bills pot and 40,000 is what is left of Free to spend (typed). Pay of about 250,000 (it varies with overtime, vary 0.3) lands on the 25th (moved earlier) and starts the period; Free to spend is 60,000 a month. Power of about 10,000 (vary 0.3) is paid from the bills pot on the 10th (moved later). On Tue 23 Mar the person spends 5,000 from Free to spend. On Wed 24 Mar a first statement is read: the old flat's deposit of 200,000 came back on Mon 22 Mar. It is the only line that fits the pay, so it settles pay@2027-03-25 and the period starts on 22 Mar. On Mon 29 Mar, with no check-in in between, a second statement is read: the real pay of 262,000 on Thu 25 Mar, and two lines out that fit the power bill, 8,000 on Tue 9 Mar and 11,000 on Thu 11 Mar. The pay line is nearer the pay's day (0 days, the deposit 3), so the settle moves to it and the period starts on 25 Mar. The two power lines are each one day from Wed 10 Mar, so the nearer amount, 11,000, settles it. Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2027-03-01", "to": "2027-04-30" },
+  "holidays": { "country": "none", "dates": [], "bank_closed": [] },
+  "main_bank": "b",
+  "accounts": [
+    { "id": "b", "name": "Bank", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2027-03-01", "amount": 100000, "split": { "goals": { "pot": 20000 }, "free": 40000 } } }
+  ],
+  "income": [
+    { "id": "pay", "name": "Pay", "account": "b", "amount": 250000, "vary": 0.3, "schedule": { "frequency": "monthly", "day": 25 }, "weekend_holiday": "move earlier", "starts_period": true }
+  ],
+  "bills": [
+    { "id": "power", "name": "Power", "account": "b", "amount": 10000, "vary": 0.3, "place": "pot", "schedule": { "frequency": "monthly", "day": 10 }, "weekend_holiday": "move later" }
+  ],
+  "goals": [
+    { "id": "pot", "name": "Bills pot", "kept_in": "b", "due": "2027-12-31" }
+  ],
+  "plan": { "free": { "per": "month", "amount": 60000 } },
+  "events": [
+    { "id": "i3", "date": "2027-03-09", "posted": "2027-03-09", "told": "2027-03-29T09:00", "kind": "spend", "account": "b", "amount": 8000, "source": "statement", "note": "second statement: 8,000 out" },
+    { "id": "i4", "date": "2027-03-11", "posted": "2027-03-11", "told": "2027-03-29T09:00", "kind": "spend", "account": "b", "amount": 11000, "source": "statement", "note": "second statement: 11,000 out" },
+    { "id": "i1", "date": "2027-03-22", "posted": "2027-03-22", "told": "2027-03-24T09:00", "kind": "money_in", "account": "b", "amount": 200000, "source": "statement", "note": "first statement: the deposit back" },
+    { "id": "f1", "date": "2027-03-23", "told": "2027-03-23T12:00", "kind": "spend", "account": "b", "amount": 5000, "line": "free", "note": "dinner" },
+    { "id": "i2", "date": "2027-03-25", "posted": "2027-03-25", "told": "2027-03-29T09:00", "kind": "money_in", "account": "b", "amount": 262000, "source": "statement", "note": "second statement: the pay" }
+  ],
+  "asks": [
+    { "id": "near-01", "date": "2027-03-24", "question": "days_to_next_pay", "expected": { "days": 30, "next_pay": "2027-04-23" },
+      "why": "2027-04-23 - 2027-03-24 = 30",
+      "note": "Only the deposit line is known: it fits the pay (within 30% of 250,000, 3 days early) and settles it, so the next pay is 25 Apr, moved earlier to Fri 23 Apr." },
+    { "id": "near-02", "date": "2027-03-24", "question": "headline", "expected": 55000,
+      "why": "60,000 (Free to spend for the period from Mon 22 Mar, as the deposit settles the pay) - 5,000 (dinner, Tue 23 Mar) = 55,000" },
+    { "id": "near-03", "date": "2027-03-29", "question": "headline", "expected": 60000,
+      "why": "60,000 (Free to spend for the period from Thu 25 Mar, nothing spent from it yet) = 60,000",
+      "note": "The second statement, in the same check-in stretch, has a nearer line for the pay (0 days against 3), so the settle moves to it [Q6]; the dinner of 23 Mar belongs to the period before. Before Q6 the first line in the file kept the settle (final_review_2 S8)." },
+    { "id": "near-04", "date": "2027-03-29", "question": "days_to_next_pay", "expected": { "days": 25, "next_pay": "2027-04-23" },
+      "why": "2027-04-23 - 2027-03-29 = 25" },
+    { "id": "near-05", "date": "2027-03-29", "question": "place", "account": "b", "place": "pot", "expected": { "kept": 9000, "due": "2027-12-31" },
+      "why": "20,000 (opening) - 11,000 (power of Wed 10 Mar, paid from the pot: the Thu 11 Mar line is as near as the Tue 9 Mar one and nearer in amount) = 9,000",
+      "note": "Both lines are one day from Wed 10 Mar; 11,000 is 1,000 from the expected 10,000, 8,000 is 2,000 from it, so 11,000 settles [Q6]. Before Q6 the first line listed (8,000) settled it and the pot showed 12,000." },
+    { "id": "near-06", "date": "2027-03-29", "question": "bank_today", "account": "b", "expected": 538000,
+      "why": "100,000 (opening) - 8,000 (Tue 9 Mar) - 11,000 (Thu 11 Mar) + 200,000 (deposit back, Mon 22 Mar) - 5,000 (dinner) + 262,000 (pay, Thu 25 Mar) = 538,000" }
+  ]
+}

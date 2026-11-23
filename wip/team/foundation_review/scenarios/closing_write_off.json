@@ -1,0 +1,28 @@
+{
+  "life": "closing_write_off",
+  "title": "Closing an e-wallet whose last few pesos cannot be moved: written off as a spend, id close:<account> (decisions Q7 and the Q watch item, P6)",
+  "story": "Set up Mon 4 Jan 2027 in pesos: the bank holds 20,000.00 and an old e-wallet 3.50, which it will not let anyone send out (below its smallest transfer). On Fri 8 Jan the person closes the e-wallet: the closing writes the 3.50 off as a spend from it, id close:g, so its final figure is zero and it closes. Every amount is made up.",
+  "currency": "PHP",
+  "window": { "from": "2027-01-04", "to": "2027-01-31" },
+  "holidays": { "country": "none", "dates": [], "bank_closed": [] },
+  "accounts": [
+    { "id": "b", "name": "Bank", "kind": "bank", "currency": "PHP", "minimum": 0, "opening": { "date": "2027-01-04", "amount": 20000.00 } },
+    { "id": "g", "name": "Old e-wallet", "kind": "ewallet", "currency": "PHP", "minimum": 0, "opening": { "date": "2027-01-04", "amount": 3.50 }, "closed": "2027-01-08" }
+  ],
+  "income": [],
+  "bills": [],
+  "goals": [],
+  "events": [
+    { "id": "close:g", "date": "2027-01-08", "told": "2027-01-08T12:00", "kind": "spend", "account": "g", "amount": 3.50, "note": "written off at the closing: it cannot be moved out" }
+  ],
+  "asks": [
+    { "id": "woff-01", "date": "2027-01-07", "question": "headline", "expected": 20003.50,
+      "why": "20,000.00 (Bank today) + 3.50 (Old e-wallet today) = 20,003.50" },
+    { "id": "woff-02", "date": "2027-01-08", "question": "bank_today", "account": "g", "expected": 0.00,
+      "why": "3.50 (opening) - 3.50 (written off at the closing, close:g) = 0.00" },
+    { "id": "woff-03", "date": "2027-01-08", "question": "total", "expected": 20000.00,
+      "why": "20,000.00 (Bank) + 0.00 (Old e-wallet, closed) = 20,000.00" },
+    { "id": "woff-04", "date": "2027-01-08", "question": "warnings", "expected": [],
+      "why": "The e-wallet is closed at zero: nothing is refused and nothing more is due from it." }
+  ]
+}

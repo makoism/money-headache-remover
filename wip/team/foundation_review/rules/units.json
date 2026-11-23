@@ -1,13 +1,14 @@
 {
   "area": "units",
   "title": "Units: whole minor units per currency code, the currency table and its fallback, 26 or 27 pays a year spread so the year adds up, interest rounded half up, monthly amounts per pay",
-  "written_in": "SCHEMA_V3 0, 3 (interest), 8 (units), 11 (the move's questions); DECISIONS_ROUND2 B4, B8, H9, I2, J1, E2, L (units q1 to q9), M8 to M10, N3, N4, O6, O, P4",
+  "written_in": "SCHEMA_V3 0, 3 (interest), 8 (units), 11 (the move's questions); DECISIONS_ROUND2 B4, B8, H9, I2, J1, E2, L (units q1 to q9), M8 to M10, N3, N4, O6, O, P4, R2",
   "notes": [
     "Every amount is made up. Inputs typed by a person are text (\"19.99\"); everything else is whole minor units: yen 1 is 1, peso 1.00 is 100.",
     "Question `to_minor`: a typed amount in a currency, as whole minor units with the currency's decimals and whether the screen must ask about the code. Question `currency_for`: the code from what an old copy or a person gave, or ask. Question `interest`: one month's interest on a balance at a yearly rate in percent [I2]. Question `pays_in_year`: the real number of pays a schedule has in a calendar year [H9]. Question `per_pay`: a monthly amount over that many pays, shown as the low and high per-pay amounts, how many get the high one, and the year's total. Question `period_amount`: what one pay period gets for a budget line or Free to spend by its `per` [B8]. Question `by_day`: with no fixed pay, what a monthly amount comes to over a number of days [B4]. Question `by_day_dates`: the same over dated days, each day rounded down and the remainder on the month's last day [L units q7]. Question `per_pay_list`: the amount of each pay of the year in order [L units q4]. Question `period_count`: the pay count a period uses [L units q3]. Question `load_amount`: a saved amount as it is loaded [L units q9]. Question `period_per_pay`: the amount of the pay that starts a period (`due`, its unshifted due date): its year, that year's pay count, its number in the year and its amount [N3]; a period that starts on 31 Dec with its pay due 1 Jan gets the next year's first amount. Question `week_by_day`: with no fixed pay, what a day gets from a `per: week` amount, and what the week's last day gets [M9]. Question `week_by_day_dates`: the same over dated days from `from` to `to`, for a line that started on `lineFrom`; a week ends on the seventh day counted from `lineFrom` [N4].",
     "The currency table is the ISO 4217 minor-unit table, shipped with the page; an unknown code is 2 decimals and the screen asks once [L units q1]. A typed amount with more decimals than its currency is rounded half up, and `rounded: true` tells the screen to say so [L units q2].",
     "Question `pays_in_year` also takes `{ rules: [ { from, rule } ] }`: each due date counted by the rule in force on it [O]. Question `home_cur_on` [O6]: the home currency on a date from the dated `home.curs`. Question `move_currency` [O, H9]: the move's currency answer from the raw stored 38.31 `ui` (`cur`, `preset`); ₱ with preset `legacy` or no preset, no currency at all, \"$\" and \"¥\" are asked.",
-    "Question `per_pay_rules` [P4]: a monthly amount for a schedule whose rule changes during the year (`rule.rules`). Each rule gets the months it is in force in that year (the first from 1 Jan): the monthly amount x those months, spread over that rule's pays, the leftover minor units on its earliest pays; `yearTotal` is 12 months. Question `period_per_pay` with `rule.rules` gives the pay's rule (`from`), that rule's pays, the pay's number among them and its amount."
+    "Question `per_pay_rules` [P4]: a monthly amount for a schedule whose rule changes during the year (`rule.rules`). Each rule gets the months it is in force in that year (the first from 1 Jan): the monthly amount x those months, spread over that rule's pays, the leftover minor units on its earliest pays; `yearTotal` is 12 months. Question `period_per_pay` with `rule.rules` gives the pay's rule (`from`), that rule's pays, the pay's number among them and its amount.",
+    "[R2] A rule that changes on a day other than the 1st: the month of the change goes to the rule in force on its first day, and the new rule's months start the next month. Its pays still follow the new rule: every due date from the new rule's `from` is one of its pays, a pay in the month of the change included, and its months are spread over those pays."
   ],
   "defaults": {},
   "cases": [
@@ -959,13 +960,250 @@
       "decisions": [
         "P4"
       ]
+    },
+    {
+      "id": "units-70",
+      "question": "per_pay_rules",
+      "title": "Two-weekly pay to Thu 15 Jul, then monthly on the 10th: July goes to the two-weekly rule",
+      "input": {
+        "rule": {
+          "rules": [
+            {
+              "from": "2027-01-01",
+              "rule": {
+                "every": "weeks",
+                "n": 2,
+                "from": "2027-01-01"
+              }
+            },
+            {
+              "from": "2027-07-15",
+              "rule": {
+                "every": "month",
+                "days": [
+                  10
+                ]
+              }
+            }
+          ]
+        },
+        "year": 2027,
+        "monthly": 50000
+      },
+      "expected": {
+        "parts": [
+          {
+            "from": "2027-01-01",
+            "months": 7,
+            "pays": 14,
+            "total": 350000,
+            "low": 25000,
+            "high": 25000,
+            "highCount": 0
+          },
+          {
+            "from": "2027-07-15",
+            "months": 5,
+            "pays": 5,
+            "total": 250000,
+            "low": 50000,
+            "high": 50000,
+            "highCount": 0
+          }
+        ],
+        "yearTotal": 600000
+      },
+      "why": "The rule changes on Thu 15 Jul, not the 1st. On 1 Jul the two-weekly rule is in force, so July is its month [R2]: January to July, 7 months, 7 x 50,000 = 350,000 over its 14 pays (1 Jan, then every 14 days to Fri 2 Jul), 25,000 each. The monthly rule's months start in August: 5 months, 250,000 over its pays from 15 Jul, 10 Aug to 10 Dec, 5 pays, 50,000 each. 350,000 + 250,000 = 600,000 = 12 x 50,000.",
+      "decisions": [
+        "R2",
+        "P4"
+      ]
+    },
+    {
+      "id": "units-71",
+      "question": "period_per_pay",
+      "title": "The last two-weekly pay before a mid-month change gets its share of seven months",
+      "input": {
+        "rule": {
+          "rules": [
+            {
+              "from": "2027-01-01",
+              "rule": {
+                "every": "weeks",
+                "n": 2,
+                "from": "2027-01-01"
+              }
+            },
+            {
+              "from": "2027-07-15",
+              "rule": {
+                "every": "month",
+                "days": [
+                  10
+                ]
+              }
+            }
+          ]
+        },
+        "due": "2027-07-02",
+        "monthly": 50000
+      },
+      "expected": {
+        "year": 2027,
+        "from": "2027-01-01",
+        "pays": 14,
+        "pay": 14,
+        "amount": 25000
+      },
+      "why": "Fri 2 Jul is 1 Jan + 13 x 14, the 14th and last two-weekly pay before Thu 15 Jul. Its rule has 7 months (July included, R2), 350,000 over 14 pays, 25,000 each.",
+      "decisions": [
+        "R2",
+        "P4"
+      ]
+    },
+    {
+      "id": "units-72",
+      "question": "period_per_pay",
+      "title": "The first monthly pay after a mid-month change, in the next month",
+      "input": {
+        "rule": {
+          "rules": [
+            {
+              "from": "2027-01-01",
+              "rule": {
+                "every": "weeks",
+                "n": 2,
+                "from": "2027-01-01"
+              }
+            },
+            {
+              "from": "2027-07-15",
+              "rule": {
+                "every": "month",
+                "days": [
+                  10
+                ]
+              }
+            }
+          ]
+        },
+        "due": "2027-08-10",
+        "monthly": 50000
+      },
+      "expected": {
+        "year": 2027,
+        "from": "2027-07-15",
+        "pays": 5,
+        "pay": 1,
+        "amount": 50000
+      },
+      "why": "Tue 10 Aug is the monthly rule's first pay (10 Jul is before its start). Its months are August to December, 250,000 over 5 pays, 50,000 each [R2].",
+      "decisions": [
+        "R2",
+        "P4"
+      ]
+    },
+    {
+      "id": "units-73",
+      "question": "per_pay_rules",
+      "title": "Monthly on the 25th from Thu 15 Jul: the 25 Jul pay is the new rule's, and its five months are spread over six pays",
+      "input": {
+        "rule": {
+          "rules": [
+            {
+              "from": "2027-01-01",
+              "rule": {
+                "every": "weeks",
+                "n": 2,
+                "from": "2027-01-01"
+              }
+            },
+            {
+              "from": "2027-07-15",
+              "rule": {
+                "every": "month",
+                "days": [
+                  25
+                ]
+              }
+            }
+          ]
+        },
+        "year": 2027,
+        "monthly": 50000
+      },
+      "expected": {
+        "parts": [
+          {
+            "from": "2027-01-01",
+            "months": 7,
+            "pays": 14,
+            "total": 350000,
+            "low": 25000,
+            "high": 25000,
+            "highCount": 0
+          },
+          {
+            "from": "2027-07-15",
+            "months": 5,
+            "pays": 6,
+            "total": 250000,
+            "low": 41666,
+            "high": 41667,
+            "highCount": 4
+          }
+        ],
+        "yearTotal": 600000
+      },
+      "why": "July is the two-weekly rule's month, as in units-70 [R2]. The new rule's pays still follow it: 25 Jul to 25 Dec, 6 pays, and its months are August to December, 250,000. 250,000 / 6 = 41,666 with 4 left over (41,666 x 6 = 249,996), so the 4 earliest pays get 41,667 [L units q4]. The year: 350,000 + 250,000 = 600,000.",
+      "decisions": [
+        "R2",
+        "P4",
+        "L units q4"
+      ]
+    },
+    {
+      "id": "units-74",
+      "question": "period_per_pay",
+      "title": "The new rule's pay in the month of the change gets its first share",
+      "input": {
+        "rule": {
+          "rules": [
+            {
+              "from": "2027-01-01",
+              "rule": {
+                "every": "weeks",
+                "n": 2,
+                "from": "2027-01-01"
+              }
+            },
+            {
+              "from": "2027-07-15",
+              "rule": {
+                "every": "month",
+                "days": [
+                  25
+                ]
+              }
+            }
+          ]
+        },
+        "due": "2027-07-25",
+        "monthly": 50000
+      },
+      "expected": {
+        "year": 2027,
+        "from": "2027-07-15",
+        "pays": 6,
+        "pay": 1,
+        "amount": 41667
+      },
+      "why": "Sun 25 Jul follows the new rule, so it is that rule's first pay of 6; its 250,000 gives the 4 earliest pays 41,667 [R2, L units q4].",
+      "decisions": [
+        "R2",
+        "L units q4"
+      ]
     }
   ],
-  "open": [
-    {
-      "id": "units-open-1",
-      "question": "P4 gives each rule the months it is in force. When a rule starts on a day other than the 1st (two-weekly pay until Thu 15 Jul, then monthly), how is the month of the change shared between the two rules: by days, to the rule in force on the 1st, or to the rule of its first pay?",
-      "ref_does": "per_pay_rules and period_per_pay refuse (throw) a rule whose `from` is not the 1st of a month; no case depends on it."
-    }
-  ]
+  "open": []
 }

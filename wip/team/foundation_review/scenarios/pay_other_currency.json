@@ -1,0 +1,43 @@
+{
+  "life": "pay_other_currency",
+  "title": "Pay in another currency than its account: not counted in the walk until stage 2, with a warning; a settled pay keeps its original amount in a2 (final_review_2 S5b, S5c, decision Q4)",
+  "story": "Home currency yen. Set up Mon 4 Jan 2027. A yen bank holds 100,000 and a peso bank 10,000.00. An employer pays 1,000.00 USD on the 25th (moved earlier) into the yen bank; the yen that arrives moves with the rate. This pay starts the period. A second employer pays 200,000 JPY on the 25th (moved earlier) into the peso bank, converted on arrival. Rent of 120,000 is paid from the yen bank on the 27th, and 25,000.00 pesos of rent from the peso bank on the 27th. Neither pay is in its account's currency, so until stage 2 neither is counted in the walk, and each is warned about. On Mon 25 Jan the check-in ticks the dollar pay: 148,500 yen arrived, and the event keeps the original 1,000.00 USD as a2. Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2027-01-04", "to": "2027-01-31" },
+  "holidays": { "country": "none", "dates": [], "bank_closed": [] },
+  "accounts": [
+    { "id": "b", "name": "Yen bank", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2027-01-04", "amount": 100000 } },
+    { "id": "p", "name": "Peso bank", "kind": "bank", "currency": "PHP", "minimum": 0, "opening": { "date": "2027-01-04", "amount": 10000.00 } }
+  ],
+  "income": [
+    { "id": "payu", "name": "Pay in USD", "account": "b", "currency": "USD", "amount": 1000.00, "schedule": { "frequency": "monthly", "day": 25 }, "weekend_holiday": "move earlier", "starts_period": true },
+    { "id": "payj", "name": "Pay in JPY", "account": "p", "currency": "JPY", "amount": 200000, "schedule": { "frequency": "monthly", "day": 25 }, "weekend_holiday": "move earlier", "starts_period": false }
+  ],
+  "bills": [
+    { "id": "rent", "name": "Rent", "account": "b", "amount": 120000, "schedule": { "frequency": "monthly", "day": 27 }, "weekend_holiday": "none" },
+    { "id": "rentp", "name": "Rent in pesos", "account": "p", "amount": 25000.00, "schedule": { "frequency": "monthly", "day": 27 }, "weekend_holiday": "none" }
+  ],
+  "goals": [],
+  "events": [
+    { "id": "set:payu@2027-01-25", "date": "2027-01-25", "told": "2027-01-25T20:00", "kind": "pay_in", "account": "b", "amount": 148500, "amount2": 1000.00, "settles": "payu@2027-01-25", "note": "ticked: 148,500 yen arrived for 1,000.00 USD" }
+  ],
+  "asks": [
+    { "id": "cur-01", "date": "2027-01-20", "question": "safe_to_spend", "account": "b", "expected": -140000,
+      "why": "100,000 (Yen bank today) - 120,000 (Rent 27 Jan) - 120,000 (Rent 27 Feb) = -140,000",
+      "note": "The walk runs to Sat 6 Mar (today + 45 days). The dollar pay is not counted [Q4]; before Q4 it was counted as 1,000 yen each month: -138,000 (final_review_2 S5b)." },
+    { "id": "cur-02", "date": "2027-01-20", "question": "safe_to_spend", "account": "p", "expected": -40000.00,
+      "why": "10,000.00 (Peso bank today) - 25,000.00 (Rent in pesos 27 Jan) - 25,000.00 (Rent in pesos 27 Feb) = -40,000.00",
+      "note": "Before Q4 the yen pay was counted as 200,000.00 pesos, about 2.7 times too high, and the peso bank looked safe (final_review_2 S5c)." },
+    { "id": "cur-03", "date": "2027-01-20", "question": "warnings",
+      "expected": [ { "account": "b", "code": "below_minimum" }, { "account": "b", "code": "income_other_currency" }, { "account": "p", "code": "below_minimum" }, { "account": "p", "code": "income_other_currency" } ],
+      "why": "Each bank goes below zero before its pay can be counted, and each bank has a pay in another currency that is not counted until stage 2 [Q4]." },
+    { "id": "cur-04", "date": "2027-01-20", "question": "days_to_next_pay", "expected": { "days": 5, "next_pay": "2027-01-25" },
+      "why": "2027-01-25 - 2027-01-20 = 5",
+      "note": "The pay still starts the period and is still expected; only its amount is not counted." },
+    { "id": "cur-05", "date": "2027-01-26", "question": "bank_today", "account": "b", "expected": 248500,
+      "why": "100,000 (opening) + 148,500 (the dollar pay as it arrived, Mon 25 Jan; its 1,000.00 USD kept as a2) = 248,500" },
+    { "id": "cur-06", "date": "2027-01-26", "question": "safe_to_spend", "account": "b", "expected": 8500,
+      "why": "248,500 (Yen bank today) - 120,000 (Rent 27 Jan) - 120,000 (Rent 27 Feb) = 8,500",
+      "note": "The walk runs to the second next pay, Thu 25 Mar; the pays of 25 Feb and 25 Mar are not counted. Before Q4: 9,500." }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "life": "import_read_as_repay",
+  "title": "A statement line read as a card payment meets the ticked one: it attaches to the bank side (final_review_2 S1c, decision Q1)",
+  "story": "Set up Mon 4 Jan 2027: the bank holds 300,000. A card closes on the 15th and is paid on the 10th of the next month (moved later) from the bank; its statement of 15 Dec holds 50,000, not paid yet. On Mon 11 Jan the check-in ticks the card payment of 50,000. On Mon 18 Jan the bank statement is read, and the reader knows the line is the card company: it reads it as a payment from the bank to the card, on the bank's statement (`account` is the bank). It meets the ticked payment on its bank side and attaches there. Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2027-01-04", "to": "2027-01-31" },
+  "holidays": { "country": "none", "dates": [], "bank_closed": [] },
+  "accounts": [
+    { "id": "b", "name": "Bank", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2027-01-04", "amount": 300000 } },
+    { "id": "c", "name": "Card", "kind": "card", "currency": "JPY", "statement_close_day": 15,
+      "payment": { "day": 10, "months_after_close": 1, "from": "b", "pays": "in full", "weekend_holiday": "move later" },
+      "opening": { "date": "2027-01-04", "statement": { "closed": "2026-12-15", "amount": 50000, "paid": false }, "current": 50000 } }
+  ],
+  "income": [],
+  "bills": [],
+  "goals": [],
+  "events": [
+    { "id": "set:c@2027-01-10", "date": "2027-01-11", "told": "2027-01-11T20:00", "kind": "repay", "from": "b", "to": "c", "amount": 50000, "settles": "c@2027-01-10", "note": "ticked at the check-in" },
+    { "id": "i2", "date": "2027-01-11", "posted": "2027-01-11", "told": "2027-01-18T09:00", "kind": "repay", "from": "b", "to": "c", "account": "b", "amount": 50000, "source": "statement", "note": "the bank statement's line, read as a card payment" }
+  ],
+  "asks": [
+    { "id": "rrep-01", "date": "2027-01-18", "question": "bank_today", "account": "b", "expected": 250000,
+      "why": "300,000 (opening) - 50,000 (card payment, Mon 11 Jan; the statement line attaches to its bank side) = 250,000",
+      "note": "Before Q1 the model stopped with an error on an import line that names no single account." },
+    { "id": "rrep-02", "date": "2027-01-18", "question": "owed_now", "account": "c", "expected": 0,
+      "why": "50,000 (statement of 15 Dec) - 50,000 (the one payment) = 0" }
+  ]
+}

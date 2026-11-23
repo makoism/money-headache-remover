@@ -1,0 +1,43 @@
+{
+  "life": "to_place",
+  "title": "Money to place put in Free to spend counts again; kept in Waiting on purpose it does not; a period-end answer record's moves fill a place (decisions R1, P2 and the Q watch item)",
+  "story": "Set up Mon 4 Jan 2027: the bank holds 150,000, of which 100,000 is kept for a trip and 20,000 is what is left of Free to spend (typed). An emergency place starts empty. Pay of 250,000 lands on the 25th (moved earlier) and starts the period; Free to spend is 40,000 a month. On Wed 6 Jan the person removes the trip: its 100,000 moves to Waiting marked \"to place\". On Thu 7 Jan they place 30,000 of it in Free to spend, where it counts in safe to spend again. On Fri 8 Jan they keep 20,000 of it in Waiting on purpose: it is no longer to place, and it still does not count. On Mon 25 Jan the pay is ticked, and the period-end answer for Free to spend (one record, pe:2027-01-24:free) moves 15,000 of what was left to the emergency place. Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2027-01-04", "to": "2027-01-31" },
+  "holidays": { "country": "none", "dates": [], "bank_closed": [] },
+  "main_bank": "b",
+  "accounts": [
+    { "id": "b", "name": "Bank", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2027-01-04", "amount": 150000, "split": { "goals": { "trip": 100000 }, "free": 20000 } } }
+  ],
+  "income": [
+    { "id": "pay", "name": "Pay", "account": "b", "amount": 250000, "schedule": { "frequency": "monthly", "day": 25 }, "weekend_holiday": "move earlier", "starts_period": true }
+  ],
+  "bills": [],
+  "goals": [
+    { "id": "trip", "name": "Trip", "kept_in": "b", "due": "2027-08-01", "removed": "2027-01-06" },
+    { "id": "emergency", "name": "Emergency", "kept_in": "b", "due": "2027-12-31", "opening": { "date": "2027-01-04", "amount": 0 } }
+  ],
+  "plan": { "free": { "per": "month", "amount": 40000 } },
+  "events": [
+    { "id": "pm1", "date": "2027-01-07", "told": "2027-01-07T12:00", "kind": "place_money", "account": "b", "to_place_of": "trip", "into": "free", "amount": 30000, "note": "placed in Free to spend" },
+    { "id": "pm2", "date": "2027-01-08", "told": "2027-01-08T12:00", "kind": "place_money", "account": "b", "to_place_of": "trip", "into": "waiting", "amount": 20000, "note": "kept in Waiting on purpose" },
+    { "id": "pe:2027-01-24:free", "date": "2027-01-24", "told": "2027-01-25T20:05", "kind": "period_end_answer", "account": "b", "place": "free", "moves": [ { "to": "emergency", "amount": 15000 } ], "note": "the period-end answer for Free to spend: one record holding its moves" },
+    { "id": "set:pay@2027-01-25", "date": "2027-01-25", "told": "2027-01-25T20:00", "kind": "pay_in", "account": "b", "amount": 250000, "settles": "pay@2027-01-25" }
+  ],
+  "asks": [
+    { "id": "tp-01", "date": "2027-01-06", "question": "headline", "expected": 20000,
+      "why": "20,000 (Free to spend at the opening, typed) = 20,000",
+      "note": "The bank's headroom is 150,000 - 100,000 (the trip's money, to place) = 50,000, above Free to spend, so Free to spend caps it." },
+    { "id": "tp-02", "date": "2027-01-07", "question": "headline", "expected": 50000,
+      "why": "20,000 (Free to spend at the opening) + 30,000 (the trip's money placed in Free to spend) = 50,000",
+      "note": "Placed in Free to spend, the money counts in safe to spend again [R1]: the bank's headroom is now 150,000 - 70,000 = 80,000." },
+    { "id": "tp-03", "date": "2027-01-08", "question": "safe_to_spend", "account": "b", "expected": 80000,
+      "why": "150,000 (Bank today) - 20,000 (Trip's money, kept in Waiting on purpose) - 50,000 (Trip's money, in Waiting to place: 100,000 - 30,000 - 20,000) = 80,000",
+      "note": "Kept in Waiting on purpose, the money is no longer to place and still does not count [R1]." },
+    { "id": "tp-04", "date": "2027-01-08", "question": "headline", "expected": 50000,
+      "why": "20,000 (Free to spend at the opening) + 30,000 (placed in Free to spend) = 50,000" },
+    { "id": "tp-05", "date": "2027-01-26", "question": "place", "account": "b", "place": "emergency", "expected": { "kept": 15000, "due": "2027-12-31" },
+      "why": "0 (opening) + 15,000 (the period-end answer pe:2027-01-24:free, its move to Emergency) = 15,000",
+      "note": "A period-end answer is one record per place holding its moves [P2]; place balances read its moves (the Q watch item replaces the move events of SCHEMA_V3 6.2 and 7.4)." }
+  ]
+}

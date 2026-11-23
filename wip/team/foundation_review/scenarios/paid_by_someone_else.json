@@ -1,0 +1,38 @@
+{
+  "life": "paid_by_someone_else",
+  "title": "A card statement paid by a parent (a repay with no paying account) and a travel spend on the home card posted late (final_review_2 S10 and S6, the Q watch items; both were sound)",
+  "story": "Set up Mon 4 Jan 2027: the bank holds 300,000. A card closes on the 15th and is paid on the 10th of the next month (moved later) from the bank; its last statement (15 Dec) was 0 and nothing is on it. On Fri 8 Jan 40,000 is spent on the card. A parent pays that statement straight to the card company on Tue 9 Feb: the person records a payment to the card from no account of theirs. On Fri 5 Feb, travelling, a dinner of 80.00 USD goes on the yen card; the person types it as about 12,000 yen (rough). The card posts it on Wed 17 Feb, 8 working days later, as 12,830 yen (the rate and a 2% fee, 6.9% more); the statement is read on Sat 20 Feb. Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2027-01-04", "to": "2027-02-28" },
+  "holidays": { "country": "none", "dates": [], "bank_closed": [] },
+  "accounts": [
+    { "id": "b", "name": "Bank", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2027-01-04", "amount": 300000 } },
+    { "id": "c", "name": "Card", "kind": "card", "currency": "JPY", "statement_close_day": 15,
+      "payment": { "day": 10, "months_after_close": 1, "from": "b", "pays": "in full", "weekend_holiday": "move later" },
+      "opening": { "date": "2027-01-04", "statement": { "closed": "2026-12-15", "amount": 0, "paid": true }, "current": 0 } }
+  ],
+  "income": [],
+  "bills": [],
+  "goals": [],
+  "events": [
+    { "id": "e1", "date": "2027-01-08", "told": "2027-01-08T12:00", "kind": "spend", "account": "c", "amount": 40000 },
+    { "id": "t1", "date": "2027-02-05", "told": "2027-02-05T21:00", "kind": "spend", "account": "c", "amount": 12000, "est": true, "note": "dinner, 80.00 USD, typed roughly" },
+    { "id": "i1", "date": "2027-02-05", "posted": "2027-02-17", "told": "2027-02-20T09:00", "kind": "spend", "account": "c", "amount": 12830, "source": "statement", "note": "the dinner as the card posted it" },
+    { "id": "p1", "date": "2027-02-09", "told": "2027-02-09T12:00", "kind": "repay", "to": "c", "amount": 40000, "settles": "c@2027-02-10", "note": "paid by a parent: no paying account" }
+  ],
+  "asks": [
+    { "id": "paid-01", "date": "2027-02-12", "question": "bank_today", "account": "b", "expected": 300000,
+      "why": "300,000 (opening) - 0 (the card statement was paid by a parent: a repay with no paying account takes nothing from the bank) = 300,000" },
+    { "id": "paid-02", "date": "2027-02-12", "question": "owed_now", "account": "c", "expected": 12000,
+      "why": "40,000 (Fri 8 Jan) - 40,000 (paid by a parent, Tue 9 Feb) + 12,000 (dinner, Fri 5 Feb, typed roughly) = 12,000" },
+    { "id": "paid-03", "date": "2027-02-12", "question": "not_seen_yet", "expected": { "items": [], "money_in": 0, "money_out": 0 },
+      "why": { "money_in": "none = 0", "money_out": "none = 0" },
+      "note": "The statement's payment c@2027-02-10 is settled by the parent's payment, so nothing is waited for." },
+    { "id": "paid-04", "date": "2027-02-20", "question": "owed_now", "account": "c", "expected": 12830,
+      "why": "40,000 (Fri 8 Jan) - 40,000 (paid by a parent) + 12,830 (the dinner as posted Wed 17 Feb; it replaces the rough 12,000, within 10%, matched by its buy date) = 12,830",
+      "note": "Posted 8 working days after the buy, outside the card's 7 working days by its posted date; its buy date is the typed day, so it matches [L matching q4]." },
+    { "id": "paid-05", "date": "2027-02-20", "question": "card_due", "account": "c", "expected": { "amount": 12830, "payment_date": "2027-04-12", "statement": "open" },
+      "why": "12,830 (the dinner, posted Wed 17 Feb, after the 15 Feb close, so in the statement closing 15 Mar) = 12,830",
+      "note": "The 15 Feb statement holds nothing new, so no payment is due on 10 Mar; the open one is paid on Sat 10 Apr, moved later to Mon 12 Apr." }
+  ]
+}

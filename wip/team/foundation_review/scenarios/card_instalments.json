@@ -1,0 +1,43 @@
+{
+  "life": "card_instalments",
+  "title": "A card buy in 12 parts: saved on its own pay-later account of the card (`of`), the card due only the part posted each month (final_review_2 S9, decision Q3)",
+  "story": "Set up Mon 4 Jan 2027: the bank holds 300,000. A card closes on the 15th and is paid on the 10th of the next month (moved later) from the bank; its last statement (15 Dec) was 0 and nothing is on it. On Wed 20 Jan a laptop of 120,000 is bought on the card in 12 monthly parts of 10,000 with no interest. It is saved on its own pay-later account `of` the card, whose plans list holds the laptop: 12 parts of 10,000, the first posted to the card on Mon 15 Feb, then on the 15th of each month. On Wed 10 Mar the card statement of 15 Feb (the first part) is paid. No fixed pay. Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2027-01-04", "to": "2027-03-31" },
+  "holidays": { "country": "none", "dates": [], "bank_closed": [] },
+  "accounts": [
+    { "id": "b", "name": "Bank", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2027-01-04", "amount": 300000 } },
+    { "id": "c", "name": "Card", "kind": "card", "currency": "JPY", "statement_close_day": 15,
+      "payment": { "day": 10, "months_after_close": 1, "from": "b", "pays": "in full", "weekend_holiday": "move later" },
+      "opening": { "date": "2027-01-04", "statement": { "closed": "2026-12-15", "amount": 0, "paid": true }, "current": 0 } },
+    { "id": "lap", "name": "Laptop on the card, 12 parts", "kind": "paylater", "currency": "JPY", "of": "c",
+      "opening": { "date": "2027-01-04", "owed": 0 },
+      "plans": [ { "id": "laptop", "amount": 10000, "count": 12, "first": "2027-02-15" } ] }
+  ],
+  "income": [],
+  "bills": [],
+  "goals": [],
+  "events": [
+    { "id": "e1", "date": "2027-01-20", "told": "2027-01-20T12:00", "kind": "spend", "account": "lap", "amount": 120000, "note": "laptop, on the card in 12 parts" },
+    { "id": "set:c@2027-03-10", "date": "2027-03-10", "told": "2027-03-10T20:00", "kind": "repay", "from": "b", "to": "c", "amount": 10000, "settles": "c@2027-03-10", "note": "statement of 15 Feb, ticked" }
+  ],
+  "asks": [
+    { "id": "inst-01", "date": "2027-02-16", "question": "card_due", "account": "c", "expected": { "amount": 10000, "payment_date": "2027-03-10", "statement": "closed" },
+      "why": "10,000 (laptop part 1 of 12, posted to the card Mon 15 Feb, in the statement closed that day) = 10,000",
+      "note": "Before Q3 the whole 120,000 was due on 10 Mar (final_review_2 S9)." },
+    { "id": "inst-02", "date": "2027-02-16", "question": "owed_now", "account": "lap", "expected": 110000,
+      "why": "0 (opening) + 120,000 (laptop, Wed 20 Jan) - 10,000 (part 1, posted to the card Mon 15 Feb) = 110,000" },
+    { "id": "inst-03", "date": "2027-02-16", "question": "owed_now", "account": "c", "expected": 10000,
+      "why": "0 (opening) + 10,000 (laptop part 1, posted Mon 15 Feb) = 10,000" },
+    { "id": "inst-04", "date": "2027-03-16", "question": "card_due", "account": "c", "expected": { "amount": 10000, "payment_date": "2027-04-12", "statement": "closed" },
+      "why": "0 (the 15 Feb statement, paid Wed 10 Mar) + 10,000 (laptop part 2 of 12, posted Mon 15 Mar) = 10,000",
+      "note": "Paid on Sat 10 Apr, moved later to Mon 12 Apr. Before Q3: 110,000." },
+    { "id": "inst-05", "date": "2027-03-16", "question": "owed_now", "account": "lap", "expected": 100000,
+      "why": "120,000 (laptop) - 10,000 (part 1, 15 Feb) - 10,000 (part 2, 15 Mar) = 100,000" },
+    { "id": "inst-06", "date": "2027-03-16", "question": "owed_now", "account": "c", "expected": 10000,
+      "why": "10,000 (part 1) + 10,000 (part 2) - 10,000 (paid Wed 10 Mar) = 10,000" },
+    { "id": "inst-07", "date": "2027-03-16", "question": "safe_to_spend", "account": "b", "expected": 280000,
+      "why": "300,000 (opening) - 10,000 (card paid Wed 10 Mar) - 10,000 (Card statement closed 15 Mar, paid 12 Apr: laptop part 2) = 280,000",
+      "note": "No fixed pay: the walk runs to Fri 30 Apr. The part posted 15 Apr is paid on 10 May, after it; parts not yet posted are not walked (section 14)." }
+  ]
+}

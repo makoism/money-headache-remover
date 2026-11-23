@@ -1,0 +1,38 @@
+{
+  "life": "fees",
+  "title": "A top-up that costs a fee: what left and what arrived both kept (a and a2), the difference a spend on the fees line from Free to spend, and a transfer schedule with its fee (final_review_2 S4, decision Q2)",
+  "story": "Set up Mon 4 Jan 2027 in pesos: the bank holds 20,000.00, of which 3,000.00 is what is left of Free to spend (typed), and an e-wallet holds nothing. Pay of 30,000.00 lands in the bank on the 25th (moved earlier) and starts the period; Free to spend is 5,000.00 a month. A top-up of 1,000.00 from the bank to the e-wallet is planned on the 5th and the 20th, and each one costs a 15.00 fee (the schedule carries `fee`). On Tue 5 Jan the check-in ticks the top-up: 1,015.00 left the bank and 1,000.00 arrived (a and a2). On Wed 6 Jan the bank statement is read: one line out of 1,015.00 on 5 Jan, which attaches to the transfer's bank side. Every amount is made up.",
+  "currency": "PHP",
+  "window": { "from": "2027-01-04", "to": "2027-01-31" },
+  "holidays": { "country": "none", "dates": [], "bank_closed": [] },
+  "main_bank": "b",
+  "accounts": [
+    { "id": "b", "name": "Bank", "kind": "bank", "currency": "PHP", "minimum": 0, "opening": { "date": "2027-01-04", "amount": 20000.00, "split": { "free": 3000.00 } } },
+    { "id": "g", "name": "E-wallet", "kind": "ewallet", "currency": "PHP", "minimum": 0, "opening": { "date": "2027-01-04", "amount": 0 } }
+  ],
+  "income": [
+    { "id": "pay", "name": "Pay", "account": "b", "amount": 30000.00, "schedule": { "frequency": "monthly", "day": 25 }, "weekend_holiday": "move earlier", "starts_period": true }
+  ],
+  "bills": [
+    { "id": "top", "name": "Top-up", "kind": "transfer", "account": "b", "to": "g", "amount": 1000.00, "fee": 15.00, "schedule": { "frequency": "monthly", "days": [5, 20] }, "weekend_holiday": "none" }
+  ],
+  "goals": [],
+  "plan": { "free": { "per": "month", "amount": 5000.00 } },
+  "events": [
+    { "id": "set:top@2027-01-05", "date": "2027-01-05", "told": "2027-01-05T20:00", "kind": "transfer", "from": "b", "to": "g", "amount_out": 1015.00, "amount_in": 1000.00, "settles": "top@2027-01-05", "note": "ticked: 1,015.00 left the bank, 1,000.00 arrived" },
+    { "id": "i1", "date": "2027-01-05", "posted": "2027-01-05", "told": "2027-01-06T09:00", "kind": "spend", "account": "b", "amount": 1015.00, "source": "statement", "note": "bank statement: top-up 1,015.00 out" }
+  ],
+  "asks": [
+    { "id": "fee-01", "date": "2027-01-06", "question": "bank_today", "account": "b", "expected": 18985.00,
+      "why": "20,000.00 (opening) - 1,015.00 (top-up of Tue 5 Jan, what left the bank; the statement line attaches to it) = 18,985.00" },
+    { "id": "fee-02", "date": "2027-01-06", "question": "bank_today", "account": "g", "expected": 1000.00,
+      "why": "0.00 (opening) + 1,000.00 (what arrived, a2) = 1,000.00",
+      "note": "Before Q2 one currency left a2 out, so the e-wallet showed 1,015.00 when it held 1,000.00 (final_review_2 S4)." },
+    { "id": "fee-03", "date": "2027-01-06", "question": "safe_to_spend", "account": "b", "expected": 17970.00,
+      "why": "18,985.00 (Bank today) - 1,015.00 (Top-up 20 Jan: 1,000.00 and its 15.00 fee, from the schedule's fee) = 17,970.00",
+      "note": "Its lowest point is 20 Jan; pay comes on Mon 25 Jan. Before Q2 the schedule had one amount for both sides and each top-up came off 15.00 short." },
+    { "id": "fee-04", "date": "2027-01-06", "question": "headline", "expected": 2985.00,
+      "why": "3,000.00 (Free to spend at the opening, typed) - 15.00 (the top-up's fee: a spend from the bank on the fees line, in Free to spend) = 2,985.00",
+      "note": "Free to spend caps the headline: the bank's 17,970.00 and the e-wallet's 1,000.00 are far above it." }
+  ]
+}

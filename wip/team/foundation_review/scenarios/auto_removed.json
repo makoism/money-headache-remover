@@ -1,0 +1,37 @@
+{
+  "life": "auto_removed",
+  "title": "A spend the app logs by itself, removed because someone else paid: the removal writes skip:<occurrence>, on one device and on two (final_review_2 S2, decision Q5)",
+  "story": "Set up Mon 4 Jan 2027: the bank holds 100,000. The gym fee of 8,000 logs itself on the 8th of each month (no weekend move). In January a parent pays it, so on Sat 9 Jan the person removes the spend the app logged: the record auto:gym@2027-01-08 is marked gone and the removal writes skip:gym@2027-01-08. In February the parent pays again. The phone logs the gym at 10:00 on Mon 8 Feb and the person removes it at 10:05 (gone, and skip:gym@2027-02-08); the laptop, not synced yet, is opened at 21:00 and writes its own auto:gym@2027-02-08. Its `at` is newer than the phone's removal, so after the merge that record is alive again, beside the phone's skip. The copy below is the merged one. In March nobody else pays and the gym logs itself as usual. No fixed pay. Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2027-01-04", "to": "2027-03-31" },
+  "holidays": { "country": "none", "dates": [], "bank_closed": [] },
+  "accounts": [
+    { "id": "b", "name": "Bank", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2027-01-04", "amount": 100000 } }
+  ],
+  "income": [],
+  "bills": [
+    { "id": "gym", "name": "Gym", "kind": "auto_spend", "account": "b", "amount": 8000, "schedule": { "frequency": "monthly", "day": 8 }, "weekend_holiday": "none" }
+  ],
+  "goals": [],
+  "events": [
+    { "id": "auto:gym@2027-01-08", "date": "2027-01-08", "told": "2027-01-08T10:00", "kind": "spend", "account": "b", "amount": 8000, "settles": "gym@2027-01-08", "gone": true, "note": "logged by itself, removed on Sat 9 Jan (a parent paid)" },
+    { "id": "skip:gym@2027-01-08", "date": "2027-01-08", "told": "2027-01-09T09:00", "kind": "skip", "settles": "gym@2027-01-08", "note": "written by the removal [Q5]" },
+    { "id": "skip:gym@2027-02-08", "date": "2027-02-08", "told": "2027-02-08T10:05", "kind": "skip", "settles": "gym@2027-02-08", "note": "the phone's removal" },
+    { "id": "auto:gym@2027-02-08", "date": "2027-02-08", "told": "2027-02-08T10:00", "kind": "spend", "account": "b", "amount": 8000, "settles": "gym@2027-02-08", "note": "alive after the merge: the laptop wrote its own copy at 21:00, newer than the phone's removal" }
+  ],
+  "asks": [
+    { "id": "auto-01", "date": "2027-01-12", "question": "bank_today", "account": "b", "expected": 100000,
+      "why": "100,000 (opening) - 0 (gym of Fri 8 Jan: its logged spend removed, and skip:gym@2027-01-08 says it did not happen) = 100,000",
+      "note": "Before Q5 the removed record no longer settled the occurrence, so the model logged it again: 92,000 (final_review_2 S2)." },
+    { "id": "auto-02", "date": "2027-01-12", "question": "check_in_list", "expected": { "items": [], "total": 0 },
+      "why": "none = 0" },
+    { "id": "auto-03", "date": "2027-02-10", "question": "bank_today", "account": "b", "expected": 100000,
+      "why": "100,000 (opening) - 0 (gym 8 Jan, skipped) - 0 (gym 8 Feb: skipped on the phone; the laptop's copy of the logged spend came back in the merge and does not count beside the skip) = 100,000",
+      "note": "Not logged again on any device [Q5]. Reading taken: a live skip of an occurrence wins over a self-logged spend of the same occurrence (section 14)." },
+    { "id": "auto-04", "date": "2027-02-10", "question": "safe_to_spend", "account": "b", "expected": 84000,
+      "why": "100,000 (Bank today) - 8,000 (Gym 8 Mar) - 8,000 (Gym 8 Apr) = 84,000",
+      "note": "No fixed pay: the walk reaches the gym's second occurrence from today, Thu 8 Apr." },
+    { "id": "auto-05", "date": "2027-03-09", "question": "bank_today", "account": "b", "expected": 92000,
+      "why": "100,000 (opening) - 8,000 (gym Mon 8 Mar, logged by itself) = 92,000" }
+  ]
+}
