@@ -77,6 +77,14 @@ function closeSet3() {
   (SET3.was || []).forEach(([el, h]) => { el.hidden = h; }); SET3.was = null;
   const b = $('#a3SetGo'); if (b) b.focus();
 }
+/* the first screen's "I already use the burrow on another device": Settings, with the cloud code box open and the
+   backup file's Restore beside it (draft words, FOR_MAKO copy pass) */
+async function fromOther3() {
+  openSet3();
+  $('#a3SetT').insertAdjacentHTML('afterend', `<p class="a3-next" data-set="other">Type the cloud code from your other device, or restore a backup file you saved there</p>`);
+  for (let i = 0; i < 40 && SET3.open && !$('#a3CloudHave'); i++) await new Promise(r => setTimeout(r, 25));   // the cloud card paints after it reads its state
+  if (SET3.open && $('#a3CloudHave') && typeof haveCode3 === 'function') haveCode3();
+}
 async function paintSpace3() {
   const el = $('#a3Space'); if (!el || typeof BurrowPersist !== 'object') return;
   const s = await BurrowPersist.space();

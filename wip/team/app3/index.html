@@ -7948,9 +7948,10 @@ function renderHome3() {
   if (!E3.book) {
     host.removeAttribute('data-origin');
     host.innerHTML = `<section class="a3-card" data-card="first"><h2>Welcome to the burrow</h2><p class="a3-sub">Put in what your bank shows today, your pay, your cards and your bills. Or look around first with made-up numbers shaped like a real month</p>
-      <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3SetupGo">Set up with your own numbers</button><button type="button" class="a3-btn" id="a3TryGo">See it with made-up numbers first</button></div></section>`;
+      <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3SetupGo">Set up with your own numbers</button><button type="button" class="a3-btn" id="a3TryGo">See it with made-up numbers first</button><button type="button" class="a3-btn" id="a3OtherGo">I already use the burrow on another device</button></div></section>`;
     $('#a3SetupGo').addEventListener('click', openSetup3);
     $('#a3TryGo').addEventListener('click', () => { E3.useTry('mako'); tryBand3(); renderHome3(); });
+    $('#a3OtherGo').addEventListener('click', fromOther3);
     return;
   }
   const day = E3.today(), yr = day.slice(0, 4);
@@ -9258,6 +9259,14 @@ function closeSet3() {
   $('#a3Set').hidden = true; $('#a3Set').innerHTML = '';
   (SET3.was || []).forEach(([el, h]) => { el.hidden = h; }); SET3.was = null;
   const b = $('#a3SetGo'); if (b) b.focus();
+}
+/* the first screen's "I already use the burrow on another device": Settings, with the cloud code box open and the
+   backup file's Restore beside it (draft words, FOR_MAKO copy pass) */
+async function fromOther3() {
+  openSet3();
+  $('#a3SetT').insertAdjacentHTML('afterend', `<p class="a3-next" data-set="other">Type the cloud code from your other device, or restore a backup file you saved there</p>`);
+  for (let i = 0; i < 40 && SET3.open && !$('#a3CloudHave'); i++) await new Promise(r => setTimeout(r, 25));   // the cloud card paints after it reads its state
+  if (SET3.open && $('#a3CloudHave') && typeof haveCode3 === 'function') haveCode3();
 }
 async function paintSpace3() {
   const el = $('#a3Space'); if (!el || typeof BurrowPersist !== 'object') return;

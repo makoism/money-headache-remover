@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-/* The ways out of the first screen and the made-up numbers.
+/* The ways out of the first screen and the made-up numbers. The first screen's "I already use the burrow on another
+   device": Settings with the cloud code box open and Restore from a file beside it, nothing written by looking.
    The try band's "Set up with my own numbers": out of the try book (from ?try=mako and from the first screen's
    made-up numbers), nothing of it written, setup opens; with a book this device already keeps, that book shows and
    setup does not. Made-up numbers only. */
@@ -56,6 +57,23 @@ async function fresh(url) {
     const k = await kept(p);
     ck('the kept book is as it was', k && k.events.length === bk.events.length);
     ck('no page errors (kept book)', errs.length === 0, errs.join(' | '));
+    await b.close();
+  }
+  /* 4. the first screen's "I already use the burrow on another device": the cloud code box, with Restore beside it */
+  {
+    const { b, p, errs } = await fresh('?today=' + DAY);
+    ck('the first screen offers it', (await p.$eval('#a3OtherGo', e => e.textContent).catch(() => '')) === 'I already use the burrow on another device');
+    await p.tap('#a3OtherGo'); await T.w(500);
+    ck('Settings opens over the first screen', await shows(p, '#a3Set') && !(await shows(p, '#a3Home')));
+    ck('it says what to do', /cloud code from your other device, or restore a backup file/.test(await p.$eval('[data-set=other]', e => e.textContent).catch(() => '')));
+    ck('the cloud code box is open and ready to type in', await p.evaluate(() => !!document.querySelector('#a3CloudCode') && document.activeElement === document.querySelector('#a3CloudCode')));
+    ck('Restore from a file is there', await shows(p, '#a3BkLoad'));
+    ck('nothing written by looking', (await kept(p)) === null);
+    await p.tap('#a3SetClose'); await T.w(300);
+    ck('Done is the first screen again', await shows(p, '#a3Home') && /Welcome to the burrow/.test(await p.$eval('#a3Home', e => e.textContent)) && !(await shows(p, '#a3Set')));
+    await p.tap('#a3SetGo'); await T.w(300);
+    ck('Settings opened from the header has no from-another-device line', !(await p.$('[data-set=other]')));
+    ck('no page errors (another device)', errs.length === 0, errs.join(' | '));
     await b.close();
   }
   T.done('e3_first');
