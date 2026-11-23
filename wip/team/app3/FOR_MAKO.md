@@ -62,7 +62,7 @@ limits, with what would remove each one. app3 works without any of them.
 - A big check-in gap in a past period shows as Free to spend overspent. Should it have its own line?
 - Goal pace reads "about ¥16,250 each pay to reach it by 1 Aug 2027".
 - Overdue reads "¥25,000 due 27 Nov has not been seen. Tick it at Check your bank when it has gone".
-- Cloud code look (MHR-XXXX), the turn-off words, 90 s between sends, a new build loading by itself when the page goes to the background.
+- Cloud code look (XXXX-XXXX-XXXX-XXXX-XXXX in groups of four; the MHR- prefix is gone from the screen, and a code typed with it still works), the turn-off words, 90 s between sends, a new build loading by itself when the page goes to the background.
 - With the cloud copy on, restoring a backup does not remove records added on another device since.
 - Names left open in screens/names.js: Bank today or In your bank; This pay period or Until next pay; and the others listed there.
 - Privacy words for statements and Ask.

@@ -155,7 +155,7 @@ async function turnOn3() {
 function haveCode3() {
   const f = $('#a3CloudForm');
   f.innerHTML = `<div class="a3-field"><label for="a3CloudCode">Your cloud code</label>
-      <input class="a3-in a3-text" id="a3CloudCode" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="MHR-XXXX-XXXX-XXXX-XXXX-XXXX">
+      <input class="a3-in a3-text" id="a3CloudCode" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX">
       <p class="a3-err" id="a3CloudErr" role="alert"></p></div>
     <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3CloudUse">Use this code</button></div>`;
   $('#a3CloudUse').addEventListener('click', useCode3);
@@ -163,7 +163,7 @@ function haveCode3() {
 }
 async function useCode3() {
   const err = $('#a3CloudErr'), code = CLOUD3.codeClean($('#a3CloudCode').value);
-  if (!CLOUD3.codeValid(code)) { err.textContent = 'The code is 20 letters and digits, like MHR-XXXX-XXXX-XXXX-XXXX-XXXX. Check that none is missing.'; return; }
+  if (!CLOUD3.codeValid(code)) { err.textContent = 'The code is 20 letters and digits, like XXXX-XXXX-XXXX-XXXX-XXXX. Check that none is missing.'; return; }
   err.textContent = 'Looking for the cloud copy.';
   const keys = await CLOUD3.keysFor(code);
   const c = await CLOUD3.fetchCloud({ api: cloudApi3(), pack: BurrowPack, keys });

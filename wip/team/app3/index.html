@@ -8240,7 +8240,6 @@ function drawHome3() {
   if (late.length) out.push(`<section class="a3-card" data-card="notseen"><h2>${esc3(label3('notSeenYet'))}</h2><p class="a3-sub">These were due and are not ticked off. Check your bank to tick them</p><ul class="a3-rows">${rowsHtml3(late, home, yr, 'notSeenYet.items')}</ul></section>`);
   for (const l of r.laterOn) out.push(`<p class="a3-warn" data-warn="later">${esc3(BurrowScreens.status.laterText(l, wctx))}</p>`);
   out.push(`<div class="a3-actions"><button type="button" class="a3-btn solid" id="a3CheckGo">Check your bank</button></div>`);
-  out.push('<p class="a3-later">Coming next: burrows and the art</p>');
   host.setAttribute('data-origin', origin);
   host.innerHTML = out.join('');
   /* every figure carries where it came from: a sample screen shows only sample values; the person's bank figure is typed, the rest worked out */
@@ -9146,7 +9145,7 @@ async function saveSetup3() {
 /* ---------- CLOUD3: the cloud copy of the new shape (SCHEMA_V3 1, 2.2, 2.3; DECISIONS_ROUND2 D5, E3, AQ, AW, BD2, BD5) ----------
    The copy is packed by store/pack.js ({ fmt: 'gz1', v, enc: 'aes-gcm', iv, data }: JSON, gzipped, then encrypted in this
    browser) and kept on the vault server (/api/vault/<id>). The server sees only ciphertext.
-   The code. A recovery code the person keeps (20 letters and digits, shown as MHR-XXXX-XXXX-XXXX-XXXX-XXXX) is turned into
+   The code. A recovery code the person keeps (20 letters and digits, shown as XXXX-XXXX-XXXX-XXXX-XXXX) is turned into
    three values, as the old app does (ui42.js keysFor): PBKDF2-SHA-256, 150,000 rounds, salt 'mhr2000-vault-v1', then HKDF-
    SHA-256 with an empty salt splits it into the vault id, the write token and the AES-GCM key. Only the HKDF labels differ:
    'burrow3:id', 'burrow3:token', 'burrow3:enc' (the old app uses 'id', 'token', 'enc'). So the same code opens a different
@@ -9172,8 +9171,10 @@ async function saveSetup3() {
     let s = ''; for (let i = 0; i < 20; i++) s += ALPHA[b[i] % ALPHA.length];
     return s;
   }
-  const codeShow = c => 'MHR-' + String(c).match(/.{1,4}/g).join('-');
-  const codeClean = v => String(v || '').toUpperCase().replace(/^\s*MHR/, '').replace(/[^A-Z0-9]/g, '').replace(/O/g, '0').replace(/[IL]/g, '1');
+  /* shown in groups of four with no prefix; the MHR- an older build showed in front is display only, so a code typed
+     with it is still read (23 characters starting MHR), and a code that itself starts with MHR keeps those letters */
+  const codeShow = c => String(c).match(/.{1,4}/g).join('-');
+  const codeClean = v => { const s = String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); return (s.length === 23 && s.startsWith('MHR') ? s.slice(3) : s).replace(/O/g, '0').replace(/[IL]/g, '1'); };
   const codeValid = c => /^[A-Z0-9]{20}$/.test(c);
   const hex = u8 => Array.from(u8, x => x.toString(16).padStart(2, '0')).join('');
   const keyCache = new Map();
@@ -9421,7 +9422,7 @@ async function turnOn3() {
 function haveCode3() {
   const f = $('#a3CloudForm');
   f.innerHTML = `<div class="a3-field"><label for="a3CloudCode">Your cloud code</label>
-      <input class="a3-in a3-text" id="a3CloudCode" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="MHR-XXXX-XXXX-XXXX-XXXX-XXXX">
+      <input class="a3-in a3-text" id="a3CloudCode" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX">
       <p class="a3-err" id="a3CloudErr" role="alert"></p></div>
     <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3CloudUse">Use this code</button></div>`;
   $('#a3CloudUse').addEventListener('click', useCode3);
@@ -9429,7 +9430,7 @@ function haveCode3() {
 }
 async function useCode3() {
   const err = $('#a3CloudErr'), code = CLOUD3.codeClean($('#a3CloudCode').value);
-  if (!CLOUD3.codeValid(code)) { err.textContent = 'The code is 20 letters and digits, like MHR-XXXX-XXXX-XXXX-XXXX-XXXX. Check that none is missing.'; return; }
+  if (!CLOUD3.codeValid(code)) { err.textContent = 'The code is 20 letters and digits, like XXXX-XXXX-XXXX-XXXX-XXXX. Check that none is missing.'; return; }
   err.textContent = 'Looking for the cloud copy.';
   const keys = await CLOUD3.keysFor(code);
   const c = await CLOUD3.fetchCloud({ api: cloudApi3(), pack: BurrowPack, keys });
@@ -10578,7 +10579,7 @@ function openRem3() {
   sheet.innerHTML = `<div class="a3-sheet-in">
     <h1 id="a3RemT">Reminders</h1>
     <div class="a3-card" data-card="rem-check"><h2>Check your bank</h2>
-      <p class="a3-next">A reminder to open the app and check your bank. It keeps safe to spend true.</p>
+      <p class="a3-next">A reminder to open the app and check your bank. It keeps safe to spend true</p>
       <label class="a3-check"><input type="checkbox" id="a3RemAfter"${REM3.afterPay ? ' checked' : ''}> The day after pay lands</label>
       <label class="a3-check"><input type="checkbox" id="a3RemMid"${REM3.mid ? ' checked' : ''}> The middle of each pay period</label>
       <p class="a3-sub" id="a3RemNext" data-rem="next"></p></div>

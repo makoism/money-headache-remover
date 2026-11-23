@@ -1,7 +1,7 @@
 /* ---------- CLOUD3: the cloud copy of the new shape (SCHEMA_V3 1, 2.2, 2.3; DECISIONS_ROUND2 D5, E3, AQ, AW, BD2, BD5) ----------
    The copy is packed by store/pack.js ({ fmt: 'gz1', v, enc: 'aes-gcm', iv, data }: JSON, gzipped, then encrypted in this
    browser) and kept on the vault server (/api/vault/<id>). The server sees only ciphertext.
-   The code. A recovery code the person keeps (20 letters and digits, shown as MHR-XXXX-XXXX-XXXX-XXXX-XXXX) is turned into
+   The code. A recovery code the person keeps (20 letters and digits, shown as XXXX-XXXX-XXXX-XXXX-XXXX) is turned into
    three values, as the old app does (ui42.js keysFor): PBKDF2-SHA-256, 150,000 rounds, salt 'mhr2000-vault-v1', then HKDF-
    SHA-256 with an empty salt splits it into the vault id, the write token and the AES-GCM key. Only the HKDF labels differ:
    'burrow3:id', 'burrow3:token', 'burrow3:enc' (the old app uses 'id', 'token', 'enc'). So the same code opens a different
@@ -27,8 +27,10 @@
     let s = ''; for (let i = 0; i < 20; i++) s += ALPHA[b[i] % ALPHA.length];
     return s;
   }
-  const codeShow = c => 'MHR-' + String(c).match(/.{1,4}/g).join('-');
-  const codeClean = v => String(v || '').toUpperCase().replace(/^\s*MHR/, '').replace(/[^A-Z0-9]/g, '').replace(/O/g, '0').replace(/[IL]/g, '1');
+  /* shown in groups of four with no prefix; the MHR- an older build showed in front is display only, so a code typed
+     with it is still read (23 characters starting MHR), and a code that itself starts with MHR keeps those letters */
+  const codeShow = c => String(c).match(/.{1,4}/g).join('-');
+  const codeClean = v => { const s = String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); return (s.length === 23 && s.startsWith('MHR') ? s.slice(3) : s).replace(/O/g, '0').replace(/[IL]/g, '1'); };
   const codeValid = c => /^[A-Z0-9]{20}$/.test(c);
   const hex = u8 => Array.from(u8, x => x.toString(16).padStart(2, '0')).join('');
   const keyCache = new Map();

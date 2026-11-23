@@ -66,8 +66,7 @@ const DAYS = ['2026-11-23', '2026-12-09', '2026-12-10', '2026-12-11', '2026-12-1
   const labelOnly = shown.map(x => ({ label: x.label.replace(/ until next pay on .*$/, ''), figure: x.figure }));
   ck('labels come from the name table', SN.check(labelOnly).length === 0, SN.check(labelOnly).join('; '));
   /* Plan and Receipts are here already: the last line names only what is still to come */
-  const later = await p.evaluate(() => [...document.querySelectorAll('.a3-later')].map(e => e.textContent).join(' | '));
-  ck('the "coming next" line names only burrows and the art', later === 'Coming next: burrows and the art', later);
+  ck('no "Coming next" line on Home', !/Coming next/.test(await p.$eval('#a3Home', e => e.textContent)));
   const old = await T.readOld(p);
   ck('the old app\'s copy is byte for byte the same', old.ls === T.OLD_TEXT && old.idb === T.OLD_IDB, JSON.stringify(old).slice(0, 200));
   ck('no page errors', errs.length === 0, errs.join(' | '));

@@ -34,7 +34,7 @@ const until = async (f, ms) => { for (let i = 0; i < (ms || 8000) / 100; i++) { 
     await A.p.click('#a3CloudOn');
     ck('turning on shows a code once', await until(async () => !!(await A.p.$('[data-cloud=code]'))));
     const code = (await A.p.$eval('[data-cloud=code]', e => e.textContent)).trim();
-    ck('the code looks like MHR-XXXX-XXXX-XXXX-XXXX-XXXX', /^MHR(-[A-Z0-9]{4}){5}$/.test(code), code);
+    ck('the code looks like XXXX-XXXX-XXXX-XXXX-XXXX, no prefix', /^[A-Z0-9]{4}(-[A-Z0-9]{4}){4}$/.test(code), code);
     ck('nothing is sent before the person says they saved the code', vault.rows.size === 0);
     await A.p.click('#a3CloudSaved');
     ck('then the copy is sent', await until(() => vault.rows.size === 1 && /^On\. Last in step/.test(''), 200) || await until(async () => vault.rows.size === 1 && /^On\./.test(await state(A.p))));
@@ -48,7 +48,7 @@ const until = async (f, ms) => { for (let i = 0; i < (ms || 8000) / 100; i++) { 
     ck('a device with nothing offers "I have a code" but no turn on', !!(await B.p.$('#a3CloudHave')) && !(await B.p.$('#a3CloudOn')));
     await B.p.click('#a3CloudHave'); await B.p.type('#a3CloudCode', 'MHR-AAAA'); await B.p.click('#a3CloudUse'); await T.w(200);
     ck('a short code is refused with what a code looks like', /20 letters and digits/.test(await B.p.$eval('#a3CloudErr', e => e.textContent)));
-    await B.p.$eval('#a3CloudCode', e => { e.value = ''; }); await B.p.type('#a3CloudCode', code.toLowerCase()); await B.p.click('#a3CloudUse');
+    await B.p.$eval('#a3CloudCode', e => { e.value = ''; }); await B.p.type('#a3CloudCode', 'mhr-' + code.toLowerCase()); await B.p.click('#a3CloudUse');
     ck('the code finds the cloud copy and B takes it', await until(async () => { const b = await stored(B.p); return !!b && b.schedules.length === book.schedules.length; }));
     await B.p.click('#a3SetClose'); await T.w(200);
     ck('B\'s Home shows the book', /Safe to spend/.test(await B.p.$eval('#a3Home', e => e.textContent)));

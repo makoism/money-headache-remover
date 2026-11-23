@@ -25,6 +25,7 @@ const noStamp = s => s.replace(/DTSTAMP:\d{8}T\d{6}Z/g, 'DTSTAMP:x');
   const before = JSON.stringify(await saved(p));
 
   await p.click('#a3RemGo'); await T.w(300);
+  ck('the check-in line has no full stop at its end (VOICE)', await p.$eval('#a3Rem', e => /It keeps safe to spend true(?!\.)/.test(e.textContent) && !/safe to spend true\./.test(e.textContent)));
   ck('Reminders opens as its own sheet over the tabs', await p.$eval('#a3Rem', e => !e.hidden) && await p.$eval('#a3Home', e => e.hidden));
   const c0 = R.checkins(bk, DAY);
   ck('both check-in days ticked; the next three are the engine\'s days', await p.$eval('#a3RemAfter', e => e.checked) && await p.$eval('#a3RemMid', e => e.checked)

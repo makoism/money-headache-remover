@@ -24,7 +24,7 @@ function openRem3() {
   sheet.innerHTML = `<div class="a3-sheet-in">
     <h1 id="a3RemT">Reminders</h1>
     <div class="a3-card" data-card="rem-check"><h2>Check your bank</h2>
-      <p class="a3-next">A reminder to open the app and check your bank. It keeps safe to spend true.</p>
+      <p class="a3-next">A reminder to open the app and check your bank. It keeps safe to spend true</p>
       <label class="a3-check"><input type="checkbox" id="a3RemAfter"${REM3.afterPay ? ' checked' : ''}> The day after pay lands</label>
       <label class="a3-check"><input type="checkbox" id="a3RemMid"${REM3.mid ? ' checked' : ''}> The middle of each pay period</label>
       <p class="a3-sub" id="a3RemNext" data-rem="next"></p></div>

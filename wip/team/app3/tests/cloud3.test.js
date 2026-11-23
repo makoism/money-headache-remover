@@ -24,7 +24,10 @@ const canon = x => S.canon(x);
   const pack = window.BurrowPack;
   const code = C.newCode();
   ck('a new code is 20 letters and digits that are hard to misread', C.codeValid(code) && !/[01OIL]/.test(code), code);
-  ck('a typed code is read back however it was written', C.codeClean(' mhr-' + C.codeShow(code).slice(4).toLowerCase() + ' ') === code);
+  ck('the code is shown in groups of four, with no prefix', C.codeShow(code) === code.match(/.{4}/g).join('-'), C.codeShow(code));
+  ck('a typed code is read back however it was written', C.codeClean(' ' + C.codeShow(code).toLowerCase() + ' ') === code);
+  ck('an older code written with MHR- in front is still read', C.codeClean('MHR-' + C.codeShow(code)) === code && C.codeClean(' mhr ' + code.toLowerCase()) === code);
+  ck('a code that itself starts with MHR keeps those letters', C.codeClean('MHRA-BCDE-FGHJ-KMNP-QRST') === 'MHRABCDEFGHJKMNPQRST');
   const keys = await C.keysFor(code);
   ck('the code makes a vault id, a token and a key', /^[a-f0-9]{64}$/.test(keys.id) && /^[a-f0-9]{64}$/.test(keys.token) && !!keys.key);
 
