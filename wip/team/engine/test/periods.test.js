@@ -91,4 +91,24 @@ t('Mako\'s made-up shape before any pay is ticked: only the period running now',
   eq([r.current.start, r.current.end], ['2026-11-10', '2026-12-09']);
   ok(r.current.moneyIn.total === 0);
 });
+const { scheduleView } = require('../periods.js');
+t('each schedule on a day: its amount, rule, next occurrence (moved off the weekend)', () => {
+  const v = scheduleView(base(), '2027-01-05');
+  eq([v.rent.kind, v.rent.amount, v.rent.rule], ['bill', 70000, { every: 'month', days: [27] }]);
+  eq(v.rent.next, { due: '2027-01-27', land: '2027-01-27', amount: 70000 });
+  // 25 Jan 2027 is a Monday: no move; 25 Dec 2027 is a Saturday, moved before
+  eq(scheduleView(base(), '2027-12-01').pay.next, { due: '2027-12-25', land: '2027-12-24', amount: 250000 });
+});
+t('a change may start only after the latest occurrence a record names [X8]', () => {
+  const v = scheduleView(base(), '2026-12-27');
+  // the 27 Dec rent was paid (settled) on 28 Dec: a change from 27 Dec would no longer make it
+  eq([v.rent.lastNamed, v.rent.changeFrom], ['2026-12-27', '2026-12-28']);
+  eq([v.pay.lastNamed, v.pay.changeFrom], ['2026-12-25', '2026-12-27']);
+  const b = base(x => { x.schedules[1].amounts = { '2027-01-27': { amount: 71000, at: '2026-12-01T10:00' + TZ, by: 'aaaaaa' } }; });
+  eq(scheduleView(b, '2027-01-05').rent.changeFrom, '2027-01-28');
+});
+t('an ended bill has no next occurrence after its end', () => {
+  const b = base(x => { x.schedules[1].ends = '2027-01-31'; });
+  eq(scheduleView(b, '2027-02-01').rent.next, null);
+});
 done('periods.test.js');

@@ -15,6 +15,7 @@
   { "name": "Statements read: rows with posting dates, card statements, Japanese dates and files, the pasted-answer checker", "test": "tests/e3_stmt_read.js", "passes": true },
   { "name": "Statements written: imp: lines with posting dates, matched to typed spends and expected items by the frozen rules (engine/match.js), card payments once, card statements as statement records, BC4 lines, duplicates once", "test": "tests/e3_stmt_plan.js", "passes": true },
   { "name": "Receipts: log a spend fast (amount, line or place, account or card, day, note), a refund, money moved; list by period with search; change and remove with Undo; Free to spend left and safe to spend before and after, from the engine", "test": "tests/e3_receipts.js", "passes": true },
+  { "name": "Plan steps through act3: budget lines, Free to spend, bills from a date, goals in the bank or their own account, loans, card days (pure)", "test": "tests/plan3_write.test.js", "passes": true },
   { "name": "Setup, short (setup3)", "test": "tests/e3_setup.js", "passes": false }
  ]
 }
