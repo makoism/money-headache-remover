@@ -69,8 +69,10 @@
     const lineAcct = l => l.acct || mainAcct;   // [O4] a line with no account is on the main bank
     const moneyAcct = id => (acct[id] && acct[id].type === 'card' ? acct[id].payFrom || mainAcct : id);   // a card's line: its paying account
     const payFromOf = id => acct[id].payFrom || mainAcct;
-    // [AN3] the main bank's minimum lives in home.main; any other account's in its own minBank
-    const minimumOf = id => (id === mainAcct ? (main.min ? main.min.a : 0) : acct[id].minBank ? acct[id].minBank.a : 0);
+    // [AN3] the main bank's minimum lives in home.main; any other account's in its own minBank. [AS11, AV2] A main
+    // minimum in another currency than the main bank's is never converted: no minimum is used and the person is asked.
+    const mainMinOtherCur = () => !!(main.min && mainAcct && acct[mainAcct] && main.min.cur && main.min.cur !== cur(mainAcct));
+    const minimumOf = id => (id === mainAcct ? (main.min && !mainMinOtherCur() ? main.min.a : 0) : acct[id].minBank ? acct[id].minBank.a : 0);
 
     // ----- the openings: one `open` and a `check` the same day, written together [B6, B7, H1] -----
     const all = (book.events || []).map((e, i) => ({ e, i }));
@@ -935,6 +937,7 @@
         currency: a.cur, minimum, lowest: w.lowest, lowestDay: dayStr(w.lowestDay), headroom: w.headroom,
         spendFrom: isClosed ? false : a.spendFrom != null ? a.spendFrom : !!SPEND_TYPES[a.type] && a.cur === home && !backsGoal(id),
         why: whyText(w.why, w.headroom, a.cur), fillers: banks[id].fillers };
+      if (id === mainAcct && mainMinOtherCur()) res.warnings.push({ account: id, code: 'minimum_other_currency', text: `The minimum kept for ${a.name} is in ${main.min.cur}, not ${a.cur}: what is its minimum in ${a.cur}?` });
       if (w.headroom < 0) res.warnings.push({ account: id, code: 'below_minimum', day: r.lowestDay, short: -w.headroom, text: `${a.name} goes ${fmt(-w.headroom, a.cur)} below its minimum on ${r.lowestDay}` });
       const later = walk(id, today + LATER_ON_DAYS, 0);   // [B11]
       if (later.firstBelowZero !== null && later.firstBelowZero > horizon) res.laterOn.push({ account: id, day: dayStr(later.firstBelowZero), balance: later.belowBal, text: `Later on: ${a.name} goes below zero in ${dayStr(later.firstBelowZero).slice(0, 7)}` });
