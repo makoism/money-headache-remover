@@ -4,7 +4,8 @@
    side pay to 58,000 (a tap selects the old amount, so typing replaces it) and types 339,000 for the bank. Home then
    shows 339,000 checked today and every figure equals the engine's for the same records written in node; card B still
    leaves on 11 Dec; nothing is written anywhere (a try book).
-   Kept book: the same book put in IndexedDB burrow3; a check-in is saved there and is still there after a reload;
+   Kept book: the same book saved through the store (store/idb.js, IndexedDB burrow3); a check-in is saved there and is
+   still there after a reload and a browser restart;
    the old app's copies are byte for byte the same after hide, pagehide and reload. */
 'use strict';
 const T = require('./lib3.js');
@@ -54,7 +55,7 @@ async function walk(p, bk) {
     ck('the late bills are still not seen yet', (await p.$$('[data-card=notseen] li')).length === 3);
     await T.shot(p, 'home_after_checkin_' + DAY);
     const stored = await p.evaluate(() => new Promise(res => indexedDB.databases ? indexedDB.databases().then(d => res({ dbs: d.map(x => x.name), ls: localStorage.length })) : res({ dbs: [], ls: localStorage.length })));
-    ck('a try book writes nothing', !stored.dbs.includes('burrow3') && stored.ls === 0, JSON.stringify(stored));
+    ck('a try book writes nothing', !stored.dbs.includes('burrow3') && stored.ls === 0, JSON.stringify(stored));   // ?try=mako never opens the store
     ck('no page errors (try)', errs.length === 0, errs.join(' | '));
     await b.close();
   }
@@ -65,7 +66,8 @@ async function walk(p, bk) {
     await p.goto(T.URL0 + '?today=' + DAY); await T.w(300);
     ck('with nothing kept, the first screen offers the made-up numbers', !!(await p.$('#a3TryGo')));
     await T.seedOld(p);
-    await p.evaluate(bk0 => new Promise(res => { const rq = indexedDB.open('burrow3', 1); rq.onupgradeneeded = () => rq.result.createObjectStore('slice1'); rq.onsuccess = () => { const db = rq.result, tx = db.transaction('slice1', 'readwrite'); tx.objectStore('slice1').put({ v: 1, book: bk0, t: 1 }, 'book'); tx.oncomplete = () => { db.close(); res(); }; }; }), bk);
+    const saved = await p.evaluate(async bk0 => { const s = await BurrowStore.open(); const r = await s.save(bk0, { full: true }); s.db && s.db.close(); return r; }, bk);
+    ck('the book is saved through the store', saved && saved.ok, JSON.stringify(saved));
     await p.reload(); await T.w(400);
     await walk(p, bk);
     await p.click('#a3CheckSave'); await T.w(500);
@@ -81,7 +83,7 @@ async function walk(p, bk) {
     const old = await T.readOld(p);
     ck('the old app\'s copies are byte for byte the same after hide, pagehide and reload', old.ls === T.OLD_TEXT && old.idb === T.OLD_IDB, JSON.stringify(old).slice(0, 300));
     const keys = await p.evaluate(() => Object.keys(localStorage));
-    ck('app3 writes no localStorage key', keys.length === 1 && keys[0] === T.OLD_KEY, keys.join(','));
+    ck('app3 writes only the store\'s small device keys (burrow3.*) in localStorage', keys.every(k => k === T.OLD_KEY || /^burrow3\./.test(k)), keys.join(','));
     ck('no page errors (kept)', errs.length === 0, errs.join(' | '));
     await b.close();
   }

@@ -48,7 +48,12 @@ async function saveCheck3() {
     if (v === null) { err.textContent = `Type the amount for ${E3.occName(o.item)}`; row.querySelector('[data-amt]').focus(); return; }
     ticked.push(o.item); if (v !== o.amount) amounts[o.item] = v;
   }
-  const out = BurrowEngine.checkin.checkIn(E3.book, { day: check3.day, told: E3.told(), newId: E3.newId, figures, ticked, unticked: [], amounts, expected, lands });
+  const out = BurrowEngine.checkin.checkIn(E3.book, { day: check3.day, told: E3.told('00'), newId: E3.newId, figures, ticked, unticked: [], amounts, expected, lands });
+  /* TODO(lane A, lane C): the figure is read after the ticked items went through, but the writer gives them all one
+     `told`, so the engine orders them by their place in the list, and the store hands events back sorted by id. A
+     reload then put the check before the pay and counted the pay twice. Until the writer or the store keeps that order,
+     the check is told one second after the items it holds. */
+  for (const e of out.events) if (e.k === 'check') { e.told = E3.told('01'); e.at = e.told; }
   const ok = await E3.write(out);
   if (!ok) { err.textContent = 'This could not be saved on this device. Nothing changed'; return; }
   closeCheck3(); renderHome3();

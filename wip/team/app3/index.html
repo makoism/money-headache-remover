@@ -3840,6 +3840,645 @@ body::before { content: ''; position: fixed; inset: 0; z-index: -1; background: 
 
   return { createQueue, mount, KINDS, LIFE, BAND_CSS };
 });
+// The Burrow's clock for the new store (SCHEMA_V3 section 0; DECISIONS_ROUND2 D4, D8, AH1, AI1, M4, N1, N2).
+// Plain browser JavaScript, no dependencies. Sets window.BurrowClock (and module.exports under Node).
+//
+// - A time is ISO with its offset (2026-11-23T10:00:00.000+09:00) and is compared as a moment, never as text.
+// - A device's own write uses its own clock [AH1]: `at` = the later of now and (the newest `at` it has seen + 1 ms).
+//   A long gap since the last write is normal and never held.
+// - A copy that arrives with an `at` or `told` more than a day ahead of this device's own now is held at that now
+//   plus 1 ms, with a `held: { came, at }` mark [M4, N1, N2, AI1]. Same result as rules/merge_ref.js holdArriving.
+// - D8: dates are whole day numbers; one day back from the last open is allowed; more than one day back or more
+//   than 40 days ahead asks before anything is written; "today" is worked out again when the page comes back into
+//   view and at local midnight.
+(function (root) {
+  'use strict';
+  const DAY = 86400000;
+  const ms = t => Date.parse(t);
+
+  // ---------- writing a time ----------
+  function offsetOf(t) { const m = /([+-])(\d\d):(\d\d)$/.exec(t); return m ? (m[1] === '-' ? -1 : 1) * (+m[2] * 60 + +m[3]) : 0; }
+  const pad = (n, w) => String(n).padStart(w || 2, '0');
+  // A moment written in the given offset (minutes east of UTC).
+  function write(msValue, offsetMin) {
+    const d = new Date(msValue + offsetMin * 60000), o = Math.abs(offsetMin);
+    return d.getUTCFullYear() + '-' + pad(d.getUTCMonth() + 1) + '-' + pad(d.getUTCDate()) + 'T' + pad(d.getUTCHours()) + ':' +
+      pad(d.getUTCMinutes()) + ':' + pad(d.getUTCSeconds()) + '.' + pad(d.getUTCMilliseconds(), 3) +
+      (offsetMin < 0 ? '-' : '+') + pad(Math.floor(o / 60)) + ':' + pad(o % 60);
+  }
+  // Now, in this device's own offset (daylight saving and a flight change it; every time carries its own).
+  function nowIso(d) { d = d || new Date(); return write(d.getTime(), -d.getTimezoneOffset()); }
+
+  // ---------- days [D8] ----------
+  // Whole day numbers: never `new Date('<date>')` (read as UTC) and never toISOString() of now (yesterday in Japan
+  // before 9:00).
+  function dayNum(s) { const p = String(s).slice(0, 10).split('-').map(Number); return Math.round(Date.UTC(p[0], p[1] - 1, p[2]) / DAY); }
+  function dayStr(n) { const d = new Date(n * DAY); return d.getUTCFullYear() + '-' + pad(d.getUTCMonth() + 1) + '-' + pad(d.getUTCDate()); }
+  const addDays = (s, n) => dayStr(dayNum(s) + n);
+  const daysBetween = (a, b) => dayNum(b) - dayNum(a);
+  // The person's calendar day on this device now.
+  function todayStr(d) { d = d || new Date(); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+
+  // [D8] 'back' for a date more than one day before the last open, 'ahead' for more than 40 days after it.
+  function clockAsk(today, lastDay) {
+    if (!lastDay) return null;
+    const d = dayNum(today) - dayNum(lastDay);
+    return d < -1 ? 'back' : d > 40 ? 'ahead' : null;
+  }
+  // On opening (and on coming back into view): is there a question about the date, and what is the device's
+  // `clock.lastSeen` afterwards. Nothing may be written while `ask` is set; once the person confirms the date,
+  // call again with { confirmed: true }. One day back keeps the later day as the last open.
+  function openDay(device, today, opts) {
+    const last = device && device.clock ? device.clock.lastSeen : device && device.lastSeen;
+    const ask = opts && opts.confirmed ? null : clockAsk(today, last);
+    if (ask) return { ask, lastSeen: last };
+    return { ask: null, lastSeen: !last || opts && opts.confirmed || dayNum(today) > dayNum(last) ? today : last };
+  }
+
+  // ---------- the hybrid clock [D4, AH1] ----------
+  function nextAtWarn(now, lastSeen, lastDay) {
+    return { at: write(Math.max(ms(now), lastSeen ? ms(lastSeen) + 1 : -Infinity), offsetOf(now)),
+      warn: clockAsk(String(now).slice(0, 10), lastDay) !== null };
+  }
+  const nextAt = (now, lastSeen) => nextAtWarn(now, lastSeen).at;
+  // The newest `at` anywhere in what was read, at any depth, compared as moments [AL2]. A held mark's `came` is not
+  // an `at`, so a fast clock's time is never seen.
+  function newestAt(copy) {
+    let best = null, bestMs = -Infinity;
+    (function walk(x) {
+      if (Array.isArray(x)) { for (let i = 0; i < x.length; i++) walk(x[i]); return; }
+      if (x && typeof x === 'object') {
+        if (typeof x.at === 'string') { const m = ms(x.at); if (m > bestMs) { bestMs = m; best = x.at; } }
+        for (const k in x) if (Object.prototype.hasOwnProperty.call(x, k)) walk(x[k]);
+      }
+    })(copy);
+    return best;
+  }
+  // One clock per page: stamp() gives the `at` (and `told`) of the next own write; see(x) takes in what was read.
+  function makeClock(opts) {
+    let seen = opts && opts.lastSeen || null;
+    const later = t => { if (t && (!seen || ms(t) > ms(seen))) seen = t; };
+    return {
+      stamp(now) { const at = nextAt(now || nowIso(), seen); seen = at; return at; },
+      see(x) { later(typeof x === 'string' ? x : newestAt(x)); },
+      seen: () => seen,
+    };
+  }
+
+  // ---------- holding a copy that arrives far ahead [M4, N1, N2, AI1] ----------
+  const sameMoment = (a, b) => typeof a === 'string' && typeof b === 'string' && ms(a) === ms(b);
+  // `mine` is this device's copy (its held marks are reused, so a copy held once is not held again); `now` is this
+  // device's own now. Returns { copy, warn }; the input is not changed.
+  function holdArriving(copy, mine, now) {
+    if (!now) throw new Error('a copy that arrives is judged against the receiving device\'s own now [AH1]');
+    let warn = false;
+    const held = JSON.parse(JSON.stringify(copy || {}));
+    const ahead = t => typeof t === 'string' && ms(t) > ms(now) + DAY;
+    const cap = () => { warn = true; return write(ms(now) + 1, offsetOf(now)); };
+    const holdAt = (x, mark) => {
+      if (mark && sameMoment(x.at, mark.came)) { x.at = mark.at; x.held = mark; }
+      else if (ahead(x.at)) { const came = x.at; x.at = cap(); x.held = { came, at: x.at }; }
+      if (ahead(x.told)) x.told = cap();
+    };
+    const twin = (list, v) => (Array.isArray(list) && v && typeof v === 'object'
+      ? list.find(m => m && ((v.id !== undefined && m.id === v.id) || (v.id === undefined && v.from !== undefined && m.from === v.from))) : undefined);
+    (function walk(x, m) {
+      if (Array.isArray(x)) return x.forEach(v => walk(v, twin(m, v)));
+      if (!x || typeof x !== 'object') return;
+      m = m && typeof m === 'object' ? m : undefined;
+      if (typeof x.at === 'string') holdAt(x, m && m.held);
+      for (const k of Object.keys(x)) if (k !== 'at' && k !== 'held') walk(x[k], m && m[k]);
+    })(held, mine);
+    return { copy: held, warn };
+  }
+
+  // ---------- "today", worked out again [D8] ----------
+  // Calls onChange(newDay, oldDay) when the local day changes: at local midnight while the page is open, and when
+  // the page comes back into view (visibilitychange, focus, pageshow), since timers do not run in the background.
+  function watchToday(onChange, opts) {
+    const win = opts && opts.win || root;
+    let day = todayStr(), timer = null, stopped = false;
+    const check = () => {
+      if (stopped) return;
+      const d = todayStr();
+      if (d !== day) { const old = day; day = d; try { onChange(d, old); } catch (e) { /* the caller's problem */ } }
+      arm();
+    };
+    const arm = () => {
+      clearTimeout(timer);
+      const n = new Date(), next = new Date(n.getFullYear(), n.getMonth(), n.getDate() + 1, 0, 0, 1);
+      timer = setTimeout(check, Math.max(1000, next - n));
+    };
+    const onVis = () => { if (!win.document || win.document.visibilityState !== 'hidden') check(); };
+    win.document && win.document.addEventListener('visibilitychange', onVis);
+    win.addEventListener('focus', check);
+    win.addEventListener('pageshow', check);
+    arm();
+    return {
+      today: () => day,
+      check,
+      stop() { stopped = true; clearTimeout(timer); win.document && win.document.removeEventListener('visibilitychange', onVis); win.removeEventListener('focus', check); win.removeEventListener('pageshow', check); },
+    };
+  }
+
+  const api = { DAY, ms, offsetOf, write, nowIso, dayNum, dayStr, addDays, daysBetween, todayStr, clockAsk, openDay,
+    nextAt, nextAtWarn, newestAt, makeClock, holdArriving, watchToday };
+  root.BurrowClock = api;
+  if (typeof module === 'object' && module.exports) module.exports = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+// The version check every writer asks before writing (SCHEMA_V3 section 1; DECISIONS_ROUND2 D6).
+// Plain browser JavaScript, no dependencies. Sets window.BurrowGuard.
+//
+// - ledgerMayWrite(storedV): asked by every writer (local save, another tab, IndexedDB, backup restore, cloud) with
+//   the shape version `v` it found stored. A newer `v` than this page knows makes the page read-only for good, with
+//   "Update the app"; both copies stay as they are. A `v` that is not a whole number is treated the same way.
+// - mayRestore(v): a backup or cloud copy of a newer shape is refused, without making the page read-only.
+// - tabs: one BroadcastChannel ('burrow3'). Every message carries the sender's shape; a message from a newer shape
+//   makes this page read-only and is not passed on. A page says hello when it opens; a newer page answers an older
+//   page's hello, so an old tab learns of a newer one whichever opened first.
+// - The old 38.31 key: the move leaves the marker { movedTo: 'burrow3', at } there [D6]. The marker has no `rev`, so
+//   a 38.31 tab still open does not take it as a newer copy (ui0.js storage listener). Such a tab can still write its
+//   own copy back over the marker; oldKeyState() then says 'rewritten' and the move should run again on that copy
+//   (the move's `mv:` ids make a second run add only what changed).
+(function (root) {
+  'use strict';
+  const OLD_KEY = 'money-map-template-v2';
+  const MOVED_FLAG = 'burrow3.moved';   // localStorage: when this device left the marker
+  const CHANNEL = 'burrow3';
+  let pageV = Number.isInteger(root.BURROW_PAGE_V) ? root.BURROW_PAGE_V : 3;
+  const st = { readOnly: false, why: null, seenV: null };
+  const roListeners = [], msgListeners = [];
+
+  const WORDS = {
+    title: 'Update the app',
+    body: 'Your money was saved by a newer version of the app. This page can show it but will not save anything, so nothing is lost. Close this page and open the app again to update.',
+  };
+
+  // A stored shape: a whole number, or nothing stored yet (null or undefined). Anything else cannot be read.
+  function shapeOf(v) {
+    if (v === undefined || v === null) return 0;
+    const n = typeof v === 'string' && /^\d+$/.test(v) ? +v : v;
+    return Number.isInteger(n) && n >= 0 ? n : NaN;
+  }
+  function stop(why, v) {
+    if (st.readOnly) return;
+    st.readOnly = true; st.why = why; st.seenV = v === undefined ? null : v;
+    roListeners.forEach(f => { try { f({ why: st.why, seenV: st.seenV, words: WORDS }); } catch (e) { /* a listener's own fault */ } });
+  }
+  // The one question every writer asks before it writes.
+  function ledgerMayWrite(storedV) {
+    if (st.readOnly) return false;
+    const n = shapeOf(storedV);
+    if (Number.isNaN(n)) { stop('unreadable', storedV); return false; }
+    if (n > pageV) { stop('newer', n); return false; }
+    return true;
+  }
+  function mayRestore(v) { const n = shapeOf(v); return !st.readOnly && !Number.isNaN(n) && n <= pageV; }
+
+  // ---------- tabs ----------
+  let ch = null;
+  function channel() {
+    if (ch || typeof BroadcastChannel !== 'function') return ch;
+    ch = new BroadcastChannel(CHANNEL);
+    ch.onmessage = e => {
+      const m = e.data;
+      if (!m || typeof m !== 'object') return;
+      if (!ledgerMayWrite(m.v)) return;   // a newer shape: read-only, and its message is not ours to read
+      if (m.type === 'hello') { if (shapeOf(m.v) < pageV) post({ type: 'hello' }); return; }
+      msgListeners.forEach(f => { try { f(m); } catch (er) { /* a listener's own fault */ } });
+    };
+    return ch;
+  }
+  function post(msg) {
+    const c = channel();
+    if (c) try { c.postMessage(Object.assign({}, msg, { v: msg.v === undefined ? pageV : msg.v })); } catch (e) { /* closed */ }
+  }
+
+  // ---------- the old 38.31 key ----------
+  function ls() { try { return root.localStorage || null; } catch (e) { return null; } }
+  function leaveMarker(at) {
+    const s = ls(); if (!s) return false;
+    try { s.setItem(OLD_KEY, JSON.stringify({ movedTo: 'burrow3', at })); s.setItem(MOVED_FLAG, at); return true; } catch (e) { return false; }
+  }
+  // 'none', 'data' (a 38.31 copy to move), 'marker' (moved), 'rewritten' (moved, then an old page wrote again),
+  // 'unreadable' (damaged text; the move keeps it as its frozen text).
+  function oldKeyState() {
+    const s = ls(); if (!s) return 'none';
+    let raw, flag;
+    try { raw = s.getItem(OLD_KEY); flag = s.getItem(MOVED_FLAG); } catch (e) { return 'none'; }
+    if (raw === null) return 'none';
+    let d; try { d = JSON.parse(raw); } catch (e) { return 'unreadable'; }
+    if (d && d.movedTo === 'burrow3') return 'marker';
+    if (!d || typeof d !== 'object') return 'unreadable';
+    return flag ? 'rewritten' : 'data';
+  }
+
+  const api = {
+    OLD_KEY, CHANNEL, WORDS,
+    pageV: () => pageV,
+    setPageV(n) { pageV = n; post({ type: 'hello' }); },   // the build sets it; tests stand in for a later build
+    ledgerMayWrite, mayRestore,
+    readOnly: () => st.readOnly, why: () => st.why, seenV: () => st.seenV,
+    words: () => WORDS,
+    onReadOnly(f) { roListeners.push(f); if (st.readOnly) f({ why: st.why, seenV: st.seenV, words: WORDS }); },
+    stop,
+    tabs: { post, on(f) { channel(); msgListeners.push(f); } },
+    leaveMarker, oldKeyState,
+  };
+  root.BurrowGuard = api;
+  channel();
+  post({ type: 'hello' });
+})(typeof window !== 'undefined' ? window : globalThis);
+// The main store: IndexedDB `burrow3` (SCHEMA_V3 section 1; DECISIONS_ROUND2 D1, D2, D3, D6, AW7).
+// Plain browser JavaScript, no dependencies. Load clock.js and guard.js first. Sets window.BurrowStore.
+//
+// Stores:
+//   events  one record per event, keyed by `id`, indexed by `date` and `acct`
+//   kept    one record per shared kept version (`keptVersions`, ids `kept:<record id or field path>`, AW7), and a
+//           whole copy kept before a big replace (ids `copy:<at>`, D2), never inside the book
+//   book    'book': everything else in the shared copy; 'meta': { v, rev, at } of the last save
+//   device  'device': device-only state (SCHEMA_V3 2.2), never in the shared copy
+// localStorage holds small device things only: the device part of ids, the theme, the last open day.
+//
+// Writing only what changed: every edit moves a record's `at` (SCHEMA_V3 section 0), so a record is written when
+// its `at` differs from the one last read or written here; the book is written when its text differs.
+// Every save asks BurrowGuard.ledgerMayWrite with the stored `v`, inside the same transaction as its writes, and
+// is refused when another tab saved since this page last read (the stored `rev` is not the one this page knows).
+// The other tab is told over BroadcastChannel and reads only the records that changed.
+(function (root) {
+  'use strict';
+  const NAME = 'burrow3', IDB_VERSION = 1;
+  const LISTS = { events: 'events', keptVersions: 'kept' };   // copy field -> store, one record per item
+  const NOT_IN_BOOK = new Set(['events', 'keptVersions', 'rev', 'at', 'fmt']);
+  const KEPT_LO = 'kept:', KEPT_HI = 'kept:￿', COPY_LO = 'copy:', COPY_HI = 'copy:￿';
+  const MANY = 2000;   // a tab message lists changed ids up to this many; more and the other tab reads everything
+
+  const EMPTY_WORDS = 'Nothing is saved on this device yet. Load your cloud copy or backup file to bring your money back, or start setup.';
+  const FULL_WORDS = 'Not saved: this device has no space left. Free some space and the app saves again. Your last save is safe.';
+
+  const G = () => root.BurrowGuard;
+  const pageV = () => (G() ? G().pageV() : 3);
+  const mayWrite = v => !G() || G().ledgerMayWrite(v);
+  const readOnly = () => !!(G() && G().readOnly());
+  const nowIso = () => (root.BurrowClock ? root.BurrowClock.nowIso() : new Date().toISOString());
+
+  function openRaw(name, version) {
+    return new Promise((resolve, reject) => {
+      let q;
+      try { q = version ? indexedDB.open(name, version) : indexedDB.open(name); } catch (e) { reject(e); return; }
+      q.onupgradeneeded = () => {
+        const db = q.result;
+        if (!db.objectStoreNames.contains('events')) {
+          const ev = db.createObjectStore('events', { keyPath: 'id' });
+          ev.createIndex('date', 'date'); ev.createIndex('acct', 'acct');
+        }
+        if (!db.objectStoreNames.contains('kept')) db.createObjectStore('kept', { keyPath: 'id' });
+        if (!db.objectStoreNames.contains('book')) db.createObjectStore('book');
+        if (!db.objectStoreNames.contains('device')) db.createObjectStore('device');
+      };
+      q.onsuccess = () => resolve(q.result);
+      q.onerror = () => reject(q.error);
+    });
+  }
+  function bookOf(copy) {
+    const b = {};
+    for (const k of Object.keys(copy)) if (!NOT_IN_BOOK.has(k)) b[k] = copy[k];
+    return b;
+  }
+
+  class Store {
+    constructor(name, version) {
+      this.name = name; this.version = version; this.db = null;
+      this.atOf = { events: new Map(), keptVersions: new Map() };
+      this.bookJson = null; this.rev = 0; this.had = false;
+      this.q = Promise.resolve();
+    }
+    // Every operation runs one after the other, so a tab message is never read in the middle of a save.
+    run(f) { const p = this.q.then(f, f); this.q = p.catch(() => {}); return p; }
+
+    async conn() {
+      if (this.db) return this.db;
+      let db;
+      try { db = await openRaw(this.name, this.version); }
+      catch (e) {
+        if (!e || e.name !== 'VersionError') throw e;
+        if (G()) G().stop('newer', null);   // a later build changed the store: read it, never write [D6]
+        db = await openRaw(this.name);
+      }
+      if (db.version > this.version && G()) G().stop('newer', null);
+      db.onversionchange = e => {   // another page wants the store: let go at once
+        db.close(); if (this.db === db) this.db = null;
+        if (e.newVersion !== null && G()) G().stop('newer', null);   // a later build; null is a delete
+      };
+      db.onclose = () => { if (this.db === db) this.db = null; };   // the browser closed it (data cleared)
+      this.db = db;
+      return db;
+    }
+    async tx(stores, mode) {
+      for (let i = 0; ; i++) {
+        const db = await this.conn();
+        try { return db.transaction(stores, mode); }
+        catch (e) { if (i || e.name !== 'InvalidStateError') throw e; this.db = null; }   // closed under us: open again once
+      }
+    }
+    remember(field, list) { const m = this.atOf[field]; for (const r of list) m.set(r.id, r.at); }
+
+    // The whole copy, or { empty: true } when nothing is stored.
+    load() {
+      return this.run(async () => {
+        const tx = await this.tx(['book', 'events', 'kept', 'device'], 'readonly');
+        const got = {};
+        tx.objectStore('book').get('meta').onsuccess = e => { got.meta = e.target.result; };
+        tx.objectStore('book').get('book').onsuccess = e => { got.book = e.target.result; };
+        tx.objectStore('events').getAll().onsuccess = e => { got.events = e.target.result; };
+        tx.objectStore('kept').getAll(IDBKeyRange.bound(KEPT_LO, KEPT_HI)).onsuccess = e => { got.kept = e.target.result; };
+        tx.objectStore('device').get('device').onsuccess = e => { got.device = e.target.result; };
+        await done(tx);
+        this.atOf.events.clear(); this.atOf.keptVersions.clear();
+        const device = got.device || null;
+        if (!got.meta && !got.book) {
+          this.had = false; this.rev = 0; this.bookJson = null;
+          return { copy: null, device, empty: true, readOnly: readOnly(), rev: 0 };
+        }
+        const meta = got.meta || { v: got.book.v, rev: 0 };
+        mayWrite(meta.v);
+        const book = got.book || {};
+        this.bookJson = JSON.stringify(book);
+        this.remember('events', got.events); this.remember('keptVersions', got.kept);
+        this.rev = meta.rev; this.had = true;
+        const copy = Object.assign({}, book, { events: got.events, keptVersions: got.kept, rev: meta.rev, at: meta.at });
+        return { copy, device, empty: false, readOnly: readOnly(), rev: meta.rev };
+      });
+    }
+
+    // Writes what changed in `copy` since this page last read or wrote. Sets copy.v, copy.rev and copy.at.
+    // { ok: true, events, kept, book, rev, cleared } or { ok: false, why: 'read-only' | 'behind' | 'full' | 'error' }.
+    // opts.full writes every record; opts.replace also removes stored records the copy does not have (a big replace;
+    // keep the old copy with keepCopy first).
+    save(copy, opts) {
+      opts = opts || {};
+      return this.run(async () => {
+        if (readOnly()) return { ok: false, why: 'read-only' };
+        for (const f of Object.keys(LISTS)) for (const r of copy[f] || []) {
+          if (!r || typeof r.id !== 'string') return { ok: false, why: 'error', error: 'a record in ' + f + ' has no id' };
+        }
+        const v = pageV(), book = bookOf(Object.assign({}, copy, { v })), bookJson = JSON.stringify(book);
+        const pick = (f, all) => (copy[f] || []).filter(r => all || !this.atOf[f].has(r.id) || this.atOf[f].get(r.id) !== r.at);
+        let tx;
+        try { tx = await this.tx(['book', 'events', 'kept'], 'readwrite'); } catch (e) { return { ok: false, why: 'error', error: String(e) }; }
+        const out = { ok: true, events: 0, kept: 0, book: false, cleared: false };
+        let why = null, written = null, rev = this.rev, at = null;
+        const isFull = e => /Quota/.test(e && e.name || '') || /quota|space/i.test(String(e && e.message));
+        tx.objectStore('book').get('meta').onsuccess = e => { try { write(e.target.result); } catch (er) {
+          // a write refused at once (the browser's space ran out, or a record it cannot store): nothing is kept
+          why = isFull(er) ? 'full' : 'error'; written = null; try { tx.abort(); } catch (x) { /* already over */ }
+        } };
+        const write = meta => {
+          if (!mayWrite(meta && meta.v)) { why = 'read-only'; tx.abort(); return; }
+          if (meta && meta.rev !== this.rev) { why = 'behind'; tx.abort(); return; }
+          const cleared = !meta && this.had;   // the browser or another tab removed the store under us
+          const all = !!(opts.full || opts.replace || cleared);
+          const ch = { events: pick('events', all), keptVersions: pick('keptVersions', all) };
+          const bookCh = all || bookJson !== this.bookJson;
+          if (!ch.events.length && !ch.keptVersions.length && !bookCh) return;   // nothing changed: nothing written
+          if (opts.replace) { tx.objectStore('events').clear(); tx.objectStore('kept').delete(IDBKeyRange.bound(KEPT_LO, KEPT_HI)); }
+          const evs = tx.objectStore('events'), kept = tx.objectStore('kept');
+          for (const r of ch.events) evs.put(r);
+          for (const r of ch.keptVersions) kept.put(r);
+          rev = Math.max(Date.now(), this.rev + 1); at = nowIso();
+          if (bookCh) tx.objectStore('book').put(book, 'book');
+          tx.objectStore('book').put({ v, rev, at }, 'meta');
+          written = { ch, bookCh, cleared, all };
+        };
+        try { await done(tx); }
+        catch (e) {
+          if (why) return { ok: false, why };
+          return { ok: false, why: isFull(e) ? 'full' : 'error', error: (e && e.name || '') + ' ' + (e && e.message || '') };
+        }
+        if (!written) return Object.assign(out, { rev: this.rev });
+        if (written.all) { this.atOf.events.clear(); this.atOf.keptVersions.clear(); }
+        this.remember('events', written.ch.events); this.remember('keptVersions', written.ch.keptVersions);
+        if (written.bookCh) this.bookJson = bookJson;
+        this.rev = rev; this.had = true;
+        copy.v = v; copy.rev = rev; copy.at = at;
+        const ids = l => (l.length > MANY ? null : l.map(r => r.id));
+        if (G()) G().tabs.post({ type: 'saved', rev, events: written.all ? null : ids(written.ch.events), kept: written.all ? null : ids(written.ch.keptVersions), book: written.bookCh });
+        return Object.assign(out, { events: written.ch.events.length, kept: written.ch.keptVersions.length, book: written.bookCh, cleared: written.cleared, rev });
+      });
+    }
+
+    // What another tab saved, read from the store: { events, keptVersions, book (or null), rev }. The page joins
+    // it into its own copy; the records read count as known here, so they are not written back unchanged.
+    onOther(fn) {
+      if (!G()) return;
+      G().tabs.on(m => {
+        if (!m || m.type !== 'saved') return;
+        this.run(() => this.readChanged(m)).then(ch => { if (ch) fn(ch); }, () => {});
+      });
+    }
+    async readChanged(m) {
+      if (m.events === null || m.kept === null) return this.catchUpNow();
+      const tx = await this.tx(['book', 'events', 'kept'], 'readonly');
+      const got = { events: [], keptVersions: [], book: null };
+      tx.objectStore('book').get('meta').onsuccess = e => { got.meta = e.target.result; };
+      if (m.book) tx.objectStore('book').get('book').onsuccess = e => { got.book = e.target.result || null; };
+      for (const id of m.events || []) tx.objectStore('events').get(id).onsuccess = e => { if (e.target.result) got.events.push(e.target.result); };
+      for (const id of m.kept || []) tx.objectStore('kept').get(id).onsuccess = e => { if (e.target.result) got.keptVersions.push(e.target.result); };
+      await done(tx);
+      if (!got.meta) return null;
+      mayWrite(got.meta.v);
+      this.remember('events', got.events); this.remember('keptVersions', got.keptVersions);
+      if (got.book) this.bookJson = JSON.stringify(got.book);
+      this.rev = got.meta.rev; this.had = true;
+      return { events: got.events, keptVersions: got.keptVersions, book: got.book, rev: got.meta.rev };
+    }
+    // After a save was refused as 'behind': everything stored that differs from what this page knows.
+    catchUp() { return this.run(() => this.catchUpNow()); }
+    async catchUpNow() {
+      const tx = await this.tx(['book', 'events', 'kept'], 'readonly');
+      const got = {};
+      tx.objectStore('book').get('meta').onsuccess = e => { got.meta = e.target.result; };
+      tx.objectStore('book').get('book').onsuccess = e => { got.book = e.target.result; };
+      tx.objectStore('events').getAll().onsuccess = e => { got.events = e.target.result; };
+      tx.objectStore('kept').getAll(IDBKeyRange.bound(KEPT_LO, KEPT_HI)).onsuccess = e => { got.kept = e.target.result; };
+      await done(tx);
+      if (!got.meta) return { events: [], keptVersions: [], book: null, rev: 0, cleared: this.had };
+      mayWrite(got.meta.v);
+      const diff = (f, list) => list.filter(r => !this.atOf[f].has(r.id) || this.atOf[f].get(r.id) !== r.at);
+      const out = { events: diff('events', got.events), keptVersions: diff('keptVersions', got.kept), book: null, rev: got.meta.rev };
+      const bj = JSON.stringify(got.book || {});
+      if (bj !== this.bookJson) { out.book = got.book || {}; this.bookJson = bj; }
+      this.remember('events', out.events); this.remember('keptVersions', out.keptVersions);
+      this.rev = got.meta.rev; this.had = true;
+      return out;
+    }
+
+    // A whole copy kept before a big replace (backup restore, cloud load), as its own record [D2].
+    keepCopy(copy, why) {
+      return this.run(async () => {
+        if (readOnly()) throw new Error('read-only');
+        const at = nowIso(), id = COPY_LO + at;
+        const tx = await this.tx(['kept'], 'readwrite');
+        tx.objectStore('kept').put({ id, why: why || '', at, copy });
+        await done(tx);
+        return id;
+      });
+    }
+    keptCopies() {
+      return this.run(async () => {
+        const tx = await this.tx(['kept'], 'readonly'), out = [];
+        tx.objectStore('kept').openCursor(IDBKeyRange.bound(COPY_LO, COPY_HI)).onsuccess = e => {
+          const c = e.target.result; if (!c) return;
+          out.push({ id: c.value.id, why: c.value.why, at: c.value.at, events: (c.value.copy.events || []).length }); c.continue();
+        };
+        await done(tx);
+        return out;
+      });
+    }
+    keptCopy(id) {
+      return this.run(async () => {
+        const tx = await this.tx(['kept'], 'readonly'); let r;
+        tx.objectStore('kept').get(id).onsuccess = e => { r = e.target.result; };
+        await done(tx);
+        return r || null;
+      });
+    }
+
+    // Device-only state (SCHEMA_V3 2.2): never merged, never in the cloud copy or a backup.
+    getDevice() {
+      return this.run(async () => {
+        const tx = await this.tx(['device'], 'readonly'); let r;
+        tx.objectStore('device').get('device').onsuccess = e => { r = e.target.result; };
+        await done(tx);
+        return r || null;
+      });
+    }
+    putDevice(d) {
+      return this.run(async () => {
+        if (readOnly()) return false;
+        const tx = await this.tx(['device'], 'readwrite');
+        tx.objectStore('device').put(d, 'device');
+        await done(tx);
+        return true;
+      });
+    }
+    close() { if (this.db) { this.db.close(); this.db = null; } }
+  }
+
+  function done(tx) {
+    return new Promise((resolve, reject) => {
+      tx.oncomplete = () => resolve();
+      tx.onabort = () => reject(tx.error || new DOMException('aborted', 'AbortError'));
+    });
+  }
+
+  async function open(opts) {
+    opts = opts || {};
+    const s = new Store(opts.name || NAME, opts.idbVersion || IDB_VERSION);
+    await s.conn();
+    return s;
+  }
+
+  // ---------- small device things in localStorage ----------
+  const P = 'burrow3.';
+  const ABC = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  function rand(n) {
+    let s = '';
+    const b = new Uint8Array(n * 2);
+    while (s.length < n) {
+      crypto.getRandomValues(b);
+      for (let i = 0; i < b.length && s.length < n; i++) if (b[i] < 252) s += ABC[b[i] % 36];   // 252 = 7 * 36, no bias
+    }
+    return s;
+  }
+  function lsGet(k) { try { return root.localStorage.getItem(P + k); } catch (e) { return null; } }
+  function lsSet(k, v) { try { root.localStorage.setItem(P + k, v); return true; } catch (e) { return false; } }
+  let memDevice = null;   // when localStorage is blocked, the part lasts for this page only
+  const local = {
+    deviceIdPart() {
+      let d = lsGet('device');
+      if (!d || !/^[a-z0-9]{6}$/.test(d)) { d = memDevice || rand(6); if (!lsSet('device', d)) memDevice = d; }
+      return d;
+    },
+    sessionPart: () => rand(10),
+    theme() { const t = lsGet('theme'); return t === 'light' || t === 'auto' ? t : 'dark'; },
+    setTheme: t => lsSet('theme', t === 'light' || t === 'auto' ? t : 'dark'),
+    lastOpen: () => lsGet('lastOpen'),
+    setLastOpen: d => lsSet('lastOpen', d),
+  };
+  // Ids `<device part>-<session part>-<counter>` (SCHEMA_V3 section 0): a new session part per page open.
+  function idMaker() {
+    const d = local.deviceIdPart(), s = local.sessionPart();
+    let n = 0;
+    return () => d + '-' + s + '-' + (++n);
+  }
+
+  root.BurrowStore = { NAME, IDB_VERSION, EMPTY_WORDS, FULL_WORDS, open, local, idMaker, bookOf };
+})(typeof window !== 'undefined' ? window : globalThis);
+// Asking the browser to keep the data, and the space used (SCHEMA_V3 section 1; DECISIONS_ROUND2 D7).
+// Plain browser JavaScript, no dependencies. Sets window.BurrowPersist.
+//
+// Without persist(), Chrome on Android counts the site's storage as "best effort" and may clear all of it
+// (IndexedDB and localStorage together) when the phone runs low on space (sweep2_platform 2).
+// - afterSetup(): called once setup is done; asks once per device and remembers the answer in localStorage.
+// - askToKeep(): asks now (Settings can offer it again).
+// - space(): { persisted, usage, quota, words } for Settings.
+(function (root) {
+  'use strict';
+  const KEY = 'burrow3.persist';
+  const navOf = o => (o && o.nav) || root.navigator || {};
+
+  async function askToKeep(opts) {
+    const st = navOf(opts).storage;
+    if (!st || typeof st.persist !== 'function') return { granted: null, asked: false };
+    try { if (typeof st.persisted === 'function' && await st.persisted()) return { granted: true, asked: false }; } catch (e) { /* ask below */ }
+    let granted = false;
+    try { granted = (await st.persist()) === true; } catch (e) { granted = false; }
+    return { granted, asked: true };
+  }
+
+  async function afterSetup(opts) {
+    let before = null;
+    try { before = root.localStorage.getItem(KEY); } catch (e) { /* no storage: ask */ }
+    if (before === 'yes' || before === 'no') {
+      const st = navOf(opts).storage;
+      let now = before === 'yes';
+      try { if (st && typeof st.persisted === 'function') now = await st.persisted(); } catch (e) { /* keep the remembered answer */ }
+      return { granted: now, asked: false };
+    }
+    const r = await askToKeep(opts);
+    if (r.granted !== null) try { root.localStorage.setItem(KEY, r.granted ? 'yes' : 'no'); } catch (e) { /* asked again next time */ }
+    return r;
+  }
+
+  // Sizes as people read them on a phone: 1,000 bytes to a KB.
+  function sizeWords(b) {
+    b = Math.max(0, +b || 0);
+    const one = (v, unit) => (v < 10 ? String(Math.round(v * 10) / 10) : String(Math.round(v))) + ' ' + unit;
+    if (b < 1e6) return (b === 0 ? 0 : Math.max(1, Math.round(b / 1000))) + ' KB';
+    if (b < 1e9) return one(b / 1e6, 'MB');
+    return one(b / 1e9, 'GB');
+  }
+
+  const KEPT = 'This device keeps your money until you remove it.';
+  const NOT_KEPT = 'The browser may clear your money if this device runs low on space. Keep the cloud copy on or save a backup file.';
+  const UNKNOWN = 'This browser does not say whether it keeps your money. Keep the cloud copy on or save a backup file.';
+
+  async function space(opts) {
+    const st = navOf(opts).storage;
+    if (!st) return { persisted: null, usage: null, quota: null, words: UNKNOWN };
+    let persisted = null, usage = null, quota = null;
+    if (typeof st.persisted === 'function') { try { persisted = (await st.persisted()) === true; } catch (e) { persisted = false; } }
+    if (typeof st.estimate === 'function') {
+      try { const e = await st.estimate(); usage = typeof e.usage === 'number' ? e.usage : null; quota = typeof e.quota === 'number' ? e.quota : null; } catch (e) { /* unknown */ }
+    }
+    let words = persisted === true ? KEPT : persisted === false ? NOT_KEPT : UNKNOWN;
+    if (usage !== null) words += ' Space used: ' + sizeWords(usage) + (quota ? ' of ' + sizeWords(quota) : '') + '.';
+    return { persisted, usage, quota, words };
+  }
+
+  root.BurrowPersist = { askToKeep, afterSetup, space, sizeWords, WORDS: { KEPT, NOT_KEPT, UNKNOWN } };
+})(typeof window !== 'undefined' ? window : globalThis);
 </script>
 <script>
 (function () {
@@ -4273,15 +4912,15 @@ const msg3 = text => MSG3.post({ kind: 'toast', key: 'a3', text });
    write what it returns. No sums here.
    Where the book comes from:
      ?try=mako   the made-up Mako book, read only: a check-in changes it in memory, nothing is ever written.
-     otherwise   the book kept in IndexedDB `burrow3` (store `slice1`, one record). TODO(lane C): use wip/team/store/
-                 when it lands, and move this record into it with its source marker (WIRING_PLAN "Watch").
+     otherwise   the book kept by the store (wip/team/store/, IndexedDB `burrow3`); with nothing kept, the first screen
+                 offers setup3 and the made-up numbers.
    The old app's keys (localStorage money-map-template-v2, IndexedDB money-map-safe) are never read or written here;
-   only engine/move.js may read them (AZ1).
+   the move (engine/move.js) is not wired (DECISIONS_ROUND2 BE: version one starts empty).
    ?today=YYYY-MM-DD shows the page as on that day (for checks); on a try book the day box does the same, so the page
      works as a plain file with no address. */
+const root3 = globalThis;
 const E3 = (() => {
   const Q = new URLSearchParams(location.search);
-  const DB = 'burrow3', STORE = 'slice1', KEY = 'book';
   let book = null, mode = 'none', dayShown = null;
   const pad2 = n => String(n).padStart(2, '0');
   function today() {
@@ -4290,37 +4929,17 @@ const E3 = (() => {
     if (t && /^\d{4}-\d{2}-\d{2}$/.test(t)) return t;
     const d = new Date(); return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
   }
-  /* the moment a record is told: the shown day at the device's clock time, with the device's offset */
-  function told() {
+  /* the moment a record is told: the shown day at the device's clock time (to the minute, then the given seconds),
+     with the device's offset */
+  function told(sec) {
     const d = new Date(), off = -d.getTimezoneOffset(), sign = off < 0 ? '-' : '+', a = Math.abs(off);
-    return today() + 'T' + pad2(d.getHours()) + ':' + pad2(d.getMinutes()) + sign + pad2(Math.floor(a / 60)) + ':' + pad2(a % 60);
+    return today() + 'T' + pad2(d.getHours()) + ':' + pad2(d.getMinutes()) + ':' + (sec || '00') + sign + pad2(Math.floor(a / 60)) + ':' + pad2(a % 60);
   }
-  const idMaker = BurrowEngine.ids.idMaker(devicePart());
-  function devicePart() {
-    // TODO(lane C): the device part is kept by the store. Slice 1 draws one per open: ids stay unique (the session part is random).
-    const abc = 'abcdefghijklmnopqrstuvwxyz0123456789'; let s = '';
-    for (let i = 0; i < 6; i++) s += abc[Math.floor(Math.random() * abc.length)];
-    return s;
-  }
-  /* ---- the slice 1 holder: one record in IndexedDB burrow3 ---- */
-  function dbOpen() {
-    return new Promise(res => {
-      try {
-        const rq = indexedDB.open(DB, 1);
-        rq.onupgradeneeded = () => { try { rq.result.createObjectStore(STORE); } catch (e) { /* reported by onerror */ } };
-        rq.onsuccess = () => res(rq.result); rq.onerror = () => res(null); rq.onblocked = () => res(null);
-      } catch (e) { res(null); }
-    });
-  }
-  function dbRun(mode2, fn) {
-    return dbOpen().then(db => new Promise(res => {
-      if (!db) { res(null); return; }
-      try {
-        const tx = db.transaction(STORE, mode2), rq = fn(tx.objectStore(STORE));
-        tx.oncomplete = () => { db.close(); res({ v: rq.result }); }; tx.onerror = tx.onabort = () => { db.close(); res(null); };
-      } catch (e) { db.close(); res(null); }
-    }));
-  }
+  /* ids `<device part>-<session part>-<n>`: the store keeps the device part (store/idb.js). A try book writes nothing,
+     not even the device part, so its ids use a made-up one. */
+  let idMaker = null, tryIds = null;
+  const newId = () => mode === 'try' ? (tryIds = tryIds || BurrowEngine.ids.idMaker('try000'))() : (idMaker = idMaker || BurrowStore.idMaker())();
+  let store = null, readOnly = false;
   /* the day box on a try book: show the page as on that day */
   function setToday(d) { if (/^\d{4}-\d{2}-\d{2}$/.test(d || '')) dayShown = d; }
   /* the first screen's "See it with made-up numbers first": a try book in memory, nothing written */
@@ -4328,13 +4947,29 @@ const E3 = (() => {
   async function load() {
     const t = Q.get('try');
     if (t && TRY_BOOKS[t]) { book = JSON.parse(JSON.stringify(TRY_BOOKS[t])); mode = 'try'; return; }
-    const r = await dbRun('readonly', st => st.get(KEY));
-    if (r && r.v && r.v.book) { book = r.v.book; mode = 'kept'; } else { book = null; mode = 'none'; }
+    book = null; mode = 'none';
+    try {
+      store = await BurrowStore.open();
+      const r = await store.load();
+      readOnly = !!r.readOnly;
+      if (!r.empty && r.copy) { book = r.copy; mode = 'kept'; }
+    } catch (e) { store = null; }
   }
-  async function save() {
-    if (mode !== 'kept') return true;   // a try book is never written
-    const r = await dbRun('readwrite', st => st.put({ v: 1, book, t: Date.now() }, KEY));
-    return !!r;
+  /* writes what changed through the store; a try book is never written */
+  async function save(opts) {
+    if (mode !== 'kept') return true;
+    if (!store || readOnly) return false;
+    const r = await store.save(book, opts);
+    return !!(r && r.ok);
+  }
+  /* setup3's new book: kept from now on */
+  async function start(newBook) {
+    const before = { book, mode };
+    book = newBook; mode = 'kept';
+    const ok = await save({ full: true });
+    if (!ok) { book = before.book; mode = before.mode; }
+    else if (root3.BurrowPersist) root3.BurrowPersist.afterSetup().catch(() => {});
+    return ok;
   }
   function view(day) {
     const res = BurrowEngine.lookahead.lookahead(book, day || today());
@@ -4358,7 +4993,7 @@ const E3 = (() => {
   }
   /* is a the day before b (two YYYY-MM-DD days) */
   const dayBefore = (a, b) => BurrowEngine.dates.dayNum(b) - BurrowEngine.dates.dayNum(a) === 1;
-  return { today, setToday, useTry, told, dayBefore, newId: () => idMaker(), load, view, nameOf, occName, curOf, home, write,
+  return { today, setToday, useTry, start, told, dayBefore, newId, load, view, nameOf, occName, curOf, home, write,
     get book() { return book; }, get mode() { return mode; } };
 })();
 /* ---------- Home, the new top (WIRING_PLAN 1.1 item 2, step 7) ----------
@@ -4538,7 +5173,12 @@ async function saveCheck3() {
     if (v === null) { err.textContent = `Type the amount for ${E3.occName(o.item)}`; row.querySelector('[data-amt]').focus(); return; }
     ticked.push(o.item); if (v !== o.amount) amounts[o.item] = v;
   }
-  const out = BurrowEngine.checkin.checkIn(E3.book, { day: check3.day, told: E3.told(), newId: E3.newId, figures, ticked, unticked: [], amounts, expected, lands });
+  const out = BurrowEngine.checkin.checkIn(E3.book, { day: check3.day, told: E3.told('00'), newId: E3.newId, figures, ticked, unticked: [], amounts, expected, lands });
+  /* TODO(lane A, lane C): the figure is read after the ticked items went through, but the writer gives them all one
+     `told`, so the engine orders them by their place in the list, and the store hands events back sorted by id. A
+     reload then put the check before the pay and counted the pay twice. Until the writer or the store keeps that order,
+     the check is told one second after the items it holds. */
+  for (const e of out.events) if (e.k === 'check') { e.told = E3.told('01'); e.at = e.told; }
   const ok = await E3.write(out);
   if (!ok) { err.textContent = 'This could not be saved on this device. Nothing changed'; return; }
   closeCheck3(); renderHome3();
