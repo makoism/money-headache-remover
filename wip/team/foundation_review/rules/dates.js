@@ -10,4 +10,6 @@ const weekday = n => ((n % 7) + 7 + 4) % 7;   // day 0 (1 Jan 1970) was a Thursd
 function isWorking(n, holidays) { const w = weekday(n); return w !== 0 && w !== 6 && !(holidays || []).includes(dayStr(n)); }
 // The day `n` working days after day `from` (weekends and the holidays given are skipped).
 function addWorking(from, n, holidays) { let d = from; while (n > 0) { d++; if (isWorking(d, holidays)) n--; } return d; }
-module.exports = { dayNum, dayStr, weekday, isWorking, addWorking };
+// The day `n` working days before day `from`.
+function subWorking(from, n, holidays) { let d = from; while (n > 0) { d--; if (isWorking(d, holidays)) n--; } return d; }
+module.exports = { dayNum, dayStr, weekday, isWorking, addWorking, subWorking };

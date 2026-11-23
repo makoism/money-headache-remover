@@ -1,10 +1,11 @@
 {
   "area": "units",
   "title": "Units: whole minor units per currency code, the currency table and its fallback, 26 or 27 pays a year spread so the year adds up, interest rounded half up, monthly amounts per pay",
-  "written_in": "SCHEMA_V3 0, 3 (interest), 8 (units), 11 (the move's questions); DECISIONS_ROUND2 B4, B8, H9, I2, J1, E2",
+  "written_in": "SCHEMA_V3 0, 3 (interest), 8 (units), 11 (the move's questions); DECISIONS_ROUND2 B4, B8, H9, I2, J1, E2, L (units q1 to q9)",
   "notes": [
     "Every amount is made up. Inputs typed by a person are text (\"19.99\"); everything else is whole minor units: yen 1 is 1, peso 1.00 is 100.",
-    "Question `to_minor`: a typed amount in a currency, as whole minor units with the currency's decimals and whether the screen must ask about the code. Question `currency_for`: the code from what an old copy or a person gave, or ask. Question `interest`: one month's interest on a balance at a yearly rate in percent [I2]. Question `pays_in_year`: the real number of pays a schedule has in a calendar year [H9]. Question `per_pay`: a monthly amount over that many pays, shown as the low and high per-pay amounts, how many get the high one, and the year's total. Question `period_amount`: what one pay period gets for a budget line or Free to spend by its `per` [B8]. Question `by_day`: with no fixed pay, what a monthly amount comes to over a number of days [B4]."
+    "Question `to_minor`: a typed amount in a currency, as whole minor units with the currency's decimals and whether the screen must ask about the code. Question `currency_for`: the code from what an old copy or a person gave, or ask. Question `interest`: one month's interest on a balance at a yearly rate in percent [I2]. Question `pays_in_year`: the real number of pays a schedule has in a calendar year [H9]. Question `per_pay`: a monthly amount over that many pays, shown as the low and high per-pay amounts, how many get the high one, and the year's total. Question `period_amount`: what one pay period gets for a budget line or Free to spend by its `per` [B8]. Question `by_day`: with no fixed pay, what a monthly amount comes to over a number of days [B4]. Question `by_day_dates`: the same over dated days, each day rounded down and the remainder on the month's last day [L units q7]. Question `per_pay_list`: the amount of each pay of the year in order [L units q4]. Question `period_count`: the pay count a period uses [L units q3]. Question `load_amount`: a saved amount as it is loaded [L units q9].",
+    "The currency table is the ISO 4217 minor-unit table, shipped with the page; an unknown code is 2 decimals and the screen asks once [L units q1]. A typed amount with more decimals than its currency is rounded half up, and `rounded: true` tells the screen to say so [L units q2]."
   ],
   "defaults": {},
   "cases": [
@@ -189,7 +190,7 @@
       "title": "30,000 yen a month over 26 pays: the year adds up to 360,000",
       "input": { "monthly": 30000, "pays": 26 },
       "expected": { "pays": 26, "low": 13846, "high": 13847, "highCount": 4, "yearTotal": 360000 },
-      "why": "30,000 x 12 / 26 = 13,846.15. Every pay gets 13,846 or 13,847. 13,846 x 26 = 359,996, so 360,000 - 359,996 = 4 pays get the one extra yen and the year adds up exactly to 360,000 [H9]. (Which 4 is open question units-q4.)",
+      "why": "30,000 x 12 / 26 = 13,846.15. Every pay gets 13,846 or 13,847. 13,846 x 26 = 359,996, so 360,000 - 359,996 = 4 pays get the one extra yen and the year adds up exactly to 360,000 [H9]. (Which 4: the earliest pays of the year, units-38 [L units q4].)",
       "decisions": [ "H9" ]
     },
     {
@@ -255,17 +256,215 @@
       "expected": 36000,
       "why": "Section 8 and B4: the monthly amount x 12 / 365 a day = 36,500 x 12 / 365 = 1,200 a day; 30 days = 36,000.",
       "decisions": [ "B4" ]
+    },
+    {
+      "id": "units-32", "question": "to_minor",
+      "title": "Tunisian dinars have three decimals",
+      "input": {
+        "text": "1.234",
+        "cur": "TND"
+      },
+      "expected": { "minor": 1234, "decimals": 3, "ask": false },
+      "why": "The full ISO 4217 table ships with the page [L units q1]: TND has 3 decimals, so 1 x 1,000 + 234 = 1,234, and the screen need not ask.",
+      "decisions": [ "L units q1" ]
+    },
+    {
+      "id": "units-33", "question": "to_minor",
+      "title": "Icelandic kronur have none",
+      "input": {
+        "text": "1500",
+        "cur": "ISK"
+      },
+      "expected": { "minor": 1500, "decimals": 0, "ask": false },
+      "why": "ISK has 0 decimals in ISO 4217 [L units q1]: 1,500 is 1,500.",
+      "decisions": [ "L units q1" ]
+    },
+    {
+      "id": "units-34", "question": "to_minor",
+      "title": "A code the short list did not have: Malaysian ringgit",
+      "input": {
+        "text": "12.34",
+        "cur": "MYR"
+      },
+      "expected": { "minor": 1234, "decimals": 2, "ask": false },
+      "why": "MYR is in the ISO table with 2 decimals [L units q1]: 12 x 100 + 34 = 1,234. It is known, so nothing is asked (before L it was treated as unknown and asked).",
+      "decisions": [ "L units q1" ]
+    },
+    {
+      "id": "units-35", "question": "to_minor",
+      "title": "A typed yen amount with a decimal is rounded half up, and the screen says so",
+      "input": {
+        "text": "1234.5",
+        "cur": "JPY"
+      },
+      "expected": { "minor": 1235, "decimals": 0, "ask": false, "rounded": true },
+      "why": "Yen has no decimals. 1,234.5 is rounded half up to 1,235 and `rounded` tells the screen to say so [L units q2].",
+      "decisions": [ "L units q2" ]
+    },
+    {
+      "id": "units-36", "question": "to_minor",
+      "title": "12.345 pesos: half a centavo goes up",
+      "input": {
+        "text": "12.345",
+        "cur": "PHP"
+      },
+      "expected": { "minor": 1235, "decimals": 2, "ask": false, "rounded": true },
+      "why": "PHP has 2 decimals; 12.345 is 1,234.5 centavos, rounded half up to 1,235 [L units q2].",
+      "decisions": [ "L units q2" ]
+    },
+    {
+      "id": "units-37", "question": "to_minor",
+      "title": "12.344 pesos: under half a centavo goes down, still said",
+      "input": {
+        "text": "12.344",
+        "cur": "PHP"
+      },
+      "expected": { "minor": 1234, "decimals": 2, "ask": false, "rounded": true },
+      "why": "12.344 is 1,234.4 centavos; under half, so 1,234. It was still rounded, so the screen says so [L units q2].",
+      "decisions": [ "L units q2" ]
+    },
+    {
+      "id": "units-38", "question": "per_pay_list",
+      "title": "30,000 a month over 26 pays: the extra yen go to the first 4 pays",
+      "input": {
+        "monthly": 30000,
+        "pays": 26
+      },
+      "expected": [ 13847, 13847, 13847, 13847, 13846, 13846, 13846, 13846, 13846, 13846, 13846, 13846, 13846, 13846, 13846, 13846, 13846, 13846, 13846, 13846, 13846, 13846, 13846, 13846, 13846, 13846 ],
+      "why": "360,000 / 26 = 13,846 with 4 left over (13,846 x 26 = 359,996). The leftover minor units go to the earliest pays of the year [L units q4]: pays 1 to 4 get 13,847, the other 22 get 13,846. 4 x 13,847 + 22 x 13,846 = 55,388 + 304,612 = 360,000.",
+      "decisions": [ "L units q4" ]
+    },
+    {
+      "id": "units-39", "question": "pays_in_year",
+      "title": "A pay due Sat 1 Jan 2028, moved to Fri 31 Dec 2027, counts in 2028",
+      "input": {
+        "rule": { "every": "weeks", "n": 2, "from": "2027-01-02" },
+        "year": 2027
+      },
+      "expected": 26,
+      "why": "From Sat 2 Jan 2027 every 14 days: 2 Jan + 14 x 25 = 18 Dec, the 26th pay in 2027. The next is due Sat 1 Jan 2028; moved earlier it lands Fri 31 Dec 2027, but the count uses the unshifted due date's year [L units q3], so 2027 has 26.",
+      "decisions": [ "L units q3" ]
+    },
+    {
+      "id": "units-40", "question": "period_count",
+      "title": "A period that crosses 31 Dec uses its start year",
+      "input": {
+        "rule": { "every": "weeks", "n": 2, "from": "2027-01-01" },
+        "periodFrom": "2027-12-31",
+        "periodTo": "2028-01-13"
+      },
+      "expected": { "year": 2027, "pays": 27 },
+      "why": "The period runs Fri 31 Dec 2027 to Thu 13 Jan 2028. It uses its start year [L units q3]: 2027, which has 27 pays on this rhythm (1 Jan + 14 x 26 = 31 Dec). 2028 would have 26.",
+      "decisions": [ "L units q3" ]
+    },
+    {
+      "id": "units-41", "question": "pays_in_year",
+      "title": "The first year of a schedule set up in November counts the whole year by its rhythm",
+      "input": {
+        "rule": { "every": "weeks", "n": 2, "from": "2026-11-13" },
+        "year": 2026
+      },
+      "expected": 26,
+      "why": "Set up with its first pay on Fri 13 Nov 2026, it has only 4 pays in 2026 (13 and 27 Nov, 11 and 25 Dec). The first year counts by the rhythm [L units q5]: back from 13 Nov in steps of 14 days, the first on or after 1 Jan is Fri 9 Jan, and 9 Jan + 14 x 25 = 25 Dec, so 26.",
+      "decisions": [ "L units q5" ]
+    },
+    {
+      "id": "units-42", "question": "period_amount",
+      "title": "`per: week` over 30 days is rounded down",
+      "input": {
+        "per": "week",
+        "amount": 5000,
+        "payKind": "month",
+        "periodDays": 30
+      },
+      "expected": 21428,
+      "why": "5,000 x 30 / 7 = 21,428.57, rounded down per period to 21,428 [L units q6]. Weekly amounts are a rate; nothing is carried to the next period and a year need not add up.",
+      "decisions": [ "L units q6" ]
+    },
+    {
+      "id": "units-43", "question": "by_day_dates",
+      "title": "No fixed pay, April 2027: each day rounded down, the remainder on 30 Apr",
+      "input": {
+        "monthly": 30000,
+        "from": "2027-04-01",
+        "to": "2027-04-30"
+      },
+      "expected": { "total": 29589, "days": 30, "daily": 986, "lastDays": { "2027-04-30": 995 } },
+      "why": "2027 has 365 days. A day is 30,000 x 12 / 365 = 986.30, rounded down to 986 [L units q7]. April's share is 30,000 x 12 x 30 / 365 = 29,589.04, 29,589 in whole yen; 29 days x 986 = 28,594, so 30 Apr gets the remainder: 29,589 - 28,594 = 995. 28,594 + 995 = 29,589.",
+      "decisions": [ "L units q7" ]
+    },
+    {
+      "id": "units-44", "question": "by_day_dates",
+      "title": "The same in a leap year: 366 days",
+      "input": {
+        "monthly": 30000,
+        "from": "2028-04-01",
+        "to": "2028-04-30"
+      },
+      "expected": { "total": 29508, "days": 30, "daily": 983, "lastDays": { "2028-04-30": 1001 } },
+      "why": "2028 has 366 days [L units q7]. A day is 360,000 / 366 = 983.6, rounded down to 983. April's share is 360,000 x 30 / 366 = 29,508.2, so 29,508; 29 x 983 = 28,507, and 30 Apr gets 29,508 - 28,507 = 1,001.",
+      "decisions": [ "L units q7" ]
+    },
+    {
+      "id": "units-45", "question": "by_day_dates",
+      "title": "A stretch across a month end: April's last day carries its remainder, May has not ended",
+      "input": {
+        "monthly": 30000,
+        "from": "2027-04-21",
+        "to": "2027-05-05"
+      },
+      "expected": { "total": 14799, "days": 15, "daily": 986, "lastDays": { "2027-04-30": 995 } },
+      "why": "21 to 30 Apr is 10 days: 9 x 986 + 995 (30 Apr, with April's remainder) = 9,869. 1 to 5 May is 5 days at 986 = 4,930; May's last day is not in the stretch [L units q7]. 9,869 + 4,930 = 14,799.",
+      "decisions": [ "L units q7" ]
+    },
+    {
+      "id": "units-46", "question": "period_amount",
+      "title": "No fixed pay: `per: pay` is each money-in event",
+      "input": {
+        "per": "pay",
+        "amount": 20000,
+        "payKind": "none",
+        "periodDays": 12
+      },
+      "expected": 20000,
+      "why": "With no fixed pay, `per: pay` means each money-in event [L units q7]: every time money comes in, the line gets 20,000.",
+      "decisions": [ "L units q7" ]
+    },
+    {
+      "id": "units-47", "question": "per_pay",
+      "title": "Weekly pay in a 53-pay year: the engine's real count, not the model's 52",
+      "input": {
+        "monthly": 30000,
+        "pays": 53
+      },
+      "expected": { "pays": 53, "low": 6792, "high": 6793, "highCount": 24, "yearTotal": 360000 },
+      "why": "2027 has 53 Fridays (units-21). 360,000 / 53 = 6,792 with 24 left over (6,792 x 53 = 359,976), so 24 pays get 6,793 and the year is 360,000. lookahead_ref.js keeps its plain 52 a year; the engine uses this file [L units q8].",
+      "decisions": [ "L units q8" ]
+    },
+    {
+      "id": "units-48", "question": "load_amount",
+      "title": "A saved amount that is not whole is kept as it is and flagged",
+      "input": {
+        "a": 1234.5
+      },
+      "expected": { "a": 1234.5, "flag": true },
+      "why": "An old or hand-edited copy holds 1,234.5 where a whole number of minor units belongs. It is kept as it is (nothing is rounded on load, section 0) and flagged [L units q9].",
+      "decisions": [ "L units q9" ]
+    },
+    {
+      "id": "units-49", "question": "load_amount",
+      "title": "A whole amount loads with no flag",
+      "input": {
+        "a": 1200
+      },
+      "expected": { "a": 1200, "flag": false },
+      "why": "1,200 is a whole number of minor units: kept, no flag [L units q9].",
+      "decisions": [ "L units q9" ]
     }
   ],
   "open": [
-    { "id": "units-q1", "question": "What is in the currency table beyond JPY (0) and PHP (2), and from what source? ISO 4217 also has KRW and VND with 0 decimals and KWD and BHD with 3.", "ref_does": "a short ISO 4217 list: JPY, KRW, VND 0; PHP, USD, EUR, GBP, CHF, CAD, AUD, SGD 2; KWD, BHD 3" },
-    { "id": "units-q2", "question": "A typed amount with more decimals than its currency (\"1234.5\" yen, \"12.345\" pesos): refused, or rounded? Section 0 only says nothing is rounded on load.", "ref_does": "refuses (throws)" },
-    { "id": "units-q3", "question": "\"Pays in that year\": the calendar year, counted by the due date or by the landed date (a pay due Sat 1 Jan moved to Fri 31 Dec)? And which year's count does a period that starts in December and ends in January use?", "ref_does": "calendar year, by the due date before any move; a period uses the year it starts in" },
-    { "id": "units-q4", "question": "Which pays get the extra minor unit when a year does not divide evenly (the first ones, the last ones, spread through the year)?", "ref_does": "spread: pay k gets floor(year x k / N) - floor(year x (k - 1) / N)" },
-    { "id": "units-q5", "question": "The first year of a schedule set up in November: \"26 or 27\" counts the whole year by its rhythm, but the schedule has only 4 pays in that year. Which count?", "ref_does": "the whole year by its rhythm (26 or 27), counted back from its first date" },
-    { "id": "units-q6", "question": "`per: week` when days / 7 is not whole (5,000 over 30 days = 21,428.57): how is it rounded, and must a year of periods add up?", "ref_does": "half up per period, nothing carried" },
-    { "id": "units-q7", "question": "No fixed pay: 365 or 366 days in a leap year, how a day's amount is rounded (lookahead_ref.js carries the remainder so nothing is lost), and what `per: pay` and `per: week` mean with no fixed pay.", "ref_does": "365; the total over the days is rounded down once; `per: pay` refuses, `per: week` is amount / 7 a day" },
-    { "id": "units-q8", "question": "Confirm: lookahead_ref.js `paysAYear` uses 52 / n (26 flat for every two weeks, 52 for weekly) and rounds each period on its own, so a year does not add up. It is the model's plain form only; the engine takes the count and the spread from this file.", "ref_does": "the real count and the spread" },
-    { "id": "units-q9", "question": "A saved amount that is not a whole number (an old or hand-edited copy): kept as is, refused, or asked about? Section 0 says nothing is rounded on load.", "ref_does": "not covered" }
+    { "id": "units-q10", "question": "L q3: a period uses its start year, and a pay counts in its unshifted due date's year. A period that starts on Fri 31 Dec 2027 with the pay due Sat 1 Jan 2028 (moved earlier): which year's per-pay amount does it get, and which of the year's pays is it for the leftover units (q4)?", "ref_does": "the start year's count (period_count); no per-period amount is worked out" },
+    { "id": "units-q11", "question": "L q7: with no fixed pay, what does `per: week` give per day (amount / 7 a day rounded down, with what remainder where)?", "ref_does": "not worked out (period_amount refuses it)" },
+    { "id": "units-q12", "question": "L q7: a month's share (monthly x 12 x days / 365 or 366) is not always whole. Is it rounded down (the fraction lost, under one minor unit a month), or carried to the next month?", "ref_does": "rounded down, the fraction is not carried (units-43 to units-45)" }
   ]
 }

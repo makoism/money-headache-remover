@@ -1,12 +1,13 @@
 {
   "area": "period_end",
   "title": "Period end: the question after a fresh check-in, nothing rolling on silently, and \"to decide\"",
-  "written_in": "SCHEMA_V3 7.4, 9; DECISIONS_ROUND2 A7, F8, H8; DECISIONS.md (money left at month end never drops out silently, 18 Nov)",
+  "written_in": "SCHEMA_V3 7.4, 9; DECISIONS_ROUND2 A7, F8, H8, L (period end q1 to q10); DECISIONS.md (money left at month end never drops out silently, 18 Nov)",
   "notes": [
     "Every amount is made up and in whole minor units (yen).",
     "A period runs from the day the period stream's pay lands to the day before the next one lands [F8]. While the next pay has not landed (late, H8) the period has not ended.",
     "The last 3 days of a period are its last day and the two days before it.",
-    "Question `question_start`: has the period ended, its last day, and whether the period-end question has to start with a check-in. Question `leftovers`: for each place with money left at the period's end, what is decided, what is still \"to decide\", and the `move` events the answers write."
+    "Question `question_start`: has the period ended, its last day, and whether the period-end question has to start with a check-in; while pay is past its posting window, `askPayCame` [L period_end q3]. A check-in is a date (every account typed) or `{ date, accounts }`; `spendFrom` lists the spend-from accounts [L period_end q9]. Question `leftovers`: for each place, what is decided (moved), what is kept in the place, what is still \"to decide\", how much an overspent place is over and what covers it, and the `move` events the answers write; answers adding up to more than is left are refused [L period_end q4, q6, q10]. Question `screen`: whether the period-end question is shown [L period_end q5]. Question `next_period`: what each place holds in the new period and how much of it counts in safe to spend [L period_end q6, q7]. Question `leftovers_ends`: two or more unanswered period ends, each answered on its own [L period_end q8].",
+    "An answer is `{ place, to, a, told }` (a move to another place), `{ place, keep: true, a, told }` (keep it here) or, for an overspent place, `{ place, from, a, told }` where `from` is `free` or `waiting` (what covers it)."
   ],
   "defaults": {},
   "cases": [
@@ -55,7 +56,7 @@
       "title": "Pay is late: the period has not ended, nothing is asked",
       "input": { "periodFrom": "2026-11-10", "nextPay": { "due": "2026-12-10", "landed": null }, "checkins": [ "2026-12-08" ], "today": "2026-12-11" },
       "expected": { "ended": false },
-      "why": "Pay due Thu 10 Dec has not landed on Fri 11 Dec. While pay is late the period does not move on [H8], so there is no period end yet and no question. (After the posting window, see open question pe-q3.)",
+      "why": "Pay due Thu 10 Dec has not landed on Fri 11 Dec. While pay is late the period does not move on [H8], so there is no period end yet and no question. Fri 11 Dec is the last day of its posting window (Thu 10 + 1 working day), so the check-in does not ask about the pay yet (after it, pe-16) [L period_end q3].",
       "decisions": [ "H8" ]
     },
     {
@@ -78,7 +79,7 @@
       "id": "pe-09", "question": "leftovers",
       "title": "Free to spend has money left and nothing is answered yet: it waits, to decide",
       "input": { "periodTo": "2026-12-09", "places": [ { "id": "free", "left": 12000 } ], "answers": [] },
-      "expected": { "places": { "free": { "left": 12000, "decided": 0, "toDecide": 12000, "state": "to decide" } }, "moves": [] },
+      "expected": { "places": { "free": { "left": 12000, "decided": 0, "kept": 0, "toDecide": 12000, "state": "to decide" } }, "moves": [] },
       "why": "12,000 is left in Free to spend. Nothing rolls on silently [A7]: it stays in Free to spend, marked to decide, and no event moves it until the person answers.",
       "decisions": [ "A7" ]
     },
@@ -88,19 +89,19 @@
       "input": { "periodTo": "2026-12-09", "places": [ { "id": "food", "left": 3000 }, { "id": "free", "left": 0 } ], "answers": [] },
       "expected": {
         "places": {
-          "food": { "left": 3000, "decided": 0, "toDecide": 3000, "state": "to decide" },
-          "free": { "left": 0, "decided": 0, "toDecide": 0, "state": "nothing left" }
+          "food": { "left": 3000, "decided": 0, "kept": 0, "toDecide": 3000, "state": "to decide" },
+          "free": { "left": 0, "decided": 0, "kept": 0, "toDecide": 0, "state": "nothing left" }
         },
         "moves": []
       },
-      "why": "A7 covers Free to spend and every budget line: food's 3,000 waits, to decide. Free to spend ended at exactly 0, so there is no money to place. (Whether the question is still shown then is open question pe-q5.)",
+      "why": "A7 covers Free to spend and every budget line: food's 3,000 waits, to decide. Free to spend ended at exactly 0, so there is no money to place. (When nothing is left anywhere, the screen shows one line and asks nothing, pe-24 [L period_end q5].)",
       "decisions": [ "A7" ]
     },
     {
       "id": "pe-11", "question": "leftovers",
       "title": "An answer given three days late is a move dated the period's last day",
       "input": { "periodTo": "2026-12-09", "places": [ { "id": "free", "left": 12000 } ], "answers": [ { "place": "free", "to": "trip", "a": 12000, "told": "2026-12-12T20:15:00.000+09:00" } ] },
-      "expected": { "places": { "free": { "left": 12000, "decided": 12000, "toDecide": 0, "state": "decided" } }, "moves": [ { "k": "move", "date": "2026-12-09", "a": 12000, "place": "free", "place2": "trip", "told": "2026-12-12T20:15:00.000+09:00" } ] },
+      "expected": { "places": { "free": { "left": 12000, "decided": 12000, "kept": 0, "toDecide": 0, "state": "decided" } }, "moves": [ { "k": "move", "date": "2026-12-09", "a": 12000, "place": "free", "place2": "trip", "told": "2026-12-12T20:15:00.000+09:00" } ] },
       "why": "7.4: answers are move events dated the period's last day, 9 Dec, even when answered on 12 Dec. The move's `told` is when it was answered (section 0: told is when the app heard of it). All 12,000 is placed, nothing waits.",
       "decisions": [ "A7", "H1" ]
     },
@@ -108,7 +109,7 @@
       "id": "pe-12", "question": "leftovers",
       "title": "A part answer: the rest still waits, to decide",
       "input": { "periodTo": "2026-12-09", "places": [ { "id": "free", "left": 12000 } ], "answers": [ { "place": "free", "to": "trip", "a": 5000, "told": "2026-12-10T08:00:00.000+09:00" } ] },
-      "expected": { "places": { "free": { "left": 12000, "decided": 5000, "toDecide": 7000, "state": "to decide" } }, "moves": [ { "k": "move", "date": "2026-12-09", "a": 5000, "place": "free", "place2": "trip", "told": "2026-12-10T08:00:00.000+09:00" } ] },
+      "expected": { "places": { "free": { "left": 12000, "decided": 5000, "kept": 0, "toDecide": 7000, "state": "to decide" } }, "moves": [ { "k": "move", "date": "2026-12-09", "a": 5000, "place": "free", "place2": "trip", "told": "2026-12-10T08:00:00.000+09:00" } ] },
       "why": "5,000 is answered (a move to the trip, dated 9 Dec). 12,000 - 5,000 = 7,000 has no answer, so it waits in Free to spend, to decide, until answered [A7].",
       "decisions": [ "A7" ]
     },
@@ -118,23 +119,202 @@
       "input": { "periodTo": "2026-12-09", "places": [ { "id": "free", "left": 12000 } ], "answers": [
         { "place": "free", "to": "trip", "a": 5000, "told": "2026-12-10T08:00:00.000+09:00" },
         { "place": "free", "to": "emergency", "a": 7000, "told": "2026-12-10T08:00:00.000+09:00" } ] },
-      "expected": { "places": { "free": { "left": 12000, "decided": 12000, "toDecide": 0, "state": "decided" } }, "moves": [
+      "expected": { "places": { "free": { "left": 12000, "decided": 12000, "kept": 0, "toDecide": 0, "state": "decided" } }, "moves": [
         { "k": "move", "date": "2026-12-09", "a": 5000, "place": "free", "place2": "trip", "told": "2026-12-10T08:00:00.000+09:00" },
         { "k": "move", "date": "2026-12-09", "a": 7000, "place": "free", "place2": "emergency", "told": "2026-12-10T08:00:00.000+09:00" } ] },
       "why": "5,000 + 7,000 = 12,000, all of it. Two move events, both dated 9 Dec. Nothing waits.",
       "decisions": [ "A7" ]
+    },
+    {
+      "id": "pe-14", "question": "question_start",
+      "title": "A check-in the day after pay counts: the question needs no new one",
+      "input": {
+        "periodFrom": "2026-11-10",
+        "nextPay": { "due": "2026-12-10", "landed": "2026-12-10" },
+        "checkins": [ "2026-12-06", "2026-12-11" ],
+        "today": "2026-12-11"
+      },
+      "expected": { "ended": true, "periodTo": "2026-12-09", "startsWithCheckIn": false },
+      "why": "The period ran to Wed 9 Dec. The check-in on 11 Dec is after the end; it counts [L period_end q1], and its stretch (7 to 11 Dec) is split by days at the 10 Dec pay: 3 days to the old period, 2 to the new (A4). So the question starts straight away.",
+      "decisions": [ "L period_end q1" ]
+    },
+    {
+      "id": "pe-15", "question": "question_start",
+      "title": "On the period's last day, after a check-in, nothing is asked until pay is seen",
+      "input": {
+        "periodFrom": "2026-11-10",
+        "nextPay": { "due": "2026-12-10", "landed": null },
+        "checkins": [ "2026-12-09" ],
+        "today": "2026-12-09"
+      },
+      "expected": { "ended": false },
+      "why": "The question comes when the next period-starting pay is seen [L period_end q2]. On Wed 9 Dec the 10 Dec pay has not landed, so the period has not ended, even with a check-in that day.",
+      "decisions": [ "L period_end q2" ]
+    },
+    {
+      "id": "pe-16", "question": "question_start",
+      "title": "Pay past its posting window: the period waits and the check-in asks \"did your pay come?\"",
+      "input": {
+        "periodFrom": "2026-11-10",
+        "nextPay": { "due": "2026-12-10", "landed": null },
+        "checkins": [ "2026-12-08" ],
+        "today": "2026-12-14"
+      },
+      "expected": { "ended": false, "askPayCame": true },
+      "why": "Pay due Thu 10 Dec, window Thu 10 + 1 working day = Fri 11. On Mon 14 it is past the window and not seen. The period waits for pay; the check-in asks \"did your pay come?\" [L period_end q3].",
+      "decisions": [ "L period_end q3" ]
+    },
+    {
+      "id": "pe-17", "question": "question_start",
+      "title": "The person says the pay came on Fri 11: the period ends the day before",
+      "input": {
+        "periodFrom": "2026-11-10",
+        "nextPay": { "due": "2026-12-10", "landed": "2026-12-11" },
+        "checkins": [ "2026-12-08" ],
+        "today": "2026-12-14"
+      },
+      "expected": { "ended": true, "periodTo": "2026-12-10", "startsWithCheckIn": false },
+      "why": "Answering \"yes, on Fri 11\" writes the pay landed 11 Dec, which starts the new period [L period_end q3, F8]. The old one ends Thu 10 Dec; its last 3 days are 8, 9 and 10 Dec, and the 8 Dec check-in is one of them.",
+      "decisions": [ "L period_end q3" ]
+    },
+    {
+      "id": "pe-18", "question": "question_start",
+      "title": "A check-in that typed only the bank, not the cash: not fresh",
+      "input": {
+        "periodFrom": "2026-11-10",
+        "nextPay": { "due": "2026-12-10", "landed": "2026-12-10" },
+        "spendFrom": [ "bank", "cash" ],
+        "checkins": [ { "date": "2026-12-08", "accounts": [ "bank" ] } ],
+        "today": "2026-12-10"
+      },
+      "expected": { "ended": true, "periodTo": "2026-12-09", "startsWithCheckIn": true },
+      "why": "A check-in is fresh only when every spend-from account was typed [L period_end q9]. The 8 Dec check-in is in the last 3 days but typed only the bank; the cash was not counted, so the question starts with a check-in.",
+      "decisions": [ "L period_end q9" ]
+    },
+    {
+      "id": "pe-19", "question": "question_start",
+      "title": "A check-in that typed every spend-from account: fresh",
+      "input": {
+        "periodFrom": "2026-11-10",
+        "nextPay": { "due": "2026-12-10", "landed": "2026-12-10" },
+        "spendFrom": [ "bank", "cash" ],
+        "checkins": [ { "date": "2026-12-08", "accounts": [ "bank", "cash" ] } ],
+        "today": "2026-12-10"
+      },
+      "expected": { "ended": true, "periodTo": "2026-12-09", "startsWithCheckIn": false },
+      "why": "The 8 Dec check-in typed the bank and the cash, both spend-from accounts, and is in the last 3 days (7 to 9 Dec), so it is fresh [L period_end q9].",
+      "decisions": [ "L period_end q9" ]
+    },
+    {
+      "id": "pe-20", "question": "leftovers",
+      "title": "An overspent line is shown with how much it is over, not yet covered",
+      "input": {
+        "periodTo": "2026-12-09",
+        "places": [ { "id": "food", "left": -3000 }, { "id": "free", "left": 12000 } ],
+        "answers": []
+      },
+      "expected": { "places": { "food": { "left": -3000, "over": 3000, "covered": 0, "toCover": 3000, "state": "over" }, "free": { "left": 12000, "decided": 0, "kept": 0, "toDecide": 12000, "state": "to decide" } }, "moves": [] },
+      "why": "Food ended at -3,000: it is shown with how much it is over, 3,000, to be covered from what is left in Free to spend, then Waiting, as the person picks [L period_end q4]. Nothing is answered yet: 3,000 to cover, and Free to spend's 12,000 waits, to decide.",
+      "decisions": [ "L period_end q4" ]
+    },
+    {
+      "id": "pe-21", "question": "leftovers",
+      "title": "The overspend covered from Free to spend: a move, and less left to decide",
+      "input": {
+        "periodTo": "2026-12-09",
+        "places": [ { "id": "food", "left": -3000 }, { "id": "free", "left": 12000 } ],
+        "answers": [ { "place": "food", "from": "free", "a": 3000, "told": "2026-12-10T08:00:00.000+09:00" } ]
+      },
+      "expected": { "places": { "food": { "left": -3000, "over": 3000, "covered": 3000, "toCover": 0, "state": "covered" }, "free": { "left": 12000, "decided": 3000, "kept": 0, "toDecide": 9000, "state": "to decide" } }, "moves": [ { "k": "move", "date": "2026-12-09", "a": 3000, "place": "free", "place2": "food", "told": "2026-12-10T08:00:00.000+09:00" } ] },
+      "why": "The person covers food's 3,000 from Free to spend [L period_end q4]: a move of 3,000 from free to food dated the period's last day (7.4). Free to spend: 12,000 - 3,000 = 9,000 still to decide.",
+      "decisions": [ "L period_end q4" ]
+    },
+    {
+      "id": "pe-22", "question": "leftovers",
+      "title": "Free to spend has too little: the rest of the overspend from Waiting",
+      "input": {
+        "periodTo": "2026-12-09",
+        "places": [ { "id": "food", "left": -3000 }, { "id": "free", "left": 2000 } ],
+        "answers": [ { "place": "food", "from": "free", "a": 2000, "told": "2026-12-10T08:00:00.000+09:00" }, { "place": "food", "from": "waiting", "a": 1000, "told": "2026-12-10T08:00:00.000+09:00" } ]
+      },
+      "expected": { "places": { "food": { "left": -3000, "over": 3000, "covered": 3000, "toCover": 0, "state": "covered" }, "free": { "left": 2000, "decided": 2000, "kept": 0, "toDecide": 0, "state": "decided" } }, "moves": [ { "k": "move", "date": "2026-12-09", "a": 2000, "place": "free", "place2": "food", "told": "2026-12-10T08:00:00.000+09:00" }, { "k": "move", "date": "2026-12-09", "a": 1000, "place": "waiting", "place2": "food", "told": "2026-12-10T08:00:00.000+09:00" } ] },
+      "why": "Free to spend has 2,000 left, all of it moved to food; the other 1,000 comes from Waiting [L period_end q4]: 2,000 + 1,000 = 3,000 covered. Free to spend has nothing left to decide.",
+      "decisions": [ "L period_end q4" ]
+    },
+    {
+      "id": "pe-23", "question": "leftovers",
+      "title": "\"Keep it here\": no move, the money stays in its place, decided",
+      "input": {
+        "periodTo": "2026-12-09",
+        "places": [ { "id": "free", "left": 12000 } ],
+        "answers": [ { "place": "free", "keep": true, "a": 5000, "told": "2026-12-10T08:00:00.000+09:00" } ]
+      },
+      "expected": { "places": { "free": { "left": 12000, "decided": 0, "kept": 5000, "toDecide": 7000, "state": "to decide" } }, "moves": [] },
+      "why": "\"Keep it here\" leaves 5,000 in Free to spend with no move [L period_end q6]. 12,000 - 5,000 = 7,000 still waits, to decide.",
+      "decisions": [ "L period_end q6" ]
+    },
+    {
+      "id": "pe-24", "question": "screen",
+      "title": "Nothing left anywhere: one line, no question",
+      "input": {
+        "periodTo": "2026-12-09",
+        "places": [ { "id": "food", "left": 0 }, { "id": "free", "left": 0 } ],
+        "answers": []
+      },
+      "expected": { "ask": false, "line": "nothing left this time" },
+      "why": "Food and Free to spend both ended at 0. With nothing left the screen shows one line, \"nothing left this time\", and asks no question [L period_end q5].",
+      "decisions": [ "L period_end q5" ]
+    },
+    {
+      "id": "pe-25", "question": "screen",
+      "title": "Money left in one place: the question is shown",
+      "input": {
+        "periodTo": "2026-12-09",
+        "places": [ { "id": "food", "left": 0 }, { "id": "free", "left": 12000 } ],
+        "answers": []
+      },
+      "expected": { "ask": true },
+      "why": "Free to spend has 12,000 left, so the question is shown (always asked, Mako decision 3); only when nothing is left is it one line [L period_end q5].",
+      "decisions": [ "L period_end q5" ]
+    },
+    {
+      "id": "pe-26", "question": "next_period",
+      "title": "Kept money adds on top; money to decide is not in safe to spend",
+      "input": {
+        "periodTo": "2026-12-09",
+        "places": [ { "id": "free", "left": 12000, "next": 80000 } ],
+        "answers": [ { "place": "free", "keep": true, "a": 5000, "told": "2026-12-10T08:00:00.000+09:00" } ]
+      },
+      "expected": { "free": { "holds": 92000, "spendable": 85000, "toDecide": 7000 } },
+      "why": "The new period gives Free to spend 80,000. The 5,000 kept adds on top [L period_end q6]: 80,000 + 5,000 = 85,000 counts. The 7,000 still to decide stays in the place but is not in the new period's safe to spend [L period_end q7]. Held: 80,000 + 5,000 + 7,000 = 92,000.",
+      "decisions": [ "L period_end q6", "L period_end q7" ]
+    },
+    {
+      "id": "pe-27", "question": "leftovers_ends",
+      "title": "Two unanswered period ends stay apart; a late answer takes its own period's last day",
+      "input": {
+        "ends": [ { "periodTo": "2026-12-09", "places": [ { "id": "free", "left": 12000 } ] }, { "periodTo": "2027-01-07", "places": [ { "id": "free", "left": 8000 } ] } ],
+        "answers": [ { "period": "2026-12-09", "place": "free", "to": "trip", "a": 12000, "told": "2027-01-09T09:00:00.000+09:00" } ]
+      },
+      "expected": [ { "periodTo": "2026-12-09", "places": { "free": { "left": 12000, "decided": 12000, "kept": 0, "toDecide": 0, "state": "decided" } }, "moves": [ { "k": "move", "date": "2026-12-09", "a": 12000, "place": "free", "place2": "trip", "told": "2027-01-09T09:00:00.000+09:00" } ] }, { "periodTo": "2027-01-07", "places": { "free": { "left": 8000, "decided": 0, "kept": 0, "toDecide": 8000, "state": "to decide" } }, "moves": [] } ],
+      "why": "The December and January ends were both left unanswered. They stay apart, each answered with its own last day [L period_end q8]: the December answer, given on 9 Jan, moves 12,000 dated 9 Dec; January's 8,000 still waits, to decide.",
+      "decisions": [ "L period_end q8" ]
+    },
+    {
+      "id": "pe-28", "question": "leftovers",
+      "title": "Answers adding up to more than is left are refused, with the amount left",
+      "input": {
+        "periodTo": "2026-12-09",
+        "places": [ { "id": "free", "left": 12000 } ],
+        "answers": [ { "place": "free", "to": "trip", "a": 8000, "told": "2026-12-10T08:00:00.000+09:00" }, { "place": "free", "to": "emergency", "a": 5000, "told": "2026-12-10T08:00:00.000+09:00" } ]
+      },
+      "expected": { "refused": { "place": "free", "left": 12000 } },
+      "why": "8,000 + 5,000 = 13,000, more than the 12,000 left. The answers are refused and the screen shows the 12,000 left [L period_end q10].",
+      "decisions": [ "L period_end q10" ]
     }
   ],
   "open": [
-    { "id": "pe-q1", "question": "A check-in made after the period ended (the app opened two days after pay) is not in the last 3 days. Read literally the question starts with a new check-in, which is also after the end, so it can never be fresh. Does a check-in after the end count (its stretch split by days, A4, so the old period gets its part)?", "ref_does": "the literal reading: only a check-in dated in the last 3 days counts" },
-    { "id": "pe-q2", "question": "Is the question asked on the period's last day (after a check-in that day), or only once the next pay has landed?", "ref_does": "only once the next pay has landed" },
-    { "id": "pe-q3", "question": "Pay past its posting window becomes \"not seen yet\" [H8]. Does the period end then (and the question come), or only when pay lands?", "ref_does": "only when pay lands" },
-    { "id": "pe-q4", "question": "A line overspent (below zero at the end): is it in the question, and does anything cover it (a move from Free to spend)?", "ref_does": "nothing to decide; reported as nothing left" },
-    { "id": "pe-q5", "question": "\"Always asked\" (Mako decision 3) when nothing is left anywhere: is the question still shown?", "ref_does": "reports nothing to decide; showing it is the screen's call" },
-    { "id": "pe-q6", "question": "An answer \"keep it here for next period\": what does it write? No move is needed, but something has to mark it decided.", "ref_does": "no such answer; the money stays to decide" },
-    { "id": "pe-q7", "question": "While money waits \"to decide\", is it counted in safe to spend for the new period? B1 takes off what is left of this period's budget lines, and the place's balance now holds old and new money together.", "ref_does": "not answered here (the walk is in the reference model)" },
-    { "id": "pe-q8", "question": "Two period ends both unanswered: is each period's leftover kept apart, and which period's last day does a later answer get?", "ref_does": "each period is asked on its own; the place balance cannot tell them apart" },
-    { "id": "pe-q9", "question": "A check-in that typed only some accounts: is it a fresh check-in for the question?", "ref_does": "any check-in counts" },
-    { "id": "pe-q10", "question": "Answers that add up to more than is left: refused, or allowed (taking from Waiting)?", "ref_does": "refuses (throws)" }
+    { "id": "pe-q11", "question": "L q9: a check-in is fresh only when every spend-from account was typed. Does that hold per check-in, or may two check-ins inside the last 3 days together type every account (the bank on 7 Dec, the cash on 8 Dec)?", "ref_does": "per check-in: one check-in must type every spend-from account" },
+    { "id": "pe-q12", "question": "L q3: after the posting window the person \"can start the new period\". When they say the pay has not come but start the period anyway, which day does the new period start (the pay's due date, its landing day, or the day they say so), and is the late pay still expected?", "ref_does": "only a landed pay ends the period (the \"yes, it came\" answer writes it, pe-17)" }
   ]
 }

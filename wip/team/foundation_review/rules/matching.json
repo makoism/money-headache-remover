@@ -1,16 +1,17 @@
 {
   "area": "matching",
   "title": "Matching an import to a typed line or an expected item, the vary margin, the source ranking, est within 10%, and the possible double typed on two devices",
-  "written_in": "SCHEMA_V3 6.4 and 12; DECISIONS_ROUND2 A6, F4, H2, H9",
+  "written_in": "SCHEMA_V3 6.4 and 12; DECISIONS_ROUND2 A6, F4, H2, H9, L (matching q1 to q13)",
   "notes": [
     "Every amount is made up and in whole minor units (yen, so 1 is 1).",
     "Dates: Fri 20 Nov 2026, Sat 21, Sun 22, Mon 23, Tue 24, Wed 25, Thu 26; Thu 10 Dec 2026, Fri 11, Sat 12, Mon 14.",
-    "An import line's day is its `posted` date when it has one, else its `date` (6.4). The window runs from the typed line's day (or the expected item's landing day) to that day plus the account's `postingDays` working days, both ends counted [F4].",
+    "An import line's day is its `posted` date when it has one, else its `date` (6.4). A typed line matches an import line inside its posting window either side of its day: from that day less the account's `postingDays` working days to that day plus them, both ends counted [F4; L matching q3]. On a card, the import line's buy date (`date`) or its posted date may fall in the window, and a card with no `postingDays` of its own has 7 [L matching q4]. An expected item is settled by an import landing from 5 working days before its landing day to the end of its posting window after it [L matching q2].",
     "`dir` is `out` (money leaving the account) or `in`. Expected items are named by schedule and unshifted due date, `pay@2026-12-12` [H2]; `lands` is the day after any weekend or holiday move.",
-    "Question `import`: the lines after every import is applied, as `gone` (line id to the id that removed it) and `settled` (occurrence name to the live line that settles it). Question `import_counts`: how many lines are gone and how many import lines are live. Question `possible_doubles`: the pairs of typed lines offered as a possible double; nothing is removed."
+    "Question `import`: the lines after every import is applied, as `gone` (line id to the id that removed it) and `settled` (occurrence name to the live line that settles it). Question `import_counts`: how many lines are gone and how many import lines are live. Question `import_dropped`: the import lines dropped as repeats of an equal-rank line [L matching q9]. Question `possible_doubles`: the pairs of typed lines offered as a possible double; nothing is removed. Question `not_double_mark`: what the answer \"both are real\" writes [L matching q12].",
+    "A statement import carries its own dates, `from` and `to` [L matching q8]. An import may carry the `file` it was read from, and each of its lines the `line` it was on; with the type they are the line's `src`. A line's id for repeats is its date, amount, direction and count (the first, second, ... line with that date, amount and direction in its own import) [L matching q9]."
   ],
   "defaults": {
-    "accounts": { "bank": { "postingDays": 1 }, "card": { "postingDays": 1 } },
+    "accounts": { "bank": { "kind": "bank", "postingDays": 1 }, "card": { "kind": "card" } },
     "holidays": [],
     "schedules": {},
     "lines": [],
@@ -48,7 +49,7 @@
         "imports": [ { "id": "f1", "src": "statement", "acct": "bank", "lines": [ { "id": "i1", "dir": "out", "a": 1200, "date": "2026-11-20", "posted": "2026-11-24" } ] } ]
       },
       "expected": { "gone": {}, "settled": {} },
-      "why": "The window ends Mon 23 (Fri 20 + 1 working day). Posted Tue 24 is after it, so nothing matches: t1 stays and i1 is a new line. (See open question match-q4 on lines like this.)",
+      "why": "The window is Thu 19 to Mon 23 (Fri 20 less and plus 1 working day) [L matching q3]. Posted Tue 24 is after it, and on a bank account only the posted date counts, so nothing matches: t1 stays and i1 is a new line.",
       "decisions": [ "A6", "F4" ]
     },
     {
@@ -67,7 +68,7 @@
       "id": "match-05", "question": "import",
       "title": "A card line posted six days after the buy, card window of 4 working days",
       "input": {
-        "accounts": { "bank": { "postingDays": 1 }, "card": { "postingDays": 4 } },
+        "accounts": { "bank": { "kind": "bank", "postingDays": 1 }, "card": { "kind": "card", "postingDays": 4 } },
         "lines": [ { "id": "t1", "acct": "card", "dir": "out", "a": 4800, "date": "2026-11-20", "src": "typed" } ],
         "imports": [ { "id": "f1", "src": "statement", "acct": "card", "lines": [ { "id": "i1", "dir": "out", "a": 4800, "date": "2026-11-20", "posted": "2026-11-26" } ] } ]
       },
@@ -77,13 +78,13 @@
     },
     {
       "id": "match-06", "question": "import",
-      "title": "The same card line with the default window: matching uses the posted date, not the buy date",
+      "title": "The same card line with the card default window: the buy date matches",
       "input": {
         "lines": [ { "id": "t1", "acct": "card", "dir": "out", "a": 4800, "date": "2026-11-20", "src": "typed" } ],
         "imports": [ { "id": "f1", "src": "statement", "acct": "card", "lines": [ { "id": "i1", "dir": "out", "a": 4800, "date": "2026-11-20", "posted": "2026-11-26" } ] } ]
       },
-      "expected": { "gone": {}, "settled": {} },
-      "why": "6.4 says the date is compared by `posted` when there is one. Posted Thu 26 is after Mon 23 (Fri 20 + 1 working day), so there is no match even though the buy date is the typed date. Both lines stay. This is the rule as written; open question match-q4 asks whether it is meant.",
+      "expected": { "gone": { "t1": "i1" }, "settled": {} },
+      "why": "A card line matches by its buy date or its posted date, and a card with no window of its own has 7 [L matching q4]. The buy date, Fri 20, is the typed day itself, so it is inside the window and t1 is replaced. (The posted date, Thu 26, is 4 working days and 6 days after Fri 20, inside 7 either way.) Before L this was no match and the spend counted twice.",
       "decisions": [ "A6", "F4" ]
     },
     {
@@ -121,13 +122,13 @@
     },
     {
       "id": "match-10", "question": "import",
-      "title": "A rough line one yen past 10% does not match",
+      "title": "A rough line one yen past 10% of the typed amount still matches: 10% of the larger",
       "input": {
         "lines": [ { "id": "t1", "acct": "bank", "dir": "out", "a": 1200, "date": "2026-11-20", "src": "typed", "est": true } ],
         "imports": [ { "id": "f1", "src": "statement", "acct": "bank", "lines": [ { "id": "i1", "dir": "out", "a": 1321, "date": "2026-11-20", "posted": "2026-11-20" } ] } ]
       },
-      "expected": { "gone": {}, "settled": {} },
-      "why": "1,321 - 1,200 = 121, more than 120 (10% of 1,200). No match; both lines stay.",
+      "expected": { "gone": { "t1": "i1" }, "settled": {} },
+      "why": "Within 10% means the difference is at most 10% of the larger amount, compared exactly in minor units [L matching q10]. The larger is 1,321; 1,321 - 1,200 = 121, and 121 x 10 = 1,210 is not more than 1,321, so t1 is replaced. Before L the margin was 10% of the typed 1,200 (120) and this did not match.",
       "decisions": [ "H9" ]
     },
     {
@@ -184,7 +185,7 @@
         "imports": [ { "id": "f1", "src": "statement", "acct": "bank", "lines": [ { "id": "i1", "dir": "in", "a": 250000, "date": "2026-12-10", "posted": "2026-12-10" } ] } ]
       },
       "expected": { "gone": {}, "settled": { "pay@2026-12-10": "i1" } },
-      "why": "Same account, money in, 250,000 exactly, posted Thu 10 Dec on its landing day. The pay occurrence is settled by i1. (An exact amount matches whatever the margin is, so this does not depend on open question match-q1.)",
+      "why": "Same account, money in, 250,000 exactly, posted Thu 10 Dec on its landing day. The pay occurrence is settled by i1. (An exact amount matches whatever the margin is; with no `vary`, only the exact amount matches [L matching q1].)",
       "decisions": [ "A6", "H2" ]
     },
     {
@@ -228,14 +229,14 @@
           { "id": "s1", "acct": "bank", "dir": "out", "a": 500, "date": "2026-11-18", "src": "screenshot" },
           { "id": "s2", "acct": "bank", "dir": "out", "a": 800, "date": "2026-11-19", "src": "screenshot" }
         ],
-        "imports": [ { "id": "f1", "src": "statement", "acct": "bank", "lines": [
+        "imports": [ { "id": "f1", "src": "statement", "acct": "bank", "from": "2026-11-16", "to": "2026-11-22", "lines": [
           { "id": "st1", "dir": "out", "a": 500, "date": "2026-11-18", "posted": "2026-11-18" },
           { "id": "st2", "dir": "out", "a": 800, "date": "2026-11-19", "posted": "2026-11-19" },
           { "id": "st3", "dir": "out", "a": 300, "date": "2026-11-20", "posted": "2026-11-20" }
         ] } ]
       },
-      "expected": { "gone": { "s1": "st1", "s2": "st2" }, "settled": {} },
-      "why": "Statement ranks over screenshot (6.4). st1 and st2 each match a screenshot line (same account, direction, amount, day), so s1 and s2 are gone, each goneBy the statement line that replaces it. st3 matches nothing and is a new line. (Screenshot lines with no statement line are open question match-q8.)",
+      "expected": { "gone": { "s1": "f1", "s2": "f1" }, "settled": {} },
+      "why": "Statement ranks over screenshot (6.4). The statement covers Mon 16 to Sun 22 Nov, and a statement removes the screenshot lines inside its own dates, goneBy the statement import's id, f1 [L matching q8]. s1 (18 Nov) and s2 (19 Nov) are inside, so both are gone by f1; st1 and st2 are the live lines for that money. st3 matches nothing and is a new line. Before L each was goneBy its statement line (st1, st2).",
       "decisions": [ "A6" ]
     },
     {
@@ -256,11 +257,11 @@
         "lines": [ { "id": "t1", "acct": "bank", "dir": "out", "a": 500, "date": "2026-11-18", "src": "typed" } ],
         "imports": [
           { "id": "f2", "src": "screenshot", "acct": "bank", "lines": [ { "id": "sc1", "dir": "out", "a": 500, "date": "2026-11-18" } ] },
-          { "id": "f1", "src": "statement", "acct": "bank", "lines": [ { "id": "st1", "dir": "out", "a": 500, "date": "2026-11-18", "posted": "2026-11-18" } ] }
+          { "id": "f1", "src": "statement", "acct": "bank", "from": "2026-11-16", "to": "2026-11-22", "lines": [ { "id": "st1", "dir": "out", "a": 500, "date": "2026-11-18", "posted": "2026-11-18" } ] }
         ]
       },
-      "expected": { "gone": { "t1": "sc1", "sc1": "st1" }, "settled": {} },
-      "why": "First the screenshot: sc1 matches typed t1 and ranks over it, so t1 is gone by sc1. Then the statement: st1 matches sc1 and ranks over it, so sc1 is gone by st1. t1 stays gone (a gone line is never matched again). One live line, st1.",
+      "expected": { "gone": { "t1": "sc1", "sc1": "f1" }, "settled": {} },
+      "why": "First the screenshot: sc1 matches typed t1 and ranks over it, so t1 is gone by sc1. Then the statement (16 to 22 Nov): sc1 is a screenshot line inside its dates, so it is gone, goneBy the statement import f1 [L matching q8]. t1 stays gone (a gone line is never matched again). One live line, st1.",
       "decisions": [ "A6" ]
     },
     {
@@ -274,7 +275,7 @@
         ] } ]
       },
       "expected": { "goneCount": 1, "liveImportLines": 2 },
-      "why": "A replaced line is gone, and a gone line is never matched again, so the typed 500 can be replaced by only one of the two statement lines. The other is a second coffee nobody typed. Total spending 1,000, not 500 and not 1,500. (Which of i1 or i2 takes t1's place is open question match-q7; the count does not depend on it.)",
+      "why": "A replaced line is gone, and a gone line is never matched again, so the typed 500 can be replaced by only one of the two statement lines. The other is a second coffee nobody typed. Total spending 1,000, not 500 and not 1,500. (The import lines are applied in the order they are listed, so i1 is the one that takes the place of t1; the count does not depend on it.)",
       "decisions": [ "A6" ]
     },
     {
@@ -331,21 +332,293 @@
       "expected": [],
       "why": "The bbbbbb line was already removed, so there is nothing to ask about it. The cccccc line came from a statement, not typed on a device; an import is handled by the matching rule above, not by the double question.",
       "decisions": [ "H9" ]
+    },
+    {
+      "id": "match-23", "question": "import",
+      "title": "A rough line and an import 10% of the larger apart: they match",
+      "input": {
+        "lines": [ { "id": "t1", "acct": "bank", "dir": "out", "a": 1200, "date": "2026-11-20", "src": "typed", "est": true } ],
+        "imports": [ { "id": "f1", "src": "statement", "acct": "bank", "lines": [ { "id": "i1", "dir": "out", "a": 1333, "date": "2026-11-20", "posted": "2026-11-20" } ] } ]
+      },
+      "expected": { "gone": { "t1": "i1" }, "settled": {} },
+      "why": "The larger is 1,333. 1,333 - 1,200 = 133; 133 x 10 = 1,330, not more than 1,333, so it is within 10% of the larger and t1 is replaced [L matching q10]. (10% of the typed 1,200 would be 120, and 133 is past it.)",
+      "decisions": [ "L matching q10" ]
+    },
+    {
+      "id": "match-24", "question": "import",
+      "title": "One yen further: past 10% of the larger, no match",
+      "input": {
+        "lines": [ { "id": "t1", "acct": "bank", "dir": "out", "a": 1200, "date": "2026-11-20", "src": "typed", "est": true } ],
+        "imports": [ { "id": "f1", "src": "statement", "acct": "bank", "lines": [ { "id": "i1", "dir": "out", "a": 1334, "date": "2026-11-20", "posted": "2026-11-20" } ] } ]
+      },
+      "expected": { "gone": {}, "settled": {} },
+      "why": "1,334 - 1,200 = 134; 134 x 10 = 1,340, more than 1,334 (the larger), so it is past 10% and nothing matches [L matching q10].",
+      "decisions": [ "L matching q10" ]
+    },
+    {
+      "id": "match-25", "question": "import",
+      "title": "An import below the typed amount: the typed amount is the larger",
+      "input": {
+        "lines": [ { "id": "t1", "acct": "bank", "dir": "out", "a": 1200, "date": "2026-11-20", "src": "typed", "est": true } ],
+        "imports": [ { "id": "f1", "src": "statement", "acct": "bank", "lines": [ { "id": "i1", "dir": "out", "a": 1080, "date": "2026-11-20", "posted": "2026-11-20" } ] } ]
+      },
+      "expected": { "gone": { "t1": "i1" }, "settled": {} },
+      "why": "The larger is the typed 1,200. 1,200 - 1,080 = 120; 120 x 10 = 1,200, not more than 1,200: exactly at the edge, so it matches [L matching q10].",
+      "decisions": [ "L matching q10" ]
+    },
+    {
+      "id": "match-26", "question": "import",
+      "title": "Half a minor unit is never rounded: a rough 1,205 and an import of 1,084",
+      "input": {
+        "lines": [ { "id": "t1", "acct": "bank", "dir": "out", "a": 1205, "date": "2026-11-20", "src": "typed", "est": true } ],
+        "imports": [ { "id": "f1", "src": "statement", "acct": "bank", "lines": [ { "id": "i1", "dir": "out", "a": 1084, "date": "2026-11-20", "posted": "2026-11-20" } ] } ]
+      },
+      "expected": { "gone": {}, "settled": {} },
+      "why": "The larger is 1,205; 10% of it is 120.5. 1,205 - 1,084 = 121; 121 x 10 = 1,210, more than 1,205, so no match. Compared exactly in minor units [L matching q10]: rounding the margin 120.5 up to 121 (as lookahead_ref.js did) would have matched.",
+      "decisions": [ "L matching q10" ]
+    },
+    {
+      "id": "match-27", "question": "import",
+      "title": "A bill with no `vary`: one yen off settles nothing",
+      "input": {
+        "expected": [ { "s": "power", "due": "2026-11-25", "lands": "2026-11-25", "acct": "bank", "dir": "out", "a": 8000 } ],
+        "imports": [ { "id": "f1", "src": "statement", "acct": "bank", "lines": [ { "id": "i1", "dir": "out", "a": 8001, "date": "2026-11-25", "posted": "2026-11-25" } ] } ]
+      },
+      "expected": { "gone": {}, "settled": {} },
+      "why": "The power schedule has no `vary`, so only the exact 8,000 matches [L matching q1]. 8,001 is not 8,000: the occurrence stays unsettled and i1 is a new spend. At the check-in the person can tick the bill with the real amount (A2, F16).",
+      "decisions": [ "L matching q1" ]
+    },
+    {
+      "id": "match-28", "question": "import",
+      "title": "Pay landing 5 working days early settles its occurrence",
+      "input": {
+        "expected": [ { "s": "pay", "due": "2026-12-10", "lands": "2026-12-10", "acct": "bank", "dir": "in", "a": 250000 } ],
+        "imports": [ { "id": "f1", "src": "statement", "acct": "bank", "lines": [ { "id": "i1", "dir": "in", "a": 250000, "date": "2026-12-03", "posted": "2026-12-03" } ] } ]
+      },
+      "expected": { "gone": {}, "settled": { "pay@2026-12-10": "i1" } },
+      "why": "An import may settle an expected item up to 5 working days early [L matching q2]. Back from Thu 10 Dec: Wed 9, Tue 8, Mon 7, Fri 4, Thu 3 (Sat 5 and Sun 6 skipped). Posted Thu 3 Dec is the fifth working day before, so it settles pay@2026-12-10 (and F8 starts the period on 3 Dec).",
+      "decisions": [ "L matching q2" ]
+    },
+    {
+      "id": "match-29", "question": "import",
+      "title": "Pay landing 6 working days early does not settle it",
+      "input": {
+        "expected": [ { "s": "pay", "due": "2026-12-10", "lands": "2026-12-10", "acct": "bank", "dir": "in", "a": 250000 } ],
+        "imports": [ { "id": "f1", "src": "statement", "acct": "bank", "lines": [ { "id": "i1", "dir": "in", "a": 250000, "date": "2026-12-02", "posted": "2026-12-02" } ] } ]
+      },
+      "expected": { "gone": {}, "settled": {} },
+      "why": "The early limit is Thu 3 Dec (5 working days before Thu 10 Dec) [L matching q2]. Wed 2 Dec is before it, so the import is a new line in; the person can still tick the pay at the check-in (A2).",
+      "decisions": [ "L matching q2" ]
+    },
+    {
+      "id": "match-30", "question": "import",
+      "title": "An import posted the working day before the typed date matches",
+      "input": {
+        "lines": [ { "id": "t1", "acct": "bank", "dir": "out", "a": 1200, "date": "2026-11-23", "src": "typed" } ],
+        "imports": [ { "id": "f1", "src": "statement", "acct": "bank", "lines": [ { "id": "i1", "dir": "out", "a": 1200, "date": "2026-11-20", "posted": "2026-11-20" } ] } ]
+      },
+      "expected": { "gone": { "t1": "i1" }, "settled": {} },
+      "why": "The window runs either side of the typed day [L matching q3]: Mon 23 less 1 working day is Fri 20 (Sat and Sun skipped), Mon 23 plus 1 is Tue 24. Posted Fri 20 is inside, so the person typed the wrong day and t1 is replaced.",
+      "decisions": [ "L matching q3" ]
+    },
+    {
+      "id": "match-31", "question": "import",
+      "title": "Two working days before the typed date: no match",
+      "input": {
+        "lines": [ { "id": "t1", "acct": "bank", "dir": "out", "a": 1200, "date": "2026-11-24", "src": "typed" } ],
+        "imports": [ { "id": "f1", "src": "statement", "acct": "bank", "lines": [ { "id": "i1", "dir": "out", "a": 1200, "date": "2026-11-20", "posted": "2026-11-20" } ] } ]
+      },
+      "expected": { "gone": {}, "settled": {} },
+      "why": "Tue 24 less 1 working day is Mon 23, so the window is Mon 23 to Wed 25 [L matching q3]. Posted Fri 20 is outside it; both lines stay.",
+      "decisions": [ "L matching q3" ]
+    },
+    {
+      "id": "match-32", "question": "import",
+      "title": "A card line posted long after the buy matches by its buy date",
+      "input": {
+        "lines": [ { "id": "t1", "acct": "card", "dir": "out", "a": 4800, "date": "2026-11-20", "src": "typed" } ],
+        "imports": [ { "id": "f1", "src": "statement", "acct": "card", "lines": [ { "id": "i1", "dir": "out", "a": 4800, "date": "2026-11-20", "posted": "2026-12-02" } ] } ]
+      },
+      "expected": { "gone": { "t1": "i1" }, "settled": {} },
+      "why": "A card line matches by its buy date or its posted date [L matching q4]. Posted Wed 2 Dec is past the 7 day card window, but the buy date, Fri 20 Nov, is the typed day, so t1 is replaced and the spend counts once.",
+      "decisions": [ "L matching q4" ]
+    },
+    {
+      "id": "match-33", "question": "import",
+      "title": "A card with a 1 working day window: the buy date is inside, the posted date is not",
+      "input": {
+        "accounts": { "bank": { "kind": "bank", "postingDays": 1 }, "card": { "kind": "card", "postingDays": 1 } },
+        "lines": [ { "id": "t1", "acct": "card", "dir": "out", "a": 4800, "date": "2026-11-20", "src": "typed" } ],
+        "imports": [ { "id": "f1", "src": "statement", "acct": "card", "lines": [ { "id": "i1", "dir": "out", "a": 4800, "date": "2026-11-23", "posted": "2026-11-27" } ] } ]
+      },
+      "expected": { "gone": { "t1": "i1" }, "settled": {} },
+      "why": "The window is Thu 19 to Mon 23 (Fri 20 less and plus 1 working day). The posted date, Fri 27, is outside; the buy date, Mon 23, is inside, and on a card either one counts [L matching q4]. So t1 is replaced.",
+      "decisions": [ "L matching q4" ]
+    },
+    {
+      "id": "match-34", "question": "import",
+      "title": "The same dates on a bank account: only the posted date counts",
+      "input": {
+        "lines": [ { "id": "t1", "acct": "bank", "dir": "out", "a": 4800, "date": "2026-11-20", "src": "typed" } ],
+        "imports": [ { "id": "f1", "src": "statement", "acct": "bank", "lines": [ { "id": "i1", "dir": "out", "a": 4800, "date": "2026-11-23", "posted": "2026-11-27" } ] } ]
+      },
+      "expected": { "gone": {}, "settled": {} },
+      "why": "L matching q4 gives the buy date to card lines only; a bank line is matched by its posted date (6.4). Posted Fri 27 is outside Thu 19 to Mon 23, so both lines stay.",
+      "decisions": [ "L matching q4" ]
+    },
+    {
+      "id": "match-35", "question": "import",
+      "title": "A ticked pay replaced by its statement line: the settle moves to the import",
+      "input": {
+        "expected": [ { "s": "pay", "due": "2026-12-10", "lands": "2026-12-10", "acct": "bank", "dir": "in", "a": 250000 } ],
+        "lines": [ { "id": "t1", "acct": "bank", "dir": "in", "a": 250000, "date": "2026-12-10", "src": "typed", "settles": [ "pay@2026-12-10" ] } ],
+        "imports": [ { "id": "f1", "src": "statement", "acct": "bank", "lines": [ { "id": "i1", "dir": "in", "a": 250000, "date": "2026-12-10", "posted": "2026-12-10" } ] } ]
+      },
+      "expected": { "gone": { "t1": "i1" }, "settled": { "pay@2026-12-10": "i1" } },
+      "why": "The pay was ticked at the check-in, so t1 settles pay@2026-12-10. The statement line matches t1 and replaces it, and the import takes over the typed line's `settles` [L matching q5], so the pay stays settled once, by i1, and is never counted twice.",
+      "decisions": [ "L matching q5" ]
+    },
+    {
+      "id": "match-36", "question": "import",
+      "title": "An import that matches both a typed line and the expected item: the typed line wins and its settle moves",
+      "input": {
+        "expected": [ { "s": "rent", "due": "2026-11-27", "lands": "2026-11-27", "acct": "bank", "dir": "out", "a": 80000 } ],
+        "lines": [ { "id": "t1", "acct": "bank", "dir": "out", "a": 80000, "date": "2026-11-27", "src": "typed", "settles": [ "rent@2026-11-27" ] } ],
+        "imports": [ { "id": "f1", "src": "statement", "acct": "bank", "lines": [ { "id": "i1", "dir": "out", "a": 80000, "date": "2026-11-27", "posted": "2026-11-30" } ] } ]
+      },
+      "expected": { "gone": { "t1": "i1" }, "settled": { "rent@2026-11-27": "i1" } },
+      "why": "Posted Mon 30 Nov is inside Fri 27 plus 1 working day, for both the typed line and the rent item. The typed line wins and is replaced by the import, which carries its settle [L matching q6]: t1 gone by i1, rent@2026-11-27 settled by i1. Rent counts once.",
+      "decisions": [ "L matching q6" ]
+    },
+    {
+      "id": "match-37", "question": "import",
+      "title": "Two typed lines match one import: the closest date wins",
+      "input": {
+        "lines": [ { "id": "t1", "acct": "bank", "dir": "out", "a": 500, "date": "2026-11-18", "src": "typed" }, { "id": "t2", "acct": "bank", "dir": "out", "a": 500, "date": "2026-11-19", "src": "typed" } ],
+        "imports": [ { "id": "f1", "src": "statement", "acct": "bank", "lines": [ { "id": "i1", "dir": "out", "a": 500, "date": "2026-11-19", "posted": "2026-11-19" } ] } ]
+      },
+      "expected": { "gone": { "t2": "i1" }, "settled": {} },
+      "why": "Both are inside the window (Wed 18 + 1 working day is Thu 19). t2 is dated Thu 19, 0 days from the import; t1 is 1 day away. The closest date wins [L matching q7], so t2 is replaced and t1 stays as a second coffee. Before L the earliest dated (t1) was taken.",
+      "decisions": [ "L matching q7" ]
+    },
+    {
+      "id": "match-38", "question": "import",
+      "title": "Two typed lines the same distance away: the earliest `told` wins",
+      "input": {
+        "lines": [ { "id": "t1", "acct": "bank", "dir": "out", "a": 500, "date": "2026-11-18", "src": "typed", "told": "2026-11-20T21:00:00.000+09:00" }, { "id": "t2", "acct": "bank", "dir": "out", "a": 500, "date": "2026-11-20", "src": "typed", "told": "2026-11-20T08:00:00.000+09:00" } ],
+        "imports": [ { "id": "f1", "src": "statement", "acct": "bank", "lines": [ { "id": "i1", "dir": "out", "a": 500, "date": "2026-11-19", "posted": "2026-11-19" } ] } ]
+      },
+      "expected": { "gone": { "t2": "i1" }, "settled": {} },
+      "why": "Posted Thu 19 is inside both windows (Wed 18 + 1 working day; Fri 20 - 1 working day) and 1 day from each. On equal distance the earliest `told` wins [L matching q7]: t2 was told at 08:00 on 20 Nov, t1 at 21:00 the same day, so t2 is replaced.",
+      "decisions": [ "L matching q7" ]
+    },
+    {
+      "id": "match-39", "question": "import",
+      "title": "A misread screenshot line inside the statement's dates goes; one after them stays",
+      "input": {
+        "lines": [ { "id": "s1", "acct": "bank", "dir": "out", "a": 500, "date": "2026-11-18", "src": "screenshot" }, { "id": "s2", "acct": "bank", "dir": "out", "a": 750, "date": "2026-11-19", "src": "screenshot" }, { "id": "s3", "acct": "bank", "dir": "out", "a": 900, "date": "2026-11-25", "src": "screenshot" } ],
+        "imports": [ { "id": "f1", "src": "statement", "acct": "bank", "from": "2026-11-16", "to": "2026-11-22", "lines": [ { "id": "st1", "dir": "out", "a": 500, "date": "2026-11-18", "posted": "2026-11-18" } ] } ]
+      },
+      "expected": { "gone": { "s1": "f1", "s2": "f1" }, "settled": {} },
+      "why": "The statement covers 16 to 22 Nov. It removes the screenshot lines inside its own dates, matched or not, goneBy the statement import f1 [L matching q8]: s1 (matched by st1) and s2 (a misread 750 no statement line holds) are gone. s3, on 25 Nov, is after the statement's dates and stays.",
+      "decisions": [ "L matching q8" ]
+    },
+    {
+      "id": "match-40", "question": "import_dropped",
+      "title": "Two screenshots overlapping: the repeated line is dropped, the new one kept",
+      "input": {
+        "lines": [ { "id": "a1", "acct": "bank", "dir": "out", "a": 500, "date": "2026-11-18", "src": "screenshot", "file": "shot1", "line": 1 } ],
+        "imports": [ { "id": "f3", "src": "screenshot", "acct": "bank", "file": "shot2", "lines": [ { "id": "b1", "dir": "out", "a": 500, "date": "2026-11-18", "line": 1 }, { "id": "b2", "dir": "out", "a": 300, "date": "2026-11-19", "line": 2 } ] } ]
+      },
+      "expected": [ "b1" ],
+      "why": "b1 has the same line id as the live screenshot line a1: 18 Nov, 500, out, the first such line in its own screenshot. An equal-rank repeat with the same line id is dropped [L matching q9]. b2 (300 on 19 Nov) is new and kept.",
+      "decisions": [ "L matching q9" ]
+    },
+    {
+      "id": "match-41", "question": "import_dropped",
+      "title": "The second of two coffees on a later screenshot is kept: the count is part of the line id",
+      "input": {
+        "lines": [ { "id": "a1", "acct": "bank", "dir": "out", "a": 500, "date": "2026-11-18", "src": "screenshot", "file": "shot1", "line": 1 } ],
+        "imports": [ { "id": "f3", "src": "screenshot", "acct": "bank", "file": "shot2", "lines": [ { "id": "b1", "dir": "out", "a": 500, "date": "2026-11-18", "line": 1 }, { "id": "b2", "dir": "out", "a": 500, "date": "2026-11-18", "line": 2 } ] } ]
+      },
+      "expected": [ "b1" ],
+      "why": "shot2 shows two coffees of 500 on 18 Nov. b1 is the first such line (count 1), the same line id as a1, so it is dropped. b2 is the second (count 2); no live line has that id, so it is a coffee shot1 did not show and is kept [L matching q9].",
+      "decisions": [ "L matching q9" ]
+    },
+    {
+      "id": "match-42", "question": "import_dropped",
+      "title": "One statement file read twice: every line with the same `src` is dropped, even one read differently",
+      "input": {
+        "imports": [ { "id": "f1", "src": "statement", "acct": "bank", "file": "nov.pdf", "lines": [ { "id": "i1", "dir": "out", "a": 1200, "date": "2026-11-18", "posted": "2026-11-18", "line": 1 }, { "id": "i2", "dir": "out", "a": 800, "date": "2026-11-19", "posted": "2026-11-19", "line": 2 } ] }, { "id": "f2", "src": "statement", "acct": "bank", "file": "nov.pdf", "lines": [ { "id": "j1", "dir": "out", "a": 1200, "date": "2026-11-18", "posted": "2026-11-18", "line": 1 }, { "id": "j2", "dir": "out", "a": 850, "date": "2026-11-19", "posted": "2026-11-19", "line": 2 } ] } ]
+      },
+      "expected": [ "j1", "j2" ],
+      "why": "f2 is the same file read again. j1 has the same src (statement, nov.pdf, line 1) and the same line id as i1, so it is dropped. j2 was read as 850, so its line id differs from i2's (800), but its src (nov.pdf, line 2) is the same, so it is dropped too [L matching q9]. The month is counted once.",
+      "decisions": [ "L matching q9" ]
+    },
+    {
+      "id": "match-43", "question": "import_counts",
+      "title": "A repeat that is dropped is neither gone nor live",
+      "input": {
+        "imports": [ { "id": "f1", "src": "statement", "acct": "bank", "file": "nov.pdf", "lines": [ { "id": "i1", "dir": "out", "a": 1200, "date": "2026-11-18", "posted": "2026-11-18", "line": 1 } ] }, { "id": "f2", "src": "statement", "acct": "bank", "file": "nov.pdf", "lines": [ { "id": "j1", "dir": "out", "a": 1200, "date": "2026-11-18", "posted": "2026-11-18", "line": 1 } ] } ]
+      },
+      "expected": { "goneCount": 0, "liveImportLines": 1 },
+      "why": "j1 repeats i1 (same src, same line id) and is dropped, never added [L matching q9]. Only i1 is live: 1 live import line and nothing gone, so 1,200 is counted once.",
+      "decisions": [ "L matching q9" ]
+    },
+    {
+      "id": "double-05", "question": "possible_doubles",
+      "title": "Two spends with the same budget line and no place: the line counts as the place",
+      "input": {
+        "lines": [ { "id": "aaaaaa-x1y-3", "acct": "bank", "dir": "out", "a": 1500, "date": "2026-11-20", "line": "food", "src": "typed" }, { "id": "bbbbbb-q2w-7", "acct": "bank", "dir": "out", "a": 1500, "date": "2026-11-20", "line": "food", "src": "typed" } ]
+      },
+      "expected": [ [ "aaaaaa-x1y-3", "bbbbbb-q2w-7" ] ],
+      "why": "Neither names a place; both name the budget line food. A budget line counts as the place [L matching q11], so two devices, the same day, the same place and 1,500: offered.",
+      "decisions": [ "L matching q11" ]
+    },
+    {
+      "id": "double-06", "question": "possible_doubles",
+      "title": "\"Both are real\" is kept on the newer record: the pair is not offered again",
+      "input": {
+        "lines": [ { "id": "aaaaaa-x1y-3", "acct": "bank", "dir": "out", "a": 1500, "date": "2026-11-20", "place": "free", "src": "typed", "told": "2026-11-20T12:00:00.000+09:00" }, { "id": "bbbbbb-q2w-7", "acct": "bank", "dir": "out", "a": 1500, "date": "2026-11-20", "place": "free", "src": "typed", "told": "2026-11-20T12:02:00.000+09:00", "notDouble": [ "aaaaaa-x1y-3" ] } ]
+      },
+      "expected": [],
+      "why": "The pair is a possible double (double-01), but the person said both are real, which wrote `notDouble: [aaaaaa-x1y-3]` on the newer record [L matching q12]. So the pair is not offered again.",
+      "decisions": [ "L matching q12" ]
+    },
+    {
+      "id": "double-07", "question": "not_double_mark",
+      "title": "What \"both are real\" writes",
+      "input": {
+        "pair": [ "aaaaaa-x1y-3", "bbbbbb-q2w-7" ],
+        "lines": [ { "id": "aaaaaa-x1y-3", "acct": "bank", "dir": "out", "a": 1500, "date": "2026-11-20", "place": "free", "src": "typed", "told": "2026-11-20T12:00:00.000+09:00" }, { "id": "bbbbbb-q2w-7", "acct": "bank", "dir": "out", "a": 1500, "date": "2026-11-20", "place": "free", "src": "typed", "told": "2026-11-20T12:02:00.000+09:00" } ]
+      },
+      "expected": { "id": "bbbbbb-q2w-7", "notDouble": [ "aaaaaa-x1y-3" ] },
+      "why": "The answer is kept as `notDouble: [id]` on the newer record [L matching q12]. bbbbbb-q2w-7 was told at 12:02, after aaaaaa-x1y-3 at 12:00, so it is the newer and gets notDouble naming the other.",
+      "decisions": [ "L matching q12" ]
+    },
+    {
+      "id": "double-08", "question": "possible_doubles",
+      "title": "The same spend date typed on two different days is still offered",
+      "input": {
+        "lines": [ { "id": "aaaaaa-x1y-3", "acct": "bank", "dir": "out", "a": 1500, "date": "2026-11-20", "place": "free", "src": "typed", "told": "2026-11-20T12:00:00.000+09:00" }, { "id": "bbbbbb-q2w-7", "acct": "bank", "dir": "out", "a": 1500, "date": "2026-11-20", "place": "free", "src": "typed", "told": "2026-11-22T09:00:00.000+09:00" } ]
+      },
+      "expected": [ [ "aaaaaa-x1y-3", "bbbbbb-q2w-7" ] ],
+      "why": "\"Same day\" is the spend's date [L matching q13]: both are dated 20 Nov, though one was typed two days later. Same place, same 1,500, two devices: offered.",
+      "decisions": [ "L matching q13" ]
+    },
+    {
+      "id": "double-09", "question": "possible_doubles",
+      "title": "The same day typed but different spend dates is not offered",
+      "input": {
+        "lines": [ { "id": "aaaaaa-x1y-3", "acct": "bank", "dir": "out", "a": 1500, "date": "2026-11-19", "place": "free", "src": "typed", "told": "2026-11-20T12:00:00.000+09:00" }, { "id": "bbbbbb-q2w-7", "acct": "bank", "dir": "out", "a": 1500, "date": "2026-11-20", "place": "free", "src": "typed", "told": "2026-11-20T12:02:00.000+09:00" } ]
+      },
+      "expected": [],
+      "why": "Both were typed on 20 Nov, but the spends are dated 19 and 20 Nov. \"Same day\" is the spend's date [L matching q13], so they are not offered.",
+      "decisions": [ "L matching q13" ]
     }
   ],
   "open": [
-    { "id": "match-q1", "question": "A schedule with no `vary`: exact amount only, or a default margin? (Electricity is never the planned amount, sweep2_experience 9.)", "ref_does": "exact amount only" },
-    { "id": "match-q2", "question": "How early may an import land before an expected item's landing day and still settle it? F8 says early pay starts the period on the day it lands, so early pay must be recognised, but 6.4 only gives a window after the date.", "ref_does": "never before the landing day" },
-    { "id": "match-q3", "question": "An import posted before the typed line's date (the person typed the wrong day): no match?", "ref_does": "no match; the window starts on the typed day" },
-    { "id": "match-q4", "question": "A card line whose buy date is the typed date but whose posted date is past the posting window (match-06). As written it does not match and the spend counts twice. Should a match on the buy date also count, or should cards default to a longer `postingDays`?", "ref_does": "the rule as written (posted date only)" },
-    { "id": "match-q5", "question": "An import that replaces a typed line which settled an occurrence (pay ticked at a check-in, then the statement arrives): does the settle move to the import line? If not, the occurrence is unsettled again and the pay counts twice.", "ref_does": "the import line takes over the typed line's settles" },
-    { "id": "match-q6", "question": "An import line that matches both a typed line and an unsettled expected item: which wins?", "ref_does": "the typed line" },
-    { "id": "match-q7", "question": "Several lines match one import line (two typed 500s, or two statement lines for one typed line): which is taken?", "ref_does": "the earliest dated, then the first listed" },
-    { "id": "match-q8", "question": "\"A statement replaces screenshot lines in the same stretch\": does it also remove screenshot lines that no statement line matches (a misread screenshot)? Is \"the same stretch\" the check-in stretch or the dates the statement covers? Which id goes in `goneBy`?", "ref_does": "only screenshot lines matched by a statement line are replaced, goneBy that statement line" },
-    { "id": "match-q9", "question": "Two overlapping screenshots holding the same line, or one statement imported twice (equal rank): what removes the repeat?", "ref_does": "nothing; both stay" },
-    { "id": "match-q10", "question": "\"Within 10%\" at a half minor unit: lookahead_ref.js rounds the margin (Math.round(a x 0.1)), so a rough 1,205 matches 1,326 (margin 120.5 rounded to 121). Comparing exactly (difference x 10 <= amount) does not. Which?", "ref_does": "exact comparison, no rounding (differs from lookahead_ref.js at that one edge)" },
-    { "id": "match-q11", "question": "\"Same place\" for a possible double: a spend with a budget `line` and no `place`. Does the line count as the place?", "ref_does": "place, else line" },
-    { "id": "match-q12", "question": "Where is the person's answer \"both are real\" kept, so the same pair is not offered again? The shape has no field for it.", "ref_does": "nothing kept; offers every time" },
-    { "id": "match-q13", "question": "\"On the same day\" for a possible double: the spend's date, or the day it was typed (`told`)?", "ref_does": "the spend's date" }
+    { "id": "match-q14", "question": "L q4 gives cards a 7 day posting window by default. `postingDays` counts working days everywhere else [F4]; is the card's 7 also working days, or 7 calendar days? No case here depends on it (every card line above is inside or outside both).", "ref_does": "7 working days, like every other `postingDays`" },
+    { "id": "match-q15", "question": "L q8 says a statement removes the screenshot lines inside its own dates. A screenshot read after the statement, inside its dates, that matches no statement line (match-20 is the matched case): is it removed too, and goneBy what?", "ref_does": "only the matched case: the new screenshot line goes, goneBy the statement line holding that money (match-20); an unmatched one stays" }
   ]
 }
