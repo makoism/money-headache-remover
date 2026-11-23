@@ -5,7 +5,9 @@
      fixed to one screen's height.
    - The cards box shows the day each card's figure was checked ("checked 20 Nov"), and after a card figure is typed
      at a check-in on 23 Nov, "checked 23 Nov".
-   - Home has "Log a spend": it opens Receipts' own log form (no second form), with the amount box ready. */
+   - Home has "Log a spend": it opens Receipts' own log form (no second form), with the amount box ready.
+   - A "?" beside safe to spend, the status line and the pay period (with why its dates moved for a weekend or a
+     holiday) opens one or two plain lines from the one help piece, screens/help.js. */
 'use strict';
 const T = require('./lib3.js');
 const { ck } = T;
@@ -40,6 +42,32 @@ const { ck } = T;
   ck('it opens Receipts\' log form, the one form, with the amount box ready', at.rc && at.home && at.head === 'Log a spend' && at.focus === 'rcAmt' && at.forms === 1 && at.tab === 'Receipts', JSON.stringify(at));
   await p.keyboard.type('1200'); await p.click('#rcSave'); await T.w(400);
   ck('and the spend is logged through it', /Logged \u00a51,200 on Free to spend/.test(await p.evaluate(() => (document.querySelector('#a3Msg .burrow-msg span') || {}).textContent || '')));
+  /* [NS-FIX 5] a "?" with one or two plain lines beside safe to spend, the status line, the pay period (and why its
+     dates moved), from the one help piece (screens/help.js); the heading's own words stay as they were */
+  const H = require('../../screens/help.js');
+  await p.goto(T.URL0 + '?try=mako&today=2026-11-23'); await T.w(400);
+  const helpOf = card => p.evaluate(c => { const b = document.querySelector(`[data-card=${c}] .burrow-help`), t = document.querySelector(`[data-card=${c}] .burrow-help-text`); return b ? { btn: b.textContent, open: b.getAttribute('aria-expanded'), shown: t && !t.hidden, text: t ? t.textContent : null, head: document.querySelector(`[data-card=${c}] h2`).textContent } : null; }, card);
+  let h = await helpOf('safe');
+  ck('safe to spend has a "?" with its lines hidden, beside an unchanged heading', h && h.btn === '?' && h.open === 'false' && !h.shown && h.head === 'Safe to spend until next pay on 10 Dec', JSON.stringify(h));
+  await p.click('[data-card=safe] .burrow-help'); await T.w(100); h = await helpOf('safe');
+  ck('a tap opens the lines: the help piece\'s words', h.shown && h.open === 'true' && h.text === H.words('safeToSpend').join(' '), JSON.stringify(h));
+  await p.click('[data-card=safe] .burrow-help'); await T.w(100); h = await helpOf('safe');
+  ck('a second tap closes them', !h.shown && h.open === 'false', JSON.stringify(h));
+  h = await helpOf('period');
+  ck('the pay period has its "?", and on 23 Nov nothing moved', h && h.text === H.words('period').join(' '), JSON.stringify(h));
+  /* a kept book: the status line has its "?"; on 5 Jan the next pay is due 10 Jan (a Sunday) and lands 12 Jan */
+  const prof = require('fs').mkdtempSync(require('os').tmpdir() + '/a3prof-');
+  const k = await T.open({ profile: prof });
+  await k.p.goto(T.URL0 + '?today=2026-12-10'); await T.w(300);
+  await k.p.evaluate(async bk0 => { const s = await BurrowStore.open(); await s.save(bk0, { full: true }); s.db && s.db.close(); }, bk);
+  await k.p.reload(); await T.w(400);
+  await k.p.click('#a3CheckGo'); await T.w(300); await k.p.tap('[data-bankfig]'); await k.p.keyboard.type('387,400'); await k.p.click('#a3CheckSave'); await T.w(400);
+  await k.p.goto(T.URL0 + '?today=2027-01-05'); await T.w(400);
+  const ks = await k.p.evaluate(() => ({ st: (document.querySelector('[data-card=status] .burrow-help-text') || {}).textContent, per: (document.querySelector('[data-card=period] .burrow-help-text') || {}).textContent }));
+  ck('the status line has its "?"', ks.st === H.words('status').join(' '), JSON.stringify(ks));
+  ck('the pay period says why its dates moved: due 10 Jan, lands 12 Jan', ks.per === H.words('period').concat(H.words('periodMoved', { due: '10 Jan', landed: '12 Jan' })).join(' '), JSON.stringify(ks));
+  ck('no page errors (kept book)', k.errs.length === 0, k.errs.join(' | '));
+  await k.b.close();
   ck('no page errors', errs.length === 0, errs.join(' | '));
   await b.close(); T.done('e3_ns');
 })().catch(e => { console.log('FAIL crashed ' + e.stack); process.exit(1); });

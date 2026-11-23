@@ -26,6 +26,9 @@ const row = (p, id) => p.$eval(`[data-line="${id}"]`, e => ({ left: Number(e.que
   let x = await row(p, food.id);
   ck('the row shows one amount for the period, the one that counts now: 20,000 left of 20,000', x.left === 20000 && x.amount === 20000, JSON.stringify(x));
   ck('a sentence says only the part for the days left counts now, with the full 30,000', /¥30,000/.test(x.text) && /days left in this pay period/.test(x.text) && !/[.]$/.test(x.text.trim()), x.text);
+  /* [NS-FIX 5] the part-period sentence has its "?", with the help piece's words */
+  const hs = await p.$eval(`[data-line="${food.id}"]`, x => { const e = x.closest('li'), b = e.querySelector('.burrow-help[data-help=lineShare]'); if (!b) return null; b.click(); const t = e.querySelector('.burrow-help-text'); return { shown: t && !t.hidden, text: t && t.textContent }; });
+  ck('the part-period sentence has a "?" that opens the help piece\'s words', hs && hs.shown && hs.text === require('../../screens/help.js').words('lineShare').join(' '), JSON.stringify(hs));
   /* 35,000 spent on Food, kept in the store as Receipts would keep it */
   await p.evaluate(async (acct, line, day) => { const s = await BurrowStore.open(); const r = await s.load(); const t = day + 'T13:00:00.000+09:00';
     r.copy.events.push({ id: 'k7m2qa-zzzzzzzzzz-901', k: 'spend', acct, date: day, a: 35000, line, told: t, at: t, by: 'k7m2qa' }); await s.save(r.copy, { full: true }); s.close(); }, BANK, food.id, DAY);

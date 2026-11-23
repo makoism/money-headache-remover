@@ -4,7 +4,7 @@
 # ../art.js and ../pixel.js, the engine (../engine/), the shared screen pieces (../screens/) and the store (../store/). The old app is not touched.
 cd "$(dirname "$0")" || exit 1
 ENGINE="dates.js units.js ids.js schedules.js ledger.js lookahead.js periods.js match.js checkin.js build_book.js"
-SCREENS="money.js names.js status.js inputs.js provenance.js messages.js"
+SCREENS="money.js names.js status.js inputs.js provenance.js messages.js help.js"
 STORE="clock.js guard.js idb.js persist.js"
 OUT=index.html
 {

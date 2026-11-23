@@ -110,7 +110,7 @@ function drawHome3() {
   /* the one status; on a sample screen the yellow band already says these are made-up numbers, so no second card */
   const names = {}; for (const id of ids.concat(Object.keys(r.cards), Object.keys(r.owed || {}))) names[id] = E3.nameOf(id);
   const st = BurrowScreens.status.statusOf(r, { currency: home, origin, names });
-  if (origin !== 'sample') out.push(`<section class="a3-card a3-status" data-card="status" data-level="${esc3(st.level)}"><h2>${esc3(st.text.state)}</h2><p class="a3-sub">${esc3(st.text.reason)}</p></section>`);
+  if (origin !== 'sample') out.push(`<section class="a3-card a3-status" data-card="status" data-level="${esc3(st.level)}">${helpHead3(`<h2>${esc3(st.text.state)}</h2>`, 'status')}<p class="a3-sub">${esc3(st.text.reason)}</p></section>`);
   /* bank today, one figure per account, with its age */
   for (const id of ids) {
     const a = r.accounts[id];
@@ -134,12 +134,14 @@ function drawHome3() {
   const wctx = { currency: home, names, accounts: r.accounts };
   const warns = (r.warnings || []).map(w => `<p class="a3-warn" data-warn="${esc3(w.code)}">${esc3(BurrowScreens.status.warningText(w, wctx))}</p>`
     + (w.later ? `<p class="a3-warn" data-warn="later_low">${esc3(BurrowScreens.status.laterLowText(w, wctx))}</p>` : '')).join('');
-  out.push(`<section class="a3-card" data-card="safe"><h2>${esc3(label3('safeToSpend'))}${until}</h2>
+  out.push(`<section class="a3-card" data-card="safe">${helpHead3(`<h2>${esc3(label3('safeToSpend'))}${until}</h2>`, 'safeToSpend')}
     <p class="a3-big" data-fig="safe">${fig3('safeToSpend.headline', r.safeToSpend.headline, home)}</p>${short}${sums}${warns}</section>`);
   /* the period by its dates, and the next pay */
   const p = r.period;
   const per = p && p.start && p.end ? `<p class="a3-mid" data-fig="period" data-start="${esc3(p.start)}" data-end="${esc3(p.end)}">${esc3(period3(p))}</p>` : '';
-  out.push(`<section class="a3-card" data-card="period"><h2>${esc3(label3('period'))}</h2>${per}${nextPayWords3(r, yr)}</section>`);
+  /* [NS-FIX 5] when the next pay lands on another day than it is due (a weekend or a holiday), the help says so */
+  const np3 = nextPay3(r), moved = np3 && p && p.nextPay && np3.day !== p.nextPay.due ? { due: day3(p.nextPay.due, yr), landed: day3(np3.day, yr) } : null;
+  out.push(`<section class="a3-card" data-card="period">${helpHead3(`<h2>${esc3(label3('period'))}</h2>`, moved ? ['period', 'periodMoved'] : 'period', moved)}${per}${nextPayWords3(r, yr)}</section>`);
   /* due before next pay, by account */
   const due = r.dueBeforeNextPay;
   const byAcct = Object.keys(due.byAccount).map(acct => `<p class="a3-acct">From ${esc3(E3.nameOf(acct))}</p><ul class="a3-rows">${rowsHtml3(due.items.filter(o => o.account === acct), E3.curOf(acct), yr, 'dueBeforeNextPay.items')}</ul>`).join('');
@@ -177,6 +179,7 @@ function drawHome3() {
   out.push(`<div class="a3-actions"><button type="button" class="a3-btn solid" id="a3CheckGo">Check your bank</button><button type="button" class="a3-btn" id="a3LogGo">Log a spend</button></div>`);
   host.setAttribute('data-origin', origin);
   host.innerHTML = out.join('');
+  HELP3.bind(host);
   /* every figure carries where it came from: a sample screen shows only sample values; the person's bank figure is typed, the rest worked out */
   const P = BurrowScreens.provenance;
   host.querySelectorAll('[data-figure]').forEach(el => P.stamp(el, P.mark(Number(el.dataset.amt), origin === 'sample' ? 'sample' : el.dataset.figure === 'accounts.*.bank' ? 'typed' : 'worked')));

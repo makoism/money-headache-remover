@@ -32,5 +32,8 @@ const fig3 = (path, minor, cur, tag) => `<${tag || 'span'} data-figure="${esc3(p
 /* [NS-FIX 4] a line taken over, in one set of words for Plan and Receipts: "¥1,076 over Food, taken from safe to spend"
    (the amount already written by the screen's formatter, the engine's `over`) */
 const overWords3 = (name, overText) => `${overText} over ${name}, taken from safe to spend`;
+/* [NS-FIX 5] a heading with the one help piece's "?" beside it (never inside it) and its hidden lines under it */
+const HELP3 = BurrowScreens.help;
+const helpHead3 = (h2, keys, ctx) => `<div class="a3-head">${h2}${HELP3.button([].concat(keys)[0])}</div>${HELP3.text(keys, ctx)}`;
 const MSG3 = BurrowScreens.messages.createQueue();
 const msg3 = text => MSG3.post({ kind: 'toast', key: 'a3', text });

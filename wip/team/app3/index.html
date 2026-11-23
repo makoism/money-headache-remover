@@ -1405,6 +1405,17 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
 .a3-gapopt label { display: flex; gap: 8px; align-items: center; font-size: var(--t-sm); }
 .a3-gapopt .a3-sel { width: auto; min-width: 10em; }
 .a3-gapask .a3-sub { margin: 0; flex: 1 1 100%; }
+/* the one help piece (screens/help.js): a small "?" beside a heading, its lines under it */
+.a3-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.a3-head h2 { margin-bottom: 4px; }
+.burrow-help { flex: none; width: 28px; height: 28px; border-radius: 50%; border: 0; background: var(--track); color: var(--ink2); font: inherit; font-size: var(--t-sm); font-weight: 600; cursor: pointer; }
+.burrow-help[aria-expanded="true"] { background: var(--accent); color: var(--on-accent); }
+.burrow-help:focus-visible { outline: 3px solid var(--acc-ring); outline-offset: 2px; }
+.burrow-help-text { margin: 4px 0 8px; font-size: var(--t-sm); color: var(--ink2); }
+.a3-rows li.a3-hashelp { flex-wrap: wrap; }
+.a3-rows li.a3-hashelp > .a3-rcrow { flex: 1 1 100%; }
+.a3-helprow { flex: 1 1 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.a3-helprow .burrow-help-text { flex: 1 1 100%; margin: 0; }
 </style>
 </head>
 <body>
@@ -4718,6 +4729,71 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
 
   return { createQueue, mount, KINDS, LIFE, BAND_CSS };
 });
+/* The one help piece (NORTH_STAR: a question mark next to anything that needs it; LESSONS lesson 2: one shared piece).
+   A "?" button beside a heading opens one or two plain lines under it; a second tap closes them. Every screen asks
+   here for the words and the button, so one thing is explained the same way everywhere. The words are drafts for
+   Mako's copy pass (app3/FOR_MAKO.md "Help words"), written to VOICE.md: plain, short, no comfort, no em dashes.
+     help.words(key, ctx)   the lines for a key, filled from ctx (periodMoved needs { due: '10 Jan', landed: '12 Jan' })
+     help.button(key)       '<button class="burrow-help" ...>?</button>', to sit beside a heading (never inside it)
+     help.text(keys, ctx)   the hidden lines for one or more keys, as one <p>, placed right after the heading
+     help.bind(root)        wires every "?" inside root to the lines after it (safe to call again after a redraw)
+   Plain browser JavaScript, no dependencies. In a page it is BurrowScreens.help; in node, require('./help.js'). */
+(function (root, make) {
+  const m = make();
+  if (typeof module === 'object' && module.exports) module.exports = m;
+  else (root.BurrowScreens = root.BurrowScreens || {}).help = m;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+  'use strict';
+  const WORDS = {
+    safeToSpend: ['What you can spend before your next pay and still cover everything due before it.',
+      'Bills and card payments due by then are already taken off.'],
+    status: ['How things stand today, in one line.', 'It changes when you check your bank or log a spend.'],
+    period: ['Your money runs from one pay to the next, not by calendar month.'],
+    periodMoved: ['Your pay is due on {due}, but that day is a weekend or a holiday, so it lands on {landed}. The pay period moves with it.'],
+    lineShare: ['This line started partway through the pay period, so only the part for the days left counts now.',
+      'The full amount counts from your next pay.'],
+  };
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+  function words(key, ctx) {
+    const lines = WORDS[key];
+    if (!lines) throw new Error('help: no words for ' + key);
+    return lines.map(l => l.replace(/\{(\w+)\}/g, (_, k) => {
+      if (!ctx || ctx[k] == null) throw new Error('help: ' + key + ' needs ' + k);
+      return ctx[k];
+    }));
+  }
+  function button(key) {
+    if (!WORDS[key]) throw new Error('help: no words for ' + key);
+    return `<button type="button" class="burrow-help" data-help="${esc(key)}" aria-expanded="false" aria-label="What this means">?</button>`;
+  }
+  function text(keys, ctx) {
+    const list = [].concat(keys);
+    return `<p class="burrow-help-text" data-helptext="${esc(list[0])}" hidden>${[].concat(...list.map(k => words(k, ctx))).map(esc).join(' ')}</p>`;
+  }
+  /* the lines are the first .burrow-help-text after the button's own row (the heading row it sits in) */
+  function linesOf(b) {
+    for (let e = b.parentElement, n = 0; e && n < 3; e = e.parentElement, n++) {
+      let s = e.nextElementSibling;
+      while (s && !(s.classList && s.classList.contains('burrow-help-text'))) s = s.nextElementSibling;
+      if (s && s.dataset.helptext === b.dataset.help) return s;
+      const inside = e.querySelector(`.burrow-help-text[data-helptext="${b.dataset.help}"]`);
+      if (inside) return inside;
+    }
+    return null;
+  }
+  function bind(rootEl) {
+    for (const b of rootEl.querySelectorAll('.burrow-help')) {
+      if (b.dataset.bound) continue;
+      b.dataset.bound = '1';
+      b.addEventListener('click', e => {
+        e.preventDefault(); e.stopPropagation();
+        const t = linesOf(b), open = b.getAttribute('aria-expanded') !== 'true';
+        b.setAttribute('aria-expanded', String(open)); if (t) t.hidden = !open;
+      });
+    }
+  }
+  return { WORDS, words, button, text, bind };
+});
 // The Burrow's clock for the new store (SCHEMA_V3 section 0; DECISIONS_ROUND2 D4, D8, AH1, AI1, M4, N1, N2).
 // Plain browser JavaScript, no dependencies. Sets window.BurrowClock (and module.exports under Node).
 //
@@ -7396,6 +7472,9 @@ const fig3 = (path, minor, cur, tag) => `<${tag || 'span'} data-figure="${esc3(p
 /* [NS-FIX 4] a line taken over, in one set of words for Plan and Receipts: "¥1,076 over Food, taken from safe to spend"
    (the amount already written by the screen's formatter, the engine's `over`) */
 const overWords3 = (name, overText) => `${overText} over ${name}, taken from safe to spend`;
+/* [NS-FIX 5] a heading with the one help piece's "?" beside it (never inside it) and its hidden lines under it */
+const HELP3 = BurrowScreens.help;
+const helpHead3 = (h2, keys, ctx) => `<div class="a3-head">${h2}${HELP3.button([].concat(keys)[0])}</div>${HELP3.text(keys, ctx)}`;
 const MSG3 = BurrowScreens.messages.createQueue();
 const msg3 = text => MSG3.post({ kind: 'toast', key: 'a3', text });
 /* ---------- E3: the book and the one call the screens use (WIRING_PLAN 1.2, as changed by DECISIONS_ROUND2 AZ1) ----------
@@ -8214,7 +8293,7 @@ function drawHome3() {
   /* the one status; on a sample screen the yellow band already says these are made-up numbers, so no second card */
   const names = {}; for (const id of ids.concat(Object.keys(r.cards), Object.keys(r.owed || {}))) names[id] = E3.nameOf(id);
   const st = BurrowScreens.status.statusOf(r, { currency: home, origin, names });
-  if (origin !== 'sample') out.push(`<section class="a3-card a3-status" data-card="status" data-level="${esc3(st.level)}"><h2>${esc3(st.text.state)}</h2><p class="a3-sub">${esc3(st.text.reason)}</p></section>`);
+  if (origin !== 'sample') out.push(`<section class="a3-card a3-status" data-card="status" data-level="${esc3(st.level)}">${helpHead3(`<h2>${esc3(st.text.state)}</h2>`, 'status')}<p class="a3-sub">${esc3(st.text.reason)}</p></section>`);
   /* bank today, one figure per account, with its age */
   for (const id of ids) {
     const a = r.accounts[id];
@@ -8238,12 +8317,14 @@ function drawHome3() {
   const wctx = { currency: home, names, accounts: r.accounts };
   const warns = (r.warnings || []).map(w => `<p class="a3-warn" data-warn="${esc3(w.code)}">${esc3(BurrowScreens.status.warningText(w, wctx))}</p>`
     + (w.later ? `<p class="a3-warn" data-warn="later_low">${esc3(BurrowScreens.status.laterLowText(w, wctx))}</p>` : '')).join('');
-  out.push(`<section class="a3-card" data-card="safe"><h2>${esc3(label3('safeToSpend'))}${until}</h2>
+  out.push(`<section class="a3-card" data-card="safe">${helpHead3(`<h2>${esc3(label3('safeToSpend'))}${until}</h2>`, 'safeToSpend')}
     <p class="a3-big" data-fig="safe">${fig3('safeToSpend.headline', r.safeToSpend.headline, home)}</p>${short}${sums}${warns}</section>`);
   /* the period by its dates, and the next pay */
   const p = r.period;
   const per = p && p.start && p.end ? `<p class="a3-mid" data-fig="period" data-start="${esc3(p.start)}" data-end="${esc3(p.end)}">${esc3(period3(p))}</p>` : '';
-  out.push(`<section class="a3-card" data-card="period"><h2>${esc3(label3('period'))}</h2>${per}${nextPayWords3(r, yr)}</section>`);
+  /* [NS-FIX 5] when the next pay lands on another day than it is due (a weekend or a holiday), the help says so */
+  const np3 = nextPay3(r), moved = np3 && p && p.nextPay && np3.day !== p.nextPay.due ? { due: day3(p.nextPay.due, yr), landed: day3(np3.day, yr) } : null;
+  out.push(`<section class="a3-card" data-card="period">${helpHead3(`<h2>${esc3(label3('period'))}</h2>`, moved ? ['period', 'periodMoved'] : 'period', moved)}${per}${nextPayWords3(r, yr)}</section>`);
   /* due before next pay, by account */
   const due = r.dueBeforeNextPay;
   const byAcct = Object.keys(due.byAccount).map(acct => `<p class="a3-acct">From ${esc3(E3.nameOf(acct))}</p><ul class="a3-rows">${rowsHtml3(due.items.filter(o => o.account === acct), E3.curOf(acct), yr, 'dueBeforeNextPay.items')}</ul>`).join('');
@@ -8281,6 +8362,7 @@ function drawHome3() {
   out.push(`<div class="a3-actions"><button type="button" class="a3-btn solid" id="a3CheckGo">Check your bank</button><button type="button" class="a3-btn" id="a3LogGo">Log a spend</button></div>`);
   host.setAttribute('data-origin', origin);
   host.innerHTML = out.join('');
+  HELP3.bind(host);
   /* every figure carries where it came from: a sample screen shows only sample values; the person's bank figure is typed, the rest worked out */
   const P = BurrowScreens.provenance;
   host.querySelectorAll('[data-figure]').forEach(el => P.stamp(el, P.mark(Number(el.dataset.amt), origin === 'sample' ? 'sample' : el.dataset.figure === 'accounts.*.bank' ? 'typed' : 'worked')));
@@ -8727,8 +8809,8 @@ const plLive3 = x => x && !x.gone;
 const plWords3 = { once: 'This pay period only', now: 'This pay period and after', next: 'From the next pay period' };
 
 function plFig3(path, minor, cur) { return fig3(path, minor, cur || E3.home()); }
-function plRow3(attrs, left, right) {
-  return `<li><button type="button" class="a3-rcrow" ${attrs}><span>${left}</span><span class="amt">${right}</span></button></li>`;
+function plRow3(attrs, left, right, after) {
+  return `<li${after ? ' class="a3-hashelp"' : ''}><button type="button" class="a3-rcrow" ${attrs}><span>${left}</span><span class="amt">${right}</span></button>${after || ''}</li>`;
 }
 /* an overdue card or loan payment (the engine's `overdue`: past its day and not ticked [F4, H8, BF2]) */
 function overdueWords3(o, cur, yr, path) {
@@ -8759,7 +8841,9 @@ function drawPlan3() {
       const cur = E3.home(), f = fmt3(cur, [l.amount, l.counts, l.spent, l.over]);
       const part = l.counts !== l.amount ? `<br><span class="when" data-fig="line-part">Only the part for the days left in this pay period counts now: ${f(l.counts)} of ${f(l.amount)}</span>` : '';
       const over = l.over ? `<br><span class="when a3-late" data-fig="line-over">Spent ${f(l.spent)} of ${f(l.counts)}: ${esc3(overWords3(l.name, f(l.over)))}</span>` : '';
-      return plRow3(`data-line="${esc3(l.id)}"`, `${esc3(l.name)}${ends}${part}${over}`, `<span data-fig="line-left">${plFig3('period.lines.*.left', l.left)}</span> <span class="when">left of <span data-fig="line-amount">${plFig3('period.lines.*.counts', l.counts)}</span></span>`);
+      /* [NS-FIX 5] the part-period sentence gets the help piece's "?" (beside the row's button, never inside it) */
+      const why = part ? `<div class="a3-helprow"><span class="when">Why only part?</span>${HELP3.button('lineShare')}${HELP3.text('lineShare')}</div>` : '';
+      return plRow3(`data-line="${esc3(l.id)}"`, `${esc3(l.name)}${ends}${part}${over}`, `<span data-fig="line-left">${plFig3('period.lines.*.left', l.left)}</span> <span class="when">left of <span data-fig="line-amount">${plFig3('period.lines.*.counts', l.counts)}</span></span>`, why);
     });
     const fp = p.free && p.free.counts !== p.free.amount ? (f => `<br><span class="when" data-fig="free-part">Only the part for the days left in this pay period counts now: ${f(p.free.counts)} of ${f(p.free.amount)}</span>`)(fmt3(E3.home(), [p.free.counts, p.free.amount])) : '';
     const free = p.free ? plRow3('data-line="free"', `${esc3(label3('freeToSpendLeft'))}${fp}`, `<span data-fig="free-left">${plFig3('period.free.left', p.free.left)}</span> <span class="when">of <span data-fig="free-amount">${plFig3('period.free.counts', p.free.counts)}</span></span>`) : '';
@@ -8819,6 +8903,7 @@ function drawPlan3() {
   out.push(`<section class="a3-card" data-card="plan-past"><h2>Pay periods gone by</h2>${past.length ? past.join('') : '<p class="a3-sub">None yet. When your next pay is ticked off, this pay period shows here with what was spent</p>'}</section>`);
   host.setAttribute('data-origin', E3.mode === 'try' ? 'sample' : 'typed');
   host.innerHTML = out.join('');
+  HELP3.bind(host);
   const P = BurrowScreens.provenance, origin = E3.mode === 'try' ? 'sample' : null;
   host.querySelectorAll('[data-figure]').forEach(el => P.stamp(el, P.mark(Number(el.dataset.amt), origin || (/(amount|target|start)$/.test(el.dataset.figure) ? 'typed' : 'worked'))));
   const on = (sel, fn) => { const el = $(sel); if (el) el.addEventListener('click', fn); };

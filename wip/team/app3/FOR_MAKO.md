@@ -80,3 +80,12 @@ limits, with what would remove each one. app3 works without any of them.
 - Reminder choices are not kept between visits. Should they be?
 - Defaults: the day after pay plus the middle of the period, 2 days before each bill, 09:00.
 - Ask can log a spend, change a line, change Free to spend, and set money aside. Should it also add bills or goals?
+
+## Help words (the "?" marks; drafts for your copy pass, all in screens/help.js)
+One help piece serves every "?", so changing a line there changes it everywhere. The short video of you comes later; these are the written words.
+- Safe to spend: "What you can spend before your next pay and still cover everything due before it. Bills and card payments due by then are already taken off."
+- The status line (Fine for now and the others): "How things stand today, in one line. It changes when you check your bank or log a spend."
+- This pay period: "Your money runs from one pay to the next, not by calendar month."
+- This pay period, when the pay day falls on a weekend or holiday: "Your pay is due on 10 Jan, but that day is a weekend or a holiday, so it lands on 12 Jan. The pay period moves with it."
+- A line added partway through a period (Plan, "Why only part?"): "This line started partway through the pay period, so only the part for the days left counts now. The full amount counts from your next pay."
+- Also for your pass: the bank after the cards line reads "After your cards are paid on 10 and 11 Dec: Main bank ¥364,400. Your pay on 10 Dec is in it. If everything on the cards now is taken. This is the bank, not safe to spend".

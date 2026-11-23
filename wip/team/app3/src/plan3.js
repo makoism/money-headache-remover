@@ -10,8 +10,8 @@ const plLive3 = x => x && !x.gone;
 const plWords3 = { once: 'This pay period only', now: 'This pay period and after', next: 'From the next pay period' };
 
 function plFig3(path, minor, cur) { return fig3(path, minor, cur || E3.home()); }
-function plRow3(attrs, left, right) {
-  return `<li><button type="button" class="a3-rcrow" ${attrs}><span>${left}</span><span class="amt">${right}</span></button></li>`;
+function plRow3(attrs, left, right, after) {
+  return `<li${after ? ' class="a3-hashelp"' : ''}><button type="button" class="a3-rcrow" ${attrs}><span>${left}</span><span class="amt">${right}</span></button>${after || ''}</li>`;
 }
 /* an overdue card or loan payment (the engine's `overdue`: past its day and not ticked [F4, H8, BF2]) */
 function overdueWords3(o, cur, yr, path) {
@@ -42,7 +42,9 @@ function drawPlan3() {
       const cur = E3.home(), f = fmt3(cur, [l.amount, l.counts, l.spent, l.over]);
       const part = l.counts !== l.amount ? `<br><span class="when" data-fig="line-part">Only the part for the days left in this pay period counts now: ${f(l.counts)} of ${f(l.amount)}</span>` : '';
       const over = l.over ? `<br><span class="when a3-late" data-fig="line-over">Spent ${f(l.spent)} of ${f(l.counts)}: ${esc3(overWords3(l.name, f(l.over)))}</span>` : '';
-      return plRow3(`data-line="${esc3(l.id)}"`, `${esc3(l.name)}${ends}${part}${over}`, `<span data-fig="line-left">${plFig3('period.lines.*.left', l.left)}</span> <span class="when">left of <span data-fig="line-amount">${plFig3('period.lines.*.counts', l.counts)}</span></span>`);
+      /* [NS-FIX 5] the part-period sentence gets the help piece's "?" (beside the row's button, never inside it) */
+      const why = part ? `<div class="a3-helprow"><span class="when">Why only part?</span>${HELP3.button('lineShare')}${HELP3.text('lineShare')}</div>` : '';
+      return plRow3(`data-line="${esc3(l.id)}"`, `${esc3(l.name)}${ends}${part}${over}`, `<span data-fig="line-left">${plFig3('period.lines.*.left', l.left)}</span> <span class="when">left of <span data-fig="line-amount">${plFig3('period.lines.*.counts', l.counts)}</span></span>`, why);
     });
     const fp = p.free && p.free.counts !== p.free.amount ? (f => `<br><span class="when" data-fig="free-part">Only the part for the days left in this pay period counts now: ${f(p.free.counts)} of ${f(p.free.amount)}</span>`)(fmt3(E3.home(), [p.free.counts, p.free.amount])) : '';
     const free = p.free ? plRow3('data-line="free"', `${esc3(label3('freeToSpendLeft'))}${fp}`, `<span data-fig="free-left">${plFig3('period.free.left', p.free.left)}</span> <span class="when">of <span data-fig="free-amount">${plFig3('period.free.counts', p.free.counts)}</span></span>`) : '';
@@ -102,6 +104,7 @@ function drawPlan3() {
   out.push(`<section class="a3-card" data-card="plan-past"><h2>Pay periods gone by</h2>${past.length ? past.join('') : '<p class="a3-sub">None yet. When your next pay is ticked off, this pay period shows here with what was spent</p>'}</section>`);
   host.setAttribute('data-origin', E3.mode === 'try' ? 'sample' : 'typed');
   host.innerHTML = out.join('');
+  HELP3.bind(host);
   const P = BurrowScreens.provenance, origin = E3.mode === 'try' ? 'sample' : null;
   host.querySelectorAll('[data-figure]').forEach(el => P.stamp(el, P.mark(Number(el.dataset.amt), origin || (/(amount|target|start)$/.test(el.dataset.figure) ? 'typed' : 'worked'))));
   const on = (sel, fn) => { const el = $(sel); if (el) el.addEventListener('click', fn); };

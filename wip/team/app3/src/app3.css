@@ -141,3 +141,14 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
 .a3-gapopt label { display: flex; gap: 8px; align-items: center; font-size: var(--t-sm); }
 .a3-gapopt .a3-sel { width: auto; min-width: 10em; }
 .a3-gapask .a3-sub { margin: 0; flex: 1 1 100%; }
+/* the one help piece (screens/help.js): a small "?" beside a heading, its lines under it */
+.a3-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.a3-head h2 { margin-bottom: 4px; }
+.burrow-help { flex: none; width: 28px; height: 28px; border-radius: 50%; border: 0; background: var(--track); color: var(--ink2); font: inherit; font-size: var(--t-sm); font-weight: 600; cursor: pointer; }
+.burrow-help[aria-expanded="true"] { background: var(--accent); color: var(--on-accent); }
+.burrow-help:focus-visible { outline: 3px solid var(--acc-ring); outline-offset: 2px; }
+.burrow-help-text { margin: 4px 0 8px; font-size: var(--t-sm); color: var(--ink2); }
+.a3-rows li.a3-hashelp { flex-wrap: wrap; }
+.a3-rows li.a3-hashelp > .a3-rcrow { flex: 1 1 100%; }
+.a3-helprow { flex: 1 1 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.a3-helprow .burrow-help-text { flex: 1 1 100%; margin: 0; }
