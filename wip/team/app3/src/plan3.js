@@ -130,7 +130,7 @@ function plForm3(title, fields, buttons, note) {
   const input = f => {
     const id = 'pl-' + f.key, v = f.value == null ? '' : f.value;
     if (f.kind === 'pick') return `<select class="a3-in a3-sel" id="${id}">${f.options.map(o => `<option value="${esc3(o.v)}"${o.v === v ? ' selected' : ''}>${esc3(o.name)}</option>`).join('')}</select>`;
-    if (f.kind === 'amount') return `<input class="a3-in" id="${id}" type="text" inputmode="decimal" autocomplete="off" value="${v === '' ? '' : SM.toInput(v, cur)}" placeholder="${esc3(SM.symbol(cur).trim())}">`;
+    if (f.kind === 'amount') return `<input class="a3-in" data-amount id="${id}" type="text" inputmode="decimal" autocomplete="off" value="${v === '' ? '' : SM.toInput(v, cur)}" placeholder="${esc3(SM.symbol(cur).trim())}">`;
     if (f.kind === 'day') return `<input class="a3-in" id="${id}" type="number" inputmode="numeric" min="1" max="31" value="${esc3(v)}">`;
     if (f.kind === 'date') return `<input class="a3-in a3-date" id="${id}" type="date" value="${esc3(v)}">`;
     return `<input class="a3-in a3-text" id="${id}" type="text" autocomplete="off" maxlength="60" value="${esc3(v)}">`;

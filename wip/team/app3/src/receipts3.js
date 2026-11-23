@@ -114,7 +114,7 @@ function rcFormHtml3() {
   const modes = [['spend', 'Spend'], ['refund', 'Refund'], ['moved', 'Moved']].map(([k, n]) => `<button type="button" class="a3-seg" data-mode="${k}" aria-pressed="${k === m}"${e ? ' disabled' : ''}>${n}</button>`).join('');
   return `<h2>${e ? 'Change this' : { spend: 'Log a spend', refund: 'Log a refund', moved: 'Log money moved between your accounts' }[m]}</h2>
     <div class="a3-segs" role="group" aria-label="What happened">${modes}</div>
-    <div class="a3-field"><label for="rcAmt">Amount</label><input class="a3-in" type="text" inputmode="decimal" autocomplete="off" id="rcAmt" value="${esc3(amt)}" placeholder="${esc3(SM.symbol(E3.home()).trim())}"></div>
+    <div class="a3-field"><label for="rcAmt">Amount</label><input class="a3-in" data-amount type="text" inputmode="decimal" autocomplete="off" id="rcAmt" value="${esc3(amt)}" placeholder="${esc3(SM.symbol(E3.home()).trim())}"></div>
     ${fields}
     <div class="a3-field"><label for="rcDate">Day</label><input class="a3-in a3-date" type="date" id="rcDate" value="${esc3(e ? e.date : today)}" max="${esc3(today)}"></div>
     <div class="a3-field"><label for="rcNote">Note</label><input class="a3-in a3-text" type="text" id="rcNote" autocomplete="off" value="${esc3(e && e.note ? e.note : '')}" placeholder="Optional"></div>

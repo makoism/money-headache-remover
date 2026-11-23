@@ -53,6 +53,7 @@ step "Add statements (the AI route, any AI, review, Add, duplicates once, the re
 step "each record once after a statement (BI2): Receipts"; run tests/e3_stmt_once.js "e3_stmt_once: ALL PASS"
 step "the period by its dates"; run tests/e3_period.js "e3_period: ALL PASS"
 step "Receipts"; run tests/e3_receipts.js "e3_receipts: ALL PASS"
+step "every amount box: a tap, click or Tab, or a form's own focus, selects, so typing replaces (screens/inputs.js)"; run tests/e3_amounts.js "e3_amounts: ALL PASS"
 step "a spend larger than what its account holds asks first, new or changed (north star F5)"; run tests/e3_bigspend.js "e3_bigspend: ALL PASS"
 step "only the tapped tab's panel shows (every tab after every other, the sheets)"; run tests/e3_panels.js "e3_panels: ALL PASS"
 step "a line added mid-period: one amount that counts now, the full one in a sentence, how far over"; run tests/e3_lineshare.js "e3_lineshare: ALL PASS"

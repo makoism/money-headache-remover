@@ -11,6 +11,7 @@
   { "name": "A line or Free to spend started mid-period shows one amount for the period, the part that counts now, with the full amount in a sentence; a line gone over says by how much, taken from safe to spend", "test": "tests/e3_lineshare.js", "passes": true },
   { "name": "A card whose payment is past its day and not ticked names that payment on Home's card line, never Nothing to pay yet", "test": "tests/e3_cardline.js", "passes": true },
   { "name": "The try book with the engine check-in writer: a check-in on 10 Dec, and the weekend where card B leaves before pay", "test": "tests/checkin_book.test.js", "passes": true },
+  { "name": "Every amount box (Receipts log and Change this, Check your bank, every Plan form, Setup) goes through screens/inputs.js: a tap, click or Tab, or a form's own focus then a click, selects the old value so typing replaces it", "test": "tests/e3_amounts.js", "passes": true },
   { "name": "No money maths in screens", "test": "tests/no_maths.js", "passes": true },
   { "name": "Idle CPU, long tasks, no outside requests, no errors", "test": "tests/guard3.js", "passes": true },
   { "name": "Opens offline", "test": "tests/offline.js", "passes": true },

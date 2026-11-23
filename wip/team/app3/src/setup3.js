@@ -23,13 +23,13 @@ function openSetup3() {
     <h1 id="a3SetupT">Set up with your own numbers</h1>
     <section class="a3-card"><h2>Your bank</h2>
       <div class="a3-field"><label for="s3BankName">Its name</label><input class="a3-in a3-txt" id="s3BankName" placeholder="Main bank" autocomplete="off"></div>
-      <div class="a3-field"><label for="s3Bank">What does your bank show today?</label><input class="a3-in" id="s3Bank" data-money></div>
+      <div class="a3-field"><label for="s3Bank">What does your bank show today?</label><input class="a3-in" id="s3Bank" data-amount data-money></div>
       <div class="a3-field"><label for="s3Cur">Money in</label><select class="a3-in a3-sel" id="s3Cur"><option value="JPY" selected>Yen</option><option value="USD">US dollars</option><option value="PHP">Philippine pesos</option><option value="EUR">Euros</option></select></div>
     </section>
     <section class="a3-card"><h2>Your pay</h2>
       <div class="a3-row3" data-row="pay1">
         <div class="a3-field"><label for="s3PayName">Called</label><input class="a3-in a3-txt" id="s3PayName" data-f="name" placeholder="Pay" autocomplete="off"></div>
-        <div class="a3-field"><label for="s3PayAmt">How much lands</label><input class="a3-in" id="s3PayAmt" data-f="amount" data-money></div>
+        <div class="a3-field"><label for="s3PayAmt">How much lands</label><input class="a3-in" id="s3PayAmt" data-f="amount" data-amount data-money></div>
       </div>
       <div class="a3-field"><label for="s3PayDay">Day of the month it lands</label><select class="a3-in a3-sel" id="s3PayDay">${dayOptions3('25')}</select></div>
       <div class="a3-field"><label for="s3PayShift">When that day is a weekend or holiday, it lands</label><select class="a3-in a3-sel" id="s3PayShift">${shiftOptions3(SHIFT3.pay, 'before')}</select></div>
@@ -37,7 +37,7 @@ function openSetup3() {
       <div class="a3-actions"><button type="button" class="a3-btn" id="s3AddPay">Add a second income on the same day</button></div>
     </section>
     <section class="a3-card"><h2>Everyday spending</h2>
-      <div class="a3-field"><label for="s3Free">About how much do you spend on food and everyday things each pay period?</label><input class="a3-in" id="s3Free" data-money data-optional aria-describedby="s3FreeH">
+      <div class="a3-field"><label for="s3Free">About how much do you spend on food and everyday things each pay period?</label><input class="a3-in" id="s3Free" data-amount data-money data-optional aria-describedby="s3FreeH">
         <p class="a3-sub" id="s3FreeH" data-hint="free">This is Free to spend. Safe to spend leaves room for it until each pay. Leave it blank to add it later on Plan</p></div>
     </section>
     <section class="a3-card"><h2>Your cards</h2><p class="a3-sub">Each card is paid in full from your bank. If you don't know the day its statement closes, leave it as not sure</p>
@@ -49,7 +49,7 @@ function openSetup3() {
       <div class="a3-actions"><button type="button" class="a3-btn" id="s3AddBill">Add a bill</button></div>
     </section>
     <section class="a3-card"><h2>Keep at least</h2><p class="a3-sub">An amount you never want your bank to go under. Leave it blank for none</p>
-      <div class="a3-field"><label for="s3Min">Keep at least</label><input class="a3-in" id="s3Min" data-money data-optional aria-describedby="s3MinH">
+      <div class="a3-field"><label for="s3Min">Keep at least</label><input class="a3-in" id="s3Min" data-amount data-money data-optional aria-describedby="s3MinH">
         <p class="a3-sub" id="s3MinH" data-hint="min">Safe to spend leaves this much in your bank as a cushion</p></div>
     </section>
     <p class="a3-err" id="a3SetupErr" role="alert"></p>
@@ -62,7 +62,7 @@ function openSetup3() {
     setup3.pays++; const k = 'pay' + setup3.pays;
     $('#s3Pays').insertAdjacentHTML('beforeend', `<div class="a3-row3" data-row="${k}">
       <div class="a3-field"><label for="s3-${k}-n">Called</label><input class="a3-in a3-txt" id="s3-${k}-n" data-f="name" placeholder="Second income" autocomplete="off"></div>
-      <div class="a3-field"><label for="s3-${k}-a">How much lands</label><input class="a3-in" id="s3-${k}-a" data-f="amount" data-money></div></div>`);
+      <div class="a3-field"><label for="s3-${k}-a">How much lands</label><input class="a3-in" id="s3-${k}-a" data-f="amount" data-amount data-money></div></div>`);
     bindMoney3($(`#s3-${k}-a`));
     $('#s3AddPay').hidden = true;
   });
@@ -70,12 +70,12 @@ function openSetup3() {
     setup3.cards++; const k = 'card' + setup3.cards;
     $('#s3Cards').insertAdjacentHTML('beforeend', `<div class="a3-group" data-row="${k}">
       <div class="a3-row3"><div class="a3-field"><label for="s3-${k}-n">Called</label><input class="a3-in a3-txt" id="s3-${k}-n" data-f="name" placeholder="Card" autocomplete="off"></div>
-      <div class="a3-field"><label for="s3-${k}-o">On it now</label><input class="a3-in" id="s3-${k}-o" data-f="owed" data-money></div></div>
+      <div class="a3-field"><label for="s3-${k}-o">On it now</label><input class="a3-in" id="s3-${k}-o" data-f="owed" data-amount data-money></div></div>
       <div class="a3-field"><label for="s3-${k}-p">Day of the month it is paid from your bank</label><select class="a3-in a3-sel" id="s3-${k}-p" data-f="payDay">${dayOptions3('10')}</select></div>
       <div class="a3-field"><label for="s3-${k}-s">When that day is a weekend or holiday, it comes out</label><select class="a3-in a3-sel" id="s3-${k}-s" data-f="shift">${shiftOptions3(SHIFT3.out, 'after')}</select></div>
       <div class="a3-field"><label for="s3-${k}-c">Day its statement closes</label><select class="a3-in a3-sel" id="s3-${k}-c" data-f="closeDay" aria-describedby="s3-${k}-ch">${dayOptions3('not sure', [['last', 'the last day'], ['not sure', 'not sure']])}</select>
         <p class="a3-sub" id="s3-${k}-ch" data-hint="closeDay">Spends after this day go on the next payment</p></div>
-      <div class="a3-field" data-q="stmt" hidden><label for="s3-${k}-st">How much of it was on the statement that closed?</label><input class="a3-in" id="s3-${k}-st" data-f="statement" data-money data-optional aria-describedby="s3-${k}-sth">
+      <div class="a3-field" data-q="stmt" hidden><label for="s3-${k}-st">How much of it was on the statement that closed?</label><input class="a3-in" id="s3-${k}-st" data-f="statement" data-amount data-money data-optional aria-describedby="s3-${k}-sth">
         <p class="a3-sub" id="s3-${k}-sth" data-hint="stmt"></p></div></div>`);
     bindMoney3($(`#s3-${k}-o`)); bindMoney3($(`#s3-${k}-st`));
     askTaken3();
@@ -84,7 +84,7 @@ function openSetup3() {
     setup3.bills++; const k = 'bill' + setup3.bills;
     $('#s3Bills').insertAdjacentHTML('beforeend', `<div class="a3-group" data-row="${k}"><div class="a3-row3">
       <div class="a3-field"><label for="s3-${k}-n">Called</label><input class="a3-in a3-txt" id="s3-${k}-n" data-f="name" placeholder="Bill" autocomplete="off"></div>
-      <div class="a3-field"><label for="s3-${k}-a">Amount</label><input class="a3-in" id="s3-${k}-a" data-f="amount" data-money></div></div>
+      <div class="a3-field"><label for="s3-${k}-a">Amount</label><input class="a3-in" id="s3-${k}-a" data-f="amount" data-amount data-money></div></div>
       <div class="a3-field"><label for="s3-${k}-d">Day of the month it leaves</label><select class="a3-in a3-sel" id="s3-${k}-d" data-f="day">${dayOptions3('27')}</select></div>
       <div class="a3-field" data-q="takenOut" hidden><label for="s3-${k}-t">Did it leave your bank?</label><select class="a3-in a3-sel" id="s3-${k}-t" data-f="takenOut"><option value="yes" selected>Yes</option><option value="no">No, not yet</option></select></div></div>`);
     bindMoney3($(`#s3-${k}-a`));

@@ -4548,6 +4548,14 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
     return { ok: false, reason: r.reason, value: raw, message };
   }
 
+  /* whether the last key or press in the page was Tab: a box reached by Tab was opened by the person, not by a form */
+  function watchTab(doc) {
+    if (!doc || doc.__burrowTabWatch) return;
+    doc.__burrowTabWatch = true;
+    doc.addEventListener('keydown', e => { doc.__burrowTab = e.key === 'Tab'; }, true);
+    doc.addEventListener('pointerdown', () => { doc.__burrowTab = false; }, true);
+  }
+
   function bind(input, opts) {
     if (!input || typeof input.addEventListener !== 'function' || !('value' in input)) throw new Error('inputs: bind needs an input box');
     opts = opts || {};
@@ -4556,26 +4564,34 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
       if (!input.getAttribute('inputmode')) input.setAttribute('inputmode', 'decimal');
       input.setAttribute('autocomplete', 'off');
     }
-    let fresh = false, before = input.value;
+    input.setAttribute('data-input', kind);   // the shared marker: every box bound here says so (app3 tests/e3_amounts.js)
+    watchTab(input.ownerDocument);
+    /* fresh: the next press keeps the box selected. byCode: a form put the box in focus by itself (no tap, click or Tab
+       on it), so the person's first tap or click still selects; once they type or press again it is a small fix */
+    let fresh = false, byCode = false, pressed = false, before = input.value;
     input.addEventListener('focus', () => {
-      fresh = true; before = input.value;
+      byCode = !pressed && !input.ownerDocument.__burrowTab;
+      fresh = true; pressed = false; before = input.value;
       input.select();
     });
     /* the click or tap that focused the box would put the caret down and undo the selection: keep it selected once */
     /* a press on a box that was already open (reached by Tab, or tapped before) is a small fix: no select */
-    const down = () => { if (input.ownerDocument.activeElement === input) fresh = false; };
+    const down = () => {
+      if (input.ownerDocument.activeElement !== input) { pressed = true; return; }
+      fresh = byCode;   // pointerdown and mousedown both come for one press: byCode is spent when the press ends
+    };
     input.addEventListener('pointerdown', down);
     input.addEventListener('mousedown', down);
-    const keep = e => { if (fresh) { e.preventDefault(); input.select(); fresh = false; } };
+    const keep = e => { pressed = false; byCode = false; if (fresh) { e.preventDefault(); input.select(); fresh = false; } };
     input.addEventListener('mouseup', keep);
     input.addEventListener('pointerup', keep);
     input.addEventListener('touchend', keep);
     input.addEventListener('keydown', e => {
-      fresh = false;
+      fresh = false; byCode = false;
       if (e.key === 'Escape') { input.value = before; input.select(); }
       if (e.key === 'Enter' && kind === 'amount') finish();
     });
-    input.addEventListener('blur', () => { fresh = false; finish(); });
+    input.addEventListener('blur', () => { fresh = false; byCode = false; pressed = false; finish(); });
     function finish() {
       if (kind !== 'amount') { if (opts.onValue) opts.onValue(input.value); return; }
       const r = commit(input.value, opts);
@@ -8495,11 +8511,11 @@ function openCheck3() {
   const rows = list.map((o, i) => `<div class="a3-tick" data-item="${esc3(o.item)}">
       <input type="checkbox" id="a3t${i}" checked aria-describedby="a3d${i}">
       <label for="a3t${i}"><span>${esc3(E3.occName(o.item))}</span><span class="when" id="a3d${i}">${esc3(day3(o.lands, yr))}, ${esc3(E3.nameOf(o.account))}</span></label>
-      <input class="a3-in" type="text" inputmode="decimal" autocomplete="off" aria-label="Amount for ${esc3(E3.occName(o.item))}" data-amt="${esc3(o.item)}" value="${SM.toInput(o.amount, E3.curOf(o.account))}">
+      <input class="a3-in" data-amount type="text" inputmode="decimal" autocomplete="off" aria-label="Amount for ${esc3(E3.occName(o.item))}" data-amt="${esc3(o.item)}" value="${SM.toInput(o.amount, E3.curOf(o.account))}">
       ${landedRow(o, i)}
     </div>`).join('');
   const figs = Object.keys(r.accounts).map(id => `<div class="a3-field"><label for="a3f-${esc3(id)}">What does ${esc3(E3.nameOf(id))} show today?</label>
-      <input class="a3-in" type="text" inputmode="decimal" autocomplete="off" id="a3f-${esc3(id)}" data-bankfig="${esc3(id)}" placeholder="${esc3(SM.symbol(r.accounts[id].currency).trim())}">
+      <input class="a3-in" data-amount type="text" inputmode="decimal" autocomplete="off" id="a3f-${esc3(id)}" data-bankfig="${esc3(id)}" placeholder="${esc3(SM.symbol(r.accounts[id].currency).trim())}">
       <p class="a3-sub" data-expected="${esc3(id)}"></p><p class="a3-warn" data-gap="${esc3(id)}" aria-live="polite" hidden></p>
       <div class="a3-gapask" data-gapask="${esc3(id)}" hidden><p class="a3-sub" data-gapq="${esc3(id)}"></p><button type="button" class="a3-btn" data-gapyes="${esc3(id)}">Yes, that was it</button></div>
       <div class="a3-gapopt" data-gapopt="${esc3(id)}" hidden><label><input type="checkbox" data-gapspend="${esc3(id)}"> Log it as a spend now, on</label>
@@ -8507,7 +8523,7 @@ function openCheck3() {
   /* each card's figure, typed like the bank figure (DECISIONS.md "Mako's own money"): optional, blank means not checked;
      a typed figure is a check on the card, written by the engine's check-in writer */
   const cardFigs = Object.keys(r.cards || {}).map(id => `<div class="a3-field"><label for="a3c-${esc3(id)}">What is on ${esc3(E3.nameOf(id))} now?</label>
-      <input class="a3-in" type="text" inputmode="decimal" autocomplete="off" id="a3c-${esc3(id)}" data-cardfig="${esc3(id)}" placeholder="${esc3(SM.symbol(E3.curOf(id)).trim())}">
+      <input class="a3-in" data-amount type="text" inputmode="decimal" autocomplete="off" id="a3c-${esc3(id)}" data-cardfig="${esc3(id)}" placeholder="${esc3(SM.symbol(E3.curOf(id)).trim())}">
       <p class="a3-sub">Leave it blank if you have not looked. <span data-expected="${esc3(id)}"></span></p><p class="a3-warn" data-gap="${esc3(id)}" aria-live="polite" hidden></p></div>`).join('');
   const sheet = $('#a3Check');
   sheet.innerHTML = `<div class="a3-sheet-in">
@@ -8753,7 +8769,7 @@ function rcFormHtml3() {
   const modes = [['spend', 'Spend'], ['refund', 'Refund'], ['moved', 'Moved']].map(([k, n]) => `<button type="button" class="a3-seg" data-mode="${k}" aria-pressed="${k === m}"${e ? ' disabled' : ''}>${n}</button>`).join('');
   return `<h2>${e ? 'Change this' : { spend: 'Log a spend', refund: 'Log a refund', moved: 'Log money moved between your accounts' }[m]}</h2>
     <div class="a3-segs" role="group" aria-label="What happened">${modes}</div>
-    <div class="a3-field"><label for="rcAmt">Amount</label><input class="a3-in" type="text" inputmode="decimal" autocomplete="off" id="rcAmt" value="${esc3(amt)}" placeholder="${esc3(SM.symbol(E3.home()).trim())}"></div>
+    <div class="a3-field"><label for="rcAmt">Amount</label><input class="a3-in" data-amount type="text" inputmode="decimal" autocomplete="off" id="rcAmt" value="${esc3(amt)}" placeholder="${esc3(SM.symbol(E3.home()).trim())}"></div>
     ${fields}
     <div class="a3-field"><label for="rcDate">Day</label><input class="a3-in a3-date" type="date" id="rcDate" value="${esc3(e ? e.date : today)}" max="${esc3(today)}"></div>
     <div class="a3-field"><label for="rcNote">Note</label><input class="a3-in a3-text" type="text" id="rcNote" autocomplete="off" value="${esc3(e && e.note ? e.note : '')}" placeholder="Optional"></div>
@@ -9066,7 +9082,7 @@ function plForm3(title, fields, buttons, note) {
   const input = f => {
     const id = 'pl-' + f.key, v = f.value == null ? '' : f.value;
     if (f.kind === 'pick') return `<select class="a3-in a3-sel" id="${id}">${f.options.map(o => `<option value="${esc3(o.v)}"${o.v === v ? ' selected' : ''}>${esc3(o.name)}</option>`).join('')}</select>`;
-    if (f.kind === 'amount') return `<input class="a3-in" id="${id}" type="text" inputmode="decimal" autocomplete="off" value="${v === '' ? '' : SM.toInput(v, cur)}" placeholder="${esc3(SM.symbol(cur).trim())}">`;
+    if (f.kind === 'amount') return `<input class="a3-in" data-amount id="${id}" type="text" inputmode="decimal" autocomplete="off" value="${v === '' ? '' : SM.toInput(v, cur)}" placeholder="${esc3(SM.symbol(cur).trim())}">`;
     if (f.kind === 'day') return `<input class="a3-in" id="${id}" type="number" inputmode="numeric" min="1" max="31" value="${esc3(v)}">`;
     if (f.kind === 'date') return `<input class="a3-in a3-date" id="${id}" type="date" value="${esc3(v)}">`;
     return `<input class="a3-in a3-text" id="${id}" type="text" autocomplete="off" maxlength="60" value="${esc3(v)}">`;
@@ -9244,13 +9260,13 @@ function openSetup3() {
     <h1 id="a3SetupT">Set up with your own numbers</h1>
     <section class="a3-card"><h2>Your bank</h2>
       <div class="a3-field"><label for="s3BankName">Its name</label><input class="a3-in a3-txt" id="s3BankName" placeholder="Main bank" autocomplete="off"></div>
-      <div class="a3-field"><label for="s3Bank">What does your bank show today?</label><input class="a3-in" id="s3Bank" data-money></div>
+      <div class="a3-field"><label for="s3Bank">What does your bank show today?</label><input class="a3-in" id="s3Bank" data-amount data-money></div>
       <div class="a3-field"><label for="s3Cur">Money in</label><select class="a3-in a3-sel" id="s3Cur"><option value="JPY" selected>Yen</option><option value="USD">US dollars</option><option value="PHP">Philippine pesos</option><option value="EUR">Euros</option></select></div>
     </section>
     <section class="a3-card"><h2>Your pay</h2>
       <div class="a3-row3" data-row="pay1">
         <div class="a3-field"><label for="s3PayName">Called</label><input class="a3-in a3-txt" id="s3PayName" data-f="name" placeholder="Pay" autocomplete="off"></div>
-        <div class="a3-field"><label for="s3PayAmt">How much lands</label><input class="a3-in" id="s3PayAmt" data-f="amount" data-money></div>
+        <div class="a3-field"><label for="s3PayAmt">How much lands</label><input class="a3-in" id="s3PayAmt" data-f="amount" data-amount data-money></div>
       </div>
       <div class="a3-field"><label for="s3PayDay">Day of the month it lands</label><select class="a3-in a3-sel" id="s3PayDay">${dayOptions3('25')}</select></div>
       <div class="a3-field"><label for="s3PayShift">When that day is a weekend or holiday, it lands</label><select class="a3-in a3-sel" id="s3PayShift">${shiftOptions3(SHIFT3.pay, 'before')}</select></div>
@@ -9258,7 +9274,7 @@ function openSetup3() {
       <div class="a3-actions"><button type="button" class="a3-btn" id="s3AddPay">Add a second income on the same day</button></div>
     </section>
     <section class="a3-card"><h2>Everyday spending</h2>
-      <div class="a3-field"><label for="s3Free">About how much do you spend on food and everyday things each pay period?</label><input class="a3-in" id="s3Free" data-money data-optional aria-describedby="s3FreeH">
+      <div class="a3-field"><label for="s3Free">About how much do you spend on food and everyday things each pay period?</label><input class="a3-in" id="s3Free" data-amount data-money data-optional aria-describedby="s3FreeH">
         <p class="a3-sub" id="s3FreeH" data-hint="free">This is Free to spend. Safe to spend leaves room for it until each pay. Leave it blank to add it later on Plan</p></div>
     </section>
     <section class="a3-card"><h2>Your cards</h2><p class="a3-sub">Each card is paid in full from your bank. If you don't know the day its statement closes, leave it as not sure</p>
@@ -9270,7 +9286,7 @@ function openSetup3() {
       <div class="a3-actions"><button type="button" class="a3-btn" id="s3AddBill">Add a bill</button></div>
     </section>
     <section class="a3-card"><h2>Keep at least</h2><p class="a3-sub">An amount you never want your bank to go under. Leave it blank for none</p>
-      <div class="a3-field"><label for="s3Min">Keep at least</label><input class="a3-in" id="s3Min" data-money data-optional aria-describedby="s3MinH">
+      <div class="a3-field"><label for="s3Min">Keep at least</label><input class="a3-in" id="s3Min" data-amount data-money data-optional aria-describedby="s3MinH">
         <p class="a3-sub" id="s3MinH" data-hint="min">Safe to spend leaves this much in your bank as a cushion</p></div>
     </section>
     <p class="a3-err" id="a3SetupErr" role="alert"></p>
@@ -9283,7 +9299,7 @@ function openSetup3() {
     setup3.pays++; const k = 'pay' + setup3.pays;
     $('#s3Pays').insertAdjacentHTML('beforeend', `<div class="a3-row3" data-row="${k}">
       <div class="a3-field"><label for="s3-${k}-n">Called</label><input class="a3-in a3-txt" id="s3-${k}-n" data-f="name" placeholder="Second income" autocomplete="off"></div>
-      <div class="a3-field"><label for="s3-${k}-a">How much lands</label><input class="a3-in" id="s3-${k}-a" data-f="amount" data-money></div></div>`);
+      <div class="a3-field"><label for="s3-${k}-a">How much lands</label><input class="a3-in" id="s3-${k}-a" data-f="amount" data-amount data-money></div></div>`);
     bindMoney3($(`#s3-${k}-a`));
     $('#s3AddPay').hidden = true;
   });
@@ -9291,12 +9307,12 @@ function openSetup3() {
     setup3.cards++; const k = 'card' + setup3.cards;
     $('#s3Cards').insertAdjacentHTML('beforeend', `<div class="a3-group" data-row="${k}">
       <div class="a3-row3"><div class="a3-field"><label for="s3-${k}-n">Called</label><input class="a3-in a3-txt" id="s3-${k}-n" data-f="name" placeholder="Card" autocomplete="off"></div>
-      <div class="a3-field"><label for="s3-${k}-o">On it now</label><input class="a3-in" id="s3-${k}-o" data-f="owed" data-money></div></div>
+      <div class="a3-field"><label for="s3-${k}-o">On it now</label><input class="a3-in" id="s3-${k}-o" data-f="owed" data-amount data-money></div></div>
       <div class="a3-field"><label for="s3-${k}-p">Day of the month it is paid from your bank</label><select class="a3-in a3-sel" id="s3-${k}-p" data-f="payDay">${dayOptions3('10')}</select></div>
       <div class="a3-field"><label for="s3-${k}-s">When that day is a weekend or holiday, it comes out</label><select class="a3-in a3-sel" id="s3-${k}-s" data-f="shift">${shiftOptions3(SHIFT3.out, 'after')}</select></div>
       <div class="a3-field"><label for="s3-${k}-c">Day its statement closes</label><select class="a3-in a3-sel" id="s3-${k}-c" data-f="closeDay" aria-describedby="s3-${k}-ch">${dayOptions3('not sure', [['last', 'the last day'], ['not sure', 'not sure']])}</select>
         <p class="a3-sub" id="s3-${k}-ch" data-hint="closeDay">Spends after this day go on the next payment</p></div>
-      <div class="a3-field" data-q="stmt" hidden><label for="s3-${k}-st">How much of it was on the statement that closed?</label><input class="a3-in" id="s3-${k}-st" data-f="statement" data-money data-optional aria-describedby="s3-${k}-sth">
+      <div class="a3-field" data-q="stmt" hidden><label for="s3-${k}-st">How much of it was on the statement that closed?</label><input class="a3-in" id="s3-${k}-st" data-f="statement" data-amount data-money data-optional aria-describedby="s3-${k}-sth">
         <p class="a3-sub" id="s3-${k}-sth" data-hint="stmt"></p></div></div>`);
     bindMoney3($(`#s3-${k}-o`)); bindMoney3($(`#s3-${k}-st`));
     askTaken3();
@@ -9305,7 +9321,7 @@ function openSetup3() {
     setup3.bills++; const k = 'bill' + setup3.bills;
     $('#s3Bills').insertAdjacentHTML('beforeend', `<div class="a3-group" data-row="${k}"><div class="a3-row3">
       <div class="a3-field"><label for="s3-${k}-n">Called</label><input class="a3-in a3-txt" id="s3-${k}-n" data-f="name" placeholder="Bill" autocomplete="off"></div>
-      <div class="a3-field"><label for="s3-${k}-a">Amount</label><input class="a3-in" id="s3-${k}-a" data-f="amount" data-money></div></div>
+      <div class="a3-field"><label for="s3-${k}-a">Amount</label><input class="a3-in" id="s3-${k}-a" data-f="amount" data-amount data-money></div></div>
       <div class="a3-field"><label for="s3-${k}-d">Day of the month it leaves</label><select class="a3-in a3-sel" id="s3-${k}-d" data-f="day">${dayOptions3('27')}</select></div>
       <div class="a3-field" data-q="takenOut" hidden><label for="s3-${k}-t">Did it leave your bank?</label><select class="a3-in a3-sel" id="s3-${k}-t" data-f="takenOut"><option value="yes" selected>Yes</option><option value="no">No, not yet</option></select></div></div>`);
     bindMoney3($(`#s3-${k}-a`));

@@ -14,11 +14,11 @@ function openCheck3() {
   const rows = list.map((o, i) => `<div class="a3-tick" data-item="${esc3(o.item)}">
       <input type="checkbox" id="a3t${i}" checked aria-describedby="a3d${i}">
       <label for="a3t${i}"><span>${esc3(E3.occName(o.item))}</span><span class="when" id="a3d${i}">${esc3(day3(o.lands, yr))}, ${esc3(E3.nameOf(o.account))}</span></label>
-      <input class="a3-in" type="text" inputmode="decimal" autocomplete="off" aria-label="Amount for ${esc3(E3.occName(o.item))}" data-amt="${esc3(o.item)}" value="${SM.toInput(o.amount, E3.curOf(o.account))}">
+      <input class="a3-in" data-amount type="text" inputmode="decimal" autocomplete="off" aria-label="Amount for ${esc3(E3.occName(o.item))}" data-amt="${esc3(o.item)}" value="${SM.toInput(o.amount, E3.curOf(o.account))}">
       ${landedRow(o, i)}
     </div>`).join('');
   const figs = Object.keys(r.accounts).map(id => `<div class="a3-field"><label for="a3f-${esc3(id)}">What does ${esc3(E3.nameOf(id))} show today?</label>
-      <input class="a3-in" type="text" inputmode="decimal" autocomplete="off" id="a3f-${esc3(id)}" data-bankfig="${esc3(id)}" placeholder="${esc3(SM.symbol(r.accounts[id].currency).trim())}">
+      <input class="a3-in" data-amount type="text" inputmode="decimal" autocomplete="off" id="a3f-${esc3(id)}" data-bankfig="${esc3(id)}" placeholder="${esc3(SM.symbol(r.accounts[id].currency).trim())}">
       <p class="a3-sub" data-expected="${esc3(id)}"></p><p class="a3-warn" data-gap="${esc3(id)}" aria-live="polite" hidden></p>
       <div class="a3-gapask" data-gapask="${esc3(id)}" hidden><p class="a3-sub" data-gapq="${esc3(id)}"></p><button type="button" class="a3-btn" data-gapyes="${esc3(id)}">Yes, that was it</button></div>
       <div class="a3-gapopt" data-gapopt="${esc3(id)}" hidden><label><input type="checkbox" data-gapspend="${esc3(id)}"> Log it as a spend now, on</label>
@@ -26,7 +26,7 @@ function openCheck3() {
   /* each card's figure, typed like the bank figure (DECISIONS.md "Mako's own money"): optional, blank means not checked;
      a typed figure is a check on the card, written by the engine's check-in writer */
   const cardFigs = Object.keys(r.cards || {}).map(id => `<div class="a3-field"><label for="a3c-${esc3(id)}">What is on ${esc3(E3.nameOf(id))} now?</label>
-      <input class="a3-in" type="text" inputmode="decimal" autocomplete="off" id="a3c-${esc3(id)}" data-cardfig="${esc3(id)}" placeholder="${esc3(SM.symbol(E3.curOf(id)).trim())}">
+      <input class="a3-in" data-amount type="text" inputmode="decimal" autocomplete="off" id="a3c-${esc3(id)}" data-cardfig="${esc3(id)}" placeholder="${esc3(SM.symbol(E3.curOf(id)).trim())}">
       <p class="a3-sub">Leave it blank if you have not looked. <span data-expected="${esc3(id)}"></span></p><p class="a3-warn" data-gap="${esc3(id)}" aria-live="polite" hidden></p></div>`).join('');
   const sheet = $('#a3Check');
   sheet.innerHTML = `<div class="a3-sheet-in">
