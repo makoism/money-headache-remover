@@ -12,5 +12,5 @@ function tryBand3() {
   if (E3.mode === 'try') tryBand3();
   BurrowScreens.messages.mount($('#a3Msg'), MSG3);
   renderHome3();
-  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#a3Check').hidden) closeCheck3(); });
+  document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; if (!$('#a3Check').hidden) closeCheck3(); });
 })();

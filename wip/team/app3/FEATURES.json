@@ -11,6 +11,6 @@
   { "name": "Opens offline", "test": "tests/offline.js", "passes": true },
   { "name": "Period dates on Home and the next pay state (res.period)", "test": "tests/e3_period.js", "passes": true },
   { "name": "Works as a plain file: first screen offers the made-up numbers, with a day box to step through the days", "test": "tests/e3_file.js", "passes": true },
-  { "name": "Setup, short (setup3)", "test": "tests/e3_setup.js", "passes": false }
+  { "name": "Setup, short (setup3): bank today, pay with a second income, cards with a close day or not sure, bills, the minimum; through build_book and the store", "test": "tests/e3_setup.js", "passes": true }
  ]
 }

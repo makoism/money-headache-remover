@@ -8,6 +8,11 @@ step() { echo; echo "== $1"; }
 run() {   # run <test file> <pass word>: one line per test in $RESULTS, "<file> PASS|FAIL"
   local f=$1 word=$2 out rc
   out=$(timeout 300 node "$f" 2>&1); rc=$?
+  # The browser itself going away under load from other lanes (a detached frame, a closed session, a failed launch)
+  # is not a test result: that one case runs again once, and says so. A FAIL line is never run again.
+  if [ $rc -ne 0 ] && ! echo "$out" | grep -q "^FAIL [^c]" && echo "$out" | grep -q "detached Frame\|Session closed\|Target closed\|Failed to launch the browser"; then
+    echo "(the browser went away under load, not a test failure: running $f once more)"; out=$(timeout 300 node "$f" 2>&1); rc=$?
+  fi
   echo "$out" | grep -v "^PASS" | tail -12
   if [ $rc -eq 0 ] && echo "$out" | grep -q "$word"; then echo "$f PASS" >> "$RESULTS"; else echo "$f FAIL" >> "$RESULTS"; echo "FAILED: $f (exit $rc)"; BAD=1; fi
 }
@@ -31,6 +36,7 @@ step "Home, the new top"; run tests/e3_home.js "e3_home: ALL PASS"
 step "Check your bank"; run tests/e3_checkin.js "e3_checkin: ALL PASS"
 step "the period by its dates"; run tests/e3_period.js "e3_period: ALL PASS"
 step "as a plain file: the first screen, the try book and its day box"; run tests/e3_file.js "e3_file: ALL PASS"
+step "setup3"; run tests/e3_setup.js "e3_setup: ALL PASS"
 step "guard (idle CPU, long tasks, outside requests, errors)"; run tests/guard3.js "guard3: ALL PASS"
 step "offline load"; run tests/offline.js "offline: ALL PASS"
 

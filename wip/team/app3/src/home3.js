@@ -61,8 +61,9 @@ function renderHome3() {
   const host = $('#a3Home');
   if (!E3.book) {
     host.removeAttribute('data-origin');
-    host.innerHTML = `<section class="a3-card" data-card="first"><h2>Welcome to the burrow</h2><p class="a3-sub">Setting up with your own numbers comes next. You can look around first with made-up numbers shaped like a real month</p>
-      <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3TryGo">See it with made-up numbers first</button></div></section>`;
+    host.innerHTML = `<section class="a3-card" data-card="first"><h2>Welcome to the burrow</h2><p class="a3-sub">Put in what your bank shows today, your pay, your cards and your bills. Or look around first with made-up numbers shaped like a real month</p>
+      <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3SetupGo">Set up with your own numbers</button><button type="button" class="a3-btn" id="a3TryGo">See it with made-up numbers first</button></div></section>`;
+    $('#a3SetupGo').addEventListener('click', openSetup3);
     $('#a3TryGo').addEventListener('click', () => { E3.useTry('mako'); tryBand3(); renderHome3(); });
     return;
   }

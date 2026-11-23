@@ -36,7 +36,7 @@ echo "'use strict';"
 echo 'const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];'
 cat ../art.js ../pixel.js
 printf 'const TRY_BOOKS = { mako: '; cat fixtures/mako_madeup_book.json; echo '};'
-cat src/money3.js src/e3.js src/home3.js src/checkin3.js src/start3.js
+cat src/money3.js src/e3.js src/home3.js src/checkin3.js src/setup3.js src/start3.js
 echo '})();'
 echo '</script>'
 echo '</body>'
