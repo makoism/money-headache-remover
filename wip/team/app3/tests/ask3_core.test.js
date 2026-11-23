@@ -156,6 +156,24 @@ const ctxOf = h => ({ book: h.book, today: DAY });
     ok(!res.ok && /Food/.test(res.text), JSON.stringify(res));
     eq(L.lookahead(h.book, DAY).places[refs.G1].kept, kept, 'set aside taken back');
   });
+  /* [B1, QC numbers] short: named by the first day under and how much then, before the pay only when one brings money.
+     Set up Mon 23 Nov with 30,000, Rent 60,000 on the 24th, Pay 50,000 on the 25th: -30,000 on 24 Nov, -40,000 on 24 Dec.
+     Pay 0 with 100,000 and Rent on the 28th: 40,000 on 28 Nov, -20,000 on 28 Dec, and no pay brings anything. */
+  const B = require(E + 'build_book.js');
+  const jp = (bank, pay, rentDay) => B.buildBook({ day: '2026-11-23', told: '2026-11-23T09:00+09:00', country: 'JP', currency: 'JPY',
+    banks: [{ key: 'b', name: 'Main bank', amount: bank }],
+    pays: [{ key: 'pay', name: 'Pay', bank: 'b', amount: pay, day: 25, shift: 'none', startsPeriod: true }],
+    bills: [{ key: 'rent', name: 'Rent', from: 'b', amount: 60000, day: rentDay, shift: 'none' }] }, { newId: I.idMaker('b1ask0', () => 0.5) }).book;
+  await t('the summary names the first day short and how much then, and the lower point later with its own day [B1]', async () => {
+    const s = K.summary(jp(30000, 50000, 24), '2026-11-23').text;
+    ok(s.includes('Short by ¥30,000 on 24 Nov, before the pay on 25 Nov. Later on it goes ¥40,000 below zero on 24 Dec.'), s);
+    ok(!s.includes('before then'), 'no "before then"');
+  });
+  await t('the summary with pay 0 never says short before a pay that brings nothing [B1]', async () => {
+    const s = K.summary(jp(100000, 0, 28), '2026-11-23').text;
+    ok(s.includes('Short by ¥20,000 on 28 Dec.'), s);
+    ok(!/before the pay|before then/.test(s), s);
+  });
   console.log(bad ? `ask3_core: ${bad} FAIL of ${n}` : `ask3_core: ALL PASS (${n})`);
   process.exit(bad ? 1 : 0);
 })();

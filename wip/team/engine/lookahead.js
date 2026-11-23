@@ -1051,7 +1051,7 @@
         // [BH1, replaces H8 for safe to spend] money not yet seen never counts: a pay past its day and not ticked (late or
         // not seen) is left out of the walk until it is ticked; a pay due today counts [G4]
         if (o.kind === 'income' && o.acct === id && !o.otherCur && o.land >= today && !leftToday(o) && o.land <= end)
-          steps.push({ day: o.land, order: 0, amount: o.amount, label: o.name + ' ' + short(o.land) });
+          steps.push({ day: o.land, order: 0, amount: o.amount, label: o.name + ' ' + short(o.land), pay: true });
         if (o.kind === 'loan' && cur(o.card) !== cur(id)) continue;   // [V2] warned below
         if ((o.kind === 'bill' || o.kind === 'transfer' || o.kind === 'auto' || o.kind === 'loan') && o.acct === id && o.land <= end) {
           const fromIt = o.place && placeLeft[o.place] ? Math.min(placeLeft[o.place], o.amount) : 0;   // [H7] the place's money first
@@ -1081,15 +1081,20 @@
       for (const p of plannedFor(id)) if (p.land <= end) steps.push({ day: p.land, order: 2, amount: -p.amount, label: p.label });
       steps.sort((a, b) => a.day - b.day || a.order - b.order);
       let low = bal, lowDay = today, lowAt = 0, firstBelowZero = null, belowBal = null;
+      // [B1, QC numbers] the first day the bank ends under its minimum (or zero) and how far under then, and the first
+      // pay that brings money in after that day: the shortfall is named by that day, never by a lower point later
+      let firstUnder = bal < minimum ? { day: today, amount: minimum - bal } : null, payAfter = null;
       for (let i = 0; i < steps.length; i++) {
         bal += steps[i].amount;
+        if (firstUnder && payAfter === null && steps[i].pay && steps[i].amount > 0 && steps[i].day > firstUnder.day) payAfter = steps[i].day;
         if (steps[i + 1] && steps[i + 1].day === steps[i].day) continue;   // the end of a day
         if (bal < low) { low = bal; lowDay = steps[i].day; lowAt = i + 1; }
         if (bal < 0 && firstBelowZero === null) { firstBelowZero = steps[i].day; belowBal = bal; }
+        if (bal < minimum && firstUnder === null) firstUnder = { day: steps[i].day, amount: minimum - bal };
       }
       for (let i = 0; i < lowAt; i++) why.push({ label: steps[i].label, amount: steps[i].amount });
       why.push({ label: 'minimum', amount: -minimum });
-      return { lowest: low, lowestDay: lowDay, headroom: low - minimum, why, firstBelowZero, belowBal };
+      return { lowest: low, lowestDay: lowDay, headroom: low - minimum, why, firstBelowZero, belowBal, firstUnder, payAfter };
     }
 
     const backsGoal = id => places.some(g => g.keptIn && g.keptIn.acct === id && g.keptIn.mode === 'ownAccount' && removedOn(g) === null);
@@ -1113,8 +1118,13 @@
       if (id === mainAcct && mainMinOtherCur()) res.warnings.push({ account: id, code: 'minimum_other_currency', text: `The minimum kept for ${a.name} is in ${main.min.cur}, not ${a.cur}: what is its minimum in ${a.cur}?` });
       // [QC fix] data for the screens to word (account, amount, day, minimum or null for none); the text is only for Ask's
       // summary, and says "below zero" when there is no minimum, with the day as "1 Jan", never an ISO day
-      if (w.headroom < 0) res.warnings.push({ account: id, code: 'below_minimum', day: r.lowestDay, amount: -w.headroom, short: -w.headroom, minimum: minimum || null,
-        text: minimum ? `${a.name} goes ${fmt(-w.headroom, a.cur)} below its minimum of ${fmt(minimum, a.cur)} on ${short(w.lowestDay)}` : `${a.name} goes ${fmt(-w.headroom, a.cur)} below zero on ${short(w.lowestDay)}` });
+      // [B1] named by the first day under and how far under then; a lower point after it is `later`, with its own day
+      if (w.headroom < 0) {
+        const f = w.firstUnder, lower = -w.headroom > f.amount && w.lowestDay !== f.day ? { day: r.lowestDay, amount: -w.headroom } : undefined;
+        res.warnings.push(Object.assign({ account: id, code: 'below_minimum', day: dayStr(f.day), amount: f.amount, short: f.amount, minimum: minimum || null },
+          lower ? { later: lower } : {}, { payAfter: w.payAfter === null ? null : dayStr(w.payAfter),
+            text: minimum ? `${a.name} goes ${fmt(f.amount, a.cur)} below its minimum of ${fmt(minimum, a.cur)} on ${short(f.day)}` : `${a.name} goes ${fmt(f.amount, a.cur)} below zero on ${short(f.day)}` }));
+      }
       const later = walk(id, today + LATER_ON_DAYS, 0);   // [B11]
       if (later.firstBelowZero !== null && later.firstBelowZero > horizon) res.laterOn.push({ account: id, day: dayStr(later.firstBelowZero), balance: later.belowBal, amount: -later.belowBal, minimum: null,
         text: `Later on: ${a.name} goes below zero in ${MONTHS[+dayStr(later.firstBelowZero).slice(5, 7) - 1]} ${dayStr(later.firstBelowZero).slice(0, 4)}` });
@@ -1143,6 +1153,11 @@
     const raw = up - shortfalls;
     const oldest = Object.keys(res.accounts).reduce((d, id) => Math.min(d, dayNum(res.accounts[id].asOf)), today);
     res.safeToSpend = { headline: Math.max(0, cap === null ? raw : Math.min(cap, raw)), shortfall: Math.max(0, -raw), cappedByFreeToSpend: cap !== null && cap < raw, oldestInput: dayStr(oldest) };
+    // [B1, QC numbers] what the screens say when short: the first day an account in the home currency goes under, how far
+    // under on that day, the pay that comes after it (null when none brings money in), and a lower point later, if any
+    const firstWarn = res.warnings.filter(w => w.code === 'below_minimum' && res.accounts[w.account].currency === home).sort((x, z) => (x.day < z.day ? -1 : x.day > z.day ? 1 : 0))[0];
+    res.safeToSpend.short = res.safeToSpend.shortfall > 0 && firstWarn ? { account: firstWarn.account, day: firstWarn.day, amount: firstWarn.amount, minimum: firstWarn.minimum,
+      beforePay: firstWarn.payAfter, later: firstWarn.later || null } : null;
     // [BJ5] when Free to spend caps the headline, the sum under it ends with the cap, so the two figures never disagree
     res.safeToSpend.why = res.safeToSpend.cappedByFreeToSpend
       ? `${fmt(raw, home)} (what your accounts can spare) - ${fmt(raw - Math.max(0, cap), home)} (more than Free to spend left this period) = ${fmt(res.safeToSpend.headline, home)}` : null;

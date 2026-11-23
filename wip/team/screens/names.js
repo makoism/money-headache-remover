@@ -41,7 +41,7 @@
       source: 'DECISIONS_ROUND2 F9 (each account walked and warned on its own)',
     },
     shortBy: {
-      label: 'Short by', figures: ['safeToSpend.shortfall'], state: 'for Mako', choices: ['Short by', 'Under your minimum by'],
+      label: 'Short by', figures: ['safeToSpend.short'], state: 'for Mako', choices: ['Short by', 'Under your minimum by'],
       source: 'MAKO_RUN 2.2 (one word for short)',
     },
     freeToSpendLeft: {

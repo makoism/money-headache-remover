@@ -69,6 +69,8 @@
     'warn.below_zero': W('{account} goes {amount} below zero on {day}'),
     'warn.below_minimum': W('{account} goes {amount} below its minimum of {minimum} on {day}'),
     'warn.later_on': W('Later on: {account} goes below zero in {month}'),
+    'warn.later_low_zero': W('Later on: {account} goes {amount} below zero on {day}'),
+    'warn.later_low_minimum': W('Later on: {account} goes {amount} below its minimum of {minimum} on {day}'),
     'warn.check_again': W('The {account} figure of {day} was wrong: what does it show now'),
     'warn.gain_to_ask': W('{account} shows {amount} more than the app had: was that figure right'),
     'warn.reopened': W('{account} was closed, but money came into it, so it is open again'),
@@ -118,8 +120,9 @@
     const below = warnings.filter(w => w.code === 'below_minimum').sort((a, b) => (a.day < b.day ? -1 : a.day > b.day ? 1 : 0));
     if (!Object.keys(accounts).length) out.push({ state: 'empty', reason: { code: 'no_figures' }, next: { code: 'check_in' } });
     if (stp.shortfall > 0) {
-      const day = below.length ? below[0].day : null;
-      out.push({ state: 'short', reason: { code: 'short', amount: stp.shortfall, currency: ctx.currency, day }, next: { code: 'move_money_in', day }, note: below.length ? 'below_minimum' : 'short' });
+      /* [B1] the engine's first day under and how much then (safeToSpend.short), never a lower point later */
+      const sh = stp.short || null, day = sh ? sh.day : below.length ? below[0].day : null;
+      out.push({ state: 'short', reason: { code: 'short', amount: sh ? sh.amount : stp.shortfall, currency: ctx.currency, day }, next: { code: 'move_money_in', day }, note: below.length ? 'below_minimum' : 'short' });
     }
     for (const w of below) out.push({ state: 'warning', reason: { code: 'below_minimum', account: w.account, amount: w.amount != null ? w.amount : w.short, currency: (accounts[w.account] || {}).currency || ctx.currency, day: w.day, minimum: minimumOf(w, accounts) }, next: { code: 'move_money_in', day: w.day }, note: 'below_minimum' });
     for (const w of warnings) {
@@ -166,6 +169,13 @@
   }
   /* one "later on" entry in words: the month it goes below zero, as "Mar 2027" */
   function laterText(l, ctx) { return fill('warn.later_on', { account: l.account, month: l.day }, ctx || {}); }
+  /* [B1] a below-minimum warning's lower point after its first day under, in words with its own day; '' when none */
+  function laterLowText(w, ctx) {
+    ctx = ctx || {};
+    if (!w || w.code !== 'below_minimum' || !w.later) return '';
+    const accounts = ctx.accounts || {}, minimum = minimumOf(w, accounts);
+    return fill(minimum ? 'warn.later_low_minimum' : 'warn.later_low_zero', { account: w.account, amount: w.later.amount, minimum, day: w.later.day, currency: (accounts[w.account] || {}).currency || ctx.currency }, ctx);
+  }
 
   function deepFreeze(o) { Object.values(o).forEach(v => { if (v && typeof v === 'object') deepFreeze(v); }); return Object.freeze(o); }
 
@@ -183,5 +193,5 @@
     return deepFreeze(s);
   }
 
-  return { statusOf, warningText, laterText, WORDS, STALE_DAYS };
+  return { statusOf, warningText, laterText, laterLowText, WORDS, STALE_DAYS };
 });

@@ -381,4 +381,36 @@ t('the sums as parts for the screens (numbers review S4): each account\'s parts 
   eq(r.safeToSpend.whyParts, [{ label: 'what your accounts can spare', amount: 370000 }, { label: 'more than Free to spend left this period', amount: -320000 }]);
   eq(r.safeToSpend.whyParts.reduce((t, p) => t + p.amount, 0), r.safeToSpend.headline);
 });
+// [B1, QC numbers] The shortfall names the FIRST day the bank goes under (zero or the minimum), and how much then; a
+// lower point later is given with its own day. Bank 30,000 on Mon 23 Nov, Rent 60,000 on the 24th, Pay 50,000 on the
+// 25th: 30,000 - 60,000 = -30,000 on 24 Nov, before the pay; -30,000 + 50,000 = 20,000 on 25 Nov; 20,000 - 60,000 =
+// -40,000 on 24 Dec. Pay 0: nothing comes in, so no pay is named as the one the bank is short before.
+function firstShort(bank, pay, rentDay) {
+  return { v: 3, home: { curs: [{ from: '2026-01-01', cur: 'JPY' }], country: { v: 'JP' }, main: { v: { acct: 'bank', min: null } } },
+    accounts: [{ id: 'bank', name: 'Bank', type: 'bank', cur: 'JPY' }],
+    schedules: [{ id: 'pay', kind: 'income', name: 'Pay', acct: 'bank', cur: 'JPY', startsPeriod: true, shift: 'none', rules: [{ rule: { every: 'month', days: [25] } }], steps: [{ amount: pay }] },
+      { id: 'rent', kind: 'bill', name: 'Rent', acct: 'bank', cur: 'JPY', shift: 'none', rules: [{ rule: { every: 'month', days: [rentDay] } }], steps: [{ amount: 60000 }] }],
+    plan: { shares: [], budgets: [] },
+    events: [{ id: 'o', k: 'open', acct: 'bank', date: '2026-11-23', a: bank, told: '2026-11-23T10:00' + TZ, grp: 's' },
+      { id: 'c', k: 'check', acct: 'bank', date: '2026-11-23', a: bank, told: '2026-11-23T10:00' + TZ, grp: 's' }] };
+}
+t('short: the first day under and how much then, before the pay; the lower point later with its own day [B1]', () => {
+  const r = run(firstShort(30000, 50000, 24), '2026-11-23');
+  const w = r.warnings.find(x => x.code === 'below_minimum');
+  eq([w.day, w.amount, w.short], ['2026-11-24', 30000, 30000]);
+  eq(w.later, { day: '2026-12-24', amount: 40000 });
+  ok(/goes 30,000 below zero on 24 Nov/.test(w.text), w.text);
+  eq(r.safeToSpend.short, { account: 'bank', day: '2026-11-24', amount: 30000, minimum: null, beforePay: '2026-11-25', later: { day: '2026-12-24', amount: 40000 } });
+  eq(r.safeToSpend.headline, 0);
+  eq(r.accounts.bank.lowestDay, '2026-12-24');   // the lowest point is still the walk's, for the sum under safe to spend
+});
+t('short with pay 0: the first day under is after the 25 Nov pay, and no pay is named [B1]', () => {
+  // 100,000 - 60,000 = 40,000 on 28 Nov; 40,000 - 60,000 = -20,000 on 28 Dec
+  const r = run(firstShort(100000, 0, 28), '2026-11-23');
+  eq(r.safeToSpend.short, { account: 'bank', day: '2026-12-28', amount: 20000, minimum: null, beforePay: null, later: null });
+  eq(r.warnings.find(x => x.code === 'below_minimum').later, undefined);
+});
+t('no shortfall: no short [B1]', () => {
+  eq(run(firstShort(300000, 50000, 24), '2026-11-23').safeToSpend.short, null);
+});
 done('lookahead');
