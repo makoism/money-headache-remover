@@ -206,7 +206,7 @@
           throw e;
         }
         const ok = await o.put(planned.book);
-        if (!ok) return { ok: false, why: 'save', text: 'This could not be saved on this device. Nothing changed' };
+        if (ok !== true) return { ok: false, why: (ok && ok.why) || 'save', text: (ok && ok.text) || 'This could not be saved on this device. Nothing changed' };   // put may say why (another tab changed the same record)
         if (clock) clock.see(planned.step.at);
         const st = planned.step;
         st.own = {}; for (const x of st.added.concat(st.edited, st.removed)) st.own[x.id] = st.at;   // the `at` this step left on each record

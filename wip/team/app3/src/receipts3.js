@@ -169,7 +169,7 @@ async function rcSave3() {
   if (x.bad) { err.textContent = x.bad; $('#rcAmt').focus(); return; }
   const before = rcFigs3(E3.book);
   const r = RC3.edit ? await ACT3.edit(RC3.edit.id, rcFields3(x), { undo: rcWords3(x) }) : await ACT3[RC_KIND3[RC3.mode]](x, { undo: rcWords3(x) });
-  if (!r.ok) { err.textContent = r.text; return; }
+  if (!r.ok) { $('#rcErr').textContent = r.text; return; }   // the form may have been drawn again meanwhile (another tab)
   RC3.last = before;
   if (RC3.edit) { RC3.edit = null; RC3.mode = 'spend'; }
   renderRc3();

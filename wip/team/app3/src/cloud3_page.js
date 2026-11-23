@@ -247,7 +247,7 @@ async function answer3(q, pick) {
     else next = S.answerCheck(Object.assign(base, { question: q, pick }));
   } catch (e) { setMsg3('That choice could not be made. Nothing changed.', true); return; }
   const ok = await E3.put(next);   // an edit with this device's clock; every version stays kept
-  if (!ok) { setMsg3('This could not be saved on this device. Nothing changed.', true); return; }
+  if (ok !== true) { setMsg3(ok && ok.text ? ok.text : 'This could not be saved on this device. Nothing changed.', true); paintQuestions3(); return; }
   renderHome3();
   setMsg3('Kept. The other version can still come back.');
   paintQuestions3();

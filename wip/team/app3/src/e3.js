@@ -44,18 +44,35 @@ const E3 = (() => {
       const r = await store.load();
       readOnly = !!r.readOnly;
       if (!r.empty && r.copy) { book = r.copy; mode = 'kept'; }
+      store.onOther(ch => { if (joinIn(ch)) shown(); });   // another tab saved: take it in and draw it
     } catch (e) { store = null; }
   }
+  /* ---- two tabs on one device (store/idb.js onOther and catchUp) ----
+     What another tab saved (changed events and kept versions by id, the rest of the book when it changed) is joined into
+     this page's book, and the screens are told with the 'burrow3:other' event so they draw it. */
+  const OTHER = 'Changed in another tab. Shown again, try again';
+  function joinIn(ch) {
+    if (!ch || !book || mode !== 'kept') return false;
+    if (!ch.book && !(ch.events || []).length && !(ch.keptVersions || []).length) return false;
+    const byId = (mine, theirs) => { const m = new Map((mine || []).map(r => [r.id, r])); for (const r of theirs || []) m.set(r.id, r); return [...m.values()]; };
+    const rest = ch.book || BurrowStore.bookOf(book);
+    book = Object.assign({}, rest, { events: byId(book.events, ch.events), keptVersions: byId(book.keptVersions, ch.keptVersions), rev: ch.rev, at: book.at });
+    return true;
+  }
+  function shown() { try { root3.dispatchEvent(new CustomEvent('burrow3:other')); } catch (e) { /* a screen's own fault */ } }
   const savedFns = [];
   /* writes what changed through the store; a try book is never written */
-  async function save(opts) {
-    if (mode !== 'kept') return true;
-    if (!store || readOnly) return false;
-    const r = await store.save(book, opts);
-    const ok = !!(r && r.ok);
-    if (ok) savedFns.forEach(f => { try { f(book); } catch (e) { /* a listener's own fault */ } });   // backup lane: the cloud copy follows saves
-    return ok;
+  async function save(opts) { return (await saveR(opts)).ok; }
+  /* the store's answer: { ok } or { ok: false, why: 'behind' | 'read-only' | 'full' | 'error' } */
+  async function saveR(opts) {
+    if (mode !== 'kept') return { ok: true };
+    if (!store || readOnly) return { ok: false, why: 'read-only' };
+    const r = (await store.save(book, opts)) || { ok: false, why: 'error' };
+    if (r.ok) savedFns.forEach(f => { try { f(book); } catch (e) { /* a listener's own fault */ } });   // backup lane: the cloud copy follows saves
+    return r;
   }
+  /* refused as behind: take in what the other tab saved (this page's book becomes the latest) */
+  async function catchUp() { const ch = await store.catchUp(); joinIn(ch); return book; }
   /* setup3's new book: kept from now on */
   async function start(newBook) {
     const before = { book, mode };
@@ -72,9 +89,10 @@ const E3 = (() => {
     if (mode === 'try') return false;
     const before = book, m = mode;
     book = next; mode = 'kept';
-    const ok = await save({ replace: true });
-    if (!ok) { book = before; mode = m; }
-    return ok;
+    let r = await saveR({ replace: true });
+    if (!r.ok && r.why === 'behind' && store) { await store.catchUp(); book = next; r = await saveR({ replace: true }); }   // the whole book replaces the other tab's too
+    if (!r.ok) { book = before; mode = m; }
+    return r.ok;
   }
   /* backup lane: what the store keeps beside the book (store/idb.js):
        rec('copy', { copy, why })  keeps a whole copy before a big replace in the store's `kept` store [D2]; gives its id
@@ -110,9 +128,21 @@ const E3 = (() => {
   async function put(next) {
     const before = book;
     book = next;
-    const ok = await save();
-    if (!ok) book = before;
-    return ok;
+    const r = await saveR();
+    if (r.ok) return true;
+    if (r.why !== 'behind') { book = before; return false; }
+    /* another tab saved since this page last read: catch up, then the same step again on the latest (a three-way join of
+       what this step changed, from the book it started on, with what the other tab saved). When both changed the same
+       record, nothing is saved: the latest is shown again and the person tries again with their draft still there. */
+    book = before;
+    const theirs = await catchUp();
+    const asked = c => ((c && c.keptVersions) || []).filter(k => k && k.ask).length;
+    const joined = BurrowEngine.sync.sync(before, next, theirs);
+    if (asked(joined) > asked(theirs)) { shown(); return { ok: false, why: 'other', text: OTHER }; }
+    book = joined;
+    if ((await saveR()).ok) { shown(); return true; }
+    book = theirs; shown();
+    return { ok: false, why: 'other', text: OTHER };
   }
   /* is a the day before b (two YYYY-MM-DD days) */
   const dayBefore = (a, b) => BurrowEngine.dates.dayNum(b) - BurrowEngine.dates.dayNum(a) === 1;
