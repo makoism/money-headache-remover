@@ -226,4 +226,9 @@ t('a waiting once amount for Free to spend counts the smaller [AV3]', () => {
     x.events.push({ id: 'p1', k: 'in', sub: 'pay', acct: 'bank', date: '2026-12-25', a: 250000, told: '2026-12-25T09:00' + TZ, settles: ['pay@2026-12-25'], stream: 'pay' }); });
   eq(run(b, '2026-12-26').safeToSpend.headline, 30000);
 });
+t('a refund never settles a pay, whatever its size [AV4]', () => {
+  const b = base(x => { x.events.push({ id: 'imp:bank:1', k: 'in', sub: 'refund', acct: 'bank', date: '2026-12-25', a: 250000, told: '2026-12-26T08:00' + TZ, src: { type: 'statement' } }); });
+  const d = run(b, '2026-12-26').daysToNextPay;
+  eq([d.item, d.late], ['pay@2026-12-25', true]);
+});
 done('lookahead');

@@ -261,6 +261,7 @@
       let best = null;
       for (const imp of freeLines) {
         if (imp.settles.length || imp.untick || imp.account !== o.acct || (o.kind === 'income' ? 'in' : 'out') !== dirOf(imp)
+          || (o.kind === 'income' && imp.sub === 'refund')   // [AV4] a refund never settles a pay
           || Math.abs(imp.a - o.amount) * 1000 > o.amount * Math.round(vary * 1000)) continue;
         const ds = importDays(imp).filter(d => d >= from && d <= to);
         if (!ds.length) continue;
