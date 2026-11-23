@@ -469,11 +469,12 @@
       "expected": {
         "asked": true,
         "filled": null,
-        "minBank": null
+        "min": null
       },
-      "why": "The box starts empty (no amount filled in for the person) and they skip it: `home.minBank` is null, no minimum [AB, MAKO M1].",
+      "why": "The box starts empty (no amount filled in for the person) and they skip it: `home.main` holds `min: null`, no minimum [AB, MAKO M1]. The main bank's own `minBank` stays null [AN3].",
       "decisions": [
         "AB",
+        "AN3",
         "MAKO M1"
       ]
     },
@@ -488,14 +489,15 @@
       "expected": {
         "asked": true,
         "filled": null,
-        "minBank": {
+        "min": {
           "a": 20000,
           "cur": "JPY"
         }
       },
-      "why": "The person types 20,000: `home.minBank` is { a: 20,000, cur: JPY } [AB, MAKO M1, O6].",
+      "why": "The person types 20,000: `home.main` holds `min:` { a: 20,000, cur: JPY } [AB, MAKO M1, O6]. The main bank's own `minBank` stays null [AN3].",
       "decisions": [
         "AB",
+        "AN3",
         "MAKO M1",
         "O6"
       ]
@@ -1904,7 +1906,567 @@
         "X8",
         "T1"
       ]
+    },
+    {
+      "id": "ed-56",
+      "question": "min_save",
+      "title": "AN3: the main bank's minimum is saved only in `home.main`; the account's own `minBank` stays null",
+      "input": {
+        "main": {
+          "v": {
+            "acct": "k7qzpa-m2xq7ab9zt-2",
+            "min": {
+              "a": 20000,
+              "cur": "JPY"
+            }
+          },
+          "at": "2026-11-24T09:00:00.000+09:00",
+          "by": "phn001"
+        },
+        "accounts": [
+          {
+            "id": "k7qzpa-m2xq7ab9zt-2",
+            "name": "Bank",
+            "type": "bank",
+            "cur": "JPY",
+            "minBank": null,
+            "told": "2026-11-01T09:00:00.000+09:00",
+            "at": "2026-11-01T09:00:00.000+09:00",
+            "by": "phn001"
+          },
+          {
+            "id": "k7qzpa-m2xq7ab9zt-5",
+            "name": "E-wallet",
+            "type": "ewallet",
+            "cur": "JPY",
+            "minBank": null,
+            "told": "2026-11-01T09:00:00.000+09:00",
+            "at": "2026-11-01T09:00:00.000+09:00",
+            "by": "phn001"
+          }
+        ],
+        "acct": "k7qzpa-m2xq7ab9zt-2",
+        "typed": 30000,
+        "cur": "JPY",
+        "at": "2026-12-01T09:00:00.000+09:00",
+        "by": "phn001"
+      },
+      "expected": {
+        "main": {
+          "v": {
+            "acct": "k7qzpa-m2xq7ab9zt-2",
+            "min": {
+              "a": 30000,
+              "cur": "JPY"
+            }
+          },
+          "at": "2026-12-01T09:00:00.000+09:00",
+          "by": "phn001"
+        },
+        "minBank": null
+      },
+      "why": "The person raises \"Keep at least\" on the main bank from 20,000 to 30,000. The main bank's minimum lives only in `home.main` [AN3, AL3]: the pair is written with the new minimum and a new `at`; the account's own `minBank` is null and stays null, so the figure is in one place (LESSONS lesson 1).",
+      "decisions": [
+        "AN3",
+        "AL3"
+      ]
+    },
+    {
+      "id": "ed-57",
+      "question": "min_save",
+      "title": "AN3: another account's minimum is its own `minBank`; `home.main` is not touched",
+      "input": {
+        "main": {
+          "v": {
+            "acct": "k7qzpa-m2xq7ab9zt-2",
+            "min": {
+              "a": 20000,
+              "cur": "JPY"
+            }
+          },
+          "at": "2026-11-24T09:00:00.000+09:00",
+          "by": "phn001"
+        },
+        "accounts": [
+          {
+            "id": "k7qzpa-m2xq7ab9zt-2",
+            "name": "Bank",
+            "type": "bank",
+            "cur": "JPY",
+            "minBank": null,
+            "told": "2026-11-01T09:00:00.000+09:00",
+            "at": "2026-11-01T09:00:00.000+09:00",
+            "by": "phn001"
+          },
+          {
+            "id": "k7qzpa-m2xq7ab9zt-5",
+            "name": "E-wallet",
+            "type": "ewallet",
+            "cur": "JPY",
+            "minBank": null,
+            "told": "2026-11-01T09:00:00.000+09:00",
+            "at": "2026-11-01T09:00:00.000+09:00",
+            "by": "phn001"
+          }
+        ],
+        "acct": "k7qzpa-m2xq7ab9zt-5",
+        "typed": 5000,
+        "cur": "JPY",
+        "at": "2026-12-01T09:00:00.000+09:00",
+        "by": "phn001"
+      },
+      "expected": {
+        "minBank": {
+          "a": 5000,
+          "cur": "JPY"
+        }
+      },
+      "why": "The person sets a 5,000 minimum on the e-wallet. It is not the main bank, so its minimum is its own `minBank`, in its currency [AN3, O6]; `home.main` is unchanged.",
+      "decisions": [
+        "AN3",
+        "O6"
+      ]
+    },
+    {
+      "id": "ed-58",
+      "question": "min_ok",
+      "title": "AN3: a copy whose main bank carries its own `minBank` is refused",
+      "input": {
+        "home": {
+          "main": {
+            "v": {
+              "acct": "k7qzpa-m2xq7ab9zt-2",
+              "min": {
+                "a": 20000,
+                "cur": "JPY"
+              }
+            },
+            "at": "2026-11-24T09:00:00.000+09:00",
+            "by": "phn001"
+          }
+        },
+        "accounts": [
+          {
+            "id": "k7qzpa-m2xq7ab9zt-2",
+            "name": "Bank",
+            "type": "bank",
+            "cur": "JPY",
+            "minBank": {
+              "a": 10000,
+              "cur": "JPY"
+            },
+            "told": "2026-11-01T09:00:00.000+09:00",
+            "at": "2026-11-01T09:00:00.000+09:00",
+            "by": "phn001"
+          },
+          {
+            "id": "k7qzpa-m2xq7ab9zt-5",
+            "name": "E-wallet",
+            "type": "ewallet",
+            "cur": "JPY",
+            "minBank": null,
+            "told": "2026-11-01T09:00:00.000+09:00",
+            "at": "2026-11-01T09:00:00.000+09:00",
+            "by": "phn001"
+          }
+        ]
+      },
+      "expected": {
+        "refused": true,
+        "account": "k7qzpa-m2xq7ab9zt-2",
+        "field": "minBank"
+      },
+      "why": "The main bank's own `minBank` is always null; its minimum lives only in `home.main` [AN3]. A copy holding 10,000 on the account and 20,000 in `home.main` has one figure in two places, so it is refused, as X8 refuses a copy a change made unsound.",
+      "decisions": [
+        "AN3"
+      ]
+    },
+    {
+      "id": "ed-59",
+      "question": "min_ok",
+      "title": "AN3: the main bank's `minBank` null and another account with its own minimum: sound",
+      "input": {
+        "home": {
+          "main": {
+            "v": {
+              "acct": "k7qzpa-m2xq7ab9zt-2",
+              "min": {
+                "a": 20000,
+                "cur": "JPY"
+              }
+            },
+            "at": "2026-11-24T09:00:00.000+09:00",
+            "by": "phn001"
+          }
+        },
+        "accounts": [
+          {
+            "id": "k7qzpa-m2xq7ab9zt-2",
+            "name": "Bank",
+            "type": "bank",
+            "cur": "JPY",
+            "minBank": null,
+            "told": "2026-11-01T09:00:00.000+09:00",
+            "at": "2026-11-01T09:00:00.000+09:00",
+            "by": "phn001"
+          },
+          {
+            "id": "k7qzpa-m2xq7ab9zt-5",
+            "name": "E-wallet",
+            "type": "ewallet",
+            "cur": "JPY",
+            "minBank": {
+              "a": 5000,
+              "cur": "JPY"
+            },
+            "told": "2026-11-01T09:00:00.000+09:00",
+            "at": "2026-11-01T09:00:00.000+09:00",
+            "by": "phn001"
+          }
+        ]
+      },
+      "expected": {
+        "ok": true
+      },
+      "why": "The main bank's minimum is in `home.main` (20,000) and its own `minBank` is null; the e-wallet's 5,000 is its own [AN3].",
+      "decisions": [
+        "AN3"
+      ]
+    },
+    {
+      "id": "ed-60",
+      "question": "move_save",
+      "title": "AN5: two amounts moved onto one pay: January's own is written, December's waits in `pendingMove` until the person picks add or replace; nothing unpicked is saved in `amounts`",
+      "input": {
+        "schedule": "k7qzpa-m2xq7ab9zt-41",
+        "amounts": {
+          "2026-12-25": {
+            "amount": 400000,
+            "at": "2026-11-24T10:00:00.000+09:00",
+            "by": "phn001"
+          },
+          "2027-01-25": {
+            "amount": 150000,
+            "at": "2026-11-24T10:00:00.000+09:00",
+            "by": "phn001"
+          }
+        },
+        "moveTo": {
+          "2026-12-25": "2027-01-10",
+          "2027-01-25": "2027-01-10"
+        },
+        "at": "2026-12-02T10:00:00.000+09:00",
+        "by": "phn001",
+        "pendId": "k7qzpa-m2xq7ab9zt-61"
+      },
+      "expected": {
+        "amounts": {
+          "2026-12-25": {
+            "amount": 400000,
+            "at": "2026-12-02T10:00:00.000+09:00",
+            "by": "phn001",
+            "gone": "2026-12-02"
+          },
+          "2027-01-25": {
+            "amount": 150000,
+            "at": "2026-12-02T10:00:00.000+09:00",
+            "by": "phn001",
+            "gone": "2026-12-02"
+          },
+          "2027-01-10": {
+            "amount": 150000,
+            "at": "2026-12-02T10:00:00.000+09:00",
+            "by": "phn001"
+          }
+        },
+        "pendingMove": [
+          {
+            "id": "k7qzpa-m2xq7ab9zt-61",
+            "waits": "pick",
+            "to": "amounts",
+            "schedule": "k7qzpa-m2xq7ab9zt-41",
+            "key": "2027-01-10",
+            "from": "2026-12-25",
+            "a": 400000,
+            "told": "2026-12-02T10:00:00.000+09:00",
+            "at": "2026-12-02T10:00:00.000+09:00",
+            "by": "phn001"
+          }
+        ]
+      },
+      "why": "As ed-53 with January's 150,000 (part unpaid leave). Wed 2 Dec 10:00 the person picks move: December's 400,000 bonus goes to 10 Jan (no December occurrence of the new rule on or after 15 Dec, AL6) and January's 150,000 to 10 Jan (the first January one, AK2). Both old keys are removed by their own `gone` with the edit's `at`. January's amount is 10 Jan's own (the same month), so it is written there. December's lands on an occurrence that now has its own amount, so it is not written until the person picks add or replace: it waits in `pendingMove`, an ordinary record (`waits: 'pick'`, the schedule, the target key, where it came from, the amount) [AN5]. Until then it counts nowhere (section 2.1), and no `pick` key exists.",
+      "decisions": [
+        "AN5",
+        "AL6",
+        "AK2",
+        "AA5"
+      ]
+    },
+    {
+      "id": "ed-61",
+      "question": "move_save",
+      "title": "AN5: the person picks add: the sum is written on the target key and the waiting entry is removed",
+      "input": {
+        "schedule": "k7qzpa-m2xq7ab9zt-41",
+        "amounts": {
+          "2026-12-25": {
+            "amount": 400000,
+            "at": "2026-12-02T10:00:00.000+09:00",
+            "by": "phn001",
+            "gone": "2026-12-02"
+          },
+          "2027-01-25": {
+            "amount": 150000,
+            "at": "2026-12-02T10:00:00.000+09:00",
+            "by": "phn001",
+            "gone": "2026-12-02"
+          },
+          "2027-01-10": {
+            "amount": 150000,
+            "at": "2026-12-02T10:00:00.000+09:00",
+            "by": "phn001"
+          }
+        },
+        "pendingMove": [
+          {
+            "id": "k7qzpa-m2xq7ab9zt-61",
+            "waits": "pick",
+            "to": "amounts",
+            "schedule": "k7qzpa-m2xq7ab9zt-41",
+            "key": "2027-01-10",
+            "from": "2026-12-25",
+            "a": 400000,
+            "told": "2026-12-02T10:00:00.000+09:00",
+            "at": "2026-12-02T10:00:00.000+09:00",
+            "by": "phn001"
+          }
+        ],
+        "pick": "add",
+        "at": "2026-12-17T09:00:00.000+09:00",
+        "by": "phn001"
+      },
+      "expected": {
+        "amounts": {
+          "2026-12-25": {
+            "amount": 400000,
+            "at": "2026-12-02T10:00:00.000+09:00",
+            "by": "phn001",
+            "gone": "2026-12-02"
+          },
+          "2027-01-25": {
+            "amount": 150000,
+            "at": "2026-12-02T10:00:00.000+09:00",
+            "by": "phn001",
+            "gone": "2026-12-02"
+          },
+          "2027-01-10": {
+            "amount": 550000,
+            "at": "2026-12-17T09:00:00.000+09:00",
+            "by": "phn001"
+          }
+        },
+        "pendingMove": [
+          {
+            "id": "k7qzpa-m2xq7ab9zt-61",
+            "waits": "pick",
+            "to": "amounts",
+            "schedule": "k7qzpa-m2xq7ab9zt-41",
+            "key": "2027-01-10",
+            "from": "2026-12-25",
+            "a": 400000,
+            "told": "2026-12-02T10:00:00.000+09:00",
+            "at": "2026-12-17T09:00:00.000+09:00",
+            "by": "phn001",
+            "gone": "2026-12-17"
+          }
+        ]
+      },
+      "why": "Thu 17 Dec 09:00 the person opens the offer and picks add: 150,000 + 400,000 = 550,000 on 10 Jan, written with the pick's `at`; the waiting entry is kept, removed by its own `gone` with the same `at`, so a device still holding it drops it at the merge [AN5, AA5, H6].",
+      "decisions": [
+        "AN5",
+        "AA5",
+        "H6"
+      ]
+    },
+    {
+      "id": "ed-62",
+      "question": "move_save",
+      "title": "AN5: the person picks replace: the moved amount takes the target key's place",
+      "input": {
+        "schedule": "k7qzpa-m2xq7ab9zt-41",
+        "amounts": {
+          "2026-12-25": {
+            "amount": 400000,
+            "at": "2026-12-02T10:00:00.000+09:00",
+            "by": "phn001",
+            "gone": "2026-12-02"
+          },
+          "2027-01-25": {
+            "amount": 150000,
+            "at": "2026-12-02T10:00:00.000+09:00",
+            "by": "phn001",
+            "gone": "2026-12-02"
+          },
+          "2027-01-10": {
+            "amount": 150000,
+            "at": "2026-12-02T10:00:00.000+09:00",
+            "by": "phn001"
+          }
+        },
+        "pendingMove": [
+          {
+            "id": "k7qzpa-m2xq7ab9zt-61",
+            "waits": "pick",
+            "to": "amounts",
+            "schedule": "k7qzpa-m2xq7ab9zt-41",
+            "key": "2027-01-10",
+            "from": "2026-12-25",
+            "a": 400000,
+            "told": "2026-12-02T10:00:00.000+09:00",
+            "at": "2026-12-02T10:00:00.000+09:00",
+            "by": "phn001"
+          }
+        ],
+        "pick": "replace",
+        "at": "2026-12-17T09:00:00.000+09:00",
+        "by": "phn001"
+      },
+      "expected": {
+        "amounts": {
+          "2026-12-25": {
+            "amount": 400000,
+            "at": "2026-12-02T10:00:00.000+09:00",
+            "by": "phn001",
+            "gone": "2026-12-02"
+          },
+          "2027-01-25": {
+            "amount": 150000,
+            "at": "2026-12-02T10:00:00.000+09:00",
+            "by": "phn001",
+            "gone": "2026-12-02"
+          },
+          "2027-01-10": {
+            "amount": 400000,
+            "at": "2026-12-17T09:00:00.000+09:00",
+            "by": "phn001"
+          }
+        },
+        "pendingMove": [
+          {
+            "id": "k7qzpa-m2xq7ab9zt-61",
+            "waits": "pick",
+            "to": "amounts",
+            "schedule": "k7qzpa-m2xq7ab9zt-41",
+            "key": "2027-01-10",
+            "from": "2026-12-25",
+            "a": 400000,
+            "told": "2026-12-02T10:00:00.000+09:00",
+            "at": "2026-12-17T09:00:00.000+09:00",
+            "by": "phn001",
+            "gone": "2026-12-17"
+          }
+        ]
+      },
+      "why": "As ed-61, but the person picks replace: the waiting 400,000 replaces the 150,000 on 10 Jan [AN5].",
+      "decisions": [
+        "AN5",
+        "AA5"
+      ]
+    },
+    {
+      "id": "ed-63",
+      "question": "move_save",
+      "title": "AN5: one amount moved onto a pay that already has its own amount waits; one moved onto a free occurrence is written",
+      "input": {
+        "schedule": "k7qzpa-m2xq7ab9zt-41",
+        "amounts": {
+          "2026-12-25": {
+            "amount": 400000,
+            "at": "2026-11-24T10:00:00.000+09:00",
+            "by": "phn001"
+          },
+          "2027-01-10": {
+            "amount": 200000,
+            "at": "2026-11-24T10:00:00.000+09:00",
+            "by": "phn001"
+          },
+          "2027-02-25": {
+            "amount": 0,
+            "at": "2026-11-24T10:00:00.000+09:00",
+            "by": "phn001"
+          }
+        },
+        "moveTo": {
+          "2026-12-25": "2027-01-10",
+          "2027-02-25": "2027-02-10"
+        },
+        "at": "2026-12-02T10:00:00.000+09:00",
+        "by": "phn001",
+        "pendId": "k7qzpa-m2xq7ab9zt-61"
+      },
+      "expected": {
+        "amounts": {
+          "2026-12-25": {
+            "amount": 400000,
+            "at": "2026-12-02T10:00:00.000+09:00",
+            "by": "phn001",
+            "gone": "2026-12-02"
+          },
+          "2027-01-10": {
+            "amount": 200000,
+            "at": "2026-11-24T10:00:00.000+09:00",
+            "by": "phn001"
+          },
+          "2027-02-25": {
+            "amount": 0,
+            "at": "2026-12-02T10:00:00.000+09:00",
+            "by": "phn001",
+            "gone": "2026-12-02"
+          },
+          "2027-02-10": {
+            "amount": 0,
+            "at": "2026-12-02T10:00:00.000+09:00",
+            "by": "phn001"
+          }
+        },
+        "pendingMove": [
+          {
+            "id": "k7qzpa-m2xq7ab9zt-61",
+            "waits": "pick",
+            "to": "amounts",
+            "schedule": "k7qzpa-m2xq7ab9zt-41",
+            "key": "2027-01-10",
+            "from": "2026-12-25",
+            "a": 400000,
+            "told": "2026-12-02T10:00:00.000+09:00",
+            "at": "2026-12-02T10:00:00.000+09:00",
+            "by": "phn001"
+          }
+        ]
+      },
+      "why": "10 Jan already has its own amount (200,000, typed at setup). December's bonus moves onto it, so it waits in `pendingMove` until add or replace is picked [AN5]. February's unpaid month (0) moves to 10 Feb, which has nothing of its own: written there. Both old keys removed by their own `gone`.",
+      "decisions": [
+        "AN5",
+        "AL6",
+        "AK2"
+      ]
     }
   ],
-  "open": []
+  "open": [
+    {
+      "id": "ed-q-an5a",
+      "question": "AN5 says a moved amount that lands on an occurrence that already has its own amount waits. When two amounts move onto an occurrence that had none, which one is its own? The reference takes the one from the target's own month (AK2) as its own and lets the one carried over from an earlier month (AL6) wait (ed-60). With both from other months it writes the earliest and lets the rest wait.",
+      "ref_does": "Same month first, else the earliest old due date; the rest wait in pendingMove."
+    },
+    {
+      "id": "ed-q-an5b",
+      "question": "While a moved bill amount waits for add or replace it counts nowhere (section 2.1), so the walk counts only the amount written on the key, which may be the smaller one (moved_together mt-01: 70,000 counted, 95,000 waiting). AM1 counted the larger for a bill. Should a waiting bill amount count on the safe side until the pick?",
+      "ref_does": "Counts nowhere until picked, as every pendingMove entry."
+    },
+    {
+      "id": "ed-q-an3",
+      "question": "AN3: when another account with its own `minBank` becomes the main bank, which minimum does the pair take (the old main bank's, or the account's own), and does the old main bank get its minimum back as its own `minBank`?",
+      "ref_does": "Nothing yet: min_save writes only what the person types into the pair."
+    }
+  ]
 }

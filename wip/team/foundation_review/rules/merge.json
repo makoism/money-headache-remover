@@ -16447,7 +16447,7 @@
         "mine": {
           "imports": {
             "cats": {
-              "seven eleven": {
+              "k:seven eleven": {
                 "v": "bill:food",
                 "at": "2026-12-01T08:00:00.000+09:00",
                 "by": "phn001"
@@ -16458,7 +16458,7 @@
         "theirs": {
           "imports": {
             "cats": {
-              "amazon co jp": {
+              "k:amazon co jp": {
                 "v": "envelope",
                 "at": "2026-12-01T09:00:00.000+09:00",
                 "by": "dsk001"
@@ -16470,12 +16470,12 @@
       "expected": {
         "imports": {
           "cats": {
-            "seven eleven": {
+            "k:seven eleven": {
               "v": "bill:food",
               "at": "2026-12-01T08:00:00.000+09:00",
               "by": "phn001"
             },
-            "amazon co jp": {
+            "k:amazon co jp": {
               "v": "envelope",
               "at": "2026-12-01T09:00:00.000+09:00",
               "by": "dsk001"
@@ -16582,7 +16582,7 @@
         "mine": {
           "imports": {
             "cats": {
-              "seven eleven": {
+              "k:seven eleven": {
                 "v": "bill:food",
                 "at": "2026-11-24T09:00:00.000+09:00",
                 "by": "phn001"
@@ -16593,12 +16593,12 @@
         "theirs": {
           "imports": {
             "cats": {
-              "seven eleven": {
+              "k:seven eleven": {
                 "v": "bill:food",
                 "at": "2026-11-24T09:00:00.000+09:00",
                 "by": "phn001"
               },
-              "lawson": {
+              "k:lawson": {
                 "v": "bill:food",
                 "at": "2026-11-27T10:00:00.000+09:00",
                 "by": "tab001"
@@ -16611,12 +16611,12 @@
         "copy": {
           "imports": {
             "cats": {
-              "seven eleven": {
+              "k:seven eleven": {
                 "v": "bill:food",
                 "at": "2026-11-24T09:00:00.000+09:00",
                 "by": "phn001"
               },
-              "lawson": {
+              "k:lawson": {
                 "v": "bill:food",
                 "at": "2026-11-24T12:00:00.001+09:00",
                 "by": "tab001",
@@ -16737,12 +16737,12 @@
         "current": {
           "imports": {
             "cats": {
-              "seven eleven": {
+              "k:seven eleven": {
                 "v": "envelope",
                 "at": "2026-11-26T10:00:00.000+09:00",
                 "by": "dsk001"
               },
-              "lawson": {
+              "k:lawson": {
                 "v": "bill:food",
                 "at": "2026-11-26T10:00:00.000+09:00",
                 "by": "dsk001"
@@ -16753,7 +16753,7 @@
         "backup": {
           "imports": {
             "cats": {
-              "seven eleven": {
+              "k:seven eleven": {
                 "v": "bill:food",
                 "at": "2026-11-20T10:00:00.000+09:00",
                 "by": "phn001"
@@ -16771,12 +16771,12 @@
       "expected": {
         "imports": {
           "cats": {
-            "seven eleven": {
+            "k:seven eleven": {
               "v": "bill:food",
               "at": "2026-11-28T09:00:00.000+09:00",
               "by": "phn001"
             },
-            "lawson": {
+            "k:lawson": {
               "v": "bill:food",
               "at": "2026-11-28T09:00:00.000+09:00",
               "by": "phn001",
@@ -16989,7 +16989,7 @@
         "copy": {
           "imports": {
             "cats": {
-              "seven eleven": {
+              "k:seven eleven": {
                 "v": "bill:food",
                 "at": "2026-11-30T08:00:00.000+09:00",
                 "by": "phn001"
@@ -17004,7 +17004,7 @@
             "edit": {
               "record": "imports.cats",
               "set": {
-                "seven eleven": "envelope"
+                "k:seven eleven": "envelope"
               }
             }
           },
@@ -17019,7 +17019,7 @@
             "edit": {
               "record": "imports.cats",
               "set": {
-                "seven eleven": "bill:food"
+                "k:seven eleven": "bill:food"
               }
             }
           },
@@ -17035,7 +17035,7 @@
         }
       },
       "expected": {
-        "seven eleven": {
+        "k:seven eleven": {
           "v": "bill:food",
           "at": "2026-12-01T13:00:00.001+09:00",
           "by": "phn001"
@@ -17185,7 +17185,7 @@
           ],
           "imports": {
             "cats": {
-              "lawson": {
+              "k:lawson": {
                 "v": "bill:food",
                 "at": "2026-11-25T09:00:00.000+09:00",
                 "by": "dsk001"
@@ -17282,7 +17282,7 @@
         "copy": {
           "imports": {
             "cats": {
-              "lawson": {
+              "k:lawson": {
                 "v": "bill:food",
                 "at": "2026-11-24T12:00:00.001+09:00",
                 "by": "tab001",
@@ -17325,7 +17325,7 @@
           },
           "imports": {
             "cats": {
-              "lawson": {
+              "k:lawson": {
                 "v": "bill:food",
                 "at": "2026-11-24T10:00:00.000+09:00",
                 "by": "phn001"
@@ -17354,7 +17354,7 @@
           },
           "imports": {
             "cats": {
-              "lawson": {
+              "k:lawson": {
                 "v": "envelope",
                 "at": "2026-11-24T10:00:00.000+09:00",
                 "by": "dsk001",
@@ -17408,7 +17408,7 @@
           },
           "imports": {
             "cats": {
-              "lawson": {
+              "k:lawson": {
                 "v": "bill:food",
                 "at": "2026-11-24T10:00:00.000+09:00",
                 "by": "phn001"
@@ -17437,7 +17437,7 @@
           },
           "imports": {
             "cats": {
-              "lawson": {
+              "k:lawson": {
                 "v": "envelope",
                 "at": "2026-11-24T10:00:00.000+09:00",
                 "by": "dsk001",
@@ -17477,7 +17477,7 @@
         },
         "imports": {
           "cats": {
-            "lawson": {
+            "k:lawson": {
               "v": "envelope",
               "at": "2026-11-24T10:00:00.000+09:00",
               "by": "dsk001",
@@ -17530,7 +17530,7 @@
           },
           "imports": {
             "cats": {
-              "lawson": {
+              "k:lawson": {
                 "v": "envelope",
                 "at": "2026-11-24T10:00:00.000+09:00",
                 "by": "dsk001",
@@ -18038,7 +18038,7 @@
         "copy": {
           "imports": {
             "cats": {
-              "seven eleven": {
+              "k:seven eleven": {
                 "v": "bill:food",
                 "at": "2026-11-24T09:00:00.000+09:00",
                 "by": "phn001"
@@ -18053,7 +18053,7 @@
             "edit": {
               "record": "imports.cats",
               "set": {
-                "lawson": "bill:food"
+                "k:lawson": "bill:food"
               }
             }
           },
@@ -18068,7 +18068,7 @@
             "edit": {
               "record": "imports.cats",
               "remove": [
-                "lawson"
+                "k:lawson"
               ]
             }
           },
@@ -18084,12 +18084,12 @@
         }
       },
       "expected": {
-        "seven eleven": {
+        "k:seven eleven": {
           "v": "bill:food",
           "at": "2026-11-24T09:00:00.000+09:00",
           "by": "phn001"
         },
-        "lawson": {
+        "k:lawson": {
           "v": "bill:food",
           "at": "2026-11-24T10:05:00.000+09:00",
           "by": "phn001",
@@ -18336,7 +18336,7 @@
         "copy": {
           "imports": {
             "cats": {
-              "seven eleven": {
+              "k:seven eleven": {
                 "v": "bill:food",
                 "at": "2026-11-01T09:00:00.000+09:00",
                 "by": "phn001"
@@ -18351,7 +18351,7 @@
             "edit": {
               "record": "imports.cats",
               "set": {
-                "lawson": "bill:food"
+                "k:lawson": "bill:food"
               }
             }
           },
@@ -18361,7 +18361,7 @@
             "edit": {
               "record": "imports.cats",
               "set": {
-                "seven eleven": "envelope"
+                "k:seven eleven": "envelope"
               }
             }
           },
@@ -18382,12 +18382,12 @@
         }
       },
       "expected": {
-        "seven eleven": {
+        "k:seven eleven": {
           "v": "envelope",
           "at": "2026-11-24T12:00:00.000+09:00",
           "by": "phn001"
         },
-        "lawson": {
+        "k:lawson": {
           "v": "bill:food",
           "at": "2026-11-11T10:00:00.000+09:00",
           "by": "dsk001"
@@ -18817,7 +18817,7 @@
         "copy": {
           "imports": {
             "cats": {
-              "seven eleven": {
+              "k:seven eleven": {
                 "v": "bill:food",
                 "at": "2026-12-20T22:00:00.000+09:00",
                 "by": "phn001"
@@ -18832,7 +18832,7 @@
             "edit": {
               "record": "imports.cats",
               "set": {
-                "seven eleven": "envelope"
+                "k:seven eleven": "envelope"
               }
             }
           },
@@ -18842,7 +18842,7 @@
             "edit": {
               "record": "imports.cats",
               "set": {
-                "seven eleven": "bill:food"
+                "k:seven eleven": "bill:food"
               }
             }
           },
@@ -18858,7 +18858,7 @@
         }
       },
       "expected": {
-        "seven eleven": {
+        "k:seven eleven": {
           "v": "bill:food",
           "at": "2026-12-20T15:00:00.000-10:00",
           "by": "phn001"
@@ -19232,7 +19232,5452 @@
         "AL3",
         "AL1"
       ]
+    },
+    {
+      "id": "mg-257",
+      "question": "merge_both",
+      "title": "AN1 (confirm_review_7 s1, part 1): a `home` holding one plain field on both copies merges field by field, the same on both devices",
+      "input": {
+        "mine": {
+          "home": {
+            "week1": "mon",
+            "country": {
+              "v": "JP",
+              "at": "2026-12-01T08:00:00.000+09:00",
+              "by": "phn001"
+            },
+            "main": {
+              "v": {
+                "acct": "k7qzpa-m2xq7ab9zt-2",
+                "min": {
+                  "a": 30000,
+                  "cur": "JPY"
+                }
+              },
+              "at": "2026-12-01T09:00:00.000+09:00",
+              "by": "phn001"
+            }
+          }
+        },
+        "theirs": {
+          "home": {
+            "week1": "mon",
+            "country": {
+              "v": "PH",
+              "at": "2026-12-01T10:00:00.000+09:00",
+              "by": "dsk001"
+            },
+            "main": {
+              "v": {
+                "acct": "k7qzpa-m2xq7ab9zt-2",
+                "min": null
+              },
+              "at": "2026-12-01T07:00:00.000+09:00",
+              "by": "dsk001"
+            }
+          }
+        }
+      },
+      "expected": {
+        "mine_first": {
+          "home": {
+            "week1": "mon",
+            "country": {
+              "v": "PH",
+              "at": "2026-12-01T10:00:00.000+09:00",
+              "by": "dsk001"
+            },
+            "main": {
+              "v": {
+                "acct": "k7qzpa-m2xq7ab9zt-2",
+                "min": {
+                  "a": 30000,
+                  "cur": "JPY"
+                }
+              },
+              "at": "2026-12-01T09:00:00.000+09:00",
+              "by": "phn001"
+            }
+          }
+        },
+        "theirs_first": {
+          "home": {
+            "week1": "mon",
+            "country": {
+              "v": "PH",
+              "at": "2026-12-01T10:00:00.000+09:00",
+              "by": "dsk001"
+            },
+            "main": {
+              "v": {
+                "acct": "k7qzpa-m2xq7ab9zt-2",
+                "min": {
+                  "a": 30000,
+                  "cur": "JPY"
+                }
+              },
+              "at": "2026-12-01T09:00:00.000+09:00",
+              "by": "phn001"
+            }
+          }
+        }
+      },
+      "why": "A later build (or a bug) writes a plain `week1: 'mon'` into `home` on both copies. Tue 1 Dec: the phone sets the minimum 30,000 at 09:00 (`main`) and the country JP at 08:00; the desktop sets the country PH at 10:00 and, earlier, `main` with no minimum at 07:00. Every map with no `at` of its own merges key by key [AN1]: `country` by its own `at`, the desktop's 10:00 PH; `main` by its own `at`, the phone's 09:00 pair with 30,000; `week1` is the same on both. Merged either way round the copy is the same. Before AN1 the plain field made `home` fail the field-value shape and the merge kept \"mine\" whole: the phone ended JP with 30,000, the desktop PH with none, and they never agreed.",
+      "decisions": [
+        "AN1",
+        "AL1"
+      ]
+    },
+    {
+      "id": "mg-258",
+      "question": "merge_both",
+      "title": "AN1: a plain field that differs on the two copies settles the same way on both devices (the keyed rule)",
+      "input": {
+        "mine": {
+          "home": {
+            "week1": "mon",
+            "country": {
+              "v": "JP",
+              "at": "2026-12-01T08:00:00.000+09:00",
+              "by": "phn001"
+            }
+          }
+        },
+        "theirs": {
+          "home": {
+            "week1": "sun",
+            "country": {
+              "v": "PH",
+              "at": "2026-12-01T10:00:00.000+09:00",
+              "by": "dsk001"
+            }
+          }
+        }
+      },
+      "expected": {
+        "mine_first": {
+          "home": {
+            "week1": "sun",
+            "country": {
+              "v": "PH",
+              "at": "2026-12-01T10:00:00.000+09:00",
+              "by": "dsk001"
+            }
+          }
+        },
+        "theirs_first": {
+          "home": {
+            "week1": "sun",
+            "country": {
+              "v": "PH",
+              "at": "2026-12-01T10:00:00.000+09:00",
+              "by": "dsk001"
+            }
+          }
+        }
+      },
+      "why": "As mg-257, but the plain field differs: 'mon' on the phone, 'sun' on the desktop. A plain value has no `at` and no `by`, so the keyed rule settles it by the last step of `winner`: the larger as sorted JSON text, \"sun\" before \"mon\" [AN1, L merge q1]. Both devices keep 'sun', so they agree; `country` still goes by its own `at` (the desktop's 10:00 PH).",
+      "decisions": [
+        "AN1",
+        "AL1"
+      ]
+    },
+    {
+      "id": "mg-259",
+      "question": "merge_both",
+      "title": "AN1 (s1, part 2): a `home` holding only `curs` on both copies merges entry by entry",
+      "input": {
+        "mine": {
+          "home": {
+            "curs": [
+              {
+                "from": "2026-11-01",
+                "cur": "JPY",
+                "at": "2026-11-01T09:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ]
+          }
+        },
+        "theirs": {
+          "home": {
+            "curs": [
+              {
+                "from": "2026-11-01",
+                "cur": "JPY",
+                "at": "2026-11-01T09:00:00.000+09:00",
+                "by": "phn001"
+              },
+              {
+                "from": "2027-04-01",
+                "cur": "PHP",
+                "at": "2026-12-01T09:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ]
+          }
+        }
+      },
+      "expected": {
+        "mine_first": {
+          "home": {
+            "curs": [
+              {
+                "from": "2026-11-01",
+                "cur": "JPY",
+                "at": "2026-11-01T09:00:00.000+09:00",
+                "by": "phn001"
+              },
+              {
+                "from": "2027-04-01",
+                "cur": "PHP",
+                "at": "2026-12-01T09:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ]
+          }
+        },
+        "theirs_first": {
+          "home": {
+            "curs": [
+              {
+                "from": "2026-11-01",
+                "cur": "JPY",
+                "at": "2026-11-01T09:00:00.000+09:00",
+                "by": "phn001"
+              },
+              {
+                "from": "2027-04-01",
+                "cur": "PHP",
+                "at": "2026-12-01T09:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ]
+          }
+        }
+      },
+      "why": "A person with no main bank chosen yet: `home` holds only `curs`. On Tue 1 Dec 09:00 the phone adds pesos from 1 Apr 2027 (going home); the desktop's copy still holds only yen. `home` has no `at` of its own, so it merges key by key and `curs` entry by entry by `from` [AN1, AJ3]: both entries on both devices. Before AN1 a `home` with only an entry list failed the shape (it needs one field that is not a list) and the desktop kept its own one entry.",
+      "decisions": [
+        "AN1",
+        "AJ3"
+      ]
+    },
+    {
+      "id": "mg-260",
+      "question": "merge_both",
+      "title": "AN1 (s1, part 3): `imports` with an empty `cats` and a list a later build adds keeps both copies' entries",
+      "input": {
+        "mine": {
+          "imports": {
+            "cats": {},
+            "files": [
+              {
+                "id": "k7qzpa-m2xq7ab9zt-51",
+                "name": "nov.csv",
+                "at": "2026-12-01T09:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ]
+          }
+        },
+        "theirs": {
+          "imports": {
+            "cats": {},
+            "files": [
+              {
+                "id": "dsk001-w3e5r7t9y1-7",
+                "name": "card_nov.pdf",
+                "at": "2026-12-01T10:00:00.000+09:00",
+                "by": "dsk001"
+              }
+            ]
+          }
+        }
+      },
+      "expected": {
+        "mine_first": {
+          "imports": {
+            "cats": {},
+            "files": [
+              {
+                "id": "dsk001-w3e5r7t9y1-7",
+                "name": "card_nov.pdf",
+                "at": "2026-12-01T10:00:00.000+09:00",
+                "by": "dsk001"
+              },
+              {
+                "id": "k7qzpa-m2xq7ab9zt-51",
+                "name": "nov.csv",
+                "at": "2026-12-01T09:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ]
+          }
+        },
+        "theirs_first": {
+          "imports": {
+            "cats": {},
+            "files": [
+              {
+                "id": "dsk001-w3e5r7t9y1-7",
+                "name": "card_nov.pdf",
+                "at": "2026-12-01T10:00:00.000+09:00",
+                "by": "dsk001"
+              },
+              {
+                "id": "k7qzpa-m2xq7ab9zt-51",
+                "name": "nov.csv",
+                "at": "2026-12-01T09:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ]
+          }
+        }
+      },
+      "why": "A later build keeps the statements read under `imports.files`, each entry with `id` and `at`. The phone reads nov.csv at 09:00, the desktop card_nov.pdf at 10:00; neither has taught a shop yet, so `cats` is empty on both. `imports` has no `at` of its own, so it merges key by key: `files` is an entry list by `id` [AJ2], both files stay; `cats` is empty [AN1]. Before AN1 the empty `cats` failed the shape and each device kept only its own file.",
+      "decisions": [
+        "AN1",
+        "AJ2"
+      ]
+    },
+    {
+      "id": "mg-261",
+      "question": "merge_both",
+      "title": "AN1: an empty `cats` on one copy and a lesson on the other",
+      "input": {
+        "mine": {
+          "imports": {
+            "cats": {}
+          }
+        },
+        "theirs": {
+          "imports": {
+            "cats": {
+              "k:seven eleven": {
+                "v": "bill:food",
+                "at": "2026-11-24T09:00:00.000+09:00",
+                "by": "phn001",
+                "src": "person"
+              }
+            }
+          }
+        }
+      },
+      "expected": {
+        "mine_first": {
+          "imports": {
+            "cats": {
+              "k:seven eleven": {
+                "v": "bill:food",
+                "at": "2026-11-24T09:00:00.000+09:00",
+                "by": "phn001",
+                "src": "person"
+              }
+            }
+          }
+        },
+        "theirs_first": {
+          "imports": {
+            "cats": {
+              "k:seven eleven": {
+                "v": "bill:food",
+                "at": "2026-11-24T09:00:00.000+09:00",
+                "by": "phn001",
+                "src": "person"
+              }
+            }
+          }
+        }
+      },
+      "why": "The desktop has never read a statement (`cats` empty); the phone filed \"seven eleven\" under food on 24 Nov. Key by key [AN1], the lesson is on one side only and stays on both devices. The key is the shop text in the AN7 form, `k:` and lowercase.",
+      "decisions": [
+        "AN1",
+        "AN7"
+      ]
+    },
+    {
+      "id": "mg-262",
+      "question": "merge_both",
+      "title": "AN1: `plan` with a plain field on both copies merges key by key, the same on both devices",
+      "input": {
+        "mine": {
+          "plan": {
+            "weekStart": "mon",
+            "limits": {
+              "ceiling": {
+                "v": {
+                  "a": 120000,
+                  "cur": "JPY",
+                  "per": "month"
+                },
+                "at": "2026-12-01T09:00:00.000+09:00",
+                "by": "phn001"
+              }
+            }
+          }
+        },
+        "theirs": {
+          "plan": {
+            "weekStart": "sun",
+            "limits": {
+              "ceiling": {
+                "v": {
+                  "a": 100000,
+                  "cur": "JPY",
+                  "per": "month"
+                },
+                "at": "2026-12-01T11:00:00.000+09:00",
+                "by": "dsk001"
+              }
+            }
+          }
+        }
+      },
+      "expected": {
+        "mine_first": {
+          "plan": {
+            "weekStart": "sun",
+            "limits": {
+              "ceiling": {
+                "v": {
+                  "a": 100000,
+                  "cur": "JPY",
+                  "per": "month"
+                },
+                "at": "2026-12-01T11:00:00.000+09:00",
+                "by": "dsk001"
+              }
+            }
+          }
+        },
+        "theirs_first": {
+          "plan": {
+            "weekStart": "sun",
+            "limits": {
+              "ceiling": {
+                "v": {
+                  "a": 100000,
+                  "cur": "JPY",
+                  "per": "month"
+                },
+                "at": "2026-12-01T11:00:00.000+09:00",
+                "by": "dsk001"
+              }
+            }
+          }
+        }
+      },
+      "why": "A later build adds a plain `plan.weekStart`: 'mon' on the phone, 'sun' on the desktop. The ceiling is set to 120,000 on the phone at 09:00 and to 100,000 on the desktop at 11:00. `plan` has no `at` of its own: `limits.ceiling` by its own `at`, the desktop's 100,000; the plain field by the keyed rule, \"sun\" [AN1]. Before AN1 `plan` kept \"mine\" for any plain field, so the phone kept 'mon' and the desktop 'sun'.",
+      "decisions": [
+        "AN1",
+        "AL1",
+        "AL5"
+      ]
+    },
+    {
+      "id": "mg-263",
+      "question": "merge_both",
+      "title": "AN1: the top level, with a plain field and its own save time, merges the same on both devices",
+      "input": {
+        "mine": {
+          "v": 3,
+          "rev": 12,
+          "at": "2026-12-01T09:30:00.000+09:00",
+          "lang": "ja",
+          "home": {
+            "curs": [
+              {
+                "from": "2026-11-01",
+                "cur": "JPY",
+                "at": "2026-11-01T09:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ]
+          }
+        },
+        "theirs": {
+          "v": 3,
+          "rev": 15,
+          "at": "2026-12-01T09:00:00.000+08:00",
+          "lang": "en",
+          "home": {
+            "curs": [
+              {
+                "from": "2026-11-01",
+                "cur": "JPY",
+                "at": "2026-11-01T09:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ]
+          }
+        }
+      },
+      "expected": {
+        "mine_first": {
+          "v": 3,
+          "rev": 16,
+          "at": "2026-12-01T09:00:00.000+08:00",
+          "lang": "ja",
+          "home": {
+            "curs": [
+              {
+                "from": "2026-11-01",
+                "cur": "JPY",
+                "at": "2026-11-01T09:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ]
+          }
+        },
+        "theirs_first": {
+          "v": 3,
+          "rev": 16,
+          "at": "2026-12-01T09:00:00.000+08:00",
+          "lang": "ja",
+          "home": {
+            "curs": [
+              {
+                "from": "2026-11-01",
+                "cur": "JPY",
+                "at": "2026-11-01T09:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ]
+          }
+        }
+      },
+      "why": "A later build adds a plain top-level `lang`: 'ja' on the phone (Tokyo), 'en' on the desktop (Manila). The copy's own `at` is when it was saved: the phone 09:30 Tokyo (00:30 UTC), the desktop 09:00 Manila (01:00 UTC). The top level merges key by key [AN1]: `rev` the larger plus one, 16 [L merge q3]; `at` the later moment, the desktop's 01:00 UTC (as text the phone's \"09:30\" sorts later, so it is compared as a moment [T watch]); `v` is 3 on both; `lang` by the keyed rule, \"ja\". Before AN1 the merge kept \"mine\" for `at` and `lang`.",
+      "decisions": [
+        "AN1",
+        "L merge q3"
+      ]
+    },
+    {
+      "id": "mg-264",
+      "question": "lost_notices",
+      "title": "AN-note: the country changed on both devices before a sync: the phone's change lost, so the phone records the notice; the mode changed only on the desktop records nothing",
+      "input": {
+        "mine": {
+          "home": {
+            "curs": [
+              {
+                "from": "2026-11-01",
+                "cur": "JPY",
+                "at": "2026-11-01T09:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ],
+            "country": {
+              "v": "PH",
+              "at": "2026-12-01T10:00:00.000+09:00",
+              "by": "phn001"
+            },
+            "mode": {
+              "v": "track",
+              "at": "2026-11-24T09:00:00.000+09:00",
+              "by": "phn001"
+            }
+          }
+        },
+        "theirs": {
+          "home": {
+            "curs": [
+              {
+                "from": "2026-11-01",
+                "cur": "JPY",
+                "at": "2026-11-01T09:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ],
+            "country": {
+              "v": "TH",
+              "at": "2026-12-01T11:00:00.000+09:00",
+              "by": "dsk001"
+            },
+            "mode": {
+              "v": "wallet",
+              "at": "2026-12-01T11:00:00.000+09:00",
+              "by": "dsk001"
+            }
+          }
+        },
+        "synced": {
+          "home": {
+            "curs": [
+              {
+                "from": "2026-11-01",
+                "cur": "JPY",
+                "at": "2026-11-01T09:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ],
+            "country": {
+              "v": "JP",
+              "at": "2026-11-24T09:00:00.000+09:00",
+              "by": "phn001"
+            },
+            "mode": {
+              "v": "track",
+              "at": "2026-11-24T09:00:00.000+09:00",
+              "by": "phn001"
+            }
+          }
+        }
+      },
+      "expected": {
+        "notices": [
+          {
+            "field": "home.country",
+            "text": "Your other device changed this. Check it.",
+            "was": "PH",
+            "by": "dsk001",
+            "at": "2026-12-01T11:00:00.000+09:00"
+          }
+        ]
+      },
+      "why": "Both devices last synced JP and track (24 Nov). On Tue 1 Dec the phone, offline, sets the country to PH at 10:00; the desktop sets TH at 11:00 and Wallet mode. At the phone's merge: `country` differs from the synced value on both copies, so both changed it, and the desktop's 11:00 wins; the phone's own change lost, so it records \"Your other device changed this. Check it.\" with what it had, PH [AN-note, AM2]. `mode` changed only on the desktop: a plain sync, nothing recorded.",
+      "decisions": [
+        "AN-note",
+        "AM2",
+        "AL1"
+      ]
+    },
+    {
+      "id": "mg-265",
+      "question": "lost_notices",
+      "title": "AN-note: a `curs` entry changed on both devices: the phone's lost and is noticed; a shared `ui` key the phone's own change won records nothing",
+      "input": {
+        "mine": {
+          "home": {
+            "curs": [
+              {
+                "from": "2026-11-01",
+                "cur": "JPY",
+                "at": "2026-11-01T09:00:00.000+09:00",
+                "by": "phn001"
+              },
+              {
+                "from": "2027-04-01",
+                "cur": "KRW",
+                "at": "2026-12-01T10:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ]
+          },
+          "ui": {
+            "askNums": {
+              "v": false,
+              "at": "2026-12-01T12:00:00.000+09:00",
+              "by": "phn001"
+            }
+          }
+        },
+        "theirs": {
+          "home": {
+            "curs": [
+              {
+                "from": "2026-11-01",
+                "cur": "JPY",
+                "at": "2026-11-01T09:00:00.000+09:00",
+                "by": "phn001"
+              },
+              {
+                "from": "2027-04-01",
+                "cur": "USD",
+                "at": "2026-12-01T11:00:00.000+09:00",
+                "by": "dsk001"
+              }
+            ]
+          },
+          "ui": {
+            "askNums": {
+              "v": true,
+              "at": "2026-12-01T11:30:00.000+09:00",
+              "by": "dsk001"
+            }
+          }
+        },
+        "synced": {
+          "home": {
+            "curs": [
+              {
+                "from": "2026-11-01",
+                "cur": "JPY",
+                "at": "2026-11-01T09:00:00.000+09:00",
+                "by": "phn001"
+              },
+              {
+                "from": "2027-04-01",
+                "cur": "PHP",
+                "at": "2026-11-24T09:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ]
+          },
+          "ui": {
+            "askNums": {
+              "v": true,
+              "at": "2026-11-24T09:00:00.000+09:00",
+              "by": "phn001"
+            }
+          }
+        }
+      },
+      "expected": {
+        "notices": [
+          {
+            "field": "home.curs.2027-04-01",
+            "text": "Your other device changed this. Check it.",
+            "was": {
+              "from": "2027-04-01",
+              "cur": "KRW"
+            },
+            "by": "dsk001",
+            "at": "2026-12-01T11:00:00.000+09:00"
+          }
+        ]
+      },
+      "why": "Both last synced pesos from 1 Apr 2027 and `askNums` true. Tue 1 Dec: the phone changes the 1 Apr entry to won at 10:00 and turns `askNums` off at 12:00; the desktop changes the 1 Apr entry to dollars at 11:00 and sets `askNums` true again at 11:30. The entry merges by `from` and its own `at`: the desktop's 11:00 wins, the phone's change lost, so it records the notice with what it had (from 1 Apr, KRW) [AN-note]. `askNums`: the phone's 12:00 wins, its own change did not lose, nothing recorded.",
+      "decisions": [
+        "AN-note",
+        "AM2",
+        "AJ3"
+      ]
+    },
+    {
+      "id": "mg-266",
+      "question": "lost_notices",
+      "title": "AN-note: a shared `ui` key and `plan.limits.ceiling` both changed on both devices: two notices on the phone",
+      "input": {
+        "mine": {
+          "ui": {
+            "sb": {
+              "v": [
+                "food",
+                "fun"
+              ],
+              "at": "2026-12-01T09:00:00.000+09:00",
+              "by": "phn001"
+            }
+          },
+          "plan": {
+            "limits": {
+              "ceiling": {
+                "v": {
+                  "a": 110000,
+                  "cur": "JPY",
+                  "per": "month"
+                },
+                "at": "2026-12-01T09:00:00.000+09:00",
+                "by": "phn001"
+              }
+            }
+          }
+        },
+        "theirs": {
+          "ui": {
+            "sb": {
+              "v": [
+                "food",
+                "travel"
+              ],
+              "at": "2026-12-01T10:00:00.000+09:00",
+              "by": "dsk001"
+            }
+          },
+          "plan": {
+            "limits": {
+              "ceiling": {
+                "v": {
+                  "a": 100000,
+                  "cur": "JPY",
+                  "per": "month"
+                },
+                "at": "2026-12-01T10:00:00.000+09:00",
+                "by": "dsk001"
+              }
+            }
+          }
+        },
+        "synced": {
+          "ui": {
+            "sb": {
+              "v": [
+                "food"
+              ],
+              "at": "2026-11-24T09:00:00.000+09:00",
+              "by": "phn001"
+            }
+          },
+          "plan": {
+            "limits": {
+              "ceiling": {
+                "v": {
+                  "a": 120000,
+                  "cur": "JPY",
+                  "per": "month"
+                },
+                "at": "2026-11-24T09:00:00.000+09:00",
+                "by": "phn001"
+              }
+            }
+          }
+        }
+      },
+      "expected": {
+        "notices": [
+          {
+            "field": "plan.limits.ceiling",
+            "text": "Your other device changed this. Check it.",
+            "was": {
+              "a": 110000,
+              "cur": "JPY",
+              "per": "month"
+            },
+            "by": "dsk001",
+            "at": "2026-12-01T10:00:00.000+09:00"
+          },
+          {
+            "field": "ui.sb",
+            "text": "Your other device changed this. Check it.",
+            "was": [
+              "food",
+              "fun"
+            ],
+            "by": "dsk001",
+            "at": "2026-12-01T10:00:00.000+09:00"
+          }
+        ]
+      },
+      "why": "Both last synced the open sections [food] and a ceiling of 120,000. At 09:00 the phone opens fun and lowers the ceiling to 110,000; at 10:00 the desktop opens travel and sets 100,000. Each field value merges by its own `at`: the desktop's two 10:00 values win, and each was changed on both, so the phone records one notice per field, with what it had [AN-note]. The notices are listed by field.",
+      "decisions": [
+        "AN-note",
+        "AM2",
+        "AL1",
+        "AL5"
+      ]
+    },
+    {
+      "id": "mg-267",
+      "question": "lost_notices",
+      "title": "AN-note: a plain sync (only the desktop changed `main` and `mode`) records nothing on the phone",
+      "input": {
+        "mine": {
+          "home": {
+            "curs": [
+              {
+                "from": "2026-11-01",
+                "cur": "JPY",
+                "at": "2026-11-01T09:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ],
+            "main": {
+              "v": {
+                "acct": "k7qzpa-m2xq7ab9zt-2",
+                "min": {
+                  "a": 20000,
+                  "cur": "JPY"
+                }
+              },
+              "at": "2026-11-24T09:00:00.000+09:00",
+              "by": "phn001"
+            },
+            "mode": {
+              "v": "track",
+              "at": "2026-11-24T09:00:00.000+09:00",
+              "by": "phn001"
+            }
+          }
+        },
+        "theirs": {
+          "home": {
+            "curs": [
+              {
+                "from": "2026-11-01",
+                "cur": "JPY",
+                "at": "2026-11-01T09:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ],
+            "main": {
+              "v": {
+                "acct": "dsk001-w3e5r7t9y1-2",
+                "min": {
+                  "a": 20000,
+                  "cur": "JPY"
+                }
+              },
+              "at": "2026-12-01T11:00:00.000+09:00",
+              "by": "dsk001"
+            },
+            "mode": {
+              "v": "wallet",
+              "at": "2026-12-01T11:00:00.000+09:00",
+              "by": "dsk001"
+            }
+          }
+        },
+        "synced": {
+          "home": {
+            "curs": [
+              {
+                "from": "2026-11-01",
+                "cur": "JPY",
+                "at": "2026-11-01T09:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ],
+            "main": {
+              "v": {
+                "acct": "k7qzpa-m2xq7ab9zt-2",
+                "min": {
+                  "a": 20000,
+                  "cur": "JPY"
+                }
+              },
+              "at": "2026-11-24T09:00:00.000+09:00",
+              "by": "phn001"
+            },
+            "mode": {
+              "v": "track",
+              "at": "2026-11-24T09:00:00.000+09:00",
+              "by": "phn001"
+            }
+          }
+        }
+      },
+      "expected": {
+        "notices": []
+      },
+      "why": "The phone has changed nothing since its last sync; the desktop changed the main bank and the mode. Only one device changed each field, so the phone simply takes them: no notice [AN-note, AM2 (mg-254)].",
+      "decisions": [
+        "AN-note",
+        "AM2"
+      ]
+    },
+    {
+      "id": "mg-268",
+      "question": "after_merge",
+      "title": "AN2 (confirm_review_7 s2): a pay day change made offline after the other device settled the pay moves to the day after it, with a new `at` and a notice (grid E x D)",
+      "input": {
+        "mine": {
+          "schedules": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-41",
+              "kind": "income",
+              "name": "Pay",
+              "acct": "k7qzpa-m2xq7ab9zt-2",
+              "rules": [
+                {
+                  "from": "2026-11-01",
+                  "rule": {
+                    "every": "month",
+                    "days": [
+                      10
+                    ]
+                  },
+                  "at": "2026-11-01T09:00:00.000+09:00",
+                  "by": "phn001"
+                },
+                {
+                  "from": "2026-12-01",
+                  "rule": {
+                    "every": "month",
+                    "days": [
+                      25
+                    ]
+                  },
+                  "at": "2026-12-11T08:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              ],
+              "steps": [
+                {
+                  "from": "2026-11-01",
+                  "amount": 250000,
+                  "at": "2026-11-01T09:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              ],
+              "startsPeriod": true,
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-12-11T08:00:00.000+09:00",
+              "by": "phn001"
+            }
+          ],
+          "events": [
+            {
+              "id": "set:k7qzpa-m2xq7ab9zt-41@2026-11-10",
+              "k": "in",
+              "date": "2026-11-10",
+              "acct": "k7qzpa-m2xq7ab9zt-2",
+              "a": 250000,
+              "stream": "k7qzpa-m2xq7ab9zt-41",
+              "settles": [
+                {
+                  "s": "k7qzpa-m2xq7ab9zt-41",
+                  "due": "2026-11-10"
+                }
+              ],
+              "told": "2026-11-10T12:00:00.000+09:00",
+              "at": "2026-11-10T12:00:00.000+09:00",
+              "by": "dsk001"
+            }
+          ]
+        },
+        "theirs": {
+          "schedules": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-41",
+              "kind": "income",
+              "name": "Pay",
+              "acct": "k7qzpa-m2xq7ab9zt-2",
+              "rules": [
+                {
+                  "from": "2026-11-01",
+                  "rule": {
+                    "every": "month",
+                    "days": [
+                      10
+                    ]
+                  },
+                  "at": "2026-11-01T09:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              ],
+              "steps": [
+                {
+                  "from": "2026-11-01",
+                  "amount": 250000,
+                  "at": "2026-11-01T09:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              ],
+              "startsPeriod": true,
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-11-01T09:00:00.000+09:00",
+              "by": "phn001"
+            }
+          ],
+          "events": [
+            {
+              "id": "set:k7qzpa-m2xq7ab9zt-41@2026-11-10",
+              "k": "in",
+              "date": "2026-11-10",
+              "acct": "k7qzpa-m2xq7ab9zt-2",
+              "a": 250000,
+              "stream": "k7qzpa-m2xq7ab9zt-41",
+              "settles": [
+                {
+                  "s": "k7qzpa-m2xq7ab9zt-41",
+                  "due": "2026-11-10"
+                }
+              ],
+              "told": "2026-11-10T12:00:00.000+09:00",
+              "at": "2026-11-10T12:00:00.000+09:00",
+              "by": "dsk001"
+            },
+            {
+              "id": "set:k7qzpa-m2xq7ab9zt-41@2026-12-10",
+              "k": "in",
+              "date": "2026-12-10",
+              "acct": "k7qzpa-m2xq7ab9zt-2",
+              "a": 250000,
+              "stream": "k7qzpa-m2xq7ab9zt-41",
+              "settles": [
+                {
+                  "s": "k7qzpa-m2xq7ab9zt-41",
+                  "due": "2026-12-10"
+                }
+              ],
+              "told": "2026-12-10T12:00:00.000+09:00",
+              "at": "2026-12-10T12:00:00.000+09:00",
+              "by": "dsk001"
+            }
+          ]
+        },
+        "now": "2026-12-11T09:00:00.000+09:00",
+        "by": "phn001",
+        "show": [
+          "schedules"
+        ]
+      },
+      "expected": {
+        "schedules": [
+          {
+            "id": "k7qzpa-m2xq7ab9zt-41",
+            "kind": "income",
+            "name": "Pay",
+            "acct": "k7qzpa-m2xq7ab9zt-2",
+            "rules": [
+              {
+                "from": "2026-11-01",
+                "rule": {
+                  "every": "month",
+                  "days": [
+                    10
+                  ]
+                },
+                "at": "2026-11-01T09:00:00.000+09:00",
+                "by": "phn001"
+              },
+              {
+                "from": "2026-12-01",
+                "rule": {
+                  "every": "month",
+                  "days": [
+                    25
+                  ]
+                },
+                "at": "2026-12-11T09:00:00.000+09:00",
+                "by": "phn001",
+                "gone": "2026-12-11"
+              },
+              {
+                "from": "2026-12-11",
+                "rule": {
+                  "every": "month",
+                  "days": [
+                    25
+                  ]
+                },
+                "at": "2026-12-11T09:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ],
+            "steps": [
+              {
+                "from": "2026-11-01",
+                "amount": 250000,
+                "at": "2026-11-01T09:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ],
+            "startsPeriod": true,
+            "told": "2026-11-01T09:00:00.000+09:00",
+            "at": "2026-12-11T09:00:00.000+09:00",
+            "by": "phn001"
+          }
+        ],
+        "notices": [
+          {
+            "schedule": "k7qzpa-m2xq7ab9zt-41",
+            "text": "This change now starts the day after what your other device had already settled. Check it.",
+            "was": "2026-12-01",
+            "from": "2026-12-11",
+            "latest": "k7qzpa-m2xq7ab9zt-41@2026-12-10"
+          }
+        ]
+      },
+      "why": "Pay on the 10th. Thu 10 Dec 12:00 the desktop ticks the 10 Dec pay (`set:<pay>@2026-12-10`). Fri 11 Dec 08:00 the phone, offline since 9 Dec, changes the pay day to the 25th \"from 1 Dec\": it has seen no December settle, so X8 allows it there (s2). The merged copy names 10 Dec, which the new rule no longer makes, and the look ahead would refuse it (x8_ordinary_ids.json). After the merge the change moves to start the day after the settled pay, 11 Dec, the edit's own offer [AN2, X8]: the 1 Dec entry is removed by its own `gone` and a 11 Dec entry with the same rule is written, both with the phone's new `at`, 09:00 (the later of now and the newest `at` seen, 08:00, plus 1 ms) [D4]; entries merge by `from`, so nothing is deleted [M3]. The phone made the change, so it shows the notice at its next open. The copy is then x8_ordinary_ids_ok.json's: the 25 Dec pay is next.",
+      "decisions": [
+        "AN2",
+        "X8",
+        "D4",
+        "M3"
+      ]
+    },
+    {
+      "id": "mg-269",
+      "question": "after_merge",
+      "title": "AN2: the desktop, taking in the phone's change, moves it the same way and shows no notice (the change was the phone's)",
+      "input": {
+        "mine": {
+          "schedules": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-41",
+              "kind": "income",
+              "name": "Pay",
+              "acct": "k7qzpa-m2xq7ab9zt-2",
+              "rules": [
+                {
+                  "from": "2026-11-01",
+                  "rule": {
+                    "every": "month",
+                    "days": [
+                      10
+                    ]
+                  },
+                  "at": "2026-11-01T09:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              ],
+              "steps": [
+                {
+                  "from": "2026-11-01",
+                  "amount": 250000,
+                  "at": "2026-11-01T09:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              ],
+              "startsPeriod": true,
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-11-01T09:00:00.000+09:00",
+              "by": "phn001"
+            }
+          ],
+          "events": [
+            {
+              "id": "set:k7qzpa-m2xq7ab9zt-41@2026-11-10",
+              "k": "in",
+              "date": "2026-11-10",
+              "acct": "k7qzpa-m2xq7ab9zt-2",
+              "a": 250000,
+              "stream": "k7qzpa-m2xq7ab9zt-41",
+              "settles": [
+                {
+                  "s": "k7qzpa-m2xq7ab9zt-41",
+                  "due": "2026-11-10"
+                }
+              ],
+              "told": "2026-11-10T12:00:00.000+09:00",
+              "at": "2026-11-10T12:00:00.000+09:00",
+              "by": "dsk001"
+            },
+            {
+              "id": "set:k7qzpa-m2xq7ab9zt-41@2026-12-10",
+              "k": "in",
+              "date": "2026-12-10",
+              "acct": "k7qzpa-m2xq7ab9zt-2",
+              "a": 250000,
+              "stream": "k7qzpa-m2xq7ab9zt-41",
+              "settles": [
+                {
+                  "s": "k7qzpa-m2xq7ab9zt-41",
+                  "due": "2026-12-10"
+                }
+              ],
+              "told": "2026-12-10T12:00:00.000+09:00",
+              "at": "2026-12-10T12:00:00.000+09:00",
+              "by": "dsk001"
+            }
+          ]
+        },
+        "theirs": {
+          "schedules": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-41",
+              "kind": "income",
+              "name": "Pay",
+              "acct": "k7qzpa-m2xq7ab9zt-2",
+              "rules": [
+                {
+                  "from": "2026-11-01",
+                  "rule": {
+                    "every": "month",
+                    "days": [
+                      10
+                    ]
+                  },
+                  "at": "2026-11-01T09:00:00.000+09:00",
+                  "by": "phn001"
+                },
+                {
+                  "from": "2026-12-01",
+                  "rule": {
+                    "every": "month",
+                    "days": [
+                      25
+                    ]
+                  },
+                  "at": "2026-12-11T08:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              ],
+              "steps": [
+                {
+                  "from": "2026-11-01",
+                  "amount": 250000,
+                  "at": "2026-11-01T09:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              ],
+              "startsPeriod": true,
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-12-11T08:00:00.000+09:00",
+              "by": "phn001"
+            }
+          ],
+          "events": [
+            {
+              "id": "set:k7qzpa-m2xq7ab9zt-41@2026-11-10",
+              "k": "in",
+              "date": "2026-11-10",
+              "acct": "k7qzpa-m2xq7ab9zt-2",
+              "a": 250000,
+              "stream": "k7qzpa-m2xq7ab9zt-41",
+              "settles": [
+                {
+                  "s": "k7qzpa-m2xq7ab9zt-41",
+                  "due": "2026-11-10"
+                }
+              ],
+              "told": "2026-11-10T12:00:00.000+09:00",
+              "at": "2026-11-10T12:00:00.000+09:00",
+              "by": "dsk001"
+            }
+          ]
+        },
+        "now": "2026-12-11T09:30:00.000+09:00",
+        "by": "dsk001",
+        "show": [
+          "schedules"
+        ]
+      },
+      "expected": {
+        "schedules": [
+          {
+            "id": "k7qzpa-m2xq7ab9zt-41",
+            "kind": "income",
+            "name": "Pay",
+            "acct": "k7qzpa-m2xq7ab9zt-2",
+            "rules": [
+              {
+                "from": "2026-11-01",
+                "rule": {
+                  "every": "month",
+                  "days": [
+                    10
+                  ]
+                },
+                "at": "2026-11-01T09:00:00.000+09:00",
+                "by": "phn001"
+              },
+              {
+                "from": "2026-12-01",
+                "rule": {
+                  "every": "month",
+                  "days": [
+                    25
+                  ]
+                },
+                "at": "2026-12-11T09:30:00.000+09:00",
+                "by": "dsk001",
+                "gone": "2026-12-11"
+              },
+              {
+                "from": "2026-12-11",
+                "rule": {
+                  "every": "month",
+                  "days": [
+                    25
+                  ]
+                },
+                "at": "2026-12-11T09:30:00.000+09:00",
+                "by": "dsk001"
+              }
+            ],
+            "steps": [
+              {
+                "from": "2026-11-01",
+                "amount": 250000,
+                "at": "2026-11-01T09:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ],
+            "startsPeriod": true,
+            "told": "2026-11-01T09:00:00.000+09:00",
+            "at": "2026-12-11T09:30:00.000+09:00",
+            "by": "dsk001"
+          }
+        ],
+        "notices": []
+      },
+      "why": "As mg-268 on the desktop at 09:30. The merged copy is the same, so the desktop writes the same move with its own `at` (09:30) and `by` [AN2, D4]: at the next sync the two writes are one entry each by `from`, the newer winning, so both devices hold the 11 Dec entry. The change was the phone's (its entry's `by`), so only the phone shows the notice.",
+      "decisions": [
+        "AN2",
+        "D4"
+      ]
+    },
+    {
+      "id": "mg-270",
+      "question": "after_merge",
+      "title": "AN2: a change that starts after everything settled is left as it is",
+      "input": {
+        "mine": {
+          "schedules": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-41",
+              "kind": "income",
+              "name": "Pay",
+              "acct": "k7qzpa-m2xq7ab9zt-2",
+              "rules": [
+                {
+                  "from": "2026-11-01",
+                  "rule": {
+                    "every": "month",
+                    "days": [
+                      10
+                    ]
+                  },
+                  "at": "2026-11-01T09:00:00.000+09:00",
+                  "by": "phn001"
+                },
+                {
+                  "from": "2026-12-01",
+                  "rule": {
+                    "every": "month",
+                    "days": [
+                      25
+                    ]
+                  },
+                  "at": "2026-12-11T08:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              ],
+              "steps": [
+                {
+                  "from": "2026-11-01",
+                  "amount": 250000,
+                  "at": "2026-11-01T09:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              ],
+              "startsPeriod": true,
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-12-11T08:00:00.000+09:00",
+              "by": "phn001"
+            }
+          ],
+          "events": [
+            {
+              "id": "set:k7qzpa-m2xq7ab9zt-41@2026-11-10",
+              "k": "in",
+              "date": "2026-11-10",
+              "acct": "k7qzpa-m2xq7ab9zt-2",
+              "a": 250000,
+              "stream": "k7qzpa-m2xq7ab9zt-41",
+              "settles": [
+                {
+                  "s": "k7qzpa-m2xq7ab9zt-41",
+                  "due": "2026-11-10"
+                }
+              ],
+              "told": "2026-11-10T12:00:00.000+09:00",
+              "at": "2026-11-10T12:00:00.000+09:00",
+              "by": "dsk001"
+            }
+          ]
+        },
+        "theirs": {
+          "schedules": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-41",
+              "kind": "income",
+              "name": "Pay",
+              "acct": "k7qzpa-m2xq7ab9zt-2",
+              "rules": [
+                {
+                  "from": "2026-11-01",
+                  "rule": {
+                    "every": "month",
+                    "days": [
+                      10
+                    ]
+                  },
+                  "at": "2026-11-01T09:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              ],
+              "steps": [
+                {
+                  "from": "2026-11-01",
+                  "amount": 250000,
+                  "at": "2026-11-01T09:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              ],
+              "startsPeriod": true,
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-11-01T09:00:00.000+09:00",
+              "by": "phn001"
+            }
+          ],
+          "events": [
+            {
+              "id": "set:k7qzpa-m2xq7ab9zt-41@2026-11-10",
+              "k": "in",
+              "date": "2026-11-10",
+              "acct": "k7qzpa-m2xq7ab9zt-2",
+              "a": 250000,
+              "stream": "k7qzpa-m2xq7ab9zt-41",
+              "settles": [
+                {
+                  "s": "k7qzpa-m2xq7ab9zt-41",
+                  "due": "2026-11-10"
+                }
+              ],
+              "told": "2026-11-10T12:00:00.000+09:00",
+              "at": "2026-11-10T12:00:00.000+09:00",
+              "by": "dsk001"
+            }
+          ]
+        },
+        "now": "2026-12-11T09:00:00.000+09:00",
+        "by": "phn001",
+        "show": [
+          "schedules"
+        ]
+      },
+      "expected": {
+        "schedules": [
+          {
+            "id": "k7qzpa-m2xq7ab9zt-41",
+            "kind": "income",
+            "name": "Pay",
+            "acct": "k7qzpa-m2xq7ab9zt-2",
+            "rules": [
+              {
+                "from": "2026-11-01",
+                "rule": {
+                  "every": "month",
+                  "days": [
+                    10
+                  ]
+                },
+                "at": "2026-11-01T09:00:00.000+09:00",
+                "by": "phn001"
+              },
+              {
+                "from": "2026-12-01",
+                "rule": {
+                  "every": "month",
+                  "days": [
+                    25
+                  ]
+                },
+                "at": "2026-12-11T08:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ],
+            "steps": [
+              {
+                "from": "2026-11-01",
+                "amount": 250000,
+                "at": "2026-11-01T09:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ],
+            "startsPeriod": true,
+            "told": "2026-11-01T09:00:00.000+09:00",
+            "at": "2026-12-11T08:00:00.000+09:00",
+            "by": "phn001"
+          }
+        ],
+        "notices": []
+      },
+      "why": "As mg-268, but the desktop has settled only the November pay. Nothing settled or named is on or after 1 Dec, so the change stands: nothing is written and nothing is shown [AN2].",
+      "decisions": [
+        "AN2",
+        "X8"
+      ]
+    },
+    {
+      "id": "mg-271",
+      "question": "after_merge",
+      "title": "AN2: a moved bonus key left live by an edit on the other device: the change moves to the day after it, with a notice",
+      "input": {
+        "mine": {
+          "schedules": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-41",
+              "kind": "income",
+              "name": "Pay",
+              "acct": "k7qzpa-m2xq7ab9zt-2",
+              "rules": [
+                {
+                  "from": "2026-11-01",
+                  "rule": {
+                    "every": "month",
+                    "days": [
+                      25
+                    ]
+                  },
+                  "at": "2026-11-01T09:00:00.000+09:00",
+                  "by": "phn001"
+                },
+                {
+                  "from": "2026-12-15",
+                  "rule": {
+                    "every": "month",
+                    "days": [
+                      10
+                    ]
+                  },
+                  "at": "2026-12-02T10:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              ],
+              "steps": [
+                {
+                  "from": "2026-11-01",
+                  "amount": 250000,
+                  "at": "2026-11-01T09:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              ],
+              "startsPeriod": true,
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-12-02T10:00:00.000+09:00",
+              "by": "phn001",
+              "amounts": {
+                "2026-12-25": {
+                  "amount": 400000,
+                  "at": "2026-12-02T10:00:00.000+09:00",
+                  "by": "phn001",
+                  "gone": "2026-12-02"
+                },
+                "2027-01-10": {
+                  "amount": 400000,
+                  "at": "2026-12-02T10:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              }
+            }
+          ],
+          "events": []
+        },
+        "theirs": {
+          "schedules": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-41",
+              "kind": "income",
+              "name": "Pay",
+              "acct": "k7qzpa-m2xq7ab9zt-2",
+              "rules": [
+                {
+                  "from": "2026-11-01",
+                  "rule": {
+                    "every": "month",
+                    "days": [
+                      25
+                    ]
+                  },
+                  "at": "2026-11-01T09:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              ],
+              "steps": [
+                {
+                  "from": "2026-11-01",
+                  "amount": 250000,
+                  "at": "2026-11-01T09:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              ],
+              "startsPeriod": true,
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-12-02T11:00:00.000+09:00",
+              "by": "dsk001",
+              "amounts": {
+                "2026-12-25": {
+                  "amount": 450000,
+                  "at": "2026-12-02T11:00:00.000+09:00",
+                  "by": "dsk001"
+                }
+              }
+            }
+          ],
+          "events": []
+        },
+        "now": "2026-12-02T12:00:00.000+09:00",
+        "by": "phn001",
+        "show": [
+          "schedules"
+        ]
+      },
+      "expected": {
+        "schedules": [
+          {
+            "id": "k7qzpa-m2xq7ab9zt-41",
+            "kind": "income",
+            "name": "Pay",
+            "acct": "k7qzpa-m2xq7ab9zt-2",
+            "rules": [
+              {
+                "from": "2026-11-01",
+                "rule": {
+                  "every": "month",
+                  "days": [
+                    25
+                  ]
+                },
+                "at": "2026-11-01T09:00:00.000+09:00",
+                "by": "phn001"
+              },
+              {
+                "from": "2026-12-15",
+                "rule": {
+                  "every": "month",
+                  "days": [
+                    10
+                  ]
+                },
+                "at": "2026-12-02T12:00:00.000+09:00",
+                "by": "phn001",
+                "gone": "2026-12-02"
+              },
+              {
+                "from": "2026-12-26",
+                "rule": {
+                  "every": "month",
+                  "days": [
+                    10
+                  ]
+                },
+                "at": "2026-12-02T12:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ],
+            "steps": [
+              {
+                "from": "2026-11-01",
+                "amount": 250000,
+                "at": "2026-11-01T09:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ],
+            "startsPeriod": true,
+            "told": "2026-11-01T09:00:00.000+09:00",
+            "at": "2026-12-02T12:00:00.000+09:00",
+            "by": "phn001",
+            "amounts": {
+              "2026-12-25": {
+                "amount": 450000,
+                "at": "2026-12-02T11:00:00.000+09:00",
+                "by": "dsk001"
+              },
+              "2027-01-10": {
+                "amount": 400000,
+                "at": "2026-12-02T10:00:00.000+09:00",
+                "by": "phn001"
+              }
+            }
+          }
+        ],
+        "notices": [
+          {
+            "schedule": "k7qzpa-m2xq7ab9zt-41",
+            "text": "This change now starts the day after what your other device had already settled. Check it.",
+            "was": "2026-12-15",
+            "from": "2026-12-26",
+            "latest": "k7qzpa-m2xq7ab9zt-41@2026-12-25"
+          }
+        ]
+      },
+      "why": "Pay on the 25th with a 400,000 bonus keyed 25 Dec. Wed 2 Dec 10:00 the phone enters a new pay day, the 10th from 15 Dec, and moves the bonus to 10 Jan (AL6): the 25 Dec key is removed by its own `gone`, a 10 Jan key written. At 11:00 the desktop, not having seen it, raises the 25 Dec bonus to 450,000. Merged key by key [AE1], the desktop's 11:00 edit is newer than the phone's removal, so the 25 Dec key is live again: an orphan the new rule no longer makes, which the look ahead refuses [X8]. After the merge the change moves to start the day after it, 26 Dec, with the phone's new `at` (12:00) and a notice on the phone [AN2]. The 10 Jan key stays (the new rule still makes 10 Jan). The bonus is now keyed on both 25 Dec and 10 Jan: see the open question mg-q-an2.",
+      "decisions": [
+        "AN2",
+        "AL6",
+        "AE1",
+        "X8"
+      ]
+    },
+    {
+      "id": "mg-272",
+      "question": "after_merge",
+      "title": "AN6 (grid Z x D, spend): an event written on the phone into an account the desktop closed meanwhile reopens it at the merge, with a notice",
+      "input": {
+        "mine": {
+          "accounts": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-2",
+              "name": "Bank",
+              "type": "bank",
+              "cur": "JPY",
+              "minBank": null,
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-11-01T09:00:00.000+09:00",
+              "by": "phn001"
+            },
+            {
+              "id": "k7qzpa-m2xq7ab9zt-5",
+              "name": "E-wallet",
+              "type": "ewallet",
+              "cur": "JPY",
+              "minBank": null,
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-11-01T09:00:00.000+09:00",
+              "by": "phn001"
+            }
+          ],
+          "events": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-80",
+              "k": "spend",
+              "date": "2026-12-06",
+              "acct": "k7qzpa-m2xq7ab9zt-5",
+              "a": 1200,
+              "line": "free",
+              "told": "2026-12-06T13:00:00.000+09:00",
+              "at": "2026-12-06T13:00:00.000+09:00",
+              "by": "phn001"
+            }
+          ]
+        },
+        "theirs": {
+          "accounts": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-2",
+              "name": "Bank",
+              "type": "bank",
+              "cur": "JPY",
+              "minBank": null,
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-11-01T09:00:00.000+09:00",
+              "by": "phn001"
+            },
+            {
+              "id": "k7qzpa-m2xq7ab9zt-5",
+              "name": "E-wallet",
+              "type": "ewallet",
+              "cur": "JPY",
+              "minBank": null,
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-12-05T10:00:00.000+09:00",
+              "by": "dsk001",
+              "closed": "2026-12-05"
+            }
+          ],
+          "events": [
+            {
+              "id": "close:k7qzpa-m2xq7ab9zt-5",
+              "k": "transfer",
+              "date": "2026-12-05",
+              "acct": "k7qzpa-m2xq7ab9zt-5",
+              "acct2": "k7qzpa-m2xq7ab9zt-2",
+              "a": 8000,
+              "told": "2026-12-05T10:00:00.000+09:00",
+              "at": "2026-12-05T10:00:00.000+09:00",
+              "by": "dsk001"
+            }
+          ]
+        },
+        "now": "2026-12-07T09:00:00.000+09:00",
+        "by": "phn001",
+        "show": [
+          "accounts"
+        ]
+      },
+      "expected": {
+        "accounts": [
+          {
+            "id": "k7qzpa-m2xq7ab9zt-2",
+            "name": "Bank",
+            "type": "bank",
+            "cur": "JPY",
+            "minBank": null,
+            "told": "2026-11-01T09:00:00.000+09:00",
+            "at": "2026-11-01T09:00:00.000+09:00",
+            "by": "phn001"
+          },
+          {
+            "id": "k7qzpa-m2xq7ab9zt-5",
+            "name": "E-wallet",
+            "type": "ewallet",
+            "cur": "JPY",
+            "minBank": null,
+            "told": "2026-11-01T09:00:00.000+09:00",
+            "at": "2026-12-07T09:00:00.000+09:00",
+            "by": "phn001",
+            "closed": null
+          }
+        ],
+        "notices": [
+          {
+            "account": "k7qzpa-m2xq7ab9zt-5",
+            "text": "This account was closed, but something was written into it after its closing day, so it is open again. Check it.",
+            "closed": "2026-12-05"
+          }
+        ]
+      },
+      "why": "Sat 5 Dec 10:00 the desktop closes the e-wallet, moving its last 8,000 to the bank (`close:<e-wallet>`) and setting `closed`. The phone, offline, still shows it open. Sun 6 Dec 13:00 the phone logs a 1,200 lunch paid from the e-wallet. At the phone's merge on Mon 7 Dec 09:00 the account is closed but holds an event dated after its closing day, so it is open again: `closed` cleared with the phone's new `at` (09:00) and `by`, and a notice at the next open, on each device that merges it [AN6]. The desktop does the same at its merge. Nothing is deleted: the closing's transfer stays.",
+      "decisions": [
+        "AN6",
+        "T watch",
+        "P6"
+      ]
+    },
+    {
+      "id": "mg-273",
+      "question": "after_merge",
+      "title": "AN6 (grid Z x D, in / pay): an event written on the phone into an account the desktop closed meanwhile reopens it at the merge, with a notice",
+      "input": {
+        "mine": {
+          "accounts": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-2",
+              "name": "Bank",
+              "type": "bank",
+              "cur": "JPY",
+              "minBank": null,
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-11-01T09:00:00.000+09:00",
+              "by": "phn001"
+            },
+            {
+              "id": "k7qzpa-m2xq7ab9zt-5",
+              "name": "E-wallet",
+              "type": "ewallet",
+              "cur": "JPY",
+              "minBank": null,
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-11-01T09:00:00.000+09:00",
+              "by": "phn001"
+            }
+          ],
+          "events": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-81",
+              "k": "in",
+              "date": "2026-12-06",
+              "acct": "k7qzpa-m2xq7ab9zt-5",
+              "a": 3000,
+              "note": "a friend paid back",
+              "told": "2026-12-06T13:00:00.000+09:00",
+              "at": "2026-12-06T13:00:00.000+09:00",
+              "by": "phn001"
+            }
+          ]
+        },
+        "theirs": {
+          "accounts": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-2",
+              "name": "Bank",
+              "type": "bank",
+              "cur": "JPY",
+              "minBank": null,
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-11-01T09:00:00.000+09:00",
+              "by": "phn001"
+            },
+            {
+              "id": "k7qzpa-m2xq7ab9zt-5",
+              "name": "E-wallet",
+              "type": "ewallet",
+              "cur": "JPY",
+              "minBank": null,
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-12-05T10:00:00.000+09:00",
+              "by": "dsk001",
+              "closed": "2026-12-05"
+            }
+          ],
+          "events": [
+            {
+              "id": "close:k7qzpa-m2xq7ab9zt-5",
+              "k": "transfer",
+              "date": "2026-12-05",
+              "acct": "k7qzpa-m2xq7ab9zt-5",
+              "acct2": "k7qzpa-m2xq7ab9zt-2",
+              "a": 8000,
+              "told": "2026-12-05T10:00:00.000+09:00",
+              "at": "2026-12-05T10:00:00.000+09:00",
+              "by": "dsk001"
+            }
+          ]
+        },
+        "now": "2026-12-07T09:00:00.000+09:00",
+        "by": "phn001",
+        "show": [
+          "accounts"
+        ]
+      },
+      "expected": {
+        "accounts": [
+          {
+            "id": "k7qzpa-m2xq7ab9zt-2",
+            "name": "Bank",
+            "type": "bank",
+            "cur": "JPY",
+            "minBank": null,
+            "told": "2026-11-01T09:00:00.000+09:00",
+            "at": "2026-11-01T09:00:00.000+09:00",
+            "by": "phn001"
+          },
+          {
+            "id": "k7qzpa-m2xq7ab9zt-5",
+            "name": "E-wallet",
+            "type": "ewallet",
+            "cur": "JPY",
+            "minBank": null,
+            "told": "2026-11-01T09:00:00.000+09:00",
+            "at": "2026-12-07T09:00:00.000+09:00",
+            "by": "phn001",
+            "closed": null
+          }
+        ],
+        "notices": [
+          {
+            "account": "k7qzpa-m2xq7ab9zt-5",
+            "text": "This account was closed, but something was written into it after its closing day, so it is open again. Check it.",
+            "closed": "2026-12-05"
+          }
+        ]
+      },
+      "why": "Sat 5 Dec 10:00 the desktop closes the e-wallet, moving its last 8,000 to the bank (`close:<e-wallet>`) and setting `closed`. The phone, offline, still shows it open. Sun 6 Dec 13:00 the phone logs 3,000 a friend sent to the e-wallet. At the phone's merge on Mon 7 Dec 09:00 the account is closed but holds an event dated after its closing day, so it is open again: `closed` cleared with the phone's new `at` (09:00) and `by`, and a notice at the next open, on each device that merges it [AN6]. The desktop does the same at its merge. Nothing is deleted: the closing's transfer stays.",
+      "decisions": [
+        "AN6",
+        "T watch",
+        "P6"
+      ]
+    },
+    {
+      "id": "mg-274",
+      "question": "after_merge",
+      "title": "AN6 (grid Z x D, refund): an event written on the phone into an account the desktop closed meanwhile reopens it at the merge, with a notice",
+      "input": {
+        "mine": {
+          "accounts": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-2",
+              "name": "Bank",
+              "type": "bank",
+              "cur": "JPY",
+              "minBank": null,
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-11-01T09:00:00.000+09:00",
+              "by": "phn001"
+            },
+            {
+              "id": "k7qzpa-m2xq7ab9zt-5",
+              "name": "E-wallet",
+              "type": "ewallet",
+              "cur": "JPY",
+              "minBank": null,
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-11-01T09:00:00.000+09:00",
+              "by": "phn001"
+            }
+          ],
+          "events": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-82",
+              "k": "in",
+              "sub": "refund",
+              "date": "2026-12-06",
+              "acct": "k7qzpa-m2xq7ab9zt-5",
+              "a": 900,
+              "told": "2026-12-06T13:00:00.000+09:00",
+              "at": "2026-12-06T13:00:00.000+09:00",
+              "by": "phn001"
+            }
+          ]
+        },
+        "theirs": {
+          "accounts": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-2",
+              "name": "Bank",
+              "type": "bank",
+              "cur": "JPY",
+              "minBank": null,
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-11-01T09:00:00.000+09:00",
+              "by": "phn001"
+            },
+            {
+              "id": "k7qzpa-m2xq7ab9zt-5",
+              "name": "E-wallet",
+              "type": "ewallet",
+              "cur": "JPY",
+              "minBank": null,
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-12-05T10:00:00.000+09:00",
+              "by": "dsk001",
+              "closed": "2026-12-05"
+            }
+          ],
+          "events": [
+            {
+              "id": "close:k7qzpa-m2xq7ab9zt-5",
+              "k": "transfer",
+              "date": "2026-12-05",
+              "acct": "k7qzpa-m2xq7ab9zt-5",
+              "acct2": "k7qzpa-m2xq7ab9zt-2",
+              "a": 8000,
+              "told": "2026-12-05T10:00:00.000+09:00",
+              "at": "2026-12-05T10:00:00.000+09:00",
+              "by": "dsk001"
+            }
+          ]
+        },
+        "now": "2026-12-07T09:00:00.000+09:00",
+        "by": "phn001",
+        "show": [
+          "accounts"
+        ]
+      },
+      "expected": {
+        "accounts": [
+          {
+            "id": "k7qzpa-m2xq7ab9zt-2",
+            "name": "Bank",
+            "type": "bank",
+            "cur": "JPY",
+            "minBank": null,
+            "told": "2026-11-01T09:00:00.000+09:00",
+            "at": "2026-11-01T09:00:00.000+09:00",
+            "by": "phn001"
+          },
+          {
+            "id": "k7qzpa-m2xq7ab9zt-5",
+            "name": "E-wallet",
+            "type": "ewallet",
+            "cur": "JPY",
+            "minBank": null,
+            "told": "2026-11-01T09:00:00.000+09:00",
+            "at": "2026-12-07T09:00:00.000+09:00",
+            "by": "phn001",
+            "closed": null
+          }
+        ],
+        "notices": [
+          {
+            "account": "k7qzpa-m2xq7ab9zt-5",
+            "text": "This account was closed, but something was written into it after its closing day, so it is open again. Check it.",
+            "closed": "2026-12-05"
+          }
+        ]
+      },
+      "why": "Sat 5 Dec 10:00 the desktop closes the e-wallet, moving its last 8,000 to the bank (`close:<e-wallet>`) and setting `closed`. The phone, offline, still shows it open. Sun 6 Dec 13:00 the phone logs a 900 refund to the e-wallet. At the phone's merge on Mon 7 Dec 09:00 the account is closed but holds an event dated after its closing day, so it is open again: `closed` cleared with the phone's new `at` (09:00) and `by`, and a notice at the next open, on each device that merges it [AN6]. The desktop does the same at its merge. Nothing is deleted: the closing's transfer stays.",
+      "decisions": [
+        "AN6",
+        "T watch",
+        "P6"
+      ]
+    },
+    {
+      "id": "mg-275",
+      "question": "after_merge",
+      "title": "AN6 (grid Z x D, transfer): an event written on the phone into an account the desktop closed meanwhile reopens it at the merge, with a notice",
+      "input": {
+        "mine": {
+          "accounts": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-2",
+              "name": "Bank",
+              "type": "bank",
+              "cur": "JPY",
+              "minBank": null,
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-11-01T09:00:00.000+09:00",
+              "by": "phn001"
+            },
+            {
+              "id": "k7qzpa-m2xq7ab9zt-5",
+              "name": "E-wallet",
+              "type": "ewallet",
+              "cur": "JPY",
+              "minBank": null,
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-11-01T09:00:00.000+09:00",
+              "by": "phn001"
+            }
+          ],
+          "events": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-83",
+              "k": "transfer",
+              "date": "2026-12-06",
+              "acct": "k7qzpa-m2xq7ab9zt-2",
+              "acct2": "k7qzpa-m2xq7ab9zt-5",
+              "a": 5000,
+              "told": "2026-12-06T13:00:00.000+09:00",
+              "at": "2026-12-06T13:00:00.000+09:00",
+              "by": "phn001"
+            }
+          ]
+        },
+        "theirs": {
+          "accounts": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-2",
+              "name": "Bank",
+              "type": "bank",
+              "cur": "JPY",
+              "minBank": null,
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-11-01T09:00:00.000+09:00",
+              "by": "phn001"
+            },
+            {
+              "id": "k7qzpa-m2xq7ab9zt-5",
+              "name": "E-wallet",
+              "type": "ewallet",
+              "cur": "JPY",
+              "minBank": null,
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-12-05T10:00:00.000+09:00",
+              "by": "dsk001",
+              "closed": "2026-12-05"
+            }
+          ],
+          "events": [
+            {
+              "id": "close:k7qzpa-m2xq7ab9zt-5",
+              "k": "transfer",
+              "date": "2026-12-05",
+              "acct": "k7qzpa-m2xq7ab9zt-5",
+              "acct2": "k7qzpa-m2xq7ab9zt-2",
+              "a": 8000,
+              "told": "2026-12-05T10:00:00.000+09:00",
+              "at": "2026-12-05T10:00:00.000+09:00",
+              "by": "dsk001"
+            }
+          ]
+        },
+        "now": "2026-12-07T09:00:00.000+09:00",
+        "by": "phn001",
+        "show": [
+          "accounts"
+        ]
+      },
+      "expected": {
+        "accounts": [
+          {
+            "id": "k7qzpa-m2xq7ab9zt-2",
+            "name": "Bank",
+            "type": "bank",
+            "cur": "JPY",
+            "minBank": null,
+            "told": "2026-11-01T09:00:00.000+09:00",
+            "at": "2026-11-01T09:00:00.000+09:00",
+            "by": "phn001"
+          },
+          {
+            "id": "k7qzpa-m2xq7ab9zt-5",
+            "name": "E-wallet",
+            "type": "ewallet",
+            "cur": "JPY",
+            "minBank": null,
+            "told": "2026-11-01T09:00:00.000+09:00",
+            "at": "2026-12-07T09:00:00.000+09:00",
+            "by": "phn001",
+            "closed": null
+          }
+        ],
+        "notices": [
+          {
+            "account": "k7qzpa-m2xq7ab9zt-5",
+            "text": "This account was closed, but something was written into it after its closing day, so it is open again. Check it.",
+            "closed": "2026-12-05"
+          }
+        ]
+      },
+      "why": "Sat 5 Dec 10:00 the desktop closes the e-wallet, moving its last 8,000 to the bank (`close:<e-wallet>`) and setting `closed`. The phone, offline, still shows it open. Sun 6 Dec 13:00 the phone logs a 5,000 top-up from the bank into the e-wallet (`acct2`). At the phone's merge on Mon 7 Dec 09:00 the account is closed but holds an event dated after its closing day, so it is open again: `closed` cleared with the phone's new `at` (09:00) and `by`, and a notice at the next open, on each device that merges it [AN6]. The desktop does the same at its merge. Nothing is deleted: the closing's transfer stays.",
+      "decisions": [
+        "AN6",
+        "T watch",
+        "P6"
+      ]
+    },
+    {
+      "id": "mg-276",
+      "question": "after_merge",
+      "title": "AN6 (grid Z x D, repay): an event written on the phone into an account the desktop closed meanwhile reopens it at the merge, with a notice",
+      "input": {
+        "mine": {
+          "accounts": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-2",
+              "name": "Bank",
+              "type": "bank",
+              "cur": "JPY",
+              "minBank": null,
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-11-01T09:00:00.000+09:00",
+              "by": "phn001"
+            },
+            {
+              "id": "k7qzpa-m2xq7ab9zt-7",
+              "name": "Card",
+              "type": "card",
+              "cur": "JPY",
+              "minBank": null,
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-11-01T09:00:00.000+09:00",
+              "by": "phn001"
+            }
+          ],
+          "events": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-84",
+              "k": "repay",
+              "date": "2026-12-06",
+              "acct": "k7qzpa-m2xq7ab9zt-2",
+              "acct2": "k7qzpa-m2xq7ab9zt-7",
+              "a": 4000,
+              "told": "2026-12-06T13:00:00.000+09:00",
+              "at": "2026-12-06T13:00:00.000+09:00",
+              "by": "phn001"
+            }
+          ]
+        },
+        "theirs": {
+          "accounts": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-2",
+              "name": "Bank",
+              "type": "bank",
+              "cur": "JPY",
+              "minBank": null,
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-11-01T09:00:00.000+09:00",
+              "by": "phn001"
+            },
+            {
+              "id": "k7qzpa-m2xq7ab9zt-7",
+              "name": "Card",
+              "type": "card",
+              "cur": "JPY",
+              "minBank": null,
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-12-05T10:00:00.000+09:00",
+              "by": "dsk001",
+              "closed": "2026-12-05"
+            }
+          ],
+          "events": [
+            {
+              "id": "close:k7qzpa-m2xq7ab9zt-7",
+              "k": "transfer",
+              "date": "2026-12-05",
+              "acct": "k7qzpa-m2xq7ab9zt-7",
+              "acct2": "k7qzpa-m2xq7ab9zt-2",
+              "a": 8000,
+              "told": "2026-12-05T10:00:00.000+09:00",
+              "at": "2026-12-05T10:00:00.000+09:00",
+              "by": "dsk001"
+            }
+          ]
+        },
+        "now": "2026-12-07T09:00:00.000+09:00",
+        "by": "phn001",
+        "show": [
+          "accounts"
+        ]
+      },
+      "expected": {
+        "accounts": [
+          {
+            "id": "k7qzpa-m2xq7ab9zt-2",
+            "name": "Bank",
+            "type": "bank",
+            "cur": "JPY",
+            "minBank": null,
+            "told": "2026-11-01T09:00:00.000+09:00",
+            "at": "2026-11-01T09:00:00.000+09:00",
+            "by": "phn001"
+          },
+          {
+            "id": "k7qzpa-m2xq7ab9zt-7",
+            "name": "Card",
+            "type": "card",
+            "cur": "JPY",
+            "minBank": null,
+            "told": "2026-11-01T09:00:00.000+09:00",
+            "at": "2026-12-07T09:00:00.000+09:00",
+            "by": "phn001",
+            "closed": null
+          }
+        ],
+        "notices": [
+          {
+            "account": "k7qzpa-m2xq7ab9zt-7",
+            "text": "This account was closed, but something was written into it after its closing day, so it is open again. Check it.",
+            "closed": "2026-12-05"
+          }
+        ]
+      },
+      "why": "Sat 5 Dec 10:00 the desktop closes the card (`closed`, its closing transfer `close:<card>`). The phone, offline, logs a 4,000 payment from the bank to the card dated Sun 6 Dec. At the phone's merge on Mon 7 Dec 09:00 the card is closed but holds an event dated after its closing day, so it is open again: `closed` cleared with the phone's new `at` (09:00) and `by`, and a notice at the next open, on each device that merges it [AN6]. The desktop does the same at its merge. Nothing is deleted: the closing's transfer stays.",
+      "decisions": [
+        "AN6",
+        "T watch",
+        "P6"
+      ]
+    },
+    {
+      "id": "mg-277",
+      "question": "after_merge",
+      "title": "AN6 (grid Z x D, spend, dated before the closing): an event dated on or before the closing day leaves the account closed",
+      "input": {
+        "mine": {
+          "accounts": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-2",
+              "name": "Bank",
+              "type": "bank",
+              "cur": "JPY",
+              "minBank": null,
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-11-01T09:00:00.000+09:00",
+              "by": "phn001"
+            },
+            {
+              "id": "k7qzpa-m2xq7ab9zt-5",
+              "name": "E-wallet",
+              "type": "ewallet",
+              "cur": "JPY",
+              "minBank": null,
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-11-01T09:00:00.000+09:00",
+              "by": "phn001"
+            }
+          ],
+          "events": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-85",
+              "k": "spend",
+              "date": "2026-12-04",
+              "acct": "k7qzpa-m2xq7ab9zt-5",
+              "a": 700,
+              "line": "free",
+              "told": "2026-12-06T13:00:00.000+09:00",
+              "at": "2026-12-06T13:00:00.000+09:00",
+              "by": "phn001"
+            }
+          ]
+        },
+        "theirs": {
+          "accounts": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-2",
+              "name": "Bank",
+              "type": "bank",
+              "cur": "JPY",
+              "minBank": null,
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-11-01T09:00:00.000+09:00",
+              "by": "phn001"
+            },
+            {
+              "id": "k7qzpa-m2xq7ab9zt-5",
+              "name": "E-wallet",
+              "type": "ewallet",
+              "cur": "JPY",
+              "minBank": null,
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-12-05T10:00:00.000+09:00",
+              "by": "dsk001",
+              "closed": "2026-12-05"
+            }
+          ],
+          "events": [
+            {
+              "id": "close:k7qzpa-m2xq7ab9zt-5",
+              "k": "transfer",
+              "date": "2026-12-05",
+              "acct": "k7qzpa-m2xq7ab9zt-5",
+              "acct2": "k7qzpa-m2xq7ab9zt-2",
+              "a": 8000,
+              "told": "2026-12-05T10:00:00.000+09:00",
+              "at": "2026-12-05T10:00:00.000+09:00",
+              "by": "dsk001"
+            }
+          ]
+        },
+        "now": "2026-12-07T09:00:00.000+09:00",
+        "by": "phn001",
+        "show": [
+          "accounts"
+        ]
+      },
+      "expected": {
+        "accounts": [
+          {
+            "id": "k7qzpa-m2xq7ab9zt-2",
+            "name": "Bank",
+            "type": "bank",
+            "cur": "JPY",
+            "minBank": null,
+            "told": "2026-11-01T09:00:00.000+09:00",
+            "at": "2026-11-01T09:00:00.000+09:00",
+            "by": "phn001"
+          },
+          {
+            "id": "k7qzpa-m2xq7ab9zt-5",
+            "name": "E-wallet",
+            "type": "ewallet",
+            "cur": "JPY",
+            "minBank": null,
+            "told": "2026-11-01T09:00:00.000+09:00",
+            "at": "2026-12-05T10:00:00.000+09:00",
+            "by": "dsk001",
+            "closed": "2026-12-05"
+          }
+        ],
+        "notices": []
+      },
+      "why": "Sat 5 Dec 10:00 the desktop closes the e-wallet, moving its last 8,000 to the bank (`close:<e-wallet>`) and setting `closed`. The phone, offline, still shows it open. Sun 6 Dec 13:00 the phone logs a 700 receipt from Fri 4 Dec, before the closing day. It belongs to the account's history before it closed (as closed_reopened cr-05), so the account stays closed and nothing is shown [AN6].",
+      "decisions": [
+        "AN6",
+        "T watch",
+        "P6"
+      ]
+    },
+    {
+      "id": "mg-278",
+      "question": "merge_both",
+      "title": "AN6 (grid people x D): a person renamed on both devices and a person added on each: the newer name wins, both new people stay, `told` the earliest",
+      "input": {
+        "mine": {
+          "people": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-3",
+              "name": "Jun S.",
+              "told": "2026-11-20T09:00:00.000+09:00",
+              "at": "2026-12-01T10:00:00.000+09:00",
+              "by": "phn001"
+            },
+            {
+              "id": "k7qzpa-m2xq7ab9zt-90",
+              "name": "Tess",
+              "told": "2026-12-01T10:05:00.000+09:00",
+              "at": "2026-12-01T10:05:00.000+09:00",
+              "by": "phn001"
+            }
+          ]
+        },
+        "theirs": {
+          "people": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-3",
+              "name": "Jun T.",
+              "told": "2026-11-20T09:00:00.000+09:00",
+              "at": "2026-12-01T11:00:00.000+09:00",
+              "by": "dsk001"
+            },
+            {
+              "id": "dsk001-w3e5r7t9y1-4",
+              "name": "Mika",
+              "told": "2026-12-01T11:05:00.000+09:00",
+              "at": "2026-12-01T11:05:00.000+09:00",
+              "by": "dsk001"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "mine_first": {
+          "people": [
+            {
+              "id": "dsk001-w3e5r7t9y1-4",
+              "name": "Mika",
+              "told": "2026-12-01T11:05:00.000+09:00",
+              "at": "2026-12-01T11:05:00.000+09:00",
+              "by": "dsk001"
+            },
+            {
+              "id": "k7qzpa-m2xq7ab9zt-3",
+              "name": "Jun T.",
+              "told": "2026-11-20T09:00:00.000+09:00",
+              "at": "2026-12-01T11:00:00.000+09:00",
+              "by": "dsk001"
+            },
+            {
+              "id": "k7qzpa-m2xq7ab9zt-90",
+              "name": "Tess",
+              "told": "2026-12-01T10:05:00.000+09:00",
+              "at": "2026-12-01T10:05:00.000+09:00",
+              "by": "phn001"
+            }
+          ]
+        },
+        "theirs_first": {
+          "people": [
+            {
+              "id": "dsk001-w3e5r7t9y1-4",
+              "name": "Mika",
+              "told": "2026-12-01T11:05:00.000+09:00",
+              "at": "2026-12-01T11:05:00.000+09:00",
+              "by": "dsk001"
+            },
+            {
+              "id": "k7qzpa-m2xq7ab9zt-3",
+              "name": "Jun T.",
+              "told": "2026-11-20T09:00:00.000+09:00",
+              "at": "2026-12-01T11:00:00.000+09:00",
+              "by": "dsk001"
+            },
+            {
+              "id": "k7qzpa-m2xq7ab9zt-90",
+              "name": "Tess",
+              "told": "2026-12-01T10:05:00.000+09:00",
+              "at": "2026-12-01T10:05:00.000+09:00",
+              "by": "phn001"
+            }
+          ]
+        }
+      },
+      "why": "`people` records carry `id`, `told`, `at` and `by` like every list record [AL7]. Tue 1 Dec the phone renames Jun to \"Jun S.\" at 10:00 and adds Tess; the desktop, not having seen it, renames him \"Jun T.\" at 11:00 and adds Mika. Union by id, the newer `at` per record: \"Jun T.\" (11:00), Tess and Mika both stay; `told` stays 20 Nov [H1, D4].",
+      "decisions": [
+        "AN6",
+        "AL7",
+        "D4"
+      ]
+    },
+    {
+      "id": "mg-279",
+      "question": "merge_both",
+      "title": "AN6 (grid people x U): a person removed with Undo on the phone after the desktop renamed them: the removal is newer and wins",
+      "input": {
+        "mine": {
+          "people": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-3",
+              "name": "Jun",
+              "told": "2026-11-20T09:00:00.000+09:00",
+              "at": "2026-12-01T10:00:00.000+09:00",
+              "by": "phn001",
+              "gone": "2026-12-01"
+            }
+          ]
+        },
+        "theirs": {
+          "people": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-3",
+              "name": "Jun T.",
+              "told": "2026-11-20T09:00:00.000+09:00",
+              "at": "2026-12-01T09:30:00.000+09:00",
+              "by": "dsk001"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "mine_first": {
+          "people": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-3",
+              "name": "Jun",
+              "told": "2026-11-20T09:00:00.000+09:00",
+              "at": "2026-12-01T10:00:00.000+09:00",
+              "by": "phn001",
+              "gone": "2026-12-01"
+            }
+          ]
+        },
+        "theirs_first": {
+          "people": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-3",
+              "name": "Jun",
+              "told": "2026-11-20T09:00:00.000+09:00",
+              "at": "2026-12-01T10:00:00.000+09:00",
+              "by": "phn001",
+              "gone": "2026-12-01"
+            }
+          ]
+        }
+      },
+      "why": "Jun was added by mistake. The desktop renames him at 09:30; at 10:00 the phone, not having seen it, takes the adding back with Undo: `gone` with a newer `at` [H6]. The removal is newer, so he stays removed on both devices, his record kept (nothing is deleted).",
+      "decisions": [
+        "AN6",
+        "H6"
+      ]
+    },
+    {
+      "id": "mg-280",
+      "question": "merge_both",
+      "title": "AN6 (grid people x U): Redo on the phone after the Undo reached the desktop: the Redo is newer and the person is back",
+      "input": {
+        "mine": {
+          "people": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-3",
+              "name": "Jun",
+              "told": "2026-11-20T09:00:00.000+09:00",
+              "at": "2026-12-01T11:00:00.000+09:00",
+              "by": "phn001"
+            }
+          ]
+        },
+        "theirs": {
+          "people": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-3",
+              "name": "Jun",
+              "told": "2026-11-20T09:00:00.000+09:00",
+              "at": "2026-12-01T10:00:00.000+09:00",
+              "by": "phn001",
+              "gone": "2026-12-01"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "mine_first": {
+          "people": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-3",
+              "name": "Jun",
+              "told": "2026-11-20T09:00:00.000+09:00",
+              "at": "2026-12-01T11:00:00.000+09:00",
+              "by": "phn001"
+            }
+          ]
+        },
+        "theirs_first": {
+          "people": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-3",
+              "name": "Jun",
+              "told": "2026-11-20T09:00:00.000+09:00",
+              "at": "2026-12-01T11:00:00.000+09:00",
+              "by": "phn001"
+            }
+          ]
+        }
+      },
+      "why": "As mg-279; the desktop has taken in the Undo (10:00). At 11:00 the person presses Redo on the phone: `gone` cleared with a newer `at` [H6]. The Redo is newer, so Jun is back on both devices.",
+      "decisions": [
+        "AN6",
+        "H6"
+      ]
+    },
+    {
+      "id": "mg-281",
+      "question": "restore",
+      "title": "AN6 (grid people x R): restoring an older backup removes a person added since and gives the backup's person the restore's stamp",
+      "input": {
+        "current": {
+          "people": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-3",
+              "name": "Jun T.",
+              "told": "2026-11-20T09:00:00.000+09:00",
+              "at": "2026-11-26T10:00:00.000+09:00",
+              "by": "dsk001"
+            },
+            {
+              "id": "dsk001-w3e5r7t9y1-4",
+              "name": "Mika",
+              "told": "2026-11-26T10:05:00.000+09:00",
+              "at": "2026-11-26T10:05:00.000+09:00",
+              "by": "dsk001"
+            }
+          ]
+        },
+        "backup": {
+          "people": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-3",
+              "name": "Jun",
+              "told": "2026-11-20T09:00:00.000+09:00",
+              "at": "2026-11-20T09:00:00.000+09:00",
+              "by": "phn001"
+            }
+          ]
+        },
+        "now": "2026-11-28T09:00:00.000+09:00",
+        "by": "phn001",
+        "lastSeen": "2026-11-26T10:05:00.000+09:00",
+        "show": [
+          "people"
+        ]
+      },
+      "expected": {
+        "people": [
+          {
+            "id": "dsk001-w3e5r7t9y1-4",
+            "name": "Mika",
+            "told": "2026-11-26T10:05:00.000+09:00",
+            "gone": "2026-11-28",
+            "at": "2026-11-28T09:00:00.000+09:00",
+            "by": "phn001"
+          },
+          {
+            "id": "k7qzpa-m2xq7ab9zt-3",
+            "name": "Jun",
+            "told": "2026-11-20T09:00:00.000+09:00",
+            "at": "2026-11-28T09:00:00.000+09:00",
+            "by": "phn001"
+          }
+        ]
+      },
+      "why": "The backup (Fri 20 Nov) holds Jun. On Thu 26 Nov the desktop renamed him \"Jun T.\" and added Mika. On Sat 28 Nov 09:00 the phone restores the backup with the cloud on: the stamp is the later of 09:00 and 26 Nov 10:05:00.001, so 09:00 [D4, AE5]. Jun takes the backup's name with the stamp; Mika, not in the backup, is removed by `gone` (28 Nov) with the same stamp, so the next sync keeps the restore. `told` stays each record's first [H1].",
+      "decisions": [
+        "AN6",
+        "AE5",
+        "D4"
+      ]
+    },
+    {
+      "id": "mg-282",
+      "question": "cat_key",
+      "title": "AN7: a shop key is the shop text trimmed, spaces collapsed, lowercased, with a `k:` prefix",
+      "input": {
+        "texts": [
+          "SEVEN ELEVEN",
+          "  Seven   Eleven ",
+          "seven eleven",
+          "Lawson\tStore",
+          "__proto__"
+        ]
+      },
+      "expected": [
+        "k:seven eleven",
+        "k:seven eleven",
+        "k:seven eleven",
+        "k:lawson store",
+        "k:__proto__"
+      ],
+      "why": "38.31's reader writes \"SEVEN ELEVEN\"; a person may type \"  Seven   Eleven \". Both are one shop: trimmed, every run of spaces (a tab too) one space, lowercased, then `k:` in front [AN7]. A shop read off a statement as \"__proto__\" becomes `k:__proto__`, which no plain-object merge drops.",
+      "decisions": [
+        "AN7"
+      ]
+    },
+    {
+      "id": "mg-283",
+      "question": "merge_both",
+      "title": "AN7: a reader's newer guess never replaces the person's lesson at a merge",
+      "input": {
+        "mine": {
+          "imports": {
+            "cats": {
+              "k:seven eleven": {
+                "v": "bill:food",
+                "at": "2026-11-24T09:00:00.000+09:00",
+                "by": "phn001",
+                "src": "person"
+              }
+            }
+          }
+        },
+        "theirs": {
+          "imports": {
+            "cats": {
+              "k:seven eleven": {
+                "v": "bill:fun",
+                "at": "2026-12-01T10:00:00.000+09:00",
+                "by": "dsk001",
+                "src": "reader"
+              }
+            }
+          }
+        }
+      },
+      "expected": {
+        "mine_first": {
+          "imports": {
+            "cats": {
+              "k:seven eleven": {
+                "v": "bill:food",
+                "at": "2026-11-24T09:00:00.000+09:00",
+                "by": "phn001",
+                "src": "person"
+              }
+            }
+          }
+        },
+        "theirs_first": {
+          "imports": {
+            "cats": {
+              "k:seven eleven": {
+                "v": "bill:food",
+                "at": "2026-11-24T09:00:00.000+09:00",
+                "by": "phn001",
+                "src": "person"
+              }
+            }
+          }
+        }
+      },
+      "why": "On 24 Nov the person filed \"seven eleven\" under food on the phone (`src: 'person'`). On 1 Dec 10:00 the desktop read a statement and its reader, not having seen the lesson, guessed fun (`src: 'reader'`). The reader's value is newer, but a reader's guess never replaces a person's lesson, whatever the `at` [AN7]: food on both devices.",
+      "decisions": [
+        "AN7",
+        "AL4"
+      ]
+    },
+    {
+      "id": "mg-284",
+      "question": "merge_both",
+      "title": "AN7: a shop read as \"__proto__\" keeps its lesson through a merge",
+      "input": {
+        "mine": {
+          "imports": {
+            "cats": {
+              "k:seven eleven": {
+                "v": "bill:food",
+                "at": "2026-11-24T09:00:00.000+09:00",
+                "by": "phn001",
+                "src": "person"
+              }
+            }
+          }
+        },
+        "theirs": {
+          "imports": {
+            "cats": {
+              "k:__proto__": {
+                "v": "bill:other",
+                "at": "2026-12-01T09:00:00.000+09:00",
+                "by": "dsk001",
+                "src": "reader"
+              }
+            }
+          }
+        }
+      },
+      "expected": {
+        "mine_first": {
+          "imports": {
+            "cats": {
+              "k:__proto__": {
+                "v": "bill:other",
+                "at": "2026-12-01T09:00:00.000+09:00",
+                "by": "dsk001",
+                "src": "reader"
+              },
+              "k:seven eleven": {
+                "v": "bill:food",
+                "at": "2026-11-24T09:00:00.000+09:00",
+                "by": "phn001",
+                "src": "person"
+              }
+            }
+          }
+        },
+        "theirs_first": {
+          "imports": {
+            "cats": {
+              "k:__proto__": {
+                "v": "bill:other",
+                "at": "2026-12-01T09:00:00.000+09:00",
+                "by": "dsk001",
+                "src": "reader"
+              },
+              "k:seven eleven": {
+                "v": "bill:food",
+                "at": "2026-11-24T09:00:00.000+09:00",
+                "by": "phn001",
+                "src": "person"
+              }
+            }
+          }
+        }
+      },
+      "why": "The desktop's reader met a line whose shop text is \"__proto__\" and guessed other. Its key is `k:__proto__` [AN7], an ordinary key, so the merge keeps it beside the phone's \"seven eleven\" on both devices; without the prefix a plain-object merge would drop it (confirm_review_7 WATCH).",
+      "decisions": [
+        "AN7"
+      ]
+    },
+    {
+      "id": "mg-285",
+      "question": "cat_learn",
+      "title": "AN7: the reader's guesses and the person's lessons written in turn: a guess never writes over a lesson, a lesson always writes over a guess",
+      "input": {
+        "cats": {
+          "k:seven eleven": {
+            "v": "bill:food",
+            "at": "2026-11-24T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "person"
+          },
+          "k:lawson": {
+            "v": "bill:food",
+            "at": "2026-11-25T09:00:00.000+09:00",
+            "by": "dsk001",
+            "src": "reader"
+          }
+        },
+        "writes": [
+          {
+            "shop": "Seven Eleven",
+            "v": "bill:fun",
+            "src": "reader",
+            "at": "2026-12-01T10:00:00.000+09:00",
+            "by": "phn001"
+          },
+          {
+            "shop": "LAWSON",
+            "v": "bill:fun",
+            "src": "person",
+            "at": "2026-12-01T10:01:00.000+09:00",
+            "by": "phn001"
+          },
+          {
+            "shop": "Family Mart",
+            "v": "bill:food",
+            "src": "reader",
+            "at": "2026-12-01T10:02:00.000+09:00",
+            "by": "phn001"
+          }
+        ]
+      },
+      "expected": {
+        "k:seven eleven": {
+          "v": "bill:food",
+          "at": "2026-11-24T09:00:00.000+09:00",
+          "by": "phn001",
+          "src": "person"
+        },
+        "k:lawson": {
+          "v": "bill:fun",
+          "at": "2026-12-01T10:01:00.000+09:00",
+          "by": "phn001",
+          "src": "person"
+        },
+        "k:family mart": {
+          "v": "bill:food",
+          "at": "2026-12-01T10:02:00.000+09:00",
+          "by": "phn001",
+          "src": "reader"
+        }
+      },
+      "why": "The person taught \"seven eleven\" food; the reader guessed food for \"lawson\". On 1 Dec the reader guesses fun for \"Seven Eleven\": a person's lesson is there, so nothing is written [AN7]. The person then files \"LAWSON\" under fun: a lesson replaces the guess, `src: 'person'`. The reader's first guess for \"Family Mart\" is written as a guess. Keys in the AN7 form.",
+      "decisions": [
+        "AN7",
+        "AL4"
+      ]
+    },
+    {
+      "id": "mg-286",
+      "question": "cat_learn",
+      "title": "AN7: the map is never trimmed: a 401st shop is added and none is removed",
+      "input": {
+        "cats": {
+          "k:shop 001": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 002": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 003": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 004": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 005": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 006": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 007": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 008": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 009": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 010": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 011": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 012": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 013": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 014": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 015": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 016": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 017": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 018": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 019": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 020": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 021": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 022": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 023": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 024": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 025": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 026": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 027": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 028": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 029": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 030": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 031": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 032": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 033": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 034": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 035": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 036": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 037": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 038": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 039": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 040": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 041": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 042": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 043": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 044": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 045": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 046": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 047": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 048": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 049": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 050": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 051": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 052": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 053": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 054": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 055": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 056": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 057": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 058": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 059": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 060": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 061": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 062": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 063": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 064": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 065": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 066": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 067": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 068": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 069": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 070": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 071": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 072": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 073": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 074": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 075": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 076": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 077": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 078": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 079": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 080": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 081": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 082": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 083": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 084": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 085": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 086": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 087": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 088": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 089": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 090": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 091": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 092": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 093": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 094": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 095": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 096": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 097": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 098": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 099": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 100": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 101": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 102": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 103": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 104": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 105": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 106": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 107": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 108": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 109": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 110": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 111": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 112": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 113": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 114": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 115": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 116": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 117": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 118": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 119": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 120": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 121": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 122": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 123": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 124": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 125": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 126": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 127": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 128": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 129": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 130": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 131": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 132": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 133": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 134": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 135": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 136": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 137": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 138": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 139": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 140": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 141": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 142": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 143": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 144": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 145": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 146": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 147": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 148": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 149": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 150": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 151": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 152": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 153": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 154": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 155": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 156": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 157": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 158": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 159": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 160": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 161": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 162": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 163": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 164": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 165": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 166": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 167": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 168": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 169": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 170": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 171": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 172": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 173": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 174": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 175": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 176": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 177": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 178": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 179": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 180": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 181": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 182": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 183": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 184": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 185": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 186": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 187": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 188": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 189": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 190": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 191": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 192": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 193": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 194": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 195": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 196": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 197": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 198": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 199": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 200": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 201": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 202": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 203": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 204": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 205": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 206": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 207": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 208": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 209": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 210": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 211": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 212": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 213": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 214": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 215": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 216": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 217": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 218": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 219": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 220": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 221": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 222": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 223": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 224": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 225": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 226": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 227": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 228": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 229": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 230": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 231": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 232": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 233": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 234": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 235": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 236": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 237": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 238": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 239": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 240": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 241": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 242": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 243": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 244": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 245": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 246": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 247": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 248": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 249": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 250": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 251": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 252": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 253": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 254": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 255": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 256": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 257": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 258": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 259": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 260": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 261": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 262": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 263": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 264": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 265": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 266": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 267": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 268": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 269": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 270": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 271": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 272": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 273": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 274": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 275": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 276": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 277": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 278": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 279": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 280": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 281": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 282": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 283": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 284": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 285": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 286": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 287": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 288": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 289": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 290": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 291": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 292": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 293": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 294": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 295": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 296": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 297": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 298": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 299": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 300": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 301": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 302": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 303": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 304": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 305": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 306": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 307": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 308": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 309": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 310": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 311": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 312": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 313": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 314": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 315": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 316": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 317": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 318": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 319": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 320": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 321": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 322": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 323": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 324": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 325": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 326": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 327": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 328": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 329": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 330": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 331": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 332": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 333": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 334": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 335": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 336": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 337": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 338": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 339": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 340": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 341": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 342": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 343": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 344": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 345": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 346": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 347": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 348": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 349": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 350": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 351": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 352": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 353": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 354": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 355": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 356": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 357": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 358": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 359": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 360": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 361": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 362": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 363": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 364": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 365": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 366": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 367": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 368": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 369": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 370": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 371": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 372": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 373": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 374": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 375": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 376": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 377": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 378": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 379": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 380": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 381": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 382": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 383": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 384": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 385": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 386": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 387": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 388": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 389": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 390": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 391": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 392": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 393": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 394": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 395": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 396": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 397": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 398": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 399": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          },
+          "k:shop 400": {
+            "v": "bill:food",
+            "at": "2026-11-20T09:00:00.000+09:00",
+            "by": "phn001",
+            "src": "reader"
+          }
+        },
+        "writes": [
+          {
+            "shop": "Ministop",
+            "v": "bill:food",
+            "src": "reader",
+            "at": "2026-12-01T10:00:00.000+09:00",
+            "by": "phn001"
+          }
+        ],
+        "count": true,
+        "check": ["k:ministop", "k:shop 001", "k:shop 400"]
+      },
+      "expected": {
+        "count": 401,
+        "has": [
+          "k:ministop",
+          "k:shop 001",
+          "k:shop 400"
+        ]
+      },
+      "why": "38.31 caps `ui.cats` at 400 by deleting the oldest keys. Under \"nothing is deleted\" a deleted key comes back from the other device, so v3 never trims the map [AN7]: with 400 shops, a 401st is added and the first, \"shop 001\", is still there (`check` names the keys looked for).",
+      "decisions": [
+        "AN7"
+      ]
     }
   ],
-  "open": []
+  "open": [
+    {
+      "id": "mg-q-an2",
+      "question": "AN2 moves the change to the day after an orphaned moved key (mg-271): the bonus is then keyed on 25 Dec (450,000, the other device's edit) and on 10 Jan (400,000, the phone's move), so two bonuses count. Should the newer edit of the orphaned key instead travel to where the move took it (a pick, AN5)?",
+      "ref_does": "Moves the change to 26 Dec and leaves both keys live (both counted)."
+    },
+    {
+      "id": "mg-q-an6",
+      "question": "AN6 reopens an account at a merge for an event dated after its closing day. An event dated on the closing day itself (a lunch at noon, the closing at 10:00) is read as before the closing and does not reopen it. Is that right?",
+      "ref_does": "Only an event dated after the closing day reopens it (as the look ahead's money-in reopening, `e.day > closed`)."
+    }
+  ]
 }

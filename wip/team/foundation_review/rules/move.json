@@ -2517,13 +2517,14 @@
         ],
         "imports": {
           "cats": {
-            "SEVEN ELEVEN": "bill:food"
+            "k:seven eleven": "bill:food"
           }
         }
       },
-      "why": "ui.accts are accounts with their names and types, confirmed at the first check-in; ui.cats is `imports.cats` [11.1].",
+      "why": "ui.accts are accounts with their names and types, confirmed at the first check-in; ui.cats is `imports.cats` [11.1]. [AN7] Each shop key is in the shop-key form: the 38.31 key trimmed, spaces collapsed, lowercased, with `k:` in front (\"SEVEN ELEVEN\" is `k:seven eleven`).",
       "decisions": [
-        "11.1"
+        "11.1",
+        "AN7"
       ]
     },
     {
@@ -15994,8 +15995,9 @@
         },
         "imports": {
           "cats": {
-            "SEVEN ELEVEN": {
+            "k:seven eleven": {
               "v": "bill:food",
+              "src": "person",
               "at": "2026-11-23T20:00:00.000+09:00",
               "by": "phn001"
             }
@@ -16020,7 +16022,7 @@
           }
         }
       },
-      "why": "The copy of mv-123 (last saved Mon 23 Nov 20:00), with a typed minimum of 30,000 (ui.minAuto 20,000 differs, so the person typed it [11.1, AD1]), a ceiling of 120,000 a month, aims of 10% play, a taught shop and the screen answer `sb`. The phone moves it on Tue 24 Nov and the desktop takes the cloud copy [AB1]. Every record of separately edited fields is stored as field values `{ v, at, by }`, each stamped with the copy's last save and phn001 [AL1, AB1]: `home.main` holds the moved bank and its 30,000 as one value [AL3]; each shared `ui` key (`done`, `sb`) its value; each `imports.cats` shop its category [AL4]; `plan.limits.ceiling` 120,000 yen a month with `per` [AL5] and `aims` the shares. The yen entry of `home.curs` is an entry with its own `at` and `by` [AJ3]. No separate `at`, `by` or `held` maps remain [AL1].",
+      "why": "The copy of mv-123 (last saved Mon 23 Nov 20:00), with a typed minimum of 30,000 (ui.minAuto 20,000 differs, so the person typed it [11.1, AD1]), a ceiling of 120,000 a month, aims of 10% play, a taught shop and the screen answer `sb`. The phone moves it on Tue 24 Nov and the desktop takes the cloud copy [AB1]. Every record of separately edited fields is stored as field values `{ v, at, by }`, each stamped with the copy's last save and phn001 [AL1, AB1]: `home.main` holds the moved bank and its 30,000 as one value [AL3]; each shared `ui` key (`done`, `sb`) its value; each `imports.cats` shop its category [AL4]; `plan.limits.ceiling` 120,000 yen a month with `per` [AL5] and `aims` the shares. The yen entry of `home.curs` is an entry with its own `at` and `by` [AJ3]. No separate `at`, `by` or `held` maps remain [AL1]. [AN7] The shop key is lowercased at the move with its `k:` prefix, and the value carries `src: 'person'`: 38.31 keeps the reader's guesses and the person's corrections in one map and cannot tell them apart, so the move takes the safe side, and a reader's guess never writes over it.",
       "decisions": [
         "AL1",
         "AL3",
@@ -16028,7 +16030,8 @@
         "AL5",
         "AB1",
         "AD1",
-        "11.1"
+        "11.1",
+        "AN7"
       ]
     },
     {
@@ -16130,8 +16133,9 @@
             "record": "imports.cats",
             "at": "2026-11-25T08:05:00.000+09:00",
             "set": {
-              "LAWSON": "bill:food"
-            }
+              "k:lawson": "bill:food"
+            },
+            "src": "person"
           },
           {
             "record": "plan.limits",
@@ -16253,13 +16257,15 @@
         },
         "imports": {
           "cats": {
-            "SEVEN ELEVEN": {
+            "k:seven eleven": {
               "v": "bill:food",
+              "src": "person",
               "at": "2026-11-23T20:00:00.000+09:00",
               "by": "phn001"
             },
-            "LAWSON": {
+            "k:lawson": {
               "v": "bill:food",
+              "src": "person",
               "at": "2026-11-25T08:05:00.000+09:00",
               "by": "phn001"
             }
@@ -16284,12 +16290,13 @@
           }
         }
       },
-      "why": "The copy of mv-125 (last saved Mon 23 Nov 20:00). The phone moves it on Tue 24 Nov: every field value carries 23 Nov 20:00 and phn001 [AB1, AL1]. On Wed 25 Nov it adds the screen answer `sb` \"fun\" (08:00), files \"LAWSON\" under food (08:05) and lowers the ceiling to 100,000 a month (08:10). On Tue 1 Dec the desktop moves the same 38.31 copy, finds the phone's moved copy in the cloud and takes it [AB1]: `ui`, `imports` and `plan.limits` are the cloud's, so all three edits stay.",
+      "why": "The copy of mv-125 (last saved Mon 23 Nov 20:00). The phone moves it on Tue 24 Nov: every field value carries 23 Nov 20:00 and phn001 [AB1, AL1]. On Wed 25 Nov it adds the screen answer `sb` \"fun\" (08:00), files \"LAWSON\" under food (08:05) and lowers the ceiling to 100,000 a month (08:10). On Tue 1 Dec the desktop moves the same 38.31 copy, finds the phone's moved copy in the cloud and takes it [AB1]: `ui`, `imports` and `plan.limits` are the cloud's, so all three edits stay. [AN7] Shop keys in the shop-key form (`k:seven eleven`, `k:lawson`), each value `src: 'person'` (the moved one: 38.31 cannot tell a lesson from a guess, the safe side; the phone's: typed by the person).",
       "decisions": [
         "AL1",
         "AL4",
         "AL5",
-        "AB1"
+        "AB1",
+        "AN7"
       ]
     },
     {
@@ -16391,8 +16398,9 @@
             "record": "imports.cats",
             "at": "2026-11-25T08:05:00.000+09:00",
             "set": {
-              "LAWSON": "bill:food"
-            }
+              "k:lawson": "bill:food"
+            },
+            "src": "person"
           },
           {
             "record": "plan.limits",
@@ -16514,13 +16522,15 @@
         },
         "imports": {
           "cats": {
-            "SEVEN ELEVEN": {
+            "k:seven eleven": {
               "v": "bill:food",
+              "src": "person",
               "at": "2026-11-23T20:00:00.000+09:00",
               "by": "phn001"
             },
-            "LAWSON": {
+            "k:lawson": {
               "v": "bill:food",
+              "src": "person",
               "at": "2026-11-25T08:05:00.000+09:00",
               "by": "phn001"
             }
@@ -16545,14 +16555,15 @@
           }
         }
       },
-      "why": "As mv-126, but the desktop moves on its own and the copies meet in the merge. Its moved field values carry the copy's last save, 23 Nov 20:00, by dsk001 [AB1, AA10]. Field by field [AL1]: `sb`, \"LAWSON\" and the ceiling are the phone's 25 Nov edits, newer; `done`, \"SEVEN ELEVEN\" and the aims tie on 23 Nov 20:00 with the same value, and the larger `by`, phn001, is kept [L merge q1]. So the result is mv-126's.",
+      "why": "As mv-126, but the desktop moves on its own and the copies meet in the merge. Its moved field values carry the copy's last save, 23 Nov 20:00, by dsk001 [AB1, AA10]. Field by field [AL1]: `sb`, \"LAWSON\" and the ceiling are the phone's 25 Nov edits, newer; `done`, \"SEVEN ELEVEN\" and the aims tie on 23 Nov 20:00 with the same value, and the larger `by`, phn001, is kept [L merge q1]. So the result is mv-126's. [AN7] Shop keys in the shop-key form, each value `src: 'person'`, as mv-126.",
       "decisions": [
         "AL1",
         "AL4",
         "AL5",
         "AB1",
         "AA10",
-        "L merge q1"
+        "L merge q1",
+        "AN7"
       ]
     }
   ],

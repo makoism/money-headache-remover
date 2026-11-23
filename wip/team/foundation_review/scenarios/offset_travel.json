@@ -1,7 +1,7 @@
 {
   "life": "offset_travel",
-  "title": "A phone whose offset changes: set up in Tokyo, used in Honolulu; dates stay in the writer's own calendar (AL watch), and a spend dated the day before a check is judged by `told` (AM3)",
-  "story": "A couple, one shared copy. Set up Thu 10 Dec 2026 in Tokyo, pay day: the bank holds 400,000, of which Free to spend 60,000 (typed). Pay of 300,000 on the 10th (moved earlier). Tess's phone was set up in Tokyo and flies with her to Honolulu (-10:00, 19 hours behind Tokyo). Mon 14 Dec: Jun, in Tokyo, checks in at 10:00 Tokyo time (01:00 UTC): 380,000. Tess logs two spends from the bank on Free to spend in Honolulu: 2,000 at 16:00 on Sun 13 Dec Honolulu time (02:00 UTC 14 Dec, 11:00 Tokyo, an hour after the check), dated 13 Dec in her own calendar; and 3,000 at 08:00 on Mon 14 Dec Honolulu time (18:00 UTC 14 Dec, 03:00 Tokyo on 15 Dec), dated 14 Dec. Tess's phone writes each time in its own offset, which changed with the flight; every time is compared as a moment and each date is in her own calendar [AL watch]. A check holds the events dated more than a day before its day; those dated on its day or the day before are judged by `told` [AM3]. Every amount is made up.",
+  "title": "A phone whose offset changes: set up in Tokyo, used in Honolulu; dates stay in the writer's own calendar (AL watch), and a spend whose date had not ended at the check's moment is judged by `told` (AN4)",
+  "story": "A couple, one shared copy. Set up Thu 10 Dec 2026 in Tokyo, pay day: the bank holds 400,000, of which Free to spend 60,000 (typed). Pay of 300,000 on the 10th (moved earlier). Tess's phone was set up in Tokyo and flies with her to Honolulu (-10:00, 19 hours behind Tokyo). Mon 14 Dec: Jun, in Tokyo, checks in at 10:00 Tokyo time (01:00 UTC): 380,000. Tess logs two spends from the bank on Free to spend in Honolulu: 2,000 at 16:00 on Sun 13 Dec Honolulu time (02:00 UTC 14 Dec, 11:00 Tokyo, an hour after the check), dated 13 Dec in her own calendar; and 3,000 at 08:00 on Mon 14 Dec Honolulu time (18:00 UTC 14 Dec, 03:00 Tokyo on 15 Dec), dated 14 Dec. Tess's phone writes each time in its own offset, which changed with the flight; every time is compared as a moment and each date is in her own calendar [AL watch]. A check holds an event when the end of the event's date, in its writer's offset (taken from its `told`), is at or before the check's moment; otherwise `told` decides (H1) [AN4]. Tess's Sunday 13 Dec ended at 00:00 on 14 Dec Honolulu time, 10:00 UTC, nine hours after Jun's check (01:00 UTC), so that spend was not yet over when the bank showed 380,000. Every amount is made up.",
   "currency": "JPY",
   "window": {
     "from": "2026-12-10",
@@ -60,7 +60,7 @@
       "account": "b",
       "amount": 2000,
       "line": "free",
-      "note": "Tess, Honolulu: 11:00 on 14 Dec in Tokyo, after the check; dated 13 Dec in her calendar, the day before the check's day, so judged by told [AM3]"
+      "note": "Tess, Honolulu: 11:00 on 14 Dec in Tokyo, after the check; her 13 Dec ended at 10:00 UTC 14 Dec, after the check's 01:00 UTC, so `told` decides: after it [AN4]"
     },
     {
       "id": "c1",
@@ -89,8 +89,8 @@
       "question": "bank_today",
       "account": "b",
       "expected": 375000,
-      "why": "380,000 (Jun's check, Mon 14 Dec 10:00 Tokyo, 01:00 UTC) - 2,000 (Tess's spend dated Sun 13 Dec, the day before the check's day, told 02:00 UTC: after the check, taken off [AM3]) - 3,000 (Tess's spend dated 14 Dec, the check's day, told 18:00 UTC: after the check, taken off [H1]) = 375,000",
-      "note": "Before AM3 the 2,000 dated 13 Dec in Tess's own calendar was read as inside the check (dated before its day) though it was told an hour after it, and the bank figure was 377,000, 2,000 high until the next check (AL's third question). AM3: a spend dated the day before a check is judged by `told`, so the figure matches the 375,000 the bank really holds."
+      "why": "380,000 (Jun's check, Mon 14 Dec 10:00 Tokyo, 01:00 UTC) - 2,000 (Tess's spend dated Sun 13 Dec in Honolulu: that day ends at 10:00 UTC on 14 Dec, after the check, so `told` decides; told 02:00 UTC, after the check, taken off [AN4]) - 3,000 (dated 14 Dec in Honolulu, ending 10:00 UTC on 15 Dec; told 18:00 UTC, after the check, taken off [AN4, H1]) = 375,000",
+      "note": "Before AM3 the 2,000 dated 13 Dec in Tess's own calendar was read as inside the check (dated before its day) though it was told an hour after it: 377,000, 2,000 high until the next check (confirm_review_7). AN4 judges it by when its date ends in its writer's offset: Honolulu's 13 Dec had not ended at the check, so `told` decides and the figure matches the 375,000 the bank really holds."
     },
     {
       "id": "ot-02",
@@ -99,7 +99,7 @@
       "account": "b",
       "on": "2026-12-14",
       "expected": 20000,
-      "why": "400,000 (opening, Thu 10 Dec; the pay of 10 Dec is in it) - 380,000 (check, Mon 14 Dec) = 20,000 (the 2,000 dated 13 Dec was told after the check, so it is not inside it and does not shrink the filler [AM3])",
+      "why": "400,000 (opening, Thu 10 Dec; the pay of 10 Dec is in it) - 380,000 (check, Mon 14 Dec) = 20,000 (the 2,000 dated 13 Dec in Honolulu was neither over nor told by the check, so it is not inside it and does not shrink the filler [AN4])",
       "note": "Before AM3: 18,000 (the 2,000 read as inside the check)."
     },
     {
@@ -108,7 +108,7 @@
       "question": "headline",
       "expected": 35000,
       "why": "60,000 (Free to spend at the opening) - 20,000 (the filler of Mon 14 Dec) - 2,000 (13 Dec) - 3,000 (14 Dec) = 35,000",
-      "note": "Each spend is counted once, whatever its offset; the 2,000 is now both off the bank figure (ot-01) and outside the filler (ot-02). Before AM3: 37,000."
+      "note": "Each spend is counted once, whatever its offset; the 2,000 is both off the bank figure (ot-01) and outside the filler (ot-02) [AN4]. Before AM3: 37,000, 2,000 too high."
     }
   ]
 }

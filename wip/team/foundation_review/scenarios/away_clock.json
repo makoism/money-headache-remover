@@ -1,7 +1,7 @@
 {
   "life": "away_clock",
   "title": "Used again after three weeks away: `told` on the device's own clock, so a spend typed after a check that day is counted (AH1; confirm_review_4 g1)",
-  "story": "Ken (made up) uses a phone and a desktop. The bank opened Sun 1 Nov 2026 with 320,000, typed on the phone at 20:00; the phone is then not opened until Sun 22 Nov. Pay of 250,000 on the 25th (moved earlier) starts the period. On 21 Nov he spent 3,000 and on 22 Nov he lunches for 8,000. On Sun 22 Nov at 09:00 he checks the bank on the desktop: 300,000. At 12:00 he opens the phone and logs both spends. Each `told` is the phone's own clock, 22 Nov 12:00 (AH1); before AH1 both were stamped 1 Nov 21:00:00.001 and the 8,000 read as already inside the 09:00 check. A check holds the events dated more than a day before its day; the 3,000, dated the day before and told after the check, comes after it too (AM3). Times carry the device's offset, +09:00. Every amount is made up.",
+  "story": "Ken (made up) uses a phone and a desktop. The bank opened Sun 1 Nov 2026 with 320,000, typed on the phone at 20:00; the phone is then not opened until Sun 22 Nov. Pay of 250,000 on the 25th (moved earlier) starts the period. On 21 Nov he spent 3,000 and on 22 Nov he lunches for 8,000. On Sun 22 Nov at 09:00 he checks the bank on the desktop: 300,000. At 12:00 he opens the phone and logs both spends. Each `told` is the phone's own clock, 22 Nov 12:00 (AH1); before AH1 both were stamped 1 Nov 21:00:00.001 and the 8,000 read as already inside the 09:00 check. A check holds an event when the end of the event's date, in its writer's offset (taken from its `told`), is at or before the check's moment; otherwise `told` decides (H1) [AN4]. The 3,000 of 21 Nov ended at 00:00 on 22 Nov (+09:00), before the 09:00 check, so it is inside it although it was logged later; the lunch of 22 Nov had not ended, so `told` decides and it comes after the check. Times carry the device's offset, +09:00. Every amount is made up.",
   "currency": "JPY",
   "window": {
     "from": "2026-11-01",
@@ -52,7 +52,7 @@
       "kind": "spend",
       "account": "bank",
       "amount": 3000,
-      "note": "logged on the phone after three weeks away; dated the day before the check, so judged by told [AM3]"
+      "note": "logged on the phone after three weeks away; 21 Nov ended before the 09:00 check on 22 Nov, so inside it [AN4]"
     },
     {
       "id": "ac1",
@@ -79,27 +79,27 @@
       "date": "2026-11-22",
       "question": "bank_today",
       "account": "bank",
-      "expected": 289000,
-      "why": "300,000 (the desktop check at 09:00) - 3,000 (21 Nov, the day before the check's day, told at 12:00 on the phone's own clock: after the check [AM3]) - 8,000 (lunch, told at 12:00, after the check) = 289,000",
-      "note": "AM3: a check holds the events dated more than a day before its day; the 3,000 is dated the day before, so `told` decides and it comes after the 09:00 check. Before AM3 it was read as inside the 300,000 whatever its `told`: 292,000. Before AH1 the lunch's `told` was 1 Nov 21:00:00.001, before the check: 300,000, and the 8,000 was never counted."
+      "expected": 292000,
+      "why": "300,000 (the desktop check at 09:00) - 8,000 (lunch, 22 Nov, told at 12:00 on the phone's own clock, after the check [AH1, H1]) = 292,000",
+      "note": "The 3,000 of 21 Nov is inside the 300,000: its date ended at 00:00 on 22 Nov, before the check [AN4]. Under AM3 it was judged by `told` and taken off again: 289,000. Before AH1 the lunch's `told` was 1 Nov 21:00:00.001, before the check: 300,000, and the 8,000 was never counted."
     },
     {
       "id": "ac-02",
       "date": "2026-11-22",
       "question": "safe_to_spend",
       "account": "bank",
-      "expected": 289000,
-      "why": "289,000 (Bank today) - 0 (nothing due before the 25 Nov pay) = 289,000",
-      "note": "Before AM3: 292,000 (the 3,000 read as inside the check). Before AH1: 300,000, 8,000 too high (confirm_review_4 item 1)."
+      "expected": 292000,
+      "why": "292,000 (Bank today) - 0 (nothing due before the 25 Nov pay) = 292,000",
+      "note": "Under AM3: 289,000 (the 3,000 counted twice). Before AH1: 300,000, 8,000 too high (confirm_review_4 item 1)."
     },
     {
       "id": "ac-03",
       "date": "2026-11-22",
       "question": "not_explained",
       "account": "bank",
-      "expected": 20000,
-      "why": "320,000 (opening) - 300,000 (the check) = 20,000",
-      "note": "20,000 more went out than the app knows of by the 09:00 check. The 3,000 of 21 Nov and the lunch, both told after the check, are not part of it [AM3]; before AM3 the 3,000 was: 17,000."
+      "expected": 17000,
+      "why": "320,000 (opening) - 3,000 (21 Nov, inside the check [AN4]) - 300,000 (the check) = 17,000",
+      "note": "17,000 more went out than the app knows of by the 09:00 check. The lunch, told after the check, is not part of it. Under AM3: 20,000."
     }
   ]
 }

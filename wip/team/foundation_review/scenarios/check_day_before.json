@@ -1,7 +1,7 @@
 {
   "life": "check_day_before",
-  "title": "Receipts logged after a check: one dated the day before is judged by `told`, one dated two days before stays inside the check (AM3, H1)",
-  "story": "Set up Thu 10 Dec 2026 in Tokyo, pay day: the bank holds 400,000, of which Free to spend 60,000 (typed). Pay of 300,000 on the 10th (moved earlier). Mon 14 Dec: Jun checks in at 10:00: 380,000. At 12:00 the same day he finds two receipts in his wallet and logs both from the bank on Free to spend: 4,000 for Sun 13 Dec and 6,000 for Sat 12 Dec. A check holds the events dated more than a day before its day; those dated on its day or the day before are judged by `told` [AM3]. So the 4,000 (the day before, told after the check) comes after it and is taken off the figure, while the 6,000 (two days before) is inside the check, whatever its `told`, and shrinks the filler. One phone, one zone. Every amount is made up.",
+  "title": "Receipts logged after a check: yesterday's and the day before's stay inside the check, because their dates ended before it (AN4, H1)",
+  "story": "Set up Thu 10 Dec 2026 in Tokyo, pay day: the bank holds 400,000, of which Free to spend 60,000 (typed). Pay of 300,000 on the 10th (moved earlier). Mon 14 Dec: Jun checks in at 10:00: 380,000. At 12:00 the same day he finds two receipts in his wallet and logs both from the bank on Free to spend: 4,000 for Sun 13 Dec and 6,000 for Sat 12 Dec. A check holds an event when the end of the event's date, in its writer's offset (taken from its `told`), is at or before the check's moment; otherwise `told` decides (H1) [AN4]. Sunday ended at 00:00 on Monday in Tokyo (his phone's offset, +09:00, from each receipt's `told`), before the 10:00 check, so both receipts were already spent when the bank showed 380,000: both are inside the check, whatever their `told`, and shrink its filler. Before AN4 (under AM3) the receipt from Sunday was judged by `told` and taken off the bank figure a second time. One phone, one zone. Every amount is made up.",
   "currency": "JPY",
   "window": {
     "from": "2026-12-10",
@@ -60,7 +60,7 @@
       "account": "b",
       "amount": 6000,
       "line": "free",
-      "note": "Jun: a receipt from Saturday, logged after the check; two days before its day, so inside it [AM3]"
+      "note": "Jun: a receipt from Saturday, logged after the check; Saturday ended before the check, so inside it [AN4]"
     },
     {
       "id": "s2",
@@ -70,7 +70,7 @@
       "account": "b",
       "amount": 4000,
       "line": "free",
-      "note": "Jun: a receipt from Sunday, logged after the check; the day before its day, judged by told [AM3]"
+      "note": "Jun: a receipt from Sunday, logged after the check; Sunday ended at 00:00 Monday Tokyo time, before the 10:00 check, so inside it [AN4]"
     },
     {
       "id": "c1",
@@ -88,9 +88,9 @@
       "date": "2026-12-15",
       "question": "bank_today",
       "account": "b",
-      "expected": 376000,
-      "why": "380,000 (check, Mon 14 Dec 10:00) - 4,000 (the receipt dated Sun 13 Dec, the day before the check's day, told 12:00: after the check, taken off [AM3]) = 376,000",
-      "note": "The 6,000 dated Sat 12 Dec is two days before the check's day, so it is inside the check and not taken off, whatever its `told` [AM3]. Before AM3 both receipts were read as inside the check (dated before its day): 380,000."
+      "expected": 380000,
+      "why": "380,000 (check, Mon 14 Dec 10:00; both receipts are inside it: Sat 12 Dec and Sun 13 Dec each ended, in Tokyo, before 10:00 on Mon 14 Dec [AN4]) = 380,000",
+      "note": "The bank figure already has yesterday's lunch off: taking the 4,000 off again would show 376,000 while the bank app shows 380,000, and the next check would find an unexplained 4,000 gain (confirm_review_7, AM3 soundness). Under AM3: 376,000."
     },
     {
       "id": "cdb-02",
@@ -98,17 +98,17 @@
       "question": "not_explained",
       "account": "b",
       "on": "2026-12-14",
-      "expected": 14000,
-      "why": "400,000 (opening, Thu 10 Dec; the pay of 10 Dec is in it) - 6,000 (the receipt dated 12 Dec, inside the check) - 380,000 (check, Mon 14 Dec) = 14,000",
-      "note": "Before AM3: 10,000 (the 4,000 of 13 Dec read as inside too)."
+      "expected": 10000,
+      "why": "400,000 (opening, Thu 10 Dec; the pay of 10 Dec is in it) - 6,000 (the receipt dated 12 Dec, inside the check) - 4,000 (the receipt dated 13 Dec, inside the check) - 380,000 (check, Mon 14 Dec) = 10,000",
+      "note": "Both receipts explain part of the gap the check found [AN4]. Under AM3: 14,000."
     },
     {
       "id": "cdb-03",
       "date": "2026-12-15",
       "question": "headline",
-      "expected": 36000,
-      "why": "60,000 (Free to spend at the opening) - 14,000 (the filler of Mon 14 Dec) - 6,000 (12 Dec) - 4,000 (13 Dec) = 36,000",
-      "note": "Each receipt is counted once. Before AM3: 60,000 - 10,000 - 6,000 - 4,000 = 40,000, with the 4,000 neither off the bank nor in the filler."
+      "expected": 40000,
+      "why": "60,000 (Free to spend at the opening) - 10,000 (the filler of Mon 14 Dec) - 6,000 (12 Dec) - 4,000 (13 Dec) = 40,000",
+      "note": "Each receipt is counted once, inside the check, and the filler is what is left unexplained. Under AM3: 36,000, 4,000 too low (counted twice)."
     }
   ]
 }
