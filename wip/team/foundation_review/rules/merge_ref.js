@@ -60,13 +60,14 @@ function idFor(w) {
 // [X1, Y28] A record the move wrote is `mv:<kind>:<38.31 id, key or field path>`, and the ids built from what a record is
 // may name one: a moved schedule's occurrence (`set:mv:pay:steps.a@2026-12-25`), a moved place or account
 // (`pe:mv:pay:steps.a@2026-11-25:mv:place:trip`, `rm:mv:place:trip`, `close:mv:acct:cfg:2`).
-const MV = 'mv:[a-z]+:[A-Za-z0-9_.:-]+';
-const REF = '(?:[a-z0-9_]+|' + MV + ')';   // a schedule, place or account id inside a built id
-const OCC = REF + '@\\d{4}-\\d{2}-\\d{2}';
+// [AJ1] The schedule, place or account inside a built id is read by the one shared reader (rules/ids.js): an ordinary
+// id (`set:k7qzpa-m2xq7ab9zt-41@2026-12-25`, `rm:k7qzpa-m2xq7ab9zt-9`), a moved one or a short made-up one.
+const IDS = require('./ids');
+const REF = IDS.REF, OCC = IDS.OCC;
 const BUILT = new RegExp('^((set|auto|skip):' + OCC + '|pe:' + OCC + ':' + REF + '|ps:' + OCC + '|(rm|close):' + REF + '|close:' + REF + ':[1-9]\\d*)$');
-const plainOk = id => typeof id === 'string' && (/^[a-z0-9]{6}-[a-z0-9]{10}-[1-9]\d*$/.test(id) || BUILT.test(id));
+const plainOk = id => typeof id === 'string' && (new RegExp('^' + IDS.ORDINARY + '$').test(id) || BUILT.test(id));
 // [X1] `mv:<kind>:<38.31 id or key>`; [X2] `fee:` and the id of the transfer it belongs to (never a fee itself).
-const MOVED = new RegExp('^' + MV + '$');
+const MOVED = new RegExp('^' + IDS.MOVED + '$');
 const idOk = id => typeof id === 'string' && (plainOk(id) || MOVED.test(id) || (id.startsWith('fee:') && plainOk(id.slice(4))));
 
 // ---------- merging ----------
@@ -100,10 +101,11 @@ function winner(x, y) {
 // [L merge q2] `steps` and `rules` entries carry their own `at` and merge by `from`. [M3] An entry is removed
 // by its own `gone` with its own `at`, and the removed entry stays in the list, so the union cannot bring it
 // back; it is settled like a record (winner). [M5] Each entry carries its own `by` beside its `at`.
-function mergeEntries(a, b) {
-  const byFrom = new Map();
-  for (const e of a.concat(b)) byFrom.set(e.from, byFrom.has(e.from) ? winner(...heldPair(byFrom.get(e.from), e)) : e);
-  return [...byFrom.values()].sort((x, y) => (x.from < y.from ? -1 : x.from > y.from ? 1 : 0));
+// [AJ2] A list whose entries carry `id` instead of `from` (pay-later `plans`) merges the same way by `id`.
+function mergeEntries(a, b, key = 'from') {
+  const byKey = new Map();
+  for (const e of a.concat(b)) byKey.set(e[key], byKey.has(e[key]) ? winner(...heldPair(byKey.get(e[key]), e)) : e);
+  return [...byKey.values()].sort((x, y) => (x[key] < y[key] ? -1 : x[key] > y[key] ? 1 : 0));
 }
 // One record, two copies. Newest `at` wins; on the same `at` a copy with `gone` wins [H6]; then the larger
 // `by`, the device part of the last writer [L merge q1]; with no `by`, the larger as sorted JSON text, so
@@ -118,17 +120,27 @@ function mergeEntries(a, b) {
 // [AI2] An entry list is found by its shape too: a field whose value is an array whose items all carry `from` and `at`
 // merges entry by entry by `from`, so a list a later build adds (a field no build knows yet) merges entry by entry on
 // older devices too. `steps`, `rules` and `extraSteps` are entry lists whatever they hold.
+// [AJ2] An array whose items all carry `id` and `at` is an entry list too, merged by `id` (pay-later `plans`: two plans
+// added on two devices both stay). The shape is judged on either copy, so a list empty on one side (a copy that never
+// wrote to it) still merges entry by entry [AJ-confirm].
 const ENTRY_LISTS = ['steps', 'rules', 'extraSteps'], KEYED = ['amounts', 'once'];
 const isMap = x => !!x && typeof x === 'object' && !Array.isArray(x);
-const entryShape = v => Array.isArray(v) && v.length > 0 && v.every(e => isMap(e) && e.from !== undefined && typeof e.at === 'string');
-// The fields of two copies of a record that are entry lists [L merge q2, AE1, AI2].
+const shapeBy = key => v => Array.isArray(v) && v.length > 0 && v.every(e => isMap(e) && e[key] !== undefined && typeof e.at === 'string');
+const entryShape = shapeBy('from'), idShape = shapeBy('id');
+// The fields of two copies of a record that are entry lists, each with the key its entries merge by [L merge q2, AE1,
+// AI2, AJ2]: `from` for `steps`, `rules`, `extraSteps` and any list shaped like them, else `id` for a list whose items
+// all carry `id` and `at`.
 function entryFields(x, y) {
   x = x || {}; y = y || {};
-  return [...new Set(Object.keys(x).concat(Object.keys(y)))].filter(k => {
-    if (ENTRY_LISTS.includes(k)) return Array.isArray(x[k]) || Array.isArray(y[k]);
-    // an array on one copy (or both) whose items all carry `from` and `at`, and nothing but an array or nothing on the other
-    return (entryShape(x[k]) || entryShape(y[k])) && [x[k], y[k]].every(v => v === undefined || Array.isArray(v));
-  });
+  const out = [];
+  for (const k of new Set(Object.keys(x).concat(Object.keys(y)))) {
+    if (ENTRY_LISTS.includes(k)) { if (Array.isArray(x[k]) || Array.isArray(y[k])) out.push([k, 'from']); continue; }
+    // an array on one copy (or both) with the shape, and nothing but an array or nothing on the other
+    if (![x[k], y[k]].every(v => v === undefined || Array.isArray(v))) continue;
+    if (entryShape(x[k]) || entryShape(y[k])) out.push([k, 'from']);
+    else if (idShape(x[k]) || idShape(y[k])) out.push([k, 'id']);
+  }
+  return out;
 }
 const keyedShape = v => isMap(v) && Object.keys(v).length > 0 && Object.values(v).every(e => isMap(e) && typeof e.at === 'string');
 const META = ['held'];
@@ -156,7 +168,7 @@ function pick(x, y) {
   const out = Object.assign({}, win);   // whole record, unknown fields kept (section 0)
   // [AE1] An entry list or a keyed map held by either copy is merged, never taken whole from the winner: nothing is
   // deleted (section 0), so a copy that lacks one never wrote it, and the other copy's entries and keys stay.
-  for (const k of entryFields(x, y)) out[k] = mergeEntries(x[k] || [], y[k] || []);   // [AI2] found by shape too
+  for (const [k, key] of entryFields(x, y)) out[k] = mergeEntries(x[k] || [], y[k] || [], key);   // [AI2, AJ2] found by shape too
   for (const k of keyedFields(x, y)) out[k] = mergeKeyed(x[k], y[k]);
   const told = [x.told, y.told].filter(Boolean).sort((a, b) => ms(a) - ms(b))[0];
   if (told) out.told = told;
@@ -282,6 +294,7 @@ function receive(mine, theirs, lastSeen, now) {
 
 // A short story on several devices: edits (with a device clock) and syncs (merge one copy into another).
 // A device given an `id` writes it as the record's `by` [L merge q1]. A list may be nested (`plan.budgets`).
+// An edit with `record` writes a single record (`home`) instead, its fields or one entry of its entry lists [AJ3].
 function listAt(copy, name, make) {
   const parts = String(name).split('.'); let o = copy;
   for (const p of parts.slice(0, -1)) o = o[p] || (make ? (o[p] = {}) : {});
@@ -297,8 +310,20 @@ function devices({ devices: devs, copy, steps, show }) {
       const from = st[s.sync], to = st[s.to], h = holdArriving(from.copy, to.lastSeen, to.copy, s.now);
       to.copy = merge(to.copy, h.copy); seen(to, newestAt(h.copy)); continue;
     }
-    const d = st[s.on], at = nextAt(s.now, d.lastSeen), list = listAt(d.copy, s.edit.list, true);
+    const d = st[s.on], at = nextAt(s.now, d.lastSeen);
     const by = d.id ? { by: d.id } : {};
+    if (s.edit.record) {   // [AJ3] a single record (`home`): its fields, or an entry of one of its entry lists (`curs`, by `from`)
+      const rec = d.copy[s.edit.record] = Object.assign({}, d.copy[s.edit.record], s.edit.set, by, { at });   // no `told`: single records have none
+      const e = s.edit.entry;
+      if (e) {
+        const list = (rec[e.list] || []).slice(), j = list.findIndex(x => x.from === e.from);
+        const entry = Object.assign({}, j >= 0 ? list[j] : { from: e.from }, e.set, by, { at });
+        if (j >= 0) list[j] = entry; else list.push(entry);
+        rec[e.list] = list.sort((x, y) => (x.from < y.from ? -1 : x.from > y.from ? 1 : 0));
+      }
+      seen(d, at); continue;
+    }
+    const list = listAt(d.copy, s.edit.list, true);
     const id = s.edit.make ? idFor(s.edit.make) : s.edit.id;   // [O2] a record written for a known moment
     const i = list.findIndex(r => r.id === id);
     if (i >= 0) list[i] = Object.assign({}, list[i], s.edit.set, by, { at });   // an edit moves `at`, never `told` [H1]
@@ -307,6 +332,7 @@ function devices({ devices: devs, copy, steps, show }) {
     if (k) { const r = list[i >= 0 ? i : list.length - 1]; r[k.map] = Object.assign({}, r[k.map], { [k.k]: Object.assign({}, (r[k.map] || {})[k.k], k.set, by, { at }) }); }
     seen(d, at);
   }
+  if (show.record) return st[show.on].copy[show.record];
   return listAt(st[show.on].copy, show.list).find(r => r.id === show.id);
 }
 
@@ -336,10 +362,10 @@ function restore({ current, backup, now, by, lastSeen, answers }) {
     const o = Object.assign({}, r, stamp);
     const told = earliest(r.told, c && c.told); if (told) o.told = told;
     const mark = (c && c.held) || r.held; if (mark) o.held = mark;
-    for (const k of entryFields(r, c)) {   // [AI2] every entry list, found by its shape
+    for (const [k, key] of entryFields(r, c)) {   // [AI2, AJ2] every entry list, found by its shape, by `from` or `id`
       const mine = (r[k] || []).map(e => Object.assign({}, e, stamp));
-      const newer = ((c && c[k]) || []).filter(e => !(r[k] || []).some(b => b.from === e.from)).map(e => Object.assign({}, e, { gone: e.gone || day }, stamp));
-      o[k] = mine.concat(newer).sort((x, y) => (x.from < y.from ? -1 : x.from > y.from ? 1 : 0));
+      const newer = ((c && c[k]) || []).filter(e => !(r[k] || []).some(b => b[key] === e[key])).map(e => Object.assign({}, e, { gone: e.gone || day }, stamp));
+      o[k] = mine.concat(newer).sort((x, y) => (x[key] < y[key] ? -1 : x[key] > y[key] ? 1 : 0));
     }
     for (const k of keyedFields(r, c)) {   // [AE1, AH5] every keyed map, found by its shape
       const bk = r[k] || {}, ck = (c && c[k]) || {}, m = {};

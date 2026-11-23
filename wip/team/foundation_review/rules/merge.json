@@ -13917,7 +13917,7 @@
           "by": "dsk001"
         }
       },
-      "why": "`home` is a single record with one `at` (SCHEMA_V3 section 0): its plain fields come with the newer copy, as every record's do (mg-16) [D4]. The desktop's 11:00 wins, so the main bank is the new one and the minimum stays 20,000: the phone's 30,000 of 10:00 is lost, as a second device's edit of any other field of one record is. Only `curs`, an entry list, merges entry by entry [AJ3]. Whether `home`'s fields should merge one by one like the shared `ui` keys is listed as open question mg-q16.",
+      "why": "`home` is a single record with one `at` (SCHEMA_V3 section 0): its plain fields come with the newer copy, as every record's do (mg-16) [D4]. The desktop's 11:00 wins, so the main bank is the new one and the minimum stays 20,000: the phone's 30,000 of 10:00 is lost, as a second device's edit of any other field of one record is. Only `curs`, an entry list, merges entry by entry [AJ3]. Whether `home`'s fields should merge one by one, each with its own `at`, like the shared `ui` keys, is a question for Mako's run (AJ3 does not say); until then the rule of section 0 stands.",
       "decisions": [
         "AJ3",
         "D4"
@@ -14999,11 +14999,5 @@
       ]
     }
   ],
-  "open": [
-    {
-      "id": "mg-q16",
-      "question": "`home` is one record with one `at`, so its plain fields (minBank, mainBank, country, mode) come with the newer copy whole: a minimum changed on the phone and a main bank changed on the desktop before they sync keep only the desktop's (mg-198). AJ3 merges `home.curs` by `from` but says nothing of the other fields. Should `home`'s fields merge one by one, each with its own `at`, like the shared `ui` keys (L merge q6, AF3)?",
-      "ref_does": "Takes the newer `home` whole, with `curs` merged by `from` (mg-16, mg-197, mg-198)."
-    }
-  ]
+  "open": []
 }

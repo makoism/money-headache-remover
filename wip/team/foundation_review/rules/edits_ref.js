@@ -10,16 +10,26 @@ const { dayNum, dayStr } = require('./dates');
 // [AH2] Every occurrence name is read with built and moved schedule ids alike (`mv:pay:steps.a@2026-12-25`,
 // `pe:mv:pay:steps.a@2026-12-25:free`, `ps:mv:...`), so X8 protects moved schedules too.
 // [AH3] Keyed overrides are read in the AE1 shape (`{ amount, at, by, gone }`): a removed key (`gone`) names nothing.
-const OCC_NAME = /^((?:mv:[a-z]+:[A-Za-z0-9_.:-]+)|[a-z0-9_]+)@(\d{4}-\d{2}-\d{2})(?=$|:)/;
+// [AJ1] Occurrence names are read by the one shared reader (rules/ids.js), so ordinary ids (`k7qzpa-m2xq7ab9zt-41@...`)
+// count, and a schedule id is read whole: `...-4@` never counts for `...-41`.
+// [AJ5] When everything in the way is a one-off amount of the schedule itself (a live `amounts` key on or after the
+// wanted day, a December bonus), the edit also offers to move or remove those amounts (`amounts`, by date, and
+// `amountsOffer`), so a new employer's pay day can still be entered. A settle, a `once` key, a `pe:` or `ps:` record on
+// or after the wanted day cannot be moved: then the refusal and its day are all that is offered.
+const { occurrence } = require('./ids');
 const liveKeys = map => Object.keys(map || {}).filter(k => !(map[k] && typeof map[k] === 'object' && map[k].gone));
 function changeFrom({ schedule, wanted, settles, once, amounts, pe, ps }) {
-  const names = [].concat(settles || [], liveKeys(once),
-    liveKeys(amounts).map(d => schedule + '@' + d),
-    (pe || []).map(id => String(id).replace(/^pe:/, '')), (ps || []).map(id => String(id).replace(/^ps:/, '')));
-  const due = names.map(n => String(n).match(OCC_NAME)).filter(mm => mm && mm[1] === schedule).map(mm => mm[2]).sort();
+  const own = names => names.map(occurrence).filter(o => o && o.schedule === schedule).map(o => o.due);
+  const fixed = own([].concat(settles || [], liveKeys(once),
+    (pe || []).map(id => String(id).replace(/^pe:/, '')), (ps || []).map(id => String(id).replace(/^ps:/, ''))));
+  const oneOff = liveKeys(amounts);
+  const due = fixed.concat(oneOff).sort();
   const latest = due[due.length - 1];
   if (!latest || dayNum(wanted) > dayNum(latest)) return { ok: true };
-  return { refused: true, latest: schedule + '@' + latest, offer: dayStr(dayNum(latest) + 1) };
+  const out = { refused: true, latest: schedule + '@' + latest, offer: dayStr(dayNum(latest) + 1) };
+  const inWay = d => dayNum(d) >= dayNum(wanted);
+  if (!fixed.some(inWay)) Object.assign(out, { amounts: oneOff.filter(inWay).sort(), amountsOffer: ['move', 'remove'] });   // [AJ5]
+  return out;
 }
 
 // [W3] In version one a goal's own account must be in the home currency in force [O6]; another currency is stage 2.

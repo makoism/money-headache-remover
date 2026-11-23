@@ -90,10 +90,18 @@
       "expected": {
         "refused": true,
         "latest": "pay@2027-01-10",
-        "offer": "2027-01-11"
+        "offer": "2027-01-11",
+        "amounts": [
+          "2027-01-10"
+        ],
+        "amountsOffer": [
+          "move",
+          "remove"
+        ]
       },
-      "why": "`amounts` names pay@2027-01-10 (keyed by its due date). A change from 5 Jan would make that key name nothing [X8]: refused, 11 Jan offered. The key is in the AE1 shape, `{ amount, at, by }` [AE1, AH3].",
+      "why": "`amounts` names pay@2027-01-10 (keyed by its due date). A change from 5 Jan would make that key name nothing [X8]: refused, 11 Jan offered. The key is in the AE1 shape, `{ amount, at, by }` [AE1, AH3]. Only the one-off amount of 10 Jan is in the way (the 10 Dec settle is before 5 Jan), so the edit also offers to move or remove it [AJ5].",
       "decisions": [
+        "AJ5",
         "X8",
         "B8",
         "AH3"
@@ -707,10 +715,18 @@
       "expected": {
         "refused": true,
         "latest": "mv:pay:steps.a@2027-01-25",
-        "offer": "2027-01-26"
+        "offer": "2027-01-26",
+        "amounts": [
+          "2027-01-25"
+        ],
+        "amountsOffer": [
+          "move",
+          "remove"
+        ]
       },
-      "why": "The moved pay `mv:pay:steps.a` holds January's 0 on its 25 Jan occurrence (a moved one-month amount). A change from 1 Dec would leave that key naming an occurrence the new rule might not make [X8]; a moved schedule is protected like any other [AH2]: refused, 26 Jan offered (the day after 2027-01-25). Before AH2 the occurrence name `mv:pay:steps.a@2027-01-25` did not match the name pattern and the change was allowed.",
+      "why": "The moved pay `mv:pay:steps.a` holds January's 0 on its 25 Jan occurrence (a moved one-month amount). A change from 1 Dec would leave that key naming an occurrence the new rule might not make [X8]; a moved schedule is protected like any other [AH2]: refused, 26 Jan offered (the day after 2027-01-25). Before AH2 the occurrence name `mv:pay:steps.a@2027-01-25` did not match the name pattern and the change was allowed. Only the one-off amount of 25 Jan is in the way, so the edit also offers to move or remove it [AJ5].",
       "decisions": [
+        "AJ5",
         "AH2",
         "X8",
         "AE1"
@@ -937,10 +953,18 @@
       "expected": {
         "refused": true,
         "latest": "pay@2026-12-25",
-        "offer": "2026-12-26"
+        "offer": "2026-12-26",
+        "amounts": [
+          "2026-12-25"
+        ],
+        "amountsOffer": [
+          "move",
+          "remove"
+        ]
       },
-      "why": "The key was removed at 10:00 and put back with Redo at 10:05: the Redo clears `gone` with a newer `at` [H6, AE1], so the key is live and names pay@2026-12-25 [AH3]: refused, 26 Dec offered.",
+      "why": "The key was removed at 10:00 and put back with Redo at 10:05: the Redo clears `gone` with a newer `at` [H6, AE1], so the key is live and names pay@2026-12-25 [AH3]: refused, 26 Dec offered. Only that one-off amount is in the way, so the edit also offers to move or remove it [AJ5].",
       "decisions": [
+        "AJ5",
         "AH3",
         "X8",
         "H6"

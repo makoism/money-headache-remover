@@ -10,10 +10,11 @@
 //
 // It follows DECISIONS_ROUND2.md sections A, B, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W and X (X and W win over anything earlier, then V, then U and T,
 // then S, then R and Q, then P, then O, then N, then M, then L and K, then J, then I, then H). Where a line below carries a tag like [H3] or [B9], that decision is
-// the reason for it. Plain code, no dependencies, every amount in whole minor
+// the reason for it. Plain code, one dependency (the shared id reader, rules/ids.js [AJ1]), every amount in whole minor
 // units, every date a whole day number (D8). It is a reference for the engine
 // and for tests, never loaded by the app.
 'use strict';
+const { occurrence } = require('../rules/ids');
 
 const DIGITS = { JPY: 0, PHP: 2, USD: 2, EUR: 2, GBP: 2, CHF: 2 };
 const HORIZON_MIN_DAYS = 45;      // SCHEMA 10.3 step 1
@@ -359,8 +360,9 @@ function lookahead(sc, asOf, opts = {}) {
   // settled) is refused here, as a closing that leaves money is [P6].
   const named = sid => {
     const out = [];
-    // [X1, Y28] a schedule id may be a moved one (`mv:pay:steps.a@2026-12-25`)
-    const take = o => { const mm = String(o).match(/^((?:mv:[a-z]+:[A-Za-z0-9_.:-]+)|[a-z0-9_]+)@(\d{4}-\d{2}-\d{2})/); if (mm && mm[1] === sid) out.push(mm[2]); };
+    // [X1, Y28] a schedule id may be a moved one (`mv:pay:steps.a@2026-12-25`); [AJ1] or an ordinary one
+    // (`k7qzpa-m2xq7ab9zt-41@2026-12-25`), read whole by the one shared reader (rules/ids.js)
+    const take = o => { const oc = occurrence(o); if (oc && oc.schedule === sid) out.push(oc.due); };
     for (const e of live()) {
       for (const o of [].concat(e.settles || [], e.savedSettles || [])) take(o);
       if (e.kind === 'period_end_answer' || e.kind === 'period_start') take(String(e.id).replace(/^(pe|ps):/, ''));
