@@ -10,7 +10,8 @@ Written 2026-11-18 on branch `wip-38.31`. Read this whole file before touching a
 **Mako said go (23 Nov, DECISIONS "The new foundation"):** rebuild before v1; Home names the stretch by its dates; goal money can stay in the bank (default) or its own account; he does not know his cards' close days (setup asks, "not sure" = all due on the next payment day).
 **Done since:** RECOMMENDATION.md (corrected after qc-foundation plan review 1, plus the coordinator's efficiency review), SCHEMA.md draft (step 1, the saved shape).
 **Since (23 Nov afternoon JST):** schema reviews 1 and 2 (both FAIL, folded in); sweep 2 (experience, repeats, platform, requirements) all in foundation_review/sweep2_*.md; LESSONS.md lessons 1 and 2 (CLAUDE.md points to it); DECISIONS_ROUND2.md (A check-in and filler, B exact safe to spend, C screen shared pieces, D platform, E requirements, F the 24 scenario rule questions; new date 14 to 19 Dec); scenarios/ (8 lives, 180 hand-worked asks, check_specs.js) merged.
-**Running:** a helper in a worktree writing SCHEMA_V3.md (one consistent shape) and ref/lookahead_ref.js (runnable money rules) with ref/run_scenarios.js; cherry-pick its commits when done.
+**Done:** SCHEMA_V3.md and ref/lookahead_ref.js (462 lines) merged; `node wip/team/foundation_review/ref/run_scenarios.js` passes 180 of 180; DECISIONS_ROUND2 G answers the model's four questions.
+**Running:** qc-foundation on SCHEMA_V3 + the model, told to invent six new situations of its own. Save its reply as foundation_review/schema_v3_review_1.md. Asked Mako M1 (minimum balance); no answer yet.
 **Next:** qc-foundation on SCHEMA_V3 plus the reference model and scenarios, until PASS; ask Mako M1 (minimum balance, recommendation: ask once, blank, skip = none); then the failing tests (E10) and the engine lanes per RECOMMENDATION 5b.
 
 
