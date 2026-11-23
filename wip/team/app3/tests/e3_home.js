@@ -18,6 +18,9 @@ const DAYS = ['2026-11-23', '2026-12-09', '2026-12-10', '2026-12-11', '2026-12-1
     const r = T.L.lookahead(bk, day), f = await T.figs(p);
     const one = k => f.filter(x => x.fig === k);
     const bankFigs = one('bank');
+    const overdueN = [].concat(...[r.cards, r.owed || {}].map(m => Object.values(m).map(x => (x.overdue || []).length))).filter(n => n > 0).length;
+    const odCard = await p.$('[data-card=overdue]'), odItems = (await p.$$('[data-card=overdue] li')).length;
+    ck(day + ' the overdue card shows only with an overdue item under it', overdueN ? !!odCard && odItems > 0 : !odCard, `${overdueN} accounts overdue, card ${!!odCard}, ${odItems} items`);
     ck(day + ' one bank figure, the engine\'s', bankFigs.length === 1 && bankFigs[0].amt === r.accounts[bank].bank, JSON.stringify(bankFigs));
     ck(day + ' its age', one('age')[0] && one('age')[0].text === (r.accounts[bank].ageDays === 0 ? 'checked today' : r.accounts[bank].ageDays === 1 ? 'checked yesterday' : 'checked ' + r.accounts[bank].ageDays + ' days ago') + ', on 20 Nov' + (day.startsWith('2027') ? ' 2026' : ''), one('age')[0] && one('age')[0].text);
     ck(day + ' safe to spend is the engine\'s headline', one('safe')[0] && one('safe')[0].amt === r.safeToSpend.headline, JSON.stringify(one('safe')) + ' vs ' + r.safeToSpend.headline);
