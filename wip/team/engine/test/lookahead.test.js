@@ -527,4 +527,12 @@ t('the real money short: "below zero" from the real walk, its own sum; the goal 
   const g = r.warnings.find(x => x.code === 'set_aside_over');
   eq([g.day, g.amount], ['2026-12-27', 10000]);
 });
+t('what a bank can set aside: the real walk\'s lowest point before the next pay, less what is set aside [BM2, replaces BL2]', () => {
+  eq(run(goalDip(0), '2026-12-10').accounts.bank.canSetAside, 284000);
+  eq(run(goalDip(254001), '2026-12-10').accounts.bank.canSetAside, 29999);
+  // more set aside than the lowest point: never below nothing
+  eq(run(goalDip(300000), '2026-12-10').accounts.bank.canSetAside, 0);
+  // a bill after the next pay is not counted: Rent moves to the 9th of January, after the 8 Jan pay
+  eq(run(goalDip(0, b => { b.schedules[1].rules[0].rule.days = [9]; }), '2026-12-10').accounts.bank.canSetAside, 354000);
+});
 done('lookahead');

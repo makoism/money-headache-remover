@@ -137,18 +137,21 @@ const stamped = (r, step) => { ok(I.isOrdinary(r.id), 'ordinary id ' + r.id); eq
     r = await h.go('changeGoal', g.id, { target: 180000, due: '' }); ok(r.ok, JSON.stringify(r));
     eq([h.book.places[0].target, h.book.places[0].due], [180000, undefined]);
   });
-  await t('setting aside never takes more than the bank can spare: today\'s figure less what is already set aside in it [BL2]', async () => {
+  await t('setting aside never takes more than the bank can spare through the next pay: the real walk\'s lowest point less what is set aside [BM2, replaces BL2]', async () => {
     const h = setup();
-    let r = await h.go('addGoal', { name: 'Trip', target: 10000 }); ok(r.ok, JSON.stringify(r));
-    const g = h.book.places[0], bank = view(h.book).accounts[BANK].bank;
-    ok(view(h.book).accounts[BANK].canSetAside === bank, 'nothing set aside yet: all of today\'s figure');
-    r = await h.go('setAside', g.id, { amount: bank + 1 });
-    eq([r.ok, r.text], [false, 'Main bank can spare ¥' + bank.toLocaleString('en') + ' to set aside today: what it shows less what is already set aside in it'], 'refused with how much is possible');
+    let r = await h.go('addGoal', { name: 'Trip', target: 10000000 }); ok(r.ok, JSON.stringify(r));
+    const g = h.book.places[0], a0 = view(h.book).accounts[BANK], spare = a0.canSetAside;
+    // the bills and card payments before the 10 Dec pay come off first: less than today's figure
+    ok(spare > 0 && spare < a0.bank && spare === a0.real.lowest, JSON.stringify([spare, a0.bank, a0.real]));
+    const words = x => 'Main bank can spare ¥' + x.toLocaleString('en') + ' to set aside before your next pay: what it holds at its lowest until then, less what is already set aside in it';
+    r = await h.go('setAside', g.id, { amount: spare + 1 });
+    eq([r.ok, r.text], [false, words(spare)], 'refused with how much is possible');
     eq(view(h.book).places[g.id].kept, 0, 'nothing written');
     r = await h.go('setAside', g.id, { amount: 20000 }); ok(r.ok, JSON.stringify(r));
-    r = await h.go('setAside', g.id, { amount: bank - 20000 + 1 }); ok(!r.ok && r.text.includes('¥' + (bank - 20000).toLocaleString('en')), JSON.stringify(r));
-    r = await h.go('setAside', g.id, { amount: bank - 20000 }); ok(r.ok, JSON.stringify(r));
-    eq([view(h.book).places[g.id].kept, view(h.book).accounts[BANK].canSetAside], [bank, 0]);
+    eq(view(h.book).accounts[BANK].canSetAside, spare - 20000);
+    r = await h.go('setAside', g.id, { amount: spare - 20000 + 1 }); eq([r.ok, r.text], [false, words(spare - 20000)]);
+    r = await h.go('setAside', g.id, { amount: spare - 20000 }); ok(r.ok, JSON.stringify(r));
+    eq([view(h.book).places[g.id].kept, view(h.book).accounts[BANK].canSetAside], [spare, 0]);
     // kept in its own account: the money comes from the bank, so the bank's spare figure is the limit
     r = await h.go('addGoal', { name: 'House', target: 1000000, mode: 'ownAccount' }); ok(r.ok, JSON.stringify(r));
     r = await h.go('setAside', h.book.places[1].id, { amount: 1 }); ok(!r.ok && /can spare ¥0 /.test(r.text), JSON.stringify(r));

@@ -1132,10 +1132,8 @@
         why: whyText(w.why, w.headroom, a.cur), whyParts: w.why.map(p => ({ label: p.label, amount: p.amount })), fillers: banks[id].fillers };   // [S4] the parts, for screens/money.js sumLine
       // [BM2] the real-money walk: its lowest point, and its sum for the screens (the "Short by" headline is its total)
       r.real = { lowest: rw.lowest, lowestDay: dayStr(rw.lowestDay), headroom: rw.headroom, whyParts: rw.why.map(p => ({ label: p.label, amount: p.amount })) };
-      // [BL2] what is set aside in it today (goals and other kept places), and what it can still set aside: today's figure
-      // less that, never below nothing
+      // what is set aside in it today (goals and other kept places); canSetAside is worked out below, once the next pay is known
       r.setAside = (keptIn[id] || []).reduce((t, g) => t + g.amount, 0);
-      r.canSetAside = Math.max(0, r.bank - r.setAside);
       realWalks[id] = rw;
       if (id === mainAcct && mainMinOtherCur()) res.warnings.push({ account: id, code: 'minimum_other_currency', text: `The minimum kept for ${a.name} is in ${main.min.cur}, not ${a.cur}: what is its minimum in ${a.cur}?` });
       // [QC fix] data for the screens to word (account, amount, day, minimum or null for none); the text is only for Ask's
@@ -1231,6 +1229,19 @@
     // [BJ1] a pay due today left unticked at a check-in today is not counted: named so the heading can say so
     res.safeToSpend.notCounting = np && leftToday(np) ? np.id : null;
     res.dueBeforeNextPay = { until: dayStr(until), byAccount, items: due.map(itemOut), total: due.filter(o => !o.otherCur).reduce((t, o) => t + o.amount, 0) };
+    // [BM2, replaces BL2's rule] what a bank can still set aside: what it can spare through the next pay, the real-money
+    // walk's lowest end of day before the pay safe to spend runs to (today's figure included), less what is already set
+    // aside in it; never below nothing. No next pay: through the horizon.
+    for (const id in realWalks) {
+      const rw = realWalks[id], stop = after ? after.land : horizon + 1;
+      let bal = rw.start, low = bal;
+      for (let i = 0; i < rw.steps.length && rw.steps[i].day < stop; i++) {
+        bal += rw.steps[i].amount;
+        if (rw.steps[i + 1] && rw.steps[i + 1].day === rw.steps[i].day) continue;
+        low = Math.min(low, bal);
+      }
+      res.accounts[id].canSetAside = Math.max(0, low - res.accounts[id].setAside);
+    }
 
     // ----- not seen yet, and still inside the posting window [F3, F4, F23, G3, H8, S6, W2, Z2] -----
     const past = items.filter(o => !o.settled && o.land < today && fallsDue(o) && o.amount);

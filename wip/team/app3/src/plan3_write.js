@@ -173,9 +173,10 @@
   /* money set aside today: a `move` into the goal; kept in its own account, the money goes there first */
   function setAside(w, id, x) {
     const g = find(w, 'places', id), a = amountOk(x.amount, 'an amount'), k = g.keptIn || {};
-    /* [BL2] never more than the bank the money is in (or comes from) can spare: the engine's canSetAside */
+    /* [BM2, replaces BL2's rule] never more than the bank the money is in (or comes from) can spare through the next
+       pay: the engine's canSetAside (the real-money walk's lowest point before it, less what is already set aside) */
     const from = k.mode === 'ownAccount' ? x.from || mainOf(w) : k.acct || mainOf(w), spare = (LA.lookahead(w.book, w.today).accounts[from] || {}).canSetAside || 0;
-    if (a > spare) bad(nameOf(w, from) + ' can spare ' + SMF.format(spare, (w.book.accounts || []).find(y => y.id === from).cur) + ' to set aside today: what it shows less what is already set aside in it');
+    if (a > spare) bad(nameOf(w, from) + ' can spare ' + SMF.format(spare, (w.book.accounts || []).find(y => y.id === from).cur) + ' to set aside before your next pay: what it holds at its lowest until then, less what is already set aside in it');
     if (k.mode === 'ownAccount') {
       if (from === k.acct) bad('Pick the account the money comes from');
       w.add('events', { k: 'transfer', date: w.today, a, acct: from, acct2: k.acct, src: { type: 'typed' } });
