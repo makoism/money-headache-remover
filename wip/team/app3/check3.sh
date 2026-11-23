@@ -49,6 +49,7 @@ step "Home words the engine's warnings itself: below zero with no minimum, no ra
 step "a card with an overdue payment never says nothing to pay yet"; run tests/e3_cardline.js "e3_cardline: ALL PASS"
 step "bank today in its parts once something is logged after the check"; run tests/e3_bankparts.js "e3_bankparts: ALL PASS"
 step "a card's figure typed at a check-in (US dollars away until 16 Dec; Mako's 10 Dec)"; run tests/e3_cardfig.js "e3_cardfig: ALL PASS"
+step "a figure typed at Check your bank is the same after a reload: four time zones, morning, mid morning and night (QC numbers blocker 1)"; run tests/e3_reload.js "e3_reload: ALL PASS"
 step "Add statements (the AI route, any AI, review, Add, duplicates once, the relay)"; run tests/e3_stmt.js "e3_stmt: ALL PASS"
 step "each record once after a statement (BI2): Receipts"; run tests/e3_stmt_once.js "e3_stmt_once: ALL PASS"
 step "the period by its dates"; run tests/e3_period.js "e3_period: ALL PASS"
