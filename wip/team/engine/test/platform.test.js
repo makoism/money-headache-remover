@@ -9,7 +9,7 @@ const vm = require('vm');
 const { spawnSync } = require('child_process');
 
 const dir = path.join(__dirname, '..');
-const FILES = ['dates.js', 'units.js', 'ids.js', 'schedules.js', 'ledger.js', 'lookahead.js'];
+const FILES = ['dates.js', 'units.js', 'ids.js', 'schedules.js', 'ledger.js', 'lookahead.js', 'checkin.js', 'build_book.js'];
 
 t('no Date parsing of a date string, no now from toISOString, no clock read in the engine files [D8]', () => {
   for (const f of FILES) {
@@ -33,7 +33,7 @@ t('the files load as plain browser scripts and answer', () => {
   vm.createContext(ctx);
   for (const f of FILES) vm.runInContext(fs.readFileSync(path.join(dir, f), 'utf8'), ctx, { filename: f });
   const E = ctx.BurrowEngine;
-  ok(E && E.dates && E.units && E.ids && E.schedules && E.ledger && E.lookahead);
+  ok(E && E.dates && E.units && E.ids && E.schedules && E.ledger && E.lookahead && E.checkin && E.build);
   const book = { v: 3, home: { curs: [{ from: '2026-01-01', cur: 'JPY' }], country: { v: 'JP' }, main: { v: { acct: 'b', min: null } } },
     accounts: [{ id: 'b', name: 'Bank', type: 'bank', cur: 'JPY' }],
     schedules: [{ id: 'pay', kind: 'income', name: 'Pay', acct: 'b', cur: 'JPY', startsPeriod: true, shift: 'before', rules: [{ rule: { every: 'month', days: [10] } }], steps: [{ amount: 300000 }] }],
