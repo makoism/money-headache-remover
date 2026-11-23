@@ -686,7 +686,9 @@
     };
     // the period a day is in, named by the pay that started it: started, else the last pay landing on or before it
     const occOn = (start, day) => (start != null && occByStart[start] ? occByStart[start]
-      : (pays.filter(o => o.land <= day && !(day === today && nextPays.includes(o))).sort((x, z) => x.land - z.land).pop() || {}).id || null);   // [AU4, AU5] not a pay still to come
+      : (pays.filter(o => o.land <= day && (o.settled || o.land <= firstOpenDay)).sort((x, z) => x.land - z.land).pop() || {}).id || null);
+    // [H8, AU4, AU5] a pay not ticked (still to come, late, or not seen) never starts a period; one inside the opening has [AU7]
+    const firstOpenDay = Object.keys(openEv).length ? Math.min(...Object.keys(openEv).map(openDay)) : -Infinity;
 
     // [AU1] The period running now, converted like every other: from the pay that started it (or the day it started) to
     // the next pay. Its amount for a source by the units rules.
@@ -843,12 +845,17 @@
     // while that pay is due or late and not ticked (`waitingForPay`); startsWith: the occurrence of the pay that started it
     if (periodStream) {
       const n = nowPeriod();
-      const next = nextPays.slice().sort((x, z) => x.land - z.land)[0];
+      // [F4, H8, F3, G4] its next pay: the first pay after the one that started it not ticked yet. Coming (today or
+      // later), late (past its day, inside its posting window, still counted) or not seen (after the window, no longer
+      // counted). While it is due, late or not seen the period runs to today: its end is never a day already past.
+      const next = pays.filter(o => !o.settled && (n.start === null || o.land > n.start)).sort((x, z) => x.land - z.land)[0];
       const waiting = !!next && next.land <= today;
+      const state = !next ? null : next.land >= today ? 'coming' : nextPays.includes(next) ? 'late' : 'notSeen';
       res.period = {
         start: n.start === null ? null : dayStr(n.start),
-        end: n.end === null ? null : dayStr(waiting ? today : n.end - 1),
+        end: next ? dayStr(waiting ? today : next.land - 1) : n.end === null ? null : dayStr(Math.max(today, n.end - 1)),
         startsWith: n.occ, waitingForPay: waiting,
+        nextPay: next ? { occ: next.id, due: dayStr(next.due), state } : null,
         lines: (planLeft.lines || []).map(l => ({ id: l.src.id, name: l.name, acct: l.acct, per: l.per, amount: l.amount, left: l.left })),
         free: planLeft.free ? { acct: planLeft.free.acct, per: planLeft.free.per, amount: planLeft.free.amount, left: planLeft.free.left } : null };
     } else res.period = null;   // [B4] no fixed pay: no periods
@@ -1014,7 +1021,7 @@
 
     // ----- days to next pay [F3, F8, F12, F13, H8] -----
     const np = nextPays[0];
-    res.daysToNextPay = np ? { days: np.land - today, next_pay: dayStr(np.land), item: np.id, late: np.land < today || undefined } : { days: null };
+    res.daysToNextPay = np ? { days: Math.max(0, np.land - today), next_pay: dayStr(np.land), item: np.id, late: np.land < today || undefined } : { days: null };
     if (!periodStream) {   // [B4] "lasts about N weeks"
       const lastDay = homeSpend.map(id => walk(id, today + LATER_ON_DAYS, res.accounts[id].minimum).firstBelowZero);
       res.lastsAboutWeeks = planLeft.lines || planLeft.free ? Math.floor((Math.min(...lastDay.map(d => (d === null ? today + LATER_ON_DAYS : d))) - today) / 7) : null;

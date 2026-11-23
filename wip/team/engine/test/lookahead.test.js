@@ -143,4 +143,26 @@ t('the period while its next pay is due and not ticked runs to today and says it
   const p = run(base(), '2026-12-25').period;
   eq([p.start, p.end, p.waitingForPay], ['2026-11-25', '2026-12-25', true]);
 });
+// [WIRING_PLAN F4, H8, F3, G4] the period's next pay: coming, late (inside its posting window, still counted) or not
+// seen (after the window, no longer counted); the period never ends before today and days to next pay is never below 0
+t("the period's next pay on 10 Dec before the pay is ticked: coming, today [G4]", () => {
+  const r = lookahead(mako.book, '2026-12-10', Object.assign({}, mako.opts, { at: 'start of day' }));
+  eq(r.period.nextPay, { occ: 'pay_main@2026-12-10', due: '2026-12-10', state: 'coming' });
+  eq([r.period.end, r.daysToNextPay.days], ['2026-12-10', 0]);
+});
+t("the period's next pay one day late, inside its posting window: late, still counted [H8]", () => {
+  const r = run(base(), '2026-12-26');
+  eq(r.period.nextPay, { occ: 'pay@2026-12-25', due: '2026-12-25', state: 'late' });
+  eq([r.period.start, r.period.end, r.daysToNextPay.days, r.daysToNextPay.late], ['2026-11-25', '2026-12-26', 0, true]);
+});
+t('30 Dec with nothing ticked since the 10 Nov pay: the December pay is not seen, the period runs to today [H8, F3]', () => {
+  const b = base(x => {
+    x.schedules[0].rules = [{ rule: { every: 'month', days: [10] } }];
+    for (const e of x.events) e.date = '2026-11-20', e.told = '2026-11-20T10:00' + TZ;
+  });
+  const r = run(b, '2026-12-30');
+  eq(r.period.nextPay, { occ: 'pay@2026-12-10', due: '2026-12-10', state: 'notSeen' });
+  eq([r.period.start, r.period.end], ['2026-11-10', '2026-12-30']);
+  ok(r.daysToNextPay.days >= 0);
+});
 done('lookahead');
