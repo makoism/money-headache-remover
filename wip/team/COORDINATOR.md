@@ -10,6 +10,7 @@ The coordinator is the one session Mako talks to. It records his decisions in DE
 - Decisions recorded today: DECISIONS new foundation items 7 (AX, AZ, BE) and 8 (BG). BF, BH, BI, BJ are team engine rules in DECISIONS_ROUND2, not Mako's.
 - Triggers: my keep-going trig_01SaCFrjGSMoL2E4WHfPF1fy (hourly at :17, bound to coordinator 10 session_01BFpKEWtR1vrLMuizJWTGpk). Coordinator 11: disable it with update_trigger enabled=false and make your own.
 - Last percentages told to Mako: about 85% first version, 35% with art and 3D.
+- 00:25 JST 24 Nov: MAIN 15 running qc-foundation, qc-numbers, qc-north-star on app3. The "bank comparison" in Mako's main rule was STEP8_COMPARE (what changes for a 38.28 user); with BE (no old data) MAIN replaced it with the real-page walk (71 hand-worked bank and safe-to-spend checks, in every check3), written up in app3/FOR_MAKO.md with "Starting with your real numbers" on top. Mako must accept that replacement as part of his go.
 
 ## Coordinator handoff 10 (Coordinator 8, 23 Nov 2026 19:45 JST)
 - Mako's go on the NEW FOUNDATION (DECISIONS "The new foundation", 23 Nov): pay-to-pay dated ledger anchored to today's bank replaces the calendar-month engine. Read wip/team/LESSONS.md (lessons 1 to 4) and foundation_review/RECOMMENDATION.md and DECISIONS_ROUND2.md (AX: thin slices, one engine, reference frozen, no new rule rounds). qc-foundation reviews every plan before building (CLAUDE.md).
