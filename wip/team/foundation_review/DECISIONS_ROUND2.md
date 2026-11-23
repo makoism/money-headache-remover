@@ -93,3 +93,9 @@ J3. I1 is refined by H1: an "available" check holds events dated before its day,
 J4. When the split names Free to spend, the typed figure stands; rounding leftovers of other lines stay in Waiting.
 J5. A card's opening may hold several unpaid statements, each with its amount, close date and payment day (a two-month card set up between closes).
 The helper's seven readings (payment order to statements, late payments lowering the statement they were carried into, carried balance after payments with no interest on a credit, interest before the payment on loan days, the projected interest in the next open payment, a statement item asking what is left of it, the I4 leftover rule) are confirmed.
+
+## K. Answers after J
+K1. A "not sure" card's interest is on everything owed before that day's payment, as on a loan (the model's reading, confirmed).
+K2. With a percent minimum, the day's interest is added first and the minimum is worked out on the balance including it. Needs an ask and a model change.
+K3. A moved `cfg.bankNow` with no `bankNowAt` is dated to the copy's last saved day.
+Confirmed readings: J2's order applies when a receipt and a figure are told at the same moment (moved-01 stays 296,000); a payment day typed with an opening statement still follows the card's weekend rule.
