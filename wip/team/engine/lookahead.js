@@ -774,6 +774,19 @@
       const limit = placeBalance(g);
       while (total > limit && list.length) { const newest = list.pop(); gaveWay.add(newest.id); total -= newest.a; }
     }
+    // A goal with a target and a date: what is still to go from what is really set aside (a place below nothing holds
+    // nothing, AU2), and what each period needs to reach it: spread over the period-starting pays still to come on or
+    // before its date (a late pay still counted is one of them), the leftover minor units on the earliest, so the first
+    // is the most. No pay left before the date: all of it now. No fixed pay: periods are not known [B4].
+    function goalPace(g, amt, due) {
+      if (g.target == null || !due) return {};
+      const toGo = Math.max(0, g.target - Math.max(0, amt));
+      if (!periodStream) return { target: g.target, toGo, periodsLeft: null, perPeriod: null };
+      const dd = dayNum(due);
+      const n = dd < today ? 0 : occOf(periodStream, today, dd).filter(o => o.land <= dd && !settledBy[o.id]
+        && (o.land >= today || nextPays.some(p => p.id === o.id))).length;
+      return { target: g.target, toGo, periodsLeft: n, perPeriod: n ? U.spread(toGo, n)[0] : toGo };
+    }
     for (const g of places) {
       const amt = placeBalance(g), where = (g.keptIn || {}).acct;
       if (removedOn(g) !== null) {   // [P1, R1] a removed place's money waits "to place", held out of safe to spend
@@ -791,7 +804,7 @@
       const paysSched = schedules.find(s => s.place === g.id);
       const nextOf = paysSched && items.find(o => o.sid === paysSched.id && !o.settled);
       const due = g.refill && nextOf ? dayStr(nextOf.due) : g.due || (nextOf ? dayStr(nextOf.due) : null);
-      res.places[g.id] = { kept: amt, due, account: where };
+      res.places[g.id] = Object.assign({ kept: amt, due, account: where }, goalPace(g, amt, due));
       (keptIn[where] = keptIn[where] || []).push({ id: g.id, name: g.name, amount: amt });
     }
 

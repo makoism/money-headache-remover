@@ -252,4 +252,17 @@ t("a step dated on the first day of the period holding the setup day counts in t
   // the period runs 25 Nov to 24 Dec (30 days); set up 1 Dec, so Food's share is 24 of 30 days of 60,000
   eq(p.lines.map(l => [l.id, l.amount, l.left]), [['food', 60000, 48000]]);
 });
+t('a goal: what is needed each period to reach its target by its date, from what is really set aside', () => {
+  const b = base(x => {
+    x.places = [{ id: 'trip', name: 'Trip', kind: 'goal', target: 100000, due: '2027-03-31', keptIn: { acct: 'bank', mode: 'inBank' } }];
+    x.events[0].split.places = { trip: 10000 };
+    x.events.push({ id: 'g1', k: 'move', place: 'waiting', place2: 'trip', a: 15000, date: '2026-12-02', told: '2026-12-02T12:00' + TZ });
+  });
+  const g = run(b, '2026-12-03').places.trip;
+  // 25,000 set aside, 75,000 to go; pays starting periods by 31 Mar: 25 Dec, 25 Jan, 25 Feb, 25 Mar (4): 18,750 each
+  eq([g.kept, g.target, g.toGo, g.periodsLeft, g.perPeriod], [25000, 100000, 75000, 4, 18750]);
+  // past its date, or with no pay left before it: all of what is to go, now
+  eq(run(b, '2027-03-27').places.trip.periodsLeft, 0);
+  eq(run(b, '2027-03-27').places.trip.perPeriod, 75000);
+});
 done('lookahead');
