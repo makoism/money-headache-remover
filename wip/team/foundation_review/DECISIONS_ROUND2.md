@@ -487,3 +487,8 @@ BJ3. Goal pace counts a late pay that is still expected (BF1), even though safe 
 BJ4. A statement line moving money to the person's own account, with no typed move to match it, is written as a two-sided move. It is never written as a spend.
 BJ5. When Free to spend caps the headline, the sum under it shows the cap as its last step, so the two figures never disagree. Plan lists an outstanding occurrence (late, not seen, unticked) before the next one.
 Walk 3's scripts are kept in app3/walk/v3.
+
+## BK. The bank after the cards (24 Nov early JST; refines BB2)
+NORTH_STAR asks that the screen say what the bank holds after the cards are paid. BB2 removed the old figure because it had no date and competed with safe to spend.
+BK1. The figure comes back as a dated result of the engine's own walk, per bank: "After your cards are paid on 10 and 11 Dec: Main bank ¥X". It says what it includes (a pay landing on or before that day), sits in the cards box only, and is never worded as spendable.
+BK2. Check your bank names any gap before and after saving ("¥850 more left your bank than you logged. It counts as spending"), and offers to log it.
