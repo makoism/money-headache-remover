@@ -1,0 +1,21 @@
+{
+  "life": "main_min_currency",
+  "title": "The main bank's minimum (home.main.min) must be in the main bank's currency; a minimum in another currency is asked about (AS11)",
+  "story": "Set up Mon 4 Jan 2027 in pesos: the peso bank, the main bank, holds 50,000.00. The minimum saved with the main bank is 20,000 yen (kept from when a yen bank was the main bank). The app cannot turn yen into pesos (F11), so it asks the person for the minimum again. Every amount is made up.",
+  "currency": "PHP",
+  "window": { "from": "2027-01-04", "to": "2027-01-31" },
+  "holidays": { "country": "none", "dates": [], "bank_closed": [] },
+  "main_bank": "b",
+  "main_minimum": { "amount": 20000, "currency": "JPY" },
+  "accounts": [
+    { "id": "b", "name": "Peso bank", "kind": "bank", "currency": "PHP", "minimum": 0, "opening": { "date": "2027-01-04", "amount": 50000.00 } }
+  ],
+  "income": [],
+  "bills": [],
+  "goals": [],
+  "events": [],
+  "asks": [
+    { "id": "mmc-01", "date": "2027-01-05", "question": "warnings", "expected": [ { "account": "b", "code": "minimum_other_currency" } ],
+      "why": "The main bank's minimum is in yen and the main bank is in pesos: it is asked about, never converted [AS11, F11]." }
+  ]
+}

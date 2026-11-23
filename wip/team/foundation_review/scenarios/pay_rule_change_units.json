@@ -1,0 +1,30 @@
+{
+  "life": "pay_rule_change_units",
+  "title": "Pay changes from monthly to every two weeks mid-year: a monthly line covers the months each pay rule is in force, spread over that rule's pays; a change on a day other than the 1st leaves that month to the old rule (P4, R2)",
+  "story": "Pay of 250,000 on the 25th (moved earlier) until a new job pays 110,000 every other Wednesday from Wed 10 Mar 2027 (the change starts that day). Set up Fri 26 Feb 2027, the day after the February pay: the bank holds 330,000; the opening split names nothing, so Food's share is by days left. Rent of 230,000 on the 1st. Food is 30,000 a month. Mon 1 Mar the rent is ticked. In 2027 the monthly rule is in force until 10 Mar: by R2 it covers January to March (3 months) with 2 pays (25 Jan, 25 Feb), so 90,000 over 2 pays. The two-week rule covers April to December (9 months) with its 22 pays from 10 Mar to 29 Dec: 270,000 over 22 pays, 12,272 each with 16 left over for the first 16. Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2027-02-26", "to": "2027-03-31" },
+  "holidays": { "country": "none", "dates": [], "bank_closed": [] },
+  "main_bank": "b",
+  "accounts": [
+    { "id": "b", "name": "Bank", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2027-02-26", "amount": 330000 } }
+  ],
+  "income": [
+    { "id": "pay", "name": "Pay", "account": "b", "amount": 250000, "schedule": { "frequency": "monthly", "day": 25 },
+      "changes": [ { "from": "2027-03-10", "schedule": { "frequency": "every_n_weeks", "n": 2, "weekday": "Wed", "from": "2027-03-10" }, "amount": 110000 } ],
+      "weekend_holiday": "move earlier", "starts_period": true }
+  ],
+  "bills": [
+    { "id": "rent", "name": "Rent", "account": "b", "amount": 230000, "schedule": { "frequency": "monthly", "day": 1 }, "weekend_holiday": "none" }
+  ],
+  "goals": [],
+  "plan": { "lines": [ { "id": "food", "name": "Food", "per": "month", "amount": 30000 } ] },
+  "events": [
+    { "id": "r1", "date": "2027-03-01", "told": "2027-03-01T09:00", "kind": "bill_paid", "account": "b", "amount": 230000, "settles": "rent@2027-03-01" }
+  ],
+  "asks": [
+    { "id": "prc-01", "date": "2027-03-02", "question": "safe_to_spend", "account": "b", "expected": 23916,
+      "why": "100,000 (bank today: 330,000 - 230,000 rent 1 Mar) - 41,538 (Food left this period: the period from pay@2027-02-25 gets 45,000, the monthly rule's 3 months over its 2 pays [P4, R2], x 12 of its 13 days left, rounded down [I4]) + 110,000 (pay 10 Mar) - 12,273 (Food for the period from 10 Mar: pay 1 of the two-week rule's 22, one of the first 16 that get a leftover unit) + 110,000 (pay 24 Mar) - 12,273 (Food for the period from 24 Mar, pay 2 of 22) - 230,000 (rent 1 Apr) = 23,916",
+      "note": "Spreading the whole year over all 24 pays of 2027 would give 15,000 a period; the plain form gives 30,000 (the first rule is monthly)." }
+  ]
+}

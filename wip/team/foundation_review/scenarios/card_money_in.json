@@ -1,0 +1,36 @@
+{
+  "life": "card_money_in",
+  "title": "Money in on a card lowers what is owed; only a refund gives money back to a budget line (AS7, F5, O)",
+  "story": "Set up Mon 4 Jan 2027: the bank holds 300,000, of which Food 30,000 and Free to spend 50,000 (typed). A card closes on the 15th and is paid in full on the 10th of the next month from the bank (moved later); its last statement, closed 15 Dec 2026, was paid and nothing is owed. Pay of 250,000 on the 25th (moved earlier). Wed 6 Jan: 20,000 of food on the card. Fri 8 Jan: a shop refunds 3,000 to the card, and the person gives it back to Food. Mon 11 Jan: 5,000 of cashback is credited to the card. Tue 12 Jan: a friend pays 2,000 for a shared dinner straight onto the card, and the person names Food on it; it is money in, not a refund. Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2027-01-04", "to": "2027-01-31" },
+  "holidays": { "country": "none", "dates": [], "bank_closed": [] },
+  "main_bank": "b",
+  "accounts": [
+    { "id": "b", "name": "Bank", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2027-01-04", "amount": 300000, "split": { "lines": { "food": 30000 }, "free": 50000 } } },
+    { "id": "c", "name": "Card", "kind": "card", "currency": "JPY", "statement_close_day": 15,
+      "payment": { "day": 10, "months_after_close": 1, "from": "b", "pays": "in full", "weekend_holiday": "move later" },
+      "opening": { "date": "2027-01-04", "statement": { "closed": "2026-12-15", "amount": 0, "paid": true }, "current": 0 } }
+  ],
+  "income": [
+    { "id": "pay", "name": "Pay", "account": "b", "amount": 250000, "schedule": { "frequency": "monthly", "day": 25 }, "weekend_holiday": "move earlier", "starts_period": true }
+  ],
+  "bills": [],
+  "goals": [],
+  "plan": { "lines": [ { "id": "food", "name": "Food", "per": "month", "amount": 30000 } ], "free": { "per": "month", "amount": 50000 } },
+  "events": [
+    { "id": "s1", "date": "2027-01-06", "told": "2027-01-06T19:00", "kind": "spend", "account": "c", "amount": 20000, "line": "food" },
+    { "id": "r1", "date": "2027-01-08", "told": "2027-01-08T12:00", "kind": "refund", "account": "c", "amount": 3000, "line": "food", "note": "given back to Food" },
+    { "id": "m1", "date": "2027-01-11", "told": "2027-01-11T12:00", "kind": "money_in", "account": "c", "amount": 5000, "note": "cashback credited to the card" },
+    { "id": "m2", "date": "2027-01-12", "told": "2027-01-12T12:00", "kind": "money_in", "account": "c", "amount": 2000, "line": "food", "note": "a friend's share of a dinner, paid onto the card; money in, not a refund" }
+  ],
+  "asks": [
+    { "id": "cmi-01", "date": "2027-01-13", "question": "owed_now", "account": "c", "expected": 10000,
+      "why": "20,000 (food on the card, Wed 6 Jan) - 3,000 (refund, Fri 8 Jan) - 5,000 (cashback, money in, Mon 11 Jan) - 2,000 (a friend's money in, Tue 12 Jan) = 10,000",
+      "note": "Money in on a card lowers what is owed, refund or not [AS7]." },
+    { "id": "cmi-02", "date": "2027-01-13", "question": "card_due", "account": "c", "expected": { "amount": 10000, "payment_date": "2027-02-10", "statement": "open" },
+      "why": "20,000 (food) - 3,000 (refund) - 5,000 (cashback) - 2,000 (money in) = 10,000" },
+    { "id": "cmi-03", "date": "2027-01-13", "question": "safe_to_spend", "account": "b", "expected": 287000,
+      "why": "300,000 (bank today) - 13,000 (Food left: 30,000 less the 20,000 bought on the card plus the 3,000 refund given back to it; the friend's 2,000 names Food but is not a refund, so it gives nothing back [AS7]) = 287,000" }
+  ]
+}

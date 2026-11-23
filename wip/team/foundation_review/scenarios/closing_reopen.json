@@ -1,0 +1,61 @@
+{
+  "life": "closing_reopen",
+  "title": "One reopen rule for a closed account (AP1, AR3, AO6): money out after the closing day, a check other than zero, a zero check, and an event on the closing day itself",
+  "story": "Set up Mon 4 Jan 2027: the bank holds 300,000, of which Food 30,000 and Free to spend 50,000 (typed). Four e-wallets hold 10,000 each. Pay of 250,000 on the 25th (moved earlier). Wed 6 Jan: 2,000 of food paid with e-wallet 1. Fri 8 Jan the person pays 700 for lunch with e-wallet 1 at 09:00 and logs it on the phone at 21:00. At 10:00 the desktop closes all four e-wallets: each closing writes its final check (e-wallet 1 shows 7,300, the others 10,000) and moves the money to the bank (close:g1 to close:g4). Tue 12 Jan: a statement read for e-wallet 2 shows a 1,200 subscription still charged that day. Thu 14 Jan: a screenshot of e-wallet 3 shows 500 (a cashback came in), read as a check. Fri 15 Jan: a screenshot of e-wallet 4 shows 0, read as a check. Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2027-01-04", "to": "2027-01-31" },
+  "holidays": { "country": "none", "dates": [], "bank_closed": [] },
+  "main_bank": "b",
+  "accounts": [
+    { "id": "b", "name": "Bank", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2027-01-04", "amount": 300000, "split": { "lines": { "food": 30000 }, "free": 50000 } } },
+    { "id": "g1", "name": "E-wallet 1", "kind": "ewallet", "currency": "JPY", "minimum": 0, "closed": "2027-01-08", "opening": { "date": "2027-01-04", "amount": 10000 } },
+    { "id": "g2", "name": "E-wallet 2", "kind": "ewallet", "currency": "JPY", "minimum": 0, "closed": "2027-01-08", "opening": { "date": "2027-01-04", "amount": 10000 } },
+    { "id": "g3", "name": "E-wallet 3", "kind": "ewallet", "currency": "JPY", "minimum": 0, "closed": "2027-01-08", "opening": { "date": "2027-01-04", "amount": 10000 } },
+    { "id": "g4", "name": "E-wallet 4", "kind": "ewallet", "currency": "JPY", "minimum": 0, "closed": "2027-01-08", "opening": { "date": "2027-01-04", "amount": 10000 } }
+  ],
+  "income": [
+    { "id": "pay", "name": "Pay", "account": "b", "amount": 250000, "schedule": { "frequency": "monthly", "day": 25 }, "weekend_holiday": "move earlier", "starts_period": true }
+  ],
+  "bills": [],
+  "goals": [],
+  "plan": { "lines": [ { "id": "food", "name": "Food", "per": "month", "amount": 30000 } ], "free": { "per": "month", "amount": 50000 } },
+  "events": [
+    { "id": "s1", "date": "2027-01-06", "told": "2027-01-06T12:00", "kind": "spend", "account": "g1", "amount": 2000, "line": "food" },
+    { "id": "c1", "date": "2027-01-08", "told": "2027-01-08T10:00", "kind": "check", "account": "g1", "amount": 7300, "note": "the closing's final check" },
+    { "id": "close:g1", "date": "2027-01-08", "told": "2027-01-08T10:00", "kind": "transfer", "from": "g1", "to": "b", "amount": 7300, "note": "the closing moves the e-wallet's money out" },
+    { "id": "c2", "date": "2027-01-08", "told": "2027-01-08T10:05", "kind": "check", "account": "g2", "amount": 10000, "note": "the closing's final check" },
+    { "id": "close:g2", "date": "2027-01-08", "told": "2027-01-08T10:05", "kind": "transfer", "from": "g2", "to": "b", "amount": 10000 },
+    { "id": "c3", "date": "2027-01-08", "told": "2027-01-08T10:10", "kind": "check", "account": "g3", "amount": 10000, "note": "the closing's final check" },
+    { "id": "close:g3", "date": "2027-01-08", "told": "2027-01-08T10:10", "kind": "transfer", "from": "g3", "to": "b", "amount": 10000 },
+    { "id": "c4", "date": "2027-01-08", "told": "2027-01-08T10:15", "kind": "check", "account": "g4", "amount": 10000, "note": "the closing's final check" },
+    { "id": "close:g4", "date": "2027-01-08", "told": "2027-01-08T10:15", "kind": "transfer", "from": "g4", "to": "b", "amount": 10000 },
+    { "id": "l1", "date": "2027-01-08", "told": "2027-01-08T21:00", "kind": "spend", "account": "g1", "amount": 700, "line": "food", "note": "lunch paid at 09:00, before the closing, logged at 21:00" },
+    { "id": "x2", "date": "2027-01-12", "told": "2027-01-12T20:00", "kind": "spend", "account": "g2", "amount": 1200, "source": "statement", "note": "a subscription the e-wallet still charged after it was closed" },
+    { "id": "c5", "date": "2027-01-14", "told": "2027-01-14T09:00", "kind": "check", "account": "g3", "amount": 500, "note": "read from a screenshot: a check that reaches a closed account outside the check-in (AR3)" },
+    { "id": "c6", "date": "2027-01-15", "told": "2027-01-15T09:00", "kind": "check", "account": "g4", "amount": 0, "note": "read from a screenshot: a zero check after the closing day" }
+  ],
+  "asks": [
+    { "id": "cro-01", "date": "2027-01-09", "question": "bank_today", "account": "g1", "expected": 0,
+      "why": "7,300 (the closing's final check, Fri 8 Jan 10:00: it holds everything dated on or before the closing day, so the lunch dated that day and logged at 21:00 is inside it [AP1]) - 7,300 (moved out by the closing, close:g1, which comes after its own check) = 0",
+      "note": "Before AP1 the lunch was judged by its told (AN4), came after the check, left -700 in a closed account and the model refused the copy [P6] (confirm_review_8 path a)." },
+    { "id": "cro-02", "date": "2027-01-09", "question": "warnings", "expected": [],
+      "why": "The lunch is dated on the closing day: it does not reopen e-wallet 1 [AO6, AP1]. Nothing else is dated after a closing day yet, and no account goes below its minimum." },
+    { "id": "cro-03", "date": "2027-01-09", "question": "safe_to_spend", "account": "b", "expected": 310000,
+      "why": "337,300 (bank today: 300,000 + 7,300 + 10,000 + 10,000 + 10,000 moved in by the four closings) - 27,300 (Food left this period: 30,000 less 2,000 and the 700 lunch, both spent on e-wallet 1 before it closed) = 310,000" },
+    { "id": "cro-04", "date": "2027-01-12", "question": "bank_today", "account": "g2", "expected": -1200,
+      "why": "0 (after the closing) - 1,200 (the subscription line dated Tue 12 Jan, after the closing day: it reopens e-wallet 2 [AP1]) = -1,200",
+      "note": "Before AP1 only money in reopened an account; money out left a closed account below zero and the model refused the copy (confirm_review_8 path d)." },
+    { "id": "cro-05", "date": "2027-01-12", "question": "safe_to_spend", "account": "g2", "expected": -1200,
+      "why": "-1,200 (e-wallet 2 today, open again) - 0 (minimum) = -1,200" },
+    { "id": "cro-06", "date": "2027-01-12", "question": "warnings", "expected": [ { "account": "g2", "code": "reopened" }, { "account": "g2", "code": "below_minimum" } ],
+      "why": "E-wallet 2 has a record dated after its closing day: it is open again, with a notice [AP1]. It is below zero, which is below its minimum of 0 [F9]." },
+    { "id": "cro-07", "date": "2027-01-14", "question": "bank_today", "account": "g3", "expected": 500,
+      "why": "0 (after the closing) + 500 (the check dated Thu 14 Jan, a figure other than zero: it reopens e-wallet 3 and sets its bank figure [AO6, AP1, AR3]) = 500" },
+    { "id": "cro-08", "date": "2027-01-14", "question": "warnings", "expected": [ { "account": "g2", "code": "reopened" }, { "account": "g2", "code": "below_minimum" }, { "account": "g3", "code": "reopened" }, { "account": "g3", "code": "gain_to_ask" } ],
+      "why": "E-wallet 3 is open again [AR3]. Its check shows 500 more than the app had (nothing), more than 20% of what it had, so the figure is asked about [O watch, X4]. E-wallet 2 is as before." },
+    { "id": "cro-09", "date": "2027-01-15", "question": "warnings", "expected": [ { "account": "g2", "code": "reopened" }, { "account": "g2", "code": "below_minimum" }, { "account": "g3", "code": "reopened" }, { "account": "g3", "code": "gain_to_ask" }, { "account": "g4", "code": "reopened" } ],
+      "why": "A check dated after the closing day reopens the account whatever its figure: AP1's one rule (any event or check dated after the closing day) and AR3 replace AO6's 'a figure other than zero'. E-wallet 4 is open again, with a notice." },
+    { "id": "cro-10", "date": "2027-01-15", "question": "bank_today", "account": "g4", "expected": 0,
+      "why": "0 (after the closing) + 0 (the zero check of Fri 15 Jan) = 0" }
+  ]
+}

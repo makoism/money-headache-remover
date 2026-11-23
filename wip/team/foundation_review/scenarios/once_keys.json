@@ -1,0 +1,53 @@
+{
+  "life": "once_keys",
+  "title": "One-period amounts on a budget line and on Free to spend (`once`, keyed by the pay that starts the period), a removed key, and amounts waiting for add or replace counted on the safe side (B8, T1, AE1, AO4, AK3, AR1)",
+  "story": "Set up Wed 20 Jan 2027: the bank holds 500,000, of which Food 10,000 and Free to spend 20,000 (typed). Pay of 250,000 on the 25th (moved earlier) starts the period; rent of 300,000 on the 25th. Food is 30,000 a month and Free to spend 50,000. The person set one-period amounts: Food 45,000 and Free to spend 40,000 for the period from the January pay (a birthday month), Free to spend 70,000 for the period from the February pay (a trip), and Food 5,000 for the period from the March pay, later removed. A pay day change moved two Food amounts onto periods that are waiting for the person to pick add or replace: 35,000 for the February period and 20,000 for the March period. Mon 25 Jan the pay and rent are ticked; Tue 26 Jan 5,000 of food. Thu 25 Feb the pay and rent are ticked. Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2027-01-20", "to": "2027-03-31" },
+  "holidays": { "country": "none", "dates": [], "bank_closed": [] },
+  "main_bank": "b",
+  "accounts": [
+    { "id": "b", "name": "Bank", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2027-01-20", "amount": 500000, "split": { "lines": { "food": 10000 }, "free": 20000 } } }
+  ],
+  "income": [
+    { "id": "pay", "name": "Pay", "account": "b", "amount": 250000, "schedule": { "frequency": "monthly", "day": 25 }, "weekend_holiday": "move earlier", "starts_period": true }
+  ],
+  "bills": [
+    { "id": "rent", "name": "Rent", "account": "b", "amount": 300000, "schedule": { "frequency": "monthly", "day": 25 }, "weekend_holiday": "none" }
+  ],
+  "goals": [],
+  "plan": {
+    "lines": [ { "id": "food", "name": "Food", "per": "month", "amount": 30000,
+      "once": {
+        "pay@2027-01-25": { "amount": 45000, "at": "2027-01-20T10:00:00.000+09:00", "by": "phn001" },
+        "pay@2027-03-25": { "amount": 5000, "at": "2027-01-21T10:00:00.000+09:00", "by": "phn001", "gone": "2027-01-21" }
+      } } ],
+    "free": { "per": "month", "amount": 50000,
+      "once": {
+        "pay@2027-01-25": { "amount": 40000, "at": "2027-01-20T10:00:00.000+09:00", "by": "phn001" },
+        "pay@2027-02-25": { "amount": 70000, "at": "2027-01-20T10:00:00.000+09:00", "by": "phn001" }
+      } }
+  },
+  "pendingMove": [
+    { "id": "pend_food_feb", "waits": "pick", "to": "once", "line": "food", "key": "pay@2027-02-25", "a": 35000, "told": "2027-01-21T10:00:00.000+09:00", "at": "2027-01-21T10:00:00.000+09:00", "by": "phn001" },
+    { "id": "pend_food_mar", "waits": "pick", "to": "once", "line": "food", "key": "pay@2027-03-25", "a": 20000, "told": "2027-01-21T10:00:00.000+09:00", "at": "2027-01-21T10:00:00.000+09:00", "by": "phn001" }
+  ],
+  "events": [
+    { "id": "p1", "date": "2027-01-25", "told": "2027-01-25T09:00", "kind": "pay_in", "account": "b", "amount": 250000, "settles": "pay@2027-01-25" },
+    { "id": "r1", "date": "2027-01-25", "told": "2027-01-25T09:00", "kind": "bill_paid", "account": "b", "amount": 300000, "settles": "rent@2027-01-25" },
+    { "id": "s1", "date": "2027-01-26", "told": "2027-01-26T19:00", "kind": "spend", "account": "b", "amount": 5000, "line": "food" },
+    { "id": "p2", "date": "2027-02-25", "told": "2027-02-25T09:00", "kind": "pay_in", "account": "b", "amount": 250000, "settles": "pay@2027-02-25" },
+    { "id": "r2", "date": "2027-02-25", "told": "2027-02-25T09:00", "kind": "bill_paid", "account": "b", "amount": 300000, "settles": "rent@2027-02-25" }
+  ],
+  "asks": [
+    { "id": "ok-01", "date": "2027-01-27", "question": "safe_to_spend", "account": "b", "expected": 120000,
+      "why": "445,000 (bank today: 500,000 + 250,000 pay 25 Jan - 300,000 rent 25 Jan - 5,000 food 26 Jan) - 40,000 (Food left this period: its one-period amount of 45,000 for the period from pay@2027-01-25, less 5,000 spent) + 250,000 (pay 25 Feb) - 300,000 (rent 25 Feb) - 35,000 (Food for the period from 25 Feb: no key, the usual 30,000, and 35,000 waiting for add or replace; the larger counts until the person picks [AR1]) - 70,000 (Free to spend for the period from 25 Feb: its one-period amount) + 250,000 (pay 25 Mar) - 300,000 (rent 25 Mar) - 30,000 (Food for the period from 25 Mar: its key was removed, so the usual 30,000, larger than the 20,000 waiting) - 50,000 (Free to spend for the period from 25 Mar) = 120,000" },
+    { "id": "ok-02", "date": "2027-01-27", "question": "headline", "expected": 40000,
+      "why": "40,000 (Free to spend this period: its one-period amount for the period from pay@2027-01-25, nothing spent from it; the bank's headroom of 120,000 is larger) = 40,000",
+      "note": "With the usual amount the headline would be 50,000." },
+    { "id": "ok-03", "date": "2027-02-26", "question": "safe_to_spend", "account": "b", "expected": 230000,
+      "why": "395,000 (bank today: 445,000 + 250,000 pay 25 Feb - 300,000 rent 25 Feb) - 35,000 (Food left this period: 35,000 waiting for add or replace, larger than the usual 30,000, nothing spent [AR1]) + 250,000 (pay 25 Mar) - 300,000 (rent 25 Mar) - 30,000 (Food for the period from 25 Mar) - 50,000 (Free to spend for the period from 25 Mar) = 230,000" },
+    { "id": "ok-04", "date": "2027-02-26", "question": "headline", "expected": 70000,
+      "why": "70,000 (Free to spend this period: its one-period amount for the period from pay@2027-02-25) = 70,000" }
+  ]
+}

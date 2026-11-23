@@ -1,0 +1,33 @@
+{
+  "life": "weekly_line",
+  "title": "A weekly budget line with monthly pay: each period gets days x the weekly amount / 7, rounded down, this period and later ones (B8, L units q6)",
+  "story": "Set up Wed 20 Jan 2027: the bank holds 400,000, of which Food 5,000 (typed). Pay of 250,000 on the 25th (moved earlier) starts the period; rent of 250,000 on the 25th. Food is 10,000 a week. Mon 25 Jan the pay and rent are ticked; Tue 26 Jan 3,000 of food. The periods run 25 Jan to 24 Feb (31 days), 25 Feb to 24 Mar (28 days) and 25 Mar to 22 Apr (29 days: the April pay moves from Sun 25 Apr to Fri 23 Apr). Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2027-01-20", "to": "2027-02-28" },
+  "holidays": { "country": "none", "dates": [], "bank_closed": [] },
+  "main_bank": "b",
+  "accounts": [
+    { "id": "b", "name": "Bank", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2027-01-20", "amount": 400000, "split": { "lines": { "food": 5000 } } } }
+  ],
+  "income": [
+    { "id": "pay", "name": "Pay", "account": "b", "amount": 250000, "schedule": { "frequency": "monthly", "day": 25 }, "weekend_holiday": "move earlier", "starts_period": true }
+  ],
+  "bills": [
+    { "id": "rent", "name": "Rent", "account": "b", "amount": 250000, "schedule": { "frequency": "monthly", "day": 25 }, "weekend_holiday": "none" }
+  ],
+  "goals": [],
+  "plan": { "lines": [ { "id": "food", "name": "Food", "per": "week", "amount": 10000 } ] },
+  "events": [
+    { "id": "p1", "date": "2027-01-25", "told": "2027-01-25T09:00", "kind": "pay_in", "account": "b", "amount": 250000, "settles": "pay@2027-01-25" },
+    { "id": "r1", "date": "2027-01-25", "told": "2027-01-25T09:00", "kind": "bill_paid", "account": "b", "amount": 250000, "settles": "rent@2027-01-25" },
+    { "id": "s1", "date": "2027-01-26", "told": "2027-01-26T19:00", "kind": "spend", "account": "b", "amount": 3000, "line": "food" }
+  ],
+  "asks": [
+    { "id": "wl-01", "date": "2027-01-21", "question": "safe_to_spend", "account": "b", "expected": 310715,
+      "why": "400,000 (bank today) - 5,000 (Food left this period, typed at setup) + 250,000 (pay 25 Jan) - 250,000 (rent 25 Jan) - 44,285 (Food for the period from 25 Jan: 10,000 a week x 31 days / 7 is 44,285.71, rounded down) + 250,000 (pay 25 Feb) - 250,000 (rent 25 Feb) - 40,000 (Food for the period from 25 Feb: 10,000 x 28 / 7) = 310,715",
+      "note": "Rounded to the nearest (the plain form) the 25 Jan period is 44,286 and the answer 310,714." },
+    { "id": "wl-02", "date": "2027-01-27", "question": "safe_to_spend", "account": "b", "expected": 274287,
+      "why": "397,000 (bank today: 400,000 + 250,000 pay - 250,000 rent - 3,000 food) - 41,285 (Food left this period: the period from 25 Jan gets 44,285, less 3,000 spent) - 40,000 (Food for the period from 25 Feb) + 250,000 (pay 25 Mar) - 250,000 (rent 25 Mar) - 41,428 (Food for the period from 25 Mar: 10,000 x 29 / 7 is 41,428.57, rounded down) = 274,287",
+      "note": "This period's line gets its period amount too, not one week's 10,000." }
+  ]
+}

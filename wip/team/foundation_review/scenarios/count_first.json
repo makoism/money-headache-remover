@@ -1,0 +1,33 @@
+{
+  "life": "count_first",
+  "title": "A bill with a number of payments counts them from its first occurrence, across a change of its day, even when that was long before setup (AS10)",
+  "story": "A phone bought on 24 monthly payments of 4,000, the first on Wed 5 Mar 2025, on the 5th until the person moved the payment to the 20th from 1 Sep 2025 (moved later at a weekend). So it is 6 payments on the 5th (Mar to Aug 2025) and 18 on the 20th (Sep 2025 to Feb 2027); the last is Sat 20 Feb 2027, taken Mon 22 Feb. Set up Mon 11 Jan 2027: the bank holds 300,000. Pay of 250,000 on the 25th (moved earlier). The phone payments of 20 Jan and 22 Feb and the pays of 25 Jan and 25 Feb are ticked. Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2027-01-11", "to": "2027-03-31" },
+  "holidays": { "country": "none", "dates": [], "bank_closed": [] },
+  "main_bank": "b",
+  "accounts": [
+    { "id": "b", "name": "Bank", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2027-01-11", "amount": 300000 } }
+  ],
+  "income": [
+    { "id": "pay", "name": "Pay", "account": "b", "amount": 250000, "schedule": { "frequency": "monthly", "day": 25 }, "weekend_holiday": "move earlier", "starts_period": true }
+  ],
+  "bills": [
+    { "id": "phone", "name": "Phone payments", "account": "b", "amount": 4000, "schedule": { "frequency": "monthly", "day": 5, "from": "2025-03-05", "count": 24 },
+      "changes": [ { "from": "2025-09-01", "schedule": { "frequency": "monthly", "day": 20 } } ], "weekend_holiday": "move later" }
+  ],
+  "goals": [],
+  "events": [
+    { "id": "f1", "date": "2027-01-20", "told": "2027-01-20T09:00", "kind": "bill_paid", "account": "b", "amount": 4000, "settles": "phone@2027-01-20" },
+    { "id": "p1", "date": "2027-01-25", "told": "2027-01-25T09:00", "kind": "pay_in", "account": "b", "amount": 250000, "settles": "pay@2027-01-25" },
+    { "id": "f2", "date": "2027-02-22", "told": "2027-02-22T09:00", "kind": "bill_paid", "account": "b", "amount": 4000, "settles": "phone@2027-02-20" },
+    { "id": "p2", "date": "2027-02-25", "told": "2027-02-25T09:00", "kind": "pay_in", "account": "b", "amount": 250000, "settles": "pay@2027-02-25" }
+  ],
+  "asks": [
+    { "id": "cnt-01", "date": "2027-01-26", "question": "due_before_next_pay", "expected": { "items": [ { "item": "phone@2027-02-20", "lands": "2027-02-22", "amount": 4000 } ], "total": 4000 },
+      "why": "4,000 (the phone's 24th and last payment, due Sat 20 Feb, taken Mon 22 Feb: 6 on the 5th from 5 Mar 2025, then 18 on the 20th) = 4,000" },
+    { "id": "cnt-02", "date": "2027-02-26", "question": "due_before_next_pay", "expected": { "items": [], "total": 0 },
+      "why": "none (the 24 payments ended with 20 Feb; nothing is due before the pay of 25 Mar) = 0",
+      "note": "Counted from the first occurrence inside the look ahead's own window (70 days before setup) the 24 would run to 2028, and 4,000 would be due on 22 Mar." }
+  ]
+}

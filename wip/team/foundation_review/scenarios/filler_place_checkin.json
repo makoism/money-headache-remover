@@ -1,0 +1,31 @@
+{
+  "life": "filler_place_checkin",
+  "title": "The filler's place is saved per check-in and per account (`fillerPlace: { <account>: <place> }`, AS6): two check-ins on one day, one with a place picked for the bank, and an e-wallet in the same check-in with none",
+  "story": "Set up Mon 4 Jan 2027: the bank holds 300,000, of which Food 30,000 and Free to spend 50,000 (typed); an e-wallet holds 10,000. Pay of 250,000 on the 25th (moved earlier). Tue 12 Jan 09:00, a check-in: the bank shows 295,000 and the person says the 5,000 nobody logged was food; the e-wallet shows 9,000 and they pick nothing for its 1,000. Tue 12 Jan 18:00, a second check-in: the bank shows 293,000 and they pick nothing for the 2,000. Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2027-01-04", "to": "2027-01-31" },
+  "holidays": { "country": "none", "dates": [], "bank_closed": [] },
+  "main_bank": "b",
+  "accounts": [
+    { "id": "b", "name": "Bank", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2027-01-04", "amount": 300000, "split": { "lines": { "food": 30000 }, "free": 50000 } } },
+    { "id": "g", "name": "E-wallet", "kind": "ewallet", "currency": "JPY", "minimum": 0, "opening": { "date": "2027-01-04", "amount": 10000 } }
+  ],
+  "income": [
+    { "id": "pay", "name": "Pay", "account": "b", "amount": 250000, "schedule": { "frequency": "monthly", "day": 25 }, "weekend_holiday": "move earlier", "starts_period": true }
+  ],
+  "bills": [],
+  "goals": [],
+  "plan": { "lines": [ { "id": "food", "name": "Food", "per": "month", "amount": 30000 } ], "free": { "per": "month", "amount": 50000 } },
+  "events": [
+    { "id": "c1", "date": "2027-01-12", "told": "2027-01-12T09:00", "kind": "check", "account": "b", "amount": 295000, "filler_place": "food", "note": "check-in 1: fillerPlace { b: food }" },
+    { "id": "c2", "date": "2027-01-12", "told": "2027-01-12T09:00", "kind": "check", "account": "g", "amount": 9000, "note": "check-in 1: no place for the e-wallet" },
+    { "id": "c3", "date": "2027-01-12", "told": "2027-01-12T18:00", "kind": "check", "account": "b", "amount": 293000, "note": "check-in 2: no place picked" }
+  ],
+  "asks": [
+    { "id": "fpc-01", "date": "2027-01-12", "question": "safe_to_spend", "account": "b", "expected": 268000,
+      "why": "293,000 (bank today) - 25,000 (Food left this period: 30,000 less the 5,000 filler of the first check-in, which the person put on Food; the second check-in's 2,000 picked no place) = 268,000" },
+    { "id": "fpc-02", "date": "2027-01-12", "question": "headline", "expected": 47000,
+      "why": "50,000 (Free to spend at the opening) - 1,000 (the e-wallet's filler in the first check-in: no place picked for it) - 2,000 (the bank's filler in the second check-in: no place picked) = 47,000",
+      "note": "A place picked for one account in one check-in is that account's in that check-in only, not every filler of that day." }
+  ]
+}
