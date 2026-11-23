@@ -1,0 +1,35 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Store tests</title></head>
+<body>
+<script src="../clock.js"></script>
+<script src="../guard.js"></script>
+<script src="../idb.js"></script>
+<script src="../persist.js"></script>
+<script src="../pack.js"></script>
+<script>
+/* Made-up data for the tests: ids look like the ids the app makes (SCHEMA_V3 section 0), amounts are invented. */
+window.makeEvents = function (n, opts) {
+  opts = opts || {};
+  var dev = opts.dev || 'k7qzpa', ses = opts.ses || 'm2xq7ab9zt', out = [];
+  var shops = ['lawson', 'seven eleven', 'family mart', 'aeon', 'uniqlo', 'daiso', 'jr east', 'tsutaya'];
+  var start = Date.UTC(2017, 0, 1) / 86400000;
+  for (var i = 0; i < n; i++) {
+    var day = new Date((start + Math.floor(i * 3650 / n)) * 86400000).toISOString().slice(0, 10);
+    var t = day + 'T12:' + String(i % 60).padStart(2, '0') + ':00.000+09:00';
+    out.push({ id: dev + '-' + ses + '-' + (i + 1), k: 'spend', date: day, a: 100 + (i * 37) % 9000,
+      acct: dev + '-' + ses + '-' + (i % 3 === 0 ? 'card' : 'bank'), line: 'bill:food',
+      note: 'made up ' + shops[i % shops.length] + ' ' + (i % 97),
+      src: i % 4 === 0 ? { imp: 'statement', line: i, bal: null } : undefined,
+      told: t, at: t, by: dev });
+  }
+  return out;
+};
+window.makeCopy = function (n, opts) {
+  return { v: 3, home: { country: { v: 'JP', at: '2026-11-01T09:00:00.000+09:00', by: 'k7qzpa' } },
+    people: [], accounts: [{ id: 'k7qzpa-m2xq7ab9zt-bank', name: 'Bank', cur: 'JPY', told: '2026-11-01T09:00:00.000+09:00', at: '2026-11-01T09:00:00.000+09:00', by: 'k7qzpa' }],
+    places: [], schedules: [], checkins: [], plan: { shares: [], budgets: [] }, imports: { cats: {} }, ui: {},
+    keptVersions: [], events: window.makeEvents(n, opts) };
+};
+window.STORE_READY = true;
+</script>
+</body></html>
