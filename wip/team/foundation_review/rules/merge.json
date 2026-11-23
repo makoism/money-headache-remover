@@ -1,11 +1,11 @@
 {
   "area": "merge",
   "title": "Merging two copies: union by id, newest `at` per record, `gone` against the same or older `at` only, the hybrid clock, `told` never changing",
-  "written_in": "SCHEMA_V3 0 and 2.3; DECISIONS_ROUND2 D4, H1, H6, H9, L (merge q1 to q8), M3 to M5, N1, N2, O2, O3, Q5, Q7, S3, AB watch (restoring a backup with the cloud on), AD8 (the shared ui keys restored with a new at), AE1 (keyed overrides merged key by key), AE2, AE5 (restore with the D4 clock, every list, held marks, keyed overrides, a 38.31-format backup), AF3 (ui keys removed per key), AG1 (a write after a restore never ties with it; withdrawn as worded by AH4), AH1 (a device's own write uses its own clock, D8 alone questions it; an arriving copy is held only when more than a day ahead of the receiver's own now) and AH5 (keyed maps found by their shape)",
+  "written_in": "SCHEMA_V3 0 and 2.3; DECISIONS_ROUND2 D4, H1, H6, H9, L (merge q1 to q8), M3 to M5, N1, N2, O2, O3, Q5, Q7, S3, AB watch (restoring a backup with the cloud on), AD8 (the shared ui keys restored with a new at), AE1 (keyed overrides merged key by key), AE2, AE5 (restore with the D4 clock, every list, held marks, keyed overrides, a 38.31-format backup), AF3 (ui keys removed per key), AG1 (a write after a restore never ties with it; withdrawn as worded by AH4), AH1 (a device's own write uses its own clock, D8 alone questions it; an arriving copy is held only when more than a day ahead of the receiver's own now) AH5 (keyed maps found by their shape), AI1 (an arriving copy held at the receiver's own now plus 1 ms, `told` too; a device that has seen nothing holds the same way) and AI2 (entry lists found by their shape)",
   "notes": [
     "Every amount is made up and in whole minor units (yen).",
     "Times are hybrid clock values written as ISO with the time zone offset (section 0). They are compared as moments, never as text: 10:00+09:00 is 01:00 UTC, 02:30+01:00 is 01:30 UTC.",
-    "Question `next_at`: the `at` a device writes, the larger of now and (newest seen + 1 ms), in now's offset; a long gap since the last write is never held [AH1, which withdraws L merge q8's cap]. Question `next_at_warn`: the same, with whether D8 asks the date first (`lastDay`, the device's last open: more than one day back or more than 40 days ahead) [D8, AH1]. Question `clock_ask`: D8's question alone, `back`, `ahead` or null. A `receive` and every `sync` step of `devices` name the receiving device's own `now`: an arriving copy is held only when more than a day ahead of it [AH1, M4]. A restore's stamp is newer than everything in the device's own copy as well as `lastSeen` [D4, AH1]. A field whose value is a map whose values all carry `at` merges key by key, whatever its name [AH5]. Question `came_back`: the records removed in `mine` that the merge brings back [L merge q4]. Each record may carry `by`, the device part of its last writer [L merge q1]; `steps` and `rules` entries carry their own `at` [L merge q2]; shared `ui` carries `ui.at`, one `at` per key [L merge q6]; the copy's `rev` after a merge is the larger of both plus one [L merge q3]. A `steps` or `rules` entry is removed by its own `gone` with its own `at`, and is settled like a record: newer `at`, then `gone`, then the larger `by` [M3]. Entries carry their own `by` beside their `at`, and shared `ui` keys carry theirs in `ui.by` beside `ui.at` [M5]. Question `receive`: a copy that arrives is merged in after every `at` in it more than a day ahead of the newest `at` the receiving device has seen is held at that point plus 1 ms, with the warning [M4]; the `devices` syncs do the same. Question `newer`: which of two times is later. Question `merge`: two copies merged, lists ordered by id. Questions `merge_symmetric` and `merge_same`: whether merging A with B gives the same as B with A, and whether merging a copy with itself changes nothing. Question `devices`: a short story of edits and syncs on two devices, and the record one device ends with.",
+    "Question `next_at`: the `at` a device writes, the larger of now and (newest seen + 1 ms), in now's offset; a long gap since the last write is never held [AH1, which withdraws L merge q8's cap]. Question `next_at_warn`: the same, with whether D8 asks the date first (`lastDay`, the device's last open: more than one day back or more than 40 days ahead) [D8, AH1]. Question `clock_ask`: D8's question alone, `back`, `ahead` or null. A `receive` and every `sync` step of `devices` name the receiving device's own `now`: an arriving copy is held only when more than a day ahead of it [AH1, M4]. A restore's stamp is newer than everything in the device's own copy as well as `lastSeen` [D4, AH1]. A field whose value is a map whose values all carry `at` merges key by key, whatever its name [AH5]; a field whose value is an array whose items all carry `from` and `at` merges entry by entry by `from`, whatever its name, and is restored as `steps` is [AI2]. Question `came_back`: the records removed in `mine` that the merge brings back [L merge q4]. Each record may carry `by`, the device part of its last writer [L merge q1]; `steps` and `rules` entries carry their own `at` [L merge q2]; shared `ui` carries `ui.at`, one `at` per key [L merge q6]; the copy's `rev` after a merge is the larger of both plus one [L merge q3]. A `steps` or `rules` entry is removed by its own `gone` with its own `at`, and is settled like a record: newer `at`, then `gone`, then the larger `by` [M3]. Entries carry their own `by` beside their `at`, and shared `ui` keys carry theirs in `ui.by` beside `ui.at` [M5]. Question `receive`: a copy that arrives is merged in after every `at` in it more than a day ahead of the receiving device's own now is held at that now plus 1 ms (never at the newest `at` seen), `told` too, with the warning [M4, AH1, AI1]; a device that has seen nothing (no `lastSeen`) holds the same way [AI1]; the `devices` syncs do the same. Question `newer`: which of two times is later. Question `merge`: two copies merged, lists ordered by id. Questions `merge_symmetric` and `merge_same`: whether merging A with B gives the same as B with A, and whether merging a copy with itself changes nothing. Question `devices`: a short story of edits and syncs on two devices, and the record one device ends with.",
     "A copy held on arrival is marked `held: { came, at }`: the `at` it came with and the `at` it was held at (a `ui` key's mark is in `ui.held`). A record held once keeps its held `at`: a copy whose `at` is the mark's `came` counts at the held `at`, so the fast device takes the held value when the merged copy comes back, and its copy arriving again is not held a second time [N1]. `told` is held the same way as `at` [N2]; the earliest `told` is then kept, so the first held one stays.",
     "Ids [O2, O3]: question `id_for` builds the id of a record the app writes for a known moment (`set:<occurrence>`, `auto:<schedule>@<due>`, `pe:<the occurrence that started the period>:<place>`, `ps:<the occurrence it stands in for>` [T1]), so two devices writing the same moment make one record and the merge keeps the newest `at`; a `devices` edit may give `make` (what the record is) instead of `id`. Question `id_ok`: whether an id has the shape section 0 gives, `<device part>-<session part>-<counter>` with a 10-character session part, or is a built id.",
     "Ids [Q5, Q7]: `id_for` also builds `rm:<place>` (the move to Waiting written when a place with money is removed), `close:<account>` (the closing's transfer or write-off; with several records `close:<account>:1`, `:2`, in order, `n` giving the number [S3]) and `skip:<occurrence>` (the skip written when a self-logged spend is removed). So the same removal, closing or skip written on two devices is one record."
@@ -737,11 +737,11 @@
               "a": 1500,
               "date": "2026-11-20",
               "told": "2026-11-20T12:00:00.000+09:00",
-              "at": "2026-11-23T09:00:00.001+09:00",
+              "at": "2026-11-23T09:30:00.001+09:00",
               "by": "cccccc",
               "held": {
                 "came": "2026-11-25T10:00:00.000+09:00",
-                "at": "2026-11-23T09:00:00.001+09:00"
+                "at": "2026-11-23T09:30:00.001+09:00"
               }
             },
             {
@@ -757,8 +757,9 @@
         },
         "warn": true
       },
-      "why": "The newest `at` this device has seen is 23 Nov 09:00, so a day ahead is 24 Nov 09:00. The clock cap applies to a copy that arrives too [M4]: e1's 25 Nov 10:00 is more than a day ahead, so it is held at 23 Nov 09:00:00.001, marked with the `at` it came with and the held one, and the warning is shown [L merge q8, N1]. e2's 23 Nov 20:00 is less than a day ahead and is kept. Then the merge: held e1 (09:00:00.001) is newer than mine (08:00), so 1,500 wins; `by` stays cccccc, its last writer. [AH1] A copy is held only when it is more than a day ahead of this device's own now, 23 Nov 09:30.",
+      "why": "This device's own now is 23 Nov 09:30, so a day ahead is 24 Nov 09:30 [AH1]. e1's 25 Nov 10:00 is more than a day ahead, so it is held at that now plus 1 ms, 23 Nov 09:30:00.001 [AI1], marked with the `at` it came with and the held one, and the warning is shown [M4, N1]. e2's 23 Nov 20:00 is less than a day ahead and is kept. Then the merge: held e1 (09:30:00.001) is newer than mine (08:00), so 1,500 wins; `by` stays cccccc, its last writer. Before AI1 it was held at the newest `at` seen (23 Nov 09:00) plus 1 ms, 09:00:00.001, with the same result here.",
       "decisions": [
+        "AI1",
         "M4",
         "L merge q8",
         "N1",
@@ -836,14 +837,16 @@
         "by": "bbbbbb",
         "held": {
           "came": "2026-11-25T10:00:00.000+09:00",
-          "at": "2026-11-23T09:00:00.001+09:00"
+          "at": "2026-11-23T10:00:00.001+09:00"
         }
       },
-      "why": "A is new and has no `at` of its own seen, so its own write is not held: 25 Nov 10:00. When A's copy reaches B, whose newest seen is 23 Nov 09:00, the record is more than a day ahead and is held at 23 Nov 09:00:00.001 and marked `held: { came: 25 Nov 10:00, at: 23 Nov 09:00:00.001 }` [M4, N1]. B's edit at 23 Nov 10:05 is later than anything B has seen, so it is written at 10:05 by bbbbbb and wins: 1,800; the edit keeps the mark (mg-42 shows why). Before M4, B took in 25 Nov 10:00 as seen and its edit was pushed to 25 Nov 10:00:00.001. [AH1] The hold is judged against B's own now when the copy arrives, 23 Nov 10:00: a day ahead is 24 Nov 10:00, and 25 Nov 10:00 is more than that.",
+      "why": "A is new and has no `at` of its own seen, so its own write is not held: 25 Nov 10:00 [AH1]. A's copy reaches B at B's own now, 23 Nov 10:00: a day ahead is 24 Nov 10:00, and 25 Nov 10:00 is more than that [AH1], so the record is held at that now plus 1 ms, 23 Nov 10:00:00.001 [AI1], and marked `held: { came: 25 Nov 10:00, at: 23 Nov 10:00:00.001 }` [M4, N1]. B's edit at 23 Nov 10:05 is later than anything B has seen, so it is written at 10:05 by bbbbbb and wins: 1,800; the edit keeps the mark (mg-42 shows why). Before M4, B took in 25 Nov 10:00 as seen and its edit was pushed to 25 Nov 10:00:00.001. Before AI1 the held value was B's newest seen plus 1 ms, 23 Nov 09:00:00.001.",
       "decisions": [
+        "AI1",
         "M4",
         "L merge q8",
-        "N1"
+        "N1",
+        "AH1"
       ]
     },
     {
@@ -944,13 +947,15 @@
         "by": "bbbbbb",
         "held": {
           "came": "2026-11-25T10:00:00.000+09:00",
-          "at": "2026-11-23T09:00:00.001+09:00"
+          "at": "2026-11-23T10:00:00.001+09:00"
         }
       },
-      "why": "A writes 1,500 at 25 Nov 10:00 (A has seen nothing, so nothing is held). On B, whose newest seen is 23 Nov 09:00, a day ahead is 24 Nov 09:00, so the record is held at 23 Nov 09:00:00.001 and keeps the mark `held: { came: 25 Nov 10:00, at: 23 Nov 09:00:00.001 }` [M4, N1]. B writes 1,800 at 10:05, later than 09:00:00.001, so it wins; an edit keeps the mark (unknown fields are kept, section 0). A's copy arrives again, still 25 Nov 10:00. B's newest seen is now 10:05, a day ahead is 24 Nov 10:05, so before N1 it was held again at 10:05:00.001 and beat B's edit (1,500 on both). Now its `at` is the one B already held, so it takes the held 09:00:00.001 [N1]: 09:00:00.001 is older than 10:05, and 1,800 stays. [AH1] The hold is judged against B's own now when the copy arrives, 23 Nov 10:00: a day ahead is 24 Nov 10:00, and 25 Nov 10:00 is more than that.",
+      "why": "A writes 1,500 at 25 Nov 10:00 (its own write is never held [AH1]). A's copy reaches B at B's own now, 23 Nov 10:00: a day ahead is 24 Nov 10:00, so the record is held at that now plus 1 ms, 23 Nov 10:00:00.001 [AI1], and keeps the mark `held: { came: 25 Nov 10:00, at: 23 Nov 10:00:00.001 }` [M4, N1]. B writes 1,800 at 10:05, later than 10:00:00.001, so it wins; an edit keeps the mark (unknown fields are kept, section 0). A's copy arrives again at B's now 10:10, still 25 Nov 10:00, more than a day ahead: before N1 it was held again, at 10:10:00.001, and beat B's edit (1,500 on both). Now its `at` is the one B already held, so it takes the held 10:00:00.001 [N1]: older than 10:05, and 1,800 stays.",
       "decisions": [
+        "AI1",
         "N1",
-        "M4"
+        "M4",
+        "AH1"
       ]
     },
     {
@@ -1029,13 +1034,15 @@
         "by": "bbbbbb",
         "held": {
           "came": "2026-11-25T10:00:00.000+09:00",
-          "at": "2026-11-23T09:00:00.001+09:00"
+          "at": "2026-11-23T10:00:00.001+09:00"
         }
       },
-      "why": "As mg-42 up to B's edit: B holds 1,800 at 23 Nov 10:05 with the mark `held: { came: 25 Nov 10:00, at: 23 Nov 09:00:00.001 }`. B's copy reaches A. A's own copy is 1,500 at 25 Nov 10:00, which is the `came` of the mark, so A takes the held value, 09:00:00.001 [N1]. B's 10:05 is newer, so A shows 1,800 by bbbbbb, the same as B. Before N1 A's 25 Nov 10:00 was newer than 10:05: A kept 1,500 and B's edit was lost.",
+      "why": "As mg-42 up to B's edit: B holds 1,800 at 23 Nov 10:05 with the mark `held: { came: 25 Nov 10:00, at: 23 Nov 10:00:00.001 }` (B's now when the copy came, plus 1 ms [AI1]). B's copy reaches A. A's own copy is 1,500 at 25 Nov 10:00, which is the `came` of the mark, so A takes the held value, 10:00:00.001 [N1]. B's 10:05 is newer, so A shows 1,800 by bbbbbb, the same as B. Before N1 A's 25 Nov 10:00 was newer than 10:05: A kept 1,500 and B's edit was lost.",
       "decisions": [
+        "AI1",
         "N1",
-        "M4"
+        "M4",
+        "AH1"
       ]
     },
     {
@@ -1099,16 +1106,18 @@
         "a": 1500,
         "date": "2026-11-20",
         "told": "2026-11-20T12:00:00.000+09:00",
-        "at": "2026-11-23T09:00:00.001+09:00",
+        "at": "2026-11-23T10:00:00.001+09:00",
         "by": "cccccc",
         "held": {
           "came": "2026-11-25T10:00:00.000+09:00",
-          "at": "2026-11-23T09:00:00.001+09:00"
+          "at": "2026-11-23T10:00:00.001+09:00"
         }
       },
-      "why": "B holds A's 25 Nov 10:00 at 23 Nov 09:00:00.001 (newest seen 23 Nov 09:00 plus 1 ms) and marks it [M4, N1]. When B's copy comes back, A's own `at`, 25 Nov 10:00, is the mark's `came`, so A takes the held value: 1,500 at 23 Nov 09:00:00.001, still by cccccc, its writer [N1]. Both devices now hold the same `at`, so any later edit on B (10:05, say) is newer on both. [AH1] The hold is judged against B's own now when the copy arrives, 23 Nov 10:00: a day ahead is 24 Nov 10:00, and 25 Nov 10:00 is more than that.",
+      "why": "A's copy reaches B at B's own now, 23 Nov 10:00: a day ahead is 24 Nov 10:00 and 25 Nov 10:00 is more than that [AH1], so B holds it at that now plus 1 ms, 23 Nov 10:00:00.001, and marks it [AI1, M4, N1]. When B's copy comes back, A's own `at`, 25 Nov 10:00, is the mark's `came`, so A takes the held value: 1,500 at 23 Nov 10:00:00.001, still by cccccc, its writer [N1]. Both devices now hold the same `at`, so any later edit on B (10:05, say) is newer on both.",
       "decisions": [
-        "N1"
+        "AI1",
+        "N1",
+        "AH1"
       ]
     },
     {
@@ -1256,13 +1265,14 @@
         },
         "warn": false
       },
-      "why": "This device held the fast copy's 25 Nov 10:00 once, at 23 Nov 09:00:00.001, on the record and on its 1 Jan step, and then edited both at 10:05 (the marks stay). The same fast copy arrives again. Its `at` on the record and on the step is the `came` of the marks, so each takes its held 09:00:00.001 [N1, M5], not 10:05:00.001 (newest seen 10:05 plus 1 ms). 10:05 is newer on both: the name and 275,000 stay. Nothing new was held, so no warning: the warning was shown when it was first held. [AH1] A copy is held only when it is more than a day ahead of this device's own now, 23 Nov 10:10.",
+      "why": "This device held the fast copy's 25 Nov 10:00 once, at 23 Nov 09:00:00.001, on the record and on its 1 Jan step, and then edited both at 10:05 (the marks stay). The same fast copy arrives again. Its `at` on the record and on the step is the `came` of the marks, so each takes its held 09:00:00.001 [N1, M5], not 10:10:00.001 (this device's now plus 1 ms [AI1]). 10:05 is newer on both: the name and 275,000 stay. Nothing new was held, so no warning: the warning was shown when it was first held. [AH1] A copy is held only when it is more than a day ahead of this device's own now, 23 Nov 10:10.",
       "decisions": [
         "N1",
         "M3",
         "M4",
         "M5",
-        "AH1"
+        "AH1",
+        "AI1"
       ]
     },
     {
@@ -1355,20 +1365,21 @@
               "k": "spend",
               "a": 800,
               "date": "2026-11-23",
-              "told": "2026-11-23T09:00:00.001+09:00",
-              "at": "2026-11-23T09:00:00.001+09:00",
+              "told": "2026-11-23T09:30:00.001+09:00",
+              "at": "2026-11-23T09:30:00.001+09:00",
               "by": "cccccc",
               "held": {
                 "came": "2026-11-25T10:00:00.000+09:00",
-                "at": "2026-11-23T09:00:00.001+09:00"
+                "at": "2026-11-23T09:30:00.001+09:00"
               }
             }
           ]
         },
         "warn": true
       },
-      "why": "e3 was made on a device two days fast, so its `told` and `at` are both 25 Nov 10:00 (H1: `told` is set when the record is made). Newest seen here is 23 Nov 09:00, a day ahead is 24 Nov 09:00, so both are held at 23 Nov 09:00:00.001 [M4, N2] and the warning is shown. Before N2 `told` stayed 25 Nov 10:00, so e3 came after every check on 23 Nov whatever its real order. The `at` keeps its mark [N1]. [AH1] A copy is held only when it is more than a day ahead of this device's own now, 23 Nov 09:30.",
+      "why": "e3 was made on a device two days fast, so its `told` and `at` are both 25 Nov 10:00 (H1: `told` is set when the record is made). This device's own now is 23 Nov 09:30, a day ahead is 24 Nov 09:30 [AH1], so both are held at that now plus 1 ms, 23 Nov 09:30:00.001 [AI1, M4, N2], and the warning is shown. Before N2 `told` stayed 25 Nov 10:00, so e3 came after every check on 23 Nov whatever its real order. The `at` keeps its mark [N1].",
       "decisions": [
+        "AI1",
         "N2",
         "N1",
         "M4",
@@ -1446,19 +1457,21 @@
         "a": 900,
         "date": "2026-11-23",
         "by": "bbbbbb",
-        "told": "2026-11-23T09:00:00.001+09:00",
+        "told": "2026-11-23T10:00:00.001+09:00",
         "at": "2026-11-23T10:05:00.000+09:00",
         "held": {
           "came": "2026-11-25T10:00:00.000+09:00",
-          "at": "2026-11-23T09:00:00.001+09:00"
+          "at": "2026-11-23T10:00:00.001+09:00"
         }
       },
-      "why": "A makes e2 at 25 Nov 10:00: `told` and `at` both 25 Nov 10:00. On B (newest seen 23 Nov 09:00) both are held at 23 Nov 09:00:00.001 [M4, N2]. B edits at 10:05: `at` moves, `told` never does [H1]. A's copy arrives again: its `at` is the mark's `came`, so 09:00:00.001 [N1]; its `told`, 25 Nov 10:00, is more than a day past B's newest seen (10:05), so it is held at 10:05:00.001, and the earliest `told` is kept: 09:00:00.001 [H1, L merge q7]. Back on A, its own `told` 25 Nov 10:00 against 09:00:00.001: the earliest, 09:00:00.001, so the record keeps its held `told` on both. B's 10:05 edit (900) wins on A as in mg-43. [AH1] The hold is judged against B's own now when the copy arrives, 23 Nov 10:00: a day ahead is 24 Nov 10:00, and 25 Nov 10:00 is more than that.",
+      "why": "A makes e2 at 25 Nov 10:00: `told` and `at` both 25 Nov 10:00. A's copy reaches B at B's own now, 23 Nov 10:00: a day ahead is 24 Nov 10:00 [AH1], so both are held at that now plus 1 ms, 23 Nov 10:00:00.001 [AI1, M4, N2]. B edits at 10:05: `at` moves, `told` never does [H1]. A's copy arrives again at B's now 10:10: its `at` is the mark's `came`, so 10:00:00.001 [N1]; its `told`, 25 Nov 10:00, is still more than a day ahead, so it is held at 10:10:00.001, and the earliest `told` is kept: 10:00:00.001 [H1, L merge q7]. Back on A, its own `told` 25 Nov 10:00 against 10:00:00.001: the earliest, 10:00:00.001, so the record keeps its first held `told` on both. B's 10:05 edit (900) wins on A as in mg-43.",
       "decisions": [
+        "AI1",
         "N2",
         "N1",
         "H1",
-        "L merge q7"
+        "L merge q7",
+        "AH1"
       ]
     },
     {
@@ -4861,7 +4874,7 @@
               "name": "Salary",
               "per": "pay",
               "told": "2026-11-01T09:00:00.000+09:00",
-              "at": "2026-11-24T10:00:00.001+09:00",
+              "at": "2026-11-24T10:05:00.001+09:00",
               "by": "fst001",
               "steps": [
                 {
@@ -4873,16 +4886,16 @@
               ],
               "held": {
                 "came": "2026-11-27T10:00:00.000+09:00",
-                "at": "2026-11-24T10:00:00.001+09:00"
+                "at": "2026-11-24T10:05:00.001+09:00"
               },
               "amounts": {
                 "2026-12-25": {
                   "amount": 0,
-                  "at": "2026-11-24T10:00:00.001+09:00",
+                  "at": "2026-11-24T10:05:00.001+09:00",
                   "by": "fst001",
                   "held": {
                     "came": "2026-11-27T10:00:00.000+09:00",
-                    "at": "2026-11-24T10:00:00.001+09:00"
+                    "at": "2026-11-24T10:05:00.001+09:00"
                   }
                 }
               }
@@ -4891,8 +4904,9 @@
         },
         "warn": true
       },
-      "why": "This device has seen up to 24 Nov 10:00, so a day ahead is 25 Nov 10:00. A device with its clock three days fast sends the pay with December's 0 written at 27 Nov 10:00. The record and the key are each held at 24 Nov 10:00:00.001, each marked with the `at` it came with and the held one [M4, N1, AE1], and the warning is shown. Then the merge: the held record (10:00:00.001) is newer than mine (1 Nov), and the key is only in the arriving copy, so December's 0 is kept with its mark. [AH1] A copy is held only when it is more than a day ahead of this device's own now, 24 Nov 10:05.",
+      "why": "This device's own now is 24 Nov 10:05, so a day ahead is 25 Nov 10:05 [AH1]. A device with its clock three days fast sends the pay with December's 0 written at 27 Nov 10:00. The record and the key are each held at that now plus 1 ms, 24 Nov 10:05:00.001 [AI1], each marked with the `at` it came with and the held one [M4, N1, AE1], and the warning is shown. Then the merge: the held record (10:05:00.001) is newer than mine (1 Nov), and the key is only in the arriving copy, so December's 0 is kept with its mark.",
       "decisions": [
+        "AI1",
         "AE1",
         "M4",
         "N1",
@@ -12121,18 +12135,842 @@
         "M4",
         "H1"
       ]
-    }
-  ],
-  "open": [
-    {
-      "id": "mg-q14",
-      "question": "AH1 changes when an arriving copy is held (more than a day ahead of the receiving device's own now) but not the value it is held at. M4 and N1 hold it at the newest `at` the receiver has seen plus 1 ms, and that is the reading AH1 withdrew for the device's own writes (L merge q8). For a receiver back after weeks away the two differ a lot: a phone last used 1 Nov, opened 22 Nov 12:00, taking in a spend the desktop made that morning with its clock two days fast would hold its `at` and `told` at 1 Nov 21:00:00.001, so the spend reads as told before a check typed at 09:00 that day and is never counted (the same fault as confirm_review_4 item 1, through the other door). Held at the receiver's own clock (the later of its now and its newest seen plus 1 ms, 22 Nov 12:00) it is counted. Which value is it? And a device that has seen nothing yet (a new phone): does it hold a copy more than a day ahead of its now, and at what?",
-      "ref_does": "Holds at the newest seen plus 1 ms (M4, unchanged) and holds nothing on a device that has seen nothing. The cases that show a held value (mg-38, mg-39, mg-42 to mg-44, mg-46, mg-48, mg-49, mg-108, mg-112) have a receiver whose newest seen is within two hours of its now, where the two readings differ only by that gap; mg-134 has the newest seen equal to now, where they agree. No case has a held copy on a device back after days away."
     },
     {
-      "id": "mg-q15",
-      "question": "AH5 finds keyed maps by shape. Entry lists inside a record (`steps`, `rules`, `extraSteps`: lists of entries merged by `from`) are still found by name. A list of that kind a later build adds to a record would be taken whole from the newer record on an older device, losing the other device's entries, as keyed maps were before AH5. Should version one also find entry lists by shape (an array whose items all carry `from` and `at`), or should every later list be a top-level list of records with ids?",
-      "ref_does": "Finds `steps`, `rules` and `extraSteps` by name; any other array inside a record comes whole with the newer record. No case has an entry list no build knows yet."
+      "id": "mg-168",
+      "question": "receive",
+      "title": "AI1: a phone back after three weeks takes in a desktop copy two days fast: held at the phone's now plus 1 ms, `told` too, so a 09:00 check that day still counts the spend",
+      "input": {
+        "lastSeen": "2026-11-01T21:00:00.000+09:00",
+        "now": "2026-11-22T12:00:00.000+09:00",
+        "mine": {
+          "events": [
+            {
+              "id": "e1",
+              "k": "spend",
+              "a": 1200,
+              "date": "2026-11-01",
+              "acct": "bank",
+              "by": "phn001",
+              "told": "2026-11-01T20:00:00.000+09:00",
+              "at": "2026-11-01T20:00:00.000+09:00"
+            }
+          ]
+        },
+        "theirs": {
+          "events": [
+            {
+              "id": "e1",
+              "k": "spend",
+              "a": 1200,
+              "date": "2026-11-01",
+              "acct": "bank",
+              "by": "phn001",
+              "told": "2026-11-01T20:00:00.000+09:00",
+              "at": "2026-11-01T20:00:00.000+09:00"
+            },
+            {
+              "id": "e2",
+              "k": "check",
+              "acct": "bank",
+              "a": 48000,
+              "date": "2026-11-22",
+              "by": "tab001",
+              "told": "2026-11-22T09:00:00.000+09:00",
+              "at": "2026-11-22T09:00:00.000+09:00"
+            },
+            {
+              "id": "e3",
+              "k": "spend",
+              "a": 3000,
+              "date": "2026-11-22",
+              "acct": "bank",
+              "by": "dsk001",
+              "told": "2026-11-24T10:00:00.000+09:00",
+              "at": "2026-11-24T10:00:00.000+09:00"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "copy": {
+          "events": [
+            {
+              "id": "e1",
+              "k": "spend",
+              "a": 1200,
+              "date": "2026-11-01",
+              "acct": "bank",
+              "by": "phn001",
+              "told": "2026-11-01T20:00:00.000+09:00",
+              "at": "2026-11-01T20:00:00.000+09:00"
+            },
+            {
+              "id": "e2",
+              "k": "check",
+              "acct": "bank",
+              "a": 48000,
+              "date": "2026-11-22",
+              "by": "tab001",
+              "told": "2026-11-22T09:00:00.000+09:00",
+              "at": "2026-11-22T09:00:00.000+09:00"
+            },
+            {
+              "id": "e3",
+              "k": "spend",
+              "a": 3000,
+              "date": "2026-11-22",
+              "acct": "bank",
+              "by": "dsk001",
+              "told": "2026-11-22T12:00:00.001+09:00",
+              "at": "2026-11-22T12:00:00.001+09:00",
+              "held": {
+                "came": "2026-11-24T10:00:00.000+09:00",
+                "at": "2026-11-22T12:00:00.001+09:00"
+              }
+            }
+          ]
+        },
+        "warn": true
+      },
+      "why": "The phone was last used Sun 1 Nov 21:00 and is opened on Sun 22 Nov 12:00; a day ahead of its own now is Mon 23 Nov 12:00 [AH1]. The desktop's clock is two days fast: the 3,000 spend it took that morning (real 22 Nov 10:00) carries `told` and `at` Tue 24 Nov 10:00, 22 hours more than a day ahead, so it is held, at the phone's now plus 1 ms: 22 Nov 12:00:00.001 [AI1], marked `held: { came: 24 Nov 10:00, at: 22 Nov 12:00:00.001 }`, and the warning is shown [M4, N1]. Its `told` is held the same way, to 22 Nov 12:00:00.001 [AI1, N2]. The 48,000 check typed on the tablet at 22 Nov 09:00 is behind the phone's now and is kept as it came. So the spend reads as told at 12:00:00.001, after the 09:00 check: the check does not already hold it, and it counts as spending. Held at the newest `at` seen plus 1 ms (M4 before AI1) both `at` and `told` would read 1 Nov 21:00:00.001, three weeks before the check, and the spend would never be counted. e1 is the same on both copies and stays.",
+      "decisions": [
+        "AI1",
+        "AH1",
+        "M4",
+        "N1",
+        "N2"
+      ]
+    },
+    {
+      "id": "mg-169",
+      "question": "devices",
+      "title": "AI1 as a story: tablet check at 09:00, desktop two days fast spends at 10:00, the phone back after three weeks holds the spend at its now plus 1 ms",
+      "input": {
+        "devices": {
+          "P": {
+            "id": "phn001",
+            "lastSeen": "2026-11-01T21:00:00.000+09:00"
+          },
+          "D": {
+            "id": "dsk001",
+            "lastSeen": "2026-11-23T21:00:00.000+09:00"
+          },
+          "T": {
+            "id": "tab001",
+            "lastSeen": "2026-11-21T20:00:00.000+09:00"
+          }
+        },
+        "copy": {
+          "events": [
+            {
+              "id": "e1",
+              "k": "spend",
+              "a": 1200,
+              "date": "2026-11-01",
+              "acct": "bank",
+              "by": "phn001",
+              "told": "2026-11-01T20:00:00.000+09:00",
+              "at": "2026-11-01T20:00:00.000+09:00"
+            }
+          ]
+        },
+        "steps": [
+          {
+            "on": "T",
+            "now": "2026-11-22T09:00:00.000+09:00",
+            "edit": {
+              "list": "events",
+              "id": "tab001-k3m9q2x7wa-1",
+              "set": {
+                "k": "check",
+                "acct": "bank",
+                "a": 48000,
+                "date": "2026-11-22"
+              }
+            }
+          },
+          {
+            "sync": "T",
+            "to": "D",
+            "now": "2026-11-24T09:05:00.000+09:00"
+          },
+          {
+            "on": "D",
+            "now": "2026-11-24T10:00:00.000+09:00",
+            "edit": {
+              "list": "events",
+              "id": "dsk001-p8r2v6c4zn-1",
+              "set": {
+                "k": "spend",
+                "acct": "bank",
+                "a": 3000,
+                "date": "2026-11-22"
+              }
+            }
+          },
+          {
+            "sync": "D",
+            "to": "P",
+            "now": "2026-11-22T12:00:00.000+09:00"
+          }
+        ],
+        "show": {
+          "on": "P",
+          "list": "events",
+          "id": "dsk001-p8r2v6c4zn-1"
+        }
+      },
+      "expected": {
+        "id": "dsk001-p8r2v6c4zn-1",
+        "k": "spend",
+        "acct": "bank",
+        "a": 3000,
+        "date": "2026-11-22",
+        "by": "dsk001",
+        "told": "2026-11-22T12:00:00.001+09:00",
+        "at": "2026-11-22T12:00:00.001+09:00",
+        "held": {
+          "came": "2026-11-24T10:00:00.000+09:00",
+          "at": "2026-11-22T12:00:00.001+09:00"
+        }
+      },
+      "why": "Sun 22 Nov: the tablet (right clock) types a 48,000 check at 09:00 (`told` and `at` 09:00). The desktop, its clock two days fast (it reads Tue 24 Nov), takes the tablet's copy at its own now 24 Nov 09:05 (nothing ahead of that), then the person adds a 3,000 spend at real 10:00: `told` and `at` 24 Nov 10:00 [D4]. The phone, last used Sun 1 Nov 21:00, opens at 22 Nov 12:00 and takes the desktop's copy. A day ahead of its own now is 23 Nov 12:00 [AH1]: the check (22 Nov 09:00) is kept as it came; the spend (24 Nov 10:00) is more than a day ahead and is held at the phone's now plus 1 ms, 22 Nov 12:00:00.001, `told` too, marked with the `at` it came with [AI1, N1, N2]. So on the phone the spend is told after the 09:00 check and counts as spending. Under M4's value it would sit at 1 Nov 21:00:00.001, three weeks before the check.",
+      "decisions": [
+        "AI1",
+        "AH1",
+        "D4",
+        "N1",
+        "N2"
+      ]
+    },
+    {
+      "id": "mg-170",
+      "question": "devices",
+      "title": "AI1: the fast desktop takes the phone's held value when the merged copy comes back",
+      "input": {
+        "devices": {
+          "P": {
+            "id": "phn001",
+            "lastSeen": "2026-11-01T21:00:00.000+09:00"
+          },
+          "D": {
+            "id": "dsk001",
+            "lastSeen": "2026-11-23T21:00:00.000+09:00"
+          },
+          "T": {
+            "id": "tab001",
+            "lastSeen": "2026-11-21T20:00:00.000+09:00"
+          }
+        },
+        "copy": {
+          "events": [
+            {
+              "id": "e1",
+              "k": "spend",
+              "a": 1200,
+              "date": "2026-11-01",
+              "acct": "bank",
+              "by": "phn001",
+              "told": "2026-11-01T20:00:00.000+09:00",
+              "at": "2026-11-01T20:00:00.000+09:00"
+            }
+          ]
+        },
+        "steps": [
+          {
+            "on": "T",
+            "now": "2026-11-22T09:00:00.000+09:00",
+            "edit": {
+              "list": "events",
+              "id": "tab001-k3m9q2x7wa-1",
+              "set": {
+                "k": "check",
+                "acct": "bank",
+                "a": 48000,
+                "date": "2026-11-22"
+              }
+            }
+          },
+          {
+            "sync": "T",
+            "to": "D",
+            "now": "2026-11-24T09:05:00.000+09:00"
+          },
+          {
+            "on": "D",
+            "now": "2026-11-24T10:00:00.000+09:00",
+            "edit": {
+              "list": "events",
+              "id": "dsk001-p8r2v6c4zn-1",
+              "set": {
+                "k": "spend",
+                "acct": "bank",
+                "a": 3000,
+                "date": "2026-11-22"
+              }
+            }
+          },
+          {
+            "sync": "D",
+            "to": "P",
+            "now": "2026-11-22T12:00:00.000+09:00"
+          },
+          {
+            "sync": "P",
+            "to": "D",
+            "now": "2026-11-24T12:05:00.000+09:00"
+          }
+        ],
+        "show": {
+          "on": "D",
+          "list": "events",
+          "id": "dsk001-p8r2v6c4zn-1"
+        }
+      },
+      "expected": {
+        "id": "dsk001-p8r2v6c4zn-1",
+        "k": "spend",
+        "acct": "bank",
+        "a": 3000,
+        "date": "2026-11-22",
+        "by": "dsk001",
+        "told": "2026-11-22T12:00:00.001+09:00",
+        "at": "2026-11-22T12:00:00.001+09:00",
+        "held": {
+          "came": "2026-11-24T10:00:00.000+09:00",
+          "at": "2026-11-22T12:00:00.001+09:00"
+        }
+      },
+      "why": "As mg-169, then the phone's copy reaches the desktop at its own (fast) now 24 Nov 12:05. The phone's spend carries `at` 22 Nov 12:00:00.001 and the mark `held: { came: 24 Nov 10:00, ... }`; nothing in it is ahead of 24 Nov 12:05, so nothing new is held and no warning is shown. The desktop's own spend has `at` 24 Nov 10:00, the mark's `came`, so it is the same far-ahead write and counts at the held 22 Nov 12:00:00.001 and takes the mark [N1]. Both copies are then the same but `told`; the earliest is kept, 22 Nov 12:00:00.001 [H1, N2]. The desktop now shows what the phone shows.",
+      "decisions": [
+        "AI1",
+        "N1",
+        "N2",
+        "H1"
+      ]
+    },
+    {
+      "id": "mg-171",
+      "question": "receive",
+      "title": "AI1: a new phone that has seen nothing holds a copy more than a day ahead of its own now, at that now plus 1 ms",
+      "input": {
+        "now": "2026-11-22T12:00:00.000+09:00",
+        "mine": {},
+        "theirs": {
+          "events": [
+            {
+              "id": "e1",
+              "k": "spend",
+              "a": 800,
+              "date": "2026-11-21",
+              "acct": "bank",
+              "by": "dsk001",
+              "told": "2026-11-21T19:00:00.000+09:00",
+              "at": "2026-11-21T19:00:00.000+09:00"
+            },
+            {
+              "id": "e3",
+              "k": "spend",
+              "a": 3000,
+              "date": "2026-11-22",
+              "acct": "bank",
+              "by": "dsk001",
+              "told": "2026-11-24T10:00:00.000+09:00",
+              "at": "2026-11-24T10:00:00.000+09:00"
+            }
+          ],
+          "ui": {
+            "theme": "dark",
+            "at": {
+              "theme": "2026-11-24T10:00:00.000+09:00"
+            },
+            "by": {
+              "theme": "dsk001"
+            }
+          }
+        }
+      },
+      "expected": {
+        "copy": {
+          "events": [
+            {
+              "id": "e1",
+              "k": "spend",
+              "a": 800,
+              "date": "2026-11-21",
+              "acct": "bank",
+              "by": "dsk001",
+              "told": "2026-11-21T19:00:00.000+09:00",
+              "at": "2026-11-21T19:00:00.000+09:00"
+            },
+            {
+              "id": "e3",
+              "k": "spend",
+              "a": 3000,
+              "date": "2026-11-22",
+              "acct": "bank",
+              "by": "dsk001",
+              "told": "2026-11-22T12:00:00.001+09:00",
+              "at": "2026-11-22T12:00:00.001+09:00",
+              "held": {
+                "came": "2026-11-24T10:00:00.000+09:00",
+                "at": "2026-11-22T12:00:00.001+09:00"
+              }
+            }
+          ],
+          "ui": {
+            "theme": "dark",
+            "at": {
+              "theme": "2026-11-22T12:00:00.001+09:00"
+            },
+            "by": {
+              "theme": "dsk001"
+            },
+            "held": {
+              "theme": {
+                "came": "2026-11-24T10:00:00.000+09:00",
+                "at": "2026-11-22T12:00:00.001+09:00"
+              }
+            }
+          }
+        },
+        "warn": true
+      },
+      "why": "A new phone has seen nothing (no `lastSeen`); it is set up on Sun 22 Nov 12:00 and takes the desktop's copy, written with a clock two days fast. A device that has seen nothing holds against its own now [AI1]: a day ahead is 23 Nov 12:00. e1 (21 Nov 19:00) is behind it and is kept. e3 (`told` and `at` 24 Nov 10:00) and the shared `ui` key `theme` (`ui.at` 24 Nov 10:00) are more than a day ahead: each is held at the phone's now plus 1 ms, 22 Nov 12:00:00.001, marked with the `at` it came with (for the key in `ui.held`), e3's `told` too, and the warning is shown [AI1, M4, N1, N2]. Before AI1 a device that had seen nothing held nothing, so the desktop's wrong clock would have set every later write on the new phone two days ahead too (its newest seen plus 1 ms).",
+      "decisions": [
+        "AI1",
+        "AH1",
+        "M4",
+        "N1",
+        "N2"
+      ]
+    },
+    {
+      "id": "mg-172",
+      "question": "merge",
+      "title": "AI2: an entry list no build knows yet (`milestones`), edited on two devices, merges entry by entry, found by its shape",
+      "input": {
+        "mine": {
+          "places": [
+            {
+              "id": "trip",
+              "name": "Trip",
+              "kind": "goal",
+              "told": "2026-11-20T10:00:00.000+09:00",
+              "at": "2026-11-24T10:00:00.000+09:00",
+              "by": "phn001",
+              "milestones": [
+                {
+                  "from": "2026-12",
+                  "amount": 5000,
+                  "at": "2026-11-24T10:00:00.000+09:00",
+                  "by": "phn001"
+                },
+                {
+                  "from": "2027-01",
+                  "amount": 10000,
+                  "at": "2026-11-24T10:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              ]
+            }
+          ]
+        },
+        "theirs": {
+          "places": [
+            {
+              "id": "trip",
+              "name": "Trip to Osaka",
+              "kind": "goal",
+              "told": "2026-11-20T10:00:00.000+09:00",
+              "at": "2026-11-24T11:00:00.000+09:00",
+              "by": "dsk001",
+              "milestones": [
+                {
+                  "from": "2026-12",
+                  "amount": 4000,
+                  "at": "2026-11-20T10:00:00.000+09:00",
+                  "by": "phn001"
+                },
+                {
+                  "from": "2027-03",
+                  "amount": 30000,
+                  "at": "2026-11-24T11:00:00.000+09:00",
+                  "by": "dsk001"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "expected": {
+        "places": [
+          {
+            "id": "trip",
+            "name": "Trip to Osaka",
+            "kind": "goal",
+            "told": "2026-11-20T10:00:00.000+09:00",
+            "at": "2026-11-24T11:00:00.000+09:00",
+            "by": "dsk001",
+            "milestones": [
+              {
+                "from": "2026-12",
+                "amount": 5000,
+                "at": "2026-11-24T10:00:00.000+09:00",
+                "by": "phn001"
+              },
+              {
+                "from": "2027-01",
+                "amount": 10000,
+                "at": "2026-11-24T10:00:00.000+09:00",
+                "by": "phn001"
+              },
+              {
+                "from": "2027-03",
+                "amount": 30000,
+                "at": "2026-11-24T11:00:00.000+09:00",
+                "by": "dsk001"
+              }
+            ]
+          }
+        ]
+      },
+      "why": "A later build adds `milestones` to goals: a list of entries, each with its own `from`, `at` and `by`, like `steps`. Both devices had December at 4,000 (20 Nov 10:00). On Tue 24 Nov the phone changes December to 5,000 and adds January 10,000 (10:00); the desktop renames the goal and adds March 30,000 (11:00). The record: the desktop's 11:00 is newer, so its name wins [D4]. `milestones` is an array whose items all carry `from` and `at`, so it merges entry by entry by `from` whatever its name [AI2, L merge q2]: December is the phone's 5,000 (24 Nov 10:00 beats 20 Nov 10:00), January and March both stay, sorted by `from`. Found by a list of names, version one took the list whole from the newer record, and the phone's December change and January were lost.",
+      "decisions": [
+        "AI2",
+        "AH5",
+        "L merge q2",
+        "D4"
+      ]
+    },
+    {
+      "id": "mg-173",
+      "question": "merge_symmetric",
+      "title": "AI2: the same two copies merged in either order give the same `milestones`",
+      "input": {
+        "mine": {
+          "places": [
+            {
+              "id": "trip",
+              "name": "Trip",
+              "kind": "goal",
+              "told": "2026-11-20T10:00:00.000+09:00",
+              "at": "2026-11-24T10:00:00.000+09:00",
+              "by": "phn001",
+              "milestones": [
+                {
+                  "from": "2026-12",
+                  "amount": 5000,
+                  "at": "2026-11-24T10:00:00.000+09:00",
+                  "by": "phn001"
+                },
+                {
+                  "from": "2027-01",
+                  "amount": 10000,
+                  "at": "2026-11-24T10:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              ]
+            }
+          ]
+        },
+        "theirs": {
+          "places": [
+            {
+              "id": "trip",
+              "name": "Trip to Osaka",
+              "kind": "goal",
+              "told": "2026-11-20T10:00:00.000+09:00",
+              "at": "2026-11-24T11:00:00.000+09:00",
+              "by": "dsk001",
+              "milestones": [
+                {
+                  "from": "2026-12",
+                  "amount": 4000,
+                  "at": "2026-11-20T10:00:00.000+09:00",
+                  "by": "phn001"
+                },
+                {
+                  "from": "2027-03",
+                  "amount": 30000,
+                  "at": "2026-11-24T11:00:00.000+09:00",
+                  "by": "dsk001"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "expected": true,
+      "why": "Each entry is settled on its own by `at`, then `gone`, then `by` [M3, M5], and the record by the same rule, so the phone merging the desktop's copy and the desktop merging the phone's give the same text: mg-172's result on both [AI2].",
+      "decisions": [
+        "AI2",
+        "M3",
+        "M5"
+      ]
+    },
+    {
+      "id": "mg-174",
+      "question": "merge",
+      "title": "AI2: an entry removed on one device stays removed in a list no build knows yet, though the other copy's record is newer",
+      "input": {
+        "mine": {
+          "places": [
+            {
+              "id": "trip",
+              "name": "Trip",
+              "kind": "goal",
+              "told": "2026-11-20T10:00:00.000+09:00",
+              "at": "2026-11-25T10:00:00.000+09:00",
+              "by": "phn001",
+              "milestones": [
+                {
+                  "from": "2026-12",
+                  "amount": 5000,
+                  "at": "2026-11-24T10:00:00.000+09:00",
+                  "by": "phn001"
+                },
+                {
+                  "from": "2027-01",
+                  "amount": 10000,
+                  "at": "2026-11-25T10:00:00.000+09:00",
+                  "by": "phn001",
+                  "gone": "2026-11-25"
+                }
+              ]
+            }
+          ]
+        },
+        "theirs": {
+          "places": [
+            {
+              "id": "trip",
+              "name": "Trip to Osaka",
+              "kind": "goal",
+              "told": "2026-11-20T10:00:00.000+09:00",
+              "at": "2026-11-25T11:00:00.000+09:00",
+              "by": "dsk001",
+              "milestones": [
+                {
+                  "from": "2026-12",
+                  "amount": 5000,
+                  "at": "2026-11-24T10:00:00.000+09:00",
+                  "by": "phn001"
+                },
+                {
+                  "from": "2027-01",
+                  "amount": 10000,
+                  "at": "2026-11-24T10:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "expected": {
+        "places": [
+          {
+            "id": "trip",
+            "name": "Trip to Osaka",
+            "kind": "goal",
+            "told": "2026-11-20T10:00:00.000+09:00",
+            "at": "2026-11-25T11:00:00.000+09:00",
+            "by": "dsk001",
+            "milestones": [
+              {
+                "from": "2026-12",
+                "amount": 5000,
+                "at": "2026-11-24T10:00:00.000+09:00",
+                "by": "phn001"
+              },
+              {
+                "from": "2027-01",
+                "amount": 10000,
+                "at": "2026-11-25T10:00:00.000+09:00",
+                "by": "phn001",
+                "gone": "2026-11-25"
+              }
+            ]
+          }
+        ]
+      },
+      "why": "The phone removes January from `milestones` on Wed 25 Nov 10:00: the entry stays with `gone` 25 Nov and its own `at` 10:00 [M3]. The desktop, which has not seen that, renames the goal at 11:00 and still holds January at 24 Nov 10:00. The record: 11:00 is newer, so the desktop's name and `at` win. The list is found by its shape and merged entry by entry [AI2]: January's removal (25 Nov 10:00) is newer than the desktop's copy of it (24 Nov 10:00), so it stays removed; taken whole from the newer record it would have come back.",
+      "decisions": [
+        "AI2",
+        "M3",
+        "D4"
+      ]
+    },
+    {
+      "id": "mg-175",
+      "question": "merge",
+      "title": "AI2: an array whose items carry `from` but no `at` is a plain field and comes whole with the newer record",
+      "input": {
+        "mine": {
+          "places": [
+            {
+              "id": "trip",
+              "name": "Trip",
+              "kind": "goal",
+              "told": "2026-11-20T10:00:00.000+09:00",
+              "at": "2026-11-24T10:00:00.000+09:00",
+              "by": "phn001",
+              "legs": [
+                {
+                  "from": "Tokyo",
+                  "to": "Osaka"
+                }
+              ]
+            }
+          ]
+        },
+        "theirs": {
+          "places": [
+            {
+              "id": "trip",
+              "name": "Trip",
+              "kind": "goal",
+              "told": "2026-11-20T10:00:00.000+09:00",
+              "at": "2026-11-24T11:00:00.000+09:00",
+              "by": "dsk001",
+              "legs": [
+                {
+                  "from": "Tokyo",
+                  "to": "Kyoto"
+                },
+                {
+                  "from": "Kyoto",
+                  "to": "Osaka"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "expected": {
+        "places": [
+          {
+            "id": "trip",
+            "name": "Trip",
+            "kind": "goal",
+            "told": "2026-11-20T10:00:00.000+09:00",
+            "at": "2026-11-24T11:00:00.000+09:00",
+            "by": "dsk001",
+            "legs": [
+              {
+                "from": "Tokyo",
+                "to": "Kyoto"
+              },
+              {
+                "from": "Kyoto",
+                "to": "Osaka"
+              }
+            ]
+          }
+        ]
+      },
+      "why": "A later build keeps a trip's route as `legs`, items with `from` and `to` but no `at`. They are not entries (an entry list is an array whose items all carry `from` and `at` [AI2]), so `legs` is a plain field: the desktop's record (11:00) is newer than the phone's (10:00) and its two legs come with it whole [D4]. Merged by `from`, the phone's Tokyo leg and the desktop's would have been settled as one entry.",
+      "decisions": [
+        "AI2",
+        "D4"
+      ]
+    },
+    {
+      "id": "mg-176",
+      "question": "restore",
+      "title": "AI2: restoring an older backup stamps the entries of a list no build knows yet and removes the ones not in the backup",
+      "input": {
+        "current": {
+          "places": [
+            {
+              "id": "trip",
+              "name": "Trip to Osaka",
+              "kind": "goal",
+              "told": "2026-11-20T10:00:00.000+09:00",
+              "at": "2026-11-24T11:00:00.000+09:00",
+              "by": "dsk001",
+              "milestones": [
+                {
+                  "from": "2027-01",
+                  "amount": 10000,
+                  "at": "2026-11-24T10:00:00.000+09:00",
+                  "by": "phn001"
+                },
+                {
+                  "from": "2027-03",
+                  "amount": 30000,
+                  "at": "2026-11-24T11:00:00.000+09:00",
+                  "by": "dsk001"
+                }
+              ]
+            }
+          ]
+        },
+        "backup": {
+          "places": [
+            {
+              "id": "trip",
+              "name": "Trip",
+              "kind": "goal",
+              "told": "2026-11-20T10:00:00.000+09:00",
+              "at": "2026-11-22T10:00:00.000+09:00",
+              "by": "phn001",
+              "milestones": [
+                {
+                  "from": "2027-01",
+                  "amount": 8000,
+                  "at": "2026-11-22T10:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              ]
+            }
+          ]
+        },
+        "now": "2026-11-25T09:00:00.000+09:00",
+        "by": "phn001",
+        "lastSeen": "2026-11-24T11:00:00.000+09:00",
+        "show": [
+          "places"
+        ]
+      },
+      "expected": {
+        "places": [
+          {
+            "id": "trip",
+            "name": "Trip",
+            "kind": "goal",
+            "told": "2026-11-20T10:00:00.000+09:00",
+            "at": "2026-11-25T09:00:00.000+09:00",
+            "by": "phn001",
+            "milestones": [
+              {
+                "from": "2027-01",
+                "amount": 8000,
+                "at": "2026-11-25T09:00:00.000+09:00",
+                "by": "phn001"
+              },
+              {
+                "from": "2027-03",
+                "amount": 30000,
+                "at": "2026-11-25T09:00:00.000+09:00",
+                "by": "phn001",
+                "gone": "2026-11-25"
+              }
+            ]
+          }
+        ]
+      },
+      "why": "The phone restores a backup of Sun 22 Nov on Wed 25 Nov 09:00 with the cloud on. The newest `at` it has seen is 24 Nov 11:00 (its own copy included), so the restore's `at` is the later of 25 Nov 09:00 and 24 Nov 11:00:00.001: 25 Nov 09:00 [D4, AE5]. The goal takes the backup's fields (name Trip) with that `at` and `by` phn001; `told` stays 20 Nov 10:00 [H1]. `milestones` is found by its shape [AI2], so it is restored as `steps` is: the backup's January (8,000) gets the new `at`, and March, not in the backup, is removed by its own `gone` (25 Nov) with the new `at` [M3, AB watch]. So the next merge with the cloud keeps the restore; restored whole as a plain field, March would come back from the cloud.",
+      "decisions": [
+        "AI2",
+        "AE5",
+        "AB watch",
+        "M3",
+        "H1"
+      ]
     }
-  ]
+  ],
+  "open": []
 }

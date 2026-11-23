@@ -115,8 +115,21 @@ function mergeEntries(a, b) {
 // [AH5] A keyed map is found by its shape, not by a list of names: a field whose value is a map whose values all carry
 // `at` merges key by key, so a map a later build adds (a field no build knows yet) merges key by key on older devices
 // too. `amounts` and `once` are keyed whatever they hold.
+// [AI2] An entry list is found by its shape too: a field whose value is an array whose items all carry `from` and `at`
+// merges entry by entry by `from`, so a list a later build adds (a field no build knows yet) merges entry by entry on
+// older devices too. `steps`, `rules` and `extraSteps` are entry lists whatever they hold.
 const ENTRY_LISTS = ['steps', 'rules', 'extraSteps'], KEYED = ['amounts', 'once'];
 const isMap = x => !!x && typeof x === 'object' && !Array.isArray(x);
+const entryShape = v => Array.isArray(v) && v.length > 0 && v.every(e => isMap(e) && e.from !== undefined && typeof e.at === 'string');
+// The fields of two copies of a record that are entry lists [L merge q2, AE1, AI2].
+function entryFields(x, y) {
+  x = x || {}; y = y || {};
+  return [...new Set(Object.keys(x).concat(Object.keys(y)))].filter(k => {
+    if (ENTRY_LISTS.includes(k)) return Array.isArray(x[k]) || Array.isArray(y[k]);
+    // an array on one copy (or both) whose items all carry `from` and `at`, and nothing but an array or nothing on the other
+    return (entryShape(x[k]) || entryShape(y[k])) && [x[k], y[k]].every(v => v === undefined || Array.isArray(v));
+  });
+}
 const keyedShape = v => isMap(v) && Object.keys(v).length > 0 && Object.values(v).every(e => isMap(e) && typeof e.at === 'string');
 const META = ['held'];
 // The fields of two copies of a record that are keyed maps [AE1, AH5].
@@ -143,7 +156,7 @@ function pick(x, y) {
   const out = Object.assign({}, win);   // whole record, unknown fields kept (section 0)
   // [AE1] An entry list or a keyed map held by either copy is merged, never taken whole from the winner: nothing is
   // deleted (section 0), so a copy that lacks one never wrote it, and the other copy's entries and keys stay.
-  for (const k of ENTRY_LISTS) if (Array.isArray(x[k]) || Array.isArray(y[k])) out[k] = mergeEntries(x[k] || [], y[k] || []);
+  for (const k of entryFields(x, y)) out[k] = mergeEntries(x[k] || [], y[k] || []);   // [AI2] found by shape too
   for (const k of keyedFields(x, y)) out[k] = mergeKeyed(x[k], y[k]);
   const told = [x.told, y.told].filter(Boolean).sort((a, b) => ms(a) - ms(b))[0];
   if (told) out.told = told;
@@ -220,22 +233,22 @@ function newestAt(copy) {
   return best;
 }
 
-// [M4, AH1] A copy that arrives with an `at` more than a day ahead of the receiving device's own now: that `at` is held
-// at the newest `at` the device has seen plus 1 ms (in its own offset) and the warning is shown. [AH1] Only the
-// receiver's own now decides: a device back after weeks away takes in what was written meanwhile as it is. Which
-// value a held `at` takes is M4's (the newest seen plus 1 ms); SCHEMA_V3 section 14 asks whether AH1 changes it. Every `at` is held: records, `steps` and `rules` entries, and `ui.at` keys.
+// [M4, AH1, AI1] A copy that arrives with an `at` more than a day ahead of the receiving device's own now: that `at` is
+// held at that now plus 1 ms (in now's offset), never at the newest `at` seen, and the warning is shown. [AH1] Only the
+// receiver's own now decides: a device back after weeks away takes in what was written meanwhile as it is, and what it
+// holds lands at its own now, so a spend a fast clock wrote that morning reads as told after a check typed earlier that
+// day and still counts [AI1]. Every `at` is held: records, entries of every entry list, keys of keyed maps, `ui.at` keys.
 // [N1] A held `at` is marked `held: { came, at }` (for a `ui` key, in `ui.held`). A copy whose `at` is the
 // `came` of the receiving device's own mark for the same thing was held already: it takes the held `at`
 // again, is not held a second time, and shows no new warning. [N2] `told` is held the same way as `at`
 // (a merge then keeps the earliest `told`, so a record keeps its first held `told`). `by` is left as it came.
-// A device that has seen nothing holds nothing (as nextAt).
+// [AI1] A device that has seen nothing holds against its own now the same way: `lastSeen` plays no part.
 function holdArriving(copy, lastSeen, mine, now) {
   let warn = false;
   const held = JSON.parse(JSON.stringify(copy || {}));
   if (!now) throw new Error('a copy that arrives is judged against the receiving device\'s own now [AH1]');
-  if (!lastSeen) return { copy: held, warn };
   const ahead = t => typeof t === 'string' && ms(t) > ms(now) + DAY;
-  const cap = t => { warn = true; return write(ms(lastSeen) + 1, offsetOf(t)); };
+  const cap = () => { warn = true; return write(ms(now) + 1, offsetOf(now)); };   // [AI1] the receiver's now plus 1 ms
   const holdAt = (x, mark) => {   // x has `at`; mark is mine's mark for the same thing, if any
     if (mark && sameMoment(x.at, mark.came)) { x.at = mark.at; x.held = mark; }
     else if (ahead(x.at)) { const came = x.at; x.at = cap(came); x.held = { came, at: x.at }; }
@@ -323,7 +336,7 @@ function restore({ current, backup, now, by, lastSeen, answers }) {
     const o = Object.assign({}, r, stamp);
     const told = earliest(r.told, c && c.told); if (told) o.told = told;
     const mark = (c && c.held) || r.held; if (mark) o.held = mark;
-    for (const k of ENTRY_LISTS) if (Array.isArray(r[k]) || (c && Array.isArray(c[k]))) {
+    for (const k of entryFields(r, c)) {   // [AI2] every entry list, found by its shape
       const mine = (r[k] || []).map(e => Object.assign({}, e, stamp));
       const newer = ((c && c[k]) || []).filter(e => !(r[k] || []).some(b => b.from === e.from)).map(e => Object.assign({}, e, { gone: e.gone || day }, stamp));
       o[k] = mine.concat(newer).sort((x, y) => (x.from < y.from ? -1 : x.from > y.from ? 1 : 0));
