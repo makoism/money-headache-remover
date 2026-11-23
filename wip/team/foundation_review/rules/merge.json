@@ -1,11 +1,12 @@
 {
   "area": "merge",
   "title": "Merging two copies: union by id, newest `at` per record, `gone` against the same or older `at` only, the hybrid clock, `told` never changing",
-  "written_in": "SCHEMA_V3 0 and 2.3; DECISIONS_ROUND2 D4, H1, H6, H9, L (merge q1 to q8), M3 to M5",
+  "written_in": "SCHEMA_V3 0 and 2.3; DECISIONS_ROUND2 D4, H1, H6, H9, L (merge q1 to q8), M3 to M5, N1, N2",
   "notes": [
     "Every amount is made up and in whole minor units (yen).",
     "Times are hybrid clock values written as ISO with the time zone offset (section 0). They are compared as moments, never as text: 10:00+09:00 is 01:00 UTC, 02:30+01:00 is 01:30 UTC.",
-    "Question `next_at`: the `at` a device writes, the larger of now and (newest seen + 1 ms), in now's offset; a now more than a day ahead of the newest seen is held at the newest seen + 1 ms [L merge q8]. Question `next_at_warn`: the same, with whether the warning is shown. Question `came_back`: the records removed in `mine` that the merge brings back [L merge q4]. Each record may carry `by`, the device part of its last writer [L merge q1]; `steps` and `rules` entries carry their own `at` [L merge q2]; shared `ui` carries `ui.at`, one `at` per key [L merge q6]; the copy's `rev` after a merge is the larger of both plus one [L merge q3]. A `steps` or `rules` entry is removed by its own `gone` with its own `at`, and is settled like a record: newer `at`, then `gone`, then the larger `by` [M3]. Entries carry their own `by` beside their `at`, and shared `ui` keys carry theirs in `ui.by` beside `ui.at` [M5]. Question `receive`: a copy that arrives is merged in after every `at` in it more than a day ahead of the newest `at` the receiving device has seen is held at that point plus 1 ms, with the warning [M4]; the `devices` syncs do the same. Question `newer`: which of two times is later. Question `merge`: two copies merged, lists ordered by id. Questions `merge_symmetric` and `merge_same`: whether merging A with B gives the same as B with A, and whether merging a copy with itself changes nothing. Question `devices`: a short story of edits and syncs on two devices, and the record one device ends with."
+    "Question `next_at`: the `at` a device writes, the larger of now and (newest seen + 1 ms), in now's offset; a now more than a day ahead of the newest seen is held at the newest seen + 1 ms [L merge q8]. Question `next_at_warn`: the same, with whether the warning is shown. Question `came_back`: the records removed in `mine` that the merge brings back [L merge q4]. Each record may carry `by`, the device part of its last writer [L merge q1]; `steps` and `rules` entries carry their own `at` [L merge q2]; shared `ui` carries `ui.at`, one `at` per key [L merge q6]; the copy's `rev` after a merge is the larger of both plus one [L merge q3]. A `steps` or `rules` entry is removed by its own `gone` with its own `at`, and is settled like a record: newer `at`, then `gone`, then the larger `by` [M3]. Entries carry their own `by` beside their `at`, and shared `ui` keys carry theirs in `ui.by` beside `ui.at` [M5]. Question `receive`: a copy that arrives is merged in after every `at` in it more than a day ahead of the newest `at` the receiving device has seen is held at that point plus 1 ms, with the warning [M4]; the `devices` syncs do the same. Question `newer`: which of two times is later. Question `merge`: two copies merged, lists ordered by id. Questions `merge_symmetric` and `merge_same`: whether merging A with B gives the same as B with A, and whether merging a copy with itself changes nothing. Question `devices`: a short story of edits and syncs on two devices, and the record one device ends with.",
+    "A copy held on arrival is marked `held: { came, at }`: the `at` it came with and the `at` it was held at (a `ui` key's mark is in `ui.held`). A record held once keeps its held `at`: a copy whose `at` is the mark's `came` counts at the held `at`, so the fast device takes the held value when the merged copy comes back, and its copy arriving again is not held a second time [N1]. `told` is held the same way as `at` [N2]; the earliest `told` is then kept, so the first held one stays."
   ],
   "defaults": {},
   "cases": [
@@ -444,9 +445,9 @@
         "mine": {"events": [{"id": "e1", "k": "spend", "a": 1200, "date": "2026-11-20", "told": "2026-11-20T12:00:00.000+09:00", "at": "2026-11-23T08:00:00.000+09:00", "by": "aaaaaa"}]},
         "theirs": {"events": [{"id": "e1", "k": "spend", "a": 1500, "date": "2026-11-20", "told": "2026-11-20T12:00:00.000+09:00", "at": "2026-11-25T10:00:00.000+09:00", "by": "cccccc"}, {"id": "e2", "k": "spend", "a": 900, "date": "2026-11-23", "told": "2026-11-23T20:00:00.000+09:00", "at": "2026-11-23T20:00:00.000+09:00", "by": "cccccc"}]}
       },
-      "expected": {"copy": {"events": [{"id": "e1", "k": "spend", "a": 1500, "date": "2026-11-20", "told": "2026-11-20T12:00:00.000+09:00", "at": "2026-11-23T09:00:00.001+09:00", "by": "cccccc"}, {"id": "e2", "k": "spend", "a": 900, "date": "2026-11-23", "told": "2026-11-23T20:00:00.000+09:00", "at": "2026-11-23T20:00:00.000+09:00", "by": "cccccc"}]}, "warn": true},
-      "why": "The newest `at` this device has seen is 23 Nov 09:00, so a day ahead is 24 Nov 09:00. The clock cap applies to a copy that arrives too [M4]: e1's 25 Nov 10:00 is more than a day ahead, so it is held at 23 Nov 09:00:00.001 and the warning is shown [L merge q8]. e2's 23 Nov 20:00 is less than a day ahead and is kept. Then the merge: held e1 (09:00:00.001) is newer than mine (08:00), so 1,500 wins; `by` stays cccccc, its last writer.",
-      "decisions": ["M4", "L merge q8"]
+      "expected": {"copy": {"events": [{"id": "e1", "k": "spend", "a": 1500, "date": "2026-11-20", "told": "2026-11-20T12:00:00.000+09:00", "at": "2026-11-23T09:00:00.001+09:00", "by": "cccccc", "held": {"came": "2026-11-25T10:00:00.000+09:00", "at": "2026-11-23T09:00:00.001+09:00"}}, {"id": "e2", "k": "spend", "a": 900, "date": "2026-11-23", "told": "2026-11-23T20:00:00.000+09:00", "at": "2026-11-23T20:00:00.000+09:00", "by": "cccccc"}]}, "warn": true},
+      "why": "The newest `at` this device has seen is 23 Nov 09:00, so a day ahead is 24 Nov 09:00. The clock cap applies to a copy that arrives too [M4]: e1's 25 Nov 10:00 is more than a day ahead, so it is held at 23 Nov 09:00:00.001, marked with the `at` it came with and the held one, and the warning is shown [L merge q8, N1]. e2's 23 Nov 20:00 is less than a day ahead and is kept. Then the merge: held e1 (09:00:00.001) is newer than mine (08:00), so 1,500 wins; `by` stays cccccc, its last writer.",
+      "decisions": ["M4", "L merge q8", "N1"]
     },
     {
       "id": "mg-39", "question": "devices",
@@ -457,9 +458,9 @@
         "steps": [{"on": "A", "now": "2026-11-25T10:00:00.000+09:00", "edit": {"list": "events", "id": "e1", "set": {"a": 1500}}}, {"sync": "A", "to": "B"}, {"on": "B", "now": "2026-11-23T10:05:00.000+09:00", "edit": {"list": "events", "id": "e1", "set": {"a": 1800}}}],
         "show": {"on": "B", "list": "events", "id": "e1"}
       },
-      "expected": {"id": "e1", "k": "spend", "a": 1800, "date": "2026-11-20", "told": "2026-11-20T12:00:00.000+09:00", "at": "2026-11-23T10:05:00.000+09:00", "by": "bbbbbb"},
-      "why": "A is new and has no `at` of its own seen, so its own write is not held: 25 Nov 10:00. When A's copy reaches B, whose newest seen is 23 Nov 09:00, the record is more than a day ahead and is held at 23 Nov 09:00:00.001 [M4]. B's edit at 23 Nov 10:05 is later than anything B has seen, so it is written at 10:05 by bbbbbb and wins: 1,800. Before M4, B took in 25 Nov 10:00 as seen and its edit was pushed to 25 Nov 10:00:00.001.",
-      "decisions": ["M4", "L merge q8"]
+      "expected": {"id": "e1", "k": "spend", "a": 1800, "date": "2026-11-20", "told": "2026-11-20T12:00:00.000+09:00", "at": "2026-11-23T10:05:00.000+09:00", "by": "bbbbbb", "held": {"came": "2026-11-25T10:00:00.000+09:00", "at": "2026-11-23T09:00:00.001+09:00"}},
+      "why": "A is new and has no `at` of its own seen, so its own write is not held: 25 Nov 10:00. When A's copy reaches B, whose newest seen is 23 Nov 09:00, the record is more than a day ahead and is held at 23 Nov 09:00:00.001 and marked `held: { came: 25 Nov 10:00, at: 23 Nov 09:00:00.001 }` [M4, N1]. B's edit at 23 Nov 10:05 is later than anything B has seen, so it is written at 10:05 by bbbbbb and wins: 1,800; the edit keeps the mark (mg-42 shows why). Before M4, B took in 25 Nov 10:00 as seen and its edit was pushed to 25 Nov 10:00:00.001.",
+      "decisions": ["M4", "L merge q8", "N1"]
     },
     {
       "id": "mg-40", "question": "merge",
@@ -482,10 +483,587 @@
       "expected": {"ui": {"main": "trip", "at": {"main": "2026-11-21T10:00:00.000+09:00"}, "by": {"main": "bbbbbb"}}},
       "why": "A shared `ui` key carries its `by` beside its `at`: `ui.by` beside `ui.at` [M5, L merge q6]. main has the same `at`, 10:00, on both, so the larger `by` wins: bbbbbb, trip. Before M5 the larger value as text won, which was waiting.",
       "decisions": ["M5", "L merge q6"]
+    },
+    {
+      "id": "mg-42",
+      "question": "devices",
+      "title": "A record held once keeps its held `at`: the fast copy that arrives again does not beat the later edit",
+      "input": {
+        "devices": {
+          "A": {
+            "id": "cccccc"
+          },
+          "B": {
+            "id": "bbbbbb",
+            "lastSeen": "2026-11-23T09:00:00.000+09:00"
+          }
+        },
+        "copy": {
+          "events": [
+            {
+              "id": "e1",
+              "k": "spend",
+              "a": 1200,
+              "date": "2026-11-20",
+              "told": "2026-11-20T12:00:00.000+09:00",
+              "at": "2026-11-20T12:00:00.000+09:00"
+            }
+          ]
+        },
+        "steps": [
+          {
+            "on": "A",
+            "now": "2026-11-25T10:00:00.000+09:00",
+            "edit": {
+              "list": "events",
+              "id": "e1",
+              "set": {
+                "a": 1500
+              }
+            }
+          },
+          {
+            "sync": "A",
+            "to": "B"
+          },
+          {
+            "on": "B",
+            "now": "2026-11-23T10:05:00.000+09:00",
+            "edit": {
+              "list": "events",
+              "id": "e1",
+              "set": {
+                "a": 1800
+              }
+            }
+          },
+          {
+            "sync": "A",
+            "to": "B"
+          }
+        ],
+        "show": {
+          "on": "B",
+          "list": "events",
+          "id": "e1"
+        }
+      },
+      "expected": {
+        "id": "e1",
+        "k": "spend",
+        "a": 1800,
+        "date": "2026-11-20",
+        "told": "2026-11-20T12:00:00.000+09:00",
+        "at": "2026-11-23T10:05:00.000+09:00",
+        "by": "bbbbbb",
+        "held": {
+          "came": "2026-11-25T10:00:00.000+09:00",
+          "at": "2026-11-23T09:00:00.001+09:00"
+        }
+      },
+      "why": "A writes 1,500 at 25 Nov 10:00 (A has seen nothing, so nothing is held). On B, whose newest seen is 23 Nov 09:00, a day ahead is 24 Nov 09:00, so the record is held at 23 Nov 09:00:00.001 and keeps the mark `held: { came: 25 Nov 10:00, at: 23 Nov 09:00:00.001 }` [M4, N1]. B writes 1,800 at 10:05, later than 09:00:00.001, so it wins; an edit keeps the mark (unknown fields are kept, section 0). A's copy arrives again, still 25 Nov 10:00. B's newest seen is now 10:05, a day ahead is 24 Nov 10:05, so before N1 it was held again at 10:05:00.001 and beat B's edit (1,500 on both). Now its `at` is the one B already held, so it takes the held 09:00:00.001 [N1]: 09:00:00.001 is older than 10:05, and 1,800 stays.",
+      "decisions": [
+        "N1",
+        "M4"
+      ]
+    },
+    {
+      "id": "mg-43",
+      "question": "devices",
+      "title": "The fast device takes the held value when the merged copy comes back, so the later edit wins there too",
+      "input": {
+        "devices": {
+          "A": {
+            "id": "cccccc"
+          },
+          "B": {
+            "id": "bbbbbb",
+            "lastSeen": "2026-11-23T09:00:00.000+09:00"
+          }
+        },
+        "copy": {
+          "events": [
+            {
+              "id": "e1",
+              "k": "spend",
+              "a": 1200,
+              "date": "2026-11-20",
+              "told": "2026-11-20T12:00:00.000+09:00",
+              "at": "2026-11-20T12:00:00.000+09:00"
+            }
+          ]
+        },
+        "steps": [
+          {
+            "on": "A",
+            "now": "2026-11-25T10:00:00.000+09:00",
+            "edit": {
+              "list": "events",
+              "id": "e1",
+              "set": {
+                "a": 1500
+              }
+            }
+          },
+          {
+            "sync": "A",
+            "to": "B"
+          },
+          {
+            "on": "B",
+            "now": "2026-11-23T10:05:00.000+09:00",
+            "edit": {
+              "list": "events",
+              "id": "e1",
+              "set": {
+                "a": 1800
+              }
+            }
+          },
+          {
+            "sync": "B",
+            "to": "A"
+          }
+        ],
+        "show": {
+          "on": "A",
+          "list": "events",
+          "id": "e1"
+        }
+      },
+      "expected": {
+        "id": "e1",
+        "k": "spend",
+        "a": 1800,
+        "date": "2026-11-20",
+        "told": "2026-11-20T12:00:00.000+09:00",
+        "at": "2026-11-23T10:05:00.000+09:00",
+        "by": "bbbbbb",
+        "held": {
+          "came": "2026-11-25T10:00:00.000+09:00",
+          "at": "2026-11-23T09:00:00.001+09:00"
+        }
+      },
+      "why": "As mg-42 up to B's edit: B holds 1,800 at 23 Nov 10:05 with the mark `held: { came: 25 Nov 10:00, at: 23 Nov 09:00:00.001 }`. B's copy reaches A. A's own copy is 1,500 at 25 Nov 10:00, which is the `came` of the mark, so A takes the held value, 09:00:00.001 [N1]. B's 10:05 is newer, so A shows 1,800 by bbbbbb, the same as B. Before N1 A's 25 Nov 10:00 was newer than 10:05: A kept 1,500 and B's edit was lost.",
+      "decisions": [
+        "N1",
+        "M4"
+      ]
+    },
+    {
+      "id": "mg-44",
+      "question": "devices",
+      "title": "With no edit in between, the fast device ends with the held `at` too",
+      "input": {
+        "devices": {
+          "A": {
+            "id": "cccccc"
+          },
+          "B": {
+            "id": "bbbbbb",
+            "lastSeen": "2026-11-23T09:00:00.000+09:00"
+          }
+        },
+        "copy": {
+          "events": [
+            {
+              "id": "e1",
+              "k": "spend",
+              "a": 1200,
+              "date": "2026-11-20",
+              "told": "2026-11-20T12:00:00.000+09:00",
+              "at": "2026-11-20T12:00:00.000+09:00"
+            }
+          ]
+        },
+        "steps": [
+          {
+            "on": "A",
+            "now": "2026-11-25T10:00:00.000+09:00",
+            "edit": {
+              "list": "events",
+              "id": "e1",
+              "set": {
+                "a": 1500
+              }
+            }
+          },
+          {
+            "sync": "A",
+            "to": "B"
+          },
+          {
+            "sync": "B",
+            "to": "A"
+          }
+        ],
+        "show": {
+          "on": "A",
+          "list": "events",
+          "id": "e1"
+        }
+      },
+      "expected": {
+        "id": "e1",
+        "k": "spend",
+        "a": 1500,
+        "date": "2026-11-20",
+        "told": "2026-11-20T12:00:00.000+09:00",
+        "at": "2026-11-23T09:00:00.001+09:00",
+        "by": "cccccc",
+        "held": {
+          "came": "2026-11-25T10:00:00.000+09:00",
+          "at": "2026-11-23T09:00:00.001+09:00"
+        }
+      },
+      "why": "B holds A's 25 Nov 10:00 at 23 Nov 09:00:00.001 (newest seen 23 Nov 09:00 plus 1 ms) and marks it [M4, N1]. When B's copy comes back, A's own `at`, 25 Nov 10:00, is the mark's `came`, so A takes the held value: 1,500 at 23 Nov 09:00:00.001, still by cccccc, its writer [N1]. Both devices now hold the same `at`, so any later edit on B (10:05, say) is newer on both.",
+      "decisions": [
+        "N1"
+      ]
+    },
+    {
+      "id": "mg-45",
+      "question": "merge",
+      "title": "Merging the fast copy with the held one: the mark decides, in either order",
+      "input": {
+        "mine": {
+          "events": [
+            {
+              "id": "e1",
+              "k": "spend",
+              "a": 1500,
+              "date": "2026-11-20",
+              "told": "2026-11-20T12:00:00.000+09:00",
+              "at": "2026-11-25T10:00:00.000+09:00",
+              "by": "cccccc"
+            }
+          ]
+        },
+        "theirs": {
+          "events": [
+            {
+              "id": "e1",
+              "k": "spend",
+              "a": 1800,
+              "date": "2026-11-20",
+              "told": "2026-11-20T12:00:00.000+09:00",
+              "at": "2026-11-23T10:05:00.000+09:00",
+              "by": "bbbbbb",
+              "held": {
+                "came": "2026-11-25T10:00:00.000+09:00",
+                "at": "2026-11-23T09:00:00.001+09:00"
+              }
+            }
+          ]
+        }
+      },
+      "expected": {
+        "events": [
+          {
+            "id": "e1",
+            "k": "spend",
+            "a": 1800,
+            "date": "2026-11-20",
+            "told": "2026-11-20T12:00:00.000+09:00",
+            "at": "2026-11-23T10:05:00.000+09:00",
+            "by": "bbbbbb",
+            "held": {
+              "came": "2026-11-25T10:00:00.000+09:00",
+              "at": "2026-11-23T09:00:00.001+09:00"
+            }
+          }
+        ]
+      },
+      "why": "Mine is the fast device's 1,500 at 25 Nov 10:00. Theirs is B's 1,800 at 23 Nov 10:05, carrying `held: { came: 25 Nov 10:00, at: 23 Nov 09:00:00.001 }`. Mine's `at` is the `came`, so it counts as 09:00:00.001 [N1]; 10:05 is newer, so theirs wins whole, mark and all. `told` is 20 Nov 12:00 on both. Before N1 the newest `at` was 25 Nov 10:00 and 1,500 won.",
+      "decisions": [
+        "N1"
+      ]
+    },
+    {
+      "id": "mg-46",
+      "question": "receive",
+      "title": "A `steps` entry held once keeps its held `at` when the same fast copy arrives again",
+      "input": {
+        "lastSeen": "2026-11-23T10:05:00.000+09:00",
+        "mine": {
+          "schedules": [
+            {
+              "id": "pay",
+              "kind": "income",
+              "name": "Pay (main job)",
+              "steps": [
+                {
+                  "from": "2027-01-01",
+                  "amount": 275000,
+                  "at": "2026-11-23T10:05:00.000+09:00",
+                  "by": "bbbbbb",
+                  "held": {
+                    "came": "2026-11-25T10:00:00.000+09:00",
+                    "at": "2026-11-23T09:00:00.001+09:00"
+                  }
+                }
+              ],
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-11-23T10:05:00.000+09:00",
+              "by": "bbbbbb",
+              "held": {
+                "came": "2026-11-25T10:00:00.000+09:00",
+                "at": "2026-11-23T09:00:00.001+09:00"
+              }
+            }
+          ]
+        },
+        "theirs": {
+          "schedules": [
+            {
+              "id": "pay",
+              "kind": "income",
+              "name": "Pay",
+              "steps": [
+                {
+                  "from": "2027-01-01",
+                  "amount": 270000,
+                  "at": "2026-11-25T10:00:00.000+09:00",
+                  "by": "cccccc"
+                }
+              ],
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-11-25T10:00:00.000+09:00",
+              "by": "cccccc"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "copy": {
+          "schedules": [
+            {
+              "id": "pay",
+              "kind": "income",
+              "name": "Pay (main job)",
+              "steps": [
+                {
+                  "from": "2027-01-01",
+                  "amount": 275000,
+                  "at": "2026-11-23T10:05:00.000+09:00",
+                  "by": "bbbbbb",
+                  "held": {
+                    "came": "2026-11-25T10:00:00.000+09:00",
+                    "at": "2026-11-23T09:00:00.001+09:00"
+                  }
+                }
+              ],
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-11-23T10:05:00.000+09:00",
+              "by": "bbbbbb",
+              "held": {
+                "came": "2026-11-25T10:00:00.000+09:00",
+                "at": "2026-11-23T09:00:00.001+09:00"
+              }
+            }
+          ]
+        },
+        "warn": false
+      },
+      "why": "This device held the fast copy's 25 Nov 10:00 once, at 23 Nov 09:00:00.001, on the record and on its 1 Jan step, and then edited both at 10:05 (the marks stay). The same fast copy arrives again. Its `at` on the record and on the step is the `came` of the marks, so each takes its held 09:00:00.001 [N1, M5], not 10:05:00.001 (newest seen 10:05 plus 1 ms). 10:05 is newer on both: the name and 275,000 stay. Nothing new was held, so no warning: the warning was shown when it was first held.",
+      "decisions": [
+        "N1",
+        "M3",
+        "M4",
+        "M5"
+      ]
+    },
+    {
+      "id": "mg-47",
+      "question": "merge",
+      "title": "A shared `ui` key held once keeps its held `at`, with its mark in `ui.held`",
+      "input": {
+        "mine": {
+          "ui": {
+            "main": "trip",
+            "at": {
+              "main": "2026-11-23T10:05:00.000+09:00"
+            },
+            "by": {
+              "main": "bbbbbb"
+            },
+            "held": {
+              "main": {
+                "came": "2026-11-25T10:00:00.000+09:00",
+                "at": "2026-11-23T09:00:00.001+09:00"
+              }
+            }
+          }
+        },
+        "theirs": {
+          "ui": {
+            "main": "waiting",
+            "at": {
+              "main": "2026-11-25T10:00:00.000+09:00"
+            },
+            "by": {
+              "main": "cccccc"
+            }
+          }
+        }
+      },
+      "expected": {
+        "ui": {
+          "main": "trip",
+          "at": {
+            "main": "2026-11-23T10:05:00.000+09:00"
+          },
+          "by": {
+            "main": "bbbbbb"
+          },
+          "held": {
+            "main": {
+              "came": "2026-11-25T10:00:00.000+09:00",
+              "at": "2026-11-23T09:00:00.001+09:00"
+            }
+          }
+        }
+      },
+      "why": "A `ui` key carries its `at` in `ui.at` and its `by` in `ui.by` [L merge q6, M5], so its mark is in `ui.held` beside them. Theirs is the fast device's 25 Nov 10:00, the `came` of mine's mark, so it counts as 23 Nov 09:00:00.001 [N1]. Mine's 10:05 is newer: trip stays. Before N1 25 Nov 10:00 was newer and waiting won.",
+      "decisions": [
+        "N1",
+        "M5",
+        "L merge q6"
+      ]
+    },
+    {
+      "id": "mg-48",
+      "question": "receive",
+      "title": "A record made on a fast device: its `told` is held the same way as its `at`",
+      "input": {
+        "lastSeen": "2026-11-23T09:00:00.000+09:00",
+        "mine": {
+          "events": []
+        },
+        "theirs": {
+          "events": [
+            {
+              "id": "e3",
+              "k": "spend",
+              "a": 800,
+              "date": "2026-11-23",
+              "told": "2026-11-25T10:00:00.000+09:00",
+              "at": "2026-11-25T10:00:00.000+09:00",
+              "by": "cccccc"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "copy": {
+          "events": [
+            {
+              "id": "e3",
+              "k": "spend",
+              "a": 800,
+              "date": "2026-11-23",
+              "told": "2026-11-23T09:00:00.001+09:00",
+              "at": "2026-11-23T09:00:00.001+09:00",
+              "by": "cccccc",
+              "held": {
+                "came": "2026-11-25T10:00:00.000+09:00",
+                "at": "2026-11-23T09:00:00.001+09:00"
+              }
+            }
+          ]
+        },
+        "warn": true
+      },
+      "why": "e3 was made on a device two days fast, so its `told` and `at` are both 25 Nov 10:00 (H1: `told` is set when the record is made). Newest seen here is 23 Nov 09:00, a day ahead is 24 Nov 09:00, so both are held at 23 Nov 09:00:00.001 [M4, N2] and the warning is shown. Before N2 `told` stayed 25 Nov 10:00, so e3 came after every check on 23 Nov whatever its real order. The `at` keeps its mark [N1].",
+      "decisions": [
+        "N2",
+        "N1",
+        "M4",
+        "H1"
+      ]
+    },
+    {
+      "id": "mg-49",
+      "question": "devices",
+      "title": "The held `told` is kept when the fast copy arrives again and when it goes back",
+      "input": {
+        "devices": {
+          "A": {
+            "id": "cccccc"
+          },
+          "B": {
+            "id": "bbbbbb",
+            "lastSeen": "2026-11-23T09:00:00.000+09:00"
+          }
+        },
+        "copy": {
+          "events": []
+        },
+        "steps": [
+          {
+            "on": "A",
+            "now": "2026-11-25T10:00:00.000+09:00",
+            "edit": {
+              "list": "events",
+              "id": "e2",
+              "set": {
+                "k": "spend",
+                "a": 700,
+                "date": "2026-11-23"
+              }
+            }
+          },
+          {
+            "sync": "A",
+            "to": "B"
+          },
+          {
+            "on": "B",
+            "now": "2026-11-23T10:05:00.000+09:00",
+            "edit": {
+              "list": "events",
+              "id": "e2",
+              "set": {
+                "a": 900
+              }
+            }
+          },
+          {
+            "sync": "A",
+            "to": "B"
+          },
+          {
+            "sync": "B",
+            "to": "A"
+          }
+        ],
+        "show": {
+          "on": "A",
+          "list": "events",
+          "id": "e2"
+        }
+      },
+      "expected": {
+        "id": "e2",
+        "k": "spend",
+        "a": 900,
+        "date": "2026-11-23",
+        "by": "bbbbbb",
+        "told": "2026-11-23T09:00:00.001+09:00",
+        "at": "2026-11-23T10:05:00.000+09:00",
+        "held": {
+          "came": "2026-11-25T10:00:00.000+09:00",
+          "at": "2026-11-23T09:00:00.001+09:00"
+        }
+      },
+      "why": "A makes e2 at 25 Nov 10:00: `told` and `at` both 25 Nov 10:00. On B (newest seen 23 Nov 09:00) both are held at 23 Nov 09:00:00.001 [M4, N2]. B edits at 10:05: `at` moves, `told` never does [H1]. A's copy arrives again: its `at` is the mark's `came`, so 09:00:00.001 [N1]; its `told`, 25 Nov 10:00, is more than a day past B's newest seen (10:05), so it is held at 10:05:00.001, and the earliest `told` is kept: 09:00:00.001 [H1, L merge q7]. Back on A, its own `told` 25 Nov 10:00 against 09:00:00.001: the earliest, 09:00:00.001, so the record keeps its held `told` on both. B's 10:05 edit (900) wins on A as in mg-43.",
+      "decisions": [
+        "N2",
+        "N1",
+        "H1",
+        "L merge q7"
+      ]
     }
   ],
-  "open": [
-    { "id": "mg-q12", "question": "M4 holds a copy that arrives far ahead at the receiver's newest seen + 1 ms, but the sending device keeps its own far-ahead `at` (mg-39: A still holds 25 Nov 10:00). When A's copy reaches B again after B's own later edit, the record is held again, now at B's newest seen + 1 ms, and beats that edit, so A's older edit wins on both. Is that accepted, or should a record held once keep its held `at` (for example B's copy wins until A writes again)?", "ref_does": "held again on every arrival (mg-39 shows only the first arrival)" },
-    { "id": "mg-q13", "question": "M4 holds the `at` of a record that arrives far ahead. A record made on that fast device also has its `told` far ahead (`told` is set when the record is made, H1), and `told` orders same-day records against a check. Is `told` held too, the same way, or kept as it came?", "ref_does": "kept as it came; only `at` is held" }
-  ]
+  "open": []
 }

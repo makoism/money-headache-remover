@@ -1,12 +1,24 @@
-// Period end (SCHEMA_V3 7.4 and 9; DECISIONS_ROUND2 A7, F8, H8, L, M).
+// Period end (SCHEMA_V3 7.4 and 9; DECISIONS_ROUND2 A7, F8, H8, L, M, N5).
 // A plain reference for the engine lane, checked by run_rules.js against rules/period_end.json.
 // Open points name their question in period_end.json.
 'use strict';
 const { dayNum, dayStr, addWorking } = require('./dates');
 
 // Has the period ended, its last day, and does the question start with a check-in [A7].
-function questionStart({ nextPay, checkins, today, spendFrom, postingDays, holidays, startedFrom }) {
+// [N5] A new period the person started without the pay is saved as an event `{ k: 'periodStart', date }`.
+// The live one (no `gone`) dated after this period's first day and on or before today starts the new period;
+// one on or before the first day is what began this period (or an earlier one). The first one after the
+// first day ends this period; a later one would end a later period.
+function startedFromEvents(events, periodFrom, now) {
+  const from = periodFrom ? dayNum(periodFrom) : -Infinity;
+  const days = (events || []).filter(e => e.k === 'periodStart' && !e.gone && dayNum(e.date) > from && dayNum(e.date) <= now)
+    .map(e => e.date).sort();
+  return days.length ? days[0] : null;
+}
+
+function questionStart({ nextPay, checkins, today, spendFrom, postingDays, holidays, events, periodFrom }) {
   const now = dayNum(today);
+  const startedFrom = startedFromEvents(events, periodFrom, now);
   const lands = dayNum(nextPay.lands || nextPay.due);
   const windowEnd = addWorking(lands, postingDays == null ? 1 : postingDays, holidays || []);
   const landed = nextPay.landed && dayNum(nextPay.landed) <= now;

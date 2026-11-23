@@ -1,4 +1,4 @@
-// Merging two copies and the hybrid clock (SCHEMA_V3 0 and 2.3; DECISIONS_ROUND2 D4, H1, H6, L, M).
+// Merging two copies and the hybrid clock (SCHEMA_V3 0 and 2.3; DECISIONS_ROUND2 D4, H1, H6, L, M, N1, N2).
 // A plain reference for the engine lane, checked by run_rules.js against rules/merge.json.
 // Open points name their question in merge.json.
 'use strict';
@@ -32,6 +32,17 @@ function canon(x) {
   return JSON.stringify(x);
 }
 const msOr = t => (t ? ms(t) : -Infinity);
+// [N1] A record held once keeps its held `at`. A held copy carries `held: { came, at }`: the `at` it came with
+// and the `at` it was held at (an edit keeps the mark, as any field). A copy of the same record whose `at` is
+// that `came` is the same far-ahead write, so it counts at the held `at` and takes the mark. So the fast device
+// takes the held value when the merged copy comes back, and its copy arriving again is never held a second time.
+const sameMoment = (a, b) => typeof a === 'string' && typeof b === 'string' && ms(a) === ms(b);
+function takeHeld(r, mark) { return Object.assign({}, r, { at: mark.at, held: mark }); }
+function heldPair(x, y) {
+  if (x.held && !y.held && sameMoment(y.at, x.held.came)) return [x, takeHeld(y, x.held)];
+  if (y.held && !x.held && sameMoment(x.at, y.held.came)) return [takeHeld(x, y.held), y];
+  return [x, y];
+}
 // Which of two copies of one thing wins: the newer `at`; on the same `at` the copy with `gone` [H6]; then the
 // larger `by`, the device part of the last writer [L merge q1, M5]; with no `by`, the larger as sorted JSON
 // text, so both devices agree.
@@ -47,7 +58,7 @@ function winner(x, y) {
 // back; it is settled like a record (winner). [M5] Each entry carries its own `by` beside its `at`.
 function mergeEntries(a, b) {
   const byFrom = new Map();
-  for (const e of a.concat(b)) byFrom.set(e.from, byFrom.has(e.from) ? winner(byFrom.get(e.from), e) : e);
+  for (const e of a.concat(b)) byFrom.set(e.from, byFrom.has(e.from) ? winner(...heldPair(byFrom.get(e.from), e)) : e);
   return [...byFrom.values()].sort((x, y) => (x.from < y.from ? -1 : x.from > y.from ? 1 : 0));
 }
 // One record, two copies. Newest `at` wins; on the same `at` a copy with `gone` wins [H6]; then the larger
@@ -55,6 +66,7 @@ function mergeEntries(a, b) {
 // both devices agree. `told`: the earliest seen, never the winner's [H1, L merge q7]. The record's `at` is
 // the winner's: it moves only when the record changes [L merge q3].
 function pick(x, y) {
+  [x, y] = heldPair(x, y);
   const win = winner(x, y);
   const out = Object.assign({}, win);   // whole record, unknown fields kept (section 0)
   for (const k of ['steps', 'rules']) if (Array.isArray(x[k]) && Array.isArray(y[k])) out[k] = mergeEntries(x[k], y[k]);
@@ -70,9 +82,13 @@ function mergeList(a, b) {
 // [L merge q6] Shared `ui`: each key by its own `at` in `ui.at`. [M5] Each key's `by` is in `ui.by`, beside
 // its `at`: on the same `at` the larger `by` wins; with no `by`, the larger value as sorted JSON text.
 function mergeUi(a, b) {
-  const out = { at: {} }, atA = a.at || {}, atB = b.at || {}, byA = a.by || {}, byB = b.by || {};
+  const out = { at: {} }, atA = Object.assign({}, a.at), atB = Object.assign({}, b.at), byA = a.by || {}, byB = b.by || {};
+  const heldA = Object.assign({}, a.held), heldB = Object.assign({}, b.held);
+  // [N1] A key held once keeps its held `at`: its mark is in `ui.held`, beside `ui.at` and `ui.by`.
+  for (const k of Object.keys(heldA)) if (!heldB[k] && sameMoment(atB[k], heldA[k].came)) { atB[k] = heldA[k].at; heldB[k] = heldA[k]; }
+  for (const k of Object.keys(heldB)) if (!heldA[k] && sameMoment(atA[k], heldB[k].came)) { atA[k] = heldB[k].at; heldA[k] = heldB[k]; }
   for (const k of new Set(Object.keys(a).concat(Object.keys(b)))) {
-    if (k === 'at' || k === 'by') continue;
+    if (k === 'at' || k === 'by' || k === 'held') continue;
     let useB;
     if (!(k in a)) useB = true;
     else if (!(k in b)) useB = false;
@@ -84,6 +100,8 @@ function mergeUi(a, b) {
     const at = useB ? atB[k] : atA[k], by = useB ? byB[k] : byA[k];
     if (at) out.at[k] = at;
     if (by) (out.by = out.by || {})[k] = by;
+    const mark = useB ? heldB[k] : heldA[k];
+    if (mark) (out.held = out.held || {})[k] = mark;
   }
   return out;
 }
@@ -125,27 +143,45 @@ function newestAt(copy) {
 // [M4, L merge q8] A copy that arrives with an `at` more than a day ahead of the newest `at` the receiving
 // device has seen: that `at` is held at the newest seen plus 1 ms (in its own offset) and the warning is shown,
 // as on the device's own write. Every `at` is held: records, `steps` and `rules` entries, and `ui.at` keys.
-// `by` and `told` are left as they came. A device that has seen nothing holds nothing (as nextAt).
-function holdArriving(copy, lastSeen) {
+// [N1] A held `at` is marked `held: { came, at }` (for a `ui` key, in `ui.held`). A copy whose `at` is the
+// `came` of the receiving device's own mark for the same thing was held already: it takes the held `at`
+// again, is not held a second time, and shows no new warning. [N2] `told` is held the same way as `at`
+// (a merge then keeps the earliest `told`, so a record keeps its first held `told`). `by` is left as it came.
+// A device that has seen nothing holds nothing (as nextAt).
+function holdArriving(copy, lastSeen, mine) {
   let warn = false;
   const held = JSON.parse(JSON.stringify(copy || {}));
   if (!lastSeen) return { copy: held, warn };
-  const cap = t => {
-    if (typeof t === 'string' && ms(t) > ms(lastSeen) + DAY) { warn = true; return write(ms(lastSeen) + 1, offsetOf(t)); }
-    return t;
+  const ahead = t => typeof t === 'string' && ms(t) > ms(lastSeen) + DAY;
+  const cap = t => { warn = true; return write(ms(lastSeen) + 1, offsetOf(t)); };
+  const holdAt = (x, mark) => {   // x has `at`; mark is mine's mark for the same thing, if any
+    if (mark && sameMoment(x.at, mark.came)) { x.at = mark.at; x.held = mark; }
+    else if (ahead(x.at)) { const came = x.at; x.at = cap(came); x.held = { came, at: x.at }; }
+    if (ahead(x.told)) x.told = cap(x.told);   // [N2]
   };
-  (function walk(x, key) {
-    if (Array.isArray(x)) return x.forEach(v => walk(v));
+  const twin = (list, v) => (Array.isArray(list) && v && typeof v === 'object'
+    ? list.find(m => m && ((v.id !== undefined && m.id === v.id) || (v.id === undefined && v.from !== undefined && m.from === v.from))) : undefined);
+  (function walk(x, m, key) {
+    if (Array.isArray(x)) return x.forEach(v => walk(v, twin(m, v)));
     if (!x || typeof x !== 'object') return;
-    if (key === 'ui' && x.at && typeof x.at === 'object') for (const k of Object.keys(x.at)) x.at[k] = cap(x.at[k]);
-    else if (typeof x.at === 'string') x.at = cap(x.at);
-    for (const [k, v] of Object.entries(x)) if (k !== 'at') walk(v, k);
-  })(held);
+    m = m && typeof m === 'object' ? m : undefined;
+    if (key === 'ui' && x.at && typeof x.at === 'object') {
+      const marks = (m && m.held) || {};
+      for (const k of Object.keys(x.at)) {
+        const mark = marks[k], t = x.at[k];
+        if (mark && sameMoment(t, mark.came)) { x.at[k] = mark.at; (x.held = x.held || {})[k] = mark; }
+        else if (ahead(t)) { x.at[k] = cap(t); (x.held = x.held || {})[k] = { came: t, at: x.at[k] }; }
+      }
+      return;
+    }
+    if (typeof x.at === 'string') holdAt(x, m && m.held);
+    for (const [k, v] of Object.entries(x)) if (k !== 'at' && k !== 'held') walk(v, m && m[k], k);
+  })(held, mine);
   return { copy: held, warn };
 }
 // Receiving a copy: hold what arrives far ahead [M4], then merge it in.
 function receive(mine, theirs, lastSeen) {
-  const h = holdArriving(theirs, lastSeen);
+  const h = holdArriving(theirs, lastSeen, mine);
   return { copy: merge(mine, h.copy), warn: h.warn };
 }
 
@@ -157,7 +193,7 @@ function devices({ devices: devs, copy, steps, show }) {
   const seen = (d, t) => { if (t && (!d.lastSeen || ms(t) > ms(d.lastSeen))) d.lastSeen = t; };
   for (const s of steps) {
     if (s.sync) {   // the receiving device holds what arrives far ahead [M4]
-      const from = st[s.sync], to = st[s.to], h = holdArriving(from.copy, to.lastSeen);
+      const from = st[s.sync], to = st[s.to], h = holdArriving(from.copy, to.lastSeen, to.copy);
       to.copy = merge(to.copy, h.copy); seen(to, newestAt(h.copy)); continue;
     }
     const d = st[s.on], at = nextAt(s.now, d.lastSeen), list = d.copy[s.edit.list] || (d.copy[s.edit.list] = []);

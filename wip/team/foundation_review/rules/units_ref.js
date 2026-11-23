@@ -1,4 +1,4 @@
-// Units (SCHEMA_V3 0, 3 and 8; DECISIONS_ROUND2 B4, B8, H9, I2, L, M).
+// Units (SCHEMA_V3 0, 3 and 8; DECISIONS_ROUND2 B4, B8, H9, I2, L, M, N3, N4).
 // A plain reference for the engine lane, checked by run_rules.js against rules/units.json.
 // Open points name their question in units.json.
 'use strict';
@@ -88,14 +88,27 @@ function perPay(monthly, pays) {
   const list = perPayList(monthly, pays), low = Math.min(...list), high = Math.max(...list);
   return { pays, low, high, highCount: high === low ? 0 : list.filter(x => x === high).length, yearTotal: list.reduce((t, x) => t + x, 0) };
 }
-// [M8] A period that starts on 31 Dec (its pay due 1 Jan, moved earlier) uses that year's per-pay amount.
-// units-q13: when that year's pays have two amounts (leftover units, L q4), which one is not decided, so this
-// refuses unless every pay of the year gets the same amount.
-function periodPerPay({ rule, periodFrom, monthly }) {
-  const { year, pays } = periodCount({ rule, periodFrom });
-  const p = perPay(monthly, pays);
-  if (p.low !== p.high) throw new Error('units-q13: ' + year + ' has two per-pay amounts');
-  return { year, pays, amount: p.low };
+// [N3] A period gets the amount of the pay that starts it: that pay's place in the list of its own year's
+// pays, the year by its unshifted due date [L units q3], the leftover units on the earliest pays [L units q4].
+// So a period that starts on 31 Dec with its pay due 1 Jan (moved earlier) gets the next year's first amount
+// (N3 replaces M8's start year here). `due` is the pay's unshifted due date, on the schedule's rhythm.
+function payNumber(rule, due) {
+  const year = Number(due.slice(0, 4)), d = dayNum(due);
+  if (rule.every === 'weeks') {
+    const step = 7 * rule.n, first = dayNum(year + '-01-01');
+    if (((d - dayNum(rule.from)) % step + step) % step) throw new Error(due + ' is not on the rhythm');
+    return Math.floor((d - first) / step) + 1;
+  }
+  if (rule.every === 'month') {
+    const days = rule.days.slice().sort((a, b) => a - b), i = days.indexOf(Number(due.slice(8, 10)));
+    if (i < 0) throw new Error(due + ' is not a pay day');
+    return (Number(due.slice(5, 7)) - 1) * days.length + i + 1;
+  }
+  throw new Error('no pay number for ' + rule.every);
+}
+function periodPerPay({ rule, due, monthly }) {
+  const year = Number(due.slice(0, 4)), pays = paysInYear(rule, year), pay = payNumber(rule, due);
+  return { year, pays, pay, amount: perPayList(monthly, pays)[pay - 1] };
 }
 
 // [B8] What one pay period gets by `per`. payKind is the period stream's rule: 'month', 'weeks', 'none'.
@@ -137,10 +150,23 @@ function byDayDates({ monthly, from, to }) {
 }
 
 // [M9] No fixed pay, `per: week`: a seventh of the week's amount each day, rounded down, and the remainder on
-// the week's last day. units-q14: which day ends a week is not decided, so this gives the two amounts only.
+// the week's last day. weekByDay gives the two amounts; weekByDayDates puts them on dates.
 function weekByDay(weekly) {
   const daily = Math.floor(weekly / 7);
   return { daily, lastDay: weekly - daily * 6 };
+}
+// [N4] A week ends on the seventh day counted from when the line started (the line's start is day 1), not on
+// a Sunday or a Saturday. Days before the line started are not asked.
+function weekByDayDates({ weekly, lineFrom, from, to }) {
+  const { daily, lastDay } = weekByDay(weekly), start = dayNum(lineFrom), lastDays = {};
+  if (dayNum(from) < start) throw new Error('from ' + from + ' is before the line started');
+  let total = 0;
+  for (let n = dayNum(from); n <= dayNum(to); n++) {
+    const last = (n - start) % 7 === 6;
+    if (last) lastDays[dayStr(n)] = lastDay;
+    total += last ? lastDay : daily;
+  }
+  return { total, days: dayNum(to) - dayNum(from) + 1, daily, lastDays };
 }
 
 function ask(question, input) {
@@ -153,6 +179,7 @@ function ask(question, input) {
     case 'period_count': return periodCount(input);
     case 'period_per_pay': return periodPerPay(input);
     case 'week_by_day': return weekByDay(input.weekly);
+    case 'week_by_day_dates': return weekByDayDates(input);
     case 'per_pay': return perPay(input.monthly, input.pays);
     case 'per_pay_list': return perPayList(input.monthly, input.pays);
     case 'period_amount': return periodAmount(input);
@@ -162,4 +189,4 @@ function ask(question, input) {
   throw new Error('unknown question ' + question);
 }
 
-module.exports = { ask, DECIMALS, toMinor, currencyFor, loadAmount, interest, paysInYear, periodCount, perPayList, perPay, periodPerPay, periodAmount, weekByDay, byDay, byDayDates };
+module.exports = { ask, DECIMALS, toMinor, currencyFor, loadAmount, interest, paysInYear, periodCount, perPayList, perPay, payNumber, periodPerPay, periodAmount, weekByDay, weekByDayDates, byDay, byDayDates };
