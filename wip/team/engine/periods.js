@@ -60,7 +60,7 @@
   }
   /* What the Plan tab shows of each schedule (pay, bills, transfers) on a day, worked out by the engine's calendars:
      scheduleView(book, asOf) -> { <schedule id>: { kind, amount (the usual amount in force on the day), rule (the rule
-       in force), next: { due, land, amount } or null (the first occurrence landing or due on or after the day),
+       in force), next: { due, land, amount } or null (the first occurrence landing or due on or after the day that no record dated by then settles),
        lastNamed: the latest due date a record names (a settle, an `amounts` key, a period start or end), or null,
        changeFrom: the first day a change may start [X8]: the day itself, or the day after lastNamed when that is later } } */
   function scheduleView(book, asOf) {
@@ -68,18 +68,18 @@
     const today = D.dayNum(asOf), out = {};
     const acct = {}; for (const a of book.accounts || []) if (a && !a.gone) acct[a.id] = a;
     const country = L.fieldValue((book.home || {}).country) || null;
-    const named = {};
+    const named = {}, done = new Set();
     const name = (sid, due) => { if (sid && due && (!named[sid] || due > named[sid])) named[sid] = due; };
     for (const e of book.events || []) {
       if (!e || e.gone) continue;
-      for (const o of e.settles || []) { const x = typeof o === 'string' ? I.occurrence(o) : { schedule: o.s, due: o.due }; if (x) name(x.schedule, x.due); }
+      for (const o of e.settles || []) { const x = typeof o === 'string' ? I.occurrence(o) : { schedule: o.s, due: o.due }; if (x) { name(x.schedule, x.due); if (!e.date || e.date <= asOf) done.add(x.schedule + "@" + x.due); } }
       const oc = I.periodOcc(e.id); if (oc) { const x = I.occurrence(oc); name(x.schedule, x.due); }
     }
     for (const s of book.schedules || []) {
       if (!s || s.gone) continue;
       for (const k of Object.keys(s.amounts || {})) if (S.keyLive(s.amounts, k)) name(s.id, k);
       const cal = S.calendar((acct[s.acct] && acct[s.acct].country) || country);
-      const occ = S.occurrences(s, cal, today, today + 400)[0] || null;
+      const occ = S.occurrences(s, cal, today, today + 400).find(o => !done.has(o.id)) || null;
       const rules = (s.rules || []).filter(x => x && !x.gone);
       let rule = null; rules.forEach((x, i) => { if (i === 0 || x.from == null || D.dayNum(x.from) <= today) rule = x.rule; });
       const last = named[s.id] || null, after = last ? D.dayNum(last) + 1 : -Infinity;

@@ -107,6 +107,11 @@ t('a change may start only after the latest occurrence a record names [X8]', () 
   const b = base(x => { x.schedules[1].amounts = { '2027-01-27': { amount: 71000, at: '2026-12-01T10:00' + TZ, by: 'aaaaaa' } }; });
   eq(scheduleView(b, '2027-01-05').rent.changeFrom, '2027-01-28');
 });
+t('the next occurrence is the first one no record dated by the day has settled', () => {
+  // the 27 Dec rent was paid on 28 Dec: from 28 Dec the next one to come is 27 Jan; on 27 Dec it is still that one
+  eq(scheduleView(base(), '2026-12-28').rent.next.due, '2027-01-27');
+  eq(scheduleView(base(), '2026-12-27').rent.next.due, '2026-12-27');
+});
 t('an ended bill has no next occurrence after its end', () => {
   const b = base(x => { x.schedules[1].ends = '2027-01-31'; });
   eq(scheduleView(b, '2027-02-01').rent.next, null);

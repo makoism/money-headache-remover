@@ -88,6 +88,13 @@ const view = bk => T.L.lookahead(bk, DAY);
   ck('Rent changed from 1 Dec: a new step, the old one kept', JSON.stringify(rent.steps.map(x => [x.from, x.amount])) === JSON.stringify([[null, 72000], ['2026-12-01', 75000]]) && !!rent.steps[1].at, JSON.stringify(rent.steps));
   ck('the 27 Nov rent stays 72,000 (the change starts later)', await amt(p, `[data-bill="${RENT}"]`) === 72000 && PE.scheduleView(bk, DAY)[RENT].next.amount === 72000);
 
+  /* Internet changed for the next one only */
+  const NET = 'k7m2qa-f3n8p1x6wd-9';
+  await p.click(`[data-bill="${NET}"]`); await T.w(200);
+  await fill(p, { amount: '6000' }); await p.click('[data-plbtn="1"]'); await T.w(400);
+  bk = await saved(p);
+  const net = bk.schedules.find(x => x.id === NET);
+  ck('Internet changed once: an amounts key on 27 Nov, the usual amount kept', net.amounts && net.amounts['2026-11-27'].amount === 6000 && net.steps.length === 1 && await amt(p, `[data-bill="${NET}"]`) === 6000, JSON.stringify(net.amounts));
   /* a goal in the bank, money set aside */
   await p.click('#plAddGoal'); await T.w(200);
   await fill(p, { name: 'Trip', target: '150000', due: '2027-08-01' }); await save(p);
@@ -102,6 +109,15 @@ const view = bk => T.L.lookahead(bk, DAY);
     await amt(p, `[data-goal="${trip.id}"] [data-fig=goal-kept]`) === 20000 && r.places[trip.id].kept === 20000 && await p.$eval(`[data-goal="${trip.id}"] meter`, e => [e.value, e.max].join()) === '20000,150000' && r.accounts[BANK].headroom === room0 - 20000, JSON.stringify([await amt(p, `[data-goal="${trip.id}"] [data-fig=goal-kept]`), r.places[trip.id], await p.$eval(`[data-goal="${trip.id}"] meter`, e => [e.value, e.max].join()), r.accounts[BANK].headroom, room0, await err(p)]));
   const pace = await p.$eval(`[data-goal="${trip.id}"] [data-fig=goal-pace]`, e => [Number(e.querySelector('[data-amt]').dataset.amt), e.textContent]).catch(() => [null, '']);
   ck('Trip says what each pay needs, the engine\'s figure: about X each pay to reach it by 1 Aug 2027', r.places[trip.id].perPeriod > 0 && pace[0] === r.places[trip.id].perPeriod && /^about .+ each pay to reach it by 1 Aug 2027$/.test(pace[1]), JSON.stringify(pace) + ' ' + JSON.stringify(r.places[trip.id]));
+  await p.click(`[data-goal="${trip.id}"]`); await T.w(200);
+  await fill(p, { amount: '5000' }); await p.click('[data-plbtn="2"]'); await T.w(400);
+  ck('taking 5,000 back out leaves the engine\'s 15,000', await amt(p, `[data-goal="${trip.id}"] [data-fig=goal-kept]`) === 15000 && view(await saved(p)).places[trip.id].kept === 15000);
+  await p.click(`[data-goal="${trip.id}"]`); await T.w(200);
+  await fill(p, { amount: '20000' }); await p.click('[data-plbtn="2"]'); await T.w(300);
+  ck('taking out more than it holds is refused in plain words', /holds less/.test(await err(p)), await err(p));
+  await p.click('#plBack'); await T.w(200);
+  await p.click(`[data-goal="${trip.id}"]`); await T.w(200);
+  await fill(p, { amount: '5000' }); await save(p);
   /* a goal in its own account */
   await p.click('#plAddGoal'); await T.w(200);
   await fill(p, { name: 'House', target: '1000000', mode: 'ownAccount' }); await save(p);
@@ -159,6 +175,20 @@ const view = bk => T.L.lookahead(bk, DAY);
   const hod = await p.$$eval('#a3Home [data-fig=overdue]', es => es.map(e => [e.dataset.owed, Number(e.querySelector('[data-amt]').dataset.amt), e.textContent]));
   ck('Home shows it too', hod.some(x => x[0] === loanId && x[1] === lo.overdue[0].amount && /Car loan/.test(x[2]) && /27 Nov/.test(x[2])), JSON.stringify(hod));
   await p.tap('[data-tab="plan"]'); await T.w(300);
+  /* a loan that still owes does not close */
+  await p.click(`#a3Plan [data-owed="${loanId}"]`); await T.w(200);
+  await p.click('[data-plbtn="1"]'); await T.w(300);
+  ck('closing a loan that still owes is refused', /still owes/.test(await err(p)), await err(p));
+  await p.click('#plBack'); await T.w(200);
+  /* the main pay changed from a date: a new step; this pay period keeps its start */
+  const MAIN = 'k7m2qa-f3n8p1x6wd-4';
+  await p.click(`[data-pay="${MAIN}"]`); await T.w(200);
+  const from = await p.$eval('#pl-from', e => e.value);
+  await fill(p, { amount: '190000' }); await save(p);
+  bk = await saved(p);
+  const mj = bk.schedules.find(x => x.id === MAIN);
+  ck('Main job changes from ' + from + ' (after the 10 Dec pay): a new step, the old kept; the next pay shows 190,000', from === '2026-12-11' && JSON.stringify(mj.steps.map(x => [x.from, x.amount])) === JSON.stringify([[null, 180000], [from, 190000]]) && await amt(p, `[data-pay="${MAIN}"]`) === 190000, JSON.stringify(mj.steps));
+  ck('this pay period still starts 10 Dec', await p.$eval('[data-fig=plan-period]', e => e.dataset.start) === '2026-12-10');
   await p.click('[data-past="2026-11-10"] summary'); await T.w(200);
   await T.shot(p, 'plan_after_pay_' + DAY);
   ck('no page errors', errs.length === 0, errs.join(' | '));
