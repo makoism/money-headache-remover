@@ -1,8 +1,8 @@
 # The saved shape, version 3 (one document, 23 Nov 2026)
 
-This replaces SCHEMA.md (sections 1 to 10) as the shape to build. It folds in SCHEMA section 10, every decision in DECISIONS_ROUND2.md (A to J; J wins over anything earlier, then I, then H), schema_review_2.md, schema_v3_review_1.md and the four sweep 2 reports. Nothing is appended: where an older text said something else, this one holds. Built on the ledger (origin/side/ledger-wiring, LEDGER_DESIGN.md and ledger.js: accounts, places, events, the one rule).
+This replaces SCHEMA.md (sections 1 to 10) as the shape to build. It folds in SCHEMA section 10, every decision in DECISIONS_ROUND2.md (A to L; L and K win over anything earlier, then J, then I, then H), schema_review_2.md, schema_v3_review_1.md and the four sweep 2 reports. Nothing is appended: where an older text said something else, this one holds. Built on the ledger (origin/side/ledger-wiring, LEDGER_DESIGN.md and ledger.js: accounts, places, events, the one rule).
 
-The money rules are not written here in prose. They are code: `foundation_review/ref/lookahead_ref.js`, checked against 299 hand-worked asks by `ref/run_scenarios.js`. Section 12 says which part of the code answers which question, and lists the four rules that are not in the model and each have their own test file instead [H7]. For every rule section 12 puts in the model, when this document and the reference model disagree, the reference model is right and this document is fixed. For the four rules outside it, this document and their test files are right.
+The money rules are not written here in prose. They are code: `foundation_review/ref/lookahead_ref.js`, checked against 319 hand-worked asks by `ref/run_scenarios.js`. Section 12 says which part of the code answers which question, and lists the four rules that are not in the model and each have their own test file instead [H7] (`foundation_review/rules/`, 164 cases). For every rule section 12 puts in the model, when this document and the reference model disagree, the reference model is right and this document is fixed. For the four rules outside it, this document and their test files are right.
 
 All examples are made up. Tags like [A3], [B9], [F14], [D4], [H1] point to the decision in DECISIONS_ROUND2.md.
 
@@ -12,14 +12,15 @@ All examples are made up. Tags like [A3], [B9], [F14], [D4], [H1] point to the d
 
 - **Ids** are strings `<device part>-<session part>-<counter>`, for example `k7qzpa-m2x-41`. The device part (6 letters) is made once per device and kept in device storage only (never in the shared copy or a backup; a restored copy gets the new device's part for new records). The session part (3 letters) is new on every page open, so two tabs never clash. The counter starts at 1 per session. Ids are never renumbered.
 - **Dates** are `YYYY-MM-DD` in the person's local calendar. All engine date maths is on whole day numbers [D8]. "Today" is worked out again whenever the app comes back into view. Times appear only in `at`.
-- **Amounts** are whole minor units (integers): yen 1 is 1, peso 1.00 is 100. The currency table gives the decimals per code; an unknown code is 2 decimals and the screen asks once. Nothing is rounded on load.
+- **Amounts** are whole minor units (integers): yen 1 is 1, peso 1.00 is 100. The currency table is the full ISO 4217 minor-unit table, shipped with the page (every active code with its decimals: 0 for JPY, KRW, VND, ISK and the others, 2 for most, 3 for BHD, IQD, JOD, KWD, LYD, OMR, TND, 4 for CLF and UYW; `rules/units_ref.js` holds it) [L units q1]; an unknown code is 2 decimals and the screen asks once. A typed amount with more decimals than its currency has is rounded half up and the screen says so [L units q2]. Nothing is rounded on load: a saved amount that is not whole is kept as it is and flagged [L units q9].
 - **Currency** is an ISO code on every account, schedule, goal and budget line. The home currency is `home.cur`. "$" and "¥" are asked, never guessed. The currency cannot change once events exist, unless the change converts every amount with a preview first [E2].
-- **`at`** on every record is a hybrid clock: the larger of now and (the newest `at` this device has seen plus 1 ms), written as ISO with the time zone offset, with the device part breaking ties [D4]. A wrong clock on one device cannot always win. Every edit and every merge moves `at`.
+- **`at`** on every record is a hybrid clock: the larger of now and (the newest `at` this device has seen plus 1 ms), written as ISO with the time zone offset [D4]. A now more than a day ahead of the newest `at` this device has seen is held at that newest `at` plus 1 ms, and a warning says the device's clock is ahead [L merge q8]. A wrong clock on one device cannot always win. A record's `at` moves only when the record changes (an edit, a removal, a Redo); a merge keeps the winning copy's `at` [L merge q3].
+- **`by`** on every record, with `at`: the device part of its last writer (section 0, Ids). On an equal `at`, after `gone` [H6], the larger `by` wins [L merge q1]. The id's device part still names the device that made the record.
 - **`told`** on every record [H1]: when the app first heard of it, as the same hybrid clock. It is set once, when the record is made, and never changed by an edit, an Undo, a Redo or a merge (a merge keeps the oldest `told` it sees for an id). It orders records that share a date: a check holds the events dated before its day and those on its day whose `told` is before the check's `told` (section 7.1).
 - **Nothing is deleted.** Remove and Undo set `gone: '<date>'` and `goneBy: <id of the step or record that removed it>`, and move `at`. Redo clears both and moves `at` again, so the Redo is newer than the Undo [H6]. Undo is these marks; there is no full copy inside the saved data [D2].
 - **Nothing is dropped for being out of range.** No fixed window; a date years back or ahead is kept as typed.
 - **Unknown fields are kept** on load and save, arrays and objects too, so an older page never strips a newer field.
-- **Every list record** (`plan.shares` entries, budget lines, schedules, goals, accounts, events, people, check-ins) has `id`, `told` and `at`. Single records (`home`, `plan.limits`) have `at`.
+- **Every list record** (`plan.shares` entries, budget lines, schedules, goals, accounts, events, people, check-ins) has `id`, `told`, `at` and `by`. Single records (`home`, `plan.limits`) have `at` and `by`. Each entry inside a `steps` or `rules` list carries its own `at` [L merge q2]; each shared `ui` key has its `at` in `ui.at` [L merge q6].
 
 ## 1. Where it is stored [D1, D3, D5, D6, D7]
 
@@ -43,7 +44,7 @@ All examples are made up. Tags like [A3], [B9], [F14], [D4], [H1] point to the d
 ```
 { v: 3,                       // shape version; a page that knows a lower v never writes over it
   fmt: 'gz1',                 // only on the cloud copy and backup files
-  rev, at,                    // revision (max(now, rev + 1)) and when saved
+  rev, at,                    // revision (max(now, rev + 1)) and when saved; after a merge, the larger of both revs plus one [L merge q3]
   home: { cur: 'JPY', country: 'JP', mode: 'track', minBank: null, mainBank: <account id>, at },
   people: [ { id, name, at } ],
   accounts: [...],            // section 3
@@ -53,7 +54,7 @@ All examples are made up. Tags like [A3], [B9], [F14], [D4], [H1] point to the d
   checkins: [...],            // section 7
   plan: { shares: [...], budgets: [...], limits: {...}, at },   // section 8
   imports: { cats: {...}, at },  // what the person taught the statement reader (38.31 ui.cats)
-  ui: { ... },                // shared screen choices only (section 11, "shared ui")
+  ui: { ..., at: { <key>: <at> } },   // shared screen choices only (section 11, "shared ui"); `ui.at` holds each key's `at` [L merge q6]
   frozen3831: <the 38.31 copy as it was, read only>
 }
 ```
@@ -74,12 +75,12 @@ All examples are made up. Tags like [A3], [B9], [F14], [D4], [H1] point to the d
 ```
 
 ### 2.3 Merging two copies [D4]
-Union of every list by `id`; per record the newest `at` wins. A copy with `gone` wins only against a copy of the same record whose `at` is the same or older; a Redo (a newer `at` without `gone`) wins over the Undo it reverses [H6]. `told` is never taken from the winning copy: the oldest `told` seen for the id is kept [H1]. On a cloud conflict the page downloads, merges, and sends again with the server's version as its base; it never asks "keep mine". The same amount typed on two devices on the same day for the same place is offered to the person as a possible double [H9]; the merge itself never removes either (section 6.4). The merge has its own test file (section 12).
+Union of every list by `id`; per record the newest `at` wins. A copy with `gone` wins only against a copy of the same record whose `at` is the same or older; a Redo (a newer `at` without `gone`) wins over the Undo it reverses [H6]. On an equal `at` with both alive, the larger `by` wins [L merge q1]. Inside the winning record, `steps` and `rules` entries merge by `from`, each by its own `at`, so two devices adding different steps keep both [L merge q2]. Shared `ui` merges key by key, by `ui.at` [L merge q6]. An edit newer than a removal brings the record back, and the next check-in shows it as "came back" [L merge q4]. `told` is never taken from the winning copy: the earliest `told` seen for the id is kept, and a copy with none takes the other's [H1, L merge q7]. The merged copy's `rev` is the larger of both plus one; a record's `at` moves only when it changes [L merge q3]. On a cloud conflict the page downloads, merges, and sends again with the server's version as its base; it never asks "keep mine". The same amount typed on two devices on the same day for the same place is offered to the person as a possible double [H9]; the merge itself never removes either (section 6.4). The merge has its own test file (section 12).
 
 ## 3. Accounts
 ```
 { id, name, type, cur, owner, open: <event id>, minBank, spendFrom, tracked, closed, preset, confirm,
-  postingDays,               // working days a bank needs to post an expected item; default 1 [F4]
+  postingDays,               // working days the account needs to post a line; default 1, a card 7 [F4, L matching q4]
   gone, at }
 ```
 - `type`: `bank`, `cash`, `ewallet`, `wallet`, `investment` [B10], `card`, `paylater`, `loan`, `owedToYou`.
@@ -92,7 +93,7 @@ Union of every list by `id`; per record the newest `at` wins. A copy with `gone`
 
 **Owed accounts (card, paylater, loan) own their payment day** [B5, E6, 10.8]. There is no separate schedule for a card or loan payment.
 - **card**: `inFull` (true unless it carries a balance; a card that carries one pays its `minRule` plus its `extraSteps` each payment day, and the rest is carried to the next statement [H7]), `cutDay` (1 to 31, `'last'`, or null for "not sure": then on each payment day everything owed, less payments since, is due [H4]), `payDay` (1 to 31), `payMonths` (months after the close the payment falls; 1 by default, 0 for a card paid the same month), `shift` (`'before'|'after'|'none'`; from the country by default), `payFrom` (the account that pays it; `home.mainBank` by default), `apr`, `minRule` (`{ pct, floor }` or `{ fixed }`), `of` (for an older balance or an instalment plan: the card's id), `extraSteps: [ { from, amount } ]` (planned extra payments; 38.31 debt `extra`) [B5].
-- **A card statement** [H3] is what was carried over from the last statement, less the payments and refunds since its close, plus the lines posted in the cycle. Paying a statement in part leaves the rest in the next one. A statement at or below zero is a credit carried to the next one: nothing is due and no expected item is made. **Carried over** is only what is left of statements not paid by their own payment day [I3]: a statement still waiting for its payment day (a card paid two months after its close, common in Japan) is never folded into the next one, so two statements can wait at once, each with its own item. When two statements are unpaid at once, each item asks only for what the older one does not already hold, so nothing is counted twice. **Payments** [I3, confirmed in J]: a payment goes to the statement it settles (or the one that statement was carried into), then to the oldest statement still owing, then to the open cycle; so the on-time payment of a statement that was waiting does not lower the next statement to close, and a late payment of a statement already carried lowers the statement it was carried into. A statement item asks what is left of the statement after payments that settled no item, not the printed figure. **Interest** [I2]: at each close, on what is carried over after payments (a credit carries none), `apr` / 12, rounded half up to the minor unit; it is part of that statement. The look ahead adds the interest the next close will charge on what stays carried after the planned payments to the card's next open payment [confirmed in J]. **Close day not sure** [H4]: each payment day is an expected item for everything owed then (less payments since), with or without a typed last statement; after each payment the next payment day gets its own item. Such a card that carries a balance gets its interest on each payment day [J1], `apr` / 12, rounded half up, added before that day's payment, and on a payment day gone by even when its payment is not seen (as on a loan). Which balance it is on when spending posts between payment days is open (section 14).
+- **A card statement** [H3] is what was carried over from the last statement, less the payments and refunds since its close, plus the lines posted in the cycle. Paying a statement in part leaves the rest in the next one. A statement at or below zero is a credit carried to the next one: nothing is due and no expected item is made. **Carried over** is only what is left of statements not paid by their own payment day [I3]: a statement still waiting for its payment day (a card paid two months after its close, common in Japan) is never folded into the next one, so two statements can wait at once, each with its own item. When two statements are unpaid at once, each item asks only for what the older one does not already hold, so nothing is counted twice. **Payments** [I3, confirmed in J]: a payment goes to the statement it settles (or the one that statement was carried into), then to the oldest statement still owing, then to the open cycle; so the on-time payment of a statement that was waiting does not lower the next statement to close, and a late payment of a statement already carried lowers the statement it was carried into. A statement item asks what is left of the statement after payments that settled no item, not the printed figure. **Interest** [I2]: at each close, on what is carried over after payments (a credit carries none), `apr` / 12, rounded half up to the minor unit; it is part of that statement. The look ahead adds the interest the next close will charge on what stays carried after the planned payments to the card's next open payment [confirmed in J]. **Close day not sure** [H4]: each payment day is an expected item for everything owed then (less payments since), with or without a typed last statement; after each payment the next payment day gets its own item. Such a card that carries a balance gets its interest on each payment day [J1], `apr` / 12, rounded half up, added before that day's payment, and on a payment day gone by even when its payment is not seen (as on a loan). It is on everything owed before that day's payment, spending since the last payment day included [K1]. With a percent `minRule` the day's interest is added first and the minimum is worked out on the balance including it, in the look ahead too [K2].
 - **A card paid from an account in another currency** [H5]: each payment carries `a` (what left the paying account, in its currency) and `a2` (what reached the card). Until stage 2 the walk does not take the card's payments off the paying account (it cannot convert, F11) and Home shows a warning under the headline; a recorded payment takes its typed `a` off the paying account.
 - **paylater** [F19]: `payDay`, `shift`, `payFrom`, `instalments: { amount, count, first }` (the buy is a spend on this account; each part is a repay from `payFrom`), `apr`, `ends`, `of`. What is still to come is shown as owed.
 - **loan**: `payDay`, `shift`, `payFrom`, `amount` (the usual payment), `apr` (yearly rate in percent; on a loan or pay-later, interest is added on each payment day on what was owed before that day's payment, x `apr` / 12, rounded half up [I2]; it is added first and the payment asked after it, and it is added on a payment day gone by even when the payment is not seen [confirmed in J]), `minRule`, `ends`, `extraSteps`, `of`. Each payment day asks the usual `amount`, or what `minRule` asks on what is owed, plus the `extraSteps` amount in force on that day, never more than what is owed [H7]. A 38.31 "Loan or debt payment" bill line is matched to the loan at the move (or dropped with the person's OK), never both [E6].
@@ -125,7 +126,7 @@ The ledger's places: Waiting, Bills left (with one "for the card" line per card 
 { id, kind: 'income'|'bill'|'transfer'|'autoSpend'|'once',
   name, acct, acct2,          // acct: where it lands or is paid from; acct2: the other side of a transfer
   owner, cur,
-  rules: [ { from: '2026-11-20', rule } ],                   // [H2] each rule holds from its date to the next one's
+  rules: [ { from: '2026-11-20', rule, at } ],               // [H2] each rule holds from its date to the next one's; each entry has its own `at` [L merge q2]
   // rule: { every: 'month', days: [10] }                     // days of the month; 31 = last day
   //     | { every: 'weeks', n: 2, from: '2026-11-13' }       // every N weeks from a date (weekly: n 1)
   //     | { every: 'months', n: 3, day: 5, from: '2026-12-05' }
@@ -135,10 +136,10 @@ The ledger's places: Waiting, Bills left (with one "for the card" line per card 
   //     | { every: 'once', date: '2027-03-14' }
   //     | { every: 'none' }                                  // no fixed day: no future money expected [B4]
   shift: 'before'|'after'|'none',
-  steps: [ { from: '2026-11-23', amount: 250000 } ],          // the usual amount, changing from a date (a raise)
+  steps: [ { from: '2026-11-23', amount: 250000, at } ],      // the usual amount, changing from a date (a raise); its own `at` [L merge q2]
   byDay: { '15': 18000, '30': 12000 },                         // unequal halves on different days
   amounts: { '2027-06-10': 260000 },                           // one occurrence changed, keyed by the due date BEFORE any move [B8]
-  vary: 0.3,                                                   // the amount margin for matching, for example power and water [A6]
+  vary: 0.3,                                                   // the amount margin for matching, for example power and water [A6]; none: the exact amount only [L matching q1]
   startsPeriod: true,                                          // income only; see below
   place: 'bills'|'free'|<place id>,                            // where a bill is paid from
   roughAll: true,                                              // the "all my bills, roughly" line, split later [A8]
@@ -164,7 +165,8 @@ The ledger's places: Waiting, Bills left (with one "for the card" line per card 
   posted,                    // the posting date from the bank or a statement, beside `date` (the buy date) [H1]
   told,                      // when the app first heard of it; never changed (section 0) [H1]
   est: true,                 // typed as rough [A6]
-  src: { type: 'typed'|'statement'|'screenshot'|'move', file, line },   // [A6]
+  src: { type: 'typed'|'statement'|'screenshot'|'move', file, line, from, to },   // [A6]; a statement's `from` and `to` are the dates it covers [L matching q8]
+  notDouble: [ <event id> ],  // the person said "both are real": never offered as a possible double with these; on the newer record [L matching q12]
   grp,                       // the check-in (section 7) or the one step it belongs to
   owner,                     // only when different from the account's owner
   note, gone, goneBy, at }
@@ -181,12 +183,14 @@ The ledger's kinds and its one rule stand: `open`, `in`, `borrow`, `move`, `spen
 ### 6.3 Receipts are spend events
 One list. A 38.31 receipt moves in as `{ k: 'spend', date: r.d, a, acct, line or place, src: { type: 'move', id: r.id }, note }` (section 11).
 
-### 6.4 Matching an import to what is already there [A6, F15]
-- An import line matches a typed or expected one by account, direction, amount (within the schedule's `vary`; for a typed spend exactly, or within 10% of it when the typed line is `est` [H9]) and date (within the account's `postingDays` working days, by `posted` when there is one).
-- A matching typed line is replaced: it gets `gone` and `goneBy: <import event id>`.
-- The same amount typed on two devices on the same day for the same place is offered to the person as a possible double; nothing is removed without them [H9].
-- A statement replaces screenshot lines in the same stretch (`src.type` rank: statement over screenshot over typed).
-- An import line that matches an expected occurrence settles it.
+### 6.4 Matching an import to what is already there [A6, F15, L]
+- **What matches.** An import line matches a typed line or an expected occurrence by account, direction (money out with money out), amount and date. Rules file: `rules/matching.json`.
+- **Amount.** A typed line: exactly, or when it is `est`, within 10% of the larger amount, |a - b| x 10 <= the larger, compared exactly in minor units [H9, L q10]. An expected occurrence: within its schedule's `vary`; no `vary` is the exact amount, and a different real amount is ticked by the person at the check-in [A6, L q1].
+- **Date.** A typed line matches an import line posted inside its account's posting window either side of the typed day (`postingDays` working days before to the same after) [F4, L q3]. A bank line goes by `posted` when there is one; a card line by its buy date or its posted date, and a card's window is 7 by default [L q4]. An expected occurrence is settled by an import landing from 5 working days before its landing day to the end of its posting window after it [L q2].
+- **Which one.** A typed line is tried before an expected occurrence: the typed line wins, is replaced (`gone`, `goneBy: <import event id>`), and the import takes over its `settles` [L q5, q6]. Several match: the closest date wins, then the earliest `told` [L q7].
+- **Rank.** Statement over screenshot over typed (`src.type`). A statement removes every screenshot line inside its own dates (`src.from` to `src.to`), matched or not, `goneBy` the statement import's id [A6, L q8]. An import line of equal rank that repeats a live line is dropped, never added: the same line id (date, amount, direction and its count among such lines in its own import) or the same `src` (a file read twice) [L q9].
+- **Possible double** [H9]. The same amount typed on two devices on the same day (the spend's date [L q13]) for the same place (a budget line counts as the place [L q11]) is offered to the person; nothing is removed without them. "Both are real" is kept as `notDouble: [id]` on the newer record, and the pair is not offered again [L q12].
+- An import line that matches no typed line settles the expected occurrence it matches (above); one that matches neither is a new line.
 
 ## 7. The check-in, settling and the filler [A1 to A4, F15, F16, F24]
 
@@ -209,12 +213,12 @@ The check-in first lists every expected item (pay, card payments, bills, transfe
 What is left after settling is the filler for the stretch from the day after the last check-in to this one (from the same day, when the last check-in was earlier that day [H1]). Its amount is never stored: it is worked out each time as (what the events say the account holds at the check) minus (the check figure). Lines imported or typed later inside the stretch shrink it. A stretch that crosses a period start is split by days, or all to the older period when the person says "mostly before pay" [A4]. On a card, a check that names a statement fills that statement's cycle first, then the open part. Reference: `makeFiller` and the card check in `cardInfo`.
 
 ### 7.4 Period end [A7]
-The period-end question (always asked) runs after a fresh check-in: if none is dated in the last 3 days of the period, the question starts with one. Money left in Free to spend or a budget line never rolls on silently: it waits in its place marked "to decide" until answered. Answers are `move` events dated the period's last day.
+The period-end question (always asked) comes when the next period-starting pay is seen [L period_end q2], and runs after a fresh check-in: if none is dated in the last 3 days of the period or after its end (whose stretch is split by days at the pay, A4) [L q1], the question starts with one. A check-in is fresh only when every spend-from account was typed [L q9]. While pay is late the period waits for it; after its posting window the check-in asks "did your pay come?", and a yes with its day starts the new period [L q3]. Money left in Free to spend or a budget line never rolls on silently: it waits in its place marked "to decide" until answered, and "to decide" money is not in the new period's safe to spend [L q7]. Answers are `move` events dated the period's last day; "keep it here" writes no move, the money stays in its place and the next period's amount adds on top [L q6]; answers adding up to more than is left are refused, with the amount left shown [L q10]. An overspent line is shown with how much it is over and is covered from what is left in Free to spend, then Waiting, as the person picks (moves into it) [L q4]. With nothing left anywhere the screen shows one line, "nothing left this time", and asks nothing [L q5]. Two unanswered period ends stay apart, each answered with its own last day [L q8]. Rules file: `rules/period_end.json`.
 
 ## 8. The plan (what is expected)
 - **`plan.shares`**: `[ { id, from, per: { free: 'month', edu: 'month', ... }, free, edu, give, ffa, goals: { <place id>: amount }, at } ]`. Each entry holds from its date to the next. `per` is per amount [B8]. A change never moves anything dated before it.
 - **`plan.budgets`** (budget lines: food, transport, other card spending, custom lines): `[ { id, name, place: 'bills'|'free'|<place id>, cur, per: 'month'|'pay'|'week', steps: [ { from, amount } ], once: { <period start date>: amount }, at } ]`. `place` may be any place, so 38.31 custom lines in Education, Giving or Investing keep their home [B8]. `once` is a one-period override [B8]. A spend carries `line`.
-- **Units** [10.4, H9]: a period gets the amount when `per` matches its kind; `month` with pay that is not monthly gets amount x 12 / the real number of pays in that year (26 or 27 for pay every two weeks), spread so the year adds up exactly; `week` gets amount x days / 7. With no fixed pay, budget lines and Free to spend come off by day: the monthly amount x 12 / 365 a day [B4]. Units have their own test file (section 12).
+- **Units** [10.4, H9, L]: a period gets the amount when `per` matches its kind; `month` with pay that is not monthly gets amount x 12 / the real number of pays in that year (26 or 27 for pay every two weeks, 52 or 53 weekly), so the year adds up exactly, the leftover minor units going to the earliest pays of the year [L units q4]. The count is by the unshifted due date's year, and a period that crosses 31 Dec uses its start year [L q3]; a schedule's first year counts by its rhythm [L q5]. `week` gets days x amount / 7, rounded down per period; weekly amounts are a rate and need not add up to a year [L q6]. With no fixed pay, budget lines and Free to spend come off by day: the monthly amount x 12 / the year's days (365 or 366) a day, rounded down, with the remainder on the month's last day; `per: pay` means each money-in event [B4, L q7]. The reference model keeps a plain form (52 / n pays a year, each period rounded on its own); the engine uses the units rules [L q8]. Units have their own test file (section 12).
 - **`plan.limits`**: `{ ceiling, aims, at }` (38.31 `cfg.ceiling`, `cfg.aims`).
 - **Opening mid-period** [B2, I4]: the opening asks "spent since pay day?" for Free to spend and each budget line, or shares them by days left, and writes those as the places' opening split. Days left: from the setup day to the period's last day, both counted, over the period's days; each line rounded down to the minor unit; Free to spend is its own share plus the lines' rounding leftovers, then rounded down, and a total under one minor unit stays in Waiting [confirmed in J]. When the person typed Free to spend, that figure stands and the lines' rounding leftovers stay in Waiting [J4].
 - **Planned goal set-asides are not money yet** [F22]: only `move` events into a place count.
@@ -240,7 +244,7 @@ The move is proved on every old build Mako's data can be in: 38.28 live and ever
 | `once[ym]` (one month's amount) | `plan.budgets[].once` for the period starting in that month |
 | `items[ym]` (one-off costs) | `schedules` with `kind: 'once'`, `rule: { every: 'once', date: <first day of ym> }`; in the move month (a date before the opening) the date is the first day after the opening, so it is due, never treated as paid [H9] |
 | `cfg.bankStart`, `cfg.bankAt` | a dated bank `check` (the opening when it is the oldest figure), told at `bankAt`; a `bankStart` with no `bankAt` is dated to the copy's last saved day [H9] and told at the copy's last save [J2] |
-| `cfg.bankNow`, `cfg.bankNowAt` | a dated bank `check`, told at `bankNowAt`; the newer of the two opens the bank when it is newer |
+| `cfg.bankNow`, `cfg.bankNowAt` | a dated bank `check`, told at `bankNowAt`; a `bankNow` with no `bankNowAt` is dated to the copy's last saved day [K3] and told at the copy's last save [J2]; the newer of the two opens the bank when it is newer |
 | `cfg.minBank`, `ui.minAuto` | `home.minBank` (only when typed; an automatic minimum is dropped, MAKO M1) |
 | `cfg.ceiling`, `cfg.aims` | `plan.limits` |
 | `cfg.planFrom` | not needed: periods come from pay; kept in `frozen3831` |
@@ -271,18 +275,18 @@ The move is proved on every old build Mako's data can be in: 38.28 live and ever
 Sample data lives apart from the person's data and is never moved as real (requirements 1c).
 
 ## 12. The money rules: see the reference model
-Each figure below is worked out by `foundation_review/ref/lookahead_ref.js`, function `lookahead(scenario, asOf, opts)`. The tags in the code name the decision behind each line. `node foundation_review/ref/run_scenarios.js` runs the 299 hand-worked asks; all must pass. `node foundation_review/scenarios/check_specs.js` checks that every ask's `why` adds up.
+Each figure below is worked out by `foundation_review/ref/lookahead_ref.js`, function `lookahead(scenario, asOf, opts)`. The tags in the code name the decision behind each line. `node foundation_review/ref/run_scenarios.js` runs the 319 hand-worked asks; all must pass. `node foundation_review/scenarios/check_specs.js` checks that every ask's `why` adds up.
 
 | Figure | In the result | Decisions |
 |---|---|---|
-| Bank today per account, with its age | `accounts[id].bank`, `.asOf`, `.ageDays` | A1, F24, B7, H1, I1, I5, J2, J3 |
+| Bank today per account, with its age | `accounts[id].bank`, `.asOf`, `.ageDays` | A1, F24, B7, H1, I1, I5, J2, J3, K3, L (an import replacing a typed line) |
 | Safe to spend, per account | `accounts[id].headroom`, `.lowest`, `.lowestDay`, `.why` (the sum a person can check) | B1, B2, B3, B4, B5, B9, F1, F2, F3, F14, F22, H5, H7, H8, I2, I3, I4, J1, J4, J5, SCHEMA 10.3 horizon |
 | Safe to spend, the headline | `safeToSpend.headline`, `.shortfall`, `.oldestInput` | F9, B9, A1, G2, I4, J4 |
 | Warnings | `warnings` (per account, under the headline, each with a `code`); `laterOn` (12 months) | F9, B11, H5 |
-| Days to next pay | `daysToNextPay` (`late: true` while the next pay is late but inside its window) | F3, F8, F12, F13, H8 |
+| Days to next pay | `daysToNextPay` (`late: true` while the next pay is late but inside its window) | F3, F8, F12, F13, H8, L (pay settled early by an import) |
 | Due before next pay | `dueBeforeNextPay` (grouped by account; next 30 days with no fixed pay) | F7, F13, F21, F23, H8 |
-| Not seen yet | `notSeenYet`; items still inside the posting window: `mayStillPost` | F3, F4, F23, G3, H8 |
-| Each card's next payment, owed now | `cards[id].next`, `.owedNow`, `.statements` | F5, F6, F7, F18, H3, H4, H7, I2, I3, I6, J1, J5 |
+| Not seen yet | `notSeenYet`; items still inside the posting window: `mayStillPost` | F3, F4, F23, G3, H8, L (settles moving to the import, early settling) |
+| Each card's next payment, owed now | `cards[id].next`, `.owedNow`, `.statements` | F5, F6, F7, F18, H3, H4, H7, I2, I3, I6, J1, J5, K1, K2, L (a card line by its buy date) |
 | Each loan's and pay-later plan's next payment, owed now | `owed[id].next`, `.owedNow` | B5, E6, F19, H7, I2 |
 | Each place's money and when it is next due | `places[id].kept`, `.due` | B6, F22, E5, H7 |
 | Total, beside it, after the cards | `total.amount`, `.beside`, `.afterCards` | F10, F11 |
@@ -308,18 +312,21 @@ Each figure below is worked out by `foundation_review/ref/lookahead_ref.js`, fun
 - a spend told after a same-day "available" check [J3]: avail_same_day.json
 - an opening split that names Free to spend, the lines shared by days left [J4]: opening_free_typed.json
 - a card opening with several unpaid statements, each with its payment day [J5]: two_month_opening.json
+- a "not sure" card's interest on everything owed before the payment day, and a percent minimum worked out after the day's interest [K1, K2]: percent_min_interest.json
+- a moved bank figure with no date of its own, dated to the copy's last saved day [K3]: moved_bank_now.json
+- an import meeting typed lines and expected items: by direction, either side of the typed day, a card's buy or posted date with a 7 day card window, within 10% of the larger compared exactly, the closest date then the earliest `told`, the typed line's settle moving to the import, and an unmatched import settling a pay or bill up to 5 working days early [L matching q1 to q7, q10]: import_rules.json
 - holiday and bank-closed moves, pay every two weeks, twice a month, weekly, no fixed pay, a couple, cash, an e-wallet, three weeks away, set up mid-month: the first eight files
 
-**Rules not in the reference model** [H7]. Each is written in this document and must have its own test file before the engine lane starts:
+**Rules not in the reference model** [H7]. Each is written in this document and has its own test file: hand-worked cases run by `node foundation_review/rules/run_rules.js` against a small reference beside it (`rules/<area>_ref.js`); all 164 must pass. Each file also lists the points the decisions leave open (section 14).
 
 | Rule | Written in | Its own test file |
 |---|---|---|
-| Matching an import to an expected item (settling it), the `vary` margin, and statement over screenshot over typed. (Matching an import to a typed line, exact or `est` within 10%, is in the model.) The possible double offered when the same amount is typed on two devices [H9]. | 6.4 | `foundation_review/tests/matching` (to write) |
-| The period-end question and "to decide" places | 7.4 | `foundation_review/tests/period_end` (to write) |
-| Merging two copies: newest `at`, `gone` against same or older `at` only, Redo wins, oldest `told` kept [H6, H1] | 2.3 | `foundation_review/tests/merge` (to write) |
-| Units: `per` month, pay or week, and 26 or 27 pays a year spread so the year adds up [H9]. (The model holds only the plain form, used by asks with monthly pay.) | 8 | `foundation_review/tests/units` (to write) |
+| Matching: the `vary` margin, statement over screenshot over typed, a statement removing the screenshot lines inside its dates, repeats dropped, the possible double and `notDouble` [H9, L]. (Meeting a typed line and settling an expected item are in the model too, section above.) | 6.4 | `foundation_review/rules/matching.json` (52 cases) |
+| The period-end question, "to decide", keep, overspent lines, two ends apart [A7, L] | 7.4 | `foundation_review/rules/period_end.json` (28 cases) |
+| Merging two copies: newest `at`, `gone` against same or older `at` only, Redo wins, `by` on a tie, `steps` and `rules` by `from`, `ui.at`, `rev`, earliest `told`, the clock held a day ahead [H6, H1, L] | 0, 2.3 | `foundation_review/rules/merge.json` (35 cases) |
+| Units: the ISO 4217 table, typed amounts rounded half up, `per` month, pay or week, 26 or 27 pays a year with the leftover to the earliest pays, no fixed pay by day [H9, L]. (The model holds only the plain form, used by asks with monthly pay.) | 0, 8 | `foundation_review/rules/units.json` (49 cases) |
 
-Every rule that sections I and J decided is in the model with its own asks. What they leave open is in section 14.
+Every rule that sections I to L decided is in the model with its own asks, or in a rules file with its own cases. What they leave open is in section 14.
 
 ## 13. What the scenario files call each thing
 The scenario specs (scenarios/*.json) are written without saved field names. The reference model reads them as they are.
@@ -351,6 +358,10 @@ The scenario specs (scenarios/*.json) are written without saved field names. The
 | `card_payment`, `repay` | `repay`; `amount_out` and `amount_in` are `a` and `a2` [H5] |
 | `skip` | `skip` |
 | `est`, `source`, `posted` | `est`, `src.type`, `posted` |
+| account `posting_days` (left out: 1, a card 7) | `postingDays` [F4, L matching q4] |
+| schedule `vary` (left out: the exact amount only) | `vary` [A6, L matching q1] |
+| a moved `check` with no `date` (no `told`, no `own_time`) | a 38.31 `bankNow` with no `bankNowAt`: a bank `check` dated to the copy's last saved day [K3], told at the copy's last save [J2] |
+| rules files: `by`, `notDouble`, `at` on `steps` entries, `ui.at`, a statement import's `from` and `to`, an import's `file` and each line's `line` | the same names; `from`, `to`, `file` and `line` are `src.from`, `src.to`, `src.file`, `src.line` [L] |
 | `transfer`, `convert` | `transfer`, `convert` |
 | `set_aside` | `move` from Waiting into the place |
 | `check`, `card_check` | `check` (in a check-in) |
@@ -361,10 +372,21 @@ The scenario specs (scenarios/*.json) are written without saved field names. The
 | `settles: 'rent@2026-12-27'` | `settles: [ { s: 'rent', due: '2026-12-27' } ]` [H2] |
 
 ## 14. Open questions
-The questions this section held before are decided: G1 to G4, then I1 to I6, then J1 to J5 and the seven readings J confirmed (payment order to statements; a late payment lowers the statement it was carried into; the carried balance is after payments, with no interest on a credit; interest before the payment on loan days; the projected interest in a card's next open payment; a statement item asks what is left of it; the I4 leftover rule). Each is in the model with its own asks or in its comments (section 12). None of the questions below blocks an ask, no ask depends on them, and DECISIONS_ROUND2 section J does not answer them:
-1. **Which balance a "not sure" card's interest is on** [J1]. J1 says when (each payment day), not on what, when spending posts between two payment days: everything owed before that day's payment (as on a loan; the model's working form), or only what was left from the payment day before, less payments since (closer to I2's "carried balance", where new spending carries no interest until it is carried). In not_sure_interest.json nothing is spent on the card between payment days, where both give the same figure.
-2. **A "not sure" card's next payment with a percent minimum** [J1]. Whether the look ahead adds the coming payment day's interest before working out a percent `minRule` (as a loan does, and as a card with a close day does for its next open payment). The model adds none; the asks use a fixed minimum, where both agree.
-3. **A moved `cfg.bankNow` with no `bankNowAt`**. J2 tells a moved bank figure with no time at the copy's last save, and H9 dates a `bankStart` with no `bankAt` to the copy's last saved day, but nothing dates a `bankNow` with no time. No ask has one.
-4. **Readings the model uses that follow from J but are not written in it** (confirm):
-   - J2's "on one day, moved receipts come before moved figures" decides only records told at the same moment (a receipt saved at the copy's last save, moved_figure_no_time mfig-01). A receipt with its own time after the figure's own time still comes after it, by I5's own-time rule, which J2 leaves standing (moved_records moved-01, the 1,000 at 20:00). Read as a rule for the whole day, that receipt would be inside the 18:00 figure: 297,000 instead of 296,000.
-   - A payment day typed with a statement at the opening [J5] is moved by the card's weekend rule like any other (no change when it is a working day), and names the item: `jcard@2027-02-10`.
+The questions this section held before are decided: G1 to G4, I1 to I6, J1 to J5 and the readings J confirmed, then K1 to K3 and the readings K confirmed (J2's order applies to a receipt and a figure told at the same moment, so moved-01 stays 296,000; a payment day typed with an opening statement follows the card's weekend rule), and the 40 questions of the rules files (L). Each is in the model with its own asks or in a rules file with its own cases (section 12). None of the questions below blocks an ask or a case, and DECISIONS_ROUND2 sections K and L do not answer them. Each is in its rules file's open list with what the reference does meanwhile (`node foundation_review/rules/run_rules.js --open`):
+1. **A card's 7 day window** [L matching q4]: working days, like every other `postingDays`, or 7 calendar days? (match-q14)
+2. **A screenshot read after a statement, inside its dates, that matches no statement line** [L matching q8]: removed too, and `goneBy` what? (match-q15)
+3. **Removing a `steps` or `rules` entry** [L merge q2]: the union by `from` brings a removed entry back from the other copy. A `gone` mark on the entry? (mg-q9)
+4. **The clock held a day ahead** [L merge q8]: only on a device's own write, or also when a copy arrives whose records are far ahead of everything the receiving device knows (a new device that has seen nothing)? (mg-q10)
+5. **The same `at` on two `steps` entries or two `ui` keys**: `by` is on the record, not on each entry or key. (mg-q11)
+6. **"Every spend-from account typed"** [L period_end q9]: per check-in, or across the check-ins of the last 3 days together? (pe-q11)
+7. **Starting the new period without the pay** [L period_end q3]: which day does it start, and is the late pay still expected? (pe-q12)
+8. **A period that starts on 31 Dec with the pay due 1 Jan** [L units q3]: the period uses its start year, the pay counts in its due date's year; which per-pay amount does that period get? (units-q10)
+9. **`per: week` with no fixed pay** [L units q7]: what a day gets. (units-q11)
+10. **A month's share with no fixed pay that is not whole** [L units q7]: rounded down (under one minor unit lost a month) or carried? (units-q12)
+
+Readings this round used that follow from L but are not written in it (confirm):
+- L merge q8, "held at that point plus one millisecond": read as the newest `at` seen plus 1 ms, not that point plus a day. So a phone whose clock is a day fast no longer beats a later edit it never saw (merge mg-23, mg-24 changed).
+- L matching q8, "`goneBy` is the statement import's id": read as every screenshot line the statement removes, the ones a statement line matched too (match-19, match-21 changed). A typed line a statement replaces is still `goneBy` the statement line.
+- L matching q12, "the newer record": the one with the later `told`.
+- L period_end q4, "then Waiting, as the person picks": the person may cover from Free to spend and from Waiting in any split; covering more than the overspend is refused like q10.
+- L matching q2 in the model: an import settles an expected item only when it replaced no typed line and names no settle of its own; card and loan payments are left to the check-in list.
