@@ -33,13 +33,17 @@ function besidePay3(day, land, yr) {
 function whyWords3(a) {
   return a.minimum === 0 ? a.why.replace(` - ${BurrowEngine.units.fmt(0, a.currency)} (minimum) =`, ' =') : a.why;
 }
-/* the one next pay on Home is res.period.nextPay: its landing day while the engine counts it, else its due day */
+/* the one next pay on Home is res.period.nextPay, named by the day it lands after the weekend rule [BI4b]: the engine
+   gives that day for the item in its lists (next pay, may still go through, not seen yet, the check-in list) */
 function nextPay3(r) {
   const p = r.period, np = r.daysToNextPay || {};
   if (!p || !p.nextPay) return null;
-  const counted = np.item === p.nextPay.occ;
-  return { state: p.nextPay.state, day: counted ? np.next_pay : p.nextPay.due, days: counted ? np.days : null };
+  const counted = np.item === p.nextPay.occ, occ = p.nextPay.occ;
+  const listed = [].concat(r.mayStillPost || [], (r.notSeenYet || {}).items || [], (r.checkIn || {}).toConfirm || []).find(o => o.item === occ);
+  return { state: p.nextPay.state, day: counted ? np.next_pay : listed ? listed.lands : p.nextPay.due, days: counted ? np.days : null };
 }
+/* money coming in (a pay) or going out, by the schedule an item belongs to (a lookup) */
+const isIncome3 = item => (E3.book.schedules || []).some(s => s.kind === 'income' && s.id === BurrowEngine.ids.scheduleOf(item));
 /* the safe to spend heading, by that pay's state: a late or not seen pay is not counted until it is ticked [BH1, BH3] */
 function safeUntil3(r, yr) {
   const n = nextPay3(r);
@@ -118,6 +122,9 @@ function renderHome3() {
     `<li data-fig="overdue" data-owed="${esc3(id)}" data-state="${esc3(o.state)}"><span>${esc3(E3.nameOf(id))}<br><span class="when">${overdueWords3(o, E3.curOf(id), yr, k + '.*.overdue.*.amount')}</span></span></li>`))));
   const odItems = [].concat(...[].concat(...od));   // one list of the overdue items (od is per account, then per card)
   if (odItems.length) out.push(`<section class="a3-card" data-card="overdue"><h2>Card and loan payments overdue</h2><ul class="a3-rows">${odItems.join('')}</ul></section>`);
+  /* [BI4a] what may still go through: inside its posting window, so safe to spend still takes it off (a pay is not counted) */
+  const may = r.mayStillPost || [];
+  if (may.length) out.push(`<section class="a3-card" data-card="maystill"><h2>${esc3(label3('mayStillPost'))}</h2><p class="a3-sub">Due and not ticked off yet, but it can still be on its way. Safe to spend counts what goes out, not what comes in</p><ul class="a3-rows">${may.map(o => `<li><span>${esc3(E3.occName(o.item))}<br><span class="when">${esc3(day3(o.lands, yr))}${isIncome3(o.item) ? ', coming in' : ''}</span></span><span class="amt">${fig3('mayStillPost', o.amount, o.currency || home)}</span></li>`).join('')}</ul></section>`);
   /* not seen yet, and later on */
   const late = r.notSeenYet.items;
   if (late.length) out.push(`<section class="a3-card" data-card="notseen"><h2>${esc3(label3('notSeenYet'))}</h2><p class="a3-sub">These were due and are not ticked off. Check your bank to tick them</p><ul class="a3-rows">${rowsHtml3(late, home, yr, 'notSeenYet.items')}</ul></section>`);

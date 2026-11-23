@@ -75,9 +75,14 @@ function openSetup3() {
     $('#s3Bills').insertAdjacentHTML('beforeend', `<div class="a3-group" data-row="${k}"><div class="a3-row3">
       <div class="a3-field"><label for="s3-${k}-n">Called</label><input class="a3-in a3-txt" id="s3-${k}-n" data-f="name" placeholder="Bill" autocomplete="off"></div>
       <div class="a3-field"><label for="s3-${k}-a">Amount</label><input class="a3-in" id="s3-${k}-a" data-f="amount" data-money></div></div>
-      <div class="a3-field"><label for="s3-${k}-d">Day of the month it leaves</label><select class="a3-in a3-sel" id="s3-${k}-d" data-f="day">${dayOptions3('27')}</select></div></div>`);
+      <div class="a3-field"><label for="s3-${k}-d">Day of the month it leaves</label><select class="a3-in a3-sel" id="s3-${k}-d" data-f="day">${dayOptions3('27')}</select></div>
+      <div class="a3-field" data-q="takenOut" hidden><label for="s3-${k}-t">Has it gone out of your bank yet?</label><select class="a3-in a3-sel" id="s3-${k}-t" data-f="takenOut"><option value="yes" selected>Yes</option><option value="no">No, not yet</option></select></div></div>`);
     bindMoney3($(`#s3-${k}-a`));
+    askTaken3();
   });
+  /* [BI3] whenever a day or an amount changes, ask again which bills were due since the last pay */
+  host.addEventListener('change', askTaken3);
+  host.addEventListener('focusout', askTaken3);
   $('#a3SetupX').addEventListener('click', closeSetup3);
   $('#a3SetupSave').addEventListener('click', saveSetup3);
   $('#s3Bank').focus();
@@ -85,12 +90,14 @@ function openSetup3() {
 /* one input behaviour (screens/inputs.js) in the chosen currency */
 function bindMoney3(el) { BurrowScreens.inputs.bind(el, { kind: 'amount', get code() { return $('#s3Cur').value; }, optional: el.hasAttribute('data-optional') }); }
 function closeSetup3() { $('#a3Setup').hidden = true; $('#a3Setup').innerHTML = ''; setup3 = null; $('#a3Home').hidden = false; renderHome3(); }
-async function saveSetup3() {
+/* the answers as build_book takes them. strict: a missing amount is asked for (throws 'asked'); else it counts as 0,
+   for a draft book that only says which bills were due since the last pay */
+function answers3(strict) {
   const err = $('#a3SetupErr'), cur = $('#s3Cur').value;
-  const need = (el, words) => { const v = typed3(el.value, cur); if (v === null) { err.textContent = words; el.focus(); throw new Error('asked'); } return v; };
+  const need = (el, words) => { const v = typed3(el.value, cur); if (v !== null) return v; if (!strict) return 0; err.textContent = words; el.focus(); throw new Error('asked'); };
   const text = (el, dflt) => (el.value || '').trim() || dflt;
   let ans;
-  try {
+  {
     const bankName = text($('#s3BankName'), 'Main bank');
     const min = $('#s3Min').value.trim() ? need($('#s3Min'), 'Type the amount to keep at least, or leave it blank') : null;
     ans = {
@@ -111,9 +118,34 @@ async function saveSetup3() {
     });
     $$('#a3Setup [data-row^=bill]').forEach(row => {
       const name = text(row.querySelector('[data-f=name]'), 'Bill');
-      ans.bills.push({ key: row.dataset.row, name, from: 'bank1', amount: need(row.querySelector('[data-f=amount]'), `Type the amount of ${name}`), day: Number(row.querySelector('[data-f=day]').value), shift: 'after' });
+      const q = row.querySelector('[data-q=takenOut]');
+      ans.bills.push({ key: row.dataset.row, name, from: 'bank1', amount: need(row.querySelector('[data-f=amount]'), `Type the amount of ${name}`), day: Number(row.querySelector('[data-f=day]').value), shift: 'after',
+        ...(q && !q.hidden && row.querySelector('[data-f=takenOut]').value === 'no' ? { takenOut: false } : {}) });
     });
-  } catch (e) { if (e.message === 'asked') return; throw e; }
+  }
+  return ans;
+}
+/* [BI3, X3] which bills to ask "Has it gone out of your bank yet?": build_book itself says, from a draft where every
+   bill is still to go (the opening check's notYet names each one due between the last pay and the setup day) */
+function askTaken3() {
+  if (!setup3) return;
+  let due = new Set();
+  try {
+    const ans = answers3(false);
+    ans.bills.forEach(x => { x.takenOut = false; });
+    const built = BurrowEngine.build.buildBook(ans, { newId: BurrowEngine.ids.idMaker('draft0') });
+    const open = built.book.events.find(e => e.k === 'check' && e.acct === built.ids.bank1 && !e.stmt);
+    const sched = (open && open.notYet || []).map(o => BurrowEngine.ids.scheduleOf(typeof o === 'string' ? o : o.s + '@' + o.due));
+    for (const key of Object.keys(built.ids)) if (sched.includes(built.ids[key])) due.add(key);
+  } catch (e) { due = new Set(); }
+  $$('#a3Setup [data-row^=bill]').forEach(row => { row.querySelector('[data-q=takenOut]').hidden = !due.has(row.dataset.row); });
+}
+async function saveSetup3() {
+  const err = $('#a3SetupErr');
+  let ans;
+  try { ans = answers3(true); } catch (e) { if (e.message === 'asked') return; throw e; }
+  askTaken3();
+  try { ans = answers3(true); } catch (e) { if (e.message === 'asked') return; throw e; }
   let built;
   try { built = BurrowEngine.build.buildBook(ans, { newId: E3.newId }); } catch (e) { err.textContent = e.message; return; }
   const ok = await E3.start(built.book);

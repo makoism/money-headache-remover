@@ -29,6 +29,7 @@
   { "name": "Ask on the page: a question box, the line on what is sent and the exact summary, answers in plain words, proposed changes as ticked steps with before and after, Apply through ACT3 with Undo, the relay or the viewer's Claude", "test": "tests/e3_ask.js", "passes": true },
   { "name": "Reminders on the page: check-ins the day after pay and mid period, bills a chosen number of days before, a time, the calendar file made on the device, Google and Outlook links, nothing sent or saved", "test": "tests/e3_remind.js", "passes": true },
   { "name": "Reminders, pure: check-in days (after pay, mid period) and bill days from the engine's calendar, the calendar file, Google and Outlook links, words only", "test": "tests/remind3.test.js", "passes": true },
+  { "name": "Walk 2: setup asks whether each bill due since the last pay has gone out yet (BI3); Home lists what may still go through (BI4a); a late or not seen pay is named by the day it lands (BI4b)", "test": "tests/e3_walk2.js", "passes": true },
   { "name": "Setup, short (setup3): bank today, pay with a second income, cards with a close day or not sure, bills, the minimum; through build_book and the store", "test": "tests/e3_setup.js", "passes": true }
  ]
 }
