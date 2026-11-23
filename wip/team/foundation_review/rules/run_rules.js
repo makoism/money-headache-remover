@@ -47,7 +47,8 @@ for (const file of specs) {
   }
   const q = (spec.open || []).length;
   if (showOpen) for (const o of spec.open || []) console.log(`OPEN ${o.id}  ${o.question}\n     the reference: ${o.ref_does}`);
-  summary.push(`${spec.area}: ${p} passed, ${f} failed, ${q} open questions`);
+  const s2 = spec.cases.filter(c => c.stage === 2).length;   // [AQ5] the rich merge's cases, kept as the stage 2 spec
+  summary.push(`${spec.area}: ${p} passed${s2 ? ` (${s2} cases stage 2)` : ''}, ${f} failed, ${q} open questions`);
   pass += p; fail += f; open += q;
 }
 console.log('\n' + summary.join('\n'));

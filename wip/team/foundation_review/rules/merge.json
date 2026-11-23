@@ -3,6 +3,7 @@
   "title": "Merging two copies: union by id, newest `at` per record, `gone` against the same or older `at` only, the hybrid clock, `told` never changing",
   "written_in": "SCHEMA_V3 0 and 2.3; DECISIONS_ROUND2 D4, H1, H6, H9, L (merge q1 to q8), M3 to M5, N1, N2, O2, O3, Q5, Q7, S3, AB watch (restoring a backup with the cloud on), AD8 (the shared ui keys restored with a new at), AE1 (keyed overrides merged key by key), AE2, AE5 (restore with the D4 clock, every list, held marks, keyed overrides, a 38.31-format backup), AF3 (ui keys removed per key), AG1 (a write after a restore never ties with it; withdrawn as worded by AH4), AH1 (a device's own write uses its own clock, D8 alone questions it; an arriving copy is held only when more than a day ahead of the receiver's own now) AH5 (keyed maps found by their shape), AI1 (an arriving copy held at the receiver's own now plus 1 ms, `told` too; a device that has seen nothing holds the same way), AI2 (entry lists found by their shape), AL1 to AL3 (records of separately edited fields as field values; what a device has seen at any depth; the main bank and its minimum one field), AL4, AL5, AL7 and the AL watch (a device whose offset changes, a half-hour offset); AM2 (the main bank and its minimum changed on two devices before a sync: the newer pair wins and the device whose own pair lost records the notice \"Your other device changed this. Check it.\", question `main_notice`)",
   "notes": [
+    "[AQ5] A case marked `\"stage\": 2` is about the rich merge (merging two copies field by field, holding far-ahead copies, notices and moves after a merge): version one asks instead (rules/sync_v1.json), and these cases stay as the stage 2 spec, passing against merge_ref.js, never deleted or weakened. The list is foundation_review/STAGE2_MERGE_LIST.md. Cases with no mark (the clock, ids, a restore on one device, the shop key and lessons) hold in version one too.",
     "Every amount is made up and in whole minor units (yen).",
     "Times are hybrid clock values written as ISO with the time zone offset (section 0). They are compared as moments, never as text: 10:00+09:00 is 01:00 UTC, 02:30+01:00 is 01:30 UTC.",
     "Question `next_at`: the `at` a device writes, the larger of now and (newest seen + 1 ms), in now's offset; a long gap since the last write is never held [AH1, which withdraws L merge q8's cap]. Question `next_at_warn`: the same, with whether D8 asks the date first (`lastDay`, the device's last open: more than one day back or more than 40 days ahead) [D8, AH1]. Question `clock_ask`: D8's question alone, `back`, `ahead` or null. A `receive` and every `sync` step of `devices` name the receiving device's own `now`: an arriving copy is held only when more than a day ahead of it [AH1, M4]. A restore's stamp is newer than everything in the device's own copy as well as `lastSeen` [D4, AH1]. A field whose value is a map whose values all carry `at` merges key by key, whatever its name [AH5]; a field whose value is an array whose items all carry `from` and `at` merges entry by entry by `from`, whatever its name, and is restored as `steps` is [AI2]. Question `came_back`: the records removed in `mine` that the merge brings back [L merge q4]. Each record may carry `by`, the device part of its last writer [L merge q1]; `steps` and `rules` entries carry their own `at` [L merge q2]; each shared `ui` key is a field value `{ v, at, by, gone }` with its own `at` [L merge q6, AL1]; the copy's `rev` after a merge is the larger of both plus one [L merge q3]. A `steps` or `rules` entry is removed by its own `gone` with its own `at`, and is settled like a record: newer `at`, then `gone`, then the larger `by` [M3]. Entries and field values carry their own `by` beside their `at` [M5, AL1]. [AL1] The shared `ui`, `home`, `plan.limits` and `imports.cats` are records of separately edited fields: no `at` of their own, each field a field value like a keyed override key, found by shape, merged, held and restored by the one keyed-map handler. Question `seen`: the newest `at` anywhere in a copy, at any depth, compared as moments (what a device has seen) [AL2]. A `devices` edit with `record` names such a record by its path (`ui`, `home`, `plan.limits`, `imports.cats`) and writes each field it sets as a field value. Question `receive`: a copy that arrives is merged in after every `at` in it more than a day ahead of the receiving device's own now is held at that now plus 1 ms (never at the newest `at` seen), `told` too, with the warning [M4, AH1, AI1]; a device that has seen nothing (no `lastSeen`) holds the same way [AI1]; the `devices` syncs do the same. Question `newer`: which of two times is later. Question `merge`: two copies merged, lists ordered by id. Questions `merge_symmetric` and `merge_same`: whether merging A with B gives the same as B with A, and whether merging a copy with itself changes nothing. Question `devices`: a short story of edits and syncs on two devices, and the record one device ends with.",
@@ -53,7 +54,7 @@
       "decisions": [ "D4" ]
     },
     {
-      "id": "mg-06", "question": "merge",
+      "id": "mg-06", "stage": 2, "question": "merge",
       "title": "Union by id: a record on each device, both kept",
       "input": {
         "mine": { "events": [ { "id": "aaaaaa-x1y-1", "k": "spend", "a": 1200, "date": "2026-11-20", "told": "2026-11-20T12:00:00.000+09:00", "at": "2026-11-20T12:00:00.000+09:00" } ] },
@@ -66,7 +67,7 @@
       "decisions": [ "D4" ]
     },
     {
-      "id": "mg-07", "question": "merge",
+      "id": "mg-07", "stage": 2, "question": "merge",
       "title": "The same record edited on both: the newer `at` wins",
       "input": {
         "mine": { "events": [ { "id": "e1", "k": "spend", "a": 1200, "date": "2026-11-20", "told": "2026-11-20T12:00:00.000+09:00", "at": "2026-11-21T10:00:00.000+09:00" } ] },
@@ -77,7 +78,7 @@
       "decisions": [ "D4" ]
     },
     {
-      "id": "mg-08", "question": "merge",
+      "id": "mg-08", "stage": 2, "question": "merge",
       "title": "The winner's fields, the oldest `told`",
       "input": {
         "mine": { "events": [ { "id": "e1", "k": "spend", "a": 1200, "date": "2026-11-20", "told": "2026-11-20T12:00:00.000+09:00", "at": "2026-11-21T10:00:00.000+09:00" } ] },
@@ -88,7 +89,7 @@
       "decisions": [ "D4", "H1" ]
     },
     {
-      "id": "mg-09", "question": "merge",
+      "id": "mg-09", "stage": 2, "question": "merge",
       "title": "An Undo newer than the other copy wins",
       "input": {
         "mine": { "events": [ { "id": "e1", "k": "spend", "a": 1200, "date": "2026-11-20", "told": "2026-11-20T12:00:00.000+09:00", "at": "2026-11-21T10:05:00.000+09:00", "gone": "2026-11-21", "goneBy": "aaaaaa-x1y-9" } ] },
@@ -99,7 +100,7 @@
       "decisions": [ "D4", "H6" ]
     },
     {
-      "id": "mg-10", "question": "merge",
+      "id": "mg-10", "stage": 2, "question": "merge",
       "title": "`gone` wins a tie on `at`",
       "input": {
         "mine": { "events": [ { "id": "e1", "k": "spend", "a": 1500, "date": "2026-11-20", "told": "2026-11-20T12:00:00.000+09:00", "at": "2026-11-21T10:00:00.000+09:00" } ] },
@@ -110,7 +111,7 @@
       "decisions": [ "H6" ]
     },
     {
-      "id": "mg-11", "question": "merge",
+      "id": "mg-11", "stage": 2, "question": "merge",
       "title": "A Redo (newer, not gone) wins over the Undo it reverses",
       "input": {
         "mine": { "events": [ { "id": "e1", "k": "spend", "a": 1200, "date": "2026-11-20", "told": "2026-11-20T12:00:00.000+09:00", "at": "2026-11-21T10:00:00.000+09:00", "gone": "2026-11-21", "goneBy": "aaaaaa-x1y-9" } ] },
@@ -121,7 +122,7 @@
       "decisions": [ "H6" ]
     },
     {
-      "id": "mg-12", "question": "merge",
+      "id": "mg-12", "stage": 2, "question": "merge",
       "title": "Removed on one device, edited later on the other that never saw it: the edit wins",
       "input": {
         "mine": { "events": [ { "id": "e1", "k": "spend", "a": 1200, "date": "2026-11-20", "told": "2026-11-20T12:00:00.000+09:00", "at": "2026-11-21T10:00:00.000+09:00", "gone": "2026-11-21", "goneBy": "aaaaaa-x1y-9" } ] },
@@ -132,7 +133,7 @@
       "decisions": [ "H6" ]
     },
     {
-      "id": "mg-13", "question": "merge",
+      "id": "mg-13", "stage": 2, "question": "merge",
       "title": "A removed record on one device only is kept, still removed",
       "input": {
         "mine": { "events": [ { "id": "e1", "k": "spend", "a": 1200, "date": "2026-11-20", "told": "2026-11-20T12:00:00.000+09:00", "at": "2026-11-21T10:00:00.000+09:00", "gone": "2026-11-21", "goneBy": "aaaaaa-x1y-9" } ] },
@@ -143,7 +144,7 @@
       "decisions": [ "D2", "D4" ]
     },
     {
-      "id": "mg-14", "question": "merge",
+      "id": "mg-14", "stage": 2, "question": "merge",
       "title": "The same amount typed on two devices: the merge keeps both",
       "input": {
         "mine": { "events": [ { "id": "aaaaaa-x1y-3", "k": "spend", "a": 1500, "date": "2026-11-20", "place": "free", "told": "2026-11-20T12:00:00.000+09:00", "at": "2026-11-20T12:00:00.000+09:00" } ] },
@@ -156,7 +157,7 @@
       "decisions": [ "H9" ]
     },
     {
-      "id": "mg-15", "question": "merge",
+      "id": "mg-15", "stage": 2, "question": "merge",
       "title": "A schedule changed on both devices: the steps merge by `from`, neither step is lost",
       "input": {
         "mine": { "schedules": [ { "id": "pay", "kind": "income", "steps": [ { "from": "2026-11-01", "amount": 250000, "at": "2026-11-01T09:00:00.000+09:00" }, { "from": "2026-12-01", "amount": 260000, "at": "2026-11-21T10:00:00.000+09:00" } ], "told": "2026-11-01T09:00:00.000+09:00", "at": "2026-11-21T10:00:00.000+09:00" } ] },
@@ -167,7 +168,7 @@
       "decisions": [ "D4" ]
     },
     {
-      "id": "mg-16",
+      "id": "mg-16", "stage": 2,
       "question": "merge",
       "title": "AK1, AL3: the minimum edited on two devices: the newer `at` of `main` wins",
       "input": {
@@ -275,7 +276,7 @@
       ]
     },
     {
-      "id": "mg-17", "question": "merge",
+      "id": "mg-17", "stage": 2, "question": "merge",
       "title": "A field this page does not know stays on the winning copy",
       "input": {
         "mine": { "places": [ { "id": "trip", "name": "Trip", "target": 300000, "told": "2026-11-01T09:00:00.000+09:00", "at": "2026-11-21T10:00:00.000+09:00" } ] },
@@ -286,7 +287,7 @@
       "decisions": [ "D4" ]
     },
     {
-      "id": "mg-18", "question": "merge",
+      "id": "mg-18", "stage": 2, "question": "merge",
       "title": "Lists inside the plan merge by id too",
       "input": {
         "mine": { "plan": { "budgets": [ { "id": "food", "name": "Food", "per": "month", "told": "2026-11-01T09:00:00.000+09:00", "at": "2026-11-01T09:00:00.000+09:00" } ] } },
@@ -299,7 +300,7 @@
       "decisions": [ "D4" ]
     },
     {
-      "id": "mg-19", "question": "merge",
+      "id": "mg-19", "stage": 2, "question": "merge",
       "title": "Two time zones: the later moment wins, not the larger text",
       "input": {
         "mine": { "events": [ { "id": "e1", "k": "spend", "a": 1200, "date": "2026-11-20", "told": "2026-11-20T12:00:00.000+09:00", "at": "2026-11-23T10:00:00.000+09:00" } ] },
@@ -310,7 +311,7 @@
       "decisions": [ "D4" ]
     },
     {
-      "id": "mg-20", "question": "merge_symmetric",
+      "id": "mg-20", "stage": 2, "question": "merge_symmetric",
       "title": "Merging A into B gives the same as B into A",
       "input": {
         "mine": { "events": [
@@ -326,7 +327,7 @@
       "decisions": [ "D4", "H6" ]
     },
     {
-      "id": "mg-21", "question": "merge_same",
+      "id": "mg-21", "stage": 2, "question": "merge_same",
       "title": "Merging a copy with itself changes nothing",
       "input": {
         "copy": { "events": [
@@ -338,7 +339,7 @@
       "decisions": [ "D4" ]
     },
     {
-      "id": "mg-22", "question": "merge_symmetric",
+      "id": "mg-22", "stage": 2, "question": "merge_symmetric",
       "title": "Same `at`, both alive, different amounts: both devices still agree",
       "input": {
         "mine": { "events": [ { "id": "e1", "k": "spend", "a": 1200, "date": "2026-11-20", "told": "2026-11-20T12:00:00.000+09:00", "at": "2026-11-21T10:00:00.000+09:00" } ] },
@@ -349,7 +350,7 @@
       "decisions": [ "D4" ]
     },
     {
-      "id": "mg-23",
+      "id": "mg-23", "stage": 2,
       "question": "devices",
       "title": "A phone whose clock is a day fast is not held; the other device's later edit still wins, 1 ms after what it has seen (AH1)",
       "input": {
@@ -429,7 +430,7 @@
       ]
     },
     {
-      "id": "mg-24",
+      "id": "mg-24", "stage": 2,
       "question": "devices",
       "title": "A phone less than a day fast wins against an edit made without seeing it (AH1: only more than a day ahead of the receiver is held)",
       "input": {
@@ -509,7 +510,7 @@
       ]
     },
     {
-      "id": "mg-25",
+      "id": "mg-25", "stage": 2,
       "question": "devices",
       "title": "A record made on one device and edited on the other keeps its first `told`",
       "input": {
@@ -579,7 +580,7 @@
       ]
     },
     {
-      "id": "mg-26", "question": "merge",
+      "id": "mg-26", "stage": 2, "question": "merge",
       "title": "The same `at` on both, both alive: the larger `by` wins",
       "input": {
         "mine": { "events": [ { "id": "e1", "k": "spend", "a": 1300, "date": "2026-11-20", "told": "2026-11-20T12:00:00.000+09:00", "at": "2026-11-21T10:00:00.000+09:00", "by": "aaaaaa" } ] },
@@ -590,7 +591,7 @@
       "decisions": [ "L merge q1" ]
     },
     {
-      "id": "mg-27",
+      "id": "mg-27", "stage": 2,
       "question": "devices",
       "title": "An edit writes the device part of its writer in `by`",
       "input": {
@@ -662,7 +663,7 @@
       ]
     },
     {
-      "id": "mg-28", "question": "merge",
+      "id": "mg-28", "stage": 2, "question": "merge",
       "title": "The same step edited on both devices: the newer entry wins",
       "input": {
         "mine": { "schedules": [ { "id": "pay", "kind": "income", "steps": [ { "from": "2026-12-01", "amount": 260000, "at": "2026-11-21T10:00:00.000+09:00" } ], "told": "2026-11-01T09:00:00.000+09:00", "at": "2026-11-21T10:00:00.000+09:00" } ] },
@@ -673,7 +674,7 @@
       "decisions": [ "L merge q2" ]
     },
     {
-      "id": "mg-29", "question": "merge",
+      "id": "mg-29", "stage": 2, "question": "merge",
       "title": "The copy's `rev` after a merge is the larger of both plus one",
       "input": {
         "mine": { "rev": 7, "events": [ { "id": "e1", "k": "spend", "a": 1200, "date": "2026-11-20", "told": "2026-11-20T12:00:00.000+09:00", "at": "2026-11-21T10:00:00.000+09:00" } ] },
@@ -684,7 +685,7 @@
       "decisions": [ "L merge q3" ]
     },
     {
-      "id": "mg-30", "question": "came_back",
+      "id": "mg-30", "stage": 2, "question": "came_back",
       "title": "An edit newer than a removal brings the record back, and the check-in can say so",
       "input": {
         "mine": { "events": [ { "id": "e1", "k": "spend", "a": 1200, "date": "2026-11-20", "told": "2026-11-20T12:00:00.000+09:00", "at": "2026-11-21T10:00:00.000+09:00", "gone": "2026-11-21", "goneBy": "aaaaaa-x1y-9" }, { "id": "e2", "k": "spend", "a": 900, "date": "2026-11-20", "told": "2026-11-20T12:00:00.000+09:00", "at": "2026-11-21T10:00:00.000+09:00", "gone": "2026-11-21", "goneBy": "aaaaaa-x1y-9" } ] },
@@ -695,7 +696,7 @@
       "decisions": [ "L merge q4" ]
     },
     {
-      "id": "mg-31",
+      "id": "mg-31", "stage": 2,
       "question": "merge",
       "title": "Shared `ui` keys merge one by one, each by its own `at` (AL1 field values)",
       "input": {
@@ -751,7 +752,7 @@
       ]
     },
     {
-      "id": "mg-32", "question": "merge",
+      "id": "mg-32", "stage": 2, "question": "merge",
       "title": "A copy from an older page with no `told`: the one there is kept",
       "input": {
         "mine": { "events": [ { "id": "e1", "k": "spend", "a": 1200, "date": "2026-11-20", "at": "2026-11-21T10:05:00.000+09:00" } ] },
@@ -806,7 +807,7 @@
       "decisions": [ "L merge q8" ]
     },
     {
-      "id": "mg-36", "question": "merge",
+      "id": "mg-36", "stage": 2, "question": "merge",
       "title": "A step removed on one device stays removed, even when the other device edited the schedule later",
       "input": {
         "mine": {"schedules": [{"id": "pay", "kind": "income", "name": "Pay", "steps": [{"from": "2026-12-01", "amount": 260000, "at": "2026-11-21T09:00:00.000+09:00", "by": "aaaaaa"}, {"from": "2027-01-01", "amount": 270000, "at": "2026-11-21T10:20:00.000+09:00", "by": "aaaaaa", "gone": "2026-11-21"}], "told": "2026-11-01T09:00:00.000+09:00", "at": "2026-11-21T10:20:00.000+09:00", "by": "aaaaaa"}]},
@@ -817,7 +818,7 @@
       "decisions": ["M3", "L merge q2"]
     },
     {
-      "id": "mg-37", "question": "merge",
+      "id": "mg-37", "stage": 2, "question": "merge",
       "title": "A step removed and edited at the same `at`: the removal wins, as on a record",
       "input": {
         "mine": {"schedules": [{"id": "pay", "kind": "income", "steps": [{"from": "2027-01-01", "amount": 270000, "at": "2026-11-21T10:20:00.000+09:00", "by": "aaaaaa", "gone": "2026-11-21"}], "told": "2026-11-01T09:00:00.000+09:00", "at": "2026-11-21T10:20:00.000+09:00", "by": "aaaaaa"}]},
@@ -828,7 +829,7 @@
       "decisions": ["M3", "H6", "M5"]
     },
     {
-      "id": "mg-38",
+      "id": "mg-38", "stage": 2,
       "question": "receive",
       "title": "A copy that arrives more than a day ahead of what this device has seen is held",
       "input": {
@@ -909,7 +910,7 @@
       ]
     },
     {
-      "id": "mg-39",
+      "id": "mg-39", "stage": 2,
       "question": "devices",
       "title": "A new phone two days fast: its edit is held when it reaches the other device, and a later edit there wins",
       "input": {
@@ -992,7 +993,7 @@
       ]
     },
     {
-      "id": "mg-40", "question": "merge",
+      "id": "mg-40", "stage": 2, "question": "merge",
       "title": "Two steps with the same `from` and the same `at`: the larger `by` wins",
       "input": {
         "mine": {"schedules": [{"id": "pay", "kind": "income", "steps": [{"from": "2026-12-01", "amount": 260000, "at": "2026-11-21T10:00:00.000+09:00", "by": "aaaaaa"}], "told": "2026-11-01T09:00:00.000+09:00", "at": "2026-11-21T10:00:00.000+09:00", "by": "aaaaaa"}]},
@@ -1003,7 +1004,7 @@
       "decisions": ["M5", "L merge q1"]
     },
     {
-      "id": "mg-41",
+      "id": "mg-41", "stage": 2,
       "question": "merge",
       "title": "Two `ui` keys with the same `at`: the larger `by` wins",
       "input": {
@@ -1043,7 +1044,7 @@
       ]
     },
     {
-      "id": "mg-42",
+      "id": "mg-42", "stage": 2,
       "question": "devices",
       "title": "A record held once keeps its held `at`: the fast copy that arrives again does not beat the later edit",
       "input": {
@@ -1130,7 +1131,7 @@
       ]
     },
     {
-      "id": "mg-43",
+      "id": "mg-43", "stage": 2,
       "question": "devices",
       "title": "The fast device takes the held value when the merged copy comes back, so the later edit wins there too",
       "input": {
@@ -1217,7 +1218,7 @@
       ]
     },
     {
-      "id": "mg-44",
+      "id": "mg-44", "stage": 2,
       "question": "devices",
       "title": "With no edit in between, the fast device ends with the held `at` too",
       "input": {
@@ -1292,7 +1293,7 @@
       ]
     },
     {
-      "id": "mg-45",
+      "id": "mg-45", "stage": 2,
       "question": "merge",
       "title": "Merging the fast copy with the held one: the mark decides, in either order",
       "input": {
@@ -1350,7 +1351,7 @@
       ]
     },
     {
-      "id": "mg-46",
+      "id": "mg-46", "stage": 2,
       "question": "receive",
       "title": "A `steps` entry held once keeps its held `at` when the same fast copy arrives again",
       "input": {
@@ -1447,7 +1448,7 @@
       ]
     },
     {
-      "id": "mg-47",
+      "id": "mg-47", "stage": 2,
       "question": "merge",
       "title": "A shared `ui` key held once keeps its held `at`, with its mark in the field value",
       "input": {
@@ -1496,7 +1497,7 @@
       ]
     },
     {
-      "id": "mg-48",
+      "id": "mg-48", "stage": 2,
       "question": "receive",
       "title": "A record made on a fast device: its `told` is held the same way as its `at`",
       "input": {
@@ -1550,7 +1551,7 @@
       ]
     },
     {
-      "id": "mg-49",
+      "id": "mg-49", "stage": 2,
       "question": "devices",
       "title": "The held `told` is kept when the fast copy arrives again and when it goes back",
       "input": {
@@ -1701,7 +1702,7 @@
       ]
     },
     {
-      "id": "mg-54",
+      "id": "mg-54", "stage": 2,
       "question": "devices",
       "title": "Jun and Tess each tick Pay on their own phone: one record, the newest `at`",
       "input": {
@@ -1811,7 +1812,7 @@
       ]
     },
     {
-      "id": "mg-55",
+      "id": "mg-55", "stage": 2,
       "question": "merge",
       "title": "The two copies of the ticked pay merge into one event",
       "input": {
@@ -1886,7 +1887,7 @@
       ]
     },
     {
-      "id": "mg-56",
+      "id": "mg-56", "stage": 2,
       "question": "merge",
       "title": "The gym spend written on the phone and on the laptop is one spend",
       "input": {
@@ -1958,7 +1959,7 @@
       ]
     },
     {
-      "id": "mg-57",
+      "id": "mg-57", "stage": 2,
       "question": "merge",
       "title": "Both phones start the new period on the same day: one `periodStart`",
       "input": {
@@ -2046,7 +2047,7 @@
       ]
     },
     {
-      "id": "mg-61",
+      "id": "mg-61", "stage": 2,
       "question": "merge",
       "title": "Two page opens on one device never share ids: Monday's lunch and Thursday's rent both stay",
       "input": {
@@ -2186,7 +2187,7 @@
       ]
     },
     {
-      "id": "mg-68",
+      "id": "mg-68", "stage": 2,
       "question": "merge",
       "title": "A goal removed on the phone and on the laptop before they sync: one move to Waiting, not two",
       "input": {
@@ -2250,7 +2251,7 @@
       ]
     },
     {
-      "id": "mg-69",
+      "id": "mg-69", "stage": 2,
       "question": "merge",
       "title": "The gym spend removed on the phone, logged again on the laptop before they sync: the merge keeps both the laptop's spend and the phone's skip",
       "input": {
@@ -2353,7 +2354,7 @@
       ]
     },
     {
-      "id": "mg-70",
+      "id": "mg-70", "stage": 2,
       "question": "merge",
       "title": "The same closing written on two devices: one transfer out",
       "input": {
@@ -2438,7 +2439,7 @@
       ]
     },
     {
-      "id": "mg-73",
+      "id": "mg-73", "stage": 2,
       "question": "merge",
       "title": "A two-record closing written on two devices: each record once",
       "input": {
@@ -2525,7 +2526,7 @@
       ]
     },
     {
-      "id": "mg-74",
+      "id": "mg-74", "stage": 2,
       "question": "merge",
       "title": "Two phones start the new period on different days: one record, the newer `at` whole (f6)",
       "input": {
@@ -2574,7 +2575,7 @@
       ]
     },
     {
-      "id": "mg-75",
+      "id": "mg-75", "stage": 2,
       "question": "merge",
       "title": "Adding an account undone on one phone: the opening is one record, kept with its `gone`",
       "input": {
@@ -2744,7 +2745,7 @@
       ]
     },
     {
-      "id": "mg-84",
+      "id": "mg-84", "stage": 2,
       "question": "merge",
       "title": "The move run on the phone and on the desktop: accounts, places, schedules and budget lines are one copy each after the merge (X1)",
       "input": {
@@ -3054,7 +3055,7 @@
       ]
     },
     {
-      "id": "mg-85",
+      "id": "mg-85", "stage": 2,
       "question": "merge",
       "title": "The move run on two devices: the opening, the bank figure, the receipts and a month-end answer are one record each (X1, X watch: ui.sweep as pe:<occurrence>)",
       "input": {
@@ -3274,7 +3275,7 @@
       ]
     },
     {
-      "id": "mg-86",
+      "id": "mg-86", "stage": 2,
       "question": "merge",
       "title": "Two phones tick the same top-up with a fee: one transfer and one fee record (X2; confirm_review_1 item 2)",
       "input": {
@@ -3658,7 +3659,7 @@
       ]
     },
     {
-      "id": "mg-97",
+      "id": "mg-97", "stage": 2,
       "question": "restore_merge",
       "title": "AB watch: the merge with the cloud copy keeps the restore, on either side",
       "input": {
@@ -4013,7 +4014,7 @@
       ]
     },
     {
-      "id": "mg-99",
+      "id": "mg-99", "stage": 2,
       "question": "restore_merge",
       "title": "AD8: the merge with the cloud copy keeps the restored `ui` keys, on either side",
       "input": {
@@ -4103,7 +4104,7 @@
       ]
     },
     {
-      "id": "mg-100",
+      "id": "mg-100", "stage": 2,
       "question": "merge",
       "title": "AE1 (e1): a one-occurrence amount set on the phone survives a rename on the desktop before they sync",
       "input": {
@@ -4193,7 +4194,7 @@
       ]
     },
     {
-      "id": "mg-101",
+      "id": "mg-101", "stage": 2,
       "question": "merge",
       "title": "AE1 (e1): a budget line's `once` set for different periods on two devices keeps both",
       "input": {
@@ -4296,7 +4297,7 @@
       ]
     },
     {
-      "id": "mg-102",
+      "id": "mg-102", "stage": 2,
       "question": "merge",
       "title": "AE1 (e1): a loan's planned extra payments (`extraSteps`) added on two devices keep both",
       "input": {
@@ -4389,7 +4390,7 @@
       ]
     },
     {
-      "id": "mg-103",
+      "id": "mg-103", "stage": 2,
       "question": "merge",
       "title": "AE1: the same key on both devices goes to the newer key; a key removed on one device stays removed",
       "input": {
@@ -4505,7 +4506,7 @@
       ]
     },
     {
-      "id": "mg-104",
+      "id": "mg-104", "stage": 2,
       "question": "merge",
       "title": "AE1: a `plan.shares` entry's `once` set for different periods on two devices keeps both",
       "input": {
@@ -4601,7 +4602,7 @@
       ]
     },
     {
-      "id": "mg-105",
+      "id": "mg-105", "stage": 2,
       "question": "merge",
       "title": "AE1, H6: a key removed and put back with Undo wins over the removal still on the other device",
       "input": {
@@ -4698,7 +4699,7 @@
       ]
     },
     {
-      "id": "mg-106",
+      "id": "mg-106", "stage": 2,
       "question": "merge",
       "title": "AE1, H6: on the same `at` a removed key wins; two live keys on the same `at` go to the larger `by`",
       "input": {
@@ -4812,7 +4813,7 @@
       ]
     },
     {
-      "id": "mg-107",
+      "id": "mg-107", "stage": 2,
       "question": "merge",
       "title": "AE1, AE2: the pay day answered on the phone writes January's waiting 0; a rename on the desktop before the sync keeps it",
       "input": {
@@ -4973,7 +4974,7 @@
       ]
     },
     {
-      "id": "mg-108",
+      "id": "mg-108", "stage": 2,
       "question": "receive",
       "title": "AE1, M4, N1: a key that arrives more than a day ahead is held, with its own mark",
       "input": {
@@ -5078,7 +5079,7 @@
       ]
     },
     {
-      "id": "mg-109",
+      "id": "mg-109", "stage": 2,
       "question": "restore_merge",
       "title": "AE5: a restore on a device whose clock is behind stamps with the D4 clock, from the newest `at` in its own copy, so the merge still keeps it",
       "input": {
@@ -5547,7 +5548,7 @@
       ]
     },
     {
-      "id": "mg-112",
+      "id": "mg-112", "stage": 2,
       "question": "restore_merge",
       "title": "AE5, N1: a restore keeps the held marks the device knows, so the fast device's copy cannot beat the restore",
       "input": {
@@ -5646,7 +5647,7 @@
       ]
     },
     {
-      "id": "mg-113",
+      "id": "mg-113", "stage": 2,
       "question": "restore_merge",
       "title": "AE5, AE1: a restore covers keyed overrides key by key; the merge with the cloud copy keeps it",
       "input": {
@@ -6121,7 +6122,7 @@
       ]
     },
     {
-      "id": "mg-115",
+      "id": "mg-115", "stage": 2,
       "question": "restore_merge",
       "title": "AF3: the merge with the cloud copy keeps the restored `ui` key removed, on either side",
       "input": {
@@ -6206,7 +6207,7 @@
       ]
     },
     {
-      "id": "mg-116",
+      "id": "mg-116", "stage": 2,
       "question": "merge",
       "title": "AF3, H6: a removed `ui` key wins on the same `at`; a key put back with Undo wins when newer",
       "input": {
@@ -6265,7 +6266,7 @@
       ]
     },
     {
-      "id": "mg-117",
+      "id": "mg-117", "stage": 2,
       "question": "merge",
       "title": "AE2, AE1: a key the person edited after one device applied the waiting entry wins over the same key another device applies later",
       "input": {
@@ -7406,7 +7407,7 @@
       ]
     },
     {
-      "id": "mg-120",
+      "id": "mg-120", "stage": 2,
       "question": "merge",
       "title": "AG1: January's 0 written again after a restore wins at the merge over the cloud copy that holds the restore's removal",
       "input": {
@@ -7843,7 +7844,7 @@
       ]
     },
     {
-      "id": "mg-129",
+      "id": "mg-129", "stage": 2,
       "question": "devices",
       "title": "Phone away three weeks, desktop used meanwhile: the phone's correction of 22 Nov beats the desktop's edit of 10 Nov (AH1, g1)",
       "input": {
@@ -7927,7 +7928,7 @@
       ]
     },
     {
-      "id": "mg-130",
+      "id": "mg-130", "stage": 2,
       "question": "devices",
       "title": "The same on the desktop: it takes the phone's 22 Nov correction, nothing held (AH1, g1)",
       "input": {
@@ -8010,7 +8011,7 @@
       ]
     },
     {
-      "id": "mg-131",
+      "id": "mg-131", "stage": 2,
       "question": "devices",
       "title": "A spend typed on the phone at 12:00 after three weeks away is told after the desktop's 09:00 check that day (AH1, g1)",
       "input": {
@@ -8082,7 +8083,7 @@
       ]
     },
     {
-      "id": "mg-132",
+      "id": "mg-132", "stage": 2,
       "question": "devices",
       "title": "The desktop's check reaches the phone unchanged: `told` 09:00, nothing held (AH1, g1)",
       "input": {
@@ -8155,7 +8156,7 @@
       ]
     },
     {
-      "id": "mg-133",
+      "id": "mg-133", "stage": 2,
       "question": "receive",
       "title": "A device back after three weeks takes in copies dated up to a day ahead of its own now as they are (AH1)",
       "input": {
@@ -8248,7 +8249,7 @@
       ]
     },
     {
-      "id": "mg-134",
+      "id": "mg-134", "stage": 2,
       "question": "receive",
       "title": "A copy more than a day ahead of the receiving device's own now is held; exactly a day is not (AH1, M4)",
       "input": {
@@ -8328,7 +8329,7 @@
       ]
     },
     {
-      "id": "mg-135",
+      "id": "mg-135", "stage": 2,
       "question": "merge",
       "title": "AH5: a keyed map no build knows yet (`byMonth`) merges key by key, found by its shape",
       "input": {
@@ -8403,7 +8404,7 @@
       ]
     },
     {
-      "id": "mg-136",
+      "id": "mg-136", "stage": 2,
       "question": "merge",
       "title": "AH5: the same merge with the copies the other way round gives the same result",
       "input": {
@@ -8477,7 +8478,7 @@
       ]
     },
     {
-      "id": "mg-137",
+      "id": "mg-137", "stage": 2,
       "question": "merge",
       "title": "AH5: an unknown key removed on one device: the newer removal wins per key",
       "input": {
@@ -8549,7 +8550,7 @@
       ]
     },
     {
-      "id": "mg-138",
+      "id": "mg-138", "stage": 2,
       "question": "merge",
       "title": "AH5: a map whose values do not all carry `at` is a plain field, taken whole from the newer record",
       "input": {
@@ -8696,7 +8697,7 @@
       ]
     },
     {
-      "id": "mg-140",
+      "id": "mg-140", "stage": 2,
       "question": "devices",
       "title": "Used again after 2, 21 and 45 days away: an opening (grid: open x used again after days away, AH1)",
       "input": {
@@ -8822,7 +8823,7 @@
       ]
     },
     {
-      "id": "mg-141",
+      "id": "mg-141", "stage": 2,
       "question": "devices",
       "title": "Used again after 2, 21 and 45 days away: a check (grid: check x used again after days away, AH1)",
       "input": {
@@ -8948,7 +8949,7 @@
       ]
     },
     {
-      "id": "mg-142",
+      "id": "mg-142", "stage": 2,
       "question": "devices",
       "title": "Used again after 2, 21 and 45 days away: money in typed (a pay) (grid: in / pay x used again after days away, AH1)",
       "input": {
@@ -9076,7 +9077,7 @@
       ]
     },
     {
-      "id": "mg-143",
+      "id": "mg-143", "stage": 2,
       "question": "devices",
       "title": "Used again after 2, 21 and 45 days away: a refund (grid: refund x used again after days away, AH1)",
       "input": {
@@ -9206,7 +9207,7 @@
       ]
     },
     {
-      "id": "mg-144",
+      "id": "mg-144", "stage": 2,
       "question": "devices",
       "title": "Used again after 2, 21 and 45 days away: a spend (grid: spend x used again after days away, AH1)",
       "input": {
@@ -9332,7 +9333,7 @@
       ]
     },
     {
-      "id": "mg-145",
+      "id": "mg-145", "stage": 2,
       "question": "devices",
       "title": "Used again after 2, 21 and 45 days away: a transfer (grid: transfer x used again after days away, AH1)",
       "input": {
@@ -9460,7 +9461,7 @@
       ]
     },
     {
-      "id": "mg-146",
+      "id": "mg-146", "stage": 2,
       "question": "devices",
       "title": "Used again after 2, 21 and 45 days away: a card repayment (grid: repay x used again after days away, AH1)",
       "input": {
@@ -9588,7 +9589,7 @@
       ]
     },
     {
-      "id": "mg-147",
+      "id": "mg-147", "stage": 2,
       "question": "devices",
       "title": "Used again after 2, 21 and 45 days away: cash taken on a card (grid: borrow x used again after days away, AH1)",
       "input": {
@@ -9716,7 +9717,7 @@
       ]
     },
     {
-      "id": "mg-148",
+      "id": "mg-148", "stage": 2,
       "question": "devices",
       "title": "Used again after 2, 21 and 45 days away: a currency convert (grid: convert x used again after days away, AH1)",
       "input": {
@@ -9846,7 +9847,7 @@
       ]
     },
     {
-      "id": "mg-149",
+      "id": "mg-149", "stage": 2,
       "question": "devices",
       "title": "Used again after 2, 21 and 45 days away: an accepted difference (grid: adjust x used again after days away, AH1)",
       "input": {
@@ -9972,7 +9973,7 @@
       ]
     },
     {
-      "id": "mg-150",
+      "id": "mg-150", "stage": 2,
       "question": "devices",
       "title": "Used again after 2, 21 and 45 days away: a move between places (grid: move between places x used again after days away, AH1)",
       "input": {
@@ -10098,7 +10099,7 @@
       ]
     },
     {
-      "id": "mg-151",
+      "id": "mg-151", "stage": 2,
       "question": "devices",
       "title": "Used again after 2, 21 and 45 days away: a filler (grid: filler x used again after days away, AH1)",
       "input": {
@@ -10230,7 +10231,7 @@
       ]
     },
     {
-      "id": "mg-152",
+      "id": "mg-152", "stage": 2,
       "question": "devices",
       "title": "Used again after 2, 21 and 45 days away: a skip (grid: skip x used again after days away, AH1)",
       "input": {
@@ -10356,7 +10357,7 @@
       ]
     },
     {
-      "id": "mg-153",
+      "id": "mg-153", "stage": 2,
       "question": "devices",
       "title": "Used again after 2, 21 and 45 days away: a settlement (grid: set: settle x used again after days away, AH1)",
       "input": {
@@ -10486,7 +10487,7 @@
       ]
     },
     {
-      "id": "mg-154",
+      "id": "mg-154", "stage": 2,
       "question": "devices",
       "title": "Used again after 2, 21 and 45 days away: a period started without the pay (grid: periodStart x used again after days away, AH1)",
       "input": {
@@ -10608,7 +10609,7 @@
       ]
     },
     {
-      "id": "mg-155",
+      "id": "mg-155", "stage": 2,
       "question": "devices",
       "title": "Used again after 2, 21 and 45 days away: a period-end answer (grid: period-end answer x used again after days away, AH1)",
       "input": {
@@ -10764,7 +10765,7 @@
       ]
     },
     {
-      "id": "mg-156",
+      "id": "mg-156", "stage": 2,
       "question": "devices",
       "title": "Used again after 2, 21 and 45 days away: a removed place's move to Waiting (grid: rm: / to place x used again after days away, AH1)",
       "input": {
@@ -10890,7 +10891,7 @@
       ]
     },
     {
-      "id": "mg-157",
+      "id": "mg-157", "stage": 2,
       "question": "devices",
       "title": "Used again after 2, 21 and 45 days away: a closing's transfer (grid: closing x used again after days away, AH1)",
       "input": {
@@ -11018,7 +11019,7 @@
       ]
     },
     {
-      "id": "mg-158",
+      "id": "mg-158", "stage": 2,
       "question": "devices",
       "title": "Used again after 2, 21 and 45 days away: a pay schedule (grid: income schedules, every rule x used again after days away, AH1)",
       "input": {
@@ -11142,7 +11143,7 @@
       ]
     },
     {
-      "id": "mg-159",
+      "id": "mg-159", "stage": 2,
       "question": "devices",
       "title": "Used again after 2, 21 and 45 days away: a bill schedule (grid: bill / transfer / auto schedules x used again after days away, AH1)",
       "input": {
@@ -11266,7 +11267,7 @@
       ]
     },
     {
-      "id": "mg-160",
+      "id": "mg-160", "stage": 2,
       "question": "devices",
       "title": "Used again after 2, 21 and 45 days away: a budget line (grid: budget lines x used again after days away, AH1)",
       "input": {
@@ -11390,7 +11391,7 @@
       ]
     },
     {
-      "id": "mg-161",
+      "id": "mg-161", "stage": 2,
       "question": "devices",
       "title": "Used again after 2, 21 and 45 days away: a goal (grid: goals / places x used again after days away, AH1)",
       "input": {
@@ -11512,7 +11513,7 @@
       ]
     },
     {
-      "id": "mg-162",
+      "id": "mg-162", "stage": 2,
       "question": "devices",
       "title": "Used again after 2, 21 and 45 days away: a card (grid: card x used again after days away, AH1)",
       "input": {
@@ -11636,7 +11637,7 @@
       ]
     },
     {
-      "id": "mg-163",
+      "id": "mg-163", "stage": 2,
       "question": "devices",
       "title": "Used again after 2, 21 and 45 days away: a loan (grid: loan / pay-later x used again after days away, AH1)",
       "input": {
@@ -11758,7 +11759,7 @@
       ]
     },
     {
-      "id": "mg-164",
+      "id": "mg-164", "stage": 2,
       "question": "devices",
       "title": "Used again after 2, 21 and 45 days away: a cash account (grid: cash, e-wallet, wallet, investment, owedToYou x used again after days away, AH1)",
       "input": {
@@ -11880,7 +11881,7 @@
       ]
     },
     {
-      "id": "mg-165",
+      "id": "mg-165", "stage": 2,
       "question": "devices",
       "title": "Used again after 2, 21 and 45 days away: a fee record (grid: fee record (`fee:<transfer id>`) x used again after days away, AH1)",
       "input": {
@@ -12008,7 +12009,7 @@
       ]
     },
     {
-      "id": "mg-166",
+      "id": "mg-166", "stage": 2,
       "question": "devices",
       "title": "Used again after 2, 21 and 45 days away: a waiting entry (grid: pending move (`pendingMove`) x used again after days away, AH1)",
       "input": {
@@ -12136,7 +12137,7 @@
       ]
     },
     {
-      "id": "mg-167",
+      "id": "mg-167", "stage": 2,
       "question": "devices",
       "title": "Used again after 2, 21 and 45 days away: a keyed override (grid: keyed overrides x used again after days away, AH1)",
       "input": {
@@ -12290,7 +12291,7 @@
       ]
     },
     {
-      "id": "mg-168",
+      "id": "mg-168", "stage": 2,
       "question": "receive",
       "title": "AI1: a phone back after three weeks takes in a desktop copy two days fast: held at the phone's now plus 1 ms, `told` too, so a 09:00 check that day still counts the spend",
       "input": {
@@ -12396,7 +12397,7 @@
       ]
     },
     {
-      "id": "mg-169",
+      "id": "mg-169", "stage": 2,
       "question": "devices",
       "title": "AI1 as a story: tablet check at 09:00, desktop two days fast spends at 10:00, the phone back after three weeks holds the spend at its now plus 1 ms",
       "input": {
@@ -12498,7 +12499,7 @@
       ]
     },
     {
-      "id": "mg-170",
+      "id": "mg-170", "stage": 2,
       "question": "devices",
       "title": "AI1: the fast desktop takes the phone's held value when the merged copy comes back",
       "input": {
@@ -12604,7 +12605,7 @@
       ]
     },
     {
-      "id": "mg-171",
+      "id": "mg-171", "stage": 2,
       "question": "receive",
       "title": "AI1: a new phone that has seen nothing holds a copy more than a day ahead of its own now, at that now plus 1 ms",
       "input": {
@@ -12695,7 +12696,7 @@
       ]
     },
     {
-      "id": "mg-172",
+      "id": "mg-172", "stage": 2,
       "question": "merge",
       "title": "AI2: an entry list no build knows yet (`milestones`), edited on two devices, merges entry by entry, found by its shape",
       "input": {
@@ -12793,7 +12794,7 @@
       ]
     },
     {
-      "id": "mg-173",
+      "id": "mg-173", "stage": 2,
       "question": "merge_symmetric",
       "title": "AI2: the same two copies merged in either order give the same `milestones`",
       "input": {
@@ -12859,7 +12860,7 @@
       ]
     },
     {
-      "id": "mg-174",
+      "id": "mg-174", "stage": 2,
       "question": "merge",
       "title": "AI2: an entry removed on one device stays removed in a list no build knows yet, though the other copy's record is newer",
       "input": {
@@ -12952,7 +12953,7 @@
       ]
     },
     {
-      "id": "mg-175",
+      "id": "mg-175", "stage": 2,
       "question": "merge",
       "title": "AI2: an array whose items carry `from` but no `at` is a plain field and comes whole with the newer record",
       "input": {
@@ -13313,7 +13314,7 @@
       ]
     },
     {
-      "id": "mg-190",
+      "id": "mg-190", "stage": 2,
       "question": "merge",
       "title": "AJ2: two pay-later plans added on two devices before they sync: both stay (confirm_review_5 h2)",
       "input": {
@@ -13409,7 +13410,7 @@
       ]
     },
     {
-      "id": "mg-191",
+      "id": "mg-191", "stage": 2,
       "question": "merge_symmetric",
       "title": "AJ2: the two plans merge the same way whichever copy is mine",
       "input": {
@@ -13472,7 +13473,7 @@
       ]
     },
     {
-      "id": "mg-192",
+      "id": "mg-192", "stage": 2,
       "question": "merge",
       "title": "AJ2: an empty `plans` on the newer copy keeps the other copy's plan",
       "input": {
@@ -13551,7 +13552,7 @@
       ]
     },
     {
-      "id": "mg-193",
+      "id": "mg-193", "stage": 2,
       "question": "merge",
       "title": "AJ2: a plan edited on one device and the account renamed on the other: both changes stay",
       "input": {
@@ -13638,7 +13639,7 @@
       ]
     },
     {
-      "id": "mg-194",
+      "id": "mg-194", "stage": 2,
       "question": "merge",
       "title": "AJ2: a plan removed on one device stays removed, though the other copy's record is newer",
       "input": {
@@ -13841,7 +13842,7 @@
       ]
     },
     {
-      "id": "mg-196",
+      "id": "mg-196", "stage": 2,
       "question": "merge",
       "title": "AJ-confirm: an empty list on one copy is an entry list when the other copy's items carry `from` and `at` (not only `steps`, `rules`, `extraSteps`)",
       "input": {
@@ -13908,7 +13909,7 @@
       ]
     },
     {
-      "id": "mg-197",
+      "id": "mg-197", "stage": 2,
       "question": "merge",
       "title": "AJ3, AK1: the home currency added on the phone and the country set on the desktop: both stay (confirm_review_5 h2)",
       "input": {
@@ -14036,7 +14037,7 @@
       ]
     },
     {
-      "id": "mg-198",
+      "id": "mg-198", "stage": 2,
       "question": "merge",
       "title": "AL3: the minimum changed on the phone and the main bank on the desktop: the pair goes together, the newer wins",
       "input": {
@@ -14149,7 +14150,7 @@
       ]
     },
     {
-      "id": "mg-199",
+      "id": "mg-199", "stage": 2,
       "question": "merge",
       "title": "AJ3: two devices add a home currency from the same day: the newer entry wins",
       "input": {
@@ -14281,7 +14282,7 @@
       ]
     },
     {
-      "id": "mg-200",
+      "id": "mg-200", "stage": 2,
       "question": "receive",
       "title": "AJ3: a `home` that arrives more than a day ahead is held, its new currency entry too",
       "input": {
@@ -14422,7 +14423,7 @@
       ]
     },
     {
-      "id": "mg-201",
+      "id": "mg-201", "stage": 2,
       "question": "merge",
       "title": "AJ3: a home currency taken back with Undo stays removed when the other device still holds it",
       "input": {
@@ -14556,7 +14557,7 @@
       ]
     },
     {
-      "id": "mg-202",
+      "id": "mg-202", "stage": 2,
       "question": "merge",
       "title": "AJ3: Redo puts the home currency back, over the Undo on the other device",
       "input": {
@@ -14689,7 +14690,7 @@
       ]
     },
     {
-      "id": "mg-203",
+      "id": "mg-203", "stage": 2,
       "question": "merge",
       "title": "AJ3: the minimum taken back with Undo: the earlier value is written again and wins",
       "input": {
@@ -14940,7 +14941,7 @@
       ]
     },
     {
-      "id": "mg-205",
+      "id": "mg-205", "stage": 2,
       "question": "restore_merge",
       "title": "AJ3: the restored `home` is kept at the next merge with the cloud, either way round",
       "input": {
@@ -15151,7 +15152,7 @@
       ]
     },
     {
-      "id": "mg-206",
+      "id": "mg-206", "stage": 2,
       "question": "devices",
       "title": "AJ3: `home` used again after 23 and 45 days away (grid: home x used again after days away, AH1)",
       "input": {
@@ -15313,7 +15314,7 @@
       ]
     },
     {
-      "id": "mg-207",
+      "id": "mg-207", "stage": 2,
       "question": "receive",
       "title": "AJ4: a far-ahead edit held at the receiver's now plus 1 ms loses to an earlier edit from a slightly fast device",
       "input": {
@@ -15374,7 +15375,7 @@
       ]
     },
     {
-      "id": "mg-208",
+      "id": "mg-208", "stage": 2,
       "question": "devices",
       "title": "AJ-confirm: two devices holding one far-ahead copy settle on the newer held `at` and the earliest `told` (the first to receive it)",
       "input": {
@@ -15461,7 +15462,7 @@
       ]
     },
     {
-      "id": "mg-209",
+      "id": "mg-209", "stage": 2,
       "question": "devices",
       "title": "AJ-confirm: the fast device itself ends with the same copy when the merged one comes back",
       "input": {
@@ -15553,7 +15554,7 @@
       ]
     },
     {
-      "id": "mg-210",
+      "id": "mg-210", "stage": 2,
       "question": "merge",
       "title": "AK1: the mode set on the phone, the country on the desktop and the minimum on both: each field by its own `at`",
       "input": {
@@ -15667,7 +15668,7 @@
       ]
     },
     {
-      "id": "mg-211",
+      "id": "mg-211", "stage": 2,
       "question": "merge_symmetric",
       "title": "AK1: `home` merged either way round gives the same copy, a field tied on `at` included",
       "input": {
@@ -15761,7 +15762,7 @@
       ]
     },
     {
-      "id": "mg-212",
+      "id": "mg-212", "stage": 2,
       "question": "restore_merge",
       "title": "AK1: a minimum set on the desktop after the phone's restore stays; the restored fields stay too",
       "input": {
@@ -15973,7 +15974,7 @@
       ]
     },
     {
-      "id": "mg-213",
+      "id": "mg-213", "stage": 2,
       "question": "devices",
       "title": "AL2: a `ui` key changed on the phone after it took in a fast desktop's change of that key wins (confirm_review_6 k1, edit)",
       "input": {
@@ -16050,7 +16051,7 @@
       ]
     },
     {
-      "id": "mg-214",
+      "id": "mg-214", "stage": 2,
       "question": "restore_merge",
       "title": "AL2: a restore on a phone that took in a fast desktop's `ui` key stamps after it, so the restore wins (confirm_review_6 k1, restore)",
       "input": {
@@ -16115,7 +16116,7 @@
       ]
     },
     {
-      "id": "mg-215",
+      "id": "mg-215", "stage": 2,
       "question": "merge",
       "title": "AL3: the main bank changed on the desktop, then the minimum on the phone that had not seen it: the phone's pair wins whole",
       "input": {
@@ -16197,7 +16198,7 @@
       ]
     },
     {
-      "id": "mg-216",
+      "id": "mg-216", "stage": 2,
       "question": "receive",
       "title": "AL1: `home` from a clock 3 days fast is held, field by field, and the warning shows (confirm_review_6 k3, hold)",
       "input": {
@@ -16305,7 +16306,7 @@
       ]
     },
     {
-      "id": "mg-217",
+      "id": "mg-217", "stage": 2,
       "question": "restore_merge",
       "title": "AL1: the backup's `home` comes back with a new stamp and beats the cloud (confirm_review_6 k3, restore)",
       "input": {
@@ -16440,7 +16441,7 @@
       ]
     },
     {
-      "id": "mg-218",
+      "id": "mg-218", "stage": 2,
       "question": "merge",
       "title": "AL4: two devices each teach the statement reader one shop: both lessons stay (confirm_review_6 k2)",
       "input": {
@@ -16491,7 +16492,7 @@
       ]
     },
     {
-      "id": "mg-219",
+      "id": "mg-219", "stage": 2,
       "question": "merge",
       "title": "AL1, AL5: the aims changed on the phone and the ceiling on the desktop: both stay (confirm_review_6 k2)",
       "input": {
@@ -16573,7 +16574,7 @@
       ]
     },
     {
-      "id": "mg-220",
+      "id": "mg-220", "stage": 2,
       "question": "receive",
       "title": "AL1: a shop lesson from a clock 3 days fast is held on its own; the others are left as they are",
       "input": {
@@ -16640,7 +16641,7 @@
       ]
     },
     {
-      "id": "mg-221",
+      "id": "mg-221", "stage": 2,
       "question": "receive",
       "title": "AL1: a ceiling from a clock 3 days fast is held and wins only at the receiver's now plus 1 ms, with the warning",
       "input": {
@@ -16878,7 +16879,7 @@
       ]
     },
     {
-      "id": "mg-224",
+      "id": "mg-224", "stage": 2,
       "question": "devices",
       "title": "AL2: the ceiling changed back on the phone after it took in a fast desktop's ceiling wins",
       "input": {
@@ -16972,7 +16973,7 @@
       ]
     },
     {
-      "id": "mg-225",
+      "id": "mg-225", "stage": 2,
       "question": "devices",
       "title": "AL2: a shop lesson corrected on the phone after it took in a fast desktop's lesson wins",
       "input": {
@@ -17050,7 +17051,7 @@
       ]
     },
     {
-      "id": "mg-226",
+      "id": "mg-226", "stage": 2,
       "question": "devices",
       "title": "AL2, AL3: the minimum raised on the phone after it took in a fast desktop's new main bank wins, on that bank",
       "input": {
@@ -17311,7 +17312,7 @@
       ]
     },
     {
-      "id": "mg-230",
+      "id": "mg-230", "stage": 2,
       "question": "merge_symmetric",
       "title": "AL1: `ui`, `imports.cats` and `plan.limits` merged either way round give the same copy, ties included",
       "input": {
@@ -17394,7 +17395,7 @@
       ]
     },
     {
-      "id": "mg-231",
+      "id": "mg-231", "stage": 2,
       "question": "merge",
       "title": "AL1, AL4: the same three records merged: each field by its own `at`, then `gone`, then `by`",
       "input": {
@@ -17516,7 +17517,7 @@
       ]
     },
     {
-      "id": "mg-232",
+      "id": "mg-232", "stage": 2,
       "question": "merge_same",
       "title": "AL1: merging a copy holding every record of separately edited fields with itself changes nothing",
       "input": {
@@ -17598,7 +17599,7 @@
       ]
     },
     {
-      "id": "mg-233",
+      "id": "mg-233", "stage": 2,
       "question": "merge",
       "title": "AL5: a ceiling changed to a weekly amount on the phone beats a monthly change made earlier on the desktop, amount and `per` together",
       "input": {
@@ -17671,7 +17672,7 @@
       ]
     },
     {
-      "id": "mg-235",
+      "id": "mg-235", "stage": 2,
       "question": "merge",
       "title": "AL7: a `people` record carries `told` and `by` like every list record: the newer name wins, the first `told` stays",
       "input": {
@@ -17785,7 +17786,7 @@
       ]
     },
     {
-      "id": "mg-240",
+      "id": "mg-240", "stage": 2,
       "question": "merge",
       "title": "AL watch: two edits across the daylight saving change: the later moment wins, not the later text",
       "input": {
@@ -17839,7 +17840,7 @@
       ]
     },
     {
-      "id": "mg-241",
+      "id": "mg-241", "stage": 2,
       "question": "receive",
       "title": "AL watch: a copy whose date reads a day ahead in another offset is not held when it is less than a day ahead as a moment",
       "input": {
@@ -17886,7 +17887,7 @@
       ]
     },
     {
-      "id": "mg-242",
+      "id": "mg-242", "stage": 2,
       "question": "receive",
       "title": "AL watch: a half-hour offset: a copy more than a day ahead is held at the receiver's now plus 1 ms in the receiver's offset",
       "input": {
@@ -17939,7 +17940,7 @@
       ]
     },
     {
-      "id": "mg-243",
+      "id": "mg-243", "stage": 2,
       "question": "devices",
       "title": "AL watch: a phone that flies to Honolulu edits a spend after the desktop in Tokyo: its later moment wins though its date reads a day earlier",
       "input": {
@@ -18021,7 +18022,7 @@
       ]
     },
     {
-      "id": "mg-244",
+      "id": "mg-244", "stage": 2,
       "question": "devices",
       "title": "AL4: a shop lesson taken back with Undo on the phone stays removed on the desktop that still held it (grid: imports.cats x undo)",
       "input": {
@@ -18105,7 +18106,7 @@
       ]
     },
     {
-      "id": "mg-245",
+      "id": "mg-245", "stage": 2,
       "question": "devices",
       "title": "AL1, AL5: the ceiling taken back with Undo on the phone wins, and the aims changed meanwhile on the desktop stay (grid: plan.limits x undo)",
       "input": {
@@ -18225,7 +18226,7 @@
       ]
     },
     {
-      "id": "mg-246",
+      "id": "mg-246", "stage": 2,
       "question": "devices",
       "title": "AL1: shared `ui` keys used again after 23 days away: each key by its own clock (grid: shared ui x used again after days away)",
       "input": {
@@ -18319,7 +18320,7 @@
       ]
     },
     {
-      "id": "mg-247",
+      "id": "mg-247", "stage": 2,
       "question": "devices",
       "title": "AL4: shop lessons used again after 23 days away: a lesson taught meanwhile on the desktop stays (grid: imports.cats x used again after days away)",
       "input": {
@@ -18402,7 +18403,7 @@
       ]
     },
     {
-      "id": "mg-248",
+      "id": "mg-248", "stage": 2,
       "question": "devices",
       "title": "AL1, AL5: `plan.limits` used again after 45 days away: the ceiling set after D8's question, the aims from meanwhile stay (grid: plan.limits x used again after days away)",
       "input": {
@@ -18510,7 +18511,7 @@
       ]
     },
     {
-      "id": "mg-249",
+      "id": "mg-249", "stage": 2,
       "question": "devices",
       "title": "AL watch: a `ui` key set on a phone flown to Honolulu after the desktop in Tokyo: the later moment wins (grid: shared ui x offset change)",
       "input": {
@@ -18581,7 +18582,7 @@
       ]
     },
     {
-      "id": "mg-250",
+      "id": "mg-250", "stage": 2,
       "question": "devices",
       "title": "AL watch, AL3: a half-hour offset: a phone in India a little behind writes `main` 1 ms after what it has seen, and wins (grid: home x offset change)",
       "input": {
@@ -18698,7 +18699,7 @@
       ]
     },
     {
-      "id": "mg-251",
+      "id": "mg-251", "stage": 2,
       "question": "devices",
       "title": "AL watch, AL5: daylight saving ends on the laptop between two ceiling changes; the later moment beats a phone in Tokyo (grid: plan.limits x offset change)",
       "input": {
@@ -18800,7 +18801,7 @@
       ]
     },
     {
-      "id": "mg-252",
+      "id": "mg-252", "stage": 2,
       "question": "devices",
       "title": "AL watch, AL4: a shop lesson corrected on a phone flown to Honolulu after the desktop in Tokyo: the later moment wins (grid: imports.cats x offset change)",
       "input": {
@@ -18872,7 +18873,7 @@
       ]
     },
     {
-      "id": "mg-253",
+      "id": "mg-253", "stage": 2,
       "question": "main_notice",
       "title": "AM2: the minimum raised on the phone and the main bank changed on the desktop before a sync: the newer pair wins and the phone records the notice",
       "input": {
@@ -18969,7 +18970,7 @@
       ]
     },
     {
-      "id": "mg-254",
+      "id": "mg-254", "stage": 2,
       "question": "main_notice",
       "title": "AM2: the same two changes, taken in by the desktop: its own pair is the newer and wins, so the desktop records no notice",
       "input": {
@@ -19053,7 +19054,7 @@
       ]
     },
     {
-      "id": "mg-255",
+      "id": "mg-255", "stage": 2,
       "question": "main_notice",
       "title": "AM2: only the desktop changed the pair; the phone, unchanged since its last sync, takes it in: a plain sync, no notice",
       "input": {
@@ -19137,7 +19138,7 @@
       ]
     },
     {
-      "id": "mg-256",
+      "id": "mg-256", "stage": 2,
       "question": "main_notice",
       "title": "AM2: mg-215's story: the main bank changed on the desktop, then the minimum on the phone that had not seen it: the phone's newer pair wins and the desktop records the notice",
       "input": {
@@ -19234,7 +19235,7 @@
       ]
     },
     {
-      "id": "mg-257",
+      "id": "mg-257", "stage": 2,
       "question": "merge_both",
       "title": "AN1 (confirm_review_7 s1, part 1): a `home` holding one plain field on both copies merges field by field, the same on both devices",
       "input": {
@@ -19329,7 +19330,7 @@
       ]
     },
     {
-      "id": "mg-258",
+      "id": "mg-258", "stage": 2,
       "question": "merge_both",
       "title": "AN1: a plain field that differs on the two copies settles the same way on both devices (the keyed rule)",
       "input": {
@@ -19383,7 +19384,7 @@
       ]
     },
     {
-      "id": "mg-259",
+      "id": "mg-259", "stage": 2,
       "question": "merge_both",
       "title": "AN1 (s1, part 2): a `home` holding only `curs` on both copies merges entry by entry",
       "input": {
@@ -19463,7 +19464,7 @@
       ]
     },
     {
-      "id": "mg-260",
+      "id": "mg-260", "stage": 2,
       "question": "merge_both",
       "title": "AN1 (s1, part 3): `imports` with an empty `cats` and a list a later build adds keeps both copies' entries",
       "input": {
@@ -19541,7 +19542,7 @@
       ]
     },
     {
-      "id": "mg-261",
+      "id": "mg-261", "stage": 2,
       "question": "merge_both",
       "title": "AN1: an empty `cats` on one copy and a lesson on the other",
       "input": {
@@ -19596,7 +19597,7 @@
       ]
     },
     {
-      "id": "mg-262",
+      "id": "mg-262", "stage": 2,
       "question": "merge_both",
       "title": "AN1: `plan` with a plain field on both copies merges key by key, the same on both devices",
       "input": {
@@ -19675,7 +19676,7 @@
       ]
     },
     {
-      "id": "mg-263",
+      "id": "mg-263", "stage": 2,
       "question": "merge_both",
       "title": "AN1: the top level, with a plain field and its own save time, merges the same on both devices",
       "input": {
@@ -19753,7 +19754,7 @@
       ]
     },
     {
-      "id": "mg-264",
+      "id": "mg-264", "stage": 2,
       "question": "lost_notices",
       "title": "AN-note: the country changed on both devices before a sync: the phone's change lost, so the phone records the notice; the mode changed only on the desktop records nothing",
       "input": {
@@ -19843,7 +19844,7 @@
       ]
     },
     {
-      "id": "mg-265",
+      "id": "mg-265", "stage": 2,
       "question": "lost_notices",
       "title": "AN-note: a `curs` entry changed on both devices: the phone's lost and is noticed; a shared `ui` key the phone's own change won records nothing",
       "input": {
@@ -19945,7 +19946,7 @@
       ]
     },
     {
-      "id": "mg-266",
+      "id": "mg-266", "stage": 2,
       "question": "lost_notices",
       "title": "AN-note: a shared `ui` key and `plan.limits.ceiling` both changed on both devices: two notices on the phone",
       "input": {
@@ -20058,7 +20059,7 @@
       ]
     },
     {
-      "id": "mg-267",
+      "id": "mg-267", "stage": 2,
       "question": "lost_notices",
       "title": "AN-note: a plain sync (only the desktop changed `main` and `mode`) records nothing on the phone",
       "input": {
@@ -20157,7 +20158,7 @@
       ]
     },
     {
-      "id": "mg-268",
+      "id": "mg-268", "stage": 2,
       "question": "after_merge",
       "title": "AN2 (confirm_review_7 s2): a pay day change made offline after the other device settled the pay moves to the day after it, with a new `at` and a notice (grid E x D)",
       "input": {
@@ -20379,7 +20380,7 @@
       ]
     },
     {
-      "id": "mg-269",
+      "id": "mg-269", "stage": 2,
       "question": "after_merge",
       "title": "AN2: the desktop, taking in the phone's change, moves it the same way and shows no notice (the change was the phone's)",
       "input": {
@@ -20591,7 +20592,7 @@
       ]
     },
     {
-      "id": "mg-270",
+      "id": "mg-270", "stage": 2,
       "question": "after_merge",
       "title": "AN2: a change that starts after everything settled is left as it is",
       "input": {
@@ -20774,7 +20775,7 @@
       ]
     },
     {
-      "id": "mg-271",
+      "id": "mg-271", "stage": 2,
       "question": "after_merge",
       "title": "AN2, AO1: a moved bonus key left live by an edit on the other device: the change moves to the day after it and the moved copy is removed, so one bonus counts",
       "input": {
@@ -20980,7 +20981,7 @@
       ]
     },
     {
-      "id": "mg-272",
+      "id": "mg-272", "stage": 2,
       "question": "after_merge",
       "title": "AN6 (grid Z x D, spend): an event written on the phone into an account the desktop closed meanwhile reopens it at the merge, with a notice",
       "input": {
@@ -21105,7 +21106,7 @@
       ]
     },
     {
-      "id": "mg-273",
+      "id": "mg-273", "stage": 2,
       "question": "after_merge",
       "title": "AN6 (grid Z x D, in / pay): an event written on the phone into an account the desktop closed meanwhile reopens it at the merge, with a notice",
       "input": {
@@ -21230,7 +21231,7 @@
       ]
     },
     {
-      "id": "mg-274",
+      "id": "mg-274", "stage": 2,
       "question": "after_merge",
       "title": "AN6 (grid Z x D, refund): an event written on the phone into an account the desktop closed meanwhile reopens it at the merge, with a notice",
       "input": {
@@ -21355,7 +21356,7 @@
       ]
     },
     {
-      "id": "mg-275",
+      "id": "mg-275", "stage": 2,
       "question": "after_merge",
       "title": "AN6 (grid Z x D, transfer): an event written on the phone into an account the desktop closed meanwhile reopens it at the merge, with a notice",
       "input": {
@@ -21480,7 +21481,7 @@
       ]
     },
     {
-      "id": "mg-276",
+      "id": "mg-276", "stage": 2,
       "question": "after_merge",
       "title": "AN6 (grid Z x D, repay): an event written on the phone into an account the desktop closed meanwhile reopens it at the merge, with a notice",
       "input": {
@@ -21605,7 +21606,7 @@
       ]
     },
     {
-      "id": "mg-277",
+      "id": "mg-277", "stage": 2,
       "question": "after_merge",
       "title": "AN6 (grid Z x D, spend, dated before the closing): an event dated on or before the closing day leaves the account closed",
       "input": {
@@ -21724,7 +21725,7 @@
       ]
     },
     {
-      "id": "mg-278",
+      "id": "mg-278", "stage": 2,
       "question": "merge_both",
       "title": "AN6 (grid people x D): a person renamed on both devices and a person added on each: the newer name wins, both new people stay, `told` the earliest",
       "input": {
@@ -21825,7 +21826,7 @@
       ]
     },
     {
-      "id": "mg-279",
+      "id": "mg-279", "stage": 2,
       "question": "merge_both",
       "title": "AN6 (grid people x U): a person removed with Undo on the phone after the desktop renamed them: the removal is newer and wins",
       "input": {
@@ -21886,7 +21887,7 @@
       ]
     },
     {
-      "id": "mg-280",
+      "id": "mg-280", "stage": 2,
       "question": "merge_both",
       "title": "AN6 (grid people x U): Redo on the phone after the Undo reached the desktop: the Redo is newer and the person is back",
       "input": {
@@ -22037,7 +22038,7 @@
       ]
     },
     {
-      "id": "mg-283",
+      "id": "mg-283", "stage": 2,
       "question": "merge_both",
       "title": "AN7: a reader's newer guess never replaces the person's lesson at a merge",
       "input": {
@@ -22099,7 +22100,7 @@
       ]
     },
     {
-      "id": "mg-284",
+      "id": "mg-284", "stage": 2,
       "question": "merge_both",
       "title": "AN7: a shop read as \"__proto__\" keeps its lesson through a merge",
       "input": {
@@ -24673,7 +24674,7 @@
       ]
     },
     {
-      "id": "mg-287",
+      "id": "mg-287", "stage": 2,
       "question": "after_merge",
       "title": "AN2 (grid E x D, bills): a rent day change made offline after the other device ticked the rent moves to the day after it, with a notice",
       "input": {
