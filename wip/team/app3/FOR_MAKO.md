@@ -9,6 +9,18 @@ Every item already has a working default. None of them block using the app.
 4. Leave a "deleted" marker when the cloud copy is deleted, so another device does not send it back up.
 5. Watch the 400 writes a day limit (one send every 90 s).
 
+## The private publish (BG; app3/publish3.sh, tested by tests/e3_publish.js; nothing changed in the old app or the worker)
+The worker needs no change: it answers only /api/*, and the path is a plain folder of public/. These are the old app's
+limits, with what would remove each one. app3 works without any of them.
+1. Before app3's own worker has installed (the very first open), the old worker (scope /) passes the path through to the
+   network. If that first open is offline, it would show the old page. Fix: in public/sw.js, `if (u.pathname.startsWith('/n/')) return;` in fetch.
+2. When the old worker changes, its activate step removes every cache but its own, including app3's kept copy. app3
+   keeps a new copy on its next open with a connection. Fix: in public/sw.js activate, only remove caches named money-headache-*.
+3. If the old app was installed to the home screen, its manifest scope is the whole site, so opening the path from inside
+   that window stays in the old app's window. Opening the link in the browser is fine.
+4. build_site.sh empties public/ before building, which would remove the app3 folder. Run app3/publish3.sh after it, or
+   keep public/n/ in build_site.sh.
+
 ## Feel and wording
 - Tab bar at the top. It covered form fields on a phone when it was at the bottom.
 - Undo: the bar shows for 8 s. Should Undo still be offered after a reload? The old app kept it for 3 days.
