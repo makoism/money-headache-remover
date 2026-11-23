@@ -35,6 +35,7 @@ step "statements, the reading half (pure)"; run tests/e3_stmt_read.js "e3_stmt_r
 step "statements, the writing half (pure): lines, matching, records"; run tests/e3_stmt_plan.js "e3_stmt_plan: ALL PASS"
 step "the Plan tab's steps (pure)"; run tests/plan3_write.test.js "plan3_write: ALL PASS"
 step "the backup file's core"; run tests/backup3.test.js "backup3: ALL PASS"
+step "reminders, the pure half (days from the engine's calendar, the calendar file, Google and Outlook links)"; run tests/remind3.test.js "remind3: ALL PASS"
 step "no money maths in screens"; run tests/no_maths.js "NO MATHS PASS"
 [ "$(pgrep -fc check3.sh)" -le 1 ] && pkill -f chrome-linux64/chrome 2>/dev/null   # leftover test browsers, only when no other lane is checking (it killed their tests)
 step "the try book"; run tests/e3_try.js "e3_try: ALL PASS"
