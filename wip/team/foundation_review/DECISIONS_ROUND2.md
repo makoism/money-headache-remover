@@ -177,3 +177,9 @@ Watch decided: closing the main bank asks for the new main bank and moves every 
 U1. When a rough side is met by a line showing that more arrived than left can be true for (a typed 10,000 to cash, the bank line 9,800), both sides take the line's amount unless the other side has its own line; nothing arrives that did not leave, and no fee is written.
 U2. Settles made by an import show on the check-in list as "already matched", ticked, and the person can untick one (wording for Mako's copy pass).
 The S helper's readings are confirmed.
+
+## V. Answers after T and U (coverage now 165 of 165 applicable cells, COVERAGE.md)
+V1. A goal whose money was moved to its own account is counted at that account; the account it left gets no warning for it.
+V2. A loan or pay-later account paid from an account in another currency is handled like a card (H5): left out of the walk with a warning until stage 2.
+V3. Under T1 two answers for one period share its occurrence name, so they are one record; the earliest last day stands. Confirmed.
+Readings: pe-54, an unticked import settling nothing, only money in reopening a closed account, and T3 on a card with a carried balance (bills go onto the card's new spending) are confirmed. Two are corrected: closing the main bank moves the bills paid from it to the new main bank too (the person can end any of them); a plan change dated on a period's first day applies to that period.
