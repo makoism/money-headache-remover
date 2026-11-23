@@ -89,3 +89,16 @@ One help piece serves every "?", so changing a line there changes it everywhere.
 - This pay period, when the pay day falls on a weekend or holiday: "Your pay is due on 10 Jan, but that day is a weekend or a holiday, so it lands on 12 Jan. The pay period moves with it."
 - A line added partway through a period (Plan, "Why only part?"): "This line started partway through the pay period, so only the part for the days left counts now. The full amount counts from your next pay."
 - Also for your pass: the bank after the cards line reads "After your cards are paid on 10 and 11 Dec: Main bank ¥364,400. Your pay on 10 Dec is in it. If everything on the cards now is taken. This is the bank, not safe to spend".
+
+## Notes from the last gate pair (24 Nov early JST): listed, not built (BN)
+- Right after setup, safe to spend is only today's share of the everyday money for the days left in the period. Home doesn't say why; only Plan does. Should Home say it, or should the first period count in full?
+- "Safe to spend" is capped at Free to spend left once that is set. Before it is set, it is everything after bills. The help "?" explains this, but the same name covers both.
+- The sum line "− ¥297,576 (more than Free to spend left this period)" is hard to read for a newcomer.
+- The card box line "If everything on the cards now is taken." reads as half a sentence, and it doesn't name the bills taken off.
+- Gaps found at Check your bank count as spending but aren't listed in Receipts ("spent ¥6,700" above "Nothing logged"). Should each gap be a row?
+- The gap toast sometimes leaves out "It counts as spending".
+- Logging on a card can raise safe to spend (the card is paid on pay day, from the next pay). True, but surprising.
+- Using a cloud code on a second device replaces what is there without asking first. Fine on an empty device. Should it ask?
+- A goal with a date says "next due 30 Jun". "By 30 Jun" may read better.
+- When plan lines alone need more than the bank can spare, there is no warning, only "nothing safe to spend".
+- The month-end "keep it or put it toward a goal" question from the old app doesn't exist in app3. Wanted?
