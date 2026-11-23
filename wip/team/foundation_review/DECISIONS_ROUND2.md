@@ -329,3 +329,13 @@ AN5. AM1 is replaced: a moved amount that lands on an occurrence that already ha
 AN6. Grid: E x D (AN2), Z x D (an event written on one device into an account closed on the other reopens it at the merge, with a notice), and a `people` row (D, U, R, M). COVERAGE's stale count is fixed.
 AN7. `imports.cats` keys are the shop text trimmed, with spaces collapsed and lowercased (38.31's keys are lowercased at the move), stored with a `k:` prefix so no key can be `__proto__`. Each value carries `src: 'person' | 'reader'`; a reader's guess never replaces a person's lesson, whatever the `at`. The map is never trimmed.
 AN-note (on the AM helper's work): AM2 stays and is widened: any field value whose own device's change lost at a merge (country, mode, a curs entry, shared ui keys, plan.limits, main) gets the local notice. The AM1 two-amount key and the AM3 day-before rule that were coded are replaced by AN5 and AN4: the pick key shape is removed (nothing unpicked is saved), and ac-01 to ac-03, cdb-01 and ot-01 to ot-03 are re-worked by hand under AN4. The AM helper's questions 1, 2 and 4 are answered by AN5 and AN4.
+
+## AO. Answers after AN
+AO1. When AN2 moves a change after a merge, a key that moved with the original change is moved back too (the original key live again, the moved copy `gone`), so one bonus is counted, not two.
+AO2. Confirmed: of two amounts moving onto an empty occurrence, the one from that occurrence's own month is its own; the other waits.
+AO3. A waiting bill amount counts on the safe side (the larger) in the walk until the person picks; a waiting pay amount adds nothing until picked.
+AO4. `once` keys follow AN5 the same way as `amounts`.
+AO5. When an account becomes the main bank, its own `minBank` moves into `home.main` and is cleared; the old main bank gets no minimum unless the person sets one, and a notice says so.
+AO6. An event dated on the closing day does not reopen an account; a check with a figure other than zero typed into a closed account reopens it with a notice.
+AO7. Two 38.31 shop keys that become one keep the later and are listed in the move summary.
+The AN helper's readings are confirmed.
