@@ -440,3 +440,11 @@ BC2. A card payment item in "not seen yet", with its posting window: this belong
 BC3. lastWorkday counts as monthly under AW3. The X8 edit offer follows AW3 too. Both are slice 2 (Plan edits), so they go on the list.
 BC4. AW1: when an imported line is matched to a typed record and the import has no line of its own, it keeps the typed record's line, so a coffee typed on Food stays on Food. This is slice 3, and it is added to the import rules then.
 BC5. AX2 means the reference is not kept up to date for new work. Finishing decisions already made (AU, AV, AW) in it was right, and from here it stays frozen.
+
+## BD. Storage lane answers (23 Nov night JST)
+BD1. keptVersions (AW7, SCHEMA 2.1 as updated in 4054a07) are saved one record each in the `kept` store under `kept:` ids. Whole copies kept before a big replace are saved there too, under `copy:` ids. sync_v1_ref's `copy.kept` is the frozen reference's name for the same list.
+BD2. The store's meta.rev (one tab against another) and the cloud copy's compare-and-swap revision (device.sync.baseRev) are separate numbers.
+BD3. No marker on the old 38.31 key, and no patch to the old app. app3 only reads the old key through move.js and never writes it (AZ1). When the old copy changes after the move, app3 offers to move again (WIRING_PLAN F3).
+BD4. Every edit moves `at`. A change made without a new `at` is a fault, and the store's tests show it.
+BD5. Joining another tab's settings, the service worker parts of D6, the timing of D5's pushes, and turning the code into a key are slice 4 (cloud copy and backup).
+BD6. The store's timing tests passed 38 of 38 on a rerun. One flaked under load from parallel lanes, so they are not a merge gate while lanes are running.
