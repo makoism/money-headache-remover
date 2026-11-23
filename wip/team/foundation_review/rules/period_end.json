@@ -1,0 +1,140 @@
+{
+  "area": "period_end",
+  "title": "Period end: the question after a fresh check-in, nothing rolling on silently, and \"to decide\"",
+  "written_in": "SCHEMA_V3 7.4, 9; DECISIONS_ROUND2 A7, F8, H8; DECISIONS.md (money left at month end never drops out silently, 18 Nov)",
+  "notes": [
+    "Every amount is made up and in whole minor units (yen).",
+    "A period runs from the day the period stream's pay lands to the day before the next one lands [F8]. While the next pay has not landed (late, H8) the period has not ended.",
+    "The last 3 days of a period are its last day and the two days before it.",
+    "Question `question_start`: has the period ended, its last day, and whether the period-end question has to start with a check-in. Question `leftovers`: for each place with money left at the period's end, what is decided, what is still \"to decide\", and the `move` events the answers write."
+  ],
+  "defaults": {},
+  "cases": [
+    {
+      "id": "pe-01", "question": "question_start",
+      "title": "A check-in in the last 3 days: the question starts straight away",
+      "input": { "periodFrom": "2026-11-10", "nextPay": { "due": "2026-12-10", "landed": "2026-12-10" }, "checkins": [ "2026-12-08" ], "today": "2026-12-10" },
+      "expected": { "ended": true, "periodTo": "2026-12-09", "startsWithCheckIn": false },
+      "why": "The next pay landed Thu 10 Dec, so the period ran 10 Nov to Wed 9 Dec [F8]. Its last 3 days are 7, 8 and 9 Dec. The check-in on 8 Dec is one of them, so it is fresh and the question needs no new check-in [A7].",
+      "decisions": [ "A7", "F8" ]
+    },
+    {
+      "id": "pe-02", "question": "question_start",
+      "title": "The last check-in is the day before the last 3 days: the question starts with a check-in",
+      "input": { "periodFrom": "2026-11-10", "nextPay": { "due": "2026-12-10", "landed": "2026-12-10" }, "checkins": [ "2026-11-29", "2026-12-06" ], "today": "2026-12-10" },
+      "expected": { "ended": true, "periodTo": "2026-12-09", "startsWithCheckIn": true },
+      "why": "Last 3 days: 7 to 9 Dec. The newest check-in, 6 Dec, is before them, so Free to spend may still hold spending nobody entered (sweep2_experience 7). A7: the question starts with the check-in.",
+      "decisions": [ "A7" ]
+    },
+    {
+      "id": "pe-03", "question": "question_start",
+      "title": "A check-in on the first of the last 3 days counts",
+      "input": { "periodFrom": "2026-11-10", "nextPay": { "due": "2026-12-10", "landed": "2026-12-10" }, "checkins": [ "2026-12-07" ], "today": "2026-12-11" },
+      "expected": { "ended": true, "periodTo": "2026-12-09", "startsWithCheckIn": false },
+      "why": "7 Dec is the first of the last 3 days (7, 8, 9), so it is inside them. Asked on 11 Dec, a day later; the question still needs no new check-in.",
+      "decisions": [ "A7" ]
+    },
+    {
+      "id": "pe-04", "question": "question_start",
+      "title": "A check-in on the period's last day counts",
+      "input": { "periodFrom": "2026-11-10", "nextPay": { "due": "2026-12-10", "landed": "2026-12-10" }, "checkins": [ "2026-12-09" ], "today": "2026-12-10" },
+      "expected": { "ended": true, "periodTo": "2026-12-09", "startsWithCheckIn": false },
+      "why": "9 Dec is the period's last day, the third of its last 3 days.",
+      "decisions": [ "A7" ]
+    },
+    {
+      "id": "pe-05", "question": "question_start",
+      "title": "Pay lands two days early: the period ends early and so do its last 3 days",
+      "input": { "periodFrom": "2026-11-10", "nextPay": { "due": "2026-12-10", "landed": "2026-12-08" }, "checkins": [ "2026-12-06" ], "today": "2026-12-08" },
+      "expected": { "ended": true, "periodTo": "2026-12-07", "startsWithCheckIn": false },
+      "why": "Pay due 10 Dec landed Tue 8 Dec, which starts the new period [F8]. The old one ends Mon 7 Dec; its last 3 days are 5, 6 and 7 Dec. The check-in on 6 Dec is inside them.",
+      "decisions": [ "A7", "F8" ]
+    },
+    {
+      "id": "pe-06", "question": "question_start",
+      "title": "Pay is late: the period has not ended, nothing is asked",
+      "input": { "periodFrom": "2026-11-10", "nextPay": { "due": "2026-12-10", "landed": null }, "checkins": [ "2026-12-08" ], "today": "2026-12-11" },
+      "expected": { "ended": false },
+      "why": "Pay due Thu 10 Dec has not landed on Fri 11 Dec. While pay is late the period does not move on [H8], so there is no period end yet and no question. (After the posting window, see open question pe-q3.)",
+      "decisions": [ "H8" ]
+    },
+    {
+      "id": "pe-07", "question": "question_start",
+      "title": "In the middle of a period nothing is asked",
+      "input": { "periodFrom": "2026-11-10", "nextPay": { "due": "2026-12-10", "landed": null }, "checkins": [ "2026-11-22" ], "today": "2026-11-25" },
+      "expected": { "ended": false },
+      "why": "The next pay is due 10 Dec; on 25 Nov it has not landed and is not due, so the period is still running.",
+      "decisions": [ "A7" ]
+    },
+    {
+      "id": "pe-08", "question": "question_start",
+      "title": "Pay every two weeks: a short period, the same 3 days",
+      "input": { "periodFrom": "2026-11-13", "nextPay": { "due": "2026-11-27", "landed": "2026-11-27" }, "checkins": [ "2026-11-23" ], "today": "2026-11-27" },
+      "expected": { "ended": true, "periodTo": "2026-11-26", "startsWithCheckIn": true },
+      "why": "The period ran Fri 13 Nov to Thu 26 Nov. Last 3 days: 24, 25, 26 Nov. The check-in on 23 Nov is one day too early, so the question starts with a check-in.",
+      "decisions": [ "A7" ]
+    },
+    {
+      "id": "pe-09", "question": "leftovers",
+      "title": "Free to spend has money left and nothing is answered yet: it waits, to decide",
+      "input": { "periodTo": "2026-12-09", "places": [ { "id": "free", "left": 12000 } ], "answers": [] },
+      "expected": { "places": { "free": { "left": 12000, "decided": 0, "toDecide": 12000, "state": "to decide" } }, "moves": [] },
+      "why": "12,000 is left in Free to spend. Nothing rolls on silently [A7]: it stays in Free to spend, marked to decide, and no event moves it until the person answers.",
+      "decisions": [ "A7" ]
+    },
+    {
+      "id": "pe-10", "question": "leftovers",
+      "title": "A budget line with money left waits too; one with nothing left has nothing to decide",
+      "input": { "periodTo": "2026-12-09", "places": [ { "id": "food", "left": 3000 }, { "id": "free", "left": 0 } ], "answers": [] },
+      "expected": {
+        "places": {
+          "food": { "left": 3000, "decided": 0, "toDecide": 3000, "state": "to decide" },
+          "free": { "left": 0, "decided": 0, "toDecide": 0, "state": "nothing left" }
+        },
+        "moves": []
+      },
+      "why": "A7 covers Free to spend and every budget line: food's 3,000 waits, to decide. Free to spend ended at exactly 0, so there is no money to place. (Whether the question is still shown then is open question pe-q5.)",
+      "decisions": [ "A7" ]
+    },
+    {
+      "id": "pe-11", "question": "leftovers",
+      "title": "An answer given three days late is a move dated the period's last day",
+      "input": { "periodTo": "2026-12-09", "places": [ { "id": "free", "left": 12000 } ], "answers": [ { "place": "free", "to": "trip", "a": 12000, "told": "2026-12-12T20:15:00.000+09:00" } ] },
+      "expected": { "places": { "free": { "left": 12000, "decided": 12000, "toDecide": 0, "state": "decided" } }, "moves": [ { "k": "move", "date": "2026-12-09", "a": 12000, "place": "free", "place2": "trip", "told": "2026-12-12T20:15:00.000+09:00" } ] },
+      "why": "7.4: answers are move events dated the period's last day, 9 Dec, even when answered on 12 Dec. The move's `told` is when it was answered (section 0: told is when the app heard of it). All 12,000 is placed, nothing waits.",
+      "decisions": [ "A7", "H1" ]
+    },
+    {
+      "id": "pe-12", "question": "leftovers",
+      "title": "A part answer: the rest still waits, to decide",
+      "input": { "periodTo": "2026-12-09", "places": [ { "id": "free", "left": 12000 } ], "answers": [ { "place": "free", "to": "trip", "a": 5000, "told": "2026-12-10T08:00:00.000+09:00" } ] },
+      "expected": { "places": { "free": { "left": 12000, "decided": 5000, "toDecide": 7000, "state": "to decide" } }, "moves": [ { "k": "move", "date": "2026-12-09", "a": 5000, "place": "free", "place2": "trip", "told": "2026-12-10T08:00:00.000+09:00" } ] },
+      "why": "5,000 is answered (a move to the trip, dated 9 Dec). 12,000 - 5,000 = 7,000 has no answer, so it waits in Free to spend, to decide, until answered [A7].",
+      "decisions": [ "A7" ]
+    },
+    {
+      "id": "pe-13", "question": "leftovers",
+      "title": "One place split between two answers",
+      "input": { "periodTo": "2026-12-09", "places": [ { "id": "free", "left": 12000 } ], "answers": [
+        { "place": "free", "to": "trip", "a": 5000, "told": "2026-12-10T08:00:00.000+09:00" },
+        { "place": "free", "to": "emergency", "a": 7000, "told": "2026-12-10T08:00:00.000+09:00" } ] },
+      "expected": { "places": { "free": { "left": 12000, "decided": 12000, "toDecide": 0, "state": "decided" } }, "moves": [
+        { "k": "move", "date": "2026-12-09", "a": 5000, "place": "free", "place2": "trip", "told": "2026-12-10T08:00:00.000+09:00" },
+        { "k": "move", "date": "2026-12-09", "a": 7000, "place": "free", "place2": "emergency", "told": "2026-12-10T08:00:00.000+09:00" } ] },
+      "why": "5,000 + 7,000 = 12,000, all of it. Two move events, both dated 9 Dec. Nothing waits.",
+      "decisions": [ "A7" ]
+    }
+  ],
+  "open": [
+    { "id": "pe-q1", "question": "A check-in made after the period ended (the app opened two days after pay) is not in the last 3 days. Read literally the question starts with a new check-in, which is also after the end, so it can never be fresh. Does a check-in after the end count (its stretch split by days, A4, so the old period gets its part)?", "ref_does": "the literal reading: only a check-in dated in the last 3 days counts" },
+    { "id": "pe-q2", "question": "Is the question asked on the period's last day (after a check-in that day), or only once the next pay has landed?", "ref_does": "only once the next pay has landed" },
+    { "id": "pe-q3", "question": "Pay past its posting window becomes \"not seen yet\" [H8]. Does the period end then (and the question come), or only when pay lands?", "ref_does": "only when pay lands" },
+    { "id": "pe-q4", "question": "A line overspent (below zero at the end): is it in the question, and does anything cover it (a move from Free to spend)?", "ref_does": "nothing to decide; reported as nothing left" },
+    { "id": "pe-q5", "question": "\"Always asked\" (Mako decision 3) when nothing is left anywhere: is the question still shown?", "ref_does": "reports nothing to decide; showing it is the screen's call" },
+    { "id": "pe-q6", "question": "An answer \"keep it here for next period\": what does it write? No move is needed, but something has to mark it decided.", "ref_does": "no such answer; the money stays to decide" },
+    { "id": "pe-q7", "question": "While money waits \"to decide\", is it counted in safe to spend for the new period? B1 takes off what is left of this period's budget lines, and the place's balance now holds old and new money together.", "ref_does": "not answered here (the walk is in the reference model)" },
+    { "id": "pe-q8", "question": "Two period ends both unanswered: is each period's leftover kept apart, and which period's last day does a later answer get?", "ref_does": "each period is asked on its own; the place balance cannot tell them apart" },
+    { "id": "pe-q9", "question": "A check-in that typed only some accounts: is it a fresh check-in for the question?", "ref_does": "any check-in counts" },
+    { "id": "pe-q10", "question": "Answers that add up to more than is left: refused, or allowed (taking from Waiting)?", "ref_does": "refuses (throws)" }
+  ]
+}
