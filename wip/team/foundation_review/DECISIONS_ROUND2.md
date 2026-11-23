@@ -172,3 +172,8 @@ T6. Period starts are in the reference model; the look ahead reads them.
 T7. A move out of a place lowers that place; `adjust` moves its account and place as LEDGER_DESIGN says; each gets asks. Wallet mode and `hand` are stage 2 (the field stays, no screens in version one; Mako uses Track).
 S5 fix: a transfer's `a` is what left, fee included; the fee record moves only the place, never the account.
 Watch decided: closing the main bank asks for the new main bank and moves every link (`home.mainBank`, budget lines' and Free to spend's `acct`, the pay schedules' account); a transfer typed on two phones is offered as a possible double like a spend; investments never raise the gain question; a `plan.shares` change applies from the next period start; an event into a closed account reopens it with a notice; SCHEMA 3 is corrected (pre-opening spends do not count in spent-so-far, as the model does); `told` and `at` are compared as moments, not text.
+
+## U. Answers after S
+U1. When a rough side is met by a line showing that more arrived than left can be true for (a typed 10,000 to cash, the bank line 9,800), both sides take the line's amount unless the other side has its own line; nothing arrives that did not leave, and no fee is written.
+U2. Settles made by an import show on the check-in list as "already matched", ticked, and the person can untick one (wording for Mako's copy pass).
+The S helper's readings are confirmed.
