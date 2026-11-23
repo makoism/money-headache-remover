@@ -85,6 +85,11 @@ function minor(x, cur) { return Math.round(x * Math.pow(10, DIGITS[cur] === unde
 // written against plain numbers again (confirm_review_4 item 3).
 // [AN5, which replaces AM1] Nothing unpicked is ever saved in `amounts`: a moved amount waiting for add or replace waits in
 // `pendingMove` and counts nowhere until it is picked, so every key holds one amount (AM1's `pick` key is gone).
+// [AO3] Until the pick the walk counts the safe side: on an occurrence that is money out (a bill, a transfer, a spend
+// that logs itself) the larger of what is written and each amount waiting for it; on a pay, only what is written (a
+// waiting pay amount adds nothing). `waitingFor` lists the live `pendingMove` entries waiting on one occurrence.
+const waitingFor = (sc, sid, due) => (sc.pendingMove || []).filter(p => p && !p.gone && p.waits === 'pick' && p.to === 'amounts'
+  && p.schedule === sid && p.key === due && typeof p.a === 'number');
 function keyLive(map, k) {
   const v = map ? map[k] : undefined;
   if (v === undefined || v === null) return null;
@@ -155,7 +160,7 @@ function dueDays(r, start, to, cal) {
 // [H2] A schedule holds from a date: its first rule, then each change from its own date. An edit never
 // rewrites an occurrence before its date. Every occurrence is named by its schedule and its due date
 // before any move (`rent@2026-12-27`), everywhere: links, amounts and item ids [B8, H2].
-function occurrences(s, kind, cal, from, to, cur) {
+function occurrences(s, kind, cal, from, to, cur, sc) {
   const parts = [{ from: -Infinity, rule: s.schedule || {}, amount: s.amount }]
     .concat((s.changes || []).map(c => ({ from: dayNum(c.from), rule: c.schedule, amount: c.amount != null ? c.amount : s.amount })))
     .sort((a, b) => a.from - b.from);
@@ -171,7 +176,8 @@ function occurrences(s, kind, cal, from, to, cur) {
     for (const { due, key } of dueDays(p.rule, start, to, cal)) {
       if (due < p.from || due >= until || due < first || due > ends || (count && out.length >= count)) continue;
       const one = keyAmount(s.amounts, dayStr(due));   // [AE1, AH3] a removed key is not read
-      const amt = minor(one != null ? one : s.amount_by_day ? s.amount_by_day[String(key)] : p.amount, cur);
+      let amt = minor(one != null ? one : s.amount_by_day ? s.amount_by_day[String(key)] : p.amount, cur);
+      if (sc && kind !== 'income') for (const w of waitingFor(sc, s.id, dayStr(due))) amt = Math.max(amt, minor(w.a, cur));   // [AO3] a bill's safe side
       out.push({ id: s.id + '@' + dayStr(due), sid: s.id, kind, acct: s.account, to: s.to, place: s.place,
         due, land: p.rule.frequency === 'last_workday' ? due : cal.shift(due, s.weekend_holiday),
         amount: amt, startsPeriod: !!s.starts_period, name: s.name });
@@ -405,7 +411,7 @@ function lookahead(sc, asOf, opts = {}) {
     // [Q2] A transfer schedule may carry `fee`: what leaves the paying account is the amount and the fee
     // (`amount`), what arrives is the amount (`amount2`).
     const fee = s.fee ? m(s.fee, s.account) : 0;
-    for (const o of occurrences(s, kind, calOf(s.account), earliest, farEnd, cur(s.account))) items.push(fee ? Object.assign(o, { amount: o.amount + fee, amount2: o.amount, fee }) : o);
+    for (const o of occurrences(s, kind, calOf(s.account), earliest, farEnd, cur(s.account), sc)) items.push(fee ? Object.assign(o, { amount: o.amount + fee, amount2: o.amount, fee }) : o);
   }
   // [P6] A closed account's schedules (paid from it, landing in it, or a transfer into it) end on the closing
   // day: nothing due after it is expected. The closing is known once its day is.

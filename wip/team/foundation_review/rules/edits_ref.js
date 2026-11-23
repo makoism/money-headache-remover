@@ -134,29 +134,65 @@ function minOk({ home, accounts }) {
 // the amount `a`), counting nowhere until then (section 2.1). Nothing unpicked is ever saved in `amounts` (no `pick` key).
 // With `pick` ('add' or 'replace') the waiting entries of the schedule are applied: add, the target's amount plus the
 // entry's; replace, the entry's; written with the pick's `at`, and each entry kept, removed by its own `gone` [AA5].
-function moveSave({ schedule, amounts, moveTo, pendingMove, pick, at, by, pendId, pendIds }) {
-  const day = String(at).slice(0, 10), out = JSON.parse(JSON.stringify(amounts || {}));
+// [AO2] Confirmed: of two amounts moving onto an occurrence that had none, the one from that occurrence's own month is
+// its own and is written; the other waits (ed-60, ed-64).
+// [AO4] A budget line's or a share's `once` keys follow AN5 the same way (`to: 'once'`, the line's or share's `once` map
+// and its id as `line`; keys and `moveTo` are occurrence names, `<schedule>@<due>`): an entry waits with `to: 'once'` and
+// the `line`. A budget line's key holds `amount`; a share's key holds its parts (`free`, `edu`, ..., `goals`), so its
+// waiting `a` is those parts and add adds them part by part.
+const KEY_META = ['at', 'by', 'gone', 'held'];
+const partsOf = v => Object.fromEntries(Object.entries(v || {}).filter(([k]) => !KEY_META.includes(k)));
+function addParts(x, y) {
+  if (typeof x === 'number' || typeof y === 'number') return (x || 0) + (y || 0);
+  const o = Object.assign({}, x);
+  for (const [k, v] of Object.entries(y || {})) o[k] = addParts(o[k], v);
+  return o;
+}
+function moveSave({ schedule, amounts, once, to, line, moveTo, pendingMove, pick, at, by, pendId, pendIds }) {
+  const isOnce = to === 'once', src = isOnce ? once : amounts;
+  const day = String(at).slice(0, 10), out = JSON.parse(JSON.stringify(src || {}));
   const pend = JSON.parse(JSON.stringify(pendingMove || []));
   const live = v => !!v && typeof v === 'object' && !v.gone;
+  const result = () => (isOnce ? { once: out, pendingMove: pend } : { amounts: out, pendingMove: pend });
+  // a key's value: a plain amount (`amounts`, a budget line's `once`) or a share's parts
+  const valueOf = v => (typeof (v || {}).amount === 'number' ? v.amount : partsOf(v));
+  const write = (v, extra) => Object.assign(typeof v === 'number' ? { amount: v } : JSON.parse(JSON.stringify(v)), extra);
+  const mine = p => !p.gone && p.waits === 'pick' && (isOnce ? p.to === 'once' && p.line === line : (p.to || 'amounts') === 'amounts' && p.schedule === schedule);
   if (pick) {
-    for (const p of pend) if (!p.gone && p.waits === 'pick' && p.schedule === schedule) {
-      const cur = out[p.key], base = live(cur) ? cur.amount : 0;
-      out[p.key] = Object.assign({}, cur, { amount: pick === 'add' ? base + p.a : p.a, at, by }); delete out[p.key].gone;
+    for (const p of pend) if (mine(p)) {
+      const cur = out[p.key], base = live(cur) ? valueOf(cur) : (typeof p.a === 'number' ? 0 : {});
+      out[p.key] = write(pick === 'add' ? addParts(base, p.a) : p.a, { at, by });
       Object.assign(p, { gone: day, at, by });
     }
-    return { amounts: out, pendingMove: pend };
+    return result();
   }
   const ids = [].concat(pendIds || [], pendId || []);
-  const moves = Object.entries(moveTo || {}).filter(([f, t]) => t && /^\d{4}-\d{2}-\d{2}$/.test(f))
-    .sort(([f1, t1], [f2, t2]) => ((f2.slice(0, 7) === t2.slice(0, 7)) - (f1.slice(0, 7) === t1.slice(0, 7))) || (f1 < f2 ? -1 : 1));
-  const own = new Set(Object.keys(amounts || {}).filter(k => live(amounts[k]) && !(k in (moveTo || {}))));
+  const dueOf = k => (isOnce ? (occurrence(k) || {}).due : k);
+  const moves = Object.entries(moveTo || {}).filter(([f, t]) => t && /^\d{4}-\d{2}-\d{2}$/.test(dueOf(f) || ''))
+    .map(([f, t]) => [f, t, dueOf(f), dueOf(t)])
+    .sort(([f1, , d1, e1], [f2, , d2, e2]) => ((d2.slice(0, 7) === e2.slice(0, 7)) - (d1.slice(0, 7) === e1.slice(0, 7))) || (d1 < d2 ? -1 : 1));
+  const own = new Set(Object.keys(src || {}).filter(k => live(src[k]) && !(k in (moveTo || {}))));
   for (const [f] of moves) out[f] = Object.assign({}, out[f], { at, by, gone: day });
   for (const [f, t] of moves) {
-    const a = amounts[f].amount;
-    if (!own.has(t)) { out[t] = { amount: a, at, by }; own.add(t); continue; }
-    pend.push({ id: ids.shift(), waits: 'pick', to: 'amounts', schedule, key: t, from: f, a, told: at, at, by });
+    const a = valueOf(src[f]);
+    if (!own.has(t)) { out[t] = write(a, { at, by }); own.add(t); continue; }
+    pend.push(Object.assign({ id: ids.shift(), waits: 'pick' }, isOnce ? { to: 'once', line } : { to: 'amounts', schedule },
+      { key: t, from: f, a, told: at, at, by }));
   }
-  return { amounts: out, pendingMove: pend };
+  return result();
+}
+// [AO5] When an account becomes the main bank, its own `minBank` moves into `home.main` with it (the pair written with a
+// new `at` [AL3]) and is cleared on the account (null, with the same `at`); an account whose `minBank` is already null is
+// not written. The old main bank gets no minimum unless the person sets one: its own `minBank` stays null [AN3], and when
+// the pair had a minimum a notice on the old main bank says so, with what it was (`was`).
+const MAIN_MIN_NOTICE = 'This account is no longer your main bank, so it has no minimum now. Set one if you want to keep some money in it.';
+function mainChange({ main, accounts, acct, at, by }) {
+  const old = main && main.v ? main.v : {}, list = accounts || [];
+  const to = list.find(a => a.id === acct) || {};
+  const out = { main: { v: { acct, min: to.minBank != null ? to.minBank : null }, at, by } };
+  out.accounts = list.map(a => (a.id === acct && a.minBank != null ? Object.assign({}, a, { minBank: null, at, by }) : a));
+  out.notices = old.acct && old.acct !== acct && old.min != null ? [{ account: old.acct, text: MAIN_MIN_NOTICE, was: old.min }] : [];
+  return out;
 }
 
 function ask(question, input) {
@@ -164,11 +200,12 @@ function ask(question, input) {
   if (question === 'min_ask') return minAsk(input);
   if (question === 'min_save') return minSave(input);   // [AN3]
   if (question === 'min_ok') return minOk(input);   // [AN3]
-  if (question === 'move_save') return moveSave(input);   // [AN5]
+  if (question === 'move_save') return moveSave(input);   // [AN5, AO2, AO4]
+  if (question === 'main_change') return mainChange(input);   // [AO5]
   if (question === 'change_from') return changeFrom(input);
   if (question === 'own_account') return ownAccount(input);
   if (question === 'not_yet_asks') return notYetAsks(input);
   throw new Error('unknown question ' + question);
 }
 
-module.exports = { ask, changeFrom, ownAccount, notYetAsks, statementAsk, minAsk, minSave, minOk, moveSave };
+module.exports = { ask, changeFrom, ownAccount, notYetAsks, statementAsk, minAsk, minSave, minOk, moveSave, mainChange };

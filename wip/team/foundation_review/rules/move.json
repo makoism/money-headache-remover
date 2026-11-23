@@ -16565,6 +16565,106 @@
         "L merge q1",
         "AN7"
       ]
+    },
+    {
+      "id": "mv-128",
+      "question": "move",
+      "title": "AO7: two 38.31 shop keys that become one shop key keep the later and are listed in the move summary",
+      "input": {
+        "copy": {
+          "v": 1,
+          "ui": {
+            "cur": "¥",
+            "preset": "¥",
+            "done": {
+              "pay": true,
+              "bills": true,
+              "goals": true
+            },
+            "cats": {
+              "SEVEN ELEVEN": "bill:food",
+              "LAWSON": "bill:food",
+              "Seven  Eleven ": "other"
+            }
+          },
+          "plan": {
+            "lines": [],
+            "goals": []
+          }
+        },
+        "show": [
+          "imports",
+          "catsJoined"
+        ]
+      },
+      "expected": {
+        "imports": {
+          "cats": {
+            "k:seven eleven": "other",
+            "k:lawson": "bill:food"
+          }
+        },
+        "catsJoined": [
+          {
+            "key": "k:seven eleven",
+            "kept": "Seven  Eleven ",
+            "dropped": [
+              "SEVEN ELEVEN"
+            ]
+          }
+        ]
+      },
+      "why": "38.31 learnt \"SEVEN ELEVEN\" as food from a statement, then \"Seven  Eleven \" (two spaces, one after) as other, from a corrected line. In the shop-key form both are `k:seven eleven` [AN7]. The later in the map, \"Seven  Eleven \" (other), is kept [AO7], and the move summary lists the join: the key, the text kept and the text dropped [AO7]. \"LAWSON\" meets nothing and moves as it is.",
+      "decisions": [
+        "AO7",
+        "AN7",
+        "11.1"
+      ]
+    },
+    {
+      "id": "mv-129",
+      "question": "move",
+      "title": "AO7: no two shop keys meet: the summary lists no join",
+      "input": {
+        "copy": {
+          "v": 1,
+          "ui": {
+            "cur": "¥",
+            "preset": "¥",
+            "done": {
+              "pay": true,
+              "bills": true,
+              "goals": true
+            },
+            "cats": {
+              "SEVEN ELEVEN": "bill:food",
+              "LAWSON": "bill:food"
+            }
+          },
+          "plan": {
+            "lines": [],
+            "goals": []
+          }
+        },
+        "show": [
+          "imports",
+          "catsJoined"
+        ]
+      },
+      "expected": {
+        "imports": {
+          "cats": {
+            "k:seven eleven": "bill:food",
+            "k:lawson": "bill:food"
+          }
+        },
+        "catsJoined": []
+      },
+      "why": "Two different shops: each becomes its own shop key [AN7]; nothing is joined, so the summary lists none [AO7].",
+      "decisions": [
+        "AO7",
+        "AN7"
+      ]
     }
   ],
   "open": []

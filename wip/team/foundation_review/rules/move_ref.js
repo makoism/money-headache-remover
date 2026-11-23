@@ -176,6 +176,13 @@ const MIN_AUTO_FROM = '2026-11-20';
 // [AN7] 38.31's `ui.cats` keys are lowercased at the move into the shop-key form (`k:`, trimmed, spaces collapsed:
 // "SEVEN ELEVEN" is `k:seven eleven`), the one form merge_ref.catKey makes.
 const catsOf = cats => Object.fromEntries(Object.entries(cats).map(([k, v]) => [require('./merge_ref').catKey(k), v]));
+// [AO7] Two 38.31 keys that become one shop key keep the later in the map's order (catsOf), and the join is listed in the
+// move summary (`catsJoined`: the shop key, the 38.31 text kept and the texts dropped, in key order).
+function catsJoined(cats) {
+  const by = {}, key = require('./merge_ref').catKey;
+  for (const k of Object.keys(cats)) (by[key(k)] = by[key(k)] || []).push(k);
+  return Object.keys(by).sort().filter(k => by[k].length > 1).map(k => ({ key: k, kept: by[k][by[k].length - 1], dropped: by[k].slice(0, -1) }));
+}
 function move(input) {
   const raw = typeof input.raw === 'string' ? input.raw : JSON.stringify(madeCopy(input));
   const copy = JSON.parse(raw);   // [O] the raw stored text, never a cleaned copy
@@ -532,7 +539,9 @@ function move(input) {
     accounts, places, schedules, events,
     plan: { shares, budgets }, imports: isMap(ui.cats) ? { cats: catsOf(ui.cats) } : {}, ui: shared,
     device: { look, tour, opens: Array.isArray(ui.wk) ? ui.wk : [] },
-    asks, unplaced: unplaced.sort(), zero: zero.sort(), rounded: rounded.sort(), sample, saved, frozen3831: raw };
+    asks, unplaced: unplaced.sort(), zero: zero.sort(), rounded: rounded.sort(),
+    catsJoined: isMap(ui.cats) ? catsJoined(ui.cats) : [],   // [AO7] the move summary
+    sample, saved, frozen3831: raw };
   // [11.1, O6, AL5] cfg.ceiling is "the most you want to spend in a month": an amount with its currency and `per: 'month'`
   // (Lesson 1); cfg.aims are shares, not amounts.
   if (!sample && (typeof cfg.ceiling === 'number' || isMap(cfg.aims))) out.plan.limits = Object.assign({}, typeof cfg.ceiling === 'number' ? { ceiling: { a: amt(cfg.ceiling, 'cfg.ceiling'), cur, per: 'month' } } : {}, isMap(cfg.aims) ? { aims: cfg.aims } : {});
@@ -712,14 +721,14 @@ function stamp(m, now, by, saved) {
 // One device's move as it is stored: answered later when `later` is given; device-only parts dropped.
 function stored(d) {
   const o = d.later ? moveAnswer(d) : move(d), m = stamp(o, d.now, d.by, o.saved);
-  for (const k of ['device', 'asks', 'unplaced', 'zero', 'rounded', 'morePays', 'sample', 'saved', 'frozen3831']) delete m[k];
+  for (const k of ['device', 'asks', 'unplaced', 'zero', 'rounded', 'morePays', 'catsJoined', 'sample', 'saved', 'frozen3831']) delete m[k];
   return m;
 }
 // [AE5] A backup file in the 38.31 format restored after the move: the move run on it (with the person's answers), every
 // record it gives stamped with the restore's `at` (merge_ref.restore then writes it over the current copy).
 function movedBackup({ copy, answers, now, by, at }) {
   const o = move({ copy, answers, now, idb: null }), m = stamp(o, now, by, at);
-  for (const k of ['device', 'asks', 'unplaced', 'zero', 'rounded', 'morePays', 'sample', 'saved', 'frozen3831']) delete m[k];
+  for (const k of ['device', 'asks', 'unplaced', 'zero', 'rounded', 'morePays', 'catsJoined', 'sample', 'saved', 'frozen3831']) delete m[k];
   return m;
 }
 // [AB1] A device that finds a moved copy in the cloud takes it and adds only the ids it lacks; it never overwrites.

@@ -120,7 +120,7 @@ Written 23 Nov 2026 from foundation_review/RECOMMENDATION.md, life_walks_salarie
 | x8_ordinary_ids.json, x8_ordinary_ids_ok.json | X8 with ordinary schedule ids (AJ1). | JPY | 4 |
 | offset_travel.json | A phone flown from Tokyo to Honolulu: dates in the writer's own calendar (AL watch); a spend whose date in Honolulu had not ended at a Tokyo check, told after it, comes after it (AN4). | JPY | 3 |
 | check_day_before.json | Receipts from yesterday and the day before, logged after this morning's check: their dates ended before the check, so both are inside it (AN4, which replaces AM3). | JPY | 3 |
-| moved_together.json | Two moved amounts on one pay and on one bill, add or replace not picked: the occurrence's own amount is written, the one carried over waits in `pendingMove` and counts nowhere (AN5, which replaces AM1). | JPY | 3 |
+| moved_together.json | Two moved amounts on one pay and on one bill, add or replace not picked: the occurrence's own amount is written, the one carried over waits in `pendingMove`; until the pick a waiting bill amount counts on the safe side (the larger) and a waiting pay amount adds nothing (AN5, which replaces AM1; AO3). | JPY | 3 |
 | moved_together_picked.json | The same after the person picks add: the sums are written (AN5). | JPY | 3 |
 | check_specs.js | Checks every file's shape and that every `why` adds up to its expected figure. `node check_specs.js` | | |
 

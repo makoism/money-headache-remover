@@ -1,7 +1,7 @@
 {
   "life": "moved_together",
-  "title": "Two moved amounts on one occurrence, add or replace not yet picked: the occurrence's own amount is written and the one carried over waits in `pendingMove`, counting nowhere until the pick (AN5, AL6)",
-  "story": "Set up Tue 1 Dec 2026: the bank holds 400,000, of which 50,000 is what is left of Free to spend (typed). Pay of 250,000 on the 25th (moved earlier) starts the period; rent of 80,000 on the 27th (moved later). At setup the person set December's pay to 400,000 (a bonus) and January's to 150,000 (part unpaid leave), December's rent to 95,000 (a repair) and January's to 70,000 (a discount), each a keyed override. School fees of 200,000 are due once, Wed 20 Jan. On Wed 2 Dec the person enters a new job from Tue 15 Dec that pays on the 10th, and a new flat from 15 Dec with rent on the 5th. Each change offers to move or remove the amounts in its way [AJ5, AK2]; the person picks move. January's amounts go to the first January occurrence on or after 15 Dec (pay Sun 10 Jan, landing Fri 8 Jan; rent Tue 5 Jan) [AK2] and are written there, each that occurrence's own. December's have no occurrence of the new rule in December on or after 15 Dec, so they go to the same days [AL6], which now have their own amounts: they are not written until the person picks add or replace, and wait in `pendingMove` (not in this file: the look ahead reads only what is written) [AN5]. Both old keys of each schedule are removed (`gone`, 2 Dec). No unpicked state is saved in `amounts`. Every amount is made up.",
+  "title": "Two moved amounts on one occurrence, add or replace not yet picked: the occurrence's own amount is written and the one carried over waits in `pendingMove`; until the pick a waiting bill amount counts on the safe side (the larger) and a waiting pay amount adds nothing (AN5, AO3, AL6)",
+  "story": "Set up Tue 1 Dec 2026: the bank holds 400,000, of which 50,000 is what is left of Free to spend (typed). Pay of 250,000 on the 25th (moved earlier) starts the period; rent of 80,000 on the 27th (moved later). At setup the person set December's pay to 400,000 (a bonus) and January's to 150,000 (part unpaid leave), December's rent to 95,000 (a repair) and January's to 70,000 (a discount), each a keyed override. School fees of 200,000 are due once, Wed 20 Jan. On Wed 2 Dec the person enters a new job from Tue 15 Dec that pays on the 10th, and a new flat from 15 Dec with rent on the 5th. Each change offers to move or remove the amounts in its way [AJ5, AK2]; the person picks move. January's amounts go to the first January occurrence on or after 15 Dec (pay Sun 10 Jan, landing Fri 8 Jan; rent Tue 5 Jan) [AK2] and are written there, each that occurrence's own. December's have no occurrence of the new rule in December on or after 15 Dec, so they go to the same days [AL6], which now have their own amounts: they are not written until the person picks add or replace, and wait in `pendingMove` (listed below) [AN5]. Until the pick the walk counts the safe side [AO3]: on the rent of Tue 5 Jan the larger of what is written (70,000) and what waits (95,000); on the pay of Sun 10 Jan only what is written (150,000), the waiting 400,000 adding nothing. Both old keys of each schedule are removed (`gone`, 2 Dec). No unpicked state is saved in `amounts`. Every amount is made up.",
   "currency": "JPY",
   "window": {
     "from": "2026-12-01",
@@ -131,6 +131,32 @@
       "amount": 50000
     }
   },
+  "pendingMove": [
+    {
+      "id": "pend_pay",
+      "waits": "pick",
+      "to": "amounts",
+      "schedule": "pay",
+      "key": "2027-01-10",
+      "from": "2026-12-25",
+      "a": 400000,
+      "told": "2026-12-02T10:00:00.000+09:00",
+      "at": "2026-12-02T10:00:00.000+09:00",
+      "by": "phn001"
+    },
+    {
+      "id": "pend_rent",
+      "waits": "pick",
+      "to": "amounts",
+      "schedule": "rent",
+      "key": "2027-01-05",
+      "from": "2026-12-27",
+      "a": 95000,
+      "told": "2026-12-02T10:00:00.000+09:00",
+      "at": "2026-12-02T10:00:00.000+09:00",
+      "by": "phn001"
+    }
+  ],
   "events": [
     {
       "id": "set:rent@2027-01-05",
@@ -153,22 +179,22 @@
           {
             "item": "rent@2027-01-05",
             "lands": "2027-01-05",
-            "amount": 70000
+            "amount": 95000
           }
         ],
-        "total": 70000
+        "total": 95000
       },
-      "why": "70,000 (rent on Tue 5 Jan: January's 70,000, written there; December's 95,000 waits in `pendingMove` for add or replace and counts nowhere [AN5]) = 70,000",
-      "note": "Under AM1 the key held both and the larger counted: 95,000. AN5 saves nothing unpicked, so only the written amount counts; whether a waiting bill amount should count on the safe side is an open question (rules/edits.json ed-q-an5b)."
+      "why": "95,000 (rent on Tue 5 Jan: January's 70,000 is written there and December's 95,000 waits in `pendingMove` for add or replace; until the pick a waiting bill amount counts on the safe side, the larger [AO3]) = 95,000",
+      "note": "AN5 alone counted only the written 70,000 (open question ed-q-an5b, answered by AO3); AO3 counts the larger, as AM1 did, while nothing unpicked is saved in `amounts`."
     },
     {
       "id": "mt-02",
       "date": "2026-12-16",
       "question": "safe_to_spend",
       "account": "bank",
-      "expected": 150000,
-      "why": "400,000 (Bank today) - 70,000 (Rent 5 Jan, January's own) + 150,000 (Pay 8 Jan, January's own) - 50,000 (Free to spend for the period from 8 Jan) - 200,000 (School fees 20 Jan) - 80,000 (Rent 5 Feb) = 150,000",
-      "note": "The lowest point is Fri 5 Feb (5 Jan 330,000; 8 Jan 430,000; 20 Jan 230,000; 5 Feb 150,000); Wed 10 Feb then adds 250,000 and takes 50,000 (350,000). December's waiting 400,000 pay and 95,000 rent count nowhere until picked [AN5]. Under AM1: 125,000."
+      "expected": 125000,
+      "why": "400,000 (Bank today) - 95,000 (Rent 5 Jan, the larger of January's 70,000 and December's waiting 95,000 [AO3]) + 150,000 (Pay 8 Jan, January's own; December's waiting 400,000 adds nothing [AO3]) - 50,000 (Free to spend for the period from 8 Jan) - 200,000 (School fees 20 Jan) - 80,000 (Rent 5 Feb) = 125,000",
+      "note": "The lowest point is Fri 5 Feb (5 Jan 305,000; 8 Jan 405,000; 20 Jan 205,000; 5 Feb 125,000); Wed 10 Feb then adds 250,000 and takes 50,000 (325,000). Under AN5 alone: 150,000 (nothing waiting counted)."
     },
     {
       "id": "mt-03",
@@ -184,8 +210,8 @@
         ],
         "total": 150000
       },
-      "why": "150,000 (January's pay, due Sun 10 Jan, lands Fri 8 Jan: January's own amount, written; December's 400,000 waits for add or replace [AN5]) = 150,000",
-      "note": "The rent of 5 Jan is ticked (70,000), so it is not on the list. Under AM1 the same 150,000, as the smaller of the two."
+      "why": "150,000 (January's pay, due Sun 10 Jan, lands Fri 8 Jan: January's own amount, written; December's 400,000 waits for add or replace and a waiting pay amount adds nothing until picked [AO3]) = 150,000",
+      "note": "The rent of 5 Jan is ticked (70,000), so it is not on the list."
     }
   ]
 }

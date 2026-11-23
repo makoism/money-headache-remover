@@ -20776,7 +20776,7 @@
     {
       "id": "mg-271",
       "question": "after_merge",
-      "title": "AN2: a moved bonus key left live by an edit on the other device: the change moves to the day after it, with a notice",
+      "title": "AN2, AO1: a moved bonus key left live by an edit on the other device: the change moves to the day after it and the moved copy is removed, so one bonus counts",
       "input": {
         "mine": {
           "schedules": [
@@ -20950,8 +20950,9 @@
               },
               "2027-01-10": {
                 "amount": 400000,
-                "at": "2026-12-02T10:00:00.000+09:00",
-                "by": "phn001"
+                "at": "2026-12-02T12:00:00.000+09:00",
+                "by": "phn001",
+                "gone": "2026-12-02"
               }
             }
           }
@@ -20962,12 +20963,16 @@
             "text": "This change now starts the day after what your other device had already settled. Check it.",
             "was": "2026-12-15",
             "from": "2026-12-26",
-            "latest": "k7qzpa-m2xq7ab9zt-41@2026-12-25"
+            "latest": "k7qzpa-m2xq7ab9zt-41@2026-12-25",
+            "back": [
+              "2026-12-25"
+            ]
           }
         ]
       },
-      "why": "Pay on the 25th with a 400,000 bonus keyed 25 Dec. Wed 2 Dec 10:00 the phone enters a new pay day, the 10th from 15 Dec, and moves the bonus to 10 Jan (AL6): the 25 Dec key is removed by its own `gone`, a 10 Jan key written. At 11:00 the desktop, not having seen it, raises the 25 Dec bonus to 450,000. Merged key by key [AE1], the desktop's 11:00 edit is newer than the phone's removal, so the 25 Dec key is live again: an orphan the new rule no longer makes, which the look ahead refuses [X8]. After the merge the change moves to start the day after it, 26 Dec, with the phone's new `at` (12:00) and a notice on the phone [AN2]. The 10 Jan key stays (the new rule still makes 10 Jan). The bonus is now keyed on both 25 Dec and 10 Jan: see the open question mg-q-an2.",
+      "why": "Pay on the 25th with a 400,000 bonus keyed 25 Dec. Wed 2 Dec 10:00 the phone enters a new pay day, the 10th from 15 Dec, and moves the bonus to 10 Jan (AL6): the 25 Dec key is removed by its own `gone`, a 10 Jan key written. At 11:00 the desktop, not having seen it, raises the 25 Dec bonus to 450,000. Merged key by key [AE1], the desktop's 11:00 edit is newer than the phone's removal, so the 25 Dec key is live again: an orphan the new rule no longer makes, which the look ahead refuses [X8]. After the merge the change moves to start the day after it, 26 Dec, with the phone's new `at` (12:00) and a notice on the phone [AN2]. The bonus that moved with the change moves back too [AO1]: the 25 Dec key is already live (the desktop's 450,000, newer, kept as it is) and the moved copy on 10 Jan is removed by its own `gone` with the phone's new `at` (12:00). So one bonus counts, 450,000 on 25 Dec, not 450,000 + 400,000 = 850,000. The notice names the key that came back (`back`).",
       "decisions": [
+        "AO1",
         "AN2",
         "AL6",
         "AE1",
@@ -24852,18 +24857,916 @@
         "X8",
         "H2"
       ]
+    },
+    {
+      "id": "mg-288",
+      "question": "after_merge",
+      "title": "AO1: a pay day change that moved a bonus is moved after a merge: the bonus moves back to the settled pay, one bonus counted",
+      "input": {
+        "mine": {
+          "schedules": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-41",
+              "kind": "income",
+              "name": "Pay",
+              "acct": "k7qzpa-m2xq7ab9zt-2",
+              "rules": [
+                {
+                  "from": "2026-11-01",
+                  "rule": {
+                    "every": "month",
+                    "days": [
+                      10
+                    ]
+                  },
+                  "at": "2026-11-01T09:00:00.000+09:00",
+                  "by": "phn001"
+                },
+                {
+                  "from": "2026-12-01",
+                  "rule": {
+                    "every": "month",
+                    "days": [
+                      25
+                    ]
+                  },
+                  "at": "2026-12-11T08:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              ],
+              "steps": [
+                {
+                  "from": "2026-11-01",
+                  "amount": 250000,
+                  "at": "2026-11-01T09:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              ],
+              "startsPeriod": true,
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-12-11T08:00:00.000+09:00",
+              "by": "phn001",
+              "amounts": {
+                "2026-12-10": {
+                  "amount": 300000,
+                  "at": "2026-12-11T08:00:00.000+09:00",
+                  "by": "phn001",
+                  "gone": "2026-12-11"
+                },
+                "2026-12-25": {
+                  "amount": 300000,
+                  "at": "2026-12-11T08:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              }
+            }
+          ],
+          "events": [
+            {
+              "id": "set:k7qzpa-m2xq7ab9zt-41@2026-11-10",
+              "k": "in",
+              "date": "2026-11-10",
+              "acct": "k7qzpa-m2xq7ab9zt-2",
+              "a": 250000,
+              "stream": "k7qzpa-m2xq7ab9zt-41",
+              "settles": [
+                {
+                  "s": "k7qzpa-m2xq7ab9zt-41",
+                  "due": "2026-11-10"
+                }
+              ],
+              "told": "2026-11-10T12:00:00.000+09:00",
+              "at": "2026-11-10T12:00:00.000+09:00",
+              "by": "dsk001"
+            }
+          ]
+        },
+        "theirs": {
+          "schedules": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-41",
+              "kind": "income",
+              "name": "Pay",
+              "acct": "k7qzpa-m2xq7ab9zt-2",
+              "rules": [
+                {
+                  "from": "2026-11-01",
+                  "rule": {
+                    "every": "month",
+                    "days": [
+                      10
+                    ]
+                  },
+                  "at": "2026-11-01T09:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              ],
+              "steps": [
+                {
+                  "from": "2026-11-01",
+                  "amount": 250000,
+                  "at": "2026-11-01T09:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              ],
+              "startsPeriod": true,
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-11-24T10:00:00.000+09:00",
+              "by": "phn001",
+              "amounts": {
+                "2026-12-10": {
+                  "amount": 300000,
+                  "at": "2026-11-24T10:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              }
+            }
+          ],
+          "events": [
+            {
+              "id": "set:k7qzpa-m2xq7ab9zt-41@2026-11-10",
+              "k": "in",
+              "date": "2026-11-10",
+              "acct": "k7qzpa-m2xq7ab9zt-2",
+              "a": 250000,
+              "stream": "k7qzpa-m2xq7ab9zt-41",
+              "settles": [
+                {
+                  "s": "k7qzpa-m2xq7ab9zt-41",
+                  "due": "2026-11-10"
+                }
+              ],
+              "told": "2026-11-10T12:00:00.000+09:00",
+              "at": "2026-11-10T12:00:00.000+09:00",
+              "by": "dsk001"
+            },
+            {
+              "id": "set:k7qzpa-m2xq7ab9zt-41@2026-12-10",
+              "k": "in",
+              "date": "2026-12-10",
+              "acct": "k7qzpa-m2xq7ab9zt-2",
+              "a": 550000,
+              "stream": "k7qzpa-m2xq7ab9zt-41",
+              "settles": [
+                {
+                  "s": "k7qzpa-m2xq7ab9zt-41",
+                  "due": "2026-12-10"
+                }
+              ],
+              "told": "2026-12-10T12:00:00.000+09:00",
+              "at": "2026-12-10T12:00:00.000+09:00",
+              "by": "dsk001"
+            }
+          ]
+        },
+        "now": "2026-12-11T09:00:00.000+09:00",
+        "by": "phn001",
+        "show": [
+          "schedules"
+        ]
+      },
+      "expected": {
+        "schedules": [
+          {
+            "id": "k7qzpa-m2xq7ab9zt-41",
+            "kind": "income",
+            "name": "Pay",
+            "acct": "k7qzpa-m2xq7ab9zt-2",
+            "rules": [
+              {
+                "from": "2026-11-01",
+                "rule": {
+                  "every": "month",
+                  "days": [
+                    10
+                  ]
+                },
+                "at": "2026-11-01T09:00:00.000+09:00",
+                "by": "phn001"
+              },
+              {
+                "from": "2026-12-01",
+                "rule": {
+                  "every": "month",
+                  "days": [
+                    25
+                  ]
+                },
+                "at": "2026-12-11T09:00:00.000+09:00",
+                "by": "phn001",
+                "gone": "2026-12-11"
+              },
+              {
+                "from": "2026-12-11",
+                "rule": {
+                  "every": "month",
+                  "days": [
+                    25
+                  ]
+                },
+                "at": "2026-12-11T09:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ],
+            "steps": [
+              {
+                "from": "2026-11-01",
+                "amount": 250000,
+                "at": "2026-11-01T09:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ],
+            "startsPeriod": true,
+            "told": "2026-11-01T09:00:00.000+09:00",
+            "at": "2026-12-11T09:00:00.000+09:00",
+            "by": "phn001",
+            "amounts": {
+              "2026-12-10": {
+                "amount": 300000,
+                "at": "2026-12-11T09:00:00.000+09:00",
+                "by": "phn001"
+              },
+              "2026-12-25": {
+                "amount": 300000,
+                "at": "2026-12-11T09:00:00.000+09:00",
+                "by": "phn001",
+                "gone": "2026-12-11"
+              }
+            }
+          }
+        ],
+        "notices": [
+          {
+            "schedule": "k7qzpa-m2xq7ab9zt-41",
+            "text": "This change now starts the day after what your other device had already settled. Check it.",
+            "was": "2026-12-01",
+            "from": "2026-12-11",
+            "latest": "k7qzpa-m2xq7ab9zt-41@2026-12-10",
+            "back": [
+              "2026-12-10"
+            ]
+          }
+        ]
+      },
+      "why": "Pay of 250,000 on the 10th, with a 300,000 bonus keyed 10 Dec (typed 24 Nov). Thu 10 Dec 12:00 the desktop ticks the 10 Dec pay as it came in, 550,000 (250,000 + 300,000). Fri 11 Dec 08:00 the phone, offline since 9 Dec, changes the pay day to the 25th \"from 1 Dec\" and moves the bonus with it to 25 Dec (the 10 Dec key removed by its own `gone`, a 25 Dec key written, both 08:00) [AK2]. After the merge the change moves to start 11 Dec, the day after the settled pay [AN2], as mg-268. The bonus that moved with the change moves back too [AO1]: the 10 Dec key is live again (300,000, written with the phone's new `at`, 09:00, no `gone`) and the moved copy on 25 Dec is removed by its own `gone` (09:00). So one bonus counts, on 10 Dec, where it really came in: 300,000, not 600,000. The notice names the key that came back (`back`).",
+      "decisions": [
+        "AO1",
+        "AN2",
+        "AK2",
+        "X8",
+        "D4",
+        "M3"
+      ]
+    },
+    {
+      "id": "mg-289",
+      "question": "after_merge",
+      "title": "AO1 (AK3): a Food `once` key moved with a pay day change and edited on the other device: the moved copy is removed, so one override counts",
+      "input": {
+        "mine": {
+          "schedules": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-41",
+              "kind": "income",
+              "name": "Pay",
+              "acct": "k7qzpa-m2xq7ab9zt-2",
+              "rules": [
+                {
+                  "from": "2026-11-01",
+                  "rule": {
+                    "every": "month",
+                    "days": [
+                      25
+                    ]
+                  },
+                  "at": "2026-11-01T09:00:00.000+09:00",
+                  "by": "phn001"
+                },
+                {
+                  "from": "2026-12-15",
+                  "rule": {
+                    "every": "month",
+                    "days": [
+                      10
+                    ]
+                  },
+                  "at": "2026-12-02T10:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              ],
+              "steps": [
+                {
+                  "from": "2026-11-01",
+                  "amount": 250000,
+                  "at": "2026-11-01T09:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              ],
+              "startsPeriod": true,
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-12-02T10:00:00.000+09:00",
+              "by": "phn001"
+            }
+          ],
+          "plan": {
+            "budgets": [
+              {
+                "id": "k7qzpa-m2xq7ab9zt-70",
+                "name": "Food",
+                "place": "free",
+                "cur": "JPY",
+                "acct": "k7qzpa-m2xq7ab9zt-2",
+                "per": "pay",
+                "steps": [
+                  {
+                    "from": "2026-11-01",
+                    "amount": 40000,
+                    "at": "2026-11-01T09:00:00.000+09:00",
+                    "by": "phn001"
+                  }
+                ],
+                "once": {
+                  "k7qzpa-m2xq7ab9zt-41@2026-12-25": {
+                    "amount": 60000,
+                    "at": "2026-12-02T10:00:00.000+09:00",
+                    "by": "phn001",
+                    "gone": "2026-12-02"
+                  },
+                  "k7qzpa-m2xq7ab9zt-41@2027-01-10": {
+                    "amount": 60000,
+                    "at": "2026-12-02T10:00:00.000+09:00",
+                    "by": "phn001"
+                  }
+                },
+                "told": "2026-11-01T09:00:00.000+09:00",
+                "at": "2026-12-02T10:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ]
+          },
+          "events": []
+        },
+        "theirs": {
+          "schedules": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-41",
+              "kind": "income",
+              "name": "Pay",
+              "acct": "k7qzpa-m2xq7ab9zt-2",
+              "rules": [
+                {
+                  "from": "2026-11-01",
+                  "rule": {
+                    "every": "month",
+                    "days": [
+                      25
+                    ]
+                  },
+                  "at": "2026-11-01T09:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              ],
+              "steps": [
+                {
+                  "from": "2026-11-01",
+                  "amount": 250000,
+                  "at": "2026-11-01T09:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              ],
+              "startsPeriod": true,
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-11-01T09:00:00.000+09:00",
+              "by": "phn001"
+            }
+          ],
+          "plan": {
+            "budgets": [
+              {
+                "id": "k7qzpa-m2xq7ab9zt-70",
+                "name": "Food",
+                "place": "free",
+                "cur": "JPY",
+                "acct": "k7qzpa-m2xq7ab9zt-2",
+                "per": "pay",
+                "steps": [
+                  {
+                    "from": "2026-11-01",
+                    "amount": 40000,
+                    "at": "2026-11-01T09:00:00.000+09:00",
+                    "by": "phn001"
+                  }
+                ],
+                "once": {
+                  "k7qzpa-m2xq7ab9zt-41@2026-12-25": {
+                    "amount": 65000,
+                    "at": "2026-12-02T11:00:00.000+09:00",
+                    "by": "dsk001"
+                  }
+                },
+                "told": "2026-11-01T09:00:00.000+09:00",
+                "at": "2026-12-02T11:00:00.000+09:00",
+                "by": "dsk001"
+              }
+            ]
+          },
+          "events": []
+        },
+        "now": "2026-12-02T12:00:00.000+09:00",
+        "by": "phn001",
+        "show": [
+          "schedules",
+          "plan"
+        ]
+      },
+      "expected": {
+        "schedules": [
+          {
+            "id": "k7qzpa-m2xq7ab9zt-41",
+            "kind": "income",
+            "name": "Pay",
+            "acct": "k7qzpa-m2xq7ab9zt-2",
+            "rules": [
+              {
+                "from": "2026-11-01",
+                "rule": {
+                  "every": "month",
+                  "days": [
+                    25
+                  ]
+                },
+                "at": "2026-11-01T09:00:00.000+09:00",
+                "by": "phn001"
+              },
+              {
+                "from": "2026-12-15",
+                "rule": {
+                  "every": "month",
+                  "days": [
+                    10
+                  ]
+                },
+                "at": "2026-12-02T12:00:00.000+09:00",
+                "by": "phn001",
+                "gone": "2026-12-02"
+              },
+              {
+                "from": "2026-12-26",
+                "rule": {
+                  "every": "month",
+                  "days": [
+                    10
+                  ]
+                },
+                "at": "2026-12-02T12:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ],
+            "steps": [
+              {
+                "from": "2026-11-01",
+                "amount": 250000,
+                "at": "2026-11-01T09:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ],
+            "startsPeriod": true,
+            "told": "2026-11-01T09:00:00.000+09:00",
+            "at": "2026-12-02T12:00:00.000+09:00",
+            "by": "phn001"
+          }
+        ],
+        "plan": {
+          "budgets": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-70",
+              "name": "Food",
+              "place": "free",
+              "cur": "JPY",
+              "acct": "k7qzpa-m2xq7ab9zt-2",
+              "per": "pay",
+              "steps": [
+                {
+                  "from": "2026-11-01",
+                  "amount": 40000,
+                  "at": "2026-11-01T09:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              ],
+              "once": {
+                "k7qzpa-m2xq7ab9zt-41@2026-12-25": {
+                  "amount": 65000,
+                  "at": "2026-12-02T11:00:00.000+09:00",
+                  "by": "dsk001"
+                },
+                "k7qzpa-m2xq7ab9zt-41@2027-01-10": {
+                  "amount": 60000,
+                  "at": "2026-12-02T12:00:00.000+09:00",
+                  "by": "phn001",
+                  "gone": "2026-12-02"
+                }
+              },
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-12-02T12:00:00.000+09:00",
+              "by": "phn001"
+            }
+          ]
+        },
+        "notices": [
+          {
+            "schedule": "k7qzpa-m2xq7ab9zt-41",
+            "text": "This change now starts the day after what your other device had already settled. Check it.",
+            "was": "2026-12-15",
+            "from": "2026-12-26",
+            "latest": "k7qzpa-m2xq7ab9zt-41@2026-12-25",
+            "back": [
+              "k7qzpa-m2xq7ab9zt-41@2026-12-25"
+            ]
+          }
+        ]
+      },
+      "why": "As mg-271 with Food's own amount for the period of the 25 Dec pay (60,000, a `once` key) in place of a bonus. Wed 2 Dec 10:00 the phone enters the new pay day, the 10th from 15 Dec, and moves the key to the period of the 10 Jan pay [AK3, AL6]. At 11:00 the desktop, not having seen it, raises December's Food to 65,000. Merged key by key [AE1], the desktop's key is newer, so the 25 Dec period's key is live again: the change moves to start 26 Dec [AN2] (with the phone's `at`, 12:00, and its notice). The key that moved with the change moves back [AO1]: the 25 Dec key is already live (65,000, the desktop's, kept) and the moved copy on the 10 Jan period is removed by its own `gone` (12:00). Food has one override, 65,000 for December's period, not one for each period. The budget line's record takes the phone's new `at` with the write.",
+      "decisions": [
+        "AO1",
+        "AN2",
+        "AK3",
+        "AE1"
+      ]
+    },
+    {
+      "id": "mg-290",
+      "question": "after_merge",
+      "title": "AO6: a lunch dated on the closing day, logged on the other device, does not reopen the account",
+      "input": {
+        "mine": {
+          "accounts": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-2",
+              "name": "Bank",
+              "type": "bank",
+              "cur": "JPY",
+              "minBank": null,
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-11-01T09:00:00.000+09:00",
+              "by": "phn001"
+            },
+            {
+              "id": "k7qzpa-m2xq7ab9zt-5",
+              "name": "E-wallet",
+              "type": "ewallet",
+              "cur": "JPY",
+              "minBank": null,
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-11-01T09:00:00.000+09:00",
+              "by": "phn001"
+            }
+          ],
+          "events": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-86",
+              "k": "spend",
+              "date": "2026-12-05",
+              "acct": "k7qzpa-m2xq7ab9zt-5",
+              "a": 900,
+              "line": "free",
+              "told": "2026-12-06T13:00:00.000+09:00",
+              "at": "2026-12-06T13:00:00.000+09:00",
+              "by": "phn001"
+            }
+          ]
+        },
+        "theirs": {
+          "accounts": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-2",
+              "name": "Bank",
+              "type": "bank",
+              "cur": "JPY",
+              "minBank": null,
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-11-01T09:00:00.000+09:00",
+              "by": "phn001"
+            },
+            {
+              "id": "k7qzpa-m2xq7ab9zt-5",
+              "name": "E-wallet",
+              "type": "ewallet",
+              "cur": "JPY",
+              "minBank": null,
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-12-05T10:00:00.000+09:00",
+              "by": "dsk001",
+              "closed": "2026-12-05"
+            }
+          ],
+          "events": [
+            {
+              "id": "close:k7qzpa-m2xq7ab9zt-5",
+              "k": "transfer",
+              "date": "2026-12-05",
+              "acct": "k7qzpa-m2xq7ab9zt-5",
+              "acct2": "k7qzpa-m2xq7ab9zt-2",
+              "a": 8000,
+              "told": "2026-12-05T10:00:00.000+09:00",
+              "at": "2026-12-05T10:00:00.000+09:00",
+              "by": "dsk001"
+            }
+          ]
+        },
+        "now": "2026-12-07T09:00:00.000+09:00",
+        "by": "phn001",
+        "show": [
+          "accounts"
+        ]
+      },
+      "expected": {
+        "accounts": [
+          {
+            "id": "k7qzpa-m2xq7ab9zt-2",
+            "name": "Bank",
+            "type": "bank",
+            "cur": "JPY",
+            "minBank": null,
+            "told": "2026-11-01T09:00:00.000+09:00",
+            "at": "2026-11-01T09:00:00.000+09:00",
+            "by": "phn001"
+          },
+          {
+            "id": "k7qzpa-m2xq7ab9zt-5",
+            "name": "E-wallet",
+            "type": "ewallet",
+            "cur": "JPY",
+            "minBank": null,
+            "told": "2026-11-01T09:00:00.000+09:00",
+            "at": "2026-12-05T10:00:00.000+09:00",
+            "by": "dsk001",
+            "closed": "2026-12-05"
+          }
+        ],
+        "notices": []
+      },
+      "why": "Sat 5 Dec 10:00 the desktop closes the e-wallet, moving its last 8,000 to the bank. The phone, offline, logs on Sun 6 Dec a 900 lunch paid from the e-wallet at noon on Sat 5 Dec, the closing day. An event dated on the closing day does not reopen the account [AO6]: it stays closed with the desktop's `closed` and `at`, and nothing is shown.",
+      "decisions": [
+        "AO6",
+        "AN6",
+        "P6"
+      ]
+    },
+    {
+      "id": "mg-291",
+      "question": "after_merge",
+      "title": "AO6: a check of 3,000 typed into the closed e-wallet on the other device reopens it, with a notice",
+      "input": {
+        "mine": {
+          "accounts": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-2",
+              "name": "Bank",
+              "type": "bank",
+              "cur": "JPY",
+              "minBank": null,
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-11-01T09:00:00.000+09:00",
+              "by": "phn001"
+            },
+            {
+              "id": "k7qzpa-m2xq7ab9zt-5",
+              "name": "E-wallet",
+              "type": "ewallet",
+              "cur": "JPY",
+              "minBank": null,
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-11-01T09:00:00.000+09:00",
+              "by": "phn001"
+            }
+          ],
+          "events": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-87",
+              "k": "check",
+              "date": "2026-12-06",
+              "acct": "k7qzpa-m2xq7ab9zt-5",
+              "a": 3000,
+              "typedA": 3000,
+              "told": "2026-12-06T13:00:00.000+09:00",
+              "at": "2026-12-06T13:00:00.000+09:00",
+              "by": "phn001"
+            }
+          ]
+        },
+        "theirs": {
+          "accounts": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-2",
+              "name": "Bank",
+              "type": "bank",
+              "cur": "JPY",
+              "minBank": null,
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-11-01T09:00:00.000+09:00",
+              "by": "phn001"
+            },
+            {
+              "id": "k7qzpa-m2xq7ab9zt-5",
+              "name": "E-wallet",
+              "type": "ewallet",
+              "cur": "JPY",
+              "minBank": null,
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-12-05T10:00:00.000+09:00",
+              "by": "dsk001",
+              "closed": "2026-12-05"
+            }
+          ],
+          "events": [
+            {
+              "id": "close:k7qzpa-m2xq7ab9zt-5",
+              "k": "transfer",
+              "date": "2026-12-05",
+              "acct": "k7qzpa-m2xq7ab9zt-5",
+              "acct2": "k7qzpa-m2xq7ab9zt-2",
+              "a": 8000,
+              "told": "2026-12-05T10:00:00.000+09:00",
+              "at": "2026-12-05T10:00:00.000+09:00",
+              "by": "dsk001"
+            }
+          ]
+        },
+        "now": "2026-12-07T09:00:00.000+09:00",
+        "by": "phn001",
+        "show": [
+          "accounts"
+        ]
+      },
+      "expected": {
+        "accounts": [
+          {
+            "id": "k7qzpa-m2xq7ab9zt-2",
+            "name": "Bank",
+            "type": "bank",
+            "cur": "JPY",
+            "minBank": null,
+            "told": "2026-11-01T09:00:00.000+09:00",
+            "at": "2026-11-01T09:00:00.000+09:00",
+            "by": "phn001"
+          },
+          {
+            "id": "k7qzpa-m2xq7ab9zt-5",
+            "name": "E-wallet",
+            "type": "ewallet",
+            "cur": "JPY",
+            "minBank": null,
+            "told": "2026-11-01T09:00:00.000+09:00",
+            "at": "2026-12-07T09:00:00.000+09:00",
+            "by": "phn001",
+            "closed": null
+          }
+        ],
+        "notices": [
+          {
+            "account": "k7qzpa-m2xq7ab9zt-5",
+            "text": "This account was closed, but something was written into it after its closing day, so it is open again. Check it.",
+            "closed": "2026-12-05"
+          }
+        ]
+      },
+      "why": "Sat 5 Dec 10:00 the desktop closes the e-wallet, moving its last 8,000 to the bank. Sun 6 Dec 13:00 the phone, offline, does a check-in and types 3,000 for the e-wallet: money the closing missed (a refund, a cash-back). A check with a figure other than zero typed into a closed account reopens it, with a notice [AO6]: at the phone's merge on Mon 7 Dec 09:00 `closed` is cleared with the phone's new `at` (09:00).",
+      "decisions": [
+        "AO6",
+        "AN6",
+        "P6"
+      ]
+    },
+    {
+      "id": "mg-292",
+      "question": "after_merge",
+      "title": "AO6: a check of 0 typed into the closed e-wallet on the other device leaves it closed",
+      "input": {
+        "mine": {
+          "accounts": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-2",
+              "name": "Bank",
+              "type": "bank",
+              "cur": "JPY",
+              "minBank": null,
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-11-01T09:00:00.000+09:00",
+              "by": "phn001"
+            },
+            {
+              "id": "k7qzpa-m2xq7ab9zt-5",
+              "name": "E-wallet",
+              "type": "ewallet",
+              "cur": "JPY",
+              "minBank": null,
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-11-01T09:00:00.000+09:00",
+              "by": "phn001"
+            }
+          ],
+          "events": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-88",
+              "k": "check",
+              "date": "2026-12-06",
+              "acct": "k7qzpa-m2xq7ab9zt-5",
+              "a": 0,
+              "typedA": 0,
+              "told": "2026-12-06T13:00:00.000+09:00",
+              "at": "2026-12-06T13:00:00.000+09:00",
+              "by": "phn001"
+            }
+          ]
+        },
+        "theirs": {
+          "accounts": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-2",
+              "name": "Bank",
+              "type": "bank",
+              "cur": "JPY",
+              "minBank": null,
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-11-01T09:00:00.000+09:00",
+              "by": "phn001"
+            },
+            {
+              "id": "k7qzpa-m2xq7ab9zt-5",
+              "name": "E-wallet",
+              "type": "ewallet",
+              "cur": "JPY",
+              "minBank": null,
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-12-05T10:00:00.000+09:00",
+              "by": "dsk001",
+              "closed": "2026-12-05"
+            }
+          ],
+          "events": [
+            {
+              "id": "close:k7qzpa-m2xq7ab9zt-5",
+              "k": "transfer",
+              "date": "2026-12-05",
+              "acct": "k7qzpa-m2xq7ab9zt-5",
+              "acct2": "k7qzpa-m2xq7ab9zt-2",
+              "a": 8000,
+              "told": "2026-12-05T10:00:00.000+09:00",
+              "at": "2026-12-05T10:00:00.000+09:00",
+              "by": "dsk001"
+            }
+          ]
+        },
+        "now": "2026-12-07T09:00:00.000+09:00",
+        "by": "phn001",
+        "show": [
+          "accounts"
+        ]
+      },
+      "expected": {
+        "accounts": [
+          {
+            "id": "k7qzpa-m2xq7ab9zt-2",
+            "name": "Bank",
+            "type": "bank",
+            "cur": "JPY",
+            "minBank": null,
+            "told": "2026-11-01T09:00:00.000+09:00",
+            "at": "2026-11-01T09:00:00.000+09:00",
+            "by": "phn001"
+          },
+          {
+            "id": "k7qzpa-m2xq7ab9zt-5",
+            "name": "E-wallet",
+            "type": "ewallet",
+            "cur": "JPY",
+            "minBank": null,
+            "told": "2026-11-01T09:00:00.000+09:00",
+            "at": "2026-12-05T10:00:00.000+09:00",
+            "by": "dsk001",
+            "closed": "2026-12-05"
+          }
+        ],
+        "notices": []
+      },
+      "why": "As mg-291, but the phone's check-in types 0 for the e-wallet: what a closed account should hold. Only a figure other than zero reopens it [AO6], so it stays closed and nothing is shown.",
+      "decisions": [
+        "AO6",
+        "AN6",
+        "P6"
+      ]
     }
   ],
   "open": [
     {
-      "id": "mg-q-an2",
-      "question": "AN2 moves the change to the day after an orphaned moved key (mg-271): the bonus is then keyed on 25 Dec (450,000, the other device's edit) and on 10 Jan (400,000, the phone's move), so two bonuses count. Should the newer edit of the orphaned key instead travel to where the move took it (a pick, AN5)?",
-      "ref_does": "Moves the change to 26 Dec and leaves both keys live (both counted)."
+      "id": "mg-q-ao1",
+      "question": "AO1 moves back the keys that moved with a change AN2 moves after a merge (mg-271, mg-288, mg-289). When the change also left an amount waiting in `pendingMove` for add or replace (AN5: it landed on an occurrence with its own amount), should that waiting entry be removed (`gone`) and its original key made live again in the same way?",
+      "ref_does": "Leaves the waiting entry as it is; only `amounts` and `once` keys written with the change's own `at` and `by` move back."
     },
     {
-      "id": "mg-q-an6",
-      "question": "AN6 reopens an account at a merge for an event dated after its closing day. An event dated on the closing day itself (a lunch at noon, the closing at 10:00) is read as before the closing and does not reopen it. Is that right?",
-      "ref_does": "Only an event dated after the closing day reopens it (as the look ahead's money-in reopening, `e.day > closed`)."
+      "id": "mg-q-ao6",
+      "question": "AO6 reopens a closed account at a merge for a check of a figure other than zero typed into it after its closing day (mg-291). On one device, the look ahead reopens a closed account only for money coming in after its closing day. Should a non-zero check typed into a closed account on the same device also reopen it, or should the check screen not offer a closed account at all?",
+      "ref_does": "The merge reopens for any event dated after the closing day except a check of 0; the look ahead still reopens only for money in."
     }
   ]
 }

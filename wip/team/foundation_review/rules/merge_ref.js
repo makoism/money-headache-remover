@@ -503,6 +503,44 @@ function namedDues(copy, sid) {
   for (const r of [].concat(plan.budgets || [], plan.shares || [])) for (const [k, v] of Object.entries((r && r.once) || {})) if (!(v && v.gone)) take(k);
   return [...out].sort();
 }
+// [AO1] When AN2 moves a change, the keys that moved with it (AJ5, AK2, AK3, AL6: written by the same edit, so with the
+// change entry's own `at` and `by`) move back: each original key (removed by that edit's `gone`) is live again, and each
+// moved copy is removed by its own `gone`, both with the device's new `at`, so one bonus or one override counts, not two.
+// An original the other device already made live again (an edit newer than the removal) is kept as it is. Read on the
+// schedule's `amounts` and on every budget line's and share's `once` keys naming the schedule. Returns the keys back.
+function moveBack(copy, inputs, s, e, stamp, day) {
+  const back = [];
+  if (sameMoment(e.at, stamp.at) && e.by === stamp.by) return back;   // an entry this merge wrote: nothing moved with it
+  const byEdit = v => isMap(v) && sameMoment(v.at, e.at) && v.by === e.by;
+  const goneInInput = (find, k) => inputs.some(c => { const m = find(c); const v = m && m[k]; return byEdit(v) && !!v.gone; });
+  const walk = (map, find, dueOf) => {
+    let wrote = false;
+    for (const k of Object.keys(map).sort()) {
+      const v = map[k], due = dueOf(k);
+      if (!due || due < e.from || !isMap(v)) continue;
+      if (byEdit(v) && !v.gone) { map[k] = Object.assign({}, v, stamp, { gone: day }); wrote = true; }   // a moved copy
+      else if (byEdit(v) && v.gone) { const o = Object.assign({}, v, stamp); delete o.gone; map[k] = o; back.push(k); wrote = true; }   // an original
+      else if (!v.gone && goneInInput(find, k)) back.push(k);   // an original the other device made live again
+    }
+    return wrote;
+  };
+  if (isMap(s.amounts)) {
+    s.amounts = Object.assign({}, s.amounts);
+    walk(s.amounts, c => ((c.schedules || []).find(x => x.id === s.id) || {}).amounts, k => (/^\d{4}-\d{2}-\d{2}$/.test(k) ? k : null));
+  }
+  const plan = copy.plan = isMap(copy.plan) ? Object.assign({}, copy.plan) : copy.plan;
+  if (isMap(plan)) for (const list of ['budgets', 'shares']) {
+    if (!Array.isArray(plan[list])) continue;
+    plan[list] = plan[list].map(r => {
+      if (!r || !isMap(r.once)) return r;
+      const o = Object.assign({}, r, { once: Object.assign({}, r.once) });
+      const dueOf = k => { const x = IDS.occurrence(k); return x && x.schedule === s.id ? x.due : null; };
+      const find = c => ((((c.plan || {})[list]) || []).find(x => x.id === r.id) || {}).once;
+      return walk(o.once, find, dueOf) ? Object.assign(o, stamp) : r;
+    });
+  }
+  return back.sort();
+}
 function afterMerge({ mine, theirs, now, by, lastSeen }) {
   const { duesIn } = require('./move_ref');
   const { dayNum, dayStr } = require('./dates');
@@ -523,14 +561,18 @@ function afterMerge({ mine, theirs, now, by, lastSeen }) {
       s.rules.push(Object.assign({ from, rule: e.rule }, stamp));
       s.rules.sort((x, y) => (x.from < y.from ? -1 : 1));
       Object.assign(s, stamp);
-      if (e.by === by) notices.push({ schedule: s.id, text: SHIFT_NOTICE, was: e.from, from, latest: s.id + '@' + d });
+      const back = moveBack(copy, [mine, theirs], s, e, stamp, day);   // [AO1]
+      if (e.by === by) notices.push(Object.assign({ schedule: s.id, text: SHIFT_NOTICE, was: e.from, from, latest: s.id + '@' + d }, back.length ? { back } : {}));
     }
     return s;
   });
   const names = e => [e.acct, e.acct2, e.from, e.to, e.card];
+  // [AO6] An event dated on the closing day does not reopen the account; a check reopens it only with a figure other
+  // than zero (a check of 0 says it is empty, as a closed account should be).
+  const reopens = e => e.k !== 'check' || Number(e.a) !== 0;
   copy.accounts = (copy.accounts || []).map(a => {
     if (!a.closed || a.gone) return a;
-    const into = (copy.events || []).some(e => !e.gone && names(e).includes(a.id) && typeof e.date === 'string' && dayNum(e.date) > dayNum(a.closed));
+    const into = (copy.events || []).some(e => !e.gone && names(e).includes(a.id) && typeof e.date === 'string' && dayNum(e.date) > dayNum(a.closed) && reopens(e));
     if (!into) return a;
     notices.push({ account: a.id, text: REOPEN_NOTICE, closed: a.closed });
     return Object.assign({}, a, { closed: null }, stamp);
