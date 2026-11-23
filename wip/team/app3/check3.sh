@@ -41,6 +41,7 @@ step "no money maths in screens"; run tests/no_maths.js "NO MATHS PASS"
 [ "$(pgrep -fc check3.sh)" -le 1 ] && pkill -f chrome-linux64/chrome 2>/dev/null   # leftover test browsers, only when no other lane is checking (it killed their tests)
 step "the try book"; run tests/e3_try.js "e3_try: ALL PASS"
 step "Home, the new top"; run tests/e3_home.js "e3_home: ALL PASS"
+step "pay day in two steps: the pay and what it covers, to the end of the day (slice 6, G4)"; run tests/e3_payday.js "e3_payday: ALL PASS"
 step "the north-star review's small fixes (the glow at 1280, the day a card was checked, Log a spend, the help marks)"; run tests/e3_ns.js "e3_ns: ALL PASS"
 step "Home's ways into the plan: goals with what is set aside, Add a card (north star F2, F3)"; run tests/e3_homeplan.js "e3_homeplan: ALL PASS"
 step "Check your bank"; run tests/e3_checkin.js "e3_checkin: ALL PASS"

@@ -38,6 +38,13 @@ function besidePay3(day, land, yr) {
   if (day < land) return E3.dayBefore(day, land) ? ', the day before your pay lands' : `, before your pay lands on ${esc3(day3(land, yr))}`;
   return '';
 }
+/* [slice 6, G4] on a pay day whose pay covers what leaves that day, the sum is only "bank today": the engine's todayParts
+   show the pay and what it covers as their own steps, ending at the bank at the end of today (todayEnd) */
+function todayWords3(a, id) {
+  if (!a.todayParts) return '';
+  const parts = [{ label: E3.nameOf(id) + ' today', amount: a.whyParts[0].amount }].concat(a.todayParts);
+  return `<p class="a3-sum" data-fig="today">Today: ${esc3(sum3(parts, a.todayEnd, a.currency))} at the end of the day. Safe to spend counts on this pay coming in today</p>`;
+}
 /* the engine's sum, from its parts, written by screens/money.js: one minus sign, no "- 0 (minimum)" (numbers review S4) */
 function whyWords3(a) { return sum3(a.whyParts, a.headroom, a.currency); }
 /* the one next pay on Home is res.period.nextPay, named by the day it lands after the weekend rule [BI4b]: the engine
@@ -138,7 +145,7 @@ function drawHome3() {
   const capParts = (r.safeToSpend.whyParts || []).map((x, i) => (x.over ? Object.assign({}, x, { label: `${all}Free to spend is ${money3(x.over, home)} over this period` })
     : i > 0 && all && r.period && r.period.free && r.period.free.left === 0 ? Object.assign({}, x, { label: `${all}Free to spend is used up this period` }) : x));
   const capLine = r.safeToSpend.whyParts ? `<p class="a3-sum" data-fig="cap">${esc3(sum3(capParts, r.safeToSpend.headline, home))}</p>` : '';
-  const sums = `${ids.filter(id => r.accounts[id].spendFrom).map(id => `<p class="a3-sum" data-fig="why">${esc3(whyWords3(r.accounts[id]))}</p>`).join('')}${capLine}`;
+  const sums = `${ids.filter(id => r.accounts[id].spendFrom).map(id => `<p class="a3-sum" data-fig="why">${esc3(whyWords3(r.accounts[id]))}</p>${todayWords3(r.accounts[id], id)}`).join('')}${capLine}`;
   /* [BL3] short: the sum's own total, before the pay after its lowest point (only when one brings money), and the first
      day the bank goes under beside it */
   const sh = r.safeToSpend.short;

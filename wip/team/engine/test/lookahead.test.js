@@ -550,4 +550,24 @@ t('a goal with no date still says what is to go to its target, for "more than it
   eq([g.kept, g.target, g.toGo, g.periodsLeft, g.perPeriod], [15000, 20000, 5000, null, null]);
   eq(run(goalDip(25000), '2026-12-10').places.trip.toGo, 0);
 });
+// [slice 6, G4] On a pay day the pay counts and what leaves that day comes off after it. When the bank ends the day
+// higher than it started, the lowest point is the start of the day and the sum is only "bank today": the pay and what
+// it covers are given as `todayParts` so the screen can show them as two steps. Mako's made-up shape on Thu 10 Dec:
+// Main job 180,000 and Side job 60,000 land, Card A's 54,000 comes out; bank 286,000.
+t('todayParts: on a pay day whose pay covers what leaves that day, the pay and each item leaving, in the walk order', () => {
+  const B = require('../build_book.js'), I = require('../ids.js');
+  const { book } = B.buildBook({ day: '2026-12-09', told: '2026-12-09T10:00:00+09:00', currency: 'JPY', country: 'JP',
+    banks: [{ key: 'b', name: 'Main bank', amount: 286000 }],
+    pays: [{ key: 'p1', name: 'Main job', bank: 'b', amount: 180000, day: 10, shift: 'before', startsPeriod: true }, { key: 'p2', name: 'Side job', bank: 'b', amount: 60000, day: 10, shift: 'before' }],
+    cards: [{ key: 'c1', name: 'Card A', owed: 54000, payDay: 10, closeDay: 'not sure', payFrom: 'b', shift: 'after' }] }, { newId: I.idMaker('tdy3p8') });
+  const id = book.home.main.v.acct;
+  const r = lookahead(book, '2026-12-10'), a = r.accounts[id];
+  eq(a.whyParts.map(p => p.label === 'minimum' ? 'minimum' : p.amount), [286000, 'minimum'], 'the sum is only bank today');
+  eq(a.todayParts.map(p => p.amount), [180000, 60000, -54000]);
+  ok(a.todayParts.every(p => typeof p.label === 'string' && p.label), 'labelled');
+  eq(a.todayEnd, 472000, 'the end of today: 286,000 + 180,000 + 60,000 - 54,000');
+  eq(r.safeToSpend.headline, 286000, 'the headline does not change (G4)');
+  // the day before: nothing lands today, so no today parts
+  eq(lookahead(book, '2026-12-09').accounts[id].todayParts, undefined);
+});
 done('lookahead');

@@ -2,6 +2,7 @@
  "slice": 1,
  "note": "DECISIONS_ROUND2 AZ5: passes is flipped to true only when the test is green in ./check3.sh. check3.sh fails if a feature marked passing has a red test.",
  "features": [
+  { "name": "Pay day in two steps (slice 6, G4): when the pay covers what leaves that day, Home shows the pay and each item as their own steps to the bank at the end of the day; safe to spend unchanged", "test": "tests/e3_payday.js", "passes": true },
   { "name": "Plan names every rhythm in words from one function (slice 6): a day or two days each month, every n weeks on its weekday, every few months, set months, once a year, once, the last working day, no fixed day", "test": "tests/e3_rhythms.js", "passes": true },
   { "name": "Life C walk (slice 6): no fixed pay from setup to three months on: money in from Receipts, due in the next 30 days, a line each month by the day, lasts about N weeks, hand-worked figures at every step", "test": "tests/e3_life_c.js", "passes": true },
   { "name": "Receipts Money in (slice 6): a client payment or a gift into one of your own accounts, never a card; listed as Money in, changed in place, kept through a reload", "test": "tests/e3_moneyin.js", "passes": true },

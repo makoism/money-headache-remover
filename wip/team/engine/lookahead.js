@@ -1132,7 +1132,10 @@
       why.push({ label: 'minimum', amount: -minimum });
       // [BL3] the first pay that brings money in after the lowest point: the sum's own total is short before it
       const payAfterLow = (steps.slice(lowAt).find(x => x.pay && x.amount > 0 && x.day > lowDay) || {}).day;
-      return { lowest: low, lowestDay: lowDay, headroom: low - minimum, why, firstBelowZero, belowBal, firstUnder, payAfter, payAfterLow: payAfterLow == null ? null : payAfterLow, start, steps };
+      // [slice 6, G4] the lowest point is the start of today, yet today brings money in and takes some out: those steps
+      // are not in the sum, so they are given apart, in the walk's order (the pay first), for the screen to show
+      const todayParts = lowAt === 0 && steps.some(x => x.day === today && x.pay) ? steps.filter(x => x.day === today && x.order !== 2).map(x => ({ label: x.label, amount: x.amount })) : null;   // real money only: never plan lines
+      return { lowest: low, lowestDay: lowDay, headroom: low - minimum, why, firstBelowZero, belowBal, firstUnder, payAfter, payAfterLow: payAfterLow == null ? null : payAfterLow, start, steps, todayParts };
     }
 
     const backsGoal = id => places.some(g => g.keptIn && g.keptIn.acct === id && g.keptIn.mode === 'ownAccount' && removedOn(g) === null);
@@ -1154,6 +1157,7 @@
         currency: a.cur, minimum, lowest: w.lowest, lowestDay: dayStr(w.lowestDay), headroom: w.headroom,
         spendFrom: isClosed ? false : a.spendFrom != null ? a.spendFrom : !!SPEND_TYPES[a.type] && a.cur === home && !backsGoal(id),
         why: whyText(w.why, w.headroom, a.cur), whyParts: w.why.map(p => ({ label: p.label, amount: p.amount })), fillers: banks[id].fillers };   // [S4] the parts, for screens/money.js sumLine
+      if (w.todayParts) { r.todayParts = w.todayParts; r.todayEnd = w.todayParts.reduce((t, x) => t + x.amount, w.start); }
       // [BM2] the real-money walk: its lowest point, and its sum for the screens (the "Short by" headline is its total)
       r.real = { lowest: rw.lowest, lowestDay: dayStr(rw.lowestDay), headroom: rw.headroom, whyParts: rw.why.map(p => ({ label: p.label, amount: p.amount })) };
       // what is set aside in it today (goals and other kept places); canSetAside is worked out below, once the next pay is known
