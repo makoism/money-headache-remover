@@ -176,7 +176,9 @@
       }
       imp.gone = true; imp.goneBy = t.id; imp.unmatched = false;
     }
-    const live = () => events.filter(e => !e.gone);
+    // the live records, kept until one is added (a self-logged spend) or removed
+    let liveCache = null;
+    const live = () => liveCache || (liveCache = events.filter(e => !e.gone));
     // [S5] a fee record (`of` its transfer) counts only while its transfer is live; [S5 fix] it never moves an account
     const isFeeRecord = e => e.k === 'spend' && !!e.of;
     const isFee = e => isFeeRecord(e) && !!events.find(t => t.id === e.of && !t.gone && TWO_SIDED[t.k]);
@@ -268,6 +270,7 @@
     // [B5, H7, O2] a self-logged spend writes itself on its landing day unless something settled it: `auto:<occurrence>`
     for (const o of items.filter(x => x.kind === 'auto' && !x.settled && x.land <= knownTo)) {
       events.push({ id: I.built.auto(o.id), k: 'spend', account: o.acct, acct: o.acct, a: o.amount, day: o.land, date: dayStr(o.land), key: keyOf(dayStr(o.land)), idx: -1, settles: [o.id] });
+      liveCache = null;
       o.settled = true;
     }
     // [O1] an unmatched import, or a self-logged spend, dated on a check's day or the setup day counts as inside it
@@ -304,13 +307,14 @@
     const dayFor = (e, c, id) => { const p = c.avail !== 'available' && !isOwed(id) && postedOn(e, id); return p ? dayNum(p) : e.day; };
     const notGoneOut = (e, id) => e.settles.some(x => notYetOf(id).includes(x));   // [F20, X3, AB4]
     const isFigure = e => e.k === 'check';
-    const zoneOfEvent = e => offsetOf(e.told || '') || zone;
+    // the offset its writer was in, worked out once per record [X9, AN4]
+    const zoneMinOf = e => (e.zoneMin != null ? e.zoneMin : (e.zoneMin = D.offsetMin(offsetOf(e.told || '') || zone)));
     // Is event e inside check c (or the opening) of account id?
     function inside(e, c, id) {
       if (c.opening && notGoneOut(e, id)) return false;   // [AB4]
       const d = dayFor(e, c, id);
       if (d > c.day) return false;
-      if (dayEnd(d, zoneOfEvent(e)) <= c.key) return true;   // [AN4] its day was over when the figure was read
+      if ((d + 1) * D.MS - zoneMinOf(e) * 60000 <= c.key) return true;   // [AN4] its day was over when the figure was read
       if (d < c.day) {
         if (e.key !== c.key) return e.key < c.key;
         if (e.moved && c.moved && !isFigure(e)) return true;   // [J2] a moved receipt before a moved figure
@@ -342,19 +346,29 @@
       const moves = live().filter(e => delta(e, id) !== 0);
       const fillers = [];
       let lastGap = null;
+      // [T2] the place a filler was put on at the check-in, by the check's day
+      const fillerPlaces = {};
+      for (const f of live()) if (f.k === 'filler' && f.acct === id && f.stretch && f.stretch.to && f.place) fillerPlaces[f.stretch.to] = f;
+      const span = moves.map(e => { const ds = [e.day].concat([e.posted, e.posted2].filter(Boolean).map(dayNum)); return [Math.min(...ds), Math.max(...ds)]; });
+      let wasIn = moves.map(e => inside(e, base, id));
       for (const c of checks) {
         const cc = { day: c.day, key: c.key, idx: c.idx, avail: c.avail, moved: c.moved, amount: c.a };
         // [A3] the filler is worked out every time: what the events say minus what the check shows; [I1] an event inside
         // an earlier available check and not yet inside a later current one is added back
-        const computed = base.amount + moves.filter(e => inside(e, cc, id) && !inside(e, base, id)).reduce((t, e) => t + delta(e, id), 0)
-          - moves.filter(e => inside(e, base, id) && !inside(e, cc, id)).reduce((t, e) => t + delta(e, id), 0);
-        const fp = live().find(f => f.k === 'filler' && f.acct === id && f.stretch && f.stretch.to === c.date && f.place);
+        // A record whose every date is two or more days before the check's day was over in every offset when it was read;
+        // one dated after it is never inside. Only the rest need the full rule (so a long history stays quick).
+        const settledDay = cc.key >= cc.day * D.MS - 15 * 3600000;
+        const isIn = moves.map((e, k) => (settledDay && span[k][1] <= cc.day - 2 ? true : span[k][0] > cc.day ? false : inside(e, cc, id)));
+        let computed = base.amount;
+        moves.forEach((e, k) => { if (isIn[k] !== wasIn[k]) computed += isIn[k] ? delta(e, id) : -delta(e, id); });
+        wasIn = isIn;
+        const fp = fillerPlaces[c.date];
         fillers.push(Object.assign(makeFiller(id, c.day > base.day ? base.day + 1 : c.day, c.day, computed - c.a), fp ? { place: fp.place } : {},
           { had: computed, gain: c.a - computed, answer: c.gain || null }));
         base = cc;
         lastGap = { day: c.day, had: computed, gain: c.a - computed, answer: c.gain || null };
       }
-      const bank = base.amount + moves.filter(e => !inside(e, base, id)).reduce((t, e) => t + delta(e, id), 0);
+      const bank = base.amount + moves.filter((e, k) => !wasIn[k]).reduce((t, e) => t + delta(e, id), 0);
       return { bank, asOfDay: base.day, fillers, lastGap, askAgain: askAgain ? wrong.day : null };
     }
     // [A3, A4, T6] the filler of a stretch, split by days at each period start in it (or all to the older period)
