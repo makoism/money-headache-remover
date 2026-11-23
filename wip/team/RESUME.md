@@ -14,8 +14,8 @@ Written 2026-11-18 on branch `wip-38.31`. Read this whole file before touching a
 **Schema v3 review 1: FAIL** (schema_v3_review_1.md; its 14 invented situations found 7 gaps: same-day order, editing a pay day rewrites the past, card statement carry-over, close day not sure crashes, two currencies, merge vs Redo, rules only in prose; plus late pay). Decided in DECISIONS_ROUND2 H.
 **Done:** H applied (244 asks pass, 55 failed first); DECISIONS_ROUND2 I answers the model's next questions.
 **Done:** I applied (278 asks pass, 22 failed first); DECISIONS_ROUND2 J answers the next questions. Old-base full check on 6ed02e3 recorded as FAIL with reruns (qc_round14/full_check.md).
-**Done:** J applied (299 asks pass); rules/ (95 cases, run_rules.js) merged; DECISIONS_ROUND2 K and L decide every open question so far.
-**Running:** a helper applying K and L (rule cases first, then the rule refs, the model and SCHEMA_V3). Cherry-pick, run run_scenarios.js and rules/run_rules.js, then a fresh qc-foundation review that invents new situations, until PASS. Then the engine lanes (RECOMMENDATION 5b).
+**Done:** J, K, L, M applied (321 asks, 182 rule cases, all pass); DECISIONS_ROUND2 N decides the last five.
+**Running:** (1) a fresh qc-foundation review of the whole package that invents ten new situations (save as foundation_review/final_review_1.md); (2) a helper applying N. Cherry-pick N, then fold any review findings the same way (decide, cases first, then code) until a review PASSES. Then the engine lanes (RECOMMENDATION 5b).
 **Pattern so far:** each review finds fewer and narrower gaps (plan 5, schema 8, schema 9, v3 7 incl. edge cases); the invented-situation review is the one that finds real ones, keep using it.
 **Next:** qc-foundation on SCHEMA_V3 plus the reference model and scenarios, until PASS; ask Mako M1 (minimum balance, recommendation: ask once, blank, skip = none); then the failing tests (E10) and the engine lanes per RECOMMENDATION 5b.
 
