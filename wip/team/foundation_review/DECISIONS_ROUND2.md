@@ -410,3 +410,6 @@ AX1. Thin slices. Slice 1 is Mako's own shape end to end behind the switch: setu
 AX2. The engine (wip/team/engine) is the only implementation. ref/lookahead_ref.js is frozen as the spec. The checker compares against the engine.
 AX3. No new rule rounds until slice 1 runs. Stage 2 cases stay labelled and skipped. New findings go on a list unless slice 1 needs them.
 AX4. Helpers own whole areas on their own branches and commit there. The main session merges and runs the gates, and no longer writes every decision in turn.
+
+## AY. qc-foundation on WIRING_PLAN (23 Nov evening JST): FAIL, four small slice 1 fixes, all accepted
+AY1 to AY4 are F1 to F4 in WIRING_PLAN.md "Corrections". There is no second review round (AX3). The checks named there are the gate.
