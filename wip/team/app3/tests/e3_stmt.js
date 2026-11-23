@@ -66,6 +66,8 @@ async function pick(p) {
   await p.goto(T.URL0 + '?try=mako&today=' + DAY); await T.w(400);
   ck('Home shows Add statements', !(await p.$eval('#a3StmtBar', e => e.hidden)));
   await pick(p);
+  const heads = await p.$$eval('.a3-stmt-acct p', ps => ps.map(e => e.textContent.replace(/\s+/g, ' ').trim()));
+  ck('each account is named once, with no kind word put after a name that already says it ("Main bank bank")', heads.length === 3 && heads.every(t => (t.match(/\b(bank|card)\b/gi) || []).length === 1) && heads.includes('Main bank'), JSON.stringify(heads));
   const priv = await p.$eval('[data-privacy=ai]', e => e.textContent);
   ck('[E7] the privacy line says the whole file goes to the AI, names Anthropic and when it is sent', /sends the whole file to the AI/.test(priv) && /Anthropic/.test(priv) && /Nothing is sent until you tap Read/.test(priv), priv);
   ck('no false line that statements stay on the device', !/stay(s)? (on|in) (this|your) (device|phone)|never leave/i.test(await p.$eval('#a3Stmt', e => e.textContent)));

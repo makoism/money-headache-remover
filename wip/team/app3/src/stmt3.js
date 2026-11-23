@@ -34,8 +34,10 @@ function stmt3Close() {
 /* ---- step 1: the files ---- */
 function stmt3Pick() {
   const accts = stmt3Accts();
+  /* the kind word after the name only when the name does not already say it ("Visa card", never "Main bank bank") */
+  const kind = a => { const k = a.type === 'card' ? 'card' : 'bank'; return new RegExp('\\b' + k + '\\b', 'i').test(a.name) ? '' : ` <span class="when">${k}</span>`; };
   const rows = accts.map(a => `<div class="a3-stmt-acct" data-acct="${esc3(a.id)}">
-      <p><b>${esc3(a.name)}</b> <span class="when">${a.type === 'card' ? 'card' : 'bank'}</span></p>
+      <p><b>${esc3(a.name)}</b>${kind(a)}</p>
       <label class="a3-btn a3-file">Choose files<input type="file" multiple accept=".csv,.tsv,.txt,.pdf,image/*" data-files="${esc3(a.id)}"></label>
       <ul class="a3-stmt-files" data-list="${esc3(a.id)}">${(stmt3.files[a.id] || []).map(f => `<li>${esc3(f.name)}</li>`).join('')}</ul>
     </div>`).join('');

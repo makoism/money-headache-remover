@@ -7193,6 +7193,17 @@ const E3 = (() => {
   function setToday(d) { if (/^\d{4}-\d{2}-\d{2}$/.test(d || '')) dayShown = d; }
   /* the first screen's "See it with made-up numbers first": a try book in memory, nothing written */
   function useTry(name) { if (!TRY_BOOKS[name]) return false; book = JSON.parse(JSON.stringify(TRY_BOOKS[name])); mode = 'try'; return true; }
+  /* the try band's "Set up with my own numbers": the try book is dropped (it was never written) and this device's own
+     book is read, when it keeps one. Gives the mode after: 'kept' shows that book, 'none' is the caller's cue for setup */
+  async function leaveTry() {
+    if (mode !== 'try') return mode;
+    Q.delete('try');
+    try { const u = new URL(location.href); u.searchParams.delete('try'); history.replaceState(history.state, '', u.href); } catch (e) { /* the address keeps it: a reload shows the try book again */ }
+    tryIds = null; dayShown = null; book = null; mode = 'none';
+    if (!store) return (await load(), mode);
+    try { const r = await store.load(); readOnly = !!r.readOnly; if (!r.empty && r.copy) { book = r.copy; mode = 'kept'; } } catch (e) { /* nothing kept: setup */ }
+    return mode;
+  }
   async function load() {
     const t = Q.get('try');
     if (t && TRY_BOOKS[t]) { book = JSON.parse(JSON.stringify(TRY_BOOKS[t])); mode = 'try'; return; }
@@ -7304,7 +7315,7 @@ const E3 = (() => {
   }
   /* is a the day before b (two YYYY-MM-DD days) */
   const dayBefore = (a, b) => BurrowEngine.dates.dayNum(b) - BurrowEngine.dates.dayNum(a) === 1;
-  return { today, setToday, useTry, start, told, dayBefore, newId, load, view, nameOf, occName, curOf, home, put, replace, rec, onSaved: f => savedFns.push(f),
+  return { today, setToday, useTry, leaveTry, start, told, dayBefore, newId, load, view, nameOf, occName, curOf, home, put, replace, rec, onSaved: f => savedFns.push(f),
     get book() { return book; }, get mode() { return mode; } };
 })();
 /* ---------- act3: the one door for every write in app3 (SCHEMA_V3 section 0; DECISIONS_ROUND2 H6, D2, BD4) ----------
@@ -9300,8 +9311,24 @@ document.addEventListener('click', e => { const b = e.target.closest('[data-tab]
 function tryBand3() {
   const t = $('#a3Try'); t.hidden = false;
   t.innerHTML = `<span>Made-up numbers shaped like a real month. Nothing you do here is saved</span>
-    <label class="a3-day">Show the page as on <input type="date" id="a3Day" value="${esc3(E3.today())}"></label>`;
+    <label class="a3-day">Show the page as on <input type="date" id="a3Day" value="${esc3(E3.today())}"></label>
+    <button type="button" class="a3-btn" id="a3TryOut">Set up with my own numbers</button>`;
   $('#a3Day').addEventListener('change', e => { E3.setToday(e.target.value); if (!$('#a3Check').hidden) closeCheck3(); renderHome3(); });
+  $('#a3TryOut').addEventListener('click', leaveTry3);
+}
+/* out of the made-up numbers: nothing of them is written; this device's own book shows when it keeps one, else setup */
+async function leaveTry3() {
+  if (SET3.open) closeSet3();
+  if (REM3.open) closeRem3();
+  if (ASK3.open) closeAsk3();
+  if (!$('#a3Stmt').hidden) stmt3Close();
+  showTab3('home');
+  if (typeof PL3 === 'object') PL3.form = null;
+  if (typeof RC3 === 'object') { RC3.edit = null; RC3.last = null; }
+  const t = $('#a3Try'); t.hidden = true; t.innerHTML = '';
+  await E3.leaveTry();
+  renderHome3();
+  if (!E3.book) openSetup3();
 }
 (async () => {
   try { $('#a3Pix').innerHTML = pix('sprout', 2); } catch (e) { /* art is a nicety */ }
@@ -9434,8 +9461,10 @@ function stmt3Close() {
 /* ---- step 1: the files ---- */
 function stmt3Pick() {
   const accts = stmt3Accts();
+  /* the kind word after the name only when the name does not already say it ("Visa card", never "Main bank bank") */
+  const kind = a => { const k = a.type === 'card' ? 'card' : 'bank'; return new RegExp('\\b' + k + '\\b', 'i').test(a.name) ? '' : ` <span class="when">${k}</span>`; };
   const rows = accts.map(a => `<div class="a3-stmt-acct" data-acct="${esc3(a.id)}">
-      <p><b>${esc3(a.name)}</b> <span class="when">${a.type === 'card' ? 'card' : 'bank'}</span></p>
+      <p><b>${esc3(a.name)}</b>${kind(a)}</p>
       <label class="a3-btn a3-file">Choose files<input type="file" multiple accept=".csv,.tsv,.txt,.pdf,image/*" data-files="${esc3(a.id)}"></label>
       <ul class="a3-stmt-files" data-list="${esc3(a.id)}">${(stmt3.files[a.id] || []).map(f => `<li>${esc3(f.name)}</li>`).join('')}</ul>
     </div>`).join('');
