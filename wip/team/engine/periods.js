@@ -74,7 +74,8 @@
     const named = {}, done = new Set();
     // [BJ5] what has landed and is not settled, by the look ahead: not seen (past its posting window), late (inside
     // it) or unticked (left at a check-in, or due today); listed before the next one
-    const r = LA.lookahead(book, asOf, opts3 || {});
+    const r = LA.lookahead(book, asOf, Object.assign({}, opts3 || {}, { settled: true }));
+    const gone = new Set(r.settled);   // [S5] what the look ahead counts as gone: one rule on Plan and Home
     const notSeen = new Set(r.notSeenYet.items.map(i => i.item)), late = new Set(r.mayStillPost.map(i => i.item));
     const open = {};
     for (const o of r.checkIn.toConfirm.concat(r.checkIn.apart || [])) {
@@ -92,7 +93,7 @@
       for (const k of Object.keys(s.amounts || {})) if (S.keyLive(s.amounts, k)) name(s.id, k);
       const cal = S.calendar((acct[s.acct] && acct[s.acct].country) || country);
       const outstanding = (open[s.id] || []).sort((x, y) => (x.land < y.land ? -1 : 1));
-      const occ = S.occurrences(s, cal, today, today + 400).find(o => !done.has(o.id) && !outstanding.some(x => x.id === o.id)) || null;
+      const occ = S.occurrences(s, cal, today, today + 400).find(o => !done.has(o.id) && !gone.has(o.id) && !outstanding.some(x => x.id === o.id)) || null;
       const rules = (s.rules || []).filter(x => x && !x.gone);
       let rule = null; rules.forEach((x, i) => { if (i === 0 || x.from == null || D.dayNum(x.from) <= today) rule = x.rule; });
       const last = named[s.id] || null, after = last ? D.dayNum(last) + 1 : -Infinity;

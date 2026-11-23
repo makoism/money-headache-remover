@@ -303,6 +303,9 @@
       liveCache = null;
       o.settled = true;
     }
+    // [S5, QC numbers] opts.settled: the occurrences from today on that count as gone (a record settles it, it is inside
+    // the opening figure, or it logged itself), so the Plan tab's next one follows the one rule Home follows
+    if (opts.settled) res.settled = items.filter(o => o.settled && Math.max(o.land, o.due) >= today).map(o => o.id);
     // [O1] an unmatched import, or a self-logged spend, dated on a check's day or the setup day counts as inside it
     for (const e of events) if (!e.gone && ((isImport(e) && e.unmatched) || e.settles.some(x => autoSched(I.scheduleOf(x))))) e.dayInside = true;
 

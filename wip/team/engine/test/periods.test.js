@@ -140,4 +140,25 @@ t('scheduleView lists an outstanding occurrence (late, not seen or unticked) bef
   eq(v2.outstanding.map(o => o.state), ['late']);
   eq(scheduleView(b, '2026-12-20').rent.outstanding, []);
 });
+// [S5, X3, QC numbers] One rule on Plan and Home: setup's figure is read at the end of the setup day, so a bill due that
+// day is inside it (gone out) unless setup was told it has not gone out yet. Phone 4,800 due 1 Dec, the setup day.
+t('a bill due on the setup day is inside the setup figure on Plan as on Home: the next one is a month on [S5]', () => {
+  const { scheduleView } = require('../periods.js');
+  const b = base(x => { x.schedules.push({ id: 'phone', kind: 'bill', name: 'Phone', acct: 'bank', cur: 'JPY', shift: 'none', rules: [{ rule: { every: 'month', days: [1] } }], steps: [{ amount: 4800 }] }); });
+  const r = lookahead(b, '2026-12-01', opt);
+  ok(!r.dueBeforeNextPay.items.some(o => o.item === 'phone@2026-12-01'), 'Home does not take it off');
+  const v = scheduleView(b, '2026-12-01', opt).phone;
+  eq([v.outstanding, v.next.due], [[], '2027-01-01']);
+});
+t('a bill due on the setup day that setup was told has not gone out yet: Plan and Home both still count it [S5, X3]', () => {
+  const { scheduleView } = require('../periods.js');
+  const b = base(x => {
+    x.schedules.push({ id: 'phone', kind: 'bill', name: 'Phone', acct: 'bank', cur: 'JPY', shift: 'none', rules: [{ rule: { every: 'month', days: [1] } }], steps: [{ amount: 4800 }] });
+    x.events[1].notYet = ['phone@2026-12-01'];   // on the opening check, as build_book writes it
+  });
+  const r = lookahead(b, '2026-12-01', opt);
+  ok(r.dueBeforeNextPay.items.some(o => o.item === 'phone@2026-12-01'), JSON.stringify(r.dueBeforeNextPay.items));
+  const v = scheduleView(b, '2026-12-01', opt).phone;   // listed as outstanding (on the check-in list), before the next one [BJ5]
+  eq([v.outstanding.map(o => o.due), v.next.due], [['2026-12-01'], '2027-01-01']);
+});
 done('periods.test.js');

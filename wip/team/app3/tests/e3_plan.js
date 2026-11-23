@@ -204,6 +204,14 @@ const view = bk => T.L.lookahead(bk, DAY);
   ck('this pay period still starts 10 Dec', await p.$eval('[data-fig=plan-period]', e => e.dataset.start) === '2026-12-10');
   await p.click('[data-past="2026-11-10"] summary'); await T.w(200);
   await T.shot(p, 'plan_after_pay_' + DAY);
+  /* [S5] one rule on Plan and Home: the made-up book is set up on 20 Nov and its figure is read at the end of that day,
+     so the Phone bill due 20 Nov is inside it. Plan's next Phone is the December one (Sun 20 Dec moves to Mon 21 Dec), and Home does not take 20 Nov off. */
+  await p.goto(T.URL0 + '?try=mako&today=2026-11-20'); await T.w(300);
+  const homeDue = await p.$eval('[data-card=due]', e => e.textContent);
+  await p.tap('[data-tab="plan"]'); await T.w(300);
+  const phone = await p.$$eval('[data-bill]', bs => (bs.map(x => x.textContent).find(t => /Phone/.test(t)) || ''));
+  ck('20 Nov: Plan\'s next Phone is 21 Dec, never the 20 Nov one inside the setup figure', /next 21 Dec/.test(phone) && !/20 Nov/.test(phone), phone);
+  ck('20 Nov: Home does not take the 20 Nov Phone off either', !/Phone/.test(homeDue), homeDue);
   ck('no page errors', errs.length === 0, errs.join(' | '));
   await b.close(); T.done('e3_plan');
 })().catch(e => { console.log('FAIL crashed ' + e.stack); process.exit(1); });
