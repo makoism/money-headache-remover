@@ -1161,10 +1161,16 @@
     res.safeToSpend.short = res.safeToSpend.shortfall > 0 && firstWarn ? { account: firstWarn.account, day: firstWarn.day, amount: firstWarn.amount, minimum: firstWarn.minimum,
       beforePay: firstWarn.payAfter, later: firstWarn.later || null } : null;
     // [BJ5] when Free to spend caps the headline, the sum under it ends with the cap, so the two figures never disagree
-    res.safeToSpend.why = res.safeToSpend.cappedByFreeToSpend
-      ? `${fmt(raw, home)} (what your accounts can spare) - ${fmt(raw - Math.max(0, cap), home)} (more than Free to spend left this period) = ${fmt(res.safeToSpend.headline, home)}` : null;
-    res.safeToSpend.whyParts = res.safeToSpend.cappedByFreeToSpend
-      ? [{ label: 'what your accounts can spare', amount: raw }, { label: 'more than Free to spend left this period', amount: -(raw - Math.max(0, cap)) }] : null;
+    // [S6, QC numbers] Free to spend left below zero: the sum takes off all that the accounts can spare and says how far
+    // over (`over` on that part, and safeToSpend.freeOver), never hides it; the sum still adds up
+    const over = res.safeToSpend.cappedByFreeToSpend && cap < 0 ? -cap : null;
+    if (over !== null) res.safeToSpend.freeOver = over;
+    res.safeToSpend.why = !res.safeToSpend.cappedByFreeToSpend ? null : over !== null && raw <= 0 ? `Free to spend is ${fmt(over, home)} over this period` : over !== null
+      ? `${fmt(raw, home)} (what your accounts can spare) - ${fmt(raw, home)} (Free to spend is ${fmt(over, home)} over this period) = ${fmt(res.safeToSpend.headline, home)}`
+      : `${fmt(raw, home)} (what your accounts can spare) - ${fmt(raw - cap, home)} (more than Free to spend left this period) = ${fmt(res.safeToSpend.headline, home)}`;
+    res.safeToSpend.whyParts = !res.safeToSpend.cappedByFreeToSpend ? null : over !== null
+      ? [{ label: 'what your accounts can spare', amount: Math.max(0, raw) }, { label: 'Free to spend is over this period', amount: -Math.max(0, raw), over }]
+      : [{ label: 'what your accounts can spare', amount: raw }, { label: 'more than Free to spend left this period', amount: -(raw - cap) }];
 
     // ----- days to next pay [F3, F8, F12, F13, H8] -----
     const np = nextPays[0];

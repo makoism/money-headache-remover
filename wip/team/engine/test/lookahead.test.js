@@ -415,6 +415,20 @@ t('short with pay 0: the first day under is after the 25 Nov pay, and no pay is 
   eq(r.safeToSpend.short, { account: 'bank', day: '2026-12-28', amount: 20000, minimum: null, beforePay: null, later: null });
   eq(r.warnings.find(x => x.code === 'below_minimum').later, undefined);
 });
+// [S6, BJ5, QC numbers] Free to spend over its amount: the sum under the headline shows how far over, never hides it.
+// Free to spend 50,000 this period, 60,000 spent from it on 2 Dec: 10,000 over.
+t('Free to spend over: the sum names the overspend and still adds up to 0 [S6]', () => {
+  const b = base(x => { x.events.push({ id: 's1', k: 'spend', acct: 'bank', date: '2026-12-02', a: 60000, told: '2026-12-02T12:00' + TZ }); });
+  const r = run(b, '2026-12-03');
+  eq([r.period.free.left, r.safeToSpend.headline, r.safeToSpend.cappedByFreeToSpend, r.safeToSpend.freeOver], [-10000, 0, true, 10000]);
+  ok(/^([\d,]+) \(what your accounts can spare\) - \1 \(Free to spend is 10,000 over this period\) = 0$/.test(r.safeToSpend.why), r.safeToSpend.why);
+});
+t('Free to spend not over: no freeOver, and the cap sum as before [BJ5]', () => {
+  const b = base(x => { x.events.push({ id: 's1', k: 'spend', acct: 'bank', date: '2026-12-02', a: 20000, told: '2026-12-02T12:00' + TZ }); });
+  const r = run(b, '2026-12-03');
+  eq(r.safeToSpend.freeOver, undefined);
+  ok(/\(more than Free to spend left this period\) = 30,000$/.test(r.safeToSpend.why), r.safeToSpend.why);
+});
 t('no shortfall: no short [B1]', () => {
   eq(run(firstShort(300000, 50000, 24), '2026-11-23').safeToSpend.short, null);
 });

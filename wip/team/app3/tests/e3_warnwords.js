@@ -26,8 +26,9 @@ async function warns(bk, day) {
   const short = await p.$eval('[data-fig=short]', e => e.textContent).then(clean).catch(() => null);
   const status = clean(await p.$eval('[data-card=status]', e => e.textContent).catch(() => ''));
   const all = await p.$eval('#a3Home', e => e.textContent);
+  const cap = await p.$eval('[data-fig=cap]', e => e.textContent).then(clean).catch(() => null);
   await b.close();
-  return { out, status, all, errs, short };
+  return { out, status, all, errs, short, cap };
 }
 (async () => {
   {
@@ -74,6 +75,19 @@ async function warns(bk, day) {
     ck('E: pay 0, short on its day with no pay named', short === 'Short by ¥20,000 on 28 Dec', short);
     ck('E: never "before then" or "before the pay"', !/before then|before the pay/.test(all), (all.match(/.{30}before.{30}/) || [])[0]);
     ck('E: no page errors', errs.length === 0, errs.join(' | '));
+  }
+  /* F. [S6] Free to spend over: set up Mon 23 Nov with 300,000, Pay 250,000 on the 25th, Free to spend 50,000 a month
+     from 23 Nov, 70,000 spent from it on 26 Nov. Seen on 27 Nov: Free to spend left is below zero, and the sum under
+     safe to spend says by how much, never hides it. */
+  {
+    const bk = jpBook(300000, 250000, 30), acct = bk.accounts[0].id;
+    bk.plan.shares.push({ id: 's6sh', from: '2026-11-23', cur: 'JPY', per: { free: 'month' }, free: 50000 });
+    bk.events.push({ id: 's6sp', k: 'spend', acct, date: '2026-11-26', a: 70000, told: '2026-11-26T12:00+09:00' });
+    const r = T.L.lookahead(bk, '2026-11-27'), over = r.safeToSpend.freeOver;
+    ck('F: the engine says Free to spend is over', over > 0 && r.period.free.left === -over, JSON.stringify(r.safeToSpend));
+    const { cap, errs } = await warns(bk, '2026-11-27');
+    ck('F: the sum on Home names the overspend', cap && cap.includes(`(Free to spend is ¥${over.toLocaleString("en")} over this period) = ¥0`), cap);
+    ck('F: no page errors', errs.length === 0, errs.join(' | '));
   }
   T.done('e3_warnwords');
 })().catch(e => { console.log('FAIL crashed ' + e.stack); process.exit(1); });

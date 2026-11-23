@@ -3138,10 +3138,16 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
     res.safeToSpend.short = res.safeToSpend.shortfall > 0 && firstWarn ? { account: firstWarn.account, day: firstWarn.day, amount: firstWarn.amount, minimum: firstWarn.minimum,
       beforePay: firstWarn.payAfter, later: firstWarn.later || null } : null;
     // [BJ5] when Free to spend caps the headline, the sum under it ends with the cap, so the two figures never disagree
-    res.safeToSpend.why = res.safeToSpend.cappedByFreeToSpend
-      ? `${fmt(raw, home)} (what your accounts can spare) - ${fmt(raw - Math.max(0, cap), home)} (more than Free to spend left this period) = ${fmt(res.safeToSpend.headline, home)}` : null;
-    res.safeToSpend.whyParts = res.safeToSpend.cappedByFreeToSpend
-      ? [{ label: 'what your accounts can spare', amount: raw }, { label: 'more than Free to spend left this period', amount: -(raw - Math.max(0, cap)) }] : null;
+    // [S6, QC numbers] Free to spend left below zero: the sum takes off all that the accounts can spare and says how far
+    // over (`over` on that part, and safeToSpend.freeOver), never hides it; the sum still adds up
+    const over = res.safeToSpend.cappedByFreeToSpend && cap < 0 ? -cap : null;
+    if (over !== null) res.safeToSpend.freeOver = over;
+    res.safeToSpend.why = !res.safeToSpend.cappedByFreeToSpend ? null : over !== null && raw <= 0 ? `Free to spend is ${fmt(over, home)} over this period` : over !== null
+      ? `${fmt(raw, home)} (what your accounts can spare) - ${fmt(raw, home)} (Free to spend is ${fmt(over, home)} over this period) = ${fmt(res.safeToSpend.headline, home)}`
+      : `${fmt(raw, home)} (what your accounts can spare) - ${fmt(raw - cap, home)} (more than Free to spend left this period) = ${fmt(res.safeToSpend.headline, home)}`;
+    res.safeToSpend.whyParts = !res.safeToSpend.cappedByFreeToSpend ? null : over !== null
+      ? [{ label: 'what your accounts can spare', amount: Math.max(0, raw) }, { label: 'Free to spend is over this period', amount: -Math.max(0, raw), over }]
+      : [{ label: 'what your accounts can spare', amount: raw }, { label: 'more than Free to spend left this period', amount: -(raw - cap) }];
 
     // ----- days to next pay [F3, F8, F12, F13, H8] -----
     const np = nextPays[0];
@@ -8067,7 +8073,9 @@ function renderHome3() {
   /* safe to spend until next pay, with the sum behind it */
   const until = safeUntil3(r, yr);
   /* [BJ5] when Free to spend caps the headline, the engine's sum ends with the cap, so the two figures agree */
-  const capLine = r.safeToSpend.whyParts ? `<p class="a3-sum" data-fig="cap">${esc3(SM.sumLine(r.safeToSpend.whyParts, r.safeToSpend.headline, home))}</p>` : '';
+  /* [S6] Free to spend over: that part says by how much (the engine's `over`), so the sum never hides the overspend */
+  const capParts = (r.safeToSpend.whyParts || []).map(x => (x.over ? Object.assign({}, x, { label: `Free to spend is ${money3(x.over, home)} over this period` }) : x));
+  const capLine = r.safeToSpend.whyParts ? `<p class="a3-sum" data-fig="cap">${esc3(SM.sumLine(capParts, r.safeToSpend.headline, home))}</p>` : '';
   const sums = `${ids.filter(id => r.accounts[id].spendFrom).map(id => `<p class="a3-sum" data-fig="why">${esc3(whyWords3(r.accounts[id]))}</p>`).join('')}${capLine}`;
   /* [B1] short: the engine's first day under and how much then, and the pay after it only when one brings money */
   const sh = r.safeToSpend.short;

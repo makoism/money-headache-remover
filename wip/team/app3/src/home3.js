@@ -104,7 +104,9 @@ function renderHome3() {
   /* safe to spend until next pay, with the sum behind it */
   const until = safeUntil3(r, yr);
   /* [BJ5] when Free to spend caps the headline, the engine's sum ends with the cap, so the two figures agree */
-  const capLine = r.safeToSpend.whyParts ? `<p class="a3-sum" data-fig="cap">${esc3(SM.sumLine(r.safeToSpend.whyParts, r.safeToSpend.headline, home))}</p>` : '';
+  /* [S6] Free to spend over: that part says by how much (the engine's `over`), so the sum never hides the overspend */
+  const capParts = (r.safeToSpend.whyParts || []).map(x => (x.over ? Object.assign({}, x, { label: `Free to spend is ${money3(x.over, home)} over this period` }) : x));
+  const capLine = r.safeToSpend.whyParts ? `<p class="a3-sum" data-fig="cap">${esc3(SM.sumLine(capParts, r.safeToSpend.headline, home))}</p>` : '';
   const sums = `${ids.filter(id => r.accounts[id].spendFrom).map(id => `<p class="a3-sum" data-fig="why">${esc3(whyWords3(r.accounts[id]))}</p>`).join('')}${capLine}`;
   /* [B1] short: the engine's first day under and how much then, and the pay after it only when one brings money */
   const sh = r.safeToSpend.short;
