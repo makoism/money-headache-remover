@@ -6,7 +6,7 @@
    engine's, before and after: for a draft the engine is asked about the book the draft would make (ACT3.dry). This
    file chooses, writes and places; it never adds, takes away or rounds (tests: no_maths.js, e3_receipts.js).
    The tab bar: a button with data-tab="<name>" shows the panel with data-panel="<name>" and hides the others. */
-const RC3 = { mode: 'spend', edit: null, back: [], search: '', last: null };
+const RC3 = { mode: 'spend', edit: null, at: null, search: '', last: null };
 const RC_KIND3 = { spend: 'logSpend', refund: 'refund', moved: 'moveMoney' };
 const RC_SPEND_FROM3 = { bank: 1, cash: 1, ewallet: 1, wallet: 1, card: 1, paylater: 1 };
 const RC_OWN3 = { bank: 1, cash: 1, ewallet: 1, wallet: 1 };
@@ -188,21 +188,25 @@ function rcOpen3(id) {
 }
 
 /* ---- the list: by period (the engine's), Earlier and Later, or a search across everything ---- */
+/* the engine's periods (engine/periods.js): the one running now and the ones gone by, newest first; RC3.at is the
+   start of the one shown (null: the one running now). Earlier and Later step to its neighbours in the engine's list. */
 function rcPeriod3() {
-  const now = rcFigs3(E3.book), p = now && now.period;
-  if (!p || !p.start) return null;
-  /* RC3.back periods back from the one running now; each earlier one is the engine's period on the day before */
-  let start = p.start, end = p.end, steps = RC3.back.slice();
-  const before = s => rcFigs3Day3(BurrowClock.addDays(s, -1));
-  while (steps.length) {
-    const prev = before(start);
-    if (!prev || !prev.start || prev.start >= start) { RC3.back = RC3.back.slice(steps.length); break; }
-    end = BurrowClock.addDays(start, -1); start = prev.start; steps.pop();
-  }
-  const prev = before(start);
-  return { start, end, older: !!(prev && prev.start && prev.start < start) };
+  let r;
+  try { r = BurrowEngine.periods.periods(E3.book, E3.today()); } catch (e) { return null; }
+  if (!r || !r.current) return null;
+  const all = [r.current].concat(r.past || []);
+  let i = all.findIndex(x => x.start === RC3.at);
+  if (i < 0) { i = 0; RC3.at = null; }
+  const older = all.slice(i)[1], newer = all.slice(0, i).pop();
+  return Object.assign({}, all[i], { older: older ? older.start : null, newer: newer ? (newer === r.current ? 'now' : newer.start) : null });
 }
-function rcFigs3Day3(day) { try { return E3.view(day).period; } catch (e) { return null; } }
+function rcSpent3(per) {
+  const cur = E3.home(), rows = [];
+  if (per.free) rows.push(['Free to spend', per.free]);
+  for (const l of per.lines || []) rows.push([l.name, l]);
+  if (!rows.length) return '';
+  return `<ul class="a3-rows a3-spent" data-fig="rc-spent">${rows.map(([n, x]) => `<li><span>${esc3(n)}</span><span class="amt">spent ${fig3('periods.*.spent', x.spent, cur)} of ${fig3('periods.*.start', x.start, cur)}</span></li>`).join('')}</ul>`;
+}
 function rcList3() {
   const host = $('#rcList'); if (!host) return;
   const q = RC3.search.trim().toLowerCase(), yr = E3.today().slice(0, 4);
@@ -211,7 +215,7 @@ function rcList3() {
   const rows = rcRows3().filter(e => (q ? text(e).includes(q) : !per || (e.date >= per.start && e.date <= per.end)))
     .sort((x, y) => (x.date !== y.date ? (x.date < y.date ? 1 : -1) : String(x.told) < String(y.told) ? 1 : -1));
   const head = q ? `<p class="a3-sub" data-fig="rc-period" data-search="1">Searching everything</p>`
-    : per ? `<div class="a3-pernav"><button type="button" class="a3-btn" id="rcOlder"${per.older ? '' : ' disabled'}>Earlier</button><p class="a3-mid a3-per" data-fig="rc-period" data-start="${esc3(per.start)}" data-end="${esc3(per.end)}">${esc3(SN.periodLabel(per.start, per.end))}</p><button type="button" class="a3-btn" id="rcNewer"${RC3.back.length ? '' : ' disabled'}>Later</button></div>`
+    : per ? `<div class="a3-pernav"><button type="button" class="a3-btn" id="rcOlder"${per.older ? '' : ' disabled'}>Earlier</button><p class="a3-mid a3-per" data-fig="rc-period" data-start="${esc3(per.start)}" data-end="${esc3(per.end)}">${esc3(SN.periodLabel(per.start, per.end))}</p><button type="button" class="a3-btn" id="rcNewer"${per.newer ? '' : ' disabled'}>Later</button></div>${rcSpent3(per)}`
     : `<p class="a3-sub" data-fig="rc-period">Everything</p>`;
   const li = rows.map(e => `<li data-rc="${esc3(e.id)}" data-k="${esc3(e.k)}"><button type="button" class="a3-rcrow" aria-label="Change ${esc3(rcWhat3(e))}, ${esc3(money3(e.a, E3.curOf(e.acct)))}"><span>${esc3(rcWhat3(e))}<br><span class="when">${esc3(day3(e.date, yr))}, ${esc3(E3.nameOf(e.acct))}${e.note ? ', ' + esc3(e.note) : ''}</span></span><span class="amt${e.k === 'in' ? ' a3-in-amt' : ''}">${e.k === 'in' ? 'back ' : ''}${money3(e.a, E3.curOf(e.acct))}</span></button></li>`).join('');
   host.innerHTML = `<h2>What you logged</h2>
@@ -219,8 +223,8 @@ function rcList3() {
     ${head}${rows.length ? `<ul class="a3-rows a3-rclist">${li}</ul>` : `<p class="a3-sub">${q ? 'Nothing matches' : 'Nothing logged in this stretch'}</p>`}`;
   const s = $('#rcSearch');
   s.addEventListener('input', () => { RC3.search = s.value; rcList3(); const n = $('#rcSearch'); n.focus(); n.setSelectionRange(n.value.length, n.value.length); });
-  if ($('#rcOlder')) $('#rcOlder').addEventListener('click', () => { RC3.back.push(1); rcList3(); });
-  if ($('#rcNewer')) $('#rcNewer').addEventListener('click', () => { RC3.back.pop(); rcList3(); });
+  if ($('#rcOlder')) $('#rcOlder').addEventListener('click', () => { RC3.at = per.older; rcList3(); });
+  if ($('#rcNewer')) $('#rcNewer').addEventListener('click', () => { RC3.at = per.newer === 'now' ? null : per.newer; rcList3(); });
   for (const r of host.querySelectorAll('[data-rc] button')) r.addEventListener('click', () => rcOpen3(r.parentNode.dataset.rc));
 }
 
