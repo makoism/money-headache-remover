@@ -357,9 +357,12 @@
       const moves = live().filter(e => delta(e, id) !== 0);
       const fillers = [];
       let lastGap = null;
-      // [T2] the place a filler was put on at the check-in, by the check's day
-      const fillerPlaces = {};
-      for (const f of live()) if (f.k === 'filler' && f.acct === id && f.stretch && f.stretch.to && f.place) fillerPlaces[f.stretch.to] = f;
+      // [T2, AS6] the place a filler was put on is the check-in's `fillerPlace` for this account: the check-in the check
+      // was written with (`grp`), or the one whose figures name it
+      const fillerPlaceOf = c => {
+        const ci = (book.checkins || []).find(k => k && !k.gone && (k.id === c.grp || (k.figures || []).some(f => f && f.check === c.id)));
+        return ci && ci.fillerPlace && ci.fillerPlace[id] ? ci.fillerPlace[id] : null;
+      };
       const span = moves.map(e => { const ds = [e.day].concat([e.posted, e.posted2].filter(Boolean).map(dayNum)); return [Math.min(...ds), Math.max(...ds)]; });
       let wasIn = moves.map(e => inside(e, base, id));
       // [AP1] the closing's final check: the last check dated on the closing day
@@ -375,8 +378,8 @@
         let computed = base.amount;
         moves.forEach((e, k) => { if (isIn[k] !== wasIn[k]) computed += isIn[k] ? delta(e, id) : -delta(e, id); });
         wasIn = isIn;
-        const fp = fillerPlaces[c.date];
-        fillers.push(Object.assign(makeFiller(id, c.day > base.day ? base.day + 1 : c.day, c.day, computed - c.a), fp ? { place: fp.place } : {},
+        const fp = fillerPlaceOf(c);
+        fillers.push(Object.assign(makeFiller(id, c.day > base.day ? base.day + 1 : c.day, c.day, computed - c.a), fp ? { place: fp } : {},
           { had: computed, gain: c.a - computed, answer: c.gain || null }));
         base = cc;
         lastGap = { day: c.day, had: computed, gain: c.a - computed, answer: c.gain || null };

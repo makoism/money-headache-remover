@@ -190,7 +190,7 @@ function convert(sc) {
   }
 
   // ----- events [section 6, section 13] -----
-  const settled = [], unticked = [];
+  const settled = [], unticked = [], fillerCheckins = [];
   const schedCur = {}; for (const s of book.schedules) schedCur[s.id] = s.cur;
   const occs = v => [].concat(v || []).map(o => { const i = String(o).lastIndexOf('@'); return { s: String(o).slice(0, i), due: String(o).slice(i + 1) }; });
   const events = [];
@@ -247,7 +247,8 @@ function convert(sc) {
         Object.assign(x, { k: 'check', acct: e.account, a: A(e.amount, e.account) });
         if (e.avail) x.avail = e.avail;
         if (e.gain) x.gain = e.gain;
-        if (e.filler_place) events.push({ id: 'filler:' + e.id, k: 'filler', acct: e.account, stretch: { to: date }, place: e.filler_place, date, told });
+        // [AS6] the filler's place is saved on the check-in the check was written with
+        if (e.filler_place) { x.grp = 'checkin:' + e.id; fillerCheckins.push({ id: x.grp, date, told, figures: [{ acct: e.account, check: e.id }], fillerPlace: { [e.account]: e.filler_place } }); }
         break;
       case 'card_check':
         if (e.statement) events.push(Object.assign({}, x, { id: e.id + ':stmt', k: 'check', acct: e.account, stmt: true, stmtDate: e.statement.closed, a: A(e.statement.amount, e.account), grp: e.id }));
@@ -276,6 +277,7 @@ function convert(sc) {
   }
   book.events = opening.concat(events);
   if (settled.length || unticked.length) book.checkins.push({ id: 'checkin:ticked', settled, unticked });
+  book.checkins.push(...fillerCheckins);
   return { book, opts };
 }
 

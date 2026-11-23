@@ -91,4 +91,15 @@ t('a removed place keeps its money to place when the app wrote its rm: move to W
   eq(r.toPlace.trip.amount, 50000);
   ok(/50,000 \(Trip's money, in Waiting to place\)/.test(r.accounts.bank.why));
 });
+t("a filler's place is the check-in's fillerPlace for that account, that check-in only [AS6]", () => {
+  const b = base(x => {
+    x.events.push({ id: 'k1', k: 'check', acct: 'bank', date: '2026-12-03', a: 395000, told: '2026-12-03T09:00' + TZ, grp: 'ci1' },
+      { id: 'k2', k: 'check', acct: 'bank', date: '2026-12-03', a: 393000, told: '2026-12-03T18:00' + TZ, grp: 'ci2' });
+    x.checkins = [{ id: 'ci1', date: '2026-12-03', fillerPlace: { bank: 'food' } }, { id: 'ci2', date: '2026-12-03' }];
+  });
+  const r = run(b, '2026-12-03');
+  // food 30,000 less the first check-in's 5,000 filler; the second check-in's 2,000 picked nothing, so Free to spend
+  eq(r.accounts.bank.headroom, 393000 - 25000);
+  eq(r.safeToSpend.headline, 48000);
+});
 done('lookahead');
