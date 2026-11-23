@@ -52,9 +52,14 @@ function compare(sc, day) {
   const od = o.daysToNextPay || {}, rd = r.daysToNextPay || {};
   if (od.days !== rd.days || od.next_pay !== rd.next_pay || od.item !== rd.item || !!od.late !== !!rd.late) diffs.push({ field: 'days_to_next_pay', checker: od, engine: { days: rd.days, next_pay: rd.next_pay, item: rd.item, late: rd.late } });
   const key = x => x.item + ' ' + x.lands + ' ' + Number(x.amount).toFixed(2);
-  const om = o.dueBeforeNextPay.items.map(key).sort(), rm = (r.dueBeforeNextPay.items || []).map(x => key(Object.assign({}, x, { amount: M(x.amount) }))).sort();
-  if (om.join('|') !== rm.join('|') || !near(o.dueBeforeNextPay.total, M(r.dueBeforeNextPay.total)))
-    diffs.push({ field: 'due_before_next_pay', onlyChecker: om.filter(x => !rm.includes(x)), onlyEngine: rm.filter(x => !om.includes(x)), checkerTotal: o.dueBeforeNextPay.total, engineTotal: M(r.dueBeforeNextPay.total) });
+  // [G4, AU4] on pay day before the pay is ticked the engine's list runs to the pay after it (what safe to spend takes
+  // off); the checker, older, stops at today's pay, so only the engine's items before today's pay are compared then
+  const payToday = rd.next_pay === day && !rd.late;
+  const rItems = (r.dueBeforeNextPay.items || []).filter(x => !payToday || x.lands < rd.next_pay);
+  const om = o.dueBeforeNextPay.items.map(key).sort(), rm = rItems.map(x => key(Object.assign({}, x, { amount: M(x.amount) }))).sort();
+  const rTotal = payToday ? rItems.filter(x => !x.currency).reduce((t, x) => t + x.amount, 0) : r.dueBeforeNextPay.total;
+  if (om.join('|') !== rm.join('|') || !near(o.dueBeforeNextPay.total, M(rTotal)))
+    diffs.push({ field: 'due_before_next_pay', onlyChecker: om.filter(x => !rm.includes(x)), onlyEngine: rm.filter(x => !om.includes(x)), checkerTotal: o.dueBeforeNextPay.total, engineTotal: M(rTotal) });
   for (const cid of Object.keys(o.cards)) {
     // [F4 for payments] the engine lists a payment past its day apart (`overdue`), never as `next`; the checker, older,
     // gives it as its next payment, so the oldest overdue one is compared with it
