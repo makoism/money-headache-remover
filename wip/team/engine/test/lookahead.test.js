@@ -183,4 +183,22 @@ t('a credit statement carries to the next statement at its close, before its own
   const n = run(b, '2027-08-12').cards.card.next;
   eq([n.amount, n.payment_date, n.statement], [66100, '2027-10-07', 'closed']);
 });
+t('a part-paid remainder carried on again is asked once along the carry chain [AU3, I3]', () => {
+  // A bank and a card opened Tue 1 Jun 2027; the card closes on the 5th and is paid on the 22nd of the same month
+  const ev = (id, k, date, more) => Object.assign({ id, k, date, told: date + 'T12:00' + TZ }, more);
+  const b = { v: 3, home: { curs: [{ from: '2026-01-01', cur: 'JPY' }], country: { v: 'JP' }, main: { v: { acct: 'bank', min: null } } },
+    accounts: [{ id: 'bank', name: 'Bank', type: 'bank', cur: 'JPY' },
+      { id: 'card', name: 'Card', type: 'card', cur: 'JPY', inFull: true, cutDay: 5, payDay: 22, payMonths: 0, shift: 'none', payFrom: 'bank' }],
+    schedules: [],
+    events: [ev('o', 'open', '2027-06-01', { acct: 'bank', a: 400000, grp: 's' }), ev('c', 'check', '2027-06-01', { acct: 'bank', a: 400000, grp: 's' }),
+      ev('oc', 'open', '2027-06-01', { acct: 'card', a: 0, grp: 's' }), ev('cc', 'check', '2027-06-01', { acct: 'card', a: 0, grp: 's' }),
+      ev('s1', 'spend', '2027-06-15', { acct: 'card', a: 50000 }),
+      ev('p1', 'repay', '2027-07-22', { acct: 'bank', acct2: 'card', a: 41712, a2: 41712 }),   // 8,288 of the July statement left, its item open
+      ev('s2', 'spend', '2027-08-01', { acct: 'card', a: 100000 }),
+      ev('p2', 'repay', '2027-08-22', { acct: 'bank', acct2: 'card', a: 85700, a2: 85700, settles: [{ s: 'card', due: '2027-08-22' }] }),   // August ticked, 22,588 carried
+      ev('s3', 'spend', '2027-09-01', { acct: 'card', a: 74800 })] };
+  const r = run(b, '2027-09-12');
+  // 272,588 - 8,288 (the July item, late) - 89,100 (September's 97,388 less the 8,288 July already asks) = 175,200
+  eq(r.accounts.bank.headroom, 175200);
+});
 done('lookahead');

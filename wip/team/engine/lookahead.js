@@ -556,7 +556,9 @@
       for (const p of points) {
         const item = !p.paid && p.basis > 0;
         if (item) { p.part = carries ? planned(p.amount, p.due) : Math.max(0, p.basis - p.held); p.asks = carries ? p.part : p.basis; unpaid.push(p); }
-        const asked = !item ? 0 : carries ? p.part + p.held : p.basis;
+        // [AU3, I3] a statement that is no item (ticked, or nothing owed) still carries on what older items ask and is
+        // still inside its remainder, so a remainder carried on again is asked once
+        const asked = !item ? Math.min(p.held, Math.max(0, p.basis)) : carries ? p.part + p.held : p.basis;
         if (p.into) p.into.held += asked;
         else { stillAsked += asked; if (!notSure && nextPoint && p.land <= nextPoint.closes) projCarried += p.left - asked; }
       }
