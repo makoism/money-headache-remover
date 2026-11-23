@@ -1,0 +1,93 @@
+{
+ "life": "g_yearly_two_devices",
+ "title": "yearly bill changed offline while other device ticked it",
+ "currency": "JPY",
+ "window": {
+  "from": "2027-05-01",
+  "to": "2027-07-31"
+ },
+ "holidays": {
+  "country": "none",
+  "dates": [],
+  "bank_closed": []
+ },
+ "main_bank": "k7qzpa-m2xq7ab9zt-2",
+ "accounts": [
+  {
+   "id": "k7qzpa-m2xq7ab9zt-2",
+   "name": "Bank",
+   "kind": "bank",
+   "currency": "JPY",
+   "minimum": 0,
+   "opening": {
+    "date": "2027-05-01",
+    "amount": 300000
+   }
+  }
+ ],
+ "income": [
+  {
+   "id": "k7qzpa-m2xq7ab9zt-41",
+   "name": "Pay",
+   "account": "k7qzpa-m2xq7ab9zt-2",
+   "amount": 250000,
+   "schedule": {
+    "frequency": "monthly",
+    "day": 25
+   },
+   "weekend_holiday": "move earlier",
+   "starts_period": true
+  }
+ ],
+ "bills": [
+  {
+   "id": "k7qzpa-m2xq7ab9zt-44",
+   "name": "Car insurance",
+   "account": "k7qzpa-m2xq7ab9zt-2",
+   "amount": 60000,
+   "schedule": {
+    "frequency": "yearly",
+    "date": "05-31"
+   },
+   "weekend_holiday": "move later",
+   "changes": [
+    {
+     "from": "2027-05-01",
+     "schedule": {
+      "frequency": "yearly",
+      "date": "06-15"
+     }
+    }
+   ]
+  }
+ ],
+ "goals": [],
+ "plan": {
+  "lines": [],
+  "free": {
+   "per": "month",
+   "amount": 50000
+  }
+ },
+ "events": [
+  {
+   "id": "k7qzpa-m2xq7ab9zt-90",
+   "date": "2027-05-31",
+   "told": "2027-05-31T20:00",
+   "kind": "bill_paid",
+   "account": "k7qzpa-m2xq7ab9zt-2",
+   "amount": 60000,
+   "settles": "k7qzpa-m2xq7ab9zt-44@2027-05-31"
+  }
+ ],
+ "asks": [
+  {
+   "id": "g1",
+   "date": "2027-06-02",
+   "question": "bank_today",
+   "account": "k7qzpa-m2xq7ab9zt-2",
+   "expected": 240000,
+   "why": "300,000 - 60,000"
+  }
+ ]
+}

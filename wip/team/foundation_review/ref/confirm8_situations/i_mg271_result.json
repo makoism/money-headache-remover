@@ -1,0 +1,86 @@
+{
+ "life": "i_mg271_result",
+ "title": "yearly bill changed offline while other device ticked it",
+ "currency": "JPY",
+ "window": {
+  "from": "2026-12-01",
+  "to": "2027-01-31"
+ },
+ "holidays": {
+  "country": "none",
+  "dates": [],
+  "bank_closed": []
+ },
+ "main_bank": "k7qzpa-m2xq7ab9zt-2",
+ "accounts": [
+  {
+   "id": "k7qzpa-m2xq7ab9zt-2",
+   "name": "Bank",
+   "kind": "bank",
+   "currency": "JPY",
+   "minimum": 0,
+   "opening": {
+    "date": "2026-12-01",
+    "amount": 300000
+   }
+  }
+ ],
+ "income": [
+  {
+   "id": "k7qzpa-m2xq7ab9zt-41",
+   "name": "Pay",
+   "account": "k7qzpa-m2xq7ab9zt-2",
+   "amount": 250000,
+   "schedule": {
+    "frequency": "monthly",
+    "day": 25
+   },
+   "changes": [
+    {
+     "from": "2026-12-26",
+     "schedule": {
+      "frequency": "monthly",
+      "day": 10
+     }
+    }
+   ],
+   "weekend_holiday": "move earlier",
+   "starts_period": true,
+   "amounts": {
+    "2026-12-25": {
+     "amount": 450000,
+     "at": "2026-12-02T11:00:00.000+09:00",
+     "by": "dsk001"
+    },
+    "2027-01-10": {
+     "amount": 400000,
+     "at": "2026-12-02T12:00:00.000+09:00",
+     "by": "phn001",
+     "gone": "2026-12-02"
+    }
+   }
+  }
+ ],
+ "bills": [],
+ "goals": [],
+ "plan": {
+  "lines": [],
+  "free": {
+   "per": "month",
+   "amount": 50000
+  }
+ },
+ "events": [],
+ "asks": [
+  {
+   "id": "i1",
+   "date": "2026-12-16",
+   "question": "days_to_next_pay",
+   "expected": {
+    "days": 25,
+    "next_pay": "2027-01-08"
+   },
+   "why": "new job pays 10 Jan (8 Jan)"
+  }
+ ]
+}

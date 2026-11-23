@@ -339,3 +339,12 @@ AO5. When an account becomes the main bank, its own `minBank` moves into `home.m
 AO6. An event dated on the closing day does not reopen an account; a check with a figure other than zero typed into a closed account reopens it with a notice.
 AO7. Two 38.31 shop keys that become one keep the later and are listed in the move summary.
 The AN helper's readings are confirmed.
+
+## AP. Decisions from confirm_review_8.md
+AP1. A closing's final check holds everything dated on or before the closing day, whatever its `told`. One reopen rule, shared by the look ahead and the merge: any event or check dated after the closing day reopens the account, with a notice.
+AP2. AN2 lists occurrences with the look ahead's own occurrence code, for every rule kind (month, weeks, months, monthsList, year, lastWorkday, once).
+AP3. An import line's id is built from what it is: `imp:<account>:<line id>`, the line id being the statement's own reference when it has one, else date, amount, direction and a count. The same statement read on two devices makes one record at the merge.
+AP4. AO1 is refined: only settled occurrences and `pe:` / `ps:` records pin a change; `amounts` and `once` keys follow AJ5 (moved to the new rule's occurrence, or waiting in `pendingMove`), and any `pendingMove` entry the moved-back change created is marked `gone`.
+AP5. After a merge, a main bank that still has its own `minBank` has the newer value folded into `home.main`, its own field cleared, and a notice shown.
+AP6. A `checkins` row is added to the grid (D, U, R, A). SCHEMA 7.1 stores no filler ids (the filler is worked out, 7.3); a check-in stores its stretch and its settled ids.
+AP7. The shop key function is named in SCHEMA: 38.31's `stmtNorm` (digits and punctuation removed, the first three words, lowercased), used by the reader and the move alike. Moved values are `src: 'moved'`: a person's lesson beats them and they beat a reader's guess.

@@ -1,0 +1,124 @@
+{
+ "life": "b_day_before_with_check",
+ "title": "An event into a closed account reopens it with a notice (T watch decided); a spend on an account that later closed stays in its line (closed-account cells of the coverage grid)",
+ "story": "Set up Mon 4 Jan 2027: the bank holds 300,000, of which Food 30,000 and Free to spend 50,000 (typed); an e-wallet holds 10,000. Pay of 250,000 on the 25th (moved earlier). Wed 6 Jan: 2,000 of food paid with the e-wallet. Fri 8 Jan the person closes the e-wallet: the closing moves its 8,000 to the bank (close:g). Tue 12 Jan a shop refunds 500 to the e-wallet: money into a closed account reopens it, with a notice. Fri 15 Jan a friend sends 1,000 to it. Every amount is made up.",
+ "currency": "JPY",
+ "window": {
+  "from": "2027-01-04",
+  "to": "2027-01-31"
+ },
+ "holidays": {
+  "country": "none",
+  "dates": [],
+  "bank_closed": []
+ },
+ "main_bank": "b",
+ "accounts": [
+  {
+   "id": "b",
+   "name": "Bank",
+   "kind": "bank",
+   "currency": "JPY",
+   "minimum": 0,
+   "opening": {
+    "date": "2027-01-04",
+    "amount": 300000,
+    "split": {
+     "lines": {
+      "food": 30000
+     },
+     "free": 50000
+    }
+   }
+  },
+  {
+   "id": "g",
+   "name": "E-wallet",
+   "kind": "ewallet",
+   "currency": "JPY",
+   "minimum": 0,
+   "closed": "2027-01-08",
+   "opening": {
+    "date": "2027-01-04",
+    "amount": 10000
+   }
+  }
+ ],
+ "income": [
+  {
+   "id": "pay",
+   "name": "Pay",
+   "account": "b",
+   "amount": 250000,
+   "schedule": {
+    "frequency": "monthly",
+    "day": 25
+   },
+   "weekend_holiday": "move earlier",
+   "starts_period": true
+  }
+ ],
+ "bills": [],
+ "goals": [],
+ "plan": {
+  "lines": [
+   {
+    "id": "food",
+    "name": "Food",
+    "per": "month",
+    "amount": 30000
+   }
+  ],
+  "free": {
+   "per": "month",
+   "amount": 50000
+  }
+ },
+ "events": [
+  {
+   "id": "s1",
+   "date": "2027-01-06",
+   "told": "2027-01-06T12:00",
+   "kind": "spend",
+   "account": "g",
+   "amount": 2000,
+   "line": "food"
+  },
+  {
+   "id": "l1",
+   "date": "2027-01-07",
+   "told": "2027-01-09T21:00",
+   "kind": "spend",
+   "account": "g",
+   "amount": 700,
+   "line": "food"
+  },
+  {
+   "id": "c1",
+   "date": "2027-01-08",
+   "told": "2027-01-08T10:00",
+   "kind": "check",
+   "account": "g",
+   "amount": 7300
+  },
+  {
+   "id": "close:g",
+   "date": "2027-01-08",
+   "told": "2027-01-08T10:00",
+   "kind": "transfer",
+   "from": "g",
+   "to": "b",
+   "amount": 7300
+  }
+ ],
+ "asks": [
+  {
+   "id": "b1",
+   "date": "2027-01-09",
+   "question": "bank_today",
+   "account": "g",
+   "expected": 0,
+   "why": "inside the check"
+  }
+ ]
+}
