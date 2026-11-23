@@ -283,3 +283,8 @@ AH3. Every reader reads keyed overrides in the AE1 shape (`{ amount, at, by, gon
 AH4. AG1 is withdrawn as worded. AE2 stands: an applied waiting entry's keys carry the entry's `at`. For mv-q56 only: a restore stamps the waiting entries it brings back 1 ms after the `gone` marks it writes, so applying them again beats the restore's removal. mg-117 must keep passing; an mv-q56 case is added.
 AH5. Version one's merge finds keyed maps by shape (a map whose values all carry `at`), not by a list of field names, so maps added in later builds merge key by key on older devices too.
 AH4-confirm: the AG helper's narrow reading (only an entry a restore brought back takes the D4 clock; every other entry keeps its own `at`, AE2) is the rule. mg-117 and mv-117 to mv-121 stand.
+
+## AI. Answers after AH
+AI1 (mg-q14). An arriving copy more than a day ahead of the receiving device's own now is held at that now plus 1 ms, never at the newest `at` seen; its `told` is held the same way. A device that has seen nothing holds against its own now.
+AI2 (mg-q15). Entry lists inside a record are found by shape too (an array whose items all carry `from` and `at`), so lists added in later builds merge entry by entry on older devices.
+Confirmed: under AH1 a clock less than a day fast is not held and can beat a later edit made without seeing it (mg-24 ends at 1,500); D8 still questions large jumps.
