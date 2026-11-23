@@ -2,6 +2,16 @@
 
 The coordinator is the one session Mako talks to. It records his decisions in DECISIONS.md (and NORTH_STAR.md, LAUNCH_CHECKLIST.md), starts and messages working sessions, and brings their results back to him. Working sessions take direction from nowhere else. The coordinator hands off at about 150k tokens of history, like every session.
 
+
+## Coordinator handoff 10 (Coordinator 8, 23 Nov 2026 19:45 JST)
+- Mako's go on the NEW FOUNDATION (DECISIONS "The new foundation", 23 Nov): pay-to-pay dated ledger anchored to today's bank replaces the calendar-month engine. Read wip/team/LESSONS.md (lessons 1 to 4) and foundation_review/RECOMMENDATION.md and DECISIONS_ROUND2.md (AX: thin slices, one engine, reference frozen, no new rule rounds). qc-foundation reviews every plan before building (CLAUDE.md).
+- MAIN 15 (session_01BFpKEWd1ZWnpSgfqXk8WbV) runs parallel lanes in app3: slice1 setup3/Home/Check your bank; plan; receipts with act3 write door and Undo; statements; backup and cloud with settings. Engine, storage, screens pieces and move merged and green. BE: Mako has no old data, v1 starts empty, move not wired.
+- Targets JST: try file tonight 23 Nov; usable slice 1 Tue 24 Nov midday; all features without art 1 to 3 Dec.
+- Checklist row Q24 holds the running log. Old QC rounds 13/14 (Q22, Q23) were on the old base and are superseded.
+- Triggers: MAIN 15 keep-going trig_01HXvbBcPA79TWLVBu6pb23a (hourly at :40, made by me; MAIN 15 cannot create triggers, lineage limit). Watchdog trig_015mKtiUhZRgbkacuPYA8Ks6 (:33) restarts stuck sessions. Disable keep-going with update_trigger enabled=false when the build window ends (delete is often denied).
+- Last percentages told to Mako: about 65% first version, 35% with art and 3D.
+- Lessons: commit hashes MAIN reports can change after its rebase; check with git log before writing them. Efficiency agent on the foundation plan: foundation_review/efficiency_review.md.
+
 ## 2026-11-22, handoff 9 (coordinator 8 to coordinator 9) READ THIS FIRST
 
 Coordinator 8 (session_01BFpKEXZxmzMuFVBB5UQxLE) stopped at about 770k tokens, 00:25 JST 23 Nov. Start coordinator 9 by pasting wip/team/COORDINATOR_PROMPT.md into a fresh chat (it points at MAIN 15). Handoff 8 below is older; read only its "Watchdog" note.

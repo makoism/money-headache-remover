@@ -11,6 +11,10 @@
   { "name": "Opens offline", "test": "tests/offline.js", "passes": true },
   { "name": "Period dates on Home and the next pay state (res.period)", "test": "tests/e3_period.js", "passes": true },
   { "name": "act3, the one write door: named actions with ids, told, at, by; remove and Undo by gone marks; Undo keeps later changes", "test": "tests/e3_act_unit.js", "passes": true },
+  { "name": "Cloud copy core: code to key under its own id (E3), only ciphertext sent, two devices join, same record changed on both asked and kept (AW7), refused write joined again (AW5), newer shape refused", "test": "tests/cloud3.test.js", "passes": true },
+  { "name": "Statements read: rows with posting dates, card statements, Japanese dates and files, the pasted-answer checker", "test": "tests/e3_stmt_read.js", "passes": true },
+  { "name": "Statements written: imp: lines with posting dates, matched to typed spends and expected items by the frozen rules (engine/match.js), card payments once, card statements as statement records, BC4 lines, duplicates once", "test": "tests/e3_stmt_plan.js", "passes": true },
+  { "name": "Receipts: log a spend fast (amount, line or place, account or card, day, note), a refund, money moved; list by period with search; change and remove with Undo; Free to spend left and safe to spend before and after, from the engine", "test": "tests/e3_receipts.js", "passes": true },
   { "name": "Works as a plain file: first screen offers the made-up numbers, with a day box to step through the days", "test": "tests/e3_file.js", "passes": true },
   { "name": "Setup, short (setup3): bank today, pay with a second income, cards with a close day or not sure, bills, the minimum; through build_book and the store", "test": "tests/e3_setup.js", "passes": true }
  ]

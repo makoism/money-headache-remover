@@ -51,3 +51,26 @@ body::before { content: ''; position: fixed; inset: 0; z-index: -1; background: 
 .a3-msg .burrow-msg { background: var(--acc-tint2); color: var(--ink); border-radius: var(--r-ctl); padding: 10px 14px; font-size: var(--t-sm); }
 .a3-later { font-size: var(--t-sm); color: var(--ink2); margin: 0; }
 @media (max-width: 360px) { .a3-tick { grid-template-columns: 28px 1fr; } .a3-tick .a3-in { grid-column: 2; } }
+/* the tab bar and Receipts (receipts lane) */
+html { scroll-padding-top: 72px; }
+.a3-tabs { position: sticky; top: 0; display: flex; gap: 6px; padding: 8px; margin: 0 -8px; background: var(--bg); border-bottom: 1px solid var(--hair); z-index: 2; }
+.a3-tabs button { flex: 1; min-height: var(--btn-h); border: 0; border-radius: var(--r-ctl); background: transparent; color: var(--ink2); font: inherit; font-weight: 600; cursor: pointer; }
+.a3-tabs button[aria-current=page] { background: var(--track); color: var(--ink); }
+.a3-tabs button:focus-visible, .a3-seg:focus-visible, .a3-rcrow:focus-visible, .a3-sel:focus-visible { outline: 3px solid var(--acc-ring); outline-offset: 2px; }
+[data-panel][hidden] { display: none; }
+#a3Rc { display: flex; flex-direction: column; gap: var(--gap-card); }
+.a3-segs { display: flex; gap: 6px; margin-top: 8px; }
+.a3-seg { flex: 1; min-height: 44px; border: 0; border-radius: var(--r-ctl); background: var(--track); color: var(--ink2); font: inherit; font-weight: 600; cursor: pointer; }
+.a3-seg[aria-pressed=true] { background: var(--accent); color: var(--on-accent); }
+.a3-seg:disabled { opacity: .5; cursor: default; }
+.a3-sel, .a3-date, .a3-text { text-align: left; }
+.a3-was { display: block; font-size: var(--t-cap); color: var(--ink2); text-align: right; }
+.a3-pernav { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 8px; margin-top: 12px; }
+.a3-pernav .a3-btn { padding: 0 14px; }
+.a3-pernav .a3-btn:disabled { opacity: .4; cursor: default; }
+.a3-per { text-align: center; font-size: var(--t-body); }
+.a3-rclist li { padding: 0; }
+.a3-rcrow { display: flex; justify-content: space-between; gap: 12px; width: 100%; padding: 10px 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; min-height: 44px; }
+.a3-in-amt { color: var(--good, var(--ink)); }
+.a3-msg .burrow-msg { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.a3-msg .burrow-msg button { min-height: 44px; border: 0; border-radius: 980px; padding: 0 18px; background: var(--accent); color: var(--on-accent); font: inherit; font-weight: 600; cursor: pointer; }

@@ -90,6 +90,7 @@
     Object.values(groups).forEach(giveIds);
     const expected = input.expected || [];
     const dropped = [];
+    const met = {};   // an attached line id -> the record it met
     const statements = [];   // the statement imports read so far, with their own dates [L matching q8, M2]
     const live = () => lines.filter(l => !l.gone);
     const settledNames = () => new Set([].concat(...live().map(l => l.settles)));
@@ -158,6 +159,7 @@
         const meet = closest(meets);
         if (meet) {
           const t = meet.t;
+          met[line.id] = t.id;   // which record each attached line met (for the screens; no answer of the rules changes)
           if (sideAmount(t, meet.n) !== line.a) {   // [S1] the side takes the line's amount; the other keeps its own
             if (meet.n === 1) { if (t.a2 == null) t.a2 = t.a; t.a = line.a; } else { if (t.a2 == null) t.a2 = t.a; t.a2 = line.a; }
             // [U1] Unless the other side has its own line, a rough record never has more arrive than left: when the
@@ -217,7 +219,7 @@
       const t = lines.find(l => l.id === id);
       if (t && t.amountsMoved) { a.a = t.a; a.a2 = t.a2; }
     }
-    return { lines, dropped, attached };
+    return { lines, dropped, attached, met };
   }
 
   // [H9] The same amount typed on two devices on the same day for the same place. Offered, never removed.

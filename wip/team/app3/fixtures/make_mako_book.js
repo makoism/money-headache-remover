@@ -6,8 +6,9 @@
    after the November pay and card payments.
    The weekend where a card leaves before pay lands (WIRING_PLAN "Watch"): pay moves to the next working day and card B
    is taken the working day before. In January 2027 the 10th is a Sunday and the 11th a holiday, so card B leaves on
-   Fri 8 Jan while both pays and card A land on Tue 12 Jan. Card spending after setup is dated ahead (22 Nov to 29 Dec),
-   so the cards fill up as the shown day moves on.
+   Fri 8 Jan while both pays and card A land on Tue 12 Jan. Card spending after the December payments is dated ahead (18 to 29 Dec), so
+   the cards fill up again as the shown day moves into January; up to 16 Dec the cards hold only what they held at
+   setup (the statements lane's test reads the book on that day).
    The scenario is turned into the saved shape by the engine's own converter, then every id is rewritten into the
    ordinary form the app makes (`<6>-<10>-<n>`, SCHEMA_V3 section 0; LESSONS lesson 3, second addendum).
    Run: node app3/fixtures/make_mako_book.js   (writes the file; --check only compares) */
@@ -36,12 +37,9 @@ const SC = {
   ],
   // card spending after setup, dated ahead: the look ahead sees each one only from its day on
   events: [
-    { id: 'sp1', date: '2026-11-22', kind: 'spend', account: 'card_b', amount: 3200 },
-    { id: 'sp2', date: '2026-11-25', kind: 'spend', account: 'card_a', amount: 6800 },
-    { id: 'sp3', date: '2026-12-04', kind: 'spend', account: 'card_a', amount: 12500 },
-    { id: 'sp4', date: '2026-12-13', kind: 'spend', account: 'card_a', amount: 18000 },
-    { id: 'sp5', date: '2026-12-15', kind: 'spend', account: 'card_b', amount: 9500 },
-    { id: 'sp6', date: '2026-12-29', kind: 'spend', account: 'card_b', amount: 7400 }
+    { id: 'sp1', date: '2026-12-18', kind: 'spend', account: 'card_a', amount: 18000 },
+    { id: 'sp2', date: '2026-12-20', kind: 'spend', account: 'card_b', amount: 9500 },
+    { id: 'sp3', date: '2026-12-29', kind: 'spend', account: 'card_b', amount: 7400 }
   ]
 };
 
