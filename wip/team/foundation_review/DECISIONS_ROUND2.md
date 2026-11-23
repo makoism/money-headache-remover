@@ -531,3 +531,9 @@ The last gate pair under BN: qc-north-star PASS. The one qc-numbers blocker, a c
 BP1. For pay every n weeks, the anchor is stepped back to a pay on or before the setup day, whichever pay the person types.
 BP2. I4 stays: a line added in the setup period counts its share from the setup day. Free to spend's share works the same way, and later periods count a line in full. Every line saves its `from` day, so this can change later in the engine alone. Mako may choose otherwise in his run.
 BP3. A rhythm change shows what the per-pay amounts mean per month and proposes the converted figure.
+
+## BQ. Slice 6b review (24 Nov morning JST)
+BQ1. A change to no fixed pay ends the running period the day before the change. Period starts from before that day never carry past it. Until the first new pay is ticked after a change back, the plan runs by the day.
+BQ2. Plan amounts with the same field pick the entry in force by `from`, ties broken by `at`. A rhythm change writes its new entry from the later of the change's period start and the newest existing entry. This also applies to linesEachMonth.
+BQ3. With no fixed pay, Free to spend left starts again each calendar month: this month's amount less what was spent this month. In the month of setup or the change it counts from that day, shared by days left (I4, M10). The reference model gets the same rule.
+BQ4. ruleToday reads rules by `from`, never by the order they were saved. Free to spend saved under no fixed pay uses one `per` ("month") in both setup and a change.
