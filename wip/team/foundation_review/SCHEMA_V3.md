@@ -877,3 +877,7 @@ Stage 2, no field now (unknown fields are kept): two holders of one card matched
 - V2: the warning is on the paying account, code `loan_other_currency`; what the loan owes and its next payment stay in its own currency; a recorded payment takes its `a` off the paying account and its `a2` off what is owed (H5). A pay-later account `of` a card follows its card (H5 already).
 - Corrected bills: "the bills paid from it" are the schedules of kind `bill` whose account is the old main bank; a bill that already ended on or before the closing day is left as it is; the bills the person ends at the closing get `ends` set to the closing day (`rules/accounts.json` `ending`). W1 widens this to every schedule tied to it.
 - Corrected plan change: a period's first day is the day it started (the day its pay landed or was ticked, or the day of its period start record), compared as dates, not moments; a change made that day, before or after the pay was ticked, applies to the period.
+
+
+### Added 23 Nov night (BA1)
+A check event may carry `stale: true`. It is set only by the move on a bank figure with no typed day, and is dated the old copy's last save. It is never shown as today's bank: the app asks for the bank today.

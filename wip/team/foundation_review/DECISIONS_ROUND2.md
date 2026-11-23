@@ -422,3 +422,9 @@ AZ4. No new copies of the rules and no new scenario rounds. Add invariant checks
 AZ5. Each slice keeps a FEATURES.json, and an agent flips "passes" only when its test is green.
 AZ6. Mako gets something he can open as soon as slice 1 runs, then at each step after.
 Sources: anthropic.com/engineering/effective-harnesses-for-long-running-agents, anthropic.com/engineering/building-c-compiler, code.claude.com/docs/en/best-practices, claude.com/blog/building-multi-agent-systems-when-and-how-to-use-them, metr.org (2025 study, 2026 update), DORA 2025. Knight and Leveson 1986: separately written versions share failures.
+
+## BA. The move port (23 Nov night JST)
+BA1. A check may carry `stale: true`. It is set only by the move on a bank figure that had no typed day (38.28 has no bankAt). It is dated the copy's last save, and screens never show it as today: the bank today question is asked. SCHEMA_V3 takes the field. move.json keeps its frozen expectations, and the move test's adapter strips the field there.
+BA2. move() returns `needs` (bankToday, cards, cardDays, billDay, cardLine), worked out from the records and never saved. app3 asks these questions after the move.
+BA3. The engine gets its own merge in slice 4 (cloud copy). Until then move.js takes the merge as an argument.
+BA4. While cro-09 is the only red mark (until AV1 is flipped), lanes may self-merge if they add no new failure.
