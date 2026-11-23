@@ -348,3 +348,13 @@ AP4. AO1 is refined: only settled occurrences and `pe:` / `ps:` records pin a ch
 AP5. After a merge, a main bank that still has its own `minBank` has the newer value folded into `home.main`, its own field cleared, and a notice shown.
 AP6. A `checkins` row is added to the grid (D, U, R, A). SCHEMA 7.1 stores no filler ids (the filler is worked out, 7.3); a check-in stores its stretch and its settled ids.
 AP7. The shop key function is named in SCHEMA: 38.31's `stmtNorm` (digits and punctuation removed, the first three words, lowercased), used by the reader and the move alike. Moved values are `src: 'moved'`: a person's lesson beats them and they beat a reader's guess.
+
+## AQ. Version one sync, simplified (Mako, 23 Nov; efficiency_review_2.md)
+AQ1. The cloud copy carries a revision; a write is accepted only when based on the latest revision (compare and swap on the vault server). A device that is behind takes the latest first.
+AQ2. Events are append-only with built ids and join on their own (AP3's `imp:` ids, O2's built ids, `mv:` ids stay).
+AQ3. When both devices changed the same plan or settings record (schedules, rules, keyed overrides, budgets, shares, goals, accounts, home, shared ui, limits, cats), the person picks; the version not picked is kept as a `kept:<record id>` record so Undo can bring it back.
+AQ4. After every sync the one-device checks run (X8, closed accounts, minimums, shares over what is left); any failure becomes a question to the person, never a silent rule.
+AQ5. Kept for stage 2, not deleted: the per-key `at`, `by`, `gone`, holds and the rich merge rules (D4 to AP5 where they are about merging). Their mg cases are labelled stage 2 and keep passing against merge_ref.js as the stage 2 spec; qc-regression signs the list. No test is deleted or weakened.
+AQ6. A two-device fuzz script replaces hand review rounds for sync: random offline sequences on two devices with realistic ids, then a sync; it asserts merge(A,B) = merge(B,A), merging twice changes nothing, every edit is present or waiting as a question, nothing is doubled, and every one-device check passes after the sync.
+AQ7. The grid columns are frozen after one confirming review of AQ plus the fuzz. The engine lanes start now in parallel, in new files.
+Still applied from AP: AP1 (closing check and one reopen rule), AP2 (occurrence code for every rule kind, used by the AQ4 check), AP3, AP6, AP7. AP4 and AP5 become AQ4 questions.
