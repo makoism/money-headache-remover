@@ -32,10 +32,15 @@ Written 23 Nov 2026 from foundation_review/RECOMMENDATION.md, life_walks_salarie
 | interest.json | Interest on a carried card balance, a loan and a pay-later plan, at the close and payment days, rounded half up (I2). | JPY | 8 |
 | two_month_card.json | A card paid two months after its close: two statements waiting at once, one paid late (I3). | JPY | 8 |
 | opening_by_days.json | An opening split by days left, with the rounding remainder to Free to spend (I4). | JPY | 6 |
-| moved_records.json | Records moved from 38.31 with and without their own times, on one day (I5). | JPY | 3 |
+| moved_records.json | Records moved from 38.31 with and without their own times, on one day (I5, corrected by J2: moved-01 and moved-02 keep the I5 figures in `alt`). | JPY | 3 |
+| not_sure_interest.json | Interest on each payment day of a card whose close day is "not sure" and that carries a balance (J1). | JPY | 6 |
+| moved_figure_no_time.json | A moved bank figure with no time of its own, and moved receipts on its day (J2). | JPY | 2 |
+| avail_same_day.json | A spend logged after an "available" check on the same day (J3). | JPY | 3 |
+| opening_free_typed.json | An opening split that names Free to spend, the lines shared by days left (J4). | JPY | 3 |
+| two_month_opening.json | A two-month card set up between closes with two statements unpaid, each with its payment day (J5). | JPY | 7 |
 | check_specs.js | Checks every file's shape and that every `why` adds up to its expected figure. `node check_specs.js` | | |
 
-Total: 278 asks (the first eight files: 180; the H files: 64; the I files: 34).
+Total: 299 asks (the first eight files: 180; the H files: 64; the I files: 34; the J files: 21).
 
 ### The review v3 situations and where each one is now
 
@@ -78,6 +83,14 @@ The reviewer's own scripts are in `../ref/review_v3_situations/`. Each situation
 - **months_after_close: 2** is a card paid two months after its close. A statement still waiting for its payment day is never folded into the next one (I3).
 - An opening with no `split` entry for a budget line or Free to spend shares it by days left: the days from the setup day to the period's last day, both counted, over the period's days, rounded down; what rounding leaves goes to Free to spend (I4).
 - **moved: true** marks a record moved from 38.31; **own_time** is its own time when it has one. Its told is `own_time`, else the top-level `moved_copy.saved`; on one day moved records keep their order in the file (I5).
+
+### What the J files add to the way a file is written
+- A card with `statement_close_day: null` and `carries: true` that has an `apr` gets interest on each payment day (J1).
+- A **moved** receipt with no `own_time` is told at the start of its day, so one dated on or before the moved bank figure's day is inside it (J2, correcting I5). An account's `opening.moved: true` (with no `told`) is a moved bank figure with no time of its own: it is told at `moved_copy.saved`. At the same moment, moved receipts come before moved figures.
+- An "available" check holds the events dated before its day and those on its day told before it; a spend told after it comes after it (J3).
+- When `opening.split` names `free`, that figure stands; the rounding leftovers of the lines shared by days left stay in Waiting (J4).
+- A card's `opening.statements` (instead of `opening.statement`) lists several unpaid statements, oldest first, each with `closed`, `amount`, `paid: false` and `payment_day` (the due date; the weekend rule still applies) (J5).
+- `rule_questions` and `alt` may name a decision (like `I5`) whose earlier reading the `alt` keeps, as well as an open question (like `Q14`).
 
 ### Questions added for the H files
 - **days_to_next_pay** with `late: true`: the next pay is late but still inside its posting window (H8); `days` is zero or below.

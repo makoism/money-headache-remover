@@ -184,6 +184,7 @@ function checkFile(fp) {
     if (!a.opening || !isDate(a.opening.date)) { bad(file, w, 'opening needs a date'); continue; }
     if (a.apr !== undefined && !(typeof a.apr === 'number' && a.apr >= 0 && ['card', 'loan', 'paylater'].includes(a.kind))) bad(file, w, 'apr is a yearly rate in percent, on a card, loan or pay-later [I2]');
     if (a.opening.told !== undefined && !(TOLD.test(a.opening.told) && a.opening.told.slice(0, 10) === a.opening.date)) bad(file, w, 'opening.told must be the opening date, with or without a time');
+    if (a.opening.moved !== undefined && !(a.opening.moved === true && a.opening.told === undefined && s.moved_copy && TOLD.test(s.moved_copy.saved || '') && s.moved_copy.saved.slice(0, 10) >= a.opening.date)) bad(file, w, 'a moved opening with no time of its own needs moved_copy.saved on or after its date, and no told [J2]');
     if (a.kind === 'loan' || a.kind === 'paylater') {
       const p = a.payment || {};
       if (typeof a.opening.owed !== 'number' || !decimalsOk(a.opening.owed, d)) bad(file, w, 'opening.owed must be an amount');
@@ -195,8 +196,21 @@ function checkFile(fp) {
       const p = a.payment || {};
       if (!Number.isInteger(p.day) || (!notSure && !Number.isInteger(p.months_after_close)) || !WE_RULES.includes(p.weekend_holiday)) bad(file, w, 'payment needs day, months_after_close (unless the close day is not sure), weekend_holiday');
       if (!p.from || !(p.from in acc) && !(s.accounts || []).some(x => x.id === p.from)) bad(file, w, 'payment.from must be an account');
-      const st = a.opening.statement;
-      if ((st || !notSure) && (!st || !isDate(st.closed) || typeof st.amount !== 'number' || typeof st.paid !== 'boolean')) bad(file, w, 'opening.statement needs closed, amount, paid (it may be left out only when the close day is not sure)');
+      const sts = a.opening.statements;   // [J5] several unpaid statements, each with its payment day
+      if (sts !== undefined) {
+        if (a.opening.statement !== undefined || notSure || !Array.isArray(sts) || !sts.length) bad(file, w, 'opening.statements is a list, instead of opening.statement, on a card with a close day [J5]');
+        else {
+          let prev = '';
+          for (const x of sts) {
+            if (!isDate(x.closed) || typeof x.amount !== 'number' || x.paid !== false || !isDate(x.payment_day) || x.payment_day <= x.closed || x.closed > a.opening.date) bad(file, w, 'each of opening.statements needs closed (on or before the opening), amount, paid: false and a payment_day after its close [J5]');
+            if (x.closed <= prev) bad(file, w, 'opening.statements must be oldest first');
+            prev = x.closed;
+          }
+        }
+      } else {
+        const st = a.opening.statement;
+        if ((st || !notSure) && (!st || !isDate(st.closed) || typeof st.amount !== 'number' || typeof st.paid !== 'boolean')) bad(file, w, 'opening.statement needs closed, amount, paid (it may be left out only when the close day is not sure)');
+      }
       if (a.carries && !(p.min_rule || typeof p.amount === 'number')) bad(file, w, 'a card that carries a balance needs payment.min_rule');
       if (typeof a.opening.current !== 'number' || !decimalsOk(a.opening.current, d)) bad(file, w, 'opening.current must be an amount');
     } else {
@@ -268,7 +282,8 @@ function checkFile(fp) {
     if (a.question === 'card_due' && acc[a.account] && acc[a.account].kind !== 'card') bad(file, w, 'card_due needs a card account');
     const d = DIGITS[(acc[a.account] || {}).currency || s.currency];
     checkAnswer(file, w, a.question, a.expected, a.why, d, a.date);
-    for (const q of a.rule_questions || []) if (!/^Q\d+$/.test(q)) bad(file, w, `rule question ${q} is not like Q7`);
+    // An open question (Q7), or a decision (I5) whose earlier reading an alt keeps
+    for (const q of a.rule_questions || []) if (!/^[A-Z]\d+$/.test(q)) bad(file, w, `rule question ${q} is not like Q7 or I5`);
     for (const [q, alt] of Object.entries(a.alt || {})) {
       if (!(a.rule_questions || []).includes(q)) bad(file, w, `alt ${q} is not in rule_questions`);
       if (!alt.rule) bad(file, w + ` alt ${q}`, 'needs a rule');

@@ -1,0 +1,44 @@
+{
+  "life": "not_sure_interest",
+  "title": "Interest on a card that carries a balance and whose close day is \"not sure\" (decision J1)",
+  "story": "One bank, set up Fri 20 Nov 2026 with 500,000. One card paid from it: the person does not know its close day (not sure, H4) and it carries a balance, at 12% a year. It is paid on the 10th, moved later on weekends, with a fixed minimum of 10,000. At setup 100,000 is owed on it. Nothing is spent on the card after setup, so what is owed before each payment day is the same on every reading of which balance the interest is on. The December payment of 10,000 is made on its day; the January one (Sun 10 Jan, so Mon 11 Jan) is not seen. J1: such a card gets its interest on each payment day. I2: balance x yearly rate / 12, rounded half up to the yen. No income and no holidays are listed. Every amount and rate is made up.",
+  "currency": "JPY",
+  "window": { "from": "2026-11-20", "to": "2027-01-31" },
+  "holidays": { "country": "made up, none listed", "dates": [], "bank_closed": [] },
+  "accounts": [
+    { "id": "bank", "name": "Bank", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2026-11-20", "amount": 500000 } },
+    { "id": "cc", "name": "Card", "kind": "card", "currency": "JPY", "statement_close_day": null, "carries": true, "apr": 12,
+      "payment": { "day": 10, "from": "bank", "weekend_holiday": "move later", "min_rule": { "fixed": 10000 } },
+      "opening": { "date": "2026-11-20", "current": 100000, "note": "No statement typed; the close day is not sure." } }
+  ],
+  "income": [],
+  "bills": [],
+  "goals": [],
+  "landing_dates": { "cc": { "2026-12-10": "2026-12-10", "2027-01-10": "2027-01-11" } },
+  "interest": {
+    "cc": [
+      { "day": "2026-12-10", "on": 100000, "amount": 1000, "why": "100,000 x 12 / 100 / 12 = 1,000" },
+      { "day": "2027-01-11", "on": 91000, "amount": 910, "why": "91,000 x 12 / 100 / 12 = 910" } ]
+  },
+  "events": [
+    { "id": "c01", "date": "2026-12-10", "kind": "card_payment", "from": "bank", "card": "cc", "amount": 10000, "settles": "cc@2026-12-10" }
+  ],
+  "asks": [
+    { "id": "nsi-01", "date": "2026-11-20", "question": "card_due", "account": "cc", "expected": { "amount": 10000, "payment_date": "2026-12-10", "statement": "all owed" },
+      "why": "10,000 (the fixed minimum; 100,000 is owed) = 10,000" },
+    { "id": "nsi-02", "date": "2026-12-11", "question": "owed_now", "account": "cc", "expected": 91000,
+      "why": "100,000 (owed at setup) + 1,000 (interest at the 10 Dec payment day: 100,000 x 12 / 100 / 12) - 10,000 (paid 10 Dec) = 91,000",
+      "note": "Before J1 the model added no interest on a card whose close day is not sure: 90,000." },
+    { "id": "nsi-03", "date": "2026-12-11", "question": "card_due", "account": "cc", "expected": { "amount": 10000, "payment_date": "2027-01-11", "statement": "all owed" },
+      "why": "10,000 (the fixed minimum; 91,000 is owed) = 10,000" },
+    { "id": "nsi-04", "date": "2026-12-11", "question": "safe_to_spend", "account": "bank", "expected": 480000,
+      "why": "490,000 (Bank today: 500,000 - 10,000 paid 10 Dec) - 10,000 (Card, all owed, paid 11 Jan) = 480,000",
+      "note": "No fixed pay: the walk reaches 45 days ahead (25 Jan)." },
+    { "id": "nsi-05", "date": "2027-01-13", "question": "owed_now", "account": "cc", "expected": 91910,
+      "why": "91,000 (owed after the December payment) + 910 (interest at the 11 Jan payment day: 91,000 x 12 / 100 / 12) = 91,910",
+      "note": "The January payment has not been seen; the interest is added on the payment day all the same, as on a loan (interest.json int-08). Before J1: 90,000." },
+    { "id": "nsi-06", "date": "2027-01-13", "question": "not_seen_yet",
+      "expected": { "items": [ { "item": "cc@2027-01-10", "lands": "2027-01-11", "amount": 10000, "direction": "out" } ], "money_in": 0, "money_out": 10000 },
+      "why": { "money_in": "none = 0", "money_out": "10,000 (the card's minimum, due Mon 11 Jan, its posting window over on 12 Jan) = 10,000" } }
+  ]
+}

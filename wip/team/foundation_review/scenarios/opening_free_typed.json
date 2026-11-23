@@ -1,0 +1,40 @@
+{
+  "life": "opening_free_typed",
+  "title": "An opening split that names Free to spend, with the lines shared by days left (decision J4)",
+  "story": "The life of opening_by_days.json: one bank, set up Sun 29 Nov 2026 with 300,000; pay of 250,000 on the 10th, moved earlier, so the period runs from Tue 10 Nov to Wed 9 Dec (30 days); rent of 70,000 on the 1st, moved later. The plan gives Food 50,000, Transport 10,000 and Free to spend 90,000 each month. At setup the person types what is left of Free to spend, 20,000, and says nothing about Food or Transport, so those two are shared by days left (11 of 30 days): Food 18,333.33 and Transport 3,666.67, both rounded down. J4: when the split names Free to spend, the typed figure stands; the rounding leftover (one yen) stays in Waiting. No holidays are listed. Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2026-11-29", "to": "2026-12-31" },
+  "holidays": { "country": "made up, none listed", "dates": [], "bank_closed": [] },
+  "accounts": [
+    { "id": "bank", "name": "Bank", "kind": "bank", "currency": "JPY", "minimum": 0,
+      "opening": { "date": "2026-11-29", "amount": 300000, "split": { "free": 20000 }, "note": "Free to spend typed; Food and Transport shared by days left." } }
+  ],
+  "plan": {
+    "lines": [
+      { "id": "food", "name": "Food", "account": "bank", "per": "month", "amount": 50000 },
+      { "id": "transport", "name": "Transport", "account": "bank", "per": "month", "amount": 10000 } ],
+    "free": { "account": "bank", "per": "month", "amount": 90000 }
+  },
+  "income": [
+    { "id": "pay", "name": "Pay", "account": "bank", "currency": "JPY", "amount": 250000, "schedule": { "frequency": "monthly", "day": 10 }, "weekend_holiday": "move earlier", "starts_period": true }
+  ],
+  "bills": [
+    { "id": "rent", "name": "Rent", "account": "bank", "amount": 70000, "schedule": { "frequency": "monthly", "day": 1 }, "weekend_holiday": "move later" }
+  ],
+  "goals": [],
+  "events": [
+    { "id": "f01", "date": "2026-11-30", "kind": "spend", "account": "bank", "amount": 5000, "line": "free", "note": "dinner out" },
+    { "id": "f02", "date": "2026-12-01", "kind": "bill_paid", "account": "bank", "amount": 70000, "settles": "rent@2026-12-01" },
+    { "id": "f03", "date": "2026-12-10", "kind": "pay_in", "account": "bank", "amount": 250000, "settles": "pay@2026-12-10" }
+  ],
+  "asks": [
+    { "id": "ftyp-01", "date": "2026-11-29", "question": "headline", "expected": 20000,
+      "why": "20,000 (Free to spend, as typed at setup; the one yen left over from rounding Food and Transport stays in Waiting) = 20,000",
+      "note": "Under the I4 rule for an untyped Free to spend the leftover would be added to it; here the person typed it, so it stands." },
+    { "id": "ftyp-02", "date": "2026-11-29", "question": "safe_to_spend", "account": "bank", "expected": 208001,
+      "why": "300,000 (Bank today) - 18,333 (Food left this period: 50,000 x 11 / 30 = 18,333.33, rounded down) - 3,666 (Transport left this period: 10,000 x 11 / 30 = 3,666.67, rounded down) - 70,000 (Rent 1 Dec) = 208,001",
+      "note": "The one yen leftover is in Waiting, so it is still in this figure. On 10 Dec the pay (250,000) comes in before the next period's lines and Free to spend (150,000)." },
+    { "id": "ftyp-03", "date": "2026-11-30", "question": "headline", "expected": 15000,
+      "why": "20,000 (Free to spend, as typed at setup) - 5,000 (dinner 30 Nov) = 15,000" }
+  ]
+}

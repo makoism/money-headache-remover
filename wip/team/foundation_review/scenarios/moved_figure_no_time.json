@@ -1,0 +1,31 @@
+{
+  "life": "moved_figure_no_time",
+  "title": "A moved bank figure with no time of its own, and moved receipts on its day (decision J2)",
+  "story": "A 38.31 copy, last saved Tue 24 Nov 2026 at 08:00 (the moment its last receipt was saved), is moved that morning. Its bank figure of 200,000 has no date or time of its own (bankStart with no bankAt), so it is dated to the copy's last saved day, 24 Nov (H9), and told at the copy's last save, 08:00 (J2). Its receipts: 3,000 on Mon 23 Nov with no time; 2,000 on 24 Nov with no time; 1,000 on 24 Nov with its own time, 08:00, the same moment as the save. In the new app a lunch of 1,500 is logged on 24 Nov at 12:00. On Wed 25 Nov the person checks the bank: 197,000. J2: a moved receipt with no time is told at the start of its day; a moved bank figure with no time is told at the copy's last save; on one day moved receipts come before moved figures. So all three receipts are inside the figure, and only the lunch comes after it. No holidays are listed. Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2026-11-24", "to": "2026-11-30" },
+  "holidays": { "country": "made up, none listed", "dates": [], "bank_closed": [] },
+  "moved_copy": { "from": "38.31", "saved": "2026-11-24T08:00" },
+  "accounts": [
+    { "id": "bank", "name": "Bank", "kind": "bank", "currency": "JPY", "minimum": 0,
+      "opening": { "date": "2026-11-24", "moved": true, "amount": 200000, "note": "38.31 bankStart with no bankAt: dated to the copy's last saved day, told at the save (J2)" } }
+  ],
+  "income": [],
+  "bills": [],
+  "goals": [],
+  "events": [
+    { "id": "n01", "date": "2026-11-23", "kind": "spend", "account": "bank", "amount": 3000, "moved": true, "note": "receipt, no time, the day before the figure" },
+    { "id": "n02", "date": "2026-11-24", "kind": "spend", "account": "bank", "amount": 2000, "moved": true, "note": "receipt, no time: told at the start of 24 Nov, before the figure" },
+    { "id": "n03", "date": "2026-11-24", "kind": "spend", "account": "bank", "amount": 1000, "moved": true, "own_time": "2026-11-24T08:00", "note": "receipt saved at the copy's last save: same moment as the figure, receipts first" },
+    { "id": "n04", "date": "2026-11-24", "told": "2026-11-24T12:00", "kind": "spend", "account": "bank", "amount": 1500, "note": "lunch, logged in the new app" },
+    { "id": "n05", "date": "2026-11-25", "told": "2026-11-25T09:00", "kind": "check", "account": "bank", "amount": 197000, "note": "typed in the new app" }
+  ],
+  "asks": [
+    { "id": "mfig-01", "date": "2026-11-24", "question": "bank_today", "account": "bank", "expected": 198500,
+      "why": "200,000 (moved bank figure, dated 24 Nov, told at the save 08:00) - 1,500 (lunch, told at 12:00, after the figure) = 198,500",
+      "note": "The 3,000 (23 Nov), the 2,000 (24 Nov, no time) and the 1,000 (24 Nov at 08:00, the same moment as the figure; receipts come first) are inside the figure. Before J2 the model read a moved figure with no time as covering its whole day, the lunch too: 200,000." },
+    { "id": "mfig-02", "date": "2026-11-25", "question": "not_explained", "account": "bank", "expected": 1500,
+      "why": "198,500 (what the events say at the 25 Nov check) - 197,000 (the check) = 1,500",
+      "note": "Before J2: 3,000." }
+  ]
+}

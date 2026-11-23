@@ -1,0 +1,64 @@
+{
+  "life": "two_month_opening",
+  "title": "A card paid two months after its close, set up between closes with two statements unpaid (decision J5)",
+  "story": "One bank, set up Wed 20 Jan 2027 with 100,000, and one card paid in full from it. The card closes on the 15th and is paid on the 10th two months later, moved later on weekends. At setup two statements are unpaid, and the person types each with its amount, close date and payment day: 15 Dec (30,000, payment day Wed 10 Feb) and 15 Jan (20,000, payment day Wed 10 Mar). 5,000 has posted since the 15 Jan close, so 55,000 is owed now. The 15 Nov statement was paid on 11 Jan, before setup. Pay of 200,000 on the 25th, moved earlier; rent of 200,000 on the 27th, moved later (Sat 27 Feb lands Mon 1 Mar). The 15 Dec statement is paid on 10 Feb and the 15 Jan one on 10 Mar. J5: a card's opening may hold several unpaid statements, each with its amount, close date and payment day. I3: a statement still waiting for its payment day is never folded into the next one. No holidays are listed. Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2027-01-20", "to": "2027-03-31" },
+  "holidays": { "country": "made up, none listed", "dates": [], "bank_closed": [] },
+  "accounts": [
+    { "id": "bank", "name": "Bank", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2027-01-20", "amount": 100000 } },
+    { "id": "jcard", "name": "Card", "kind": "card", "currency": "JPY", "statement_close_day": 15,
+      "payment": { "day": 10, "months_after_close": 2, "from": "bank", "pays": "in full", "weekend_holiday": "move later" },
+      "opening": { "date": "2027-01-20",
+        "statements": [
+          { "closed": "2026-12-15", "amount": 30000, "paid": false, "payment_day": "2027-02-10" },
+          { "closed": "2027-01-15", "amount": 20000, "paid": false, "payment_day": "2027-03-10" } ],
+        "current": 55000,
+        "note": "Current is the two unpaid statements plus 5,000 posted 16 to 20 Jan." } }
+  ],
+  "income": [
+    { "id": "pay", "name": "Pay", "account": "bank", "currency": "JPY", "amount": 200000, "schedule": { "frequency": "monthly", "day": 25 }, "weekend_holiday": "move earlier", "starts_period": true }
+  ],
+  "bills": [
+    { "id": "rent", "name": "Rent", "account": "bank", "amount": 200000, "schedule": { "frequency": "monthly", "day": 27 }, "weekend_holiday": "move later" }
+  ],
+  "goals": [],
+  "landing_dates": {
+    "jcard": { "2027-02-10": "2027-02-10", "2027-03-10": "2027-03-10", "2027-04-10": "2027-04-12" },
+    "rent": { "2027-01-27": "2027-01-27", "2027-02-27": "2027-03-01" }
+  },
+  "card_statements": {
+    "jcard": [
+      { "closed": "2027-02-15", "amount": 9000, "why": "5,000 (posted 16 to 20 Jan, before setup) + 4,000 (2 Feb) = 9,000; the 15 Dec statement was paid on its day and the 15 Jan one waits for 10 Mar, so nothing is carried over", "payment_lands": "2027-04-12" } ]
+  },
+  "events": [
+    { "id": "t01", "date": "2027-01-25", "kind": "pay_in", "account": "bank", "amount": 200000, "settles": "pay@2027-01-25" },
+    { "id": "t02", "date": "2027-01-27", "kind": "bill_paid", "account": "bank", "amount": 200000, "settles": "rent@2027-01-27" },
+    { "id": "t03", "date": "2027-02-02", "kind": "spend", "account": "jcard", "amount": 4000 },
+    { "id": "t04", "date": "2027-02-10", "kind": "card_payment", "from": "bank", "card": "jcard", "amount": 30000, "settles": "jcard@2027-02-10", "note": "the 15 Dec statement" },
+    { "id": "t05", "date": "2027-02-25", "kind": "pay_in", "account": "bank", "amount": 200000, "settles": "pay@2027-02-25" },
+    { "id": "t06", "date": "2027-03-01", "kind": "bill_paid", "account": "bank", "amount": 200000, "settles": "rent@2027-02-27" },
+    { "id": "t07", "date": "2027-03-10", "kind": "card_payment", "from": "bank", "card": "jcard", "amount": 20000, "settles": "jcard@2027-03-10", "note": "the 15 Jan statement" }
+  ],
+  "asks": [
+    { "id": "tmo-01", "date": "2027-01-20", "question": "card_due", "account": "jcard", "expected": { "amount": 30000, "payment_date": "2027-02-10", "statement": "closed", "closed_on": "2026-12-15" },
+      "why": "30,000 (statement 15 Dec, as typed at setup) = 30,000", "note": "Two statements wait: 15 Dec (30,000, 10 Feb) and 15 Jan (20,000, 10 Mar). The card shows the older one." },
+    { "id": "tmo-02", "date": "2027-01-20", "question": "owed_now", "account": "jcard", "expected": 55000,
+      "why": "30,000 (statement 15 Dec) + 20,000 (statement 15 Jan) + 5,000 (posted 16 to 20 Jan) = 55,000" },
+    { "id": "tmo-03", "date": "2027-01-20", "question": "safe_to_spend", "account": "bank", "expected": 45000,
+      "why": "100,000 (Bank today) + 200,000 (Pay 25 Jan) - 200,000 (Rent 27 Jan) - 30,000 (Card statement closed 15 Dec, paid 10 Feb) + 200,000 (Pay 25 Feb) - 200,000 (Rent 1 Mar) - 20,000 (Card statement closed 15 Jan, paid 10 Mar, taken at the horizon end 6 Mar) - 5,000 (Card still open, closes 15 Feb, taken at the horizon end) = 45,000",
+      "note": "The walk runs to 6 Mar (45 days, later than the second next pay on 25 Feb). Each statement comes off once: 30,000 + 20,000 + 5,000 is all that is owed." },
+    { "id": "tmo-04", "date": "2027-01-26", "question": "due_before_next_pay",
+      "expected": { "items": [
+        { "item": "rent@2027-01-27", "lands": "2027-01-27", "amount": 200000 },
+        { "item": "jcard@2027-02-10", "lands": "2027-02-10", "amount": 30000 } ], "total": 230000 },
+      "why": "200,000 (rent 27 Jan) + 30,000 (card, statement 15 Dec) = 230,000", "note": "The 15 Jan statement is paid on 10 Mar, after the 25 Feb pay." },
+    { "id": "tmo-05", "date": "2027-02-11", "question": "card_due", "account": "jcard", "expected": { "amount": 20000, "payment_date": "2027-03-10", "statement": "closed", "closed_on": "2027-01-15" },
+      "why": "20,000 (statement 15 Jan, as typed at setup) = 20,000" },
+    { "id": "tmo-06", "date": "2027-02-16", "question": "owed_now", "account": "jcard", "expected": 29000,
+      "why": "55,000 (owed at setup) + 4,000 (2 Feb) - 30,000 (paid 10 Feb) = 29,000" },
+    { "id": "tmo-07", "date": "2027-03-11", "question": "card_due", "account": "jcard", "expected": { "amount": 9000, "payment_date": "2027-04-12", "statement": "closed", "closed_on": "2027-02-15" },
+      "why": "5,000 (posted 16 to 20 Jan, before setup) + 4,000 (2 Feb) = 9,000",
+      "note": "The 15 Jan statement was still waiting for its 10 Mar payment day at the 15 Feb close, so it was never folded in (I3)." }
+  ]
+}
