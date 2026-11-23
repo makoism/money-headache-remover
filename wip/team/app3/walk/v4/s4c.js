@@ -1,0 +1,24 @@
+const L = require('./lib.js');
+(async () => {
+  const B = process.argv[3] === 'B', off = B ? 4800 : 0;
+  const c = await L.ctx(process.argv[2]); const p = c.pages()[0] || await c.newPage();
+  const errs = []; p.on('pageerror', e => errs.push(e.message)); p.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
+  const show = async t => console.log('\n## ' + t + '\nHOME ' + (await L.home(p)));
+  await L.go(p, '2026-12-28'); await show('28 Dec before check');
+  let r = await L.checkin(p, { 'Main bank': 314000 - off, 'Trip account': 22000 }, {}, ['Rent']);
+  console.log('CHECK 28 Dec', JSON.stringify(r));
+  await show('28 Dec after check, rent unticked');
+  await p.reload(); await L.w(500); await show('28 Dec after reload');
+  await L.go(p, '2026-12-30'); await show('30 Dec');
+  await L.go(p, '2027-01-03'); console.log(await L.spend(p, 6000, 'Main bank', { note: 'new year' }));
+  await show('3 Jan');
+  await L.go(p, '2027-01-07'); await show('7 Jan before check');
+  r = await L.checkin(p, { 'Main bank': 236000 - off, 'Trip account': 22000 }, {}, [], { 'Rent': '2026-12-30' });
+  console.log('CHECK 7 Jan', JSON.stringify(r));
+  await show('7 Jan after check');
+  await L.tab(p, 'plan'); await p.$$eval('details', ds => ds.forEach(d => d.open = true));
+  console.log('\nPLAN', await L.txt(p, '#a3Plan'));
+  console.log('\nRC', await L.rc(p));
+  console.log('ERR', errs);
+  await c.close();
+})().catch(e => { console.log('CRASH', e); process.exit(1); });

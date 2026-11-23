@@ -1,0 +1,23 @@
+const L = require('./lib.js');
+(async () => {
+  const c = await L.ctx(process.argv[2]); const p = c.pages()[0] || await c.newPage();
+  const errs = []; p.on('pageerror', e => errs.push(e.message)); p.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
+  const show = async t => console.log('\n## ' + t + '\nHOME ' + (await L.home(p)).slice(0, 700));
+  const goal = async () => { await L.tab(p, 'plan'); return (await L.txt(p, '[data-card=plan-goals]')); };
+  await L.go(p, '2027-01-16');
+  console.log(await L.spend(p, 10000, 'Main bank', { mode: 'moved', to: 'Trip account', note: 'trip top up' }));
+  await show('16 Jan after move to Trip'); console.log('GOAL', await goal());
+  console.log('RC', (await L.rc(p)).split('What you logged')[1]);
+  await L.go(p, '2027-01-17');
+  await L.tab(p, 'plan'); await p.click('[data-goal]'); await L.w(200);
+  console.log('GOAL FORM', await L.txt(p, '#a3Plan'));
+  await p.fill('#pl-amount', '2000'); await p.click('[data-plbtn="2"]'); await L.w(500); console.log('takeout err', await L.txt(p, '#plErr'));
+  await show('17 Jan after take-out'); console.log('GOAL', await goal());
+  await L.go(p, '2027-01-18');
+  console.log(await L.spend(p, 1000, 'Card A', { mode: 'refund', note: 'book back' }));
+  await show('18 Jan after refund');
+  await p.reload(); await L.w(500); await show('18 Jan reload');
+  console.log('RC', (await L.rc(p)).split('What you logged')[1]);
+  console.log('ERR', errs);
+  await c.close();
+})().catch(e => { console.log('CRASH', e); process.exit(1); });
