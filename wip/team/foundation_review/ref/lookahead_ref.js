@@ -513,6 +513,8 @@ function lookahead(sc, asOf, opts = {}) {
   // line that settled it (money_in) [Q6].
   const startsPeriod = e => (e.kind === 'pay_in' || e.kind === 'money_in') && !!periodStream && [].concat(e.settles || []).some(s => String(s).startsWith(periodStream.id + '@'));
   const nextPays = pays.filter(o => !o.settled && (o.land >= today || lateExpected(o)));   // [F3, H8]
+  // [BJ1] a pay due today, left unticked at a check made today, is not seen: not counted (BH1 over G4)
+  const leftToday = o => o.land === today && !o.settled && live().some(e => e.kind === 'check' && e.account === o.acct && e.day === today);
   // [T1, T6] Period starts are in the model. A period is named by the occurrence of the period stream's pay that
   // starts it. It starts on the day of a live period start record for that occurrence (`ps:<occurrence>`, the day
   // the person chose); else the day after the last day its period-end answers give the period before it (a period
@@ -1256,7 +1258,7 @@ function lookahead(sc, asOf, opts = {}) {
       // [AU4, AU5] A pay due today, or late and still counted, starts its period in the walk: that period's lines and Free to
       // spend share come off with it, today, after the pay (B3).
       // [BH1] a late pay is not counted and its period has not started: it brings no lines
-      const starts = nextPays.filter(p => p.land >= today);
+      const starts = nextPays.filter(p => p.land >= today && !leftToday(p));
       starts.forEach((p, i) => {
         const end = starts[i + 1] ? starts[i + 1].land : p.land + 30;
         for (const l of lines) list.push({ land: Math.max(p.land, today), amount: perPeriod(l.src ? { per: l.per, amount: m(lineAmount(l.src, p.land, p.id, l.id), id) } : l, p.land, end, p), label: l.name + ' for the period from ' + short(p.land) });
@@ -1301,7 +1303,7 @@ function lookahead(sc, asOf, opts = {}) {
     for (const o of items) {
       if (o.settled) continue;
       // [BH1, replaces H8 for safe to spend] money not yet seen never counts: a late or not seen pay is left out of the walk
-      if (o.kind === 'income' && o.acct === id && !o.otherCur && o.land >= today && o.land <= end) steps.push({ day: o.land, order: 0, amount: o.amount, label: o.name + ' ' + short(o.land) });
+      if (o.kind === 'income' && o.acct === id && !o.otherCur && o.land >= today && !leftToday(o) && o.land <= end) steps.push({ day: o.land, order: 0, amount: o.amount, label: o.name + ' ' + short(o.land) });
       if (o.kind === 'loan' && cur(o.card) !== cur(id)) continue;   // [V2] a loan in another currency: like a card (H5), warned below
       if (['bill', 'transfer', 'auto', 'loan'].includes(o.kind) && o.acct === id && o.land <= end) {
         // [H7] a bill paid from a place takes what the place still holds first; only the rest is new

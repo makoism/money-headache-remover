@@ -567,13 +567,15 @@ function oracle(sc, asOfStr, opts) {
 
   // ---------- the walk, per money account [SCHEMA.md 10.3, B1, B3, B9, F2, F3, F14, G1, H8] ----------
   // Horizon: the later of the second next pay that starts a period and today + 45 days [G1].
+  // [BJ1] a pay due today, left unticked at a check made today, is not seen: not counted (BH1 over G4)
+  const leftToday = (acctId, o) => o.land === T && evs.some(e => e.kind === 'check' && e.account === acctId && e.d === T);
   const H = Math.max(expPays.length >= 2 ? expPays[1].land : T + 45, T + 45);
   const futureStarts = []; // expected pays of the stream within the horizon: planned spending of that period
   for (const o of occs(P, T - 62, H + 12)) {
     if (isSettled(o, pOpen)) continue;
     let day;
-    if (o.land >= T) day = o.land;
-    else continue; // [BH1, replaces H8 for safe to spend] a late pay is not counted; its period has not started
+    if (o.land >= T && !leftToday(P.acct, o)) day = o.land;
+    else continue; // [BH1, replaces H8 for safe to spend] a late pay is not counted; its period has not started [BJ1: nor one left at a check today]
     if (day > H) continue;
     if (!plannedToday && day === T && o.land === T) continue;
     if (!plannedLate && day === T && o.land < T) continue;
@@ -593,7 +595,7 @@ function oracle(sc, asOfStr, opts) {
       for (const o of occs(s, Math.max(a.open - 400, T - 400), H + 12)) {
         if (isSettled(o, a.open)) continue;
         if (s.dir === 'in') {
-          if (o.land >= T) items.push({ day: o.land, order: 0, amt: s.amt, what: o.name });
+          if (o.land >= T && !leftToday(id, o)) items.push({ day: o.land, order: 0, amt: s.amt, what: o.name });
           // [BH1] money not yet seen never counts toward safe to spend: a late pay is left out until it is ticked
         } else {
           items.push({ day: Math.max(o.land, T), order: 1, amt: -s.amt, what: o.name }); // a late bill still goes out today [rule 10]
