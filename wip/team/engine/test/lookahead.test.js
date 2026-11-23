@@ -221,4 +221,9 @@ t('in a life with a plan, a spend with no line counts against Free to spend; a b
   });
   eq(run(b, '2026-12-03').safeToSpend.headline, 45000);
 });
+t('a waiting once amount for Free to spend counts the smaller [AV3]', () => {
+  const b = base(x => { x.pendingMove = [{ id: 'pm', waits: 'pick', to: 'once', share: 'sh', key: 'pay@2026-12-25', a: 30000, told: '2026-12-01T10:00' + TZ }];
+    x.events.push({ id: 'p1', k: 'in', sub: 'pay', acct: 'bank', date: '2026-12-25', a: 250000, told: '2026-12-25T09:00' + TZ, settles: ['pay@2026-12-25'], stream: 'pay' }); });
+  eq(run(b, '2026-12-26').safeToSpend.headline, 30000);
+});
 done('lookahead');

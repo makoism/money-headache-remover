@@ -683,7 +683,8 @@
       if (occ) for (const w of book.pendingMove || []) {
         if (!w || w.gone || w.waits !== 'pick' || w.to !== 'once' || w.key !== occ || (w.line !== src.id && !(src.id === 'free' && w.share))) continue;
         const wa = typeof w.a === 'number' ? w.a : w.a && typeof w.a[src.field] === 'number' ? w.a[src.field] : null;
-        if (wa !== null) a = Math.max(a, wa);
+        // [AV3] the safe side for what it is: the larger for a spending line, the smaller for Free to spend
+        if (wa !== null) a = src.field === 'free' ? Math.min(a, wa) : Math.max(a, wa);
       }
       return a;
     };
