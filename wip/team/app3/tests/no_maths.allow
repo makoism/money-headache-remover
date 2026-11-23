@@ -8,3 +8,4 @@ e3.js :: s += abc[Math.floor(Math.random() * abc.length)] :: a random device par
 cloud3.js :: ALPHA[b[i] % ALPHA.length] :: a random letter of the recovery code; not money
 cloud3.js :: i += 0x8000 :: text turned into base64 in chunks of bytes; not money
 cloud3.js :: i + 0x8000 :: text turned into base64 in chunks of bytes; not money
+stmt3_ai.js :: s += abc[b % 36] :: the relay's anonymous id, drawn once per page open; letters, not money

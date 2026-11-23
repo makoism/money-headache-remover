@@ -67,3 +67,24 @@ html { scroll-padding-top: 72px; }
 .a3-in-amt { color: var(--good, var(--ink)); }
 .a3-msg .burrow-msg { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .a3-msg .burrow-msg button { min-height: 44px; border: 0; border-radius: 980px; padding: 0 18px; background: var(--accent); color: var(--on-accent); font: inherit; font-weight: 600; cursor: pointer; }
+
+/* statements (stmt3.js) */
+.a3-stmt-acct { padding: 10px 0; border-bottom: 1px solid var(--hair); }
+.a3-stmt-acct p { margin: 0 0 8px; }
+.a3-file { display: inline-flex; align-items: center; position: relative; overflow: hidden; }
+.a3-file input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.a3-stmt-files { margin: 6px 0 0; padding-left: 18px; font-size: var(--t-sm); color: var(--ink2); overflow-wrap: anywhere; }
+.a3-line { display: block; font-size: var(--t-sm); }
+.a3-bad-t { color: var(--bad); }
+.a3-area { text-align: left; min-height: 120px; padding: 10px 14px; font-size: var(--t-sm); resize: vertical; }
+.a3-sel { text-align: left; max-width: 46%; min-height: var(--ctl-h); }
+.a3-stmt-m { border-bottom: 1px solid var(--hair); padding: 6px 0; }
+.a3-stmt-mrow { display: flex; gap: 10px; align-items: center; justify-content: space-between; }
+.a3-stmt-mn { background: none; border: 0; color: var(--ink); font: inherit; text-align: left; padding: 8px 0; display: flex; flex-direction: column; cursor: pointer; min-width: 0; overflow-wrap: anywhere; }
+.a3-stmt-mn:focus-visible, .a3-sel:focus-visible, .a3-area:focus-visible { outline: 3px solid var(--acc-ring); outline-offset: 2px; }
+.a3-stmt-rows label { display: flex; gap: 10px; align-items: flex-start; }
+.a3-stmt-rows li[data-status=repeat] { opacity: .6; }
+.a3-tick2 { grid-template-columns: 28px 1fr auto; }
+details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
+#a3StmtBar[hidden], .a3-stmt-rows[hidden] { display: none; }
+.a3-tick2 > span:not(.amt) { display: flex; flex-direction: column; }
