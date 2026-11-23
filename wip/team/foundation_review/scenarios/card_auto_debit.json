@@ -1,0 +1,40 @@
+{
+  "life": "card_auto_debit",
+  "title": "A card paid by automatic debit, set up before the debit day: \"Has your last card statement already left your bank?\" answered not yet (decision AE6; confirm_review_3 watch)",
+  "story": "Set up Fri 20 Nov 2026. A common Japanese card: it closes on the last day of the month and its statement is taken from the bank by automatic debit on the 27th of the next month (no weekend move). The bank holds 300,000 and takes a pay of 250,000 on the 15th. Setup falls between the October close (Sat 31 Oct) and its debit (Fri 27 Nov), so it asks \"Has your last card statement already left your bank?\", with the line that an automatic debit counts as not yet until the day it comes out [AE6]. The October statement, 30,000, has not come out yet, so the answer is not yet, with the statement's 30,000 typed; the card shows 50,000 owed. On Fri 27 Nov the debit of 30,000 comes out of the bank. Read the old way (\"is it paid?\", meaning it will be) the answer was yes, and safe to spend stayed 30,000 too high until the debit landed. Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2026-11-20", "to": "2026-12-31" },
+  "holidays": { "country": "none", "dates": [], "bank_closed": [] },
+  "main_bank": "bank",
+  "accounts": [
+    { "id": "bank", "name": "Bank", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2026-11-20", "amount": 300000 } },
+    { "id": "card", "name": "Card (automatic debit)", "kind": "card", "currency": "JPY", "statement_close_day": "last",
+      "payment": { "day": 27, "months_after_close": 1, "from": "bank", "weekend_holiday": "none" },
+      "opening": { "date": "2026-11-20", "statement": { "closed": "2026-10-31", "amount": 30000, "paid": false }, "current": 50000, "note": "answered not yet: the debit comes out on 27 Nov; the statement's 30,000 typed" } }
+  ],
+  "income": [
+    { "id": "pay", "name": "Pay", "account": "bank", "amount": 250000, "schedule": { "frequency": "monthly", "day": 15 }, "weekend_holiday": "none", "starts_period": true }
+  ],
+  "bills": [],
+  "goals": [],
+  "events": [
+    { "id": "d1", "date": "2026-11-27", "told": "2026-11-27", "kind": "card_payment", "from": "bank", "card": "card", "amount": 30000, "settles": "card@2026-11-27", "note": "the automatic debit of the October statement" }
+  ],
+  "asks": [
+    { "id": "cad-01", "date": "2026-11-21", "question": "card_due", "account": "card", "expected": { "amount": 30000, "payment_date": "2026-11-27", "statement": "closed" },
+      "why": "30,000 (the October statement, answered not yet: the debit has not come out) = 30,000" },
+    { "id": "cad-02", "date": "2026-11-21", "question": "safe_to_spend", "account": "bank", "expected": 270000,
+      "why": "300,000 (Bank today) - 30,000 (October statement, automatic debit Fri 27 Nov) = 270,000",
+      "note": "The 20,000 of November closes Mon 30 Nov and is debited Sun 27 Dec, after the Tue 15 Dec pay. Answered yes the old way, this was 300,000." },
+    { "id": "cad-03", "date": "2026-11-21", "question": "owed_now", "account": "card", "expected": 50000,
+      "why": "30,000 (October statement, not yet debited) + 20,000 (November so far) = 50,000" },
+    { "id": "cad-04", "date": "2026-11-28", "question": "bank_today", "account": "bank", "expected": 270000,
+      "why": "300,000 (opening) - 30,000 (automatic debit Fri 27 Nov) = 270,000" },
+    { "id": "cad-05", "date": "2026-11-28", "question": "safe_to_spend", "account": "bank", "expected": 270000,
+      "why": "270,000 (Bank today) = 270,000",
+      "note": "The October statement is settled by the debit; November's 20,000 is debited Sun 27 Dec, after the Tue 15 Dec pay." },
+    { "id": "cad-06", "date": "2026-11-28", "question": "card_due", "account": "card", "expected": { "amount": 20000, "payment_date": "2026-12-27", "statement": "open" },
+      "why": "50,000 (owed at setup) - 30,000 (debited Fri 27 Nov) = 20,000",
+      "note": "November so far; it closes Mon 30 Nov." }
+  ]
+}

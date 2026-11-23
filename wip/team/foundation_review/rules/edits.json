@@ -332,12 +332,15 @@
           "stmtDate": "2026-10-31",
           "stmtPay": "2026-11-27",
           "paid": true
-        }
+        },
+        "q": "leftBank",
+        "line": "autoDebitNotYet"
       },
-      "why": "The card closes on the last day and is paid on the 27th of the next month. Setup on Fri 20 Nov falls after the close of Sat 31 Oct and before its payment day, Fri 27 Nov, so setup asks [AB3]. Yes: a statement check for the 31 Oct close, paid; no amount is asked. Everything owed now is after that close.",
+      "why": "The card closes on the last day and is paid on the 27th of the next month. Setup on Fri 20 Nov falls after the close of Sat 31 Oct and before its payment day, Fri 27 Nov, so setup asks [AB3]. Yes: a statement check for the 31 Oct close, paid; no amount is asked. Everything owed now is after that close. The question is asked as \"Has your last card statement already left your bank?\" [AE6].",
       "decisions": [
         "AB3",
-        "J5"
+        "J5",
+        "AE6"
       ]
     },
     {
@@ -363,13 +366,16 @@
           "stmtPay": "2026-11-27",
           "paid": false,
           "a": 30000
-        }
+        },
+        "q": "leftBank",
+        "line": "autoDebitNotYet"
       },
-      "why": "No, not paid: setup asks the amount with everything owed, 50,000, filled in [AD6]; the person changes it to the October statement, 30,000: saved as an unpaid statement closed 31 Oct and paid 27 Nov [AB3, J5]. Of the 50,000 owed, 50,000 - 30,000 = 20,000 is November so far.",
+      "why": "No, not paid: setup asks the amount with everything owed, 50,000, filled in [AD6]; the person changes it to the October statement, 30,000: saved as an unpaid statement closed 31 Oct and paid 27 Nov [AB3, J5]. Of the 50,000 owed, 50,000 - 30,000 = 20,000 is November so far. The question is asked as \"Has your last card statement already left your bank?\" [AE6].",
       "decisions": [
         "AB3",
         "AD6",
-        "J5"
+        "J5",
+        "AE6"
       ]
     },
     {
@@ -393,12 +399,15 @@
           "stmtPay": "2026-11-27",
           "paid": false,
           "a": 50000
-        }
+        },
+        "q": "leftBank",
+        "line": "autoDebitNotYet"
       },
-      "why": "\"Don't know\" counts everything owed as due on the next payment day [AB3]: the statement saved holds all 50,000 owed and is paid on Fri 27 Nov (the safe side, as H4).",
+      "why": "\"Don't know\" counts everything owed as due on the next payment day [AB3]: the statement saved holds all 50,000 owed and is paid on Fri 27 Nov (the safe side, as H4). The question is asked as \"Has your last card statement already left your bank?\" [AE6].",
       "decisions": [
         "AB3",
-        "H4"
+        "H4",
+        "AE6"
       ]
     },
     {
@@ -488,13 +497,16 @@
           "stmtPay": "2026-11-27",
           "paid": false,
           "a": 50000
-        }
+        },
+        "q": "leftBank",
+        "line": "autoDebitNotYet"
       },
-      "why": "No, not paid: the amount box opens with everything owed, 50,000 [AD6]. The person leaves it, so the unpaid statement closed Sat 31 Oct holds 50,000, all due on Fri 27 Nov; 50,000 - 50,000 = 0 is November so far. Before AD6 a \"no\" with no amount typed saved no amount (ed-q1).",
+      "why": "No, not paid: the amount box opens with everything owed, 50,000 [AD6]. The person leaves it, so the unpaid statement closed Sat 31 Oct holds 50,000, all due on Fri 27 Nov; 50,000 - 50,000 = 0 is November so far. Before AD6 a \"no\" with no amount typed saved no amount (ed-q1). The question is asked as \"Has your last card statement already left your bank?\" [AE6].",
       "decisions": [
         "AD6",
         "AB3",
-        "J5"
+        "J5",
+        "AE6"
       ]
     },
     {
@@ -519,12 +531,15 @@
           "stmtPay": "2026-11-27",
           "paid": false,
           "a": 20000
-        }
+        },
+        "q": "leftBank",
+        "line": "autoDebitNotYet"
       },
-      "why": "A loan of 400,000 paying 20,000 a month on the 27th, set up Fri 20 Nov, between its statement (Sat 31 Oct) and its payment day (Fri 27 Nov), so setup asks [AB3]. \"Don't know\" on a loan means that month's usual payment, 20,000, is due on Fri 27 Nov [AD7], not the whole 400,000 owed. 400,000 - 20,000 = 380,000 stays owed after it.",
+      "why": "A loan of 400,000 paying 20,000 a month on the 27th, set up Fri 20 Nov, between its statement (Sat 31 Oct) and its payment day (Fri 27 Nov), so setup asks [AB3]. \"Don't know\" on a loan means that month's usual payment, 20,000, is due on Fri 27 Nov [AD7], not the whole 400,000 owed. 400,000 - 20,000 = 380,000 stays owed after it. The question is asked as \"Has your last card statement already left your bank?\" [AE6].",
       "decisions": [
         "AD7",
-        "AB3"
+        "AB3",
+        "AE6"
       ]
     },
     {
@@ -549,12 +564,119 @@
           "stmtPay": "2026-11-27",
           "paid": false,
           "a": 10000
-        }
+        },
+        "q": "leftBank",
+        "line": "autoDebitNotYet"
       },
-      "why": "A pay-later owing 30,000, paying 10,000 a month on the 27th, set up Fri 20 Nov: \"don't know\" means that month's usual payment, 10,000, is due on Fri 27 Nov [AD7]; 30,000 - 10,000 = 20,000 stays owed.",
+      "why": "A pay-later owing 30,000, paying 10,000 a month on the 27th, set up Fri 20 Nov: \"don't know\" means that month's usual payment, 10,000, is due on Fri 27 Nov [AD7]; 30,000 - 10,000 = 20,000 stays owed. The question is asked as \"Has your last card statement already left your bank?\" [AE6].",
       "decisions": [
         "AD7",
-        "AB3"
+        "AB3",
+        "AE6"
+      ]
+    },
+    {
+      "id": "ed-22",
+      "question": "statement_ask",
+      "title": "AF2: a loan answered \"no, not paid\": the amount is asked, filled with that month's usual payment",
+      "input": {
+        "answer": "no",
+        "kind": "loan",
+        "owed": 400000,
+        "usual": 20000,
+        "setup": "2026-11-20",
+        "closeDay": "last",
+        "payDay": 27,
+        "monthsAfterClose": 1
+      },
+      "expected": {
+        "asked": true,
+        "filled": 20000,
+        "saved": {
+          "paid": false,
+          "a": 20000,
+          "stmt": true,
+          "stmtDate": "2026-10-31",
+          "stmtPay": "2026-11-27"
+        },
+        "q": "leftBank",
+        "line": "autoDebitNotYet"
+      },
+      "why": "A car loan owing 400,000, paying 20,000 a month on the 27th, set up Fri 20 Nov between its statement (Sat 31 Oct) and its payment day (Fri 27 Nov), so setup asks [AB3, AE6]. Answered no: the amount is asked, the box filled with that month's usual payment, 20,000, not everything owed [AF2]; left as it is, 20,000 is due on 27 Nov and 400,000 - 20,000 = 380,000 stays owed after it.",
+      "decisions": [
+        "AF2",
+        "AB3",
+        "AE6"
+      ]
+    },
+    {
+      "id": "ed-23",
+      "question": "statement_ask",
+      "title": "AF2: a pay-later answered \"no, not paid\": the box filled with the usual payment; the typed amount is saved",
+      "input": {
+        "answer": "no",
+        "amount": 12000,
+        "kind": "paylater",
+        "owed": 45000,
+        "usual": 15000,
+        "setup": "2026-11-20",
+        "closeDay": "last",
+        "payDay": 27,
+        "monthsAfterClose": 1
+      },
+      "expected": {
+        "asked": true,
+        "filled": 15000,
+        "saved": {
+          "paid": false,
+          "a": 12000,
+          "stmt": true,
+          "stmtDate": "2026-10-31",
+          "stmtPay": "2026-11-27"
+        },
+        "q": "leftBank",
+        "line": "autoDebitNotYet"
+      },
+      "why": "A pay-later owing 45,000 in three parts of 15,000, set up Fri 20 Nov between its statement (Sat 31 Oct) and its payment day (Fri 27 Nov). Answered no: the box opens with that month's usual payment, 15,000 [AF2]; the person changes it to the 12,000 the statement says, and that is saved, due on 27 Nov [AB3, J5].",
+      "decisions": [
+        "AF2",
+        "AB3",
+        "J5"
+      ]
+    },
+    {
+      "id": "ed-24",
+      "question": "statement_ask",
+      "title": "AE6: a card paid by automatic debit, set up before the debit day: \"not yet\", so the statement is still due",
+      "input": {
+        "answer": "no",
+        "kind": "card",
+        "owed": 50000,
+        "amount": 30000,
+        "setup": "2026-11-20",
+        "closeDay": "last",
+        "payDay": 27,
+        "monthsAfterClose": 1
+      },
+      "expected": {
+        "asked": true,
+        "filled": 50000,
+        "saved": {
+          "paid": false,
+          "a": 30000,
+          "stmt": true,
+          "stmtDate": "2026-10-31",
+          "stmtPay": "2026-11-27"
+        },
+        "q": "leftBank",
+        "line": "autoDebitNotYet"
+      },
+      "why": "A Japanese card closing on the last day, paid by automatic debit on the 27th of the next month; set up Fri 20 Nov. The question is \"Has your last card statement already left your bank?\", with the line that an automatic debit counts as not yet until the day it comes out [AE6]. The October statement comes out on Fri 27 Nov, so the answer is not yet (the saved answer is the same as \"no\"): the box opens with everything owed, 50,000 [AD6]; the person types the statement's 30,000: unpaid, due 27 Nov. Of the 50,000, 50,000 - 30,000 = 20,000 is November so far. Read the old way (\"is it paid?\" meaning \"will it be paid?\") the answer was yes and the 30,000 was never counted until the debit landed (confirm_review_3, watch).",
+      "decisions": [
+        "AE6",
+        "AB3",
+        "AD6",
+        "J5"
       ]
     }
   ],

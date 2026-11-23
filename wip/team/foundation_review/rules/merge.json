@@ -3519,6 +3519,2585 @@
         "L merge q6",
         "D4"
       ]
+    },
+    {
+      "id": "mg-100",
+      "question": "merge",
+      "title": "AE1 (e1): a one-occurrence amount set on the phone survives a rename on the desktop before they sync",
+      "input": {
+        "mine": {
+          "schedules": [
+            {
+              "id": "pay1",
+              "kind": "income",
+              "name": "Salary",
+              "per": "pay",
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-11-24T10:00:00.000+09:00",
+              "by": "phn001",
+              "steps": [
+                {
+                  "from": "2026-11-01",
+                  "amount": 300000,
+                  "at": "2026-11-01T09:00:00.000+09:00",
+                  "by": "aaaaaa"
+                }
+              ],
+              "amounts": {
+                "2026-12-25": {
+                  "amount": 0,
+                  "at": "2026-11-24T10:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              }
+            }
+          ]
+        },
+        "theirs": {
+          "schedules": [
+            {
+              "id": "pay1",
+              "kind": "income",
+              "name": "Salary (Acme)",
+              "per": "pay",
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-11-24T10:05:00.000+09:00",
+              "by": "dsk001",
+              "steps": [
+                {
+                  "from": "2026-11-01",
+                  "amount": 300000,
+                  "at": "2026-11-01T09:00:00.000+09:00",
+                  "by": "aaaaaa"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "expected": {
+        "schedules": [
+          {
+            "id": "pay1",
+            "kind": "income",
+            "name": "Salary (Acme)",
+            "per": "pay",
+            "told": "2026-11-01T09:00:00.000+09:00",
+            "at": "2026-11-24T10:05:00.000+09:00",
+            "by": "dsk001",
+            "steps": [
+              {
+                "from": "2026-11-01",
+                "amount": 300000,
+                "at": "2026-11-01T09:00:00.000+09:00",
+                "by": "aaaaaa"
+              }
+            ],
+            "amounts": {
+              "2026-12-25": {
+                "amount": 0,
+                "at": "2026-11-24T10:00:00.000+09:00",
+                "by": "phn001"
+              }
+            }
+          }
+        ]
+      },
+      "why": "Mako, offline on the phone at 10:00, sets December pay to 0 (unpaid leave): `amounts` key 2026-12-25 with its own `at` 10:00 and `by` phn001. At 10:05 he renames the pay on the desktop, which never saw the key. The record goes to the newer copy, the desktop (10:05): name \"Salary (Acme)\". The keyed override merges key by key like `steps` [AE1]: 2026-12-25 is only on the phone, so it stays. December counts 0, not 300,000. Before AE1 the newer record won `amounts` whole and the 0 was lost (confirm_review_3 item 1).",
+      "decisions": [
+        "AE1",
+        "L merge q2",
+        "D4"
+      ]
+    },
+    {
+      "id": "mg-101",
+      "question": "merge",
+      "title": "AE1 (e1): a budget line's `once` set for different periods on two devices keeps both",
+      "input": {
+        "mine": {
+          "plan": {
+            "budgets": [
+              {
+                "id": "food",
+                "name": "Food",
+                "per": "month",
+                "told": "2026-11-01T09:00:00.000+09:00",
+                "at": "2026-11-24T10:00:00.000+09:00",
+                "by": "phn001",
+                "steps": [
+                  {
+                    "from": "2026-11-01",
+                    "amount": 40000,
+                    "at": "2026-11-01T09:00:00.000+09:00",
+                    "by": "aaaaaa"
+                  }
+                ],
+                "once": {
+                  "pay1@2026-12-25": {
+                    "amount": 70000,
+                    "at": "2026-11-24T10:00:00.000+09:00",
+                    "by": "phn001"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "theirs": {
+          "plan": {
+            "budgets": [
+              {
+                "id": "food",
+                "name": "Food",
+                "per": "month",
+                "told": "2026-11-01T09:00:00.000+09:00",
+                "at": "2026-11-24T10:05:00.000+09:00",
+                "by": "dsk001",
+                "steps": [
+                  {
+                    "from": "2026-11-01",
+                    "amount": 40000,
+                    "at": "2026-11-01T09:00:00.000+09:00",
+                    "by": "aaaaaa"
+                  }
+                ],
+                "once": {
+                  "pay1@2027-01-25": {
+                    "amount": 20000,
+                    "at": "2026-11-24T10:05:00.000+09:00",
+                    "by": "dsk001"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "expected": {
+        "plan": {
+          "budgets": [
+            {
+              "id": "food",
+              "name": "Food",
+              "per": "month",
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-11-24T10:05:00.000+09:00",
+              "by": "dsk001",
+              "steps": [
+                {
+                  "from": "2026-11-01",
+                  "amount": 40000,
+                  "at": "2026-11-01T09:00:00.000+09:00",
+                  "by": "aaaaaa"
+                }
+              ],
+              "once": {
+                "pay1@2026-12-25": {
+                  "amount": 70000,
+                  "at": "2026-11-24T10:00:00.000+09:00",
+                  "by": "phn001"
+                },
+                "pay1@2027-01-25": {
+                  "amount": 20000,
+                  "at": "2026-11-24T10:05:00.000+09:00",
+                  "by": "dsk001"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "why": "The phone sets Food for the period of the 25 Dec pay to 70,000 (a family visit) at 10:00; the desktop sets the period of the 25 Jan pay to 20,000 at 10:05. Each `once` key carries its own `at` and `by` and merges key by key [AE1]: two different keys, so both stay. The record's own fields go to the newer copy, the desktop (10:05). Before AE1 only the desktop's January key survived.",
+      "decisions": [
+        "AE1"
+      ]
+    },
+    {
+      "id": "mg-102",
+      "question": "merge",
+      "title": "AE1 (e1): a loan's planned extra payments (`extraSteps`) added on two devices keep both",
+      "input": {
+        "mine": {
+          "accounts": [
+            {
+              "id": "car",
+              "type": "loan",
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-11-24T10:00:00.000+09:00",
+              "by": "phn001",
+              "extraSteps": [
+                {
+                  "from": "2026-11-24",
+                  "amount": 0,
+                  "at": "2026-11-01T09:00:00.000+09:00",
+                  "by": "aaaaaa"
+                },
+                {
+                  "from": "2027-01-01",
+                  "amount": 30000,
+                  "at": "2026-11-24T10:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              ]
+            }
+          ]
+        },
+        "theirs": {
+          "accounts": [
+            {
+              "id": "car",
+              "type": "loan",
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-11-24T10:05:00.000+09:00",
+              "by": "dsk001",
+              "extraSteps": [
+                {
+                  "from": "2026-11-24",
+                  "amount": 0,
+                  "at": "2026-11-01T09:00:00.000+09:00",
+                  "by": "aaaaaa"
+                },
+                {
+                  "from": "2027-04-01",
+                  "amount": 10000,
+                  "at": "2026-11-24T10:05:00.000+09:00",
+                  "by": "dsk001"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "expected": {
+        "accounts": [
+          {
+            "id": "car",
+            "type": "loan",
+            "told": "2026-11-01T09:00:00.000+09:00",
+            "at": "2026-11-24T10:05:00.000+09:00",
+            "by": "dsk001",
+            "extraSteps": [
+              {
+                "from": "2026-11-24",
+                "amount": 0,
+                "at": "2026-11-01T09:00:00.000+09:00",
+                "by": "aaaaaa"
+              },
+              {
+                "from": "2027-01-01",
+                "amount": 30000,
+                "at": "2026-11-24T10:00:00.000+09:00",
+                "by": "phn001"
+              },
+              {
+                "from": "2027-04-01",
+                "amount": 10000,
+                "at": "2026-11-24T10:05:00.000+09:00",
+                "by": "dsk001"
+              }
+            ]
+          }
+        ]
+      },
+      "why": "The phone plans 30,000 extra on the car loan from 1 Jan (10:00), the desktop 10,000 from 1 Apr (10:05). `extraSteps` entries merge by `from` like `steps` [AE1]: both stay, so January to March pay 30,000 extra and from April 10,000 (the latest entry started). Before AE1 the newer record won the list whole and January's payment was counted 30,000 too low.",
+      "decisions": [
+        "AE1",
+        "L merge q2"
+      ]
+    },
+    {
+      "id": "mg-103",
+      "question": "merge",
+      "title": "AE1: the same key on both devices goes to the newer key; a key removed on one device stays removed",
+      "input": {
+        "mine": {
+          "plan": {
+            "budgets": [
+              {
+                "id": "food",
+                "name": "Food",
+                "per": "month",
+                "told": "2026-11-01T09:00:00.000+09:00",
+                "at": "2026-11-24T10:10:00.000+09:00",
+                "by": "phn001",
+                "steps": [
+                  {
+                    "from": "2026-11-01",
+                    "amount": 40000,
+                    "at": "2026-11-01T09:00:00.000+09:00",
+                    "by": "aaaaaa"
+                  }
+                ],
+                "once": {
+                  "pay1@2026-12-25": {
+                    "amount": 70000,
+                    "at": "2026-11-24T10:00:00.000+09:00",
+                    "by": "phn001"
+                  },
+                  "pay1@2027-01-25": {
+                    "amount": 20000,
+                    "gone": "2026-11-24",
+                    "at": "2026-11-24T10:10:00.000+09:00",
+                    "by": "phn001"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "theirs": {
+          "plan": {
+            "budgets": [
+              {
+                "id": "food",
+                "name": "Food",
+                "per": "month",
+                "told": "2026-11-01T09:00:00.000+09:00",
+                "at": "2026-11-24T10:05:00.000+09:00",
+                "by": "dsk001",
+                "steps": [
+                  {
+                    "from": "2026-11-01",
+                    "amount": 40000,
+                    "at": "2026-11-01T09:00:00.000+09:00",
+                    "by": "aaaaaa"
+                  }
+                ],
+                "once": {
+                  "pay1@2026-12-25": {
+                    "amount": 60000,
+                    "at": "2026-11-24T10:05:00.000+09:00",
+                    "by": "dsk001"
+                  },
+                  "pay1@2027-01-25": {
+                    "amount": 20000,
+                    "at": "2026-11-01T09:00:00.000+09:00",
+                    "by": "aaaaaa"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "expected": {
+        "plan": {
+          "budgets": [
+            {
+              "id": "food",
+              "name": "Food",
+              "per": "month",
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-11-24T10:10:00.000+09:00",
+              "by": "phn001",
+              "steps": [
+                {
+                  "from": "2026-11-01",
+                  "amount": 40000,
+                  "at": "2026-11-01T09:00:00.000+09:00",
+                  "by": "aaaaaa"
+                }
+              ],
+              "once": {
+                "pay1@2026-12-25": {
+                  "amount": 60000,
+                  "at": "2026-11-24T10:05:00.000+09:00",
+                  "by": "dsk001"
+                },
+                "pay1@2027-01-25": {
+                  "amount": 20000,
+                  "gone": "2026-11-24",
+                  "at": "2026-11-24T10:10:00.000+09:00",
+                  "by": "phn001"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "why": "Both copies hold January's 20,000 from 1 Nov. The phone sets December to 70,000 at 10:00 and removes January at 10:10 (`gone` on the key, its own `at`); the desktop sets December to 60,000 at 10:05. Per key [AE1]: December goes to the newer key, the desktop's 60,000 (10:05 after 10:00); January's removal (10:10) is newer than the desktop's 1 Nov key, so it stays removed [M3]. The record goes to the phone (10:10).",
+      "decisions": [
+        "AE1",
+        "M3"
+      ]
+    },
+    {
+      "id": "mg-104",
+      "question": "merge",
+      "title": "AE1: a `plan.shares` entry's `once` set for different periods on two devices keeps both",
+      "input": {
+        "mine": {
+          "plan": {
+            "shares": [
+              {
+                "id": "sh1",
+                "from": "2026-11-01",
+                "cur": "JPY",
+                "free": 15000,
+                "per": {
+                  "free": "month"
+                },
+                "told": "2026-11-01T09:00:00.000+09:00",
+                "at": "2026-11-24T10:00:00.000+09:00",
+                "by": "phn001",
+                "once": {
+                  "pay1@2026-12-25": {
+                    "free": 25000,
+                    "at": "2026-11-24T10:00:00.000+09:00",
+                    "by": "phn001"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "theirs": {
+          "plan": {
+            "shares": [
+              {
+                "id": "sh1",
+                "from": "2026-11-01",
+                "cur": "JPY",
+                "free": 15000,
+                "per": {
+                  "free": "month"
+                },
+                "told": "2026-11-01T09:00:00.000+09:00",
+                "at": "2026-11-24T10:05:00.000+09:00",
+                "by": "dsk001",
+                "once": {
+                  "pay1@2027-01-25": {
+                    "goals": {
+                      "trip": 9000
+                    },
+                    "at": "2026-11-24T10:05:00.000+09:00",
+                    "by": "dsk001"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "expected": {
+        "plan": {
+          "shares": [
+            {
+              "id": "sh1",
+              "from": "2026-11-01",
+              "cur": "JPY",
+              "free": 15000,
+              "per": {
+                "free": "month"
+              },
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-11-24T10:05:00.000+09:00",
+              "by": "dsk001",
+              "once": {
+                "pay1@2026-12-25": {
+                  "free": 25000,
+                  "at": "2026-11-24T10:00:00.000+09:00",
+                  "by": "phn001"
+                },
+                "pay1@2027-01-25": {
+                  "goals": {
+                    "trip": 9000
+                  },
+                  "at": "2026-11-24T10:05:00.000+09:00",
+                  "by": "dsk001"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "why": "The phone gives Free to spend 25,000 for the period of the 25 Dec pay (10:00); the desktop puts 9,000 to the trip for the period of the 25 Jan pay (10:05). Each `once` key of a share entry carries its own `at` and `by` and merges key by key [AE1]: both stay. The entry's own fields go to the desktop (10:05).",
+      "decisions": [
+        "AE1",
+        "AA6"
+      ]
+    },
+    {
+      "id": "mg-105",
+      "question": "merge",
+      "title": "AE1, H6: a key removed and put back with Undo wins over the removal still on the other device",
+      "input": {
+        "mine": {
+          "schedules": [
+            {
+              "id": "pay1",
+              "kind": "income",
+              "name": "Salary",
+              "per": "pay",
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-11-24T10:02:00.000+09:00",
+              "by": "phn001",
+              "steps": [
+                {
+                  "from": "2026-11-01",
+                  "amount": 300000,
+                  "at": "2026-11-01T09:00:00.000+09:00",
+                  "by": "aaaaaa"
+                }
+              ],
+              "amounts": {
+                "2026-12-25": {
+                  "amount": 0,
+                  "at": "2026-11-24T10:02:00.000+09:00",
+                  "by": "phn001"
+                }
+              }
+            }
+          ]
+        },
+        "theirs": {
+          "schedules": [
+            {
+              "id": "pay1",
+              "kind": "income",
+              "name": "Salary",
+              "per": "pay",
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-11-24T10:00:00.000+09:00",
+              "by": "phn001",
+              "steps": [
+                {
+                  "from": "2026-11-01",
+                  "amount": 300000,
+                  "at": "2026-11-01T09:00:00.000+09:00",
+                  "by": "aaaaaa"
+                }
+              ],
+              "amounts": {
+                "2026-12-25": {
+                  "amount": 0,
+                  "gone": "2026-11-24",
+                  "at": "2026-11-24T10:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "expected": {
+        "schedules": [
+          {
+            "id": "pay1",
+            "kind": "income",
+            "name": "Salary",
+            "per": "pay",
+            "told": "2026-11-01T09:00:00.000+09:00",
+            "at": "2026-11-24T10:02:00.000+09:00",
+            "by": "phn001",
+            "steps": [
+              {
+                "from": "2026-11-01",
+                "amount": 300000,
+                "at": "2026-11-01T09:00:00.000+09:00",
+                "by": "aaaaaa"
+              }
+            ],
+            "amounts": {
+              "2026-12-25": {
+                "amount": 0,
+                "at": "2026-11-24T10:02:00.000+09:00",
+                "by": "phn001"
+              }
+            }
+          }
+        ]
+      },
+      "why": "December's 0 was removed on the phone at 10:00 (the key `gone`, its own `at`) and that synced to the desktop. At 10:02 the phone undoes the removal: the key again with no `gone` and a newer `at` [H6]. Per key the Undo (10:02) is newer than the removal (10:00) the desktop holds, so December stays 0 [AE1].",
+      "decisions": [
+        "AE1",
+        "H6"
+      ]
+    },
+    {
+      "id": "mg-106",
+      "question": "merge",
+      "title": "AE1, H6: on the same `at` a removed key wins; two live keys on the same `at` go to the larger `by`",
+      "input": {
+        "mine": {
+          "schedules": [
+            {
+              "id": "pay1",
+              "kind": "income",
+              "name": "Salary",
+              "per": "pay",
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-11-24T10:00:00.000+09:00",
+              "by": "aaaaaa",
+              "steps": [
+                {
+                  "from": "2026-11-01",
+                  "amount": 300000,
+                  "at": "2026-11-01T09:00:00.000+09:00",
+                  "by": "aaaaaa"
+                }
+              ],
+              "amounts": {
+                "2026-12-25": {
+                  "amount": 0,
+                  "gone": "2026-11-24",
+                  "at": "2026-11-24T10:00:00.000+09:00",
+                  "by": "aaaaaa"
+                },
+                "2027-01-25": {
+                  "amount": 280000,
+                  "at": "2026-11-24T10:00:00.000+09:00",
+                  "by": "aaaaaa"
+                }
+              }
+            }
+          ]
+        },
+        "theirs": {
+          "schedules": [
+            {
+              "id": "pay1",
+              "kind": "income",
+              "name": "Salary",
+              "per": "pay",
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-11-24T10:00:00.000+09:00",
+              "by": "aaaaaa",
+              "steps": [
+                {
+                  "from": "2026-11-01",
+                  "amount": 300000,
+                  "at": "2026-11-01T09:00:00.000+09:00",
+                  "by": "aaaaaa"
+                }
+              ],
+              "amounts": {
+                "2026-12-25": {
+                  "amount": 0,
+                  "at": "2026-11-24T10:00:00.000+09:00",
+                  "by": "bbbbbb"
+                },
+                "2027-01-25": {
+                  "amount": 290000,
+                  "at": "2026-11-24T10:00:00.000+09:00",
+                  "by": "bbbbbb"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "expected": {
+        "schedules": [
+          {
+            "id": "pay1",
+            "kind": "income",
+            "name": "Salary",
+            "per": "pay",
+            "told": "2026-11-01T09:00:00.000+09:00",
+            "at": "2026-11-24T10:00:00.000+09:00",
+            "by": "aaaaaa",
+            "steps": [
+              {
+                "from": "2026-11-01",
+                "amount": 300000,
+                "at": "2026-11-01T09:00:00.000+09:00",
+                "by": "aaaaaa"
+              }
+            ],
+            "amounts": {
+              "2026-12-25": {
+                "amount": 0,
+                "gone": "2026-11-24",
+                "at": "2026-11-24T10:00:00.000+09:00",
+                "by": "aaaaaa"
+              },
+              "2027-01-25": {
+                "amount": 290000,
+                "at": "2026-11-24T10:00:00.000+09:00",
+                "by": "bbbbbb"
+              }
+            }
+          }
+        ]
+      },
+      "why": "Two devices write keys with the same `at`, 24 Nov 10:00. December: one removed it, one kept it: the removed key wins on the same `at` [H6, AE1]. January: both live, 280,000 by aaaaaa and 290,000 by bbbbbb: the larger `by` wins [L merge q1], 290,000, so both devices agree.",
+      "decisions": [
+        "AE1",
+        "H6",
+        "L merge q1"
+      ]
+    },
+    {
+      "id": "mg-107",
+      "question": "merge",
+      "title": "AE1, AE2: the pay day answered on the phone writes January's waiting 0; a rename on the desktop before the sync keeps it",
+      "input": {
+        "mine": {
+          "schedules": [
+            {
+              "id": "mv:pay:steps.a",
+              "kind": "income",
+              "name": "Salary",
+              "cur": "JPY",
+              "acct": "mv:acct:cfg",
+              "startsPeriod": true,
+              "per": "month",
+              "steps": [
+                {
+                  "from": "2026-11-22",
+                  "amount": 250000
+                }
+              ],
+              "told": "2026-11-23T20:00:00.000+09:00",
+              "at": "2026-11-28T08:00:00.000+09:00",
+              "by": "phn001",
+              "rules": [
+                {
+                  "from": "2026-11-22",
+                  "rule": {
+                    "every": "month",
+                    "days": [
+                      25
+                    ]
+                  },
+                  "at": "2026-11-28T08:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              ],
+              "amounts": {
+                "2027-01-25": {
+                  "amount": 0,
+                  "at": "2026-11-23T20:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              }
+            }
+          ],
+          "pendingMove": [
+            {
+              "id": "mv:pend:once.2027-01.a",
+              "field": "once.2027-01.a",
+              "waits": "mv:pay:steps.a",
+              "to": "amounts",
+              "ym": "2027-01",
+              "a": 0,
+              "told": "2026-11-23T20:00:00.000+09:00",
+              "at": "2026-11-28T08:00:00.000+09:00",
+              "by": "phn001",
+              "gone": "2026-11-28"
+            }
+          ]
+        },
+        "theirs": {
+          "schedules": [
+            {
+              "id": "mv:pay:steps.a",
+              "kind": "income",
+              "name": "Salary (Acme)",
+              "cur": "JPY",
+              "acct": "mv:acct:cfg",
+              "startsPeriod": true,
+              "per": "month",
+              "steps": [
+                {
+                  "from": "2026-11-22",
+                  "amount": 250000
+                }
+              ],
+              "told": "2026-11-23T20:00:00.000+09:00",
+              "at": "2026-11-29T09:00:00.000+09:00",
+              "by": "dsk001"
+            }
+          ],
+          "pendingMove": [
+            {
+              "id": "mv:pend:once.2027-01.a",
+              "field": "once.2027-01.a",
+              "waits": "mv:pay:steps.a",
+              "to": "amounts",
+              "ym": "2027-01",
+              "a": 0,
+              "told": "2026-11-23T20:00:00.000+09:00",
+              "at": "2026-11-23T20:00:00.000+09:00",
+              "by": "dsk001"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "schedules": [
+          {
+            "id": "mv:pay:steps.a",
+            "kind": "income",
+            "name": "Salary (Acme)",
+            "cur": "JPY",
+            "acct": "mv:acct:cfg",
+            "startsPeriod": true,
+            "per": "month",
+            "steps": [
+              {
+                "from": "2026-11-22",
+                "amount": 250000
+              }
+            ],
+            "told": "2026-11-23T20:00:00.000+09:00",
+            "at": "2026-11-29T09:00:00.000+09:00",
+            "by": "dsk001",
+            "rules": [
+              {
+                "from": "2026-11-22",
+                "rule": {
+                  "every": "month",
+                  "days": [
+                    25
+                  ]
+                },
+                "at": "2026-11-28T08:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ],
+            "amounts": {
+              "2027-01-25": {
+                "amount": 0,
+                "at": "2026-11-23T20:00:00.000+09:00",
+                "by": "phn001"
+              }
+            }
+          }
+        ],
+        "pendingMove": [
+          {
+            "id": "mv:pend:once.2027-01.a",
+            "field": "once.2027-01.a",
+            "waits": "mv:pay:steps.a",
+            "to": "amounts",
+            "ym": "2027-01",
+            "a": 0,
+            "told": "2026-11-23T20:00:00.000+09:00",
+            "at": "2026-11-28T08:00:00.000+09:00",
+            "by": "phn001",
+            "gone": "2026-11-28"
+          }
+        ]
+      },
+      "why": "Both devices moved the same 38.31 copy (last saved Mon 23 Nov 20:00), which holds January 2027 pay of 0 waiting for the pay day. On Sat 28 Nov 08:00 the phone answers: the 25th. That adds a `rules` entry (the answer's `at`) and writes January's 0 on the 25 Jan pay, the key carrying the entry's `at`, 23 Nov 20:00 [AE2]; the entry is kept `gone` with the answer's `at`. On Sun 29 Nov the desktop, not yet synced, renames the pay. At the merge the record goes to the desktop (29 Nov): \"Salary (Acme)\". The `rules` entry and the `amounts` key are only on the phone and merge by entry and by key [L merge q2, AE1], so both stay: January counts 0, not 250,000. The waiting entry: the phone's `gone` (28 Nov 08:00) is newer than the desktop's live copy (23 Nov 20:00), so it is not applied again (confirm_review_3 item 1, the worst chain).",
+      "decisions": [
+        "AE1",
+        "AE2",
+        "L merge q2",
+        "AB rows"
+      ]
+    },
+    {
+      "id": "mg-108",
+      "question": "receive",
+      "title": "AE1, M4, N1: a key that arrives more than a day ahead is held, with its own mark",
+      "input": {
+        "lastSeen": "2026-11-24T10:00:00.000+09:00",
+        "mine": {
+          "schedules": [
+            {
+              "id": "pay1",
+              "kind": "income",
+              "name": "Salary",
+              "per": "pay",
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-11-01T09:00:00.000+09:00",
+              "by": "aaaaaa",
+              "steps": [
+                {
+                  "from": "2026-11-01",
+                  "amount": 300000,
+                  "at": "2026-11-01T09:00:00.000+09:00",
+                  "by": "aaaaaa"
+                }
+              ]
+            }
+          ]
+        },
+        "theirs": {
+          "schedules": [
+            {
+              "id": "pay1",
+              "kind": "income",
+              "name": "Salary",
+              "per": "pay",
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-11-27T10:00:00.000+09:00",
+              "by": "fst001",
+              "steps": [
+                {
+                  "from": "2026-11-01",
+                  "amount": 300000,
+                  "at": "2026-11-01T09:00:00.000+09:00",
+                  "by": "aaaaaa"
+                }
+              ],
+              "amounts": {
+                "2026-12-25": {
+                  "amount": 0,
+                  "at": "2026-11-27T10:00:00.000+09:00",
+                  "by": "fst001"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "expected": {
+        "copy": {
+          "schedules": [
+            {
+              "id": "pay1",
+              "kind": "income",
+              "name": "Salary",
+              "per": "pay",
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-11-24T10:00:00.001+09:00",
+              "by": "fst001",
+              "steps": [
+                {
+                  "from": "2026-11-01",
+                  "amount": 300000,
+                  "at": "2026-11-01T09:00:00.000+09:00",
+                  "by": "aaaaaa"
+                }
+              ],
+              "held": {
+                "came": "2026-11-27T10:00:00.000+09:00",
+                "at": "2026-11-24T10:00:00.001+09:00"
+              },
+              "amounts": {
+                "2026-12-25": {
+                  "amount": 0,
+                  "at": "2026-11-24T10:00:00.001+09:00",
+                  "by": "fst001",
+                  "held": {
+                    "came": "2026-11-27T10:00:00.000+09:00",
+                    "at": "2026-11-24T10:00:00.001+09:00"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "warn": true
+      },
+      "why": "This device has seen up to 24 Nov 10:00, so a day ahead is 25 Nov 10:00. A device with its clock three days fast sends the pay with December's 0 written at 27 Nov 10:00. The record and the key are each held at 24 Nov 10:00:00.001, each marked with the `at` it came with and the held one [M4, N1, AE1], and the warning is shown. Then the merge: the held record (10:00:00.001) is newer than mine (1 Nov), and the key is only in the arriving copy, so December's 0 is kept with its mark.",
+      "decisions": [
+        "AE1",
+        "M4",
+        "N1"
+      ]
+    },
+    {
+      "id": "mg-109",
+      "question": "restore_merge",
+      "title": "AE5: a restore on a device whose clock is behind stamps with the D4 clock (`nextAt`), so the merge still keeps it",
+      "input": {
+        "current": {
+          "events": [
+            {
+              "id": "phn001-aaaaaaaaaa-1",
+              "k": "spend",
+              "date": "2026-11-09",
+              "acct": "bank",
+              "a": 1500,
+              "told": "2026-11-10T10:00:00.000+09:00",
+              "at": "2026-11-18T10:00:00.000+09:00",
+              "by": "dsk001"
+            },
+            {
+              "id": "dsk001-bbbbbbbbbb-1",
+              "k": "spend",
+              "date": "2026-11-16",
+              "acct": "bank",
+              "a": 2000,
+              "told": "2026-11-16T10:00:00.000+09:00",
+              "at": "2026-11-16T10:00:00.000+09:00",
+              "by": "dsk001"
+            }
+          ]
+        },
+        "backup": {
+          "events": [
+            {
+              "id": "phn001-aaaaaaaaaa-1",
+              "k": "spend",
+              "date": "2026-11-09",
+              "acct": "bank",
+              "a": 1000,
+              "told": "2026-11-10T10:00:00.000+09:00",
+              "at": "2026-11-10T10:00:00.000+09:00",
+              "by": "phn001"
+            }
+          ]
+        },
+        "now": "2026-11-17T09:00:00.000+09:00",
+        "by": "phn001",
+        "cloud": {
+          "events": [
+            {
+              "id": "phn001-aaaaaaaaaa-1",
+              "k": "spend",
+              "date": "2026-11-09",
+              "acct": "bank",
+              "a": 1500,
+              "told": "2026-11-10T10:00:00.000+09:00",
+              "at": "2026-11-18T10:00:00.000+09:00",
+              "by": "dsk001"
+            },
+            {
+              "id": "dsk001-bbbbbbbbbb-1",
+              "k": "spend",
+              "date": "2026-11-16",
+              "acct": "bank",
+              "a": 2000,
+              "told": "2026-11-16T10:00:00.000+09:00",
+              "at": "2026-11-16T10:00:00.000+09:00",
+              "by": "dsk001"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "mine_first": {
+          "events": [
+            {
+              "id": "dsk001-bbbbbbbbbb-1",
+              "k": "spend",
+              "date": "2026-11-16",
+              "acct": "bank",
+              "a": 2000,
+              "told": "2026-11-16T10:00:00.000+09:00",
+              "at": "2026-11-18T10:00:00.001+09:00",
+              "by": "phn001",
+              "gone": "2026-11-17"
+            },
+            {
+              "id": "phn001-aaaaaaaaaa-1",
+              "k": "spend",
+              "date": "2026-11-09",
+              "acct": "bank",
+              "a": 1000,
+              "told": "2026-11-10T10:00:00.000+09:00",
+              "at": "2026-11-18T10:00:00.001+09:00",
+              "by": "phn001"
+            }
+          ]
+        },
+        "theirs_first": {
+          "events": [
+            {
+              "id": "dsk001-bbbbbbbbbb-1",
+              "k": "spend",
+              "date": "2026-11-16",
+              "acct": "bank",
+              "a": 2000,
+              "told": "2026-11-16T10:00:00.000+09:00",
+              "at": "2026-11-18T10:00:00.001+09:00",
+              "by": "phn001",
+              "gone": "2026-11-17"
+            },
+            {
+              "id": "phn001-aaaaaaaaaa-1",
+              "k": "spend",
+              "date": "2026-11-09",
+              "acct": "bank",
+              "a": 1000,
+              "told": "2026-11-10T10:00:00.000+09:00",
+              "at": "2026-11-18T10:00:00.001+09:00",
+              "by": "phn001"
+            }
+          ]
+        }
+      },
+      "why": "The backup (Tue 10 Nov) holds a spend of 1,000. Since then the desktop changed it to 1,500 (Wed 18 Nov 10:00) and added a spend of 2,000; the phone has seen both. The phone's clock is behind: it reads Tue 17 Nov 09:00 when the backup is restored. The restore stamps with the D4 clock [AE5]: the larger of now and the newest `at` seen plus 1 ms, 18 Nov 10:00:00.001. So the 1,000 comes back and the 2,000 is `gone` (the restore's day, 17 Nov), each with that `at`, newer than every `at` in the cloud copy, and the merge keeps the restore either way round. With the raw time (17 Nov 09:00) the desktop's 1,500 (18 Nov) would come back: only part of the restore would hold (confirm_review_3, restore column).",
+      "decisions": [
+        "AE5",
+        "D4",
+        "AB watch"
+      ]
+    },
+    {
+      "id": "mg-110",
+      "question": "restore",
+      "title": "AE5: a restore covers records with built ids (`set:`, `pe:`, `mv:draw:`) like any other",
+      "input": {
+        "current": {
+          "events": [
+            {
+              "id": "mv:draw:once.2027-01",
+              "k": "move",
+              "date": "2027-01-25",
+              "place": "mv:place:rainy",
+              "a": 15000,
+              "told": "2026-11-23T20:00:00.000+09:00",
+              "at": "2026-11-26T12:00:00.000+09:00",
+              "by": "dsk001"
+            },
+            {
+              "id": "pe:pay@2026-10-25:free",
+              "k": "periodEnd",
+              "date": "2026-11-24",
+              "place": "free",
+              "moves": [
+                {
+                  "to": "waiting",
+                  "a": 2000
+                }
+              ],
+              "told": "2026-11-20T10:00:00.000+09:00",
+              "at": "2026-11-26T13:00:00.000+09:00",
+              "by": "dsk001"
+            },
+            {
+              "id": "set:pay@2026-11-25",
+              "k": "in",
+              "date": "2026-11-25",
+              "acct": "bank",
+              "a": 250000,
+              "settles": "pay@2026-11-25",
+              "told": "2026-11-26T12:30:00.000+09:00",
+              "at": "2026-11-26T12:30:00.000+09:00",
+              "by": "dsk001"
+            }
+          ]
+        },
+        "backup": {
+          "events": [
+            {
+              "id": "mv:draw:once.2027-01",
+              "k": "move",
+              "date": "2027-01-25",
+              "place": "mv:place:rainy",
+              "a": 20000,
+              "told": "2026-11-23T20:00:00.000+09:00",
+              "at": "2026-11-23T20:00:00.000+09:00",
+              "by": "phn001"
+            },
+            {
+              "id": "pe:pay@2026-10-25:free",
+              "k": "periodEnd",
+              "date": "2026-11-24",
+              "place": "free",
+              "moves": [
+                {
+                  "to": "waiting",
+                  "a": 1500
+                }
+              ],
+              "told": "2026-11-20T10:00:00.000+09:00",
+              "at": "2026-11-20T10:00:00.000+09:00",
+              "by": "phn001"
+            }
+          ]
+        },
+        "now": "2026-11-27T09:00:00.000+09:00",
+        "by": "phn001"
+      },
+      "expected": {
+        "events": [
+          {
+            "id": "mv:draw:once.2027-01",
+            "k": "move",
+            "date": "2027-01-25",
+            "place": "mv:place:rainy",
+            "a": 20000,
+            "told": "2026-11-23T20:00:00.000+09:00",
+            "at": "2026-11-27T09:00:00.000+09:00",
+            "by": "phn001"
+          },
+          {
+            "id": "pe:pay@2026-10-25:free",
+            "k": "periodEnd",
+            "date": "2026-11-24",
+            "place": "free",
+            "moves": [
+              {
+                "to": "waiting",
+                "a": 1500
+              }
+            ],
+            "told": "2026-11-20T10:00:00.000+09:00",
+            "at": "2026-11-27T09:00:00.000+09:00",
+            "by": "phn001"
+          },
+          {
+            "id": "set:pay@2026-11-25",
+            "k": "in",
+            "date": "2026-11-25",
+            "acct": "bank",
+            "a": 250000,
+            "settles": "pay@2026-11-25",
+            "told": "2026-11-26T12:30:00.000+09:00",
+            "at": "2026-11-27T09:00:00.000+09:00",
+            "by": "phn001",
+            "gone": "2026-11-27"
+          }
+        ]
+      },
+      "why": "The backup (Thu 26 Nov 07:00) holds the moved Emergency fund draw `mv:draw:once.2027-01` (20,000) and October's period-end answer `pe:pay@2026-10-25:free` (1,500 to Waiting). After it the desktop changed the draw to 15,000 (12:00), ticked the 25 Nov pay, writing `set:pay@2026-11-25` (12:30), and changed the answer to 2,000 (13:00). On Fri 27 Nov 09:00 the phone restores the backup [AE5]. Built ids are records like any other: the draw comes back at 20,000 and the answer at 1,500, each with the restore's `at` and `by`; the settle is not in the backup, so it is `gone` (27 Nov) with the restore's `at`, and the 25 Nov pay is expected again. `told` stays each record's first [H1].",
+      "decisions": [
+        "AE5",
+        "O2",
+        "AB watch",
+        "H1"
+      ]
+    },
+    {
+      "id": "mg-111",
+      "question": "restore",
+      "title": "AE5: a restore covers `pendingMove`, the frozen texts and keyed overrides: what waited at the backup waits again",
+      "input": {
+        "current": {
+          "schedules": [
+            {
+              "id": "mv:pay:steps.a",
+              "kind": "income",
+              "name": "Salary",
+              "cur": "JPY",
+              "acct": "mv:acct:cfg",
+              "startsPeriod": true,
+              "per": "month",
+              "steps": [
+                {
+                  "from": "2026-11-22",
+                  "amount": 250000,
+                  "at": "2026-11-23T20:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              ],
+              "told": "2026-11-23T20:00:00.000+09:00",
+              "at": "2026-11-28T08:00:00.000+09:00",
+              "by": "phn001",
+              "rules": [
+                {
+                  "from": "2026-11-22",
+                  "rule": {
+                    "every": "month",
+                    "days": [
+                      25
+                    ]
+                  },
+                  "at": "2026-11-28T08:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              ],
+              "amounts": {
+                "2027-01-25": {
+                  "amount": 0,
+                  "at": "2026-11-23T20:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              }
+            }
+          ],
+          "pendingMove": [
+            {
+              "id": "mv:pend:once.2027-01.a",
+              "field": "once.2027-01.a",
+              "waits": "mv:pay:steps.a",
+              "to": "amounts",
+              "ym": "2027-01",
+              "a": 0,
+              "told": "2026-11-23T20:00:00.000+09:00",
+              "at": "2026-11-28T08:00:00.000+09:00",
+              "by": "phn001",
+              "gone": "2026-11-28"
+            }
+          ],
+          "frozen": [
+            {
+              "id": "mv:frozen:dsk001",
+              "raw": "{\"v\":1}",
+              "told": "2026-11-23T20:00:00.000+09:00",
+              "at": "2026-11-23T20:00:00.000+09:00",
+              "by": "dsk001"
+            },
+            {
+              "id": "mv:frozen:phn001",
+              "raw": "{\"v\":1}",
+              "told": "2026-11-23T20:00:00.000+09:00",
+              "at": "2026-11-23T20:00:00.000+09:00",
+              "by": "phn001"
+            }
+          ]
+        },
+        "backup": {
+          "schedules": [
+            {
+              "id": "mv:pay:steps.a",
+              "kind": "income",
+              "name": "Salary",
+              "cur": "JPY",
+              "acct": "mv:acct:cfg",
+              "startsPeriod": true,
+              "per": "month",
+              "steps": [
+                {
+                  "from": "2026-11-22",
+                  "amount": 250000,
+                  "at": "2026-11-23T20:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              ],
+              "told": "2026-11-23T20:00:00.000+09:00",
+              "at": "2026-11-23T20:00:00.000+09:00",
+              "by": "phn001"
+            }
+          ],
+          "pendingMove": [
+            {
+              "id": "mv:pend:once.2027-01.a",
+              "field": "once.2027-01.a",
+              "waits": "mv:pay:steps.a",
+              "to": "amounts",
+              "ym": "2027-01",
+              "a": 0,
+              "told": "2026-11-23T20:00:00.000+09:00",
+              "at": "2026-11-23T20:00:00.000+09:00",
+              "by": "phn001"
+            }
+          ],
+          "frozen": [
+            {
+              "id": "mv:frozen:phn001",
+              "raw": "{\"v\":1}",
+              "told": "2026-11-23T20:00:00.000+09:00",
+              "at": "2026-11-23T20:00:00.000+09:00",
+              "by": "phn001"
+            }
+          ]
+        },
+        "now": "2026-11-29T09:00:00.000+09:00",
+        "by": "phn001"
+      },
+      "expected": {
+        "schedules": [
+          {
+            "id": "mv:pay:steps.a",
+            "kind": "income",
+            "name": "Salary",
+            "cur": "JPY",
+            "acct": "mv:acct:cfg",
+            "startsPeriod": true,
+            "per": "month",
+            "steps": [
+              {
+                "from": "2026-11-22",
+                "amount": 250000,
+                "at": "2026-11-29T09:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ],
+            "told": "2026-11-23T20:00:00.000+09:00",
+            "at": "2026-11-29T09:00:00.000+09:00",
+            "by": "phn001",
+            "rules": [
+              {
+                "from": "2026-11-22",
+                "rule": {
+                  "every": "month",
+                  "days": [
+                    25
+                  ]
+                },
+                "at": "2026-11-29T09:00:00.000+09:00",
+                "by": "phn001",
+                "gone": "2026-11-29"
+              }
+            ],
+            "amounts": {
+              "2027-01-25": {
+                "amount": 0,
+                "gone": "2026-11-29",
+                "at": "2026-11-29T09:00:00.000+09:00",
+                "by": "phn001"
+              }
+            }
+          }
+        ],
+        "pendingMove": [
+          {
+            "id": "mv:pend:once.2027-01.a",
+            "field": "once.2027-01.a",
+            "waits": "mv:pay:steps.a",
+            "to": "amounts",
+            "ym": "2027-01",
+            "a": 0,
+            "told": "2026-11-23T20:00:00.000+09:00",
+            "at": "2026-11-29T09:00:00.000+09:00",
+            "by": "phn001"
+          }
+        ],
+        "frozen": [
+          {
+            "id": "mv:frozen:dsk001",
+            "raw": "{\"v\":1}",
+            "told": "2026-11-23T20:00:00.000+09:00",
+            "at": "2026-11-29T09:00:00.000+09:00",
+            "by": "phn001",
+            "gone": "2026-11-29"
+          },
+          {
+            "id": "mv:frozen:phn001",
+            "raw": "{\"v\":1}",
+            "told": "2026-11-23T20:00:00.000+09:00",
+            "at": "2026-11-29T09:00:00.000+09:00",
+            "by": "phn001"
+          }
+        ]
+      },
+      "why": "The phone moved its 38.31 copy (last saved Mon 23 Nov 20:00) and made a backup before answering anything: January's pay of 0 waits in `pendingMove`. Later the desktop moved too (its frozen text `mv:frozen:dsk001`), and on Sat 28 Nov the phone answered the pay day, the 25th: a `rules` entry, January's 0 as `amounts` on 25 Jan, the entry `gone`. On Sun 29 Nov 09:00 the phone restores the backup [AE5]: the schedule, its step, the waiting entry and the phone's frozen text come back as the backup holds them, each with the restore's `at`. What is newer than the backup is removed by its own `gone` (29 Nov) with that `at`: the `rules` entry [M3], the `amounts` key [AE1] and the desktop's frozen text. So the pay day is asked again and January's 0 waits for it again.",
+      "decisions": [
+        "AE5",
+        "AE1",
+        "M3",
+        "AB rows",
+        "AB1"
+      ]
+    },
+    {
+      "id": "mg-112",
+      "question": "restore_merge",
+      "title": "AE5, N1: a restore keeps the held marks the device knows, so the fast device's copy cannot beat the restore",
+      "input": {
+        "current": {
+          "events": [
+            {
+              "id": "fst001-cccccccccc-1",
+              "k": "spend",
+              "date": "2026-11-22",
+              "acct": "bank",
+              "a": 5000,
+              "told": "2026-11-22T10:00:00.000+09:00",
+              "at": "2026-11-24T10:00:00.001+09:00",
+              "by": "fst001",
+              "held": {
+                "came": "2026-11-26T10:00:00.000+09:00",
+                "at": "2026-11-24T10:00:00.001+09:00"
+              }
+            }
+          ]
+        },
+        "backup": {
+          "events": [
+            {
+              "id": "fst001-cccccccccc-1",
+              "k": "spend",
+              "date": "2026-11-22",
+              "acct": "bank",
+              "a": 4000,
+              "told": "2026-11-22T10:00:00.000+09:00",
+              "at": "2026-11-23T10:00:00.000+09:00",
+              "by": "phn001"
+            }
+          ]
+        },
+        "now": "2026-11-24T12:00:00.000+09:00",
+        "by": "phn001",
+        "cloud": {
+          "events": [
+            {
+              "id": "fst001-cccccccccc-1",
+              "k": "spend",
+              "date": "2026-11-22",
+              "acct": "bank",
+              "a": 5000,
+              "told": "2026-11-22T10:00:00.000+09:00",
+              "at": "2026-11-26T10:00:00.000+09:00",
+              "by": "fst001"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "mine_first": {
+          "events": [
+            {
+              "id": "fst001-cccccccccc-1",
+              "k": "spend",
+              "date": "2026-11-22",
+              "acct": "bank",
+              "a": 4000,
+              "told": "2026-11-22T10:00:00.000+09:00",
+              "at": "2026-11-24T12:00:00.000+09:00",
+              "by": "phn001",
+              "held": {
+                "came": "2026-11-26T10:00:00.000+09:00",
+                "at": "2026-11-24T10:00:00.001+09:00"
+              }
+            }
+          ]
+        },
+        "theirs_first": {
+          "events": [
+            {
+              "id": "fst001-cccccccccc-1",
+              "k": "spend",
+              "date": "2026-11-22",
+              "acct": "bank",
+              "a": 4000,
+              "told": "2026-11-22T10:00:00.000+09:00",
+              "at": "2026-11-24T12:00:00.000+09:00",
+              "by": "phn001",
+              "held": {
+                "came": "2026-11-26T10:00:00.000+09:00",
+                "at": "2026-11-24T10:00:00.001+09:00"
+              }
+            }
+          ]
+        }
+      },
+      "why": "A device with its clock two days fast changed a spend to 5,000, written at Thu 26 Nov 10:00. The phone, which had seen up to Tue 24 Nov 10:00, held it at 24 Nov 10:00:00.001 with the mark { came 26 Nov 10:00, at 24 Nov 10:00:00.001 } [M4, N1]. The backup (Mon 23 Nov) holds 4,000. On 24 Nov 12:00 the phone restores it [AE5]: 4,000 with the restore's `at` (12:00), and the record keeps the held mark the phone knows, as an edit keeps it [N1]. The fast device's own copy in the cloud still says 26 Nov 10:00: that is the mark's `came`, so it counts at the held 24 Nov 10:00:00.001 and the restore (12:00) wins, either way round. Without the mark the 26 Nov copy would win and the restore would not hold.",
+      "decisions": [
+        "AE5",
+        "N1",
+        "M4"
+      ]
+    },
+    {
+      "id": "mg-113",
+      "question": "restore_merge",
+      "title": "AE5, AE1: a restore covers keyed overrides key by key; the merge with the cloud copy keeps it",
+      "input": {
+        "current": {
+          "schedules": [
+            {
+              "id": "pay1",
+              "kind": "income",
+              "name": "Salary",
+              "per": "pay",
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-11-25T10:00:00.000+09:00",
+              "by": "dsk001",
+              "steps": [
+                {
+                  "from": "2026-11-01",
+                  "amount": 300000,
+                  "at": "2026-11-01T09:00:00.000+09:00",
+                  "by": "aaaaaa"
+                }
+              ],
+              "amounts": {
+                "2026-12-25": {
+                  "amount": 0,
+                  "at": "2026-11-24T10:00:00.000+09:00",
+                  "by": "phn001"
+                },
+                "2027-01-25": {
+                  "amount": 100000,
+                  "at": "2026-11-25T10:00:00.000+09:00",
+                  "by": "dsk001"
+                }
+              }
+            }
+          ],
+          "accounts": [
+            {
+              "id": "car",
+              "type": "loan",
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-11-25T10:00:00.000+09:00",
+              "by": "dsk001",
+              "extraSteps": [
+                {
+                  "from": "2026-11-24",
+                  "amount": 0,
+                  "at": "2026-11-01T09:00:00.000+09:00",
+                  "by": "aaaaaa"
+                },
+                {
+                  "from": "2027-01-01",
+                  "amount": 30000,
+                  "at": "2026-11-25T10:00:00.000+09:00",
+                  "by": "dsk001"
+                }
+              ]
+            }
+          ],
+          "plan": {
+            "budgets": [
+              {
+                "id": "food",
+                "name": "Food",
+                "per": "month",
+                "told": "2026-11-01T09:00:00.000+09:00",
+                "at": "2026-11-25T10:00:00.000+09:00",
+                "by": "dsk001",
+                "steps": [
+                  {
+                    "from": "2026-11-01",
+                    "amount": 40000,
+                    "at": "2026-11-01T09:00:00.000+09:00",
+                    "by": "aaaaaa"
+                  }
+                ],
+                "once": {
+                  "pay1@2026-12-25": {
+                    "amount": 70000,
+                    "at": "2026-11-25T10:00:00.000+09:00",
+                    "by": "dsk001"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "backup": {
+          "schedules": [
+            {
+              "id": "pay1",
+              "kind": "income",
+              "name": "Salary",
+              "per": "pay",
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-11-24T09:00:00.000+09:00",
+              "by": "phn001",
+              "steps": [
+                {
+                  "from": "2026-11-01",
+                  "amount": 300000,
+                  "at": "2026-11-01T09:00:00.000+09:00",
+                  "by": "aaaaaa"
+                }
+              ],
+              "amounts": {
+                "2026-12-25": {
+                  "amount": 50000,
+                  "at": "2026-11-24T09:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              }
+            }
+          ],
+          "accounts": [
+            {
+              "id": "car",
+              "type": "loan",
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-11-01T09:00:00.000+09:00",
+              "by": "aaaaaa",
+              "extraSteps": [
+                {
+                  "from": "2026-11-24",
+                  "amount": 0,
+                  "at": "2026-11-01T09:00:00.000+09:00",
+                  "by": "aaaaaa"
+                }
+              ]
+            }
+          ],
+          "plan": {
+            "budgets": [
+              {
+                "id": "food",
+                "name": "Food",
+                "per": "month",
+                "told": "2026-11-01T09:00:00.000+09:00",
+                "at": "2026-11-01T09:00:00.000+09:00",
+                "by": "aaaaaa",
+                "steps": [
+                  {
+                    "from": "2026-11-01",
+                    "amount": 40000,
+                    "at": "2026-11-01T09:00:00.000+09:00",
+                    "by": "aaaaaa"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        "now": "2026-11-26T09:00:00.000+09:00",
+        "by": "phn001",
+        "cloud": {
+          "schedules": [
+            {
+              "id": "pay1",
+              "kind": "income",
+              "name": "Salary",
+              "per": "pay",
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-11-25T10:00:00.000+09:00",
+              "by": "dsk001",
+              "steps": [
+                {
+                  "from": "2026-11-01",
+                  "amount": 300000,
+                  "at": "2026-11-01T09:00:00.000+09:00",
+                  "by": "aaaaaa"
+                }
+              ],
+              "amounts": {
+                "2026-12-25": {
+                  "amount": 0,
+                  "at": "2026-11-24T10:00:00.000+09:00",
+                  "by": "phn001"
+                },
+                "2027-01-25": {
+                  "amount": 100000,
+                  "at": "2026-11-25T10:00:00.000+09:00",
+                  "by": "dsk001"
+                }
+              }
+            }
+          ],
+          "accounts": [
+            {
+              "id": "car",
+              "type": "loan",
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-11-25T10:00:00.000+09:00",
+              "by": "dsk001",
+              "extraSteps": [
+                {
+                  "from": "2026-11-24",
+                  "amount": 0,
+                  "at": "2026-11-01T09:00:00.000+09:00",
+                  "by": "aaaaaa"
+                },
+                {
+                  "from": "2027-01-01",
+                  "amount": 30000,
+                  "at": "2026-11-25T10:00:00.000+09:00",
+                  "by": "dsk001"
+                }
+              ]
+            }
+          ],
+          "plan": {
+            "budgets": [
+              {
+                "id": "food",
+                "name": "Food",
+                "per": "month",
+                "told": "2026-11-01T09:00:00.000+09:00",
+                "at": "2026-11-25T10:00:00.000+09:00",
+                "by": "dsk001",
+                "steps": [
+                  {
+                    "from": "2026-11-01",
+                    "amount": 40000,
+                    "at": "2026-11-01T09:00:00.000+09:00",
+                    "by": "aaaaaa"
+                  }
+                ],
+                "once": {
+                  "pay1@2026-12-25": {
+                    "amount": 70000,
+                    "at": "2026-11-25T10:00:00.000+09:00",
+                    "by": "dsk001"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "expected": {
+        "mine_first": {
+          "schedules": [
+            {
+              "id": "pay1",
+              "kind": "income",
+              "name": "Salary",
+              "per": "pay",
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-11-26T09:00:00.000+09:00",
+              "by": "phn001",
+              "steps": [
+                {
+                  "from": "2026-11-01",
+                  "amount": 300000,
+                  "at": "2026-11-26T09:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              ],
+              "amounts": {
+                "2026-12-25": {
+                  "amount": 50000,
+                  "at": "2026-11-26T09:00:00.000+09:00",
+                  "by": "phn001"
+                },
+                "2027-01-25": {
+                  "amount": 100000,
+                  "gone": "2026-11-26",
+                  "at": "2026-11-26T09:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              }
+            }
+          ],
+          "accounts": [
+            {
+              "id": "car",
+              "type": "loan",
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-11-26T09:00:00.000+09:00",
+              "by": "phn001",
+              "extraSteps": [
+                {
+                  "from": "2026-11-24",
+                  "amount": 0,
+                  "at": "2026-11-26T09:00:00.000+09:00",
+                  "by": "phn001"
+                },
+                {
+                  "from": "2027-01-01",
+                  "amount": 30000,
+                  "gone": "2026-11-26",
+                  "at": "2026-11-26T09:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              ]
+            }
+          ],
+          "plan": {
+            "budgets": [
+              {
+                "id": "food",
+                "name": "Food",
+                "per": "month",
+                "told": "2026-11-01T09:00:00.000+09:00",
+                "at": "2026-11-26T09:00:00.000+09:00",
+                "by": "phn001",
+                "steps": [
+                  {
+                    "from": "2026-11-01",
+                    "amount": 40000,
+                    "at": "2026-11-26T09:00:00.000+09:00",
+                    "by": "phn001"
+                  }
+                ],
+                "once": {
+                  "pay1@2026-12-25": {
+                    "amount": 70000,
+                    "gone": "2026-11-26",
+                    "at": "2026-11-26T09:00:00.000+09:00",
+                    "by": "phn001"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "theirs_first": {
+          "schedules": [
+            {
+              "id": "pay1",
+              "kind": "income",
+              "name": "Salary",
+              "per": "pay",
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-11-26T09:00:00.000+09:00",
+              "by": "phn001",
+              "steps": [
+                {
+                  "from": "2026-11-01",
+                  "amount": 300000,
+                  "at": "2026-11-26T09:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              ],
+              "amounts": {
+                "2026-12-25": {
+                  "amount": 50000,
+                  "at": "2026-11-26T09:00:00.000+09:00",
+                  "by": "phn001"
+                },
+                "2027-01-25": {
+                  "amount": 100000,
+                  "gone": "2026-11-26",
+                  "at": "2026-11-26T09:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              }
+            }
+          ],
+          "accounts": [
+            {
+              "id": "car",
+              "type": "loan",
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-11-26T09:00:00.000+09:00",
+              "by": "phn001",
+              "extraSteps": [
+                {
+                  "from": "2026-11-24",
+                  "amount": 0,
+                  "at": "2026-11-26T09:00:00.000+09:00",
+                  "by": "phn001"
+                },
+                {
+                  "from": "2027-01-01",
+                  "amount": 30000,
+                  "gone": "2026-11-26",
+                  "at": "2026-11-26T09:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              ]
+            }
+          ],
+          "plan": {
+            "budgets": [
+              {
+                "id": "food",
+                "name": "Food",
+                "per": "month",
+                "told": "2026-11-01T09:00:00.000+09:00",
+                "at": "2026-11-26T09:00:00.000+09:00",
+                "by": "phn001",
+                "steps": [
+                  {
+                    "from": "2026-11-01",
+                    "amount": 40000,
+                    "at": "2026-11-26T09:00:00.000+09:00",
+                    "by": "phn001"
+                  }
+                ],
+                "once": {
+                  "pay1@2026-12-25": {
+                    "amount": 70000,
+                    "gone": "2026-11-26",
+                    "at": "2026-11-26T09:00:00.000+09:00",
+                    "by": "phn001"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "why": "The backup (Tue 24 Nov 09:00) holds December pay of 50,000 (`amounts` key 2026-12-25), the car loan with no extra and Food with no `once`. After it: December pay changed to 0 (10:00), January pay set to 100,000, 30,000 extra planned on the loan from January, and Food 70,000 for the December period (all 25 Nov). On Thu 26 Nov 09:00 the phone restores the backup [AE5]. Key by key [AE1]: December pay back to 50,000 with the restore's `at`; January's key, the January extra and Food's December key are not in the backup, so each is removed by its own `gone` (26 Nov) with the restore's `at`; the steps and the loan's first extra entry get the new `at` [M3]. Every stamp is 26 Nov 09:00, newer than the cloud copy's newest (25 Nov 10:00), so the merge keeps the restore either way round: December pay 50,000, January the usual 300,000, no extra on the loan.",
+      "decisions": [
+        "AE5",
+        "AE1",
+        "M3",
+        "AB watch"
+      ]
+    },
+    {
+      "id": "mg-114",
+      "question": "restore",
+      "title": "AF3: a restore writes `gone` for a shared `ui` key not in the backup",
+      "input": {
+        "current": {
+          "ui": {
+            "askNums": false,
+            "hideTips": true,
+            "at": {
+              "askNums": "2026-11-15T10:00:00.000+09:00",
+              "hideTips": "2026-11-16T10:00:00.000+09:00"
+            },
+            "by": {
+              "askNums": "dsk001",
+              "hideTips": "dsk001"
+            }
+          }
+        },
+        "backup": {
+          "ui": {
+            "askNums": true,
+            "at": {
+              "askNums": "2026-11-10T10:00:00.000+09:00"
+            },
+            "by": {
+              "askNums": "phn001"
+            }
+          }
+        },
+        "now": "2026-11-21T09:00:00.000+09:00",
+        "by": "phn001"
+      },
+      "expected": {
+        "ui": {
+          "askNums": true,
+          "hideTips": true,
+          "at": {
+            "askNums": "2026-11-21T09:00:00.000+09:00",
+            "hideTips": "2026-11-21T09:00:00.000+09:00"
+          },
+          "by": {
+            "askNums": "phn001",
+            "hideTips": "phn001"
+          },
+          "gone": {
+            "hideTips": "2026-11-21"
+          }
+        }
+      },
+      "why": "The backup (Tue 10 Nov) holds askNums true. After it the desktop set askNums false (15 Nov) and a new key, hideTips true (16 Nov). On Sat 21 Nov 09:00 the phone restores the backup: askNums takes the backup's true with a new `at` [AD8]; hideTips is not in the backup, so it is removed by its own `gone` in `ui.gone` (the restore's day) with the restore's `at` and `by` [AF3]. Nothing is deleted: its value stays beside the mark (section 0), and the screen reads a `gone` key as not set.",
+      "decisions": [
+        "AF3",
+        "AD8",
+        "AE5"
+      ]
+    },
+    {
+      "id": "mg-115",
+      "question": "restore_merge",
+      "title": "AF3: the merge with the cloud copy keeps the restored `ui` key removed, on either side",
+      "input": {
+        "current": {
+          "ui": {
+            "askNums": false,
+            "hideTips": true,
+            "at": {
+              "askNums": "2026-11-15T10:00:00.000+09:00",
+              "hideTips": "2026-11-16T10:00:00.000+09:00"
+            },
+            "by": {
+              "askNums": "dsk001",
+              "hideTips": "dsk001"
+            }
+          }
+        },
+        "backup": {
+          "ui": {
+            "askNums": true,
+            "at": {
+              "askNums": "2026-11-10T10:00:00.000+09:00"
+            },
+            "by": {
+              "askNums": "phn001"
+            }
+          }
+        },
+        "now": "2026-11-21T09:00:00.000+09:00",
+        "by": "phn001",
+        "cloud": {
+          "ui": {
+            "askNums": false,
+            "hideTips": true,
+            "at": {
+              "askNums": "2026-11-15T10:00:00.000+09:00",
+              "hideTips": "2026-11-16T10:00:00.000+09:00"
+            },
+            "by": {
+              "askNums": "dsk001",
+              "hideTips": "dsk001"
+            }
+          }
+        }
+      },
+      "expected": {
+        "mine_first": {
+          "ui": {
+            "askNums": true,
+            "hideTips": true,
+            "at": {
+              "askNums": "2026-11-21T09:00:00.000+09:00",
+              "hideTips": "2026-11-21T09:00:00.000+09:00"
+            },
+            "by": {
+              "askNums": "phn001",
+              "hideTips": "phn001"
+            },
+            "gone": {
+              "hideTips": "2026-11-21"
+            }
+          }
+        },
+        "theirs_first": {
+          "ui": {
+            "askNums": true,
+            "hideTips": true,
+            "at": {
+              "askNums": "2026-11-21T09:00:00.000+09:00",
+              "hideTips": "2026-11-21T09:00:00.000+09:00"
+            },
+            "by": {
+              "askNums": "phn001",
+              "hideTips": "phn001"
+            },
+            "gone": {
+              "hideTips": "2026-11-21"
+            }
+          }
+        }
+      },
+      "why": "The cloud copy still has hideTips true at 16 Nov 10:00 with no `gone`. The restored key is `gone` at 21 Nov 09:00, newer, so it wins per key [AF3, L merge q6]; askNums as in mg-99. Merged either way round it is the restored `ui`. Before AF3 the restore left the key out and the cloud's hideTips came back at the next sync (mg-q13).",
+      "decisions": [
+        "AF3",
+        "AD8",
+        "L merge q6"
+      ]
+    },
+    {
+      "id": "mg-116",
+      "question": "merge",
+      "title": "AF3, H6: a removed `ui` key wins on the same `at`; a key put back with Undo wins when newer",
+      "input": {
+        "mine": {
+          "ui": {
+            "hideTips": true,
+            "askNums": true,
+            "at": {
+              "hideTips": "2026-11-21T09:00:00.000+09:00",
+              "askNums": "2026-11-21T10:00:00.000+09:00"
+            },
+            "by": {
+              "hideTips": "aaaaaa",
+              "askNums": "aaaaaa"
+            },
+            "gone": {
+              "hideTips": "2026-11-21",
+              "askNums": "2026-11-21"
+            }
+          }
+        },
+        "theirs": {
+          "ui": {
+            "hideTips": true,
+            "askNums": true,
+            "at": {
+              "hideTips": "2026-11-21T09:00:00.000+09:00",
+              "askNums": "2026-11-21T10:05:00.000+09:00"
+            },
+            "by": {
+              "hideTips": "bbbbbb",
+              "askNums": "bbbbbb"
+            }
+          }
+        }
+      },
+      "expected": {
+        "ui": {
+          "hideTips": true,
+          "askNums": true,
+          "at": {
+            "hideTips": "2026-11-21T09:00:00.000+09:00",
+            "askNums": "2026-11-21T10:05:00.000+09:00"
+          },
+          "by": {
+            "hideTips": "aaaaaa",
+            "askNums": "bbbbbb"
+          },
+          "gone": {
+            "hideTips": "2026-11-21"
+          }
+        }
+      },
+      "why": "hideTips: removed by aaaaaa and kept by bbbbbb, both at 21 Nov 09:00. On the same `at` the removed key wins, before `by` [H6, AF3]: it stays removed. askNums: removed by aaaaaa at 10:00 and put back with Undo by bbbbbb at 10:05, newer, so it is set again, with no `gone`.",
+      "decisions": [
+        "AF3",
+        "H6",
+        "L merge q1"
+      ]
+    },
+    {
+      "id": "mg-117",
+      "question": "merge",
+      "title": "AE2, AE1: a key the person edited after one device applied the waiting entry wins over the same key another device applies later",
+      "input": {
+        "mine": {
+          "schedules": [
+            {
+              "id": "mv:pay:steps.a",
+              "kind": "income",
+              "name": "Salary",
+              "cur": "JPY",
+              "acct": "mv:acct:cfg",
+              "startsPeriod": true,
+              "per": "month",
+              "steps": [
+                {
+                  "from": "2026-11-22",
+                  "amount": 250000
+                }
+              ],
+              "told": "2026-11-23T20:00:00.000+09:00",
+              "at": "2026-11-28T08:00:00.000+09:00",
+              "by": "phn001",
+              "rules": [
+                {
+                  "from": "2026-11-22",
+                  "rule": {
+                    "every": "month",
+                    "days": [
+                      25
+                    ]
+                  },
+                  "at": "2026-11-28T08:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              ],
+              "amounts": {
+                "2027-01-25": {
+                  "amount": 0,
+                  "at": "2026-11-23T20:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              }
+            }
+          ],
+          "pendingMove": [
+            {
+              "id": "mv:pend:once.2027-01.a",
+              "field": "once.2027-01.a",
+              "waits": "mv:pay:steps.a",
+              "to": "amounts",
+              "ym": "2027-01",
+              "a": 0,
+              "told": "2026-11-23T20:00:00.000+09:00",
+              "at": "2026-11-28T08:00:00.000+09:00",
+              "by": "phn001",
+              "gone": "2026-11-28"
+            }
+          ]
+        },
+        "theirs": {
+          "schedules": [
+            {
+              "id": "mv:pay:steps.a",
+              "kind": "income",
+              "name": "Salary",
+              "cur": "JPY",
+              "acct": "mv:acct:cfg",
+              "startsPeriod": true,
+              "per": "month",
+              "steps": [
+                {
+                  "from": "2026-11-22",
+                  "amount": 250000
+                }
+              ],
+              "told": "2026-11-23T20:00:00.000+09:00",
+              "at": "2026-11-27T10:00:00.000+09:00",
+              "by": "dsk001",
+              "rules": [
+                {
+                  "from": "2026-11-22",
+                  "rule": {
+                    "every": "month",
+                    "days": [
+                      25
+                    ]
+                  },
+                  "at": "2026-11-26T08:00:00.000+09:00",
+                  "by": "dsk001"
+                }
+              ],
+              "amounts": {
+                "2027-01-25": {
+                  "amount": 120000,
+                  "at": "2026-11-27T10:00:00.000+09:00",
+                  "by": "dsk001"
+                }
+              }
+            }
+          ],
+          "pendingMove": [
+            {
+              "id": "mv:pend:once.2027-01.a",
+              "field": "once.2027-01.a",
+              "waits": "mv:pay:steps.a",
+              "to": "amounts",
+              "ym": "2027-01",
+              "a": 0,
+              "told": "2026-11-23T20:00:00.000+09:00",
+              "at": "2026-11-26T08:00:00.000+09:00",
+              "by": "dsk001",
+              "gone": "2026-11-26"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "schedules": [
+          {
+            "id": "mv:pay:steps.a",
+            "kind": "income",
+            "name": "Salary",
+            "cur": "JPY",
+            "acct": "mv:acct:cfg",
+            "startsPeriod": true,
+            "per": "month",
+            "steps": [
+              {
+                "from": "2026-11-22",
+                "amount": 250000
+              }
+            ],
+            "told": "2026-11-23T20:00:00.000+09:00",
+            "at": "2026-11-28T08:00:00.000+09:00",
+            "by": "phn001",
+            "rules": [
+              {
+                "from": "2026-11-22",
+                "rule": {
+                  "every": "month",
+                  "days": [
+                    25
+                  ]
+                },
+                "at": "2026-11-28T08:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ],
+            "amounts": {
+              "2027-01-25": {
+                "amount": 120000,
+                "at": "2026-11-27T10:00:00.000+09:00",
+                "by": "dsk001"
+              }
+            }
+          }
+        ],
+        "pendingMove": [
+          {
+            "id": "mv:pend:once.2027-01.a",
+            "field": "once.2027-01.a",
+            "waits": "mv:pay:steps.a",
+            "to": "amounts",
+            "ym": "2027-01",
+            "a": 0,
+            "told": "2026-11-23T20:00:00.000+09:00",
+            "at": "2026-11-28T08:00:00.000+09:00",
+            "by": "phn001",
+            "gone": "2026-11-28"
+          }
+        ]
+      },
+      "why": "Both devices moved the copy (last saved 23 Nov 20:00), January's 0 waiting. The desktop answered the pay day on Thu 26 Nov 08:00, applied the entry (January 0, the key at 23 Nov 20:00) and on Fri 27 Nov 10:00 the person changed January to 120,000 there (unpaid leave cancelled; the key at 27 Nov 10:00). The phone, offline, answered on Sat 28 Nov 08:00 and applied its own copy of the entry: January 0, the key at the entry's `at`, 23 Nov 20:00 [AE2]. At the merge the key is judged by its own `at` [AE1]: the desktop's 120,000 (27 Nov) is newer than the phone's 0 (23 Nov), so January counts 120,000. The record goes to the phone (28 Nov 08:00); the `rules` entries from the 22nd are one entry, the phone's newer; the entry is `gone` on both, the phone's newer kept.",
+      "decisions": [
+        "AE2",
+        "AE1",
+        "L merge q2"
+      ]
+    },
+    {
+      "id": "mg-118",
+      "question": "restore",
+      "title": "AE5: a 38.31-format backup restored after the move is moved, and every record it gives is stamped with the restore",
+      "input": {
+        "current": {
+          "schedules": [
+            {
+              "id": "mv:pay:steps.a",
+              "kind": "income",
+              "name": "Salary (Acme)",
+              "cur": "JPY",
+              "acct": "mv:acct:cfg",
+              "startsPeriod": true,
+              "per": "month",
+              "told": "2026-11-23T10:00:00.000+09:00",
+              "steps": [
+                {
+                  "from": "2026-11-22",
+                  "amount": 250000
+                }
+              ],
+              "rules": [
+                {
+                  "from": "2026-11-22",
+                  "rule": {
+                    "every": "month",
+                    "days": [
+                      25
+                    ]
+                  },
+                  "at": "2026-11-25T10:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              ],
+              "at": "2026-11-25T10:00:00.000+09:00",
+              "by": "phn001"
+            }
+          ],
+          "events": [
+            {
+              "id": "mv:check:cfg.bankStart",
+              "k": "check",
+              "date": "2026-11-22",
+              "acct": "mv:acct:cfg",
+              "a": 200000,
+              "told": "2026-11-22T23:59:59.999+09:00",
+              "at": "2026-11-23T10:00:00.000+09:00",
+              "by": "phn001"
+            },
+            {
+              "id": "mv:open:cfg",
+              "k": "open",
+              "date": "2026-11-22",
+              "acct": "mv:acct:cfg",
+              "a": 200000,
+              "told": "2026-11-22T23:59:59.999+09:00",
+              "at": "2026-11-23T10:00:00.000+09:00",
+              "by": "phn001"
+            },
+            {
+              "id": "mv:rc:r1",
+              "k": "spend",
+              "date": "2026-11-21",
+              "a": 1500,
+              "acct": "mv:acct:cfg",
+              "src": {
+                "type": "move",
+                "id": "r1"
+              },
+              "told": "2026-11-21T00:00:00.000+09:00",
+              "at": "2026-11-25T11:00:00.000+09:00",
+              "by": "phn001"
+            },
+            {
+              "id": "phn001-aaaaaaaaaa-1",
+              "k": "spend",
+              "date": "2026-11-26",
+              "acct": "mv:acct:cfg",
+              "a": 2000,
+              "told": "2026-11-26T12:00:00.000+09:00",
+              "at": "2026-11-26T12:00:00.000+09:00",
+              "by": "phn001"
+            }
+          ]
+        },
+        "backup": {
+          "v": 1,
+          "rev": 1795395600000,
+          "cfg": {
+            "bankStart": 200000,
+            "bankAt": "2026-11-22"
+          },
+          "ui": {
+            "cur": "¥",
+            "preset": "¥",
+            "done": {
+              "pay": true,
+              "bills": true,
+              "goals": true
+            }
+          },
+          "plan": {
+            "lines": [],
+            "goals": []
+          },
+          "steps": {
+            "a": [
+              {
+                "from": "2026-11",
+                "v": 250000
+              }
+            ]
+          },
+          "receipts": [
+            {
+              "id": "r1",
+              "d": "2026-11-21",
+              "a": 1200,
+              "c": "food",
+              "cn": "",
+              "n": ""
+            }
+          ]
+        },
+        "answers": {
+          "cur": "JPY"
+        },
+        "now": "2026-11-27T09:00:00.000+09:00",
+        "by": "phn001",
+        "show": [
+          "schedules",
+          "events"
+        ]
+      },
+      "expected": {
+        "schedules": [
+          {
+            "id": "mv:pay:steps.a",
+            "kind": "income",
+            "name": "Salary",
+            "cur": "JPY",
+            "acct": "mv:acct:cfg",
+            "startsPeriod": true,
+            "per": "month",
+            "told": "2026-11-23T10:00:00.000+09:00",
+            "steps": [
+              {
+                "from": "2026-11-22",
+                "amount": 250000,
+                "at": "2026-11-27T09:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ],
+            "rules": [
+              {
+                "from": "2026-11-22",
+                "rule": {
+                  "every": "month",
+                  "days": [
+                    25
+                  ]
+                },
+                "at": "2026-11-27T09:00:00.000+09:00",
+                "by": "phn001",
+                "gone": "2026-11-27"
+              }
+            ],
+            "at": "2026-11-27T09:00:00.000+09:00",
+            "by": "phn001"
+          }
+        ],
+        "events": [
+          {
+            "id": "mv:check:cfg.bankStart",
+            "k": "check",
+            "date": "2026-11-22",
+            "acct": "mv:acct:cfg",
+            "a": 200000,
+            "told": "2026-11-22T23:59:59.999+09:00",
+            "at": "2026-11-27T09:00:00.000+09:00",
+            "by": "phn001"
+          },
+          {
+            "id": "mv:open:cfg",
+            "k": "open",
+            "date": "2026-11-22",
+            "acct": "mv:acct:cfg",
+            "a": 200000,
+            "told": "2026-11-22T23:59:59.999+09:00",
+            "at": "2026-11-27T09:00:00.000+09:00",
+            "by": "phn001"
+          },
+          {
+            "id": "mv:rc:r1",
+            "k": "spend",
+            "date": "2026-11-21",
+            "a": 1200,
+            "acct": "mv:acct:cfg",
+            "src": {
+              "type": "move",
+              "id": "r1"
+            },
+            "told": "2026-11-21T00:00:00.000+09:00",
+            "at": "2026-11-27T09:00:00.000+09:00",
+            "by": "phn001"
+          },
+          {
+            "id": "phn001-aaaaaaaaaa-1",
+            "k": "spend",
+            "date": "2026-11-26",
+            "acct": "mv:acct:cfg",
+            "a": 2000,
+            "told": "2026-11-26T12:00:00.000+09:00",
+            "at": "2026-11-27T09:00:00.000+09:00",
+            "by": "phn001",
+            "gone": "2026-11-27"
+          }
+        ]
+      },
+      "why": "The phone moved its 38.31 copy (last saved Mon 23 Nov 10:00, its `rev` time), so every moved record carries 23 Nov 10:00 [AB1]. Then: the pay day answered and the pay renamed (Wed 25 Nov 10:00), the moved receipt changed to 1,500 (11:00), a spend of 2,000 added (Thu 26 Nov). On Fri 27 Nov 09:00 the person restores a backup file in the 38.31 format, the same copy as before the move. The restore runs the move on it [AE5] (the currency asked again: JPY) and stamps every record it gives with the restore's `at`, 27 Nov 09:00, and `by`; stamped with the copy's last save (23 Nov) they would lose to every edit since. So: the pay is \"Salary\" again with its step at the restore's `at`; its `rules` entry is not in the backup, so it is removed by its own `gone` (27 Nov) [M3] and the pay day is asked again; the receipt is 1,200 again; the opening and the check are the backup's; the 2,000 spend is `gone` (27 Nov) [AB watch]. `told` stays each record's first [H1].",
+      "decisions": [
+        "AE5",
+        "AB1",
+        "AB watch",
+        "M3",
+        "H1"
+      ]
     }
   ],
   "open": [
