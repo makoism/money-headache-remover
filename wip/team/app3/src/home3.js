@@ -29,6 +29,10 @@ function besidePay3(day, land, yr) {
   if (day < land) return E3.dayBefore(day, land) ? ', the day before your pay lands' : `, before your pay lands on ${esc3(day3(land, yr))}`;
   return '';
 }
+/* the engine's sum as written, without "- 0 (minimum)" when there is no minimum (TODO lane A: the engine could leave it out) */
+function whyWords3(a) {
+  return a.minimum === 0 ? a.why.replace(` - ${BurrowEngine.units.fmt(0, a.currency)} (minimum) =`, ' =') : a.why;
+}
 /* the one next pay on Home is res.period.nextPay: its landing day while the engine counts it, else its due day */
 function nextPay3(r) {
   const p = r.period, np = r.daysToNextPay || {};
@@ -82,7 +86,7 @@ function renderHome3() {
   }
   /* safe to spend until next pay, with the sum behind it */
   const until = safeUntil3(r, yr);
-  const sums = ids.filter(id => r.accounts[id].spendFrom).map(id => `<p class="a3-sum" data-fig="why">${esc3(r.accounts[id].why)}</p>`).join('');
+  const sums = ids.filter(id => r.accounts[id].spendFrom).map(id => `<p class="a3-sum" data-fig="why">${esc3(whyWords3(r.accounts[id]))}</p>`).join('');
   const short = r.safeToSpend.shortfall ? `<p class="a3-warn a3-bad">${esc3(label3('shortBy'))} ${fig3('safeToSpend.shortfall', r.safeToSpend.shortfall, home)} before then</p>` : '';
   const warns = (r.warnings || []).map(w => `<p class="a3-warn" data-warn="${esc3(w.code)}">${esc3(w.text)}</p>`).join('');
   out.push(`<section class="a3-card" data-card="safe"><h2>${esc3(label3('safeToSpend'))}${until}</h2>
