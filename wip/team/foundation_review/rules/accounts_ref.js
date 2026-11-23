@@ -49,7 +49,10 @@ function close({ account, kind, payFrom, date, figure, transfers, writeOff, sche
     if (nb && s.kind === 'income' && s.acct === account) { (moved.schedules = moved.schedules || {})[s.id] = nb; continue; }
     if (s.acct !== account && s.acct2 !== account) continue;
     if (s.ends && dayNum(s.ends) <= dayNum(date)) continue;
-    if (nb && !(ending || []).includes(s.id)) {
+    // [Z4] A transfer between the old and the new main bank would become a transfer from the new main bank to itself:
+    // it ends at the closing.
+    const between = nb && s.kind === 'transfer' && ((s.acct === account && s.acct2 === nb) || (s.acct === nb && s.acct2 === account));
+    if (nb && !between && !(ending || []).includes(s.id)) {
       if (s.acct === account) (moved.schedules = moved.schedules || {})[s.id] = nb;
       if (s.acct2 === account) (moved.schedulesTo = moved.schedulesTo || {})[s.id] = nb;
       continue;

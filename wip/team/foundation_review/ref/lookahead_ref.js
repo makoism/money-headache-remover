@@ -349,7 +349,8 @@ function lookahead(sc, asOf, opts = {}) {
   // settled) is refused here, as a closing that leaves money is [P6].
   const named = sid => {
     const out = [];
-    const take = o => { const mm = String(o).match(/^([a-z0-9_]+)@(\d{4}-\d{2}-\d{2})/); if (mm && mm[1] === sid) out.push(mm[2]); };
+    // [X1, Y28] a schedule id may be a moved one (`mv:pay:steps.a@2026-12-25`)
+    const take = o => { const mm = String(o).match(/^((?:mv:[a-z]+:[A-Za-z0-9_.:-]+)|[a-z0-9_]+)@(\d{4}-\d{2}-\d{2})/); if (mm && mm[1] === sid) out.push(mm[2]); };
     for (const e of live()) {
       for (const o of [].concat(e.settles || [], e.savedSettles || [])) take(o);
       if (e.kind === 'period_end_answer' || e.kind === 'period_start') take(String(e.id).replace(/^(pe|ps):/, ''));
@@ -448,7 +449,10 @@ function lookahead(sc, asOf, opts = {}) {
   const periodStream = (sc.income || []).find(s => s.starts_period && s.schedule && s.schedule.frequency !== 'none' && acct[s.account]);
   const windowEnd = o => calOf(o.acct).addWorking(o.land, postingDays(o.acct));
   // [G3, H8] Past its landing day but inside the posting window: late, still expected, still counted.
-  const lateExpected = o => o.land < today && today <= windowEnd(o);
+  // [Z2] An item setup was told had not gone through, whose posting window had already ended before setup, still counts
+  // as expected (late, in the walk) until it is seen (settled) or the person says it will not come (a skip).
+  const stillExpected = o => isNotYet(o) && windowEnd(o) < openDay(o.acct);
+  const lateExpected = o => o.land < today && (today <= windowEnd(o) || stillExpected(o));
   const pays = periodStream ? items.filter(o => o.sid === periodStream.id) : [];
   // [F8, A2] Money in that settles a pay of the period stream starts a period: ticked (pay_in), or an imported
   // line that settled it (money_in) [Q6].
@@ -463,7 +467,8 @@ function lookahead(sc, asOf, opts = {}) {
   const psOf = {}, peEnd = {};
   for (const e of live()) {
     if (e.kind === 'period_start' && e.day <= knownTo) psOf[String(e.id).slice(3)] = e.day;
-    if (e.kind === 'period_end_answer') { const occ = String(e.id).split(':')[1]; peEnd[occ] = Math.min(peEnd[occ] == null ? Infinity : peEnd[occ], e.day); }
+    // `pe:<occurrence>:<place>`; the occurrence may name a moved schedule and the place a moved place [X1, Y28]
+    if (e.kind === 'period_end_answer') { const occ = (/^pe:(.+?@\d{4}-\d{2}-\d{2}):/.exec(String(e.id)) || [])[1]; peEnd[occ] = Math.min(peEnd[occ] == null ? Infinity : peEnd[occ], e.day); }
   }
   const periodStartDays = [];
   pays.slice().sort((x, y) => x.due - y.due).forEach((o, i, list) => {
@@ -529,7 +534,11 @@ function lookahead(sc, asOf, opts = {}) {
   const byTime = (x, y) => x.day - y.day || keyCmp(x.key, y.key) || x.idx - y.idx;
   function bankInfo(id) {
     let base = Object.assign(openingOf(id), { amount: m(acct[id].opening.amount, id) });
-    const checks = live().filter(e => e.kind === 'check' && e.account === id).sort(byTime);
+    // [Z1] A check whose large gain was answered "wrong" is removed (the app marks it gone) and the figure is asked again:
+    // it counts nowhere, and the account asks for a new figure until a later check is typed.
+    const checks = live().filter(e => e.kind === 'check' && e.account === id && e.gain !== 'wrong').sort(byTime);
+    const wrong = events.filter(e => e.kind === 'check' && e.account === id && e.gain === 'wrong').sort(byTime).pop();
+    const askAgain = !!wrong && !checks.some(c => byTime(c, wrong) > 0);
     const moves = live().filter(e => delta(e, id) !== 0);
     const fillers = [];
     let lastGap = null;
@@ -548,7 +557,7 @@ function lookahead(sc, asOf, opts = {}) {
       lastGap = { day: c.day, had: computed, gain: amount - computed, answer: c.gain || null };
     }
     const bank = base.amount + moves.filter(e => !inside(e, base, id)).reduce((t, e) => t + delta(e, id), 0);
-    return { bank, asOfDay: base.day, fillers, lastGap };
+    return { bank, asOfDay: base.day, fillers, lastGap, askAgain: askAgain ? wrong.day : null };
   }
 
   // [A3, A4] The filler for a stretch from `first` to `last` (whole days). Split by days at each period start
@@ -1182,6 +1191,8 @@ function lookahead(sc, asOf, opts = {}) {
   // latest check of each account is looked at; the figure stands as the bank figure until answered.
   // [X4] The question's state is saved on the check (`gain`: asked, right or wrong); answered right, it is not asked again.
   for (const id in banks) {
+    if (banks[id].askAgain !== null) res.warnings.push({ account: id, code: 'check_again', day: dayStr(banks[id].askAgain),
+      text: `The ${acct[id].name} figure of ${dayStr(banks[id].askAgain)} was wrong: what does it show now?` });   // [Z1]
     const g = banks[id].lastGap;
     if (g && largeGain(id, g) && g.answer !== 'right') res.warnings.push({ account: id, code: 'gain_to_ask', day: dayStr(g.day), gain: g.gain,
       text: `${acct[id].name} shows ${fmt(g.gain, cur(id))} more than the app had: was that figure right?` });
@@ -1226,12 +1237,13 @@ function lookahead(sc, asOf, opts = {}) {
 
   // ----- not seen yet, and still inside the posting window [F3, F4, F23, F24, G3, H8] -----
   const past = items.filter(o => !o.settled && o.land < today && fallsDue(o) && o.amount);
-  const late = past.filter(o => today > windowEnd(o)).sort((a, b) => a.land - b.land);
+  const late = past.filter(o => today > windowEnd(o) && !stillExpected(o)).sort((a, b) => a.land - b.land);   // [Z2]
   // [S6] Pay in another currency is listed in its own currency and left out of the totals.
   res.notSeenYet = { items: late.map(o => Object.assign(itemOut(o), { direction: o.kind === 'income' ? 'in' : 'out' })),
     money_in: late.filter(o => o.kind === 'income' && !o.otherCur).reduce((t, o) => t + o.amount, 0),
     money_out: late.filter(o => out(o) && !o.otherCur).reduce((t, o) => t + o.amount, 0) };   // [W2]
-  res.mayStillPost = past.filter(o => today <= windowEnd(o)).map(o => Object.assign(itemOut(o), { postsBy: dayStr(windowEnd(o)) }));
+  res.mayStillPost = past.filter(o => today <= windowEnd(o) || stillExpected(o))
+    .map(o => Object.assign(itemOut(o), today <= windowEnd(o) ? { postsBy: dayStr(windowEnd(o)) } : { stillExpected: true }));   // [Z2]
 
   // ----- total [F10, F11] -----
   const totalIds = Object.keys(res.accounts);   // owed to you is inside Total (LEDGER_DESIGN)

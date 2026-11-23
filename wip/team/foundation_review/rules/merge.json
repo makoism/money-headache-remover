@@ -2104,11 +2104,11 @@
       "title": "A record the move writes is named by what it came from: mv:<kind>:<38.31 id or key> (X1)",
       "input": {
         "k": "mv",
-        "kind": "spend",
+        "kind": "rc",
         "key": "r1700000000123"
       },
-      "expected": "mv:spend:r1700000000123",
-      "why": "The move writes the 38.31 receipt r1700000000123 as a spend; its id is built from what it came from [X1], so the phone and the desktop, each running the move, write the same id.",
+      "expected": "mv:rc:r1700000000123",
+      "why": "The move writes the 38.31 receipt r1700000000123 as a spend; its id is built from what it came from, with the kind name of MOVE_FIELDS.md (`rc`, a receipt) [X1, Z], so the phone and the desktop, each running the move, write the same id.",
       "decisions": [
         "X1",
         "O2"
@@ -2135,10 +2135,10 @@
       "question": "id_ok",
       "title": "Moved ids and fee ids are valid built ids (X1, X2)",
       "input": {
-        "id": "mv:account:c1"
+        "id": "mv:card:c1"
       },
       "expected": true,
-      "why": "`mv:<kind>:<38.31 id or key>` is a built id [X1].",
+      "why": "`mv:<kind>:<38.31 id or key>` is a built id [X1]; `card` is the kind MOVE_FIELDS.md names for a 38.31 card.",
       "decisions": [
         "X1"
       ]
@@ -2179,7 +2179,7 @@
         "mine": {
           "accounts": [
             {
-              "id": "mv:account:bank",
+              "id": "mv:acct:cfg",
               "name": "Bank",
               "type": "bank",
               "cur": "JPY",
@@ -2188,7 +2188,7 @@
               "by": "phonea"
             },
             {
-              "id": "mv:account:c1",
+              "id": "mv:card:c1",
               "name": "Card",
               "type": "card",
               "cur": "JPY",
@@ -2200,7 +2200,7 @@
               "by": "phonea"
             },
             {
-              "id": "mv:account:cash",
+              "id": "mv:acct:cash",
               "name": "Cash",
               "type": "cash",
               "cur": "JPY",
@@ -2209,7 +2209,7 @@
               "by": "phonea"
             },
             {
-              "id": "mv:account:d1",
+              "id": "mv:debt:d1",
               "name": "Car loan",
               "type": "loan",
               "cur": "JPY",
@@ -2234,28 +2234,28 @@
           ],
           "schedules": [
             {
-              "id": "mv:schedule:pay",
+              "id": "mv:pay:steps.a",
               "kind": "income",
               "name": "Pay",
-              "acct": "mv:account:bank",
+              "acct": "mv:acct:cfg",
               "told": "2026-12-01T08:00:00.000+09:00",
               "at": "2026-12-01T08:00:00.000+09:00",
               "by": "phonea"
             },
             {
-              "id": "mv:schedule:r1",
+              "id": "mv:auto:r1",
               "kind": "autoSpend",
               "name": "Gym",
-              "acct": "mv:account:bank",
+              "acct": "mv:acct:cfg",
               "told": "2026-12-01T08:00:00.000+09:00",
               "at": "2026-12-01T08:00:00.000+09:00",
               "by": "phonea"
             },
             {
-              "id": "mv:schedule:rent",
+              "id": "mv:bill:rent",
               "kind": "bill",
               "name": "Rent",
-              "acct": "mv:account:bank",
+              "acct": "mv:acct:cfg",
               "told": "2026-12-01T08:00:00.000+09:00",
               "at": "2026-12-01T08:00:00.000+09:00",
               "by": "phonea"
@@ -2264,7 +2264,7 @@
           "plan": {
             "budgets": [
               {
-                "id": "mv:budget:food",
+                "id": "mv:line:food",
                 "name": "Food",
                 "place": "free",
                 "per": "month",
@@ -2278,7 +2278,7 @@
         "theirs": {
           "accounts": [
             {
-              "id": "mv:account:bank",
+              "id": "mv:acct:cfg",
               "name": "Bank",
               "type": "bank",
               "cur": "JPY",
@@ -2287,7 +2287,7 @@
               "by": "deskbb"
             },
             {
-              "id": "mv:account:c1",
+              "id": "mv:card:c1",
               "name": "Card",
               "type": "card",
               "cur": "JPY",
@@ -2299,7 +2299,7 @@
               "by": "deskbb"
             },
             {
-              "id": "mv:account:cash",
+              "id": "mv:acct:cash",
               "name": "Cash",
               "type": "cash",
               "cur": "JPY",
@@ -2308,7 +2308,7 @@
               "by": "deskbb"
             },
             {
-              "id": "mv:account:d1",
+              "id": "mv:debt:d1",
               "name": "Car loan",
               "type": "loan",
               "cur": "JPY",
@@ -2333,28 +2333,28 @@
           ],
           "schedules": [
             {
-              "id": "mv:schedule:pay",
+              "id": "mv:pay:steps.a",
               "kind": "income",
               "name": "Pay",
-              "acct": "mv:account:bank",
+              "acct": "mv:acct:cfg",
               "told": "2026-12-01T21:30:00.000+09:00",
               "at": "2026-12-01T21:30:00.000+09:00",
               "by": "deskbb"
             },
             {
-              "id": "mv:schedule:r1",
+              "id": "mv:auto:r1",
               "kind": "autoSpend",
               "name": "Gym",
-              "acct": "mv:account:bank",
+              "acct": "mv:acct:cfg",
               "told": "2026-12-01T21:30:00.000+09:00",
               "at": "2026-12-01T21:30:00.000+09:00",
               "by": "deskbb"
             },
             {
-              "id": "mv:schedule:rent",
+              "id": "mv:bill:rent",
               "kind": "bill",
               "name": "Rent",
-              "acct": "mv:account:bank",
+              "acct": "mv:acct:cfg",
               "told": "2026-12-01T21:30:00.000+09:00",
               "at": "2026-12-01T21:30:00.000+09:00",
               "by": "deskbb"
@@ -2363,7 +2363,7 @@
           "plan": {
             "budgets": [
               {
-                "id": "mv:budget:food",
+                "id": "mv:line:food",
                 "name": "Food",
                 "place": "free",
                 "per": "month",
@@ -2378,7 +2378,16 @@
       "expected": {
         "accounts": [
           {
-            "id": "mv:account:bank",
+            "id": "mv:acct:cash",
+            "name": "Cash",
+            "type": "cash",
+            "cur": "JPY",
+            "told": "2026-12-01T08:00:00.000+09:00",
+            "at": "2026-12-01T21:30:00.000+09:00",
+            "by": "deskbb"
+          },
+          {
+            "id": "mv:acct:cfg",
             "name": "Bank",
             "type": "bank",
             "cur": "JPY",
@@ -2387,7 +2396,7 @@
             "by": "deskbb"
           },
           {
-            "id": "mv:account:c1",
+            "id": "mv:card:c1",
             "name": "Card",
             "type": "card",
             "cur": "JPY",
@@ -2399,16 +2408,7 @@
             "by": "deskbb"
           },
           {
-            "id": "mv:account:cash",
-            "name": "Cash",
-            "type": "cash",
-            "cur": "JPY",
-            "told": "2026-12-01T08:00:00.000+09:00",
-            "at": "2026-12-01T21:30:00.000+09:00",
-            "by": "deskbb"
-          },
-          {
-            "id": "mv:account:d1",
+            "id": "mv:debt:d1",
             "name": "Car loan",
             "type": "loan",
             "cur": "JPY",
@@ -2433,28 +2433,28 @@
         ],
         "schedules": [
           {
-            "id": "mv:schedule:pay",
-            "kind": "income",
-            "name": "Pay",
-            "acct": "mv:account:bank",
-            "told": "2026-12-01T08:00:00.000+09:00",
-            "at": "2026-12-01T21:30:00.000+09:00",
-            "by": "deskbb"
-          },
-          {
-            "id": "mv:schedule:r1",
+            "id": "mv:auto:r1",
             "kind": "autoSpend",
             "name": "Gym",
-            "acct": "mv:account:bank",
+            "acct": "mv:acct:cfg",
             "told": "2026-12-01T08:00:00.000+09:00",
             "at": "2026-12-01T21:30:00.000+09:00",
             "by": "deskbb"
           },
           {
-            "id": "mv:schedule:rent",
+            "id": "mv:bill:rent",
             "kind": "bill",
             "name": "Rent",
-            "acct": "mv:account:bank",
+            "acct": "mv:acct:cfg",
+            "told": "2026-12-01T08:00:00.000+09:00",
+            "at": "2026-12-01T21:30:00.000+09:00",
+            "by": "deskbb"
+          },
+          {
+            "id": "mv:pay:steps.a",
+            "kind": "income",
+            "name": "Pay",
+            "acct": "mv:acct:cfg",
             "told": "2026-12-01T08:00:00.000+09:00",
             "at": "2026-12-01T21:30:00.000+09:00",
             "by": "deskbb"
@@ -2463,7 +2463,7 @@
         "plan": {
           "budgets": [
             {
-              "id": "mv:budget:food",
+              "id": "mv:line:food",
               "name": "Food",
               "place": "free",
               "per": "month",
@@ -2489,9 +2489,9 @@
         "mine": {
           "events": [
             {
-              "id": "mv:check:bank",
+              "id": "mv:check:cfg.bankStart",
               "k": "check",
-              "acct": "mv:account:bank",
+              "acct": "mv:acct:cfg",
               "a": 300000,
               "date": "2026-11-30",
               "told": "2026-12-01T08:00:00.000+09:00",
@@ -2499,9 +2499,9 @@
               "by": "phonea"
             },
             {
-              "id": "mv:open:bank",
+              "id": "mv:open:cfg",
               "k": "open",
-              "acct": "mv:account:bank",
+              "acct": "mv:acct:cfg",
               "a": 300000,
               "date": "2026-11-30",
               "told": "2026-12-01T08:00:00.000+09:00",
@@ -2509,12 +2509,12 @@
               "by": "phonea"
             },
             {
-              "id": "mv:spend:r1700000000123",
+              "id": "mv:rc:r1700000000123",
               "k": "spend",
-              "acct": "mv:account:bank",
+              "acct": "mv:acct:cfg",
               "a": 1200,
               "date": "2026-11-29",
-              "line": "mv:budget:food",
+              "line": "mv:line:food",
               "src": {
                 "type": "move",
                 "id": "r1700000000123"
@@ -2524,12 +2524,12 @@
               "by": "phonea"
             },
             {
-              "id": "mv:spend:r1700000000456",
+              "id": "mv:rc:r1700000000456",
               "k": "spend",
-              "acct": "mv:account:bank",
+              "acct": "mv:acct:cfg",
               "a": 800,
               "date": "2026-11-30",
-              "line": "mv:budget:food",
+              "line": "mv:line:food",
               "src": {
                 "type": "move",
                 "id": "r1700000000456"
@@ -2539,7 +2539,7 @@
               "by": "phonea"
             },
             {
-              "id": "pe:pay@2026-11-25:free",
+              "id": "pe:mv:pay:steps.a@2026-11-25:free",
               "k": "periodEnd",
               "place": "free",
               "date": "2026-12-24",
@@ -2558,9 +2558,9 @@
         "theirs": {
           "events": [
             {
-              "id": "mv:check:bank",
+              "id": "mv:check:cfg.bankStart",
               "k": "check",
-              "acct": "mv:account:bank",
+              "acct": "mv:acct:cfg",
               "a": 300000,
               "date": "2026-11-30",
               "told": "2026-12-01T21:30:00.000+09:00",
@@ -2568,9 +2568,9 @@
               "by": "deskbb"
             },
             {
-              "id": "mv:open:bank",
+              "id": "mv:open:cfg",
               "k": "open",
-              "acct": "mv:account:bank",
+              "acct": "mv:acct:cfg",
               "a": 300000,
               "date": "2026-11-30",
               "told": "2026-12-01T21:30:00.000+09:00",
@@ -2578,12 +2578,12 @@
               "by": "deskbb"
             },
             {
-              "id": "mv:spend:r1700000000123",
+              "id": "mv:rc:r1700000000123",
               "k": "spend",
-              "acct": "mv:account:bank",
+              "acct": "mv:acct:cfg",
               "a": 1200,
               "date": "2026-11-29",
-              "line": "mv:budget:food",
+              "line": "mv:line:food",
               "src": {
                 "type": "move",
                 "id": "r1700000000123"
@@ -2593,12 +2593,12 @@
               "by": "deskbb"
             },
             {
-              "id": "mv:spend:r1700000000456",
+              "id": "mv:rc:r1700000000456",
               "k": "spend",
-              "acct": "mv:account:bank",
+              "acct": "mv:acct:cfg",
               "a": 800,
               "date": "2026-11-30",
-              "line": "mv:budget:food",
+              "line": "mv:line:food",
               "src": {
                 "type": "move",
                 "id": "r1700000000456"
@@ -2608,7 +2608,7 @@
               "by": "deskbb"
             },
             {
-              "id": "pe:pay@2026-11-25:free",
+              "id": "pe:mv:pay:steps.a@2026-11-25:free",
               "k": "periodEnd",
               "place": "free",
               "date": "2026-12-24",
@@ -2628,9 +2628,9 @@
       "expected": {
         "events": [
           {
-            "id": "mv:check:bank",
+            "id": "mv:check:cfg.bankStart",
             "k": "check",
-            "acct": "mv:account:bank",
+            "acct": "mv:acct:cfg",
             "a": 300000,
             "date": "2026-11-30",
             "told": "2026-12-01T08:00:00.000+09:00",
@@ -2638,9 +2638,9 @@
             "by": "deskbb"
           },
           {
-            "id": "mv:open:bank",
+            "id": "mv:open:cfg",
             "k": "open",
-            "acct": "mv:account:bank",
+            "acct": "mv:acct:cfg",
             "a": 300000,
             "date": "2026-11-30",
             "told": "2026-12-01T08:00:00.000+09:00",
@@ -2648,12 +2648,12 @@
             "by": "deskbb"
           },
           {
-            "id": "mv:spend:r1700000000123",
+            "id": "mv:rc:r1700000000123",
             "k": "spend",
-            "acct": "mv:account:bank",
+            "acct": "mv:acct:cfg",
             "a": 1200,
             "date": "2026-11-29",
-            "line": "mv:budget:food",
+            "line": "mv:line:food",
             "src": {
               "type": "move",
               "id": "r1700000000123"
@@ -2663,12 +2663,12 @@
             "by": "deskbb"
           },
           {
-            "id": "mv:spend:r1700000000456",
+            "id": "mv:rc:r1700000000456",
             "k": "spend",
-            "acct": "mv:account:bank",
+            "acct": "mv:acct:cfg",
             "a": 800,
             "date": "2026-11-30",
-            "line": "mv:budget:food",
+            "line": "mv:line:food",
             "src": {
               "type": "move",
               "id": "r1700000000456"
@@ -2678,7 +2678,7 @@
             "by": "deskbb"
           },
           {
-            "id": "pe:pay@2026-11-25:free",
+            "id": "pe:mv:pay:steps.a@2026-11-25:free",
             "k": "periodEnd",
             "place": "free",
             "date": "2026-12-24",
@@ -2694,7 +2694,7 @@
           }
         ]
       },
-      "why": "The opening and the figure are `mv:open:bank` and `mv:check:bank`, the receipts `mv:spend:<receipt id>` [X1]; a month-end answer moved from 38.31 `ui.sweep` is the period-end record `pe:<occurrence>:<place>` [T1, X watch]. Both devices wrote the same ids, so each is one record: the desktop's whole, the phone's `told`. The bank does not hold 600,000 and the receipts are not taken off twice.",
+      "why": "The opening and the figure are `mv:open:cfg` and `mv:check:cfg.bankStart`, the receipts `mv:rc:<receipt id>` [X1]; a month-end answer moved from 38.31 `ui.sweep` is the period-end record `pe:<occurrence>:<place>` [T1, X watch]. Both devices wrote the same ids, so each is one record: the desktop's whole, the phone's `told`. The bank does not hold 600,000 and the receipts are not taken off twice.",
       "decisions": [
         "X1",
         "T1",

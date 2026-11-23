@@ -267,10 +267,14 @@ function weekByDayDates({ weekly, lineFrom, from, to }) {
 function periodAmountOnce({ amount, once, period }) { return once && once[period] != null ? once[period] : amount; }
 
 // [X watch: the stale 11.1 row] A 38.31 one-month amount (`once[ym]`) goes to the first period starting in that month:
-// `once` is keyed by the occurrence of the pay that starts it [T1], the first pay landing in that month.
+// `once` is keyed by the occurrence of the pay that starts it [T1], the first pay landing in that month. [Z5] When no
+// period starts in that month, it goes to the period holding that month's first day: the latest pay landing on or before it.
 function onceFromMonth({ ym, pays }) {
-  const first = (pays || []).filter(p => String(p.lands).slice(0, 7) === ym).sort((x, y) => (x.lands < y.lands ? -1 : x.lands > y.lands ? 1 : 0))[0];
-  return first ? first.occ : null;
+  const byLand = (pays || []).slice().sort((x, y) => (x.lands < y.lands ? -1 : x.lands > y.lands ? 1 : 0));
+  const first = byLand.filter(p => String(p.lands).slice(0, 7) === ym)[0];
+  if (first) return first.occ;
+  const holding = byLand.filter(p => String(p.lands) <= ym + '-01').pop();
+  return holding ? holding.occ : null;
 }
 
 function ask(question, input) {
@@ -298,4 +302,4 @@ function ask(question, input) {
   throw new Error('unknown question ' + question);
 }
 
-module.exports = { ask, periodAmountOnce, perPayRules, homeCurOn, moveCurrency, paysInYearRules, DECIMALS, toMinor, currencyFor, loadAmount, interest, paysInYear, periodCount, perPayList, perPay, payNumber, periodPerPay, periodAmount, weekByDay, weekByDayDates, byDay, byDayDates };
+module.exports = { ask, onceFromMonth, periodAmountOnce, perPayRules, homeCurOn, moveCurrency, paysInYearRules, DECIMALS, toMinor, currencyFor, loadAmount, interest, paysInYear, periodCount, perPayList, perPay, payNumber, periodPerPay, periodAmount, weekByDay, weekByDayDates, byDay, byDayDates };

@@ -3,13 +3,14 @@
   "title": "Moving a saved copy from 38.31, 38.28 and the 25.0 to 38.26 builds into the new shape: every saved field to its target, or listed",
   "written_in": "SCHEMA_V3 0, 2, 11 and 11.1; DECISIONS_ROUND2 E1, E6, H9, I5, J2, K3, O (and its watch items), X1, X9 and X watch; foundation_review/MOVE_FIELDS.md (the field list per build)",
   "notes": [
-    "Every amount is made up. Amounts in a saved copy are major units with up to two decimals (every build); the moved records hold whole minor units [section 0].",
-    "Question `move`: `copy` is the saved copy as an object, or `raw` the stored text itself (the move reads the raw text, never a cleaned copy [O]). `saved` is the copy's last save, with its offset (open question mv-q13); its day is \"the copy's last saved day\" [H9, K3] and it is the told of a figure with no day [J2]. The moving device's offset (X9) is `offset`, by default the offset of `saved`. `answers` holds the answers to the move's questions: `cur` (the currency code), `loanLine` (a plan.debts id, or `drop`). `make.receipts` adds that many plain receipts to the copy (test help, so mv-35 can hold 5,002 receipts).",
-    "The answer is the moved copy: `v`, `home`, `people`, `accounts`, `places`, `schedules`, `events`, `plan` (`shares`, `budgets`, `limits`), `imports`, `ui` (the shared screen answers), `device` (`look`, `tour`, `opens`), `asks` (the move's questions, each answered one with its `answer`), `unplaced` (every saved field with no target, kept in frozen3831 or on the shared ui as 11.1 says, which the move test lists [11.1]), `sample` and `frozen3831`. `show` picks parts (`plan.limits` picks one part of plan; `tally` counts the spends and adds them up); `omit` leaves a field out everywhere, for fields an open question has not settled. Records carry `told` only on events; `at` and `by` are written by `move_two`.",
-    "The opening [B6, B7, 11.1]: the oldest bank figure (bankStart or bankNow) opens the bank with an `open` and a `check` on its day; a newer figure is a later `check`. The opening day is that figure's day, else the copy's last saved day. Goal money kept in the bank is the open's `split` [B6]; the rest of the split (budget lines and Free to spend left, Waiting) is the opening's own question [B2, I4] and is not written by the move.",
-    "Question `move_two` [X1]: `phone` and `desktop` each hold a `move` input plus `now` (the move's moment) and `by` (the device part). Each device moves its own copy and stamps every record with `told` (events keep their own), `at` and `by`; the two moved copies are merged with rules/merge_ref.js (the merge area's own code, unchanged).",
-    "Sample data is never moved as real (requirements 1c). The sample shows while ui.done lacks pay, bills or goals, unless the copy is blank or cleared (every build's `sampleOn`).",
-    "Every open question names what the reference does; no case depends on one (a case leaves such a field out with `omit`, or holds no such data)."
+    "Every amount is made up. Amounts in a saved copy are major units with up to two decimals (every build); the moved records hold whole minor units [section 0]; an amount with more decimals than its currency is rounded half up and flagged in `rounded` [Y23].",
+    "Question `move`: `copy` is the saved copy as an object, or `raw` the stored text itself (the move reads the raw text, never a cleaned copy [O]). `idb` is the IndexedDB second copy (`{ rev, t }`, `t` the moment of its save, a time or ms); `now` is the move's own moment, with the moving device's offset (X9), which is also `offset` unless given. The copy's last save is `idb.t`, else the stored `rev` when it is a time, else `now` [Y13]; its day is \"the copy's last saved day\" [H9, K3]. The move month is the calendar month of `now` [Y21]. `answers` holds the answers to the move's questions: `cur` (the currency code), `loanLine` (a plan.debts id, or `drop`), `pay` (`{ a, b, side }`: each a rule, SCHEMA_V3 5), `billDay` (by 38.31 line id, a rule), `goalMoney` (by goal id: `bank`, or `{ name, type }` for another account). `make.receipts` adds that many plain receipts to the copy (test help, so mv-35 can hold 5,002 receipts).",
+    "The answer is the moved copy: `v`, `home`, `people`, `accounts`, `places`, `schedules`, `events`, `plan` (`shares`, `budgets`, `limits`), `imports`, `ui` (the shared screen answers), `device` (`look`, `tour`, `opens`), `asks` (the move's questions, each answered one with its `answer`), `unplaced` (every saved field with no target, kept in frozen3831 or on the shared ui as 11.1 says, which the move test lists [11.1]), `held` (fields whose target waits for an answer: a one-month amount or a month-end answer until the pay or bill day is answered), `zero` (the move summary of lines and pay amounts that are 0 every month, not moved [Y25]), `rounded` [Y23], `sample`, `saved` (the copy's last save) and `frozen3831`. `show` picks parts (`plan.limits` picks one part of plan; `tally` counts the spends and adds them up; `ids` lists every record id); `omit` leaves a field out everywhere. Records carry `told` only on events; `at` and `by` are written by `move_two`.",
+    "Ids [X1, Y28, Z]: `mv:<kind>:<38.31 id, key or field path>` with the kinds of MOVE_FIELDS.md section 7: acct, card, debt, place, bill, line, pay, auto, item, share, person, open, check, rc. A month-end answer is the period-end record `pe:<occurrence>:free` [Y8].",
+    "The opening [B6, B7, 11.1]: the oldest bank figure (bankStart or bankNow; on the same day bankNow [Y22]) opens the bank with an `open` and a `check` on its day; a newer figure is a later `check`. A figure's day with no time is told at the end of that day, or at the copy's last save when that is earlier [Y1]. The opening day is that figure's day, else the copy's last saved day. Goal money kept in the bank is the open's `split` [B6]; the rest of the split (budget lines and Free to spend left, Waiting) is the opening's own question [B2, I4] and is not written by the move.",
+    "Question `move_two` [X1, Y12]: `phone` and `desktop` each hold a `move` input plus `by` (the device part). Each device moves its own copy and stamps every record with `told` (events keep their own), `at` (its `now`) and `by`; the two moved copies are merged with rules/merge_ref.js.",
+    "Sample data is never moved as real (requirements 1c): the sample shows while ui.done lacks pay, bills or goals, unless the copy is blank or cleared (every build's `sampleOn`). Receipts, cards and a typed bank figure are the person's and move as real [Y16].",
+    "The expected outputs of mv-01 to mv-45 were re-worked by hand from MOVE_FIELDS.md, SCHEMA_V3 11.1 and the decisions (Y and Z included), not taken from the reference; mv-46 to mv-67 were written by hand for Y and Z. Every open question below names what the reference does; no case depends on one."
   ],
   "defaults": {
     "idb": {
@@ -6444,144 +6445,69 @@
   ],
   "open": [
     {
-      "id": "mv-q1",
-      "question": "cfg.bankAt, cfg.bankNowAt and cards[].at are days with no time (every build writes YYYY-MM-DD). 11.1 says the figure is \"told at bankAt\". Is that the start of that day (in the moving device's offset, X9), or, as J2 says for \"a moved bank figure with no own time\", the copy's last save?",
-      "ref_does": "The start of that day in the moving device's offset. Both readings give the same balances for moved receipts (each is told at the start of its own day, and J2 puts receipts first at the same moment); they differ only for a record typed in the new app on that day before the move, which cannot exist. No case shows this `told` (mv-02, mv-04, mv-06 and mv-21 leave it out)."
+      "id": "mv-q29",
+      "question": "Y14 moves a receipt's note unchanged; 11.1 also put `s` in the note when it names no account (\"Cash jar\"), and `cn` beside it. With the note unchanged, where does an `s` that names no account go? (`cn` is the category's name on screen, which the line or place already names: the reference treats it as needing no place; confirm.)",
+      "ref_does": "Lists receipts.<id>.s (kept in frozen3831); writes nothing for cn (mv-07)."
     },
     {
-      "id": "mv-q2",
-      "question": "The pay amounts by month (steps a, b and side) have no row in 11.1: no field says where the salary, the second income and the side income go. The move only asks \"when each pay comes in\". Do they become the income schedules' `steps` (from the opening, then from each later month's first pay), with one income schedule per key, and which starts periods (F12)?",
-      "ref_does": "Lists steps.a, steps.b and steps.side as unplaced (kept in frozen3831), writes no income schedule, and asks when each pay comes in for a key with an amount above 0 (mv-29)."
+      "id": "mv-q30",
+      "question": "Y24 makes an item's note the one-off schedule's name. 38.31 also saves a label (\"Car tax\", or \"One-time cost\" when none was typed), which 11.1 made the name. With a note, where does the label go?",
+      "ref_does": "Name from the note; the label listed (mv-65)."
     },
     {
-      "id": "mv-q3",
-      "question": "\"From that month's first pay\" (11.1 steps row) cannot be a date until the pay is answered. What is stored meanwhile? And steps dated at or before the opening month: kept as entries before the opening, or folded into the first entry?",
-      "ref_does": "Writes `from: 'firstPay:<ym>'` (and `once` keys `firstPay:<ym>`) to be replaced by the pay occurrence once it is answered. Folds every step at or before the opening month into the first entry: the amount in force in the opening month, read the way every build reads it (model.js val), from the opening day; `def` is that first entry only when no step is in force. A once entry for a month before the opening month stays in frozen3831 only."
+      "id": "mv-q31",
+      "question": "Y8 names the 38.31 answers `to: 'bank'`, `to: 'next'` and `hide`. 38.28 and older builds (and 38.31 for a goal top-up) save `{ amt, id }`: that month's Free to spend put toward goal `id`. Is it a move to that goal's place in the pe: record?",
+      "ref_does": "Lists ui.sweep.<month> (mv-52)."
     },
     {
-      "id": "mv-q4",
-      "question": "The \"Loan or debt payment\" line matched to a loan [E6]: which loan field its amount becomes (the usual `amount`, or the `minRule` beside the debt's own `min`), what its bill:loan steps become, and where its `redirect` goes (a loan owns its payment, so there is no schedule to carry it). Is an empty loan line (0 every month) asked at all, and what if the copy has no plan.debts (only \"drop\" is possible)?",
-      "ref_does": "Matched: the loan gets `amount` = the line's amount in force at the opening and `ends` from the line, `redirect` is put on the account, and bill:loan steps are listed. The question is asked whenever the line exists. mv-39 leaves these fields out."
+      "id": "mv-q32",
+      "question": "Y2 and Y8 speak of \"that month's occurrence\" and \"the period starting in that month\". For pay weekly, every two weeks or twice a month, several occurrences and periods fall in one month, and 38.31's amount is a monthly total (\"if you get paid twice a month add both\"). Which occurrence takes a one-month amount, which period takes a month-end answer, and what is each pay's amount?",
+      "ref_does": "Models only an answer of monthly on one day; with any other rule the one-month amounts and month-end answers are held."
     },
     {
-      "id": "mv-q5",
-      "question": "cfg.loanLast, cfg.redirectLoan and the older goal figures (moveTarget and the rest) are read by every build only when the copy has no plan. When the copy has a plan and still holds them, 11.1 sends them to the matching place, but no build ever showed them. Moved or not?",
-      "ref_does": "With a plan: listed as unplaced, not applied. With no plan: applied as every build applies them (mv-18, mv-44)."
+      "id": "mv-q33",
+      "question": "Until the pay day (or a bill's day) is answered there is no occurrence: a one-month pay or bill amount (Y2, Y7), a budget line's one-month amount (11.1) and a month-end answer (Y8) have no key yet. Kept waiting, and shown how?",
+      "ref_does": "Writes them when the answer is given; meanwhile lists each in `held` (mv-33)."
     },
     {
-      "id": "mv-q6",
-      "question": "plan.lines[].ends is a month (the last payment month); a schedule's and a budget line's `ends` is a day. Which day?",
-      "ref_does": "The last day of that month. No case shows it (mv-13 leaves it out)."
+      "id": "mv-q34",
+      "question": "One-month amounts with no target after Y: once[ym] draw (out of the Emergency fund), envelope, education, invest and give (one month's share), goal:<id> and debt:<id>, for months on or after the opening.",
+      "ref_does": "Listed (kept in frozen3831), as before (mv-33)."
     },
     {
-      "id": "mv-q7",
-      "question": "11.1's steps row names plan.shares and plan.budgets only; a bill's steps (bill:rent and the other five bills) and a bill's once[ym] have no row. Until the bill's due day is answered, the schedule has no rule.",
-      "ref_does": "A bill's steps go to the schedule's `steps` the same way as a budget line's (mv-30); a bill's once is listed (mv-33). The schedule has no `rules` until the due day is answered (11.1: due on the period's first day meanwhile)."
+      "id": "mv-q35",
+      "question": "Y20: a receipt on bill:loan is a repay on the matched loan. What is it when the loan line was dropped, or is 0 every month and so not moved (no loan), and while the loan question is not answered?",
+      "ref_does": "Dropped or no loan: a spend on place bills. Not answered: a repay with no loan yet, listed in `held`."
     },
     {
-      "id": "mv-q8",
-      "question": "ui.sweep answers after the opening become `pe:<the occurrence that started the period>:<place>` [X watch, T1], but the occurrence is not known until the pay is answered. And 38.31 answers `{ amt, to: 'bank' | 'next' }` and `{ hide: true }` (38.28 and older: `{ amt, id }` rounded to whole units) name no place to move to.",
-      "ref_does": "Lists each such month as unplaced; answers for a month that ended before the opening stay in frozen3831 (mv-36)."
+      "id": "mv-q36",
+      "question": "Y5 sends cfg.loanLast and redirectLoan to the loan. A copy with a plan may also hold the loan line's own `ends` and `redirect`. Which wins?",
+      "ref_does": "The line's own; cfg only when the line has none (mv-50)."
     },
     {
-      "id": "mv-q9",
-      "question": "plan.debts: no build saves a pay day, a close day or whether a card is paid in full; kind `personal` (\"owed to a person\") has no type named in 11.1; `payFrom` is not named.",
-      "ref_does": "payDay null, a card debt `cutDay: null` and `inFull: false`, kind personal becomes `loan`, payFrom the main bank. mv-19 leaves pay day, close day and in full out."
+      "id": "mv-q37",
+      "question": "Y5 uses an older goal figure when the plan has no goal with that id. A person who removed the sample trip in a later build would get it back from a stale cfg.travelTarget. Intended?",
+      "ref_does": "As Y5 says: the sample goal is made with the figures (mv-51)."
     },
     {
-      "id": "mv-q10",
-      "question": "A dated goal's monthly set-aside is worked out by every build each month (evenSave) and never saved. 11.1 moves only `monthly`. Does the new engine work it out from target and due, or does the move write the amount 38.31 showed?",
-      "ref_does": "No amount for a dated goal with no goal: step (mv-31)."
+      "id": "mv-q38",
+      "question": "Y13 takes the second copy's `t` as the last save. When the second copy is older than the stored copy (its rev lower: the last save did not reach IndexedDB), `t` is earlier than the real last save.",
+      "ref_does": "Uses `t` whenever the second copy is there."
     },
     {
-      "id": "mv-q11",
-      "question": "A pay-off goal (ui.gk \"debt\") gets `pays`, but no build links it to an account: the debt it pays is not a plan.debts entry. Which account, and does the move open one?",
-      "ref_does": "`pays: null`, no `keptIn`, its start in no split (mv-15, mv-16 leaves `pays` out)."
+      "id": "mv-q39",
+      "question": "Y10 covers a dated goal. 38.31 also works out an amount for a goal with no date and no monthly (a twelfth of what is missing). Moved?",
+      "ref_does": "No amount for such a goal."
     },
     {
-      "id": "mv-q12",
-      "question": "The move on two devices [X1]: moved records carry no time of their own, so each gets its move moment as `at`, and the later move wins over a record changed differently on the other device before the update (mv-42: the phone's edit is lost). Two different bank figures share one id (mv:check:bankNow, and the opening mv:open:cfg), so only the later move's survives. Should `at` come from the copy's last save, or should the second move compare and ask?",
-      "ref_does": "As decided: the newest `at` wins (mv-42). Different figures on two devices are not tested."
+      "id": "mv-q40",
+      "question": "The loan accounts the move makes (Y4: a loan line with no debt; Y11: a pay-off goal with no debt of its name): their balance and payment day are asked; their yearly rate and minimum are not known.",
+      "ref_does": "No `apr`; the loan line's carries its amount as `minRule`, the pay-off goal's none."
     },
     {
-      "id": "mv-q13",
-      "question": "Where does \"the copy's last save\" (I5, J2, K3, H9) come from? No build stores a save time in the copy. The second copy every build keeps in IndexedDB (`money-map-safe`, record `{ rev, t, json }`) has `t`, the moment of each save. What if that copy is missing or older than the localStorage one (its `rev` lower)?",
-      "ref_does": "Takes `saved` as given by the caller."
-    },
-    {
-      "id": "mv-q14",
-      "question": "11.1: \"`cn` and `n` the `note`\"; `s` \"else kept in `note`\". In what form?",
-      "ref_does": "The non-empty texts of cn, n and s (when s names no account) joined with \"; \" (mv-07)."
-    },
-    {
-      "id": "mv-q15",
-      "question": "11.1 sends the look, sound and tour keys to \"device `look` and `tour`\" without saying which key is which.",
-      "ref_does": "tourAt, toured and onb go to `tour`; the rest to `look` (mv-27)."
-    },
-    {
-      "id": "mv-q16",
-      "question": "A copy that still shows the sample may still hold the person's own receipts, cards and a bank typed on Home. Are those moved as real?",
-      "ref_does": "Moved: they are never sample data (the sample has none). The plan, minimum and ceiling are not (mv-37 holds none of the first kind)."
-    },
-    {
-      "id": "mv-q17",
-      "question": "Goal money [X watch]: \"the move asks where each goal's money is\". Asked for every goal, or only one with money saved? And the answer \"another account\": which account, opened when, with what figure (W3: home currency only)?",
-      "ref_does": "Asked for each goal with a start above 0 that is not a pay-off goal (mv-15); until answered, in the bank (the default, DECISIONS 23 Nov). The \"another account\" answer is not modelled."
-    },
-    {
-      "id": "mv-q18",
-      "question": "ui.accts (imported accounts) next to the cfg bank figure and cards[]: an imported bank may be the same account as the bank figure, and an imported card the same as a typed card. Which one is the main bank? And kind `wallet` (an e-wallet in 38.31) is `ewallet` or `wallet` (Wallet mode)?",
-      "ref_does": "Separate accounts; the bank figure's account is the main bank; `wallet` becomes `ewallet`. mv-08 and mv-28 hold no bank figure."
-    },
-    {
-      "id": "mv-q19",
-      "question": "A copy with no bank figure at all: there is no account to open, so no main bank, and goal starts are in no split.",
-      "ref_does": "home.mainBank null; goal starts not opened; receipts on no account."
-    },
-    {
-      "id": "mv-q20",
-      "question": "A receipt's category `c` that is a bill key (bill:rent and the others) or bill:loan, or `other`: which line or place?",
-      "ref_does": "A bill key: place `bills`; bill:loan and other: none."
-    },
-    {
-      "id": "mv-q21",
-      "question": "items[ym]: H9 names \"the move month\" with \"(a date before the opening)\". When the opening (an old bankAt) is months before the move, which month is it? An item in a month before the opening month, and one in the opening month when the opening is on the 1st?",
-      "ref_does": "The opening's month. Items in earlier months become once schedules dated before the opening (held by the opening figure); an opening on the 1st leaves the 1st as it is. mv-34 has the opening in the move month."
-    },
-    {
-      "id": "mv-q22",
-      "question": "bankStart and bankNow dated the same day (both typed that day, or both with no day): which opens, and in what order are the two checks?",
-      "ref_does": "bankStart opens and is listed first; both have the same `told`."
-    },
-    {
-      "id": "mv-q23",
-      "question": "An amount with more decimals than its currency (a 38.31 yen copy can hold 100.5: the clean-up keeps two decimals for every currency): rounded half up as typed amounts are [L units q2], or kept and flagged as on load [L units q9]?",
-      "ref_does": "Rounded half up by units_ref toMinor. No case holds one."
-    },
-    {
-      "id": "mv-q24",
-      "question": "items[ym][].note has no target.",
-      "ref_does": "Kept on the once schedule as `note` (section 0: unknown fields kept). mv-34 holds none."
-    },
-    {
-      "id": "mv-q25",
-      "question": "Every build saves all fourteen built-in lines, most at 0. Is a line that is 0 in every month moved (a bill schedule or budget line of 0, and a due-day question for each bill)?",
-      "ref_does": "Moved as they are; each bill asks its due day (mv-44 shows the six questions of an untouched plan)."
-    },
-    {
-      "id": "mv-q26",
-      "question": "Names the move must make up: the bank figure's account has no name in any build.",
-      "ref_does": "\"Bank\"."
-    },
-    {
-      "id": "mv-q27",
-      "question": "Device storage beside the copy has no row in 11.1: `mhr-vault` (the cloud code and its rev), `money-map-theme`, `mhr-anon`, `mhr-invite`, `mhr-errlog`, `mhr-orb`, `mhr-realm`, `mhr-menu-used`, and the second copy in IndexedDB `money-map-safe`.",
-      "ref_does": "Not read. The theme belongs with device `look`; the cloud code decides whether the move can reach the old cloud copy (E3)."
-    },
-    {
-      "id": "mv-q28",
-      "question": "X1 names moved records `mv:<kind>:<38.31 id or key>`. Records with no 38.31 id need a key: the bank figure's account, the first plan.shares entry, the person, the opening. Also merge_ref.js `idOk` (the merge area) does not accept `mv:` ids yet.",
-      "ref_does": "mv:acct:cfg, mv:open:cfg, mv:check:bankStart and mv:check:bankNow, mv:share:first (later entries mv:share:<ym>), mv:person:name, mv:bill:<line>, mv:line:<line>, mv:item:<ym>:<item>, mv:auto:<id>, mv:rc:<id>, mv:place:<goal>, mv:card:<id>, mv:debt:<id>, mv:acct:<imported id>, opening events mv:open:card:<id> and mv:open:debt:<id> with their checks."
+      "id": "mv-q41",
+      "question": "Y17 \"another account\": the person names the account. Its type (bank, e-wallet, investment) is not said.",
+      "ref_does": "Takes `name` and `type` from the answer (mv-59)."
     }
   ]
 }

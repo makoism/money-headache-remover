@@ -50,10 +50,16 @@ function idFor(w) {
 // [O3] Every other id is `<device part>-<session part>-<counter>`: the device part 6 characters, the session
 // part 10 random characters (letters and digits) drawn on each page open, the counter from 1. The device
 // part is letters and digits too (the schema's own example is `k7qzpa`).
-const BUILT = /^((set|auto|skip):[a-z0-9_]+@\d{4}-\d{2}-\d{2}|pe:[a-z0-9_]+@\d{4}-\d{2}-\d{2}:[a-z0-9_]+|ps:[a-z0-9_]+@\d{4}-\d{2}-\d{2}|(rm|close):[a-z0-9_]+|close:[a-z0-9_]+:[1-9]\d*)$/;
+// [X1, Y28] A record the move wrote is `mv:<kind>:<38.31 id, key or field path>`, and the ids built from what a record is
+// may name one: a moved schedule's occurrence (`set:mv:pay:steps.a@2026-12-25`), a moved place or account
+// (`pe:mv:pay:steps.a@2026-11-25:mv:place:trip`, `rm:mv:place:trip`, `close:mv:acct:cfg:2`).
+const MV = 'mv:[a-z]+:[A-Za-z0-9_.:-]+';
+const REF = '(?:[a-z0-9_]+|' + MV + ')';   // a schedule, place or account id inside a built id
+const OCC = REF + '@\\d{4}-\\d{2}-\\d{2}';
+const BUILT = new RegExp('^((set|auto|skip):' + OCC + '|pe:' + OCC + ':' + REF + '|ps:' + OCC + '|(rm|close):' + REF + '|close:' + REF + ':[1-9]\\d*)$');
 const plainOk = id => typeof id === 'string' && (/^[a-z0-9]{6}-[a-z0-9]{10}-[1-9]\d*$/.test(id) || BUILT.test(id));
 // [X1] `mv:<kind>:<38.31 id or key>`; [X2] `fee:` and the id of the transfer it belongs to (never a fee itself).
-const MOVED = /^mv:[a-z]+:[A-Za-z0-9_.@:-]+$/;
+const MOVED = new RegExp('^' + MV + '$');
 const idOk = id => typeof id === 'string' && (plainOk(id) || MOVED.test(id) || (id.startsWith('fee:') && plainOk(id.slice(4))));
 
 // ---------- merging ----------
