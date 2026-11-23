@@ -241,3 +241,7 @@ AB3. For a card, pay-later or loan set up between its close and its payment day,
 AB4. A line that settles a `notYet` occurrence comes after the opening, whatever its date.
 Rows: `pendingMove` entries carry `id`, `at` and `by` and merge like records; the Emergency fund draw's built id is `mv:draw:once.<ym>`. COVERAGE's stale `mv:` labels are fixed.
 Watch decided: restoring an older backup while the cloud copy is on writes `gone` with a new `at` for every record newer than the backup and gives the backup's records a new `at`, so the merge keeps the restore; a moved month-end answer larger than its place holds is capped (L q10) and the rest waits "to decide".
+
+## AC. Answers to mv-q42 to mv-q49
+AC1. The field is `per: 'month' | 'pay'` on income schedules (AB2); moved pay is `per: 'month'`. AC2. A loan payment receipt waits in `pendingMove` until "which loan is this" is answered. AC3. A loan the move made holds rate 0 and the old monthly payment as a fixed minimum, marked as asked, until answered. AC4. The Emergency fund draw goes to Waiting, where that period's plan places it. AC5. A debt's one-month amount is that month's whole payment. AC6. The move appends "(moved: loan line removed)" to the receipt's own note. AC7. `once[ym].bill:loan` becomes that month's payment `amounts` on the matched loan, else on the bill schedule. AC8. A month-end answer naming a goal the plan no longer has moves to Waiting as "to place".
+The AA helper's readings are confirmed.
