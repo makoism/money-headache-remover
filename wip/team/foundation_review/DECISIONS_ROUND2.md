@@ -520,3 +520,6 @@ BM1. A line that goes over is paid from what the bank can spare, not from Free t
 BM2. Warnings that the bank goes below zero or under the minimum come from the real-money walk: bank, pays, bills, card payments and moves, never goals or plan lines (as BK3). Goals kept in a bank only lower safe to spend. When goals hold more than the bank can spare, the warning says so ("Trip's money is ¥1 more than Main bank can spare on 5 Jan"), never "goes below zero". The set-aside limit is what the bank can spare through the next pay: the real-money walk's lowest point less what is already set aside. Setting aside past a goal's target asks first.
 BM3. Every part of a sum line is labelled with its own amount. A cap that takes everything says "all of it".
 BM4. Check your bank writes a card in credit the same way Home does ("in credit ¥3,000").
+
+## BN. Stop rule for the gates (24 Nov early JST, LESSONS 4)
+On the next frozen-copy gate pair, only two kinds of finding get fixed: a figure Mako would act on that is wrong, or a place where he would be stuck. Everything else goes to app3/FOR_MAKO.md for his run. The build is then ready for him.
