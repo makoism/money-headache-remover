@@ -311,6 +311,157 @@
       "decisions": [
         "X3"
       ]
+    },
+    {
+      "id": "ed-13",
+      "question": "statement_ask",
+      "title": "AB3: a card set up between its close and its payment day is asked \"Is the last statement paid?\"; yes is saved as a paid statement",
+      "input": {
+        "setup": "2026-11-20",
+        "answer": "yes",
+        "kind": "card",
+        "closeDay": "last",
+        "payDay": 27,
+        "monthsAfterClose": 1,
+        "owed": 50000
+      },
+      "expected": {
+        "asked": true,
+        "saved": {
+          "stmt": true,
+          "stmtDate": "2026-10-31",
+          "stmtPay": "2026-11-27",
+          "paid": true
+        }
+      },
+      "why": "The card closes on the last day and is paid on the 27th of the next month. Setup on Fri 20 Nov falls after the close of Sat 31 Oct and before its payment day, Fri 27 Nov, so setup asks [AB3]. Yes: a statement check for the 31 Oct close, paid; no amount is asked. Everything owed now is after that close.",
+      "decisions": [
+        "AB3",
+        "J5"
+      ]
+    },
+    {
+      "id": "ed-14",
+      "question": "statement_ask",
+      "title": "AB3: answered no, with the statement's amount: an unpaid statement",
+      "input": {
+        "setup": "2026-11-20",
+        "answer": "no",
+        "amount": 30000,
+        "kind": "card",
+        "closeDay": "last",
+        "payDay": 27,
+        "monthsAfterClose": 1,
+        "owed": 50000
+      },
+      "expected": {
+        "asked": true,
+        "saved": {
+          "stmt": true,
+          "stmtDate": "2026-10-31",
+          "stmtPay": "2026-11-27",
+          "paid": false,
+          "a": 30000
+        }
+      },
+      "why": "No, and the person types the October statement, 30,000: saved as an unpaid statement closed 31 Oct and paid 27 Nov [AB3, J5]. Of the 50,000 owed, 50,000 - 30,000 = 20,000 is November so far.",
+      "decisions": [
+        "AB3",
+        "J5"
+      ]
+    },
+    {
+      "id": "ed-15",
+      "question": "statement_ask",
+      "title": "AB3: answered don't know: everything owed is that statement, due on the next payment day",
+      "input": {
+        "setup": "2026-11-20",
+        "answer": "dontKnow",
+        "kind": "card",
+        "closeDay": "last",
+        "payDay": 27,
+        "monthsAfterClose": 1,
+        "owed": 50000
+      },
+      "expected": {
+        "asked": true,
+        "saved": {
+          "stmt": true,
+          "stmtDate": "2026-10-31",
+          "stmtPay": "2026-11-27",
+          "paid": false,
+          "a": 50000
+        }
+      },
+      "why": "\"Don't know\" counts everything owed as due on the next payment day [AB3]: the statement saved holds all 50,000 owed and is paid on Fri 27 Nov (the safe side, as H4).",
+      "decisions": [
+        "AB3",
+        "H4"
+      ]
+    },
+    {
+      "id": "ed-16",
+      "question": "statement_ask",
+      "title": "AB3: set up after the payment day and before the next close: not asked (X6 holds)",
+      "input": {
+        "setup": "2026-11-28",
+        "answer": null,
+        "kind": "card",
+        "closeDay": "last",
+        "payDay": 27,
+        "monthsAfterClose": 1,
+        "owed": 50000
+      },
+      "expected": {
+        "asked": false
+      },
+      "why": "Sat 28 Nov is after the 27 Nov payment day of the October statement and before the next close, Mon 30 Nov. There is no statement waiting between its close and its payment day, so nothing is asked; the first close after the opening holds what is owed [X6].",
+      "decisions": [
+        "AB3",
+        "X6"
+      ]
+    },
+    {
+      "id": "ed-17",
+      "question": "min_ask",
+      "title": "Mako M1: setup asks \"Keep at least ___ in your bank?\" with the box empty; skipping means no minimum",
+      "input": {
+        "cur": "JPY",
+        "typed": null
+      },
+      "expected": {
+        "asked": true,
+        "filled": null,
+        "minBank": null
+      },
+      "why": "The box starts empty (no amount filled in for the person) and they skip it: `home.minBank` is null, no minimum [AB, MAKO M1].",
+      "decisions": [
+        "AB",
+        "MAKO M1"
+      ]
+    },
+    {
+      "id": "ed-18",
+      "question": "min_ask",
+      "title": "Mako M1: a typed minimum is kept in the home currency",
+      "input": {
+        "cur": "JPY",
+        "typed": 20000
+      },
+      "expected": {
+        "asked": true,
+        "filled": null,
+        "minBank": {
+          "a": 20000,
+          "cur": "JPY"
+        }
+      },
+      "why": "The person types 20,000: `home.minBank` is { a: 20,000, cur: JPY } [AB, MAKO M1, O6].",
+      "decisions": [
+        "AB",
+        "MAKO M1",
+        "O6"
+      ]
     }
   ],
   "open": []

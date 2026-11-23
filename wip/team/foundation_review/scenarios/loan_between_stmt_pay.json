@@ -1,0 +1,42 @@
+{
+  "life": "loan_between_stmt_pay",
+  "title": "A loan and a pay-later set up between their statement and their payment day: \"Is the last statement paid?\" answered yes and no (decision AB3)",
+  "story": "Set up Fri 20 Nov 2026. The bank holds 300,000 and takes a pay of 250,000 on the 15th. Three debts are paid from it on the 27th, each already billed for Fri 27 Nov when setup runs, so setup asks \"Is the last statement paid?\" for each. A loan of 400,000 paying 20,000 a month: answered yes (the person paid the 27 Nov payment early; the 400,000 owed is after it). A second loan of 400,000 paying 20,000 a month: answered no. A pay-later owing 30,000, paying 10,000 a month: answered yes. Before AB3 every payment day after the setup day was expected, so the two payments already made were counted again. Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2026-11-20", "to": "2026-12-31" },
+  "holidays": { "country": "none", "dates": [], "bank_closed": [] },
+  "main_bank": "bank",
+  "accounts": [
+    { "id": "bank", "name": "Bank", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2026-11-20", "amount": 300000 } },
+    { "id": "loan_yes", "name": "Loan (paid)", "kind": "loan", "currency": "JPY", "payment": { "day": 27, "from": "bank", "weekend_holiday": "none", "amount": 20000 },
+      "opening": { "date": "2026-11-20", "owed": 400000, "statement": { "payment_day": "2026-11-27", "paid": true } } },
+    { "id": "loan_no", "name": "Loan (not paid)", "kind": "loan", "currency": "JPY", "payment": { "day": 27, "from": "bank", "weekend_holiday": "none", "amount": 20000 },
+      "opening": { "date": "2026-11-20", "owed": 400000, "statement": { "payment_day": "2026-11-27", "paid": false } } },
+    { "id": "pl_yes", "name": "Pay-later (paid)", "kind": "paylater", "currency": "JPY", "payment": { "day": 27, "from": "bank", "weekend_holiday": "none", "amount": 10000 },
+      "opening": { "date": "2026-11-20", "owed": 30000, "statement": { "payment_day": "2026-11-27", "paid": true } } }
+  ],
+  "income": [
+    { "id": "pay", "name": "Pay", "account": "bank", "amount": 250000, "schedule": { "frequency": "monthly", "day": 15 }, "weekend_holiday": "none", "starts_period": true }
+  ],
+  "bills": [],
+  "goals": [],
+  "events": [
+    { "id": "r1", "date": "2026-11-27", "told": "2026-11-27", "kind": "repay", "from": "bank", "to": "loan_no", "amount": 20000, "settles": "loan_no@2026-11-27" },
+    { "id": "p1", "date": "2026-12-15", "told": "2026-12-15", "kind": "pay_in", "account": "bank", "amount": 250000, "settles": "pay@2026-12-15" }
+  ],
+  "asks": [
+    { "id": "lbs-01", "date": "2026-11-21", "question": "due_before_next_pay",
+      "expected": { "items": [ { "item": "loan_no@2026-11-27", "lands": "2026-11-27", "amount": 20000 } ], "total": 20000 },
+      "why": "20,000 (Loan (not paid), the 27 Nov payment) = 20,000",
+      "note": "The 27 Nov payments of Loan (paid) and Pay-later (paid) were answered paid at setup. Before AB3: 50,000." },
+    { "id": "lbs-02", "date": "2026-11-21", "question": "safe_to_spend", "account": "bank", "expected": 280000,
+      "why": "300,000 (Bank today) - 20,000 (Loan (not paid), Fri 27 Nov) = 280,000",
+      "note": "The 27 Dec payments come after the Tue 15 Dec pay." },
+    { "id": "lbs-03", "date": "2026-11-21", "question": "owed_now", "account": "loan_yes", "expected": 400000,
+      "why": "400,000 (owed at setup, after the payment made early) = 400,000" },
+    { "id": "lbs-04", "date": "2026-12-16", "question": "due_before_next_pay",
+      "expected": { "items": [ { "item": "loan_yes@2026-12-27", "lands": "2026-12-27", "amount": 20000 }, { "item": "loan_no@2026-12-27", "lands": "2026-12-27", "amount": 20000 }, { "item": "pl_yes@2026-12-27", "lands": "2026-12-27", "amount": 10000 } ], "total": 50000 },
+      "why": "20,000 (Loan (paid), Sun 27 Dec) + 20,000 (Loan (not paid), Sun 27 Dec) + 10,000 (Pay-later (paid), Sun 27 Dec) = 50,000",
+      "note": "The paid answers cover only the 27 Nov payments; every later payment is expected as usual." }
+  ]
+}

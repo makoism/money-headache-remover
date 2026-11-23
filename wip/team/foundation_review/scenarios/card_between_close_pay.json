@@ -1,0 +1,63 @@
+{
+  "life": "card_between_close_pay",
+  "title": "Cards set up between their close and their payment day: setup asks \"Is the last statement paid?\", answered yes, no and don't know (decision AB3; confirm_review_2 item 3, d3)",
+  "story": "Set up Fri 20 Nov 2026. Three people with the same common Japanese card: it closes on the last day of the month and is paid on the 27th of the next month from their bank (no weekend move). Each bank holds 300,000 and takes a pay of 250,000 on the 15th. Setup falls between the October close (Sat 31 Oct) and its payment day (Fri 27 Nov), so it asks \"Is the last statement paid?\" and saves the answer as a statement check [J5]. Card Yes: answered yes; the card shows 20,000 owed, all of it November so far. Card No: answered no, and the October statement's 30,000 is typed; the card shows 50,000 owed. Card Don't know: answered don't know; the card shows 50,000 owed (in truth 30,000 of it is the October statement). On Wed 25 Nov 4,000 is spent on the Don't know card, and on Fri 27 Nov its owner pays the 30,000 the card company billed. Before AB3 every card fell under X6: the first close after the opening (Mon 30 Nov) held everything, paid Sun 27 Dec, so the 30,000 due 27 Nov was missed. Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2026-11-20", "to": "2026-12-31" },
+  "holidays": { "country": "none", "dates": [], "bank_closed": [] },
+  "main_bank": "bank_yes",
+  "accounts": [
+    { "id": "bank_yes", "name": "Bank (yes)", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2026-11-20", "amount": 300000 } },
+    { "id": "bank_no", "name": "Bank (no)", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2026-11-20", "amount": 300000 } },
+    { "id": "bank_dk", "name": "Bank (don't know)", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2026-11-20", "amount": 300000 } },
+    { "id": "card_yes", "name": "Card Yes", "kind": "card", "currency": "JPY", "statement_close_day": "last",
+      "payment": { "day": 27, "months_after_close": 1, "from": "bank_yes", "weekend_holiday": "none" },
+      "opening": { "date": "2026-11-20", "statement": { "closed": "2026-10-31", "paid": true }, "current": 20000, "note": "answered yes: the October statement is paid; no amount asked" } },
+    { "id": "card_no", "name": "Card No", "kind": "card", "currency": "JPY", "statement_close_day": "last",
+      "payment": { "day": 27, "months_after_close": 1, "from": "bank_no", "weekend_holiday": "none" },
+      "opening": { "date": "2026-11-20", "statement": { "closed": "2026-10-31", "amount": 30000, "paid": false }, "current": 50000, "note": "answered no, with the statement's 30,000" } },
+    { "id": "card_dk", "name": "Card Don't know", "kind": "card", "currency": "JPY", "statement_close_day": "last",
+      "payment": { "day": 27, "months_after_close": 1, "from": "bank_dk", "weekend_holiday": "none" },
+      "opening": { "date": "2026-11-20", "statement": { "closed": "2026-10-31", "paid": "dont_know" }, "current": 50000, "note": "answered don't know" } }
+  ],
+  "income": [
+    { "id": "pay", "name": "Pay", "account": "bank_yes", "amount": 250000, "schedule": { "frequency": "monthly", "day": 15 }, "weekend_holiday": "none", "starts_period": true },
+    { "id": "pay_no", "name": "Pay (no)", "account": "bank_no", "amount": 250000, "schedule": { "frequency": "monthly", "day": 15 }, "weekend_holiday": "none", "starts_period": false },
+    { "id": "pay_dk", "name": "Pay (don't know)", "account": "bank_dk", "amount": 250000, "schedule": { "frequency": "monthly", "day": 15 }, "weekend_holiday": "none", "starts_period": false }
+  ],
+  "bills": [],
+  "goals": [],
+  "events": [
+    { "id": "s1", "date": "2026-11-25", "told": "2026-11-25", "kind": "spend", "account": "card_dk", "amount": 4000 },
+    { "id": "p1", "date": "2026-11-27", "told": "2026-11-27", "kind": "card_payment", "from": "bank_dk", "card": "card_dk", "amount": 30000, "settles": "card_dk@2026-11-27", "note": "what the card company billed for October" }
+  ],
+  "asks": [
+    { "id": "cbp-01", "date": "2026-11-21", "question": "card_due", "account": "card_yes", "expected": { "amount": 20000, "payment_date": "2026-12-27", "statement": "open" },
+      "why": "20,000 (owed at setup, all after the paid October statement: it closes Mon 30 Nov) = 20,000" },
+    { "id": "cbp-02", "date": "2026-11-21", "question": "safe_to_spend", "account": "bank_yes", "expected": 300000,
+      "why": "300,000 (Bank today) = 300,000",
+      "note": "The card's 20,000 is paid Sun 27 Dec, after the Tue 15 Dec pay." },
+    { "id": "cbp-03", "date": "2026-11-21", "question": "card_due", "account": "card_no", "expected": { "amount": 30000, "payment_date": "2026-11-27", "statement": "closed" },
+      "why": "30,000 (the October statement, answered not paid and typed) = 30,000",
+      "note": "d3-03. Before AB3: 50,000 on 27 Dec, open." },
+    { "id": "cbp-04", "date": "2026-11-21", "question": "owed_now", "account": "card_no", "expected": 50000,
+      "why": "30,000 (October statement, unpaid) + 20,000 (November so far) = 50,000" },
+    { "id": "cbp-05", "date": "2026-11-21", "question": "safe_to_spend", "account": "bank_no", "expected": 270000,
+      "why": "300,000 (Bank today) - 30,000 (Card No, October statement, Fri 27 Nov) = 270,000",
+      "note": "The 20,000 of November closes Mon 30 Nov and is paid Sun 27 Dec, after the Tue 15 Dec pay." },
+    { "id": "cbp-06", "date": "2026-11-21", "question": "card_due", "account": "card_dk", "expected": { "amount": 50000, "payment_date": "2026-11-27", "statement": "closed" },
+      "why": "50,000 (everything owed at setup, due on the next payment day: answered don't know) = 50,000",
+      "note": "d3-01. The safe side: more than the 30,000 really billed." },
+    { "id": "cbp-07", "date": "2026-11-21", "question": "safe_to_spend", "account": "bank_dk", "expected": 250000,
+      "why": "300,000 (Bank today) - 50,000 (Card Don't know, everything owed, Fri 27 Nov) = 250,000",
+      "note": "d3-02." },
+    { "id": "cbp-08", "date": "2026-11-21", "question": "due_before_next_pay",
+      "expected": { "items": [ { "item": "card_no@2026-11-27", "lands": "2026-11-27", "amount": 30000 }, { "item": "card_dk@2026-11-27", "lands": "2026-11-27", "amount": 50000 } ], "total": 80000 },
+      "why": "30,000 (Card No, October statement, Fri 27 Nov) + 50,000 (Card Don't know, everything owed, Fri 27 Nov) = 80,000" },
+    { "id": "cbp-09", "date": "2026-12-01", "question": "card_due", "account": "card_dk", "expected": { "amount": 24000, "payment_date": "2026-12-27", "statement": "closed" },
+      "why": "50,000 (everything owed at setup, taken as due Fri 27 Nov) - 30,000 (paid Fri 27 Nov) + 4,000 (spend Wed 25 Nov) = 24,000",
+      "note": "What was left of the setup figure is carried into the statement closed Mon 30 Nov: the November part the person had not been billed yet, so the card then follows its real statements." },
+    { "id": "cbp-10", "date": "2026-12-01", "question": "bank_today", "account": "bank_dk", "expected": 270000,
+      "why": "300,000 (opening) - 30,000 (card payment Fri 27 Nov) = 270,000" }
+  ]
+}

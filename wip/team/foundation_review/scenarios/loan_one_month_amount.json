@@ -1,0 +1,36 @@
+{
+  "life": "loan_one_month_amount",
+  "title": "A moved debt's one-month amount is that month's whole payment, in place of the minimum and the planned extra (decision AC5)",
+  "story": "Set up Sat 16 Jan 2027. The bank holds 300,000 and takes a pay of 250,000 on the 30th. A car loan owing 400,000 is paid on the 27th from the bank: 20,000 a month, plus a planned extra of 5,000 a month from 1 Dec 2026. In 38.31 the person had typed a one-month amount of 24,000 for the loan in January 2027 (`once['2027-01']['debt:car']`); the move wrote it as `amounts` on the 27 Jan payment. AC5: that is the month's whole payment, so 24,000 is due on 27 Jan, not 24,000 on top of the usual payment and not 24,000 plus the extra. Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2027-01-16", "to": "2027-03-31" },
+  "holidays": { "country": "none", "dates": [], "bank_closed": [] },
+  "main_bank": "bank",
+  "accounts": [
+    { "id": "bank", "name": "Bank", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2027-01-16", "amount": 300000 } },
+    { "id": "car", "name": "Car loan", "kind": "loan", "currency": "JPY",
+      "payment": { "day": 27, "from": "bank", "weekend_holiday": "none", "amount": 20000, "extra_steps": [ { "from": "2026-12-01", "amount": 5000 } ], "amounts": { "2027-01-27": 24000 } },
+      "opening": { "date": "2027-01-16", "owed": 400000 } }
+  ],
+  "income": [
+    { "id": "pay", "name": "Pay", "account": "bank", "amount": 250000, "schedule": { "frequency": "monthly", "day": 30 }, "weekend_holiday": "none", "starts_period": true }
+  ],
+  "bills": [],
+  "goals": [],
+  "events": [
+    { "id": "r1", "date": "2027-01-27", "told": "2027-01-27", "kind": "repay", "from": "bank", "to": "car", "amount": 24000, "settles": "car@2027-01-27" },
+    { "id": "p1", "date": "2027-01-30", "told": "2027-01-30", "kind": "pay_in", "account": "bank", "amount": 250000, "settles": "pay@2027-01-30" }
+  ],
+  "asks": [
+    { "id": "loma-01", "date": "2027-01-16", "question": "due_before_next_pay",
+      "expected": { "items": [ { "item": "car@2027-01-27", "lands": "2027-01-27", "amount": 24000 } ], "total": 24000 },
+      "why": "24,000 (Car loan, January's one-month amount: the whole payment, Wed 27 Jan) = 24,000",
+      "note": "Without AC5 the 5,000 extra would be added on top: 29,000." },
+    { "id": "loma-02", "date": "2027-01-16", "question": "safe_to_spend", "account": "bank", "expected": 276000,
+      "why": "300,000 (Bank today) - 24,000 (Car loan, Wed 27 Jan) = 276,000" },
+    { "id": "loma-03", "date": "2027-01-31", "question": "due_before_next_pay",
+      "expected": { "items": [ { "item": "car@2027-02-27", "lands": "2027-02-27", "amount": 25000 } ], "total": 25000 },
+      "why": "20,000 (Car loan, Sat 27 Feb, the usual payment) + 5,000 (the planned extra) = 25,000",
+      "note": "February has no one-month amount, so it is the usual payment and its extra." }
+  ]
+}

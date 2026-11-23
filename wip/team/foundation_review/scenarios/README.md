@@ -109,9 +109,13 @@ Written 23 Nov 2026 from foundation_review/RECOMMENDATION.md, life_walks_salarie
 | payoff_place.json | A pay-off place naming its debt (`pays`; X watch). | JPY | 3 |
 | owed_other_currency_lists.json | A dollar card and a peso loan paid from a yen bank: listed apart in their own currency, out of the totals (W2, V2). | JPY (+USD, PHP) | 5 |
 | goal_account_spend.json | An account that backs a goal is not spent from (W). | JPY | 2 |
+| notyet_line_before.json | A not-yet bill settled by a line dated before the setup day: the line comes after the opening, an imported line and a typed one (AB4; confirm_review_2 d2). | JPY (+USD) | 3 |
+| card_between_close_pay.json | Cards set up between their close and their payment day: "Is the last statement paid?" answered yes, no (with its amount) and don't know (everything owed due on the next payment day) (AB3; confirm_review_2 d3). | JPY | 10 |
+| loan_between_stmt_pay.json | A loan and a pay-later set up between their statement and their payment day, answered yes and no (AB3). | JPY | 4 |
+| loan_one_month_amount.json | A moved debt's one-month amount is that month's whole payment (AC5). | JPY | 3 |
 | check_specs.js | Checks every file's shape and that every `why` adds up to its expected figure. `node check_specs.js` | | |
 
-Total: 549 asks (the first eight files: 180; the H files: 64; the I files: 34; the J files: 21; the K, L and M files: 22; the O files: 35; the P files: 12; the Q and R files: 63; the S files: 25; the T and U files and the coverage grid files: 92; pending_hold hold-07, added with T2: 1). T1 renamed to_place's period-end answer `pe:2027-01-24:free` to `pe:pay@2026-12-25:free` (the pay that started the period); no figure changed. S4 also changed card_instalments inst-07 (280,000 to 270,000: the part posting on 15 Apr is now walked). After V: 571. After W and X (decisions W and X, confirm_review_1): 649 asks in 99 files (78 added: 77 in the 19 new files above, 1 in fee_place).
+Total: 549 asks (the first eight files: 180; the H files: 64; the I files: 34; the J files: 21; the K, L and M files: 22; the O files: 35; the P files: 12; the Q and R files: 63; the S files: 25; the T and U files and the coverage grid files: 92; pending_hold hold-07, added with T2: 1). T1 renamed to_place's period-end answer `pe:2027-01-24:free` to `pe:pay@2026-12-25:free` (the pay that started the period); no figure changed. S4 also changed card_instalments inst-07 (280,000 to 270,000: the part posting on 15 Apr is now walked). After V: 571. After W and X (decisions W and X, confirm_review_1): 649 asks in 99 files (78 added: 77 in the 19 new files above, 1 in fee_place). After AA: 667 asks in 104 files. After AB and AC (confirm_review_2): 687 asks in 108 files (20 added, in the 4 new files above).
 
 ### The review v3 situations and where each one is now
 

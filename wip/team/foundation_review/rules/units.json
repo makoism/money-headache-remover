@@ -1289,8 +1289,8 @@
     },
     {
       "id": "units-79",
-      "question": "once_from_month",
-      "title": "Weekly pay: four or five periods start in one month; the first one gets the month's amount (X watch)",
+      "question": "once_spread",
+      "title": "Weekly pay: four periods start in one month; the month's one-month amount replaces the month's total, spread over them (AB2)",
       "input": {
         "ym": "2027-03",
         "pays": [
@@ -1314,19 +1314,26 @@
             "occ": "pay@2027-03-26",
             "lands": "2027-03-26"
           }
-        ]
+        ],
+        "a": 50000
       },
-      "expected": "pay@2027-03-05",
-      "why": "Periods start on Fri 5, 12, 19 and 26 Mar; the first is the one starting 5 Mar [X watch: `once[ym]` goes to the first period starting in that month].",
+      "expected": {
+        "pay@2027-03-05": 12500,
+        "pay@2027-03-12": 12500,
+        "pay@2027-03-19": 12500,
+        "pay@2027-03-26": 12500
+      },
+      "why": "Periods start on Fri 5, 12, 19 and 26 Mar (the pay landing Fri 26 Feb starts a February period). A 38.31 one-month amount of 50,000 replaces March's total and is spread over the four periods starting in March [AB2]: 50,000 / 4 = 12,500 each, nothing left over. Before AB2 the first period took all 50,000 and the other three kept their usual share.",
       "decisions": [
+        "AB2",
         "X watch",
         "T1"
       ]
     },
     {
       "id": "units-80",
-      "question": "once_from_month",
-      "title": "Pay twice a month: the period starting on the 15th is the first in the month (X watch)",
+      "question": "once_spread",
+      "title": "Pay twice a month: the one-month amount is spread over the two periods starting in the month (AB2)",
       "input": {
         "ym": "2027-03",
         "pays": [
@@ -1342,11 +1349,16 @@
             "occ": "half@2027-03-30",
             "lands": "2027-03-30"
           }
-        ]
+        ],
+        "a": 320000
       },
-      "expected": "half@2027-03-15",
-      "why": "The pay due 28 Feb landed Fri 26 Feb, in February; the first period starting in March starts Mon 15 Mar.",
+      "expected": {
+        "half@2027-03-15": 160000,
+        "half@2027-03-30": 160000
+      },
+      "why": "The pay due 28 Feb landed Fri 26 Feb, in February, so the periods starting in March start Mon 15 Mar and Tue 30 Mar. March's one-month amount of 320,000 replaces the month's total [AB2]: 320,000 / 2 = 160,000 each. Before AB2 the 15 Mar period got 320,000 and the 30 Mar one kept its usual half as well (320,000 + 150,000 = 470,000 for the month).",
       "decisions": [
+        "AB2",
         "X watch",
         "T1"
       ]
@@ -1374,6 +1386,109 @@
       },
       "expected": "pay@2027-03-01",
       "why": "Pay is due on the 1st and moved earlier: the pay due Mon 1 Mar 2027 landed Fri 26 Feb and the next lands Thu 1 Apr, so no period starts in March. The period holding Mon 1 Mar started with the latest pay landing on or before it, the one due 1 Mar (landed 26 Feb): `once` is keyed pay@2027-03-01 [Z5]."
+    },
+    {
+      "id": "units-82",
+      "question": "once_spread",
+      "title": "Pay every two weeks with three periods in one month: the spread's leftover minor units go to the earliest (AB2, L units q4)",
+      "input": {
+        "ym": "2027-01",
+        "a": 50000,
+        "pays": [
+          {
+            "occ": "pay@2026-12-18",
+            "lands": "2026-12-18"
+          },
+          {
+            "occ": "pay@2027-01-01",
+            "lands": "2027-01-01"
+          },
+          {
+            "occ": "pay@2027-01-15",
+            "lands": "2027-01-15"
+          },
+          {
+            "occ": "pay@2027-01-29",
+            "lands": "2027-01-29"
+          },
+          {
+            "occ": "pay@2027-02-12",
+            "lands": "2027-02-12"
+          }
+        ]
+      },
+      "expected": {
+        "pay@2027-01-01": 16667,
+        "pay@2027-01-15": 16667,
+        "pay@2027-01-29": 16666
+      },
+      "why": "Periods start Fri 1, 15 and 29 Jan 2027. 50,000 / 3 = 16,666 and 2 yen over (16,666 x 3 = 49,998); the 2 yen go one each to the earliest periods, as the units rule does with a year's pays [L units q4]: 16,667 + 16,667 + 16,666 = 50,000.",
+      "decisions": [
+        "AB2",
+        "L units q4"
+      ]
+    },
+    {
+      "id": "units-83",
+      "question": "once_spread",
+      "title": "No period starts in the month: the whole one-month amount goes to the period holding its first day (Z5, AB2)",
+      "input": {
+        "ym": "2027-03",
+        "a": 45000,
+        "pays": [
+          {
+            "occ": "pay@2027-02-01",
+            "lands": "2027-02-01"
+          },
+          {
+            "occ": "pay@2027-03-01",
+            "lands": "2027-02-26"
+          },
+          {
+            "occ": "pay@2027-04-01",
+            "lands": "2027-04-01"
+          }
+        ]
+      },
+      "expected": {
+        "pay@2027-03-01": 45000
+      },
+      "why": "As units-81: the pay due Mon 1 Mar landed Fri 26 Feb, so no period starts in March and the period holding 1 Mar is the one its pay started [Z5]. Spread over that one period [AB2]: 45,000 / 1 = 45,000.",
+      "decisions": [
+        "Z5",
+        "AB2"
+      ]
+    },
+    {
+      "id": "units-84",
+      "question": "once_spread",
+      "title": "Monthly pay: one period starts in the month and takes the whole amount (AB2)",
+      "input": {
+        "ym": "2027-03",
+        "a": 55000,
+        "pays": [
+          {
+            "occ": "pay@2027-02-25",
+            "lands": "2027-02-25"
+          },
+          {
+            "occ": "pay@2027-03-25",
+            "lands": "2027-03-25"
+          },
+          {
+            "occ": "pay@2027-04-25",
+            "lands": "2027-04-23"
+          }
+        ]
+      },
+      "expected": {
+        "pay@2027-03-25": 55000
+      },
+      "why": "Only the period starting Thu 25 Mar starts in March: 55,000 / 1 = 55,000, as before AB2 (units-78).",
+      "decisions": [
+        "AB2",
+        "X watch"
+      ]
     }
   ],
   "open": []

@@ -2908,6 +2908,473 @@
       },
       "expected": false,
       "why": "A period-end answer names the occurrence that started the period, `<schedule>@<due date>` [T1]; `mv:pay:steps.a` alone is a schedule, not an occurrence."
+    },
+    {
+      "id": "mg-96",
+      "question": "restore",
+      "title": "AB watch: restoring an older backup with the cloud on writes `gone` with a new `at` for what is newer and gives the backup's records a new `at`",
+      "input": {
+        "current": {
+          "events": [
+            {
+              "id": "phn001-aaaaaaaaaa-1",
+              "k": "spend",
+              "date": "2026-11-09",
+              "acct": "bank",
+              "a": 1500,
+              "told": "2026-11-10T10:00:00.000+09:00",
+              "at": "2026-11-15T10:00:00.000+09:00",
+              "by": "dsk001"
+            },
+            {
+              "id": "dsk001-bbbbbbbbbb-1",
+              "k": "spend",
+              "date": "2026-11-16",
+              "acct": "bank",
+              "a": 2000,
+              "told": "2026-11-16T10:00:00.000+09:00",
+              "at": "2026-11-16T10:00:00.000+09:00",
+              "by": "dsk001"
+            },
+            {
+              "id": "phn001-aaaaaaaaaa-3",
+              "k": "spend",
+              "date": "2026-11-09",
+              "acct": "bank",
+              "a": 3000,
+              "gone": "2026-11-17",
+              "told": "2026-11-10T10:00:00.000+09:00",
+              "at": "2026-11-17T10:00:00.000+09:00",
+              "by": "dsk001"
+            }
+          ],
+          "schedules": [
+            {
+              "id": "pay",
+              "kind": "income",
+              "steps": [
+                {
+                  "from": "2026-11-01",
+                  "amount": 250000,
+                  "at": "2026-11-10T10:00:00.000+09:00",
+                  "by": "phn001"
+                },
+                {
+                  "from": "2026-12-01",
+                  "amount": 260000,
+                  "at": "2026-11-18T10:00:00.000+09:00",
+                  "by": "dsk001"
+                }
+              ],
+              "told": "2026-11-10T10:00:00.000+09:00",
+              "at": "2026-11-18T10:00:00.000+09:00",
+              "by": "dsk001"
+            }
+          ]
+        },
+        "backup": {
+          "events": [
+            {
+              "id": "phn001-aaaaaaaaaa-1",
+              "k": "spend",
+              "date": "2026-11-09",
+              "acct": "bank",
+              "a": 1000,
+              "told": "2026-11-10T10:00:00.000+09:00",
+              "at": "2026-11-10T10:00:00.000+09:00",
+              "by": "phn001"
+            },
+            {
+              "id": "phn001-aaaaaaaaaa-3",
+              "k": "spend",
+              "date": "2026-11-09",
+              "acct": "bank",
+              "a": 3000,
+              "told": "2026-11-10T10:00:00.000+09:00",
+              "at": "2026-11-10T10:00:00.000+09:00",
+              "by": "phn001"
+            }
+          ],
+          "schedules": [
+            {
+              "id": "pay",
+              "kind": "income",
+              "steps": [
+                {
+                  "from": "2026-11-01",
+                  "amount": 250000,
+                  "at": "2026-11-10T10:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              ],
+              "told": "2026-11-10T10:00:00.000+09:00",
+              "at": "2026-11-10T10:00:00.000+09:00",
+              "by": "phn001"
+            }
+          ]
+        },
+        "now": "2026-11-21T09:00:00.000+09:00",
+        "by": "phn001"
+      },
+      "expected": {
+        "events": [
+          {
+            "id": "dsk001-bbbbbbbbbb-1",
+            "k": "spend",
+            "date": "2026-11-16",
+            "acct": "bank",
+            "a": 2000,
+            "gone": "2026-11-21",
+            "told": "2026-11-16T10:00:00.000+09:00",
+            "at": "2026-11-21T09:00:00.000+09:00",
+            "by": "phn001"
+          },
+          {
+            "id": "phn001-aaaaaaaaaa-1",
+            "k": "spend",
+            "date": "2026-11-09",
+            "acct": "bank",
+            "a": 1000,
+            "told": "2026-11-10T10:00:00.000+09:00",
+            "at": "2026-11-21T09:00:00.000+09:00",
+            "by": "phn001"
+          },
+          {
+            "id": "phn001-aaaaaaaaaa-3",
+            "k": "spend",
+            "date": "2026-11-09",
+            "acct": "bank",
+            "a": 3000,
+            "told": "2026-11-10T10:00:00.000+09:00",
+            "at": "2026-11-21T09:00:00.000+09:00",
+            "by": "phn001"
+          }
+        ],
+        "schedules": [
+          {
+            "id": "pay",
+            "kind": "income",
+            "steps": [
+              {
+                "from": "2026-11-01",
+                "amount": 250000,
+                "at": "2026-11-21T09:00:00.000+09:00",
+                "by": "phn001"
+              },
+              {
+                "from": "2026-12-01",
+                "amount": 260000,
+                "gone": "2026-11-21",
+                "at": "2026-11-21T09:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ],
+            "told": "2026-11-10T10:00:00.000+09:00",
+            "at": "2026-11-21T09:00:00.000+09:00",
+            "by": "phn001"
+          }
+        ]
+      },
+      "why": "A backup saved Tue 10 Nov holds a spend of 1,000, a spend of 3,000 and the pay schedule (250,000 from 1 Nov). After it, with the cloud copy on, the desktop changed the 1,000 to 1,500 (15 Nov), added a spend of 2,000 (16 Nov), removed the 3,000 (17 Nov) and added a pay step of 260,000 from 1 Dec (18 Nov). On Sat 21 Nov at 09:00 the phone restores the backup. The restore [AB watch]: the 2,000 spend is not in the backup, so it is written `gone` (the restore's day, 21 Nov) with `at` 21 Nov 09:00 and `by` phn001; the 1,000 spend and the 3,000 spend are the backup's, so they come back as the backup holds them (1,000, and the 3,000 with no `gone`), each with `at` 21 Nov 09:00. The pay schedule is the backup's with a new `at`; its 1 Nov step is the backup's with a new `at`, and the 1 Dec step, newer than the backup, is removed by its own `gone` with its own new `at` [M3]. `told` stays the first one each record had [H1].",
+      "decisions": [
+        "AB",
+        "H6",
+        "M3",
+        "H1"
+      ]
+    },
+    {
+      "id": "mg-97",
+      "question": "restore_merge",
+      "title": "AB watch: the merge with the cloud copy keeps the restore, on either side",
+      "input": {
+        "current": {
+          "events": [
+            {
+              "id": "phn001-aaaaaaaaaa-1",
+              "k": "spend",
+              "date": "2026-11-09",
+              "acct": "bank",
+              "a": 1500,
+              "told": "2026-11-10T10:00:00.000+09:00",
+              "at": "2026-11-15T10:00:00.000+09:00",
+              "by": "dsk001"
+            },
+            {
+              "id": "dsk001-bbbbbbbbbb-1",
+              "k": "spend",
+              "date": "2026-11-16",
+              "acct": "bank",
+              "a": 2000,
+              "told": "2026-11-16T10:00:00.000+09:00",
+              "at": "2026-11-16T10:00:00.000+09:00",
+              "by": "dsk001"
+            },
+            {
+              "id": "phn001-aaaaaaaaaa-3",
+              "k": "spend",
+              "date": "2026-11-09",
+              "acct": "bank",
+              "a": 3000,
+              "gone": "2026-11-17",
+              "told": "2026-11-10T10:00:00.000+09:00",
+              "at": "2026-11-17T10:00:00.000+09:00",
+              "by": "dsk001"
+            }
+          ],
+          "schedules": [
+            {
+              "id": "pay",
+              "kind": "income",
+              "steps": [
+                {
+                  "from": "2026-11-01",
+                  "amount": 250000,
+                  "at": "2026-11-10T10:00:00.000+09:00",
+                  "by": "phn001"
+                },
+                {
+                  "from": "2026-12-01",
+                  "amount": 260000,
+                  "at": "2026-11-18T10:00:00.000+09:00",
+                  "by": "dsk001"
+                }
+              ],
+              "told": "2026-11-10T10:00:00.000+09:00",
+              "at": "2026-11-18T10:00:00.000+09:00",
+              "by": "dsk001"
+            }
+          ]
+        },
+        "backup": {
+          "events": [
+            {
+              "id": "phn001-aaaaaaaaaa-1",
+              "k": "spend",
+              "date": "2026-11-09",
+              "acct": "bank",
+              "a": 1000,
+              "told": "2026-11-10T10:00:00.000+09:00",
+              "at": "2026-11-10T10:00:00.000+09:00",
+              "by": "phn001"
+            },
+            {
+              "id": "phn001-aaaaaaaaaa-3",
+              "k": "spend",
+              "date": "2026-11-09",
+              "acct": "bank",
+              "a": 3000,
+              "told": "2026-11-10T10:00:00.000+09:00",
+              "at": "2026-11-10T10:00:00.000+09:00",
+              "by": "phn001"
+            }
+          ],
+          "schedules": [
+            {
+              "id": "pay",
+              "kind": "income",
+              "steps": [
+                {
+                  "from": "2026-11-01",
+                  "amount": 250000,
+                  "at": "2026-11-10T10:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              ],
+              "told": "2026-11-10T10:00:00.000+09:00",
+              "at": "2026-11-10T10:00:00.000+09:00",
+              "by": "phn001"
+            }
+          ]
+        },
+        "now": "2026-11-21T09:00:00.000+09:00",
+        "by": "phn001",
+        "cloud": {
+          "events": [
+            {
+              "id": "phn001-aaaaaaaaaa-1",
+              "k": "spend",
+              "date": "2026-11-09",
+              "acct": "bank",
+              "a": 1500,
+              "told": "2026-11-10T10:00:00.000+09:00",
+              "at": "2026-11-15T10:00:00.000+09:00",
+              "by": "dsk001"
+            },
+            {
+              "id": "dsk001-bbbbbbbbbb-1",
+              "k": "spend",
+              "date": "2026-11-16",
+              "acct": "bank",
+              "a": 2000,
+              "told": "2026-11-16T10:00:00.000+09:00",
+              "at": "2026-11-16T10:00:00.000+09:00",
+              "by": "dsk001"
+            },
+            {
+              "id": "phn001-aaaaaaaaaa-3",
+              "k": "spend",
+              "date": "2026-11-09",
+              "acct": "bank",
+              "a": 3000,
+              "gone": "2026-11-17",
+              "told": "2026-11-10T10:00:00.000+09:00",
+              "at": "2026-11-17T10:00:00.000+09:00",
+              "by": "dsk001"
+            }
+          ],
+          "schedules": [
+            {
+              "id": "pay",
+              "kind": "income",
+              "steps": [
+                {
+                  "from": "2026-11-01",
+                  "amount": 250000,
+                  "at": "2026-11-10T10:00:00.000+09:00",
+                  "by": "phn001"
+                },
+                {
+                  "from": "2026-12-01",
+                  "amount": 260000,
+                  "at": "2026-11-18T10:00:00.000+09:00",
+                  "by": "dsk001"
+                }
+              ],
+              "told": "2026-11-10T10:00:00.000+09:00",
+              "at": "2026-11-18T10:00:00.000+09:00",
+              "by": "dsk001"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "mine_first": {
+          "events": [
+            {
+              "id": "dsk001-bbbbbbbbbb-1",
+              "k": "spend",
+              "date": "2026-11-16",
+              "acct": "bank",
+              "a": 2000,
+              "gone": "2026-11-21",
+              "told": "2026-11-16T10:00:00.000+09:00",
+              "at": "2026-11-21T09:00:00.000+09:00",
+              "by": "phn001"
+            },
+            {
+              "id": "phn001-aaaaaaaaaa-1",
+              "k": "spend",
+              "date": "2026-11-09",
+              "acct": "bank",
+              "a": 1000,
+              "told": "2026-11-10T10:00:00.000+09:00",
+              "at": "2026-11-21T09:00:00.000+09:00",
+              "by": "phn001"
+            },
+            {
+              "id": "phn001-aaaaaaaaaa-3",
+              "k": "spend",
+              "date": "2026-11-09",
+              "acct": "bank",
+              "a": 3000,
+              "told": "2026-11-10T10:00:00.000+09:00",
+              "at": "2026-11-21T09:00:00.000+09:00",
+              "by": "phn001"
+            }
+          ],
+          "schedules": [
+            {
+              "id": "pay",
+              "kind": "income",
+              "steps": [
+                {
+                  "from": "2026-11-01",
+                  "amount": 250000,
+                  "at": "2026-11-21T09:00:00.000+09:00",
+                  "by": "phn001"
+                },
+                {
+                  "from": "2026-12-01",
+                  "amount": 260000,
+                  "gone": "2026-11-21",
+                  "at": "2026-11-21T09:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              ],
+              "told": "2026-11-10T10:00:00.000+09:00",
+              "at": "2026-11-21T09:00:00.000+09:00",
+              "by": "phn001"
+            }
+          ]
+        },
+        "theirs_first": {
+          "events": [
+            {
+              "id": "dsk001-bbbbbbbbbb-1",
+              "k": "spend",
+              "date": "2026-11-16",
+              "acct": "bank",
+              "a": 2000,
+              "gone": "2026-11-21",
+              "told": "2026-11-16T10:00:00.000+09:00",
+              "at": "2026-11-21T09:00:00.000+09:00",
+              "by": "phn001"
+            },
+            {
+              "id": "phn001-aaaaaaaaaa-1",
+              "k": "spend",
+              "date": "2026-11-09",
+              "acct": "bank",
+              "a": 1000,
+              "told": "2026-11-10T10:00:00.000+09:00",
+              "at": "2026-11-21T09:00:00.000+09:00",
+              "by": "phn001"
+            },
+            {
+              "id": "phn001-aaaaaaaaaa-3",
+              "k": "spend",
+              "date": "2026-11-09",
+              "acct": "bank",
+              "a": 3000,
+              "told": "2026-11-10T10:00:00.000+09:00",
+              "at": "2026-11-21T09:00:00.000+09:00",
+              "by": "phn001"
+            }
+          ],
+          "schedules": [
+            {
+              "id": "pay",
+              "kind": "income",
+              "steps": [
+                {
+                  "from": "2026-11-01",
+                  "amount": 250000,
+                  "at": "2026-11-21T09:00:00.000+09:00",
+                  "by": "phn001"
+                },
+                {
+                  "from": "2026-12-01",
+                  "amount": 260000,
+                  "gone": "2026-11-21",
+                  "at": "2026-11-21T09:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              ],
+              "told": "2026-11-10T10:00:00.000+09:00",
+              "at": "2026-11-21T09:00:00.000+09:00",
+              "by": "phn001"
+            }
+          ]
+        }
+      },
+      "why": "A backup saved Tue 10 Nov holds a spend of 1,000, a spend of 3,000 and the pay schedule (250,000 from 1 Nov). After it, with the cloud copy on, the desktop changed the 1,000 to 1,500 (15 Nov), added a spend of 2,000 (16 Nov), removed the 3,000 (17 Nov) and added a pay step of 260,000 from 1 Dec (18 Nov). On Sat 21 Nov at 09:00 the phone restores the backup. Each restored record and step has `at` 21 Nov 09:00, newer than every `at` in the cloud copy (the newest is 18 Nov 10:00), so per record and per step the restore wins [D4, M3]: the 1,000 spend at 1,000, the 3,000 spend back, the 2,000 spend and the 1 Dec step gone. `told` is the earliest seen, the same on both sides. Merged either way round it is the restored copy. Before this rule the union merge brought every newer record back at the next sync, so a restore rolled nothing back.",
+      "decisions": [
+        "AB",
+        "D4",
+        "M3",
+        "H1"
+      ]
     }
   ],
   "open": []

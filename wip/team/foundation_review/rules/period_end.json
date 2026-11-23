@@ -2165,6 +2165,230 @@
         "T1",
         "F8"
       ]
+    },
+    {
+      "id": "pe-62",
+      "question": "leftovers",
+      "title": "A moved month-end answer larger than its place holds is capped at what is left (AB watch, L q10)",
+      "input": {
+        "periodTo": "2027-01-09",
+        "places": [
+          {
+            "id": "free",
+            "left": 4000
+          }
+        ],
+        "answers": [
+          {
+            "place": "free",
+            "to": "waiting",
+            "a": 9000,
+            "told": "2027-02-03T08:00:00.000+09:00",
+            "moved": true
+          }
+        ]
+      },
+      "expected": {
+        "places": {
+          "free": {
+            "left": 4000,
+            "decided": 4000,
+            "kept": 0,
+            "toDecide": 0,
+            "state": "decided"
+          }
+        },
+        "moves": [
+          {
+            "k": "move",
+            "date": "2027-01-09",
+            "a": 4000,
+            "place": "free",
+            "place2": "waiting",
+            "told": "2027-02-03T08:00:00.000+09:00"
+          }
+        ]
+      },
+      "why": "Pay comes on the 10th and the 25th. The 38.31 copy answered December's month end with 9,000 of Free to spend to the bank; the move wrote it for the period holding 31 Dec, the half period from 25 Dec to Sat 9 Jan, whose Free to spend has 4,000 left. A moved answer is not refused: it is capped at what the place holds [AB watch, L q10]: min(9,000, 4,000) = 4,000 moves to Waiting. 4,000 left - 4,000 moved = 0, so nothing waits to decide.",
+      "decisions": [
+        "AB",
+        "L period_end q10",
+        "AA4"
+      ]
+    },
+    {
+      "id": "pe-63",
+      "question": "leftovers",
+      "title": "A moved \"keep it here\" larger than the place holds is capped too",
+      "input": {
+        "periodTo": "2027-01-09",
+        "places": [
+          {
+            "id": "free",
+            "left": 4000
+          }
+        ],
+        "answers": [
+          {
+            "place": "free",
+            "keep": true,
+            "a": 6000,
+            "told": "2027-02-03T08:00:00.000+09:00",
+            "moved": true
+          }
+        ]
+      },
+      "expected": {
+        "places": {
+          "free": {
+            "left": 4000,
+            "decided": 0,
+            "kept": 4000,
+            "toDecide": 0,
+            "state": "decided"
+          }
+        },
+        "moves": []
+      },
+      "why": "December's 38.31 answer was \"next\" (keep it for the next month), 6,000. Free to spend has 4,000 left in the half period holding 31 Dec, so the keep is capped at 4,000 [AB watch]: kept 4,000, nothing to decide (4,000 - 4,000 = 0). A keep writes no move [L period_end q6].",
+      "decisions": [
+        "AB",
+        "L period_end q6",
+        "L period_end q10"
+      ]
+    },
+    {
+      "id": "pe-64",
+      "question": "leftovers",
+      "title": "A moved answer smaller than what is left: the rest waits to decide",
+      "input": {
+        "periodTo": "2027-01-09",
+        "places": [
+          {
+            "id": "free",
+            "left": 4000
+          }
+        ],
+        "answers": [
+          {
+            "place": "free",
+            "to": "trip",
+            "a": 1500,
+            "told": "2027-02-03T08:00:00.000+09:00",
+            "moved": true
+          }
+        ]
+      },
+      "expected": {
+        "places": {
+          "free": {
+            "left": 4000,
+            "decided": 1500,
+            "kept": 0,
+            "toDecide": 2500,
+            "state": "to decide"
+          }
+        },
+        "moves": [
+          {
+            "k": "move",
+            "date": "2027-01-09",
+            "a": 1500,
+            "place": "free",
+            "place2": "trip",
+            "told": "2027-02-03T08:00:00.000+09:00"
+          }
+        ]
+      },
+      "why": "The moved answer gives 1,500 to the trip and fits: nothing is capped. 4,000 left - 1,500 moved = 2,500, which waits \"to decide\" [A7, AB watch].",
+      "decisions": [
+        "AB",
+        "A7"
+      ]
+    },
+    {
+      "id": "pe-65",
+      "question": "leftovers",
+      "title": "A typed answer larger than what is left is still refused (only a moved one is capped)",
+      "input": {
+        "periodTo": "2027-01-09",
+        "places": [
+          {
+            "id": "free",
+            "left": 4000
+          }
+        ],
+        "answers": [
+          {
+            "place": "free",
+            "to": "waiting",
+            "a": 9000,
+            "told": "2027-01-10T08:00:00.000+09:00"
+          }
+        ]
+      },
+      "expected": {
+        "refused": {
+          "place": "free",
+          "left": 4000
+        }
+      },
+      "why": "The person typed 9,000 on the period-end screen, more than the 4,000 left: refused with the amount left shown [L period_end q10]. The cap is only for an answer the move wrote, which nobody was there to be shown [AB watch].",
+      "decisions": [
+        "L period_end q10",
+        "AB"
+      ]
+    },
+    {
+      "id": "pe-66",
+      "question": "leftovers",
+      "title": "AC8: a moved answer naming a goal the plan no longer has moves to Waiting as \"to place\"",
+      "input": {
+        "periodTo": "2027-01-24",
+        "places": [
+          {
+            "id": "free",
+            "left": 5000
+          }
+        ],
+        "answers": [
+          {
+            "place": "free",
+            "to": "waiting",
+            "toPlace": true,
+            "a": 1500,
+            "told": "2027-02-03T08:00:00.000+09:00",
+            "moved": true
+          }
+        ]
+      },
+      "expected": {
+        "places": {
+          "free": {
+            "left": 5000,
+            "decided": 1500,
+            "kept": 0,
+            "toDecide": 3500,
+            "state": "to decide"
+          }
+        },
+        "moves": [
+          {
+            "k": "move",
+            "date": "2027-01-24",
+            "a": 1500,
+            "place": "free",
+            "place2": "waiting",
+            "toPlace": true,
+            "told": "2027-02-03T08:00:00.000+09:00"
+          }
+        ]
+      },
+      "why": "The 38.31 answer `{ amt: 1500, id }` named a goal the person later removed, so the move wrote 1,500 to Waiting as \"to place\" [AC8]; the move carries `toPlace: true`, so the money stays out of safe to spend until it is placed [P1]. 5,000 left - 1,500 = 3,500 waits to decide.",
+      "decisions": [
+        "AC8",
+        "P1"
+      ]
     }
   ],
   "open": []

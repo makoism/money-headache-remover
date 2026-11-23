@@ -224,6 +224,9 @@ function checkFile(fp) {
     if (a.kind === 'loan' || a.kind === 'paylater') {
       const p = a.payment || {};
       if (typeof a.opening.owed !== 'number' || !decimalsOk(a.opening.owed, d)) bad(file, w, 'opening.owed must be an amount');
+      // [AB3] Set up between its statement and its payment day: the answer to "Is the last statement paid?", naming that payment day.
+      const ls = a.opening.statement;
+      if (ls !== undefined && (!isDate(ls.payment_day) || typeof ls.paid !== 'boolean' || ls.payment_day <= a.opening.date)) bad(file, w, 'a loan or pay-later opening.statement needs payment_day (after the opening) and paid (true or false) [AB3]');
       // [Q3] A plans list: each plan { id, amount, count, first }, its parts due from `first`, monthly.
       for (const pl of a.plans || []) if (!pl.id || typeof pl.amount !== 'number' || !decimalsOk(pl.amount, d) || !Number.isInteger(pl.count) || pl.count < 1 || !isDate(pl.first)) bad(file, w, 'each plan needs id, amount, count and first (a date) [Q3]');
       if (a.of !== undefined) {   // [Q3] a card instalment plan: its own pay-later account of the card, paid through the card
@@ -252,7 +255,10 @@ function checkFile(fp) {
       } else {
         const st = a.opening.statement;
         // [X6] A card with a known close day may have no typed last statement: the first close after the opening holds the opening balance.
-        if (st && (!isDate(st.closed) || typeof st.amount !== 'number' || typeof st.paid !== 'boolean')) bad(file, w, 'opening.statement needs closed, amount, paid');
+        // [AB3] Set up between the close and its payment day, setup asks "Is the last statement paid?": yes needs no amount,
+        // no comes with the statement's amount, and "dont_know" (no amount) counts everything owed as that statement.
+        if (st && (!isDate(st.closed) || ![true, false, 'dont_know'].includes(st.paid) || (st.paid === false && typeof st.amount !== 'number')
+          || (st.amount !== undefined && typeof st.amount !== 'number'))) bad(file, w, 'opening.statement needs closed and paid (true, false or "dont_know"), and an amount when not paid');
       }
       if (a.carries && !(p.min_rule || typeof p.amount === 'number')) bad(file, w, 'a card that carries a balance needs payment.min_rule');
       if (typeof a.opening.current !== 'number' || !decimalsOk(a.opening.current, d)) bad(file, w, 'opening.current must be an amount');
