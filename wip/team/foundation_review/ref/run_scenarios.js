@@ -32,7 +32,8 @@ function expectedLine(ask, cur) {
   switch (ask.question) {
     case 'days_to_next_pay': return nextPayLine(e);
     case 'due_before_next_pay': return `${itemsLine(mItems(e.items), cur)} | total ${mm(e.total)}`;
-    case 'check_in_list': return `${itemsLine(mItems(e.items), cur)} | total ${mm(e.total)}${apart(e.apart)}`;   // [S6] pay in another currency apart
+    case 'check_in_list': return `${itemsLine(mItems(e.items), cur)} | total ${mm(e.total)}${apart(e.apart)}`
+      + (e.matched && e.matched.length ? ' | matched ' + itemsLine(mItems(e.matched), cur) : '');   // [S6] pay in another currency apart; [U2] already matched by an import
     case 'later_on': return e.map(x => `${x.account} ${x.month} ${fmt(minor(x.balance, cur), cur)}`).sort().join('; ') || 'none';   // [B11, S4]
     case 'may_still_post': return itemsLine(mItems(e.items), cur);
     case 'not_seen_yet': return `${itemsLine(mItems(e.items), cur)} | in ${mm(e.money_in)} out ${mm(e.money_out)}`;
@@ -52,7 +53,8 @@ function modelLine(ask, r, cur) {
     case 'days_to_next_pay': return nextPayLine(r.daysToNextPay);
     case 'due_before_next_pay': return `${itemsLine(r.dueBeforeNextPay.items, cur)} | total ${fmt(r.dueBeforeNextPay.total, cur)}`;
     case 'check_in_list': return `${itemsLine(r.checkIn.toConfirm, cur)} | total ${fmt(r.checkIn.toConfirm.reduce((t, i) => t + i.amount, 0), cur)}`
-      + ((r.checkIn.apart || []).length ? ' | apart ' + itemsLine(r.checkIn.apart, cur) : '');   // [S6]
+      + ((r.checkIn.apart || []).length ? ' | apart ' + itemsLine(r.checkIn.apart, cur) : '')   // [S6]
+      + ((r.checkIn.matched || []).length ? ' | matched ' + itemsLine(r.checkIn.matched, cur) : '');   // [U2]
     case 'later_on': return (r.laterOn || []).map(l => `${l.account} ${l.day.slice(0, 7)} ${l.balance == null ? '?' : fmt(l.balance, cur)}`).sort().join('; ') || 'none';   // [B11, S4]
     case 'may_still_post': return itemsLine(r.mayStillPost, cur);
     case 'not_seen_yet': return `${itemsLine(r.notSeenYet.items, cur)} | in ${fmt(r.notSeenYet.money_in, cur)} out ${fmt(r.notSeenYet.money_out, cur)}`;

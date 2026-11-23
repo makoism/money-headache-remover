@@ -1,0 +1,42 @@
+{
+  "life": "filler_spending",
+  "title": "The filler is spending: it comes out of Free to spend for the period or periods its stretch covers, or out of the place the person picks (decision T2, final_review_3 finding 2, f8)",
+  "story": "The person never logs spends; they check in at weekends. Set up Thu 10 Dec 2026, pay day: the bank holds 500,000, of which 100,000 is kept for a trip and 60,000 is Free to spend (typed); no budget lines. Pay of 300,000 on the 10th (moved earlier) starts the period. Sat 19 Dec check-in: the bank shows 450,000, so 50,000 went out unlogged; it comes out of Free to spend. Sat 26 Dec check-in: 440,000; the person says the 10,000 was trip bookings and picks the trip place for that filler. Fri 8 Jan the pay is ticked (pay@2027-01-10, moved earlier from Sunday). Mon 11 Jan check-in: 708,000; the 32,000 filler's stretch, 27 Dec to 11 Jan, crosses the period start and is split by days. Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2026-12-10", "to": "2027-01-31" },
+  "holidays": { "country": "none", "dates": [], "bank_closed": [] },
+  "main_bank": "b",
+  "accounts": [
+    { "id": "b", "name": "Bank", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2026-12-10", "amount": 500000, "split": { "goals": { "trip": 100000 }, "free": 60000 } } }
+  ],
+  "income": [
+    { "id": "pay", "name": "Pay", "account": "b", "amount": 300000, "schedule": { "frequency": "monthly", "day": 10 }, "weekend_holiday": "move earlier", "starts_period": true }
+  ],
+  "bills": [],
+  "goals": [ { "id": "trip", "name": "Trip", "kept_in": "b", "due": "2027-08-31" } ],
+  "plan": { "free": { "per": "month", "amount": 60000 } },
+  "events": [
+    { "id": "c1", "date": "2026-12-19", "told": "2026-12-19T10:00", "kind": "check", "account": "b", "amount": 450000 },
+    { "id": "c2", "date": "2026-12-26", "told": "2026-12-26T10:00", "kind": "check", "account": "b", "amount": 440000, "filler_place": "trip", "note": "the person picked the trip place for this filler" },
+    { "id": "set:pay@2027-01-10", "date": "2027-01-08", "told": "2027-01-08T09:00", "kind": "pay_in", "account": "b", "amount": 300000, "settles": "pay@2027-01-10" },
+    { "id": "c3", "date": "2027-01-11", "told": "2027-01-11T10:00", "kind": "check", "account": "b", "amount": 708000 }
+  ],
+  "asks": [
+    { "id": "fs-01", "date": "2026-12-19", "question": "not_explained", "account": "b", "expected": 50000,
+      "why": "500,000 (opening) - 450,000 (check-in figure; nothing logged) = 50,000" },
+    { "id": "fs-02", "date": "2026-12-19", "question": "headline", "expected": 10000,
+      "why": "60,000 (Free to spend at the opening, typed) - 50,000 (the filler of Sat 19 Dec) = 10,000",
+      "note": "Before T2 the filler counted nowhere and the headline stayed 60,000 while the money was gone (f8)." },
+    { "id": "fs-03", "date": "2026-12-26", "question": "headline", "expected": 10000,
+      "why": "60,000 (Free to spend at the opening, typed) - 50,000 (the filler of Sat 19 Dec; the one of Sat 26 Dec went to the trip) = 10,000" },
+    { "id": "fs-04", "date": "2026-12-26", "question": "place", "account": "b", "place": "trip", "expected": { "kept": 90000, "due": "2027-08-31" },
+      "why": "100,000 (opening) - 10,000 (the filler of Sat 26 Dec, placed on the trip at the check-in) = 90,000" },
+    { "id": "fs-05", "date": "2027-01-11", "question": "not_explained", "account": "b", "expected": 32000,
+      "why": "440,000 (check of Sat 26 Dec) + 300,000 (pay, Fri 8 Jan) - 708,000 (check-in figure) = 32,000" },
+    { "id": "fs-06", "date": "2027-01-11", "question": "headline", "expected": 52000,
+      "why": "60,000 (Free to spend for the period from Fri 8 Jan) - 8,000 (the filler's share for 8 to 11 Jan: 32,000 x 4 / 16 days) = 52,000",
+      "note": "The other 24,000 (27 Dec to 7 Jan, 12 days) belongs to the old period [A4]." },
+    { "id": "fs-07", "date": "2027-01-11", "question": "safe_to_spend", "account": "b", "expected": 618000,
+      "why": "708,000 (bank today) - 90,000 (Trip, kept in it) = 618,000" }
+  ]
+}

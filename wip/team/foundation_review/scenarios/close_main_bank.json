@@ -1,0 +1,35 @@
+{
+  "life": "close_main_bank",
+  "title": "Closing the main bank asks for the new main bank and moves every link: home.mainBank, the budget lines' and Free to spend's account, the pay schedules' account (T watch decided, final_review_3 f9)",
+  "story": "Switching banks. Set up Mon 11 Jan 2027, the day after pay: the old bank (the main bank) holds 200,000, of which Food 40,000 and Free to spend 60,000 (typed, its opening split); a new bank opens the same day at 0. Food and Free to spend name no account, so they are on the main bank. Pay of 250,000 on the 10th (moved earlier). On Fri 15 Jan the person closes the old bank: the closing moves its 200,000 to the new bank (close:old) and asks for the new main bank; they pick the new bank, and the main bank, Food, Free to spend and the pay schedule now point to it. The file is the copy after the closing (main_bank and the pay's account are the new bank); the opening split stays where it was typed. Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2027-01-15", "to": "2027-02-28" },
+  "holidays": { "country": "none", "dates": [], "bank_closed": [] },
+  "main_bank": "b",
+  "accounts": [
+    { "id": "old", "name": "Old bank", "kind": "bank", "currency": "JPY", "minimum": 0, "closed": "2027-01-15", "opening": { "date": "2027-01-11", "amount": 200000, "split": { "lines": { "food": 40000 }, "free": 60000 } } },
+    { "id": "b", "name": "New bank", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2027-01-11", "amount": 0 } }
+  ],
+  "income": [
+    { "id": "pay", "name": "Pay", "account": "b", "amount": 250000, "schedule": { "frequency": "monthly", "day": 10 }, "weekend_holiday": "move earlier", "starts_period": true }
+  ],
+  "bills": [],
+  "goals": [],
+  "plan": { "lines": [ { "id": "food", "name": "Food", "per": "month", "amount": 40000 } ], "free": { "per": "month", "amount": 60000 } },
+  "events": [
+    { "id": "close:old", "date": "2027-01-15", "told": "2027-01-15T10:00", "kind": "transfer", "from": "old", "to": "b", "amount": 200000, "note": "the closing moves the old bank's money out" }
+  ],
+  "asks": [
+    { "id": "cmb-01", "date": "2027-01-15", "question": "headline", "expected": 60000,
+      "why": "60,000 (Free to spend at the opening, typed; it moved to the new main bank with the closing) = 60,000" },
+    { "id": "cmb-02", "date": "2027-01-15", "question": "safe_to_spend", "account": "b", "expected": 160000,
+      "why": "200,000 (bank today) - 40,000 (Food left this period, now on the new main bank) = 160,000" },
+    { "id": "cmb-03", "date": "2027-01-15", "question": "safe_to_spend", "account": "old", "expected": 0,
+      "why": "0 (the old bank is closed and holds nothing; no line is left on it) = 0",
+      "note": "Before the decision the lines stayed on the closed bank: a false 40,000 shortfall there (f9)." },
+    { "id": "cmb-04", "date": "2027-01-15", "question": "warnings", "expected": [],
+      "why": "Nothing goes below its minimum; nothing is on the closed bank." },
+    { "id": "cmb-05", "date": "2027-01-15", "question": "days_to_next_pay", "expected": { "days": 26, "next_pay": "2027-02-10" },
+      "why": "2027-02-10 - 2027-01-15 = 26" }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "life": "overspent_line",
+  "title": "An overspent budget line counts as nothing left in the walk; the overspend has already left the account (decision T4, final_review_3 finding 4, f4)",
+  "story": "Set up Thu 10 Dec 2026, pay day: the bank holds 100,000, of which 40,000 is Food and 30,000 is Free to spend (typed). Pay of 300,000 on the 10th (moved earlier) starts the period; rent of 120,000 on the 27th. On Sat 12 Dec a big shop for a party costs 50,000 of food: Food is 10,000 over. Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2026-12-10", "to": "2027-01-10" },
+  "holidays": { "country": "none", "dates": [], "bank_closed": [] },
+  "main_bank": "b",
+  "accounts": [
+    { "id": "b", "name": "Bank", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2026-12-10", "amount": 100000, "split": { "lines": { "food": 40000 }, "free": 30000 } } }
+  ],
+  "income": [
+    { "id": "pay", "name": "Pay", "account": "b", "amount": 300000, "schedule": { "frequency": "monthly", "day": 10 }, "weekend_holiday": "move earlier", "starts_period": true }
+  ],
+  "bills": [
+    { "id": "rent", "name": "Rent", "account": "b", "amount": 120000, "schedule": { "frequency": "monthly", "day": 27 }, "weekend_holiday": "none" }
+  ],
+  "goals": [],
+  "plan": { "lines": [ { "id": "food", "name": "Food", "per": "month", "amount": 40000 } ], "free": { "per": "month", "amount": 30000 } },
+  "events": [
+    { "id": "e1", "date": "2026-12-12", "told": "2026-12-12T12:00", "kind": "spend", "account": "b", "amount": 50000, "line": "food" }
+  ],
+  "asks": [
+    { "id": "ol-01", "date": "2026-12-12", "question": "safe_to_spend", "account": "b", "expected": -70000,
+      "why": "50,000 (bank today) - 0 (Food left: 10,000 over counts as nothing left) - 120,000 (rent 27 Dec) = -70,000",
+      "note": "Before T4 the walk took off Food's left of -10,000, adding it back: -60,000 (f4)." },
+    { "id": "ol-02", "date": "2026-12-12", "question": "headline", "expected": 0,
+      "why": "none (the bank goes 70,000 below zero on Sun 27 Dec) = 0" },
+    { "id": "ol-03", "date": "2026-12-12", "question": "bank_today", "account": "b", "expected": 50000,
+      "why": "100,000 (opening) - 50,000 (food, Sat 12 Dec) = 50,000" }
+  ]
+}

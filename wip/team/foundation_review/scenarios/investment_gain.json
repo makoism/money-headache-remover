@@ -1,0 +1,31 @@
+{
+  "life": "investment_gain",
+  "title": "An investment never raises the large-gain question, and its check gap is a market move, not a filler (T watch decided, B10)",
+  "story": "Set up Mon 4 Jan 2027: the bank holds 300,000, of which Free to spend 50,000 (typed); an investment account holds 1,000,000. Pay of 250,000 on the 25th (moved earlier). On Tue 12 Jan the person checks the investment: 1,300,000, a market rise of 30%. Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2027-01-04", "to": "2027-01-31" },
+  "holidays": { "country": "none", "dates": [], "bank_closed": [] },
+  "main_bank": "b",
+  "accounts": [
+    { "id": "b", "name": "Bank", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2027-01-04", "amount": 300000, "split": { "free": 50000 } } },
+    { "id": "inv", "name": "Investments", "kind": "investment", "currency": "JPY", "minimum": 0, "opening": { "date": "2027-01-04", "amount": 1000000 } }
+  ],
+  "income": [
+    { "id": "pay", "name": "Pay", "account": "b", "amount": 250000, "schedule": { "frequency": "monthly", "day": 25 }, "weekend_holiday": "move earlier", "starts_period": true }
+  ],
+  "bills": [],
+  "goals": [],
+  "plan": { "free": { "per": "month", "amount": 50000 } },
+  "events": [
+    { "id": "c1", "date": "2027-01-12", "told": "2027-01-12T10:00", "kind": "check", "account": "inv", "amount": 1300000 }
+  ],
+  "asks": [
+    { "id": "inv-01", "date": "2027-01-12", "question": "warnings", "expected": [],
+      "why": "A rise of 300,000 on an investment is a market move: no question about the figure.",
+      "note": "Before the decision the 30% rise set off gain_to_ask (final_review_3 watch)." },
+    { "id": "inv-02", "date": "2027-01-12", "question": "bank_today", "account": "inv", "expected": 1300000,
+      "why": "1,300,000 (check, Tue 12 Jan) = 1,300,000" },
+    { "id": "inv-03", "date": "2027-01-12", "question": "headline", "expected": 50000,
+      "why": "50,000 (Free to spend at the opening, typed; the investment's gap is not a filler) = 50,000" }
+  ]
+}

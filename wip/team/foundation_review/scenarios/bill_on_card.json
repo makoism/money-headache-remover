@@ -1,0 +1,39 @@
+{
+  "life": "bill_on_card",
+  "title": "Bills and self-logged spends paid by card go onto the card as future card lines and come off the bank on the card's payment day (decision T3, final_review_3 finding 3, f7)",
+  "story": "Set up Fri 11 Dec 2026, the day after pay: the bank holds 100,000; the card owes nothing (its last statement closed 25 Nov, 0, paid). The card closes on the 25th and is paid in full on the 5th of the next month from the bank. Pay of 250,000 on the 10th starts the period; rent of 95,000 on the 27th from the bank. A phone bill of 8,000 is charged to the card on the 20th each month (a plain bill), and a streaming plan of 1,500 logs itself on the card on the 15th. Both are future card lines: the statement closing 25 Dec holds 9,500, paid Tue 5 Jan, before pay on Sun 10 Jan. Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2026-12-11", "to": "2027-01-31" },
+  "holidays": { "country": "none", "dates": [], "bank_closed": [] },
+  "main_bank": "b",
+  "accounts": [
+    { "id": "b", "name": "Bank", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2026-12-11", "amount": 100000 } },
+    { "id": "c", "name": "Card", "kind": "card", "currency": "JPY", "statement_close_day": 25,
+      "payment": { "day": 5, "months_after_close": 1, "from": "b", "pays": "in full", "weekend_holiday": "none" },
+      "opening": { "date": "2026-12-11", "statement": { "closed": "2026-11-25", "amount": 0, "paid": true }, "current": 0 } }
+  ],
+  "income": [
+    { "id": "pay", "name": "Pay", "account": "b", "amount": 250000, "schedule": { "frequency": "monthly", "day": 10 }, "weekend_holiday": "none", "starts_period": true }
+  ],
+  "bills": [
+    { "id": "rent", "name": "Rent", "account": "b", "amount": 95000, "schedule": { "frequency": "monthly", "day": 27 }, "weekend_holiday": "none" },
+    { "id": "phone", "name": "Phone", "account": "c", "amount": 8000, "schedule": { "frequency": "monthly", "day": 20 }, "weekend_holiday": "none" },
+    { "id": "stream", "name": "Streaming", "kind": "auto_spend", "account": "c", "amount": 1500, "schedule": { "frequency": "monthly", "day": 15 }, "weekend_holiday": "none" }
+  ],
+  "goals": [],
+  "events": [],
+  "asks": [
+    { "id": "boc-01", "date": "2026-12-11", "question": "safe_to_spend", "account": "b", "expected": -4500,
+      "why": "100,000 (bank today) - 95,000 (rent 27 Dec) - 9,500 (card statement closing 25 Dec, paid Tue 5 Jan: the phone bill of 20 Dec 8,000 and the streaming of 15 Dec 1,500, both on the card) = -4,500",
+      "note": "Before T3 the walk took items only from banks: the card lines never came off, and the lowest point was 5,000 (f7)." },
+    { "id": "boc-02", "date": "2026-12-11", "question": "headline", "expected": 0,
+      "why": "none (the bank goes 4,500 below zero on Tue 5 Jan, so nothing is safe to spend) = 0" },
+    { "id": "boc-03", "date": "2026-12-16", "question": "owed_now", "account": "c", "expected": 1500,
+      "why": "0 (opening) + 1,500 (the streaming logged itself on Tue 15 Dec) = 1,500" },
+    { "id": "boc-04", "date": "2026-12-16", "question": "safe_to_spend", "account": "b", "expected": -4500,
+      "why": "100,000 (bank today) - 95,000 (rent 27 Dec) - 9,500 (card statement closing 25 Dec: 1,500 logged, 8,000 still to come) = -4,500",
+      "note": "The streaming now logged is a card line, no longer an expected one: it is taken once." },
+    { "id": "boc-05", "date": "2026-12-16", "question": "bank_today", "account": "b", "expected": 100000,
+      "why": "100,000 (opening; the streaming went on the card) = 100,000" }
+  ]
+}

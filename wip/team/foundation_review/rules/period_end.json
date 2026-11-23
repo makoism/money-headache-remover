@@ -8,8 +8,9 @@
     "The last 3 days of a period are its last day and the two days before it.",
     "Question `question_start`: has the period ended, its last day, and whether the period-end question has to start with a check-in; while pay is past its posting window, `askPayCame` [L period_end q3]. A check-in is a date (every account typed) or `{ date, accounts }`; `spendFrom` lists the spend-from accounts [L period_end q9], and the check-ins of the last 3 days count together [M6]. `events` may hold the saved `{ k: 'periodStart', date }` event of a new period the person started without the pay [N5]: a live one (no `gone`) dated after `periodFrom` and on or before today starts the new period on its date, the old period ends the day before, and `pay` says whether the late pay is still \"late, expected\" (inside its posting window) or \"not seen yet\" [M7]. Question `leftovers`: for each place, what is decided (moved), what is kept in the place, what is still \"to decide\", how much an overspent place is over and what covers it, and the `move` events the answers write; answers adding up to more than is left are refused [L period_end q4, q6, q10]. Question `screen`: whether the period-end question is shown [L period_end q5]. Question `next_period`: what each place holds in the new period and how much of it counts in safe to spend [L period_end q6, q7]. Question `leftovers_ends`: two or more unanswered period ends, each answered on its own [L period_end q8].",
     "An answer is `{ place, to, a, told }` (a move to another place), `{ place, keep: true, a, told }` (keep it here) or, for an overspent place, `{ place, from, a, told }` where `from` is `free` or `waiting` (what covers it).",
-    "Question `leftovers_merged` [O2]: the answers of two devices, each saved as `pe:<period last day>:<place>`, merged by id (newest `at`, earliest `told`), then `leftovers` on the merged answers, so the refusal is checked again after a merge. Question `found_later` [O]: an old statement read after the answer adds spending dated in that period (`later`); the answer stays, what waits to decide shrinks first, and what the answers gave beyond what was really left is shown as `foundLater`.",
-    "[P2] An answer is one record per place: `{ place, moves: [ { to, a } ], told, at, by }`; a move to the place itself is \"keep it here\", and an overspent place's record holds its covers `{ from, a }`. `leftovers_merged` reads these records; the merge keeps the newer record of a place whole. [P3] When records of different places add up to more than is left, the record with the newer `at` among those giving from that place gives way: its moves are undone, it is listed in `gaveWay` (`{ id, by }`), and `notice` is the line its device shows at its next open. [P5] `found_later` also gives `kept` (never used for spending found later) and, when something is found later, `covered`, `toCover` and `coverFrom` (Waiting or this period's Free to spend). `covers` are the person's picks at the check-in, `{ place, from, a, date, told }`, each a move into the place dated the check-in day; a pick from anywhere else, or picks adding up to more than was found later, are refused."
+    "Question `leftovers_merged` [O2]: the answers of two devices, each saved as `pe:<the occurrence that started the period>:<place>` [T1], merged by id (newest `at`, earliest `told`), then `leftovers` on the merged answers, so the refusal is checked again after a merge. Question `found_later` [O]: an old statement read after the answer adds spending dated in that period (`later`); the answer stays, what waits to decide shrinks first, and what the answers gave beyond what was really left is shown as `foundLater`.",
+    "[P2] An answer is one record per place: `{ place, moves: [ { to, a } ], told, at, by }`; a move to the place itself is \"keep it here\", and an overspent place's record holds its covers `{ from, a }`. `leftovers_merged` reads these records; the merge keeps the newer record of a place whole. [P3] When records of different places add up to more than is left, the record with the newer `at` among those giving from that place gives way: its moves are undone, it is listed in `gaveWay` (`{ id, by }`), and `notice` is the line its device shows at its next open. [P5] `found_later` also gives `kept` (never used for spending found later) and, when something is found later, `covered`, `toCover` and `coverFrom` (Waiting or this period's Free to spend). `covers` are the person's picks at the check-in, `{ place, from, a, date, told }`, each a move into the place dated the check-in day; a pick from anywhere else, or picks adding up to more than was found later, are refused.",
+    "[T1] A period is named by the occurrence of the pay that starts it (`pay@2026-12-10`), never by a day that can move. `question_start` takes `period` (this period's name) and `nextPay.occ` (the next pay's occurrence); a period start is `ps:<the occurrence it stands in for>` with the chosen day as `date` (two phones make one record, the newer `at` wins); answers carry `period` and `date` (the period's last day when answered). This period ends: at the date of its answers when it has any; else the day before the period start for the next pay; else the day before the next pay lands. Once fixed, the late pay settles its occurrence and starts no new period. `leftovers_ends` takes each end's `period` and matches answers by it."
   ],
   "defaults": {},
   "cases": [
@@ -292,15 +293,86 @@
       "decisions": [ "L period_end q6", "L period_end q7" ]
     },
     {
-      "id": "pe-27", "question": "leftovers_ends",
+      "id": "pe-27",
+      "question": "leftovers_ends",
       "title": "Two unanswered period ends stay apart; a late answer takes its own period's last day",
       "input": {
-        "ends": [ { "periodTo": "2026-12-09", "places": [ { "id": "free", "left": 12000 } ] }, { "periodTo": "2027-01-07", "places": [ { "id": "free", "left": 8000 } ] } ],
-        "answers": [ { "period": "2026-12-09", "place": "free", "to": "trip", "a": 12000, "told": "2027-01-09T09:00:00.000+09:00" } ]
+        "ends": [
+          {
+            "periodTo": "2026-12-09",
+            "places": [
+              {
+                "id": "free",
+                "left": 12000
+              }
+            ],
+            "period": "pay@2026-11-10"
+          },
+          {
+            "periodTo": "2027-01-07",
+            "places": [
+              {
+                "id": "free",
+                "left": 8000
+              }
+            ],
+            "period": "pay@2026-12-10"
+          }
+        ],
+        "answers": [
+          {
+            "period": "pay@2026-11-10",
+            "place": "free",
+            "to": "trip",
+            "a": 12000,
+            "told": "2027-01-09T09:00:00.000+09:00"
+          }
+        ]
       },
-      "expected": [ { "periodTo": "2026-12-09", "places": { "free": { "left": 12000, "decided": 12000, "kept": 0, "toDecide": 0, "state": "decided" } }, "moves": [ { "k": "move", "date": "2026-12-09", "a": 12000, "place": "free", "place2": "trip", "told": "2027-01-09T09:00:00.000+09:00" } ] }, { "periodTo": "2027-01-07", "places": { "free": { "left": 8000, "decided": 0, "kept": 0, "toDecide": 8000, "state": "to decide" } }, "moves": [] } ],
-      "why": "The December and January ends were both left unanswered. They stay apart, each answered with its own last day [L period_end q8]: the December answer, given on 9 Jan, moves 12,000 dated 9 Dec; January's 8,000 still waits, to decide.",
-      "decisions": [ "L period_end q8" ]
+      "expected": [
+        {
+          "periodTo": "2026-12-09",
+          "places": {
+            "free": {
+              "left": 12000,
+              "decided": 12000,
+              "kept": 0,
+              "toDecide": 0,
+              "state": "decided"
+            }
+          },
+          "moves": [
+            {
+              "k": "move",
+              "date": "2026-12-09",
+              "a": 12000,
+              "place": "free",
+              "place2": "trip",
+              "told": "2027-01-09T09:00:00.000+09:00"
+            }
+          ],
+          "period": "pay@2026-11-10"
+        },
+        {
+          "periodTo": "2027-01-07",
+          "places": {
+            "free": {
+              "left": 8000,
+              "decided": 0,
+              "kept": 0,
+              "toDecide": 8000,
+              "state": "to decide"
+            }
+          },
+          "moves": [],
+          "period": "pay@2026-12-10"
+        }
+      ],
+      "why": "The December and January ends were both left unanswered. They stay apart, each answered with its own last day [L period_end q8]: the December answer, given on 9 Jan, moves 12,000 dated 9 Dec; January's 8,000 still waits, to decide. Each end and each answer names its period by the pay that started it, pay@2026-11-10 and pay@2026-12-10 [T1].",
+      "decisions": [
+        "L period_end q8",
+        "T1"
+      ]
     },
     {
       "id": "pe-28", "question": "leftovers",
@@ -343,48 +415,129 @@
       "decisions": ["M6"]
     },
     {
-      "id": "pe-31", "question": "question_start",
+      "id": "pe-31",
+      "question": "question_start",
       "title": "Pay not seen, the person starts the new period on Mon 14 Dec: the old one ends Sun 13, the pay is not seen yet",
       "input": {
         "periodFrom": "2026-11-10",
-        "nextPay": {"due": "2026-12-10", "landed": null},
-        "events": [{"id": "k7qzpa-m2x-9", "k": "periodStart", "date": "2026-12-14", "told": "2026-12-14T08:30:00.000+09:00", "at": "2026-12-14T08:30:00.000+09:00", "by": "aaaaaa"}],
-        "checkins": ["2026-12-12"],
-        "today": "2026-12-14"
+        "nextPay": {
+          "due": "2026-12-10",
+          "landed": null,
+          "occ": "pay@2026-12-10"
+        },
+        "events": [
+          {
+            "id": "ps:pay@2026-12-10",
+            "k": "periodStart",
+            "date": "2026-12-14",
+            "told": "2026-12-14T08:30:00.000+09:00",
+            "at": "2026-12-14T08:30:00.000+09:00",
+            "by": "aaaaaa"
+          }
+        ],
+        "checkins": [
+          "2026-12-12"
+        ],
+        "today": "2026-12-14",
+        "period": "pay@2026-11-10"
       },
-      "expected": {"ended": true, "periodTo": "2026-12-13", "startsWithCheckIn": false, "pay": "not seen yet"},
-      "why": "A new period started without the pay is saved as an event `{ k: 'periodStart', date }` [N5] and starts on its date, the day the person chose, Mon 14 Dec, so the old one ends Sun 13 Dec [M7]. Its last 3 days are 11, 12 and 13 Dec, and the 12 Dec check-in is one of them. The pay due Thu 10 Dec has a window to Fri 11 (Thu 10 + 1 working day); on Mon 14 that is over, so the pay is \"not seen yet\" [M7, H8].",
-      "decisions": ["N5", "M7", "L period_end q3"]
+      "expected": {
+        "ended": true,
+        "periodTo": "2026-12-13",
+        "startsWithCheckIn": false,
+        "pay": "not seen yet"
+      },
+      "why": "A new period started without the pay is saved as an event `{ k: 'periodStart', date }, named by the pay it stands in for, `ps:pay@2026-12-10` [T1],` [N5] and starts on its date, the day the person chose, Mon 14 Dec, so the old one ends Sun 13 Dec [M7]. Its last 3 days are 11, 12 and 13 Dec, and the 12 Dec check-in is one of them. The pay due Thu 10 Dec has a window to Fri 11 (Thu 10 + 1 working day); on Mon 14 that is over, so the pay is \"not seen yet\" [M7, H8].",
+      "decisions": [
+        "N5",
+        "M7",
+        "L period_end q3",
+        "T1"
+      ]
     },
     {
-      "id": "pe-32", "question": "question_start",
+      "id": "pe-32",
+      "question": "question_start",
       "title": "The same start while the pay's window is still open: the pay stays expected",
       "input": {
         "periodFrom": "2026-11-10",
-        "nextPay": {"due": "2026-12-10", "landed": null},
-        "events": [{"id": "k7qzpa-m2x-9", "k": "periodStart", "date": "2026-12-14", "told": "2026-12-14T08:30:00.000+09:00", "at": "2026-12-14T08:30:00.000+09:00", "by": "aaaaaa"}],
+        "nextPay": {
+          "due": "2026-12-10",
+          "landed": null,
+          "occ": "pay@2026-12-10"
+        },
+        "events": [
+          {
+            "id": "ps:pay@2026-12-10",
+            "k": "periodStart",
+            "date": "2026-12-14",
+            "told": "2026-12-14T08:30:00.000+09:00",
+            "at": "2026-12-14T08:30:00.000+09:00",
+            "by": "aaaaaa"
+          }
+        ],
         "postingDays": 3,
-        "checkins": ["2026-12-12"],
-        "today": "2026-12-14"
+        "checkins": [
+          "2026-12-12"
+        ],
+        "today": "2026-12-14",
+        "period": "pay@2026-11-10"
       },
-      "expected": {"ended": true, "periodTo": "2026-12-13", "startsWithCheckIn": false, "pay": "late, expected"},
+      "expected": {
+        "ended": true,
+        "periodTo": "2026-12-13",
+        "startsWithCheckIn": false,
+        "pay": "late, expected"
+      },
       "why": "The period ends Sun 13 Dec as in pe-31 [M7]. This account's window is 3 working days: Thu 10 Dec + Fri 11, Mon 14, Tue 15. On Mon 14 the window has not ended, so the late pay stays expected [M7, H8].",
-      "decisions": ["N5", "M7", "H8"]
+      "decisions": [
+        "N5",
+        "M7",
+        "H8",
+        "T1"
+      ]
     },
     {
-      "id": "pe-33", "question": "question_start",
+      "id": "pe-33",
+      "question": "question_start",
       "title": "Two days later the window is over: the late pay is not seen yet",
       "input": {
         "periodFrom": "2026-11-10",
-        "nextPay": {"due": "2026-12-10", "landed": null},
-        "events": [{"id": "k7qzpa-m2x-9", "k": "periodStart", "date": "2026-12-14", "told": "2026-12-14T08:30:00.000+09:00", "at": "2026-12-14T08:30:00.000+09:00", "by": "aaaaaa"}],
+        "nextPay": {
+          "due": "2026-12-10",
+          "landed": null,
+          "occ": "pay@2026-12-10"
+        },
+        "events": [
+          {
+            "id": "ps:pay@2026-12-10",
+            "k": "periodStart",
+            "date": "2026-12-14",
+            "told": "2026-12-14T08:30:00.000+09:00",
+            "at": "2026-12-14T08:30:00.000+09:00",
+            "by": "aaaaaa"
+          }
+        ],
         "postingDays": 3,
-        "checkins": ["2026-12-12"],
-        "today": "2026-12-16"
+        "checkins": [
+          "2026-12-12"
+        ],
+        "today": "2026-12-16",
+        "period": "pay@2026-11-10"
       },
-      "expected": {"ended": true, "periodTo": "2026-12-13", "startsWithCheckIn": false, "pay": "not seen yet"},
+      "expected": {
+        "ended": true,
+        "periodTo": "2026-12-13",
+        "startsWithCheckIn": false,
+        "pay": "not seen yet"
+      },
       "why": "The window ended Tue 15 Dec (pe-32). On Wed 16 it is over and the pay has not landed, so it is \"not seen yet\" [M7]. The period still ended on Sun 13, the day before the start the person chose.",
-      "decisions": ["N5", "M7", "H8"]
+      "decisions": [
+        "N5",
+        "M7",
+        "H8",
+        "T1"
+      ]
     },
     {
       "id": "pe-34",
@@ -394,11 +547,12 @@
         "periodFrom": "2026-11-10",
         "nextPay": {
           "due": "2026-12-10",
-          "landed": null
+          "landed": null,
+          "occ": "pay@2026-12-10"
         },
         "events": [
           {
-            "id": "k7qzpa-m2x-9",
+            "id": "ps:pay@2026-12-10",
             "k": "periodStart",
             "date": "2026-12-14",
             "told": "2026-12-14T08:30:00.000+09:00",
@@ -410,7 +564,8 @@
         "checkins": [
           "2026-12-12"
         ],
-        "today": "2026-12-14"
+        "today": "2026-12-14",
+        "period": "pay@2026-11-10"
       },
       "expected": {
         "ended": false,
@@ -419,22 +574,24 @@
       "why": "The `periodStart` event has `gone` (Undo, section 0), so no period was started [N5]. The pay due Thu 10 Dec has not landed and its window ended Fri 11, so on Mon 14 the period has not ended and the check-in asks \"did your pay come?\" [L period_end q3].",
       "decisions": [
         "N5",
-        "L period_end q3"
+        "L period_end q3",
+        "T1"
       ]
     },
     {
       "id": "pe-35",
       "question": "question_start",
-      "title": "A `periodStart` on or before this period's first day belongs to an earlier period",
+      "title": "A `periodStart` that stands in for the pay that began this period does not end it",
       "input": {
         "periodFrom": "2026-11-10",
         "nextPay": {
           "due": "2026-12-10",
-          "landed": null
+          "landed": null,
+          "occ": "pay@2026-12-10"
         },
         "events": [
           {
-            "id": "k7qzpa-m2x-3",
+            "id": "ps:pay@2026-11-10",
             "k": "periodStart",
             "date": "2026-11-10",
             "told": "2026-11-10T08:30:00.000+09:00",
@@ -445,16 +602,18 @@
         "checkins": [
           "2026-12-08"
         ],
-        "today": "2026-12-10"
+        "today": "2026-12-10",
+        "period": "pay@2026-11-10"
       },
       "expected": {
         "ended": false
       },
-      "why": "This period started on 10 Nov, from the `periodStart` dated 10 Nov [N5]; that event is what began it, so it does not end it. The pay due Thu 10 Dec has not landed, and on Thu 10 Dec its window (to Fri 11) is open, so the period has not ended and nothing is asked yet [H8, L period_end q2].",
+      "why": "The `periodStart` is `ps:pay@2026-11-10`: it stands in for the pay that began this period, so it does not end it [T1, N5]. This period started on 10 Nov, from the `periodStart` dated 10 Nov [N5]; that event is what began it, so it does not end it. The pay due Thu 10 Dec has not landed, and on Thu 10 Dec its window (to Fri 11) is open, so the period has not ended and nothing is asked yet [H8, L period_end q2].",
       "decisions": [
         "N5",
         "H8",
-        "L period_end q2"
+        "L period_end q2",
+        "T1"
       ]
     },
     {
@@ -462,6 +621,7 @@
       "question": "leftovers_merged",
       "title": "Both phones answer the period end the same way: one answer, 20,000 moved once",
       "input": {
+        "period": "pay@2026-11-25",
         "periodTo": "2026-12-24",
         "places": [
           {
@@ -519,12 +679,13 @@
           }
         ]
       },
-      "why": "Each phone writes its answer as `pe:2026-12-24:free` [O2], one record holding its moves [P2], so the merge keeps one record (newest `at`, earliest `told`, 09:00). 20,000 leaves Free to spend once; before O2 the merged copy moved 40,000 out of a place that held 20,000 (final_review_1 S4).",
+      "why": "Each phone writes its answer as `pe:pay@2026-11-25:free` [O2], one record holding its moves [P2], so the merge keeps one record (newest `at`, earliest `told`, 09:00). 20,000 leaves Free to spend once; before O2 the merged copy moved 40,000 out of a place that held 20,000 (final_review_1 S4).",
       "decisions": [
         "O2",
         "P2",
         "A7",
-        "L period_end q10"
+        "L period_end q10",
+        "T1"
       ]
     },
     {
@@ -532,6 +693,7 @@
       "question": "leftovers_merged",
       "title": "Answers that each phone allowed add up to too much after the merge: the newer one gives way",
       "input": {
+        "period": "pay@2026-11-25",
         "periodTo": "2026-12-24",
         "places": [
           {
@@ -601,7 +763,7 @@
         ],
         "gaveWay": [
           {
-            "id": "pe:2026-12-24:food",
+            "id": "pe:pay@2026-11-25:food",
             "by": "tttttt"
           }
         ],
@@ -610,12 +772,13 @@
           "text": "An answer from your other device was used. Check it."
         }
       },
-      "why": "Jun's phone moves all 20,000 of Free to spend to the trip at 09:00; Tess's phone covers Food's 5,000 overspend from Free to spend at 09:10. Each alone is fine. They are different records (`pe:2026-12-24:free`, `pe:2026-12-24:food`), so both survive the merge, and together Free to spend gives 20,000 + 5,000 = 25,000 of 20,000 [O2]. The answer with the newer `at` (Tess's, 09:10) gives way: its move is undone, Food is over by 5,000 again with nothing covering it, and Tess's phone says \"An answer from your other device was used. Check it.\" at its next open [P3].",
+      "why": "Jun's phone moves all 20,000 of Free to spend to the trip at 09:00; Tess's phone covers Food's 5,000 overspend from Free to spend at 09:10. Each alone is fine. They are different records (`pe:pay@2026-11-25:free`, `pe:pay@2026-11-25:food`), so both survive the merge, and together Free to spend gives 20,000 + 5,000 = 25,000 of 20,000 [O2]. The answer with the newer `at` (Tess's, 09:10) gives way: its move is undone, Food is over by 5,000 again with nothing covering it, and Tess's phone says \"An answer from your other device was used. Check it.\" at its next open [P3].",
       "decisions": [
         "P3",
         "O2",
         "L period_end q4",
-        "L period_end q10"
+        "L period_end q10",
+        "T1"
       ]
     },
     {
@@ -739,6 +902,7 @@
       "question": "leftovers_merged",
       "title": "A split answer is one record per place holding all its moves",
       "input": {
+        "period": "pay@2026-11-25",
         "periodTo": "2026-12-24",
         "places": [
           {
@@ -842,12 +1006,13 @@
           }
         ]
       },
-      "why": "One phone answers both places. `pe:2026-12-24:free` holds three moves [P2]: 8,000 to the trip, 5,000 kept (a move to the place itself: \"keep it here\", no move event, L period_end q6) and 4,000 to Waiting. `pe:2026-12-24:food` holds the cover of Food's 5,000: 3,000 from Free to spend and 2,000 from Waiting (a cover is saved under the overspent line, O reading). Free to spend gives 8,000 + 5,000 + 4,000 + 3,000 = 20,000 of 20,000, nothing refused; decided 8,000 + 4,000 + 3,000 = 15,000, kept 5,000, 20,000 - 15,000 - 5,000 = 0 to decide. Food: 3,000 + 2,000 = 5,000 covered. Before P2 two answers for one place on one device were refused.",
+      "why": "One phone answers both places. `pe:pay@2026-11-25:free` holds three moves [P2]: 8,000 to the trip, 5,000 kept (a move to the place itself: \"keep it here\", no move event, L period_end q6) and 4,000 to Waiting. `pe:pay@2026-11-25:food` holds the cover of Food's 5,000: 3,000 from Free to spend and 2,000 from Waiting (a cover is saved under the overspent line, O reading). Free to spend gives 8,000 + 5,000 + 4,000 + 3,000 = 20,000 of 20,000, nothing refused; decided 8,000 + 4,000 + 3,000 = 15,000, kept 5,000, 20,000 - 15,000 - 5,000 = 0 to decide. Food: 3,000 + 2,000 = 5,000 covered. Before P2 two answers for one place on one device were refused.",
       "decisions": [
         "P2",
         "O2",
         "L period_end q4",
-        "L period_end q6"
+        "L period_end q6",
+        "T1"
       ]
     },
     {
@@ -855,6 +1020,7 @@
       "question": "leftovers_merged",
       "title": "Two phones answer one place differently: the whole newer record stands",
       "input": {
+        "period": "pay@2026-11-25",
         "periodTo": "2026-12-24",
         "places": [
           {
@@ -916,11 +1082,12 @@
           }
         ]
       },
-      "why": "Both records are `pe:2026-12-24:free`. The merge keeps the newer `at` (Tess's, 09:10) whole, with the earliest `told` (09:00) [O2, P2]: 10,000 to the trip and 10,000 kept. Moves are never mixed from two records, so the place gives 10,000 + 10,000 = 20,000, never 30,000. Nothing gave way: they were one record, not two answers adding up [P3].",
+      "why": "Both records are `pe:pay@2026-11-25:free`. The merge keeps the newer `at` (Tess's, 09:10) whole, with the earliest `told` (09:00) [O2, P2]: 10,000 to the trip and 10,000 kept. Moves are never mixed from two records, so the place gives 10,000 + 10,000 = 20,000, never 30,000. Nothing gave way: they were one record, not two answers adding up [P3].",
       "decisions": [
         "P2",
         "O2",
-        "P3"
+        "P3",
+        "T1"
       ]
     },
     {
@@ -928,6 +1095,7 @@
       "question": "leftovers_merged",
       "title": "Only the newer of the answers that add up to too much gives way; a newer answer elsewhere stays",
       "input": {
+        "period": "pay@2026-11-25",
         "periodTo": "2026-12-24",
         "places": [
           {
@@ -1028,7 +1196,7 @@
         ],
         "gaveWay": [
           {
-            "id": "pe:2026-12-24:food",
+            "id": "pe:pay@2026-11-25:food",
             "by": "tttttt"
           }
         ],
@@ -1041,7 +1209,8 @@
       "decisions": [
         "P3",
         "P2",
-        "O2"
+        "O2",
+        "T1"
       ]
     },
     {
@@ -1049,6 +1218,7 @@
       "question": "leftovers_merged",
       "title": "The newer answer gives way whichever phone wrote it, and its money goes back to \"to decide\"",
       "input": {
+        "period": "pay@2026-11-25",
         "periodTo": "2026-12-24",
         "places": [
           {
@@ -1118,7 +1288,7 @@
         ],
         "gaveWay": [
           {
-            "id": "pe:2026-12-24:free",
+            "id": "pe:pay@2026-11-25:free",
             "by": "jjjjjj"
           }
         ],
@@ -1131,7 +1301,8 @@
       "decisions": [
         "P3",
         "P2",
-        "O2"
+        "O2",
+        "T1"
       ]
     },
     {
@@ -1408,6 +1579,330 @@
       "decisions": [
         "P5",
         "L period_end q10"
+      ]
+    },
+    {
+      "id": "pe-48",
+      "question": "question_start",
+      "title": "A late pay that lands after the person started the new period settles its occurrence and starts no new period (f1)",
+      "input": {
+        "period": "pay@2026-11-10",
+        "periodFrom": "2026-11-10",
+        "nextPay": {
+          "occ": "pay@2026-12-10",
+          "due": "2026-12-10",
+          "landed": "2026-12-15"
+        },
+        "events": [
+          {
+            "id": "ps:pay@2026-12-10",
+            "k": "periodStart",
+            "date": "2026-12-14",
+            "told": "2026-12-14T08:30:00.000+09:00",
+            "at": "2026-12-14T08:30:00.000+09:00",
+            "by": "jjjjjj"
+          }
+        ],
+        "postingDays": 3,
+        "checkins": [
+          "2026-12-12"
+        ],
+        "today": "2026-12-15"
+      },
+      "expected": {
+        "ended": true,
+        "periodTo": "2026-12-13",
+        "startsWithCheckIn": false
+      },
+      "why": "The period start `ps:pay@2026-12-10` fixed the end: the new period began Mon 14 Dec, so this one ended Sun 13 Dec. The pay landing Tue 15 Dec inside its window settles pay@2026-12-10 and starts no new period [T1]. The 12 Dec check-in is in the last 3 days (11 to 13 Dec): fresh. Before T1 the landing moved the end to Mon 14 Dec (final_review_3 f1).",
+      "decisions": [
+        "T1",
+        "M7",
+        "N5"
+      ]
+    },
+    {
+      "id": "pe-49",
+      "question": "leftovers_ends",
+      "title": "The answer saved before the late pay landed still answers its period: nothing to decide again (f1)",
+      "input": {
+        "ends": [
+          {
+            "period": "pay@2026-11-10",
+            "periodTo": "2026-12-13",
+            "places": [
+              {
+                "id": "free",
+                "left": 20000
+              }
+            ]
+          }
+        ],
+        "answers": [
+          {
+            "period": "pay@2026-11-10",
+            "place": "free",
+            "to": "trip",
+            "a": 20000,
+            "told": "2026-12-14T08:30:00.000+09:00"
+          }
+        ]
+      },
+      "expected": [
+        {
+          "period": "pay@2026-11-10",
+          "periodTo": "2026-12-13",
+          "places": {
+            "free": {
+              "left": 20000,
+              "decided": 20000,
+              "kept": 0,
+              "toDecide": 0,
+              "state": "decided"
+            }
+          },
+          "moves": [
+            {
+              "k": "move",
+              "date": "2026-12-13",
+              "a": 20000,
+              "place": "free",
+              "place2": "trip",
+              "told": "2026-12-14T08:30:00.000+09:00"
+            }
+          ]
+        }
+      ],
+      "why": "The answer is `pe:pay@2026-11-10:free`, named by the pay that started the period, not by its last day [T1]. 20,000 left - 20,000 to the trip = 0 to decide. Before T1 the answer named 13 Dec and the end had moved to 14 Dec, so all 20,000 was to decide again (f1).",
+      "decisions": [
+        "T1",
+        "P2"
+      ]
+    },
+    {
+      "id": "pe-50",
+      "question": "question_start",
+      "title": "A period with answers keeps its end when the ticked pay's date is corrected (f1b)",
+      "input": {
+        "period": "pay@2026-11-10",
+        "periodFrom": "2026-11-10",
+        "nextPay": {
+          "occ": "pay@2026-12-10",
+          "due": "2026-12-10",
+          "landed": "2026-12-09"
+        },
+        "answers": [
+          {
+            "period": "pay@2026-11-10",
+            "date": "2026-12-07",
+            "place": "free",
+            "to": "trip",
+            "a": 20000,
+            "told": "2026-12-08T08:00:00.000+09:00"
+          }
+        ],
+        "checkins": [
+          "2026-12-06"
+        ],
+        "today": "2026-12-09"
+      },
+      "expected": {
+        "ended": true,
+        "periodTo": "2026-12-07",
+        "startsWithCheckIn": false
+      },
+      "why": "The pay was ticked as Tue 8 Dec and the period was answered, dated its last day, Mon 7 Dec. The date is then corrected to Wed 9 Dec. A period that already has answers keeps its end [T1]: still Mon 7 Dec, not Tue 8 Dec. The 6 Dec check-in is in its last 3 days (5 to 7 Dec): fresh.",
+      "decisions": [
+        "T1",
+        "Q6",
+        "S2"
+      ]
+    },
+    {
+      "id": "pe-51",
+      "question": "leftovers_ends",
+      "title": "After the correction the answer still answers its period (f1b)",
+      "input": {
+        "ends": [
+          {
+            "period": "pay@2026-11-10",
+            "periodTo": "2026-12-07",
+            "places": [
+              {
+                "id": "free",
+                "left": 20000
+              }
+            ]
+          }
+        ],
+        "answers": [
+          {
+            "period": "pay@2026-11-10",
+            "place": "free",
+            "to": "trip",
+            "a": 20000,
+            "told": "2026-12-08T08:00:00.000+09:00"
+          }
+        ]
+      },
+      "expected": [
+        {
+          "period": "pay@2026-11-10",
+          "periodTo": "2026-12-07",
+          "places": {
+            "free": {
+              "left": 20000,
+              "decided": 20000,
+              "kept": 0,
+              "toDecide": 0,
+              "state": "decided"
+            }
+          },
+          "moves": [
+            {
+              "k": "move",
+              "date": "2026-12-07",
+              "a": 20000,
+              "place": "free",
+              "place2": "trip",
+              "told": "2026-12-08T08:00:00.000+09:00"
+            }
+          ]
+        }
+      ],
+      "why": "20,000 left - 20,000 to the trip = 0 to decide: the answer `pe:pay@2026-11-10:free` names the period by its pay, so the corrected date leaves it in place [T1].",
+      "decisions": [
+        "T1"
+      ]
+    },
+    {
+      "id": "pe-52",
+      "question": "question_start",
+      "title": "Both phones started the new period without the pay, on different days: one record, the newer wins (f6)",
+      "input": {
+        "period": "pay@2026-11-10",
+        "periodFrom": "2026-11-10",
+        "nextPay": {
+          "occ": "pay@2026-12-10",
+          "due": "2026-12-10",
+          "landed": null
+        },
+        "events": [
+          {
+            "id": "ps:pay@2026-12-10",
+            "k": "periodStart",
+            "date": "2026-12-14",
+            "told": "2026-12-14T08:30:00.000+09:00",
+            "at": "2026-12-14T08:30:00.000+09:00",
+            "by": "jjjjjj"
+          },
+          {
+            "id": "ps:pay@2026-12-10",
+            "k": "periodStart",
+            "date": "2026-12-15",
+            "told": "2026-12-15T08:00:00.000+09:00",
+            "at": "2026-12-15T08:00:00.000+09:00",
+            "by": "tttttt"
+          }
+        ],
+        "checkins": [
+          "2026-12-12"
+        ],
+        "today": "2026-12-15"
+      },
+      "expected": {
+        "ended": true,
+        "periodTo": "2026-12-14",
+        "startsWithCheckIn": false,
+        "pay": "not seen yet"
+      },
+      "why": "Jun's and Tess's records are both `ps:pay@2026-12-10`, so after a sync they are one record and the newer `at` wins: Tess's, Tue 15 Dec [T1]. The new period starts Tue 15 Dec; this one ends Mon 14 Dec. The 12 Dec check-in is in its last 3 days (12 to 14 Dec): fresh. The pay's window ended Fri 11 Dec: not seen yet [M7].",
+      "decisions": [
+        "T1",
+        "O2",
+        "M7"
+      ]
+    },
+    {
+      "id": "pe-53",
+      "question": "question_start",
+      "title": "The period a period start began is not ended by that same record from the other phone (f6)",
+      "input": {
+        "period": "pay@2026-12-10",
+        "periodFrom": "2026-12-15",
+        "nextPay": {
+          "occ": "pay@2027-01-10",
+          "due": "2027-01-10",
+          "landed": null
+        },
+        "events": [
+          {
+            "id": "ps:pay@2026-12-10",
+            "k": "periodStart",
+            "date": "2026-12-14",
+            "told": "2026-12-14T08:30:00.000+09:00",
+            "at": "2026-12-14T08:30:00.000+09:00",
+            "by": "jjjjjj"
+          },
+          {
+            "id": "ps:pay@2026-12-10",
+            "k": "periodStart",
+            "date": "2026-12-15",
+            "told": "2026-12-15T08:00:00.000+09:00",
+            "at": "2026-12-15T08:00:00.000+09:00",
+            "by": "tttttt"
+          }
+        ],
+        "checkins": [
+          "2026-12-15"
+        ],
+        "today": "2026-12-15"
+      },
+      "expected": {
+        "ended": false
+      },
+      "why": "Both records stand in for pay@2026-12-10, the pay that names this period; neither ends it. Only a period start for pay@2027-01-10, or that pay landing, ends it [T1]. Before T1 the 15 Dec record ended the period begun 14 Dec after one day (f6).",
+      "decisions": [
+        "T1"
+      ]
+    },
+    {
+      "id": "pe-54",
+      "question": "question_start",
+      "title": "The ticked pay is undone after the period was answered: the end stays, and the pay is late again",
+      "input": {
+        "period": "pay@2026-11-10",
+        "periodFrom": "2026-11-10",
+        "nextPay": {
+          "occ": "pay@2026-12-10",
+          "due": "2026-12-10",
+          "landed": null
+        },
+        "answers": [
+          {
+            "period": "pay@2026-11-10",
+            "date": "2026-12-07",
+            "place": "free",
+            "to": "trip",
+            "a": 20000,
+            "told": "2026-12-08T08:00:00.000+09:00"
+          }
+        ],
+        "checkins": [
+          "2026-12-06"
+        ],
+        "today": "2026-12-11"
+      },
+      "expected": {
+        "ended": true,
+        "periodTo": "2026-12-07",
+        "startsWithCheckIn": false,
+        "pay": "late, expected"
+      },
+      "why": "A deposit of Tue 8 Dec was ticked as the pay, and the period was answered, dated Mon 7 Dec. On Fri 11 Dec the tick is undone (it was something else). Once a period's end is fixed by answers it stays [T1]: Mon 7 Dec. The pay due Thu 10 Dec is now inside its window (to Fri 11 Dec): late, expected [H8].",
+      "decisions": [
+        "T1",
+        "H8"
       ]
     }
   ],

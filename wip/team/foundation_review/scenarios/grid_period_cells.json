@@ -1,0 +1,39 @@
+{
+  "life": "grid_period_cells",
+  "title": "Coverage grid cells: a transfer with one side before its account's opening (transfer, opening), a refund given back to its line after the period start (refund, period start), a skipped pay that starts no period (skip, period start)",
+  "story": "Set up Mon 4 Jan 2027: the bank holds 300,000, of which Food 30,000 and Free to spend 50,000 (typed). An e-wallet is added on Wed 6 Jan at 5,000. Pay of 250,000 on the 25th (moved earlier). Tue 5 Jan: a top-up of 5,000 from the bank to the e-wallet, the day before the e-wallet's opening, whose figure holds it. Fri 22 Jan: 12,000 of food. Mon 25 Jan: the pay is ticked; a new period. Tue 26 Jan: 2,000 of that food is refunded and given back to Food. Mon 1 Feb: 6,000 from Free to spend. Thu 25 Feb: no pay this month (unpaid leave): the pay is skipped. Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2027-01-04", "to": "2027-03-31" },
+  "holidays": { "country": "none", "dates": [], "bank_closed": [] },
+  "main_bank": "b",
+  "accounts": [
+    { "id": "b", "name": "Bank", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2027-01-04", "amount": 300000, "split": { "lines": { "food": 30000 }, "free": 50000 } } },
+    { "id": "g", "name": "E-wallet", "kind": "ewallet", "currency": "JPY", "minimum": 0, "opening": { "date": "2027-01-06", "amount": 5000 } }
+  ],
+  "income": [
+    { "id": "pay", "name": "Pay", "account": "b", "amount": 250000, "schedule": { "frequency": "monthly", "day": 25 }, "weekend_holiday": "move earlier", "starts_period": true }
+  ],
+  "bills": [],
+  "goals": [],
+  "plan": { "lines": [ { "id": "food", "name": "Food", "per": "month", "amount": 30000 } ], "free": { "per": "month", "amount": 50000 } },
+  "events": [
+    { "id": "t1", "date": "2027-01-05", "told": "2027-01-05T12:00", "kind": "transfer", "from": "b", "to": "g", "amount": 5000, "note": "the day before the e-wallet's opening" },
+    { "id": "s1", "date": "2027-01-22", "told": "2027-01-22T12:00", "kind": "spend", "account": "b", "amount": 12000, "line": "food" },
+    { "id": "set:pay@2027-01-25", "date": "2027-01-25", "told": "2027-01-25T09:00", "kind": "pay_in", "account": "b", "amount": 250000, "settles": "pay@2027-01-25" },
+    { "id": "rf1", "date": "2027-01-26", "told": "2027-01-26T12:00", "kind": "refund", "account": "b", "amount": 2000, "line": "food" },
+    { "id": "s2", "date": "2027-02-01", "told": "2027-02-01T12:00", "kind": "spend", "account": "b", "amount": 6000, "line": "free" },
+    { "id": "sk1", "date": "2027-02-25", "told": "2027-02-25T09:00", "kind": "skip", "settles": "pay@2027-02-25", "note": "no pay this month" }
+  ],
+  "asks": [
+    { "id": "gpc-01", "date": "2027-01-06", "question": "bank_today", "account": "g", "expected": 5000,
+      "why": "5,000 (opening figure of Wed 6 Jan, which holds the top-up of Tue 5 Jan) = 5,000" },
+    { "id": "gpc-02", "date": "2027-01-06", "question": "bank_today", "account": "b", "expected": 295000,
+      "why": "300,000 (opening) - 5,000 (top-up, Tue 5 Jan) = 295,000" },
+    { "id": "gpc-03", "date": "2027-01-26", "question": "safe_to_spend", "account": "b", "expected": 503000,
+      "why": "535,000 (bank today: 295,000 - 12,000 + 250,000 + 2,000) - 32,000 (Food left: 30,000 for the period from Mon 25 Jan + 2,000 refund given back to it) = 503,000" },
+    { "id": "gpc-04", "date": "2027-02-26", "question": "days_to_next_pay", "expected": { "days": 27, "next_pay": "2027-03-25" },
+      "why": "2027-03-25 - 2027-02-26 = 27" },
+    { "id": "gpc-05", "date": "2027-02-26", "question": "headline", "expected": 44000,
+      "why": "50,000 (Free to spend for the period from Mon 25 Jan: the skipped pay of 25 Feb starts no period) - 6,000 (Mon 1 Feb) = 44,000" }
+  ]
+}

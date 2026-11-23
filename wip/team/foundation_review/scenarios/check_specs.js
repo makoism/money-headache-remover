@@ -7,14 +7,15 @@ const fs = require('fs');
 const path = require('path');
 
 const DIGITS = { JPY: 0, PHP: 2, USD: 2, EUR: 2 };
-const KINDS = ['bank', 'cash', 'ewallet', 'card', 'loan', 'paylater'];
+const KINDS = ['bank', 'cash', 'ewallet', 'wallet', 'investment', 'card', 'loan', 'paylater'];   // investment: its gap is a market move [B10, T watch]
 const EVENT_KINDS = ['pay_in', 'money_in', 'spend', 'refund', 'bill_paid', 'card_payment', 'transfer', 'convert', 'set_aside', 'check', 'card_check', 'skip', 'repay', 'borrow',
-  'place_money', 'period_end_answer'];   // borrow: cash taken on a card [O5], or drawn on a loan [Q3]; place_money: money to place placed [R1]; period_end_answer: a pe: record with its moves [P2]
+  'place_money', 'period_end_answer',
+  'period_start', 'adjust'];   // period_start: ps:<occurrence> with the chosen day [T1, T6]; adjust: an accepted difference, signed [T7]   // borrow: cash taken on a card [O5], or drawn on a loan [Q3]; place_money: money to place placed [R1]; period_end_answer: a pe: record with its moves [P2]
 const QUESTIONS = ['bank_today', 'safe_to_spend', 'days_to_next_pay', 'due_before_next_pay', 'not_seen_yet', 'card_due', 'total', 'not_explained',
   'check_in_list', 'may_still_post', 'owed_now', 'headline', 'place', 'warnings', 'total_after_cards', 'later_on'];   // later_on: the 12-month warnings [B11, S4]
 const WE_RULES = ['move earlier', 'move later', 'none'];
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
-const TOLD = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?$/;   // a date, or a date and a time [H1]
+const TOLD = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}([+-]\d{2}:\d{2}|Z)?)?$/;   // a date, or a date and a time [H1], maybe with its offset (compared as moments, T watch)
 
 let errors = 0;
 function bad(file, where, msg) { errors++; console.log(`FAIL ${file} ${where}: ${msg}`); }
@@ -144,6 +145,10 @@ function checkAnswer(file, where, q, expected, why, d, askDate) {
     // [S6] Pay in another currency is listed apart, each in its own currency, and is not in the total.
     for (const it of expected.apart || []) {
       if (!isDate(it.lands) || dayNum(it.lands) > dayNum(askDate) || !(it.currency in DIGITS) || typeof it.amount !== 'number' || !decimalsOk(it.amount, DIGITS[it.currency])) bad(file, where, `apart item ${it.item} needs lands (by the ask date), currency and an amount in it [S6]`);
+    }
+    // [U2] Settles an import made since the last check-in: listed as "already matched", ticked, out of the total.
+    for (const it of expected.matched || []) {
+      if (!isDate(it.lands) || dayNum(it.lands) > dayNum(askDate) || typeof it.amount !== 'number') bad(file, where, `matched item ${it.item} needs lands (by the ask date) and an amount [U2]`);
     }
     if (s !== numMinor(expected.total, d)) bad(file, where, 'items do not add to total');
     return checkSum(file, where, why, numMinor(expected.total, d), d);
@@ -285,6 +290,12 @@ function checkFile(fp) {
     last = date;
     if (!EVENT_KINDS.includes(e.kind)) bad(file, w, `kind must be one of ${EVENT_KINDS}`);
     for (const k of ['account', 'from', 'to', 'card']) if (e[k] !== undefined && !(e[k] in acc)) bad(file, w, `${k} ${e[k]} is not an account`);
+    // [T7] A move out of a place: a set_aside with `from_place` (the place it leaves), into `goal` or, with none, Waiting.
+    if (e.from_place !== undefined && !(e.kind === 'set_aside' && goals.has(e.from_place) && e.from_place !== e.goal)) bad(file, w, 'from_place is the place a set_aside moves money out of (a goal, not the one it goes to) [T7]');
+    // [T2] The place the filler of a check comes out of, when the person picked one: a budget line or a goal (Free to spend by default).
+    if (e.filler_place !== undefined && !(e.kind === 'check' && (goals.has(e.filler_place) || ((s.plan || {}).lines || []).some(l => l.id === e.filler_place)))) bad(file, w, 'filler_place is on a check: a goal or a budget line [T2]');
+    // [U2] unticked: the person unticked the settle an imported line made, on the check-in list
+    if (e.unticked !== undefined && !(e.unticked === true && e.source && e.settles === undefined)) bad(file, w, 'unticked is only on an imported line, with no settles of its own [U2]');
     if (e.goal !== undefined && !goals.has(e.goal)) bad(file, w, `goal ${e.goal} not found`);
     if (e.settles !== undefined) {
       const m = String(e.settles).match(/^([a-z0-9_]+)@(\d{4}-\d{2}-\d{2})$/);
@@ -307,9 +318,16 @@ function checkFile(fp) {
     const d = amtAcc ? DIGITS[amtAcc.currency] : DIGITS[s.currency];
     if (e.amount2 !== undefined && !(e.kind === 'pay_in' && typeof e.amount2 === 'number' && e.amount2 > 0)) bad(file, w, 'amount2 is the original amount of a pay in another currency, on pay_in only [Q4]');
     if (e.kind === 'place_money' && !((e.into === 'free' || e.into === 'waiting') && goals.has(e.to_place_of))) bad(file, w, 'place_money needs to_place_of (a removed goal) and into (free or waiting; into a goal is a set_aside with to_place_of) [R1]');
+    // [T1] A period is named by the occurrence of the pay that starts it (of the period stream).
+    const periodOcc = o => { const mm = String(o).match(/^([a-z0-9_]+)@\d{4}-\d{2}-\d{2}$/); return !!mm && (s.income || []).some(x => x.id === mm[1] && x.starts_period); };
     if (e.kind === 'period_end_answer') {
-      if (!/^pe:\d{4}-\d{2}-\d{2}:[a-z0-9_]+$/.test(e.id) || e.id !== `pe:${e.date}:${e.place}` || !Array.isArray(e.moves) || !e.moves.length) bad(file, w, 'a period-end answer is the record pe:<period last day>:<place> holding its moves [P2, O2]');
+      const mm = String(e.id).match(/^pe:([a-z0-9_]+@\d{4}-\d{2}-\d{2}):([a-z0-9_]+)$/);
+      if (!mm || !periodOcc(mm[1]) || mm[2] !== e.place || !Array.isArray(e.moves) || !e.moves.length) bad(file, w, 'a period-end answer is the record pe:<the occurrence that started the period>:<place> holding its moves, dated the period\'s last day [P2, O2, T1]');
       for (const mv of e.moves || []) if (!(mv.to === 'free' || mv.to === 'waiting' || mv.to === e.place || goals.has(mv.to)) || typeof mv.amount !== 'number' || mv.amount <= 0) bad(file, w, 'each move needs to (a place) and a positive amount [P2]');
+    } else if (e.kind === 'period_start') {
+      if (!/^ps:/.test(e.id) || !periodOcc(e.id.slice(3)) || e.amount !== undefined) bad(file, w, 'a period start is ps:<the occurrence it stands in for>, with the chosen day as its date and no amount [T1]');
+    } else if (e.kind === 'adjust') {
+      if (typeof e.amount !== 'number' || !e.amount || !decimalsOk(e.amount, d)) bad(file, w, 'an adjust carries a signed amount in the account currency [T7]');
     } else if (e.kind === 'skip') {
       if (e.settles === undefined) bad(file, w, 'a skip needs settles');
     } else if ('amount_out' in e || e.kind === 'convert') {

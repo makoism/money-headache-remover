@@ -1,0 +1,38 @@
+{
+  "life": "grid_two_phones_check",
+  "title": "Coverage grid cells: two check-ins on one day from two phones (check, two devices), a check edited after its period ended (check, edited after settled), a ticked pay's amount corrected (settle, edited after settled)",
+  "story": "A couple, one shared copy. Set up Mon 4 Jan 2027: the bank holds 300,000, of which Free to spend 50,000 (typed). Pay of 250,000 on the 25th (moved earlier). Fri 8 Jan: Jun checks in on his phone at 09:00 (296,000) and Tess on hers at 18:00 (293,000); the later one's stretch starts at the earlier one. Mon 25 Jan the pay is ticked as 250,000; later the amount is corrected to 252,000 (the record is the same, edited). In February Tess also corrects her 8 Jan figure from 294,000 to 293,000: an edit of a check in a period that has ended, which does not touch the new period. Tue 26 Jan check-in: 540,000. Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2027-01-04", "to": "2027-02-28" },
+  "holidays": { "country": "none", "dates": [], "bank_closed": [] },
+  "main_bank": "b",
+  "accounts": [
+    { "id": "b", "name": "Bank", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2027-01-04", "amount": 300000, "split": { "free": 50000 } } }
+  ],
+  "income": [
+    { "id": "pay", "name": "Pay", "account": "b", "amount": 250000, "schedule": { "frequency": "monthly", "day": 25 }, "weekend_holiday": "move earlier", "starts_period": true }
+  ],
+  "bills": [],
+  "goals": [],
+  "plan": { "free": { "per": "month", "amount": 50000 } },
+  "events": [
+    { "id": "c1", "date": "2027-01-08", "told": "2027-01-08T09:00", "kind": "check", "account": "b", "amount": 296000, "note": "Jun's phone" },
+    { "id": "c2", "date": "2027-01-08", "told": "2027-01-08T18:00", "kind": "check", "account": "b", "amount": 293000, "note": "Tess's phone; typed 294,000, corrected later" },
+    { "id": "set:pay@2027-01-25", "date": "2027-01-25", "told": "2027-01-25T09:00", "kind": "pay_in", "account": "b", "amount": 252000, "settles": "pay@2027-01-25", "note": "ticked as 250,000, corrected to 252,000" },
+    { "id": "c3", "date": "2027-01-26", "told": "2027-01-26T20:00", "kind": "check", "account": "b", "amount": 540000 }
+  ],
+  "asks": [
+    { "id": "g2p-01", "date": "2027-01-08", "question": "bank_today", "account": "b", "expected": 293000,
+      "why": "296,000 (Jun's check-in, 09:00) - 3,000 (what Tess's check-in at 18:00 found gone since) = 293,000" },
+    { "id": "g2p-02", "date": "2027-01-08", "question": "not_explained", "account": "b", "from": "2027-01-08", "expected": 3000,
+      "why": "296,000 (Jun's check-in, where the stretch starts) - 293,000 (Tess's figure) = 3,000" },
+    { "id": "g2p-03", "date": "2027-01-08", "question": "headline", "expected": 43000,
+      "why": "50,000 (Free to spend at the opening) - 4,000 (the filler of Jun's check-in, 300,000 - 296,000) - 3,000 (the filler of Tess's) = 43,000" },
+    { "id": "g2p-04", "date": "2027-01-26", "question": "not_explained", "account": "b", "expected": 5000,
+      "why": "293,000 (check of 8 Jan, as corrected) + 252,000 (pay of Mon 25 Jan, as corrected) - 540,000 (check-in figure) = 5,000" },
+    { "id": "g2p-05", "date": "2027-01-26", "question": "headline", "expected": 49444,
+      "why": "50,000 (Free to spend for the period from Mon 25 Jan; the edits in the old period do not touch it) - 556 (the filler's share for 25 and 26 Jan: 5,000 less the old period's 4,444, which is 5,000 x 16 / 18 days, rounded) = 49,444" },
+    { "id": "g2p-06", "date": "2027-01-26", "question": "bank_today", "account": "b", "expected": 540000,
+      "why": "540,000 (check-in, Tue 26 Jan) = 540,000" }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "life": "grid_borrow_window",
+  "title": "Coverage grid cell: a cash advance whose bank side posts after a check-in (borrow, posting window)",
+  "story": "Set up Thu 10 Dec 2026, pay day: the bank holds 300,000; the card owes nothing (last statement closed 25 Nov, 0, paid). The card closes on the 25th and is paid in full on the 10th of the next month from the bank. Pay of 250,000 on the 10th. Thu 24 Dec: a cash advance of 20,000 from the card into the bank; the bank posts it on Mon 28 Dec. Sat 26 Dec check-in: the bank shows 300,000, which does not hold the advance yet. Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2026-12-10", "to": "2027-01-31" },
+  "holidays": { "country": "none", "dates": [], "bank_closed": [] },
+  "main_bank": "b",
+  "accounts": [
+    { "id": "b", "name": "Bank", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2026-12-10", "amount": 300000 } },
+    { "id": "k", "name": "Card", "kind": "card", "currency": "JPY", "statement_close_day": 25,
+      "payment": { "day": 10, "months_after_close": 1, "from": "b", "pays": "in full", "weekend_holiday": "none" },
+      "opening": { "date": "2026-12-10", "statement": { "closed": "2026-11-25", "amount": 0, "paid": true }, "current": 0 } }
+  ],
+  "income": [
+    { "id": "pay", "name": "Pay", "account": "b", "amount": 250000, "schedule": { "frequency": "monthly", "day": 10 }, "weekend_holiday": "none", "starts_period": true }
+  ],
+  "bills": [],
+  "goals": [],
+  "events": [
+    { "id": "bw1", "date": "2026-12-24", "posted2": "2026-12-28", "told": "2026-12-24T12:00", "kind": "borrow", "from": "k", "to": "b", "amount": 20000, "note": "cash advance; the bank posts it Mon 28 Dec" },
+    { "id": "ck1", "date": "2026-12-26", "told": "2026-12-26T10:00", "kind": "check", "account": "b", "amount": 300000 }
+  ],
+  "asks": [
+    { "id": "gbw-01", "date": "2026-12-27", "question": "not_explained", "account": "b", "on": "2026-12-26", "expected": 0,
+      "why": "300,000 (opening) - 300,000 (check-in figure; the advance posts Mon 28 Dec, after it) = 0" },
+    { "id": "gbw-02", "date": "2026-12-28", "question": "bank_today", "account": "b", "expected": 320000,
+      "why": "300,000 (check-in, Sat 26 Dec) + 20,000 (cash advance, posted Mon 28 Dec) = 320,000" },
+    { "id": "gbw-03", "date": "2026-12-28", "question": "card_due", "account": "k", "expected": { "amount": 20000, "payment_date": "2027-01-10", "statement": "closed" },
+      "why": "20,000 (cash advance of Thu 24 Dec, a card line in the statement that closed Fri 25 Dec) = 20,000" }
+  ]
+}

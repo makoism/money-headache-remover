@@ -1,0 +1,37 @@
+{
+  "life": "check_in_matched",
+  "title": "Settles made by an import show on the check-in list as already matched, ticked; the person can untick one (decision U2)",
+  "story": "Set up Mon 4 Jan 2027: the bank holds 300,000, of which Free to spend 50,000 (typed). Pay of 250,000 on the 25th (moved earlier), a phone bill of 5,000 on the 26th and rent of 80,000 on the 27th, all on the bank. On Thu 28 Jan the person reads a statement: 250,000 in on Mon 25 Jan, 5,000 out on Tue 26 Jan and 80,000 out on Wed 27 Jan; each settles its item. At the check-in of Fri 29 Jan the list shows the three as already matched, ticked; the person unticks the rent (the 80,000 was a deposit for a new flat, paid the same day; the rent is not paid yet), so the rent is back on the list to confirm. Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2027-01-04", "to": "2027-02-28" },
+  "holidays": { "country": "none", "dates": [], "bank_closed": [] },
+  "main_bank": "b",
+  "accounts": [
+    { "id": "b", "name": "Bank", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2027-01-04", "amount": 300000, "split": { "free": 50000 } } }
+  ],
+  "income": [
+    { "id": "pay", "name": "Pay", "account": "b", "amount": 250000, "schedule": { "frequency": "monthly", "day": 25 }, "weekend_holiday": "move earlier", "starts_period": true }
+  ],
+  "bills": [
+    { "id": "phone", "name": "Phone", "account": "b", "amount": 5000, "schedule": { "frequency": "monthly", "day": 26 }, "weekend_holiday": "none" },
+    { "id": "rent", "name": "Rent", "account": "b", "amount": 80000, "schedule": { "frequency": "monthly", "day": 27 }, "weekend_holiday": "none" }
+  ],
+  "goals": [],
+  "plan": { "free": { "per": "month", "amount": 50000 } },
+  "events": [
+    { "id": "i1", "date": "2027-01-25", "posted": "2027-01-25", "told": "2027-01-28T09:00", "kind": "money_in", "account": "b", "amount": 250000, "source": "statement" },
+    { "id": "i2", "date": "2027-01-26", "posted": "2027-01-26", "told": "2027-01-28T09:00", "kind": "spend", "account": "b", "amount": 5000, "source": "statement" },
+    { "id": "i3", "date": "2027-01-27", "posted": "2027-01-27", "told": "2027-01-28T09:00", "kind": "spend", "account": "b", "amount": 80000, "source": "statement", "unticked": true, "note": "its settle of the rent was unticked at the check-in" }
+  ],
+  "asks": [
+    { "id": "cim-01", "date": "2027-01-29", "question": "check_in_list",
+      "expected": { "items": [ { "item": "rent@2027-01-27", "lands": "2027-01-27", "amount": 80000 } ], "total": 80000,
+        "matched": [ { "item": "pay@2027-01-25", "lands": "2027-01-25", "amount": 250000 }, { "item": "phone@2027-01-26", "lands": "2027-01-26", "amount": 5000 } ] },
+      "why": "80,000 (rent of Wed 27 Jan, back on the list: its statement line was unticked) = 80,000",
+      "note": "The pay and the phone bill are listed as already matched, ticked, outside the total [U2]." },
+    { "id": "cim-02", "date": "2027-01-29", "question": "days_to_next_pay", "expected": { "days": 27, "next_pay": "2027-02-25" },
+      "why": "2027-02-25 - 2027-01-29 = 27" },
+    { "id": "cim-03", "date": "2027-01-29", "question": "bank_today", "account": "b", "expected": 465000,
+      "why": "300,000 (opening) + 250,000 (pay) - 5,000 (phone) - 80,000 (the deposit) = 465,000" }
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "life": "told_moments",
+  "title": "`told` is compared as a moment, not as text: a couple split between Japan and the Philippines (T watch decided)",
+  "story": "A couple, one shared copy. Set up Thu 10 Dec 2026, pay day: the bank holds 400,000, of which Free to spend 60,000 (typed). Pay of 300,000 on the 10th (moved earlier). Mon 14 Dec: Jun, in Tokyo, checks in at 10:00 Tokyo time: 380,000. Tess, in Manila, logs a 3,000 spend at 09:30 Manila time, which is 10:30 in Tokyo: after the check. As text, 09:30 comes before 10:00. Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2026-12-10", "to": "2027-01-10" },
+  "holidays": { "country": "none", "dates": [], "bank_closed": [] },
+  "main_bank": "b",
+  "accounts": [
+    { "id": "b", "name": "Bank", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2026-12-10", "amount": 400000, "split": { "free": 60000 } } }
+  ],
+  "income": [
+    { "id": "pay", "name": "Pay", "account": "b", "amount": 300000, "schedule": { "frequency": "monthly", "day": 10 }, "weekend_holiday": "move earlier", "starts_period": true }
+  ],
+  "bills": [],
+  "goals": [],
+  "plan": { "free": { "per": "month", "amount": 60000 } },
+  "events": [
+    { "id": "c1", "date": "2026-12-14", "told": "2026-12-14T10:00+09:00", "kind": "check", "account": "b", "amount": 380000, "note": "Jun, Tokyo" },
+    { "id": "s1", "date": "2026-12-14", "told": "2026-12-14T09:30+08:00", "kind": "spend", "account": "b", "amount": 3000, "line": "free", "note": "Tess, Manila: 10:30 in Tokyo" }
+  ],
+  "asks": [
+    { "id": "tm-01", "date": "2026-12-14", "question": "bank_today", "account": "b", "expected": 377000,
+      "why": "380,000 (check-in, 10:00 in Tokyo) - 3,000 (the spend told 09:30 in Manila, 10:30 in Tokyo: after the check) = 377,000",
+      "note": "Compared as text the spend came first and was inside the check: 380,000." },
+    { "id": "tm-02", "date": "2026-12-14", "question": "not_explained", "account": "b", "expected": 20000,
+      "why": "400,000 (opening) - 380,000 (check-in figure) = 20,000" },
+    { "id": "tm-03", "date": "2026-12-14", "question": "headline", "expected": 37000,
+      "why": "60,000 (Free to spend at the opening) - 20,000 (the filler of Mon 14 Dec) - 3,000 (Tess's spend) = 37,000" }
+  ]
+}

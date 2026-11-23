@@ -1,0 +1,36 @@
+{
+  "life": "fee_record_gone",
+  "title": "A transfer's `a` is what left, fee included; the fee record moves only the place, never the account (decision T, S5 fix)",
+  "story": "In pesos. Set up Mon 4 Jan 2027: the bank holds 20,000.00, of which 3,000.00 is what is left of Free to spend (typed); an e-wallet holds nothing. Pay of 30,000.00 on the 25th (moved earlier); Free to spend is 5,000.00 a month. Tue 5 Jan: a top-up of 1,015.00 out and 1,000.00 in, with its 15.00 fee record; the top-up is undone on one phone, and the fee record's undo has not come across yet. Wed 20 Jan: a second top-up, the same, with its fee record. Every amount is made up.",
+  "currency": "PHP",
+  "window": { "from": "2027-01-04", "to": "2027-01-31" },
+  "holidays": { "country": "none", "dates": [], "bank_closed": [] },
+  "main_bank": "b",
+  "accounts": [
+    { "id": "b", "name": "Bank", "kind": "bank", "currency": "PHP", "minimum": 0, "opening": { "date": "2027-01-04", "amount": 20000.00, "split": { "free": 3000.00 } } },
+    { "id": "g", "name": "E-wallet", "kind": "ewallet", "currency": "PHP", "minimum": 0, "opening": { "date": "2027-01-04", "amount": 0 } }
+  ],
+  "income": [
+    { "id": "pay", "name": "Pay", "account": "b", "amount": 30000.00, "schedule": { "frequency": "monthly", "day": 25 }, "weekend_holiday": "move earlier", "starts_period": true }
+  ],
+  "bills": [],
+  "goals": [],
+  "plan": { "free": { "per": "month", "amount": 5000.00 } },
+  "events": [
+    { "id": "t1", "date": "2027-01-05", "told": "2027-01-05T12:00", "kind": "transfer", "from": "b", "to": "g", "amount_out": 1015.00, "amount_in": 1000.00, "gone": true, "note": "undone" },
+    { "id": "fee1", "date": "2027-01-05", "told": "2027-01-05T12:00", "kind": "spend", "account": "b", "amount": 15.00, "of": "t1", "line": "fees", "note": "its fee record; the undo has not come across" },
+    { "id": "t2", "date": "2027-01-20", "told": "2027-01-20T12:00", "kind": "transfer", "from": "b", "to": "g", "amount_out": 1015.00, "amount_in": 1000.00 },
+    { "id": "fee2", "date": "2027-01-20", "told": "2027-01-20T12:00", "kind": "spend", "account": "b", "amount": 15.00, "of": "t2", "line": "fees" }
+  ],
+  "asks": [
+    { "id": "frg-01", "date": "2027-01-06", "question": "bank_today", "account": "b", "expected": 20000.00,
+      "why": "20,000.00 (opening; the top-up was undone, and a fee record never moves the account) = 20,000.00",
+      "note": "Before the S5 fix a fee record whose transfer was gone became a plain spend: 19,985.00." },
+    { "id": "frg-02", "date": "2027-01-06", "question": "headline", "expected": 3000.00,
+      "why": "3,000.00 (Free to spend at the opening; a fee record counts only while its transfer is live) = 3,000.00" },
+    { "id": "frg-03", "date": "2027-01-21", "question": "bank_today", "account": "b", "expected": 18985.00,
+      "why": "20,000.00 (opening) - 1,015.00 (the second top-up, what left, the fee included) = 18,985.00" },
+    { "id": "frg-04", "date": "2027-01-21", "question": "headline", "expected": 2985.00,
+      "why": "3,000.00 (Free to spend at the opening) - 15.00 (the second top-up's fee) = 2,985.00" }
+  ]
+}

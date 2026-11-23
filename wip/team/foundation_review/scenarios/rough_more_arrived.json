@@ -1,0 +1,42 @@
+{
+  "life": "rough_more_arrived",
+  "title": "A rough side met by a line that would make more arrive than left: both sides take the line's amount unless the other side has its own line, and no fee is written (decision U1)",
+  "story": "In pesos. Set up Mon 4 Jan 2027: the bank holds 20,000.00, of which 3,000.00 is what is left of Free to spend (typed); cash and an e-wallet hold nothing. Pay of 30,000.00 on the 25th (moved earlier); Free to spend is 5,000.00 a month. Tue 5 Jan: ATM cash typed roughly as 2,000.00 from the bank to cash. The bank statement read Wed 6 Jan shows 1,960.00 out that day: the bank side takes 1,960.00, and since cash has no line of its own, so does the cash side. Mon 11 Jan: a top-up typed roughly as 1,000.00 from the bank to the e-wallet. The e-wallet's statement read Tue 12 Jan shows 1,020.00 in: the e-wallet side takes it, and since the bank side has no line of its own, so does the bank side. Nothing arrives that did not leave; no fee. Every amount is made up.",
+  "currency": "PHP",
+  "window": { "from": "2027-01-04", "to": "2027-01-31" },
+  "holidays": { "country": "none", "dates": [], "bank_closed": [] },
+  "main_bank": "b",
+  "accounts": [
+    { "id": "b", "name": "Bank", "kind": "bank", "currency": "PHP", "minimum": 0, "opening": { "date": "2027-01-04", "amount": 20000.00, "split": { "free": 3000.00 } } },
+    { "id": "c", "name": "Cash", "kind": "cash", "currency": "PHP", "minimum": 0, "opening": { "date": "2027-01-04", "amount": 0 } },
+    { "id": "g", "name": "E-wallet", "kind": "ewallet", "currency": "PHP", "minimum": 0, "opening": { "date": "2027-01-04", "amount": 0 } }
+  ],
+  "income": [
+    { "id": "pay", "name": "Pay", "account": "b", "amount": 30000.00, "schedule": { "frequency": "monthly", "day": 25 }, "weekend_holiday": "move earlier", "starts_period": true }
+  ],
+  "bills": [],
+  "goals": [],
+  "plan": { "free": { "per": "month", "amount": 5000.00 } },
+  "events": [
+    { "id": "t1", "date": "2027-01-05", "told": "2027-01-05T12:00", "kind": "transfer", "from": "b", "to": "c", "amount": 2000.00, "est": true, "note": "ATM cash, typed roughly" },
+    { "id": "i1", "date": "2027-01-05", "posted": "2027-01-05", "told": "2027-01-06T09:00", "kind": "spend", "account": "b", "amount": 1960.00, "source": "statement", "note": "bank statement: 1,960.00 out" },
+    { "id": "t2", "date": "2027-01-11", "told": "2027-01-11T12:00", "kind": "transfer", "from": "b", "to": "g", "amount": 1000.00, "est": true, "note": "top-up, typed roughly" },
+    { "id": "j1", "date": "2027-01-12", "posted": "2027-01-12", "told": "2027-01-12T20:00", "kind": "money_in", "account": "g", "amount": 1020.00, "source": "statement", "note": "e-wallet statement: 1,020.00 in" }
+  ],
+  "asks": [
+    { "id": "rma-01", "date": "2027-01-07", "question": "bank_today", "account": "c", "expected": 1960.00,
+      "why": "0.00 (opening) + 1,960.00 (the ATM cash: the bank line shows 1,960.00 left, so no more can have arrived) = 1,960.00",
+      "note": "Before U1 the cash side kept its typed 2,000.00: 40.00 arrived that never left." },
+    { "id": "rma-02", "date": "2027-01-07", "question": "bank_today", "account": "b", "expected": 18040.00,
+      "why": "20,000.00 (opening) - 1,960.00 (ATM, the bank line's amount) = 18,040.00" },
+    { "id": "rma-03", "date": "2027-01-07", "question": "headline", "expected": 3000.00,
+      "why": "3,000.00 (Free to spend at the opening, typed; no fee is written) = 3,000.00" },
+    { "id": "rma-04", "date": "2027-01-13", "question": "bank_today", "account": "g", "expected": 1020.00,
+      "why": "0.00 (opening) + 1,020.00 (the top-up, the e-wallet line's amount) = 1,020.00" },
+    { "id": "rma-05", "date": "2027-01-13", "question": "bank_today", "account": "b", "expected": 17020.00,
+      "why": "18,040.00 (after the ATM) - 1,020.00 (the top-up: the bank side has no line, so it takes the e-wallet line's amount) = 17,020.00",
+      "note": "Before U1 the bank side kept its typed 1,000.00: 17,040.00." },
+    { "id": "rma-06", "date": "2027-01-13", "question": "headline", "expected": 3000.00,
+      "why": "3,000.00 (Free to spend at the opening; no fee either way) = 3,000.00" }
+  ]
+}

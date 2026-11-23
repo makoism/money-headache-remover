@@ -67,9 +67,28 @@ Written 23 Nov 2026 from foundation_review/RECOMMENDATION.md, life_walks_salarie
 | card_plan_later.json | A 12-part card buy: the parts not yet posted are walked on their posting dates and show in "Later on" (S4). | JPY | 4 |
 | fee_place.json | A fee as its own spend record `of` its transfer, paid from the place the person picked, else Free to spend; it moves no money of its own (S5). | PHP | 6 |
 | other_currency_lists.json | Pay in dollars into a yen bank: listed apart, in dollars, on the check-in list, and left out of the "not seen yet" totals (S6). | JPY (+USD) | 2 |
+| period_start_model.json | A period started without the late pay, `ps:pay@2026-12-10`, is in the model; the late pay then settles its occurrence and starts no new period; a filler split at that start (T1, T6, T2; final review 3 f2). | JPY | 7 |
+| period_end_fixed.json | A period with a period-end answer (`pe:pay@2026-11-10:free`) keeps its end when the ticked pay's date is corrected (T1; f1b). | JPY | 3 |
+| filler_spending.json | The filler is spending: out of Free to spend for its period or periods, split by days at a pay, or out of the place the person picks (T2; f8). | JPY | 7 |
+| bill_on_card.json | A bill and a self-logged spend on a card are future card lines, taken off the bank on the card's payment day (T3; f7). | JPY | 5 |
+| overspent_line.json | An overspent budget line counts as nothing left in the walk (T4; f4). | JPY | 3 |
+| line_other_currency.json | A peso spend on a yen line is not counted against it and is listed apart with a warning (T5; f3). | JPY (+PHP) | 4 |
+| place_moves_adjust.json | A move out of a place lowers it; an accepted difference (`adjust`) moves its account and Free to spend or the place it names; a spend before the opening is not in spent so far (T7, T watch; f5). | JPY | 10 |
+| close_main_bank.json | Closing the main bank moves the main bank, the lines, Free to spend and the pay schedule to the new main bank (T watch; f9). | JPY | 5 |
+| closed_reopened.json | Money into a closed account reopens it with a notice; a spend on an account that later closed stays in its line (T watch). | JPY | 5 |
+| investment_gain.json | An investment's rise raises no question and is no filler (T watch). | JPY | 3 |
+| told_moments.json | `told` compared as moments across time zones (T watch). | JPY | 3 |
+| plan_change.json | A change to Free to spend applies from the next period start (T watch). | JPY | 3 |
+| rough_more_arrived.json | A rough side met by a line that would make more arrive than left: both sides take the line's amount, no fee (U1). | PHP | 6 |
+| check_in_matched.json | Settles made by an import listed as already matched on the check-in list; one unticked (U2). | JPY | 3 |
+| fee_record_gone.json | A fee record never moves the account; its transfer's `a` holds the fee (S5 fix). | PHP | 4 |
+| grid_two_phones_check.json | Coverage grid cells: two check-ins on one day from two phones, a check edited after its period ended, a ticked pay's amount corrected. | JPY | 6 |
+| grid_other_currency.json | Coverage grid cells in another currency: a refund, a bill, a goal, a loan, a conversion on a check day and met by a statement line. | JPY (+PHP) | 7 |
+| grid_period_cells.json | Coverage grid cells: a transfer before an account's opening, a refund given back after the period start, a skipped pay. | JPY | 5 |
+| grid_borrow_window.json | Coverage grid cell: a cash advance whose bank side posts after a check-in. | JPY | 3 |
 | check_specs.js | Checks every file's shape and that every `why` adds up to its expected figure. `node check_specs.js` | | |
 
-Total: 456 asks (the first eight files: 180; the H files: 64; the I files: 34; the J files: 21; the K, L and M files: 22; the O files: 35; the P files: 12; the Q and R files: 63; the S files: 25). S4 also changed card_instalments inst-07 (280,000 to 270,000: the part posting on 15 Apr is now walked).
+Total: 548 asks (the first eight files: 180; the H files: 64; the I files: 34; the J files: 21; the K, L and M files: 22; the O files: 35; the P files: 12; the Q and R files: 63; the S files: 25; the T and U files and the coverage grid files: 92). T1 renamed to_place's period-end answer `pe:2027-01-24:free` to `pe:pay@2026-12-25:free` (the pay that started the period); no figure changed. S4 also changed card_instalments inst-07 (280,000 to 270,000: the part posting on 15 Apr is now walked).
 
 ### The review v3 situations and where each one is now
 
@@ -178,6 +197,37 @@ The reviewer's own scripts (final_review_2.md) are in `../ref/final_review2_situ
 | S4. Card plan parts not yet posted are walked on their posting dates and appear in "Later on" | card_plan_later later-plan-01 to later-plan-04; card_instalments inst-07 |
 | S5. A fee is its own spend record `of` its transfer, with the place picked (Free to spend by default) | fee_place feeplace-01 to feeplace-06; rough_transfer rough-03, rough-06 (no fee record: Free to spend) |
 | S6. Pay in another currency is left out of the "not seen yet" totals and listed apart on the check-in list | other_currency_lists ocl-01, ocl-02 |
+
+### Decisions T and U and where each one is now
+
+| Decision | Asks or cases |
+|---|---|
+| T1. A period is named by the occurrence of the pay that starts it; `pe:<occurrence>:<place>`, `ps:<occurrence>` with the chosen day, `once` by occurrence; a fixed end stays | period_start_model psm-01 to psm-07, period_end_fixed pef-01 to pef-03; rules pe-27, pe-31 to pe-43 (renamed), pe-48 to pe-54, mg-52, mg-53, mg-57, mg-74, mg-76 to mg-78, units-75 to units-77 |
+| T2. The filler is spending, from Free to spend by default, split as A4, or the place picked | filler_spending fs-01 to fs-07; period_start_model psm-07; told_moments tm-03; grid_two_phones_check g2p-03, g2p-05 |
+| T3. Bills and self-logged spends paid by card are future card lines, off on the card's payment day | bill_on_card boc-01 to boc-05 |
+| T4. An overspent line counts as zero left in the walk | overspent_line ol-01 to ol-03 |
+| T5. A line counts only spends in its own currency; others listed apart with a warning | line_other_currency loc-01 to loc-04; grid_other_currency goc-04 |
+| T6. Period starts are in the model | period_start_model psm-01 to psm-07 |
+| T7. A move out of a place lowers it; `adjust` moves its account and place; Wallet mode and `hand` are stage 2 | place_moves_adjust pma-01 to pma-10 |
+| S5 fix. A transfer's `a` holds the fee; the fee record moves only the place | fee_record_gone frg-01 to frg-04 |
+| T watch: closing the main bank | close_main_bank cmb-01 to cmb-05; rules acc-17, acc-18 |
+| T watch: a transfer typed on two phones | rules double-10 to double-12 |
+| T watch: investments never raise the gain question | investment_gain inv-01 to inv-03 |
+| T watch: a `plan.shares` change applies from the next period start | plan_change pc-01 to pc-03 |
+| T watch: an event into a closed account reopens it | closed_reopened cr-01 to cr-05 |
+| T watch: SCHEMA 3 (pre-opening spends not in spent so far) | place_moves_adjust pma-03 |
+| T watch: `told` and `at` compared as moments | told_moments tm-01 to tm-03 |
+| U1. More arriving than left: both sides take the line's amount unless the other side has its own line; no fee | rough_more_arrived rma-01 to rma-06; rules match-67 to match-69 |
+| U2. Settles made by an import shown as already matched, ticked; the person can untick | check_in_matched cim-01 to cim-03 |
+
+### What the T and U files add to the way a file is written
+- **period_start** events: id `ps:<occurrence>` (the pay it stands in for), dated the day the person chose, no amount (T1, T6). A `period_end_answer` is `pe:<the occurrence that started the period>:<place>`, dated the period's last day (T1).
+- A **check** may carry **filler_place**: the goal or budget line its filler comes out of, when the person picked one; else Free to spend (T2).
+- A `set_aside` may carry **from_place**: the place money moves out of, into its `goal` or, with none, Waiting (T7). An **adjust** carries a signed `amount` on its `account`, and may name a `goal` (T7).
+- A plan line or `free` may carry **changes**: `[ { made, amount } ]`, each applying from the first period start after the day it was made (T watch).
+- `told` may carry its offset (`2026-12-14T09:30+08:00`); it is compared as a moment (T watch).
+- Account kinds **investment** and **wallet** (B10).
+- An imported line may carry **unticked: true**: the person unticked the settle it made on the check-in list, so it settles nothing (U2). **check_in_list** may give **matched**: the items an import settled since the last check-in, ticked, outside `total` (U2).
 
 ### What the S files add to the way a file is written
 - A `transfer` may carry **est: true** (typed roughly). A statement line within 10% of one side's amount meets that side and the side takes the line's amount; the other side keeps its typed amount (S1).

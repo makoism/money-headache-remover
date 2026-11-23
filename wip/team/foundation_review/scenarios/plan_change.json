@@ -1,0 +1,32 @@
+{
+  "life": "plan_change",
+  "title": "A change to Free to spend's amount applies from the next period start (T watch decided: plan.shares)",
+  "story": "Set up Thu 10 Dec 2026, pay day: the bank holds 400,000, of which Free to spend 60,000 (typed). Pay of 300,000 on the 10th (moved earlier). On Sun 20 Dec the person lowers Free to spend to 50,000 a month (a plan.shares entry made that day). Tue 22 Dec: 5,000 from Free to spend. Fri 8 Jan the pay is ticked (pay@2027-01-10). Sat 9 Jan: 2,000 from Free to spend. Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2026-12-10", "to": "2027-01-31" },
+  "holidays": { "country": "none", "dates": [], "bank_closed": [] },
+  "main_bank": "b",
+  "accounts": [
+    { "id": "b", "name": "Bank", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2026-12-10", "amount": 400000, "split": { "free": 60000 } } }
+  ],
+  "income": [
+    { "id": "pay", "name": "Pay", "account": "b", "amount": 300000, "schedule": { "frequency": "monthly", "day": 10 }, "weekend_holiday": "move earlier", "starts_period": true }
+  ],
+  "bills": [],
+  "goals": [],
+  "plan": { "free": { "per": "month", "amount": 60000, "changes": [ { "made": "2026-12-20", "amount": 50000 } ] } },
+  "events": [
+    { "id": "s1", "date": "2026-12-22", "told": "2026-12-22T12:00", "kind": "spend", "account": "b", "amount": 5000, "line": "free" },
+    { "id": "set:pay@2027-01-10", "date": "2027-01-08", "told": "2027-01-08T09:00", "kind": "pay_in", "account": "b", "amount": 300000, "settles": "pay@2027-01-10" },
+    { "id": "s2", "date": "2027-01-09", "told": "2027-01-09T12:00", "kind": "spend", "account": "b", "amount": 2000, "line": "free" }
+  ],
+  "asks": [
+    { "id": "pc-01", "date": "2026-12-21", "question": "headline", "expected": 60000,
+      "why": "60,000 (Free to spend this period; the change to 50,000 made Sun 20 Dec applies from the next period start) = 60,000" },
+    { "id": "pc-02", "date": "2026-12-22", "question": "headline", "expected": 55000,
+      "why": "60,000 (Free to spend this period) - 5,000 (Tue 22 Dec) = 55,000" },
+    { "id": "pc-03", "date": "2027-01-09", "question": "headline", "expected": 48000,
+      "why": "50,000 (Free to spend for the period from Fri 8 Jan, the new amount) - 2,000 (Sat 9 Jan) = 48,000",
+      "note": "Before the decision the model had no dated plan change: 58,000." }
+  ]
+}

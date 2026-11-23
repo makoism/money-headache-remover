@@ -1,0 +1,44 @@
+{
+  "life": "period_start_model",
+  "title": "A period started without the pay is in the model and names the pay it stands in for; the late pay then starts no new period (decisions T1 and T6, final_review_3 finding 6, f2)",
+  "story": "Set up Fri 20 Nov 2026: the bank holds 400,000, of which 20,000 is what is left of Food and 30,000 of Free to spend (typed). Pay of 300,000 on the 10th (moved earlier, posting window 3 working days) starts the period; Food is 40,000 and Free to spend 60,000 a month. The pay due Thu 10 Dec is late. On Mon 14 Dec the person starts the new period without it: the record is ps:pay@2026-12-10 (the pay it stands in for), dated the day they chose. That day they spend 5,000 on food and 3,000 from Free to spend. On Tue 15 Dec the pay arrives inside its window and is ticked: it settles its occurrence and starts no new period. On Thu 17 Dec a check-in shows 682,000: 10,000 went out unlogged since the opening, a filler split by days at the period start of 14 Dec. Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2026-11-20", "to": "2026-12-31" },
+  "holidays": { "country": "none", "dates": [], "bank_closed": [] },
+  "main_bank": "b",
+  "accounts": [
+    { "id": "b", "name": "Bank", "kind": "bank", "currency": "JPY", "minimum": 0, "posting_days": 3, "opening": { "date": "2026-11-20", "amount": 400000, "split": { "lines": { "food": 20000 }, "free": 30000 } } }
+  ],
+  "income": [
+    { "id": "pay", "name": "Pay", "account": "b", "amount": 300000, "schedule": { "frequency": "monthly", "day": 10 }, "weekend_holiday": "move earlier", "starts_period": true }
+  ],
+  "bills": [],
+  "goals": [],
+  "plan": { "lines": [ { "id": "food", "name": "Food", "per": "month", "amount": 40000 } ], "free": { "per": "month", "amount": 60000 } },
+  "events": [
+    { "id": "ps:pay@2026-12-10", "date": "2026-12-14", "told": "2026-12-14T08:00", "kind": "period_start", "note": "the new period started without the late pay; it stands in for pay@2026-12-10" },
+    { "id": "e1", "date": "2026-12-14", "told": "2026-12-14T12:00", "kind": "spend", "account": "b", "amount": 5000, "line": "food" },
+    { "id": "e2", "date": "2026-12-14", "told": "2026-12-14T19:00", "kind": "spend", "account": "b", "amount": 3000, "line": "free" },
+    { "id": "set:pay@2026-12-10", "date": "2026-12-15", "told": "2026-12-15T09:00", "kind": "pay_in", "account": "b", "amount": 300000, "settles": "pay@2026-12-10", "note": "the late pay, ticked: it settles its occurrence and starts no period" },
+    { "id": "c1", "date": "2026-12-17", "told": "2026-12-17T20:00", "kind": "check", "account": "b", "amount": 682000 }
+  ],
+  "asks": [
+    { "id": "psm-01", "date": "2026-12-14", "question": "headline", "expected": 57000,
+      "why": "60,000 (Free to spend for the period begun Mon 14 Dec by ps:pay@2026-12-10) - 3,000 (spent from it Mon 14 Dec) = 57,000",
+      "note": "Before T6 the model knew no period start: the opening split's 30,000 less 3,000, 27,000 (f2)." },
+    { "id": "psm-02", "date": "2026-12-14", "question": "safe_to_spend", "account": "b", "expected": 357000,
+      "why": "392,000 (bank today: 400,000 - 5,000 - 3,000) - 35,000 (Food left this period: 40,000 - 5,000) = 357,000" },
+    { "id": "psm-03", "date": "2026-12-14", "question": "days_to_next_pay", "expected": { "days": -4, "next_pay": "2026-12-10", "late": true },
+      "why": "The pay due Thu 10 Dec is still inside its posting window (to Tue 15 Dec): late, still expected, though the new period has started [M7]." },
+    { "id": "psm-04", "date": "2026-12-16", "question": "headline", "expected": 57000,
+      "why": "60,000 (Free to spend for the period begun Mon 14 Dec; the pay ticked Tue 15 Dec settles its occurrence and starts no new period) - 3,000 (spent Mon 14 Dec) = 57,000",
+      "note": "Before T1 the late pay started a second period on 15 Dec: 60,000, and the 3,000 of 14 Dec fell in no period (f2)." },
+    { "id": "psm-05", "date": "2026-12-16", "question": "bank_today", "account": "b", "expected": 692000,
+      "why": "400,000 (opening) - 5,000 (food) - 3,000 (Free to spend) + 300,000 (pay, Tue 15 Dec) = 692,000" },
+    { "id": "psm-06", "date": "2026-12-17", "question": "not_explained", "account": "b", "expected": 10000,
+      "why": "692,000 (what the events say) - 682,000 (check-in figure) = 10,000" },
+    { "id": "psm-07", "date": "2026-12-17", "question": "headline", "expected": 55519,
+      "why": "60,000 (Free to spend for the period begun Mon 14 Dec) - 3,000 (spent Mon 14 Dec) - 1,481 (the filler's share for 14 to 17 Dec: 10,000 less the old period's 8,519, which is 10,000 x 23 / 27 days, rounded) = 55,519",
+      "note": "The filler is spending [T2], split by days at the period start [A4], which is the period start record's day [T6]." }
+  ]
+}

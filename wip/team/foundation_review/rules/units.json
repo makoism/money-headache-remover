@@ -1203,6 +1203,60 @@
         "R2",
         "L units q4"
       ]
+    },
+    {
+      "id": "units-75",
+      "question": "period_amount_once",
+      "title": "A one-period override is keyed by the pay that starts the period",
+      "input": {
+        "amount": 40000,
+        "once": {
+          "pay@2027-01-10": 55000
+        },
+        "period": "pay@2027-01-10"
+      },
+      "expected": 55000,
+      "why": "`once` names the period by its pay, pay@2027-01-10 [T1]: that period gets 55,000 instead of 40,000.",
+      "decisions": [
+        "T1",
+        "B8"
+      ]
+    },
+    {
+      "id": "units-76",
+      "question": "period_amount_once",
+      "title": "Another period keeps the usual amount",
+      "input": {
+        "amount": 40000,
+        "once": {
+          "pay@2027-01-10": 55000
+        },
+        "period": "pay@2027-02-10"
+      },
+      "expected": 40000,
+      "why": "No override names pay@2027-02-10: 40,000 [T1, B8].",
+      "decisions": [
+        "T1",
+        "B8"
+      ]
+    },
+    {
+      "id": "units-77",
+      "question": "period_amount_once",
+      "title": "A period started without its pay, on another day, still gets its override",
+      "input": {
+        "amount": 40000,
+        "once": {
+          "pay@2027-01-10": 55000
+        },
+        "period": "pay@2027-01-10",
+        "periodFrom": "2027-01-12"
+      },
+      "expected": 55000,
+      "why": "The pay due Sun 10 Jan was late and the person started the period on Tue 12 Jan (ps:pay@2027-01-10). The period is still pay@2027-01-10, so the override set before the pay landed still applies: 55,000 [T1]. Keyed by its start day it would have been lost.",
+      "decisions": [
+        "T1"
+      ]
     }
   ],
   "open": []

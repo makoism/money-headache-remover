@@ -2050,13 +2050,360 @@
         "S2",
         "Q6"
       ]
+    },
+    {
+      "id": "match-67",
+      "question": "import_sides",
+      "title": "A rough ATM transfer of 10,000, the bank's line 9,800: both sides take 9,800, no fee",
+      "input": {
+        "accounts": {
+          "bank": {
+            "kind": "bank",
+            "postingDays": 1
+          },
+          "card": {
+            "kind": "card"
+          },
+          "cash": {
+            "kind": "cash",
+            "postingDays": 1
+          },
+          "ew": {
+            "kind": "ewallet",
+            "postingDays": 1
+          }
+        },
+        "lines": [
+          {
+            "id": "t1",
+            "k": "transfer",
+            "acct": "bank",
+            "acct2": "cash",
+            "date": "2026-11-23",
+            "a": 10000,
+            "est": true,
+            "src": "typed",
+            "told": "2026-11-23T12:00:00.000+09:00"
+          }
+        ],
+        "imports": [
+          {
+            "id": "f1",
+            "src": "statement",
+            "acct": "bank",
+            "file": "nov.csv",
+            "lines": [
+              {
+                "id": "i1",
+                "dir": "out",
+                "a": 9800,
+                "date": "2026-11-23",
+                "posted": "2026-11-23",
+                "line": 4
+              }
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "attached": {
+          "t1": {
+            "posted": "2026-11-23",
+            "src": {
+              "type": "statement",
+              "file": "nov.csv",
+              "line": 4
+            },
+            "a": 9800,
+            "a2": 9800
+          }
+        },
+        "gone": {},
+        "live": []
+      },
+      "why": "10,000 - 9,800 = 200, and 200 x 10 = 2,000 is not more than 10,000: within 10%, the bank side takes 9,800 [S1]. The cash side's typed 10,000 would arrive more than left, and cash has no line of its own, so it takes 9,800 too; nothing arrives that did not leave, and no fee is written [U1].",
+      "decisions": [
+        "U1",
+        "S1"
+      ]
+    },
+    {
+      "id": "match-68",
+      "question": "import_sides",
+      "title": "A rough top-up of 1,000, the e-wallet's line 1,020 in: both sides take 1,020",
+      "input": {
+        "accounts": {
+          "bank": {
+            "kind": "bank",
+            "postingDays": 1
+          },
+          "card": {
+            "kind": "card"
+          },
+          "cash": {
+            "kind": "cash",
+            "postingDays": 1
+          },
+          "ew": {
+            "kind": "ewallet",
+            "postingDays": 1
+          }
+        },
+        "lines": [
+          {
+            "id": "t1",
+            "k": "transfer",
+            "acct": "bank",
+            "acct2": "ew",
+            "date": "2026-11-23",
+            "a": 1000,
+            "est": true,
+            "src": "typed",
+            "told": "2026-11-23T12:00:00.000+09:00"
+          }
+        ],
+        "imports": [
+          {
+            "id": "f2",
+            "src": "statement",
+            "acct": "ew",
+            "file": "ew-nov.csv",
+            "lines": [
+              {
+                "id": "j1",
+                "dir": "in",
+                "a": 1020,
+                "date": "2026-11-23",
+                "posted": "2026-11-23",
+                "line": 2
+              }
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "attached": {
+          "t1": {
+            "posted2": "2026-11-23",
+            "src2": {
+              "type": "statement",
+              "file": "ew-nov.csv",
+              "line": 2
+            },
+            "a": 1020,
+            "a2": 1020
+          }
+        },
+        "gone": {},
+        "live": []
+      },
+      "why": "1,020 - 1,000 = 20, and 20 x 10 = 200 is not more than 1,020: the e-wallet side takes 1,020 [S1]. The bank side has no line of its own, so it takes 1,020 too: what arrived left the bank [U1].",
+      "decisions": [
+        "U1",
+        "S1"
+      ]
+    },
+    {
+      "id": "match-69",
+      "question": "import_sides",
+      "title": "Both sides have their own lines: each keeps its line's amount",
+      "input": {
+        "accounts": {
+          "bank": {
+            "kind": "bank",
+            "postingDays": 1
+          },
+          "card": {
+            "kind": "card"
+          },
+          "cash": {
+            "kind": "cash",
+            "postingDays": 1
+          },
+          "ew": {
+            "kind": "ewallet",
+            "postingDays": 1
+          }
+        },
+        "lines": [
+          {
+            "id": "t1",
+            "k": "transfer",
+            "acct": "bank",
+            "acct2": "ew",
+            "date": "2026-11-23",
+            "a": 1000,
+            "est": true,
+            "src": "typed",
+            "told": "2026-11-23T12:00:00.000+09:00"
+          }
+        ],
+        "imports": [
+          {
+            "id": "f1",
+            "src": "statement",
+            "acct": "bank",
+            "file": "nov.csv",
+            "lines": [
+              {
+                "id": "i1",
+                "dir": "out",
+                "a": 1000,
+                "date": "2026-11-23",
+                "posted": "2026-11-23",
+                "line": 5
+              }
+            ]
+          },
+          {
+            "id": "f2",
+            "src": "statement",
+            "acct": "ew",
+            "file": "ew-nov.csv",
+            "lines": [
+              {
+                "id": "j1",
+                "dir": "in",
+                "a": 1020,
+                "date": "2026-11-23",
+                "posted": "2026-11-23",
+                "line": 2
+              }
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "attached": {
+          "t1": {
+            "posted": "2026-11-23",
+            "src": {
+              "type": "statement",
+              "file": "nov.csv",
+              "line": 5
+            },
+            "posted2": "2026-11-23",
+            "src2": {
+              "type": "statement",
+              "file": "ew-nov.csv",
+              "line": 2
+            },
+            "a": 1000,
+            "a2": 1020
+          }
+        },
+        "gone": {},
+        "live": []
+      },
+      "why": "The bank line meets the bank side at 1,000. The e-wallet line meets the other side within 10% and it takes 1,020 [S1]. The bank side has its own line, so it keeps 1,000 [U1: unless the other side has its own line].",
+      "decisions": [
+        "U1",
+        "S1"
+      ]
+    },
+    {
+      "id": "double-10",
+      "question": "possible_doubles",
+      "title": "The same transfer typed on two phones is offered as a possible double",
+      "input": {
+        "lines": [
+          {
+            "id": "aaaaaa-x1y-3",
+            "k": "transfer",
+            "acct": "bank",
+            "acct2": "ew",
+            "a": 5000,
+            "date": "2026-11-20",
+            "src": "typed"
+          },
+          {
+            "id": "bbbbbb-q2w-7",
+            "k": "transfer",
+            "acct": "bank",
+            "acct2": "ew",
+            "a": 5000,
+            "date": "2026-11-20",
+            "src": "typed"
+          }
+        ]
+      },
+      "expected": [
+        [
+          "aaaaaa-x1y-3",
+          "bbbbbb-q2w-7"
+        ]
+      ],
+      "why": "Two devices, the same day, the same 5,000 from the bank to the e-wallet: offered like a spend [T watch decided, H9]. Nothing is removed.",
+      "decisions": [
+        "T",
+        "H9"
+      ]
+    },
+    {
+      "id": "double-11",
+      "question": "possible_doubles",
+      "title": "Two transfers to different accounts are not a double",
+      "input": {
+        "lines": [
+          {
+            "id": "aaaaaa-x1y-3",
+            "k": "transfer",
+            "acct": "bank",
+            "acct2": "ew",
+            "a": 5000,
+            "date": "2026-11-20",
+            "src": "typed"
+          },
+          {
+            "id": "bbbbbb-q2w-7",
+            "k": "transfer",
+            "acct": "bank",
+            "acct2": "cash",
+            "a": 5000,
+            "date": "2026-11-20",
+            "src": "typed"
+          }
+        ]
+      },
+      "expected": [],
+      "why": "Same day and amount, but one went to the e-wallet and one to cash: two different transfers, not offered [T watch decided].",
+      "decisions": [
+        "T",
+        "H9"
+      ]
+    },
+    {
+      "id": "double-12",
+      "question": "possible_doubles",
+      "title": "A transfer and a spend of the same amount are not a double",
+      "input": {
+        "lines": [
+          {
+            "id": "aaaaaa-x1y-3",
+            "k": "transfer",
+            "acct": "bank",
+            "acct2": "ew",
+            "a": 5000,
+            "date": "2026-11-20",
+            "src": "typed"
+          },
+          {
+            "id": "bbbbbb-q2w-7",
+            "acct": "bank",
+            "dir": "out",
+            "a": 5000,
+            "date": "2026-11-20",
+            "src": "typed"
+          }
+        ]
+      },
+      "expected": [],
+      "why": "A transfer is offered only against a transfer between the same two accounts [T watch decided].",
+      "decisions": [
+        "T",
+        "H9"
+      ]
     }
   ],
-  "open": [
-    {
-      "id": "matching-open-3",
-      "question": "A rough two-sided record in one currency where the line makes more arrive than left: a bank line out below the typed amount (an ATM withdrawal typed as 10,000, the bank shows 9,800), or an e-wallet line in above it. S1 says the side takes the line's amount and the difference is a fee on the sender (Q2), but a fee is what is lost when less arrives than leaves (the Q2 reading); here more arrived than left.",
-      "ref_does": "The side takes the line's amount [S1], the other side keeps its typed amount, and nothing is a fee (a fee only when less arrived than left). So the receiving account shows more than left the sender. No case depends on it."
-    }
-  ]
+  "open": []
 }

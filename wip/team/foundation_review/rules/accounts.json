@@ -511,6 +511,150 @@
         "S3",
         "P6"
       ]
+    },
+    {
+      "id": "acc-17",
+      "question": "close",
+      "title": "Closing the main bank asks for the new main bank first",
+      "input": {
+        "account": "old",
+        "kind": "bank",
+        "mainBank": true,
+        "date": "2027-01-15",
+        "figure": 200000,
+        "transfers": [
+          {
+            "to": "b",
+            "a": 200000
+          }
+        ],
+        "lines": [
+          {
+            "id": "food",
+            "acct": null
+          },
+          {
+            "id": "car",
+            "acct": "c2"
+          }
+        ],
+        "free": {
+          "acct": null
+        },
+        "schedules": [
+          {
+            "id": "pay",
+            "kind": "income",
+            "acct": "old"
+          },
+          {
+            "id": "phone",
+            "kind": "bill",
+            "acct": "old"
+          }
+        ]
+      },
+      "expected": {
+        "refused": {
+          "account": "old",
+          "needs": [
+            "mainBank"
+          ]
+        }
+      },
+      "why": "The old bank is `home.mainBank`. Closing it asks for the new main bank before anything else; until one is picked the closing is refused [T watch decided, R4].",
+      "decisions": [
+        "T",
+        "R4"
+      ]
+    },
+    {
+      "id": "acc-18",
+      "question": "close",
+      "title": "Closing the main bank moves every link to the new main bank: the main bank, the lines and Free to spend on it, the pay schedules",
+      "input": {
+        "account": "old",
+        "kind": "bank",
+        "mainBank": true,
+        "date": "2027-01-15",
+        "figure": 200000,
+        "transfers": [
+          {
+            "to": "b",
+            "a": 200000
+          }
+        ],
+        "lines": [
+          {
+            "id": "food",
+            "acct": null
+          },
+          {
+            "id": "car",
+            "acct": "c2"
+          }
+        ],
+        "free": {
+          "acct": null
+        },
+        "schedules": [
+          {
+            "id": "pay",
+            "kind": "income",
+            "acct": "old"
+          },
+          {
+            "id": "phone",
+            "kind": "bill",
+            "acct": "old"
+          }
+        ],
+        "newLinks": {
+          "mainBank": "b"
+        }
+      },
+      "expected": {
+        "closed": "2027-01-15",
+        "events": [
+          {
+            "k": "check",
+            "date": "2027-01-15",
+            "acct": "old",
+            "a": 200000
+          },
+          {
+            "id": "close:old",
+            "k": "transfer",
+            "date": "2027-01-15",
+            "acct": "old",
+            "acct2": "b",
+            "a": 200000
+          }
+        ],
+        "ends": {
+          "phone": "2027-01-15"
+        },
+        "links": {
+          "mainBank": "b"
+        },
+        "moved": {
+          "mainBank": "b",
+          "lines": {
+            "food": "b"
+          },
+          "free": "b",
+          "schedules": {
+            "pay": "b"
+          }
+        }
+      },
+      "why": "200,000 (final figure) - 200,000 (to the new bank) = 0, so it closes [P6]. The new main bank is the new bank: `home.mainBank`, Food and Free to spend (on the main bank, no account of their own) and the pay schedule move to it [T watch decided]; the car line is on another account and stays. The phone bill paid from the old bank ends on the closing day [P6].",
+      "decisions": [
+        "T",
+        "P6",
+        "R4",
+        "Q7"
+      ]
     }
   ],
   "open": []

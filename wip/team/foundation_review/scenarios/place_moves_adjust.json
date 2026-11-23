@@ -1,0 +1,53 @@
+{
+  "life": "place_moves_adjust",
+  "title": "A move out of a place lowers that place; an accepted difference (`adjust`) moves its account and Free to spend or the place it names (decision T7, final_review_3 finding 7, f5); a spend before the opening is not in spent so far (T, SCHEMA 3 corrected)",
+  "story": "Set up Thu 10 Dec 2026, pay day: the bank holds 300,000, of which 50,000 is kept for a trip, 20,000 for emergencies and 60,000 is Free to spend (typed). Pay of 300,000 on the 10th (moved earlier). A 4,000 spend of Wed 9 Dec, before the opening, is logged from Free to spend: the opening figure already holds it. Sat 12 Dec: 10,000 moves from the trip to the emergency place; a second move of 5,000 back is undone. Sun 13 Dec: outside a check-in, the person accepts a difference of -3,000 on the bank (an `adjust`), from Free to spend. Mon 14 Dec: another -2,000 accepted, from the emergency place they name. Tue 15 Dec: 5,000 moves out of the trip to Waiting. Wallet mode and `hand` are stage 2 and not here. Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2026-12-09", "to": "2027-01-10" },
+  "holidays": { "country": "none", "dates": [], "bank_closed": [] },
+  "main_bank": "b",
+  "accounts": [
+    { "id": "b", "name": "Bank", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2026-12-10", "amount": 300000, "split": { "goals": { "trip": 50000, "em": 20000 }, "free": 60000 } } }
+  ],
+  "income": [
+    { "id": "pay", "name": "Pay", "account": "b", "amount": 300000, "schedule": { "frequency": "monthly", "day": 10 }, "weekend_holiday": "move earlier", "starts_period": true }
+  ],
+  "bills": [],
+  "goals": [
+    { "id": "trip", "name": "Trip", "kept_in": "b", "due": "2027-08-31" },
+    { "id": "em", "name": "Emergency", "kept_in": "b", "due": "2027-12-31" }
+  ],
+  "plan": { "free": { "per": "month", "amount": 60000 } },
+  "events": [
+    { "id": "e0", "date": "2026-12-09", "told": "2026-12-09T19:00", "kind": "spend", "account": "b", "amount": 4000, "line": "free", "note": "before the opening: inside its figure" },
+    { "id": "m1", "date": "2026-12-12", "told": "2026-12-12T10:00", "kind": "set_aside", "from_place": "trip", "goal": "em", "amount": 10000 },
+    { "id": "m2", "date": "2026-12-12", "told": "2026-12-12T10:05", "kind": "set_aside", "from_place": "em", "goal": "trip", "amount": 5000, "gone": true, "note": "undone" },
+    { "id": "a1", "date": "2026-12-13", "told": "2026-12-13T10:00", "kind": "adjust", "account": "b", "amount": -3000, "note": "accept the difference, from Free to spend" },
+    { "id": "a2", "date": "2026-12-14", "told": "2026-12-14T10:00", "kind": "adjust", "account": "b", "amount": -2000, "goal": "em", "note": "accept the difference, from the emergency place" },
+    { "id": "m3", "date": "2026-12-15", "told": "2026-12-15T10:00", "kind": "set_aside", "from_place": "trip", "amount": 5000, "note": "out of the trip to Waiting" }
+  ],
+  "asks": [
+    { "id": "pma-01", "date": "2026-12-12", "question": "place", "account": "b", "place": "trip", "expected": { "kept": 40000, "due": "2027-08-31" },
+      "why": "50,000 (opening) - 10,000 (moved to Emergency, Sat 12 Dec; the move back was undone) = 40,000",
+      "note": "Before T7 a move out of a place lowered nothing: 50,000 (f5)." },
+    { "id": "pma-02", "date": "2026-12-12", "question": "place", "account": "b", "place": "em", "expected": { "kept": 30000, "due": "2027-12-31" },
+      "why": "20,000 (opening) + 10,000 (moved from the trip) = 30,000" },
+    { "id": "pma-03", "date": "2026-12-12", "question": "headline", "expected": 60000,
+      "why": "60,000 (Free to spend at the opening, typed; the 4,000 of Wed 9 Dec is before the opening and inside its figure) = 60,000" },
+    { "id": "pma-04", "date": "2026-12-13", "question": "bank_today", "account": "b", "expected": 297000,
+      "why": "300,000 (opening) - 3,000 (accepted difference, Sun 13 Dec) = 297,000",
+      "note": "Before T7 an adjust moved nothing: 300,000 (f5)." },
+    { "id": "pma-05", "date": "2026-12-13", "question": "headline", "expected": 57000,
+      "why": "60,000 (Free to spend at the opening) - 3,000 (the accepted difference, from Free to spend) = 57,000" },
+    { "id": "pma-06", "date": "2026-12-14", "question": "place", "account": "b", "place": "em", "expected": { "kept": 28000, "due": "2027-12-31" },
+      "why": "20,000 (opening) + 10,000 (from the trip) - 2,000 (accepted difference naming this place) = 28,000" },
+    { "id": "pma-07", "date": "2026-12-14", "question": "headline", "expected": 57000,
+      "why": "60,000 (Free to spend at the opening) - 3,000 (the difference of Sun 13 Dec; the one of Mon 14 Dec came from Emergency) = 57,000" },
+    { "id": "pma-08", "date": "2026-12-15", "question": "place", "account": "b", "place": "trip", "expected": { "kept": 35000, "due": "2027-08-31" },
+      "why": "50,000 (opening) - 10,000 (to Emergency) - 5,000 (to Waiting, Tue 15 Dec) = 35,000" },
+    { "id": "pma-09", "date": "2026-12-15", "question": "safe_to_spend", "account": "b", "expected": 232000,
+      "why": "295,000 (bank today: 300,000 - 3,000 - 2,000) - 35,000 (Trip, kept in it) - 28,000 (Emergency, kept in it) = 232,000" },
+    { "id": "pma-10", "date": "2026-12-15", "question": "headline", "expected": 57000,
+      "why": "60,000 (Free to spend at the opening) - 3,000 (accepted difference, Sun 13 Dec; money moved to Waiting is not Free to spend) = 57,000" }
+  ]
+}

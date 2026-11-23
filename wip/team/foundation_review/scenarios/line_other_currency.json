@@ -1,0 +1,35 @@
+{
+  "life": "line_other_currency",
+  "title": "A line's spent so far counts only spends in its own currency; a spend in another currency on a home line is listed apart with a warning until stage 2 (decision T5, final_review_3 finding 5, f3)",
+  "story": "Home currency yen. The bank (yen) and GCash (pesos). Set up Thu 10 Dec 2026, pay day: the bank holds 400,000, of which Food 40,000 and Free to spend 60,000 (typed); GCash holds 5,000.00 pesos. Pay of 300,000 on the 10th (moved earlier). On Sat 12 Dec, on a trip home, she buys groceries with GCash for 2,000.00 pesos and picks Food, her only food line. On Sun 13 Dec she spends 300.00 pesos from GCash and picks Free to spend. Neither can come off a yen line until stage 2. Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2026-12-10", "to": "2027-01-10" },
+  "holidays": { "country": "none", "dates": [], "bank_closed": [] },
+  "main_bank": "b",
+  "accounts": [
+    { "id": "b", "name": "Bank", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2026-12-10", "amount": 400000, "split": { "lines": { "food": 40000 }, "free": 60000 } } },
+    { "id": "g", "name": "GCash", "kind": "ewallet", "currency": "PHP", "minimum": 0, "opening": { "date": "2026-12-10", "amount": 5000.00 } }
+  ],
+  "income": [
+    { "id": "pay", "name": "Pay", "account": "b", "amount": 300000, "schedule": { "frequency": "monthly", "day": 10 }, "weekend_holiday": "move earlier", "starts_period": true }
+  ],
+  "bills": [],
+  "goals": [],
+  "plan": { "lines": [ { "id": "food", "name": "Food", "per": "month", "amount": 40000 } ], "free": { "per": "month", "amount": 60000 } },
+  "events": [
+    { "id": "e1", "date": "2026-12-12", "told": "2026-12-12T12:00", "kind": "spend", "account": "g", "amount": 2000.00, "line": "food" },
+    { "id": "e2", "date": "2026-12-13", "told": "2026-12-13T12:00", "kind": "spend", "account": "g", "amount": 300.00, "line": "free" }
+  ],
+  "asks": [
+    { "id": "loc-01", "date": "2026-12-12", "question": "safe_to_spend", "account": "b", "expected": 360000,
+      "why": "400,000 (bank today) - 40,000 (Food left: the GCash spend is in pesos and does not count against a yen line) = 360,000",
+      "note": "Before T5 the 2,000.00 pesos came off Food as 200,000 yen, and with the overspent line added back the lowest point was 560,000 (f3)." },
+    { "id": "loc-02", "date": "2026-12-12", "question": "warnings", "expected": [ { "account": "g", "code": "spend_other_currency" } ],
+      "why": "The peso spend on Food is listed apart with a warning until stage 2." },
+    { "id": "loc-03", "date": "2026-12-13", "question": "headline", "expected": 60000,
+      "why": "60,000 (Free to spend at the opening, typed; the 300.00 peso spend is listed apart) = 60,000",
+      "note": "Before T5: 30,000 (300.00 pesos taken as 30,000 yen)." },
+    { "id": "loc-04", "date": "2026-12-13", "question": "bank_today", "account": "g", "expected": 2700.00,
+      "why": "5,000.00 (opening) - 2,000.00 (groceries) - 300.00 (Sun 13 Dec) = 2,700.00" }
+  ]
+}
