@@ -465,3 +465,9 @@ Mako chose a private web address over a file. Opened as a file, Chrome on Androi
 BG1. Only app3 is published, under an unguessable path in public/ on the existing Cloudflare site. It goes up through a push to main that adds only those files, after the walk faults are fixed and the walk passes. The old app at the site's root is unchanged.
 BG2. Before publishing, check two things. The old app's service worker (scope /) must never answer for the app3 path. app3's sw3.js must be scoped to its own path. Then /api/ai works for statements and Ask from the same address.
 BG3. The cloud copy stays on one device until the server changes in app3/FOR_MAKO.md are approved.
+
+## BH. A late pay and safe to spend (23 Nov night JST; replaces H8 for safe to spend only)
+The real-page walk found this. On 11 Jan the main pay was late. H8 counted it as landing today, so safe to spend was the whole bank figure (328,000), with card A (32,000) leaving the next day. If the pay really is late, spending that leaves him short.
+BH1. Money not yet seen never counts toward safe to spend. While a period-starting pay is late or not seen, safe to spend is the lowest point of the walk without that pay, up to the pay after it. Every bill and card payment due in that stretch is taken off.
+BH2. The pay still shows as expected (late or not seen) on Home and on the check-in list, and the period dates follow res.period as before. Once it is ticked, it counts at once.
+BH3. The safe-to-spend heading says plainly that the late pay is not counted yet. late-03's due list follows BH1 too. Scenario files are changed only where BH1 changes the answer, each change noted with BH1.
