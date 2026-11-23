@@ -1,7 +1,7 @@
 {
   "life": "import_rules",
-  "title": "Imported lines meeting typed lines and expected items in the look ahead (decision L, matching q2 to q6 and q10)",
-  "story": "One bank, set up Thu 19 Nov 2026 with 300,000, and one card paid in full from it (closes on the 15th, paid on the 10th of the next month, moved later). Pay of 250,000 on the 25th, moved earlier; rent of 80,000 on the 27th, moved later. Statement lines arrive after the typed ones. Groceries typed as roughly 1,205 on 20 Nov; the statement says 1,084: 121 apart, more than 10% of the larger (120.5), so they are two spends (L q10). A 3,000 spend typed on Tue 24 Nov is on the statement on Mon 23 Nov, the working day before: the window runs either side of the typed day (L q3). A 4,800 card buy typed on 20 Nov posts on Wed 2 Dec: on a card the buy date matches, and a card's window is 7 (L q4). The 25 Nov pay was ticked at the check-in; its statement line takes over the settle (L q5). Rent was ticked on 27 Nov; its statement line matches the typed line and the rent item, the typed line wins and the settle moves with it (L q6); a typed line and a statement line match by direction, money out with money out. The December pay lands on Mon 21 Dec, four working days early, with nothing typed: the statement line settles it (L q2). Every typed line has no time; imported lines are told when the statement is read. No holidays are listed. Every amount is made up.",
+  "title": "Imported lines meeting typed lines and expected items in the look ahead (decisions L, matching q2 to q6 and q10, and M1)",
+  "story": "One bank, set up Thu 19 Nov 2026 with 300,000, and one card paid in full from it (closes on the 15th, paid on the 10th of the next month, moved later). Pay of 250,000 on the 25th, moved earlier; rent of 80,000 on the 27th, moved later. Statement lines arrive after the typed ones. Groceries typed as roughly 1,205 on 20 Nov; the statement says 1,084: 121 apart, more than 10% of the larger (120.5), so they are two spends (L q10). A 3,000 spend typed on Tue 24 Nov is on the statement on Mon 23 Nov, the working day before: the window runs either side of the typed day (L q3). A 4,800 card buy typed on 20 Nov posts on Wed 2 Dec: on a card the buy date matches, and a card's window is 7 (L q4). A 6,000 card buy typed on Fri 4 Dec is on the statement as bought Mon 14 Dec and posted Tue 15 Dec, 6 and 7 working days later: a card's 7 is working days (M1). The 25 Nov pay was ticked at the check-in; its statement line takes over the settle (L q5). Rent was ticked on 27 Nov; its statement line matches the typed line and the rent item, the typed line wins and the settle moves with it (L q6); a typed line and a statement line match by direction, money out with money out. The December pay lands on Mon 21 Dec, four working days early, with nothing typed: the statement line settles it (L q2). Every typed line has no time; imported lines are told when the statement is read. No holidays are listed. Every amount is made up.",
   "currency": "JPY",
   "window": { "from": "2026-11-19", "to": "2026-12-31" },
   "holidays": { "country": "made up, none listed", "dates": [], "bank_closed": [] },
@@ -34,6 +34,8 @@
     { "id": "r08", "date": "2026-11-25", "told": "2026-11-27", "kind": "pay_in", "account": "bank", "amount": 250000, "source": "statement", "posted": "2026-11-25", "note": "the pay's statement line" },
     { "id": "r09", "date": "2026-11-27", "kind": "bill_paid", "account": "bank", "amount": 80000, "settles": "rent@2026-11-27", "note": "rent ticked at the check-in" },
     { "id": "r10", "date": "2026-11-27", "told": "2026-11-30", "kind": "spend", "account": "bank", "amount": 80000, "source": "statement", "posted": "2026-11-30", "note": "rent's statement line" },
+    { "id": "r12", "date": "2026-12-04", "kind": "spend", "account": "card", "amount": 6000, "note": "card buy, typed on Fri 4 Dec" },
+    { "id": "r13", "date": "2026-12-14", "told": "2026-12-16", "kind": "spend", "account": "card", "amount": 6000, "source": "statement", "posted": "2026-12-15", "note": "the same buy on the card statement, read as bought Mon 14 Dec and posted Tue 15 Dec" },
     { "id": "r11", "date": "2026-12-21", "kind": "pay_in", "account": "bank", "amount": 250000, "source": "statement", "posted": "2026-12-21", "note": "December pay, four working days early, nothing typed" }
   ],
   "asks": [
@@ -64,6 +66,12 @@
       "why": "2027-01-25 - 2026-12-22 = 34",
       "note": "L q2: the 21 Dec statement line is four working days before the pay's 25 Dec landing (within 5), so it settles pay@2026-12-25 and the next pay is 25 Jan. Before L nothing settled it: 3 days to 25 Dec, and the pay was counted twice." },
     { "id": "imp-09", "date": "2026-12-22", "question": "bank_today", "account": "bank", "expected": 714711,
-      "why": "464,711 + 250,000 (December pay, landed early on 21 Dec) = 714,711" }
+      "why": "464,711 + 250,000 (December pay, landed early on 21 Dec) = 714,711" },
+    { "id": "imp-10", "date": "2026-12-16", "question": "owed_now", "account": "card", "expected": 10800,
+      "why": "4,800 (the 20 Nov buy) + 6,000 (the buy typed Fri 4 Dec; its statement line, bought Mon 14 and posted Tue 15 Dec, replaced it) = 10,800",
+      "note": "M1: a card's 7 day window is working days. From Fri 4 Dec: Mon 7, Tue 8, Wed 9, Thu 10, Fri 11, Mon 14, Tue 15 is the 7th, so both of the statement line's dates are inside. 7 calendar days would end Fri 11, and the buy would count twice: 16,800." },
+    { "id": "imp-11", "date": "2026-12-16", "question": "card_due", "account": "card", "expected": { "amount": 10800, "payment_date": "2027-01-11", "statement": "closed" },
+      "why": "4,800 (the 20 Nov buy, posted 2 Dec) + 6,000 (the 4 Dec buy, posted 15 Dec, the close day) = 10,800",
+      "note": "The statement closed Tue 15 Dec holds both; paid Sun 10 Jan, moved later to Mon 11 Jan." }
   ]
 }

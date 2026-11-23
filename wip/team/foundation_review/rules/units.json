@@ -1,10 +1,10 @@
 {
   "area": "units",
   "title": "Units: whole minor units per currency code, the currency table and its fallback, 26 or 27 pays a year spread so the year adds up, interest rounded half up, monthly amounts per pay",
-  "written_in": "SCHEMA_V3 0, 3 (interest), 8 (units), 11 (the move's questions); DECISIONS_ROUND2 B4, B8, H9, I2, J1, E2, L (units q1 to q9)",
+  "written_in": "SCHEMA_V3 0, 3 (interest), 8 (units), 11 (the move's questions); DECISIONS_ROUND2 B4, B8, H9, I2, J1, E2, L (units q1 to q9), M8 to M10",
   "notes": [
     "Every amount is made up. Inputs typed by a person are text (\"19.99\"); everything else is whole minor units: yen 1 is 1, peso 1.00 is 100.",
-    "Question `to_minor`: a typed amount in a currency, as whole minor units with the currency's decimals and whether the screen must ask about the code. Question `currency_for`: the code from what an old copy or a person gave, or ask. Question `interest`: one month's interest on a balance at a yearly rate in percent [I2]. Question `pays_in_year`: the real number of pays a schedule has in a calendar year [H9]. Question `per_pay`: a monthly amount over that many pays, shown as the low and high per-pay amounts, how many get the high one, and the year's total. Question `period_amount`: what one pay period gets for a budget line or Free to spend by its `per` [B8]. Question `by_day`: with no fixed pay, what a monthly amount comes to over a number of days [B4]. Question `by_day_dates`: the same over dated days, each day rounded down and the remainder on the month's last day [L units q7]. Question `per_pay_list`: the amount of each pay of the year in order [L units q4]. Question `period_count`: the pay count a period uses [L units q3]. Question `load_amount`: a saved amount as it is loaded [L units q9].",
+    "Question `to_minor`: a typed amount in a currency, as whole minor units with the currency's decimals and whether the screen must ask about the code. Question `currency_for`: the code from what an old copy or a person gave, or ask. Question `interest`: one month's interest on a balance at a yearly rate in percent [I2]. Question `pays_in_year`: the real number of pays a schedule has in a calendar year [H9]. Question `per_pay`: a monthly amount over that many pays, shown as the low and high per-pay amounts, how many get the high one, and the year's total. Question `period_amount`: what one pay period gets for a budget line or Free to spend by its `per` [B8]. Question `by_day`: with no fixed pay, what a monthly amount comes to over a number of days [B4]. Question `by_day_dates`: the same over dated days, each day rounded down and the remainder on the month's last day [L units q7]. Question `per_pay_list`: the amount of each pay of the year in order [L units q4]. Question `period_count`: the pay count a period uses [L units q3]. Question `load_amount`: a saved amount as it is loaded [L units q9]. Question `period_per_pay`: the per-pay amount of a period that starts on 31 Dec [M8]. Question `week_by_day`: with no fixed pay, what a day gets from a `per: week` amount, and what the week's last day gets [M9].",
     "The currency table is the ISO 4217 minor-unit table, shipped with the page; an unknown code is 2 decimals and the screen asks once [L units q1]. A typed amount with more decimals than its currency is rounded half up, and `rounded: true` tells the screen to say so [L units q2]."
   ],
   "defaults": {},
@@ -460,11 +460,55 @@
       "expected": { "a": 1200, "flag": false },
       "why": "1,200 is a whole number of minor units: kept, no flag [L units q9].",
       "decisions": [ "L units q9" ]
+    },
+    {
+      "id": "units-50", "question": "period_per_pay",
+      "title": "A period that starts Fri 31 Dec 2027, pay due Sat 1 Jan 2028: 2027's per-pay amount",
+      "input": {
+        "rule": {"every": "weeks", "n": 2, "from": "2027-01-02"},
+        "periodFrom": "2027-12-31",
+        "due": "2028-01-01",
+        "monthly": 26000
+      },
+      "expected": {"year": 2027, "pays": 26, "amount": 12000},
+      "why": "Every two weeks from Sat 2 Jan 2027: 2 Jan + 14 x 25 = 18 Dec 2027 is the last 2027 date, so 2027 has 26 pays; the next is Sat 1 Jan 2028, moved earlier to Fri 31 Dec, which starts the period. A period that starts on 31 Dec uses that year's per-pay amount [M8]: 26,000 x 12 / 26 = 312,000 / 26 = 12,000. 2028 has 27 pays (1 Jan + 14 x 26 = 30 Dec 2028), where 312,000 / 27 would give 11,556 or 11,555.",
+      "decisions": ["M8", "L units q3"]
+    },
+    {
+      "id": "units-51", "question": "week_by_day",
+      "title": "No fixed pay, `per: week` of 5,000: 714 a day, the remainder on the week's last day",
+      "input": {
+        "weekly": 5000
+      },
+      "expected": {"daily": 714, "lastDay": 716},
+      "why": "A seventh of the week's amount each day, rounded down [M9]: 5,000 / 7 = 714.28, so 714. Six days of 714 = 4,284; the week's last day gets the remainder: 5,000 - 4,284 = 716. 4,284 + 716 = 5,000.",
+      "decisions": ["M9"]
+    },
+    {
+      "id": "units-52", "question": "week_by_day",
+      "title": "No fixed pay, `per: week` of 7,000: the same every day",
+      "input": {
+        "weekly": 7000
+      },
+      "expected": {"daily": 1000, "lastDay": 1000},
+      "why": "7,000 / 7 = 1,000 exactly [M9]: nothing is left over, so the week's last day gets 1,000 like the others. 7 x 1,000 = 7,000.",
+      "decisions": ["M9"]
+    },
+    {
+      "id": "units-53", "question": "by_day_dates",
+      "title": "No fixed pay, January to March 2027: each month rounded down on its own, nothing carried",
+      "input": {
+        "monthly": 30000,
+        "from": "2027-01-01",
+        "to": "2027-03-31"
+      },
+      "expected": {"total": 88766, "days": 90, "daily": 986, "lastDays": {"2027-01-31": 995, "2027-02-28": 994, "2027-03-31": 995}},
+      "why": "A day is 360,000 / 365 = 986.30, so 986. January: 360,000 x 31 / 365 = 30,575.34, so 30,575; 30 x 986 = 29,580, and 31 Jan gets 995. February: 360,000 x 28 / 365 = 27,616.44, so 27,616; 27 x 986 = 26,622, and 28 Feb gets 994. March is as January: 995 on 31 Mar. Total 30,575 + 27,616 + 30,575 = 88,766. Nothing carries to the next month [M10]: the fractions (0.34 + 0.44 + 0.34) are lost, so the three months are not 360,000 x 90 / 365 = 88,767.12, 88,767.",
+      "decisions": ["M10", "L units q7"]
     }
   ],
   "open": [
-    { "id": "units-q10", "question": "L q3: a period uses its start year, and a pay counts in its unshifted due date's year. A period that starts on Fri 31 Dec 2027 with the pay due Sat 1 Jan 2028 (moved earlier): which year's per-pay amount does it get, and which of the year's pays is it for the leftover units (q4)?", "ref_does": "the start year's count (period_count); no per-period amount is worked out" },
-    { "id": "units-q11", "question": "L q7: with no fixed pay, what does `per: week` give per day (amount / 7 a day rounded down, with what remainder where)?", "ref_does": "not worked out (period_amount refuses it)" },
-    { "id": "units-q12", "question": "L q7: a month's share (monthly x 12 x days / 365 or 366) is not always whole. Is it rounded down (the fraction lost, under one minor unit a month), or carried to the next month?", "ref_does": "rounded down, the fraction is not carried (units-43 to units-45)" }
+    { "id": "units-q13", "question": "M8: a period that starts on 31 Dec uses that year's per-pay amount. When the year's pays do not divide evenly, the leftover units go to the earliest pays (L q4), so the year has two amounts. Which one does this period get? Its pay is due in the next year (L q3), so it is not one of the start year's pays.", "ref_does": "period_per_pay refuses unless every pay of the start year gets the same amount (units-50)" },
+    { "id": "units-q14", "question": "M9: with no fixed pay, `per: week` puts the remainder on the week's last day. Which day ends a week: Sunday, Saturday, or the seventh day from when the line started?", "ref_does": "week_by_day gives the daily amount and the last day's amount, with no dates" }
   ]
 }

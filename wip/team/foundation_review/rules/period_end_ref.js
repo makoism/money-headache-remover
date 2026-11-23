@@ -1,30 +1,36 @@
-// Period end (SCHEMA_V3 7.4 and 9; DECISIONS_ROUND2 A7, F8, H8, L).
+// Period end (SCHEMA_V3 7.4 and 9; DECISIONS_ROUND2 A7, F8, H8, L, M).
 // A plain reference for the engine lane, checked by run_rules.js against rules/period_end.json.
 // Open points name their question in period_end.json.
 'use strict';
 const { dayNum, dayStr, addWorking } = require('./dates');
 
 // Has the period ended, its last day, and does the question start with a check-in [A7].
-function questionStart({ nextPay, checkins, today, spendFrom, postingDays, holidays }) {
+function questionStart({ nextPay, checkins, today, spendFrom, postingDays, holidays, startedFrom }) {
   const now = dayNum(today);
+  const lands = dayNum(nextPay.lands || nextPay.due);
+  const windowEnd = addWorking(lands, postingDays == null ? 1 : postingDays, holidays || []);
+  const landed = nextPay.landed && dayNum(nextPay.landed) <= now;
+  // [M7] The person started the new period without the pay: it starts on the day they chose. The late pay
+  // stays expected until its posting window ends, then is "not seen yet" [H8].
+  const started = !landed && startedFrom && dayNum(startedFrom) <= now;
   // [F8, H8] The period ends the day before the next pay lands; until it is seen it has not ended, even on
   // the period's last day [L period_end q2]. Past its posting window the check-in asks "did your pay
-  // come?"; a "yes" writes the pay with the day it came, which ends the period [L period_end q3]. pe-q12.
-  if (!nextPay.landed || dayNum(nextPay.landed) > now) {
-    const lands = dayNum(nextPay.lands || nextPay.due);
-    const windowEnd = addWorking(lands, postingDays == null ? 1 : postingDays, holidays || []);
-    return now > windowEnd ? { ended: false, askPayCame: true } : { ended: false };
-  }
-  const to = dayNum(nextPay.landed) - 1;
-  // [A7] Fresh: a check-in dated in the last 3 days (to - 2 .. to), or after the end up to today; one after
-  // the end has its stretch split by days at the pay (A4) [L period_end q1]. It counts only when it typed
-  // every spend-from account [L period_end q9]; a check-in given as a date typed them all. pe-q11: per check-in.
-  const typedAll = c => typeof c === 'string' || !spendFrom || spendFrom.every(a => (c.accounts || []).includes(a));
-  const fresh = (checkins || []).some(c => {
+  // come?"; a "yes" writes the pay with the day it came, which ends the period [L period_end q3].
+  if (!landed && !started) return now > windowEnd ? { ended: false, askPayCame: true } : { ended: false };
+  const to = (started ? dayNum(startedFrom) : dayNum(nextPay.landed)) - 1;
+  // [A7] Fresh: the check-ins dated in the last 3 days (to - 2 .. to), or after the end up to today; one after
+  // the end has its stretch split by days at the pay (A4) [L period_end q1]. Fresh only when every spend-from
+  // account was typed [L period_end q9], counting those check-ins together [M6]; a check-in given as a date
+  // typed them all.
+  const recent = (checkins || []).filter(c => {
     const d = dayNum(typeof c === 'string' ? c : c.date);
-    return d >= to - 2 && d <= now && typedAll(c);
+    return d >= to - 2 && d <= now;
   });
-  return { ended: true, periodTo: dayStr(to), startsWithCheckIn: !fresh };
+  const typed = new Set([].concat(...recent.map(c => (typeof c === 'string' ? spendFrom || [] : c.accounts || []))));
+  const fresh = recent.length > 0 && (!spendFrom || spendFrom.every(a => typed.has(a)));
+  const out = { ended: true, periodTo: dayStr(to), startsWithCheckIn: !fresh };
+  if (started) out.pay = now > windowEnd ? 'not seen yet' : 'late, expected';
+  return out;
 }
 
 // Money left at the period's end waits in its place, "to decide", until answered [A7].

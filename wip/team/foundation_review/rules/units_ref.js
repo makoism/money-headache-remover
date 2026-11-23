@@ -1,4 +1,4 @@
-// Units (SCHEMA_V3 0, 3 and 8; DECISIONS_ROUND2 B4, B8, H9, I2, L).
+// Units (SCHEMA_V3 0, 3 and 8; DECISIONS_ROUND2 B4, B8, H9, I2, L, M).
 // A plain reference for the engine lane, checked by run_rules.js against rules/units.json.
 // Open points name their question in units.json.
 'use strict';
@@ -71,7 +71,7 @@ function paysInYear(rule, year) {
   if (rule.every === 'months') return 12 / rule.n;
   throw new Error('no pay count for ' + rule.every);
 }
-// [L units q3] A period that crosses 31 Dec uses its start year's count. units-q10.
+// [L units q3] A period that crosses 31 Dec uses its start year's count.
 function periodCount({ rule, periodFrom }) {
   const year = Number(periodFrom.slice(0, 4));
   return { year, pays: paysInYear(rule, year) };
@@ -88,12 +88,21 @@ function perPay(monthly, pays) {
   const list = perPayList(monthly, pays), low = Math.min(...list), high = Math.max(...list);
   return { pays, low, high, highCount: high === low ? 0 : list.filter(x => x === high).length, yearTotal: list.reduce((t, x) => t + x, 0) };
 }
+// [M8] A period that starts on 31 Dec (its pay due 1 Jan, moved earlier) uses that year's per-pay amount.
+// units-q13: when that year's pays have two amounts (leftover units, L q4), which one is not decided, so this
+// refuses unless every pay of the year gets the same amount.
+function periodPerPay({ rule, periodFrom, monthly }) {
+  const { year, pays } = periodCount({ rule, periodFrom });
+  const p = perPay(monthly, pays);
+  if (p.low !== p.high) throw new Error('units-q13: ' + year + ' has two per-pay amounts');
+  return { year, pays, amount: p.low };
+}
 
 // [B8] What one pay period gets by `per`. payKind is the period stream's rule: 'month', 'weeks', 'none'.
 function periodAmount({ per, amount, payKind, periodDays }) {
   if (payKind === 'none') {
     if (per === 'pay') return amount;   // [L units q7] each money-in event
-    throw new Error('no fixed pay: by_day_dates (units-q11 for per week)');
+    throw new Error('no fixed pay: by_day_dates for per month, week_by_day for per week');
   }
   if (per === 'pay') return amount;
   if (per === 'month' && payKind === 'month') return amount;   // a monthly rule with one day (twice a month uses per_pay with 24)
@@ -106,7 +115,7 @@ function periodAmount({ per, amount, payKind, periodDays }) {
 function byDay(monthly, days) { return Math.floor(monthly * 12 * days / 365); }
 // [L units q7] No fixed pay, over dated days: a year of 365 or 366 days; each day gets monthly x 12 / days
 // in the year, rounded down; the month's last day also gets the remainder, so the month comes to its share
-// (monthly x 12 x days in the month / days in the year, rounded down: units-q12).
+// (monthly x 12 x days in the month / days in the year, rounded down). Nothing carries to the next month [M10].
 function byDayDates({ monthly, from, to }) {
   const T = monthly * 12, lastDays = {};
   let total = 0, daily = null;
@@ -127,6 +136,13 @@ function byDayDates({ monthly, from, to }) {
   return { total, days: dayNum(to) - dayNum(from) + 1, daily, lastDays };
 }
 
+// [M9] No fixed pay, `per: week`: a seventh of the week's amount each day, rounded down, and the remainder on
+// the week's last day. units-q14: which day ends a week is not decided, so this gives the two amounts only.
+function weekByDay(weekly) {
+  const daily = Math.floor(weekly / 7);
+  return { daily, lastDay: weekly - daily * 6 };
+}
+
 function ask(question, input) {
   switch (question) {
     case 'to_minor': return toMinor(input.text, input.cur);
@@ -135,6 +151,8 @@ function ask(question, input) {
     case 'interest': return interest(input.balance, input.apr);
     case 'pays_in_year': return paysInYear(input.rule, input.year);
     case 'period_count': return periodCount(input);
+    case 'period_per_pay': return periodPerPay(input);
+    case 'week_by_day': return weekByDay(input.weekly);
     case 'per_pay': return perPay(input.monthly, input.pays);
     case 'per_pay_list': return perPayList(input.monthly, input.pays);
     case 'period_amount': return periodAmount(input);
@@ -144,4 +162,4 @@ function ask(question, input) {
   throw new Error('unknown question ' + question);
 }
 
-module.exports = { ask, DECIMALS, toMinor, currencyFor, loadAmount, interest, paysInYear, periodCount, perPayList, perPay, periodAmount, byDay, byDayDates };
+module.exports = { ask, DECIMALS, toMinor, currencyFor, loadAmount, interest, paysInYear, periodCount, perPayList, perPay, periodPerPay, periodAmount, weekByDay, byDay, byDayDates };

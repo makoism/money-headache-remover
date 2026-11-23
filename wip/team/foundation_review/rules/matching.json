@@ -1,14 +1,14 @@
 {
   "area": "matching",
   "title": "Matching an import to a typed line or an expected item, the vary margin, the source ranking, est within 10%, and the possible double typed on two devices",
-  "written_in": "SCHEMA_V3 6.4 and 12; DECISIONS_ROUND2 A6, F4, H2, H9, L (matching q1 to q13)",
+  "written_in": "SCHEMA_V3 6.4 and 12; DECISIONS_ROUND2 A6, F4, H2, H9, L (matching q1 to q13), M1, M2",
   "notes": [
     "Every amount is made up and in whole minor units (yen, so 1 is 1).",
     "Dates: Fri 20 Nov 2026, Sat 21, Sun 22, Mon 23, Tue 24, Wed 25, Thu 26; Thu 10 Dec 2026, Fri 11, Sat 12, Mon 14.",
-    "An import line's day is its `posted` date when it has one, else its `date` (6.4). A typed line matches an import line inside its posting window either side of its day: from that day less the account's `postingDays` working days to that day plus them, both ends counted [F4; L matching q3]. On a card, the import line's buy date (`date`) or its posted date may fall in the window, and a card with no `postingDays` of its own has 7 [L matching q4]. An expected item is settled by an import landing from 5 working days before its landing day to the end of its posting window after it [L matching q2].",
+    "An import line's day is its `posted` date when it has one, else its `date` (6.4). A typed line matches an import line inside its posting window either side of its day: from that day less the account's `postingDays` working days to that day plus them, both ends counted [F4; L matching q3]. On a card, the import line's buy date (`date`) or its posted date may fall in the window, and a card with no `postingDays` of its own has 7 working days [L matching q4, M1]. An expected item is settled by an import landing from 5 working days before its landing day to the end of its posting window after it [L matching q2].",
     "`dir` is `out` (money leaving the account) or `in`. Expected items are named by schedule and unshifted due date, `pay@2026-12-12` [H2]; `lands` is the day after any weekend or holiday move.",
     "Question `import`: the lines after every import is applied, as `gone` (line id to the id that removed it) and `settled` (occurrence name to the live line that settles it). Question `import_counts`: how many lines are gone and how many import lines are live. Question `import_dropped`: the import lines dropped as repeats of an equal-rank line [L matching q9]. Question `possible_doubles`: the pairs of typed lines offered as a possible double; nothing is removed. Question `not_double_mark`: what the answer \"both are real\" writes [L matching q12].",
-    "A statement import carries its own dates, `from` and `to` [L matching q8]. An import may carry the `file` it was read from, and each of its lines the `line` it was on; with the type they are the line's `src`. A line's id for repeats is its date, amount, direction and count (the first, second, ... line with that date, amount and direction in its own import) [L matching q9]."
+    "A statement import carries its own dates, `from` and `to` [L matching q8]; a screenshot read after it that falls inside those dates and matches no statement line is removed too, goneBy the statement import [M2]. An import may carry the `file` it was read from, and each of its lines the `line` it was on; with the type they are the line's `src`. A line's id for repeats is its date, amount, direction and count (the first, second, ... line with that date, amount and direction in its own import) [L matching q9]."
   ],
   "defaults": {
     "accounts": { "bank": { "kind": "bank", "postingDays": 1 }, "card": { "kind": "card" } },
@@ -615,10 +615,39 @@
       "expected": [],
       "why": "Both were typed on 20 Nov, but the spends are dated 19 and 20 Nov. \"Same day\" is the spend's date [L matching q13], so they are not offered.",
       "decisions": [ "L matching q13" ]
+    },
+    {
+      "id": "match-44", "question": "import",
+      "title": "A card line 6 working days (10 days) after the typed day: inside the card's 7 working days",
+      "input": {
+        "lines": [{"id": "t1", "acct": "card", "dir": "out", "a": 6000, "date": "2026-11-20", "src": "typed"}],
+        "imports": [{"id": "f1", "src": "statement", "acct": "card", "lines": [{"id": "i1", "dir": "out", "a": 6000, "date": "2026-11-30", "posted": "2026-11-30"}]}]
+      },
+      "expected": {"gone": {"t1": "i1"}, "settled": {}},
+      "why": "The card's default window is 7 working days [M1]. From Fri 20 Nov: Mon 23 (1), Tue 24 (2), Wed 25 (3), Thu 26 (4), Fri 27 (5), Mon 30 (6), Tue 1 Dec (7). The buy and posted date, Mon 30 Nov, is inside, so t1 is replaced. 7 calendar days would end on Fri 27 and the spend would count twice.",
+      "decisions": ["M1", "L matching q4"]
+    },
+    {
+      "id": "match-45", "question": "import",
+      "title": "A card line 8 working days after the typed day: outside the card's 7 working days",
+      "input": {
+        "lines": [{"id": "t1", "acct": "card", "dir": "out", "a": 6000, "date": "2026-11-20", "src": "typed"}],
+        "imports": [{"id": "f1", "src": "statement", "acct": "card", "lines": [{"id": "i1", "dir": "out", "a": 6000, "date": "2026-12-02", "posted": "2026-12-02"}]}]
+      },
+      "expected": {"gone": {}, "settled": {}},
+      "why": "7 working days from Fri 20 Nov end on Tue 1 Dec (match-44) [M1]. Wed 2 Dec is the 8th working day, and the line's buy date is the same day, so neither is inside: no match, and i1 is a new line beside t1.",
+      "decisions": ["M1"]
+    },
+    {
+      "id": "match-46", "question": "import",
+      "title": "A screenshot read after the statement: the unmatched line inside its dates goes too, goneBy the statement import",
+      "input": {
+        "imports": [{"id": "f1", "src": "statement", "acct": "bank", "from": "2026-11-16", "to": "2026-11-22", "lines": [{"id": "st1", "dir": "out", "a": 500, "date": "2026-11-18", "posted": "2026-11-18"}]}, {"id": "f2", "src": "screenshot", "acct": "bank", "lines": [{"id": "sc1", "dir": "out", "a": 500, "date": "2026-11-18"}, {"id": "sc2", "dir": "out", "a": 750, "date": "2026-11-19"}, {"id": "sc3", "dir": "out", "a": 900, "date": "2026-11-25"}]}]
+      },
+      "expected": {"gone": {"sc1": "st1", "sc2": "f1"}, "settled": {}},
+      "why": "The statement f1 (16 to 22 Nov) is read first, then the screenshot f2. sc1 matches st1 (500, 18 Nov), which ranks over it, so sc1 goes, goneBy st1, as in match-20. sc2 (750 on 19 Nov) matches no statement line but is inside the statement's dates, so it is removed too, goneBy the statement import f1 [M2]. sc3 (25 Nov) is after the statement's dates and stays a live line.",
+      "decisions": ["M2", "A6"]
     }
   ],
-  "open": [
-    { "id": "match-q14", "question": "L q4 gives cards a 7 day posting window by default. `postingDays` counts working days everywhere else [F4]; is the card's 7 also working days, or 7 calendar days? No case here depends on it (every card line above is inside or outside both).", "ref_does": "7 working days, like every other `postingDays`" },
-    { "id": "match-q15", "question": "L q8 says a statement removes the screenshot lines inside its own dates. A screenshot read after the statement, inside its dates, that matches no statement line (match-20 is the matched case): is it removed too, and goneBy what?", "ref_does": "only the matched case: the new screenshot line goes, goneBy the statement line holding that money (match-20); an unmatched one stays" }
-  ]
+  "open": []
 }

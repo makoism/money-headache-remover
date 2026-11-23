@@ -1,4 +1,4 @@
-// Matching an import to a typed line or an expected item (SCHEMA_V3 6.4; DECISIONS_ROUND2 A6, F4, H2, H9, L).
+// Matching an import to a typed line or an expected item (SCHEMA_V3 6.4; DECISIONS_ROUND2 A6, F4, H2, H9, L, M).
 // A plain reference for the engine lane, checked by run_rules.js against rules/matching.json.
 // Every amount is in whole minor units. Where the decisions leave a point open, the line says so and
 // names the open question in matching.json.
@@ -12,7 +12,7 @@ const dayOf = l => dayNum(l.posted || l.date);   // by `posted` when there is on
 const EARLY = 5;   // [L matching q2] an import may settle an expected item up to 5 working days early
 
 // The posting window of an account in working days [F4]: its own `postingDays`, else 7 for a card
-// [L matching q4] and 1 for anything else. match-q14: the card's 7 is read as working days, like the rest.
+// [L matching q4] and 1 for anything else. The card's 7 is working days, like the rest [M1].
 function windowOf(ctx, acct) {
   const a = ctx.accounts[acct] || {};
   return a.postingDays != null ? a.postingDays : a.kind === 'card' ? 7 : 1;
@@ -72,6 +72,7 @@ function applyImports(input) {
   Object.values(groups).forEach(giveIds);
   const expected = input.expected || [];
   const dropped = [];
+  const statements = [];   // the statement imports read so far, with their own dates [L matching q8, M2]
   const live = () => lines.filter(l => !l.gone);
   const settledNames = () => new Set([].concat(...live().map(l => l.settles)));
   // [L matching q7] Several lines match: the closest date wins, then the earliest `told`, then the first listed.
@@ -114,10 +115,13 @@ function applyImports(input) {
       lines.push(line);   // 4. otherwise a new line
     }
     // [L matching q8] A statement removes every screenshot line inside its own dates, matched or not,
-    // goneBy the statement import. match-q15: a screenshot read after the statement is not swept.
-    if (imp.src === 'statement' && imp.from && imp.to) {
+    // goneBy the statement import. [M2] A screenshot read after the statement, inside its dates, is removed
+    // too, goneBy the statement import; one that matched a statement line already went, goneBy that line
+    // (step 1, match-20, match-46).
+    if (imp.src === 'statement' && imp.from && imp.to) statements.push(imp);
+    for (const st of statements) {
       for (const t of live()) {
-        if (t.acct === imp.acct && t.src === 'screenshot' && dayOf(t) >= dayNum(imp.from) && dayOf(t) <= dayNum(imp.to)) { t.gone = true; t.goneBy = imp.id; }
+        if (t.acct === st.acct && t.src === 'screenshot' && dayOf(t) >= dayNum(st.from) && dayOf(t) <= dayNum(st.to)) { t.gone = true; t.goneBy = st.id; }
       }
     }
   }

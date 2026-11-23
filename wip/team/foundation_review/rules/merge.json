@@ -1,11 +1,11 @@
 {
   "area": "merge",
   "title": "Merging two copies: union by id, newest `at` per record, `gone` against the same or older `at` only, the hybrid clock, `told` never changing",
-  "written_in": "SCHEMA_V3 0 and 2.3; DECISIONS_ROUND2 D4, H1, H6, H9, L (merge q1 to q8)",
+  "written_in": "SCHEMA_V3 0 and 2.3; DECISIONS_ROUND2 D4, H1, H6, H9, L (merge q1 to q8), M3 to M5",
   "notes": [
     "Every amount is made up and in whole minor units (yen).",
     "Times are hybrid clock values written as ISO with the time zone offset (section 0). They are compared as moments, never as text: 10:00+09:00 is 01:00 UTC, 02:30+01:00 is 01:30 UTC.",
-    "Question `next_at`: the `at` a device writes, the larger of now and (newest seen + 1 ms), in now's offset; a now more than a day ahead of the newest seen is held at the newest seen + 1 ms [L merge q8]. Question `next_at_warn`: the same, with whether the warning is shown. Question `came_back`: the records removed in `mine` that the merge brings back [L merge q4]. Each record may carry `by`, the device part of its last writer [L merge q1]; `steps` and `rules` entries carry their own `at` [L merge q2]; shared `ui` carries `ui.at`, one `at` per key [L merge q6]; the copy's `rev` after a merge is the larger of both plus one [L merge q3]. Question `newer`: which of two times is later. Question `merge`: two copies merged, lists ordered by id. Questions `merge_symmetric` and `merge_same`: whether merging A with B gives the same as B with A, and whether merging a copy with itself changes nothing. Question `devices`: a short story of edits and syncs on two devices, and the record one device ends with."
+    "Question `next_at`: the `at` a device writes, the larger of now and (newest seen + 1 ms), in now's offset; a now more than a day ahead of the newest seen is held at the newest seen + 1 ms [L merge q8]. Question `next_at_warn`: the same, with whether the warning is shown. Question `came_back`: the records removed in `mine` that the merge brings back [L merge q4]. Each record may carry `by`, the device part of its last writer [L merge q1]; `steps` and `rules` entries carry their own `at` [L merge q2]; shared `ui` carries `ui.at`, one `at` per key [L merge q6]; the copy's `rev` after a merge is the larger of both plus one [L merge q3]. A `steps` or `rules` entry is removed by its own `gone` with its own `at`, and is settled like a record: newer `at`, then `gone`, then the larger `by` [M3]. Entries carry their own `by` beside their `at`, and shared `ui` keys carry theirs in `ui.by` beside `ui.at` [M5]. Question `receive`: a copy that arrives is merged in after every `at` in it more than a day ahead of the newest `at` the receiving device has seen is held at that point plus 1 ms, with the warning [M4]; the `devices` syncs do the same. Question `newer`: which of two times is later. Question `merge`: two copies merged, lists ordered by id. Questions `merge_symmetric` and `merge_same`: whether merging A with B gives the same as B with A, and whether merging a copy with itself changes nothing. Question `devices`: a short story of edits and syncs on two devices, and the record one device ends with."
   ],
   "defaults": {},
   "cases": [
@@ -413,11 +413,79 @@
       "expected": { "at": "2026-11-24T10:00:00.000+09:00", "warn": false },
       "why": "now is 24 hours after the newest seen: a day ahead, not more, so `at` is now and nothing is held [L merge q8].",
       "decisions": [ "L merge q8" ]
+    },
+    {
+      "id": "mg-36", "question": "merge",
+      "title": "A step removed on one device stays removed, even when the other device edited the schedule later",
+      "input": {
+        "mine": {"schedules": [{"id": "pay", "kind": "income", "name": "Pay", "steps": [{"from": "2026-12-01", "amount": 260000, "at": "2026-11-21T09:00:00.000+09:00", "by": "aaaaaa"}, {"from": "2027-01-01", "amount": 270000, "at": "2026-11-21T10:20:00.000+09:00", "by": "aaaaaa", "gone": "2026-11-21"}], "told": "2026-11-01T09:00:00.000+09:00", "at": "2026-11-21T10:20:00.000+09:00", "by": "aaaaaa"}]},
+        "theirs": {"schedules": [{"id": "pay", "kind": "income", "name": "Pay (main job)", "steps": [{"from": "2026-12-01", "amount": 260000, "at": "2026-11-21T09:00:00.000+09:00", "by": "aaaaaa"}, {"from": "2027-01-01", "amount": 270000, "at": "2026-11-21T10:10:00.000+09:00", "by": "bbbbbb"}], "told": "2026-11-01T09:00:00.000+09:00", "at": "2026-11-21T10:30:00.000+09:00", "by": "bbbbbb"}]}
+      },
+      "expected": {"schedules": [{"id": "pay", "kind": "income", "name": "Pay (main job)", "steps": [{"from": "2026-12-01", "amount": 260000, "at": "2026-11-21T09:00:00.000+09:00", "by": "aaaaaa"}, {"from": "2027-01-01", "amount": 270000, "at": "2026-11-21T10:20:00.000+09:00", "by": "aaaaaa", "gone": "2026-11-21"}], "told": "2026-11-01T09:00:00.000+09:00", "at": "2026-11-21T10:30:00.000+09:00", "by": "bbbbbb"}]},
+      "why": "The record: 10:30 (theirs, the new name) is newer than 10:20, so the name is theirs. The steps merge by `from`, each by its own `at` [L merge q2]. The 1 Jan step was removed here by its own `gone` at 10:20 [M3]; theirs is the step as it was at 10:10, older, so the removal wins and stays in the list as a removed entry. The union cannot bring it back, and the next merge finds the same `gone`.",
+      "decisions": ["M3", "L merge q2"]
+    },
+    {
+      "id": "mg-37", "question": "merge",
+      "title": "A step removed and edited at the same `at`: the removal wins, as on a record",
+      "input": {
+        "mine": {"schedules": [{"id": "pay", "kind": "income", "steps": [{"from": "2027-01-01", "amount": 270000, "at": "2026-11-21T10:20:00.000+09:00", "by": "aaaaaa", "gone": "2026-11-21"}], "told": "2026-11-01T09:00:00.000+09:00", "at": "2026-11-21T10:20:00.000+09:00", "by": "aaaaaa"}]},
+        "theirs": {"schedules": [{"id": "pay", "kind": "income", "steps": [{"from": "2027-01-01", "amount": 275000, "at": "2026-11-21T10:20:00.000+09:00", "by": "bbbbbb"}], "told": "2026-11-01T09:00:00.000+09:00", "at": "2026-11-21T10:20:00.000+09:00", "by": "bbbbbb"}]}
+      },
+      "expected": {"schedules": [{"id": "pay", "kind": "income", "steps": [{"from": "2027-01-01", "amount": 270000, "at": "2026-11-21T10:20:00.000+09:00", "by": "aaaaaa", "gone": "2026-11-21"}], "told": "2026-11-01T09:00:00.000+09:00", "at": "2026-11-21T10:20:00.000+09:00", "by": "bbbbbb"}]},
+      "why": "An entry is removed by its own `gone` with its own `at` [M3], so it is settled the way a record is: the newer `at`, then on the same `at` the copy with `gone` [H6], then the larger `by` [M5]. Both steps have `at` 10:20, so the removed one wins although bbbbbb is the larger `by`. The record itself ties on `at` too and neither is removed, so the larger `by`, bbbbbb, gives its fields [L merge q1].",
+      "decisions": ["M3", "H6", "M5"]
+    },
+    {
+      "id": "mg-38", "question": "receive",
+      "title": "A copy that arrives more than a day ahead of what this device has seen is held",
+      "input": {
+        "lastSeen": "2026-11-23T09:00:00.000+09:00",
+        "mine": {"events": [{"id": "e1", "k": "spend", "a": 1200, "date": "2026-11-20", "told": "2026-11-20T12:00:00.000+09:00", "at": "2026-11-23T08:00:00.000+09:00", "by": "aaaaaa"}]},
+        "theirs": {"events": [{"id": "e1", "k": "spend", "a": 1500, "date": "2026-11-20", "told": "2026-11-20T12:00:00.000+09:00", "at": "2026-11-25T10:00:00.000+09:00", "by": "cccccc"}, {"id": "e2", "k": "spend", "a": 900, "date": "2026-11-23", "told": "2026-11-23T20:00:00.000+09:00", "at": "2026-11-23T20:00:00.000+09:00", "by": "cccccc"}]}
+      },
+      "expected": {"copy": {"events": [{"id": "e1", "k": "spend", "a": 1500, "date": "2026-11-20", "told": "2026-11-20T12:00:00.000+09:00", "at": "2026-11-23T09:00:00.001+09:00", "by": "cccccc"}, {"id": "e2", "k": "spend", "a": 900, "date": "2026-11-23", "told": "2026-11-23T20:00:00.000+09:00", "at": "2026-11-23T20:00:00.000+09:00", "by": "cccccc"}]}, "warn": true},
+      "why": "The newest `at` this device has seen is 23 Nov 09:00, so a day ahead is 24 Nov 09:00. The clock cap applies to a copy that arrives too [M4]: e1's 25 Nov 10:00 is more than a day ahead, so it is held at 23 Nov 09:00:00.001 and the warning is shown [L merge q8]. e2's 23 Nov 20:00 is less than a day ahead and is kept. Then the merge: held e1 (09:00:00.001) is newer than mine (08:00), so 1,500 wins; `by` stays cccccc, its last writer.",
+      "decisions": ["M4", "L merge q8"]
+    },
+    {
+      "id": "mg-39", "question": "devices",
+      "title": "A new phone two days fast: its edit is held when it reaches the other device, and a later edit there wins",
+      "input": {
+        "devices": {"A": {"id": "cccccc"}, "B": {"id": "bbbbbb", "lastSeen": "2026-11-23T09:00:00.000+09:00"}},
+        "copy": {"events": [{"id": "e1", "k": "spend", "a": 1200, "date": "2026-11-20", "told": "2026-11-20T12:00:00.000+09:00", "at": "2026-11-20T12:00:00.000+09:00"}]},
+        "steps": [{"on": "A", "now": "2026-11-25T10:00:00.000+09:00", "edit": {"list": "events", "id": "e1", "set": {"a": 1500}}}, {"sync": "A", "to": "B"}, {"on": "B", "now": "2026-11-23T10:05:00.000+09:00", "edit": {"list": "events", "id": "e1", "set": {"a": 1800}}}],
+        "show": {"on": "B", "list": "events", "id": "e1"}
+      },
+      "expected": {"id": "e1", "k": "spend", "a": 1800, "date": "2026-11-20", "told": "2026-11-20T12:00:00.000+09:00", "at": "2026-11-23T10:05:00.000+09:00", "by": "bbbbbb"},
+      "why": "A is new and has no `at` of its own seen, so its own write is not held: 25 Nov 10:00. When A's copy reaches B, whose newest seen is 23 Nov 09:00, the record is more than a day ahead and is held at 23 Nov 09:00:00.001 [M4]. B's edit at 23 Nov 10:05 is later than anything B has seen, so it is written at 10:05 by bbbbbb and wins: 1,800. Before M4, B took in 25 Nov 10:00 as seen and its edit was pushed to 25 Nov 10:00:00.001.",
+      "decisions": ["M4", "L merge q8"]
+    },
+    {
+      "id": "mg-40", "question": "merge",
+      "title": "Two steps with the same `from` and the same `at`: the larger `by` wins",
+      "input": {
+        "mine": {"schedules": [{"id": "pay", "kind": "income", "steps": [{"from": "2026-12-01", "amount": 260000, "at": "2026-11-21T10:00:00.000+09:00", "by": "aaaaaa"}], "told": "2026-11-01T09:00:00.000+09:00", "at": "2026-11-21T10:00:00.000+09:00", "by": "aaaaaa"}]},
+        "theirs": {"schedules": [{"id": "pay", "kind": "income", "steps": [{"from": "2026-12-01", "amount": 255000, "at": "2026-11-21T10:00:00.000+09:00", "by": "bbbbbb"}], "told": "2026-11-01T09:00:00.000+09:00", "at": "2026-11-21T10:00:00.000+09:00", "by": "bbbbbb"}]}
+      },
+      "expected": {"schedules": [{"id": "pay", "kind": "income", "steps": [{"from": "2026-12-01", "amount": 255000, "at": "2026-11-21T10:00:00.000+09:00", "by": "bbbbbb"}], "told": "2026-11-01T09:00:00.000+09:00", "at": "2026-11-21T10:00:00.000+09:00", "by": "bbbbbb"}]},
+      "why": "Each entry carries its own `by` beside its `at` [M5]. Both 1 Dec steps have `at` 10:00 and neither is removed, so the larger `by` wins: bbbbbb, 255,000, on both devices. Before M5 the larger sorted text won, which was 260,000.",
+      "decisions": ["M5", "L merge q1"]
+    },
+    {
+      "id": "mg-41", "question": "merge",
+      "title": "Two `ui` keys with the same `at`: the larger `by` in `ui.by` wins",
+      "input": {
+        "mine": {"ui": {"main": "trip", "at": {"main": "2026-11-21T10:00:00.000+09:00"}, "by": {"main": "bbbbbb"}}},
+        "theirs": {"ui": {"main": "waiting", "at": {"main": "2026-11-21T10:00:00.000+09:00"}, "by": {"main": "aaaaaa"}}}
+      },
+      "expected": {"ui": {"main": "trip", "at": {"main": "2026-11-21T10:00:00.000+09:00"}, "by": {"main": "bbbbbb"}}},
+      "why": "A shared `ui` key carries its `by` beside its `at`: `ui.by` beside `ui.at` [M5, L merge q6]. main has the same `at`, 10:00, on both, so the larger `by` wins: bbbbbb, trip. Before M5 the larger value as text won, which was waiting.",
+      "decisions": ["M5", "L merge q6"]
     }
   ],
   "open": [
-    { "id": "mg-q9", "question": "L q2 merges `steps` and `rules` entries by `from`. How is one entry removed (a step typed by mistake) so that the union does not bring it back from the other copy: a `gone` mark on the entry, like a record?", "ref_does": "no removal: the union keeps every `from` seen" },
-    { "id": "mg-q10", "question": "L q8 holds a device's own write at the newest `at` it has seen plus 1 ms. Does it also apply when a copy arrives whose records are more than a day ahead of everything the receiving device knows (a new device with nothing seen yet), and is `by` part of that?", "ref_does": "only on a device's own write (next_at); a merge keeps the `at` it receives" },
-    { "id": "mg-q11", "question": "Two `ui` keys or two `steps` entries with the same `at`: which wins? L q1's `by` is on the record, not on each entry or key.", "ref_does": "the larger value as sorted JSON text, so both devices agree" }
+    { "id": "mg-q12", "question": "M4 holds a copy that arrives far ahead at the receiver's newest seen + 1 ms, but the sending device keeps its own far-ahead `at` (mg-39: A still holds 25 Nov 10:00). When A's copy reaches B again after B's own later edit, the record is held again, now at B's newest seen + 1 ms, and beats that edit, so A's older edit wins on both. Is that accepted, or should a record held once keep its held `at` (for example B's copy wins until A writes again)?", "ref_does": "held again on every arrival (mg-39 shows only the first arrival)" },
+    { "id": "mg-q13", "question": "M4 holds the `at` of a record that arrives far ahead. A record made on that fast device also has its `told` far ahead (`told` is set when the record is made, H1), and `told` orders same-day records against a check. Is `told` held too, the same way, or kept as it came?", "ref_does": "kept as it came; only `at` is held" }
   ]
 }

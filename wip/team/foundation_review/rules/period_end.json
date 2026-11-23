@@ -1,12 +1,12 @@
 {
   "area": "period_end",
   "title": "Period end: the question after a fresh check-in, nothing rolling on silently, and \"to decide\"",
-  "written_in": "SCHEMA_V3 7.4, 9; DECISIONS_ROUND2 A7, F8, H8, L (period end q1 to q10); DECISIONS.md (money left at month end never drops out silently, 18 Nov)",
+  "written_in": "SCHEMA_V3 7.4, 9; DECISIONS_ROUND2 A7, F8, H8, L (period end q1 to q10), M6, M7; DECISIONS.md (money left at month end never drops out silently, 18 Nov)",
   "notes": [
     "Every amount is made up and in whole minor units (yen).",
     "A period runs from the day the period stream's pay lands to the day before the next one lands [F8]. While the next pay has not landed (late, H8) the period has not ended.",
     "The last 3 days of a period are its last day and the two days before it.",
-    "Question `question_start`: has the period ended, its last day, and whether the period-end question has to start with a check-in; while pay is past its posting window, `askPayCame` [L period_end q3]. A check-in is a date (every account typed) or `{ date, accounts }`; `spendFrom` lists the spend-from accounts [L period_end q9]. Question `leftovers`: for each place, what is decided (moved), what is kept in the place, what is still \"to decide\", how much an overspent place is over and what covers it, and the `move` events the answers write; answers adding up to more than is left are refused [L period_end q4, q6, q10]. Question `screen`: whether the period-end question is shown [L period_end q5]. Question `next_period`: what each place holds in the new period and how much of it counts in safe to spend [L period_end q6, q7]. Question `leftovers_ends`: two or more unanswered period ends, each answered on its own [L period_end q8].",
+    "Question `question_start`: has the period ended, its last day, and whether the period-end question has to start with a check-in; while pay is past its posting window, `askPayCame` [L period_end q3]. A check-in is a date (every account typed) or `{ date, accounts }`; `spendFrom` lists the spend-from accounts [L period_end q9], and the check-ins of the last 3 days count together [M6]. `startedFrom` is the day the person chose to start the new period without the pay: the old period ends the day before, and `pay` says whether the late pay is still \"late, expected\" (inside its posting window) or \"not seen yet\" [M7]. Question `leftovers`: for each place, what is decided (moved), what is kept in the place, what is still \"to decide\", how much an overspent place is over and what covers it, and the `move` events the answers write; answers adding up to more than is left are refused [L period_end q4, q6, q10]. Question `screen`: whether the period-end question is shown [L period_end q5]. Question `next_period`: what each place holds in the new period and how much of it counts in safe to spend [L period_end q6, q7]. Question `leftovers_ends`: two or more unanswered period ends, each answered on its own [L period_end q8].",
     "An answer is `{ place, to, a, told }` (a move to another place), `{ place, keep: true, a, told }` (keep it here) or, for an overspent place, `{ place, from, a, told }` where `from` is `free` or `waiting` (what covers it)."
   ],
   "defaults": {},
@@ -311,10 +311,79 @@
       "expected": { "refused": { "place": "free", "left": 12000 } },
       "why": "8,000 + 5,000 = 13,000, more than the 12,000 left. The answers are refused and the screen shows the 12,000 left [L period_end q10].",
       "decisions": [ "L period_end q10" ]
+    },
+    {
+      "id": "pe-29", "question": "question_start",
+      "title": "The bank typed on 7 Dec, the cash on 8 Dec: together they are fresh",
+      "input": {
+        "periodFrom": "2026-11-10",
+        "nextPay": {"due": "2026-12-10", "landed": "2026-12-10"},
+        "spendFrom": ["bank", "cash"],
+        "checkins": [{"date": "2026-12-07", "accounts": ["bank"]}, {"date": "2026-12-08", "accounts": ["cash"]}],
+        "today": "2026-12-10"
+      },
+      "expected": {"ended": true, "periodTo": "2026-12-09", "startsWithCheckIn": false},
+      "why": "The period ran to Wed 9 Dec; its last 3 days are 7, 8 and 9 Dec. \"Fresh\" counts the check-ins of the last 3 days together [M6]: 7 Dec typed the bank and 8 Dec the cash, so between them every spend-from account was typed, and the question needs no new check-in. Before M6 each check-in had to type both.",
+      "decisions": ["M6", "L period_end q9"]
+    },
+    {
+      "id": "pe-30", "question": "question_start",
+      "title": "The bank typed on 6 Dec, the cash on 8 Dec: the bank is not in the last 3 days",
+      "input": {
+        "periodFrom": "2026-11-10",
+        "nextPay": {"due": "2026-12-10", "landed": "2026-12-10"},
+        "spendFrom": ["bank", "cash"],
+        "checkins": [{"date": "2026-12-06", "accounts": ["bank"]}, {"date": "2026-12-08", "accounts": ["cash"]}],
+        "today": "2026-12-10"
+      },
+      "expected": {"ended": true, "periodTo": "2026-12-09", "startsWithCheckIn": true},
+      "why": "Last 3 days: 7 to 9 Dec. Only the 8 Dec check-in is inside them, and it typed only the cash [M6]. The bank was last typed on 6 Dec, before them, so the question starts with a check-in.",
+      "decisions": ["M6"]
+    },
+    {
+      "id": "pe-31", "question": "question_start",
+      "title": "Pay not seen, the person starts the new period on Mon 14 Dec: the old one ends Sun 13, the pay is not seen yet",
+      "input": {
+        "periodFrom": "2026-11-10",
+        "nextPay": {"due": "2026-12-10", "landed": null},
+        "startedFrom": "2026-12-14",
+        "checkins": ["2026-12-12"],
+        "today": "2026-12-14"
+      },
+      "expected": {"ended": true, "periodTo": "2026-12-13", "startsWithCheckIn": false, "pay": "not seen yet"},
+      "why": "A new period started without the pay starts on the day the person chose, Mon 14 Dec, so the old one ends Sun 13 Dec [M7]. Its last 3 days are 11, 12 and 13 Dec, and the 12 Dec check-in is one of them. The pay due Thu 10 Dec has a window to Fri 11 (Thu 10 + 1 working day); on Mon 14 that is over, so the pay is \"not seen yet\" [M7, H8].",
+      "decisions": ["M7", "L period_end q3"]
+    },
+    {
+      "id": "pe-32", "question": "question_start",
+      "title": "The same start while the pay's window is still open: the pay stays expected",
+      "input": {
+        "periodFrom": "2026-11-10",
+        "nextPay": {"due": "2026-12-10", "landed": null},
+        "startedFrom": "2026-12-14",
+        "postingDays": 3,
+        "checkins": ["2026-12-12"],
+        "today": "2026-12-14"
+      },
+      "expected": {"ended": true, "periodTo": "2026-12-13", "startsWithCheckIn": false, "pay": "late, expected"},
+      "why": "The period ends Sun 13 Dec as in pe-31 [M7]. This account's window is 3 working days: Thu 10 Dec + Fri 11, Mon 14, Tue 15. On Mon 14 the window has not ended, so the late pay stays expected [M7, H8].",
+      "decisions": ["M7", "H8"]
+    },
+    {
+      "id": "pe-33", "question": "question_start",
+      "title": "Two days later the window is over: the late pay is not seen yet",
+      "input": {
+        "periodFrom": "2026-11-10",
+        "nextPay": {"due": "2026-12-10", "landed": null},
+        "startedFrom": "2026-12-14",
+        "postingDays": 3,
+        "checkins": ["2026-12-12"],
+        "today": "2026-12-16"
+      },
+      "expected": {"ended": true, "periodTo": "2026-12-13", "startsWithCheckIn": false, "pay": "not seen yet"},
+      "why": "The window ended Tue 15 Dec (pe-32). On Wed 16 it is over and the pay has not landed, so it is \"not seen yet\" [M7]. The period still ended on Sun 13, the day before the start the person chose.",
+      "decisions": ["M7", "H8"]
     }
   ],
-  "open": [
-    { "id": "pe-q11", "question": "L q9: a check-in is fresh only when every spend-from account was typed. Does that hold per check-in, or may two check-ins inside the last 3 days together type every account (the bank on 7 Dec, the cash on 8 Dec)?", "ref_does": "per check-in: one check-in must type every spend-from account" },
-    { "id": "pe-q12", "question": "L q3: after the posting window the person \"can start the new period\". When they say the pay has not come but start the period anyway, which day does the new period start (the pay's due date, its landing day, or the day they say so), and is the late pay still expected?", "ref_does": "only a landed pay ends the period (the \"yes, it came\" answer writes it, pe-17)" }
-  ]
+  "open": []
 }

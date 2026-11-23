@@ -1,4 +1,4 @@
-// Merging two copies and the hybrid clock (SCHEMA_V3 0 and 2.3; DECISIONS_ROUND2 D4, H1, H6, L).
+// Merging two copies and the hybrid clock (SCHEMA_V3 0 and 2.3; DECISIONS_ROUND2 D4, H1, H6, L, M).
 // A plain reference for the engine lane, checked by run_rules.js against rules/merge.json.
 // Open points name their question in merge.json.
 'use strict';
@@ -17,7 +17,7 @@ function write(msValue, offsetMin) {
 }
 // The `at` a device writes: the larger of now and (newest seen + 1 ms), in now's offset [D4].
 // [L merge q8] A now more than a day ahead of the newest `at` seen is held at that point plus 1 ms, and a
-// warning is shown. mg-q10: only on a device's own write.
+// warning is shown. The same cap holds a copy that arrives far ahead (receive, below) [M4].
 function nextAtWarn(now, lastSeen) {
   if (lastSeen && ms(now) > ms(lastSeen) + DAY) return { at: write(ms(lastSeen) + 1, offsetOf(now)), warn: true };
   return { at: write(Math.max(ms(now), lastSeen ? ms(lastSeen) + 1 : -Infinity), offsetOf(now)), warn: false };
@@ -32,16 +32,22 @@ function canon(x) {
   return JSON.stringify(x);
 }
 const msOr = t => (t ? ms(t) : -Infinity);
-// [L merge q2] `steps` and `rules` entries carry their own `at` and merge by `from`: the newer entry wins.
-// mg-q11: the same `at`, the larger as sorted JSON text. mg-q9: an entry is never removed by the union.
+// Which of two copies of one thing wins: the newer `at`; on the same `at` the copy with `gone` [H6]; then the
+// larger `by`, the device part of the last writer [L merge q1, M5]; with no `by`, the larger as sorted JSON
+// text, so both devices agree.
+function winner(x, y) {
+  const d = msOr(x.at) - msOr(y.at);
+  if (d) return d > 0 ? x : y;
+  if (!!x.gone !== !!y.gone) return x.gone ? x : y;
+  if ((x.by || '') !== (y.by || '')) return (x.by || '') > (y.by || '') ? x : y;
+  return canon(x) >= canon(y) ? x : y;
+}
+// [L merge q2] `steps` and `rules` entries carry their own `at` and merge by `from`. [M3] An entry is removed
+// by its own `gone` with its own `at`, and the removed entry stays in the list, so the union cannot bring it
+// back; it is settled like a record (winner). [M5] Each entry carries its own `by` beside its `at`.
 function mergeEntries(a, b) {
   const byFrom = new Map();
-  for (const e of a.concat(b)) {
-    const had = byFrom.get(e.from);
-    if (!had) { byFrom.set(e.from, e); continue; }
-    const d = msOr(e.at) - msOr(had.at);
-    if (d > 0 || (d === 0 && canon(e) > canon(had))) byFrom.set(e.from, e);
-  }
+  for (const e of a.concat(b)) byFrom.set(e.from, byFrom.has(e.from) ? winner(byFrom.get(e.from), e) : e);
   return [...byFrom.values()].sort((x, y) => (x.from < y.from ? -1 : x.from > y.from ? 1 : 0));
 }
 // One record, two copies. Newest `at` wins; on the same `at` a copy with `gone` wins [H6]; then the larger
@@ -49,12 +55,7 @@ function mergeEntries(a, b) {
 // both devices agree. `told`: the earliest seen, never the winner's [H1, L merge q7]. The record's `at` is
 // the winner's: it moves only when the record changes [L merge q3].
 function pick(x, y) {
-  let win;
-  const ax = ms(x.at), ay = ms(y.at);
-  if (ax !== ay) win = ax > ay ? x : y;
-  else if (!!x.gone !== !!y.gone) win = x.gone ? x : y;
-  else if ((x.by || '') !== (y.by || '')) win = (x.by || '') > (y.by || '') ? x : y;
-  else win = canon(x) >= canon(y) ? x : y;
+  const win = winner(x, y);
   const out = Object.assign({}, win);   // whole record, unknown fields kept (section 0)
   for (const k of ['steps', 'rules']) if (Array.isArray(x[k]) && Array.isArray(y[k])) out[k] = mergeEntries(x[k], y[k]);
   const told = [x.told, y.told].filter(Boolean).sort((a, b) => ms(a) - ms(b))[0];
@@ -66,18 +67,23 @@ function mergeList(a, b) {
   for (const r of (a || []).concat(b || [])) byId.set(r.id, byId.has(r.id) ? pick(byId.get(r.id), r) : Object.assign({}, r));
   return [...byId.values()].sort((x, y) => (x.id < y.id ? -1 : x.id > y.id ? 1 : 0));
 }
-// [L merge q6] Shared `ui`: each key by its own `at` in `ui.at`. mg-q11: the same `at`, the larger value.
+// [L merge q6] Shared `ui`: each key by its own `at` in `ui.at`. [M5] Each key's `by` is in `ui.by`, beside
+// its `at`: on the same `at` the larger `by` wins; with no `by`, the larger value as sorted JSON text.
 function mergeUi(a, b) {
-  const out = { at: {} }, atA = a.at || {}, atB = b.at || {};
+  const out = { at: {} }, atA = a.at || {}, atB = b.at || {}, byA = a.by || {}, byB = b.by || {};
   for (const k of new Set(Object.keys(a).concat(Object.keys(b)))) {
-    if (k === 'at') continue;
+    if (k === 'at' || k === 'by') continue;
     let useB;
     if (!(k in a)) useB = true;
     else if (!(k in b)) useB = false;
-    else { const d = msOr(atB[k]) - msOr(atA[k]); useB = d > 0 || (d === 0 && canon(b[k]) > canon(a[k])); }
+    else {
+      const d = msOr(atB[k]) - msOr(atA[k]), wa = byA[k] || '', wb = byB[k] || '';
+      useB = d > 0 || (d === 0 && (wa !== wb ? wb > wa : canon(b[k]) > canon(a[k])));
+    }
     out[k] = useB ? b[k] : a[k];
-    const at = useB ? atB[k] : atA[k];
+    const at = useB ? atB[k] : atA[k], by = useB ? byB[k] : byA[k];
     if (at) out.at[k] = at;
+    if (by) (out.by = out.by || {})[k] = by;
   }
   return out;
 }
@@ -116,6 +122,33 @@ function newestAt(copy) {
   return best;
 }
 
+// [M4, L merge q8] A copy that arrives with an `at` more than a day ahead of the newest `at` the receiving
+// device has seen: that `at` is held at the newest seen plus 1 ms (in its own offset) and the warning is shown,
+// as on the device's own write. Every `at` is held: records, `steps` and `rules` entries, and `ui.at` keys.
+// `by` and `told` are left as they came. A device that has seen nothing holds nothing (as nextAt).
+function holdArriving(copy, lastSeen) {
+  let warn = false;
+  const held = JSON.parse(JSON.stringify(copy || {}));
+  if (!lastSeen) return { copy: held, warn };
+  const cap = t => {
+    if (typeof t === 'string' && ms(t) > ms(lastSeen) + DAY) { warn = true; return write(ms(lastSeen) + 1, offsetOf(t)); }
+    return t;
+  };
+  (function walk(x, key) {
+    if (Array.isArray(x)) return x.forEach(v => walk(v));
+    if (!x || typeof x !== 'object') return;
+    if (key === 'ui' && x.at && typeof x.at === 'object') for (const k of Object.keys(x.at)) x.at[k] = cap(x.at[k]);
+    else if (typeof x.at === 'string') x.at = cap(x.at);
+    for (const [k, v] of Object.entries(x)) if (k !== 'at') walk(v, k);
+  })(held);
+  return { copy: held, warn };
+}
+// Receiving a copy: hold what arrives far ahead [M4], then merge it in.
+function receive(mine, theirs, lastSeen) {
+  const h = holdArriving(theirs, lastSeen);
+  return { copy: merge(mine, h.copy), warn: h.warn };
+}
+
 // A short story on several devices: edits (with a device clock) and syncs (merge one copy into another).
 // A device given an `id` writes it as the record's `by` [L merge q1].
 function devices({ devices: devs, copy, steps, show }) {
@@ -123,7 +156,10 @@ function devices({ devices: devs, copy, steps, show }) {
   for (const [name, d] of Object.entries(devs)) st[name] = { id: d.id, lastSeen: d.lastSeen, copy: JSON.parse(JSON.stringify(copy || {})) };
   const seen = (d, t) => { if (t && (!d.lastSeen || ms(t) > ms(d.lastSeen))) d.lastSeen = t; };
   for (const s of steps) {
-    if (s.sync) { const from = st[s.sync], to = st[s.to]; to.copy = merge(to.copy, from.copy); seen(to, newestAt(from.copy)); continue; }
+    if (s.sync) {   // the receiving device holds what arrives far ahead [M4]
+      const from = st[s.sync], to = st[s.to], h = holdArriving(from.copy, to.lastSeen);
+      to.copy = merge(to.copy, h.copy); seen(to, newestAt(h.copy)); continue;
+    }
     const d = st[s.on], at = nextAt(s.now, d.lastSeen), list = d.copy[s.edit.list] || (d.copy[s.edit.list] = []);
     const by = d.id ? { by: d.id } : {};
     const i = list.findIndex(r => r.id === s.edit.id);
@@ -143,9 +179,10 @@ function ask(question, input) {
     case 'merge_symmetric': return canon(merge(input.mine, input.theirs)) === canon(merge(input.theirs, input.mine));
     case 'merge_same': return canon(merge(input.copy, input.copy)) === canon(merge(input.copy, {}));
     case 'came_back': return cameBack(input.mine, input.theirs);
+    case 'receive': return receive(input.mine, input.theirs, input.lastSeen);
     case 'devices': return devices(input);
   }
   throw new Error('unknown question ' + question);
 }
 
-module.exports = { ask, nextAt, nextAtWarn, newer, merge, pick, cameBack };
+module.exports = { ask, nextAt, nextAtWarn, newer, merge, pick, winner, cameBack, holdArriving, receive };
