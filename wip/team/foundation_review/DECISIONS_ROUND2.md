@@ -433,3 +433,10 @@ BA4. While cro-09 is the only red mark (until AV1 is flipped), lanes may self-me
 BB1. A lane that adds files only under engine/, store/, screens/ or app3/ is gated on its own tests and on the engine, scenario and rule runs. Those files cannot reach the old build. The old app's ./check.sh runs once on a quiet machine before anything reaches Mako, because tests/guard.js fails under load from parallel lanes (known since round 11).
 BB2. "Bank after the cards are paid" must name a per-bank figure. Slice 1 is safe because Mako has one bank and no savings account in the app. Slice 6 (the other lives) adds the per-bank figure to the engine.
 BB3. The names marked for Mako (screens/names.js) go into MAKO_RUN for his copy pass. They do not block slice 1, which uses the label already in use.
+
+## BC. Answers to the checker helper (23 Nov night JST)
+BC1. AU2 against H7: yes. A bill paid from a place takes only what the place holds. Only a spend that names the place takes it below zero.
+BC2. A card payment item in "not seen yet", with its posting window: this belongs to slice 3 (statements). It goes on the list.
+BC3. lastWorkday counts as monthly under AW3. The X8 edit offer follows AW3 too. Both are slice 2 (Plan edits), so they go on the list.
+BC4. AW1: when an imported line is matched to a typed record and the import has no line of its own, it keeps the typed record's line, so a coffee typed on Food stays on Food. This is slice 3, and it is added to the import rules then.
+BC5. AX2 means the reference is not kept up to date for new work. Finishing decisions already made (AU, AV, AW) in it was right, and from here it stays frozen.
