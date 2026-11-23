@@ -1,6 +1,6 @@
 # Coverage of the foundation (after decisions T to X, 23 Nov 2026)
 
-The coverage grid of final_review_3.md, updated (LESSONS lesson 3: count coverage, do not sample). Rows are kinds of record and the shapes they live in; columns are the situations that change a record's effect. Every applicable cell names the asks (scenarios/*.json, run by `node foundation_review/ref/run_scenarios.js`) or cases (rules/*.json, run by `node foundation_review/rules/run_rules.js`) that cover it. Asks and cases for decisions W and X are added (78 asks and 32 cases); run first, 41 asks and 28 cases fail (see "Decisions W and X" at the end). The references change in the next commit; until then this grid is not all passing.
+The coverage grid of final_review_3.md, updated (LESSONS lesson 3: count coverage, do not sample). Rows are kinds of record and the shapes they live in; columns are the situations that change a record's effect. Every applicable cell names the asks (scenarios/*.json, run by `node foundation_review/ref/run_scenarios.js`) or cases (rules/*.json, run by `node foundation_review/rules/run_rules.js`) that cover it. All of them pass: 649 of 649 asks, 341 of 341 cases (after W and X: 78 asks and 32 cases added, in 19 new scenario files, one ask in fee_place and a new rules file `rules/edits.json`; see "Decisions W and X" at the end).
 
 Columns: C check day, O opening, W posting window, P period start, X other currency, D two devices, U undo/redo, E edited after settled, S imported/typed/self-logged, Z closed account, and, added after confirm_review_1 (decision X): M the move run on two devices (the phone and the desktop each move the same 38.31 copy), Y years after setup (an ask ten years out, X7), T a time with an offset (the start and end of a day in the device's offset, X9).
 
@@ -19,7 +19,7 @@ Marks: **c** covered before this round; **n** newly covered (in the first ten co
 | of which covered by asks that already existed (c) | 4 |
 | of which covered by new asks and cases (n) | 47 |
 | False covers confirm_review_1 found, now really covered (check C, card O, in / pay E, income E, rm: D) | 5 |
-| **Applicable and covered** | **216** (216 of 216) |
+| **Applicable and covered, all passing** | **216** (216 of 216) |
 | Applicable and uncovered | 0 |
 
 **Counts after V** (kept for the record): 260 cells, 93 not applicable, 2 stage 2, 165 applicable, all covered. **A note on final_review_3's numbers.** final_review_3.md says 260 cells, 171 applicable, 129 covered, 24 uncovered and sound, 18 wrong. Its own table, counted cell by cell, holds 128 c, 22 u, 17 X and 93 -, so 167 applicable; the "(X: wallet)" note on the last row is the eighteenth wrong item but not a cell of its own. This file counts the table. Wallet mode is stage 2 now (T7), so the note and the two `hand` cells are out of version one: 165 applicable cells.
@@ -393,7 +393,7 @@ Run first, before the references changed: 564 of 571 asks passed and 307 of 309 
 
 ## Decisions W and X, and where each part is tested
 
-Run first, before the references changed: 608 of 649 asks passed and 313 of 341 cases (the 41 asks and 28 cases marked "failed first" below; the 12 cases of the new file `rules/edits.json` failed as it had no reference yet).
+Run first, before the references changed: 608 of 649 asks passed and 313 of 341 cases (the 41 asks and 28 cases marked "failed first" below; the 12 cases of the new file `rules/edits.json` failed as it had no reference yet, which `run_rules.js` counts as one failure: "17 of 330"). After the changes to `ref/lookahead_ref.js`, `rules/merge_ref.js`, `rules/period_end_ref.js`, `rules/units_ref.js`, `rules/accounts_ref.js` and the new `rules/edits_ref.js`: 649 of 649 asks, 341 of 341 cases. Two asks were corrected while the references changed, both in the asks, not the rules: to_place_two_phones lacked its main bank (the model stopped on it; with it, tp2-01 gave 150,000 as the review found), and far_years had ten years of rent with none paid, which the walk takes off as late bills (its rent now starts in Nov 2036, when the person moves).
 
 | Part | Asks or cases | Failed first |
 |---|---|---|
@@ -401,7 +401,7 @@ Run first, before the references changed: 608 of 649 asks passed and 313 of 341 
 | X2: a fee record's id is `fee:<transfer id>` | rules mg-80, mg-82, mg-83, mg-86; fee_place and fee_record_gone renamed to `fee:t1`, `fee:t2`; check_specs refuses any other fee id | mg-80, mg-82 |
 | X3: the opening's `notYet`, setup asking about each, a pay due that day first | notyet_opening ny-01 to ny-06; notyet_bill nyb-01 to nyb-04; rules ed-11, ed-12 | ny-01 (0, 40,000 short), ny-02 (28 days), ny-03 (nothing on the list), nyb-01 (200,000), nyb-02, nyb-03 (200,000), nyb-04; ed-11, ed-12 (no reference) |
 | X4: the check's gain state; a large gain held until answered | gain_held gh-01 to gh-04; gain_answered ga-01, ga-02; gain_pay_day gpd-01 to gpd-03 | gh-01 (309,000), ga-01 (309,000), ga-02 (both still warned), gpd-01 (210,000) |
-| X5: every share-out from a limited amount checked again after a merge | to_place_two_phones tp2-01, tp2-02; rules pe-55 to pe-59 | tp2-01, tp2-02 (the model stopped with an error); pe-55 to pe-59 (no such question) |
+| X5: every share-out from a limited amount checked again after a merge | to_place_two_phones tp2-01, tp2-02; rules pe-55 to pe-59 | tp2-01 (150,000, once the file named its main bank); pe-55 to pe-59 (no such question) |
 | X6: a card with a known close day and no typed last statement | card_no_statement cns-01 to cns-05 | cns-01, cns-03, cns-04, cns-05 (no close day: no payment ever) |
 | X7: nothing made only up to a fixed horizon; a test ten years out | far_years fy-01 to fy-12 | fy-01, fy-02, fy-04, fy-05, fy-08, fy-09, fy-10 |
 | X8: a schedule change never on or before its latest settled or named occurrence; the edit offers the day after | rules ed-01 to ed-07; pay_day_offer offer-01 to offer-03 (the offer taken) | ed-01 to ed-07 (no reference); offer-01 to offer-03 passed first |

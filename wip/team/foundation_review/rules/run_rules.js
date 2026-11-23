@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Runs every case in rules/*.json through its reference (rules/<area>_ref.js) and prints PASS or FAIL per case.
 // These are the rule areas SCHEMA_V3 section 12 keeps outside the reference model [H7]:
-// matching, period end, merge and units, and accounts (closing, P6). Each spec holds its cases (input, hand-worked expected, why)
+// matching, period end, merge and units, accounts (closing, P6), and edits (what setup and an edit may save: X3, X8, W3). Each spec holds its cases (input, hand-worked expected, why)
 // and its open questions (points the decisions do not settle; no case depends on them).
 // Usage: node run_rules.js [area ...] [--open]   (--open also prints every open question)
 // Any FAIL, a spec with no reference, or a reference that throws makes the run fail; the last line

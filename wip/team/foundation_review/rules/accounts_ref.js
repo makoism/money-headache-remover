@@ -21,7 +21,7 @@ const OWED = { card: 1, loan: 1, paylater: 1 };
 // every link to it: `home.mainBank`, the budget lines and Free to spend held on it (their `acct` is it, or none:
 // the main bank), and the pay schedules landing in it, which move instead of ending. [V] The bills paid from it move
 // to the new main bank too; the person can end any of them at the closing (`ending`), and those end on the closing
-// day (P6). (Before V, bills paid from it ended.)
+// day (P6). (Before V, bills paid from it ended.) [W1] So do the transfers out and in and the self-logged spends.
 function close({ account, kind, payFrom, date, figure, transfers, writeOff, schedules, links, newLinks, mainBank, lines, free, ending }) {
   const linked = [].concat((links || {}).cards || [], (links || {}).places || [], mainBank ? ['mainBank'] : []);
   const needs = linked.filter(x => !(newLinks || {})[x]);
@@ -42,11 +42,18 @@ function close({ account, kind, payFrom, date, figure, transfers, writeOff, sche
     for (const l of lines || []) if (onIt(l.acct)) (moved.lines = moved.lines || {})[l.id] = nb;
     if (free && onIt(free.acct)) moved.free = nb;
   }
+  // [W1] Closing the main bank moves every schedule tied to it (pay, bills, transfers out and in, self-logged spends) to
+  // the new main bank, unless the person ends it at the closing (`ending`): the side on the old bank moves, `acct` in
+  // `moved.schedules`, `acct2` (a transfer into it) in `moved.schedulesTo`. (Before W1 only pay and bills moved.)
   for (const s of schedules || []) {
     if (nb && s.kind === 'income' && s.acct === account) { (moved.schedules = moved.schedules || {})[s.id] = nb; continue; }
     if (s.acct !== account && s.acct2 !== account) continue;
     if (s.ends && dayNum(s.ends) <= dayNum(date)) continue;
-    if (nb && s.kind === 'bill' && s.acct === account && !(ending || []).includes(s.id)) { (moved.schedules = moved.schedules || {})[s.id] = nb; continue; }
+    if (nb && !(ending || []).includes(s.id)) {
+      if (s.acct === account) (moved.schedules = moved.schedules || {})[s.id] = nb;
+      if (s.acct2 === account) (moved.schedulesTo = moved.schedulesTo || {})[s.id] = nb;
+      continue;
+    }
     ends[s.id] = date;
   }
   return Object.assign({ closed: date, events, ends }, linked.length ? { links: Object.assign({}, newLinks) } : {}, nb ? { moved } : {});

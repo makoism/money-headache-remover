@@ -8,8 +8,8 @@
 // seen yet, each card's and loan's next payment, the places' money, total, and
 // the check-in list and fillers.
 //
-// It follows DECISIONS_ROUND2.md sections A, B, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T and U (U and T win over
-// anything earlier, then S, then R and Q, then P, then O, then N, then M, then L and K, then J, then I, then H). Where a line below carries a tag like [H3] or [B9], that decision is
+// It follows DECISIONS_ROUND2.md sections A, B, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W and X (X and W win over anything earlier, then V, then U and T,
+// then S, then R and Q, then P, then O, then N, then M, then L and K, then J, then I, then H). Where a line below carries a tag like [H3] or [B9], that decision is
 // the reason for it. Plain code, no dependencies, every amount in whole minor
 // units, every date a whole day number (D8). It is a reference for the engine
 // and for tests, never loaded by the app.
@@ -54,16 +54,23 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 // [T watch] `told` is compared as a moment, not as text: a time may carry its offset ('2026-12-14T09:30+08:00',
 // 10:30 in Tokyo). A date with no time comes before every time that day (records on one day then keep their
 // order in the file); 'T24' (an opening typed with no time) is the end of its day.
+// [X9] "Start of day" and "end of day" are in the offset of the device that wrote the record, and so is a time
+// with no offset of its own: a key may carry that device's offset after a '~' ('2026-11-22~+09:00'), added
+// when the record is read (`zoned`). A key with no offset anywhere is read as before (every such time in one
+// zone, so they compare among themselves as written).
+const offsetMin = o => (!o || o === 'Z' ? 0 : (o[0] === '-' ? -1 : 1) * ((+o.slice(1, 3)) * 60 + (+o.slice(4, 6))));
 function momentOf(k) {
-  const mm = /^(\d{4}-\d{2}-\d{2})(?:T(\d{2})(?::(\d{2}))?(?::(\d{2})(?:\.(\d+))?)?(Z|[+-]\d{2}:\d{2})?)?/.exec(String(k));
+  const mm = /^(\d{4}-\d{2}-\d{2})(?:T(\d{2})(?::(\d{2}))?(?::(\d{2})(?:\.(\d+))?)?(Z|[+-]\d{2}:\d{2})?)?(?:~([+-]\d{2}:\d{2}|Z))?$/.exec(String(k));
   if (!mm) return NaN;
-  const day = dayNum(mm[1]) * MS;
+  const zone = mm[6] || mm[7];   // the time's own offset, else the device's [X9]
+  const day = dayNum(mm[1]) * MS - offsetMin(zone) * 60000;
   if (mm[2] === undefined) return day - 1;
   if (mm[2] === '24') return day + MS - 2;
-  let t = day + ((+mm[2]) * 3600 + (+(mm[3] || 0)) * 60 + (+(mm[4] || 0))) * 1000 + (mm[5] ? Math.round(Number('0.' + mm[5]) * 1000) : 0);
-  if (mm[6] && mm[6] !== 'Z') t -= (mm[6][0] === '-' ? -1 : 1) * ((+mm[6].slice(1, 3)) * 60 + (+mm[6].slice(4, 6))) * 60000;
-  return t;
+  return day + ((+mm[2]) * 3600 + (+(mm[3] || 0)) * 60 + (+(mm[4] || 0))) * 1000 + (mm[5] ? Math.round(Number('0.' + mm[5]) * 1000) : 0);
 }
+// [X9] A key with no offset of its own takes the offset of the device that wrote it.
+const offsetOf = k => { const mm = /(Z|[+-]\d{2}:\d{2})$/.exec(String(k || '').slice(10)); return mm ? mm[1] : null; };
+const zoned = (k, zone) => (zone && !offsetOf(k) && !String(k).includes('~') ? String(k) + '~' + zone : String(k));
 const keyCmp = (a, b) => momentOf(a) - momentOf(b);
 function short(n) { const d = new Date(n * MS); return d.getUTCDate() + ' ' + MONTHS[d.getUTCMonth()]; }   // "27 Nov", for sums a person reads
 
@@ -138,13 +145,17 @@ function occurrences(s, kind, cal, from, to, cur) {
     .sort((a, b) => a.from - b.from);
   const first = s.schedule && s.schedule.from ? dayNum(s.schedule.from) : -Infinity;
   const count = s.schedule && s.schedule.count;
+  // [SCHEMA 5, X watch] `ends`: nothing is due after it (its money may be redirected to a place, `redirect`, which is
+  // planned money and moves nothing [F22]). `amounts`: one occurrence changed, keyed by its due date before any move [B8].
+  const ends = s.ends ? dayNum(s.ends) : Infinity;
   const out = [];
   parts.forEach((p, i) => {
     const until = parts[i + 1] ? parts[i + 1].from : Infinity;
     const start = p.rule.from ? Math.min(from, dayNum(p.rule.from)) : Math.max(from, p.from);
     for (const { due, key } of dueDays(p.rule, start, to, cal)) {
-      if (due < p.from || due >= until || due < first || (count && out.length >= count)) continue;
-      const amt = minor(s.amount_by_day ? s.amount_by_day[String(key)] : p.amount, cur);
+      if (due < p.from || due >= until || due < first || due > ends || (count && out.length >= count)) continue;
+      const one = s.amounts && s.amounts[dayStr(due)];
+      const amt = minor(one != null ? one : s.amount_by_day ? s.amount_by_day[String(key)] : p.amount, cur);
       out.push({ id: s.id + '@' + dayStr(due), sid: s.id, kind, acct: s.account, to: s.to, place: s.place,
         due, land: p.rule.frequency === 'last_workday' ? due : cal.shift(due, s.weekend_holiday),
         amount: amt, startsPeriod: !!s.starts_period, name: s.name });
@@ -205,11 +216,14 @@ function lookahead(sc, asOf, opts = {}) {
   // [K3] A moved bank figure with no date of its own (38.31 `bankNow` with no `bankNowAt`) is dated to the
   // copy's last saved day, like a `bankStart` with no `bankAt` [H9].
   const isFigure = e => e.kind === 'check' || e.kind === 'card_check';
+  const movedZone = (sc.moved_copy && offsetOf(sc.moved_copy.saved)) || sc.device_offset;   // [X9]
   const events = [];
   (sc.events || []).forEach((e, i) => {
     if (e.told === null) return;
     const date = e.date || (e.moved && isFigure(e) ? sc.moved_copy.saved.slice(0, 10) : e.date);
-    const key = String(e.told || (e.moved ? e.own_time || (isFigure(e) ? sc.moved_copy.saved : date) : date));
+    // [X9] A moved record's day starts in the moving device's offset (the copy's last save carries it); any other
+    // record's in the offset of the person's device (`device_offset`).
+    const key = zoned(String(e.told || (e.moved ? e.own_time || (isFigure(e) ? sc.moved_copy.saved : date) : date)), e.moved ? movedZone : sc.device_offset);
     if (dayNum(key) > knownTo || dayNum(date) > knownTo) return;
     const x = Object.assign({}, e, { date, day: dayNum(date), key, idx: i });
     // [Q1] An imported line read as a two-sided record names the statement it came from (`account`); with
@@ -328,6 +342,32 @@ function lookahead(sc, asOf, opts = {}) {
   const settledBy = {};
   for (const e of live()) for (const s of [].concat(e.settles || [])) settledBy[s] = e;
 
+  // [X8] A schedule change can never start on or before its latest settled or named occurrence (a settle, a `once`
+  // or `amounts` key, a `pe:` or `ps:` record) at the time it is made: the edit offers the first day after it
+  // (rules/edits.json). So in a saved copy every settled or named occurrence is one the schedule makes; a copy where
+  // one names an occurrence a change took away (c8: pay moved to the 25th "from 1 Dec" after the 10 Dec pay was
+  // settled) is refused here, as a closing that leaves money is [P6].
+  const named = sid => {
+    const out = [];
+    const take = o => { const mm = String(o).match(/^([a-z0-9_]+)@(\d{4}-\d{2}-\d{2})/); if (mm && mm[1] === sid) out.push(mm[2]); };
+    for (const e of live()) {
+      for (const o of [].concat(e.settles || [], e.savedSettles || [])) take(o);
+      if (e.kind === 'period_end_answer' || e.kind === 'period_start') take(String(e.id).replace(/^(pe|ps):/, ''));
+    }
+    const sch = (sc.income || []).concat(sc.bills || []).find(x => x.id === sid) || {};
+    for (const d of Object.keys(sch.amounts || {})) out.push(d);
+    for (const l of ((sc.plan || {}).lines || []).concat((sc.plan || {}).free ? [sc.plan.free] : [])) for (const o of Object.keys(l.once || {})) take(o);
+    return out;
+  };
+  for (const s of (sc.income || []).concat(sc.bills || [])) {
+    if (!(s.changes || []).length || !acct[s.account]) continue;
+    const first = Math.min(...s.changes.map(c => dayNum(c.from)));
+    const late = named(s.id).filter(d => dayNum(d) >= first);
+    if (!late.length) continue;
+    const days = late.map(dayNum), made = new Set(occurrences(s, 'check', calOf(s.account), Math.min(...days), Math.max(...days), s.currency || cur(s.account)).map(o => o.id));
+    for (const d of late) if (!made.has(s.id + '@' + d)) throw new Error(`${s.id}@${d} is settled or named, but a change of ${s.name} from ${dayStr(first)} no longer makes it: a change never starts on or before its latest settled or named occurrence [X8]`);
+  }
+
   // ----- expected items from schedules -----
   const earliest = Math.min(...sc.accounts.map(a => dayNum(a.opening.date))) - 70;
   const farEnd = today + LATER_ON_DAYS + 62;
@@ -380,16 +420,18 @@ function lookahead(sc, asOf, opts = {}) {
     if (best) { best.imp.settles = x.id; best.imp.byImport = true; settledBy[x.id] = best.imp; }   // [U2] byImport: listed as already matched
   }
   // An item due or landing on or before its account's opening is inside the opening figure [rule 2],
-  // unless setup was told it has not gone out yet [F20].
+  // unless setup was told it has not gone out (or come in) yet: the opening's `notYet` [F20, X3].
+  const notYetOf = id => (acct[id] && acct[id].opening.not_yet) || [];
+  const isNotYet = o => notYetOf(o.acct).includes(o.id);
   const covered = o => {
-    const od = openDay(o.acct), notOut = acct[o.acct].opening.not_gone_out || [];
-    return (o.land <= od || o.due <= od) && !notOut.includes(o.id);
+    const od = openDay(o.acct);
+    return (o.land <= od || o.due <= od) && !isNotYet(o);
   };
   for (const o of items) o.settled = !!settledBy[o.id] || covered(o);
   // [B5, H7] autoSpend logs itself: on its landing day it writes its own spend, unless something settled it.
   // [O2] Its id is built from what it is, `auto:<schedule>@<due>`, so two devices writing it make one record.
   for (const o of items.filter(x => x.kind === 'auto' && !x.settled && x.land <= knownTo)) {
-    events.push({ id: 'auto:' + o.id, kind: 'spend', account: o.acct, a: o.amount, day: o.land, key: dayStr(o.land), idx: -1, settles: o.id });
+    events.push({ id: 'auto:' + o.id, kind: 'spend', account: o.acct, a: o.amount, day: o.land, key: zoned(dayStr(o.land), sc.device_offset), idx: -1, settles: o.id });
     o.settled = true;
   }
   // [O1] An imported line that replaced no typed line, or a spend that logs itself (written whenever the app
@@ -477,11 +519,12 @@ function lookahead(sc, asOf, opts = {}) {
     if (j === null && same.length && m(same[0].bal, id) - delta(same[0], id) === fig) j = -1;
     return j === null ? null : same.indexOf(e) <= j;
   }
-  const notGoneOut = (e, id) => [].concat(e.settles || []).some(x => (acct[id].opening.not_gone_out || []).includes(x));
+  const notGoneOut = (e, id) => [].concat(e.settles || []).some(x => notYetOf(id).includes(x));   // [F20, X3]
   // [J2] A moved bank figure with no time of its own is told at the copy's last save.
   const openingOf = id => {
     const op = acct[id].opening;
-    return { day: openDay(id), key: op.told || (op.moved ? sc.moved_copy.saved : op.date + END_OF_DAY), idx: -1, moved: !!op.moved, opening: true };
+    // [X9] An opening typed with no time covers its whole day in the setup device's offset.
+    return { day: openDay(id), key: zoned(op.told || (op.moved ? sc.moved_copy.saved : op.date + END_OF_DAY), op.moved ? movedZone : sc.device_offset), idx: -1, moved: !!op.moved, opening: true };
   };
   const byTime = (x, y) => x.day - y.day || keyCmp(x.key, y.key) || x.idx - y.idx;
   function bankInfo(id) {
@@ -498,9 +541,11 @@ function lookahead(sc, asOf, opts = {}) {
       const computed = base.amount + moves.filter(e => inside(e, c, id) && !inside(e, base, id)).reduce((t, e) => t + delta(e, id), 0)
         - moves.filter(e => inside(e, base, id) && !inside(e, c, id)).reduce((t, e) => t + delta(e, id), 0);
       const amount = m(c.amount, id);
-      fillers.push(Object.assign(makeFiller(id, c.day > base.day ? base.day + 1 : c.day, c.day, computed - amount), c.filler_place ? { place: c.filler_place } : {}));   // [T2] the place picked
+      // [T2] the place picked; [X4] what the app had, the gain and the gain question's state, for `heldGain`
+      fillers.push(Object.assign(makeFiller(id, c.day > base.day ? base.day + 1 : c.day, c.day, computed - amount), c.filler_place ? { place: c.filler_place } : {},
+        { had: computed, gain: amount - computed, answer: c.gain || null }));
       base = { day: c.day, key: c.key, idx: c.idx, avail: c.avail, moved: c.moved, amount };
-      lastGap = { day: c.day, had: computed, gain: amount - computed };
+      lastGap = { day: c.day, had: computed, gain: amount - computed, answer: c.gain || null };
     }
     const bank = base.amount + moves.filter(e => !inside(e, base, id)).reduce((t, e) => t + delta(e, id), 0);
     return { bank, asOfDay: base.day, fillers, lastGap };
@@ -556,9 +601,15 @@ function lookahead(sc, asOf, opts = {}) {
     // on its day, once that day has come, so the card is due only the parts posted. The parts not yet posted are
     // walked on their posting dates (the walk, [S4]).
     for (const pa of sc.accounts.filter(x => x.of === id)) for (const pt of planParts(pa)) if (pt.due <= knownTo && pt.due > openDay(id) && pt.due > openDay(pa.id)) lines.push({ day: pt.due, amount: pt.amount, what: 'plan part' });
-    const sClose = st ? dayNum(st.closed) : null;
+    // [X6] A card with a known close day and no typed last statement: the first close after the opening holds the
+    // opening balance plus what came after; the statements follow from there. So the close days run from the last
+    // close on or before the opening day.
+    const lastCloseBy = d => { const [y, mo] = ymOf(d), here = dayIn(y, mo, c.statement_close_day); return here <= d ? here : dayIn(y, mo - 1, c.statement_close_day); };
+    const sClose = st ? dayNum(st.closed) : notSure ? null : lastCloseBy(openDay(id));
+    // [F6] A close day never moves. [X7] Nothing is made only up to a fixed horizon: close days run as far as any
+    // question asks (the farthest day the model looks at, then one more close).
     const closes = [];
-    if (!notSure) { const [y, mo] = ymOf(sClose); for (let k = 1; k < 30; k++) closes.push(dayIn(y, mo + k, c.statement_close_day)); }   // [F6] a close day never moves
+    if (!notSure) { const [y, mo] = ymOf(sClose); for (let k = 1; ; k++) { const cl = dayIn(y, mo + k, c.statement_close_day); closes.push(cl); if (cl > farEnd) break; } }
 
     // [H3, I2, I3] The statements, worked out close by close up to `last`, with what each still holds on `upTo`.
     // A statement is what was carried over, plus interest on it, plus the lines in the cycle, less payments
@@ -623,8 +674,9 @@ function lookahead(sc, asOf, opts = {}) {
     const notSureDays = [];
     if (notSure && c.carries && c.apr) {
       const [y, mo] = ymOf(openDay(id));
-      for (let k = 0; k < 40; k++) {
+      for (let k = 0; ; k++) {   // [X7] as far as any question asks
         const p = payOf(dayIn(y, mo + k, pay.day));
+        if (p.due > farEnd) break;
         if (p.land > openDay(id) && p.due > openDay(id)) notSureDays.push(p.land);
       }
     }
@@ -666,8 +718,9 @@ function lookahead(sc, asOf, opts = {}) {
       if (nc != null) nextPoint = Object.assign(payAfterClose(nc), { closes: nc });
     } else {
       const [y, mo] = ymOf(openDay(id));
-      for (let k = 0; k < 40 && !nextPoint; k++) {
+      for (let k = 0; !nextPoint; k++) {   // [X7] as far as any question asks
         const p = payOf(dayIn(y, mo + k, pay.day));
+        if (p.due > farEnd) break;
         if (p.land <= openDay(id) || p.due <= openDay(id)) continue;   // inside the opening
         if (p.land < today) {
           const prev = points[points.length - 1];
@@ -806,11 +859,32 @@ function lookahead(sc, asOf, opts = {}) {
     else banks[a.id] = bankInfo(a.id);
   }
   // Card and loan payment items join the expected items (for due, not seen yet and the check-in list).
-  for (const id in cards) for (const ci of cards[id].cardItems) items.push(Object.assign({ kind: 'card', acct: cards[id].payFrom, card: id, settled: false }, ci));
-  for (const id in loans) items.push(...loans[id].loanItems);
+  // [W2] A card, loan or pay-later payment in another currency than its paying account is listed apart in its own
+  // currency and left out of the totals of due before next pay, not seen yet and the check-in list, as pay in
+  // another currency is (S6).
+  const otherOf = id => (acct[id] && cur(id) !== cur(id in cards ? cards[id].payFrom : (acct[id].payment || {}).from) ? { otherCur: true, currency: cur(id) } : { otherCur: false });
+  for (const id in cards) for (const ci of cards[id].cardItems) items.push(Object.assign({ kind: 'card', acct: cards[id].payFrom, card: id, settled: false }, ci, otherOf(id)));
+  for (const id in loans) for (const li of loans[id].loanItems) items.push(Object.assign(li, otherOf(id)));
   const out = o => o.kind !== 'income';
   const fallsDue = o => o.kind !== 'card' || o.statement !== 'open';   // an open statement is not due yet [F7]
 
+  // [O watch, X4] A check-in figure above what the app had by more than the period's Free to spend, or by more than
+  // 20% of what the app had, is a large gain. It is held, not placed in any place, until the person answers that
+  // the figure is right: its filler counts nowhere (not in Free to spend, a line or a place). The figure stands as
+  // the account's bank figure meanwhile. An investment's rise is a market move, never asked [T watch].
+  function freePeriodAmount() {
+    const f = sc.plan && sc.plan.free;
+    if (!periodStream || !f) return null;
+    const fid = moneyAcct(lineAcct(f)), started = periodStartDays.length ? Math.max(...periodStartDays) : null;
+    const coming = nextPays.filter(p => p.land > today);
+    return perPeriod({ per: f.per, amount: m(amountFor(f, started), fid) }, coming[0] ? coming[0].land : today, coming[1] ? coming[1].land : (coming[0] ? coming[0].land : today) + 30);
+  }
+  const largeGain = (id, g) => {
+    if (!g || g.gain <= 0 || acct[id].kind === 'investment') return false;
+    const fp = freePeriodAmount();
+    return (fp !== null && g.gain > fp) || g.gain * 5 > g.had;
+  };
+  const heldGain = (id, f) => largeGain(id, f) && f.answer !== 'right';
   // ----- places: goals and the other kept places, money already set aside [F22, B6, B10, H7] -----
   // A place's money: the opening split (or the goal's opening), plus what was set aside, less what was paid
   // from it: a spend naming it, or a bill whose schedule is paid from it. It never holds less than nothing:
@@ -818,7 +892,11 @@ function lookahead(sc, asOf, opts = {}) {
   const fromPlace = e => e.goal || [].concat(e.settles || []).map(s => billPlace[s.split('@')[0]]).find(Boolean);
   const fromPlaceOf = e => e.from_place || (e.from && !acct[e.from] ? e.from : null);   // [T7] the place a move leaves
   const keptIn = {};
-  for (const g of sc.goals || []) {
+  // [X5] Placing money to place is a share-out from a limited amount: after a merge two placings (from two phones)
+  // can add up to more than was to place. They are checked again: the newest (`at`, else `told`) gives way, until
+  // the rest fit (P3 made general). A placing that gave way places nothing; the phone that wrote it says so.
+  const gaveWay = new Set();
+  function placeBalance(g) {
     // [V1] A goal whose money was moved to its own account (`kept_in` now names that account) is counted there; its
     // opening split stays on the account it was typed on, so the split is looked for on every account. The account
     // it left no longer holds it, so it gets no warning for it.
@@ -826,7 +904,7 @@ function lookahead(sc, asOf, opts = {}) {
     const split = splitOn ? splitOn.opening.split.goals[g.id] : null;
     let amt = split != null ? m(split, splitOn.id) : g.opening && dayNum(g.opening.date) <= knownTo ? m(g.opening.amount, g.kept_in) : 0;
     for (const e of live()) {
-      if (e.kind === 'set_aside' && e.goal === g.id) amt += m(e.amount, g.kept_in);
+      if (e.kind === 'set_aside' && e.goal === g.id && !gaveWay.has(e.id)) amt += m(e.amount, g.kept_in);
       if ((e.kind === 'spend' || e.kind === 'bill_paid') && fromPlace(e) === g.id && (!isFeeRecord(e) || isFee(e))) amt -= e.a;   // [H7] paying from a place; [S5] a fee only while its transfer is live
       if (e.kind === 'set_aside' && fromPlaceOf(e) === g.id) amt -= m(e.amount, g.kept_in);   // [T7] a move out of a place lowers it
       if (e.kind === 'adjust' && e.goal === g.id) amt += e.a;   // [T7] an accepted difference naming this place
@@ -838,8 +916,18 @@ function lookahead(sc, asOf, opts = {}) {
       }
     }
     // [T2] A filler the person placed on this place at the check-in comes out of it.
-    for (const bid in banks) for (const f of banks[bid].fillers) if (f.place === g.id) amt -= f.amount;
-    amt = Math.max(0, amt);
+    for (const bid in banks) for (const f of banks[bid].fillers) if (f.place === g.id && !heldGain(bid, f)) amt -= f.amount;   // [X4] a held gain places nothing
+    return Math.max(0, amt);
+  }
+  const placings = g => live().filter(e => (e.kind === 'set_aside' || e.kind === 'place_money') && e.to_place_of === g.id);
+  for (const g of (sc.goals || []).filter(x => x.removed && dayNum(x.removed) <= knownTo)) {
+    const list = placings(g).sort((x, y) => keyCmp(x.at || x.key, y.at || y.key) || x.idx - y.idx);
+    let total = list.reduce((t, e) => t + e.a, 0);
+    const limit = placeBalance(g);
+    while (total > limit && list.length) { const newest = list.pop(); gaveWay.add(newest.id); total -= newest.a; }
+  }
+  for (const g of sc.goals || []) {
+    const amt = placeBalance(g);
     // [P1] A place removed with money in it moved that money to Waiting, marked "to place": it stays out of
     // safe to spend until the person places it. A set aside naming it (`to_place_of`) places part of it in
     // another place; what is still to place is held in the walk like a kept place.
@@ -847,10 +935,12 @@ function lookahead(sc, asOf, opts = {}) {
       // [R1] It may also be placed in Free to spend (`place_money` into `free`), where it counts in safe to spend
       // again (planNow adds it to Free to spend), or kept in Waiting on purpose (into `waiting`), where it is no
       // longer to place and still does not count: it stays held in the walk.
-      const placed = live().filter(e => (e.kind === 'set_aside' || e.kind === 'place_money') && e.to_place_of === g.id).reduce((t, e) => t + e.a, 0);
-      const keptWaiting = live().filter(e => e.kind === 'place_money' && e.to_place_of === g.id && e.into === 'waiting').reduce((t, e) => t + e.a, 0);
+      const mine = placings(g).filter(e => !gaveWay.has(e.id));   // [X5]
+      const placed = mine.reduce((t, e) => t + e.a, 0);
+      const keptWaiting = mine.filter(e => e.kind === 'place_money' && e.into === 'waiting').reduce((t, e) => t + e.a, 0);
       const toPlace = Math.max(0, amt - placed);
-      (res.toPlace = res.toPlace || {})[g.id] = { amount: toPlace, keptInWaiting: keptWaiting, account: g.kept_in };
+      (res.toPlace = res.toPlace || {})[g.id] = Object.assign({ amount: toPlace, keptInWaiting: keptWaiting, account: g.kept_in },
+        placings(g).some(e => gaveWay.has(e.id)) ? { gaveWay: placings(g).filter(e => gaveWay.has(e.id)).map(e => e.id) } : {});
       if (keptWaiting) (keptIn[g.kept_in] = keptIn[g.kept_in] || []).push({ id: g.id + ':waiting', name: g.name, label: g.name + "'s money, kept in Waiting on purpose", amount: keptWaiting });
       if (toPlace) (keptIn[g.kept_in] = keptIn[g.kept_in] || []).push({ id: g.id, name: g.name, label: g.name + "'s money, in Waiting to place", amount: toPlace });
       continue;
@@ -868,11 +958,11 @@ function lookahead(sc, asOf, opts = {}) {
   // [T watch: plan.shares] A change to a line's or Free to spend's amount (`changes: [ { made, amount } ]`) applies
   // from the first period start after the day it was made. [V] A change made on a period's first day applies to
   // that period.
-  const amountFor = (x, start) => {
+  function amountFor(x, start) {
     let a = x.amount;
     for (const ch of (x.changes || []).slice().sort((p, q) => dayNum(p.made) - dayNum(q.made))) if (start !== null && start !== undefined && dayNum(ch.made) <= start) a = ch.amount;
     return a;
-  };
+  }
   const plan = opts.plan || planNow();
   function planNow() {
     if (!sc.plan) return {};
@@ -929,7 +1019,7 @@ function lookahead(sc, asOf, opts = {}) {
       let filled = 0;
       for (const bid in banks) {
         if (acct[bid].kind === 'investment' || cur(bid) !== cur(acctId)) continue;
-        for (const f of banks[bid].fillers) if ((f.place || 'free') === lineId)
+        for (const f of banks[bid].fillers) if ((f.place || 'free') === lineId && !heldGain(bid, f))   // [X4] a held gain places nothing
           for (const pt of f.parts) if (fromOpening || dayNum(pt.from) >= lastPay) filled += pt.amount;
       }
       if (lineId === 'free') for (const cid in cards) {
@@ -947,7 +1037,7 @@ function lookahead(sc, asOf, opts = {}) {
       const fees = live().filter(e => TWO_SIDED[e.kind] && acct[e.from] && acct[reachOf(e)] && cur(e.from) === cur(reachOf(e)) && cur(e.from) === cur(acctId) && e.a > e.a2 && inPeriod(e, e.from) && !elsewhere.has(e.id))
         .reduce((t, e) => t + e.a - e.a2, 0);
       // [R1] Money to place that the person put in Free to spend counts in it again.
-      const placed = live().filter(e => e.kind === 'place_money' && e.into === 'free' && inPeriod(e, e.account)).reduce((t, e) => t + e.a, 0);
+      const placed = live().filter(e => e.kind === 'place_money' && e.into === 'free' && !gaveWay.has(e.id) && inPeriod(e, e.account)).reduce((t, e) => t + e.a, 0);   // [X5]
       // [T7] An accepted difference (`adjust`) naming no place comes out of (or goes into) Free to spend.
       const adjusted = live().filter(e => e.kind === 'adjust' && !e.goal && acct[e.account] && cur(e.account) === cur(acctId) && inPeriod(e, e.account)).reduce((t, e) => t + e.a, 0);
       return start - spent - fees + placed + adjusted;
@@ -974,11 +1064,11 @@ function lookahead(sc, asOf, opts = {}) {
 
   // ----- planned spending of later periods (10.3 step 2, [B1, B3, B4]) -----
   // Units (SCHEMA 8, H9: 26 or 27 pays a year) are in their own test file; this is the plain form.
-  const perPeriod = (x, startDay, endDay) => {
+  function perPeriod(x, startDay, endDay) {
     if (x.per === 'week') return Math.round(x.amount * (endDay - startDay) / 7);
     if (x.per === 'month' && periodStream && periodStream.schedule.frequency !== 'monthly') return Math.round(x.amount * 12 / paysAYear(periodStream));
     return x.amount;
-  };
+  }
   function plannedFor(id) {
     const list = [];
     const lines = (plan.lines || []).filter(l => l.acct === id);
@@ -1065,6 +1155,7 @@ function lookahead(sc, asOf, opts = {}) {
     return { lowest: low, lowestDay: lowDay, headroom: low - minimum, why, firstBelowZero, belowBal };
   }
 
+  const backsGoal = id => (sc.goals || []).some(g => g.kept_in === id && g.mode === 'own_account' && !(g.removed && dayNum(g.removed) <= knownTo));
   // [T watch] Money into a closed account after its closing day reopens it, with a notice. Its schedules stay ended.
   const reopened = id => closedOn(id) !== null && live().some(e => e.day > closedOn(id) && delta(e, id) > 0);
   for (const id in banks) {
@@ -1078,7 +1169,9 @@ function lookahead(sc, asOf, opts = {}) {
     const r = res.accounts[id] = {
       bank: banks[id].bank, asOf: dayStr(banks[id].asOfDay), ageDays: today - banks[id].asOfDay,   // [A1, F24]
       currency: a.currency, minimum, lowest: w.lowest, lowestDay: dayStr(w.lowestDay), headroom: w.headroom,
-      spendFrom: closed ? false : a.spend_from != null ? a.spend_from : !!SPEND_TYPES[a.kind] && a.currency === home,
+      // [SCHEMA 3, confirmed in W] An account that backs a goal (a goal kept in it as its own account) is not spent from
+      // unless the person says so (`spend_from`).
+      spendFrom: closed ? false : a.spend_from != null ? a.spend_from : !!SPEND_TYPES[a.kind] && a.currency === home && !backsGoal(id),
       why: whyText(w.why, w.headroom, a.currency), fillers: banks[id].fillers };
     if (w.headroom < 0) res.warnings.push({ account: id, code: 'below_minimum', day: r.lowestDay, short: -w.headroom, text: `${a.name} goes ${fmt(-w.headroom, a.currency)} below its minimum on ${r.lowestDay}` });   // [F9]
     const later = walk(id, today + LATER_ON_DAYS, 0);   // [B11]
@@ -1087,12 +1180,10 @@ function lookahead(sc, asOf, opts = {}) {
   // [O watch: a wrong figure at a check-in] A check-in figure above what the app had for the account by more
   // than the period's Free to spend, or by more than 20% of what the app had, is asked about, not placed. The
   // latest check of each account is looked at; the figure stands as the bank figure until answered.
-  const coming = nextPays.filter(p => p.land > today);
-  const freePeriod = periodStream && plan.free ? perPeriod(plan.free, coming[0] ? coming[0].land : today, coming[1] ? coming[1].land : (coming[0] ? coming[0].land : today) + 30) : null;
+  // [X4] The question's state is saved on the check (`gain`: asked, right or wrong); answered right, it is not asked again.
   for (const id in banks) {
     const g = banks[id].lastGap;
-    if (!g || g.gain <= 0 || acct[id].kind === 'investment') continue;   // [T watch] an investment's rise is a market move
-    if ((freePeriod !== null && g.gain > freePeriod) || g.gain * 5 > g.had) res.warnings.push({ account: id, code: 'gain_to_ask', day: dayStr(g.day), gain: g.gain,
+    if (g && largeGain(id, g) && g.answer !== 'right') res.warnings.push({ account: id, code: 'gain_to_ask', day: dayStr(g.day), gain: g.gain,
       text: `${acct[id].name} shows ${fmt(g.gain, cur(id))} more than the app had: was that figure right?` });
   }
   for (const id in cards) {
@@ -1131,7 +1222,7 @@ function lookahead(sc, asOf, opts = {}) {
   const until = np ? np.land : today + NO_PAY_DUE_DAYS;
   const due = items.filter(o => out(o) && !o.settled && o.land >= today && o.land < until && o.amount)
     .sort((a, b) => a.land - b.land || (a.acct < b.acct ? -1 : 1));
-  res.dueBeforeNextPay = { until: dayStr(until), byAccount: groupBy(due, 'acct'), items: due.map(itemOut), total: due.reduce((t, o) => t + o.amount, 0) };
+  res.dueBeforeNextPay = { until: dayStr(until), byAccount: groupBy(due, 'acct'), items: due.map(itemOut), total: due.filter(o => !o.otherCur).reduce((t, o) => t + o.amount, 0) };   // [W2]
 
   // ----- not seen yet, and still inside the posting window [F3, F4, F23, F24, G3, H8] -----
   const past = items.filter(o => !o.settled && o.land < today && fallsDue(o) && o.amount);
@@ -1139,7 +1230,7 @@ function lookahead(sc, asOf, opts = {}) {
   // [S6] Pay in another currency is listed in its own currency and left out of the totals.
   res.notSeenYet = { items: late.map(o => Object.assign(itemOut(o), { direction: o.kind === 'income' ? 'in' : 'out' })),
     money_in: late.filter(o => o.kind === 'income' && !o.otherCur).reduce((t, o) => t + o.amount, 0),
-    money_out: late.filter(out).reduce((t, o) => t + o.amount, 0) };
+    money_out: late.filter(o => out(o) && !o.otherCur).reduce((t, o) => t + o.amount, 0) };   // [W2]
   res.mayStillPost = past.filter(o => today <= windowEnd(o)).map(o => Object.assign(itemOut(o), { postsBy: dayStr(windowEnd(o)) }));
 
   // ----- total [F10, F11] -----
@@ -1155,7 +1246,10 @@ function lookahead(sc, asOf, opts = {}) {
   // autoSpends are not on it: they logged themselves.
   const lastCheckIn = Math.min(...Object.keys(banks).map(id => banks[id].asOfDay));
   // [S6] Pay in another currency is listed apart, in its own currency, and is not in the list's total.
-  const listed = items.filter(o => !o.settled && o.land > lastCheckIn && o.land <= today && fallsDue(o) && o.amount);
+  // [X3] An item setup was told had not gone out or come in yet is on the list too while its account has had no
+  // check-in since the opening (the setup day's pay, a bill due before setup): it landed before the opening.
+  const sinceOpening = o => isNotYet(o) && banks[o.acct] && banks[o.acct].asOfDay === openDay(o.acct);
+  const listed = items.filter(o => !o.settled && (o.land > lastCheckIn || sinceOpening(o)) && o.land <= today && fallsDue(o) && o.amount);
   // [U2] Settles an import made since the last check-in are listed as already matched, ticked; the person can
   // untick one (the line then settles nothing, and the item is back on the list to confirm).
   const matched = items.filter(o => settledBy[o.id] && settledBy[o.id].byImport && o.land > lastCheckIn && o.land <= today && o.amount);

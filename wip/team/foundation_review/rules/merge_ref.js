@@ -40,13 +40,21 @@ function idFor(w) {
   if (w.k === 'ps') return 'ps:' + w.occurrence;
   if (w.k === 'rm') return 'rm:' + w.place;
   if (w.k === 'close') return 'close:' + w.acct + (w.n ? ':' + w.n : '');   // [S3] n: the record's place in a closing that writes several
+  // [X1] A record the move writes is named by what it came from, `mv:<kind>:<38.31 id or key>`, so the phone and the
+  // desktop, each running the move on the same 38.31 copy, write one record after the merge. [X2] A fee record is
+  // named by its transfer, `fee:<transfer id>`, so two phones ticking one transfer write one fee.
+  if (w.k === 'mv') return 'mv:' + w.kind + ':' + w.key;
+  if (w.k === 'fee') return 'fee:' + w.of;
   throw new Error('no built id for ' + w.k);
 }
 // [O3] Every other id is `<device part>-<session part>-<counter>`: the device part 6 characters, the session
 // part 10 random characters (letters and digits) drawn on each page open, the counter from 1. The device
 // part is letters and digits too (the schema's own example is `k7qzpa`).
 const BUILT = /^((set|auto|skip):[a-z0-9_]+@\d{4}-\d{2}-\d{2}|pe:[a-z0-9_]+@\d{4}-\d{2}-\d{2}:[a-z0-9_]+|ps:[a-z0-9_]+@\d{4}-\d{2}-\d{2}|(rm|close):[a-z0-9_]+|close:[a-z0-9_]+:[1-9]\d*)$/;
-const idOk = id => typeof id === 'string' && (/^[a-z0-9]{6}-[a-z0-9]{10}-[1-9]\d*$/.test(id) || BUILT.test(id));
+const plainOk = id => typeof id === 'string' && (/^[a-z0-9]{6}-[a-z0-9]{10}-[1-9]\d*$/.test(id) || BUILT.test(id));
+// [X1] `mv:<kind>:<38.31 id or key>`; [X2] `fee:` and the id of the transfer it belongs to (never a fee itself).
+const MOVED = /^mv:[a-z]+:[A-Za-z0-9_.@:-]+$/;
+const idOk = id => typeof id === 'string' && (plainOk(id) || MOVED.test(id) || (id.startsWith('fee:') && plainOk(id.slice(4))));
 
 // ---------- merging ----------
 function canon(x) {

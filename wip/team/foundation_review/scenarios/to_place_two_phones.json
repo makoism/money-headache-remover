@@ -12,6 +12,7 @@
     "dates": [],
     "bank_closed": []
   },
+  "main_bank": "b",
   "accounts": [
     {
       "id": "b",

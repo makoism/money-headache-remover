@@ -203,7 +203,38 @@ function foundLater({ periodTo, places, answers, later, covers }) {
   return out;
 }
 
+// [X5] P3 made general: every share-out from a limited amount (placing money to place, covering an overspend found
+// later, period-end answers) is checked again after a merge. The two copies' share-outs are merged by id (an edited
+// one is one record, its newer copy whole [D4]); when they add up to more than there is (`limit`), the one with the
+// newest `at` gives way, repeated until the rest fit. The device that wrote one that gave way says so at its next open.
+function shareOutMerged({ limit, mine, theirs }) {
+  let live = mergeList(mine, theirs).filter(x => !x.gone);
+  const gaveWay = [];
+  const sum = () => live.reduce((t, x) => t + x.a, 0);
+  while (sum() > limit && live.length) {
+    const newest = live.reduce((n, x) => (ms(x.at) > ms(n.at) || (ms(x.at) === ms(n.at) && x.id > n.id) ? x : n));
+    gaveWay.push({ id: newest.id, by: newest.by });
+    live = live.filter(x => x !== newest);
+  }
+  const out = { kept: live.map(x => x.id).sort() };
+  if (!gaveWay.length) return out;
+  const to = [...new Set(gaveWay.map(g => g.by))];
+  return Object.assign(out, { gaveWay, notice: to.length === 1 ? { to: to[0], text: NOTICE } : to.map(t => ({ to: t, text: NOTICE })) });
+}
+
+// [X watch: the stale 11.1 row] A 38.31 month-end answer (`ui.sweep`), dated its period's last day, becomes the record
+// `pe:<the occurrence of the pay that started that period>:<place>` [T1]: the period holding its last day started with
+// the latest pay landing on or before that day.
+function sweepId({ place, periodTo, pays }) {
+  const to = dayNum(periodTo);
+  const start = (pays || []).filter(p => dayNum(p.lands) <= to).sort((x, y) => dayNum(x.lands) - dayNum(y.lands)).pop();
+  if (!start) return null;
+  return idFor({ k: 'pe', period: start.occ, place });
+}
+
 function ask(question, input) {
+  if (question === 'share_out_merged') return shareOutMerged(input);
+  if (question === 'sweep_id') return sweepId(input);
   if (question === 'question_start') return questionStart(input);
   if (question === 'leftovers_merged') return leftoversMerged(input);
   if (question === 'found_later') return foundLater(input);
@@ -214,4 +245,4 @@ function ask(question, input) {
   throw new Error('unknown question ' + question);
 }
 
-module.exports = { ask, questionStart, leftovers, screen, nextPeriod, leftoversEnds, leftoversMerged, foundLater };
+module.exports = { ask, questionStart, leftovers, screen, nextPeriod, leftoversEnds, leftoversMerged, foundLater, shareOutMerged, sweepId };

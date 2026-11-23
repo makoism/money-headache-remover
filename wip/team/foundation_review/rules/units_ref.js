@@ -266,9 +266,17 @@ function weekByDayDates({ weekly, lineFrom, from, to }) {
 // period (`pay@2027-01-10`), never by the period's start day, which is not known until the pay lands.
 function periodAmountOnce({ amount, once, period }) { return once && once[period] != null ? once[period] : amount; }
 
+// [X watch: the stale 11.1 row] A 38.31 one-month amount (`once[ym]`) goes to the first period starting in that month:
+// `once` is keyed by the occurrence of the pay that starts it [T1], the first pay landing in that month.
+function onceFromMonth({ ym, pays }) {
+  const first = (pays || []).filter(p => String(p.lands).slice(0, 7) === ym).sort((x, y) => (x.lands < y.lands ? -1 : x.lands > y.lands ? 1 : 0))[0];
+  return first ? first.occ : null;
+}
+
 function ask(question, input) {
   switch (question) {
     case 'period_amount_once': return periodAmountOnce(input);
+    case 'once_from_month': return onceFromMonth(input);
     case 'to_minor': return toMinor(input.text, input.cur);
     case 'currency_for': return currencyFor(input);
     case 'load_amount': return loadAmount(input.a);
