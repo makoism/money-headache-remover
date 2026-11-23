@@ -319,3 +319,12 @@ AM1. When two moved amounts land on one occurrence and the person has not picked
 AM2. When the main bank and its minimum are changed on two devices before a sync (AL3), the newer pair wins, and the other device's change is shown at the next open: "Your other device changed this. Check it."
 AM3. A check holds events dated more than a day before its day; events dated on its day or the day before are judged by `told` (H1). This covers a spend dated the day before a check made in another time zone.
 The AL helper's readings are confirmed.
+
+## AN. Decisions from confirm_review_7.md (AN3 and AN5 replace AM3 and AM1)
+AN1. Every map without an `at` of its own merges key by key, at any depth (the top level, `plan`, `imports`, `home`); plain values inside it settle the same way on both devices (the keyed rule), so merge(A, B) equals merge(B, A). Symmetric cases with a plain field, a `home` holding only `curs`, and an empty `cats`.
+AN2. After a merge, a schedule change that now starts on or before a settled or named occurrence is moved to start the day after it (the edit's own offer), written with a new `at`, and shown to the person at the next open. The same for a moved key left orphaned by an edit on the other device.
+AN3. The main bank's own `minBank` is always null; its minimum lives only in `home.main`. SCHEMA_V3 line 99 is fixed.
+AN4. AM3 is replaced: an event is inside a check when the end of its date, in its writer's offset (taken from its `told`), is at or before the check's moment; otherwise it is judged by `told` (H1). ot-01 to ot-03 are corrected to 375,000, 20,000 and 35,000.
+AN5. AM1 is replaced: a moved amount that lands on an occurrence that already has its own amount is not written until the person picks add or replace; it waits in `pendingMove`. No unpicked state is ever saved in `amounts`.
+AN6. Grid: E x D (AN2), Z x D (an event written on one device into an account closed on the other reopens it at the merge, with a notice), and a `people` row (D, U, R, M). COVERAGE's stale count is fixed.
+AN7. `imports.cats` keys are the shop text trimmed, with spaces collapsed and lowercased (38.31's keys are lowercased at the move), stored with a `k:` prefix so no key can be `__proto__`. Each value carries `src: 'person' | 'reader'`; a reader's guess never replaces a person's lesson, whatever the `at`. The map is never trimmed.
