@@ -1255,7 +1255,8 @@ function lookahead(sc, asOf, opts = {}) {
     if (periodStream) {
       // [AU4, AU5] A pay due today, or late and still counted, starts its period in the walk: that period's lines and Free to
       // spend share come off with it, today, after the pay (B3).
-      const starts = nextPays;
+      // [BH1] a late pay is not counted and its period has not started: it brings no lines
+      const starts = nextPays.filter(p => p.land >= today);
       starts.forEach((p, i) => {
         const end = starts[i + 1] ? starts[i + 1].land : p.land + 30;
         for (const l of lines) list.push({ land: Math.max(p.land, today), amount: perPeriod(l.src ? { per: l.per, amount: m(lineAmount(l.src, p.land, p.id, l.id), id) } : l, p.land, end, p), label: l.name + ' for the period from ' + short(p.land) });
@@ -1299,7 +1300,8 @@ function lookahead(sc, asOf, opts = {}) {
     const steps = [];   // { day, order, amount, label }  order: 0 income, 1 bills, 2 planned spending
     for (const o of items) {
       if (o.settled) continue;
-      if (o.kind === 'income' && o.acct === id && !o.otherCur && (o.land >= today || lateExpected(o)) && o.land <= end) steps.push({ day: Math.max(o.land, today), order: 0, amount: o.amount, label: o.name + ' ' + short(o.land) + (o.land < today ? ', late, still expected' : '') });
+      // [BH1, replaces H8 for safe to spend] money not yet seen never counts: a late or not seen pay is left out of the walk
+      if (o.kind === 'income' && o.acct === id && !o.otherCur && o.land >= today && o.land <= end) steps.push({ day: o.land, order: 0, amount: o.amount, label: o.name + ' ' + short(o.land) });
       if (o.kind === 'loan' && cur(o.card) !== cur(id)) continue;   // [V2] a loan in another currency: like a card (H5), warned below
       if (['bill', 'transfer', 'auto', 'loan'].includes(o.kind) && o.acct === id && o.land <= end) {
         // [H7] a bill paid from a place takes what the place still holds first; only the rest is new
@@ -1426,8 +1428,9 @@ function lookahead(sc, asOf, opts = {}) {
   }
 
   // ----- due before next pay [F7, F13, F21, F23, H8] -----
-  // While the next pay is late, it is still the next pay: nothing lands between today and it.
-  const until = np ? np.land : today + NO_PAY_DUE_DAYS;
+  // [BH1] While the next pay is late it is not counted: the list runs to the pay after it (late-03).
+  const npAfter = np && np.land < today ? nextPays.find(p => p.land >= today) : np;
+  const until = npAfter ? npAfter.land : today + NO_PAY_DUE_DAYS;
   const due = items.filter(o => out(o) && !o.settled && o.land >= today && o.land < until && o.amount)
     .sort((a, b) => a.land - b.land || (a.acct < b.acct ? -1 : 1));
   res.dueBeforeNextPay = { until: dayStr(until), byAccount: groupBy(due, 'acct'), items: due.map(itemOut), total: due.filter(o => !o.otherCur).reduce((t, o) => t + o.amount, 0) };   // [W2]

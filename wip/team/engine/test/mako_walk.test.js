@@ -57,4 +57,22 @@ t('on pay day before the check-in, due before next pay is what the sum takes off
   const pastOut = r.mayStillPost.concat(r.notSeenYet.items).filter(i => i.direction !== 'in' && !i.item.startsWith(w.ids.pay_main) && !i.item.startsWith(w.ids.pay_side)).reduce((t, i) => t + i.amount, 0);
   eq(bank.headroom, bank.bank + 240000 - pastOut - r.dueBeforeNextPay.total);
 });
+t('while the main pay is late, it does not count: safe to spend is the walk without it, to the pay after it [BH1, BH2]', () => {
+  const w = life();
+  w.ci('2026-12-10'); w.ci('2026-12-11');
+  // 32,000 on card A in December: its payment of Tue 12 Jan (the 10th is a Sunday, the 11th a holiday)
+  w.book.events.push({ id: 'q4zt8m-cardspend-1', k: 'spend', acct: w.ids.card_a, date: '2026-12-15', a: 32000, told: '2026-12-15T12:00+09:00' });
+  w.ci('2026-12-28');
+  w.ci('2027-01-08', ['pay_main']);   // the main pay, expected Fri 8 Jan, has not come
+  const r = w.on('2027-01-11'), bank = r.accounts[w.ids.bank];
+  // bank - card A 32,000 (12 Jan) - phone 4,800 (20 Jan) - power 7,400 (26 Jan) - rent 72,000 and internet 5,200 (27 Jan)
+  // = bank - 121,400; the 10 Feb pay comes after the lowest point
+  eq(bank.headroom, bank.bank - 121400);
+  eq(r.dueBeforeNextPay.total, 121400);   // late-03 under BH1: the list runs to the pay after the late one
+  eq([r.daysToNextPay.item, r.daysToNextPay.late], [w.ids.pay_main + '@2027-01-10', true]);   // still shown as expected, late
+  eq(r.period.nextPay.state, 'late');
+  // ticked: it counts at once
+  w.ci('2027-01-11');
+  ok(w.on('2027-01-11').accounts[w.ids.bank].headroom > bank.headroom);
+});
 done('mako_walk');

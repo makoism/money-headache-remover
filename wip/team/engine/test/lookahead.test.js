@@ -111,9 +111,11 @@ t('a pay due today and not ticked brings its period\'s lines and Free to spend [
   // 25 Jan: + 250,000 - 300,000 - 30,000 - 50,000 = 110,000
   eq(r.accounts.bank.lowest, 110000);
 });
-t('a late pay still counted brings its period\'s lines and Free to spend [AU5, H8]', () => {
+t('a late pay is not counted and brings no lines until it is ticked [BH1, replaces AU5 and H8 for safe to spend]', () => {
   const r = run(withRent(), '2026-12-28');
-  eq(r.accounts.bank.lowest, 110000);
+  // 400,000 - 30,000 food left - 300,000 (rent 25 Dec, late, still taken off) = 70,000; the late pay is left out;
+  // 25 Jan: + 250,000 - 300,000 rent - 30,000 food - 50,000 free = -60,000
+  eq(r.accounts.bank.lowest, -60000);
 });
 // [WIRING_PLAN 1.4 step 2] the period in the answer: start, end (the day before the next period-starting pay),
 // the pay that started it, and what is left of each plan line and of Free to spend

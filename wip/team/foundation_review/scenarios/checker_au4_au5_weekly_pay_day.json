@@ -555,17 +555,6 @@
     "AU5"
    ]
   },
-  {
-   "id": "cau2-02",
-   "date": "2027-12-04",
-   "question": "safe_to_spend",
-   "account": "fx8kvh-wvn8m4480k-1",
-   "expected": 9252.56,
-   "why": "11,640.10 (Main bank today) - 1,454.34 (Trip, kept in it, and Food left this week) + 1,880.00 (Pay 3 Dec, on 4 Dec) - 54.34 (Food for the period from 4 Dec) - 538.86 (Free to spend for the period from 4 Dec) - 140.00 (Phone 5 Dec) - 2,080.00 (Rent 5 Dec, on 6 Dec) + 0.00 (minimum) = 9,252.56",
-   "decisions": [
-    "AU4",
-    "AU5"
-   ]
-  }
+  {"id": "cau2-02", "date": "2027-12-04", "question": "safe_to_spend", "account": "fx8kvh-wvn8m4480k-1", "expected": 7965.76, "why": "11,640.10 (Main bank today) - 1,454.34 (Trip, kept in it, and Food left this week) - 140.00 (Phone 5 Dec) - 2,080.00 (Rent 5 Dec, on 6 Dec) + 0.00 (minimum) = 7,965.76; the pay of 3 Dec, late, is not counted and its period has not started, so its lines do not come off [BH1]", "decisions": ["AU4", "AU5", "BH1"], "note": "BH1 replaces AU5 here: under AU5 the late pay counted with its period's lines: 9,252.56."}
  ]
 }

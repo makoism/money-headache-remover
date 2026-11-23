@@ -573,8 +573,7 @@ function oracle(sc, asOfStr, opts) {
     if (isSettled(o, pOpen)) continue;
     let day;
     if (o.land >= T) day = o.land;
-    else if (windowEnd(o.land, pWin) >= T) day = T; // late, expected: counted today [H8]
-    else continue;
+    else continue; // [BH1, replaces H8 for safe to spend] a late pay is not counted; its period has not started
     if (day > H) continue;
     if (!plannedToday && day === T && o.land === T) continue;
     if (!plannedLate && day === T && o.land < T) continue;
@@ -595,7 +594,7 @@ function oracle(sc, asOfStr, opts) {
         if (isSettled(o, a.open)) continue;
         if (s.dir === 'in') {
           if (o.land >= T) items.push({ day: o.land, order: 0, amt: s.amt, what: o.name });
-          else if (windowEnd(o.land, win) >= T) items.push({ day: T, order: 0, amt: s.amt, what: o.name }); // late pay inside its window [H8]
+          // [BH1] money not yet seen never counts toward safe to spend: a late pay is left out until it is ticked
         } else {
           items.push({ day: Math.max(o.land, T), order: 1, amt: -s.amt, what: o.name }); // a late bill still goes out today [rule 10]
         }
@@ -650,7 +649,8 @@ function oracle(sc, asOfStr, opts) {
   // ---------- due before next pay [F7, F13, F21, F23, I6] ----------
   const dueItems = [];
   if (expPays.length) {
-    const stop = expPays[0].land; // up to the day before the next pay (the late pay while it is late)
+    // up to the day before the next pay; [BH1] while it is late it is not counted, so up to the pay after it
+    const stop = expPays[0].land >= T ? expPays[0].land : (expPays.find(p => p.land >= T) || expPays[0]).land;
     for (const s of scheds) {
       if (s.dir !== 'out') continue;
       for (const o of occs(s, T - 12, stop + 12)) {

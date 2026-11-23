@@ -966,9 +966,9 @@
       if (planLeft.free && planLeft.free.acct === id) lines.push(planLeft.free);
       if (!lines.length) return list;
       if (periodStream) {
-        // [AU4, AU5] every pay the walk counts (due today, or late and still expected) brings its period's lines, on the
-        // day the walk counts the pay
-        const starts = nextPays.slice().sort((x, z) => x.land - z.land);
+        // [AU4] every pay the walk counts (due today or later) brings its period's lines on the day it lands; [BH1] a late
+        // pay is not counted and its period has not started, so it brings none
+        const starts = nextPays.filter(p => p.land >= today).sort((x, z) => x.land - z.land);
         starts.forEach((p, i) => {
           const end = starts[i + 1] ? starts[i + 1].land : p.land + 30;
           for (const l of lines) list.push({ land: Math.max(p.land, today), amount: perPeriod({ per: l.per, amount: periodAmount(l.src, p.land, p.id) }, p.land, end, p.id), label: l.name + ' for the period from ' + short(p.land) });
@@ -1006,8 +1006,10 @@
       const steps = [];
       for (const o of items) {
         if (o.settled) continue;
-        if (o.kind === 'income' && o.acct === id && !o.otherCur && (o.land >= today || lateExpected(o)) && o.land <= end)
-          steps.push({ day: Math.max(o.land, today), order: 0, amount: o.amount, label: o.name + ' ' + short(o.land) + (o.land < today ? ', late, still expected' : '') });
+        // [BH1, replaces H8 for safe to spend] money not yet seen never counts: a pay past its day and not ticked (late or
+        // not seen) is left out of the walk until it is ticked; a pay due today counts [G4]
+        if (o.kind === 'income' && o.acct === id && !o.otherCur && o.land >= today && o.land <= end)
+          steps.push({ day: o.land, order: 0, amount: o.amount, label: o.name + ' ' + short(o.land) });
         if (o.kind === 'loan' && cur(o.card) !== cur(id)) continue;   // [V2] warned below
         if ((o.kind === 'bill' || o.kind === 'transfer' || o.kind === 'auto' || o.kind === 'loan') && o.acct === id && o.land <= end) {
           const fromIt = o.place && placeLeft[o.place] ? Math.min(placeLeft[o.place], o.amount) : 0;   // [H7] the place's money first
@@ -1105,9 +1107,10 @@
 
     // ----- due before next pay [F7, F13, F21, F23, H8, W2] -----
     // [G4] a pay due today and not ticked counts as coming in today, and its period's lines come off with it (AU4): the
-    // list runs to the pay after it, so it holds what the walk takes off before that pay. While the next pay is late
-    // (H8) the list still runs to it (late-03). What is past its day and not settled is in mayStillPost and notSeenYet.
-    const after = np && np.land === today ? nextPays.find(p => p.land > today) : np;
+    // list runs to the pay after it, so it holds what the walk takes off before that pay. [BH1] While the next pay is
+    // late it is not counted, so the list runs to the pay after it too (late-03 under BH1). What is past its day and not
+    // settled is in mayStillPost and notSeenYet.
+    const after = np && np.land <= today ? nextPays.find(p => p.land > today) : np;
     const until = after ? after.land : today + NO_PAY_DUE_DAYS;
     const due = items.filter(o => isOut(o) && !o.settled && o.land >= today && o.land < until && o.amount).sort((a, b) => a.land - b.land || (a.acct < b.acct ? -1 : 1));
     const byAccount = {}; for (const o of due) (byAccount[o.acct] = byAccount[o.acct] || []).push(o.id);
