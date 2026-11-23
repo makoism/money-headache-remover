@@ -144,3 +144,11 @@ Q6. Across one import, the line nearest the expected day settles an item, then t
 Q7. Built ids also for `rm:<place>` (a removed goal's move to Waiting) and `close:<account>` (the closing transfer or write-off).
 Watch decided: a repay may have no paying account (paid by someone else); P2's answer record with `moves` replaces "move events" in SCHEMA_V3 6.2 and 7.4 and place balances read it; closing may write off a balance that cannot be moved, as a spend.
 Stage 2 (no field now, unknown fields are kept): two holders of one card matched by sum; a travel spend's original amount `orig`.
+
+## R. Answers after P
+R1. Money "to place" may be placed in Free to spend, where it counts in safe to spend again, or kept in Waiting on purpose, where it does not.
+R2. When a pay rule changes on a day other than the 1st, that month goes to the rule in force on its first day; the new rule's amounts start the next month (its pays still follow the new rule).
+R3. A card or loan that still owes money, or a bank below zero, cannot be closed until it is at zero; the closing screen offers the payment that gets it there.
+R4. Closing the account a card is paid from, or a goal is kept in, first asks for the new account and moves the link; it cannot close until one is picked.
+R5. 38.31 has no closed accounts (one bank figure), so nothing closed is brought in at the move.
+The P helper's readings are confirmed.
