@@ -383,6 +383,7 @@
     }
     const byTime = (x, y) => x.day - y.day || keyCmp(x.key, y.key) || x.idx - y.idx;
     const isClosingRecord = (e, id) => e.id === I.built.close(id) || String(e.id).startsWith(I.built.close(id) + ':');
+    const heldBy = [];   // [S3] records told after a check that holds them: { id, account, check }
     function bankInfo(id) {
       let base = openingOf(id);
       // [Z1] a check whose large gain was answered "wrong" counts nowhere; the account asks for the figure again
@@ -412,6 +413,8 @@
         const isIn = moves.map((e, k) => (cc.closing && span[k][0] <= cc.day ? inside(e, cc, id) : settledDay && span[k][1] <= cc.day - 2 ? true : span[k][0] > cc.day ? false : inside(e, cc, id)));
         let computed = base.amount;
         moves.forEach((e, k) => { if (isIn[k] !== wasIn[k]) computed += isIn[k] ? delta(e, id) : -delta(e, id); });
+        // [S3, AN4] a record told after this check but inside it: named, so the screens can say the figure holds it
+        moves.forEach((e, k) => { if (isIn[k] && !wasIn[k] && e.key > cc.key) heldBy.push({ id: e.id, account: id, check: dayStr(cc.day) }); });
         wasIn = isIn;
         const fp = fillerPlaceOf(c);
         fillers.push(Object.assign(makeFiller(id, c.day > base.day ? base.day + 1 : c.day, c.day, computed - c.a), fp ? { place: fp } : {},
@@ -697,6 +700,7 @@
       else if (isOwed(id)) loans[id] = loanInfo(id);
       else banks[id] = bankInfo(id);
     }
+    res.heldByCheck = heldBy;
     // [W2] a card, loan or pay-later payment in another currency than its paying account is listed apart
     const otherOf = (id, from) => (acct[from] && cur(id) !== cur(from) ? { otherCur: true, currency: cur(id) } : { otherCur: false });
     for (const id in cards) for (const ci of cards[id].cardItems) items.push(Object.assign({ kind: 'card', acct: cards[id].payFrom, card: id, settled: false }, ci, otherOf(id, cards[id].payFrom)));

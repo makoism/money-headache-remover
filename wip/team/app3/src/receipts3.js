@@ -215,8 +215,16 @@ function rcSpent3(per) {
   if (!rows.length) return '';
   return `<ul class="a3-rows a3-spent" data-fig="rc-spent">${rows.map(([n, x]) => `<li><span>${esc3(n)}</span><span class="amt">spent ${fig3('periods.*.spent', x.spent, cur)} of ${fig3('periods.*.start', x.start, cur)}</span></li>`).join('')}</ul>`;
 }
+/* [S3, AN4, O1] records told after a bank figure but dated before it are inside that figure (the bank did not move,
+   the figure's gap did): the engine names them (res.heldByCheck), and the row says so */
+function rcHeld3() {
+  const out = {};
+  try { for (const h of E3.view(E3.today()).heldByCheck || []) out[h.id] = h.check; } catch (e) { /* no figures: nothing to say */ }
+  return out;
+}
 function rcList3() {
   const host = $('#rcList'); if (!host) return;
+  const held = rcHeld3();
   const q = RC3.search.trim().toLowerCase(), yr = E3.today().slice(0, 4);
   const per = q ? null : rcPeriod3();
   const text = e => [rcWhat3(e), E3.nameOf(e.acct), rcNote3(e), money3(e.a, E3.curOf(e.acct)), String(e.a), day3(e.date, 'any')].join(' ').toLowerCase();
@@ -225,7 +233,7 @@ function rcList3() {
   const head = q ? `<p class="a3-sub" data-fig="rc-period" data-search="1">Searching everything</p>`
     : per ? `<div class="a3-pernav"><button type="button" class="a3-btn" id="rcOlder"${per.older ? '' : ' disabled'}>Earlier</button><p class="a3-mid a3-per" data-fig="rc-period" data-start="${esc3(per.start)}" data-end="${esc3(per.end)}">${esc3(period3(per))}</p><button type="button" class="a3-btn" id="rcNewer"${per.newer ? '' : ' disabled'}>Later</button></div>${rcSpent3(per)}`
     : `<p class="a3-sub" data-fig="rc-period">Everything</p>`;
-  const li = rows.map(e => `<li data-rc="${esc3(e.id)}" data-k="${esc3(e.k)}"><button type="button" class="a3-rcrow" aria-label="Change ${esc3(rcWhat3(e))}, ${esc3(money3(e.a, E3.curOf(e.acct)))}"><span>${esc3(rcWhat3(e))}<br><span class="when">${esc3(day3(e.date, yr))}, ${esc3(E3.nameOf(e.acct))}${rcNote3(e) ? ', ' + esc3(rcNote3(e)) : ''}</span></span><span class="amt${e.k === 'in' ? ' a3-in-amt' : ''}">${e.k === 'in' ? 'back ' : ''}${money3(e.a, E3.curOf(e.acct))}</span></button></li>`).join('');
+  const li = rows.map(e => `<li data-rc="${esc3(e.id)}" data-k="${esc3(e.k)}"><button type="button" class="a3-rcrow" aria-label="Change ${esc3(rcWhat3(e))}, ${esc3(money3(e.a, E3.curOf(e.acct)))}"><span>${esc3(rcWhat3(e))}<br><span class="when">${esc3(day3(e.date, yr))}, ${esc3(E3.nameOf(e.acct))}${rcNote3(e) ? ', ' + esc3(rcNote3(e)) : ''}${held[e.id] ? `<br><span data-fig="rc-held">already in your bank figure of ${esc3(day3(held[e.id], yr))}</span>` : ''}</span></span><span class="amt${e.k === 'in' ? ' a3-in-amt' : ''}">${e.k === 'in' ? 'back ' : ''}${money3(e.a, E3.curOf(e.acct))}</span></button></li>`).join('');
   host.innerHTML = `<h2>What you logged</h2>
     <div class="a3-field"><label for="rcSearch">Search</label><input class="a3-in a3-text" type="search" id="rcSearch" autocomplete="off" value="${esc3(RC3.search)}" placeholder="A note, a line, an amount"></div>
     ${head}${rows.length ? `<ul class="a3-rows a3-rclist">${li}</ul><p class="a3-sub" data-hint="rc-tap">Tap a spend to change it</p>` : `<p class="a3-sub">${q ? 'Nothing matches' : 'Nothing logged in this stretch'}</p>`}`;

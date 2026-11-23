@@ -194,5 +194,34 @@ async function figsMatch(p, book, what) {
   await T.shot(p, 'receipts_try_320');
   ck('no page errors (try)', errs.length === 0, errs.join(' | '));
   await b.close();
+  /* [S3, AN4, O1] a spend told after a check but dated before it is inside that check's figure: the bank stays, and the
+     row says so. Set up Mon 23 Nov with 300,000, Pay 250,000 on the 25th; a check of 550,000 on 28 Nov at 20:00; then
+     1,000 dated 24 Nov told at 21:00, and 2,000 dated 28 Nov told 29 Nov (after the check: not inside it, AN4). */
+  {
+    const B = require('../../engine/build_book.js'), I = require('../../engine/ids.js'), nid = I.idMaker('s3rcpt', () => 0.3);
+    const bk = B.buildBook({ day: '2026-11-23', told: '2026-11-23T09:00+09:00', country: 'JP', currency: 'JPY',
+      banks: [{ key: 'b', name: 'Main bank', amount: 300000 }],
+      pays: [{ key: 'pay', name: 'Pay', bank: 'b', amount: 250000, day: 25, shift: 'none', startsPeriod: true }], bills: [] }, { newId: I.idMaker('s3book', () => 0.5) }).book;
+    const acct = bk.accounts[0].id, pay = bk.schedules[0].id, late = nid(), after = nid();
+    bk.events.push({ id: nid(), k: 'in', acct, date: '2026-11-25', a: 250000, settles: [pay + '@2026-11-25'], told: '2026-11-25T20:00+09:00' },
+      { id: nid(), k: 'check', acct, date: '2026-11-28', a: 550000, told: '2026-11-28T20:00+09:00' },
+      { id: late, k: 'spend', acct, date: '2026-11-24', a: 1000, told: '2026-11-28T21:00+09:00' },
+      { id: after, k: 'spend', acct, date: '2026-11-28', a: 2000, told: '2026-11-29T09:00+09:00' });
+    const r = T.L.lookahead(bk, '2026-11-29');
+    ck('S3: the engine names the 24 Nov spend as inside the 28 Nov check, the bank stays 550,000 less the 2,000',
+      JSON.stringify(r.heldByCheck) === JSON.stringify([{ id: late, account: acct, check: '2026-11-28' }]) && r.accounts[acct].bank === 548000, JSON.stringify([r.heldByCheck, r.accounts[acct].bank]));
+    const prof2 = require('fs').mkdtempSync(require('os').tmpdir() + '/a3rc3-');
+    ({ b, p, errs } = await T.open({ profile: prof2 }));
+    await p.goto(T.URL0 + '?today=2026-11-29'); await T.w(300);
+    await p.evaluate(async bk => { const s = await BurrowStore.open(); await s.save(bk, { full: true }); if (s.db) s.db.close(); }, bk);
+    await p.reload(); await T.w(400);
+    await p.tap('[data-tab="receipts"]'); await T.w(200);
+    await p.$eval('#rcSearch', e => { e.value = '000'; e.dispatchEvent(new Event('input', { bubbles: true })); }); await T.w(200);
+    const rs = await rows(p), one = rs.find(x => x.id === late), two = rs.find(x => x.id === after);
+    ck('S3: the 24 Nov row says it is already in the 28 Nov bank figure', one && /already in your bank figure of 28 Nov/.test(one.text), JSON.stringify(rs));
+    ck('S3: the 28 Nov row told after the check says nothing of it', two && !/already in/.test(two.text), JSON.stringify(two));
+    ck('no page errors (S3)', errs.length === 0, errs.join(' | '));
+    await b.close();
+  }
   T.done('e3_receipts');
 })().catch(e => { console.log('FAIL crashed ' + e.stack); process.exit(1); });

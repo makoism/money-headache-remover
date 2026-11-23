@@ -432,4 +432,17 @@ t('Free to spend not over: no freeOver, and the cap sum as before [BJ5]', () => 
 t('no shortfall: no short [B1]', () => {
   eq(run(firstShort(300000, 50000, 24), '2026-11-23').safeToSpend.short, null);
 });
+// [S3, AN4, O1, QC numbers] A spend told after a check but dated before it is inside that check's figure (AN4): the bank
+// does not move, the check's gap does. The engine names such records so the screen can say so. Check 400,000 on
+// 10 Dec (told 20:00); then a 1,000 spend dated 5 Dec and a 2,000 spend dated 11 Dec, both told 11 Dec.
+t('a record told after a check and dated before it: inside it, the bank stays, and it is named with the check [S3, AN4]', () => {
+  const b = base(x => {
+    x.events.push({ id: 'c9', k: 'check', acct: 'bank', date: '2026-12-10', a: 400000, told: '2026-12-10T20:00' + TZ },
+      { id: 'late', k: 'spend', acct: 'bank', date: '2026-12-05', a: 1000, told: '2026-12-11T09:00' + TZ },
+      { id: 'after', k: 'spend', acct: 'bank', date: '2026-12-11', a: 2000, told: '2026-12-11T09:05' + TZ });
+  });
+  const r = run(b, '2026-12-12');
+  eq(r.accounts.bank.bank, 398000);   // 400,000 at the check, less the 11 Dec spend only
+  eq(r.heldByCheck, [{ id: 'late', account: 'bank', check: '2026-12-10' }]);
+});
 done('lookahead');
