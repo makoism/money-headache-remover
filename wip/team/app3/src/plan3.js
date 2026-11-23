@@ -137,7 +137,7 @@ function plForm3(title, fields, buttons, note) {
   };
   host.innerHTML = `<section class="a3-card" data-card="plan-form"><h2>${esc3(title)}</h2>${note ? `<p class="a3-sub">${note}</p>` : ''}
     ${fields.map(f => `<div class="a3-field"><label for="pl-${f.key}">${esc3(f.label)}</label>${input(f)}${f.hint ? `<p class="a3-sub">${esc3(f.hint)}</p>` : ''}</div>`).join('')}
-    <p class="a3-err" id="plErr" role="alert"></p>
+    <p class="a3-err" id="plErr" role="alert"></p><div class="a3-actions" id="plAsk" hidden></div>
     <div class="a3-actions">${buttons.map((b, i) => `<button type="button" class="a3-btn${b.solid ? ' solid' : ''}" data-plbtn="${i}">${esc3(b.label)}</button>`).join('')}<button type="button" class="a3-btn" id="plBack">Back</button></div></section>`;
   for (const f of fields) if (f.kind === 'amount') BurrowScreens.inputs.bind($('#pl-' + f.key), { kind: 'amount', code: cur, optional: true });
   const read = () => {
@@ -155,9 +155,24 @@ function plForm3(title, fields, buttons, note) {
   host.querySelectorAll('[data-plbtn]').forEach(btn => btn.addEventListener('click', async () => {
     const got = read(), err = $('#plErr');
     if (got.bad) { err.textContent = got.bad; got.el.focus(); return; }
-    const [label, fn, undo] = buttons[Number(btn.dataset.plbtn)].step(got.vals);
+    const b = buttons[Number(btn.dataset.plbtn)], [label, fn, undo] = b.step(got.vals);
     const res = await ACT3.run(label, fn, { undo });
-    if (!res.ok) { err.textContent = res.text; return; }
+    const ask = $('#plAsk'); ask.hidden = true; ask.innerHTML = '';
+    if (!res.ok) {
+      err.textContent = res.text;
+      /* [BM2] a step that asks first (why 'ask'): the question, and a button that does it anyway with what is typed then */
+      if (res.why === 'ask' && b.anyway) {
+        ask.innerHTML = `<button type="button" class="a3-btn solid" id="plAnyway">${esc3(b.anyway.label)}</button>`; ask.hidden = false;
+        $('#plAnyway').addEventListener('click', async () => {
+          const again = read();
+          if (again.bad) { err.textContent = again.bad; again.el.focus(); return; }
+          const [l2, f2, u2] = b.anyway.step(again.vals), r2 = await ACT3.run(l2, f2, { undo: u2 });
+          if (!r2.ok) { err.textContent = r2.text; ask.hidden = true; ask.innerHTML = ''; return; }
+          plClose3();
+        });
+      }
+      return;
+    }
     plClose3();
   }));
   $('#plBack').addEventListener('click', plClose3);
@@ -224,7 +239,8 @@ function plGoalForm3(id) {
   const g = book.places.find(x => x.id === id);
   plForm3(g.name, [{ key: 'amount', label: 'Set aside now', kind: 'amount', optional: true, hint: g.keptIn && g.keptIn.mode === 'ownAccount' ? 'It moves from your bank into ' + E3.nameOf(g.keptIn.acct) : 'It stays in your bank, kept apart from safe to spend' },
     { key: 'name', label: 'Name', kind: 'text', value: g.name }, { key: 'target', label: 'Goal amount', kind: 'amount', value: g.target }, { key: 'due', label: 'Target date', kind: 'date', value: g.due || '' }],
-  [{ label: 'Set aside', solid: true, step: v => ['setAside', w => PLAN3W.setAside(w, id, { amount: v.amount }), 'Set aside for ' + g.name] },
+  [{ label: 'Set aside', solid: true, step: v => ['setAside', w => PLAN3W.setAside(w, id, { amount: v.amount }), 'Set aside for ' + g.name],
+     anyway: { label: 'Set aside anyway', step: v => ['setAside', w => PLAN3W.setAside(w, id, { amount: v.amount, anyway: true }), 'Set aside for ' + g.name] } },
    { label: 'Save changes', step: v => ['changeGoal', w => PLAN3W.changeGoal(w, id, { name: v.name, target: v.target, due: v.due }), 'Goal changed'] },
    { label: 'Take out', step: v => ['takeOut', w => PLAN3W.takeOut(w, id, { amount: v.amount }), 'Taken out of ' + g.name] }]);
 }

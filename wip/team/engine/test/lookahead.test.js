@@ -535,4 +535,9 @@ t('what a bank can set aside: the real walk\'s lowest point before the next pay,
   // a bill after the next pay is not counted: Rent moves to the 9th of January, after the 8 Jan pay
   eq(run(goalDip(0, b => { b.schedules[1].rules[0].rule.days = [9]; }), '2026-12-10').accounts.bank.canSetAside, 354000);
 });
+t('a goal with no date still says what is to go to its target, for "more than it needs" [BM2]', () => {
+  const g = run(goalDip(15000), '2026-12-10').places.trip;
+  eq([g.kept, g.target, g.toGo, g.periodsLeft, g.perPeriod], [15000, 20000, 5000, null, null]);
+  eq(run(goalDip(25000), '2026-12-10').places.trip.toGo, 0);
+});
 done('lookahead');

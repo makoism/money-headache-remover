@@ -156,6 +156,23 @@ const stamped = (r, step) => { ok(I.isOrdinary(r.id), 'ordinary id ' + r.id); eq
     r = await h.go('addGoal', { name: 'House', target: 1000000, mode: 'ownAccount' }); ok(r.ok, JSON.stringify(r));
     r = await h.go('setAside', h.book.places[1].id, { amount: 1 }); ok(!r.ok && /can spare ¥0 /.test(r.text), JSON.stringify(r));
   });
+  await t('setting aside past a goal\'s target asks first; nothing is written until "anyway" [BM2]', async () => {
+    const h = setup();
+    let r = await h.go('addGoal', { name: 'Trip', target: 20000 }); ok(r.ok, JSON.stringify(r));
+    const g = h.book.places[0], n0 = h.book.events.length;
+    r = await h.go('setAside', g.id, { amount: 25000 });
+    eq([r.ok, r.why, r.text], [false, 'ask', 'That is more than Trip needs (¥20,000). Set aside ¥25,000 anyway?']);
+    eq(h.book.events.length, n0, 'nothing written');
+    r = await h.go('setAside', g.id, { amount: 25000, anyway: true }); ok(r.ok, JSON.stringify(r));
+    eq(view(h.book).places[g.id].kept, 25000);
+    // up to the target never asks; past it, the words name what is still needed (nothing now)
+    r = await h.go('addGoal', { name: 'Gift', target: 10000 }); ok(r.ok, JSON.stringify(r));
+    const gift = h.book.places[1];
+    r = await h.go('setAside', gift.id, { amount: 6000 }); ok(r.ok, JSON.stringify(r));
+    r = await h.go('setAside', gift.id, { amount: 4000 }); ok(r.ok, JSON.stringify(r));
+    r = await h.go('setAside', gift.id, { amount: 1 });
+    eq([r.ok, r.why, r.text], [false, 'ask', 'Gift already has all it needs (¥10,000). Set aside ¥1 anyway?']);
+  });
   await t('a goal in its own account: a new account opened with nothing; money moved there and set aside; that account is not spent from', async () => {
     const h = setup();
     let r = await h.go('addGoal', { name: 'House', target: 1000000, mode: 'ownAccount' }); ok(r.ok, JSON.stringify(r));

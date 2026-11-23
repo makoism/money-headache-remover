@@ -2824,9 +2824,9 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
     // before its date (a late pay still counted is one of them), the leftover minor units on the earliest, so the first
     // is the most. No pay left before the date: all of it now. No fixed pay: periods are not known [B4].
     function goalPace(g, amt, due) {
-      if (g.target == null || !due) return {};
+      if (g.target == null) return {};
       const toGo = Math.max(0, g.target - Math.max(0, amt));
-      if (!periodStream) return { target: g.target, toGo, periodsLeft: null, perPeriod: null };
+      if (!due || !periodStream) return { target: g.target, toGo, periodsLeft: null, perPeriod: null };   // [BM2] toGo with no date too
       const dd = dayNum(due);
       // [BJ3, BF1] a late pay still expected counts here (pace is a plan), though safe to spend leaves it out (BH1)
       const n = dd < today ? 0 : occOf(periodStream, today - 62, dd).filter(o => o.land <= dd && !settledBy[o.id]
@@ -3043,13 +3043,15 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
     }
 
     // ----- the walk, one account at a time [B3, B9, F1, F2, F3, F9, F14, H5, H7, H8, Q2, Q4, S4, T3, T4, V2] -----
-    function walk(id, end, minimum) {
+    // [BM2] `real`: the real-money walk, the bank's own money only (pays, bills, card payments, moves): no goals, no plan
+    // lines. Below zero and under the minimum are judged on it; the full walk (goals and plan lines off) is what can be spared.
+    function walk(id, end, minimum, real) {
       const start = banks[id].bank;
       const why = [{ label: acct[id].name + ' today', amount: start }];
       let bal = start;
       const placeLeft = {};
-      for (const g of keptIn[id] || []) { bal -= g.amount; placeLeft[g.id] = g.amount; why.push({ label: g.label || g.name + ', kept in it', amount: -g.amount }); }
-      if (periodStream) for (const l of (planLeft.lines || []).filter(x => x.acct === id && x.left)) { const left = Math.max(0, l.left); bal -= left; why.push({ label: l.name + ' left this period', amount: -left }); }
+      if (!real) for (const g of keptIn[id] || []) { bal -= g.amount; placeLeft[g.id] = g.amount; why.push({ label: g.label || g.name + ', kept in it', amount: -g.amount }); }
+      if (periodStream && !real) for (const l of (planLeft.lines || []).filter(x => x.acct === id && x.left)) { const left = Math.max(0, l.left); bal -= left; why.push({ label: l.name + ' left this period', amount: -left }); }
       const steps = [];
       for (const o of items) {
         if (o.settled) continue;
@@ -3083,7 +3085,7 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
           if (pt.due <= end) steps.push({ day: Math.max(pt.due, today), order: 1, amount: -amt, label: pa.name + ', part posted ' + short(pt.due) });
         }
       }
-      for (const p of plannedFor(id)) if (p.land <= end) steps.push({ day: p.land, order: 2, amount: -p.amount, label: p.label });
+      if (!real) for (const p of plannedFor(id)) if (p.land <= end) steps.push({ day: p.land, order: 2, amount: -p.amount, label: p.label });
       steps.sort((a, b) => a.day - b.day || a.order - b.order);
       let low = bal, lowDay = today, lowAt = 0, firstBelowZero = null, belowBal = null;
       // [B1, QC numbers] the first day the bank ends under its minimum (or zero) and how far under then, and the first
@@ -3110,33 +3112,48 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
     const touches = (e, id) => e.account === id || e.from === id || e.to === id;
     const reopened = id => closedOn(id) !== null && live().some(e => e.day > closedOn(id) && touches(e, id)
       && (e.k === 'check' ? e.a !== 0 : delta(e, id) !== 0));
+    const realWalks = {};
     for (const id in banks) {
       const isClosed = closedOn(id) !== null && !reopened(id);
       if (reopened(id)) res.warnings.push({ account: id, code: 'reopened', text: `${acct[id].name} was closed; money came into it, so it is open again` });
       if (isClosed && banks[id].bank !== 0) throw new Error(`${acct[id].name} is closed with ${fmt(banks[id].bank, cur(id))} in it: a closing is refused unless its figure is zero or moved out [P6]`);
       const a = acct[id], minimum = isClosed ? 0 : minimumOf(id);
-      const w = walk(id, horizon, minimum);
+      const w = walk(id, horizon, minimum), rw = walk(id, horizon, minimum, true);
       const r = res.accounts[id] = {
         bank: banks[id].bank, asOf: dayStr(banks[id].asOfDay), ageDays: today - banks[id].asOfDay,
         checked: banks[id].checked, loggedIn: banks[id].loggedIn, loggedOut: banks[id].loggedOut,
         currency: a.cur, minimum, lowest: w.lowest, lowestDay: dayStr(w.lowestDay), headroom: w.headroom,
         spendFrom: isClosed ? false : a.spendFrom != null ? a.spendFrom : !!SPEND_TYPES[a.type] && a.cur === home && !backsGoal(id),
         why: whyText(w.why, w.headroom, a.cur), whyParts: w.why.map(p => ({ label: p.label, amount: p.amount })), fillers: banks[id].fillers };   // [S4] the parts, for screens/money.js sumLine
-      // [BL2] what is set aside in it today (goals and other kept places), and what it can still set aside: today's figure
-      // less that, never below nothing
+      // [BM2] the real-money walk: its lowest point, and its sum for the screens (the "Short by" headline is its total)
+      r.real = { lowest: rw.lowest, lowestDay: dayStr(rw.lowestDay), headroom: rw.headroom, whyParts: rw.why.map(p => ({ label: p.label, amount: p.amount })) };
+      // what is set aside in it today (goals and other kept places); canSetAside is worked out below, once the next pay is known
       r.setAside = (keptIn[id] || []).reduce((t, g) => t + g.amount, 0);
-      r.canSetAside = Math.max(0, r.bank - r.setAside);
+      realWalks[id] = rw;
       if (id === mainAcct && mainMinOtherCur()) res.warnings.push({ account: id, code: 'minimum_other_currency', text: `The minimum kept for ${a.name} is in ${main.min.cur}, not ${a.cur}: what is its minimum in ${a.cur}?` });
       // [QC fix] data for the screens to word (account, amount, day, minimum or null for none); the text is only for Ask's
       // summary, and says "below zero" when there is no minimum, with the day as "1 Jan", never an ISO day
       // [B1] named by the first day under and how far under then; a lower point after it is `later`, with its own day
-      if (w.headroom < 0) {
-        const f = w.firstUnder, lower = -w.headroom > f.amount && w.lowestDay !== f.day ? { day: r.lowestDay, amount: -w.headroom } : undefined;
+      // [BM2] from the real-money walk only: goals and plan lines never make the bank "go below zero"
+      if (rw.headroom < 0) {
+        const f = rw.firstUnder, lower = -rw.headroom > f.amount && rw.lowestDay !== f.day ? { day: dayStr(rw.lowestDay), amount: -rw.headroom } : undefined;
         res.warnings.push(Object.assign({ account: id, code: 'below_minimum', day: dayStr(f.day), amount: f.amount, short: f.amount, minimum: minimum || null },
-          lower ? { later: lower } : {}, { payAfter: w.payAfter === null ? null : dayStr(w.payAfter), payAfterLow: w.payAfterLow === null ? null : dayStr(w.payAfterLow),
+          lower ? { later: lower } : {}, { payAfter: rw.payAfter === null ? null : dayStr(rw.payAfter), payAfterLow: rw.payAfterLow === null ? null : dayStr(rw.payAfterLow),
             text: minimum ? `${a.name} goes ${fmt(f.amount, a.cur)} below its minimum of ${fmt(minimum, a.cur)} on ${short(f.day)}` : `${a.name} goes ${fmt(f.amount, a.cur)} below zero on ${short(f.day)}` }));
       }
-      const later = walk(id, today + LATER_ON_DAYS, 0);   // [B11]
+      // [BM2] goals holding more than the bank can spare (after bills, card payments and plan lines): their own warning,
+      // named by the first day the full walk goes under and how much of the goals' money is over then (never more than
+      // they hold); a lower point later is `later`. Data for screens/status.js to word.
+      const kept = (keptIn[id] || []).filter(g => g.amount > 0);
+      if (w.headroom < 0 && r.setAside > 0 && kept.length) {
+        const f = w.firstUnder, first = Math.min(r.setAside, f.amount), most = Math.min(r.setAside, -w.headroom);
+        const placesOver = kept.map(g => ({ place: g.id, name: g.name })).filter((g, i, all) => all.findIndex(x => x.place === g.place) === i);
+        const who = placesOver.length === 1 ? placesOver[0].name + "'s money" : 'The money set aside for ' + placesOver.map(g => g.name).join(' and ');
+        res.warnings.push(Object.assign({ account: id, code: 'set_aside_over', day: dayStr(f.day), amount: first, places: placesOver },
+          most > first && w.lowestDay !== f.day ? { later: { day: dayStr(w.lowestDay), amount: most } } : {},
+          { text: `${who} is ${fmt(first, a.cur)} more than ${a.name} can spare on ${short(f.day)}` }));
+      }
+      const later = walk(id, today + LATER_ON_DAYS, 0, true);   // [B11; BM2: the real-money walk]
       if (later.firstBelowZero !== null && later.firstBelowZero > horizon) res.laterOn.push({ account: id, day: dayStr(later.firstBelowZero), balance: later.belowBal, amount: -later.belowBal, minimum: null,
         text: `Later on: ${a.name} goes below zero in ${MONTHS[+dayStr(later.firstBelowZero).slice(5, 7) - 1]} ${dayStr(later.firstBelowZero).slice(0, 4)}` });
     }
@@ -3169,7 +3186,8 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
     // the account's walk ends under its minimum, or zero), before the first pay that brings money in after its lowest
     // point (null when none does); the first day it goes under is named beside it (`day`), with how far under then (`first`)
     const firstWarn = res.warnings.filter(w => w.code === 'below_minimum' && res.accounts[w.account].currency === home).sort((x, z) => (x.day < z.day ? -1 : x.day > z.day ? 1 : 0))[0];
-    res.safeToSpend.short = res.safeToSpend.shortfall > 0 && firstWarn ? { account: firstWarn.account, day: firstWarn.day, amount: -res.accounts[firstWarn.account].headroom, minimum: firstWarn.minimum,
+    // [BM2] from the real-money walk: its own total (accounts[].real.headroom, whose sum is accounts[].real.whyParts)
+    res.safeToSpend.short = firstWarn ? { account: firstWarn.account, day: firstWarn.day, amount: -res.accounts[firstWarn.account].real.headroom, minimum: firstWarn.minimum,
       beforePay: firstWarn.payAfterLow, first: firstWarn.amount } : null;
     // [BJ5] when Free to spend caps the headline, the sum under it ends with the cap, so the two figures never disagree
     // [S6, QC numbers] Free to spend left below zero: the sum takes off all that the accounts can spare and says how far
@@ -3206,6 +3224,19 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
     // [BJ1] a pay due today left unticked at a check-in today is not counted: named so the heading can say so
     res.safeToSpend.notCounting = np && leftToday(np) ? np.id : null;
     res.dueBeforeNextPay = { until: dayStr(until), byAccount, items: due.map(itemOut), total: due.filter(o => !o.otherCur).reduce((t, o) => t + o.amount, 0) };
+    // [BM2, replaces BL2's rule] what a bank can still set aside: what it can spare through the next pay, the real-money
+    // walk's lowest end of day before the pay safe to spend runs to (today's figure included), less what is already set
+    // aside in it; never below nothing. No next pay: through the horizon.
+    for (const id in realWalks) {
+      const rw = realWalks[id], stop = after ? after.land : horizon + 1;
+      let bal = rw.start, low = bal;
+      for (let i = 0; i < rw.steps.length && rw.steps[i].day < stop; i++) {
+        bal += rw.steps[i].amount;
+        if (rw.steps[i + 1] && rw.steps[i + 1].day === rw.steps[i].day) continue;
+        low = Math.min(low, bal);
+      }
+      res.accounts[id].canSetAside = Math.max(0, low - res.accounts[id].setAside);
+    }
 
     // ----- not seen yet, and still inside the posting window [F3, F4, F23, G3, H8, S6, W2, Z2] -----
     const past = items.filter(o => !o.settled && o.land < today && fallsDue(o) && o.amount);
@@ -4259,7 +4290,7 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
      ctx.staleDays a bank figure older than this asks for a check-in (7 until Mako says otherwise)
 
    One state, in this order (the first that is true wins, the rest go in `also` so they can sit under it):
-     sample > empty > short > warning > question > late > check > zero > no_free > ok
+     sample > empty > short > warning > set_aside > question > late > check > zero > no_free > ok
    no_free [north star F1]: a pay period with neither Free to spend nor a budget line, so safe to spend leaves nothing
    for food and everyday things; Home asks for it in place of "Fine for now" and links to Plan's Set Free to spend
    Plain browser JavaScript. In a page it is BurrowScreens.status (load money.js and names.js first). */
@@ -4272,9 +4303,9 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
   'use strict';
 
   const STALE_DAYS = 7;   // for Mako: how old a bank figure may get before the status asks for a check-in
-  const LEVEL = { sample: 'wait', empty: 'wait', short: 'bad', warning: 'bad', question: 'wait', late: 'wait', check: 'wait', zero: 'wait', no_free: 'wait', ok: 'good' };
+  const LEVEL = { sample: 'wait', empty: 'wait', short: 'bad', warning: 'bad', set_aside: 'bad', question: 'wait', late: 'wait', check: 'wait', zero: 'wait', no_free: 'wait', ok: 'good' };
   /* engine warning codes (lookahead_ref.js): which change the state, which are notes under it */
-  const WARNING_STATE = { below_minimum: 'warning', check_again: 'question', gain_to_ask: 'question', minimum_other_currency: 'question' };
+  const WARNING_STATE = { below_minimum: 'warning', set_aside_over: 'set_aside', check_again: 'question', gain_to_ask: 'question', minimum_other_currency: 'question' };
   const NOTE_ONLY = ['card_other_currency', 'loan_other_currency', 'income_other_currency', 'spend_other_currency', 'reopened'];
 
   /* every word the status says, all drafts for Mako's copy pass (VOICE: one-line notes have no full stop) */
@@ -4284,6 +4315,7 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
     'state.empty': W('No bank figure yet'),
     'state.short': W('Not safe to spend'),
     'state.warning': W('Under a minimum'),
+    'state.set_aside': W('Set aside more than you can spare'),
     'state.question': W('A question for you'),
     'state.late': W('Pay not in yet'),
     'state.check': W('Time to check in'),
@@ -4300,6 +4332,7 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
     'reason.short_from_min': W('You\'re short by {amount}, below your minimum from {day}'),
     'reason.below_minimum': W('{account} goes {amount} under its minimum on {day}'),
     'reason.below_zero': W('{account} goes {amount} below zero on {day}'),
+    'reason.set_aside_over': W('{who} is {amount} more than {account} can spare on {day}'),
     'reason.gain_to_ask': W('{account} has more in it than the app expected'),
     'reason.check_again': W('Check {account} again'),
     'reason.minimum_other_currency': W('What\'s the minimum for {account} in its own currency'),
@@ -4319,6 +4352,7 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
     'next.move_money_in': W('Move money in before {day}'),
     'next.move_money_in_now': W('Move money in or spend less'),
     'next.answer': W('Answer the question'),
+    'next.take_out_or_move_in': W('Take some out of a goal, or move money in'),
     'next.check_in_when_it_lands': W('Check in when it lands'),
     'next.wait_for_pay': W('It turns safe once your pay is in'),
     'next.log_money_in': W('Log money in when it comes'),
@@ -4329,6 +4363,8 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
     'warn.later_on': W('Later on: {account} goes below zero in {month}'),
     'warn.later_low_zero': W('Later on: {account} goes {amount} below zero on {day}'),
     'warn.later_low_minimum': W('Later on: {account} goes {amount} below its minimum of {minimum} on {day}'),
+    'warn.set_aside_over': W('{who} is {amount} more than {account} can spare on {day}'),
+    'warn.later_set_aside_over': W('Later on: {who} is {amount} more than {account} can spare on {day}'),
     'warn.check_again': W('The {account} figure of {day} was wrong: what does it show now'),
     'warn.gain_to_ask': W('{account} shows {amount} more than the app had: was that figure right'),
     'warn.reopened': W('{account} was closed, but money came into it, so it is open again'),
@@ -4378,7 +4414,9 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
     const warnings = r.warnings || [];
     const below = warnings.filter(w => w.code === 'below_minimum').sort((a, b) => (a.day < b.day ? -1 : a.day > b.day ? 1 : 0));
     if (!Object.keys(accounts).length) out.push({ state: 'empty', reason: { code: 'no_figures' }, next: { code: 'check_in' } });
-    if (stp.shortfall > 0) {
+    /* [BM2] short only when the real money is: the engine's short (or a below-zero warning) comes from the real-money
+       walk; a shortfall from goals or plan lines alone is the goals' own warning, or nothing safe to spend */
+    if (stp.shortfall > 0 && (stp.short || below.length)) {
       /* [BL3] the engine's short (safeToSpend.short): the headline's amount, the sum's own total, before the pay after the
          lowest point; money moves in before the first day under */
       const sh = stp.short || null, day = sh ? sh.day : below.length ? below[0].day : null;
@@ -4387,6 +4425,8 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
     for (const w of below) out.push({ state: 'warning', reason: { code: 'below_minimum', account: w.account, amount: w.amount != null ? w.amount : w.short, currency: (accounts[w.account] || {}).currency || ctx.currency, day: w.day, minimum: minimumOf(w, accounts) }, next: { code: 'move_money_in', day: w.day }, note: 'below_minimum' });
     for (const w of warnings) {
       if (w.code === 'below_minimum' || NOTE_ONLY.includes(w.code)) continue;
+      /* [BM2] goals holding more than the bank can spare: the money is short against the goals, never the bank */
+      if (w.code === 'set_aside_over') { out.push({ state: 'set_aside', reason: { code: 'set_aside_over', who: whoOf(w), account: w.account, amount: w.amount, currency: (accounts[w.account] || {}).currency || ctx.currency, day: w.day }, next: { code: 'take_out_or_move_in' }, note: 'set_aside_over' }); continue; }
       const known = WARNING_STATE[w.code];
       out.push({ state: known || 'question', reason: known ? { code: w.code, account: w.account } : { code: 'unknown_warning', warning: w.code, account: w.account }, next: { code: 'answer' }, note: w.code });
     }
@@ -4412,6 +4452,12 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
     const m = w.minimum !== undefined ? w.minimum : (accounts[w.account] || {}).minimum;
     return m ? m : null;
   }
+  /* [BM2] whose money a set_aside_over warning names: "Trip's money", or "The money set aside for Trip and House" */
+  function whoOf(w, lower) {
+    const n = (w.places || []).map(p => p.name);
+    if (n.length === 1) return `${n[0]}'s money`;
+    return `${lower ? 'the' : 'The'} money set aside for ${n.length ? n.join(' and ') : 'your goals'}`;
+  }
   /* one engine warning in words: from its data only, so no raw ISO day and no engine text reaches a screen.
      ctx: { currency, names: { id: name }, accounts (the engine's, for each account's currency) } */
   function warningText(w, ctx) {
@@ -4422,6 +4468,7 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
       const minimum = minimumOf(w, accounts), amount = w.amount != null ? w.amount : w.short;
       return fill(minimum ? 'warn.below_minimum' : 'warn.below_zero', { account: w.account, amount, minimum, day: w.day, currency }, ctx);
     }
+    if (w.code === 'set_aside_over') return fill('warn.set_aside_over', { who: whoOf(w), account: w.account, amount: w.amount, day: w.day, currency }, ctx);
     if (w.code === 'check_again') return fill('warn.check_again', { account: w.account, day: w.day }, ctx);
     if (w.code === 'gain_to_ask') return fill('warn.gain_to_ask', { account: w.account, amount: w.gain, currency }, ctx);
     if (w.code === 'card_other_currency') return fill('warn.card_other_currency', { account: w.account, card: w.card }, ctx);
@@ -4434,8 +4481,9 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
   /* [B1] a below-minimum warning's lower point after its first day under, in words with its own day; '' when none */
   function laterLowText(w, ctx) {
     ctx = ctx || {};
-    if (!w || w.code !== 'below_minimum' || !w.later) return '';
+    if (!w || (w.code !== 'below_minimum' && w.code !== 'set_aside_over') || !w.later) return '';
     const accounts = ctx.accounts || {}, minimum = minimumOf(w, accounts);
+    if (w.code === 'set_aside_over') return fill('warn.later_set_aside_over', { who: whoOf(w, true), account: w.account, amount: w.later.amount, day: w.later.day, currency: (accounts[w.account] || {}).currency || ctx.currency }, ctx);
     return fill(minimum ? 'warn.later_low_minimum' : 'warn.later_low_zero', { account: w.account, amount: w.later.amount, minimum, day: w.later.day, currency: (accounts[w.account] || {}).currency || ctx.currency }, ctx);
   }
 
@@ -8141,9 +8189,19 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
   /* money set aside today: a `move` into the goal; kept in its own account, the money goes there first */
   function setAside(w, id, x) {
     const g = find(w, 'places', id), a = amountOk(x.amount, 'an amount'), k = g.keptIn || {};
-    /* [BL2] never more than the bank the money is in (or comes from) can spare: the engine's canSetAside */
-    const from = k.mode === 'ownAccount' ? x.from || mainOf(w) : k.acct || mainOf(w), spare = (LA.lookahead(w.book, w.today).accounts[from] || {}).canSetAside || 0;
-    if (a > spare) bad(nameOf(w, from) + ' can spare ' + SMF.format(spare, (w.book.accounts || []).find(y => y.id === from).cur) + ' to set aside today: what it shows less what is already set aside in it');
+    /* [BM2, replaces BL2's rule] never more than the bank the money is in (or comes from) can spare through the next
+       pay: the engine's canSetAside (the real-money walk's lowest point before it, less what is already set aside) */
+    const res = LA.lookahead(w.book, w.today), from = k.mode === 'ownAccount' ? x.from || mainOf(w) : k.acct || mainOf(w), spare = (res.accounts[from] || {}).canSetAside || 0;
+    if (a > spare) bad(nameOf(w, from) + ' can spare ' + SMF.format(spare, (w.book.accounts || []).find(y => y.id === from).cur) + ' to set aside before your next pay: what it holds at its lowest until then, less what is already set aside in it');
+    /* [BM2] past the goal's target: asked first (why 'ask'); the screen offers "anyway", which writes it */
+    const need = (res.places[id] || {}).toGo;
+    if (!x.anyway && need != null && a > need) {
+      const cur = g.cur || (w.book.accounts || []).find(y => y.id === from).cur;
+      const q = new A3.Bad(need > 0 ? `That is more than ${g.name} needs (${SMF.format(need, cur)}). Set aside ${SMF.format(a, cur)} anyway?`
+        : `${g.name} already has all it needs (${SMF.format(g.target, cur)}). Set aside ${SMF.format(a, cur)} anyway?`);
+      q.why = 'ask';
+      throw q;
+    }
     if (k.mode === 'ownAccount') {
       if (from === k.acct) bad('Pick the account the money comes from');
       w.add('events', { k: 'transfer', date: w.today, a, acct: from, acct2: k.acct, src: { type: 'typed' } });
@@ -8349,7 +8407,10 @@ function drawHome3() {
   /* [BL3] short: the sum's own total, before the pay after its lowest point (only when one brings money), and the first
      day the bank goes under beside it */
   const sh = r.safeToSpend.short;
-  const short = sh ? `<p class="a3-warn a3-bad" data-fig="short">${esc3(label3('shortBy'))} ${fig3('safeToSpend.short', sh.amount, home)}${sh.beforePay ? ` before the pay on ${esc3(day3(sh.beforePay, yr))}` : ''}, below ${sh.minimum ? 'your minimum' : 'zero'} from ${esc3(day3(sh.day, yr))}</p>` : '';
+  /* [BM2] the short is the real money's (no goals, no plan lines): its own sum sits under it and ends with the same figure */
+  const shA = sh && r.accounts[sh.account] && r.accounts[sh.account].real;
+  const short = sh ? `<p class="a3-warn a3-bad" data-fig="short">${esc3(label3('shortBy'))} ${fig3('safeToSpend.short', sh.amount, home)}${sh.beforePay ? ` before the pay on ${esc3(day3(sh.beforePay, yr))}` : ''}, below ${sh.minimum ? 'your minimum' : 'zero'} from ${esc3(day3(sh.day, yr))}</p>`
+    + (shA ? `<p class="a3-sum" data-fig="shortwhy">${esc3(sum3(shA.whyParts, shA.headroom, r.accounts[sh.account].currency))}</p>` : '') : '';
   /* the engine's warnings are data (account, amount, day, minimum or none): worded by screens/status.js, never its text;
      a lower point after the first day under is its own "Later on" line with its own day [B1] */
   const wctx = { currency: home, names, accounts: r.accounts };
@@ -9008,7 +9069,7 @@ function plForm3(title, fields, buttons, note) {
   };
   host.innerHTML = `<section class="a3-card" data-card="plan-form"><h2>${esc3(title)}</h2>${note ? `<p class="a3-sub">${note}</p>` : ''}
     ${fields.map(f => `<div class="a3-field"><label for="pl-${f.key}">${esc3(f.label)}</label>${input(f)}${f.hint ? `<p class="a3-sub">${esc3(f.hint)}</p>` : ''}</div>`).join('')}
-    <p class="a3-err" id="plErr" role="alert"></p>
+    <p class="a3-err" id="plErr" role="alert"></p><div class="a3-actions" id="plAsk" hidden></div>
     <div class="a3-actions">${buttons.map((b, i) => `<button type="button" class="a3-btn${b.solid ? ' solid' : ''}" data-plbtn="${i}">${esc3(b.label)}</button>`).join('')}<button type="button" class="a3-btn" id="plBack">Back</button></div></section>`;
   for (const f of fields) if (f.kind === 'amount') BurrowScreens.inputs.bind($('#pl-' + f.key), { kind: 'amount', code: cur, optional: true });
   const read = () => {
@@ -9026,9 +9087,24 @@ function plForm3(title, fields, buttons, note) {
   host.querySelectorAll('[data-plbtn]').forEach(btn => btn.addEventListener('click', async () => {
     const got = read(), err = $('#plErr');
     if (got.bad) { err.textContent = got.bad; got.el.focus(); return; }
-    const [label, fn, undo] = buttons[Number(btn.dataset.plbtn)].step(got.vals);
+    const b = buttons[Number(btn.dataset.plbtn)], [label, fn, undo] = b.step(got.vals);
     const res = await ACT3.run(label, fn, { undo });
-    if (!res.ok) { err.textContent = res.text; return; }
+    const ask = $('#plAsk'); ask.hidden = true; ask.innerHTML = '';
+    if (!res.ok) {
+      err.textContent = res.text;
+      /* [BM2] a step that asks first (why 'ask'): the question, and a button that does it anyway with what is typed then */
+      if (res.why === 'ask' && b.anyway) {
+        ask.innerHTML = `<button type="button" class="a3-btn solid" id="plAnyway">${esc3(b.anyway.label)}</button>`; ask.hidden = false;
+        $('#plAnyway').addEventListener('click', async () => {
+          const again = read();
+          if (again.bad) { err.textContent = again.bad; again.el.focus(); return; }
+          const [l2, f2, u2] = b.anyway.step(again.vals), r2 = await ACT3.run(l2, f2, { undo: u2 });
+          if (!r2.ok) { err.textContent = r2.text; ask.hidden = true; ask.innerHTML = ''; return; }
+          plClose3();
+        });
+      }
+      return;
+    }
     plClose3();
   }));
   $('#plBack').addEventListener('click', plClose3);
@@ -9095,7 +9171,8 @@ function plGoalForm3(id) {
   const g = book.places.find(x => x.id === id);
   plForm3(g.name, [{ key: 'amount', label: 'Set aside now', kind: 'amount', optional: true, hint: g.keptIn && g.keptIn.mode === 'ownAccount' ? 'It moves from your bank into ' + E3.nameOf(g.keptIn.acct) : 'It stays in your bank, kept apart from safe to spend' },
     { key: 'name', label: 'Name', kind: 'text', value: g.name }, { key: 'target', label: 'Goal amount', kind: 'amount', value: g.target }, { key: 'due', label: 'Target date', kind: 'date', value: g.due || '' }],
-  [{ label: 'Set aside', solid: true, step: v => ['setAside', w => PLAN3W.setAside(w, id, { amount: v.amount }), 'Set aside for ' + g.name] },
+  [{ label: 'Set aside', solid: true, step: v => ['setAside', w => PLAN3W.setAside(w, id, { amount: v.amount }), 'Set aside for ' + g.name],
+     anyway: { label: 'Set aside anyway', step: v => ['setAside', w => PLAN3W.setAside(w, id, { amount: v.amount, anyway: true }), 'Set aside for ' + g.name] } },
    { label: 'Save changes', step: v => ['changeGoal', w => PLAN3W.changeGoal(w, id, { name: v.name, target: v.target, due: v.due }), 'Goal changed'] },
    { label: 'Take out', step: v => ['takeOut', w => PLAN3W.takeOut(w, id, { amount: v.amount }), 'Taken out of ' + g.name] }]);
 }

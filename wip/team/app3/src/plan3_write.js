@@ -175,8 +175,17 @@
     const g = find(w, 'places', id), a = amountOk(x.amount, 'an amount'), k = g.keptIn || {};
     /* [BM2, replaces BL2's rule] never more than the bank the money is in (or comes from) can spare through the next
        pay: the engine's canSetAside (the real-money walk's lowest point before it, less what is already set aside) */
-    const from = k.mode === 'ownAccount' ? x.from || mainOf(w) : k.acct || mainOf(w), spare = (LA.lookahead(w.book, w.today).accounts[from] || {}).canSetAside || 0;
+    const res = LA.lookahead(w.book, w.today), from = k.mode === 'ownAccount' ? x.from || mainOf(w) : k.acct || mainOf(w), spare = (res.accounts[from] || {}).canSetAside || 0;
     if (a > spare) bad(nameOf(w, from) + ' can spare ' + SMF.format(spare, (w.book.accounts || []).find(y => y.id === from).cur) + ' to set aside before your next pay: what it holds at its lowest until then, less what is already set aside in it');
+    /* [BM2] past the goal's target: asked first (why 'ask'); the screen offers "anyway", which writes it */
+    const need = (res.places[id] || {}).toGo;
+    if (!x.anyway && need != null && a > need) {
+      const cur = g.cur || (w.book.accounts || []).find(y => y.id === from).cur;
+      const q = new A3.Bad(need > 0 ? `That is more than ${g.name} needs (${SMF.format(need, cur)}). Set aside ${SMF.format(a, cur)} anyway?`
+        : `${g.name} already has all it needs (${SMF.format(g.target, cur)}). Set aside ${SMF.format(a, cur)} anyway?`);
+      q.why = 'ask';
+      throw q;
+    }
     if (k.mode === 'ownAccount') {
       if (from === k.acct) bad('Pick the account the money comes from');
       w.add('events', { k: 'transfer', date: w.today, a, acct: from, acct2: k.acct, src: { type: 'typed' } });

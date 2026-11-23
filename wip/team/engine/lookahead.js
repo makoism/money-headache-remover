@@ -829,9 +829,9 @@
     // before its date (a late pay still counted is one of them), the leftover minor units on the earliest, so the first
     // is the most. No pay left before the date: all of it now. No fixed pay: periods are not known [B4].
     function goalPace(g, amt, due) {
-      if (g.target == null || !due) return {};
+      if (g.target == null) return {};
       const toGo = Math.max(0, g.target - Math.max(0, amt));
-      if (!periodStream) return { target: g.target, toGo, periodsLeft: null, perPeriod: null };
+      if (!due || !periodStream) return { target: g.target, toGo, periodsLeft: null, perPeriod: null };   // [BM2] toGo with no date too
       const dd = dayNum(due);
       // [BJ3, BF1] a late pay still expected counts here (pace is a plan), though safe to spend leaves it out (BH1)
       const n = dd < today ? 0 : occOf(periodStream, today - 62, dd).filter(o => o.land <= dd && !settledBy[o.id]

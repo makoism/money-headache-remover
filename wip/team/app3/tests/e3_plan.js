@@ -119,6 +119,17 @@ const view = bk => T.L.lookahead(bk, DAY);
   await p.click('#plBack'); await T.w(200);
   await p.click(`[data-goal="${trip.id}"]`); await T.w(200);
   await fill(p, { amount: '5000' }); await save(p);
+  /* [BM2] past a goal's target: asked first, nothing written until "Set aside anyway" */
+  await p.click('#plAddGoal'); await T.w(200);
+  await fill(p, { name: 'Gift', target: '10000' }); await save(p);
+  bk = await saved(p);
+  const gift = bk.places.find(g => g.name === 'Gift'), nEv = bk.events.length;
+  await p.click(`[data-goal="${gift.id}"]`); await T.w(200);
+  await fill(p, { amount: '12000' }); await save(p);
+  ck('setting aside past the target asks first, and writes nothing', await err(p) === 'That is more than Gift needs (¥10,000). Set aside ¥12,000 anyway?' && (await saved(p)).events.length === nEv && await formOpen(p), await err(p));
+  ck('the question offers "Set aside anyway"', await p.$eval('#plAnyway', e => e.textContent).catch(() => null) === 'Set aside anyway');
+  await p.click('#plAnyway'); await T.w(400);
+  ck('"Set aside anyway" writes it: Gift holds the engine\'s 12,000', !(await formOpen(p)) && view(await saved(p)).places[gift.id].kept === 12000 && await amt(p, `[data-goal="${gift.id}"] [data-fig=goal-kept]`) === 12000);
   /* a goal in its own account */
   await p.click('#plAddGoal'); await T.w(200);
   await fill(p, { name: 'House', target: '1000000', mode: 'ownAccount' }); await save(p);
