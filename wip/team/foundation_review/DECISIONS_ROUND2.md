@@ -374,3 +374,15 @@ AT1 (sy-q1). An event changed two different ways on two devices (a ticked pay wi
 AT2 (sy-q2). X8's offer for a rule that is not monthly or weekly starts the day after the old rule's next occurrence after the last settled one (insurance paid 31 May yearly, changed to 15 Jun: offered from 1 Jun 2027, so the first new payment is 15 Jun 2027 and nothing is paid twice in one cycle).
 AT3. When one account's main-bank switch and its minimum change meet at a sync, it is one question showing both changes.
 The look ahead's reopen rule follows AP1 (being brought in line by the reference catch-up helper). mg-282 and mv-125 to mv-127 move to AP7's shop keys and `src: 'moved'`; move_two, move_later and pe-36 to pe-43, pe-55 to pe-59 are reviewed by qc-regression for the stage 2 label.
+
+## AU. The independent checker's eight classes (lane/checker-b, checker_differences_1.md), decided
+AU1 (class 1, reference wrong). Weekly and two-weekly pay: the period running now is converted like every other (units rules, I4 for the days left); the large-gain test uses the current period's converted Free to spend.
+AU2 (class 2). LEDGER_DESIGN L1 stands: a place may go below zero (shown amber), and money placed later adds to it from where it is. In the walk a place below zero counts as nothing set aside (it holds nothing). Both the reference and the checker follow this.
+AU3 (class 3, reference wrong). A part-paid remainder carried on again is counted once (I3).
+AU4 (class 4). When an income occurrence that starts a period is counted (due today, B3 income first), that period's budget lines and Free to spend share come off with it (SCHEMA 10.3 step 2).
+AU5 (class 5). The same for a late pay still counted (H8).
+AU6 (class 6). A credit statement carries to the next statement (H3); I3 is about amounts owed, not credits. The closed statement takes the credit off, as the open amount already does.
+AU7 (class 7). A pay inside the opening is already in; its period starts by the setup day at the latest.
+AU8 (class 8). The plain units form (52 / n) is retired; the reference uses the units rules (L, M, P4, R2) everywhere.
+Other points: a spend with no budget line in a life with a plan counts against Free to spend; a card payment item uses the paying bank's posting window (1 working day); while the next pay is late it is still "the next pay" for G1; an older statement that is late and unpaid is due now, beside the next one; a card's open amount shows a part-paid remainder that will carry, marked as carrying.
+The checker becomes a permanent gate: `node wip/team/checker/fuzz_vs_ref.js --seeds 2000` must show 0 differences, and the engine is run against the checker the same way.
