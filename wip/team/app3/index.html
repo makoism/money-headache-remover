@@ -2157,6 +2157,12 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
       }
       imp.gone = true; imp.goneBy = t.id; imp.unmatched = false;
     }
+    // [BI2] what the matching above set aside, and the record that holds each: a typed or ticked record an imported line
+    // replaced, an imported line that met a side of a two-sided record (a move, a card payment), a self-logged spend
+    // skipped. Receipts and the past periods count through countOnce() with this, so a pair is one record everywhere.
+    const wasGone = new Set((book.events || []).filter(e => e && e.gone).map(e => e.id));
+    res.dropped = {};
+    for (const x of events) if (x.gone && !wasGone.has(x.id)) res.dropped[x.id] = x.goneBy || null;
     // the live records, kept until one is added (a self-logged spend) or removed
     let liveCache = null;
     const live = () => liveCache || (liveCache = events.filter(e => !e.gone));
@@ -3131,7 +3137,13 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
     }).join(' ') + ' = ' + fmt(result, cur);
   }
 
-  const api = { lookahead };
+  /* [BI2] the one way to count what happened: the book's live records, less those the look ahead (`res`, its answer for
+     the day) set aside as matched to another record. Receipts and the past periods both list through this. */
+  function countOnce(book, res) {
+    const away = (res && res.dropped) || {};
+    return (book.events || []).filter(e => e && !e.gone && !Object.prototype.hasOwnProperty.call(away, e.id));
+  }
+  const api = { lookahead, countOnce };
   if (node) module.exports = api;
   else (root.BurrowEngine = root.BurrowEngine || {}).lookahead = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
@@ -3172,7 +3184,8 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
     // what the app had heard of by then, as the look ahead counts it: dated and told by the day asked (the day before,
     // at its start); a record belongs to the period its date falls in, whenever it was told [section 9]
     const knownTo = opts.at === 'start of day' ? D0.dayStr(D0.dayNum(asOf) - 1) : asOf;
-    const evs = (book.events || []).filter(e => e && !e.gone && e.date && e.date <= knownTo && String(e.told || e.date).slice(0, 10) <= knownTo);
+    // [BI2] each record once: a statement line matched to a typed or ticked record is one record (LA.countOnce)
+    const evs = LA.countOnce(book, r).filter(e => e.date && e.date <= knownTo && String(e.told || e.date).slice(0, 10) <= knownTo);
     const firstSched = e => { const o = (e.settles || [])[0]; return o ? (typeof o === 'string' ? I.scheduleOf(o) : o.s) : null; };
     function happened(start, end) {
       const home = L.homeOn(book, start);
@@ -7905,8 +7918,19 @@ function rcForName3(e) {
 /* what was logged, as the engine knows it on the shown day: a record dated or told after that day is not known yet
    (the look ahead's own rule; it matters when the made-up book is stepped through the days) */
 const rcKnown3 = e => e.date <= E3.today() && String(e.told || e.date).slice(0, 10) <= E3.today();
+/* [BI2] each record once: a statement line matched to a typed record or a move is one row, through the engine's countOnce
+   (the look ahead's own matching, for the shown day; worked out once per book and day) */
+let rcOnce3 = { book: null, day: null, res: null };
+function rcCounted3() {
+  if (!E3.book) return [];
+  if (rcOnce3.book !== E3.book || rcOnce3.day !== E3.today()) {
+    let res = null; try { res = E3.view(E3.today()); } catch (e) { res = null; }
+    rcOnce3 = { book: E3.book, day: E3.today(), res };
+  }
+  return BurrowEngine.lookahead.countOnce(E3.book, rcOnce3.res);
+}
 function rcRows3() {
-  return ((E3.book && E3.book.events) || []).filter(e => rcLive3(e) && rcKnown3(e) && !e.of && !(e.settles && e.settles.length)
+  return rcCounted3().filter(e => rcLive3(e) && rcKnown3(e) && !e.of && !(e.settles && e.settles.length)
     && (e.k === 'spend' || e.k === 'transfer' || (e.k === 'in' && e.sub === 'refund')));
 }
 function rcWhat3(e) {

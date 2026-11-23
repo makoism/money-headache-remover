@@ -178,6 +178,12 @@
       }
       imp.gone = true; imp.goneBy = t.id; imp.unmatched = false;
     }
+    // [BI2] what the matching above set aside, and the record that holds each: a typed or ticked record an imported line
+    // replaced, an imported line that met a side of a two-sided record (a move, a card payment), a self-logged spend
+    // skipped. Receipts and the past periods count through countOnce() with this, so a pair is one record everywhere.
+    const wasGone = new Set((book.events || []).filter(e => e && e.gone).map(e => e.id));
+    res.dropped = {};
+    for (const x of events) if (x.gone && !wasGone.has(x.id)) res.dropped[x.id] = x.goneBy || null;
     // the live records, kept until one is added (a self-logged spend) or removed
     let liveCache = null;
     const live = () => liveCache || (liveCache = events.filter(e => !e.gone));
@@ -1152,7 +1158,13 @@
     }).join(' ') + ' = ' + fmt(result, cur);
   }
 
-  const api = { lookahead };
+  /* [BI2] the one way to count what happened: the book's live records, less those the look ahead (`res`, its answer for
+     the day) set aside as matched to another record. Receipts and the past periods both list through this. */
+  function countOnce(book, res) {
+    const away = (res && res.dropped) || {};
+    return (book.events || []).filter(e => e && !e.gone && !Object.prototype.hasOwnProperty.call(away, e.id));
+  }
+  const api = { lookahead, countOnce };
   if (node) module.exports = api;
   else (root.BurrowEngine = root.BurrowEngine || {}).lookahead = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

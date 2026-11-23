@@ -41,8 +41,19 @@ function rcForName3(e) {
 /* what was logged, as the engine knows it on the shown day: a record dated or told after that day is not known yet
    (the look ahead's own rule; it matters when the made-up book is stepped through the days) */
 const rcKnown3 = e => e.date <= E3.today() && String(e.told || e.date).slice(0, 10) <= E3.today();
+/* [BI2] each record once: a statement line matched to a typed record or a move is one row, through the engine's countOnce
+   (the look ahead's own matching, for the shown day; worked out once per book and day) */
+let rcOnce3 = { book: null, day: null, res: null };
+function rcCounted3() {
+  if (!E3.book) return [];
+  if (rcOnce3.book !== E3.book || rcOnce3.day !== E3.today()) {
+    let res = null; try { res = E3.view(E3.today()); } catch (e) { res = null; }
+    rcOnce3 = { book: E3.book, day: E3.today(), res };
+  }
+  return BurrowEngine.lookahead.countOnce(E3.book, rcOnce3.res);
+}
 function rcRows3() {
-  return ((E3.book && E3.book.events) || []).filter(e => rcLive3(e) && rcKnown3(e) && !e.of && !(e.settles && e.settles.length)
+  return rcCounted3().filter(e => rcLive3(e) && rcKnown3(e) && !e.of && !(e.settles && e.settles.length)
     && (e.k === 'spend' || e.k === 'transfer' || (e.k === 'in' && e.sub === 'refund')));
 }
 function rcWhat3(e) {
