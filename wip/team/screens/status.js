@@ -10,7 +10,7 @@
      ctx.staleDays a bank figure older than this asks for a check-in (7 until Mako says otherwise)
 
    One state, in this order (the first that is true wins, the rest go in `also` so they can sit under it):
-     sample > empty > short > warning > question > late > check > zero > no_free > ok
+     sample > empty > short > warning > set_aside > question > late > check > zero > no_free > ok
    no_free [north star F1]: a pay period with neither Free to spend nor a budget line, so safe to spend leaves nothing
    for food and everyday things; Home asks for it in place of "Fine for now" and links to Plan's Set Free to spend
    Plain browser JavaScript. In a page it is BurrowScreens.status (load money.js and names.js first). */
@@ -23,9 +23,9 @@
   'use strict';
 
   const STALE_DAYS = 7;   // for Mako: how old a bank figure may get before the status asks for a check-in
-  const LEVEL = { sample: 'wait', empty: 'wait', short: 'bad', warning: 'bad', question: 'wait', late: 'wait', check: 'wait', zero: 'wait', no_free: 'wait', ok: 'good' };
+  const LEVEL = { sample: 'wait', empty: 'wait', short: 'bad', warning: 'bad', set_aside: 'bad', question: 'wait', late: 'wait', check: 'wait', zero: 'wait', no_free: 'wait', ok: 'good' };
   /* engine warning codes (lookahead_ref.js): which change the state, which are notes under it */
-  const WARNING_STATE = { below_minimum: 'warning', check_again: 'question', gain_to_ask: 'question', minimum_other_currency: 'question' };
+  const WARNING_STATE = { below_minimum: 'warning', set_aside_over: 'set_aside', check_again: 'question', gain_to_ask: 'question', minimum_other_currency: 'question' };
   const NOTE_ONLY = ['card_other_currency', 'loan_other_currency', 'income_other_currency', 'spend_other_currency', 'reopened'];
 
   /* every word the status says, all drafts for Mako's copy pass (VOICE: one-line notes have no full stop) */
@@ -35,6 +35,7 @@
     'state.empty': W('No bank figure yet'),
     'state.short': W('Not safe to spend'),
     'state.warning': W('Under a minimum'),
+    'state.set_aside': W('Set aside more than you can spare'),
     'state.question': W('A question for you'),
     'state.late': W('Pay not in yet'),
     'state.check': W('Time to check in'),
@@ -51,6 +52,7 @@
     'reason.short_from_min': W('You\'re short by {amount}, below your minimum from {day}'),
     'reason.below_minimum': W('{account} goes {amount} under its minimum on {day}'),
     'reason.below_zero': W('{account} goes {amount} below zero on {day}'),
+    'reason.set_aside_over': W('{who} is {amount} more than {account} can spare on {day}'),
     'reason.gain_to_ask': W('{account} has more in it than the app expected'),
     'reason.check_again': W('Check {account} again'),
     'reason.minimum_other_currency': W('What\'s the minimum for {account} in its own currency'),
@@ -70,6 +72,7 @@
     'next.move_money_in': W('Move money in before {day}'),
     'next.move_money_in_now': W('Move money in or spend less'),
     'next.answer': W('Answer the question'),
+    'next.take_out_or_move_in': W('Take some out of a goal, or move money in'),
     'next.check_in_when_it_lands': W('Check in when it lands'),
     'next.wait_for_pay': W('It turns safe once your pay is in'),
     'next.log_money_in': W('Log money in when it comes'),
@@ -80,6 +83,8 @@
     'warn.later_on': W('Later on: {account} goes below zero in {month}'),
     'warn.later_low_zero': W('Later on: {account} goes {amount} below zero on {day}'),
     'warn.later_low_minimum': W('Later on: {account} goes {amount} below its minimum of {minimum} on {day}'),
+    'warn.set_aside_over': W('{who} is {amount} more than {account} can spare on {day}'),
+    'warn.later_set_aside_over': W('Later on: {who} is {amount} more than {account} can spare on {day}'),
     'warn.check_again': W('The {account} figure of {day} was wrong: what does it show now'),
     'warn.gain_to_ask': W('{account} shows {amount} more than the app had: was that figure right'),
     'warn.reopened': W('{account} was closed, but money came into it, so it is open again'),
@@ -129,7 +134,9 @@
     const warnings = r.warnings || [];
     const below = warnings.filter(w => w.code === 'below_minimum').sort((a, b) => (a.day < b.day ? -1 : a.day > b.day ? 1 : 0));
     if (!Object.keys(accounts).length) out.push({ state: 'empty', reason: { code: 'no_figures' }, next: { code: 'check_in' } });
-    if (stp.shortfall > 0) {
+    /* [BM2] short only when the real money is: the engine's short (or a below-zero warning) comes from the real-money
+       walk; a shortfall from goals or plan lines alone is the goals' own warning, or nothing safe to spend */
+    if (stp.shortfall > 0 && (stp.short || below.length)) {
       /* [BL3] the engine's short (safeToSpend.short): the headline's amount, the sum's own total, before the pay after the
          lowest point; money moves in before the first day under */
       const sh = stp.short || null, day = sh ? sh.day : below.length ? below[0].day : null;
@@ -138,6 +145,8 @@
     for (const w of below) out.push({ state: 'warning', reason: { code: 'below_minimum', account: w.account, amount: w.amount != null ? w.amount : w.short, currency: (accounts[w.account] || {}).currency || ctx.currency, day: w.day, minimum: minimumOf(w, accounts) }, next: { code: 'move_money_in', day: w.day }, note: 'below_minimum' });
     for (const w of warnings) {
       if (w.code === 'below_minimum' || NOTE_ONLY.includes(w.code)) continue;
+      /* [BM2] goals holding more than the bank can spare: the money is short against the goals, never the bank */
+      if (w.code === 'set_aside_over') { out.push({ state: 'set_aside', reason: { code: 'set_aside_over', who: whoOf(w), account: w.account, amount: w.amount, currency: (accounts[w.account] || {}).currency || ctx.currency, day: w.day }, next: { code: 'take_out_or_move_in' }, note: 'set_aside_over' }); continue; }
       const known = WARNING_STATE[w.code];
       out.push({ state: known || 'question', reason: known ? { code: w.code, account: w.account } : { code: 'unknown_warning', warning: w.code, account: w.account }, next: { code: 'answer' }, note: w.code });
     }
@@ -163,6 +172,12 @@
     const m = w.minimum !== undefined ? w.minimum : (accounts[w.account] || {}).minimum;
     return m ? m : null;
   }
+  /* [BM2] whose money a set_aside_over warning names: "Trip's money", or "The money set aside for Trip and House" */
+  function whoOf(w, lower) {
+    const n = (w.places || []).map(p => p.name);
+    if (n.length === 1) return `${n[0]}'s money`;
+    return `${lower ? 'the' : 'The'} money set aside for ${n.length ? n.join(' and ') : 'your goals'}`;
+  }
   /* one engine warning in words: from its data only, so no raw ISO day and no engine text reaches a screen.
      ctx: { currency, names: { id: name }, accounts (the engine's, for each account's currency) } */
   function warningText(w, ctx) {
@@ -173,6 +188,7 @@
       const minimum = minimumOf(w, accounts), amount = w.amount != null ? w.amount : w.short;
       return fill(minimum ? 'warn.below_minimum' : 'warn.below_zero', { account: w.account, amount, minimum, day: w.day, currency }, ctx);
     }
+    if (w.code === 'set_aside_over') return fill('warn.set_aside_over', { who: whoOf(w), account: w.account, amount: w.amount, day: w.day, currency }, ctx);
     if (w.code === 'check_again') return fill('warn.check_again', { account: w.account, day: w.day }, ctx);
     if (w.code === 'gain_to_ask') return fill('warn.gain_to_ask', { account: w.account, amount: w.gain, currency }, ctx);
     if (w.code === 'card_other_currency') return fill('warn.card_other_currency', { account: w.account, card: w.card }, ctx);
@@ -185,8 +201,9 @@
   /* [B1] a below-minimum warning's lower point after its first day under, in words with its own day; '' when none */
   function laterLowText(w, ctx) {
     ctx = ctx || {};
-    if (!w || w.code !== 'below_minimum' || !w.later) return '';
+    if (!w || (w.code !== 'below_minimum' && w.code !== 'set_aside_over') || !w.later) return '';
     const accounts = ctx.accounts || {}, minimum = minimumOf(w, accounts);
+    if (w.code === 'set_aside_over') return fill('warn.later_set_aside_over', { who: whoOf(w, true), account: w.account, amount: w.later.amount, day: w.later.day, currency: (accounts[w.account] || {}).currency || ctx.currency }, ctx);
     return fill(minimum ? 'warn.later_low_minimum' : 'warn.later_low_zero', { account: w.account, amount: w.later.amount, minimum, day: w.later.day, currency: (accounts[w.account] || {}).currency || ctx.currency }, ctx);
   }
 

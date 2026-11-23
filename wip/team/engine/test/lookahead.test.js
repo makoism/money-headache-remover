@@ -469,4 +469,62 @@ t('a record told after a check and dated before it: inside it, the bank stays, a
   eq(r.accounts.bank.bank, 398000);   // 400,000 at the check, less the 11 Dec spend only
   eq(r.heldByCheck, [{ id: 'late', account: 'bank', check: '2026-12-10' }]);
 });
+// [BM2] Warnings that the bank goes below zero or under its minimum come from the real-money walk (bank, counted pays,
+// bills, card payments, moves; never goals, never plan lines). Goals kept in a bank only lower safe to spend; goals
+// holding more than the bank can spare get their own warning. The case from the numbers QC: Main bank 359,000 checked
+// Thu 10 Dec 2026 (the pay of the 10th in, Visa paid), Rent 70,000 on the 27th, Gym 5,000 on the 5th, Pay 200,000 on the
+// 10th (the working day before: Fri 8 Jan 2027), Food 30,000, Free to spend 40,000. Every amount made up.
+function goalDip(setAside, more) {
+  const b = { v: 3, home: { curs: [{ from: '2026-01-01', cur: 'JPY' }], country: { v: 'JP' }, main: { v: { acct: 'bank', min: null } } },
+    accounts: [{ id: 'bank', name: 'Main bank', type: 'bank', cur: 'JPY' }],
+    schedules: [{ id: 'pay', kind: 'income', name: 'Pay', acct: 'bank', cur: 'JPY', startsPeriod: true, shift: 'before', rules: [{ rule: { every: 'month', days: [10] } }], steps: [{ amount: 200000 }] },
+      { id: 'rent', kind: 'bill', name: 'Rent', acct: 'bank', cur: 'JPY', shift: 'none', rules: [{ rule: { every: 'month', days: [27] } }], steps: [{ amount: 70000 }] },
+      { id: 'gym', kind: 'bill', name: 'Gym', acct: 'bank', cur: 'JPY', shift: 'none', rules: [{ rule: { every: 'month', days: [5] } }], steps: [{ amount: 5000 }] }],
+    plan: { shares: [{ id: 'sh', cur: 'JPY', per: { free: 'month' }, free: 40000 }], budgets: [{ id: 'food', name: 'Food', cur: 'JPY', per: 'month', steps: [{ amount: 30000 }] }] },
+    places: [{ id: 'trip', name: 'Trip', kind: 'goal', target: 20000, keptIn: { acct: 'bank', mode: 'inBank' } }],
+    events: [
+      { id: 'o', k: 'open', acct: 'bank', date: '2026-12-10', a: 359000, told: '2026-12-10T20:00' + TZ, grp: 's', split: { free: 40000, lines: { food: 30000 } } },
+      { id: 'c', k: 'check', acct: 'bank', date: '2026-12-10', a: 359000, told: '2026-12-10T20:00' + TZ, grp: 's' }] };
+  if (setAside) b.events.push({ id: 'g1', k: 'move', place: 'waiting', place2: 'trip', a: setAside, date: '2026-12-10', told: '2026-12-10T21:00' + TZ });
+  return more ? more(b) || b : b;
+}
+t('a goal set aside past what the bank can spare: no "below zero", its own warning instead [BM2]', () => {
+  const r = run(goalDip(254001), '2026-12-10');
+  // the real money on 5 Jan: 359,000 - 70,000 - 5,000 = 284,000, never below zero
+  eq(r.warnings.filter(w => w.code === 'below_minimum'), []);
+  eq(r.safeToSpend.short, null);
+  eq([r.accounts.bank.real.lowest, r.accounts.bank.real.lowestDay, r.accounts.bank.real.headroom], [284000, '2027-01-05', 284000]);
+  // what it can spare after Food: 284,000 - 30,000 = 254,000; Trip holds 254,001, 1 more
+  const w = r.warnings.find(x => x.code === 'set_aside_over');
+  ok(w, JSON.stringify(r.warnings));
+  eq([w.account, w.day, w.amount, w.places, w.later], ['bank', '2027-01-05', 1, [{ place: 'trip', name: 'Trip' }], undefined]);
+  ok(/^Trip's money is 1 more than Main bank can spare on 5 Jan$/.test(w.text) && !/below zero/.test(w.text), w.text);
+  eq(r.safeToSpend.headline, 0);   // goals only lower safe to spend
+});
+t('a goal the bank can spare: no warning of either kind [BM2]', () => {
+  const r = run(goalDip(254000), '2026-12-10');
+  eq(r.warnings.filter(w => w.code === 'below_minimum' || w.code === 'set_aside_over'), []);
+  eq(r.safeToSpend.headline, 0);
+});
+t('plan lines more than the bank can spare are never "below zero" [BM2]', () => {
+  // Food 300,000 this period: the plan cannot be kept, but the bank itself never goes below zero
+  const r = run(goalDip(0, b => { b.events[0].split.lines.food = 300000; b.plan.budgets[0].steps[0].amount = 300000; }), '2026-12-10');
+  eq(r.warnings.filter(w => w.code === 'below_minimum'), []);
+  eq(r.safeToSpend.short, null);
+  eq(r.safeToSpend.headline, 0);
+});
+t('the real money short: "below zero" from the real walk, its own sum; the goal warning beside it [BM2, BL3]', () => {
+  // Rent 400,000 and pay 600,000: 359,000 - 400,000 = -41,000 on 27 Dec, -46,000 on 5 Jan before the 8 Jan pay
+  const r = run(goalDip(10000, b => { b.schedules[1].steps[0].amount = 400000; b.schedules[0].steps[0].amount = 600000; }), '2026-12-10');
+  const w = r.warnings.find(x => x.code === 'below_minimum');
+  eq([w.day, w.amount, w.later], ['2026-12-27', 41000, { day: '2027-01-05', amount: 46000 }]);
+  eq(r.safeToSpend.short, { account: 'bank', day: '2026-12-27', amount: 46000, minimum: null, beforePay: '2027-01-08', first: 41000 });
+  const real = r.accounts.bank.real;
+  eq(r.safeToSpend.short.amount, -real.headroom, 'the headline and its sum never differ');
+  eq(real.whyParts.reduce((t, p) => t + p.amount, 0), real.headroom);
+  ok(!real.whyParts.some(p => /Trip|Food/.test(p.label)), JSON.stringify(real.whyParts));
+  // all of Trip's 10,000 is more than the bank can spare
+  const g = r.warnings.find(x => x.code === 'set_aside_over');
+  eq([g.day, g.amount], ['2026-12-27', 10000]);
+});
 done('lookahead');

@@ -1290,15 +1290,17 @@ function lookahead(sc, asOf, opts = {}) {
   }
 
   // ----- the walk, one account at a time [B3, B9, F1, F2, F3, F9, F14, H5, H7, H8] -----
-  function walk(id, end, minimum) {
+  // [BM2] `real`: the real-money walk (pays, bills, card payments, moves; no goals, no plan lines): below zero and under
+  // the minimum are judged on it
+  function walk(id, end, minimum, real) {
     const start = banks[id].bank;
     const why = [{ label: acct[id].name + ' today', amount: start }];
     let bal = start;
     const placeLeft = {};
-    for (const g of keptIn[id] || []) { bal -= g.amount; placeLeft[g.id] = g.amount; why.push({ label: g.label || g.name + ', kept in it', amount: -g.amount }); }
+    if (!real) for (const g of keptIn[id] || []) { bal -= g.amount; placeLeft[g.id] = g.amount; why.push({ label: g.label || g.name + ', kept in it', amount: -g.amount }); }
     // [B1]; no fixed pay: by day instead [B4]. [T4] An overspent line counts as nothing left: the overspend has
     // already left the account.
-    if (periodStream) for (const l of (plan.lines || []).filter(x => x.acct === id && x.left)) { const left = Math.max(0, l.left); bal -= left; why.push({ label: l.name + ' left this period', amount: -left }); }
+    if (periodStream && !real) for (const l of (plan.lines || []).filter(x => x.acct === id && x.left)) { const left = Math.max(0, l.left); bal -= left; why.push({ label: l.name + ' left this period', amount: -left }); }
     const steps = [];   // { day, order, amount, label }  order: 0 income, 1 bills, 2 planned spending
     for (const o of items) {
       if (o.settled) continue;
@@ -1335,7 +1337,7 @@ function lookahead(sc, asOf, opts = {}) {
         if (pt.due <= end) steps.push({ day: Math.max(pt.due, today), order: 1, amount: -amt, label: pa.name + ', part posted ' + short(pt.due) });
       }
     }
-    for (const p of plannedFor(id)) if (p.land <= end) steps.push({ day: p.land, order: 2, amount: -p.amount, label: p.label });
+    if (!real) for (const p of plannedFor(id)) if (p.land <= end) steps.push({ day: p.land, order: 2, amount: -p.amount, label: p.label });
     steps.sort((a, b) => a.day - b.day || a.order - b.order);
     let low = bal, lowDay = today, lowAt = 0, firstBelowZero = null, belowBal = null;
     for (let i = 0; i < steps.length; i++) {
@@ -1383,8 +1385,13 @@ function lookahead(sc, asOf, opts = {}) {
       // unless the person says so (`spend_from`).
       spendFrom: closed ? false : a.spend_from != null ? a.spend_from : !!SPEND_TYPES[a.kind] && a.currency === home && !backsGoal(id),
       why: whyText(w.why, w.headroom, a.currency), fillers: banks[id].fillers };
-    if (w.headroom < 0) res.warnings.push({ account: id, code: 'below_minimum', day: r.lowestDay, short: -w.headroom, text: `${a.name} goes ${fmt(-w.headroom, a.currency)} below its minimum on ${r.lowestDay}` });   // [F9]
-    const later = walk(id, today + LATER_ON_DAYS, 0);   // [B11]
+    // [BM2] below zero or the minimum from the real-money walk only; goals holding more than the bank can spare are
+    // their own warning, never "below zero"
+    const rw = walk(id, horizon, minimum, true);
+    if (rw.headroom < 0) res.warnings.push({ account: id, code: 'below_minimum', day: dayStr(rw.lowestDay), short: -rw.headroom, text: `${a.name} goes ${fmt(-rw.headroom, a.currency)} below its minimum on ${dayStr(rw.lowestDay)}` });   // [F9]
+    const kept = (keptIn[id] || []).reduce((t, g) => t + g.amount, 0);
+    if (w.headroom < 0 && kept > 0) res.warnings.push({ account: id, code: 'set_aside_over', day: r.lowestDay, amount: Math.min(kept, -w.headroom), text: `Money set aside in ${a.name} is ${fmt(Math.min(kept, -w.headroom), a.currency)} more than it can spare on ${r.lowestDay}` });
+    const later = walk(id, today + LATER_ON_DAYS, 0, true);   // [B11; BM2: the real-money walk]
     if (later.firstBelowZero !== null && later.firstBelowZero > horizon) res.laterOn.push({ account: id, day: dayStr(later.firstBelowZero), balance: later.belowBal, text: `Later on: ${a.name} goes below zero in ${dayStr(later.firstBelowZero).slice(0, 7)}` });
   }
   // [O watch: a wrong figure at a check-in] A check-in figure above what the app had for the account by more

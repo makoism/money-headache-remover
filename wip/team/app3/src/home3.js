@@ -128,7 +128,10 @@ function drawHome3() {
   /* [BL3] short: the sum's own total, before the pay after its lowest point (only when one brings money), and the first
      day the bank goes under beside it */
   const sh = r.safeToSpend.short;
-  const short = sh ? `<p class="a3-warn a3-bad" data-fig="short">${esc3(label3('shortBy'))} ${fig3('safeToSpend.short', sh.amount, home)}${sh.beforePay ? ` before the pay on ${esc3(day3(sh.beforePay, yr))}` : ''}, below ${sh.minimum ? 'your minimum' : 'zero'} from ${esc3(day3(sh.day, yr))}</p>` : '';
+  /* [BM2] the short is the real money's (no goals, no plan lines): its own sum sits under it and ends with the same figure */
+  const shA = sh && r.accounts[sh.account] && r.accounts[sh.account].real;
+  const short = sh ? `<p class="a3-warn a3-bad" data-fig="short">${esc3(label3('shortBy'))} ${fig3('safeToSpend.short', sh.amount, home)}${sh.beforePay ? ` before the pay on ${esc3(day3(sh.beforePay, yr))}` : ''}, below ${sh.minimum ? 'your minimum' : 'zero'} from ${esc3(day3(sh.day, yr))}</p>`
+    + (shA ? `<p class="a3-sum" data-fig="shortwhy">${esc3(sum3(shA.whyParts, shA.headroom, r.accounts[sh.account].currency))}</p>` : '') : '';
   /* the engine's warnings are data (account, amount, day, minimum or none): worded by screens/status.js, never its text;
      a lower point after the first day under is its own "Later on" line with its own day [B1] */
   const wctx = { currency: home, names, accounts: r.accounts };

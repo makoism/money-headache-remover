@@ -138,5 +138,42 @@ async function warns(bk, day) {
     ck('F: the sum on Home names the overspend', cap && cap.includes(`(Free to spend is ¥${over.toLocaleString("en")} over this period) = ¥0`), cap);
     ck('F: no page errors', errs.length === 0, errs.join(' | '));
   }
+  /* J. [BM2, numbers QC finding 2] Set up Thu 10 Dec with Main bank 359,000 (the pay of the 10th in), Pay 200,000 on the
+     10th (Fri 8 Jan next), Rent 70,000 on the 27th, Gym 5,000 on the 5th, Food 30,000 and Free to spend 40,000 a pay
+     period, Trip (goal 20,000) with 254,001 set aside. The bank itself is 284,000 on 5 Jan: never "below zero"; Trip's
+     money is 1 more than it can spare after Food. Safe to spend is 0, and no "Short by". Then K: Rent 400,000 and pay
+     600,000: really short, by the real money's own sum (no Trip, no Food in it). */
+  const goalBook = (rent, pay) => {
+    const bk = B.buildBook({ day: '2026-12-10', told: '2026-12-10T20:00+09:00', country: 'JP', currency: 'JPY',
+      banks: [{ key: 'b', name: 'Main bank', amount: 359000 }],
+      pays: [{ key: 'pay', name: 'Pay', bank: 'b', amount: pay, day: 10, shift: 'before', startsPeriod: true }],
+      bills: [{ key: 'rent', name: 'Rent', from: 'b', amount: rent, day: 27, shift: 'none' }, { key: 'gym', name: 'Gym', from: 'b', amount: 5000, day: 5, shift: 'none' }] }, { newId: I.idMaker('bm2gdp', () => 0.5) }).book;
+    const acct = bk.accounts[0].id, st = { at: '2026-12-10T20:00+09:00', by: 'bm2gdp', told: '2026-12-10T20:00+09:00' };
+    bk.plan.shares.push(Object.assign({ id: 'bm2gdp-k7m2qa-911', from: '2026-12-10', cur: 'JPY', per: { free: 'pay' }, free: 40000, goals: {} }, st));
+    bk.plan.budgets.push(Object.assign({ id: 'bm2gdp-k7m2qa-912', name: 'Food', place: 'bills', cur: 'JPY', per: 'pay', from: '2026-12-10', steps: [Object.assign({ from: null, amount: 30000 }, st)] }, st));
+    bk.places.push(Object.assign({ id: 'bm2gdp-k7m2qa-913', name: 'Trip', kind: 'goal', target: 20000, cur: 'JPY', keptIn: { acct, mode: 'inBank' } }, st));
+    bk.events.push(Object.assign({ id: 'bm2gdp-k7m2qa-914', k: 'move', date: '2026-12-10', a: rent === 70000 ? 254001 : 10000, acct, place2: 'bm2gdp-k7m2qa-913', src: { type: 'typed' } }, st, { told: '2026-12-10T20:05+09:00' }));
+    return bk;
+  };
+  {
+    const bk = goalBook(70000, 200000), r = T.L.lookahead(bk, '2026-12-10');
+    const { out, status, short, all, errs } = await warns(bk, '2026-12-10');
+    ck('J: the engine: no below zero, Trip over by 1 on 5 Jan, safe to spend 0', !r.warnings.some(w => w.code === 'below_minimum') && r.safeToSpend.headline === 0 && r.safeToSpend.short === null
+      && JSON.stringify(r.warnings.filter(w => w.code === 'set_aside_over').map(w => [w.day, w.amount])) === '[["2027-01-05",1]]', JSON.stringify(r.warnings));
+    ck('J: Home never says "below zero" or "Short by"', !/below zero|Short by|short by/.test(all.replace(/⁠/g, '')), (all.replace(/⁠/g, '').match(/.{40}(below zero|hort by).{30}/) || [])[0]);
+    const w = out.find(x => x.code === 'set_aside_over');
+    ck('J: the goal\'s own warning in words', w && w.text === 'Trip\'s money is ¥1 more than Main bank can spare on 5 Jan', JSON.stringify(out));
+    ck('J: the status says the same, as its own state', /Set aside more than you can spare/.test(status) && /Trip's money is ¥1 more than Main bank can spare on 5 Jan/.test(status), status);
+    ck('J: no page errors', errs.length === 0 && short === null, errs.join(' | ') + ' ' + short);
+  }
+  {
+    const bk = goalBook(400000, 600000), r = T.L.lookahead(bk, '2026-12-10');
+    const { short, all, errs } = await warns(bk, '2026-12-10');
+    const real = Object.values(r.accounts)[0].real;
+    ck('K: short by the real money\'s own total, before the 8 Jan pay, below zero from 27 Dec', short === 'Short by ¥46,000 before the pay on 8 Jan 2027, below zero from 27 Dec' && real.headroom === -46000, short + ' ' + JSON.stringify(real));
+    const sum = await (async () => { const m = all.replace(/⁠/g, '').match(/Main bank today[^=]*= −¥46,000/); return m && m[0]; })();
+    ck('K: the real money\'s sum sits under it and ends with the same figure, no Trip and no Food in it', !!sum && !/Trip|Food/.test(sum), (all.replace(/⁠/g, '').match(/.{80}= −?¥[\d,]+/g) || []).join(' || '));
+    ck('K: no page errors', errs.length === 0, errs.join(' | '));
+  }
   T.done('e3_warnwords');
 })().catch(e => { console.log('FAIL crashed ' + e.stack); process.exit(1); });

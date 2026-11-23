@@ -139,7 +139,7 @@ test('nothing safe: says when it turns safe, and with no fixed pay says what to 
 });
 
 test('every made-up situation and every ask day: one known state, never "ok" next to a shortfall or an account under its minimum', () => {
-  const STATES = ['sample', 'empty', 'short', 'warning', 'question', 'late', 'check', 'zero', 'no_free', 'ok'];
+  const STATES = ['sample', 'empty', 'short', 'warning', 'set_aside', 'question', 'late', 'check', 'zero', 'no_free', 'ok'];
   let n = 0, refused = 0;
   for (const f of fs.readdirSync(SC).filter(x => x.endsWith('.json'))) {
     const sc = JSON.parse(fs.readFileSync(path.join(SC, f), 'utf8'));
@@ -151,7 +151,8 @@ test('every made-up situation and every ask day: one known state, never "ok" nex
       const s = status.statusOf(r, { currency: sc.currency, origin: 'typed' });
       n++;
       assert.ok(STATES.includes(s.state), f + ' ' + d + ' ' + s.state);
-      const danger = r.safeToSpend.shortfall > 0 || r.warnings.some(w => w.code === 'below_minimum');
+      /* [BM2] money goes short when the real money does (short, below_minimum) or goals hold more than it can spare */
+      const danger = !!r.safeToSpend.short || r.warnings.some(w => w.code === 'below_minimum' || w.code === 'set_aside_over');
       if (danger) assert.ok(s.level === 'bad', `${f} ${d}: ${s.state} while money goes short`);
       if (s.state === 'ok') assert.ok(r.safeToSpend.headline > 0 && !danger, f + ' ' + d);
       for (const part of ['state', 'reason']) assert.ok(typeof s.text[part] === 'string' && s.text[part] && !/undefined|NaN|null/.test(s.text[part]), `${f} ${d} ${part}: ${s.text[part]}`);
@@ -206,6 +207,35 @@ test('no Free to spend and no budget line: Home asks for everyday spending in pl
   // anything that needs doing first still wins
   r.period.lines = []; r.safeToSpend.headline = 0;
   assert.strictEqual(status.statusOf(r, YEN).state, 'zero');
+});
+/* [BM2] goals holding more than the bank can spare: their own warning, worded here from the engine's data, never
+   "goes below zero"; the real money is fine, so the state is never "short". The numbers QC case: Trip 254,001 set aside
+   in Main bank, which can spare 254,000 on 5 Jan. */
+const goalOver = () => {
+  const r = clone(engine('mako_shape', '2026-11-25'));
+  r.safeToSpend.headline = 0; r.safeToSpend.shortfall = 1; r.safeToSpend.short = null;
+  r.warnings = r.warnings.filter(w => w.code !== 'below_minimum');
+  r.warnings.push({ account: 'bank', code: 'set_aside_over', day: '2027-01-05', amount: 1, places: [{ place: 'trip', name: 'Trip' }] });
+  return r;
+};
+test('goals over what the bank can spare: their own state and words, never short or below zero [BM2]', () => {
+  const r = goalOver();
+  const s = status.statusOf(r, Object.assign({ names: { bank: 'Main bank' } }, YEN));
+  assert.strictEqual(s.state, 'set_aside');
+  assert.strictEqual(s.level, 'bad');
+  assert.strictEqual(s.text.reason, 'Trip\'s money is ¥1 more than Main bank can spare on 5 Jan');
+  assert.ok(!/below zero|short/i.test(s.text.state + ' ' + s.text.reason + ' ' + s.text.next), JSON.stringify(s.text));
+  assert.strictEqual(status.warningText(r.warnings[r.warnings.length - 1], { currency: 'JPY', names: { bank: 'Main bank' } }), 'Trip\'s money is ¥1 more than Main bank can spare on 5 Jan');
+  const two = Object.assign({}, r.warnings[r.warnings.length - 1], { places: [{ place: 'trip', name: 'Trip' }, { place: 'pc', name: 'New laptop' }], later: { day: '2027-01-27', amount: 3000 } });
+  assert.strictEqual(status.warningText(two, { currency: 'JPY', names: { bank: 'Main bank' } }), 'The money set aside for Trip and New laptop is ¥1 more than Main bank can spare on 5 Jan');
+  assert.strictEqual(status.laterLowText(two, { currency: 'JPY', names: { bank: 'Main bank' } }), 'Later on: the money set aside for Trip and New laptop is ¥3,000 more than Main bank can spare on 27 Jan');
+});
+test('a shortfall with no real money short (goals or plan lines) is never the "short" state [BM2]', () => {
+  const r = goalOver();
+  r.warnings = r.warnings.filter(w => w.code !== 'set_aside_over');
+  const s = status.statusOf(r, YEN);
+  assert.notStrictEqual(s.state, 'short');
+  assert.strictEqual(s.state, 'zero');
 });
 
 run('status.js');

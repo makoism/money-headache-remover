@@ -100,10 +100,10 @@
       "expected": [
         {
           "account": "bank",
-          "code": "below_minimum"
+          "code": "set_aside_over"
         }
       ],
-      "why": "The bank is short of what it keeps: shown, not refused [Z3]."
+      "why": "The bank holds less than the goal keeps in it: shown, not refused [Z3]. [BM2] The bank itself never goes below zero (100,000, nothing goes out before the pay), so it is the goal's own warning, never below_minimum."
     }
   ]
 }
