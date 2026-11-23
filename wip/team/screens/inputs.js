@@ -55,6 +55,10 @@
       input.select();
     });
     /* the click or tap that focused the box would put the caret down and undo the selection: keep it selected once */
+    /* a press on a box that was already open (reached by Tab, or tapped before) is a small fix: no select */
+    const down = () => { if (input.ownerDocument.activeElement === input) fresh = false; };
+    input.addEventListener('pointerdown', down);
+    input.addEventListener('mousedown', down);
     const keep = e => { if (fresh) { e.preventDefault(); input.select(); fresh = false; } };
     input.addEventListener('mouseup', keep);
     input.addEventListener('pointerup', keep);
