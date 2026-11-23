@@ -4,6 +4,9 @@ Written 2026-11-18 on branch `wip-38.31`. Read this whole file before touching a
 
 ## 0. Handoff (latest first)
 
+**2026-11-24 08:45 JST, MAIN 15: PUBLISHED.** Mako said yes in chat. Build 5bf4d32 went to main as ba79e69: only the two app3 files under public/n/<private path>/ were added. The path is not written here; Mako has the link. The BG2 checks (e3_publish) passed against main's live sw.js before the push. This session's network cannot reach the site, so Mako confirms that the root is unchanged and the new link loads.
+**Next:** slice 6b (lane/slice6b, e5c6ae6) needs qc-foundation before it merges. Decide Free to spend with no fixed pay (recommend: it starts again each month). Mako's run feedback, from app3/FOR_MAKO.md. Then art and the 3D world, with Mako.
+
 **2026-11-24 05:40 JST, MAIN 15: the build for Mako is READY (DECISIONS_ROUND2 BO).**
 - The build to publish is commit **5bf4d32** (app3, every gate green). Publish exactly that commit.
 - The push to main is HELD until Mako answers Coordinator 10 (session_01BFpKEWtR1vrLMuizJWTGpk) on whether his "private web address" choice covers a push of only the app3 files to main.
