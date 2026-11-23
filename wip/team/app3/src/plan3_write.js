@@ -20,7 +20,8 @@
   const PE = node ? require('../../engine/periods.js') : root.BurrowEngine.periods;
   const G = node ? require('../../engine/ledger.js') : root.BurrowEngine.ledger;
   const bad = text => { throw new A3.Bad(text); };
-  const PAY_NEEDS_AMOUNT = (node ? require('../../engine/build_book.js') : root.BurrowEngine.build).PAY_NEEDS_AMOUNT;
+  const BUILD = node ? require('../../engine/build_book.js') : root.BurrowEngine.build;
+  const PAY_NEEDS_AMOUNT = BUILD.PAY_NEEDS_AMOUNT;
   const live = x => x && !x.gone;
   const DAY = /^\d{4}-\d{2}-\d{2}$/;
   const amountOk = (a, what) => { if (!Number.isInteger(a) || !(a > 0)) bad('Type ' + what + ' above zero'); return a; };
@@ -34,6 +35,8 @@
   /* stamp the entries this step added with the record's own `at` and `by` (each entry carries its own) */
   const stampNew = (rec, field) => { const x = rec[field].slice(-1)[0]; x.at = rec.at; x.by = rec.by; return rec; };
   const period = w => { const p = LA.lookahead(w.book, w.today).period; if (!p) bad('Your plan needs a pay day first'); return p; };
+  /* [slice 6, B4] with no fixed pay there are no pay periods: lines and Free to spend are each month, by the day */
+  const noPay = w => !LA.lookahead(w.book, w.today).period;
   const sameName = (list, name, id) => { if (list.some(x => live(x) && x.id !== id && String(x.name).toLowerCase() === name.toLowerCase())) bad('There is already one called ' + name); };
 
   /* ---- budget lines and Free to spend ---- */
@@ -41,13 +44,19 @@
     const name = nameOk(x.name), a = amountOk(x.amount, 'an amount');
     sameName(A3.listOf(w.book, 'budgets'), name);
     if (name.toLowerCase() === 'free to spend') bad('Free to spend is already in your plan. Change its amount instead');
-    const id = w.add('budgets', { name, place: 'bills', cur: home(w), per: 'pay', from: w.today, steps: [{ from: null, amount: a }] });
+    const id = w.add('budgets', { name, place: 'bills', cur: home(w), per: noPay(w) ? 'month' : 'pay', from: w.today, steps: [{ from: null, amount: a }] });
     stampNew(find(w, 'budgets', id), 'steps');
     return id;
   }
   /* when: 'now' (this pay period and after), 'next' (from the next pay period), 'once' (this pay period only) */
   function changeLine(w, id, x) {
-    const l = find(w, 'budgets', id), a = x.amount == null || x.amount === 0 ? x.amount : amountOk(x.amount, 'an amount'), p = period(w);
+    const l = find(w, 'budgets', id), a = x.amount == null || x.amount === 0 ? x.amount : amountOk(x.amount, 'an amount');
+    /* [slice 6] no fixed pay: a change counts from today */
+    if (noPay(w)) {
+      if (x.when === 'once') bad('With no pay day, a change counts from today on');
+      x = Object.assign({}, x, { when: 'today' });
+    }
+    const p = x.when === 'today' ? { start: w.today } : period(w);
     const ch = {};
     if (x.name != null && x.name !== l.name) { ch.name = nameOk(x.name); sameName(A3.listOf(w.book, 'budgets'), ch.name, id); }
     /* 'now' is a step from this period's first day: it counts in this period and after [V, BF] */
@@ -56,7 +65,7 @@
       if (!p.startsWith) bad('This pay period has no pay to name it by yet. Change it from the next one');
       ch.once = Object.assign({}, l.once || {}, { [p.startsWith]: { amount: a } });
     }
-    if (a != null && (x.when === 'now' || x.when === 'next')) ch.steps = (l.steps || []).concat([{ from: x.when === 'now' ? p.start : w.today, amount: a }]);
+    if (a != null && (x.when === 'now' || x.when === 'next' || x.when === 'today')) ch.steps = (l.steps || []).concat([{ from: x.when === 'now' || x.when === 'today' ? p.start : w.today, amount: a }]);
     else if (a != null && x.when !== 'once') bad('Pick when the change starts');
     const r = w.edit('budgets', id, ch);
     if (ch.steps) stampNew(r, 'steps');
@@ -81,8 +90,8 @@
       return s.id;
     }
     // 'now': from this period's first day [V]; [BJ2] the first amount too carries its day, never null
-    const from = x.when === 'now' ? period(w).start : w.today;
-    return w.add('shares', { from, cur: home(w), per: { free: 'pay' }, free: a, goals: {} });
+    const none = noPay(w), from = x.when === 'now' && !none ? period(w).start : w.today;
+    return w.add('shares', { from, cur: home(w), per: { free: none ? 'month' : 'pay' }, free: a, goals: {} });
   }
 
   /* ---- bills ---- */
@@ -95,24 +104,64 @@
     const r = find(w, 'schedules', id); stampNew(r, 'rules'); stampNew(r, 'steps');
     return id;
   }
-  /* x: { name, amount, day, from } ; an amount or a day changes from `from`, never before what a record names [X8] */
+  /* [slice 6] how often, as the pay form offers it: a day each month, or every 1, 2 or 4 weeks from the day of one pay */
+  const EVERY = { month: 1, weeks1: 1, weeks2: 1, weeks4: 1 };
+  const everyWords = { weeks1: 'every week', weeks2: 'every 2 weeks', weeks4: 'every 4 weeks', month: 'once a month' };
+  function sameRule(a, b) { return JSON.stringify(a) === JSON.stringify(b); }
+  /* x: { name, amount, day, from, every?, start?, lines? } ; an amount, a day or how often changes from `from`, never
+     before what a record names [X8]. [slice 6] When the pay that starts the period changes how often it lands, every
+     line and Free to spend counted each pay is asked about: `lines` { <line id> | 'free': its amount each pay from
+     then }; an amount other than today's is a new step (a new Free to spend entry) from the same day. */
   function changeBill(w, id, x) {
     const s = find(w, 'schedules', id), v = PE.scheduleView(w.book, w.today)[id];
     const ch = {};
+    let rhythm = null;
+    if (x.every != null && x.every !== '') {
+      if (!EVERY[x.every]) bad('Pick how often it lands');
+      if (x.every === 'month') rhythm = { every: 'month', days: [dayOfMonth(x.day != null ? x.day : (v.rule && v.rule.days ? v.rule.days[0] : null))] };
+      else { if (!DAY.test(x.start || '')) bad('Pick the day of one pay, the last one or the next one'); const n = Number(x.every.slice(5)); rhythm = { every: 'weeks', n, from: BUILD.weeksAnchor(x.start, DAY.test(x.from || '') ? x.from : v.changeFrom, n) }; }
+      if (sameRule(rhythm, v.rule)) rhythm = null;
+    }
     if (x.name != null && x.name !== s.name) { ch.name = nameOk(x.name); sameName(A3.listOf(w.book, 'schedules').filter(y => y.kind === s.kind), ch.name, id); }
     const from = x.from || v.changeFrom;
     if (s.kind === 'income' && x.amount === 0) bad(PAY_NEEDS_AMOUNT);   // [BL1] a pay always has an amount
-    if ((x.amount != null && x.amount !== v.amount) || (x.day != null && !(v.rule && v.rule.every === 'month' && v.rule.days.length === 1 && v.rule.days[0] === x.day))) {
+    const dayMoved = x.every == null && x.day != null && !(v.rule && v.rule.every === 'month' && v.rule.days.length === 1 && v.rule.days[0] === x.day);
+    if ((x.amount != null && x.amount !== v.amount) || dayMoved || rhythm) {
       if (!DAY.test(from)) bad('Pick the day the change starts');
       if (from < v.changeFrom) bad('The change can start on ' + v.changeFrom + ' at the earliest: an earlier one is already paid or noted');
       if (x.amount != null && x.amount !== v.amount) ch.steps = (s.steps || []).concat([{ from, amount: amountOk(x.amount, 'the amount') }]);
-      if (x.day != null && !(v.rule && v.rule.every === 'month' && v.rule.days.length === 1 && v.rule.days[0] === x.day)) ch.rules = (s.rules || []).concat([{ from, rule: { every: 'month', days: [dayOfMonth(x.day)] } }]);
+      if (dayMoved) ch.rules = (s.rules || []).concat([{ from, rule: { every: 'month', days: [dayOfMonth(x.day)] } }]);
+      if (rhythm) ch.rules = (s.rules || []).concat([{ from, rule: rhythm }]);
     }
     if (!Object.keys(ch).length) bad('Nothing changed');
+    /* [slice 6] the pay that starts the period changes how often it lands: each line counted each pay is asked about */
+    const perPay = rhythm && s.startsPeriod ? linesEachPay(w) : [];
+    if (perPay.length) {
+      const got = x.lines || {};
+      const missing = perPay.filter(l => got[l.key] == null);
+      if (missing.length) bad(`Your pay will land ${everyWords[x.every]}. How much each pay from then for ${missing.map(l => l.name).join(' and ')}?`);
+    }
     const r = w.edit('schedules', id, ch);
     if (ch.steps) stampNew(r, 'steps');
     if (ch.rules) stampNew(r, 'rules');
+    /* the new amounts start with the pay period that holds the change day: from the last pay landing on or before it */
+    const lineFrom = perPay.length ? PE.lastLanding(w.book, id, from) || from : from;
+    for (const l of perPay) {
+      const a = x.lines[l.key];
+      if (a === l.amount) continue;
+      amountOk(a, 'the amount each pay for ' + l.name);
+      if (l.key === 'free') w.add('shares', { from: lineFrom, cur: home(w), per: { free: 'pay' }, free: a, goals: {} });
+      else { const e = w.edit('budgets', l.key, { steps: (l.rec.steps || []).concat([{ from: lineFrom, amount: a }]) }); stampNew(e, 'steps'); }
+    }
     return id;
+  }
+  /* the lines and Free to spend counted each pay today, with today's amount (the engine's period) */
+  function linesEachPay(w) {
+    const p = LA.lookahead(w.book, w.today).period;
+    if (!p) return [];
+    const out = (p.lines || []).filter(l => l.per === 'pay' && l.amount).map(l => ({ key: l.id, name: l.name, amount: l.amount, rec: A3.listOf(w.book, 'budgets').find(b => b.id === l.id) }));
+    if (p.free && p.free.amount && p.free.per === 'pay') out.push({ key: 'free', name: 'Free to spend', amount: p.free.amount });
+    return out;
   }
   /* the last day it is due; nothing is due after it [SCHEMA 5 `ends`] */
   function endBill(w, id, x) {
@@ -257,7 +306,7 @@
     return id;
   }
 
-  const api = { addLine, changeLine, endLine, setFree, addBill, changeBill, changeOnce, endBill, addGoal, changeGoal, setAside, takeOut, addLoan, addCard, changeOwed, closeLoan };
+  const api = { linesEachPay, addLine, changeLine, endLine, setFree, addBill, changeBill, changeOnce, endBill, addGoal, changeGoal, setAside, takeOut, addLoan, addCard, changeOwed, closeLoan };
   if (node) module.exports = api;
   else root.PLAN3W = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

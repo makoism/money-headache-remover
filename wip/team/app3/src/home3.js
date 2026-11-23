@@ -38,6 +38,13 @@ function besidePay3(day, land, yr) {
   if (day < land) return E3.dayBefore(day, land) ? ', the day before your pay lands' : `, before your pay lands on ${esc3(day3(land, yr))}`;
   return '';
 }
+/* [slice 6, G4] on a pay day whose pay covers what leaves that day, the sum is only "bank today": the engine's todayParts
+   show the pay and what it covers as their own steps, ending at the bank at the end of today (todayEnd) */
+function todayWords3(a, id) {
+  if (!a.todayParts) return '';
+  const parts = [{ label: E3.nameOf(id) + ' today', amount: a.whyParts[0].amount }].concat(a.todayParts);
+  return `<p class="a3-sum" data-fig="today">Today: ${esc3(sum3(parts, a.todayEnd, a.currency))} at the end of the day. Safe to spend counts on this pay coming in today</p>`;
+}
 /* the engine's sum, from its parts, written by screens/money.js: one minus sign, no "- 0 (minimum)" (numbers review S4) */
 function whyWords3(a) { return sum3(a.whyParts, a.headroom, a.currency); }
 /* the one next pay on Home is res.period.nextPay, named by the day it lands after the weekend rule [BI4b]: the engine
@@ -69,6 +76,8 @@ function afterCards3(r, yr) {
 const isIncome3 = item => (E3.book.schedules || []).some(s => s.kind === 'income' && s.id === BurrowEngine.ids.scheduleOf(item));
 /* the safe to spend heading, by that pay's state: a late or not seen pay is not counted until it is ticked [BH1, BH3] */
 function safeUntil3(r, yr) {
+  /* [slice 6, B4] no fixed pay: no next pay to run to; the walk looks ahead at the bills to come and the plan by the day */
+  if (!r.period) return ' with no fixed pay';
   const n = nextPay3(r);
   if (!n) return ' for now';
   const d = esc3(day3(n.day, yr));
@@ -78,8 +87,17 @@ function safeUntil3(r, yr) {
   if (n.days === 0 && r.safeToSpend.until) return ` until next pay on ${esc3(day3(r.safeToSpend.until, yr))}${r.safeToSpend.notCounting ? ', not counting today\'s pay (not in at your check today)' : ''}`;
   return ` until next pay on ${d}`;
 }
+/* [slice 6, B4] with no fixed pay: how long the money lasts at this rate (the engine's lastsAboutWeeks, from bills and the
+   plan by the day; it looks a year ahead) */
+function lastsWords3(r) {
+  const n = r.period ? null : r.lastsAboutWeeks;
+  if (n == null) return '';
+  const words = n >= 52 ? 'Lasts a year or more at this rate' : n === 0 ? 'Lasts less than a week at this rate' : `${label3('lastsAbout')} ${n} ${n === 1 ? 'week' : 'weeks'} at this rate`;
+  return `<p class="a3-sub" data-fig="lasts" data-weeks="${esc3(n)}">${esc3(words)}</p>`;
+}
 function nextPayWords3(r, yr) {
   const n = nextPay3(r);
+  if (!n && !r.period) return `<p class="a3-sub">No fixed pay. Log money as it comes in, on Receipts</p>`;
   if (!n) return `<p class="a3-sub">No pay day set</p>`;
   const d = esc3(day3(n.day, yr));
   if (n.state === 'notSeen') return `<p class="a3-warn" data-fig="nextpay" data-state="notSeen">Pay due ${d} has not been seen yet. Check your bank when it lands</p>`;
@@ -127,7 +145,7 @@ function drawHome3() {
   const capParts = (r.safeToSpend.whyParts || []).map((x, i) => (x.over ? Object.assign({}, x, { label: `${all}Free to spend is ${money3(x.over, home)} over this period` })
     : i > 0 && all && r.period && r.period.free && r.period.free.left === 0 ? Object.assign({}, x, { label: `${all}Free to spend is used up this period` }) : x));
   const capLine = r.safeToSpend.whyParts ? `<p class="a3-sum" data-fig="cap">${esc3(sum3(capParts, r.safeToSpend.headline, home))}</p>` : '';
-  const sums = `${ids.filter(id => r.accounts[id].spendFrom).map(id => `<p class="a3-sum" data-fig="why">${esc3(whyWords3(r.accounts[id]))}</p>`).join('')}${capLine}`;
+  const sums = `${ids.filter(id => r.accounts[id].spendFrom).map(id => `<p class="a3-sum" data-fig="why">${esc3(whyWords3(r.accounts[id]))}</p>${todayWords3(r.accounts[id], id)}`).join('')}${capLine}`;
   /* [BL3] short: the sum's own total, before the pay after its lowest point (only when one brings money), and the first
      day the bank goes under beside it */
   const sh = r.safeToSpend.short;
@@ -141,7 +159,7 @@ function drawHome3() {
   const warns = (r.warnings || []).map(w => `<p class="a3-warn" data-warn="${esc3(w.code)}">${esc3(BurrowScreens.status.warningText(w, wctx))}</p>`
     + (w.later ? `<p class="a3-warn" data-warn="later_low">${esc3(BurrowScreens.status.laterLowText(w, wctx))}</p>` : '')).join('');
   out.push(`<section class="a3-card" data-card="safe">${helpHead3(`<h2>${esc3(label3('safeToSpend'))}${until}</h2>`, 'safeToSpend')}
-    <p class="a3-big" data-fig="safe">${fig3('safeToSpend.headline', r.safeToSpend.headline, home)}</p>${short}${sums}${warns}</section>`);
+    <p class="a3-big" data-fig="safe">${fig3('safeToSpend.headline', r.safeToSpend.headline, home)}</p>${short}${sums}${lastsWords3(r)}${warns}</section>`);
   /* the period by its dates, and the next pay */
   const p = r.period;
   const per = p && p.start && p.end ? `<p class="a3-mid" data-fig="period" data-start="${esc3(p.start)}" data-end="${esc3(p.end)}">${esc3(period3(p))}</p>` : '';
@@ -151,7 +169,9 @@ function drawHome3() {
   /* due before next pay, by account */
   const due = r.dueBeforeNextPay;
   const byAcct = Object.keys(due.byAccount).map(acct => `<p class="a3-acct">From ${esc3(E3.nameOf(acct))}</p><ul class="a3-rows">${rowsHtml3(due.items.filter(o => o.account === acct), E3.curOf(acct), yr, 'dueBeforeNextPay.items')}</ul>`).join('');
-  out.push(`<section class="a3-card" data-card="due"><h2>${esc3(label3('dueBeforeNextPay'))}</h2>${due.items.length ? byAcct + `<ul class="a3-rows"><li class="total"><span>Together</span><span class="amt" data-fig="duetotal">${fig3('dueBeforeNextPay.total', due.total, home)}</span></li></ul>` : '<p class="a3-sub">Nothing is due before next pay</p>'}</section>`);
+  /* [F13] with no fixed pay, "due" is the next 30 days */
+  const dueName = label3('dueBeforeNextPay', { noFixedPay: !r.period });
+  out.push(`<section class="a3-card" data-card="due"><h2>${esc3(dueName)}</h2>${due.items.length ? byAcct + `<ul class="a3-rows"><li class="total"><span>Together</span><span class="amt" data-fig="duetotal">${fig3('dueBeforeNextPay.total', due.total, home)}</span></li></ul>` : `<p class="a3-sub">${r.period ? 'Nothing is due before next pay' : 'Nothing is due in the next 30 days'}</p>`}</section>`);
   /* each card, and the bank after the cards are paid */
   const cardIds = Object.keys(r.cards), land = payLands3(r);
   {

@@ -61,7 +61,7 @@ t('pay every two weeks, a card with a close day, a bill paid by card', () => {
   a.bills.push({ key: 'gym', name: 'Gym', from: 'card_a', amount: 6000, day: 5 });
   const r = B.buildBook(a, { newId });
   const p = r.book.schedules.find(s => s.id === r.ids.pay);
-  eq([p.rules[0].rule, p.startsPeriod], [{ every: 'weeks', n: 2, from: '2026-11-27' }, true]);
+  eq([p.rules[0].rule, p.startsPeriod], [{ every: 'weeks', n: 2, from: '2026-11-13' }, true]);   // [slice 6] the next pay given, saved as the one before setup
   eq(r.book.accounts.find(x => x.id === r.ids.card_a).cutDay, 15);
   eq(r.book.schedules.find(s => s.id === r.ids.gym).acct, r.ids.card_a);
   eq(lookahead(r.book, '2026-11-21').daysToNextPay.next_pay, '2026-11-27');
@@ -77,7 +77,7 @@ t('wrong answers are refused, not guessed', () => {
 });
 t('a pay of 0 is refused with words: a pay that exists always has an amount [BL1]', () => {
   const a = clone(ANSWERS); a.pays[0].amount = 0;
-  assert.throws(() => B.buildBook(a, { newId }), /^Error: A pay needs an amount\. No fixed pay comes later$/);
+  assert.throws(() => B.buildBook(a, { newId }), /^Error: A pay needs an amount\. If it comes when it comes, pick No fixed pay$/);
 });
 t('the builder does not change the answers it is given', () => {
   const a = clone(ANSWERS); B.buildBook(a, { newId }); assert.deepStrictEqual(a, ANSWERS);
@@ -162,5 +162,56 @@ t('the everyday amount from setup is Free to spend from the setup day; this peri
   eq(blank.book.plan.shares, []);
   eq(lookahead(blank.book, '2026-11-05').safeToSpend.headline, 320000);
   assert.throws(() => B.buildBook(everyday(400.5), { newId }), /whole/);
+});
+// [slice 6] the other lives: no fixed pay, and bills once a year or every few months. Kai (made-up yen) is set up on
+// Tue 1 Dec 2026 with ¥420,000 in the bank and ¥20,000 cash, no fixed pay, Phone ¥5,000 on the 20th (Sun 20 Dec lands
+// Mon 21 Dec) and Rent ¥85,000 on the 27th (Sun 27 Dec lands Mon 28 Dec). "Due" is the next 30 days: 1 to 30 Dec [F13].
+const kai = more => Object.assign({ day: '2026-12-01', told: '2026-12-01T10:00:00+09:00', country: 'JP', currency: 'JPY',
+  banks: [{ key: 'bank', name: 'Bank', amount: 420000 }, { key: 'cash', name: 'Cash', amount: 20000, type: 'cash' }],
+  pays: [{ key: 'work', name: 'Client work', bank: 'bank', every: 'none' }],
+  bills: [{ key: 'phone', name: 'Phone', from: 'bank', amount: 5000, day: 20, shift: 'after' }, { key: 'rent', name: 'Rent', from: 'bank', amount: 85000, day: 27, shift: 'after' }] }, more || {});
+t('no fixed pay: saved with the rule none and no amount, never starting the period; due means the next 30 days [B4, F13]', () => {
+  const r = B.buildBook(kai(), { newId });
+  const s = r.book.schedules.find(x => x.id === r.ids.work);
+  eq([s.kind, s.rules[0].rule, s.steps[0].amount, s.startsPeriod], ['income', { every: 'none' }, null, undefined]);
+  eq(r.book.accounts.map(a => a.type), ['bank', 'cash']);
+  const la = lookahead(r.book, '2026-12-01');
+  eq([la.period, la.dueBeforeNextPay.until, la.dueBeforeNextPay.items.map(o => [o.lands, o.amount])], [null, '2026-12-31', [['2026-12-21', 5000], ['2026-12-28', 85000]]]);
+  // the bank's lowest point to the horizon: 420,000 less two months of phone and rent (21 Dec, 28 Dec, 20 Jan, 27 Jan) = 240,000; cash 20,000
+  eq(la.safeToSpend.headline, 260000);
+  // a pay with no fixed day cannot start the period, and a fixed pay still needs its amount [BL1]
+  assert.throws(() => B.buildBook(kai({ pays: [{ key: 'work', name: 'Client work', bank: 'bank', every: 'none', startsPeriod: true }] }), { newId }), /no fixed day/);
+  assert.throws(() => B.buildBook(kai({ pays: [{ key: 'work', name: 'Client work', bank: 'bank', day: 25 }] }), { newId }), /whole/);
+});
+t('a bill once a year (month and day) and one every few months from a date (start: the day of one; a bill names its account by from)', () => {
+  const r = B.buildBook(kai({ bills: [{ key: 'car', name: 'Car tax', from: 'bank', amount: 34500, every: 'year', date: '05-31', shift: 'after' },
+    { key: 'water', name: 'Water', from: 'bank', amount: 6200, every: 'months', n: 2, start: '2026-12-15', shift: 'after' }] }), { newId });
+  const car = r.book.schedules.find(x => x.id === r.ids.car), water = r.book.schedules.find(x => x.id === r.ids.water);
+  eq(car.rules[0].rule, { every: 'year', date: '05-31' });
+  eq(water.rules[0].rule, { every: 'months', n: 2, from: '2026-12-15' });
+  const S = require('../schedules.js'), cal = S.calendar('JP');
+  // 31 May 2027 is a Monday; water on 15 Dec (Tue), 15 Feb (Mon), 15 Apr (Thu)
+  eq(S.occurrences(car, cal, D.dayNum('2026-12-01'), D.dayNum('2027-12-31')).map(o => D.dayStr(o.land)), ['2027-05-31']);
+  eq(S.occurrences(water, cal, D.dayNum('2026-12-01'), D.dayNum('2027-04-30')).map(o => D.dayStr(o.land)), ['2026-12-15', '2027-02-15', '2027-04-15']);
+  assert.throws(() => B.buildBook(kai({ bills: [{ key: 'car', name: 'Car tax', from: 'bank', amount: 34500, every: 'year', date: '13-01' }] }), { newId }), /day of the year/);
+  assert.throws(() => B.buildBook(kai({ bills: [{ key: 'w', name: 'Water', from: 'bank', amount: 6200, every: 'months', n: 0, start: '2026-12-15' }] }), { newId }), /how many months/);
+});
+// [slice 6, qc-foundation blocker] every n weeks set up with the NEXT pay day: the anchor is stepped back by n weeks
+// until it is on or before the setup day, so the pay period holding the setup day exists. Sam (made-up dollars) on
+// Mon 7 Dec 2026, every 2 weeks, next pay Fri 18 Dec: the last pay was Fri 4 Dec, the period is 4 to 17 Dec, and
+// Free to spend $400 counts 11 of its 14 days: 40,000 x 11 / 14 = 31,428 ($314.28).
+t('every n weeks given by the next pay: the anchor steps back to on or before the setup day', () => {
+  const sam = (start, n) => ({ day: '2026-12-07', told: '2026-12-07T09:00:00-05:00', country: 'XX', currency: 'USD', free: 40000,
+    banks: [{ key: 'chk', name: 'Checking', amount: 185000 }],
+    pays: [{ key: 'pay', name: 'Pay', bank: 'chk', amount: 160000, every: 'weeks', n, start, startsPeriod: true }] });
+  const r = B.buildBook(sam('2026-12-18', 2), { newId });
+  eq(r.book.schedules[0].rules[0].rule, { every: 'weeks', n: 2, from: '2026-12-04' });
+  const la = lookahead(r.book, '2026-12-07');
+  eq([la.period.start, la.period.end, la.period.free.counts, la.safeToSpend.headline], ['2026-12-04', '2026-12-17', 31428, 31428]);
+  // weekly, next pay Thu 10 Dec: the last one was Thu 3 Dec; a past day or the setup day itself is kept as given
+  eq(B.buildBook(sam('2026-12-10', 1), { newId }).book.schedules[0].rules[0].rule.from, '2026-12-03');
+  eq(B.buildBook(sam('2026-12-07', 2), { newId }).book.schedules[0].rules[0].rule.from, '2026-12-07');
+  eq(B.buildBook(sam('2026-11-20', 2), { newId }).book.schedules[0].rules[0].rule.from, '2026-11-20');
+  eq(B.weeksAnchor('2027-01-29', '2027-01-20', 2), '2027-01-15');
 });
 done('build_book');

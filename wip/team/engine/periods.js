@@ -104,7 +104,63 @@
     }
     return out;
   }
-  const api = { periods, scheduleView };
+  /* [slice 6] Setting money aside ahead for a cost that does not come every month (once a year, set months, every few
+     months, once). aheadFor(book, asOf, opts3) -> [{ schedule, name, amount, due (its landing day), pays, perPay }],
+     by due day: each such bill's next one not yet settled, the pays that start a period from the day asked and land
+     before it (not settled), and its amount spread over them (units.spread: the leftover minor units on the earliest,
+     so perPay is the first and largest). A cost with no pay before it is due before next pay, and not listed. With no
+     fixed pay, pays and perPay are null. Nothing is saved; the screens word it. */
+  function aheadFor(book, asOf, opts3) {
+    const S = node ? require('./schedules.js') : E.schedules, D = node ? require('./dates.js') : E.dates, U = node ? require('./units.js') : E.units;
+    const today = D.dayNum(asOf), acct = {}; for (const a of book.accounts || []) if (a && !a.gone) acct[a.id] = a;
+    const country = L.fieldValue((book.home || {}).country) || null;
+    const calOf = s => S.calendar((acct[s.acct] && acct[s.acct].country) || country);
+    const r = LA.lookahead(book, asOf, Object.assign({}, opts3 || {}, { settled: true }));
+    const gone = new Set(r.settled);
+    const live = (book.schedules || []).filter(s => s && !s.gone);
+    const ruleOn = s => { let rule = null; (s.rules || []).filter(x => x && !x.gone).forEach((x, i) => { if (i === 0 || x.from == null || D.dayNum(x.from) <= today) rule = x.rule; }); return rule || {}; };
+    const stream = live.find(s => s.kind === 'income' && s.startsPeriod && ruleOn(s).every !== 'none');
+    const AHEAD = { year: 1, monthsList: 1, once: 1 };
+    const out = [];
+    for (const s of live.filter(x => x.kind === 'bill')) {
+      const rule = ruleOn(s);
+      if (!AHEAD[rule.every] && !(rule.every === 'months' && rule.n >= 2)) continue;
+      const next = S.occurrences(s, calOf(s), today, today + 400).find(o => o.land >= today && !gone.has(o.id) && o.amount);
+      if (!next) continue;
+      let pays = null, perPay = null;
+      if (stream) {
+        pays = S.occurrences(stream, calOf(stream), today, next.land).filter(o => o.land >= today && o.land < next.land && !gone.has(o.id)).length;
+        if (!pays) continue;
+        perPay = U.spread(next.amount, pays)[0];
+      }
+      out.push({ schedule: s.id, name: s.name, amount: next.amount, due: D.dayStr(next.land), pays, perPay });
+    }
+    return out.sort((a, b) => (a.due < b.due ? -1 : a.due > b.due ? 1 : 0));
+  }
+  /* [slice 6] lastLanding(book, sid, day): the landing day (YYYY-MM-DD) of schedule sid's last occurrence landing on or
+     before `day`, by its rules as saved, looking back up to 400 days; null when there is none. A pay rhythm changed
+     from a day starts its lines' new amounts with the pay period that holds that day. */
+  function lastLanding(book, sid, day) {
+    const S = node ? require('./schedules.js') : E.schedules, D = node ? require('./dates.js') : E.dates;
+    const s = (book.schedules || []).find(x => x && !x.gone && x.id === sid);
+    if (!s) return null;
+    const a = (book.accounts || []).find(x => x && !x.gone && x.id === s.acct) || {};
+    const cal = S.calendar(a.country || L.fieldValue((book.home || {}).country) || null), n = D.dayNum(day);
+    const before = S.occurrences(s, cal, n - 400, n).filter(o => o.land <= n);
+    return before.length ? D.dayStr(before[before.length - 1].land) : null;
+  }
+  /* [slice 6, qc-foundation 2] perPayAcross(amount, fromRule, toRule): an amount each pay under one rhythm, carried to
+     another so the money a year is the same: amount x (pays a year before) / (pays a year after), rounded half up to
+     the minor unit. Pays a year: a day each month 12 per day named, every n weeks 52 / n. Null when either rhythm has
+     no count a year (no fixed day, once, a year, ...). */
+  function perPayAcross(amount, fromRule, toRule) {
+    const year = r => (!r ? null : r.every === 'month' ? [12 * (r.days || [r.day]).length, 1] : r.every === 'weeks' ? [52, r.n || 1] : null);
+    const f = year(fromRule), t = year(toRule);
+    if (!f || !t || !Number.isInteger(amount)) return null;
+    const num = amount * f[0] * t[1], den = f[1] * t[0];
+    return Math.floor((2 * num + den) / (2 * den));
+  }
+  const api = { periods, scheduleView, aheadFor, lastLanding, perPayAcross };
   if (node) module.exports = api;
   else (root.BurrowEngine = root.BurrowEngine || {}).periods = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

@@ -62,8 +62,8 @@ html { scroll-padding-top: 72px; }
 .a3-tabs button[aria-current=page] { background: var(--track); color: var(--ink); }
 .a3-tabs button:focus-visible, .a3-seg:focus-visible, .a3-rcrow:focus-visible, .a3-sel:focus-visible { outline: 3px solid var(--acc-ring); outline-offset: 2px; }
 #a3Rc { display: flex; flex-direction: column; gap: var(--gap-card); }
-.a3-segs { display: flex; gap: 6px; margin-top: 8px; }
-.a3-seg { flex: 1; min-height: 44px; border: 0; border-radius: var(--r-ctl); background: var(--track); color: var(--ink2); font: inherit; font-weight: 600; cursor: pointer; }
+.a3-segs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.a3-seg { flex: 1 1 auto; min-width: 0; padding: 0 10px; min-height: 44px; border: 0; border-radius: var(--r-ctl); background: var(--track); color: var(--ink2); font: inherit; font-weight: 600; cursor: pointer; }
 .a3-seg[aria-pressed=true] { background: var(--accent); color: var(--on-accent); }
 .a3-seg:disabled { opacity: .5; cursor: default; }
 .a3-sel, .a3-date, .a3-text { text-align: left; }

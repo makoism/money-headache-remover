@@ -22,7 +22,27 @@ function screen3(draw) {
 function typed3(text, cur) { const r = SM.parse(text, cur); return r.ok ? r.minor : null; }
 /* '2026-12-10' as '10 Dec', with the year when it is not the shown day's year */
 const day3 = (s, thisYear) => (s ? SN.dayLabel(s, !!thisYear && s.slice(0, 4) !== thisYear) : '');
-const label3 = key => SN.label(key);
+const label3 = (key, ctx) => SN.label(key, ctx);
+/* [slice 6] a schedule's rhythm in words, one function for every screen: "day 10 each month", "day 15 and the last day
+   each month", "every 2 weeks, on Fridays", "every 3 months, on day 15", "each year in May and Nov, on day 31", "each
+   year on 1 Mar", "once, on 10 Jan 2027", "the last working day of each month", "no fixed day". `yr` is this year. */
+const WEEKDAYS3 = ['Sundays', 'Mondays', 'Tuesdays', 'Wednesdays', 'Thursdays', 'Fridays', 'Saturdays'];
+const MONTH_SHORT3 = { 1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'May', 6: 'Jun', 7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec' };
+function rhythmWords3(rule, yr) {
+  const r = rule || {}, D = BurrowEngine.dates;
+  const dayWord = d => (d === 'last' ? 'the last day' : 'day ' + d);
+  const and = list => (list.length > 1 ? list.slice(0, -1).join(', ') + ' and ' + list.slice(-1)[0] : list[0] || '');
+  switch (r.every) {
+    case 'month': return `${and((r.days || [r.day]).map(dayWord))} each month`;
+    case 'weeks': return `${r.n === 1 || !r.n ? 'every week' : `every ${r.n} weeks`}, on ${WEEKDAYS3[D.weekday(D.dayNum(r.from))]}`;
+    case 'months': return `every ${r.n === 1 ? 'month' : `${r.n} months`}, on ${dayWord(r.day != null ? r.day : +r.from.slice(8, 10))}`;
+    case 'monthsList': return `each year in ${and(r.months.map(m => MONTH_SHORT3[m]))}, on ${dayWord(r.day)}`;
+    case 'year': return `each year on ${day3('2000-' + r.date, '2000')}`;
+    case 'once': return `once, on ${day3(r.date, yr)}`;
+    case 'lastWorkday': return 'the last working day of each month';
+    default: return 'no fixed day';
+  }
+}
 /* [S1] a period by its dates; on the day its pay lands and counts (res.period.payToday) it runs "to today's pay", never
    "10 Nov to 10 Dec" beside a safe to spend that already counts that pay */
 const period3 = p => (p.payToday ? SN.periodLabel(p.start, p.end).split(' to ')[0] + ' to today\'s pay' : SN.periodLabel(p.start, p.end));

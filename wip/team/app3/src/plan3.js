@@ -19,6 +19,19 @@ function overdueWords3(o, cur, yr, path) {
 }
 function plAccounts3(kinds) { return ((E3.book && E3.book.accounts) || []).filter(a => plLive3(a) && kinds[a.type] && !a.closed); }
 
+/* [slice 6, B4] no fixed pay: no pay periods. Each line and Free to spend is an amount a month that comes off by the day;
+   the amount in force today is the record's own (a lookup, schedules.stepOn) */
+function plNoPay3(book, day) {
+  const S = BurrowEngine.schedules, n = BurrowEngine.dates.dayNum(day);
+  const lines = ((book.plan || {}).budgets || []).filter(l => plLive3(l) && !(l.ends && l.ends <= day)).map(l => ({ l, a: S.stepOn(l, n) })).filter(x => x.a)
+    .map(({ l, a }) => plRow3(`data-line="${esc3(l.id)}"`, `${esc3(l.name)}<br><span class="when">Comes off by the day</span>`, `<span data-fig="line-amount">${plFig3('plan.budgets.*.steps', a)}</span> <span class="when">a month</span>`));
+  const fr = ((book.plan || {}).shares || []).filter(s => plLive3(s) && s.free != null && (!s.from || s.from <= day)).pop();
+  const free = fr && fr.free ? plRow3('data-line="free"', `${esc3(label3('freeToSpendLeft'))}<br><span class="when">Comes off by the day</span>`, `<span data-fig="free-amount">${plFig3('plan.shares.*.free', fr.free)}</span> <span class="when">a month</span>`) : '';
+  return `<section class="a3-card" data-card="plan-period"><h2>Your plan, with no fixed pay</h2>
+    <p class="a3-sub">With no pay day there are no pay periods. Each line is an amount a month, taken off by the day, and safe to spend leaves room for it</p>
+    ${lines.length || free ? `<ul class="a3-rows a3-rclist">${lines.join('')}${free}</ul>` : '<p class="a3-sub">No budget lines yet. A line keeps money for one thing, like food, each month</p>'}
+    <div class="a3-actions"><button type="button" class="a3-btn" id="plAddLine">Add a line</button>${fr ? '' : '<button type="button" class="a3-btn" id="plSetFree">Set Free to spend</button>'}</div></section>`;
+}
 function renderPlan3() { screen3(drawPlan3); }
 function drawPlan3() {
   const host = $('#a3Plan');
@@ -33,7 +46,7 @@ function drawPlan3() {
   const out = [];
   /* this pay period */
   const p = r.period;
-  if (!p) out.push('<section class="a3-card" data-card="plan-period"><h2>Your plan</h2><p class="a3-sub">Your plan runs from one pay to the next. Add a pay day first</p></section>');
+  if (!p) out.push(plNoPay3(book, day));
   else {
     const lines = p.lines.filter(l => !(l.amount === 0 && l.left === 0)).map(l => {
       const rec = ((book.plan || {}).budgets || []).find(x => x.id === l.id) || {};
@@ -49,7 +62,7 @@ function drawPlan3() {
     const fp = p.free && p.free.counts !== p.free.amount ? (f => `<br><span class="when" data-fig="free-part">Only the part for the days left in this pay period counts now: ${f(p.free.counts)} of ${f(p.free.amount)}</span>`)(fmt3(E3.home(), [p.free.counts, p.free.amount])) : '';
     const free = p.free ? plRow3('data-line="free"', `${esc3(label3('freeToSpendLeft'))}${fp}`, `<span data-fig="free-left">${plFig3('period.free.left', p.free.left)}</span> <span class="when">of <span data-fig="free-amount">${plFig3('period.free.counts', p.free.counts)}</span></span>`) : '';
     out.push(`<section class="a3-card" data-card="plan-period"><h2>${esc3(label3('period'))}</h2>
-      <p class="a3-mid" data-fig="plan-period" data-start="${esc3(p.start)}" data-end="${esc3(p.end)}">${esc3(period3(p))}</p>
+      ${p.start && p.end ? `<p class="a3-mid" data-fig="plan-period" data-start="${esc3(p.start)}" data-end="${esc3(p.end)}">${esc3(period3(p))}</p>` : '<p class="a3-sub">The first pay period starts with your next pay</p>'}
       ${lines.length || free ? `<ul class="a3-rows a3-rclist">${lines.join('')}${free}</ul>` : '<p class="a3-sub">No budget lines yet. A line keeps money for one thing, like food, each pay period</p>'}
       <div class="a3-actions"><button type="button" class="a3-btn" id="plAddLine">Add a line</button>${p.free ? '' : '<button type="button" class="a3-btn" id="plSetFree">Set Free to spend</button>'}</div></section>`);
   }
@@ -62,9 +75,23 @@ function drawPlan3() {
   const nextWords = (v, cur) => `${owingWords(v, cur)}${v.next ? `next ${esc3(day3(v.next.land, yr))}${(v.outstanding || []).length ? ', ' + money3(v.next.amount, cur || home) : ''}` : v.ends ? `ended ${esc3(day3(v.ends, yr))}` : 'nothing coming'}`;
   /* the row's figure: the first outstanding one's own amount (scheduleView outstanding[].amount), else the next one's */
   const rowAmount = v => ((v.outstanding || []).length ? v.outstanding[0].amount : v.next ? v.next.amount : v.amount);
-  const ruleWords = v => (v.rule && v.rule.every === 'month' ? 'day ' + v.rule.days.join(' and ') + ' each month' : v.rule && v.rule.every === 'weeks' ? 'every ' + (v.rule.n === 1 ? 'week' : v.rule.n + ' weeks') : 'no fixed day');
-  const pays = scheds.filter(s => s.kind === 'income').map(s => plRow3(`data-pay="${esc3(s.id)}"`, `${esc3(s.name)}<br><span class="when">${ruleWords(view[s.id])}, ${nextWords(view[s.id], s.cur)}</span>`, plFig3((view[s.id].outstanding || []).length ? 'schedules.*.outstanding.0.amount' : 'schedules.*.next.amount', rowAmount(view[s.id]), s.cur)));
-  const bills = scheds.filter(s => s.kind === 'bill').map(s => plRow3(`data-bill="${esc3(s.id)}"`, `${esc3(s.name)}<br><span class="when">${ruleWords(view[s.id])}, ${nextWords(view[s.id], s.cur)}${view[s.id].ends && view[s.id].next ? ', last on ' + esc3(day3(view[s.id].ends, yr)) : ''}</span>`, plFig3((view[s.id].outstanding || []).length ? 'schedules.*.outstanding.0.amount' : 'schedules.*.next.amount', rowAmount(view[s.id]), s.cur)));
+  const ruleWords = v => rhythmWords3(v.rule, yr);
+  /* [slice 6, B4] a pay with no fixed day and no amount: words, no figure */
+  const payFig = (s, v) => (rowAmount(v) == null ? '<span class="when">comes when it comes</span>' : plFig3((v.outstanding || []).length ? 'schedules.*.outstanding.0.amount' : 'schedules.*.next.amount', rowAmount(v), s.cur));
+  const pays = scheds.filter(s => s.kind === 'income').map(s => plRow3(`data-pay="${esc3(s.id)}"`, `${esc3(s.name)}<br><span class="when">${ruleWords(view[s.id])}${view[s.id].rule && view[s.id].rule.every === 'none' ? '' : ', ' + nextWords(view[s.id], s.cur)}</span>`, payFig(s, view[s.id])));
+  /* [slice 6] a cost that does not come every month: a nudge to set money aside ahead, from the engine (periods.aheadFor),
+     until a goal of the same name holds it */
+  let ahead = [];
+  try { ahead = BurrowEngine.periods.aheadFor(book, day); } catch (e) { ahead = []; }
+  const goalNames = new Set((book.places || []).filter(g => plLive3(g) && g.kind === 'goal').map(g => String(g.name).toLowerCase()));
+  const aheadOf = s => {
+    const a = ahead.find(x => x.schedule === s.id);
+    if (!a || goalNames.has(String(s.name).toLowerCase())) return '';
+    const f = fmt3(s.cur || home, [a.amount].concat(a.perPay == null ? [] : [a.perPay]));
+    const words = a.perPay == null ? `Set money aside ahead: ${f(a.amount)} by ${day3(a.due, yr)}` : `Set aside about ${f(a.perPay)} each pay to have ${f(a.amount)} ready by ${day3(a.due, yr)} (${a.pays === 1 ? '1 pay' : a.pays + ' pays'} before it)`;
+    return `<div class="a3-helprow" data-fig="ahead" data-sched="${esc3(s.id)}"><span class="when">${esc3(words)}</span><button type="button" class="a3-btn" data-ahead="${esc3(s.id)}">Make a goal for it</button></div>`;
+  };
+  const bills = scheds.filter(s => s.kind === 'bill').map(s => plRow3(`data-bill="${esc3(s.id)}"`, `${esc3(s.name)}<br><span class="when">${ruleWords(view[s.id])}, ${nextWords(view[s.id], s.cur)}${view[s.id].ends && view[s.id].next ? ', last on ' + esc3(day3(view[s.id].ends, yr)) : ''}</span>`, plFig3((view[s.id].outstanding || []).length ? 'schedules.*.outstanding.0.amount' : 'schedules.*.next.amount', rowAmount(view[s.id]), s.cur), aheadOf(s)));
   out.push(`<section class="a3-card" data-card="plan-bills"><h2>Pay and bills</h2>
     ${pays.length ? `<ul class="a3-rows a3-rclist">${pays.join('')}</ul>` : ''}
     ${bills.length ? `<ul class="a3-rows a3-rclist">${bills.join('')}</ul>` : '<p class="a3-sub">No bills yet</p>'}
@@ -101,7 +128,7 @@ function drawPlan3() {
     return `<details class="a3-past" data-past="${esc3(q.start)}"><summary>${esc3(SN.periodLabel(q.start, q.end))}</summary><ul class="a3-rows">${ln}${fr}
       ${tot('Money in', q.moneyIn, 'periods.*.moneyIn.total')}${tot('Bills paid', q.billsPaid, 'periods.*.billsPaid.total')}${tot('Card payments', q.cardPayments, 'periods.*.cardPayments.total')}</ul></details>`;
   });
-  out.push(`<section class="a3-card" data-card="plan-past"><h2>Pay periods gone by</h2>${past.length ? past.join('') : '<p class="a3-sub">None yet. When your next pay is ticked off, this pay period shows here with what was spent</p>'}</section>`);
+  if (p) out.push(`<section class="a3-card" data-card="plan-past"><h2>Pay periods gone by</h2>${past.length ? past.join('') : '<p class="a3-sub">None yet. When your next pay is ticked off, this pay period shows here with what was spent</p>'}</section>`);
   host.setAttribute('data-origin', E3.mode === 'try' ? 'sample' : 'typed');
   host.innerHTML = out.join('');
   HELP3.bind(host);
@@ -118,6 +145,10 @@ function drawPlan3() {
   host.querySelectorAll('[data-bill]').forEach(b => b.addEventListener('click', () => plBillForm3(b.dataset.bill)));
   host.querySelectorAll('[data-pay]').forEach(b => b.addEventListener('click', () => plBillForm3(b.dataset.pay)));
   host.querySelectorAll('[data-goal]').forEach(b => b.addEventListener('click', () => plGoalForm3(b.dataset.goal)));
+  host.querySelectorAll('[data-ahead]').forEach(b => b.addEventListener('click', () => {
+    const a = BurrowEngine.periods.aheadFor(E3.book, E3.today()).find(x => x.schedule === b.dataset.ahead), s = E3.book.schedules.find(x => x.id === b.dataset.ahead);
+    plGoalForm3(null, a && s ? { name: s.name, target: a.amount, due: a.due } : null);
+  }));
   host.querySelectorAll('[data-owed]').forEach(b => b.addEventListener('click', () => plOwedForm3(b.dataset.owed)));
 }
 
@@ -187,25 +218,29 @@ function plWhen3(value) {
 /* a budget line, or Free to spend ('free'); id null adds a line */
 function plLineForm3(id) {
   const book = E3.book, p = E3.view(E3.today()).period;
+  /* [slice 6, B4] no fixed pay: each month, by the day, from today */
+  const each = p ? 'Each pay period' : 'Each month';
   if (id === 'free') {
     const has = !!(p && p.free);
-    plForm3('Free to spend', [{ key: 'amount', label: 'Each pay period', kind: 'amount', value: has ? p.free.amount : null }].concat(has ? [plWhen3('next')] : []),
+    plForm3('Free to spend', [{ key: 'amount', label: each, kind: 'amount', value: has ? p.free.amount : null }].concat(has ? [plWhen3('next')] : []),
       [{ label: 'Save', solid: true, step: v => ['setFree', w => PLAN3W.setFree(w, { amount: v.amount, when: v.when }), 'Free to spend changed'] }],
       'Free to spend is money for anything, with no line of its own');
     return;
   }
   if (!id) {
-    plForm3('Add a line', [{ key: 'name', label: 'Name', kind: 'text', hint: 'Like Food or Transport' }, { key: 'amount', label: 'Each pay period', kind: 'amount' }],
+    plForm3('Add a line', [{ key: 'name', label: 'Name', kind: 'text', hint: 'Like Food or Transport' }, { key: 'amount', label: each, kind: 'amount' }],
       [{ label: 'Add', solid: true, step: v => ['addLine', w => PLAN3W.addLine(w, { name: v.name, amount: v.amount }), 'Line added'] }],
-      'It starts in this pay period');
+      p ? 'It starts in this pay period' : 'It starts today and comes off a little each day');
     return;
   }
-  const rec = ((book.plan || {}).budgets || []).find(x => x.id === id), l = p.lines.find(x => x.id === id);
-  plForm3(rec.name, [{ key: 'name', label: 'Name', kind: 'text', value: rec.name }, { key: 'amount', label: 'Each pay period', kind: 'amount', value: l ? l.amount : null }, plWhen3('next')],
+  const rec = ((book.plan || {}).budgets || []).find(x => x.id === id);
+  const l = p ? p.lines.find(x => x.id === id) : { amount: BurrowEngine.schedules.stepOn(rec, BurrowEngine.dates.dayNum(E3.today())) };
+  plForm3(rec.name, [{ key: 'name', label: 'Name', kind: 'text', value: rec.name }, { key: 'amount', label: each, kind: 'amount', value: l ? l.amount : null }].concat(p ? [plWhen3('next')] : []),
     [{ label: 'Save', solid: true, step: v => ['changeLine', w => PLAN3W.changeLine(w, id, { name: v.name, amount: l && v.amount === l.amount ? null : v.amount, when: v.when }), 'Line changed'] },
      { label: 'End this line', step: () => ['endLine', w => PLAN3W.endLine(w, id), rec.name + ' ends after this pay period'] }],
     'A change never changes a pay period gone by');
 }
+const PL_EVERY3 = [{ v: 'month', name: 'On a day each month' }, { v: 'weeks1', name: 'Every week' }, { v: 'weeks2', name: 'Every 2 weeks' }, { v: 'weeks4', name: 'Every 4 weeks' }];
 /* a bill; id null adds one */
 function plBillForm3(id) {
   const book = E3.book, accts = plAccounts3({ bank: 1, cash: 1, ewallet: 1, wallet: 1, card: 1 }).map(a => ({ v: a.id, name: a.name }));
@@ -219,19 +254,50 @@ function plBillForm3(id) {
   const s = book.schedules.find(x => x.id === id), v0 = BurrowEngine.periods.scheduleView(book, E3.today())[id];
   const day = v0.rule && v0.rule.every === 'month' && v0.rule.days.length === 1 ? v0.rule.days[0] : null;
   const pay = s.kind === 'income';
-  plForm3(s.name, [{ key: 'name', label: 'Name', kind: 'text', value: s.name }, { key: 'amount', label: 'Amount', kind: 'amount', value: v0.amount },
-    { key: 'day', label: 'Day of the month it is due', kind: 'day', value: day }, { key: 'from', label: 'Changes from', kind: 'date', value: v0.changeFrom, hint: 'Earlier ones stay as they were' }],
-  [{ label: 'Save', solid: true, step: v => ['changeBill', w => PLAN3W.changeBill(w, id, { name: v.name, amount: v.amount, day: v.day, from: v.from }), pay ? 'Pay changed' : 'Bill changed'] }]
+  /* [slice 6] a pay on a day each month or every n weeks can change how often it lands; for the pay that starts the
+     period, each line counted each pay is asked about, with its amount now filled in */
+  const r0 = v0.rule || {}, everyNow = r0.every === 'month' && r0.days.length === 1 ? 'month' : r0.every === 'weeks' && [1, 2, 4].includes(r0.n) ? 'weeks' + r0.n : null;
+  const every = pay && everyNow ? [{ key: 'every', label: 'How often it lands', kind: 'pick', value: everyNow, options: PL_EVERY3 },
+    { key: 'start', label: 'The day of one pay, when it lands every few weeks', kind: 'date', value: r0.every === 'weeks' ? r0.from : '' }] : [];
+  const perPay = every.length && s.startsPeriod ? PLAN3W.linesEachPay({ book, today: E3.today() }) : [];
+  const lines = perPay.map(l => ({ key: 'ln-' + l.key, label: `${l.name} each pay from the change`, kind: 'amount', value: l.amount, optional: true, hint: ' ' }));
+  plForm3(s.name, [{ key: 'name', label: 'Name', kind: 'text', value: s.name }, { key: 'amount', label: 'Amount', kind: 'amount', value: v0.amount }].concat(every,
+    [{ key: 'day', label: 'Day of the month it is due', kind: 'day', value: day }, { key: 'from', label: 'Changes from', kind: 'date', value: v0.changeFrom, hint: 'Earlier ones stay as they were' }], lines),
+  [{ label: 'Save', solid: true, step: v => ['changeBill', w => PLAN3W.changeBill(w, id, { name: v.name, amount: v.amount, day: v.day, from: v.from,
+    ...(every.length ? { every: v.every, start: v.start, lines: Object.fromEntries(perPay.map(l => [l.key, v['ln-' + l.key] == null ? l.amount : v['ln-' + l.key]])) } : {}) }), pay ? 'Pay changed' : 'Bill changed'] }]
     .concat(pay || !v0.next ? [] : [{ label: 'Change the next one only', step: v => ['changeOnce', w => PLAN3W.changeOnce(w, id, { due: v0.next.due, amount: v.amount }), s.name + ' on ' + day3(v0.next.land, 'any') + ' changed'] },
       { label: 'End this bill', step: v => ['endBill', w => PLAN3W.endBill(w, id, { last: v.from }), s.name + ' ends'] }]),
   pay ? 'A change starts from the day in "Changes from". Pay periods before it stay as they were' : `"Change the next one only" changes the amount of the one on ${esc3(day3(v0.next ? v0.next.land : v0.changeFrom, 'any'))}. End this bill: nothing is due after the day in "Changes from"`);
+  if (perPay.length) plPropose3(perPay, r0);
+}
+/* [slice 6, qc-foundation 2] when how often the pay lands changes, each line counted each pay is proposed as the same
+   money a year under the new rhythm (the engine's periods.perPayAcross, rounded half up), and says so:
+   "$400.00 every 2 weeks is $866.67 a month". Back to the rhythm it has, it is today's amount again. */
+const PL_EVERY_WORDS3 = { month: 'a month', weeks1: 'a week', weeks2: 'every 2 weeks', weeks4: 'every 4 weeks' };
+function plPropose3(perPay, r0) {
+  const cur = E3.home(), now = $('#pl-every').value;
+  const ruleOf = v => (v === 'month' ? { every: 'month', days: [Number($('#pl-day').value) || 1] } : { every: 'weeks', n: Number(v.slice(5)) });
+  const show = () => {
+    const v = $('#pl-every').value, same = v === now;
+    for (const l of perPay) {
+      const box = $('#pl-ln-' + l.key), hint = box.parentElement.querySelector('.a3-sub');
+      const a = same ? l.amount : BurrowEngine.periods.perPayAcross(l.amount, r0, ruleOf(v));
+      if (a == null) { hint.textContent = ''; continue; }
+      box.value = SM.toInput(a, cur);
+      const f = fmt3(cur, [l.amount, a]);
+      hint.textContent = same ? '' : `${f(l.amount)} ${PL_EVERY_WORDS3[now]} is ${f(a)} ${PL_EVERY_WORDS3[v]}, the same money a year. Change it if you like`;
+    }
+  };
+  $('#pl-every').addEventListener('change', show);
 }
 /* a goal; id null adds one */
-function plGoalForm3(id) {
+function plGoalForm3(id, fill) {
   const book = E3.book;
   if (!id) {
-    plForm3('Add a goal', [{ key: 'name', label: 'Name', kind: 'text', hint: 'Like Trip or New laptop' }, { key: 'target', label: 'Goal amount', kind: 'amount' },
-      { key: 'due', label: 'Target date', kind: 'date', hint: 'Leave it empty for no date' },
+    /* [slice 6] from a yearly cost's nudge: filled in with its name, amount and day */
+    const f = fill || {};
+    plForm3('Add a goal', [{ key: 'name', label: 'Name', kind: 'text', hint: 'Like Trip or New laptop', value: f.name }, { key: 'target', label: 'Goal amount', kind: 'amount', value: f.target },
+      { key: 'due', label: 'Target date', kind: 'date', hint: 'Leave it empty for no date', value: f.due },
       { key: 'mode', label: 'Where the money is kept', kind: 'pick', value: 'inBank', options: [{ v: 'inBank', name: 'In my bank, set aside' }, { v: 'ownAccount', name: 'In an account of its own' }] }],
     [{ label: 'Add', solid: true, step: v => ['addGoal', w => PLAN3W.addGoal(w, { name: v.name, target: v.target, due: v.due || null, mode: v.mode }), 'Goal added'] }]);
     return;

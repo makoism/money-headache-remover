@@ -3,9 +3,11 @@
    buildBook(answers, { newId, by }) returns { book, ids } (ids: each answer's key to the id it was given). Answers:
      { day, told, country, currency,
        banks: [{ key, name, amount, type?: 'bank'|'cash'|'ewallet'|'wallet', main?, min? }],
-       pays:  [{ key, name, bank, amount, every: 'month'|'weeks', day | days, n, from, shift?, startsPeriod? }],
+       pays:  [{ key, name, bank, amount, every: 'month'|'weeks'|'months'|'year'|'none', day | days, n, start | from, date, shift?, startsPeriod? }],
        cards: [{ key, name, owed, payDay, closeDay: <1 to 31, 'last'> | 'not sure', payMonths?, payFrom, shift?, inFull? }],
-       bills: [{ key, name, from, amount, day | days, every?, n?, shift?, takenOut? }],
+       bills: [{ key, name, from, amount, day | days, every?, n?, start?, date?, shift?, takenOut? }],
+     Rhythms [slice 6]: 'month' (day or days), 'weeks' and 'months' (every n, from `start`, the day of one; a pay may say
+     `from`), 'year' (`date` 'MM-DD'), 'none' (a pay with no fixed day: no amount needed, never starts the period [B4]).
        free?: what goes on food and everyday things each pay period, or null for not said }
    `free` [north star F1, BJ2] is Free to spend: the first plan amount, a `plan.shares` entry from the setup day (the
    period holding the setup day counts its share for the days left, as Plan does). Left out: no Free to spend.
@@ -29,7 +31,12 @@
 
   const SHIFTS = { before: 1, after: 1, none: 1 };
   const BANK_TYPES = { bank: 1, cash: 1, ewallet: 1, wallet: 1 };
-  const PAY_NEEDS_AMOUNT = 'A pay needs an amount. No fixed pay comes later';
+  // [slice 6] the day of one pay every n weeks, stepped back by whole n weeks until it is on or before `day` (YYYY-MM-DD)
+  function weeksAnchor(start, day, n) {
+    const step = 7 * (n || 1), a = D.dayNum(start), d = D.dayNum(day);
+    return a <= d ? start : D.dayStr(a - Math.ceil((a - d) / step) * step);
+  }
+  const PAY_NEEDS_AMOUNT = 'A pay needs an amount. If it comes when it comes, pick No fixed pay';
   function buildBook(ans, opts) {
     const newId = opts.newId, by = opts.by || String(newId()).split('-')[0];
     const day = ans.day, told = ans.told, at = ans.told, cur = ans.currency;
@@ -99,7 +106,10 @@
     book.home = { curs: [{ from: '1970-01-01', cur, at, by }], country: field(ans.country || 'XX'), mode: field('track'),
       main: field({ acct: ids[main.key], min: main.min != null ? { a: whole(main.min, 'the minimum'), cur } : null }) };
 
-    const ruleOf = (x, what) => {
+    // [slice 6] `start` is the day of one occurrence (weeks, months); a pay may give it as `from` too (a bill's `from` is
+    // its account). `year` takes `date` 'MM-DD'. `none` is a pay with no fixed day [B4].
+    const isDay = s => /^\d{4}-\d{2}-\d{2}$/.test(s || '') && D.dayStr(D.dayNum(s)) === s;
+    const ruleOf = (x, what, start) => {
       const every = x.every || 'month';
       if (every === 'month') {
         const ds = x.days || [x.day];
@@ -108,22 +118,39 @@
       }
       if (every === 'weeks') {
         if (!Number.isInteger(x.n || 1) || (x.n || 1) < 1) throw new Error(what + ': every how many weeks? ' + x.n);
-        if (!x.from || D.dayStr(D.dayNum(x.from)) !== x.from) throw new Error(what + ': the weeks need the day of one pay');
-        return { every: 'weeks', n: x.n || 1, from: x.from };
+        if (!isDay(start)) throw new Error(what + ': the weeks need the day of one pay');
+        // [qc-foundation] a pay day given in the future (the next pay) is stepped back by n weeks until it is on or
+        // before the setup day, so the pay period holding the setup day exists
+        return { every: 'weeks', n: x.n || 1, from: weeksAnchor(start, day, x.n || 1) };
       }
+      if (every === 'months') {
+        if (!Number.isInteger(x.n) || x.n < 1) throw new Error(what + ': every how many months? ' + x.n);
+        if (!isDay(start)) throw new Error(what + ': every few months needs the day of one');
+        return { every: 'months', n: x.n, from: start };
+      }
+      if (every === 'year') {
+        const m = /^(\d\d)-(\d\d)$/.exec(x.date || '');
+        if (!m || +m[1] < 1 || +m[1] > 12 || +m[2] < 1 || +m[2] > D.daysInMonth(2028, +m[1])) throw new Error(what + ': no such day of the year ' + x.date);
+        return { every: 'year', date: x.date };
+      }
+      if (every === 'none') return { every: 'none' };
       throw new Error(what + ': no such rhythm ' + every);
     };
     if ((ans.pays || []).filter(p => p.startsPeriod).length > 1) throw new Error('only one pay starts the period');
     for (const p of ans.pays || []) {
-      // [BL1] a pay that exists always has an amount (no fixed pay comes in slice 6), so its check-in item can be ticked
-      if (p.amount === 0) throw new Error(PAY_NEEDS_AMOUNT);
+      const none = p.every === 'none';
+      // [B4] a pay with no fixed day has no fixed amount and never starts the period: the money is logged as it comes in
+      if (none && p.startsPeriod) throw new Error(p.name + ' has no fixed day, so it cannot start the pay period');
+      // [BL1] a fixed pay always has an amount, so its check-in item can be ticked
+      if (!none && p.amount === 0) throw new Error(PAY_NEEDS_AMOUNT);
       book.schedules.push(stamp({ id: idFor(p.key), kind: 'income', name: p.name, acct: acctOf(p.bank), cur, shift: shift(p.shift, p.name),
-        rules: [{ from: null, rule: ruleOf(p, p.name) }], steps: [{ from: null, amount: whole(p.amount, p.name) }],
+        rules: [{ from: null, rule: ruleOf(p, p.name, p.start || p.from) }], steps: [{ from: null, amount: none && p.amount == null ? null : whole(p.amount, p.name) }],
         ...(p.startsPeriod ? { startsPeriod: true } : {}) }));
     }
     for (const b of ans.bills || []) {
+      if (b.every === 'none') throw new Error(b.name + ': a bill needs a day');
       book.schedules.push(stamp({ id: idFor(b.key), kind: 'bill', name: b.name, acct: acctOf(b.from), cur, shift: shift(b.shift, b.name),
-        rules: [{ from: null, rule: ruleOf(b, b.name) }], steps: [{ from: null, amount: whole(b.amount, b.name) }] }));
+        rules: [{ from: null, rule: ruleOf(b, b.name, b.start) }], steps: [{ from: null, amount: whole(b.amount, b.name) }] }));
     }
     // [X3] bills due between the last pay and the setup day: `asked` names each one's landing days (setup asks about
     // those, QC F3), and the ones still to go are marked on the opening check
@@ -152,7 +179,7 @@
     }
     return { book, ids, asked, askedStatements };
   }
-  const api = { buildBook, PAY_NEEDS_AMOUNT };
+  const api = { buildBook, weeksAnchor, PAY_NEEDS_AMOUNT };
   if (node) module.exports = api;
   else (root.BurrowEngine = root.BurrowEngine || {}).build = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

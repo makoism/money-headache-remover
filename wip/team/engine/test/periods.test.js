@@ -161,4 +161,44 @@ t('a bill due on the setup day that setup was told has not gone out yet: Plan an
   const v = scheduleView(b, '2026-12-01', opt).phone;   // listed as outstanding (on the check-in list), before the next one [BJ5]
   eq([v.outstanding.map(o => o.due), v.next.due], [['2026-12-01'], '2027-01-01']);
 });
+// [slice 6] setting money aside ahead for a cost that comes once a year (or every few months, or once). Sam (made-up
+// dollars, weekends only) is set up Mon 7 Dec 2026, paid $1,600 every 2 weeks from Fri 4 Dec: the pays before car
+// insurance's $480 on Mon 1 Mar 2027 are 18 Dec, 1 Jan, 15 Jan, 29 Jan, 12 Feb and 26 Feb: 6 pays of $80. Water $62
+// every 2 months from 15 Dec lands Tue 15 Dec, before the next pay, so it is not listed (it is due before next pay).
+t('aheadFor: a yearly cost spread over the pays before it; monthly bills and one due before the next pay are not listed', () => {
+  const { aheadFor } = require('../periods.js'), I = require('../ids.js');
+  const sam = more => buildBook(Object.assign({ day: '2026-12-07', told: '2026-12-07T09:00:00-05:00', country: 'XX', currency: 'USD',
+    banks: [{ key: 'chk', name: 'Checking', amount: 185000 }],
+    pays: [{ key: 'pay', name: 'Pay', bank: 'chk', amount: 160000, every: 'weeks', n: 2, start: '2026-12-04', startsPeriod: true }],
+    bills: [{ key: 'rent', name: 'Rent', from: 'chk', amount: 90000, day: 1, shift: 'after' },
+      { key: 'car', name: 'Car insurance', from: 'chk', amount: 48000, every: 'year', date: '03-01', shift: 'after' },
+      { key: 'water', name: 'Water', from: 'chk', amount: 6200, every: 'months', n: 2, start: '2026-12-15', shift: 'after' }] }, more || {}), { newId: I.idMaker('ahd4k1') });
+  const b = sam();
+  eq(aheadFor(b.book, '2026-12-07'), [{ schedule: b.ids.car, name: 'Car insurance', amount: 48000, due: '2027-03-01', pays: 6, perPay: 8000 }]);
+  // on 20 Dec the 18 Dec pay is past: 5 pays left, $96 each; water's next (15 Feb) now has pays before it: 4 ($15.50)
+  const r = aheadFor(b.book, '2026-12-20');
+  eq(r.map(x => [x.name, x.due, x.pays, x.perPay]), [['Water', '2027-02-15', 4, 1550], ['Car insurance', '2027-03-01', 5, 9600]]);
+  // no fixed pay: no pays to spread over (null), the cost and its day still listed
+  const k = sam({ pays: [{ key: 'pay', name: 'Client work', bank: 'chk', every: 'none' }] });
+  eq(aheadFor(k.book, '2026-12-07').map(x => [x.name, x.pays, x.perPay]), [['Water', null, null], ['Car insurance', null, null]]);
+});
+t('lastLanding: the last pay landing on or before a day, by the rules as saved', () => {
+  const { lastLanding } = require('../periods.js'), I = require('../ids.js');
+  const b = buildBook({ day: '2026-12-07', told: '2026-12-07T09:00:00-05:00', country: 'XX', currency: 'USD', banks: [{ key: 'chk', name: 'Checking', amount: 185000 }],
+    pays: [{ key: 'pay', name: 'Pay', bank: 'chk', amount: 160000, every: 'weeks', n: 2, start: '2026-12-04', startsPeriod: true }] }, { newId: I.idMaker('lst2k9') });
+  eq([lastLanding(b.book, b.ids.pay, '2027-02-01'), lastLanding(b.book, b.ids.pay, '2027-01-29'), lastLanding(b.book, 'nope', '2027-01-29')], ['2027-01-29', '2027-01-29', null]);
+});
+// [slice 6, qc-foundation 2] an amount each pay carried across a change of how often pay lands, by pays a year: every
+// 2 weeks is 26 a year, every week 52, every 4 weeks 13, a day a month 12, two days a month 24. Rounded half up to the
+// minor unit. $400 every 2 weeks = $400 x 26 / 12 = $866.666 -> $866.67 a month; $866.67 monthly back = $400.00.
+t('perPayAcross: an amount each pay under one rhythm, the same money a year under another', () => {
+  const { perPayAcross } = require('../periods.js');
+  const w2 = { every: 'weeks', n: 2, from: '2026-12-04' }, m = { every: 'month', days: [25] };
+  eq(perPayAcross(40000, w2, m), 86667);
+  eq(perPayAcross(86667, m, w2), 40000);
+  eq(perPayAcross(10000, { every: 'weeks', n: 1, from: '2026-12-04' }, { every: 'weeks', n: 4, from: '2026-12-04' }), 40000);
+  eq(perPayAcross(30000, { every: 'month', days: [15, 'last'] }, m), 60000);
+  eq(perPayAcross(40000, w2, w2), 40000);
+  eq(perPayAcross(40000, w2, { every: 'none' }), null);
+});
 done('periods.test.js');
