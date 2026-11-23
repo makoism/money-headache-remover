@@ -69,6 +69,16 @@ Item names are `<schedule>@<due date>`, using the due date before any move: the 
 13. **Total** does not take off what is owed on cards. Card spending moves no money until the card is paid (as in the ledger design: "Total stays, Free to spend drops").
 14. **Other currencies** sit beside the total and are not added in until converted.
 
+## Decided readings (DECISIONS_ROUND2 F, 23 Nov)
+
+The questions below were decided in DECISIONS_ROUND2.md section F. The expected figures now use the decided reading; where that changed a figure, the old one is kept in the ask's `alt` with the rule it used. The reference model (`../ref/lookahead_ref.js`) works out every figure, and `node ../ref/run_scenarios.js` checks all 180 asks. What changed from rules 1 to 14 above:
+- **Rule 9, cards (F14).** Nothing is taken off today as one lump. Each statement comes off on its payment day (income first on the same day), the still-open part on the payment day after its close, anything past the horizon at the horizon's end.
+- **Rule 9, how far the walk goes (SCHEMA 10.3 step 1).** Every account is walked to the same horizon: the later of the second next pay that starts a period and 45 days from today.
+- **Rule 11, no fixed pay (B4).** The horizon reaches the second occurrence of every monthly bill (and at least 45 days).
+- **Rule 12 and Q12, couples (F12).** One stream starts periods, by default the first entered (Tess). Days to next pay counts to it; every pay still counts in its account's walk.
+- **Q4 (F4).** An item is "not seen yet" only after its landing day plus the account's posting window, one working day by default.
+- The other answers (Q1, Q2, Q3, Q5 to Q11, Q13, Q15 to Q24) were already the readings used here. Older `alt` figures for readings that were decided against (Q2, Q3) are kept with a note.
+
 ## Open rule questions
 
 The expected figures use the reading in rules 1 to 14. Where the rule could reasonably go the other way, the question is below; asks that depend on it name it in `rule_questions`, and where the other reading gives a different figure the ask has an `alt`.
