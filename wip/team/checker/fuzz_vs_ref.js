@@ -17,7 +17,7 @@ const N = Number(arg('--seeds', 2000));
 const FROM = Number(arg('--from', 1));
 const ONE = arg('--seed', null);
 const units = arg('--units', 'written');
-// --as-ref units,placeFloor,currentMonthly,plannedToday,plannedLate,creditWaits: let the checker copy the reference's reading on
+// --as-ref units,placeFloor,currentMonthly,plannedToday,plannedLate,creditWaits,openingLanding,carryOneStep: let the checker copy the reference's reading on
 // those points, so the differences that are left belong to the other classes (DIFFERENCES.md).
 const asRef = (arg('--as-ref', '') || '').split(',').filter(Boolean);
 const OPTS = { units };
@@ -26,6 +26,8 @@ if (asRef.includes('currentMonthly')) OPTS.currentMonthly = true;
 if (asRef.includes('plannedToday')) OPTS.plannedToday = false;
 if (asRef.includes('plannedLate')) OPTS.plannedLate = false;
 if (asRef.includes('creditWaits')) OPTS.creditWaits = true;
+if (asRef.includes('openingLanding')) OPTS.openingLanding = true;
+if (asRef.includes('carryOneStep')) OPTS.carryOneStep = true;
 if (asRef.includes('units')) OPTS.units = 'plain';
 const outFile = arg('--out', null);
 const verbose = argv.includes('-v');

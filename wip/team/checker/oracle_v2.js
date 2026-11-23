@@ -61,9 +61,12 @@ function oracle(sc, asOfStr, opts) {
   //     (SCHEMA_V3 8 units and I4: every period gets its own amount, monthly x 12 / the pays in that year)
   //   plannedToday false: no planned spending for a period whose pay is due today and not in yet (SCHEMA.md 10.3 step 2 counts it)
   //   plannedLate false: none either for a period whose late pay is still counted today [H8] (SCHEMA.md 10.3 step 2 counts it)
+  //   openingLanding true: a pay inside the opening that lands after the setup day starts no period (see the starts below)
+  //   carryOneStep true: an unpaid older item is taken out of the statement it was carried into only, not out of a later one
+  //     that statement's rest was carried into in turn (I3: nothing is counted twice)
   //   creditWaits true: a credit statement waits for its own payment day before it is carried (H3 carries it to the next statement)
   const placeFloor = opts.placeFloor !== false, currentMonthly = !!opts.currentMonthly, plannedToday = opts.plannedToday !== false;
-  const plannedLate = opts.plannedLate !== false, creditWaits = !!opts.creditWaits;
+  const plannedLate = opts.plannedLate !== false, creditWaits = !!opts.creditWaits, openingLanding = !!opts.openingLanding, carryOneStep = !!opts.carryOneStep;
   const cur = sc.currency;
   const D = decsOf(cur);
   const M = (x) => Math.round(Number(x) * Math.pow(10, D));
@@ -293,8 +296,16 @@ function oracle(sc, asOfStr, opts) {
   const starts = [];
   {
     const before = occs(P, pOpen - 400, pOpen + 12).filter((o) => o.due <= pOpen || o.land <= pOpen);
-    const lastIn = before.sort((x, y) => x.land - y.land || x.due - y.due).pop();
-    if (lastIn && !settledBy[lastIn.name]) starts.push({ day: Math.min(lastIn.land, pOpen), occ: lastIn, opening: true });
+    before.sort((x, y) => x.land - y.land || x.due - y.due);
+    const lastIn = before.pop();
+    // A pay due on or before the setup day is inside the opening, so it came in by then: its period
+    // started by the setup day even when its calendar landing is later [rule 2, F8; the rules do not
+    // say this case outright, DIFFERENCES.md]. --as-ref openingLanding copies the reference: the period
+    // before keeps running until the next pay is seen.
+    if (lastIn && lastIn.land > pOpen && openingLanding) {
+      const prev = before.pop();
+      if (prev) starts.push({ day: prev.land, occ: prev, opening: true });
+    } else if (lastIn && !settledBy[lastIn.name]) starts.push({ day: Math.min(lastIn.land, pOpen), occ: lastIn, opening: true });
     for (const e of evs) {
       if (e.kind !== 'pay_in' || !e.settles) continue;
       const nm = Array.isArray(e.settles) ? e.settles[0] : e.settles;
@@ -537,9 +548,12 @@ function oracle(sc, asOfStr, opts) {
       let amount;
       if (s.carried) {
         if (!s.itemCap) continue;
-        const h = head(s);
-        amount = Math.max(0, Math.min(s.itemCap, h.rem - h.used)); // what the older one holds
-        h.used += amount;
+        if (carryOneStep) { amount = s.itemCap; s.carriedInto.used += amount; } // the reference's reading
+        else {
+          const h = head(s);
+          amount = Math.max(0, Math.min(s.itemCap, h.rem - h.used)); // what the older one holds
+          h.used += amount;
+        }
       } else amount = s.rem - s.used; // what the older ones do not already hold
       if (amount <= 0) continue;
       res.push({ name: s.name, due: s.due, land: s.land, amt: amount, closed: !s.future, close: s.close, card: cid });
@@ -562,6 +576,8 @@ function oracle(sc, asOfStr, opts) {
     if (!plannedLate && day === T && o.land < T) continue;
     futureStarts.push({ day, occ: o });
   }
+  // a period whose pay is inside the opening but lands after the ask still starts in the walk
+  for (const st of starts) if (st.day > T && st.day <= H) futureStarts.push({ day: st.day, occ: st.occ });
 
   const accountsOut = {};
   let sumHead = 0, shortfall = 0;
