@@ -35,7 +35,8 @@
     // what the app had heard of by then, as the look ahead counts it: dated and told by the day asked (the day before,
     // at its start); a record belongs to the period its date falls in, whenever it was told [section 9]
     const knownTo = opts.at === 'start of day' ? D0.dayStr(D0.dayNum(asOf) - 1) : asOf;
-    const evs = (book.events || []).filter(e => e && !e.gone && e.date && e.date <= knownTo && String(e.told || e.date).slice(0, 10) <= knownTo);
+    // [BI2] each record once: a statement line matched to a typed or ticked record is one record (LA.countOnce)
+    const evs = LA.countOnce(book, r).filter(e => e.date && e.date <= knownTo && String(e.told || e.date).slice(0, 10) <= knownTo);
     const firstSched = e => { const o = (e.settles || [])[0]; return o ? (typeof o === 'string' ? I.scheduleOf(o) : o.s) : null; };
     function happened(start, end) {
       const home = L.homeOn(book, start);
