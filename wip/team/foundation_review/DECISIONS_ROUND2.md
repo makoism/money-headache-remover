@@ -264,3 +264,9 @@ AE3. Bill schedules may carry `per` too (AD4); a moved bill's one-month amount i
 AE4. The move summary notes when a moved one-month amount is spread over a three-pay month.
 AE5. A restore stamps with the D4 clock (`nextAt`), never the raw time, and covers built ids, `pendingMove`, `frozen`, held marks and keyed overrides. Restoring a 38.31-format backup after the move runs the move on it and stamps every record with the restore. A restore column is added to the grid.
 AE6. AB3's question is asked as "Has your last card statement already left your bank?", with a line that automatic debits count as "not yet" until the day they come out. The meaning, not the field, is what changes; it is checked with real people before setup ships (MAKO_RUN).
+
+## AF. Answers after AD
+AF1 (mv-q55). A minimum whose origin cannot be told is neither kept nor dropped silently: the move asks, showing the old figure ("Keep at least X in your bank?").
+AF2 (ed-q3). A loan or pay-later answered "no, not paid" asks the amount, filled with that month's usual payment.
+AF3 (mg-q13). Shared `ui` keys carry `gone` per key like keyed overrides (AE1); a restore writes `gone` for keys not in the backup.
+The AD helper's readings (AD1: a `rev` that is a count, or a last save before 20 Nov 2026; the dropped minimum is asked; AD2's summary is the move's `zero` list) are confirmed.
