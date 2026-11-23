@@ -30,8 +30,13 @@ const { dayNum, dayStr } = require('./dates');
 const ms = t => Date.parse(t);
 const isMap = x => !!x && typeof x === 'object' && !Array.isArray(x);
 const fieldValue = x => isMap(x) && typeof x.at === 'string';
+// A list of records (every item with a string `id`, ids all different) is a set by id: its order is never a change
+// (section 0; sync_v1 sy-59, the fuzz's first failure). Any other list keeps its order.
 function canon(x) {
-  if (Array.isArray(x)) return '[' + x.map(canon).join(',') + ']';
+  if (Array.isArray(x)) {
+    const byId = x.length > 1 && x.every(i => isMap(i) && typeof i.id === 'string') && new Set(x.map(i => i.id)).size === x.length;
+    return '[' + (byId ? x.slice().sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0)) : x).map(canon).join(',') + ']';
+  }
   if (isMap(x)) return '{' + Object.keys(x).sort().map(k => JSON.stringify(k) + ':' + canon(x[k])).join(',') + '}';
   return JSON.stringify(x);
 }
@@ -51,7 +56,15 @@ function content(x) {
   }
   return o;
 }
-const same = (x, y) => canon(content(x)) === canon(content(y));
+// [AP3] An import line's `src` (the file it was read from, the dates that file covers) is not content either: the id says
+// which line it is, so the same line read from a mid-month CSV on one device and the month's PDF on the other is one
+// record (sync_v1 sy-58, found by the fuzz's first design).
+function contentOf(x) {
+  const o = content(x);
+  if (isMap(x) && typeof x.id === 'string' && x.id.startsWith('imp:')) delete o.src;
+  return o;
+}
+const same = (x, y) => canon(contentOf(x)) === canon(contentOf(y));
 const earliest = (...ts) => ts.filter(t => typeof t === 'string').sort((a, b) => ms(a) - ms(b) || (a < b ? -1 : a > b ? 1 : 0))[0];
 const newest = (...ts) => ts.filter(t => typeof t === 'string').sort((a, b) => ms(b) - ms(a) || (a > b ? -1 : a < b ? 1 : 0))[0];
 
@@ -63,7 +76,7 @@ const rankOf = x => (fieldValue(x) && typeof x.src === 'string' && RANK[x.src] ?
 function versionsOf(list) {
   const byContent = new Map();
   for (const v of list) {
-    const k = canon(content(v));
+    const k = canon(contentOf(v));
     byContent.set(k, byContent.has(k) ? M.winner(byContent.get(k), v) : v);
   }
   return [...byContent.values()].sort((a, b) => ms(a.at) - ms(b.at) || (canon(a) < canon(b) ? -1 : 1));
@@ -292,7 +305,7 @@ function minimumQuestions(copy) {
 // [X5] A place cannot give out more than it holds. A place's figure is added up from events: moves (`place` it leaves,
 // `place2` it reaches, none: Waiting), period-end answers' moves, spends and adjusts naming it (section 4). Free to spend
 // is worked out by the engine and is not judged here. The question offers to undo the newest moves out until it holds.
-function sharesQuestions(copy) {
+function placeFigures(copy) {
   const fig = new Map(), add = (p, a) => { if (p) fig.set(p, (fig.get(p) || 0) + a); };
   const evs = live(copy.events);
   for (const e of evs) {
@@ -302,6 +315,10 @@ function sharesQuestions(copy) {
     else if (e.k === 'spend' && e.place) add(e.place, -a);
     else if (e.k === 'adjust' && e.place) add(e.place, a);
   }
+  return fig;
+}
+function sharesQuestions(copy) {
+  const fig = placeFigures(copy), evs = live(copy.events);
   const out = [];
   for (const [p, f] of [...fig].sort((x, y) => (x[0] < y[0] ? -1 : 1))) {
     if (p === 'free' || f >= 0) continue;
@@ -449,4 +466,4 @@ function ask(question, input) {
   throw new Error('unknown question ' + question);
 }
 
-module.exports = { ask, sync, push, syncDevice, casStory, afterSync, answer, answerCheck, x8Questions, closedChecks, minimumQuestions, sharesQuestions, makes, firstFrom, figureAtClose, impIds, idOk, catKey, catLearn, stmtNorm, content, same, canon };
+module.exports = { ask, laRule, CAL, placeFigures, sync, push, syncDevice, casStory, afterSync, answer, answerCheck, x8Questions, closedChecks, minimumQuestions, sharesQuestions, makes, firstFrom, figureAtClose, impIds, idOk, catKey, catLearn, stmtNorm, content, same, canon };
