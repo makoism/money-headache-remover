@@ -393,3 +393,13 @@ AV2. While AS11's currency question is open, no minimum is used and the warning 
 AV3. A waiting `once` amount counts on the safe side for what it is: the larger for spending lines and bills, the smaller for Free to spend and any cap.
 AV4. A refund (`sub: 'refund'`) never settles a pay, whatever its size.
 AV5. A budget line with no `from` counts from its account's setup day.
+
+## AW. Decisions from sync_review_1.md
+AW1. After a sync, matching (6.4) runs again between import lines and typed or `set:` records that came from the other device, with the usual `gone` / `goneBy` writes. New fuzz invariant: no occurrence is settled by two live records, and each real purchase is one live record.
+AW2. A device with its own data and no `sync.base` meeting a cloud copy asks which whole copy to keep; the other copy goes to the kept versions.
+AW3. AT2 is corrected: a change to a rule that is not monthly or weekly starts the day after the old rule's next occurrence after the last settled one (insurance paid 31 May 2027 yearly: offered from 1 Jun 2028, so nothing is paid twice in a year). AT2's worked example was wrong; sy-23 to sy-25 follow this.
+AW4. AT3 is coded: a main-bank switch and a minimum change meeting at a sync are one question.
+AW5. A refused write retries from the copy it took as its base, saved with the joined copy before pushing (sy-62).
+AW6. Questions the person cannot answer are not asked: a closing transfer is worked out again from the joined events; check-ins that differ only in their settled lists are joined; a record changed on two devices in different fields offers "keep both" (from the per-entry `at` and `by`) besides picking one; the shares question lets the person undo either placing.
+AW7. The shared list of kept versions is named `keptVersions` and is in SCHEMA 2.1; the IndexedDB store keeps the name `kept`. While a money question waits, the walk counts the safe side across the kept versions (as AR1).
+Watch: a restore that gives every record a new `at` asks about every item the other device changed since the last sync; acceptable in version one, noted for stage 2.
