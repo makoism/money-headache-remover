@@ -668,7 +668,7 @@
     };
     const freeSrc = shares.length ? { id: 'free', acct: shares[0].acct, per: (shares[0].per || {}).free || 'month',
       steps: shares.map((x, i) => ({ from: i === 0 ? null : x.from, amount: x.free })) } : null;
-    const lineSrcs = budgets.map(l => ({ id: l.id, name: l.name, acct: l.acct, per: l.per, steps: l.steps, once: [l.once], field: 'amount' }));
+    const lineSrcs = budgets.map(l => ({ id: l.id, name: l.name, acct: l.acct, per: l.per, steps: l.steps, once: [l.once], field: 'amount', from: l.from || null }));
     if (freeSrc) Object.assign(freeSrc, { once: shares.map(x => x.once), field: 'free' });
     // [B8, T1, AE1] A period's amount: a live `once` key named by the occurrence of the pay that starts it, else the step in
     // force. [AO4, AR1] Until the person picks add or replace, a `once` amount waiting for that period counts on the safe
@@ -880,7 +880,10 @@
           for (let d = today + 1; d <= today + LATER_ON_DAYS; d++) {
             const [y, mo] = ymOf(d), yearDays = dayIn(y + 1, 1, 1) - dayIn(y, 1, 1);
             let want;
-            if (l.per === 'week') { const day7 = (d - today) % 7 === 0; want = Math.floor(l.amount / 7) + (day7 ? l.amount - 7 * Math.floor(l.amount / 7) : 0); }
+            if (l.per === 'week') {
+              // [N4, AS9, AV5] a week ends on the seventh day counted from the line's `from` (day 1), else its account's setup day
+              const f = l.src && l.src.from ? dayNum(l.src.from) : openEv[l.acct] ? openDay(l.acct) : today + 1;
+              const day7 = (((d - f) % 7) + 7) % 7 === 6; want = Math.floor(l.amount / 7) + (day7 ? l.amount - 7 * Math.floor(l.amount / 7) : 0); }
             else {
               const perDay = Math.floor(l.amount * 12 / yearDays), monthDays = dayIn(y, mo + 1, 1) - dayIn(y, mo, 1);
               want = perDay + (d === dayIn(y, mo, 'last') ? Math.floor(l.amount * 12 * monthDays / yearDays) - perDay * monthDays : 0);
