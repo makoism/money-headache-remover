@@ -8183,7 +8183,8 @@ function renderRc3() {
   const f = rcFigs3(E3.book);
   const was = RC3.last;
   const left = f ? `<ul class="a3-rows">${f.free != null ? rcFigRow3(label3('freeToSpendLeft'), 'period.free.left', f.free, was && was.free, 'rc-free') : ''}${rcFigRow3(label3('safeToSpend'), 'safeToSpend.headline', f.safe, was && was.safe, 'rc-safe')}</ul>` : '';
-  host.innerHTML = `<section class="a3-card" data-card="rc-left"><h2>Left to spend now</h2>${left}</section>
+  /* the heading names no figure: each row carries its own label from names.js, the same name as on Home and Plan */
+  host.innerHTML = `<section class="a3-card" data-card="rc-left"><h2>Where you stand</h2>${left}</section>
     <section class="a3-card" data-card="rc-form" id="rcForm">${rcFormHtml3()}</section>
     <section class="a3-card" data-card="rc-list" id="rcList"></section>`;
   rcWire3();
