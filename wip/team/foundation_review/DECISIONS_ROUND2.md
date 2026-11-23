@@ -448,3 +448,9 @@ BD3. No marker on the old 38.31 key, and no patch to the old app. app3 only read
 BD4. Every edit moves `at`. A change made without a new `at` is a fault, and the store's tests show it.
 BD5. Joining another tab's settings, the service worker parts of D6, the timing of D5's pushes, and turning the code into a key are slice 4 (cloud copy and backup).
 BD6. The store's timing tests passed 38 of 38 on a rerun. One flaked under load from parallel lanes, so they are not a merge gate while lanes are running.
+
+## BE. No old data to move (Mako, 23 Nov night JST)
+Mako: "there is no old data on the old app. We don't need to calculate with that. I will put my own numbers once we have the first working version."
+BE1. Version one starts empty. setup3 is the only way in, and made-up numbers are offered to look at first. The move is not wired into app3. engine/move.js and its tests stay in the repo for anyone who does have old data later.
+BE2. These drop out of version one: E1 (the move proved on every old build), WIRING_PLAN F2 and F3 (questions after a move, which copy wins), the comparison of the move before deploy, and the old app's backup as a way in.
+BE3. Backup and restore of the new shape (store/pack) stay in slice 4.
