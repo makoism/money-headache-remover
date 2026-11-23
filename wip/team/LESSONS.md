@@ -74,3 +74,21 @@ A second cause: most reviewer briefs forbid reading DECISIONS.md and MAKO_RUN.md
 
 ### Warning sign
 A fix commit that names one screen for a finding that was seen on another screen before.
+
+---
+
+## Lesson 3: Count coverage, do not sample (found 23 Nov 2026, the same day)
+
+### What happened
+While rebuilding the base, five reviews in a row each invented their own situations and each found new gaps: same-day order, card statements, fees, loans, two devices. Every round felt thorough, and every round the next reviewer found more. The sixth review drew a grid instead: every kind of record against every situation that changes its effect (check day, opening, posting window, period start, other currency, two devices, undo, edited after settled, imported or typed, closed account). It found in minutes that the core loop for people who never log spending was wrong: the gap found at a check-in never counted as spending, so safe to spend stayed full while the money was gone. Hundreds of passing cases had never asked it.
+
+### Why
+Invented situations follow what the reviewer happens to think of. Passing tests say nothing about what nobody tested. Without a count, there is no way to know when to stop, and the most ordinary case can be the one nobody picked.
+
+### What changed
+- Reviews of the foundation build and keep a coverage grid (record kinds by situations), with each cell marked covered (the test named), not applicable, or uncovered. foundation_review/final_review_3.md has the first one.
+- An uncovered cell that matters to a person gets a test, even when reasoning says it is fine.
+- The foundation is ready when every applicable cell is covered and passing, not when a review finds nothing.
+
+### Warning sign
+"We tested a lot" with no number for what was not tested.
