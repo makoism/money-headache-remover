@@ -372,4 +372,13 @@ t('a line started mid-period: the part that counts now, what was spent, and how 
   const l0 = run(base(x => { delete x.events[0].split; }), '2026-12-02').period.lines.find(x => x.id === 'food');
   eq([l0.amount, l0.counts, l0.spent, l0.left, l0.over], [30000, 24000, 0, 24000, 0]);
 });
+t('the sums as parts for the screens (numbers review S4): each account\'s parts add up to its headroom; the cap\'s to the headline', () => {
+  const r = run(base(), '2026-12-03');
+  const a = r.accounts.bank;
+  eq(a.whyParts.reduce((t, p) => t + p.amount, 0), a.headroom);
+  eq(a.whyParts[0].amount, a.bank);
+  ok(r.safeToSpend.cappedByFreeToSpend);
+  eq(r.safeToSpend.whyParts, [{ label: 'what your accounts can spare', amount: 370000 }, { label: 'more than Free to spend left this period', amount: -320000 }]);
+  eq(r.safeToSpend.whyParts.reduce((t, p) => t + p.amount, 0), r.safeToSpend.headline);
+});
 done('lookahead');

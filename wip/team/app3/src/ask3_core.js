@@ -21,6 +21,7 @@
   const G = node ? require('../../engine/ledger.js') : E.ledger;
   const SM = node ? require('../../screens/money.js') : root.BurrowScreens.money;
   const SN = node ? require('../../screens/names.js') : root.BurrowScreens.names;
+  const ST = node ? require('../../screens/status.js') : root.BurrowScreens.status;
   const A3 = node ? require('./act3.js') : root.BurrowAct3;
   const PW = () => (node ? require('./plan3_write.js') : root.PLAN3W);
   const MAX = 4, TURNS = 4;
@@ -54,7 +55,7 @@
       rows.push(`${ref} | ${a.name} | ${a.type} | ` + (fig ? `${m(fig.bank, fig.currency)} today, checked ${fig.ageDays === 0 ? 'today' : fig.ageDays === 1 ? 'yesterday' : fig.ageDays + ' days ago'}` : 'see cards'));
     }
     out.push('Accounts you can spend from (ref | name | kind | bank today):\n' + rows.join('\n'));
-    for (const id of Object.keys(r.accounts)) if (r.accounts[id].spendFrom && r.accounts[id].why) out.push(`How safe to spend is worked out for ${name(id)}: ${r.accounts[id].why}`);
+    for (const id of Object.keys(r.accounts)) if (r.accounts[id].spendFrom && r.accounts[id].whyParts) out.push(`How safe to spend is worked out for ${name(id)}: ${SM.sumLine(r.accounts[id].whyParts, r.accounts[id].headroom, r.accounts[id].currency)}`);   // [S4] as Home writes it
     const lines = (p && p.lines) || [];
     if (lines.length) {
       // [QC F5, B2] the amount that counts this period, the full amount a period beside it only when they differ
@@ -75,7 +76,10 @@
     if (cards.length) out.push('Cards (name | owed | next payment):\n' + cards.map(id => { const c = r.cards[id], nx = c.next; return `${name(id)} | ${m(c.owedNow, (accts.find(a => a.id === id) || {}).cur)} owed | ` + (nx && nx.amount ? `next payment ${m(nx.amount)} on ${day(nx.payment_date, today)}` : 'nothing to pay yet') + ((c.overdue || []).length ? ' | a payment is overdue' : ''); }).join('\n'));
     const owed = Object.keys(r.owed || {});
     if (owed.length) out.push('Loans (name | owed): ' + owed.map(id => `${name(id)} | ${m(r.owed[id].owedNow != null ? r.owed[id].owedNow : 0)}`).join('; ') + '.');
-    for (const w of (r.warnings || []).concat(r.laterOn || [])) if (w && w.text) out.push('Note: ' + w.text);
+    /* [S4] the notes in the same words as Home (screens/status.js), each amount with its currency */
+    const wctx = { currency: home, names: Object.fromEntries(accts.map(a => [a.id, a.name])), accounts: r.accounts };
+    for (const w of r.warnings || []) out.push('Note: ' + ST.warningText(w, wctx));
+    for (const l of r.laterOn || []) out.push('Note: ' + ST.laterText(l, wctx));
     return { text: out.join('\n'), refs };
   }
 

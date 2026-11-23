@@ -1109,7 +1109,7 @@
         checked: banks[id].checked, loggedIn: banks[id].loggedIn, loggedOut: banks[id].loggedOut,
         currency: a.cur, minimum, lowest: w.lowest, lowestDay: dayStr(w.lowestDay), headroom: w.headroom,
         spendFrom: isClosed ? false : a.spendFrom != null ? a.spendFrom : !!SPEND_TYPES[a.type] && a.cur === home && !backsGoal(id),
-        why: whyText(w.why, w.headroom, a.cur), fillers: banks[id].fillers };
+        why: whyText(w.why, w.headroom, a.cur), whyParts: w.why.map(p => ({ label: p.label, amount: p.amount })), fillers: banks[id].fillers };   // [S4] the parts, for screens/money.js sumLine
       if (id === mainAcct && mainMinOtherCur()) res.warnings.push({ account: id, code: 'minimum_other_currency', text: `The minimum kept for ${a.name} is in ${main.min.cur}, not ${a.cur}: what is its minimum in ${a.cur}?` });
       // [QC fix] data for the screens to word (account, amount, day, minimum or null for none); the text is only for Ask's
       // summary, and says "below zero" when there is no minimum, with the day as "1 Jan", never an ISO day
@@ -1146,6 +1146,8 @@
     // [BJ5] when Free to spend caps the headline, the sum under it ends with the cap, so the two figures never disagree
     res.safeToSpend.why = res.safeToSpend.cappedByFreeToSpend
       ? `${fmt(raw, home)} (what your accounts can spare) - ${fmt(raw - Math.max(0, cap), home)} (more than Free to spend left this period) = ${fmt(res.safeToSpend.headline, home)}` : null;
+    res.safeToSpend.whyParts = res.safeToSpend.cappedByFreeToSpend
+      ? [{ label: 'what your accounts can spare', amount: raw }, { label: 'more than Free to spend left this period', amount: -(raw - Math.max(0, cap)) }] : null;
 
     // ----- days to next pay [F3, F8, F12, F13, H8] -----
     const np = nextPays[0];

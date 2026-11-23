@@ -50,7 +50,7 @@ const typeIn = async (p, sel, v) => { await p.click(sel, { clickCount: 3 }); awa
     const f = await T.figs(p), one = k => f.filter(x => x.fig === k);
     ck(when + ': Home shows the bank typed', one('bank').length === 1 && one('bank')[0].amt === 286000, JSON.stringify(one('bank')));
     ck(when + ': safe to spend is the same as the try book\'s on that day', one('safe')[0] && one('safe')[0].amt === r.safeToSpend.headline, JSON.stringify(one('safe')) + ' vs ' + r.safeToSpend.headline);
-    ck(when + ': the sum behind it reads the same', one('why')[0] && one('why')[0].text === r.accounts[bank].why.replace(' - 0 (minimum) =', ' ='), one('why')[0] && one('why')[0].text);
+    ck(when + ': the sum behind it reads the same', one('why')[0] && one('why')[0].text === require('../../screens/money.js').sumLine(r.accounts[bank].whyParts, r.accounts[bank].headroom, r.accounts[bank].currency), one('why')[0] && one('why')[0].text);
     ck(when + ': the period is 10 Nov to 9 Dec', (await p.$eval('[data-fig=period]', e => e.textContent)) === '10 Nov to 9 Dec');
     const owed = await p.$$eval('[data-cardid]', es => es.map(e => e.textContent));
     ck(when + ': both cards with what they owe', owed.length === 2 && /Card A/.test(owed[0]) && /54,000/.test(owed[0]) && /Card B/.test(owed[1]) && /23,000/.test(owed[1]), owed.join(' | '));

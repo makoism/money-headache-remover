@@ -38,10 +38,8 @@ function besidePay3(day, land, yr) {
   if (day < land) return E3.dayBefore(day, land) ? ', the day before your pay lands' : `, before your pay lands on ${esc3(day3(land, yr))}`;
   return '';
 }
-/* the engine's sum as written, without "- 0 (minimum)" when there is no minimum (TODO lane A: the engine could leave it out) */
-function whyWords3(a) {
-  return a.minimum === 0 ? a.why.replace(` - ${BurrowEngine.units.fmt(0, a.currency)} (minimum) =`, ' =') : a.why;
-}
+/* the engine's sum, from its parts, written by screens/money.js: one minus sign, no "- 0 (minimum)" (numbers review S4) */
+function whyWords3(a) { return SM.sumLine(a.whyParts, a.headroom, a.currency); }
 /* the one next pay on Home is res.period.nextPay, named by the day it lands after the weekend rule [BI4b]: the engine
    gives that day for the item in its lists (next pay, may still go through, not seen yet, the check-in list) */
 function nextPay3(r) {
@@ -104,7 +102,7 @@ function renderHome3() {
   /* safe to spend until next pay, with the sum behind it */
   const until = safeUntil3(r, yr);
   /* [BJ5] when Free to spend caps the headline, the engine's sum ends with the cap, so the two figures agree */
-  const capLine = r.safeToSpend.why ? `<p class="a3-sum" data-fig="cap">${esc3(r.safeToSpend.why)}</p>` : '';
+  const capLine = r.safeToSpend.whyParts ? `<p class="a3-sum" data-fig="cap">${esc3(SM.sumLine(r.safeToSpend.whyParts, r.safeToSpend.headline, home))}</p>` : '';
   const sums = `${ids.filter(id => r.accounts[id].spendFrom).map(id => `<p class="a3-sum" data-fig="why">${esc3(whyWords3(r.accounts[id]))}</p>`).join('')}${capLine}`;
   const short = r.safeToSpend.shortfall ? `<p class="a3-warn a3-bad">${esc3(label3('shortBy'))} ${fig3('safeToSpend.shortfall', r.safeToSpend.shortfall, home)} before then</p>` : '';
   /* the engine's warnings are data (account, amount, day, minimum or none): worded by screens/status.js, never its text */

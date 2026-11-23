@@ -3086,7 +3086,7 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
         checked: banks[id].checked, loggedIn: banks[id].loggedIn, loggedOut: banks[id].loggedOut,
         currency: a.cur, minimum, lowest: w.lowest, lowestDay: dayStr(w.lowestDay), headroom: w.headroom,
         spendFrom: isClosed ? false : a.spendFrom != null ? a.spendFrom : !!SPEND_TYPES[a.type] && a.cur === home && !backsGoal(id),
-        why: whyText(w.why, w.headroom, a.cur), fillers: banks[id].fillers };
+        why: whyText(w.why, w.headroom, a.cur), whyParts: w.why.map(p => ({ label: p.label, amount: p.amount })), fillers: banks[id].fillers };   // [S4] the parts, for screens/money.js sumLine
       if (id === mainAcct && mainMinOtherCur()) res.warnings.push({ account: id, code: 'minimum_other_currency', text: `The minimum kept for ${a.name} is in ${main.min.cur}, not ${a.cur}: what is its minimum in ${a.cur}?` });
       // [QC fix] data for the screens to word (account, amount, day, minimum or null for none); the text is only for Ask's
       // summary, and says "below zero" when there is no minimum, with the day as "1 Jan", never an ISO day
@@ -3123,6 +3123,8 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
     // [BJ5] when Free to spend caps the headline, the sum under it ends with the cap, so the two figures never disagree
     res.safeToSpend.why = res.safeToSpend.cappedByFreeToSpend
       ? `${fmt(raw, home)} (what your accounts can spare) - ${fmt(raw - Math.max(0, cap), home)} (more than Free to spend left this period) = ${fmt(res.safeToSpend.headline, home)}` : null;
+    res.safeToSpend.whyParts = res.safeToSpend.cappedByFreeToSpend
+      ? [{ label: 'what your accounts can spare', amount: raw }, { label: 'more than Free to spend left this period', amount: -(raw - Math.max(0, cap)) }] : null;
 
     // ----- days to next pay [F3, F8, F12, F13, H8] -----
     const np = nextPays[0];
@@ -3912,7 +3914,19 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
     return { ok: true, minor: m[1] && minor !== 0 ? -minor : minor };
   }
 
-  return { MINUS, digits, symbol, format, formatter, toInput, parse };
+  /* sumLine(parts, result, code): the engine's sum as a person reads it (numbers review S4), "¥312,000 (Main bank today)
+     − ¥100,000 (Trip) = ¥212,000". parts: [{ label, amount }] in order, signed; a part of zero is left out (no
+     "- 0 (minimum)"). One minus sign (U+2212) everywhere, one way of writing cents for the whole line. It writes the
+     engine's figures only: nothing is added up here. */
+  function sumLine(parts, result, code) {
+    const shown = (parts || []).filter(p => p.amount !== 0);
+    const f = formatter(code, shown.map(p => p.amount).concat([result]));
+    const label = p => ' (' + String(p.label).replace(/[()]/g, '') + ')';
+    const body = shown.map((p, i) => (i === 0 ? f(p.amount) : (p.amount < 0 ? ' \u2212 ' + f(-p.amount) : ' + ' + f(p.amount))) + label(p)).join('');
+    return body + ' = ' + f(result);
+  }
+
+  return { MINUS, digits, symbol, format, formatter, toInput, parse, sumLine };
 });
 /* The one name table (DECISIONS_ROUND2 C, sweep2_repeats A8, LESSONS lesson 2). Each label is tied to the engine figure
    it names (a path in the engine result, SCHEMA_V3 section 12; `*` stands for an account, card, loan or place id), so one
@@ -7952,10 +7966,8 @@ function besidePay3(day, land, yr) {
   if (day < land) return E3.dayBefore(day, land) ? ', the day before your pay lands' : `, before your pay lands on ${esc3(day3(land, yr))}`;
   return '';
 }
-/* the engine's sum as written, without "- 0 (minimum)" when there is no minimum (TODO lane A: the engine could leave it out) */
-function whyWords3(a) {
-  return a.minimum === 0 ? a.why.replace(` - ${BurrowEngine.units.fmt(0, a.currency)} (minimum) =`, ' =') : a.why;
-}
+/* the engine's sum, from its parts, written by screens/money.js: one minus sign, no "- 0 (minimum)" (numbers review S4) */
+function whyWords3(a) { return SM.sumLine(a.whyParts, a.headroom, a.currency); }
 /* the one next pay on Home is res.period.nextPay, named by the day it lands after the weekend rule [BI4b]: the engine
    gives that day for the item in its lists (next pay, may still go through, not seen yet, the check-in list) */
 function nextPay3(r) {
@@ -8018,7 +8030,7 @@ function renderHome3() {
   /* safe to spend until next pay, with the sum behind it */
   const until = safeUntil3(r, yr);
   /* [BJ5] when Free to spend caps the headline, the engine's sum ends with the cap, so the two figures agree */
-  const capLine = r.safeToSpend.why ? `<p class="a3-sum" data-fig="cap">${esc3(r.safeToSpend.why)}</p>` : '';
+  const capLine = r.safeToSpend.whyParts ? `<p class="a3-sum" data-fig="cap">${esc3(SM.sumLine(r.safeToSpend.whyParts, r.safeToSpend.headline, home))}</p>` : '';
   const sums = `${ids.filter(id => r.accounts[id].spendFrom).map(id => `<p class="a3-sum" data-fig="why">${esc3(whyWords3(r.accounts[id]))}</p>`).join('')}${capLine}`;
   const short = r.safeToSpend.shortfall ? `<p class="a3-warn a3-bad">${esc3(label3('shortBy'))} ${fig3('safeToSpend.shortfall', r.safeToSpend.shortfall, home)} before then</p>` : '';
   /* the engine's warnings are data (account, amount, day, minimum or none): worded by screens/status.js, never its text */
@@ -9787,6 +9799,7 @@ function stmt3Bar() {
   const G = node ? require('../../engine/ledger.js') : E.ledger;
   const SM = node ? require('../../screens/money.js') : root.BurrowScreens.money;
   const SN = node ? require('../../screens/names.js') : root.BurrowScreens.names;
+  const ST = node ? require('../../screens/status.js') : root.BurrowScreens.status;
   const A3 = node ? require('./act3.js') : root.BurrowAct3;
   const PW = () => (node ? require('./plan3_write.js') : root.PLAN3W);
   const MAX = 4, TURNS = 4;
@@ -9820,7 +9833,7 @@ function stmt3Bar() {
       rows.push(`${ref} | ${a.name} | ${a.type} | ` + (fig ? `${m(fig.bank, fig.currency)} today, checked ${fig.ageDays === 0 ? 'today' : fig.ageDays === 1 ? 'yesterday' : fig.ageDays + ' days ago'}` : 'see cards'));
     }
     out.push('Accounts you can spend from (ref | name | kind | bank today):\n' + rows.join('\n'));
-    for (const id of Object.keys(r.accounts)) if (r.accounts[id].spendFrom && r.accounts[id].why) out.push(`How safe to spend is worked out for ${name(id)}: ${r.accounts[id].why}`);
+    for (const id of Object.keys(r.accounts)) if (r.accounts[id].spendFrom && r.accounts[id].whyParts) out.push(`How safe to spend is worked out for ${name(id)}: ${SM.sumLine(r.accounts[id].whyParts, r.accounts[id].headroom, r.accounts[id].currency)}`);   // [S4] as Home writes it
     const lines = (p && p.lines) || [];
     if (lines.length) {
       // [QC F5, B2] the amount that counts this period, the full amount a period beside it only when they differ
@@ -9841,7 +9854,10 @@ function stmt3Bar() {
     if (cards.length) out.push('Cards (name | owed | next payment):\n' + cards.map(id => { const c = r.cards[id], nx = c.next; return `${name(id)} | ${m(c.owedNow, (accts.find(a => a.id === id) || {}).cur)} owed | ` + (nx && nx.amount ? `next payment ${m(nx.amount)} on ${day(nx.payment_date, today)}` : 'nothing to pay yet') + ((c.overdue || []).length ? ' | a payment is overdue' : ''); }).join('\n'));
     const owed = Object.keys(r.owed || {});
     if (owed.length) out.push('Loans (name | owed): ' + owed.map(id => `${name(id)} | ${m(r.owed[id].owedNow != null ? r.owed[id].owedNow : 0)}`).join('; ') + '.');
-    for (const w of (r.warnings || []).concat(r.laterOn || [])) if (w && w.text) out.push('Note: ' + w.text);
+    /* [S4] the notes in the same words as Home (screens/status.js), each amount with its currency */
+    const wctx = { currency: home, names: Object.fromEntries(accts.map(a => [a.id, a.name])), accounts: r.accounts };
+    for (const w of r.warnings || []) out.push('Note: ' + ST.warningText(w, wctx));
+    for (const l of r.laterOn || []) out.push('Note: ' + ST.laterText(l, wctx));
     return { text: out.join('\n'), refs };
   }
 

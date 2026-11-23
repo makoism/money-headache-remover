@@ -24,7 +24,8 @@ const DAYS = ['2026-11-23', '2026-12-09', '2026-12-10', '2026-12-11', '2026-12-1
     ck(day + ' one bank figure, the engine\'s', bankFigs.length === 1 && bankFigs[0].amt === r.accounts[bank].bank, JSON.stringify(bankFigs));
     ck(day + ' its age', one('age')[0] && one('age')[0].text === (r.accounts[bank].ageDays === 0 ? 'checked today' : r.accounts[bank].ageDays === 1 ? 'checked yesterday' : 'checked ' + r.accounts[bank].ageDays + ' days ago') + ', on 20 Nov' + (day.startsWith('2027') ? ' 2026' : ''), one('age')[0] && one('age')[0].text);
     ck(day + ' safe to spend is the engine\'s headline', one('safe')[0] && one('safe')[0].amt === r.safeToSpend.headline, JSON.stringify(one('safe')) + ' vs ' + r.safeToSpend.headline);
-    ck(day + ' the sum behind it is the engine\'s, without a minimum of 0', one('why')[0] && one('why')[0].text === r.accounts[bank].why.replace(' - 0 (minimum) =', ' =') && !/minimum/.test(one('why')[0].text), one('why')[0] && one('why')[0].text);
+    { const w = one('why')[0], want = require('../../screens/money.js').sumLine(r.accounts[bank].whyParts, r.accounts[bank].headroom, r.accounts[bank].currency);
+      ck(day + ' the sum behind it is the engine\'s parts, one minus sign, without a minimum of 0 (S4)', w && w.text === want && !/minimum/.test(w.text) && !/ - /.test(w.text) && (r.accounts[bank].whyParts.filter(p => p.amount < 0 && p.label !== 'minimum').length === 0 || w.text.includes('\u2212')), w && w.text); }
     const npDay = r.period.nextPay.state === 'notSeen' ? r.period.nextPay.due : r.daysToNextPay.next_pay;
     ck(day + ' the next pay (' + r.period.nextPay.state + ')', one('nextpay')[0] && one('nextpay')[0].text.indexOf(SN0.dayLabel(npDay)) > 0, one('nextpay')[0] && one('nextpay')[0].text);
     const dt = one('duetotal');

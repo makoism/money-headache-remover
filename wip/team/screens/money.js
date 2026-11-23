@@ -94,5 +94,17 @@
     return { ok: true, minor: m[1] && minor !== 0 ? -minor : minor };
   }
 
-  return { MINUS, digits, symbol, format, formatter, toInput, parse };
+  /* sumLine(parts, result, code): the engine's sum as a person reads it (numbers review S4), "¥312,000 (Main bank today)
+     − ¥100,000 (Trip) = ¥212,000". parts: [{ label, amount }] in order, signed; a part of zero is left out (no
+     "- 0 (minimum)"). One minus sign (U+2212) everywhere, one way of writing cents for the whole line. It writes the
+     engine's figures only: nothing is added up here. */
+  function sumLine(parts, result, code) {
+    const shown = (parts || []).filter(p => p.amount !== 0);
+    const f = formatter(code, shown.map(p => p.amount).concat([result]));
+    const label = p => ' (' + String(p.label).replace(/[()]/g, '') + ')';
+    const body = shown.map((p, i) => (i === 0 ? f(p.amount) : (p.amount < 0 ? ' \u2212 ' + f(-p.amount) : ' + ' + f(p.amount))) + label(p)).join('');
+    return body + ' = ' + f(result);
+  }
+
+  return { MINUS, digits, symbol, format, formatter, toInput, parse, sumLine };
 });

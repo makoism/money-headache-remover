@@ -117,7 +117,18 @@ test('written then read back gives the same minor units', () => {
 });
 
 test('money.js offers writing and reading only: no adding, splitting or rounding of amounts', () => {
-  assert.deepStrictEqual(Object.keys(money).sort(), ['MINUS', 'digits', 'format', 'formatter', 'parse', 'symbol', 'toInput']);
+  assert.deepStrictEqual(Object.keys(money).sort(), ['MINUS', 'digits', 'format', 'formatter', 'parse', 'sumLine', 'symbol', 'toInput']);
+});
+
+test('a sum line (numbers review S4): the engine\'s parts written with one minus sign, no "- 0 (minimum)", one way of writing cents', () => {
+  const M = '\u2212';
+  assert.strictEqual(money.sumLine([{ label: 'Main bank today', amount: 312000 }, { label: 'Trip, kept in it', amount: -100000 }, { label: 'minimum', amount: 0 }], 212000, 'JPY'),
+    `¥312,000 (Main bank today) ${M} ¥100,000 (Trip, kept in it) = ¥212,000`);
+  assert.strictEqual(money.sumLine([{ label: 'Bank today', amount: 150000 }, { label: 'Visa, all owed, paid 5 Jan', amount: -81240 }, { label: 'minimum', amount: -5000 }], 63760, 'USD'),
+    `$1,500.00 (Bank today) ${M} $812.40 (Visa, all owed, paid 5 Jan) ${M} $50.00 (minimum) = $637.60`);
+  assert.strictEqual(money.sumLine([{ label: 'Bank today', amount: 1000 }, { label: 'Pay', amount: 2000 }, { label: 'Rent', amount: -5000 }], -2000, 'JPY'),
+    `¥1,000 (Bank today) + ¥2,000 (Pay) ${M} ¥5,000 (Rent) = ${money.MINUS}¥2,000`);
+  for (const s of [money.sumLine([{ label: 'a', amount: -5 }], -5, 'JPY')]) assert.ok(!/ - /.test(s) && !s.includes('-'), s);
 });
 
 run('money.js');
