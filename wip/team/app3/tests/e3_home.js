@@ -38,8 +38,8 @@ const DAYS = ['2026-11-23', '2026-12-09', '2026-12-10', '2026-12-11', '2026-12-1
     ck(day + ' every amount written is the amount it stands for', shown);
     const audit = await p.evaluate(() => BurrowScreens.provenance.audit(document.getElementById('a3Home')));
     ck(day + ' every figure is marked sample on the sample screen (provenance audit)', audit.length === 0 && (await p.$$('[data-figure]')).length > 5, audit.join('; '));
-    const st = await p.evaluate(() => document.querySelector('[data-card=status] h2').textContent);
-    ck(day + ' the one status says these are sample numbers', st === 'Sample numbers', st);
+    const st = await p.evaluate(() => ({ card: !!document.querySelector('[data-card=status]'), band: document.getElementById('a3Try').hidden ? '' : document.getElementById('a3Try').textContent, n: (document.getElementById('a3').textContent.match(/[Mm]ade.up|Sample numbers/g) || []).length }));
+    ck(day + ' made-up numbers are said once, in the yellow band, with no status card', !st.card && /Made-up numbers/.test(st.band) && st.n === 1, JSON.stringify(st));
     if (day === '2026-11-23' || day === '2027-01-08' || day === '2026-12-10') await T.shot(p, 'home_' + day);
   }
   /* the phone width: no sideways scroll at 320 */
