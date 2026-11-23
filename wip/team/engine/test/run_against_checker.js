@@ -6,6 +6,7 @@
 // The checker is not part of this branch: point at a folder holding it, for example one made with
 //   git archive origin/lane/checker-b wip/team/checker | tar -x -C <folder>
 // Usage: node run_against_checker.js --checker <folder>/wip/team/checker [--seeds 2000] [--from 1] [--seed N] [-v] [--out f.json]
+//   [--checker-opts k=v,...]
 // Any difference fails the run; the last line never says all agree when one does not (LESSONS lesson 2).
 'use strict';
 const fs = require('fs');
@@ -25,12 +26,15 @@ const { genLife } = require(path.join(dir, 'life_gen.js'));
 const { oracle, Refused } = require(path.join(dir, 'oracle_v2.js'));
 const N = Number(arg('--seeds', 2000)), FROM = Number(arg('--from', 1)), ONE = arg('--seed', null);
 const outFile = arg('--out', null), verbose = argv.includes('-v');
+// --checker-opts placeFloor=false,plannedToday=false,...: switch a reading in the checker, to sort differences by cause
+const COPTS = { units: 'written' };
+for (const kv of (arg('--checker-opts', '') || '').split(',').filter(Boolean)) { const [k, v] = kv.split('='); COPTS[k] = v === 'true' ? true : v === 'false' ? false : v; }
 const near = (a, b) => (typeof a === 'number' && typeof b === 'number' ? Math.abs(a - b) < 1e-6 : a === b);
 
 function compare(sc, day) {
   const diffs = [];
   let o, r;
-  try { o = oracle(sc, day, { units: 'written' }); } catch (e) {
+  try { o = oracle(sc, day, COPTS); } catch (e) {
     if (e instanceof Refused) return { refused: e.message };
     return { diffs: [{ field: 'checker threw', mine: null, checker: e.message }] };
   }
