@@ -1,8 +1,8 @@
-# Coverage of the foundation (after decisions T to AG, 23 Nov 2026)
+# Coverage of the foundation (after decisions T to AH, 23 Nov 2026)
 
-The coverage grid of final_review_3.md, updated (LESSONS lesson 3: count coverage, do not sample). Rows are kinds of record and the shapes they live in; columns are the situations that change a record's effect. Every applicable cell names the asks (scenarios/*.json, run by `node foundation_review/ref/run_scenarios.js`) or cases (rules/*.json, run by `node foundation_review/rules/run_rules.js`) that cover it. All of them pass: 698 of 698 asks, 522 of 522 cases (after AG: 6 cases added and 3 re-worked, no new row or column; see "Decision AG" at the end; after AE and AF: 6 asks in a new scenario file, 31 cases added and 20 re-worked (3 of them only reworded), the row "keyed overrides" and the column R; see "Decisions AE and AF" at the end; after AB and AC: 20 asks in 4 new scenario files, 34 cases added and 15 re-worked, the columns L and B and the rows `pendingMove` and `frozen`; see "Decisions AB and AC" at the end; after AA: 3 asks in a new scenario file and 12 move cases; after W and X: 78 asks and 32 cases added, in 19 new scenario files, one ask in fee_place and a new rules file `rules/edits.json`; after Y and Z: 15 asks in 4 new scenario files, 11 rules cases and 24 move cases, and the move row; see "Decisions W and X" and "Decisions Y and Z" at the end). The move cases (`rules/move.json`) are counted in the 522.
+The coverage grid of final_review_3.md, updated (LESSONS lesson 3: count coverage, do not sample). Rows are kinds of record and the shapes they live in; columns are the situations that change a record's effect. Every applicable cell names the asks (scenarios/*.json, run by `node foundation_review/ref/run_scenarios.js`) or cases (rules/*.json, run by `node foundation_review/rules/run_rules.js`) that cover it. All of them pass: 709 of 709 asks, 582 of 582 cases (after AH: 11 asks in 3 new scenario files, 8 asks moved to the AE1 shape, 60 cases added and 26 re-worked (12 of them only to name the receiving device's now, 5 only moved to the AE1 shape), the column A and two false covers fixed; see "Decision AH" at the end; after AG: 6 cases added and 3 re-worked, no new row or column; see "Decision AG" at the end; after AE and AF: 6 asks in a new scenario file, 31 cases added and 20 re-worked (3 of them only reworded), the row "keyed overrides" and the column R; see "Decisions AE and AF" at the end; after AB and AC: 20 asks in 4 new scenario files, 34 cases added and 15 re-worked, the columns L and B and the rows `pendingMove` and `frozen`; see "Decisions AB and AC" at the end; after AA: 3 asks in a new scenario file and 12 move cases; after W and X: 78 asks and 32 cases added, in 19 new scenario files, one ask in fee_place and a new rules file `rules/edits.json`; after Y and Z: 15 asks in 4 new scenario files, 11 rules cases and 24 move cases, and the move row; see "Decisions W and X" and "Decisions Y and Z" at the end). The move cases (`rules/move.json`) are counted in the 582.
 
-Columns: C check day, O opening, W posting window, P period start, X other currency, D two devices, U undo/redo, E edited after settled, S imported/typed/self-logged, Z closed account, and, added after confirm_review_1 (decision X): M the move run on two devices (the phone and the desktop each move the same 38.31 copy), Y years after setup (an ask ten years out, X7), T a time with an offset (the start and end of a day in the device's offset, X9); and, added after confirm_review_2 (decisions AB and AC): L a second device moving days later, after real use on the first (AB1), and B setup between a statement's close and its payment day, for cards, pay-later and loans (AB3); and, added after confirm_review_3 (decision AE5): R restore, an older backup restored while the cloud copy is on (the D4 clock, every list, held marks, a 38.31-format backup after the move).
+Columns: C check day, O opening, W posting window, P period start, X other currency, D two devices, U undo/redo, E edited after settled, S imported/typed/self-logged, Z closed account, and, added after confirm_review_1 (decision X): M the move run on two devices (the phone and the desktop each move the same 38.31 copy), Y years after setup (an ask ten years out, X7), T a time with an offset (the start and end of a day in the device's offset, X9); and, added after confirm_review_2 (decisions AB and AC): L a second device moving days later, after real use on the first (AB1), and B setup between a statement's close and its payment day, for cards, pay-later and loans (AB3); and, added after confirm_review_3 (decision AE5): R restore, an older backup restored while the cloud copy is on (the D4 clock, every list, held marks, a 38.31-format backup after the move); and, added after confirm_review_4 (decision AH1): A used again after days away, a device opened again after 2, 21 and 45 days (its own writes and what it is told on its own clock, a desktop edit made meanwhile, D8's question past 40 days).
 
 Rows added after Y and Z: **move**, the move of a saved copy from 38.31, 38.28 or the 25.0 to 38.26 builds (`rules/move.json`), as a record kind of its own: what it writes in each situation. Rows added after AB: **`pendingMove`** (what waits on a moved copy, records `mv:pend:<field path>`) and **`frozen`** (each device's raw 38.31 text, `mv:frozen:<by>`, formerly the shared `frozen3831`). Row added after AE: **keyed overrides** (`amounts` on schedules and loans, `once` on budget lines and `plan.shares` entries, `extraSteps` on loans), each key or entry with its own `at`, `by` and `gone` (AE1).
 
@@ -12,10 +12,15 @@ Marks: **c** covered before this round; **n** newly covered (in the first ten co
 
 | | Cells |
 |---|---|
-| All cells (32 rows x 16 columns) | 512 |
-| Not applicable | 221 |
-| Stage 2 (hand and Wallet mode, T7) | 2 |
-| **Applicable** | **289** |
+| All cells (32 rows x 17 columns) | 544 |
+| Not applicable | 223 |
+| Stage 2 (hand and Wallet mode, T7) | 3 |
+| **Applicable** | **318** |
+| New after confirm_review_4: the column A (32 cells: 28 applicable, 3 not applicable, 1 stage 2) | 28 |
+| of which covered by new cases (n) | 28 |
+| False covers confirm_review_4 found, now really covered (move E, marked not applicable, AH2: a cell made applicable; keyed overrides U, covered only by a merge, AH3) | 2 (1 new applicable cell) |
+| Near miss confirm_review_4 found, now really covered (keyed overrides C: the asks used plain numbers, AH3) | 1 (no count change) |
+| Applicable after AG (32 rows x 16 columns) | 289 |
 | New after confirm_review_3: the column R (32 cells, 31 applicable) and the row keyed overrides (16 cells, 8 applicable; its R cell counted once) | 38 |
 | of which covered by asks and cases that already existed (c: keyed overrides C and P, E; restore of spend and income schedules, mg-96, mg-97) | 5 |
 | of which covered by new cases (n) | 33 |
@@ -39,47 +44,47 @@ Marks: **c** covered before this round; **n** newly covered (in the first ten co
 | Changed by AD (no new row or column; cells of the move, `pendingMove`, card, loan and period-end rows covered again by AD's cases and asks) | 0 |
 | Changed by AE and AF in the old cells (none uncovered; the `pendingMove` L cell re-covered by AE2's cases, the card B cell by AE6's) | 0 |
 | Changed by AG (no new row or column; AG's cases add to the `pendingMove` and keyed overrides R cells and the keyed overrides P cell) | 0 |
-| **Applicable and covered, all passing** | **289** (289 of 289) |
+| **Applicable and covered, all passing** | **318** (318 of 318) |
 | Applicable and uncovered | 0 |
 
 **Counts after V** (kept for the record): 260 cells, 93 not applicable, 2 stage 2, 165 applicable, all covered. **A note on final_review_3's numbers.** final_review_3.md says 260 cells, 171 applicable, 129 covered, 24 uncovered and sound, 18 wrong. Its own table, counted cell by cell, holds 128 c, 22 u, 17 X and 93 -, so 167 applicable; the "(X: wallet)" note on the last row is the eighteenth wrong item but not a cell of its own. This file counts the table. Wallet mode is stage 2 now (T7), so the note and the two `hand` cells are out of version one: 165 applicable cells.
 
 ## The grid
 
-| Row | C | O | W | P | X | D | U | E | S | Z | M | Y | T | L | B | R |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| open | c | c | c | c | c | - | n (u) | - | c | c | n | - | n | n | n | n |
-| check | c, f (X4) | c | c | n (X) | c | n (u) | c | n (u) | c | c | n | n | n | n | n | n |
-| in / pay | c | c | c | c | c | c | n (X) | c, f (X8) | c | n (u) | - | n | n | - | - | n |
-| refund | c | - | c | n (u) | n (u) | - | - | - | c | n (u) | - | n | n | - | - | n |
-| spend | c | c | c | c | n (X) | c | c | c | c | n (u) | n | n | n | n | - | c |
-| transfer | c | n (u) | c | - | c | n (u) | - | - | c | c | - | - | n | - | - | n |
-| repay | c | c | c | - | c | c | - | - | c | c | - | n | n | n | - | n |
-| borrow | c | - | n (u) | - | - | - | - | - | c | - | - | n | n | - | - | n |
-| convert | n (u) | - | - | - | c | - | - | - | n (u) | - | - | - | n | - | - | n |
-| adjust | n (X) | - | - | - | - | - | - | - | - | - | - | - | n | - | - | n |
-| hand / Wallet mode | s2 | - | - | s2 | - | - | - | - | - | - | - | - | - | - | - | - |
-| move between places | n (X) | c | - | c | - | c | n (u) | - | - | c | - | - | - | n | - | n |
-| filler | c | - | c | n (X) | - | - | - | - | - | - | - | - | - | - | - | n |
-| skip | c | - | - | n (u) | - | c | c | - | c | - | - | n | - | - | - | n |
-| set: settle | c | c | c | c | c | c | c | n (u) | c | c | - | n | n | - | - | n |
-| periodStart | c | - | c | n (X) | - | n (X) | c | - | - | - | - | - | - | - | - | n |
-| period-end answer | c | - | - | n (X) | - | c | c | n (X) | c | - | n | - | - | n | - | n |
-| rm: / to place | c | - | - | c | - | c, f (X5) | c | - | - | c | - | - | - | - | - | n |
-| closing | c | c | - | - | - | c | - | - | - | n (u) | - | - | - | - | - | n |
-| income schedules, every rule | c | c | c | c | c | c | - | c, f (X8) | c | c | n | n | - | n | - | c, n |
-| bill / transfer / auto schedules | c | c | c | c | n (u) | c | c | c | c | n (X) | n | n | - | n | - | n |
-| budget lines | n (X) | c | - | n (X) | n (X) | c | - | n (u) | c | n (u) | n | n | - | n | - | n |
-| goals / places | c | c | - | c | n (u) | c | c | - | - | c | n | n | - | n | - | n |
-| card | c | c, f (X6), f (AB3) | c | c | c | c | c | c | c | c | n | n | n | n | n | n |
-| loan / pay-later | c | c | - | - | n (u) | c | - | - | c | c | n | n | n | n | n | n |
-| cash, e-wallet, wallet, investment, owedToYou | c | c | c | - | c | - | - | - | c | c | n | - | n | n | - | n |
-| fee record (`fee:<transfer id>`) | - | - | c | n | c | n | c | - | c | - | - | - | - | - | - | n |
-| not yet at setup (`notYet`) | n | n | n | n | n | - | - | - | n, f (AB4) | - | - | - | - | - | - | n |
-| move (an old copy moved) | n | n | - | n | n | n, f (AB1) | n | - | n | - | n, f (AB1) | n | n | n | - | n |
-| pending move (`pendingMove`) | - | - | - | n | - | n | - | - | - | - | n | - | - | n | - | n |
-| frozen text (`mv:frozen:<by>`) | - | - | - | - | - | n | - | - | - | - | n | - | - | n | - | n |
-| keyed overrides (`amounts`, `once`, `extraSteps`) | c | - | - | c | - | n | n | c | - | - | n | - | - | n | - | n |
+| Row | C | O | W | P | X | D | U | E | S | Z | M | Y | T | L | B | R | A |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| open | c | c | c | c | c | - | n (u) | - | c | c | n | - | n | n | n | n | n |
+| check | c, f (X4) | c | c | n (X) | c | n (u) | c | n (u) | c | c | n | n | n | n | n | n | n |
+| in / pay | c | c | c | c | c | c | n (X) | c, f (X8) | c | n (u) | - | n | n | - | - | n | n |
+| refund | c | - | c | n (u) | n (u) | - | - | - | c | n (u) | - | n | n | - | - | n | n |
+| spend | c | c | c | c | n (X) | c | c | c | c | n (u) | n | n | n | n | - | c | n |
+| transfer | c | n (u) | c | - | c | n (u) | - | - | c | c | - | - | n | - | - | n | n |
+| repay | c | c | c | - | c | c | - | - | c | c | - | n | n | n | - | n | n |
+| borrow | c | - | n (u) | - | - | - | - | - | c | - | - | n | n | - | - | n | n |
+| convert | n (u) | - | - | - | c | - | - | - | n (u) | - | - | - | n | - | - | n | n |
+| adjust | n (X) | - | - | - | - | - | - | - | - | - | - | - | n | - | - | n | n |
+| hand / Wallet mode | s2 | - | - | s2 | - | - | - | - | - | - | - | - | - | - | - | - | s2 |
+| move between places | n (X) | c | - | c | - | c | n (u) | - | - | c | - | - | - | n | - | n | n |
+| filler | c | - | c | n (X) | - | - | - | - | - | - | - | - | - | - | - | n | n |
+| skip | c | - | - | n (u) | - | c | c | - | c | - | - | n | - | - | - | n | n |
+| set: settle | c | c | c | c | c | c | c | n (u) | c | c | - | n | n | - | - | n | n |
+| periodStart | c | - | c | n (X) | - | n (X) | c | - | - | - | - | - | - | - | - | n | n |
+| period-end answer | c | - | - | n (X) | - | c | c | n (X) | c | - | n | - | - | n | - | n | n |
+| rm: / to place | c | - | - | c | - | c, f (X5) | c | - | - | c | - | - | - | - | - | n | n |
+| closing | c | c | - | - | - | c | - | - | - | n (u) | - | - | - | - | - | n | n |
+| income schedules, every rule | c | c | c | c | c | c | - | c, f (X8) | c | c | n | n | - | n | - | c, n | n |
+| bill / transfer / auto schedules | c | c | c | c | n (u) | c | c | c | c | n (X) | n | n | - | n | - | n | n |
+| budget lines | n (X) | c | - | n (X) | n (X) | c | - | n (u) | c | n (u) | n | n | - | n | - | n | n |
+| goals / places | c | c | - | c | n (u) | c | c | - | - | c | n | n | - | n | - | n | n |
+| card | c | c, f (X6), f (AB3) | c | c | c | c | c | c | c | c | n | n | n | n | n | n | n |
+| loan / pay-later | c | c | - | - | n (u) | c | - | - | c | c | n | n | n | n | n | n | n |
+| cash, e-wallet, wallet, investment, owedToYou | c | c | c | - | c | - | - | - | c | c | n | - | n | n | - | n | n |
+| fee record (`fee:<transfer id>`) | - | - | c | n | c | n | c | - | c | - | - | - | - | - | - | n | n |
+| not yet at setup (`notYet`) | n | n | n | n | n | - | - | - | n, f (AB4) | - | - | - | - | - | - | n | - |
+| move (an old copy moved) | n | n | - | n | n | n, f (AB1) | n | n, f (AH2) | n | - | n, f (AB1) | n | n | n | - | n | - |
+| pending move (`pendingMove`) | - | - | - | n | - | n | - | - | - | - | n | - | - | n | - | n | n |
+| frozen text (`mv:frozen:<by>`) | - | - | - | - | - | n | - | - | - | - | n | - | - | n | - | n | - |
+| keyed overrides (`amounts`, `once`, `extraSteps`) | c, f (AH3) | - | - | c | - | n | n, f (AH3) | c | - | - | n | - | - | n | - | n | n |
 
 ## Every applicable cell and what covers it
 
@@ -402,7 +407,8 @@ Marks: **c** covered before this round; **n** newly covered (in the first ten co
 - T a time with an offset (n, partly uncovered until this round): rules mv-02, mv-07 (+09:00), mv-69 (a moving device at -05:00)
 - L a second move days later (n): rules mv-82 to mv-85 (d1: cloud on and off, the same and a newer 38.31 copy), mv-97 to mv-99 (every kind of moved record)
 - P, continued (AB2): moved pay per month; a one-month amount spread over the month's pays or periods: mv-87, mv-88; a month-end answer for a period not ended at the move waits: mv-52, mv-89
-- not applicable: B (the move sets up no card statement: a moved card or debt has its close day "not sure", Y9); W (the move writes no import line, so no posting window); E (the move settles nothing; X8 applies to moved schedules as to any, rules ed-01 to ed-07); Z (38.31 has no closed accounts)
+- E edited after settled (n, a false cover fixed by AH2: it was marked not applicable "as any, ed-01 to ed-07", but the occurrence-name reader did not take `mv:` ids): a moved schedule's change is refused on or before its latest settled or named occurrence, rules ed-25 (an `amounts` key), ed-26 (a settled moved pay), ed-27 (`pe:mv:...`), ed-28 (`ps:mv:...`), ed-29 (a `once` key), ed-30 (another schedule's occurrences do not count), ed-31 (a `pe:` on a moved place); the reviewer's g4
+- not applicable: B (the move sets up no card statement: a moved card or debt has its close day "not sure", Y9); W (the move writes no import line, so no posting window); Z (38.31 has no closed accounts); A (moved records carry the copy's last save as `at`, never the clock, AA10, AB1; what a moved copy waits for is in the `pendingMove` row)
 
 ### pending move (`pendingMove`) (a new row: confirm_review_2 found it missing)
 - P period start (n): rules mv-52, mv-89 (a month-end answer waits for a period not ended at the move, AB2); mv-71, mv-72 (what waits is keyed by the period's pay once its day is answered)
@@ -420,11 +426,11 @@ Marks: **c** covered before this round; **n** newly covered (in the first ten co
 - not applicable: every other column (read only; never written again after the move, O)
 
 ### keyed overrides (`amounts`, `once`, `extraSteps`) (a new row: confirm_review_3 found it missing)
-- C check day (c): one_occurrence_amount amt-01 to amt-05 (an occurrence's own amount on the check-in list and in safe to spend)
-- P period start (c): rules units-75 to units-77 (a `once` keyed by the pay that starts the period, T1); mv-88 (spread over the periods starting in the month); mv-119, mv-120 (weekly: five and four periods, the five-pay month noted, AG2)
+- C check day (c, a near miss fixed by AH3: the asks held plain numbers): one_occurrence_amount amt-01 to amt-05 and loan_one_month_amount loma-01 to loma-03, now in the AE1 shape (an occurrence's own amount on the check-in list and in safe to spend); keyed_removed kr-03, kr-05 (a removed key and a key put back with Redo on their check days)
+- P period start (c): rules units-75 to units-77 (a `once` keyed by the pay that starts the period, T1; in the AE1 shape since AH3), units-85 (a removed `once` key gives the usual amount); keyed_removed kr-02 (January's removed 0 key: the walk across the period start counts the 250,000 pay); mv-88 (spread over the periods starting in the month); mv-119, mv-120 (weekly: five and four periods, the five-pay month noted, AG2)
 - D two devices (n): rules mg-100 (December pay 0 survives a rename), mg-101 (two Food keys), mg-102 (two `extraSteps` entries), mg-103 (the same key: the newer; a removed key stays removed), mg-104 (`plan.shares` keys), mg-106 (same `at`: removed wins, then the larger `by`), mg-108 (a key held on arrival, its own mark); the reviewer's e1
-- U undo/redo (n): rules mg-105 (a key removed and put back wins over the removal)
-- E edited after settled (c): rules ed-04 (an `amounts` key is a named occurrence, X8), ed-06 (a `once` key)
+- U undo/redo (n, a false cover fixed by AH3: mg-105 tested only the merge, and no reader skipped a removed key): rules mg-105 (a key removed and put back wins over the removal at the merge); keyed_removed kr-01 (an undone key not read), kr-04, kr-05 (a key put back with Redo read again), kr-06 (a removed key); rules units-85, units-86 (`once`); X8: ed-32 (a removed key names nothing; the reviewer's g3), ed-33, ed-34 (Redo counts again); keyed_removed_x8 krx-01, krx-02 (the look ahead's own X8 check)
+- E edited after settled (c): rules ed-04 (an `amounts` key is a named occurrence, X8), ed-06 (a `once` key), both in the AE1 shape since AH3; ed-25, ed-29 (keys on a moved pay, AH2); ed-32 to ed-34 (removed keys, AH3)
 - M the move run on two devices (n): rules mg-107 (the phone answers the pay day and writes the waiting key; the desktop's rename keeps it), mg-117 (a key edited after one device applied the entry wins over the other's later apply)
 - L a second move days later (n): rules mv-116 (a key edited on the phone survives the desktop moving the same copy days later)
 - R restore (n): rules mg-111 (the key an answer wrote, removed by the restore), mg-113 (each key and `extraSteps` entry, key by key; the merge keeps it); mv-117, mv-118, mg-120 (the key written again after the restore wins, AG1)
@@ -437,6 +443,14 @@ Every row's R cell, with the case that covers it (all in `rules/merge.json`; eac
 - income schedules (c, n): mg-96, mg-97 (steps); mg-109 (the D4 clock), mg-111 (`rules` and `amounts`), mg-113, mg-118. bill schedules: mg-119. budget lines: mg-113. goals / places: mg-119. card, cash and e-wallet: mg-119. loan / pay-later: mg-113 (`extraSteps`).
 - fee record (`fee:`): mg-119. not yet at setup: mg-119. move: mg-118 (a 38.31-format backup restored after the move, moved and stamped with the restore). `pendingMove`, frozen: mg-111; `pendingMove` answered again after it: mv-117, mv-118, mg-120 (AG1). keyed overrides: mg-111, mg-113, mg-120. Shared `ui` keys (no row of their own): mg-98, mg-99, mg-114 to mg-116.
 - not applicable: hand / Wallet mode (stage 2, T7).
+
+### used again after days away (A) (a new column: confirm_review_4 found none)
+Every row's A cell. Each row has one story in `rules/merge.json` (mg-140 to mg-167): the phone, last used Sun 1 Nov 21:00, makes the record two days later (3 Nov 09:00), edits it after 21 days away (24 Nov 12:00) and after 45 days away (Fri 8 Jan 2027 12:00, D8 asking the date first), against desktop edits made meanwhile; the desktop ends with the phone's last value at 8 Jan 12:00 and `told` 3 Nov 09:00 [AH1]. All 28 failed first (before AH1 every phone write was held at 1 Nov 21:00 plus a few ms).
+- open: mg-140. check: mg-141; mg-132 (a desktop check reaches a phone back after three weeks unchanged); away_clock ac-01 to ac-03 (a spend typed after the check that day is counted). in / pay: mg-142. refund: mg-143. spend: mg-144; mg-128 (three writes after three weeks), mg-129, mg-130 (the 22 Nov correction beats the 10 Nov desktop edit, on both), mg-131 (`told` after a 09:00 check), mg-133 (copies up to a day ahead of the phone's now taken as they are); away_clock ac-01 to ac-03.
+- transfer: mg-145. repay: mg-146. borrow: mg-147. convert: mg-148. adjust: mg-149. move between places: mg-150. filler: mg-151. skip (`skip:`): mg-152. set: settle (`set:`): mg-153. periodStart (`ps:`): mg-154. period-end answer (`pe:`): mg-155. rm: / to place (`rm:`): mg-156. closing (`close:`): mg-157.
+- income schedules: mg-158. bill schedules: mg-159. budget lines (`plan.budgets`): mg-160. goals / places: mg-161. card: mg-162. loan / pay-later: mg-163. cash and the other accounts: mg-164. fee record (`fee:`): mg-165. `pendingMove`: mg-166. keyed overrides (a key and its record from the same clock): mg-167.
+- The clock itself, for every row: mg-33, mg-34 (2 days), mg-121 (21 days), mg-122 (45 days: D8 asks), mg-123, mg-124 (40 and 41 days), mg-125 to mg-127 (D8 one and two days back, two days ahead), mg-96 to mg-99 and mg-109 (a restore after days away, natural inputs).
+- not applicable: not yet at setup (written once, at setup, on the opening check: the open and check rows hold it); move (moved records carry the copy's last save, never the clock, AA10); frozen text (read only, never written again). Stage 2: hand / Wallet mode (T7).
 
 ## What was wrong (the X cells) and the decision that fixed it
 
@@ -628,3 +642,17 @@ Run first, before the reference changed: rules 514 of 522 cases (8 failed, all m
 | AG: the AE and AF helper's readings confirmed | (as in "Decisions AE and AF") | none (already so) |
 
 Questions AG does not answer: none is open in `rules/*.json`. One reading to confirm (SCHEMA_V3 section 14): AG1 is read to reach what an entry writes only when a restore brought the entry back; read for every entry, mg-117's edited 120,000 would lose to a stale 0 applied later on the other device.
+
+## Decision AH, and where each part is tested
+
+Run first, before the references changed (task 1): rules 516 of 582 cases (66 failed: 54 merge, 8 edits, 4 units) and scenarios 695 of 709 asks (14 failed); `check_specs.js` 7 problems (the `amounts` shape it checked was the old one). After the changes to `rules/merge_ref.js`, `rules/edits_ref.js`, `rules/units_ref.js`, `ref/lookahead_ref.js` and `scenarios/check_specs.js` (task 2): 582 of 582 cases, 709 of 709 asks, `check_specs.js` all good, and the reviewer's g1 to g4, rewritten to run on this worktree, print the hand answers.
+
+| Part | Asks or cases | Failed first |
+|---|---|---|
+| AH1: a device's own write on its own clock, never held for a gap; D8 alone questions it; an arriving copy held only when more than a day ahead of the receiver's own now; `told` the same; natural inputs | rules mg-33, mg-34, mg-23, mg-24, mg-96 to mg-99, mg-109 (re-worked by hand), mg-121 to mg-134, mg-140 to mg-167 (the column A); every `sync` and `receive` names the receiver's now (mg-25, mg-27, mg-38, mg-39, mg-42 to mg-44, mg-46, mg-48, mg-49, mg-54, mg-108: same answers); away_clock ac-01 to ac-03 | mg-23, mg-24, mg-33, mg-34, mg-96 to mg-99 (held at 18 and 15 Nov), mg-109 (the copy's own `at`s not counted as seen), mg-121 to mg-133, mg-140 to mg-167 (all stuck at 1 Nov 21:00 plus a few ms). Passed first: mg-134 (the receiver's newest seen equal to its now), ac-01 to ac-03 (the model reads `told` as given) |
+| AH2: occurrence names with `mv:` ids; X8 protects moved schedules | rules ed-25 to ed-31; the grid's move E cell | ed-25 to ed-29, ed-31 (allowed). Passed first: ed-30 (nothing to protect) |
+| AH3: keyed overrides read in the AE1 shape, removed keys skipped, in the look ahead, X8 and the period amounts | keyed_removed kr-01 to kr-06; keyed_removed_x8 krx-01, krx-02; one_occurrence_amount amt-01 to amt-05 and loan_one_month_amount loma-01 to loma-03 (moved to the AE1 shape); rules ed-04, ed-06 (moved), ed-32 to ed-34, units-75 to units-77 (moved), units-85, units-86 | kr-01 to kr-06, amt-01 to amt-04, loma-01, loma-02 (an entry read as a number: nothing due or listed), krx-01, krx-02 (the model threw: X8 counted the removed key), ed-32, ed-33, units-75, units-77, units-85, units-86. Passed first: amt-05, loma-03, ed-04, ed-06, ed-34, units-76 (no key read on that day, or a live key named by its date only) |
+| AH4 and AH4-confirm: AG1 withdrawn as worded; the narrow reading (only an entry a restore brought back takes the D4 clock) is the rule | rules mg-117, mv-117 to mv-121 (stand), mv-122 (g2 the other way round: a waiting 300,000 never beats a later 250,000) | none (the reference already took the narrow reading) |
+| AH5: keyed maps found by shape | rules mg-135 to mg-139 (an unknown `byMonth` both ways round, its removed key, a map that is not keyed, its restore) | mg-135 to mg-137, mg-139. Passed first: mg-138 (a plain map, taken whole as before) |
+
+Questions AH does not answer (`rules/merge.json` `open`, SCHEMA_V3 section 14): mg-q14, the value an arriving copy is held at now that L merge q8's reading is withdrawn for own writes (M4's newest seen plus 1 ms, kept for now, puts a fast device's spend before a same-day check on a receiver back after weeks away), and whether a device that has seen nothing holds anything; mg-q15, whether entry lists inside a record are found by shape too (AH5 covers maps only).
