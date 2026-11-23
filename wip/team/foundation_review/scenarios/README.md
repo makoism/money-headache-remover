@@ -28,9 +28,14 @@ Written 23 Nov 2026 from foundation_review/RECOMMENDATION.md, life_walks_salarie
 | places_and_checked.json | Paying from a goal's money, a goal account that goes overdrawn, a skipped bill, a top-up before the e-wallet was set up (situations 10 to 13). | JPY | 7 |
 | loans_and_carried.json | A loan with a minimum rule and planned extra, a pay-later plan, a card that carries a balance (H7). | JPY | 7 |
 | split_auto_est.json | The opening split by place, a gym fee that logs itself, a rough spend replaced by its statement line (H7, H9). | JPY | 6 |
+| avail_check.json | An available check and a current check with a pending debit, and the two mixed on one bank (I1). | JPY | 9 |
+| interest.json | Interest on a carried card balance, a loan and a pay-later plan, at the close and payment days, rounded half up (I2). | JPY | 8 |
+| two_month_card.json | A card paid two months after its close: two statements waiting at once, one paid late (I3). | JPY | 8 |
+| opening_by_days.json | An opening split by days left, with the rounding remainder to Free to spend (I4). | JPY | 6 |
+| moved_records.json | Records moved from 38.31 with and without their own times, on one day (I5). | JPY | 3 |
 | check_specs.js | Checks every file's shape and that every `why` adds up to its expected figure. `node check_specs.js` | | |
 
-Total: 244 asks (the first eight files: 180; the H files: 64).
+Total: 278 asks (the first eight files: 180; the H files: 64; the I files: 34).
 
 ### The review v3 situations and where each one is now
 
@@ -66,6 +71,13 @@ The reviewer's own scripts are in `../ref/review_v3_situations/`. Each situation
 - **goals** may have `refill: true` with `for_bill`: after each payment it starts again for the next occurrence (E5).
 - **opening.split** on a bank: `{ goals, lines, free }`, the opening figure by place (B2, B6); the rest is waiting. **plan** at the top: `{ lines: [ { id, name, account, per, amount } ], free: { account, per, amount } }`.
 - **est: true** marks a typed line as rough; **source: "statement"** (or "screenshot") marks an imported line.
+
+### What the I files add to the way a file is written
+- **avail** on a bank `check`: `"available"` (the figure already has pending debits off, so every event dated on or before its day is inside it) or `"current"` (the H1 posted-date rule). Left out, a check is current (I1).
+- **apr** on a card, loan or pay-later account: the yearly rate in percent. Interest is added on the carried balance at each card close and on each loan or pay-later payment day, balance x apr / 100 / 12, rounded half up to the minor unit (I2). A file may list the interest worked by hand under `interest`, for checking; it is not an input.
+- **months_after_close: 2** is a card paid two months after its close. A statement still waiting for its payment day is never folded into the next one (I3).
+- An opening with no `split` entry for a budget line or Free to spend shares it by days left: the days from the setup day to the period's last day, both counted, over the period's days, rounded down; what rounding leaves goes to Free to spend (I4).
+- **moved: true** marks a record moved from 38.31; **own_time** is its own time when it has one. Its told is `own_time`, else the top-level `moved_copy.saved`; on one day moved records keep their order in the file (I5).
 
 ### Questions added for the H files
 - **days_to_next_pay** with `late: true`: the next pay is late but still inside its posting window (H8); `days` is zero or below.

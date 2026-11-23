@@ -182,6 +182,7 @@ function checkFile(fp) {
     if (!(a.currency in DIGITS)) bad(file, w, `unknown currency ${a.currency}`);
     const d = DIGITS[a.currency];
     if (!a.opening || !isDate(a.opening.date)) { bad(file, w, 'opening needs a date'); continue; }
+    if (a.apr !== undefined && !(typeof a.apr === 'number' && a.apr >= 0 && ['card', 'loan', 'paylater'].includes(a.kind))) bad(file, w, 'apr is a yearly rate in percent, on a card, loan or pay-later [I2]');
     if (a.opening.told !== undefined && !(TOLD.test(a.opening.told) && a.opening.told.slice(0, 10) === a.opening.date)) bad(file, w, 'opening.told must be the opening date, with or without a time');
     if (a.kind === 'loan' || a.kind === 'paylater') {
       const p = a.payment || {};
@@ -238,6 +239,9 @@ function checkFile(fp) {
     }
     if ('told' in e && e.told !== null && !(TOLD.test(e.told) && isDate(e.told.slice(0, 10)))) bad(file, w, 'told must be a date, a date and time, or null');
     if (e.posted !== undefined && !isDate(e.posted)) bad(file, w, 'posted must be a date');
+    if (e.avail !== undefined && !(e.kind === 'check' && ['available', 'current'].includes(e.avail))) bad(file, w, 'avail is only on a bank check, "available" or "current" [I1]');
+    if (e.own_time !== undefined && !(e.moved === true && TOLD.test(e.own_time) && e.own_time.length > 10)) bad(file, w, 'own_time is a date and time, only on a moved record [I5]');
+    if (e.moved === true && !(s.moved_copy && TOLD.test(s.moved_copy.saved || '') && s.moved_copy.saved.length > 10)) bad(file, w, 'a moved record needs the top-level moved_copy.saved (a date and time) [I5]');
     const amtAcc = acc[e.account || e.from || e.card];
     const d = amtAcc ? DIGITS[amtAcc.currency] : DIGITS[s.currency];
     if (e.kind === 'skip') {

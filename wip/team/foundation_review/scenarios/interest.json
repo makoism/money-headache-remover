@@ -1,0 +1,77 @@
+{
+  "life": "interest",
+  "title": "Interest on a carried card balance, a loan and a pay-later plan (decision I2)",
+  "story": "The same life as loans_and_carried.json, now with yearly rates. One bank, set up Thu 26 Nov 2026 with 500,000, the day after pay. Pay of 300,000 on the 25th, moved earlier. A car loan of 1,000,000 at 18% a year is paid on the 5th (moved later): the minimum is 2% of what is owed, at least 10,000, and from 1 Jan 2027 an extra 5,000 is planned each time. A pay-later plan has 30,000 left at 15% a year, 10,000 a month on the 15th (moved later). A card that carries a balance, at 15% a year, closes on the 20th and is paid on the 10th of the next month (moved later): the minimum is 5% of the statement, at least 3,000, and an extra 2,000 is planned from 1 Dec. Its 100,000 statement of 20 Nov is not paid yet. All three are paid from the bank. The January car loan payment has not been seen by 6 Jan. I2: interest is added on the carried balance at each card close and on each loan and pay-later payment day, balance x yearly rate / 12, rounded half up to the yen. On a payment day the interest is added first, then the payment is asked on what is owed. A minimum of 5% or 2% is rounded to the nearest yen, as before. No holidays are listed. Every amount and rate is made up.",
+  "currency": "JPY",
+  "window": { "from": "2026-11-26", "to": "2027-01-31" },
+  "holidays": { "country": "made up, none listed", "dates": [], "bank_closed": [] },
+  "accounts": [
+    { "id": "bank", "name": "Bank", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2026-11-26", "amount": 500000 } },
+    { "id": "car_loan", "name": "Car loan", "kind": "loan", "currency": "JPY", "apr": 18,
+      "payment": { "day": 5, "from": "bank", "weekend_holiday": "move later", "min_rule": { "pct": 2, "floor": 10000 }, "extra_steps": [ { "from": "2027-01-01", "amount": 5000 } ] },
+      "opening": { "date": "2026-11-26", "owed": 1000000 } },
+    { "id": "bnpl", "name": "Pay-later", "kind": "paylater", "currency": "JPY", "apr": 15,
+      "payment": { "day": 15, "from": "bank", "weekend_holiday": "move later", "amount": 10000 },
+      "opening": { "date": "2026-11-26", "owed": 30000 } },
+    { "id": "cc", "name": "Card that carries", "kind": "card", "currency": "JPY", "statement_close_day": 20, "carries": true, "apr": 15,
+      "payment": { "day": 10, "months_after_close": 1, "from": "bank", "weekend_holiday": "move later", "min_rule": { "pct": 5, "floor": 3000 }, "extra_steps": [ { "from": "2026-12-01", "amount": 2000 } ] },
+      "opening": { "date": "2026-11-26", "statement": { "closed": "2026-11-20", "amount": 100000, "paid": false }, "current": 100000 } }
+  ],
+  "income": [
+    { "id": "pay", "name": "Pay", "account": "bank", "currency": "JPY", "amount": 300000, "schedule": { "frequency": "monthly", "day": 25 }, "weekend_holiday": "move earlier", "starts_period": true }
+  ],
+  "bills": [],
+  "goals": [],
+  "landing_dates": {
+    "car_loan": { "2026-12-05": "2026-12-07", "2027-01-05": "2027-01-05" },
+    "bnpl": { "2026-12-15": "2026-12-15", "2027-01-15": "2027-01-15" },
+    "cc": { "2026-12-10": "2026-12-10", "2027-01-10": "2027-01-11" }
+  },
+  "interest": {
+    "car_loan": [
+      { "day": "2026-12-07", "on": 1000000, "amount": 15000, "why": "1,000,000 x 18 / 100 / 12 = 15,000" },
+      { "day": "2027-01-05", "on": 994700, "amount": 14921, "why": "994,700 x 18 / 100 / 12 = 14,920.5, rounded half up" } ],
+    "bnpl": [
+      { "day": "2026-12-15", "on": 30000, "amount": 375, "why": "30,000 x 15 / 100 / 12 = 375" },
+      { "day": "2027-01-15", "on": 20375, "amount": 255, "why": "20,375 x 15 / 100 / 12 = 254.6875, rounded half up" } ],
+    "cc": [
+      { "day": "2026-12-20", "on": 93000, "amount": 1163, "why": "93,000 carried (100,000 statement - 7,000 paid) x 15 / 100 / 12 = 1,162.5, rounded half up" } ]
+  },
+  "events": [
+    { "id": "i01", "date": "2026-12-07", "kind": "repay", "from": "bank", "to": "car_loan", "amount": 20300, "settles": "car_loan@2026-12-05" },
+    { "id": "i02", "date": "2026-12-10", "kind": "card_payment", "from": "bank", "card": "cc", "amount": 7000, "settles": "cc@2026-12-10" },
+    { "id": "i03", "date": "2026-12-12", "kind": "spend", "account": "cc", "amount": 10000 },
+    { "id": "i04", "date": "2026-12-15", "kind": "repay", "from": "bank", "to": "bnpl", "amount": 10000, "settles": "bnpl@2026-12-15" },
+    { "id": "i05", "date": "2026-12-25", "kind": "pay_in", "account": "bank", "amount": 300000, "settles": "pay@2026-12-25" }
+  ],
+  "asks": [
+    { "id": "int-01", "date": "2026-11-26", "question": "due_before_next_pay",
+      "expected": { "items": [
+        { "item": "car_loan@2026-12-05", "lands": "2026-12-07", "amount": 20300 },
+        { "item": "cc@2026-12-10", "lands": "2026-12-10", "amount": 7000 },
+        { "item": "bnpl@2026-12-15", "lands": "2026-12-15", "amount": 10000 } ], "total": 37300 },
+      "why": "20,300 (car loan: 2% of 1,015,000, the 1,000,000 owed plus 15,000 interest on 7 Dec) + 7,000 (card: 5% of the 100,000 statement and the planned 2,000 extra) + 10,000 (pay-later part) = 37,300",
+      "note": "Before I2 the car loan asked 20,000." },
+    { "id": "int-02", "date": "2026-11-26", "question": "safe_to_spend", "account": "bank", "expected": 462700,
+      "why": "500,000 (Bank today) - 20,300 (Car loan 7 Dec) - 7,000 (Card that carries 10 Dec) - 10,000 (Pay-later 15 Dec) = 462,700",
+      "note": "The 25 Dec pay of 300,000 comes before the January payments (25,192, 6,708 and 10,000), so the lowest point is 15 Dec." },
+    { "id": "int-03", "date": "2026-12-08", "question": "owed_now", "account": "car_loan", "expected": 994700,
+      "why": "1,000,000 (owed at setup) + 15,000 (interest at the 7 Dec payment day) - 20,300 (paid 7 Dec) = 994,700" },
+    { "id": "int-04", "date": "2026-12-16", "question": "owed_now", "account": "bnpl", "expected": 20375,
+      "why": "30,000 (left at setup) + 375 (interest at the 15 Dec payment day) - 10,000 (paid 15 Dec) = 20,375" },
+    { "id": "int-05", "date": "2026-12-21", "question": "owed_now", "account": "cc", "expected": 104163,
+      "why": "100,000 (statement 20 Nov) - 7,000 (paid 10 Dec) + 1,163 (interest at the 20 Dec close on the 93,000 carried, 1,162.5 rounded half up) + 10,000 (spent 12 Dec) = 104,163" },
+    { "id": "int-06", "date": "2026-12-21", "question": "card_due", "account": "cc", "expected": { "amount": 7208, "payment_date": "2027-01-11", "statement": "closed", "closed_on": "2026-12-20" },
+      "why": "5,208 (5% of the 104,163 statement is 5,208.15, to the nearest yen) + 2,000 (planned extra) = 7,208",
+      "note": "Before I2: 7,150, on a 103,000 statement with no interest." },
+    { "id": "int-07", "date": "2026-12-26", "question": "due_before_next_pay",
+      "expected": { "items": [
+        { "item": "car_loan@2027-01-05", "lands": "2027-01-05", "amount": 25192 },
+        { "item": "cc@2027-01-10", "lands": "2027-01-11", "amount": 7208 },
+        { "item": "bnpl@2027-01-15", "lands": "2027-01-15", "amount": 10000 } ], "total": 42400 },
+      "why": "25,192 (car loan: 2% of 1,009,621, the 994,700 owed plus 14,921 interest, is 20,192.42, to the nearest yen 20,192, plus the 5,000 extra from 1 Jan) + 7,208 (card) + 10,000 (pay-later, on 20,630 owed after 255 interest) = 42,400" },
+    { "id": "int-08", "date": "2027-01-06", "question": "owed_now", "account": "car_loan", "expected": 1009621,
+      "why": "994,700 (owed after the December payment) + 14,921 (interest at the 5 Jan payment day, 14,920.5 rounded half up) = 1,009,621",
+      "note": "The January payment has not been seen; the interest is added on the payment day all the same." }
+  ]
+}

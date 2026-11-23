@@ -1,0 +1,47 @@
+{
+  "life": "opening_by_days",
+  "title": "An opening split by days left, with rounding (decision I4)",
+  "story": "One bank, set up Sun 29 Nov 2026 with 300,000. Pay of 250,000 on the 10th, moved earlier, so the period runs from Tue 10 Nov to Wed 9 Dec: 30 days. The plan gives Food 50,000, Transport 10,000 and Free to spend 90,000 each month. At setup the person does not say what was spent since pay day, so the opening shares each by days left: 29 Nov to 9 Dec, both counted, is 11 days of 30. Food is 18,333.33 and Transport 3,666.67, both rounded down; what rounding left over (0.33 and 0.67, one yen) goes to Free to spend, 33,000 + 1. The rest of the 300,000 is waiting. Rent of 70,000 on the 1st, moved later. I4: days from the setup day to the period's last day, both counted, over the period's days; amounts rounded down to the minor unit, the remainder to Free to spend. No holidays are listed. Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2026-11-29", "to": "2026-12-31" },
+  "holidays": { "country": "made up, none listed", "dates": [], "bank_closed": [] },
+  "accounts": [
+    { "id": "bank", "name": "Bank", "kind": "bank", "currency": "JPY", "minimum": 0,
+      "opening": { "date": "2026-11-29", "amount": 300000, "note": "No split typed: Food, Transport and Free to spend are shared by days left." } }
+  ],
+  "plan": {
+    "lines": [
+      { "id": "food", "name": "Food", "account": "bank", "per": "month", "amount": 50000 },
+      { "id": "transport", "name": "Transport", "account": "bank", "per": "month", "amount": 10000 } ],
+    "free": { "account": "bank", "per": "month", "amount": 90000 }
+  },
+  "income": [
+    { "id": "pay", "name": "Pay", "account": "bank", "currency": "JPY", "amount": 250000, "schedule": { "frequency": "monthly", "day": 10 }, "weekend_holiday": "move earlier", "starts_period": true }
+  ],
+  "bills": [
+    { "id": "rent", "name": "Rent", "account": "bank", "amount": 70000, "schedule": { "frequency": "monthly", "day": 1 }, "weekend_holiday": "move later" }
+  ],
+  "goals": [],
+  "landing_dates": { "pay": { "2026-11-10": "2026-11-10", "2026-12-10": "2026-12-10", "2027-01-10": "2027-01-08" } },
+  "events": [
+    { "id": "b01", "date": "2026-11-30", "kind": "spend", "account": "bank", "amount": 5000, "line": "free", "note": "dinner out" },
+    { "id": "b02", "date": "2026-12-01", "kind": "bill_paid", "account": "bank", "amount": 70000, "settles": "rent@2026-12-01" },
+    { "id": "b03", "date": "2026-12-10", "kind": "pay_in", "account": "bank", "amount": 250000, "settles": "pay@2026-12-10" }
+  ],
+  "asks": [
+    { "id": "days-01", "date": "2026-11-29", "question": "days_to_next_pay", "expected": { "days": 11, "next_pay": "2026-12-10" },
+      "why": "2026-12-10 - 2026-11-29 = 11", "note": "So 29 Nov to 9 Dec, both counted, is 11 days, of a period of 30 (10 Nov to 9 Dec)." },
+    { "id": "days-02", "date": "2026-11-29", "question": "headline", "expected": 33001,
+      "why": "33,000 (Free to spend: 90,000 x 11 / 30) + 1 (left over from rounding down Food 18,333.33 and Transport 3,666.67) = 33,001",
+      "note": "Before I4 the model used the whole month for each line not named in the split: 90,000." },
+    { "id": "days-03", "date": "2026-11-29", "question": "safe_to_spend", "account": "bank", "expected": 208001,
+      "why": "300,000 (Bank today) - 18,333 (Food left this period: 50,000 x 11 / 30 = 18,333.33, rounded down) - 3,666 (Transport left this period: 10,000 x 11 / 30 = 3,666.67, rounded down) - 70,000 (Rent 1 Dec) = 208,001",
+      "note": "On 10 Dec the pay (250,000) comes in before the next period's lines and Free to spend (150,000), so the lowest point is 1 Dec. Before I4: 170,000." },
+    { "id": "days-04", "date": "2026-11-30", "question": "headline", "expected": 28001,
+      "why": "33,001 (Free to spend at setup, by days left) - 5,000 (dinner 30 Nov) = 28,001" },
+    { "id": "days-05", "date": "2026-11-30", "question": "safe_to_spend", "account": "bank", "expected": 203001,
+      "why": "295,000 (Bank today) - 18,333 (Food left this period) - 3,666 (Transport left this period) - 70,000 (Rent 1 Dec) = 203,001" },
+    { "id": "days-06", "date": "2026-12-11", "question": "headline", "expected": 90000,
+      "why": "90,000 (Free to spend for the period from 10 Dec, nothing spent from it yet) = 90,000", "note": "A new period starts from the plan's amounts; days left only shapes the first one." }
+  ]
+}

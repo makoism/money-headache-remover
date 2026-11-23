@@ -1,0 +1,48 @@
+{
+  "life": "avail_check",
+  "title": "An available check and a current check with a pending debit, and the two mixed (decision I1)",
+  "story": "Three made-up bank accounts, each opened on Fri 20 Nov 2026 with 300,000. On Sat 21 Nov each pays 10,000 by debit card; the bank posts it on Tue 24 Nov. On Sun 22 Nov a check is typed for each. Available: the bank app's 'available' figure, 290,000, which already has the pending debit taken off. Current: the bank's 'current' figure, 300,000, which does not have it yet. Mixed: the available figure 290,000 on the 22nd, then the current figure 300,000 on Mon 23 Nov. I1: an available check holds every event dated on or before its day; a current check follows the H1 posted-date rule; a check that does not say is current. No holidays are listed for this test. Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2026-11-20", "to": "2026-11-30" },
+  "holidays": { "country": "made up, none listed", "dates": [], "bank_closed": [] },
+  "accounts": [
+    { "id": "avail", "name": "Available bank", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2026-11-20", "amount": 300000 } },
+    { "id": "current", "name": "Current bank", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2026-11-20", "amount": 300000 } },
+    { "id": "mixed", "name": "Mixed bank", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2026-11-20", "amount": 300000 } }
+  ],
+  "income": [],
+  "bills": [],
+  "goals": [],
+  "events": [
+    { "id": "v01", "date": "2026-11-21", "posted": "2026-11-24", "kind": "spend", "account": "avail", "amount": 10000, "note": "debit card, pending until the 24th" },
+    { "id": "v02", "date": "2026-11-21", "posted": "2026-11-24", "kind": "spend", "account": "current", "amount": 10000, "note": "debit card, pending until the 24th" },
+    { "id": "v03", "date": "2026-11-21", "posted": "2026-11-24", "kind": "spend", "account": "mixed", "amount": 10000, "note": "debit card, pending until the 24th" },
+    { "id": "v04", "date": "2026-11-22", "kind": "check", "account": "avail", "amount": 290000, "avail": "available", "note": "the available figure, the pending debit already off" },
+    { "id": "v05", "date": "2026-11-22", "kind": "check", "account": "current", "amount": 300000, "avail": "current", "note": "the current figure, without the pending debit" },
+    { "id": "v06", "date": "2026-11-22", "kind": "check", "account": "mixed", "amount": 290000, "avail": "available" },
+    { "id": "v07", "date": "2026-11-23", "kind": "check", "account": "mixed", "amount": 300000, "avail": "current", "note": "the next day the person types the current figure instead" }
+  ],
+  "asks": [
+    { "id": "avail-01", "date": "2026-11-22", "question": "bank_today", "account": "avail", "expected": 290000,
+      "why": "290,000 (the available check; the pending 10,000 debit is already inside it) = 290,000",
+      "note": "Before I1 the model read every check as current and took the debit off again: 280,000." },
+    { "id": "avail-02", "date": "2026-11-22", "question": "not_explained", "account": "avail", "expected": 0,
+      "why": "300,000 (opening) - 10,000 (debit of 21 Nov, inside an available check by its date) - 290,000 (the check) = 0",
+      "note": "Before I1: 10,000 not explained." },
+    { "id": "avail-03", "date": "2026-11-25", "question": "bank_today", "account": "avail", "expected": 290000,
+      "why": "290,000 (available check 22 Nov; the debit that posted on 24 Nov is already in it) = 290,000" },
+    { "id": "avail-04", "date": "2026-11-22", "question": "bank_today", "account": "current", "expected": 290000,
+      "why": "300,000 (the current check, without the pending debit) - 10,000 (debit of 21 Nov, posts 24 Nov, so after the check) = 290,000" },
+    { "id": "avail-05", "date": "2026-11-22", "question": "not_explained", "account": "current", "expected": 0,
+      "why": "300,000 (what the events say at the current check; the debit posts after it) - 300,000 (the check) = 0" },
+    { "id": "avail-06", "date": "2026-11-22", "question": "not_explained", "account": "mixed", "expected": 0,
+      "why": "300,000 (opening) - 10,000 (debit, inside the available check) - 290,000 (the check) = 0" },
+    { "id": "avail-07", "date": "2026-11-23", "question": "not_explained", "account": "mixed", "expected": 0,
+      "why": "290,000 (available check 22 Nov, the debit inside it) + 10,000 (the debit is not inside the current check of 23 Nov, which comes before its posting day) - 300,000 (current check 23 Nov) = 0",
+      "note": "A debit can be inside an earlier available check and outside a later current one. Before I1 the model said -10,000." },
+    { "id": "avail-08", "date": "2026-11-23", "question": "bank_today", "account": "mixed", "expected": 290000,
+      "why": "300,000 (current check 23 Nov) - 10,000 (debit, posts 24 Nov, after this check) = 290,000" },
+    { "id": "avail-09", "date": "2026-11-25", "question": "bank_today", "account": "mixed", "expected": 290000,
+      "why": "300,000 (current check 23 Nov) - 10,000 (debit, posted 24 Nov) = 290,000" }
+  ]
+}
