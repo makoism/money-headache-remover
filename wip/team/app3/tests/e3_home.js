@@ -54,6 +54,9 @@ const DAYS = ['2026-11-23', '2026-12-09', '2026-12-10', '2026-12-11', '2026-12-1
   const shown = await p.evaluate(() => [['[data-card=safe] h2', 'safeToSpend.headline'], ['[data-card=due] h2', 'dueBeforeNextPay.total'], ['[data-card=period] h2', 'period.start']].map(([s, f]) => ({ label: document.querySelector(s) ? document.querySelector(s).textContent : '', figure: f })));
   const labelOnly = shown.map(x => ({ label: x.label.replace(/ until next pay on .*$/, ''), figure: x.figure }));
   ck('labels come from the name table', SN.check(labelOnly).length === 0, SN.check(labelOnly).join('; '));
+  /* Plan and Receipts are here already: the last line names only what is still to come */
+  const later = await p.evaluate(() => [...document.querySelectorAll('.a3-later')].map(e => e.textContent).join(' | '));
+  ck('the "coming next" line names only burrows and the art', later === 'Coming next: burrows and the art', later);
   const old = await T.readOld(p);
   ck('the old app\'s copy is byte for byte the same', old.ls === T.OLD_TEXT && old.idb === T.OLD_IDB, JSON.stringify(old).slice(0, 200));
   ck('no page errors', errs.length === 0, errs.join(' | '));
