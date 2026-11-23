@@ -78,4 +78,20 @@ t('wrong answers are refused, not guessed', () => {
 t('the builder does not change the answers it is given', () => {
   const a = clone(ANSWERS); B.buildBook(a, { newId }); assert.deepStrictEqual(a, ANSWERS);
 });
+t('a bill due between the last pay and the setup day: taken out already (inside the bank figure) or still to go [X3]', () => {
+  // set up Fri 20 Nov after the 10 Nov pay; the phone bill of 4,800 is due that day
+  const occ = k => r => r.checkIn.toConfirm.some(o => o.item === k);
+  const a1 = clone(ANSWERS);   // no answer: taken out already, as before
+  const b1 = B.buildBook(a1, { newId });
+  ok(!occ(b1.ids.phone + '@2026-11-20')(lookahead(b1.book, '2026-11-21')));
+  const a2 = clone(ANSWERS); a2.bills.find(b => b.key === 'phone').takenOut = false;
+  const b2 = B.buildBook(a2, { newId });
+  const r2 = lookahead(b2.book, '2026-11-21');
+  ok(occ(b2.ids.phone + '@2026-11-20')(r2));
+  eq(r2.accounts[b2.ids.bank].headroom, lookahead(b1.book, '2026-11-21').accounts[b1.ids.bank].headroom - 4800);
+  eq(b2.book.events.find(e => e.k === 'check' && e.acct === b2.ids.bank).notYet, [b2.ids.phone + '@2026-11-20']);
+  // a bill with no day since the last pay has nothing to mark
+  const a3 = clone(ANSWERS); a3.bills.find(b => b.key === 'rent').takenOut = false;
+  eq(B.buildBook(a3, { newId }).book.events.find(e => e.k === 'check').notYet, undefined);
+});
 done('build_book');
