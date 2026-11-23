@@ -513,3 +513,4 @@ BK4 (check-in gap rules):
 - A gain goes to the gain question (gain_to_ask), never to spending.
 - With close days "not sure", on or after a card payment day, the app first asks "Was Card A's payment ¥Y?" before calling the gap spending.
 - A spend logged from the gap is dated on or before the check and marked as already inside its figure (the existing dayInside), so it is never counted twice.
+BK5. A card payment landing on the same day as pay N is part of X, with that pay counted first (the walk's order, Q14). The rule becomes: the last card payment on or before N's day. A pay after N is never included. With nothing owed on any card, no after-cards line is shown.
