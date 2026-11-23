@@ -20,7 +20,8 @@
   const PE = node ? require('../../engine/periods.js') : root.BurrowEngine.periods;
   const G = node ? require('../../engine/ledger.js') : root.BurrowEngine.ledger;
   const bad = text => { throw new A3.Bad(text); };
-  const PAY_NEEDS_AMOUNT = (node ? require('../../engine/build_book.js') : root.BurrowEngine.build).PAY_NEEDS_AMOUNT;
+  const BUILD = node ? require('../../engine/build_book.js') : root.BurrowEngine.build;
+  const PAY_NEEDS_AMOUNT = BUILD.PAY_NEEDS_AMOUNT;
   const live = x => x && !x.gone;
   const DAY = /^\d{4}-\d{2}-\d{2}$/;
   const amountOk = (a, what) => { if (!Number.isInteger(a) || !(a > 0)) bad('Type ' + what + ' above zero'); return a; };
@@ -118,7 +119,7 @@
     if (x.every != null && x.every !== '') {
       if (!EVERY[x.every]) bad('Pick how often it lands');
       if (x.every === 'month') rhythm = { every: 'month', days: [dayOfMonth(x.day != null ? x.day : (v.rule && v.rule.days ? v.rule.days[0] : null))] };
-      else { if (!DAY.test(x.start || '')) bad('Pick the day of one pay, the last one or the next one'); rhythm = { every: 'weeks', n: Number(x.every.slice(5)), from: x.start }; }
+      else { if (!DAY.test(x.start || '')) bad('Pick the day of one pay, the last one or the next one'); const n = Number(x.every.slice(5)); rhythm = { every: 'weeks', n, from: BUILD.weeksAnchor(x.start, DAY.test(x.from || '') ? x.from : v.changeFrom, n) }; }
       if (sameRule(rhythm, v.rule)) rhythm = null;
     }
     if (x.name != null && x.name !== s.name) { ch.name = nameOk(x.name); sameName(A3.listOf(w.book, 'schedules').filter(y => y.kind === s.kind), ch.name, id); }

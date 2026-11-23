@@ -31,6 +31,11 @@
 
   const SHIFTS = { before: 1, after: 1, none: 1 };
   const BANK_TYPES = { bank: 1, cash: 1, ewallet: 1, wallet: 1 };
+  // [slice 6] the day of one pay every n weeks, stepped back by whole n weeks until it is on or before `day` (YYYY-MM-DD)
+  function weeksAnchor(start, day, n) {
+    const step = 7 * (n || 1), a = D.dayNum(start), d = D.dayNum(day);
+    return a <= d ? start : D.dayStr(a - Math.ceil((a - d) / step) * step);
+  }
   const PAY_NEEDS_AMOUNT = 'A pay needs an amount. If it comes when it comes, pick No fixed pay';
   function buildBook(ans, opts) {
     const newId = opts.newId, by = opts.by || String(newId()).split('-')[0];
@@ -114,7 +119,9 @@
       if (every === 'weeks') {
         if (!Number.isInteger(x.n || 1) || (x.n || 1) < 1) throw new Error(what + ': every how many weeks? ' + x.n);
         if (!isDay(start)) throw new Error(what + ': the weeks need the day of one pay');
-        return { every: 'weeks', n: x.n || 1, from: start };
+        // [qc-foundation] a pay day given in the future (the next pay) is stepped back by n weeks until it is on or
+        // before the setup day, so the pay period holding the setup day exists
+        return { every: 'weeks', n: x.n || 1, from: weeksAnchor(start, day, x.n || 1) };
       }
       if (every === 'months') {
         if (!Number.isInteger(x.n) || x.n < 1) throw new Error(what + ': every how many months? ' + x.n);
@@ -172,7 +179,7 @@
     }
     return { book, ids, asked, askedStatements };
   }
-  const api = { buildBook, PAY_NEEDS_AMOUNT };
+  const api = { buildBook, weeksAnchor, PAY_NEEDS_AMOUNT };
   if (node) module.exports = api;
   else (root.BurrowEngine = root.BurrowEngine || {}).build = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

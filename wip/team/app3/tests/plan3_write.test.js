@@ -264,6 +264,10 @@ const stamped = (r, step) => { ok(I.isOrdinary(r.id), 'ordinary id ' + r.id); eq
     r = await h3.go('changeBill', MAIN, { every: 'weeks2', start: '2026-12-04', from: '2026-12-04', lines: { [h3.book.plan.budgets[0].id]: 20000 } }); ok(r.ok, JSON.stringify(r));
     r = await h3.go('changeBill', MAIN, { every: 'month', day: 25, from: '2026-12-10', lines: { [h3.book.plan.budgets[0].id]: 45000 } }); ok(r.ok, JSON.stringify(r));
     eq(h3.book.plan.budgets[0].steps.map(x => [x.from, x.amount]), [[null, 40000], ['2026-12-04', 20000], ['2026-12-04', 45000]]);
+    // [qc-foundation] the next pay given as the day of one pay: saved stepped back to on or before the change day
+    const h4 = setup();
+    r = await h4.go('changeBill', MAIN, { every: 'weeks2', start: '2026-12-18', from: '2026-12-04' }); ok(r.ok, JSON.stringify(r));
+    eq(h4.book.schedules.find(x => x.id === MAIN).rules[1].rule, { every: 'weeks', n: 2, from: '2026-12-04' });
     // a line left at its amount keeps it (no new step); the rhythm the same: the lines are not touched
     const h2 = setup();
     await h2.go('addLine', { name: 'Food', amount: 40000 });
