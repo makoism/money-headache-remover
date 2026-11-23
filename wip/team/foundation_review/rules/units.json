@@ -1257,6 +1257,99 @@
       "decisions": [
         "T1"
       ]
+    },
+    {
+      "id": "units-78",
+      "question": "once_from_month",
+      "title": "A 38.31 one-month amount goes to the first period starting in that month (X watch: the stale 11.1 row)",
+      "input": {
+        "ym": "2027-03",
+        "pays": [
+          {
+            "occ": "pay@2027-02-25",
+            "lands": "2027-02-25"
+          },
+          {
+            "occ": "pay@2027-03-25",
+            "lands": "2027-03-25"
+          },
+          {
+            "occ": "pay@2027-04-25",
+            "lands": "2027-04-23"
+          }
+        ]
+      },
+      "expected": "pay@2027-03-25",
+      "why": "38.31 `once['2027-03']`: the first period starting in March 2027 starts with the pay landing Thu 25 Mar, so `once` is keyed `pay@2027-03-25` [T1, X watch].",
+      "decisions": [
+        "X watch",
+        "T1",
+        "B8"
+      ]
+    },
+    {
+      "id": "units-79",
+      "question": "once_from_month",
+      "title": "Weekly pay: four or five periods start in one month; the first one gets the month's amount (X watch)",
+      "input": {
+        "ym": "2027-03",
+        "pays": [
+          {
+            "occ": "pay@2027-02-26",
+            "lands": "2027-02-26"
+          },
+          {
+            "occ": "pay@2027-03-05",
+            "lands": "2027-03-05"
+          },
+          {
+            "occ": "pay@2027-03-12",
+            "lands": "2027-03-12"
+          },
+          {
+            "occ": "pay@2027-03-19",
+            "lands": "2027-03-19"
+          },
+          {
+            "occ": "pay@2027-03-26",
+            "lands": "2027-03-26"
+          }
+        ]
+      },
+      "expected": "pay@2027-03-05",
+      "why": "Periods start on Fri 5, 12, 19 and 26 Mar; the first is the one starting 5 Mar [X watch: `once[ym]` goes to the first period starting in that month].",
+      "decisions": [
+        "X watch",
+        "T1"
+      ]
+    },
+    {
+      "id": "units-80",
+      "question": "once_from_month",
+      "title": "Pay twice a month: the period starting on the 15th is the first in the month (X watch)",
+      "input": {
+        "ym": "2027-03",
+        "pays": [
+          {
+            "occ": "half@2027-02-28",
+            "lands": "2027-02-26"
+          },
+          {
+            "occ": "half@2027-03-15",
+            "lands": "2027-03-15"
+          },
+          {
+            "occ": "half@2027-03-30",
+            "lands": "2027-03-30"
+          }
+        ]
+      },
+      "expected": "half@2027-03-15",
+      "why": "The pay due 28 Feb landed Fri 26 Feb, in February; the first period starting in March starts Mon 15 Mar.",
+      "decisions": [
+        "X watch",
+        "T1"
+      ]
     }
   ],
   "open": []

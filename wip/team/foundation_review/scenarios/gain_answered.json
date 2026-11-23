@@ -1,0 +1,128 @@
+{
+  "life": "gain_answered",
+  "title": "A large gain the person says is right is placed; one still asked stays held (decision X4)",
+  "story": "Set up Mon 4 Jan 2027, after pay on Fri 25 Dec. The bank holds 100,000 (30,000 of it Free to spend left), the e-wallet 5,000, the cash 10,000. Pay of 250,000 on the 25th starts the period; Free to spend is 60,000 a month. At the check-in on Fri 8 Jan at 20:00 the person types 101,000 for the bank, 280,000 for the e-wallet (the bank's figure typed in the wrong box) and 13,000 for the cash. Every amount is made up. The person answers the cash question: the 13,000 is right (`gain: right`). The e-wallet question is still asked (`gain: asked`).",
+  "currency": "JPY",
+  "window": {
+    "from": "2027-01-04",
+    "to": "2027-01-31"
+  },
+  "holidays": {
+    "country": "none",
+    "dates": [],
+    "bank_closed": []
+  },
+  "accounts": [
+    {
+      "id": "b",
+      "name": "Bank",
+      "kind": "bank",
+      "currency": "JPY",
+      "minimum": 0,
+      "opening": {
+        "date": "2027-01-04",
+        "amount": 100000,
+        "split": {
+          "free": 30000
+        }
+      }
+    },
+    {
+      "id": "w",
+      "name": "E-wallet",
+      "kind": "ewallet",
+      "currency": "JPY",
+      "minimum": 0,
+      "opening": {
+        "date": "2027-01-04",
+        "amount": 5000
+      }
+    },
+    {
+      "id": "cash",
+      "name": "Cash",
+      "kind": "cash",
+      "currency": "JPY",
+      "minimum": 0,
+      "opening": {
+        "date": "2027-01-04",
+        "amount": 10000
+      }
+    }
+  ],
+  "plan": {
+    "lines": [],
+    "free": {
+      "account": "b",
+      "per": "month",
+      "amount": 60000
+    }
+  },
+  "income": [
+    {
+      "id": "pay",
+      "name": "Pay",
+      "account": "b",
+      "amount": 250000,
+      "schedule": {
+        "frequency": "monthly",
+        "day": 25
+      },
+      "weekend_holiday": "move earlier",
+      "starts_period": true
+    }
+  ],
+  "bills": [],
+  "goals": [],
+  "events": [
+    {
+      "id": "cb",
+      "date": "2027-01-08",
+      "told": "2027-01-08T20:00",
+      "kind": "check",
+      "account": "b",
+      "amount": 101000
+    },
+    {
+      "id": "cw",
+      "date": "2027-01-08",
+      "told": "2027-01-08T20:00",
+      "kind": "check",
+      "account": "w",
+      "amount": 280000,
+      "note": "the bank's figure typed in the e-wallet's box",
+      "gain": "asked"
+    },
+    {
+      "id": "cc",
+      "date": "2027-01-08",
+      "told": "2027-01-08T20:00",
+      "kind": "check",
+      "account": "cash",
+      "amount": 13000,
+      "gain": "right"
+    }
+  ],
+  "asks": [
+    {
+      "id": "ga-01",
+      "date": "2027-01-08",
+      "question": "headline",
+      "expected": 34000,
+      "why": "30,000 (Free to spend at the opening) + 1,000 (the bank's small gain) + 3,000 (the cash's gain, answered right, so placed: it gives back to Free to spend) = 34,000",
+      "note": "The e-wallet's 275,000 is still held [X4]."
+    },
+    {
+      "id": "ga-02",
+      "date": "2027-01-08",
+      "question": "warnings",
+      "expected": [
+        {
+          "account": "w",
+          "code": "gain_to_ask"
+        }
+      ],
+      "why": "The cash question is answered; only the e-wallet's is still asked."
+    }
+  ]
+}

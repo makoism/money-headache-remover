@@ -1,0 +1,167 @@
+{
+  "life": "bill_ends_redirect",
+  "title": "A bill that ends on a date, its money redirected to a goal after it (`ends`, `redirect`; 38.31 line redirect; X watch decided)",
+  "story": "Set up Mon 4 Jan 2027: the bank holds 300,000, of which 50,000 is what is left of Free to spend (typed). Pay of 250,000 on the 25th (moved earlier) starts the period; Free to spend is 50,000 a month. The car payment of 30,000 on the 20th (moved later) ends on 28 Feb 2027; after it, its money is redirected to the goal Next car (38.31 `redirect`). The January and February car payments and pays are ticked. A redirect is planned money: only money really set aside counts [F22]. Every amount is made up.",
+  "currency": "JPY",
+  "window": {
+    "from": "2027-01-04",
+    "to": "2027-04-30"
+  },
+  "holidays": {
+    "country": "none",
+    "dates": [],
+    "bank_closed": []
+  },
+  "main_bank": "bank",
+  "accounts": [
+    {
+      "id": "bank",
+      "name": "Bank",
+      "kind": "bank",
+      "currency": "JPY",
+      "minimum": 0,
+      "opening": {
+        "date": "2027-01-04",
+        "amount": 300000,
+        "split": {
+          "free": 50000
+        }
+      }
+    }
+  ],
+  "income": [
+    {
+      "id": "pay",
+      "name": "Pay",
+      "account": "bank",
+      "amount": 250000,
+      "schedule": {
+        "frequency": "monthly",
+        "day": 25
+      },
+      "weekend_holiday": "move earlier",
+      "starts_period": true
+    }
+  ],
+  "bills": [
+    {
+      "id": "carpay",
+      "name": "Car payment",
+      "account": "bank",
+      "amount": 30000,
+      "schedule": {
+        "frequency": "monthly",
+        "day": 20
+      },
+      "weekend_holiday": "move later",
+      "ends": "2027-02-28",
+      "redirect": "nextcar"
+    }
+  ],
+  "goals": [
+    {
+      "id": "nextcar",
+      "name": "Next car",
+      "kept_in": "bank",
+      "due": "2029-12-31",
+      "opening": {
+        "date": "2027-01-04",
+        "amount": 0
+      }
+    }
+  ],
+  "plan": {
+    "lines": [],
+    "free": {
+      "per": "month",
+      "amount": 50000
+    }
+  },
+  "events": [
+    {
+      "id": "set:carpay@2027-01-20",
+      "date": "2027-01-20",
+      "told": "2027-01-20T12:00",
+      "kind": "bill_paid",
+      "account": "bank",
+      "amount": 30000,
+      "settles": "carpay@2027-01-20"
+    },
+    {
+      "id": "set:pay@2027-01-25",
+      "date": "2027-01-25",
+      "told": "2027-01-25T12:00",
+      "kind": "pay_in",
+      "account": "bank",
+      "amount": 250000,
+      "settles": "pay@2027-01-25"
+    },
+    {
+      "id": "set:carpay@2027-02-20",
+      "date": "2027-02-22",
+      "told": "2027-02-22T12:00",
+      "kind": "bill_paid",
+      "account": "bank",
+      "amount": 30000,
+      "settles": "carpay@2027-02-20"
+    },
+    {
+      "id": "set:pay@2027-02-25",
+      "date": "2027-02-25",
+      "told": "2027-02-25T12:00",
+      "kind": "pay_in",
+      "account": "bank",
+      "amount": 250000,
+      "settles": "pay@2027-02-25"
+    }
+  ],
+  "asks": [
+    {
+      "id": "red-01",
+      "date": "2027-02-01",
+      "question": "due_before_next_pay",
+      "expected": {
+        "items": [
+          {
+            "item": "carpay@2027-02-20",
+            "lands": "2027-02-22",
+            "amount": 30000
+          }
+        ],
+        "total": 30000
+      },
+      "why": "30,000 (the last car payment, Sat 20 Feb, lands Mon 22 Feb) = 30,000"
+    },
+    {
+      "id": "red-02",
+      "date": "2027-03-01",
+      "question": "due_before_next_pay",
+      "expected": {
+        "items": [],
+        "total": 0
+      },
+      "why": "none = 0",
+      "note": "The car payment ended on 28 Feb. Before `ends` was read: 30,000 on Mon 22 Mar."
+    },
+    {
+      "id": "red-03",
+      "date": "2027-03-01",
+      "question": "safe_to_spend",
+      "account": "bank",
+      "expected": 740000,
+      "why": "740,000 (Bank today; the car payment ended, so nothing more comes off for it) = 740,000"
+    },
+    {
+      "id": "red-04",
+      "date": "2027-03-01",
+      "question": "place",
+      "account": "bank",
+      "place": "nextcar",
+      "expected": {
+        "kept": 0,
+        "due": "2029-12-31"
+      },
+      "why": "0 (opening; the car payment's money redirected after it ends is planned, not money yet) = 0"
+    }
+  ]
+}

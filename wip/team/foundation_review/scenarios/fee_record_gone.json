@@ -18,9 +18,9 @@
   "plan": { "free": { "per": "month", "amount": 5000.00 } },
   "events": [
     { "id": "t1", "date": "2027-01-05", "told": "2027-01-05T12:00", "kind": "transfer", "from": "b", "to": "g", "amount_out": 1015.00, "amount_in": 1000.00, "gone": true, "note": "undone" },
-    { "id": "fee1", "date": "2027-01-05", "told": "2027-01-05T12:00", "kind": "spend", "account": "b", "amount": 15.00, "of": "t1", "line": "fees", "note": "its fee record; the undo has not come across" },
+    { "id": "fee:t1", "date": "2027-01-05", "told": "2027-01-05T12:00", "kind": "spend", "account": "b", "amount": 15.00, "of": "t1", "line": "fees", "note": "its fee record; the undo has not come across" },
     { "id": "t2", "date": "2027-01-20", "told": "2027-01-20T12:00", "kind": "transfer", "from": "b", "to": "g", "amount_out": 1015.00, "amount_in": 1000.00 },
-    { "id": "fee2", "date": "2027-01-20", "told": "2027-01-20T12:00", "kind": "spend", "account": "b", "amount": 15.00, "of": "t2", "line": "fees" }
+    { "id": "fee:t2", "date": "2027-01-20", "told": "2027-01-20T12:00", "kind": "spend", "account": "b", "amount": 15.00, "of": "t2", "line": "fees" }
   ],
   "asks": [
     { "id": "frg-01", "date": "2027-01-06", "question": "bank_today", "account": "b", "expected": 20000.00,

@@ -65,7 +65,7 @@ Written 23 Nov 2026 from foundation_review/RECOMMENDATION.md, life_walks_salarie
 | settle_later_stretch.json | A deposit settles the pay before a check-in; the pay's own line, read in the next stretch, moves the settle and the period start (S2). | JPY | 4 |
 | settle_ticked.json | The same, but the person ticked the deposit's settle at the check-in: it stays (S2). | JPY | 3 |
 | card_plan_later.json | A 12-part card buy: the parts not yet posted are walked on their posting dates and show in "Later on" (S4). | JPY | 4 |
-| fee_place.json | A fee as its own spend record `of` its transfer, paid from the place the person picked, else Free to spend; it moves no money of its own (S5). | PHP | 6 |
+| fee_place.json | A fee as its own spend record `of` its transfer, paid from the place the person picked, else Free to spend; it moves no money of its own (S5); a fee in the next period (coverage: fee record, period start). The fee records are `fee:t1`, `fee:t2`, `fee:t3` (X2). | PHP | 7 |
 | other_currency_lists.json | Pay in dollars into a yen bank: listed apart, in dollars, on the check-in list, and left out of the "not seen yet" totals (S6). | JPY (+USD) | 2 |
 | period_start_model.json | A period started without the late pay, `ps:pay@2026-12-10`, is in the model; the late pay then settles its occurrence and starts no new period; a filler split at that start (T1, T6, T2; final review 3 f2). | JPY | 7 |
 | period_end_fixed.json | A period with a period-end answer (`pe:pay@2026-11-10:free`) keeps its end when the ticked pay's date is corrected (T1; f1b). | JPY | 3 |
@@ -86,9 +86,32 @@ Written 23 Nov 2026 from foundation_review/RECOMMENDATION.md, life_walks_salarie
 | grid_other_currency.json | Coverage grid cells in another currency: a refund, a bill, a goal, a loan, a conversion on a check day and met by a statement line. | JPY (+PHP) | 7 |
 | grid_period_cells.json | Coverage grid cells: a transfer before an account's opening, a refund given back after the period start, a skipped pay. | JPY | 5 |
 | grid_borrow_window.json | Coverage grid cell: a cash advance whose bank side posts after a check-in. | JPY | 3 |
+| goal_own_account.json | A goal's money moved to its own account, counted there (V1). | JPY | 7 |
+| loan_other_currency.json | A peso loan paid from a yen bank, left out of the walk with a warning (V2). | JPY (+PHP) | 7 |
+| close_main_bank_bills.json | Closing the main bank moves its bills too (V). | JPY | 5 |
+| plan_change_first_day.json | A plan change made on a period's first day applies to it (V). | JPY | 3 |
+| card_no_statement.json | A card with a known close day and no typed last statement: the first close after the opening holds the opening balance (X6; c1). | JPY | 5 |
+| far_years.json | Ten years out: close days, a not-sure card's payment days, a credit line, pay later, pay, rent, a yearly tax place and a budget line in 2036 (X7; c2). | JPY | 12 |
+| notyet_opening.json | Set up on pay day before the pay is in: `not_yet`, the pay on the first check-in list, starting the period (X3; c3). | JPY | 6 |
+| notyet_bill.json | A bill due the day before setup not gone out, and pay in dollars not in yet; a statement line settling the bill stays outside the opening (X3, F20). | JPY (+USD) | 4 |
+| gain_held.json | A large check-in gain held, not placed, until answered (X4; c4). | JPY | 4 |
+| gain_answered.json | A gain answered right is placed; one still asked stays held (X4). | JPY | 2 |
+| gain_pay_day.json | Set up on pay day with the pay taken as in; the next check-in's 250,000 gain held (X4; c3). | JPY | 3 |
+| to_place_two_phones.json | Money to place placed on two phones: the newer placing gives way (X5; c7). | JPY | 2 |
+| day_offsets.json | A moved receipt and a typed spend with a date only start at the start of the day in +09:00; a time with no offset is the device's (X9; c5). | JPY | 1 |
+| day_offset_west.json | The opening day's end at -05:00 (X9). | USD | 1 |
+| day_offset_kinds.json | Every kind that moves money, dated the opening day with no time, is inside a 07:00 +09:00 opening (X9). | JPY (+USD) | 5 |
+| pay_day_offer.json | A pay day change entered after a settled pay, from the day after it as the edit offers (X8; c8). | JPY | 3 |
+| leap_year_end.json | A yearly bill on 29 Feb, pay on the 31st moved earlier for a holiday, a card closing on the last day (c9). | JPY | 6 |
+| goal_money_elsewhere.json | A moved goal whose money is in another account: kept there, out of the bank's split (X watch; c10). | JPY | 4 |
+| one_occurrence_amount.json | One occurrence changed (`amounts`), winning over a step (X watch). | JPY | 5 |
+| bill_ends_redirect.json | A bill that ends, its money redirected to a goal (`ends`, `redirect`; X watch). | JPY | 4 |
+| payoff_place.json | A pay-off place naming its debt (`pays`; X watch). | JPY | 3 |
+| owed_other_currency_lists.json | A dollar card and a peso loan paid from a yen bank: listed apart in their own currency, out of the totals (W2, V2). | JPY (+USD, PHP) | 5 |
+| goal_account_spend.json | An account that backs a goal is not spent from (W). | JPY | 2 |
 | check_specs.js | Checks every file's shape and that every `why` adds up to its expected figure. `node check_specs.js` | | |
 
-Total: 549 asks (the first eight files: 180; the H files: 64; the I files: 34; the J files: 21; the K, L and M files: 22; the O files: 35; the P files: 12; the Q and R files: 63; the S files: 25; the T and U files and the coverage grid files: 92; pending_hold hold-07, added with T2: 1). T1 renamed to_place's period-end answer `pe:2027-01-24:free` to `pe:pay@2026-12-25:free` (the pay that started the period); no figure changed. S4 also changed card_instalments inst-07 (280,000 to 270,000: the part posting on 15 Apr is now walked).
+Total: 549 asks (the first eight files: 180; the H files: 64; the I files: 34; the J files: 21; the K, L and M files: 22; the O files: 35; the P files: 12; the Q and R files: 63; the S files: 25; the T and U files and the coverage grid files: 92; pending_hold hold-07, added with T2: 1). T1 renamed to_place's period-end answer `pe:2027-01-24:free` to `pe:pay@2026-12-25:free` (the pay that started the period); no figure changed. S4 also changed card_instalments inst-07 (280,000 to 270,000: the part posting on 15 Apr is now walked). After V: 571. After W and X (decisions W and X, confirm_review_1): 649 asks in 99 files (78 added: 77 in the 19 new files above, 1 in fee_place).
 
 ### The review v3 situations and where each one is now
 

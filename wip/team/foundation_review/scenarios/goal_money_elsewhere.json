@@ -1,0 +1,116 @@
+{
+  "life": "goal_money_elsewhere",
+  "title": "A moved goal whose money the person says is in another account: the move opens that account and keeps the goal there, out of the bank's split (X watch decided: the move asks where each goal's money is; confirm_review_1 situation c10)",
+  "story": "A 38.31 copy is moved on Tue 1 Dec 2026. Its bank figure is 100,000 and Free to spend's left is 40,000; its goal Moving has 300,000 saved so far. 38.31 put every goal's start into the bank's opening split, which gave 200,000 short on the first open. The move now asks where Moving's money is; the person says it is in a savings account, so Savings opens at 300,000 and Moving is kept there as its own account. The file is the copy after the move. Pay of 250,000 on the 10th (moved earlier) starts the period; Free to spend is 60,000 a month. Every amount is made up.",
+  "currency": "JPY",
+  "window": {
+    "from": "2026-12-01",
+    "to": "2026-12-31"
+  },
+  "holidays": {
+    "country": "none",
+    "dates": [],
+    "bank_closed": []
+  },
+  "main_bank": "bank",
+  "accounts": [
+    {
+      "id": "bank",
+      "name": "Bank",
+      "kind": "bank",
+      "currency": "JPY",
+      "minimum": 0,
+      "opening": {
+        "date": "2026-12-01",
+        "amount": 100000,
+        "split": {
+          "free": 40000
+        }
+      }
+    },
+    {
+      "id": "sav",
+      "name": "Savings",
+      "kind": "bank",
+      "currency": "JPY",
+      "minimum": 0,
+      "opening": {
+        "date": "2026-12-01",
+        "amount": 300000
+      }
+    }
+  ],
+  "income": [
+    {
+      "id": "pay",
+      "name": "Pay",
+      "account": "bank",
+      "amount": 250000,
+      "schedule": {
+        "frequency": "monthly",
+        "day": 10
+      },
+      "weekend_holiday": "move earlier",
+      "starts_period": true
+    }
+  ],
+  "bills": [],
+  "goals": [
+    {
+      "id": "move",
+      "name": "Moving",
+      "kept_in": "sav",
+      "mode": "own_account",
+      "due": "2027-06-30",
+      "opening": {
+        "date": "2026-12-01",
+        "amount": 300000
+      }
+    }
+  ],
+  "plan": {
+    "lines": [],
+    "free": {
+      "per": "month",
+      "amount": 60000
+    }
+  },
+  "events": [],
+  "asks": [
+    {
+      "id": "gme-01",
+      "date": "2026-12-01",
+      "question": "headline",
+      "expected": 40000,
+      "why": "40,000 (Free to spend at the move; the bank's headroom is 100,000) = 40,000",
+      "note": "With every goal start in the bank's split (11.1 before the X watch decision): 0, with 200,000 short."
+    },
+    {
+      "id": "gme-02",
+      "date": "2026-12-01",
+      "question": "place",
+      "account": "sav",
+      "place": "move",
+      "expected": {
+        "kept": 300000,
+        "due": "2027-06-30"
+      },
+      "why": "300,000 (saved so far, kept in Savings) = 300,000"
+    },
+    {
+      "id": "gme-03",
+      "date": "2026-12-01",
+      "question": "safe_to_spend",
+      "account": "bank",
+      "expected": 100000,
+      "why": "100,000 (Bank today; Moving is not in it) = 100,000"
+    },
+    {
+      "id": "gme-04",
+      "date": "2026-12-01",
+      "question": "warnings",
+      "expected": [],
+      "why": "Nothing is below its minimum: Savings holds exactly Moving."
+    }
+  ]
+}

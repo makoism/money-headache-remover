@@ -1,0 +1,116 @@
+{
+  "life": "to_place_two_phones",
+  "title": "Money to place placed on two phones before they sync: the newer placing gives way (decision X5, confirm_review_1 item 5)",
+  "story": "to_place.json's start: set up Mon 4 Jan 2027, the bank holds 150,000, of which 100,000 is kept for a trip and 20,000 is what is left of Free to spend (typed). Pay of 250,000 on the 25th (moved earlier); Free to spend is 40,000 a month. On Wed 6 Jan the trip is removed: its 100,000 is to place. On Thu 7 Jan, before the phones sync, both people place the trip's 100,000 in Free to spend: one at 12:00, the other at 12:03, each with an ordinary id. After the merge both records are there. X5 (P3 made general): every share-out from a limited amount is checked again after a merge; when two share more than there is, the newer gives way. Every amount is made up.",
+  "currency": "JPY",
+  "window": {
+    "from": "2027-01-04",
+    "to": "2027-01-31"
+  },
+  "holidays": {
+    "country": "none",
+    "dates": [],
+    "bank_closed": []
+  },
+  "accounts": [
+    {
+      "id": "b",
+      "name": "Bank",
+      "kind": "bank",
+      "currency": "JPY",
+      "minimum": 0,
+      "opening": {
+        "date": "2027-01-04",
+        "amount": 150000,
+        "split": {
+          "goals": {
+            "trip": 100000
+          },
+          "free": 20000
+        }
+      }
+    }
+  ],
+  "income": [
+    {
+      "id": "pay",
+      "name": "Pay",
+      "account": "b",
+      "amount": 250000,
+      "schedule": {
+        "frequency": "monthly",
+        "day": 25
+      },
+      "weekend_holiday": "move earlier",
+      "starts_period": true
+    }
+  ],
+  "bills": [],
+  "goals": [
+    {
+      "id": "trip",
+      "name": "Trip",
+      "kept_in": "b",
+      "due": "2027-08-01",
+      "removed": "2027-01-06"
+    },
+    {
+      "id": "emergency",
+      "name": "Emergency",
+      "kept_in": "b",
+      "due": "2027-12-31",
+      "opening": {
+        "date": "2027-01-04",
+        "amount": 0
+      }
+    }
+  ],
+  "plan": {
+    "free": {
+      "per": "month",
+      "amount": 40000
+    }
+  },
+  "events": [
+    {
+      "id": "aaaaaa-m2xq7ab9zt-1",
+      "date": "2027-01-07",
+      "told": "2027-01-07T12:00",
+      "kind": "place_money",
+      "account": "b",
+      "to_place_of": "trip",
+      "into": "free",
+      "amount": 100000,
+      "note": "Jun's phone"
+    },
+    {
+      "id": "bbbbbb-p4kd8wq2rn-1",
+      "date": "2027-01-07",
+      "told": "2027-01-07T12:03",
+      "kind": "place_money",
+      "account": "b",
+      "to_place_of": "trip",
+      "into": "free",
+      "amount": 100000,
+      "note": "Tess's phone, newer: gives way"
+    }
+  ],
+  "asks": [
+    {
+      "id": "tp2-01",
+      "date": "2027-01-07",
+      "question": "headline",
+      "expected": 120000,
+      "why": "20,000 (Free to spend at the opening) + 100,000 (the trip's money placed in Free to spend at 12:00; the placing at 12:03 gave way, as only 100,000 was to place) = 120,000",
+      "note": "Before X5: 150,000 (the 100,000 placed twice, capped by the bank's headroom)."
+    },
+    {
+      "id": "tp2-02",
+      "date": "2027-01-07",
+      "question": "safe_to_spend",
+      "account": "b",
+      "expected": 150000,
+      "why": "150,000 (Bank today; nothing is left to place) = 150,000"
+    }
+  ]
+}

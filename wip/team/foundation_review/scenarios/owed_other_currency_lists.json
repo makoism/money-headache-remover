@@ -1,0 +1,204 @@
+{
+  "life": "owed_other_currency_lists",
+  "title": "Card and loan payments in another currency are listed apart in their own currency and left out of the totals (decision W2)",
+  "story": "Set up Mon 4 Jan 2027: a yen bank holds 300,000, of which 60,000 is what is left of Free to spend (typed). A dollar card paid in full from the yen bank closes on the 15th and is paid on the 5th of the next month (moved later); its 15 Dec statement of 500.00 is unpaid and due Tue 5 Jan. A peso loan owes 20,000.00 and asks 2,000.00 on the 15th from the yen bank. Rent of 80,000 on the 27th (moved later); pay of 300,000 on the 25th (moved earlier). Nothing is paid by Tue 19 Jan. W2: card, loan or pay-later payments in another currency are listed apart in their own currency and left out of the totals of due before next pay, not seen yet and the check-in list, as pay in another currency is (S6). Every amount is made up.",
+  "currency": "JPY",
+  "window": {
+    "from": "2027-01-04",
+    "to": "2027-01-31"
+  },
+  "holidays": {
+    "country": "none",
+    "dates": [],
+    "bank_closed": []
+  },
+  "main_bank": "bank",
+  "accounts": [
+    {
+      "id": "bank",
+      "name": "Bank",
+      "kind": "bank",
+      "currency": "JPY",
+      "minimum": 0,
+      "opening": {
+        "date": "2027-01-04",
+        "amount": 300000,
+        "split": {
+          "free": 60000
+        }
+      }
+    },
+    {
+      "id": "usd",
+      "name": "Dollar card",
+      "kind": "card",
+      "currency": "USD",
+      "statement_close_day": 15,
+      "payment": {
+        "day": 5,
+        "months_after_close": 1,
+        "from": "bank",
+        "weekend_holiday": "move later"
+      },
+      "opening": {
+        "date": "2027-01-04",
+        "current": 500.0,
+        "statement": {
+          "closed": "2026-12-15",
+          "amount": 500.0,
+          "paid": false
+        }
+      }
+    },
+    {
+      "id": "loan",
+      "name": "Peso loan",
+      "kind": "loan",
+      "currency": "PHP",
+      "payment": {
+        "day": 15,
+        "from": "bank",
+        "weekend_holiday": "none",
+        "amount": 2000.0
+      },
+      "opening": {
+        "date": "2027-01-04",
+        "owed": 20000.0
+      }
+    }
+  ],
+  "income": [
+    {
+      "id": "pay",
+      "name": "Pay",
+      "account": "bank",
+      "amount": 300000,
+      "schedule": {
+        "frequency": "monthly",
+        "day": 25
+      },
+      "weekend_holiday": "move earlier",
+      "starts_period": true
+    }
+  ],
+  "bills": [
+    {
+      "id": "rent",
+      "name": "Rent",
+      "account": "bank",
+      "amount": 80000,
+      "schedule": {
+        "frequency": "monthly",
+        "day": 27
+      },
+      "weekend_holiday": "move later"
+    }
+  ],
+  "goals": [],
+  "plan": {
+    "lines": [],
+    "free": {
+      "per": "month",
+      "amount": 60000
+    }
+  },
+  "events": [],
+  "asks": [
+    {
+      "id": "oocl-01",
+      "date": "2027-01-04",
+      "question": "due_before_next_pay",
+      "expected": {
+        "items": [
+          {
+            "item": "usd@2027-01-05",
+            "lands": "2027-01-05",
+            "amount": 500.0,
+            "currency": "USD"
+          },
+          {
+            "item": "loan@2027-01-15",
+            "lands": "2027-01-15",
+            "amount": 2000.0,
+            "currency": "PHP"
+          }
+        ],
+        "total": 0
+      },
+      "why": "none = 0",
+      "note": "Both are listed in their own currency and left out of the yen total [W2]. Before W2 they read as 50,000 and 200,000 yen in a total of 250,000."
+    },
+    {
+      "id": "oocl-02",
+      "date": "2027-01-06",
+      "question": "check_in_list",
+      "expected": {
+        "items": [],
+        "total": 0,
+        "apart": [
+          {
+            "item": "usd@2027-01-05",
+            "lands": "2027-01-05",
+            "amount": 500.0,
+            "currency": "USD"
+          }
+        ]
+      },
+      "why": "none = 0"
+    },
+    {
+      "id": "oocl-03",
+      "date": "2027-01-19",
+      "question": "not_seen_yet",
+      "expected": {
+        "items": [
+          {
+            "item": "usd@2027-01-05",
+            "lands": "2027-01-05",
+            "amount": 500.0,
+            "currency": "USD",
+            "direction": "out"
+          },
+          {
+            "item": "loan@2027-01-15",
+            "lands": "2027-01-15",
+            "amount": 2000.0,
+            "currency": "PHP",
+            "direction": "out"
+          }
+        ],
+        "money_in": 0,
+        "money_out": 0
+      },
+      "why": {
+        "money_in": "none = 0",
+        "money_out": "none = 0"
+      }
+    },
+    {
+      "id": "oocl-04",
+      "date": "2027-01-04",
+      "question": "safe_to_spend",
+      "account": "bank",
+      "expected": 300000,
+      "why": "300,000 (Bank today; the dollar card's and the peso loan's payments are not taken off as yen, see the warnings) = 300,000",
+      "note": "V2: the loan item is skipped in the walk, as H5 skips the card's."
+    },
+    {
+      "id": "oocl-05",
+      "date": "2027-01-04",
+      "question": "warnings",
+      "expected": [
+        {
+          "account": "bank",
+          "code": "card_other_currency"
+        },
+        {
+          "account": "bank",
+          "code": "loan_other_currency"
+        }
+      ],
+      "why": "The dollar card and the peso loan are paid from the yen bank."
+    }
+  ]
+}

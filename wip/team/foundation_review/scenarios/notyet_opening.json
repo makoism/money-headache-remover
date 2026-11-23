@@ -1,0 +1,40 @@
+{
+  "life": "notyet_opening",
+  "title": "Set up on pay day before the pay is in: the opening saves it as not in yet (decision X3, F20; confirm_review_1 item 3)",
+  "story": "Set up Fri 25 Jun 2027 at 08:00, pay day. The bank holds 40,000; the pay of 250,000 has not come in yet, and setup asks about it first (a pay due that day): the person says not yet, so the opening saves it in `not_yet`. Pay is monthly on the 25th (moved earlier) and starts the period; rent of 80,000 on the 27th (moved later: Mon 28 Jun); Free to spend is 60,000 a month. At the check-in on Sat 26 Jun at 10:00 the person ticks the pay (it came in on 25 Jun) and types the bank: 290,000. Before X3 the model took the setup day's pay as already inside the opening: day one said 40,000 short, the pay never reached the check-in list and never started a period. Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2027-06-25", "to": "2027-07-31" },
+  "holidays": { "country": "none", "dates": [], "bank_closed": [] },
+  "main_bank": "bank",
+  "accounts": [
+    { "id": "bank", "name": "Bank", "kind": "bank", "currency": "JPY", "minimum": 0,
+      "opening": { "date": "2027-06-25", "told": "2027-06-25T08:00", "amount": 40000, "not_yet": [ "pay@2027-06-25" ] } }
+  ],
+  "income": [
+    { "id": "pay", "name": "Pay", "account": "bank", "amount": 250000, "schedule": { "frequency": "monthly", "day": 25 }, "weekend_holiday": "move earlier", "starts_period": true }
+  ],
+  "bills": [
+    { "id": "rent", "name": "Rent", "account": "bank", "amount": 80000, "schedule": { "frequency": "monthly", "day": 27 }, "weekend_holiday": "move later" }
+  ],
+  "goals": [],
+  "plan": { "lines": [], "free": { "per": "month", "amount": 60000 } },
+  "events": [
+    { "id": "set:pay@2027-06-25", "date": "2027-06-25", "told": "2027-06-26T10:00", "kind": "pay_in", "account": "bank", "amount": 250000, "settles": "pay@2027-06-25", "note": "ticked at the check-in" },
+    { "id": "c1", "date": "2027-06-26", "told": "2027-06-26T10:01", "kind": "check", "account": "bank", "amount": 290000 }
+  ],
+  "asks": [
+    { "id": "ny-01", "date": "2027-06-25", "question": "headline", "expected": 40000,
+      "why": "40,000 (Bank today; the pay of Fri 25 Jun is not in yet and is still expected today, so nothing is short) = 40,000",
+      "note": "Before X3: 0, with 40,000 short (the rent taken off with no pay to come before it)." },
+    { "id": "ny-02", "date": "2027-06-25", "question": "days_to_next_pay", "expected": { "days": 0, "next_pay": "2027-06-25", "item": "pay@2027-06-25" },
+      "why": "2027-06-25 - 2027-06-25 = 0" },
+    { "id": "ny-03", "date": "2027-06-26", "at": "start of day", "question": "check_in_list", "expected": { "items": [ { "item": "pay@2027-06-25", "lands": "2027-06-25", "amount": 250000 } ], "total": 250000 },
+      "why": "250,000 (the pay of Fri 25 Jun: setup was told it was not in yet, so the first check-in asks about it) = 250,000" },
+    { "id": "ny-04", "date": "2027-06-26", "question": "bank_today", "account": "bank", "expected": 290000,
+      "why": "40,000 (opening, Fri 25 Jun 08:00) + 250,000 (the pay of 25 Jun, ticked Sat 26 Jun; not inside the opening) = 290,000" },
+    { "id": "ny-05", "date": "2027-06-26", "question": "headline", "expected": 60000,
+      "why": "60,000 (Free to spend: the pay of Fri 25 Jun started the period) = 60,000" },
+    { "id": "ny-06", "date": "2027-06-26", "question": "warnings", "expected": [],
+      "why": "The check-in figure is what the app had (the opening and the ticked pay), so no gain is asked about." }
+  ]
+}

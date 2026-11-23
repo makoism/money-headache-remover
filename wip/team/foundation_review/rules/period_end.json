@@ -1904,6 +1904,267 @@
         "T1",
         "H8"
       ]
+    },
+    {
+      "id": "pe-55",
+      "question": "share_out_merged",
+      "title": "Money to place placed on two phones before they sync: the newer placing gives way (X5, c7)",
+      "input": {
+        "limit": 100000,
+        "mine": [
+          {
+            "id": "aaaaaa-m2xq7ab9zt-1",
+            "a": 100000,
+            "at": "2027-01-07T12:00:00.000+09:00",
+            "by": "aaaaaa"
+          }
+        ],
+        "theirs": [
+          {
+            "id": "bbbbbb-p4kd8wq2rn-1",
+            "a": 100000,
+            "at": "2027-01-07T12:03:00.000+09:00",
+            "by": "bbbbbb"
+          }
+        ]
+      },
+      "expected": {
+        "kept": [
+          "aaaaaa-m2xq7ab9zt-1"
+        ],
+        "gaveWay": [
+          {
+            "id": "bbbbbb-p4kd8wq2rn-1",
+            "by": "bbbbbb"
+          }
+        ],
+        "notice": {
+          "to": "bbbbbb",
+          "text": "An answer from your other device was used. Check it."
+        }
+      },
+      "why": "100,000 (the trip's money to place) - 100,000 (placed at 12:00) - 100,000 (placed at 12:03) = -100,000: more than there is. The newer `at` (12:03) gives way, as P3 does for period-end answers [X5]; 100,000 - 100,000 = 0 then stands. The phone that wrote it says so at its next open.",
+      "decisions": [
+        "X5",
+        "P3",
+        "P1"
+      ]
+    },
+    {
+      "id": "pe-56",
+      "question": "share_out_merged",
+      "title": "Covering an overspend found later on two phones: the newer cover gives way (X5)",
+      "input": {
+        "limit": 30000,
+        "mine": [
+          {
+            "id": "aaaaaa-m2xq7ab9zt-7",
+            "a": 20000,
+            "at": "2027-02-02T10:00:00.000+09:00",
+            "by": "aaaaaa"
+          }
+        ],
+        "theirs": [
+          {
+            "id": "bbbbbb-p4kd8wq2rn-4",
+            "a": 15000,
+            "at": "2027-02-02T10:05:00.000+09:00",
+            "by": "bbbbbb"
+          }
+        ]
+      },
+      "expected": {
+        "kept": [
+          "aaaaaa-m2xq7ab9zt-7"
+        ],
+        "gaveWay": [
+          {
+            "id": "bbbbbb-p4kd8wq2rn-4",
+            "by": "bbbbbb"
+          }
+        ],
+        "notice": {
+          "to": "bbbbbb",
+          "text": "An answer from your other device was used. Check it."
+        }
+      },
+      "why": "30,000 (found later) - 20,000 (covered at 10:00) - 15,000 (covered at 10:05) = -5,000: more than was found later [P5]. The newer cover gives way [X5]; 30,000 - 20,000 = 10,000 is still to cover at the next check-in.",
+      "decisions": [
+        "X5",
+        "P5",
+        "P3"
+      ]
+    },
+    {
+      "id": "pe-57",
+      "question": "share_out_merged",
+      "title": "Two share-outs that fit: both stay (X5)",
+      "input": {
+        "limit": 100000,
+        "mine": [
+          {
+            "id": "aaaaaa-m2xq7ab9zt-1",
+            "a": 40000,
+            "at": "2027-01-07T12:00:00.000+09:00",
+            "by": "aaaaaa"
+          }
+        ],
+        "theirs": [
+          {
+            "id": "bbbbbb-p4kd8wq2rn-1",
+            "a": 50000,
+            "at": "2027-01-07T12:03:00.000+09:00",
+            "by": "bbbbbb"
+          }
+        ]
+      },
+      "expected": {
+        "kept": [
+          "aaaaaa-m2xq7ab9zt-1",
+          "bbbbbb-p4kd8wq2rn-1"
+        ]
+      },
+      "why": "100,000 - 40,000 - 50,000 = 10,000: nothing is shared out twice, so both stay and no notice is shown.",
+      "decisions": [
+        "X5"
+      ]
+    },
+    {
+      "id": "pe-58",
+      "question": "share_out_merged",
+      "title": "Three share-outs: only the newest gives way, until the rest fit (X5)",
+      "input": {
+        "limit": 100000,
+        "mine": [
+          {
+            "id": "aaaaaa-m2xq7ab9zt-1",
+            "a": 50000,
+            "at": "2027-01-07T12:00:00.000+09:00",
+            "by": "aaaaaa"
+          }
+        ],
+        "theirs": [
+          {
+            "id": "bbbbbb-p4kd8wq2rn-1",
+            "a": 30000,
+            "at": "2027-01-07T12:01:00.000+09:00",
+            "by": "bbbbbb"
+          },
+          {
+            "id": "bbbbbb-p4kd8wq2rn-2",
+            "a": 40000,
+            "at": "2027-01-07T12:02:00.000+09:00",
+            "by": "bbbbbb"
+          }
+        ]
+      },
+      "expected": {
+        "kept": [
+          "aaaaaa-m2xq7ab9zt-1",
+          "bbbbbb-p4kd8wq2rn-1"
+        ],
+        "gaveWay": [
+          {
+            "id": "bbbbbb-p4kd8wq2rn-2",
+            "by": "bbbbbb"
+          }
+        ],
+        "notice": {
+          "to": "bbbbbb",
+          "text": "An answer from your other device was used. Check it."
+        }
+      },
+      "why": "100,000 - 50,000 - 30,000 - 40,000 = -20,000. The newest (12:02, 40,000) gives way; 100,000 - 50,000 - 30,000 = 20,000 fits, so the others stay (P3: repeated until nothing is refused).",
+      "decisions": [
+        "X5",
+        "P3"
+      ]
+    },
+    {
+      "id": "pe-59",
+      "question": "share_out_merged",
+      "title": "The same share-out edited on two phones is one record before the check (X5, D4)",
+      "input": {
+        "limit": 100000,
+        "mine": [
+          {
+            "id": "aaaaaa-m2xq7ab9zt-1",
+            "a": 60000,
+            "at": "2027-01-07T12:00:00.000+09:00",
+            "by": "aaaaaa"
+          }
+        ],
+        "theirs": [
+          {
+            "id": "aaaaaa-m2xq7ab9zt-1",
+            "a": 80000,
+            "at": "2027-01-07T12:05:00.000+09:00",
+            "by": "bbbbbb"
+          }
+        ]
+      },
+      "expected": {
+        "kept": [
+          "aaaaaa-m2xq7ab9zt-1"
+        ]
+      },
+      "why": "One record edited on two phones: the merge keeps the newer copy whole (80,000) [D4], so 100,000 - 80,000 = 20,000 fits and nothing gives way.",
+      "decisions": [
+        "X5",
+        "D4"
+      ]
+    },
+    {
+      "id": "pe-60",
+      "question": "sweep_id",
+      "title": "A 38.31 month-end answer becomes pe:<the occurrence that started its period>:<place> (X watch: the stale 11.1 row)",
+      "input": {
+        "place": "free",
+        "periodTo": "2027-01-24",
+        "pays": [
+          {
+            "occ": "pay@2026-12-25",
+            "lands": "2026-12-25"
+          },
+          {
+            "occ": "pay@2027-01-25",
+            "lands": "2027-01-25"
+          }
+        ]
+      },
+      "expected": "pe:pay@2026-12-25:free",
+      "why": "The answer is dated its period's last day, Sun 24 Jan 2027. The period holding that day started with the pay that landed Fri 25 Dec 2026, so it is named pay@2026-12-25 [T1], never by its last day.",
+      "decisions": [
+        "X watch",
+        "T1",
+        "P2"
+      ]
+    },
+    {
+      "id": "pe-61",
+      "question": "sweep_id",
+      "title": "A month-end answer whose period ended early because the next pay landed early (X watch, T1)",
+      "input": {
+        "place": "food",
+        "periodTo": "2027-01-21",
+        "pays": [
+          {
+            "occ": "pay@2026-12-25",
+            "lands": "2026-12-25"
+          },
+          {
+            "occ": "pay@2027-01-25",
+            "lands": "2027-01-22"
+          }
+        ]
+      },
+      "expected": "pe:pay@2026-12-25:food",
+      "why": "The pay due Mon 25 Jan landed early, Fri 22 Jan, so the period before ended Thu 21 Jan. That period started with the pay of 25 Dec: pe:pay@2026-12-25:food.",
+      "decisions": [
+        "X watch",
+        "T1",
+        "F8"
+      ]
     }
   ],
   "open": []

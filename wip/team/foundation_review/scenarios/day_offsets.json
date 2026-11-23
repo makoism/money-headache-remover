@@ -1,0 +1,78 @@
+{
+  "life": "day_offsets",
+  "title": "The start of a day is in the offset of the device that wrote the record: a moved receipt and a typed spend with no time (decision X9, confirm_review_1 item 9)",
+  "story": "Mako's phone is in Japan (+09:00). A 38.31 copy last saved Tue 24 Nov 2026 at 08:00 +09:00 is moved: its bank figure of 300,000 was typed on Sun 22 Nov at 07:00 +09:00, so the bank opens then. A moved receipt of 5,000 dated 22 Nov has no time: it is told at the start of 22 Nov in the moving device's offset, so it is inside the 07:00 figure [J2, X9]. On the new app the person logs a 2,000 spend dated 22 Nov with no time (start of its day, on this device: inside the figure) and a 1,000 spend told at 08:00 with no offset of its own (08:00 on this device, +09:00: after the figure). Before X9 a day with no time started at midnight UTC (09:00 in Japan), after the 07:00 figure, and a time with no offset was read as UTC. Every amount is made up.",
+  "currency": "JPY",
+  "window": {
+    "from": "2026-11-22",
+    "to": "2026-11-30"
+  },
+  "holidays": {
+    "country": "none",
+    "dates": [],
+    "bank_closed": []
+  },
+  "device_offset": "+09:00",
+  "moved_copy": {
+    "from": "38.31",
+    "saved": "2026-11-24T08:00+09:00"
+  },
+  "accounts": [
+    {
+      "id": "bank",
+      "name": "Bank",
+      "kind": "bank",
+      "currency": "JPY",
+      "minimum": 0,
+      "opening": {
+        "date": "2026-11-22",
+        "told": "2026-11-22T07:00+09:00",
+        "amount": 300000,
+        "note": "38.31 bankNow with its own time"
+      }
+    }
+  ],
+  "income": [],
+  "bills": [],
+  "goals": [],
+  "events": [
+    {
+      "id": "m03",
+      "date": "2026-11-22",
+      "kind": "spend",
+      "account": "bank",
+      "amount": 5000,
+      "moved": true,
+      "note": "moved receipt, no time: the start of 22 Nov in +09:00"
+    },
+    {
+      "id": "s1",
+      "date": "2026-11-22",
+      "told": "2026-11-22",
+      "kind": "spend",
+      "account": "bank",
+      "amount": 2000,
+      "note": "typed with a date only: the start of 22 Nov on this device"
+    },
+    {
+      "id": "s2",
+      "date": "2026-11-22",
+      "told": "2026-11-22T08:00",
+      "kind": "spend",
+      "account": "bank",
+      "amount": 1000,
+      "note": "08:00 on this device (+09:00)"
+    }
+  ],
+  "asks": [
+    {
+      "id": "off-01",
+      "date": "2026-11-24",
+      "question": "bank_today",
+      "account": "bank",
+      "expected": 299000,
+      "why": "300,000 (figure Sun 22 Nov 07:00 +09:00; the moved 5,000 and the typed 2,000 with no time are inside it) - 1,000 (spend 08:00 on this device, after the figure) = 299,000",
+      "note": "Before X9: 292,000 (each of the three taken off again)."
+    }
+  ]
+}

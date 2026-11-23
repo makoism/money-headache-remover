@@ -1,0 +1,220 @@
+{
+  "life": "one_occurrence_amount",
+  "title": "One occurrence changed (`amounts`), keyed by its due date before any move (SCHEMA_V3 5, B8; X watch decided)",
+  "story": "Set up Tue 1 Dec 2026: the bank holds 400,000, of which 50,000 is what is left of Free to spend (typed). Pay of 250,000 on the 10th (moved earlier) starts the period; Free to spend is 50,000 a month. Rent of 80,000 on the 27th (moved later) rises to 85,000 from 1 Feb 2027. December's rent is 95,000 this once (a repair added), and February's 90,000: each is saved in `amounts` under its due date before any move (27 Dec lands Mon 28 Dec; 27 Feb lands Mon 1 Mar). The pays and the December and January rents are ticked; a check-in on Sat 20 Feb 2027 shows 975,000. Every amount is made up.",
+  "currency": "JPY",
+  "window": {
+    "from": "2026-12-01",
+    "to": "2027-03-31"
+  },
+  "holidays": {
+    "country": "none",
+    "dates": [],
+    "bank_closed": []
+  },
+  "main_bank": "bank",
+  "accounts": [
+    {
+      "id": "bank",
+      "name": "Bank",
+      "kind": "bank",
+      "currency": "JPY",
+      "minimum": 0,
+      "opening": {
+        "date": "2026-12-01",
+        "amount": 400000,
+        "split": {
+          "free": 50000
+        }
+      }
+    }
+  ],
+  "income": [
+    {
+      "id": "pay",
+      "name": "Pay",
+      "account": "bank",
+      "amount": 250000,
+      "schedule": {
+        "frequency": "monthly",
+        "day": 10
+      },
+      "weekend_holiday": "move earlier",
+      "starts_period": true
+    }
+  ],
+  "bills": [
+    {
+      "id": "rent",
+      "name": "Rent",
+      "account": "bank",
+      "amount": 80000,
+      "schedule": {
+        "frequency": "monthly",
+        "day": 27
+      },
+      "weekend_holiday": "move later",
+      "changes": [
+        {
+          "from": "2027-02-01",
+          "schedule": {
+            "frequency": "monthly",
+            "day": 27
+          },
+          "amount": 85000
+        }
+      ],
+      "amounts": {
+        "2026-12-27": 95000,
+        "2027-02-27": 90000
+      }
+    }
+  ],
+  "goals": [],
+  "plan": {
+    "lines": [],
+    "free": {
+      "per": "month",
+      "amount": 50000
+    }
+  },
+  "events": [
+    {
+      "id": "set:pay@2026-12-10",
+      "date": "2026-12-10",
+      "told": "2026-12-10T12:00",
+      "kind": "pay_in",
+      "account": "bank",
+      "amount": 250000,
+      "settles": "pay@2026-12-10"
+    },
+    {
+      "id": "set:rent@2026-12-27",
+      "date": "2026-12-28",
+      "told": "2026-12-28T12:00",
+      "kind": "bill_paid",
+      "account": "bank",
+      "amount": 95000,
+      "settles": "rent@2026-12-27"
+    },
+    {
+      "id": "set:pay@2027-01-10",
+      "date": "2027-01-08",
+      "told": "2027-01-08T12:00",
+      "kind": "pay_in",
+      "account": "bank",
+      "amount": 250000,
+      "settles": "pay@2027-01-10"
+    },
+    {
+      "id": "set:rent@2027-01-27",
+      "date": "2027-01-27",
+      "told": "2027-01-27T12:00",
+      "kind": "bill_paid",
+      "account": "bank",
+      "amount": 80000,
+      "settles": "rent@2027-01-27"
+    },
+    {
+      "id": "set:pay@2027-02-10",
+      "date": "2027-02-10",
+      "told": "2027-02-10T12:00",
+      "kind": "pay_in",
+      "account": "bank",
+      "amount": 250000,
+      "settles": "pay@2027-02-10"
+    },
+    {
+      "id": "c1",
+      "date": "2027-02-20",
+      "told": "2027-02-20T10:00",
+      "kind": "check",
+      "account": "bank",
+      "amount": 975000
+    },
+    {
+      "id": "set:pay@2027-03-10",
+      "date": "2027-03-10",
+      "told": "2027-03-10T12:00",
+      "kind": "pay_in",
+      "account": "bank",
+      "amount": 250000,
+      "settles": "pay@2027-03-10"
+    }
+  ],
+  "asks": [
+    {
+      "id": "amt-01",
+      "date": "2026-12-11",
+      "question": "due_before_next_pay",
+      "expected": {
+        "items": [
+          {
+            "item": "rent@2026-12-27",
+            "lands": "2026-12-28",
+            "amount": 95000
+          }
+        ],
+        "total": 95000
+      },
+      "why": "95,000 (December's rent, changed this once, lands Mon 28 Dec) = 95,000",
+      "note": "Before `amounts` was read: 80,000."
+    },
+    {
+      "id": "amt-02",
+      "date": "2026-12-11",
+      "question": "safe_to_spend",
+      "account": "bank",
+      "expected": 555000,
+      "why": "650,000 (Bank today) - 95,000 (Rent 27 Dec, this one changed to 95,000) = 555,000"
+    },
+    {
+      "id": "amt-03",
+      "date": "2027-02-11",
+      "question": "due_before_next_pay",
+      "expected": {
+        "items": [
+          {
+            "item": "rent@2027-02-27",
+            "lands": "2027-03-01",
+            "amount": 90000
+          }
+        ],
+        "total": 90000
+      },
+      "why": "90,000 (February's rent, changed this once; it wins over the 85,000 step from 1 Feb) = 90,000"
+    },
+    {
+      "id": "amt-04",
+      "date": "2027-03-02",
+      "question": "check_in_list",
+      "expected": {
+        "items": [
+          {
+            "item": "rent@2027-02-27",
+            "lands": "2027-03-01",
+            "amount": 90000
+          }
+        ],
+        "total": 90000
+      },
+      "why": "90,000 (February's rent, keyed by its due date Sat 27 Feb, landed Mon 1 Mar) = 90,000"
+    },
+    {
+      "id": "amt-05",
+      "date": "2027-03-11",
+      "question": "due_before_next_pay",
+      "expected": {
+        "items": [
+          {
+            "item": "rent@2027-03-27",
+            "lands": "2027-03-29",
+            "amount": 85000
+          }
+        ],
+        "total": 85000
+      },
+      "why": "85,000 (March's rent: no change this once, so the step from 1 Feb) = 85,000"
+    }
+  ]
+}

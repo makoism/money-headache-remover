@@ -1,0 +1,218 @@
+{
+  "life": "day_offset_kinds",
+  "title": "Records with a date only, on the opening day, start at the start of that day in the device's offset: every kind that moves money (decision X9)",
+  "story": "Set up Wed 2 Dec 2026 at 07:00 on a phone in Japan (+09:00): the bank holds 500,000, an e-wallet 10,000, a dollar wallet 100.00, a card owes 30,000 (its 15 Nov statement was 0 and paid) and a credit line owes 100,000. Pay of 250,000 is due that day (the 2nd). Records dated 2 Dec with no time of their own (a ticked pay, a refund, a top-up to the e-wallet, a card payment, a draw on the credit line, a change of yen into dollars, an accepted difference) start at the start of 2 Dec on this device, so each is inside the 07:00 opening. Before X9 a date with no time started at midnight UTC (09:00 in Japan), after the opening, and every one of them moved the figures again. Every amount is made up.",
+  "currency": "JPY",
+  "window": {
+    "from": "2026-12-02",
+    "to": "2026-12-31"
+  },
+  "holidays": {
+    "country": "none",
+    "dates": [],
+    "bank_closed": []
+  },
+  "device_offset": "+09:00",
+  "main_bank": "bank",
+  "accounts": [
+    {
+      "id": "bank",
+      "name": "Bank",
+      "kind": "bank",
+      "currency": "JPY",
+      "minimum": 0,
+      "opening": {
+        "date": "2026-12-02",
+        "amount": 500000,
+        "told": "2026-12-02T07:00+09:00"
+      }
+    },
+    {
+      "id": "wallet",
+      "name": "E-wallet",
+      "kind": "ewallet",
+      "currency": "JPY",
+      "minimum": 0,
+      "opening": {
+        "date": "2026-12-02",
+        "amount": 10000,
+        "told": "2026-12-02T07:00+09:00"
+      }
+    },
+    {
+      "id": "usd",
+      "name": "Dollar wallet",
+      "kind": "wallet",
+      "currency": "USD",
+      "minimum": 0,
+      "opening": {
+        "date": "2026-12-02",
+        "amount": 100.0,
+        "told": "2026-12-02T07:00+09:00"
+      }
+    },
+    {
+      "id": "card",
+      "name": "Card",
+      "kind": "card",
+      "currency": "JPY",
+      "statement_close_day": 15,
+      "payment": {
+        "day": 5,
+        "months_after_close": 1,
+        "from": "bank",
+        "weekend_holiday": "move later"
+      },
+      "opening": {
+        "date": "2026-12-02",
+        "told": "2026-12-02T07:00+09:00",
+        "current": 30000,
+        "statement": {
+          "closed": "2026-11-15",
+          "amount": 0,
+          "paid": true
+        }
+      }
+    },
+    {
+      "id": "line",
+      "name": "Credit line",
+      "kind": "loan",
+      "currency": "JPY",
+      "payment": {
+        "day": 27,
+        "from": "bank",
+        "weekend_holiday": "move later",
+        "amount": 10000
+      },
+      "opening": {
+        "date": "2026-12-02",
+        "told": "2026-12-02T07:00+09:00",
+        "owed": 100000
+      }
+    }
+  ],
+  "income": [
+    {
+      "id": "pay",
+      "name": "Pay",
+      "account": "bank",
+      "amount": 250000,
+      "schedule": {
+        "frequency": "monthly",
+        "day": 2
+      },
+      "weekend_holiday": "move earlier",
+      "starts_period": true
+    }
+  ],
+  "bills": [],
+  "goals": [],
+  "events": [
+    {
+      "id": "set:pay@2026-12-02",
+      "date": "2026-12-02",
+      "told": "2026-12-02",
+      "kind": "pay_in",
+      "account": "bank",
+      "amount": 250000,
+      "settles": "pay@2026-12-02"
+    },
+    {
+      "id": "r1",
+      "date": "2026-12-02",
+      "told": "2026-12-02",
+      "kind": "refund",
+      "account": "bank",
+      "amount": 3000
+    },
+    {
+      "id": "t1",
+      "date": "2026-12-02",
+      "told": "2026-12-02",
+      "kind": "transfer",
+      "from": "bank",
+      "to": "wallet",
+      "amount": 5000
+    },
+    {
+      "id": "cp1",
+      "date": "2026-12-02",
+      "told": "2026-12-02",
+      "kind": "card_payment",
+      "from": "bank",
+      "card": "card",
+      "amount": 7000
+    },
+    {
+      "id": "b1",
+      "date": "2026-12-02",
+      "told": "2026-12-02",
+      "kind": "borrow",
+      "from": "line",
+      "to": "bank",
+      "amount": 11000
+    },
+    {
+      "id": "cv1",
+      "date": "2026-12-02",
+      "told": "2026-12-02",
+      "kind": "convert",
+      "from": "bank",
+      "to": "usd",
+      "amount_out": 13000,
+      "amount_in": 100.0
+    },
+    {
+      "id": "a1",
+      "date": "2026-12-02",
+      "told": "2026-12-02",
+      "kind": "adjust",
+      "account": "bank",
+      "amount": 17000
+    }
+  ],
+  "asks": [
+    {
+      "id": "kinds-01",
+      "date": "2026-12-03",
+      "question": "bank_today",
+      "account": "bank",
+      "expected": 500000,
+      "why": "500,000 (opening, Wed 2 Dec 07:00 +09:00; the pay, refund, top-up, card payment, draw, change into dollars and accepted difference dated 2 Dec with no time are inside it) = 500,000",
+      "note": "Before X9: 756,000."
+    },
+    {
+      "id": "kinds-02",
+      "date": "2026-12-03",
+      "question": "bank_today",
+      "account": "wallet",
+      "expected": 10000,
+      "why": "10,000 (opening; the top-up is inside it) = 10,000"
+    },
+    {
+      "id": "kinds-03",
+      "date": "2026-12-03",
+      "question": "bank_today",
+      "account": "usd",
+      "expected": 100.0,
+      "why": "100.00 (opening; the change into dollars is inside it) = 100.00"
+    },
+    {
+      "id": "kinds-04",
+      "date": "2026-12-03",
+      "question": "owed_now",
+      "account": "card",
+      "expected": 30000,
+      "why": "30,000 (owed at the opening; the card payment is inside it) = 30,000"
+    },
+    {
+      "id": "kinds-05",
+      "date": "2026-12-03",
+      "question": "owed_now",
+      "account": "line",
+      "expected": 100000,
+      "why": "100,000 (owed at the opening; the draw is inside it) = 100,000"
+    }
+  ]
+}

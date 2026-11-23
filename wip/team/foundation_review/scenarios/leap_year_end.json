@@ -1,0 +1,214 @@
+{
+  "life": "leap_year_end",
+  "title": "A leap day and the year end: a yearly bill on 29 Feb, pay on the 31st moved earlier, a card closing on the last day (confirm_review_1 situation c9)",
+  "story": "Set up Mon 20 Dec 2027: the bank holds 100,000. Pay of 250,000 on the 31st (the last day in a shorter month), moved earlier: 31 Dec 2027 is a holiday, so it lands Thu 30 Dec. A card closes on the month's last day and is paid on the 27th of the next month (moved later; 3 Jan 2028 is a holiday too); at setup it owes 10,000, its 30 Nov statement was 0 and paid. A yearly insurance of 36,000 is due 29 Feb (moved later). The pays of 30 Dec, 31 Jan and 29 Feb are ticked, and the card's 27 Jan payment; on Thu 10 Feb 5,000 is spent on the card. Every amount is made up.",
+  "currency": "JPY",
+  "window": {
+    "from": "2027-12-20",
+    "to": "2028-03-31"
+  },
+  "holidays": {
+    "country": "made up",
+    "dates": [
+      {
+        "date": "2028-01-03"
+      },
+      {
+        "date": "2027-12-31"
+      }
+    ],
+    "bank_closed": []
+  },
+  "main_bank": "bank",
+  "accounts": [
+    {
+      "id": "bank",
+      "name": "Bank",
+      "kind": "bank",
+      "currency": "JPY",
+      "minimum": 0,
+      "opening": {
+        "date": "2027-12-20",
+        "amount": 100000
+      }
+    },
+    {
+      "id": "card",
+      "name": "Card",
+      "kind": "card",
+      "currency": "JPY",
+      "statement_close_day": "last",
+      "payment": {
+        "day": 27,
+        "months_after_close": 1,
+        "from": "bank",
+        "weekend_holiday": "move later"
+      },
+      "opening": {
+        "date": "2027-12-20",
+        "current": 10000,
+        "statement": {
+          "closed": "2027-11-30",
+          "amount": 0,
+          "paid": true
+        }
+      }
+    }
+  ],
+  "income": [
+    {
+      "id": "pay",
+      "name": "Pay",
+      "account": "bank",
+      "amount": 250000,
+      "schedule": {
+        "frequency": "monthly",
+        "day": 31
+      },
+      "weekend_holiday": "move earlier",
+      "starts_period": true
+    }
+  ],
+  "bills": [
+    {
+      "id": "ins",
+      "name": "Insurance",
+      "account": "bank",
+      "amount": 36000,
+      "schedule": {
+        "frequency": "yearly",
+        "date": "02-29"
+      },
+      "weekend_holiday": "move later"
+    }
+  ],
+  "goals": [],
+  "events": [
+    {
+      "id": "set:pay@2027-12-31",
+      "date": "2027-12-30",
+      "told": "2027-12-30T12:00",
+      "kind": "pay_in",
+      "account": "bank",
+      "amount": 250000,
+      "settles": "pay@2027-12-31"
+    },
+    {
+      "id": "set:card@2028-01-27",
+      "date": "2028-01-27",
+      "told": "2028-01-27T12:00",
+      "kind": "card_payment",
+      "from": "bank",
+      "card": "card",
+      "amount": 10000,
+      "settles": "card@2028-01-27"
+    },
+    {
+      "id": "set:pay@2028-01-31",
+      "date": "2028-01-31",
+      "told": "2028-01-31T12:00",
+      "kind": "pay_in",
+      "account": "bank",
+      "amount": 250000,
+      "settles": "pay@2028-01-31"
+    },
+    {
+      "id": "s1",
+      "date": "2028-02-10",
+      "told": "2028-02-10T12:00",
+      "kind": "spend",
+      "account": "card",
+      "amount": 5000
+    },
+    {
+      "id": "set:pay@2028-02-29",
+      "date": "2028-02-29",
+      "told": "2028-02-29T12:00",
+      "kind": "pay_in",
+      "account": "bank",
+      "amount": 250000,
+      "settles": "pay@2028-02-29"
+    }
+  ],
+  "asks": [
+    {
+      "id": "leap-01",
+      "date": "2027-12-20",
+      "question": "days_to_next_pay",
+      "expected": {
+        "days": 10,
+        "next_pay": "2027-12-30",
+        "item": "pay@2027-12-31"
+      },
+      "why": "2027-12-30 - 2027-12-20 = 10",
+      "note": "Fri 31 Dec is a holiday: moved earlier to Thu 30 Dec."
+    },
+    {
+      "id": "leap-02",
+      "date": "2027-12-20",
+      "question": "card_due",
+      "account": "card",
+      "expected": {
+        "amount": 10000,
+        "payment_date": "2028-01-27",
+        "statement": "open"
+      },
+      "why": "10,000 (owed at the opening, in the statement closing Fri 31 Dec) = 10,000"
+    },
+    {
+      "id": "leap-03",
+      "date": "2028-02-01",
+      "question": "due_before_next_pay",
+      "expected": {
+        "items": [],
+        "total": 0
+      },
+      "why": "none = 0",
+      "note": "The next pay is due 31 Feb, the month's last day, Tue 29 Feb; the insurance lands that day too, so nothing lands before it. The 31 Jan statement was 0."
+    },
+    {
+      "id": "leap-04",
+      "date": "2028-03-01",
+      "question": "card_due",
+      "account": "card",
+      "expected": {
+        "amount": 5000,
+        "payment_date": "2028-03-27",
+        "statement": "closed"
+      },
+      "why": "5,000 (spend Thu 10 Feb, in the statement closed Tue 29 Feb, the leap day) = 5,000"
+    },
+    {
+      "id": "leap-05",
+      "date": "2028-03-01",
+      "question": "days_to_next_pay",
+      "expected": {
+        "days": 30,
+        "next_pay": "2028-03-31",
+        "item": "pay@2028-03-31"
+      },
+      "why": "2028-03-31 - 2028-03-01 = 30"
+    },
+    {
+      "id": "leap-06",
+      "date": "2028-03-02",
+      "question": "not_seen_yet",
+      "expected": {
+        "items": [
+          {
+            "item": "ins@2028-02-29",
+            "lands": "2028-02-29",
+            "amount": 36000,
+            "direction": "out"
+          }
+        ],
+        "money_in": 0,
+        "money_out": 36000
+      },
+      "why": {
+        "money_in": "none = 0",
+        "money_out": "36,000 (Insurance, due the leap day Tue 29 Feb, past its posting window) = 36,000"
+      }
+    }
+  ]
+}

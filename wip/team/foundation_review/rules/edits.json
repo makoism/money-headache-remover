@@ -1,0 +1,317 @@
+{
+  "area": "edits",
+  "title": "What setup and an edit may save: a schedule change never before its latest settled or named occurrence, a goal's own account in the home currency, setup's not-yet questions (X8, W3, X3)",
+  "written_in": "SCHEMA_V3 sections 4, 5 and 8 (the opening)",
+  "notes": "Hand-worked cases for edit-time and setup rules that the reference model does not hold [H7]. All amounts and dates are made up.",
+  "defaults": {},
+  "cases": [
+    {
+      "id": "ed-01",
+      "question": "change_from",
+      "title": "A pay day change dated before a settled pay is refused; the edit offers the day after it (X8, c8)",
+      "input": {
+        "schedule": "pay",
+        "wanted": "2026-12-01",
+        "settles": [
+          "pay@2026-11-10",
+          "pay@2026-12-10",
+          "rent@2026-12-27"
+        ]
+      },
+      "expected": {
+        "refused": true,
+        "latest": "pay@2026-12-10",
+        "offer": "2026-12-11"
+      },
+      "why": "The latest settled occurrence of the pay is pay@2026-12-10 (rent's settle is another schedule's). 1 Dec is on or before it, so the change would rename or remove a settled pay [X8]: refused, and the edit offers Fri 11 Dec, the first day after it.",
+      "decisions": [
+        "X8",
+        "H2"
+      ]
+    },
+    {
+      "id": "ed-02",
+      "question": "change_from",
+      "title": "A change dated after every settled pay is saved as asked (X8)",
+      "input": {
+        "schedule": "pay",
+        "wanted": "2027-01-01",
+        "settles": [
+          "pay@2026-12-10"
+        ]
+      },
+      "expected": {
+        "ok": true
+      },
+      "why": "1 Jan 2027 is after pay@2026-12-10, the latest settled occurrence, so nothing settled or named is rewritten [X8, H2].",
+      "decisions": [
+        "X8"
+      ]
+    },
+    {
+      "id": "ed-03",
+      "question": "change_from",
+      "title": "A change dated on the settled occurrence's own due date is refused (X8)",
+      "input": {
+        "schedule": "pay",
+        "wanted": "2026-12-10",
+        "settles": [
+          "pay@2026-12-10"
+        ]
+      },
+      "expected": {
+        "refused": true,
+        "latest": "pay@2026-12-10",
+        "offer": "2026-12-11"
+      },
+      "why": "On or before: a change from 10 Dec would own the 10 Dec occurrence [H2], so it is refused and 11 Dec offered [X8].",
+      "decisions": [
+        "X8"
+      ]
+    },
+    {
+      "id": "ed-04",
+      "question": "change_from",
+      "title": "An occurrence named by `amounts` counts, even when not settled (X8)",
+      "input": {
+        "schedule": "pay",
+        "wanted": "2027-01-05",
+        "settles": [
+          "pay@2026-12-10"
+        ],
+        "amounts": {
+          "2027-01-10": 260000
+        }
+      },
+      "expected": {
+        "refused": true,
+        "latest": "pay@2027-01-10",
+        "offer": "2027-01-11"
+      },
+      "why": "`amounts` names pay@2027-01-10 (keyed by its due date). A change from 5 Jan would make that key name nothing [X8]: refused, 11 Jan offered.",
+      "decisions": [
+        "X8",
+        "B8"
+      ]
+    },
+    {
+      "id": "ed-05",
+      "question": "change_from",
+      "title": "Periods named by the pay (`pe:` and `ps:`) count (X8, T1)",
+      "input": {
+        "schedule": "pay",
+        "wanted": "2027-02-01",
+        "settles": [
+          "pay@2026-12-10"
+        ],
+        "pe": [
+          "pe:pay@2027-01-10:free"
+        ],
+        "ps": [
+          "ps:pay@2027-02-10"
+        ]
+      },
+      "expected": {
+        "refused": true,
+        "latest": "pay@2027-02-10",
+        "offer": "2027-02-11"
+      },
+      "why": "The period-end answer names pay@2027-01-10 and the period start stands in for pay@2027-02-10 [T1]. The latest is 10 Feb, so a change from 1 Feb is refused and 11 Feb offered [X8].",
+      "decisions": [
+        "X8",
+        "T1"
+      ]
+    },
+    {
+      "id": "ed-06",
+      "question": "change_from",
+      "title": "A one-period override (`once`) keyed by a pay counts (X8)",
+      "input": {
+        "schedule": "pay",
+        "wanted": "2027-03-01",
+        "settles": [
+          "pay@2027-02-10"
+        ],
+        "once": {
+          "pay@2027-03-10": 20000
+        }
+      },
+      "expected": {
+        "refused": true,
+        "latest": "pay@2027-03-10",
+        "offer": "2027-03-11"
+      },
+      "why": "A budget line's `once` is keyed pay@2027-03-10 [T1]; a change from 1 Mar would leave it naming nothing [X8].",
+      "decisions": [
+        "X8",
+        "T1",
+        "B8"
+      ]
+    },
+    {
+      "id": "ed-07",
+      "question": "change_from",
+      "title": "Only the changed schedule's own occurrences count (X8)",
+      "input": {
+        "schedule": "rent",
+        "wanted": "2026-12-01",
+        "settles": [
+          "pay@2026-12-10",
+          "rent@2026-11-27"
+        ],
+        "pe": [
+          "pe:pay@2027-01-10:free"
+        ]
+      },
+      "expected": {
+        "ok": true
+      },
+      "why": "The rent's latest settled occurrence is rent@2026-11-27; the pay's settle and the period named by the pay are another schedule's. 1 Dec is after 27 Nov, so the rent change is saved [X8].",
+      "decisions": [
+        "X8"
+      ]
+    },
+    {
+      "id": "ed-08",
+      "question": "own_account",
+      "title": "A goal's money moved to its own account in the home currency is allowed (W3, V1)",
+      "input": {
+        "home": "JPY",
+        "account": {
+          "id": "sav",
+          "cur": "JPY"
+        }
+      },
+      "expected": {
+        "ok": true
+      },
+      "why": "The account is in yen, the home currency [W3].",
+      "decisions": [
+        "W3",
+        "V1"
+      ]
+    },
+    {
+      "id": "ed-09",
+      "question": "own_account",
+      "title": "A goal's own account in another currency is stage 2 (W3)",
+      "input": {
+        "home": "JPY",
+        "account": {
+          "id": "php",
+          "cur": "PHP"
+        }
+      },
+      "expected": {
+        "refused": {
+          "account": "php",
+          "cur": "PHP",
+          "stage": 2
+        }
+      },
+      "why": "In version one a goal's own account must be in the home currency; a peso account for a yen home is stage 2 [W3].",
+      "decisions": [
+        "W3"
+      ]
+    },
+    {
+      "id": "ed-10",
+      "question": "own_account",
+      "title": "After a change of home currency the new home currency is the one checked (W3, O6)",
+      "input": {
+        "home": "PHP",
+        "account": {
+          "id": "php",
+          "cur": "PHP"
+        }
+      },
+      "expected": {
+        "ok": true
+      },
+      "why": "The home currency in force is pesos [O6], so a peso account may back a goal [W3].",
+      "decisions": [
+        "W3",
+        "O6"
+      ]
+    },
+    {
+      "id": "ed-11",
+      "question": "not_yet_asks",
+      "title": "Setup asks about pay and bills due from the last pay to the setup day, a pay due that day first (X3, F20)",
+      "input": {
+        "setup": "2027-06-25",
+        "lastPay": "2027-05-25",
+        "items": [
+          {
+            "occ": "rent@2027-05-27",
+            "kind": "bill",
+            "due": "2027-05-27"
+          },
+          {
+            "occ": "phone@2027-06-21",
+            "kind": "bill",
+            "due": "2027-06-21"
+          },
+          {
+            "occ": "gym@2027-06-25",
+            "kind": "bill",
+            "due": "2027-06-25"
+          },
+          {
+            "occ": "pay@2027-06-25",
+            "kind": "income",
+            "due": "2027-06-25"
+          },
+          {
+            "occ": "pay@2027-05-25",
+            "kind": "income",
+            "due": "2027-05-25"
+          },
+          {
+            "occ": "rent@2027-06-27",
+            "kind": "bill",
+            "due": "2027-06-27"
+          }
+        ]
+      },
+      "expected": [
+        "pay@2027-06-25",
+        "rent@2027-05-27",
+        "phone@2027-06-21",
+        "gym@2027-06-25"
+      ],
+      "why": "Asked: what is due after the last pay (25 May, already in) up to and including the setup day, Fri 25 Jun [X3]. The pay due that day is asked first; the rest by due date. Rent of 27 Jun is after setup and is simply expected.",
+      "decisions": [
+        "X3",
+        "F20"
+      ]
+    },
+    {
+      "id": "ed-12",
+      "question": "not_yet_asks",
+      "title": "Nothing due since the last pay: setup asks nothing (X3)",
+      "input": {
+        "setup": "2027-06-10",
+        "lastPay": "2027-05-25",
+        "items": [
+          {
+            "occ": "pay@2027-05-25",
+            "kind": "income",
+            "due": "2027-05-25"
+          },
+          {
+            "occ": "rent@2027-06-27",
+            "kind": "bill",
+            "due": "2027-06-27"
+          }
+        ]
+      },
+      "expected": [],
+      "why": "Nothing is due between the last pay and the setup day, so there is nothing to ask [X3].",
+      "decisions": [
+        "X3"
+      ]
+    }
+  ],
+  "open": []
+}

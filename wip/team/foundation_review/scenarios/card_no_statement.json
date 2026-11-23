@@ -1,0 +1,37 @@
+{
+  "life": "card_no_statement",
+  "title": "A card with a known close day and no typed last statement: the first close after the opening holds the opening balance (decision X6, confirm_review_1 item 6)",
+  "story": "Set up Fri 20 Nov 2026. The bank holds 300,000. A card closes on the 25th and is paid on the 10th of the next month from the bank (no weekend move); at setup it shows 50,000 owed and the person does not type its last statement. On Sun 22 Nov 20,000 is spent on the card. Pay of 250,000 lands on the 15th and starts the period. X6: the first close after the opening (Wed 25 Nov) holds the opening balance plus what came after, and is paid on Thu 10 Dec; statements follow from there. Before X6 the model found no close day at all and never asked for a payment. Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2026-11-20", "to": "2026-12-31" },
+  "holidays": { "country": "none", "dates": [], "bank_closed": [] },
+  "main_bank": "bank",
+  "accounts": [
+    { "id": "bank", "name": "Bank", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2026-11-20", "amount": 300000 } },
+    { "id": "card", "name": "Card", "kind": "card", "currency": "JPY", "statement_close_day": 25,
+      "payment": { "day": 10, "months_after_close": 1, "from": "bank", "weekend_holiday": "none" },
+      "opening": { "date": "2026-11-20", "current": 50000, "note": "no last statement typed" } }
+  ],
+  "income": [
+    { "id": "pay", "name": "Pay", "account": "bank", "amount": 250000, "schedule": { "frequency": "monthly", "day": 15 }, "weekend_holiday": "none", "starts_period": true }
+  ],
+  "bills": [],
+  "goals": [],
+  "events": [
+    { "id": "s1", "date": "2026-11-22", "told": "2026-11-22", "kind": "spend", "account": "card", "amount": 20000 }
+  ],
+  "asks": [
+    { "id": "cns-01", "date": "2026-11-23", "question": "card_due", "account": "card", "expected": { "amount": 70000, "payment_date": "2026-12-10", "statement": "open" },
+      "why": "50,000 (on the card at the opening, Fri 20 Nov) + 20,000 (spend Sun 22 Nov) = 70,000",
+      "note": "The first close after the opening is Wed 25 Nov; it holds the opening balance and what came after [X6], paid Thu 10 Dec." },
+    { "id": "cns-02", "date": "2026-11-23", "question": "owed_now", "account": "card", "expected": 70000,
+      "why": "50,000 (opening) + 20,000 (Sun 22 Nov) = 70,000" },
+    { "id": "cns-03", "date": "2026-11-23", "question": "safe_to_spend", "account": "bank", "expected": 230000,
+      "why": "300,000 (Bank today) - 70,000 (Card, still open, closes 25 Nov, paid Thu 10 Dec) = 230,000",
+      "note": "Before X6 the model gave 300,000: the card was never due." },
+    { "id": "cns-04", "date": "2026-12-01", "question": "card_due", "account": "card", "expected": { "amount": 70000, "payment_date": "2026-12-10", "statement": "closed" },
+      "why": "50,000 (opening) + 20,000 (Sun 22 Nov) = 70,000" },
+    { "id": "cns-05", "date": "2026-12-01", "question": "due_before_next_pay", "expected": { "items": [ { "item": "card@2026-12-10", "lands": "2026-12-10", "amount": 70000 } ], "total": 70000 },
+      "why": "70,000 (the statement closed Wed 25 Nov, paid Thu 10 Dec, before the pay of Tue 15 Dec) = 70,000" }
+  ]
+}

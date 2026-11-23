@@ -1,0 +1,121 @@
+{
+  "life": "payoff_place",
+  "title": "A pay-off place names the debt it pays down (`pays`): its money is set aside like any place and is not a payment (SCHEMA_V3 4; X watch decided)",
+  "story": "Set up Mon 4 Jan 2027: the bank holds 300,000, of which 50,000 is what is left of Free to spend (typed). A car loan owes 500,000 and asks 20,000 on the 10th (moved later), paid from the bank. The place Pay off the car (kind payoff) names the car loan in `pays`; a pay-off place is never opened as savings, so it starts at nothing. On Wed 6 Jan the person sets 100,000 aside in it. Pay of 250,000 on the 25th (moved earlier); Free to spend is 50,000 a month. Every amount is made up.",
+  "currency": "JPY",
+  "window": {
+    "from": "2027-01-04",
+    "to": "2027-02-28"
+  },
+  "holidays": {
+    "country": "none",
+    "dates": [],
+    "bank_closed": []
+  },
+  "main_bank": "bank",
+  "accounts": [
+    {
+      "id": "bank",
+      "name": "Bank",
+      "kind": "bank",
+      "currency": "JPY",
+      "minimum": 0,
+      "opening": {
+        "date": "2027-01-04",
+        "amount": 300000,
+        "split": {
+          "free": 50000
+        }
+      }
+    },
+    {
+      "id": "carloan",
+      "name": "Car loan",
+      "kind": "loan",
+      "currency": "JPY",
+      "payment": {
+        "day": 10,
+        "from": "bank",
+        "weekend_holiday": "move later",
+        "amount": 20000
+      },
+      "opening": {
+        "date": "2027-01-04",
+        "owed": 500000
+      }
+    }
+  ],
+  "income": [
+    {
+      "id": "pay",
+      "name": "Pay",
+      "account": "bank",
+      "amount": 250000,
+      "schedule": {
+        "frequency": "monthly",
+        "day": 25
+      },
+      "weekend_holiday": "move earlier",
+      "starts_period": true
+    }
+  ],
+  "bills": [],
+  "goals": [
+    {
+      "id": "payoff",
+      "name": "Pay off the car",
+      "kind": "payoff",
+      "pays": "carloan",
+      "kept_in": "bank",
+      "due": "2027-12-31"
+    }
+  ],
+  "plan": {
+    "lines": [],
+    "free": {
+      "per": "month",
+      "amount": 50000
+    }
+  },
+  "events": [
+    {
+      "id": "sa1",
+      "date": "2027-01-06",
+      "told": "2027-01-06T12:00",
+      "kind": "set_aside",
+      "account": "bank",
+      "goal": "payoff",
+      "amount": 100000
+    }
+  ],
+  "asks": [
+    {
+      "id": "pays-01",
+      "date": "2027-01-07",
+      "question": "place",
+      "account": "bank",
+      "place": "payoff",
+      "expected": {
+        "kept": 100000,
+        "due": "2027-12-31"
+      },
+      "why": "0 (opening: a pay-off place is never opened as savings) + 100,000 (set aside Wed 6 Jan) = 100,000"
+    },
+    {
+      "id": "pays-02",
+      "date": "2027-01-07",
+      "question": "owed_now",
+      "account": "carloan",
+      "expected": 500000,
+      "why": "500,000 (owed at the opening; money set aside to pay it off is not a payment) = 500,000"
+    },
+    {
+      "id": "pays-03",
+      "date": "2027-01-07",
+      "question": "safe_to_spend",
+      "account": "bank",
+      "expected": 180000,
+      "why": "300,000 (Bank today) - 100,000 (Pay off the car, kept in it) - 20,000 (Car loan 11 Jan) = 180,000"
+    }
+  ]
+}

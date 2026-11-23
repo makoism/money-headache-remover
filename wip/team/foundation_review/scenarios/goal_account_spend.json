@@ -1,0 +1,74 @@
+{
+  "life": "goal_account_spend",
+  "title": "An account that backs a goal is not spent from by default (SCHEMA_V3 3, confirmed in W)",
+  "story": "Set up Mon 4 Jan 2027: the bank holds 100,000; a savings account holds 80,000 and backs the goal Trip (50,000 of it, kept in its own account). There is no fixed pay and no plan, so the headline is what the spend-from accounts can spare. W confirms SCHEMA_V3 section 3: an account that backs a goal (`keptIn.mode 'ownAccount'`) is not spent from unless the person says so. Before, the savings account's 30,000 above Trip counted. Every amount is made up.",
+  "currency": "JPY",
+  "window": {
+    "from": "2027-01-04",
+    "to": "2027-01-31"
+  },
+  "holidays": {
+    "country": "none",
+    "dates": [],
+    "bank_closed": []
+  },
+  "main_bank": "bank",
+  "accounts": [
+    {
+      "id": "bank",
+      "name": "Bank",
+      "kind": "bank",
+      "currency": "JPY",
+      "minimum": 0,
+      "opening": {
+        "date": "2027-01-04",
+        "amount": 100000
+      }
+    },
+    {
+      "id": "sav",
+      "name": "Savings",
+      "kind": "bank",
+      "currency": "JPY",
+      "minimum": 0,
+      "opening": {
+        "date": "2027-01-04",
+        "amount": 80000
+      }
+    }
+  ],
+  "income": [],
+  "bills": [],
+  "goals": [
+    {
+      "id": "trip",
+      "name": "Trip",
+      "kept_in": "sav",
+      "mode": "own_account",
+      "due": "2027-08-01",
+      "opening": {
+        "date": "2027-01-04",
+        "amount": 50000
+      }
+    }
+  ],
+  "events": [],
+  "asks": [
+    {
+      "id": "gas-01",
+      "date": "2027-01-05",
+      "question": "headline",
+      "expected": 100000,
+      "why": "100,000 (the bank's safe to spend; Savings backs a goal, so it is not spent from) = 100,000",
+      "note": "Before: 130,000."
+    },
+    {
+      "id": "gas-02",
+      "date": "2027-01-05",
+      "question": "safe_to_spend",
+      "account": "sav",
+      "expected": 30000,
+      "why": "80,000 (Savings today) - 50,000 (Trip, kept in it) = 30,000"
+    }
+  ]
+}

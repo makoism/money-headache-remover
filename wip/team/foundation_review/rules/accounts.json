@@ -691,6 +691,202 @@
         "T",
         "P6"
       ]
+    },
+    {
+      "id": "acc-20",
+      "question": "close",
+      "title": "Closing the main bank moves every schedule tied to it: pay, bills, transfers out and in, self-logged spends (W1)",
+      "input": {
+        "account": "old",
+        "kind": "bank",
+        "mainBank": true,
+        "date": "2027-01-15",
+        "figure": 200000,
+        "transfers": [
+          {
+            "to": "b",
+            "a": 200000
+          }
+        ],
+        "lines": [],
+        "free": {
+          "acct": null
+        },
+        "schedules": [
+          {
+            "id": "pay",
+            "kind": "income",
+            "acct": "old"
+          },
+          {
+            "id": "phone",
+            "kind": "bill",
+            "acct": "old"
+          },
+          {
+            "id": "top",
+            "kind": "transfer",
+            "acct": "old",
+            "acct2": "wallet"
+          },
+          {
+            "id": "sweep",
+            "kind": "transfer",
+            "acct": "sav",
+            "acct2": "old"
+          },
+          {
+            "id": "gym",
+            "kind": "autoSpend",
+            "acct": "old"
+          }
+        ],
+        "newLinks": {
+          "mainBank": "b"
+        }
+      },
+      "expected": {
+        "closed": "2027-01-15",
+        "events": [
+          {
+            "k": "check",
+            "date": "2027-01-15",
+            "acct": "old",
+            "a": 200000
+          },
+          {
+            "id": "close:old",
+            "k": "transfer",
+            "date": "2027-01-15",
+            "acct": "old",
+            "acct2": "b",
+            "a": 200000
+          }
+        ],
+        "ends": {},
+        "links": {
+          "mainBank": "b"
+        },
+        "moved": {
+          "mainBank": "b",
+          "free": "b",
+          "schedules": {
+            "pay": "b",
+            "phone": "b",
+            "top": "b",
+            "gym": "b"
+          },
+          "schedulesTo": {
+            "sweep": "b"
+          }
+        }
+      },
+      "why": "200,000 (final figure) - 200,000 (to the new bank) = 0, so it closes [P6]. W1: every schedule tied to the old main bank moves to the new one unless the person ends it: the pay and the phone bill (as V), the monthly top-up to the e-wallet and the gym that logs itself (paid from it, `acct`), and the savings sweep that lands in it (`acct2`, listed under `schedulesTo`). Before W1 the top-up, the sweep and the gym ended on the closing day.",
+      "decisions": [
+        "W1",
+        "V",
+        "P6"
+      ]
+    },
+    {
+      "id": "acc-21",
+      "question": "close",
+      "title": "Closing the main bank: the person ends the top-up; the other schedules move (W1)",
+      "input": {
+        "account": "old",
+        "kind": "bank",
+        "mainBank": true,
+        "date": "2027-01-15",
+        "figure": 200000,
+        "transfers": [
+          {
+            "to": "b",
+            "a": 200000
+          }
+        ],
+        "lines": [],
+        "free": {
+          "acct": null
+        },
+        "schedules": [
+          {
+            "id": "pay",
+            "kind": "income",
+            "acct": "old"
+          },
+          {
+            "id": "phone",
+            "kind": "bill",
+            "acct": "old"
+          },
+          {
+            "id": "top",
+            "kind": "transfer",
+            "acct": "old",
+            "acct2": "wallet"
+          },
+          {
+            "id": "sweep",
+            "kind": "transfer",
+            "acct": "sav",
+            "acct2": "old"
+          },
+          {
+            "id": "gym",
+            "kind": "autoSpend",
+            "acct": "old"
+          }
+        ],
+        "newLinks": {
+          "mainBank": "b"
+        },
+        "ending": [
+          "top"
+        ]
+      },
+      "expected": {
+        "closed": "2027-01-15",
+        "events": [
+          {
+            "k": "check",
+            "date": "2027-01-15",
+            "acct": "old",
+            "a": 200000
+          },
+          {
+            "id": "close:old",
+            "k": "transfer",
+            "date": "2027-01-15",
+            "acct": "old",
+            "acct2": "b",
+            "a": 200000
+          }
+        ],
+        "ends": {
+          "top": "2027-01-15"
+        },
+        "links": {
+          "mainBank": "b"
+        },
+        "moved": {
+          "mainBank": "b",
+          "free": "b",
+          "schedules": {
+            "pay": "b",
+            "phone": "b",
+            "gym": "b"
+          },
+          "schedulesTo": {
+            "sweep": "b"
+          }
+        }
+      },
+      "why": "200,000 - 200,000 = 0, so it closes. The person ends the top-up at the closing, so it ends on the closing day [W1: unless the person ends it]; the rest move to the new main bank.",
+      "decisions": [
+        "W1",
+        "V",
+        "P6"
+      ]
     }
   ],
   "open": []

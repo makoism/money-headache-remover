@@ -111,7 +111,7 @@ function checkAnswer(file, where, q, expected, why, d, askDate) {
       if (!isDate(it.lands) || typeof it.amount !== 'number' || !['in', 'out'].includes(it.direction)) bad(file, where, `item ${it.item} needs lands, amount, direction in/out`);
       if (isDate(it.lands) && dayNum(it.lands) >= dayNum(askDate)) bad(file, where, `item ${it.item} lands on or after the ask date, so it is not late`);
       if (it.currency !== undefined) {   // [S6] pay in another currency: listed in its own currency, left out of the totals
-        if (!(it.currency in DIGITS) || it.direction !== 'in' || !decimalsOk(it.amount, DIGITS[it.currency])) bad(file, where, `item ${it.item}: currency is only on money in, in a known currency [S6]`);
+        if (!(it.currency in DIGITS) || !decimalsOk(it.amount, DIGITS[it.currency])) bad(file, where, `item ${it.item}: an item in another currency needs a known currency and an amount in it [S6, W2]`);
         continue;
       }
       if (it.direction === 'in') inn += numMinor(it.amount, d); else out += numMinor(it.amount, d);
@@ -128,6 +128,8 @@ function checkAnswer(file, where, q, expected, why, d, askDate) {
     for (const it of expected.items) {
       if (!isDate(it.lands) || typeof it.amount !== 'number') bad(file, where, `item ${it.item} needs lands and amount`);
       else if (dayNum(it.lands) < dayNum(askDate)) bad(file, where, `item ${it.item} lands before the ask date (that is not seen yet, not due)`);
+      // [W2] A card, loan or pay-later payment in another currency is listed in its own currency and left out of the total.
+      if (it.currency !== undefined) { if (!(it.currency in DIGITS) || !decimalsOk(it.amount, DIGITS[it.currency])) bad(file, where, `item ${it.item}: a known currency and an amount in it [W2]`); continue; }
       s += numMinor(it.amount, d);
     }
     if (s !== numMinor(expected.total, d)) bad(file, where, 'items do not add to total');
@@ -192,6 +194,8 @@ function checkFile(fp) {
     if (!(k in s)) bad(file, 'top', `missing "${k}"`);
   }
   if (!(s.currency in DIGITS)) bad(file, 'currency', `unknown currency ${s.currency}`);
+  // [X9] The offset of the person's device: a time with no offset of its own, and the start and end of a day, are in it.
+  if (s.device_offset !== undefined && !/^[+-]\d{2}:\d{2}$/.test(s.device_offset)) bad(file, 'device_offset', 'an offset like +09:00 [X9]');
   // [O6] The home currency may change on a date: `home_curs` lists { from, cur }, oldest first, the first from the file's start.
   if (s.home_curs !== undefined) {
     if (!Array.isArray(s.home_curs) || !s.home_curs.length || s.home_curs[0].cur !== s.currency) bad(file, 'home_curs', 'a list of { from, cur }, the first in the file\'s currency [O6]');
@@ -247,7 +251,8 @@ function checkFile(fp) {
         }
       } else {
         const st = a.opening.statement;
-        if ((st || !notSure) && (!st || !isDate(st.closed) || typeof st.amount !== 'number' || typeof st.paid !== 'boolean')) bad(file, w, 'opening.statement needs closed, amount, paid (it may be left out only when the close day is not sure)');
+        // [X6] A card with a known close day may have no typed last statement: the first close after the opening holds the opening balance.
+        if (st && (!isDate(st.closed) || typeof st.amount !== 'number' || typeof st.paid !== 'boolean')) bad(file, w, 'opening.statement needs closed, amount, paid');
       }
       if (a.carries && !(p.min_rule || typeof p.amount === 'number')) bad(file, w, 'a card that carries a balance needs payment.min_rule');
       if (typeof a.opening.current !== 'number' || !decimalsOk(a.opening.current, d)) bad(file, w, 'opening.current must be an amount');
@@ -269,10 +274,24 @@ function checkFile(fp) {
       if (!(x.account in acc) && !(list === 'income' && x.account === 'any')) bad(file, w, `account ${x.account} not found`);
       if (list === 'income' && typeof x.starts_period !== 'boolean') bad(file, w, 'starts_period must be true or false');
       if (x.fee !== undefined && !(list === 'bills' && x.kind === 'transfer' && typeof x.fee === 'number' && x.fee >= 0)) bad(file, w, 'fee is only on a transfer schedule [Q2]');
+      // [B8, X watch] `amounts`: one occurrence changed, keyed by its due date before any move.
+      for (const [k, v] of Object.entries(x.amounts || {})) if (!isDate(k) || typeof v !== 'number' || v < 0) bad(file, w, 'amounts is { <due date>: amount } [B8]');
+      if (x.ends !== undefined && !isDate(x.ends)) bad(file, w, 'ends must be a date');
+      if (x.redirect !== undefined && !(x.ends !== undefined && (s.goals || []).some(g => g.id === x.redirect))) bad(file, w, 'redirect names a goal, on a schedule that ends (38.31 line redirect)');
     }
   }
   const goals = new Set((s.goals || []).map(g => g.id));
   for (const g of s.goals || []) if (!(g.kept_in in acc)) bad(file, `goal ${g.id}`, 'kept_in must be an account');
+  // [section 4, X watch] A pay-off place names the debt it pays down (`pays`); its money is never opened as savings.
+  for (const g of s.goals || []) {
+    if ((g.kind === 'payoff') !== (g.pays !== undefined) || (g.pays !== undefined && !(acc[g.pays] && ['card', 'loan', 'paylater'].includes(acc[g.pays].kind)))) bad(file, `goal ${g.id}`, 'a payoff place names the card, loan or pay-later account it pays (pays), and only a payoff place does');
+    if (g.pays !== undefined && ((g.opening && g.opening.amount) || (s.accounts || []).some(a => ((a.opening.split || {}).goals || {})[g.id] != null))) bad(file, `goal ${g.id}`, 'a payoff place is never opened as savings: no opening and no split');
+  }
+  // [X3] The opening's `not_yet`: occurrences of this file's pay and bills due from the last pay to the setup day.
+  for (const a of s.accounts || []) for (const o of (a.opening || {}).not_yet || []) {
+    const mm = String(o).match(/^([a-z0-9_]+)@(\d{4}-\d{2}-\d{2})$/);
+    if (!mm || !(s.income || []).concat(s.bills || []).some(x => x.id === mm[1] && x.account === a.id) || mm[2] > a.opening.date) bad(file, `account ${a.id}`, `not_yet ${o}: an occurrence of a schedule of this account, due on or before the setup day [X3]`);
+  }
 
   let last = '';
   const ids = new Set();
@@ -312,6 +331,10 @@ function checkFile(fp) {
         || numMinor(t.amount_out, DIGITS[acc[t.from].currency]) - numMinor(t.amount_in, DIGITS[acc[t.from].currency]) !== numMinor(e.amount, DIGITS[acc[t.from].currency])) bad(file, w, 'of names the transfer a fee belongs to: a spend from its sending account of what left less what arrived [S5, Q2]');
     }
     if (e.avail !== undefined && !(e.kind === 'check' && ['available', 'current'].includes(e.avail))) bad(file, w, 'avail is only on a bank check, "available" or "current" [I1]');
+    // [X4] The gain question's state on a check: asked, right or wrong.
+    if (e.gain !== undefined && !(e.kind === 'check' && ['asked', 'right', 'wrong'].includes(e.gain))) bad(file, w, 'gain is on a check: "asked", "right" or "wrong" [X4]');
+    // [X2] A fee record's id is built from its transfer: fee:<transfer id>.
+    if (e.of !== undefined && e.id !== 'fee:' + e.of) bad(file, w, 'a fee record\'s id is fee:<transfer id> [X2]');
     if (e.own_time !== undefined && !(e.moved === true && TOLD.test(e.own_time) && e.own_time.length > 10)) bad(file, w, 'own_time is a date and time, only on a moved record [I5]');
     if (e.moved === true && !(s.moved_copy && TOLD.test(s.moved_copy.saved || '') && s.moved_copy.saved.length > 10)) bad(file, w, 'a moved record needs the top-level moved_copy.saved (a date and time) [I5]');
     const amtAcc = acc[e.account || e.from || e.card];
