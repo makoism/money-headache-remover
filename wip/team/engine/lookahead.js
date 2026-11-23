@@ -795,9 +795,13 @@
     }
 
     // ----- what is left of this period's lines and Free to spend [B1, B2, I4, J4, O4, O, Q2, R1, T2, T4, T5, T7] -----
-    function planNow() {
+    // [periods.js] `win` names a period gone by: { start, end, occ, next } (whole day numbers; `next` the day the period
+    // after it started). Left out: the period running now. A past period counts only what is dated inside it.
+    function planNow(win) {
       if (!freeSrc && !lineSrcs.length) return {};
-      const lastPay = periodStartDays.length ? Math.max(...periodStartDays) : null;
+      const past = !!win && !win.now;
+      const lastPay = past ? win.start : periodStartDays.length ? Math.max(...periodStartDays) : null;
+      const upTo = past ? win.end : Infinity;
       const opening = {};
       function openingShares(acctId) {
         if (opening[acctId]) return opening[acctId];
@@ -832,35 +836,37 @@
           : lineId === 'free' ? openingShares(acctId).free : openingShares(acctId).lines[lineId];
         const fromOpening = lastPay === null || lastPay <= openDay(moved ? sa : acctId);
         const start = fromOpening ? (atOpening != null ? atOpening : amount) : amount;
-        const inLine = e => lineOfSpend(e) === lineId && e.account && openEv[e.account] && !inside(e, openingOf(e.account), e.account) && (fromOpening || e.day >= lastPay);
+        const inLine = e => lineOfSpend(e) === lineId && e.account && openEv[e.account] && !inside(e, openingOf(e.account), e.account) && (fromOpening || e.day >= lastPay) && e.day <= upTo;
         const counts = e => inLine(e) && cur(e.account) === cur(acctId);   // [T5] only spends in the line's own currency
-        for (const e of live().filter(x => x.k === 'spend' && !isFeeRecord(x) && inLine(x) && cur(x.account) !== cur(acctId)))
+        if (!past) for (const e of live().filter(x => x.k === 'spend' && !isFeeRecord(x) && inLine(x) && cur(x.account) !== cur(acctId)))
           res.warnings.push({ account: e.account, code: 'spend_other_currency', line: lineId, event: e.id,
             text: `${fmt(e.a, cur(e.account))} ${cur(e.account)} on ${lineId === 'free' ? 'Free to spend' : lineId} is listed apart: it is not counted until stage 2` });
         let filled = 0;   // [T2] the filler is spending, signed; [X4] a held gain places nothing
         for (const bid in banks) {
           if (acct[bid].type === 'investment' || cur(bid) !== cur(acctId)) continue;
           for (const f of banks[bid].fillers) if ((f.place || 'free') === lineId && !heldGain(bid, f))
-            for (const pt of f.parts) if (fromOpening || dayNum(pt.from) >= lastPay) filled += pt.amount;
+            for (const pt of f.parts) if ((fromOpening || dayNum(pt.from) >= lastPay) && dayNum(pt.from) <= upTo) filled += pt.amount;
         }
         if (lineId === 'free') for (const cid in cards) {
           if (cur(cid) !== cur(acctId)) continue;
-          for (const f of cards[cid].fillers) if (fromOpening || dayNum(f.day) >= lastPay) filled += f.amount;
+          for (const f of cards[cid].fillers) if ((fromOpening || dayNum(f.day) >= lastPay) && dayNum(f.day) <= upTo) filled += f.amount;
         }
         const spent = live().filter(e => e.k === 'spend' && !isFeeRecord(e) && counts(e)).reduce((t, e) => t + e.a, 0)
           - live().filter(e => e.k === 'in' && e.sub === 'refund' && counts(e)).reduce((t, e) => t + e.a, 0) + filled;   // [O] a refund given back to its line
-        if (lineId !== 'free') return start - spent;
-        const inPeriod = (e, id) => openEv[id] && !inside(e, openingOf(id), id) && (fromOpening || e.day >= lastPay);
+        if (lineId !== 'free') return win ? { start, left: start - spent } : start - spent;
+        const inPeriod = (e, id) => openEv[id] && !inside(e, openingOf(id), id) && (fromOpening || e.day >= lastPay) && e.day <= upTo;
         // [Q2, S5] a fee in one currency comes out of Free to spend unless its fee record names another place
         const elsewhere = new Set(live().filter(f => isFee(f) && f.place).map(f => f.of));
         const fees = live().filter(e => TWO_SIDED[e.k] && acct[e.from] && acct[e.to] && cur(e.from) === cur(e.to) && cur(e.from) === cur(acctId) && e.a > e.a2 && inPeriod(e, e.from) && !elsewhere.has(e.id))
           .reduce((t, e) => t + e.a - e.a2, 0);
         const placed = live().filter(e => e.k === 'move' && e.placed && e.place2 === 'free' && !gaveWay.has(e.id) && e.acct && inPeriod(e, e.acct)).reduce((t, e) => t + e.a, 0);   // [R1, X5]
         const adjusted = live().filter(e => e.k === 'adjust' && !e.place && acct[e.account] && cur(e.account) === cur(acctId) && inPeriod(e, e.account)).reduce((t, e) => t + e.a, 0);   // [T7]
-        return start - spent - fees + placed + adjusted;
+        return win ? { start, left: start - spent - fees + placed + adjusted } : start - spent - fees + placed + adjusted;
       };
-      const lines = lineSrcs.map(l => { const id = moneyAcct(lineAcct(l)), a = periodStream ? nowAmount(l, l.per) : periodAmount(l, lastPay, occOn(lastPay, today)); return { name: l.name, acct: id, per: l.per, amount: a, left: leftOf(l.id, id, a), src: l }; });
-      const fid = freeSrc && moneyAcct(lineAcct(freeSrc)), fa = freeSrc && (periodStream ? nowAmount(freeSrc, freeSrc.per) : periodAmount(freeSrc, lastPay, occOn(lastPay, today)));
+      const amountOf = (src, per) => (past ? perPeriod({ per, amount: periodAmount(src, win.start, win.occ) }, win.start, win.next, win.occ)
+        : periodStream ? nowAmount(src, per) : periodAmount(src, lastPay, occOn(lastPay, today)));
+      const lines = lineSrcs.map(l => { const id = moneyAcct(lineAcct(l)), a = amountOf(l, l.per); return { name: l.name, acct: id, per: l.per, amount: a, left: leftOf(l.id, id, a), src: l }; });
+      const fid = freeSrc && moneyAcct(lineAcct(freeSrc)), fa = freeSrc && amountOf(freeSrc, freeSrc.per);
       const free = freeSrc && { name: 'Free to spend', acct: fid, per: freeSrc.per, amount: fa, left: leftOf('free', fid, fa), src: freeSrc };
       return { lines, free };
     }
@@ -885,6 +891,27 @@
         lines: (planLeft.lines || []).map(l => ({ id: l.src.id, name: l.name, acct: l.acct, per: l.per, amount: l.amount, left: l.left })),
         free: planLeft.free ? { acct: planLeft.free.acct, per: planLeft.free.per, amount: planLeft.free.amount, left: planLeft.free.left } : null };
     } else res.period = null;   // [B4] no fixed pay: no periods
+    // [periods.js] opts.periods: every period gone by, oldest first, each counted only from what is dated inside it, with
+    // everything heard of by the day asked (a spend logged late, a check-in on pay day whose stretch reaches back)
+    if (opts.periods && periodStream) {
+      const starts = periodStartDays.slice().sort((x, z) => x - z), occAt = Object.assign({}, occByStart);
+      // [AU7] the period holding the opening starts by its pay (inside the opening, so never ticked)
+      const held = firstOpenDay > -Infinity ? pays.find(o => o.id === occOn(null, firstOpenDay)) : null;
+      if (held && starts.length && startDayOf(held) < starts[0]) { starts.unshift(startDayOf(held)); occAt[startDayOf(held)] = held.id; }
+      res.periods = [];
+      for (let i = 0; i + 1 < starts.length; i++) {
+        const win = { start: starts[i], end: starts[i + 1] - 1, occ: occAt[starts[i]], next: starts[i + 1] };
+        if (win.end < win.start) continue;
+        const pl = planNow(win), out = x => ({ amount: x.amount, start: x.left.start, spent: x.left.start - x.left.left, left: x.left.left });
+        res.periods.push({ start: dayStr(win.start), end: dayStr(win.end), startsWith: win.occ,
+          lines: (pl.lines || []).map(l => Object.assign({ id: l.src.id, name: l.name, acct: l.acct, per: l.per }, out(l))),
+          free: pl.free ? Object.assign({ acct: pl.free.acct, per: pl.free.per }, out(pl.free)) : null });
+      }
+      // the period running now in the same shape (what it started with and what is spent so far)
+      const pn = planNow({ now: true }), outN = x => ({ amount: x.amount, start: x.left.start, spent: x.left.start - x.left.left, left: x.left.left });
+      res.periodNow = { lines: (pn.lines || []).map(l => Object.assign({ id: l.src.id, name: l.name, acct: l.acct, per: l.per }, outN(l))),
+        free: pn.free ? Object.assign({ acct: pn.free.acct, per: pn.free.per }, outN(pn.free)) : null };
+    }
 
     // ----- the horizon [SCHEMA 10.3, B4] -----
     let horizon;

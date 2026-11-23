@@ -3,7 +3,7 @@
 # It reuses, copied in at build time and never edited: the style tokens of ../style.css (the :root palettes only),
 # ../art.js and ../pixel.js, the engine (../engine/), the shared screen pieces (../screens/) and the store (../store/). The old app is not touched.
 cd "$(dirname "$0")" || exit 1
-ENGINE="dates.js units.js ids.js schedules.js ledger.js lookahead.js checkin.js build_book.js"
+ENGINE="dates.js units.js ids.js schedules.js ledger.js lookahead.js periods.js checkin.js build_book.js"
 SCREENS="money.js names.js status.js inputs.js provenance.js messages.js"
 STORE="clock.js guard.js idb.js persist.js"
 OUT=index.html
@@ -36,7 +36,7 @@ echo "'use strict';"
 echo 'const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];'
 cat ../art.js ../pixel.js
 printf 'const TRY_BOOKS = { mako: '; cat fixtures/mako_madeup_book.json; echo '};'
-cat src/money3.js src/e3.js src/home3.js src/checkin3.js src/setup3.js src/start3.js
+cat src/money3.js src/e3.js src/act3.js src/home3.js src/checkin3.js src/setup3.js src/start3.js
 echo '})();'
 echo '</script>'
 echo '</body>'
