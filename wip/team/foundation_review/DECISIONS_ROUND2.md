@@ -183,3 +183,9 @@ V1. A goal whose money was moved to its own account is counted at that account; 
 V2. A loan or pay-later account paid from an account in another currency is handled like a card (H5): left out of the walk with a warning until stage 2.
 V3. Under T1 two answers for one period share its occurrence name, so they are one record; the earliest last day stands. Confirmed.
 Readings: pe-54, an unticked import settling nothing, only money in reopening a closed account, and T3 on a card with a carried balance (bills go onto the card's new spending) are confirmed. Two are corrected: closing the main bank moves the bills paid from it to the new main bank too (the person can end any of them); a plan change dated on a period's first day applies to that period.
+
+## W. Answers after V
+W1. Closing the main bank moves every schedule tied to it (pay, bills, transfers out and in, self-logged spends) to the new main bank, unless the person ends it.
+W2. Card, loan or pay-later payments in another currency are listed apart in their own currency and left out of the totals of "due before next pay", "not seen yet" and the check-in list, as pay in another currency is (S6).
+W3. In version one a goal's own account must be in the home currency; another currency for it is stage 2.
+The reading that an account backing a goal is not spendable by default (SCHEMA_V3) is confirmed and goes into the reference model.
