@@ -57,9 +57,10 @@
     for (const id of Object.keys(r.accounts)) if (r.accounts[id].spendFrom && r.accounts[id].why) out.push(`How safe to spend is worked out for ${name(id)}: ${r.accounts[id].why}`);
     const lines = (p && p.lines) || [];
     if (lines.length) {
-      out.push('Budget lines this pay period (ref | name | amount | left):\n' + lines.map((l, i) => { const ref = 'L' + (i + 1); refs[ref] = l.id; return `${ref} | ${l.name} | ${m(l.amount)} | ${m(l.left)} left`; }).join('\n'));
+      // [QC F5, B2] the amount that counts this period, the full amount a period beside it only when they differ
+      out.push('Budget lines this pay period (ref | name | amount | left):\n' + lines.map((l, i) => { const ref = 'L' + (i + 1); refs[ref] = l.id; return `${ref} | ${l.name} | ${m(l.counts)}${l.counts !== l.amount ? ` (part of ${m(l.amount)} a period, for the days left)` : ''} | ${m(l.left)} left`; }).join('\n'));
     } else out.push('Budget lines: none yet.');
-    out.push(p && p.free ? `Free to spend this pay period: ${m(p.free.amount)}, ${m(p.free.left)} left.` : 'Free to spend: not set yet.');
+    out.push(p && p.free ? `Free to spend this pay period: ${m(p.free.counts)}${p.free.counts !== p.free.amount ? ` (part of ${m(p.free.amount)} a period, for the days left)` : ''}, ${m(p.free.left)} left.` : 'Free to spend: not set yet.');
     const goals = (book.places || []).filter(g => live(g) && g.kind === 'goal');
     if (goals.length) {
       out.push('Goals (ref | name | set aside | date | pace):\n' + goals.map((g, i) => {

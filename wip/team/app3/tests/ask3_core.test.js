@@ -50,8 +50,8 @@ const ctxOf = h => ({ book: h.book, today: DAY });
     ok(S.text.includes('Next pay: 10 Dec'), 'next pay');
     ok(S.text.includes('Safe to spend until next pay: ¥' + r.safeToSpend.headline.toLocaleString('en')), 'safe ' + r.safeToSpend.headline);
     ok(S.text.includes('A1 | Main bank | bank | ¥284,800'), 'bank');
-    ok(S.text.includes('L1 | Food | ¥30,000 | ¥18,800 left'), 'line');
-    ok(S.text.includes('Free to spend this pay period: ¥20,000, ¥13,333 left'), 'free');
+    ok(S.text.includes('L1 | Food | ¥20,000 (part of ¥30,000 a period, for the days left) | ¥18,800 left'), 'line');   // [QC F5] 20 of 30 days count
+    ok(S.text.includes('Free to spend this pay period: ¥13,333 (part of ¥20,000 a period, for the days left), ¥13,333 left'), 'free ' + (S.text.match(/Free to spend this[^\n]*/) || [])[0]);
     ok(S.text.includes('G1 | Trip | ¥10,000 set aside of ¥100,000 | by 1 Jun 2027 | ¥15,000 each pay period to get there'), 'goal');
     ok(S.text.includes('Rent 27 Nov ¥72,000'), 'due');
     ok(S.text.includes('Card A | ¥54,000 owed | next payment ¥54,000 on 10 Dec'), 'card');

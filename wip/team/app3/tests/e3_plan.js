@@ -49,7 +49,7 @@ const view = bk => T.L.lookahead(bk, DAY);
   bk = await saved(p); r = view(bk);
   const food = bk.plan.budgets[0];
   ck('Food saved as one line with an ordinary id, told, at and by', !!food && I.isOrdinary(food.id) && food.name === 'Food' && food.told && food.at && food.by && food.steps[0].amount === 40000, JSON.stringify(food));
-  ck('the form closed and the line shows the engine\'s left and amount', !(await formOpen(p)) && await amt(p, `[data-line="${food.id}"] [data-fig=line-left]`) === r.period.lines[0].left && await amt(p, `[data-line="${food.id}"] [data-fig=line-amount]`) === 40000);
+  ck('the form closed and the line shows the engine\'s left and amount', !(await formOpen(p)) && await amt(p, `[data-line="${food.id}"] [data-fig=line-left]`) === r.period.lines[0].left && await amt(p, `[data-line="${food.id}"] [data-fig=line-amount]`) === r.period.lines[0].counts && r.period.lines[0].counts === 26666);   // [QC F5] the part that counts now, 20 of 30 days
   const undoBar = await p.$eval('#a3Msg .burrow-msg', e => e.textContent).catch(() => '');
   ck('the Undo bar says what happened', /Line added/.test(undoBar) && /Undo/.test(undoBar), undoBar);
   /* a refused one, in plain words, nothing saved */
@@ -63,13 +63,13 @@ const view = bk => T.L.lookahead(bk, DAY);
   await p.click('#plSetFree'); await T.w(200);
   await fill(p, { amount: '60000' }); await save(p);
   bk = await saved(p); r = view(bk);
-  ck('Free to spend shows the engine\'s left and amount', await amt(p, '[data-fig=free-left]') === r.period.free.left && await amt(p, '[data-fig=free-amount]') === 60000, JSON.stringify(r.period.free));
+  ck('Free to spend shows the engine\'s left and amount', await amt(p, '[data-fig=free-left]') === r.period.free.left && await amt(p, '[data-fig=free-amount]') === r.period.free.counts && r.period.free.counts === 40000, JSON.stringify(r.period.free));   // [QC F5] 20 of 30 days of 60,000
 
   /* this pay period only */
   await p.click(`[data-line="${food.id}"]`); await T.w(200);
   await fill(p, { amount: '50000', when: 'once' }); await save(p);
   bk = await saved(p); r = view(bk);
-  ck('Food for this pay period only: a once key named by the pay, the period shows 50,000', Object.keys(bk.plan.budgets[0].once || {}).join() === r.period.startsWith && await amt(p, `[data-line="${food.id}"] [data-fig=line-amount]`) === 50000);
+  ck('Food for this pay period only: a once key named by the pay, the period shows 50,000', Object.keys(bk.plan.budgets[0].once || {}).join() === r.period.startsWith && await amt(p, `[data-line="${food.id}"] [data-fig=line-amount]`) === r.period.lines[0].counts);
 
   /* a bill: add, then change Rent from a date */
   await p.click('#plAddBill'); await T.w(200);

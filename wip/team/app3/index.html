@@ -2865,6 +2865,7 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
       const splitAt = lineId => Object.keys(openEv).find(id => { const sp = openEv[id].split; return sp && (lineId === 'free' ? sp.free != null : (sp.lines || {})[lineId] != null); });
       // [AU] in a life with a plan, a spend with no line (not a bill paid, not from a place, not a fee) is Free to spend's
       const lineOfSpend = e => (e.line ? e.line : e.k === 'spend' && freeSrc && !e.settles.length && !e.place && !isFeeRecord(e) ? 'free' : null);
+      const partsOf = {};   // [QC F5] each line's part that counts this period, and what was spent on it
       const leftOf = (lineId, acctId, amount) => {
         const sa = splitAt(lineId), moved = sa && sa !== acctId;
         const atOpening = moved ? (lineId === 'free' ? openEv[sa].split.free : openEv[sa].split.lines[lineId])
@@ -2888,7 +2889,7 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
         }
         const spent = live().filter(e => e.k === 'spend' && !isFeeRecord(e) && counts(e)).reduce((t, e) => t + e.a, 0)
           - live().filter(e => e.k === 'in' && e.sub === 'refund' && counts(e)).reduce((t, e) => t + e.a, 0) + filled;   // [O] a refund given back to its line
-        if (lineId !== 'free') return win ? { start, left: start - spent } : start - spent;
+        if (lineId !== 'free') { partsOf[lineId] = { start, spent }; return win ? { start, left: start - spent } : start - spent; }
         const inPeriod = (e, id) => openEv[id] && !inside(e, openingOf(id), id) && (fromOpening || e.day >= lastPay) && e.day <= upTo;
         // [Q2, S5] a fee in one currency comes out of Free to spend unless its fee record names another place
         const elsewhere = new Set(live().filter(f => isFee(f) && f.place).map(f => f.of));
@@ -2896,14 +2897,16 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
           .reduce((t, e) => t + e.a - e.a2, 0);
         const placed = live().filter(e => e.k === 'move' && e.placed && e.place2 === 'free' && !gaveWay.has(e.id) && e.acct && inPeriod(e, e.acct)).reduce((t, e) => t + e.a, 0);   // [R1, X5]
         const adjusted = live().filter(e => e.k === 'adjust' && !e.place && acct[e.account] && cur(e.account) === cur(acctId) && inPeriod(e, e.account)).reduce((t, e) => t + e.a, 0);   // [T7]
+        partsOf.free = { start };
         return win ? { start, left: start - spent - fees + placed + adjusted } : start - spent - fees + placed + adjusted;
       };
       const amountOf = (src, per) => (past ? perPeriod({ per, amount: periodAmount(src, win.start, win.occ) }, win.start, win.next, win.occ)
         : periodStream ? nowAmount(src, per) : periodAmount(src, lastPay, occOn(lastPay, today)));
       // [BJ2] a line or Free to spend with no amount in this period (set later) is not in it
-      const lines = lineSrcs.map(l => { const id = moneyAcct(lineAcct(l)), a = amountOf(l, l.per); return a == null ? null : { name: l.name, acct: id, per: l.per, amount: a, left: leftOf(l.id, id, a), src: l }; }).filter(Boolean);
+      const lines = lineSrcs.map(l => { const id = moneyAcct(lineAcct(l)), a = amountOf(l, l.per); if (a == null) return null; const left = leftOf(l.id, id, a), pt = partsOf[l.id]; return { name: l.name, acct: id, per: l.per, amount: a, left, counts: pt.start, spent: pt.spent, src: l }; }).filter(Boolean);
       const fid = freeSrc && moneyAcct(lineAcct(freeSrc)), fa = freeSrc && amountOf(freeSrc, freeSrc.per);
       const free = freeSrc && fa != null ? { name: 'Free to spend', acct: fid, per: freeSrc.per, amount: fa, left: leftOf('free', fid, fa), src: freeSrc } : null;
+      if (free) free.counts = partsOf.free.start;
       return { lines, free };
     }
     const planLeft = planNow();
@@ -2924,8 +2927,10 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
         end: next ? dayStr(waiting ? today : next.land - 1) : n.end === null ? null : dayStr(Math.max(today, n.end - 1)),
         startsWith: n.occ, waitingForPay: waiting,
         nextPay: next ? { occ: next.id, due: dayStr(next.due), state } : null,
-        lines: (planLeft.lines || []).map(l => ({ id: l.src.id, name: l.name, acct: l.acct, per: l.per, amount: l.amount, left: l.left })),
-        free: planLeft.free ? { acct: planLeft.free.acct, per: planLeft.free.per, amount: planLeft.free.amount, left: planLeft.free.left } : null };
+        // [QC F5, B2] amount: the line's full amount a period; counts: the part that counts in this period (less when it
+        // started mid-period); spent; left = counts - spent; over: how far past it, taken from safe to spend
+        lines: (planLeft.lines || []).map(l => ({ id: l.src.id, name: l.name, acct: l.acct, per: l.per, amount: l.amount, left: l.left, counts: l.counts, spent: l.spent, over: Math.max(0, -l.left) })),
+        free: planLeft.free ? { acct: planLeft.free.acct, per: planLeft.free.per, amount: planLeft.free.amount, left: planLeft.free.left, counts: planLeft.free.counts } : null };
     } else res.period = null;   // [B4] no fixed pay: no periods
     // [periods.js] opts.periods: every period gone by, oldest first, each counted only from what is dated inside it, with
     // everything heard of by the day asked (a spend logged late, a check-in on pay day whose stretch reaches back)
@@ -8425,9 +8430,14 @@ function renderPlan3() {
     const lines = p.lines.filter(l => !(l.amount === 0 && l.left === 0)).map(l => {
       const rec = ((book.plan || {}).budgets || []).find(x => x.id === l.id) || {};
       const ends = rec.ends ? `<br><span class="when">Ends after this pay period</span>` : '';
-      return plRow3(`data-line="${esc3(l.id)}"`, `${esc3(l.name)}${ends}`, `<span data-fig="line-left">${plFig3('period.lines.*.left', l.left)}</span> <span class="when">left of <span data-fig="line-amount">${plFig3('period.lines.*.amount', l.amount)}</span></span>`);
+      /* [QC F5, B2] one amount for the period, the one that counts now; the full amount only in the sentence under it */
+      const cur = E3.home(), f = SM.formatter(cur, [l.amount, l.counts, l.spent, l.over]);
+      const part = l.counts !== l.amount ? `<br><span class="when" data-fig="line-part">Only the part for the days left in this pay period counts now: ${f(l.counts)} of ${f(l.amount)}</span>` : '';
+      const over = l.over ? `<br><span class="when a3-late" data-fig="line-over">Spent ${f(l.spent)} of ${f(l.counts)}: ${f(l.over)} over, taken from safe to spend</span>` : '';
+      return plRow3(`data-line="${esc3(l.id)}"`, `${esc3(l.name)}${ends}${part}${over}`, `<span data-fig="line-left">${plFig3('period.lines.*.left', l.left)}</span> <span class="when">left of <span data-fig="line-amount">${plFig3('period.lines.*.counts', l.counts)}</span></span>`);
     });
-    const free = p.free ? plRow3('data-line="free"', esc3(label3('freeToSpendLeft')), `<span data-fig="free-left">${plFig3('period.free.left', p.free.left)}</span> <span class="when">of <span data-fig="free-amount">${plFig3('period.free.amount', p.free.amount)}</span></span>`) : '';
+    const fp = p.free && p.free.counts !== p.free.amount ? (f => `<br><span class="when" data-fig="free-part">Only the part for the days left in this pay period counts now: ${f(p.free.counts)} of ${f(p.free.amount)}</span>`)(SM.formatter(E3.home(), [p.free.counts, p.free.amount])) : '';
+    const free = p.free ? plRow3('data-line="free"', `${esc3(label3('freeToSpendLeft'))}${fp}`, `<span data-fig="free-left">${plFig3('period.free.left', p.free.left)}</span> <span class="when">of <span data-fig="free-amount">${plFig3('period.free.counts', p.free.counts)}</span></span>`) : '';
     out.push(`<section class="a3-card" data-card="plan-period"><h2>${esc3(label3('period'))}</h2>
       <p class="a3-mid" data-fig="plan-period" data-start="${esc3(p.start)}" data-end="${esc3(p.end)}">${esc3(SN.periodLabel(p.start, p.end))}</p>
       ${lines.length || free ? `<ul class="a3-rows a3-rclist">${lines.join('')}${free}</ul>` : '<p class="a3-sub">No budget lines yet. A line keeps money for one thing, like food, each pay period</p>'}
@@ -9810,9 +9820,10 @@ function stmt3Bar() {
     for (const id of Object.keys(r.accounts)) if (r.accounts[id].spendFrom && r.accounts[id].why) out.push(`How safe to spend is worked out for ${name(id)}: ${r.accounts[id].why}`);
     const lines = (p && p.lines) || [];
     if (lines.length) {
-      out.push('Budget lines this pay period (ref | name | amount | left):\n' + lines.map((l, i) => { const ref = 'L' + (i + 1); refs[ref] = l.id; return `${ref} | ${l.name} | ${m(l.amount)} | ${m(l.left)} left`; }).join('\n'));
+      // [QC F5, B2] the amount that counts this period, the full amount a period beside it only when they differ
+      out.push('Budget lines this pay period (ref | name | amount | left):\n' + lines.map((l, i) => { const ref = 'L' + (i + 1); refs[ref] = l.id; return `${ref} | ${l.name} | ${m(l.counts)}${l.counts !== l.amount ? ` (part of ${m(l.amount)} a period, for the days left)` : ''} | ${m(l.left)} left`; }).join('\n'));
     } else out.push('Budget lines: none yet.');
-    out.push(p && p.free ? `Free to spend this pay period: ${m(p.free.amount)}, ${m(p.free.left)} left.` : 'Free to spend: not set yet.');
+    out.push(p && p.free ? `Free to spend this pay period: ${m(p.free.counts)}${p.free.counts !== p.free.amount ? ` (part of ${m(p.free.amount)} a period, for the days left)` : ''}, ${m(p.free.left)} left.` : 'Free to spend: not set yet.');
     const goals = (book.places || []).filter(g => live(g) && g.kind === 'goal');
     if (goals.length) {
       out.push('Goals (ref | name | set aside | date | pace):\n' + goals.map((g, i) => {

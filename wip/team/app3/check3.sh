@@ -50,6 +50,7 @@ step "each record once after a statement (BI2): Receipts"; run tests/e3_stmt_onc
 step "the period by its dates"; run tests/e3_period.js "e3_period: ALL PASS"
 step "Receipts"; run tests/e3_receipts.js "e3_receipts: ALL PASS"
 step "only the tapped tab's panel shows (every tab after every other, the sheets)"; run tests/e3_panels.js "e3_panels: ALL PASS"
+step "a line added mid-period: one amount that counts now, the full one in a sentence, how far over"; run tests/e3_lineshare.js "e3_lineshare: ALL PASS"
 step "the Plan tab"; run tests/e3_plan.js "e3_plan: ALL PASS"
 step "one figure, one name on Home, Receipts and Plan (labels from screens/names.js)"; run tests/e3_names.js "e3_names: ALL PASS"
 step "the ways out of the first screen and the made-up numbers"; run tests/e3_first.js "e3_first: ALL PASS"

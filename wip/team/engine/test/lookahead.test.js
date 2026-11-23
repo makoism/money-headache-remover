@@ -362,4 +362,14 @@ t('bank today in its parts: the last check, and what was logged in and out since
   const a0 = run(base(), '2026-12-02').accounts.bank;
   eq([a0.bank, a0.checked, a0.loggedOut, a0.loggedIn], [400000, 400000, 0, 0]);
 });
+t('a line started mid-period: the part that counts now, what was spent, and how far over (QC F5, B2)', () => {
+  // Food 30,000 a month, no typed split: set up 1 Dec in the period from 25 Nov to 24 Dec, so 24 of 30 days count:
+  // 30,000 x 24 / 30 = 24,000. 35,000 spent on Food: 24,000 - 35,000 = -11,000, 11,000 over
+  const ev = (id, k, date, more) => Object.assign({ id, k, date, told: date + 'T12:00' + TZ }, more);
+  const b = base(x => { delete x.events[0].split; x.events.push(ev('f1', 'spend', '2026-12-02', { acct: 'bank', a: 35000, line: 'food' })); });
+  const l = run(b, '2026-12-02').period.lines.find(x => x.id === 'food');
+  eq([l.amount, l.counts, l.spent, l.left, l.over], [30000, 24000, 35000, -11000, 11000]);
+  const l0 = run(base(x => { delete x.events[0].split; }), '2026-12-02').period.lines.find(x => x.id === 'food');
+  eq([l0.amount, l0.counts, l0.spent, l0.left, l0.over], [30000, 24000, 0, 24000, 0]);
+});
 done('lookahead');
