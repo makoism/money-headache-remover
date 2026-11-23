@@ -6099,6 +6099,737 @@
         "M3",
         "H1"
       ]
+    },
+    {
+      "id": "mg-119",
+      "question": "restore",
+      "title": "AE5: a restore covers every kind of record alike: each event kind, built ids, a bill, a place and each account kind",
+      "input": {
+        "current": {
+          "events": [
+            {
+              "told": "2026-11-20T10:00:00.000+09:00",
+              "at": "2026-11-25T10:00:00.000+09:00",
+              "by": "dsk001",
+              "id": "phn001-aaaaaaaaaa-1",
+              "k": "open",
+              "date": "2026-11-10",
+              "acct": "bank",
+              "a": 310000,
+              "notYet": []
+            },
+            {
+              "told": "2026-11-20T10:00:00.000+09:00",
+              "at": "2026-11-25T10:00:00.000+09:00",
+              "by": "dsk001",
+              "id": "phn001-aaaaaaaaaa-2",
+              "k": "in",
+              "date": "2026-11-12",
+              "acct": "card",
+              "a": 1500,
+              "line": "food",
+              "note": "refund"
+            },
+            {
+              "told": "2026-11-20T10:00:00.000+09:00",
+              "at": "2026-11-25T10:00:00.000+09:00",
+              "by": "dsk001",
+              "id": "phn001-aaaaaaaaaa-3",
+              "k": "transfer",
+              "date": "2026-11-13",
+              "acct": "bank",
+              "acct2": "cash",
+              "a": 12000
+            },
+            {
+              "told": "2026-11-20T10:00:00.000+09:00",
+              "at": "2026-11-25T10:00:00.000+09:00",
+              "by": "dsk001",
+              "id": "fee:phn001-aaaaaaaaaa-3",
+              "k": "spend",
+              "date": "2026-11-13",
+              "acct": "bank",
+              "a": 220,
+              "of": "phn001-aaaaaaaaaa-3"
+            },
+            {
+              "told": "2026-11-20T10:00:00.000+09:00",
+              "at": "2026-11-25T10:00:00.000+09:00",
+              "by": "dsk001",
+              "id": "phn001-aaaaaaaaaa-4",
+              "k": "repay",
+              "date": "2026-11-14",
+              "acct": "bank",
+              "acct2": "card",
+              "a": 35000
+            },
+            {
+              "told": "2026-11-20T10:00:00.000+09:00",
+              "at": "2026-11-25T10:00:00.000+09:00",
+              "by": "dsk001",
+              "id": "phn001-aaaaaaaaaa-5",
+              "k": "borrow",
+              "date": "2026-11-15",
+              "acct": "card",
+              "acct2": "cash",
+              "a": 25000
+            },
+            {
+              "told": "2026-11-20T10:00:00.000+09:00",
+              "at": "2026-11-25T10:00:00.000+09:00",
+              "by": "dsk001",
+              "id": "phn001-aaaaaaaaaa-6",
+              "k": "convert",
+              "date": "2026-11-16",
+              "acct": "bank",
+              "acct2": "usd",
+              "a": 15000,
+              "a2": 9900
+            },
+            {
+              "told": "2026-11-20T10:00:00.000+09:00",
+              "at": "2026-11-25T10:00:00.000+09:00",
+              "by": "dsk001",
+              "id": "phn001-aaaaaaaaaa-7",
+              "k": "adjust",
+              "date": "2026-11-17",
+              "acct": "bank",
+              "a": -700
+            },
+            {
+              "told": "2026-11-20T10:00:00.000+09:00",
+              "at": "2026-11-25T10:00:00.000+09:00",
+              "by": "dsk001",
+              "id": "phn001-aaaaaaaaaa-8",
+              "k": "move",
+              "date": "2026-11-18",
+              "place": "trip",
+              "a": 6000
+            },
+            {
+              "told": "2026-11-20T10:00:00.000+09:00",
+              "at": "2026-11-25T10:00:00.000+09:00",
+              "by": "dsk001",
+              "id": "phn001-aaaaaaaaaa-9",
+              "k": "filler",
+              "stretch": {
+                "from": "2026-11-10",
+                "to": "2026-11-18"
+              },
+              "place": "free",
+              "split": "before"
+            },
+            {
+              "told": "2026-11-20T10:00:00.000+09:00",
+              "at": "2026-11-25T10:00:00.000+09:00",
+              "by": "dsk001",
+              "id": "skip:gym@2026-11-19",
+              "k": "skip",
+              "date": "2026-11-19",
+              "settles": "gym@2026-11-19",
+              "note": "paid by a friend"
+            },
+            {
+              "told": "2026-11-20T10:00:00.000+09:00",
+              "at": "2026-11-25T10:00:00.000+09:00",
+              "by": "dsk001",
+              "id": "ps:pay@2026-11-25",
+              "k": "periodStart",
+              "date": "2026-11-18"
+            },
+            {
+              "told": "2026-11-20T10:00:00.000+09:00",
+              "at": "2026-11-25T10:00:00.000+09:00",
+              "by": "dsk001",
+              "id": "rm:trip",
+              "k": "move",
+              "date": "2026-11-19",
+              "place": "trip",
+              "a": 4000
+            },
+            {
+              "told": "2026-11-20T10:00:00.000+09:00",
+              "at": "2026-11-25T10:00:00.000+09:00",
+              "by": "dsk001",
+              "id": "close:cash",
+              "k": "transfer",
+              "date": "2026-11-19",
+              "acct": "cash",
+              "acct2": "bank",
+              "a": 2500
+            },
+            {
+              "told": "2026-11-25T10:00:00.000+09:00",
+              "at": "2026-11-25T10:00:00.000+09:00",
+              "by": "dsk001",
+              "id": "dsk001-bbbbbbbbbb-1",
+              "k": "in",
+              "date": "2026-11-24",
+              "acct": "bank",
+              "a": 800,
+              "note": "refund"
+            },
+            {
+              "told": "2026-11-25T10:00:00.000+09:00",
+              "at": "2026-11-25T10:00:00.000+09:00",
+              "by": "dsk001",
+              "id": "skip:gym@2026-11-26",
+              "k": "skip",
+              "date": "2026-11-26",
+              "settles": "gym@2026-11-26"
+            },
+            {
+              "told": "2026-11-25T10:00:00.000+09:00",
+              "at": "2026-11-25T10:00:00.000+09:00",
+              "by": "dsk001",
+              "id": "close:card",
+              "k": "transfer",
+              "date": "2026-11-24",
+              "acct": "card",
+              "acct2": "bank",
+              "a": 0
+            }
+          ],
+          "schedules": [
+            {
+              "told": "2026-11-20T10:00:00.000+09:00",
+              "at": "2026-11-25T10:00:00.000+09:00",
+              "by": "dsk001",
+              "id": "rent",
+              "kind": "bill",
+              "name": "Rent (flat)",
+              "acct": "bank",
+              "steps": [
+                {
+                  "from": "2026-11-01",
+                  "amount": 80000,
+                  "at": "2026-11-20T10:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              ]
+            }
+          ],
+          "places": [
+            {
+              "told": "2026-11-20T10:00:00.000+09:00",
+              "at": "2026-11-25T10:00:00.000+09:00",
+              "by": "dsk001",
+              "id": "trip",
+              "name": "Trip",
+              "target": 120000
+            },
+            {
+              "told": "2026-11-25T10:00:00.000+09:00",
+              "at": "2026-11-25T10:00:00.000+09:00",
+              "by": "dsk001",
+              "id": "dsk001-bbbbbbbbbb-2",
+              "name": "New sofa",
+              "target": 60000
+            }
+          ],
+          "accounts": [
+            {
+              "told": "2026-11-20T10:00:00.000+09:00",
+              "at": "2026-11-25T10:00:00.000+09:00",
+              "by": "dsk001",
+              "id": "card",
+              "type": "card",
+              "name": "Card (blue)",
+              "cutDay": "last"
+            },
+            {
+              "told": "2026-11-20T10:00:00.000+09:00",
+              "at": "2026-11-25T10:00:00.000+09:00",
+              "by": "dsk001",
+              "id": "cash",
+              "type": "cash",
+              "name": "Wallet"
+            },
+            {
+              "told": "2026-11-25T10:00:00.000+09:00",
+              "at": "2026-11-25T10:00:00.000+09:00",
+              "by": "dsk001",
+              "id": "dsk001-bbbbbbbbbb-3",
+              "type": "ewallet",
+              "name": "E-wallet"
+            }
+          ]
+        },
+        "backup": {
+          "events": [
+            {
+              "told": "2026-11-20T10:00:00.000+09:00",
+              "at": "2026-11-20T10:00:00.000+09:00",
+              "by": "phn001",
+              "id": "phn001-aaaaaaaaaa-1",
+              "k": "open",
+              "date": "2026-11-10",
+              "acct": "bank",
+              "a": 300000,
+              "notYet": [
+                "rent@2026-11-10"
+              ]
+            },
+            {
+              "told": "2026-11-20T10:00:00.000+09:00",
+              "at": "2026-11-20T10:00:00.000+09:00",
+              "by": "phn001",
+              "id": "phn001-aaaaaaaaaa-2",
+              "k": "in",
+              "date": "2026-11-12",
+              "acct": "card",
+              "a": 1200,
+              "line": "food",
+              "note": "refund"
+            },
+            {
+              "told": "2026-11-20T10:00:00.000+09:00",
+              "at": "2026-11-20T10:00:00.000+09:00",
+              "by": "phn001",
+              "id": "phn001-aaaaaaaaaa-3",
+              "k": "transfer",
+              "date": "2026-11-13",
+              "acct": "bank",
+              "acct2": "cash",
+              "a": 10000
+            },
+            {
+              "told": "2026-11-20T10:00:00.000+09:00",
+              "at": "2026-11-20T10:00:00.000+09:00",
+              "by": "phn001",
+              "id": "fee:phn001-aaaaaaaaaa-3",
+              "k": "spend",
+              "date": "2026-11-13",
+              "acct": "bank",
+              "a": 110,
+              "of": "phn001-aaaaaaaaaa-3"
+            },
+            {
+              "told": "2026-11-20T10:00:00.000+09:00",
+              "at": "2026-11-20T10:00:00.000+09:00",
+              "by": "phn001",
+              "id": "phn001-aaaaaaaaaa-4",
+              "k": "repay",
+              "date": "2026-11-14",
+              "acct": "bank",
+              "acct2": "card",
+              "a": 30000
+            },
+            {
+              "told": "2026-11-20T10:00:00.000+09:00",
+              "at": "2026-11-20T10:00:00.000+09:00",
+              "by": "phn001",
+              "id": "phn001-aaaaaaaaaa-5",
+              "k": "borrow",
+              "date": "2026-11-15",
+              "acct": "card",
+              "acct2": "cash",
+              "a": 20000
+            },
+            {
+              "told": "2026-11-20T10:00:00.000+09:00",
+              "at": "2026-11-20T10:00:00.000+09:00",
+              "by": "phn001",
+              "id": "phn001-aaaaaaaaaa-6",
+              "k": "convert",
+              "date": "2026-11-16",
+              "acct": "bank",
+              "acct2": "usd",
+              "a": 15000,
+              "a2": 10000
+            },
+            {
+              "told": "2026-11-20T10:00:00.000+09:00",
+              "at": "2026-11-20T10:00:00.000+09:00",
+              "by": "phn001",
+              "id": "phn001-aaaaaaaaaa-7",
+              "k": "adjust",
+              "date": "2026-11-17",
+              "acct": "bank",
+              "a": -500
+            },
+            {
+              "told": "2026-11-20T10:00:00.000+09:00",
+              "at": "2026-11-20T10:00:00.000+09:00",
+              "by": "phn001",
+              "id": "phn001-aaaaaaaaaa-8",
+              "k": "move",
+              "date": "2026-11-18",
+              "place": "trip",
+              "a": 5000
+            },
+            {
+              "told": "2026-11-20T10:00:00.000+09:00",
+              "at": "2026-11-20T10:00:00.000+09:00",
+              "by": "phn001",
+              "id": "phn001-aaaaaaaaaa-9",
+              "k": "filler",
+              "stretch": {
+                "from": "2026-11-10",
+                "to": "2026-11-18"
+              },
+              "place": "free",
+              "split": "days"
+            },
+            {
+              "told": "2026-11-20T10:00:00.000+09:00",
+              "at": "2026-11-20T10:00:00.000+09:00",
+              "by": "phn001",
+              "id": "skip:gym@2026-11-19",
+              "k": "skip",
+              "date": "2026-11-19",
+              "settles": "gym@2026-11-19"
+            },
+            {
+              "told": "2026-11-20T10:00:00.000+09:00",
+              "at": "2026-11-20T10:00:00.000+09:00",
+              "by": "phn001",
+              "id": "ps:pay@2026-11-25",
+              "k": "periodStart",
+              "date": "2026-11-19"
+            },
+            {
+              "told": "2026-11-20T10:00:00.000+09:00",
+              "at": "2026-11-20T10:00:00.000+09:00",
+              "by": "phn001",
+              "id": "rm:trip",
+              "k": "move",
+              "date": "2026-11-19",
+              "place": "trip",
+              "a": 3000
+            },
+            {
+              "told": "2026-11-20T10:00:00.000+09:00",
+              "at": "2026-11-20T10:00:00.000+09:00",
+              "by": "phn001",
+              "id": "close:cash",
+              "k": "transfer",
+              "date": "2026-11-19",
+              "acct": "cash",
+              "acct2": "bank",
+              "a": 2000
+            }
+          ],
+          "schedules": [
+            {
+              "told": "2026-11-20T10:00:00.000+09:00",
+              "at": "2026-11-20T10:00:00.000+09:00",
+              "by": "phn001",
+              "id": "rent",
+              "kind": "bill",
+              "name": "Rent",
+              "acct": "bank",
+              "steps": [
+                {
+                  "from": "2026-11-01",
+                  "amount": 80000,
+                  "at": "2026-11-20T10:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              ]
+            }
+          ],
+          "places": [
+            {
+              "told": "2026-11-20T10:00:00.000+09:00",
+              "at": "2026-11-20T10:00:00.000+09:00",
+              "by": "phn001",
+              "id": "trip",
+              "name": "Trip",
+              "target": 100000
+            }
+          ],
+          "accounts": [
+            {
+              "told": "2026-11-20T10:00:00.000+09:00",
+              "at": "2026-11-20T10:00:00.000+09:00",
+              "by": "phn001",
+              "id": "card",
+              "type": "card",
+              "name": "Card",
+              "cutDay": "last"
+            },
+            {
+              "told": "2026-11-20T10:00:00.000+09:00",
+              "at": "2026-11-20T10:00:00.000+09:00",
+              "by": "phn001",
+              "id": "cash",
+              "type": "cash",
+              "name": "Cash"
+            }
+          ]
+        },
+        "now": "2026-11-27T09:00:00.000+09:00",
+        "by": "phn001"
+      },
+      "expected": {
+        "events": [
+          {
+            "told": "2026-11-25T10:00:00.000+09:00",
+            "at": "2026-11-27T09:00:00.000+09:00",
+            "by": "phn001",
+            "id": "close:card",
+            "k": "transfer",
+            "date": "2026-11-24",
+            "acct": "card",
+            "acct2": "bank",
+            "a": 0,
+            "gone": "2026-11-27"
+          },
+          {
+            "told": "2026-11-20T10:00:00.000+09:00",
+            "at": "2026-11-27T09:00:00.000+09:00",
+            "by": "phn001",
+            "id": "close:cash",
+            "k": "transfer",
+            "date": "2026-11-19",
+            "acct": "cash",
+            "acct2": "bank",
+            "a": 2000
+          },
+          {
+            "told": "2026-11-25T10:00:00.000+09:00",
+            "at": "2026-11-27T09:00:00.000+09:00",
+            "by": "phn001",
+            "id": "dsk001-bbbbbbbbbb-1",
+            "k": "in",
+            "date": "2026-11-24",
+            "acct": "bank",
+            "a": 800,
+            "note": "refund",
+            "gone": "2026-11-27"
+          },
+          {
+            "told": "2026-11-20T10:00:00.000+09:00",
+            "at": "2026-11-27T09:00:00.000+09:00",
+            "by": "phn001",
+            "id": "fee:phn001-aaaaaaaaaa-3",
+            "k": "spend",
+            "date": "2026-11-13",
+            "acct": "bank",
+            "a": 110,
+            "of": "phn001-aaaaaaaaaa-3"
+          },
+          {
+            "told": "2026-11-20T10:00:00.000+09:00",
+            "at": "2026-11-27T09:00:00.000+09:00",
+            "by": "phn001",
+            "id": "phn001-aaaaaaaaaa-1",
+            "k": "open",
+            "date": "2026-11-10",
+            "acct": "bank",
+            "a": 300000,
+            "notYet": [
+              "rent@2026-11-10"
+            ]
+          },
+          {
+            "told": "2026-11-20T10:00:00.000+09:00",
+            "at": "2026-11-27T09:00:00.000+09:00",
+            "by": "phn001",
+            "id": "phn001-aaaaaaaaaa-2",
+            "k": "in",
+            "date": "2026-11-12",
+            "acct": "card",
+            "a": 1200,
+            "line": "food",
+            "note": "refund"
+          },
+          {
+            "told": "2026-11-20T10:00:00.000+09:00",
+            "at": "2026-11-27T09:00:00.000+09:00",
+            "by": "phn001",
+            "id": "phn001-aaaaaaaaaa-3",
+            "k": "transfer",
+            "date": "2026-11-13",
+            "acct": "bank",
+            "acct2": "cash",
+            "a": 10000
+          },
+          {
+            "told": "2026-11-20T10:00:00.000+09:00",
+            "at": "2026-11-27T09:00:00.000+09:00",
+            "by": "phn001",
+            "id": "phn001-aaaaaaaaaa-4",
+            "k": "repay",
+            "date": "2026-11-14",
+            "acct": "bank",
+            "acct2": "card",
+            "a": 30000
+          },
+          {
+            "told": "2026-11-20T10:00:00.000+09:00",
+            "at": "2026-11-27T09:00:00.000+09:00",
+            "by": "phn001",
+            "id": "phn001-aaaaaaaaaa-5",
+            "k": "borrow",
+            "date": "2026-11-15",
+            "acct": "card",
+            "acct2": "cash",
+            "a": 20000
+          },
+          {
+            "told": "2026-11-20T10:00:00.000+09:00",
+            "at": "2026-11-27T09:00:00.000+09:00",
+            "by": "phn001",
+            "id": "phn001-aaaaaaaaaa-6",
+            "k": "convert",
+            "date": "2026-11-16",
+            "acct": "bank",
+            "acct2": "usd",
+            "a": 15000,
+            "a2": 10000
+          },
+          {
+            "told": "2026-11-20T10:00:00.000+09:00",
+            "at": "2026-11-27T09:00:00.000+09:00",
+            "by": "phn001",
+            "id": "phn001-aaaaaaaaaa-7",
+            "k": "adjust",
+            "date": "2026-11-17",
+            "acct": "bank",
+            "a": -500
+          },
+          {
+            "told": "2026-11-20T10:00:00.000+09:00",
+            "at": "2026-11-27T09:00:00.000+09:00",
+            "by": "phn001",
+            "id": "phn001-aaaaaaaaaa-8",
+            "k": "move",
+            "date": "2026-11-18",
+            "place": "trip",
+            "a": 5000
+          },
+          {
+            "told": "2026-11-20T10:00:00.000+09:00",
+            "at": "2026-11-27T09:00:00.000+09:00",
+            "by": "phn001",
+            "id": "phn001-aaaaaaaaaa-9",
+            "k": "filler",
+            "stretch": {
+              "from": "2026-11-10",
+              "to": "2026-11-18"
+            },
+            "place": "free",
+            "split": "days"
+          },
+          {
+            "told": "2026-11-20T10:00:00.000+09:00",
+            "at": "2026-11-27T09:00:00.000+09:00",
+            "by": "phn001",
+            "id": "ps:pay@2026-11-25",
+            "k": "periodStart",
+            "date": "2026-11-19"
+          },
+          {
+            "told": "2026-11-20T10:00:00.000+09:00",
+            "at": "2026-11-27T09:00:00.000+09:00",
+            "by": "phn001",
+            "id": "rm:trip",
+            "k": "move",
+            "date": "2026-11-19",
+            "place": "trip",
+            "a": 3000
+          },
+          {
+            "told": "2026-11-20T10:00:00.000+09:00",
+            "at": "2026-11-27T09:00:00.000+09:00",
+            "by": "phn001",
+            "id": "skip:gym@2026-11-19",
+            "k": "skip",
+            "date": "2026-11-19",
+            "settles": "gym@2026-11-19"
+          },
+          {
+            "told": "2026-11-25T10:00:00.000+09:00",
+            "at": "2026-11-27T09:00:00.000+09:00",
+            "by": "phn001",
+            "id": "skip:gym@2026-11-26",
+            "k": "skip",
+            "date": "2026-11-26",
+            "settles": "gym@2026-11-26",
+            "gone": "2026-11-27"
+          }
+        ],
+        "schedules": [
+          {
+            "told": "2026-11-20T10:00:00.000+09:00",
+            "at": "2026-11-27T09:00:00.000+09:00",
+            "by": "phn001",
+            "id": "rent",
+            "kind": "bill",
+            "name": "Rent",
+            "acct": "bank",
+            "steps": [
+              {
+                "from": "2026-11-01",
+                "amount": 80000,
+                "at": "2026-11-27T09:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ]
+          }
+        ],
+        "places": [
+          {
+            "told": "2026-11-25T10:00:00.000+09:00",
+            "at": "2026-11-27T09:00:00.000+09:00",
+            "by": "phn001",
+            "id": "dsk001-bbbbbbbbbb-2",
+            "name": "New sofa",
+            "target": 60000,
+            "gone": "2026-11-27"
+          },
+          {
+            "told": "2026-11-20T10:00:00.000+09:00",
+            "at": "2026-11-27T09:00:00.000+09:00",
+            "by": "phn001",
+            "id": "trip",
+            "name": "Trip",
+            "target": 100000
+          }
+        ],
+        "accounts": [
+          {
+            "told": "2026-11-20T10:00:00.000+09:00",
+            "at": "2026-11-27T09:00:00.000+09:00",
+            "by": "phn001",
+            "id": "card",
+            "type": "card",
+            "name": "Card",
+            "cutDay": "last"
+          },
+          {
+            "told": "2026-11-20T10:00:00.000+09:00",
+            "at": "2026-11-27T09:00:00.000+09:00",
+            "by": "phn001",
+            "id": "cash",
+            "type": "cash",
+            "name": "Cash"
+          },
+          {
+            "told": "2026-11-25T10:00:00.000+09:00",
+            "at": "2026-11-27T09:00:00.000+09:00",
+            "by": "phn001",
+            "id": "dsk001-bbbbbbbbbb-3",
+            "type": "ewallet",
+            "name": "E-wallet",
+            "gone": "2026-11-27"
+          }
+        ]
+      },
+      "why": "The backup (Fri 20 Nov 10:00) holds one record of each kind: the bank's opening with a `notYet` item, a refund, a transfer and its fee record `fee:<transfer id>`, a repay, a borrow, a convert, an adjust, a move between places, a filler, a skip `skip:gym@2026-11-19`, a period start `ps:pay@2026-11-25`, a removed place's move `rm:trip`, a closing's transfer `close:cash`, the rent bill with its step, the trip place, a card and a cash account. On Wed 25 Nov 10:00 the desktop changed each of them (an amount, a name, a day, the opening's `notYet`), and added a refund, a skip, a closing `close:card`, a place and an e-wallet. On Fri 27 Nov 09:00 the phone restores the backup [AE5]: each record the backup holds comes back as the backup holds it, with the restore's `at` and `by` (the rent's step too) [AB watch, M3]; each record added after it is removed by its own `gone` (27 Nov) with that `at`. The restore never looks at a record's kind or how its id was made, so the merge keeps it for each of them as in mg-97. `told` stays each record's first [H1].",
+      "decisions": [
+        "AE5",
+        "AB watch",
+        "M3",
+        "H1",
+        "O2",
+        "Q5",
+        "Q7",
+        "X2",
+        "T1"
+      ]
     }
   ],
   "open": []

@@ -14209,6 +14209,167 @@
         "AF1",
         "MAKO M1"
       ]
+    },
+    {
+      "id": "mv-116",
+      "question": "move_later",
+      "title": "AE1, AB1: a key the first device edited after its move survives the second device moving the same copy days later",
+      "input": {
+        "phone": {
+          "copy": {
+            "v": 1,
+            "cfg": {
+              "bankStart": 200000,
+              "bankAt": "2026-11-22"
+            },
+            "ui": {
+              "cur": "¥",
+              "preset": "¥",
+              "done": {
+                "pay": true,
+                "bills": true,
+                "goals": true
+              }
+            },
+            "plan": {
+              "lines": [],
+              "goals": []
+            },
+            "steps": {
+              "a": [
+                {
+                  "from": "2026-11",
+                  "v": 250000
+                }
+              ]
+            },
+            "once": {
+              "2027-01": {
+                "a": 0
+              }
+            }
+          },
+          "answers": {
+            "cur": "JPY",
+            "pay": {
+              "a": {
+                "every": "month",
+                "days": [
+                  25
+                ]
+              }
+            }
+          },
+          "now": "2026-11-24T09:00:00.000+09:00",
+          "by": "phn001",
+          "idb": {
+            "t": "2026-11-23T20:00:00.000+09:00"
+          }
+        },
+        "edits": [
+          {
+            "list": "schedules",
+            "id": "mv:pay:steps.a",
+            "set": {
+              "amounts": {
+                "2027-01-25": {
+                  "amount": 120000,
+                  "at": "2026-11-26T10:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              }
+            },
+            "at": "2026-11-26T10:00:00.000+09:00"
+          }
+        ],
+        "desktop": {
+          "copy": {
+            "v": 1,
+            "cfg": {
+              "bankStart": 200000,
+              "bankAt": "2026-11-22"
+            },
+            "ui": {
+              "cur": "¥",
+              "preset": "¥",
+              "done": {
+                "pay": true,
+                "bills": true,
+                "goals": true
+              }
+            },
+            "plan": {
+              "lines": [],
+              "goals": []
+            },
+            "steps": {
+              "a": [
+                {
+                  "from": "2026-11",
+                  "v": 250000
+                }
+              ]
+            },
+            "once": {
+              "2027-01": {
+                "a": 0
+              }
+            }
+          },
+          "answers": {
+            "cur": "JPY",
+            "pay": {
+              "a": {
+                "every": "month",
+                "days": [
+                  25
+                ]
+              }
+            }
+          },
+          "now": "2026-11-28T09:00:00.000+09:00",
+          "by": "dsk001",
+          "idb": {
+            "t": "2026-11-23T20:00:00.000+09:00"
+          }
+        },
+        "pick": [
+          [
+            "schedules",
+            "mv:pay:steps.a",
+            "amounts"
+          ],
+          [
+            "schedules",
+            "mv:pay:steps.a",
+            "at"
+          ],
+          [
+            "schedules",
+            "mv:pay:steps.a",
+            "by"
+          ]
+        ]
+      },
+      "expected": {
+        "pick": {
+          "schedules mv:pay:steps.a amounts": {
+            "2027-01-25": {
+              "amount": 120000,
+              "at": "2026-11-26T10:00:00.000+09:00",
+              "by": "phn001"
+            }
+          },
+          "schedules mv:pay:steps.a at": "2026-11-26T10:00:00.000+09:00",
+          "schedules mv:pay:steps.a by": "phn001"
+        }
+      },
+      "why": "The 38.31 copy (last saved Mon 23 Nov 20:00) holds January 2027 pay of 0. The phone moves it on Tue 24 Nov with the pay day answered, the 25th: January's 0 is `amounts` on 2027-01-25, the key carrying the copy's last save, 23 Nov 20:00, as every moved record [AB1, AE1]. On Thu 26 Nov 10:00 the person changes January to 120,000 on the phone (the key and the record at 26 Nov). On Sat 28 Nov the desktop, offline, moves the same copy: its key says 0 at 23 Nov 20:00. At the merge the key goes to the newer, the phone's 120,000 (26 Nov), and so does the record [AE1, AB1].",
+      "decisions": [
+        "AE1",
+        "AB1",
+        "AB2"
+      ]
     }
   ],
   "open": [
