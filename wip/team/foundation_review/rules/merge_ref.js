@@ -1,4 +1,4 @@
-// Merging two copies and the hybrid clock (SCHEMA_V3 0 and 2.3; DECISIONS_ROUND2 D4, H1, H6, L, M, N1, N2, O2, O3).
+// Merging two copies and the hybrid clock (SCHEMA_V3 0 and 2.3; DECISIONS_ROUND2 D4, H1, H6, L, M, N1, N2, O2, O3, Q5, Q7).
 // A plain reference for the engine lane, checked by run_rules.js against rules/merge.json.
 // Open points name their question in merge.json.
 'use strict';
@@ -29,18 +29,22 @@ function newer(a, b) { return ms(a) > ms(b) ? 'a' : ms(b) > ms(a) ? 'b' : 'same'
 // [O2] A record the app writes for a known moment gets an id built from what it is, so two devices writing
 // the same moment make one record and the merge keeps the newest `at`: a settlement `set:<occurrence>`, a
 // self-logged spend `auto:<schedule>@<due>`, a period-end answer `pe:<period last day>:<place>`, a period
-// started without the pay `ps:<date>`.
+// started without the pay `ps:<date>`. [Q7] A removed place's move to Waiting `rm:<place>`, a closing's transfer
+// or write-off `close:<account>`. [Q5] The skip written when a self-logged spend is removed `skip:<occurrence>`.
 function idFor(w) {
   if (w.k === 'set') return 'set:' + w.s + '@' + w.due;
   if (w.k === 'auto') return 'auto:' + w.s + '@' + w.due;
+  if (w.k === 'skip') return 'skip:' + w.s + '@' + w.due;
   if (w.k === 'pe') return 'pe:' + w.periodTo + ':' + w.place;
   if (w.k === 'ps') return 'ps:' + w.date;
+  if (w.k === 'rm') return 'rm:' + w.place;
+  if (w.k === 'close') return 'close:' + w.acct;
   throw new Error('no built id for ' + w.k);
 }
 // [O3] Every other id is `<device part>-<session part>-<counter>`: the device part 6 characters, the session
 // part 10 random characters (letters and digits) drawn on each page open, the counter from 1. The device
 // part is letters and digits too (the schema's own example is `k7qzpa`).
-const BUILT = /^(set:[a-z0-9_]+@\d{4}-\d{2}-\d{2}|auto:[a-z0-9_]+@\d{4}-\d{2}-\d{2}|pe:\d{4}-\d{2}-\d{2}:[a-z0-9_]+|ps:\d{4}-\d{2}-\d{2})$/;
+const BUILT = /^((set|auto|skip):[a-z0-9_]+@\d{4}-\d{2}-\d{2}|pe:\d{4}-\d{2}-\d{2}:[a-z0-9_]+|ps:\d{4}-\d{2}-\d{2}|(rm|close):[a-z0-9_]+)$/;
 const idOk = id => typeof id === 'string' && (/^[a-z0-9]{6}-[a-z0-9]{10}-[1-9]\d*$/.test(id) || BUILT.test(id));
 
 // ---------- merging ----------

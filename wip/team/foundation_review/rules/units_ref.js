@@ -161,7 +161,9 @@ function payNumber(rule, due) {
 // covers the months the rule is in force in that year (the first rule from 1 Jan), spread over that rule's
 // pays (its due dates in those months, counted as paysInYearRules does), the leftover minor units on that
 // rule's earliest pays [L units q4]. So the year adds up to 12 months. A rule that starts on a day other
-// than the 1st is not decided (units.json open question) and is refused.
+// than the 1st [R2]: the month of the change goes to the rule in force on its first day, and the new rule's
+// months start the next month; its pays still follow the new rule (every due date from its `from` is one of its
+// pays, one in the month of the change included).
 function spread(total, pays) {
   const base = Math.floor(total / pays), extra = total - base * pays, list = [];
   for (let k = 1; k <= pays; k++) list.push(base + (k <= extra ? 1 : 0));
@@ -171,12 +173,13 @@ function rulesParts(rules, year, monthly) {
   const list = rules.slice().sort((a, b) => (a.from < b.from ? -1 : 1));
   const first = dayNum(year + '-01-01'), next = dayNum((year + 1) + '-01-01'), parts = [];
   const monthOf = n => { const s = dayStr(n); return Number(s.slice(0, 4)) * 12 + Number(s.slice(5, 7)) - 1; };
+  // [R2] The first month a rule's amounts cover: the month of its `from` when that is the 1st, else the next one.
+  const firstMonth = n => monthOf(n) + (dayStr(n).slice(8) === '01' ? 0 : 1);
   list.forEach((r, i) => {
     const start = Math.max(i === 0 ? -Infinity : dayNum(r.from), first);
     const end = Math.min(list[i + 1] ? dayNum(list[i + 1].from) : Infinity, next);
     if (start >= end) return;
-    if (dayStr(start).slice(8) !== '01' || (end !== next && dayStr(end).slice(8) !== '01')) throw new Error('a rule from ' + dayStr(start === first ? end : start) + ', not the 1st of a month: not decided (units.json open question)');
-    const months = monthOf(end) - monthOf(start);
+    const months = (end === next ? monthOf(next) : firstMonth(end)) - (start === first ? monthOf(first) : firstMonth(start));
     const dues = dueDatesIn(r.rule, year).filter(d => d >= start && d < end);
     parts.push({ from: dayStr(start), months, total: monthly * months, dues, list: spread(monthly * months, dues.length) });
   });

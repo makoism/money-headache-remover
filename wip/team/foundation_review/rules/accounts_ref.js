@@ -1,4 +1,4 @@
-// Accounts: closing (SCHEMA_V3 3 and 5; DECISIONS_ROUND2 O, P6).
+// Accounts: closing (SCHEMA_V3 3 and 5; DECISIONS_ROUND2 O, P6, Q7, the Q watch item (write-off), R3, R4, R5).
 // A plain reference for the engine lane, checked by run_rules.js against rules/accounts.json.
 // Open points name their question in accounts.json.
 'use strict';
@@ -8,18 +8,33 @@ const { dayNum } = require('./dates');
 // [P6] It closes only when its final figure is zero or moved out by the transfers the closing asks for
 // (dated the closing day); otherwise it is refused, with what is still in it shown. Its schedules (paid from
 // it, landing in it, or a transfer into it) end on the closing day, unless they already end on or before it.
-function close({ account, date, figure, transfers, schedules }) {
-  const out = (transfers || []).reduce((t, x) => t + x.a, 0);
+// [R4] Closing the account a card is paid from, or a place is kept in, first asks for the new account for each
+// (`newLinks`) and moves the link; until each has one, the closing is refused with what still `needs` one.
+// [R3] A card, loan or pay-later account that still owes money (`figure` above zero), or a bank below zero,
+// cannot be closed until it is at zero: refused, with the payment that gets it there offered (a repay from its
+// `payFrom`, or for a bank a transfer in from an account the person picks).
+// [Q watch item] A balance that cannot be moved out may be written off as a spend (`writeOff`).
+// [Q7] The closing's transfer or write-off has the built id `close:<account>`; with more than one such record
+// none gets it (accounts-open-4).
+const OWED = { card: 1, loan: 1, paylater: 1 };
+function close({ account, kind, payFrom, date, figure, transfers, writeOff, schedules, links, newLinks }) {
+  const linked = [].concat((links || {}).cards || [], (links || {}).places || []);
+  const needs = linked.filter(x => !(newLinks || {})[x]);
+  if (needs.length) return { refused: { account, needs } };
+  if (OWED[kind] && figure > 0) return { refused: { account, owes: figure, offer: { k: 'repay', acct: payFrom, acct2: account, a: figure } } };
+  if (!OWED[kind] && figure < 0 && !(transfers || []).length) return { refused: { account, left: figure, offer: { k: 'transfer', acct2: account, a: -figure } } };
+  const out = (transfers || []).reduce((t, x) => t + x.a, 0) + (writeOff || 0);
   if (figure - out !== 0) return { refused: { account, left: figure - out } };
-  const events = [{ k: 'check', date, acct: account, a: figure }]
-    .concat((transfers || []).map(x => ({ k: 'transfer', date, acct: account, acct2: x.to, a: x.a })));
+  const recs = (transfers || []).map(x => ({ k: 'transfer', date, acct: account, acct2: x.to, a: x.a }))
+    .concat(writeOff ? [{ k: 'spend', date, acct: account, a: writeOff }] : []);
+  const events = [{ k: 'check', date, acct: account, a: figure }].concat(recs.length === 1 ? [Object.assign({ id: 'close:' + account }, recs[0])] : recs);
   const ends = {};
   for (const s of schedules || []) {
     if (s.acct !== account && s.acct2 !== account) continue;
     if (s.ends && dayNum(s.ends) <= dayNum(date)) continue;
     ends[s.id] = date;
   }
-  return { closed: date, events, ends };
+  return Object.assign({ closed: date, events, ends }, linked.length ? { links: Object.assign({}, newLinks) } : {});
 }
 
 function ask(question, input) {
