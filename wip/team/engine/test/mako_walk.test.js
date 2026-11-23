@@ -116,6 +116,27 @@ t('the bank after the cards are paid: 11 Dec on 23 Nov, 9 Dec and 10 Dec, before
   bk = W.apply(bk, W.checkIn(bk, { day, told: day + 'T20:01+09:00', newId, figures: { [bank]: L.lookahead(bk, day).accounts[bank].bank } }));
   eq(at(bk, day), Object.assign({ day: '2026-12-11', amount: 364400, cardDays: ['2026-12-11'], cards: ['card_b'], pays: [], billsTaken: 0 }, bacBase));
 });
+// [BK5] a card payment on pay N's own day is part of X, the pay counted first. The app's book: card B leaves Fri 8 Jan,
+// both pays and card A land Tue 12 Jan. Every item ticked at check-ins on 10, 11 and 28 Dec (bank 275,000). On 5 Jan:
+// D1 is 8 Jan, N the 12 Jan pay, the day 12 Jan: 275,000 - 16,900 (B) + 240,000 - 18,000 (A) = 480,100. With a 270,000
+// spend on 2 Jan the bank dips on 8 Jan: 275,000 - 270,000 - 16,900 = -11,900, and X is 210,100.
+t('the bank after the cards are paid: a card on pay N\'s own day is in it, with the pay; a dip before it is named [BK5]', () => {
+  const sc = JSON.parse(JSON.stringify(require('./mako_madeup.js').SC));
+  sc.events = [{ id: 'sp1', date: '2026-12-18', kind: 'spend', account: 'card_a', amount: 18000 }, { id: 'sp2', date: '2026-12-20', kind: 'spend', account: 'card_b', amount: 9500 },
+    { id: 'sp3', date: '2026-12-29', kind: 'spend', account: 'card_b', amount: 7400 }];
+  let bk = require('./scenario_to_book.js').convert(sc).book; const bank = 'bank';
+  bk.home.main = { v: { acct: 'bank', min: null } };
+  const newId = I.idMaker('q4zt8m', () => 0.35);
+  for (const day of ['2026-12-10', '2026-12-11', '2026-12-28']) {
+    const li = L.lookahead(bk, day).checkIn.toConfirm;
+    bk = W.apply(bk, W.checkIn(bk, { day, told: day + 'T20:00+09:00', newId, ticked: li.map(o => o.item), figures: {}, expected: Object.fromEntries(li.map(o => [o.item, o.amount])), lands: Object.fromEntries(li.map(o => [o.item, o.lands])) }));
+    bk = W.apply(bk, W.checkIn(bk, { day, told: day + 'T20:01+09:00', newId, figures: { [bank]: L.lookahead(bk, day).accounts[bank].bank } }));
+  }
+  eq(L.lookahead(bk, '2027-01-05').bankAfterCards[bank], Object.assign({ day: '2027-01-12', amount: 480100, cardDays: ['2027-01-08', '2027-01-12'], cards: ['card_b', 'card_a'], pays: ['2027-01-12'], billsTaken: 0 }, bacBase));
+  bk.events.push({ id: 'k7m2qa-spbigjan-1', k: 'spend', acct: bank, a: 270000, date: '2027-01-02', told: '2027-01-02T21:00+09:00', line: 'free', src: { type: 'typed' } });
+  const x = L.lookahead(bk, '2027-01-05').bankAfterCards[bank];
+  eq([x.day, x.amount, x.dip], ['2027-01-12', 210100, { day: '2027-01-08', amount: 11900 }]);
+});
 // The walk's life (pay moved earlier: the January pay and card B on Fri 8 Jan, card A on Tue 12 Jan), card spending
 // typed on 11 Dec (A 18,000, B 9,500). From 12 Dec to 7 Jan: D1 is 8 Jan (B), N the 10 Feb pay, the day 12 Jan, with the
 // 8 Jan pay in it: 364,400 - 89,400 (Dec bills) + 240,000 - 9,500 - 18,000 = 487,500. On 11 Jan, the 8 Jan pay left

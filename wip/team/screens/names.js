@@ -28,7 +28,7 @@
     bankAfterCards: {
       label: 'After your cards are paid', figures: ['bankAfterCards.*.amount'], state: 'decided',
       source: 'DECISIONS_ROUND2 F10 (Mako, A5), BB2, BK1, BK3; NORTH_STAR; DECISIONS.md 169',
-      note: 'per bank and dated: "After your cards are paid on 10 and 11 Dec: Main bank", the engine walk to the last card payment day before the next counted pay after the first one (res.bankAfterCards, BK3). Shown once, in the cards box, with its day and the pays in it, so it is never read as safe to spend. The undated total.afterCards is not shown (BB2)',
+      note: 'per bank and dated: "After your cards are paid on 10 and 11 Dec: Main bank", the engine walk to the last card payment on or before the first counted pay after the earliest unpaid one (res.bankAfterCards, BK3, BK5). Shown once, in the cards box, with its day and the pays in it, so it is never read as safe to spend. The undated total.afterCards is not shown (BB2)',
     },
     safeToSpend: {
       label: 'Safe to spend', figures: ['safeToSpend.headline'], state: 'decided',

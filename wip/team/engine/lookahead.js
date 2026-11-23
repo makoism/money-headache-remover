@@ -1223,7 +1223,7 @@
     // ----- each bank after its cards are paid [NORTH_STAR, BK1, BK3; refines BB2] -----
     // Per bank, dated, from the walk's own steps. D1 is the earliest unpaid card payment from the bank (an overdue one
     // is taken today); N is the first counted pay landing after D1; the day is the last card payment on or after D1 and
-    // before N. It starts from the bank today, adds the counted pays and takes off bills, moves, loan parts and card
+    // on or before N's day (BK5: the pay counted first, the walk's order). It starts from the bank today, adds the counted pays and takes off bills, moves, loan parts and card
     // payments up to that day; never plan lines, never goals (money set aside in the bank stays in it and is named).
     // A late or not seen pay is not counted (BH1) and is named; close days "not sure" are named (all on the card is
     // taken); the lowest end of day below zero before the day is given as a dip.
@@ -1235,7 +1235,7 @@
       if (!cardSteps.length) continue;
       const d1 = Math.min(...cardSteps.map(x => x.day));
       const n = real.find(x => x.pay && x.amount > 0 && x.day > d1);
-      const inStretch = cardSteps.filter(x => x.day >= d1 && (!n || x.day < n.day));
+      const inStretch = cardSteps.filter(x => x.day >= d1 && (!n || x.day <= n.day));   // [BK5] on N's own day too, the pay first
       const last = Math.max(...inStretch.map(x => x.day));
       let bal = w.start, dip = null;
       const upTo = real.filter(x => x.day <= last);
