@@ -4,24 +4,11 @@
    dates) with Earlier and Later, and a search across everything. A tap on a row opens it to change or remove; every
    write goes through ACT3 (src/act3.js), which gives the Undo bar. Free to spend left and safe to spend are the
    engine's, before and after: for a draft the engine is asked about the book the draft would make (ACT3.dry). This
-   file chooses, writes and places; it never adds, takes away or rounds (tests: no_maths.js, e3_receipts.js).
-   The tab bar: a button with data-tab="<name>" shows the panel with data-panel="<name>" and hides the others. */
+   file chooses, writes and places; it never adds, takes away or rounds (tests: no_maths.js, e3_receipts.js). */
 const RC3 = { mode: 'spend', edit: null, at: null, search: '', last: null };
 const RC_KIND3 = { spend: 'logSpend', refund: 'refund', moved: 'moveMoney' };
 const RC_SPEND_FROM3 = { bank: 1, cash: 1, ewallet: 1, wallet: 1, card: 1, paylater: 1 };
 const RC_OWN3 = { bank: 1, cash: 1, ewallet: 1, wallet: 1 };
-
-/* ---- tabs ---- */
-function showTab3(name) {
-  const on = document.querySelector(`[data-panel="${name}"]`);
-  if (!on || !on.hidden) return;   // already shown: a second tap keeps what is typed
-  for (const p of document.querySelectorAll('[data-panel]')) p.hidden = p.dataset.panel !== name;
-  for (const b of document.querySelectorAll('[data-tab]')) { if (b.dataset.tab === name) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); }
-  if (name === 'receipts') renderRc3();
-  if (!$('#a3Check').hidden) closeCheck3();
-  scrollTo(0, 0);
-}
-document.addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (b) showTab3(b.dataset.tab); });
 
 /* ---- what is in the book, by name (lookups, nothing worked out) ---- */
 const rcLive3 = x => x && !x.gone;

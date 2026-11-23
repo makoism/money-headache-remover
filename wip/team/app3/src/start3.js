@@ -1,4 +1,18 @@
 /* ---------- start ---------- */
+/* the one tab switch: a button with data-tab="<name>" shows the panel with data-panel="<name>" and hides every other
+   panel. A sheet open over Home (Check your bank) closes first, so its close cannot bring Home back beside the new tab. */
+function showTab3(name) {
+  const on = document.querySelector(`[data-panel="${name}"]`);
+  if (!on) return;
+  if (!$('#a3Check').hidden) closeCheck3();
+  if (on.hidden || $$('[data-panel]').some(p => p !== on && !p.hidden)) {
+    for (const p of $$('[data-panel]')) p.hidden = p !== on;
+    if (name === 'receipts') renderRc3();
+    scrollTo(0, 0);
+  }   // already shown alone: a second tap keeps what is typed
+  for (const b of $$('[data-tab]')) { if (b.dataset.tab === name) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); }
+}
+document.addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (b) showTab3(b.dataset.tab); });
 /* the yellow band on a try book, with the day box (a plain file has no address to carry ?today=) */
 function tryBand3() {
   const t = $('#a3Try'); t.hidden = false;

@@ -48,6 +48,7 @@ step "Add statements (the AI route, any AI, review, Add, duplicates once, the re
 step "each record once after a statement (BI2): Receipts"; run tests/e3_stmt_once.js "e3_stmt_once: ALL PASS"
 step "the period by its dates"; run tests/e3_period.js "e3_period: ALL PASS"
 step "Receipts"; run tests/e3_receipts.js "e3_receipts: ALL PASS"
+step "only the tapped tab's panel shows (every tab after every other, the sheets)"; run tests/e3_panels.js "e3_panels: ALL PASS"
 step "the Plan tab"; run tests/e3_plan.js "e3_plan: ALL PASS"
 step "as a plain file: the first screen, the try book and its day box"; run tests/e3_file.js "e3_file: ALL PASS"
 step "setup3"; run tests/e3_setup.js "e3_setup: ALL PASS"

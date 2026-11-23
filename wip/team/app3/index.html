@@ -1264,6 +1264,9 @@ body .upd.undo-bar.undo-top { top: calc(10px + env(safe-area-inset-top, 0px)); b
 [role="tab"]:focus-visible { outline-offset: -3px; }   /* the ring sits inside the tab, never past the tab bar (QC round 11 layout 3) */
 /* app3: slice 1's own page. Built only from the tokens of ../style.css (copied in above by build3.sh). */
 * { box-sizing: border-box; }
+/* the one rule for hidden: anything marked hidden is not shown, whatever display another rule gives it (a panel's own
+   display: flex once beat [data-panel][hidden] and the Receipts block showed on every tab) */
+[hidden] { display: none !important; }
 html { -webkit-text-size-adjust: 100%; }
 body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--f); font-size: var(--t-body); line-height: 1.47; -webkit-font-smoothing: antialiased; }
 body::before { content: ''; position: fixed; inset: 0; z-index: -1; background: var(--aurora); pointer-events: none; }
@@ -1296,7 +1299,6 @@ body::before { content: ''; position: fixed; inset: 0; z-index: -1; background: 
 .a3-btn.solid { background: var(--accent); color: var(--on-accent); }
 .a3-btn:focus-visible, .a3-in:focus-visible, .a3-tick input:focus-visible { outline: 3px solid var(--acc-ring); outline-offset: 2px; }
 .a3-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
-.a3-sheet[hidden], #a3Home[hidden] { display: none; }
 .a3-in.a3-txt, .a3-in.a3-sel { text-align: left; }
 .a3-row3 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .a3-group { padding: 6px 0 14px; border-bottom: 1px solid var(--hair); }
@@ -1321,7 +1323,6 @@ html { scroll-padding-top: 72px; }
 .a3-tabs button { flex: 1; min-height: var(--btn-h); border: 0; border-radius: var(--r-ctl); background: transparent; color: var(--ink2); font: inherit; font-weight: 600; cursor: pointer; }
 .a3-tabs button[aria-current=page] { background: var(--track); color: var(--ink); }
 .a3-tabs button:focus-visible, .a3-seg:focus-visible, .a3-rcrow:focus-visible, .a3-sel:focus-visible { outline: 3px solid var(--acc-ring); outline-offset: 2px; }
-[data-panel][hidden] { display: none; }
 #a3Rc { display: flex; flex-direction: column; gap: var(--gap-card); }
 .a3-segs { display: flex; gap: 6px; margin-top: 8px; }
 .a3-seg { flex: 1; min-height: 44px; border: 0; border-radius: var(--r-ctl); background: var(--track); color: var(--ink2); font: inherit; font-weight: 600; cursor: pointer; }
@@ -1357,10 +1358,8 @@ html { scroll-padding-top: 72px; }
 .a3-stmt-rows li[data-status=repeat] { opacity: .6; }
 .a3-tick2 { grid-template-columns: 28px 1fr auto; }
 details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
-#a3StmtBar[hidden], .a3-stmt-rows[hidden] { display: none; }
 .a3-tick2 > span:not(.amt) { display: flex; flex-direction: column; }
 /* Plan (plan lane) */
-#a3Plan[hidden] { display: none; }
 #a3Plan { display: flex; flex-direction: column; gap: var(--gap-card); }
 .a3-goal meter { display: block; width: 100%; height: 10px; margin-top: 6px; accent-color: var(--accent); }
 .a3-goal > span:first-child { flex: 1; min-width: 0; }
@@ -1376,7 +1375,6 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
 .a3-in.a3-text { text-align: left; }
 .a3-btn:disabled { opacity: .5; cursor: default; }
 .a3-code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: var(--t-h3); letter-spacing: .04em; overflow-wrap: anywhere; margin: 10px 0 0; }
-.a3-tabs[hidden] { display: none; }
 .a3-q { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--hair); }
 .a3-q .a3-rows li { align-items: center; }
 /* Ask (ask lane) */
@@ -3081,16 +3079,12 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
         spendFrom: isClosed ? false : a.spendFrom != null ? a.spendFrom : !!SPEND_TYPES[a.type] && a.cur === home && !backsGoal(id),
         why: whyText(w.why, w.headroom, a.cur), fillers: banks[id].fillers };
       if (id === mainAcct && mainMinOtherCur()) res.warnings.push({ account: id, code: 'minimum_other_currency', text: `The minimum kept for ${a.name} is in ${main.min.cur}, not ${a.cur}: what is its minimum in ${a.cur}?` });
-      // [QC fix] data for the screens to word (account, amount, day, minimum or null for none); the text is only for Ask's
-      // summary, and says "below zero" when there is no minimum, with the day as "1 Jan", never an ISO day
-      if (w.headroom < 0) res.warnings.push({ account: id, code: 'below_minimum', day: r.lowestDay, amount: -w.headroom, short: -w.headroom, minimum: minimum || null,
-        text: minimum ? `${a.name} goes ${fmt(-w.headroom, a.cur)} below its minimum of ${fmt(minimum, a.cur)} on ${short(w.lowestDay)}` : `${a.name} goes ${fmt(-w.headroom, a.cur)} below zero on ${short(w.lowestDay)}` });
+      if (w.headroom < 0) res.warnings.push({ account: id, code: 'below_minimum', day: r.lowestDay, short: -w.headroom, text: `${a.name} goes ${fmt(-w.headroom, a.cur)} below its minimum on ${r.lowestDay}` });
       const later = walk(id, today + LATER_ON_DAYS, 0);   // [B11]
-      if (later.firstBelowZero !== null && later.firstBelowZero > horizon) res.laterOn.push({ account: id, day: dayStr(later.firstBelowZero), balance: later.belowBal, amount: -later.belowBal, minimum: null,
-        text: `Later on: ${a.name} goes below zero in ${MONTHS[+dayStr(later.firstBelowZero).slice(5, 7) - 1]} ${dayStr(later.firstBelowZero).slice(0, 4)}` });
+      if (later.firstBelowZero !== null && later.firstBelowZero > horizon) res.laterOn.push({ account: id, day: dayStr(later.firstBelowZero), balance: later.belowBal, text: `Later on: ${a.name} goes below zero in ${dayStr(later.firstBelowZero).slice(0, 7)}` });
     }
     for (const id in banks) {
-      if (banks[id].askAgain !== null) res.warnings.push({ account: id, code: 'check_again', day: dayStr(banks[id].askAgain), text: `The ${acct[id].name} figure of ${short(banks[id].askAgain)} was wrong: what does it show now?` });   // [Z1]
+      if (banks[id].askAgain !== null) res.warnings.push({ account: id, code: 'check_again', day: dayStr(banks[id].askAgain), text: `The ${acct[id].name} figure of ${dayStr(banks[id].askAgain)} was wrong: what does it show now?` });   // [Z1]
       const g = banks[id].lastGap;
       if (g && largeGain(id, g) && g.answer !== 'right') res.warnings.push({ account: id, code: 'gain_to_ask', day: dayStr(g.day), gain: g.gain, text: `${acct[id].name} shows ${fmt(g.gain, cur(id))} more than the app had: was that figure right?` });
     }
@@ -4062,8 +4056,6 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
     return { y: m[1], m: m[2], d: m[3].replace(/^0/, ''), s: m[0] };
   }
   function dayLabel(s, withYear) { const p = parseDay(s); return [p.d, MONTHS[p.m]].concat(withYear ? [p.y] : []).join(' '); }
-  /* a month as VOICE says: "Feb 2027" (from a real day in it) */
-  function monthLabel(s) { const p = parseDay(s); return MONTHS[p.m] + ' ' + p.y; }
   /* "10 Nov to 9 Dec"; across the new year both days carry their year (for Mako: whether the year shows otherwise) */
   function periodLabel(start, end) {
     const a = parseDay(start), b = parseDay(end);
@@ -4072,7 +4064,7 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
     return dayLabel(start, years) + ' to ' + dayLabel(end, years);
   }
 
-  return { NAMES, label, byFigure, labelKey, check, forMako, notInEngine, dayLabel, monthLabel, periodLabel };
+  return { NAMES, label, byFigure, labelKey, check, forMako, notInEngine, dayLabel, periodLabel };
 });
 /* The one status every screen reads (DECISIONS_ROUND2 C, sweep2_repeats A1 and B2, LESSONS lesson 2). It is worked out
    from the engine's result only (SCHEMA_V3 section 12: safe to spend, warnings, next pay, not seen yet, the check-in
@@ -4119,7 +4111,6 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
     'reason.short': W('You\'re short by {amount}'),
     'reason.short_on': W('You\'re short by {amount} on {day}'),
     'reason.below_minimum': W('{account} goes {amount} under its minimum on {day}'),
-    'reason.below_zero': W('{account} goes {amount} below zero on {day}'),
     'reason.gain_to_ask': W('{account} has more in it than the app expected'),
     'reason.check_again': W('Check {account} again'),
     'reason.minimum_other_currency': W('What\'s the minimum for {account} in its own currency'),
@@ -4141,40 +4132,21 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
     'next.check_in_when_it_lands': W('Check in when it lands'),
     'next.wait_for_pay': W('It turns safe once your pay is in'),
     'next.log_money_in': W('Log money in when it comes'),
-    /* the engine's warnings, worded here from their data (account, amount, day, minimum or none), never its text */
-    'warn.below_zero': W('{account} goes {amount} below zero on {day}'),
-    'warn.below_minimum': W('{account} goes {amount} below its minimum of {minimum} on {day}'),
-    'warn.later_on': W('Later on: {account} goes below zero in {month}'),
-    'warn.check_again': W('The {account} figure of {day} was wrong: what does it show now'),
-    'warn.gain_to_ask': W('{account} shows {amount} more than the app had: was that figure right'),
-    'warn.reopened': W('{account} was closed, but money came into it, so it is open again'),
-    'warn.minimum_other_currency': W('The minimum kept for {account} is in another currency: what is its minimum in its own'),
-    'warn.card_other_currency': W('{card} is paid from {account} in another currency: it is not taken off safe to spend until it is paid'),
-    'warn.loan_other_currency': W('{loan} is paid from {account} in another currency: it is not taken off safe to spend until it is paid'),
-    'warn.income_other_currency': W('A pay into {account} is in another currency: it is not counted until it arrives'),
-    'warn.spend_other_currency': W('A spend from {account} in another currency is listed apart: it is not counted yet'),
-    'warn.unknown': W('Something about {account} needs a look'),
   };
 
   function fill(key, p, ctx) {
     const w = WORDS[key];
     if (!w) throw new Error('status: no words for ' + key);
-    /* one sentence, one way of writing cents: when one amount in it has cents, every amount does (money.formatter) */
-    const code = p.currency || ctx.currency;
-    const amounts = ['amount', 'minimum'].map(k => p[k]).filter(v => typeof v === 'number');
-    const fmt = amounts.length && code ? money.formatter(code, amounts) : null;
     return w.text.replace(/\{(\w+)\}/g, (all, k) => {
       const v = p[k];
       if (v === undefined || v === null) throw new Error('status: ' + key + ' needs ' + k);
-      if (k === 'amount' || k === 'minimum') return fmt(v);
+      if (k === 'amount') return money.format(v, p.currency || ctx.currency);
       if (k === 'day' || k === 'since' || k === 'until') return names.dayLabel(v);
-      if (k === 'month') return names.monthLabel(v);
-      if (k === 'account' || k === 'card' || k === 'loan') return (ctx.names && ctx.names[v]) || 'an account';
+      if (k === 'account') return (ctx.names && ctx.names[v]) || v;
       return String(v);
     });
   }
   function reasonKey(r) {
-    if (r.code === 'below_minimum' && !r.minimum) return 'reason.below_zero';
     if (r.code === 'short') return r.day ? 'reason.short_on' : 'reason.short';
     if (r.code === 'to_confirm') return r.count === 1 ? 'reason.to_confirm_one' : 'reason.to_confirm_many';
     if (r.code === 'nothing_safe') return r.until ? 'reason.nothing_safe' : 'reason.nothing_safe_no_pay';
@@ -4197,7 +4169,7 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
       const day = below.length ? below[0].day : null;
       out.push({ state: 'short', reason: { code: 'short', amount: stp.shortfall, currency: ctx.currency, day }, next: { code: 'move_money_in', day }, note: below.length ? 'below_minimum' : 'short' });
     }
-    for (const w of below) out.push({ state: 'warning', reason: { code: 'below_minimum', account: w.account, amount: w.amount != null ? w.amount : w.short, currency: (accounts[w.account] || {}).currency || ctx.currency, day: w.day, minimum: minimumOf(w, accounts) }, next: { code: 'move_money_in', day: w.day }, note: 'below_minimum' });
+    for (const w of below) out.push({ state: 'warning', reason: { code: 'below_minimum', account: w.account, amount: w.short, currency: (accounts[w.account] || {}).currency || ctx.currency, day: w.day }, next: { code: 'move_money_in', day: w.day }, note: 'below_minimum' });
     for (const w of warnings) {
       if (w.code === 'below_minimum' || NOTE_ONLY.includes(w.code)) continue;
       const known = WARNING_STATE[w.code];
@@ -4218,31 +4190,6 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
     return out;
   }
 
-  /* the minimum a warning is measured against, or null for none (zero): the engine's own field, else the account's */
-  function minimumOf(w, accounts) {
-    const m = w.minimum !== undefined ? w.minimum : (accounts[w.account] || {}).minimum;
-    return m ? m : null;
-  }
-  /* one engine warning in words: from its data only, so no raw ISO day and no engine text reaches a screen.
-     ctx: { currency, names: { id: name }, accounts (the engine's, for each account's currency) } */
-  function warningText(w, ctx) {
-    ctx = ctx || {};
-    const accounts = ctx.accounts || {};
-    const currency = (accounts[w.account] || {}).currency || ctx.currency;
-    if (w.code === 'below_minimum') {
-      const minimum = minimumOf(w, accounts), amount = w.amount != null ? w.amount : w.short;
-      return fill(minimum ? 'warn.below_minimum' : 'warn.below_zero', { account: w.account, amount, minimum, day: w.day, currency }, ctx);
-    }
-    if (w.code === 'check_again') return fill('warn.check_again', { account: w.account, day: w.day }, ctx);
-    if (w.code === 'gain_to_ask') return fill('warn.gain_to_ask', { account: w.account, amount: w.gain, currency }, ctx);
-    if (w.code === 'card_other_currency') return fill('warn.card_other_currency', { account: w.account, card: w.card }, ctx);
-    if (w.code === 'loan_other_currency') return fill('warn.loan_other_currency', { account: w.account, loan: w.loan }, ctx);
-    if (WORDS['warn.' + w.code]) return fill('warn.' + w.code, { account: w.account }, ctx);
-    return fill('warn.unknown', { account: w.account }, ctx);
-  }
-  /* one "later on" entry in words: the month it goes below zero, as "Mar 2027" */
-  function laterText(l, ctx) { return fill('warn.later_on', { account: l.account, month: l.day }, ctx || {}); }
-
   function deepFreeze(o) { Object.values(o).forEach(v => { if (v && typeof v === 'object') deepFreeze(v); }); return Object.freeze(o); }
 
   function statusOf(r, ctx) {
@@ -4259,7 +4206,7 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
     return deepFreeze(s);
   }
 
-  return { statusOf, warningText, laterText, WORDS, STALE_DAYS };
+  return { statusOf, WORDS, STALE_DAYS };
 });
 /* One input behaviour for every box (DECISIONS_ROUND2 C, sweep2_repeats A11: "$1,212", "TripLisbon"). The first tap or
    click into a box selects what is in it, so what is typed next replaces the old value instead of adding to it. A
@@ -7954,7 +7901,7 @@ function renderHome3() {
   const ids = Object.keys(r.accounts);
   const out = [];
   /* the one status; on a sample screen the yellow band already says these are made-up numbers, so no second card */
-  const names = {}; for (const id of ids.concat(Object.keys(r.cards), Object.keys(r.owed || {}))) names[id] = E3.nameOf(id);
+  const names = {}; for (const id of ids.concat(Object.keys(r.cards))) names[id] = E3.nameOf(id);
   const st = BurrowScreens.status.statusOf(r, { currency: home, origin, names });
   if (origin !== 'sample') out.push(`<section class="a3-card a3-status" data-card="status" data-level="${esc3(st.level)}"><h2>${esc3(st.text.state)}</h2><p class="a3-sub">${esc3(st.text.reason)}</p></section>`);
   /* bank today, one figure per account, with its age */
@@ -7970,9 +7917,7 @@ function renderHome3() {
   const capLine = r.safeToSpend.why ? `<p class="a3-sum" data-fig="cap">${esc3(r.safeToSpend.why)}</p>` : '';
   const sums = `${ids.filter(id => r.accounts[id].spendFrom).map(id => `<p class="a3-sum" data-fig="why">${esc3(whyWords3(r.accounts[id]))}</p>`).join('')}${capLine}`;
   const short = r.safeToSpend.shortfall ? `<p class="a3-warn a3-bad">${esc3(label3('shortBy'))} ${fig3('safeToSpend.shortfall', r.safeToSpend.shortfall, home)} before then</p>` : '';
-  /* the engine's warnings are data (account, amount, day, minimum or none): worded by screens/status.js, never its text */
-  const wctx = { currency: home, names, accounts: r.accounts };
-  const warns = (r.warnings || []).map(w => `<p class="a3-warn" data-warn="${esc3(w.code)}">${esc3(BurrowScreens.status.warningText(w, wctx))}</p>`).join('');
+  const warns = (r.warnings || []).map(w => `<p class="a3-warn" data-warn="${esc3(w.code)}">${esc3(w.text)}</p>`).join('');
   out.push(`<section class="a3-card" data-card="safe"><h2>${esc3(label3('safeToSpend'))}${until}</h2>
     <p class="a3-big" data-fig="safe">${fig3('safeToSpend.headline', r.safeToSpend.headline, home)}</p>${short}${sums}${warns}</section>`);
   /* the period by its dates, and the next pay */
@@ -8005,7 +7950,7 @@ function renderHome3() {
   /* not seen yet, and later on */
   const late = r.notSeenYet.items;
   if (late.length) out.push(`<section class="a3-card" data-card="notseen"><h2>${esc3(label3('notSeenYet'))}</h2><p class="a3-sub">These were due and are not ticked off. Check your bank to tick them</p><ul class="a3-rows">${rowsHtml3(late, home, yr, 'notSeenYet.items')}</ul></section>`);
-  for (const l of r.laterOn) out.push(`<p class="a3-warn" data-warn="later">${esc3(BurrowScreens.status.laterText(l, wctx))}</p>`);
+  for (const l of r.laterOn) out.push(`<p class="a3-warn" data-warn="later">${esc3(l.text)}</p>`);
   out.push(`<div class="a3-actions"><button type="button" class="a3-btn solid" id="a3CheckGo">Check your bank</button></div>`);
   out.push('<p class="a3-later">Coming next: burrows and the art</p>');
   host.setAttribute('data-origin', origin);
@@ -8101,24 +8046,11 @@ async function saveCheck3() {
    dates) with Earlier and Later, and a search across everything. A tap on a row opens it to change or remove; every
    write goes through ACT3 (src/act3.js), which gives the Undo bar. Free to spend left and safe to spend are the
    engine's, before and after: for a draft the engine is asked about the book the draft would make (ACT3.dry). This
-   file chooses, writes and places; it never adds, takes away or rounds (tests: no_maths.js, e3_receipts.js).
-   The tab bar: a button with data-tab="<name>" shows the panel with data-panel="<name>" and hides the others. */
+   file chooses, writes and places; it never adds, takes away or rounds (tests: no_maths.js, e3_receipts.js). */
 const RC3 = { mode: 'spend', edit: null, at: null, search: '', last: null };
 const RC_KIND3 = { spend: 'logSpend', refund: 'refund', moved: 'moveMoney' };
 const RC_SPEND_FROM3 = { bank: 1, cash: 1, ewallet: 1, wallet: 1, card: 1, paylater: 1 };
 const RC_OWN3 = { bank: 1, cash: 1, ewallet: 1, wallet: 1 };
-
-/* ---- tabs ---- */
-function showTab3(name) {
-  const on = document.querySelector(`[data-panel="${name}"]`);
-  if (!on || !on.hidden) return;   // already shown: a second tap keeps what is typed
-  for (const p of document.querySelectorAll('[data-panel]')) p.hidden = p.dataset.panel !== name;
-  for (const b of document.querySelectorAll('[data-tab]')) { if (b.dataset.tab === name) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); }
-  if (name === 'receipts') renderRc3();
-  if (!$('#a3Check').hidden) closeCheck3();
-  scrollTo(0, 0);
-}
-document.addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (b) showTab3(b.dataset.tab); });
 
 /* ---- what is in the book, by name (lookups, nothing worked out) ---- */
 const rcLive3 = x => x && !x.gone;
@@ -9350,6 +9282,20 @@ if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
   });
 }
 /* ---------- start ---------- */
+/* the one tab switch: a button with data-tab="<name>" shows the panel with data-panel="<name>" and hides every other
+   panel. A sheet open over Home (Check your bank) closes first, so its close cannot bring Home back beside the new tab. */
+function showTab3(name) {
+  const on = document.querySelector(`[data-panel="${name}"]`);
+  if (!on) return;
+  if (!$('#a3Check').hidden) closeCheck3();
+  if (on.hidden || $$('[data-panel]').some(p => p !== on && !p.hidden)) {
+    for (const p of $$('[data-panel]')) p.hidden = p !== on;
+    if (name === 'receipts') renderRc3();
+    scrollTo(0, 0);
+  }   // already shown alone: a second tap keeps what is typed
+  for (const b of $$('[data-tab]')) { if (b.dataset.tab === name) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); }
+}
+document.addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (b) showTab3(b.dataset.tab); });
 /* the yellow band on a try book, with the day box (a plain file has no address to carry ?today=) */
 function tryBand3() {
   const t = $('#a3Try'); t.hidden = false;
