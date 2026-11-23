@@ -725,7 +725,8 @@
       return { started, occ, start, end };
     }
     const nowAmount = (src, per) => {
-      const n = nowPeriod(), a = periodAmount(src, n.started, n.occ);
+      // the period's own first day, also for the period holding the setup day, which has no recorded start
+      const n = nowPeriod(), a = periodAmount(src, n.start, n.occ);
       return n.start === null ? a : perPeriod({ per, amount: a }, n.start, n.end, n.occ);
     };
     function freePeriodAmount() {
@@ -812,7 +813,7 @@
         const share = before.length && after.length ? { d: after[0].land - od, D: after[0].land - startDayOf(before[before.length - 1]) } : null;
         // [AS, AU1] of the amount of the period holding the opening, by the units rules
         const holding = before.length ? before[before.length - 1] : null;
-        const openAmount = (src, per) => { const a = periodAmount(src, null, occOn(null, od)); return holding && after.length ? perPeriod({ per, amount: a }, startDayOf(holding), after[0].land, holding.id) : a; };
+        const openAmount = (src, per) => { const a = periodAmount(src, holding ? startDayOf(holding) : null, occOn(null, od)); return holding && after.length ? perPeriod({ per, amount: a }, startDayOf(holding), after[0].land, holding.id) : a; };
         let leftOver = 0;
         for (const l of lineSrcs.filter(x => moneyAcct(lineAcct(x)) === acctId)) {
           const typed = (split.lines || {})[l.id], amount = openAmount(l, l.per);

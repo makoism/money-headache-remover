@@ -243,4 +243,13 @@ t('while a money question waits, the walk counts the safe side across the kept v
   b.keptVersions.forEach(k => { k.ask = false; });
   eq(run(b, '2026-12-02').accounts.bank.lowest, 240000);   // picked: what shows, 250,000 and 300,000
 });
+t("a step dated on the first day of the period holding the setup day counts in that period [T watch, V]", () => {
+  const b = base(x => {
+    delete x.events[0].split;
+    x.plan.budgets[0].steps.push({ from: '2026-11-25', amount: 60000 });
+  });
+  const p = run(b, '2026-12-02').period;
+  // the period runs 25 Nov to 24 Dec (30 days); set up 1 Dec, so Food's share is 24 of 30 days of 60,000
+  eq(p.lines.map(l => [l.id, l.amount, l.left]), [['food', 60000, 48000]]);
+});
 done('lookahead');
