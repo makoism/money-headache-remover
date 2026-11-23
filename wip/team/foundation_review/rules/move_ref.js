@@ -173,6 +173,9 @@ function undatedFigure(copy, g, ym) {
 // [AD1] The day from which 38.31 writes ui.minAuto with a minimum it fills in (and deletes it when the person types one).
 const MIN_AUTO_FROM = '2026-11-20';
 
+// [AN7] 38.31's `ui.cats` keys are lowercased at the move into the shop-key form (`k:`, trimmed, spaces collapsed:
+// "SEVEN ELEVEN" is `k:seven eleven`), the one form merge_ref.catKey makes.
+const catsOf = cats => Object.fromEntries(Object.entries(cats).map(([k, v]) => [require('./merge_ref').catKey(k), v]));
 function move(input) {
   const raw = typeof input.raw === 'string' ? input.raw : JSON.stringify(madeCopy(input));
   const copy = JSON.parse(raw);   // [O] the raw stored text, never a cleaned copy
@@ -527,7 +530,7 @@ function move(input) {
 
   const out = { v: 3, home, people: typeof ui.name === 'string' && ui.name ? [{ id: 'mv:person:ui.name', name: ui.name }] : [],
     accounts, places, schedules, events,
-    plan: { shares, budgets }, imports: isMap(ui.cats) ? { cats: ui.cats } : {}, ui: shared,
+    plan: { shares, budgets }, imports: isMap(ui.cats) ? { cats: catsOf(ui.cats) } : {}, ui: shared,
     device: { look, tour, opens: Array.isArray(ui.wk) ? ui.wk : [] },
     asks, unplaced: unplaced.sort(), zero: zero.sort(), rounded: rounded.sort(), sample, saved, frozen3831: raw };
   // [11.1, O6, AL5] cfg.ceiling is "the most you want to spend in a month": an amount with its currency and `per: 'month'`
@@ -700,7 +703,9 @@ function stamp(m, now, by, saved) {
   const curs = (m.home.curs || []).map(e => Object.assign({}, e, { at: e.at || saved, by: e.by || by }));
   m.home = Object.assign(fields(Object.fromEntries(Object.entries(m.home).filter(([k]) => k !== 'curs'))), { curs });
   m.ui = fields(m.ui);
-  if (isMap(m.imports) && isMap(m.imports.cats)) m.imports = Object.assign({}, m.imports, { cats: fields(m.imports.cats) });
+  // [AN7] each moved shop lesson carries `src: 'person'`: 38.31 keeps the reader's guesses and the person's corrections in
+  // one map and cannot tell them apart, so the move takes the safe side (a reader's guess never writes over it)
+  if (isMap(m.imports) && isMap(m.imports.cats)) m.imports = Object.assign({}, m.imports, { cats: Object.fromEntries(Object.entries(m.imports.cats).map(([k, v]) => [k, { v, src: 'person', at: saved, by }])) });
   m.rev = Date.parse(now); m.at = now;
   return m;
 }
@@ -742,7 +747,7 @@ function moveLater({ phone, edits, desktop, cloud }) {
     const r = e.record ? e.record.split('.').reduce((o, k) => (o[k] = o[k] || {}), p) : listOf(p, e.list.split('.')).find(x => x.id === e.id);
     for (const k of e.unset || []) delete r[k];   // an Undo of a removal: the record again, with a newer `at` [H6]
     if (e.record) {   // [AK1, AL1] each field set is written as a field value with the edit's `at` and `by`
-      for (const [k, v] of Object.entries(e.set || {})) r[k] = { v, at: e.at, by: phone.by };
+      for (const [k, v] of Object.entries(e.set || {})) r[k] = Object.assign({ v }, e.src ? { src: e.src } : {}, { at: e.at, by: phone.by });   // [AN7] a lesson's `src`
     } else Object.assign(r, e.set, { at: e.at, by: phone.by });
   }
   const d = stored(desktop);

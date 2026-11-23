@@ -169,6 +169,19 @@ function fieldsShape(x) {
   return vs.some(v => !Array.isArray(v))
     && vs.every(v => fieldValue(v) || (Array.isArray(v) && (!v.length || entryShape(v) || idShape(v))) || fieldsShape(v));
 }
+// [AN7] A field value may carry `src`: 'person' (a lesson the person typed) or 'reader' (the statement reader's guess),
+// as `imports.cats` values do. A reader's guess never replaces a person's lesson, whatever the `at`: of two field values
+// one of which is the reader's, the other wins unless it was taken back (`gone`). A value with no `src` is read as the
+// person's (the safe side). Any other pair is settled by `winner` [H6, M5].
+const isReader = x => isMap(x) && x.src === 'reader';
+function fieldWinner(x, y) {
+  [x, y] = heldPair(x, y);
+  if (fieldValue(x) && fieldValue(y) && isReader(x) !== isReader(y)) { const p = isReader(x) ? y : x; if (!p.gone) return p; }
+  return winner(x, y);
+}
+// [AN1] Two plain values (no `at`, no `by`) settle by the keyed rule: `winner`'s last step, the larger as sorted JSON
+// text, so both devices keep the same one.
+const plainWinner = (x, y) => winner({ v: x }, { v: y }).v;
 const listKeyOf = (x, y) => ((idShape(x) || idShape(y)) && !(entryShape(x) || entryShape(y)) ? 'id' : 'from');
 function mergeKeyed(a, b) {
   const out = {};
@@ -177,7 +190,7 @@ function mergeKeyed(a, b) {
     if (x === undefined || y === undefined) out[k] = x === undefined ? y : x;
     else if (Array.isArray(x) || Array.isArray(y)) out[k] = mergeEntries(Array.isArray(x) ? x : [], Array.isArray(y) ? y : [], listKeyOf(x, y));   // [AJ3] `home.curs`
     else if (isMap(x) && isMap(y) && !fieldValue(x) && !fieldValue(y)) out[k] = mergeKeyed(x, y);   // [AL1] `cats` inside `imports`
-    else out[k] = isMap(x) && isMap(y) ? winner(...heldPair(x, y)) : winner({ v: x }, { v: y }).v;
+    else out[k] = isMap(x) && isMap(y) ? fieldWinner(x, y) : plainWinner(x, y);   // [AN7] a guess never beats a lesson; [AN1] plain values
   }
   return out;
 }
@@ -200,6 +213,10 @@ function mergeList(a, b) {
 }
 // Union of every list by id [D4]; single records with `at` by newest `at`; records of separately edited fields
 // (shared `ui`, `home`, `plan.limits`, `imports`) field by field [AL1]; `plan` holds lists and `limits`.
+// [AN1] Every map without an `at` of its own merges key by key, at any depth (the top level, `plan`, `imports`, `home`),
+// whatever it holds: a plain field, only an entry list (`home.curs`), an empty `cats`. Plain values inside settle by the
+// keyed rule, so merge(A, B) equals merge(B, A); nothing keeps "mine" whole any more (confirm_review_7 item 1). At the
+// top level `rev` is the larger plus one [L merge q3] and the copy's own `at` (when it was saved) the later moment.
 function merge(mine, theirs, top = true) {
   const out = {};
   for (const k of new Set(Object.keys(mine || {}).concat(Object.keys(theirs || {})))) {
@@ -208,9 +225,10 @@ function merge(mine, theirs, top = true) {
     else if (a === undefined || b === undefined) out[k] = Array.isArray(a || b) ? mergeList(a, b) : k === 'plan' ? merge(a, b, false) : (a === undefined ? b : a);
     else if (Array.isArray(a) || Array.isArray(b)) out[k] = mergeList(a, b);
     else if (k === 'plan') out[k] = merge(a, b, false);
+    else if (top && k === 'at' && typeof a === 'string' && typeof b === 'string') out[k] = ms(b) > ms(a) ? b : a;   // [AN1] as moments
     else if (fieldValue(a) && fieldValue(b)) out[k] = pick(a, b);   // a single record with its own `at`
-    else if (isMap(a) && isMap(b) && (fieldsShape(a) || fieldsShape(b))) out[k] = mergeKeyed(a, b);   // [AL1] found by shape
-    else out[k] = a;   // no `at` to compare
+    else if (isMap(a) && isMap(b) && !fieldValue(a) && !fieldValue(b)) out[k] = mergeKeyed(a, b);   // [AL1, AN1] no `at` of its own: key by key
+    else out[k] = isMap(a) && isMap(b) ? fieldWinner(a, b) : plainWinner(a, b);   // [AN1] the keyed rule
   }
   return out;
 }
@@ -396,7 +414,7 @@ function restore({ current, backup, now, by, lastSeen, answers }) {
       if (Array.isArray(a) || Array.isArray(b)) out[k] = restoreList(a, b);
       else if (k === 'plan') out[k] = walk(a, b);
       else if (fieldValue(b)) out[k] = restoreRecord(b, a);   // a single record with its own `at`
-      else if (fieldsShape(b) || fieldsShape(a)) out[k] = restoreKeyed(b, a);   // [AL1] `ui`, `home`, `plan.limits`, `imports`, by shape
+      else if ((isMap(b) || isMap(a)) && !fieldValue(a)) out[k] = restoreKeyed(b, a);   // [AL1, AN1] `ui`, `home`, `plan.limits`, `imports`: any map with no `at` of its own
       else if (b !== undefined) out[k] = b;   // the rest: the backup's as it is
     }
     return out;
@@ -422,6 +440,119 @@ function mainNotice({ mine, theirs, synced }) {
   return { main: merged, notice };
 }
 
+// [AN-note] AM2 widened: any field value whose own device's change lost at a merge (`country`, `mode`, a `curs` entry,
+// a shared `ui` key, `plan.limits`, `main`) records the same notice on that device, for its next open: "Your other device
+// changed this. Check it." A device's change and the other device's both count when each copy's value differs from the
+// value this device last synced (`synced`, the copy as it stood at its last sync); its own change lost when the merged
+// value is not its own. A plain sync, and a merge its own change wins, record nothing. Field values are found by shape
+// in every map with no `at` of its own (`home`, `ui`, `imports`, `plan.limits`), and so are the entries of an entry
+// list by `from` inside one (`home.curs`). Each notice names the field by its path (`home.country`,
+// `home.curs.2027-04-01`), with what this device had (`was`) and the `by` and `at` of what won; listed by path.
+const LOST_NOTICE = MAIN_NOTICE;
+function lostNotices({ mine, theirs, synced }) {
+  const merged = merge(mine, theirs), out = [];
+  const strip = e => { const o = Object.assign({}, e); delete o.at; delete o.by; delete o.held; return o; };
+  const same = (x, y) => canon(x) === canon(y);
+  const changed = (x, s) => !!x && !(s && sameMoment(x.at, s.at) && same(strip(x), strip(s)));
+  const check = (path, a, b, s, m, val) => {
+    if (!a || !b || !m || !changed(a, s) || !changed(b, s)) return;
+    const lost = !(sameMoment(m.at, a.at) && m.by === a.by && same(strip(m), strip(a)));
+    if (lost && !same(val(a), val(m))) out.push({ field: path, text: LOST_NOTICE, was: val(a), by: m.by, at: m.at });
+  };
+  const walk = (path, a, b, s, m, top) => {
+    a = a || {}; b = b || {}; s = s || {}; m = m || {};
+    for (const k of new Set(Object.keys(a).concat(Object.keys(b)))) {
+      const p = path ? path + '.' + k : k, x = a[k], y = b[k];
+      if (fieldValue(x) || fieldValue(y)) { if (!top) check(p, x, y, s[k], m[k], v => v.v); }
+      else if (Array.isArray(x) || Array.isArray(y)) {
+        if (top || !(entryShape(x) || entryShape(y))) continue;   // records are not field values
+        const at = (l, f) => (Array.isArray(l) ? l.find(e => e.from === f) : undefined);
+        for (const f of new Set([].concat(x || [], y || []).map(e => e.from)))
+          check(p + '.' + f, at(x, f), at(y, f), at(s[k], f), at(m[k], f), strip);
+      } else if (isMap(x) || isMap(y)) walk(p, x, y, s[k], m[k], false);
+    }
+  };
+  walk('', mine, theirs, synced, merged, true);
+  return { notices: out.sort((x, y) => (x.field < y.field ? -1 : x.field > y.field ? 1 : 0)) };
+}
+
+// [AN2, AN6] What a device writes right after a merge, with its own D4 clock (`at`: the later of now and the newest `at`
+// it has seen plus 1 ms) and its `by`, and the notices it shows at its next open.
+// [AN2] A schedule change (a `rules` entry after the first) that the merged copy shows starting on or before a settled
+// or named occurrence it no longer makes (a settle, a live `amounts` key, a `once` key, a `pe:` or `ps:` record: X8's
+// list) is moved to start the day after the latest such occurrence, the edit's own offer [X8]: the entry is removed by
+// its own `gone` and the same rule written from the new day, so entries keep merging by `from` and nothing is deleted
+// [M3]. This also catches a moved key left orphaned by an edit on the other device (a bonus key the other device edited
+// after this one moved it away, AL6). Both devices write the same move; only the device whose change it was (the
+// entry's `by`) records the notice. Only rules whose days the reference can list (`every: 'month'` and `'weeks'`) are
+// judged; the look ahead's own X8 check still refuses anything else.
+// [AN6] An account closed on one device that the merged copy shows an event dated after its closing day in (written on
+// the other device, which did not know) is open again: `closed` cleared, with a notice on each device that reopens it.
+const SHIFT_NOTICE = 'This change now starts the day after what your other device had already settled. Check it.';
+const REOPEN_NOTICE = 'This account was closed, but something was written into it after its closing day, so it is open again. Check it.';
+function namedDues(copy, sid) {
+  const out = new Set(), take = n => { const o = IDS.occurrence(n); if (o && o.schedule === sid) out.add(o.due); };
+  for (const e of copy.events || []) {
+    if (e.gone) continue;
+    for (const x of [].concat(e.settles || [])) take(x && typeof x === 'object' ? x.s + '@' + x.due : x);
+    if (/^(pe|ps):/.test(String(e.id))) take(String(e.id).slice(3));
+  }
+  const s = (copy.schedules || []).find(x => x.id === sid) || {};
+  for (const [d, v] of Object.entries(s.amounts || {})) if (!(v && v.gone)) out.add(d);
+  const plan = copy.plan || {};
+  for (const r of [].concat(plan.budgets || [], plan.shares || [])) for (const [k, v] of Object.entries((r && r.once) || {})) if (!(v && v.gone)) take(k);
+  return [...out].sort();
+}
+function afterMerge({ mine, theirs, now, by, lastSeen }) {
+  const { duesIn } = require('./move_ref');
+  const { dayNum, dayStr } = require('./dates');
+  const copy = merge(mine, theirs), notices = [];
+  const seen = [lastSeen, newestAt(copy)].filter(Boolean).sort((a, b) => ms(b) - ms(a))[0];
+  const at = nextAt(now, seen), day = String(now).slice(0, 10), stamp = { at, by };
+  copy.schedules = (copy.schedules || []).map(s0 => {
+    if (s0.gone || !Array.isArray(s0.rules)) return s0;
+    const s = Object.assign({}, s0, { rules: s0.rules.slice() });
+    for (let guard = 0; guard < 24; guard++) {
+      const live = s.rules.filter(e => !e.gone).sort((x, y) => (x.from < y.from ? -1 : 1));
+      const gov = d => live.filter(e => e.from <= d).pop();
+      const judged = e => e && e !== live[0] && e.rule && (e.rule.every === 'month' || e.rule.every === 'weeks');
+      const orphans = namedDues(Object.assign({}, copy, { schedules: [s] }), s.id).filter(d => judged(gov(d)) && !duesIn(gov(d).rule, d.slice(0, 7)).includes(d));
+      if (!orphans.length) break;
+      const d = orphans[orphans.length - 1], e = gov(d), from = dayStr(dayNum(d) + 1);
+      s.rules = s.rules.filter(x => x.from !== from).map(x => (x === e ? Object.assign({}, e, stamp, { gone: day }) : x));
+      s.rules.push(Object.assign({ from, rule: e.rule }, stamp));
+      s.rules.sort((x, y) => (x.from < y.from ? -1 : 1));
+      Object.assign(s, stamp);
+      if (e.by === by) notices.push({ schedule: s.id, text: SHIFT_NOTICE, was: e.from, from, latest: s.id + '@' + d });
+    }
+    return s;
+  });
+  const names = e => [e.acct, e.acct2, e.from, e.to, e.card];
+  copy.accounts = (copy.accounts || []).map(a => {
+    if (!a.closed || a.gone) return a;
+    const into = (copy.events || []).some(e => !e.gone && names(e).includes(a.id) && typeof e.date === 'string' && dayNum(e.date) > dayNum(a.closed));
+    if (!into) return a;
+    notices.push({ account: a.id, text: REOPEN_NOTICE, closed: a.closed });
+    return Object.assign({}, a, { closed: null }, stamp);
+  });
+  return { copy, notices };
+}
+
+// [AN7] `imports.cats` keys: the shop text trimmed, every run of spaces one space, lowercased, with `k:` in front, so no
+// key can be `__proto__` and 38.31's "SEVEN ELEVEN" is the same shop as a typed "Seven Eleven". Each value carries `src`:
+// a reader's guess never writes over a person's lesson; a person's lesson always writes over a guess. The map is never
+// trimmed (38.31 deleted keys past 400; under "nothing is deleted" a deleted key would only come back from the other device).
+const catKey = t => 'k:' + String(t).trim().replace(/\s+/g, ' ').toLowerCase();
+function catLearn({ cats, writes, count, check }) {
+  const o = Object.assign({}, cats);
+  for (const w of writes || []) {
+    const k = catKey(w.shop), cur = o[k];
+    if (w.src === 'reader' && isMap(cur) && !isReader(cur) && !cur.gone) continue;   // a guess never writes over a lesson
+    o[k] = { v: w.v, src: w.src, at: w.at, by: w.by };
+  }
+  return count ? { count: Object.keys(o).length, has: (check || []).filter(k => Object.prototype.hasOwnProperty.call(o, k)) } : o;
+}
+
 function ask(question, input) {
   switch (question) {
     case 'restore': { const r = restore(input); return input.show ? Object.fromEntries(input.show.map(k => [k, r[k]])) : r; }
@@ -439,9 +570,14 @@ function ask(question, input) {
     case 'id_for': return idFor(input);
     case 'id_ok': return idOk(input.id);
     case 'seen': return newestAt(input.copy);   // [AL2] what a device has seen after reading a copy
-    case 'main_notice': return mainNotice(input);   // [AM2] the newer pair wins; the device whose own pair lost records the notice
+    case 'main_notice': return mainNotice(input);
+    case 'merge_both': return { mine_first: merge(input.mine, input.theirs), theirs_first: merge(input.theirs, input.mine) };   // [AN1]
+    case 'lost_notices': return lostNotices(input);   // [AN-note]
+    case 'after_merge': { const r = afterMerge(input); return input.show ? Object.assign(Object.fromEntries(input.show.map(k => [k, r.copy[k]])), { notices: r.notices }) : r; }   // [AN2, AN6]
+    case 'cat_key': return (input.texts || []).map(catKey);   // [AN7]
+    case 'cat_learn': return catLearn(input);   // [AN7]   // [AM2] the newer pair wins; the device whose own pair lost records the notice
   }
   throw new Error('unknown question ' + question);
 }
 
-module.exports = { ask, mainNotice, restore, mergeKeyed, keyedShape, fieldsShape, newestAt, isOldFormat, nextAt, nextAtWarn, clockAsk, newer, merge, mergeList, pick, winner, cameBack, holdArriving, receive, idFor, idOk };
+module.exports = { ask, mainNotice, lostNotices, afterMerge, namedDues, catKey, catLearn, restore, mergeKeyed, keyedShape, fieldsShape, newestAt, isOldFormat, nextAt, nextAtWarn, clockAsk, newer, merge, mergeList, pick, winner, cameBack, holdArriving, receive, idFor, idOk };

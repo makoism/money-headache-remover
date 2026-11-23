@@ -22,7 +22,8 @@ const { dayNum, dayStr } = require('./dates');
 // first occurrence in the same month (`moveTo`, old name to new name). [AL6] A month with no occurrence of the new rule on
 // or after the wanted day sends it to the new rule's next occurrence (a 25 Dec bonus, the new pay day the 10th from
 // 15 Dec: 10 Jan). When two land on one occurrence, or one lands on an occurrence that already has its own amount or
-// key, the offer shows them together and the person picks add or replace (`together`, `togetherOffer`).
+// key, the offer shows them together and the person picks add or replace (`together`, `togetherOffer`). [AN5] What is
+// saved before the pick: `moveSave` (an amount landing on an occurrence with its own amount waits in `pendingMove`).
 const { occurrence } = require('./ids');
 const ymAdd = (ym, n) => { const i = Number(ym.slice(0, 4)) * 12 + Number(ym.slice(5, 7)) - 1 + n; return String(Math.floor(i / 12)) + '-' + String(i % 12 + 1).padStart(2, '0'); };
 const { duesIn } = require('./move_ref');
@@ -108,17 +109,66 @@ function statementAsk({ setup, kind, closeDay, payDay, monthsAfterClose, owed, u
   return q;
 }
 // [AB, MAKO M1] Setup asks once, "Keep at least ___ in your bank?", the box empty; skipping means no minimum.
+// [AN3] The answer is the main bank's minimum, saved only as `min` in `home.main`; the account's own `minBank` stays null.
 function minAsk({ cur, typed }) {
-  return { asked: true, filled: null, minBank: typeof typed === 'number' ? { a: typed, cur } : null };
+  return { asked: true, filled: null, min: typeof typed === 'number' ? { a: typed, cur } : null };
+}
+// [AN3] Where a minimum is saved. The main bank's (the account `home.main` names) lives only in `home.main`, written as
+// the pair with a new `at` [AL3]; its own `minBank` is always null. Any other account's is its own `minBank`.
+function minSave({ main, acct, typed, cur, at, by }) {
+  const min = typeof typed === 'number' ? { a: typed, cur } : null;
+  if (main && main.v && main.v.acct === acct) return { main: { v: { acct, min }, at, by }, minBank: null };
+  return { minBank: min };
+}
+// [AN3] A copy whose main bank carries its own `minBank` holds one figure in two places (LESSONS lesson 1): refused.
+function minOk({ home, accounts }) {
+  const m = home && home.main && home.main.v ? home.main.v.acct : null;
+  const a = (accounts || []).find(x => x.id === m);
+  return a && a.minBank != null ? { refused: true, account: m, field: 'minBank' } : { ok: true };
+}
+// [AN5, which replaces AM1] What "move" saves (`moveTo` from the offer, AK2, AL6). Each old key is removed by its own
+// `gone` with the edit's `at`. A moved amount is written on its target only when the target has no amount of its own;
+// one that lands on an occurrence that already has its own amount (a live key there before the move, or one moved there
+// from the target's own month, AK2, taken first) is not written until the person picks add or replace: it waits in
+// `pendingMove` as a record (`waits: 'pick'`, `to: 'amounts'`, the schedule, the target `key`, the old due date `from`,
+// the amount `a`), counting nowhere until then (section 2.1). Nothing unpicked is ever saved in `amounts` (no `pick` key).
+// With `pick` ('add' or 'replace') the waiting entries of the schedule are applied: add, the target's amount plus the
+// entry's; replace, the entry's; written with the pick's `at`, and each entry kept, removed by its own `gone` [AA5].
+function moveSave({ schedule, amounts, moveTo, pendingMove, pick, at, by, pendId, pendIds }) {
+  const day = String(at).slice(0, 10), out = JSON.parse(JSON.stringify(amounts || {}));
+  const pend = JSON.parse(JSON.stringify(pendingMove || []));
+  const live = v => !!v && typeof v === 'object' && !v.gone;
+  if (pick) {
+    for (const p of pend) if (!p.gone && p.waits === 'pick' && p.schedule === schedule) {
+      const cur = out[p.key], base = live(cur) ? cur.amount : 0;
+      out[p.key] = Object.assign({}, cur, { amount: pick === 'add' ? base + p.a : p.a, at, by }); delete out[p.key].gone;
+      Object.assign(p, { gone: day, at, by });
+    }
+    return { amounts: out, pendingMove: pend };
+  }
+  const ids = [].concat(pendIds || [], pendId || []);
+  const moves = Object.entries(moveTo || {}).filter(([f, t]) => t && /^\d{4}-\d{2}-\d{2}$/.test(f))
+    .sort(([f1, t1], [f2, t2]) => ((f2.slice(0, 7) === t2.slice(0, 7)) - (f1.slice(0, 7) === t1.slice(0, 7))) || (f1 < f2 ? -1 : 1));
+  const own = new Set(Object.keys(amounts || {}).filter(k => live(amounts[k]) && !(k in (moveTo || {}))));
+  for (const [f] of moves) out[f] = Object.assign({}, out[f], { at, by, gone: day });
+  for (const [f, t] of moves) {
+    const a = amounts[f].amount;
+    if (!own.has(t)) { out[t] = { amount: a, at, by }; own.add(t); continue; }
+    pend.push({ id: ids.shift(), waits: 'pick', to: 'amounts', schedule, key: t, from: f, a, told: at, at, by });
+  }
+  return { amounts: out, pendingMove: pend };
 }
 
 function ask(question, input) {
   if (question === 'statement_ask') return statementAsk(input);
   if (question === 'min_ask') return minAsk(input);
+  if (question === 'min_save') return minSave(input);   // [AN3]
+  if (question === 'min_ok') return minOk(input);   // [AN3]
+  if (question === 'move_save') return moveSave(input);   // [AN5]
   if (question === 'change_from') return changeFrom(input);
   if (question === 'own_account') return ownAccount(input);
   if (question === 'not_yet_asks') return notYetAsks(input);
   throw new Error('unknown question ' + question);
 }
 
-module.exports = { ask, changeFrom, ownAccount, notYetAsks, statementAsk, minAsk };
+module.exports = { ask, changeFrom, ownAccount, notYetAsks, statementAsk, minAsk, minSave, minOk, moveSave };
