@@ -206,6 +206,10 @@
   function records(book, p, opts) {
     const o = opts || {}, skip = o.skip || {};
     const kept = {}; for (const e of book.events || []) if (e && !e.gone) kept[e.id] = e;
+    // [walk 4] a line waiting for an answer (which card, or a move?) is never dropped quietly: nothing is written until
+    // every question is answered or the person unticks that line
+    const waiting = p.lines.filter(l => (l.status === 'pick' || l.status === 'askmove') && !skip[l.id]);
+    if (waiting.length) throw new Error(waiting.length + (waiting.length === 1 ? ' line is' : ' lines are') + ' waiting for an answer');
     const events = [], settled = [];
     for (const l of p.lines) {
       if (l.status === 'repeat' || l.status === 'pick' || l.status === 'askmove' || skip[l.id]) continue;

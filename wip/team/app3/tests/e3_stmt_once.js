@@ -56,7 +56,7 @@ const P_known = bk => { const c = (bk.imports && bk.imports.cats) || {}, o = {};
     await p.click('#a3StmtCheck'); await T.w(400);
     const q = await p.$eval('#a3StmtMoves', e => e.textContent).catch(() => '');
     ck('[BJ4] "Is this a move to one of your accounts?" asks about the line naming no account, with "No, it went to someone else"', /FURIKOMI/.test(q) && !/TRIP/.test(q) && /No, it went to someone else/.test(q), q);
-    ck('[BJ4] until it is answered, that line waits; the two moves can be added', (await p.$eval('#a3StmtAdd', e => e.textContent)) === 'Add 2 lines', await p.$eval('#a3StmtAdd', e => e.textContent));
+    ck('[walk 4] until it is answered nothing is added: Add waits and says why, and the line is still in the review', (await p.$eval('#a3StmtAdd', e => e.disabled && e.textContent)) === 'Answer the question above' && /FURIKOMI/.test(await p.$eval('#a3Stmt', e => e.textContent)), await p.$eval('#a3StmtAdd', e => e.textContent));
     await p.select('[data-move]', 'no'); await T.w(300);
     ck('[BJ4] answered "No, it went to someone else": all three can be added', (await p.$eval('#a3StmtAdd', e => e.textContent)) === 'Add 3 lines');
     await T.shot(p, 'stmt_move_review');

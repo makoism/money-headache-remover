@@ -151,7 +151,9 @@ function stmt3Review() {
   /* [BJ4] money sent out that names none of the person's accounts: a move to one of them, or a spend? */
   const asks = p.lines.filter(l => l.status === 'askmove').map(l => `<div class="a3-field" data-askline="${esc3(l.id)}"><label for="a3mv-${esc3(l.id)}">${esc3(l.text)}, ${esc3(day3(l.date, yr))}, ${money3(l.a, cur(l.acct))}</label>
       <select class="a3-in a3-sel" id="a3mv-${esc3(l.id)}" data-move="${esc3(l.id)}"><option value="">Choose</option>${l.accts.map(id => `<option value="${esc3(id)}">Yes, to ${esc3(E3.nameOf(id))}</option>`).join('')}<option value="no">No, it went to someone else</option></select></div>`).join('');
-  const c = p.counts, adding = p.lines.filter(l => l.status !== 'repeat' && l.status !== 'pick' && l.status !== 'askmove' && !stmt3.skip[l.id]).length;
+  /* [walk 4] while a question is open nothing is added, so no line is ever left out without the person knowing */
+  const c = p.counts, open = p.lines.some(l => (l.status === 'pick' || l.status === 'askmove') && !stmt3.skip[l.id]);
+  const adding = open ? 0 : p.lines.filter(l => l.status !== 'repeat' && !stmt3.skip[l.id]).length;
   const said = [c.settles ? c.settles + ' are bills, pay or card payments you expected' : '', c.typed ? `${c.typed} ${c.typed === 1 ? 'is one you typed' : 'are ones you typed'}` : '',
     c.meets ? c.meets + ' read twice, from your bank and your card' : '', c.repeat ? c.repeat + ' already here, left out' : '', c.pick ? `${c.pick} ${c.pick === 1 ? 'card payment needs' : 'card payments need'} you to say which card` : '', c.askmove ? `${c.askmove} sent out: ${c.askmove === 1 ? 'is it' : 'are they'} a move to your own account?` : ''].filter(Boolean);
   const sheet = stmt3Show(`<h1 id="a3StmtT">What was read</h1>
@@ -162,7 +164,7 @@ function stmt3Review() {
     ${sts ? `<section class="a3-card"><h2>Card statements</h2>${sts}</section>` : ''}
     <section class="a3-card"><h2>Shops and categories</h2><p class="a3-sub">Tap a shop to see its lines. Untick a line to leave it out</p>${shops}</section>
     <p class="a3-err" id="a3StmtErr"></p>
-    <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3StmtAdd" ${adding ? '' : 'disabled'}>${adding ? 'Add ' + adding + (adding === 1 ? ' line' : ' lines') : c.pick || c.askmove ? 'Answer the question above' : 'Nothing new to add'}</button><button type="button" class="a3-btn" id="a3StmtBack">Back</button></div>`);
+    <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3StmtAdd" ${adding ? '' : 'disabled'}>${adding ? 'Add ' + adding + (adding === 1 ? ' line' : ' lines') : open ? 'Answer the question above' : 'Nothing new to add'}</button><button type="button" class="a3-btn" id="a3StmtBack">Back</button></div>`);
   sheet.querySelectorAll('[data-mx]').forEach(b => b.addEventListener('click', () => {
     const ul = sheet.querySelector(`[data-rowsof="${CSS.escape(b.dataset.mx)}"]`); ul.hidden = !ul.hidden; b.setAttribute('aria-expanded', String(!ul.hidden));
   }));

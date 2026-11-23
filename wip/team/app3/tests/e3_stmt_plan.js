@@ -147,7 +147,8 @@ ck('setup hints come from the old reader\'s own sums: pay, rent', h.pay && h.pay
   const tie = one(pay('JCB', '2026-12-21', 5));
   ck('no name, no nearer day, no amount: nothing is guessed, the review asks', tie.status === 'pick' && !tie.to && tie.cards.slice().sort().join() === [CA, CB].sort().join(), JSON.stringify(tie));
   const tp = P.plan(bk, [pay('JCB', '2026-12-21', 5)], { today: D2, assign: [BANK], cats: {} });
-  ck('a line waiting for its card is not written, and is counted', P.records(bk, tp, { told: D2 }).events.length === 0 && tp.counts.pick === 1);
+  const throws = f => { try { f(); return false; } catch (e) { return /waiting for an answer/.test(e.message); } };
+  ck('[walk 4] a line waiting for its card is counted, and nothing is written while it waits: records() refuses', tp.counts.pick === 1 && throws(() => P.records(bk, tp, { told: D2 })));
   const chosen = one(pay('JCB', '2026-12-21', 5), { cardFor: { [tie.id]: CB } });
   ck('the person\'s choice wins', chosen.to === CB && chosen.status !== 'pick');
   const kept = P.catsToKeep(P.plan(bk, [pay('JCB', '2026-12-21', 5)], { today: D2, assign: [BANK], cats: {}, cardFor: { [tie.id]: CB } }), {}, D2);
@@ -182,7 +183,7 @@ ck('setup hints come from the old reader\'s own sums: pay, rent', h.pay && h.pay
   ck('the goal and the Trip account agree', ra.places[GOAL].kept === ra.accounts[TRIP].bank && ra.accounts[TRIP].bank === 25000, JSON.stringify([ra.places[GOAL].kept, ra.accounts[TRIP].bank]));
   const vague = rd([{ date: '2026-12-08', text: 'FURIKOMI 0123', amount: 7000, dir: 'out', cat: 'transfer_out' }]);
   const lv = P.plan(bk, [vague], { today: D3, assign: [MB], cats: {} }).lines[0];
-  ck('a transfer out that names no account of yours: the review asks, nothing is written yet', lv.status === 'askmove' && lv.accts.includes(TRIP) && P.records(bk, P.plan(bk, [vague], { today: D3, assign: [MB], cats: {} }), { told: D3 }).events.length === 0, JSON.stringify(lv));
+  ck('a transfer out that names no account of yours: the review asks, nothing is written yet', lv.status === 'askmove' && lv.accts.includes(TRIP) && (() => { try { P.records(bk, P.plan(bk, [vague], { today: D3, assign: [MB], cats: {} }), { told: D3 }); return false; } catch (e) { return /waiting for an answer/.test(e.message); } })(), JSON.stringify(lv));
   const yes = P.plan(bk, [vague], { today: D3, assign: [MB], cats: {}, moveFor: { [lv.id]: TRIP } });
   ck('"it went to the Trip account": a move', yes.lines[0].k === 'transfer' && yes.lines[0].to === TRIP);
   const no = P.plan(bk, [vague], { today: D3, assign: [MB], cats: {}, moveFor: { [lv.id]: 'no' } });
