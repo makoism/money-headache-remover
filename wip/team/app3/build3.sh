@@ -39,7 +39,7 @@ cat ../art.js ../pixel.js
 printf 'const TRY_BOOKS = { mako: '; cat fixtures/mako_madeup_book.json; echo '};'
 printf 'const RELAY3 = "%s";\n' "$(tr -d '\n\r\"' < ../RELAY)"   # the site's address, for the cloud copy when opened as a file (backup lane)
 cat src/stmt3_read.js src/stmt3_plan.js
-cat src/checkin_write.js src/money3.js src/e3.js src/act3.js src/plan3_write.js src/home3.js src/checkin3.js src/receipts3.js src/plan3.js src/backup3.js src/cloud3.js src/cloud3_page.js src/settings3.js src/start3.js
+cat src/checkin_write.js src/money3.js src/e3.js src/act3.js src/plan3_write.js src/home3.js src/checkin3.js src/receipts3.js src/plan3.js src/backup3.js src/cloud3.js src/cloud3_page.js src/settings3.js src/settings3_sw.js src/start3.js
 cat src/stmt3_ai.js src/stmt3.js   # statements lane
 echo '})();'
 echo '</script>'
@@ -47,3 +47,5 @@ echo '</body>'
 echo '</html>'
 } > "$OUT"
 wc -c "$OUT"
+# the service worker beside it (D6, backup lane): its cache is named by this build, so a new build is a new worker
+sed "s/@@BUILD@@/$(sha1sum "$OUT" | cut -c1-12)/" src/sw3.js > sw3.js

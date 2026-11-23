@@ -6,11 +6,11 @@ const T = require('./lib3.js'), { ck } = T;
 const http = require('http'), fs = require('fs'), path = require('path');
 (async () => {
   const html = fs.readFileSync(process.env.APP3 || path.join(__dirname, '../index.html'));
-  const srv = http.createServer((q, r) => { if (q.url.split('?')[0] === '/' || q.url.startsWith('/index.html')) { r.writeHead(200, { 'content-type': 'text/html' }); r.end(html); } else { r.writeHead(404); r.end(); } });
+  const srv = http.createServer((q, r) => { if (q.url.split('?')[0] === '/' || q.url.startsWith('/index.html')) { r.writeHead(200, { 'content-type': 'text/html' }); r.end(html); } else if (q.url.startsWith('/sw3.js')) { r.writeHead(200, { 'content-type': 'text/javascript' }); r.end(fs.readFileSync(path.join(__dirname, '../sw3.js'))); } else { r.writeHead(404); r.end(); } });   // sw3.js: the page's own worker (D6)
   await new Promise(r => srv.listen(0, '127.0.0.1', r));
   const port = srv.address().port, asked = [];
   const { b, p, errs } = await T.open();
-  p.on('request', r => { const u = r.url().split('?')[0]; if (!/\/(index\.html)?$/.test(u) && !u.startsWith('data:')) asked.push(r.url()); });
+  p.on('request', r => { const u = r.url().split('?')[0]; if (!/\/(index\.html|sw3\.js)?$/.test(u) && !u.startsWith('data:')) asked.push(r.url()); });
   await p.goto(`http://127.0.0.1:${port}/?try=mako&today=2026-11-23`); await T.w(300);
   await p.setOfflineMode(true);
   await p.reload({ waitUntil: 'load' }).catch(() => {});

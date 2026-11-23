@@ -54,12 +54,14 @@ function makeVault() {
   return { rows, log, handle, fetch: fetchFn };
 }
 /* the vault and the page on one local http server (the page's own address is where the vault is, as on the site) */
-function serve(vault, pageHtml) {
+function serve(vault, pageHtml, opts) {
+  opts = opts || {};
   const srv = http.createServer((q, r) => {
     const u = new URL(q.url, 'http://x');
     const cors = { 'access-control-allow-origin': '*', 'access-control-allow-methods': 'GET, PUT, DELETE, OPTIONS', 'access-control-allow-headers': 'content-type, x-vault-token, x-app' };
     if (q.method === 'OPTIONS') { r.writeHead(204, cors); r.end(); return; }
     if (u.pathname === '/' || u.pathname === '/index.html') { r.writeHead(200, { 'content-type': 'text/html', 'cache-control': 'no-store' }); r.end(typeof pageHtml === 'function' ? pageHtml() : pageHtml); return; }
+    if (u.pathname === '/sw3.js') { r.writeHead(200, { 'content-type': 'text/javascript', 'cache-control': 'no-store' }); r.end(typeof opts.sw === 'function' ? opts.sw() : require('fs').readFileSync(require('path').join(__dirname, '../sw3.js'))); return; }
     if (u.pathname === '/api/health') { r.writeHead(200, Object.assign({ 'content-type': 'application/json' }, cors)); r.end(JSON.stringify({ ok: true, ai: false, vault: true, invite: false, version: 'test' })); return; }
     const m = /^\/api\/vault\/([^/]+)$/.exec(u.pathname);
     if (!m) { r.writeHead(404); r.end(); return; }
