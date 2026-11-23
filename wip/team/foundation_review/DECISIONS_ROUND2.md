@@ -296,3 +296,9 @@ AJ3. `home` gets a grid row (curs, minBank, mainBank, country) across two device
 AJ4. A case fixes AI1's result when the receiver has already seen a slightly fast copy.
 AJ5. When X8 refuses a pay-day change because of a future one-off amount (a bonus), the edit offers to move or remove that amount instead of only refusing.
 AJ-confirm (AI helper's readings): the held value is the receiver's now plus 1 ms (AJ4 fixes the case); two devices holding one far-ahead copy settle on the newer held `at` and the earliest `told` (needs a case); an empty array is an entry list when the other copy's items have the shape (AJ2), not only for steps, rules and extraSteps.
+
+## AK. Answers after AJ
+AK1. `home`'s fields merge one by one, each with its own `at` and `by`, like the shared `ui` keys.
+AK2. AJ5's "move" takes a one-off amount to the new rule's first occurrence in the same month.
+AK3. A budget line's or share's `once` key named by the pay gets the same move-or-remove offer.
+The AJ helper's AJ5 reading (a live, unsettled key on or after the change's day; the offer only when nothing unmovable is in the way) is confirmed.
