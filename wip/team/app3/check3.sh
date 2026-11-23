@@ -20,10 +20,12 @@ NEW=$(echo "$OUT" | grep "^FAIL" | cut -c1-60 | sort -u | grep -v -x -F -f <(gre
 if echo "$OUT" | grep -q "ENGINE CHECKS ALL PASS"; then echo "engine: all pass"; [ -n "$(grep -v '^#' engine_known.txt)" ] && echo "NOTE engine_known.txt can be emptied now"
 elif [ -n "$NEW" ]; then echo "NEW ENGINE FAILURES:"; echo "$NEW"; BAD=1; else echo "engine: only the known failures (engine_known.txt, lane A)"; fi
 
+step "the check-in writer (pure)"; run tests/checkin_write.test.js "CHECKIN WRITE PASS"
 step "no money maths in screens"; run tests/no_maths.js "NO MATHS PASS"
 pkill -f chrome-linux64/chrome 2>/dev/null
 step "the try book"; run tests/e3_try.js "e3_try: ALL PASS"
 step "Home, the new top"; run tests/e3_home.js "e3_home: ALL PASS"
+step "Check your bank"; run tests/e3_checkin.js "e3_checkin: ALL PASS"
 step "guard (idle CPU, long tasks, outside requests, errors)"; run tests/guard3.js "guard3: ALL PASS"
 step "offline load"; run tests/offline.js "offline: ALL PASS"
 

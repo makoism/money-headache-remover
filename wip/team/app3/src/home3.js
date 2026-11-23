@@ -67,8 +67,10 @@ function renderHome3() {
   }
   /* not seen yet, and later on */
   const late = r.notSeenYet.items;
-  if (late.length) out.push(`<section class="a3-card" data-card="notseen"><h2>Not seen yet</h2><p class="a3-sub">These were due and are not ticked off. Checking your bank comes next.</p><ul class="a3-rows">${rowsHtml3(late, home, yr)}</ul></section>`);
+  if (late.length) out.push(`<section class="a3-card" data-card="notseen"><h2>Not seen yet</h2><p class="a3-sub">These were due and are not ticked off. Check your bank to tick them.</p><ul class="a3-rows">${rowsHtml3(late, home, yr)}</ul></section>`);
   for (const l of r.laterOn) out.push(`<p class="a3-warn" data-warn="later">${esc3(l.text)}</p>`);
+  out.push(`<div class="a3-actions"><button type="button" class="a3-btn solid" id="a3CheckGo">Check your bank</button></div>`);
   out.push('<p class="a3-later">Coming next: your plan, receipts and burrows.</p>');
   host.innerHTML = out.join('');
+  $('#a3CheckGo').addEventListener('click', openCheck3);
 }

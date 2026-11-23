@@ -77,7 +77,7 @@ const E3 = (() => {
   const home = () => BurrowEngine.ledger.homeOn(book, today());
   async function write(out) {
     const before = book;
-    book = out;
+    book = CHECKIN3.apply(book, out);
     const ok = await save();
     if (!ok) book = before;
     return ok;

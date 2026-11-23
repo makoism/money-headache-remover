@@ -7,4 +7,5 @@
     t.textContent = 'Made-up numbers shaped like a real month. Nothing you do here is saved.' + (new URLSearchParams(location.search).get('today') ? ' Shown as on ' + day3(E3.today()) + ' ' + E3.today().slice(0, 4) + '.' : '');
   }
   renderHome3();
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#a3Check').hidden) closeCheck3(); });
 })();

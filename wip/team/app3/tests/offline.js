@@ -17,6 +17,8 @@ const http = require('http'), fs = require('fs'), path = require('path');
   const fromFile = async () => { await p.goto(T.URL0 + '?try=mako&today=2026-11-23'); await T.w(300); };
   await fromFile();
   ck('offline, Home draws from the file', /Safe to spend/.test(await p.$eval('#a3Home', e => e.textContent)));
+  await p.click('#a3CheckGo'); await T.w(200);
+  ck('offline, Check your bank opens', !(await p.$eval('#a3Check', e => e.hidden)));
   ck('the page asked for nothing but itself', asked.length === 0, asked.join(' '));
   ck('no page errors', errs.length === 0, errs.join(' | '));
   await b.close(); srv.close(); T.done('offline');
