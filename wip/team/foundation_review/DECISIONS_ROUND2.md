@@ -313,3 +313,9 @@ AL6. AK2's gap: with no occurrence of the new rule in that month on or after the
 AL7. SCHEMA wording: ordinary ids are lowercase letters and digits; `people` records carry `told` and `by` like every list record.
 Watch decided: tests add a device whose offset changes (travel, daylight saving) and a half-hour offset; dates stay in the writer's own calendar.
 AL-note: AK's two open questions are answered by AL6 (no occurrence that month on or after the change: the next occurrence, so 10 Jan; two amounts landing on one day: the offer shows both and the person picks add or replace). AK1's parallel at/by maps are replaced by AL1's field values.
+
+## AM. Answers after AL
+AM1. When two moved amounts land on one occurrence and the person has not picked add or replace, the walk counts the safe side (the smaller for pay, the larger for a bill) until they pick.
+AM2. When the main bank and its minimum are changed on two devices before a sync (AL3), the newer pair wins, and the other device's change is shown at the next open: "Your other device changed this. Check it."
+AM3. A check holds events dated more than a day before its day; events dated on its day or the day before are judged by `told` (H1). This covers a spend dated the day before a check made in another time zone.
+The AL helper's readings are confirmed.
