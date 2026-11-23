@@ -215,3 +215,20 @@ Z4. A transfer schedule between the old and the new main bank ends at the closin
 Z5. `once[ym]` with no period starting in that month goes to the period holding that month's first day.
 Z6. A pay-off goal's "saved so far" is never opened as savings (it was paid); it is kept as a note on the loan of how much was paid before the move.
 The W and X helper's readings are confirmed; the `mv:` kind names follow MOVE_FIELDS.md (the move helper's), and the reviewer's scripts c3 and c6 are updated to the new field names.
+
+## AA. Answers to the move's next 14 (mv-q29 to mv-q41 and Z2)
+AA1. A receipt's `s` that names no account is added to its note as "paid from: <s>".
+AA2. Y24 is corrected: an item's label becomes the one-off schedule's name, its note the schedule's note.
+AA3. An older month-end answer `{ amt, id }` becomes that period's `pe:` record with a move of `amt` to goal `id`.
+AA4. 38.31 pay was monthly. The move asks the rhythm; a month's one-month amount goes to the first pay occurrence in that month; a month-end answer goes to the period holding that month's last day; a monthly total is spread per pay by the units rule (monthly x 12 / pays in that year).
+AA5. Amounts and answers waiting for a pay or bill day are kept in `pendingMove` on the copy and applied when the day is answered.
+AA6. One-month amounts for the four shares and goals become `once` on that period's `plan.shares` entry (keyed by occurrence, like budget lines); the Emergency fund draw becomes a move out of the fund's place in that period; a debt's becomes that month's payment occurrence `amounts`.
+AA7. A receipt on "Loan or debt payment" when the loan line was dropped or empty is a spend on place bills with line `loan` and a note.
+AA8. A loan line's own end month and redirect win over `cfg.loanLast`.
+AA9. A goal the person removed is never brought back by Y5.
+AA10. "The copy's last save" is the later of the second copy's `t` and the stored copy's `rev` time.
+AA11. A goal with no date and no monthly amount moves with the monthly figure 38.31 worked out, as its share.
+AA12. Loans the move creates ask for the yearly rate and the minimum; "don't know" gives rate 0 and the old monthly payment as a fixed minimum.
+AA13. "Another account" for a goal asks "bank or e-wallet" and makes that type.
+AA14. A not-yet item (Z2) can be settled by a matching amount at any later date; the posting window does not apply to it until it is settled.
+The move helper's readings are confirmed.
