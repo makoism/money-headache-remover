@@ -312,3 +312,4 @@ AL5. `plan.limits.ceiling` carries `per` (default month), like every amount over
 AL6. AK2's gap: with no occurrence of the new rule in that month on or after the change, the amount goes to the new rule's next occurrence; when the target already has its own amount, the offer shows both and the person picks add or replace.
 AL7. SCHEMA wording: ordinary ids are lowercase letters and digits; `people` records carry `told` and `by` like every list record.
 Watch decided: tests add a device whose offset changes (travel, daylight saving) and a half-hour offset; dates stay in the writer's own calendar.
+AL-note: AK's two open questions are answered by AL6 (no occurrence that month on or after the change: the next occurrence, so 10 Jan; two amounts landing on one day: the offer shows both and the person picks add or replace). AK1's parallel at/by maps are replaced by AL1's field values.
