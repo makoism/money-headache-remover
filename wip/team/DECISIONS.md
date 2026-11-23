@@ -288,3 +288,4 @@ Said in MAIN 12's chat and relayed to coordinator 8 (not seen first hand): "use 
 2. **What Home calls the current stretch: Claude's recommendation.** Its dates, for example "10 Nov to 9 Dec". The month name only in history.
 3. **Goal money: both.** "Kept in my bank, set aside" is an option (the default), and "moved to its own account" too.
 4. **Card statement close days:** Mako does not know them. Setup asks for each card's statement close day with a plain explanation and a "not sure" answer; tests use made-up days.
+5. **Minimum balance (Mako, 2026-11-23):** setup asks once, "Keep at least ___ in your bank?", with the box empty. Skipping means no minimum; it can be changed in Settings. No minimum is ever set without the person choosing it.

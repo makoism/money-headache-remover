@@ -232,3 +232,12 @@ AA12. Loans the move creates ask for the yearly rate and the minimum; "don't kno
 AA13. "Another account" for a goal asks "bank or e-wallet" and makes that type.
 AA14. A not-yet item (Z2) can be settled by a matching amount at any later date; the posting window does not apply to it until it is settled.
 The move helper's readings are confirmed.
+
+## AB. Mako's minimum answer, and decisions from confirm_review_2.md
+M1 answered by Mako (23 Nov): setup asks once, "Keep at least ___ in your bank?", box empty; skipping means no minimum (DECISIONS.md, new foundation 5). The move keeps a 38.31 minimum only when the person typed it (`ui.minAuto` false); an automatic one is dropped.
+AB1. A device that finds a moved copy in the cloud takes it and adds only the ids it lacks; it never overwrites. Moved records carry the copy's last save as `at` (AA10), so any later real edit wins. `frozen3831` is kept per device as the record `mv:frozen:<by>`.
+AB2. Income schedules carry `per: 'month' | 'pay'`; moved pay is per month. A one-month amount replaces that month's total, spread over that month's pays or periods. A month-end answer for a period not yet ended at the move waits in `pendingMove` and the period's own question still comes.
+AB3. For a card, pay-later or loan set up between its close and its payment day, setup asks "Is the last statement paid?" and saves the answer as a J5 statement; "don't know" counts everything owed as due on the next payment day.
+AB4. A line that settles a `notYet` occurrence comes after the opening, whatever its date.
+Rows: `pendingMove` entries carry `id`, `at` and `by` and merge like records; the Emergency fund draw's built id is `mv:draw:once.<ym>`. COVERAGE's stale `mv:` labels are fixed.
+Watch decided: restoring an older backup while the cloud copy is on writes `gone` with a new `at` for every record newer than the backup and gives the backup's records a new `at`, so the merge keeps the restore; a moved month-end answer larger than its place holds is capped (L q10) and the rest waits "to decide".

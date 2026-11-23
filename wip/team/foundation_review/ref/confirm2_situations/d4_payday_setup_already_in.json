@@ -1,0 +1,105 @@
+{
+ "life": "d4_payday_setup_already_in",
+ "title": "Set up on pay day before the pay is in: the opening saves it as not in yet (decision X3, F20; confirm_review_1 item 3)",
+ "story": "Set up Fri 25 Jun 2027 at 08:00, pay day. The bank holds 40,000; the pay of 250,000 has not come in yet, and setup asks about it first (a pay due that day): the person says not yet, so the opening saves it in `not_yet`. Pay is monthly on the 25th (moved earlier) and starts the period; rent of 80,000 on the 27th (moved later: Mon 28 Jun); Free to spend is 60,000 a month. At the check-in on Sat 26 Jun at 10:00 the person ticks the pay (it came in on 25 Jun) and types the bank: 290,000. Before X3 the model took the setup day's pay as already inside the opening: day one said 40,000 short, the pay never reached the check-in list and never started a period. Every amount is made up.",
+ "currency": "JPY",
+ "window": {
+  "from": "2027-06-25",
+  "to": "2027-07-31"
+ },
+ "holidays": {
+  "country": "none",
+  "dates": [],
+  "bank_closed": []
+ },
+ "main_bank": "bank",
+ "accounts": [
+  {
+   "id": "bank",
+   "name": "Bank",
+   "kind": "bank",
+   "currency": "JPY",
+   "minimum": 0,
+   "opening": {
+    "date": "2027-06-25",
+    "told": "2027-06-25T08:00",
+    "amount": 290000
+   }
+  }
+ ],
+ "income": [
+  {
+   "id": "pay",
+   "name": "Pay",
+   "account": "bank",
+   "amount": 250000,
+   "schedule": {
+    "frequency": "monthly",
+    "day": 25
+   },
+   "weekend_holiday": "move earlier",
+   "starts_period": true
+  }
+ ],
+ "bills": [
+  {
+   "id": "rent",
+   "name": "Rent",
+   "account": "bank",
+   "amount": 80000,
+   "schedule": {
+    "frequency": "monthly",
+    "day": 27
+   },
+   "weekend_holiday": "move later"
+  }
+ ],
+ "goals": [],
+ "plan": {
+  "lines": [],
+  "free": {
+   "per": "month",
+   "amount": 60000
+  }
+ },
+ "events": [],
+ "asks": [
+  {
+   "id": "d4-01",
+   "date": "2027-06-26",
+   "at": "start of day",
+   "question": "check_in_list",
+   "expected": {
+    "items": [],
+    "total": 0
+   },
+   "why": "the pay was already in at setup"
+  },
+  {
+   "id": "d4-02",
+   "date": "2027-06-26",
+   "question": "bank_today",
+   "account": "bank",
+   "expected": 290000,
+   "why": "opening"
+  },
+  {
+   "id": "d4-03",
+   "date": "2027-06-26",
+   "question": "days_to_next_pay",
+   "expected": {
+    "days": 29,
+    "next_pay": "2027-07-23",
+    "item": "pay@2027-07-25"
+   },
+   "why": "25 Jul 2027 is Sunday, moved earlier to Fri 23 Jul"
+  },
+  {
+   "id": "d4-04",
+   "date": "2027-06-26",
+   "question": "headline",
+   "expected": 60000,
+   "why": "Free to spend for the period begun by the 25 Jun pay"
+  }
+ ]
+}

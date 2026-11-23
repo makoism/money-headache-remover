@@ -1,0 +1,102 @@
+{
+ "life": "d3_card_unpaid_statement_at_setup",
+ "title": "A card with a known close day and no typed last statement: the first close after the opening holds the opening balance (decision X6, confirm_review_1 item 6)",
+ "story": "Set up Fri 20 Nov 2026. A card closes at month end and is paid on the 27th of the next month (a common Japanese card). At setup the card app shows 50,000 owed: 30,000 is the October statement (closed 31 Oct, due Fri 27 Nov, not yet paid) and 20,000 is November so far. The person does not type the last statement. Pay 250,000 on the 15th.",
+ "currency": "JPY",
+ "window": {
+  "from": "2026-11-20",
+  "to": "2026-12-31"
+ },
+ "holidays": {
+  "country": "none",
+  "dates": [],
+  "bank_closed": []
+ },
+ "main_bank": "bank",
+ "accounts": [
+  {
+   "id": "bank",
+   "name": "Bank",
+   "kind": "bank",
+   "currency": "JPY",
+   "minimum": 0,
+   "opening": {
+    "date": "2026-11-20",
+    "amount": 300000
+   }
+  },
+  {
+   "id": "card",
+   "name": "Card",
+   "kind": "card",
+   "currency": "JPY",
+   "statement_close_day": "last",
+   "payment": {
+    "day": 27,
+    "months_after_close": 1,
+    "from": "bank",
+    "weekend_holiday": "none"
+   },
+   "opening": {
+    "date": "2026-11-20",
+    "current": 50000,
+    "note": "no last statement typed"
+   }
+  }
+ ],
+ "income": [
+  {
+   "id": "pay",
+   "name": "Pay",
+   "account": "bank",
+   "amount": 250000,
+   "schedule": {
+    "frequency": "monthly",
+    "day": 15
+   },
+   "weekend_holiday": "none",
+   "starts_period": true
+  }
+ ],
+ "bills": [],
+ "goals": [],
+ "events": [],
+ "asks": [
+  {
+   "id": "d3-01",
+   "date": "2026-11-21",
+   "question": "due_before_next_pay",
+   "expected": {
+    "items": [
+     {
+      "item": "card@2026-11-27",
+      "lands": "2026-11-27",
+      "amount": 50000
+     }
+    ],
+    "total": 50000
+   },
+   "why": "hand answer under X6 if it took the safe side: the whole 50,000 may be due 27 Nov (H4-like), or at least the closed part"
+  },
+  {
+   "id": "d3-02",
+   "date": "2026-11-21",
+   "question": "safe_to_spend",
+   "account": "bank",
+   "expected": 250000,
+   "why": "300,000 - 50,000 due 27 Nov, before the 15 Dec pay"
+  },
+  {
+   "id": "d3-03",
+   "date": "2026-11-21",
+   "question": "card_due",
+   "account": "card",
+   "expected": {
+    "amount": 30000,
+    "payment_date": "2026-11-27",
+    "statement": "closed"
+   },
+   "why": "the October statement"
+  }
+ ]
+}

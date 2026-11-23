@@ -1,0 +1,140 @@
+{
+ "life": "d2_notyet_line_before",
+ "title": "Bills and pay due before setup that had not gone out or come in (decision X3, F20)",
+ "story": "Set up Tue 22 Jun 2027 at 09:00. The bank holds 200,000, of which 30,000 is what is left of Free to spend (typed). The phone bill of 8,000 was due Mon 21 Jun and has not gone out yet; a side job's 500.00 dollars was due Tue 22 Jun into the yen bank and has not come in. Setup asks about each; both are saved in `not_yet`. Pay of 250,000 on the 25th (moved earlier) starts the period; rent of 80,000 on the 27th (moved later). On Thu 24 Jun at 20:00 the person reads the bank statement: the phone bill's line, dated Tue 22 Jun (the setup day). Every amount is made up.",
+ "currency": "JPY",
+ "window": {
+  "from": "2027-06-22",
+  "to": "2027-07-31"
+ },
+ "holidays": {
+  "country": "none",
+  "dates": [],
+  "bank_closed": []
+ },
+ "main_bank": "bank",
+ "accounts": [
+  {
+   "id": "bank",
+   "name": "Bank",
+   "kind": "bank",
+   "currency": "JPY",
+   "minimum": 0,
+   "opening": {
+    "date": "2027-06-22",
+    "told": "2027-06-22T09:00",
+    "amount": 200000,
+    "split": {
+     "free": 30000
+    },
+    "not_yet": [
+     "phone@2027-06-21",
+     "side@2027-06-22"
+    ]
+   }
+  }
+ ],
+ "income": [
+  {
+   "id": "pay",
+   "name": "Pay",
+   "account": "bank",
+   "amount": 250000,
+   "schedule": {
+    "frequency": "monthly",
+    "day": 25
+   },
+   "weekend_holiday": "move earlier",
+   "starts_period": true
+  },
+  {
+   "id": "side",
+   "name": "Side job",
+   "account": "bank",
+   "currency": "USD",
+   "amount": 500.0,
+   "schedule": {
+    "frequency": "monthly",
+    "day": 22
+   },
+   "weekend_holiday": "none",
+   "starts_period": false
+  }
+ ],
+ "bills": [
+  {
+   "id": "phone",
+   "name": "Phone",
+   "account": "bank",
+   "amount": 8000,
+   "schedule": {
+    "frequency": "monthly",
+    "day": 21
+   },
+   "weekend_holiday": "move later"
+  },
+  {
+   "id": "rent",
+   "name": "Rent",
+   "account": "bank",
+   "amount": 80000,
+   "schedule": {
+    "frequency": "monthly",
+    "day": 27
+   },
+   "weekend_holiday": "move later"
+  }
+ ],
+ "goals": [],
+ "plan": {
+  "lines": [],
+  "free": {
+   "per": "month",
+   "amount": 60000
+  }
+ },
+ "events": [
+  {
+   "id": "i1",
+   "date": "2027-06-21",
+   "told": "2027-06-24T20:00",
+   "kind": "spend",
+   "account": "bank",
+   "amount": 8000,
+   "source": "statement",
+   "note": "the phone bill's line, dated its due day; the statement gives no posted date"
+  }
+ ],
+ "asks": [
+  {
+   "id": "d2-01",
+   "date": "2027-06-25",
+   "question": "bank_today",
+   "account": "bank",
+   "expected": 192000,
+   "why": "200,000 typed before the bill went out - 8,000"
+  },
+  {
+   "id": "d2-02",
+   "date": "2027-06-25",
+   "question": "not_seen_yet",
+   "expected": {
+    "items": [
+     {
+      "item": "side@2027-06-22",
+      "lands": "2027-06-22",
+      "amount": 500,
+      "currency": "USD",
+      "direction": "in"
+     }
+    ],
+    "money_in": 0,
+    "money_out": 0
+   },
+   "why": {
+    "money_in": "0",
+    "money_out": "0"
+   }
+  }
+ ]
+}
