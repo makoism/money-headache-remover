@@ -1,0 +1,271 @@
+{
+  "area": "units",
+  "title": "Units: whole minor units per currency code, the currency table and its fallback, 26 or 27 pays a year spread so the year adds up, interest rounded half up, monthly amounts per pay",
+  "written_in": "SCHEMA_V3 0, 3 (interest), 8 (units), 11 (the move's questions); DECISIONS_ROUND2 B4, B8, H9, I2, J1, E2",
+  "notes": [
+    "Every amount is made up. Inputs typed by a person are text (\"19.99\"); everything else is whole minor units: yen 1 is 1, peso 1.00 is 100.",
+    "Question `to_minor`: a typed amount in a currency, as whole minor units with the currency's decimals and whether the screen must ask about the code. Question `currency_for`: the code from what an old copy or a person gave, or ask. Question `interest`: one month's interest on a balance at a yearly rate in percent [I2]. Question `pays_in_year`: the real number of pays a schedule has in a calendar year [H9]. Question `per_pay`: a monthly amount over that many pays, shown as the low and high per-pay amounts, how many get the high one, and the year's total. Question `period_amount`: what one pay period gets for a budget line or Free to spend by its `per` [B8]. Question `by_day`: with no fixed pay, what a monthly amount comes to over a number of days [B4]."
+  ],
+  "defaults": {},
+  "cases": [
+    {
+      "id": "units-01", "question": "to_minor",
+      "title": "Yen has no decimals: 1 yen is 1",
+      "input": { "text": "1", "cur": "JPY" },
+      "expected": { "minor": 1, "decimals": 0, "ask": false },
+      "why": "Section 0: yen 1 is 1. The table gives JPY 0 decimals.",
+      "decisions": [ "H9" ]
+    },
+    {
+      "id": "units-02", "question": "to_minor",
+      "title": "Pesos have two decimals: 1.00 is 100",
+      "input": { "text": "1.00", "cur": "PHP" },
+      "expected": { "minor": 100, "decimals": 2, "ask": false },
+      "why": "Section 0: peso 1.00 is 100. PHP has 2 decimals, so 1 x 100 + 00 = 100.",
+      "decisions": [ "H9" ]
+    },
+    {
+      "id": "units-03", "question": "to_minor",
+      "title": "19.99 pesos is 1999, read from the text",
+      "input": { "text": "19.99", "cur": "PHP" },
+      "expected": { "minor": 1999, "decimals": 2, "ask": false },
+      "why": "19 x 100 + 99 = 1,999. Worked as a decimal number, 19.99 x 100 is 1998.9999999999998, so a reader that cuts off instead of rounding would store 1,998. The digits are read as text.",
+      "decisions": [ "H9" ]
+    },
+    {
+      "id": "units-04", "question": "to_minor",
+      "title": "0.29 pesos is 29",
+      "input": { "text": "0.29", "cur": "PHP" },
+      "expected": { "minor": 29, "decimals": 2, "ask": false },
+      "why": "0 x 100 + 29 = 29 (0.29 x 100 is 28.999999999999996 as a decimal number).",
+      "decisions": [ "H9" ]
+    },
+    {
+      "id": "units-05", "question": "to_minor",
+      "title": "One decimal typed in a two-decimal currency",
+      "input": { "text": "1234.5", "cur": "USD" },
+      "expected": { "minor": 123450, "decimals": 2, "ask": false },
+      "why": "USD has 2 decimals (the table in lookahead_ref.js): 1,234 x 100 + 50 = 123,450. \".5\" is fifty cents.",
+      "decisions": [ "H9" ]
+    },
+    {
+      "id": "units-06", "question": "to_minor",
+      "title": "An unknown code: 2 decimals, and the screen asks once",
+      "input": { "text": "12.34", "cur": "XQQ" },
+      "expected": { "minor": 1234, "decimals": 2, "ask": true },
+      "why": "Section 0: an unknown code is 2 decimals and the screen asks once. 12 x 100 + 34 = 1,234, with ask set.",
+      "decisions": [ "H9" ]
+    },
+    {
+      "id": "units-07", "question": "currency_for",
+      "title": "A code is used as it is",
+      "input": { "code": "JPY" },
+      "expected": { "cur": "JPY", "ask": false },
+      "why": "Every account, schedule, goal and budget line carries an ISO code (section 0); a code needs no question.",
+      "decisions": [ "H9" ]
+    },
+    {
+      "id": "units-08", "question": "currency_for",
+      "title": "\"$\" is asked, never guessed",
+      "input": { "symbol": "$" },
+      "expected": { "cur": null, "ask": true },
+      "why": "Section 0 and 11: \"$\" (dollars of many countries, and pesos are written with it too) is asked, never guessed.",
+      "decisions": [ "H9" ]
+    },
+    {
+      "id": "units-09", "question": "currency_for",
+      "title": "\"¥\" is asked, never guessed",
+      "input": { "symbol": "¥" },
+      "expected": { "cur": null, "ask": true },
+      "why": "\"¥\" is yen or yuan; section 0 says it is asked.",
+      "decisions": [ "H9" ]
+    },
+    {
+      "id": "units-10", "question": "currency_for",
+      "title": "An old copy with no currency is asked, never set to pesos",
+      "input": {},
+      "expected": { "cur": null, "ask": true },
+      "why": "H9: old copies with no currency are asked, never set to pesos (the old default). The question comes before any amount is turned into minor units (section 11), because the decimals depend on it.",
+      "decisions": [ "H9" ]
+    },
+    {
+      "id": "units-11", "question": "interest",
+      "title": "100,000 yen at 15% a year: 1,250 for the month",
+      "input": { "balance": 100000, "apr": 15 },
+      "expected": 1250,
+      "why": "100,000 x 15 / 100 / 12 = 1,250 exactly [I2].",
+      "decisions": [ "I2" ]
+    },
+    {
+      "id": "units-12", "question": "interest",
+      "title": "93,000 yen at 15%: half a yen rounds up",
+      "input": { "balance": 93000, "apr": 15 },
+      "expected": 1163,
+      "why": "93,000 x 15 / 1,200 = 1,162.5. Half up to the minor unit gives 1,163 [I2]. (The same figure as interest.json's carried 93,000.)",
+      "decisions": [ "I2" ]
+    },
+    {
+      "id": "units-13", "question": "interest",
+      "title": "123.45 pesos at 18%: under half a centavo rounds down",
+      "input": { "balance": 12345, "apr": 18 },
+      "expected": 185,
+      "why": "12,345 centavos x 18 / 1,200 = 185.175 centavos. The part after the minor unit is .175, under half, so 185 (1.85 pesos).",
+      "decisions": [ "I2" ]
+    },
+    {
+      "id": "units-14", "question": "interest",
+      "title": "A rate with a decimal: 14.6%",
+      "input": { "balance": 100000, "apr": 14.6 },
+      "expected": 1217,
+      "why": "100,000 x 14.6 / 1,200 = 1,216.666..., which rounds to 1,217.",
+      "decisions": [ "I2" ]
+    },
+    {
+      "id": "units-15", "question": "interest",
+      "title": "Exactly half a minor unit goes up",
+      "input": { "balance": 100, "apr": 6 },
+      "expected": 1,
+      "why": "100 x 6 / 1,200 = 0.5. Half up gives 1. Worked in whole numbers, so no decimal number can land just under 0.5.",
+      "decisions": [ "I2" ]
+    },
+    {
+      "id": "units-16", "question": "interest",
+      "title": "Under half a minor unit is nothing",
+      "input": { "balance": 1, "apr": 6 },
+      "expected": 0,
+      "why": "1 x 6 / 1,200 = 0.005, under half of one minor unit, so 0.",
+      "decisions": [ "I2" ]
+    },
+    {
+      "id": "units-17", "question": "interest",
+      "title": "A credit carries no interest",
+      "input": { "balance": -5000, "apr": 15 },
+      "expected": 0,
+      "why": "A balance at or below zero is a credit; J confirms no interest on a credit.",
+      "decisions": [ "I2", "J" ]
+    },
+    {
+      "id": "units-18", "question": "pays_in_year",
+      "title": "Every two weeks from Fri 1 Jan 2027: 27 pays in 2027",
+      "input": { "rule": { "every": "weeks", "n": 2, "from": "2027-01-01" }, "year": 2027 },
+      "expected": 27,
+      "why": "1 Jan + 14 x 26 days = 1 Jan + 364 days = Fri 31 Dec 2027, still in 2027. So 1 + 26 = 27 pays [H9].",
+      "decisions": [ "H9" ]
+    },
+    {
+      "id": "units-19", "question": "pays_in_year",
+      "title": "Every two weeks from Fri 8 Jan 2027: 26 pays",
+      "input": { "rule": { "every": "weeks", "n": 2, "from": "2027-01-08" }, "year": 2027 },
+      "expected": 26,
+      "why": "8 Jan + 14 x 25 = 8 Jan + 350 days = Fri 24 Dec 2027; the next, 7 Jan 2028, is in the next year. 1 + 25 = 26.",
+      "decisions": [ "H9" ]
+    },
+    {
+      "id": "units-20", "question": "pays_in_year",
+      "title": "A schedule that started in 2026 keeps its rhythm in 2027",
+      "input": { "rule": { "every": "weeks", "n": 2, "from": "2026-11-13" }, "year": 2027 },
+      "expected": 26,
+      "why": "From Fri 13 Nov 2026: 27 Nov, 11 Dec, 25 Dec 2026, then Fri 8 Jan 2027 is the first in 2027. As units-19: 26 pays in 2027.",
+      "decisions": [ "H9" ]
+    },
+    {
+      "id": "units-21", "question": "pays_in_year",
+      "title": "Weekly on Fridays: 53 pays in 2027",
+      "input": { "rule": { "every": "weeks", "n": 1, "from": "2026-11-20" }, "year": 2027 },
+      "expected": 53,
+      "why": "2027 starts on a Friday and has 365 days = 52 weeks + 1 day, so it has 53 Fridays: 1 Jan to 31 Dec. Section 8 says the real number of pays in that year; lookahead_ref.js uses 52 as its plain form, which is why this rule has its own file.",
+      "decisions": [ "H9" ]
+    },
+    {
+      "id": "units-22", "question": "pays_in_year",
+      "title": "Twice a month: 24 pays",
+      "input": { "rule": { "every": "month", "days": [ 15, 31 ] }, "year": 2027 },
+      "expected": 24,
+      "why": "Two days in every month (31 is the last day in shorter months, 10.8): 12 x 2 = 24.",
+      "decisions": [ "H9" ]
+    },
+    {
+      "id": "units-23", "question": "per_pay",
+      "title": "30,000 yen a month over 26 pays: the year adds up to 360,000",
+      "input": { "monthly": 30000, "pays": 26 },
+      "expected": { "pays": 26, "low": 13846, "high": 13847, "highCount": 4, "yearTotal": 360000 },
+      "why": "30,000 x 12 / 26 = 13,846.15. Every pay gets 13,846 or 13,847. 13,846 x 26 = 359,996, so 360,000 - 359,996 = 4 pays get the one extra yen and the year adds up exactly to 360,000 [H9]. (Which 4 is open question units-q4.)",
+      "decisions": [ "H9" ]
+    },
+    {
+      "id": "units-24", "question": "per_pay",
+      "title": "The same 30,000 a month in a 27-pay year",
+      "input": { "monthly": 30000, "pays": 27 },
+      "expected": { "pays": 27, "low": 13333, "high": 13334, "highCount": 9, "yearTotal": 360000 },
+      "why": "360,000 / 27 = 13,333.33. 13,333 x 27 = 359,991; 360,000 - 359,991 = 9 pays get 13,334. Each pay is smaller than in a 26-pay year, but the year is the same 360,000. Using 26 in a 27-pay year would plan 13,846 x 27 = 373,842, about 4% too much.",
+      "decisions": [ "H9" ]
+    },
+    {
+      "id": "units-25", "question": "per_pay",
+      "title": "300.01 pesos a month, paid twice a month",
+      "input": { "monthly": 30001, "pays": 24 },
+      "expected": { "pays": 24, "low": 15000, "high": 15001, "highCount": 12, "yearTotal": 360012 },
+      "why": "30,001 centavos x 12 = 360,012 over 24 pays = 15,000.5. 15,000 x 24 = 360,000, so 12 pays get 15,001 and the year is 360,012 centavos (3,600.12 pesos), 12 times the month.",
+      "decisions": [ "H9" ]
+    },
+    {
+      "id": "units-26", "question": "per_pay",
+      "title": "When it divides exactly, every pay is the same",
+      "input": { "monthly": 26000, "pays": 26 },
+      "expected": { "pays": 26, "low": 12000, "high": 12000, "highCount": 0, "yearTotal": 312000 },
+      "why": "26,000 x 12 / 26 = 12,000 exactly. Every pay is 12,000; 12,000 x 26 = 312,000 = 26,000 x 12.",
+      "decisions": [ "H9" ]
+    },
+    {
+      "id": "units-27", "question": "period_amount",
+      "title": "`per: pay` gets its amount each pay",
+      "input": { "per": "pay", "amount": 20000, "payKind": "weeks", "periodDays": 14 },
+      "expected": 20000,
+      "why": "Section 8: a period gets the amount when `per` matches its kind. Every period is a pay period, so a per-pay line gets 20,000.",
+      "decisions": [ "B8" ]
+    },
+    {
+      "id": "units-28", "question": "period_amount",
+      "title": "`per: month` with monthly pay gets its amount, however long the period",
+      "input": { "per": "month", "amount": 60000, "payKind": "month", "periodDays": 33 },
+      "expected": 60000,
+      "why": "Monthly pay, monthly line: `per` matches, so 60,000 whether the period is 28 or 33 days (schema_review_1: never spread by days for a monthly earner).",
+      "decisions": [ "B8" ]
+    },
+    {
+      "id": "units-29", "question": "period_amount",
+      "title": "`per: week` over a 31-day period",
+      "input": { "per": "week", "amount": 7000, "payKind": "month", "periodDays": 31 },
+      "expected": 31000,
+      "why": "Section 8: `week` gets amount x days / 7 = 7,000 x 31 / 7 = 31,000.",
+      "decisions": [ "B8" ]
+    },
+    {
+      "id": "units-30", "question": "period_amount",
+      "title": "`per: week` with weekly pay",
+      "input": { "per": "week", "amount": 5000, "payKind": "weeks", "periodDays": 7 },
+      "expected": 5000,
+      "why": "A 7-day period: 5,000 x 7 / 7 = 5,000, the same as `per` matching.",
+      "decisions": [ "B8" ]
+    },
+    {
+      "id": "units-31", "question": "by_day",
+      "title": "No fixed pay: a monthly amount comes off by day",
+      "input": { "monthly": 36500, "days": 30 },
+      "expected": 36000,
+      "why": "Section 8 and B4: the monthly amount x 12 / 365 a day = 36,500 x 12 / 365 = 1,200 a day; 30 days = 36,000.",
+      "decisions": [ "B4" ]
+    }
+  ],
+  "open": [
+    { "id": "units-q1", "question": "What is in the currency table beyond JPY (0) and PHP (2), and from what source? ISO 4217 also has KRW and VND with 0 decimals and KWD and BHD with 3.", "ref_does": "a short ISO 4217 list: JPY, KRW, VND 0; PHP, USD, EUR, GBP, CHF, CAD, AUD, SGD 2; KWD, BHD 3" },
+    { "id": "units-q2", "question": "A typed amount with more decimals than its currency (\"1234.5\" yen, \"12.345\" pesos): refused, or rounded? Section 0 only says nothing is rounded on load.", "ref_does": "refuses (throws)" },
+    { "id": "units-q3", "question": "\"Pays in that year\": the calendar year, counted by the due date or by the landed date (a pay due Sat 1 Jan moved to Fri 31 Dec)? And which year's count does a period that starts in December and ends in January use?", "ref_does": "calendar year, by the due date before any move; a period uses the year it starts in" },
+    { "id": "units-q4", "question": "Which pays get the extra minor unit when a year does not divide evenly (the first ones, the last ones, spread through the year)?", "ref_does": "spread: pay k gets floor(year x k / N) - floor(year x (k - 1) / N)" },
+    { "id": "units-q5", "question": "The first year of a schedule set up in November: \"26 or 27\" counts the whole year by its rhythm, but the schedule has only 4 pays in that year. Which count?", "ref_does": "the whole year by its rhythm (26 or 27), counted back from its first date" },
+    { "id": "units-q6", "question": "`per: week` when days / 7 is not whole (5,000 over 30 days = 21,428.57): how is it rounded, and must a year of periods add up?", "ref_does": "half up per period, nothing carried" },
+    { "id": "units-q7", "question": "No fixed pay: 365 or 366 days in a leap year, how a day's amount is rounded (lookahead_ref.js carries the remainder so nothing is lost), and what `per: pay` and `per: week` mean with no fixed pay.", "ref_does": "365; the total over the days is rounded down once; `per: pay` refuses, `per: week` is amount / 7 a day" },
+    { "id": "units-q8", "question": "Confirm: lookahead_ref.js `paysAYear` uses 52 / n (26 flat for every two weeks, 52 for weekly) and rounds each period on its own, so a year does not add up. It is the model's plain form only; the engine takes the count and the spread from this file.", "ref_does": "the real count and the spread" },
+    { "id": "units-q9", "question": "A saved amount that is not a whole number (an old or hand-edited copy): kept as is, refused, or asked about? Section 0 says nothing is rounded on load.", "ref_does": "not covered" }
+  ]
+}
