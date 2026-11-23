@@ -102,4 +102,25 @@ t('a monthly amount per pay: monthly x 12 over the pays of the year [per month, 
   eq(list.reduce((a, o) => a + o.amount, 0), 600000);
   eq(list[0].amount, 22223);
 });
+
+// [H9, L units q4, q5, P4, R2] a monthly amount per pay: each rule its own months, spread over that rule's pays
+const cal0 = S.calendar('none', { holidays: [], bankClosed: [] });
+const sched = rules => ({ id: 'pay', rules: rules.map(r => ({ from: r.from, rule: r.rule })) });
+const twoWeekly = { from: '2027-01-01', rule: { every: 'weeks', n: 2, from: '2027-01-01' } };
+t('the first year of a schedule counts the whole year by its rhythm [L units q5]', () => {
+  const sp = S.monthShare(sched([{ from: null, rule: { every: 'weeks', n: 2, from: '2026-11-13' } }]), cal0, n('2026-11-13'), 50000);
+  eq(sp.pays, 26);
+});
+t('two-weekly to June, then monthly: each rule its own months [P4]', () => {
+  const sc = sched([twoWeekly, { from: '2027-07-01', rule: { every: 'month', days: [25] } }]);
+  eq(S.monthShare(sc, cal0, n('2027-06-18'), 50000), { pays: 13, pay: 13, months: 6, amount: 23076 });
+  eq(S.monthShare(sc, cal0, n('2027-07-25'), 50000), { pays: 6, pay: 1, months: 6, amount: 50000 });
+});
+t('a rule changing on the 15th: that month is the old rule\'s, the new rule\'s pays from its from [R2]', () => {
+  const sc = sched([twoWeekly, { from: '2027-07-15', rule: { every: 'month', days: [10] } }]);
+  eq(S.monthShare(sc, cal0, n('2027-07-02'), 50000), { pays: 14, pay: 14, months: 7, amount: 25000 });
+  eq(S.monthShare(sc, cal0, n('2027-08-10'), 50000), { pays: 5, pay: 1, months: 5, amount: 50000 });
+  const sc2 = sched([twoWeekly, { from: '2027-07-15', rule: { every: 'month', days: [25] } }]);
+  eq(S.monthShare(sc2, cal0, n('2027-07-25'), 50000), { pays: 6, pay: 1, months: 5, amount: 41667 });
+});
 done('schedules');

@@ -162,25 +162,50 @@
       .sort((a, b) => a.land - b.land || (a.id < b.id ? -1 : 1));
   }
 
-  // [per: 'month', H9, L units q4] Each step is a monthly total: each occurrence gets monthly x 12 over the occurrences
-  // in its due date's year, the leftover minor units on the earliest. (A rule that changes during the year gets the
-  // months it is in force [P4, R2]: not yet here, see the report.)
-  function perMonthAmounts(sch, cal) {
-    const cache = {};
-    return due => {
-      const y = ymOf(due)[0];
-      if (!cache[y]) {
-        const plain = Object.assign({}, sch, { per: 'pay', amounts: null, byDay: null, count: null });
-        const list = occurrences(plain, cal, dayIn(y, 1, 1), dayIn(y, 12, 31)).filter(o => ymOf(o.due)[0] === y).sort((a, b) => a.due - b.due);
-        cache[y] = {};
-        const monthly = stepOn(sch, dayIn(y, 1, 1));
-        U.spread(monthly * 12, list.length || 1).forEach((a, i) => { if (list[i]) cache[y][list[i].due] = a; });
+  // [H9, L units q3 to q5, N3, P4, R2] The pays of a year, each with the rule it follows and that rule's months:
+  // a month belongs to the rule in force on its first day (the first rule from 1 Jan); a rule's pays are its due dates
+  // in that year (by the unshifted due date) from its `from`; the first rule counts the whole year by its rhythm.
+  // Returns { byDue: { <due day>: { rule, pay, pays, months } } }.
+  function yearPays(sch, cal, y) {
+    const rules = liveEntries(sch.rules).map((x, i) => ({ f: entryFrom(x, i), rule: x.rule || {} })).sort((p, q) => p.f - q.f);
+    const y0 = dayIn(y, 1, 1), y1 = dayIn(y, 12, 31);
+    const ruleOn = d => { let k = 0; rules.forEach((p, i) => { if (p.f <= d) k = i; }); return k; };
+    const months = rules.map(() => 0);
+    for (let m = 1; m <= 12; m++) months[ruleOn(dayIn(y, m, 1))]++;
+    const byDue = {};
+    rules.forEach((p, i) => {
+      const until = rules[i + 1] ? rules[i + 1].f : Infinity;
+      let r = p.rule;
+      // [L units q5] the first rule's first year counts by its rhythm: its anchor moved back a whole number of steps
+      if (i === 0 && r.from && dayNum(r.from) > y0) {
+        if (r.every === 'weeks') { const step = 7 * (r.n || 1), a = dayNum(r.from); r = Object.assign({}, r, { from: dayStr(a - Math.ceil((a - y0 + 1) / step) * step) }); }
+        else if (r.every === 'months') { const a = dayNum(r.from), back = (ymOf(a)[0] - y + 1) * 12 * (r.n || 1); const [ay, am] = ymOf(a); r = Object.assign({}, r, { day: r.day != null ? r.day : +r.from.slice(8, 10), from: dayStr(dayIn(ay, am - back, 1)) }); }
       }
-      return cache[y][due] != null ? cache[y][due] : stepOn(sch, due);
-    };
+      const list = dueDays(r, Math.max(y0, i === 0 ? y0 : p.f), y1, cal).map(x => x.due)
+        .filter(d => d >= y0 && d <= y1 && (i === 0 || d >= p.f) && d < until).sort((a, b) => a - b);
+      list.forEach((d, k) => { byDue[d] = { rule: i, pay: k + 1, pays: list.length, months: months[i] }; });
+    });
+    return { byDue };
+  }
+  // A monthly amount for the pay due on day `due`: the months of the rule it follows x the amount, spread over that rule's
+  // pays in the due date's year, the leftover minor units on the earliest [L units q4, P4, R2].
+  // `cache` (optional, one per look ahead) keeps each year's list; the saved records are never written to.
+  function monthShare(sch, cal, due, monthly, cache) {
+    const y = ymOf(due)[0];
+    const c = cache || {};
+    const yp = c[y] = c[y] || yearPays(sch, cal, y);
+    const p = yp.byDue[due];
+    if (!p) return null;
+    return { pays: p.pays, pay: p.pay, months: p.months, amount: U.spread(monthly * p.months, p.pays)[p.pay - 1] };
   }
 
-  const api = { calendar, holidays, bankClosed, easter, keyLive, keyAmount, dueDays, occurrences, stepOn };
+  // [per: 'month', H9, L units q4, P4, R2] Each step is a monthly total: each occurrence gets its share by monthShare.
+  function perMonthAmounts(sch, cal) {
+    const cache = {};
+    return due => { const sh = monthShare(sch, cal, due, stepOn(sch, dayIn(ymOf(due)[0], 1, 1)), cache); return sh ? sh.amount : stepOn(sch, due); };
+  }
+
+  const api = { calendar, holidays, bankClosed, easter, keyLive, keyAmount, dueDays, occurrences, stepOn, monthShare };
   if (node) module.exports = api;
   else (root.BurrowEngine = root.BurrowEngine || {}).schedules = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
