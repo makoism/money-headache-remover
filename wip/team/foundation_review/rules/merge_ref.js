@@ -102,11 +102,27 @@ function mergeEntries(a, b) {
 // `by`, the device part of the last writer [L merge q1]; with no `by`, the larger as sorted JSON text, so
 // both devices agree. `told`: the earliest seen, never the winner's [H1, L merge q7]. The record's `at` is
 // the winner's: it moves only when the record changes [L merge q3].
+// [AE1] Keyed overrides: `amounts` (schedules, loans) and `once` (budget lines, `plan.shares` entries) are maps whose every
+// key is an entry with its own `at`, `by` and `gone` (and `held` mark): they merge key by key, as `steps` entries merge by
+// `from`. `extraSteps` (loans) is an entry list like `steps`.
+const ENTRY_LISTS = ['steps', 'rules', 'extraSteps'], KEYED = ['amounts', 'once'];
+const isMap = x => !!x && typeof x === 'object' && !Array.isArray(x);
+function mergeKeyed(a, b) {
+  const out = {};
+  for (const k of new Set(Object.keys(a || {}).concat(Object.keys(b || {})))) {
+    const x = (a || {})[k], y = (b || {})[k];
+    out[k] = x === undefined ? y : y === undefined ? x : (isMap(x) && isMap(y) ? winner(...heldPair(x, y)) : winner({ v: x }, { v: y }).v);
+  }
+  return out;
+}
 function pick(x, y) {
   [x, y] = heldPair(x, y);
   const win = winner(x, y);
   const out = Object.assign({}, win);   // whole record, unknown fields kept (section 0)
-  for (const k of ['steps', 'rules']) if (Array.isArray(x[k]) && Array.isArray(y[k])) out[k] = mergeEntries(x[k], y[k]);
+  // [AE1] An entry list or a keyed map held by either copy is merged, never taken whole from the winner: nothing is
+  // deleted (section 0), so a copy that lacks one never wrote it, and the other copy's entries and keys stay.
+  for (const k of ENTRY_LISTS) if (Array.isArray(x[k]) || Array.isArray(y[k])) out[k] = mergeEntries(x[k] || [], y[k] || []);
+  for (const k of KEYED) if (isMap(x[k]) || isMap(y[k])) out[k] = mergeKeyed(x[k], y[k]);
   const told = [x.told, y.told].filter(Boolean).sort((a, b) => ms(a) - ms(b))[0];
   if (told) out.told = told;
   return out;
@@ -118,20 +134,23 @@ function mergeList(a, b) {
 }
 // [L merge q6] Shared `ui`: each key by its own `at` in `ui.at`. [M5] Each key's `by` is in `ui.by`, beside
 // its `at`: on the same `at` the larger `by` wins; with no `by`, the larger value as sorted JSON text.
+// [AF3] A key is removed by its own `gone` in `ui.gone` (the day), beside its `at` and `by`; its value stays. On the same
+// `at` a removed key wins [H6], before `by`; a key put back with Undo has no `gone` and a newer `at`.
 function mergeUi(a, b) {
   const out = { at: {} }, atA = Object.assign({}, a.at), atB = Object.assign({}, b.at), byA = a.by || {}, byB = b.by || {};
+  const goneA = a.gone || {}, goneB = b.gone || {};
   const heldA = Object.assign({}, a.held), heldB = Object.assign({}, b.held);
   // [N1] A key held once keeps its held `at`: its mark is in `ui.held`, beside `ui.at` and `ui.by`.
   for (const k of Object.keys(heldA)) if (!heldB[k] && sameMoment(atB[k], heldA[k].came)) { atB[k] = heldA[k].at; heldB[k] = heldA[k]; }
   for (const k of Object.keys(heldB)) if (!heldA[k] && sameMoment(atA[k], heldB[k].came)) { atA[k] = heldB[k].at; heldA[k] = heldB[k]; }
   for (const k of new Set(Object.keys(a).concat(Object.keys(b)))) {
-    if (k === 'at' || k === 'by' || k === 'held') continue;
+    if (k === 'at' || k === 'by' || k === 'held' || k === 'gone') continue;
     let useB;
     if (!(k in a)) useB = true;
     else if (!(k in b)) useB = false;
     else {
       const d = msOr(atB[k]) - msOr(atA[k]), wa = byA[k] || '', wb = byB[k] || '';
-      useB = d > 0 || (d === 0 && (wa !== wb ? wb > wa : canon(b[k]) > canon(a[k])));
+      useB = d > 0 || (d === 0 && (!!goneA[k] !== !!goneB[k] ? !!goneB[k] : wa !== wb ? wb > wa : canon(b[k]) > canon(a[k])));
     }
     out[k] = useB ? b[k] : a[k];
     const at = useB ? atB[k] : atA[k], by = useB ? byB[k] : byA[k];
@@ -139,6 +158,8 @@ function mergeUi(a, b) {
     if (by) (out.by = out.by || {})[k] = by;
     const mark = useB ? heldB[k] : heldA[k];
     if (mark) (out.held = out.held || {})[k] = mark;
+    const gone = useB ? goneB[k] : goneA[k];
+    if (gone) (out.gone = out.gone || {})[k] = gone;
   }
   return out;
 }
@@ -244,25 +265,46 @@ function devices({ devices: devs, copy, steps, show }) {
   return st[show.on].copy[show.list].find(r => r.id === show.id);
 }
 
-// [AB watch] Restoring an older backup while the cloud copy is on. A union merge would bring back everything newer at the
-// next sync, so the restore writes: `gone` (the restore's day) with a new `at` for every record newer than the backup
-// (not in it), and the backup's records with a new `at`, so the merge keeps the restore. Inside a restored record the
-// `steps` and `rules` entries merge by their own `at` [L merge q2], so the backup's entries get the new `at` too and an
-// entry not in the backup is removed by its own `gone` [M3]. `told` stays the first one each record had [H1]. [AD8] The
-// shared `ui` keys (stamped per key in `ui.at` and `ui.by`) take the backup's values with a new `at` too.
-function restore({ current, backup, now, by }) {
-  const day = String(now).slice(0, 10), stamp = { at: now, by };
+// [AB watch, AE5] Restoring an older backup while the cloud copy is on. A union merge would bring back everything newer
+// at the next sync, so the restore writes: `gone` (the restore's day) with a new `at` for every record newer than the
+// backup (not in it), and the backup's records with a new `at`, so the merge keeps the restore. [AE5] The new `at` is
+// the D4 clock (`nextAt`: the larger of now and the newest `at` this device has seen plus 1 ms), never the raw time, so
+// a device whose clock is behind still restores all of it. It covers every list alike: records with built ids (`set:`,
+// `pe:`, `mv:draw:`), `pendingMove` entries and the frozen texts. Inside a restored record the `steps`, `rules` and
+// `extraSteps` entries merge by their own `at` [L merge q2], so the backup's entries get the new `at` too and an entry
+// not in the backup is removed by its own `gone` [M3]; each key of a keyed override (`amounts`, `once`) likewise [AE1].
+// A restore is an edit, so a record keeps the held mark this device knows for it [N1] (its own, else the backup's),
+// and a far-ahead copy of it still in the cloud counts at its held `at` and cannot beat the restore. `told` stays the
+// first one each record had [H1]. [AD8, AF3] The shared `ui` keys take the backup's values with a new `at` and `by`; a
+// key not in the backup is removed by its own `gone` in `ui.gone`. [AE5] A backup in the 38.31 format (a copy with
+// `cfg`, `steps`, `once`, `receipts`, `items` or `cards` and no `v: 3`) is moved first (move_ref, with the person's
+// answers to the move's questions), and every record it gives is stamped with the restore.
+const OLD_KEYS = ['cfg', 'steps', 'once', 'receipts', 'items', 'cards'];
+const isOldFormat = b => isMap(b) && b.v !== 3 && OLD_KEYS.some(k => k in b);
+function restore({ current, backup, now, by, lastSeen, answers }) {
+  const at = nextAt(now, lastSeen), day = String(now).slice(0, 10), stamp = { at, by };
+  if (isOldFormat(backup)) backup = require('./move_ref').movedBackup({ copy: backup, answers, now, by, at });
+  const earliest = (...t) => t.filter(Boolean).sort((a, b) => ms(a) - ms(b))[0];
+  const restoreRecord = (r, c) => {
+    const o = Object.assign({}, r, stamp);
+    const told = earliest(r.told, c && c.told); if (told) o.told = told;
+    const mark = (c && c.held) || r.held; if (mark) o.held = mark;
+    for (const k of ENTRY_LISTS) if (Array.isArray(r[k]) || (c && Array.isArray(c[k]))) {
+      const mine = (r[k] || []).map(e => Object.assign({}, e, stamp));
+      const newer = ((c && c[k]) || []).filter(e => !(r[k] || []).some(b => b.from === e.from)).map(e => Object.assign({}, e, { gone: e.gone || day }, stamp));
+      o[k] = mine.concat(newer).sort((x, y) => (x.from < y.from ? -1 : x.from > y.from ? 1 : 0));
+    }
+    for (const k of KEYED) if (isMap(r[k]) || (c && isMap(c[k]))) {
+      const bk = r[k] || {}, ck = (c && c[k]) || {}, m = {};
+      for (const key of Object.keys(bk)) m[key] = Object.assign({}, bk[key], stamp);
+      for (const key of Object.keys(ck)) if (!(key in bk)) m[key] = Object.assign({}, ck[key], { gone: ck[key].gone || day }, stamp);
+      o[k] = m;
+    }
+    return o;
+  };
   const restoreList = (cur, bak) => {
     const have = new Map((bak || []).map(r => [r.id, r])), out = [];
-    for (const r of bak || []) {
-      const o = Object.assign({}, r, stamp), c = (cur || []).find(x => x.id === r.id);
-      for (const k of ['steps', 'rules']) if (Array.isArray(r[k]) || (c && Array.isArray(c[k]))) {
-        const mine = (r[k] || []).map(e => Object.assign({}, e, stamp));
-        const newer = ((c && c[k]) || []).filter(e => !(r[k] || []).some(b => b.from === e.from)).map(e => Object.assign({}, e, { gone: e.gone || day }, stamp));
-        o[k] = mine.concat(newer).sort((x, y) => (x.from < y.from ? -1 : x.from > y.from ? 1 : 0));
-      }
-      out.push(o);
-    }
+    for (const r of bak || []) out.push(restoreRecord(r, (cur || []).find(x => x.id === r.id)));
     for (const r of cur || []) if (!have.has(r.id)) out.push(Object.assign({}, r, { gone: r.gone || day }, stamp));
     return out.sort((x, y) => (x.id < y.id ? -1 : x.id > y.id ? 1 : 0));
   };
@@ -272,10 +314,19 @@ function restore({ current, backup, now, by }) {
       const a = (cur || {})[k], b = (bak || {})[k];
       if (Array.isArray(a) || Array.isArray(b)) out[k] = restoreList(a, b);
       else if (k === 'plan') out[k] = walk(a, b);
-      else if (b && typeof b === 'object' && typeof b.at === 'string') out[k] = Object.assign({}, b, stamp);   // home, plan.limits
-      else if (k === 'ui' && b && typeof b === 'object') {   // [AD8] the shared ui keys: the backup's values, each with a new `at` and `by`
-        const keys = Object.keys(b).filter(x => x !== 'at' && x !== 'by' && x !== 'held');
-        out[k] = Object.assign({}, b, { at: Object.fromEntries(keys.map(x => [x, now])), by: Object.fromEntries(keys.map(x => [x, by])) });
+      else if (b && typeof b === 'object' && typeof b.at === 'string') out[k] = restoreRecord(b, a);   // home, plan.limits
+      else if (k === 'ui' && b && typeof b === 'object') {   // [AD8] the backup's values, each with a new `at` and `by`; [AF3] the rest `gone`
+        const META = ['at', 'by', 'held', 'gone'], keys = Object.keys(b).filter(x => !META.includes(x));
+        const extra = Object.keys(a || {}).filter(x => !META.includes(x) && !keys.includes(x));
+        const o = Object.assign({}, b);
+        for (const x of extra) o[x] = a[x];
+        const all = keys.concat(extra);
+        o.at = Object.fromEntries(all.map(x => [x, at])); o.by = Object.fromEntries(all.map(x => [x, by]));
+        const gone = Object.assign({}, b.gone); for (const x of extra) gone[x] = ((a && a.gone) || {})[x] || day;
+        if (Object.keys(gone).length) o.gone = gone; else delete o.gone;
+        const held = Object.assign({}, b.held, (a && a.held) || {}); for (const x of Object.keys(held)) if (!all.includes(x)) delete held[x];
+        if (Object.keys(held).length) o.held = held; else delete o.held;
+        out[k] = o;
       }
       else if (b !== undefined) out[k] = b;   // the rest: the backup's as it is
     }
@@ -286,7 +337,7 @@ function restore({ current, backup, now, by }) {
 
 function ask(question, input) {
   switch (question) {
-    case 'restore': return restore(input);
+    case 'restore': { const r = restore(input); return input.show ? Object.fromEntries(input.show.map(k => [k, r[k]])) : r; }
     case 'restore_merge': { const r = restore(input); return { mine_first: merge(r, input.cloud), theirs_first: merge(input.cloud, r) }; }
     case 'next_at': return nextAt(input.now, input.lastSeen);
     case 'next_at_warn': return nextAtWarn(input.now, input.lastSeen);
@@ -303,4 +354,4 @@ function ask(question, input) {
   throw new Error('unknown question ' + question);
 }
 
-module.exports = { ask, restore, nextAt, nextAtWarn, newer, merge, mergeList, pick, winner, cameBack, holdArriving, receive, idFor, idOk };
+module.exports = { ask, restore, mergeKeyed, isOldFormat, nextAt, nextAtWarn, newer, merge, mergeList, pick, winner, cameBack, holdArriving, receive, idFor, idOk };

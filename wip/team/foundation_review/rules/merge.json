@@ -1,7 +1,7 @@
 {
   "area": "merge",
   "title": "Merging two copies: union by id, newest `at` per record, `gone` against the same or older `at` only, the hybrid clock, `told` never changing",
-  "written_in": "SCHEMA_V3 0 and 2.3; DECISIONS_ROUND2 D4, H1, H6, H9, L (merge q1 to q8), M3 to M5, N1, N2, O2, O3, Q5, Q7, S3, AB watch (restoring a backup with the cloud on), AD8 (the shared ui keys restored with a new at)",
+  "written_in": "SCHEMA_V3 0 and 2.3; DECISIONS_ROUND2 D4, H1, H6, H9, L (merge q1 to q8), M3 to M5, N1, N2, O2, O3, Q5, Q7, S3, AB watch (restoring a backup with the cloud on), AD8 (the shared ui keys restored with a new at), AE1 (keyed overrides merged key by key), AE2, AE5 (restore with the D4 clock, every list, held marks, keyed overrides, a 38.31-format backup) and AF3 (ui keys removed per key)",
   "notes": [
     "Every amount is made up and in whole minor units (yen).",
     "Times are hybrid clock values written as ISO with the time zone offset (section 0). They are compared as moments, never as text: 10:00+09:00 is 01:00 UTC, 02:30+01:00 is 01:30 UTC.",
@@ -4536,6 +4536,7 @@
           ]
         },
         "now": "2026-11-17T09:00:00.000+09:00",
+        "lastSeen": "2026-11-18T10:00:00.000+09:00",
         "by": "phn001",
         "cloud": {
           "events": [
@@ -6100,11 +6101,5 @@
       ]
     }
   ],
-  "open": [
-    {
-      "id": "mg-q13",
-      "question": "AD8: a restore gives the shared `ui` keys a new `at`. A key set after the backup (in the cloud copy, not in the backup) has no `gone` of its own (ui keys are stamped per key, not records), so the merge brings it back. Should the restore remove it, and how (a `gone` per key, or the key set back to its value when the backup was made)?",
-      "ref_does": "Leaves it: the restored `ui` holds the backup's keys only, each with the new `at`; a key only in the cloud copy comes back at the merge with its own `at`. No case depends on it."
-    }
-  ]
+  "open": []
 }

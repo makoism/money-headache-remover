@@ -1,7 +1,7 @@
 {
   "area": "move",
   "title": "Moving a saved copy from 38.31, 38.28 and the 25.0 to 38.26 builds into the new shape: every saved field to its target, or listed",
-  "written_in": "SCHEMA_V3 0, 2, 11 and 11.1; DECISIONS_ROUND2 E1, E6, H9, I5, J2, K3, O (and its watch items), X1, X9 and X watch, Y, Z, AA, AB, AC and AD; foundation_review/MOVE_FIELDS.md (the field list per build)",
+  "written_in": "SCHEMA_V3 0, 2, 11 and 11.1; DECISIONS_ROUND2 E1, E6, H9, I5, J2, K3, O (and its watch items), X1, X9 and X watch, Y, Z, AA, AB, AC, AD (AD5 its second sentence only), AE (AE2 withdraws AD5's first) and AF1; foundation_review/MOVE_FIELDS.md (the field list per build)",
   "notes": [
     "Every amount is made up. Amounts in a saved copy are major units with up to two decimals (every build); the moved records hold whole minor units [section 0]; an amount with more decimals than its currency is rounded half up and flagged in `rounded` [Y23].",
     "Question `move`: `copy` is the saved copy as an object, or `raw` the stored text itself (the move reads the raw text, never a cleaned copy [O]). `idb` is the IndexedDB second copy (`{ rev, t }`, `t` the moment of its save, a time or ms); `now` is the move's own moment, with the moving device's offset (X9), which is also `offset` unless given. The copy's last save is the later of `idb.t` and the stored `rev` when it is a time, either alone, else `now` [Y13, AA10]; its day is \"the copy's last saved day\" [H9, K3]. The move month is the calendar month of `now` [Y21]. `answers` holds the answers to the move's questions: `cur` (the currency code), `loanLine` (a plan.debts id, or `drop`), `pay` (`{ a, b, side }`: each a rule, SCHEMA_V3 5, any rhythm [AA4]), `billDay` (by 38.31 line id, a rule), `debtDay` (by debt id, or the field path of a loan the move made: the payment day), `goalMoney` (by goal id: `bank`, or `{ name, type }` for another account, type `bank` or `ewallet` [AA13]), `loanTerms` (by the id of a loan the move made: `{ apr, min }` or `dontKnow` [AA12]). `make.receipts` adds that many plain receipts to the copy (test help, so mv-35 can hold 5,002 receipts).",
@@ -13706,43 +13706,6 @@
       "expected": {
         "schedules": [
           {
-            "id": "mv:bill:rent",
-            "kind": "bill",
-            "name": "Rent or mortgage",
-            "cur": "JPY",
-            "acct": "mv:acct:cfg",
-            "place": "bills",
-            "steps": [
-              {
-                "from": "2026-11-22",
-                "amount": 80000
-              }
-            ],
-            "told": "2026-11-23T20:00:00.000+09:00",
-            "at": "2026-11-28T08:00:00.000+09:00",
-            "by": "phn001",
-            "rules": [
-              {
-                "from": "2026-11-22",
-                "rule": {
-                  "every": "month",
-                  "days": [
-                    27
-                  ]
-                },
-                "at": "2026-11-28T08:00:00.000+09:00",
-                "by": "phn001"
-              }
-            ],
-            "amounts": {
-              "2027-01-27": {
-                "amount": 0,
-                "at": "2026-11-23T20:00:00.000+09:00",
-                "by": "phn001"
-              }
-            }
-          },
-          {
             "id": "mv:pay:steps.a",
             "kind": "income",
             "name": "Salary",
@@ -13777,6 +13740,43 @@
                 "amount": 0,
                 "gone": "2026-11-27",
                 "at": "2026-11-27T10:00:00.000+09:00",
+                "by": "phn001"
+              }
+            }
+          },
+          {
+            "id": "mv:bill:rent",
+            "kind": "bill",
+            "name": "Rent or mortgage",
+            "cur": "JPY",
+            "acct": "mv:acct:cfg",
+            "place": "bills",
+            "steps": [
+              {
+                "from": "2026-11-22",
+                "amount": 80000
+              }
+            ],
+            "told": "2026-11-23T20:00:00.000+09:00",
+            "at": "2026-11-28T08:00:00.000+09:00",
+            "by": "phn001",
+            "rules": [
+              {
+                "from": "2026-11-22",
+                "rule": {
+                  "every": "month",
+                  "days": [
+                    27
+                  ]
+                },
+                "at": "2026-11-28T08:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ],
+            "amounts": {
+              "2027-01-27": {
+                "amount": 0,
+                "at": "2026-11-23T20:00:00.000+09:00",
                 "by": "phn001"
               }
             }
@@ -14213,9 +14213,14 @@
   ],
   "open": [
     {
-      "id": "mv-q55",
-      "question": "AD1: a minimum saved by a build before 20 Nov with no `ui.minAuto` is automatic. The copy says nothing of the build that set the minimum, only of the last save: the reference reads a `rev` that is a count (38.28, the 25.0 builds) or a last save before 20 Nov as such a build. A copy last saved from 20 Nov on by 38.31, whose minimum an earlier build filled in (38.31 never adds `ui.minAuto` to a minimum already there), has no `ui.minAuto` either, like a typed one. Is it typed (kept) or automatic (dropped)?",
-      "ref_does": "Kept: read as typed (mv-09, mv-102). No case has a minimum known to come from an earlier build in such a copy."
+      "id": "mv-q56",
+      "question": "AE2 with AE5: a backup made while an entry waited, restored after the entry was applied. The restore brings the entry back live and removes the key it wrote with its own `gone`, both stamped with the restore's `at` (mg-111). When the day is answered again, the entry writes its key with the entry's `at`, which is now the restore's `at`: the same as the removed key's, and on the same `at` a removed key wins [H6], so the key is never written again (January's 0 stays removed and January counts the usual 250,000). Should the key an entry writes after a restore win over the restore's own removal (for example: the restore leaves out the keys whose entry it brings back, or the entry writes with the answer's `at`), or does the restore keep the entry `gone` when the backup's entry is already answered in the current copy?",
+      "ref_does": "Follows AE2 and AE5 as written: the removed key wins on the same `at`; the entry is marked `gone` and nothing is written. No case depends on it."
+    },
+    {
+      "id": "mv-q57",
+      "question": "AE4 notes a one-month amount spread over a three-pay month. Pay weekly gives four or five pays a month; a month with five spreads the amount over five, each less than the usual weekly share (monthly x 12 / 52), the same effect AE4 notes for three. Is a five-pay month (weekly) noted too?",
+      "ref_does": "Notes only a spread over exactly three pays or payments (every two weeks, mv-112). No case has weekly pay with a one-month amount."
     }
   ]
 }

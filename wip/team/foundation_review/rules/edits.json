@@ -1,7 +1,7 @@
 {
   "area": "edits",
   "title": "What setup and an edit may save: a schedule change never before its latest settled or named occurrence, a goal's own account in the home currency, setup's not-yet questions (X8, W3, X3)",
-  "written_in": "SCHEMA_V3 sections 4, 5 and 8 (the opening); DECISIONS_ROUND2 X3, X8, W3, AB3 (the last statement asked at setup; AD6 and AD7: \"no\" asks the amount with everything owed filled in, \"don't know\" on a loan or pay-later is that month's usual payment) and AB with MAKO M1 (the minimum asked once, box empty)",
+  "written_in": "SCHEMA_V3 sections 4, 5 and 8 (the opening); DECISIONS_ROUND2 X3, X8, W3, AB3 (the last statement asked at setup; AD6 and AD7: \"no\" asks the amount with everything owed filled in, \"don't know\" on a loan or pay-later is that month's usual payment; AE6: the question asked as \"Has your last card statement already left your bank?\", an automatic debit not yet until it comes out; AF2: \"no\" on a loan or pay-later filled with the usual payment) and AB with MAKO M1 (the minimum asked once, box empty)",
   "notes": "Hand-worked cases for edit-time and setup rules that the reference model does not hold [H7]. All amounts and dates are made up.",
   "defaults": {},
   "cases": [
@@ -680,11 +680,5 @@
       ]
     }
   ],
-  "open": [
-    {
-      "id": "ed-q3",
-      "question": "AD6: \"No, not paid\" asks the amount with everything owed filled in. On a loan or a pay-later (everything owed is the whole balance, 400,000 on a loan paying 20,000 a month), is the amount asked too, and filled with what: everything owed, or that month's usual payment (as AD7 reads \"don't know\")?",
-      "ref_does": "AD6 only on a card. A loan or pay-later answered no saves the amount typed, with no box filled (the AB3 reading: \"no\" leaves that payment expected, its usual amount, loan_between_stmt_pay lbs-01). No case has it."
-    }
-  ]
+  "open": []
 }
