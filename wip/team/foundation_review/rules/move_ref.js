@@ -209,7 +209,8 @@ function move(input) {
   // [Y28] Records with no 38.31 id are named by their field path: the bank's account, opening and checks come from cfg.
   const bank = figures.length ? 'mv:acct:cfg' : null;
   if (!bank) asks.push({ q: 'bankFigure' });   // [Y19] asked at the first check-in; safe to spend shows nothing until then
-  const home = { curs: [{ from: D0, cur }], minBank: null, mainBank: bank };   // [Y18] the typed bank figure is the main bank
+  // [Y18] the typed bank figure is the main bank. [AL3] The main bank and its minimum are one value, `main: { acct, min }`.
+  const home = { curs: [{ from: D0, cur }], main: { acct: bank, min: null } };
   // [11.1, MAKO M1] the minimum only when typed: one the app filled in itself (ui.minAuto) is dropped. [AD1] A build before
   // 20 Nov filled it in without writing ui.minAuto, so there no ui.minAuto reads as automatic. Such a build is one whose
   // `rev` is a count (38.28, the 25.0 builds) or a copy last saved before 20 Nov 2026 (early 38.31). A dropped minimum is
@@ -222,11 +223,11 @@ function move(input) {
     const oldBuild = (typeof copy.rev === 'number' && copy.rev < 1e12) || savedDay < MIN_AUTO_FROM;
     const old = amt(cfg.minBank, 'cfg.minBank');
     if (ui.minAuto !== undefined ? cfg.minBank === ui.minAuto : oldBuild) asks.push({ q: 'minBank' });
-    else if (ui.minAuto !== undefined) home.minBank = { a: old, cur };
+    else if (ui.minAuto !== undefined) home.main.min = { a: old, cur };
     else if (answers.minBank !== undefined) {
       asks.push({ q: 'minBank', shown: old, answer: answers.minBank });
-      home.minBank = typeof answers.minBank === 'number' ? { a: answers.minBank, cur } : null;
-    } else { asks.push({ q: 'minBank', shown: old }); home.minBank = { a: old, cur, asked: true }; }
+      home.main.min = typeof answers.minBank === 'number' ? { a: answers.minBank, cur } : null;
+    } else { asks.push({ q: 'minBank', shown: old }); home.main.min = { a: old, cur, asked: true }; }
   }
 
   const accounts = [], events = [], places = [], schedules = [], budgets = [], shares = [], debtAccts = [];
@@ -529,7 +530,9 @@ function move(input) {
     plan: { shares, budgets }, imports: isMap(ui.cats) ? { cats: ui.cats } : {}, ui: shared,
     device: { look, tour, opens: Array.isArray(ui.wk) ? ui.wk : [] },
     asks, unplaced: unplaced.sort(), zero: zero.sort(), rounded: rounded.sort(), sample, saved, frozen3831: raw };
-  if (!sample && (typeof cfg.ceiling === 'number' || isMap(cfg.aims))) out.plan.limits = Object.assign({}, typeof cfg.ceiling === 'number' ? { ceiling: amt(cfg.ceiling, 'cfg.ceiling') } : {}, isMap(cfg.aims) ? { aims: cfg.aims } : {}, { cur });
+  // [11.1, O6, AL5] cfg.ceiling is "the most you want to spend in a month": an amount with its currency and `per: 'month'`
+  // (Lesson 1); cfg.aims are shares, not amounts.
+  if (!sample && (typeof cfg.ceiling === 'number' || isMap(cfg.aims))) out.plan.limits = Object.assign({}, typeof cfg.ceiling === 'number' ? { ceiling: { a: amt(cfg.ceiling, 'cfg.ceiling'), cur, per: 'month' } } : {}, isMap(cfg.aims) ? { aims: cfg.aims } : {});
   // [AA5, AB rows] what has its day is written now; the rest stays on the copy, each entry a record `mv:pend:<field path>`
   out.morePays = [];   // [AE4, AG2] the fields whose one-month amount is spread over a month with more pays than usual (the move summary)
   out.pendingMove = applyPending(out, pend.map(x => Object.assign({ id: 'mv:pend:' + x.field }, x)), moveDay);
@@ -672,7 +675,7 @@ function madeCopy({ copy, make }) {
 }
 
 // [section 0, X1, AB1] the stamps a device writes: `told` (once; the events have their own), `at` and `by` on every record,
-// `at` and `by` per shared ui key; the copy's `rev` is max(now, rev + 1) with no old rev (11.1). [AB1] A moved record
+// `at` and `by` on every field value [AL1]; the copy's `rev` is max(now, rev + 1) with no old rev (11.1). [AB1] A moved record
 // carries the copy's last save as `at` (AA10), never the move moment, so any later real edit wins; a record an answer
 // after the move changed keeps that answer's `at`. The raw 38.31 text is kept per device, as the record `mv:frozen:<by>`;
 // `pendingMove` entries are records too [AB rows].
@@ -689,12 +692,15 @@ function stamp(m, now, by, saved) {
   m.frozen = [{ id: 'mv:frozen:' + by, raw: m.frozen3831 }];
   for (const k of ['people', 'accounts', 'places', 'schedules', 'events', 'frozen', 'pendingMove']) m[k] = (m[k] || []).map(rec);
   m.plan.shares = m.plan.shares.map(rec); m.plan.budgets = m.plan.budgets.map(rec);
-  if (m.plan.limits) Object.assign(m.plan.limits, { at: saved, by });
-  // [AK1] each field of `home` carries its own `at` and `by` (maps by field name, as `ui`); [AJ3] each `curs` entry its own
-  const fields = Object.keys(m.home).filter(k => k !== 'curs');
-  m.home.curs = (m.home.curs || []).map(e => Object.assign({}, e, { at: e.at || saved, by: e.by || by }));
-  m.home.at = Object.fromEntries(fields.map(k => [k, saved])); m.home.by = Object.fromEntries(fields.map(k => [k, by]));
-  m.ui.at = {}; m.ui.by = {}; for (const k of Object.keys(m.ui)) if (k !== 'at' && k !== 'by') { m.ui.at[k] = saved; m.ui.by[k] = by; }
+  // [AL1] Every record of separately edited fields is stored as field values `{ v, at, by }`: the shared `ui` keys, `home`
+  // (`main` holding the main bank and its minimum as one value [AL3]; [AJ3] each `curs` entry carries its own `at` and
+  // `by`), `plan.limits` (`ceiling` with its `per` [AL5], `aims`) and each `imports.cats` shop [AL4].
+  const fields = o => Object.fromEntries(Object.entries(o || {}).map(([k, v]) => [k, { v, at: saved, by }]));
+  if (m.plan.limits) m.plan.limits = fields(m.plan.limits);
+  const curs = (m.home.curs || []).map(e => Object.assign({}, e, { at: e.at || saved, by: e.by || by }));
+  m.home = Object.assign(fields(Object.fromEntries(Object.entries(m.home).filter(([k]) => k !== 'curs'))), { curs });
+  m.ui = fields(m.ui);
+  if (isMap(m.imports) && isMap(m.imports.cats)) m.imports = Object.assign({}, m.imports, { cats: fields(m.imports.cats) });
   m.rev = Date.parse(now); m.at = now;
   return m;
 }
@@ -732,11 +738,11 @@ function moveLater({ phone, edits, desktop, cloud }) {
   const p = stored(phone);
   for (const e of edits || []) {
     // [AJ3] an edit of a single record (`home`) names it by `record`
-    const r = e.record ? (p[e.record] = p[e.record] || {}) : listOf(p, e.list.split('.')).find(x => x.id === e.id);
+    // [AL1] a record of separately edited fields is named by its path (`home`, `ui`, `plan.limits`, `imports.cats`)
+    const r = e.record ? e.record.split('.').reduce((o, k) => (o[k] = o[k] || {}), p) : listOf(p, e.list.split('.')).find(x => x.id === e.id);
     for (const k of e.unset || []) delete r[k];   // an Undo of a removal: the record again, with a newer `at` [H6]
-    if (e.record) {   // [AK1] each field set takes the edit's `at` and `by` in `home.at` and `home.by`
-      Object.assign(r, e.set); r.at = Object.assign({}, r.at); r.by = Object.assign({}, r.by);
-      for (const k of Object.keys(e.set || {})) { r.at[k] = e.at; r.by[k] = phone.by; }
+    if (e.record) {   // [AK1, AL1] each field set is written as a field value with the edit's `at` and `by`
+      for (const [k, v] of Object.entries(e.set || {})) r[k] = { v, at: e.at, by: phone.by };
     } else Object.assign(r, e.set, { at: e.at, by: phone.by });
   }
   const d = stored(desktop);
@@ -763,7 +769,6 @@ function newestAt(x, best) {
   if (Array.isArray(x)) for (const v of x) best = newestAt(v, best);
   else if (isMap(x)) for (const [k, v] of Object.entries(x)) {
     if (k === 'at' && typeof v === 'string' && !Number.isNaN(Date.parse(v)) && (!best || Date.parse(v) > Date.parse(best))) best = v;
-    else if (k === 'at' && isMap(v)) best = newestAt(Object.values(v).map(t => ({ at: t })), best);   // [AK1] `home.at`, `ui.at`
     else best = newestAt(v, best);
   }
   return best;

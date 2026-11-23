@@ -18,7 +18,7 @@ const { dayNum } = require('./dates');
 // records names them `close:<account>:1`, `:2`, in the order written (the transfers as listed, then the write-off).
 const OWED = { card: 1, loan: 1, paylater: 1 };
 // [T watch decided] Closing the main bank (`mainBank`) asks for the new main bank (`newLinks.mainBank`) and moves
-// every link to it: `home.mainBank`, the budget lines and Free to spend held on it (their `acct` is it, or none:
+// every link to it: the main bank in `home.main` (AL3), the budget lines and Free to spend held on it (their `acct` is it, or none:
 // the main bank), and the pay schedules landing in it, which move instead of ending. [V] The bills paid from it move
 // to the new main bank too; the person can end any of them at the closing (`ending`), and those end on the closing
 // day (P6). (Before V, bills paid from it ended.) [W1] So do the transfers out and in and the self-logged spends.

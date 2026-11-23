@@ -204,7 +204,7 @@ function lookahead(sc, asOf, opts = {}) {
   // own items, card payment days and posting windows; every other account uses the home table.
   const cals = {};
   const calOf = id => (acct[id] && acct[id].holidays ? (cals[id] = cals[id] || makeCalendar(acct[id].holidays)) : cal);
-  // [O4] A budget line or Free to spend with no account is on the main bank (`home.mainBank`). A line on a
+  // [O4] A budget line or Free to spend with no account is on the main bank (`home.main.v.acct`, AL3). A line on a
   // card is reserved from the card's paying account, so the money is held once, where it will leave from.
   const lineAcct = l => l.account || sc.main_bank;
   const moneyAcct = id => (acct[id] && acct[id].kind === 'card' ? acct[id].payment.from : id);

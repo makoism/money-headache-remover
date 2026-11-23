@@ -19,9 +19,12 @@ const { dayNum, dayStr } = require('./dates');
 // [AK3] A budget line's or a share's `once` key named by the pay is offered the same way (`once`, the occurrence names,
 // each once however many lines and shares hold it). `once` may be one map or a list of maps, one per line or share.
 // [AK2] With the new rule given (`rule`, from the wanted day), "move" takes each offered amount or key to the new rule's
-// first occurrence in the same month (`moveTo`, old name to new name). A month with no occurrence of the new rule on or
-// after the wanted day gives null: that amount can only be removed (a question for Mako's run, edits.json ed-q1).
+// first occurrence in the same month (`moveTo`, old name to new name). [AL6] A month with no occurrence of the new rule on
+// or after the wanted day sends it to the new rule's next occurrence (a 25 Dec bonus, the new pay day the 10th from
+// 15 Dec: 10 Jan). When two land on one occurrence, or one lands on an occurrence that already has its own amount or
+// key, the offer shows them together and the person picks add or replace (`together`, `togetherOffer`).
 const { occurrence } = require('./ids');
+const ymAdd = (ym, n) => { const i = Number(ym.slice(0, 4)) * 12 + Number(ym.slice(5, 7)) - 1 + n; return String(Math.floor(i / 12)) + '-' + String(i % 12 + 1).padStart(2, '0'); };
 const { duesIn } = require('./move_ref');
 const liveKeys = map => Object.keys(map || {}).filter(k => !(map[k] && typeof map[k] === 'object' && map[k].gone));
 function changeFrom({ schedule, wanted, rule, settles, once, amounts, pe, ps }) {
@@ -41,10 +44,18 @@ function changeFrom({ schedule, wanted, rule, settles, once, amounts, pe, ps }) 
   if (on.length) out.once = on.map(d => schedule + '@' + d);   // [AK3]
   out.amountsOffer = ['move', 'remove'];
   if (rule) {   // [AK2] the new rule's first occurrence in the same month, on or after the wanted day
-    const to = d => duesIn(rule, d.slice(0, 7)).find(x => dayNum(x) >= dayNum(wanted)) || null;
+    // [AL6] none in that month on or after the wanted day: the new rule's next occurrence (the first on or after the
+    // wanted day, in a later month; looked for up to 24 months on)
+    const to = d => { for (let i = 0; i < 24; i++) { const x = duesIn(rule, ymAdd(d.slice(0, 7), i)).find(y => dayNum(y) >= dayNum(wanted)); if (x) return x; } return null; };
     out.moveTo = {};
     for (const d of am) out.moveTo[d] = to(d);
     for (const d of on) { const t = to(d); out.moveTo[schedule + '@' + d] = t && schedule + '@' + t; }
+    // [AL6] two amounts or keys landing on one occurrence (one of them may be that occurrence's own): the offer shows
+    // them together and the person picks add or replace (`together`, each target with what lands on it, in date order)
+    const together = {};
+    for (const [from, t] of Object.entries(out.moveTo)) if (t) (together[t] = together[t] || []).push(from);
+    for (const t of Object.keys(together)) if (together[t].length < 2) delete together[t]; else together[t].sort();
+    if (Object.keys(together).length) { out.together = together; out.togetherOffer = ['add', 'replace']; }
   }
   return out;
 }

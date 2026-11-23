@@ -154,11 +154,30 @@ function keyedFields(x, y) {
     return (keyedShape(x[k]) || keyedShape(y[k])) && [x[k], y[k]].every(v => v === undefined || isMap(v));
   });
 }
+// [AL1] One shape for every record of separately edited fields: the shared `ui`, `home`, `plan.limits` and `imports.cats`.
+// The value of each field is `{ v, at, by, gone }` (with its `held` mark once held), exactly like a keyed override key
+// [AE1]; `home.curs` is an entry list inside it [AJ3]. Such a record has no `at` of its own. It is found by its shape,
+// never by its name: a map with no `at` of its own whose values are field values, entry lists, or such maps again
+// (`imports` holds `cats`). One handler settles keyed overrides and these records alike: a field value by `winner`
+// (newer `at`, then `gone`, then the larger `by` [H6, M5]) with the held marks [N1], an entry list entry by entry
+// [AI2, AJ2], a map with no `at` of its own key by key again. The same shape is what holding (`holdArriving`),
+// restoring (`restoreKeyed`) and what a device has seen (`newestAt`) read [AL1, AL2]; nothing looks for the name `ui`.
+const fieldValue = x => isMap(x) && typeof x.at === 'string';
+function fieldsShape(x) {
+  if (!isMap(x) || typeof x.at === 'string') return false;
+  const vs = Object.values(x);
+  return vs.some(v => !Array.isArray(v))
+    && vs.every(v => fieldValue(v) || (Array.isArray(v) && (!v.length || entryShape(v) || idShape(v))) || fieldsShape(v));
+}
+const listKeyOf = (x, y) => ((idShape(x) || idShape(y)) && !(entryShape(x) || entryShape(y)) ? 'id' : 'from');
 function mergeKeyed(a, b) {
   const out = {};
   for (const k of new Set(Object.keys(a || {}).concat(Object.keys(b || {})))) {
     const x = (a || {})[k], y = (b || {})[k];
-    out[k] = x === undefined ? y : y === undefined ? x : (isMap(x) && isMap(y) ? winner(...heldPair(x, y)) : winner({ v: x }, { v: y }).v);
+    if (x === undefined || y === undefined) out[k] = x === undefined ? y : x;
+    else if (Array.isArray(x) || Array.isArray(y)) out[k] = mergeEntries(Array.isArray(x) ? x : [], Array.isArray(y) ? y : [], listKeyOf(x, y));   // [AJ3] `home.curs`
+    else if (isMap(x) && isMap(y) && !fieldValue(x) && !fieldValue(y)) out[k] = mergeKeyed(x, y);   // [AL1] `cats` inside `imports`
+    else out[k] = isMap(x) && isMap(y) ? winner(...heldPair(x, y)) : winner({ v: x }, { v: y }).v;
   }
   return out;
 }
@@ -179,49 +198,8 @@ function mergeList(a, b) {
   for (const r of (a || []).concat(b || [])) byId.set(r.id, byId.has(r.id) ? pick(byId.get(r.id), r) : Object.assign({}, r));
   return [...byId.values()].sort((x, y) => (x.id < y.id ? -1 : x.id > y.id ? 1 : 0));
 }
-// [L merge q6] Shared `ui`: each key by its own `at` in `ui.at`. [M5] Each key's `by` is in `ui.by`, beside
-// its `at`: on the same `at` the larger `by` wins; with no `by`, the larger value as sorted JSON text.
-// [AF3] A key is removed by its own `gone` in `ui.gone` (the day), beside its `at` and `by`; its value stays. On the same
-// `at` a removed key wins [H6], before `by`; a key put back with Undo has no `gone` and a newer `at`.
-function mergeUi(a, b) {
-  const out = { at: {} }, atA = Object.assign({}, a.at), atB = Object.assign({}, b.at), byA = a.by || {}, byB = b.by || {};
-  const goneA = a.gone || {}, goneB = b.gone || {};
-  const heldA = Object.assign({}, a.held), heldB = Object.assign({}, b.held);
-  // [N1] A key held once keeps its held `at`: its mark is in `ui.held`, beside `ui.at` and `ui.by`.
-  for (const k of Object.keys(heldA)) if (!heldB[k] && sameMoment(atB[k], heldA[k].came)) { atB[k] = heldA[k].at; heldB[k] = heldA[k]; }
-  for (const k of Object.keys(heldB)) if (!heldA[k] && sameMoment(atA[k], heldB[k].came)) { atA[k] = heldB[k].at; heldA[k] = heldB[k]; }
-  for (const k of new Set(Object.keys(a).concat(Object.keys(b)))) {
-    if (k === 'at' || k === 'by' || k === 'held' || k === 'gone') continue;
-    let useB;
-    if (!(k in a)) useB = true;
-    else if (!(k in b)) useB = false;
-    else {
-      const d = msOr(atB[k]) - msOr(atA[k]), wa = byA[k] || '', wb = byB[k] || '';
-      useB = d > 0 || (d === 0 && (!!goneA[k] !== !!goneB[k] ? !!goneB[k] : wa !== wb ? wb > wa : canon(b[k]) > canon(a[k])));
-    }
-    out[k] = useB ? b[k] : a[k];
-    const at = useB ? atB[k] : atA[k], by = useB ? byB[k] : byA[k];
-    if (at) out.at[k] = at;
-    if (by) (out.by = out.by || {})[k] = by;
-    const mark = useB ? heldB[k] : heldA[k];
-    if (mark) (out.held = out.held || {})[k] = mark;
-    const gone = useB ? goneB[k] : goneA[k];
-    if (gone) (out.gone = out.gone || {})[k] = gone;
-  }
-  return out;
-}
-// [AK1] A record whose fields each carry their own `at` and `by` (`home`: `at` and `by` are maps by field name, beside
-// `held` and `gone`), merged like the shared `ui` keys, field by field; its entry lists (`home.curs`) merge entry by
-// entry, found by shape [AJ3, AI2]. Found by shape too: a record whose `at` is a map.
-const fieldsRecord = x => isMap(x) && isMap(x.at);
-function mergeFields(a, b) {
-  const lists = entryFields(a, b), names = lists.map(([k]) => k);
-  const strip = x => Object.fromEntries(Object.entries(x).filter(([k]) => !names.includes(k)));
-  const out = mergeUi(strip(a), strip(b));
-  for (const [k, key] of lists) out[k] = mergeEntries(a[k] || [], b[k] || [], key);
-  return out;
-}
-// Union of every list by id [D4]; single records with `at` by newest `at`; `plan` holds both kinds.
+// Union of every list by id [D4]; single records with `at` by newest `at`; records of separately edited fields
+// (shared `ui`, `home`, `plan.limits`, `imports`) field by field [AL1]; `plan` holds lists and `limits`.
 function merge(mine, theirs, top = true) {
   const out = {};
   for (const k of new Set(Object.keys(mine || {}).concat(Object.keys(theirs || {})))) {
@@ -230,9 +208,8 @@ function merge(mine, theirs, top = true) {
     else if (a === undefined || b === undefined) out[k] = Array.isArray(a || b) ? mergeList(a, b) : k === 'plan' ? merge(a, b, false) : (a === undefined ? b : a);
     else if (Array.isArray(a) || Array.isArray(b)) out[k] = mergeList(a, b);
     else if (k === 'plan') out[k] = merge(a, b, false);
-    else if (k === 'ui' && a && b && typeof a === 'object') out[k] = mergeUi(a, b);
-    else if (isMap(a) && isMap(b) && (fieldsRecord(a) || fieldsRecord(b))) out[k] = mergeFields(a, b);   // [AK1] home
-    else if (a && b && typeof a === 'object' && a.at && b.at) out[k] = pick(a, b);
+    else if (fieldValue(a) && fieldValue(b)) out[k] = pick(a, b);   // a single record with its own `at`
+    else if (isMap(a) && isMap(b) && (fieldsShape(a) || fieldsShape(b))) out[k] = mergeKeyed(a, b);   // [AL1] found by shape
     else out[k] = a;   // no `at` to compare
   }
   return out;
@@ -247,14 +224,15 @@ function cameBack(mine, theirs) {
   }
   return ids.sort();
 }
-// The newest `at` anywhere in a copy (what a device has seen after reading it).
+// The newest `at` anywhere in a copy (what a device has seen after reading it). [AL2] Every `at` at any depth: records,
+// entries, keyed override keys and the field values of `ui`, `home`, `plan.limits` and `imports.cats`, compared as
+// moments. A held mark's `came` is not an `at`: the far-ahead time it came with is never seen [AI1].
 function newestAt(copy) {
   let best = null;
   (function walk(x) {
     if (Array.isArray(x)) return x.forEach(walk);
     if (x && typeof x === 'object') {
-      // [AK1] a field-by-field record (`home`, the shared `ui`) holds its `at`s in a map
-      for (const t of typeof x.at === 'string' ? [x.at] : isMap(x.at) ? Object.values(x.at) : []) if (typeof t === 'string' && (!best || ms(t) > ms(best))) best = t;
+      if (typeof x.at === 'string' && (!best || ms(x.at) > ms(best))) best = x.at;
       Object.values(x).forEach(walk);
     }
   })(copy);
@@ -265,8 +243,9 @@ function newestAt(copy) {
 // held at that now plus 1 ms (in now's offset), never at the newest `at` seen, and the warning is shown. [AH1] Only the
 // receiver's own now decides: a device back after weeks away takes in what was written meanwhile as it is, and what it
 // holds lands at its own now, so a spend a fast clock wrote that morning reads as told after a check typed earlier that
-// day and still counts [AI1]. Every `at` is held: records, entries of every entry list, keys of keyed maps, `ui.at` keys.
-// [N1] A held `at` is marked `held: { came, at }` (for a `ui` key, in `ui.held`). A copy whose `at` is the
+// day and still counts [AI1]. Every `at` is held: records, entries of every entry list, keys of keyed maps, and [AL1] the
+// field values of `ui`, `home`, `plan.limits` and `imports.cats`, each on its own, found by shape like any of these.
+// [N1] A held `at` is marked `held: { came, at }` beside it (for a field value, inside it). A copy whose `at` is the
 // `came` of the receiving device's own mark for the same thing was held already: it takes the held `at`
 // again, is not held a second time, and shows no new warning. [N2] `told` is held the same way as `at`
 // (a merge then keeps the earliest `told`, so a record keeps its first held `told`). `by` is left as it came.
@@ -284,23 +263,12 @@ function holdArriving(copy, lastSeen, mine, now) {
   };
   const twin = (list, v) => (Array.isArray(list) && v && typeof v === 'object'
     ? list.find(m => m && ((v.id !== undefined && m.id === v.id) || (v.id === undefined && v.from !== undefined && m.from === v.from))) : undefined);
-  (function walk(x, m, key) {
+  (function walk(x, m) {
     if (Array.isArray(x)) return x.forEach(v => walk(v, twin(m, v)));
     if (!x || typeof x !== 'object') return;
     m = m && typeof m === 'object' ? m : undefined;
-    if (isMap(x.at)) {   // the shared `ui` keys and [AK1] `home`'s fields: each `at` held on its own, marked in `held`
-      const marks = (m && m.held) || {};
-      for (const k of Object.keys(x.at)) {
-        const mark = marks[k], t = x.at[k];
-        if (mark && sameMoment(t, mark.came)) { x.at[k] = mark.at; (x.held = x.held || {})[k] = mark; }
-        else if (ahead(t)) { x.at[k] = cap(t); (x.held = x.held || {})[k] = { came: t, at: x.at[k] }; }
-      }
-      if (key === 'ui') return;
-      for (const [k, v] of Object.entries(x)) if (!['at', 'by', 'held', 'gone'].includes(k)) walk(v, m && m[k], k);   // [AJ3] `home.curs` entries
-      return;
-    }
-    if (typeof x.at === 'string') holdAt(x, m && m.held);
-    for (const [k, v] of Object.entries(x)) if (k !== 'at' && k !== 'held') walk(v, m && m[k], k);
+    if (typeof x.at === 'string') holdAt(x, m && m.held);   // a record, an entry, a key or a field value [AL1]
+    for (const [k, v] of Object.entries(x)) if (k !== 'at' && k !== 'held') walk(v, m && m[k]);
   })(held, mine);
   return { copy: held, warn };
 }
@@ -312,7 +280,8 @@ function receive(mine, theirs, lastSeen, now) {
 
 // A short story on several devices: edits (with a device clock) and syncs (merge one copy into another).
 // A device given an `id` writes it as the record's `by` [L merge q1]. A list may be nested (`plan.budgets`).
-// An edit with `record` writes a single record (`home`) instead, its fields or one entry of its entry lists [AJ3].
+// An edit with `record` writes a record of separately edited fields instead (`ui`, `home`, `plan.limits`, `imports.cats`,
+// named by its path): its fields, or one entry of its entry lists [AJ3, AL1].
 function listAt(copy, name, make) {
   const parts = String(name).split('.'); let o = copy;
   for (const p of parts.slice(0, -1)) o = o[p] || (make ? (o[p] = {}) : {});
@@ -330,11 +299,15 @@ function devices({ devices: devs, copy, steps, show }) {
     }
     const d = st[s.on], at = nextAt(s.now, d.lastSeen);
     const by = d.id ? { by: d.id } : {};
-    if (s.edit.record) {   // [AJ3] a single record (`home`): its fields, or an entry of one of its entry lists (`curs`, by `from`)
-      // [AK1] each field set gets its own `at` and `by` in `home.at` and `home.by`; no `told`: single records have none
-      const old = d.copy[s.edit.record] || {}, rec = d.copy[s.edit.record] = Object.assign({}, old, s.edit.set);
-      rec.at = Object.assign({}, old.at); rec.by = Object.assign({}, old.by);
-      for (const k of Object.keys(s.edit.set || {})) { rec.at[k] = at; if (d.id) rec.by[k] = d.id; }
+    if (s.edit.record) {   // [AJ3, AL1] a record of separately edited fields: its fields, or an entry of one of its entry lists (`curs`, by `from`)
+      // [AL1] each field set is written as a field value `{ v, at, by }` from the same clock, keeping its held mark [N1]
+      // and dropping a `gone` (a value set again is not removed); no `told`: these records have none
+      const parts = String(s.edit.record).split('.'), last = parts.pop();
+      let o = d.copy; for (const p of parts) o = o[p] = Object.assign({}, o[p]);
+      const rec = o[last] = Object.assign({}, o[last]);
+      for (const [k, v] of Object.entries(s.edit.set || {})) { rec[k] = Object.assign({}, rec[k], { v }, by, { at }); delete rec[k].gone; }
+      // a field taken back (Undo of a lesson, a key removed): its own `gone` (the day) with the same `at`, its value kept [AF3]
+      for (const k of s.edit.remove || []) rec[k] = Object.assign({}, rec[k], by, { at, gone: String(s.now).slice(0, 10) });
       const e = s.edit.entry;
       if (e) {
         const list = (rec[e.list] || []).slice(), j = list.findIndex(x => x.from === e.from);
@@ -353,7 +326,7 @@ function devices({ devices: devs, copy, steps, show }) {
     if (k) { const r = list[i >= 0 ? i : list.length - 1]; r[k.map] = Object.assign({}, r[k.map], { [k.k]: Object.assign({}, (r[k.map] || {})[k.k], k.set, by, { at }) }); }
     seen(d, at);
   }
-  if (show.record) return st[show.on].copy[show.record];
+  if (show.record) return String(show.record).split('.').reduce((o, p) => (o || {})[p], st[show.on].copy);
   return listAt(st[show.on].copy, show.list).find(r => r.id === show.id);
 }
 
@@ -367,8 +340,8 @@ function devices({ devices: devs, copy, steps, show }) {
 // not in the backup is removed by its own `gone` [M3]; each key of a keyed override (`amounts`, `once`) likewise [AE1].
 // A restore is an edit, so a record keeps the held mark this device knows for it [N1] (its own, else the backup's),
 // and a far-ahead copy of it still in the cloud counts at its held `at` and cannot beat the restore. `told` stays the
-// first one each record had [H1]. [AD8, AF3] The shared `ui` keys take the backup's values with a new `at` and `by`; a
-// key not in the backup is removed by its own `gone` in `ui.gone`. [AE5] A backup in the 38.31 format (a copy with
+// first one each record had [H1]. [AD8, AF3, AL1] The field values of the shared `ui`, `home`, `plan.limits` and
+// `imports.cats` take the backup's values with a new `at` and `by`; one not in the backup is removed by its own `gone`. [AE5] A backup in the 38.31 format (a copy with
 // `cfg`, `steps`, `once`, `receipts`, `items` or `cards` and no `v: 3`) is moved first (move_ref, with the person's
 // answers to the move's questions), and every record it gives is stamped with the restore.
 const OLD_KEYS = ['cfg', 'steps', 'once', 'receipts', 'items', 'cards'];
@@ -384,21 +357,22 @@ function restore({ current, backup, now, by, lastSeen, answers }) {
     const newer = (ck || []).filter(e => !(rk || []).some(b => b[key] === e[key])).map(e => Object.assign({}, e, { gone: e.gone || day }, stamp));
     return mine.concat(newer).sort((x, y) => (x[key] < y[key] ? -1 : x[key] > y[key] ? 1 : 0));
   };
-  // [AD8, AF3] The shared `ui` keys, and [AK1] `home`'s fields: the backup's values, each with a new `at` and `by`; a key
-  // not in the backup keeps its value and is removed by its own `gone`. [AJ3] `home`'s entry lists as any record's.
-  const restoreFields = (b, a, lists) => {
-    const META = ['at', 'by', 'held', 'gone'], names = lists.map(([x]) => x);
-    const keys = Object.keys(b).filter(x => !META.includes(x) && !names.includes(x));
-    const extra = Object.keys(a || {}).filter(x => !META.includes(x) && !names.includes(x) && !keys.includes(x));
-    const o = Object.assign({}, b);
-    for (const x of extra) o[x] = a[x];
-    const all = keys.concat(extra);
-    o.at = Object.fromEntries(all.map(x => [x, at])); o.by = Object.fromEntries(all.map(x => [x, by]));
-    const gone = Object.assign({}, b.gone); for (const x of extra) gone[x] = ((a && a.gone) || {})[x] || day;
-    if (Object.keys(gone).length) o.gone = gone; else delete o.gone;
-    const held = Object.assign({}, b.held, (a && a.held) || {}); for (const x of Object.keys(held)) if (!all.includes(x)) delete held[x];
-    if (Object.keys(held).length) o.held = held; else delete o.held;
-    for (const [k, key] of lists) o[k] = restoreEntries(b[k], a && a[k], key);
+  // [AE1, AD8, AF3, AL1] One handler for every keyed map and every record of separately edited fields (the shared `ui`,
+  // `home`, `plan.limits`, `imports.cats`): each key or field value of the backup with a new `at` and `by`, keeping the
+  // held mark this device knows for it [N1]; one not in the backup keeps its value and is removed by its own `gone`;
+  // an entry list inside (`home.curs`) as any record's [AJ3]; a map with no `at` of its own (`cats` in `imports`) again.
+  const restoreKeyed = (bk, ck) => {
+    bk = bk || {}; ck = ck || {};
+    const o = {};
+    for (const k of new Set(Object.keys(bk).concat(Object.keys(ck)))) {
+      const b = bk[k], c = ck[k];
+      if (Array.isArray(b) || Array.isArray(c)) o[k] = restoreEntries(Array.isArray(b) ? b : [], Array.isArray(c) ? c : [], listKeyOf(b, c));
+      else if ((isMap(b) || isMap(c)) && !fieldValue(b) && !fieldValue(c)) o[k] = restoreKeyed(b, c);
+      else if (b !== undefined) {
+        o[k] = isMap(b) ? Object.assign({}, b, stamp) : b;
+        const mark = isMap(b) && ((isMap(c) && c.held) || b.held); if (mark) o[k].held = mark;
+      } else o[k] = isMap(c) ? Object.assign({}, c, { gone: c.gone || day }, stamp) : c;
+    }
     return o;
   };
   const restoreRecord = (r, c) => {
@@ -406,12 +380,7 @@ function restore({ current, backup, now, by, lastSeen, answers }) {
     const told = earliest(r.told, c && c.told); if (told) o.told = told;
     const mark = (c && c.held) || r.held; if (mark) o.held = mark;
     for (const [k, key] of entryFields(r, c)) o[k] = restoreEntries(r[k], c && c[k], key);   // [AI2, AJ2] found by shape, by `from` or `id`
-    for (const k of keyedFields(r, c)) {   // [AE1, AH5] every keyed map, found by its shape
-      const bk = r[k] || {}, ck = (c && c[k]) || {}, m = {};
-      for (const key of Object.keys(bk)) m[key] = Object.assign({}, bk[key], stamp);
-      for (const key of Object.keys(ck)) if (!(key in bk)) m[key] = Object.assign({}, ck[key], { gone: ck[key].gone || day }, stamp);
-      o[k] = m;
-    }
+    for (const k of keyedFields(r, c)) o[k] = restoreKeyed(r[k], c && c[k]);   // [AE1, AH5] every keyed map, found by its shape
     return o;
   };
   const restoreList = (cur, bak) => {
@@ -426,9 +395,8 @@ function restore({ current, backup, now, by, lastSeen, answers }) {
       const a = (cur || {})[k], b = (bak || {})[k];
       if (Array.isArray(a) || Array.isArray(b)) out[k] = restoreList(a, b);
       else if (k === 'plan') out[k] = walk(a, b);
-      else if (b && typeof b === 'object' && typeof b.at === 'string') out[k] = restoreRecord(b, a);   // plan.limits
-      else if (k === 'ui' && b && typeof b === 'object') out[k] = restoreFields(b, a, []);   // [AD8, AF3]
-      else if (fieldsRecord(b)) out[k] = restoreFields(b, a, entryFields(b, a));   // [AK1] home, field by field; [AJ3] its `curs`
+      else if (fieldValue(b)) out[k] = restoreRecord(b, a);   // a single record with its own `at`
+      else if (fieldsShape(b) || fieldsShape(a)) out[k] = restoreKeyed(b, a);   // [AL1] `ui`, `home`, `plan.limits`, `imports`, by shape
       else if (b !== undefined) out[k] = b;   // the rest: the backup's as it is
     }
     return out;
@@ -452,8 +420,9 @@ function ask(question, input) {
     case 'devices': return devices(input);
     case 'id_for': return idFor(input);
     case 'id_ok': return idOk(input.id);
+    case 'seen': return newestAt(input.copy);   // [AL2] what a device has seen after reading a copy
   }
   throw new Error('unknown question ' + question);
 }
 
-module.exports = { ask, restore, mergeKeyed, keyedShape, isOldFormat, nextAt, nextAtWarn, clockAsk, newer, merge, mergeList, pick, winner, cameBack, holdArriving, receive, idFor, idOk };
+module.exports = { ask, restore, mergeKeyed, keyedShape, fieldsShape, newestAt, isOldFormat, nextAt, nextAtWarn, clockAsk, newer, merge, mergeList, pick, winner, cameBack, holdArriving, receive, idFor, idOk };
