@@ -124,3 +124,12 @@ O5. Transfers and borrows out of a card (cash advance, a closed card's credit se
 O6. The home currency is dated: `home.curs: [ { from, cur } ]`. `plan.shares` entries, `home.minBank` and `plan.limits` carry `cur`. A change of home currency starts a new entry; history stays in its own currency.
 Watch items decided: accounts get `country` (holiday table per account); an account is closed, never deleted, with a final figure; a goal deleted with money in it writes a move to Waiting; a check-in gain larger than the period's Free to spend, or 20% of the account, is asked about, not placed; the pay count uses the rule in force on each due date; N3 means the pay's due-date year (units-50 becomes 11,556); N1 keeps a `held` mark on a held record; the move asks for the currency when a copy holds ₱ with preset `legacy` or no recorded currency choice; `frozen3831` is the raw stored text; a refund may carry `line` (given back only when the person picks it); an old statement imported after a period-end answer leaves the answer and shows the overspend as "found later" at the next check-in.
 O-confirm (the N helper's five readings): N3 replaces M8 for a period starting 31 Dec, so units-50 is 11,556 (as O says); "by person" is the writing device's `by`, no person field; `held: { came, at }` and `ui.held` are the shape, and an edit keeps the mark; no new warning on a repeat arrival with nothing newly held; the first live `periodStart` after a period's first day ends it.
+
+## P. Answers after O
+P1. Money moved to Waiting from a deleted goal is marked "to place" and stays out of safe to spend until the person places it.
+P2. A period-end answer is one record per place (`pe:<period last day>:<place>`) holding all its moves (`moves: [ { to, a } ]`).
+P3. When a merge makes two answers add up to more than is left, the answer with the newer `at` gives way: its moves are undone and the next open says "An answer from your other device was used. Check it."
+P4. When the pay rhythm changes mid-year, each rule gets its own months: monthly amounts cover the months each rule is in force, spread over that rule's pays.
+P5. Spending found later never comes out of money kept for the next period; the person picks at the check-in where it comes from (Waiting or this period's Free to spend).
+P6. An account is closed only when its final figure is zero or moved out by a transfer the closing asks for; its schedules end on the closing date.
+The O helper's readings are confirmed.
