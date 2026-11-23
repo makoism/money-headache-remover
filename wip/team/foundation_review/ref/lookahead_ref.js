@@ -1328,7 +1328,8 @@ function lookahead(sc, asOf, opts = {}) {
   // that reaches the account reopens it, money in or out, a check whatever its figure. A record on the closing day reopens
   // nothing (the closing's check holds it).
   const touches = (e, id) => e.account === id || e.from === id || reachOf(e) === id;
-  const reopened = id => closedOn(id) !== null && live().some(e => e.day > closedOn(id) && touches(e, id));
+  // [AV1] A zero check after the closing day does not reopen (AO6): AP1's "check" is a check with a figure other than zero.
+  const reopened = id => closedOn(id) !== null && live().some(e => e.day > closedOn(id) && touches(e, id) && !(isFigure(e) && !e.a));
   for (const id in banks) {
     // [P6] An account is closed only when its final figure is zero or moved out by the transfer the closing
     // asks for; a closed account holds nothing, has no minimum and is not counted in safe to spend.

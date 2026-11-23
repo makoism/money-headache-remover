@@ -53,9 +53,9 @@
       "why": "0 (after the closing) + 500 (the check dated Thu 14 Jan, a figure other than zero: it reopens e-wallet 3 and sets its bank figure [AO6, AP1, AR3]) = 500" },
     { "id": "cro-08", "date": "2027-01-14", "question": "warnings", "expected": [ { "account": "g2", "code": "reopened" }, { "account": "g2", "code": "below_minimum" }, { "account": "g3", "code": "reopened" }, { "account": "g3", "code": "gain_to_ask" } ],
       "why": "E-wallet 3 is open again [AR3]. Its check shows 500 more than the app had (nothing), more than 20% of what it had, so the figure is asked about [O watch, X4]. E-wallet 2 is as before." },
-    { "id": "cro-09", "date": "2027-01-15", "question": "warnings", "expected": [ { "account": "g2", "code": "reopened" }, { "account": "g2", "code": "below_minimum" }, { "account": "g3", "code": "reopened" }, { "account": "g3", "code": "gain_to_ask" }, { "account": "g4", "code": "reopened" } ],
-      "why": "A check dated after the closing day reopens the account whatever its figure: AP1's one rule (any event or check dated after the closing day) and AR3 replace AO6's 'a figure other than zero'. E-wallet 4 is open again, with a notice." },
+    { "id": "cro-09", "date": "2027-01-15", "question": "warnings", "expected": [ { "account": "g2", "code": "reopened" }, { "account": "g2", "code": "below_minimum" }, { "account": "g3", "code": "reopened" }, { "account": "g3", "code": "gain_to_ask" } ], "decisions": ["AV1"],
+      "why": "A zero check dated after the closing day does not reopen the account: AP1's \"check\" means a check with a figure other than zero [AV1, AO6]. E-wallet 4 stays closed, with no notice; e-wallets 2 and 3 are as before." },
     { "id": "cro-10", "date": "2027-01-15", "question": "bank_today", "account": "g4", "expected": 0,
-      "why": "0 (after the closing) + 0 (the zero check of Fri 15 Jan) = 0" }
+      "why": "0 (closed, nothing in it) + 0 (the zero check of Fri 15 Jan, which reopens nothing [AV1]) = 0" }
   ]
 }
