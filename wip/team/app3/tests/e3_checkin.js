@@ -63,7 +63,7 @@ async function walk(p, bk) {
     const prof = require('fs').mkdtempSync(require('os').tmpdir() + '/a3prof-');
     let { b, p, errs } = await T.open({ profile: prof });
     await p.goto(T.URL0 + '?today=' + DAY); await T.w(300);
-    ck('with nothing kept, Home says so and offers the try book', /Nothing here yet/.test(await p.$eval('#a3Home', e => e.textContent)));
+    ck('with nothing kept, the first screen offers the made-up numbers', !!(await p.$('#a3TryGo')));
     await T.seedOld(p);
     await p.evaluate(bk0 => new Promise(res => { const rq = indexedDB.open('burrow3', 1); rq.onupgradeneeded = () => rq.result.createObjectStore('slice1'); rq.onsuccess = () => { const db = rq.result, tx = db.transaction('slice1', 'readwrite'); tx.objectStore('slice1').put({ v: 1, book: bk0, t: 1 }, 'book'); tx.oncomplete = () => { db.close(); res(); }; }; }), bk);
     await p.reload(); await T.w(400);

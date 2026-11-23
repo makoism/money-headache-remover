@@ -7,13 +7,15 @@
                  when it lands, and move this record into it with its source marker (WIRING_PLAN "Watch").
    The old app's keys (localStorage money-map-template-v2, IndexedDB money-map-safe) are never read or written here;
    only engine/move.js may read them (AZ1).
-   ?today=YYYY-MM-DD shows the page as on that day (for checks and for trying the shape on pay days). */
+   ?today=YYYY-MM-DD shows the page as on that day (for checks); on a try book the day box does the same, so the page
+     works as a plain file with no address. */
 const E3 = (() => {
   const Q = new URLSearchParams(location.search);
   const DB = 'burrow3', STORE = 'slice1', KEY = 'book';
-  let book = null, mode = 'none';
+  let book = null, mode = 'none', dayShown = null;
   const pad2 = n => String(n).padStart(2, '0');
   function today() {
+    if (dayShown) return dayShown;
     const t = Q.get('today');
     if (t && /^\d{4}-\d{2}-\d{2}$/.test(t)) return t;
     const d = new Date(); return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
@@ -49,6 +51,10 @@ const E3 = (() => {
       } catch (e) { db.close(); res(null); }
     }));
   }
+  /* the day box on a try book: show the page as on that day */
+  function setToday(d) { if (/^\d{4}-\d{2}-\d{2}$/.test(d || '')) dayShown = d; }
+  /* the first screen's "See it with made-up numbers first": a try book in memory, nothing written */
+  function useTry(name) { if (!TRY_BOOKS[name]) return false; book = JSON.parse(JSON.stringify(TRY_BOOKS[name])); mode = 'try'; return true; }
   async function load() {
     const t = Q.get('try');
     if (t && TRY_BOOKS[t]) { book = JSON.parse(JSON.stringify(TRY_BOOKS[t])); mode = 'try'; return; }
@@ -82,6 +88,6 @@ const E3 = (() => {
   }
   /* is a the day before b (two YYYY-MM-DD days) */
   const dayBefore = (a, b) => BurrowEngine.dates.dayNum(b) - BurrowEngine.dates.dayNum(a) === 1;
-  return { today, told, dayBefore, newId: () => idMaker(), load, view, nameOf, occName, curOf, home, write,
+  return { today, setToday, useTry, told, dayBefore, newId: () => idMaker(), load, view, nameOf, occName, curOf, home, write,
     get book() { return book; }, get mode() { return mode; } };
 })();

@@ -38,7 +38,7 @@ t('a pay is written as income with its stream, card A as a repay from the bank',
   const p = out.events.find(e => e.id === 'set:' + payMain + '@2026-12-10');
   assert.strictEqual(p.k, 'in'); assert.strictEqual(p.sub, 'pay'); assert.strictEqual(p.stream, payMain); assert.strictEqual(p.a, 180000);
   const c = out.events.find(e => e.id === 'set:' + cardA + '@2026-12-10');
-  assert.strictEqual(c.k, 'repay'); assert.strictEqual(c.acct, bank); assert.strictEqual(c.acct2, cardA); assert.strictEqual(c.a, 54000); assert.strictEqual(c.a2, 54000);
+  assert.strictEqual(c.k, 'repay'); assert.strictEqual(c.acct, bank); assert.strictEqual(c.acct2, cardA); const want = list.find(o => o.item === cardA + '@2026-12-10').amount; assert.strictEqual(c.a, want); assert.strictEqual(c.a2, want);
 });
 t('every record carries the check-in as grp, and the check-in lists what it settled', () => {
   const id = out.checkins[0].id;

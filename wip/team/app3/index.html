@@ -1272,6 +1272,8 @@ body::before { content: ''; position: fixed; inset: 0; z-index: -1; background: 
 .a3-top { display: flex; flex-direction: column; gap: 6px; }
 .a3-brand { margin: 8px 0 0; font-family: var(--fd); font-size: var(--t-h3); display: flex; align-items: center; gap: 10px; color: var(--ink2); }
 .a3-brand .pix { display: inline-block; }
+.a3-day { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; color: var(--ink); }
+.a3-day input { min-height: var(--btn-h-s); border: 0; border-radius: var(--r-ctl-s); background: var(--field); color: var(--ink); font: inherit; padding: 0 10px; box-shadow: inset 0 0 0 1px var(--hair); }
 .a3-try { margin: 0; font-size: var(--t-cap); color: var(--warn); background: var(--warn-bg); border-radius: var(--r-ctl-s); padding: 8px 12px; }
 .a3-card { background: var(--card); border-radius: var(--r-card); padding: var(--pad-card); box-shadow: inset 0 0 0 1px var(--hair), inset 0 1px 0 var(--glass-hi); }
 .a3-card h2 { margin: 0 0 4px; font-size: var(--t-cap); font-weight: 600; letter-spacing: .02em; color: var(--ink2); text-transform: none; }
@@ -4008,6 +4010,54 @@ const TRY_BOOKS = { mako: {
    "a": 23000,
    "told": "2026-11-20T24:00",
    "grp": "setup"
+  },
+  {
+   "id": "k7m2qa-f3n8p1x6wd-16",
+   "date": "2026-11-22",
+   "told": "2026-11-22",
+   "k": "spend",
+   "acct": "k7m2qa-f3n8p1x6wd-3",
+   "a": 3200
+  },
+  {
+   "id": "k7m2qa-f3n8p1x6wd-17",
+   "date": "2026-11-25",
+   "told": "2026-11-25",
+   "k": "spend",
+   "acct": "k7m2qa-f3n8p1x6wd-2",
+   "a": 6800
+  },
+  {
+   "id": "k7m2qa-f3n8p1x6wd-18",
+   "date": "2026-12-04",
+   "told": "2026-12-04",
+   "k": "spend",
+   "acct": "k7m2qa-f3n8p1x6wd-2",
+   "a": 12500
+  },
+  {
+   "id": "k7m2qa-f3n8p1x6wd-19",
+   "date": "2026-12-13",
+   "told": "2026-12-13",
+   "k": "spend",
+   "acct": "k7m2qa-f3n8p1x6wd-2",
+   "a": 18000
+  },
+  {
+   "id": "k7m2qa-f3n8p1x6wd-20",
+   "date": "2026-12-15",
+   "told": "2026-12-15",
+   "k": "spend",
+   "acct": "k7m2qa-f3n8p1x6wd-3",
+   "a": 9500
+  },
+  {
+   "id": "k7m2qa-f3n8p1x6wd-21",
+   "date": "2026-12-29",
+   "told": "2026-12-29",
+   "k": "spend",
+   "acct": "k7m2qa-f3n8p1x6wd-3",
+   "a": 7400
   }
  ],
  "checkins": [],
@@ -4096,13 +4146,15 @@ const msg3 = text => MSG3.post({ kind: 'toast', key: 'a3', text });
                  when it lands, and move this record into it with its source marker (WIRING_PLAN "Watch").
    The old app's keys (localStorage money-map-template-v2, IndexedDB money-map-safe) are never read or written here;
    only engine/move.js may read them (AZ1).
-   ?today=YYYY-MM-DD shows the page as on that day (for checks and for trying the shape on pay days). */
+   ?today=YYYY-MM-DD shows the page as on that day (for checks); on a try book the day box does the same, so the page
+     works as a plain file with no address. */
 const E3 = (() => {
   const Q = new URLSearchParams(location.search);
   const DB = 'burrow3', STORE = 'slice1', KEY = 'book';
-  let book = null, mode = 'none';
+  let book = null, mode = 'none', dayShown = null;
   const pad2 = n => String(n).padStart(2, '0');
   function today() {
+    if (dayShown) return dayShown;
     const t = Q.get('today');
     if (t && /^\d{4}-\d{2}-\d{2}$/.test(t)) return t;
     const d = new Date(); return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
@@ -4138,6 +4190,10 @@ const E3 = (() => {
       } catch (e) { db.close(); res(null); }
     }));
   }
+  /* the day box on a try book: show the page as on that day */
+  function setToday(d) { if (/^\d{4}-\d{2}-\d{2}$/.test(d || '')) dayShown = d; }
+  /* the first screen's "See it with made-up numbers first": a try book in memory, nothing written */
+  function useTry(name) { if (!TRY_BOOKS[name]) return false; book = JSON.parse(JSON.stringify(TRY_BOOKS[name])); mode = 'try'; return true; }
   async function load() {
     const t = Q.get('try');
     if (t && TRY_BOOKS[t]) { book = JSON.parse(JSON.stringify(TRY_BOOKS[t])); mode = 'try'; return; }
@@ -4171,7 +4227,7 @@ const E3 = (() => {
   }
   /* is a the day before b (two YYYY-MM-DD days) */
   const dayBefore = (a, b) => BurrowEngine.dates.dayNum(b) - BurrowEngine.dates.dayNum(a) === 1;
-  return { today, told, dayBefore, newId: () => idMaker(), load, view, nameOf, occName, curOf, home, write,
+  return { today, setToday, useTry, told, dayBefore, newId: () => idMaker(), load, view, nameOf, occName, curOf, home, write,
     get book() { return book; }, get mode() { return mode; } };
 })();
 /* ---------- Home, the new top (WIRING_PLAN 1.1 item 2, step 7) ----------
@@ -4237,7 +4293,9 @@ function renderHome3() {
   const host = $('#a3Home');
   if (!E3.book) {
     host.removeAttribute('data-origin');
-    host.innerHTML = `<section class="a3-card"><h2>Nothing here yet</h2><p class="a3-sub">This page is the new money engine. Setup comes next. To look around with made-up numbers shaped like a real month, open <a href="?try=mako">the try book</a></p></section>`;
+    host.innerHTML = `<section class="a3-card" data-card="first"><h2>Welcome to the burrow</h2><p class="a3-sub">Setting up with your own numbers comes next. You can look around first with made-up numbers shaped like a real month</p>
+      <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3TryGo">See it with made-up numbers first</button></div></section>`;
+    $('#a3TryGo').addEventListener('click', () => { E3.useTry('mako'); tryBand3(); renderHome3(); });
     return;
   }
   const day = E3.today(), yr = day.slice(0, 4);
@@ -4356,13 +4414,17 @@ async function saveCheck3() {
   msg3(E3.mode === 'try' ? 'Done. These are made-up numbers, so nothing is saved' : 'Saved');
 }
 /* ---------- start ---------- */
+/* the yellow band on a try book, with the day box (a plain file has no address to carry ?today=) */
+function tryBand3() {
+  const t = $('#a3Try'); t.hidden = false;
+  t.innerHTML = `<span>Made-up numbers shaped like a real month. Nothing you do here is saved</span>
+    <label class="a3-day">Show the page as on <input type="date" id="a3Day" value="${esc3(E3.today())}"></label>`;
+  $('#a3Day').addEventListener('change', e => { E3.setToday(e.target.value); if (!$('#a3Check').hidden) closeCheck3(); renderHome3(); });
+}
 (async () => {
   try { $('#a3Pix').innerHTML = pix('sprout', 2); } catch (e) { /* art is a nicety */ }
   await E3.load();
-  if (E3.mode === 'try') {
-    const t = $('#a3Try'); t.hidden = false;
-    t.textContent = 'Made-up numbers shaped like a real month. Nothing you do here is saved' + (new URLSearchParams(location.search).get('today') ? '. Shown as on ' + day3(E3.today(), 'any') : '');
-  }
+  if (E3.mode === 'try') tryBand3();
   BurrowScreens.messages.mount($('#a3Msg'), MSG3);
   renderHome3();
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#a3Check').hidden) closeCheck3(); });

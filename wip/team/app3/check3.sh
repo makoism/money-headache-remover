@@ -30,6 +30,7 @@ step "the try book"; run tests/e3_try.js "e3_try: ALL PASS"
 step "Home, the new top"; run tests/e3_home.js "e3_home: ALL PASS"
 step "Check your bank"; run tests/e3_checkin.js "e3_checkin: ALL PASS"
 step "the period by its dates"; run tests/e3_period.js "e3_period: ALL PASS"
+step "as a plain file: the first screen, the try book and its day box"; run tests/e3_file.js "e3_file: ALL PASS"
 step "guard (idle CPU, long tasks, outside requests, errors)"; run tests/guard3.js "guard3: ALL PASS"
 step "offline load"; run tests/offline.js "offline: ALL PASS"
 

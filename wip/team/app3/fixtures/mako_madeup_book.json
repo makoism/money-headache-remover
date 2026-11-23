@@ -267,6 +267,54 @@
    "a": 23000,
    "told": "2026-11-20T24:00",
    "grp": "setup"
+  },
+  {
+   "id": "k7m2qa-f3n8p1x6wd-16",
+   "date": "2026-11-22",
+   "told": "2026-11-22",
+   "k": "spend",
+   "acct": "k7m2qa-f3n8p1x6wd-3",
+   "a": 3200
+  },
+  {
+   "id": "k7m2qa-f3n8p1x6wd-17",
+   "date": "2026-11-25",
+   "told": "2026-11-25",
+   "k": "spend",
+   "acct": "k7m2qa-f3n8p1x6wd-2",
+   "a": 6800
+  },
+  {
+   "id": "k7m2qa-f3n8p1x6wd-18",
+   "date": "2026-12-04",
+   "told": "2026-12-04",
+   "k": "spend",
+   "acct": "k7m2qa-f3n8p1x6wd-2",
+   "a": 12500
+  },
+  {
+   "id": "k7m2qa-f3n8p1x6wd-19",
+   "date": "2026-12-13",
+   "told": "2026-12-13",
+   "k": "spend",
+   "acct": "k7m2qa-f3n8p1x6wd-2",
+   "a": 18000
+  },
+  {
+   "id": "k7m2qa-f3n8p1x6wd-20",
+   "date": "2026-12-15",
+   "told": "2026-12-15",
+   "k": "spend",
+   "acct": "k7m2qa-f3n8p1x6wd-3",
+   "a": 9500
+  },
+  {
+   "id": "k7m2qa-f3n8p1x6wd-21",
+   "date": "2026-12-29",
+   "told": "2026-12-29",
+   "k": "spend",
+   "acct": "k7m2qa-f3n8p1x6wd-3",
+   "a": 7400
   }
  ],
  "checkins": [],
