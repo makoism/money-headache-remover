@@ -35,7 +35,7 @@ module.exports = [
   } },
 
   { name: 'own writes: never behind anything seen, a long gap is never held, a clock set back still moves forward', run: async t => {
-    const p = await t.page(await t.context(TOKYO), pg => pg.clock.install({ time: new Date('2026-11-23T10:00:00+09:00') }));
+    const p = await t.page(await t.context(TOKYO), pg => pg.clock.setFixedTime(new Date('2026-11-23T10:00:00+09:00')));
     const r = await p.evaluate(() => {
       const C = window.BurrowClock, c = C.makeClock();
       const a = c.stamp();
@@ -46,19 +46,19 @@ module.exports = [
     t.assert.eq(r.a, '2026-11-23T10:00:00.000+09:00', 'first stamp is now with the Tokyo offset');
     t.assert.eq(r.b, '2026-11-23T10:05:00.001+09:00', 'after seeing a newer at, the stamp is that plus 1 ms');
     t.assert.eq(r.b2, '2026-11-23T10:05:00.002+09:00', 'two stamps in one moment still differ');
-    await p.clock.setSystemTime(new Date('2026-12-14T10:00:00+09:00'));   // three weeks away
+    await p.clock.setFixedTime(new Date('2026-12-14T10:00:00+09:00'));   // three weeks away
     t.assert.eq(await p.evaluate(() => window.BurrowClock.makeClock({ lastSeen: '2026-11-23T10:05:00.002+09:00' }).stamp()),
       '2026-12-14T10:00:00.000+09:00', 'three weeks away: the write takes its real time [AH1]');
-    await p.clock.setSystemTime(new Date('2026-11-20T10:00:00+09:00'));   // clock set back
+    await p.clock.setFixedTime(new Date('2026-11-20T10:00:00+09:00'));   // clock set back
     t.assert.eq(await p.evaluate(() => window.BurrowClock.makeClock({ lastSeen: '2026-11-23T10:05:00.002+09:00' }).stamp()),
       '2026-11-23T10:05:00.003+09:00', 'a clock set back still writes after what it has seen');
   } },
 
   { name: 'today is the local calendar day, never the UTC one, in Tokyo before 9:00 and in Los Angeles in the evening', run: async t => {
-    const tk = await t.page(await t.context(TOKYO), pg => pg.clock.install({ time: new Date('2026-11-23T08:30:00+09:00') }));
+    const tk = await t.page(await t.context(TOKYO), pg => pg.clock.setFixedTime(new Date('2026-11-23T08:30:00+09:00')));
     t.assert.eq(await tk.evaluate(() => [window.BurrowClock.todayStr(), window.BurrowClock.nowIso()]),
       ['2026-11-23', '2026-11-23T08:30:00.000+09:00'], 'Tokyo 08:30');
-    const la = await t.page(await t.context(LA), pg => pg.clock.install({ time: new Date('2026-11-23T20:00:00-08:00') }));
+    const la = await t.page(await t.context(LA), pg => pg.clock.setFixedTime(new Date('2026-11-23T20:00:00-08:00')));
     t.assert.eq(await la.evaluate(() => [window.BurrowClock.todayStr(), window.BurrowClock.nowIso()]),
       ['2026-11-23', '2026-11-23T20:00:00.000-08:00'], 'Los Angeles 20:00');
   } },
