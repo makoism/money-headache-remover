@@ -1125,6 +1125,10 @@
         currency: a.cur, minimum, lowest: w.lowest, lowestDay: dayStr(w.lowestDay), headroom: w.headroom,
         spendFrom: isClosed ? false : a.spendFrom != null ? a.spendFrom : !!SPEND_TYPES[a.type] && a.cur === home && !backsGoal(id),
         why: whyText(w.why, w.headroom, a.cur), whyParts: w.why.map(p => ({ label: p.label, amount: p.amount })), fillers: banks[id].fillers };   // [S4] the parts, for screens/money.js sumLine
+      // [BL2] what is set aside in it today (goals and other kept places), and what it can still set aside: today's figure
+      // less that, never below nothing
+      r.setAside = (keptIn[id] || []).reduce((t, g) => t + g.amount, 0);
+      r.canSetAside = Math.max(0, r.bank - r.setAside);
       if (id === mainAcct && mainMinOtherCur()) res.warnings.push({ account: id, code: 'minimum_other_currency', text: `The minimum kept for ${a.name} is in ${main.min.cur}, not ${a.cur}: what is its minimum in ${a.cur}?` });
       // [QC fix] data for the screens to word (account, amount, day, minimum or null for none); the text is only for Ask's
       // summary, and says "below zero" when there is no minimum, with the day as "1 Jan", never an ISO day

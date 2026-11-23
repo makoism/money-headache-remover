@@ -274,6 +274,18 @@ t('a goal: what is needed each period to reach its target by its date, from what
   eq(run(b, '2027-03-27').places.trip.periodsLeft, 0);
   eq(run(b, '2027-03-27').places.trip.perPeriod, 75000);
 });
+t('what a bank can still set aside: today\'s figure less what is already set aside in it [BL2]', () => {
+  const b = base(x => {
+    x.places = [{ id: 'trip', name: 'Trip', kind: 'goal', target: 100000, keptIn: { acct: 'bank', mode: 'inBank' } }];
+    x.events[0].split.places = { trip: 10000 };
+    x.events.push({ id: 'g1', k: 'move', place: 'waiting', place2: 'trip', a: 15000, date: '2026-12-02', told: '2026-12-02T12:00' + TZ });
+    x.events.push({ id: 's1', k: 'spend', acct: 'bank', date: '2026-12-02', a: 3000, told: '2026-12-02T13:00' + TZ });
+  });
+  const a = run(b, '2026-12-03').accounts;
+  // 400,000 - 3,000 spent = 397,000 today; 25,000 already set aside in it: 372,000 can still be set aside
+  eq([a.bank.bank, a.bank.setAside, a.bank.canSetAside], [397000, 25000, 372000]);
+  eq([a.old.setAside, a.old.canSetAside], [0, 0]);
+});
 // [F4 for payments, H8, AU] a card or loan payment past its day and not ticked is late (inside the paying bank's posting
 // window) or not seen; it is never the "next payment" with a past date
 t('a card payment past its day and not ticked: late, then not seen, never the next payment', () => {

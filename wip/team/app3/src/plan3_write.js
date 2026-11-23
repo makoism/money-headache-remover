@@ -27,6 +27,8 @@
   const nameOk = n => { const s = String(n == null ? '' : n).trim(); if (!s) bad('Type a name'); if (s.length > 60) bad('Keep the name to 60 letters'); return s; };
   const dayOfMonth = d => { if (!(Number.isInteger(d) && d >= 1 && d <= 31)) bad('Pick a day of the month, 1 to 31'); return d; };
   const home = w => G.homeOn(w.book, w.today);
+  const SMF = node ? require('../../screens/money.js') : root.BurrowScreens.money;
+  const nameOf = (w, acctId) => ((w.book.accounts || []).find(y => y.id === acctId) || {}).name || 'That account';
   const mainOf = w => (G.fieldValue((w.book.home || {}).main) || {}).acct;
   const find = (w, list, id) => { const r = A3.listOf(w.book, list).find(x => x && x.id === id); if (!live(r)) bad('That is not in your plan any more'); return r; };
   /* stamp the entries this step added with the record's own `at` and `by` (each entry carries its own) */
@@ -171,8 +173,10 @@
   /* money set aside today: a `move` into the goal; kept in its own account, the money goes there first */
   function setAside(w, id, x) {
     const g = find(w, 'places', id), a = amountOk(x.amount, 'an amount'), k = g.keptIn || {};
+    /* [BL2] never more than the bank the money is in (or comes from) can spare: the engine's canSetAside */
+    const from = k.mode === 'ownAccount' ? x.from || mainOf(w) : k.acct || mainOf(w), spare = (LA.lookahead(w.book, w.today).accounts[from] || {}).canSetAside || 0;
+    if (a > spare) bad(nameOf(w, from) + ' can spare ' + SMF.format(spare, (w.book.accounts || []).find(y => y.id === from).cur) + ' to set aside today: what it shows less what is already set aside in it');
     if (k.mode === 'ownAccount') {
-      const from = x.from || mainOf(w);
       if (from === k.acct) bad('Pick the account the money comes from');
       w.add('events', { k: 'transfer', date: w.today, a, acct: from, acct2: k.acct, src: { type: 'typed' } });
     }

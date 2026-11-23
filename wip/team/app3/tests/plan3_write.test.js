@@ -137,6 +137,22 @@ const stamped = (r, step) => { ok(I.isOrdinary(r.id), 'ordinary id ' + r.id); eq
     r = await h.go('changeGoal', g.id, { target: 180000, due: '' }); ok(r.ok, JSON.stringify(r));
     eq([h.book.places[0].target, h.book.places[0].due], [180000, undefined]);
   });
+  await t('setting aside never takes more than the bank can spare: today\'s figure less what is already set aside in it [BL2]', async () => {
+    const h = setup();
+    let r = await h.go('addGoal', { name: 'Trip', target: 10000 }); ok(r.ok, JSON.stringify(r));
+    const g = h.book.places[0], bank = view(h.book).accounts[BANK].bank;
+    ok(view(h.book).accounts[BANK].canSetAside === bank, 'nothing set aside yet: all of today\'s figure');
+    r = await h.go('setAside', g.id, { amount: bank + 1 });
+    eq([r.ok, r.text], [false, 'Main bank can spare ¥' + bank.toLocaleString('en') + ' to set aside today: what it shows less what is already set aside in it'], 'refused with how much is possible');
+    eq(view(h.book).places[g.id].kept, 0, 'nothing written');
+    r = await h.go('setAside', g.id, { amount: 20000 }); ok(r.ok, JSON.stringify(r));
+    r = await h.go('setAside', g.id, { amount: bank - 20000 + 1 }); ok(!r.ok && r.text.includes('¥' + (bank - 20000).toLocaleString('en')), JSON.stringify(r));
+    r = await h.go('setAside', g.id, { amount: bank - 20000 }); ok(r.ok, JSON.stringify(r));
+    eq([view(h.book).places[g.id].kept, view(h.book).accounts[BANK].canSetAside], [bank, 0]);
+    // kept in its own account: the money comes from the bank, so the bank's spare figure is the limit
+    r = await h.go('addGoal', { name: 'House', target: 1000000, mode: 'ownAccount' }); ok(r.ok, JSON.stringify(r));
+    r = await h.go('setAside', h.book.places[1].id, { amount: 1 }); ok(!r.ok && /can spare ¥0 /.test(r.text), JSON.stringify(r));
+  });
   await t('a goal in its own account: a new account opened with nothing; money moved there and set aside; that account is not spent from', async () => {
     const h = setup();
     let r = await h.go('addGoal', { name: 'House', target: 1000000, mode: 'ownAccount' }); ok(r.ok, JSON.stringify(r));
