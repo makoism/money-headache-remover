@@ -96,6 +96,29 @@ test('Tab into a box selects it too; a second click while open puts the caret do
   await p.context().close();
 });
 
+test('a box a form focuses by itself is selected, and the first tap or click after that still selects (not "121,200")', async () => {
+  for (const how of ['click', 'tap']) {
+    const p = await page(how === 'tap' ? { hasTouch: true, isMobile: true, viewport: { width: 375, height: 700 } } : undefined); await boxes(p);
+    await p.evaluate(() => document.getElementById('amt').focus());
+    const sel = await p.evaluate(() => { const e = document.getElementById('amt'); return [e.selectionStart, e.selectionEnd]; });
+    assert.deepStrictEqual(sel, [0, 4], how + ': focus from code selects');
+    await p[how]('#amt');
+    await p.keyboard.type('12000');
+    assert.strictEqual(await p.inputValue('#amt'), '12000', how + ': first press after focus from code');
+    await p[how]('#amt');
+    const caret = await p.evaluate(() => { const e = document.getElementById('amt'); return e.selectionStart === e.selectionEnd; });
+    assert.ok(caret, how + ': a press after typing is a small fix');
+    await p.context().close();
+  }
+});
+
+test('a bound amount box carries the shared marker', async () => {
+  const p = await page(); await boxes(p);
+  assert.strictEqual(await p.getAttribute('#amt', 'data-input'), 'amount');
+  assert.strictEqual(await p.getAttribute('#name', 'data-input'), 'text');
+  await p.context().close();
+});
+
 test('an amount that can\'t be read stays as typed and the box says why', async () => {
   const p = await page(); await boxes(p);
   await p.click('#amt');

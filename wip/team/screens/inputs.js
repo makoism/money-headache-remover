@@ -41,6 +41,14 @@
     return { ok: false, reason: r.reason, value: raw, message };
   }
 
+  /* whether the last key or press in the page was Tab: a box reached by Tab was opened by the person, not by a form */
+  function watchTab(doc) {
+    if (!doc || doc.__burrowTabWatch) return;
+    doc.__burrowTabWatch = true;
+    doc.addEventListener('keydown', e => { doc.__burrowTab = e.key === 'Tab'; }, true);
+    doc.addEventListener('pointerdown', () => { doc.__burrowTab = false; }, true);
+  }
+
   function bind(input, opts) {
     if (!input || typeof input.addEventListener !== 'function' || !('value' in input)) throw new Error('inputs: bind needs an input box');
     opts = opts || {};
@@ -49,26 +57,34 @@
       if (!input.getAttribute('inputmode')) input.setAttribute('inputmode', 'decimal');
       input.setAttribute('autocomplete', 'off');
     }
-    let fresh = false, before = input.value;
+    input.setAttribute('data-input', kind);   // the shared marker: every box bound here says so (app3 tests/e3_amounts.js)
+    watchTab(input.ownerDocument);
+    /* fresh: the next press keeps the box selected. byCode: a form put the box in focus by itself (no tap, click or Tab
+       on it), so the person's first tap or click still selects; once they type or press again it is a small fix */
+    let fresh = false, byCode = false, pressed = false, before = input.value;
     input.addEventListener('focus', () => {
-      fresh = true; before = input.value;
+      byCode = !pressed && !input.ownerDocument.__burrowTab;
+      fresh = true; pressed = false; before = input.value;
       input.select();
     });
     /* the click or tap that focused the box would put the caret down and undo the selection: keep it selected once */
     /* a press on a box that was already open (reached by Tab, or tapped before) is a small fix: no select */
-    const down = () => { if (input.ownerDocument.activeElement === input) fresh = false; };
+    const down = () => {
+      if (input.ownerDocument.activeElement !== input) { pressed = true; return; }
+      fresh = byCode;   // pointerdown and mousedown both come for one press: byCode is spent when the press ends
+    };
     input.addEventListener('pointerdown', down);
     input.addEventListener('mousedown', down);
-    const keep = e => { if (fresh) { e.preventDefault(); input.select(); fresh = false; } };
+    const keep = e => { pressed = false; byCode = false; if (fresh) { e.preventDefault(); input.select(); fresh = false; } };
     input.addEventListener('mouseup', keep);
     input.addEventListener('pointerup', keep);
     input.addEventListener('touchend', keep);
     input.addEventListener('keydown', e => {
-      fresh = false;
+      fresh = false; byCode = false;
       if (e.key === 'Escape') { input.value = before; input.select(); }
       if (e.key === 'Enter' && kind === 'amount') finish();
     });
-    input.addEventListener('blur', () => { fresh = false; finish(); });
+    input.addEventListener('blur', () => { fresh = false; byCode = false; pressed = false; finish(); });
     function finish() {
       if (kind !== 'amount') { if (opts.onValue) opts.onValue(input.value); return; }
       const r = commit(input.value, opts);
