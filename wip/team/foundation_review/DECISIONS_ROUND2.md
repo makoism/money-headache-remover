@@ -302,3 +302,13 @@ AK1. `home`'s fields merge one by one, each with its own `at` and `by`, like the
 AK2. AJ5's "move" takes a one-off amount to the new rule's first occurrence in the same month.
 AK3. A budget line's or share's `once` key named by the pay gets the same move-or-remove offer.
 The AJ helper's AJ5 reading (a live, unsettled key on or after the change's day; the offer only when nothing unmovable is in the way) is confirmed.
+
+## AL. Decisions from confirm_review_6.md
+AL1. One shape for every "record of separately edited fields": the value of each field is `{ v, at, by, gone }`, exactly like a keyed override (AE1). Shared `ui`, `home`, `plan.limits` and `imports.cats` all use it; the separate `ui.at`, `ui.by` and `ui.held` maps are replaced. One handler (the keyed-map handler) serves merge, holding, restore and "what the device has seen"; nothing checks for the name `ui`. AK1 is coded in this shape.
+AL2. "What the device has seen" reads every `at` in the copy, at any depth, including field values.
+AL3. `home.mainBank` and `home.minBank` merge as one field (`main: { v: { acct, min }, at, by }`), so a minimum never lands on another bank.
+AL4. `imports.cats` values are `{ v: <category>, at, by, gone }` (AL1).
+AL5. `plan.limits.ceiling` carries `per` (default month), like every amount over time.
+AL6. AK2's gap: with no occurrence of the new rule in that month on or after the change, the amount goes to the new rule's next occurrence; when the target already has its own amount, the offer shows both and the person picks add or replace.
+AL7. SCHEMA wording: ordinary ids are lowercase letters and digits; `people` records carry `told` and `by` like every list record.
+Watch decided: tests add a device whose offset changes (travel, daylight saving) and a half-hour offset; dates stay in the writer's own calendar.
