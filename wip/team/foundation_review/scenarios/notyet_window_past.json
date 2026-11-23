@@ -103,7 +103,7 @@
     }
   ],
   "asks": [
-    {"id": "nwp-01", "date": "2027-06-22", "question": "safe_to_spend", "account": "bank", "expected": 170000, "why": "200,000 (Bank today) - 30,000 (Insurance 8 Jun, not gone out at setup: still expected, taken off) = 170,000; the tips of 20,000 (8 Jun, not come in at setup) are still expected but not counted until ticked [BH1]", "note": "BH1: money not yet seen never counts toward safe to spend. Under Z2 alone the tips counted: 190,000.", "decisions": ["BH1"]},
+    {"id": "nwp-01", "date": "2027-06-22", "question": "safe_to_spend", "account": "bank", "expected": 170000, "why": "200,000 (Bank today) - 30,000 (Insurance 8 Jun, not gone out at setup: still expected, taken off) = 170,000 (BH1: the tips of 20,000, due 8 Jun and not come in at setup, are still expected but not counted until ticked)", "note": "BH1: money not yet seen never counts toward safe to spend. Under Z2 alone the tips counted: 190,000.", "decisions": ["BH1"]},
     {
       "id": "nwp-02",
       "date": "2027-06-22",
