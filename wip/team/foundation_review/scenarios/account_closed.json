@@ -1,0 +1,40 @@
+{
+  "life": "account_closed",
+  "title": "An old bank closed: its money moved out by the closing's transfer, its bill ends on the closing day (decision P6)",
+  "story": "Set up Mon 4 Jan 2027. The main bank holds 200,000 and an old bank 30,000. Pay of 250,000 lands in the main bank on the 25th (moved earlier) and starts the period; a gym bill of 5,000 is paid from the old bank on the 15th (moved later). On Fri 8 Jan the person closes the old bank: its final figure is 30,000, and the closing asks for a transfer of all of it to the main bank. The gym bill's schedule ends on 8 Jan. No Free to spend amount is set. Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2027-01-04", "to": "2027-01-31" },
+  "holidays": { "country": "none", "dates": [], "bank_closed": [] },
+  "accounts": [
+    { "id": "b", "name": "Bank", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2027-01-04", "amount": 200000 } },
+    { "id": "old", "name": "Old bank", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2027-01-04", "amount": 30000 }, "closed": "2027-01-08" }
+  ],
+  "income": [
+    { "id": "pay", "name": "Pay", "account": "b", "amount": 250000, "schedule": { "frequency": "monthly", "day": 25 }, "weekend_holiday": "move earlier", "starts_period": true }
+  ],
+  "bills": [
+    { "id": "gym", "name": "Gym", "account": "old", "amount": 5000, "schedule": { "frequency": "monthly", "day": 15 }, "weekend_holiday": "move later" }
+  ],
+  "goals": [],
+  "events": [
+    { "id": "c1", "date": "2027-01-08", "kind": "transfer", "from": "old", "to": "b", "amount": 30000, "note": "the transfer the closing asks for: the old bank's whole final figure" }
+  ],
+  "asks": [
+    { "id": "close-01", "date": "2027-01-07", "question": "due_before_next_pay",
+      "expected": { "items": [ { "item": "gym@2027-01-15", "lands": "2027-01-15", "amount": 5000 } ], "total": 5000 },
+      "why": "5,000 (gym, Fri 15 Jan, from the old bank) = 5,000" },
+    { "id": "close-02", "date": "2027-01-07", "question": "headline", "expected": 220000,
+      "why": "200,000 (Bank today, its lowest to the second next pay on Thu 25 Feb) + 30,000 (Old bank today) - 5,000 (gym 15 Jan) - 5,000 (gym 15 Feb) = 220,000" },
+    { "id": "close-03", "date": "2027-01-08", "question": "bank_today", "account": "old", "expected": 0,
+      "why": "30,000 (opening) - 30,000 (moved to Bank at the closing) = 0" },
+    { "id": "close-04", "date": "2027-01-08", "question": "bank_today", "account": "b", "expected": 230000,
+      "why": "200,000 (opening) + 30,000 (moved from the old bank at the closing) = 230,000" },
+    { "id": "close-05", "date": "2027-01-08", "question": "due_before_next_pay", "expected": { "items": [], "total": 0 },
+      "why": "none = 0", "note": "The gym's schedule ended on the closing day, 8 Jan, so 15 Jan is not expected." },
+    { "id": "close-06", "date": "2027-01-08", "question": "headline", "expected": 230000,
+      "why": "230,000 (Bank today, its lowest to Thu 25 Feb) + 0 (Old bank, closed: no gym after 8 Jan) = 230,000",
+      "note": "Before P6 the gym kept coming out of the empty old bank: 10,000 short, so the headline said 220,000 and warned." },
+    { "id": "close-07", "date": "2027-01-08", "question": "warnings", "expected": [],
+      "why": "The old bank is closed with nothing in it and nothing more due from it, so it cannot go below its minimum." }
+  ]
+}

@@ -1,4 +1,4 @@
-// Units (SCHEMA_V3 0, 3, 8 and 11; DECISIONS_ROUND2 B4, B8, H9, I2, L, M, N3, N4, O6, O).
+// Units (SCHEMA_V3 0, 3, 8 and 11; DECISIONS_ROUND2 B4, B8, H9, I2, L, M, N3, N4, O6, O, P4).
 // A plain reference for the engine lane, checked by run_rules.js against rules/units.json.
 // Open points name their question in units.json.
 'use strict';
@@ -157,7 +157,46 @@ function payNumber(rule, due) {
   }
   throw new Error('no pay number for ' + rule.every);
 }
+// [P4] A schedule whose rule changes during the year: each rule gets its own months. The monthly amount
+// covers the months the rule is in force in that year (the first rule from 1 Jan), spread over that rule's
+// pays (its due dates in those months, counted as paysInYearRules does), the leftover minor units on that
+// rule's earliest pays [L units q4]. So the year adds up to 12 months. A rule that starts on a day other
+// than the 1st is not decided (units.json open question) and is refused.
+function spread(total, pays) {
+  const base = Math.floor(total / pays), extra = total - base * pays, list = [];
+  for (let k = 1; k <= pays; k++) list.push(base + (k <= extra ? 1 : 0));
+  return list;
+}
+function rulesParts(rules, year, monthly) {
+  const list = rules.slice().sort((a, b) => (a.from < b.from ? -1 : 1));
+  const first = dayNum(year + '-01-01'), next = dayNum((year + 1) + '-01-01'), parts = [];
+  const monthOf = n => { const s = dayStr(n); return Number(s.slice(0, 4)) * 12 + Number(s.slice(5, 7)) - 1; };
+  list.forEach((r, i) => {
+    const start = Math.max(i === 0 ? -Infinity : dayNum(r.from), first);
+    const end = Math.min(list[i + 1] ? dayNum(list[i + 1].from) : Infinity, next);
+    if (start >= end) return;
+    if (dayStr(start).slice(8) !== '01' || (end !== next && dayStr(end).slice(8) !== '01')) throw new Error('a rule from ' + dayStr(start === first ? end : start) + ', not the 1st of a month: not decided (units.json open question)');
+    const months = monthOf(end) - monthOf(start);
+    const dues = dueDatesIn(r.rule, year).filter(d => d >= start && d < end);
+    parts.push({ from: dayStr(start), months, total: monthly * months, dues, list: spread(monthly * months, dues.length) });
+  });
+  return parts;
+}
+function perPayRules({ rule, year, monthly }) {
+  const parts = rulesParts(rule.rules, year, monthly).map(p => {
+    const low = Math.min(...p.list), high = Math.max(...p.list);
+    return { from: p.from, months: p.months, pays: p.dues.length, total: p.total, low, high, highCount: high === low ? 0 : p.list.filter(x => x === high).length };
+  });
+  return { parts, yearTotal: parts.reduce((t, p) => t + p.total, 0) };
+}
 function periodPerPay({ rule, due, monthly }) {
+  if (rule.rules) {   // [P4] the pay's place among its own rule's pays
+    const year = Number(due.slice(0, 4)), d = dayNum(due);
+    const part = rulesParts(rule.rules, year, monthly).find(p => p.dues.includes(d));
+    if (!part) throw new Error(due + ' is not a pay day');
+    const pay = part.dues.indexOf(d) + 1;
+    return { year, from: part.from, pays: part.dues.length, pay, amount: part.list[pay - 1] };
+  }
   const year = Number(due.slice(0, 4)), pays = paysInYear(rule, year), pay = payNumber(rule, due);
   return { year, pays, pay, amount: perPayList(monthly, pays)[pay - 1] };
 }
@@ -233,6 +272,7 @@ function ask(question, input) {
     case 'week_by_day_dates': return weekByDayDates(input);
     case 'per_pay': return perPay(input.monthly, input.pays);
     case 'per_pay_list': return perPayList(input.monthly, input.pays);
+    case 'per_pay_rules': return perPayRules(input);
     case 'period_amount': return periodAmount(input);
     case 'by_day': return byDay(input.monthly, input.days);
     case 'by_day_dates': return byDayDates(input);
@@ -242,4 +282,4 @@ function ask(question, input) {
   throw new Error('unknown question ' + question);
 }
 
-module.exports = { ask, homeCurOn, moveCurrency, paysInYearRules, DECIMALS, toMinor, currencyFor, loadAmount, interest, paysInYear, periodCount, perPayList, perPay, payNumber, periodPerPay, periodAmount, weekByDay, weekByDayDates, byDay, byDayDates };
+module.exports = { ask, perPayRules, homeCurOn, moveCurrency, paysInYearRules, DECIMALS, toMinor, currencyFor, loadAmount, interest, paysInYear, periodCount, perPayList, perPay, payNumber, periodPerPay, periodAmount, weekByDay, weekByDayDates, byDay, byDayDates };

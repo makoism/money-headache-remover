@@ -1,0 +1,36 @@
+{
+  "life": "goal_removed",
+  "title": "A goal removed with money in it: the money waits \"to place\" and stays out of safe to spend (final_review_1 S7, decision P1)",
+  "story": "One bank, set up Mon 4 Jan 2027 with 150,000, of which 100,000 is kept for a trip. An emergency place starts empty. No fixed pay and no Free to spend amount, so nothing caps the headline. On Wed 6 Jan the person removes the trip: its 100,000 moves to Waiting marked \"to place\". On Thu 7 Jan they place 30,000 of it in the emergency place; on Fri 8 Jan they set aside another 20,000 for emergencies from the bank's other money. Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2027-01-04", "to": "2027-01-31" },
+  "holidays": { "country": "none", "dates": [], "bank_closed": [] },
+  "accounts": [
+    { "id": "b", "name": "Bank", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2027-01-04", "amount": 150000, "split": { "goals": { "trip": 100000 } } } }
+  ],
+  "income": [],
+  "bills": [],
+  "goals": [
+    { "id": "trip", "name": "Trip", "kept_in": "b", "due": "2027-08-01", "removed": "2027-01-06" },
+    { "id": "emergency", "name": "Emergency", "kept_in": "b", "due": "2027-12-31", "opening": { "date": "2027-01-04", "amount": 0 } }
+  ],
+  "events": [
+    { "id": "g1", "date": "2027-01-07", "kind": "set_aside", "goal": "emergency", "account": "b", "amount": 30000, "to_place_of": "trip", "note": "placed from the trip's money waiting to place" },
+    { "id": "g2", "date": "2027-01-08", "kind": "set_aside", "goal": "emergency", "account": "b", "amount": 20000, "note": "from the bank's other money in Waiting" }
+  ],
+  "asks": [
+    { "id": "gone-01", "date": "2027-01-05", "question": "headline", "expected": 50000,
+      "why": "150,000 (Bank today) - 100,000 (Trip, kept in it) = 50,000" },
+    { "id": "gone-02", "date": "2027-01-06", "question": "headline", "expected": 50000,
+      "why": "150,000 (Bank today) - 100,000 (the trip's money, moved to Waiting and marked to place) = 50,000",
+      "note": "Before P1 the 100,000 went into the headroom and the headline jumped to 150,000 (final_review_1 S7)." },
+    { "id": "gone-03", "date": "2027-01-07", "question": "safe_to_spend", "account": "b", "expected": 50000,
+      "why": "150,000 (Bank today) - 30,000 (Emergency, kept in it) - 70,000 (the trip's money still to place: 100,000 - 30,000 placed) = 50,000",
+      "note": "Placing money that was to place moves it, it does not free it: the headline is unchanged." },
+    { "id": "gone-04", "date": "2027-01-07", "question": "place", "account": "b", "place": "emergency", "expected": { "kept": 30000, "due": "2027-12-31" },
+      "why": "0 (opening) + 30,000 (placed from the trip's money) = 30,000" },
+    { "id": "gone-05", "date": "2027-01-08", "question": "headline", "expected": 30000,
+      "why": "150,000 (Bank today) - 50,000 (Emergency, kept in it: 30,000 + 20,000) - 70,000 (the trip's money still to place) = 30,000",
+      "note": "The 20,000 came from the bank's other money, not from the money to place, so 70,000 is still to place." }
+  ]
+}

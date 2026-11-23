@@ -1,0 +1,125 @@
+{
+  "area": "accounts",
+  "title": "Closing an account: only at zero or with its money moved out, and its schedules end on the closing day",
+  "written_in": "SCHEMA_V3 3, 5; DECISIONS_ROUND2 O (close, never delete), P6",
+  "notes": [
+    "Every amount is made up and in whole minor units (yen).",
+    "Question `close` [P6]: closing `account` on `date` with its final figure `figure` (the final `check`). `transfers` are the transfers out that the closing asks for, `{ to, a }`. The account closes only when the figure less the transfers is zero; otherwise the closing is refused and `left` shows what is still in it. On a close the answer gives `closed` (the date), the events written (the final `check`, then each transfer, all dated the closing day) and `ends`: each schedule of the account (paid from it, landing in it, or a transfer into it) with its new `ends`, the closing day, unless it already ends on or before that day. Other schedules are untouched."
+  ],
+  "defaults": {},
+  "cases": [
+    {
+      "id": "acc-01",
+      "question": "close",
+      "title": "An account at zero closes; its bill ends on the closing day",
+      "input": {
+        "account": "old", "date": "2027-01-08", "figure": 0, "transfers": [],
+        "schedules": [
+          { "id": "gym", "acct": "old", "ends": null },
+          { "id": "pay", "acct": "b", "ends": null }
+        ]
+      },
+      "expected": {
+        "closed": "2027-01-08",
+        "events": [ { "k": "check", "date": "2027-01-08", "acct": "old", "a": 0 } ],
+        "ends": { "gym": "2027-01-08" }
+      },
+      "why": "The final figure is 0, so nothing has to move out and the account closes [P6]. The gym is paid from it, so its schedule ends on Fri 8 Jan; the pay lands in the main bank and is untouched.",
+      "decisions": [ "P6", "O" ]
+    },
+    {
+      "id": "acc-02",
+      "question": "close",
+      "title": "30,000 left, moved out by the transfer the closing asks for: it closes",
+      "input": {
+        "account": "old", "date": "2027-01-08", "figure": 30000, "transfers": [ { "to": "b", "a": 30000 } ],
+        "schedules": [ { "id": "gym", "acct": "old", "ends": null } ]
+      },
+      "expected": {
+        "closed": "2027-01-08",
+        "events": [
+          { "k": "check", "date": "2027-01-08", "acct": "old", "a": 30000 },
+          { "k": "transfer", "date": "2027-01-08", "acct": "old", "acct2": "b", "a": 30000 }
+        ],
+        "ends": { "gym": "2027-01-08" }
+      },
+      "why": "30,000 (final figure) - 30,000 (moved to the main bank) = 0, so it closes [P6]. The final check holds the figure; the transfer moves it out on the same day. As scenarios/account_closed.json.",
+      "decisions": [ "P6", "O" ]
+    },
+    {
+      "id": "acc-03",
+      "question": "close",
+      "title": "Money left and no transfer: the closing is refused",
+      "input": {
+        "account": "old", "date": "2027-01-08", "figure": 30000, "transfers": [],
+        "schedules": [ { "id": "gym", "acct": "old", "ends": null } ]
+      },
+      "expected": { "refused": { "account": "old", "left": 30000 } },
+      "why": "30,000 is still in it and nothing moves it out, so it is not closed [P6]; the 30,000 is shown and nothing is written.",
+      "decisions": [ "P6" ]
+    },
+    {
+      "id": "acc-04",
+      "question": "close",
+      "title": "A transfer that moves out only part: refused, with what is still in it",
+      "input": {
+        "account": "old", "date": "2027-01-08", "figure": 30000, "transfers": [ { "to": "b", "a": 20000 } ],
+        "schedules": []
+      },
+      "expected": { "refused": { "account": "old", "left": 10000 } },
+      "why": "30,000 - 20,000 = 10,000 still in it, which is not zero, so it is not closed [P6].",
+      "decisions": [ "P6" ]
+    },
+    {
+      "id": "acc-05",
+      "question": "close",
+      "title": "A transfer of more than the final figure: refused",
+      "input": {
+        "account": "old", "date": "2027-01-08", "figure": 30000, "transfers": [ { "to": "b", "a": 35000 } ],
+        "schedules": []
+      },
+      "expected": { "refused": { "account": "old", "left": -5000 } },
+      "why": "30,000 - 35,000 = -5,000: the transfer would take 5,000 the account does not hold, so it is not zero and the closing is refused [P6].",
+      "decisions": [ "P6" ]
+    },
+    {
+      "id": "acc-06",
+      "question": "close",
+      "title": "Every schedule of the account ends on the closing day; one that already ended keeps its end",
+      "input": {
+        "account": "old", "date": "2027-01-08", "figure": 0, "transfers": [],
+        "schedules": [
+          { "id": "gym", "acct": "old", "ends": "2027-12-31" },
+          { "id": "side", "acct": "old", "ends": null },
+          { "id": "topup", "acct": "b", "acct2": "old", "ends": null },
+          { "id": "phone", "acct": "old", "ends": "2027-01-05" },
+          { "id": "rent", "acct": "b", "ends": null }
+        ]
+      },
+      "expected": {
+        "closed": "2027-01-08",
+        "events": [ { "k": "check", "date": "2027-01-08", "acct": "old", "a": 0 } ],
+        "ends": { "gym": "2027-01-08", "side": "2027-01-08", "topup": "2027-01-08" }
+      },
+      "why": "The gym (paid from it, ending 31 Dec), a side income landing in it and a top-up transfer into it from the main bank are its schedules: each ends on Fri 8 Jan [P6]. The phone already ended on 5 Jan, before the closing day, and keeps that end. The rent is paid from the main bank and is untouched.",
+      "decisions": [ "P6" ]
+    }
+  ],
+  "open": [
+    {
+      "id": "accounts-open-1",
+      "question": "A card, pay-later or loan closed while something is still owed on it, or a bank closed below zero: P6 speaks of a figure moved out by a transfer. Is closing refused until it is paid to zero, or does the closing ask for a payment into it?",
+      "ref_does": "`close` takes a final figure and transfers out only; no case closes an owed account."
+    },
+    {
+      "id": "accounts-open-2",
+      "question": "Closing the account a card is paid from (`payFrom`), or the account a goal or other kept place is kept in (`keptIn.acct`): does the closing ask for a new paying account and move the place's money, or is it refused?",
+      "ref_does": "`close` looks only at the account's figure and schedules; no case has a card or a place on the closing account."
+    },
+    {
+      "id": "accounts-open-3",
+      "question": "A 38.31 account that is already closed with a figure that is not zero, at the move: how is it brought in?",
+      "ref_does": "Nothing; the move (SCHEMA_V3 section 11) is not part of this file."
+    }
+  ]
+}

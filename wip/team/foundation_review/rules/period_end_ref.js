@@ -1,4 +1,4 @@
-// Period end (SCHEMA_V3 7.4 and 9; DECISIONS_ROUND2 A7, F8, H8, L, M, N5, O2, O).
+// Period end (SCHEMA_V3 7.4 and 9; DECISIONS_ROUND2 A7, F8, H8, L, M, N5, O2, O, P2, P3, P5).
 // A plain reference for the engine lane, checked by run_rules.js against rules/period_end.json.
 // Open points name their question in period_end.json.
 'use strict';
@@ -109,39 +109,84 @@ function leftoversEnds({ ends, answers }) {
     leftovers({ periodTo: e.periodTo, places: e.places, answers: (answers || []).filter(a => a.period === e.periodTo) })));
 }
 
-// [O2] Each answer is saved as `pe:<period last day>:<place>`, so the same answer written on two phones is one
-// record after the merge (newest `at`, earliest `told`). Answers for different places both stay, so the
-// refusal is checked again on the merged answers [L period_end q10]. One answer per place and period: a
-// second answer for the same place on one device would share its id (SCHEMA_V3 section 14 asks how a split
-// answer is saved), so it is refused here rather than guessed.
+// [P2] A period-end answer is one record per place, `pe:<period last day>:<place>`, holding all its moves:
+// `{ place, moves: [ { to, a } ], told, at, by }`. A move to the place itself is "keep it here" (no move
+// event, L period_end q6); for an overspent place the moves are its covers, `{ from, a }` (a cover is saved
+// under the line it covers, O reading). Turned into single answers, the shape `leftovers` reads:
+function flatten(records) {
+  const out = [];
+  for (const r of records || []) {
+    if (!r.moves) { out.push(r); continue; }
+    for (const m of r.moves) {
+      const one = m.from ? { place: r.place, from: m.from, a: m.a } : m.to === r.place ? { place: r.place, keep: true, a: m.a } : { place: r.place, to: m.to, a: m.a };
+      if (r.told) one.told = r.told;
+      out.push(one);
+    }
+  }
+  return out;
+}
+
+// [O2] The same place answered on two phones is one record after the merge (newest `at` whole, earliest
+// `told`), so moves are never mixed from two records [P2]. Records for different places both stay, so the
+// refusal is checked again on the merged answers [L period_end q10]. [P3] When they add up to more than is
+// left, the record with the newer `at` among those that give from that place gives way: its moves are undone
+// (the record is marked `gone`, goneBy the record kept) and the device that wrote it says "An answer from
+// your other device was used. Check it." at its next open. Repeated until nothing is refused.
+const NOTICE = 'An answer from your other device was used. Check it.';
 function leftoversMerged({ periodTo, places, mine, theirs }) {
   const named = list => {
     const seen = new Set();
     return (list || []).map(a => {
       const id = idFor({ k: 'pe', periodTo, place: a.place });
-      if (seen.has(id)) throw new Error('two answers for ' + a.place + ' on one device: not decided (section 14)');
+      if (seen.has(id)) throw new Error('two records for ' + a.place + ' on one device: an answer is one record per place [P2]');
       seen.add(id);
       return Object.assign({ id }, a);
     });
   };
-  const merged = mergeList(named(mine), named(theirs)).filter(a => !a.gone);
-  return leftovers({ periodTo, places, answers: merged });
+  let live = mergeList(named(mine), named(theirs)).filter(a => !a.gone);
+  const gaveWay = [], ms = t => Date.parse(t);
+  for (;;) {
+    const r = leftovers({ periodTo, places, answers: flatten(live) });
+    if (!r.refused) {
+      if (!gaveWay.length) return r;
+      const to = [...new Set(gaveWay.map(g => g.by))];
+      return Object.assign(r, { gaveWay, notice: to.length === 1 ? { to: to[0], text: NOTICE } : to.map(t => ({ to: t, text: NOTICE })) });
+    }
+    const id = r.refused.place;
+    const gives = live.filter(x => x.place === id || x.from === id || (x.moves || []).some(m => m.from === id));
+    if (gives.length < 2) return r;   // not two answers adding up: refused as before [L period_end q10]
+    const newest = gives.reduce((n, x) => (ms(x.at) > ms(n.at) || (ms(x.at) === ms(n.at) && x.id > n.id) ? x : n));
+    gaveWay.push({ id: newest.id, by: newest.by });
+    live = live.filter(x => x !== newest);
+  }
 }
 
 // [O] An old statement read after the period-end answer: the answer stays (its moves are unchanged). The
 // spending it adds, dated in that period, comes out of the place: what was really left is the left at the
-// answer less that spending. What still waited to decide shrinks first; what the answers gave beyond what
-// was really left is the overspend, shown as "found later" at the next check-in.
-function foundLater({ periodTo, places, answers, later }) {
-  const r = leftovers({ periodTo, places, answers });
+// answer less that spending. What still waited to decide shrinks first; [P5] the money kept for the next
+// period never does. What the answers gave beyond what was really left is shown as "found later" at the next
+// check-in, where the person picks where it comes from: Waiting or this period's Free to spend. Each pick
+// (`covers`: `{ place, from, a, date, told }`) is a move into the place dated the check-in day. A pick from
+// anywhere else is refused, and so are picks adding up to more than was found later [L period_end q10].
+const COVER_FROM = ['waiting', 'free'];
+function foundLater({ periodTo, places, answers, later, covers }) {
+  const r = leftovers({ periodTo, places, answers: flatten(answers) });
   if (r.refused) return r;
-  const out = { places: {}, moves: r.moves };
+  const out = { places: {}, moves: r.moves.slice() };
   for (const p of places) {
     const e = r.places[p.id];
     if (!e || p.left < 0) continue;
     const extra = (later || []).filter(x => x.place === p.id).reduce((t, x) => t + x.a, 0);
-    const left = p.left - extra, given = e.decided + e.kept;
-    out.places[p.id] = { left, given, toDecide: Math.max(0, left - given), foundLater: Math.max(0, given - left) };
+    const left = p.left - extra, given = e.decided + e.kept, found = Math.max(0, given - left);
+    const o = out.places[p.id] = { left, given, kept: e.kept, toDecide: Math.max(0, left - given), foundLater: found };
+    const mine = (covers || []).filter(c => c.place === p.id);
+    for (const c of mine) if (!COVER_FROM.includes(c.from)) return { refused: { place: p.id, from: c.from } };
+    const covered = mine.reduce((t, c) => t + c.a, 0);
+    if (covered > found) return { refused: { place: p.id, left: found } };
+    if (!found) continue;
+    Object.assign(o, { covered, toCover: found - covered });
+    if (found > covered) o.coverFrom = COVER_FROM.slice();
+    for (const c of mine) out.moves.push({ k: 'move', date: c.date, a: c.a, place: c.from, place2: p.id, told: c.told });
   }
   return out;
 }

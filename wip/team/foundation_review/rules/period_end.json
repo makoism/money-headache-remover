@@ -1,14 +1,15 @@
 {
   "area": "period_end",
   "title": "Period end: the question after a fresh check-in, nothing rolling on silently, and \"to decide\"",
-  "written_in": "SCHEMA_V3 7.4, 9; DECISIONS_ROUND2 A7, F8, H8, L (period end q1 to q10), M6, M7, N5, O2, O; DECISIONS.md (money left at month end never drops out silently, 18 Nov)",
+  "written_in": "SCHEMA_V3 7.4, 9; DECISIONS_ROUND2 A7, F8, H8, L (period end q1 to q10), M6, M7, N5, O2, O, P2, P3, P5; DECISIONS.md (money left at month end never drops out silently, 18 Nov)",
   "notes": [
     "Every amount is made up and in whole minor units (yen).",
     "A period runs from the day the period stream's pay lands to the day before the next one lands [F8]. While the next pay has not landed (late, H8) the period has not ended.",
     "The last 3 days of a period are its last day and the two days before it.",
     "Question `question_start`: has the period ended, its last day, and whether the period-end question has to start with a check-in; while pay is past its posting window, `askPayCame` [L period_end q3]. A check-in is a date (every account typed) or `{ date, accounts }`; `spendFrom` lists the spend-from accounts [L period_end q9], and the check-ins of the last 3 days count together [M6]. `events` may hold the saved `{ k: 'periodStart', date }` event of a new period the person started without the pay [N5]: a live one (no `gone`) dated after `periodFrom` and on or before today starts the new period on its date, the old period ends the day before, and `pay` says whether the late pay is still \"late, expected\" (inside its posting window) or \"not seen yet\" [M7]. Question `leftovers`: for each place, what is decided (moved), what is kept in the place, what is still \"to decide\", how much an overspent place is over and what covers it, and the `move` events the answers write; answers adding up to more than is left are refused [L period_end q4, q6, q10]. Question `screen`: whether the period-end question is shown [L period_end q5]. Question `next_period`: what each place holds in the new period and how much of it counts in safe to spend [L period_end q6, q7]. Question `leftovers_ends`: two or more unanswered period ends, each answered on its own [L period_end q8].",
     "An answer is `{ place, to, a, told }` (a move to another place), `{ place, keep: true, a, told }` (keep it here) or, for an overspent place, `{ place, from, a, told }` where `from` is `free` or `waiting` (what covers it).",
-    "Question `leftovers_merged` [O2]: the answers of two devices, each saved as `pe:<period last day>:<place>`, merged by id (newest `at`, earliest `told`), then `leftovers` on the merged answers, so the refusal is checked again after a merge. Question `found_later` [O]: an old statement read after the answer adds spending dated in that period (`later`); the answer stays, what waits to decide shrinks first, and what the answers gave beyond what was really left is shown as `foundLater`."
+    "Question `leftovers_merged` [O2]: the answers of two devices, each saved as `pe:<period last day>:<place>`, merged by id (newest `at`, earliest `told`), then `leftovers` on the merged answers, so the refusal is checked again after a merge. Question `found_later` [O]: an old statement read after the answer adds spending dated in that period (`later`); the answer stays, what waits to decide shrinks first, and what the answers gave beyond what was really left is shown as `foundLater`.",
+    "[P2] An answer is one record per place: `{ place, moves: [ { to, a } ], told, at, by }`; a move to the place itself is \"keep it here\", and an overspent place's record holds its covers `{ from, a }`. `leftovers_merged` reads these records; the merge keeps the newer record of a place whole. [P3] When records of different places add up to more than is left, the record with the newer `at` among those giving from that place gives way: its moves are undone, it is listed in `gaveWay` (`{ id, by }`), and `notice` is the line its device shows at its next open. [P5] `found_later` also gives `kept` (never used for spending found later) and, when something is found later, `covered`, `toCover` and `coverFrom` (Waiting or this period's Free to spend). `covers` are the person's picks at the check-in, `{ place, from, a, date, told }`, each a move into the place dated the check-in day; a pick from anywhere else, or picks adding up to more than was found later, are refused."
   ],
   "defaults": {},
   "cases": [
@@ -471,8 +472,12 @@
         "mine": [
           {
             "place": "free",
-            "to": "trip",
-            "a": 20000,
+            "moves": [
+              {
+                "to": "trip",
+                "a": 20000
+              }
+            ],
             "told": "2026-12-26T09:00:00.000+09:00",
             "at": "2026-12-26T09:00:00.000+09:00",
             "by": "jjjjjj"
@@ -481,8 +486,12 @@
         "theirs": [
           {
             "place": "free",
-            "to": "trip",
-            "a": 20000,
+            "moves": [
+              {
+                "to": "trip",
+                "a": 20000
+              }
+            ],
             "told": "2026-12-26T09:10:00.000+09:00",
             "at": "2026-12-26T09:10:00.000+09:00",
             "by": "tttttt"
@@ -510,9 +519,10 @@
           }
         ]
       },
-      "why": "Each phone writes its answer as `pe:2026-12-24:free` [O2], so the merge keeps one record (newest `at`, earliest `told`, 09:00). 20,000 leaves Free to spend once; before O2 the merged copy moved 40,000 out of a place that held 20,000 (final_review_1 S4).",
+      "why": "Each phone writes its answer as `pe:2026-12-24:free` [O2], one record holding its moves [P2], so the merge keeps one record (newest `at`, earliest `told`, 09:00). 20,000 leaves Free to spend once; before O2 the merged copy moved 40,000 out of a place that held 20,000 (final_review_1 S4).",
       "decisions": [
         "O2",
+        "P2",
         "A7",
         "L period_end q10"
       ]
@@ -520,7 +530,7 @@
     {
       "id": "pe-37",
       "question": "leftovers_merged",
-      "title": "Answers that each phone allowed are refused together after the merge",
+      "title": "Answers that each phone allowed add up to too much after the merge: the newer one gives way",
       "input": {
         "periodTo": "2026-12-24",
         "places": [
@@ -536,8 +546,12 @@
         "mine": [
           {
             "place": "free",
-            "to": "trip",
-            "a": 20000,
+            "moves": [
+              {
+                "to": "trip",
+                "a": 20000
+              }
+            ],
             "told": "2026-12-26T09:00:00.000+09:00",
             "at": "2026-12-26T09:00:00.000+09:00",
             "by": "jjjjjj"
@@ -546,8 +560,12 @@
         "theirs": [
           {
             "place": "food",
-            "from": "free",
-            "a": 5000,
+            "moves": [
+              {
+                "from": "free",
+                "a": 5000
+              }
+            ],
             "told": "2026-12-26T09:10:00.000+09:00",
             "at": "2026-12-26T09:10:00.000+09:00",
             "by": "tttttt"
@@ -555,13 +573,46 @@
         ]
       },
       "expected": {
-        "refused": {
-          "place": "free",
-          "left": 20000
+        "places": {
+          "food": {
+            "left": -5000,
+            "over": 5000,
+            "covered": 0,
+            "toCover": 5000,
+            "state": "over"
+          },
+          "free": {
+            "left": 20000,
+            "decided": 20000,
+            "kept": 0,
+            "toDecide": 0,
+            "state": "decided"
+          }
+        },
+        "moves": [
+          {
+            "k": "move",
+            "date": "2026-12-24",
+            "a": 20000,
+            "place": "free",
+            "place2": "trip",
+            "told": "2026-12-26T09:00:00.000+09:00"
+          }
+        ],
+        "gaveWay": [
+          {
+            "id": "pe:2026-12-24:food",
+            "by": "tttttt"
+          }
+        ],
+        "notice": {
+          "to": "tttttt",
+          "text": "An answer from your other device was used. Check it."
         }
       },
-      "why": "Jun's phone moves all 20,000 of Free to spend to the trip; Tess's phone covers Food's 5,000 overspend from Free to spend. Each alone is fine (20,000 and 5,000 of 20,000). They are different records (`pe:2026-12-24:free`, `pe:2026-12-24:food`), so both survive the merge; checked again after it [O2], Free to spend gives 20,000 + 5,000 = 25,000 of 20,000, which is refused, the amount left shown [L period_end q10].",
+      "why": "Jun's phone moves all 20,000 of Free to spend to the trip at 09:00; Tess's phone covers Food's 5,000 overspend from Free to spend at 09:10. Each alone is fine. They are different records (`pe:2026-12-24:free`, `pe:2026-12-24:food`), so both survive the merge, and together Free to spend gives 20,000 + 5,000 = 25,000 of 20,000 [O2]. The answer with the newer `at` (Tess's, 09:10) gives way: its move is undone, Food is over by 5,000 again with nothing covering it, and Tess's phone says \"An answer from your other device was used. Check it.\" at its next open [P3].",
       "decisions": [
+        "P3",
         "O2",
         "L period_end q4",
         "L period_end q10"
@@ -599,8 +650,15 @@
           "free": {
             "left": -10000,
             "given": 20000,
+            "kept": 0,
             "toDecide": 0,
-            "foundLater": 30000
+            "foundLater": 30000,
+            "covered": 0,
+            "toCover": 30000,
+            "coverFrom": [
+              "waiting",
+              "free"
+            ]
           }
         },
         "moves": [
@@ -614,9 +672,10 @@
           }
         ]
       },
-      "why": "At the answer Free to spend had 20,000 left and all of it went to the trip. A statement read later adds 30,000 of spending dated in that period: 20,000 - 30,000 = -10,000 really left. The answer stays [O]; the place is now 20,000 - (-10,000) = 30,000 short, shown at the next check-in as found later.",
+      "why": "At the answer Free to spend had 20,000 left and all of it went to the trip. A statement read later adds 30,000 of spending dated in that period: 20,000 - 30,000 = -10,000 really left. The answer stays [O]; the place is now 20,000 - (-10,000) = 30,000 short, shown at the next check-in as found later, where the person picks whether it comes from Waiting or this period's Free to spend [P5].",
       "decisions": [
         "O",
+        "P5",
         "A7"
       ]
     },
@@ -652,6 +711,7 @@
           "free": {
             "left": 10000,
             "given": 5000,
+            "kept": 0,
             "toDecide": 5000,
             "foundLater": 0
           }
@@ -672,6 +732,682 @@
         "O",
         "A7",
         "L period_end q7"
+      ]
+    },
+    {
+      "id": "pe-40",
+      "question": "leftovers_merged",
+      "title": "A split answer is one record per place holding all its moves",
+      "input": {
+        "periodTo": "2026-12-24",
+        "places": [
+          {
+            "id": "food",
+            "left": -5000
+          },
+          {
+            "id": "free",
+            "left": 20000
+          }
+        ],
+        "mine": [
+          {
+            "place": "free",
+            "moves": [
+              {
+                "to": "trip",
+                "a": 8000
+              },
+              {
+                "to": "free",
+                "a": 5000
+              },
+              {
+                "to": "waiting",
+                "a": 4000
+              }
+            ],
+            "told": "2026-12-26T09:00:00.000+09:00",
+            "at": "2026-12-26T09:00:00.000+09:00",
+            "by": "jjjjjj"
+          },
+          {
+            "place": "food",
+            "moves": [
+              {
+                "from": "free",
+                "a": 3000
+              },
+              {
+                "from": "waiting",
+                "a": 2000
+              }
+            ],
+            "told": "2026-12-26T09:00:00.000+09:00",
+            "at": "2026-12-26T09:00:00.000+09:00",
+            "by": "jjjjjj"
+          }
+        ],
+        "theirs": []
+      },
+      "expected": {
+        "places": {
+          "food": {
+            "left": -5000,
+            "over": 5000,
+            "covered": 5000,
+            "toCover": 0,
+            "state": "covered"
+          },
+          "free": {
+            "left": 20000,
+            "decided": 15000,
+            "kept": 5000,
+            "toDecide": 0,
+            "state": "decided"
+          }
+        },
+        "moves": [
+          {
+            "k": "move",
+            "date": "2026-12-24",
+            "a": 3000,
+            "place": "free",
+            "place2": "food",
+            "told": "2026-12-26T09:00:00.000+09:00"
+          },
+          {
+            "k": "move",
+            "date": "2026-12-24",
+            "a": 2000,
+            "place": "waiting",
+            "place2": "food",
+            "told": "2026-12-26T09:00:00.000+09:00"
+          },
+          {
+            "k": "move",
+            "date": "2026-12-24",
+            "a": 8000,
+            "place": "free",
+            "place2": "trip",
+            "told": "2026-12-26T09:00:00.000+09:00"
+          },
+          {
+            "k": "move",
+            "date": "2026-12-24",
+            "a": 4000,
+            "place": "free",
+            "place2": "waiting",
+            "told": "2026-12-26T09:00:00.000+09:00"
+          }
+        ]
+      },
+      "why": "One phone answers both places. `pe:2026-12-24:free` holds three moves [P2]: 8,000 to the trip, 5,000 kept (a move to the place itself: \"keep it here\", no move event, L period_end q6) and 4,000 to Waiting. `pe:2026-12-24:food` holds the cover of Food's 5,000: 3,000 from Free to spend and 2,000 from Waiting (a cover is saved under the overspent line, O reading). Free to spend gives 8,000 + 5,000 + 4,000 + 3,000 = 20,000 of 20,000, nothing refused; decided 8,000 + 4,000 + 3,000 = 15,000, kept 5,000, 20,000 - 15,000 - 5,000 = 0 to decide. Food: 3,000 + 2,000 = 5,000 covered. Before P2 two answers for one place on one device were refused.",
+      "decisions": [
+        "P2",
+        "O2",
+        "L period_end q4",
+        "L period_end q6"
+      ]
+    },
+    {
+      "id": "pe-41",
+      "question": "leftovers_merged",
+      "title": "Two phones answer one place differently: the whole newer record stands",
+      "input": {
+        "periodTo": "2026-12-24",
+        "places": [
+          {
+            "id": "free",
+            "left": 20000
+          }
+        ],
+        "mine": [
+          {
+            "place": "free",
+            "moves": [
+              {
+                "to": "trip",
+                "a": 20000
+              }
+            ],
+            "told": "2026-12-26T09:00:00.000+09:00",
+            "at": "2026-12-26T09:00:00.000+09:00",
+            "by": "jjjjjj"
+          }
+        ],
+        "theirs": [
+          {
+            "place": "free",
+            "moves": [
+              {
+                "to": "trip",
+                "a": 10000
+              },
+              {
+                "to": "free",
+                "a": 10000
+              }
+            ],
+            "told": "2026-12-26T09:10:00.000+09:00",
+            "at": "2026-12-26T09:10:00.000+09:00",
+            "by": "tttttt"
+          }
+        ]
+      },
+      "expected": {
+        "places": {
+          "free": {
+            "left": 20000,
+            "decided": 10000,
+            "kept": 10000,
+            "toDecide": 0,
+            "state": "decided"
+          }
+        },
+        "moves": [
+          {
+            "k": "move",
+            "date": "2026-12-24",
+            "a": 10000,
+            "place": "free",
+            "place2": "trip",
+            "told": "2026-12-26T09:00:00.000+09:00"
+          }
+        ]
+      },
+      "why": "Both records are `pe:2026-12-24:free`. The merge keeps the newer `at` (Tess's, 09:10) whole, with the earliest `told` (09:00) [O2, P2]: 10,000 to the trip and 10,000 kept. Moves are never mixed from two records, so the place gives 10,000 + 10,000 = 20,000, never 30,000. Nothing gave way: they were one record, not two answers adding up [P3].",
+      "decisions": [
+        "P2",
+        "O2",
+        "P3"
+      ]
+    },
+    {
+      "id": "pe-42",
+      "question": "leftovers_merged",
+      "title": "Only the newer of the answers that add up to too much gives way; a newer answer elsewhere stays",
+      "input": {
+        "periodTo": "2026-12-24",
+        "places": [
+          {
+            "id": "food",
+            "left": -5000
+          },
+          {
+            "id": "free",
+            "left": 20000
+          },
+          {
+            "id": "gift",
+            "left": 3000
+          }
+        ],
+        "mine": [
+          {
+            "place": "free",
+            "moves": [
+              {
+                "to": "trip",
+                "a": 20000
+              }
+            ],
+            "told": "2026-12-26T09:00:00.000+09:00",
+            "at": "2026-12-26T09:00:00.000+09:00",
+            "by": "jjjjjj"
+          }
+        ],
+        "theirs": [
+          {
+            "place": "food",
+            "moves": [
+              {
+                "from": "free",
+                "a": 5000
+              }
+            ],
+            "told": "2026-12-26T09:10:00.000+09:00",
+            "at": "2026-12-26T09:10:00.000+09:00",
+            "by": "tttttt"
+          },
+          {
+            "place": "gift",
+            "moves": [
+              {
+                "to": "trip",
+                "a": 3000
+              }
+            ],
+            "told": "2026-12-26T09:20:00.000+09:00",
+            "at": "2026-12-26T09:20:00.000+09:00",
+            "by": "tttttt"
+          }
+        ]
+      },
+      "expected": {
+        "places": {
+          "food": {
+            "left": -5000,
+            "over": 5000,
+            "covered": 0,
+            "toCover": 5000,
+            "state": "over"
+          },
+          "free": {
+            "left": 20000,
+            "decided": 20000,
+            "kept": 0,
+            "toDecide": 0,
+            "state": "decided"
+          },
+          "gift": {
+            "left": 3000,
+            "decided": 3000,
+            "kept": 0,
+            "toDecide": 0,
+            "state": "decided"
+          }
+        },
+        "moves": [
+          {
+            "k": "move",
+            "date": "2026-12-24",
+            "a": 20000,
+            "place": "free",
+            "place2": "trip",
+            "told": "2026-12-26T09:00:00.000+09:00"
+          },
+          {
+            "k": "move",
+            "date": "2026-12-24",
+            "a": 3000,
+            "place": "gift",
+            "place2": "trip",
+            "told": "2026-12-26T09:20:00.000+09:00"
+          }
+        ],
+        "gaveWay": [
+          {
+            "id": "pe:2026-12-24:food",
+            "by": "tttttt"
+          }
+        ],
+        "notice": {
+          "to": "tttttt",
+          "text": "An answer from your other device was used. Check it."
+        }
+      },
+      "why": "Free to spend gives 20,000 (to the trip, 09:00) + 5,000 (the cover of Food, 09:10) = 25,000 of 20,000. Of those two answers the newer (09:10) gives way [P3]. The gift answer (09:20) is newer still, but it takes nothing from Free to spend, so it is not one of the two answers that add up to too much and it stays: 3,000 of 3,000 to the trip.",
+      "decisions": [
+        "P3",
+        "P2",
+        "O2"
+      ]
+    },
+    {
+      "id": "pe-43",
+      "question": "leftovers_merged",
+      "title": "The newer answer gives way whichever phone wrote it, and its money goes back to \"to decide\"",
+      "input": {
+        "periodTo": "2026-12-24",
+        "places": [
+          {
+            "id": "food",
+            "left": -5000
+          },
+          {
+            "id": "free",
+            "left": 20000
+          }
+        ],
+        "mine": [
+          {
+            "place": "free",
+            "moves": [
+              {
+                "to": "trip",
+                "a": 18000
+              }
+            ],
+            "told": "2026-12-26T09:30:00.000+09:00",
+            "at": "2026-12-26T09:30:00.000+09:00",
+            "by": "jjjjjj"
+          }
+        ],
+        "theirs": [
+          {
+            "place": "food",
+            "moves": [
+              {
+                "from": "free",
+                "a": 5000
+              }
+            ],
+            "told": "2026-12-26T09:10:00.000+09:00",
+            "at": "2026-12-26T09:10:00.000+09:00",
+            "by": "tttttt"
+          }
+        ]
+      },
+      "expected": {
+        "places": {
+          "food": {
+            "left": -5000,
+            "over": 5000,
+            "covered": 5000,
+            "toCover": 0,
+            "state": "covered"
+          },
+          "free": {
+            "left": 20000,
+            "decided": 5000,
+            "kept": 0,
+            "toDecide": 15000,
+            "state": "to decide"
+          }
+        },
+        "moves": [
+          {
+            "k": "move",
+            "date": "2026-12-24",
+            "a": 5000,
+            "place": "free",
+            "place2": "food",
+            "told": "2026-12-26T09:10:00.000+09:00"
+          }
+        ],
+        "gaveWay": [
+          {
+            "id": "pe:2026-12-24:free",
+            "by": "jjjjjj"
+          }
+        ],
+        "notice": {
+          "to": "jjjjjj",
+          "text": "An answer from your other device was used. Check it."
+        }
+      },
+      "why": "Free to spend gives 18,000 (to the trip, Jun 09:30) + 5,000 (Food's cover, Tess 09:10) = 23,000 of 20,000. Jun's answer is the newer, so it gives way [P3]: the cover stands, Free to spend has 20,000 - 5,000 = 15,000 to decide again, and Jun's phone shows the notice.",
+      "decisions": [
+        "P3",
+        "P2",
+        "O2"
+      ]
+    },
+    {
+      "id": "pe-44",
+      "question": "found_later",
+      "title": "Spending found later never comes out of what was kept for the next period",
+      "input": {
+        "periodTo": "2026-12-24",
+        "places": [
+          {
+            "id": "food",
+            "left": 20000
+          }
+        ],
+        "answers": [
+          {
+            "place": "food",
+            "keep": true,
+            "a": 10000,
+            "told": "2026-12-26T09:00:00.000+09:00"
+          },
+          {
+            "place": "food",
+            "to": "trip",
+            "a": 5000,
+            "told": "2026-12-26T09:00:00.000+09:00"
+          }
+        ],
+        "later": [
+          {
+            "place": "food",
+            "a": 12000
+          }
+        ]
+      },
+      "expected": {
+        "places": {
+          "food": {
+            "left": 8000,
+            "given": 15000,
+            "kept": 10000,
+            "toDecide": 0,
+            "foundLater": 7000,
+            "covered": 0,
+            "toCover": 7000,
+            "coverFrom": [
+              "waiting",
+              "free"
+            ]
+          }
+        },
+        "moves": [
+          {
+            "k": "move",
+            "date": "2026-12-24",
+            "a": 5000,
+            "place": "food",
+            "place2": "trip",
+            "told": "2026-12-26T09:00:00.000+09:00"
+          }
+        ]
+      },
+      "why": "Food had 20,000 left: 10,000 kept for the next period, 5,000 to the trip, 5,000 to decide. A statement read later adds 12,000 of food dated in that period: 20,000 - 12,000 = 8,000 really left. The 5,000 to decide is used first; the 10,000 kept stays kept [P5]. So 12,000 - 5,000 = 7,000 is found later, and at the check-in the person picks whether it comes from Waiting or this period's Free to spend [P5].",
+      "decisions": [
+        "P5",
+        "O",
+        "L period_end q6"
+      ]
+    },
+    {
+      "id": "pe-45",
+      "question": "found_later",
+      "title": "The person covers the found-later spending from Waiting and from Free to spend",
+      "input": {
+        "periodTo": "2026-12-24",
+        "places": [
+          {
+            "id": "food",
+            "left": 20000
+          }
+        ],
+        "answers": [
+          {
+            "place": "food",
+            "keep": true,
+            "a": 10000,
+            "told": "2026-12-26T09:00:00.000+09:00"
+          },
+          {
+            "place": "food",
+            "to": "trip",
+            "a": 5000,
+            "told": "2026-12-26T09:00:00.000+09:00"
+          }
+        ],
+        "later": [
+          {
+            "place": "food",
+            "a": 12000
+          }
+        ],
+        "covers": [
+          {
+            "place": "food",
+            "from": "waiting",
+            "a": 4000,
+            "date": "2027-01-08",
+            "told": "2027-01-08T20:00:00.000+09:00"
+          },
+          {
+            "place": "food",
+            "from": "free",
+            "a": 3000,
+            "date": "2027-01-08",
+            "told": "2027-01-08T20:00:00.000+09:00"
+          }
+        ]
+      },
+      "expected": {
+        "places": {
+          "food": {
+            "left": 8000,
+            "given": 15000,
+            "kept": 10000,
+            "toDecide": 0,
+            "foundLater": 7000,
+            "covered": 7000,
+            "toCover": 0
+          }
+        },
+        "moves": [
+          {
+            "k": "move",
+            "date": "2026-12-24",
+            "a": 5000,
+            "place": "food",
+            "place2": "trip",
+            "told": "2026-12-26T09:00:00.000+09:00"
+          },
+          {
+            "k": "move",
+            "date": "2027-01-08",
+            "a": 4000,
+            "place": "waiting",
+            "place2": "food",
+            "told": "2027-01-08T20:00:00.000+09:00"
+          },
+          {
+            "k": "move",
+            "date": "2027-01-08",
+            "a": 3000,
+            "place": "free",
+            "place2": "food",
+            "told": "2027-01-08T20:00:00.000+09:00"
+          }
+        ]
+      },
+      "why": "As pe-44, 7,000 is found later. At the check-in on Fri 8 Jan the person picks 4,000 from Waiting and 3,000 from this period's Free to spend [P5]: 4,000 + 3,000 = 7,000 covered, 0 left to cover. Each is a move into Food dated the check-in day; the 10,000 kept is untouched.",
+      "decisions": [
+        "P5",
+        "O",
+        "L period_end q4"
+      ]
+    },
+    {
+      "id": "pe-46",
+      "question": "found_later",
+      "title": "Found-later spending cannot be covered from the money kept for the next period",
+      "input": {
+        "periodTo": "2026-12-24",
+        "places": [
+          {
+            "id": "food",
+            "left": 20000
+          }
+        ],
+        "answers": [
+          {
+            "place": "food",
+            "keep": true,
+            "a": 10000,
+            "told": "2026-12-26T09:00:00.000+09:00"
+          },
+          {
+            "place": "food",
+            "to": "trip",
+            "a": 5000,
+            "told": "2026-12-26T09:00:00.000+09:00"
+          }
+        ],
+        "later": [
+          {
+            "place": "food",
+            "a": 12000
+          }
+        ],
+        "covers": [
+          {
+            "place": "food",
+            "from": "food",
+            "a": 7000,
+            "date": "2027-01-08",
+            "told": "2027-01-08T20:00:00.000+09:00"
+          }
+        ]
+      },
+      "expected": {
+        "refused": {
+          "place": "food",
+          "from": "food"
+        }
+      },
+      "why": "The only places found-later spending may come from are Waiting and this period's Free to spend [P5]. Food's own money (the 10,000 kept for the next period) is not one of them, so the cover is refused.",
+      "decisions": [
+        "P5"
+      ]
+    },
+    {
+      "id": "pe-47",
+      "question": "found_later",
+      "title": "Covers that add up to more than was found later are refused",
+      "input": {
+        "periodTo": "2026-12-24",
+        "places": [
+          {
+            "id": "food",
+            "left": 20000
+          }
+        ],
+        "answers": [
+          {
+            "place": "food",
+            "keep": true,
+            "a": 10000,
+            "told": "2026-12-26T09:00:00.000+09:00"
+          },
+          {
+            "place": "food",
+            "to": "trip",
+            "a": 5000,
+            "told": "2026-12-26T09:00:00.000+09:00"
+          }
+        ],
+        "later": [
+          {
+            "place": "food",
+            "a": 12000
+          }
+        ],
+        "covers": [
+          {
+            "place": "food",
+            "from": "waiting",
+            "a": 7000,
+            "date": "2027-01-08",
+            "told": "2027-01-08T20:00:00.000+09:00"
+          },
+          {
+            "place": "food",
+            "from": "free",
+            "a": 1000,
+            "date": "2027-01-08",
+            "told": "2027-01-08T20:00:00.000+09:00"
+          }
+        ]
+      },
+      "expected": {
+        "refused": {
+          "place": "food",
+          "left": 7000
+        }
+      },
+      "why": "7,000 + 1,000 = 8,000 covers 7,000 found later (pe-44): refused, with the amount to cover shown, as answers adding up to more than is left are [L period_end q10, P5].",
+      "decisions": [
+        "P5",
+        "L period_end q10"
       ]
     }
   ],

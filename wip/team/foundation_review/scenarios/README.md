@@ -47,9 +47,11 @@ Written 23 Nov 2026 from foundation_review/RECOMMENDATION.md, life_walks_salarie
 | home_currency_dated.json | The home currency changes from yen to pesos on a date; the yen history stays in yen (O6). | JPY, then PHP | 5 |
 | country_per_account.json | A Japanese card follows Japan's holidays while home follows the Philippines' (O, watch item). | PHP (+JPY) | 1 |
 | check_gain.json | A check-in figure far above what the app had is asked about (O, watch item). | JPY | 3 |
+| goal_removed.json | A goal removed with money in it: the money waits in Waiting "to place" and stays out of safe to spend; placing it moves it (P1; final review S7). | JPY | 5 |
+| account_closed.json | An old bank closed: its money moved out by the transfer the closing asks for, its bill ends on the closing day (P6). | JPY | 7 |
 | check_specs.js | Checks every file's shape and that every `why` adds up to its expected figure. `node check_specs.js` | | |
 
-Total: 356 asks (the first eight files: 180; the H files: 64; the I files: 34; the J files: 21; the K, L and M files: 22; the O files: 35).
+Total: 368 asks (the first eight files: 180; the H files: 64; the I files: 34; the J files: 21; the K, L and M files: 22; the O files: 35; the P files: 12).
 
 ### The review v3 situations and where each one is now
 
@@ -110,19 +112,24 @@ The reviewer's own scripts (final_review_1.md) are in `../ref/final_review_situa
 | S1. A printed running balance; a spend that logs itself written after a check | O1 | import_after_check iac-07 to iac-10 |
 | S2. A closed card's credit sent to the bank (a), a cash advance (b), cash taken at an ATM | O5 | card_out out-01 to out-10 |
 | S3. Food bought on the card, the line on the bank or on the card | O4 | line_on_card line-01 to line-06 |
-| S4. Two phones tick the same pay; the period end answered on both | O2 | rules mg-50, mg-54, mg-55, pe-36, pe-37 |
+| S4. Two phones tick the same pay; the period end answered on both | O2, P2, P3 | rules mg-50, mg-54, mg-55, pe-36, pe-37, pe-40 to pe-43 |
 | S5. The three-letter session part | O3 | rules mg-58, mg-59, mg-61 |
-| S5. A goal deleted with money in it | O (watch) | not tested: see SCHEMA_V3 section 14 (the move to Waiting does not stop the headline jump) |
-| S5. Pay rhythm changed mid-year | O (watch) | rules units-59 (the count); the per-pay amount is in SCHEMA_V3 section 14 |
+| S5 (S7 in final_review_1). A goal deleted with money in it | O (watch), P1 | goal_removed gone-01 to gone-05 |
+| S5. Pay rhythm changed mid-year | O (watch), P4 | rules units-59 (the count), units-67 to units-69 (each rule its own months) |
 | S5. Rent paid twice then refunded; pay split across two accounts | sound | none needed |
 | S6. A spend that logs itself written on two devices | O2 | rules mg-51, mg-56 |
 | Home currency changed over time | O6 | home_currency_dated cur-01 to cur-05; rules units-60 to units-62 |
 | One holiday table for all accounts | O (watch) | country_per_account ctry-01 |
 | A wrong figure typed at a check-in | O (watch) | check_gain gain-01 to gain-03 |
 | A refund given back to its line | O (watch) | line_on_card line-04, line-05 |
-| An old statement read after a period-end answer | O (watch) | rules pe-38, pe-39 |
+| An old statement read after a period-end answer | O (watch), P5 | rules pe-38, pe-39, pe-44 to pe-47 |
+| An account closed | O (watch), P6 | account_closed close-01 to close-07; rules acc-01 to acc-06 |
 | The move's ₱ and the raw `frozen3831` | O (watch) | rules units-63 to units-66 |
 | A period started without the pay, on two phones | O2 | rules mg-53, mg-57 |
+
+### What the P files add to the way a file is written
+- A goal may carry **removed** (a date): from that day it is no longer a place, and what it held waits in Waiting marked "to place", out of safe to spend (P1). A `set_aside` may carry **to_place_of** (the removed goal's id): it places that much of the money to place in its goal; a `set_aside` without it comes from the account's other money.
+- An account may carry **closed** (a date): from that day its schedules (paid from it, landing in it, or a transfer into it) expect nothing due after it, it has no minimum and is not counted in safe to spend. The model refuses (throws) a closed account that still holds money on that day: the file moves it out with a `transfer` dated the closing day (P6).
 
 ### What the O files add to the way a file is written
 - An imported line may carry **bal**: the running balance the statement prints after that line (`src.bal`). On a check's day it decides whether the line is inside the check (O1).

@@ -248,6 +248,13 @@ function lookahead(sc, asOf, opts = {}) {
     const kind = s.kind === 'transfer' ? 'transfer' : s.kind === 'auto_spend' ? 'auto' : 'bill';
     items.push(...occurrences(s, kind, calOf(s.account), earliest, farEnd, cur(s.account)));
   }
+  // [P6] A closed account's schedules (paid from it, landing in it, or a transfer into it) end on the closing
+  // day: nothing due after it is expected. The closing is known once its day is.
+  const closedOn = id => acct[id] && acct[id].closed && dayNum(acct[id].closed) <= knownTo ? dayNum(acct[id].closed) : null;
+  for (let i = items.length - 1; i >= 0; i--) {
+    const ends = [closedOn(items[i].acct), closedOn(items[i].to)].filter(x => x !== null);
+    if (ends.length && items[i].due > Math.min(...ends)) items.splice(i, 1);
+  }
   // [L matching q1, q2] An imported line that replaced no typed line and settles nothing settles the first
   // unsettled pay or bill of its account and direction with the exact amount (or within the schedule's `vary`),
   // when it lands from 5 working days before the item's landing day to the end of its posting window.
@@ -639,6 +646,16 @@ function lookahead(sc, asOf, opts = {}) {
       if ((e.kind === 'spend' || e.kind === 'bill_paid') && fromPlace(e) === g.id) amt -= e.a;   // [H7] paying from a place
     }
     amt = Math.max(0, amt);
+    // [P1] A place removed with money in it moved that money to Waiting, marked "to place": it stays out of
+    // safe to spend until the person places it. A set aside naming it (`to_place_of`) places part of it in
+    // another place; what is still to place is held in the walk like a kept place.
+    if (g.removed && dayNum(g.removed) <= knownTo) {
+      const placed = live().filter(e => e.kind === 'set_aside' && e.to_place_of === g.id).reduce((t, e) => t + e.a, 0);
+      const toPlace = Math.max(0, amt - placed);
+      (res.toPlace = res.toPlace || {})[g.id] = { amount: toPlace, account: g.kept_in };
+      if (toPlace) (keptIn[g.kept_in] = keptIn[g.kept_in] || []).push({ id: g.id, name: g.name, label: g.name + "'s money, in Waiting to place", amount: toPlace });
+      continue;
+    }
     // [E5, H7] A place that refills is next due on the next occurrence of its bill that is not settled yet.
     const nextOf = g.for_bill && items.find(o => o.sid === g.for_bill && !o.settled);
     const due = g.refill && nextOf ? dayStr(nextOf.due) : g.due || (nextOf ? dayStr(nextOf.due) : null);
@@ -749,7 +766,7 @@ function lookahead(sc, asOf, opts = {}) {
     const why = [{ label: acct[id].name + ' today', amount: start }];
     let bal = start;
     const placeLeft = {};
-    for (const g of keptIn[id] || []) { bal -= g.amount; placeLeft[g.id] = g.amount; why.push({ label: g.name + ', kept in it', amount: -g.amount }); }
+    for (const g of keptIn[id] || []) { bal -= g.amount; placeLeft[g.id] = g.amount; why.push({ label: g.label || g.name + ', kept in it', amount: -g.amount }); }
     if (periodStream) for (const l of (plan.lines || []).filter(x => x.acct === id && x.left)) { bal -= l.left; why.push({ label: l.name + ' left this period', amount: -l.left }); }   // [B1]; no fixed pay: by day instead [B4]
     const steps = [];   // { day, order, amount, label }  order: 0 income, 1 bills, 2 planned spending
     for (const o of items) {
@@ -788,12 +805,16 @@ function lookahead(sc, asOf, opts = {}) {
   }
 
   for (const id in banks) {
-    const a = acct[id], minimum = m(a.minimum || 0, id);
+    // [P6] An account is closed only when its final figure is zero or moved out by the transfer the closing
+    // asks for; a closed account holds nothing, has no minimum and is not counted in safe to spend.
+    const closed = closedOn(id) !== null;
+    if (closed && banks[id].bank !== 0) throw new Error(`${acct[id].name} is closed with ${fmt(banks[id].bank, cur(id))} in it: a closing is refused unless its figure is zero or moved out [P6]`);
+    const a = acct[id], minimum = closed ? 0 : m(a.minimum || 0, id);
     const w = walk(id, horizon, minimum);
     const r = res.accounts[id] = {
       bank: banks[id].bank, asOf: dayStr(banks[id].asOfDay), ageDays: today - banks[id].asOfDay,   // [A1, F24]
       currency: a.currency, minimum, lowest: w.lowest, lowestDay: dayStr(w.lowestDay), headroom: w.headroom,
-      spendFrom: a.spend_from != null ? a.spend_from : !!SPEND_TYPES[a.kind] && a.currency === home,
+      spendFrom: closed ? false : a.spend_from != null ? a.spend_from : !!SPEND_TYPES[a.kind] && a.currency === home,
       why: whyText(w.why, w.headroom, a.currency), fillers: banks[id].fillers };
     if (w.headroom < 0) res.warnings.push({ account: id, code: 'below_minimum', day: r.lowestDay, short: -w.headroom, text: `${a.name} goes ${fmt(-w.headroom, a.currency)} below its minimum on ${r.lowestDay}` });   // [F9]
     const later = walk(id, today + LATER_ON_DAYS, 0);   // [B11]
