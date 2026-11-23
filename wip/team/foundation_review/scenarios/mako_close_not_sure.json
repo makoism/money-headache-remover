@@ -1,0 +1,96 @@
+{
+  "life": "mako_close_not_sure",
+  "title": "Mako's shape with both card close days \"not sure\": one with a typed last statement, one without (decision H4, review v3 situation 5, E10)",
+  "story": "Mako's shape: one main bank, pay on the 10th (main job 250,000 and side job 50,000), rent on the 27th, a trip goal kept in the bank, two cards paid in full from the bank on the 10th and 11th. He does not know either card's close day (the setup default, A8). Card A: he typed the last statement at setup (60,000, closed 15 Nov, not paid yet); 75,000 is owed now. Card B: no statement typed; 30,000 is owed now. H4: on each payment day everything owed, less payments since, is due. Set up Fri 20 Nov 2026. January 2027: pay lands Fri the 8th; the 11th is a holiday, so both cards are taken Tue 12 Jan. He does not record the January card payments. Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2026-11-20", "to": "2027-02-20" },
+  "holidays": {
+    "country": "JP",
+    "dates": [
+      { "date": "2026-11-23", "name": "Labour Thanksgiving Day" },
+      { "date": "2027-01-01", "name": "New Year's Day" },
+      { "date": "2027-01-11", "name": "Coming of Age Day" }
+    ],
+    "bank_closed": [
+      { "date": "2026-12-31", "name": "banks closed for the New Year" },
+      { "date": "2027-01-02", "name": "banks closed for the New Year" },
+      { "date": "2027-01-03", "name": "banks closed for the New Year" }
+    ]
+  },
+  "accounts": [
+    { "id": "bank", "name": "Main bank", "kind": "bank", "currency": "JPY", "owner": "Mako", "minimum": 20000,
+      "opening": { "date": "2026-11-20", "amount": 400000 } },
+    { "id": "card_a", "name": "Card A", "kind": "card", "currency": "JPY", "owner": "Mako", "statement_close_day": null,
+      "payment": { "day": 10, "from": "bank", "pays": "in full", "weekend_holiday": "move later" },
+      "opening": { "date": "2026-11-20", "statement": { "closed": "2026-11-15", "amount": 60000, "paid": false }, "current": 75000,
+        "note": "The last statement as he typed it; 75,000 is everything owed now." } },
+    { "id": "card_b", "name": "Card B", "kind": "card", "currency": "JPY", "owner": "Mako", "statement_close_day": null,
+      "payment": { "day": 11, "from": "bank", "pays": "in full", "weekend_holiday": "move later" },
+      "opening": { "date": "2026-11-20", "current": 30000, "note": "No statement typed." } }
+  ],
+  "income": [
+    { "id": "pay_main", "name": "Main job", "account": "bank", "owner": "Mako", "currency": "JPY", "amount": 250000,
+      "schedule": { "frequency": "monthly", "day": 10 }, "weekend_holiday": "move earlier", "starts_period": true },
+    { "id": "pay_side", "name": "Side job", "account": "bank", "owner": "Mako", "currency": "JPY", "amount": 50000,
+      "schedule": { "frequency": "monthly", "day": 10 }, "weekend_holiday": "move earlier", "starts_period": false }
+  ],
+  "bills": [
+    { "id": "rent", "name": "Rent", "account": "bank", "amount": 80000, "schedule": { "frequency": "monthly", "day": 27 }, "weekend_holiday": "move later" }
+  ],
+  "goals": [
+    { "id": "trip", "name": "Trip", "kept_in": "bank", "owner": "Mako", "opening": { "date": "2026-11-20", "amount": 100000 } }
+  ],
+  "landing_dates": {
+    "card_a": { "2026-12-10": "2026-12-10", "2027-01-10": "2027-01-12", "2027-02-10": "2027-02-10" },
+    "card_b": { "2026-12-11": "2026-12-11", "2027-01-11": "2027-01-12", "2027-02-11": "2027-02-11" }
+  },
+  "events": [
+    { "id": "k01", "date": "2026-11-27", "kind": "bill_paid", "account": "bank", "amount": 80000, "settles": "rent@2026-11-27" },
+    { "id": "k02", "date": "2026-12-01", "kind": "spend", "account": "card_a", "amount": 20000 },
+    { "id": "k03", "date": "2026-12-05", "kind": "spend", "account": "card_b", "amount": 10000 },
+    { "id": "k04", "date": "2026-12-10", "kind": "pay_in", "account": "bank", "amount": 250000, "settles": "pay_main@2026-12-10" },
+    { "id": "k05", "date": "2026-12-10", "kind": "pay_in", "account": "bank", "amount": 50000, "settles": "pay_side@2026-12-10" },
+    { "id": "k06", "date": "2026-12-10", "kind": "card_payment", "from": "bank", "card": "card_a", "amount": 95000, "settles": "card_a@2026-12-10", "note": "everything owed: 75,000 + 20,000" },
+    { "id": "k07", "date": "2026-12-11", "kind": "card_payment", "from": "bank", "card": "card_b", "amount": 40000, "settles": "card_b@2026-12-11", "note": "everything owed: 30,000 + 10,000" },
+    { "id": "k08", "date": "2026-12-14", "kind": "spend", "account": "card_a", "amount": 40000 },
+    { "id": "k09", "date": "2026-12-20", "kind": "spend", "account": "card_b", "amount": 15000 },
+    { "id": "k10", "date": "2026-12-28", "kind": "bill_paid", "account": "bank", "amount": 80000, "settles": "rent@2026-12-27" },
+    { "id": "k11", "date": "2027-01-08", "kind": "pay_in", "account": "bank", "amount": 250000, "settles": "pay_main@2027-01-10" },
+    { "id": "k12", "date": "2027-01-08", "kind": "pay_in", "account": "bank", "amount": 50000, "settles": "pay_side@2027-01-10" }
+  ],
+  "asks": [
+    { "id": "notsure-01", "date": "2026-11-20", "question": "card_due", "account": "card_a", "expected": { "amount": 75000, "payment_date": "2026-12-10", "statement": "all owed" },
+      "why": "60,000 (last statement, typed at setup) + 15,000 (posted since) = 75,000", "note": "Close day not sure: everything owed is due on the next payment day (H4). Before H4: 60,000." },
+    { "id": "notsure-02", "date": "2026-11-20", "question": "card_due", "account": "card_b", "expected": { "amount": 30000, "payment_date": "2026-12-11", "statement": "all owed" },
+      "why": "30,000 (owed now, no statement typed) = 30,000", "note": "Before H4 the model crashed with no statement typed." },
+    { "id": "notsure-03", "date": "2026-11-20", "question": "due_before_next_pay",
+      "expected": { "items": [ { "item": "rent@2026-11-27", "lands": "2026-11-27", "amount": 80000 } ], "total": 80000 },
+      "why": "80,000 (rent 27 Nov) = 80,000", "note": "Both cards are paid on or after the 10 Dec pay." },
+    { "id": "notsure-04", "date": "2026-11-20", "question": "safe_to_spend", "account": "bank", "expected": 200000,
+      "why": "400,000 (Main bank today) - 100,000 (Trip, kept in it) - 80,000 (Rent 27 Nov) - 20,000 (minimum) = 200,000",
+      "note": "On 10 Dec both pays (300,000) come in before card A (75,000), and card B (30,000) is taken on 11 Dec, so the lowest point is 27 Nov." },
+    { "id": "notsure-05", "date": "2026-12-20", "question": "card_due", "account": "card_a", "expected": { "amount": 40000, "payment_date": "2027-01-12", "statement": "all owed" },
+      "why": "75,000 (owed at setup) + 20,000 (1 Dec) - 95,000 (paid 10 Dec) + 40,000 (14 Dec) = 40,000", "note": "Before H4 no card item was made after the first payment." },
+    { "id": "notsure-06", "date": "2026-12-20", "question": "card_due", "account": "card_b", "expected": { "amount": 15000, "payment_date": "2027-01-12", "statement": "all owed" },
+      "why": "30,000 (owed at setup) + 10,000 (5 Dec) - 40,000 (paid 11 Dec) + 15,000 (20 Dec) = 15,000" },
+    { "id": "notsure-07", "date": "2027-01-09", "question": "due_before_next_pay",
+      "expected": { "items": [
+        { "item": "card_a@2027-01-10", "lands": "2027-01-12", "amount": 40000 },
+        { "item": "card_b@2027-01-11", "lands": "2027-01-12", "amount": 15000 },
+        { "item": "rent@2027-01-27", "lands": "2027-01-27", "amount": 80000 } ], "total": 135000 },
+      "why": "40,000 (card A, all owed) + 15,000 (card B, all owed) + 80,000 (rent 27 Jan) = 135,000", "note": "Before H4 both cards were left out." },
+    { "id": "notsure-08", "date": "2027-01-09", "question": "safe_to_spend", "account": "bank", "expected": 450000,
+      "why": "705,000 (Main bank today) - 100,000 (Trip, kept in it) - 40,000 (Card A, all owed, paid 12 Jan) - 15,000 (Card B, all owed, paid 12 Jan) - 80,000 (Rent 27 Jan) - 20,000 (minimum) = 450,000",
+      "note": "Bank today: 400,000 - 80,000 + 300,000 - 95,000 - 40,000 - 80,000 + 300,000 = 705,000. The 10 Feb pays come before rent on 1 Mar." },
+    { "id": "notsure-09", "date": "2027-01-14", "question": "not_seen_yet",
+      "expected": { "items": [
+        { "item": "card_a@2027-01-10", "lands": "2027-01-12", "amount": 40000, "direction": "out" },
+        { "item": "card_b@2027-01-11", "lands": "2027-01-12", "amount": 15000, "direction": "out" } ], "money_in": 0, "money_out": 55000 },
+      "why": { "money_in": "none = 0", "money_out": "40,000 (card A, due Tue 12 Jan) + 15,000 (card B, due Tue 12 Jan; the window ended Wed 13 Jan) = 55,000" } },
+    { "id": "notsure-10", "date": "2027-01-14", "question": "check_in_list",
+      "expected": { "items": [
+        { "item": "card_a@2027-01-10", "lands": "2027-01-12", "amount": 40000 },
+        { "item": "card_b@2027-01-11", "lands": "2027-01-12", "amount": 15000 } ], "total": 55000 },
+      "why": "40,000 (card A) + 15,000 (card B) = 55,000", "note": "Review situation 5c: the check-in now asks about the card payments." }
+  ]
+}

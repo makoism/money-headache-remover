@@ -1,0 +1,46 @@
+{
+  "life": "pay_day_moves",
+  "title": "Pay moves from the 10th to the 25th from January (review v3 situation 8, decision H2)",
+  "story": "One bank in Japan, set up Fri 20 Nov 2026. Pay of 250,000 on the 10th, moved to the working day before; from 1 Jan 2027 the employer pays on the 25th instead. Rent of 80,000 on the 27th, moved later. H2: a schedule changes from a date; the change never rewrites occurrences before it, and an occurrence is named by its schedule and its due date before any move, so the settled 10 Dec pay keeps its name. Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2026-11-20", "to": "2027-02-28" },
+  "holidays": {
+    "country": "JP",
+    "dates": [
+      { "date": "2026-11-23", "name": "Labour Thanksgiving Day" },
+      { "date": "2027-01-01", "name": "New Year's Day" },
+      { "date": "2027-01-11", "name": "Coming of Age Day" }
+    ],
+    "bank_closed": []
+  },
+  "accounts": [
+    { "id": "bank", "name": "Bank", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2026-11-20", "amount": 300000 } }
+  ],
+  "income": [
+    { "id": "pay", "name": "Pay", "account": "bank", "currency": "JPY", "amount": 250000,
+      "schedule": { "frequency": "monthly", "day": 10 },
+      "changes": [ { "from": "2027-01-01", "schedule": { "frequency": "monthly", "day": 25 } } ],
+      "weekend_holiday": "move earlier", "starts_period": true }
+  ],
+  "bills": [
+    { "id": "rent", "name": "Rent", "account": "bank", "amount": 80000, "schedule": { "frequency": "monthly", "day": 27 }, "weekend_holiday": "move later" }
+  ],
+  "goals": [],
+  "events": [
+    { "id": "p01", "date": "2026-11-27", "kind": "bill_paid", "account": "bank", "amount": 80000, "settles": "rent@2026-11-27" },
+    { "id": "p02", "date": "2026-12-10", "kind": "pay_in", "account": "bank", "amount": 250000, "settles": "pay@2026-12-10" },
+    { "id": "p03", "date": "2026-12-28", "kind": "bill_paid", "account": "bank", "amount": 80000, "settles": "rent@2026-12-27" },
+    { "id": "p04", "date": "2027-01-25", "kind": "pay_in", "account": "bank", "amount": 250000, "settles": "pay@2027-01-25" }
+  ],
+  "asks": [
+    { "id": "move-01", "date": "2026-12-20", "question": "days_to_next_pay", "expected": { "days": 36, "next_pay": "2027-01-25", "item": "pay@2027-01-25" },
+      "why": "2027-01-25 - 2026-12-20 = 36", "note": "The January pay is under the new rule. The model before H2 had one rule only: 8 Jan." },
+    { "id": "move-02", "date": "2027-01-05", "question": "days_to_next_pay", "expected": { "days": 20, "next_pay": "2027-01-25", "item": "pay@2027-01-25" },
+      "why": "2027-01-25 - 2027-01-05 = 20" },
+    { "id": "move-03", "date": "2027-01-26", "question": "not_seen_yet", "expected": { "items": [], "money_in": 0, "money_out": 0 },
+      "why": { "money_in": "none = 0", "money_out": "none = 0" },
+      "note": "No pay is made up on 25 Nov or 25 Dec, and no 10 Jan pay is left waiting. Before H2: pay@2027-01-10 not seen yet." },
+    { "id": "move-04", "date": "2027-01-26", "question": "days_to_next_pay", "expected": { "days": 30, "next_pay": "2027-02-25", "item": "pay@2027-02-25" },
+      "why": "2027-02-25 - 2027-01-26 = 30" }
+  ]
+}

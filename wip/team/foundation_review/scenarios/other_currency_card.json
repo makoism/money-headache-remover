@@ -1,0 +1,31 @@
+{
+  "life": "other_currency_card",
+  "title": "A dollar card paid from a yen bank (review v3 situation 6, decision H5)",
+  "story": "A yen bank and a dollar card paid in full from it, set up Fri 20 Nov 2026. The card closes on the 15th and is paid on the 5th of the next month (moved later). Its 500.00 statement of 15 Nov is paid on Mon 7 Dec: 75,000 yen left the bank and 500.00 dollars arrived on the card. 120.00 is spent on 10 Dec. H5: a payment between two currencies carries what left and what arrived. Until stage 2 the walk warns when a card is paid from an account in another currency and does not take the card off in the wrong unit. No holidays are listed for this test. Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2026-11-20", "to": "2026-12-31" },
+  "holidays": { "country": "made up, none listed", "dates": [], "bank_closed": [] },
+  "accounts": [
+    { "id": "bank", "name": "Bank", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2026-11-20", "amount": 300000 } },
+    { "id": "usd", "name": "Dollar card", "kind": "card", "currency": "USD", "statement_close_day": 15,
+      "payment": { "day": 5, "months_after_close": 1, "from": "bank", "pays": "in full", "weekend_holiday": "move later" },
+      "opening": { "date": "2026-11-20", "statement": { "closed": "2026-11-15", "amount": 500.00, "paid": false }, "current": 500.00 } }
+  ],
+  "income": [],
+  "bills": [],
+  "goals": [],
+  "events": [
+    { "id": "u01", "date": "2026-12-07", "kind": "card_payment", "from": "bank", "card": "usd", "amount_out": 75000, "amount_in": 500.00, "settles": "usd@2026-12-05", "note": "75,000 yen left the bank, 500.00 dollars arrived on the card" },
+    { "id": "u02", "date": "2026-12-10", "kind": "spend", "account": "usd", "amount": 120.00 }
+  ],
+  "asks": [
+    { "id": "fx-01", "date": "2026-11-21", "question": "safe_to_spend", "account": "bank", "expected": 300000,
+      "why": "300,000 (bank today; the dollar card's 500.00 is not taken off as yen, see the warning) = 300,000", "note": "Before H5 the walk took 500.00 dollars off as 50,000 yen." },
+    { "id": "fx-02", "date": "2026-11-21", "question": "warnings", "expected": [ { "account": "bank", "code": "card_other_currency" } ],
+      "why": "the dollar card is paid from the yen bank: the yen amount is not known until it is paid" },
+    { "id": "fx-03", "date": "2026-12-08", "question": "bank_today", "account": "bank", "expected": 225000,
+      "why": "300,000 (opening) - 75,000 (the yen that left for the 500.00 card payment, 7 Dec) = 225,000" },
+    { "id": "fx-04", "date": "2026-12-16", "question": "owed_now", "account": "usd", "expected": 120.00,
+      "why": "500.00 (statement) - 500.00 (arrived 7 Dec) + 120.00 (10 Dec) = 120.00" }
+  ]
+}

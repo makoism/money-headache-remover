@@ -1,0 +1,51 @@
+{
+  "life": "split_auto_est",
+  "title": "The opening split by place, a gym fee that logs itself, and a rough spend replaced by its statement line (decision H7)",
+  "story": "One bank, set up Fri 20 Nov 2026 with 400,000, after pay. Setup splits it by place (B2, B6): 100,000 kept for a trip, 30,000 left for food this period, 50,000 left in Free to spend, the rest waiting. The plan gives food 60,000 and Free to spend 80,000 each month. Pay of 250,000 on the 10th, moved earlier; rent of 80,000 on the 27th, moved later; a gym fee of 8,000 on the 1st (moved later) logs itself (autoSpend). On Sun 22 Nov groceries are typed as roughly 12,000; the statement line of 12,600 on Tue 24 Nov replaces it (Mon 23 Nov is a holiday, so it is inside the one working day posting window, and within 10%). Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2026-11-20", "to": "2027-01-10" },
+  "holidays": { "country": "JP", "dates": [ { "date": "2026-11-23", "name": "Labour Thanksgiving Day" } ], "bank_closed": [] },
+  "accounts": [
+    { "id": "bank", "name": "Bank", "kind": "bank", "currency": "JPY", "minimum": 0,
+      "opening": { "date": "2026-11-20", "amount": 400000, "split": { "goals": { "trip": 100000 }, "lines": { "food": 30000 }, "free": 50000 },
+        "note": "220,000 waiting: 400,000 - 100,000 - 30,000 - 50,000" } }
+  ],
+  "plan": {
+    "lines": [ { "id": "food", "name": "Food", "account": "bank", "per": "month", "amount": 60000 } ],
+    "free": { "account": "bank", "per": "month", "amount": 80000 }
+  },
+  "income": [
+    { "id": "pay", "name": "Pay", "account": "bank", "currency": "JPY", "amount": 250000, "schedule": { "frequency": "monthly", "day": 10 }, "weekend_holiday": "move earlier", "starts_period": true }
+  ],
+  "bills": [
+    { "id": "rent", "name": "Rent", "account": "bank", "amount": 80000, "schedule": { "frequency": "monthly", "day": 27 }, "weekend_holiday": "move later" },
+    { "id": "gym", "kind": "auto_spend", "name": "Gym", "account": "bank", "amount": 8000, "schedule": { "frequency": "monthly", "day": 1 }, "weekend_holiday": "move later" }
+  ],
+  "goals": [
+    { "id": "trip", "name": "Trip", "kept_in": "bank" }
+  ],
+  "events": [
+    { "id": "a01", "date": "2026-11-22", "kind": "spend", "account": "bank", "amount": 12000, "line": "food", "est": true, "note": "groceries, typed as rough" },
+    { "id": "a02", "date": "2026-11-24", "kind": "spend", "account": "bank", "amount": 12600, "line": "food", "source": "statement", "note": "the statement line for the same groceries" },
+    { "id": "a03", "date": "2026-11-25", "kind": "spend", "account": "bank", "amount": 20000, "line": "free", "note": "dinner out" },
+    { "id": "a04", "date": "2026-11-27", "kind": "bill_paid", "account": "bank", "amount": 80000, "settles": "rent@2026-11-27" },
+    { "id": "a05", "date": "2026-12-10", "kind": "pay_in", "account": "bank", "amount": 250000, "settles": "pay@2026-12-10" },
+    { "id": "a06", "date": "2026-12-11", "kind": "spend", "account": "bank", "amount": 10000, "line": "food" }
+  ],
+  "asks": [
+    { "id": "split-01", "date": "2026-11-26", "question": "bank_today", "account": "bank", "expected": 367400,
+      "why": "400,000 (opening) - 12,600 (groceries, the statement line; the rough 12,000 it replaced no longer counts) - 20,000 (dinner) = 367,400" },
+    { "id": "split-02", "date": "2026-12-02", "question": "bank_today", "account": "bank", "expected": 279400,
+      "why": "367,400 - 80,000 (rent 27 Nov) - 8,000 (gym 1 Dec, logged itself) = 279,400" },
+    { "id": "split-03", "date": "2026-11-26", "question": "safe_to_spend", "account": "bank", "expected": 162000,
+      "why": "367,400 (Bank today) - 100,000 (Trip, kept in it) - 17,400 (Food left this period: 30,000 - 12,600) - 80,000 (Rent 27 Nov) - 8,000 (Gym 1 Dec) = 162,000",
+      "note": "On 10 Dec the pay (250,000) comes in before the next period's food and Free to spend (140,000), so the lowest point is 1 Dec." },
+    { "id": "split-04", "date": "2026-11-26", "question": "headline", "expected": 30000,
+      "why": "50,000 (Free to spend at setup) - 20,000 (dinner) = 30,000", "note": "The walk leaves 162,000; the headline is capped by what is left in Free to spend (G2)." },
+    { "id": "split-05", "date": "2026-12-11", "question": "safe_to_spend", "account": "bank", "expected": 281400,
+      "why": "519,400 (Bank today: 279,400 + 250,000 pay - 10,000 food) - 100,000 (Trip, kept in it) - 50,000 (Food left this period: 60,000 - 10,000) - 80,000 (Rent 28 Dec) - 8,000 (Gym 1 Jan) = 281,400",
+      "note": "The period started with the 10 Dec pay, so food and Free to spend start from the plan's amounts." },
+    { "id": "split-06", "date": "2026-12-11", "question": "headline", "expected": 80000,
+      "why": "80,000 (Free to spend this period, nothing spent from it yet) = 80,000" }
+  ]
+}

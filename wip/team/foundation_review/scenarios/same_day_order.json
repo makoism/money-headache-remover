@@ -1,0 +1,43 @@
+{
+  "life": "same_day_order",
+  "title": "Checks and events on the same day, and a debit that posts later (review v3 situations 2, 3 and 4, decision H1)",
+  "story": "Four made-up bank accounts, each opened on Fri 20 Nov 2026 with 300,000, so each situation has its own clean sums. Setup: the person sets up at 10:00 and logs a 7,000 dinner at 19:30 the same day. One check: a check at 09:00 on the 22nd, then a 5,000 lunch logged at 12:00. Two checks: the same, and a second check at 18:00 that shows 290,000. Debit: a 10,000 debit card spend on the 21st that the bank posts on the 24th; a check on the 22nd shows 300,000 because the bank does not show it yet. H1: a check holds the events dated before its day, and those on its day that the app heard of before it (told); a bank line with a posting date counts by that date. Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2026-11-20", "to": "2026-11-30" },
+  "holidays": { "country": "JP", "dates": [ { "date": "2026-11-23", "name": "Labour Thanksgiving Day" } ], "bank_closed": [] },
+  "accounts": [
+    { "id": "setup", "name": "Setup bank", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2026-11-20", "told": "2026-11-20T10:00", "amount": 300000 } },
+    { "id": "one_check", "name": "One check", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2026-11-20", "amount": 300000 } },
+    { "id": "two_checks", "name": "Two checks", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2026-11-20", "amount": 300000 } },
+    { "id": "debit", "name": "Debit bank", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2026-11-20", "amount": 300000 } }
+  ],
+  "income": [],
+  "bills": [],
+  "goals": [],
+  "events": [
+    { "id": "o01", "date": "2026-11-20", "told": "2026-11-20T19:30", "kind": "spend", "account": "setup", "amount": 7000, "note": "dinner, logged after setup" },
+    { "id": "o02", "date": "2026-11-21", "posted": "2026-11-24", "kind": "spend", "account": "debit", "amount": 10000, "note": "debit card; the bank posts it on the 24th" },
+    { "id": "o03", "date": "2026-11-22", "told": "2026-11-22T09:00", "kind": "check", "account": "one_check", "amount": 300000 },
+    { "id": "o04", "date": "2026-11-22", "told": "2026-11-22T12:00", "kind": "spend", "account": "one_check", "amount": 5000, "note": "lunch, after the morning check" },
+    { "id": "o05", "date": "2026-11-22", "told": "2026-11-22T09:00", "kind": "check", "account": "two_checks", "amount": 300000 },
+    { "id": "o06", "date": "2026-11-22", "told": "2026-11-22T12:00", "kind": "spend", "account": "two_checks", "amount": 5000, "note": "lunch" },
+    { "id": "o07", "date": "2026-11-22", "told": "2026-11-22T18:00", "kind": "check", "account": "two_checks", "amount": 290000 },
+    { "id": "o08", "date": "2026-11-22", "kind": "check", "account": "debit", "amount": 300000, "note": "the bank app does not show the debit yet" }
+  ],
+  "asks": [
+    { "id": "order-01", "date": "2026-11-20", "question": "bank_today", "account": "setup", "expected": 293000,
+      "why": "300,000 (typed at setup, 10:00) - 7,000 (dinner, told at 19:30, so not inside the setup figure) = 293,000", "note": "The model before H1 said 300,000: anything dated on the opening day was treated as inside it." },
+    { "id": "order-02", "date": "2026-11-22", "question": "bank_today", "account": "one_check", "expected": 295000,
+      "why": "300,000 (check at 09:00) - 5,000 (lunch, told at 12:00) = 295,000" },
+    { "id": "order-03", "date": "2026-11-22", "question": "not_explained", "account": "one_check", "expected": 0,
+      "why": "300,000 (what the events say at the 09:00 check: the opening, nothing logged since) - 300,000 (the check) = 0", "note": "Before H1 this read -5,000, less went out than logged." },
+    { "id": "order-04", "date": "2026-11-22", "from": "2026-11-22", "question": "not_explained", "account": "two_checks", "expected": 5000,
+      "why": "300,000 (09:00 check) - 5,000 (lunch at 12:00) - 290,000 (18:00 check) = 5,000", "note": "The second check's stretch starts at the first one: 22 Nov to 22 Nov (before H1 it ran from 23 Nov to 22 Nov)." },
+    { "id": "order-05", "date": "2026-11-22", "question": "bank_today", "account": "debit", "expected": 290000,
+      "why": "300,000 (check, without the debit) - 10,000 (debit of 21 Nov, posts 24 Nov, so after the check) = 290,000" },
+    { "id": "order-06", "date": "2026-11-22", "question": "not_explained", "account": "debit", "expected": 0,
+      "why": "300,000 (what the events say at the check; the debit posts after it) - 300,000 (the check) = 0" },
+    { "id": "order-07", "date": "2026-11-25", "question": "bank_today", "account": "debit", "expected": 290000,
+      "why": "300,000 (check 22 Nov) - 10,000 (debit, posted 24 Nov) = 290,000", "note": "Before H1 the debit was lost for good: 300,000." }
+  ]
+}

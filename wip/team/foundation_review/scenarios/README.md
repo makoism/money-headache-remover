@@ -18,9 +18,64 @@ Written 23 Nov 2026 from foundation_review/RECOMMENDATION.md, life_walks_salarie
 | setup_mid_month.json | Nell: sets up on the 20th after pay, rent and the card payment already went through. Deferred-debit card. Cents. | EUR | 15 |
 | couple_cash.json | Jun and Tess: one phone, three pay days across two people, joint bank, her e-wallet, household cash, a savings circle payout. | PHP | 18 |
 | away_three_weeks.json | Rina: does not open the app for three weeks; confirms what happened, then checks bank and card. | PHP | 14 |
+| late_pay.json | A pay that is late after a holiday weekend (review v3 situation 1, H8). | JPY | 8 |
+| same_day_order.json | A spend after setup on setup day, a spend after a check on the same day, two checks on one day, a debit that posts after a check (situations 2, 3, 4, H1). | JPY | 7 |
+| card_statements.json | A statement paid in part, and a refund bigger than the statement (situations 7 and 14, H3). | JPY | 5 |
+| mako_close_not_sure.json | Mako's shape with both card close days "not sure", one card with a typed last statement and one without (H4, situation 5, E10). | JPY | 10 |
+| other_currency_card.json | A dollar card paid from a yen bank (situation 6, H5). | JPY (+USD) | 4 |
+| pay_day_moves.json | Pay moves from the 10th to the 25th from January (situation 8, H2). | JPY | 4 |
+| yearly_and_places.json | A yearly tax paid from its own place that refills, bills in some months, a one-off, pay on the last working day (situation 9, H7). | JPY | 6 |
+| places_and_checked.json | Paying from a goal's money, a goal account that goes overdrawn, a skipped bill, a top-up before the e-wallet was set up (situations 10 to 13). | JPY | 7 |
+| loans_and_carried.json | A loan with a minimum rule and planned extra, a pay-later plan, a card that carries a balance (H7). | JPY | 7 |
+| split_auto_est.json | The opening split by place, a gym fee that logs itself, a rough spend replaced by its statement line (H7, H9). | JPY | 6 |
 | check_specs.js | Checks every file's shape and that every `why` adds up to its expected figure. `node check_specs.js` | | |
 
-Total: 180 asks.
+Total: 244 asks (the first eight files: 180; the H files: 64).
+
+### The review v3 situations and where each one is now
+
+The reviewer's own scripts are in `../ref/review_v3_situations/`. Each situation is now an ask with a hand-worked answer:
+
+| Situation | Decision | Asks |
+|---|---|---|
+| 1. Pay a day late after a holiday | H8 | late_pay late-01 to late-08 |
+| 2. A spend after a same-day check; two checks on one day | H1 | same_day_order order-02 to order-04 |
+| 3. A spend on setup day, after setup | H1 | same_day_order order-01 |
+| 4. A debit that posts after a check | H1 | same_day_order order-05 to order-07 |
+| 5. Close day "not sure": no statement typed (a), after the first payment (b), payment day passed (c) | H4 | mako_close_not_sure notsure-02 (a), notsure-05 to notsure-08 (b), notsure-09 and notsure-10 (c) |
+| 6. A dollar card paid from a yen bank | H5 | other_currency_card fx-01 to fx-04 |
+| 7. A refund bigger than the statement | H3 | card_statements stmt-02 to stmt-05 |
+| 8. Pay day changes from the 10th to the 25th | H2 | pay_day_moves move-01 to move-04 |
+| 9. A yearly bill | H7 | yearly_and_places year-01 to year-06 |
+| 10. A skipped bill (sound) | | places_and_checked place-06, place-07 |
+| 11. A top-up to an e-wallet set up later (sound) | B7 | places_and_checked place-01, place-02 |
+| 12. A goal kept in its own account that goes overdrawn | H7 | places_and_checked place-03, place-05 |
+| 13. A trip paid from the trip money | H7 | places_and_checked place-04, place-05 |
+| 14. A pay-in-full card paid in part | H3 | card_statements stmt-01, stmt-04, stmt-05 |
+
+### What the H files add to the way a file is written
+- **told** on an event or a check may be a date and a time (`2026-11-22T12:00`): when the app first heard of it. With no time, records on the same day keep the order they are listed in. An account's `opening.told` is when setup was typed; with no time, the opening covers its whole day (rule 2).
+- **posted** on a bank event: the day the bank posts it. A check holds it by that day (H1).
+- **changes** on a schedule: `[ { from, schedule } ]`, the schedule from that date on (H2).
+- **frequency** may also be `yearly` (`date: "MM-DD"`), `months_list` (`months`, `day`), `last_workday` (no move needed) and `once` (`date`).
+- **statement_close_day: null** is "not sure" (H4); then the last statement may be left out, and `months_after_close` is not needed.
+- **kind `loan` and `paylater`** accounts: `opening.owed`, and `payment` with `day`, `from`, `weekend_holiday`, and `amount` or `min_rule` (`{ pct, floor }` or `{ fixed }`), and `extra_steps` (`[ { from, amount } ]`). A card with `carries: true` pays its `min_rule` plus `extra_steps` instead of the whole statement.
+- **repay** events (`from`, `to`, `amount`, `settles`) pay a loan or pay-later plan. A card payment or a repay between two currencies has `amount_out` (what left) and `amount_in` (what arrived) instead of `amount` (H5).
+- **skip** events settle an occurrence with no money.
+- **bills** may have `kind: "auto_spend"` (it logs itself on its day) and `place` (a goal id it is paid from). A spend may name the `goal` it is paid from, and the budget `line` it is for (`free` is Free to spend).
+- **goals** may have `refill: true` with `for_bill`: after each payment it starts again for the next occurrence (E5).
+- **opening.split** on a bank: `{ goals, lines, free }`, the opening figure by place (B2, B6); the rest is waiting. **plan** at the top: `{ lines: [ { id, name, account, per, amount } ], free: { account, per, amount } }`.
+- **est: true** marks a typed line as rough; **source: "statement"** (or "screenshot") marks an imported line.
+
+### Questions added for the H files
+- **days_to_next_pay** with `late: true`: the next pay is late but still inside its posting window (H8); `days` is zero or below.
+- **check_in_list**: what the check-in lists first, ticked by default (A2).
+- **may_still_post**: items past their landing day but inside the posting window (G3).
+- **owed_now** (per card, loan or pay-later account).
+- **headline**: safe to spend, the one figure on Home (F9, G2).
+- **place**: what a goal or other kept place holds now and when it is next due (with `account` and `place`).
+- **warnings**: the warnings under the headline, as `{ account, code }`.
+- **not_explained** may give `from`: only the filler whose stretch starts that day.
 
 ## How to read a file
 
@@ -69,9 +124,12 @@ Item names are `<schedule>@<due date>`, using the due date before any move: the 
 13. **Total** does not take off what is owed on cards. Card spending moves no money until the card is paid (as in the ledger design: "Total stays, Free to spend drops").
 14. **Other currencies** sit beside the total and are not added in until converted.
 
+## Decided readings (DECISIONS_ROUND2 H, 23 Nov)
+Section H answers schema_v3_review_1.md and wins over anything earlier. Changes to figures in the first eight files: **mako-35** (H8: the side pay, late but inside its posting window, still counts; 429,000 becomes 479,000, the old figure is kept in its `alt`). Every other figure in those files stands.
+
 ## Decided readings (DECISIONS_ROUND2 F, 23 Nov)
 
-The questions below were decided in DECISIONS_ROUND2.md section F. The expected figures now use the decided reading; where that changed a figure, the old one is kept in the ask's `alt` with the rule it used. The reference model (`../ref/lookahead_ref.js`) works out every figure, and `node ../ref/run_scenarios.js` checks all 180 asks. What changed from rules 1 to 14 above:
+The questions below were decided in DECISIONS_ROUND2.md section F. The expected figures now use the decided reading; where that changed a figure, the old one is kept in the ask's `alt` with the rule it used. The reference model (`../ref/lookahead_ref.js`) works out every figure, and `node ../ref/run_scenarios.js` checks every ask. What changed from rules 1 to 14 above:
 - **Rule 9, cards (F14).** Nothing is taken off today as one lump. Each statement comes off on its payment day (income first on the same day), the still-open part on the payment day after its close, anything past the horizon at the horizon's end.
 - **Rule 9, how far the walk goes (SCHEMA 10.3 step 1).** Every account is walked to the same horizon: the later of the second next pay that starts a period and 45 days from today.
 - **Rule 11, no fixed pay (B4).** The horizon reaches the second occurrence of every monthly bill (and at least 45 days).

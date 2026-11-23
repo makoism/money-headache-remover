@@ -7,11 +7,13 @@ const fs = require('fs');
 const path = require('path');
 
 const DIGITS = { JPY: 0, PHP: 2, USD: 2, EUR: 2 };
-const KINDS = ['bank', 'cash', 'ewallet', 'card'];
-const EVENT_KINDS = ['pay_in', 'money_in', 'spend', 'refund', 'bill_paid', 'card_payment', 'transfer', 'convert', 'set_aside', 'check', 'card_check'];
-const QUESTIONS = ['bank_today', 'safe_to_spend', 'days_to_next_pay', 'due_before_next_pay', 'not_seen_yet', 'card_due', 'total', 'not_explained'];
+const KINDS = ['bank', 'cash', 'ewallet', 'card', 'loan', 'paylater'];
+const EVENT_KINDS = ['pay_in', 'money_in', 'spend', 'refund', 'bill_paid', 'card_payment', 'transfer', 'convert', 'set_aside', 'check', 'card_check', 'skip', 'repay'];
+const QUESTIONS = ['bank_today', 'safe_to_spend', 'days_to_next_pay', 'due_before_next_pay', 'not_seen_yet', 'card_due', 'total', 'not_explained',
+  'check_in_list', 'may_still_post', 'owed_now', 'headline', 'place', 'warnings'];
 const WE_RULES = ['move earlier', 'move later', 'none'];
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
+const TOLD = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?$/;   // a date, or a date and a time [H1]
 
 let errors = 0;
 function bad(file, where, msg) { errors++; console.log(`FAIL ${file} ${where}: ${msg}`); }
@@ -90,8 +92,9 @@ function checkSum(file, where, why, expectedMinor, d, isDays) {
 function checkAnswer(file, where, q, expected, why, d, askDate) {
   if (q === 'days_to_next_pay') {
     if (!expected || typeof expected !== 'object' || !('days' in expected)) return bad(file, where, 'expected needs { days, next_pay }');
-    if (expected.days === null) {
-      if (typeof why !== 'string' || why.includes('=')) bad(file, where, 'no next pay: why should be words with no sum');
+    if (expected.days === null || expected.late) {
+      if (typeof why !== 'string' || why.includes('=')) bad(file, where, 'no next pay or a late pay: why should be words with no sum');
+      if (expected.late && (!isDate(expected.next_pay) || dayNum(expected.next_pay) - dayNum(askDate) !== expected.days || expected.days > 0)) bad(file, where, 'a late pay needs next_pay on or before the ask date and days = next_pay minus the ask date');
       return;
     }
     if (!isDate(expected.next_pay)) bad(file, where, 'next_pay is not a date');
@@ -124,8 +127,34 @@ function checkAnswer(file, where, q, expected, why, d, askDate) {
     if (s !== numMinor(expected.total, d)) bad(file, where, 'items do not add to total');
     return checkSum(file, where, why, numMinor(expected.total, d), d);
   }
+  if (q === 'check_in_list') {
+    if (!expected || !Array.isArray(expected.items) || typeof expected.total !== 'number') return bad(file, where, 'expected needs items and total');
+    let s = 0;
+    for (const it of expected.items) {
+      if (!isDate(it.lands) || typeof it.amount !== 'number') bad(file, where, `item ${it.item} needs lands and amount`);
+      else if (dayNum(it.lands) > dayNum(askDate)) bad(file, where, `item ${it.item} lands after the ask date (a check-in only lists what has landed)`);
+      s += numMinor(it.amount, d);
+    }
+    if (s !== numMinor(expected.total, d)) bad(file, where, 'items do not add to total');
+    return checkSum(file, where, why, numMinor(expected.total, d), d);
+  }
+  if (q === 'may_still_post') {
+    if (!expected || !Array.isArray(expected.items)) return bad(file, where, 'expected needs items');
+    for (const it of expected.items) if (!isDate(it.lands) || typeof it.amount !== 'number' || dayNum(it.lands) >= dayNum(askDate)) bad(file, where, `item ${it.item} needs lands before the ask date and an amount`);
+    if (typeof why !== 'string') bad(file, where, 'why should be words');
+    return;
+  }
+  if (q === 'warnings') {
+    if (!Array.isArray(expected) || expected.some(w => !w.account || !w.code)) return bad(file, where, 'expected is a list of { account, code }');
+    if (typeof why !== 'string' || why.includes('=')) bad(file, where, 'why should be words with no sum');
+    return;
+  }
+  if (q === 'place') {
+    if (!expected || typeof expected.kept !== 'number' || !isDate(expected.due)) return bad(file, where, 'expected needs kept and due');
+    return checkSum(file, where, why, numMinor(expected.kept, d), d);
+  }
   if (q === 'card_due') {
-    if (!expected || typeof expected.amount !== 'number' || !isDate(expected.payment_date) || !['open', 'closed'].includes(expected.statement)) return bad(file, where, 'expected needs amount, payment_date, statement open/closed');
+    if (!expected || typeof expected.amount !== 'number' || !isDate(expected.payment_date) || !['open', 'closed', 'all owed'].includes(expected.statement)) return bad(file, where, 'expected needs amount, payment_date, statement open/closed/all owed');
     return checkSum(file, where, why, numMinor(expected.amount, d), d);
   }
   if (typeof expected !== 'number') return bad(file, where, 'expected must be a number');
@@ -153,13 +182,21 @@ function checkFile(fp) {
     if (!(a.currency in DIGITS)) bad(file, w, `unknown currency ${a.currency}`);
     const d = DIGITS[a.currency];
     if (!a.opening || !isDate(a.opening.date)) { bad(file, w, 'opening needs a date'); continue; }
-    if (a.kind === 'card') {
-      if (!(Number.isInteger(a.statement_close_day) || a.statement_close_day === 'last')) bad(file, w, 'statement_close_day must be a day or "last"');
+    if (a.opening.told !== undefined && !(TOLD.test(a.opening.told) && a.opening.told.slice(0, 10) === a.opening.date)) bad(file, w, 'opening.told must be the opening date, with or without a time');
+    if (a.kind === 'loan' || a.kind === 'paylater') {
       const p = a.payment || {};
-      if (!Number.isInteger(p.day) || !Number.isInteger(p.months_after_close) || !WE_RULES.includes(p.weekend_holiday)) bad(file, w, 'payment needs day, months_after_close, weekend_holiday');
+      if (typeof a.opening.owed !== 'number' || !decimalsOk(a.opening.owed, d)) bad(file, w, 'opening.owed must be an amount');
+      if (!Number.isInteger(p.day) || !WE_RULES.includes(p.weekend_holiday) || !(s.accounts || []).some(x => x.id === p.from)) bad(file, w, 'payment needs day, weekend_holiday and from (an account)');
+      if (typeof p.amount !== 'number' && !p.min_rule) bad(file, w, 'payment needs amount or min_rule');
+    } else if (a.kind === 'card') {
+      const notSure = a.statement_close_day === null;   // close day "not sure" [H4]
+      if (!(Number.isInteger(a.statement_close_day) || a.statement_close_day === 'last' || notSure)) bad(file, w, 'statement_close_day must be a day, "last" or null (not sure)');
+      const p = a.payment || {};
+      if (!Number.isInteger(p.day) || (!notSure && !Number.isInteger(p.months_after_close)) || !WE_RULES.includes(p.weekend_holiday)) bad(file, w, 'payment needs day, months_after_close (unless the close day is not sure), weekend_holiday');
       if (!p.from || !(p.from in acc) && !(s.accounts || []).some(x => x.id === p.from)) bad(file, w, 'payment.from must be an account');
       const st = a.opening.statement;
-      if (!st || !isDate(st.closed) || typeof st.amount !== 'number' || typeof st.paid !== 'boolean') bad(file, w, 'opening.statement needs closed, amount, paid');
+      if ((st || !notSure) && (!st || !isDate(st.closed) || typeof st.amount !== 'number' || typeof st.paid !== 'boolean')) bad(file, w, 'opening.statement needs closed, amount, paid (it may be left out only when the close day is not sure)');
+      if (a.carries && !(p.min_rule || typeof p.amount === 'number')) bad(file, w, 'a card that carries a balance needs payment.min_rule');
       if (typeof a.opening.current !== 'number' || !decimalsOk(a.opening.current, d)) bad(file, w, 'opening.current must be an amount');
     } else {
       if (typeof a.opening.amount !== 'number' || !decimalsOk(a.opening.amount, d)) bad(file, w, 'opening.amount must be an amount');
@@ -167,13 +204,14 @@ function checkFile(fp) {
     }
   }
 
-  const sched = new Set(Object.keys(acc).filter(id => acc[id].kind === 'card'));
+  const sched = new Set(Object.keys(acc).filter(id => ['card', 'loan', 'paylater'].includes(acc[id].kind)));
   for (const list of ['income', 'bills']) {
     for (const x of s[list] || []) {
       const w = `${list} ${x.id}`;
       if (!x.id || sched.has(x.id)) bad(file, w, 'missing or repeated id');
       sched.add(x.id);
       if (!x.schedule || !x.schedule.frequency) bad(file, w, 'needs a schedule with a frequency');
+      for (const c of x.changes || []) if (!isDate(c.from) || !c.schedule || !c.schedule.frequency) bad(file, w, 'each change needs from (a date) and a schedule');
       if (!WE_RULES.includes(x.weekend_holiday)) bad(file, w, `weekend_holiday must be one of ${WE_RULES}`);
       if (!(x.account in acc) && !(list === 'income' && x.account === 'any')) bad(file, w, `account ${x.account} not found`);
       if (list === 'income' && typeof x.starts_period !== 'boolean') bad(file, w, 'starts_period must be true or false');
@@ -198,10 +236,13 @@ function checkFile(fp) {
       const m = String(e.settles).match(/^([a-z0-9_]+)@(\d{4}-\d{2}-\d{2})$/);
       if (!m || !sched.has(m[1])) bad(file, w, `settles "${e.settles}" must be <schedule id>@<date>`);
     }
-    if ('told' in e && e.told !== null && !isDate(e.told)) bad(file, w, 'told must be a date or null');
+    if ('told' in e && e.told !== null && !(TOLD.test(e.told) && isDate(e.told.slice(0, 10)))) bad(file, w, 'told must be a date, a date and time, or null');
+    if (e.posted !== undefined && !isDate(e.posted)) bad(file, w, 'posted must be a date');
     const amtAcc = acc[e.account || e.from || e.card];
     const d = amtAcc ? DIGITS[amtAcc.currency] : DIGITS[s.currency];
-    if (e.kind === 'convert') {
+    if (e.kind === 'skip') {
+      if (e.settles === undefined) bad(file, w, 'a skip needs settles');
+    } else if ('amount_out' in e || e.kind === 'convert') {
       if (typeof e.amount_out !== 'number' || typeof e.amount_in !== 'number') bad(file, w, 'convert needs amount_out and amount_in');
     } else if (e.kind === 'card_check') {
       if (typeof e.current !== 'number') bad(file, w, 'card_check needs current');
@@ -217,7 +258,9 @@ function checkFile(fp) {
     if (s.window && (a.date < s.window.from || a.date > s.window.to)) bad(file, w, 'date outside the window');
     if (a.at !== undefined && !['start of day', 'end of day'].includes(a.at)) bad(file, w, 'at must be "start of day" or "end of day"');
     if (!QUESTIONS.includes(a.question)) { bad(file, w, `question must be one of ${QUESTIONS}`); continue; }
-    if (['bank_today', 'safe_to_spend', 'card_due', 'not_explained'].includes(a.question) && !(a.account in acc)) bad(file, w, 'needs an account');
+    if (['bank_today', 'safe_to_spend', 'card_due', 'not_explained', 'owed_now', 'place'].includes(a.question) && !(a.account in acc)) bad(file, w, 'needs an account');
+    if (a.question === 'place' && !goals.has(a.place)) bad(file, w, 'needs a place (a goal id)');
+    if (a.from !== undefined && !isDate(a.from)) bad(file, w, 'from must be a date');
     if (a.question === 'card_due' && acc[a.account] && acc[a.account].kind !== 'card') bad(file, w, 'card_due needs a card account');
     const d = DIGITS[(acc[a.account] || {}).currency || s.currency];
     checkAnswer(file, w, a.question, a.expected, a.why, d, a.date);

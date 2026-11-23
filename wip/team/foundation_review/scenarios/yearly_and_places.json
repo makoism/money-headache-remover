@@ -1,0 +1,54 @@
+{
+  "life": "yearly_and_places",
+  "title": "A yearly tax paid from its own place, bills in some months, a one-off, pay on the last working day (review v3 situation 9, decision H7)",
+  "story": "One bank, set up Sat 1 May 2027 with 600,000, of which 300,000 is kept in a car tax place. Pay of 250,000 lands on the last working day of each month. Car tax of 400,000 is due every 31 May (moved later), paid from the car tax place; the place refills for next year after each payment (E5). Property tax of 100,000 is due on 15 June and 15 September. A one-off sofa of 50,000 is due on 20 May. Rent of 80,000 on the 27th, moved later. No holidays are listed for this test. Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2027-05-01", "to": "2027-07-31" },
+  "holidays": { "country": "made up, none listed", "dates": [], "bank_closed": [] },
+  "accounts": [
+    { "id": "bank", "name": "Bank", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2027-05-01", "amount": 600000 } }
+  ],
+  "income": [
+    { "id": "pay", "name": "Pay", "account": "bank", "currency": "JPY", "amount": 250000, "schedule": { "frequency": "last_workday" }, "weekend_holiday": "none", "starts_period": true }
+  ],
+  "bills": [
+    { "id": "car_tax", "name": "Car tax", "account": "bank", "amount": 400000, "schedule": { "frequency": "yearly", "date": "05-31" }, "weekend_holiday": "move later", "place": "car_tax_fund" },
+    { "id": "prop_tax", "name": "Property tax", "account": "bank", "amount": 100000, "schedule": { "frequency": "months_list", "months": [6, 9], "day": 15 }, "weekend_holiday": "move later" },
+    { "id": "sofa", "name": "Sofa", "account": "bank", "amount": 50000, "schedule": { "frequency": "once", "date": "2027-05-20" }, "weekend_holiday": "move later" },
+    { "id": "rent", "name": "Rent", "account": "bank", "amount": 80000, "schedule": { "frequency": "monthly", "day": 27 }, "weekend_holiday": "move later" }
+  ],
+  "goals": [
+    { "id": "car_tax_fund", "name": "Car tax", "kept_in": "bank", "opening": { "date": "2027-05-01", "amount": 300000 }, "refill": true, "for_bill": "car_tax" }
+  ],
+  "landing_dates": {
+    "pay": { "2027-05-31": "2027-05-31", "2027-06-30": "2027-06-30", "2027-07-30": "2027-07-30" },
+    "car_tax": { "2027-05-31": "2027-05-31", "2028-05-31": "2028-05-31" },
+    "prop_tax": { "2027-06-15": "2027-06-15", "2027-09-15": "2027-09-15" },
+    "rent": { "2027-05-27": "2027-05-27", "2027-06-27": "2027-06-28", "2027-07-27": "2027-07-27" }
+  },
+  "events": [
+    { "id": "y01", "date": "2027-05-20", "kind": "bill_paid", "account": "bank", "amount": 50000, "settles": "sofa@2027-05-20" },
+    { "id": "y02", "date": "2027-05-27", "kind": "bill_paid", "account": "bank", "amount": 80000, "settles": "rent@2027-05-27" },
+    { "id": "y03", "date": "2027-05-31", "kind": "pay_in", "account": "bank", "amount": 250000, "settles": "pay@2027-05-31" },
+    { "id": "y04", "date": "2027-05-31", "kind": "bill_paid", "account": "bank", "amount": 400000, "settles": "car_tax@2027-05-31", "note": "300,000 from the car tax place, 100,000 from the rest of the bank" }
+  ],
+  "asks": [
+    { "id": "year-01", "date": "2027-05-01", "question": "days_to_next_pay", "expected": { "days": 30, "next_pay": "2027-05-31", "item": "pay@2027-05-31" },
+      "why": "2027-05-31 - 2027-05-01 = 30", "note": "Mon 31 May is the last working day of May. Before H7 the model had no last working day rule: no next pay." },
+    { "id": "year-02", "date": "2027-05-01", "question": "due_before_next_pay",
+      "expected": { "items": [
+        { "item": "sofa@2027-05-20", "lands": "2027-05-20", "amount": 50000 },
+        { "item": "rent@2027-05-27", "lands": "2027-05-27", "amount": 80000 } ], "total": 130000 },
+      "why": "50,000 (sofa, once) + 80,000 (rent) = 130,000", "note": "The car tax lands on the pay day, so it is not before the pay." },
+    { "id": "year-03", "date": "2027-05-01", "question": "safe_to_spend", "account": "bank", "expected": 140000,
+      "why": "600,000 (Bank today) - 300,000 (Car tax place, kept in it) - 50,000 (Sofa 20 May) - 80,000 (Rent 27 May) + 250,000 (Pay 31 May) - 100,000 (Car tax 31 May: 400,000, of which 300,000 comes from its place) - 100,000 (Property tax 15 Jun) - 80,000 (Rent 28 Jun) = 140,000",
+      "note": "Paid from its place, the car tax is not taken off twice. The walk runs to the second next pay, 30 Jun." },
+    { "id": "year-04", "date": "2027-06-01", "question": "place", "account": "bank", "place": "car_tax_fund", "expected": { "kept": 0, "due": "2028-05-31" },
+      "why": "300,000 (set aside) - 300,000 (car tax 31 May, paid from it up to what it held) = 0", "note": "Refill (E5): it starts again for next year's car tax." },
+    { "id": "year-05", "date": "2027-06-01", "question": "safe_to_spend", "account": "bank", "expected": 140000,
+      "why": "320,000 (Bank today: 600,000 - 50,000 - 80,000 + 250,000 - 400,000) - 100,000 (Property tax 15 Jun) - 80,000 (Rent 28 Jun) = 140,000",
+      "note": "Nothing is kept for the car tax any more, so nothing more comes off for it." },
+    { "id": "year-06", "date": "2027-06-01", "question": "days_to_next_pay", "expected": { "days": 29, "next_pay": "2027-06-30", "item": "pay@2027-06-30" },
+      "why": "2027-06-30 - 2027-06-01 = 29" }
+  ]
+}

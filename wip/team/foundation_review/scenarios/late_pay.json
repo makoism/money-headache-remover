@@ -1,0 +1,59 @@
+{
+  "life": "late_pay",
+  "title": "A pay that is late after a holiday weekend (review v3 situation 1, decision H8)",
+  "story": "One bank in Japan. Pay of 250,000 on the 10th, moved to the working day before. Rent of 80,000 on the 27th, moved to the working day after. In January 2027 the 10th is a Sunday, so the pay should land Fri 8 Jan. Mon 11 Jan is a holiday. The pay really arrives Tue 12 Jan and the person logs it on Wed 13 Jan. Pay inside its posting window (one working day after it should land, so up to Tue 12 Jan) is late but still expected: it counts and the period does not move on (H8). After the window it is not seen yet and stops counting. Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2026-11-20", "to": "2027-02-20" },
+  "holidays": {
+    "country": "JP",
+    "dates": [
+      { "date": "2026-11-23", "name": "Labour Thanksgiving Day" },
+      { "date": "2027-01-11", "name": "Coming of Age Day" }
+    ],
+    "bank_closed": []
+  },
+  "accounts": [
+    { "id": "bank", "name": "Bank", "kind": "bank", "currency": "JPY", "owner": "Aki", "minimum": 0,
+      "opening": { "date": "2026-11-20", "amount": 300000 } }
+  ],
+  "income": [
+    { "id": "pay", "name": "Pay", "account": "bank", "currency": "JPY", "amount": 250000,
+      "schedule": { "frequency": "monthly", "day": 10 }, "weekend_holiday": "move earlier", "starts_period": true }
+  ],
+  "bills": [
+    { "id": "rent", "name": "Rent", "account": "bank", "amount": 80000, "schedule": { "frequency": "monthly", "day": 27 }, "weekend_holiday": "move later" }
+  ],
+  "goals": [],
+  "landing_dates": {
+    "pay": { "2026-12-10": "2026-12-10", "2027-01-10": "2027-01-08", "2027-02-10": "2027-02-10", "2027-03-10": "2027-03-10" },
+    "rent": { "2026-11-27": "2026-11-27", "2026-12-27": "2026-12-28", "2027-01-27": "2027-01-27", "2027-02-27": "2027-03-01" }
+  },
+  "events": [
+    { "id": "lp1", "date": "2026-11-27", "kind": "bill_paid", "account": "bank", "amount": 80000, "settles": "rent@2026-11-27" },
+    { "id": "lp2", "date": "2026-12-10", "kind": "pay_in", "account": "bank", "amount": 250000, "settles": "pay@2026-12-10" },
+    { "id": "lp3", "date": "2026-12-28", "kind": "bill_paid", "account": "bank", "amount": 80000, "settles": "rent@2026-12-27" },
+    { "id": "lp4", "date": "2027-01-12", "told": "2027-01-13", "kind": "pay_in", "account": "bank", "amount": 250000, "settles": "pay@2027-01-10", "note": "arrived Tue 12 Jan, logged the next morning" }
+  ],
+  "asks": [
+    { "id": "late-01", "date": "2027-01-09", "question": "days_to_next_pay", "expected": { "days": -1, "next_pay": "2027-01-08", "item": "pay@2027-01-10", "late": true },
+      "why": "the pay due Sun 10 Jan should have landed Fri 8 Jan and has not come yet; it may still post until Tue 12 Jan, so it is late and still expected, and the period does not move on",
+      "note": "The model before H8 said 32 days to 10 Feb." },
+    { "id": "late-02", "date": "2027-01-09", "question": "safe_to_spend", "account": "bank", "expected": 390000,
+      "why": "390,000 (bank today: 300,000 opening - 80,000 rent 27 Nov + 250,000 pay 10 Dec - 80,000 rent 28 Dec; the late pay of 250,000 counts today and rent of 80,000 on 27 Jan never takes it below today's start) = 390,000",
+      "note": "H8: the late pay still counts. Without it the lowest point would be 310,000 on 27 Jan." },
+    { "id": "late-03", "date": "2027-01-09", "question": "due_before_next_pay", "expected": { "items": [], "total": 0 }, "why": "none = 0",
+      "note": "The next pay is the late one, so nothing lands between today and it. Before H8 this list ran to 10 Feb." },
+    { "id": "late-04", "date": "2027-01-12", "at": "start of day", "question": "days_to_next_pay", "expected": { "days": -4, "next_pay": "2027-01-08", "item": "pay@2027-01-10", "late": true },
+      "why": "Mon 11 Jan was a holiday, so Tue 12 Jan is the last day of the posting window: still late and expected" },
+    { "id": "late-05", "date": "2027-01-13", "at": "start of day", "question": "not_seen_yet",
+      "expected": { "items": [ { "item": "pay@2027-01-10", "lands": "2027-01-08", "amount": 250000, "direction": "in" } ], "money_in": 250000, "money_out": 0 },
+      "why": { "money_in": "250,000 (pay, should have landed Fri 8 Jan, window over Tue 12 Jan) = 250,000", "money_out": "none = 0" },
+      "note": "Passes on the model before H8 too: after the window the reading did not change." },
+    { "id": "late-06", "date": "2027-01-13", "at": "start of day", "question": "days_to_next_pay", "expected": { "days": 28, "next_pay": "2027-02-10", "item": "pay@2027-02-10" },
+      "why": "2027-02-10 - 2027-01-13 = 28", "note": "Not seen yet, so it is no longer the next pay. Passes before H8 too." },
+    { "id": "late-07", "date": "2027-01-13", "at": "start of day", "question": "safe_to_spend", "account": "bank", "expected": 310000,
+      "why": "390,000 (bank) - 80,000 (rent 27 Jan) = 310,000", "note": "After the window the late pay stops counting (H8). Passes before H8 too." },
+    { "id": "late-08", "date": "2027-01-13", "question": "bank_today", "account": "bank", "expected": 640000,
+      "why": "390,000 (bank) + 250,000 (pay, arrived 12 Jan, logged 13 Jan) = 640,000", "note": "Passes before H8 too." }
+  ]
+}

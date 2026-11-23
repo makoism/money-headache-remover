@@ -1,0 +1,51 @@
+{
+  "life": "places_and_checked",
+  "title": "Paying from a goal's money, a goal account that goes overdrawn, a skipped bill, a top-up before the e-wallet was set up (review v3 situations 10 to 13)",
+  "story": "A bank (300,000), a savings account kept for a rainy day (50,000, not for spending) and an e-wallet set up later. Pay of 250,000 on the 10th, moved earlier; rent of 80,000 on the 27th, moved later; a 5,000 top-up from the bank to the e-wallet on the 1st. A trip goal of 100,000 is kept in the bank. On 22 Nov a 60,000 vet bill is paid from the rainy day money, so savings go 10,000 overdrawn. On 24 Nov 3,000 is topped up to the e-wallet, which is set up on 25 Nov with 1,000 (the top-up is inside that figure). On 25 Nov the trip is paid from the trip money. The landlord waives December's rent. Situations 10 and 11 were found sound by the review; situations 12 and 13 need paying from a place (H7). Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2026-11-20", "to": "2027-01-10" },
+  "holidays": { "country": "JP", "dates": [ { "date": "2026-11-23", "name": "Labour Thanksgiving Day" } ], "bank_closed": [] },
+  "accounts": [
+    { "id": "bank", "name": "Bank", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2026-11-20", "amount": 300000 } },
+    { "id": "sav", "name": "Savings", "kind": "bank", "currency": "JPY", "minimum": 0, "spend_from": false, "opening": { "date": "2026-11-20", "amount": 50000 } },
+    { "id": "ew", "name": "E-wallet", "kind": "ewallet", "currency": "JPY", "minimum": 0, "opening": { "date": "2026-11-25", "amount": 1000 } }
+  ],
+  "income": [
+    { "id": "pay", "name": "Pay", "account": "bank", "currency": "JPY", "amount": 250000, "schedule": { "frequency": "monthly", "day": 10 }, "weekend_holiday": "move earlier", "starts_period": true }
+  ],
+  "bills": [
+    { "id": "rent", "name": "Rent", "account": "bank", "amount": 80000, "schedule": { "frequency": "monthly", "day": 27 }, "weekend_holiday": "move later" },
+    { "id": "top", "kind": "transfer", "name": "Top-up", "account": "bank", "to": "ew", "amount": 5000, "schedule": { "frequency": "monthly", "day": 1 }, "weekend_holiday": "none" }
+  ],
+  "goals": [
+    { "id": "trip", "name": "Trip", "kept_in": "bank", "opening": { "date": "2026-11-20", "amount": 100000 } },
+    { "id": "rainy", "name": "Rainy day", "kept_in": "sav", "opening": { "date": "2026-11-20", "amount": 50000 } }
+  ],
+  "events": [
+    { "id": "g01", "date": "2026-11-22", "kind": "spend", "account": "sav", "amount": 60000, "goal": "rainy", "note": "emergency vet, paid from the rainy day money; savings go 10,000 overdrawn" },
+    { "id": "g02", "date": "2026-11-24", "kind": "transfer", "from": "bank", "to": "ew", "amount": 3000, "note": "a top-up before the e-wallet was set up" },
+    { "id": "g03", "date": "2026-11-25", "kind": "spend", "account": "bank", "amount": 100000, "goal": "trip", "note": "the trip, paid from the trip money" },
+    { "id": "g04", "date": "2026-11-27", "kind": "bill_paid", "account": "bank", "amount": 80000, "settles": "rent@2026-11-27" },
+    { "id": "g05", "date": "2026-12-01", "kind": "transfer", "from": "bank", "to": "ew", "amount": 5000, "settles": "top@2026-12-01" },
+    { "id": "g06", "date": "2026-12-10", "kind": "pay_in", "account": "bank", "amount": 250000, "settles": "pay@2026-12-10" },
+    { "id": "g07", "date": "2026-12-27", "kind": "skip", "account": "bank", "settles": "rent@2026-12-27", "note": "the landlord waived December" }
+  ],
+  "asks": [
+    { "id": "place-01", "date": "2026-11-26", "question": "bank_today", "account": "ew", "expected": 1000,
+      "why": "1,000 (opening 25 Nov; the 3,000 top-up of 24 Nov is inside it) = 1,000", "note": "Situation 11, sound already." },
+    { "id": "place-02", "date": "2026-11-26", "question": "total", "expected": 188000,
+      "why": "197,000 (bank: 300,000 - 3,000 - 100,000) + 1,000 (e-wallet) - 10,000 (savings, overdrawn) = 188,000", "note": "Situation 11, sound already: the total stays true." },
+    { "id": "place-03", "date": "2026-11-26", "question": "safe_to_spend", "account": "sav", "expected": -10000,
+      "why": "-10,000 (Savings today: 50,000 - 60,000) - 0 (rainy day money: its 50,000 went to the vet) = -10,000",
+      "note": "Situation 12. Before H7 the 50,000 was still taken off as kept: -60,000." },
+    { "id": "place-04", "date": "2026-11-26", "question": "safe_to_spend", "account": "bank", "expected": 112000,
+      "why": "197,000 (Bank today) - 0 (trip money, all spent on the trip) - 80,000 (Rent 27 Nov) - 5,000 (Top-up 1 Dec) = 112,000",
+      "note": "Situation 13. Before H7 the trip money was taken off again: 12,000." },
+    { "id": "place-05", "date": "2026-11-26", "question": "headline", "expected": 103000,
+      "why": "112,000 (bank) + 1,000 (e-wallet) - 10,000 (savings short) = 103,000" },
+    { "id": "place-06", "date": "2026-12-30", "question": "not_seen_yet", "expected": { "items": [], "money_in": 0, "money_out": 0 },
+      "why": { "money_in": "none = 0", "money_out": "none = 0" }, "note": "Situation 10, sound already: the skip settles December's rent." },
+    { "id": "place-07", "date": "2026-12-30", "question": "bank_today", "account": "bank", "expected": 362000,
+      "why": "197,000 (26 Nov) - 80,000 (rent 27 Nov) - 5,000 (top-up 1 Dec) + 250,000 (pay 10 Dec) = 362,000", "note": "Situation 10, sound already." }
+  ]
+}
