@@ -689,8 +689,10 @@
     };
     // the period a day is in, named by the pay that started it: started, else the last pay landing on or before it
     const occOn = (start, day) => (start != null && occByStart[start] ? occByStart[start]
-      : (pays.filter(o => o.land <= day && (o.settled || o.land <= firstOpenDay)).sort((x, z) => x.land - z.land).pop() || {}).id || null);
+      : (pays.filter(o => (o.land <= day && (o.settled || o.land <= firstOpenDay)) || (o.due <= firstOpenDay && firstOpenDay <= day)).sort((x, z) => startDayOf(x) - startDayOf(z)).pop() || {}).id || null);
     // [H8, AU4, AU5] a pay not ticked (still to come, late, or not seen) never starts a period; one inside the opening has [AU7]
+    // [AU7] a pay inside the opening (due on or before the setup day) starts its period by the setup day at the latest
+    const startDayOf = o => (o.due <= firstOpenDay ? Math.min(o.land, firstOpenDay) : o.land);
     const firstOpenDay = Object.keys(openEv).length ? Math.min(...Object.keys(openEv).map(openDay)) : -Infinity;
 
     // [AU1] The period running now, converted like every other: from the pay that started it (or the day it started) to
@@ -699,7 +701,7 @@
       const started = periodStartDays.length ? Math.max(...periodStartDays) : null;
       const occ = occOn(started, today);
       const o = occ && pays.find(p => p.id === occ);
-      const start = started !== null ? started : o ? o.land : null;
+      const start = started !== null ? started : o ? startDayOf(o) : null;
       const next = nextPays.slice().sort((x, z) => x.land - z.land)[0];   // [AU4, AU5] a pay counted today or late ends it
       const end = next ? next.land : start !== null ? start + 30 : null;
       return { started, occ, start, end };
@@ -782,12 +784,13 @@
       function openingShares(acctId) {
         if (opening[acctId]) return opening[acctId];
         const split = (openEv[acctId] && openEv[acctId].split) || {}, od = openDay(acctId), out = { lines: {}, free: null };
-        const before = pays.filter(o => o.land <= od).sort((x, z) => x.land - z.land), after = pays.filter(o => o.land > od).sort((x, z) => x.land - z.land);
+        const inOpening = o => o.land <= od || o.due <= od;   // [AU7]
+        const before = pays.filter(inOpening).sort((x, z) => x.land - z.land), after = pays.filter(o => !inOpening(o)).sort((x, z) => x.land - z.land);
         // [I4] shared by days left: from the setup day to the period's last day, both counted, over the period's days
-        const share = before.length && after.length ? { d: after[0].land - od, D: after[0].land - before[before.length - 1].land } : null;
+        const share = before.length && after.length ? { d: after[0].land - od, D: after[0].land - startDayOf(before[before.length - 1]) } : null;
         // [AS, AU1] of the amount of the period holding the opening, by the units rules
         const holding = before.length ? before[before.length - 1] : null;
-        const openAmount = (src, per) => { const a = periodAmount(src, null, occOn(null, od)); return holding && after.length ? perPeriod({ per, amount: a }, holding.land, after[0].land, holding.id) : a; };
+        const openAmount = (src, per) => { const a = periodAmount(src, null, occOn(null, od)); return holding && after.length ? perPeriod({ per, amount: a }, startDayOf(holding), after[0].land, holding.id) : a; };
         let leftOver = 0;
         for (const l of lineSrcs.filter(x => moneyAcct(lineAcct(x)) === acctId)) {
           const typed = (split.lines || {})[l.id], amount = openAmount(l, l.per);

@@ -201,4 +201,16 @@ t('a part-paid remainder carried on again is asked once along the carry chain [A
   // 272,588 - 8,288 (the July item, late) - 89,100 (September's 97,388 less the 8,288 July already asks) = 175,200
   eq(r.accounts.bank.headroom, 175200);
 });
+t('a pay inside the opening that lands after the setup day: its period starts by the setup day [AU7]', () => {
+  // set up Sat 20 Feb 2027; pay due that day is moved later to Mon 22 Feb, and is already in the opening figure
+  const b = base(x => {
+    x.schedules[0].rules = [{ rule: { every: 'month', days: [20] } }];
+    x.schedules[0].shift = 'after';
+    for (const e of x.events) { e.date = '2027-02-20'; e.told = '2027-02-20T10:00' + TZ; delete e.split; }
+  });
+  const r = run(b, '2027-02-20');
+  eq([r.period.start, r.period.end, r.period.startsWith], ['2027-02-20', '2027-03-22', 'pay@2027-02-20']);
+  // to Tue 23 Mar (20 Mar is a Saturday, 22 Mar the equinox's substitute holiday); Free to spend by days left: all of it
+  eq(r.safeToSpend.headline, 50000);
+});
 done('lookahead');
