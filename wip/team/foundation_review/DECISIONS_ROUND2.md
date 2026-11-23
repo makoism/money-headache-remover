@@ -161,3 +161,14 @@ S4. Card plan parts not yet posted are walked on their posting dates and appear 
 S5. A fee is its own spend record linked to its transfer (`of: <transfer id>`), with the place the person picked (Free to spend by default).
 S6. Pay in another currency is left out of the "not seen yet" totals and listed apart, in its own currency, on the check-in list.
 The Q and R helper's readings are confirmed.
+
+## T. Decisions from final_review_3.md (coverage grid: 171 cells apply, 129 covered, 24 sound by working, 18 wrong)
+T1. A period is named by the occurrence of the pay that starts it (for example `pay@2026-12-10`), never by a day that can move. Period-end answers are `pe:<that occurrence>:<place>`; a manual period start is `ps:<the occurrence it stands in for>` with the chosen day as a field (two phones make one record, the newer `at` wins); one-period overrides are keyed by the occurrence. Once a period's end is fixed (by a period start or by answers), the late pay settles its occurrence but starts no new period. A moved settle (Q6, S2) never moves a period that already has answers.
+T2. The filler is spending: by default it comes out of Free to spend for the period or periods its stretch covers (split as A4); the person may pick another place at the check-in.
+T3. Bills and self-logged spends paid by card go onto the card as future card lines and come off in the walk on the card's payment day.
+T4. An overspent budget line counts as zero left in the walk; the overspend has already left the account.
+T5. A line's spent-so-far counts only spends in its own currency; a spend in another currency on a home line is listed apart with a warning until stage 2.
+T6. Period starts are in the reference model; the look ahead reads them.
+T7. A move out of a place lowers that place; `adjust` moves its account and place as LEDGER_DESIGN says; each gets asks. Wallet mode and `hand` are stage 2 (the field stays, no screens in version one; Mako uses Track).
+S5 fix: a transfer's `a` is what left, fee included; the fee record moves only the place, never the account.
+Watch decided: closing the main bank asks for the new main bank and moves every link (`home.mainBank`, budget lines' and Free to spend's `acct`, the pay schedules' account); a transfer typed on two phones is offered as a possible double like a spend; investments never raise the gain question; a `plan.shares` change applies from the next period start; an event into a closed account reopens it with a notice; SCHEMA 3 is corrected (pre-opening spends do not count in spent-so-far, as the model does); `told` and `at` are compared as moments, not text.
