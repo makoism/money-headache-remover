@@ -55,10 +55,29 @@ const E3 = (() => {
     const r = await dbRun('readonly', st => st.get(KEY));
     if (r && r.v && r.v.book) { book = r.v.book; mode = 'kept'; } else { book = null; mode = 'none'; }
   }
+  const savedFns = [];
   async function save() {
     if (mode !== 'kept') return true;   // a try book is never written
     const r = await dbRun('readwrite', st => st.put({ v: 1, book, t: Date.now() }, KEY));
+    if (r) savedFns.forEach(f => { try { f(book); } catch (e) { /* a listener's own fault */ } });
     return !!r;
+  }
+  /* backup lane: a whole new book from a restore or the cloud copy; the first one makes this device keep a book.
+     The caller keeps the old book first (rec 'copy:<at>', D2). A try book is never replaced. */
+  async function replace(next) {
+    if (mode === 'try') return false;
+    const before = book, m = mode;
+    book = next; mode = 'kept';
+    const ok = await save();
+    if (!ok) { book = before; mode = m; }
+    return ok;
+  }
+  /* backup lane: other records beside the book in the same store (a whole copy kept before a replace `copy:<at>`, the
+     list of them `copies`, device-only cloud state `cloud`). TODO(lane C): the store's `kept` and `device` stores. */
+  function rec(key, value) {
+    if (mode === 'try') return Promise.resolve(value === undefined ? null : false);
+    if (value === undefined) return dbRun('readonly', st => st.get(key)).then(r => (r && r.v !== undefined ? r.v : null));
+    return dbRun('readwrite', st => st.put(value, key)).then(r => !!r);
   }
   function view(day) {
     const res = BurrowEngine.lookahead.lookahead(book, day || today());
@@ -88,6 +107,6 @@ const E3 = (() => {
     if (!ok) book = before;
     return ok;
   }
-  return { today, told, newId: () => idMaker(), load, view, nameOf, occName, curOf, home, write, put,
+  return { today, told, newId: () => idMaker(), load, view, nameOf, occName, curOf, home, write, put, replace, rec, onSaved: f => savedFns.push(f),
     get book() { return book; }, get mode() { return mode; } };
 })();

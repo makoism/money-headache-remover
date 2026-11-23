@@ -96,3 +96,12 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
 .a3-past { border-bottom: 1px solid var(--hair); padding: 8px 0; }
 .a3-past summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; font-weight: 600; }
 .a3-past summary:focus-visible { outline: 3px solid var(--acc-ring); outline-offset: 2px; }
+/* Settings (settings3.js, backup lane) */
+.a3-link { margin-left: auto; border: 0; background: none; color: var(--ink2); font: inherit; font-size: var(--t-sm); min-height: 44px; padding: 0 4px; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.a3-link:focus-visible, .a3-check input:focus-visible { outline: 3px solid var(--acc-ring); outline-offset: 2px; }
+.a3-check { display: flex; align-items: center; gap: 10px; margin-top: 12px; min-height: 44px; }
+.a3-check input { width: 22px; height: 22px; accent-color: var(--accent); }
+.a3-in.a3-text { text-align: left; }
+.a3-btn:disabled { opacity: .5; cursor: default; }
+.a3-code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: var(--t-h3); letter-spacing: .04em; overflow-wrap: anywhere; margin: 10px 0 0; }
+.a3-tabs[hidden] { display: none; }

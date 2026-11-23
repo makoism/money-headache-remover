@@ -29,6 +29,7 @@ for f in $ENGINE; do cat "../engine/$f"; done
 for f in $SCREENS; do cat "../screens/$f"; done
 cat ../store/clock.js   # act3's `at` clock (receipts lane)
 cat ../stmt.js   # the old app's statement reader, reused as is (statements lane)
+cat ../engine/sync.js ../store/guard.js ../store/pack.js ../store/persist.js   # backup and cloud lane
 echo '</script>'
 echo '<script>'
 echo '(function () {'
@@ -37,7 +38,7 @@ echo 'const $ = s => document.querySelector(s), $$ = s => [...document.querySele
 cat ../art.js ../pixel.js
 printf 'const TRY_BOOKS = { mako: '; cat fixtures/mako_madeup_book.json; echo '};'
 cat src/stmt3_read.js src/stmt3_plan.js
-cat src/checkin_write.js src/money3.js src/e3.js src/act3.js src/plan3_write.js src/home3.js src/checkin3.js src/receipts3.js src/plan3.js src/start3.js
+cat src/checkin_write.js src/money3.js src/e3.js src/act3.js src/plan3_write.js src/home3.js src/checkin3.js src/receipts3.js src/plan3.js src/backup3.js src/settings3.js src/start3.js
 cat src/stmt3_ai.js src/stmt3.js   # statements lane
 echo '})();'
 echo '</script>'
