@@ -1,6 +1,6 @@
 /* ---------- Check your bank (WIRING_PLAN 1.1 item 3, step 9) ----------
    Lists every expected item since the last check (res.checkIn.toConfirm), ticked, with its amount editable; asks what
-   each bank shows today; Save writes the records through the check-in writer, and Home is drawn again. The gap is the
+   each bank shows today and, optionally, what is on each card now (blank means not checked); Save writes the records through the check-in writer, and Home is drawn again. The gap is the
    engine's filler (A3), never written here. One input behaviour: a tap on an amount selects it, so typing replaces it. */
 let check3 = null;
 function openCheck3() {
@@ -20,17 +20,23 @@ function openCheck3() {
   const figs = Object.keys(r.accounts).map(id => `<div class="a3-field"><label for="a3f-${esc3(id)}">What does ${esc3(E3.nameOf(id))} show today?</label>
       <input class="a3-in" type="text" inputmode="decimal" autocomplete="off" id="a3f-${esc3(id)}" data-bankfig="${esc3(id)}" placeholder="${esc3(SM.symbol(r.accounts[id].currency).trim())}">
       <p class="a3-sub">Last time ${money3(r.accounts[id].bank, r.accounts[id].currency)} on ${esc3(day3(r.accounts[id].asOf, yr))}</p></div>`).join('');
+  /* each card's figure, typed like the bank figure (DECISIONS.md "Mako's own money"): optional, blank means not checked;
+     a typed figure is a check on the card, written by the engine's check-in writer */
+  const cardFigs = Object.keys(r.cards || {}).map(id => `<div class="a3-field"><label for="a3c-${esc3(id)}">What is on ${esc3(E3.nameOf(id))} now?</label>
+      <input class="a3-in" type="text" inputmode="decimal" autocomplete="off" id="a3c-${esc3(id)}" data-cardfig="${esc3(id)}" placeholder="${esc3(SM.symbol(E3.curOf(id)).trim())}">
+      <p class="a3-sub">Leave it blank if you have not looked. The app has ${money3(r.cards[id].owedNow, E3.curOf(id))} on it now</p></div>`).join('');
   const sheet = $('#a3Check');
   sheet.innerHTML = `<div class="a3-sheet-in">
     <h1 id="a3CheckT">Check your bank</h1>
     <section class="a3-card"><h2>${esc3(label3('checkInList'))} since ${esc3(day3(r.checkIn.since, yr))}</h2>${list.length ? '<p class="a3-sub">Untick anything that has not gone through yet. Change an amount if it was different</p>' + rows : '<p class="a3-sub">Nothing was due since then</p>'}</section>
-    <section class="a3-card"><h2>Your bank today</h2>${figs}<p class="a3-err" id="a3CheckErr"></p></section>
+    <section class="a3-card"><h2>Your bank today</h2>${figs}${cardFigs ? '<h2>Your cards today</h2>' + cardFigs : ''}<p class="a3-err" id="a3CheckErr"></p></section>
     <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3CheckSave">Save</button><button type="button" class="a3-btn" id="a3CheckX">Back</button></div>
   </div>`;
   sheet.hidden = false; $('#a3Home').hidden = true; scrollTo(0, 0);
   /* one input behaviour (screens/inputs.js): the first tap selects, so typing replaces; read through money.js when left */
   sheet.querySelectorAll('[data-amt]').forEach(el => { const o = list.find(x => x.item === el.dataset.amt); BurrowScreens.inputs.bind(el, { kind: 'amount', code: E3.curOf(o.account) }); });
   sheet.querySelectorAll('[data-bankfig]').forEach(el => BurrowScreens.inputs.bind(el, { kind: 'amount', code: E3.curOf(el.dataset.bankfig), optional: true }));
+  sheet.querySelectorAll('[data-cardfig]').forEach(el => BurrowScreens.inputs.bind(el, { kind: 'amount', code: E3.curOf(el.dataset.cardfig), optional: true }));
   $('#a3CheckX').addEventListener('click', closeCheck3);
   $('#a3CheckSave').addEventListener('click', saveCheck3);
   const first = sheet.querySelector("[data-bankfig]"); if (first) first.focus();
@@ -43,6 +49,13 @@ async function saveCheck3() {
   for (const el of sheet.querySelectorAll("[data-bankfig]")) {
     const id = el.dataset.bankfig, v = typed3(el.value, E3.curOf(id));
     if (v === null) { err.textContent = `Type what ${E3.nameOf(id)} shows today, as an amount`; el.focus(); return; }
+    figures[id] = v;
+  }
+  for (const el of sheet.querySelectorAll("[data-cardfig]")) {
+    const id = el.dataset.cardfig;
+    if (!el.value.trim()) continue;   // blank: this card is not checked
+    const v = typed3(el.value, E3.curOf(id));
+    if (v === null) { err.textContent = `Type what is on ${E3.nameOf(id)} now, as an amount, or leave it blank`; el.focus(); return; }
     figures[id] = v;
   }
   const ticked = [], amounts = {}, expected = {}, lands = {}, landed = {};
