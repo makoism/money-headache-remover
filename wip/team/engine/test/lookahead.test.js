@@ -165,4 +165,22 @@ t('30 Dec with nothing ticked since the 10 Nov pay: the December pay is not seen
   eq([r.period.start, r.period.end], ['2026-11-10', '2026-12-30']);
   ok(r.daysToNextPay.days >= 0);
 });
+// A card closing on the 10th, paid on the 7th two months later, in full from the bank, opened Tue 1 Jun 2027 owing 0
+function cardBook(more) {
+  return base(x => {
+    x.accounts.push({ id: 'card', name: 'Card', type: 'card', cur: 'JPY', inFull: true, cutDay: 10, payDay: 7, payMonths: 2, shift: 'none', payFrom: 'bank' });
+    x.events.push({ id: 'oc', k: 'open', acct: 'card', date: '2027-06-01', a: 0, told: '2027-06-01T10:00' + TZ, grp: 's2' },
+      { id: 'cc', k: 'check', acct: 'card', date: '2027-06-01', a: 0, told: '2027-06-01T10:00' + TZ, grp: 's2' });
+    if (more) more(x);
+  });
+}
+t('a credit statement carries to the next statement at its close, before its own payment day [AU6, H3]', () => {
+  const b = cardBook(x => x.events.push(
+    { id: 'rf', k: 'in', sub: 'refund', acct: 'card', date: '2027-06-20', a: 14900, told: '2027-06-20T12:00' + TZ },
+    { id: 'sp', k: 'spend', acct: 'card', date: '2027-07-20', a: 81000, told: '2027-07-20T12:00' + TZ }));
+  // the 10 Jul statement is a credit of 14,900; the 10 Aug one is 81,000 - 14,900, as the open amount was on 31 Jul
+  eq(run(b, '2027-07-31').cards.card.next.amount, 66100);
+  const n = run(b, '2027-08-12').cards.card.next;
+  eq([n.amount, n.payment_date, n.statement], [66100, '2027-10-07', 'closed']);
+});
 done('lookahead');

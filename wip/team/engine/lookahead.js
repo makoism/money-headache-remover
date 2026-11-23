@@ -485,7 +485,8 @@
         for (const cl of closes) {
           if (cl > last) break;
           apply(cl);
-          const folding = list.filter(b => !b.into && b.land <= cl);   // [I3] only statements whose payment day has come
+          // [I3] only statements whose payment day has come; [AU6, H3] a credit carries to the next statement at once
+          const folding = list.filter(b => !b.into && (b.land <= cl || b.left < 0));
           const carried = folding.reduce((t, b) => t + b.left, 0);
           const interest = interestOn(carried, c.apr);
           const amount = carried + interest + openAmt;
