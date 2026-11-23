@@ -42,6 +42,10 @@
     'reason.no_figures': W('There\'s no bank figure yet'),
     'reason.short': W('You\'re short by {amount}'),
     'reason.short_on': W('You\'re short by {amount} on {day}'),
+    'reason.short_before': W('You\'re short by {amount} before pay on {until}, below zero from {day}'),
+    'reason.short_before_min': W('You\'re short by {amount} before pay on {until}, below your minimum from {day}'),
+    'reason.short_from': W('You\'re short by {amount}, below zero from {day}'),
+    'reason.short_from_min': W('You\'re short by {amount}, below your minimum from {day}'),
     'reason.below_minimum': W('{account} goes {amount} under its minimum on {day}'),
     'reason.below_zero': W('{account} goes {amount} below zero on {day}'),
     'reason.gain_to_ask': W('{account} has more in it than the app expected'),
@@ -101,6 +105,7 @@
   }
   function reasonKey(r) {
     if (r.code === 'below_minimum' && !r.minimum) return 'reason.below_zero';
+    if (r.code === 'short' && r.short) return r.until ? (r.short.minimum ? 'reason.short_before_min' : 'reason.short_before') : r.short.minimum ? 'reason.short_from_min' : 'reason.short_from';
     if (r.code === 'short') return r.day ? 'reason.short_on' : 'reason.short';
     if (r.code === 'to_confirm') return r.count === 1 ? 'reason.to_confirm_one' : 'reason.to_confirm_many';
     if (r.code === 'nothing_safe') return r.until ? 'reason.nothing_safe' : 'reason.nothing_safe_no_pay';
@@ -120,9 +125,10 @@
     const below = warnings.filter(w => w.code === 'below_minimum').sort((a, b) => (a.day < b.day ? -1 : a.day > b.day ? 1 : 0));
     if (!Object.keys(accounts).length) out.push({ state: 'empty', reason: { code: 'no_figures' }, next: { code: 'check_in' } });
     if (stp.shortfall > 0) {
-      /* [B1] the engine's first day under and how much then (safeToSpend.short), never a lower point later */
+      /* [BL3] the engine's short (safeToSpend.short): the headline's amount, the sum's own total, before the pay after the
+         lowest point; money moves in before the first day under */
       const sh = stp.short || null, day = sh ? sh.day : below.length ? below[0].day : null;
-      out.push({ state: 'short', reason: { code: 'short', amount: sh ? sh.amount : stp.shortfall, currency: ctx.currency, day }, next: { code: 'move_money_in', day }, note: below.length ? 'below_minimum' : 'short' });
+      out.push({ state: 'short', reason: Object.assign({ code: 'short', amount: sh ? sh.amount : stp.shortfall, currency: ctx.currency, day }, sh ? { short: sh } : {}, sh && sh.beforePay ? { until: sh.beforePay } : {}), next: { code: 'move_money_in', day }, note: below.length ? 'below_minimum' : 'short' });
     }
     for (const w of below) out.push({ state: 'warning', reason: { code: 'below_minimum', account: w.account, amount: w.amount != null ? w.amount : w.short, currency: (accounts[w.account] || {}).currency || ctx.currency, day: w.day, minimum: minimumOf(w, accounts) }, next: { code: 'move_money_in', day: w.day }, note: 'below_minimum' });
     for (const w of warnings) {

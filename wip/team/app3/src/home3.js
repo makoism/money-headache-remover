@@ -124,9 +124,10 @@ function renderHome3() {
   const capParts = (r.safeToSpend.whyParts || []).map(x => (x.over ? Object.assign({}, x, { label: `Free to spend is ${money3(x.over, home)} over this period` }) : x));
   const capLine = r.safeToSpend.whyParts ? `<p class="a3-sum" data-fig="cap">${esc3(SM.sumLine(capParts, r.safeToSpend.headline, home))}</p>` : '';
   const sums = `${ids.filter(id => r.accounts[id].spendFrom).map(id => `<p class="a3-sum" data-fig="why">${esc3(whyWords3(r.accounts[id]))}</p>`).join('')}${capLine}`;
-  /* [B1] short: the engine's first day under and how much then, and the pay after it only when one brings money */
+  /* [BL3] short: the sum's own total, before the pay after its lowest point (only when one brings money), and the first
+     day the bank goes under beside it */
   const sh = r.safeToSpend.short;
-  const short = sh ? `<p class="a3-warn a3-bad" data-fig="short">${esc3(label3('shortBy'))} ${fig3('safeToSpend.short', sh.amount, home)} on ${esc3(day3(sh.day, yr))}${sh.beforePay ? `, before the pay on ${esc3(day3(sh.beforePay, yr))}` : ''}</p>` : '';
+  const short = sh ? `<p class="a3-warn a3-bad" data-fig="short">${esc3(label3('shortBy'))} ${fig3('safeToSpend.short', sh.amount, home)}${sh.beforePay ? ` before the pay on ${esc3(day3(sh.beforePay, yr))}` : ''}, below ${sh.minimum ? 'your minimum' : 'zero'} from ${esc3(day3(sh.day, yr))}</p>` : '';
   /* the engine's warnings are data (account, amount, day, minimum or none): worded by screens/status.js, never its text;
      a lower point after the first day under is its own "Later on" line with its own day [B1] */
   const wctx = { currency: home, names, accounts: r.accounts };

@@ -3081,7 +3081,9 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
       }
       for (let i = 0; i < lowAt; i++) why.push({ label: steps[i].label, amount: steps[i].amount });
       why.push({ label: 'minimum', amount: -minimum });
-      return { lowest: low, lowestDay: lowDay, headroom: low - minimum, why, firstBelowZero, belowBal, firstUnder, payAfter, start, steps };
+      // [BL3] the first pay that brings money in after the lowest point: the sum's own total is short before it
+      const payAfterLow = (steps.slice(lowAt).find(x => x.pay && x.amount > 0 && x.day > lowDay) || {}).day;
+      return { lowest: low, lowestDay: lowDay, headroom: low - minimum, why, firstBelowZero, belowBal, firstUnder, payAfter, payAfterLow: payAfterLow == null ? null : payAfterLow, start, steps };
     }
 
     const backsGoal = id => places.some(g => g.keptIn && g.keptIn.acct === id && g.keptIn.mode === 'ownAccount' && removedOn(g) === null);
@@ -3113,7 +3115,7 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
       if (w.headroom < 0) {
         const f = w.firstUnder, lower = -w.headroom > f.amount && w.lowestDay !== f.day ? { day: r.lowestDay, amount: -w.headroom } : undefined;
         res.warnings.push(Object.assign({ account: id, code: 'below_minimum', day: dayStr(f.day), amount: f.amount, short: f.amount, minimum: minimum || null },
-          lower ? { later: lower } : {}, { payAfter: w.payAfter === null ? null : dayStr(w.payAfter),
+          lower ? { later: lower } : {}, { payAfter: w.payAfter === null ? null : dayStr(w.payAfter), payAfterLow: w.payAfterLow === null ? null : dayStr(w.payAfterLow),
             text: minimum ? `${a.name} goes ${fmt(f.amount, a.cur)} below its minimum of ${fmt(minimum, a.cur)} on ${short(f.day)}` : `${a.name} goes ${fmt(f.amount, a.cur)} below zero on ${short(f.day)}` }));
       }
       const later = walk(id, today + LATER_ON_DAYS, 0);   // [B11]
@@ -3144,11 +3146,12 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
     const raw = up - shortfalls;
     const oldest = Object.keys(res.accounts).reduce((d, id) => Math.min(d, dayNum(res.accounts[id].asOf)), today);
     res.safeToSpend = { headline: Math.max(0, cap === null ? raw : Math.min(cap, raw)), shortfall: Math.max(0, -raw), cappedByFreeToSpend: cap !== null && cap < raw, oldestInput: dayStr(oldest) };
-    // [B1, QC numbers] what the screens say when short: the first day an account in the home currency goes under, how far
-    // under on that day, the pay that comes after it (null when none brings money in), and a lower point later, if any
+    // [BL3, replaces B1 for the headline] what the screens say when short: the amount is the sum's own total (how far
+    // the account's walk ends under its minimum, or zero), before the first pay that brings money in after its lowest
+    // point (null when none does); the first day it goes under is named beside it (`day`), with how far under then (`first`)
     const firstWarn = res.warnings.filter(w => w.code === 'below_minimum' && res.accounts[w.account].currency === home).sort((x, z) => (x.day < z.day ? -1 : x.day > z.day ? 1 : 0))[0];
-    res.safeToSpend.short = res.safeToSpend.shortfall > 0 && firstWarn ? { account: firstWarn.account, day: firstWarn.day, amount: firstWarn.amount, minimum: firstWarn.minimum,
-      beforePay: firstWarn.payAfter, later: firstWarn.later || null } : null;
+    res.safeToSpend.short = res.safeToSpend.shortfall > 0 && firstWarn ? { account: firstWarn.account, day: firstWarn.day, amount: -res.accounts[firstWarn.account].headroom, minimum: firstWarn.minimum,
+      beforePay: firstWarn.payAfterLow, first: firstWarn.amount } : null;
     // [BJ5] when Free to spend caps the headline, the sum under it ends with the cap, so the two figures never disagree
     // [S6, QC numbers] Free to spend left below zero: the sum takes off all that the accounts can spare and says how far
     // over (`over` on that part, and safeToSpend.freeOver), never hides it; the sum still adds up
@@ -4233,6 +4236,10 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
     'reason.no_figures': W('There\'s no bank figure yet'),
     'reason.short': W('You\'re short by {amount}'),
     'reason.short_on': W('You\'re short by {amount} on {day}'),
+    'reason.short_before': W('You\'re short by {amount} before pay on {until}, below zero from {day}'),
+    'reason.short_before_min': W('You\'re short by {amount} before pay on {until}, below your minimum from {day}'),
+    'reason.short_from': W('You\'re short by {amount}, below zero from {day}'),
+    'reason.short_from_min': W('You\'re short by {amount}, below your minimum from {day}'),
     'reason.below_minimum': W('{account} goes {amount} under its minimum on {day}'),
     'reason.below_zero': W('{account} goes {amount} below zero on {day}'),
     'reason.gain_to_ask': W('{account} has more in it than the app expected'),
@@ -4292,6 +4299,7 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
   }
   function reasonKey(r) {
     if (r.code === 'below_minimum' && !r.minimum) return 'reason.below_zero';
+    if (r.code === 'short' && r.short) return r.until ? (r.short.minimum ? 'reason.short_before_min' : 'reason.short_before') : r.short.minimum ? 'reason.short_from_min' : 'reason.short_from';
     if (r.code === 'short') return r.day ? 'reason.short_on' : 'reason.short';
     if (r.code === 'to_confirm') return r.count === 1 ? 'reason.to_confirm_one' : 'reason.to_confirm_many';
     if (r.code === 'nothing_safe') return r.until ? 'reason.nothing_safe' : 'reason.nothing_safe_no_pay';
@@ -4311,9 +4319,10 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
     const below = warnings.filter(w => w.code === 'below_minimum').sort((a, b) => (a.day < b.day ? -1 : a.day > b.day ? 1 : 0));
     if (!Object.keys(accounts).length) out.push({ state: 'empty', reason: { code: 'no_figures' }, next: { code: 'check_in' } });
     if (stp.shortfall > 0) {
-      /* [B1] the engine's first day under and how much then (safeToSpend.short), never a lower point later */
+      /* [BL3] the engine's short (safeToSpend.short): the headline's amount, the sum's own total, before the pay after the
+         lowest point; money moves in before the first day under */
       const sh = stp.short || null, day = sh ? sh.day : below.length ? below[0].day : null;
-      out.push({ state: 'short', reason: { code: 'short', amount: sh ? sh.amount : stp.shortfall, currency: ctx.currency, day }, next: { code: 'move_money_in', day }, note: below.length ? 'below_minimum' : 'short' });
+      out.push({ state: 'short', reason: Object.assign({ code: 'short', amount: sh ? sh.amount : stp.shortfall, currency: ctx.currency, day }, sh ? { short: sh } : {}, sh && sh.beforePay ? { until: sh.beforePay } : {}), next: { code: 'move_money_in', day }, note: below.length ? 'below_minimum' : 'short' });
     }
     for (const w of below) out.push({ state: 'warning', reason: { code: 'below_minimum', account: w.account, amount: w.amount != null ? w.amount : w.short, currency: (accounts[w.account] || {}).currency || ctx.currency, day: w.day, minimum: minimumOf(w, accounts) }, next: { code: 'move_money_in', day: w.day }, note: 'below_minimum' });
     for (const w of warnings) {
@@ -8160,9 +8169,10 @@ function renderHome3() {
   const capParts = (r.safeToSpend.whyParts || []).map(x => (x.over ? Object.assign({}, x, { label: `Free to spend is ${money3(x.over, home)} over this period` }) : x));
   const capLine = r.safeToSpend.whyParts ? `<p class="a3-sum" data-fig="cap">${esc3(SM.sumLine(capParts, r.safeToSpend.headline, home))}</p>` : '';
   const sums = `${ids.filter(id => r.accounts[id].spendFrom).map(id => `<p class="a3-sum" data-fig="why">${esc3(whyWords3(r.accounts[id]))}</p>`).join('')}${capLine}`;
-  /* [B1] short: the engine's first day under and how much then, and the pay after it only when one brings money */
+  /* [BL3] short: the sum's own total, before the pay after its lowest point (only when one brings money), and the first
+     day the bank goes under beside it */
   const sh = r.safeToSpend.short;
-  const short = sh ? `<p class="a3-warn a3-bad" data-fig="short">${esc3(label3('shortBy'))} ${fig3('safeToSpend.short', sh.amount, home)} on ${esc3(day3(sh.day, yr))}${sh.beforePay ? `, before the pay on ${esc3(day3(sh.beforePay, yr))}` : ''}</p>` : '';
+  const short = sh ? `<p class="a3-warn a3-bad" data-fig="short">${esc3(label3('shortBy'))} ${fig3('safeToSpend.short', sh.amount, home)}${sh.beforePay ? ` before the pay on ${esc3(day3(sh.beforePay, yr))}` : ''}, below ${sh.minimum ? 'your minimum' : 'zero'} from ${esc3(day3(sh.day, yr))}</p>` : '';
   /* the engine's warnings are data (account, amount, day, minimum or none): worded by screens/status.js, never its text;
      a lower point after the first day under is its own "Later on" line with its own day [B1] */
   const wctx = { currency: home, names, accounts: r.accounts };
@@ -9967,10 +9977,10 @@ function stmt3Bar() {
       const st = p && p.nextPay ? p.nextPay.state : null;
       out.push(`Next pay: ${day(np.next_pay, today)}${st === 'late' || np.late ? ', late' : st === 'notSeen' ? ', not seen in the bank yet' : ', in ' + np.days + ' days'}.`);
     } else out.push('No pay day is set.');
-    /* [B1] short: the engine's first day under and how much then; "before the pay" only when one brings money after it */
-    const sh = r.safeToSpend.short, under = sh && sh.minimum ? 'under its minimum' : 'below zero';
-    out.push(`Safe to spend until next pay: ${m(r.safeToSpend.headline)}.` + (sh ? ` Short by ${m(sh.amount)} on ${day(sh.day, today)}${sh.beforePay ? `, before the pay on ${day(sh.beforePay, today)}` : ''}.`
-      + (sh.later ? ` Later on it goes ${m(sh.later.amount)} ${under} on ${day(sh.later.day, today)}.` : '') : ''));
+    /* [BL3] short as Home says it: the sum's own total, before the pay after its lowest point (only when one brings money),
+       and the first day under */
+    const sh = r.safeToSpend.short;
+    out.push(`Safe to spend until next pay: ${m(r.safeToSpend.headline)}.` + (sh ? ` Short by ${m(sh.amount)}${sh.beforePay ? ` before the pay on ${day(sh.beforePay, today)}` : ''}, below ${sh.minimum ? 'your minimum' : 'zero'} from ${day(sh.day, today)}.` : ''));
     const rows = [];
     let k = 0;
     for (const a of accts.filter(x => SPEND_FROM[x.type])) {

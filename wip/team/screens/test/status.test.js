@@ -58,6 +58,13 @@ test('short: says by how much, from when, and what to do before then', () => {
   assert.strictEqual(s.state, 'short');
   assert.strictEqual(s.level, 'bad');
   assert.strictEqual(s.text.reason, 'You\'re short by ¥12,000 on 7 Dec');
+  /* [BL3] with the engine's short (the sum's own total, the pay after the lowest point), the status says the headline's words */
+  r.safeToSpend.short = { account: 'bank', day: '2026-12-07', amount: 15000, minimum: null, beforePay: '2026-12-25', first: 12000 };
+  const s2 = status.statusOf(r, Object.assign({ names: { bank: 'Main bank' } }, YEN));
+  assert.strictEqual(s2.text.reason, 'You\'re short by ¥15,000 before pay on 25 Dec, below zero from 7 Dec');
+  r.safeToSpend.short = Object.assign({}, r.safeToSpend.short, { minimum: 5000, beforePay: null });
+  assert.strictEqual(status.statusOf(r, Object.assign({ names: { bank: 'Main bank' } }, YEN)).text.reason, 'You\'re short by ¥15,000, below your minimum from 7 Dec');
+  assert.strictEqual(s2.text.next, 'Move money in before 7 Dec');
   assert.strictEqual(s.next.code, 'move_money_in');
   assert.strictEqual(s.text.next, 'Move money in before 7 Dec');
   assert.ok(!s.also.includes('below_minimum'), 'the warning that makes the state is not repeated under it');

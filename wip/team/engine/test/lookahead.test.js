@@ -417,14 +417,16 @@ t('short: the first day under and how much then, before the pay; the lower point
   eq([w.day, w.amount, w.short], ['2026-11-24', 30000, 30000]);
   eq(w.later, { day: '2026-12-24', amount: 40000 });
   ok(/goes 30,000 below zero on 24 Nov/.test(w.text), w.text);
-  eq(r.safeToSpend.short, { account: 'bank', day: '2026-11-24', amount: 30000, minimum: null, beforePay: '2026-11-25', later: { day: '2026-12-24', amount: 40000 } });
+  // [BL3] the headline is the sum's own total (-40,000 on 24 Dec, before the 25 Dec pay); the first day under beside it
+  eq(r.safeToSpend.short, { account: 'bank', day: '2026-11-24', amount: 40000, minimum: null, beforePay: '2026-12-25', first: 30000 });
+  eq(r.safeToSpend.short.amount, -r.accounts.bank.headroom, 'the headline and the sum never differ');
   eq(r.safeToSpend.headline, 0);
   eq(r.accounts.bank.lowestDay, '2026-12-24');   // the lowest point is still the walk's, for the sum under safe to spend
 });
 t('short with pay 0: the first day under is after the 25 Nov pay, and no pay is named [B1]', () => {
   // 100,000 - 60,000 = 40,000 on 28 Nov; 40,000 - 60,000 = -20,000 on 28 Dec
   const r = run(firstShort(100000, 0, 28), '2026-11-23');
-  eq(r.safeToSpend.short, { account: 'bank', day: '2026-12-28', amount: 20000, minimum: null, beforePay: null, later: null });
+  eq(r.safeToSpend.short, { account: 'bank', day: '2026-12-28', amount: 20000, minimum: null, beforePay: null, first: 20000 });
   eq(r.warnings.find(x => x.code === 'below_minimum').later, undefined);
 });
 // [S6, BJ5, QC numbers] Free to spend over its amount: the sum under the headline shows how far over, never hides it.

@@ -1104,7 +1104,9 @@
       }
       for (let i = 0; i < lowAt; i++) why.push({ label: steps[i].label, amount: steps[i].amount });
       why.push({ label: 'minimum', amount: -minimum });
-      return { lowest: low, lowestDay: lowDay, headroom: low - minimum, why, firstBelowZero, belowBal, firstUnder, payAfter, start, steps };
+      // [BL3] the first pay that brings money in after the lowest point: the sum's own total is short before it
+      const payAfterLow = (steps.slice(lowAt).find(x => x.pay && x.amount > 0 && x.day > lowDay) || {}).day;
+      return { lowest: low, lowestDay: lowDay, headroom: low - minimum, why, firstBelowZero, belowBal, firstUnder, payAfter, payAfterLow: payAfterLow == null ? null : payAfterLow, start, steps };
     }
 
     const backsGoal = id => places.some(g => g.keptIn && g.keptIn.acct === id && g.keptIn.mode === 'ownAccount' && removedOn(g) === null);
@@ -1136,7 +1138,7 @@
       if (w.headroom < 0) {
         const f = w.firstUnder, lower = -w.headroom > f.amount && w.lowestDay !== f.day ? { day: r.lowestDay, amount: -w.headroom } : undefined;
         res.warnings.push(Object.assign({ account: id, code: 'below_minimum', day: dayStr(f.day), amount: f.amount, short: f.amount, minimum: minimum || null },
-          lower ? { later: lower } : {}, { payAfter: w.payAfter === null ? null : dayStr(w.payAfter),
+          lower ? { later: lower } : {}, { payAfter: w.payAfter === null ? null : dayStr(w.payAfter), payAfterLow: w.payAfterLow === null ? null : dayStr(w.payAfterLow),
             text: minimum ? `${a.name} goes ${fmt(f.amount, a.cur)} below its minimum of ${fmt(minimum, a.cur)} on ${short(f.day)}` : `${a.name} goes ${fmt(f.amount, a.cur)} below zero on ${short(f.day)}` }));
       }
       const later = walk(id, today + LATER_ON_DAYS, 0);   // [B11]
@@ -1167,11 +1169,12 @@
     const raw = up - shortfalls;
     const oldest = Object.keys(res.accounts).reduce((d, id) => Math.min(d, dayNum(res.accounts[id].asOf)), today);
     res.safeToSpend = { headline: Math.max(0, cap === null ? raw : Math.min(cap, raw)), shortfall: Math.max(0, -raw), cappedByFreeToSpend: cap !== null && cap < raw, oldestInput: dayStr(oldest) };
-    // [B1, QC numbers] what the screens say when short: the first day an account in the home currency goes under, how far
-    // under on that day, the pay that comes after it (null when none brings money in), and a lower point later, if any
+    // [BL3, replaces B1 for the headline] what the screens say when short: the amount is the sum's own total (how far
+    // the account's walk ends under its minimum, or zero), before the first pay that brings money in after its lowest
+    // point (null when none does); the first day it goes under is named beside it (`day`), with how far under then (`first`)
     const firstWarn = res.warnings.filter(w => w.code === 'below_minimum' && res.accounts[w.account].currency === home).sort((x, z) => (x.day < z.day ? -1 : x.day > z.day ? 1 : 0))[0];
-    res.safeToSpend.short = res.safeToSpend.shortfall > 0 && firstWarn ? { account: firstWarn.account, day: firstWarn.day, amount: firstWarn.amount, minimum: firstWarn.minimum,
-      beforePay: firstWarn.payAfter, later: firstWarn.later || null } : null;
+    res.safeToSpend.short = res.safeToSpend.shortfall > 0 && firstWarn ? { account: firstWarn.account, day: firstWarn.day, amount: -res.accounts[firstWarn.account].headroom, minimum: firstWarn.minimum,
+      beforePay: firstWarn.payAfterLow, first: firstWarn.amount } : null;
     // [BJ5] when Free to spend caps the headline, the sum under it ends with the cap, so the two figures never disagree
     // [S6, QC numbers] Free to spend left below zero: the sum takes off all that the accounts can spare and says how far
     // over (`over` on that part, and safeToSpend.freeOver), never hides it; the sum still adds up

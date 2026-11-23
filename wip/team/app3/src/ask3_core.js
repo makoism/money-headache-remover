@@ -46,10 +46,10 @@
       const st = p && p.nextPay ? p.nextPay.state : null;
       out.push(`Next pay: ${day(np.next_pay, today)}${st === 'late' || np.late ? ', late' : st === 'notSeen' ? ', not seen in the bank yet' : ', in ' + np.days + ' days'}.`);
     } else out.push('No pay day is set.');
-    /* [B1] short: the engine's first day under and how much then; "before the pay" only when one brings money after it */
-    const sh = r.safeToSpend.short, under = sh && sh.minimum ? 'under its minimum' : 'below zero';
-    out.push(`Safe to spend until next pay: ${m(r.safeToSpend.headline)}.` + (sh ? ` Short by ${m(sh.amount)} on ${day(sh.day, today)}${sh.beforePay ? `, before the pay on ${day(sh.beforePay, today)}` : ''}.`
-      + (sh.later ? ` Later on it goes ${m(sh.later.amount)} ${under} on ${day(sh.later.day, today)}.` : '') : ''));
+    /* [BL3] short as Home says it: the sum's own total, before the pay after its lowest point (only when one brings money),
+       and the first day under */
+    const sh = r.safeToSpend.short;
+    out.push(`Safe to spend until next pay: ${m(r.safeToSpend.headline)}.` + (sh ? ` Short by ${m(sh.amount)}${sh.beforePay ? ` before the pay on ${day(sh.beforePay, today)}` : ''}, below ${sh.minimum ? 'your minimum' : 'zero'} from ${day(sh.day, today)}.` : ''));
     const rows = [];
     let k = 0;
     for (const a of accts.filter(x => SPEND_FROM[x.type])) {

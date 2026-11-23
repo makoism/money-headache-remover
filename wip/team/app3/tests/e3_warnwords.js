@@ -63,19 +63,34 @@ async function warns(bk, day) {
   const jpBook0 = (bank, pay, rentDay) => { const bk = jpBook(bank, pay, rentDay); if (!pay) bk.schedules.find(x => x.kind === 'income').steps[0].amount = 0; return bk; };   // [BL1] setup refuses a pay of 0; a book written before that still reads
   {
     const { out, status, short, errs } = await warns(jpBook(30000, 50000, 24), '2026-11-23');
-    ck('D: short by the first day under and how much then, before the pay', short === 'Short by ¥30,000 on 24 Nov, before the pay on 25 Nov', short);
+    ck('D: [BL3] short by the sum\'s own total before the pay after the lowest point, the first day under beside it', short === 'Short by ¥40,000 before the pay on 25 Dec, below zero from 24 Nov', short);
     const w = out.find(x => x.code === 'below_minimum');
     ck('D: the warning names 24 Nov and 30,000', w && w.text === 'Main bank goes ¥30,000 below zero on 24 Nov', JSON.stringify(out));
     const l = out.find(x => x.code === 'later_low');
     ck('D: the lower point later, with its own day', l && l.text === 'Later on: Main bank goes ¥40,000 below zero on 24 Dec', JSON.stringify(out));
-    ck('D: the status names 24 Nov and 30,000', /30,000 on 24 Nov/.test(status), status);
+    ck('D: the status says the same amount as the headline, and the first day under', /short by ¥40,000 before pay on 25 Dec, below zero from 24 Nov/.test(status), status);
     ck('D: no page errors', errs.length === 0, errs.join(' | '));
   }
   {
     const { short, all, errs } = await warns(jpBook0(100000, 0, 28), '2026-11-23');
-    ck('E: pay 0, short on its day with no pay named', short === 'Short by ¥20,000 on 28 Dec', short);
+    ck('E: pay 0, short with no pay named, the first day under beside it', short === 'Short by ¥20,000, below zero from 28 Dec', short);
     ck('E: never "before then" or "before the pay"', !/before then|before the pay/.test(all), (all.match(/.{30}before.{30}/) || [])[0]);
     ck('E: no page errors', errs.length === 0, errs.join(' | '));
+  }
+  /* G. [BL3, numbers QC rerun] set up Mon 23 Nov: bank 50,000, pay 200,000 on the 25th, Visa 30,000 paid on the 24th, Rent
+     60,000 on the 24th, keep at least 5,000. Seen Thu 26 Nov with nothing ticked: 50,000 - 30,000 - 60,000 = -40,000 now,
+     45,000 under the minimum from 26 Nov; Rent again on 24 Dec: -100,000, less the 5,000 minimum: short by 105,000 before
+     the pay on 25 Dec. The headline and the sum under it say the same figure. */
+  {
+    const bk = B.buildBook({ day: '2026-11-23', told: '2026-11-23T09:00+09:00', country: 'JP', currency: 'JPY',
+      banks: [{ key: 'b', name: 'Main bank', amount: 50000, min: 5000 }],
+      pays: [{ key: 'pay', name: 'Pay', bank: 'b', amount: 200000, day: 25, shift: 'none', startsPeriod: true }],
+      cards: [{ key: 'visa', name: 'Visa', owed: 30000, payDay: 24, closeDay: 'not sure', payFrom: 'b', shift: 'none' }],
+      bills: [{ key: 'rent', name: 'Rent', from: 'b', amount: 60000, day: 24, shift: 'none' }] }, { newId: I.idMaker('bl3gcs', () => 0.5) }).book;
+    const { short, all, errs } = await warns(bk, '2026-11-26');
+    ck('G: short by ¥105,000 before the pay on 25 Dec, below the minimum from 26 Nov', short === 'Short by ¥105,000 before the pay on 25 Dec, below your minimum from 26 Nov', short);
+    ck('G: the sum under it ends with the same figure', /= −¥105,000/.test(all.replace(/⁠/g, '')), (all.replace(/⁠/g, '').match(/.{40}= −?¥[\d,]+/) || [])[0]);
+    ck('G: no page errors', errs.length === 0, errs.join(' | '));
   }
   /* F. [S6] Free to spend over: set up Mon 23 Nov with 300,000, Pay 250,000 on the 25th, Free to spend 50,000 a month
      from 23 Nov, 70,000 spent from it on 26 Nov. Seen on 27 Nov: Free to spend left is below zero, and the sum under

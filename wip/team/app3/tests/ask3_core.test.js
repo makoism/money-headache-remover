@@ -167,12 +167,12 @@ const ctxOf = h => ({ book: h.book, today: DAY });
   const jpBook0 = (bank, pay, rentDay) => { const bk = jp(bank, pay, rentDay); if (!pay) bk.schedules.find(x => x.kind === 'income').steps[0].amount = 0; return bk; };   // [BL1] setup refuses a pay of 0; a book written before that still reads
   await t('the summary names the first day short and how much then, and the lower point later with its own day [B1]', async () => {
     const s = K.summary(jp(30000, 50000, 24), '2026-11-23').text;
-    ok(s.includes('Short by ¥30,000 on 24 Nov, before the pay on 25 Nov. Later on it goes ¥40,000 below zero on 24 Dec.'), s);
+    ok(s.includes('Short by ¥40,000 before the pay on 25 Dec, below zero from 24 Nov.'), s);   // [BL3] as Home says it
     ok(!s.includes('before then'), 'no "before then"');
   });
   await t('the summary with pay 0 never says short before a pay that brings nothing [B1]', async () => {
     const s = K.summary(jpBook0(100000, 0, 28), '2026-11-23').text;
-    ok(s.includes('Short by ¥20,000 on 28 Dec.'), s);
+    ok(s.includes('Short by ¥20,000, below zero from 28 Dec.'), s);
     ok(!/before the pay|before then/.test(s), s);
   });
   console.log(bad ? `ask3_core: ${bad} FAIL of ${n}` : `ask3_core: ALL PASS (${n})`);
