@@ -76,7 +76,8 @@
       Object.assign(r.once[p.startsWith], { at: r.at, by: r.by });
       return s.id;
     }
-    const from = !shares.length ? null : x.when === 'now' ? period(w).start : w.today;   // 'now': from this period's first day [V]
+    // 'now': from this period's first day [V]; [BJ2] the first amount too carries its day, never null
+    const from = x.when === 'now' ? period(w).start : w.today;
     return w.add('shares', { from, cur: home(w), per: { free: 'pay' }, free: a, goals: {} });
   }
 

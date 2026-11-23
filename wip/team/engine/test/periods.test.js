@@ -124,4 +124,10 @@ t('what happened is what the app had heard of by the day asked: dated in the per
   eq(ids(periods(b, '2026-12-28', opt), 0), []);
   eq(ids(periods(b, '2026-12-30', opt), 0), ['late']);
 });
+t('Free to spend set for the first time on 15 Jan: no period before it has a Free to spend amount [BJ2, V]', () => {
+  const b = base(x => { x.plan.shares = [{ id: 'sh', from: '2027-01-15', cur: 'JPY', per: { free: 'month' }, free: 50000 }]; delete x.events[0].split.free; });
+  const r = periods(b, '2027-01-20', opt);
+  eq(r.past.map(p => p.free), [null]);
+  eq(r.current.free.amount, 50000);   // set first in the period running since 25 Dec: that period has it
+});
 done('periods.test.js');

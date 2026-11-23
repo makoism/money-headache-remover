@@ -74,10 +74,10 @@ const stamped = (r, step) => { ok(I.isOrdinary(r.id), 'ordinary id ' + r.id); eq
     const h = setup();
     let r = await h.go('setFree', { amount: 60000 }); ok(r.ok, JSON.stringify(r));
     const s = h.book.plan.shares[0]; stamped(s, r.step);
-    eq([s.from, s.free, s.per, s.cur], [null, 60000, { free: 'pay' }, 'JPY']);
+    eq([s.from, s.free, s.per, s.cur], [DAY, 60000, { free: 'pay' }, 'JPY']);   // [BJ2] the first amount carries its day
     eq(view(h.book).period.free.amount, 60000);
     r = await h.go('setFree', { amount: 70000, when: 'next' });
-    eq(h.book.plan.shares.map(x => [x.from, x.free]), [[null, 60000], [DAY, 70000]]);
+    eq(h.book.plan.shares.map(x => [x.from, x.free]), [[DAY, 60000], [DAY, 70000]]);
     eq(view(h.book).period.free.amount, 60000);
     r = await h.go('setFree', { amount: 65000, when: 'now' });
     eq(view(h.book).period.free.amount, 65000);

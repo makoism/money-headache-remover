@@ -699,14 +699,18 @@
     const budgets = (plan.budgets || []).filter(l => l && !l.gone);
     const shares = (plan.shares || []).filter(x => x && !x.gone && x.free != null);
     // A change applies from the first period start on or after the day it was made [T watch, V]
+    // [BJ2] an amount set for the first time carries the day it was set: the period it was set in has it, a period
+    // that ended before that day has none (null); nothing before it changes
     const stepAmount = (steps, start) => {
-      const list = (steps || []).filter(x => !x.gone).map((x, i) => ({ f: i === 0 || x.from == null ? -Infinity : dayNum(x.from), a: x.amount })).sort((p, q) => p.f - q.f);
-      let a = list.length ? list[0].a : 0;
+      const list = (steps || []).filter(x => !x.gone).map(x => ({ f: x.from == null ? -Infinity : dayNum(x.from), a: x.amount })).sort((p, q) => p.f - q.f);
+      if (!list.length) return null;
+      const nextStart = start == null ? Infinity : Math.min(Infinity, ...pays.map(startDayOf).filter(d => d > start));
+      let a = list[0].f === -Infinity || start == null || list[0].f < nextStart ? list[0].a : null;
       for (const x of list) if (x.f === -Infinity || (start != null && x.f <= start)) a = x.a;
       return a;
     };
     const freeSrc = shares.length ? { id: 'free', acct: shares[0].acct, per: (shares[0].per || {}).free || 'month',
-      steps: shares.map((x, i) => ({ from: i === 0 ? null : x.from, amount: x.free })) } : null;
+      steps: shares.map(x => ({ from: x.from == null ? null : x.from, amount: x.free })) } : null;
     const lineSrcs = budgets.map(l => ({ id: l.id, name: l.name, acct: l.acct, per: l.per, steps: l.steps, once: [l.once], field: 'amount', from: l.from || null }));
     if (freeSrc) Object.assign(freeSrc, { once: shares.map(x => x.once), field: 'free' });
     // [B8, T1, AE1] A period's amount: a live `once` key named by the occurrence of the pay that starts it, else the step in
@@ -720,7 +724,7 @@
         if (!w || w.gone || w.waits !== 'pick' || w.to !== 'once' || w.key !== occ || (w.line !== src.id && !(src.id === 'free' && w.share))) continue;
         const wa = typeof w.a === 'number' ? w.a : w.a && typeof w.a[src.field] === 'number' ? w.a[src.field] : null;
         // [AV3] the safe side for what it is: the larger for a spending line, the smaller for Free to spend
-        if (wa !== null) a = src.field === 'free' ? Math.min(a, wa) : Math.max(a, wa);
+        if (wa !== null && a !== null) a = src.field === 'free' ? Math.min(a, wa) : Math.max(a, wa);
       }
       return a;
     };
@@ -862,12 +866,13 @@
         for (const l of lineSrcs.filter(x => moneyAcct(lineAcct(x)) === acctId)) {
           const typed = (split.lines || {})[l.id], amount = openAmount(l, l.per);
           if (typed != null) out.lines[l.id] = typed;
+          else if (amount == null) continue;   // [BJ2] no amount in the period holding the opening
           else if (share) { out.lines[l.id] = Math.floor(amount * share.d / share.D); leftOver += amount * share.d - out.lines[l.id] * share.D; }
           else out.lines[l.id] = amount;
         }
         if (freeSrc && moneyAcct(lineAcct(freeSrc)) === acctId) {
           const amount = openAmount(freeSrc, freeSrc.per);
-          out.free = split.free != null ? split.free : share ? Math.floor((amount * share.d + leftOver) / share.D) : amount;   // [J4]
+          out.free = split.free != null ? split.free : amount == null ? null : share ? Math.floor((amount * share.d + leftOver) / share.D) : amount;   // [J4]
         }
         return (opening[acctId] = out);
       }
@@ -910,9 +915,10 @@
       };
       const amountOf = (src, per) => (past ? perPeriod({ per, amount: periodAmount(src, win.start, win.occ) }, win.start, win.next, win.occ)
         : periodStream ? nowAmount(src, per) : periodAmount(src, lastPay, occOn(lastPay, today)));
-      const lines = lineSrcs.map(l => { const id = moneyAcct(lineAcct(l)), a = amountOf(l, l.per); return { name: l.name, acct: id, per: l.per, amount: a, left: leftOf(l.id, id, a), src: l }; });
+      // [BJ2] a line or Free to spend with no amount in this period (set later) is not in it
+      const lines = lineSrcs.map(l => { const id = moneyAcct(lineAcct(l)), a = amountOf(l, l.per); return a == null ? null : { name: l.name, acct: id, per: l.per, amount: a, left: leftOf(l.id, id, a), src: l }; }).filter(Boolean);
       const fid = freeSrc && moneyAcct(lineAcct(freeSrc)), fa = freeSrc && amountOf(freeSrc, freeSrc.per);
-      const free = freeSrc && { name: 'Free to spend', acct: fid, per: freeSrc.per, amount: fa, left: leftOf('free', fid, fa), src: freeSrc };
+      const free = freeSrc && fa != null ? { name: 'Free to spend', acct: fid, per: freeSrc.per, amount: fa, left: leftOf('free', fid, fa), src: freeSrc } : null;
       return { lines, free };
     }
     const planLeft = planNow();
@@ -972,6 +978,7 @@
     // year's pays, the leftover on the earliest; `week` gets days x amount / 7, rounded down [SCHEMA 8].
     // `occId` names the pay that starts the period, when known (a period started without its pay keeps its name [T1]).
     function perPeriod(x, startDay, endDay, occId) {
+      if (x.amount == null) return null;   // [BJ2] no amount in that period
       if (x.per === 'week') return Math.floor(x.amount * (endDay - startDay) / 7);
       if (x.per === 'month' && periodStream) {
         const o = occId ? pays.find(p => p.id === occId) : pays.find(p => p.land === startDay);
