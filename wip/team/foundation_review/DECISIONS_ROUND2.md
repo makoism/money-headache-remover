@@ -152,3 +152,12 @@ R3. A card or loan that still owes money, or a bank below zero, cannot be closed
 R4. Closing the account a card is paid from, or a goal is kept in, first asks for the new account and moves the link; it cannot close until one is picked.
 R5. 38.31 has no closed accounts (one bank figure), so nothing closed is brought in at the move.
 The P helper's readings are confirmed.
+
+## S. Answers after Q and R
+S1. A rough transfer side met by a statement line within 10% takes the line's amount; the other side keeps its typed amount, and the difference is a fee on the sender (Q2).
+S2. A nearer line read later moves an existing settle, and the period start with it, unless the person ticked that settle at a check-in; a ticked settle stays.
+S3. A closing that writes several records names them `close:<account>:1`, `:2`, in order.
+S4. Card plan parts not yet posted are walked on their posting dates and appear in "Later on".
+S5. A fee is its own spend record linked to its transfer (`of: <transfer id>`), with the place the person picked (Free to spend by default).
+S6. Pay in another currency is left out of the "not seen yet" totals and listed apart, in its own currency, on the check-in list.
+The Q and R helper's readings are confirmed.
