@@ -1128,8 +1128,9 @@
     // ----- the check-in list [A1, A2, S6, U2, W2, X3] -----
     const bankIds = Object.keys(banks);
     const lastCheckIn = bankIds.length ? Math.min(...bankIds.map(id => banks[id].asOfDay)) : today;
-    const sinceOpening = o => isNotYet(o) && banks[o.acct] && banks[o.acct].asOfDay === openDay(o.acct);
-    const listed = items.filter(o => !o.settled && (o.land > lastCheckIn || sinceOpening(o)) && o.land <= today && fallsDue(o) && o.amount);
+    // [A2, X3] every expected item that has landed and is not settled or skipped stays on the list, also one left
+    // unticked at an earlier check-in (an item inside the opening is settled by it, unless setup said "not yet")
+    const listed = items.filter(o => !o.settled && o.land <= today && fallsDue(o) && o.amount);
     const matched = items.filter(o => settledBy[o.id] && settledBy[o.id].byImport && o.land > lastCheckIn && o.land <= today && o.amount);
     res.checkIn = { since: dayStr(lastCheckIn), toConfirm: listed.filter(o => !o.otherCur).map(itemOut), apart: listed.filter(o => o.otherCur).map(itemOut), matched: matched.map(itemOut) };
     return res;
