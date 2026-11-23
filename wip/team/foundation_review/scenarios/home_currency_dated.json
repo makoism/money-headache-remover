@@ -1,0 +1,29 @@
+{
+  "life": "home_currency_dated",
+  "title": "The home currency changes on a date: a worker in Japan goes home to the Philippines (final_review_1 finding 6, decision O6)",
+  "story": "A yen bank opened Mon 4 Jan 2027 with 300,000, home currency yen. A GCash e-wallet in pesos opened Sat 20 Feb 2027 with 10,000.00. From Mon 1 Mar 2027 the home currency is pesos: a new entry in the dated home currency list; the yen history stays in yen. Every amount is made up.",
+  "currency": "JPY",
+  "home_curs": [ { "from": "2027-01-04", "cur": "JPY" }, { "from": "2027-03-01", "cur": "PHP" } ],
+  "window": { "from": "2027-01-04", "to": "2027-03-31" },
+  "holidays": { "country": "none", "dates": [], "bank_closed": [] },
+  "accounts": [
+    { "id": "jb", "name": "Yen bank", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2027-01-04", "amount": 300000 } },
+    { "id": "pw", "name": "GCash", "kind": "ewallet", "currency": "PHP", "minimum": 0, "opening": { "date": "2027-02-20", "amount": 10000.00 } }
+  ],
+  "income": [],
+  "bills": [],
+  "goals": [],
+  "events": [],
+  "asks": [
+    { "id": "cur-01", "date": "2027-02-25", "question": "total", "beside": { "PHP": 10000.00 }, "expected": 300000,
+      "why": "300,000 (the yen bank; home is yen until 1 Mar, so the pesos sit beside) = 300,000" },
+    { "id": "cur-02", "date": "2027-03-05", "question": "total", "beside": { "JPY": 300000 }, "expected": 10000.00,
+      "why": "10,000.00 (GCash; home is pesos from 1 Mar [O6], the yen bank sits beside in yen, its history unchanged) = 10,000.00" },
+    { "id": "cur-03", "date": "2027-02-25", "question": "headline", "expected": 300000,
+      "why": "300,000 (the yen bank's headroom; the peso e-wallet is not the home currency yet) = 300,000" },
+    { "id": "cur-04", "date": "2027-03-05", "question": "headline", "expected": 10000.00,
+      "why": "10,000.00 (GCash's headroom; the yen bank is no longer in the home currency) = 10,000.00" },
+    { "id": "cur-05", "date": "2027-03-05", "question": "bank_today", "account": "jb", "expected": 300000,
+      "why": "300,000 (the yen bank, still in yen: a change of home currency converts nothing [O6]) = 300,000" }
+  ]
+}

@@ -41,9 +41,15 @@ Written 23 Nov 2026 from foundation_review/RECOMMENDATION.md, life_walks_salarie
 | percent_min_interest.json | A card with close day "not sure", a percent minimum and a balance: the day's interest first, spending between payment days included (K1, K2). | JPY | 8 |
 | moved_bank_now.json | A moved later bank figure with no date or time of its own (38.31 bankNow with no bankNowAt) (K3). | JPY | 3 |
 | import_rules.json | Statement lines meeting typed lines and expected items: within 10% of the larger, either side of the typed day, a card's buy date, a card's 7 working days, settles moving to the import, early pay (L matching q2 to q6, q10; M1). | JPY | 11 |
+| import_after_check.json | A statement line read after a check-in or after setup, a printed running balance deciding the order, a spend that logs itself written after a check (O1; final review S1). | JPY | 10 |
+| card_out.json | Money leaving a card: a closed card's credit sent to the bank, a cash advance, cash taken at an ATM (O5; final review S2). | JPY | 10 |
+| line_on_card.json | Food bought on the card: a line counts its spends on every account and is reserved once from the card's paying account; a line and Free to spend with no account are on the main bank; a refund given back to its line (O4; final review S3). | JPY | 6 |
+| home_currency_dated.json | The home currency changes from yen to pesos on a date; the yen history stays in yen (O6). | JPY, then PHP | 5 |
+| country_per_account.json | A Japanese card follows Japan's holidays while home follows the Philippines' (O, watch item). | PHP (+JPY) | 1 |
+| check_gain.json | A check-in figure far above what the app had is asked about (O, watch item). | JPY | 3 |
 | check_specs.js | Checks every file's shape and that every `why` adds up to its expected figure. `node check_specs.js` | | |
 
-Total: 321 asks (the first eight files: 180; the H files: 64; the I files: 34; the J files: 21; the K, L and M files: 22).
+Total: 356 asks (the first eight files: 180; the H files: 64; the I files: 34; the J files: 21; the K, L and M files: 22; the O files: 35).
 
 ### The review v3 situations and where each one is now
 
@@ -94,6 +100,40 @@ The reviewer's own scripts are in `../ref/review_v3_situations/`. Each situation
 - When `opening.split` names `free`, that figure stands; the rounding leftovers of the lines shared by days left stay in Waiting (J4).
 - A card's `opening.statements` (instead of `opening.statement`) lists several unpaid statements, oldest first, each with `closed`, `amount`, `paid: false` and `payment_day` (the due date; the weekend rule still applies) (J5).
 - `rule_questions` and `alt` may name a decision (like `I5`) whose earlier reading the `alt` keeps, as well as an open question (like `Q14`).
+
+### The final review situations and where each one is now
+The reviewer's own scripts (final_review_1.md) are in `../ref/final_review_situations/` (they name the main checkout's path; run them from a copy that points at this one). Each situation is now an ask or a rules case with a hand-worked answer:
+
+| Situation | Decision | Asks or cases |
+|---|---|---|
+| S1. A statement line read after a check-in (a), with no typed line (b), on the setup day (c) | O1 | import_after_check iac-01 to iac-06; rules match-47, match-48 |
+| S1. A printed running balance; a spend that logs itself written after a check | O1 | import_after_check iac-07 to iac-10 |
+| S2. A closed card's credit sent to the bank (a), a cash advance (b), cash taken at an ATM | O5 | card_out out-01 to out-10 |
+| S3. Food bought on the card, the line on the bank or on the card | O4 | line_on_card line-01 to line-06 |
+| S4. Two phones tick the same pay; the period end answered on both | O2 | rules mg-50, mg-54, mg-55, pe-36, pe-37 |
+| S5. The three-letter session part | O3 | rules mg-58, mg-59, mg-61 |
+| S5. A goal deleted with money in it | O (watch) | not tested: see SCHEMA_V3 section 14 (the move to Waiting does not stop the headline jump) |
+| S5. Pay rhythm changed mid-year | O (watch) | rules units-59 (the count); the per-pay amount is in SCHEMA_V3 section 14 |
+| S5. Rent paid twice then refunded; pay split across two accounts | sound | none needed |
+| S6. A spend that logs itself written on two devices | O2 | rules mg-51, mg-56 |
+| Home currency changed over time | O6 | home_currency_dated cur-01 to cur-05; rules units-60 to units-62 |
+| One holiday table for all accounts | O (watch) | country_per_account ctry-01 |
+| A wrong figure typed at a check-in | O (watch) | check_gain gain-01 to gain-03 |
+| A refund given back to its line | O (watch) | line_on_card line-04, line-05 |
+| An old statement read after a period-end answer | O (watch) | rules pe-38, pe-39 |
+| The move's ₱ and the raw `frozen3831` | O (watch) | rules units-63 to units-66 |
+| A period started without the pay, on two phones | O2 | rules mg-53, mg-57 |
+
+### What the O files add to the way a file is written
+- An imported line may carry **bal**: the running balance the statement prints after that line (`src.bal`). On a check's day it decides whether the line is inside the check (O1).
+- An imported line that replaces no typed line, or a spend that logs itself (it settles an `auto_spend` bill, like `auto:gym@2027-01-08`), dated on a check's day or the setup day, is inside that figure, whatever its `told` (O1).
+- **not_explained** may give **on**: the day of the check it is about, when the ask is later (an import read after the check).
+- **borrow** events (`from` a card, `to` an account, `amount`): cash taken on a card. A `transfer` or `borrow` out of a card is a card line (O5). A card may carry **cash_apr** (stored for stage 2, not used yet).
+- A top-level **main_bank** names the main bank. A budget line or Free to spend with no `account` is on it; a line may name a card, and is then reserved from the card's paying account (O4). A **refund** may name its `line` when the person gives it back to that line.
+- A top-level **home_curs** (`[ { from, cur } ]`, the first in the file's `currency`) dates the home currency; asks with no account are in the currency in force on their date (O6).
+- An account may carry **country** and its own **holidays** table; its items, card payments and posting windows follow it (O).
+- **total_after_cards**: the total less what the home-currency cards owe (F10, O5).
+- The warning **gain_to_ask**: a check-in figure above what the app had by more than the period's Free to spend, or by more than 20% of what the app had for the account (O).
 
 ### What the K and L files add to the way a file is written
 - A card with `statement_close_day: null`, `carries: true`, an `apr` and a percent `min_rule`: the next payment day's interest is added first, on everything owed before that day's payment (spending since the last payment day included, K1), and the minimum is worked out on the balance including it (K2).

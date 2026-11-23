@@ -1,0 +1,50 @@
+{
+  "life": "card_out",
+  "title": "Money leaving a card: a closed card's credit sent back to the bank, a cash advance into the bank, cash taken at an ATM (final_review_1 finding 5, decision O5)",
+  "story": "Two banks opened Mon 4 Jan 2027 with 100,000 each, and a cash wallet with nothing in it. Card 1 is paid from bank 1, card 2 from bank 2; both close on the 15th and are paid in full on the 10th of the next month (moved later), and both opened with their 15 Dec statement at 0, paid. Card 1: a refund of 3,000 on Wed 20 Jan after the person stopped using it; on Sat 20 Feb the card company sends that credit to bank 1. Card 2 (cash rate 18% a year, stored for stage 2): a cash advance of 20,000 into bank 2 on Wed 20 Jan, and 5,000 cash taken at an ATM on Fri 22 Jan. No pay is set up. Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2027-01-04", "to": "2027-03-31" },
+  "holidays": { "country": "none", "dates": [], "bank_closed": [] },
+  "accounts": [
+    { "id": "b1", "name": "Bank 1", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2027-01-04", "amount": 100000 } },
+    { "id": "b2", "name": "Bank 2", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2027-01-04", "amount": 100000 } },
+    { "id": "w", "name": "Cash", "kind": "cash", "currency": "JPY", "minimum": 0, "opening": { "date": "2027-01-04", "amount": 0 } },
+    { "id": "c1", "name": "Card 1", "kind": "card", "currency": "JPY", "statement_close_day": 15,
+      "payment": { "day": 10, "months_after_close": 1, "from": "b1", "pays": "in full", "weekend_holiday": "move later" },
+      "opening": { "date": "2027-01-04", "statement": { "closed": "2026-12-15", "amount": 0, "paid": true }, "current": 0 } },
+    { "id": "c2", "name": "Card 2", "kind": "card", "currency": "JPY", "statement_close_day": 15, "cash_apr": 18,
+      "payment": { "day": 10, "months_after_close": 1, "from": "b2", "pays": "in full", "weekend_holiday": "move later" },
+      "opening": { "date": "2027-01-04", "statement": { "closed": "2026-12-15", "amount": 0, "paid": true }, "current": 0 } }
+  ],
+  "income": [],
+  "bills": [],
+  "goals": [],
+  "events": [
+    { "id": "r1", "date": "2027-01-20", "kind": "refund", "account": "c1", "amount": 3000, "note": "refund after the person stopped using card 1" },
+    { "id": "a1", "date": "2027-01-20", "kind": "transfer", "from": "c2", "to": "b2", "amount": 20000, "note": "cash advance from card 2 into bank 2" },
+    { "id": "k1", "date": "2027-01-22", "kind": "borrow", "from": "c2", "to": "w", "amount": 5000, "note": "cash taken on card 2 at an ATM" },
+    { "id": "x1", "date": "2027-02-20", "kind": "transfer", "from": "c1", "to": "b1", "amount": 3000, "note": "the card company sends card 1's credit to bank 1" }
+  ],
+  "asks": [
+    { "id": "out-01", "date": "2027-01-25", "question": "bank_today", "account": "b2", "expected": 120000,
+      "why": "100,000 (opening) + 20,000 (cash advance from card 2) = 120,000" },
+    { "id": "out-02", "date": "2027-01-25", "question": "owed_now", "account": "c2", "expected": 25000,
+      "why": "20,000 (cash advance 20 Jan, a card line [O5]) + 5,000 (cash taken 22 Jan, a card line [O5]) = 25,000" },
+    { "id": "out-03", "date": "2027-01-25", "question": "card_due", "account": "c2", "expected": { "amount": 25000, "payment_date": "2027-03-10", "statement": "open" },
+      "why": "20,000 (cash advance) + 5,000 (cash taken; both after the 15 Jan close, so on the statement closing 15 Feb, paid Wed 10 Mar) = 25,000" },
+    { "id": "out-04", "date": "2027-01-25", "question": "bank_today", "account": "w", "expected": 5000,
+      "why": "0 (opening) + 5,000 (cash taken on card 2) = 5,000" },
+    { "id": "out-05", "date": "2027-01-25", "question": "safe_to_spend", "account": "b2", "expected": 95000,
+      "why": "120,000 (b2 today) - 25,000 (card 2, paid 10 Mar, inside the 45 days) - 0 (minimum) = 95,000" },
+    { "id": "out-06", "date": "2027-02-25", "question": "bank_today", "account": "b1", "expected": 103000,
+      "why": "100,000 (opening) + 3,000 (card 1's credit sent back) = 103,000" },
+    { "id": "out-07", "date": "2027-02-25", "question": "owed_now", "account": "c1", "expected": 0,
+      "why": "3,000 (the credit sent to bank 1, a card line [O5]) - 3,000 (refund 20 Jan) = 0" },
+    { "id": "out-08", "date": "2027-02-25", "question": "card_due", "account": "c2", "expected": { "amount": 25000, "payment_date": "2027-03-10", "statement": "closed" },
+      "why": "20,000 (cash advance) + 5,000 (cash taken; the statement closed Mon 15 Feb) = 25,000" },
+    { "id": "out-09", "date": "2027-02-25", "question": "total", "expected": 228000,
+      "why": "103,000 (b1) + 120,000 (b2) + 5,000 (cash) = 228,000" },
+    { "id": "out-10", "date": "2027-02-25", "question": "total_after_cards", "expected": 203000,
+      "why": "228,000 (total) - 0 (card 1) - 25,000 (card 2) = 203,000" }
+  ]
+}

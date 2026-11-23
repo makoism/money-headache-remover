@@ -8,9 +8,9 @@ const path = require('path');
 
 const DIGITS = { JPY: 0, PHP: 2, USD: 2, EUR: 2 };
 const KINDS = ['bank', 'cash', 'ewallet', 'card', 'loan', 'paylater'];
-const EVENT_KINDS = ['pay_in', 'money_in', 'spend', 'refund', 'bill_paid', 'card_payment', 'transfer', 'convert', 'set_aside', 'check', 'card_check', 'skip', 'repay'];
+const EVENT_KINDS = ['pay_in', 'money_in', 'spend', 'refund', 'bill_paid', 'card_payment', 'transfer', 'convert', 'set_aside', 'check', 'card_check', 'skip', 'repay', 'borrow'];   // borrow: cash taken on a card [O5]
 const QUESTIONS = ['bank_today', 'safe_to_spend', 'days_to_next_pay', 'due_before_next_pay', 'not_seen_yet', 'card_due', 'total', 'not_explained',
-  'check_in_list', 'may_still_post', 'owed_now', 'headline', 'place', 'warnings'];
+  'check_in_list', 'may_still_post', 'owed_now', 'headline', 'place', 'warnings', 'total_after_cards'];
 const WE_RULES = ['move earlier', 'move later', 'none'];
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 const TOLD = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?$/;   // a date, or a date and a time [H1]
@@ -170,6 +170,16 @@ function checkFile(fp) {
     if (!(k in s)) bad(file, 'top', `missing "${k}"`);
   }
   if (!(s.currency in DIGITS)) bad(file, 'currency', `unknown currency ${s.currency}`);
+  // [O6] The home currency may change on a date: `home_curs` lists { from, cur }, oldest first, the first from the file's start.
+  if (s.home_curs !== undefined) {
+    if (!Array.isArray(s.home_curs) || !s.home_curs.length || s.home_curs[0].cur !== s.currency) bad(file, 'home_curs', 'a list of { from, cur }, the first in the file\'s currency [O6]');
+    let prev = '';
+    for (const h of s.home_curs || []) {
+      if (!isDate(h.from) || !(h.cur in DIGITS) || h.from <= prev) bad(file, 'home_curs', 'each entry needs a later from date and a known cur [O6]');
+      prev = h.from;
+    }
+  }
+  const homeOn = day => (s.home_curs || []).filter(h => h.from <= day).reduce((c, h) => h.cur, s.currency);
   if (!s.window || !isDate(s.window.from) || !isDate(s.window.to)) bad(file, 'window', 'needs from and to dates');
   for (const h of [...((s.holidays || {}).dates || []), ...((s.holidays || {}).bank_closed || [])]) if (!isDate(h.date)) bad(file, 'holidays', `bad date ${h.date}`);
 
@@ -284,8 +294,9 @@ function checkFile(fp) {
     if (['bank_today', 'safe_to_spend', 'card_due', 'not_explained', 'owed_now', 'place'].includes(a.question) && !(a.account in acc)) bad(file, w, 'needs an account');
     if (a.question === 'place' && !goals.has(a.place)) bad(file, w, 'needs a place (a goal id)');
     if (a.from !== undefined && !isDate(a.from)) bad(file, w, 'from must be a date');
+    if (a.on !== undefined && !(a.question === 'not_explained' && isDate(a.on) && a.on <= a.date)) bad(file, w, 'on is the day of the check a not_explained ask is about, on or before the ask date [O1]');
     if (a.question === 'card_due' && acc[a.account] && acc[a.account].kind !== 'card') bad(file, w, 'card_due needs a card account');
-    const d = DIGITS[(acc[a.account] || {}).currency || s.currency];
+    const d = DIGITS[(acc[a.account] || {}).currency || homeOn(a.date)];
     checkAnswer(file, w, a.question, a.expected, a.why, d, a.date);
     // An open question (Q7), or a decision (I5) whose earlier reading an alt keeps
     for (const q of a.rule_questions || []) if (!/^[A-Z]\d+$/.test(q)) bad(file, w, `rule question ${q} is not like Q7 or I5`);

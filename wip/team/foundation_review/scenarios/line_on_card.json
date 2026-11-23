@@ -1,0 +1,54 @@
+{
+  "life": "line_on_card",
+  "title": "Food bought on the card: a budget line counts its spends on every account and is reserved once from the card's paying account; a refund given back to its line (final_review_1 finding 4, decision O4, the refund watch item)",
+  "story": "Mako's shape, twice. Set up Fri 11 Dec 2026, the day after pay. Bank 1 (the main bank) and bank 2 hold 400,000 each; pay of 300,000 lands in each on the 10th (moved earlier), bank 1's pay starts the period. Card 1 is paid from bank 1, card 2 from bank 2; both close on the 15th and are paid in full on the 10th of the next month (moved later). Food is 50,000 a month and names no account, so it is on the main bank; a second food line of 50,000 is set on card 2. Free to spend is 60,000 a month and names no account. At setup bank 1's split holds 50,000 for Food and 40,000 in Free to spend; bank 2's holds 50,000 for the card 2 food line. Sat 12 Dec: 30,000 of food on each card. Mon 14 Dec: a 5,000 refund on each card; on card 1 the person gives it back to Food, on card 2 they do not. Every amount is made up.",
+  "currency": "JPY",
+  "main_bank": "b1",
+  "window": { "from": "2026-12-11", "to": "2027-01-31" },
+  "holidays": { "country": "none", "dates": [], "bank_closed": [] },
+  "accounts": [
+    { "id": "b1", "name": "Bank 1", "kind": "bank", "currency": "JPY", "minimum": 0,
+      "opening": { "date": "2026-12-11", "amount": 400000, "split": { "lines": { "food": 50000 }, "free": 40000 } } },
+    { "id": "b2", "name": "Bank 2", "kind": "bank", "currency": "JPY", "minimum": 0,
+      "opening": { "date": "2026-12-11", "amount": 400000, "split": { "lines": { "food2": 50000 } } } },
+    { "id": "c1", "name": "Card 1", "kind": "card", "currency": "JPY", "statement_close_day": 15,
+      "payment": { "day": 10, "months_after_close": 1, "from": "b1", "pays": "in full", "weekend_holiday": "move later" },
+      "opening": { "date": "2026-12-11", "statement": { "closed": "2026-11-15", "amount": 0, "paid": true }, "current": 0 } },
+    { "id": "c2", "name": "Card 2", "kind": "card", "currency": "JPY", "statement_close_day": 15,
+      "payment": { "day": 10, "months_after_close": 1, "from": "b2", "pays": "in full", "weekend_holiday": "move later" },
+      "opening": { "date": "2026-12-11", "statement": { "closed": "2026-11-15", "amount": 0, "paid": true }, "current": 0 } }
+  ],
+  "plan": {
+    "lines": [
+      { "id": "food", "name": "Food", "per": "month", "amount": 50000 },
+      { "id": "food2", "name": "Food on card 2", "account": "c2", "per": "month", "amount": 50000 }
+    ],
+    "free": { "per": "month", "amount": 60000 }
+  },
+  "income": [
+    { "id": "pay1", "name": "Pay 1", "account": "b1", "amount": 300000, "schedule": { "frequency": "monthly", "day": 10 }, "weekend_holiday": "move earlier", "starts_period": true },
+    { "id": "pay2", "name": "Pay 2", "account": "b2", "amount": 300000, "schedule": { "frequency": "monthly", "day": 10 }, "weekend_holiday": "move earlier", "starts_period": false }
+  ],
+  "bills": [],
+  "goals": [],
+  "events": [
+    { "id": "f1", "date": "2026-12-12", "kind": "spend", "account": "c1", "amount": 30000, "line": "food", "note": "food bought on card 1" },
+    { "id": "f2", "date": "2026-12-12", "kind": "spend", "account": "c2", "amount": 30000, "line": "food2", "note": "food bought on card 2" },
+    { "id": "f3", "date": "2026-12-14", "kind": "refund", "account": "c1", "amount": 5000, "line": "food", "note": "refund; the person gives it back to Food" },
+    { "id": "f4", "date": "2026-12-14", "kind": "refund", "account": "c2", "amount": 5000, "note": "refund; the person names no line" }
+  ],
+  "asks": [
+    { "id": "line-01", "date": "2026-12-13", "question": "safe_to_spend", "account": "b1", "expected": 380000,
+      "why": "400,000 (b1 today) - 20,000 (Food left: 50,000 less the 30,000 bought on card 1, counted on every account [O4]; the 30,000 itself comes off with card 1's payment on 11 Jan, after pay on 8 Jan; Free to spend is not taken off the headroom, it caps the headline [B1]) - 0 (minimum) = 380,000" },
+    { "id": "line-02", "date": "2026-12-13", "question": "safe_to_spend", "account": "b2", "expected": 380000,
+      "why": "400,000 (b2 today) - 20,000 (Food on card 2 left, reserved from b2, which pays card 2 [O4]; the 30,000 already bought comes off with card 2's payment on 11 Jan, after pay on 8 Jan) - 0 (minimum) = 380,000" },
+    { "id": "line-03", "date": "2026-12-13", "question": "headline", "expected": 40000,
+      "why": "40,000 (Free to spend left, on b1, the main bank [O4]; it caps the headroom of 380,000 + 380,000) = 40,000" },
+    { "id": "line-04", "date": "2026-12-14", "question": "safe_to_spend", "account": "b1", "expected": 375000,
+      "why": "400,000 (b1 today) - 25,000 (Food left: 50,000 - 30,000 + 5,000, the refund the person gave back to Food) - 0 (minimum) = 375,000" },
+    { "id": "line-05", "date": "2026-12-14", "question": "safe_to_spend", "account": "b2", "expected": 380000,
+      "why": "400,000 (b2 today) - 20,000 (Food on card 2 left; the refund names no line, so it lowers what card 2 owes and gives nothing back to the line) - 0 (minimum) = 380,000" },
+    { "id": "line-06", "date": "2026-12-14", "question": "card_due", "account": "c1", "expected": { "amount": 25000, "payment_date": "2027-01-11", "statement": "open" },
+      "why": "30,000 (food 12 Dec) - 5,000 (refund 14 Dec; the statement closes Tue 15 Dec, paid Sun 10 Jan moved to Mon 11 Jan) = 25,000" }
+  ]
+}

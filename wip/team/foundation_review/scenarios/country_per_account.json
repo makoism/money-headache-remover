@@ -1,0 +1,26 @@
+{
+  "life": "country_per_account",
+  "title": "Each account follows its own country's holidays: a Japanese card for someone whose home table is the Philippines' (final_review_1 watch item, decision O)",
+  "story": "Home is the Philippines (pesos, the Philippine table). A GCash e-wallet opened Mon 4 Jan 2027 with 20,000.00. A yen bank and a yen card, both Japanese, carry Japan's table: Mon 11 Jan 2027 is Coming of Age Day there and an ordinary day in the Philippines. The card closes on the last day of the month and is paid on the 11th of the next month, moved later, from the yen bank; its 31 Dec statement of 30,000 is unpaid at setup. Every amount is made up.",
+  "currency": "PHP",
+  "window": { "from": "2027-01-04", "to": "2027-01-31" },
+  "holidays": { "country": "PH", "dates": [ { "date": "2026-12-30", "name": "Rizal Day" } ], "bank_closed": [] },
+  "accounts": [
+    { "id": "gcash", "name": "GCash", "kind": "ewallet", "currency": "PHP", "minimum": 0, "opening": { "date": "2027-01-04", "amount": 20000.00 } },
+    { "id": "jb", "name": "Yen bank", "kind": "bank", "currency": "JPY", "minimum": 0, "country": "JP",
+      "holidays": { "country": "JP", "dates": [ { "date": "2027-01-11", "name": "Coming of Age Day" } ], "bank_closed": [] },
+      "opening": { "date": "2027-01-04", "amount": 200000 } },
+    { "id": "jc", "name": "Yen card", "kind": "card", "currency": "JPY", "country": "JP", "statement_close_day": "last",
+      "holidays": { "country": "JP", "dates": [ { "date": "2027-01-11", "name": "Coming of Age Day" } ], "bank_closed": [] },
+      "payment": { "day": 11, "months_after_close": 1, "from": "jb", "pays": "in full", "weekend_holiday": "move later" },
+      "opening": { "date": "2027-01-04", "statement": { "closed": "2026-12-31", "amount": 30000, "paid": false }, "current": 30000 } }
+  ],
+  "income": [],
+  "bills": [],
+  "goals": [],
+  "events": [],
+  "asks": [
+    { "id": "ctry-01", "date": "2027-01-05", "question": "card_due", "account": "jc", "expected": { "amount": 30000, "payment_date": "2027-01-12", "statement": "closed" },
+      "why": "30,000 (statement closed 31 Dec, due Mon 11 Jan, a holiday in Japan, so paid Tue 12 Jan by the card's own table) = 30,000" }
+  ]
+}

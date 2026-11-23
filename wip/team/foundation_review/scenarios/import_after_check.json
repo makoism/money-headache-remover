@@ -1,0 +1,56 @@
+{
+  "life": "import_after_check",
+  "title": "A statement line imported after a check-in or after setup, a printed running balance, and a spend that logs itself written late (final_review_1 finding 1, decision O1)",
+  "story": "Five banks, each opened Mon 4 Jan 2027 with 100,000, so each story stands alone. b1: lunch of 1,000 typed at noon on Wed 6 Jan, the bank checked at 20:00 at 99,000, and the statement line for the lunch imported a week later. b2: the same with no typed line. b3: setup at 12:00 on 4 Jan; a coffee of 500 bought at 8:00 that morning arrives on a statement a week later, and a dinner of 2,000 typed at 19:00 that evening. b4: a check at 20:00 on Fri 8 Jan shows 97,000; the statement imported a week later has two lines that day with its running balance printed: 3,000 (balance 97,000) then 4,000 (balance 93,000). b5: a gym fee of 8,000 logs itself on Fri 8 Jan; the bank was checked at 9:00 that day at 92,000, the gym already taken, and the app wrote the gym spend when it was next opened at 10:00. Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2027-01-04", "to": "2027-01-31" },
+  "holidays": { "country": "none", "dates": [], "bank_closed": [] },
+  "accounts": [
+    { "id": "b1", "name": "Bank 1", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2027-01-04", "amount": 100000 } },
+    { "id": "b2", "name": "Bank 2", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2027-01-04", "amount": 100000 } },
+    { "id": "b3", "name": "Bank 3", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2027-01-04", "told": "2027-01-04T12:00", "amount": 100000 } },
+    { "id": "b4", "name": "Bank 4", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2027-01-04", "amount": 100000 } },
+    { "id": "b5", "name": "Bank 5", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2027-01-04", "amount": 100000 } }
+  ],
+  "income": [],
+  "bills": [
+    { "id": "gym", "kind": "auto_spend", "name": "Gym", "account": "b5", "amount": 8000, "schedule": { "frequency": "monthly", "day": 8 }, "weekend_holiday": "none" }
+  ],
+  "goals": [],
+  "events": [
+    { "id": "d3", "date": "2027-01-04", "told": "2027-01-04T19:00", "kind": "spend", "account": "b3", "amount": 2000, "note": "dinner typed that evening, after setup" },
+    { "id": "i3", "date": "2027-01-04", "posted": "2027-01-04", "told": "2027-01-10T09:00", "kind": "spend", "account": "b3", "amount": 500, "source": "statement", "note": "the 8:00 coffee, before setup at 12:00" },
+    { "id": "t1", "date": "2027-01-06", "told": "2027-01-06T12:00", "kind": "spend", "account": "b1", "amount": 1000, "note": "lunch typed at noon" },
+    { "id": "c1", "date": "2027-01-06", "told": "2027-01-06T20:00", "kind": "check", "account": "b1", "amount": 99000, "note": "the bank app shows the lunch gone" },
+    { "id": "c2", "date": "2027-01-06", "told": "2027-01-06T20:00", "kind": "check", "account": "b2", "amount": 99000, "note": "the bank app shows the lunch gone; nothing was typed" },
+    { "id": "i1", "date": "2027-01-06", "posted": "2027-01-06", "told": "2027-01-13T09:00", "kind": "spend", "account": "b1", "amount": 1000, "source": "statement", "note": "the lunch on the statement, imported a week later" },
+    { "id": "i2", "date": "2027-01-06", "posted": "2027-01-06", "told": "2027-01-13T09:00", "kind": "spend", "account": "b2", "amount": 1000, "source": "statement", "note": "the lunch on the statement, imported a week later" },
+    { "id": "c4", "date": "2027-01-08", "told": "2027-01-08T20:00", "kind": "check", "account": "b4", "amount": 97000 },
+    { "id": "c5", "date": "2027-01-08", "told": "2027-01-08T09:00", "kind": "check", "account": "b5", "amount": 92000, "note": "the gym was already taken" },
+    { "id": "auto:gym@2027-01-08", "date": "2027-01-08", "told": "2027-01-08T10:00", "kind": "spend", "account": "b5", "amount": 8000, "settles": "gym@2027-01-08", "note": "the spend the gym fee logs by itself, written when the app was opened at 10:00" },
+    { "id": "i4a", "date": "2027-01-08", "posted": "2027-01-08", "told": "2027-01-15T09:00", "kind": "spend", "account": "b4", "amount": 3000, "bal": 97000, "source": "statement", "note": "first line that day, running balance 97,000" },
+    { "id": "i4b", "date": "2027-01-08", "posted": "2027-01-08", "told": "2027-01-15T09:00", "kind": "spend", "account": "b4", "amount": 4000, "bal": 93000, "source": "statement", "note": "second line that day, running balance 93,000" }
+  ],
+  "asks": [
+    { "id": "iac-01", "date": "2027-01-13", "question": "bank_today", "account": "b1", "expected": 99000,
+      "why": "99,000 (the check on 6 Jan; the statement line replaced the typed lunch and keeps its told, 12:00, so it is inside the 20:00 check [O1]) = 99,000" },
+    { "id": "iac-02", "date": "2027-01-13", "question": "not_explained", "on": "2027-01-06", "account": "b1", "expected": 0,
+      "why": "100,000 (opening) - 1,000 (the lunch, told at 12:00 as the typed line was) - 99,000 (check 6 Jan) = 0" },
+    { "id": "iac-03", "date": "2027-01-12", "question": "not_explained", "on": "2027-01-06", "account": "b2", "expected": 1000,
+      "why": "100,000 (opening) - 99,000 (check 6 Jan; nothing was typed, so the check holds 1,000 the app cannot explain yet) = 1,000" },
+    { "id": "iac-04", "date": "2027-01-13", "question": "not_explained", "on": "2027-01-06", "account": "b2", "expected": 0,
+      "why": "100,000 (opening) - 1,000 (the statement line, unmatched and dated on the check's day, so inside that figure [O1]) - 99,000 (check 6 Jan) = 0" },
+    { "id": "iac-05", "date": "2027-01-13", "question": "bank_today", "account": "b2", "expected": 99000,
+      "why": "99,000 (the check on 6 Jan, which held the lunch; the import shrinks the gap and never lowers the bank) = 99,000" },
+    { "id": "iac-06", "date": "2027-01-10", "question": "bank_today", "account": "b3", "expected": 98000,
+      "why": "100,000 (opening at 12:00, which held the 8:00 coffee: an unmatched import dated on the setup day is inside the opening [O1]) - 2,000 (dinner typed at 19:00, after setup) = 98,000" },
+    { "id": "iac-07", "date": "2027-01-15", "question": "bank_today", "account": "b4", "expected": 93000,
+      "why": "97,000 (check 8 Jan at 20:00; the first line's printed balance is 97,000, so it is inside the check, and the second line came after it: the running balance decides the order [O1]) - 4,000 (the second line) = 93,000" },
+    { "id": "iac-08", "date": "2027-01-15", "question": "not_explained", "on": "2027-01-08", "account": "b4", "expected": 0,
+      "why": "100,000 (opening) - 3,000 (first line, inside the check by its balance) - 97,000 (check 8 Jan) = 0" },
+    { "id": "iac-09", "date": "2027-01-08", "question": "bank_today", "account": "b5", "expected": 92000,
+      "why": "92,000 (the 9:00 check; the gym spend the app wrote at 10:00 is dated that day, so it is inside that figure [O1]) = 92,000" },
+    { "id": "iac-10", "date": "2027-01-08", "question": "not_explained", "account": "b5", "expected": 0,
+      "why": "100,000 (opening) - 8,000 (gym, logged by itself, inside the check) - 92,000 (check 8 Jan) = 0" }
+  ]
+}

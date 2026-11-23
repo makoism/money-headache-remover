@@ -454,6 +454,224 @@
         "H8",
         "L period_end q2"
       ]
+    },
+    {
+      "id": "pe-36",
+      "question": "leftovers_merged",
+      "title": "Both phones answer the period end the same way: one answer, 20,000 moved once",
+      "input": {
+        "periodTo": "2026-12-24",
+        "places": [
+          {
+            "id": "free",
+            "left": 20000
+          }
+        ],
+        "mine": [
+          {
+            "place": "free",
+            "to": "trip",
+            "a": 20000,
+            "told": "2026-12-26T09:00:00.000+09:00",
+            "at": "2026-12-26T09:00:00.000+09:00",
+            "by": "jjjjjj"
+          }
+        ],
+        "theirs": [
+          {
+            "place": "free",
+            "to": "trip",
+            "a": 20000,
+            "told": "2026-12-26T09:10:00.000+09:00",
+            "at": "2026-12-26T09:10:00.000+09:00",
+            "by": "tttttt"
+          }
+        ]
+      },
+      "expected": {
+        "places": {
+          "free": {
+            "left": 20000,
+            "decided": 20000,
+            "kept": 0,
+            "toDecide": 0,
+            "state": "decided"
+          }
+        },
+        "moves": [
+          {
+            "k": "move",
+            "date": "2026-12-24",
+            "a": 20000,
+            "place": "free",
+            "place2": "trip",
+            "told": "2026-12-26T09:00:00.000+09:00"
+          }
+        ]
+      },
+      "why": "Each phone writes its answer as `pe:2026-12-24:free` [O2], so the merge keeps one record (newest `at`, earliest `told`, 09:00). 20,000 leaves Free to spend once; before O2 the merged copy moved 40,000 out of a place that held 20,000 (final_review_1 S4).",
+      "decisions": [
+        "O2",
+        "A7",
+        "L period_end q10"
+      ]
+    },
+    {
+      "id": "pe-37",
+      "question": "leftovers_merged",
+      "title": "Answers that each phone allowed are refused together after the merge",
+      "input": {
+        "periodTo": "2026-12-24",
+        "places": [
+          {
+            "id": "food",
+            "left": -5000
+          },
+          {
+            "id": "free",
+            "left": 20000
+          }
+        ],
+        "mine": [
+          {
+            "place": "free",
+            "to": "trip",
+            "a": 20000,
+            "told": "2026-12-26T09:00:00.000+09:00",
+            "at": "2026-12-26T09:00:00.000+09:00",
+            "by": "jjjjjj"
+          }
+        ],
+        "theirs": [
+          {
+            "place": "food",
+            "from": "free",
+            "a": 5000,
+            "told": "2026-12-26T09:10:00.000+09:00",
+            "at": "2026-12-26T09:10:00.000+09:00",
+            "by": "tttttt"
+          }
+        ]
+      },
+      "expected": {
+        "refused": {
+          "place": "free",
+          "left": 20000
+        }
+      },
+      "why": "Jun's phone moves all 20,000 of Free to spend to the trip; Tess's phone covers Food's 5,000 overspend from Free to spend. Each alone is fine (20,000 and 5,000 of 20,000). They are different records (`pe:2026-12-24:free`, `pe:2026-12-24:food`), so both survive the merge; checked again after it [O2], Free to spend gives 20,000 + 5,000 = 25,000 of 20,000, which is refused, the amount left shown [L period_end q10].",
+      "decisions": [
+        "O2",
+        "L period_end q4",
+        "L period_end q10"
+      ]
+    },
+    {
+      "id": "pe-38",
+      "question": "found_later",
+      "title": "An old statement read after the answer: the answer stays, the overspend is found later",
+      "input": {
+        "periodTo": "2026-12-24",
+        "places": [
+          {
+            "id": "free",
+            "left": 20000
+          }
+        ],
+        "answers": [
+          {
+            "place": "free",
+            "to": "trip",
+            "a": 20000,
+            "told": "2026-12-26T09:00:00.000+09:00"
+          }
+        ],
+        "later": [
+          {
+            "place": "free",
+            "a": 30000
+          }
+        ]
+      },
+      "expected": {
+        "places": {
+          "free": {
+            "left": -10000,
+            "given": 20000,
+            "toDecide": 0,
+            "foundLater": 30000
+          }
+        },
+        "moves": [
+          {
+            "k": "move",
+            "date": "2026-12-24",
+            "a": 20000,
+            "place": "free",
+            "place2": "trip",
+            "told": "2026-12-26T09:00:00.000+09:00"
+          }
+        ]
+      },
+      "why": "At the answer Free to spend had 20,000 left and all of it went to the trip. A statement read later adds 30,000 of spending dated in that period: 20,000 - 30,000 = -10,000 really left. The answer stays [O]; the place is now 20,000 - (-10,000) = 30,000 short, shown at the next check-in as found later.",
+      "decisions": [
+        "O",
+        "A7"
+      ]
+    },
+    {
+      "id": "pe-39",
+      "question": "found_later",
+      "title": "A later statement that fits in what still waits to decide: no overspend",
+      "input": {
+        "periodTo": "2026-12-24",
+        "places": [
+          {
+            "id": "free",
+            "left": 20000
+          }
+        ],
+        "answers": [
+          {
+            "place": "free",
+            "to": "trip",
+            "a": 5000,
+            "told": "2026-12-26T09:00:00.000+09:00"
+          }
+        ],
+        "later": [
+          {
+            "place": "free",
+            "a": 10000
+          }
+        ]
+      },
+      "expected": {
+        "places": {
+          "free": {
+            "left": 10000,
+            "given": 5000,
+            "toDecide": 5000,
+            "foundLater": 0
+          }
+        },
+        "moves": [
+          {
+            "k": "move",
+            "date": "2026-12-24",
+            "a": 5000,
+            "place": "free",
+            "place2": "trip",
+            "told": "2026-12-26T09:00:00.000+09:00"
+          }
+        ]
+      },
+      "why": "5,000 went to the trip and 15,000 waited to decide. The later 10,000 comes out of the money still in the place: 20,000 - 10,000 = 10,000 really left, 5,000 given, 10,000 - 5,000 = 5,000 still to decide. Nothing is overspent, so nothing is found later; the answer stays [O].",
+      "decisions": [
+        "O",
+        "A7",
+        "L period_end q7"
+      ]
     }
   ],
   "open": []

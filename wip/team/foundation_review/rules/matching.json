@@ -647,6 +647,82 @@
       "expected": {"gone": {"sc1": "st1", "sc2": "f1"}, "settled": {}},
       "why": "The statement f1 (16 to 22 Nov) is read first, then the screenshot f2. sc1 matches st1 (500, 18 Nov), which ranks over it, so sc1 goes, goneBy st1, as in match-20. sc2 (750 on 19 Nov) matches no statement line but is inside the statement's dates, so it is removed too, goneBy the statement import f1 [M2]. sc3 (25 Nov) is after the statement's dates and stays a live line.",
       "decisions": ["M2", "A6"]
+    },
+    {
+      "id": "match-47",
+      "question": "import_told",
+      "title": "A statement line that replaces a typed line keeps the typed line's `told`",
+      "input": {
+        "lines": [
+          {
+            "id": "t1",
+            "acct": "bank",
+            "dir": "out",
+            "a": 1000,
+            "date": "2027-01-06",
+            "src": "typed",
+            "told": "2027-01-06T12:00:00.000+09:00"
+          }
+        ],
+        "imports": [
+          {
+            "id": "f1",
+            "src": "statement",
+            "acct": "bank",
+            "lines": [
+              {
+                "id": "i1",
+                "dir": "out",
+                "a": 1000,
+                "date": "2027-01-06",
+                "posted": "2027-01-06",
+                "told": "2027-01-13T09:00:00.000+09:00"
+              }
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "i1": "2027-01-06T12:00:00.000+09:00"
+      },
+      "why": "Lunch typed at 12:00 on Wed 6 Jan and a check-in at 20:00 that held it. The statement line read on 13 Jan matches t1 and replaces it [A6]; it keeps t1's `told`, 12:00, so it stays inside the 20:00 check and is not counted again [O1]. Its own read time, 13 Jan 09:00, is not used.",
+      "decisions": [
+        "O1",
+        "A6",
+        "L matching q5"
+      ]
+    },
+    {
+      "id": "match-48",
+      "question": "import_told",
+      "title": "A statement line that replaces nothing keeps its own `told`",
+      "input": {
+        "lines": [],
+        "imports": [
+          {
+            "id": "f1",
+            "src": "statement",
+            "acct": "bank",
+            "lines": [
+              {
+                "id": "i2",
+                "dir": "out",
+                "a": 1000,
+                "date": "2027-01-06",
+                "posted": "2027-01-06",
+                "told": "2027-01-13T09:00:00.000+09:00"
+              }
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "i2": "2027-01-13T09:00:00.000+09:00"
+      },
+      "why": "Nothing was typed, so the line replaces nothing and keeps its own `told`. Whether it is inside a check on its day is the model's rule: an unmatched import dated on a check's day or the setup day counts as inside that figure [O1] (scenarios/import_after_check.json iac-04, iac-06).",
+      "decisions": [
+        "O1"
+      ]
     }
   ],
   "open": []

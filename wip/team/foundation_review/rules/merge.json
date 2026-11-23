@@ -1063,6 +1063,465 @@
         "H1",
         "L merge q7"
       ]
+    },
+    {
+      "id": "mg-50",
+      "question": "id_for",
+      "title": "A settlement the check-in writes is named by its occurrence",
+      "input": {
+        "k": "set",
+        "s": "pay",
+        "due": "2026-12-25"
+      },
+      "expected": "set:pay@2026-12-25",
+      "why": "Ticking Pay at the check-in settles pay@2026-12-25, so the event it writes is `set:pay@2026-12-25` on every device [O2].",
+      "decisions": [
+        "O2",
+        "H2"
+      ]
+    },
+    {
+      "id": "mg-51",
+      "question": "id_for",
+      "title": "A spend that logs itself is named by its schedule and date",
+      "input": {
+        "k": "auto",
+        "s": "gym",
+        "due": "2027-02-01"
+      },
+      "expected": "auto:gym@2027-02-01",
+      "why": "The gym fee's own spend for its 1 Feb occurrence is `auto:gym@2027-02-01`, whichever device writes it [O2]. The date is the occurrence's due date before any move, as in every occurrence name [H2].",
+      "decisions": [
+        "O2",
+        "H2"
+      ]
+    },
+    {
+      "id": "mg-52",
+      "question": "id_for",
+      "title": "A period-end answer is named by the period's last day and its place",
+      "input": {
+        "k": "pe",
+        "periodTo": "2026-12-24",
+        "place": "free"
+      },
+      "expected": "pe:2026-12-24:free",
+      "why": "The answer for what was left in Free to spend in the period ending Thu 24 Dec is `pe:2026-12-24:free` [O2].",
+      "decisions": [
+        "O2"
+      ]
+    },
+    {
+      "id": "mg-53",
+      "question": "id_for",
+      "title": "A period started without the pay is named by its date",
+      "input": {
+        "k": "ps",
+        "date": "2026-12-20"
+      },
+      "expected": "ps:2026-12-20",
+      "why": "A `periodStart` the person chose for Sun 20 Dec is `ps:2026-12-20` [O2, N5].",
+      "decisions": [
+        "O2",
+        "N5"
+      ]
+    },
+    {
+      "id": "mg-54",
+      "question": "devices",
+      "title": "Jun and Tess each tick Pay on their own phone: one record, the newest `at`",
+      "input": {
+        "devices": {
+          "A": {
+            "id": "jjjjjj",
+            "lastSeen": "2026-12-26T07:00:00.000+09:00"
+          },
+          "B": {
+            "id": "tttttt",
+            "lastSeen": "2026-12-26T07:00:00.000+09:00"
+          }
+        },
+        "copy": {
+          "events": []
+        },
+        "steps": [
+          {
+            "on": "A",
+            "now": "2026-12-26T08:01:00.000+09:00",
+            "edit": {
+              "list": "events",
+              "make": {
+                "k": "set",
+                "s": "pay",
+                "due": "2026-12-25"
+              },
+              "set": {
+                "k": "in",
+                "date": "2026-12-25",
+                "a": 250000,
+                "acct": "b",
+                "stream": "pay",
+                "settles": [
+                  {
+                    "s": "pay",
+                    "due": "2026-12-25"
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "on": "B",
+            "now": "2026-12-26T08:02:00.000+09:00",
+            "edit": {
+              "list": "events",
+              "make": {
+                "k": "set",
+                "s": "pay",
+                "due": "2026-12-25"
+              },
+              "set": {
+                "k": "in",
+                "date": "2026-12-25",
+                "a": 248000,
+                "acct": "b",
+                "stream": "pay",
+                "settles": [
+                  {
+                    "s": "pay",
+                    "due": "2026-12-25"
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "sync": "A",
+            "to": "B"
+          },
+          {
+            "sync": "B",
+            "to": "A"
+          }
+        ],
+        "show": {
+          "on": "A",
+          "list": "events",
+          "id": "set:pay@2026-12-25"
+        }
+      },
+      "expected": {
+        "id": "set:pay@2026-12-25",
+        "k": "in",
+        "date": "2026-12-25",
+        "a": 248000,
+        "acct": "b",
+        "stream": "pay",
+        "settles": [
+          {
+            "s": "pay",
+            "due": "2026-12-25"
+          }
+        ],
+        "told": "2026-12-26T08:01:00.000+09:00",
+        "at": "2026-12-26T08:02:00.000+09:00",
+        "by": "tttttt"
+      },
+      "why": "Both ticks settle pay@2026-12-25, so both phones write `set:pay@2026-12-25` [O2]. The merge joins them as one record: Tess's 248,000 at 08:02 is newer than Jun's 250,000 at 08:01, so it wins; `told` keeps the earliest, 08:01 [L merge q7]. Bank: 50,000 + 248,000 = 298,000, never 548,000.",
+      "decisions": [
+        "O2",
+        "D4",
+        "L merge q7"
+      ]
+    },
+    {
+      "id": "mg-55",
+      "question": "merge",
+      "title": "The two copies of the ticked pay merge into one event",
+      "input": {
+        "mine": {
+          "events": [
+            {
+              "id": "set:pay@2026-12-25",
+              "k": "in",
+              "date": "2026-12-25",
+              "a": 250000,
+              "acct": "b",
+              "stream": "pay",
+              "settles": [
+                {
+                  "s": "pay",
+                  "due": "2026-12-25"
+                }
+              ],
+              "told": "2026-12-26T08:01:00.000+09:00",
+              "at": "2026-12-26T08:01:00.000+09:00",
+              "by": "jjjjjj"
+            }
+          ]
+        },
+        "theirs": {
+          "events": [
+            {
+              "id": "set:pay@2026-12-25",
+              "k": "in",
+              "date": "2026-12-25",
+              "a": 248000,
+              "acct": "b",
+              "stream": "pay",
+              "settles": [
+                {
+                  "s": "pay",
+                  "due": "2026-12-25"
+                }
+              ],
+              "told": "2026-12-26T08:02:00.000+09:00",
+              "at": "2026-12-26T08:02:00.000+09:00",
+              "by": "tttttt"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "events": [
+          {
+            "id": "set:pay@2026-12-25",
+            "k": "in",
+            "date": "2026-12-25",
+            "a": 248000,
+            "acct": "b",
+            "stream": "pay",
+            "settles": [
+              {
+                "s": "pay",
+                "due": "2026-12-25"
+              }
+            ],
+            "told": "2026-12-26T08:01:00.000+09:00",
+            "at": "2026-12-26T08:02:00.000+09:00",
+            "by": "tttttt"
+          }
+        ]
+      },
+      "why": "One id, so one record: newest `at` wins (248,000), earliest `told` kept (08:01) [O2, D4, L merge q7].",
+      "decisions": [
+        "O2",
+        "D4"
+      ]
+    },
+    {
+      "id": "mg-56",
+      "question": "merge",
+      "title": "The gym spend written on the phone and on the laptop is one spend",
+      "input": {
+        "mine": {
+          "events": [
+            {
+              "id": "auto:gym@2027-02-01",
+              "k": "spend",
+              "date": "2027-02-01",
+              "a": 8000,
+              "acct": "b",
+              "settles": [
+                {
+                  "s": "gym",
+                  "due": "2027-02-01"
+                }
+              ],
+              "told": "2027-02-01T07:10:00.000+09:00",
+              "at": "2027-02-01T07:10:00.000+09:00",
+              "by": "phoneq"
+            }
+          ]
+        },
+        "theirs": {
+          "events": [
+            {
+              "id": "auto:gym@2027-02-01",
+              "k": "spend",
+              "date": "2027-02-01",
+              "a": 8000,
+              "acct": "b",
+              "settles": [
+                {
+                  "s": "gym",
+                  "due": "2027-02-01"
+                }
+              ],
+              "told": "2027-02-01T09:30:00.000+09:00",
+              "at": "2027-02-01T09:30:00.000+09:00",
+              "by": "laptop"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "events": [
+          {
+            "id": "auto:gym@2027-02-01",
+            "k": "spend",
+            "date": "2027-02-01",
+            "a": 8000,
+            "acct": "b",
+            "settles": [
+              {
+                "s": "gym",
+                "due": "2027-02-01"
+              }
+            ],
+            "told": "2027-02-01T07:10:00.000+09:00",
+            "at": "2027-02-01T09:30:00.000+09:00",
+            "by": "laptop"
+          }
+        ]
+      },
+      "why": "The phone (offline) wrote the gym fee's spend at 07:10 and the laptop at 09:30, both as `auto:gym@2027-02-01` [O2]. One record after the merge: the laptop's `at` is newer; the earliest `told` (07:10) is kept. Bank: 100,000 - 8,000 = 92,000, never 84,000.",
+      "decisions": [
+        "O2",
+        "L merge q7"
+      ]
+    },
+    {
+      "id": "mg-57",
+      "question": "merge",
+      "title": "Both phones start the new period on the same day: one `periodStart`",
+      "input": {
+        "mine": {
+          "events": [
+            {
+              "id": "ps:2026-12-20",
+              "k": "periodStart",
+              "date": "2026-12-20",
+              "told": "2026-12-20T09:00:00.000+09:00",
+              "at": "2026-12-20T09:00:00.000+09:00",
+              "by": "jjjjjj"
+            }
+          ]
+        },
+        "theirs": {
+          "events": [
+            {
+              "id": "ps:2026-12-20",
+              "k": "periodStart",
+              "date": "2026-12-20",
+              "told": "2026-12-20T09:05:00.000+09:00",
+              "at": "2026-12-20T09:05:00.000+09:00",
+              "by": "tttttt"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "events": [
+          {
+            "id": "ps:2026-12-20",
+            "k": "periodStart",
+            "date": "2026-12-20",
+            "told": "2026-12-20T09:00:00.000+09:00",
+            "at": "2026-12-20T09:05:00.000+09:00",
+            "by": "tttttt"
+          }
+        ]
+      },
+      "why": "Each phone answered \"start the new period on 20 Dec\"; both write `ps:2026-12-20` [O2, N5], so the merged copy holds one: newest `at` (09:05), earliest `told` (09:00).",
+      "decisions": [
+        "O2",
+        "N5"
+      ]
+    },
+    {
+      "id": "mg-58",
+      "question": "id_ok",
+      "title": "An id with a ten-character session part",
+      "input": {
+        "id": "k7qzpa-m2xq7ab9zt-41"
+      },
+      "expected": true,
+      "why": "Device part 6 letters, session part 10 random characters (letters and digits), counter 41 [O3].",
+      "decisions": [
+        "O3"
+      ]
+    },
+    {
+      "id": "mg-59",
+      "question": "id_ok",
+      "title": "An id with the old three-letter session part is not made any more",
+      "input": {
+        "id": "k7qzpa-m2x-41"
+      },
+      "expected": false,
+      "why": "Three letters give 17,576 session parts: a phone opened 3 to 5 times a day reuses one 34 to 95 times a year, and the same session part with the counter from 1 gives the same ids (final_review_1 finding 3). The session part is 10 random characters [O3].",
+      "decisions": [
+        "O3"
+      ]
+    },
+    {
+      "id": "mg-60",
+      "question": "id_ok",
+      "title": "An id built from what the record is",
+      "input": {
+        "id": "set:pay@2026-12-25"
+      },
+      "expected": true,
+      "why": "Records the app writes for a known moment are named by what they are, not by device and session [O2].",
+      "decisions": [
+        "O2"
+      ]
+    },
+    {
+      "id": "mg-61",
+      "question": "merge",
+      "title": "Two page opens on one device never share ids: Monday's lunch and Thursday's rent both stay",
+      "input": {
+        "mine": {
+          "events": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-1",
+              "k": "spend",
+              "a": 1200,
+              "date": "2027-01-04",
+              "at": "2027-01-04T12:00:00.000+09:00",
+              "by": "k7qzpa"
+            }
+          ]
+        },
+        "theirs": {
+          "events": [
+            {
+              "id": "k7qzpa-r8vw2n4kpc-1",
+              "k": "spend",
+              "a": 80000,
+              "date": "2027-01-07",
+              "at": "2027-01-07T09:00:00.000+09:00",
+              "by": "k7qzpa"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "events": [
+          {
+            "id": "k7qzpa-m2xq7ab9zt-1",
+            "k": "spend",
+            "a": 1200,
+            "date": "2027-01-04",
+            "at": "2027-01-04T12:00:00.000+09:00",
+            "by": "k7qzpa"
+          },
+          {
+            "id": "k7qzpa-r8vw2n4kpc-1",
+            "k": "spend",
+            "a": 80000,
+            "date": "2027-01-07",
+            "at": "2027-01-07T09:00:00.000+09:00",
+            "by": "k7qzpa"
+          }
+        ]
+      },
+      "why": "Each page open draws its own 10-character session part [O3], so counter 1 on Monday and counter 1 on Thursday are different ids, and the merge keeps both (final_review_1 S5 lost the 1,200 lunch).",
+      "decisions": [
+        "O3"
+      ]
     }
   ],
   "open": []

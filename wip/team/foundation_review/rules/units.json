@@ -633,6 +633,188 @@
         "N4",
         "M9"
       ]
+    },
+    {
+      "id": "units-59",
+      "question": "pays_in_year",
+      "title": "Pay every two weeks to June, then monthly: each due date counts by the rule in force on it",
+      "input": {
+        "rule": {
+          "rules": [
+            {
+              "from": "2027-01-01",
+              "rule": {
+                "every": "weeks",
+                "n": 2,
+                "from": "2027-01-01"
+              }
+            },
+            {
+              "from": "2027-07-01",
+              "rule": {
+                "every": "month",
+                "days": [
+                  25
+                ]
+              }
+            }
+          ]
+        },
+        "year": 2027
+      },
+      "expected": 19,
+      "why": "Every two weeks from Fri 1 Jan: 1 Jan + 14 x 12 = 18 Jun is the last before 1 Jul, so 13 pays; then the 25th of July to December, 6 pays. 13 + 6 = 19, each due date counted by the rule in force on it [O]. One rule for the whole year would say 26 (or 12).",
+      "decisions": [
+        "O",
+        "H2",
+        "H9"
+      ]
+    },
+    {
+      "id": "units-60",
+      "question": "home_cur_on",
+      "title": "Before the change the home currency is yen",
+      "input": {
+        "curs": [
+          {
+            "from": "2027-01-04",
+            "cur": "JPY"
+          },
+          {
+            "from": "2027-03-01",
+            "cur": "PHP"
+          }
+        ],
+        "date": "2027-02-28"
+      },
+      "expected": "JPY",
+      "why": "`home.curs` holds yen from 4 Jan and pesos from 1 Mar [O6]; on 28 Feb the yen entry is in force.",
+      "decisions": [
+        "O6"
+      ]
+    },
+    {
+      "id": "units-61",
+      "question": "home_cur_on",
+      "title": "On the day of the change the home currency is pesos",
+      "input": {
+        "curs": [
+          {
+            "from": "2027-01-04",
+            "cur": "JPY"
+          },
+          {
+            "from": "2027-03-01",
+            "cur": "PHP"
+          }
+        ],
+        "date": "2027-03-01"
+      },
+      "expected": "PHP",
+      "why": "An entry holds from its own date [O6], so 1 Mar is pesos.",
+      "decisions": [
+        "O6"
+      ]
+    },
+    {
+      "id": "units-62",
+      "question": "home_cur_on",
+      "title": "Months after the change the home currency is still pesos",
+      "input": {
+        "curs": [
+          {
+            "from": "2027-01-04",
+            "cur": "JPY"
+          },
+          {
+            "from": "2027-03-01",
+            "cur": "PHP"
+          }
+        ],
+        "date": "2027-12-31"
+      },
+      "expected": "PHP",
+      "why": "The latest entry dated on or before 31 Dec is pesos [O6]; the yen history stays in yen.",
+      "decisions": [
+        "O6"
+      ]
+    },
+    {
+      "id": "units-63",
+      "question": "move_currency",
+      "title": "A copy holding ₱ with preset `legacy` is asked",
+      "input": {
+        "ui": {
+          "cur": "₱",
+          "preset": "legacy"
+        }
+      },
+      "expected": {
+        "cur": null,
+        "ask": true
+      },
+      "why": "38.28's clean-up writes ₱ and preset `legacy` into any copy with no currency (src/ui0.js normalize), so ₱ there may be a yen copy. The move asks [O].",
+      "decisions": [
+        "O",
+        "H9"
+      ]
+    },
+    {
+      "id": "units-64",
+      "question": "move_currency",
+      "title": "A copy with no currency recorded is asked",
+      "input": {
+        "ui": {
+          "preset": "blank"
+        }
+      },
+      "expected": {
+        "cur": null,
+        "ask": true
+      },
+      "why": "The raw stored text (`frozen3831`) has no `ui.cur`, so no currency was ever chosen; the move asks, never pesos [O, H9].",
+      "decisions": [
+        "O",
+        "H9"
+      ]
+    },
+    {
+      "id": "units-65",
+      "question": "move_currency",
+      "title": "₱ chosen with the peso sample is pesos",
+      "input": {
+        "ui": {
+          "cur": "₱",
+          "preset": "₱"
+        }
+      },
+      "expected": {
+        "cur": "PHP",
+        "ask": false
+      },
+      "why": "The copy holds ₱ and was set up from the peso sample, so the choice is recorded: pesos, nothing asked [O].",
+      "decisions": [
+        "O"
+      ]
+    },
+    {
+      "id": "units-66",
+      "question": "move_currency",
+      "title": "¥ is still asked",
+      "input": {
+        "ui": {
+          "cur": "¥",
+          "preset": "¥"
+        }
+      },
+      "expected": {
+        "cur": null,
+        "ask": true
+      },
+      "why": "\"¥\" is yen or yuan, so it is asked, never guessed [H9].",
+      "decisions": [
+        "H9"
+      ]
     }
   ],
   "open": []

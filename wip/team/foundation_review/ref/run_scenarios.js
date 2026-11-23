@@ -58,9 +58,11 @@ function modelLine(ask, r, cur) {
     }
     case 'not_explained': {
       const a = r.accounts[ask.account] || r.cards[ask.account];
-      const f = (a.fillers || []).filter(x => (x.to || x.day) === ask.date && (!ask.from || x.from === ask.from));
+      // `on`: the check's day, when the ask is made later (an import read after the check) [O1]; else the ask's date.
+      const f = (a.fillers || []).filter(x => (x.to || x.day) === (ask.on || ask.date) && (!ask.from || x.from === ask.from));
       return fmt(f.reduce((t, x) => t + x.amount, 0), cur);
     }
+    case 'total_after_cards': return fmt(r.total.afterCards, cur);   // [O5] total less what the cards owe
     case 'place': { const p = r.places[ask.place]; return `kept ${fmt(p.kept, cur)}, next due ${p.due}`; }
     case 'warnings': return r.warnings.map(w => `${w.account} ${w.code}`).sort().join('; ') || 'none';
     default: return 'unknown question';
@@ -73,7 +75,8 @@ for (const fp of files) {
   console.log(`\n${path.basename(fp)}`);
   for (const ask of sc.asks) {
     const acc = sc.accounts.find(a => a.id === ask.account);
-    const cur = acc ? acc.currency : sc.currency;
+    // [O6] An ask about no one account is in the home currency in force on its date.
+    const cur = acc ? acc.currency : (sc.home_curs || []).filter(h => h.from <= ask.date).reduce((c, h) => h.cur, sc.currency);
     const want = expectedLine(ask, cur);
     let got, r;
     try { r = lookahead(sc, ask.date, { at: ask.at }); got = modelLine(ask, r, cur); } catch (err) { got = 'model error: ' + err.message; }

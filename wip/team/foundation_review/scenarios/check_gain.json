@@ -1,0 +1,32 @@
+{
+  "life": "check_gain",
+  "title": "A check-in figure far above what the app had is asked about, not placed (final_review_1 watch item, decision O)",
+  "story": "Set up Mon 4 Jan 2027, after pay on Fri 25 Dec. The bank holds 100,000 (30,000 of it Free to spend left), the e-wallet 5,000, the cash 10,000. Pay of 250,000 on the 25th starts the period; Free to spend is 60,000 a month. At the check-in on Fri 8 Jan at 20:00 the person types 101,000 for the bank, 280,000 for the e-wallet (the bank's figure typed in the wrong box) and 13,000 for the cash. Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2027-01-04", "to": "2027-01-31" },
+  "holidays": { "country": "none", "dates": [], "bank_closed": [] },
+  "accounts": [
+    { "id": "b", "name": "Bank", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2027-01-04", "amount": 100000, "split": { "free": 30000 } } },
+    { "id": "w", "name": "E-wallet", "kind": "ewallet", "currency": "JPY", "minimum": 0, "opening": { "date": "2027-01-04", "amount": 5000 } },
+    { "id": "cash", "name": "Cash", "kind": "cash", "currency": "JPY", "minimum": 0, "opening": { "date": "2027-01-04", "amount": 10000 } }
+  ],
+  "plan": { "lines": [], "free": { "account": "b", "per": "month", "amount": 60000 } },
+  "income": [
+    { "id": "pay", "name": "Pay", "account": "b", "amount": 250000, "schedule": { "frequency": "monthly", "day": 25 }, "weekend_holiday": "move earlier", "starts_period": true }
+  ],
+  "bills": [],
+  "goals": [],
+  "events": [
+    { "id": "cb", "date": "2027-01-08", "told": "2027-01-08T20:00", "kind": "check", "account": "b", "amount": 101000 },
+    { "id": "cw", "date": "2027-01-08", "told": "2027-01-08T20:00", "kind": "check", "account": "w", "amount": 280000, "note": "the bank's figure typed in the e-wallet's box" },
+    { "id": "cc", "date": "2027-01-08", "told": "2027-01-08T20:00", "kind": "check", "account": "cash", "amount": 13000 }
+  ],
+  "asks": [
+    { "id": "gain-01", "date": "2027-01-08", "question": "warnings", "expected": [ { "account": "cash", "code": "gain_to_ask" }, { "account": "w", "code": "gain_to_ask" } ],
+      "why": "The e-wallet shows 275,000 more than the 5,000 the app had: more than this period's Free to spend of 60,000, so it is asked about. The cash shows 3,000 more than 10,000: more than 20% of the account (2,000), so it is asked about too. The bank's 1,000 is below both (60,000 and 20,000), so it is not asked." },
+    { "id": "gain-02", "date": "2027-01-08", "question": "not_explained", "account": "w", "expected": -275000,
+      "why": "5,000 (what the app had) - 280,000 (the figure typed) = -275,000" },
+    { "id": "gain-03", "date": "2027-01-08", "question": "bank_today", "account": "w", "expected": 280000,
+      "why": "280,000 (the figure typed stands as the bank figure until the person answers) = 280,000" }
+  ]
+}
