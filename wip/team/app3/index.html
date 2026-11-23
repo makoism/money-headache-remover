@@ -3083,7 +3083,11 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
     }
 
     // ----- due before next pay [F7, F13, F21, F23, H8, W2] -----
-    const until = np ? np.land : today + NO_PAY_DUE_DAYS;
+    // [G4] a pay due today and not ticked counts as coming in today, and its period's lines come off with it (AU4): the
+    // list runs to the pay after it, so it holds what the walk takes off before that pay. While the next pay is late
+    // (H8) the list still runs to it (late-03). What is past its day and not settled is in mayStillPost and notSeenYet.
+    const after = np && np.land === today ? nextPays.find(p => p.land > today) : np;
+    const until = after ? after.land : today + NO_PAY_DUE_DAYS;
     const due = items.filter(o => isOut(o) && !o.settled && o.land >= today && o.land < until && o.amount).sort((a, b) => a.land - b.land || (a.acct < b.acct ? -1 : 1));
     const byAccount = {}; for (const o of due) (byAccount[o.acct] = byAccount[o.acct] || []).push(o.id);
     res.dueBeforeNextPay = { until: dayStr(until), byAccount, items: due.map(itemOut), total: due.filter(o => !o.otherCur).reduce((t, o) => t + o.amount, 0) };
@@ -3107,8 +3111,9 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
     // ----- the check-in list [A1, A2, S6, U2, W2, X3] -----
     const bankIds = Object.keys(banks);
     const lastCheckIn = bankIds.length ? Math.min(...bankIds.map(id => banks[id].asOfDay)) : today;
-    const sinceOpening = o => isNotYet(o) && banks[o.acct] && banks[o.acct].asOfDay === openDay(o.acct);
-    const listed = items.filter(o => !o.settled && (o.land > lastCheckIn || sinceOpening(o)) && o.land <= today && fallsDue(o) && o.amount);
+    // [A2, X3] every expected item that has landed and is not settled or skipped stays on the list, also one left
+    // unticked at an earlier check-in (an item inside the opening is settled by it, unless setup said "not yet")
+    const listed = items.filter(o => !o.settled && o.land <= today && fallsDue(o) && o.amount);
     const matched = items.filter(o => settledBy[o.id] && settledBy[o.id].byImport && o.land > lastCheckIn && o.land <= today && o.amount);
     res.checkIn = { since: dayStr(lastCheckIn), toConfirm: listed.filter(o => !o.otherCur).map(itemOut), apart: listed.filter(o => o.otherCur).map(itemOut), matched: matched.map(itemOut) };
     return res;
@@ -3585,7 +3590,11 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
        banks: [{ key, name, amount, type?: 'bank'|'cash'|'ewallet'|'wallet', main?, min? }],
        pays:  [{ key, name, bank, amount, every: 'month'|'weeks', day | days, n, from, shift?, startsPeriod? }],
        cards: [{ key, name, owed, payDay, closeDay: <1 to 31, 'last'> | 'not sure', payMonths?, payFrom, shift?, inFull? }],
-       bills: [{ key, name, from, amount, day | days, every?, n?, shift? }] }
+       bills: [{ key, name, from, amount, day | days, every?, n?, shift?, takenOut? }] }
+   `takenOut` [X3]: for a bill due between the last pay and the setup day, whether it has already come out of the
+   account (true, the default: it is inside the opening figure) or is still to go (false: each such occurrence is
+   named in the opening check's `notYet`, so it stays expected and on the check-in list). "The last pay" is the
+   period-starting pay (else any pay) landing on or before the setup day; with no pay, the month before setup.
    Amounts are whole minor units of the home currency. `shift` is 'before', 'after' or 'none' (the weekend and holiday
    rule). The first bank is the main one unless another says `main`. Each account opens with one `open` and one `check`
    on the setup day, written together [B6, B7, H1]; a card's opening is what it owes now. A close day "not sure" is saved
@@ -3595,6 +3604,7 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
   'use strict';
   const node = typeof module === 'object' && module.exports;
   const D = node ? require('./dates.js') : root.BurrowEngine.dates;
+  const S = node ? require('./schedules.js') : root.BurrowEngine.schedules;
 
   const SHIFTS = { before: 1, after: 1, none: 1 };
   const BANK_TYPES = { bank: 1, cash: 1, ewallet: 1, wallet: 1 };
@@ -3671,6 +3681,23 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
     for (const b of ans.bills || []) {
       book.schedules.push(stamp({ id: idFor(b.key), kind: 'bill', name: b.name, acct: acctOf(b.from), cur, shift: shift(b.shift, b.name),
         rules: [{ from: null, rule: ruleOf(b, b.name) }], steps: [{ from: null, amount: whole(b.amount, b.name) }] }));
+    }
+    // [X3] bills still to go that were due between the last pay and the setup day
+    const toGo = (ans.bills || []).filter(b => b.takenOut === false);
+    if (toGo.length) {
+      const cal = S.calendar(ans.country || 'XX');
+      const d0 = D.dayNum(day), occ = (sch, from) => S.occurrences(sch, cal, from, d0);
+      const payStarts = book.schedules.filter(x => x.kind === 'income' && x.startsPeriod);
+      const pays = (payStarts.length ? payStarts : book.schedules.filter(x => x.kind === 'income'))
+        .map(x => occ(x, d0 - 62).filter(o => o.land <= d0).map(o => o.land)).reduce((a, l) => a.concat(l), []);
+      const since = pays.length ? Math.max(...pays) : d0 - 31;
+      for (const b of toGo) {
+        const sch = book.schedules.find(x => x.id === ids[b.key]);
+        const names = occ(sch, since).filter(o => o.land > since && o.land <= d0).map(o => o.id);
+        if (!names.length) continue;
+        const check = book.events.find(e => e.k === 'check' && e.acct === sch.acct && e.grp === grp);
+        check.notYet = (check.notYet || []).concat(names);
+      }
     }
     return { book, ids };
   }
