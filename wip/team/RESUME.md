@@ -4,6 +4,20 @@ Written 2026-11-18 on branch `wip-38.31`. Read this whole file before touching a
 
 ## 0. Handoff (latest first)
 
+**2026-11-23 22:45 JST, MAIN 15 state.**
+- **Built:** every app3 feature except art is on wip-38.31: setup, Home, Check your bank, Receipts, Plan, Statements, Settings with backup and the cloud copy, Ask, Reminders, offline use. check3 ALL GOOD, engine gates green.
+- **Real-page walks:**
+  - walk 1 FAIL, fixed
+  - walk 2 FAIL, fixed (BI)
+  - walk 3: no blockers, four fixes running (BJ1 to BJ5): engine lane on lane/engine-a7, statements lane on BJ4
+- **Walk scripts:** app3/walk/v2 and v3 (lib.js). Make them a check3 step once they pass.
+- **Publish (BG):** app3/publish3.sh <path> and the e3_publish test are ready. HOLD the push to main: Coordinator 10 is asking Mako whether his "private web address" answer covers a push of only the app3 files to main. The old app's sw.js and build_site.sh notes are in app3/FOR_MAKO.md.
+- **Next:**
+  1. merge the BJ fixes
+  2. run walk 4 with a fresh qc-foundation
+  3. after Mako's OK, from main: publish3.sh with a fresh random path (never committed elsewhere), push only those files, then send Mako the link and tell him to open it in Chrome while online
+- **Open for Mako:** app3/FOR_MAKO.md (feel and wording, and 5 cloud server changes).
+
 **2026-11-23 19:45 JST, MAIN 15: NEW WAY OF WORKING (LESSONS lesson 4, DECISIONS_ROUND2 AX to BE).** The new app is its own page, wip/team/app3/, built on the new engine (wip/team/engine/), with storage (store/) and the shared screen pieces (screens/). The old app stays frozen as a fallback. Mako has no old data (BE): version one starts empty, and the move is not wired.
 **Green on wip-38.31:**
 - engine 779/779 asks, and 2,000 seeds against the checker with 0 differences
