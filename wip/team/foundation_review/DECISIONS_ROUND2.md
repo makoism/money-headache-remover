@@ -358,3 +358,9 @@ AQ5. Kept for stage 2, not deleted: the per-key `at`, `by`, `gone`, holds and th
 AQ6. A two-device fuzz script replaces hand review rounds for sync: random offline sequences on two devices with realistic ids, then a sync; it asserts merge(A,B) = merge(B,A), merging twice changes nothing, every edit is present or waiting as a question, nothing is doubled, and every one-device check passes after the sync.
 AQ7. The grid columns are frozen after one confirming review of AQ plus the fuzz. The engine lanes start now in parallel, in new files.
 Still applied from AP: AP1 (closing check and one reopen rule), AP2 (occurrence code for every rule kind, used by the AQ4 check), AP3, AP6, AP7. AP4 and AP5 become AQ4 questions.
+
+## AR. Answers after AO
+AR1 (ed-q-ao4). A waiting `once` amount counts on the safe side like a bill (the larger for spending lines) until the person picks.
+AR2 (mg-q-ao1). Stage 2 (AQ5): it is about the rich merge.
+AR3 (mg-q-ao6). The check-in does not offer closed accounts; a check dated after the closing day that reaches a closed account any other way reopens it in the look ahead too (AP1's one reopen rule).
+The AO helper's readings are confirmed.
