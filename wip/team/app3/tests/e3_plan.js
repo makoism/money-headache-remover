@@ -10,8 +10,9 @@ const T = require('./lib3.js'), { ck } = T;
 const PE = require('../../engine/periods.js'), I = require('../../engine/ids.js');
 const BANK = 'k7m2qa-f3n8p1x6wd-1', CARD_A = 'k7m2qa-f3n8p1x6wd-2', RENT = 'k7m2qa-f3n8p1x6wd-6';
 let DAY = '2026-11-25';
-const seed = (p, bk) => p.evaluate(bk => new Promise(res => { const rq = indexedDB.open('burrow3', 1); rq.onupgradeneeded = () => rq.result.createObjectStore('slice1'); rq.onsuccess = () => { const db = rq.result, tx = db.transaction('slice1', 'readwrite'); tx.objectStore('slice1').put({ v: 1, book: bk, t: 1 }, 'book'); tx.oncomplete = () => { db.close(); res(); }; }; }), bk);
-const saved = p => p.evaluate(() => new Promise(res => { const rq = indexedDB.open('burrow3', 1); rq.onsuccess = () => { const db = rq.result, g = db.transaction('slice1').objectStore('slice1').get('book'); g.onsuccess = () => { db.close(); res(g.result && g.result.book); }; }; }));
+/* the book through the store (store/idb.js, IndexedDB burrow3), as the page keeps it since slice 1's merge */
+const seed = (p, bk) => p.evaluate(async bk0 => { const s = await BurrowStore.open(); await s.load(); const r = await s.save(bk0, { full: true }); s.close(); return r.ok; }, bk);
+const saved = p => p.evaluate(async () => { const s = await BurrowStore.open(); try { const r = await s.load(); return r.copy; } finally { s.close(); } });
 const amt = (p, sel) => p.evaluate(s => { const e = document.querySelector(s); const a = e && (e.dataset.amt !== undefined ? e : e.querySelector('[data-amt]')); return a ? Number(a.dataset.amt) : null; }, sel);
 async function fill(p, vals) {
   for (const [k, v] of Object.entries(vals)) {

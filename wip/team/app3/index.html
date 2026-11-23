@@ -1272,6 +1272,8 @@ body::before { content: ''; position: fixed; inset: 0; z-index: -1; background: 
 .a3-top { display: flex; flex-direction: column; gap: 6px; }
 .a3-brand { margin: 8px 0 0; font-family: var(--fd); font-size: var(--t-h3); display: flex; align-items: center; gap: 10px; color: var(--ink2); }
 .a3-brand .pix { display: inline-block; }
+.a3-day { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; color: var(--ink); }
+.a3-day input { min-height: var(--btn-h-s); border: 0; border-radius: var(--r-ctl-s); background: var(--field); color: var(--ink); font: inherit; padding: 0 10px; box-shadow: inset 0 0 0 1px var(--hair); }
 .a3-try { margin: 0; font-size: var(--t-cap); color: var(--warn); background: var(--warn-bg); border-radius: var(--r-ctl-s); padding: 8px 12px; }
 .a3-card { background: var(--card); border-radius: var(--r-card); padding: var(--pad-card); box-shadow: inset 0 0 0 1px var(--hair), inset 0 1px 0 var(--glass-hi); }
 .a3-card h2 { margin: 0 0 4px; font-size: var(--t-cap); font-weight: 600; letter-spacing: .02em; color: var(--ink2); text-transform: none; }
@@ -1295,6 +1297,11 @@ body::before { content: ''; position: fixed; inset: 0; z-index: -1; background: 
 .a3-btn:focus-visible, .a3-in:focus-visible, .a3-tick input:focus-visible { outline: 3px solid var(--acc-ring); outline-offset: 2px; }
 .a3-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
 .a3-sheet[hidden], #a3Home[hidden] { display: none; }
+.a3-in.a3-txt, .a3-in.a3-sel { text-align: left; }
+.a3-row3 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.a3-group { padding: 6px 0 14px; border-bottom: 1px solid var(--hair); }
+.a3-group:last-child { border-bottom: 0; }
+@media (max-width: 360px) { .a3-row3 { grid-template-columns: 1fr; } }
 .a3-sheet-in { display: flex; flex-direction: column; gap: var(--gap-card); }
 .a3-sheet h1 { margin: 8px 0 0; font-family: var(--fd); font-size: var(--t-h2); }
 .a3-tick { display: grid; grid-template-columns: 28px 1fr minmax(110px, 40%); align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--hair); }
@@ -1377,7 +1384,7 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
 <main class="a3" id="a3">
   <header class="a3-top">
     <p class="a3-brand"><span id="a3Pix"></span>the burrow<button type="button" class="a3-link" id="a3SetGo">Settings</button></p>
-    <p class="a3-try" id="a3Try" hidden></p>
+    <div class="a3-try" id="a3Try" hidden></div>
   </header>
   <nav class="a3-tabs" aria-label="Pages"><button type="button" data-tab="home" aria-current="page">Home</button><button type="button" data-tab="receipts">Receipts</button><button type="button" data-tab="plan">Plan</button></nav>
   <div class="a3-msg" id="a3Msg"></div>
@@ -1387,6 +1394,7 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
   <section class="a3-sheet" id="a3Stmt" role="dialog" aria-modal="true" aria-labelledby="a3StmtT" hidden></section>
   <div id="a3Plan" data-panel="plan" hidden></div>
   <section class="a3-sheet" id="a3Set" role="dialog" aria-modal="true" aria-labelledby="a3SetT" hidden></section>
+  <section class="a3-sheet" id="a3Setup" role="dialog" aria-modal="true" aria-labelledby="a3SetupT" hidden></section>
   <section class="a3-sheet" id="a3Check" role="dialog" aria-modal="true" aria-labelledby="a3CheckT" hidden></section>
 </main>
 <script>
@@ -3449,6 +3457,172 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
   if (typeof module === 'object' && module.exports) module.exports = api;
   else (root.BurrowEngine = root.BurrowEngine || {}).match = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
+/* The check-in writer (SCHEMA_V3 7.1 to 7.3; DECISIONS_ROUND2 A2, A4, AP6, AS5, AS6, O2), pure. It works nothing out:
+   it turns what the person ticked and typed into records. Taken over from app3/src/checkin_write.js (WIRING_PLAN step 8).
+   checkIn(book, { day, told, newId, figures: { acct: amount }, ticked: [occ], amounts: { occ: amount },
+                   expected: { occ: amount }, lands: { occ: day }, unticked: [import line id],
+                   fillerPlace: { acct: place }, from, split })
+   returns { checkins: [one record], events: [...] } and never changes the book:
+     - each ticked item writes `set:<occ>` [O2]: pay as `in` with `stream` (it starts the period), a card payment as
+       `repay` from its paying account, a bill or transfer as `spend` from its account, each with `settles` and the
+       amount typed (or the expected one), dated the day it landed (or the check-in day);
+     - each typed figure writes a `check` on the check-in day;
+     - every record carries `grp: <check-in id>`; the check-in lists its figures, what it settled, the imported lines
+       the person unticked [U2, AS5], each account's filler place for an account typed in it [AS6], its stretch start
+       (`from`, AP6) and the "mostly before pay" answer (`split`, A4) when given.
+   An item left unticked writes nothing: it stays expected. Amounts are whole minor units. apply(book, out) gives a new
+   book with the records added. */
+(function (root) {
+  'use strict';
+  const node = typeof module === 'object' && module.exports;
+  const I = node ? require('./ids.js') : root.BurrowEngine.ids;
+  const whole = (v, what) => { if (!Number.isInteger(v)) throw new Error(what + ' is not a whole amount in minor units: ' + v); return v; };
+
+  function checkIn(book, a) {
+    const cid = a.newId();
+    const at = a.told;
+    const accts = {}; for (const x of book.accounts || []) if (x && !x.gone) accts[x.id] = x;
+    const scheds = {}; for (const s of book.schedules || []) if (s && !s.gone) scheds[s.id] = s;
+    const events = [], settled = [], figures = [];
+    for (const occ of a.ticked || []) {
+      const o = I.occurrence(occ);
+      if (!o) throw new Error('not an occurrence: ' + occ);
+      const typed = a.amounts && Object.prototype.hasOwnProperty.call(a.amounts, occ);
+      const amt = whole(typed ? a.amounts[occ] : (a.expected || {})[occ], 'the amount of ' + occ);
+      const rec = { id: I.built.set(occ), date: (a.lands || {})[occ] || a.day, told: at, at, grp: cid, settles: [{ s: o.schedule, due: o.due }] };
+      const s = scheds[o.schedule], card = accts[o.schedule];
+      if (s && s.kind === 'income') Object.assign(rec, { k: 'in', sub: 'pay', acct: s.acct, a: amt, stream: s.id });
+      else if (s) Object.assign(rec, { k: 'spend', acct: s.acct, a: amt });
+      else if (card) Object.assign(rec, { k: 'repay', acct: card.payFrom || null, acct2: card.id, a: amt, a2: amt });
+      else throw new Error('no schedule or account for ' + occ);
+      events.push(rec); settled.push(rec.id);
+    }
+    const places = {};
+    for (const acct of Object.keys(a.figures || {})) {
+      if (!accts[acct]) throw new Error('no account ' + acct);
+      const id = a.newId();
+      events.push({ id, k: 'check', acct, date: a.day, a: whole(a.figures[acct], 'the figure for ' + acct), told: at, at, grp: cid });
+      figures.push({ acct, check: id, typedA: a.figures[acct] });
+      if (a.fillerPlace && a.fillerPlace[acct]) places[acct] = a.fillerPlace[acct];
+    }
+    const rec = { id: cid, date: a.day, told: at, at, figures, settled };
+    if ((a.unticked || []).length) rec.unticked = a.unticked.slice();
+    if (Object.keys(places).length) rec.fillerPlace = places;
+    if (a.from) rec.from = a.from;
+    if (a.split === 'days' || a.split === 'before') rec.split = a.split;
+    if (a.by) { rec.by = a.by; for (const e of events) e.by = a.by; }
+    return { checkins: [rec], events };
+  }
+  function apply(book, out) {
+    const b = JSON.parse(JSON.stringify(book));
+    b.events = (b.events || []).concat(out.events);
+    b.checkins = (b.checkins || []).concat(out.checkins);
+    return b;
+  }
+  const api = { checkIn, apply };
+  if (node) module.exports = api;
+  else (root.BurrowEngine = root.BurrowEngine || {}).checkin = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+/* Setup answers into a book, the saved shape version 3 (SCHEMA_V3 sections 0 and 2 to 5; B6, B7, H1, H4, AN3, O3). Pure:
+   it works nothing out, it writes what the person answered. WIRING_PLAN step 10.
+   buildBook(answers, { newId, by }) returns { book, ids } (ids: each answer's key to the id it was given). Answers:
+     { day, told, country, currency,
+       banks: [{ key, name, amount, type?: 'bank'|'cash'|'ewallet'|'wallet', main?, min? }],
+       pays:  [{ key, name, bank, amount, every: 'month'|'weeks', day | days, n, from, shift?, startsPeriod? }],
+       cards: [{ key, name, owed, payDay, closeDay: <1 to 31, 'last'> | 'not sure', payMonths?, payFrom, shift?, inFull? }],
+       bills: [{ key, name, from, amount, day | days, every?, n?, shift? }] }
+   Amounts are whole minor units of the home currency. `shift` is 'before', 'after' or 'none' (the weekend and holiday
+   rule). The first bank is the main one unless another says `main`. Each account opens with one `open` and one `check`
+   on the setup day, written together [B6, B7, H1]; a card's opening is what it owes now. A close day "not sure" is saved
+   as none: each payment is then all that is owed [H4]. The main bank's minimum lives in home.main with its currency
+   [AN3]; skipped means none [M1]. Wrong answers are refused, never guessed. */
+(function (root) {
+  'use strict';
+  const node = typeof module === 'object' && module.exports;
+  const D = node ? require('./dates.js') : root.BurrowEngine.dates;
+
+  const SHIFTS = { before: 1, after: 1, none: 1 };
+  const BANK_TYPES = { bank: 1, cash: 1, ewallet: 1, wallet: 1 };
+  function buildBook(ans, opts) {
+    const newId = opts.newId, by = opts.by || String(newId()).split('-')[0];
+    const day = ans.day, told = ans.told, at = ans.told, cur = ans.currency;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(day || '') || D.dayStr(D.dayNum(day)) !== day) throw new Error('the setup day is not a date: ' + day);
+    if (!told) throw new Error('the setup answers need the moment they were told');
+    if (!cur) throw new Error('the setup answers need the home currency');
+    const whole = (v, what) => { if (!Number.isInteger(v)) throw new Error(what + ' is not a whole amount in minor units: ' + v); return v; };
+    const shift = (v, what) => { const s = v == null ? 'none' : v; if (!SHIFTS[s]) throw new Error(what + ': no such weekend rule ' + v); return s; };
+    const dayOfMonth = (v, what) => { if (v !== 'last' && !(Number.isInteger(v) && v >= 1 && v <= 31)) throw new Error(what + ': no such day ' + v); return v; };
+    const ids = {};
+    const idFor = key => {
+      if (key == null || key === '') throw new Error('every answer needs its key');
+      if (ids[key]) throw new Error('the key ' + key + ' is used twice');
+      return (ids[key] = newId());
+    };
+    const stamp = r => Object.assign(r, { told, at, by });
+    const field = v => ({ v, at, by });
+
+    const book = { v: 3, home: {}, people: [], accounts: [], places: [], schedules: [], events: [], checkins: [], plan: { shares: [], budgets: [] } };
+    const banks = ans.banks || [];
+    if (!banks.length) throw new Error('setup needs at least one bank');
+    const main = banks.find(b => b.main) || banks[0];
+    if (banks.filter(b => b.main).length > 1) throw new Error('only one main bank');
+    const grp = newId();   // the setup moment: its opens and checks belong together
+    const opening = (acct, amount) => {
+      book.events.push(stamp({ id: newId(), k: 'open', acct, date: day, a: amount, grp }));
+      book.events.push(stamp({ id: newId(), k: 'check', acct, date: day, a: amount, grp }));
+    };
+
+    for (const b of banks) {
+      const type = b.type || 'bank';
+      if (!BANK_TYPES[type]) throw new Error(b.name + ': no such kind of account ' + type);
+      const x = stamp({ id: idFor(b.key), name: b.name, type, cur, owner: null });
+      if (b !== main && b.min != null) x.minBank = { a: whole(b.min, b.name + "'s minimum"), cur };
+      book.accounts.push(x);
+      opening(x.id, whole(b.amount, b.name));
+    }
+    const acctOf = key => { if (!ids[key]) throw new Error('no account ' + key); return ids[key]; };
+    for (const c of ans.cards || []) {
+      const notSure = c.closeDay == null || c.closeDay === 'not sure';
+      const x = stamp({ id: idFor(c.key), name: c.name, type: 'card', cur, owner: null, inFull: c.inFull !== false,
+        cutDay: notSure ? null : dayOfMonth(c.closeDay, c.name + "'s close day"), payDay: dayOfMonth(c.payDay, c.name + "'s payment day"),
+        payMonths: c.payMonths != null ? c.payMonths : 1, shift: shift(c.shift, c.name), payFrom: acctOf(c.payFrom) });
+      if (book.accounts.find(a => a.id === x.payFrom).type === 'card') throw new Error(c.name + ' is paid from a card');
+      book.accounts.push(x);
+      opening(x.id, whole(c.owed, c.name + ' owed'));
+    }
+    book.home = { curs: [{ from: '1970-01-01', cur, at, by }], country: field(ans.country || 'XX'), mode: field('track'),
+      main: field({ acct: ids[main.key], min: main.min != null ? { a: whole(main.min, 'the minimum'), cur } : null }) };
+
+    const ruleOf = (x, what) => {
+      const every = x.every || 'month';
+      if (every === 'month') {
+        const ds = x.days || [x.day];
+        ds.forEach(d => dayOfMonth(d, what));
+        return { every: 'month', days: ds.slice() };
+      }
+      if (every === 'weeks') {
+        if (!Number.isInteger(x.n || 1) || (x.n || 1) < 1) throw new Error(what + ': every how many weeks? ' + x.n);
+        if (!x.from || D.dayStr(D.dayNum(x.from)) !== x.from) throw new Error(what + ': the weeks need the day of one pay');
+        return { every: 'weeks', n: x.n || 1, from: x.from };
+      }
+      throw new Error(what + ': no such rhythm ' + every);
+    };
+    if ((ans.pays || []).filter(p => p.startsPeriod).length > 1) throw new Error('only one pay starts the period');
+    for (const p of ans.pays || []) {
+      book.schedules.push(stamp({ id: idFor(p.key), kind: 'income', name: p.name, acct: acctOf(p.bank), cur, shift: shift(p.shift, p.name),
+        rules: [{ from: null, rule: ruleOf(p, p.name) }], steps: [{ from: null, amount: whole(p.amount, p.name) }],
+        ...(p.startsPeriod ? { startsPeriod: true } : {}) }));
+    }
+    for (const b of ans.bills || []) {
+      book.schedules.push(stamp({ id: idFor(b.key), kind: 'bill', name: b.name, acct: acctOf(b.from), cur, shift: shift(b.shift, b.name),
+        rules: [{ from: null, rule: ruleOf(b, b.name) }], steps: [{ from: null, amount: whole(b.amount, b.name) }] }));
+    }
+    return { book, ids };
+  }
+  const api = { buildBook };
+  if (node) module.exports = api;
+  else (root.BurrowEngine = root.BurrowEngine || {}).build = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this);
 /* The one amount formatter every screen uses (DECISIONS_ROUND2 C, sweep2_repeats A11 "$180" next to "$180.00", B3, B4).
    Amounts come in as whole minor units of an ISO 4217 currency (cents, or yen), the shape the engine returns. This file
    writes them and reads them back from a box. It never adds, splits or rounds an amount: that is the engine's job.
@@ -3594,10 +3768,10 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
       source: 'MAKO_RUN 2.2 (one word for short)',
     },
     freeToSpendLeft: {
-      label: 'Free to spend left', figures: ['freeToSpend.left'], state: 'for Mako', engine: false,
+      label: 'Free to spend left', figures: ['period.free.left'], state: 'for Mako',
       choices: ['Free to spend left', 'Left to spend'],
       source: 'COPY_QC8_FOR_MAKO one word per thing (four names today); MAKO_RUN 2.5',
-      note: 'the engine reads plan.free.left as the cap on safe to spend but does not return it; the screens need it returned',
+      note: 'the engine returns it as res.period.free.left (the cap on safe to spend)',
     },
     notPlacedYet: {
       label: 'Not placed yet', figures: ['toPlace.*.amount'], state: 'decided',
@@ -3662,10 +3836,10 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
       source: 'DECISIONS_ROUND2 A2 (expected items since the last check-in, ticked by default)',
     },
     period: {
-      label: 'This pay period', figures: ['period.start', 'period.end'], state: 'for Mako', engine: false,
+      label: 'This pay period', figures: ['period.start', 'period.end'], state: 'for Mako',
       choices: ['This pay period', 'This period', 'Until next pay'],
       source: 'LESSONS lesson 1 (periods run pay to pay); QC_ROLES glossary "This month" no longer fits a pay period',
-      note: 'written with periodLabel, "10 Nov to 9 Dec"; the engine works out period starts but does not return them yet',
+      note: 'written with periodLabel, "10 Nov to 9 Dec", from res.period',
     },
   };
 
@@ -4290,6 +4464,499 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
     nextAt, nextAtWarn, newestAt, makeClock, holdArriving, watchToday };
   root.BurrowClock = api;
   if (typeof module === 'object' && module.exports) module.exports = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+// The version check every writer asks before writing (SCHEMA_V3 section 1; DECISIONS_ROUND2 D6).
+// Plain browser JavaScript, no dependencies. Sets window.BurrowGuard.
+//
+// - ledgerMayWrite(storedV): asked by every writer (local save, another tab, IndexedDB, backup restore, cloud) with
+//   the shape version `v` it found stored. A newer `v` than this page knows makes the page read-only for good, with
+//   "Update the app"; both copies stay as they are. A `v` that is not a whole number is treated the same way.
+// - mayRestore(v): a backup or cloud copy of a newer shape is refused, without making the page read-only.
+// - tabs: one BroadcastChannel ('burrow3'). Every message carries the sender's shape; a message from a newer shape
+//   makes this page read-only and is not passed on. A page says hello when it opens; a newer page answers an older
+//   page's hello, so an old tab learns of a newer one whichever opened first.
+// - The old 38.31 key: the move leaves the marker { movedTo: 'burrow3', at } there [D6]. The marker has no `rev`, so
+//   a 38.31 tab still open does not take it as a newer copy (ui0.js storage listener). Such a tab can still write its
+//   own copy back over the marker; oldKeyState() then says 'rewritten' and the move should run again on that copy
+//   (the move's `mv:` ids make a second run add only what changed).
+(function (root) {
+  'use strict';
+  const OLD_KEY = 'money-map-template-v2';
+  const MOVED_FLAG = 'burrow3.moved';   // localStorage: when this device left the marker
+  const CHANNEL = 'burrow3';
+  let pageV = Number.isInteger(root.BURROW_PAGE_V) ? root.BURROW_PAGE_V : 3;
+  const st = { readOnly: false, why: null, seenV: null };
+  const roListeners = [], msgListeners = [];
+
+  const WORDS = {
+    title: 'Update the app',
+    body: 'Your money was saved by a newer version of the app. This page can show it but will not save anything, so nothing is lost. Close this page and open the app again to update.',
+  };
+
+  // A stored shape: a whole number, or nothing stored yet (null or undefined). Anything else cannot be read.
+  function shapeOf(v) {
+    if (v === undefined || v === null) return 0;
+    const n = typeof v === 'string' && /^\d+$/.test(v) ? +v : v;
+    return Number.isInteger(n) && n >= 0 ? n : NaN;
+  }
+  function stop(why, v) {
+    if (st.readOnly) return;
+    st.readOnly = true; st.why = why; st.seenV = v === undefined ? null : v;
+    roListeners.forEach(f => { try { f({ why: st.why, seenV: st.seenV, words: WORDS }); } catch (e) { /* a listener's own fault */ } });
+  }
+  // The one question every writer asks before it writes.
+  function ledgerMayWrite(storedV) {
+    if (st.readOnly) return false;
+    const n = shapeOf(storedV);
+    if (Number.isNaN(n)) { stop('unreadable', storedV); return false; }
+    if (n > pageV) { stop('newer', n); return false; }
+    return true;
+  }
+  function mayRestore(v) { const n = shapeOf(v); return !st.readOnly && !Number.isNaN(n) && n <= pageV; }
+
+  // ---------- tabs ----------
+  let ch = null;
+  function channel() {
+    if (ch || typeof BroadcastChannel !== 'function') return ch;
+    ch = new BroadcastChannel(CHANNEL);
+    ch.onmessage = e => {
+      const m = e.data;
+      if (!m || typeof m !== 'object') return;
+      if (!ledgerMayWrite(m.v)) return;   // a newer shape: read-only, and its message is not ours to read
+      if (m.type === 'hello') { if (shapeOf(m.v) < pageV) post({ type: 'hello' }); return; }
+      msgListeners.forEach(f => { try { f(m); } catch (er) { /* a listener's own fault */ } });
+    };
+    return ch;
+  }
+  function post(msg) {
+    const c = channel();
+    if (c) try { c.postMessage(Object.assign({}, msg, { v: msg.v === undefined ? pageV : msg.v })); } catch (e) { /* closed */ }
+  }
+
+  // ---------- the old 38.31 key ----------
+  function ls() { try { return root.localStorage || null; } catch (e) { return null; } }
+  function leaveMarker(at) {
+    const s = ls(); if (!s) return false;
+    try { s.setItem(OLD_KEY, JSON.stringify({ movedTo: 'burrow3', at })); s.setItem(MOVED_FLAG, at); return true; } catch (e) { return false; }
+  }
+  // 'none', 'data' (a 38.31 copy to move), 'marker' (moved), 'rewritten' (moved, then an old page wrote again),
+  // 'unreadable' (damaged text; the move keeps it as its frozen text).
+  function oldKeyState() {
+    const s = ls(); if (!s) return 'none';
+    let raw, flag;
+    try { raw = s.getItem(OLD_KEY); flag = s.getItem(MOVED_FLAG); } catch (e) { return 'none'; }
+    if (raw === null) return 'none';
+    let d; try { d = JSON.parse(raw); } catch (e) { return 'unreadable'; }
+    if (d && d.movedTo === 'burrow3') return 'marker';
+    if (!d || typeof d !== 'object') return 'unreadable';
+    return flag ? 'rewritten' : 'data';
+  }
+
+  const api = {
+    OLD_KEY, CHANNEL, WORDS,
+    pageV: () => pageV,
+    setPageV(n) { pageV = n; post({ type: 'hello' }); },   // the build sets it; tests stand in for a later build
+    ledgerMayWrite, mayRestore,
+    readOnly: () => st.readOnly, why: () => st.why, seenV: () => st.seenV,
+    words: () => WORDS,
+    onReadOnly(f) { roListeners.push(f); if (st.readOnly) f({ why: st.why, seenV: st.seenV, words: WORDS }); },
+    stop,
+    tabs: { post, on(f) { channel(); msgListeners.push(f); } },
+    leaveMarker, oldKeyState,
+  };
+  root.BurrowGuard = api;
+  channel();
+  post({ type: 'hello' });
+})(typeof window !== 'undefined' ? window : globalThis);
+// The main store: IndexedDB `burrow3` (SCHEMA_V3 section 1; DECISIONS_ROUND2 D1, D2, D3, D6, AW7).
+// Plain browser JavaScript, no dependencies. Load clock.js and guard.js first. Sets window.BurrowStore.
+//
+// Stores:
+//   events  one record per event, keyed by `id`, indexed by `date` and `acct`
+//   kept    one record per shared kept version (`keptVersions`, ids `kept:<record id or field path>`, AW7), and a
+//           whole copy kept before a big replace (ids `copy:<at>`, D2), never inside the book
+//   book    'book': everything else in the shared copy; 'meta': { v, rev, at } of the last save
+//   device  'device': device-only state (SCHEMA_V3 2.2), never in the shared copy
+// localStorage holds small device things only: the device part of ids, the theme, the last open day.
+//
+// Writing only what changed: every edit moves a record's `at` (SCHEMA_V3 section 0), so a record is written when
+// its `at` differs from the one last read or written here; the book is written when its text differs.
+// Every save asks BurrowGuard.ledgerMayWrite with the stored `v`, inside the same transaction as its writes, and
+// is refused when another tab saved since this page last read (the stored `rev` is not the one this page knows).
+// The other tab is told over BroadcastChannel and reads only the records that changed.
+(function (root) {
+  'use strict';
+  const NAME = 'burrow3', IDB_VERSION = 1;
+  const LISTS = { events: 'events', keptVersions: 'kept' };   // copy field -> store, one record per item
+  const NOT_IN_BOOK = new Set(['events', 'keptVersions', 'rev', 'at', 'fmt']);
+  const KEPT_LO = 'kept:', KEPT_HI = 'kept:￿', COPY_LO = 'copy:', COPY_HI = 'copy:￿';
+  const MANY = 2000;   // a tab message lists changed ids up to this many; more and the other tab reads everything
+
+  const EMPTY_WORDS = 'Nothing is saved on this device yet. Load your cloud copy or backup file to bring your money back, or start setup.';
+  const FULL_WORDS = 'Not saved: this device has no space left. Free some space and the app saves again. Your last save is safe.';
+
+  const G = () => root.BurrowGuard;
+  const pageV = () => (G() ? G().pageV() : 3);
+  const mayWrite = v => !G() || G().ledgerMayWrite(v);
+  const readOnly = () => !!(G() && G().readOnly());
+  const nowIso = () => (root.BurrowClock ? root.BurrowClock.nowIso() : new Date().toISOString());
+
+  function openRaw(name, version) {
+    return new Promise((resolve, reject) => {
+      let q;
+      try { q = version ? indexedDB.open(name, version) : indexedDB.open(name); } catch (e) { reject(e); return; }
+      q.onupgradeneeded = () => {
+        const db = q.result;
+        if (!db.objectStoreNames.contains('events')) {
+          const ev = db.createObjectStore('events', { keyPath: 'id' });
+          ev.createIndex('date', 'date'); ev.createIndex('acct', 'acct');
+        }
+        if (!db.objectStoreNames.contains('kept')) db.createObjectStore('kept', { keyPath: 'id' });
+        if (!db.objectStoreNames.contains('book')) db.createObjectStore('book');
+        if (!db.objectStoreNames.contains('device')) db.createObjectStore('device');
+      };
+      q.onsuccess = () => resolve(q.result);
+      q.onerror = () => reject(q.error);
+    });
+  }
+  function bookOf(copy) {
+    const b = {};
+    for (const k of Object.keys(copy)) if (!NOT_IN_BOOK.has(k)) b[k] = copy[k];
+    return b;
+  }
+
+  class Store {
+    constructor(name, version) {
+      this.name = name; this.version = version; this.db = null;
+      this.atOf = { events: new Map(), keptVersions: new Map() };
+      this.bookJson = null; this.rev = 0; this.had = false;
+      this.q = Promise.resolve();
+    }
+    // Every operation runs one after the other, so a tab message is never read in the middle of a save.
+    run(f) { const p = this.q.then(f, f); this.q = p.catch(() => {}); return p; }
+
+    async conn() {
+      if (this.db) return this.db;
+      let db;
+      try { db = await openRaw(this.name, this.version); }
+      catch (e) {
+        if (!e || e.name !== 'VersionError') throw e;
+        if (G()) G().stop('newer', null);   // a later build changed the store: read it, never write [D6]
+        db = await openRaw(this.name);
+      }
+      if (db.version > this.version && G()) G().stop('newer', null);
+      db.onversionchange = e => {   // another page wants the store: let go at once
+        db.close(); if (this.db === db) this.db = null;
+        if (e.newVersion !== null && G()) G().stop('newer', null);   // a later build; null is a delete
+      };
+      db.onclose = () => { if (this.db === db) this.db = null; };   // the browser closed it (data cleared)
+      this.db = db;
+      return db;
+    }
+    async tx(stores, mode) {
+      for (let i = 0; ; i++) {
+        const db = await this.conn();
+        try { return db.transaction(stores, mode); }
+        catch (e) { if (i || e.name !== 'InvalidStateError') throw e; this.db = null; }   // closed under us: open again once
+      }
+    }
+    remember(field, list) { const m = this.atOf[field]; for (const r of list) m.set(r.id, r.at); }
+
+    // The whole copy, or { empty: true } when nothing is stored.
+    load() {
+      return this.run(async () => {
+        const tx = await this.tx(['book', 'events', 'kept', 'device'], 'readonly');
+        const got = {};
+        tx.objectStore('book').get('meta').onsuccess = e => { got.meta = e.target.result; };
+        tx.objectStore('book').get('book').onsuccess = e => { got.book = e.target.result; };
+        tx.objectStore('events').getAll().onsuccess = e => { got.events = e.target.result; };
+        tx.objectStore('kept').getAll(IDBKeyRange.bound(KEPT_LO, KEPT_HI)).onsuccess = e => { got.kept = e.target.result; };
+        tx.objectStore('device').get('device').onsuccess = e => { got.device = e.target.result; };
+        await done(tx);
+        this.atOf.events.clear(); this.atOf.keptVersions.clear();
+        const device = got.device || null;
+        if (!got.meta && !got.book) {
+          this.had = false; this.rev = 0; this.bookJson = null;
+          return { copy: null, device, empty: true, readOnly: readOnly(), rev: 0 };
+        }
+        const meta = got.meta || { v: got.book.v, rev: 0 };
+        mayWrite(meta.v);
+        const book = got.book || {};
+        this.bookJson = JSON.stringify(book);
+        this.remember('events', got.events); this.remember('keptVersions', got.kept);
+        this.rev = meta.rev; this.had = true;
+        const copy = Object.assign({}, book, { events: got.events, keptVersions: got.kept, rev: meta.rev, at: meta.at });
+        return { copy, device, empty: false, readOnly: readOnly(), rev: meta.rev };
+      });
+    }
+
+    // Writes what changed in `copy` since this page last read or wrote. Sets copy.v, copy.rev and copy.at.
+    // { ok: true, events, kept, book, rev, cleared } or { ok: false, why: 'read-only' | 'behind' | 'full' | 'error' }.
+    // opts.full writes every record; opts.replace also removes stored records the copy does not have (a big replace;
+    // keep the old copy with keepCopy first).
+    save(copy, opts) {
+      opts = opts || {};
+      return this.run(async () => {
+        if (readOnly()) return { ok: false, why: 'read-only' };
+        for (const f of Object.keys(LISTS)) for (const r of copy[f] || []) {
+          if (!r || typeof r.id !== 'string') return { ok: false, why: 'error', error: 'a record in ' + f + ' has no id' };
+        }
+        const v = pageV(), book = bookOf(Object.assign({}, copy, { v })), bookJson = JSON.stringify(book);
+        const pick = (f, all) => (copy[f] || []).filter(r => all || !this.atOf[f].has(r.id) || this.atOf[f].get(r.id) !== r.at);
+        let tx;
+        try { tx = await this.tx(['book', 'events', 'kept'], 'readwrite'); } catch (e) { return { ok: false, why: 'error', error: String(e) }; }
+        const out = { ok: true, events: 0, kept: 0, book: false, cleared: false };
+        let why = null, written = null, rev = this.rev, at = null;
+        const isFull = e => /Quota/.test(e && e.name || '') || /quota|space/i.test(String(e && e.message));
+        tx.objectStore('book').get('meta').onsuccess = e => { try { write(e.target.result); } catch (er) {
+          // a write refused at once (the browser's space ran out, or a record it cannot store): nothing is kept
+          why = isFull(er) ? 'full' : 'error'; written = null; try { tx.abort(); } catch (x) { /* already over */ }
+        } };
+        const write = meta => {
+          if (!mayWrite(meta && meta.v)) { why = 'read-only'; tx.abort(); return; }
+          if (meta && meta.rev !== this.rev) { why = 'behind'; tx.abort(); return; }
+          const cleared = !meta && this.had;   // the browser or another tab removed the store under us
+          const all = !!(opts.full || opts.replace || cleared);
+          const ch = { events: pick('events', all), keptVersions: pick('keptVersions', all) };
+          const bookCh = all || bookJson !== this.bookJson;
+          if (!ch.events.length && !ch.keptVersions.length && !bookCh) return;   // nothing changed: nothing written
+          if (opts.replace) { tx.objectStore('events').clear(); tx.objectStore('kept').delete(IDBKeyRange.bound(KEPT_LO, KEPT_HI)); }
+          const evs = tx.objectStore('events'), kept = tx.objectStore('kept');
+          for (const r of ch.events) evs.put(r);
+          for (const r of ch.keptVersions) kept.put(r);
+          rev = Math.max(Date.now(), this.rev + 1); at = nowIso();
+          if (bookCh) tx.objectStore('book').put(book, 'book');
+          tx.objectStore('book').put({ v, rev, at }, 'meta');
+          written = { ch, bookCh, cleared, all };
+        };
+        try { await done(tx); }
+        catch (e) {
+          if (why) return { ok: false, why };
+          return { ok: false, why: isFull(e) ? 'full' : 'error', error: (e && e.name || '') + ' ' + (e && e.message || '') };
+        }
+        if (!written) return Object.assign(out, { rev: this.rev });
+        if (written.all) { this.atOf.events.clear(); this.atOf.keptVersions.clear(); }
+        this.remember('events', written.ch.events); this.remember('keptVersions', written.ch.keptVersions);
+        if (written.bookCh) this.bookJson = bookJson;
+        this.rev = rev; this.had = true;
+        copy.v = v; copy.rev = rev; copy.at = at;
+        const ids = l => (l.length > MANY ? null : l.map(r => r.id));
+        if (G()) G().tabs.post({ type: 'saved', rev, events: written.all ? null : ids(written.ch.events), kept: written.all ? null : ids(written.ch.keptVersions), book: written.bookCh });
+        return Object.assign(out, { events: written.ch.events.length, kept: written.ch.keptVersions.length, book: written.bookCh, cleared: written.cleared, rev });
+      });
+    }
+
+    // What another tab saved, read from the store: { events, keptVersions, book (or null), rev }. The page joins
+    // it into its own copy; the records read count as known here, so they are not written back unchanged.
+    onOther(fn) {
+      if (!G()) return;
+      G().tabs.on(m => {
+        if (!m || m.type !== 'saved') return;
+        this.run(() => this.readChanged(m)).then(ch => { if (ch) fn(ch); }, () => {});
+      });
+    }
+    async readChanged(m) {
+      if (m.events === null || m.kept === null) return this.catchUpNow();
+      const tx = await this.tx(['book', 'events', 'kept'], 'readonly');
+      const got = { events: [], keptVersions: [], book: null };
+      tx.objectStore('book').get('meta').onsuccess = e => { got.meta = e.target.result; };
+      if (m.book) tx.objectStore('book').get('book').onsuccess = e => { got.book = e.target.result || null; };
+      for (const id of m.events || []) tx.objectStore('events').get(id).onsuccess = e => { if (e.target.result) got.events.push(e.target.result); };
+      for (const id of m.kept || []) tx.objectStore('kept').get(id).onsuccess = e => { if (e.target.result) got.keptVersions.push(e.target.result); };
+      await done(tx);
+      if (!got.meta) return null;
+      mayWrite(got.meta.v);
+      this.remember('events', got.events); this.remember('keptVersions', got.keptVersions);
+      if (got.book) this.bookJson = JSON.stringify(got.book);
+      this.rev = got.meta.rev; this.had = true;
+      return { events: got.events, keptVersions: got.keptVersions, book: got.book, rev: got.meta.rev };
+    }
+    // After a save was refused as 'behind': everything stored that differs from what this page knows.
+    catchUp() { return this.run(() => this.catchUpNow()); }
+    async catchUpNow() {
+      const tx = await this.tx(['book', 'events', 'kept'], 'readonly');
+      const got = {};
+      tx.objectStore('book').get('meta').onsuccess = e => { got.meta = e.target.result; };
+      tx.objectStore('book').get('book').onsuccess = e => { got.book = e.target.result; };
+      tx.objectStore('events').getAll().onsuccess = e => { got.events = e.target.result; };
+      tx.objectStore('kept').getAll(IDBKeyRange.bound(KEPT_LO, KEPT_HI)).onsuccess = e => { got.kept = e.target.result; };
+      await done(tx);
+      if (!got.meta) return { events: [], keptVersions: [], book: null, rev: 0, cleared: this.had };
+      mayWrite(got.meta.v);
+      const diff = (f, list) => list.filter(r => !this.atOf[f].has(r.id) || this.atOf[f].get(r.id) !== r.at);
+      const out = { events: diff('events', got.events), keptVersions: diff('keptVersions', got.kept), book: null, rev: got.meta.rev };
+      const bj = JSON.stringify(got.book || {});
+      if (bj !== this.bookJson) { out.book = got.book || {}; this.bookJson = bj; }
+      this.remember('events', out.events); this.remember('keptVersions', out.keptVersions);
+      this.rev = got.meta.rev; this.had = true;
+      return out;
+    }
+
+    // A whole copy kept before a big replace (backup restore, cloud load), as its own record [D2].
+    keepCopy(copy, why) {
+      return this.run(async () => {
+        if (readOnly()) throw new Error('read-only');
+        const at = nowIso(), id = COPY_LO + at;
+        const tx = await this.tx(['kept'], 'readwrite');
+        tx.objectStore('kept').put({ id, why: why || '', at, copy });
+        await done(tx);
+        return id;
+      });
+    }
+    keptCopies() {
+      return this.run(async () => {
+        const tx = await this.tx(['kept'], 'readonly'), out = [];
+        tx.objectStore('kept').openCursor(IDBKeyRange.bound(COPY_LO, COPY_HI)).onsuccess = e => {
+          const c = e.target.result; if (!c) return;
+          out.push({ id: c.value.id, why: c.value.why, at: c.value.at, events: (c.value.copy.events || []).length }); c.continue();
+        };
+        await done(tx);
+        return out;
+      });
+    }
+    keptCopy(id) {
+      return this.run(async () => {
+        const tx = await this.tx(['kept'], 'readonly'); let r;
+        tx.objectStore('kept').get(id).onsuccess = e => { r = e.target.result; };
+        await done(tx);
+        return r || null;
+      });
+    }
+
+    // Device-only state (SCHEMA_V3 2.2): never merged, never in the cloud copy or a backup.
+    getDevice() {
+      return this.run(async () => {
+        const tx = await this.tx(['device'], 'readonly'); let r;
+        tx.objectStore('device').get('device').onsuccess = e => { r = e.target.result; };
+        await done(tx);
+        return r || null;
+      });
+    }
+    putDevice(d) {
+      return this.run(async () => {
+        if (readOnly()) return false;
+        const tx = await this.tx(['device'], 'readwrite');
+        tx.objectStore('device').put(d, 'device');
+        await done(tx);
+        return true;
+      });
+    }
+    close() { if (this.db) { this.db.close(); this.db = null; } }
+  }
+
+  function done(tx) {
+    return new Promise((resolve, reject) => {
+      tx.oncomplete = () => resolve();
+      tx.onabort = () => reject(tx.error || new DOMException('aborted', 'AbortError'));
+    });
+  }
+
+  async function open(opts) {
+    opts = opts || {};
+    const s = new Store(opts.name || NAME, opts.idbVersion || IDB_VERSION);
+    await s.conn();
+    return s;
+  }
+
+  // ---------- small device things in localStorage ----------
+  const P = 'burrow3.';
+  const ABC = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  function rand(n) {
+    let s = '';
+    const b = new Uint8Array(n * 2);
+    while (s.length < n) {
+      crypto.getRandomValues(b);
+      for (let i = 0; i < b.length && s.length < n; i++) if (b[i] < 252) s += ABC[b[i] % 36];   // 252 = 7 * 36, no bias
+    }
+    return s;
+  }
+  function lsGet(k) { try { return root.localStorage.getItem(P + k); } catch (e) { return null; } }
+  function lsSet(k, v) { try { root.localStorage.setItem(P + k, v); return true; } catch (e) { return false; } }
+  let memDevice = null;   // when localStorage is blocked, the part lasts for this page only
+  const local = {
+    deviceIdPart() {
+      let d = lsGet('device');
+      if (!d || !/^[a-z0-9]{6}$/.test(d)) { d = memDevice || rand(6); if (!lsSet('device', d)) memDevice = d; }
+      return d;
+    },
+    sessionPart: () => rand(10),
+    theme() { const t = lsGet('theme'); return t === 'light' || t === 'auto' ? t : 'dark'; },
+    setTheme: t => lsSet('theme', t === 'light' || t === 'auto' ? t : 'dark'),
+    lastOpen: () => lsGet('lastOpen'),
+    setLastOpen: d => lsSet('lastOpen', d),
+  };
+  // Ids `<device part>-<session part>-<counter>` (SCHEMA_V3 section 0): a new session part per page open.
+  function idMaker() {
+    const d = local.deviceIdPart(), s = local.sessionPart();
+    let n = 0;
+    return () => d + '-' + s + '-' + (++n);
+  }
+
+  root.BurrowStore = { NAME, IDB_VERSION, EMPTY_WORDS, FULL_WORDS, open, local, idMaker, bookOf };
+})(typeof window !== 'undefined' ? window : globalThis);
+// Asking the browser to keep the data, and the space used (SCHEMA_V3 section 1; DECISIONS_ROUND2 D7).
+// Plain browser JavaScript, no dependencies. Sets window.BurrowPersist.
+//
+// Without persist(), Chrome on Android counts the site's storage as "best effort" and may clear all of it
+// (IndexedDB and localStorage together) when the phone runs low on space (sweep2_platform 2).
+// - afterSetup(): called once setup is done; asks once per device and remembers the answer in localStorage.
+// - askToKeep(): asks now (Settings can offer it again).
+// - space(): { persisted, usage, quota, words } for Settings.
+(function (root) {
+  'use strict';
+  const KEY = 'burrow3.persist';
+  const navOf = o => (o && o.nav) || root.navigator || {};
+
+  async function askToKeep(opts) {
+    const st = navOf(opts).storage;
+    if (!st || typeof st.persist !== 'function') return { granted: null, asked: false };
+    try { if (typeof st.persisted === 'function' && await st.persisted()) return { granted: true, asked: false }; } catch (e) { /* ask below */ }
+    let granted = false;
+    try { granted = (await st.persist()) === true; } catch (e) { granted = false; }
+    return { granted, asked: true };
+  }
+
+  async function afterSetup(opts) {
+    let before = null;
+    try { before = root.localStorage.getItem(KEY); } catch (e) { /* no storage: ask */ }
+    if (before === 'yes' || before === 'no') {
+      const st = navOf(opts).storage;
+      let now = before === 'yes';
+      try { if (st && typeof st.persisted === 'function') now = await st.persisted(); } catch (e) { /* keep the remembered answer */ }
+      return { granted: now, asked: false };
+    }
+    const r = await askToKeep(opts);
+    if (r.granted !== null) try { root.localStorage.setItem(KEY, r.granted ? 'yes' : 'no'); } catch (e) { /* asked again next time */ }
+    return r;
+  }
+
+  // Sizes as people read them on a phone: 1,000 bytes to a KB.
+  function sizeWords(b) {
+    b = Math.max(0, +b || 0);
+    const one = (v, unit) => (v < 10 ? String(Math.round(v * 10) / 10) : String(Math.round(v))) + ' ' + unit;
+    if (b < 1e6) return (b === 0 ? 0 : Math.max(1, Math.round(b / 1000))) + ' KB';
+    if (b < 1e9) return one(b / 1e6, 'MB');
+    return one(b / 1e9, 'GB');
+  }
+
+  const KEPT = 'This device keeps your money until you remove it.';
+  const NOT_KEPT = 'The browser may clear your money if this device runs low on space. Keep the cloud copy on or save a backup file.';
+  const UNKNOWN = 'This browser does not say whether it keeps your money. Keep the cloud copy on or save a backup file.';
+
+  async function space(opts) {
+    const st = navOf(opts).storage;
+    if (!st) return { persisted: null, usage: null, quota: null, words: UNKNOWN };
+    let persisted = null, usage = null, quota = null;
+    if (typeof st.persisted === 'function') { try { persisted = (await st.persisted()) === true; } catch (e) { persisted = false; } }
+    if (typeof st.estimate === 'function') {
+      try { const e = await st.estimate(); usage = typeof e.usage === 'number' ? e.usage : null; quota = typeof e.quota === 'number' ? e.quota : null; } catch (e) { /* unknown */ }
+    }
+    let words = persisted === true ? KEPT : persisted === false ? NOT_KEPT : UNKNOWN;
+    if (usage !== null) words += ' Space used: ' + sizeWords(usage) + (quota ? ' of ' + sizeWords(quota) : '') + '.';
+    return { persisted, usage, quota, words };
+  }
+
+  root.BurrowPersist = { askToKeep, afterSetup, space, sizeWords, WORDS: { KEPT, NOT_KEPT, UNKNOWN } };
 })(typeof window !== 'undefined' ? window : globalThis);
 /* ===== statements to numbers =====
    Pure functions, no DOM. Claude does two small, fixed-shape jobs: each file becomes a table of rows (date, text, amount, in or out),
@@ -5158,109 +5825,6 @@ function stmtReceipts(rows, catOf, acctOf) {
   if (node) module.exports = api;
   else (root.BurrowEngine = root.BurrowEngine || {}).sync = api;
 })(typeof window !== 'undefined' ? window : globalThis);
-// The version check every writer asks before writing (SCHEMA_V3 section 1; DECISIONS_ROUND2 D6).
-// Plain browser JavaScript, no dependencies. Sets window.BurrowGuard.
-//
-// - ledgerMayWrite(storedV): asked by every writer (local save, another tab, IndexedDB, backup restore, cloud) with
-//   the shape version `v` it found stored. A newer `v` than this page knows makes the page read-only for good, with
-//   "Update the app"; both copies stay as they are. A `v` that is not a whole number is treated the same way.
-// - mayRestore(v): a backup or cloud copy of a newer shape is refused, without making the page read-only.
-// - tabs: one BroadcastChannel ('burrow3'). Every message carries the sender's shape; a message from a newer shape
-//   makes this page read-only and is not passed on. A page says hello when it opens; a newer page answers an older
-//   page's hello, so an old tab learns of a newer one whichever opened first.
-// - The old 38.31 key: the move leaves the marker { movedTo: 'burrow3', at } there [D6]. The marker has no `rev`, so
-//   a 38.31 tab still open does not take it as a newer copy (ui0.js storage listener). Such a tab can still write its
-//   own copy back over the marker; oldKeyState() then says 'rewritten' and the move should run again on that copy
-//   (the move's `mv:` ids make a second run add only what changed).
-(function (root) {
-  'use strict';
-  const OLD_KEY = 'money-map-template-v2';
-  const MOVED_FLAG = 'burrow3.moved';   // localStorage: when this device left the marker
-  const CHANNEL = 'burrow3';
-  let pageV = Number.isInteger(root.BURROW_PAGE_V) ? root.BURROW_PAGE_V : 3;
-  const st = { readOnly: false, why: null, seenV: null };
-  const roListeners = [], msgListeners = [];
-
-  const WORDS = {
-    title: 'Update the app',
-    body: 'Your money was saved by a newer version of the app. This page can show it but will not save anything, so nothing is lost. Close this page and open the app again to update.',
-  };
-
-  // A stored shape: a whole number, or nothing stored yet (null or undefined). Anything else cannot be read.
-  function shapeOf(v) {
-    if (v === undefined || v === null) return 0;
-    const n = typeof v === 'string' && /^\d+$/.test(v) ? +v : v;
-    return Number.isInteger(n) && n >= 0 ? n : NaN;
-  }
-  function stop(why, v) {
-    if (st.readOnly) return;
-    st.readOnly = true; st.why = why; st.seenV = v === undefined ? null : v;
-    roListeners.forEach(f => { try { f({ why: st.why, seenV: st.seenV, words: WORDS }); } catch (e) { /* a listener's own fault */ } });
-  }
-  // The one question every writer asks before it writes.
-  function ledgerMayWrite(storedV) {
-    if (st.readOnly) return false;
-    const n = shapeOf(storedV);
-    if (Number.isNaN(n)) { stop('unreadable', storedV); return false; }
-    if (n > pageV) { stop('newer', n); return false; }
-    return true;
-  }
-  function mayRestore(v) { const n = shapeOf(v); return !st.readOnly && !Number.isNaN(n) && n <= pageV; }
-
-  // ---------- tabs ----------
-  let ch = null;
-  function channel() {
-    if (ch || typeof BroadcastChannel !== 'function') return ch;
-    ch = new BroadcastChannel(CHANNEL);
-    ch.onmessage = e => {
-      const m = e.data;
-      if (!m || typeof m !== 'object') return;
-      if (!ledgerMayWrite(m.v)) return;   // a newer shape: read-only, and its message is not ours to read
-      if (m.type === 'hello') { if (shapeOf(m.v) < pageV) post({ type: 'hello' }); return; }
-      msgListeners.forEach(f => { try { f(m); } catch (er) { /* a listener's own fault */ } });
-    };
-    return ch;
-  }
-  function post(msg) {
-    const c = channel();
-    if (c) try { c.postMessage(Object.assign({}, msg, { v: msg.v === undefined ? pageV : msg.v })); } catch (e) { /* closed */ }
-  }
-
-  // ---------- the old 38.31 key ----------
-  function ls() { try { return root.localStorage || null; } catch (e) { return null; } }
-  function leaveMarker(at) {
-    const s = ls(); if (!s) return false;
-    try { s.setItem(OLD_KEY, JSON.stringify({ movedTo: 'burrow3', at })); s.setItem(MOVED_FLAG, at); return true; } catch (e) { return false; }
-  }
-  // 'none', 'data' (a 38.31 copy to move), 'marker' (moved), 'rewritten' (moved, then an old page wrote again),
-  // 'unreadable' (damaged text; the move keeps it as its frozen text).
-  function oldKeyState() {
-    const s = ls(); if (!s) return 'none';
-    let raw, flag;
-    try { raw = s.getItem(OLD_KEY); flag = s.getItem(MOVED_FLAG); } catch (e) { return 'none'; }
-    if (raw === null) return 'none';
-    let d; try { d = JSON.parse(raw); } catch (e) { return 'unreadable'; }
-    if (d && d.movedTo === 'burrow3') return 'marker';
-    if (!d || typeof d !== 'object') return 'unreadable';
-    return flag ? 'rewritten' : 'data';
-  }
-
-  const api = {
-    OLD_KEY, CHANNEL, WORDS,
-    pageV: () => pageV,
-    setPageV(n) { pageV = n; post({ type: 'hello' }); },   // the build sets it; tests stand in for a later build
-    ledgerMayWrite, mayRestore,
-    readOnly: () => st.readOnly, why: () => st.why, seenV: () => st.seenV,
-    words: () => WORDS,
-    onReadOnly(f) { roListeners.push(f); if (st.readOnly) f({ why: st.why, seenV: st.seenV, words: WORDS }); },
-    stop,
-    tabs: { post, on(f) { channel(); msgListeners.push(f); } },
-    leaveMarker, oldKeyState,
-  };
-  root.BurrowGuard = api;
-  channel();
-  post({ type: 'hello' });
-})(typeof window !== 'undefined' ? window : globalThis);
 // Backup files and the cloud copy (SCHEMA_V3 section 1; DECISIONS_ROUND2 D5, D6).
 // Plain browser JavaScript, no dependencies (load guard.js first so a newer shape is refused). Sets window.BurrowPack.
 //
@@ -5521,70 +6085,6 @@ function stmtReceipts(rows, catOf, acctOf) {
 
   root.BurrowPack = { FMT, WORDS, pack, unpack, toBlob, readFile, gzip, gunzip, inflateRaw, crc32,
     useNative(on) { native = !!on; }, hasNative };
-})(typeof window !== 'undefined' ? window : globalThis);
-// Asking the browser to keep the data, and the space used (SCHEMA_V3 section 1; DECISIONS_ROUND2 D7).
-// Plain browser JavaScript, no dependencies. Sets window.BurrowPersist.
-//
-// Without persist(), Chrome on Android counts the site's storage as "best effort" and may clear all of it
-// (IndexedDB and localStorage together) when the phone runs low on space (sweep2_platform 2).
-// - afterSetup(): called once setup is done; asks once per device and remembers the answer in localStorage.
-// - askToKeep(): asks now (Settings can offer it again).
-// - space(): { persisted, usage, quota, words } for Settings.
-(function (root) {
-  'use strict';
-  const KEY = 'burrow3.persist';
-  const navOf = o => (o && o.nav) || root.navigator || {};
-
-  async function askToKeep(opts) {
-    const st = navOf(opts).storage;
-    if (!st || typeof st.persist !== 'function') return { granted: null, asked: false };
-    try { if (typeof st.persisted === 'function' && await st.persisted()) return { granted: true, asked: false }; } catch (e) { /* ask below */ }
-    let granted = false;
-    try { granted = (await st.persist()) === true; } catch (e) { granted = false; }
-    return { granted, asked: true };
-  }
-
-  async function afterSetup(opts) {
-    let before = null;
-    try { before = root.localStorage.getItem(KEY); } catch (e) { /* no storage: ask */ }
-    if (before === 'yes' || before === 'no') {
-      const st = navOf(opts).storage;
-      let now = before === 'yes';
-      try { if (st && typeof st.persisted === 'function') now = await st.persisted(); } catch (e) { /* keep the remembered answer */ }
-      return { granted: now, asked: false };
-    }
-    const r = await askToKeep(opts);
-    if (r.granted !== null) try { root.localStorage.setItem(KEY, r.granted ? 'yes' : 'no'); } catch (e) { /* asked again next time */ }
-    return r;
-  }
-
-  // Sizes as people read them on a phone: 1,000 bytes to a KB.
-  function sizeWords(b) {
-    b = Math.max(0, +b || 0);
-    const one = (v, unit) => (v < 10 ? String(Math.round(v * 10) / 10) : String(Math.round(v))) + ' ' + unit;
-    if (b < 1e6) return (b === 0 ? 0 : Math.max(1, Math.round(b / 1000))) + ' KB';
-    if (b < 1e9) return one(b / 1e6, 'MB');
-    return one(b / 1e9, 'GB');
-  }
-
-  const KEPT = 'This device keeps your money until you remove it.';
-  const NOT_KEPT = 'The browser may clear your money if this device runs low on space. Keep the cloud copy on or save a backup file.';
-  const UNKNOWN = 'This browser does not say whether it keeps your money. Keep the cloud copy on or save a backup file.';
-
-  async function space(opts) {
-    const st = navOf(opts).storage;
-    if (!st) return { persisted: null, usage: null, quota: null, words: UNKNOWN };
-    let persisted = null, usage = null, quota = null;
-    if (typeof st.persisted === 'function') { try { persisted = (await st.persisted()) === true; } catch (e) { persisted = false; } }
-    if (typeof st.estimate === 'function') {
-      try { const e = await st.estimate(); usage = typeof e.usage === 'number' ? e.usage : null; quota = typeof e.quota === 'number' ? e.quota : null; } catch (e) { /* unknown */ }
-    }
-    let words = persisted === true ? KEPT : persisted === false ? NOT_KEPT : UNKNOWN;
-    if (usage !== null) words += ' Space used: ' + sizeWords(usage) + (quota ? ' of ' + sizeWords(quota) : '') + '.';
-    return { persisted, usage, quota, words };
-  }
-
-  root.BurrowPersist = { askToKeep, afterSetup, space, sizeWords, WORDS: { KEPT, NOT_KEPT, UNKNOWN } };
 })(typeof window !== 'undefined' ? window : globalThis);
 </script>
 <script>
@@ -5942,6 +6442,30 @@ const TRY_BOOKS = { mako: {
    "a": 23000,
    "told": "2026-11-20T24:00",
    "grp": "setup"
+  },
+  {
+   "id": "k7m2qa-f3n8p1x6wd-16",
+   "date": "2026-12-18",
+   "told": "2026-12-18",
+   "k": "spend",
+   "acct": "k7m2qa-f3n8p1x6wd-2",
+   "a": 18000
+  },
+  {
+   "id": "k7m2qa-f3n8p1x6wd-17",
+   "date": "2026-12-20",
+   "told": "2026-12-20",
+   "k": "spend",
+   "acct": "k7m2qa-f3n8p1x6wd-3",
+   "a": 9500
+  },
+  {
+   "id": "k7m2qa-f3n8p1x6wd-18",
+   "date": "2026-12-29",
+   "told": "2026-12-29",
+   "k": "spend",
+   "acct": "k7m2qa-f3n8p1x6wd-3",
+   "a": 7400
   }
  ],
  "checkins": [],
@@ -6337,61 +6861,6 @@ RULES
   if (node) module.exports = api;
   else root.STMT3P = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
-/* The check-in writer, pure (SCHEMA_V3 7.1 and 7.2; DECISIONS_ROUND2 A2, AS5, O2).
-   TODO(lane A): WIRING_PLAN step 8 puts this in engine/checkin.js. Until it lands, slice 1 uses this one; when it lands,
-   app3 calls the engine's and this file is removed. It works nothing out: it turns what the person ticked and typed
-   into records.
-   checkIn(book, { day, told, newId, figures: { acct: amount }, ticked: [occ], unticked: [occ], amounts: { occ: amount } })
-   returns { checkins: [one record], events: [...] } and never changes the book:
-     - each ticked item writes `set:<occ>` [O2]: pay as `in` with `stream` (it starts the period), a card payment as
-       `repay` from its paying account, a bill as `spend`, each with `settles` and the amount typed (or the expected one);
-     - each typed figure writes a `check` on the check-in day;
-     - every record carries `grp: <check-in id>`; the check-in lists its figures and what it settled.
-   An item left unticked writes nothing: it stays expected. (`unticked` on a check-in is for imported lines [U2, AS5];
-   slice 1 has none.) Amounts are whole minor units. apply(book, out) gives a new book with the records added. */
-(function (root) {
-  'use strict';
-  const node = typeof module === 'object' && module.exports;
-  const I = node ? require('../../engine/ids.js') : root.BurrowEngine.ids;
-  const whole = (v, what) => { if (!Number.isInteger(v)) throw new Error(what + ' is not a whole amount in minor units: ' + v); return v; };
-
-  function checkIn(book, a) {
-    const cid = a.newId();
-    const at = a.told;
-    const accts = {}; for (const x of book.accounts || []) if (!x.gone) accts[x.id] = x;
-    const scheds = {}; for (const s of book.schedules || []) if (!s.gone) scheds[s.id] = s;
-    const events = [], settled = [], figures = [];
-    for (const occ of a.ticked || []) {
-      const o = I.occurrence(occ);
-      if (!o) throw new Error('not an occurrence: ' + occ);
-      const expected = (a.expected || {})[occ];
-      const amt = whole(occ in (a.amounts || {}) ? a.amounts[occ] : expected, 'the amount of ' + occ);
-      const base = { id: I.built.set(occ), date: (a.lands || {})[occ] || a.day, told: at, at, grp: cid, settles: [{ s: o.schedule, due: o.due }] };
-      const s = scheds[o.schedule], card = accts[o.schedule];
-      if (s && s.kind === 'income') Object.assign(base, { k: 'in', sub: 'pay', acct: s.acct, a: amt, stream: s.id });
-      else if (s) Object.assign(base, { k: 'spend', acct: s.acct, a: amt });
-      else if (card) Object.assign(base, { k: 'repay', acct: card.payFrom || null, acct2: card.id, a: amt, a2: amt });
-      else throw new Error('no schedule or account for ' + occ);
-      events.push(base); settled.push(base.id);
-    }
-    for (const acct of Object.keys(a.figures || {})) {
-      const id = a.newId();
-      events.push({ id, k: 'check', acct, date: a.day, a: whole(a.figures[acct], 'the figure for ' + acct), told: at, at, grp: cid });
-      figures.push({ acct, check: id, typedA: a.figures[acct] });
-    }
-    const rec = { id: cid, date: a.day, told: at, at, figures, settled };
-    return { checkins: [rec], events };
-  }
-  function apply(book, out) {
-    const b = JSON.parse(JSON.stringify(book));
-    b.events = (b.events || []).concat(out.events);
-    b.checkins = (b.checkins || []).concat(out.checkins);
-    return b;
-  }
-  const api = { checkIn, apply };
-  if (node) module.exports = api;
-  else root.CHECKIN3 = api;
-})(typeof globalThis !== 'undefined' ? globalThis : this);
 /* ---------- the shared screen pieces, in short names (wip/team/screens/, lane D) ----------
    money.js writes and reads amounts, names.js gives every label and day, status.js the one verdict, inputs.js the one
    box behaviour, provenance.js the typed-or-sample mark, messages.js the one message band. No sums here. */
@@ -6412,81 +6881,95 @@ const msg3 = text => MSG3.post({ kind: 'toast', key: 'a3', text });
    write what it returns. No sums here.
    Where the book comes from:
      ?try=mako   the made-up Mako book, read only: a check-in changes it in memory, nothing is ever written.
-     otherwise   the book kept in IndexedDB `burrow3` (store `slice1`, one record). TODO(lane C): use wip/team/store/
-                 when it lands, and move this record into it with its source marker (WIRING_PLAN "Watch").
+     otherwise   the book kept by the store (wip/team/store/, IndexedDB `burrow3`); with nothing kept, the first screen
+                 offers setup3 and the made-up numbers.
    The old app's keys (localStorage money-map-template-v2, IndexedDB money-map-safe) are never read or written here;
-   only engine/move.js may read them (AZ1).
-   ?today=YYYY-MM-DD shows the page as on that day (for checks and for trying the shape on pay days). */
+   the move (engine/move.js) is not wired (DECISIONS_ROUND2 BE: version one starts empty).
+   ?today=YYYY-MM-DD shows the page as on that day (for checks); on a try book the day box does the same, so the page
+     works as a plain file with no address. */
+const root3 = globalThis;
 const E3 = (() => {
   const Q = new URLSearchParams(location.search);
-  const DB = 'burrow3', STORE = 'slice1', KEY = 'book';
-  let book = null, mode = 'none';
+  let book = null, mode = 'none', dayShown = null;
   const pad2 = n => String(n).padStart(2, '0');
   function today() {
+    if (dayShown) return dayShown;
     const t = Q.get('today');
     if (t && /^\d{4}-\d{2}-\d{2}$/.test(t)) return t;
     const d = new Date(); return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
   }
-  /* the moment a record is told: the shown day at the device's clock time, with the device's offset */
-  function told() {
+  /* the moment a record is told: the shown day at the device's clock time (to the minute, then the given seconds),
+     with the device's offset */
+  function told(sec) {
     const d = new Date(), off = -d.getTimezoneOffset(), sign = off < 0 ? '-' : '+', a = Math.abs(off);
-    return today() + 'T' + pad2(d.getHours()) + ':' + pad2(d.getMinutes()) + sign + pad2(Math.floor(a / 60)) + ':' + pad2(a % 60);
+    return today() + 'T' + pad2(d.getHours()) + ':' + pad2(d.getMinutes()) + ':' + (sec || '00') + sign + pad2(Math.floor(a / 60)) + ':' + pad2(a % 60);
   }
-  const idMaker = BurrowEngine.ids.idMaker(devicePart());
-  function devicePart() {
-    // TODO(lane C): the device part is kept by the store. Slice 1 draws one per open: ids stay unique (the session part is random).
-    const abc = 'abcdefghijklmnopqrstuvwxyz0123456789'; let s = '';
-    for (let i = 0; i < 6; i++) s += abc[Math.floor(Math.random() * abc.length)];
-    return s;
-  }
-  /* ---- the slice 1 holder: one record in IndexedDB burrow3 ---- */
-  function dbOpen() {
-    return new Promise(res => {
-      try {
-        const rq = indexedDB.open(DB, 1);
-        rq.onupgradeneeded = () => { try { rq.result.createObjectStore(STORE); } catch (e) { /* reported by onerror */ } };
-        rq.onsuccess = () => res(rq.result); rq.onerror = () => res(null); rq.onblocked = () => res(null);
-      } catch (e) { res(null); }
-    });
-  }
-  function dbRun(mode2, fn) {
-    return dbOpen().then(db => new Promise(res => {
-      if (!db) { res(null); return; }
-      try {
-        const tx = db.transaction(STORE, mode2), rq = fn(tx.objectStore(STORE));
-        tx.oncomplete = () => { db.close(); res({ v: rq.result }); }; tx.onerror = tx.onabort = () => { db.close(); res(null); };
-      } catch (e) { db.close(); res(null); }
-    }));
-  }
+  /* ids `<device part>-<session part>-<n>`: the store keeps the device part (store/idb.js). A try book writes nothing,
+     not even the device part, so its ids use a made-up one. */
+  let idMaker = null, tryIds = null;
+  const newId = () => mode === 'try' ? (tryIds = tryIds || BurrowEngine.ids.idMaker('try000'))() : (idMaker = idMaker || BurrowStore.idMaker())();
+  let store = null, readOnly = false;
+  /* the day box on a try book: show the page as on that day */
+  function setToday(d) { if (/^\d{4}-\d{2}-\d{2}$/.test(d || '')) dayShown = d; }
+  /* the first screen's "See it with made-up numbers first": a try book in memory, nothing written */
+  function useTry(name) { if (!TRY_BOOKS[name]) return false; book = JSON.parse(JSON.stringify(TRY_BOOKS[name])); mode = 'try'; return true; }
   async function load() {
     const t = Q.get('try');
     if (t && TRY_BOOKS[t]) { book = JSON.parse(JSON.stringify(TRY_BOOKS[t])); mode = 'try'; return; }
-    const r = await dbRun('readonly', st => st.get(KEY));
-    if (r && r.v && r.v.book) { book = r.v.book; mode = 'kept'; } else { book = null; mode = 'none'; }
+    book = null; mode = 'none';
+    try {
+      store = await BurrowStore.open();
+      const r = await store.load();
+      readOnly = !!r.readOnly;
+      if (!r.empty && r.copy) { book = r.copy; mode = 'kept'; }
+    } catch (e) { store = null; }
   }
   const savedFns = [];
-  async function save() {
-    if (mode !== 'kept') return true;   // a try book is never written
-    const r = await dbRun('readwrite', st => st.put({ v: 1, book, t: Date.now() }, KEY));
-    if (r) savedFns.forEach(f => { try { f(book); } catch (e) { /* a listener's own fault */ } });
-    return !!r;
+  /* writes what changed through the store; a try book is never written */
+  async function save(opts) {
+    if (mode !== 'kept') return true;
+    if (!store || readOnly) return false;
+    const r = await store.save(book, opts);
+    const ok = !!(r && r.ok);
+    if (ok) savedFns.forEach(f => { try { f(book); } catch (e) { /* a listener's own fault */ } });   // backup lane: the cloud copy follows saves
+    return ok;
+  }
+  /* setup3's new book: kept from now on */
+  async function start(newBook) {
+    const before = { book, mode };
+    book = newBook; mode = 'kept';
+    const ok = await save({ full: true });
+    if (!ok) { book = before.book; mode = before.mode; }
+    else if (root3.BurrowPersist) root3.BurrowPersist.afterSetup().catch(() => {});
+    return ok;
   }
   /* backup lane: a whole new book from a restore or the cloud copy; the first one makes this device keep a book.
-     The caller keeps the old book first (rec 'copy:<at>', D2). A try book is never replaced. */
+     Written whole (the store's replace: records the new book does not have are taken away). The caller keeps the old
+     book first (rec('copy', ...), D2). A try book is never replaced. */
   async function replace(next) {
     if (mode === 'try') return false;
     const before = book, m = mode;
     book = next; mode = 'kept';
-    const ok = await save();
+    const ok = await save({ replace: true });
     if (!ok) { book = before; mode = m; }
     return ok;
   }
-  /* backup lane: other records beside the book in the same store (a whole copy kept before a replace `copy:<at>`, the
-     list of them `copies`, device-only cloud state `cloud`). TODO(lane C): the store's `kept` and `device` stores. */
-  function rec(key, value) {
-    if (mode === 'try') return Promise.resolve(value === undefined ? null : false);
-    if (value === undefined) return dbRun('readonly', st => st.get(key)).then(r => (r && r.v !== undefined ? r.v : null));
-    return dbRun('readwrite', st => st.put(value, key)).then(r => !!r);
+  /* backup lane: what the store keeps beside the book (store/idb.js):
+       rec('copy', { copy, why })  keeps a whole copy before a big replace in the store's `kept` store [D2]; gives its id
+       rec('copies')               the kept whole copies, newest first: [{ id, why, at, events }]
+       rec('copy:<at>')            one kept copy { id, why, at, copy }
+       rec('cloud') / rec('cloud', v)   the cloud copy's device-only state, in the store's `device` record (SCHEMA_V3 2.2)
+     A try book keeps nothing. */
+  async function rec(key, value) {
+    if (mode === 'try' || !store) return value === undefined ? null : false;
+    try {
+      if (key === 'copy') return await store.keepCopy(value.copy, value.why);
+      if (key === 'copies') return (await store.keptCopies()).sort((x, y) => (x.id < y.id ? 1 : -1));
+      if (key.startsWith('copy:')) return await store.keptCopy(key);
+      const d = (await store.getDevice()) || {};
+      if (value === undefined) return d[key] === undefined ? null : d[key];
+      return await store.putDevice(Object.assign({}, d, { [key]: value }));
+    } catch (e) { return value === undefined ? null : false; }
   }
   function view(day) {
     const res = BurrowEngine.lookahead.lookahead(book, day || today());
@@ -6501,13 +6984,6 @@ const E3 = (() => {
   const occName = item => { const o = BurrowEngine.ids.occurrence(item); return o ? nameOf(o.schedule) : nameOf(item); };
   const curOf = id => { const a = (book.accounts || []).find(x => x.id === id); return a ? a.cur : BurrowEngine.ledger.homeOn(book, today()); };
   const home = () => BurrowEngine.ledger.homeOn(book, today());
-  async function write(out) {
-    const before = book;
-    book = CHECKIN3.apply(book, out);
-    const ok = await save();
-    if (!ok) book = before;
-    return ok;
-  }
   /* act3's save (src/act3.js, the one write door): the whole new book, kept or (on failure) the old one back */
   async function put(next) {
     const before = book;
@@ -6516,7 +6992,9 @@ const E3 = (() => {
     if (!ok) book = before;
     return ok;
   }
-  return { today, told, newId: () => idMaker(), load, view, nameOf, occName, curOf, home, write, put, replace, rec, onSaved: f => savedFns.push(f),
+  /* is a the day before b (two YYYY-MM-DD days) */
+  const dayBefore = (a, b) => BurrowEngine.dates.dayNum(b) - BurrowEngine.dates.dayNum(a) === 1;
+  return { today, setToday, useTry, start, told, dayBefore, newId, load, view, nameOf, occName, curOf, home, put, replace, rec, onSaved: f => savedFns.push(f),
     get book() { return book; }, get mode() { return mode; } };
 })();
 /* ---------- act3: the one door for every write in app3 (SCHEMA_V3 section 0; DECISIONS_ROUND2 H6, D2, BD4) ----------
@@ -6996,8 +7474,8 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
 })(typeof globalThis !== 'undefined' ? globalThis : this);
 /* ---------- Home, the new top (WIRING_PLAN 1.1 item 2, step 7) ----------
    The one status (screens/status.js), bank today and its age, safe to spend until next pay with the sum behind it, the
-   period by its dates (res.period), the next pay and its state, what is due before next pay by account, each card,
-   the bank after the cards are paid, not seen yet and later on. Every figure is one the engine returned for the day,
+   period by its dates (res.period), the one next pay (res.period.nextPay), what is due before next pay by account,
+   each card and when it comes out beside the pay, not seen yet and later on. Every figure is one the engine returned for the day,
    every label comes from screens/names.js, every figure carries its typed-or-sample mark (screens/provenance.js).
    This file chooses, writes and places; it never adds, takes away or rounds (tests: no_maths.js, e3_home.js). */
 function ageWords3(days) {
@@ -7013,19 +7491,54 @@ function dueWords3(n) {
 function rowsHtml3(items, cur, yr, path) {
   return items.map(o => `<li><span>${esc3(E3.occName(o.item))}<br><span class="when">${esc3(day3(o.lands, yr))}</span></span><span class="amt">${fig3(path, o.amount, o.currency || cur)}</span></li>`).join('');
 }
+/* the day the next pay lands, when the engine still counts it (res.period.nextPay is the one next pay on Home) */
+function payLands3(r) {
+  const n = nextPay3(r);
+  return n && n.state !== 'notSeen' && n.days !== null ? n.day : null;
+}
+/* where a card payment falls beside the pay: the same day, the day before, or earlier (dates compared, no money) */
+function besidePay3(day, land, yr) {
+  if (!land) return '';
+  if (day === land) return ', the day your pay lands';
+  if (day < land) return E3.dayBefore(day, land) ? ', the day before your pay lands' : `, before your pay lands on ${esc3(day3(land, yr))}`;
+  return '';
+}
+/* the engine's sum as written, without "- 0 (minimum)" when there is no minimum (TODO lane A: the engine could leave it out) */
+function whyWords3(a) {
+  return a.minimum === 0 ? a.why.replace(` - ${BurrowEngine.units.fmt(0, a.currency)} (minimum) =`, ' =') : a.why;
+}
+/* the one next pay on Home is res.period.nextPay: its landing day while the engine counts it, else its due day */
+function nextPay3(r) {
+  const p = r.period, np = r.daysToNextPay || {};
+  if (!p || !p.nextPay) return null;
+  const counted = np.item === p.nextPay.occ;
+  return { state: p.nextPay.state, day: counted ? np.next_pay : p.nextPay.due, days: counted ? np.days : null };
+}
+/* the safe to spend heading, by that pay's state (late is still counted by the engine; not seen is not) */
+function safeUntil3(r, yr) {
+  const n = nextPay3(r);
+  if (!n) return ' for now';
+  const d = esc3(day3(n.day, yr));
+  if (n.state === 'notSeen') return `, not counting the ${d} pay (not seen yet)`;
+  if (n.state === 'late') return `, counting the ${d} pay (late)`;
+  return ` until next pay on ${d}`;
+}
 function nextPayWords3(r, yr) {
-  const np = r.daysToNextPay || {}, p = r.period, st = p && p.nextPay ? p.nextPay.state : null;
-  if (!np.next_pay) return `<p class="a3-sub">No pay day set</p>`;
-  const d = esc3(day3(np.next_pay, yr));
-  if (st === 'notSeen') return `<p class="a3-warn" data-fig="nextpay" data-state="notSeen">Pay due ${esc3(day3(p.nextPay.due, yr))} has not been seen yet. Check your bank when it lands</p>`;
-  if (st === 'late' || np.late) return `<p class="a3-warn" data-fig="nextpay" data-state="late">Pay due ${d} is late</p>`;
-  return `<p class="a3-sub" data-fig="nextpay" data-state="coming">${esc3(label3('nextPay'))} ${d}, ${dueWords3(np.days)}</p>`;
+  const n = nextPay3(r);
+  if (!n) return `<p class="a3-sub">No pay day set</p>`;
+  const d = esc3(day3(n.day, yr));
+  if (n.state === 'notSeen') return `<p class="a3-warn" data-fig="nextpay" data-state="notSeen">Pay due ${d} has not been seen yet. Check your bank when it lands</p>`;
+  if (n.state === 'late') return `<p class="a3-warn" data-fig="nextpay" data-state="late">Pay due ${d} is late. Check your bank when it lands</p>`;
+  return `<p class="a3-sub" data-fig="nextpay" data-state="coming">${esc3(label3('nextPay'))} ${d}, ${dueWords3(n.days)}</p>`;
 }
 function renderHome3() {
   const host = $('#a3Home');
   if (!E3.book) {
     host.removeAttribute('data-origin');
-    host.innerHTML = `<section class="a3-card"><h2>Nothing here yet</h2><p class="a3-sub">This page is the new money engine. Setup comes next. To look around with made-up numbers shaped like a real month, open <a href="?try=mako">the try book</a></p></section>`;
+    host.innerHTML = `<section class="a3-card" data-card="first"><h2>Welcome to the burrow</h2><p class="a3-sub">Put in what your bank shows today, your pay, your cards and your bills. Or look around first with made-up numbers shaped like a real month</p>
+      <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3SetupGo">Set up with your own numbers</button><button type="button" class="a3-btn" id="a3TryGo">See it with made-up numbers first</button></div></section>`;
+    $('#a3SetupGo').addEventListener('click', openSetup3);
+    $('#a3TryGo').addEventListener('click', () => { E3.useTry('mako'); tryBand3(); renderHome3(); });
     return;
   }
   const day = E3.today(), yr = day.slice(0, 4);
@@ -7037,10 +7550,10 @@ function renderHome3() {
   const home = E3.home(), origin = E3.mode === 'try' ? 'sample' : 'typed';
   const ids = Object.keys(r.accounts);
   const out = [];
-  /* the one status */
+  /* the one status; on a sample screen the yellow band already says these are made-up numbers, so no second card */
   const names = {}; for (const id of ids.concat(Object.keys(r.cards))) names[id] = E3.nameOf(id);
   const st = BurrowScreens.status.statusOf(r, { currency: home, origin, names });
-  out.push(`<section class="a3-card a3-status" data-card="status" data-level="${esc3(st.level)}"><h2>${esc3(st.text.state)}</h2><p class="a3-sub">${esc3(st.text.reason)}</p></section>`);
+  if (origin !== 'sample') out.push(`<section class="a3-card a3-status" data-card="status" data-level="${esc3(st.level)}"><h2>${esc3(st.text.state)}</h2><p class="a3-sub">${esc3(st.text.reason)}</p></section>`);
   /* bank today, one figure per account, with its age */
   for (const id of ids) {
     const a = r.accounts[id];
@@ -7049,12 +7562,11 @@ function renderHome3() {
       <p class="a3-sub" data-fig="age">${ageWords3(a.ageDays)}, on ${esc3(day3(a.asOf, yr))}</p></section>`);
   }
   /* safe to spend until next pay, with the sum behind it */
-  const np = r.daysToNextPay || {};
-  const until = np.next_pay ? `until next pay on ${esc3(day3(np.next_pay, yr))}` : 'for now';
-  const sums = ids.filter(id => r.accounts[id].spendFrom).map(id => `<p class="a3-sum" data-fig="why">${esc3(r.accounts[id].why)}</p>`).join('');
+  const until = safeUntil3(r, yr);
+  const sums = ids.filter(id => r.accounts[id].spendFrom).map(id => `<p class="a3-sum" data-fig="why">${esc3(whyWords3(r.accounts[id]))}</p>`).join('');
   const short = r.safeToSpend.shortfall ? `<p class="a3-warn a3-bad">${esc3(label3('shortBy'))} ${fig3('safeToSpend.shortfall', r.safeToSpend.shortfall, home)} before then</p>` : '';
   const warns = (r.warnings || []).map(w => `<p class="a3-warn" data-warn="${esc3(w.code)}">${esc3(w.text)}</p>`).join('');
-  out.push(`<section class="a3-card" data-card="safe"><h2>${esc3(label3('safeToSpend'))} ${until}</h2>
+  out.push(`<section class="a3-card" data-card="safe"><h2>${esc3(label3('safeToSpend'))}${until}</h2>
     <p class="a3-big" data-fig="safe">${fig3('safeToSpend.headline', r.safeToSpend.headline, home)}</p>${short}${sums}${warns}</section>`);
   /* the period by its dates, and the next pay */
   const p = r.period;
@@ -7065,15 +7577,15 @@ function renderHome3() {
   const byAcct = Object.keys(due.byAccount).map(acct => `<p class="a3-acct">From ${esc3(E3.nameOf(acct))}</p><ul class="a3-rows">${rowsHtml3(due.items.filter(o => o.account === acct), E3.curOf(acct), yr, 'dueBeforeNextPay.items')}</ul>`).join('');
   out.push(`<section class="a3-card" data-card="due"><h2>${esc3(label3('dueBeforeNextPay'))}</h2>${due.items.length ? byAcct + `<ul class="a3-rows"><li class="total"><span>Together</span><span class="amt" data-fig="duetotal">${fig3('dueBeforeNextPay.total', due.total, home)}</span></li></ul>` : '<p class="a3-sub">Nothing is due before next pay</p>'}</section>`);
   /* each card, and the bank after the cards are paid */
-  const cardIds = Object.keys(r.cards);
+  const cardIds = Object.keys(r.cards), land = payLands3(r);
   if (cardIds.length) {
     const rows = cardIds.map(id => {
       const k = r.cards[id], cur = E3.curOf(id), nx = k.next;
-      const when = nx && nx.amount ? `${esc3(label3('nextPayment'))} ${fig3('cards.*.next.amount', nx.amount, cur)} on ${esc3(day3(nx.payment_date, yr))}` : 'Nothing to pay yet';
+      const what = nx && nx.amount && nx.amount !== k.owedNow ? `${fig3('cards.*.next.amount', nx.amount, cur)} comes out` : 'Comes out';
+      const when = nx && nx.amount ? `${what} on ${esc3(day3(nx.payment_date, yr))}${besidePay3(nx.payment_date, land, yr)}` : 'Nothing to pay yet';
       return `<li data-cardid="${esc3(id)}"><span>${esc3(E3.nameOf(id))}<br><span class="when">${when}</span></span><span class="amt" data-fig="owed">${fig3('cards.*.owedNow', k.owedNow, cur)}</span></li>`;
     }).join('');
-    out.push(`<section class="a3-card" data-card="cards"><h2>${esc3(label3('owed'))} on your cards</h2><ul class="a3-rows">${rows}</ul>
-      <p class="a3-sub">${esc3(label3('bankAfterCards'))}: <b data-fig="aftercards">${fig3('total.afterCards', r.total.afterCards, home)}</b></p></section>`);
+    out.push(`<section class="a3-card" data-card="cards"><h2>${esc3(label3('owed'))} on your cards</h2><ul class="a3-rows">${rows}</ul></section>`);
   }
   /* not seen yet, and later on */
   const late = r.notSeenYet.items;
@@ -7138,11 +7650,16 @@ async function saveCheck3() {
     if (v === null) { err.textContent = `Type the amount for ${E3.occName(o.item)}`; row.querySelector('[data-amt]').focus(); return; }
     ticked.push(o.item); if (v !== o.amount) amounts[o.item] = v;
   }
-  const out = CHECKIN3.checkIn(E3.book, { day: check3.day, told: E3.told(), newId: E3.newId, figures, ticked, unticked: [], amounts, expected, lands });
-  const ok = await E3.write(out);
-  if (!ok) { err.textContent = 'This could not be saved on this device. Nothing changed'; return; }
+  const out = BurrowEngine.checkin.checkIn(E3.book, { day: check3.day, told: E3.told('00'), newId: E3.newId, figures, ticked, unticked: [], amounts, expected, lands });
+  /* TODO(lane A, lane C): the figure is read after the ticked items went through, but the writer gives them all one
+     `told`, so the engine orders them by their place in the list, and the store hands events back sorted by id. A
+     reload then put the check before the pay and counted the pay twice. Until the writer or the store keeps that order,
+     the check is told one second after the items it holds. */
+  for (const e of out.events) if (e.k === 'check') { e.told = E3.told('01'); e.at = e.told; }
+  /* act3 is the only door: the check-in is one step, with its Undo bar */
+  const r = await ACT3.addRecords('Check your bank', out, { undo: E3.mode === 'try' ? 'Bank checked. Made-up numbers, so nothing is saved' : 'Bank checked' });
+  if (!r.ok) { err.textContent = r.text; return; }
   closeCheck3(); renderHome3();
-  msg3(E3.mode === 'try' ? 'Done. These are made-up numbers, so nothing is saved' : 'Saved');
 }
 /* ---------- Receipts (the receipts lane; old app: ui4.js and the Log spend card, rebuilt on the new engine) ----------
    Log a spend fast (amount, what it was for, the account or card, the day (today unless changed), a note), a refund,
@@ -7184,8 +7701,11 @@ function rcForName3(e) {
   const l = ((E3.book.plan || {}).budgets || []).find(x => x.id === e.line); return l ? l.name : 'a line no longer in your plan';
 }
 /* the records Receipts lists: what a person logged or an import read, never a ticked pay or bill (those carry `settles`) */
+/* what was logged, as the engine knows it on the shown day: a record dated or told after that day is not known yet
+   (the look ahead's own rule; it matters when the made-up book is stepped through the days) */
+const rcKnown3 = e => e.date <= E3.today() && String(e.told || e.date).slice(0, 10) <= E3.today();
 function rcRows3() {
-  return ((E3.book && E3.book.events) || []).filter(e => rcLive3(e) && !e.of && !(e.settles && e.settles.length)
+  return ((E3.book && E3.book.events) || []).filter(e => rcLive3(e) && rcKnown3(e) && !e.of && !(e.settles && e.settles.length)
     && (e.k === 'spend' || e.k === 'transfer' || (e.k === 'in' && e.sub === 'refund')));
 }
 function rcWhat3(e) {
@@ -7602,6 +8122,129 @@ function plLoanForm3() {
 /* the tab, and drawing again after every saved write or Undo */
 document.addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (b) { if (b.dataset.tab !== 'plan') PL3.form = null; else setTimeout(renderPlan3, 0); } });
 if (ACT3) ACT3.onChange(() => { if (!PL3.form) renderPlan3(); });
+/* ---------- Setup, short (WIRING_PLAN 1.1 item 1, step 10; DECISIONS_ROUND2 BE: the only way in for a person's own money) ----------
+   One screen: what the bank shows today, pay (day and amount, a second income allowed), the cards (what is on each now,
+   its payment day, its close day or "not sure"), the bills with their due days, and the minimum (M1: blank means none).
+   Save turns the answers into a book through engine/build_book.js and keeps it through the store. Nothing is worked out
+   here. The words are drafts for Mako's copy pass. */
+let setup3 = null;
+function dayOptions3(sel, extra) {
+  const out = [];
+  for (let i = 1; i <= 31; i++) out.push(`<option value="${i}"${String(i) === String(sel) ? ' selected' : ''}>${i}</option>`);
+  return out.concat((extra || []).map(([v, t]) => `<option value="${v}"${v === sel ? ' selected' : ''}>${t}</option>`)).join('');
+}
+const SHIFT3 = {
+  pay: [['before', 'the working day before'], ['after', 'the working day after']],
+  out: [['after', 'the working day after'], ['before', 'the working day before']],
+};
+const shiftOptions3 = (list, sel) => list.map(([v, t]) => `<option value="${v}"${v === sel ? ' selected' : ''}>${t}</option>`).join('');
+function openSetup3() {
+  setup3 = { pays: 1, cards: 0, bills: 0 };
+  const cur = 'JPY';
+  const host = $('#a3Setup');
+  host.innerHTML = `<div class="a3-sheet-in">
+    <h1 id="a3SetupT">Set up with your own numbers</h1>
+    <section class="a3-card"><h2>Your bank</h2>
+      <div class="a3-field"><label for="s3BankName">Its name</label><input class="a3-in a3-txt" id="s3BankName" placeholder="Main bank" autocomplete="off"></div>
+      <div class="a3-field"><label for="s3Bank">What does your bank show today?</label><input class="a3-in" id="s3Bank" data-money></div>
+      <div class="a3-field"><label for="s3Cur">Money in</label><select class="a3-in a3-sel" id="s3Cur"><option value="JPY" selected>Yen</option><option value="USD">US dollars</option><option value="PHP">Philippine pesos</option><option value="EUR">Euros</option></select></div>
+    </section>
+    <section class="a3-card"><h2>Your pay</h2>
+      <div class="a3-row3" data-row="pay1">
+        <div class="a3-field"><label for="s3PayName">Called</label><input class="a3-in a3-txt" id="s3PayName" data-f="name" placeholder="Pay" autocomplete="off"></div>
+        <div class="a3-field"><label for="s3PayAmt">How much lands</label><input class="a3-in" id="s3PayAmt" data-f="amount" data-money></div>
+      </div>
+      <div class="a3-field"><label for="s3PayDay">Day of the month it lands</label><select class="a3-in a3-sel" id="s3PayDay">${dayOptions3('25')}</select></div>
+      <div class="a3-field"><label for="s3PayShift">When that day is a weekend or holiday, it lands</label><select class="a3-in a3-sel" id="s3PayShift">${shiftOptions3(SHIFT3.pay, 'before')}</select></div>
+      <div id="s3Pays"></div>
+      <div class="a3-actions"><button type="button" class="a3-btn" id="s3AddPay">Add a second income on the same day</button></div>
+    </section>
+    <section class="a3-card"><h2>Your cards</h2><p class="a3-sub">Each card is paid in full from your bank. If you don't know the day its statement closes, leave it as not sure</p>
+      <div id="s3Cards"></div>
+      <div class="a3-actions"><button type="button" class="a3-btn" id="s3AddCard">Add a card</button></div>
+    </section>
+    <section class="a3-card"><h2>Your bills</h2><p class="a3-sub">Bills that leave your bank on a day each month</p>
+      <div id="s3Bills"></div>
+      <div class="a3-actions"><button type="button" class="a3-btn" id="s3AddBill">Add a bill</button></div>
+    </section>
+    <section class="a3-card"><h2>Keep at least</h2><p class="a3-sub">An amount you never want your bank to go under. Leave it blank for none</p>
+      <div class="a3-field"><label for="s3Min">Keep at least</label><input class="a3-in" id="s3Min" data-money data-optional></div>
+    </section>
+    <p class="a3-err" id="a3SetupErr" role="alert"></p>
+    <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3SetupSave">Save and see my money</button><button type="button" class="a3-btn" id="a3SetupX">Back</button></div>
+  </div>`;
+  host.hidden = false; $('#a3Home').hidden = true; scrollTo(0, 0);
+  host.querySelectorAll('[data-money]').forEach(el => bindMoney3(el));
+  host.addEventListener('input', () => { $('#a3SetupErr').textContent = ''; });
+  $('#s3AddPay').addEventListener('click', () => {
+    setup3.pays++; const k = 'pay' + setup3.pays;
+    $('#s3Pays').insertAdjacentHTML('beforeend', `<div class="a3-row3" data-row="${k}">
+      <div class="a3-field"><label for="s3-${k}-n">Called</label><input class="a3-in a3-txt" id="s3-${k}-n" data-f="name" placeholder="Second income" autocomplete="off"></div>
+      <div class="a3-field"><label for="s3-${k}-a">How much lands</label><input class="a3-in" id="s3-${k}-a" data-f="amount" data-money></div></div>`);
+    bindMoney3($(`#s3-${k}-a`));
+    $('#s3AddPay').hidden = true;
+  });
+  $('#s3AddCard').addEventListener('click', () => {
+    setup3.cards++; const k = 'card' + setup3.cards;
+    $('#s3Cards').insertAdjacentHTML('beforeend', `<div class="a3-group" data-row="${k}">
+      <div class="a3-row3"><div class="a3-field"><label for="s3-${k}-n">Called</label><input class="a3-in a3-txt" id="s3-${k}-n" data-f="name" placeholder="Card" autocomplete="off"></div>
+      <div class="a3-field"><label for="s3-${k}-o">On it now</label><input class="a3-in" id="s3-${k}-o" data-f="owed" data-money></div></div>
+      <div class="a3-field"><label for="s3-${k}-p">Day of the month it is paid from your bank</label><select class="a3-in a3-sel" id="s3-${k}-p" data-f="payDay">${dayOptions3('10')}</select></div>
+      <div class="a3-field"><label for="s3-${k}-s">When that day is a weekend or holiday, it comes out</label><select class="a3-in a3-sel" id="s3-${k}-s" data-f="shift">${shiftOptions3(SHIFT3.out, 'after')}</select></div>
+      <div class="a3-field"><label for="s3-${k}-c">Day its statement closes</label><select class="a3-in a3-sel" id="s3-${k}-c" data-f="closeDay">${dayOptions3('not sure', [['last', 'the last day'], ['not sure', 'not sure']])}</select></div></div>`);
+    bindMoney3($(`#s3-${k}-o`));
+  });
+  $('#s3AddBill').addEventListener('click', () => {
+    setup3.bills++; const k = 'bill' + setup3.bills;
+    $('#s3Bills').insertAdjacentHTML('beforeend', `<div class="a3-group" data-row="${k}"><div class="a3-row3">
+      <div class="a3-field"><label for="s3-${k}-n">Called</label><input class="a3-in a3-txt" id="s3-${k}-n" data-f="name" placeholder="Bill" autocomplete="off"></div>
+      <div class="a3-field"><label for="s3-${k}-a">Amount</label><input class="a3-in" id="s3-${k}-a" data-f="amount" data-money></div></div>
+      <div class="a3-field"><label for="s3-${k}-d">Day of the month it leaves</label><select class="a3-in a3-sel" id="s3-${k}-d" data-f="day">${dayOptions3('27')}</select></div></div>`);
+    bindMoney3($(`#s3-${k}-a`));
+  });
+  $('#a3SetupX').addEventListener('click', closeSetup3);
+  $('#a3SetupSave').addEventListener('click', saveSetup3);
+  $('#s3Bank').focus();
+}
+/* one input behaviour (screens/inputs.js) in the chosen currency */
+function bindMoney3(el) { BurrowScreens.inputs.bind(el, { kind: 'amount', get code() { return $('#s3Cur').value; }, optional: el.hasAttribute('data-optional') }); }
+function closeSetup3() { $('#a3Setup').hidden = true; $('#a3Setup').innerHTML = ''; setup3 = null; $('#a3Home').hidden = false; renderHome3(); }
+async function saveSetup3() {
+  const err = $('#a3SetupErr'), cur = $('#s3Cur').value;
+  const need = (el, words) => { const v = typed3(el.value, cur); if (v === null) { err.textContent = words; el.focus(); throw new Error('asked'); } return v; };
+  const text = (el, dflt) => (el.value || '').trim() || dflt;
+  let ans;
+  try {
+    const bankName = text($('#s3BankName'), 'Main bank');
+    const min = $('#s3Min').value.trim() ? need($('#s3Min'), 'Type the amount to keep at least, or leave it blank') : null;
+    ans = {
+      day: E3.today(), told: E3.told('00'), currency: cur, country: { JPY: 'JP', PHP: 'PH' }[cur] || 'XX',
+      banks: [{ key: 'bank1', name: bankName, amount: need($('#s3Bank'), `Type what ${bankName} shows today`), main: true, min }],
+      pays: [], cards: [], bills: [],
+    };
+    const day = Number($('#s3PayDay').value), shift = $('#s3PayShift').value;
+    $$('#a3Setup [data-row^=pay]').forEach((row, i) => {
+      const name = text(row.querySelector('[data-f=name]'), 'Pay');
+      ans.pays.push({ key: row.dataset.row, name, bank: 'bank1', amount: need(row.querySelector('[data-f=amount]'), `Type how much ${name} is`), day, shift, startsPeriod: i === 0 });
+    });
+    $$('#a3Setup [data-row^=card]').forEach(row => {
+      const name = text(row.querySelector('[data-f=name]'), 'Card'), cd = row.querySelector('[data-f=closeDay]').value;
+      ans.cards.push({ key: row.dataset.row, name, owed: need(row.querySelector('[data-f=owed]'), `Type what is on ${name} now, or 0`),
+        payDay: Number(row.querySelector('[data-f=payDay]').value), closeDay: cd === 'not sure' || cd === 'last' ? cd : Number(cd),
+        payFrom: 'bank1', shift: row.querySelector('[data-f=shift]').value });
+    });
+    $$('#a3Setup [data-row^=bill]').forEach(row => {
+      const name = text(row.querySelector('[data-f=name]'), 'Bill');
+      ans.bills.push({ key: row.dataset.row, name, from: 'bank1', amount: need(row.querySelector('[data-f=amount]'), `Type the amount of ${name}`), day: Number(row.querySelector('[data-f=day]').value), shift: 'after' });
+    });
+  } catch (e) { if (e.message === 'asked') return; throw e; }
+  let built;
+  try { built = BurrowEngine.build.buildBook(ans, { newId: E3.newId }); } catch (e) { err.textContent = e.message; return; }
+  const ok = await E3.start(built.book);
+  if (!ok) { err.textContent = 'This could not be saved on this device. Nothing changed'; return; }
+  $('#a3Setup').hidden = true; $('#a3Setup').innerHTML = ''; setup3 = null; $('#a3Home').hidden = false;
+  renderHome3(); msg3('Saved on this device');
+}
 /* ---------- BACKUP3: a backup file of the new shape, and restoring one (SCHEMA_V3 1; DECISIONS_ROUND2 D2, D5, D6, BE3) ----------
    Saving: the shared copy packed by store/pack.js ({ fmt: 'gz1', v, data }: JSON, gzipped, base64), as a .json file. With a
    code typed by the person it is also encrypted (AES-GCM); the key is made from the code with PBKDF2-SHA-256 (150,000
@@ -7739,7 +8382,8 @@ if (ACT3) ACT3.onChange(() => { if (!PL3.form) renderPlan3(); });
   const failOf = st => (st === 0 ? WHY.net : st === 403 ? WHY.code : st === 429 ? WHY.busy : WHY.server);
 
   // ---------- one sync [AQ1, AW2, AW5] ----------
-  const noRev = c => { if (!c || typeof c !== 'object') return c; const o = Object.assign({}, c); delete o.rev; return o; };
+  // the store's own marks on a saved book (its revision and save time, store/idb.js meta) are never part of the shared copy [BD2]
+  const noRev = c => { if (!c || typeof c !== 'object') return c; const o = Object.assign({}, c); delete o.rev; delete o.at; return o; };
   // What the cloud holds now: { ok, rev, copy } (rev 0 and no copy when nothing is stored), or { ok: false, why }.
   async function fetchCloud({ api, pack, keys }) {
     const g = await api.get(keys);
@@ -8043,22 +8687,14 @@ async function answer3(q, pick) {
    One sheet: the currency shown, this device's storage line (store/persist.js), the backup file (src/backup3.js) and the
    cloud copy (src/cloud3_page.js adds its own card when it is in the page). Nothing here works out money.
    A try book shows the currency only: nothing about it is saved, backed up or sent.
-   Restoring keeps the copy on this device whole first (E3.rec 'copy:<at>', listed in 'copies'), so Put it back can
-   bring it back; the last three are kept. */
+   Restoring keeps the copy on this device whole first (E3.rec('copy'), the store's kept store), so Put it back can
+   bring it back. */
 const SET3 = { open: false, restore: null, was: null };
-const KEEP3 = 3;
 const setMsg3 = (text, bad) => { const el = $('#a3SetMsg'); if (el) { el.textContent = text || ''; el.classList.toggle('a3-bad', !!bad); el.hidden = !text; } };
-/* a whole copy kept before a replace [D2]: { id, at, why } in 'copies', the copy itself under its id */
+/* a whole copy kept before a replace, in the store's own kept store [D2]; gives its id, or null when it could not be kept */
 async function keepCopy3(why) {
   if (!E3.book) return null;
-  const at = E3.told(), id = 'copy:' + new Date().toISOString();
-  const ok = await E3.rec(id, { id, at, why, copy: JSON.parse(JSON.stringify(E3.book)) });
-  if (!ok) return null;
-  const list = (await E3.rec('copies')) || [];
-  list.unshift({ id, at, why });
-  for (const old of list.splice(KEEP3)) await E3.rec(old.id, null);
-  await E3.rec('copies', list);
-  return id;
+  return (await E3.rec('copy', { copy: JSON.parse(JSON.stringify(E3.book)), why })) || null;
 }
 /* replace this device's book; the old one is kept first when there is one. Gives true when saved. */
 async function replaceBook3(next, why) {
@@ -8213,16 +8849,20 @@ if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
   });
 }
 /* ---------- start ---------- */
+/* the yellow band on a try book, with the day box (a plain file has no address to carry ?today=) */
+function tryBand3() {
+  const t = $('#a3Try'); t.hidden = false;
+  t.innerHTML = `<span>Made-up numbers shaped like a real month. Nothing you do here is saved</span>
+    <label class="a3-day">Show the page as on <input type="date" id="a3Day" value="${esc3(E3.today())}"></label>`;
+  $('#a3Day').addEventListener('change', e => { E3.setToday(e.target.value); if (!$('#a3Check').hidden) closeCheck3(); renderHome3(); });
+}
 (async () => {
   try { $('#a3Pix').innerHTML = pix('sprout', 2); } catch (e) { /* art is a nicety */ }
   await E3.load();
-  if (E3.mode === 'try') {
-    const t = $('#a3Try'); t.hidden = false;
-    t.textContent = 'Made-up numbers shaped like a real month. Nothing you do here is saved' + (new URLSearchParams(location.search).get('today') ? '. Shown as on ' + day3(E3.today(), 'any') : '');
-  }
+  if (E3.mode === 'try') tryBand3();
   BurrowScreens.messages.mount($('#a3Msg'), MSG3);
   renderHome3();
-  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#a3Check').hidden) closeCheck3(); });
+  document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; if (!$('#a3Check').hidden) closeCheck3(); });
   if (typeof startCloud3 === 'function') startCloud3();   // the cloud copy, when on: taken on opening (backup lane)
 })();
 /* ---------- Statements: the AI route (DECISIONS_ROUND2 E4; the old app's ui41.js relayFn and ui46.js connectAsk) ----------

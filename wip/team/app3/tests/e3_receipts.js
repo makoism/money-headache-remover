@@ -12,7 +12,8 @@ const { ck } = T;
 const { actBook, WALLET, FOOD } = require('./e3_act_book.js');
 const DAY = '2026-11-25';
 const bk0 = actBook(), bank = bk0.home.main.v.acct, cardA = bk0.accounts.find(a => a.name === 'Card A').id;
-const saved = p => p.evaluate(() => new Promise(res => { const rq = indexedDB.open('burrow3'); rq.onsuccess = () => { const db = rq.result, g = db.transaction('slice1').objectStore('slice1').get('book'); g.onsuccess = () => { db.close(); res(g.result.book); }; }; }));
+/* the book as the page saved it, read back through the store (store/idb.js) */
+const saved = p => p.evaluate(async () => { const s = await BurrowStore.open(); const r = await s.load(); if (s.db) s.db.close(); return r.copy; });
 const fig = (p, k) => p.evaluate(k => { const e = document.querySelector(`[data-fig="${k}"] [data-amt]`); return e ? Number(e.dataset.amt) : null; }, k);
 const rows = p => p.$$eval('#rcList [data-rc]', rs => rs.map(r => ({ id: r.dataset.rc, k: r.dataset.k, text: r.textContent.replace(/\s+/g, ' ').trim() })));
 const bar = p => p.evaluate(() => { const m = document.querySelector('#a3Msg .burrow-msg'); return m ? { text: m.querySelector('span').textContent, button: (m.querySelector('button') || {}).textContent || null } : null; });
@@ -28,7 +29,8 @@ async function figsMatch(p, book, what) {
   const prof = require('fs').mkdtempSync(require('os').tmpdir() + '/a3rc-');
   let { b, p, errs } = await T.open({ profile: prof });
   await p.goto(T.URL0 + '?today=' + DAY); await T.w(300);
-  await p.evaluate(bk => new Promise(res => { const rq = indexedDB.open('burrow3', 1); rq.onupgradeneeded = () => rq.result.createObjectStore('slice1'); rq.onsuccess = () => { const db = rq.result, tx = db.transaction('slice1', 'readwrite'); tx.objectStore('slice1').put({ v: 1, book: bk, t: 1 }, 'book'); tx.oncomplete = () => { db.close(); res(); }; }; }), bk0);
+  const put = await p.evaluate(async bk => { const s = await BurrowStore.open(); const r = await s.save(bk, { full: true }); if (s.db) s.db.close(); return r; }, bk0);
+  ck('the made-up book is kept through the store', put && put.ok, JSON.stringify(put));
   await p.reload(); await T.w(400);
 
   /* the tab */
@@ -155,13 +157,14 @@ async function figsMatch(p, book, what) {
     const out = CI.checkIn(kb, { day: D2, told: D2 + 'T20:00+09:00', newId: I.idMaker('t3rcpt', () => 0.6), figures: {}, ticked: pays.map(o => o.item),
       expected: Object.fromEntries(pays.map(o => [o.item, o.amount])), lands: Object.fromEntries(pays.map(o => [o.item, o.lands])) });
     const nb = CI.apply ? CI.apply(kb, out) : Object.assign({}, kb, { events: kb.events.concat(out.events), checkins: (kb.checkins || []).concat(out.checkins) });
-    await p.evaluate(bk => new Promise(res => { const rq = indexedDB.open('burrow3', 1); rq.onsuccess = () => { const db = rq.result, tx = db.transaction('slice1', 'readwrite'); tx.objectStore('slice1').put({ v: 1, book: bk, t: 2 }, 'book'); tx.oncomplete = () => { db.close(); res(); }; }; }), nb);
+    const put2 = await p.evaluate(async bk => { const s = await BurrowStore.open(); await s.load(); const r = await s.save(bk, { full: true }); if (s.db) s.db.close(); return r; }, nb);
+    ck('the book with the check-in is kept through the store', put2 && put2.ok, JSON.stringify(put2));
     await p.goto(T.URL0 + '?today=' + D3); await T.w(400);
     await p.tap('[data-tab="receipts"]'); await T.w(200);
     const q = P.periods(nb, D3);
     const cur = await p.$eval('[data-fig=rc-period]', e => [e.dataset.start, e.dataset.end, e.textContent]);
     ck('on 15 Dec the list shows the period the 10 Dec pay started', cur[0] === q.current.start && cur[0] === '2026-12-10' && cur[1] === q.current.end, JSON.stringify(cur));
-    ck('nothing logged in it yet', (await rows(p)).length === 0);
+    ck('nothing logged in it yet', (await rows(p)).length === 0, JSON.stringify(await rows(p)));
     ck('Earlier is offered', await p.$eval('#rcOlder', e => !e.disabled));
     await p.tap('#rcOlder'); await T.w(200);
     const old = await p.$eval('[data-fig=rc-period]', e => [e.dataset.start, e.dataset.end, e.textContent]);

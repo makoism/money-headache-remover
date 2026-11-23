@@ -15,10 +15,12 @@ const B = require('../src/backup3.js');
 const DAY = '2026-12-10';
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'a3bk-'));
 const fileOf = (name, text) => { const f = path.join(tmp, name); fs.writeFileSync(f, text); return f; };
-async function seed(p, bk) {
-  await p.evaluate(bk0 => new Promise(res => { const rq = indexedDB.open('burrow3', 1); rq.onupgradeneeded = () => rq.result.createObjectStore('slice1'); rq.onsuccess = () => { const db = rq.result, tx = db.transaction('slice1', 'readwrite'); tx.objectStore('slice1').put({ v: 1, book: bk0, t: 1 }, 'book'); tx.oncomplete = () => { db.close(); res(); }; }; }), bk);
-}
-const stored = (p, key) => p.evaluate(k => new Promise(res => { const rq = indexedDB.open('burrow3'); rq.onsuccess = () => { const db = rq.result; if (!db.objectStoreNames.contains('slice1')) { db.close(); res(null); return; } const g = db.transaction('slice1').objectStore('slice1').get(k); g.onsuccess = () => { db.close(); res(g.result === undefined ? null : g.result); }; }; rq.onerror = () => res(null); }), key);
+/* the book kept through the store (store/idb.js), as the page keeps it */
+const seed = (p, bk) => p.evaluate(async bk0 => { const s = await BurrowStore.open(); await s.load(); const r = await s.save(bk0, { full: true }); s.close(); return r.ok; }, bk);
+/* 'book': { book } as stored; 'copies': the kept whole copies, newest first; 'copy:...': one kept copy */
+const stored = (p, key) => p.evaluate(async k => { const s = await BurrowStore.open(); try { if (k === 'book') { const r = await s.load(); return r.copy ? { book: r.copy } : null; } if (k === 'copies') return (await s.keptCopies()).sort((x, y) => (x.id < y.id ? 1 : -1)); return await s.keptCopy(k); } finally { s.close(); } }, key);
+/* a copy without what the store adds when it saves (its own revision and save time) */
+const bare = c => { const o = Object.assign({}, c); delete o.rev; delete o.at; if (Array.isArray(o.keptVersions) && !o.keptVersions.length) delete o.keptVersions; return require('../../engine/sync.js').canon(o); };   // records compared by id, in any order
 const msg = p => p.$eval('#a3SetMsg', e => (e.hidden ? '' : e.textContent));
 async function download(p, dir, click) {
   const before = new Set(fs.readdirSync(dir));
@@ -57,7 +59,7 @@ async function download(p, dir, click) {
     const f1 = await download(p, dl, () => p.click('#a3BkSave'));
     ck('Save a backup file downloads burrow-backup-<day>.json', !!f1 && path.basename(f1) === 'burrow-backup-' + DAY + '.json', f1);
     const r1 = f1 ? await B.read(new File([fs.readFileSync(f1)], 'x.json')) : { ok: false };
-    ck('the file reads back as the same book', r1.ok && JSON.stringify(r1.copy) === JSON.stringify(bk));
+    ck('the file reads back as the same book', r1.ok && bare(r1.copy) === bare(bk));
     ck('the page says where it went', /Saved burrow-backup/.test(await msg(p)));
     // a locked backup
     await p.click('#a3BkLock'); await p.type('#a3BkCode', 'abc'); await p.click('#a3BkSave'); await T.w(200);
@@ -78,7 +80,7 @@ async function download(p, dir, click) {
     ck('the book is the backup now', (await stored(p, 'book')).book.schedules[0].name === 'Main job (from backup)');
     const copies = await stored(p, 'copies');
     const kept = copies && copies[0] ? await stored(p, copies[0].id) : null;
-    ck('the copy that was here is kept whole first [D2]', !!kept && JSON.stringify(kept.copy) === JSON.stringify(bk), JSON.stringify(copies));
+    ck('the copy that was here is kept whole first [D2]', !!kept && bare(kept.copy) === bare(bk), JSON.stringify(copies));
     ck('Put it back is offered', !!(await p.$('#a3BkBack')));
     // a locked file: asks the code
     await (await p.$('#a3BkFile')).uploadFile(locked); await T.w(400);

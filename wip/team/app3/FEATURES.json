@@ -3,9 +3,9 @@
  "note": "DECISIONS_ROUND2 AZ5: passes is flipped to true only when the test is green in ./check3.sh. check3.sh fails if a feature marked passing has a red test.",
  "features": [
   { "name": "The made-up Mako book behind ?try=mako (his shape, ids like the app's, nothing written)", "test": "tests/e3_try.js", "passes": true },
-  { "name": "Home top: bank today and its age, safe to spend with its sum, next pay, due before next pay, each card, money after the cards", "test": "tests/e3_home.js", "passes": true },
-  { "name": "Check your bank: ticked list with editable amounts, the bank figure, Home updates; kept in IndexedDB burrow3; old copies untouched", "test": "tests/e3_checkin.js", "passes": true },
-  { "name": "The check-in writer, pure (until lane A's engine/checkin.js)", "test": "tests/checkin_write.test.js", "passes": true },
+  { "name": "Home top: bank today and its age, safe to spend with its sum, next pay, due before next pay, each card and when it comes out beside the pay", "test": "tests/e3_home.js", "passes": true },
+  { "name": "Check your bank: ticked list with editable amounts, the bank figure, Home updates; kept by the store (IndexedDB burrow3) through reload and restart; old copies untouched", "test": "tests/e3_checkin.js", "passes": true },
+  { "name": "The try book with the engine check-in writer: a check-in on 10 Dec, and the weekend where card B leaves before pay", "test": "tests/checkin_book.test.js", "passes": true },
   { "name": "No money maths in screens", "test": "tests/no_maths.js", "passes": true },
   { "name": "Idle CPU, long tasks, no outside requests, no errors", "test": "tests/guard3.js", "passes": true },
   { "name": "Opens offline", "test": "tests/offline.js", "passes": true },
@@ -22,6 +22,7 @@
   { "name": "Settings: currency, storage line, save a backup, restore from a file after asking with the copy here kept whole first, Put it back, a backup as the way in", "test": "tests/e3_backup.js", "passes": true },
   { "name": "Cloud copy on the page: turn on with a code shown once, I have a code, taken on opening, sent on leaving and at most every 90 s, Send now, the same record changed on two devices asked in Settings with the other kept, refused sends said, turn off saying what is lost", "test": "tests/e3_cloud.js", "passes": true },
   { "name": "Service worker when served: page kept with cache reload, opens offline and after 3 s with no answer, a new build takes over and loads when the page goes to the background, /api/ never cached", "test": "tests/e3_sw.js", "passes": true },
-  { "name": "Setup, short (setup3)", "test": "tests/e3_setup.js", "passes": false }
+  { "name": "Works as a plain file: first screen offers the made-up numbers, with a day box to step through the days", "test": "tests/e3_file.js", "passes": true },
+  { "name": "Setup, short (setup3): bank today, pay with a second income, cards with a close day or not sure, bills, the minimum; through build_book and the store", "test": "tests/e3_setup.js", "passes": true }
  ]
 }

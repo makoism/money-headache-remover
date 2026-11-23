@@ -8,6 +8,11 @@ step() { echo; echo "== $1"; }
 run() {   # run <test file> <pass word>: one line per test in $RESULTS, "<file> PASS|FAIL"
   local f=$1 word=$2 out rc
   out=$(timeout 300 node "$f" 2>&1); rc=$?
+  # The browser itself going away under load from other lanes (a detached frame, a closed session, a failed launch)
+  # is not a test result: that one case runs again once, and says so. A FAIL line is never run again.
+  if [ $rc -ne 0 ] && ! echo "$out" | grep -q "^FAIL [^c]" && echo "$out" | grep -q "detached Frame\|Session closed\|Target closed\|Failed to launch the browser"; then
+    echo "(the browser went away under load, not a test failure: running $f once more)"; out=$(timeout 300 node "$f" 2>&1); rc=$?
+  fi
   echo "$out" | grep -v "^PASS" | tail -12
   if [ $rc -eq 0 ] && echo "$out" | grep -q "$word"; then echo "$f PASS" >> "$RESULTS"; else echo "$f FAIL" >> "$RESULTS"; echo "FAILED: $f (exit $rc)"; BAD=1; fi
 }
@@ -23,7 +28,7 @@ elif [ -n "$NEW" ]; then echo "NEW ENGINE FAILURES:"; echo "$NEW"; BAD=1; else e
 step "the shared screen pieces (screens/test/run_all.sh)"
 OUT=$(bash ../screens/test/run_all.sh 2>&1); echo "$OUT" | tail -1; echo "$OUT" | tail -1 | grep -q "every file passed" || { echo "SCREENS TESTS FAILED"; BAD=1; }
 
-step "the check-in writer (pure)"; run tests/checkin_write.test.js "CHECKIN WRITE PASS"
+step "the try book through the engine check-in writer"; run tests/checkin_book.test.js "CHECKIN BOOK PASS"
 step "act3, the one write door (pure)"; run tests/e3_act_unit.js "e3_act_unit: ALL PASS"
 step "the cloud copy's core, two devices on a local fake vault"; run tests/cloud3.test.js "cloud3: ALL PASS"
 step "statements, the reading half (pure)"; run tests/e3_stmt_read.js "e3_stmt_read: ALL PASS"
@@ -39,6 +44,8 @@ step "Add statements (the AI route, any AI, review, Add, duplicates once, the re
 step "the period by its dates"; run tests/e3_period.js "e3_period: ALL PASS"
 step "Receipts"; run tests/e3_receipts.js "e3_receipts: ALL PASS"
 step "the Plan tab"; run tests/e3_plan.js "e3_plan: ALL PASS"
+step "as a plain file: the first screen, the try book and its day box"; run tests/e3_file.js "e3_file: ALL PASS"
+step "setup3"; run tests/e3_setup.js "e3_setup: ALL PASS"
 step "guard (idle CPU, long tasks, outside requests, errors)"; run tests/guard3.js "guard3: ALL PASS"
 step "offline load"; run tests/offline.js "offline: ALL PASS"
 step "Settings and the backup file"; run tests/e3_backup.js "e3_backup: ALL PASS"

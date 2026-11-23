@@ -38,8 +38,11 @@ function rcForName3(e) {
   const l = ((E3.book.plan || {}).budgets || []).find(x => x.id === e.line); return l ? l.name : 'a line no longer in your plan';
 }
 /* the records Receipts lists: what a person logged or an import read, never a ticked pay or bill (those carry `settles`) */
+/* what was logged, as the engine knows it on the shown day: a record dated or told after that day is not known yet
+   (the look ahead's own rule; it matters when the made-up book is stepped through the days) */
+const rcKnown3 = e => e.date <= E3.today() && String(e.told || e.date).slice(0, 10) <= E3.today();
 function rcRows3() {
-  return ((E3.book && E3.book.events) || []).filter(e => rcLive3(e) && !e.of && !(e.settles && e.settles.length)
+  return ((E3.book && E3.book.events) || []).filter(e => rcLive3(e) && rcKnown3(e) && !e.of && !(e.settles && e.settles.length)
     && (e.k === 'spend' || e.k === 'transfer' || (e.k === 'in' && e.sub === 'refund')));
 }
 function rcWhat3(e) {

@@ -2,22 +2,14 @@
    One sheet: the currency shown, this device's storage line (store/persist.js), the backup file (src/backup3.js) and the
    cloud copy (src/cloud3_page.js adds its own card when it is in the page). Nothing here works out money.
    A try book shows the currency only: nothing about it is saved, backed up or sent.
-   Restoring keeps the copy on this device whole first (E3.rec 'copy:<at>', listed in 'copies'), so Put it back can
-   bring it back; the last three are kept. */
+   Restoring keeps the copy on this device whole first (E3.rec('copy'), the store's kept store), so Put it back can
+   bring it back. */
 const SET3 = { open: false, restore: null, was: null };
-const KEEP3 = 3;
 const setMsg3 = (text, bad) => { const el = $('#a3SetMsg'); if (el) { el.textContent = text || ''; el.classList.toggle('a3-bad', !!bad); el.hidden = !text; } };
-/* a whole copy kept before a replace [D2]: { id, at, why } in 'copies', the copy itself under its id */
+/* a whole copy kept before a replace, in the store's own kept store [D2]; gives its id, or null when it could not be kept */
 async function keepCopy3(why) {
   if (!E3.book) return null;
-  const at = E3.told(), id = 'copy:' + new Date().toISOString();
-  const ok = await E3.rec(id, { id, at, why, copy: JSON.parse(JSON.stringify(E3.book)) });
-  if (!ok) return null;
-  const list = (await E3.rec('copies')) || [];
-  list.unshift({ id, at, why });
-  for (const old of list.splice(KEEP3)) await E3.rec(old.id, null);
-  await E3.rec('copies', list);
-  return id;
+  return (await E3.rec('copy', { copy: JSON.parse(JSON.stringify(E3.book)), why })) || null;
 }
 /* replace this device's book; the old one is kept first when there is one. Gives true when saved. */
 async function replaceBook3(next, why) {

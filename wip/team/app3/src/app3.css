@@ -8,6 +8,8 @@ body::before { content: ''; position: fixed; inset: 0; z-index: -1; background: 
 .a3-top { display: flex; flex-direction: column; gap: 6px; }
 .a3-brand { margin: 8px 0 0; font-family: var(--fd); font-size: var(--t-h3); display: flex; align-items: center; gap: 10px; color: var(--ink2); }
 .a3-brand .pix { display: inline-block; }
+.a3-day { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; color: var(--ink); }
+.a3-day input { min-height: var(--btn-h-s); border: 0; border-radius: var(--r-ctl-s); background: var(--field); color: var(--ink); font: inherit; padding: 0 10px; box-shadow: inset 0 0 0 1px var(--hair); }
 .a3-try { margin: 0; font-size: var(--t-cap); color: var(--warn); background: var(--warn-bg); border-radius: var(--r-ctl-s); padding: 8px 12px; }
 .a3-card { background: var(--card); border-radius: var(--r-card); padding: var(--pad-card); box-shadow: inset 0 0 0 1px var(--hair), inset 0 1px 0 var(--glass-hi); }
 .a3-card h2 { margin: 0 0 4px; font-size: var(--t-cap); font-weight: 600; letter-spacing: .02em; color: var(--ink2); text-transform: none; }
@@ -31,6 +33,11 @@ body::before { content: ''; position: fixed; inset: 0; z-index: -1; background: 
 .a3-btn:focus-visible, .a3-in:focus-visible, .a3-tick input:focus-visible { outline: 3px solid var(--acc-ring); outline-offset: 2px; }
 .a3-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
 .a3-sheet[hidden], #a3Home[hidden] { display: none; }
+.a3-in.a3-txt, .a3-in.a3-sel { text-align: left; }
+.a3-row3 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.a3-group { padding: 6px 0 14px; border-bottom: 1px solid var(--hair); }
+.a3-group:last-child { border-bottom: 0; }
+@media (max-width: 360px) { .a3-row3 { grid-template-columns: 1fr; } }
 .a3-sheet-in { display: flex; flex-direction: column; gap: var(--gap-card); }
 .a3-sheet h1 { margin: 8px 0 0; font-family: var(--fd); font-size: var(--t-h2); }
 .a3-tick { display: grid; grid-template-columns: 28px 1fr minmax(110px, 40%); align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--hair); }

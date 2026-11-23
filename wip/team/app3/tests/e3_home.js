@@ -21,20 +21,25 @@ const DAYS = ['2026-11-23', '2026-12-09', '2026-12-10', '2026-12-11', '2026-12-1
     ck(day + ' one bank figure, the engine\'s', bankFigs.length === 1 && bankFigs[0].amt === r.accounts[bank].bank, JSON.stringify(bankFigs));
     ck(day + ' its age', one('age')[0] && one('age')[0].text === (r.accounts[bank].ageDays === 0 ? 'checked today' : r.accounts[bank].ageDays === 1 ? 'checked yesterday' : 'checked ' + r.accounts[bank].ageDays + ' days ago') + ', on 20 Nov' + (day.startsWith('2027') ? ' 2026' : ''), one('age')[0] && one('age')[0].text);
     ck(day + ' safe to spend is the engine\'s headline', one('safe')[0] && one('safe')[0].amt === r.safeToSpend.headline, JSON.stringify(one('safe')) + ' vs ' + r.safeToSpend.headline);
-    ck(day + ' the sum behind it is the engine\'s', one('why')[0] && one('why')[0].text === r.accounts[bank].why, one('why')[0] && one('why')[0].text);
+    ck(day + ' the sum behind it is the engine\'s, without a minimum of 0', one('why')[0] && one('why')[0].text === r.accounts[bank].why.replace(' - 0 (minimum) =', ' =') && !/minimum/.test(one('why')[0].text), one('why')[0] && one('why')[0].text);
     const npDay = r.period.nextPay.state === 'notSeen' ? r.period.nextPay.due : r.daysToNextPay.next_pay;
     ck(day + ' the next pay (' + r.period.nextPay.state + ')', one('nextpay')[0] && one('nextpay')[0].text.indexOf(SN0.dayLabel(npDay)) > 0, one('nextpay')[0] && one('nextpay')[0].text);
     const dt = one('duetotal');
     ck(day + ' due before next pay', r.dueBeforeNextPay.items.length ? dt.length === 1 && dt[0].amt === r.dueBeforeNextPay.total : dt.length === 0, JSON.stringify(dt) + ' vs ' + r.dueBeforeNextPay.total);
     const owed = one('owed');
     ck(day + ' each card', owed.length === Object.keys(r.cards).length && Object.keys(r.cards).every((id, i) => owed[i].amt === r.cards[id].owedNow), JSON.stringify(owed));
-    ck(day + ' all the money after the cards', one('aftercards')[0] && one('aftercards')[0].amt === r.total.afterCards);
+    ck(day + ' no second figure beside safe to spend (no "bank after the cards")', !(await p.$('[data-figure="total.afterCards"]')) && !/after the cards/i.test(await p.$eval('#a3Home', e => e.textContent)));
+    if (day === '2026-11-23') {
+      const lines = await p.$$eval('[data-cardid] .when', es => es.map(e => e.textContent));
+      ck(day + ' card A comes out the day pay lands', lines[0] === 'Comes out on 10 Dec, the day your pay lands', lines[0]);
+      ck(day + ' card B comes out the day after', lines[1] === 'Comes out on 11 Dec', lines[1]);
+    }
     const shown = await p.evaluate(() => [...document.querySelectorAll('[data-amt]')].every(e => e.textContent.replace(/[^\d]/g, '') === String(Math.abs(Number(e.dataset.amt)))));
     ck(day + ' every amount written is the amount it stands for', shown);
     const audit = await p.evaluate(() => BurrowScreens.provenance.audit(document.getElementById('a3Home')));
     ck(day + ' every figure is marked sample on the sample screen (provenance audit)', audit.length === 0 && (await p.$$('[data-figure]')).length > 5, audit.join('; '));
-    const st = await p.evaluate(() => document.querySelector('[data-card=status] h2').textContent);
-    ck(day + ' the one status says these are sample numbers', st === 'Sample numbers', st);
+    const st = await p.evaluate(() => ({ card: !!document.querySelector('[data-card=status]'), band: document.getElementById('a3Try').hidden ? '' : document.getElementById('a3Try').textContent, n: (document.getElementById('a3').textContent.match(/[Mm]ade.up|Sample numbers/g) || []).length }));
+    ck(day + ' made-up numbers are said once, in the yellow band, with no status card', !st.card && /Made-up numbers/.test(st.band) && st.n === 1, JSON.stringify(st));
     if (day === '2026-11-23' || day === '2027-01-08' || day === '2026-12-10') await T.shot(p, 'home_' + day);
   }
   /* the phone width: no sideways scroll at 320 */

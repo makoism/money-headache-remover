@@ -12,9 +12,10 @@ const fs = require('fs'), os = require('os'), path = require('path');
 const { makeVault, serve } = require('./fake_vault.js');
 const DAY = '2026-12-10';
 const book = T.book();
-const seed = (p, bk) => p.evaluate(bk0 => new Promise(res => { const rq = indexedDB.open('burrow3', 1); rq.onupgradeneeded = () => rq.result.createObjectStore('slice1'); rq.onsuccess = () => { const db = rq.result, tx = db.transaction('slice1', 'readwrite'); tx.objectStore('slice1').put({ v: 1, book: bk0, t: 1 }, 'book'); tx.oncomplete = () => { db.close(); res(); }; }; }), bk);
-const stored = p => p.evaluate(() => new Promise(res => { const rq = indexedDB.open('burrow3'); rq.onsuccess = () => { const db = rq.result; if (!db.objectStoreNames.contains('slice1')) { db.close(); res(null); return; } const g = db.transaction('slice1').objectStore('slice1').get('book'); g.onsuccess = () => { db.close(); res(g.result ? g.result.book : null); }; }; rq.onerror = () => res(null); }));
-const rename = (p, id, name, at, by) => p.evaluate((id0, n, a, b) => new Promise(res => { const rq = indexedDB.open('burrow3'); rq.onsuccess = () => { const db = rq.result, tx = db.transaction('slice1', 'readwrite'), st = tx.objectStore('slice1'); const g = st.get('book'); g.onsuccess = () => { const r = g.result; const s = r.book.schedules.find(x => x.id === id0); s.name = n; s.at = a; s.by = b; st.put(r, 'book'); }; tx.oncomplete = () => { db.close(); res(); }; }; }), id, name, at, by);
+/* the book through the store (store/idb.js), as the page keeps it; a change made here is read by the page on its next open */
+const seed = (p, bk) => p.evaluate(async bk0 => { const s = await BurrowStore.open(); await s.load(); const r = await s.save(bk0, { full: true }); s.close(); return r.ok; }, bk);
+const stored = p => p.evaluate(async () => { const s = await BurrowStore.open(); try { const r = await s.load(); return r.copy; } finally { s.close(); } });
+const rename = (p, id, name, at, by) => p.evaluate(async (id0, n, a, b) => { const s = await BurrowStore.open(); try { const r = await s.load(); const x = r.copy.schedules.find(y => y.id === id0); Object.assign(x, { name: n, at: a, by: b }); return (await s.save(r.copy)).ok; } finally { s.close(); } }, id, name, at, by);
 const state = p => p.$eval('#a3CloudState', e => e.textContent);
 const until = async (f, ms) => { for (let i = 0; i < (ms || 8000) / 100; i++) { if (await f()) return true; await T.w(100); } return false; };
 (async () => {

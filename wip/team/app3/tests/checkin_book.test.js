@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* The check-in writer (app3/src/checkin_write.js), pure, on the made-up Mako book (WIRING_PLAN 1.4 step 8, SCHEMA_V3 7.1, 7.2).
+/* The engine's check-in writer (engine/checkin.js) on the made-up try book (WIRING_PLAN 1.4 step 8, SCHEMA_V3 7.1, 7.2).
    Mako on 10 Dec ticks both pays and card A and types the bank; the look ahead then shows the new bank figure as of
    10 Dec, card B still due on the 11th, and no ticked item left on the check-in list. Made-up yen. */
 'use strict';
@@ -7,7 +7,7 @@ const assert = require('assert');
 const path = require('path');
 const E = path.join(__dirname, '../../engine/');
 const L = require(E + 'lookahead.js'), G = require(E + 'ledger.js'), I = require(E + 'ids.js');
-const W = require('../src/checkin_write.js');
+const W = require(E + 'checkin.js');
 const book0 = require('../fixtures/mako_madeup_book.json');
 let bad = 0, n = 0;
 const t = (name, fn) => { n++; try { fn(); console.log('PASS ' + name); } catch (e) { bad++; console.log('FAIL ' + name + ': ' + e.message.split('\n')[0]); } };
@@ -38,7 +38,7 @@ t('a pay is written as income with its stream, card A as a repay from the bank',
   const p = out.events.find(e => e.id === 'set:' + payMain + '@2026-12-10');
   assert.strictEqual(p.k, 'in'); assert.strictEqual(p.sub, 'pay'); assert.strictEqual(p.stream, payMain); assert.strictEqual(p.a, 180000);
   const c = out.events.find(e => e.id === 'set:' + cardA + '@2026-12-10');
-  assert.strictEqual(c.k, 'repay'); assert.strictEqual(c.acct, bank); assert.strictEqual(c.acct2, cardA); assert.strictEqual(c.a, 54000); assert.strictEqual(c.a2, 54000);
+  assert.strictEqual(c.k, 'repay'); assert.strictEqual(c.acct, bank); assert.strictEqual(c.acct2, cardA); const want = list.find(o => o.item === cardA + '@2026-12-10').amount; assert.strictEqual(c.a, want); assert.strictEqual(c.a2, want);
 });
 t('every record carries the check-in as grp, and the check-in lists what it settled', () => {
   const id = out.checkins[0].id;
@@ -71,5 +71,5 @@ t('the try book has the weekend where card B leaves before pay lands', () => {
   assert.strictEqual(jan.cards[cardB].next.payment_date, '2027-01-08');
   assert.strictEqual(jan.daysToNextPay.next_pay, '2027-01-12');
 });
-console.log(bad ? 'CHECKIN WRITE FAIL ' + bad + ' of ' + n : 'CHECKIN WRITE PASS ' + n);
+console.log(bad ? 'CHECKIN BOOK FAIL ' + bad + ' of ' + n : 'CHECKIN BOOK PASS ' + n);
 process.exit(bad ? 1 : 0);

@@ -72,7 +72,8 @@
   const failOf = st => (st === 0 ? WHY.net : st === 403 ? WHY.code : st === 429 ? WHY.busy : WHY.server);
 
   // ---------- one sync [AQ1, AW2, AW5] ----------
-  const noRev = c => { if (!c || typeof c !== 'object') return c; const o = Object.assign({}, c); delete o.rev; return o; };
+  // the store's own marks on a saved book (its revision and save time, store/idb.js meta) are never part of the shared copy [BD2]
+  const noRev = c => { if (!c || typeof c !== 'object') return c; const o = Object.assign({}, c); delete o.rev; delete o.at; return o; };
   // What the cloud holds now: { ok, rev, copy } (rev 0 and no copy when nothing is stored), or { ok: false, why }.
   async function fetchCloud({ api, pack, keys }) {
     const g = await api.get(keys);
