@@ -43,11 +43,8 @@ t('a once key waiting for add or replace counts on the safe side, the larger, fo
     x.pendingMove = [{ id: 'p1', waits: 'pick', to: 'once', line: 'food', key: 'pay@2026-12-25', a: 70000, told: '2026-12-01T10:00' + TZ, at: '2026-12-01T10:00' + TZ, by: 'aaaaaa' }];
   });
   // the larger of 40,000 written and 70,000 waiting: 400,000 - 30,000 + 250,000 - 70,000 - 50,000 = 500,000; lowest 370,000
-  const r = run(b, '2026-12-02');
-  ok(/70,000 \(Food for the period from 25 Dec\)/.test(r.accounts.bank.why) || r.accounts.bank.lowest === 370000);
-  const walk = run(b, '2026-12-02');
-  eq(walk.accounts.bank.lowest, 370000);
-  // seen directly: the period amount the walk uses
+  eq(run(b, '2026-12-02').accounts.bank.lowest, 370000);
+  // large enough to be the lowest point: the larger, 700,000, is what the walk takes
   const b2 = base(x => { x.plan.budgets[0].once = { 'pay@2026-12-25': { amount: 400000, at: 'x', by: 'y' } };
     x.pendingMove = [{ id: 'p1', waits: 'pick', to: 'once', line: 'food', key: 'pay@2026-12-25', a: 700000, at: 'x', by: 'y' }]; });
   eq(run(b2, '2026-12-02').accounts.bank.lowest, 400000 - 30000 + 250000 - 700000 - 50000);
