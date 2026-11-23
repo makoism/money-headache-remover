@@ -1,0 +1,114 @@
+{
+  "life": "check_day_before",
+  "title": "Receipts logged after a check: one dated the day before is judged by `told`, one dated two days before stays inside the check (AM3, H1)",
+  "story": "Set up Thu 10 Dec 2026 in Tokyo, pay day: the bank holds 400,000, of which Free to spend 60,000 (typed). Pay of 300,000 on the 10th (moved earlier). Mon 14 Dec: Jun checks in at 10:00: 380,000. At 12:00 the same day he finds two receipts in his wallet and logs both from the bank on Free to spend: 4,000 for Sun 13 Dec and 6,000 for Sat 12 Dec. A check holds the events dated more than a day before its day; those dated on its day or the day before are judged by `told` [AM3]. So the 4,000 (the day before, told after the check) comes after it and is taken off the figure, while the 6,000 (two days before) is inside the check, whatever its `told`, and shrinks the filler. One phone, one zone. Every amount is made up.",
+  "currency": "JPY",
+  "window": {
+    "from": "2026-12-10",
+    "to": "2027-01-10"
+  },
+  "holidays": {
+    "country": "none",
+    "dates": [],
+    "bank_closed": []
+  },
+  "main_bank": "b",
+  "accounts": [
+    {
+      "id": "b",
+      "name": "Bank",
+      "kind": "bank",
+      "currency": "JPY",
+      "minimum": 0,
+      "opening": {
+        "date": "2026-12-10",
+        "amount": 400000,
+        "split": {
+          "free": 60000
+        }
+      }
+    }
+  ],
+  "income": [
+    {
+      "id": "pay",
+      "name": "Pay",
+      "account": "b",
+      "amount": 300000,
+      "schedule": {
+        "frequency": "monthly",
+        "day": 10
+      },
+      "weekend_holiday": "move earlier",
+      "starts_period": true
+    }
+  ],
+  "bills": [],
+  "goals": [],
+  "plan": {
+    "free": {
+      "per": "month",
+      "amount": 60000
+    }
+  },
+  "events": [
+    {
+      "id": "s1",
+      "date": "2026-12-12",
+      "told": "2026-12-14T12:00+09:00",
+      "kind": "spend",
+      "account": "b",
+      "amount": 6000,
+      "line": "free",
+      "note": "Jun: a receipt from Saturday, logged after the check; two days before its day, so inside it [AM3]"
+    },
+    {
+      "id": "s2",
+      "date": "2026-12-13",
+      "told": "2026-12-14T12:00+09:00",
+      "kind": "spend",
+      "account": "b",
+      "amount": 4000,
+      "line": "free",
+      "note": "Jun: a receipt from Sunday, logged after the check; the day before its day, judged by told [AM3]"
+    },
+    {
+      "id": "c1",
+      "date": "2026-12-14",
+      "told": "2026-12-14T10:00+09:00",
+      "kind": "check",
+      "account": "b",
+      "amount": 380000,
+      "note": "Jun"
+    }
+  ],
+  "asks": [
+    {
+      "id": "cdb-01",
+      "date": "2026-12-15",
+      "question": "bank_today",
+      "account": "b",
+      "expected": 376000,
+      "why": "380,000 (check, Mon 14 Dec 10:00) - 4,000 (the receipt dated Sun 13 Dec, the day before the check's day, told 12:00: after the check, taken off [AM3]) = 376,000",
+      "note": "The 6,000 dated Sat 12 Dec is two days before the check's day, so it is inside the check and not taken off, whatever its `told` [AM3]. Before AM3 both receipts were read as inside the check (dated before its day): 380,000."
+    },
+    {
+      "id": "cdb-02",
+      "date": "2026-12-15",
+      "question": "not_explained",
+      "account": "b",
+      "on": "2026-12-14",
+      "expected": 14000,
+      "why": "400,000 (opening, Thu 10 Dec; the pay of 10 Dec is in it) - 6,000 (the receipt dated 12 Dec, inside the check) - 380,000 (check, Mon 14 Dec) = 14,000",
+      "note": "Before AM3: 10,000 (the 4,000 of 13 Dec read as inside too)."
+    },
+    {
+      "id": "cdb-03",
+      "date": "2026-12-15",
+      "question": "headline",
+      "expected": 36000,
+      "why": "60,000 (Free to spend at the opening) - 14,000 (the filler of Mon 14 Dec) - 6,000 (12 Dec) - 4,000 (13 Dec) = 36,000",
+      "note": "Each receipt is counted once. Before AM3: 60,000 - 10,000 - 6,000 - 4,000 = 40,000, with the 4,000 neither off the bank nor in the filler."
+    }
+  ]
+}

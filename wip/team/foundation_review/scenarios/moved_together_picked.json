@@ -1,0 +1,190 @@
+{
+  "life": "moved_together_picked",
+  "title": "Two moved amounts on one occurrence, after the person picks add: the walk counts the sum (AM1, AL6)",
+  "story": "As moved_together, the copy after Thu 17 Dec 09:00, when the person opens the offer and picks add on both: Sun 10 Jan's pay becomes 400,000 + 150,000 = 550,000 and Tue 5 Jan's rent 95,000 + 70,000 = 165,000, each a plain keyed override with a newer `at` (the `pick` list is gone). The landlord takes 165,000 on 5 Jan. Every amount is made up.",
+  "currency": "JPY",
+  "window": {
+    "from": "2026-12-01",
+    "to": "2027-02-28"
+  },
+  "holidays": {
+    "country": "none",
+    "dates": [],
+    "bank_closed": []
+  },
+  "main_bank": "bank",
+  "accounts": [
+    {
+      "id": "bank",
+      "name": "Bank",
+      "kind": "bank",
+      "currency": "JPY",
+      "minimum": 0,
+      "opening": {
+        "date": "2026-12-01",
+        "amount": 400000,
+        "split": {
+          "free": 50000
+        }
+      }
+    }
+  ],
+  "income": [
+    {
+      "id": "pay",
+      "name": "Pay",
+      "account": "bank",
+      "amount": 250000,
+      "schedule": {
+        "frequency": "monthly",
+        "day": 25
+      },
+      "changes": [
+        {
+          "from": "2026-12-15",
+          "schedule": {
+            "frequency": "monthly",
+            "day": 10
+          }
+        }
+      ],
+      "weekend_holiday": "move earlier",
+      "starts_period": true,
+      "amounts": {
+        "2026-12-25": {
+          "amount": 400000,
+          "at": "2026-12-02T10:00:00.000+09:00",
+          "by": "phn001",
+          "gone": "2026-12-02"
+        },
+        "2027-01-10": {
+          "amount": 550000,
+          "at": "2026-12-17T09:00:00.000+09:00",
+          "by": "phn001"
+        },
+        "2027-01-25": {
+          "amount": 150000,
+          "at": "2026-12-02T10:00:00.000+09:00",
+          "by": "phn001",
+          "gone": "2026-12-02"
+        }
+      }
+    }
+  ],
+  "bills": [
+    {
+      "id": "rent",
+      "name": "Rent",
+      "account": "bank",
+      "amount": 80000,
+      "schedule": {
+        "frequency": "monthly",
+        "day": 27
+      },
+      "changes": [
+        {
+          "from": "2026-12-15",
+          "schedule": {
+            "frequency": "monthly",
+            "day": 5
+          }
+        }
+      ],
+      "weekend_holiday": "move later",
+      "amounts": {
+        "2026-12-27": {
+          "amount": 95000,
+          "at": "2026-12-02T10:00:00.000+09:00",
+          "by": "phn001",
+          "gone": "2026-12-02"
+        },
+        "2027-01-05": {
+          "amount": 165000,
+          "at": "2026-12-17T09:00:00.000+09:00",
+          "by": "phn001"
+        },
+        "2027-01-27": {
+          "amount": 70000,
+          "at": "2026-12-02T10:00:00.000+09:00",
+          "by": "phn001",
+          "gone": "2026-12-02"
+        }
+      }
+    },
+    {
+      "id": "fees",
+      "name": "School fees",
+      "account": "bank",
+      "amount": 200000,
+      "schedule": {
+        "frequency": "once",
+        "date": "2027-01-20"
+      },
+      "weekend_holiday": "move later"
+    }
+  ],
+  "goals": [],
+  "plan": {
+    "lines": [],
+    "free": {
+      "per": "month",
+      "amount": 50000
+    }
+  },
+  "events": [
+    {
+      "id": "set:rent@2027-01-05",
+      "date": "2027-01-05",
+      "told": "2027-01-05T19:00",
+      "kind": "bill_paid",
+      "account": "bank",
+      "amount": 165000,
+      "settles": "rent@2027-01-05",
+      "note": "the landlord took 165,000; ticked that evening"
+    }
+  ],
+  "asks": [
+    {
+      "id": "mtp-01",
+      "date": "2026-12-17",
+      "question": "due_before_next_pay",
+      "expected": {
+        "items": [
+          {
+            "item": "rent@2027-01-05",
+            "lands": "2027-01-05",
+            "amount": 165000
+          }
+        ],
+        "total": 165000
+      },
+      "why": "95,000 (December's rent, moved to Tue 5 Jan) + 70,000 (January's rent, moved to Tue 5 Jan; picked add [AM1, AL6]) = 165,000"
+    },
+    {
+      "id": "mtp-02",
+      "date": "2026-12-17",
+      "question": "safe_to_spend",
+      "account": "bank",
+      "expected": 235000,
+      "why": "400,000 (Bank today) - 165,000 (Rent 5 Jan, picked add) = 235,000",
+      "note": "The lowest point is 5 Jan: 8 Jan then adds 550,000 and takes 50,000 (735,000); 20 Jan 535,000; 5 Feb 455,000; 10 Feb 655,000. Picked, the key is one amount again and the safe side no longer applies [AM1]."
+    },
+    {
+      "id": "mtp-03",
+      "date": "2027-01-08",
+      "question": "check_in_list",
+      "expected": {
+        "items": [
+          {
+            "item": "pay@2027-01-10",
+            "lands": "2027-01-08",
+            "amount": 550000
+          }
+        ],
+        "total": 550000
+      },
+      "why": "400,000 (December's pay with the bonus, moved to Sun 10 Jan) + 150,000 (January's, moved to Sun 10 Jan; picked add [AM1, AL6]) = 550,000",
+      "note": "Lands Fri 8 Jan. The rent of 5 Jan is ticked (165,000), so it is not on the list."
+    }
+  ]
+}

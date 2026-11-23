@@ -404,6 +404,24 @@ function restore({ current, backup, now, by, lastSeen, answers }) {
   return walk(current, backup);
 }
 
+// [AM2] The main bank and its minimum (`home.main`, one field [AL3]) changed on two devices before a sync: the newer pair
+// wins whole, and the device whose own pair lost records a notice, shown at its next open: "Your other device changed
+// this. Check it." Both changed it when each copy's pair differs from the pair this device last synced (`synced`, the
+// field value as it stood at its last sync, sent or received); a plain sync (only the other device changed it) and a
+// merge this device's own pair wins record nothing. The notice is the device's own (like the P3 notice, "An answer from
+// your other device was used"): `{ field, text, was: <the pair it had>, by, at }` of the pair that won.
+const MAIN_NOTICE = 'Your other device changed this. Check it.';
+function mainNotice({ mine, theirs, synced }) {
+  const a = ((mine || {}).home || {}).main, b = ((theirs || {}).home || {}).main;
+  const merged = (merge(mine, theirs).home || {}).main;
+  const same = (x, y) => canon(x) === canon(y);
+  const changed = x => !!x && !(synced && sameMoment(x.at, synced.at) && same(x.v, synced.v));
+  const lost = !!a && !!merged && !(sameMoment(merged.at, a.at) && merged.by === a.by && same(merged.v, a.v));
+  const notice = changed(a) && changed(b) && lost && !same(a.v, merged.v)
+    ? { field: 'main', text: MAIN_NOTICE, was: a.v, by: merged.by, at: merged.at } : null;
+  return { main: merged, notice };
+}
+
 function ask(question, input) {
   switch (question) {
     case 'restore': { const r = restore(input); return input.show ? Object.fromEntries(input.show.map(k => [k, r[k]])) : r; }
@@ -421,8 +439,9 @@ function ask(question, input) {
     case 'id_for': return idFor(input);
     case 'id_ok': return idOk(input.id);
     case 'seen': return newestAt(input.copy);   // [AL2] what a device has seen after reading a copy
+    case 'main_notice': return mainNotice(input);   // [AM2] the newer pair wins; the device whose own pair lost records the notice
   }
   throw new Error('unknown question ' + question);
 }
 
-module.exports = { ask, restore, mergeKeyed, keyedShape, fieldsShape, newestAt, isOldFormat, nextAt, nextAtWarn, clockAsk, newer, merge, mergeList, pick, winner, cameBack, holdArriving, receive, idFor, idOk };
+module.exports = { ask, mainNotice, restore, mergeKeyed, keyedShape, fieldsShape, newestAt, isOldFormat, nextAt, nextAtWarn, clockAsk, newer, merge, mergeList, pick, winner, cameBack, holdArriving, receive, idFor, idOk };

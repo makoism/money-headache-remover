@@ -27,8 +27,12 @@ function bad(file, where, msg) { errors++; console.log(`FAIL ${file} ${where}: $
 
 // [AE1, AH3] A keyed override: { amount (whole, not below 0), at (a time with its offset), by, gone (a date, when removed) }.
 const AT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}([+-]\d{2}:\d{2}|Z)$/;
+// [AM1, AL6] Or, while the person has not picked add or replace for two moved amounts landing on one occurrence:
+// { pick: [ { from (the old due date), amount }, ... ] (two or more), at, by, gone }, with no `amount` of its own.
+const pickOk = v => Array.isArray(v.pick) && v.pick.length >= 2 && v.amount === undefined
+  && v.pick.every(p => !!p && isDate(p.from) && typeof p.amount === 'number' && p.amount >= 0);
 function keyedOk(v) {
-  return !!v && typeof v === 'object' && typeof v.amount === 'number' && v.amount >= 0 && typeof v.at === 'string' && AT.test(v.at)
+  return !!v && typeof v === 'object' && ((typeof v.amount === 'number' && v.amount >= 0) || pickOk(v)) && typeof v.at === 'string' && AT.test(v.at)
     && typeof v.by === 'string' && (v.gone === undefined || isDate(v.gone));
 }
 function isDate(s) { return typeof s === 'string' && DATE.test(s) && !isNaN(Date.parse(s + 'T00:00:00Z')); }
@@ -299,7 +303,7 @@ function checkFile(fp) {
       if (x.fee !== undefined && !(list === 'bills' && x.kind === 'transfer' && typeof x.fee === 'number' && x.fee >= 0)) bad(file, w, 'fee is only on a transfer schedule [Q2]');
       // [B8, X watch] `amounts`: one occurrence changed, keyed by its due date before any move; [AE1, AH3] each key a keyed
       // override { amount, at, by, gone }, removed by its own `gone` (a date).
-      for (const [k, v] of Object.entries(x.amounts || {})) if (!isDate(k) || !keyedOk(v)) bad(file, w, 'amounts is { <due date>: { amount, at, by, gone } } [B8, AE1, AH3]');
+      for (const [k, v] of Object.entries(x.amounts || {})) if (!isDate(k) || !keyedOk(v)) bad(file, w, 'amounts is { <due date>: { amount, at, by, gone } or { pick, at, by, gone } } [B8, AE1, AH3, AM1]');
       if (x.ends !== undefined && !isDate(x.ends)) bad(file, w, 'ends must be a date');
       if (x.redirect !== undefined && !(x.ends !== undefined && (s.goals || []).some(g => g.id === x.redirect))) bad(file, w, 'redirect names a goal, on a schedule that ends (38.31 line redirect)');
     }

@@ -1,7 +1,7 @@
 {
   "area": "merge",
   "title": "Merging two copies: union by id, newest `at` per record, `gone` against the same or older `at` only, the hybrid clock, `told` never changing",
-  "written_in": "SCHEMA_V3 0 and 2.3; DECISIONS_ROUND2 D4, H1, H6, H9, L (merge q1 to q8), M3 to M5, N1, N2, O2, O3, Q5, Q7, S3, AB watch (restoring a backup with the cloud on), AD8 (the shared ui keys restored with a new at), AE1 (keyed overrides merged key by key), AE2, AE5 (restore with the D4 clock, every list, held marks, keyed overrides, a 38.31-format backup), AF3 (ui keys removed per key), AG1 (a write after a restore never ties with it; withdrawn as worded by AH4), AH1 (a device's own write uses its own clock, D8 alone questions it; an arriving copy is held only when more than a day ahead of the receiver's own now) AH5 (keyed maps found by their shape), AI1 (an arriving copy held at the receiver's own now plus 1 ms, `told` too; a device that has seen nothing holds the same way), AI2 (entry lists found by their shape), AL1 to AL3 (records of separately edited fields as field values; what a device has seen at any depth; the main bank and its minimum one field), AL4, AL5, AL7 and the AL watch (a device whose offset changes, a half-hour offset)",
+  "written_in": "SCHEMA_V3 0 and 2.3; DECISIONS_ROUND2 D4, H1, H6, H9, L (merge q1 to q8), M3 to M5, N1, N2, O2, O3, Q5, Q7, S3, AB watch (restoring a backup with the cloud on), AD8 (the shared ui keys restored with a new at), AE1 (keyed overrides merged key by key), AE2, AE5 (restore with the D4 clock, every list, held marks, keyed overrides, a 38.31-format backup), AF3 (ui keys removed per key), AG1 (a write after a restore never ties with it; withdrawn as worded by AH4), AH1 (a device's own write uses its own clock, D8 alone questions it; an arriving copy is held only when more than a day ahead of the receiver's own now) AH5 (keyed maps found by their shape), AI1 (an arriving copy held at the receiver's own now plus 1 ms, `told` too; a device that has seen nothing holds the same way), AI2 (entry lists found by their shape), AL1 to AL3 (records of separately edited fields as field values; what a device has seen at any depth; the main bank and its minimum one field), AL4, AL5, AL7 and the AL watch (a device whose offset changes, a half-hour offset); AM2 (the main bank and its minimum changed on two devices before a sync: the newer pair wins and the device whose own pair lost records the notice \"Your other device changed this. Check it.\", question `main_notice`)",
   "notes": [
     "Every amount is made up and in whole minor units (yen).",
     "Times are hybrid clock values written as ISO with the time zone offset (section 0). They are compared as moments, never as text: 10:00+09:00 is 01:00 UTC, 02:30+01:00 is 01:30 UTC.",
@@ -18869,6 +18869,368 @@
         "AL watch",
         "AL4",
         "D4"
+      ]
+    },
+    {
+      "id": "mg-253",
+      "question": "main_notice",
+      "title": "AM2: the minimum raised on the phone and the main bank changed on the desktop before a sync: the newer pair wins and the phone records the notice",
+      "input": {
+        "device": "phn001",
+        "mine": {
+          "home": {
+            "curs": [
+              {
+                "from": "2026-11-01",
+                "cur": "JPY",
+                "at": "2026-11-24T09:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ],
+            "main": {
+              "v": {
+                "acct": "k7qzpa-m2xq7ab9zt-2",
+                "min": {
+                  "a": 30000,
+                  "cur": "JPY"
+                }
+              },
+              "at": "2026-11-24T10:00:00.000+09:00",
+              "by": "phn001"
+            }
+          }
+        },
+        "theirs": {
+          "home": {
+            "curs": [
+              {
+                "from": "2026-11-01",
+                "cur": "JPY",
+                "at": "2026-11-24T09:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ],
+            "main": {
+              "v": {
+                "acct": "dsk001-w3e5r7t9y1-2",
+                "min": {
+                  "a": 20000,
+                  "cur": "JPY"
+                }
+              },
+              "at": "2026-11-24T11:00:00.000+09:00",
+              "by": "dsk001"
+            }
+          }
+        },
+        "synced": {
+          "v": {
+            "acct": "k7qzpa-m2xq7ab9zt-2",
+            "min": {
+              "a": 20000,
+              "cur": "JPY"
+            }
+          },
+          "at": "2026-11-24T09:00:00.000+09:00",
+          "by": "phn001"
+        }
+      },
+      "expected": {
+        "main": {
+          "v": {
+            "acct": "dsk001-w3e5r7t9y1-2",
+            "min": {
+              "a": 20000,
+              "cur": "JPY"
+            }
+          },
+          "at": "2026-11-24T11:00:00.000+09:00",
+          "by": "dsk001"
+        },
+        "notice": {
+          "field": "main",
+          "text": "Your other device changed this. Check it.",
+          "was": {
+            "acct": "k7qzpa-m2xq7ab9zt-2",
+            "min": {
+              "a": 30000,
+              "cur": "JPY"
+            }
+          },
+          "by": "dsk001",
+          "at": "2026-11-24T11:00:00.000+09:00"
+        }
+      },
+      "why": "As mg-198. Both devices last synced setup's pair (the old bank, 20,000, 09:00). At 10:00 the phone, offline, raises the minimum to 30,000; at 11:00 the desktop, which has not seen it, makes the new bank the main bank with the 20,000 it showed. When the phone takes in the desktop's copy, each side differs from the pair both last synced, so both changed it before the sync; the pair is one field [AL3] and the desktop's 11:00 is newer than the phone's 10:00, so `main` is the new bank with 20,000 [AM2]. The phone's own pair lost, so the phone records the notice and shows it at its next open: \"Your other device changed this. Check it.\", with what it had (the old bank, 30,000) [AM2].",
+      "decisions": [
+        "AM2",
+        "AL3",
+        "AL1"
+      ]
+    },
+    {
+      "id": "mg-254",
+      "question": "main_notice",
+      "title": "AM2: the same two changes, taken in by the desktop: its own pair is the newer and wins, so the desktop records no notice",
+      "input": {
+        "device": "dsk001",
+        "mine": {
+          "home": {
+            "curs": [
+              {
+                "from": "2026-11-01",
+                "cur": "JPY",
+                "at": "2026-11-24T09:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ],
+            "main": {
+              "v": {
+                "acct": "dsk001-w3e5r7t9y1-2",
+                "min": {
+                  "a": 20000,
+                  "cur": "JPY"
+                }
+              },
+              "at": "2026-11-24T11:00:00.000+09:00",
+              "by": "dsk001"
+            }
+          }
+        },
+        "theirs": {
+          "home": {
+            "curs": [
+              {
+                "from": "2026-11-01",
+                "cur": "JPY",
+                "at": "2026-11-24T09:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ],
+            "main": {
+              "v": {
+                "acct": "k7qzpa-m2xq7ab9zt-2",
+                "min": {
+                  "a": 30000,
+                  "cur": "JPY"
+                }
+              },
+              "at": "2026-11-24T10:00:00.000+09:00",
+              "by": "phn001"
+            }
+          }
+        },
+        "synced": {
+          "v": {
+            "acct": "k7qzpa-m2xq7ab9zt-2",
+            "min": {
+              "a": 20000,
+              "cur": "JPY"
+            }
+          },
+          "at": "2026-11-24T09:00:00.000+09:00",
+          "by": "phn001"
+        }
+      },
+      "expected": {
+        "main": {
+          "v": {
+            "acct": "dsk001-w3e5r7t9y1-2",
+            "min": {
+              "a": 20000,
+              "cur": "JPY"
+            }
+          },
+          "at": "2026-11-24T11:00:00.000+09:00",
+          "by": "dsk001"
+        },
+        "notice": null
+      },
+      "why": "As mg-253 from the desktop's side. Both pairs changed since setup's (both differ from it), but the desktop's own 11:00 pair is newer than the phone's 10:00 [AL3], so nothing the desktop typed was lost: `main` stays the new bank with 20,000 and the desktop records no notice. The phone records it when it takes in this copy (mg-253) [AM2].",
+      "decisions": [
+        "AM2",
+        "AL3"
+      ]
+    },
+    {
+      "id": "mg-255",
+      "question": "main_notice",
+      "title": "AM2: only the desktop changed the pair; the phone, unchanged since its last sync, takes it in: a plain sync, no notice",
+      "input": {
+        "device": "phn001",
+        "mine": {
+          "home": {
+            "curs": [
+              {
+                "from": "2026-11-01",
+                "cur": "JPY",
+                "at": "2026-11-24T09:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ],
+            "main": {
+              "v": {
+                "acct": "k7qzpa-m2xq7ab9zt-2",
+                "min": {
+                  "a": 20000,
+                  "cur": "JPY"
+                }
+              },
+              "at": "2026-11-24T09:00:00.000+09:00",
+              "by": "phn001"
+            }
+          }
+        },
+        "theirs": {
+          "home": {
+            "curs": [
+              {
+                "from": "2026-11-01",
+                "cur": "JPY",
+                "at": "2026-11-24T09:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ],
+            "main": {
+              "v": {
+                "acct": "dsk001-w3e5r7t9y1-2",
+                "min": {
+                  "a": 20000,
+                  "cur": "JPY"
+                }
+              },
+              "at": "2026-11-24T11:00:00.000+09:00",
+              "by": "dsk001"
+            }
+          }
+        },
+        "synced": {
+          "v": {
+            "acct": "k7qzpa-m2xq7ab9zt-2",
+            "min": {
+              "a": 20000,
+              "cur": "JPY"
+            }
+          },
+          "at": "2026-11-24T09:00:00.000+09:00",
+          "by": "phn001"
+        }
+      },
+      "expected": {
+        "main": {
+          "v": {
+            "acct": "dsk001-w3e5r7t9y1-2",
+            "min": {
+              "a": 20000,
+              "cur": "JPY"
+            }
+          },
+          "at": "2026-11-24T11:00:00.000+09:00",
+          "by": "dsk001"
+        },
+        "notice": null
+      },
+      "why": "The phone still holds setup's pair, the one it last synced: it changed nothing. The desktop's 11:00 pair is newer and wins [AL3]. Only one device changed the pair, so this is an ordinary sync and no notice is recorded [AM2: the notice is for a pair changed on two devices before a sync].",
+      "decisions": [
+        "AM2",
+        "AL3"
+      ]
+    },
+    {
+      "id": "mg-256",
+      "question": "main_notice",
+      "title": "AM2: mg-215's story: the main bank changed on the desktop, then the minimum on the phone that had not seen it: the phone's newer pair wins and the desktop records the notice",
+      "input": {
+        "device": "dsk001",
+        "mine": {
+          "home": {
+            "curs": [
+              {
+                "from": "2026-11-01",
+                "cur": "JPY",
+                "at": "2026-11-20T10:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ],
+            "main": {
+              "v": {
+                "acct": "k7qzpa-m2xq7ab9zt-5",
+                "min": {
+                  "a": 20000,
+                  "cur": "JPY"
+                }
+              },
+              "at": "2026-11-24T10:00:00.000+09:00",
+              "by": "dsk001"
+            }
+          }
+        },
+        "theirs": {
+          "home": {
+            "curs": [
+              {
+                "from": "2026-11-01",
+                "cur": "JPY",
+                "at": "2026-11-20T10:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ],
+            "main": {
+              "v": {
+                "acct": "k7qzpa-m2xq7ab9zt-2",
+                "min": {
+                  "a": 30000,
+                  "cur": "JPY"
+                }
+              },
+              "at": "2026-11-24T11:00:00.000+09:00",
+              "by": "phn001"
+            }
+          }
+        },
+        "synced": {
+          "v": {
+            "acct": "k7qzpa-m2xq7ab9zt-2",
+            "min": {
+              "a": 20000,
+              "cur": "JPY"
+            }
+          },
+          "at": "2026-11-20T10:00:00.000+09:00",
+          "by": "phn001"
+        }
+      },
+      "expected": {
+        "main": {
+          "v": {
+            "acct": "k7qzpa-m2xq7ab9zt-2",
+            "min": {
+              "a": 30000,
+              "cur": "JPY"
+            }
+          },
+          "at": "2026-11-24T11:00:00.000+09:00",
+          "by": "phn001"
+        },
+        "notice": {
+          "field": "main",
+          "text": "Your other device changed this. Check it.",
+          "was": {
+            "acct": "k7qzpa-m2xq7ab9zt-5",
+            "min": {
+              "a": 20000,
+              "cur": "JPY"
+            }
+          },
+          "by": "phn001",
+          "at": "2026-11-24T11:00:00.000+09:00"
+        }
+      },
+      "why": "As mg-215. Setup (Fri 20 Nov) made the first bank the main bank with 20,000, and both devices synced it. On Tue 24 Nov at 10:00 the desktop makes the second bank the main bank (20,000 beside it); at 11:00 the phone, offline and not having seen that, raises the minimum to 30,000 on the first bank. When the desktop takes in the phone's copy, both pairs differ from the synced one, so both changed it; the phone's 11:00 is newer and wins whole [AL3], so the desktop's change of bank is undone. The desktop's own pair lost, so it records the notice for its next open, \"Your other device changed this. Check it.\", with what it had (the second bank, 20,000) [AM2]: the person is told, instead of finding the old bank main again with no word (AL's second question).",
+      "decisions": [
+        "AM2",
+        "AL3",
+        "AL1"
       ]
     }
   ],

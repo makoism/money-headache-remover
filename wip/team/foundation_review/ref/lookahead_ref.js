@@ -80,13 +80,25 @@ function minor(x, cur) { return Math.round(x * Math.pow(10, DIGITS[cur] === unde
 // [AE1, AH3] A keyed override (`amounts`, `once`) is read in its saved shape, `{ amount, at, by, gone }`: a removed key
 // (`gone`) is not read, so the occurrence takes its usual amount again. Any other shape is refused, so no reader is
 // written against plain numbers again (confirm_review_4 item 3).
+// [AM1, AL6] Two moved amounts that land on one occurrence while the person has not picked add or replace: the key holds
+// both, `{ pick: [ { from, amount }, ... ], at, by }`, and no `amount` of its own. Until they pick, the walk counts the
+// safe side: the smaller for a pay (money in), the larger for a bill, a transfer, a self-logged spend or a debt payment
+// (money out). Picking writes a plain key again (`{ amount, at, by }`, a newer `at`): add, the sum; replace, the one kept.
+const pickOk = v => Array.isArray(v.pick) && v.pick.length >= 2 && v.pick.every(p => p && typeof p.amount === 'number');
 function keyLive(map, k) {
   const v = map ? map[k] : undefined;
   if (v === undefined || v === null) return null;
-  if (typeof v !== 'object' || typeof v.amount !== 'number') throw new Error(`the key ${k} is not in the keyed override shape { amount, at, by, gone } [AE1, AH3]`);
+  if (typeof v !== 'object' || (typeof v.amount !== 'number' && !pickOk(v))) throw new Error(`the key ${k} is not in the keyed override shape { amount, at, by, gone } or { pick, at, by, gone } [AE1, AH3, AM1]`);
   return v.gone ? null : v;
 }
-const keyAmount = (map, k) => { const v = keyLive(map, k); return v ? v.amount : null; };
+// `money`: 'in' for a pay, else out [AM1].
+const keyAmount = (map, k, money) => {
+  const v = keyLive(map, k);
+  if (!v) return null;
+  if (typeof v.amount === 'number') return v.amount;
+  const all = v.pick.map(p => p.amount);
+  return money === 'in' ? Math.min(...all) : Math.max(...all);   // [AM1] the safe side until the person picks
+};
 // [I2] Interest for one month on a balance: balance x yearly rate (percent) / 12, rounded half up to
 // the minor unit. Nothing on a balance at or below zero. Whole-number maths, so x.5 always goes up.
 function interestOn(bal, apr) {
@@ -165,7 +177,7 @@ function occurrences(s, kind, cal, from, to, cur) {
     const start = p.rule.from ? Math.min(from, dayNum(p.rule.from)) : Math.max(from, p.from);
     for (const { due, key } of dueDays(p.rule, start, to, cal)) {
       if (due < p.from || due >= until || due < first || due > ends || (count && out.length >= count)) continue;
-      const one = keyAmount(s.amounts, dayStr(due));   // [AE1, AH3] a removed key is not read
+      const one = keyAmount(s.amounts, dayStr(due), kind === 'income' ? 'in' : 'out');   // [AE1, AH3] a removed key is not read; [AM1] an unpicked key its safe side
       const amt = minor(one != null ? one : s.amount_by_day ? s.amount_by_day[String(key)] : p.amount, cur);
       out.push({ id: s.id + '@' + dayStr(due), sid: s.id, kind, acct: s.account, to: s.to, place: s.place,
         due, land: p.rule.frequency === 'last_workday' ? due : cal.shift(due, s.weekend_holiday),
@@ -505,8 +517,8 @@ function lookahead(sc, asOf, opts = {}) {
       default: return 0;   // set_aside and skip move no money; checks set a base, below
     }
   };
-  // [H1] Is event e already inside a check (or the opening) of account id? Events dated before the check's
-  // day are; on its day, those the app heard of before it. A bank line with a posting date counts by that date.
+  // [H1, AM3] Is event e already inside a check (or the opening) of account id? Events dated more than a day before
+  // the check's day are; on its day or the day before, those the app heard of before it. A bank line with a posting date counts by that date.
   // [I1, J3] An "available" bank check already has pending debits off: it holds every event dated before its
   // day by the buy date (posted or not), and on its day those told before it. A spend told after it comes
   // after it, whatever the check kind. A "current" check, and one that does not say, follows the H1 rule.
@@ -521,7 +533,18 @@ function lookahead(sc, asOf, opts = {}) {
     // [AB4] A line that settles an occurrence in the opening's `notYet` comes after the opening, whatever its date.
     if (c.opening && notGoneOut(e, id)) return false;
     const d = dayFor(e, c, id);
-    if (d !== c.day) return d < c.day;
+    if (d > c.day) return false;
+    // [AM3] Events dated more than a day before the check's day are inside it. Those dated the day before are judged
+    // like those on its day: a line the app hears of late (an unmatched import, a self-logged spend) is inside, else
+    // `told` decides, so a spend dated the day before a check made in another time zone, told after it, comes after it.
+    if (d < c.day - 1) return true;
+    if (d === c.day - 1) {
+      if (e.dayInside) return true;
+      const kd = keyCmp(e.key, c.key);
+      if (kd) return kd < 0;
+      if (e.moved && c.moved && !isFigure(e)) return true;
+      return e.idx < c.idx;
+    }
     const byBal = balOrder(e, c, id);
     if (byBal !== null) return byBal;
     if (e.dayInside && !(c.opening && notGoneOut(e, id))) return true;
@@ -870,7 +893,7 @@ function lookahead(sc, asOf, opts = {}) {
     // What a payment day asks: with plans, every plan's parts due after the payment day before and up to this one.
     // [AC5] A payment's own amount (`amounts`, a moved debt's one-month amount) is that payment, whole: in place of the
     // usual amount or minimum and any planned extra.
-    const own = d => { const a = keyAmount(pay.amounts, dayStr(d.due)); return a != null ? minor(a, c) : null; };   // [AE1, AH3]
+    const own = d => { const a = keyAmount(pay.amounts, dayStr(d.due), 'out'); return a != null ? minor(a, c) : null; };   // [AE1, AH3]
     const asks = (d, i, bal) => own(d) != null ? own(d) : (parts.length
       ? parts.filter(pt => pt.due <= d.due && (i === 0 || pt.due > days[i - 1].due)).reduce((t, pt) => t + pt.amount, 0)
       : pay.amount != null ? minor(pay.amount, c) : minPay(pay.min_rule, bal, c)) + extraOn(pay.extra_steps, d.due, c);
