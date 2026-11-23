@@ -471,3 +471,11 @@ The real-page walk found this. On 11 Jan the main pay was late. H8 counted it as
 BH1. Money not yet seen never counts toward safe to spend. While a period-starting pay is late or not seen, safe to spend is the lowest point of the walk without that pay, up to the pay after it. Every bill and card payment due in that stretch is taken off.
 BH2. The pay still shows as expected (late or not seen) on Home and on the check-in list, and the period dates follow res.period as before. Once it is ticked, it counts at once.
 BH3. The safe-to-spend heading says plainly that the late pay is not counted yet. late-03's due list follows BH1 too. Scenario files are changed only where BH1 changes the answer, each change noted with BH1.
+
+## BI. Second real-page walk (23 Nov night JST): FAIL, two blockers
+BI1. An item ticked at a later check-in, after being left unticked at an earlier one, is dated after the earlier check, never on its due day before that check. The sheet offers "landed on" with the day after the earlier check as the default. This holds for pay, bills and card payments.
+BI2. Imported lines matched to typed or ticked records are one record wherever money is listed or summed: Receipts, past periods, the look ahead. Every place counts through one shared function, never its own (lesson 2). A bank line moving money to the person's own account matches the move.
+BI3. Setup asks whether each bill due since the last pay has gone out yet (X3, build_book takenOut).
+BI4. Home shows the "may still go through" items that safe to spend takes off. A late or not seen pay is named by its shifted landing day.
+BI5. A move into a goal's own account counts as set aside for that goal.
+The second walk's scripts are kept in app3/walk/v2 and become a check3 step once they pass.

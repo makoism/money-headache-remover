@@ -1,0 +1,1157 @@
+{
+ "v": 3,
+ "home": {
+  "curs": [
+   {
+    "from": "1970-01-01",
+    "cur": "JPY",
+    "at": "2026-11-24T12:58:00+00:00",
+    "by": "m5e9hx"
+   }
+  ],
+  "country": {
+   "v": "JP",
+   "at": "2026-11-24T12:58:00+00:00",
+   "by": "m5e9hx"
+  },
+  "mode": {
+   "v": "track",
+   "at": "2026-11-24T12:58:00+00:00",
+   "by": "m5e9hx"
+  },
+  "main": {
+   "v": {
+    "acct": "m5e9hx-3yxgx8piog-3",
+    "min": null
+   },
+   "at": "2026-11-24T12:58:00+00:00",
+   "by": "m5e9hx"
+  }
+ },
+ "people": [],
+ "accounts": [
+  {
+   "id": "m5e9hx-3yxgx8piog-3",
+   "name": "Main bank",
+   "type": "bank",
+   "cur": "JPY",
+   "owner": null,
+   "told": "2026-11-24T12:58:00+00:00",
+   "at": "2026-11-24T12:58:00+00:00",
+   "by": "m5e9hx"
+  },
+  {
+   "id": "m5e9hx-3yxgx8piog-6",
+   "name": "Card A",
+   "type": "card",
+   "cur": "JPY",
+   "owner": null,
+   "inFull": true,
+   "cutDay": null,
+   "payDay": 10,
+   "payMonths": 1,
+   "shift": "after",
+   "payFrom": "m5e9hx-3yxgx8piog-3",
+   "told": "2026-11-24T12:58:00+00:00",
+   "at": "2026-11-24T12:58:00+00:00",
+   "by": "m5e9hx"
+  },
+  {
+   "id": "m5e9hx-3yxgx8piog-9",
+   "name": "Card B",
+   "type": "card",
+   "cur": "JPY",
+   "owner": null,
+   "inFull": true,
+   "cutDay": null,
+   "payDay": 11,
+   "payMonths": 1,
+   "shift": "before",
+   "payFrom": "m5e9hx-3yxgx8piog-3",
+   "told": "2026-11-24T12:58:00+00:00",
+   "at": "2026-11-24T12:58:00+00:00",
+   "by": "m5e9hx"
+  },
+  {
+   "name": "Trip account",
+   "type": "bank",
+   "cur": "JPY",
+   "owner": null,
+   "id": "m5e9hx-brsn4vcdpi-2",
+   "told": "2026-12-01T12:58:00+00:00",
+   "grp": "m5e9hx-brsn4vcdpi-1",
+   "at": "2026-11-24T12:58:00.029+00:00",
+   "by": "m5e9hx"
+  }
+ ],
+ "places": [
+  {
+   "name": "Trip",
+   "kind": "goal",
+   "target": 100000,
+   "cur": "JPY",
+   "keptIn": {
+    "acct": "m5e9hx-brsn4vcdpi-2",
+    "mode": "ownAccount"
+   },
+   "due": "2027-06-30",
+   "id": "m5e9hx-brsn4vcdpi-5",
+   "told": "2026-12-01T12:58:00+00:00",
+   "grp": "m5e9hx-brsn4vcdpi-1",
+   "at": "2026-11-24T12:58:00.029+00:00",
+   "by": "m5e9hx"
+  }
+ ],
+ "schedules": [
+  {
+   "id": "m5e9hx-3yxgx8piog-12",
+   "kind": "income",
+   "name": "Main job",
+   "acct": "m5e9hx-3yxgx8piog-3",
+   "cur": "JPY",
+   "shift": "before",
+   "rules": [
+    {
+     "from": null,
+     "rule": {
+      "every": "month",
+      "days": [
+       10
+      ]
+     }
+    }
+   ],
+   "steps": [
+    {
+     "from": null,
+     "amount": 180000
+    },
+    {
+     "from": "2027-02-01",
+     "amount": 185000,
+     "at": "2026-12-15T13:00:00.004+00:00",
+     "by": "m5e9hx"
+    }
+   ],
+   "startsPeriod": true,
+   "told": "2026-11-24T12:58:00+00:00",
+   "at": "2026-12-15T13:00:00.004+00:00",
+   "by": "m5e9hx"
+  },
+  {
+   "id": "m5e9hx-3yxgx8piog-13",
+   "kind": "income",
+   "name": "Side job",
+   "acct": "m5e9hx-3yxgx8piog-3",
+   "cur": "JPY",
+   "shift": "before",
+   "rules": [
+    {
+     "from": null,
+     "rule": {
+      "every": "month",
+      "days": [
+       10
+      ]
+     }
+    }
+   ],
+   "steps": [
+    {
+     "from": null,
+     "amount": 60000
+    }
+   ],
+   "told": "2026-11-24T12:58:00+00:00",
+   "at": "2026-11-24T12:58:00+00:00",
+   "by": "m5e9hx"
+  },
+  {
+   "id": "m5e9hx-3yxgx8piog-14",
+   "kind": "bill",
+   "name": "Rent",
+   "acct": "m5e9hx-3yxgx8piog-3",
+   "cur": "JPY",
+   "shift": "after",
+   "rules": [
+    {
+     "from": null,
+     "rule": {
+      "every": "month",
+      "days": [
+       27
+      ]
+     }
+    }
+   ],
+   "steps": [
+    {
+     "from": null,
+     "amount": 72000
+    },
+    {
+     "from": "2027-01-01",
+     "amount": 75000,
+     "at": "2026-12-15T13:00:00.003+00:00",
+     "by": "m5e9hx"
+    }
+   ],
+   "told": "2026-11-24T12:58:00+00:00",
+   "at": "2026-12-15T13:00:00.003+00:00",
+   "by": "m5e9hx"
+  },
+  {
+   "id": "m5e9hx-3yxgx8piog-15",
+   "kind": "bill",
+   "name": "Power",
+   "acct": "m5e9hx-3yxgx8piog-3",
+   "cur": "JPY",
+   "shift": "after",
+   "rules": [
+    {
+     "from": null,
+     "rule": {
+      "every": "month",
+      "days": [
+       26
+      ]
+     }
+    }
+   ],
+   "steps": [
+    {
+     "from": null,
+     "amount": 7400
+    }
+   ],
+   "told": "2026-11-24T12:58:00+00:00",
+   "at": "2026-11-24T12:58:00+00:00",
+   "by": "m5e9hx"
+  },
+  {
+   "id": "m5e9hx-3yxgx8piog-16",
+   "kind": "bill",
+   "name": "Phone",
+   "acct": "m5e9hx-3yxgx8piog-3",
+   "cur": "JPY",
+   "shift": "after",
+   "rules": [
+    {
+     "from": null,
+     "rule": {
+      "every": "month",
+      "days": [
+       20
+      ]
+     }
+    }
+   ],
+   "steps": [
+    {
+     "from": null,
+     "amount": 4800
+    }
+   ],
+   "told": "2026-11-24T12:58:00+00:00",
+   "at": "2026-11-24T12:58:00+00:00",
+   "by": "m5e9hx"
+  },
+  {
+   "id": "m5e9hx-3yxgx8piog-17",
+   "kind": "bill",
+   "name": "Internet",
+   "acct": "m5e9hx-3yxgx8piog-3",
+   "cur": "JPY",
+   "shift": "after",
+   "rules": [
+    {
+     "from": null,
+     "rule": {
+      "every": "month",
+      "days": [
+       27
+      ]
+     }
+    }
+   ],
+   "steps": [
+    {
+     "from": null,
+     "amount": 5200
+    }
+   ],
+   "told": "2026-11-24T12:58:00+00:00",
+   "at": "2026-11-24T12:58:00+00:00",
+   "by": "m5e9hx"
+  }
+ ],
+ "checkins": [
+  {
+   "id": "m5e9hx-p4t86anpe8-1",
+   "date": "2026-12-10",
+   "told": "2026-12-10T12:59:00+00:00",
+   "at": "2026-11-24T12:58:00.049+00:00",
+   "figures": [
+    {
+     "acct": "m5e9hx-3yxgx8piog-3",
+     "check": "m5e9hx-p4t86anpe8-2",
+     "typedA": 295400
+    },
+    {
+     "acct": "m5e9hx-brsn4vcdpi-2",
+     "check": "m5e9hx-p4t86anpe8-3",
+     "typedA": 25000
+    }
+   ],
+   "settled": [
+    "set:m5e9hx-3yxgx8piog-12@2026-12-10",
+    "set:m5e9hx-3yxgx8piog-14@2026-11-27",
+    "set:m5e9hx-3yxgx8piog-15@2026-11-26",
+    "set:m5e9hx-3yxgx8piog-17@2026-11-27",
+    "set:m5e9hx-3yxgx8piog-6@2026-12-10"
+   ],
+   "grp": "m5e9hx-p4t86anpe8-4",
+   "by": "m5e9hx"
+  },
+  {
+   "id": "m5e9hx-t2hzfszaam-1",
+   "date": "2026-12-11",
+   "told": "2026-12-11T12:59:00+00:00",
+   "at": "2026-11-24T12:58:00.050+00:00",
+   "figures": [
+    {
+     "acct": "m5e9hx-3yxgx8piog-3",
+     "check": "m5e9hx-t2hzfszaam-2",
+     "typedA": 332400
+    },
+    {
+     "acct": "m5e9hx-brsn4vcdpi-2",
+     "check": "m5e9hx-t2hzfszaam-3",
+     "typedA": 25000
+    }
+   ],
+   "settled": [
+    "set:m5e9hx-3yxgx8piog-13@2026-12-10",
+    "set:m5e9hx-3yxgx8piog-9@2026-12-11"
+   ],
+   "grp": "m5e9hx-t2hzfszaam-4",
+   "by": "m5e9hx"
+  }
+ ],
+ "plan": {
+  "shares": [],
+  "budgets": []
+ },
+ "imports": {
+  "cats": {
+   "k:salary main": {
+    "v": "pay",
+    "src": "reader",
+    "at": "2026-12-15T13:00:00+00:00"
+   },
+   "k:rent": {
+    "v": "rent",
+    "src": "reader",
+    "at": "2026-12-15T13:00:00+00:00"
+   },
+   "k:side job": {
+    "v": "pay",
+    "src": "reader",
+    "at": "2026-12-15T13:00:00+00:00"
+   },
+   "k:card a payment": {
+    "v": "card_payment",
+    "src": "reader",
+    "at": "2026-12-15T13:00:00+00:00"
+   },
+   "k:to trip acct": {
+    "v": "transfer_out",
+    "src": "reader",
+    "at": "2026-12-15T13:00:00+00:00"
+   },
+   "k:card b payment": {
+    "v": "card_payment",
+    "src": "reader",
+    "at": "2026-12-15T13:00:00+00:00"
+   },
+   "k:denki power": {
+    "v": "util",
+    "src": "reader",
+    "at": "2026-12-15T13:00:00+00:00"
+   },
+   "k:super": {
+    "v": "food",
+    "src": "reader",
+    "at": "2026-12-15T13:00:00+00:00"
+   },
+   "k:net": {
+    "v": "net",
+    "src": "reader",
+    "at": "2026-12-15T13:00:00+00:00"
+   },
+   "k:food mart": {
+    "v": "food",
+    "src": "reader",
+    "at": "2026-12-15T13:00:00+00:00"
+   }
+  }
+ },
+ "events": [
+  {
+   "id": "imp:m5e9hx-3yxgx8piog-3:2026-11-24:3000:out:1",
+   "k": "spend",
+   "date": "2026-11-24",
+   "a": 3000,
+   "note": "SUPER",
+   "src": {
+    "type": "statement",
+    "file": "pasted 1",
+    "line": 0,
+    "acct": "m5e9hx-3yxgx8piog-3",
+    "from": "2026-11-24",
+    "to": "2026-12-14"
+   },
+   "told": "2026-11-24T12:58:00+00:00",
+   "at": "2026-11-24T12:58:00.058+00:00",
+   "acct": "m5e9hx-3yxgx8piog-3",
+   "line": "free",
+   "grp": "m5e9hx-q0bzsiw3yn-1",
+   "by": "m5e9hx"
+  },
+  {
+   "id": "imp:m5e9hx-3yxgx8piog-3:2026-11-26:7400:out:1",
+   "k": "spend",
+   "date": "2026-11-26",
+   "a": 7400,
+   "note": "DENKI POWER",
+   "src": {
+    "type": "statement",
+    "file": "pasted 1",
+    "line": 1,
+    "acct": "m5e9hx-3yxgx8piog-3",
+    "from": "2026-11-24",
+    "to": "2026-12-14"
+   },
+   "told": "2026-12-10T12:59:00+00:00",
+   "at": "2026-11-24T12:58:00.058+00:00",
+   "acct": "m5e9hx-3yxgx8piog-3",
+   "settles": [
+    {
+     "s": "m5e9hx-3yxgx8piog-15",
+     "due": "2026-11-26"
+    }
+   ],
+   "grp": "m5e9hx-q0bzsiw3yn-1",
+   "by": "m5e9hx"
+  },
+  {
+   "id": "imp:m5e9hx-3yxgx8piog-3:2026-11-27:5200:out:1",
+   "k": "spend",
+   "date": "2026-11-27",
+   "a": 5200,
+   "note": "NET",
+   "src": {
+    "type": "statement",
+    "file": "pasted 1",
+    "line": 3,
+    "acct": "m5e9hx-3yxgx8piog-3",
+    "from": "2026-11-24",
+    "to": "2026-12-14"
+   },
+   "told": "2026-12-10T12:59:00+00:00",
+   "at": "2026-11-24T12:58:00.058+00:00",
+   "acct": "m5e9hx-3yxgx8piog-3",
+   "settles": [
+    {
+     "s": "m5e9hx-3yxgx8piog-17",
+     "due": "2026-11-27"
+    }
+   ],
+   "grp": "m5e9hx-q0bzsiw3yn-1",
+   "by": "m5e9hx"
+  },
+  {
+   "id": "imp:m5e9hx-3yxgx8piog-3:2026-11-27:72000:out:1",
+   "k": "spend",
+   "date": "2026-11-27",
+   "a": 72000,
+   "note": "RENT",
+   "src": {
+    "type": "statement",
+    "file": "pasted 1",
+    "line": 2,
+    "acct": "m5e9hx-3yxgx8piog-3",
+    "from": "2026-11-24",
+    "to": "2026-12-14"
+   },
+   "told": "2026-12-10T12:59:00+00:00",
+   "at": "2026-11-24T12:58:00.058+00:00",
+   "acct": "m5e9hx-3yxgx8piog-3",
+   "settles": [
+    {
+     "s": "m5e9hx-3yxgx8piog-14",
+     "due": "2026-11-27"
+    }
+   ],
+   "grp": "m5e9hx-q0bzsiw3yn-1",
+   "by": "m5e9hx"
+  },
+  {
+   "id": "imp:m5e9hx-3yxgx8piog-3:2026-12-01:20000:out:1",
+   "k": "spend",
+   "date": "2026-12-01",
+   "a": 20000,
+   "note": "TO TRIP ACCT",
+   "src": {
+    "type": "statement",
+    "file": "pasted 1",
+    "line": 4,
+    "acct": "m5e9hx-3yxgx8piog-3",
+    "from": "2026-11-24",
+    "to": "2026-12-14"
+   },
+   "told": "2026-12-15T13:00:00+00:00",
+   "at": "2026-11-24T12:58:00.058+00:00",
+   "acct": "m5e9hx-3yxgx8piog-3",
+   "grp": "m5e9hx-q0bzsiw3yn-1",
+   "by": "m5e9hx"
+  },
+  {
+   "id": "imp:m5e9hx-3yxgx8piog-3:2026-12-05:5000:out:1",
+   "k": "spend",
+   "date": "2026-12-05",
+   "a": 5000,
+   "note": "TO TRIP ACCT",
+   "src": {
+    "type": "statement",
+    "file": "pasted 1",
+    "line": 5,
+    "acct": "m5e9hx-3yxgx8piog-3",
+    "from": "2026-11-24",
+    "to": "2026-12-14"
+   },
+   "told": "2026-12-15T13:00:00+00:00",
+   "at": "2026-11-24T12:58:00.058+00:00",
+   "acct": "m5e9hx-3yxgx8piog-3",
+   "grp": "m5e9hx-q0bzsiw3yn-1",
+   "by": "m5e9hx"
+  },
+  {
+   "id": "imp:m5e9hx-3yxgx8piog-3:2026-12-06:4000:out:1",
+   "k": "spend",
+   "date": "2026-12-06",
+   "a": 4000,
+   "note": "FOOD MART",
+   "src": {
+    "type": "statement",
+    "file": "pasted 1",
+    "line": 6,
+    "acct": "m5e9hx-3yxgx8piog-3",
+    "from": "2026-11-24",
+    "to": "2026-12-14"
+   },
+   "told": "2026-12-06T12:58:00+00:00",
+   "at": "2026-11-24T12:58:00.058+00:00",
+   "acct": "m5e9hx-3yxgx8piog-3",
+   "line": "free",
+   "grp": "m5e9hx-q0bzsiw3yn-1",
+   "by": "m5e9hx"
+  },
+  {
+   "id": "imp:m5e9hx-3yxgx8piog-3:2026-12-10:180000:in:1",
+   "k": "in",
+   "date": "2026-12-10",
+   "a": 180000,
+   "note": "SALARY MAIN",
+   "src": {
+    "type": "statement",
+    "file": "pasted 1",
+    "line": 7,
+    "acct": "m5e9hx-3yxgx8piog-3",
+    "from": "2026-11-24",
+    "to": "2026-12-14"
+   },
+   "told": "2026-12-10T12:59:00+00:00",
+   "at": "2026-11-24T12:58:00.058+00:00",
+   "acct": "m5e9hx-3yxgx8piog-3",
+   "settles": [
+    {
+     "s": "m5e9hx-3yxgx8piog-12",
+     "due": "2026-12-10"
+    }
+   ],
+   "grp": "m5e9hx-q0bzsiw3yn-1",
+   "by": "m5e9hx"
+  },
+  {
+   "id": "imp:m5e9hx-3yxgx8piog-3:2026-12-10:54000:out:1",
+   "k": "repay",
+   "date": "2026-12-10",
+   "a": 54000,
+   "note": "CARD A PAYMENT",
+   "src": {
+    "type": "statement",
+    "file": "pasted 1",
+    "line": 8,
+    "acct": "m5e9hx-3yxgx8piog-3",
+    "from": "2026-11-24",
+    "to": "2026-12-14"
+   },
+   "told": "2026-12-15T13:00:00+00:00",
+   "at": "2026-11-24T12:58:00.058+00:00",
+   "acct": "m5e9hx-3yxgx8piog-3",
+   "acct2": "m5e9hx-3yxgx8piog-6",
+   "grp": "m5e9hx-q0bzsiw3yn-1",
+   "by": "m5e9hx"
+  },
+  {
+   "id": "imp:m5e9hx-3yxgx8piog-3:2026-12-11:23000:out:1",
+   "k": "repay",
+   "date": "2026-12-11",
+   "a": 23000,
+   "note": "CARD B PAYMENT",
+   "src": {
+    "type": "statement",
+    "file": "pasted 1",
+    "line": 10,
+    "acct": "m5e9hx-3yxgx8piog-3",
+    "from": "2026-11-24",
+    "to": "2026-12-14"
+   },
+   "told": "2026-12-15T13:00:00+00:00",
+   "at": "2026-11-24T12:58:00.058+00:00",
+   "acct": "m5e9hx-3yxgx8piog-3",
+   "acct2": "m5e9hx-3yxgx8piog-9",
+   "grp": "m5e9hx-q0bzsiw3yn-1",
+   "by": "m5e9hx"
+  },
+  {
+   "id": "imp:m5e9hx-3yxgx8piog-3:2026-12-11:60000:in:1",
+   "k": "in",
+   "date": "2026-12-11",
+   "a": 60000,
+   "note": "SIDE JOB",
+   "src": {
+    "type": "statement",
+    "file": "pasted 1",
+    "line": 9,
+    "acct": "m5e9hx-3yxgx8piog-3",
+    "from": "2026-11-24",
+    "to": "2026-12-14"
+   },
+   "told": "2026-12-11T12:59:00+00:00",
+   "at": "2026-11-24T12:58:00.058+00:00",
+   "acct": "m5e9hx-3yxgx8piog-3",
+   "settles": [
+    {
+     "s": "m5e9hx-3yxgx8piog-13",
+     "due": "2026-12-10"
+    }
+   ],
+   "grp": "m5e9hx-q0bzsiw3yn-1",
+   "by": "m5e9hx"
+  },
+  {
+   "id": "imp:m5e9hx-3yxgx8piog-3:2026-12-14:2500:out:1",
+   "k": "spend",
+   "date": "2026-12-14",
+   "a": 2500,
+   "note": "SUPER",
+   "src": {
+    "type": "statement",
+    "file": "pasted 1",
+    "line": 11,
+    "acct": "m5e9hx-3yxgx8piog-3",
+    "from": "2026-11-24",
+    "to": "2026-12-14"
+   },
+   "told": "2026-12-15T13:00:00+00:00",
+   "at": "2026-11-24T12:58:00.058+00:00",
+   "acct": "m5e9hx-3yxgx8piog-3",
+   "grp": "m5e9hx-q0bzsiw3yn-1",
+   "by": "m5e9hx"
+  },
+  {
+   "k": "spend",
+   "date": "2026-12-24",
+   "a": 9000,
+   "acct": "m5e9hx-3yxgx8piog-9",
+   "line": "free",
+   "note": "xmas",
+   "src": {
+    "type": "typed"
+   },
+   "id": "m5e9hx-20javc9t4a-14",
+   "told": "2026-12-24T13:00:00+00:00",
+   "grp": "m5e9hx-20javc9t4a-13",
+   "at": "2026-12-15T13:00:00.011+00:00",
+   "by": "m5e9hx"
+  },
+  {
+   "k": "spend",
+   "date": "2026-12-12",
+   "a": 12000,
+   "acct": "m5e9hx-3yxgx8piog-6",
+   "line": "free",
+   "note": "gift",
+   "src": {
+    "type": "typed"
+   },
+   "id": "m5e9hx-3fesmijuxh-14",
+   "told": "2026-12-12T13:00:00+00:00",
+   "grp": "m5e9hx-3fesmijuxh-13",
+   "at": "2026-11-24T12:58:00.057+00:00",
+   "by": "m5e9hx"
+  },
+  {
+   "id": "m5e9hx-3yxgx8piog-10",
+   "k": "open",
+   "acct": "m5e9hx-3yxgx8piog-9",
+   "date": "2026-11-24",
+   "a": 23000,
+   "grp": "m5e9hx-3yxgx8piog-2",
+   "told": "2026-11-24T12:58:00+00:00",
+   "at": "2026-11-24T12:58:00+00:00",
+   "by": "m5e9hx"
+  },
+  {
+   "id": "m5e9hx-3yxgx8piog-11",
+   "k": "check",
+   "acct": "m5e9hx-3yxgx8piog-9",
+   "date": "2026-11-24",
+   "a": 23000,
+   "grp": "m5e9hx-3yxgx8piog-2",
+   "told": "2026-11-24T12:58:00+00:00",
+   "at": "2026-11-24T12:58:00+00:00",
+   "by": "m5e9hx"
+  },
+  {
+   "id": "m5e9hx-3yxgx8piog-4",
+   "k": "open",
+   "acct": "m5e9hx-3yxgx8piog-3",
+   "date": "2026-11-24",
+   "a": 286000,
+   "grp": "m5e9hx-3yxgx8piog-2",
+   "told": "2026-11-24T12:58:00+00:00",
+   "at": "2026-11-24T12:58:00+00:00",
+   "by": "m5e9hx"
+  },
+  {
+   "id": "m5e9hx-3yxgx8piog-5",
+   "k": "check",
+   "acct": "m5e9hx-3yxgx8piog-3",
+   "date": "2026-11-24",
+   "a": 286000,
+   "grp": "m5e9hx-3yxgx8piog-2",
+   "told": "2026-11-24T12:58:00+00:00",
+   "at": "2026-11-24T12:58:00+00:00",
+   "by": "m5e9hx"
+  },
+  {
+   "id": "m5e9hx-3yxgx8piog-7",
+   "k": "open",
+   "acct": "m5e9hx-3yxgx8piog-6",
+   "date": "2026-11-24",
+   "a": 54000,
+   "grp": "m5e9hx-3yxgx8piog-2",
+   "told": "2026-11-24T12:58:00+00:00",
+   "at": "2026-11-24T12:58:00+00:00",
+   "by": "m5e9hx"
+  },
+  {
+   "id": "m5e9hx-3yxgx8piog-8",
+   "k": "check",
+   "acct": "m5e9hx-3yxgx8piog-6",
+   "date": "2026-11-24",
+   "a": 54000,
+   "grp": "m5e9hx-3yxgx8piog-2",
+   "told": "2026-11-24T12:58:00+00:00",
+   "at": "2026-11-24T12:58:00+00:00",
+   "by": "m5e9hx"
+  },
+  {
+   "k": "move",
+   "date": "2026-12-20",
+   "a": 3000,
+   "acct": "m5e9hx-brsn4vcdpi-2",
+   "place": "m5e9hx-brsn4vcdpi-5",
+   "src": {
+    "type": "typed"
+   },
+   "id": "m5e9hx-4a01abhh8z-2",
+   "told": "2026-12-20T13:00:00+00:00",
+   "grp": "m5e9hx-4a01abhh8z-1",
+   "at": "2026-12-15T13:00:00.002+00:00",
+   "by": "m5e9hx"
+  },
+  {
+   "k": "transfer",
+   "date": "2026-12-20",
+   "a": 3000,
+   "acct": "m5e9hx-brsn4vcdpi-2",
+   "acct2": "m5e9hx-3yxgx8piog-3",
+   "src": {
+    "type": "typed"
+   },
+   "id": "m5e9hx-4a01abhh8z-3",
+   "told": "2026-12-20T13:00:00+00:00",
+   "grp": "m5e9hx-4a01abhh8z-1",
+   "at": "2026-12-15T13:00:00.002+00:00",
+   "by": "m5e9hx"
+  },
+  {
+   "k": "open",
+   "acct": "m5e9hx-brsn4vcdpi-2",
+   "date": "2026-12-01",
+   "a": 0,
+   "id": "m5e9hx-brsn4vcdpi-3",
+   "told": "2026-12-01T12:58:00+00:00",
+   "grp": "m5e9hx-brsn4vcdpi-1",
+   "at": "2026-11-24T12:58:00.029+00:00",
+   "by": "m5e9hx"
+  },
+  {
+   "k": "check",
+   "acct": "m5e9hx-brsn4vcdpi-2",
+   "date": "2026-12-01",
+   "a": 0,
+   "id": "m5e9hx-brsn4vcdpi-4",
+   "told": "2026-12-01T12:58:00+00:00",
+   "grp": "m5e9hx-brsn4vcdpi-1",
+   "at": "2026-11-24T12:58:00.029+00:00",
+   "by": "m5e9hx"
+  },
+  {
+   "k": "transfer",
+   "date": "2026-12-01",
+   "a": 20000,
+   "acct": "m5e9hx-3yxgx8piog-3",
+   "acct2": "m5e9hx-brsn4vcdpi-2",
+   "src": {
+    "type": "typed"
+   },
+   "id": "m5e9hx-brsn4vcdpi-7",
+   "told": "2026-12-01T12:58:00+00:00",
+   "grp": "m5e9hx-brsn4vcdpi-6",
+   "at": "2026-11-24T12:58:00.030+00:00",
+   "by": "m5e9hx"
+  },
+  {
+   "k": "move",
+   "date": "2026-12-01",
+   "a": 20000,
+   "acct": "m5e9hx-brsn4vcdpi-2",
+   "place2": "m5e9hx-brsn4vcdpi-5",
+   "src": {
+    "type": "typed"
+   },
+   "id": "m5e9hx-brsn4vcdpi-8",
+   "told": "2026-12-01T12:58:00+00:00",
+   "grp": "m5e9hx-brsn4vcdpi-6",
+   "at": "2026-11-24T12:58:00.030+00:00",
+   "by": "m5e9hx"
+  },
+  {
+   "k": "spend",
+   "date": "2026-12-18",
+   "a": 1500,
+   "acct": "m5e9hx-3yxgx8piog-3",
+   "line": "free",
+   "note": "lunch",
+   "src": {
+    "type": "typed"
+   },
+   "id": "m5e9hx-k0trys3klo-4",
+   "told": "2026-12-18T13:00:00+00:00",
+   "grp": "m5e9hx-k0trys3klo-3",
+   "at": "2026-12-15T13:00:00.001+00:00",
+   "by": "m5e9hx"
+  },
+  {
+   "k": "in",
+   "sub": "refund",
+   "date": "2026-11-28",
+   "a": 2000,
+   "acct": "m5e9hx-3yxgx8piog-6",
+   "note": "shoes partly back",
+   "src": {
+    "type": "typed"
+   },
+   "id": "m5e9hx-mjnrnqca0t-14",
+   "told": "2026-11-28T12:58:00+00:00",
+   "grp": "m5e9hx-mjnrnqca0t-13",
+   "at": "2026-11-24T12:58:00.028+00:00",
+   "by": "m5e9hx"
+  },
+  {
+   "k": "spend",
+   "date": "2026-12-06",
+   "a": 4000,
+   "acct": "m5e9hx-3yxgx8piog-3",
+   "line": "free",
+   "note": "food",
+   "src": {
+    "type": "typed"
+   },
+   "id": "m5e9hx-oobk86mz55-14",
+   "told": "2026-12-06T12:58:00+00:00",
+   "grp": "m5e9hx-oobk86mz55-13",
+   "at": "2026-11-24T12:58:00.048+00:00",
+   "by": "m5e9hx"
+  },
+  {
+   "id": "m5e9hx-p4t86anpe8-2",
+   "k": "check",
+   "acct": "m5e9hx-3yxgx8piog-3",
+   "date": "2026-12-10",
+   "a": 295400,
+   "told": "2026-12-10T12:59:01+00:00",
+   "at": "2026-11-24T12:58:00.049+00:00",
+   "grp": "m5e9hx-p4t86anpe8-1",
+   "by": "m5e9hx"
+  },
+  {
+   "id": "m5e9hx-p4t86anpe8-3",
+   "k": "check",
+   "acct": "m5e9hx-brsn4vcdpi-2",
+   "date": "2026-12-10",
+   "a": 25000,
+   "told": "2026-12-10T12:59:01+00:00",
+   "at": "2026-11-24T12:58:00.049+00:00",
+   "grp": "m5e9hx-p4t86anpe8-1",
+   "by": "m5e9hx"
+  },
+  {
+   "k": "spend",
+   "date": "2026-11-24",
+   "a": 3000,
+   "acct": "m5e9hx-3yxgx8piog-3",
+   "line": "free",
+   "note": "groceries",
+   "src": {
+    "type": "typed"
+   },
+   "id": "m5e9hx-qs9rn3q4er-14",
+   "told": "2026-11-24T12:58:00+00:00",
+   "grp": "m5e9hx-qs9rn3q4er-13",
+   "at": "2026-11-24T12:58:00.007+00:00",
+   "by": "m5e9hx"
+  },
+  {
+   "k": "spend",
+   "date": "2026-11-24",
+   "a": 8000,
+   "acct": "m5e9hx-3yxgx8piog-6",
+   "line": "free",
+   "note": "shoes",
+   "src": {
+    "type": "typed"
+   },
+   "id": "m5e9hx-qs9rn3q4er-28",
+   "told": "2026-11-24T12:58:00+00:00",
+   "grp": "m5e9hx-qs9rn3q4er-27",
+   "at": "2026-11-24T12:58:00.014+00:00",
+   "by": "m5e9hx"
+  },
+  {
+   "k": "transfer",
+   "date": "2026-12-05",
+   "a": 5000,
+   "acct": "m5e9hx-3yxgx8piog-3",
+   "acct2": "m5e9hx-brsn4vcdpi-2",
+   "note": "extra for trip",
+   "src": {
+    "type": "typed"
+   },
+   "id": "m5e9hx-rwt3ola12m-22",
+   "told": "2026-12-05T12:58:00+00:00",
+   "grp": "m5e9hx-rwt3ola12m-21",
+   "at": "2026-11-24T12:58:00.041+00:00",
+   "by": "m5e9hx"
+  },
+  {
+   "id": "m5e9hx-t2hzfszaam-2",
+   "k": "check",
+   "acct": "m5e9hx-3yxgx8piog-3",
+   "date": "2026-12-11",
+   "a": 332400,
+   "told": "2026-12-11T12:59:01+00:00",
+   "at": "2026-11-24T12:58:00.050+00:00",
+   "grp": "m5e9hx-t2hzfszaam-1",
+   "by": "m5e9hx"
+  },
+  {
+   "id": "m5e9hx-t2hzfszaam-3",
+   "k": "check",
+   "acct": "m5e9hx-brsn4vcdpi-2",
+   "date": "2026-12-11",
+   "a": 25000,
+   "told": "2026-12-11T12:59:01+00:00",
+   "at": "2026-11-24T12:58:00.050+00:00",
+   "grp": "m5e9hx-t2hzfszaam-1",
+   "by": "m5e9hx"
+  },
+  {
+   "k": "spend",
+   "date": "2026-11-25",
+   "a": 5000,
+   "acct": "m5e9hx-3yxgx8piog-9",
+   "line": "free",
+   "note": "dinner",
+   "src": {
+    "type": "typed"
+   },
+   "id": "m5e9hx-yhep0bt2px-14",
+   "told": "2026-11-25T12:58:00+00:00",
+   "grp": "m5e9hx-yhep0bt2px-13",
+   "at": "2026-11-24T12:58:00.021+00:00",
+   "by": "m5e9hx"
+  },
+  {
+   "k": "spend",
+   "date": "2027-01-03",
+   "a": 6000,
+   "acct": "m5e9hx-3yxgx8piog-3",
+   "line": "free",
+   "note": "new year",
+   "src": {
+    "type": "typed"
+   },
+   "id": "m5e9hx-yqr0lo2625-14",
+   "told": "2027-01-03T13:00:00+00:00",
+   "grp": "m5e9hx-yqr0lo2625-13",
+   "at": "2026-12-15T13:00:00.018+00:00",
+   "by": "m5e9hx"
+  },
+  {
+   "id": "set:m5e9hx-3yxgx8piog-12@2026-12-10",
+   "date": "2026-12-10",
+   "told": "2026-12-10T12:59:00+00:00",
+   "at": "2026-11-24T12:58:00.049+00:00",
+   "grp": "m5e9hx-p4t86anpe8-1",
+   "settles": [
+    {
+     "s": "m5e9hx-3yxgx8piog-12",
+     "due": "2026-12-10"
+    }
+   ],
+   "k": "in",
+   "sub": "pay",
+   "acct": "m5e9hx-3yxgx8piog-3",
+   "a": 180000,
+   "stream": "m5e9hx-3yxgx8piog-12",
+   "by": "m5e9hx"
+  },
+  {
+   "id": "set:m5e9hx-3yxgx8piog-13@2026-12-10",
+   "date": "2026-12-10",
+   "told": "2026-12-11T12:59:00+00:00",
+   "at": "2026-11-24T12:58:00.050+00:00",
+   "grp": "m5e9hx-t2hzfszaam-1",
+   "settles": [
+    {
+     "s": "m5e9hx-3yxgx8piog-13",
+     "due": "2026-12-10"
+    }
+   ],
+   "k": "in",
+   "sub": "pay",
+   "acct": "m5e9hx-3yxgx8piog-3",
+   "a": 60000,
+   "stream": "m5e9hx-3yxgx8piog-13",
+   "by": "m5e9hx"
+  },
+  {
+   "id": "set:m5e9hx-3yxgx8piog-14@2026-11-27",
+   "date": "2026-11-27",
+   "told": "2026-12-10T12:59:00+00:00",
+   "at": "2026-11-24T12:58:00.049+00:00",
+   "grp": "m5e9hx-p4t86anpe8-1",
+   "settles": [
+    {
+     "s": "m5e9hx-3yxgx8piog-14",
+     "due": "2026-11-27"
+    }
+   ],
+   "k": "spend",
+   "acct": "m5e9hx-3yxgx8piog-3",
+   "a": 72000,
+   "by": "m5e9hx"
+  },
+  {
+   "id": "set:m5e9hx-3yxgx8piog-15@2026-11-26",
+   "date": "2026-11-26",
+   "told": "2026-12-10T12:59:00+00:00",
+   "at": "2026-11-24T12:58:00.049+00:00",
+   "grp": "m5e9hx-p4t86anpe8-1",
+   "settles": [
+    {
+     "s": "m5e9hx-3yxgx8piog-15",
+     "due": "2026-11-26"
+    }
+   ],
+   "k": "spend",
+   "acct": "m5e9hx-3yxgx8piog-3",
+   "a": 7400,
+   "by": "m5e9hx"
+  },
+  {
+   "id": "set:m5e9hx-3yxgx8piog-17@2026-11-27",
+   "date": "2026-11-27",
+   "told": "2026-12-10T12:59:00+00:00",
+   "at": "2026-11-24T12:58:00.049+00:00",
+   "grp": "m5e9hx-p4t86anpe8-1",
+   "settles": [
+    {
+     "s": "m5e9hx-3yxgx8piog-17",
+     "due": "2026-11-27"
+    }
+   ],
+   "k": "spend",
+   "acct": "m5e9hx-3yxgx8piog-3",
+   "a": 5200,
+   "by": "m5e9hx"
+  },
+  {
+   "id": "set:m5e9hx-3yxgx8piog-6@2026-12-10",
+   "date": "2026-12-10",
+   "told": "2026-12-10T12:59:00+00:00",
+   "at": "2026-11-24T12:58:00.049+00:00",
+   "grp": "m5e9hx-p4t86anpe8-1",
+   "settles": [
+    {
+     "s": "m5e9hx-3yxgx8piog-6",
+     "due": "2026-12-10"
+    }
+   ],
+   "k": "repay",
+   "acct": "m5e9hx-3yxgx8piog-3",
+   "acct2": "m5e9hx-3yxgx8piog-6",
+   "a": 54000,
+   "a2": 54000,
+   "by": "m5e9hx"
+  },
+  {
+   "id": "set:m5e9hx-3yxgx8piog-9@2026-12-11",
+   "date": "2026-12-11",
+   "told": "2026-12-11T12:59:00+00:00",
+   "at": "2026-11-24T12:58:00.050+00:00",
+   "grp": "m5e9hx-t2hzfszaam-1",
+   "settles": [
+    {
+     "s": "m5e9hx-3yxgx8piog-9",
+     "due": "2026-12-11"
+    }
+   ],
+   "k": "repay",
+   "acct": "m5e9hx-3yxgx8piog-3",
+   "acct2": "m5e9hx-3yxgx8piog-9",
+   "a": 23000,
+   "a2": 23000,
+   "by": "m5e9hx"
+  }
+ ],
+ "keptVersions": [],
+ "rev": 1795438828600,
+ "at": "2026-11-23T13:00:28.600+00:00"
+}
