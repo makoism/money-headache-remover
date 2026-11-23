@@ -7,11 +7,16 @@ const { dayNum, dayStr } = require('./dates');
 // or named occurrence: a settle (`settles`), a `once` key, an `amounts` key, a period-end answer `pe:<occurrence>:...`
 // or a period start `ps:<occurrence>`. Only the changed schedule's own occurrences count. The edit offers the first
 // day after that occurrence's due date [H2: an occurrence is named by its due date before any move].
+// [AH2] Every occurrence name is read with built and moved schedule ids alike (`mv:pay:steps.a@2026-12-25`,
+// `pe:mv:pay:steps.a@2026-12-25:free`, `ps:mv:...`), so X8 protects moved schedules too.
+// [AH3] Keyed overrides are read in the AE1 shape (`{ amount, at, by, gone }`): a removed key (`gone`) names nothing.
+const OCC_NAME = /^((?:mv:[a-z]+:[A-Za-z0-9_.:-]+)|[a-z0-9_]+)@(\d{4}-\d{2}-\d{2})(?=$|:)/;
+const liveKeys = map => Object.keys(map || {}).filter(k => !(map[k] && typeof map[k] === 'object' && map[k].gone));
 function changeFrom({ schedule, wanted, settles, once, amounts, pe, ps }) {
-  const names = [].concat(settles || [], Object.keys(once || {}),
-    Object.keys(amounts || {}).map(d => schedule + '@' + d),
-    (pe || []).map(id => String(id).split(':')[1]), (ps || []).map(id => String(id).slice(3)));
-  const due = names.map(n => String(n).match(/^([a-z0-9_]+)@(\d{4}-\d{2}-\d{2})$/)).filter(mm => mm && mm[1] === schedule).map(mm => mm[2]).sort();
+  const names = [].concat(settles || [], liveKeys(once),
+    liveKeys(amounts).map(d => schedule + '@' + d),
+    (pe || []).map(id => String(id).replace(/^pe:/, '')), (ps || []).map(id => String(id).replace(/^ps:/, '')));
+  const due = names.map(n => String(n).match(OCC_NAME)).filter(mm => mm && mm[1] === schedule).map(mm => mm[2]).sort();
   const latest = due[due.length - 1];
   if (!latest || dayNum(wanted) > dayNum(latest)) return { ok: true };
   return { refused: true, latest: schedule + '@' + latest, offer: dayStr(dayNum(latest) + 1) };

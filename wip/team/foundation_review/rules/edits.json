@@ -1,7 +1,7 @@
 {
   "area": "edits",
   "title": "What setup and an edit may save: a schedule change never before its latest settled or named occurrence, a goal's own account in the home currency, setup's not-yet questions (X8, W3, X3)",
-  "written_in": "SCHEMA_V3 sections 4, 5 and 8 (the opening); DECISIONS_ROUND2 X3, X8, W3, AB3 (the last statement asked at setup; AD6 and AD7: \"no\" asks the amount with everything owed filled in, \"don't know\" on a loan or pay-later is that month's usual payment; AE6: the question asked as \"Has your last card statement already left your bank?\", an automatic debit not yet until it comes out; AF2: \"no\" on a loan or pay-later filled with the usual payment) and AB with MAKO M1 (the minimum asked once, box empty)",
+  "written_in": "SCHEMA_V3 sections 4, 5 and 8 (the opening); DECISIONS_ROUND2 X3, X8, W3, AB3 (the last statement asked at setup; AD6 and AD7: \"no\" asks the amount with everything owed filled in, \"don't know\" on a loan or pay-later is that month's usual payment; AE6: the question asked as \"Has your last card statement already left your bank?\", an automatic debit not yet until it comes out; AF2: \"no\" on a loan or pay-later filled with the usual payment) and AB with MAKO M1 (the minimum asked once, box empty); AH2 (X8 reads moved schedule ids: `mv:pay:steps.a@...`, `pe:mv:...`, `ps:mv:...`) and AH3 (keyed overrides in the AE1 shape; a removed key names nothing)",
   "notes": "Hand-worked cases for edit-time and setup rules that the reference model does not hold [H7]. All amounts and dates are made up.",
   "defaults": {},
   "cases": [

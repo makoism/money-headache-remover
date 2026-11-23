@@ -20,6 +20,12 @@ const TOLD = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}([+-]\d{2}:\d{2}|Z)?)?$/;   // a da
 let errors = 0;
 function bad(file, where, msg) { errors++; console.log(`FAIL ${file} ${where}: ${msg}`); }
 
+// [AE1, AH3] A keyed override: { amount (whole, not below 0), at (a time with its offset), by, gone (a date, when removed) }.
+const AT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}([+-]\d{2}:\d{2}|Z)$/;
+function keyedOk(v) {
+  return !!v && typeof v === 'object' && typeof v.amount === 'number' && v.amount >= 0 && typeof v.at === 'string' && AT.test(v.at)
+    && typeof v.by === 'string' && (v.gone === undefined || isDate(v.gone));
+}
 function isDate(s) { return typeof s === 'string' && DATE.test(s) && !isNaN(Date.parse(s + 'T00:00:00Z')); }
 function dayNum(s) { return Math.round(Date.parse(s + 'T00:00:00Z') / 86400000); }
 
@@ -281,8 +287,9 @@ function checkFile(fp) {
       if (!(x.account in acc) && !(list === 'income' && x.account === 'any')) bad(file, w, `account ${x.account} not found`);
       if (list === 'income' && typeof x.starts_period !== 'boolean') bad(file, w, 'starts_period must be true or false');
       if (x.fee !== undefined && !(list === 'bills' && x.kind === 'transfer' && typeof x.fee === 'number' && x.fee >= 0)) bad(file, w, 'fee is only on a transfer schedule [Q2]');
-      // [B8, X watch] `amounts`: one occurrence changed, keyed by its due date before any move.
-      for (const [k, v] of Object.entries(x.amounts || {})) if (!isDate(k) || typeof v !== 'number' || v < 0) bad(file, w, 'amounts is { <due date>: amount } [B8]');
+      // [B8, X watch] `amounts`: one occurrence changed, keyed by its due date before any move; [AE1, AH3] each key a keyed
+      // override { amount, at, by, gone }, removed by its own `gone` (a date).
+      for (const [k, v] of Object.entries(x.amounts || {})) if (!isDate(k) || !keyedOk(v)) bad(file, w, 'amounts is { <due date>: { amount, at, by, gone } } [B8, AE1, AH3]');
       if (x.ends !== undefined && !isDate(x.ends)) bad(file, w, 'ends must be a date');
       if (x.redirect !== undefined && !(x.ends !== undefined && (s.goals || []).some(g => g.id === x.redirect))) bad(file, w, 'redirect names a goal, on a schedule that ends (38.31 line redirect)');
     }

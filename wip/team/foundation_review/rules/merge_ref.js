@@ -16,11 +16,18 @@ function write(msValue, offsetMin) {
     + (offsetMin < 0 ? '-' : '+') + p(Math.floor(o / 60)) + ':' + p(o % 60);
 }
 // The `at` a device writes: the larger of now and (newest seen + 1 ms), in now's offset [D4].
-// [L merge q8] A now more than a day ahead of the newest `at` seen is held at that point plus 1 ms, and a
-// warning is shown. The same cap holds a copy that arrives far ahead (receive, below) [M4].
-function nextAtWarn(now, lastSeen) {
-  if (lastSeen && ms(now) > ms(lastSeen) + DAY) return { at: write(ms(lastSeen) + 1, offsetOf(now)), warn: true };
-  return { at: write(Math.max(ms(now), lastSeen ? ms(lastSeen) + 1 : -Infinity), offsetOf(now)), warn: false };
+// [AH1] A device's own write uses its own clock: a long gap since the last write is normal and never held (L merge
+// q8's cap is withdrawn). The device's own clock is questioned only by D8: before anything is written, a date more
+// than one day back from the last open (`lastDay`, device storage `clock.lastSeen`) or more than 40 days ahead of
+// it asks the person (`warn`). Once the date is confirmed the write takes the clock as it is.
+const dayOf = s => { const [y, m, d] = String(s).slice(0, 10).split('-').map(Number); return Math.round(Date.UTC(y, m - 1, d) / DAY); };
+function clockAsk(today, lastDay) {
+  if (!lastDay) return null;
+  const d = dayOf(today) - dayOf(lastDay);
+  return d < -1 ? 'back' : d > 40 ? 'ahead' : null;   // [D8] one day back allowed; more than 40 days ahead asks
+}
+function nextAtWarn(now, lastSeen, lastDay) {
+  return { at: write(Math.max(ms(now), lastSeen ? ms(lastSeen) + 1 : -Infinity), offsetOf(now)), warn: clockAsk(String(now).slice(0, 10), lastDay) !== null };
 }
 const nextAt = (now, lastSeen) => nextAtWarn(now, lastSeen).at;
 function newer(a, b) { return ms(a) > ms(b) ? 'a' : ms(b) > ms(a) ? 'b' : 'same'; }
@@ -105,8 +112,23 @@ function mergeEntries(a, b) {
 // [AE1] Keyed overrides: `amounts` (schedules, loans) and `once` (budget lines, `plan.shares` entries) are maps whose every
 // key is an entry with its own `at`, `by` and `gone` (and `held` mark): they merge key by key, as `steps` entries merge by
 // `from`. `extraSteps` (loans) is an entry list like `steps`.
+// [AH5] A keyed map is found by its shape, not by a list of names: a field whose value is a map whose values all carry
+// `at` merges key by key, so a map a later build adds (a field no build knows yet) merges key by key on older devices
+// too. `amounts` and `once` are keyed whatever they hold.
 const ENTRY_LISTS = ['steps', 'rules', 'extraSteps'], KEYED = ['amounts', 'once'];
 const isMap = x => !!x && typeof x === 'object' && !Array.isArray(x);
+const keyedShape = v => isMap(v) && Object.keys(v).length > 0 && Object.values(v).every(e => isMap(e) && typeof e.at === 'string');
+const META = ['held'];
+// The fields of two copies of a record that are keyed maps [AE1, AH5].
+function keyedFields(x, y) {
+  x = x || {}; y = y || {};
+  return [...new Set(Object.keys(x).concat(Object.keys(y)))].filter(k => {
+    if (META.includes(k) || ENTRY_LISTS.includes(k)) return false;
+    if (KEYED.includes(k)) return isMap(x[k]) || isMap(y[k]);
+    // a map on one copy (or both) whose values all carry `at`, and nothing but a map or nothing on the other
+    return (keyedShape(x[k]) || keyedShape(y[k])) && [x[k], y[k]].every(v => v === undefined || isMap(v));
+  });
+}
 function mergeKeyed(a, b) {
   const out = {};
   for (const k of new Set(Object.keys(a || {}).concat(Object.keys(b || {})))) {
@@ -122,7 +144,7 @@ function pick(x, y) {
   // [AE1] An entry list or a keyed map held by either copy is merged, never taken whole from the winner: nothing is
   // deleted (section 0), so a copy that lacks one never wrote it, and the other copy's entries and keys stay.
   for (const k of ENTRY_LISTS) if (Array.isArray(x[k]) || Array.isArray(y[k])) out[k] = mergeEntries(x[k] || [], y[k] || []);
-  for (const k of KEYED) if (isMap(x[k]) || isMap(y[k])) out[k] = mergeKeyed(x[k], y[k]);
+  for (const k of keyedFields(x, y)) out[k] = mergeKeyed(x[k], y[k]);
   const told = [x.told, y.told].filter(Boolean).sort((a, b) => ms(a) - ms(b))[0];
   if (told) out.told = told;
   return out;
@@ -198,19 +220,21 @@ function newestAt(copy) {
   return best;
 }
 
-// [M4, L merge q8] A copy that arrives with an `at` more than a day ahead of the newest `at` the receiving
-// device has seen: that `at` is held at the newest seen plus 1 ms (in its own offset) and the warning is shown,
-// as on the device's own write. Every `at` is held: records, `steps` and `rules` entries, and `ui.at` keys.
+// [M4, AH1] A copy that arrives with an `at` more than a day ahead of the receiving device's own now: that `at` is held
+// at the newest `at` the device has seen plus 1 ms (in its own offset) and the warning is shown. [AH1] Only the
+// receiver's own now decides: a device back after weeks away takes in what was written meanwhile as it is. Which
+// value a held `at` takes is M4's (the newest seen plus 1 ms); SCHEMA_V3 section 14 asks whether AH1 changes it. Every `at` is held: records, `steps` and `rules` entries, and `ui.at` keys.
 // [N1] A held `at` is marked `held: { came, at }` (for a `ui` key, in `ui.held`). A copy whose `at` is the
 // `came` of the receiving device's own mark for the same thing was held already: it takes the held `at`
 // again, is not held a second time, and shows no new warning. [N2] `told` is held the same way as `at`
 // (a merge then keeps the earliest `told`, so a record keeps its first held `told`). `by` is left as it came.
 // A device that has seen nothing holds nothing (as nextAt).
-function holdArriving(copy, lastSeen, mine) {
+function holdArriving(copy, lastSeen, mine, now) {
   let warn = false;
   const held = JSON.parse(JSON.stringify(copy || {}));
+  if (!now) throw new Error('a copy that arrives is judged against the receiving device\'s own now [AH1]');
   if (!lastSeen) return { copy: held, warn };
-  const ahead = t => typeof t === 'string' && ms(t) > ms(lastSeen) + DAY;
+  const ahead = t => typeof t === 'string' && ms(t) > ms(now) + DAY;
   const cap = t => { warn = true; return write(ms(lastSeen) + 1, offsetOf(t)); };
   const holdAt = (x, mark) => {   // x has `at`; mark is mine's mark for the same thing, if any
     if (mark && sameMoment(x.at, mark.came)) { x.at = mark.at; x.held = mark; }
@@ -238,31 +262,39 @@ function holdArriving(copy, lastSeen, mine) {
   return { copy: held, warn };
 }
 // Receiving a copy: hold what arrives far ahead [M4], then merge it in.
-function receive(mine, theirs, lastSeen) {
-  const h = holdArriving(theirs, lastSeen, mine);
+function receive(mine, theirs, lastSeen, now) {
+  const h = holdArriving(theirs, lastSeen, mine, now);
   return { copy: merge(mine, h.copy), warn: h.warn };
 }
 
 // A short story on several devices: edits (with a device clock) and syncs (merge one copy into another).
-// A device given an `id` writes it as the record's `by` [L merge q1].
+// A device given an `id` writes it as the record's `by` [L merge q1]. A list may be nested (`plan.budgets`).
+function listAt(copy, name, make) {
+  const parts = String(name).split('.'); let o = copy;
+  for (const p of parts.slice(0, -1)) o = o[p] || (make ? (o[p] = {}) : {});
+  const last = parts[parts.length - 1];
+  return o[last] || (make ? (o[last] = []) : []);
+}
 function devices({ devices: devs, copy, steps, show }) {
   const st = {};
   for (const [name, d] of Object.entries(devs)) st[name] = { id: d.id, lastSeen: d.lastSeen, copy: JSON.parse(JSON.stringify(copy || {})) };
   const seen = (d, t) => { if (t && (!d.lastSeen || ms(t) > ms(d.lastSeen))) d.lastSeen = t; };
   for (const s of steps) {
-    if (s.sync) {   // the receiving device holds what arrives far ahead [M4]
-      const from = st[s.sync], to = st[s.to], h = holdArriving(from.copy, to.lastSeen, to.copy);
+    if (s.sync) {   // the receiving device holds what arrives more than a day ahead of its own now (`now` on the step) [M4, AH1]
+      const from = st[s.sync], to = st[s.to], h = holdArriving(from.copy, to.lastSeen, to.copy, s.now);
       to.copy = merge(to.copy, h.copy); seen(to, newestAt(h.copy)); continue;
     }
-    const d = st[s.on], at = nextAt(s.now, d.lastSeen), list = d.copy[s.edit.list] || (d.copy[s.edit.list] = []);
+    const d = st[s.on], at = nextAt(s.now, d.lastSeen), list = listAt(d.copy, s.edit.list, true);
     const by = d.id ? { by: d.id } : {};
     const id = s.edit.make ? idFor(s.edit.make) : s.edit.id;   // [O2] a record written for a known moment
     const i = list.findIndex(r => r.id === id);
     if (i >= 0) list[i] = Object.assign({}, list[i], s.edit.set, by, { at });   // an edit moves `at`, never `told` [H1]
     else list.push(Object.assign({ id }, s.edit.set, by, { told: at, at }));   // `told` is set once, when made
+    const k = s.edit.key;   // [AE1] a keyed override's key, written with its own `at` and `by` from the same clock
+    if (k) { const r = list[i >= 0 ? i : list.length - 1]; r[k.map] = Object.assign({}, r[k.map], { [k.k]: Object.assign({}, (r[k.map] || {})[k.k], k.set, by, { at }) }); }
     seen(d, at);
   }
-  return st[show.on].copy[show.list].find(r => r.id === show.id);
+  return listAt(st[show.on].copy, show.list).find(r => r.id === show.id);
 }
 
 // [AB watch, AE5] Restoring an older backup while the cloud copy is on. A union merge would bring back everything newer
@@ -282,7 +314,9 @@ function devices({ devices: devs, copy, steps, show }) {
 const OLD_KEYS = ['cfg', 'steps', 'once', 'receipts', 'items', 'cards'];
 const isOldFormat = b => isMap(b) && b.v !== 3 && OLD_KEYS.some(k => k in b);
 function restore({ current, backup, now, by, lastSeen, answers }) {
-  const at = nextAt(now, lastSeen), day = String(now).slice(0, 10), stamp = { at, by };
+  // [D4, AH1] What the device has seen includes its own copy: the stamp is newer than every `at` in it.
+  const seen = [lastSeen, newestAt(current)].filter(Boolean).sort((a, b) => ms(b) - ms(a))[0];
+  const at = nextAt(now, seen), day = String(now).slice(0, 10), stamp = { at, by };
   if (isOldFormat(backup)) backup = require('./move_ref').movedBackup({ copy: backup, answers, now, by, at });
   const earliest = (...t) => t.filter(Boolean).sort((a, b) => ms(a) - ms(b))[0];
   const restoreRecord = (r, c) => {
@@ -294,7 +328,7 @@ function restore({ current, backup, now, by, lastSeen, answers }) {
       const newer = ((c && c[k]) || []).filter(e => !(r[k] || []).some(b => b.from === e.from)).map(e => Object.assign({}, e, { gone: e.gone || day }, stamp));
       o[k] = mine.concat(newer).sort((x, y) => (x.from < y.from ? -1 : x.from > y.from ? 1 : 0));
     }
-    for (const k of KEYED) if (isMap(r[k]) || (c && isMap(c[k]))) {
+    for (const k of keyedFields(r, c)) {   // [AE1, AH5] every keyed map, found by its shape
       const bk = r[k] || {}, ck = (c && c[k]) || {}, m = {};
       for (const key of Object.keys(bk)) m[key] = Object.assign({}, bk[key], stamp);
       for (const key of Object.keys(ck)) if (!(key in bk)) m[key] = Object.assign({}, ck[key], { gone: ck[key].gone || day }, stamp);
@@ -340,13 +374,14 @@ function ask(question, input) {
     case 'restore': { const r = restore(input); return input.show ? Object.fromEntries(input.show.map(k => [k, r[k]])) : r; }
     case 'restore_merge': { const r = restore(input); return { mine_first: merge(r, input.cloud), theirs_first: merge(input.cloud, r) }; }
     case 'next_at': return nextAt(input.now, input.lastSeen);
-    case 'next_at_warn': return nextAtWarn(input.now, input.lastSeen);
+    case 'next_at_warn': return nextAtWarn(input.now, input.lastSeen, input.lastDay);
+    case 'clock_ask': return clockAsk(input.today, input.lastDay);
     case 'newer': return newer(input.a, input.b);
     case 'merge': return merge(input.mine, input.theirs);
     case 'merge_symmetric': return canon(merge(input.mine, input.theirs)) === canon(merge(input.theirs, input.mine));
     case 'merge_same': return canon(merge(input.copy, input.copy)) === canon(merge(input.copy, {}));
     case 'came_back': return cameBack(input.mine, input.theirs);
-    case 'receive': return receive(input.mine, input.theirs, input.lastSeen);
+    case 'receive': return receive(input.mine, input.theirs, input.lastSeen, input.now);
     case 'devices': return devices(input);
     case 'id_for': return idFor(input);
     case 'id_ok': return idOk(input.id);
@@ -354,4 +389,4 @@ function ask(question, input) {
   throw new Error('unknown question ' + question);
 }
 
-module.exports = { ask, restore, mergeKeyed, isOldFormat, nextAt, nextAtWarn, newer, merge, mergeList, pick, winner, cameBack, holdArriving, receive, idFor, idOk };
+module.exports = { ask, restore, mergeKeyed, keyedShape, isOldFormat, nextAt, nextAtWarn, clockAsk, newer, merge, mergeList, pick, winner, cameBack, holdArriving, receive, idFor, idOk };

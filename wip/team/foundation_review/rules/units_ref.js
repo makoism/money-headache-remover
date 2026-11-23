@@ -264,7 +264,13 @@ function weekByDayDates({ weekly, lineFrom, from, to }) {
 
 // [B8, T1] A one-period override (`plan.budgets[].once`) is keyed by the occurrence of the pay that starts the
 // period (`pay@2027-01-10`), never by the period's start day, which is not known until the pay lands.
-function periodAmountOnce({ amount, once, period }) { return once && once[period] != null ? once[period] : amount; }
+// [AE1, AH3] Each key is a keyed override `{ amount, at, by, gone }`: a removed key (`gone`) is not read.
+function periodAmountOnce({ amount, once, period }) {
+  const k = once ? once[period] : undefined;
+  if (k === undefined || k === null) return amount;
+  if (typeof k !== 'object' || typeof k.amount !== 'number') throw new Error(`once[${period}] is not in the keyed override shape { amount, at, by, gone } [AE1, AH3]`);
+  return k.gone ? amount : k.amount;
+}
 
 // [X watch: the stale 11.1 row] A 38.31 one-month amount (`once[ym]`) goes to the first period starting in that month:
 // `once` is keyed by the occurrence of the pay that starts it [T1], the first pay landing in that month. [Z5] When no

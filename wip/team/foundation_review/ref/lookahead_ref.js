@@ -76,6 +76,16 @@ function short(n) { const d = new Date(n * MS); return d.getUTCDate() + ' ' + MO
 
 // ---------- amounts ----------
 function minor(x, cur) { return Math.round(x * Math.pow(10, DIGITS[cur] === undefined ? 2 : DIGITS[cur])); }
+// [AE1, AH3] A keyed override (`amounts`, `once`) is read in its saved shape, `{ amount, at, by, gone }`: a removed key
+// (`gone`) is not read, so the occurrence takes its usual amount again. Any other shape is refused, so no reader is
+// written against plain numbers again (confirm_review_4 item 3).
+function keyLive(map, k) {
+  const v = map ? map[k] : undefined;
+  if (v === undefined || v === null) return null;
+  if (typeof v !== 'object' || typeof v.amount !== 'number') throw new Error(`the key ${k} is not in the keyed override shape { amount, at, by, gone } [AE1, AH3]`);
+  return v.gone ? null : v;
+}
+const keyAmount = (map, k) => { const v = keyLive(map, k); return v ? v.amount : null; };
 // [I2] Interest for one month on a balance: balance x yearly rate (percent) / 12, rounded half up to
 // the minor unit. Nothing on a balance at or below zero. Whole-number maths, so x.5 always goes up.
 function interestOn(bal, apr) {
@@ -154,7 +164,7 @@ function occurrences(s, kind, cal, from, to, cur) {
     const start = p.rule.from ? Math.min(from, dayNum(p.rule.from)) : Math.max(from, p.from);
     for (const { due, key } of dueDays(p.rule, start, to, cal)) {
       if (due < p.from || due >= until || due < first || due > ends || (count && out.length >= count)) continue;
-      const one = s.amounts && s.amounts[dayStr(due)];
+      const one = keyAmount(s.amounts, dayStr(due));   // [AE1, AH3] a removed key is not read
       const amt = minor(one != null ? one : s.amount_by_day ? s.amount_by_day[String(key)] : p.amount, cur);
       out.push({ id: s.id + '@' + dayStr(due), sid: s.id, kind, acct: s.account, to: s.to, place: s.place,
         due, land: p.rule.frequency === 'last_workday' ? due : cal.shift(due, s.weekend_holiday),
@@ -173,7 +183,7 @@ function minPay(rule, bal, cur) {
 // The planned extra on a day: the latest `extra_steps` entry that has started [H7, B5].
 function extraOn(steps, day, cur) {
   let x = 0;
-  for (const st of steps || []) if (dayNum(st.from) <= day) x = minor(st.amount, cur);
+  for (const st of steps || []) if (!st.gone && dayNum(st.from) <= day) x = minor(st.amount, cur);   // [AE1] a removed entry counts for nothing
   return x;
 }
 
@@ -356,8 +366,9 @@ function lookahead(sc, asOf, opts = {}) {
       if (e.kind === 'period_end_answer' || e.kind === 'period_start') take(String(e.id).replace(/^(pe|ps):/, ''));
     }
     const sch = (sc.income || []).concat(sc.bills || []).find(x => x.id === sid) || {};
-    for (const d of Object.keys(sch.amounts || {})) out.push(d);
-    for (const l of ((sc.plan || {}).lines || []).concat((sc.plan || {}).free ? [sc.plan.free] : [])) for (const o of Object.keys(l.once || {})) take(o);
+    // [AH3] only live keys name an occurrence: a removed `amounts` or `once` key names nothing
+    for (const d of Object.keys(sch.amounts || {})) if (keyLive(sch.amounts, d)) out.push(d);
+    for (const l of ((sc.plan || {}).lines || []).concat((sc.plan || {}).free ? [sc.plan.free] : [])) for (const o of Object.keys(l.once || {})) if (!(l.once[o] && l.once[o].gone)) take(o);
     return out;
   };
   for (const s of (sc.income || []).concat(sc.bills || [])) {
@@ -857,7 +868,7 @@ function lookahead(sc, asOf, opts = {}) {
     // What a payment day asks: with plans, every plan's parts due after the payment day before and up to this one.
     // [AC5] A payment's own amount (`amounts`, a moved debt's one-month amount) is that payment, whole: in place of the
     // usual amount or minimum and any planned extra.
-    const own = d => (pay.amounts && pay.amounts[dayStr(d.due)] != null ? minor(pay.amounts[dayStr(d.due)], c) : null);
+    const own = d => { const a = keyAmount(pay.amounts, dayStr(d.due)); return a != null ? minor(a, c) : null; };   // [AE1, AH3]
     const asks = (d, i, bal) => own(d) != null ? own(d) : (parts.length
       ? parts.filter(pt => pt.due <= d.due && (i === 0 || pt.due > days[i - 1].due)).reduce((t, pt) => t + pt.amount, 0)
       : pay.amount != null ? minor(pay.amount, c) : minPay(pay.min_rule, bal, c)) + extraOn(pay.extra_steps, d.due, c);
