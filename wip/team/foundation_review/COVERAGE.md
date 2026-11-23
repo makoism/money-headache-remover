@@ -1,4 +1,4 @@
-# Coverage of the foundation (after decisions T to AQ, 23 Nov 2026)
+# Coverage of the foundation (after decisions T to AS, 23 Nov 2026)
 
 The coverage grid of final_review_3.md, updated (LESSONS lesson 3: count coverage, do not sample). Rows are kinds of record and the shapes they live in; columns are the situations that change a record's effect. Every applicable cell names the asks (scenarios/*.json, run by `node foundation_review/ref/run_scenarios.js`) or cases (rules/*.json, run by `node foundation_review/rules/run_rules.js`) that cover it. All of them pass: 725 of 725 asks, 736 of 736 cases, and the same again with every short made-up id rewritten to the ordinary form by the realistic-ids check (`foundation_review/realistic_ids.js`, which both runners run every time) (after AN: 39 cases added (rules mg-257 to mg-287, ed-56 to ed-63) and 9 re-worked (ed-17, ed-18 for AN3; mv-28, mv-125 to mv-127 for AN7's shop keys; the shop keys of the existing merge cases put in the `k:` form, no result changed), 6 asks re-worked by hand with new results (check_day_before cdb-01 to cdb-03, away_clock ac-01 to ac-03, AN4) and 6 re-worked with the same or new figures (moved_together mt-01 to mt-03, AN5; offset_travel ot-01 to ot-03, AN4, re-worded), the columns E x D and Z x D and the row `people`; see "Decision AN" at the end; after AM: 9 asks in 3 new scenario files, 6 asks re-worked by hand (offset_travel ot-01 to ot-03, away_clock ac-01 to ac-03, new results for AM3) and 4 cases added, no new row or column; see "Decision AM" at the end; after AL: 3 asks in a new scenario file, 47 cases added and 41 re-worked (the shared `ui`, `home` and the move's `home` in the field-value shape; 4 of them, mg-198, mg-206, mg-211 and mg-212, with a new result for AL3), the rows shared `ui`, `imports.cats` and `plan.limits` and the column V; see "Decision AL" at the end; after AK: 10 cases added and 17 re-worked (one of them only reworded), no new row or column: `home` now merges field by field; see "Decision AK" at the end; after AJ: 4 asks in 2 new scenario files, 45 cases added and 3 re-worked, the row `home` and 19 false covers fixed (the E column and the built-id D cells held only for short made-up ids; loan / pay-later D); see "Decision AJ" at the end; after AI: 9 cases added and 8 re-worked for the held value, no new row or column; see "Decision AI" at the end; after AH: 11 asks in 3 new scenario files, 8 asks moved to the AE1 shape, 60 cases added and 26 re-worked (12 of them only to name the receiving device's now, 5 only moved to the AE1 shape), the column A and two false covers fixed; see "Decision AH" at the end; after AG: 6 cases added and 3 re-worked, no new row or column; see "Decision AG" at the end; after AE and AF: 6 asks in a new scenario file, 31 cases added and 20 re-worked (3 of them only reworded), the row "keyed overrides" and the column R; see "Decisions AE and AF" at the end; after AB and AC: 20 asks in 4 new scenario files, 34 cases added and 15 re-worked, the columns L and B and the rows `pendingMove` and `frozen`; see "Decisions AB and AC" at the end; after AA: 3 asks in a new scenario file and 12 move cases; after W and X: 78 asks and 32 cases added, in 19 new scenario files, one ask in fee_place and a new rules file `rules/edits.json`; after Y and Z: 15 asks in 4 new scenario files, 11 rules cases and 24 move cases, and the move row; see "Decisions W and X" and "Decisions Y and Z" at the end). The move cases (`rules/move.json`) are counted in the 697.
 
@@ -73,6 +73,7 @@ Marks: **c** covered before this round; **n** newly covered (in the first ten co
 | Changed by AN in the old cells (none uncovered; AN1 and AN-note add to the `home`, shared `ui`, `imports.cats` and `plan.limits` D cells, AN4 re-covers the check C and V and spend V cells with new results, AN5 the keyed overrides P and E cells, AN7 the `imports.cats` D and M cells) | 0 |
 | Changed by AO: the cell check x Z x D, not applicable before (a check typed on one device into an account closed on the other reopens it when its figure is not zero, AO6) | 1 |
 | Changed by AO in the old cells (none uncovered; AO1 adds to the income schedules and keyed overrides ED cells, AO3 re-covers the keyed overrides P and E cells with new results, AO2 and AO4 add to them, AO6 to the spend and cash / e-wallet ZD cells) | 0 |
+| Changed by AP, AR and AS in the old cells (no new row or column; 37 new asks re-cover the closing Z, check Z, spend Z, closing C, rm: / to place C, budget lines O and P, keyed overrides P, `pendingMove` P, income schedules P and E, bill schedules O, filler C, refund and in / pay on a card, and `home` X cells with the reference brought up to the decisions; see the AS section below) | 0 |
 | **Applicable and covered, all passing** | **367** (367 of 367) |
 | Applicable and uncovered | 0 |
 
@@ -156,6 +157,7 @@ Marks: **c** covered before this round; **n** newly covered (in the first ten co
 - L a second move days later (n): rules mv-98, mv-99 (the 23 Nov bank figure corrected on the phone stays 185,000 when the desktop moves on 1 Dec, AB1)
 - B set up between close and payment day (n): rules ed-13 to ed-16 (the statement check setup saves: yes, no with its amount, don't know holding everything owed; not asked after the payment day, AB3; "no" with everything owed filled in, ed-19, AD6; "don't know" on a loan or pay-later is that month's usual payment, ed-20, ed-21, AD7); card_between_close_pay cbp-03, cbp-06
 - ZD written into an account closed on the other device (n, applicable since AO6): rules mg-291 (a check of 3,000 typed on the phone into the e-wallet the desktop closed: reopened at the merge, with a notice), mg-292 (a check of 0: stays closed, nothing shown) (AO6)
+- Z closed account, after AP1 and AR3: a check after the closing day reopens the account, a figure other than zero (closing_reopen cro-07, cro-08) and, read from AP1, a zero check (cro-09, cro-10); the closing's own check holds everything dated on or before the closing day (cro-01)
 
 ### in / pay
 - C check day (c): late_pay late-08; settle_ticked tick-03
@@ -171,6 +173,7 @@ Marks: **c** covered before this round; **n** newly covered (in the first ten co
 - Y years after setup (n): far_years fy-03, fy-10 (a pay ticked in 2036 starts the period)
 - T a time with an offset (n): notyet_opening ny-04 (`set:pay@2027-06-25` ticked at a check-in, told with a time and no offset, read in the device's offset; confirm_review_2 found that kinds-01's date-only `told` on a `set:` record is one the engine never writes)
 - ZD written into an account closed on the other device (n): rules mg-273 (3,000 a friend sent to an e-wallet the desktop closed meanwhile: reopened at the merge, with a notice, AN6)
+- (AS7, no column of its own) money in on a card lowers what is owed and gives nothing back to a line: card_money_in cmi-01 to cmi-03
 
 ### refund
 - C check day (c): card_statements stmt-02, stmt-03; line_on_card line-04, line-05
@@ -182,6 +185,7 @@ Marks: **c** covered before this round; **n** newly covered (in the first ten co
 - Y years after setup (n): far_years fy-04 (a card refund in 2036)
 - T a time with an offset (n): day_offset_kinds kinds-01
 - ZD written into an account closed on the other device (n): rules mg-274 (a refund to the closed e-wallet reopens it, AN6)
+- (AS7) a refund on a card given back to its line beside money in that is not: card_money_in cmi-01, cmi-03
 
 ### spend
 - C check day (c): same_day_order order-02; avail_same_day avsd-01 to avsd-03
@@ -200,6 +204,7 @@ Marks: **c** covered before this round; **n** newly covered (in the first ten co
 - V an offset that changes (n): offset_travel ot-01, ot-03 (a phone flown from Tokyo to Honolulu; the spend dated the day before the check, whose Honolulu day had not ended at it, told after it, comes after it, AN4); rules mg-240 (two edits across the end of daylight saving: the later moment wins), mg-241 (a copy whose date reads a day ahead in another offset is not held), mg-242 (a half-hour offset: held at the receiver's now plus 1 ms in its own offset), mg-243 (a phone in Honolulu edits after the desktop in Tokyo and wins)
 - L a second move days later (n): rules mv-82, mv-83 (a receipt removed on the phone stays removed), mv-84, mv-85 (a receipt only the desktop's later copy held is added), mv-97 (removed, then put back with an Undo, AB1, H6)
 - ZD written into an account closed on the other device (n): rules mg-272 (a lunch from the e-wallet the desktop closed: reopened, with a notice), mg-277 (a receipt dated before the closing day: the account stays closed) (AN6); mg-290 (a lunch dated on the closing day: stays closed, AO6)
+- Z closed account, after AP1: money out dated after the closing day reopens the account (closing_reopen cro-04 to cro-06); a spend dated on the closing day and logged after the closing is inside the closing's check (cro-01 to cro-03)
 
 ### transfer
 - C check day (c): import_two_sided two-04, two-05
@@ -261,6 +266,7 @@ Marks: **c** covered before this round; **n** newly covered (in the first ten co
 - C check day (c): same_day_order order-04; avail_check avail-02; filler_spending fs-01, fs-02
 - W posting window (c): avail_check avail-07; pending_hold hold-02, hold-03, hold-05, hold-07
 - P period start (n, was X): filler_spending fs-03 to fs-06; period_start_model psm-07
+- (AS6) the filler's place per check-in and per account, two check-ins on one day: filler_place_checkin fpc-01, fpc-02
 
 ### skip
 - C check day (c): auto_removed auto-01, auto-02
@@ -308,12 +314,14 @@ Marks: **c** covered before this round; **n** newly covered (in the first ten co
 - D two devices (c, a false cover fixed by X5): rules mg-62, mg-68; placing money to place on two phones, the newer gives way: to_place_two_phones tp2-01, tp2-02; rules pe-55, pe-57 to pe-59; covering an overspend found later: rules pe-56
 - U undo/redo (c): rules mg-13, mg-68
 - Z closed account (c): rules acc-12, acc-13
+- C check day, with the removal's own `rm:<place>` move saved (P1, Q7): removed_rm_move rmm-01 to rmm-05
 
 ### closing
 - C check day (c): account_closed close-03, close-04
 - O opening (c): closing_write_off woff-01, woff-02
 - D two devices (c): rules mg-70, mg-73
 - Z closed account (n, was u): closed_reopened cr-01, cr-02
+- C and Z, after AP1 and AR3 (one reopen rule in the look ahead): closing_reopen cro-01 to cro-10
 
 ### income schedules, every rule
 - C check day (c): mako_shape mako-21, mako-29
@@ -329,6 +337,7 @@ Marks: **c** covered before this round; **n** newly covered (in the first ten co
 - Y years after setup (n): far_years fy-11
 - L a second move days later (n): rules mv-82, mv-83 (the pay day answered on the phone keeps its rule, AB1)
 - ED edited after settled on two devices (n): rules mg-268 (confirm_review_7 s2: the pay day changed to the 25th "from 1 Dec" on the offline phone after the desktop ticked the 10 Dec pay; after the merge the change starts 11 Dec, a new `at`, the phone's notice), mg-269 (the desktop writes the same move, no notice), mg-270 (nothing settled in the way: left as it is) (AN2); mg-288 (a 300,000 bonus that moved with the change goes back to the settled 10 Dec pay when the change moves: one bonus counted, AO1); x8_ordinary_ids_ok x8o-02 to x8o-04 (the copy that results is worked out: the 25 Dec pay next)
+- P and E, a pay rule changing mid-year and the amounts per period it gives (P4, R2): pay_rule_change_units prc-01; a 26-pay and a 27-pay year (H9, N3): units_27_pays u27-01 to u27-03
 
 ### bill / transfer / auto schedules
 - C check day (c): mako_shape mako-12
@@ -347,6 +356,7 @@ Marks: **c** covered before this round; **n** newly covered (in the first ten co
 - (X watch, no column of its own) one occurrence changed, `amounts`: one_occurrence_amount amt-01 to amt-05; a bill that ends with its money redirected, `ends` and `redirect`: bill_ends_redirect red-01 to red-04
 - (W1, no column of its own) closing the main bank moves the transfers out and in and the self-logged spends tied to it: rules acc-20, acc-21
 - ED edited after settled on two devices (n): rules mg-287 (the rent day changed to the 5th on the offline phone after the desktop ticked the 27 Dec rent: the change starts 28 Dec, with a notice, AN2)
+- O opening, `count` from the first occurrence, before setup and across a change of day (AS10): count_first cnt-01, cnt-02
 
 ### budget lines
 - C check day (n, was X): overspent_line ol-01 to ol-03
@@ -360,6 +370,9 @@ Marks: **c** covered before this round; **n** newly covered (in the first ten co
 - M the move run on two devices (n): rules mg-84 (`mv:line:food`); a 38.31 one-month amount replaces the month's total, spread over the periods starting in that month (AB2): rules units-79, units-80, units-82 to units-84, mv-73, mv-88 (units-78 and units-81 key it)
 - Y years after setup (n): far_years fy-09, fy-10
 - L a second move days later (n): rules mv-98, mv-99 (Food renamed on the phone stays renamed, AB1)
+- P period start, amounts per period by the units rules in the walk: units_27_pays u27-01 to u27-03; weekly_line wl-01, wl-02; pay_rule_change_units prc-01; no fixed pay by day and by week from the line's `from` (M9, M10, N4, AS9): no_fixed_pay_by_day nfd-01, nfd-02
+- O opening, the share by days left of the opening period's own amount: units_27_pays u27-01; pay_rule_change_units prc-01
+- P period start, `once` keys this period and later, a removed key: once_keys ok-01 to ok-04
 
 ### goals / places
 - C check day (c): mako_shape mako-02
@@ -466,6 +479,7 @@ Marks: **c** covered before this round; **n** newly covered (in the first ten co
 - R restore (n): rules mg-111 (what waited at the backup waits again); mv-117, mv-118 (answered again after the restore: written with the D4 clock, the key wins, AG1), mg-120 (and wins at the merge)
 - (AC2, no column of its own) a loan receipt waiting for the loan question: rules mv-91 to mv-93
 - not applicable: C, O, W, X, U, E, S, Z, Y, T, B (an entry holds a 38.31 amount or answer waiting for a day; it moves no account and is in the home currency)
+- P period start, a `once` amount waiting for add or replace counted on the safe side (AR1, AS8): once_keys ok-01, ok-03
 
 ### frozen text (`mv:frozen:<by>`) (a new row: confirm_review_2 found `frozen3831` missing)
 - D two devices (n): rules mv-86 (two different 38.31 copies: both kept, one record per device, AB1)
@@ -486,6 +500,7 @@ Marks: **c** covered before this round; **n** newly covered (in the first ten co
 - not applicable: O, W, X, S, Z, Y, T, B (a keyed override is typed or moved, in its record's currency, on no account of its own, and is no opening, import or statement)
 - ED edited after settled on two devices (n): rules mg-271 (a bonus key moved away on the phone (AL6) and raised on the desktop: live again at the merge, an orphan; the change moves to the day after it, with a notice, AN2; the moved copy on 10 Jan is removed, so one bonus counts, 450,000, AO1), mg-288 (the bonus moved back to the settled pay, AO1), mg-289 (a Food `once` key moved with the change and raised on the desktop: the moved copy removed, AO1)
 - P, E, AO2 to AO4 (n): moved_together mt-01 (95,000) and mt-02 (125,000) re-worked by hand: the two `pendingMove` entries are in the file, and until the pick a waiting bill amount counts at the larger (the 5 Jan rent 95,000) while a waiting pay amount adds nothing (mt-03, 150,000; AO3); rules ed-64 (two rent amounts onto an empty 5 Jan: January's is its own, AO2), ed-65 to ed-68 (a budget line's and a share's `once` keys wait in `pendingMove` and are added on the pick, AO4)
+- P period start, `once` on a budget line and on a share in the look ahead, a removed key not read (B8, T1, AE1, AO4, AR1): once_keys ok-01 to ok-04
 
 ### home (`curs`, `main`, `country`, `mode`) (a new row: confirm_review_5 found it missing, AJ3; field by field since AK1; field values and `main` one field since AL1 and AL3)
 - O opening (c): rules ed-17, ed-18 (the minimum asked once at setup, in the home currency); units-60 (the first `curs` entry, from setup)
@@ -504,6 +519,7 @@ Marks: **c** covered before this round; **n** newly covered (in the first ten co
 - not applicable: C (a check-in writes no `home` field), W, S (never imported or posted), E (nothing in it is settled), Y (the entry in force is read by its date, as in X and P), T (`curs` entries are days, with no time), B (no statement)
 - D, AN1 and AN-note (n): rules mg-257 (confirm_review_7 s1: a plain field in `home` on both copies, merged key by key, the same both ways), mg-258 (the plain field differs: the keyed rule), mg-259 (a `home` holding only `curs`); mg-264 (the country changed on both: the phone, whose change lost, records the notice), mg-265 (a `curs` entry), mg-267 (a plain sync records nothing)
 - (AO5, no column of its own) another account becomes the main bank: rules ed-69 (its own 5,000 moves into `home.main`, the old main bank's 20,000 does not follow, a notice), ed-70 (no minimum of its own: none), ed-71 (the old main bank had none: no notice) (question `main_change`)
+- X other currency, the main bank's minimum in another currency asked about (AS11): main_min_currency mmc-01; in its own currency: main_min_same mms-01, mms-02
 
 ### shared `ui` (one field value per key) (a new row: confirm_review_6 found it had none, AL1)
 - D two devices (n): rules mg-31, mg-41 (re-worked to field values: each key by its own `at`, then `by`), mg-213 (a key changed after seeing a fast desktop's change wins, k1, AL2), mg-230, mg-231 (merged either way round, ties)
@@ -930,3 +946,23 @@ Questions AN does not answer (for Mako's run; SCHEMA_V3 section 14 has them with
 - the checks after a sync: D sy-39 to sy-42 (minimum, shares); E sy-23 to sy-32 (every rule kind, AP2); Z sy-33 to sy-38 (AP1)
 
 **The fuzz** (`node foundation_review/rules/fuzz_two_devices.js`, AQ6): 5,000 seeds, one to three rounds each, every round both devices editing offline and syncing through the revision. It is not counted as a cell cover on its own; it is the check that replaces hand review rounds for the D column.
+
+## Decisions AP1, AR and AS (engine lane A's readings), and where each part is tested
+
+The reference model is brought up to the decisions the engine already followed (AS's last paragraph). 37 asks in 12 new files, each worked by hand from the decisions. Run first on the reference before it changed: 5 of 37 passed (cnt-01, mms-02, fpc-01, fpc-02, cmi-03), 32 failed. After: 762 of 762 asks, and 762 of 762 in the realistic-ids run; rules 751 of 751 (unchanged).
+
+| Part | Asks | Failed first |
+|---|---|---|
+| AP1, AR3: the closing's check holds everything dated on or before the closing day; any event or check dated after it reopens, money out and a check of 0 included | closing_reopen cro-01 to cro-10 | all ten (the model refused the copy: a lunch on the closing day left -700 in the closed e-wallet) |
+| B8, T1, AO4, AR1, AS8: `once` on a line and on Free to spend, a removed key, waiting `once` amounts on the safe side | once_keys ok-01 to ok-04 | all four |
+| P1, Q7: the removal's own `rm:` move keeps the money to place | removed_rm_move rmm-01 to rmm-05 | all five |
+| H9, L units q3 to q5, N3: a monthly line over 26 and 27 pays a year, this period and the opening share too | units_27_pays u27-01 to u27-03 | all three |
+| L units q6: a weekly line rounded down per period, this period too | weekly_line wl-01, wl-02 | both |
+| P4, R2: a pay rule changing mid-year | pay_rule_change_units prc-01 | prc-01 |
+| M9, M10, N4, AS9: no fixed pay by day and by week from the line's `from` | no_fixed_pay_by_day nfd-01, nfd-02 | both |
+| AS10: `count` from the first occurrence | count_first cnt-01, cnt-02 | cnt-02 |
+| AS11: the main bank's minimum in `home.main` with its currency | main_min_currency mmc-01; main_min_same mms-01, mms-02 | mmc-01, mms-01 |
+| AS6: the filler's place per check-in and per account | filler_place_checkin fpc-01, fpc-02 | none (the reference already kept the place per check) |
+| AS7: money in on a card lowers what is owed; only a refund gives back to a line | card_money_in cmi-01 to cmi-03 | cmi-01, cmi-02 |
+
+Questions AS does not answer (SCHEMA_V3 section 14, "Open after AS"): (1) a check of 0 dated after the closing day: AP1 read literally reopens (the reference, cro-09), AO6, mg-292 and the engine do not; (2) the minimum the walk uses while AS11's question is unanswered; (3) a waiting `once` amount on Free to spend for the period running now (the larger raises the headline's cap); (4) whether an imported refund line may settle a pay; (5) a budget line with no `from` in a scenario (the reference uses its account's setup day).

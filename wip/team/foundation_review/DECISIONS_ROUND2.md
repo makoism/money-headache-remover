@@ -386,3 +386,10 @@ AU7 (class 7). A pay inside the opening is already in; its period starts by the 
 AU8 (class 8). The plain units form (52 / n) is retired; the reference uses the units rules (L, M, P4, R2) everywhere.
 Other points: a spend with no budget line in a life with a plan counts against Free to spend; a card payment item uses the paying bank's posting window (1 working day); while the next pay is late it is still "the next pay" for G1; an older statement that is late and unpaid is due now, beside the next one; a card's open amount shows a part-paid remainder that will carry, marked as carrying.
 The checker becomes a permanent gate: `node wip/team/checker/fuzz_vs_ref.js --seeds 2000` must show 0 differences, and the engine is run against the checker the same way.
+
+## AV. Answers after the reference catch-up (AS asks)
+AV1. A zero check after the closing day does not reopen (AO6); AP1's "check" means a check with a figure other than zero. cro-09 is flipped.
+AV2. While AS11's currency question is open, no minimum is used and the warning shows.
+AV3. A waiting `once` amount counts on the safe side for what it is: the larger for spending lines and bills, the smaller for Free to spend and any cap.
+AV4. A refund (`sub: 'refund'`) never settles a pay, whatever its size.
+AV5. A budget line with no `from` counts from its account's setup day.
