@@ -139,7 +139,7 @@ test('nothing safe: says when it turns safe, and with no fixed pay says what to 
 });
 
 test('every made-up situation and every ask day: one known state, never "ok" next to a shortfall or an account under its minimum', () => {
-  const STATES = ['sample', 'empty', 'short', 'warning', 'question', 'late', 'check', 'zero', 'ok'];
+  const STATES = ['sample', 'empty', 'short', 'warning', 'question', 'late', 'check', 'zero', 'no_free', 'ok'];
   let n = 0, refused = 0;
   for (const f of fs.readdirSync(SC).filter(x => x.endsWith('.json'))) {
     const sc = JSON.parse(fs.readFileSync(path.join(SC, f), 'utf8'));
@@ -187,6 +187,25 @@ test('warnings are worded here from the engine\'s data, never its text: "below z
   r.warnings = [{ account: Object.keys(r.accounts)[0], code: 'below_minimum', day: '2026-12-07', amount: 12000, short: 12000, minimum: null }];
   const s = status.statusOf(r, YEN);
   assert.match(s.text.reason, /goes ¥12,000 below zero on 7 Dec/);
+});
+
+test('no Free to spend and no budget line: Home asks for everyday spending in place of "Fine for now" (north star F1)', () => {
+  const r = clone(engine('mako_shape', '2026-11-25'));
+  r.period = { start: '2026-11-10', end: '2026-12-09', free: null, lines: [] };
+  const s = status.statusOf(r, YEN);
+  assert.strictEqual(s.state, 'no_free');
+  assert.strictEqual(s.level, 'wait');
+  assert.strictEqual(s.text.reason, 'Add what you spend on everyday things so safe to spend leaves room for it');
+  assert.deepStrictEqual(s.next, { code: 'set_free' });
+  assert.strictEqual(s.text.next, 'Set Free to spend');
+  // Free to spend set, or a budget line with an amount: fine again
+  r.period.free = { amount: 40000, counts: 40000, left: 40000 };
+  assert.strictEqual(status.statusOf(r, YEN).state, 'ok');
+  r.period.free = null; r.period.lines = [{ id: 'food', amount: 30000 }];
+  assert.strictEqual(status.statusOf(r, YEN).state, 'ok');
+  // anything that needs doing first still wins
+  r.period.lines = []; r.safeToSpend.headline = 0;
+  assert.strictEqual(status.statusOf(r, YEN).state, 'zero');
 });
 
 run('status.js');

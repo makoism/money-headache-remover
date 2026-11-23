@@ -143,4 +143,24 @@ t('the statement figure is written as its own dated check: $250 out on 7 Dec, th
   // a statement figure for a card not in that gap is refused, not guessed
   assert.throws(() => B.buildBook(usCard('2026-12-08', 20, { statement: 25000 }), { newId }), /statement/);
 });
+// [north star F1, BJ2] setup asks what goes on food and everyday things each pay period: it is Free to spend, the first
+// plan amount, from the setup day. Set up Thu 5 Nov 2026, bank 320,000, pay 250,000 on the 25th (the working day
+// before a weekend), 40,000 a period. The 25 Oct pay landed Fri 23 Oct, the next lands Wed 25 Nov: the period is 23 Oct
+// to 24 Nov, 33 days, and 5 to 24 Nov is 20 of them, so this period counts 40,000 x 20 / 33 = 24,242 (made-up yen).
+const everyday = free => ({ day: '2026-11-05', told: '2026-11-05T10:00:00+09:00', country: 'JP', currency: 'JPY',
+  banks: [{ key: 'bank', name: 'Main bank', amount: 320000 }],
+  pays: [{ key: 'pay', name: 'Pay', bank: 'bank', amount: 250000, day: 25, shift: 'before', startsPeriod: true }], free });
+t('the everyday amount from setup is Free to spend from the setup day; this period gets its share for the days left [BJ2]', () => {
+  const r = B.buildBook(everyday(40000), { newId });
+  eq(r.book.plan.shares.map(x => [x.from, x.free, x.per, x.cur]), [['2026-11-05', 40000, { free: 'pay' }, 'JPY']]);
+  ok(r.book.plan.shares.every(x => I.isOrdinary(x.id) && x.told && x.at && x.by), 'an ordinary record');
+  const la = lookahead(r.book, '2026-11-05');
+  eq([la.period.start, la.period.end, la.period.free.amount, la.period.free.counts], ['2026-10-23', '2026-11-24', 40000, 24242]);
+  eq(la.safeToSpend.headline, 24242);
+  // left blank: no Free to spend, and the whole bank is the headline (Home asks for it instead of "Fine for now")
+  const blank = B.buildBook(everyday(null), { newId });
+  eq(blank.book.plan.shares, []);
+  eq(lookahead(blank.book, '2026-11-05').safeToSpend.headline, 320000);
+  assert.throws(() => B.buildBook(everyday(400.5), { newId }), /whole/);
+});
 done('build_book');

@@ -10,7 +10,9 @@
      ctx.staleDays a bank figure older than this asks for a check-in (7 until Mako says otherwise)
 
    One state, in this order (the first that is true wins, the rest go in `also` so they can sit under it):
-     sample > empty > short > warning > question > late > check > zero > ok
+     sample > empty > short > warning > question > late > check > zero > no_free > ok
+   no_free [north star F1]: a pay period with neither Free to spend nor a budget line, so safe to spend leaves nothing
+   for food and everyday things; Home asks for it in place of "Fine for now" and links to Plan's Set Free to spend
    Plain browser JavaScript. In a page it is BurrowScreens.status (load money.js and names.js first). */
 (function (root, make) {
   const dep = n => (typeof module === 'object' && module.exports ? require('./' + n + '.js') : root.BurrowScreens[n]);
@@ -21,7 +23,7 @@
   'use strict';
 
   const STALE_DAYS = 7;   // for Mako: how old a bank figure may get before the status asks for a check-in
-  const LEVEL = { sample: 'wait', empty: 'wait', short: 'bad', warning: 'bad', question: 'wait', late: 'wait', check: 'wait', zero: 'wait', ok: 'good' };
+  const LEVEL = { sample: 'wait', empty: 'wait', short: 'bad', warning: 'bad', question: 'wait', late: 'wait', check: 'wait', zero: 'wait', no_free: 'wait', ok: 'good' };
   /* engine warning codes (lookahead_ref.js): which change the state, which are notes under it */
   const WARNING_STATE = { below_minimum: 'warning', check_again: 'question', gain_to_ask: 'question', minimum_other_currency: 'question' };
   const NOTE_ONLY = ['card_other_currency', 'loan_other_currency', 'income_other_currency', 'spend_other_currency', 'reopened'];
@@ -37,6 +39,7 @@
     'state.late': W('Pay not in yet'),
     'state.check': W('Time to check in'),
     'state.zero': W('Nothing safe to spend yet'),
+    'state.no_free': W('Add your everyday spending'),
     'state.ok': W('Fine for now'),
     'reason.sample_numbers': W('These numbers are made up - put yours in to see your own'),
     'reason.no_figures': W('There\'s no bank figure yet'),
@@ -59,6 +62,7 @@
     'reason.nothing_safe': W('Nothing\'s safe to spend until pay on {until}'),
     'reason.nothing_safe_no_pay': W('Nothing\'s safe to spend right now'),
     'reason.free_used_up': W('Free to spend is used up until pay on {until}'),
+    'reason.no_free': W('Add what you spend on everyday things so safe to spend leaves room for it'),
     'reason.safe': W('{amount} is safe to spend until pay on {until}'),
     'reason.safe_no_pay': W('{amount} is safe to spend'),
     'next.put_yours_in': W('Put your numbers in'),
@@ -69,6 +73,7 @@
     'next.check_in_when_it_lands': W('Check in when it lands'),
     'next.wait_for_pay': W('It turns safe once your pay is in'),
     'next.log_money_in': W('Log money in when it comes'),
+    'next.set_free': W('Set Free to spend'),
     /* the engine's warnings, worded here from their data (account, amount, day, minimum or none), never its text */
     'warn.below_zero': W('{account} goes {amount} below zero on {day}'),
     'warn.below_minimum': W('{account} goes {amount} below its minimum of {minimum} on {day}'),
@@ -145,6 +150,8 @@
     if (Object.keys(accounts).length && stp.headline === 0) {
       out.push({ state: 'zero', reason: { code: stp.cappedByFreeToSpend && until ? 'free_used_up' : 'nothing_safe', until }, next: until ? { code: 'wait_for_pay', until } : { code: 'log_money_in' } });
     }
+    const per = r.period;
+    if (Object.keys(accounts).length && stp.headline > 0 && per && !per.free && !(per.lines || []).some(l => l.amount)) out.push({ state: 'no_free', reason: { code: 'no_free' }, next: { code: 'set_free' }, note: 'no_free' });
     if (Object.keys(accounts).length && stp.headline > 0) out.push({ state: 'ok', reason: { code: 'safe', amount: stp.headline, currency: ctx.currency, until, capped: !!stp.cappedByFreeToSpend }, next: null });
     for (const w of warnings) if (NOTE_ONLY.includes(w.code)) out.push({ note: w.code });
     if ((r.laterOn || []).length) out.push({ note: 'later_on' });

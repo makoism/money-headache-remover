@@ -1,6 +1,7 @@
 /* ---------- Setup, short (WIRING_PLAN 1.1 item 1, step 10; DECISIONS_ROUND2 BE: the only way in for a person's own money) ----------
    One screen: what the bank shows today, pay (day and amount, a second income allowed), the cards (what is on each now,
-   its payment day, its close day or "not sure"), the bills with their due days, and the minimum (M1: blank means none).
+   its payment day, its close day or "not sure"), what goes on food and everyday things each pay period (Free to
+   spend, blank allowed), the bills with their due days, and the minimum (M1: blank means none).
    Save turns the answers into a book through engine/build_book.js and keeps it through the store. Nothing is worked out
    here. The words are drafts for Mako's copy pass. */
 let setup3 = null;
@@ -34,6 +35,10 @@ function openSetup3() {
       <div class="a3-field"><label for="s3PayShift">When that day is a weekend or holiday, it lands</label><select class="a3-in a3-sel" id="s3PayShift">${shiftOptions3(SHIFT3.pay, 'before')}</select></div>
       <div id="s3Pays"></div>
       <div class="a3-actions"><button type="button" class="a3-btn" id="s3AddPay">Add a second income on the same day</button></div>
+    </section>
+    <section class="a3-card"><h2>Everyday spending</h2>
+      <div class="a3-field"><label for="s3Free">About how much do you spend on food and everyday things each pay period?</label><input class="a3-in" id="s3Free" data-money data-optional aria-describedby="s3FreeH">
+        <p class="a3-sub" id="s3FreeH" data-hint="free">This is Free to spend. Safe to spend leaves room for it until each pay. Leave it blank to add it later on Plan</p></div>
     </section>
     <section class="a3-card"><h2>Your cards</h2><p class="a3-sub">Each card is paid in full from your bank. If you don't know the day its statement closes, leave it as not sure</p>
       <div id="s3Cards"></div>
@@ -109,6 +114,8 @@ function answers3(strict) {
       day: E3.today(), told: E3.told(), currency: cur, country: { JPY: 'JP', PHP: 'PH' }[cur] || 'XX',
       banks: [{ key: 'bank1', name: bankName, amount: need($('#s3Bank'), `Type what ${bankName} shows today`), main: true, min }],
       pays: [], cards: [], bills: [],
+      /* [north star F1, BJ2] Free to spend, the first plan amount, from the setup day; blank: not said (Home asks) */
+      free: $('#s3Free').value.trim() ? need($('#s3Free'), 'Type about how much goes on everyday things, or leave it blank') : null,
     };
     const day = Number($('#s3PayDay').value), shift = $('#s3PayShift').value;
     $$('#a3Setup [data-row^=pay]').forEach((row, i) => {

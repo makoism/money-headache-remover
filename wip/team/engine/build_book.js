@@ -5,7 +5,10 @@
        banks: [{ key, name, amount, type?: 'bank'|'cash'|'ewallet'|'wallet', main?, min? }],
        pays:  [{ key, name, bank, amount, every: 'month'|'weeks', day | days, n, from, shift?, startsPeriod? }],
        cards: [{ key, name, owed, payDay, closeDay: <1 to 31, 'last'> | 'not sure', payMonths?, payFrom, shift?, inFull? }],
-       bills: [{ key, name, from, amount, day | days, every?, n?, shift?, takenOut? }] }
+       bills: [{ key, name, from, amount, day | days, every?, n?, shift?, takenOut? }],
+       free?: what goes on food and everyday things each pay period, or null for not said }
+   `free` [north star F1, BJ2] is Free to spend: the first plan amount, a `plan.shares` entry from the setup day (the
+   period holding the setup day counts its share for the days left, as Plan does). Left out: no Free to spend.
    `takenOut` [X3]: for a bill due between the last pay and the setup day, whether it has already come out of the
    account (true, the default: it is inside the opening figure) or is still to go (false: each such occurrence is
    named in the opening check's `notYet`, so it stays expected and on the check-in list). The result's `asked` gives,
@@ -142,6 +145,10 @@
         const check = book.events.find(e => e.k === 'check' && e.acct === sch.acct && e.grp === grp);
         check.notYet = (check.notYet || []).concat(names);
       }
+    }
+    if (ans.free != null) {
+      if (ans.free < 0) throw new Error('what goes on everyday things cannot be below zero');
+      book.plan.shares.push(stamp({ id: newId(), from: day, cur, per: { free: 'pay' }, free: whole(ans.free, 'what goes on everyday things'), goals: {} }));
     }
     return { book, ids, asked, askedStatements };
   }

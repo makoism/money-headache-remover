@@ -3796,7 +3796,10 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
        banks: [{ key, name, amount, type?: 'bank'|'cash'|'ewallet'|'wallet', main?, min? }],
        pays:  [{ key, name, bank, amount, every: 'month'|'weeks', day | days, n, from, shift?, startsPeriod? }],
        cards: [{ key, name, owed, payDay, closeDay: <1 to 31, 'last'> | 'not sure', payMonths?, payFrom, shift?, inFull? }],
-       bills: [{ key, name, from, amount, day | days, every?, n?, shift?, takenOut? }] }
+       bills: [{ key, name, from, amount, day | days, every?, n?, shift?, takenOut? }],
+       free?: what goes on food and everyday things each pay period, or null for not said }
+   `free` [north star F1, BJ2] is Free to spend: the first plan amount, a `plan.shares` entry from the setup day (the
+   period holding the setup day counts its share for the days left, as Plan does). Left out: no Free to spend.
    `takenOut` [X3]: for a bill due between the last pay and the setup day, whether it has already come out of the
    account (true, the default: it is inside the opening figure) or is still to go (false: each such occurrence is
    named in the opening check's `notYet`, so it stays expected and on the check-in list). The result's `asked` gives,
@@ -3933,6 +3936,10 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
         const check = book.events.find(e => e.k === 'check' && e.acct === sch.acct && e.grp === grp);
         check.notYet = (check.notYet || []).concat(names);
       }
+    }
+    if (ans.free != null) {
+      if (ans.free < 0) throw new Error('what goes on everyday things cannot be below zero');
+      book.plan.shares.push(stamp({ id: newId(), from: day, cur, per: { free: 'pay' }, free: whole(ans.free, 'what goes on everyday things'), goals: {} }));
     }
     return { book, ids, asked, askedStatements };
   }
@@ -4252,7 +4259,9 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
      ctx.staleDays a bank figure older than this asks for a check-in (7 until Mako says otherwise)
 
    One state, in this order (the first that is true wins, the rest go in `also` so they can sit under it):
-     sample > empty > short > warning > question > late > check > zero > ok
+     sample > empty > short > warning > question > late > check > zero > no_free > ok
+   no_free [north star F1]: a pay period with neither Free to spend nor a budget line, so safe to spend leaves nothing
+   for food and everyday things; Home asks for it in place of "Fine for now" and links to Plan's Set Free to spend
    Plain browser JavaScript. In a page it is BurrowScreens.status (load money.js and names.js first). */
 (function (root, make) {
   const dep = n => (typeof module === 'object' && module.exports ? require('./' + n + '.js') : root.BurrowScreens[n]);
@@ -4263,7 +4272,7 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
   'use strict';
 
   const STALE_DAYS = 7;   // for Mako: how old a bank figure may get before the status asks for a check-in
-  const LEVEL = { sample: 'wait', empty: 'wait', short: 'bad', warning: 'bad', question: 'wait', late: 'wait', check: 'wait', zero: 'wait', ok: 'good' };
+  const LEVEL = { sample: 'wait', empty: 'wait', short: 'bad', warning: 'bad', question: 'wait', late: 'wait', check: 'wait', zero: 'wait', no_free: 'wait', ok: 'good' };
   /* engine warning codes (lookahead_ref.js): which change the state, which are notes under it */
   const WARNING_STATE = { below_minimum: 'warning', check_again: 'question', gain_to_ask: 'question', minimum_other_currency: 'question' };
   const NOTE_ONLY = ['card_other_currency', 'loan_other_currency', 'income_other_currency', 'spend_other_currency', 'reopened'];
@@ -4279,6 +4288,7 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
     'state.late': W('Pay not in yet'),
     'state.check': W('Time to check in'),
     'state.zero': W('Nothing safe to spend yet'),
+    'state.no_free': W('Add your everyday spending'),
     'state.ok': W('Fine for now'),
     'reason.sample_numbers': W('These numbers are made up - put yours in to see your own'),
     'reason.no_figures': W('There\'s no bank figure yet'),
@@ -4301,6 +4311,7 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
     'reason.nothing_safe': W('Nothing\'s safe to spend until pay on {until}'),
     'reason.nothing_safe_no_pay': W('Nothing\'s safe to spend right now'),
     'reason.free_used_up': W('Free to spend is used up until pay on {until}'),
+    'reason.no_free': W('Add what you spend on everyday things so safe to spend leaves room for it'),
     'reason.safe': W('{amount} is safe to spend until pay on {until}'),
     'reason.safe_no_pay': W('{amount} is safe to spend'),
     'next.put_yours_in': W('Put your numbers in'),
@@ -4311,6 +4322,7 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
     'next.check_in_when_it_lands': W('Check in when it lands'),
     'next.wait_for_pay': W('It turns safe once your pay is in'),
     'next.log_money_in': W('Log money in when it comes'),
+    'next.set_free': W('Set Free to spend'),
     /* the engine's warnings, worded here from their data (account, amount, day, minimum or none), never its text */
     'warn.below_zero': W('{account} goes {amount} below zero on {day}'),
     'warn.below_minimum': W('{account} goes {amount} below its minimum of {minimum} on {day}'),
@@ -4387,6 +4399,8 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
     if (Object.keys(accounts).length && stp.headline === 0) {
       out.push({ state: 'zero', reason: { code: stp.cappedByFreeToSpend && until ? 'free_used_up' : 'nothing_safe', until }, next: until ? { code: 'wait_for_pay', until } : { code: 'log_money_in' } });
     }
+    const per = r.period;
+    if (Object.keys(accounts).length && stp.headline > 0 && per && !per.free && !(per.lines || []).some(l => l.amount)) out.push({ state: 'no_free', reason: { code: 'no_free' }, next: { code: 'set_free' }, note: 'no_free' });
     if (Object.keys(accounts).length && stp.headline > 0) out.push({ state: 'ok', reason: { code: 'safe', amount: stp.headline, currency: ctx.currency, until, capped: !!stp.cappedByFreeToSpend }, next: null });
     for (const w of warnings) if (NOTE_ONLY.includes(w.code)) out.push({ note: w.code });
     if ((r.laterOn || []).length) out.push({ note: 'later_on' });
@@ -8316,7 +8330,7 @@ function drawHome3() {
   /* the one status; on a sample screen the yellow band already says these are made-up numbers, so no second card */
   const names = {}; for (const id of ids.concat(Object.keys(r.cards), Object.keys(r.owed || {}))) names[id] = E3.nameOf(id);
   const st = BurrowScreens.status.statusOf(r, { currency: home, origin, names });
-  if (origin !== 'sample') out.push(`<section class="a3-card a3-status" data-card="status" data-level="${esc3(st.level)}">${helpHead3(`<h2>${esc3(st.text.state)}</h2>`, 'status')}<p class="a3-sub">${esc3(st.text.reason)}</p></section>`);
+  if (origin !== 'sample') out.push(`<section class="a3-card a3-status" data-card="status" data-level="${esc3(st.level)}">${helpHead3(`<h2>${esc3(st.text.state)}</h2>`, 'status')}<p class="a3-sub">${esc3(st.text.reason)}</p>${st.state === 'no_free' ? `<div class="a3-actions"><button type="button" class="a3-btn solid" id="a3FreeGo">${esc3(st.text.next)}</button></div>` : ''}</section>`);
   /* bank today, one figure per account, with its age */
   for (const id of ids) {
     const a = r.accounts[id];
@@ -8389,6 +8403,8 @@ function drawHome3() {
   /* every figure carries where it came from: a sample screen shows only sample values; the person's bank figure is typed, the rest worked out */
   const P = BurrowScreens.provenance;
   host.querySelectorAll('[data-figure]').forEach(el => P.stamp(el, P.mark(Number(el.dataset.amt), origin === 'sample' ? 'sample' : el.dataset.figure === 'accounts.*.bank' ? 'typed' : 'worked')));
+  /* [north star F1] no Free to spend yet: the prompt opens Plan's own Set Free to spend form */
+  if ($('#a3FreeGo')) $('#a3FreeGo').addEventListener('click', () => planOpen3('free'));
   $('#a3CheckGo').addEventListener('click', openCheck3);
   $('#a3LogGo').addEventListener('click', rcLogFromHome3);
 }
@@ -9077,12 +9093,22 @@ function plLoanForm3() {
   'It is paid from your main bank. Its payment counts in what is due before next pay');
 }
 
+/* Home's ways into Plan's own forms (one form each, never a second copy): 'free' Set Free to spend, 'card' Add a card,
+   'goal' a goal by its id */
+function planOpen3(what, id) {
+  showTab3('plan'); PL3.form = null;
+  if (what === 'free') plLineForm3('free');
+  else if (what === 'card') plCardForm3();
+  else if (what === 'goal') plGoalForm3(id);
+  else renderPlan3();
+}
 /* the tab, and drawing again after every saved write or Undo */
 document.addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (b) { if (b.dataset.tab !== 'plan') PL3.form = null; else setTimeout(renderPlan3, 0); } });
 if (ACT3) ACT3.onChange(() => { if (!PL3.form) renderPlan3(); });
 /* ---------- Setup, short (WIRING_PLAN 1.1 item 1, step 10; DECISIONS_ROUND2 BE: the only way in for a person's own money) ----------
    One screen: what the bank shows today, pay (day and amount, a second income allowed), the cards (what is on each now,
-   its payment day, its close day or "not sure"), the bills with their due days, and the minimum (M1: blank means none).
+   its payment day, its close day or "not sure"), what goes on food and everyday things each pay period (Free to
+   spend, blank allowed), the bills with their due days, and the minimum (M1: blank means none).
    Save turns the answers into a book through engine/build_book.js and keeps it through the store. Nothing is worked out
    here. The words are drafts for Mako's copy pass. */
 let setup3 = null;
@@ -9116,6 +9142,10 @@ function openSetup3() {
       <div class="a3-field"><label for="s3PayShift">When that day is a weekend or holiday, it lands</label><select class="a3-in a3-sel" id="s3PayShift">${shiftOptions3(SHIFT3.pay, 'before')}</select></div>
       <div id="s3Pays"></div>
       <div class="a3-actions"><button type="button" class="a3-btn" id="s3AddPay">Add a second income on the same day</button></div>
+    </section>
+    <section class="a3-card"><h2>Everyday spending</h2>
+      <div class="a3-field"><label for="s3Free">About how much do you spend on food and everyday things each pay period?</label><input class="a3-in" id="s3Free" data-money data-optional aria-describedby="s3FreeH">
+        <p class="a3-sub" id="s3FreeH" data-hint="free">This is Free to spend. Safe to spend leaves room for it until each pay. Leave it blank to add it later on Plan</p></div>
     </section>
     <section class="a3-card"><h2>Your cards</h2><p class="a3-sub">Each card is paid in full from your bank. If you don't know the day its statement closes, leave it as not sure</p>
       <div id="s3Cards"></div>
@@ -9191,6 +9221,8 @@ function answers3(strict) {
       day: E3.today(), told: E3.told(), currency: cur, country: { JPY: 'JP', PHP: 'PH' }[cur] || 'XX',
       banks: [{ key: 'bank1', name: bankName, amount: need($('#s3Bank'), `Type what ${bankName} shows today`), main: true, min }],
       pays: [], cards: [], bills: [],
+      /* [north star F1, BJ2] Free to spend, the first plan amount, from the setup day; blank: not said (Home asks) */
+      free: $('#s3Free').value.trim() ? need($('#s3Free'), 'Type about how much goes on everyday things, or leave it blank') : null,
     };
     const day = Number($('#s3PayDay').value), shift = $('#s3PayShift').value;
     $$('#a3Setup [data-row^=pay]').forEach((row, i) => {

@@ -255,6 +255,15 @@ function plLoanForm3() {
   'It is paid from your main bank. Its payment counts in what is due before next pay');
 }
 
+/* Home's ways into Plan's own forms (one form each, never a second copy): 'free' Set Free to spend, 'card' Add a card,
+   'goal' a goal by its id */
+function planOpen3(what, id) {
+  showTab3('plan'); PL3.form = null;
+  if (what === 'free') plLineForm3('free');
+  else if (what === 'card') plCardForm3();
+  else if (what === 'goal') plGoalForm3(id);
+  else renderPlan3();
+}
 /* the tab, and drawing again after every saved write or Undo */
 document.addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (b) { if (b.dataset.tab !== 'plan') PL3.form = null; else setTimeout(renderPlan3, 0); } });
 if (ACT3) ACT3.onChange(() => { if (!PL3.form) renderPlan3(); });

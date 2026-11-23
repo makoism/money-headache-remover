@@ -96,5 +96,43 @@ const typeIn = async (p, sel, v) => { await p.click(sel, { clickCount: 3 }); awa
     ck('BL6: no page errors', o.errs.length === 0, o.errs.join(' | '));
     await o.b.close();
   }
+  /* [north star F1, BJ2] setup asks about food and everyday things. Thu 5 Nov 2026, bank 320,000, pay 250,000 on the 25th
+     (the working day before a weekend): the 25 Oct pay landed Fri 23 Oct, the next lands Wed 25 Nov, so the period is
+     23 Oct to 24 Nov (33 days) and 5 to 24 Nov is 20 of them. 40,000 a period: this period counts 40,000 x 20 / 33 =
+     24,242, and that is safe to spend, not the whole bank. Left blank: Home asks for it in place of "Fine for now". */
+  for (const free of ['40000', '']) {
+    const prof3 = require('fs').mkdtempSync(require('os').tmpdir() + '/a3setupfree-');
+    const o = await T.open({ profile: prof3 }), q = o.p, tag = free ? 'everyday 40,000' : 'everyday blank';
+    await q.goto(T.URL0 + '?today=2026-11-05'); await T.w(400);
+    await q.click('#a3SetupGo'); await T.w(300);
+    const lab = await q.$eval('label[for=s3Free]', e => e.textContent).catch(() => '');
+    ck(tag + ': setup asks about everyday spending', lab === 'About how much do you spend on food and everyday things each pay period?', lab);
+    await typeIn(q, '#s3Bank', '320000'); await typeIn(q, '#s3PayAmt', '250000'); await q.select('#s3PayDay', '25'); await q.select('#s3PayShift', 'before');
+    if (free) await typeIn(q, '#s3Free', free);
+    await q.click('#a3SetupSave'); await T.w(700);
+    ck(tag + ': saved', await q.$eval('#a3Setup', e => e.hidden), await q.$eval('#a3SetupErr', e => e.textContent).catch(() => ''));
+    const f = await T.figs(q), safe = f.find(x => x.fig === 'safe');
+    const st = await q.$eval('[data-card=status]', e => ({ level: e.dataset.level, text: e.textContent.replace(/\s+/g, ' ') }));
+    if (free) {
+      ck(tag + ': safe to spend leaves the share for 5 to 24 Nov: 24,242, not the bank', safe && safe.amt === 24242, JSON.stringify(safe));
+      ck(tag + ': the status is fine, no prompt', /Fine for now/.test(st.text) && !(await q.$('#a3FreeGo')), st.text);
+      await q.click('[data-tab=plan]'); await T.w(400);
+      const fr = await q.$eval('[data-fig=free-amount]', e => Number(e.querySelector('[data-amt]') ? e.querySelector('[data-amt]').dataset.amt : e.dataset.amt)).catch(() => null);
+      ck(tag + ': Plan shows Free to spend counting 24,242 of it now', fr === 24242, fr);
+    } else {
+      ck(tag + ': safe to spend is the bank (nothing told yet)', safe && safe.amt === 320000, JSON.stringify(safe));
+      ck(tag + ': the prompt shows in place of "Fine for now"', !/Fine for now/.test(st.text) && /Add what you spend on everyday things so safe to spend leaves room for it/.test(st.text), st.text);
+      await q.click('#a3FreeGo'); await T.w(400);
+      const form = await q.evaluate(() => ({ plan: !document.querySelector('[data-panel=plan]').hidden, title: (document.querySelector('[data-card=plan-form] h2') || {}).textContent }));
+      ck(tag + ': the prompt opens Plan\'s Set Free to spend', form.plan && form.title === 'Free to spend', JSON.stringify(form));
+      await typeIn(q, '#pl-amount', '40000'); await q.click('[data-plbtn="0"]'); await T.w(500);
+      await q.click('[data-tab=home]'); await T.w(400);
+      const s2 = (await T.figs(q)).find(x => x.fig === 'safe');
+      ck(tag + ': set there, safe to spend is the same 24,242', s2 && s2.amt === 24242, JSON.stringify(s2));
+      ck(tag + ': and the prompt is gone', !(await q.$('#a3FreeGo')));
+    }
+    ck(tag + ': no page errors', o.errs.length === 0, o.errs.join(' | '));
+    await o.b.close();
+  }
   T.done('e3_setup');
 })().catch(e => { console.log('FAIL crashed ' + e.stack); process.exit(1); });
