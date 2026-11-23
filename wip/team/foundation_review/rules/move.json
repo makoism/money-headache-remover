@@ -10,7 +10,7 @@
     "The opening [B6, B7, 11.1]: the oldest bank figure (bankStart or bankNow; on the same day bankNow [Y22]) opens the bank with an `open` and a `check` on its day; a newer figure is a later `check`. A figure's day with no time is told at the end of that day, or at the copy's last save when that is earlier [Y1]. The opening day is that figure's day, else the copy's last saved day. Goal money kept in the bank is the open's `split` [B6]; the rest of the split (budget lines and Free to spend left, Waiting) is the opening's own question [B2, I4] and is not written by the move.",
     "Question `move_two` [X1, Y12]: `phone` and `desktop` each hold a `move` input plus `by` (the device part). Each device moves its own copy and stamps every record with `told` (events keep their own), `at` (its `now`) and `by`; the two moved copies are merged with rules/merge_ref.js.",
     "Sample data is never moved as real (requirements 1c): the sample shows while ui.done lacks pay, bills or goals, unless the copy is blank or cleared (every build's `sampleOn`). Receipts, cards and a typed bank figure are the person's and move as real [Y16].",
-    "The expected outputs of mv-01 to mv-45 were re-worked by hand from MOVE_FIELDS.md, SCHEMA_V3 11.1 and the decisions (Y and Z included), not taken from the reference; mv-46 to mv-67 were written by hand for Y and Z. Every open question below names what the reference does; no case depends on one."
+    "The expected outputs of mv-01 to mv-45 were re-worked by hand from MOVE_FIELDS.md, SCHEMA_V3 11.1 and the decisions (Y and Z included), not taken from the reference; mv-46 to mv-67 were written by hand for Y and Z, and mv-68 and mv-69 for the coverage grid's move row (COVERAGE.md). Every open question below names what the reference does; no case depends on one."
   ],
   "defaults": {
     "idb": {
@@ -6441,6 +6441,184 @@
         ]
       },
       "why": "The bank account, its opening and check, the salary stream, the person and the first share entry have no 38.31 id: each is named by the field path it came from [Y28], and both devices name each the same, so the merge makes one of each [X1, Y12]. Neither bank figure has a day, so both are dated the last saved day and bankNow wins [Y22]: one check, `mv:check:cfg.bankNow`, and the opening `mv:open:cfg`."
+    },
+    {
+      "id": "mv-68",
+      "title": "Years ahead: steps and items ten years out move as they are (coverage: move, Y; X7)",
+      "question": "move",
+      "input": {
+        "copy": {
+          "v": 1,
+          "cfg": {
+            "bankStart": 200000
+          },
+          "ui": {
+            "cur": "¥",
+            "preset": "¥",
+            "done": {
+              "pay": true,
+              "bills": true,
+              "goals": true
+            }
+          },
+          "plan": {
+            "lines": [
+              {
+                "id": "rent",
+                "key": "bill:rent",
+                "jar": "nec",
+                "name": "Rent or mortgage",
+                "def": 80000
+              }
+            ],
+            "goals": []
+          },
+          "steps": {
+            "bill:rent": [
+              {
+                "from": "2036-01",
+                "v": 95000
+              }
+            ]
+          },
+          "items": {
+            "2036-05": [
+              {
+                "id": "i1",
+                "label": "Roof",
+                "amount": 500000
+              }
+            ]
+          }
+        },
+        "show": [
+          "schedules"
+        ]
+      },
+      "expected": {
+        "schedules": [
+          {
+            "id": "mv:bill:rent",
+            "kind": "bill",
+            "name": "Rent or mortgage",
+            "cur": "JPY",
+            "acct": "mv:acct:cfg",
+            "place": "bills",
+            "steps": [
+              {
+                "from": "2026-11-24",
+                "amount": 80000
+              },
+              {
+                "from": "2036-01-01",
+                "amount": 95000
+              }
+            ]
+          },
+          {
+            "id": "mv:item:2036-05:i1",
+            "kind": "once",
+            "name": "Roof",
+            "cur": "JPY",
+            "acct": "mv:acct:cfg",
+            "rules": [
+              {
+                "from": "2036-05-01",
+                "rule": {
+                  "every": "once",
+                  "date": "2036-05-01"
+                }
+              }
+            ],
+            "steps": [
+              {
+                "from": "2036-05-01",
+                "amount": 500000
+              }
+            ]
+          }
+        ]
+      },
+      "why": "38.31 keeps months outside the old window (MOVE_FIELDS.md section 1), and nothing is dropped for being out of range [section 0, X7]: rent's step from Jan 2036 is a step from 1 Jan 2036 [Y3], and the roof in May 2036 a once schedule due 1 May 2036 [11.1]."
+    },
+    {
+      "id": "mv-69",
+      "title": "A moving device west of UTC: days told in its own offset (coverage: move, T; X9, Y1)",
+      "question": "move",
+      "input": {
+        "copy": {
+          "v": 1,
+          "cfg": {
+            "bankNow": 150000,
+            "bankNowAt": "2026-11-22"
+          },
+          "ui": {
+            "cur": "¥",
+            "preset": "¥",
+            "done": {
+              "pay": true,
+              "bills": true,
+              "goals": true
+            }
+          },
+          "plan": {
+            "lines": [],
+            "goals": []
+          },
+          "receipts": [
+            {
+              "id": "r1",
+              "d": "2026-11-21",
+              "a": 1000,
+              "c": "other",
+              "cn": "Other",
+              "n": ""
+            }
+          ]
+        },
+        "idb": {
+          "t": 1795478400000
+        },
+        "now": "2026-11-23T20:00:00.000-05:00",
+        "show": [
+          "events"
+        ]
+      },
+      "expected": {
+        "events": [
+          {
+            "id": "mv:open:cfg",
+            "k": "open",
+            "date": "2026-11-22",
+            "acct": "mv:acct:cfg",
+            "a": 150000,
+            "told": "2026-11-22T23:59:59.999-05:00"
+          },
+          {
+            "id": "mv:check:cfg.bankNow",
+            "k": "check",
+            "date": "2026-11-22",
+            "acct": "mv:acct:cfg",
+            "a": 150000,
+            "told": "2026-11-22T23:59:59.999-05:00"
+          },
+          {
+            "id": "mv:rc:r1",
+            "k": "spend",
+            "date": "2026-11-21",
+            "a": 1000,
+            "acct": "mv:acct:cfg",
+            "place": "free",
+            "line": "other",
+            "src": {
+              "type": "move",
+              "id": "r1"
+            },
+            "told": "2026-11-21T00:00:00.000-05:00"
+          }
+        ]
+      },
+      "why": "The moving device is at -05:00 (its `now`). The second copy's `t`, 1,795,478,400,000 ms = 20,781 days x 86,400,000, is 24 Nov 2026 00:00 UTC, which is Mon 23 Nov 19:00 -05:00 [Y13]. bankNowAt Sun 22 Nov is told at the end of that day at -05:00, earlier than the save [Y1, X9]; the receipt at the start of its day at -05:00 [J2, X9]."
     }
   ],
   "open": [

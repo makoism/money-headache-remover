@@ -1,8 +1,10 @@
-# Coverage of the foundation (after decisions T to X, 23 Nov 2026)
+# Coverage of the foundation (after decisions T to Z, 23 Nov 2026)
 
-The coverage grid of final_review_3.md, updated (LESSONS lesson 3: count coverage, do not sample). Rows are kinds of record and the shapes they live in; columns are the situations that change a record's effect. Every applicable cell names the asks (scenarios/*.json, run by `node foundation_review/ref/run_scenarios.js`) or cases (rules/*.json, run by `node foundation_review/rules/run_rules.js`) that cover it. All of them pass: 649 of 649 asks, 341 of 341 cases (after W and X: 78 asks and 32 cases added, in 19 new scenario files, one ask in fee_place and a new rules file `rules/edits.json`; see "Decisions W and X" at the end).
+The coverage grid of final_review_3.md, updated (LESSONS lesson 3: count coverage, do not sample). Rows are kinds of record and the shapes they live in; columns are the situations that change a record's effect. Every applicable cell names the asks (scenarios/*.json, run by `node foundation_review/ref/run_scenarios.js`) or cases (rules/*.json, run by `node foundation_review/rules/run_rules.js`) that cover it. All of them pass: 664 of 664 asks, 421 of 421 cases (after W and X: 78 asks and 32 cases added, in 19 new scenario files, one ask in fee_place and a new rules file `rules/edits.json`; after Y and Z: 15 asks in 4 new scenario files, 11 rules cases and 24 move cases, and the move row; see "Decisions W and X" and "Decisions Y and Z" at the end). The move cases (`rules/move.json`) are counted in the 421.
 
 Columns: C check day, O opening, W posting window, P period start, X other currency, D two devices, U undo/redo, E edited after settled, S imported/typed/self-logged, Z closed account, and, added after confirm_review_1 (decision X): M the move run on two devices (the phone and the desktop each move the same 38.31 copy), Y years after setup (an ask ten years out, X7), T a time with an offset (the start and end of a day in the device's offset, X9).
+
+Rows added after Y and Z: **move**, the move of a saved copy from 38.31, 38.28 or the 25.0 to 38.26 builds (`rules/move.json`), as a record kind of its own: what it writes in each situation.
 
 Marks: **c** covered before this round; **n** newly covered (in the first ten columns, by T to V: it was "u", uncovered and sound by working, or "X", uncovered and wrong, and the cell says which; in the columns M, Y, T and the two new rows, by W and X); **f (X..)** a false cover confirm_review_1 found, now really covered by the decision named; **-** not applicable; **s2** stage 2 (decision T7 took Wallet mode and `hand` out of version one).
 
@@ -10,16 +12,20 @@ Marks: **c** covered before this round; **n** newly covered (in the first ten co
 
 | | Cells |
 |---|---|
-| All cells (28 rows x 13 columns) | 364 |
-| Not applicable | 146 |
+| All cells (29 rows x 13 columns) | 377 |
+| Not applicable | 149 |
 | Stage 2 (hand and Wallet mode, T7) | 2 |
-| **Applicable** | **216** |
+| **Applicable** | **226** |
+| New after Y and Z: the move row (10 applicable, 3 not applicable) | 10 |
+| of which covered by cases written for Y and Z | 8 |
+| of which uncovered until this round, now covered by new cases (Y ten years out, T a device west of UTC) | 2 |
+| Applicable after X (28 rows x 13 columns) | 216 |
 | Applicable after V (26 rows x 10 columns) | 165 |
 | New after confirm_review_1: the columns M, Y, T (39) and the rows fee record and not yet at setup (12) | 51 |
 | of which covered by asks that already existed (c) | 4 |
 | of which covered by new asks and cases (n) | 47 |
 | False covers confirm_review_1 found, now really covered (check C, card O, in / pay E, income E, rm: D) | 5 |
-| **Applicable and covered, all passing** | **216** (216 of 216) |
+| **Applicable and covered, all passing** | **226** (226 of 226) |
 | Applicable and uncovered | 0 |
 
 **Counts after V** (kept for the record): 260 cells, 93 not applicable, 2 stage 2, 165 applicable, all covered. **A note on final_review_3's numbers.** final_review_3.md says 260 cells, 171 applicable, 129 covered, 24 uncovered and sound, 18 wrong. Its own table, counted cell by cell, holds 128 c, 22 u, 17 X and 93 -, so 167 applicable; the "(X: wallet)" note on the last row is the eighteenth wrong item but not a cell of its own. This file counts the table. Wallet mode is stage 2 now (T7), so the note and the two `hand` cells are out of version one: 165 applicable cells.
@@ -56,6 +62,7 @@ Marks: **c** covered before this round; **n** newly covered (in the first ten co
 | cash, e-wallet, wallet, investment, owedToYou | c | c | c | - | c | - | - | - | c | c | n | - | n |
 | fee record (`fee:<transfer id>`) | - | - | c | n | c | n | c | - | c | - | - | - | - |
 | not yet at setup (`notYet`) | n | n | n | n | n | - | - | - | n | - | - | - | - |
+| move (an old copy moved) | n | n | - | n | n | n | n | - | n | - | n | n | n |
 
 ## Every applicable cell and what covers it
 
@@ -344,6 +351,19 @@ Marks: **c** covered before this round; **n** newly covered (in the first ten co
 - setup's questions, a pay due that day first: rules ed-11, ed-12
 - not applicable: D, U, E, Z (setup writes the opening once, on one device; nothing is settled or closed before it); M (38.31 has no such answer), Y, T
 
+### move (an old copy moved) (a new row after Y and Z: the move is a record kind of its own)
+- C check day (n): rules mv-02 to mv-06, mv-47, mv-48 (each bank figure a dated check, told at the end of its day or the last save, Y1, Y22); moved_bank_now, moved_figure_no_time
+- O opening (n): rules mv-02, mv-15, mv-45, mv-59 (the oldest figure opens the bank, goal money in its split or another account's opening, Y17, Z3); goal_money_unanswered gmu-01 to gmu-04 (Z3); moved_records moved-01
+- P period start (n): rules mv-29, mv-46 (the salary stream starts periods, the others not, Y2); mv-33 (a budget line's one-month amount keyed by the period's pay); mv-52 (month-end answers named by the period's pay, Y8); units-78 to units-81 (Z5)
+- X other currency (n): rules mv-22 to mv-25 (the currency asked before any amount is converted), mv-64 (too many decimals rounded and flagged, Y23)
+- D two devices (n): rules mv-41, mv-42, mv-67 (Y12, Y28); mg-84, mg-85
+- U undo/redo (n): rules mv-27 (38.31's Undo copies are not moved, D2); a moved record taken back is marked `gone` like any built id (section 0): mg-91
+- S imported/typed/self-logged (n): rules mv-07 (typed receipts), mv-08, mv-28, mv-60 (imported accounts, Y18), mv-20 (self-logged spends), mv-62 (Y20)
+- M the move run on two devices (n): rules mv-41, mv-42, mv-67; moved_ids mvid-01 to mvid-03 (the model reads moved ids)
+- Y years after setup (n, uncovered until this round): rules mv-68 (steps and items ten years out move as they are)
+- T a time with an offset (n, partly uncovered until this round): rules mv-02, mv-07 (+09:00), mv-69 (a moving device at -05:00)
+- not applicable: W (the move writes no import line, so no posting window); E (the move settles nothing; X8 applies to moved schedules as to any, rules ed-01 to ed-07); Z (38.31 has no closed accounts)
+
 ## What was wrong (the X cells) and the decision that fixed it
 
 | Cell | Situation | Decision | Now |
@@ -419,3 +439,21 @@ Run first, before the references changed: 608 of 649 asks passed and 313 of 341 
 | confirm_review_1 c9: a leap day and the year end | leap_year_end leap-01 to leap-06 | none (sound, as the review found) |
 | confirm_review_1 c10: a goal's 300,000 kept outside the bank | goal_money_elsewhere gme-01 to gme-04 | none |
 | the fee row, period start | fee_place feeplace-07 | none |
+
+## Decisions Y and Z, and where each part is tested
+
+Run first, before the references changed: rules 343 of 419 cases and scenarios 659 of 664 asks. Every move case failed, as the cases now take the copy's last save from the second copy (`idb`, Y13) and the old reference read `saved`; given `saved` from `idb.t`, 18 of the 67 move cases passed and 49 failed (mv-02 to mv-08, mv-12, mv-15, mv-16, mv-19 to mv-21, mv-24, mv-25, mv-27, mv-29 to mv-31, mv-33, mv-38 to mv-42, mv-44 to mv-67). After the changes to `rules/move_ref.js`, `rules/merge_ref.js`, `rules/accounts_ref.js`, `rules/units_ref.js`, `ref/lookahead_ref.js` and `scenarios/check_specs.js`: 421 of 421 cases (with mv-68 and mv-69, added for this grid's move row, which passed first) and 664 of 664 asks.
+
+| Part | Asks or cases | Failed first |
+|---|---|---|
+| Y1 to Y28: the move's 28 questions | rules mv-01 to mv-69 (MOVE_FIELDS.md section 8 names the cases of each) | the 49 above |
+| Y28 and Z: the merge and the model accept `mv:` ids, also inside built ids | rules mg-87 to mg-95; moved_ids mvid-01 to mvid-03 | mg-87 to mg-93 (not a valid id); mvid-01 (60,000: the period-end answer's occurrence was read as `mv`) |
+| Z (kinds): the move helper's kind names everywhere | rules mg-79, mg-81, mg-84, mg-85 renamed; SCHEMA_V3 section 0 | none (renamed data) |
+| Z1: a gain answered wrong removes the check and asks again | gain_wrong gw-01 to gw-03 | gw-02 (13,000), gw-03 (no `check_again`); gw-01 passed first (a held gain places nothing) |
+| Z2: a not-yet item past its window before setup still expected | notyet_window_past nwp-01 to nwp-05 | nwp-01 (170,000), nwp-02 (both "not seen yet") |
+| Z3: goal money in the bank until answered; short shown, never refused | goal_money_unanswered gmu-01 to gmu-04; rules mv-15 | none in the model (it already did this); mv-15 with the move cases |
+| Z4: a transfer between the old and the new main bank ends at the closing | rules acc-22 | acc-22 (moved to the new bank) |
+| Z5: once with no period starting in the month | rules units-81 | units-81 (no key) |
+| Z6: a pay-off goal's saved so far kept on the loan | rules mv-15, mv-55 | both |
+| Z: the reviewer's scripts c3 and c6 renamed | ref/confirm_situations c3 (`not_yet`), c6 (`fee:t1`) | c6 stopped on the missing `fee1`; c3 ran but its `not_gone_out` was read by nothing |
+
