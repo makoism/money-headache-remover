@@ -15324,6 +15324,360 @@
         "AE1",
         "AA5"
       ]
+    },
+    {
+      "id": "mv-123",
+      "question": "move_later",
+      "title": "AJ3, AB1: the minimum set on the phone after its move stays when the desktop moves days later, the cloud on (grid: home x a second move days later)",
+      "input": {
+        "phone": {
+          "copy": {
+            "v": 1,
+            "cfg": {
+              "bankStart": 200000,
+              "bankAt": "2026-11-22"
+            },
+            "ui": {
+              "cur": "¥",
+              "preset": "¥",
+              "done": {
+                "pay": true,
+                "bills": true,
+                "goals": true
+              }
+            },
+            "steps": {
+              "a": [
+                {
+                  "from": "2026-11",
+                  "v": 250000
+                }
+              ]
+            },
+            "plan": {
+              "lines": [
+                {
+                  "id": "rent",
+                  "key": "bill:rent",
+                  "jar": "nec",
+                  "name": "Rent or mortgage",
+                  "def": 80000
+                }
+              ],
+              "goals": [
+                {
+                  "id": "trip",
+                  "name": "Trip",
+                  "target": 300000,
+                  "start": 100000,
+                  "due": "2027-06"
+                }
+              ]
+            },
+            "receipts": [
+              {
+                "id": "r1",
+                "d": "2026-11-21",
+                "a": 5000,
+                "c": "other",
+                "cn": "Other",
+                "n": "typed twice"
+              }
+            ]
+          },
+          "answers": {
+            "cur": "JPY",
+            "goalMoney": {
+              "trip": "bank"
+            }
+          },
+          "now": "2026-11-24T09:00:00.000+09:00",
+          "by": "phn001",
+          "idb": {
+            "t": "2026-11-23T20:00:00.000+09:00"
+          }
+        },
+        "edits": [
+          {
+            "record": "home",
+            "at": "2026-11-25T08:00:00.000+09:00",
+            "set": {
+              "minBank": {
+                "a": 30000,
+                "cur": "JPY"
+              },
+              "country": "JP"
+            }
+          }
+        ],
+        "desktop": {
+          "copy": {
+            "v": 1,
+            "cfg": {
+              "bankStart": 200000,
+              "bankAt": "2026-11-22"
+            },
+            "ui": {
+              "cur": "¥",
+              "preset": "¥",
+              "done": {
+                "pay": true,
+                "bills": true,
+                "goals": true
+              }
+            },
+            "steps": {
+              "a": [
+                {
+                  "from": "2026-11",
+                  "v": 250000
+                }
+              ]
+            },
+            "plan": {
+              "lines": [
+                {
+                  "id": "rent",
+                  "key": "bill:rent",
+                  "jar": "nec",
+                  "name": "Rent or mortgage",
+                  "def": 80000
+                }
+              ],
+              "goals": [
+                {
+                  "id": "trip",
+                  "name": "Trip",
+                  "target": 300000,
+                  "start": 100000,
+                  "due": "2027-06"
+                }
+              ]
+            },
+            "receipts": [
+              {
+                "id": "r1",
+                "d": "2026-11-21",
+                "a": 5000,
+                "c": "other",
+                "cn": "Other",
+                "n": "typed twice"
+              }
+            ]
+          },
+          "answers": {
+            "cur": "JPY",
+            "goalMoney": {
+              "trip": "bank"
+            }
+          },
+          "now": "2026-12-01T21:00:00.000+09:00",
+          "by": "dsk001",
+          "idb": {
+            "t": "2026-11-23T20:00:00.000+09:00"
+          }
+        },
+        "cloud": true,
+        "show": [
+          "home.minBank",
+          "home.country",
+          "home.at",
+          "home.by"
+        ]
+      },
+      "expected": {
+        "home.minBank": {
+          "a": 30000,
+          "cur": "JPY"
+        },
+        "home.country": "JP",
+        "home.at": "2026-11-25T08:00:00.000+09:00",
+        "home.by": "phn001"
+      },
+      "why": "The phone moves the 38.31 copy (last saved Mon 23 Nov 20:00) on Tue 24 Nov and on Wed 25 Nov 08:00 sets \"Keep at least 30,000 in your bank?\" and the country, Japan: `home` gets `at` 25 Nov 08:00 and `by` phn001. On Tue 1 Dec the desktop, holding the same 38.31 copy, finds the phone's moved copy in the cloud and takes it, adding only the ids it lacks; `home` is the cloud's [AB1, AJ3]. So the minimum stays 30,000.",
+      "decisions": [
+        "AJ3",
+        "AB1",
+        "AA10",
+        "D4"
+      ]
+    },
+    {
+      "id": "mv-124",
+      "question": "move_later",
+      "title": "AJ3, AB1: the minimum set on the phone after its move stays when the desktop moves days later, the cloud off (grid: home x a second move days later)",
+      "input": {
+        "phone": {
+          "copy": {
+            "v": 1,
+            "cfg": {
+              "bankStart": 200000,
+              "bankAt": "2026-11-22"
+            },
+            "ui": {
+              "cur": "¥",
+              "preset": "¥",
+              "done": {
+                "pay": true,
+                "bills": true,
+                "goals": true
+              }
+            },
+            "steps": {
+              "a": [
+                {
+                  "from": "2026-11",
+                  "v": 250000
+                }
+              ]
+            },
+            "plan": {
+              "lines": [
+                {
+                  "id": "rent",
+                  "key": "bill:rent",
+                  "jar": "nec",
+                  "name": "Rent or mortgage",
+                  "def": 80000
+                }
+              ],
+              "goals": [
+                {
+                  "id": "trip",
+                  "name": "Trip",
+                  "target": 300000,
+                  "start": 100000,
+                  "due": "2027-06"
+                }
+              ]
+            },
+            "receipts": [
+              {
+                "id": "r1",
+                "d": "2026-11-21",
+                "a": 5000,
+                "c": "other",
+                "cn": "Other",
+                "n": "typed twice"
+              }
+            ]
+          },
+          "answers": {
+            "cur": "JPY",
+            "goalMoney": {
+              "trip": "bank"
+            }
+          },
+          "now": "2026-11-24T09:00:00.000+09:00",
+          "by": "phn001",
+          "idb": {
+            "t": "2026-11-23T20:00:00.000+09:00"
+          }
+        },
+        "edits": [
+          {
+            "record": "home",
+            "at": "2026-11-25T08:00:00.000+09:00",
+            "set": {
+              "minBank": {
+                "a": 30000,
+                "cur": "JPY"
+              },
+              "country": "JP"
+            }
+          }
+        ],
+        "desktop": {
+          "copy": {
+            "v": 1,
+            "cfg": {
+              "bankStart": 200000,
+              "bankAt": "2026-11-22"
+            },
+            "ui": {
+              "cur": "¥",
+              "preset": "¥",
+              "done": {
+                "pay": true,
+                "bills": true,
+                "goals": true
+              }
+            },
+            "steps": {
+              "a": [
+                {
+                  "from": "2026-11",
+                  "v": 250000
+                }
+              ]
+            },
+            "plan": {
+              "lines": [
+                {
+                  "id": "rent",
+                  "key": "bill:rent",
+                  "jar": "nec",
+                  "name": "Rent or mortgage",
+                  "def": 80000
+                }
+              ],
+              "goals": [
+                {
+                  "id": "trip",
+                  "name": "Trip",
+                  "target": 300000,
+                  "start": 100000,
+                  "due": "2027-06"
+                }
+              ]
+            },
+            "receipts": [
+              {
+                "id": "r1",
+                "d": "2026-11-21",
+                "a": 5000,
+                "c": "other",
+                "cn": "Other",
+                "n": "typed twice"
+              }
+            ]
+          },
+          "answers": {
+            "cur": "JPY",
+            "goalMoney": {
+              "trip": "bank"
+            }
+          },
+          "now": "2026-12-01T21:00:00.000+09:00",
+          "by": "dsk001",
+          "idb": {
+            "t": "2026-11-23T20:00:00.000+09:00"
+          }
+        },
+        "cloud": false,
+        "show": [
+          "home.minBank",
+          "home.country",
+          "home.at",
+          "home.by"
+        ]
+      },
+      "expected": {
+        "home.minBank": {
+          "a": 30000,
+          "cur": "JPY"
+        },
+        "home.country": "JP",
+        "home.at": "2026-11-25T08:00:00.000+09:00",
+        "home.by": "phn001"
+      },
+      "why": "As mv-123, but the desktop moved on its own and the copies meet in the merge. The desktop's moved `home` carries the copy's last save, Mon 23 Nov 20:00 [AA10, AB1]; the phone's carries its edit of Wed 25 Nov 08:00, newer, so the phone's `home` wins [D4, AJ3]: the minimum stays 30,000.",
+      "decisions": [
+        "AJ3",
+        "AB1",
+        "AA10",
+        "D4"
+      ]
     }
   ],
   "open": []

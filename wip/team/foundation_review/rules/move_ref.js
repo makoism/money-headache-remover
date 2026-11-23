@@ -724,11 +724,12 @@ function moveTwo({ phone, desktop, cloud }) {
   return cloud ? adopt(p, d) : merge(p, d);
 }
 // [AB1] The phone moves and is used for a while (`edits`: records changed with their own `at`, `unset` for fields an
-// edit takes away); then the desktop moves.
+// edit takes away; `record` for a single record such as `home` [AJ3]); then the desktop moves.
 function moveLater({ phone, edits, desktop, cloud }) {
   const p = stored(phone);
   for (const e of edits || []) {
-    const r = listOf(p, e.list.split('.')).find(x => x.id === e.id);
+    // [AJ3] an edit of a single record (`home`) names it by `record`
+    const r = e.record ? (p[e.record] = p[e.record] || {}) : listOf(p, e.list.split('.')).find(x => x.id === e.id);
     for (const k of e.unset || []) delete r[k];   // an Undo of a removal: the record again, with a newer `at` [H6]
     Object.assign(r, e.set, { at: e.at, by: phone.by });
   }
