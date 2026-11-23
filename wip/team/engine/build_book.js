@@ -31,7 +31,7 @@
 
   const SHIFTS = { before: 1, after: 1, none: 1 };
   const BANK_TYPES = { bank: 1, cash: 1, ewallet: 1, wallet: 1 };
-  const PAY_NEEDS_AMOUNT = 'A pay needs an amount. No fixed pay comes later';
+  const PAY_NEEDS_AMOUNT = 'A pay needs an amount. If it comes when it comes, pick No fixed pay';
   function buildBook(ans, opts) {
     const newId = opts.newId, by = opts.by || String(newId()).split('-')[0];
     const day = ans.day, told = ans.told, at = ans.told, cur = ans.currency;

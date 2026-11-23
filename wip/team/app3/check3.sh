@@ -63,6 +63,7 @@ step "one figure, one name on Home, Receipts and Plan (labels from screens/names
 step "the ways out of the first screen and the made-up numbers"; run tests/e3_first.js "e3_first: ALL PASS"
 step "as a plain file:the first screen, the try book and its day box"; run tests/e3_file.js "e3_file: ALL PASS"
 step "setup3"; run tests/e3_setup.js "e3_setup: ALL PASS"
+step "setup for the other lives: the country chosen, more accounts, pay rhythms, a second income on its own day, cards and bills from their account, once a year (slice 6)"; run tests/e3_setup6.js "e3_setup6: ALL PASS"
 step "walk 2 fixes (BI3 bills not gone out yet, BI4 may still go through, a pay by its landing day)"; run tests/e3_walk2.js "e3_walk2: ALL PASS"
 step "walk 4 fixes (an outstanding pay's own amount on Plan, the typed note beside a statement row in Receipts)"; run tests/e3_walk4.js "e3_walk4: ALL PASS"
 step "the real-page walk, walk 4 run A: setup 24 Nov to 15 Feb, hand-worked figures at every step"; run tests/e3_walk.js "e3_walk: ALL PASS"

@@ -2,6 +2,7 @@
  "slice": 1,
  "note": "DECISIONS_ROUND2 AZ5: passes is flipped to true only when the test is green in ./check3.sh. check3.sh fails if a feature marked passing has a red test.",
  "features": [
+  { "name": "Setup for the other lives (slice 6): the country chosen, a second bank, cash and e-wallets, pay on a day, two days, every n weeks or no fixed pay, a second income on its own day and account, cards and bills from their own account, bills once a year", "test": "tests/e3_setup6.js", "passes": true },
   { "name": "The made-up Mako book behind ?try=mako (his shape, ids like the app's, nothing written)", "test": "tests/e3_try.js", "passes": true },
   { "name": "Home top: bank today and its age, safe to spend with its sum, next pay, due before next pay, each card and when it comes out beside the pay", "test": "tests/e3_home.js", "passes": true },
   { "name": "Check your bank: ticked list with editable amounts, the bank figure, Home updates; kept by the store (IndexedDB burrow3) through reload and restart; old copies untouched", "test": "tests/e3_checkin.js", "passes": true },

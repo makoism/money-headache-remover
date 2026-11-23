@@ -77,7 +77,7 @@ t('wrong answers are refused, not guessed', () => {
 });
 t('a pay of 0 is refused with words: a pay that exists always has an amount [BL1]', () => {
   const a = clone(ANSWERS); a.pays[0].amount = 0;
-  assert.throws(() => B.buildBook(a, { newId }), /^Error: A pay needs an amount\. No fixed pay comes later$/);
+  assert.throws(() => B.buildBook(a, { newId }), /^Error: A pay needs an amount\. If it comes when it comes, pick No fixed pay$/);
 });
 t('the builder does not change the answers it is given', () => {
   const a = clone(ANSWERS); B.buildBook(a, { newId }); assert.deepStrictEqual(a, ANSWERS);

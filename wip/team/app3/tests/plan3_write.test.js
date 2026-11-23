@@ -115,7 +115,7 @@ const stamped = (r, step) => { ok(I.isOrdinary(r.id), 'ordinary id ' + r.id); eq
   await t('a pay changed to 0 is refused with words; a bill too; nothing is written [BL1]', async () => {
     const h = setup(), before = JSON.stringify(h.book);
     let r = await h.go('changeBill', 'k7m2qa-f3n8p1x6wd-4', { amount: 0 });
-    ok(!r.ok && r.text === 'A pay needs an amount. No fixed pay comes later', JSON.stringify(r));
+    ok(!r.ok && r.text === 'A pay needs an amount. If it comes when it comes, pick No fixed pay', JSON.stringify(r));
     r = await h.go('changeBill', RENT, { amount: 0 });
     ok(!r.ok && /above zero/.test(r.text), JSON.stringify(r));
     eq(JSON.stringify(h.book), before, 'nothing written');
