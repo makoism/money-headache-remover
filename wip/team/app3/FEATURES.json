@@ -7,6 +7,7 @@
   { "name": "Check your bank: ticked list with editable amounts, the bank figure, Home updates; kept by the store (IndexedDB burrow3) through reload and restart; old copies untouched", "test": "tests/e3_checkin.js", "passes": true },
   { "name": "Check your bank asks what is on each card now (optional, blank is not checked), written as a check on the card: Home's card owed, due before next pay and safe to spend follow it", "test": "tests/e3_cardfig.js", "passes": true },
   { "name": "Home words the engine's warnings from their data (account, amount, day, minimum or none): below zero with no minimum, its minimum named when there is one, days and months as VOICE, never the engine's text or a raw ISO day", "test": "tests/e3_warnwords.js", "passes": true },
+  { "name": "Home's bank today in its parts from the engine once something is logged after the check: the check and its day, what went out and came in since", "test": "tests/e3_bankparts.js", "passes": true },
   { "name": "The try book with the engine check-in writer: a check-in on 10 Dec, and the weekend where card B leaves before pay", "test": "tests/checkin_book.test.js", "passes": true },
   { "name": "No money maths in screens", "test": "tests/no_maths.js", "passes": true },
   { "name": "Idle CPU, long tasks, no outside requests, no errors", "test": "tests/guard3.js", "passes": true },

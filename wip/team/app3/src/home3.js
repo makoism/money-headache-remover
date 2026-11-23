@@ -9,6 +9,15 @@ function ageWords3(days) {
   if (days === 1) return 'checked yesterday';
   return 'checked ' + days + ' days ago';
 }
+/* [QC F4] the line under bank today: its age while it is the check itself; once something is logged after the check,
+   both parts from the engine (the check and its day, what was logged out and in since), so a figure that moved never
+   says "checked today". One way of writing cents for the sentence (money.js formatter). */
+function bankParts3(a, yr) {
+  if (!a.loggedIn && !a.loggedOut) return `${ageWords3(a.ageDays)}, on ${esc3(day3(a.asOf, yr))}`;
+  const f = SM.formatter(a.currency, [a.checked, a.loggedOut, a.loggedIn]);
+  const moved = [a.loggedOut ? `${f(a.loggedOut)} out` : '', a.loggedIn ? `${f(a.loggedIn)} in` : ''].filter(Boolean).join(' and ');
+  return `${f(a.checked)} checked ${esc3(day3(a.asOf, yr))}, ${moved} logged since`;
+}
 function dueWords3(n) {
   if (n === 0) return 'today';
   if (n === 1) return 'tomorrow';
@@ -90,7 +99,7 @@ function renderHome3() {
     const a = r.accounts[id];
     out.push(`<section class="a3-card" data-card="bank" data-acct="${esc3(id)}"><h2>${esc3(label3('bankToday'))}: ${esc3(E3.nameOf(id))}</h2>
       <p class="a3-big" data-fig="bank">${fig3('accounts.*.bank', a.bank, a.currency)}</p>
-      <p class="a3-sub" data-fig="age">${ageWords3(a.ageDays)}, on ${esc3(day3(a.asOf, yr))}</p></section>`);
+      <p class="a3-sub" data-fig="age">${bankParts3(a, yr)}</p></section>`);
   }
   /* safe to spend until next pay, with the sum behind it */
   const until = safeUntil3(r, yr);

@@ -416,8 +416,11 @@
         base = cc;
         lastGap = { day: c.day, had: computed, gain: c.a - computed, answer: c.gain || null };
       }
-      const bank = base.amount + moves.filter((e, k) => !wasIn[k]).reduce((t, e) => t + delta(e, id), 0);
-      return { bank, asOfDay: base.day, fillers, lastGap, askAgain: askAgain ? wrong.day : null };
+      // [QC F4] bank today in its parts: the last check, and what was logged in and out after it
+      const since = moves.filter((e, k) => !wasIn[k]).map(e => delta(e, id));
+      const loggedIn = since.filter(d => d > 0).reduce((t, d) => t + d, 0), loggedOut = since.filter(d => d < 0).reduce((t, d) => t - d, 0);
+      const bank = base.amount + loggedIn - loggedOut;
+      return { bank, checked: base.amount, loggedIn, loggedOut, asOfDay: base.day, fillers, lastGap, askAgain: askAgain ? wrong.day : null };
     }
     // [A3, A4, T6] the filler of a stretch, split by days at each period start in it (or all to the older period)
     function makeFiller(id, first, last, amount) {
@@ -1098,6 +1101,7 @@
       const w = walk(id, horizon, minimum);
       const r = res.accounts[id] = {
         bank: banks[id].bank, asOf: dayStr(banks[id].asOfDay), ageDays: today - banks[id].asOfDay,
+        checked: banks[id].checked, loggedIn: banks[id].loggedIn, loggedOut: banks[id].loggedOut,
         currency: a.cur, minimum, lowest: w.lowest, lowestDay: dayStr(w.lowestDay), headroom: w.headroom,
         spendFrom: isClosed ? false : a.spendFrom != null ? a.spendFrom : !!SPEND_TYPES[a.type] && a.cur === home && !backsGoal(id),
         why: whyText(w.why, w.headroom, a.cur), fillers: banks[id].fillers };

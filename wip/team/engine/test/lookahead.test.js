@@ -352,4 +352,14 @@ t('later on: structured with the minimum or none, and no "2027-03" in the words'
   eq([l.account, l.day, l.balance, l.amount, l.minimum], ['bank', '2027-03-01', -50000, 50000, null]);
   ok(/Bank goes below zero in Mar 2027/.test(l.text) && !ISO.test(l.text), l.text);
 });
+t('bank today in its parts: the last check, and what was logged in and out since it (QC F4)', () => {
+  // checked 400,000 on 1 Dec; on 2 Dec a spend of 1,500 and money in of 2,000 logged after the check
+  const ev = (id, k, date, more) => Object.assign({ id, k, date, told: date + 'T12:00' + TZ }, more);
+  const b = base(x => { x.events.push(ev('sp', 'spend', '2026-12-02', { acct: 'bank', a: 1500 }), ev('in', 'in', '2026-12-02', { acct: 'bank', a: 2000, sub: 'other' })); });
+  const a = run(b, '2026-12-02').accounts.bank;
+  eq([a.bank, a.checked, a.asOf, a.loggedOut, a.loggedIn], [400500, 400000, '2026-12-01', 1500, 2000]);
+  // nothing logged since: both zero, and bank today is the check
+  const a0 = run(base(), '2026-12-02').accounts.bank;
+  eq([a0.bank, a0.checked, a0.loggedOut, a0.loggedIn], [400000, 400000, 0, 0]);
+});
 done('lookahead');
