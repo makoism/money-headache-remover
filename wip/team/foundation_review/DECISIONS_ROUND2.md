@@ -85,3 +85,11 @@ I3. A card paid two months after its close: "carried over" means only statements
 I4. Opening split "by days left": days from the setup day to the period's last day, both counted, over the period's days; amounts rounded down to the minor unit, the remainder to Free to spend.
 I5. `told` for records moved from 38.31: the record's own time if it has one, else the copy's last saved time; on one day they keep the old list order.
 I6. The helper's five readings are confirmed: while pay is late, "due before next pay" counts to the late pay; two unpaid statements never double count; a card paid from another currency is left out of the walk with a warning; a place pays a bill up to what it holds and the account pays the rest; an opening with no time covers its whole day.
+
+## J. Answers after I (SCHEMA_V3 section 14, second list)
+J1. A card with close day "not sure" that carries a balance gets its interest on each payment day.
+J2. I5 is corrected to agree with 11.1: a moved receipt with no time is told at the start of its day, so a receipt on or before the moved bank figure's day is inside that figure. A moved bank figure with no own time is told at the copy's last save. On one day, moved receipts come before moved figures.
+J3. I1 is refined by H1: an "available" check holds events dated before its day, and those on its day told before it. A spend told after the check is after it, whatever the check kind.
+J4. When the split names Free to spend, the typed figure stands; rounding leftovers of other lines stay in Waiting.
+J5. A card's opening may hold several unpaid statements, each with its amount, close date and payment day (a two-month card set up between closes).
+The helper's seven readings (payment order to statements, late payments lowering the statement they were carried into, carried balance after payments with no interest on a credit, interest before the payment on loan days, the projected interest in the next open payment, a statement item asking what is left of it, the I4 leftover rule) are confirmed.
