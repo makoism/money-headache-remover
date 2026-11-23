@@ -703,7 +703,8 @@
       for (const id of Object.keys(openEv)) { const sp = (openEv[id].split || {}).places || {}; if (sp[g.id] != null) amt += sp[g.id]; }
       for (const e of live()) {
         if (e.k === 'move' && e.place2 === g.id && e.place !== g.id && !gaveWay.has(e.id)) amt += e.a;
-        if (e.k === 'move' && e.place === g.id && e.place2 !== g.id) amt -= e.a;   // [T7] a move out of a place
+        // [T7] a move out of a place lowers it; [P1, Q7] the removal's own move to Waiting (`toPlace`) is the money to place
+        if (e.k === 'move' && e.place === g.id && e.place2 !== g.id && !e.toPlace) amt -= e.a;
         if (e.k === 'spend' && fromPlace(e) === g.id && (!isFeeRecord(e) || isFee(e))) amt -= e.a;   // [H7, S5]
         if (e.k === 'adjust' && e.place === g.id) amt += e.a;   // [T7]
         if (e.k === 'periodEnd') for (const mv of e.moves || []) {   // [P2]
@@ -736,7 +737,7 @@
         continue;
       }
       // [E5, H7] a place that pays a schedule is next due on that schedule's next occurrence not settled yet
-      const paysSched = schedules.find(s => s.forPlace === g.id) || schedules.find(s => s.place === g.id);
+      const paysSched = schedules.find(s => s.place === g.id);
       const nextOf = paysSched && items.find(o => o.sid === paysSched.id && !o.settled);
       const due = g.refill && nextOf ? dayStr(nextOf.due) : g.due || (nextOf ? dayStr(nextOf.due) : null);
       res.places[g.id] = { kept: amt, due, account: where };

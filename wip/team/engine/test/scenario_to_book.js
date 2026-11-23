@@ -152,7 +152,7 @@ function convert(sc) {
       if (s.vary) x.vary = s.vary;
       if (s.starts_period) x.startsPeriod = true;
       if (s.place) x.place = s.place;
-      if (forBill[s.id]) x.forPlace = forBill[s.id];
+      else if (forBill[s.id]) x.place = forBill[s.id];   // a goal `for_bill`: the place pays that schedule [E5]
       if (s.fee) x.fee = mn(s.fee, cur(s.account));
       if (s.owner) x.owner = s.owner;
       book.schedules.push(x);

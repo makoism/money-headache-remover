@@ -80,4 +80,15 @@ t('any event dated after the closing day reopens it, money out too [AP1]', () =>
   ok(r.warnings.some(w => w.account === 'old' && w.code === 'reopened'));
   eq(r.accounts.old.bank, -200);
 });
+t('a removed place keeps its money to place when the app wrote its rm: move to Waiting [O, P1, Q7]', () => {
+  const b = base(x => {
+    x.places = [{ id: 'trip', name: 'Trip', kind: 'goal', keptIn: { acct: 'bank', mode: 'inBank' }, gone: '2026-12-03' }];
+    x.events[0].split.places = { trip: 60000 };
+    x.events.push({ id: 'rm:trip', k: 'move', place: 'trip', place2: 'waiting', a: 60000, toPlace: true, date: '2026-12-03', told: '2026-12-03T09:00' + TZ });
+    x.events.push({ id: 'pl1', k: 'move', place: 'waiting', place2: 'free', a: 10000, placed: 'rm:trip', acct: 'bank', date: '2026-12-04', told: '2026-12-04T09:00' + TZ });
+  });
+  const r = run(b, '2026-12-05');
+  eq(r.toPlace.trip.amount, 50000);
+  ok(/50,000 \(Trip's money, in Waiting to place\)/.test(r.accounts.bank.why));
+});
 done('lookahead');
