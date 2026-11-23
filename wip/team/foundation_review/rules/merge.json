@@ -2818,6 +2818,96 @@
         "O2",
         "D4"
       ]
+    },
+    {
+      "id": "mg-87",
+      "title": "A period-end answer for a period begun by a moved pay stream: pe:<moved occurrence>:<place> (Y28, X1)",
+      "question": "id_ok",
+      "input": {
+        "id": "pe:mv:pay:steps.a@2026-11-25:free"
+      },
+      "expected": true,
+      "why": "The moved salary stream is `mv:pay:steps.a` [Y28], so its occurrence is `mv:pay:steps.a@2026-11-25` and the answer `pe:mv:pay:steps.a@2026-11-25:free` [T1, Y8]; the merge accepts it."
+    },
+    {
+      "id": "mg-88",
+      "title": "A ticked moved pay: set:<moved occurrence> (Y28, X1)",
+      "question": "id_ok",
+      "input": {
+        "id": "set:mv:pay:steps.a@2026-12-25"
+      },
+      "expected": true,
+      "why": "A settle of a moved stream's occurrence is `set:` and that occurrence [O2, Y28]."
+    },
+    {
+      "id": "mg-89",
+      "title": "A spend a moved self-logging schedule writes: auto:<moved schedule>@<due> (Y28, X1)",
+      "question": "id_ok",
+      "input": {
+        "id": "auto:mv:auto:gym@2027-01-04"
+      },
+      "expected": true,
+      "why": "38.31 recurring `gym` is `mv:auto:gym` after the move; what it logs is `auto:mv:auto:gym@2027-01-04` [O2, X1]."
+    },
+    {
+      "id": "mg-90",
+      "title": "A period-end answer for a moved goal place (Y28, X1)",
+      "question": "id_ok",
+      "input": {
+        "id": "pe:mv:pay:steps.a@2026-11-25:mv:place:trip"
+      },
+      "expected": true,
+      "why": "The answer saved under the moved trip place `mv:place:trip` [P2, X1]."
+    },
+    {
+      "id": "mg-91",
+      "title": "A moved place removed with money in it: rm:<moved place> (Y28, X1)",
+      "question": "id_ok",
+      "input": {
+        "id": "rm:mv:place:trip"
+      },
+      "expected": true,
+      "why": "The move to Waiting of the moved trip place is `rm:` and its id [Q7, X1]."
+    },
+    {
+      "id": "mg-92",
+      "title": "The second record of closing the moved bank: close:<moved account>:2 (Y28, X1)",
+      "question": "id_ok",
+      "input": {
+        "id": "close:mv:acct:cfg:2"
+      },
+      "expected": true,
+      "why": "The moved bank is `mv:acct:cfg`; the second record its closing writes is `close:mv:acct:cfg:2` [S3, X1]."
+    },
+    {
+      "id": "mg-93",
+      "title": "A period started without the moved pay: ps:<moved occurrence> (Y28, X1)",
+      "question": "id_ok",
+      "input": {
+        "id": "ps:mv:pay:steps.a@2026-12-25"
+      },
+      "expected": true,
+      "why": "The period start stands in for the moved stream's occurrence [T1, Y28]."
+    },
+    {
+      "id": "mg-94",
+      "title": "A record with no 38.31 id, named by its field path (Y28, X1)",
+      "question": "id_ok",
+      "input": {
+        "id": "mv:debt:plan.goals.owe"
+      },
+      "expected": true,
+      "why": "The loan made for a pay-off goal with no matching debt is named by the field path it came from, `plan.goals.owe` [Y11, Y28]."
+    },
+    {
+      "id": "mg-95",
+      "title": "A moved occurrence with no due date is not an id (Y28)",
+      "question": "id_ok",
+      "input": {
+        "id": "pe:mv:pay:steps.a:free"
+      },
+      "expected": false,
+      "why": "A period-end answer names the occurrence that started the period, `<schedule>@<due date>` [T1]; `mv:pay:steps.a` alone is a schedule, not an occurrence."
     }
   ],
   "open": []

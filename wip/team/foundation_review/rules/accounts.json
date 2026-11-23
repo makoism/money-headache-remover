@@ -887,6 +887,91 @@
         "V",
         "P6"
       ]
+    },
+    {
+      "id": "acc-22",
+      "title": "Closing the main bank: a transfer schedule between the old and the new main bank ends at the closing (Z4)",
+      "question": "close",
+      "input": {
+        "account": "old",
+        "kind": "bank",
+        "mainBank": true,
+        "date": "2027-01-15",
+        "figure": 200000,
+        "transfers": [
+          {
+            "to": "b",
+            "a": 200000
+          }
+        ],
+        "lines": [],
+        "free": {
+          "acct": null
+        },
+        "schedules": [
+          {
+            "id": "pay",
+            "kind": "income",
+            "acct": "old"
+          },
+          {
+            "id": "save",
+            "kind": "transfer",
+            "acct": "old",
+            "acct2": "b"
+          },
+          {
+            "id": "back",
+            "kind": "transfer",
+            "acct": "b",
+            "acct2": "old"
+          },
+          {
+            "id": "top",
+            "kind": "transfer",
+            "acct": "old",
+            "acct2": "wallet"
+          }
+        ],
+        "newLinks": {
+          "mainBank": "b"
+        }
+      },
+      "expected": {
+        "closed": "2027-01-15",
+        "events": [
+          {
+            "k": "check",
+            "date": "2027-01-15",
+            "acct": "old",
+            "a": 200000
+          },
+          {
+            "id": "close:old",
+            "k": "transfer",
+            "date": "2027-01-15",
+            "acct": "old",
+            "acct2": "b",
+            "a": 200000
+          }
+        ],
+        "ends": {
+          "save": "2027-01-15",
+          "back": "2027-01-15"
+        },
+        "links": {
+          "mainBank": "b"
+        },
+        "moved": {
+          "mainBank": "b",
+          "free": "b",
+          "schedules": {
+            "pay": "b",
+            "top": "b"
+          }
+        }
+      },
+      "why": "200,000 (final figure) - 200,000 (to the new bank) = 0, so it closes [P6]. The monthly transfer from the old bank to the new one, and the one back, would become transfers from the new main bank to itself: each ends on the closing day [Z4]. The pay and the top-up to the e-wallet move to the new main bank [W1]."
     }
   ],
   "open": []

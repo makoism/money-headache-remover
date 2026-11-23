@@ -1,0 +1,161 @@
+{
+  "life": "notyet_window_past",
+  "title": "A not-yet item whose posting window ended before setup still counts as expected until it is seen or the person says it will not come (decision Z2)",
+  "story": "Set up Tue 22 Jun 2027 at 09:00. The bank holds 200,000, of which 30,000 is what is left of Free to spend (typed). The insurance of 30,000 was due Tue 8 Jun and tips of 20,000 were due to come in that day; both posting windows ended Wed 9 Jun, but the person says neither has gone through, so the opening saves both in `not_yet`. Pay of 250,000 on the 25th (moved earlier) starts the period. At the check-in on Thu 24 Jun at 20:00 the person ticks the insurance as paid on Wed 23 Jun and says the tips will not come (a skip). Every amount is made up.",
+  "currency": "JPY",
+  "window": {
+    "from": "2027-06-22",
+    "to": "2027-07-31"
+  },
+  "holidays": {
+    "country": "none",
+    "dates": [],
+    "bank_closed": []
+  },
+  "main_bank": "bank",
+  "accounts": [
+    {
+      "id": "bank",
+      "name": "Bank",
+      "kind": "bank",
+      "currency": "JPY",
+      "minimum": 0,
+      "opening": {
+        "date": "2027-06-22",
+        "told": "2027-06-22T09:00",
+        "amount": 200000,
+        "split": {
+          "free": 30000
+        },
+        "not_yet": [
+          "ins@2027-06-08",
+          "tip@2027-06-08"
+        ]
+      }
+    }
+  ],
+  "income": [
+    {
+      "id": "pay",
+      "name": "Pay",
+      "account": "bank",
+      "amount": 250000,
+      "schedule": {
+        "frequency": "monthly",
+        "day": 25
+      },
+      "weekend_holiday": "move earlier",
+      "starts_period": true
+    },
+    {
+      "id": "tip",
+      "name": "Tips",
+      "account": "bank",
+      "amount": 20000,
+      "schedule": {
+        "frequency": "monthly",
+        "day": 8
+      },
+      "weekend_holiday": "none",
+      "starts_period": false
+    }
+  ],
+  "bills": [
+    {
+      "id": "ins",
+      "name": "Insurance",
+      "account": "bank",
+      "amount": 30000,
+      "schedule": {
+        "frequency": "monthly",
+        "day": 8
+      },
+      "weekend_holiday": "move later"
+    }
+  ],
+  "goals": [],
+  "plan": {
+    "lines": [],
+    "free": {
+      "per": "month",
+      "amount": 60000
+    }
+  },
+  "events": [
+    {
+      "id": "set:ins@2027-06-08",
+      "date": "2027-06-23",
+      "told": "2027-06-24T20:00",
+      "kind": "bill_paid",
+      "account": "bank",
+      "amount": 30000,
+      "settles": "ins@2027-06-08",
+      "note": "ticked at the check-in: paid Wed 23 Jun"
+    },
+    {
+      "id": "skip:tip@2027-06-08",
+      "date": "2027-06-24",
+      "told": "2027-06-24T20:00",
+      "kind": "skip",
+      "account": "bank",
+      "settles": "tip@2027-06-08",
+      "note": "the person says the tips will not come"
+    }
+  ],
+  "asks": [
+    {
+      "id": "nwp-01",
+      "date": "2027-06-22",
+      "question": "safe_to_spend",
+      "account": "bank",
+      "expected": 190000,
+      "why": "200,000 (Bank today) + 20,000 (Tips 8 Jun, not come in at setup: still expected) - 30,000 (Insurance 8 Jun, not gone out at setup: still expected) = 190,000",
+      "note": "Before Z2 the tips, past their posting window, were \"not seen yet\" and not counted: 170,000."
+    },
+    {
+      "id": "nwp-02",
+      "date": "2027-06-22",
+      "question": "not_seen_yet",
+      "expected": {
+        "items": [],
+        "money_in": 0,
+        "money_out": 0
+      },
+      "why": {
+        "money_in": "none = 0",
+        "money_out": "none = 0"
+      },
+      "note": "Both are still expected, not \"not seen yet\" [Z2]."
+    },
+    {
+      "id": "nwp-03",
+      "date": "2027-06-24",
+      "question": "bank_today",
+      "account": "bank",
+      "expected": 170000,
+      "why": "200,000 (opening) - 30,000 (Insurance, ticked paid Wed 23 Jun) = 170,000"
+    },
+    {
+      "id": "nwp-04",
+      "date": "2027-06-24",
+      "question": "safe_to_spend",
+      "account": "bank",
+      "expected": 170000,
+      "why": "170,000 (Bank today; the insurance is seen and the tips will not come, so nothing of either is still expected) = 170,000"
+    },
+    {
+      "id": "nwp-05",
+      "date": "2027-06-24",
+      "question": "not_seen_yet",
+      "expected": {
+        "items": [],
+        "money_in": 0,
+        "money_out": 0
+      },
+      "why": {
+        "money_in": "none = 0",
+        "money_out": "none = 0"
+      }
+    }
+  ]
+}

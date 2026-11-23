@@ -1,0 +1,130 @@
+{
+  "life": "moved_ids",
+  "title": "Records the move wrote, with their built mv: ids, in period starts, period-end answers and settles (decisions X1, Y28; the merge and the model accept mv: ids)",
+  "story": "The copy of period_end_fixed after a move from 38.31: the bank is mv:acct:cfg, the salary stream mv:pay:steps.a, the trip mv:place:trip and the receipt mv:rc:r1, so the period-end answer is pe:mv:pay:steps.a@2026-11-10:free and the ticked pay set:mv:pay:steps.a@2026-12-10. Set up Fri 20 Nov 2026: the bank holds 400,000, of which 30,000 is what is left of Free to spend (typed); a trip place starts empty. Pay of 300,000 on the 10th (moved earlier) starts the period; Free to spend is 60,000 a month. The pay was ticked as landing Tue 8 Dec, so the period begun by mv:pay:steps.a@2026-11-10 ended Mon 7 Dec. That morning the person answers its period end: 20,000 of Free to spend to the trip, one record pe:mv:pay:steps.a@2026-11-10:free dated the period's last day. On Tue 8 Dec they spend 2,000 from Free to spend. Later they correct the ticked pay's date to Wed 9 Dec (it was in the bank a day later). The period already has answers, so its end stays Mon 7 Dec and the new period still began Tue 8 Dec. Every amount is made up.",
+  "currency": "JPY",
+  "window": {
+    "from": "2026-11-20",
+    "to": "2026-12-31"
+  },
+  "holidays": {
+    "country": "none",
+    "dates": [],
+    "bank_closed": []
+  },
+  "main_bank": "mv:acct:cfg",
+  "accounts": [
+    {
+      "id": "mv:acct:cfg",
+      "name": "Bank",
+      "kind": "bank",
+      "currency": "JPY",
+      "minimum": 0,
+      "opening": {
+        "date": "2026-11-20",
+        "amount": 400000,
+        "split": {
+          "goals": {
+            "mv:place:trip": 0
+          },
+          "free": 30000
+        }
+      }
+    }
+  ],
+  "income": [
+    {
+      "id": "mv:pay:steps.a",
+      "name": "Pay",
+      "account": "mv:acct:cfg",
+      "amount": 300000,
+      "schedule": {
+        "frequency": "monthly",
+        "day": 10
+      },
+      "weekend_holiday": "move earlier",
+      "starts_period": true
+    }
+  ],
+  "bills": [],
+  "goals": [
+    {
+      "id": "mv:place:trip",
+      "name": "Trip",
+      "kept_in": "mv:acct:cfg",
+      "due": "2027-06-30"
+    }
+  ],
+  "plan": {
+    "free": {
+      "per": "month",
+      "amount": 60000
+    }
+  },
+  "events": [
+    {
+      "id": "pe:mv:pay:steps.a@2026-11-10:free",
+      "date": "2026-12-07",
+      "told": "2026-12-08T08:00",
+      "kind": "period_end_answer",
+      "account": "mv:acct:cfg",
+      "place": "free",
+      "moves": [
+        {
+          "to": "mv:place:trip",
+          "amount": 20000
+        }
+      ],
+      "note": "the answer for the period begun by mv:pay:steps.a@2026-11-10, dated its last day"
+    },
+    {
+      "id": "mv:rc:r1",
+      "date": "2026-12-08",
+      "told": "2026-12-08T12:00",
+      "kind": "spend",
+      "account": "mv:acct:cfg",
+      "amount": 2000,
+      "line": "free"
+    },
+    {
+      "id": "set:mv:pay:steps.a@2026-12-10",
+      "date": "2026-12-09",
+      "told": "2026-12-08T07:00",
+      "kind": "pay_in",
+      "account": "mv:acct:cfg",
+      "amount": 300000,
+      "settles": "mv:pay:steps.a@2026-12-10",
+      "note": "ticked on 8 Dec as landing that day; its date later corrected to 9 Dec"
+    }
+  ],
+  "asks": [
+    {
+      "id": "mvid-01",
+      "date": "2026-12-10",
+      "question": "headline",
+      "expected": 58000,
+      "why": "60,000 (Free to spend for the period that began Tue 8 Dec, the day after the answered period's last day) - 2,000 (spent Tue 8 Dec) = 58,000",
+      "note": "Before T1 the corrected date moved the period start to Wed 9 Dec and the 2,000 fell in the old period: 60,000."
+    },
+    {
+      "id": "mvid-02",
+      "date": "2026-12-10",
+      "question": "place",
+      "account": "mv:acct:cfg",
+      "place": "mv:place:trip",
+      "expected": {
+        "kept": 20000,
+        "due": "2027-06-30"
+      },
+      "why": "0 (opening) + 20,000 (the answer pe:mv:pay:steps.a@2026-11-10:free, its move to the trip) = 20,000"
+    },
+    {
+      "id": "mvid-03",
+      "date": "2026-12-10",
+      "question": "bank_today",
+      "account": "mv:acct:cfg",
+      "expected": 698000,
+      "why": "400,000 (opening) - 2,000 (Tue 8 Dec) + 300,000 (pay, Wed 9 Dec) = 698,000"
+    }
+  ]
+}

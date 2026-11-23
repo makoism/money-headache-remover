@@ -1,0 +1,141 @@
+{
+  "life": "gain_wrong",
+  "title": "A large gain answered \"wrong\" removes that check and asks for the figure again (decision Z1)",
+  "story": "Set up Mon 4 Jan 2027, after pay on Fri 25 Dec. The bank holds 100,000 (30,000 of it Free to spend left), the e-wallet 5,000, the cash 10,000. Pay of 250,000 on the 25th starts the period; Free to spend is 60,000 a month. At the check-in on Fri 8 Jan at 20:00 the person types 101,000 for the bank, 280,000 for the e-wallet (the bank's figure typed in the wrong box) and 13,000 for the cash. Every amount is made up. The person answers the cash question: the 13,000 is wrong (`gain: wrong`; they typed the e-wallet's figure in the cash box). The e-wallet question is still asked (`gain: asked`). A check answered wrong is removed (marked gone) and the figure is asked again.",
+  "currency": "JPY",
+  "window": {
+    "from": "2027-01-04",
+    "to": "2027-01-31"
+  },
+  "holidays": {
+    "country": "none",
+    "dates": [],
+    "bank_closed": []
+  },
+  "accounts": [
+    {
+      "id": "b",
+      "name": "Bank",
+      "kind": "bank",
+      "currency": "JPY",
+      "minimum": 0,
+      "opening": {
+        "date": "2027-01-04",
+        "amount": 100000,
+        "split": {
+          "free": 30000
+        }
+      }
+    },
+    {
+      "id": "w",
+      "name": "E-wallet",
+      "kind": "ewallet",
+      "currency": "JPY",
+      "minimum": 0,
+      "opening": {
+        "date": "2027-01-04",
+        "amount": 5000
+      }
+    },
+    {
+      "id": "cash",
+      "name": "Cash",
+      "kind": "cash",
+      "currency": "JPY",
+      "minimum": 0,
+      "opening": {
+        "date": "2027-01-04",
+        "amount": 10000
+      }
+    }
+  ],
+  "plan": {
+    "lines": [],
+    "free": {
+      "account": "b",
+      "per": "month",
+      "amount": 60000
+    }
+  },
+  "income": [
+    {
+      "id": "pay",
+      "name": "Pay",
+      "account": "b",
+      "amount": 250000,
+      "schedule": {
+        "frequency": "monthly",
+        "day": 25
+      },
+      "weekend_holiday": "move earlier",
+      "starts_period": true
+    }
+  ],
+  "bills": [],
+  "goals": [],
+  "events": [
+    {
+      "id": "cb",
+      "date": "2027-01-08",
+      "told": "2027-01-08T20:00",
+      "kind": "check",
+      "account": "b",
+      "amount": 101000
+    },
+    {
+      "id": "cw",
+      "date": "2027-01-08",
+      "told": "2027-01-08T20:00",
+      "kind": "check",
+      "account": "w",
+      "amount": 280000,
+      "note": "the bank's figure typed in the e-wallet's box",
+      "gain": "asked"
+    },
+    {
+      "id": "cc",
+      "date": "2027-01-08",
+      "told": "2027-01-08T20:00",
+      "kind": "check",
+      "account": "cash",
+      "amount": 13000,
+      "gain": "wrong",
+      "note": "answered wrong: removed, the figure asked again"
+    }
+  ],
+  "asks": [
+    {
+      "id": "gw-01",
+      "date": "2027-01-08",
+      "question": "headline",
+      "expected": 31000,
+      "why": "30,000 (Free to spend at the opening) + 1,000 (the bank's small gain) = 31,000",
+      "note": "The cash check answered wrong is removed: its 3,000 is no gain [Z1]. The e-wallet's 275,000 is still held [X4]."
+    },
+    {
+      "id": "gw-02",
+      "date": "2027-01-08",
+      "question": "bank_today",
+      "account": "cash",
+      "expected": 10000,
+      "why": "10,000 (opening; the check of 13,000 answered wrong is removed) = 10,000"
+    },
+    {
+      "id": "gw-03",
+      "date": "2027-01-08",
+      "question": "warnings",
+      "expected": [
+        {
+          "account": "cash",
+          "code": "check_again"
+        },
+        {
+          "account": "w",
+          "code": "gain_to_ask"
+        }
+      ],
+      "why": "The cash figure was answered wrong, so it is asked again [Z1]; the e-wallet's question is still asked [X4]."
+    }
+  ]
+}

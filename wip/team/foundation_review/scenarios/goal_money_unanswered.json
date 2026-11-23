@@ -1,0 +1,109 @@
+{
+  "life": "goal_money_unanswered",
+  "title": "Until the goal-money question at the move is answered, the goal's money is in the bank; a bank below the goal is shown as short, never refused (decision Z3)",
+  "story": "A moved 38.31 copy, opened Tue 1 Dec 2026: the bank figure is 100,000 and a goal \"Moving\" had 300,000 saved so far. The move asks where that money is; the person has not answered yet, so it is treated as kept in the bank (the safe side) and the bank's opening split holds it, though the bank holds less. 40,000 is what is left of Free to spend. Pay of 250,000 on the 10th (moved earlier) starts the period. Every amount is made up.",
+  "currency": "JPY",
+  "window": {
+    "from": "2026-12-01",
+    "to": "2026-12-31"
+  },
+  "holidays": {
+    "country": "none",
+    "dates": [],
+    "bank_closed": []
+  },
+  "main_bank": "bank",
+  "accounts": [
+    {
+      "id": "bank",
+      "name": "Bank",
+      "kind": "bank",
+      "currency": "JPY",
+      "minimum": 0,
+      "opening": {
+        "date": "2026-12-01",
+        "amount": 100000,
+        "split": {
+          "goals": {
+            "move": 300000
+          },
+          "free": 40000
+        }
+      }
+    }
+  ],
+  "income": [
+    {
+      "id": "pay",
+      "name": "Pay",
+      "account": "bank",
+      "amount": 250000,
+      "schedule": {
+        "frequency": "monthly",
+        "day": 10
+      },
+      "weekend_holiday": "move earlier",
+      "starts_period": true
+    }
+  ],
+  "bills": [],
+  "goals": [
+    {
+      "id": "move",
+      "name": "Moving",
+      "kept_in": "bank",
+      "due": "2027-06-30"
+    }
+  ],
+  "plan": {
+    "lines": [],
+    "free": {
+      "amount": 60000,
+      "per": "month"
+    }
+  },
+  "events": [],
+  "asks": [
+    {
+      "id": "gmu-01",
+      "date": "2026-12-01",
+      "question": "place",
+      "account": "bank",
+      "place": "move",
+      "expected": {
+        "kept": 300000,
+        "due": "2027-06-30"
+      },
+      "why": "300,000 (the goal's saved so far, in the bank's opening split until the question is answered) = 300,000",
+      "note": "The split is never refused [Z3]."
+    },
+    {
+      "id": "gmu-02",
+      "date": "2026-12-01",
+      "question": "safe_to_spend",
+      "account": "bank",
+      "expected": -200000,
+      "why": "100,000 (Bank today) - 300,000 (Moving, kept in it) = -200,000",
+      "note": "Shown as short [Z3]."
+    },
+    {
+      "id": "gmu-03",
+      "date": "2026-12-01",
+      "question": "headline",
+      "expected": 0,
+      "why": "0 (nothing is safe to spend: the bank is 200,000 short of what it keeps) = 0"
+    },
+    {
+      "id": "gmu-04",
+      "date": "2026-12-01",
+      "question": "warnings",
+      "expected": [
+        {
+          "account": "bank",
+          "code": "below_minimum"
+        }
+      ],
+      "why": "The bank is short of what it keeps: shown, not refused [Z3]."
+    }
+  ]
+}

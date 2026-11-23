@@ -1350,6 +1350,30 @@
         "X watch",
         "T1"
       ]
+    },
+    {
+      "id": "units-81",
+      "title": "A 38.31 one-month amount when no period starts in that month goes to the period holding that month's first day (Z5)",
+      "question": "once_from_month",
+      "input": {
+        "ym": "2027-03",
+        "pays": [
+          {
+            "occ": "pay@2027-02-01",
+            "lands": "2027-02-01"
+          },
+          {
+            "occ": "pay@2027-03-01",
+            "lands": "2027-02-26"
+          },
+          {
+            "occ": "pay@2027-04-01",
+            "lands": "2027-04-01"
+          }
+        ]
+      },
+      "expected": "pay@2027-03-01",
+      "why": "Pay is due on the 1st and moved earlier: the pay due Mon 1 Mar 2027 landed Fri 26 Feb and the next lands Thu 1 Apr, so no period starts in March. The period holding Mon 1 Mar started with the latest pay landing on or before it, the one due 1 Mar (landed 26 Feb): `once` is keyed pay@2027-03-01 [Z5]."
     }
   ],
   "open": []
