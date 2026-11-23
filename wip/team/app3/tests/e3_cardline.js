@@ -36,6 +36,11 @@ const { ck } = T;
     await p.$eval('[data-tab=plan]', el => el.click()); await T.w(500);
     const prow = (await p.$eval(`[data-owed="${visa}"]`, e => e.textContent)).replace(/⁠/g, '');
     ck('BL5: Plan says in credit ¥1,500, never still owed', /in credit ¥1,500/.test(prow) && !/still owed/i.test(prow) && !/−/.test(prow), prow);
+    /* [BM4] Check your bank writes it the way Home does: "Expected now in credit ¥1,500", never "−¥1,500" */
+    await p.$eval('[data-tab=home]', el => el.click()); await T.w(300);
+    await p.click('#a3CheckGo'); await T.w(500);
+    const exp = (await p.$eval(`[data-expected="${visa}"]`, e => e.textContent).catch(() => '')).replace(/\u2060/g, '');
+    ck('BM4: Check your bank says Expected now in credit ¥1,500, no minus', /^Expected now in credit ¥1,500/.test(exp) && !/−/.test(exp), exp);
   }
   ck('no page errors', errs.length === 0, errs.join(' | '));
   await b.close();

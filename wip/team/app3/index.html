@@ -8601,7 +8601,8 @@ function checkPreview3() {
   for (const el of sheet.querySelectorAll('[data-expected]')) {
     const id = el.dataset.expected, a = r0.accounts[id];
     if (a) el.textContent = `Expected now ${money3(a.bank, a.currency)}, last checked ${money3(a.checked, a.currency)} on ${day3(a.asOf, yr)}`;
-    else if (r0.cards[id]) { const c = E3.lastCheckOf(id, check3.day); el.textContent = `Expected now ${money3(r0.cards[id].owedNow, E3.curOf(id))}${c ? `, last checked ${money3(c.a, E3.curOf(id))} on ${day3(c.date, yr)}` : ''}`; }
+    /* [BM4, BL5] a card in credit is written the way Home writes it, "in credit ¥3,000", never with a minus */
+    else if (r0.cards[id]) { const c = E3.lastCheckOf(id, check3.day), k = r0.cards[id]; el.textContent = `Expected now ${k.credit ? label3('inCredit').toLowerCase() + ' ' + money3(k.credit, E3.curOf(id)) : money3(k.owedNow, E3.curOf(id))}${c ? `, last checked ${money3(c.a, E3.curOf(id))} on ${day3(c.date, yr)}` : ''}`; }
   }
   for (const el of sheet.querySelectorAll('[data-gap]')) {
     const id = el.dataset.gap, g = id in d.figures ? gapWords3(r1, id, check3.day) : null;
