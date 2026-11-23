@@ -49,8 +49,8 @@ function renderPlan3() {
   const scheds = (book.schedules || []).filter(s => plLive3(s) && view[s.id]);
   /* [BJ5] what has landed and is not ticked off comes first, then the next one */
   const owing = { late: 'late', notSeen: 'not seen yet', unticked: 'not ticked off yet' };
-  const nextWords = v => (v.outstanding || []).map(o => `due ${esc3(day3(o.land, yr))}, ${owing[o.state]}, `).join('')
-    + (v.next ? `next ${esc3(day3(v.next.land, yr))}` : v.ends ? `ended ${esc3(day3(v.ends, yr))}` : 'nothing coming');
+  const owingWords = v => (v.outstanding || []).map(o => `due ${esc3(day3(o.land, yr))}, ${owing[o.state]}, `).join('');
+  const nextWords = v => `${owingWords(v)}${v.next ? `next ${esc3(day3(v.next.land, yr))}` : v.ends ? `ended ${esc3(day3(v.ends, yr))}` : 'nothing coming'}`;
   const ruleWords = v => (v.rule && v.rule.every === 'month' ? 'day ' + v.rule.days.join(' and ') + ' each month' : v.rule && v.rule.every === 'weeks' ? 'every ' + (v.rule.n === 1 ? 'week' : v.rule.n + ' weeks') : 'no fixed day');
   const pays = scheds.filter(s => s.kind === 'income').map(s => plRow3(`data-pay="${esc3(s.id)}"`, `${esc3(s.name)}<br><span class="when">${ruleWords(view[s.id])}, ${nextWords(view[s.id])}</span>`, plFig3('schedules.*.next.amount', view[s.id].next ? view[s.id].next.amount : view[s.id].amount, s.cur)));
   const bills = scheds.filter(s => s.kind === 'bill').map(s => plRow3(`data-bill="${esc3(s.id)}"`, `${esc3(s.name)}<br><span class="when">${ruleWords(view[s.id])}, ${nextWords(view[s.id])}${view[s.id].ends && view[s.id].next ? ', last on ' + esc3(day3(view[s.id].ends, yr)) : ''}</span>`, plFig3('schedules.*.next.amount', view[s.id].next ? view[s.id].next.amount : view[s.id].amount, s.cur)));

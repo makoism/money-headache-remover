@@ -2293,6 +2293,10 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
     const pays = periodStream ? items.filter(o => o.sid === periodStream.id) : [];
     const startsPeriod = e => e.k === 'in' && e.sub !== 'refund' && !!periodStream && e.settles.some(s => I.scheduleOf(s) === periodStream.id);
     const nextPays = pays.filter(o => !o.settled && (o.land >= today || lateExpected(o)));
+    // [BJ1] a pay due today left unticked at a check-in made today is not seen: it is not counted (BH1 over G4)
+    const checkedOn = {};
+    for (const e of all) if (e.e && !e.e.gone && e.e.k === 'check' && !e.e.stmt && e.e.date && dayNum(e.e.date) === today && !isOpeningCheck(e.e) && dayNum(e.e.told || e.e.date) <= knownTo) checkedOn[e.e.acct] = true;
+    const leftToday = o => o.land === today && !o.settled && !!checkedOn[o.acct];
     const psOf = {}, peEnd = {};
     for (const e of live()) {
       if (e.k === 'periodStart' && e.day <= knownTo) { const oc = I.periodOcc(e.id); if (oc) psOf[oc] = e.day; }
@@ -2674,14 +2678,18 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
     const budgets = (plan.budgets || []).filter(l => l && !l.gone);
     const shares = (plan.shares || []).filter(x => x && !x.gone && x.free != null);
     // A change applies from the first period start on or after the day it was made [T watch, V]
+    // [BJ2] an amount set for the first time carries the day it was set: the period it was set in has it, a period
+    // that ended before that day has none (null); nothing before it changes
     const stepAmount = (steps, start) => {
-      const list = (steps || []).filter(x => !x.gone).map((x, i) => ({ f: i === 0 || x.from == null ? -Infinity : dayNum(x.from), a: x.amount })).sort((p, q) => p.f - q.f);
-      let a = list.length ? list[0].a : 0;
+      const list = (steps || []).filter(x => !x.gone).map(x => ({ f: x.from == null ? -Infinity : dayNum(x.from), a: x.amount })).sort((p, q) => p.f - q.f);
+      if (!list.length) return null;
+      const nextStart = start == null ? Infinity : Math.min(Infinity, ...pays.map(startDayOf).filter(d => d > start));
+      let a = list[0].f === -Infinity || start == null || list[0].f < nextStart ? list[0].a : null;
       for (const x of list) if (x.f === -Infinity || (start != null && x.f <= start)) a = x.a;
       return a;
     };
     const freeSrc = shares.length ? { id: 'free', acct: shares[0].acct, per: (shares[0].per || {}).free || 'month',
-      steps: shares.map((x, i) => ({ from: i === 0 ? null : x.from, amount: x.free })) } : null;
+      steps: shares.map(x => ({ from: x.from == null ? null : x.from, amount: x.free })) } : null;
     const lineSrcs = budgets.map(l => ({ id: l.id, name: l.name, acct: l.acct, per: l.per, steps: l.steps, once: [l.once], field: 'amount', from: l.from || null }));
     if (freeSrc) Object.assign(freeSrc, { once: shares.map(x => x.once), field: 'free' });
     // [B8, T1, AE1] A period's amount: a live `once` key named by the occurrence of the pay that starts it, else the step in
@@ -2695,7 +2703,7 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
         if (!w || w.gone || w.waits !== 'pick' || w.to !== 'once' || w.key !== occ || (w.line !== src.id && !(src.id === 'free' && w.share))) continue;
         const wa = typeof w.a === 'number' ? w.a : w.a && typeof w.a[src.field] === 'number' ? w.a[src.field] : null;
         // [AV3] the safe side for what it is: the larger for a spending line, the smaller for Free to spend
-        if (wa !== null) a = src.field === 'free' ? Math.min(a, wa) : Math.max(a, wa);
+        if (wa !== null && a !== null) a = src.field === 'free' ? Math.min(a, wa) : Math.max(a, wa);
       }
       return a;
     };
@@ -2789,7 +2797,8 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
       const toGo = Math.max(0, g.target - Math.max(0, amt));
       if (!periodStream) return { target: g.target, toGo, periodsLeft: null, perPeriod: null };
       const dd = dayNum(due);
-      const n = dd < today ? 0 : occOf(periodStream, today, dd).filter(o => o.land <= dd && !settledBy[o.id]
+      // [BJ3, BF1] a late pay still expected counts here (pace is a plan), though safe to spend leaves it out (BH1)
+      const n = dd < today ? 0 : occOf(periodStream, today - 62, dd).filter(o => o.land <= dd && !settledBy[o.id]
         && (o.land >= today || nextPays.some(p => p.id === o.id))).length;
       return { target: g.target, toGo, periodsLeft: n, perPeriod: n ? U.spread(toGo, n)[0] : toGo };
     }
@@ -2837,12 +2846,13 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
         for (const l of lineSrcs.filter(x => moneyAcct(lineAcct(x)) === acctId)) {
           const typed = (split.lines || {})[l.id], amount = openAmount(l, l.per);
           if (typed != null) out.lines[l.id] = typed;
+          else if (amount == null) continue;   // [BJ2] no amount in the period holding the opening
           else if (share) { out.lines[l.id] = Math.floor(amount * share.d / share.D); leftOver += amount * share.d - out.lines[l.id] * share.D; }
           else out.lines[l.id] = amount;
         }
         if (freeSrc && moneyAcct(lineAcct(freeSrc)) === acctId) {
           const amount = openAmount(freeSrc, freeSrc.per);
-          out.free = split.free != null ? split.free : share ? Math.floor((amount * share.d + leftOver) / share.D) : amount;   // [J4]
+          out.free = split.free != null ? split.free : amount == null ? null : share ? Math.floor((amount * share.d + leftOver) / share.D) : amount;   // [J4]
         }
         return (opening[acctId] = out);
       }
@@ -2885,9 +2895,10 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
       };
       const amountOf = (src, per) => (past ? perPeriod({ per, amount: periodAmount(src, win.start, win.occ) }, win.start, win.next, win.occ)
         : periodStream ? nowAmount(src, per) : periodAmount(src, lastPay, occOn(lastPay, today)));
-      const lines = lineSrcs.map(l => { const id = moneyAcct(lineAcct(l)), a = amountOf(l, l.per); return { name: l.name, acct: id, per: l.per, amount: a, left: leftOf(l.id, id, a), src: l }; });
+      // [BJ2] a line or Free to spend with no amount in this period (set later) is not in it
+      const lines = lineSrcs.map(l => { const id = moneyAcct(lineAcct(l)), a = amountOf(l, l.per); return a == null ? null : { name: l.name, acct: id, per: l.per, amount: a, left: leftOf(l.id, id, a), src: l }; }).filter(Boolean);
       const fid = freeSrc && moneyAcct(lineAcct(freeSrc)), fa = freeSrc && amountOf(freeSrc, freeSrc.per);
-      const free = freeSrc && { name: 'Free to spend', acct: fid, per: freeSrc.per, amount: fa, left: leftOf('free', fid, fa), src: freeSrc };
+      const free = freeSrc && fa != null ? { name: 'Free to spend', acct: fid, per: freeSrc.per, amount: fa, left: leftOf('free', fid, fa), src: freeSrc } : null;
       return { lines, free };
     }
     const planLeft = planNow();
@@ -2947,6 +2958,7 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
     // year's pays, the leftover on the earliest; `week` gets days x amount / 7, rounded down [SCHEMA 8].
     // `occId` names the pay that starts the period, when known (a period started without its pay keeps its name [T1]).
     function perPeriod(x, startDay, endDay, occId) {
+      if (x.amount == null) return null;   // [BJ2] no amount in that period
       if (x.per === 'week') return Math.floor(x.amount * (endDay - startDay) / 7);
       if (x.per === 'month' && periodStream) {
         const o = occId ? pays.find(p => p.id === occId) : pays.find(p => p.land === startDay);
@@ -2965,7 +2977,7 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
       if (periodStream) {
         // [AU4] every pay the walk counts (due today or later) brings its period's lines on the day it lands; [BH1] a late
         // pay is not counted and its period has not started, so it brings none
-        const starts = nextPays.filter(p => p.land >= today).sort((x, z) => x.land - z.land);
+        const starts = nextPays.filter(p => p.land >= today && !leftToday(p)).sort((x, z) => x.land - z.land);
         starts.forEach((p, i) => {
           const end = starts[i + 1] ? starts[i + 1].land : p.land + 30;
           for (const l of lines) list.push({ land: Math.max(p.land, today), amount: perPeriod({ per: l.per, amount: periodAmount(l.src, p.land, p.id) }, p.land, end, p.id), label: l.name + ' for the period from ' + short(p.land) });
@@ -3005,7 +3017,7 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
         if (o.settled) continue;
         // [BH1, replaces H8 for safe to spend] money not yet seen never counts: a pay past its day and not ticked (late or
         // not seen) is left out of the walk until it is ticked; a pay due today counts [G4]
-        if (o.kind === 'income' && o.acct === id && !o.otherCur && o.land >= today && o.land <= end)
+        if (o.kind === 'income' && o.acct === id && !o.otherCur && o.land >= today && !leftToday(o) && o.land <= end)
           steps.push({ day: o.land, order: 0, amount: o.amount, label: o.name + ' ' + short(o.land) });
         if (o.kind === 'loan' && cur(o.card) !== cur(id)) continue;   // [V2] warned below
         if ((o.kind === 'bill' || o.kind === 'transfer' || o.kind === 'auto' || o.kind === 'loan') && o.acct === id && o.land <= end) {
@@ -3093,6 +3105,9 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
     const raw = up - shortfalls;
     const oldest = Object.keys(res.accounts).reduce((d, id) => Math.min(d, dayNum(res.accounts[id].asOf)), today);
     res.safeToSpend = { headline: Math.max(0, cap === null ? raw : Math.min(cap, raw)), shortfall: Math.max(0, -raw), cappedByFreeToSpend: cap !== null && cap < raw, oldestInput: dayStr(oldest) };
+    // [BJ5] when Free to spend caps the headline, the sum under it ends with the cap, so the two figures never disagree
+    res.safeToSpend.why = res.safeToSpend.cappedByFreeToSpend
+      ? `${fmt(raw, home)} (what your accounts can spare) - ${fmt(raw - Math.max(0, cap), home)} (more than Free to spend left this period) = ${fmt(res.safeToSpend.headline, home)}` : null;
 
     // ----- days to next pay [F3, F8, F12, F13, H8] -----
     const np = nextPays[0];
@@ -3224,13 +3239,24 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
      scheduleView(book, asOf) -> { <schedule id>: { kind, amount (the usual amount in force on the day), rule (the rule
        in force), next: { due, land, amount } or null (the first occurrence landing or due on or after the day that no record dated by then settles),
        lastNamed: the latest due date a record names (a settle, an `amounts` key, a period start or end), or null,
-       changeFrom: the first day a change may start [X8]: the day itself, or the day after lastNamed when that is later } } */
-  function scheduleView(book, asOf) {
+       changeFrom: the first day a change may start [X8]: the day itself, or the day after lastNamed when that is later,
+       outstanding: [{ due, land, amount, state: 'late'|'notSeen'|'unticked' }] what has landed and is not settled,
+       oldest first, listed before `next` [BJ5] } }   (opts3: the look ahead's opts) */
+  function scheduleView(book, asOf, opts3) {
     const S = node ? require('./schedules.js') : E.schedules, D = node ? require('./dates.js') : E.dates;
     const today = D.dayNum(asOf), out = {};
     const acct = {}; for (const a of book.accounts || []) if (a && !a.gone) acct[a.id] = a;
     const country = L.fieldValue((book.home || {}).country) || null;
     const named = {}, done = new Set();
+    // [BJ5] what has landed and is not settled, by the look ahead: not seen (past its posting window), late (inside
+    // it) or unticked (left at a check-in, or due today); listed before the next one
+    const r = LA.lookahead(book, asOf, opts3 || {});
+    const notSeen = new Set(r.notSeenYet.items.map(i => i.item)), late = new Set(r.mayStillPost.map(i => i.item));
+    const open = {};
+    for (const o of r.checkIn.toConfirm.concat(r.checkIn.apart || [])) {
+      const sid = I.scheduleOf(o.item), due = (I.occurrence(o.item) || {}).due;
+      (open[sid] = open[sid] || []).push({ due, land: o.lands, amount: o.amount, state: notSeen.has(o.item) ? 'notSeen' : late.has(o.item) ? 'late' : 'unticked', id: o.item });
+    }
     const name = (sid, due) => { if (sid && due && (!named[sid] || due > named[sid])) named[sid] = due; };
     for (const e of book.events || []) {
       if (!e || e.gone) continue;
@@ -3241,11 +3267,13 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
       if (!s || s.gone) continue;
       for (const k of Object.keys(s.amounts || {})) if (S.keyLive(s.amounts, k)) name(s.id, k);
       const cal = S.calendar((acct[s.acct] && acct[s.acct].country) || country);
-      const occ = S.occurrences(s, cal, today, today + 400).find(o => !done.has(o.id)) || null;
+      const outstanding = (open[s.id] || []).sort((x, y) => (x.land < y.land ? -1 : 1));
+      const occ = S.occurrences(s, cal, today, today + 400).find(o => !done.has(o.id) && !outstanding.some(x => x.id === o.id)) || null;
       const rules = (s.rules || []).filter(x => x && !x.gone);
       let rule = null; rules.forEach((x, i) => { if (i === 0 || x.from == null || D.dayNum(x.from) <= today) rule = x.rule; });
       const last = named[s.id] || null, after = last ? D.dayNum(last) + 1 : -Infinity;
       out[s.id] = { kind: s.kind, amount: S.stepOn(s, today), rule, ends: s.ends || null,
+        outstanding: outstanding.map(x => ({ due: x.due, land: x.land, amount: x.amount, state: x.state })),
         next: occ ? { due: D.dayStr(occ.due), land: D.dayStr(occ.land), amount: occ.amount } : null,
         lastNamed: last, changeFrom: D.dayStr(Math.max(today, after)) };
     }
@@ -7606,7 +7634,8 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
       Object.assign(r.once[p.startsWith], { at: r.at, by: r.by });
       return s.id;
     }
-    const from = !shares.length ? null : x.when === 'now' ? period(w).start : w.today;   // 'now': from this period's first day [V]
+    // 'now': from this period's first day [V]; [BJ2] the first amount too carries its day, never null
+    const from = x.when === 'now' ? period(w).start : w.today;
     return w.add('shares', { from, cur: home(w), per: { free: 'pay' }, free: a, goals: {} });
   }
 
@@ -7851,7 +7880,9 @@ function renderHome3() {
   }
   /* safe to spend until next pay, with the sum behind it */
   const until = safeUntil3(r, yr);
-  const sums = ids.filter(id => r.accounts[id].spendFrom).map(id => `<p class="a3-sum" data-fig="why">${esc3(whyWords3(r.accounts[id]))}</p>`).join('');
+  /* [BJ5] when Free to spend caps the headline, the engine's sum ends with the cap, so the two figures agree */
+  const capLine = r.safeToSpend.why ? `<p class="a3-sum" data-fig="cap">${esc3(r.safeToSpend.why)}</p>` : '';
+  const sums = `${ids.filter(id => r.accounts[id].spendFrom).map(id => `<p class="a3-sum" data-fig="why">${esc3(whyWords3(r.accounts[id]))}</p>`).join('')}${capLine}`;
   const short = r.safeToSpend.shortfall ? `<p class="a3-warn a3-bad">${esc3(label3('shortBy'))} ${fig3('safeToSpend.shortfall', r.safeToSpend.shortfall, home)} before then</p>` : '';
   const warns = (r.warnings || []).map(w => `<p class="a3-warn" data-warn="${esc3(w.code)}">${esc3(w.text)}</p>`).join('');
   out.push(`<section class="a3-card" data-card="safe"><h2>${esc3(label3('safeToSpend'))}${until}</h2>
@@ -8268,7 +8299,10 @@ function renderPlan3() {
   }
   /* pay and bills */
   const scheds = (book.schedules || []).filter(s => plLive3(s) && view[s.id]);
-  const nextWords = v => (v.next ? `next ${esc3(day3(v.next.land, yr))}` : v.ends ? `ended ${esc3(day3(v.ends, yr))}` : 'nothing coming');
+  /* [BJ5] what has landed and is not ticked off comes first, then the next one */
+  const owing = { late: 'late', notSeen: 'not seen yet', unticked: 'not ticked off yet' };
+  const owingWords = v => (v.outstanding || []).map(o => `due ${esc3(day3(o.land, yr))}, ${owing[o.state]}, `).join('');
+  const nextWords = v => `${owingWords(v)}${v.next ? `next ${esc3(day3(v.next.land, yr))}` : v.ends ? `ended ${esc3(day3(v.ends, yr))}` : 'nothing coming'}`;
   const ruleWords = v => (v.rule && v.rule.every === 'month' ? 'day ' + v.rule.days.join(' and ') + ' each month' : v.rule && v.rule.every === 'weeks' ? 'every ' + (v.rule.n === 1 ? 'week' : v.rule.n + ' weeks') : 'no fixed day');
   const pays = scheds.filter(s => s.kind === 'income').map(s => plRow3(`data-pay="${esc3(s.id)}"`, `${esc3(s.name)}<br><span class="when">${ruleWords(view[s.id])}, ${nextWords(view[s.id])}</span>`, plFig3('schedules.*.next.amount', view[s.id].next ? view[s.id].next.amount : view[s.id].amount, s.cur)));
   const bills = scheds.filter(s => s.kind === 'bill').map(s => plRow3(`data-bill="${esc3(s.id)}"`, `${esc3(s.name)}<br><span class="when">${ruleWords(view[s.id])}, ${nextWords(view[s.id])}${view[s.id].ends && view[s.id].next ? ', last on ' + esc3(day3(view[s.id].ends, yr)) : ''}</span>`, plFig3('schedules.*.next.amount', view[s.id].next ? view[s.id].next.amount : view[s.id].amount, s.cur)));
