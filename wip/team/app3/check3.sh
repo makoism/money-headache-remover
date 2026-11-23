@@ -25,6 +25,7 @@ OUT=$(bash ../screens/test/run_all.sh 2>&1); echo "$OUT" | tail -1; echo "$OUT" 
 
 step "the check-in writer (pure)"; run tests/checkin_write.test.js "CHECKIN WRITE PASS"
 step "act3, the one write door (pure)"; run tests/e3_act_unit.js "e3_act_unit: ALL PASS"
+step "the cloud copy's core, two devices on a local fake vault"; run tests/cloud3.test.js "cloud3: ALL PASS"
 step "no money maths in screens"; run tests/no_maths.js "NO MATHS PASS"
 pkill -f chrome-linux64/chrome 2>/dev/null
 step "the try book"; run tests/e3_try.js "e3_try: ALL PASS"

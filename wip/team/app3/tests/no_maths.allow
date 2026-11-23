@@ -5,3 +5,6 @@ e3.js :: Math.abs(off) :: the device's offset written as +09:00; a clock, not mo
 e3.js :: Math.floor(a / 60) :: the offset's hours; a clock, not money
 e3.js :: a % 60 :: the offset's minutes; a clock, not money
 e3.js :: s += abc[Math.floor(Math.random() * abc.length)] :: a random device part for ids until lane C's store keeps one; not money
+cloud3.js :: ALPHA[b[i] % ALPHA.length] :: a random letter of the recovery code; not money
+cloud3.js :: i += 0x8000 :: text turned into base64 in chunks of bytes; not money
+cloud3.js :: i + 0x8000 :: text turned into base64 in chunks of bytes; not money
