@@ -1,10 +1,10 @@
-# Every saved field of every old build, and where the move puts it (23 Nov 2026, after Y and Z)
+# Every saved field of every old build, and where the move puts it (23 Nov 2026, after Y, Z and AA)
 
-Mako's money is in copies saved by older builds: 38.28 is live, 38.31 is the latest, and E1 asks for the 25.0 to 38.28 builds too. SCHEMA_V3 11.1 lists the 38.31 fields and their targets. This file lists the fields of every build that could be found, from each build's own load and clean-up code, with the target of each, or the reason it needs none. Decisions Y (the 28 questions mv-q1 to mv-q28) and Z (the `mv:` kind names below, Z3, Z5, Z6) are folded in. The cases are in `rules/move.json` (69 cases, run by `node rules/run_rules.js move`), the reference is `rules/move_ref.js`, and the 13 questions Y and Z leave (mv-q29 to mv-q41) are in `rules/move.json` under `open` and in section 9. Every amount in the cases is made up.
+Mako's money is in copies saved by older builds: 38.28 is live, 38.31 is the latest, and E1 asks for the 25.0 to 38.28 builds too. SCHEMA_V3 11.1 lists the 38.31 fields and their targets. This file lists the fields of every build that could be found, from each build's own load and clean-up code, with the target of each, or the reason it needs none. Decisions Y (the 28 questions mv-q1 to mv-q28), Z (the `mv:` kind names below, Z3, Z5, Z6) and AA (the next 13, mv-q29 to mv-q41) are folded in. The cases are in `rules/move.json` (81 cases, run by `node rules/run_rules.js move`), the reference is `rules/move_ref.js`, and the 8 questions AA leaves (mv-q42 to mv-q49) are in `rules/move.json` under `open` and in section 9. Every amount in the cases is made up.
 
 ## 1. The builds found
 
-All builds save to the same localStorage key, `money-map-template-v2`, and keep a second copy in IndexedDB `money-map-safe` (record `{ rev, t, json }`, `t` the moment of the save). No build writes a save time into the copy itself; the copy's last save is that second copy's `t`, else the stored `rev` when it is a time (38.31), else the move's own time [Y13].
+All builds save to the same localStorage key, `money-map-template-v2`, and keep a second copy in IndexedDB `money-map-safe` (record `{ rev, t, json }`, `t` the moment of the save). No build writes a save time into the copy itself; the copy's last save is the later of that second copy's `t` and the stored `rev` when it is a time (38.31), either one alone, else the move's own time [Y13, AA10].
 
 | Build | Commit (public/index.html) | Load code |
 |---|---|---|
@@ -24,16 +24,18 @@ Two things hold in every build: the ui object is kept whole on load (every ui ke
 
 ## 2. Field counts per build
 
-A row of the table can name several fields (`cfg.moveTarget, moveStart, ...`); these counts count each one. **Target**: decided (by 11.1, a decision or Y and Z). **None needed**: the field needs no place, for the reason the row gives (kept in `frozen3831`). **Open**: it has a target, and a detail Y and Z leave open (section 9). **No target**: nothing decided yet, kept in `frozen3831` and listed (section 9, mv-q34).
+A row of the table can name several fields (`cfg.moveTarget, moveStart, ...`); these counts count each one. **Target**: decided (by 11.1, a decision or Y to AA). **None needed**: the field needs no place, for the reason the row gives (kept in `frozen3831`). **Open**: it has a target, and a detail AA leaves open (section 9). **No target**: nothing decided yet, kept in `frozen3831` and listed (section 9).
 
 | Builds | Fields | Target | None needed | Open | No target |
 |---|---|---|---|---|---|
-| 25.0 to 31.0 | 121 | 100 | 4 | 11 | 6 |
-| 32.0, 33.1 | 130 | 108 | 4 | 12 | 6 |
-| 34.0, 35.1 | 132 | 109 | 4 | 13 | 6 |
-| 36.4 to 38.22 | 136 | 113 | 4 | 13 | 6 |
-| 38.26, 38.28 | 158 | 134 | 4 | 13 | 7 |
-| 38.31 | 178 | 146 | 12 | 13 | 7 |
+| 25.0 to 31.0 | 122 | 113 | 4 | 4 | 1 |
+| 32.0, 33.1 | 131 | 122 | 4 | 4 | 1 |
+| 34.0, 35.1 | 133 | 124 | 4 | 4 | 1 |
+| 36.4 to 38.22 | 137 | 128 | 4 | 4 | 1 |
+| 38.26, 38.28 | 159 | 149 | 4 | 5 | 1 |
+| 38.31 | 179 | 161 | 12 | 5 | 1 |
+
+After Y and Z, before AA (kept for the record): 121, 130, 132, 136, 158 and 178 fields, of which 6, 6, 6, 6, 7 and 7 had no target and 11, 12, 13, 13, 13 and 13 an open detail. AA added one row, `once[ym].bill:loan` (a field every build saves that the table did not name), which is the one field with no target now (mv-q48). The open details left are the pay streams' spread (mv-q42), the draw's destination (mv-q45) and a debt's `amounts` (mv-q46).
 
 Before Y and Z (kept for the record): 114, 123, 125, 129, 151 and 171 fields, of which 22, 22, 22, 22, 23 and 26 had no target and 16, 16, 17, 17, 24 and 26 an open detail. The rows were redrawn for Y (pay amounts, item labels and notes, receipt notes apart), so the field totals differ a little from the old count.
 
@@ -44,8 +46,8 @@ Before Y and Z (kept for the record): 114, 123, 125, 129, 151 and 171 fields, of
 | Saved field | Meaning | First build | Target, or why none is needed | Status | Case |
 |---|---|---|---|---|---|
 | `v` | shape version, always 1 | 25.0 | replaced by `v: 3` | target | mv-01 |
-| `rev` | revision count, +1 per save (38.31: max(now, rev + 1), a time) | 25.0 | replaced by `rev` (max(now, rev + 1)) and `at`; when it is a time and there is no second copy, it is the copy's last save [Y13]; the old value only in `frozen3831` | target | mv-01, mv-41, mv-56, mv-57 |
-| `steps.a, steps.b, steps.side` | pay by month: salary, second pay, side pay (`[ { from: ym, v } ]`) | 25.0 | three `income` schedules into the main bank, named as 38.31 names them; only the salary starts periods; each step from its month's first day; the rule once the pay day is answered [Y2, Y3]; 0 every month: not moved, in the move summary [Y25, reading] | open | mv-29, mv-46 (mv-q32: pay not monthly on one day) |
+| `rev` | revision count, +1 per save (38.31: max(now, rev + 1), a time) | 25.0 | replaced by `rev` (max(now, rev + 1)) and `at`; when it is a time it is the copy's last save if later than the second copy's `t` [Y13, AA10]; the old value only in `frozen3831` | target | mv-01, mv-41, mv-56, mv-57, mv-78 |
+| `steps.a, steps.b, steps.side` | pay by month: salary, second pay, side pay (`[ { from: ym, v } ]`) | 25.0 | three `income` schedules into the main bank, named as 38.31 names them; only the salary starts periods; each step from its month's first day; the rule once the pay day and rhythm are answered [Y2, Y3, AA4]; with a rhythm other than monthly on one day, each monthly total spread per pay, monthly x 12 / the pays in that year [AA4]; 0 every month: not moved, in the move summary [Y25, reading] | open | mv-29, mv-46, mv-73, mv-74 (mv-q42: where the shape says the steps are monthly totals) |
 | `steps.<bill key>` (bill:rent, util, net, phone, ins, subs) | a bill's monthly amount from a month on | 25.0 | the bill schedule's `steps`, from that month's first day [Y7, Y3] | target | mv-30 |
 | `steps.<budget key>` (bill:food, bill:gas, card, line:<id>) | a budget line's monthly amount from a month on | 25.0 | `plan.budgets[].steps`, from that month's first day [Y3] | target | mv-30, mv-66 |
 | `steps.envelope, education, invest, give` | Free to spend, Courses and books, Investing, Giving by month | 25.0 | `plan.shares` entries (`free`, `edu`, `ffa`, `give`), from that month's first day [Y3] | target | mv-30, mv-45 |
@@ -53,16 +55,17 @@ Before Y and Z (kept for the record): 114, 123, 125, 129, 151 and 171 fields, of
 | `steps.bill:loan` | the "Loan or debt payment" line by month | 25.0 | the matched loan's payment `steps` (its first amount the loan's fixed `minRule`) [Y4] | target | mv-49, mv-50 |
 | `steps.debt:<id>` | extra paid on a card or loan from a month on | 38.26 | `extraSteps` on that loan or card, from that month's first day [Y3] | target | mv-19 |
 | `steps.<key with no line, goal or debt>` | left behind by a removed line in an older build | 25.0 | none needed: its line is gone, so there is nothing to apply it to; kept in `frozen3831` and listed | none needed | mv-32 |
-| `once[ym].<budget key>` | one month's amount for a budget line | 25.0 | `plan.budgets[].once`, the first period starting in that month [X watch], else the period holding its first day [Z5]; waits for the pay day (`held`) | open | mv-33 (mv-q33) |
-| `once[ym].a, b, side` | one month's pay, or extra money added to it | 25.0 | `amounts` on that month's occurrence of that stream [Y2]; waits for the pay day (`held`) | open | mv-33, mv-46 (mv-q32, mv-q33) |
-| `once[ym].<bill key>` | one month's bill amount | 25.0 | `amounts` on that month's occurrence of the bill [Y7]; waits for the bill day (`held`) | open | mv-33 (mv-q33) |
-| `once[ym].draw` | money taken out of the Emergency fund that month | 25.0 | none decided: kept in `frozen3831`, listed | no target | mv-33 (mv-q34) |
-| `once[ym].envelope, education, invest, give` | one month's share, or extra money placed there | 25.0 | none decided (`plan.shares` has no one-period amount): kept in `frozen3831`, listed | no target | mv-33 (mv-q34) |
-| `once[ym].goal:<id>` | one month's goal set-aside, or extra money put in the goal | 25.0 | none decided: kept in `frozen3831`, listed | no target | mv-33 (mv-q34) |
-| `once[ym].debt:<id>` | extra money put on a debt that month | 38.26 | none decided: kept in `frozen3831`, listed | no target | mv-33 (mv-q34) |
+| `once[ym].<budget key>` | one month's amount for a budget line | 25.0 | `plan.budgets[].once`, the first period starting in that month (the first salary pay in it, any rhythm) [X watch, AA4], else the period holding its first day [Z5]; until the salary's day is answered, kept in `pendingMove` and written when it is [AA5] | target | mv-33, mv-71, mv-72, mv-73 |
+| `once[ym].a, b, side` | one month's pay, or extra money added to it | 25.0 | `amounts` on that stream's first occurrence in that month [Y2, AA4]; until its day is answered, in `pendingMove` [AA5] | target | mv-33, mv-46, mv-71, mv-72, mv-73 |
+| `once[ym].<bill key>` | one month's bill amount | 25.0 | `amounts` on the bill's first occurrence in that month [Y7, AA4 reading]; until its day is answered, in `pendingMove` [AA5] | target | mv-33, mv-71, mv-72 |
+| `once[ym].draw` | money taken out of the Emergency fund that month | 25.0 | a `move` out of the fund's place in that period (the first period starting in that month), dated its pay's due day, `mv:move:once.<ym>.draw`; in `pendingMove` until the salary's day is answered [AA6, AA5]; no Emergency fund: listed | open | mv-33, mv-71, mv-72 (mv-q45: where the money goes) |
+| `once[ym].envelope, education, invest, give` | one month's share, or extra money placed there | 25.0 | `once` on that period's `plan.shares` entry, keyed by the occurrence like budget lines (`free`, `edu`, `ffa`, `give`) [AA6]; in `pendingMove` until the salary's day is answered [AA5] | target | mv-33, mv-71, mv-72 |
+| `once[ym].goal:<id>` | one month's goal set-aside, or extra money put in the goal | 25.0 | `once` on that period's `plan.shares` entry, under `goals` [AA6]; in `pendingMove` until the salary's day is answered [AA5]; a goal the plan does not have: listed | target | mv-33, mv-71, mv-72 |
+| `once[ym].debt:<id>` | extra money put on a debt that month | 38.26 | `amounts` on that month's payment occurrence of the loan or card [AA6]; in `pendingMove` until its payment day is answered [AA5] | open | mv-33, mv-71, mv-72 (mv-q46: the extra or the whole payment) |
+| `once[ym].bill:loan` | one month's amount of the "Loan or debt payment" line | 25.0 | none decided (AA6 names a debt's, not the loan line's): kept in `frozen3831`, listed | no target | none (mv-q48) |
 | `items[ym][].id, amount` | a one-time cost in a month | 25.0 | a `once` schedule dated the month's first day; in the move month (the calendar month the move runs in) a first day before the opening becomes the first day after it [H9, Y21] | target | mv-34, mv-63, mv-68 |
-| `items[ym][].label` | the one-time cost's name | 25.0 | the schedule's name when there is no note [11.1]; with a note it has no place (listed) | open | mv-34, mv-65 (mv-q30) |
-| `items[ym][].note` | the one-time cost's note | 25.0 | the schedule's name [Y24] | target | mv-65 |
+| `items[ym][].label` | the one-time cost's name ("One-time cost" when none was typed) | 25.0 | the schedule's name [11.1, AA2] | target | mv-34, mv-65 |
+| `items[ym][].note` | the one-time cost's note | 25.0 | the schedule's `note` [AA2, correcting Y24] | target | mv-65 |
 | `items[ym] = []` | "no one-time costs this month" (touched and emptied) | 25.0 | none needed: nothing to move; only in `frozen3831` | none needed | mv-34 |
 | `cfg.bankStart` | the bank at the start of the first month, or as typed in setup | 25.0 | a dated bank `check`; the oldest figure opens the bank, on the account `mv:acct:cfg` named "Bank", the main bank [Y18, Y26]; on the same day as bankNow, bankNow wins [Y22] | target | mv-02 to mv-06, mv-48 |
 | `cfg.bankAt` | the day bankStart was typed (a day, no time) | 38.31 | the check's date; told at the end of that day in the moving device's offset, or at the copy's last save when that is earlier [Y1] | target | mv-02, mv-47, mv-69 |
@@ -72,37 +75,37 @@ Before Y and Z (kept for the record): 114, 123, 125, 129, 151 and 171 fields, of
 | `cfg.ceiling` | most to spend in a month | 25.0 | `plan.limits.ceiling` | target | mv-11 |
 | `cfg.aims` | the split chosen in setup, shares of pay per jar | 25.0 | `plan.limits.aims` | target | mv-11 |
 | `cfg.planFrom` | the month the plan starts | 38.31 | none needed: periods come from pay; `frozen3831` only (read for a dated goal's set-aside, Y10) | none needed | mv-11 |
-| `cfg.loanLast, cfg.redirectLoan` | older copies: the loan line's last month and whether its money then goes to the Emergency fund | 25.0 | the loan's `ends` (the month's last day) and `redirect` [Y5, Y6]; with an empty loan line, in the move summary with it [Y4] | open | mv-44, mv-50 (mv-q36) |
-| `cfg.moveMonth, cfg.carDue` | older copies: the move goal's month and the yearly cost's date | 25.0 | the goal's `due`, when the plan has no goal with that id [Y5] | target | mv-18 |
-| `cfg.moveTarget, moveStart, travelTarget, travelStart, carTarget, carStart, rainyStart, rainyTarget, rainyStretch` | older copies: the four sample goals' figures | 25.0 | the matching sample goal's `target`, `start` and `stretch`, used only when the plan has no goal with that id [Y5] | target | mv-18, mv-51 (mv-q37) |
+| `cfg.loanLast, cfg.redirectLoan` | older copies: the loan line's last month and whether its money then goes to the Emergency fund | 25.0 | the loan's `ends` (the month's last day) and `redirect` [Y5, Y6]; the loan line's own end month and redirect win over them [AA8]; with an empty loan line, in the move summary with it [Y4] | target | mv-44, mv-50, mv-77 |
+| `cfg.moveMonth, cfg.carDue` | older copies: the move goal's month and the yearly cost's date | 25.0 | the goal's `due`, for a copy with no plan [Y5]; with a plan, none needed: a goal the plan lacks was removed and is never brought back [AA9] | target | mv-18, mv-51 |
+| `cfg.moveTarget, moveStart, travelTarget, travelStart, carTarget, carStart, rainyStart, rainyTarget, rainyStretch` | older copies: the four sample goals' figures | 25.0 | the matching sample goal's `target`, `start` and `stretch`, for a copy with no plan [Y5]; with a plan, none needed: a goal the plan lacks was removed and is never brought back [AA9] | target | mv-18, mv-51 |
 | `cfg.<unknown>` | a newer build's setting | 38.31 | none needed: a setting this move cannot know; `frozen3831`, listed [11.1] | none needed | mv-26 |
-| `plan.lines[].id, key, jar, name` | a line: its id, the key its amounts use, its jar, its name | 25.0 | rent, util, net, phone, ins, subs: bill schedules; loan: matched to a loan, or a loan of its own, or dropped [E6, Y4]; food, gas, card and custom lines: `plan.budgets` (place from the jar); spend, learn, invest, give: `plan.shares`; 0 every month: not moved, in the move summary [Y25] | target | mv-12, mv-49, mv-66 |
+| `plan.lines[].id, key, jar, name` | a line: its id, the key its amounts use, its jar, its name | 25.0 | rent, util, net, phone, ins, subs: bill schedules; loan: matched to a loan, or a loan of its own (its balance, yearly rate and minimum asked, AA12), or dropped [E6, Y4]; food, gas, card and custom lines: `plan.budgets` (place from the jar); spend, learn, invest, give: `plan.shares`; 0 every month: not moved, in the move summary [Y25] | target | mv-12, mv-49, mv-66, mv-80 |
 | `plan.lines[].def` | the line's usual monthly amount | 25.0 | the first step | target | mv-12 |
 | `plan.lines[].note` | the built-in line's help text (app text, reset on every load) | 25.0 | none needed: app text, not the person's | none needed | mv-12 |
 | `plan.lines[].ends` | the last month of the line (a month, not a day) | 25.0 | `ends`, that month's last day [Y6] | target | mv-13, mv-49 |
 | `plan.lines[].redirect` | after `ends`, the line's money goes to the Emergency fund | 25.0 | `redirect: <the Emergency fund's place>`; on the loan line, the loan's redirect [Y4] | target | mv-13, mv-49 |
 | `plan.goals[].id, name, target, due, slot` | a goal | 25.0 | `places` | target | mv-14 |
-| `plan.goals[].start` | saved so far | 25.0 | asked where it is [Y17]: in the bank (and until answered, Z3) part of the bank's opening split; in another account the person names, that account's opening; a pay-off goal's is the loan's `paidBefore` [Z6] | target | mv-15, mv-45, mv-55, mv-59 |
-| `plan.goals[].monthly` | fixed monthly set-aside for a goal with no date | 25.0 | `plan.shares[].goals`; a dated goal's set-aside, never saved, is worked out as 38.31 does, from the move day [Y10] | target | mv-31, mv-54 (mv-q39) |
+| `plan.goals[].start` | saved so far | 25.0 | asked where it is [Y17]: in the bank (and until answered, Z3) part of the bank's opening split; in another account the person names, a bank or an e-wallet as they say [AA13], that account's opening; a pay-off goal's is the loan's `paidBefore` [Z6] | target | mv-15, mv-45, mv-55, mv-59, mv-81 |
+| `plan.goals[].monthly` | fixed monthly set-aside for a goal with no date | 25.0 | `plan.shares[].goals`; a dated goal's set-aside, never saved, is worked out as 38.31 does, from the move day [Y10]; a goal with neither moves with 38.31's figure, a twelfth of what is missing rounded up to its unit [AA11] | target | mv-31, mv-54, mv-79 |
 | `plan.goals[].why` | a line on why the goal matters | 34.0 | kept on the place | target | mv-14 |
 | `plan.goals[].emergency, stretch` | the Emergency fund and its longer target | 25.0 | `places` kind emergency, `stretch` | target | mv-17 |
 | `plan.goals[].stretchOn, stretchFrom` | yes to the longer target, and from which month | 38.31 | `stretchOn`, `stretchFrom` on the place | target | mv-17 |
 | `plan.goals[].<unknown plain>` | a newer build's goal field | 38.31 | kept on the place | target | mv-14 |
-| `plan.debts[].id, name, kind, balance, apr, min, extra` | a card or loan with interest | 38.26 | a `loan` or `card` account opened at `balance`, `apr`, `minRule: { fixed: min }`, `extraSteps` from `extra`; its payment day asked; a card's close day "not sure" and `inFull: false`; kind `personal` a loan [Y9] | target | mv-19, mv-53 |
+| `plan.debts[].id, name, kind, balance, apr, min, extra` | a card or loan with interest | 38.26 | a `loan` or `card` account opened at `balance`, `apr`, `minRule: { fixed: min }`, `extraSteps` from `extra`; its payment day asked (`payDay` once answered); a card's close day "not sure" and `inFull: false`; kind `personal` a loan [Y9] | target | mv-19, mv-53, mv-72 |
 | `plan.recurring[].id, a, c, n, every, on, from, last` | spending that logs itself, weekly on a weekday or monthly on a day | 38.26 | `schedules` kind autoSpend; weekly `on` becomes the rule [H9]; `last` the last day already logged; `c` as a receipt's [Y20, reading] | target | mv-20 |
-| `receipts[].id, d, a, c` | a logged spend | 25.0 | `spend` events, `mv:rc:<id>`; `c` a budget line, a share's place, a bill (place bills with its line), `other` (Free to spend, line `other`), bill:loan a `repay` on the matched loan [Y20]; `told` the start of its day [J2, Y1] | target | mv-07, mv-62 |
+| `receipts[].id, d, a, c` | a logged spend | 25.0 | `spend` events, `mv:rc:<id>`; `c` a budget line, a share's place, a bill (place bills with its line), `other` (Free to spend, line `other`), bill:loan a `repay` on the matched loan [Y20], or with no loan (the line dropped or 0 every month) a spend on place bills with line `loan` [AA7]; `told` the start of its day [J2, Y1] | target | mv-07, mv-62, mv-75, mv-76 |
 | `receipts[].n` | the receipt's note | 25.0 | `note`, unchanged [Y14] | target | mv-07 |
-| `receipts[].cn` | the category's name as shown when it was logged | 25.0 | none needed: the line or place `c` names carries the name (reading, mv-q29) | none needed | mv-07 |
-| `receipts[].s` | the account it came from, as named | 32.0 | `acct` when it names an account; else no place now the note moves unchanged (listed) | open | mv-08, mv-21, mv-07 (mv-q29) |
+| `receipts[].cn` | the category's name as shown when it was logged | 25.0 | none needed: the line or place `c` names carries the name (the reading of mv-q29, confirmed by AA) | none needed | mv-07 |
+| `receipts[].s` | the account it came from, as named | 32.0 | `acct` when it names an account; else added to its note as "paid from: <s>" [AA1] | target | mv-07, mv-08, mv-21, mv-70 |
 | `receipts[].<unknown plain>` | a newer build's receipt field | 38.31 | none needed: a field this move cannot know; `frozen3831` only, listed | none needed | mv-26 |
 | receipts beyond 5,000 | receipts every build's clean-up drops (it keeps the first 5,000) | 25.0 | moved from the raw text [O] | target | mv-35 |
 | `cards[].id, name, owed, payDay, at` | pay-in-full cards typed on Home | 38.31 | `card` accounts, `cutDay: null`, `inFull: true`, opened with a check of `owed` dated `at`, told at the end of that day [Y1] | target | mv-21, mv-58 |
 | `<unknown top-level field>` | a newer build's field | 38.31 | none needed: a field this move cannot know; `frozen3831`, listed | none needed | mv-26 |
 | `ui.cur, ui.preset` | currency symbol; which sample was loaded | 25.0 | the first `home.curs` entry, asked when ambiguous | target | mv-22 to mv-25 |
 | `ui.name` | the person's name | 25.0 | `people[0].name`, `mv:person:ui.name` [Y28] | target | mv-27 |
-| `ui.gk` | goal kinds by goal id | 25.0 | the place's `kind`; a pay-off goal gets `pays`: the debt with its name, else a new loan whose balance is asked [Y11] | target | mv-14, mv-16, mv-55 |
+| `ui.gk` | goal kinds by goal id | 25.0 | the place's `kind`; a pay-off goal gets `pays`: the debt with its name, else a new loan whose balance, yearly rate and minimum are asked [Y11, AA12] | target | mv-14, mv-16, mv-55, mv-80 |
 | `ui.accts` | accounts named by a statement import `[ { id, name, kind } ]` | 32.0 | accounts keeping their names; `wallet` an `ewallet` unless named as cash [Y18] | target | mv-08, mv-28, mv-60 |
-| `ui.sweep` | month-end answers by month | 34.0 | after the opening, `pe:<occurrence of the period starting in that month>:free`: bank to Waiting, next kept, hide nothing [Y8]; earlier ones in `frozen3831`; the older `{ amt, id }` listed | open | mv-36, mv-52 (mv-q31, mv-q32, mv-q33) |
+| `ui.sweep` | month-end answers by month | 34.0 | after the opening, `pe:<the salary occurrence that starts the period holding that month's last day>:free` [Y8, AA4]: bank to Waiting, next kept, the older `{ amt, id }` a move to goal `id` [AA3], hide nothing; in `pendingMove` until the salary's day is answered [AA5]; earlier ones in `frozen3831` | target | mv-36, mv-52, mv-71, mv-72, mv-73 (mv-q49: an `id` the plan does not have) |
 | `ui.keep, ui.keeps, ui.preSplit` | Undo copies | 38.31 | none needed: Undo is the `gone` marks now, no copy inside the saved data [D2] | none needed | mv-27 |
 | `ui.cats` | categories the statement reader was taught | 32.0 | `imports.cats` | target | mv-28 |
 | `ui.minAuto` | the minimum the app filled in itself | 38.31 | none needed: it only decides that `cfg.minBank` is dropped (MAKO M1) | none needed | mv-10 |
@@ -125,9 +128,9 @@ Before Y and Z (kept for the record): 114, 123, 125, 129, 151 and 171 fields, of
 
 ## 4. Fields with no target, and fields that need none
 
-**No target** (nothing decided; kept in `frozen3831` and listed by the move; mv-q34): the one-month amounts `once[ym].draw`, `once[ym].envelope, education, invest, give`, `once[ym].goal:<id>` and `once[ym].debt:<id>` (38.26 on), for months on or after the opening.
+**No target** (nothing decided; kept in `frozen3831` and listed by the move): `once[ym].bill:loan`, the loan line's one-month amount (mv-q48). AA6 gave the other one-month amounts (`draw`, the shares, goals and debts) their targets.
 
-**None needed**, each for the reason its row gives: a steps key of a removed line; `items[ym] = []`; `cfg.planFrom`; `plan.lines[].note` (app text); `receipts[].cn` (the category's name, carried by the line or place; a reading, mv-q29); `ui.keep, keeps, preSplit` (Undo copies, D2); `ui.minAuto`; and the fields of a newer build this move cannot know (unknown fields on the top level, in cfg and on receipts), kept in `frozen3831` and listed.
+**None needed**, each for the reason its row gives: a steps key of a removed line; `items[ym] = []`; `cfg.planFrom`; `plan.lines[].note` (app text); `receipts[].cn` (the category's name, carried by the line or place; confirmed by AA); the older cfg goal figures in a copy with a plan (AA9; their rows count them as target, as a copy with no plan uses them); `ui.keep, keeps, preSplit` (Undo copies, D2); `ui.minAuto`; and the fields of a newer build this move cannot know (unknown fields on the top level, in cfg and on receipts), kept in `frozen3831` and listed.
 
 **Not fields of the copy**: the IndexedDB second copy's save time `t` is the copy's last save [Y13]; device storage beside the copy (`mhr-vault`, `money-map-theme`, `mhr-anon`, `mhr-invite`, `mhr-errlog`, `mhr-orb`, `mhr-realm`, `mhr-menu-used`) stays where it is and is read as it is, the theme being a look key [Y27, Y15]. Not counted above.
 
@@ -140,7 +143,7 @@ Before Y and Z (kept for the record): 114, 123, 125, 129, 151 and 171 fields, of
 
 ## 6. The move's own questions in the reference
 
-Asked once, each recorded with its answer (`asks`): the currency (O, H9; before any amount is converted); the bank figure, when the copy has none [Y19]; where each goal with money is [Y17]; the balance of each loan the move makes [Y4, Y11]; when each bill is due; which loan the "Loan or debt payment" line is, when the copy has debts (E6); when each pay comes in [Y2]; each debt's payment day [Y9]. Until a question is answered the reference writes what 11.1 says to use meanwhile: a goal's money in the bank [Z3]; no rule on a pay or bill; nothing for the loan line; and a one-month amount or month-end answer that needs the day waits in `held`.
+Asked once, each recorded with its answer (`asks`): the currency (O, H9; before any amount is converted); the bank figure, when the copy has none [Y19]; where each goal with money is, and for another account bank or e-wallet [Y17, AA13]; the balance of each loan the move makes [Y4, Y11], and its yearly rate and minimum (`loanTerms`; "don't know" is rate 0 and the old monthly payment as a fixed minimum) [AA12]; when each bill is due; which loan the "Loan or debt payment" line is, when the copy has debts (E6); when each pay comes in, any rhythm [Y2, AA4]; each debt's payment day [Y9]. Until a question is answered the reference writes what 11.1 says to use meanwhile: a goal's money in the bank [Z3]; no rule on a pay or bill; nothing for the loan line; a one-month amount or month-end answer that needs a pay, bill or payment day waits in `pendingMove` on the copy and is written when that day is answered [AA5] (question `move_answer`, mv-72); a bill:loan receipt while the loan question waits is listed in `held` (mv-q43).
 
 ## 7. The `mv:` kinds
 
@@ -161,10 +164,11 @@ Every record the move writes is `mv:<kind>:<the 38.31 id or key it came from>`, 
 | `person` | the person | `ui.name` | `mv:person:ui.name` |
 | `open`, `check` | an account's opening and its check | `cfg` (the bank's opening), `cfg.bankStart`, `cfg.bankNow`; `card:<id>`, `debt:<id>`, `plan.goals.<goal id>` | `mv:open:cfg`, `mv:check:cfg.bankNow`, `mv:open:debt:car` |
 | `rc` | a receipt (a `spend`, or a `repay` for bill:loan) | the receipt's id | `mv:rc:r1700000000123` |
+| `move` | the Emergency fund draw's move out of its place [AA6] (a reading) | the field path | `mv:move:once.2027-01.draw` |
 
 A month-end answer is not an `mv:` record: it is the period-end record `pe:<occurrence>:free` (`pe:mv:pay:steps.a@2026-12-25:free`) [Y8, T1].
 
-## 8. Decisions Y and Z, and their cases
+## 8. Decisions Y, Z and AA, and their cases
 
 | Item | What the move does | Cases |
 |---|---|---|
@@ -180,7 +184,7 @@ A month-end answer is not an `mv:` record: it is the period-end record `pe:<occu
 | Y10 | a dated goal's set-aside (38.31's evenSave) from the move day | mv-31, mv-54 |
 | Y11 | a pay-off goal pays the debt of its name, else a new loan, balance asked | mv-15, mv-16, mv-55 |
 | Y12 | two devices' moves merge like any records | mv-41, mv-42, mv-67 |
-| Y13 | the last save: the second copy's `t`, else rev when a time, else the move's time | mv-03, mv-56, mv-57, mv-69 |
+| Y13 | the last save: the second copy's `t`, else rev when a time, else the move's time (AA10: the later of the two) | mv-03, mv-56, mv-57, mv-69, mv-78 |
 | Y14 | the note moves unchanged | mv-07, mv-08, mv-21, mv-45 |
 | Y15 | look keys to `look`, tour and coach keys to `tour`, on the device | mv-27 |
 | Y16 | with the sample shown, receipts, cards and a typed bank figure move; the plan does not | mv-37, mv-58 |
@@ -191,7 +195,7 @@ A month-end answer is not an `mv:` record: it is the period-end record `pe:<occu
 | Y21 | the move month is the calendar month the move runs in | mv-34, mv-63 |
 | Y22 | bankStart and bankNow on the same day: bankNow | mv-48, mv-67 |
 | Y23 | too many decimals: rounded half up, flagged | mv-24, mv-64 |
-| Y24 | an item's note is its schedule's name | mv-65 |
+| Y24 | an item's note is its schedule's name (corrected by AA2) | mv-65 |
 | Y25 | lines (and pay amounts) 0 every month not moved, in the move summary | mv-29, mv-44, mv-66 |
 | Y26 | the bank account is "Bank" | mv-02 |
 | Y27 | device storage stays where it is | none possible (not in the copy) |
@@ -200,14 +204,32 @@ A month-end answer is not an `mv:` record: it is the period-end record `pe:<occu
 | Z5 | once with no period starting in the month: the period holding its first day | rules units-81 |
 | Z6 | a pay-off goal's saved so far: the loan's `paidBefore` | mv-15, mv-55 |
 | Z (kinds) | the kind names of section 7 everywhere | mg-79, mg-81, mg-84, mg-85 |
+| AA1 | a receipt's `s` naming no account: added to its note as "paid from: <s>" | mv-07, mv-70 |
+| AA2 | an item's label is the schedule's name, its note the schedule's `note` | mv-65 |
+| AA3 | the older `{ amt, id }`: that period's `pe:` record, a move of `amt` to goal `id` | mv-52, mv-71, mv-72 |
+| AA4 | the pay rhythm asked; a one-month amount to the first pay in the month; a month-end answer to the period holding the month's last day; a monthly total spread per pay | mv-73, mv-74 |
+| AA5 | what waits for a pay or bill day is kept in `pendingMove` and written when the day is answered | mv-33, mv-46, mv-71, mv-72 |
+| AA6 | shares and goals: `once` on that period's plan.shares entry; the draw a move out of the fund's place; a debt's its payment occurrence `amounts` | mv-33, mv-71, mv-72 |
+| AA7 | a bill:loan receipt with the loan line dropped or empty: a spend on place bills, line `loan` | mv-75, mv-76 |
+| AA8 | the loan line's own end month and redirect win over cfg.loanLast | mv-50, mv-77 |
+| AA9 | a removed goal is never brought back by an older figure | mv-51 |
+| AA10 | the last save: the later of the second copy's `t` and the `rev` time | mv-78 |
+| AA11 | a goal with no date and no monthly: 38.31's figure is its share | mv-33, mv-79 |
+| AA12 | the loans the move makes ask rate and minimum; "don't know": 0 and the old monthly payment | mv-15, mv-49, mv-80 |
+| AA13 | "another account" asks bank or e-wallet and makes that type | mv-59, mv-81 |
+| AA14 | (the model, not the move) a not-yet item past its window is settled by a matching line at any later date | scenarios notyet_import_late nil-01 to nil-03 |
 
-## 9. What Y and Z leave open
+## 9. What AA leaves open
 
-The 13 questions in `rules/move.json` `open` (no case depends on one; the reference does the least it can): mv-q29 a receipt's `s` that names no account, now the note moves unchanged; mv-q30 an item's label when its note is the name; mv-q31 the older month-end answer `{ amt, id }`; mv-q32 pay that is not monthly on one day (which occurrence and period, and each pay's amount from a monthly total); mv-q33 what waits until a pay or bill day is answered; mv-q34 one-month amounts of draw, the shares, goals and debts; mv-q35 a bill:loan receipt with no loan; mv-q36 a loan line's own `ends` against cfg.loanLast; mv-q37 a stale sample goal figure bringing back a removed goal; mv-q38 a second copy older than the stored one; mv-q39 a goal with no date and no monthly; mv-q40 the rate and minimum of the loans the move makes; mv-q41 the type of a goal's "another account".
+AA answers mv-q29 to mv-q41 (section 8). The 8 questions it leaves are in `rules/move.json` `open`; the reference does what each says: mv-q42 where the shape says a pay stream's steps are monthly totals to spread per pay (AA4; the reference writes `per: 'month'` on the schedule); mv-q43 a bill:loan receipt while the loan question is not answered (a repay with no loan yet, in `held`); mv-q44 what a made loan holds until its rate and minimum are answered; mv-q45 where the Emergency fund draw's money goes (the reference: Waiting, the shape's default; 38.31 counted it as money in); mv-q46 whether a debt's `amounts` is the extra or the whole payment; mv-q47 which note AA7's spend carries (the reference keeps the receipt's own); mv-q48 `once[ym].bill:loan`, which has no target; mv-q49 an older `{ amt, id }` naming a goal the plan does not have. mv-72, mv-75 and mv-76 show the reference's reading of mv-q45, mv-q46 and mv-q47; mv-73 leaves `per` (mv-q42) out of its view.
 
-Readings taken (to confirm): the field paths of section 7; Y25 applied to pay amounts; Y20 applied to a self-logged spend's category; `seen` as the coach-mark key (Y15); "named as cash" as a name holding the word cash (Y18); close day and in full on cards only (Y9); the move's period-end record written `k: 'periodEnd'`, Waiting the place `waiting` (Y8).
+Readings taken while writing AA (to confirm; SCHEMA_V3 section 14 lists them too): AA1's join is "; " ("stamps; paid from: Cash jar"); AA4 is applied to a bill's one-month amount as to pay (its first occurrence in the month); `pendingMove` also holds what waits for a debt's payment day, and a rule answered later is from the opening; a share's `once` goes on the plan.shares entry in force on the due day of the pay that starts the period; the draw's `move` is dated that day and has the kind `move`; with no Emergency fund the draw is listed; AA7 applies whenever there is no loan; AA11's figure is the share from the opening, worked out for the opening's month.
+
+The readings Y and Z took (the field paths of section 7; Y25 applied to pay amounts; Y20 applied to a self-logged spend's category; `seen` as the coach-mark key; "named as cash" as a name holding the word cash; close day and in full on cards only; the move's period-end record written `k: 'periodEnd'`, Waiting the place `waiting`) are confirmed by AA.
 
 ## 10. The hand re-check of the 45 cases (Y: "re-worked by hand by the next reviewer")
+
+After AA: mv-70 to mv-81 were written by hand, and mv-07, mv-15, mv-33, mv-46, mv-49, mv-51, mv-52 and mv-65 re-worked by hand where AA changed the rule, before the reference changed; 18 of them failed on the old reference (mv-77 and mv-81 passed first: the reference already did what AA8 and AA13 say), and all 81 passed on the first run after the change. The rest of this section is the record of the Y re-check.
 
 Each of mv-01 to mv-45 was worked again by hand from this file, SCHEMA_V3 11.1 and the decisions, Y and Z included, without the reference's output; the hand answers are now the cases' expected outputs, and the reference was then changed until it gave them (all 69 cases passed on its first run after the change).
 

@@ -1,6 +1,6 @@
-# Coverage of the foundation (after decisions T to Z, 23 Nov 2026)
+# Coverage of the foundation (after decisions T to AA, 23 Nov 2026)
 
-The coverage grid of final_review_3.md, updated (LESSONS lesson 3: count coverage, do not sample). Rows are kinds of record and the shapes they live in; columns are the situations that change a record's effect. Every applicable cell names the asks (scenarios/*.json, run by `node foundation_review/ref/run_scenarios.js`) or cases (rules/*.json, run by `node foundation_review/rules/run_rules.js`) that cover it. All of them pass: 664 of 664 asks, 421 of 421 cases (after W and X: 78 asks and 32 cases added, in 19 new scenario files, one ask in fee_place and a new rules file `rules/edits.json`; after Y and Z: 15 asks in 4 new scenario files, 11 rules cases and 24 move cases, and the move row; see "Decisions W and X" and "Decisions Y and Z" at the end). The move cases (`rules/move.json`) are counted in the 421.
+The coverage grid of final_review_3.md, updated (LESSONS lesson 3: count coverage, do not sample). Rows are kinds of record and the shapes they live in; columns are the situations that change a record's effect. Every applicable cell names the asks (scenarios/*.json, run by `node foundation_review/ref/run_scenarios.js`) or cases (rules/*.json, run by `node foundation_review/rules/run_rules.js`) that cover it. All of them pass: 667 of 667 asks, 433 of 433 cases (after AA: 3 asks in a new scenario file and 12 move cases; after W and X: 78 asks and 32 cases added, in 19 new scenario files, one ask in fee_place and a new rules file `rules/edits.json`; after Y and Z: 15 asks in 4 new scenario files, 11 rules cases and 24 move cases, and the move row; see "Decisions W and X" and "Decisions Y and Z" at the end). The move cases (`rules/move.json`) are counted in the 433.
 
 Columns: C check day, O opening, W posting window, P period start, X other currency, D two devices, U undo/redo, E edited after settled, S imported/typed/self-logged, Z closed account, and, added after confirm_review_1 (decision X): M the move run on two devices (the phone and the desktop each move the same 38.31 copy), Y years after setup (an ask ten years out, X7), T a time with an offset (the start and end of a day in the device's offset, X9).
 
@@ -25,6 +25,7 @@ Marks: **c** covered before this round; **n** newly covered (in the first ten co
 | of which covered by asks that already existed (c) | 4 |
 | of which covered by new asks and cases (n) | 47 |
 | False covers confirm_review_1 found, now really covered (check C, card O, in / pay E, income E, rm: D) | 5 |
+| Changed by AA (no new row or column; cells of the move row and the not-yet row covered again by AA's cases and asks) | 0 |
 | **Applicable and covered, all passing** | **226** (226 of 226) |
 | Applicable and uncovered | 0 |
 
@@ -344,23 +345,23 @@ Marks: **c** covered before this round; **n** newly covered (in the first ten co
 ### not yet at setup (`notYet`) (a new row: confirm_review_1 found it missing)
 - C check day (n): notyet_opening ny-03; notyet_bill nyb-02 (each is on the first check-in list)
 - O opening (n): notyet_opening ny-01; notyet_bill nyb-01
-- W posting window (n): notyet_bill nyb-01 (a bill due the day before setup, late and still inside its window)
+- W posting window (n): notyet_bill nyb-01 (a bill due the day before setup, late and still inside its window); notyet_window_past nwp-01 (Z2); notyet_import_late nil-02 (AA14: a line three weeks past the window settles the item)
 - P period start (n): notyet_opening ny-02, ny-05 (the pay due on the setup day starts the period when it lands)
 - X other currency (n): notyet_bill nyb-02, nyb-04 (pay in dollars not in yet: listed apart)
-- S imported/typed/self-logged (n): notyet_bill nyb-03 (a statement line settling it stays outside the opening)
+- S imported/typed/self-logged (n): notyet_bill nyb-03 (a statement line settling it stays outside the opening); notyet_import_late nil-01 to nil-03 (AA14: a matching statement line at any later date settles it, one of another amount does not)
 - setup's questions, a pay due that day first: rules ed-11, ed-12
 - not applicable: D, U, E, Z (setup writes the opening once, on one device; nothing is settled or closed before it); M (38.31 has no such answer), Y, T
 
 ### move (an old copy moved) (a new row after Y and Z: the move is a record kind of its own)
-- C check day (n): rules mv-02 to mv-06, mv-47, mv-48 (each bank figure a dated check, told at the end of its day or the last save, Y1, Y22); moved_bank_now, moved_figure_no_time
-- O opening (n): rules mv-02, mv-15, mv-45, mv-59 (the oldest figure opens the bank, goal money in its split or another account's opening, Y17, Z3); goal_money_unanswered gmu-01 to gmu-04 (Z3); moved_records moved-01
-- P period start (n): rules mv-29, mv-46 (the salary stream starts periods, the others not, Y2); mv-33 (a budget line's one-month amount keyed by the period's pay); mv-52 (month-end answers named by the period's pay, Y8); units-78 to units-81 (Z5)
+- C check day (n): rules mv-02 to mv-06, mv-47, mv-48 (each bank figure a dated check, told at the end of its day or the last save, Y1, Y22); mv-78 (the last save the later of the second copy's `t` and the `rev` time, AA10); moved_bank_now, moved_figure_no_time
+- O opening (n): rules mv-02, mv-15, mv-45, mv-59, mv-81 (the oldest figure opens the bank, goal money in its split or another account's opening, a bank or an e-wallet, Y17, Z3, AA13); mv-80 (a made loan's rate and minimum, AA12); goal_money_unanswered gmu-01 to gmu-04 (Z3); moved_records moved-01
+- P period start (n): rules mv-29, mv-46 (the salary stream starts periods, the others not, Y2); mv-33 (a budget line's, a share's and a goal's one-month amount keyed by the period's pay, AA6); mv-52 (month-end answers named by the period's pay, Y8, AA3); mv-72 (written when the pay day is answered after the move, AA5); mv-73 (pay every two weeks: the first pay in the month, the period holding the month's last day, AA4); units-78 to units-81 (Z5)
 - X other currency (n): rules mv-22 to mv-25 (the currency asked before any amount is converted), mv-64 (too many decimals rounded and flagged, Y23)
 - D two devices (n): rules mv-41, mv-42, mv-67 (Y12, Y28); mg-84, mg-85
 - U undo/redo (n): rules mv-27 (38.31's Undo copies are not moved, D2); a moved record taken back is marked `gone` like any built id (section 0): mg-91
-- S imported/typed/self-logged (n): rules mv-07 (typed receipts), mv-08, mv-28, mv-60 (imported accounts, Y18), mv-20 (self-logged spends), mv-62 (Y20)
+- S imported/typed/self-logged (n): rules mv-07, mv-70 (typed receipts, AA1), mv-08, mv-28, mv-60 (imported accounts, Y18), mv-20 (self-logged spends), mv-62, mv-75, mv-76 (Y20, AA7)
 - M the move run on two devices (n): rules mv-41, mv-42, mv-67; moved_ids mvid-01 to mvid-03 (the model reads moved ids)
-- Y years after setup (n, uncovered until this round): rules mv-68 (steps and items ten years out move as they are)
+- Y years after setup (n, uncovered until this round): rules mv-68 (steps and items ten years out move as they are); mv-74 (a weekly pay's share of a monthly total through a year of 53 pays, AA4)
 - T a time with an offset (n, partly uncovered until this round): rules mv-02, mv-07 (+09:00), mv-69 (a moving device at -05:00)
 - not applicable: W (the move writes no import line, so no posting window); E (the move settles nothing; X8 applies to moved schedules as to any, rules ed-01 to ed-07); Z (38.31 has no closed accounts)
 
@@ -457,3 +458,23 @@ Run first, before the references changed: rules 343 of 419 cases and scenarios 6
 | Z6: a pay-off goal's saved so far kept on the loan | rules mv-15, mv-55 | both |
 | Z: the reviewer's scripts c3 and c6 renamed | ref/confirm_situations c3 (`not_yet`), c6 (`fee:t1`) | c6 stopped on the missing `fee1`; c3 ran but its `not_gone_out` was read by nothing |
 
+## Decision AA, and where each part is tested
+
+Run first, before the references changed: rules 415 of 433 cases (the 18 move cases marked "failed first" below) and scenarios 666 of 667 asks (nil-02). After the changes to `rules/move_ref.js` and `ref/lookahead_ref.js`: 433 of 433 cases and 667 of 667 asks. The cases' expected outputs and the asks were worked by hand before the references changed. AA answers the move's open questions mv-q29 to mv-q41 and Z2's import question; the 8 it leaves are `rules/move.json` mv-q42 to mv-q49 (MOVE_FIELDS.md section 9, SCHEMA_V3 section 14).
+
+| Part | Asks or cases | Failed first |
+|---|---|---|
+| AA1: a receipt's `s` naming no account added to its note | rules mv-07, mv-70 | both (listed, note unchanged) |
+| AA2: an item's label the schedule's name, its note the `note` | rules mv-65 | mv-65 (named by the note) |
+| AA3: the older `{ amt, id }` a move to that goal in the period's `pe:` record | rules mv-52, mv-71, mv-72 | all three (listed) |
+| AA4: the pay rhythm; the first pay in the month; the period holding the month's last day; a monthly total spread per pay | rules mv-73, mv-74 | both (held; no `payAmounts`) |
+| AA5: what waits for a pay or bill day kept in `pendingMove`, written when answered | rules mv-33, mv-46, mv-71, mv-72 | all four (`held`; no question `move_answer`) |
+| AA6: shares and goals `once` on that period's plan.shares entry; the draw a move out of the fund; a debt's payment occurrence `amounts` | rules mv-33, mv-71, mv-72 | all three (listed) |
+| AA7: a bill:loan receipt with the loan line dropped or empty | rules mv-75, mv-76 | both (a spend with no place) |
+| AA8: the loan line's own end month and redirect win | rules mv-50, mv-77 | none (the reference already did this) |
+| AA9: a removed goal never brought back | rules mv-51 | mv-51 (the sample trip made again) |
+| AA10: the later of the second copy's `t` and the `rev` time | rules mv-78 | mv-78 (08:00, the second copy's) |
+| AA11: a goal with no date and no monthly takes 38.31's figure | rules mv-33, mv-79 | both (no amount) |
+| AA12: the loans the move makes ask rate and minimum | rules mv-15, mv-49, mv-80 | all three (no question) |
+| AA13: "another account" a bank or an e-wallet | rules mv-59, mv-81 | none (the reference took the type from the answer) |
+| AA14: a not-yet item past its window settled by a matching line at any later date | notyet_import_late nil-01 to nil-03 | nil-02 (345,200: the line stayed unmatched and the insurance was still expected) |
