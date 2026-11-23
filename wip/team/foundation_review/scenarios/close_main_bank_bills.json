@@ -1,0 +1,37 @@
+{
+  "life": "close_main_bank_bills",
+  "title": "Closing the main bank moves the bills paid from it to the new main bank too; the person can end any of them (V, corrected reading)",
+  "story": "Switching banks, as close_main_bank. Set up Mon 11 Jan 2027, the day after pay: the old bank (the main bank) holds 200,000, of which Food 40,000 and Free to spend 60,000 (typed); a new bank opens the same day at 0. Pay of 250,000 on the 10th (moved earlier). Two bills are paid from the old bank: the phone, 8,000 on the 27th, and the gym, 5,000 on the 20th. On Fri 15 Jan the person closes the old bank: the closing moves its 200,000 to the new bank (close:old), they pick the new bank as the main bank, and the main bank, Food, Free to spend, the pay and the bills move to it; at the closing they end the gym (they are leaving it). The file is the copy after the closing: the pay and the phone are on the new bank; the gym stays on the old bank and ends with it on the closing day. Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2027-01-15", "to": "2027-02-28" },
+  "holidays": { "country": "none", "dates": [], "bank_closed": [] },
+  "main_bank": "b",
+  "accounts": [
+    { "id": "old", "name": "Old bank", "kind": "bank", "currency": "JPY", "minimum": 0, "closed": "2027-01-15", "opening": { "date": "2027-01-11", "amount": 200000, "split": { "lines": { "food": 40000 }, "free": 60000 } } },
+    { "id": "b", "name": "New bank", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2027-01-11", "amount": 0 } }
+  ],
+  "income": [
+    { "id": "pay", "name": "Pay", "account": "b", "amount": 250000, "schedule": { "frequency": "monthly", "day": 10 }, "weekend_holiday": "move earlier", "starts_period": true }
+  ],
+  "bills": [
+    { "id": "phone", "name": "Phone", "account": "b", "amount": 8000, "schedule": { "frequency": "monthly", "day": 27 }, "weekend_holiday": "move later" },
+    { "id": "gym", "name": "Gym", "account": "old", "amount": 5000, "schedule": { "frequency": "monthly", "day": 20 }, "weekend_holiday": "move later" }
+  ],
+  "goals": [],
+  "plan": { "lines": [ { "id": "food", "name": "Food", "per": "month", "amount": 40000 } ], "free": { "per": "month", "amount": 60000 } },
+  "events": [
+    { "id": "close:old", "date": "2027-01-15", "told": "2027-01-15T10:00", "kind": "transfer", "from": "old", "to": "b", "amount": 200000, "note": "the closing moves the old bank's money out" }
+  ],
+  "asks": [
+    { "id": "cmbb-01", "date": "2027-01-15", "question": "due_before_next_pay", "expected": { "items": [ { "item": "phone@2027-01-27", "lands": "2027-01-27", "amount": 8000 } ], "total": 8000 },
+      "why": "8,000 (phone, Wed 27 Jan, now paid from the new bank; the gym ended with the old bank) = 8,000" },
+    { "id": "cmbb-02", "date": "2027-01-15", "question": "safe_to_spend", "account": "b", "expected": 152000,
+      "why": "200,000 (new bank today) - 40,000 (Food left this period) - 8,000 (phone, 27 Jan) = 152,000" },
+    { "id": "cmbb-03", "date": "2027-01-15", "question": "safe_to_spend", "account": "old", "expected": 0,
+      "why": "0 (the old bank is closed and holds nothing; the gym ended on the closing day) = 0" },
+    { "id": "cmbb-04", "date": "2027-01-15", "question": "warnings", "expected": [],
+      "why": "Nothing goes below its minimum; nothing is on the closed bank." },
+    { "id": "cmbb-05", "date": "2027-01-15", "question": "headline", "expected": 60000,
+      "why": "60,000 (Free to spend at the opening, typed; it moved to the new main bank with the closing) = 60,000" }
+  ]
+}

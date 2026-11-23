@@ -1,0 +1,42 @@
+{
+  "life": "goal_own_account",
+  "title": "A goal whose money was moved to its own account is counted at that account; the account it left gets no warning for it (decision V1)",
+  "story": "Set up Mon 4 Jan 2027: the bank holds 150,000 (minimum 20,000), of which Trip 50,000, Food 40,000 and Free to spend 60,000 (typed, its opening split); a savings account opens the same day at 0. Pay of 300,000 on the 25th (moved earlier). On Wed 6 Jan the person moves Trip's money to its own account: 50,000 goes from the bank to Savings, and Trip is now kept in Savings (its own account). The file is the copy after the move: Trip's kept_in is Savings, mode own_account; the opening split stays where it was typed, on the bank. Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2027-01-04", "to": "2027-02-28" },
+  "holidays": { "country": "none", "dates": [], "bank_closed": [] },
+  "main_bank": "b",
+  "accounts": [
+    { "id": "b", "name": "Bank", "kind": "bank", "currency": "JPY", "minimum": 20000, "opening": { "date": "2027-01-04", "amount": 150000, "split": { "goals": { "trip": 50000 }, "lines": { "food": 40000 }, "free": 60000 } } },
+    { "id": "sav", "name": "Savings", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2027-01-04", "amount": 0 } }
+  ],
+  "income": [
+    { "id": "pay", "name": "Pay", "account": "b", "amount": 300000, "schedule": { "frequency": "monthly", "day": 25 }, "weekend_holiday": "move earlier", "starts_period": true }
+  ],
+  "bills": [],
+  "goals": [ { "id": "trip", "name": "Trip", "kept_in": "sav", "mode": "own_account", "due": "2027-08-01" } ],
+  "plan": { "lines": [ { "id": "food", "name": "Food", "per": "month", "amount": 40000 } ], "free": { "per": "month", "amount": 60000 } },
+  "events": [
+    { "id": "t1", "date": "2027-01-06", "told": "2027-01-06T10:00", "kind": "transfer", "from": "b", "to": "sav", "amount": 50000, "note": "Trip's money moved to its own account" }
+  ],
+  "asks": [
+    { "id": "goa-01", "date": "2027-01-07", "question": "bank_today", "account": "b", "expected": 100000,
+      "why": "150,000 (opening) - 50,000 (Trip's money moved to Savings, Wed 6 Jan) = 100,000" },
+    { "id": "goa-02", "date": "2027-01-07", "question": "bank_today", "account": "sav", "expected": 50000,
+      "why": "0 (opening) + 50,000 (Trip's money, Wed 6 Jan) = 50,000" },
+    { "id": "goa-03", "date": "2027-01-07", "question": "place", "account": "sav", "place": "trip", "expected": { "kept": 50000, "due": "2027-08-01" },
+      "why": "50,000 (Trip's opening split, typed on the bank; the move took the money, not the place's balance) = 50,000",
+      "note": "Before V1 the model looked for Trip's split only on the account it is kept in now: 0." },
+    { "id": "goa-04", "date": "2027-01-07", "question": "safe_to_spend", "account": "sav", "expected": 0,
+      "why": "50,000 (Savings today) - 50,000 (Trip, kept in it) = 0",
+      "note": "Before V1: 50,000, Trip's money counted as free on Savings." },
+    { "id": "goa-05", "date": "2027-01-07", "question": "safe_to_spend", "account": "b", "expected": 40000,
+      "why": "100,000 (bank today) - 40,000 (Food left this period) - 20,000 (minimum) = 40,000",
+      "note": "Trip is no longer held on the bank; held there it would show 10,000 below the minimum (the false warning of final_review_3)." },
+    { "id": "goa-06", "date": "2027-01-07", "question": "warnings", "expected": [],
+      "why": "The bank keeps 40,000 above its minimum; Savings holds exactly Trip; nothing is below its minimum." },
+    { "id": "goa-07", "date": "2027-01-07", "question": "headline", "expected": 40000,
+      "why": "40,000 (the bank's safe to spend, below Free to spend's 60,000 this period, so it holds the headline; Savings has nothing free) = 40,000",
+      "note": "Before V1: 60,000, Savings' 50,000 counted as free." }
+  ]
+}

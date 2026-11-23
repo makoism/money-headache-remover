@@ -1,0 +1,41 @@
+{
+  "life": "loan_other_currency",
+  "title": "A loan paid from an account in another currency is handled like a card (H5): left out of the walk with a warning until stage 2 (decision V2)",
+  "story": "Set up Mon 4 Jan 2027: the bank (yen) holds 300,000, of which Free to spend 60,000 (typed). A peso loan owes 20,000.00, paid 2,000.00 on the 15th from the yen bank. Pay of 300,000 on the 25th (moved earlier). Fri 15 Jan: the loan payment is ticked: 26,000 yen left the bank and 2,000.00 pesos arrived on the loan. Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2027-01-04", "to": "2027-02-28" },
+  "holidays": { "country": "none", "dates": [], "bank_closed": [] },
+  "main_bank": "b",
+  "accounts": [
+    { "id": "b", "name": "Bank", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2027-01-04", "amount": 300000, "split": { "free": 60000 } } },
+    { "id": "loan", "name": "Peso loan", "kind": "loan", "currency": "PHP",
+      "payment": { "day": 15, "from": "b", "weekend_holiday": "none", "amount": 2000.00 },
+      "opening": { "date": "2027-01-04", "owed": 20000.00 } }
+  ],
+  "income": [
+    { "id": "pay", "name": "Pay", "account": "b", "amount": 300000, "schedule": { "frequency": "monthly", "day": 25 }, "weekend_holiday": "move earlier", "starts_period": true }
+  ],
+  "bills": [],
+  "goals": [],
+  "plan": { "free": { "per": "month", "amount": 60000 } },
+  "events": [
+    { "id": "set:loan@2027-01-15", "date": "2027-01-15", "told": "2027-01-15T20:00", "kind": "repay", "from": "b", "to": "loan", "amount_out": 26000, "amount_in": 2000.00, "settles": "loan@2027-01-15", "note": "26,000 yen left the bank, 2,000.00 pesos arrived on the loan" }
+  ],
+  "asks": [
+    { "id": "lfx-01", "date": "2027-01-07", "question": "safe_to_spend", "account": "b", "expected": 300000,
+      "why": "300,000 (bank today; the loan's 2,000.00 pesos on 15 Jan and 15 Feb are not taken off as yen, see the warning) = 300,000",
+      "note": "Before V2 the walk took 2,000.00 pesos off as 200,000 yen on each payment day: 100,000." },
+    { "id": "lfx-02", "date": "2027-01-07", "question": "warnings", "expected": [ { "account": "b", "code": "loan_other_currency" } ],
+      "why": "The peso loan is paid from the yen bank: the yen amount is not known until it is paid." },
+    { "id": "lfx-03", "date": "2027-01-07", "question": "owed_now", "account": "loan", "expected": 20000.00,
+      "why": "20,000.00 (owed at the opening; no payment day yet) = 20,000.00" },
+    { "id": "lfx-04", "date": "2027-01-07", "question": "headline", "expected": 60000,
+      "why": "60,000 (Free to spend at the opening; the bank's headroom is larger) = 60,000" },
+    { "id": "lfx-05", "date": "2027-01-18", "question": "bank_today", "account": "b", "expected": 274000,
+      "why": "300,000 (opening) - 26,000 (the yen that left for the loan payment, Fri 15 Jan) = 274,000" },
+    { "id": "lfx-06", "date": "2027-01-18", "question": "owed_now", "account": "loan", "expected": 18000.00,
+      "why": "20,000.00 (opening) - 2,000.00 (arrived Fri 15 Jan) = 18,000.00" },
+    { "id": "lfx-07", "date": "2027-01-18", "question": "safe_to_spend", "account": "b", "expected": 274000,
+      "why": "274,000 (bank today; the 15 Feb payment is not taken off as yen) = 274,000" }
+  ]
+}

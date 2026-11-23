@@ -9,7 +9,8 @@
     "[Q watch item] Closing may write off a balance that cannot be moved out (a few pesos in a dead e-wallet): `writeOff` is that amount, written as a spend from the account dated the closing day, id `close:<account>`; with it the figure less the transfers less the write-off must be zero.",
     "[R3] `kind` is the account's type (left out: bank). A card, loan or pay-later account whose `figure` (what it still owes) is above zero, or a bank whose figure is below zero, cannot be closed: the answer is refused with `owes` (an owed account) or `left` (a bank below zero) and `offer`, the payment that gets it to zero: a `repay` from the account's `payFrom` into it, or for a bank a `transfer` into it from an account the person picks (no `acct`).",
     "[R4] `links` lists what hangs on the account: `cards` paid from it and `places` kept in it. Each needs a new account in `newLinks` (`{ <card or place id>: <account id> }`) before the closing goes on; without one the closing is refused with `needs`, the links still to move. A close answer with links gives `links`, each moved to its new account.",
-    "[R5] 38.31 has no closed accounts (one bank figure), so the move brings in nothing closed; there is no case for it."
+    "[R5] 38.31 has no closed accounts (one bank figure), so the move brings in nothing closed; there is no case for it.",
+    "[T watch, V] `mainBank: true` closes the main bank: `newLinks.mainBank` is the new main bank, and `lines`, `free` and the pay schedules (`kind: 'income'`) and bills (`kind: 'bill'`) on it move to it (`moved`). `ending` lists the bills the person chose to end at the closing instead (V: the person can end any of them); they end on the closing day."
   ],
   "defaults": {},
   "cases": [
@@ -631,9 +632,7 @@
             "a": 200000
           }
         ],
-        "ends": {
-          "phone": "2027-01-15"
-        },
+        "ends": {},
         "links": {
           "mainBank": "b"
         },
@@ -644,16 +643,53 @@
           },
           "free": "b",
           "schedules": {
-            "pay": "b"
+            "pay": "b",
+            "phone": "b"
           }
         }
       },
-      "why": "200,000 (final figure) - 200,000 (to the new bank) = 0, so it closes [P6]. The new main bank is the new bank: `home.mainBank`, Food and Free to spend (on the main bank, no account of their own) and the pay schedule move to it [T watch decided]; the car line is on another account and stays. The phone bill paid from the old bank ends on the closing day [P6].",
+      "why": "200,000 (final figure) - 200,000 (to the new bank) = 0, so it closes [P6]. The new main bank is the new bank: `home.mainBank`, Food and Free to spend (on the main bank, no account of their own), the pay schedule and the phone bill paid from the old bank move to it [T watch decided; V corrects the reading that bills paid from it end]; the car line is on another account and stays. Before V the phone bill ended on the closing day.",
       "decisions": [
+        "V",
         "T",
         "P6",
         "R4",
         "Q7"
+      ]
+    },
+    {
+      "id": "acc-19",
+      "question": "close",
+      "title": "Closing the main bank: the person ends one of the bills paid from it, the others move; a bill already ended is left as it is",
+      "input": {
+        "account": "old", "kind": "bank", "mainBank": true, "date": "2027-01-15", "figure": 200000,
+        "transfers": [ { "to": "b", "a": 200000 } ],
+        "lines": [ { "id": "food", "acct": null } ],
+        "free": { "acct": null },
+        "schedules": [
+          { "id": "pay", "kind": "income", "acct": "old" },
+          { "id": "phone", "kind": "bill", "acct": "old" },
+          { "id": "gym", "kind": "bill", "acct": "old" },
+          { "id": "tax", "kind": "bill", "acct": "old", "ends": "2027-01-10" }
+        ],
+        "newLinks": { "mainBank": "b" },
+        "ending": [ "gym" ]
+      },
+      "expected": {
+        "closed": "2027-01-15",
+        "events": [
+          { "k": "check", "date": "2027-01-15", "acct": "old", "a": 200000 },
+          { "id": "close:old", "k": "transfer", "date": "2027-01-15", "acct": "old", "acct2": "b", "a": 200000 }
+        ],
+        "ends": { "gym": "2027-01-15" },
+        "links": { "mainBank": "b" },
+        "moved": { "mainBank": "b", "lines": { "food": "b" }, "free": "b", "schedules": { "pay": "b", "phone": "b" } }
+      },
+      "why": "200,000 (final figure) - 200,000 (to the new bank) = 0, so it closes [P6]. The bills paid from the old main bank move to the new main bank [V]: the phone moves. The person ended the gym at the closing (`ending`), so it ends on the closing day instead of moving [V: the person can end any of them]. The tax bill already ended on Sun 10 Jan, before the closing: it neither moves nor gets a new end [P6].",
+      "decisions": [
+        "V",
+        "T",
+        "P6"
       ]
     }
   ],

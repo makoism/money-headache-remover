@@ -1,6 +1,6 @@
-# Coverage of the foundation (after decisions T and U, 23 Nov 2026)
+# Coverage of the foundation (after decisions T, U and V, 23 Nov 2026)
 
-The coverage grid of final_review_3.md, updated (LESSONS lesson 3: count coverage, do not sample). Rows are kinds of record and the shapes they live in; columns are the situations that change a record's effect. Every applicable cell names the asks (scenarios/*.json, run by `node foundation_review/ref/run_scenarios.js`) or cases (rules/*.json, run by `node foundation_review/rules/run_rules.js`) that cover it. All of them pass: 549 of 549 asks, 308 of 308 cases.
+The coverage grid of final_review_3.md, updated (LESSONS lesson 3: count coverage, do not sample). Rows are kinds of record and the shapes they live in; columns are the situations that change a record's effect. Every applicable cell names the asks (scenarios/*.json, run by `node foundation_review/ref/run_scenarios.js`) or cases (rules/*.json, run by `node foundation_review/rules/run_rules.js`) that cover it. All of them pass: 571 of 571 asks, 309 of 309 cases (after V: 22 asks and 1 case added, 1 case corrected; see "Decision V" at the end).
 
 Columns: C check day, O opening, W posting window, P period start, X other currency, D two devices, U undo/redo, E edited after settled, S imported/typed/self-logged, Z closed account.
 
@@ -213,7 +213,7 @@ Marks: **c** covered before this round; **n** newly covered this round (it was "
 - D two devices (c): rules mg-15, mg-28
 - E edited after settled (c): pay_day_moves move-01 to move-04
 - S imported/typed/self-logged (c): import_rules imp-08, imp-09
-- Z closed account (c): close_main_bank cmb-05; rules acc-18
+- Z closed account (c): close_main_bank cmb-05; rules acc-18, acc-19
 
 ### bill / transfer / auto schedules
 - C check day (c): mako_shape mako-12
@@ -225,7 +225,7 @@ Marks: **c** covered before this round; **n** newly covered this round (it was "
 - U undo/redo (c): auto_removed auto-01 to auto-03
 - E edited after settled (c): rules mg-15, mg-36
 - S imported/typed/self-logged (c): split_auto_est split-02; fees fee-03
-- Z closed account (n, was X): account_closed close-01, close-05; bill_on_card boc-01 to boc-05 (paid by card, the X)
+- Z closed account (n, was X): account_closed close-01, close-05; bill_on_card boc-01 to boc-05 (paid by card, the X); closing the main bank moves its bills (V): close_main_bank_bills cmbb-01 to cmbb-05; rules acc-18, acc-19
 
 ### budget lines
 - C check day (n, was X): overspent_line ol-01 to ol-03
@@ -233,7 +233,7 @@ Marks: **c** covered before this round; **n** newly covered this round (it was "
 - P period start (n, was X): period_start_model psm-02; rules units-75 to units-77
 - X other currency (n, was X): line_other_currency loc-01, loc-02; grid_other_currency goc-04
 - D two devices (c): rules mg-18
-- E edited after settled (n, was u): plan_change pc-01 to pc-03
+- E edited after settled (n, was u): plan_change pc-01 to pc-03; a change made on a period's first day (V): plan_change_first_day pcf-01 to pcf-03
 - S imported/typed/self-logged (c): line_on_card line-01 to line-05
 - Z closed account (n, was u): close_main_bank cmb-02, cmb-03; rules acc-18
 
@@ -243,6 +243,7 @@ Marks: **c** covered before this round; **n** newly covered this round (it was "
 - P period start (c): yearly_and_places year-04; to_place tp-05
 - X other currency (n, was u): grid_other_currency goc-05, goc-06
 - D two devices (c): rules mg-68
+- (V1, no column of its own) a goal's money moved to its own account: goal_own_account goa-01 to goa-07
 - U undo/redo (c): goal_removed gone-02 to gone-05
 - Z closed account (c): rules acc-12, acc-13
 
@@ -261,7 +262,7 @@ Marks: **c** covered before this round; **n** newly covered this round (it was "
 ### loan / pay-later
 - C check day (c): borrow_and_plans plan-03
 - O opening (c): loans_and_carried loan-01
-- X other currency (n, was u): grid_other_currency goc-06
+- X other currency (n, was u): grid_other_currency goc-06; paid from an account in another currency (V2): loan_other_currency lfx-01 to lfx-07
 - D two devices (c): rules mg-06
 - S imported/typed/self-logged (c): borrow_and_plans plan-01, plan-04
 - Z closed account (c): rules acc-09
@@ -299,12 +300,24 @@ Marks: **c** covered before this round; **n** newly covered this round (it was "
 
 | Watch item | Asks or cases |
 |---|---|
-| Closing the main bank (f9): every link moves to the new main bank | close_main_bank cmb-01 to cmb-05; rules acc-17, acc-18 |
+| Closing the main bank (f9): every link moves to the new main bank, its bills too (V) | close_main_bank cmb-01 to cmb-05; close_main_bank_bills cmbb-01 to cmbb-05; rules acc-17 to acc-19 |
 | A transfer typed on two phones offered as a possible double | rules double-10 to double-12 |
 | An investment never raises the gain question | investment_gain inv-01 to inv-03 |
-| A `plan.shares` change applies from the next period start | plan_change pc-01 to pc-03 |
+| A `plan.shares` change applies from the next period start; made on a period's first day, to that period (V) | plan_change pc-01 to pc-03; plan_change_first_day pcf-01 to pcf-03 |
 | An event into a closed account reopens it with a notice | closed_reopened cr-01 to cr-05 |
 | SCHEMA 3: pre-opening spends are not in spent so far | place_moves_adjust pma-03 |
 | `told` and `at` compared as moments | told_moments tm-01 to tm-03; rules mg-04, mg-05, mg-19 |
-| A goal's money moved to another account: a false per-account warning | not decided in T; see SCHEMA_V3 section 14 |
+| A goal's money moved to another account: a false per-account warning | V1: goal_own_account goa-01 to goa-07 |
 | A two-currency transfer schedule (stage 2) | stage 2 |
+
+## Decision V, and where each part is tested
+
+Run first, before the references changed: 564 of 571 asks passed and 307 of 309 cases (the 7 asks and 2 cases marked "failed first" below). After the changes to `ref/lookahead_ref.js` and `rules/accounts_ref.js`: 571 of 571 asks, 309 of 309 cases.
+
+| Part of V | Asks or cases | Failed first |
+|---|---|---|
+| V1: a goal's money moved to its own account is counted there; no warning on the account it left | goal_own_account goa-01 to goa-07 | goa-03 (kept 0), goa-04 (50,000), goa-07 (60,000) |
+| V2: a loan or pay-later account paid from another currency, like a card (H5) | loan_other_currency lfx-01 to lfx-07 | lfx-01 (100,000), lfx-02 (no warning) |
+| V3: two answers of one period are one record; the earliest last day stands | no case of its own: a confirmation; `rules/period_end_ref.js` already takes the earliest last day the answers give | not run (nothing changed) |
+| Corrected: closing the main bank moves the bills paid from it too; the person can end any of them | close_main_bank_bills cmbb-01 to cmbb-05; rules acc-18 (corrected), acc-19 | acc-18, acc-19 (the bills ended). cmbb-01 to cmbb-05 passed first: the scenario file is the copy after the closing, so the model reads the moved link |
+| Corrected: a plan change dated on a period's first day applies to that period | plan_change_first_day pcf-01 to pcf-03 | pcf-02 (58,000), pcf-03 (658,000) |

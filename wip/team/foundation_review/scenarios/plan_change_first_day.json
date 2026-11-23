@@ -1,0 +1,36 @@
+{
+  "life": "plan_change_first_day",
+  "title": "A plan change dated on a period's first day applies to that period (V, corrected reading)",
+  "story": "Set up Thu 10 Dec 2026, pay day: the bank holds 400,000, of which Food 40,000 and Free to spend 60,000 (typed). Pay of 300,000 on the 10th (moved earlier). Fri 8 Jan 2027 the pay is ticked (pay@2027-01-10; 10 Jan is a Sunday): a new period starts that day. The same day the person lowers Free to spend to 50,000 a month and raises Food to 45,000 a month (changes made Fri 8 Jan). Sat 9 Jan: 2,000 from Free to spend and 3,000 on Food. Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2026-12-10", "to": "2027-02-28" },
+  "holidays": { "country": "none", "dates": [], "bank_closed": [] },
+  "main_bank": "b",
+  "accounts": [
+    { "id": "b", "name": "Bank", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2026-12-10", "amount": 400000, "split": { "lines": { "food": 40000 }, "free": 60000 } } }
+  ],
+  "income": [
+    { "id": "pay", "name": "Pay", "account": "b", "amount": 300000, "schedule": { "frequency": "monthly", "day": 10 }, "weekend_holiday": "move earlier", "starts_period": true }
+  ],
+  "bills": [],
+  "goals": [],
+  "plan": {
+    "lines": [ { "id": "food", "name": "Food", "per": "month", "amount": 40000, "changes": [ { "made": "2027-01-08", "amount": 45000 } ] } ],
+    "free": { "per": "month", "amount": 60000, "changes": [ { "made": "2027-01-08", "amount": 50000 } ] }
+  },
+  "events": [
+    { "id": "set:pay@2027-01-10", "date": "2027-01-08", "told": "2027-01-08T09:00", "kind": "pay_in", "account": "b", "amount": 300000, "settles": "pay@2027-01-10" },
+    { "id": "s1", "date": "2027-01-09", "told": "2027-01-09T12:00", "kind": "spend", "account": "b", "amount": 2000, "line": "free" },
+    { "id": "s2", "date": "2027-01-09", "told": "2027-01-09T12:05", "kind": "spend", "account": "b", "amount": 3000, "line": "food" }
+  ],
+  "asks": [
+    { "id": "pcf-01", "date": "2027-01-07", "question": "headline", "expected": 60000,
+      "why": "60,000 (Free to spend at the opening, typed; the change is not made yet) = 60,000" },
+    { "id": "pcf-02", "date": "2027-01-09", "question": "headline", "expected": 48000,
+      "why": "50,000 (Free to spend for the period from Fri 8 Jan: the change was made on its first day, so it applies to it) - 2,000 (Sat 9 Jan) = 48,000",
+      "note": "Before the corrected reading the change applied from the next period start: 58,000." },
+    { "id": "pcf-03", "date": "2027-01-09", "question": "safe_to_spend", "account": "b", "expected": 653000,
+      "why": "400,000 (opening) + 300,000 (pay, Fri 8 Jan) - 2,000 (Sat 9 Jan) - 3,000 (Sat 9 Jan) - 42,000 (Food left this period: 45,000, the new amount from this period's first day, less 3,000) = 653,000",
+      "note": "Before the corrected reading Food kept 40,000 this period: 658,000." }
+  ]
+}

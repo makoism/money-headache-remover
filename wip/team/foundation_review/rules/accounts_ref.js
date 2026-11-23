@@ -19,8 +19,10 @@ const { dayNum } = require('./dates');
 const OWED = { card: 1, loan: 1, paylater: 1 };
 // [T watch decided] Closing the main bank (`mainBank`) asks for the new main bank (`newLinks.mainBank`) and moves
 // every link to it: `home.mainBank`, the budget lines and Free to spend held on it (their `acct` is it, or none:
-// the main bank), and the pay schedules landing in it, which move instead of ending. Bills paid from it end (P6).
-function close({ account, kind, payFrom, date, figure, transfers, writeOff, schedules, links, newLinks, mainBank, lines, free }) {
+// the main bank), and the pay schedules landing in it, which move instead of ending. [V] The bills paid from it move
+// to the new main bank too; the person can end any of them at the closing (`ending`), and those end on the closing
+// day (P6). (Before V, bills paid from it ended.)
+function close({ account, kind, payFrom, date, figure, transfers, writeOff, schedules, links, newLinks, mainBank, lines, free, ending }) {
   const linked = [].concat((links || {}).cards || [], (links || {}).places || [], mainBank ? ['mainBank'] : []);
   const needs = linked.filter(x => !(newLinks || {})[x]);
   if (needs.length) return { refused: { account, needs } };
@@ -44,6 +46,7 @@ function close({ account, kind, payFrom, date, figure, transfers, writeOff, sche
     if (nb && s.kind === 'income' && s.acct === account) { (moved.schedules = moved.schedules || {})[s.id] = nb; continue; }
     if (s.acct !== account && s.acct2 !== account) continue;
     if (s.ends && dayNum(s.ends) <= dayNum(date)) continue;
+    if (nb && s.kind === 'bill' && s.acct === account && !(ending || []).includes(s.id)) { (moved.schedules = moved.schedules || {})[s.id] = nb; continue; }
     ends[s.id] = date;
   }
   return Object.assign({ closed: date, events, ends }, linked.length ? { links: Object.assign({}, newLinks) } : {}, nb ? { moved } : {});

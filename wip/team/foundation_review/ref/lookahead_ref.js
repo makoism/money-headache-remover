@@ -819,8 +819,12 @@ function lookahead(sc, asOf, opts = {}) {
   const fromPlaceOf = e => e.from_place || (e.from && !acct[e.from] ? e.from : null);   // [T7] the place a move leaves
   const keptIn = {};
   for (const g of sc.goals || []) {
-    const split = ((acct[g.kept_in].opening.split || {}).goals || {})[g.id];
-    let amt = split != null ? m(split, g.kept_in) : g.opening && dayNum(g.opening.date) <= knownTo ? m(g.opening.amount, g.kept_in) : 0;
+    // [V1] A goal whose money was moved to its own account (`kept_in` now names that account) is counted there; its
+    // opening split stays on the account it was typed on, so the split is looked for on every account. The account
+    // it left no longer holds it, so it gets no warning for it.
+    const splitOn = sc.accounts.find(a => (((a.opening || {}).split || {}).goals || {})[g.id] != null);
+    const split = splitOn ? splitOn.opening.split.goals[g.id] : null;
+    let amt = split != null ? m(split, splitOn.id) : g.opening && dayNum(g.opening.date) <= knownTo ? m(g.opening.amount, g.kept_in) : 0;
     for (const e of live()) {
       if (e.kind === 'set_aside' && e.goal === g.id) amt += m(e.amount, g.kept_in);
       if ((e.kind === 'spend' || e.kind === 'bill_paid') && fromPlace(e) === g.id && (!isFeeRecord(e) || isFee(e))) amt -= e.a;   // [H7] paying from a place; [S5] a fee only while its transfer is live
@@ -862,10 +866,11 @@ function lookahead(sc, asOf, opts = {}) {
   // The period started with the last pay of the period stream; before any, the opening split holds what
   // was left at setup [B2]. A spend names its `line` (`free` is Free to spend).
   // [T watch: plan.shares] A change to a line's or Free to spend's amount (`changes: [ { made, amount } ]`) applies
-  // from the first period start after the day it was made.
+  // from the first period start after the day it was made. [V] A change made on a period's first day applies to
+  // that period.
   const amountFor = (x, start) => {
     let a = x.amount;
-    for (const ch of (x.changes || []).slice().sort((p, q) => dayNum(p.made) - dayNum(q.made))) if (start !== null && start !== undefined && dayNum(ch.made) < start) a = ch.amount;
+    for (const ch of (x.changes || []).slice().sort((p, q) => dayNum(p.made) - dayNum(q.made))) if (start !== null && start !== undefined && dayNum(ch.made) <= start) a = ch.amount;
     return a;
   };
   const plan = opts.plan || planNow();
@@ -1014,6 +1019,7 @@ function lookahead(sc, asOf, opts = {}) {
     for (const o of items) {
       if (o.settled) continue;
       if (o.kind === 'income' && o.acct === id && !o.otherCur && (o.land >= today || lateExpected(o)) && o.land <= end) steps.push({ day: Math.max(o.land, today), order: 0, amount: o.amount, label: o.name + ' ' + short(o.land) + (o.land < today ? ', late, still expected' : '') });
+      if (o.kind === 'loan' && cur(o.card) !== cur(id)) continue;   // [V2] a loan in another currency: like a card (H5), warned below
       if (['bill', 'transfer', 'auto', 'loan'].includes(o.kind) && o.acct === id && o.land <= end) {
         // [H7] a bill paid from a place takes what the place still holds first; only the rest is new
         const fromIt = o.place && placeLeft[o.place] ? Math.min(placeLeft[o.place], o.amount) : 0;
@@ -1095,7 +1101,13 @@ function lookahead(sc, asOf, opts = {}) {
     // [H5] Until stage 2: a card paid from an account in another currency is warned about, never converted.
     if (cur(id) !== cur(k.payFrom)) res.warnings.push({ account: k.payFrom, card: id, code: 'card_other_currency', text: `${acct[id].name} (${cur(id)}) is paid from ${acct[k.payFrom].name} (${cur(k.payFrom)}): it is not taken off safe to spend until it is paid` });
   }
-  for (const id in loans) res.owed[id] = { owedNow: loans[id].owedNow, next: loans[id].next };
+  for (const id in loans) {
+    res.owed[id] = { owedNow: loans[id].owedNow, next: loans[id].next };
+    // [V2] A loan or pay-later account paid from an account in another currency is handled like a card (H5): left
+    // out of the walk and warned about, never converted, until stage 2.
+    const from = (acct[id].payment || {}).from;
+    if (from && acct[from] && cur(id) !== cur(from)) res.warnings.push({ account: from, loan: id, code: 'loan_other_currency', text: `${acct[id].name} (${cur(id)}) is paid from ${acct[from].name} (${cur(from)}): it is not taken off safe to spend until it is paid` });
+  }
 
   // ----- safe to spend: one headline [F9, B9, G2, SCHEMA 10.3 step 5] -----
   const homeSpend = Object.keys(res.accounts).filter(id => res.accounts[id].spendFrom && res.accounts[id].currency === home);
