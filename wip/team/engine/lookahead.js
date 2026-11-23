@@ -1126,6 +1126,9 @@
     const raw = up - shortfalls;
     const oldest = Object.keys(res.accounts).reduce((d, id) => Math.min(d, dayNum(res.accounts[id].asOf)), today);
     res.safeToSpend = { headline: Math.max(0, cap === null ? raw : Math.min(cap, raw)), shortfall: Math.max(0, -raw), cappedByFreeToSpend: cap !== null && cap < raw, oldestInput: dayStr(oldest) };
+    // [BJ5] when Free to spend caps the headline, the sum under it ends with the cap, so the two figures never disagree
+    res.safeToSpend.why = res.safeToSpend.cappedByFreeToSpend
+      ? `${fmt(raw, home)} (what your accounts can spare) - ${fmt(raw - Math.max(0, cap), home)} (more than Free to spend left this period) = ${fmt(res.safeToSpend.headline, home)}` : null;
 
     // ----- days to next pay [F3, F8, F12, F13, H8] -----
     const np = nextPays[0];

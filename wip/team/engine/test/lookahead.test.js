@@ -308,4 +308,12 @@ t("a move into a goal's own account counts as set aside for that goal, once [BI5
   eq(r.accounts.tripacct.bank, 21000);
   eq(r.places.trip.kept, 21000);   // 20,000 + 5,000 - 3,000 - 1,000, each counted once
 });
+t('when Free to spend caps the headline, the sum shows the cap as its last step [BJ5]', () => {
+  const r = run(base(), '2026-12-03');
+  ok(r.safeToSpend.cappedByFreeToSpend);
+  eq(r.safeToSpend.why, '370,000 (what your accounts can spare) - 320,000 (more than Free to spend left this period) = 50,000');
+  const b = base(x => { x.events[0].a = x.events[1].a = 60000; });
+  const r2 = run(b, '2026-12-03');
+  eq([r2.safeToSpend.cappedByFreeToSpend, r2.safeToSpend.why], [false, null]);
+});
 done('lookahead');

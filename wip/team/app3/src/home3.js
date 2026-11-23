@@ -93,7 +93,9 @@ function renderHome3() {
   }
   /* safe to spend until next pay, with the sum behind it */
   const until = safeUntil3(r, yr);
-  const sums = ids.filter(id => r.accounts[id].spendFrom).map(id => `<p class="a3-sum" data-fig="why">${esc3(whyWords3(r.accounts[id]))}</p>`).join('');
+  /* [BJ5] when Free to spend caps the headline, the engine's sum ends with the cap, so the two figures agree */
+  const sums = ids.filter(id => r.accounts[id].spendFrom).map(id => `<p class="a3-sum" data-fig="why">${esc3(whyWords3(r.accounts[id]))}</p>`).join('')
+    + (r.safeToSpend.why ? `<p class="a3-sum" data-fig="cap">${esc3(r.safeToSpend.why)}</p>` : '');
   const short = r.safeToSpend.shortfall ? `<p class="a3-warn a3-bad">${esc3(label3('shortBy'))} ${fig3('safeToSpend.shortfall', r.safeToSpend.shortfall, home)} before then</p>` : '';
   const warns = (r.warnings || []).map(w => `<p class="a3-warn" data-warn="${esc3(w.code)}">${esc3(w.text)}</p>`).join('');
   out.push(`<section class="a3-card" data-card="safe"><h2>${esc3(label3('safeToSpend'))}${until}</h2>
