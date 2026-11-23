@@ -295,3 +295,4 @@ AJ2. AI2 is widened: an array whose items all carry `id` and `at` merges by id (
 AJ3. `home` gets a grid row (curs, minBank, mainBank, country) across two devices, undo, restore and days away; `home.curs` merges by `from`.
 AJ4. A case fixes AI1's result when the receiver has already seen a slightly fast copy.
 AJ5. When X8 refuses a pay-day change because of a future one-off amount (a bonus), the edit offers to move or remove that amount instead of only refusing.
+AJ-confirm (AI helper's readings): the held value is the receiver's now plus 1 ms (AJ4 fixes the case); two devices holding one far-ahead copy settle on the newer held `at` and the earliest `told` (needs a case); an empty array is an entry list when the other copy's items have the shape (AJ2), not only for steps, rules and extraSteps.
