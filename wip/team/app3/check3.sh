@@ -41,6 +41,7 @@ step "no money maths in screens"; run tests/no_maths.js "NO MATHS PASS"
 [ "$(pgrep -fc check3.sh)" -le 1 ] && pkill -f chrome-linux64/chrome 2>/dev/null   # leftover test browsers, only when no other lane is checking (it killed their tests)
 step "the try book"; run tests/e3_try.js "e3_try: ALL PASS"
 step "Home, the new top"; run tests/e3_home.js "e3_home: ALL PASS"
+step "the north-star review's small fixes (the glow at 1280, the day a card was checked, Log a spend, the help marks)"; run tests/e3_ns.js "e3_ns: ALL PASS"
 step "Check your bank"; run tests/e3_checkin.js "e3_checkin: ALL PASS"
 step "Check your bank names the gap before and after saving (BK2, BK4)"; run tests/e3_checkgap.js "e3_checkgap: ALL PASS"
 step "Home words the engine's warnings itself: below zero with no minimum, no raw ISO day or month"; run tests/e3_warnwords.js "e3_warnwords: ALL PASS"
