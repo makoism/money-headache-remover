@@ -288,3 +288,10 @@ AH4-confirm: the AG helper's narrow reading (only an entry a restore brought bac
 AI1 (mg-q14). An arriving copy more than a day ahead of the receiving device's own now is held at that now plus 1 ms, never at the newest `at` seen; its `told` is held the same way. A device that has seen nothing holds against its own now.
 AI2 (mg-q15). Entry lists inside a record are found by shape too (an array whose items all carry `from` and `at`), so lists added in later builds merge entry by entry on older devices.
 Confirmed: under AH1 a clock less than a day fast is not held and can beat a later edit made without seeing it (mg-24 ends at 1,500); D8 still questions large jumps.
+
+## AJ. Decisions from confirm_review_5.md
+AJ1. Every reader of a built id accepts ordinary ids (`k7qzpa-m2xq7ab9zt-41`) for the schedule, place or account it names. A permanent check rewrites every short made-up id in scenarios/ and rules/ into the ordinary form and runs both suites on the result; both runners run it every time.
+AJ2. AI2 is widened: an array whose items all carry `id` and `at` merges by id (pay-later `plans`), as well as arrays whose items carry `from` and `at`. The shape is judged on either copy, so a list empty on one side still merges entry by entry.
+AJ3. `home` gets a grid row (curs, minBank, mainBank, country) across two devices, undo, restore and days away; `home.curs` merges by `from`.
+AJ4. A case fixes AI1's result when the receiver has already seen a slightly fast copy.
+AJ5. When X8 refuses a pay-day change because of a future one-off amount (a bonus), the edit offers to move or remove that amount instead of only refusing.
