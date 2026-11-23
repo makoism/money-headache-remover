@@ -22,3 +22,10 @@ Every item already has a working default. None of them block using the app.
 - With the cloud copy on, restoring a backup does not remove records added on another device since.
 - Names left open in screens/names.js: Bank today or In your bank; This pay period or Until next pay; and the others listed there.
 - Privacy words for statements and Ask.
+
+## Ask and Reminders
+- Bill reminders carry no amount, because calendars often sync to Google or Apple. Should they show it?
+- Ask and Reminders are header links beside Settings. At 320 wide, "the burrow" wraps onto two lines.
+- Reminder choices are not kept between visits. Should they be?
+- Defaults: the day after pay plus the middle of the period, 2 days before each bill, 09:00.
+- Ask can log a spend, change a line, change Free to spend, and set money aside. Should it also add bills or goals?
