@@ -120,6 +120,7 @@ function rcFormHtml3() {
     <div class="a3-field"><label for="rcNote">Note</label><input class="a3-in a3-text" type="text" id="rcNote" autocomplete="off" value="${esc3(e && e.note ? e.note : '')}" placeholder="Optional"></div>
     <p class="a3-sub" id="rcAfter" aria-live="polite"></p>
     <p class="a3-err" id="rcErr" role="alert"></p>
+    <div class="a3-warn" id="rcAsk" role="alert" hidden><p id="rcAskText"></p><div class="a3-actions"><button type="button" class="a3-btn solid" id="rcAskYes">Save it anyway</button><button type="button" class="a3-btn" id="rcAskNo">Change the amount</button></div></div>
     <div class="a3-actions"><button type="button" class="a3-btn solid" id="rcSave">${e ? 'Save change' : word}</button>${e ? '<button type="button" class="a3-btn" id="rcRemove">Remove</button><button type="button" class="a3-btn" id="rcCancel">Cancel</button>' : ''}</div>`;
 }
 /* what the form holds, as the action's arguments, or { bad: words } */
@@ -143,6 +144,7 @@ function rcFields3(x) {
   return f;
 }
 function rcPreview3() {
+  rcAskOff3();
   const out = $('#rcAfter'); if (!out) return;
   const x = rcDraft3();
   if (x.bad || !x.a) { out.textContent = ''; return; }
@@ -160,8 +162,11 @@ function rcWire3() {
   const from = $('#rcFrom');
   if (from) from.addEventListener('change', () => { const keep = rcKeep3(); $('#rcForm').innerHTML = rcFormHtml3(); rcPut3(keep); rcWire3(); });
   for (const b of document.querySelectorAll('[data-mode]')) b.addEventListener('click', () => { const keep = rcKeep3(); RC3.mode = b.dataset.mode; $('#rcForm').innerHTML = rcFormHtml3(); rcPut3(keep); rcWire3(); $('#rcAmt').focus(); });
-  $('#rcSave').addEventListener('click', rcSave3);
+  $('#rcSave').addEventListener('click', () => rcSave3());
+  $('#rcAskYes').addEventListener('click', () => rcSave3(true));
+  $('#rcAskNo').addEventListener('click', () => { rcAskOff3(); $('#rcAmt').focus(); });
   amt.addEventListener('keydown', e => { if (e.key === 'Enter') rcSave3(); });
+  amt.addEventListener('input', rcAskOff3);
   if ($('#rcRemove')) $('#rcRemove').addEventListener('click', rcRemove3);
   if ($('#rcCancel')) $('#rcCancel').addEventListener('click', () => { RC3.edit = null; RC3.mode = 'spend'; renderRc3(); });
   rcPreview3();
@@ -177,9 +182,30 @@ function rcWords3(x, r) {
   if (RC3.mode === 'refund') return `Refund of ${amt} logged`;
   return `Logged ${amt} on ${rcForName3(x)}`;
 }
-async function rcSave3() {
+/* [north star F5] what a bank, cash or e-wallet account holds without this spend: the engine's figure for today, on the
+   book without the record being changed (a new spend: the book as it is); null for a card or a loan */
+function rcHolds3(x) {
+  const a = ((E3.book && E3.book.accounts) || []).find(y => y.id === x.acct);
+  if (!a || a.type === 'card' || a.type === 'loan') return null;
+  try {
+    const r = RC3.edit ? BurrowEngine.lookahead.lookahead(ACT3.dry('remove', RC3.edit.id), E3.today()) : E3.view(E3.today());
+    return r.accounts[x.acct] ? r.accounts[x.acct].bank : null;
+  } catch (e) { return null; }
+}
+function rcAskOff3() { const q = $('#rcAsk'); if (q) q.hidden = true; }
+async function rcSave3(sure) {
   const err = $('#rcErr'), x = rcDraft3();
   if (x.bad) { err.textContent = x.bad; $('#rcAmt').focus(); return; }
+  /* [north star F5] a spend larger than what its account holds asks first; nothing is saved until "Save it anyway" */
+  if (RC3.mode === 'spend' && !sure) {
+    const holds = rcHolds3(x);
+    if (holds !== null && x.a > holds) {
+      $('#rcAskText').textContent = `That is more than ${E3.nameOf(x.acct)} holds (${money3(holds, E3.curOf(x.acct))}). Save it anyway?`;
+      $('#rcAsk').hidden = false; $('#rcAskYes').focus();
+      return;
+    }
+  }
+  rcAskOff3();
   const before = rcFigs3(E3.book);
   let ov = null;
   try { ov = rcOver3(rcFigs3(RC3.edit ? ACT3.dry('edit', RC3.edit.id, rcFields3(x)) : ACT3.dry(RC_KIND3[RC3.mode], x)), x); } catch (e) { ov = null; }
