@@ -1,4 +1,4 @@
-# Coverage of the foundation (after decisions T to AC, 23 Nov 2026)
+# Coverage of the foundation (after decisions T to AD, 23 Nov 2026)
 
 The coverage grid of final_review_3.md, updated (LESSONS lesson 3: count coverage, do not sample). Rows are kinds of record and the shapes they live in; columns are the situations that change a record's effect. Every applicable cell names the asks (scenarios/*.json, run by `node foundation_review/ref/run_scenarios.js`) or cases (rules/*.json, run by `node foundation_review/rules/run_rules.js`) that cover it. All of them pass: 687 of 687 asks, 467 of 467 cases (after AB and AC: 20 asks in 4 new scenario files, 34 cases added and 15 re-worked, the columns L and B and the rows `pendingMove` and `frozen`; see "Decisions AB and AC" at the end; after AA: 3 asks in a new scenario file and 12 move cases; after W and X: 78 asks and 32 cases added, in 19 new scenario files, one ask in fee_place and a new rules file `rules/edits.json`; after Y and Z: 15 asks in 4 new scenario files, 11 rules cases and 24 move cases, and the move row; see "Decisions W and X" and "Decisions Y and Z" at the end). The move cases (`rules/move.json`) are counted in the 467.
 
@@ -31,6 +31,7 @@ Marks: **c** covered before this round; **n** newly covered (in the first ten co
 | of which covered by new asks and cases (n) | 47 |
 | False covers confirm_review_1 found, now really covered (check C, card O, in / pay E, income E, rm: D) | 5 |
 | Changed by AA (no new row or column; cells of the move row and the not-yet row covered again by AA's cases and asks) | 0 |
+| Changed by AD (no new row or column; cells of the move, `pendingMove`, card, loan and period-end rows covered again by AD's cases and asks) | 0 |
 | **Applicable and covered, all passing** | **251** (251 of 251) |
 | Applicable and uncovered | 0 |
 
@@ -103,7 +104,7 @@ Marks: **c** covered before this round; **n** newly covered (in the first ten co
 - Y years after setup (n): far_years fy-03 (a check in 2036)
 - T a time with an offset (n): day_offsets off-01; day_offset_kinds kinds-01
 - L a second move days later (n): rules mv-98, mv-99 (the 23 Nov bank figure corrected on the phone stays 185,000 when the desktop moves on 1 Dec, AB1)
-- B set up between close and payment day (n): rules ed-13 to ed-16 (the statement check setup saves: yes, no with its amount, don't know holding everything owed; not asked after the payment day, AB3); card_between_close_pay cbp-03, cbp-06
+- B set up between close and payment day (n): rules ed-13 to ed-16 (the statement check setup saves: yes, no with its amount, don't know holding everything owed; not asked after the payment day, AB3; "no" with everything owed filled in, ed-19, AD6; "don't know" on a loan or pay-later is that month's usual payment, ed-20, ed-21, AD7); card_between_close_pay cbp-03, cbp-06
 
 ### in / pay
 - C check day (c): late_pay late-08; settle_ticked tick-03
@@ -241,7 +242,7 @@ Marks: **c** covered before this round; **n** newly covered (in the first ten co
 - E edited after settled (n, was X): period_end_fixed pef-01 to pef-03; rules pe-50, pe-51
 - S imported/typed/self-logged (c): rules pe-38, pe-39, pe-44 to pe-47
 - M the move run on two devices (n): rules mg-85 (38.31 `ui.sweep` as `pe:<occurrence>:<place>`); rules pe-60, pe-61 (its occurrence)
-- M, continued (AB2): a month-end answer for a period not ended at the move waits and the period's own question still comes: rules mv-52, mv-89 (pay twice a month); a moved answer larger than its place holds is capped: rules pe-62 to pe-65; one naming a removed goal goes to Waiting to place: rules mv-90, pe-66 (AC8)
+- M, continued (AB2): a month-end answer for a period not ended at the move waits and the period's own question still comes, offering it as the default, capped (AD3): rules mv-52, mv-89 (pay twice a month), pe-67 to pe-70; a moved answer larger than its place holds is capped: rules pe-62 to pe-65; one naming a removed goal goes to Waiting to place: rules mv-90, pe-66 (AC8)
 - L a second move days later (n): rules mv-98, mv-99 (September's moved answer, changed on the phone to 1,500, stays)
 
 ### rm: / to place
@@ -346,7 +347,7 @@ Marks: **c** covered before this round; **n** newly covered (in the first ten co
 - Y years after setup (n): far_years fy-06 to fy-08
 - T a time with an offset (n): day_offset_kinds kinds-05
 - L a second move days later (n): rules mv-98, mv-99 (the moved loan's rate set on the phone stays, AB1)
-- B set up between statement and payment day (n): loan_between_stmt_pay lbs-01 to lbs-04 (a loan answered yes and no, a pay-later answered yes, AB3)
+- B set up between statement and payment day (n): loan_between_stmt_pay lbs-01 to lbs-04 (a loan answered yes and no, a pay-later answered yes, AB3); loan_stmt_dont_know ldk-01 to ldk-05 (a loan and a pay-later answered don't know: that month's usual payment, AD7)
 - (AC5, AC7, AC3, no column of its own) a one-month amount is that month's whole payment: loan_one_month_amount loma-01 to loma-03; the loan line's: rules mv-94; a made loan until its terms are answered: rules mv-15, mv-49
 - (W2, V2) a loan payment in another currency listed apart, and skipped in the walk: owed_other_currency_lists oocl-01, oocl-03, oocl-04, oocl-05
 
@@ -399,7 +400,7 @@ Marks: **c** covered before this round; **n** newly covered (in the first ten co
 - P period start (n): rules mv-52, mv-89 (a month-end answer waits for a period not ended at the move, AB2); mv-71, mv-72 (what waits is keyed by the period's pay once its day is answered)
 - D two devices (n): rules mv-95 (one device answers, the other has not: the written entries are `gone` with the answer's `at`, the other's live copy gives way), mv-96 (both answer: one draw, one answer, AB rows)
 - M the move run on two devices (n): rules mv-95, mv-96
-- L a second move days later (n): rules mv-98, mv-99 (November's answer waits on both and is one record; the desktop's entries for what the phone wrote at its move are kept: open question mv-q54)
+- L a second move days later (n): rules mv-98, mv-99 (November's answer waits on both and is one record; the phone kept its entries for what it wrote at its move marked `gone`, so the desktop's waiting copies of them are dropped, AD5); a waiting entry applied later only over an older `at`: mv-106 to mv-108 (AD5)
 - (AC2, no column of its own) a loan receipt waiting for the loan question: rules mv-91 to mv-93
 - not applicable: C, O, W, X, U, E, S, Z, Y, T, B (an entry holds a 38.31 amount or answer waiting for a day; it moves no account and is in the home currency)
 
@@ -549,4 +550,22 @@ Run first, before the references changed (task 1): rules 421 of 464 cases (43 fa
 | confirm_review_2 d3 | card_between_close_pay cbp-03, cbp-06, cbp-07, cbp-08 (d3-03, d3-01, d3-02, with the setup answer saved; the reviewer's file has no answer, so it still reads X6) | cbp-06, cbp-07, cbp-08 |
 | confirm_review_2 d4 | none needed: the reviewer found its one failed ask was a counting error (26 Jun to 23 Jul is 27 days, which the model gives) | not run |
 
-Questions AB and AC do not answer (no case depends on them; `rules/*.json` `open`): mv-q50 to mv-q54, ed-q1, ed-q2, mg-q12. SCHEMA_V3 section 14 lists each with what the references do.
+Questions AB and AC did not answer: mv-q50 to mv-q54, ed-q1, ed-q2, mg-q12. AD answers all eight (below).
+
+## Decision AD, and where each part is tested
+
+Run first, before the references changed (task 1): rules 459 of 485 cases (26 failed); scenarios 692 of 692 asks in the model, but `scenarios/check_specs.js` refused the new file (a loan's "dont_know" was not allowed: 2 problems). After the changes to `rules/move_ref.js`, `rules/edits_ref.js`, `rules/merge_ref.js`, `rules/period_end_ref.js`, `scenarios/check_specs.js` and a comment in `ref/lookahead_ref.js`: mv-45 failed (AD1 reaches a 25.0 copy with a minimum; re-worked by hand), then 485 of 485 cases and 692 of 692 asks, and check_specs all good (109 files).
+
+| Part | Asks or cases | Failed first |
+|---|---|---|
+| AD1 (mv-q50): a minimum with no `ui.minAuto` from a build before 20 Nov is automatic, dropped; the minimum is asked | rules mv-09, mv-45, mv-100 to mv-102 | mv-100, mv-101 (kept as typed); mv-102 and mv-09 passed first; mv-45 failed after the change and was re-worked |
+| AD2 (mv-q51): the dropped loan line's one-month amount dropped, listed in the move summary | rules mv-103 | mv-103 (in `unplaced`, not `zero`) |
+| AD3 (mv-q52): a waiting month-end answer offered as the default, capped | rules pe-67 to pe-70, mv-52, mv-89 | pe-67, pe-68 (no `offered`); pe-69, pe-70 passed first |
+| AD4 (mv-q53): a moved bill answered with another rhythm is per month, spread | rules mv-104, mv-105 | both (no `per`; 80,000 a payment; the whole one-month amount on the first payment) |
+| AD5 (mv-q54): a waiting entry applied only over an older `at`; one written at the move kept `gone` | rules mv-106 to mv-108; mv-33, mv-46, mv-52, mv-73, mv-75, mv-89, mv-90, mv-94, mv-98, mv-99 | all of them (no question `apply_waiting`; no `gone` entries for what the move wrote; mv-98, mv-99: three entries came back waiting) |
+| AD6 (ed-q1): "no, not paid" asks the amount with everything owed filled in | rules ed-14, ed-19 | both (no `filled`; no amount saved) |
+| AD7 (ed-q2): "don't know" on a loan or pay-later is that month's usual payment | loan_stmt_dont_know ldk-01 to ldk-05; rules ed-20, ed-21 | ed-20, ed-21 (400,000 and 30,000 saved); the five asks passed in the model, but check_specs refused the file |
+| AD8 (mg-q12): a restore gives the shared `ui` keys a new `at` | rules mg-98, mg-99 | both (the old `ui.at`; the cloud's false came back) |
+| AD: the helper's readings confirmed (leftover to the earliest, `terms: 'asked'`, AC6's words after a space) | rules mv-73, mv-105, mv-15, mv-49, mv-75, mv-76, mv-93 | none (already so) |
+
+Questions AD does not answer (no case depends on them; `rules/*.json` `open`): mv-q55 (AD1: a 38.31 copy saved from 20 Nov on whose minimum an earlier build filled in looks typed), ed-q3 (AD6 on a loan or pay-later answered "no"), mg-q13 (AD8: a `ui` key set after the backup comes back at the merge). SCHEMA_V3 section 14 lists each with what the references do.
