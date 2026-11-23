@@ -94,6 +94,25 @@ module.exports = [
     t.assert.eq([r.n, r.why, r.again], [20, 'backup restore', 0], 'the whole copy is there and not among the shared kept versions');
   } },
 
+  { name: 'only the newest 5 whole copies are kept; removeCopy takes one away and touches nothing else [D2]', run: async t => {
+    const p = await t.page();
+    const r = await p.evaluate(async () => {
+      const s = await window.BurrowStore.open(); await s.load();
+      const c = window.makeCopy(3); c.keptVersions = [{ id: 'kept:x1', at: c.at, v: 1 }]; await s.save(c, { full: true });
+      const ids = [];
+      for (let i = 0; i < 7; i++) { ids.push(await s.keepCopy(c, 'restore ' + i)); await new Promise(res => setTimeout(res, 5)); }
+      const after7 = (await s.keptCopies()).map(x => x.why);
+      const gone = await s.removeCopy(ids[6]);
+      const after1 = (await s.keptCopies()).map(x => x.why);
+      let refused = false; try { await s.removeCopy('kept:x1'); } catch (e) { refused = true; }
+      return { after7, gone, after1, refused, oldest: await s.keptCopy(ids[0]), versions: (await s.load()).copy.keptVersions.length };
+    });
+    t.assert.eq(r.after7.slice().sort(), ['restore 2', 'restore 3', 'restore 4', 'restore 5', 'restore 6'], 'the newest 5 are kept');
+    t.assert.eq(r.oldest, null, 'an older copy is removed');
+    t.assert.eq([r.gone, r.after1.length, r.after1.includes('restore 6')], [true, 4, false], 'removeCopy takes that copy away');
+    t.assert.eq([r.refused, r.versions], [true, 1], 'removeCopy refuses an id that is not a whole copy; the shared kept versions stay');
+  } },
+
   { name: 'device-only state is its own record and never in the shared copy [D3]', run: async t => {
     const ctx = await t.context();
     const a = await t.page(ctx);

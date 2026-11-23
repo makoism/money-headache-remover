@@ -4766,6 +4766,7 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
   const NAME = 'burrow3', IDB_VERSION = 1;
   const LISTS = { events: 'events', keptVersions: 'kept' };   // copy field -> store, one record per item
   const NOT_IN_BOOK = new Set(['events', 'keptVersions', 'rev', 'at', 'fmt']);
+  const KEEP_COPIES = 5;   // whole copies kept before a big replace [D2]
   const KEPT_LO = 'kept:', KEPT_HI = 'kept:￿', COPY_LO = 'copy:', COPY_HI = 'copy:￿';
   const MANY = 2000;   // a tab message lists changed ids up to this many; more and the other tab reads everything
 
@@ -4969,15 +4970,38 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
       return out;
     }
 
-    // A whole copy kept before a big replace (backup restore, cloud load), as its own record [D2].
+    // A whole copy kept before a big replace (backup restore, cloud load), as its own record [D2]. Only the newest
+    // KEEP_COPIES are kept (by moment, since each `at` carries its own offset); older ones are removed in the same write.
     keepCopy(copy, why) {
       return this.run(async () => {
         if (readOnly()) throw new Error('read-only');
         const at = nowIso(), id = COPY_LO + at;
-        const tx = await this.tx(['kept'], 'readwrite');
-        tx.objectStore('kept').put({ id, why: why || '', at, copy });
+        const tx = await this.tx(['kept'], 'readwrite'), kept = tx.objectStore('kept'), had = [];
+        kept.put({ id, why: why || '', at, copy });
+        kept.openCursor(IDBKeyRange.bound(COPY_LO, COPY_HI)).onsuccess = e => {
+          const c = e.target.result; if (!c) return;
+          if (c.value.id !== id) had.push({ id: c.value.id, ms: Date.parse(c.value.at) || 0 });
+          c.continue();
+        };
         await done(tx);
+        const old = had.sort((x, y) => y.ms - x.ms || (x.id < y.id ? 1 : -1)).slice(KEEP_COPIES - 1);
+        if (old.length) {
+          const tx2 = await this.tx(['kept'], 'readwrite');
+          for (const o of old) tx2.objectStore('kept').delete(o.id);
+          await done(tx2);
+        }
         return id;
+      });
+    }
+    // Remove one kept whole copy. Only `copy:` ids: the shared kept versions are never removed here.
+    removeCopy(id) {
+      return this.run(async () => {
+        if (readOnly()) throw new Error('read-only');
+        if (typeof id !== 'string' || !id.startsWith(COPY_LO)) throw new Error('not a kept copy: ' + id);
+        const tx = await this.tx(['kept'], 'readwrite');
+        tx.objectStore('kept').delete(id);
+        await done(tx);
+        return true;
       });
     }
     keptCopies() {
