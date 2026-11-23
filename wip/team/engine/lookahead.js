@@ -296,6 +296,7 @@
       if (e.k === 'periodStart' && e.day <= knownTo) { const oc = I.periodOcc(e.id); if (oc) psOf[oc] = e.day; }
       if (e.k === 'periodEnd') { const oc = I.periodOcc(e.id); if (oc) peEnd[oc] = Math.min(peEnd[oc] == null ? Infinity : peEnd[oc], e.day); }
     }
+    const monthCache = {};   // each year's pays for the units rules, for this look ahead only
     const periodStartDays = [], occByStart = {};   // [T1] each period is named by the occurrence of the pay that starts it
     pays.slice().sort((x, y) => x.due - y.due).forEach((o, i, list) => {
       const prev = list[i - 1], s = settledBy[o.id];
@@ -687,11 +688,24 @@
     const occOn = (start, day) => (start != null && occByStart[start] ? occByStart[start]
       : (pays.filter(o => o.land <= day).sort((x, z) => x.land - z.land).pop() || {}).id || null);
 
+    // [AU1] The period running now, converted like every other: from the pay that started it (or the day it started) to
+    // the next pay. Its amount for a source by the units rules.
+    function nowPeriod() {
+      const started = periodStartDays.length ? Math.max(...periodStartDays) : null;
+      const occ = occOn(started, today);
+      const o = occ && pays.find(p => p.id === occ);
+      const start = started !== null ? started : o ? o.land : null;
+      const next = nextPays.filter(p => p.land > today)[0];
+      const end = next ? next.land : start !== null ? start + 30 : null;
+      return { started, occ, start, end };
+    }
+    const nowAmount = (src, per) => {
+      const n = nowPeriod(), a = periodAmount(src, n.started, n.occ);
+      return n.start === null ? a : perPeriod({ per, amount: a }, n.start, n.end, n.occ);
+    };
     function freePeriodAmount() {
       if (!periodStream || !freeSrc) return null;
-      const started = periodStartDays.length ? Math.max(...periodStartDays) : null;
-      const coming = nextPays.filter(p => p.land > today);
-      return perPeriod({ per: freeSrc.per, amount: periodAmount(freeSrc, started, occOn(started, today)) }, coming[0] ? coming[0].land : today, coming[1] ? coming[1].land : (coming[0] ? coming[0].land : today) + 30);
+      return nowAmount(freeSrc, freeSrc.per);
     }
     // [O watch, X4] a check-in figure above what the app had by more than the period's Free to spend, or by more than
     // 20% of what it had, is held until the person answers that it is right; an investment's rise is never asked [T watch]
@@ -766,15 +780,18 @@
         const before = pays.filter(o => o.land <= od).sort((x, z) => x.land - z.land), after = pays.filter(o => o.land > od).sort((x, z) => x.land - z.land);
         // [I4] shared by days left: from the setup day to the period's last day, both counted, over the period's days
         const share = before.length && after.length ? { d: after[0].land - od, D: after[0].land - before[before.length - 1].land } : null;
+        // [AS, AU1] of the amount of the period holding the opening, by the units rules
+        const holding = before.length ? before[before.length - 1] : null;
+        const openAmount = (src, per) => { const a = periodAmount(src, null, occOn(null, od)); return holding && after.length ? perPeriod({ per, amount: a }, holding.land, after[0].land, holding.id) : a; };
         let leftOver = 0;
         for (const l of lineSrcs.filter(x => moneyAcct(lineAcct(x)) === acctId)) {
-          const typed = (split.lines || {})[l.id], amount = periodAmount(l, null, occOn(null, od));
+          const typed = (split.lines || {})[l.id], amount = openAmount(l, l.per);
           if (typed != null) out.lines[l.id] = typed;
           else if (share) { out.lines[l.id] = Math.floor(amount * share.d / share.D); leftOver += amount * share.d - out.lines[l.id] * share.D; }
           else out.lines[l.id] = amount;
         }
         if (freeSrc && moneyAcct(lineAcct(freeSrc)) === acctId) {
-          const amount = periodAmount(freeSrc, null, occOn(null, od));
+          const amount = openAmount(freeSrc, freeSrc.per);
           out.free = split.free != null ? split.free : share ? Math.floor((amount * share.d + leftOver) / share.D) : amount;   // [J4]
         }
         return (opening[acctId] = out);
@@ -814,9 +831,8 @@
         const adjusted = live().filter(e => e.k === 'adjust' && !e.place && acct[e.account] && cur(e.account) === cur(acctId) && inPeriod(e, e.account)).reduce((t, e) => t + e.a, 0);   // [T7]
         return start - spent - fees + placed + adjusted;
       };
-      const curOcc = occOn(lastPay, today);
-      const lines = lineSrcs.map(l => { const id = moneyAcct(lineAcct(l)), a = periodAmount(l, lastPay, curOcc); return { name: l.name, acct: id, per: l.per, amount: a, left: leftOf(l.id, id, a), src: l }; });
-      const fid = freeSrc && moneyAcct(lineAcct(freeSrc)), fa = freeSrc && periodAmount(freeSrc, lastPay, curOcc);
+      const lines = lineSrcs.map(l => { const id = moneyAcct(lineAcct(l)), a = periodStream ? nowAmount(l, l.per) : periodAmount(l, lastPay, occOn(lastPay, today)); return { name: l.name, acct: id, per: l.per, amount: a, left: leftOf(l.id, id, a), src: l }; });
+      const fid = freeSrc && moneyAcct(lineAcct(freeSrc)), fa = freeSrc && (periodStream ? nowAmount(freeSrc, freeSrc.per) : periodAmount(freeSrc, lastPay, occOn(lastPay, today)));
       const free = freeSrc && { name: 'Free to spend', acct: fid, per: freeSrc.per, amount: fa, left: leftOf('free', fid, fa), src: freeSrc };
       return { lines, free };
     }
@@ -834,18 +850,18 @@
     // ----- planned spending of later periods [B1, B3, B4, 10.4, H9] -----
     // A period gets a line's amount when its `per` matches; `month` with pay that is not monthly gets monthly x 12 over the
     // year's pays, the leftover on the earliest; `week` gets days x amount / 7, rounded down [SCHEMA 8].
-    function perPeriod(x, startDay, endDay) {
+    // `occId` names the pay that starts the period, when known (a period started without its pay keeps its name [T1]).
+    function perPeriod(x, startDay, endDay, occId) {
       if (x.per === 'week') return Math.floor(x.amount * (endDay - startDay) / 7);
-      if (x.per === 'month' && periodStream && !monthlyOneDay(periodStream)) {
-        const y = ymOf(startDay)[0];
-        const list = S.occurrences(periodStream, calOf(periodStream.acct), dayIn(y, 1, 1), dayIn(y, 12, 31)).filter(o => ymOf(o.due)[0] === y).sort((a, b) => a.due - b.due);
-        const i = list.findIndex(o => o.land === startDay);
-        const sp = U.spread(x.amount * 12, list.length || 1);
-        return sp[i >= 0 ? i : 0];
+      if (x.per === 'month' && periodStream) {
+        const o = occId ? pays.find(p => p.id === occId) : pays.find(p => p.land === startDay);
+        const oc = !o && occId ? I.occurrence(occId) : null;
+        const due = o ? o.due : oc && oc.schedule === periodStream.id ? dayNum(oc.due) : null;
+        const sh = due === null ? null : S.monthShare(periodStream, calOf(periodStream.acct), due, x.amount, monthCache);
+        if (sh) return sh.amount;
       }
       return x.amount;
     }
-    function monthlyOneDay(s) { const r = ((s.rules || []).find(q => !q.gone) || {}).rule || {}; return r.every === 'month' && (r.days || [r.day]).length === 1; }
     function plannedFor(id) {
       const list = [];
       const lines = (planLeft.lines || []).filter(l => l.acct === id);
@@ -855,7 +871,7 @@
         const starts = nextPays.filter(p => p.land > today);
         starts.forEach((p, i) => {
           const end = starts[i + 1] ? starts[i + 1].land : p.land + 30;
-          for (const l of lines) list.push({ land: p.land, amount: perPeriod({ per: l.per, amount: periodAmount(l.src, p.land, p.id) }, p.land, end), label: l.name + ' for the period from ' + short(p.land) });
+          for (const l of lines) list.push({ land: p.land, amount: perPeriod({ per: l.per, amount: periodAmount(l.src, p.land, p.id) }, p.land, end, p.id), label: l.name + ' for the period from ' + short(p.land) });
         });
       } else {
         // [B4, M9, M10] no fixed pay: by day. A monthly amount x 12 / the year's days a day, rounded down, the rest of each
