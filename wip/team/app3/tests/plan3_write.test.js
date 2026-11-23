@@ -239,6 +239,34 @@ const stamped = (r, step) => { ok(I.isOrdinary(r.id), 'ordinary id ' + r.id); eq
     eq(p1.end, '2026-11-26', 'it ends before the new pay day');
     r = await h.go('changeBill', SIDE, { name: 'Main job' }); ok(!r.ok && /already one/.test(r.text), JSON.stringify(r));
   });
+  await t('[slice 6] the pay that starts the period changed to every 2 weeks: each line each pay is asked about, a new step from the change', async () => {
+    const h = setup(), MAIN = 'k7m2qa-f3n8p1x6wd-4';
+    let r = await h.go('addLine', { name: 'Food', amount: 40000 }); ok(r.ok, JSON.stringify(r));
+    r = await h.go('setFree', { amount: 60000 }); ok(r.ok, JSON.stringify(r));
+    const food = h.book.plan.budgets[0].id;
+    // the rhythm changes and no line is answered: refused, naming each line
+    r = await h.go('changeBill', MAIN, { every: 'weeks2', start: '2026-12-04', from: '2026-12-04' });
+    ok(!r.ok && r.text === 'Your pay will land every 2 weeks. How much each pay from then for Food and Free to spend?', JSON.stringify(r));
+    // every 2 weeks with no day of one pay: refused
+    r = await h.go('changeBill', MAIN, { every: 'weeks2', from: '2026-12-04', lines: { [food]: 20000, free: 30000 } });
+    ok(!r.ok && /day of one pay/.test(r.text), JSON.stringify(r));
+    r = await h.go('changeBill', MAIN, { every: 'weeks2', start: '2026-12-04', from: '2026-12-04', lines: { [food]: 20000, free: 30000 } });
+    ok(r.ok, JSON.stringify(r));
+    const s = h.book.schedules.find(x => x.id === MAIN);
+    eq(s.rules.map(x => [x.from, x.rule]), [[null, { every: 'month', days: [10] }], ['2026-12-04', { every: 'weeks', n: 2, from: '2026-12-04' }]]);
+    eq(h.book.plan.budgets[0].steps.map(x => [x.from, x.amount]), [[null, 40000], ['2026-12-04', 20000]], 'Food from the change');
+    eq(h.book.plan.shares.filter(x => !x.gone).map(x => [x.from, x.free]), [[DAY, 60000], ['2026-12-04', 30000]], 'Free to spend from the change');
+    eq(PE.scheduleView(h.book, DAY)[MAIN].next.land, '2026-12-04');
+    // a line left at its amount keeps it (no new step); the rhythm the same: the lines are not touched
+    const h2 = setup();
+    await h2.go('addLine', { name: 'Food', amount: 40000 });
+    r = await h2.go('changeBill', MAIN, { every: 'weeks2', start: '2026-12-04', from: '2026-12-04', lines: { [h2.book.plan.budgets[0].id]: 40000 } });
+    ok(r.ok, JSON.stringify(r));
+    eq(h2.book.plan.budgets[0].steps.length, 1, 'kept as it was');
+    r = await h2.go('changeBill', MAIN, { amount: 185000, lines: { [h2.book.plan.budgets[0].id]: 1 } });
+    ok(r.ok, JSON.stringify(r));
+    eq(h2.book.plan.budgets[0].steps.length, 1, 'the rhythm the same: lines not touched');
+  });
   await t('one bill changed once: an amounts key on its due date; the next one goes back to the usual amount', async () => {
     const h = setup();
     let r = await h.go('changeOnce', RENT, { due: '2026-11-27', amount: 80000 }); ok(r.ok, JSON.stringify(r));
