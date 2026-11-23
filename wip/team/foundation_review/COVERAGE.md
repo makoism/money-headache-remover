@@ -1,4 +1,4 @@
-# Coverage of the foundation (after decisions T to AN, 23 Nov 2026)
+# Coverage of the foundation (after decisions T to AO, 23 Nov 2026)
 
 The coverage grid of final_review_3.md, updated (LESSONS lesson 3: count coverage, do not sample). Rows are kinds of record and the shapes they live in; columns are the situations that change a record's effect. Every applicable cell names the asks (scenarios/*.json, run by `node foundation_review/ref/run_scenarios.js`) or cases (rules/*.json, run by `node foundation_review/rules/run_rules.js`) that cover it. All of them pass: 725 of 725 asks, 736 of 736 cases, and the same again with every short made-up id rewritten to the ordinary form by the realistic-ids check (`foundation_review/realistic_ids.js`, which both runners run every time) (after AN: 39 cases added (rules mg-257 to mg-287, ed-56 to ed-63) and 9 re-worked (ed-17, ed-18 for AN3; mv-28, mv-125 to mv-127 for AN7's shop keys; the shop keys of the existing merge cases put in the `k:` form, no result changed), 6 asks re-worked by hand with new results (check_day_before cdb-01 to cdb-03, away_clock ac-01 to ac-03, AN4) and 6 re-worked with the same or new figures (moved_together mt-01 to mt-03, AN5; offset_travel ot-01 to ot-03, AN4, re-worded), the columns E x D and Z x D and the row `people`; see "Decision AN" at the end; after AM: 9 asks in 3 new scenario files, 6 asks re-worked by hand (offset_travel ot-01 to ot-03, away_clock ac-01 to ac-03, new results for AM3) and 4 cases added, no new row or column; see "Decision AM" at the end; after AL: 3 asks in a new scenario file, 47 cases added and 41 re-worked (the shared `ui`, `home` and the move's `home` in the field-value shape; 4 of them, mg-198, mg-206, mg-211 and mg-212, with a new result for AL3), the rows shared `ui`, `imports.cats` and `plan.limits` and the column V; see "Decision AL" at the end; after AK: 10 cases added and 17 re-worked (one of them only reworded), no new row or column: `home` now merges field by field; see "Decision AK" at the end; after AJ: 4 asks in 2 new scenario files, 45 cases added and 3 re-worked, the row `home` and 19 false covers fixed (the E column and the built-id D cells held only for short made-up ids; loan / pay-later D); see "Decision AJ" at the end; after AI: 9 cases added and 8 re-worked for the held value, no new row or column; see "Decision AI" at the end; after AH: 11 asks in 3 new scenario files, 8 asks moved to the AE1 shape, 60 cases added and 26 re-worked (12 of them only to name the receiving device's now, 5 only moved to the AE1 shape), the column A and two false covers fixed; see "Decision AH" at the end; after AG: 6 cases added and 3 re-worked, no new row or column; see "Decision AG" at the end; after AE and AF: 6 asks in a new scenario file, 31 cases added and 20 re-worked (3 of them only reworded), the row "keyed overrides" and the column R; see "Decisions AE and AF" at the end; after AB and AC: 20 asks in 4 new scenario files, 34 cases added and 15 re-worked, the columns L and B and the rows `pendingMove` and `frozen`; see "Decisions AB and AC" at the end; after AA: 3 asks in a new scenario file and 12 move cases; after W and X: 78 asks and 32 cases added, in 19 new scenario files, one ask in fee_place and a new rules file `rules/edits.json`; after Y and Z: 15 asks in 4 new scenario files, 11 rules cases and 24 move cases, and the move row; see "Decisions W and X" and "Decisions Y and Z" at the end). The move cases (`rules/move.json`) are counted in the 697.
 
@@ -13,9 +13,9 @@ Marks: **c** covered before this round; **n** newly covered (in the first ten co
 | | Cells |
 |---|---|
 | All cells (37 rows x 20 columns) | 740 |
-| Not applicable | 371 |
+| Not applicable | 370 |
 | Stage 2 (hand and Wallet mode, T7) | 3 |
-| **Applicable** | **366** |
+| **Applicable** | **367** |
 | New after confirm_review_7: the columns E x D and Z x D (72 cells on the old rows: 10 applicable, ED on income schedules, bill / transfer / auto schedules and keyed overrides, ZD on in / pay, refund, spend, transfer, repay, card and cash / e-wallet; 62 not applicable) | 10 |
 | New after confirm_review_7: the row `people` (20 cells: 4 applicable, D, U, R and M; 16 not applicable) | 4 |
 | of the 14 new applicable cells, covered by cases and asks that already existed (c: people M, mv-27 and mv-67) | 1 |
@@ -66,7 +66,9 @@ Marks: **c** covered before this round; **n** newly covered (in the first ten co
 | Applicable after AL (36 rows x 18 columns) | 352 |
 | Changed by AM (no new row or column; AM1 adds to the keyed overrides P and E cells and the income and bill schedules, AM2 to the `home` D cell, AM3 re-covers the check and spend C and V cells with new results) | 0 |
 | Changed by AN in the old cells (none uncovered; AN1 and AN-note add to the `home`, shared `ui`, `imports.cats` and `plan.limits` D cells, AN4 re-covers the check C and V and spend V cells with new results, AN5 the keyed overrides P and E cells, AN7 the `imports.cats` D and M cells) | 0 |
-| **Applicable and covered, all passing** | **366** (366 of 366) |
+| Changed by AO: the cell check x Z x D, not applicable before (a check typed on one device into an account closed on the other reopens it when its figure is not zero, AO6) | 1 |
+| Changed by AO in the old cells (none uncovered; AO1 adds to the income schedules and keyed overrides ED cells, AO3 re-covers the keyed overrides P and E cells with new results, AO2 and AO4 add to them, AO6 to the spend and cash / e-wallet ZD cells) | 0 |
+| **Applicable and covered, all passing** | **367** (367 of 367) |
 | Applicable and uncovered | 0 |
 
 **Counts after V** (kept for the record): 260 cells, 93 not applicable, 2 stage 2, 165 applicable, all covered. **A note on final_review_3's numbers.** final_review_3.md says 260 cells, 171 applicable, 129 covered, 24 uncovered and sound, 18 wrong. Its own table, counted cell by cell, holds 128 c, 22 u, 17 X and 93 -, so 167 applicable; the "(X: wallet)" note on the last row is the eighteenth wrong item but not a cell of its own. This file counts the table. Wallet mode is stage 2 now (T7), so the note and the two `hand` cells are out of version one: 165 applicable cells.
@@ -76,7 +78,7 @@ Marks: **c** covered before this round; **n** newly covered (in the first ten co
 | Row | C | O | W | P | X | D | U | E | S | Z | M | Y | T | L | B | R | A | V | ED | ZD |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | open | c | c | c | c | c | - | n (u) | - | c | c | n | - | n | n | n | n | n | - | - | - |
-| check | c, f (X4) | c | c | n (X) | c | n (u) | c | n (u), f (AJ1) | c | c | n | n | n | n | n | n | n | n | - | - |
+| check | c, f (X4) | c | c | n (X) | c | n (u) | c | n (u), f (AJ1) | c | c | n | n | n | n | n | n | n | n | - | n |
 | in / pay | c | c | c | c | c | c | n (X) | c, f (X8), f (AJ1) | c | n (u) | - | n | n | - | - | n | n | - | - | n |
 | refund | c | - | c | n (u) | n (u) | - | - | - | c | n (u) | - | n | n | - | - | n | n | - | - | n |
 | spend | c | c | c | c | n (X) | c | c | c, f (AJ1) | c | n (u) | n | n | n | n | - | c | n | n | - | n |
@@ -147,6 +149,7 @@ Marks: **c** covered before this round; **n** newly covered (in the first ten co
 - C, AN4 (n): check_day_before cdb-01 to cdb-03 (receipts from yesterday and the day before, logged after this morning's check: their days ended before it, so both are inside it; re-worked by hand from AM3's results); away_clock ac-01, ac-03 (the 3,000 of the day before, logged after the check, is inside it: 292,000 and 17,000 again)
 - L a second move days later (n): rules mv-98, mv-99 (the 23 Nov bank figure corrected on the phone stays 185,000 when the desktop moves on 1 Dec, AB1)
 - B set up between close and payment day (n): rules ed-13 to ed-16 (the statement check setup saves: yes, no with its amount, don't know holding everything owed; not asked after the payment day, AB3; "no" with everything owed filled in, ed-19, AD6; "don't know" on a loan or pay-later is that month's usual payment, ed-20, ed-21, AD7); card_between_close_pay cbp-03, cbp-06
+- ZD written into an account closed on the other device (n, applicable since AO6): rules mg-291 (a check of 3,000 typed on the phone into the e-wallet the desktop closed: reopened at the merge, with a notice), mg-292 (a check of 0: stays closed, nothing shown) (AO6)
 
 ### in / pay
 - C check day (c): late_pay late-08; settle_ticked tick-03
@@ -190,7 +193,7 @@ Marks: **c** covered before this round; **n** newly covered (in the first ten co
 - T a time with an offset (n): day_offsets off-01 (a moved receipt and a typed spend with a date only, a time with no offset); day_offset_west west-01
 - V an offset that changes (n): offset_travel ot-01, ot-03 (a phone flown from Tokyo to Honolulu; the spend dated the day before the check, whose Honolulu day had not ended at it, told after it, comes after it, AN4); rules mg-240 (two edits across the end of daylight saving: the later moment wins), mg-241 (a copy whose date reads a day ahead in another offset is not held), mg-242 (a half-hour offset: held at the receiver's now plus 1 ms in its own offset), mg-243 (a phone in Honolulu edits after the desktop in Tokyo and wins)
 - L a second move days later (n): rules mv-82, mv-83 (a receipt removed on the phone stays removed), mv-84, mv-85 (a receipt only the desktop's later copy held is added), mv-97 (removed, then put back with an Undo, AB1, H6)
-- ZD written into an account closed on the other device (n): rules mg-272 (a lunch from the e-wallet the desktop closed: reopened, with a notice), mg-277 (a receipt dated before the closing day: the account stays closed) (AN6)
+- ZD written into an account closed on the other device (n): rules mg-272 (a lunch from the e-wallet the desktop closed: reopened, with a notice), mg-277 (a receipt dated before the closing day: the account stays closed) (AN6); mg-290 (a lunch dated on the closing day: stays closed, AO6)
 
 ### transfer
 - C check day (c): import_two_sided two-04, two-05
@@ -319,7 +322,7 @@ Marks: **c** covered before this round; **n** newly covered (in the first ten co
 - M the move run on two devices (n): rules mg-84 (`mv:pay:steps.a`); moved pay `per: 'month'` with a one-month amount spread over the month's pays (AB2, AC1): rules mv-87, mv-88
 - Y years after setup (n): far_years fy-11
 - L a second move days later (n): rules mv-82, mv-83 (the pay day answered on the phone keeps its rule, AB1)
-- ED edited after settled on two devices (n): rules mg-268 (confirm_review_7 s2: the pay day changed to the 25th "from 1 Dec" on the offline phone after the desktop ticked the 10 Dec pay; after the merge the change starts 11 Dec, a new `at`, the phone's notice), mg-269 (the desktop writes the same move, no notice), mg-270 (nothing settled in the way: left as it is) (AN2); x8_ordinary_ids_ok x8o-02 to x8o-04 (the copy that results is worked out: the 25 Dec pay next)
+- ED edited after settled on two devices (n): rules mg-268 (confirm_review_7 s2: the pay day changed to the 25th "from 1 Dec" on the offline phone after the desktop ticked the 10 Dec pay; after the merge the change starts 11 Dec, a new `at`, the phone's notice), mg-269 (the desktop writes the same move, no notice), mg-270 (nothing settled in the way: left as it is) (AN2); mg-288 (a 300,000 bonus that moved with the change goes back to the settled 10 Dec pay when the change moves: one bonus counted, AO1); x8_ordinary_ids_ok x8o-02 to x8o-04 (the copy that results is worked out: the 25 Dec pay next)
 
 ### bill / transfer / auto schedules
 - C check day (c): mako_shape mako-12
@@ -412,7 +415,7 @@ Marks: **c** covered before this round; **n** newly covered (in the first ten co
 - M the move run on two devices (n): rules mg-84 (`mv:acct:cash`)
 - T a time with an offset (n): day_offset_kinds kinds-02, kinds-03
 - L a second move days later (n): rules mv-98, mv-99 (the moved PayPay wallet renamed on the phone stays, AB1)
-- ZD written into an account closed on the other device (n): rules mg-272 to mg-275 (a spend, money in, a refund and a top-up into an e-wallet the desktop closed: reopened, with a notice), mg-277 (dated before the closing: stays closed) (AN6)
+- ZD written into an account closed on the other device (n): rules mg-272 to mg-275 (a spend, money in, a refund and a top-up into an e-wallet the desktop closed: reopened, with a notice), mg-277 (dated before the closing: stays closed) (AN6); mg-290 (dated on the closing day: stays closed), mg-291 and mg-292 (a check of 3,000 reopens it, a check of 0 does not) (AO6)
 
 ### fee record (`fee:<transfer id>`) (a new row: confirm_review_1 found it missing)
 - W posting window (c): rough_transfer rough-03, rough-06 (a statement line meets a rough side and the fee is written)
@@ -475,7 +478,8 @@ Marks: **c** covered before this round; **n** newly covered (in the first ten co
 - L a second move days later (n): rules mv-116 (a key edited on the phone survives the desktop moving the same copy days later)
 - R restore (n): rules mg-111 (the key an answer wrote, removed by the restore), mg-113 (each key and `extraSteps` entry, key by key; the merge keeps it); mv-117, mv-118, mg-120 (the key written again after the restore wins, AG1)
 - not applicable: O, W, X, S, Z, Y, T, B (a keyed override is typed or moved, in its record's currency, on no account of its own, and is no opening, import or statement)
-- ED edited after settled on two devices (n): rules mg-271 (a bonus key moved away on the phone (AL6) and raised on the desktop: live again at the merge, an orphan; the change moves to the day after it, with a notice, AN2; the double bonus is open question mg-q-an2)
+- ED edited after settled on two devices (n): rules mg-271 (a bonus key moved away on the phone (AL6) and raised on the desktop: live again at the merge, an orphan; the change moves to the day after it, with a notice, AN2; the moved copy on 10 Jan is removed, so one bonus counts, 450,000, AO1), mg-288 (the bonus moved back to the settled pay, AO1), mg-289 (a Food `once` key moved with the change and raised on the desktop: the moved copy removed, AO1)
+- P, E, AO2 to AO4 (n): moved_together mt-01 (95,000) and mt-02 (125,000) re-worked by hand: the two `pendingMove` entries are in the file, and until the pick a waiting bill amount counts at the larger (the 5 Jan rent 95,000) while a waiting pay amount adds nothing (mt-03, 150,000; AO3); rules ed-64 (two rent amounts onto an empty 5 Jan: January's is its own, AO2), ed-65 to ed-68 (a budget line's and a share's `once` keys wait in `pendingMove` and are added on the pick, AO4)
 
 ### home (`curs`, `main`, `country`, `mode`) (a new row: confirm_review_5 found it missing, AJ3; field by field since AK1; field values and `main` one field since AL1 and AL3)
 - O opening (c): rules ed-17, ed-18 (the minimum asked once at setup, in the home currency); units-60 (the first `curs` entry, from setup)
@@ -493,6 +497,7 @@ Marks: **c** covered before this round; **n** newly covered (in the first ten co
 - V an offset that changes (n): rules mg-250 (a phone in India, +05:30, a little behind, writes `main` 1 ms after what it has seen, in its own offset); mg-228 (what a device has seen reads `home` among others, as moments)
 - not applicable: C (a check-in writes no `home` field), W, S (never imported or posted), E (nothing in it is settled), Y (the entry in force is read by its date, as in X and P), T (`curs` entries are days, with no time), B (no statement)
 - D, AN1 and AN-note (n): rules mg-257 (confirm_review_7 s1: a plain field in `home` on both copies, merged key by key, the same both ways), mg-258 (the plain field differs: the keyed rule), mg-259 (a `home` holding only `curs`); mg-264 (the country changed on both: the phone, whose change lost, records the notice), mg-265 (a `curs` entry), mg-267 (a plain sync records nothing)
+- (AO5, no column of its own) another account becomes the main bank: rules ed-69 (its own 5,000 moves into `home.main`, the old main bank's 20,000 does not follow, a notice), ed-70 (no minimum of its own: none), ed-71 (the old main bank had none: no notice) (question `main_change`)
 
 ### shared `ui` (one field value per key) (a new row: confirm_review_6 found it had none, AL1)
 - D two devices (n): rules mg-31, mg-41 (re-worked to field values: each key by its own `at`, then `by`), mg-213 (a key changed after seeing a fast desktop's change wins, k1, AL2), mg-230, mg-231 (merged either way round, ties)
@@ -516,6 +521,7 @@ Marks: **c** covered before this round; **n** newly covered (in the first ten co
 - not applicable: C, O, W, P, X, E, Z, Y, T, B; S (the category is read by the statement reader, which the reference does not model: matching_ref meets imports only with typed lines)
 - D, AN1 and AN7 (n): rules mg-260 (an empty `cats` and a `files` list on both copies), mg-261 (empty on one copy, a lesson on the other), mg-283 (a reader's newer guess never replaces the person's lesson), mg-284 (a shop read as "__proto__", key `k:__proto__`, kept)
 - (AN7, no column of its own) the shop key form: rules mg-282; a guess never writes over a lesson, a lesson over a guess: mg-285; never trimmed, a 401st shop kept: mg-286; 38.31 keys lowercased at the move: mv-28, mv-125 to mv-127 (M and L re-worked)
+- (AO7, no column of its own) two 38.31 shop keys that become one at the move: rules mv-128 (the later kept, the join listed in `catsJoined`), mv-129 (no join)
 
 ### `plan.limits` (`ceiling` with `per`, `aims`) (a new row: confirm_review_6 found it missing, AL1, AL5)
 - D two devices (n): rules mg-219 (the aims on the phone and the ceiling on the desktop: both kept, k2), mg-221 (a ceiling from a clock 3 days fast held), mg-224 (the ceiling changed back after seeing a fast desktop's, AL2), mg-233 (a weekly ceiling beats an earlier monthly one, amount and `per` together, AL5)
@@ -852,4 +858,20 @@ Run first, before any reference changed (the new and re-worked cases and asks, h
 | AN7: shop keys `k:` + trimmed, collapsed, lowercased text; `src`, a reader's guess never replaces a person's lesson; never trimmed; 38.31 keys lowercased at the move | rules mg-282 to mg-286 (questions `cat_key`, `cat_learn`, `merge_both`); mv-28, mv-125 to mv-127 | mg-282, mg-283, mg-285, mg-286, mv-28, mv-125 to mv-127; mg-284 on the question |
 | AN-note: any field value whose own device's change lost at a merge gets the notice | rules mg-264 to mg-267 (question `lost_notices`); AM2's mg-253 to mg-256 unchanged | mg-264 to mg-267 |
 
-Questions AN does not answer (for Mako's run; SCHEMA_V3 section 14 has them with the readings to confirm, and `rules/*.json` lists each as an open question): (1) mg-271 leaves the bonus keyed on both 25 Dec and 10 Jan after the change moves (two bonuses counted); (2) which of two amounts moved onto an empty occurrence is its own (ed-60: the same month's); (3) whether a waiting bill amount should count on the safe side (mt-01 counts 70,000, 95,000 waits); (4) `once` keys moved onto a period with its own; (5) the minimum when another account with its own `minBank` becomes the main bank; (6) an event dated on the closing day, and a check figure, at AN6; (7) two 38.31 shop keys that become one key at the move.
+Questions AN does not answer (for Mako's run; SCHEMA_V3 section 14 has them with the readings to confirm, and `rules/*.json` lists each as an open question): (1) mg-271 leaves the bonus keyed on both 25 Dec and 10 Jan after the change moves (two bonuses counted); (2) which of two amounts moved onto an empty occurrence is its own (ed-60: the same month's); (3) whether a waiting bill amount should count on the safe side (mt-01 counts 70,000, 95,000 waits); (4) `once` keys moved onto a period with its own; (5) the minimum when another account with its own `minBank` becomes the main bank; (6) an event dated on the closing day, and a check figure, at AN6; (7) two 38.31 shop keys that become one key at the move. All seven are answered by AO (below).
+
+## Decision AO, and where each part is tested
+
+Run first, before any reference changed (the new and re-worked cases and asks, hand-worked): rules 738 of 751 cases (13 failed: ed-65 to ed-71, mg-271, mg-288, mg-289, mg-292, mv-128, mv-129); scenarios 723 of 725 asks (2 failed: mt-01 and mt-02, the waiting 95,000 rent counted nowhere). ed-64 (AO2, a confirmation), mg-290 (an event on the closing day) and mg-291 (a check of 3,000) passed first: the reference already did what AO says there. Of the failing cases, ed-69 to ed-71 failed only because the question `main_change` was new; mg-292 failed on the merge itself (a check of 0 reopened the account); mg-271, mg-288 and mg-289 on the two bonuses (the moved copy stayed live and the original stayed removed); ed-65 to ed-68 because `move_save` read only `amounts`; mv-128 and mv-129 because the move summary had no list of joined shop keys. After the references: rules 751 of 751, scenarios 725 of 725, the spec check all good, and the same again with realistic ids.
+
+| Part | Asks or cases | Failed first |
+|---|---|---|
+| AO1: when AN2 moves a change after a merge, the keys that moved with it move back (the original live again, the moved copy `gone`), so one bonus is counted | rules mg-271 (re-worked by hand: 450,000 on 25 Dec, the 10 Jan copy `gone`, not 850,000), mg-288 (300,000 back on the settled 10 Dec pay, the 25 Dec copy `gone`, not 600,000), mg-289 (a Food `once` key: 65,000 for December's period, the 10 Jan copy `gone`) | all three |
+| AO2: of two amounts moving onto an empty occurrence, the one from its own month is its own; the other waits | rules ed-60 (unchanged), ed-64 (the rent: January's 70,000 written on 5 Jan, December's 95,000 waits) | none (a confirmation) |
+| AO3: a waiting bill amount counts on the safe side (the larger) in the walk until picked; a waiting pay amount adds nothing | moved_together mt-01 (95,000), mt-02 (125,000 = 400,000 - 95,000 + 150,000 - 50,000 - 200,000 - 80,000), mt-03 (150,000), re-worked by hand | mt-01, mt-02 |
+| AO4: `once` keys follow AN5 the same way as `amounts` | rules ed-65, ed-66 (a budget line: 50,000 written, 60,000 waits; add gives 110,000), ed-67, ed-68 (a share's parts wait whole; add gives Free to spend 50,000 and the goal 10,000) | all four |
+| AO5: an account that becomes the main bank brings its own `minBank` into `home.main`, cleared on the account; the old main bank gets none, with a notice | rules ed-69 to ed-71 (question `main_change`) | all three (new question) |
+| AO6: an event on the closing day reopens nothing; a check other than zero typed into a closed account reopens it, with a notice | rules mg-290 (a lunch on the closing day), mg-291 (a check of 3,000), mg-292 (a check of 0); the new cell check x Z x D | mg-292 |
+| AO7: two 38.31 shop keys that become one keep the later and are listed in the move summary | rules mv-128 (`catsJoined`), mv-129 (none) | both |
+
+Questions AO does not answer (for Mako's run; SCHEMA_V3 section 14 has them with the readings to confirm, and `rules/*.json` lists each as an open question): (1) whether a waiting `once` amount counts on the safe side in the walk (ed-q-ao4); (2) whether an amount the moved change left waiting in `pendingMove` is removed and its original key made live again too (mg-q-ao1); (3) whether a check other than zero typed into a closed account on one device reopens it in the look ahead, or the check-in should not offer a closed account (mg-q-ao6).
