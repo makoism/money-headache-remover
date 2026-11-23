@@ -1,17 +1,17 @@
 {
   "area": "move",
   "title": "Moving a saved copy from 38.31, 38.28 and the 25.0 to 38.26 builds into the new shape: every saved field to its target, or listed",
-  "written_in": "SCHEMA_V3 0, 2, 11 and 11.1; DECISIONS_ROUND2 E1, E6, H9, I5, J2, K3, O (and its watch items), X1, X9 and X watch, Y, Z and AA; foundation_review/MOVE_FIELDS.md (the field list per build)",
+  "written_in": "SCHEMA_V3 0, 2, 11 and 11.1; DECISIONS_ROUND2 E1, E6, H9, I5, J2, K3, O (and its watch items), X1, X9 and X watch, Y, Z, AA, AB and AC; foundation_review/MOVE_FIELDS.md (the field list per build)",
   "notes": [
     "Every amount is made up. Amounts in a saved copy are major units with up to two decimals (every build); the moved records hold whole minor units [section 0]; an amount with more decimals than its currency is rounded half up and flagged in `rounded` [Y23].",
     "Question `move`: `copy` is the saved copy as an object, or `raw` the stored text itself (the move reads the raw text, never a cleaned copy [O]). `idb` is the IndexedDB second copy (`{ rev, t }`, `t` the moment of its save, a time or ms); `now` is the move's own moment, with the moving device's offset (X9), which is also `offset` unless given. The copy's last save is the later of `idb.t` and the stored `rev` when it is a time, either alone, else `now` [Y13, AA10]; its day is \"the copy's last saved day\" [H9, K3]. The move month is the calendar month of `now` [Y21]. `answers` holds the answers to the move's questions: `cur` (the currency code), `loanLine` (a plan.debts id, or `drop`), `pay` (`{ a, b, side }`: each a rule, SCHEMA_V3 5, any rhythm [AA4]), `billDay` (by 38.31 line id, a rule), `debtDay` (by debt id, or the field path of a loan the move made: the payment day), `goalMoney` (by goal id: `bank`, or `{ name, type }` for another account, type `bank` or `ewallet` [AA13]), `loanTerms` (by the id of a loan the move made: `{ apr, min }` or `dontKnow` [AA12]). `make.receipts` adds that many plain receipts to the copy (test help, so mv-35 can hold 5,002 receipts).",
-    "The answer is the moved copy: `v`, `home`, `people`, `accounts`, `places`, `schedules`, `events`, `plan` (`shares`, `budgets`, `limits`), `imports`, `ui` (the shared screen answers), `device` (`look`, `tour`, `opens`), `asks` (the move's questions, each answered one with its `answer`), `unplaced` (every saved field with no target, kept in frozen3831 or on the shared ui as 11.1 says, which the move test lists [11.1]), `pendingMove` (kept on the copy [AA5]: each one-month amount and month-end answer whose pay, bill or payment day is not answered yet, `{ field, waits, to, ym, a }` plus what it becomes, written when the day is answered), `held` (a receipt on bill:loan while the loan question waits, mv-q43), `zero` (the move summary of lines and pay amounts that are 0 every month, not moved [Y25]), `rounded` [Y23], `sample`, `saved` (the copy's last save) and `frozen3831`. `show` picks parts (`plan.limits` picks one part of plan; `tally` counts the spends and adds them up; `ids` lists every record id; `payAmounts` gives each pay's amount on the days `payAt` names [AA4]); `omit` leaves a field out everywhere. Records carry `told` only on events; `at` and `by` are written by `move_two`.",
+    "The answer is the moved copy: `v`, `home`, `people`, `accounts`, `places`, `schedules`, `events`, `plan` (`shares`, `budgets`, `limits`), `imports`, `ui` (the shared screen answers), `device` (`look`, `tour`, `opens`), `asks` (the move's questions, each answered one with its `answer`), `unplaced` (every saved field with no target, kept in frozen3831 or on the shared ui as 11.1 says, which the move test lists [11.1]), `pendingMove` (kept on the copy [AA5]: each one-month amount and month-end answer whose pay, bill or payment day is not answered yet, a month-end answer for a period not ended at the move [AB2], and a receipt on bill:loan while the loan question waits [AC2]; each a record `{ id: 'mv:pend:<field path>', field, waits, to, ... }` [AB rows], written when what it waits for is answered and then kept marked `gone`), `zero` (the move summary of lines and pay amounts that are 0 every month, not moved [Y25]), `rounded` [Y23], `sample`, `saved` (the copy's last save) and `frozen3831` (the raw text; the stored copy keeps it as the record `mv:frozen:<by>` in `frozen` [AB1]). `show` picks parts (`frozenIds` lists the `frozen` records' ids, `pendingMoveIds` the entries still waiting) (`plan.limits` picks one part of plan; `tally` counts the spends and adds them up; `ids` lists every record id; `payAmounts` gives each pay's amount on the days `payAt` names [AA4]); `pick` gives single fields as \"list id field\"; `omit` leaves a field out everywhere. Records carry `told` only on events; `at` and `by` are written by `move_two` and `move_later` (the copy's last save [AB1]) and by `move_answer` on what an answer changed (`answeredAt`). `move_two` with `cloud` and `move_later` with `cloud`: the desktop finds the phone's moved copy in the cloud and takes it, adding only the ids it lacks [AB1]; without, both copies meet in the merge.",
     "Ids [X1, Y28, Z]: `mv:<kind>:<38.31 id, key or field path>` with the kinds of MOVE_FIELDS.md section 7: acct, card, debt, place, bill, line, pay, auto, item, share, person, open, check, rc, and `move` for the Emergency fund draw's move out of its place (`mv:move:once.<month>.draw`, AA6, a reading). A month-end answer is the period-end record `pe:<occurrence>:free` [Y8].",
     "The opening [B6, B7, 11.1]: the oldest bank figure (bankStart or bankNow; on the same day bankNow [Y22]) opens the bank with an `open` and a `check` on its day; a newer figure is a later `check`. A figure's day with no time is told at the end of that day, or at the copy's last save when that is earlier [Y1]. The opening day is that figure's day, else the copy's last saved day. Goal money kept in the bank is the open's `split` [B6]; the rest of the split (budget lines and Free to spend left, Waiting) is the opening's own question [B2, I4] and is not written by the move.",
     "Question `move_two` [X1, Y12]: `phone` and `desktop` each hold a `move` input plus `by` (the device part). Each device moves its own copy and stamps every record with `told` (events keep their own), `at` (its `now`) and `by`; the two moved copies are merged with rules/merge_ref.js.",
     "Question `move_answer` [AA5]: the copy is moved with `answers`, then the days in `later` (`pay`, `billDay`, `debtDay`) are answered on the moved copy and what waits in `pendingMove` for them is written.",
     "Sample data is never moved as real (requirements 1c): the sample shows while ui.done lacks pay, bills or goals, unless the copy is blank or cleared (every build's `sampleOn`). Receipts, cards and a typed bank figure are the person's and move as real [Y16].",
-    "The expected outputs of mv-01 to mv-45 were re-worked by hand from MOVE_FIELDS.md, SCHEMA_V3 11.1 and the decisions (Y and Z included), not taken from the reference; mv-46 to mv-67 were written by hand for Y and Z, and mv-68 and mv-69 for the coverage grid's move row (COVERAGE.md). Every open question below names what the reference does. mv-70 to mv-81 were written by hand for AA, and mv-07, mv-15, mv-33, mv-46, mv-49, mv-51, mv-52 and mv-65 re-worked by hand for it. Four cases show what the reference does on an open question AA leaves: mv-72 (mv-q45, the draw's move to Waiting; mv-q46, the debt's `amounts`), mv-75 and mv-76 (mv-q47, the receipt's own note); mv-73 leaves `per` (mv-q42) out of its view."
+    "The expected outputs of mv-01 to mv-45 were re-worked by hand from MOVE_FIELDS.md, SCHEMA_V3 11.1 and the decisions (Y and Z included), not taken from the reference; mv-46 to mv-67 were written by hand for Y and Z, and mv-68 and mv-69 for the coverage grid's move row (COVERAGE.md). Every open question below names what the reference does. mv-70 to mv-81 were written by hand for AA, and mv-07, mv-15, mv-33, mv-46, mv-49, mv-51, mv-52 and mv-65 re-worked by hand for it. Four cases show what the reference does on an open question AA leaves: mv-72 (mv-q45, the draw's move to Waiting; mv-q46, the debt's `amounts`), mv-75 and mv-76 (mv-q47, the receipt's own note); mv-73 leaves `per` (mv-q42) out of its view. mv-82 to mv-99 were written by hand for AB and AC (and the reviewer's d1; mv-97 to mv-99 for the coverage grid's new column L), and mv-09, mv-10, mv-15, mv-29, mv-33, mv-42, mv-46, mv-49, mv-52, mv-71, mv-72, mv-73, mv-75 and mv-76 re-worked by hand for them; AC answered mv-q42 to mv-q49."
   ],
   "defaults": {
     "idb": {
@@ -7390,8 +7390,7 @@
             "date": "2027-01-25",
             "place": "mv:place:rainy",
             "a": 20000,
-            "told": "2027-02-03T08:00:00.000+09:00",
-            "at": "2027-02-03T12:00:00.000+09:00"
+            "told": "2027-02-03T08:00:00.000+09:00"
           },
           {
             "id": "pe:mv:pay:steps.a@2026-12-25:free",
@@ -7405,7 +7404,6 @@
               }
             ],
             "told": "2027-02-03T08:00:00.000+09:00",
-            "at": "2027-02-03T12:00:00.000+09:00",
             "src": {
               "type": "move",
               "id": "ui.sweep.2026-12"
@@ -7506,7 +7504,7 @@
           }
         ]
       },
-      "why": "The copy of mv-71, moved, then answered: salary monthly on the 25th, rent on the 27th, the car loan's payment on the 27th. The salary's January pay is the 25 Jan occurrence, so its 1,000 is `amounts` on 2027-01-25 [AA4]; rent's 0 is `amounts` on 2027-01-27 [Y7]; the car loan's 4,000 is `amounts` on its 27 Jan payment occurrence, that month's whole payment [AC5], and its payDay is 27 [AA6]. The first period starting in January starts with the pay due 25 Jan: the Food line's `once` 50,000 [units-78], and on the plan.shares entry in force that day (the one from the opening) a `once` of Free to spend 25,000 and the trip 9,000 [AA6]; the Emergency fund's draw of 20,000 is a `move` out of the fund's place in that period, dated the day its pay is due, 25 Jan, with no `place2`: it goes to Waiting, where that period's plan places it [AA6, AC4]; its built id is `mv:draw:once.2027-01`, so two devices applying it write one record [AB rows]. December's month-end answer goes to the period holding 31 Dec, the one starting with the pay due 25 Dec and ending Sun 24 Jan 2027: `pe:mv:pay:steps.a@2026-12-25:free`, 1,500 to the trip [AA3, AA4]. Nothing waits any more [AA5]: each `pendingMove` entry is kept as a record marked `gone` (the answer's day, 3 Feb) with the answer's `at`, so a device that has not answered yet takes the removal at the merge [AB rows]. Every record the answers changed or wrote carries the answer's `at`, Wed 3 Feb 12:00; the rest keep none here (stamped at the copy's last save, AB1). Each pay stream is `per: 'month'` [AB2, AC1]. The bank opens on its bankAt day, Tue 24 Nov, told at the end of that day, its split the fund's 50,000 (answered: in the bank) [Y1, Y17]; the car loan opens at its balance on the same day, told at the copy's last save.",
+      "why": "The copy of mv-71, moved, then answered: salary monthly on the 25th, rent on the 27th, the car loan's payment on the 27th. The salary's January pay is the 25 Jan occurrence, so its 1,000 is `amounts` on 2027-01-25 [AA4]; rent's 0 is `amounts` on 2027-01-27 [Y7]; the car loan's 4,000 is `amounts` on its 27 Jan payment occurrence, that month's whole payment [AC5], and its payDay is 27 [AA6]. The first period starting in January starts with the pay due 25 Jan: the Food line's `once` 50,000 [units-78], and on the plan.shares entry in force that day (the one from the opening) a `once` of Free to spend 25,000 and the trip 9,000 [AA6]; the Emergency fund's draw of 20,000 is a `move` out of the fund's place in that period, dated the day its pay is due, 25 Jan, with no `place2`: it goes to Waiting, where that period's plan places it [AA6, AC4]; its built id is `mv:draw:once.2027-01`, so two devices applying it write one record [AB rows]. December's month-end answer goes to the period holding 31 Dec, the one starting with the pay due 25 Dec and ending Sun 24 Jan 2027: `pe:mv:pay:steps.a@2026-12-25:free`, 1,500 to the trip [AA3, AA4]. Nothing waits any more [AA5]: each `pendingMove` entry is kept as a record marked `gone` (the answer's day, 3 Feb) with the answer's `at`, so a device that has not answered yet takes the removal at the merge [AB rows]. Every record the answers changed carries the answer's `at`, Wed 3 Feb 12:00; the draw and the month-end answer they wrote are moved records and, like the rest, keep none here (stamped at the copy's last save, AB1), so a later real edit of either on another device still wins. Each pay stream is `per: 'month'` [AB2, AC1]. The bank opens on its bankAt day, Tue 24 Nov, told at the end of that day, its split the fund's 50,000 (answered: in the bank) [Y1, Y17]; the car loan opens at its balance on the same day, told at the copy's last save.",
       "decisions": [
         "AA3",
         "AA4",
@@ -10382,8 +10380,7 @@
               "type": "move",
               "id": "r1"
             },
-            "told": "2026-11-21T00:00:00.000+09:00",
-            "at": "2026-11-26T10:00:00.000+09:00"
+            "told": "2026-11-21T00:00:00.000+09:00"
           }
         ],
         "pendingMove": [
@@ -10410,7 +10407,7 @@
           }
         ]
       },
-      "why": "On Thu 26 Nov at 10:00 the person answers that the loan line is the car loan. The waiting receipt is written: a repay of 20,000 from the bank to the car loan, keeping its note \"Nov\" [Y20, AC2], with the answer's `at`. Its `pendingMove` entry is kept as a record marked `gone` (26 Nov) with the same `at`, so another device holding it takes the removal [AB rows].",
+      "why": "On Thu 26 Nov at 10:00 the person answers that the loan line is the car loan. The waiting receipt is written: a repay of 20,000 from the bank to the car loan, keeping its note \"Nov\" [Y20, AC2]; it is a moved record, stamped at the copy's last save like the rest [AB1]. Its `pendingMove` entry is kept as a record marked `gone` (26 Nov) with the same `at`, so another device holding it takes the removal [AB rows].",
       "decisions": [
         "AC2",
         "Y20",
@@ -10526,8 +10523,7 @@
               "type": "move",
               "id": "r1"
             },
-            "told": "2026-11-21T00:00:00.000+09:00",
-            "at": "2026-11-26T10:00:00.000+09:00"
+            "told": "2026-11-21T00:00:00.000+09:00"
           }
         ],
         "pendingMove": [
@@ -10554,7 +10550,7 @@
           }
         ]
       },
-      "why": "The person drops the loan line. The waiting receipt is then no repay: a spend of 20,000 on place bills with line `loan` [AA7], and the move appends \"(moved: loan line removed)\" to its own note: \"Nov (moved: loan line removed)\" [AC6]. Its `pendingMove` entry is marked `gone` (26 Nov) [AB rows].",
+      "why": "The person drops the loan line. The waiting receipt is then no repay: a spend of 20,000 on place bills with line `loan` [AA7], and the move appends \"(moved: loan line removed)\" to its own note: \"Nov (moved: loan line removed)\" [AC6]; a moved record, stamped at the copy's last save [AB1]. Its `pendingMove` entry is marked `gone` (26 Nov) [AB rows].",
       "decisions": [
         "AC2",
         "AC6",
@@ -11119,57 +11115,1062 @@
         ],
         "pick": {
           "events mv:draw:once.2027-01 a": 20000,
-          "events mv:draw:once.2027-01 by": "dsk001"
+          "events mv:draw:once.2027-01 by": "phn001"
         }
       },
-      "why": "As mv-95, but the desktop answers the same pay day at 13:00 before the two meet. Each device applies both waiting entries. The draw's id is built, `mv:draw:once.<ym>`, and the answer's is `pe:<occurrence>:<place>`, so the two applications are one record each after the merge, 20,000 once, the newer (the desktop's, 13:00) kept [AB rows, O2, D4]. The `pendingMove` entries are gone on both; the desktop's removals are newer.",
+      "why": "As mv-95, but the desktop answers the same pay day at 13:00 before the two meet. Each device applies both waiting entries. The draw's id is built, `mv:draw:once.<ym>`, and the answer's is `pe:<occurrence>:<place>`, so the two applications are one record each after the merge, 20,000 once [AB rows, O2]. Both are moved records with the copy's last save as `at` (Wed 3 Feb 08:00) [AB1], so on the same `at` the larger `by` keeps one, phn001 [L merge q1]; their content is the same. The `pendingMove` entries are gone on both; the desktop's removals (13:00) are newer.",
       "decisions": [
         "AB",
+        "AB1",
         "O2",
+        "L merge q1"
+      ]
+    },
+    {
+      "id": "mv-97",
+      "question": "move_later",
+      "title": "AB1, H6: an Undo on the first device after the move (a receipt removed, then put back) still wins when the second device moves days later",
+      "input": {
+        "phone": {
+          "copy": {
+            "v": 1,
+            "cfg": {
+              "bankStart": 200000,
+              "bankAt": "2026-11-22"
+            },
+            "ui": {
+              "cur": "¥",
+              "preset": "¥",
+              "done": {
+                "pay": true,
+                "bills": true,
+                "goals": true
+              }
+            },
+            "steps": {
+              "a": [
+                {
+                  "from": "2026-11",
+                  "v": 250000
+                }
+              ]
+            },
+            "plan": {
+              "lines": [
+                {
+                  "id": "rent",
+                  "key": "bill:rent",
+                  "jar": "nec",
+                  "name": "Rent or mortgage",
+                  "def": 80000
+                }
+              ],
+              "goals": [
+                {
+                  "id": "trip",
+                  "name": "Trip",
+                  "target": 300000,
+                  "start": 100000,
+                  "due": "2027-06"
+                }
+              ]
+            },
+            "receipts": [
+              {
+                "id": "r1",
+                "d": "2026-11-21",
+                "a": 5000,
+                "c": "other",
+                "cn": "Other",
+                "n": "typed twice"
+              }
+            ]
+          },
+          "answers": {
+            "cur": "JPY",
+            "goalMoney": {
+              "trip": "bank"
+            }
+          },
+          "now": "2026-11-24T09:00:00.000+09:00",
+          "by": "phn001",
+          "idb": {
+            "t": "2026-11-23T20:00:00.000+09:00"
+          }
+        },
+        "edits": [
+          {
+            "list": "events",
+            "id": "mv:rc:r1",
+            "at": "2026-11-25T08:00:00.000+09:00",
+            "set": {
+              "gone": "2026-11-25"
+            }
+          },
+          {
+            "list": "events",
+            "id": "mv:rc:r1",
+            "at": "2026-11-26T08:00:00.000+09:00",
+            "unset": [
+              "gone"
+            ],
+            "set": {}
+          }
+        ],
+        "desktop": {
+          "copy": {
+            "v": 1,
+            "cfg": {
+              "bankStart": 200000,
+              "bankAt": "2026-11-22"
+            },
+            "ui": {
+              "cur": "¥",
+              "preset": "¥",
+              "done": {
+                "pay": true,
+                "bills": true,
+                "goals": true
+              }
+            },
+            "steps": {
+              "a": [
+                {
+                  "from": "2026-11",
+                  "v": 250000
+                }
+              ]
+            },
+            "plan": {
+              "lines": [
+                {
+                  "id": "rent",
+                  "key": "bill:rent",
+                  "jar": "nec",
+                  "name": "Rent or mortgage",
+                  "def": 80000
+                }
+              ],
+              "goals": [
+                {
+                  "id": "trip",
+                  "name": "Trip",
+                  "target": 300000,
+                  "start": 100000,
+                  "due": "2027-06"
+                }
+              ]
+            },
+            "receipts": [
+              {
+                "id": "r1",
+                "d": "2026-11-21",
+                "a": 5000,
+                "c": "other",
+                "cn": "Other",
+                "n": "typed twice"
+              }
+            ]
+          },
+          "answers": {
+            "cur": "JPY",
+            "goalMoney": {
+              "trip": "bank"
+            }
+          },
+          "now": "2026-12-01T21:00:00.000+09:00",
+          "by": "dsk001",
+          "idb": {
+            "t": "2026-11-23T20:00:00.000+09:00"
+          }
+        },
+        "cloud": false,
+        "pick": [
+          [
+            "events",
+            "mv:rc:r1",
+            "gone"
+          ],
+          [
+            "events",
+            "mv:rc:r1",
+            "at"
+          ],
+          [
+            "events",
+            "mv:rc:r1",
+            "a"
+          ]
+        ]
+      },
+      "expected": {
+        "pick": {
+          "events mv:rc:r1 gone": null,
+          "events mv:rc:r1 at": "2026-11-26T08:00:00.000+09:00",
+          "events mv:rc:r1 a": 5000
+        }
+      },
+      "why": "The phone moves on Tue 24 Nov; on Wed 25 Nov it removes the moved receipt r1 (5,000), and on Thu 26 Nov it undoes that: the Redo is a newer `at` without `gone` [H6]. The desktop moves the same copy offline on Tue 1 Dec; its r1 carries the copy's last save, Mon 23 Nov 20:00 [AB1]. At the merge the phone's 26 Nov copy is newer: r1 is back, 5,000, not gone [D4, H6]. Before AB1 the desktop's move moment (1 Dec) would have won and the Undo would not have mattered either way.",
+      "decisions": [
+        "AB1",
+        "H6",
         "D4"
+      ]
+    },
+    {
+      "id": "mv-98",
+      "question": "move_later",
+      "title": "AB1: a second device moving days later, offline: every kind of moved record keeps the first device's real edits",
+      "input": {
+        "phone": {
+          "copy": {
+            "v": 1,
+            "cfg": {
+              "bankStart": 200000,
+              "bankAt": "2026-09-20",
+              "bankNow": 190000,
+              "bankNowAt": "2026-11-23"
+            },
+            "ui": {
+              "cur": "¥",
+              "preset": "¥",
+              "done": {
+                "pay": true,
+                "bills": true,
+                "goals": true
+              },
+              "accts": [
+                {
+                  "id": "w1",
+                  "name": "PayPay",
+                  "kind": "wallet"
+                }
+              ],
+              "sweep": {
+                "2026-09": {
+                  "amt": 2000,
+                  "to": "bank"
+                },
+                "2026-11": {
+                  "amt": 1000,
+                  "to": "next"
+                }
+              }
+            },
+            "steps": {
+              "a": [
+                {
+                  "from": "2026-09",
+                  "v": 250000
+                }
+              ]
+            },
+            "plan": {
+              "lines": [
+                {
+                  "id": "food",
+                  "key": "bill:food",
+                  "jar": "nec",
+                  "name": "Food and groceries",
+                  "def": 40000
+                },
+                {
+                  "id": "loan",
+                  "key": "bill:loan",
+                  "jar": "nec",
+                  "name": "Loan or debt payment",
+                  "def": 20000
+                }
+              ],
+              "goals": [
+                {
+                  "id": "rainy",
+                  "name": "Emergency fund",
+                  "target": 600000,
+                  "start": 0,
+                  "due": "",
+                  "monthly": 10000,
+                  "slot": 7,
+                  "emergency": true,
+                  "stretch": 0
+                }
+              ],
+              "debts": [
+                {
+                  "id": "car",
+                  "name": "Car loan",
+                  "kind": "loan",
+                  "balance": 300000,
+                  "apr": 0,
+                  "min": 20000,
+                  "extra": 0
+                }
+              ]
+            },
+            "cards": [
+              {
+                "id": "c1",
+                "name": "Card",
+                "owed": 30000,
+                "payDay": 27,
+                "at": "2026-11-20"
+              }
+            ],
+            "once": {
+              "2026-12": {
+                "draw": 15000
+              }
+            },
+            "receipts": [
+              {
+                "id": "r1",
+                "d": "2026-11-21",
+                "a": 20000,
+                "c": "bill:loan",
+                "cn": "Loan or debt payment",
+                "n": ""
+              }
+            ]
+          },
+          "answers": {
+            "cur": "JPY",
+            "pay": {
+              "a": {
+                "every": "month",
+                "days": [
+                  25
+                ]
+              }
+            },
+            "loanLine": "car",
+            "debtDay": {
+              "car": 27
+            }
+          },
+          "now": "2026-11-24T09:00:00.000+09:00",
+          "by": "phn001",
+          "idb": {
+            "t": "2026-11-23T20:00:00.000+09:00"
+          }
+        },
+        "edits": [
+          {
+            "list": "events",
+            "id": "mv:check:cfg.bankNow",
+            "at": "2026-11-25T08:00:00.000+09:00",
+            "set": {
+              "a": 185000
+            }
+          },
+          {
+            "list": "events",
+            "id": "pe:mv:pay:steps.a@2026-09-25:free",
+            "at": "2026-11-25T08:00:00.000+09:00",
+            "set": {
+              "moves": [
+                {
+                  "to": "waiting",
+                  "a": 1500
+                }
+              ]
+            }
+          },
+          {
+            "list": "plan.budgets",
+            "id": "mv:line:food",
+            "at": "2026-11-25T08:00:00.000+09:00",
+            "set": {
+              "name": "Groceries"
+            }
+          },
+          {
+            "list": "accounts",
+            "id": "mv:card:c1",
+            "at": "2026-11-25T08:00:00.000+09:00",
+            "set": {
+              "payDay": 26
+            }
+          },
+          {
+            "list": "accounts",
+            "id": "mv:debt:car",
+            "at": "2026-11-25T08:00:00.000+09:00",
+            "set": {
+              "apr": 3
+            }
+          },
+          {
+            "list": "accounts",
+            "id": "mv:acct:w1",
+            "at": "2026-11-25T08:00:00.000+09:00",
+            "set": {
+              "name": "PayPay wallet"
+            }
+          },
+          {
+            "list": "events",
+            "id": "mv:draw:once.2026-12",
+            "at": "2026-11-25T08:00:00.000+09:00",
+            "set": {
+              "a": 12000
+            }
+          },
+          {
+            "list": "events",
+            "id": "mv:rc:r1",
+            "at": "2026-11-25T08:00:00.000+09:00",
+            "set": {
+              "note": "November loan"
+            }
+          }
+        ],
+        "desktop": {
+          "copy": {
+            "v": 1,
+            "cfg": {
+              "bankStart": 200000,
+              "bankAt": "2026-09-20",
+              "bankNow": 190000,
+              "bankNowAt": "2026-11-23"
+            },
+            "ui": {
+              "cur": "¥",
+              "preset": "¥",
+              "done": {
+                "pay": true,
+                "bills": true,
+                "goals": true
+              },
+              "accts": [
+                {
+                  "id": "w1",
+                  "name": "PayPay",
+                  "kind": "wallet"
+                }
+              ],
+              "sweep": {
+                "2026-09": {
+                  "amt": 2000,
+                  "to": "bank"
+                },
+                "2026-11": {
+                  "amt": 1000,
+                  "to": "next"
+                }
+              }
+            },
+            "steps": {
+              "a": [
+                {
+                  "from": "2026-09",
+                  "v": 250000
+                }
+              ]
+            },
+            "plan": {
+              "lines": [
+                {
+                  "id": "food",
+                  "key": "bill:food",
+                  "jar": "nec",
+                  "name": "Food and groceries",
+                  "def": 40000
+                },
+                {
+                  "id": "loan",
+                  "key": "bill:loan",
+                  "jar": "nec",
+                  "name": "Loan or debt payment",
+                  "def": 20000
+                }
+              ],
+              "goals": [
+                {
+                  "id": "rainy",
+                  "name": "Emergency fund",
+                  "target": 600000,
+                  "start": 0,
+                  "due": "",
+                  "monthly": 10000,
+                  "slot": 7,
+                  "emergency": true,
+                  "stretch": 0
+                }
+              ],
+              "debts": [
+                {
+                  "id": "car",
+                  "name": "Car loan",
+                  "kind": "loan",
+                  "balance": 300000,
+                  "apr": 0,
+                  "min": 20000,
+                  "extra": 0
+                }
+              ]
+            },
+            "cards": [
+              {
+                "id": "c1",
+                "name": "Card",
+                "owed": 30000,
+                "payDay": 27,
+                "at": "2026-11-20"
+              }
+            ],
+            "once": {
+              "2026-12": {
+                "draw": 15000
+              }
+            },
+            "receipts": [
+              {
+                "id": "r1",
+                "d": "2026-11-21",
+                "a": 20000,
+                "c": "bill:loan",
+                "cn": "Loan or debt payment",
+                "n": ""
+              }
+            ]
+          },
+          "answers": {
+            "cur": "JPY"
+          },
+          "now": "2026-12-01T21:00:00.000+09:00",
+          "by": "dsk001",
+          "idb": {
+            "t": "2026-11-23T20:00:00.000+09:00"
+          }
+        },
+        "cloud": false,
+        "pick": [
+          [
+            "events",
+            "mv:check:cfg.bankNow",
+            "a"
+          ],
+          [
+            "events",
+            "pe:mv:pay:steps.a@2026-09-25:free",
+            "moves"
+          ],
+          [
+            "plan.budgets",
+            "mv:line:food",
+            "name"
+          ],
+          [
+            "accounts",
+            "mv:card:c1",
+            "payDay"
+          ],
+          [
+            "accounts",
+            "mv:debt:car",
+            "apr"
+          ],
+          [
+            "accounts",
+            "mv:acct:w1",
+            "name"
+          ],
+          [
+            "events",
+            "mv:draw:once.2026-12",
+            "a"
+          ],
+          [
+            "events",
+            "mv:rc:r1",
+            "note"
+          ],
+          [
+            "events",
+            "mv:rc:r1",
+            "acct2"
+          ]
+        ],
+        "show": [
+          "frozenIds",
+          "pendingMoveIds"
+        ]
+      },
+      "expected": {
+        "pick": {
+          "events mv:check:cfg.bankNow a": 185000,
+          "events pe:mv:pay:steps.a@2026-09-25:free moves": [
+            {
+              "to": "waiting",
+              "a": 1500
+            }
+          ],
+          "plan.budgets mv:line:food name": "Groceries",
+          "accounts mv:card:c1 payDay": 26,
+          "accounts mv:debt:car apr": 3,
+          "accounts mv:acct:w1 name": "PayPay wallet",
+          "events mv:draw:once.2026-12 a": 12000,
+          "events mv:rc:r1 note": "November loan",
+          "events mv:rc:r1 acct2": "mv:debt:car"
+        },
+        "frozenIds": [
+          "mv:frozen:dsk001",
+          "mv:frozen:phn001"
+        ],
+        "pendingMoveIds": [
+          "mv:pend:once.2026-12.draw",
+          "mv:pend:receipts.r1",
+          "mv:pend:ui.sweep.2026-09",
+          "mv:pend:ui.sweep.2026-11"
+        ]
+      },
+      "why": "The 38.31 copy (last saved Mon 23 Nov 20:00) opened the bank on Sun 20 Sep, has a bank figure of 23 Nov, a PayPay wallet, a card, a car loan with the loan line, a Food line, an Emergency fund with a December draw of 15,000, month-end answers for September (2,000 to the bank) and November (1,000 kept), and a receipt on the loan line. The phone moves on Tue 24 Nov at 09:00 and answers there: pay on the 25th, the loan line is the car loan, paid on the 27th. So it writes September's answer (its period, 25 Sep to 24 Oct, has ended), the draw (25 Dec) and the receipt as a repay on the car loan; November's answer waits (its period ends 24 Dec) [AB2]. On Wed 25 Nov at 08:00 the phone is used: the 23 Nov bank figure corrected to 185,000, September's answer changed to 1,500, Food renamed Groceries, the card's payment day 26, the loan's rate 3%, the wallet renamed, the draw lowered to 12,000 and the repay's note typed. On Tue 1 Dec at 21:00 the desktop moves the same copy and answers only the currency. The desktop moved offline, so the copies meet in the merge. Each moved record carries the copy's last save (23 Nov 20:00) on both devices [AB1]; each phone edit carries 25 Nov 08:00 and wins [D4]: the check 185,000, Groceries, payment day 26, rate 3, the wallet's name. September's answer, the draw and the repay exist only on the phone (the desktop does not know the pay day or the loan), so they are the phone's: 1,500 to Waiting, 12,000, \"November loan\" on the car loan. The two frozen texts are both kept. `pendingMove` is the union: November's answer (waiting on both, one record) and, from the desktop, the draw, the receipt and September's answer, which the phone had already written at its own move (open question mv-q54: what a device does when it applies one of those).",
+      "decisions": [
+        "AB1",
+        "AB rows",
+        "D4",
+        "AB2"
+      ]
+    },
+    {
+      "id": "mv-99",
+      "question": "move_later",
+      "title": "AB1: the same with the cloud on: the desktop takes the phone's moved copy and adds only the ids it lacks",
+      "input": {
+        "phone": {
+          "copy": {
+            "v": 1,
+            "cfg": {
+              "bankStart": 200000,
+              "bankAt": "2026-09-20",
+              "bankNow": 190000,
+              "bankNowAt": "2026-11-23"
+            },
+            "ui": {
+              "cur": "¥",
+              "preset": "¥",
+              "done": {
+                "pay": true,
+                "bills": true,
+                "goals": true
+              },
+              "accts": [
+                {
+                  "id": "w1",
+                  "name": "PayPay",
+                  "kind": "wallet"
+                }
+              ],
+              "sweep": {
+                "2026-09": {
+                  "amt": 2000,
+                  "to": "bank"
+                },
+                "2026-11": {
+                  "amt": 1000,
+                  "to": "next"
+                }
+              }
+            },
+            "steps": {
+              "a": [
+                {
+                  "from": "2026-09",
+                  "v": 250000
+                }
+              ]
+            },
+            "plan": {
+              "lines": [
+                {
+                  "id": "food",
+                  "key": "bill:food",
+                  "jar": "nec",
+                  "name": "Food and groceries",
+                  "def": 40000
+                },
+                {
+                  "id": "loan",
+                  "key": "bill:loan",
+                  "jar": "nec",
+                  "name": "Loan or debt payment",
+                  "def": 20000
+                }
+              ],
+              "goals": [
+                {
+                  "id": "rainy",
+                  "name": "Emergency fund",
+                  "target": 600000,
+                  "start": 0,
+                  "due": "",
+                  "monthly": 10000,
+                  "slot": 7,
+                  "emergency": true,
+                  "stretch": 0
+                }
+              ],
+              "debts": [
+                {
+                  "id": "car",
+                  "name": "Car loan",
+                  "kind": "loan",
+                  "balance": 300000,
+                  "apr": 0,
+                  "min": 20000,
+                  "extra": 0
+                }
+              ]
+            },
+            "cards": [
+              {
+                "id": "c1",
+                "name": "Card",
+                "owed": 30000,
+                "payDay": 27,
+                "at": "2026-11-20"
+              }
+            ],
+            "once": {
+              "2026-12": {
+                "draw": 15000
+              }
+            },
+            "receipts": [
+              {
+                "id": "r1",
+                "d": "2026-11-21",
+                "a": 20000,
+                "c": "bill:loan",
+                "cn": "Loan or debt payment",
+                "n": ""
+              }
+            ]
+          },
+          "answers": {
+            "cur": "JPY",
+            "pay": {
+              "a": {
+                "every": "month",
+                "days": [
+                  25
+                ]
+              }
+            },
+            "loanLine": "car",
+            "debtDay": {
+              "car": 27
+            }
+          },
+          "now": "2026-11-24T09:00:00.000+09:00",
+          "by": "phn001",
+          "idb": {
+            "t": "2026-11-23T20:00:00.000+09:00"
+          }
+        },
+        "edits": [
+          {
+            "list": "events",
+            "id": "mv:check:cfg.bankNow",
+            "at": "2026-11-25T08:00:00.000+09:00",
+            "set": {
+              "a": 185000
+            }
+          },
+          {
+            "list": "events",
+            "id": "pe:mv:pay:steps.a@2026-09-25:free",
+            "at": "2026-11-25T08:00:00.000+09:00",
+            "set": {
+              "moves": [
+                {
+                  "to": "waiting",
+                  "a": 1500
+                }
+              ]
+            }
+          },
+          {
+            "list": "plan.budgets",
+            "id": "mv:line:food",
+            "at": "2026-11-25T08:00:00.000+09:00",
+            "set": {
+              "name": "Groceries"
+            }
+          },
+          {
+            "list": "accounts",
+            "id": "mv:card:c1",
+            "at": "2026-11-25T08:00:00.000+09:00",
+            "set": {
+              "payDay": 26
+            }
+          },
+          {
+            "list": "accounts",
+            "id": "mv:debt:car",
+            "at": "2026-11-25T08:00:00.000+09:00",
+            "set": {
+              "apr": 3
+            }
+          },
+          {
+            "list": "accounts",
+            "id": "mv:acct:w1",
+            "at": "2026-11-25T08:00:00.000+09:00",
+            "set": {
+              "name": "PayPay wallet"
+            }
+          },
+          {
+            "list": "events",
+            "id": "mv:draw:once.2026-12",
+            "at": "2026-11-25T08:00:00.000+09:00",
+            "set": {
+              "a": 12000
+            }
+          },
+          {
+            "list": "events",
+            "id": "mv:rc:r1",
+            "at": "2026-11-25T08:00:00.000+09:00",
+            "set": {
+              "note": "November loan"
+            }
+          }
+        ],
+        "desktop": {
+          "copy": {
+            "v": 1,
+            "cfg": {
+              "bankStart": 200000,
+              "bankAt": "2026-09-20",
+              "bankNow": 190000,
+              "bankNowAt": "2026-11-23"
+            },
+            "ui": {
+              "cur": "¥",
+              "preset": "¥",
+              "done": {
+                "pay": true,
+                "bills": true,
+                "goals": true
+              },
+              "accts": [
+                {
+                  "id": "w1",
+                  "name": "PayPay",
+                  "kind": "wallet"
+                }
+              ],
+              "sweep": {
+                "2026-09": {
+                  "amt": 2000,
+                  "to": "bank"
+                },
+                "2026-11": {
+                  "amt": 1000,
+                  "to": "next"
+                }
+              }
+            },
+            "steps": {
+              "a": [
+                {
+                  "from": "2026-09",
+                  "v": 250000
+                }
+              ]
+            },
+            "plan": {
+              "lines": [
+                {
+                  "id": "food",
+                  "key": "bill:food",
+                  "jar": "nec",
+                  "name": "Food and groceries",
+                  "def": 40000
+                },
+                {
+                  "id": "loan",
+                  "key": "bill:loan",
+                  "jar": "nec",
+                  "name": "Loan or debt payment",
+                  "def": 20000
+                }
+              ],
+              "goals": [
+                {
+                  "id": "rainy",
+                  "name": "Emergency fund",
+                  "target": 600000,
+                  "start": 0,
+                  "due": "",
+                  "monthly": 10000,
+                  "slot": 7,
+                  "emergency": true,
+                  "stretch": 0
+                }
+              ],
+              "debts": [
+                {
+                  "id": "car",
+                  "name": "Car loan",
+                  "kind": "loan",
+                  "balance": 300000,
+                  "apr": 0,
+                  "min": 20000,
+                  "extra": 0
+                }
+              ]
+            },
+            "cards": [
+              {
+                "id": "c1",
+                "name": "Card",
+                "owed": 30000,
+                "payDay": 27,
+                "at": "2026-11-20"
+              }
+            ],
+            "once": {
+              "2026-12": {
+                "draw": 15000
+              }
+            },
+            "receipts": [
+              {
+                "id": "r1",
+                "d": "2026-11-21",
+                "a": 20000,
+                "c": "bill:loan",
+                "cn": "Loan or debt payment",
+                "n": ""
+              }
+            ]
+          },
+          "answers": {
+            "cur": "JPY"
+          },
+          "now": "2026-12-01T21:00:00.000+09:00",
+          "by": "dsk001",
+          "idb": {
+            "t": "2026-11-23T20:00:00.000+09:00"
+          }
+        },
+        "cloud": true,
+        "pick": [
+          [
+            "events",
+            "mv:check:cfg.bankNow",
+            "a"
+          ],
+          [
+            "events",
+            "pe:mv:pay:steps.a@2026-09-25:free",
+            "moves"
+          ],
+          [
+            "plan.budgets",
+            "mv:line:food",
+            "name"
+          ],
+          [
+            "accounts",
+            "mv:card:c1",
+            "payDay"
+          ],
+          [
+            "accounts",
+            "mv:debt:car",
+            "apr"
+          ],
+          [
+            "accounts",
+            "mv:acct:w1",
+            "name"
+          ],
+          [
+            "events",
+            "mv:draw:once.2026-12",
+            "a"
+          ],
+          [
+            "events",
+            "mv:rc:r1",
+            "note"
+          ],
+          [
+            "events",
+            "mv:rc:r1",
+            "acct2"
+          ]
+        ],
+        "show": [
+          "frozenIds",
+          "pendingMoveIds"
+        ]
+      },
+      "expected": {
+        "pick": {
+          "events mv:check:cfg.bankNow a": 185000,
+          "events pe:mv:pay:steps.a@2026-09-25:free moves": [
+            {
+              "to": "waiting",
+              "a": 1500
+            }
+          ],
+          "plan.budgets mv:line:food name": "Groceries",
+          "accounts mv:card:c1 payDay": 26,
+          "accounts mv:debt:car apr": 3,
+          "accounts mv:acct:w1 name": "PayPay wallet",
+          "events mv:draw:once.2026-12 a": 12000,
+          "events mv:rc:r1 note": "November loan",
+          "events mv:rc:r1 acct2": "mv:debt:car"
+        },
+        "frozenIds": [
+          "mv:frozen:dsk001",
+          "mv:frozen:phn001"
+        ],
+        "pendingMoveIds": [
+          "mv:pend:once.2026-12.draw",
+          "mv:pend:receipts.r1",
+          "mv:pend:ui.sweep.2026-09",
+          "mv:pend:ui.sweep.2026-11"
+        ]
+      },
+      "why": "The 38.31 copy (last saved Mon 23 Nov 20:00) opened the bank on Sun 20 Sep, has a bank figure of 23 Nov, a PayPay wallet, a card, a car loan with the loan line, a Food line, an Emergency fund with a December draw of 15,000, month-end answers for September (2,000 to the bank) and November (1,000 kept), and a receipt on the loan line. The phone moves on Tue 24 Nov at 09:00 and answers there: pay on the 25th, the loan line is the car loan, paid on the 27th. So it writes September's answer (its period, 25 Sep to 24 Oct, has ended), the draw (25 Dec) and the receipt as a repay on the car loan; November's answer waits (its period ends 24 Dec) [AB2]. On Wed 25 Nov at 08:00 the phone is used: the 23 Nov bank figure corrected to 185,000, September's answer changed to 1,500, Food renamed Groceries, the card's payment day 26, the loan's rate 3%, the wallet renamed, the draw lowered to 12,000 and the repay's note typed. On Tue 1 Dec at 21:00 the desktop moves the same copy and answers only the currency. The desktop finds the phone's moved copy in the cloud, takes it and adds only the ids it lacks [AB1]: every edited record is the cloud's (185,000, 1,500 to Waiting, Groceries, payment day 26, rate 3, the wallet's name, 12,000, \"November loan\"). The ids it lacks are its frozen text, `mv:frozen:dsk001`, and three `pendingMove` entries the phone never held because it wrote them at its move: the draw, the receipt and September's answer (open question mv-q54). November's answer is in the cloud already.",
+      "decisions": [
+        "AB1",
+        "AB rows"
       ]
     }
   ],
   "open": [
     {
-      "id": "mv-q42",
-      "question": "AA4 spreads a monthly pay total per pay (monthly x 12 / pays in that year) when the rhythm is not monthly on one day. A schedule's `steps` hold one amount per occurrence, and the spread one differs within a year (the leftover minor units go to the earliest pays). Where does the shape say a stream's steps are monthly totals?",
-      "ref_does": "Writes `per: 'month'` on that income schedule (as plan.budgets has); the pay amounts are worked out from it (mv-74). No case shows the field (mv-73 leaves it out of its view)."
+      "id": "mv-q50",
+      "question": "AB keeps a 38.31 minimum only when the person typed it (`ui.minAuto` false). Builds before 20 Nov 2026 (38.28, the 25.0 builds and early 38.31 copies) filled in `cfg.minBank` themselves, a tenth of pay, without writing `ui.minAuto`. In such a copy, is a minimum with no `ui.minAuto` typed (kept) or automatic (dropped)?",
+      "ref_does": "Keeps it: no `ui.minAuto` reads as typed (mv-09). No new case depends on it."
     },
     {
-      "id": "mv-q43",
-      "question": "mv-q35's third part, which AA7 does not cover: a receipt on bill:loan while the loan question (which debt the loan line is) is not answered.",
-      "ref_does": "A repay with no loan yet, listed in `held` (unchanged)."
+      "id": "mv-q51",
+      "question": "AC7 puts `once[ym].bill:loan` on the matched loan, \"else on the bill schedule\". The loan line never becomes a bill schedule (Y4, E6): matched or made from the line it is a loan account, and dropped (or 0 every month) it has no record. Where does it go when the person drops the loan line?",
+      "ref_does": "On the loan the line is (matched or made from the line, mv-94); while the loan question is not answered it waits in `pendingMove`; dropped, it is listed (kept in the frozen text)."
     },
     {
-      "id": "mv-q44",
-      "question": "AA12 asks a made loan's yearly rate and minimum. Until it is answered, what does the loan hold?",
-      "ref_does": "No `apr`; the loan line's loan has its amount as the fixed `minRule` (Y4), the pay-off goal's loan none (mv-15, mv-49)."
+      "id": "mv-q52",
+      "question": "AB2: a month-end answer for a period not ended at the move waits in `pendingMove`, and that period's own question still comes. When the question comes, what happens to the waiting answer: offered as the answer, applied with the cap (AB watch), or dropped?",
+      "ref_does": "It keeps waiting (mv-52, mv-89); nothing writes it."
     },
     {
-      "id": "mv-q45",
-      "question": "AA6 makes the Emergency fund draw a move out of the fund's place in that period. Where does the money go? 38.31 counted the draw as that month's money in (spendable).",
-      "ref_does": "No `place2`, so Waiting (the shape's default for a move out of a place, section 4); dated the day the period's pay is due; id `mv:move:<field path>` (mv-72)."
+      "id": "mv-q53",
+      "question": "AB2 makes moved pay `per: 'month'`. A moved bill's 38.31 amount is a monthly total too. When its day is answered with a rhythm other than once a month (twice a month, every two weeks), is it `per: 'month'` as well, or each occurrence's amount?",
+      "ref_does": "Each occurrence's amount (unchanged; its one-month amount is `amounts` on that month's first occurrence, Y7). No case answers a bill with such a rhythm."
     },
     {
-      "id": "mv-q46",
-      "question": "AA6 makes a debt's one-month amount (38.31 `once[ym].debt:<id>`, the extra put on the debt that month) `amounts` on that month's payment occurrence. Is that the extra for that payment (in place of `extraSteps`) or the whole payment (in place of minimum plus extra)? Accounts had no `amounts` before.",
-      "ref_does": "Writes the 38.31 amount as `amounts[<due>]` on the loan or card account (mv-72); what it replaces is not modelled."
-    },
-    {
-      "id": "mv-q47",
-      "question": "AA7: a spend on place bills with line `loan` \"and a note\". Which note: the receipt's own, or a note the move adds (and its words)?",
-      "ref_does": "Keeps the receipt's own note only (mv-75, mv-76)."
-    },
-    {
-      "id": "mv-q48",
-      "question": "`once[ym].bill:loan`, the loan line's one-month amount, has no target: AA6 covers a debt's (`debt:<id>`), not the loan line's. Is it `amounts` on that month's payment occurrence of the loan the line becomes?",
-      "ref_does": "Listed (kept in frozen3831)."
-    },
-    {
-      "id": "mv-q49",
-      "question": "AA3 makes `{ amt, id }` a move to goal `id`. When the plan has no goal with that id (removed, AA9), where does that month's answer go?",
-      "ref_does": "Listed (kept in frozen3831)."
+      "id": "mv-q54",
+      "question": "AB1 and AB rows: a device that writes a one-month amount or a month-end answer at its own move (its day answered there) never holds a `pendingMove` entry for it. A second device that moves the same copy without that answer holds the entry, and the cloud takes it as an id it lacks (mv-98, mv-99). When a device later applies such an entry and the record (a draw, a `pe:` answer, a moved receipt, an `amounts` or `once` key) is already there, edited since: does applying overwrite it, or skip it because it is there (as AB1's \"never overwrites\")? Or should the first device keep a `gone` entry for everything it wrote at its move?",
+      "ref_does": "Keeps the entries (mv-98, mv-99); the reference applies waiting entries only inside the move and `move_answer`, never to a merged copy. A record written from an entry is a moved record stamped at the copy's last save, so an edit made after it wins at a merge, but a device writing into its own copy would replace it."
     }
   ]
 }

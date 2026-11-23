@@ -277,8 +277,23 @@ function onceFromMonth({ ym, pays }) {
   return holding ? holding.occ : null;
 }
 
+// [AB2] A one-month amount replaces that month's total: spread over the periods starting in that month (by landing),
+// the leftover minor units to the earliest, as the units rule does with a year's pays [L units q4]. With no period
+// starting in it, the period holding its first day takes the whole amount [Z5]. Returns { occurrence: amount }.
+function onceSpread({ ym, a, pays }) {
+  const byLand = (pays || []).slice().sort((x, y) => (x.lands < y.lands ? -1 : x.lands > y.lands ? 1 : 0));
+  let list = byLand.filter(p => String(p.lands).slice(0, 7) === ym).map(p => p.occ);
+  if (!list.length) { const k = onceFromMonth({ ym, pays }); list = k ? [k] : []; }
+  const out = {};
+  if (!list.length) return out;
+  const base = Math.floor(a / list.length), extra = a - base * list.length;
+  list.forEach((occ, i) => { out[occ] = base + (i < extra ? 1 : 0); });
+  return out;
+}
+
 function ask(question, input) {
   switch (question) {
+    case 'once_spread': return onceSpread(input);
     case 'period_amount_once': return periodAmountOnce(input);
     case 'once_from_month': return onceFromMonth(input);
     case 'to_minor': return toMinor(input.text, input.cur);
@@ -302,4 +317,4 @@ function ask(question, input) {
   throw new Error('unknown question ' + question);
 }
 
-module.exports = { ask, onceFromMonth, periodAmountOnce, perPayRules, homeCurOn, moveCurrency, paysInYearRules, DECIMALS, toMinor, currencyFor, loadAmount, interest, paysInYear, periodCount, perPayList, perPay, payNumber, periodPerPay, periodAmount, weekByDay, weekByDayDates, byDay, byDayDates };
+module.exports = { ask, onceFromMonth, onceSpread, periodAmountOnce, perPayRules, homeCurOn, moveCurrency, paysInYearRules, DECIMALS, toMinor, currencyFor, loadAmount, interest, paysInYear, periodCount, perPayList, perPay, payNumber, periodPerPay, periodAmount, weekByDay, weekByDayDates, byDay, byDayDates };

@@ -505,6 +505,8 @@ function lookahead(sc, asOf, opts = {}) {
   const postedOn = (e, id) => (e.account === id || e.from === id ? e.posted : reachOf(e) === id ? e.posted2 : null);
   const dayFor = (e, c, id) => { const p = c.avail !== 'available' && !isOwed(id) && postedOn(e, id); return p ? dayNum(p) : e.day; };
   function inside(e, c, id) {
+    // [AB4] A line that settles an occurrence in the opening's `notYet` comes after the opening, whatever its date.
+    if (c.opening && notGoneOut(e, id)) return false;
     const d = dayFor(e, c, id);
     if (d !== c.day) return d < c.day;
     const byBal = balOrder(e, c, id);
@@ -588,7 +590,11 @@ function lookahead(sc, asOf, opts = {}) {
     const notSure = c.statement_close_day == null;   // [H4] close day "not sure"
     // [J5] The opening may hold several unpaid statements, oldest first, each with its amount, close date
     // and payment day; or one last statement, paid or not, whose payment day comes from the card's rule.
-    const sts = op.statements || (op.statement ? [op.statement] : []);
+    // [AB3] Set up between the close and its payment day, setup asked "Is the last statement paid?": yes saves a paid
+    // statement with no amount (it holds nothing); no saves it unpaid with its amount; "dont_know" counts everything owed
+    // as that statement, so it is all due on the next payment day (the safe side, as H4).
+    const sts = (op.statements || (op.statement ? [op.statement] : [])).map(x => (x.paid === 'dont_know' ? Object.assign({}, x, { amount: op.current, paid: false })
+      : x.amount === undefined ? Object.assign({}, x, { amount: 0 }) : x));
     const st = sts.length ? sts[sts.length - 1] : null;   // the latest close before the opening
     const payOf = due => ({ id: id + '@' + dayStr(due), due, land: cal.shift(due, pay.weekend_holiday) });
     const payAfterClose = cl => { const [y, mo] = ymOf(cl); return payOf(dayIn(y, mo + pay.months_after_close, pay.day)); };
@@ -833,6 +839,9 @@ function lookahead(sc, asOf, opts = {}) {
       if (due > farEnd) break;
       const land = cal.shift(due, pay.weekend_holiday);
       if (land <= openDay(id) || due <= openDay(id)) continue;
+      // [AB3] Set up between its statement and its payment day and answered "paid": that payment was made before setup.
+      const ls = a.opening.statement;
+      if (ls && ls.paid === true && ls.payment_day === dayStr(due)) continue;
       days.push({ due, land, iid: id + '@' + dayStr(due) });
     }
     let owed = m(a.opening.owed, id), r = 0;
@@ -845,7 +854,10 @@ function lookahead(sc, asOf, opts = {}) {
     while (r < changes.length) owed += changes[r++].d;
     const owedNow = owed;
     // What a payment day asks: with plans, every plan's parts due after the payment day before and up to this one.
-    const asks = (d, i, bal) => (parts.length
+    // [AC5] A payment's own amount (`amounts`, a moved debt's one-month amount) is that payment, whole: in place of the
+    // usual amount or minimum and any planned extra.
+    const own = d => (pay.amounts && pay.amounts[dayStr(d.due)] != null ? minor(pay.amounts[dayStr(d.due)], c) : null);
+    const asks = (d, i, bal) => own(d) != null ? own(d) : (parts.length
       ? parts.filter(pt => pt.due <= d.due && (i === 0 || pt.due > days[i - 1].due)).reduce((t, pt) => t + pt.amount, 0)
       : pay.amount != null ? minor(pay.amount, c) : minPay(pay.min_rule, bal, c)) + extraOn(pay.extra_steps, d.due, c);
     const loanItems = [];

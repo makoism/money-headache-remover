@@ -1,7 +1,7 @@
 {
   "area": "edits",
   "title": "What setup and an edit may save: a schedule change never before its latest settled or named occurrence, a goal's own account in the home currency, setup's not-yet questions (X8, W3, X3)",
-  "written_in": "SCHEMA_V3 sections 4, 5 and 8 (the opening)",
+  "written_in": "SCHEMA_V3 sections 4, 5 and 8 (the opening); DECISIONS_ROUND2 X3, X8, W3, AB3 (the last statement asked at setup) and AB with MAKO M1 (the minimum asked once, box empty)",
   "notes": "Hand-worked cases for edit-time and setup rules that the reference model does not hold [H7]. All amounts and dates are made up.",
   "defaults": {},
   "cases": [
@@ -464,5 +464,16 @@
       ]
     }
   ],
-  "open": []
+  "open": [
+    {
+      "id": "ed-q1",
+      "question": "AB3: a card answered \"no, not paid\": does setup then ask the statement's amount, and if the person skips it, is everything owed that statement (as \"don't know\")?",
+      "ref_does": "Saves the amount typed (ed-14, card_between_close_pay cbp-03); with none typed it saves no amount. No case has \"no\" without an amount."
+    },
+    {
+      "id": "ed-q2",
+      "question": "AB3: \"don't know\" counts everything owed as due on the next payment day. For a loan or a pay-later account, everything owed is the whole balance (a loan of 400,000 paying 20,000 a month). Does \"don't know\" there mean the whole balance, or that month's usual payment?",
+      "ref_does": "Not modelled: a loan or pay-later takes only yes or no (loan_between_stmt_pay.json); the scenario checker refuses \"dont_know\" on them."
+    }
+  ]
 }

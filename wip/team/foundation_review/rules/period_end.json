@@ -1,7 +1,7 @@
 {
   "area": "period_end",
   "title": "Period end: the question after a fresh check-in, nothing rolling on silently, and \"to decide\"",
-  "written_in": "SCHEMA_V3 7.4, 9; DECISIONS_ROUND2 A7, F8, H8, L (period end q1 to q10), M6, M7, N5, O2, O, P2, P3, P5; DECISIONS.md (money left at month end never drops out silently, 18 Nov)",
+  "written_in": "SCHEMA_V3 7.4, 9; DECISIONS_ROUND2 A7, F8, H8, L (period end q1 to q10), M6, M7, N5, O2, O, P2, P3, P5, AB watch (a moved answer capped), AC8 (to place); DECISIONS.md (money left at month end never drops out silently, 18 Nov)",
   "notes": [
     "Every amount is made up and in whole minor units (yen).",
     "A period runs from the day the period stream's pay lands to the day before the next one lands [F8]. While the next pay has not landed (late, H8) the period has not ended.",

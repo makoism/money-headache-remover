@@ -1,7 +1,7 @@
 {
   "area": "merge",
   "title": "Merging two copies: union by id, newest `at` per record, `gone` against the same or older `at` only, the hybrid clock, `told` never changing",
-  "written_in": "SCHEMA_V3 0 and 2.3; DECISIONS_ROUND2 D4, H1, H6, H9, L (merge q1 to q8), M3 to M5, N1, N2, O2, O3, Q5, Q7, S3",
+  "written_in": "SCHEMA_V3 0 and 2.3; DECISIONS_ROUND2 D4, H1, H6, H9, L (merge q1 to q8), M3 to M5, N1, N2, O2, O3, Q5, Q7, S3, AB watch (restoring a backup with the cloud on)",
   "notes": [
     "Every amount is made up and in whole minor units (yen).",
     "Times are hybrid clock values written as ISO with the time zone offset (section 0). They are compared as moments, never as text: 10:00+09:00 is 01:00 UTC, 02:30+01:00 is 01:30 UTC.",
@@ -3377,5 +3377,11 @@
       ]
     }
   ],
-  "open": []
+  "open": [
+    {
+      "id": "mg-q12",
+      "question": "AB watch: a restore writes `gone` and a new `at` for every record newer than the backup and gives the backup's records a new `at`. Shared `ui` keys are stamped per key (`ui.at`), not as records. Do they take the backup's values with a new `at` too, so the merge keeps them?",
+      "ref_does": "Takes the backup's `ui` as it is, with its old `ui.at` (so a newer key in the cloud wins at the merge). No case depends on it."
+    }
+  ]
 }

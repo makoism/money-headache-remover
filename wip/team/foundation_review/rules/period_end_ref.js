@@ -60,9 +60,25 @@ function questionStart({ nextPay, checkins, today, spendFrom, postingDays, holid
 // Answers are move events dated the period's last day (7.4), told when they were answered.
 // An answer is a move to another place `{ place, to, a }`, "keep it here" `{ place, keep: true, a }`
 // [L period_end q6], or for an overspent place a cover `{ place, from: 'free'|'waiting', a }` [L period_end q4].
+// [AB watch] An answer the move wrote from a 38.31 month-end answer (`moved: true`; its record's `src` names the field) is
+// never refused: it is capped at what its place still holds after the person's own answers, and the rest of the place
+// waits "to decide" as usual. A capped answer with nothing left to take is dropped. [AC8] `toPlace` rides on its move.
+function capMoved(places, answers) {
+  const left = {}; for (const p of places) left[p.id] = Math.max(0, p.left);
+  const from = a => (a.from ? a.from : a.place);
+  for (const a of answers) if (!a.moved) left[from(a)] = (left[from(a)] || 0) - a.a;
+  const out = [];
+  for (const a of answers) {
+    if (!a.moved) { out.push(a); continue; }
+    const take = Math.min(a.a, Math.max(0, left[from(a)] || 0));
+    left[from(a)] = (left[from(a)] || 0) - take;
+    if (take > 0) out.push(Object.assign({}, a, { a: take }));
+  }
+  return out;
+}
 function leftovers({ periodTo, places, answers }) {
   const out = { places: {}, moves: [] };
-  const all = answers || [];
+  const all = capMoved(places, answers || []);
   const refuse = (place, left) => ({ refused: { place, left } });   // [L period_end q10]
   // What each place gives: its own moves and keeps, and the covers taken from it.
   const givenFrom = id => all.filter(a => (a.place === id && !a.from) || a.from === id).reduce((t, a) => t + a.a, 0);
@@ -88,7 +104,7 @@ function leftovers({ periodTo, places, answers }) {
     const decided = givenFrom(p.id) - kept;
     const toDecide = p.left - decided - kept;
     out.places[p.id] = { left: p.left, decided, kept, toDecide, state: toDecide ? 'to decide' : 'decided' };
-    for (const a of mine) if (!a.keep) out.moves.push({ k: 'move', date: periodTo, a: a.a, place: p.id, place2: a.to, told: a.told });
+    for (const a of mine) if (!a.keep) out.moves.push(Object.assign({ k: 'move', date: periodTo, a: a.a, place: p.id, place2: a.to }, a.toPlace ? { toPlace: true } : {}, { told: a.told }));
   }
   // A cover from Free to spend is a move out of it: list it once, under the place it covers (above).
   return out;

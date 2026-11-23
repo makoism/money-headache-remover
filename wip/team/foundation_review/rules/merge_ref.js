@@ -244,8 +244,45 @@ function devices({ devices: devs, copy, steps, show }) {
   return st[show.on].copy[show.list].find(r => r.id === show.id);
 }
 
+// [AB watch] Restoring an older backup while the cloud copy is on. A union merge would bring back everything newer at the
+// next sync, so the restore writes: `gone` (the restore's day) with a new `at` for every record newer than the backup
+// (not in it), and the backup's records with a new `at`, so the merge keeps the restore. Inside a restored record the
+// `steps` and `rules` entries merge by their own `at` [L merge q2], so the backup's entries get the new `at` too and an
+// entry not in the backup is removed by its own `gone` [M3]. `told` stays the first one each record had [H1].
+function restore({ current, backup, now, by }) {
+  const day = String(now).slice(0, 10), stamp = { at: now, by };
+  const restoreList = (cur, bak) => {
+    const have = new Map((bak || []).map(r => [r.id, r])), out = [];
+    for (const r of bak || []) {
+      const o = Object.assign({}, r, stamp), c = (cur || []).find(x => x.id === r.id);
+      for (const k of ['steps', 'rules']) if (Array.isArray(r[k]) || (c && Array.isArray(c[k]))) {
+        const mine = (r[k] || []).map(e => Object.assign({}, e, stamp));
+        const newer = ((c && c[k]) || []).filter(e => !(r[k] || []).some(b => b.from === e.from)).map(e => Object.assign({}, e, { gone: e.gone || day }, stamp));
+        o[k] = mine.concat(newer).sort((x, y) => (x.from < y.from ? -1 : x.from > y.from ? 1 : 0));
+      }
+      out.push(o);
+    }
+    for (const r of cur || []) if (!have.has(r.id)) out.push(Object.assign({}, r, { gone: r.gone || day }, stamp));
+    return out.sort((x, y) => (x.id < y.id ? -1 : x.id > y.id ? 1 : 0));
+  };
+  const walk = (cur, bak) => {
+    const out = {};
+    for (const k of new Set(Object.keys(cur || {}).concat(Object.keys(bak || {})))) {
+      const a = (cur || {})[k], b = (bak || {})[k];
+      if (Array.isArray(a) || Array.isArray(b)) out[k] = restoreList(a, b);
+      else if (k === 'plan') out[k] = walk(a, b);
+      else if (b && typeof b === 'object' && typeof b.at === 'string') out[k] = Object.assign({}, b, stamp);   // home, plan.limits
+      else if (b !== undefined) out[k] = b;   // shared ui keys and the rest: the backup's as they are (merge.json open question mg-q12)
+    }
+    return out;
+  };
+  return walk(current, backup);
+}
+
 function ask(question, input) {
   switch (question) {
+    case 'restore': return restore(input);
+    case 'restore_merge': { const r = restore(input); return { mine_first: merge(r, input.cloud), theirs_first: merge(input.cloud, r) }; }
     case 'next_at': return nextAt(input.now, input.lastSeen);
     case 'next_at_warn': return nextAtWarn(input.now, input.lastSeen);
     case 'newer': return newer(input.a, input.b);
@@ -261,4 +298,4 @@ function ask(question, input) {
   throw new Error('unknown question ' + question);
 }
 
-module.exports = { ask, nextAt, nextAtWarn, newer, merge, mergeList, pick, winner, cameBack, holdArriving, receive, idFor, idOk };
+module.exports = { ask, restore, nextAt, nextAtWarn, newer, merge, mergeList, pick, winner, cameBack, holdArriving, receive, idFor, idOk };
