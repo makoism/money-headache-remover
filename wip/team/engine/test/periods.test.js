@@ -188,4 +188,17 @@ t('lastLanding: the last pay landing on or before a day, by the rules as saved',
     pays: [{ key: 'pay', name: 'Pay', bank: 'chk', amount: 160000, every: 'weeks', n: 2, start: '2026-12-04', startsPeriod: true }] }, { newId: I.idMaker('lst2k9') });
   eq([lastLanding(b.book, b.ids.pay, '2027-02-01'), lastLanding(b.book, b.ids.pay, '2027-01-29'), lastLanding(b.book, 'nope', '2027-01-29')], ['2027-01-29', '2027-01-29', null]);
 });
+// [slice 6, qc-foundation 2] an amount each pay carried across a change of how often pay lands, by pays a year: every
+// 2 weeks is 26 a year, every week 52, every 4 weeks 13, a day a month 12, two days a month 24. Rounded half up to the
+// minor unit. $400 every 2 weeks = $400 x 26 / 12 = $866.666 -> $866.67 a month; $866.67 monthly back = $400.00.
+t('perPayAcross: an amount each pay under one rhythm, the same money a year under another', () => {
+  const { perPayAcross } = require('../periods.js');
+  const w2 = { every: 'weeks', n: 2, from: '2026-12-04' }, m = { every: 'month', days: [25] };
+  eq(perPayAcross(40000, w2, m), 86667);
+  eq(perPayAcross(86667, m, w2), 40000);
+  eq(perPayAcross(10000, { every: 'weeks', n: 1, from: '2026-12-04' }, { every: 'weeks', n: 4, from: '2026-12-04' }), 40000);
+  eq(perPayAcross(30000, { every: 'month', days: [15, 'last'] }, m), 60000);
+  eq(perPayAcross(40000, w2, w2), 40000);
+  eq(perPayAcross(40000, w2, { every: 'none' }), null);
+});
 done('periods.test.js');

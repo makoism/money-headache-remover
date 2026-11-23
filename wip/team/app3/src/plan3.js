@@ -260,7 +260,7 @@ function plBillForm3(id) {
   const every = pay && everyNow ? [{ key: 'every', label: 'How often it lands', kind: 'pick', value: everyNow, options: PL_EVERY3 },
     { key: 'start', label: 'The day of one pay, when it lands every few weeks', kind: 'date', value: r0.every === 'weeks' ? r0.from : '' }] : [];
   const perPay = every.length && s.startsPeriod ? PLAN3W.linesEachPay({ book, today: E3.today() }) : [];
-  const lines = perPay.map(l => ({ key: 'ln-' + l.key, label: `${l.name} each pay from the change`, kind: 'amount', value: l.amount, optional: true }));
+  const lines = perPay.map(l => ({ key: 'ln-' + l.key, label: `${l.name} each pay from the change`, kind: 'amount', value: l.amount, optional: true, hint: ' ' }));
   plForm3(s.name, [{ key: 'name', label: 'Name', kind: 'text', value: s.name }, { key: 'amount', label: 'Amount', kind: 'amount', value: v0.amount }].concat(every,
     [{ key: 'day', label: 'Day of the month it is due', kind: 'day', value: day }, { key: 'from', label: 'Changes from', kind: 'date', value: v0.changeFrom, hint: 'Earlier ones stay as they were' }], lines),
   [{ label: 'Save', solid: true, step: v => ['changeBill', w => PLAN3W.changeBill(w, id, { name: v.name, amount: v.amount, day: v.day, from: v.from,
@@ -268,6 +268,27 @@ function plBillForm3(id) {
     .concat(pay || !v0.next ? [] : [{ label: 'Change the next one only', step: v => ['changeOnce', w => PLAN3W.changeOnce(w, id, { due: v0.next.due, amount: v.amount }), s.name + ' on ' + day3(v0.next.land, 'any') + ' changed'] },
       { label: 'End this bill', step: v => ['endBill', w => PLAN3W.endBill(w, id, { last: v.from }), s.name + ' ends'] }]),
   pay ? 'A change starts from the day in "Changes from". Pay periods before it stay as they were' : `"Change the next one only" changes the amount of the one on ${esc3(day3(v0.next ? v0.next.land : v0.changeFrom, 'any'))}. End this bill: nothing is due after the day in "Changes from"`);
+  if (perPay.length) plPropose3(perPay, r0);
+}
+/* [slice 6, qc-foundation 2] when how often the pay lands changes, each line counted each pay is proposed as the same
+   money a year under the new rhythm (the engine's periods.perPayAcross, rounded half up), and says so:
+   "$400.00 every 2 weeks is $866.67 a month". Back to the rhythm it has, it is today's amount again. */
+const PL_EVERY_WORDS3 = { month: 'a month', weeks1: 'a week', weeks2: 'every 2 weeks', weeks4: 'every 4 weeks' };
+function plPropose3(perPay, r0) {
+  const cur = E3.home(), now = $('#pl-every').value;
+  const ruleOf = v => (v === 'month' ? { every: 'month', days: [Number($('#pl-day').value) || 1] } : { every: 'weeks', n: Number(v.slice(5)) });
+  const show = () => {
+    const v = $('#pl-every').value, same = v === now;
+    for (const l of perPay) {
+      const box = $('#pl-ln-' + l.key), hint = box.parentElement.querySelector('.a3-sub');
+      const a = same ? l.amount : BurrowEngine.periods.perPayAcross(l.amount, r0, ruleOf(v));
+      if (a == null) { hint.textContent = ''; continue; }
+      box.value = SM.toInput(a, cur);
+      const f = fmt3(cur, [l.amount, a]);
+      hint.textContent = same ? '' : `${f(l.amount)} ${PL_EVERY_WORDS3[now]} is ${f(a)} ${PL_EVERY_WORDS3[v]}, the same money a year. Change it if you like`;
+    }
+  };
+  $('#pl-every').addEventListener('change', show);
 }
 /* a goal; id null adds one */
 function plGoalForm3(id, fill) {

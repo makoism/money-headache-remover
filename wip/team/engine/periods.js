@@ -149,7 +149,18 @@
     const before = S.occurrences(s, cal, n - 400, n).filter(o => o.land <= n);
     return before.length ? D.dayStr(before[before.length - 1].land) : null;
   }
-  const api = { periods, scheduleView, aheadFor, lastLanding };
+  /* [slice 6, qc-foundation 2] perPayAcross(amount, fromRule, toRule): an amount each pay under one rhythm, carried to
+     another so the money a year is the same: amount x (pays a year before) / (pays a year after), rounded half up to
+     the minor unit. Pays a year: a day each month 12 per day named, every n weeks 52 / n. Null when either rhythm has
+     no count a year (no fixed day, once, a year, ...). */
+  function perPayAcross(amount, fromRule, toRule) {
+    const year = r => (!r ? null : r.every === 'month' ? [12 * (r.days || [r.day]).length, 1] : r.every === 'weeks' ? [52, r.n || 1] : null);
+    const f = year(fromRule), t = year(toRule);
+    if (!f || !t || !Number.isInteger(amount)) return null;
+    const num = amount * f[0] * t[1], den = f[1] * t[0];
+    return Math.floor((2 * num + den) / (2 * den));
+  }
+  const api = { periods, scheduleView, aheadFor, lastLanding, perPayAcross };
   if (node) module.exports = api;
   else (root.BurrowEngine = root.BurrowEngine || {}).periods = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

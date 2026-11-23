@@ -34,7 +34,7 @@
    15 Jan check-in: pay and phone ticked; Checking 376,950 + 160,000 - 4,500 = 532,450. Period 15 to 28 Jan:
           532,450 - 30,000 = 502,450, the lowest. Safe 512,450.
    20 Jan Plan: the pay changes to $3,400.00 on the 25th each month from 1 Feb; Groceries each pay from the change
-          $650.00. The last pay every 2 weeks is 29 Jan; the period holding 1 Feb starts then, so Groceries is 65,000
+          $650.00 (the form proposes it: $300 x 26 pays / 12 months, the same money a year). The last pay every 2 weeks is 29 Jan; the period holding 1 Feb starts then, so Groceries is 65,000
           from 29 Jan. Today: 532,450 - 30,000 = 502,450 is still the lowest. Safe 512,450.
    29 Jan check-in: pay ticked; Checking 692,450. Period 29 Jan to 24 Feb, Groceries 65,000. 692,450 - 65,000 =
           627,450; 1 Feb rent -90,000 = 537,450; 15 Feb phone -4,500 = 532,950 (lowest); 25 Feb +340,000 - 65,000.
@@ -109,7 +109,7 @@ const row = (p, attr, name) => p.evaluate(([a, n]) => { const b = [...document.q
   await p.click(`[data-pay="${await p.$eval('[data-pay]', e => e.dataset.pay)}"]`); await w(250);
   await p.selectOption('#pl-every', 'month'); await p.fill('#pl-day', '25'); await p.fill('#pl-amount', '3400'); await p.fill('#pl-from', '2027-02-01');
   const lineBox = await p.evaluate(() => { const l = [...document.querySelectorAll('#a3Plan label')].find(x => /^Groceries each pay from the change/.test(x.textContent)); return l ? l.getAttribute('for') : null; });
-  ck('20 Jan: the pay form asks about Groceries each pay, with $300.00 in it', !!lineBox && (await p.$eval('#' + lineBox, e => e.value)).replace(/[^\d.]/g, '').replace(/\.00$/, '') === '300', lineBox);
+  ck('20 Jan: the pay form asks about Groceries each pay and proposes $650 ($300 x 26 / 12, the same money a year)', !!lineBox && Number((await p.$eval('#' + lineBox, e => e.value)).replace(/[^\d.]/g, '')) === 650, lineBox);
   await p.fill('#' + lineBox, '650'); await p.click('[data-plbtn="0"]'); await w(400);
   ck('20 Jan: the change is saved', (await L.txt(p, '#plErr')) === '(none)' || !(await L.txt(p, '#plErr')).trim(), await L.txt(p, '#plErr'));
   await home(p, '20 Jan after the pay change', 512450, { Checking: 532450, Cash: 10000 });

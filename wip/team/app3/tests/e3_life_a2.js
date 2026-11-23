@@ -42,6 +42,20 @@ const { ck, go, tab, typeIn, log, checkin, home, w } = L;
   await home(p, '10 Dec after a cash spend', 28628, { Checking: 185000, Cash: 9200 });
   await go(p, '2026-12-18'); await checkin(p, { Checking: '3405', Cash: '92' });
   await home(p, '18 Dec after the check', 40000, { Checking: 340500, Cash: 9200 });
+  /* [qc-foundation 2] the pay form, changed from every 2 weeks to a day each month: Free to spend $400.00 each pay is
+     proposed as the same money a year, $400 x 26 / 12 = $866.67 each pay (rounded half up), and says so. Back to
+     every 2 weeks, it is $400.00 again. Nothing is saved (Back). */
+  await tab(p, 'plan'); await p.click(`[data-pay="${await p.$eval('[data-pay]', e => e.dataset.pay)}"]`); await w(250);
+  const box = () => p.evaluate(() => { const l = [...document.querySelectorAll('#a3Plan label')].find(x => /^Free to spend each pay from the change/.test(x.textContent)); const i = l && document.getElementById(l.getAttribute('for')); return i ? { v: i.value, hint: (i.parentElement.querySelector('.a3-sub') || {}).textContent || '' } : null; });
+  let b = await box();
+  ck('18 Dec pay form: Free to spend $400.00 each pay, as now', !!b && Number(b.v.replace(/[^\d.]/g, '')) === 400, JSON.stringify(b));
+  await p.selectOption('#pl-every', 'month'); await w(200);
+  b = await box();
+  ck('18 Dec pay form, monthly: Free to spend proposed as $866.67, with the reason', !!b && Number(b.v.replace(/[^\d.]/g, '')) === 866.67 && /\$400\.00 every 2 weeks is \$866\.67 a month/.test(b.hint), JSON.stringify(b));
+  await p.selectOption('#pl-every', 'weeks2'); await w(200);
+  b = await box();
+  ck('18 Dec pay form, back to every 2 weeks: $400.00 again', !!b && Number(b.v.replace(/[^\d.]/g, '')) === 400, JSON.stringify(b));
+  await p.click('#plBack'); await w(200);
   await c.close();
   await L.finish();
 })().catch(e => { console.log('FAIL crashed ' + e.stack); process.exit(1); });
