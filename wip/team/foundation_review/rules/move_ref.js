@@ -1,11 +1,11 @@
 // Moving a saved copy from an older build (SCHEMA_V3 11 and 11.1; DECISIONS_ROUND2 E1, E4, E6, H9, I5, J2, K3, O, O watch,
-// X1, X9, X watch, Y1 to Y28, Z3, Z5, Z6).
+// X1, X9, X watch, Y1 to Y28, Z3, Z5, Z6, AA1 to AA13).
 // A plain reference for the engine lane, checked by run_rules.js against rules/move.json. The field list it follows is
-// foundation_review/MOVE_FIELDS.md, which also names the `mv:` kinds. Where Y and Z leave a detail open, the reference
+// foundation_review/MOVE_FIELDS.md, which also names the `mv:` kinds. Where Y to AA leave a detail open, the reference
 // does the least it can and move.json names the open question.
 'use strict';
 const { dayNum, dayStr, weekday } = require('./dates');
-const { moveCurrency, toMinor, onceFromMonth } = require('./units_ref');
+const { moveCurrency, toMinor, onceFromMonth, periodPerPay } = require('./units_ref');
 const { merge } = require('./merge_ref');
 
 // 38.31 plan.lines ids: the bills [11.1], the loan line [E6], the four lines that are plan.shares, and the jar of each
@@ -27,10 +27,10 @@ const UI_LOOK = ['mute', 'music', 'vol', 'dj', 'scene', 'ms', 'mcSeen', 'vaultSe
 const UI_TOUR = ['tourAt', 'toured', 'onb', 'seen'];
 const UI_USED = ['cur', 'preset', 'name', 'gk', 'accts', 'cats', 'wk', 'sweep', 'keep', 'keeps', 'preSplit', 'minAuto'];
 const CFG_USED = ['bankStart', 'bankAt', 'bankNow', 'bankNowAt', 'minBank', 'ceiling', 'aims', 'planFrom'];
-// [Y5] The older cfg figures: loanLast and redirectLoan go to the loan; each goal figure is used only when the plan has
-// no goal with that id. Every one of them is decided, so none is listed.
+// [Y5, AA8, AA9] The older cfg figures: loanLast and redirectLoan go to the loan when its line has none of its own; each
+// goal figure is read only for a copy with no plan (a plan without that goal means it was removed). Every one of them is
+// decided, so none is listed.
 const CFG_OLD = ['loanLast', 'redirectLoan', 'moveMonth', 'carDue', 'moveTarget', 'moveStart', 'travelTarget', 'travelStart', 'carTarget', 'carStart', 'rainyStart', 'rainyTarget', 'rainyStretch'];
-const FIGURES_OF = { moving: ['moveTarget', 'moveStart', 'moveMonth'], travel: ['travelTarget', 'travelStart'], car: ['carTarget', 'carStart', 'carDue'], rainy: ['rainyStart', 'rainyTarget', 'rainyStretch'] };
 const TOP_USED = ['v', 'rev', 'steps', 'once', 'items', 'cfg', 'ui', 'plan', 'receipts', 'cards'];
 const RC_KNOWN = ['id', 'd', 'a', 'c', 'cn', 'n', 's'];
 const GOAL_KNOWN = ['id', 'name', 'target', 'start', 'due', 'slot', 'monthly', 'why', 'emergency', 'stretch', 'stretchOn', 'stretchFrom'];
@@ -75,12 +75,13 @@ function isoAt(ms, offset) {
 const startOf = (day, offset) => day + 'T00:00:00.000' + offset;
 const endOf = (day, offset) => day + 'T23:59:59.999' + offset;
 const earlier = (a, b) => (Date.parse(a) <= Date.parse(b) ? a : b);
-// [Y13] The copy's last save: the IndexedDB second copy's `t`, else the stored `rev` when it is a time (38.31 saves
-// max(now, rev + 1), a moment in ms; older builds a count), else the move's own time.
+// [Y13, AA10] The copy's last save: the later of the IndexedDB second copy's `t` and the stored `rev` when it is a time
+// (38.31 saves max(now, rev + 1), a moment in ms; older builds a count); either one alone; else the move's own time.
 function lastSave({ idb, copy, now, offset }) {
-  if (idb && idb.t != null) return typeof idb.t === 'number' ? isoAt(idb.t, offset) : idb.t;
-  if (copy && typeof copy.rev === 'number' && copy.rev >= 1e12) return isoAt(copy.rev, offset);
-  return now;
+  const t = idb && idb.t != null ? (typeof idb.t === 'number' ? isoAt(idb.t, offset) : idb.t) : null;
+  const r = copy && typeof copy.rev === 'number' && copy.rev >= 1e12 ? isoAt(copy.rev, offset) : null;
+  if (t && r) return Date.parse(r) > Date.parse(t) ? r : t;
+  return t || r || now;
 }
 // [sample] every build's rule (sampleOn): the sample shows until pay, bills and goals are done, unless the copy was cleared or is blank.
 function sampleShown(ui) { const d = ui.done || {}, zero = ui.preset === 'blank' || !!ui.cleared; return !zero && !(d.pay && d.bills && d.goals); }
@@ -99,12 +100,34 @@ function zeroAll(def, steps, once, key) {
   if ((steps || []).some(s => s && s.v !== 0)) return false;
   return !Object.keys(once).some(ym => isMap(once[ym]) && typeof once[ym][key] === 'number' && once[ym][key] !== 0);
 }
-// The due day in a month of a rule the person answered. Only a monthly rule on one day is modelled; any other rule
-// gives no single occurrence for a month (open question in move.json). A day past the month's end is its last day.
-function dueIn(rule, ym) {
-  if (!rule || rule.every !== 'month' || !Array.isArray(rule.days) || rule.days.length !== 1) return null;
+// [AA4] The due days in a month of a rule the person answered (monthly on one or more days, every N weeks); a day past
+// the month's end is its last day. Any other rule gives none here, so what waits for it stays in `pendingMove`.
+function duesIn(rule, ym) {
+  if (!rule) return [];
   const last = Number(lastDayOf(ym).slice(8));
-  return ym + '-' + String(Math.min(Number(rule.days[0]), last)).padStart(2, '0');
+  if (rule.every === 'month' && Array.isArray(rule.days)) return [...new Set(rule.days.map(d => ym + '-' + String(Math.min(Number(d), last)).padStart(2, '0')))].sort();
+  if (rule.every === 'weeks' && isDay(rule.from) && rule.n > 0) {
+    const step = 7 * rule.n, first = dayNum(ym + '-01'), end = dayNum(lastDayOf(ym)), out = [];
+    let d = dayNum(rule.from); d += Math.ceil((first - d) / step) * step;
+    for (; d <= end; d += step) out.push(dayStr(d));
+    return out;
+  }
+  return [];
+}
+const firstDue = (rule, ym) => duesIn(rule, ym)[0] || null;
+const monthlyOne = rule => !!rule && rule.every === 'month' && Array.isArray(rule.days) && rule.days.length === 1;
+// [AA4] The period holding a day: from the latest due on or before it to the day before the next due.
+function periodHolding(rule, day) {
+  const ym = day.slice(0, 7); let start = null, next = null;
+  for (let k = 0; k < 13 && !start; k++) { const l = duesIn(rule, ymAdd(ym, -k)).filter(d => d <= day); if (l.length) start = l[l.length - 1]; }
+  for (let k = 0; k < 13 && !next; k++) { const l = duesIn(rule, ymAdd(ym, k)).filter(d => d > day); if (l.length) next = l[0]; }
+  return start && next ? { start, last: dayStr(dayNum(next) - 1) } : null;
+}
+// [11.1, T1, units-78, Z5, AA4] A one-month amount of a budget line or a share is keyed by the first period starting in
+// that month (the first pay due in it), else the period holding that month's first day.
+function onceKeyOf(stream, rule, ym) {
+  const pays = [-1, 0, 1].reduce((l, n) => l.concat(duesIn(rule, ymAdd(ym, n))), []).map(d => ({ occ: stream + '@' + d, lands: d }));
+  return onceFromMonth({ ym, pays });
 }
 // [Y10] A dated goal's monthly set-aside as 38.31 works it out (model.js evenSave, goalDefault): what is still missing,
 // spread evenly over the months from the plan's first month to its last saving month (the due month when the due day is
@@ -112,21 +135,37 @@ function dueIn(rule, ym) {
 const M_START = '2026-11', M_END = '2028-10', PAYDAY = 15;
 const ymIdx = ym => Number(ym.slice(0, 4)) * 12 + Number(ym.slice(5)) - 1;
 function evenSave(copy, g, ym) {
-  const steps = isMap(copy.steps) ? copy.steps : {}, once = isMap(copy.once) ? copy.once : {}, cfg = isMap(copy.cfg) ? copy.cfg : {};
+  const cfg = isMap(copy.cfg) ? copy.cfg : {};
   const t = Math.max(0, (g.target || 0) - (g.start || 0)); if (t <= 0) return 0;
   const rb = Number(g.due.slice(8, 10)) > PAYDAY ? g.due.slice(0, 7) : ymAdd(g.due.slice(0, 7), -1);
   if (ym > rb) return 0;
   const pf = typeof cfg.planFrom === 'string' && cfg.planFrom >= M_START && cfg.planFrom <= M_END ? cfg.planFrom : M_START;
   if (ym < pf) return 0;
   const n = ymIdx(rb) - ymIdx(pf) + 1; if (n < 1) return 0;
+  const u = roundUnit(copy);
+  return Math.ceil(t / n / u) * u;
+}
+// 38.31's unit (model.js roundUnit): 100, 10 or 5 by the largest monthly pay in its window.
+function roundUnit(copy) {
+  const steps = isMap(copy.steps) ? copy.steps : {}, once = isMap(copy.once) ? copy.once : {};
   let pay = 0;
   for (let i = ymIdx(M_START); i <= ymIdx(M_END); i++) {
     const m = Math.floor(i / 12) + '-' + String(i % 12 + 1).padStart(2, '0');
     const val = k => (isMap(once[m]) && typeof once[m][k] === 'number' ? once[m][k] : inForce(steps[k], m) || 0);
     pay = Math.max(pay, val('a') + val('b') + val('side'));
   }
-  const u = pay >= 20000 ? 100 : pay >= 5000 ? 10 : 5;
-  return Math.ceil(t / n / u) * u;
+  return pay >= 20000 ? 100 : pay >= 5000 ? 10 : 5;
+}
+// [AA11] A goal with no date and no monthly: 38.31's figure (model.js goalDefault), a twelfth of what is still missing
+// toward its cap (the Emergency fund's longer target when said yes to, from its month), rounded up to 38.31's unit.
+function undatedFigure(copy, g, ym) {
+  const cfg = isMap(copy.cfg) ? copy.cfg : {};
+  const pf = typeof cfg.planFrom === 'string' && cfg.planFrom >= M_START && cfg.planFrom <= M_END ? cfg.planFrom : M_START;
+  if (ym < M_START || ym < pf) return 0;
+  const cap = g.emergency && g.stretchOn === true && !(g.stretchFrom && ym < g.stretchFrom) ? Math.max(g.stretch || 0, g.target || 0) : g.target || 0;
+  const rem = Math.max(0, cap - (g.start || 0)); if (rem <= 0) return 0;
+  const u = roundUnit(copy);
+  return Math.ceil(rem / 12 / u) * u;
 }
 
 function move(input) {
@@ -147,12 +186,9 @@ function move(input) {
   const amt = (x, path) => { const r = toMinor(String(x), cur); if (r.rounded && path && !rounded.includes(path)) rounded.push(path); return r.minor; };
   const sample = sampleShown(Object.assign({ preset: 'legacy' }, ui));
   const hasPlan = isMap(copy.plan) && Array.isArray(copy.plan.lines) && Array.isArray(copy.plan.goals);
-  let plan = hasPlan ? copy.plan : basePlan(cfg);
-  if (hasPlan) {   // [Y5] an older goal figure is used only for a sample goal the plan does not have
-    const have = new Set(plan.goals.map(g => (g || {}).id));
-    const extra = GOAL_DEFS().filter(g => !have.has(g.id) && FIGURES_OF[g.id].some(k => cfg[k] !== undefined)).map(g => withFigures(g, cfg));
-    if (extra.length) plan = Object.assign({}, plan, { goals: plan.goals.concat(extra) });
-  }
+  // [Y5, AA9] the older cfg goal figures are read only for a copy with no plan (every build's basePlan); a plan without a
+  // goal means the person removed it, and an older figure never brings it back.
+  const plan = hasPlan ? copy.plan : basePlan(cfg);
   const steps = isMap(copy.steps) ? copy.steps : {}, once = isMap(copy.once) ? copy.once : {}, items = isMap(copy.items) ? copy.items : {};
 
   // ---- the bank figures [11.1, H9, J2, K3, Y1, Y22]: each a dated check; the oldest opens the bank. bankAt and bankNowAt
@@ -193,11 +229,21 @@ function move(input) {
 
   // ---- the plan, unless the sample is still shown (never moved as real, requirements 1c, Y16)
   const goalPlace = {}, lineOfKey = {}, ownAccount = {};
-  let loanAcct = null, loanPending = false, mainRule = null;
-  const pending = [];   // events written after the accounts' openings and before the receipts (period-end answers)
+  let loanAcct = null, loanPending = false;
+  const pend = [];   // [AA5] what waits for a pay, bill or payment day: written by applyPending once that day is known
   if (!sample) {
     const gk = isMap(ui.gk) ? ui.gk : {};
     const emergency = (plan.goals || []).find(g => g && g.emergency);
+    // [AA12] a loan the move makes asks its yearly rate and minimum; "don't know" is rate 0 and the old monthly payment
+    // as a fixed minimum. Until answered, what it holds is open (move.json mv-q44).
+    const terms = (acc, oldMonthly) => {
+      const ans = (answers.loanTerms || {})[acc.id];
+      asks.push(Object.assign({ q: 'loanTerms', acct: acc.id }, ans !== undefined ? { answer: ans } : {}));
+      if (ans === 'dontKnow') Object.assign(acc, { apr: 0, minRule: { fixed: oldMonthly } });
+      else if (isMap(ans)) Object.assign(acc, { apr: ans.apr, minRule: { fixed: amt(ans.min, 'answers.loanTerms.' + acc.id + '.min') } });
+    };
+    // a goal's monthly set-aside in force at the opening, as 38.31 worked it out [Y10, AA11]
+    const goalMonthly = g => { const v = inForce(steps['goal:' + g.id], openYm); return v !== undefined ? v : isDay(g.due) ? evenSave(copy, g, moveYm) : typeof g.monthly === 'number' ? g.monthly : g.due ? 0 : undatedFigure(copy, g, openYm); };
     // [11.1, Y9] plan.debts: a loan or card account opened at `balance`; `debt:<id>` steps become its extraSteps. Its
     // payment day is asked; a card's close day is "not sure" and it is not paid in full; kind `personal` is a loan.
     for (const d of Array.isArray(plan.debts) ? plan.debts : []) if (d && typeof d.id === 'string') {
@@ -220,6 +266,7 @@ function move(input) {
         if (!loan) {
           loan = { id: 'mv:debt:plan.goals.' + g.id, name: g.name, type: 'loan', cur, payDay: null, payFrom: bank, confirm: true };
           accounts.push(loan); debtAccts.push(loan.id); asks.push({ q: 'loanBalance', acct: loan.id });
+          terms(loan, amt(goalMonthly(g), 'plan.goals.' + g.id + '.monthly'));
         }
         p.pays = loan.id;
         if (g.start > 0) loan.paidBefore = amt(g.start, 'plan.goals.' + g.id + '.start');
@@ -242,18 +289,8 @@ function move(input) {
       for (const k of Object.keys(g)) if (!GOAL_KNOWN.includes(k) && ['string', 'number', 'boolean'].includes(typeof g[k])) p[k] = g[k];   // unknown plain fields kept
       places.push(p); goalPlace[g.id] = id;
     }
-    // [Y2] the main pay stream's answered rule names the periods (budget `once`, period-end answers).
+    // [Y2, AA4] each pay stream's answered rhythm; the salary's names the periods (budget and share `once`, period-end answers).
     const payRule = k => (answers.pay || {})[k];
-    const hasA = (Array.isArray(steps.a) || Object.keys(once).some(ym => isMap(once[ym]) && typeof once[ym].a === 'number')) && !zeroAll(0, steps.a, once, 'a');
-    mainRule = hasA ? payRule('a') || null : null;
-    const occOf = due => 'mv:pay:steps.a@' + due;
-    // [11.1, T1, units-78, Z5] a one-month amount of a budget line is keyed by the first period starting in that month,
-    // else the period holding that month's first day.
-    const onceKey = ym => {
-      if (!dueIn(mainRule, ym)) return null;
-      const pays = [-1, 0, 1].map(n => dueIn(mainRule, ymAdd(ym, n))).map(d => ({ occ: occOf(d), lands: d }));
-      return onceFromMonth({ ym, pays });
-    };
     // [11.1] plan.lines
     let loanLine = null;
     const shareLines = [];   // [ { key, field, def } ] the four share lines present
@@ -278,19 +315,15 @@ function move(input) {
         const id = 'mv:bill:' + l.id, rule = (answers.billDay || {})[l.id], s = Object.assign({ id, kind: 'bill', name: l.name, cur, acct: bank, place: 'bills', steps: st }, extra);
         asks.push(Object.assign({ q: 'billDay', bill: id }, rule ? { answer: rule } : {}));   // [11.1] until answered, due on the period's first day
         if (rule) s.rules = [{ from: D0, rule }];
-        for (const ym of Object.keys(once).sort()) if (ym >= openYm && isMap(once[ym]) && typeof once[ym][key] === 'number') {
-          const due = dueIn(rule, ym);
-          if (due) (s.amounts = s.amounts || {})[due] = amt(once[ym][key], 'once.' + ym + '.' + key); else held.push('once.' + ym + '.' + key);
-        }
+        for (const ym of Object.keys(once).sort()) if (ym >= openYm && isMap(once[ym]) && typeof once[ym][key] === 'number')
+          pend.push({ field: 'once.' + ym + '.' + key, waits: id, to: 'amounts', ym, a: amt(once[ym][key], 'once.' + ym + '.' + key) });   // [AA5]
         schedules.push(s);
         lineOfKey[key] = { place: 'bills', line: id };
       } else {
-        const id = 'mv:line:' + l.id, o = {};
-        for (const ym of Object.keys(once).sort()) if (ym >= openYm && isMap(once[ym]) && typeof once[ym][key] === 'number') {
-          const k = onceKey(ym);
-          if (k) o[k] = amt(once[ym][key], 'once.' + ym + '.' + key); else held.push('once.' + ym + '.' + key);
-        }
-        budgets.push(Object.assign({ id, name: l.name, place: JAR_PLACE[l.jar] || 'bills', cur, per: 'month', steps: st }, Object.keys(o).length ? { once: o } : {}, extra));
+        const id = 'mv:line:' + l.id;
+        for (const ym of Object.keys(once).sort()) if (ym >= openYm && isMap(once[ym]) && typeof once[ym][key] === 'number')
+          pend.push({ field: 'once.' + ym + '.' + key, waits: PAY_A, to: 'once', line: id, ym, a: amt(once[ym][key], 'once.' + ym + '.' + key) });   // [AA5]
+        budgets.push(Object.assign({ id, name: l.name, place: JAR_PLACE[l.jar] || 'bills', cur, per: 'month', steps: st }, extra));
         lineOfKey[key] = { line: id };
       }
     }
@@ -310,6 +343,7 @@ function move(input) {
         const acc = fill({ id: 'mv:debt:plan.lines.loan', name: loanLine.l.name, type: 'loan', cur });
         Object.assign(acc, { payDay: null, payFrom: bank, confirm: true });
         accounts.push(acc); debtAccts.push(acc.id); asks.push({ q: 'loanBalance', acct: acc.id }); loanAcct = acc.id;
+        terms(acc, amt(loanLine.first, 'steps.bill:loan'));
       }
     }
     // [Y2] steps a, b and side: three income streams into the main bank; only the salary starts periods. A month's
@@ -321,25 +355,25 @@ function move(input) {
       const inf = inForce(steps[k], openYm), rule = payRule(k);
       const s = { id: 'mv:pay:steps.' + k, kind: 'income', name: PAY_NAME[k], cur, acct: bank, startsPeriod: k === 'a', steps: stepList(steps[k], inf === undefined ? 0 : inf, openYm, D0, amt, 'steps.' + k) };
       asks.push(Object.assign({ q: 'payDay', pay: k }, rule ? { answer: rule } : {}));
-      if (rule) s.rules = [{ from: D0, rule }];
-      for (const ym of Object.keys(once).sort()) if (ym >= openYm && isMap(once[ym]) && typeof once[ym][k] === 'number') {
-        const due = dueIn(rule, ym);
-        if (due) (s.amounts = s.amounts || {})[due] = amt(once[ym][k], 'once.' + ym + '.' + k); else held.push('once.' + ym + '.' + k);
-      }
+      if (rule) setRule(s, rule, D0);
+      for (const ym of Object.keys(once).sort()) if (ym >= openYm && isMap(once[ym]) && typeof once[ym][k] === 'number')
+        pend.push({ field: 'once.' + ym + '.' + k, waits: s.id, to: 'amounts', ym, a: amt(once[ym][k], 'once.' + ym + '.' + k) });   // [AA4, AA5] its first pay in that month
       schedules.push(s);
     }
     for (const k of Object.keys(SHARE_OF_KEY)) lineOfKey[k] = { place: SHARE_OF_KEY[k] };
     // [11.1, Y3, Y10] plan.shares: the share lines and each goal's set-aside, one entry from the opening, then one per later
     // month with a step (from its first day). A dated goal's set-aside (38.31's evenSave) counts from the move day: when
     // the opening is before the move day, an entry starts that day.
-    const goalKeys = (plan.goals || []).filter(g => g && goalPlace[g.id] && (steps['goal:' + g.id] || (!g.due && typeof g.monthly === 'number') || (isDay(g.due) && evenSave(copy, g, moveYm) > 0)));
+    // [AA11] a goal with no date and no monthly takes the figure 38.31 worked out for it.
+    const goalKeys = (plan.goals || []).filter(g => g && goalPlace[g.id] && (steps['goal:' + g.id] || (!g.due && typeof g.monthly === 'number') || (isDay(g.due) && evenSave(copy, g, moveYm) > 0)
+      || (!g.due && typeof g.monthly !== 'number' && undatedFigure(copy, g, openYm) > 0)));
     const valAt = (key, ym, dflt) => { const v = inForce(steps[key], ym); return v === undefined ? dflt : v; };
     const entry = (ym, from, idPart, dated) => {
       const e = { id: 'mv:share:' + idPart, from, cur };
       for (const s of shareLines) { e[s.field] = amt(valAt(s.key, ym, s.def), 'steps.' + s.key); (e.per = e.per || {})[s.field] = 'month'; }
       const gs = {};
       for (const g of goalKeys) {
-        const dflt = isDay(g.due) ? (dated ? evenSave(copy, g, moveYm) : undefined) : g.monthly;
+        const dflt = isDay(g.due) ? (dated ? evenSave(copy, g, moveYm) : undefined) : typeof g.monthly === 'number' ? g.monthly : g.due ? undefined : undatedFigure(copy, g, ym);
         const v = valAt('goal:' + g.id, ym, dflt); if (v !== undefined) gs[goalPlace[g.id]] = amt(v, 'steps.goal:' + g.id);
       }
       if (Object.keys(gs).length) e.goals = gs;
@@ -359,15 +393,26 @@ function move(input) {
       (plan.goals || []).map(g => 'goal:' + (g || {}).id), (plan.debts || []).map(d => 'debt:' + (d || {}).id)));
     for (const k of Object.keys(steps)) if (!known.has(k)) unplaced.push('steps.' + k);
     const onceDone = k => PAY_KEYS.includes(k) || (lineOfKey[k] && lineOfKey[k].line) || ((plan.lines || []).some(l => l && (BUILTIN_KEY[l.id] || 'line:' + l.id) === k && zero.includes('plan.lines.' + l.id)));
-    for (const ym of Object.keys(once).sort()) if (ym >= openYm && isMap(once[ym])) for (const k of Object.keys(once[ym])) if (!onceDone(k)) unplaced.push('once.' + ym + '.' + k);
+    // [AA6] the shares' and goals' one-month amounts are `once` on that period's plan.shares entry; the draw is a move out of
+    // the Emergency fund's place in that period; a debt's is that month's payment occurrence `amounts`. Each waits [AA5].
+    const fund = emergency ? goalPlace[emergency.id] : null;
+    for (const ym of Object.keys(once).sort()) if (ym >= openYm && isMap(once[ym])) for (const k of Object.keys(once[ym])) {
+      if (onceDone(k)) continue;
+      const field = 'once.' + ym + '.' + k, v = once[ym][k], base = typeof v === 'number' ? { field, ym, a: amt(v, field) } : null;
+      if (base && SHARE_OF_KEY[k] && shares.length) pend.push(Object.assign({ waits: PAY_A, to: 'shares', share: SHARE_OF_KEY[k] }, base));
+      else if (base && k.startsWith('goal:') && goalPlace[k.slice(5)] && shares.length) pend.push(Object.assign({ waits: PAY_A, to: 'shares', goal: goalPlace[k.slice(5)] }, base));
+      else if (base && k === 'draw' && fund) pend.push(Object.assign({ waits: PAY_A, to: 'move', place: fund }, base));
+      else if (base && k.startsWith('debt:') && debtAccts.includes('mv:debt:' + k.slice(5))) pend.push(Object.assign({ waits: 'mv:debt:' + k.slice(5), to: 'amounts' }, base));
+      else unplaced.push(field);
+    }
     // [11.1, H9, Y21, Y24] items[ym]: a once schedule on the month's first day; in the move month (the calendar month the
-    // move runs in), a first day before the opening becomes the day after it. A note becomes the schedule's name.
+    // move runs in), a first day before the opening becomes the day after it. [AA2] The label is the schedule's name
+    // ("One-time cost" when none), the note its note.
     for (const ym of Object.keys(items).sort()) for (const it of Array.isArray(items[ym]) ? items[ym] : []) if (isMap(it) && typeof it.amount === 'number') {
       let date = ym + '-01';
       if (ym === moveYm && dayNum(date) < dayNum(D0)) date = dayStr(dayNum(D0) + 1);
       const note = typeof it.note === 'string' && it.note.trim() ? it.note.trim() : null;
-      if (note && typeof it.label === 'string' && it.label) unplaced.push('items.' + ym + '.' + it.id + '.label');
-      schedules.push({ id: 'mv:item:' + ym + ':' + it.id, kind: 'once', name: note || it.label || 'One-time cost', cur, acct: bank, rules: [{ from: date, rule: { every: 'once', date } }], steps: [{ from: date, amount: amt(it.amount, 'items.' + ym + '.' + it.id + '.amount') }] });
+      schedules.push(Object.assign({ id: 'mv:item:' + ym + ':' + it.id, kind: 'once', name: (typeof it.label === 'string' && it.label) || 'One-time cost' }, note ? { note } : {}, { cur, acct: bank, rules: [{ from: date, rule: { every: 'once', date } }], steps: [{ from: date, amount: amt(it.amount, 'items.' + ym + '.' + it.id + '.amount') }] }));
     }
     // [11.1, H9] plan.recurring: autoSpend; a weekly one starts on the first `on` weekday on or after `from`. Its category
     // maps as a receipt's does (the spends it logs are receipts, Y20).
@@ -379,17 +424,17 @@ function move(input) {
       if (isDay(r.last)) s.last = r.last;
       schedules.push(s);
     }
-    // [Y8] ui.sweep after the opening: `pe:<the occurrence of the period starting in that month>:free`, dated the period's
-    // last day; 'bank' moves to Waiting, 'next' keeps (a move to the place itself), 'hide' writes nothing. Told at the
-    // answer's own time (`t`) when it has one, else at the copy's last save.
+    // [Y8, AA3, AA4] ui.sweep after the opening: `pe:<the salary occurrence starting the period holding that month's last
+    // day>:free`, dated the period's last day; 'bank' moves to Waiting, 'next' keeps (a move to the place itself), the
+    // older `{ amt, id }` moves to goal `id`, 'hide' writes nothing. Told at the answer's own time (`t`) when it has one,
+    // else at the copy's last save. It waits for the salary's day [AA5].
     if (isMap(ui.sweep)) for (const ym of Object.keys(ui.sweep).sort()) if (/^\d{4}-\d{2}$/.test(ym) && dayNum(lastDayOf(ym)) >= dayNum(D0)) {
       const v = ui.sweep[ym];
       if (!isMap(v) || v.hide === true) continue;
-      if (!(v.to === 'bank' || v.to === 'next') || typeof v.amt !== 'number') { unplaced.push('ui.sweep.' + ym); continue; }   // the older { amt, id }: open
-      const due = dueIn(mainRule, ym), next = dueIn(mainRule, ymAdd(ym, 1));
-      if (!due) { held.push('ui.sweep.' + ym); continue; }
-      pending.push({ id: 'pe:' + occOf(due) + ':free', k: 'periodEnd', date: dayStr(dayNum(next) - 1), place: 'free',
-        moves: [{ to: v.to === 'bank' ? 'waiting' : 'free', a: amt(v.amt, 'ui.sweep.' + ym + '.amt') }], told: typeof v.t === 'number' ? isoAt(v.t, offset) : saved });
+      const field = 'ui.sweep.' + ym;
+      const to = v.to === 'bank' ? 'waiting' : v.to === 'next' ? 'free' : v.to === undefined && typeof v.id === 'string' ? goalPlace[v.id] : undefined;
+      if (!to || typeof v.amt !== 'number') { unplaced.push(field); continue; }   // a goal id the plan does not have, or an unknown shape
+      pend.push({ field, waits: PAY_A, to: 'periodEnd', ym, place: 'free', moves: [{ to, a: amt(v.amt, field + '.amt') }], told: typeof v.t === 'number' ? isoAt(v.t, offset) : saved });
     }
   }
   if (sample) for (const k of Object.keys(SHARE_OF_KEY)) lineOfKey[k] = { place: SHARE_OF_KEY[k] };
@@ -402,23 +447,29 @@ function move(input) {
     events.unshift(Object.assign({ id: 'mv:open:cfg', k: 'open', date: f0.date, acct: bank, a: f0.a }, Object.keys(split).length ? { split } : {}, { told: f0.told }),
       ...figures.map(f => ({ id: 'mv:check:cfg.' + f.key, k: 'check', date: f.date, acct: bank, a: f.a, told: f.told })));
   }
-  events.push(...pending);
   // ---- receipts [11.1, 6.3, I5, J2, Y14, Y20]: every one in the raw text (no 5,000 cap), told at the start of their day.
   for (const r of Array.isArray(copy.receipts) ? copy.receipts : []) if (r && typeof r.id === 'string') {
     const acctS = typeof r.s === 'string' && acctByName[r.s];
-    if (typeof r.s === 'string' && r.s && !acctS) unplaced.push('receipts.' + r.id + '.s');   // names no account: open
-    const note = typeof r.n === 'string' && r.n ? { note: r.n } : {};   // [Y14] the note moves unchanged
+    // [Y14] the note moves unchanged; [AA1] an `s` that names no account is added to it as "paid from: <s>"
+    let n = typeof r.n === 'string' ? r.n : '';
+    if (typeof r.s === 'string' && r.s && !acctS) n = n ? n + '; paid from: ' + r.s : 'paid from: ' + r.s;
+    const note = n ? { note: n } : {};
     const base = { id: 'mv:rc:' + r.id, date: r.d, a: amt(r.a, 'receipts.' + r.id + '.a'), acct: acctS || bank };
     let e;
     if (r.c === 'bill:loan' && (loanAcct || loanPending)) {   // [Y20] a repay on the matched loan
       e = Object.assign({ id: base.id, k: 'repay', date: r.d, a: base.a, acct: base.acct, acct2: loanAcct }, note);
       if (!loanAcct) held.push('receipts.' + r.id);
-    } else e = Object.assign({ id: base.id, k: 'spend', date: r.d, a: base.a, acct: base.acct }, catOf(r.c, lineOfKey), note);
+    } else if (r.c === 'bill:loan') e = Object.assign({ id: base.id, k: 'spend', date: r.d, a: base.a, acct: base.acct, place: 'bills', line: 'loan' }, note);   // [AA7] no loan
+    else e = Object.assign({ id: base.id, k: 'spend', date: r.d, a: base.a, acct: base.acct }, catOf(r.c, lineOfKey), note);
     events.push(Object.assign(e, { src: { type: 'move', id: r.id }, told: startOf(r.d, offset) }));
     for (const k of Object.keys(r)) if (!RC_KNOWN.includes(k)) unplaced.push('receipts.' + r.id + '.' + k);
   }
-  // [Y9] every debt's payment day is asked
-  for (const id of debtAccts) asks.push({ q: 'debtDay', acct: id });
+  // [Y9] every debt's payment day is asked (answered by the debt's 38.31 id, or the field path of a loan the move made)
+  for (const id of debtAccts) {
+    const day = (answers.debtDay || {})[id.slice('mv:debt:'.length)];
+    asks.push(Object.assign({ q: 'debtDay', acct: id }, day != null ? { answer: day } : {}));
+    if (day != null) accounts.find(a => a.id === id).payDay = day;
+  }
 
   // ---- ui, cfg and top-level fields
   const shared = {}, look = {}, tour = {};
@@ -437,6 +488,7 @@ function move(input) {
     device: { look, tour, opens: Array.isArray(ui.wk) ? ui.wk : [] },
     asks, unplaced: unplaced.sort(), held: held.sort(), zero: zero.sort(), rounded: rounded.sort(), sample, saved, frozen3831: raw };
   if (!sample && (typeof cfg.ceiling === 'number' || isMap(cfg.aims))) out.plan.limits = Object.assign({}, typeof cfg.ceiling === 'number' ? { ceiling: amt(cfg.ceiling, 'cfg.ceiling') } : {}, isMap(cfg.aims) ? { aims: cfg.aims } : {}, { cur });
+  out.pendingMove = applyPending(out, pend);   // [AA5] what has its day is written now; the rest stays on the copy
   return out;
 }
 
@@ -446,6 +498,81 @@ function catOf(c, lineOfKey) {
   if (c === 'other') return { place: 'free', line: 'other' };
   if (typeof c === 'string' && /^bill:(rent|util|net|phone|ins|subs)$/.test(c)) return lineOfKey[c] ? Object.assign({}, lineOfKey[c]) : { place: 'bills' };
   return lineOfKey[c] ? Object.assign({}, lineOfKey[c]) : {};
+}
+
+// [AA4] A rule from the opening; a pay stream answered with any rhythm but monthly on one day keeps its 38.31 monthly
+// totals as `per: 'month'`, each pay getting monthly x 12 / the pays in that year (units rule, H9). Where the shape holds
+// that is an open question in move.json (mv-q42).
+function setRule(s, rule, D0) { s.rules = [{ from: D0, rule }]; if (s.kind === 'income' && !monthlyOne(rule)) s.per = 'month'; }
+const PAY_A = 'mv:pay:steps.a';
+function ruleOf(out, id) {
+  const s = (out.schedules || []).find(x => x.id === id);
+  if (s) return s.rules && s.rules.length ? s.rules[s.rules.length - 1].rule : null;
+  const a = (out.accounts || []).find(x => x.id === id);
+  return a && a.payDay != null ? { every: 'month', days: [a.payDay] } : null;
+}
+// [AA5] `pendingMove`: each entry names the 38.31 field it came from, the schedule or account whose day it waits for
+// (`waits`), and what it becomes (`to`). Entries whose day is known are written, in field order; the rest are returned.
+function applyPending(out, pend) {
+  const left = [], evs = [];
+  for (const p of pend.slice().sort((x, y) => (x.field < y.field ? -1 : x.field > y.field ? 1 : 0))) {
+    const rule = ruleOf(out, p.waits);
+    if (!rule || !writePending(out, p, rule, evs)) left.push(p);
+  }
+  if (evs.length) { const i = out.events.findIndex(e => /^mv:rc:/.test(e.id)); out.events.splice(i < 0 ? out.events.length : i, 0, ...evs); }
+  return left;
+}
+function writePending(out, p, rule, evs) {
+  if (p.to === 'amounts') {   // [Y2, Y7, AA4, AA6] the first occurrence in that month of the pay, the bill or the debt's payment
+    const due = firstDue(rule, p.ym); if (!due) return false;
+    const rec = out.schedules.find(s => s.id === p.waits) || out.accounts.find(a => a.id === p.waits);
+    (rec.amounts = rec.amounts || {})[due] = p.a; return true;
+  }
+  if (p.to === 'periodEnd') {   // [Y8, AA4] the period holding that month's last day
+    const per = periodHolding(rule, lastDayOf(p.ym)); if (!per) return false;
+    evs.push({ id: 'pe:' + p.waits + '@' + per.start + ':' + p.place, k: 'periodEnd', date: per.last, place: p.place, moves: p.moves, told: p.told }); return true;
+  }
+  const key = onceKeyOf(p.waits, rule, p.ym); if (!key) return false;
+  const due = key.slice(key.lastIndexOf('@') + 1);
+  if (p.to === 'once') { const b = out.plan.budgets.find(x => x.id === p.line); (b.once = b.once || {})[key] = p.a; return true; }
+  if (p.to === 'shares') {   // [AA6] on the entry in force on that period's pay day, keyed by its occurrence
+    let e = out.plan.shares[0];
+    for (const x of out.plan.shares) if (dayNum(x.from) <= dayNum(due)) e = x;
+    const o = (e.once = e.once || {})[key] = (e.once || {})[key] || {};
+    if (p.share) o[p.share] = p.a; else (o.goals = o.goals || {})[p.goal] = p.a;
+    return true;
+  }
+  if (p.to === 'move') {   // [AA6] the draw: a move out of the fund's place (no place2: Waiting), dated that period's pay day
+    evs.push({ id: 'mv:move:' + p.field, k: 'move', date: due, place: p.place, a: p.a, told: out.saved }); return true;
+  }
+  return false;
+}
+// [AA5] The days answered after the move (`later`: pay, billDay by line id, debtDay by debt id): each rule is set from the
+// opening and asked question recorded, then what waits in `pendingMove` for it is written.
+function moveAnswer(input) {
+  const out = move(input), later = input.later || {}, D0 = out.home.curs[0].from;
+  const answer = (q, key, val, a) => { const x = out.asks.find(y => y.q === q && y[key] === val); if (x) x.answer = a; };
+  for (const k of Object.keys(later.pay || {})) { const s = out.schedules.find(x => x.id === 'mv:pay:steps.' + k); if (s) { setRule(s, later.pay[k], D0); answer('payDay', 'pay', k, later.pay[k]); } }
+  for (const id of Object.keys(later.billDay || {})) { const s = out.schedules.find(x => x.id === 'mv:bill:' + id); if (s) { setRule(s, later.billDay[id], D0); answer('billDay', 'bill', s.id, later.billDay[id]); } }
+  for (const id of Object.keys(later.debtDay || {})) { const a = out.accounts.find(x => x.id === 'mv:debt:' + id); if (a) { a.payDay = later.debtDay[id]; answer('debtDay', 'acct', a.id, later.debtDay[id]); } }
+  out.pendingMove = applyPending(out, out.pendingMove);
+  return out;
+}
+// [AA4] Each pay's amount on a due day: `amounts` first, else the step in force; a stream kept as monthly totals gets
+// monthly x 12 / the pays in that year, the leftover minor units on the year's earliest pays (units_ref periodPerPay).
+function payAmounts(out, payAt) {
+  const r = {};
+  for (const id of Object.keys(payAt || {})) {
+    const s = (out.schedules || []).find(x => x.id === id); if (!s) continue;
+    r[id] = {};
+    for (const due of payAt[id]) {
+      let rule = null, step = null;
+      for (const x of s.rules || []) if (x.from <= due) rule = x.rule;
+      for (const x of s.steps || []) if (x.from <= due) step = x.amount;
+      r[id][due] = s.amounts && s.amounts[due] != null ? s.amounts[due] : s.per === 'month' && rule ? periodPerPay({ rule, due, monthly: step }).amount : step;
+    }
+  }
+  return r;
 }
 
 // A test helper only: `make.receipts` adds that many plain receipts to the copy, so a case can hold 5,002 receipts without listing them.
@@ -481,9 +608,9 @@ function ids(out) {
   for (const k of ['shares', 'budgets']) for (const r of (out.plan || {})[k] || []) all.push(r.id);
   return all.sort();
 }
-function view(out, { show, omit }) {
+function view(out, { show, omit, payAt }) {
   let o = out;
-  if (show) { o = {}; for (const k of show) if (k === 'tally') o.tally = tally(out); else if (k === 'ids') o.ids = ids(out); else if (k.includes('.')) { const [a, b] = k.split('.'); o[k] = (out[a] || {})[b]; } else o[k] = out[k]; }
+  if (show) { o = {}; for (const k of show) if (k === 'tally') o.tally = tally(out); else if (k === 'ids') o.ids = ids(out); else if (k === 'payAmounts') o.payAmounts = payAmounts(out, payAt); else if (k.includes('.')) { const [a, b] = k.split('.'); o[k] = (out[a] || {})[b]; } else o[k] = out[k]; }
   if (omit) { const strip = x => Array.isArray(x) ? x.map(strip) : isMap(x) ? Object.fromEntries(Object.entries(x).filter(([k]) => !omit.includes(k)).map(([k, v]) => [k, strip(v)])) : x; o = strip(o); }
   return o;
 }
@@ -492,7 +619,8 @@ function tally(out) { const sp = (out.events || []).filter(e => e.k === 'spend')
 function ask(question, input) {
   if (question === 'move') return view(move(input), input);
   if (question === 'move_two') return view(moveTwo(input), input);
+  if (question === 'move_answer') return view(moveAnswer(input), input);
   throw new Error('unknown question ' + question);
 }
 
-module.exports = { ask, move, moveTwo, lastSave };
+module.exports = { ask, move, moveTwo, moveAnswer, lastSave };

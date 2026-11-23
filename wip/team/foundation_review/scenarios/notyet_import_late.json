@@ -1,0 +1,146 @@
+{
+  "life": "notyet_import_late",
+  "title": "A not-yet item past its posting window is settled by a matching amount at any later date (decision AA14)",
+  "story": "Set up Tue 22 Jun 2027 at 09:00. The bank holds 200,000. The insurance of 30,000 and the phone of 5,000 were both due Tue 8 Jun; both posting windows ended Wed 9 Jun, but the person says neither has gone out, so the opening saves both in `not_yet` (decision Z2: still expected). Pay of 250,000 on the 25th (moved earlier) starts the period; the person ticks it on Fri 25 Jun. A bank statement read on Thu 1 Jul at 09:00 holds two lines dated Wed 30 Jun: 30,000 out (the insurance's amount, three weeks after its window, and six working days before the next insurance of Thu 8 Jul, so too early for that one) and 4,800 out (not the phone's amount). Every amount is made up.",
+  "currency": "JPY",
+  "window": {
+    "from": "2027-06-22",
+    "to": "2027-07-31"
+  },
+  "holidays": {
+    "country": "none",
+    "dates": [],
+    "bank_closed": []
+  },
+  "main_bank": "bank",
+  "accounts": [
+    {
+      "id": "bank",
+      "name": "Bank",
+      "kind": "bank",
+      "currency": "JPY",
+      "minimum": 0,
+      "opening": {
+        "date": "2027-06-22",
+        "told": "2027-06-22T09:00",
+        "amount": 200000,
+        "not_yet": [
+          "ins@2027-06-08",
+          "phone@2027-06-08"
+        ]
+      }
+    }
+  ],
+  "income": [
+    {
+      "id": "pay",
+      "name": "Pay",
+      "account": "bank",
+      "amount": 250000,
+      "schedule": {
+        "frequency": "monthly",
+        "day": 25
+      },
+      "weekend_holiday": "move earlier",
+      "starts_period": true
+    }
+  ],
+  "bills": [
+    {
+      "id": "ins",
+      "name": "Insurance",
+      "account": "bank",
+      "amount": 30000,
+      "schedule": {
+        "frequency": "monthly",
+        "day": 8
+      },
+      "weekend_holiday": "none"
+    },
+    {
+      "id": "phone",
+      "name": "Phone",
+      "account": "bank",
+      "amount": 5000,
+      "schedule": {
+        "frequency": "monthly",
+        "day": 8
+      },
+      "weekend_holiday": "none"
+    }
+  ],
+  "goals": [],
+  "plan": {
+    "lines": [],
+    "free": {
+      "per": "month",
+      "amount": 60000
+    }
+  },
+  "events": [
+    {
+      "id": "set:pay@2027-06-25",
+      "date": "2027-06-25",
+      "told": "2027-06-25T20:00",
+      "kind": "pay_in",
+      "account": "bank",
+      "amount": 250000,
+      "settles": "pay@2027-06-25",
+      "note": "ticked at the check-in"
+    },
+    {
+      "id": "st1",
+      "date": "2027-06-30",
+      "posted": "2027-06-30",
+      "told": "2027-07-01T09:00",
+      "kind": "spend",
+      "account": "bank",
+      "amount": 30000,
+      "source": "statement"
+    },
+    {
+      "id": "st2",
+      "date": "2027-06-30",
+      "posted": "2027-06-30",
+      "told": "2027-07-01T09:00",
+      "kind": "spend",
+      "account": "bank",
+      "amount": 4800,
+      "source": "statement"
+    }
+  ],
+  "asks": [
+    {
+      "id": "nil-01",
+      "date": "2027-07-01",
+      "question": "bank_today",
+      "account": "bank",
+      "expected": 415200,
+      "why": "200,000 (opening) + 250,000 (pay, ticked Fri 25 Jun) - 30,000 (statement line Wed 30 Jun) - 4,800 (statement line Wed 30 Jun) = 415,200"
+    },
+    {
+      "id": "nil-02",
+      "date": "2027-07-01",
+      "question": "safe_to_spend",
+      "account": "bank",
+      "expected": 375200,
+      "why": "415,200 (Bank today) - 5,000 (Phone 8 Jun, not gone out at setup and not matched by the 4,800 line: still expected) - 30,000 (Insurance 8 Jul) - 5,000 (Phone 8 Jul) = 375,200",
+      "note": "AA14: the 30,000 line settles the insurance of 8 Jun though it is three weeks past its window, so that insurance is not taken off again. Before AA14 the line stayed unmatched and the insurance was still expected: 30,000 less."
+    },
+    {
+      "id": "nil-03",
+      "date": "2027-07-01",
+      "question": "not_seen_yet",
+      "expected": {
+        "items": [],
+        "money_in": 0,
+        "money_out": 0
+      },
+      "why": {
+        "money_in": "none = 0",
+        "money_out": "none = 0"
+      },
+      "note": "The phone of 8 Jun is still expected, not \"not seen yet\" [Z2]; the insurance of 8 Jun is seen [AA14]."
+    }
+  ]
+}

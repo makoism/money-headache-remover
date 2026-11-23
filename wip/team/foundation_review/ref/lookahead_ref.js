@@ -405,9 +405,13 @@ function lookahead(sc, asOf, opts = {}) {
   // settle the person ticked at a check-in is not worked out again (it keeps its `settles`, above).
   const varyOf = {}; for (const s of (sc.income || []).concat(sc.bills || [])) varyOf[s.id] = s.vary || 0;
   const freeLines = live().filter(e => e.unmatched && !e.settles);
+  // [AA14] An item setup was told had not gone through, whose posting window had already ended before setup (Z2), is
+  // settled by a matching line at any later date: its posting window does not apply until it is settled.
+  const pastAtSetup = x => ((acct[x.acct] && acct[x.acct].opening.not_yet) || []).includes(x.id)
+    && calOf(x.acct).addWorking(x.land, postingDays(x.acct)) < openDay(x.acct);
   for (const x of items.slice().sort((a, b) => a.land - b.land || (a.id < b.id ? -1 : 1))) {
     if (settledBy[x.id]) continue;
-    const xcal = calOf(x.acct), from = xcal.subWorking(x.land, EARLY_SETTLE), to = xcal.addWorking(x.land, postingDays(x.acct));
+    const xcal = calOf(x.acct), from = xcal.subWorking(x.land, EARLY_SETTLE), to = pastAtSetup(x) ? Infinity : xcal.addWorking(x.land, postingDays(x.acct));
     let best = null;
     for (const imp of freeLines) {
       if (imp.settles || imp.untick || imp.account !== x.acct || (x.kind === 'income' ? 'in' : 'out') !== dirOf(imp)
