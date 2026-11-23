@@ -1104,7 +1104,11 @@
     }
 
     // ----- due before next pay [F7, F13, F21, F23, H8, W2] -----
-    const until = np ? np.land : today + NO_PAY_DUE_DAYS;
+    // [G4] a pay due today and not ticked counts as coming in today, and its period's lines come off with it (AU4): the
+    // list runs to the pay after it, so it holds what the walk takes off before that pay. While the next pay is late
+    // (H8) the list still runs to it (late-03). What is past its day and not settled is in mayStillPost and notSeenYet.
+    const after = np && np.land === today ? nextPays.find(p => p.land > today) : np;
+    const until = after ? after.land : today + NO_PAY_DUE_DAYS;
     const due = items.filter(o => isOut(o) && !o.settled && o.land >= today && o.land < until && o.amount).sort((a, b) => a.land - b.land || (a.acct < b.acct ? -1 : 1));
     const byAccount = {}; for (const o of due) (byAccount[o.acct] = byAccount[o.acct] || []).push(o.id);
     res.dueBeforeNextPay = { until: dayStr(until), byAccount, items: due.map(itemOut), total: due.filter(o => !o.otherCur).reduce((t, o) => t + o.amount, 0) };

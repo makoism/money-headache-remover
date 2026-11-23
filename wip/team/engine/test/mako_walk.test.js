@@ -47,4 +47,14 @@ t('a late pay unticked at two check-ins stays on the list, and ticking it starts
   ok(!r.checkIn.toConfirm.some(o => o.item === occ));
   eq([r.period.start, r.period.startsWith], ['2027-01-13', occ]);
 });
+t('on pay day before the check-in, due before next pay is what the sum takes off before the pay after it [G4, AU4]', () => {
+  const w = life();
+  const r = w.on('2026-12-10');
+  const bank = r.accounts[w.ids.bank];
+  eq(r.dueBeforeNextPay.until, '2027-01-08');
+  ok(r.dueBeforeNextPay.items.some(w.of('card_b')) && r.dueBeforeNextPay.items.some(w.of('rent')));
+  // bank + both pays today - what is past and not settled (the November bills) - what is due before the January pay
+  const pastOut = r.mayStillPost.concat(r.notSeenYet.items).filter(i => i.direction !== 'in' && !i.item.startsWith(w.ids.pay_main) && !i.item.startsWith(w.ids.pay_side)).reduce((t, i) => t + i.amount, 0);
+  eq(bank.headroom, bank.bank + 240000 - pastOut - r.dueBeforeNextPay.total);
+});
 done('mako_walk');
