@@ -323,6 +323,14 @@ const stamped = (r, step) => { ok(I.isOrdinary(r.id), 'ordinary id ' + r.id); eq
     eq(view(h.book).period, null, 'by the day until the first pay is ticked');
     DAY = '2026-11-25';
   });
+  await t('[slice 6b] every 3 weeks: the day of one stepped back, the lines asked about', async () => {
+    const h = setup(), MAIN = 'k7m2qa-f3n8p1x6wd-4';
+    await h.go('addLine', { name: 'Food', amount: 40000 });
+    let r = await h.go('changeBill', MAIN, { every: 'weeks3', start: '2026-12-18', from: '2026-12-04' });
+    ok(!r.ok && r.text === 'Your pay will land every 3 weeks. How much each pay from then for Food?', JSON.stringify(r));
+    r = await h.go('changeBill', MAIN, { every: 'weeks3', start: '2026-12-18', from: '2026-12-04', lines: { [h.book.plan.budgets[0].id]: 27692 } }); ok(r.ok, JSON.stringify(r));
+    eq(h.book.schedules.find(x => x.id === MAIN).rules.slice(-1)[0].rule, { every: 'weeks', n: 3, from: '2026-11-27' });
+  });
   await t('one bill changed once: an amounts key on its due date; the next one goes back to the usual amount', async () => {
     const h = setup();
     let r = await h.go('changeOnce', RENT, { due: '2026-11-27', amount: 80000 }); ok(r.ok, JSON.stringify(r));

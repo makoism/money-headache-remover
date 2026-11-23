@@ -105,10 +105,10 @@
     const r = find(w, 'schedules', id); stampNew(r, 'rules'); stampNew(r, 'steps');
     return id;
   }
-  /* [slice 6] how often, as the pay form offers it: a day each month, every 1, 2 or 4 weeks from the day of one pay;
+  /* [slice 6] how often, as the pay form offers it: a day each month, every 1, 2, 3 or 4 weeks from the day of one pay;
      [slice 6b] also two days each month, and no fixed pay */
-  const EVERY = { month: 1, days: 1, weeks1: 1, weeks2: 1, weeks4: 1, none: 1 };
-  const everyWords = { weeks1: 'every week', weeks2: 'every 2 weeks', weeks4: 'every 4 weeks', month: 'once a month', days: 'on two days each month' };
+  const EVERY = { month: 1, days: 1, weeks1: 1, weeks2: 1, weeks3: 1, weeks4: 1, none: 1 };
+  const everyWords = { weeks1: 'every week', weeks2: 'every 2 weeks', weeks3: 'every 3 weeks', weeks4: 'every 4 weeks', month: 'once a month', days: 'on two days each month' };
   function sameRule(a, b) { return JSON.stringify(a) === JSON.stringify(b); }
   const dayOrLast = d => (d === 'last' ? d : dayOfMonth(d));
   /* x: { name, amount, day, day2, from, every?, start?, lines? } ; an amount, a day or how often changes from `from`,

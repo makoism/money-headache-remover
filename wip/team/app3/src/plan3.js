@@ -241,7 +241,7 @@ function plLineForm3(id) {
     'A change never changes a pay period gone by');
 }
 const PL_EVERY3 = [{ v: 'month', name: 'On a day each month' }, { v: 'days', name: 'On two days each month' }, { v: 'weeks1', name: 'Every week' }, { v: 'weeks2', name: 'Every 2 weeks' },
-  { v: 'weeks4', name: 'Every 4 weeks' }, { v: 'none', name: 'No fixed pay: it comes when it comes' }];
+  { v: 'weeks3', name: 'Every 3 weeks' }, { v: 'weeks4', name: 'Every 4 weeks' }, { v: 'none', name: 'No fixed pay: it comes when it comes' }];
 const PL_DAY2_3 = '1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31'.split(' ').map(d => ({ v: d, name: d })).concat([{ v: 'last', name: 'the last day' }]);
 /* a bill; id null adds one */
 function plBillForm3(id) {
@@ -262,7 +262,7 @@ function plBillForm3(id) {
      an amount each pay, when this pay will start the period */
   const r0 = v0.rule || {};
   const everyNow = !pay ? null : r0.every === 'none' ? 'none' : r0.every === 'month' && r0.days.length === 1 ? 'month' : r0.every === 'month' && r0.days.length === 2 ? 'days'
-    : r0.every === 'weeks' && [1, 2, 4].includes(r0.n) ? 'weeks' + r0.n : null;
+    : r0.every === 'weeks' && [1, 2, 3, 4].includes(r0.n) ? 'weeks' + r0.n : null;
   const dayNow = day != null ? day : everyNow === 'days' && typeof r0.days[0] === 'number' ? r0.days[0] : null;
   const every = everyNow ? [{ key: 'every', label: 'How often it lands', kind: 'pick', value: everyNow, options: PL_EVERY3 },
     { key: 'day2', label: 'And on day', kind: 'pick', value: everyNow === 'days' ? String(r0.days[1]) : 'last', options: PL_DAY2_3 },
@@ -285,7 +285,7 @@ function plBillForm3(id) {
    "$400.00 every 2 weeks is $866.67 a month". Back to the rhythm it has, it is today's amount again.
    [slice 6b, BP3] No fixed pay counts as an amount a month (12 a year): "¥50,000 twice a month is ¥100,000 a month".
    The boxes each rhythm needs show: the day for a day or two days a month, the second day, the day of one pay. */
-const PL_EVERY_WORDS3 = { month: 'a month', days: 'twice a month', weeks1: 'a week', weeks2: 'every 2 weeks', weeks4: 'every 4 weeks', none: 'a month' };
+const PL_EVERY_WORDS3 = { month: 'a month', days: 'twice a month', weeks1: 'a week', weeks2: 'every 2 weeks', weeks3: 'every 3 weeks', weeks4: 'every 4 weeks', none: 'a month' };
 function plPropose3(perPay, r0, now) {
   const cur = E3.home();
   const field = k => $('#pl-' + k).closest('.a3-field');

@@ -68,6 +68,7 @@ step "as a plain file:the first screen, the try book and its day box"; run tests
 step "setup3"; run tests/e3_setup.js "e3_setup: ALL PASS"
 step "setup for the other lives: the country chosen, more accounts, pay rhythms, a second income on its own day, cards and bills from their account, once a year (slice 6)"; run tests/e3_setup6.js "e3_setup6: ALL PASS"
 step "a second income every n weeks (stepped back to a day on or before setup) or on two days a month (slice 6b)"; run tests/e3_income2.js "e3_income2: ALL PASS"
+step "pay every 3 weeks in setup and the pay form (slice 6b)"; run tests/e3_weeks3.js "e3_weeks3: ALL PASS"
 step "walk 2 fixes (BI3 bills not gone out yet, BI4 may still go through, a pay by its landing day)"; run tests/e3_walk2.js "e3_walk2: ALL PASS"
 step "walk 4 fixes (an outstanding pay's own amount on Plan, the typed note beside a statement row in Receipts)"; run tests/e3_walk4.js "e3_walk4: ALL PASS"
 step "life C, no fixed pay (Kai, yen, Japan): setup 1 Dec to 2 Mar, hand-worked figures at every step (slice 6)"; run tests/e3_life_c.js "e3_life_c: ALL PASS"

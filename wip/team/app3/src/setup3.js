@@ -22,9 +22,9 @@ const COUNTRY3 = [['JP', 'Japan'], ['PH', 'The Philippines'], ['XX', 'Somewhere 
 const COUNTRY_OF3 = { JPY: 'JP', PHP: 'PH' };
 /* [slice 6b] a second income: every rhythm the pay has (after "On the same days as your pay") */
 const EVERY2_3 = [['month', 'On a day each month'], ['days', 'On two days each month'], ['weeks1', 'Every week'], ['weeks2', 'Every 2 weeks'],
-  ['weeks4', 'Every 4 weeks'], ['none', 'No fixed day']];
+  ['weeks3', 'Every 3 weeks'], ['weeks4', 'Every 4 weeks'], ['none', 'No fixed day']];
 const EVERY3 = [['month', 'On a day each month'], ['days', 'On two days each month'], ['weeks1', 'Every week'], ['weeks2', 'Every 2 weeks'],
-  ['weeks4', 'Every 4 weeks'], ['none', 'No fixed pay: it comes when it comes']];
+  ['weeks3', 'Every 3 weeks'], ['weeks4', 'Every 4 weeks'], ['none', 'No fixed pay: it comes when it comes']];
 const KINDS3 = [['bank', 'A bank'], ['cash', 'Cash'], ['ewallet', 'An e-wallet']];
 const MONTHS3 = [['01', 'January'], ['02', 'February'], ['03', 'March'], ['04', 'April'], ['05', 'May'], ['06', 'June'], ['07', 'July'], ['08', 'August'], ['09', 'September'], ['10', 'October'], ['11', 'November'], ['12', 'December']];
 const KIND_NAME3 = { bank: 'Second bank', cash: 'Cash', ewallet: 'E-wallet' };
