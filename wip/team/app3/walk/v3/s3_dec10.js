@@ -1,0 +1,20 @@
+const L = require('./lib.js');
+(async () => {
+  const c = await L.ctx(process.argv[2]); const p = c.pages()[0] || await c.newPage();
+  const errs = []; p.on('pageerror', e => errs.push(e.message)); p.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
+  const show = async t => console.log('\n## ' + t + '\nHOME ' + (await L.home(p)));
+  const bank10 = Number(process.argv[3] || 295400), bank11 = Number(process.argv[4] || 332400);
+  await L.go(p, '2026-12-10'); await show('10 Dec before check');
+  let r = await L.checkin(p, { 'Main bank': bank10, 'Trip account': 25000 }, { 'Card A': 54000 }, ['Side job'], process.argv[5] === 'B' ? { 'Phone': '2026-11-26' } : {});
+  console.log('CHECK 10 Dec', JSON.stringify(r));
+  await show('10 Dec after check (side job unticked, card A 54,000)');
+  console.log('\nPLAN', await L.plan(p));
+  await p.reload(); await L.w(500); await show('10 Dec after reload');
+  await L.go(p, '2026-12-11'); await show('11 Dec before check');
+  r = await L.checkin(p, { 'Main bank': bank11, 'Trip account': 25000 }, { 'Card B': 23000 }, [], { 'Side job': '2026-12-11' });
+  console.log('CHECK 11 Dec', JSON.stringify(r));
+  await show('11 Dec after check');
+  console.log('\nPLAN', await L.plan(p));
+  console.log('ERR', errs);
+  await c.close();
+})().catch(e => { console.log('CRASH', e); process.exit(1); });

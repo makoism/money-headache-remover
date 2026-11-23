@@ -479,3 +479,11 @@ BI3. Setup asks whether each bill due since the last pay has gone out yet (X3, b
 BI4. Home shows the "may still go through" items that safe to spend takes off. A late or not seen pay is named by its shifted landing day.
 BI5. A move into a goal's own account counts as set aside for that goal.
 The second walk's scripts are kept in app3/walk/v2 and become a check3 step once they pass.
+
+## BJ. Third real-page walk (23 Nov night JST): no blockers, four fixes before real use
+BJ1. A pay left unticked at a check-in made on its due day is not seen, so it is not counted (BH1 wins over G4). G4 still counts a pay due today when no check-in that day left it unticked.
+BJ2. A plan amount set for the first time is saved with `from` = the day it was set, never null. Nothing before it changes (SCHEMA_V3 line 296).
+BJ3. Goal pace counts a late pay that is still expected (BF1), even though safe to spend does not (BH1). Pace is a plan; safe to spend is cash.
+BJ4. A statement line moving money to the person's own account, with no typed move to match it, is written as a two-sided move. It is never written as a spend.
+BJ5. When Free to spend caps the headline, the sum under it shows the cap as its last step, so the two figures never disagree. Plan lists an outstanding occurrence (late, not seen, unticked) before the next one.
+Walk 3's scripts are kept in app3/walk/v3.
