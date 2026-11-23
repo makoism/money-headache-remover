@@ -1,0 +1,24 @@
+{
+ "life": "refund_not_pay",
+ "title": "AV4: a refund never settles a pay, whatever its size",
+ "story": "Set up Mon 4 Jan 2027: the bank holds 300,000. Pay of 250,000 on the 25th (moved earlier). On Mon 25 Jan a refund of 250,000 for a returned laptop comes in; the bank statement read on Tue 26 Jan shows it as a refund line. The pay has not come yet. Every amount is made up.",
+ "currency": "JPY",
+ "window": { "from": "2027-01-04", "to": "2027-01-31" },
+ "holidays": { "country": "none", "dates": [], "bank_closed": [] },
+ "main_bank": "b",
+ "accounts": [
+  { "id": "b", "name": "Bank", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2027-01-04", "amount": 300000 } }
+ ],
+ "income": [
+  { "id": "pay", "name": "Pay", "account": "b", "amount": 250000, "schedule": { "frequency": "monthly", "day": 25 }, "weekend_holiday": "move earlier", "starts_period": true }
+ ],
+ "bills": [],
+ "goals": [],
+ "events": [
+  { "id": "imp:b:2027-01-25:250000:in:1", "date": "2027-01-25", "told": "2027-01-26T08:00", "kind": "refund", "sub": "refund", "account": "b", "amount": 250000, "source": "statement" }
+ ],
+ "asks": [
+  { "id": "rnp-01", "date": "2027-01-26", "question": "days_to_next_pay", "expected": { "days": -1, "next_pay": "2027-01-25", "item": "pay@2027-01-25", "late": true }, "why": "The refund line is money in of the pay's size inside its window, but a refund never settles a pay [AV4]: the 25 Jan pay is still late, expected (its posting window ends Tue 26 Jan).", "decisions": ["AV4"] },
+  { "id": "rnp-02", "date": "2027-01-26", "question": "bank_today", "account": "b", "expected": 550000, "why": "300,000 (opening) + 250,000 (the refund) = 550,000" }
+ ]
+}

@@ -1,12 +1,13 @@
 {
  "area": "sync_v1",
- "title": "Version one sync: the revision, events joined by id, the same record changed on two devices asked, the one-device checks after a sync as questions (AQ1 to AQ4, AP1 to AP7)",
+ "title": "Version one sync: the revision, events joined by id, the same record changed on two devices asked, the one-device checks after a sync as questions (AQ1 to AQ4, AP1 to AP7; AW1 to AW7)",
  "written_in": "SCHEMA_V3 0 and 2.3; DECISIONS_ROUND2 AP and AQ (AQ wins); DECISIONS.md \"Phone and desktop in version one\" (Mako, 23 Nov)",
  "notes": [
   "Every amount is made up and in whole minor units (yen). Every id has the ordinary form or a built form, as the app writes them.",
-  "A device keeps the copy it last synced (`base`) and its revision (`baseRev`). Question `push`: the vault accepts a write only on the latest revision [AQ1]. `sync_device`: a device takes the latest first when behind, joins it with its own, and writes. `cas_story`: devices sync in turn. `sync`: the join of two copies on their common base: a record or field value changed on one side only is taken; changed on both to the same content (apart from `at`, `by`, `told`, `held`, `goneBy`, and `gone` read as yes or no) is one record, the newer, with the earliest `told`; changed on both to different content is asked: the newer shows meanwhile (`at`, then `gone`, then `by`, then the text), every version is kept in `kept:<record id or field path>` with `ask: true` [AQ3]. A field value of `home`, `ui`, `plan.limits` or `imports.cats` is one item; a list record is one item whole (its rules, steps and keyed overrides with it).",
+  "A device keeps the copy it last synced (`base`) and its revision (`baseRev`). Question `push`: the vault accepts a write only on the latest revision [AQ1]. `sync_device`: a device takes the latest first when behind, joins it with its own, and writes. `cas_story`: devices sync in turn. `sync`: the join of two copies on their common base: a record or field value changed on one side only is taken; changed on both to the same content (apart from `at`, `by`, `told`, `held`, `goneBy`, and `gone` read as yes or no) is one record, the newer, with the earliest `told`; changed on both to different content is asked: the newer shows meanwhile (`at`, then `gone`, then `by`, then the text), every version is kept in `keptVersions` as `kept:<record id or field path>` with `ask: true` [AQ3]. A field value of `home`, `ui`, `plan.limits` or `imports.cats` is one item; a list record is one item whole (its rules, steps and keyed overrides with it).",
   "Question `sync_check`: the join, then the one-device checks [AQ4] as questions (`x8`, `closed`, `minimum`, `shares`, and `which` for each kept record waiting) and notices (`reopened`, AP1). `answer` picks a kept version; `answer_check` answers a check question and lists what is still asked.",
-  "Merging rules of D4 to AP5 that are about merging (per key `at` merging, holds, AN2 and AN6 after a merge) are stage 2: their mg cases keep passing against merge_ref.js (STAGE2_MERGE_LIST.md) [AQ5]."
+  "Merging rules of D4 to AP5 that are about merging (per key `at` merging, holds, AN2 and AN6 after a merge) are stage 2: their mg cases keep passing against merge_ref.js (STAGE2_MERGE_LIST.md) [AQ5].",
+  "[AW7] The shared list of kept versions is `keptVersions` (SCHEMA 2.1); the IndexedDB store keeps the name `kept`. A question's `kept` names the kept record."
  ],
  "defaults": {},
  "cases": [
@@ -1050,7 +1051,7 @@
     },
     "show": [
      "events",
-     "kept"
+     "keptVersions"
     ]
    },
    "expected": {
@@ -1136,7 +1137,7 @@
     },
     "show": [
      "events",
-     "kept"
+     "keptVersions"
     ]
    },
    "expected": {
@@ -1219,7 +1220,7 @@
     },
     "show": [
      "events",
-     "kept"
+     "keptVersions"
     ]
    },
    "expected": {
@@ -1242,7 +1243,7 @@
       "by": "w3hmxd"
      }
     ],
-    "kept": [
+    "keptVersions": [
      {
       "id": "kept:set:k7qzpa-m2xq7ab9zt-41@2026-12-25",
       "of": "set:k7qzpa-m2xq7ab9zt-41@2026-12-25",
@@ -1338,7 +1339,7 @@
     },
     "show": [
      "events",
-     "kept"
+     "keptVersions"
     ]
    },
    "expected": {
@@ -1483,7 +1484,7 @@
     },
     "show": [
      "schedules",
-     "kept"
+     "keptVersions"
     ]
    },
    "expected": {
@@ -1650,7 +1651,7 @@
     },
     "show": [
      "schedules",
-     "kept"
+     "keptVersions"
     ]
    },
    "expected": {
@@ -1687,7 +1688,7 @@
       "by": "w3hmxd"
      }
     ],
-    "kept": [
+    "keptVersions": [
      {
       "id": "kept:k7qzpa-m2xq7ab9zt-42",
       "of": "k7qzpa-m2xq7ab9zt-42",
@@ -1899,7 +1900,7 @@
     },
     "show": [
      "schedules",
-     "kept"
+     "keptVersions"
     ]
    },
    "expected": {
@@ -2062,7 +2063,7 @@
     },
     "show": [
      "schedules",
-     "kept"
+     "keptVersions"
     ]
    },
    "expected": {
@@ -2099,7 +2100,7 @@
       "by": "w3hmxd"
      }
     ],
-    "kept": [
+    "keptVersions": [
      {
       "id": "kept:k7qzpa-m2xq7ab9zt-42",
       "of": "k7qzpa-m2xq7ab9zt-42",
@@ -2265,7 +2266,7 @@
     },
     "show": [
      "home",
-     "kept"
+     "keptVersions"
     ]
    },
    "expected": {
@@ -2381,7 +2382,7 @@
     },
     "show": [
      "home",
-     "kept"
+     "keptVersions"
     ]
    },
    "expected": {
@@ -2408,7 +2409,7 @@
       "by": "w3hmxd"
      }
     },
-    "kept": [
+    "keptVersions": [
      {
       "id": "kept:home.main",
       "of": "home.main",
@@ -2735,7 +2736,7 @@
        "by": "w3hmxd"
       }
      ],
-     "kept": [
+     "keptVersions": [
       {
        "id": "kept:k7qzpa-m2xq7ab9zt-42",
        "of": "k7qzpa-m2xq7ab9zt-42",
@@ -2823,7 +2824,7 @@
     "by": "k7qzpa",
     "show": [
      "schedules",
-     "kept"
+     "keptVersions"
     ]
    },
    "expected": {
@@ -2866,7 +2867,7 @@
       "by": "k7qzpa"
      }
     ],
-    "kept": [
+    "keptVersions": [
      {
       "id": "kept:k7qzpa-m2xq7ab9zt-42",
       "of": "k7qzpa-m2xq7ab9zt-42",
@@ -2999,7 +3000,7 @@
        "by": "k7qzpa"
       }
      ],
-     "kept": [
+     "keptVersions": [
       {
        "id": "kept:k7qzpa-m2xq7ab9zt-42",
        "of": "k7qzpa-m2xq7ab9zt-42",
@@ -3087,7 +3088,7 @@
     "by": "k7qzpa",
     "show": [
      "schedules",
-     "kept"
+     "keptVersions"
     ]
    },
    "expected": {
@@ -3124,7 +3125,7 @@
       "by": "k7qzpa"
      }
     ],
-    "kept": [
+    "keptVersions": [
      {
       "id": "kept:k7qzpa-m2xq7ab9zt-42",
       "of": "k7qzpa-m2xq7ab9zt-42",
@@ -3250,7 +3251,7 @@
        "by": "w3hmxd"
       }
      ],
-     "kept": [
+     "keptVersions": [
       {
        "id": "kept:k7qzpa-m2xq7ab9zt-42",
        "of": "k7qzpa-m2xq7ab9zt-42",
@@ -3372,7 +3373,7 @@
        "by": "k7qzpa"
       }
      ],
-     "kept": [
+     "keptVersions": [
       {
        "id": "kept:k7qzpa-m2xq7ab9zt-42",
        "of": "k7qzpa-m2xq7ab9zt-42",
@@ -3488,7 +3489,7 @@
        "by": "w3hmxd"
       }
      ],
-     "kept": [
+     "keptVersions": [
       {
        "id": "kept:k7qzpa-m2xq7ab9zt-42",
        "of": "k7qzpa-m2xq7ab9zt-42",
@@ -3572,7 +3573,7 @@
     },
     "show": [
      "schedules",
-     "kept"
+     "keptVersions"
     ]
    },
    "expected": {
@@ -3609,7 +3610,7 @@
       "by": "w3hmxd"
      }
     ],
-    "kept": [
+    "keptVersions": [
      {
       "id": "kept:k7qzpa-m2xq7ab9zt-42",
       "of": "k7qzpa-m2xq7ab9zt-42",
@@ -4007,14 +4008,15 @@
       "schedule": "k7qzpa-m2xq7ab9zt-44",
       "due": "2027-05-31",
       "from": "2027-05-01",
-      "offer": "2027-06-01",
-      "next": "2027-06-15"
+      "offer": "2028-06-01",
+      "next": "2028-06-15"
      }
     ],
     "notices": []
    },
-   "why": "Desktop ticks the car insurance on 31 May 2027. The phone, offline, moved it to 15 Jun from 1 May. After the sync the change (from 1 May, every 15 Jun) no longer makes 31 May, which is settled: X8 fails. AN2 judged only month and weeks rules; the look ahead's own occurrence code reads `year` too [AP2]. It becomes a question [AQ4]: the offer is X8's, the day after (1 Jun), and the question shows what that makes next: 15 Jun 2027, a second payment this year (the report's question 2).",
+   "why": "Desktop ticks the car insurance on 31 May 2027. The phone, offline, moved it to 15 Jun from 1 May. After the sync the change no longer makes 31 May, which is settled: X8 fails, and it is a question [AQ4, AP2]. AW3 (correcting AT2): a rule that is not monthly or weekly is offered from the day after the old rule's next occurrence after the last settled one: the old rule's next is 31 May 2028, so the offer is 1 Jun 2028 and the first new payment 15 Jun 2028. Nothing is paid twice in a year.",
    "decisions": [
+    "AW3",
     "AQ4",
     "AP2",
     "X8"
@@ -4170,14 +4172,15 @@
       "schedule": "k7qzpa-m2xq7ab9zt-44",
       "due": "2027-03-05",
       "from": "2027-03-01",
-      "offer": "2027-03-06",
-      "next": "2027-03-20"
+      "offer": "2027-06-06",
+      "next": "2027-06-20"
      }
     ],
     "notices": []
    },
-   "why": "Every 3 months on the 5th from 5 Dec: 5 Mar is due and the desktop ticks it. The phone moved it to the 20th from 1 Mar (every 3 months from 20 Mar): 5 Mar is not one of its days. Asked, offering 6 Mar; next 20 Mar.",
+   "why": "Every 3 months on the 5th from 5 Dec: 5 Mar is due and the desktop ticks it. The phone moved it to the 20th from 1 Mar: 5 Mar is not one of its days. Asked [AQ4]. AW3: the old rule's next after 5 Mar is 5 Jun, so the offer is 6 Jun and the new rule's first day from it 20 Jun 2027 (not 20 Mar, two weeks after paying).",
    "decisions": [
+    "AW3",
     "AQ4",
     "AP2",
     "X8"
@@ -4341,14 +4344,15 @@
       "schedule": "k7qzpa-m2xq7ab9zt-44",
       "due": "2027-06-10",
       "from": "2027-06-01",
-      "offer": "2027-06-11",
-      "next": "2027-07-10"
+      "offer": "2027-12-11",
+      "next": "2028-07-10"
      }
     ],
     "notices": []
    },
-   "why": "June and December on the 10th; the desktop ticks 10 Jun. The phone changed it to July and December from 1 Jun: 10 Jun is not made. Asked, offering 11 Jun; next 10 Jul.",
+   "why": "June and December on the 10th; the desktop ticks 10 Jun 2027. The phone changed it to July and December from 1 Jun: 10 Jun is not made. Asked [AQ4]. AW3: the old rule's next after 10 Jun is 10 Dec 2027, so the offer is 11 Dec 2027; the new rule's first day from it is 10 Jul 2028 (not 10 Jul 2027, a month after the June payment).",
    "decisions": [
+    "AW3",
     "AQ4",
     "AP2",
     "X8"
@@ -6375,7 +6379,7 @@
   {
    "id": "sy-39",
    "question": "sync_check",
-   "title": "AP5 under AQ: the main bank changed on the phone while the desktop changed that bank's own minimum: asked",
+   "title": "AW4 (AT3), AP5 under AQ: the main bank changed on the phone while the desktop changed that bank's own minimum: one question",
    "input": {
     "base": {
      "home": {
@@ -6468,8 +6472,11 @@
    "expected": {
     "questions": [
      {
-      "q": "minimum",
+      "q": "main",
       "account": "k7qzpa-m2xq7ab9zt-5",
+      "kept": [
+       "kept:k7qzpa-m2xq7ab9zt-5"
+      ],
       "main": {
        "a": 20000,
        "cur": "JPY"
@@ -6477,19 +6484,19 @@
       "own": {
        "a": 25000,
        "cur": "JPY"
-      }
-     },
-     {
-      "q": "which",
-      "of": "k7qzpa-m2xq7ab9zt-5",
-      "kept": "kept:k7qzpa-m2xq7ab9zt-5"
+      },
+      "options": [
+       "k7qzpa",
+       "w3hmxd"
+      ]
      }
     ],
     "notices": []
    },
-   "why": "The phone makes the second bank the main bank: its 20,000 moves into `home.main` and its own `minBank` is cleared [AN3]. The desktop, offline, sets that bank's `minBank` to 25,000. The account changed on both: asked which (shown: the desktop's, newer, with 25,000). And the one-device check fails: the main bank has its own minimum beside the one in `home.main` [AN3]: a second question, which figure to keep [AQ4, AP5].",
+   "why": "The phone makes the second bank the main bank (its 20,000 moves into `home.main`, its own `minBank` cleared) [AN3]; the desktop, offline, sets that bank's `minBank` to 25,000. The account changed on both (a `which`), and the main bank now has a minimum in two places (the `minimum` check). Under AW4 (AT3) these are one question showing both changes; the person picks one device's view (`options`, by device), which answers both.",
    "decisions": [
-    "AQ4",
+    "AW4",
+    "AT3",
     "AP5",
     "AN3"
    ]
@@ -6528,7 +6535,7 @@
        "by": "w3hmxd"
       }
      ],
-     "kept": [
+     "keptVersions": [
       {
        "id": "kept:k7qzpa-m2xq7ab9zt-5",
        "of": "k7qzpa-m2xq7ab9zt-5",
@@ -6710,15 +6717,19 @@
       "over": 100000,
       "undo": [
        "w3hmxd-p4kd8wq2rn-1"
+      ],
+      "undoOlder": [
+       "k7qzpa-m2xq7ab9zt-71"
       ]
      }
     ],
     "notices": []
    },
-   "why": "pe-55's story: 100,000 to place; the phone puts it all in the trip at 12:00, the desktop all in the car at 12:03. Waiting: 100,000 - 100,000 - 100,000 = -100,000. X5 let the newer give way silently; under AQ4 it is a question, offering to undo the newer placing (12:03, the car) [AQ4, X5].",
+   "why": "pe-55's story: 100,000 to place; the phone puts it all in the trip at 12:00, the desktop all in the car at 12:03. Waiting: 100,000 - 100,000 - 100,000 = -100,000. X5 let the newer give way silently; under AQ4 it is a question, offering to undo the newer placing (12:03, the car) [AQ4, X5]. AW6: it also offers to undo the older placing instead (12:00, the trip), so either can give way.",
    "decisions": [
     "AQ4",
-    "X5"
+    "X5",
+    "AW6"
    ]
   },
   {
@@ -7021,7 +7032,7 @@
     },
     "show": [
      "events",
-     "kept"
+     "keptVersions"
     ]
    },
    "expected": {
@@ -7209,7 +7220,7 @@
     },
     "show": [
      "events",
-     "kept"
+     "keptVersions"
     ]
    },
    "expected": {
@@ -7334,7 +7345,7 @@
     },
     "show": [
      "checkins",
-     "kept"
+     "keptVersions"
     ]
    },
    "expected": {
@@ -7382,7 +7393,7 @@
   {
    "id": "sy-48",
    "question": "sync",
-   "title": "AP6: one check-in changed on both devices: asked",
+   "title": "AW6, AP6: one check-in changed on both devices only in its settled list: joined, not asked",
    "input": {
     "base": {
      "checkins": [
@@ -7448,7 +7459,7 @@
     },
     "show": [
      "checkins",
-     "kept"
+     "keptVersions"
     ]
    },
    "expected": {
@@ -7464,65 +7475,18 @@
        }
       ],
       "settled": [
-       "set:k7qzpa-m2xq7ab9zt-42@2026-11-27",
        "set:k7qzpa-m2xq7ab9zt-41@2026-11-25"
       ],
       "told": "2026-11-30T08:00:00.000+09:00",
       "at": "2026-12-01T20:00:00.000+09:00",
       "by": "w3hmxd"
      }
-    ],
-    "kept": [
-     {
-      "id": "kept:k7qzpa-m2xq7ab9zt-401",
-      "of": "k7qzpa-m2xq7ab9zt-401",
-      "in": "checkins",
-      "versions": [
-       {
-        "id": "k7qzpa-m2xq7ab9zt-401",
-        "date": "2026-11-30",
-        "from": "2026-11-26",
-        "figures": [
-         {
-          "acct": "k7qzpa-m2xq7ab9zt-2",
-          "check": "k7qzpa-m2xq7ab9zt-402"
-         }
-        ],
-        "settled": [],
-        "told": "2026-11-30T08:00:00.000+09:00",
-        "at": "2026-12-01T08:00:00.000+09:00",
-        "by": "k7qzpa"
-       },
-       {
-        "id": "k7qzpa-m2xq7ab9zt-401",
-        "date": "2026-11-30",
-        "from": "2026-11-26",
-        "figures": [
-         {
-          "acct": "k7qzpa-m2xq7ab9zt-2",
-          "check": "k7qzpa-m2xq7ab9zt-402"
-         }
-        ],
-        "settled": [
-         "set:k7qzpa-m2xq7ab9zt-42@2026-11-27",
-         "set:k7qzpa-m2xq7ab9zt-41@2026-11-25"
-        ],
-        "told": "2026-11-30T08:00:00.000+09:00",
-        "at": "2026-12-01T20:00:00.000+09:00",
-        "by": "w3hmxd"
-       }
-      ],
-      "ask": true,
-      "told": "2026-11-30T08:00:00.000+09:00",
-      "at": "2026-12-01T20:00:00.000+09:00",
-      "by": "w3hmxd"
-     }
     ]
    },
-   "why": "The phone unticked the rent settle; the desktop ticked the pay too. One record, two contents: shown the newer, both kept, asked.",
+   "why": "The phone unticked the rent settle; the desktop ticked the pay too. The two differ only in `settled`, which the person cannot judge as lists of ids [AW6]: joined three ways against the base: rent removed (phone), pay added (desktop), leaving the pay. The newer `at` and `by`, the earliest `told`; nothing asked.",
    "decisions": [
-    "AP6",
-    "AQ3"
+    "AW6",
+    "AP6"
    ]
   },
   {
@@ -7597,7 +7561,7 @@
     },
     "show": [
      "checkins",
-     "kept"
+     "keptVersions"
     ]
    },
    "expected": {
@@ -7781,7 +7745,7 @@
     },
     "show": [
      "imports",
-     "kept"
+     "keptVersions"
     ]
    },
    "expected": {
@@ -7795,7 +7759,7 @@
       }
      }
     },
-    "kept": [
+    "keptVersions": [
      {
       "id": "kept:imports.cats.k:seven eleven",
       "of": "imports.cats.k:seven eleven",
@@ -7871,7 +7835,7 @@
     },
     "show": [
      "imports",
-     "kept"
+     "keptVersions"
     ]
    },
    "expected": {
@@ -7885,7 +7849,7 @@
       }
      }
     },
-    "kept": [
+    "keptVersions": [
      {
       "id": "kept:imports.cats.k:seven eleven",
       "of": "imports.cats.k:seven eleven",
@@ -8252,7 +8216,7 @@
     "show": [
      "schedules",
      "events",
-     "kept"
+     "keptVersions"
     ]
    },
    "expected": {
@@ -8370,7 +8334,7 @@
     },
     "show": [
      "people",
-     "kept"
+     "keptVersions"
     ]
    },
    "expected": {
@@ -8383,7 +8347,7 @@
       "by": "w3hmxd"
      }
     ],
-    "kept": [
+    "keptVersions": [
      {
       "id": "kept:k7qzpa-m2xq7ab9zt-81",
       "of": "k7qzpa-m2xq7ab9zt-81",
@@ -8490,7 +8454,7 @@
     "show": [
      "ui",
      "plan",
-     "kept"
+     "keptVersions"
     ]
    },
    "expected": {
@@ -8570,7 +8534,7 @@
     },
     "show": [
      "events",
-     "kept"
+     "keptVersions"
     ]
    },
    "expected": {
@@ -8829,7 +8793,7 @@
     },
     "show": [
      "checkins",
-     "kept"
+     "keptVersions"
     ]
    },
    "expected": {
@@ -8921,7 +8885,7 @@
     },
     "show": [
      "checkins",
-     "kept"
+     "keptVersions"
     ]
    },
    "expected": {
@@ -8970,6 +8934,1077 @@
     "AP6",
     "AQ1"
    ]
+  },
+  {
+   "id": "sy-62",
+   "question": "race",
+   "title": "AW5: the phone took revision 2 and joined; the desktop wrote revision 3 first: the refused write retries from the copy it took",
+   "input": {
+    "device": {
+     "copy": {
+      "rev": 1,
+      "schedules": [
+       {
+        "id": "k7qzpa-m2xq7ab9zt-7",
+        "name": "Rent",
+        "amount": 80000,
+        "told": "2026-12-01T09:00:00.000+09:00",
+        "at": "2026-12-01T09:00:00.000+09:00",
+        "by": "k7qzpa"
+       }
+      ],
+      "places": [
+       {
+        "id": "k7qzpa-m2xq7ab9zt-9",
+        "name": "Trip",
+        "target": 300000,
+        "told": "2026-12-01T09:00:00.000+09:00",
+        "at": "2026-12-02T09:00:00.000+09:00",
+        "by": "k7qzpa"
+       }
+      ]
+     },
+     "base": {
+      "rev": 1,
+      "schedules": [
+       {
+        "id": "k7qzpa-m2xq7ab9zt-7",
+        "name": "Rent",
+        "amount": 80000,
+        "told": "2026-12-01T09:00:00.000+09:00",
+        "at": "2026-12-01T09:00:00.000+09:00",
+        "by": "k7qzpa"
+       }
+      ],
+      "places": [
+       {
+        "id": "k7qzpa-m2xq7ab9zt-9",
+        "name": "Trip",
+        "target": 200000,
+        "told": "2026-12-01T09:00:00.000+09:00",
+        "at": "2026-12-01T09:00:00.000+09:00",
+        "by": "k7qzpa"
+       }
+      ]
+     },
+     "baseRev": 1
+    },
+    "fetched": {
+     "rev": 2,
+     "copy": {
+      "rev": 2,
+      "schedules": [
+       {
+        "id": "k7qzpa-m2xq7ab9zt-7",
+        "name": "Rent",
+        "amount": 82000,
+        "told": "2026-12-01T09:00:00.000+09:00",
+        "at": "2026-12-02T09:00:00.000+09:00",
+        "by": "w3hmxd"
+       }
+      ],
+      "places": [
+       {
+        "id": "k7qzpa-m2xq7ab9zt-9",
+        "name": "Trip",
+        "target": 200000,
+        "told": "2026-12-01T09:00:00.000+09:00",
+        "at": "2026-12-01T09:00:00.000+09:00",
+        "by": "k7qzpa"
+       }
+      ]
+     }
+    },
+    "cloudNow": {
+     "rev": 3,
+     "copy": {
+      "rev": 3,
+      "schedules": [
+       {
+        "id": "k7qzpa-m2xq7ab9zt-7",
+        "name": "Rent",
+        "amount": 85000,
+        "told": "2026-12-01T09:00:00.000+09:00",
+        "at": "2026-12-03T09:00:00.000+09:00",
+        "by": "w3hmxd"
+       }
+      ],
+      "places": [
+       {
+        "id": "k7qzpa-m2xq7ab9zt-9",
+        "name": "Trip",
+        "target": 200000,
+        "told": "2026-12-01T09:00:00.000+09:00",
+        "at": "2026-12-01T09:00:00.000+09:00",
+        "by": "k7qzpa"
+       }
+      ]
+     }
+    },
+    "show": [
+     "schedules",
+     "places"
+    ]
+   },
+   "expected": {
+    "refused": true,
+    "rev": 4,
+    "questions": [],
+    "copy": {
+     "schedules": [
+      {
+       "id": "k7qzpa-m2xq7ab9zt-7",
+       "name": "Rent",
+       "amount": 85000,
+       "told": "2026-12-01T09:00:00.000+09:00",
+       "at": "2026-12-03T09:00:00.000+09:00",
+       "by": "w3hmxd"
+      }
+     ],
+     "places": [
+      {
+       "id": "k7qzpa-m2xq7ab9zt-9",
+       "name": "Trip",
+       "target": 300000,
+       "told": "2026-12-01T09:00:00.000+09:00",
+       "at": "2026-12-02T09:00:00.000+09:00",
+       "by": "k7qzpa"
+      }
+     ]
+    }
+   },
+   "why": "The phone changed the trip offline (300,000). It takes revision 2 (the desktop's rent 82,000) and joins: rent 82,000, trip 300,000. Before its write lands, the desktop writes rent 85,000 (revision 3): the write on revision 2 is refused [AQ1]. AW5: the phone saves the joined copy with revision 2 as its base before pushing, so the retry joins against revision 2: rent changed only on the desktop since (85,000), the trip only on the phone (300,000). Nothing is asked; revision 4. With the older base kept, rent would look changed on both sides and the person would be asked about two edits he made himself on the desktop (sync_review_1 race.js).",
+   "decisions": [
+    "AW5",
+    "AQ1"
+   ]
+  },
+  {
+   "id": "sy-63",
+   "question": "sync",
+   "title": "AW1: rent ticked and a coffee typed on the phone, the bank statement read on the desktop: matching runs again after the sync, each payment once",
+   "input": {
+    "base": {
+     "accounts": [
+      {
+       "id": "k7qzpa-m2xq7ab9zt-1",
+       "kind": "bank",
+       "name": "Bank",
+       "told": "2026-11-01T09:00:00.000+09:00",
+       "at": "2026-11-01T09:00:00.000+09:00",
+       "by": "k7qzpa"
+      }
+     ],
+     "events": []
+    },
+    "mine": {
+     "accounts": [
+      {
+       "id": "k7qzpa-m2xq7ab9zt-1",
+       "kind": "bank",
+       "name": "Bank",
+       "told": "2026-11-01T09:00:00.000+09:00",
+       "at": "2026-11-01T09:00:00.000+09:00",
+       "by": "k7qzpa"
+      }
+     ],
+     "events": [
+      {
+       "id": "set:k7qzpa-m2xq7ab9zt-7@2026-11-27",
+       "k": "spend",
+       "date": "2026-11-27",
+       "acct": "k7qzpa-m2xq7ab9zt-1",
+       "a": 80000,
+       "settles": [
+        {
+         "s": "k7qzpa-m2xq7ab9zt-7",
+         "due": "2026-11-27"
+        }
+       ],
+       "told": "2026-11-29T08:10:00.000+09:00",
+       "at": "2026-11-29T08:10:00.000+09:00",
+       "by": "k7qzpa"
+      },
+      {
+       "id": "k7qzpa-p9x2m4q7ra-3",
+       "k": "spend",
+       "date": "2026-11-28",
+       "acct": "k7qzpa-m2xq7ab9zt-1",
+       "a": 1200,
+       "line": "k7qzpa-m2xq7ab9zt-51",
+       "src": {
+        "type": "typed"
+       },
+       "told": "2026-11-28T12:30:00.000+09:00",
+       "at": "2026-11-28T12:30:00.000+09:00",
+       "by": "k7qzpa"
+      }
+     ]
+    },
+    "theirs": {
+     "accounts": [
+      {
+       "id": "k7qzpa-m2xq7ab9zt-1",
+       "kind": "bank",
+       "name": "Bank",
+       "told": "2026-11-01T09:00:00.000+09:00",
+       "at": "2026-11-01T09:00:00.000+09:00",
+       "by": "k7qzpa"
+      }
+     ],
+     "events": [
+      {
+       "id": "imp:k7qzpa-m2xq7ab9zt-1:2026-11-27:80000:out:1",
+       "k": "spend",
+       "date": "2026-11-27",
+       "acct": "k7qzpa-m2xq7ab9zt-1",
+       "a": 80000,
+       "src": {
+        "type": "statement",
+        "file": "bank-2026-11.csv",
+        "from": "2026-11-01",
+        "to": "2026-11-30"
+       },
+       "settles": [
+        {
+         "s": "k7qzpa-m2xq7ab9zt-7",
+         "due": "2026-11-27"
+        }
+       ],
+       "told": "2026-11-29T21:00:00.000+09:00",
+       "at": "2026-11-29T21:00:00.000+09:00",
+       "by": "w3hmxd"
+      },
+      {
+       "id": "imp:k7qzpa-m2xq7ab9zt-1:2026-11-28:1200:out:1",
+       "k": "spend",
+       "date": "2026-11-28",
+       "acct": "k7qzpa-m2xq7ab9zt-1",
+       "a": 1200,
+       "src": {
+        "type": "statement",
+        "file": "bank-2026-11.csv",
+        "from": "2026-11-01",
+        "to": "2026-11-30"
+       },
+       "told": "2026-11-29T21:00:00.000+09:00",
+       "at": "2026-11-29T21:00:00.000+09:00",
+       "by": "w3hmxd"
+      }
+     ]
+    },
+    "show": [
+     "events",
+     "keptVersions"
+    ]
+   },
+   "expected": {
+    "events": [
+     {
+      "id": "imp:k7qzpa-m2xq7ab9zt-1:2026-11-28:1200:out:1",
+      "k": "spend",
+      "date": "2026-11-28",
+      "acct": "k7qzpa-m2xq7ab9zt-1",
+      "a": 1200,
+      "src": {
+       "type": "statement",
+       "file": "bank-2026-11.csv",
+       "from": "2026-11-01",
+       "to": "2026-11-30"
+      },
+      "told": "2026-11-28T12:30:00.000+09:00",
+      "at": "2026-11-29T21:00:00.000+09:00",
+      "by": "w3hmxd"
+     },
+     {
+      "id": "imp:k7qzpa-m2xq7ab9zt-1:2026-11-27:80000:out:1",
+      "k": "spend",
+      "date": "2026-11-27",
+      "acct": "k7qzpa-m2xq7ab9zt-1",
+      "a": 80000,
+      "src": {
+       "type": "statement",
+       "file": "bank-2026-11.csv",
+       "from": "2026-11-01",
+       "to": "2026-11-30"
+      },
+      "settles": [
+       {
+        "s": "k7qzpa-m2xq7ab9zt-7",
+        "due": "2026-11-27"
+       }
+      ],
+      "told": "2026-11-29T08:10:00.000+09:00",
+      "at": "2026-11-29T21:00:00.000+09:00",
+      "by": "w3hmxd"
+     },
+     {
+      "id": "k7qzpa-p9x2m4q7ra-3",
+      "k": "spend",
+      "date": "2026-11-28",
+      "acct": "k7qzpa-m2xq7ab9zt-1",
+      "a": 1200,
+      "line": "k7qzpa-m2xq7ab9zt-51",
+      "src": {
+       "type": "typed"
+      },
+      "told": "2026-11-28T12:30:00.000+09:00",
+      "at": "2026-11-29T21:00:00.000+09:00",
+      "by": "w3hmxd",
+      "gone": "2026-11-29",
+      "goneBy": "imp:k7qzpa-m2xq7ab9zt-1:2026-11-28:1200:out:1"
+     },
+     {
+      "id": "set:k7qzpa-m2xq7ab9zt-7@2026-11-27",
+      "k": "spend",
+      "date": "2026-11-27",
+      "acct": "k7qzpa-m2xq7ab9zt-1",
+      "a": 80000,
+      "settles": [
+       {
+        "s": "k7qzpa-m2xq7ab9zt-7",
+        "due": "2026-11-27"
+       }
+      ],
+      "told": "2026-11-29T08:10:00.000+09:00",
+      "at": "2026-11-29T21:00:00.000+09:00",
+      "by": "w3hmxd",
+      "gone": "2026-11-29",
+      "goneBy": "imp:k7qzpa-m2xq7ab9zt-1:2026-11-27:80000:out:1"
+     }
+    ]
+   },
+   "why": "The desktop's matching (6.4) settled rent with the 80,000 line; it never saw the phone's tick or coffee. After the join, 6.4 runs again between import lines and typed or `set:` records that came from the other device [AW1]: the same account and direction, the same amount, inside the bank's posting window (1 working day). The tick (27 Nov) meets the 80,000 line of 27 Nov, the coffee (28 Nov) the 1,200 line of 28 Nov. Each typed record is `gone`, `goneBy` its line, with the newer of the two `at` (the import's, 21:00 on 29 Nov, by the desktop); each line keeps the typed record's `told` [O1] and its `settles` (rent's line has its own). Money out of the bank: 80,000 + 1,200 = 81,200, not 162,400; rent is settled by one live record.",
+   "decisions": [
+    "AW1",
+    "O1"
+   ]
+  },
+  {
+   "id": "sy-64",
+   "question": "sync_device",
+   "title": "AW2: a desktop set up on its own turns the cloud on: which whole copy to keep is asked; nothing is joined",
+   "input": {
+    "device": {
+     "copy": {
+      "v": 3,
+      "rev": 1,
+      "at": "2026-11-22T21:00:00.000+09:00",
+      "home": {
+       "country": {
+        "v": "JP",
+        "at": "2026-11-22T21:00:00.000+09:00",
+        "by": "w3hmxd"
+       },
+       "main": {
+        "v": {
+         "acct": "w3hmxd-m2xq7ab9zt-1",
+         "min": null
+        },
+        "at": "2026-11-22T21:00:00.000+09:00",
+        "by": "w3hmxd"
+       }
+      },
+      "accounts": [
+       {
+        "id": "w3hmxd-m2xq7ab9zt-1",
+        "kind": "bank",
+        "name": "Bank",
+        "told": "2026-11-22T21:00:00.000+09:00",
+        "at": "2026-11-22T21:00:00.000+09:00",
+        "by": "w3hmxd"
+       }
+      ],
+      "schedules": [
+       {
+        "id": "w3hmxd-m2xq7ab9zt-2",
+        "kind": "income",
+        "name": "Pay",
+        "acct": "w3hmxd-m2xq7ab9zt-1",
+        "rules": [
+         {
+          "from": "2026-11-01",
+          "rule": {
+           "every": "month",
+           "days": [
+            10
+           ]
+          },
+          "at": "2026-11-22T21:00:00.000+09:00",
+          "by": "w3hmxd"
+         }
+        ],
+        "steps": [
+         {
+          "from": "2026-11-01",
+          "amount": 250000,
+          "at": "2026-11-22T21:00:00.000+09:00",
+          "by": "w3hmxd"
+         }
+        ],
+        "told": "2026-11-22T21:00:00.000+09:00",
+        "at": "2026-11-22T21:00:00.000+09:00",
+        "by": "w3hmxd"
+       }
+      ],
+      "events": [
+       {
+        "id": "w3hmxd-m2xq7ab9zt-3",
+        "k": "open",
+        "acct": "w3hmxd-m2xq7ab9zt-1",
+        "date": "2026-11-22",
+        "a": 400000,
+        "told": "2026-11-22T21:00:00.000+09:00",
+        "at": "2026-11-22T21:00:00.000+09:00",
+        "by": "w3hmxd"
+       }
+      ]
+     },
+     "baseRev": 0
+    },
+    "cloud": {
+     "rev": 5,
+     "copy": {
+      "v": 3,
+      "rev": 1,
+      "at": "2026-11-20T09:00:00.000+09:00",
+      "home": {
+       "country": {
+        "v": "JP",
+        "at": "2026-11-20T09:00:00.000+09:00",
+        "by": "k7qzpa"
+       },
+       "main": {
+        "v": {
+         "acct": "k7qzpa-m2xq7ab9zt-1",
+         "min": null
+        },
+        "at": "2026-11-20T09:00:00.000+09:00",
+        "by": "k7qzpa"
+       }
+      },
+      "accounts": [
+       {
+        "id": "k7qzpa-m2xq7ab9zt-1",
+        "kind": "bank",
+        "name": "Bank",
+        "told": "2026-11-20T09:00:00.000+09:00",
+        "at": "2026-11-20T09:00:00.000+09:00",
+        "by": "k7qzpa"
+       }
+      ],
+      "schedules": [
+       {
+        "id": "k7qzpa-m2xq7ab9zt-2",
+        "kind": "income",
+        "name": "Pay",
+        "acct": "k7qzpa-m2xq7ab9zt-1",
+        "rules": [
+         {
+          "from": "2026-11-01",
+          "rule": {
+           "every": "month",
+           "days": [
+            10
+           ]
+          },
+          "at": "2026-11-20T09:00:00.000+09:00",
+          "by": "k7qzpa"
+         }
+        ],
+        "steps": [
+         {
+          "from": "2026-11-01",
+          "amount": 250000,
+          "at": "2026-11-20T09:00:00.000+09:00",
+          "by": "k7qzpa"
+         }
+        ],
+        "told": "2026-11-20T09:00:00.000+09:00",
+        "at": "2026-11-20T09:00:00.000+09:00",
+        "by": "k7qzpa"
+       }
+      ],
+      "events": [
+       {
+        "id": "k7qzpa-m2xq7ab9zt-3",
+        "k": "open",
+        "acct": "k7qzpa-m2xq7ab9zt-1",
+        "date": "2026-11-20",
+        "a": 400000,
+        "told": "2026-11-20T09:00:00.000+09:00",
+        "at": "2026-11-20T09:00:00.000+09:00",
+        "by": "k7qzpa"
+       }
+      ]
+     }
+    },
+    "show": [
+     "accounts",
+     "schedules",
+     "events"
+    ],
+    "questions": true
+   },
+   "expected": {
+    "merged": false,
+    "pushed": true,
+    "rev": 6,
+    "copy": {
+     "accounts": [
+      {
+       "id": "k7qzpa-m2xq7ab9zt-1",
+       "kind": "bank",
+       "name": "Bank",
+       "told": "2026-11-20T09:00:00.000+09:00",
+       "at": "2026-11-20T09:00:00.000+09:00",
+       "by": "k7qzpa"
+      }
+     ],
+     "schedules": [
+      {
+       "id": "k7qzpa-m2xq7ab9zt-2",
+       "kind": "income",
+       "name": "Pay",
+       "acct": "k7qzpa-m2xq7ab9zt-1",
+       "rules": [
+        {
+         "from": "2026-11-01",
+         "rule": {
+          "every": "month",
+          "days": [
+           10
+          ]
+         },
+         "at": "2026-11-20T09:00:00.000+09:00",
+         "by": "k7qzpa"
+        }
+       ],
+       "steps": [
+        {
+         "from": "2026-11-01",
+         "amount": 250000,
+         "at": "2026-11-20T09:00:00.000+09:00",
+         "by": "k7qzpa"
+        }
+       ],
+       "told": "2026-11-20T09:00:00.000+09:00",
+       "at": "2026-11-20T09:00:00.000+09:00",
+       "by": "k7qzpa"
+      }
+     ],
+     "events": [
+      {
+       "id": "k7qzpa-m2xq7ab9zt-3",
+       "k": "open",
+       "acct": "k7qzpa-m2xq7ab9zt-1",
+       "date": "2026-11-20",
+       "a": 400000,
+       "told": "2026-11-20T09:00:00.000+09:00",
+       "at": "2026-11-20T09:00:00.000+09:00",
+       "by": "k7qzpa"
+      }
+     ]
+    },
+    "questions": [
+     {
+      "q": "which",
+      "of": "copy",
+      "kept": "kept:copy"
+     }
+    ]
+   },
+   "why": "The desktop has its own data and no `sync.base`; the cloud holds the phone's copy. Joining them would make two banks, two pay schedules and two openings (800,000 instead of 400,000). AW2: it asks which whole copy to keep; the cloud's copy shows meanwhile (one bank, one pay, 400,000), and both whole copies wait in `keptVersions` (`kept:copy`), written to the cloud so either device can answer.",
+   "decisions": [
+    "AW2",
+    "AQ1"
+   ]
+  },
+  {
+   "id": "sy-65",
+   "question": "sync",
+   "title": "AW6: the e-wallet closed on both devices with two closing amounts: the closing transfer is worked out again from the joined events, not asked",
+   "input": {
+    "base": {
+     "accounts": [
+      {
+       "id": "k7qzpa-m2xq7ab9zt-3",
+       "kind": "ewallet",
+       "name": "E-wallet",
+       "cur": "JPY",
+       "told": "2027-01-04T09:00:00.000+09:00",
+       "at": "2027-01-04T09:00:00.000+09:00",
+       "by": "k7qzpa"
+      }
+     ],
+     "events": [
+      {
+       "id": "k7qzpa-m2xq7ab9zt-201",
+       "k": "open",
+       "date": "2027-01-04",
+       "acct": "k7qzpa-m2xq7ab9zt-3",
+       "a": 10000,
+       "told": "2027-01-04T09:00:00.000+09:00",
+       "at": "2027-01-04T09:00:00.000+09:00",
+       "by": "k7qzpa"
+      },
+      {
+       "id": "k7qzpa-m2xq7ab9zt-202",
+       "k": "spend",
+       "date": "2027-01-06",
+       "acct": "k7qzpa-m2xq7ab9zt-3",
+       "a": 2000,
+       "told": "2027-01-06T12:00:00.000+09:00",
+       "at": "2027-01-06T12:00:00.000+09:00",
+       "by": "k7qzpa"
+      }
+     ]
+    },
+    "mine": {
+     "accounts": [
+      {
+       "id": "k7qzpa-m2xq7ab9zt-3",
+       "kind": "ewallet",
+       "name": "E-wallet",
+       "cur": "JPY",
+       "closed": "2027-01-08",
+       "told": "2027-01-04T09:00:00.000+09:00",
+       "at": "2027-01-08T09:30:00.000+09:00",
+       "by": "k7qzpa"
+      }
+     ],
+     "events": [
+      {
+       "id": "k7qzpa-m2xq7ab9zt-201",
+       "k": "open",
+       "date": "2027-01-04",
+       "acct": "k7qzpa-m2xq7ab9zt-3",
+       "a": 10000,
+       "told": "2027-01-04T09:00:00.000+09:00",
+       "at": "2027-01-04T09:00:00.000+09:00",
+       "by": "k7qzpa"
+      },
+      {
+       "id": "k7qzpa-m2xq7ab9zt-202",
+       "k": "spend",
+       "date": "2027-01-06",
+       "acct": "k7qzpa-m2xq7ab9zt-3",
+       "a": 2000,
+       "told": "2027-01-06T12:00:00.000+09:00",
+       "at": "2027-01-06T12:00:00.000+09:00",
+       "by": "k7qzpa"
+      },
+      {
+       "id": "k7qzpa-m2xq7ab9zt-206",
+       "k": "spend",
+       "date": "2027-01-08",
+       "acct": "k7qzpa-m2xq7ab9zt-3",
+       "a": 700,
+       "told": "2027-01-08T09:00:00.000+09:00",
+       "at": "2027-01-08T09:00:00.000+09:00",
+       "by": "k7qzpa"
+      },
+      {
+       "id": "close:k7qzpa-m2xq7ab9zt-3",
+       "k": "transfer",
+       "date": "2027-01-08",
+       "acct": "k7qzpa-m2xq7ab9zt-3",
+       "acct2": "k7qzpa-m2xq7ab9zt-2",
+       "a": 7300,
+       "told": "2027-01-08T09:30:00.000+09:00",
+       "at": "2027-01-08T09:30:00.000+09:00",
+       "by": "k7qzpa"
+      }
+     ]
+    },
+    "theirs": {
+     "accounts": [
+      {
+       "id": "k7qzpa-m2xq7ab9zt-3",
+       "kind": "ewallet",
+       "name": "E-wallet",
+       "cur": "JPY",
+       "closed": "2027-01-08",
+       "told": "2027-01-04T09:00:00.000+09:00",
+       "at": "2027-01-08T10:05:00.000+09:00",
+       "by": "w3hmxd"
+      }
+     ],
+     "events": [
+      {
+       "id": "k7qzpa-m2xq7ab9zt-201",
+       "k": "open",
+       "date": "2027-01-04",
+       "acct": "k7qzpa-m2xq7ab9zt-3",
+       "a": 10000,
+       "told": "2027-01-04T09:00:00.000+09:00",
+       "at": "2027-01-04T09:00:00.000+09:00",
+       "by": "k7qzpa"
+      },
+      {
+       "id": "k7qzpa-m2xq7ab9zt-202",
+       "k": "spend",
+       "date": "2027-01-06",
+       "acct": "k7qzpa-m2xq7ab9zt-3",
+       "a": 2000,
+       "told": "2027-01-06T12:00:00.000+09:00",
+       "at": "2027-01-06T12:00:00.000+09:00",
+       "by": "k7qzpa"
+      },
+      {
+       "id": "close:k7qzpa-m2xq7ab9zt-3",
+       "k": "transfer",
+       "date": "2027-01-08",
+       "acct": "k7qzpa-m2xq7ab9zt-3",
+       "acct2": "k7qzpa-m2xq7ab9zt-2",
+       "a": 8000,
+       "told": "2027-01-08T10:05:00.000+09:00",
+       "at": "2027-01-08T10:05:00.000+09:00",
+       "by": "w3hmxd"
+      }
+     ]
+    },
+    "show": [
+     "events"
+    ]
+   },
+   "expected": {
+    "events": [
+     {
+      "id": "k7qzpa-m2xq7ab9zt-201",
+      "k": "open",
+      "date": "2027-01-04",
+      "acct": "k7qzpa-m2xq7ab9zt-3",
+      "a": 10000,
+      "told": "2027-01-04T09:00:00.000+09:00",
+      "at": "2027-01-04T09:00:00.000+09:00",
+      "by": "k7qzpa"
+     },
+     {
+      "id": "k7qzpa-m2xq7ab9zt-202",
+      "k": "spend",
+      "date": "2027-01-06",
+      "acct": "k7qzpa-m2xq7ab9zt-3",
+      "a": 2000,
+      "told": "2027-01-06T12:00:00.000+09:00",
+      "at": "2027-01-06T12:00:00.000+09:00",
+      "by": "k7qzpa"
+     },
+     {
+      "id": "k7qzpa-m2xq7ab9zt-206",
+      "k": "spend",
+      "date": "2027-01-08",
+      "acct": "k7qzpa-m2xq7ab9zt-3",
+      "a": 700,
+      "told": "2027-01-08T09:00:00.000+09:00",
+      "at": "2027-01-08T09:00:00.000+09:00",
+      "by": "k7qzpa"
+     },
+     {
+      "id": "close:k7qzpa-m2xq7ab9zt-3",
+      "k": "transfer",
+      "date": "2027-01-08",
+      "acct": "k7qzpa-m2xq7ab9zt-3",
+      "acct2": "k7qzpa-m2xq7ab9zt-2",
+      "a": 7300,
+      "told": "2027-01-08T09:30:00.000+09:00",
+      "at": "2027-01-08T10:05:00.000+09:00",
+      "by": "w3hmxd"
+     }
+    ]
+   },
+   "why": "The phone logged a 700 lunch and closed the e-wallet, moving 7,300 out; the desktop, not knowing the lunch, closed it moving 8,000. Neither figure can be judged by the person; the right one comes from the joined events [AW6]: 10,000 (opening) - 2,000 (6 Jan) - 700 (lunch, 8 Jan) = 7,300. `close:<account>` is written with 7,300, the newer `at` and `by` (the desktop's), the earliest `told`; both versions stay kept for Undo, not asked. The closed account then holds 7,300 - 7,300 = 0: no closing question.",
+   "decisions": [
+    "AW6",
+    "AP1",
+    "P6"
+   ]
+  },
+  {
+   "id": "sy-66",
+   "question": "sync",
+   "title": "AW6: rent renamed on the phone and given a new amount from January on the desktop: asked, with \"keep both\" offered",
+   "input": {
+    "base": {
+     "schedules": [
+      {
+       "id": "k7qzpa-m2xq7ab9zt-44",
+       "kind": "bill",
+       "name": "Rent",
+       "acct": "k7qzpa-m2xq7ab9zt-2",
+       "cur": "JPY",
+       "rules": [
+        {
+         "from": "2026-01-01",
+         "rule": {
+          "every": "month",
+          "days": [
+           27
+          ]
+         },
+         "at": "2026-11-23T09:00:00.000+09:00",
+         "by": "k7qzpa"
+        }
+       ],
+       "steps": [
+        {
+         "from": "2026-01-01",
+         "amount": 80000,
+         "at": "2026-11-23T09:00:00.000+09:00",
+         "by": "k7qzpa"
+        }
+       ],
+       "told": "2026-11-23T09:00:00.000+09:00",
+       "at": "2026-11-23T09:00:00.000+09:00",
+       "by": "k7qzpa"
+      }
+     ]
+    },
+    "mine": {
+     "schedules": [
+      {
+       "id": "k7qzpa-m2xq7ab9zt-44",
+       "kind": "bill",
+       "name": "Flat rent",
+       "acct": "k7qzpa-m2xq7ab9zt-2",
+       "cur": "JPY",
+       "rules": [
+        {
+         "from": "2026-01-01",
+         "rule": {
+          "every": "month",
+          "days": [
+           27
+          ]
+         },
+         "at": "2026-11-23T09:00:00.000+09:00",
+         "by": "k7qzpa"
+        }
+       ],
+       "steps": [
+        {
+         "from": "2026-01-01",
+         "amount": 80000,
+         "at": "2026-11-23T09:00:00.000+09:00",
+         "by": "k7qzpa"
+        }
+       ],
+       "told": "2026-11-23T09:00:00.000+09:00",
+       "at": "2026-11-24T08:00:00.000+09:00",
+       "by": "k7qzpa"
+      }
+     ]
+    },
+    "theirs": {
+     "schedules": [
+      {
+       "id": "k7qzpa-m2xq7ab9zt-44",
+       "kind": "bill",
+       "name": "Rent",
+       "acct": "k7qzpa-m2xq7ab9zt-2",
+       "cur": "JPY",
+       "rules": [
+        {
+         "from": "2026-01-01",
+         "rule": {
+          "every": "month",
+          "days": [
+           27
+          ]
+         },
+         "at": "2026-11-23T09:00:00.000+09:00",
+         "by": "k7qzpa"
+        }
+       ],
+       "steps": [
+        {
+         "from": "2026-01-01",
+         "amount": 80000,
+         "at": "2026-11-23T09:00:00.000+09:00",
+         "by": "k7qzpa"
+        },
+        {
+         "from": "2027-01-01",
+         "amount": 82000,
+         "at": "2026-11-24T20:00:00.000+09:00",
+         "by": "w3hmxd"
+        }
+       ],
+       "told": "2026-11-23T09:00:00.000+09:00",
+       "at": "2026-11-24T20:00:00.000+09:00",
+       "by": "w3hmxd"
+      }
+     ]
+    },
+    "show": [
+     "schedules",
+     "keptVersions"
+    ]
+   },
+   "expected": {
+    "schedules": [
+     {
+      "id": "k7qzpa-m2xq7ab9zt-44",
+      "kind": "bill",
+      "name": "Rent",
+      "acct": "k7qzpa-m2xq7ab9zt-2",
+      "cur": "JPY",
+      "rules": [
+       {
+        "from": "2026-01-01",
+        "rule": {
+         "every": "month",
+         "days": [
+          27
+         ]
+        },
+        "at": "2026-11-23T09:00:00.000+09:00",
+        "by": "k7qzpa"
+       }
+      ],
+      "steps": [
+       {
+        "from": "2026-01-01",
+        "amount": 80000,
+        "at": "2026-11-23T09:00:00.000+09:00",
+        "by": "k7qzpa"
+       },
+       {
+        "from": "2027-01-01",
+        "amount": 82000,
+        "at": "2026-11-24T20:00:00.000+09:00",
+        "by": "w3hmxd"
+       }
+      ],
+      "told": "2026-11-23T09:00:00.000+09:00",
+      "at": "2026-11-24T20:00:00.000+09:00",
+      "by": "w3hmxd"
+     }
+    ],
+    "keptVersions": [
+     {
+      "id": "kept:k7qzpa-m2xq7ab9zt-44",
+      "of": "k7qzpa-m2xq7ab9zt-44",
+      "in": "schedules",
+      "versions": [
+       {
+        "id": "k7qzpa-m2xq7ab9zt-44",
+        "kind": "bill",
+        "name": "Flat rent",
+        "acct": "k7qzpa-m2xq7ab9zt-2",
+        "cur": "JPY",
+        "rules": [
+         {
+          "from": "2026-01-01",
+          "rule": {
+           "every": "month",
+           "days": [
+            27
+           ]
+          },
+          "at": "2026-11-23T09:00:00.000+09:00",
+          "by": "k7qzpa"
+         }
+        ],
+        "steps": [
+         {
+          "from": "2026-01-01",
+          "amount": 80000,
+          "at": "2026-11-23T09:00:00.000+09:00",
+          "by": "k7qzpa"
+         }
+        ],
+        "told": "2026-11-23T09:00:00.000+09:00",
+        "at": "2026-11-24T08:00:00.000+09:00",
+        "by": "k7qzpa"
+       },
+       {
+        "id": "k7qzpa-m2xq7ab9zt-44",
+        "kind": "bill",
+        "name": "Rent",
+        "acct": "k7qzpa-m2xq7ab9zt-2",
+        "cur": "JPY",
+        "rules": [
+         {
+          "from": "2026-01-01",
+          "rule": {
+           "every": "month",
+           "days": [
+            27
+           ]
+          },
+          "at": "2026-11-23T09:00:00.000+09:00",
+          "by": "k7qzpa"
+         }
+        ],
+        "steps": [
+         {
+          "from": "2026-01-01",
+          "amount": 80000,
+          "at": "2026-11-23T09:00:00.000+09:00",
+          "by": "k7qzpa"
+         },
+         {
+          "from": "2027-01-01",
+          "amount": 82000,
+          "at": "2026-11-24T20:00:00.000+09:00",
+          "by": "w3hmxd"
+         }
+        ],
+        "told": "2026-11-23T09:00:00.000+09:00",
+        "at": "2026-11-24T20:00:00.000+09:00",
+        "by": "w3hmxd"
+       }
+      ],
+      "ask": true,
+      "both": {
+       "id": "k7qzpa-m2xq7ab9zt-44",
+       "kind": "bill",
+       "name": "Flat rent",
+       "acct": "k7qzpa-m2xq7ab9zt-2",
+       "cur": "JPY",
+       "rules": [
+        {
+         "from": "2026-01-01",
+         "rule": {
+          "every": "month",
+          "days": [
+           27
+          ]
+         },
+         "at": "2026-11-23T09:00:00.000+09:00",
+         "by": "k7qzpa"
+        }
+       ],
+       "steps": [
+        {
+         "from": "2026-01-01",
+         "amount": 80000,
+         "at": "2026-11-23T09:00:00.000+09:00",
+         "by": "k7qzpa"
+        },
+        {
+         "from": "2027-01-01",
+         "amount": 82000,
+         "at": "2026-11-24T20:00:00.000+09:00",
+         "by": "w3hmxd"
+        }
+       ],
+       "told": "2026-11-23T09:00:00.000+09:00",
+       "at": "2026-11-24T20:00:00.000+09:00",
+       "by": "w3hmxd"
+      },
+      "told": "2026-11-23T09:00:00.000+09:00",
+      "at": "2026-11-24T20:00:00.000+09:00",
+      "by": "w3hmxd"
+     }
+    ]
+   },
+   "why": "One record changed on both devices: asked, the newer shown, both kept [AQ3]. The two changed different fields (the phone `name`, the desktop `steps`, each entry with its own `at` and `by`), so AW6 also offers \"keep both\": the base with each device's changed fields, `Flat rent` with the 82,000 step from January, the newer `at` and `by`.",
+   "decisions": [
+    "AW6",
+    "AQ3"
+   ]
   }
  ],
  "open": [
@@ -8977,11 +10012,6 @@
    "id": "sy-q1",
    "question": "AQ3 names plan and settings records. An event (a ticked pay, a check-in, an import line) changed two different ways on the two devices: is that asked too?",
    "ref_does": "Asks, the same way (sy-09, sy-48): the newer shows and both versions are kept. Events changed on one side, or the same way on both, join with no question."
-  },
-  {
-   "id": "sy-q2",
-   "question": "X8's offer (the day after the settled occurrence) for a yearly, every-N-months or monthsList change can make a second occurrence in the cycle already paid (sy-23: insurance paid 31 May, the offer makes 15 Jun 2027 too). Should the offer for these rules be the day after the old rule's next occurrence instead?",
-   "ref_does": "Offers the day after, and shows the next occurrence that makes (`next`), so the person sees it."
   }
  ]
 }

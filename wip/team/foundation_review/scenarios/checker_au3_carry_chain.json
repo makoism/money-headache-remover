@@ -1,0 +1,1341 @@
+{
+ "life": "checker_au3_carry_chain",
+ "title": "AU3: a part-paid remainder carried on again is counted once (checker seed 1692)",
+ "story": "A life made by the checker's generator (wip/team/checker/life_gen.js, seed 1692), with ordinary ids. Every amount is made up. The hand answers are checker_differences_1.md's, as AU3 decided them.",
+ "currency": "JPY",
+ "window": {
+  "from": "2027-06-29",
+  "to": "2027-10-07"
+ },
+ "main_bank": "4mvnli-m2hqlag4kf-1",
+ "holidays": {
+  "country": "XX",
+  "dates": [
+   {
+    "date": "2027-08-05",
+    "name": "Holiday"
+   },
+   {
+    "date": "2027-08-06",
+    "name": "Holiday"
+   },
+   {
+    "date": "2027-10-28",
+    "name": "Holiday"
+   }
+  ],
+  "bank_closed": []
+ },
+ "accounts": [
+  {
+   "id": "4mvnli-m2hqlag4kf-1",
+   "name": "Main bank",
+   "kind": "bank",
+   "currency": "JPY",
+   "minimum": 50000,
+   "opening": {
+    "date": "2027-06-29",
+    "amount": 378000
+   }
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-2",
+   "name": "E-wallet",
+   "kind": "ewallet",
+   "currency": "JPY",
+   "minimum": 0,
+   "opening": {
+    "date": "2027-06-29",
+    "amount": 12000
+   }
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-3",
+   "name": "Cash",
+   "kind": "cash",
+   "currency": "JPY",
+   "minimum": 0,
+   "opening": {
+    "date": "2027-06-29",
+    "amount": 28000
+   }
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-4",
+   "name": "Card 1",
+   "kind": "card",
+   "currency": "JPY",
+   "statement_close_day": 10,
+   "payment": {
+    "day": 2,
+    "months_after_close": 1,
+    "from": "4mvnli-m2hqlag4kf-1",
+    "pays": "in full",
+    "weekend_holiday": "move later"
+   },
+   "opening": {
+    "date": "2027-06-29",
+    "statement": {
+     "closed": "2027-06-10",
+     "paid": "dont_know"
+    },
+    "current": 59000
+   }
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-5",
+   "name": "Card 2",
+   "kind": "card",
+   "currency": "JPY",
+   "statement_close_day": 25,
+   "payment": {
+    "day": 6,
+    "months_after_close": 1,
+    "from": "4mvnli-m2hqlag4kf-1",
+    "pays": "in full",
+    "weekend_holiday": "move later"
+   },
+   "opening": {
+    "date": "2027-06-29",
+    "statement": {
+     "closed": "2027-06-25",
+     "paid": "dont_know"
+    },
+    "current": 46000
+   }
+  }
+ ],
+ "income": [
+  {
+   "id": "4mvnli-m2hqlag4kf-6",
+   "name": "Pay",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "currency": "JPY",
+   "amount": 81000,
+   "schedule": {
+    "frequency": "weekly",
+    "weekday": "Fri"
+   },
+   "weekend_holiday": "move later",
+   "starts_period": true
+  }
+ ],
+ "bills": [
+  {
+   "id": "4mvnli-m2hqlag4kf-7",
+   "name": "Rent",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "currency": "JPY",
+   "amount": 54000,
+   "schedule": {
+    "frequency": "monthly",
+    "day": 5
+   },
+   "weekend_holiday": "move later"
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-8",
+   "name": "Power and water",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "currency": "JPY",
+   "amount": 15000,
+   "schedule": {
+    "frequency": "monthly",
+    "day": 1
+   },
+   "weekend_holiday": "move later"
+  }
+ ],
+ "goals": [],
+ "events": [
+  {
+   "id": "4mvnli-m2hqlag4kf-9",
+   "date": "2027-06-30",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 7600
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-10",
+   "date": "2027-06-30",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-3",
+   "amount": 2500
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-11",
+   "date": "2027-07-01",
+   "kind": "bill_paid",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 15000,
+   "settles": "4mvnli-m2hqlag4kf-8@2027-07-01"
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-12",
+   "date": "2027-07-01",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-4",
+   "amount": 4700
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-13",
+   "date": "2027-07-02",
+   "kind": "check",
+   "account": "4mvnli-m2hqlag4kf-2",
+   "amount": 12138
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-14",
+   "date": "2027-07-02",
+   "kind": "check",
+   "account": "4mvnli-m2hqlag4kf-3",
+   "amount": 24850
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-15",
+   "date": "2027-07-02",
+   "kind": "transfer",
+   "from": "4mvnli-m2hqlag4kf-1",
+   "to": "4mvnli-m2hqlag4kf-2",
+   "amount": 19000
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-16",
+   "date": "2027-07-02",
+   "kind": "card_payment",
+   "from": "4mvnli-m2hqlag4kf-1",
+   "card": "4mvnli-m2hqlag4kf-4",
+   "amount": 36412,
+   "settles": "4mvnli-m2hqlag4kf-4@2027-07-02"
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-17",
+   "date": "2027-07-02",
+   "kind": "pay_in",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 81000,
+   "settles": "4mvnli-m2hqlag4kf-6@2027-07-02"
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-18",
+   "date": "2027-07-02",
+   "kind": "check",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 380988
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-19",
+   "date": "2027-07-02",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-2",
+   "amount": 500
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-20",
+   "date": "2027-07-02",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-5",
+   "amount": 19800
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-21",
+   "date": "2027-07-03",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 4400
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-22",
+   "date": "2027-07-03",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 7700
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-23",
+   "date": "2027-07-04",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 600
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-24",
+   "date": "2027-07-04",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 3000
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-25",
+   "date": "2027-07-05",
+   "kind": "bill_paid",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 54000,
+   "settles": "4mvnli-m2hqlag4kf-7@2027-07-05",
+   "told": "2027-07-06"
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-26",
+   "date": "2027-07-05",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 12000
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-27",
+   "date": "2027-07-05",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 4500
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-28",
+   "date": "2027-07-05",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-3",
+   "amount": 2500
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-29",
+   "date": "2027-07-06",
+   "kind": "card_payment",
+   "from": "4mvnli-m2hqlag4kf-1",
+   "card": "4mvnli-m2hqlag4kf-5",
+   "amount": 46000,
+   "settles": "4mvnli-m2hqlag4kf-5@2027-07-06"
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-30",
+   "date": "2027-07-06",
+   "kind": "transfer",
+   "from": "4mvnli-m2hqlag4kf-1",
+   "to": "4mvnli-m2hqlag4kf-2",
+   "amount": 6000
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-31",
+   "date": "2027-07-08",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 5700
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-32",
+   "date": "2027-07-08",
+   "kind": "transfer",
+   "from": "4mvnli-m2hqlag4kf-1",
+   "to": "4mvnli-m2hqlag4kf-3",
+   "amount": 20000
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-33",
+   "date": "2027-07-09",
+   "kind": "pay_in",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 81000,
+   "settles": "4mvnli-m2hqlag4kf-6@2027-07-09"
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-34",
+   "date": "2027-07-10",
+   "kind": "refund",
+   "account": "4mvnli-m2hqlag4kf-4",
+   "amount": 19000
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-35",
+   "date": "2027-07-11",
+   "kind": "check",
+   "account": "4mvnli-m2hqlag4kf-2",
+   "amount": 36638
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-36",
+   "date": "2027-07-11",
+   "kind": "check",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 296538
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-37",
+   "date": "2027-07-11",
+   "kind": "check",
+   "account": "4mvnli-m2hqlag4kf-3",
+   "amount": 41267
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-38",
+   "date": "2027-07-11",
+   "kind": "transfer",
+   "from": "4mvnli-m2hqlag4kf-1",
+   "to": "4mvnli-m2hqlag4kf-2",
+   "amount": 15000
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-39",
+   "date": "2027-07-12",
+   "kind": "transfer",
+   "from": "4mvnli-m2hqlag4kf-1",
+   "to": "4mvnli-m2hqlag4kf-2",
+   "amount": 8000
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-40",
+   "date": "2027-07-13",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 7600
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-41",
+   "date": "2027-07-13",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 10100
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-42",
+   "date": "2027-07-15",
+   "kind": "pay_in",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 81000,
+   "settles": "4mvnli-m2hqlag4kf-6@2027-07-16"
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-43",
+   "date": "2027-07-15",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-5",
+   "amount": 9700
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-44",
+   "date": "2027-07-17",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-2",
+   "amount": 1300
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-45",
+   "date": "2027-07-18",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-2",
+   "amount": 1500
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-46",
+   "date": "2027-07-20",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 5400
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-47",
+   "date": "2027-07-21",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-4",
+   "amount": 8500
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-48",
+   "date": "2027-07-22",
+   "kind": "transfer",
+   "from": "4mvnli-m2hqlag4kf-1",
+   "to": "4mvnli-m2hqlag4kf-3",
+   "amount": 28000
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-49",
+   "date": "2027-07-22",
+   "kind": "check",
+   "account": "4mvnli-m2hqlag4kf-2",
+   "amount": 56838
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-50",
+   "date": "2027-07-22",
+   "kind": "check",
+   "account": "4mvnli-m2hqlag4kf-3",
+   "amount": 69267
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-51",
+   "date": "2027-07-22",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-4",
+   "amount": 21300
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-52",
+   "date": "2027-07-22",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 4100
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-53",
+   "date": "2027-07-22",
+   "kind": "check",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 292086
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-54",
+   "date": "2027-07-23",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-4",
+   "amount": 22400
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-55",
+   "date": "2027-07-23",
+   "kind": "pay_in",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 81000,
+   "settles": "4mvnli-m2hqlag4kf-6@2027-07-23"
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-56",
+   "date": "2027-07-23",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-4",
+   "amount": 8300
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-57",
+   "date": "2027-07-23",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-4",
+   "amount": 23300,
+   "posted": "2027-07-26",
+   "told": "2027-07-26"
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-58",
+   "date": "2027-07-24",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-5",
+   "amount": 14500,
+   "posted": "2027-07-26",
+   "told": "2027-07-26"
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-59",
+   "date": "2027-07-24",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-3",
+   "amount": 2700
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-60",
+   "date": "2027-07-26",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 5700
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-61",
+   "date": "2027-07-27",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-3",
+   "amount": 3100
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-62",
+   "date": "2027-07-28",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-4",
+   "amount": 25400
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-63",
+   "date": "2027-07-28",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 3200
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-64",
+   "date": "2027-07-29",
+   "kind": "transfer",
+   "from": "4mvnli-m2hqlag4kf-1",
+   "to": "4mvnli-m2hqlag4kf-2",
+   "amount": 15000
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-65",
+   "date": "2027-07-30",
+   "kind": "transfer",
+   "from": "4mvnli-m2hqlag4kf-1",
+   "to": "4mvnli-m2hqlag4kf-3",
+   "amount": 29000
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-66",
+   "date": "2027-07-30",
+   "kind": "pay_in",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 81000,
+   "settles": "4mvnli-m2hqlag4kf-6@2027-07-30"
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-67",
+   "date": "2027-07-31",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-4",
+   "amount": 29900,
+   "posted": "2027-08-02",
+   "told": "2027-08-02"
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-68",
+   "date": "2027-07-31",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-3",
+   "amount": 3800
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-69",
+   "date": "2027-07-31",
+   "kind": "refund",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 8700
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-70",
+   "date": "2027-08-02",
+   "kind": "bill_paid",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 15000,
+   "settles": "4mvnli-m2hqlag4kf-8@2027-08-01"
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-71",
+   "date": "2027-08-02",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-2",
+   "amount": 3300
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-72",
+   "date": "2027-08-03",
+   "kind": "transfer",
+   "from": "4mvnli-m2hqlag4kf-2",
+   "to": "4mvnli-m2hqlag4kf-3",
+   "amount": 5000
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-73",
+   "date": "2027-08-03",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-5",
+   "amount": 11200
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-74",
+   "date": "2027-08-03",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-3",
+   "amount": 3200
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-75",
+   "date": "2027-08-04",
+   "kind": "refund",
+   "account": "4mvnli-m2hqlag4kf-4",
+   "amount": 12200,
+   "posted": "2027-08-04",
+   "told": "2027-08-04"
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-76",
+   "date": "2027-08-04",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 11000
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-77",
+   "date": "2027-08-05",
+   "kind": "refund",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 6100
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-78",
+   "date": "2027-08-06",
+   "kind": "check",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 389986
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-79",
+   "date": "2027-08-07",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 900
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-80",
+   "date": "2027-08-07",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-4",
+   "amount": 27800
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-81",
+   "date": "2027-08-07",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 3900
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-82",
+   "date": "2027-08-07",
+   "kind": "pay_in",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 81000,
+   "settles": "4mvnli-m2hqlag4kf-6@2027-08-06"
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-83",
+   "date": "2027-08-08",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-3",
+   "amount": 2200
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-84",
+   "date": "2027-08-09",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-3",
+   "amount": 400
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-85",
+   "date": "2027-08-09",
+   "kind": "card_payment",
+   "from": "4mvnli-m2hqlag4kf-1",
+   "card": "4mvnli-m2hqlag4kf-5",
+   "amount": 29500,
+   "settles": "4mvnli-m2hqlag4kf-5@2027-08-06"
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-86",
+   "date": "2027-08-09",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-3",
+   "amount": 2700
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-87",
+   "date": "2027-08-09",
+   "kind": "bill_paid",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 54000,
+   "settles": "4mvnli-m2hqlag4kf-7@2027-08-05"
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-88",
+   "date": "2027-08-10",
+   "kind": "transfer",
+   "from": "4mvnli-m2hqlag4kf-1",
+   "to": "4mvnli-m2hqlag4kf-3",
+   "amount": 26000
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-89",
+   "date": "2027-08-10",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 7300
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-90",
+   "date": "2027-08-10",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 1700
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-91",
+   "date": "2027-08-12",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 10000
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-92",
+   "date": "2027-08-12",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-2",
+   "amount": 2900
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-93",
+   "date": "2027-08-12",
+   "kind": "transfer",
+   "from": "4mvnli-m2hqlag4kf-1",
+   "to": "4mvnli-m2hqlag4kf-3",
+   "amount": 18000
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-94",
+   "date": "2027-08-13",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-2",
+   "amount": 1800
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-95",
+   "date": "2027-08-13",
+   "kind": "pay_in",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 81000,
+   "settles": "4mvnli-m2hqlag4kf-6@2027-08-13"
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-96",
+   "date": "2027-08-16",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-4",
+   "amount": 28200
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-97",
+   "date": "2027-08-16",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-3",
+   "amount": 3100
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-98",
+   "date": "2027-08-16",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-5",
+   "amount": 2500
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-99",
+   "date": "2027-08-18",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 11900
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-100",
+   "date": "2027-08-19",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 4300
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-101",
+   "date": "2027-08-19",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-5",
+   "amount": 6000
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-102",
+   "date": "2027-08-19",
+   "kind": "check",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 384486
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-103",
+   "date": "2027-08-19",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-3",
+   "amount": 500
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-104",
+   "date": "2027-08-19",
+   "kind": "check",
+   "account": "4mvnli-m2hqlag4kf-3",
+   "amount": 123855
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-105",
+   "date": "2027-08-20",
+   "kind": "pay_in",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 81000,
+   "settles": "4mvnli-m2hqlag4kf-6@2027-08-20"
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-106",
+   "date": "2027-08-21",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-4",
+   "amount": 20300
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-107",
+   "date": "2027-08-21",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 5400
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-108",
+   "date": "2027-08-23",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 10000
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-109",
+   "date": "2027-08-23",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 5700
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-110",
+   "date": "2027-08-25",
+   "kind": "transfer",
+   "from": "4mvnli-m2hqlag4kf-1",
+   "to": "4mvnli-m2hqlag4kf-2",
+   "amount": 4000
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-111",
+   "date": "2027-08-25",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 5400
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-112",
+   "date": "2027-08-25",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-2",
+   "amount": 300
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-113",
+   "date": "2027-08-25",
+   "kind": "transfer",
+   "from": "4mvnli-m2hqlag4kf-2",
+   "to": "4mvnli-m2hqlag4kf-3",
+   "amount": 25000
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-114",
+   "date": "2027-08-25",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-2",
+   "amount": 4400
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-115",
+   "date": "2027-08-26",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-2",
+   "amount": 2100
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-116",
+   "date": "2027-08-26",
+   "kind": "transfer",
+   "from": "4mvnli-m2hqlag4kf-2",
+   "to": "4mvnli-m2hqlag4kf-3",
+   "amount": 17000
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-117",
+   "date": "2027-08-26",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-2",
+   "amount": 2700
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-118",
+   "date": "2027-08-26",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-3",
+   "amount": 3800
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-119",
+   "date": "2027-08-27",
+   "kind": "pay_in",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 81000,
+   "settles": "4mvnli-m2hqlag4kf-6@2027-08-27"
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-120",
+   "date": "2027-08-27",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-4",
+   "amount": 8400
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-121",
+   "date": "2027-08-28",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 4900
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-122",
+   "date": "2027-08-29",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-3",
+   "amount": 600
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-123",
+   "date": "2027-08-29",
+   "kind": "check",
+   "account": "4mvnli-m2hqlag4kf-2",
+   "amount": 11325
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-124",
+   "date": "2027-08-29",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-4",
+   "amount": 17900
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-125",
+   "date": "2027-08-29",
+   "kind": "check",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 501836
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-126",
+   "date": "2027-08-30",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-3",
+   "amount": 4000
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-127",
+   "date": "2027-08-30",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 11200
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-128",
+   "date": "2027-09-01",
+   "kind": "bill_paid",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 16719,
+   "settles": "4mvnli-m2hqlag4kf-8@2027-09-01"
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-129",
+   "date": "2027-09-02",
+   "kind": "card_payment",
+   "from": "4mvnli-m2hqlag4kf-1",
+   "card": "4mvnli-m2hqlag4kf-4",
+   "amount": 140400,
+   "settles": "4mvnli-m2hqlag4kf-4@2027-09-02"
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-130",
+   "date": "2027-09-03",
+   "kind": "pay_in",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 81000,
+   "settles": "4mvnli-m2hqlag4kf-6@2027-09-03"
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-131",
+   "date": "2027-09-03",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-5",
+   "amount": 26600,
+   "posted": "2027-09-06",
+   "told": "2027-09-06"
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-132",
+   "date": "2027-09-03",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-2",
+   "amount": 3200
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-133",
+   "date": "2027-09-04",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 8200
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-134",
+   "date": "2027-09-04",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 9500
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-135",
+   "date": "2027-09-05",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 9100
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-136",
+   "date": "2027-09-05",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 2600
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-137",
+   "date": "2027-09-06",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-2",
+   "amount": 1500
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-138",
+   "date": "2027-09-06",
+   "kind": "card_payment",
+   "from": "4mvnli-m2hqlag4kf-1",
+   "card": "4mvnli-m2hqlag4kf-5",
+   "amount": 34200,
+   "settles": "4mvnli-m2hqlag4kf-5@2027-09-06"
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-139",
+   "date": "2027-09-06",
+   "kind": "bill_paid",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 54000,
+   "settles": "4mvnli-m2hqlag4kf-7@2027-09-05"
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-140",
+   "date": "2027-09-07",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 8600
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-141",
+   "date": "2027-09-08",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-2",
+   "amount": 3900
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-142",
+   "date": "2027-09-08",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 2600
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-143",
+   "date": "2027-09-09",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-3",
+   "amount": 2900
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-144",
+   "date": "2027-09-09",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 10800
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-145",
+   "date": "2027-09-09",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-5",
+   "amount": 7200
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-146",
+   "date": "2027-09-10",
+   "kind": "pay_in",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 81000,
+   "settles": "4mvnli-m2hqlag4kf-6@2027-09-10"
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-147",
+   "date": "2027-09-12",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-2",
+   "amount": 1300
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-148",
+   "date": "2027-09-12",
+   "kind": "transfer",
+   "from": "4mvnli-m2hqlag4kf-1",
+   "to": "4mvnli-m2hqlag4kf-3",
+   "amount": 12000
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-149",
+   "date": "2027-09-13",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-4",
+   "amount": 19200,
+   "posted": "2027-09-15",
+   "told": "2027-09-15"
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-150",
+   "date": "2027-09-13",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 5600
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-151",
+   "date": "2027-09-13",
+   "kind": "check",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 338317
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-152",
+   "date": "2027-09-13",
+   "kind": "transfer",
+   "from": "4mvnli-m2hqlag4kf-1",
+   "to": "4mvnli-m2hqlag4kf-2",
+   "amount": 12000
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-153",
+   "date": "2027-09-13",
+   "kind": "check",
+   "account": "4mvnli-m2hqlag4kf-3",
+   "amount": 161797
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-154",
+   "date": "2027-09-14",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 6200
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-155",
+   "date": "2027-09-14",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 1500
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-156",
+   "date": "2027-09-15",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 4400
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-157",
+   "date": "2027-09-16",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-4",
+   "amount": 20300,
+   "posted": "2027-09-17",
+   "told": "2027-09-17"
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-158",
+   "date": "2027-09-17",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-4",
+   "amount": 5200
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-159",
+   "date": "2027-09-17",
+   "kind": "pay_in",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 81000,
+   "settles": "4mvnli-m2hqlag4kf-6@2027-09-17"
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-160",
+   "date": "2027-09-18",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 11900
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-161",
+   "date": "2027-09-19",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-5",
+   "amount": 15900
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-162",
+   "date": "2027-09-21",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-5",
+   "amount": 25700
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-163",
+   "date": "2027-09-22",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 4700
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-164",
+   "date": "2027-09-22",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-2",
+   "amount": 3300
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-165",
+   "date": "2027-09-22",
+   "kind": "pay_in",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "amount": 81000,
+   "settles": "4mvnli-m2hqlag4kf-6@2027-09-24"
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-166",
+   "date": "2027-09-23",
+   "kind": "transfer",
+   "from": "4mvnli-m2hqlag4kf-1",
+   "to": "4mvnli-m2hqlag4kf-2",
+   "amount": 17000
+  },
+  {
+   "id": "4mvnli-m2hqlag4kf-167",
+   "date": "2027-09-24",
+   "kind": "spend",
+   "account": "4mvnli-m2hqlag4kf-5",
+   "amount": 18700,
+   "posted": "2027-09-27",
+   "told": "2027-09-27"
+  }
+ ],
+ "asks": [
+  {
+   "id": "cau1692-01",
+   "date": "2027-09-24",
+   "question": "safe_to_spend",
+   "account": "4mvnli-m2hqlag4kf-1",
+   "expected": 231829,
+   "why": "442,617 (Main bank today) - 8,288 (Card 1 2 Aug, on 24 Sep) + 81,000 (Pay 1 Oct) - 15,000 (Power and water 1 Oct) - 89,100 (Card 1 2 Oct, on 4 Oct) - 54,000 (Rent 5 Oct) - 75,400 (Card 2 6 Oct) - 50,000 (minimum) = 231,829",
+   "decisions": [
+    "AU3"
+   ]
+  }
+ ]
+}

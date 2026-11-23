@@ -1,0 +1,191 @@
+{
+ "life": "checker_au7_pay_in_opening",
+ "title": "AU7: a pay inside the opening whose calendar landing is after setup starts its period by the setup day (checker seed 1846)",
+ "story": "A life made by the checker's generator (wip/team/checker/life_gen.js, seed 1846), with ordinary ids. Every amount is made up. The hand answers are checker_differences_1.md's, as AU7 decided them.",
+ "currency": "PHP",
+ "window": {
+  "from": "2027-02-20",
+  "to": "2027-05-31"
+ },
+ "main_bank": "7e8p4d-57u4j0qm7u-1",
+ "holidays": {
+  "country": "XX",
+  "dates": [
+   {
+    "date": "2027-03-23",
+    "name": "Holiday"
+   },
+   {
+    "date": "2027-06-29",
+    "name": "Holiday"
+   },
+   {
+    "date": "2027-07-21",
+    "name": "Holiday"
+   }
+  ],
+  "bank_closed": []
+ },
+ "accounts": [
+  {
+   "id": "7e8p4d-57u4j0qm7u-1",
+   "name": "Main bank",
+   "kind": "bank",
+   "currency": "PHP",
+   "minimum": 200,
+   "opening": {
+    "date": "2027-02-20",
+    "amount": 9980
+   }
+  },
+  {
+   "id": "7e8p4d-57u4j0qm7u-2",
+   "name": "Cash",
+   "kind": "cash",
+   "currency": "PHP",
+   "minimum": 0,
+   "opening": {
+    "date": "2027-02-20",
+    "amount": 480
+   }
+  }
+ ],
+ "income": [
+  {
+   "id": "7e8p4d-57u4j0qm7u-3",
+   "name": "Pay",
+   "account": "7e8p4d-57u4j0qm7u-1",
+   "currency": "PHP",
+   "amount": 3820,
+   "schedule": {
+    "frequency": "monthly",
+    "day": 20
+   },
+   "weekend_holiday": "move later",
+   "starts_period": true
+  },
+  {
+   "id": "7e8p4d-57u4j0qm7u-4",
+   "name": "Side job",
+   "account": "7e8p4d-57u4j0qm7u-1",
+   "currency": "PHP",
+   "amount": 1080,
+   "schedule": {
+    "frequency": "monthly",
+    "day": 10
+   },
+   "weekend_holiday": "none",
+   "starts_period": false
+  }
+ ],
+ "bills": [
+  {
+   "id": "7e8p4d-57u4j0qm7u-5",
+   "name": "Rent",
+   "account": "7e8p4d-57u4j0qm7u-1",
+   "currency": "PHP",
+   "amount": 2200,
+   "schedule": {
+    "frequency": "monthly",
+    "day": 10
+   },
+   "weekend_holiday": "move later"
+  },
+  {
+   "id": "7e8p4d-57u4j0qm7u-6",
+   "name": "Power and water",
+   "account": "7e8p4d-57u4j0qm7u-1",
+   "currency": "PHP",
+   "amount": 140,
+   "schedule": {
+    "frequency": "monthly",
+    "day": 28
+   },
+   "weekend_holiday": "move later"
+  },
+  {
+   "id": "7e8p4d-57u4j0qm7u-7",
+   "name": "Phone",
+   "account": "7e8p4d-57u4j0qm7u-1",
+   "currency": "PHP",
+   "amount": 220,
+   "schedule": {
+    "frequency": "monthly",
+    "day": 1
+   },
+   "weekend_holiday": "none"
+  },
+  {
+   "id": "7e8p4d-57u4j0qm7u-8",
+   "name": "Internet",
+   "account": "7e8p4d-57u4j0qm7u-1",
+   "currency": "PHP",
+   "amount": 100,
+   "schedule": {
+    "frequency": "monthly",
+    "day": 20
+   },
+   "weekend_holiday": "move earlier"
+  },
+  {
+   "id": "7e8p4d-57u4j0qm7u-9",
+   "name": "Gym",
+   "account": "7e8p4d-57u4j0qm7u-1",
+   "currency": "PHP",
+   "amount": 200,
+   "schedule": {
+    "frequency": "monthly",
+    "day": 1
+   },
+   "weekend_holiday": "move earlier"
+  }
+ ],
+ "goals": [],
+ "plan": {
+  "lines": [],
+  "free": {
+   "per": "month",
+   "amount": 1380
+  }
+ },
+ "events": [
+  {
+   "id": "7e8p4d-57u4j0qm7u-10",
+   "date": "2027-02-22",
+   "kind": "spend",
+   "account": "7e8p4d-57u4j0qm7u-2",
+   "amount": 26,
+   "line": "free"
+  },
+  {
+   "id": "7e8p4d-57u4j0qm7u-11",
+   "date": "2027-02-22",
+   "kind": "spend",
+   "account": "7e8p4d-57u4j0qm7u-1",
+   "amount": 38,
+   "line": "free"
+  }
+ ],
+ "asks": [
+  {
+   "id": "cau1846-01",
+   "date": "2027-02-20",
+   "question": "headline",
+   "expected": 1380,
+   "why": "1,380 (Free to spend for the period started by the setup day, nothing spent) = 1,380",
+   "decisions": [
+    "AU7"
+   ]
+  },
+  {
+   "id": "cau1846-02",
+   "date": "2027-02-22",
+   "question": "headline",
+   "expected": 1316,
+   "why": "1,380 (Free to spend this period) - 64 (spent from it by 22 Feb) = 1,316",
+   "decisions": [
+    "AU7"
+   ]
+  }
+ ]
+}

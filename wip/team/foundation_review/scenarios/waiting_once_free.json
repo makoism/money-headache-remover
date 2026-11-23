@@ -1,0 +1,27 @@
+{
+ "life": "waiting_once_free",
+ "title": "AV3: a waiting `once` amount for Free to spend counts on the safe side for it: the smaller",
+ "story": "Set up Mon 4 Jan 2027: the bank holds 300,000, Free to spend 50,000 (typed). Pay of 250,000 on the 25th (moved earlier), seen on Mon 25 Jan. A moved copy left a one-period Free to spend of 30,000 for the period from the 25 Jan pay waiting for add or replace (`pendingMove`, `share`). Every amount is made up.",
+ "currency": "JPY",
+ "window": { "from": "2027-01-04", "to": "2027-01-31" },
+ "holidays": { "country": "none", "dates": [], "bank_closed": [] },
+ "main_bank": "b",
+ "accounts": [
+  { "id": "b", "name": "Bank", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2027-01-04", "amount": 300000, "split": { "free": 50000 } } }
+ ],
+ "income": [
+  { "id": "pay", "name": "Pay", "account": "b", "amount": 250000, "schedule": { "frequency": "monthly", "day": 25 }, "weekend_holiday": "move earlier", "starts_period": true }
+ ],
+ "bills": [],
+ "goals": [],
+ "plan": { "lines": [], "free": { "per": "month", "amount": 50000 } },
+ "pendingMove": [
+  { "id": "pend_free_jan", "waits": "pick", "to": "once", "share": "free", "key": "pay@2027-01-25", "a": 30000, "told": "2027-01-20T10:00:00.000+09:00", "at": "2027-01-20T10:00:00.000+09:00", "by": "phn001" }
+ ],
+ "events": [
+  { "id": "p1", "date": "2027-01-25", "told": "2027-01-25T09:00", "kind": "pay_in", "account": "b", "amount": 250000, "settles": "pay@2027-01-25" }
+ ],
+ "asks": [
+  { "id": "wof-01", "date": "2027-01-26", "question": "headline", "expected": 30000, "why": "30,000 (Free to spend this period: the waiting 30,000 is smaller than the usual 50,000, and for Free to spend the safe side is the smaller [AV3]) = 30,000", "decisions": ["AV3"] }
+ ]
+}

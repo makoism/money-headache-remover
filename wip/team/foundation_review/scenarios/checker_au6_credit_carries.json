@@ -1,0 +1,714 @@
+{
+ "life": "checker_au6_credit_carries",
+ "title": "AU6: a credit statement carries to the next statement (H3), on a card paid two months after its close (checker seed 90)",
+ "story": "A life made by the checker's generator (wip/team/checker/life_gen.js, seed 90), with ordinary ids. Every amount is made up. The hand answers are checker_differences_1.md's, as AU6 decided them.",
+ "currency": "JPY",
+ "window": {
+  "from": "2027-07-04",
+  "to": "2027-10-12"
+ },
+ "main_bank": "gottlt-con9xuwwt9-1",
+ "holidays": {
+  "country": "XX",
+  "dates": [
+   {
+    "date": "2027-07-08",
+    "name": "Holiday"
+   },
+   {
+    "date": "2027-11-19",
+    "name": "Holiday"
+   }
+  ],
+  "bank_closed": []
+ },
+ "accounts": [
+  {
+   "id": "gottlt-con9xuwwt9-1",
+   "name": "Main bank",
+   "kind": "bank",
+   "currency": "JPY",
+   "minimum": 0,
+   "opening": {
+    "date": "2027-07-04",
+    "amount": 734000
+   }
+  },
+  {
+   "id": "gottlt-con9xuwwt9-2",
+   "name": "Cash",
+   "kind": "cash",
+   "currency": "JPY",
+   "minimum": 0,
+   "opening": {
+    "date": "2027-07-04",
+    "amount": 18000
+   }
+  },
+  {
+   "id": "gottlt-con9xuwwt9-3",
+   "name": "Card 1",
+   "kind": "card",
+   "currency": "JPY",
+   "statement_close_day": 10,
+   "payment": {
+    "day": 7,
+    "months_after_close": 2,
+    "from": "gottlt-con9xuwwt9-1",
+    "pays": "in full",
+    "weekend_holiday": "none"
+   },
+   "opening": {
+    "date": "2027-07-04",
+    "current": 2000
+   }
+  },
+  {
+   "id": "gottlt-con9xuwwt9-4",
+   "name": "Card 2",
+   "kind": "card",
+   "currency": "JPY",
+   "statement_close_day": 15,
+   "payment": {
+    "day": 3,
+    "months_after_close": 1,
+    "from": "gottlt-con9xuwwt9-1",
+    "pays": "in full",
+    "weekend_holiday": "move earlier"
+   },
+   "opening": {
+    "date": "2027-07-04",
+    "statement": {
+     "closed": "2027-06-15",
+     "amount": 16000,
+     "paid": true
+    },
+    "current": 31000
+   }
+  }
+ ],
+ "income": [
+  {
+   "id": "gottlt-con9xuwwt9-5",
+   "name": "Pay",
+   "account": "gottlt-con9xuwwt9-1",
+   "currency": "JPY",
+   "amount": 193000,
+   "schedule": {
+    "frequency": "every_n_weeks",
+    "n": 2,
+    "weekday": "Fri",
+    "from": "2027-06-04"
+   },
+   "weekend_holiday": "move later",
+   "starts_period": true
+  },
+  {
+   "id": "gottlt-con9xuwwt9-6",
+   "name": "Side job",
+   "account": "gottlt-con9xuwwt9-1",
+   "currency": "JPY",
+   "amount": 27000,
+   "schedule": {
+    "frequency": "monthly",
+    "day": 30
+   },
+   "weekend_holiday": "none",
+   "starts_period": false
+  }
+ ],
+ "bills": [
+  {
+   "id": "gottlt-con9xuwwt9-7",
+   "name": "Rent",
+   "account": "gottlt-con9xuwwt9-1",
+   "currency": "JPY",
+   "amount": 99000,
+   "schedule": {
+    "frequency": "monthly",
+    "day": 10
+   },
+   "weekend_holiday": "move earlier"
+  },
+  {
+   "id": "gottlt-con9xuwwt9-8",
+   "name": "Power and water",
+   "account": "gottlt-con9xuwwt9-1",
+   "currency": "JPY",
+   "amount": 12000,
+   "schedule": {
+    "frequency": "monthly",
+    "day": 20
+   },
+   "weekend_holiday": "move later"
+  },
+  {
+   "id": "gottlt-con9xuwwt9-9",
+   "name": "Phone",
+   "account": "gottlt-con9xuwwt9-1",
+   "currency": "JPY",
+   "amount": 9000,
+   "schedule": {
+    "frequency": "monthly",
+    "day": 1
+   },
+   "weekend_holiday": "none"
+  }
+ ],
+ "goals": [
+  {
+   "id": "gottlt-con9xuwwt9-10",
+   "name": "Trip",
+   "kept_in": "gottlt-con9xuwwt9-1",
+   "opening": {
+    "date": "2027-07-04",
+    "amount": 37000
+   }
+  }
+ ],
+ "plan": {
+  "lines": [
+   {
+    "id": "gottlt-con9xuwwt9-11",
+    "name": "Food",
+    "per": "month",
+    "amount": 27000
+   }
+  ],
+  "free": {
+   "per": "month",
+   "amount": 110000
+  }
+ },
+ "events": [
+  {
+   "id": "gottlt-con9xuwwt9-12",
+   "date": "2027-07-06",
+   "kind": "refund",
+   "account": "gottlt-con9xuwwt9-3",
+   "amount": 16900,
+   "posted": "2027-07-07",
+   "told": "2027-07-07"
+  },
+  {
+   "id": "gottlt-con9xuwwt9-13",
+   "date": "2027-07-09",
+   "kind": "bill_paid",
+   "account": "gottlt-con9xuwwt9-1",
+   "amount": 99000,
+   "settles": "gottlt-con9xuwwt9-7@2027-07-10"
+  },
+  {
+   "id": "gottlt-con9xuwwt9-14",
+   "date": "2027-07-09",
+   "kind": "spend",
+   "account": "gottlt-con9xuwwt9-1",
+   "amount": 7500,
+   "line": "free"
+  },
+  {
+   "id": "gottlt-con9xuwwt9-15",
+   "date": "2027-07-09",
+   "kind": "spend",
+   "account": "gottlt-con9xuwwt9-1",
+   "amount": 10700,
+   "line": "free"
+  },
+  {
+   "id": "gottlt-con9xuwwt9-16",
+   "date": "2027-07-09",
+   "kind": "spend",
+   "account": "gottlt-con9xuwwt9-1",
+   "amount": 10000,
+   "line": "gottlt-con9xuwwt9-11"
+  },
+  {
+   "id": "gottlt-con9xuwwt9-17",
+   "date": "2027-07-09",
+   "kind": "money_in",
+   "account": "gottlt-con9xuwwt9-1",
+   "amount": 18000
+  },
+  {
+   "id": "gottlt-con9xuwwt9-18",
+   "date": "2027-07-11",
+   "kind": "spend",
+   "account": "gottlt-con9xuwwt9-1",
+   "amount": 10800,
+   "line": "free"
+  },
+  {
+   "id": "gottlt-con9xuwwt9-19",
+   "date": "2027-07-11",
+   "kind": "spend",
+   "account": "gottlt-con9xuwwt9-1",
+   "amount": 3900,
+   "line": "free"
+  },
+  {
+   "id": "gottlt-con9xuwwt9-20",
+   "date": "2027-07-11",
+   "kind": "spend",
+   "account": "gottlt-con9xuwwt9-1",
+   "amount": 1700,
+   "line": "free"
+  },
+  {
+   "id": "gottlt-con9xuwwt9-21",
+   "date": "2027-07-12",
+   "kind": "spend",
+   "account": "gottlt-con9xuwwt9-1",
+   "amount": 6900,
+   "line": "free"
+  },
+  {
+   "id": "gottlt-con9xuwwt9-22",
+   "date": "2027-07-12",
+   "kind": "spend",
+   "account": "gottlt-con9xuwwt9-1",
+   "amount": 7600,
+   "line": "free"
+  },
+  {
+   "id": "gottlt-con9xuwwt9-23",
+   "date": "2027-07-14",
+   "kind": "spend",
+   "account": "gottlt-con9xuwwt9-1",
+   "amount": 1100,
+   "line": "free"
+  },
+  {
+   "id": "gottlt-con9xuwwt9-24",
+   "date": "2027-07-14",
+   "kind": "spend",
+   "account": "gottlt-con9xuwwt9-2",
+   "amount": 2700,
+   "line": "gottlt-con9xuwwt9-11"
+  },
+  {
+   "id": "gottlt-con9xuwwt9-25",
+   "date": "2027-07-14",
+   "kind": "spend",
+   "account": "gottlt-con9xuwwt9-1",
+   "amount": 11200,
+   "line": "gottlt-con9xuwwt9-11"
+  },
+  {
+   "id": "gottlt-con9xuwwt9-26",
+   "date": "2027-07-15",
+   "kind": "money_in",
+   "account": "gottlt-con9xuwwt9-2",
+   "amount": 19000
+  },
+  {
+   "id": "gottlt-con9xuwwt9-27",
+   "date": "2027-07-15",
+   "kind": "check",
+   "account": "gottlt-con9xuwwt9-1",
+   "amount": 582273
+  },
+  {
+   "id": "gottlt-con9xuwwt9-28",
+   "date": "2027-07-16",
+   "kind": "pay_in",
+   "account": "gottlt-con9xuwwt9-1",
+   "amount": 193000,
+   "settles": "gottlt-con9xuwwt9-5@2027-07-16"
+  },
+  {
+   "id": "gottlt-con9xuwwt9-29",
+   "date": "2027-07-18",
+   "kind": "transfer",
+   "from": "gottlt-con9xuwwt9-1",
+   "to": "gottlt-con9xuwwt9-2",
+   "amount": 15000
+  },
+  {
+   "id": "gottlt-con9xuwwt9-30",
+   "date": "2027-07-18",
+   "kind": "spend",
+   "account": "gottlt-con9xuwwt9-2",
+   "amount": 2500,
+   "line": "free"
+  },
+  {
+   "id": "gottlt-con9xuwwt9-31",
+   "date": "2027-07-19",
+   "kind": "spend",
+   "account": "gottlt-con9xuwwt9-1",
+   "amount": 2600,
+   "line": "gottlt-con9xuwwt9-11"
+  },
+  {
+   "id": "gottlt-con9xuwwt9-32",
+   "date": "2027-07-19",
+   "kind": "transfer",
+   "from": "gottlt-con9xuwwt9-1",
+   "to": "gottlt-con9xuwwt9-2",
+   "amount": 25000
+  },
+  {
+   "id": "gottlt-con9xuwwt9-33",
+   "date": "2027-07-20",
+   "kind": "spend",
+   "account": "gottlt-con9xuwwt9-1",
+   "amount": 10500,
+   "line": "free"
+  },
+  {
+   "id": "gottlt-con9xuwwt9-34",
+   "date": "2027-07-20",
+   "kind": "spend",
+   "account": "gottlt-con9xuwwt9-2",
+   "amount": 2400,
+   "line": "gottlt-con9xuwwt9-11"
+  },
+  {
+   "id": "gottlt-con9xuwwt9-35",
+   "date": "2027-07-20",
+   "kind": "bill_paid",
+   "account": "gottlt-con9xuwwt9-1",
+   "amount": 11913,
+   "settles": "gottlt-con9xuwwt9-8@2027-07-20"
+  },
+  {
+   "id": "gottlt-con9xuwwt9-36",
+   "date": "2027-07-20",
+   "kind": "spend",
+   "account": "gottlt-con9xuwwt9-1",
+   "amount": 6800,
+   "line": "gottlt-con9xuwwt9-11"
+  },
+  {
+   "id": "gottlt-con9xuwwt9-37",
+   "date": "2027-07-21",
+   "kind": "spend",
+   "account": "gottlt-con9xuwwt9-1",
+   "amount": 1900,
+   "line": "free"
+  },
+  {
+   "id": "gottlt-con9xuwwt9-38",
+   "date": "2027-07-21",
+   "kind": "spend",
+   "account": "gottlt-con9xuwwt9-3",
+   "amount": 29800,
+   "line": "free",
+   "posted": "2027-07-22",
+   "told": "2027-07-22"
+  },
+  {
+   "id": "gottlt-con9xuwwt9-39",
+   "date": "2027-07-21",
+   "kind": "refund",
+   "account": "gottlt-con9xuwwt9-1",
+   "amount": 7900
+  },
+  {
+   "id": "gottlt-con9xuwwt9-40",
+   "date": "2027-07-22",
+   "kind": "set_aside",
+   "account": "gottlt-con9xuwwt9-1",
+   "goal": "gottlt-con9xuwwt9-10",
+   "amount": 18000
+  },
+  {
+   "id": "gottlt-con9xuwwt9-41",
+   "date": "2027-07-23",
+   "kind": "spend",
+   "account": "gottlt-con9xuwwt9-1",
+   "amount": 9000,
+   "line": "gottlt-con9xuwwt9-11"
+  },
+  {
+   "id": "gottlt-con9xuwwt9-42",
+   "date": "2027-07-24",
+   "kind": "spend",
+   "account": "gottlt-con9xuwwt9-2",
+   "amount": 3300,
+   "line": "free"
+  },
+  {
+   "id": "gottlt-con9xuwwt9-43",
+   "date": "2027-07-25",
+   "kind": "spend",
+   "account": "gottlt-con9xuwwt9-1",
+   "goal": "gottlt-con9xuwwt9-10",
+   "amount": 17000
+  },
+  {
+   "id": "gottlt-con9xuwwt9-44",
+   "date": "2027-07-25",
+   "kind": "spend",
+   "account": "gottlt-con9xuwwt9-2",
+   "amount": 1000,
+   "line": "gottlt-con9xuwwt9-11"
+  },
+  {
+   "id": "gottlt-con9xuwwt9-45",
+   "date": "2027-07-25",
+   "kind": "spend",
+   "account": "gottlt-con9xuwwt9-2",
+   "amount": 600,
+   "line": "free"
+  },
+  {
+   "id": "gottlt-con9xuwwt9-46",
+   "date": "2027-07-25",
+   "kind": "check",
+   "account": "gottlt-con9xuwwt9-1",
+   "amount": 684475
+  },
+  {
+   "id": "gottlt-con9xuwwt9-47",
+   "date": "2027-07-25",
+   "kind": "spend",
+   "account": "gottlt-con9xuwwt9-2",
+   "amount": 2800,
+   "line": "free"
+  },
+  {
+   "id": "gottlt-con9xuwwt9-48",
+   "date": "2027-07-26",
+   "kind": "spend",
+   "account": "gottlt-con9xuwwt9-1",
+   "amount": 4600,
+   "line": "gottlt-con9xuwwt9-11"
+  },
+  {
+   "id": "gottlt-con9xuwwt9-49",
+   "date": "2027-07-27",
+   "kind": "spend",
+   "account": "gottlt-con9xuwwt9-3",
+   "amount": 25600,
+   "line": "free"
+  },
+  {
+   "id": "gottlt-con9xuwwt9-50",
+   "date": "2027-07-28",
+   "kind": "spend",
+   "account": "gottlt-con9xuwwt9-2",
+   "amount": 1500,
+   "line": "gottlt-con9xuwwt9-11"
+  },
+  {
+   "id": "gottlt-con9xuwwt9-51",
+   "date": "2027-07-29",
+   "kind": "spend",
+   "account": "gottlt-con9xuwwt9-3",
+   "amount": 25600,
+   "line": "gottlt-con9xuwwt9-11"
+  },
+  {
+   "id": "gottlt-con9xuwwt9-52",
+   "date": "2027-07-30",
+   "kind": "spend",
+   "account": "gottlt-con9xuwwt9-1",
+   "amount": 4600,
+   "line": "gottlt-con9xuwwt9-11"
+  },
+  {
+   "id": "gottlt-con9xuwwt9-53",
+   "date": "2027-07-30",
+   "kind": "pay_in",
+   "account": "gottlt-con9xuwwt9-1",
+   "amount": 27000,
+   "settles": "gottlt-con9xuwwt9-6@2027-07-30"
+  },
+  {
+   "id": "gottlt-con9xuwwt9-54",
+   "date": "2027-07-30",
+   "kind": "pay_in",
+   "account": "gottlt-con9xuwwt9-1",
+   "amount": 193000,
+   "settles": "gottlt-con9xuwwt9-5@2027-07-30"
+  },
+  {
+   "id": "gottlt-con9xuwwt9-55",
+   "date": "2027-08-01",
+   "kind": "bill_paid",
+   "account": "gottlt-con9xuwwt9-1",
+   "amount": 9000,
+   "settles": "gottlt-con9xuwwt9-9@2027-08-01"
+  },
+  {
+   "id": "gottlt-con9xuwwt9-56",
+   "date": "2027-08-01",
+   "kind": "spend",
+   "account": "gottlt-con9xuwwt9-3",
+   "amount": 16100,
+   "line": "free"
+  },
+  {
+   "id": "gottlt-con9xuwwt9-57",
+   "date": "2027-08-02",
+   "kind": "spend",
+   "account": "gottlt-con9xuwwt9-4",
+   "amount": 5000,
+   "line": "free",
+   "posted": "2027-08-04",
+   "told": "2027-08-04"
+  },
+  {
+   "id": "gottlt-con9xuwwt9-58",
+   "date": "2027-08-02",
+   "kind": "spend",
+   "account": "gottlt-con9xuwwt9-2",
+   "amount": 600,
+   "line": "gottlt-con9xuwwt9-11"
+  },
+  {
+   "id": "gottlt-con9xuwwt9-59",
+   "date": "2027-08-02",
+   "kind": "transfer",
+   "from": "gottlt-con9xuwwt9-1",
+   "to": "gottlt-con9xuwwt9-2",
+   "amount": 5000
+  },
+  {
+   "id": "gottlt-con9xuwwt9-60",
+   "date": "2027-08-03",
+   "kind": "card_payment",
+   "from": "gottlt-con9xuwwt9-1",
+   "card": "gottlt-con9xuwwt9-4",
+   "amount": 31000,
+   "settles": "gottlt-con9xuwwt9-4@2027-08-03"
+  },
+  {
+   "id": "gottlt-con9xuwwt9-61",
+   "date": "2027-08-05",
+   "kind": "check",
+   "account": "gottlt-con9xuwwt9-1",
+   "amount": 827948
+  },
+  {
+   "id": "gottlt-con9xuwwt9-62",
+   "date": "2027-08-05",
+   "kind": "check",
+   "account": "gottlt-con9xuwwt9-2",
+   "amount": 64600
+  },
+  {
+   "id": "gottlt-con9xuwwt9-63",
+   "date": "2027-08-06",
+   "kind": "spend",
+   "account": "gottlt-con9xuwwt9-2",
+   "amount": 2500,
+   "line": "free"
+  },
+  {
+   "id": "gottlt-con9xuwwt9-64",
+   "date": "2027-08-06",
+   "kind": "spend",
+   "account": "gottlt-con9xuwwt9-2",
+   "amount": 300,
+   "line": "gottlt-con9xuwwt9-11"
+  },
+  {
+   "id": "gottlt-con9xuwwt9-65",
+   "date": "2027-08-07",
+   "kind": "spend",
+   "account": "gottlt-con9xuwwt9-1",
+   "amount": 7800,
+   "line": "free"
+  },
+  {
+   "id": "gottlt-con9xuwwt9-66",
+   "date": "2027-08-07",
+   "kind": "spend",
+   "account": "gottlt-con9xuwwt9-4",
+   "amount": 21700,
+   "line": "free"
+  },
+  {
+   "id": "gottlt-con9xuwwt9-67",
+   "date": "2027-08-07",
+   "kind": "set_aside",
+   "account": "gottlt-con9xuwwt9-1",
+   "goal": "gottlt-con9xuwwt9-10",
+   "amount": 6000
+  },
+  {
+   "id": "gottlt-con9xuwwt9-68",
+   "date": "2027-08-07",
+   "kind": "spend",
+   "account": "gottlt-con9xuwwt9-1",
+   "amount": 11300,
+   "line": "gottlt-con9xuwwt9-11"
+  },
+  {
+   "id": "gottlt-con9xuwwt9-69",
+   "date": "2027-08-09",
+   "kind": "spend",
+   "account": "gottlt-con9xuwwt9-2",
+   "amount": 3300,
+   "line": "free"
+  },
+  {
+   "id": "gottlt-con9xuwwt9-70",
+   "date": "2027-08-09",
+   "kind": "spend",
+   "account": "gottlt-con9xuwwt9-1",
+   "amount": 11500,
+   "line": "free"
+  },
+  {
+   "id": "gottlt-con9xuwwt9-71",
+   "date": "2027-08-10",
+   "kind": "spend",
+   "account": "gottlt-con9xuwwt9-3",
+   "amount": 22000,
+   "line": "gottlt-con9xuwwt9-11"
+  },
+  {
+   "id": "gottlt-con9xuwwt9-72",
+   "date": "2027-08-10",
+   "kind": "bill_paid",
+   "account": "gottlt-con9xuwwt9-1",
+   "amount": 99000,
+   "settles": "gottlt-con9xuwwt9-7@2027-08-10"
+  },
+  {
+   "id": "gottlt-con9xuwwt9-73",
+   "date": "2027-08-11",
+   "kind": "spend",
+   "account": "gottlt-con9xuwwt9-1",
+   "goal": "gottlt-con9xuwwt9-10",
+   "amount": 13000
+  },
+  {
+   "id": "gottlt-con9xuwwt9-74",
+   "date": "2027-08-11",
+   "kind": "transfer",
+   "from": "gottlt-con9xuwwt9-1",
+   "to": "gottlt-con9xuwwt9-2",
+   "amount": 29000
+  },
+  {
+   "id": "gottlt-con9xuwwt9-75",
+   "date": "2027-08-12",
+   "kind": "spend",
+   "account": "gottlt-con9xuwwt9-3",
+   "amount": 16300,
+   "line": "gottlt-con9xuwwt9-11"
+  }
+ ],
+ "asks": [
+  {
+   "id": "cau90-01",
+   "date": "2027-08-12",
+   "question": "card_due",
+   "account": "gottlt-con9xuwwt9-3",
+   "expected": {
+    "amount": 104200,
+    "payment_date": "2027-10-07",
+    "statement": "closed",
+    "closed_on": "2027-08-10"
+   },
+   "why": "119,100 (lines in the cycle closed 10 Aug) - 14,900 (the credit of the 10 Jul statement, carried at the next close) = 104,200",
+   "decisions": [
+    "AU6"
+   ]
+  }
+ ]
+}
