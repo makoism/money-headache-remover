@@ -23,6 +23,8 @@
   { "name": "Cloud copy on the page: turn on with a code shown once, I have a code, taken on opening, sent on leaving and at most every 90 s, Send now, the same record changed on two devices asked in Settings with the other kept, refused sends said, turn off saying what is lost", "test": "tests/e3_cloud.js", "passes": true },
   { "name": "Service worker when served: page kept with cache reload, opens offline and after 3 s with no answer, a new build takes over and loads when the page goes to the background, /api/ never cached", "test": "tests/e3_sw.js", "passes": true },
   { "name": "Works as a plain file: first screen offers the made-up numbers, with a day box to step through the days", "test": "tests/e3_file.js", "passes": true },
+  { "name": "Ask, pure: a short summary of the engine's figures (refs, never ids, notes, shops or single spends), the reply checked into steps, a preview from the engine, Apply through act3, Undo all", "test": "tests/ask3_core.test.js", "passes": true },
+  { "name": "Ask on the page: a question box, the line on what is sent and the exact summary, answers in plain words, proposed changes as ticked steps with before and after, Apply through ACT3 with Undo, the relay or the viewer's Claude", "test": "tests/e3_ask.js", "passes": true },
   { "name": "Reminders, pure: check-in days (after pay, mid period) and bill days from the engine's calendar, the calendar file, Google and Outlook links, words only", "test": "tests/remind3.test.js", "passes": true },
   { "name": "Setup, short (setup3): bank today, pay with a second income, cards with a close day or not sure, bills, the minimum; through build_book and the store", "test": "tests/e3_setup.js", "passes": true }
  ]
