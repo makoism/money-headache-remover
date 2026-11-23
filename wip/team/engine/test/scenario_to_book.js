@@ -131,6 +131,7 @@ function convert(sc) {
     // goal money typed with its own date: a move from Waiting into the place on that day
     if (g.opening) opening.push({ id: 'open:' + g.id, k: 'move', place: 'waiting', place2: g.id, a: mn(g.opening.amount, cur(g.kept_in)), date: g.opening.date, told: g.opening.date, grp: 'setup' });
   }
+  const schedCurOf = id => { const x = (sc.income || []).concat(sc.bills || []).find(y => y.id === id); return x ? (x.currency || cur(x.account)) : home; };
   const forBill = {}; for (const g of sc.goals || []) if (g.for_bill) forBill[g.for_bill] = g.id;
 
   // ----- schedules [H2, B8, Q2, Q4, X watch] -----
@@ -157,6 +158,9 @@ function convert(sc) {
       book.schedules.push(x);
     }
   }
+
+  // [AN5] what waits for add or replace, in minor units of its schedule's currency
+  if (sc.pendingMove) book.pendingMove = sc.pendingMove.map(p => Object.assign({}, p, typeof p.a === 'number' && p.schedule ? { a: mn(p.a, schedCurOf(p.schedule)) } : {}));
 
   // ----- the plan [B1, B2, O4, T watch] -----
   if (sc.plan) {

@@ -215,6 +215,8 @@
       for (const d of late) if (!made.has(s.id + '@' + d)) throw new Error(`${s.id}@${d} is settled or named, but a change of ${s.name} from ${dayStr(first)} no longer makes it: a change never starts on or before its latest settled or named occurrence [X8]`);
     }
 
+    const waitingFor = (sid, due) => (book.pendingMove || []).filter(p => p && !p.gone && p.waits === 'pick' && p.to === 'amounts'
+      && p.schedule === sid && p.key === due && typeof p.a === 'number');
     const openDays = Object.keys(acct).filter(id => openEv[id]).map(openDay);
     const earliest = (openDays.length ? Math.min(...openDays) : today) - 70;
     const farEnd = today + LATER_ON_DAYS + 62;
@@ -225,6 +227,9 @@
       const other = kind === 'income' && !!s.cur && s.cur !== cur(s.acct);   // [Q4] pay in another currency
       const fee = kind === 'transfer' && s.fee ? s.fee : 0;                  // [Q2] what each occurrence costs on top
       for (const o of occOf(s, earliest, farEnd)) {
+        // [AN5, AO3] until the person picks add or replace, money out counts on the safe side: the larger of what is
+        // written and each amount waiting for that occurrence; a waiting pay amount adds nothing
+        if (kind !== 'income') for (const w of waitingFor(s.id, dayStr(o.due))) o.amount = Math.max(o.amount || 0, w.a);
         const it = { id: o.id, sid: s.id, kind, acct: s.acct, to: s.acct2, place: s.place, due: o.due, land: o.land, amount: o.amount || 0,
           startsPeriod: !!s.startsPeriod, name: s.name, otherCur: other };
         if (other) it.currency = s.cur;
