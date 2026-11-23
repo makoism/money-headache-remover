@@ -34,6 +34,8 @@
   /* stamp the entries this step added with the record's own `at` and `by` (each entry carries its own) */
   const stampNew = (rec, field) => { const x = rec[field].slice(-1)[0]; x.at = rec.at; x.by = rec.by; return rec; };
   const period = w => { const p = LA.lookahead(w.book, w.today).period; if (!p) bad('Your plan needs a pay day first'); return p; };
+  /* [slice 6, B4] with no fixed pay there are no pay periods: lines and Free to spend are each month, by the day */
+  const noPay = w => !LA.lookahead(w.book, w.today).period;
   const sameName = (list, name, id) => { if (list.some(x => live(x) && x.id !== id && String(x.name).toLowerCase() === name.toLowerCase())) bad('There is already one called ' + name); };
 
   /* ---- budget lines and Free to spend ---- */
@@ -41,13 +43,19 @@
     const name = nameOk(x.name), a = amountOk(x.amount, 'an amount');
     sameName(A3.listOf(w.book, 'budgets'), name);
     if (name.toLowerCase() === 'free to spend') bad('Free to spend is already in your plan. Change its amount instead');
-    const id = w.add('budgets', { name, place: 'bills', cur: home(w), per: 'pay', from: w.today, steps: [{ from: null, amount: a }] });
+    const id = w.add('budgets', { name, place: 'bills', cur: home(w), per: noPay(w) ? 'month' : 'pay', from: w.today, steps: [{ from: null, amount: a }] });
     stampNew(find(w, 'budgets', id), 'steps');
     return id;
   }
   /* when: 'now' (this pay period and after), 'next' (from the next pay period), 'once' (this pay period only) */
   function changeLine(w, id, x) {
-    const l = find(w, 'budgets', id), a = x.amount == null || x.amount === 0 ? x.amount : amountOk(x.amount, 'an amount'), p = period(w);
+    const l = find(w, 'budgets', id), a = x.amount == null || x.amount === 0 ? x.amount : amountOk(x.amount, 'an amount');
+    /* [slice 6] no fixed pay: a change counts from today */
+    if (noPay(w)) {
+      if (x.when === 'once') bad('With no pay day, a change counts from today on');
+      x = Object.assign({}, x, { when: 'today' });
+    }
+    const p = x.when === 'today' ? { start: w.today } : period(w);
     const ch = {};
     if (x.name != null && x.name !== l.name) { ch.name = nameOk(x.name); sameName(A3.listOf(w.book, 'budgets'), ch.name, id); }
     /* 'now' is a step from this period's first day: it counts in this period and after [V, BF] */
@@ -56,7 +64,7 @@
       if (!p.startsWith) bad('This pay period has no pay to name it by yet. Change it from the next one');
       ch.once = Object.assign({}, l.once || {}, { [p.startsWith]: { amount: a } });
     }
-    if (a != null && (x.when === 'now' || x.when === 'next')) ch.steps = (l.steps || []).concat([{ from: x.when === 'now' ? p.start : w.today, amount: a }]);
+    if (a != null && (x.when === 'now' || x.when === 'next' || x.when === 'today')) ch.steps = (l.steps || []).concat([{ from: x.when === 'now' || x.when === 'today' ? p.start : w.today, amount: a }]);
     else if (a != null && x.when !== 'once') bad('Pick when the change starts');
     const r = w.edit('budgets', id, ch);
     if (ch.steps) stampNew(r, 'steps');
@@ -81,8 +89,8 @@
       return s.id;
     }
     // 'now': from this period's first day [V]; [BJ2] the first amount too carries its day, never null
-    const from = x.when === 'now' ? period(w).start : w.today;
-    return w.add('shares', { from, cur: home(w), per: { free: 'pay' }, free: a, goals: {} });
+    const none = noPay(w), from = x.when === 'now' && !none ? period(w).start : w.today;
+    return w.add('shares', { from, cur: home(w), per: { free: none ? 'month' : 'pay' }, free: a, goals: {} });
   }
 
   /* ---- bills ---- */

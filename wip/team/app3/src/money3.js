@@ -22,7 +22,7 @@ function screen3(draw) {
 function typed3(text, cur) { const r = SM.parse(text, cur); return r.ok ? r.minor : null; }
 /* '2026-12-10' as '10 Dec', with the year when it is not the shown day's year */
 const day3 = (s, thisYear) => (s ? SN.dayLabel(s, !!thisYear && s.slice(0, 4) !== thisYear) : '');
-const label3 = key => SN.label(key);
+const label3 = (key, ctx) => SN.label(key, ctx);
 /* [S1] a period by its dates; on the day its pay lands and counts (res.period.payToday) it runs "to today's pay", never
    "10 Nov to 10 Dec" beside a safe to spend that already counts that pay */
 const period3 = p => (p.payToday ? SN.periodLabel(p.start, p.end).split(' to ')[0] + ' to today\'s pay' : SN.periodLabel(p.start, p.end));
