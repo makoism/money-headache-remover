@@ -15,7 +15,7 @@
   const node = typeof module === 'object' && module.exports;
   const E = node ? { ids: require('../../engine/ids.js'), units: require('../../engine/units.js'), match: require('../../engine/match.js'),
     lookahead: require('../../engine/lookahead.js'), schedules: require('../../engine/schedules.js') } : root.BurrowEngine;
-  const dep = { cats: root.STMT_CATS, numbers: root.stmtNumbers };
+  const dep = { cats: typeof STMT_CATS !== 'undefined' ? STMT_CATS : null, numbers: root.stmtNumbers };   // eslint-disable-line no-undef
   function use(d) { dep.cats = d.STMT_CATS; dep.numbers = d.stmtNumbers; }
   const TWO = { transfer: 1, repay: 1, borrow: 1, convert: 1 };
 
@@ -24,7 +24,8 @@
 
   const liveAccts = book => (book.accounts || []).filter(a => a && !a.gone && !a.closed);
   const isCard = a => !!a && a.type === 'card';
-  const catOf = (cats, row) => { const c = cats[row.k]; return dep.cats.includes(c) ? c : row.dir === 'in' ? 'other_income' : 'other'; };
+  /* a line's category: the person's or the one the book remembers for the shop (opts.cats), else the reader's, else other */
+  const catOf = (cats, row) => { const c = cats[row.k] || row.cat; return dep.cats.includes(c) ? c : row.dir === 'in' ? 'other_income' : 'other'; };
 
   /* the items the book expects (pay, bills, card payments), from the look ahead on the day: those still to confirm and
      those not seen yet, each with its account and direction */
@@ -142,7 +143,7 @@
     const count = s => all.filter(l => l.status === s).length;
     return { today, lines: all, statements, merchants: Object.values(merchants).sort((x, y) => (y.inA + y.outA) - (x.inA + x.outA)),
       counts: { read: all.length, repeat: count('repeat'), typed: count('typed'), settles: count('settles'), meets: count('meets'), new: count('new') },
-      reads: byRead.map(g => ({ file: g.read.file, acct: g.acct.id, from: g.read.from, to: g.read.to, rows: g.lines.length, notes: g.read.notes || [] })) };
+      reads: byRead.map(g => ({ idx: g.idx, file: g.read.file, acct: g.acct.id, from: g.read.from, to: g.read.to, rows: g.lines.length, notes: g.read.notes || [] })) };
   }
 
   /* the records to add for a plan. opts: { told, grp, skip: { line id: true }, keepStatements (default true) } */
