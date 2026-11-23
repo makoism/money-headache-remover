@@ -1121,6 +1121,9 @@
         bal += steps[i].amount;
         if (firstUnder && payAfter === null && steps[i].pay && steps[i].amount > 0 && steps[i].day > firstUnder.day) payAfter = steps[i].day;
         if (steps[i + 1] && steps[i + 1].day === steps[i].day) continue;   // the end of a day
+        // [QC numbers note 1] under already this morning: how far under is judged at the end of today, with today's
+        // bills and card payments, as every other day is (so a goal's warning and the below-zero one agree)
+        if (firstUnder && firstUnder.day === today && steps[i].day === today && bal < minimum) firstUnder.amount = Math.max(firstUnder.amount, minimum - bal);
         if (bal < low) { low = bal; lowDay = steps[i].day; lowAt = i + 1; }
         if (bal < 0 && firstBelowZero === null) { firstBelowZero = steps[i].day; belowBal = bal; }
         if (bal < minimum && firstUnder === null) firstUnder = { day: steps[i].day, amount: minimum - bal };

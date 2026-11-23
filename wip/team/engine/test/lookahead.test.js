@@ -501,6 +501,16 @@ t('a goal set aside past what the bank can spare: no "below zero", its own warni
   ok(/^Trip's money is 1 more than Main bank can spare on 5 Jan$/.test(w.text) && !/below zero/.test(w.text), w.text);
   eq(r.safeToSpend.headline, 0);   // goals only lower safe to spend
 });
+t('the goal warning and the below-zero warning agree on a day with bills of its own (QC numbers note 1) [BM2]', () => {
+  // Rent 400,000 lands today, 27 Dec. Real money: 359,000 - 400,000 = -41,000 at the end of today. Trip holds 340,000:
+  // before today's rent the bank less Trip and Food is 359,000 - 340,000 - 30,000 = -11,000, but the day ends 411,000
+  // under, so none of Trip's money can be spared today: all 340,000 of it is over, never just the 11,000.
+  const r = run(goalDip(340000, b => { b.schedules[1].steps[0].amount = 400000; }), '2026-12-27');
+  const below = r.warnings.find(x => x.code === 'below_minimum'), g = r.warnings.find(x => x.code === 'set_aside_over');
+  ok(below && g, JSON.stringify(r.warnings));
+  eq([below.day, below.amount], ['2026-12-27', 41000]);
+  eq([g.day, g.amount], ['2026-12-27', 340000]);
+});
 t('a goal the bank can spare: no warning of either kind [BM2]', () => {
   const r = run(goalDip(254000), '2026-12-10');
   eq(r.warnings.filter(w => w.code === 'below_minimum' || w.code === 'set_aside_over'), []);
