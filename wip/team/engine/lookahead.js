@@ -686,7 +686,7 @@
     };
     // the period a day is in, named by the pay that started it: started, else the last pay landing on or before it
     const occOn = (start, day) => (start != null && occByStart[start] ? occByStart[start]
-      : (pays.filter(o => o.land <= day).sort((x, z) => x.land - z.land).pop() || {}).id || null);
+      : (pays.filter(o => o.land <= day && !(day === today && nextPays.includes(o))).sort((x, z) => x.land - z.land).pop() || {}).id || null);   // [AU4, AU5] not a pay still to come
 
     // [AU1] The period running now, converted like every other: from the pay that started it (or the day it started) to
     // the next pay. Its amount for a source by the units rules.
@@ -837,6 +837,21 @@
       return { lines, free };
     }
     const planLeft = planNow();
+
+    // ----- the period in the answer [F8, T1, AU4, AU5; WIRING_PLAN 1.4 step 2] -----
+    // start: the day the period running now started; end: the day before the next period-starting pay lands, or today
+    // while that pay is due or late and not ticked (`waitingForPay`); startsWith: the occurrence of the pay that started it
+    if (periodStream) {
+      const n = nowPeriod();
+      const next = nextPays.slice().sort((x, z) => x.land - z.land)[0];
+      const waiting = !!next && next.land <= today;
+      res.period = {
+        start: n.start === null ? null : dayStr(n.start),
+        end: n.end === null ? null : dayStr(waiting ? today : n.end - 1),
+        startsWith: n.occ, waitingForPay: waiting,
+        lines: (planLeft.lines || []).map(l => ({ id: l.src.id, name: l.name, acct: l.acct, per: l.per, amount: l.amount, left: l.left })),
+        free: planLeft.free ? { acct: planLeft.free.acct, per: planLeft.free.per, amount: planLeft.free.amount, left: planLeft.free.left } : null };
+    } else res.period = null;   // [B4] no fixed pay: no periods
 
     // ----- the horizon [SCHEMA 10.3, B4] -----
     let horizon;

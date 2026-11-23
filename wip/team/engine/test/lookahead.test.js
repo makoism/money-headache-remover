@@ -115,4 +115,32 @@ t('a late pay still counted brings its period\'s lines and Free to spend [AU5, H
   const r = run(withRent(), '2026-12-28');
   eq(r.accounts.bank.lowest, 110000);
 });
+// [WIRING_PLAN 1.4 step 2] the period in the answer: start, end (the day before the next period-starting pay),
+// the pay that started it, and what is left of each plan line and of Free to spend
+const { convert } = require('./scenario_to_book.js');
+const mako = convert(JSON.parse(require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'foundation_review', 'scenarios', 'mako_shape.json'), 'utf8')));
+const makoOn = day => lookahead(mako.book, day, mako.opts).period;
+t("the period: Mako's shape on Mon 23 Nov runs 10 Nov to 9 Dec", () => {
+  const p = makoOn('2026-11-23');
+  eq([p.start, p.end, p.startsWith], ['2026-11-10', '2026-12-09', 'pay_main@2026-11-10']);
+});
+t('the period: on 10 Dec, the pay ticked, 10 Dec to 7 Jan (the January pay lands early on Fri 8 Jan)', () => {
+  const p = makoOn('2026-12-10');
+  eq([p.start, p.end, p.startsWith], ['2026-12-10', '2027-01-07', 'pay_main@2026-12-10']);
+});
+t('the period: the January pay landing early on Fri 8 Jan starts the period that day [F8]', () => {
+  const p = makoOn('2027-01-08');
+  eq([p.start, p.end, p.startsWith], ['2027-01-08', '2027-02-09', 'pay_main@2027-01-10']);
+});
+t('the period carries its plan lines and Free to spend, with what is left of each', () => {
+  const b = base(x => { x.events.push({ id: 's1', k: 'spend', acct: 'bank', date: '2026-12-02', a: 4000, told: '2026-12-02T12:00' + TZ, line: 'food' }); });
+  const p = run(b, '2026-12-03').period;
+  eq(p.lines.map(l => [l.id, l.amount, l.left]), [['food', 30000, 26000]]);
+  eq([p.free.amount, p.free.left], [50000, 50000]);
+  eq([p.start, p.end, p.waitingForPay], ['2026-11-25', '2026-12-24', false]);
+});
+t('the period while its next pay is due and not ticked runs to today and says it waits for the pay [AU4]', () => {
+  const p = run(base(), '2026-12-25').period;
+  eq([p.start, p.end, p.waitingForPay], ['2026-11-25', '2026-12-25', true]);
+});
 done('lookahead');
