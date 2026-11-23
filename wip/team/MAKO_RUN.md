@@ -215,6 +215,9 @@ When the same question came from several reviewers, it is one entry here and the
 - **Visual first ideas.** A bank line over the months on All months; debt as a hole that fills; the chest empty or cracked when Free to spend is over; a zero line on the bar when the bank starts below zero; a cloud with a tick for the cloud copy.
 - **Sources.** `qc_round14/*.md`.
 
+### 1.28 Check with real people before setup ships (from the foundation reviews)
+- "Has your last card statement already left your bank?" With automatic debits (common in Japan), people may say "yes" when they mean "it will come out on the 27th". The app then counts too much as safe to spend until the debit lands. Ask two or three people how they read it.
+
 ## 2. Words and glossary
 
 Your earlier copy pass list still stands: `COPY_QC8_FOR_MAKO.md` has about 40 lines with a rewrite each. Say which ones you want. The questions below are the "one word per thing" choices on top of that.
