@@ -1,8 +1,9 @@
-// Period end (SCHEMA_V3 7.4 and 9; DECISIONS_ROUND2 A7, F8, H8, L, M, N5).
+// Period end (SCHEMA_V3 7.4 and 9; DECISIONS_ROUND2 A7, F8, H8, L, M, N5, O2, O).
 // A plain reference for the engine lane, checked by run_rules.js against rules/period_end.json.
 // Open points name their question in period_end.json.
 'use strict';
 const { dayNum, dayStr, addWorking } = require('./dates');
+const { mergeList, idFor } = require('./merge_ref');
 
 // Has the period ended, its last day, and does the question start with a check-in [A7].
 // [N5] A new period the person started without the pay is saved as an event `{ k: 'periodStart', date }`.
@@ -108,8 +109,47 @@ function leftoversEnds({ ends, answers }) {
     leftovers({ periodTo: e.periodTo, places: e.places, answers: (answers || []).filter(a => a.period === e.periodTo) })));
 }
 
+// [O2] Each answer is saved as `pe:<period last day>:<place>`, so the same answer written on two phones is one
+// record after the merge (newest `at`, earliest `told`). Answers for different places both stay, so the
+// refusal is checked again on the merged answers [L period_end q10]. One answer per place and period: a
+// second answer for the same place on one device would share its id (SCHEMA_V3 section 14 asks how a split
+// answer is saved), so it is refused here rather than guessed.
+function leftoversMerged({ periodTo, places, mine, theirs }) {
+  const named = list => {
+    const seen = new Set();
+    return (list || []).map(a => {
+      const id = idFor({ k: 'pe', periodTo, place: a.place });
+      if (seen.has(id)) throw new Error('two answers for ' + a.place + ' on one device: not decided (section 14)');
+      seen.add(id);
+      return Object.assign({ id }, a);
+    });
+  };
+  const merged = mergeList(named(mine), named(theirs)).filter(a => !a.gone);
+  return leftovers({ periodTo, places, answers: merged });
+}
+
+// [O] An old statement read after the period-end answer: the answer stays (its moves are unchanged). The
+// spending it adds, dated in that period, comes out of the place: what was really left is the left at the
+// answer less that spending. What still waited to decide shrinks first; what the answers gave beyond what
+// was really left is the overspend, shown as "found later" at the next check-in.
+function foundLater({ periodTo, places, answers, later }) {
+  const r = leftovers({ periodTo, places, answers });
+  if (r.refused) return r;
+  const out = { places: {}, moves: r.moves };
+  for (const p of places) {
+    const e = r.places[p.id];
+    if (!e || p.left < 0) continue;
+    const extra = (later || []).filter(x => x.place === p.id).reduce((t, x) => t + x.a, 0);
+    const left = p.left - extra, given = e.decided + e.kept;
+    out.places[p.id] = { left, given, toDecide: Math.max(0, left - given), foundLater: Math.max(0, given - left) };
+  }
+  return out;
+}
+
 function ask(question, input) {
   if (question === 'question_start') return questionStart(input);
+  if (question === 'leftovers_merged') return leftoversMerged(input);
+  if (question === 'found_later') return foundLater(input);
   if (question === 'leftovers') return leftovers(input);
   if (question === 'screen') return screen(input);
   if (question === 'next_period') return nextPeriod(input);
@@ -117,4 +157,4 @@ function ask(question, input) {
   throw new Error('unknown question ' + question);
 }
 
-module.exports = { ask, questionStart, leftovers, screen, nextPeriod, leftoversEnds };
+module.exports = { ask, questionStart, leftovers, screen, nextPeriod, leftoversEnds, leftoversMerged, foundLater };

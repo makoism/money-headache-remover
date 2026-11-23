@@ -1,4 +1,4 @@
-// Merging two copies and the hybrid clock (SCHEMA_V3 0 and 2.3; DECISIONS_ROUND2 D4, H1, H6, L, M, N1, N2).
+// Merging two copies and the hybrid clock (SCHEMA_V3 0 and 2.3; DECISIONS_ROUND2 D4, H1, H6, L, M, N1, N2, O2, O3).
 // A plain reference for the engine lane, checked by run_rules.js against rules/merge.json.
 // Open points name their question in merge.json.
 'use strict';
@@ -24,6 +24,24 @@ function nextAtWarn(now, lastSeen) {
 }
 const nextAt = (now, lastSeen) => nextAtWarn(now, lastSeen).at;
 function newer(a, b) { return ms(a) > ms(b) ? 'a' : ms(b) > ms(a) ? 'b' : 'same'; }
+
+// ---------- ids [section 0, O2, O3] ----------
+// [O2] A record the app writes for a known moment gets an id built from what it is, so two devices writing
+// the same moment make one record and the merge keeps the newest `at`: a settlement `set:<occurrence>`, a
+// self-logged spend `auto:<schedule>@<due>`, a period-end answer `pe:<period last day>:<place>`, a period
+// started without the pay `ps:<date>`.
+function idFor(w) {
+  if (w.k === 'set') return 'set:' + w.s + '@' + w.due;
+  if (w.k === 'auto') return 'auto:' + w.s + '@' + w.due;
+  if (w.k === 'pe') return 'pe:' + w.periodTo + ':' + w.place;
+  if (w.k === 'ps') return 'ps:' + w.date;
+  throw new Error('no built id for ' + w.k);
+}
+// [O3] Every other id is `<device part>-<session part>-<counter>`: the device part 6 characters, the session
+// part 10 random characters (letters and digits) drawn on each page open, the counter from 1. The device
+// part is letters and digits too (the schema's own example is `k7qzpa`).
+const BUILT = /^(set:[a-z0-9_]+@\d{4}-\d{2}-\d{2}|auto:[a-z0-9_]+@\d{4}-\d{2}-\d{2}|pe:\d{4}-\d{2}-\d{2}:[a-z0-9_]+|ps:\d{4}-\d{2}-\d{2})$/;
+const idOk = id => typeof id === 'string' && (/^[a-z0-9]{6}-[a-z0-9]{10}-[1-9]\d*$/.test(id) || BUILT.test(id));
 
 // ---------- merging ----------
 function canon(x) {
@@ -198,9 +216,10 @@ function devices({ devices: devs, copy, steps, show }) {
     }
     const d = st[s.on], at = nextAt(s.now, d.lastSeen), list = d.copy[s.edit.list] || (d.copy[s.edit.list] = []);
     const by = d.id ? { by: d.id } : {};
-    const i = list.findIndex(r => r.id === s.edit.id);
+    const id = s.edit.make ? idFor(s.edit.make) : s.edit.id;   // [O2] a record written for a known moment
+    const i = list.findIndex(r => r.id === id);
     if (i >= 0) list[i] = Object.assign({}, list[i], s.edit.set, by, { at });   // an edit moves `at`, never `told` [H1]
-    else list.push(Object.assign({ id: s.edit.id }, s.edit.set, by, { told: at, at }));   // `told` is set once, when made
+    else list.push(Object.assign({ id }, s.edit.set, by, { told: at, at }));   // `told` is set once, when made
     seen(d, at);
   }
   return st[show.on].copy[show.list].find(r => r.id === show.id);
@@ -217,8 +236,10 @@ function ask(question, input) {
     case 'came_back': return cameBack(input.mine, input.theirs);
     case 'receive': return receive(input.mine, input.theirs, input.lastSeen);
     case 'devices': return devices(input);
+    case 'id_for': return idFor(input);
+    case 'id_ok': return idOk(input.id);
   }
   throw new Error('unknown question ' + question);
 }
 
-module.exports = { ask, nextAt, nextAtWarn, newer, merge, pick, winner, cameBack, holdArriving, receive };
+module.exports = { ask, nextAt, nextAtWarn, newer, merge, mergeList, pick, winner, cameBack, holdArriving, receive, idFor, idOk };

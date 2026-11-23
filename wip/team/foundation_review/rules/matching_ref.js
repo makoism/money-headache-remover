@@ -1,4 +1,4 @@
-// Matching an import to a typed line or an expected item (SCHEMA_V3 6.4; DECISIONS_ROUND2 A6, F4, H2, H9, L, M).
+// Matching an import to a typed line or an expected item (SCHEMA_V3 6.4; DECISIONS_ROUND2 A6, F4, H2, H9, L, M, O1).
 // A plain reference for the engine lane, checked by run_rules.js against rules/matching.json.
 // Every amount is in whole minor units. Where the decisions leave a point open, the line says so and
 // names the open question in matching.json.
@@ -101,6 +101,7 @@ function applyImports(input) {
         lower.t.gone = true;
         lower.t.goneBy = line.src === 'statement' && lower.t.src === 'screenshot' ? imp.id : line.id;
         line.settles = lower.t.settles.slice();
+        if (lower.t.told) line.told = lower.t.told;   // [O1] it keeps the typed line's `told`, so a check that held that line holds it
         lines.push(line); continue;
       }
       // 3. An unsettled expected item it matches is settled by it (6.4, last point), when it lands from 5
@@ -156,6 +157,12 @@ function ask(question, input) {
   if (question === 'not_double_mark') return notDoubleMark(input.lines || [], input.pair);
   const { lines: out, dropped } = applyImports(input);
   if (question === 'import_dropped') return dropped.slice().sort();
+  if (question === 'import_told') {   // [O1] each live imported line's `told`
+    const importIds = new Set([].concat(...(input.imports || []).map(f => f.lines.map(l => l.id))));
+    const told = {};
+    for (const l of out) if (!l.gone && importIds.has(l.id)) told[l.id] = l.told;
+    return told;
+  }
   if (question === 'import_counts') {
     const importIds = new Set([].concat(...(input.imports || []).map(f => f.lines.map(l => l.id))));
     return { goneCount: out.filter(l => l.gone).length, liveImportLines: out.filter(l => !l.gone && importIds.has(l.id)).length };

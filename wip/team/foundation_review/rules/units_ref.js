@@ -1,4 +1,4 @@
-// Units (SCHEMA_V3 0, 3 and 8; DECISIONS_ROUND2 B4, B8, H9, I2, L, M, N3, N4).
+// Units (SCHEMA_V3 0, 3, 8 and 11; DECISIONS_ROUND2 B4, B8, H9, I2, L, M, N3, N4, O6, O).
 // A plain reference for the engine lane, checked by run_rules.js against rules/units.json.
 // Open points name their question in units.json.
 'use strict';
@@ -59,6 +59,7 @@ function interest(balance, apr) {
 // [L units q3]. An every-N-weeks rule is counted over the whole year by its rhythm, back from its first date,
 // in its first year too [L units q5].
 function paysInYear(rule, year) {
+  if (rule.rules) return paysInYearRules(rule.rules, year);
   if (rule.every === 'month') return 12 * rule.days.length;
   if (rule.every === 'weeks') {
     const step = 7 * rule.n, first = dayNum(year + '-01-01'), last = dayNum(year + '-12-31');
@@ -71,6 +72,56 @@ function paysInYear(rule, year) {
   if (rule.every === 'months') return 12 / rule.n;
   throw new Error('no pay count for ' + rule.every);
 }
+// [O] A schedule whose rule changes during the year (`rules: [ { from, rule } ]`, H2): each due date is counted
+// by the rule in force on it. The first rule counts back to 1 Jan by its rhythm (L units q5); a later rule
+// counts from its own `from`.
+function dueDatesIn(rule, year) {
+  const first = dayNum(year + '-01-01'), last = dayNum(year + '-12-31'), out = [];
+  if (rule.every === 'month') {
+    for (let mo = 1; mo <= 12; mo++) for (const d of rule.days) {
+      const end = new Date(Date.UTC(year, mo, 0)).getUTCDate();
+      out.push(dayNum(year + '-' + String(mo).padStart(2, '0') + '-' + String(Math.min(d, end)).padStart(2, '0')));
+    }
+  } else if (rule.every === 'weeks') {
+    const step = 7 * rule.n;
+    let d = dayNum(rule.from);
+    d -= Math.floor((d - first) / step) * step;
+    for (; d <= last; d += step) out.push(d);
+  } else throw new Error('no due dates for ' + rule.every);
+  return out;
+}
+function paysInYearRules(rules, year) {
+  const list = rules.slice().sort((a, b) => (a.from < b.from ? -1 : 1));
+  let count = 0;
+  list.forEach((r, i) => {
+    const from = i === 0 ? -Infinity : dayNum(r.from), until = list[i + 1] ? dayNum(list[i + 1].from) : Infinity;
+    count += dueDatesIn(r.rule, year).filter(d => d >= from && d < until).length;
+  });
+  return count;
+}
+
+// [O6] The home currency is dated: `home.curs: [ { from, cur } ]`. On a day, the latest entry dated on or
+// before it. A change of home currency starts a new entry; history stays in its own currency.
+function homeCurOn(curs, date) {
+  let c = null;
+  for (const h of curs.slice().sort((a, b) => (a.from < b.from ? -1 : 1))) if (h.from <= date) c = h.cur;
+  return c === null ? curs[0].cur : c;
+}
+
+// [O, H9] The move's currency question, read from the raw stored 38.31 text (`frozen3831`). 38.28's clean-up
+// writes ₱ and preset `legacy` into any copy with no currency, so ₱ with preset `legacy` (or with no preset)
+// is asked, as is a copy with no `ui.cur` at all; "$" and "¥" are always asked [H9]. ₱ and € with a recorded
+// choice are pesos and euros.
+const SYMBOLS = { '₱': 'PHP', '€': 'EUR' };
+function moveCurrency({ ui }) {
+  const c = (ui || {}).cur, preset = (ui || {}).preset;
+  if (typeof c !== 'string' || !c) return { cur: null, ask: true };
+  if (DECIMALS[c] !== undefined) return { cur: c, ask: false };
+  if (!SYMBOLS[c]) return { cur: null, ask: true };   // "$", "¥", anything unknown
+  if (c === '₱' && (!preset || preset === 'legacy')) return { cur: null, ask: true };
+  return { cur: SYMBOLS[c], ask: false };
+}
+
 // [L units q3] A period that crosses 31 Dec uses its start year's count.
 function periodCount({ rule, periodFrom }) {
   const year = Number(periodFrom.slice(0, 4));
@@ -185,8 +236,10 @@ function ask(question, input) {
     case 'period_amount': return periodAmount(input);
     case 'by_day': return byDay(input.monthly, input.days);
     case 'by_day_dates': return byDayDates(input);
+    case 'home_cur_on': return homeCurOn(input.curs, input.date);
+    case 'move_currency': return moveCurrency(input);
   }
   throw new Error('unknown question ' + question);
 }
 
-module.exports = { ask, DECIMALS, toMinor, currencyFor, loadAmount, interest, paysInYear, periodCount, perPayList, perPay, payNumber, periodPerPay, periodAmount, weekByDay, weekByDayDates, byDay, byDayDates };
+module.exports = { ask, homeCurOn, moveCurrency, paysInYearRules, DECIMALS, toMinor, currencyFor, loadAmount, interest, paysInYear, periodCount, perPayList, perPay, payNumber, periodPerPay, periodAmount, weekByDay, weekByDayDates, byDay, byDayDates };

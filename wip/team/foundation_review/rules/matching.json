@@ -1,14 +1,15 @@
 {
   "area": "matching",
   "title": "Matching an import to a typed line or an expected item, the vary margin, the source ranking, est within 10%, and the possible double typed on two devices",
-  "written_in": "SCHEMA_V3 6.4 and 12; DECISIONS_ROUND2 A6, F4, H2, H9, L (matching q1 to q13), M1, M2",
+  "written_in": "SCHEMA_V3 6.4 and 12; DECISIONS_ROUND2 A6, F4, H2, H9, L (matching q1 to q13), M1, M2, O1",
   "notes": [
     "Every amount is made up and in whole minor units (yen, so 1 is 1).",
     "Dates: Fri 20 Nov 2026, Sat 21, Sun 22, Mon 23, Tue 24, Wed 25, Thu 26; Thu 10 Dec 2026, Fri 11, Sat 12, Mon 14.",
     "An import line's day is its `posted` date when it has one, else its `date` (6.4). A typed line matches an import line inside its posting window either side of its day: from that day less the account's `postingDays` working days to that day plus them, both ends counted [F4; L matching q3]. On a card, the import line's buy date (`date`) or its posted date may fall in the window, and a card with no `postingDays` of its own has 7 working days [L matching q4, M1]. An expected item is settled by an import landing from 5 working days before its landing day to the end of its posting window after it [L matching q2].",
     "`dir` is `out` (money leaving the account) or `in`. Expected items are named by schedule and unshifted due date, `pay@2026-12-12` [H2]; `lands` is the day after any weekend or holiday move.",
     "Question `import`: the lines after every import is applied, as `gone` (line id to the id that removed it) and `settled` (occurrence name to the live line that settles it). Question `import_counts`: how many lines are gone and how many import lines are live. Question `import_dropped`: the import lines dropped as repeats of an equal-rank line [L matching q9]. Question `possible_doubles`: the pairs of typed lines offered as a possible double; nothing is removed. Question `not_double_mark`: what the answer \"both are real\" writes [L matching q12].",
-    "A statement import carries its own dates, `from` and `to` [L matching q8]; a screenshot read after it that falls inside those dates and matches no statement line is removed too, goneBy the statement import [M2]. An import may carry the `file` it was read from, and each of its lines the `line` it was on; with the type they are the line's `src`. A line's id for repeats is its date, amount, direction and count (the first, second, ... line with that date, amount and direction in its own import) [L matching q9]."
+    "A statement import carries its own dates, `from` and `to` [L matching q8]; a screenshot read after it that falls inside those dates and matches no statement line is removed too, goneBy the statement import [M2]. An import may carry the `file` it was read from, and each of its lines the `line` it was on; with the type they are the line's `src`. A line's id for repeats is its date, amount, direction and count (the first, second, ... line with that date, amount and direction in its own import) [L matching q9].",
+    "Question `import_told` [O1]: each live imported line's `told`. An import that replaces a typed line keeps that line's `told`; one that replaces nothing keeps its own. Whether an unmatched import dated on a check's day or the setup day is inside that figure, and the printed running balance (`src.bal`) deciding the order, are in the reference model (scenarios/import_after_check.json)."
   ],
   "defaults": {
     "accounts": { "bank": { "kind": "bank", "postingDays": 1 }, "card": { "kind": "card" } },
