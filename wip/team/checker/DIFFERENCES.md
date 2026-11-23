@@ -104,4 +104,20 @@ node wip/team/checker/self_test.js                       # the checker on the ha
 node wip/team/checker/fuzz_vs_ref.js --seeds 2000        # every difference, by figure
 node wip/team/checker/fuzz_vs_ref.js --seed 1692 -v      # one life, each difference
 node wip/team/checker/fuzz_vs_ref.js --seeds 2000 --as-ref units,placeFloor,currentMonthly,plannedToday,plannedLate,creditWaits,openingLanding,carryOneStep
+node wip/team/checker/invariants.js --seeds 2000         # the AZ4 invariants, engine and reference
 ```
+
+---
+
+## After AU, AV and AW (23 Nov 2026, JST)
+
+AU decided the eight classes. The checker now follows AU2: a place may go below zero and holds nothing in the walk, so `placeFloor` is off by default and `--as-ref placeFloor` turns the floor back on. It also follows WIRING_PLAN F4 (days to next pay never below zero, a late pay included), counts a spend with no line against Free to spend (AU other points), and refuses `once` keys, `pendingMove` and `keptVersions` because it does not cover them. The reference follows AU1 and AU3 to AU8. Two of the open points are still not coded in either model: 6 (the card payment item's posting window) and the "carrying" mark in 10 (the amount is already the same in both).
+
+| Run | Before | After |
+|---|---|---|
+| `fuzz_vs_ref.js --seeds 2000` | 371 seeds differ | 0 (2,000 seeds, 35,424 asks) |
+| `engine/test/run_against_checker.js --seeds 2000`, no defaults | (passed only with two defaults) | 0 |
+| `self_test.js` | 145 pass, 4 fail | 158 pass, 0 fail |
+| `invariants.js --seeds 2000` (engine and reference) | (new) | every invariant holds |
+
+`ref/run_scenarios.js` runs the checker fuzz on 300 seeds every time; a difference fails it.

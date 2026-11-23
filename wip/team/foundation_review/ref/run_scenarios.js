@@ -105,4 +105,17 @@ console.log(`\n${pass} passed, ${fail} failed, ${pass + fail} asks`);
 // Its own last line says how that run went; either run failing fails this one.
 let realOk = true;
 if (!process.env.REALISTIC_IDS_INNER) { console.log(''); realOk = require('../realistic_ids.js').run(['scenarios']); }
-process.exit(fail || !realOk ? 1 : 0);
+// [AU] The independent checker is a permanent gate: its fuzz against this model (300 seeds here; 2,000 with
+// `node wip/team/checker/fuzz_vs_ref.js --seeds 2000`) runs every time, and any difference fails this run.
+let checkerOk = true;
+if (!process.env.REALISTIC_IDS_INNER && mi < 0) {
+  const fz = path.join(__dirname, '..', '..', 'checker', 'fuzz_vs_ref.js');
+  if (!fs.existsSync(fz)) { console.log('\nchecker: FAILED, no checker at ' + fz); checkerOk = false; }
+  else {
+    const out = require('child_process').spawnSync(process.execPath, [fz, '--seeds', '300'], { encoding: 'utf8' });
+    const lines = String(out.stdout || '').trim().split('\n');
+    console.log('\nchecker against the reference: ' + lines.slice(-2).join('; ') + (out.status ? ' (FAILED)' : ''));
+    checkerOk = out.status === 0;
+  }
+}
+process.exit(fail || !realOk || !checkerOk ? 1 : 0);

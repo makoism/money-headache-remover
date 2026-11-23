@@ -52,7 +52,9 @@ function compare(sc, day) {
     if (!near(o.accounts[id].headroom, U(ra.headroom))) diffs.push({ field: 'safe_to_spend', account: id, mine: o.accounts[id].headroom, ref: U(ra.headroom), mineLowest: o.accounts[id].lowestDay, refLowest: ra.lowestDay });
   }
   if (!near(o.headline, U(r.safeToSpend.headline))) diffs.push({ field: 'headline', mine: o.headline, ref: U(r.safeToSpend.headline), mineFree: o.freeLeft });
-  const od = o.daysToNextPay || {}, rd = r.daysToNextPay || {};
+  // [WIRING_PLAN F4] days to next pay is never below zero; the reference (frozen, AX2) counts a late pay's days back
+  const od = o.daysToNextPay || {}, rd = Object.assign({}, r.daysToNextPay || {});
+  if (typeof rd.days === 'number') rd.days = Math.max(0, rd.days);
   if (od.days !== rd.days || od.next_pay !== rd.next_pay || od.item !== rd.item || !!od.late !== !!rd.late) diffs.push({ field: 'days_to_next_pay', mine: od, ref: { days: rd.days, next_pay: rd.next_pay, item: rd.item, late: rd.late } });
   const key = (x) => x.item + ' ' + x.lands + ' ' + Number(x.amount).toFixed(2);
   const om = o.dueBeforeNextPay.items.map(key).sort(), rm = (r.dueBeforeNextPay.items || []).map((x) => key(Object.assign({}, x, { amount: U(x.amount) }))).sort();

@@ -56,7 +56,8 @@ function oracle(sc, asOfStr, opts) {
   opts = opts || {};
   const units = opts.units || 'written'; // 'written' (SCHEMA_V3 8, units rules) or 'plain' (L q8: 52 / n pays a year)
   // Switches that copy another reading, used only to sort differences into classes (fuzz_vs_ref.js --as-ref):
-  //   placeFloor false: a place may go below nothing (H7 says it never does)
+  //   placeFloor true: a place never goes below nothing (H7 as first written; AU2 and LEDGER_DESIGN L1 let it go below zero,
+  //     holding nothing in the walk, which is the default now)
   //   currentMonthly true: the period running now gets the whole monthly amount (the opening one shared by days left), whatever the pay rhythm
   //     (SCHEMA_V3 8 units and I4: every period gets its own amount, monthly x 12 / the pays in that year)
   //   plannedToday false: no planned spending for a period whose pay is due today and not in yet (SCHEMA.md 10.3 step 2 counts it)
@@ -65,8 +66,9 @@ function oracle(sc, asOfStr, opts) {
   //   carryOneStep true: an unpaid older item is taken out of the statement it was carried into only, not out of a later one
   //     that statement's rest was carried into in turn (I3: nothing is counted twice)
   //   creditWaits true: a credit statement waits for its own payment day before it is carried (H3 carries it to the next statement)
-  const placeFloor = opts.placeFloor !== false, currentMonthly = !!opts.currentMonthly, plannedToday = opts.plannedToday !== false;
+  const placeFloor = opts.placeFloor === true, currentMonthly = !!opts.currentMonthly, plannedToday = opts.plannedToday !== false;
   const plannedLate = opts.plannedLate !== false, creditWaits = !!opts.creditWaits, openingLanding = !!opts.openingLanding, carryOneStep = !!opts.carryOneStep;
+  if (sc.pendingMove || sc.keptVersions) refuse('waiting amounts (pendingMove, keptVersions)');
   const cur = sc.currency;
   const D = decsOf(cur);
   const M = (x) => Math.round(Number(x) * Math.pow(10, D));
@@ -330,11 +332,11 @@ function oracle(sc, asOfStr, opts) {
   let free = null;
   if (plan) {
     for (const l of plan.lines || []) {
-      if (l.per !== 'month' || l.changes || l.currency) refuse('line extras');
+      if (l.per !== 'month' || l.changes || l.currency || l.once) refuse('line extras');
       lines.push({ id: l.id, acct: l.account || mainBank, amt: M(l.amount) });
     }
     if (plan.free) {
-      if (plan.free.per !== 'month' || plan.free.changes) refuse('free extras');
+      if (plan.free.per !== 'month' || plan.free.changes || plan.free.once) refuse('free extras');
       free = { id: 'free', acct: plan.free.account || mainBank, amt: M(plan.free.amount) };
     }
   }
@@ -395,6 +397,8 @@ function oracle(sc, asOfStr, opts) {
   const spent = {};
   const openOf = (e) => accts[e.account || e.from] ? accts[e.account || e.from].open : -Infinity;
   for (const e of evs) {
+    // [AU other points] In a life with a plan, a spend with no line (no goal, settling nothing) counts against Free to spend.
+    if (!e.line && free && e.kind === 'spend' && !e.goal && !e.settles && e.d >= curStart.day && e.d <= T && e.d > openOf(e)) { spent.free = (spent.free || 0) + e.amt; continue; }
     if (!e.line) continue;
     if (e.d < curStart.day || e.d > T) continue;
     if (e.d <= openOf(e)) continue; // before the opening: not in spent so far [SCHEMA_V3 3]
@@ -612,16 +616,19 @@ function oracle(sc, asOfStr, opts) {
     let start = money[id].bank;
     for (const g of Object.values(goals)) if (g.keptIn === id) start -= Math.max(0, g.kept);
     for (const l of lines) if (reserveAcct(l.acct) === id) start -= lineLeft[l.id];
-    let bal = start, lowest = start, lowestDay = T;
+    let bal = start, lowest = start, lowestDay = T, lowAt = 0;
     items.sort((x, y) => x.day - y.day || x.order - y.order);
     let k = 0;
     for (let day = T; day <= H; day++) {
       let any = false;
       while (k < items.length && items[k].day === day) { bal += items[k].amt; k += 1; any = true; }
-      if (any && bal < lowest) { lowest = bal; lowestDay = day; }
+      if (any && bal < lowest) { lowest = bal; lowestDay = day; lowAt = k; }
     }
+    // The checker's own working, for a person to read: what comes off today, then each step to the lowest day.
+    const steps = [{ what: 'bank today', amt: money[id].bank, day: ds(T) }, { what: 'kept and left this period', amt: start - money[id].bank, day: ds(T) }]
+      .concat(items.slice(0, lowAt).map((x) => ({ what: x.what, amt: x.amt, day: ds(x.day) })), [{ what: 'minimum', amt: -a.min, day: '' }]);
     const headroom = lowest - a.min;
-    accountsOut[id] = { bank: out(money[id].bank), asOf: ds(money[id].asOf), headroom: out(headroom), lowest: out(lowest), lowestDay: ds(lowestDay) };
+    accountsOut[id] = { bank: out(money[id].bank), asOf: ds(money[id].asOf), headroom: out(headroom), lowest: out(lowest), lowestDay: ds(lowestDay), steps: steps.map((x) => Object.assign({}, x, { amt: out(x.amt) })) };
     if (a.spendFrom && headroom > 0) sumHead += headroom;
     if (headroom < 0) shortfall += -headroom;
   }
@@ -635,7 +642,8 @@ function oracle(sc, asOfStr, opts) {
   let daysToNextPay = null;
   if (expPays.length) {
     const np = expPays[0];
-    daysToNextPay = { days: np.land - T, next_pay: ds(np.land), item: np.name };
+    // [WIRING_PLAN F4] days to next pay is never below zero, a late pay included (it is shown as late)
+    daysToNextPay = { days: Math.max(0, np.land - T), next_pay: ds(np.land), item: np.name };
     if (np.land < T) daysToNextPay.late = true;
   }
 
