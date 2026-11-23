@@ -523,3 +523,6 @@ BM4. Check your bank writes a card in credit the same way Home does ("in credit 
 
 ## BN. Stop rule for the gates (24 Nov early JST, LESSONS 4)
 On the next frozen-copy gate pair, only two kinds of finding get fixed: a figure Mako would act on that is wrong, or a place where he would be stuck. Everything else goes to app3/FOR_MAKO.md for his run. The build is then ready for him.
+
+## BO. The build is ready for Mako (24 Nov about 05:30 JST)
+The last gate pair under BN: qc-north-star PASS. The one qc-numbers blocker, a card figure changing after a reload, is fixed at its cause (records are read in a fixed order) with reload tests in four time zones. The edit box appending to the old value is fixed in screens/inputs.js, with a test on every amount box. Every gate is green on 5bf4d32: check3 ALL GOOD, engine 18 runs, scenarios exit 0, rules 817. All other notes are in app3/FOR_MAKO.md.
