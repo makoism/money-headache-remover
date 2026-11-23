@@ -101,7 +101,7 @@ function answers3(strict) {
     const bankName = text($('#s3BankName'), 'Main bank');
     const min = $('#s3Min').value.trim() ? need($('#s3Min'), 'Type the amount to keep at least, or leave it blank') : null;
     ans = {
-      day: E3.today(), told: E3.told('00'), currency: cur, country: { JPY: 'JP', PHP: 'PH' }[cur] || 'XX',
+      day: E3.today(), told: E3.told(), currency: cur, country: { JPY: 'JP', PHP: 'PH' }[cur] || 'XX',
       banks: [{ key: 'bank1', name: bankName, amount: need($('#s3Bank'), `Type what ${bankName} shows today`), main: true, min }],
       pays: [], cards: [], bills: [],
     };

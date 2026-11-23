@@ -101,4 +101,30 @@ t('an item ticked after being left at an earlier check-in is dated the day after
   eq(r.accounts[bank].bank, 466000);
   eq(W.landedFrom(b1, { day: '2026-12-14' }, occ), '2026-12-11');
 });
+// The store hands events back sorted by id, not in the order they were written. Records written by one check-in share
+// its `told`, and its figure was read after the ticked items went through: they are inside it whatever the list order,
+// so a reload never counts a ticked pay twice (also for an item dated before the check-in day, BI1).
+t('a check-in counts its ticked pay once whatever order its records come back in', () => {
+  const o = W.checkIn(clone(book0), Object.assign({}, known, { day: DAY, told: DAY + 'T19:30:00.000+09:00', newId,
+    figures: { [bank]: 341000 }, ticked: pick.map(x => x.item), amounts: {} }));
+  const back = clone(o); back.events.reverse();
+  eq(back.events[0].k, 'check');
+  for (const d of [DAY, '2026-12-11']) eq(L.lookahead(W.apply(book0, back), d).accounts[bank].bank, L.lookahead(W.apply(book0, o), d).accounts[bank].bank);
+  eq(L.lookahead(W.apply(book0, back), DAY).accounts[bank].bank, 341000);
+  const b1 = W.apply(book0, W.checkIn(book0, Object.assign({}, known, { day: DAY, told: DAY + 'T19:30+09:00', newId, figures: { [bank]: 286000 }, ticked: [] })));
+  const occ = payMain + '@2026-12-10';
+  const li = L.lookahead(b1, '2026-12-14').checkIn.toConfirm;
+  const late = W.checkIn(b1, { day: '2026-12-14', told: '2026-12-14T19:30:00.000+09:00', newId, figures: { [bank]: 466000 }, ticked: [occ],
+    expected: Object.fromEntries(li.map(x => [x.item, x.amount])), lands: Object.fromEntries(li.map(x => [x.item, x.lands])) });
+  late.events.reverse();
+  eq(late.events[0].k, 'check');
+  const r = L.lookahead(W.apply(b1, late), '2026-12-14');
+  eq(r.accounts[bank].bank, 466000);
+  ok(!r.warnings.some(w => w.code === 'gain_to_ask'));
+  // a statement line read later that replaces the ticked pay takes its moment too, so it stays inside the check
+  const pay = o.events.find(e => e.id === 'set:' + payMain + '@' + DAY);
+  const withLine = W.apply(book0, back);
+  withLine.events.push({ id: 'imp:' + bank + ':zz1', k: 'in', acct: bank, date: DAY, a: pay.a, told: '2026-12-15T09:00:00.000+09:00', src: { type: 'statement', acct: bank } });
+  eq(L.lookahead(withLine, '2026-12-15').accounts[bank].bank, L.lookahead(W.apply(book0, back), '2026-12-15').accounts[bank].bank);
+});
 done('checkin');

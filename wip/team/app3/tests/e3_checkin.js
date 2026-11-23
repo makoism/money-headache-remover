@@ -82,6 +82,11 @@ async function walk(p, bk) {
     await p.reload(); await T.w(400);
     let f = await T.figs(p);
     ck('the check-in is kept in burrow3 after a reload', f.filter(x => x.fig === 'bank')[0].amt === 339000, JSON.stringify(f.filter(x => x.fig === 'bank')));
+    /* the store hands events back sorted by id; the engine keeps a check-in's records inside its check whatever that
+       order (lookahead `sameMoment`), so the page writes them with one `told` and the reload counts each pay once */
+    const kept = await p.evaluate(async () => { const s = await BurrowStore.open(); const r = await s.load(); s.close(); return r.copy.events.filter(e => e.grp && e.date >= '2026-12-10').map(e => ({ k: e.k, told: e.told, grp: e.grp })); });
+    const ck1 = kept.find(e => e.k === 'check');
+    ck('the check and the items it holds are told at one moment, and the reload counts each pay once', !!ck1 && kept.length > 1 && kept.every(e => e.grp === ck1.grp && e.told === ck1.told), JSON.stringify(kept));
     await b.close();
     ({ b, p, errs } = await T.open({ profile: prof }));
     await p.goto(T.URL0 + '?today=' + DAY); await T.w(400);

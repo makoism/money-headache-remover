@@ -147,7 +147,7 @@
         const hit = hits[0].t;
         hit.gone = true; hit.goneBy = imp.id;
         if (hit.settles.length && !imp.settles.length && !imp.untick) imp.settles = hit.settles;
-        imp.key = hit.key; imp.idx = hit.idx;
+        imp.key = hit.key; imp.idx = hit.idx; imp.momentGrp = hit.grp != null ? hit.grp : null;   // and its moment (sameMoment)
       } else imp.unmatched = true;
     }
     // [Q1, S1, U1] An imported line that met no typed line attaches to one side of a two-sided record: a money-out line on
@@ -344,6 +344,10 @@
     const isFigure = e => e.k === 'check';
     // the offset its writer was in, worked out once per record [X9, AN4]
     const zoneMinOf = e => (e.zoneMin != null ? e.zoneMin : (e.zoneMin = D.offsetMin(offsetOf(e.told || '') || zone)));
+    // Told at the same moment as check c: a record written by the same check-in (`grp`) is inside it, since the figure is
+    // read after its ticked items went through, and so is an imported line that replaced one of them; anything else goes
+    // by its place in the list. The list order alone is not kept: the store hands events back sorted by id.
+    const sameMoment = (e, c) => (c.grp != null && (e.momentGrp !== undefined ? e.momentGrp : e.grp) === c.grp ? true : e.idx < c.idx);
     // Is event e inside check c (or the opening) of account id?
     function inside(e, c, id) {
       if (c.opening && notGoneOut(e, id)) return false;   // [AB4]
@@ -356,14 +360,14 @@
       if (d < c.day) {
         if (e.key !== c.key) return e.key < c.key;
         if (e.moved && c.moved && !isFigure(e)) return true;   // [J2] a moved receipt before a moved figure
-        return e.idx < c.idx;
+        return sameMoment(e, c);
       }
       const byBal = balOrder(e, c, id);   // [O1] a printed running balance decides first
       if (byBal !== null) return byBal;
       if (e.dayInside) return true;
       if (e.key !== c.key) return e.key < c.key;
       if (e.moved && c.moved && !isFigure(e)) return true;
-      return e.idx < c.idx;
+      return sameMoment(e, c);
     }
     function balOrder(e, c, id) {
       const fig = c.amount;
@@ -396,7 +400,7 @@
       // [AP1] the closing's final check: the last check dated on the closing day
       const closingCheck = closedOn(id) === null ? null : checks.filter(c => c.day === closedOn(id)).pop() || null;
       for (const c of checks) {
-        const cc = { day: c.day, key: c.key, idx: c.idx, avail: c.avail, moved: c.moved, amount: c.a, closing: c === closingCheck };
+        const cc = { day: c.day, key: c.key, idx: c.idx, avail: c.avail, moved: c.moved, amount: c.a, closing: c === closingCheck, grp: c.grp };
         // [A3] the filler is worked out every time: what the events say minus what the check shows; [I1] an event inside
         // an earlier available check and not yet inside a later current one is added back
         // A record whose every date is two or more days before the check's day was over in every offset when it was read;
