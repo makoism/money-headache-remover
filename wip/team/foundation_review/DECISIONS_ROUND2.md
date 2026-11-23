@@ -189,3 +189,15 @@ W1. Closing the main bank moves every schedule tied to it (pay, bills, transfers
 W2. Card, loan or pay-later payments in another currency are listed apart in their own currency and left out of the totals of "due before next pay", "not seen yet" and the check-in list, as pay in another currency is (S6).
 W3. In version one a goal's own account must be in the home currency; another currency for it is stage 2.
 The reading that an account backing a goal is not spendable by default (SCHEMA_V3) is confirmed and goes into the reference model.
+
+## X. Decisions from confirm_review_1.md (two missing rows, three missing columns, four false covers)
+X1. Moved records get built ids `mv:<kind>:<38.31 id or key>`, so the move run on a phone and a desktop makes one copy of each record after the merge.
+X2. A fee record's id is `fee:<transfer id>`.
+X3. The opening saves `notYet: [occurrence ids]`: pay and bills due from the last pay to the setup day, including the setup day itself, that had not gone out or come in at setup (F20). Setup asks about each, with a pay due that day asked first.
+X4. A check saves the gain question's state (`gain: 'asked' | 'right' | 'wrong'`); a large gain is held, not placed, until answered.
+X5. Every share-out from a limited amount (placing money to place, covering an overspend found later, period-end answers) is checked again after a merge; when two share more than there is, the newer `at` gives way (P3 made general).
+X6. A card with a known close day and no typed last statement: the first close after the opening holds the opening balance plus what came after; statements follow from there.
+X7. Nothing is generated only up to a fixed horizon: close days, occurrences and statements are made as far as any question asks. A test runs ten years out.
+X8. A schedule change can never start on or before its latest settled or named occurrence (settle, `once`, `amounts`, `pe:`, `ps:`); the edit offers the first date after it.
+X9. "Start of day" and "end of day" are in the offset of the device that wrote the record; references follow.
+Watch decided: every 38.31 field and every field of 38.28 and the 25.0 builds gets a move test (field lists taken from those builds' code); SCHEMA_V3 11.1's stale rows are fixed (`ui.sweep` becomes `pe:<occurrence>`, `once[ym]` goes to the first period starting in that month); the move asks where each goal's money is (in the bank or in another account); `amounts`, `redirect` and `pays` get asks; V2's loan item is skipped in the walk.
