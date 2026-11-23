@@ -1,0 +1,69 @@
+{
+  "life": "import_rules",
+  "title": "Imported lines meeting typed lines and expected items in the look ahead (decision L, matching q2 to q6 and q10)",
+  "story": "One bank, set up Thu 19 Nov 2026 with 300,000, and one card paid in full from it (closes on the 15th, paid on the 10th of the next month, moved later). Pay of 250,000 on the 25th, moved earlier; rent of 80,000 on the 27th, moved later. Statement lines arrive after the typed ones. Groceries typed as roughly 1,205 on 20 Nov; the statement says 1,084: 121 apart, more than 10% of the larger (120.5), so they are two spends (L q10). A 3,000 spend typed on Tue 24 Nov is on the statement on Mon 23 Nov, the working day before: the window runs either side of the typed day (L q3). A 4,800 card buy typed on 20 Nov posts on Wed 2 Dec: on a card the buy date matches, and a card's window is 7 (L q4). The 25 Nov pay was ticked at the check-in; its statement line takes over the settle (L q5). Rent was ticked on 27 Nov; its statement line matches the typed line and the rent item, the typed line wins and the settle moves with it (L q6); a typed line and a statement line match by direction, money out with money out. The December pay lands on Mon 21 Dec, four working days early, with nothing typed: the statement line settles it (L q2). Every typed line has no time; imported lines are told when the statement is read. No holidays are listed. Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2026-11-19", "to": "2026-12-31" },
+  "holidays": { "country": "made up, none listed", "dates": [], "bank_closed": [] },
+  "accounts": [
+    { "id": "bank", "name": "Bank", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2026-11-19", "amount": 300000 } },
+    { "id": "card", "name": "Card", "kind": "card", "currency": "JPY", "statement_close_day": 15,
+      "payment": { "day": 10, "months_after_close": 1, "from": "bank", "weekend_holiday": "move later" },
+      "opening": { "date": "2026-11-19", "statement": { "closed": "2026-11-15", "amount": 0, "paid": true }, "current": 0, "note": "No posting window of its own: a card's is 7 (L q4)." } }
+  ],
+  "income": [
+    { "id": "pay", "name": "Pay", "account": "bank", "currency": "JPY", "amount": 250000, "schedule": { "frequency": "monthly", "day": 25 }, "weekend_holiday": "move earlier", "starts_period": true }
+  ],
+  "bills": [
+    { "id": "rent", "name": "Rent", "account": "bank", "amount": 80000, "schedule": { "frequency": "monthly", "day": 27 }, "weekend_holiday": "move later" }
+  ],
+  "goals": [],
+  "landing_dates": {
+    "pay": { "2026-11-25": "2026-11-25", "2026-12-25": "2026-12-25", "2027-01-25": "2027-01-25" },
+    "rent": { "2026-11-27": "2026-11-27", "2026-12-27": "2026-12-28" },
+    "card": { "2026-12-10": "2026-12-10", "2027-01-10": "2027-01-11" }
+  },
+  "events": [
+    { "id": "r01", "date": "2026-11-20", "kind": "spend", "account": "bank", "amount": 1205, "est": true, "note": "groceries, typed as rough" },
+    { "id": "r02", "date": "2026-11-20", "told": "2026-11-21", "kind": "spend", "account": "bank", "amount": 1084, "source": "statement", "posted": "2026-11-20", "note": "a different shop: 121 from the rough 1,205" },
+    { "id": "r03", "date": "2026-11-20", "kind": "spend", "account": "card", "amount": 4800, "note": "card buy, typed" },
+    { "id": "r04", "date": "2026-11-20", "told": "2026-12-02", "kind": "spend", "account": "card", "amount": 4800, "source": "statement", "posted": "2026-12-02", "note": "the same buy on the card statement, posted 12 days later" },
+    { "id": "r05", "date": "2026-11-23", "told": "2026-11-25", "kind": "spend", "account": "bank", "amount": 3000, "source": "statement", "posted": "2026-11-23", "note": "the statement line for the spend typed on 24 Nov" },
+    { "id": "r06", "date": "2026-11-24", "kind": "spend", "account": "bank", "amount": 3000, "note": "typed a day late" },
+    { "id": "r07", "date": "2026-11-25", "kind": "pay_in", "account": "bank", "amount": 250000, "settles": "pay@2026-11-25", "note": "ticked at the check-in" },
+    { "id": "r08", "date": "2026-11-25", "told": "2026-11-27", "kind": "pay_in", "account": "bank", "amount": 250000, "source": "statement", "posted": "2026-11-25", "note": "the pay's statement line" },
+    { "id": "r09", "date": "2026-11-27", "kind": "bill_paid", "account": "bank", "amount": 80000, "settles": "rent@2026-11-27", "note": "rent ticked at the check-in" },
+    { "id": "r10", "date": "2026-11-27", "told": "2026-11-30", "kind": "spend", "account": "bank", "amount": 80000, "source": "statement", "posted": "2026-11-30", "note": "rent's statement line" },
+    { "id": "r11", "date": "2026-12-21", "kind": "pay_in", "account": "bank", "amount": 250000, "source": "statement", "posted": "2026-12-21", "note": "December pay, four working days early, nothing typed" }
+  ],
+  "asks": [
+    { "id": "imp-01", "date": "2026-11-21", "question": "bank_today", "account": "bank", "expected": 297711,
+      "why": "300,000 (opening) - 1,205 (groceries, typed) - 1,084 (statement line, a second spend) = 297,711",
+      "note": "L q10: within 10% means the difference is at most 10% of the larger, compared exactly: 121 x 10 = 1,210 is more than 1,205. Before L the model rounded the margin (120.5 to 121) and the two matched: 298,916." },
+    { "id": "imp-02", "date": "2026-11-25", "question": "bank_today", "account": "bank", "expected": 544711,
+      "why": "297,711 - 3,000 (the 23 Nov statement line, which replaced the line typed on 24 Nov) + 250,000 (pay 25 Nov) = 544,711",
+      "note": "L q3: Tue 24 less one working day is Mon 23, inside the window. Before L the window started on the typed day and the 3,000 counted twice." },
+    { "id": "imp-03", "date": "2026-11-28", "question": "not_seen_yet",
+      "expected": { "items": [], "money_in": 0, "money_out": 0 },
+      "why": { "money_in": "none = 0", "money_out": "none = 0" },
+      "note": "L q5: the pay's statement line replaced the ticked pay and took over its settle, so pay@2026-11-25 is still settled. Before L the settle was lost with the typed line and the pay showed as not seen yet (250,000 in)." },
+    { "id": "imp-04", "date": "2026-12-01", "question": "bank_today", "account": "bank", "expected": 464711,
+      "why": "544,711 + 0 (the pay's statement line replaced the ticked pay, the same 250,000) - 80,000 (rent: the statement line replaced the ticked line) = 464,711",
+      "note": "L q6 and 6.4: the statement's rent line (money out) matches the ticked rent (money out) by direction. Before L lines matched only on the same kind, so rent went out twice: 384,711." },
+    { "id": "imp-05", "date": "2026-12-01", "question": "not_seen_yet",
+      "expected": { "items": [], "money_in": 0, "money_out": 0 },
+      "why": { "money_in": "none = 0", "money_out": "none = 0" },
+      "note": "L q6: the rent's settle moved to the statement line, so rent@2026-11-27 stays settled." },
+    { "id": "imp-06", "date": "2026-12-03", "question": "owed_now", "account": "card", "expected": 4800,
+      "why": "0 (owed at setup) + 4,800 (the card buy; its statement line, posted 2 Dec, replaced it) = 4,800",
+      "note": "L q4: a card line matches by its buy date (20 Nov, the typed day) or its posted date. Before L only the posted date counted and the window was 1 working day, so the buy counted twice: 9,600." },
+    { "id": "imp-07", "date": "2026-12-03", "question": "card_due", "account": "card", "expected": { "amount": 4800, "payment_date": "2027-01-11", "statement": "open" },
+      "why": "4,800 (the buy, on the statement that closes 15 Dec, so far) = 4,800",
+      "note": "Paid Sun 10 Jan, moved later to Mon 11 Jan." },
+    { "id": "imp-08", "date": "2026-12-22", "question": "days_to_next_pay", "expected": { "days": 34, "next_pay": "2027-01-25" },
+      "why": "2027-01-25 - 2026-12-22 = 34",
+      "note": "L q2: the 21 Dec statement line is four working days before the pay's 25 Dec landing (within 5), so it settles pay@2026-12-25 and the next pay is 25 Jan. Before L nothing settled it: 3 days to 25 Dec, and the pay was counted twice." },
+    { "id": "imp-09", "date": "2026-12-22", "question": "bank_today", "account": "bank", "expected": 714711,
+      "why": "464,711 + 250,000 (December pay, landed early on 21 Dec) = 714,711" }
+  ]
+}

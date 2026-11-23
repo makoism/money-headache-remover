@@ -38,9 +38,12 @@ Written 23 Nov 2026 from foundation_review/RECOMMENDATION.md, life_walks_salarie
 | avail_same_day.json | A spend logged after an "available" check on the same day (J3). | JPY | 3 |
 | opening_free_typed.json | An opening split that names Free to spend, the lines shared by days left (J4). | JPY | 3 |
 | two_month_opening.json | A two-month card set up between closes with two statements unpaid, each with its payment day (J5). | JPY | 7 |
+| percent_min_interest.json | A card with close day "not sure", a percent minimum and a balance: the day's interest first, spending between payment days included (K1, K2). | JPY | 8 |
+| moved_bank_now.json | A moved later bank figure with no date or time of its own (38.31 bankNow with no bankNowAt) (K3). | JPY | 3 |
+| import_rules.json | Statement lines meeting typed lines and expected items: within 10% of the larger, either side of the typed day, a card's buy date, settles moving to the import, early pay (L matching q2 to q6, q10). | JPY | 9 |
 | check_specs.js | Checks every file's shape and that every `why` adds up to its expected figure. `node check_specs.js` | | |
 
-Total: 299 asks (the first eight files: 180; the H files: 64; the I files: 34; the J files: 21).
+Total: 319 asks (the first eight files: 180; the H files: 64; the I files: 34; the J files: 21; the K and L files: 20).
 
 ### The review v3 situations and where each one is now
 
@@ -91,6 +94,12 @@ The reviewer's own scripts are in `../ref/review_v3_situations/`. Each situation
 - When `opening.split` names `free`, that figure stands; the rounding leftovers of the lines shared by days left stay in Waiting (J4).
 - A card's `opening.statements` (instead of `opening.statement`) lists several unpaid statements, oldest first, each with `closed`, `amount`, `paid: false` and `payment_day` (the due date; the weekend rule still applies) (J5).
 - `rule_questions` and `alt` may name a decision (like `I5`) whose earlier reading the `alt` keeps, as well as an open question (like `Q14`).
+
+### What the K and L files add to the way a file is written
+- A card with `statement_close_day: null`, `carries: true`, an `apr` and a percent `min_rule`: the next payment day's interest is added first, on everything owed before that day's payment (spending since the last payment day included, K1), and the minimum is worked out on the balance including it (K2).
+- A **moved** `check` with no `date` (and no `told` or `own_time`) is a 38.31 `bankNow` with no `bankNowAt`: it is dated to the day of `moved_copy.saved` and told at it (K3, J2). The checker orders it by that day.
+- An imported line (`source`) meets typed lines by direction (money out: `spend`, `bill_paid`; money in: `pay_in`, `money_in`, `refund`), inside the account's posting window either side of the typed day, by its `posted` date and, on a card, by its buy date too. A card with no `posting_days` of its own has 7 (working days, the open point match-q14 in rules/matching.json). A rough line matches within 10% of the larger amount, compared exactly. The closest date wins, then the earliest `told`. The import takes over the typed line's `settles` (L matching q3 to q7, q10).
+- An imported line that replaces no typed line and settles nothing settles the first unsettled pay or bill of its account and direction with the exact amount (or within the schedule's `vary`, when a file gives one), landing from 5 working days before the item's landing day to the end of its posting window (L matching q1, q2).
 
 ### Questions added for the H files
 - **days_to_next_pay** with `late: true`: the next pay is late but still inside its posting window (H8); `days` is zero or below.

@@ -1,0 +1,33 @@
+{
+  "life": "moved_bank_now",
+  "title": "A moved bank figure typed later with no time of its own (cfg.bankNow with no bankNowAt, decision K3)",
+  "story": "A 38.31 copy, last saved Tue 24 Nov 2026 at 08:00, is moved that morning. Its first bank figure, 300,000, was typed on Sun 22 Nov at 18:00 (bankStart with its bankAt), so the bank opens on 22 Nov, told at 18:00. A later figure, 294,000 (bankNow), has no bankNowAt. K3: it is dated to the copy's last saved day, 24 Nov; J2: a moved bank figure with no time of its own is told at the copy's last save, 08:00. Its receipts: 4,000 on Mon 23 Nov and 1,000 on 24 Nov, both with no time, so each is told at the start of its day (J2) and is inside the 24 Nov figure. In the new app a lunch of 1,500 is logged on 24 Nov at 12:00, after the figure. The 24 Nov figure carries no date in the file: the move dates it. No holidays are listed. Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2026-11-22", "to": "2026-11-30" },
+  "holidays": { "country": "made up, none listed", "dates": [], "bank_closed": [] },
+  "moved_copy": { "from": "38.31", "saved": "2026-11-24T08:00" },
+  "accounts": [
+    { "id": "bank", "name": "Bank", "kind": "bank", "currency": "JPY", "minimum": 0,
+      "opening": { "date": "2026-11-22", "told": "2026-11-22T18:00", "amount": 300000, "note": "38.31 bankStart with its own time (bankAt)" } }
+  ],
+  "income": [],
+  "bills": [],
+  "goals": [],
+  "events": [
+    { "id": "b01", "date": "2026-11-23", "kind": "spend", "account": "bank", "amount": 4000, "moved": true, "note": "receipt, no time: told at the start of 23 Nov" },
+    { "id": "b02", "date": "2026-11-24", "kind": "spend", "account": "bank", "amount": 1000, "moved": true, "note": "receipt, no time: told at the start of 24 Nov, before the figure" },
+    { "id": "b03", "kind": "check", "account": "bank", "amount": 294000, "moved": true, "note": "38.31 bankNow with no bankNowAt: no date here; dated to the copy's last saved day (K3), told at the save (J2)" },
+    { "id": "b04", "date": "2026-11-24", "told": "2026-11-24T12:00", "kind": "spend", "account": "bank", "amount": 1500, "note": "lunch, logged in the new app" }
+  ],
+  "asks": [
+    { "id": "bnow-01", "date": "2026-11-24", "question": "bank_today", "account": "bank", "expected": 292500,
+      "why": "294,000 (the moved bankNow, dated 24 Nov, told at the save 08:00) - 1,500 (lunch, told at 12:00, after it) = 292,500",
+      "note": "The 4,000 (23 Nov) and the 1,000 (24 Nov, no time) are inside the 24 Nov figure. Undated, the figure would have no place in time at all." },
+    { "id": "bnow-02", "date": "2026-11-24", "question": "not_explained", "account": "bank", "expected": 1000,
+      "why": "295,000 (what the events say on 24 Nov before the figure: 300,000 - 4,000 - 1,000) - 294,000 (the moved bankNow) = 1,000",
+      "note": "The filler for the stretch from 23 Nov (the day after the 22 Nov opening) to 24 Nov." },
+    { "id": "bnow-03", "date": "2026-11-23", "question": "bank_today", "account": "bank", "expected": 296000,
+      "why": "300,000 (bankStart, 22 Nov at 18:00) - 4,000 (23 Nov) = 296,000",
+      "note": "The bankNow figure is dated 24 Nov, so on 23 Nov it is not known yet." }
+  ]
+}

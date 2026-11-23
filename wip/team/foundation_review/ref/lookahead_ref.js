@@ -8,8 +8,8 @@
 // seen yet, each card's and loan's next payment, the places' money, total, and
 // the check-in list and fillers.
 //
-// It follows DECISIONS_ROUND2.md sections A, B, F, G, H, I and J (J wins over
-// anything earlier, then I, then H). Where a line below carries a tag like [H3] or [B9], that decision is
+// It follows DECISIONS_ROUND2.md sections A, B, F, G, H, I, J, K and L (L and K win
+// over anything earlier, then J, then I, then H). Where a line below carries a tag like [H3] or [B9], that decision is
 // the reason for it. Plain code, no dependencies, every amount in whole minor
 // units, every date a whole day number (D8). It is a reference for the engine
 // and for tests, never loaded by the app.
@@ -20,7 +20,13 @@ const HORIZON_MIN_DAYS = 45;      // SCHEMA 10.3 step 1
 const LATER_ON_DAYS = 365;        // [B11] warnings look 12 months ahead
 const NO_PAY_DUE_DAYS = 30;       // [F13] "due in the next 30 days"
 const POSTING_WINDOW = 1;         // [F4] working days, unless the account says otherwise
-const ROUGH_MARGIN = 0.10;        // [H9] a rough (est) line matches an import within 10%
+const CARD_POSTING_WINDOW = 7;    // [L matching q4] a card's default (read as working days: rules match-q14)
+const EARLY_SETTLE = 5;           // [L matching q2] an import may settle an expected item up to 5 working days early
+// [H9, L matching q10] A rough (est) line matches an import within 10%: |a - b| <= 10% of the larger, compared
+// exactly in minor units (difference x 10 <= the larger), never with a rounded margin.
+const withinTenth = (a, b) => Math.abs(a - b) * 10 <= Math.max(a, b);
+const OUT_KINDS = { spend: 1, bill_paid: 1 }, IN_KINDS = { pay_in: 1, money_in: 1, refund: 1 };
+const dirOf = e => (OUT_KINDS[e.kind] ? 'out' : IN_KINDS[e.kind] ? 'in' : e.kind);   // 6.4 matches by direction
 const SPEND_TYPES = { bank: 1, cash: 1, ewallet: 1, wallet: 1 };   // spendFrom defaults true (SCHEMA 10.3)
 const OWED_TYPES = { card: 1, loan: 1, paylater: 1 };              // they own their payment day [B5, E6]
 const END_OF_DAY = 'T24';         // an opening typed with no time covers its whole day (README rule 2)
@@ -70,8 +76,9 @@ function makeCalendar(h) {
     return n;
   }
   function addWorking(n, k) { while (k > 0) { n++; if (working(n)) k--; } return n; }
+  function subWorking(n, k) { while (k > 0) { n--; if (working(n)) k--; } return n; }
   function lastWorking(y, m) { let n = dayIn(y, m, 'last'); while (!working(n)) n--; return n; }
-  return { working, shift, addWorking, lastWorking };
+  return { working, shift, addWorking, subWorking, lastWorking };
 }
 
 // ---------- expected items ----------
@@ -157,7 +164,8 @@ function lookahead(sc, asOf, opts = {}) {
   const openDay = id => dayNum(acct[id].opening.date);
   const isOwed = id => !!(acct[id] && OWED_TYPES[acct[id].kind]);
   const m = (x, id) => minor(x, id ? cur(id) : home);
-  const postingDays = id => acct[id].posting_days == null ? POSTING_WINDOW : acct[id].posting_days;
+  // [F4, L matching q4] An account's posting window in working days: its own, else 7 for a card, else 1.
+  const postingDays = id => acct[id].posting_days != null ? acct[id].posting_days : acct[id].kind === 'card' ? CARD_POSTING_WINDOW : POSTING_WINDOW;
   const res = { asOf, at, accounts: {}, cards: {}, owed: {}, places: {}, warnings: [], laterOn: [] };
 
   // ----- events the app knows of [H1, F24] -----
@@ -168,13 +176,16 @@ function lookahead(sc, asOf, opts = {}) {
   // receipt is told at the start of its day (so one dated on or before the moved bank figure's day is
   // inside that figure), and a moved bank figure at the copy's last save. At the same moment, moved
   // receipts come before moved figures (see `inside`).
+  // [K3] A moved bank figure with no date of its own (38.31 `bankNow` with no `bankNowAt`) is dated to the
+  // copy's last saved day, like a `bankStart` with no `bankAt` [H9].
   const isFigure = e => e.kind === 'check' || e.kind === 'card_check';
   const events = [];
   (sc.events || []).forEach((e, i) => {
     if (e.told === null) return;
-    const key = String(e.told || (e.moved ? e.own_time || (isFigure(e) ? sc.moved_copy.saved : e.date) : e.date));
-    if (dayNum(key) > knownTo || dayNum(e.date) > knownTo) return;
-    const x = Object.assign({}, e, { day: dayNum(e.date), key, idx: i });
+    const date = e.date || (e.moved && isFigure(e) ? sc.moved_copy.saved.slice(0, 10) : e.date);
+    const key = String(e.told || (e.moved ? e.own_time || (isFigure(e) ? sc.moved_copy.saved : date) : date));
+    if (dayNum(key) > knownTo || dayNum(date) > knownTo) return;
+    const x = Object.assign({}, e, { date, day: dayNum(date), key, idx: i });
     const side = e.account || e.from;
     if (side && acct[side] && e.amount != null) x.a = m(e.amount, side);
     if (e.amount_out != null) x.a = m(e.amount_out, e.from);
@@ -183,16 +194,37 @@ function lookahead(sc, asOf, opts = {}) {
     events.push(x);
   });
 
-  // [A6, H9] An imported line (statement or screenshot) replaces the typed line it matches: same account and
-  // kind, its posting day within the account's posting window from the typed day, and the same amount, or
-  // within 10% when the typed line is rough (`est`). The typed line is gone (goneBy the import).
-  // Matching to expected items and the statement-over-screenshot rank are in matching's own test file.
-  for (const imp of events.filter(e => e.source && e.source !== 'typed')) {
-    const when = imp.posted ? dayNum(imp.posted) : imp.day;
-    const hit = events.find(t => !t.gone && (!t.source || t.source === 'typed') && t.kind === imp.kind && t.account === imp.account
-      && when >= t.day && when <= cal.addWorking(t.day, postingDays(t.account))
-      && (t.est ? Math.abs(imp.a - t.a) <= Math.round(t.a * ROUGH_MARGIN) : imp.a === t.a));
-    if (hit) { hit.gone = true; hit.goneBy = imp.id; }
+  // [A6, H9, L matching q3 to q7, q10] An imported line (statement or screenshot) replaces the typed line it
+  // matches: same account and direction (6.4), the same amount, or within 10% of the larger when the typed
+  // line is rough (`est`), and inside the account's posting window either side of the typed day [q3]: by its
+  // posted date, and on a card by its buy date too [q4]. Several match: the closest date, then the earliest
+  // `told` [q7]. The typed line is gone (goneBy the import) and the import takes over its `settles` [q5, q6].
+  // The statement-over-screenshot rank, repeats and the possible double are in the rules files
+  // (rules/matching.json); this model meets imports only with typed lines and expected items.
+  const isImport = e => e.source && e.source !== 'typed';
+  const importDays = imp => {
+    const d = [imp.posted ? dayNum(imp.posted) : imp.day];
+    if (acct[imp.account] && acct[imp.account].kind === 'card' && imp.day !== d[0]) d.push(imp.day);
+    return d;
+  };
+  for (const imp of events.filter(isImport)) {
+    const w = postingDays(imp.account);
+    const near = t => {
+      let best = null;
+      for (const d of importDays(imp)) {
+        if (d < cal.subWorking(t.day, w) || d > cal.addWorking(t.day, w)) continue;
+        best = best === null ? Math.abs(d - t.day) : Math.min(best, Math.abs(d - t.day));
+      }
+      return best;
+    };
+    const hits = events.filter(t => !t.gone && !isImport(t) && dirOf(t) === dirOf(imp) && t.account === imp.account
+      && (t.est ? withinTenth(imp.a, t.a) : imp.a === t.a)).map(t => ({ t, gap: near(t) })).filter(x => x.gap !== null)
+      .sort((x, y) => x.gap - y.gap || (x.t.key < y.t.key ? -1 : x.t.key > y.t.key ? 1 : x.t.idx - y.t.idx));
+    if (hits.length) {
+      const hit = hits[0].t;
+      hit.gone = true; hit.goneBy = imp.id;
+      if (hit.settles && !imp.settles) imp.settles = hit.settles;
+    } else imp.unmatched = true;
   }
   const live = () => events.filter(e => !e.gone);
   const settledBy = {};
@@ -206,6 +238,18 @@ function lookahead(sc, asOf, opts = {}) {
   for (const s of sc.bills || []) {
     const kind = s.kind === 'transfer' ? 'transfer' : s.kind === 'auto_spend' ? 'auto' : 'bill';
     items.push(...occurrences(s, kind, cal, earliest, farEnd, cur(s.account)));
+  }
+  // [L matching q1, q2] An imported line that replaced no typed line and settles nothing settles the first
+  // unsettled pay or bill of its account and direction with the exact amount (or within the schedule's `vary`),
+  // when it lands from 5 working days before the item's landing day to the end of its posting window.
+  const varyOf = {}; for (const s of (sc.income || []).concat(sc.bills || [])) varyOf[s.id] = s.vary || 0;
+  for (const imp of live().filter(e => e.unmatched && !e.settles)) {
+    const days = importDays(imp);
+    const o = items.filter(x => !settledBy[x.id] && x.acct === imp.account && (x.kind === 'income' ? 'in' : 'out') === dirOf(imp)
+      && Math.abs(imp.a - x.amount) * 1000 <= x.amount * Math.round(varyOf[x.sid] * 1000)
+      && days.some(d => d >= cal.subWorking(x.land, EARLY_SETTLE) && d <= cal.addWorking(x.land, postingDays(x.acct))))
+      .sort((a, b) => a.land - b.land)[0];
+    if (o) { imp.settles = o.id; settledBy[o.id] = imp; }
   }
   // An item due or landing on or before its account's opening is inside the opening figure [rule 2],
   // unless setup was told it has not gone out yet [F20].
@@ -382,9 +426,9 @@ function lookahead(sc, asOf, opts = {}) {
       - payments.filter(p => p.day <= day).reduce((t, p) => t + p.amount, 0);
     // [J1] Close day not sure and the card carries a balance: interest on each payment day after the opening,
     // added before that day's payment, on what was owed at the end of the day before (the interest added
-    // on earlier payment days included), x apr / 12, rounded half up [I2]. Which balance it is on when
-    // spending posts between payment days (all of it, or only what was left from the payment day before)
-    // is not decided (SCHEMA_V3 section 14); no ask depends on it.
+    // on earlier payment days included), x apr / 12, rounded half up [I2]. It is on everything owed before
+    // that day's payment, spending since the last payment day included, as on a loan [K1]
+    // (percent_min_interest.json pmin-08).
     const notSureDays = [];
     if (notSure && c.carries && c.apr) {
       const [y, mo] = ymOf(openDay(id));
@@ -465,7 +509,12 @@ function lookahead(sc, asOf, opts = {}) {
       }
     }
     const label = notSure ? 'all owed' : null;
-    const rest = Math.max(0, owedNow - stillAsked + (nextPoint && !notSure ? interestOn(projCarried, c.apr) : 0));
+    // What the next payment is worked out on. A card with a close day: the projected interest at its next
+    // close [I2]. Close day not sure and carrying a balance: the interest of the next payment day on everything
+    // owed before it [J1, K1], added first, so a percent minimum is worked out on the balance including it [K2].
+    const owedBefore = owedNow - stillAsked;
+    const nextInterest = !nextPoint ? 0 : !notSure ? interestOn(projCarried, c.apr) : c.carries ? interestOn(owedBefore, c.apr) : 0;
+    const rest = Math.max(0, owedBefore + nextInterest);
     const nextAmount = nextPoint ? planned(rest, nextPoint.due) : 0;
     // What comes off the paying account, and when: each unpaid point on its payment day, the rest on the
     // next payment day [F14]. Close day not sure: everything owed on the next payment day [H4].

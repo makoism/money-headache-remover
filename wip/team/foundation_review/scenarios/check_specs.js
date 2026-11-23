@@ -241,9 +241,14 @@ function checkFile(fp) {
     const w = `event ${e.id}`;
     if (!e.id || ids.has(e.id)) bad(file, w, 'missing or repeated id');
     ids.add(e.id);
-    if (!isDate(e.date)) { bad(file, w, 'bad date'); continue; }
-    if (e.date < last) bad(file, w, 'events are not in date order');
-    last = e.date;
+    // [K3] A moved bank figure with no date of its own (38.31 bankNow with no bankNowAt) is dated to the copy's
+    // last saved day; the file leaves its date out and the model dates it.
+    const undatedFigure = e.date === undefined && e.moved === true && e.kind === 'check' && e.own_time === undefined && e.told === undefined;
+    if (undatedFigure && !(s.moved_copy && TOLD.test(s.moved_copy.saved || ''))) { bad(file, w, 'an undated moved figure needs moved_copy.saved [K3]'); continue; }
+    const date = undatedFigure ? s.moved_copy.saved.slice(0, 10) : e.date;
+    if (!isDate(date)) { bad(file, w, 'bad date'); continue; }
+    if (date < last) bad(file, w, 'events are not in date order');
+    last = date;
     if (!EVENT_KINDS.includes(e.kind)) bad(file, w, `kind must be one of ${EVENT_KINDS}`);
     for (const k of ['account', 'from', 'to', 'card']) if (e[k] !== undefined && !(e[k] in acc)) bad(file, w, `${k} ${e[k]} is not an account`);
     if (e.goal !== undefined && !goals.has(e.goal)) bad(file, w, `goal ${e.goal} not found`);

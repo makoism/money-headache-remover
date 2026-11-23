@@ -1,0 +1,54 @@
+{
+  "life": "percent_min_interest",
+  "title": "A percent minimum on a card whose close day is \"not sure\": the day's interest first (decisions K1 and K2)",
+  "story": "One bank, set up Fri 20 Nov 2026 with 500,000. One card paid from it: the close day is not sure (H4) and it carries a balance at 12% a year. It is paid on the 10th, moved later on weekends, and its minimum is 5% of what is owed, at least 3,000. At setup 100,000 is owed. The December minimum is paid on its day; 10,000 is spent on the card on 15 Dec; the January payment (Sun 10 Jan, so Mon 11 Jan) is not seen. K1: the interest of a payment day is on everything owed before that day's payment, as on a loan. K2: with a percent minimum, the day's interest is added first and the minimum is worked out on the balance including it. I2: interest is balance x yearly rate / 12, rounded half up to the yen; a 5% minimum is rounded to the nearest yen. No income and no holidays are listed. Every amount and rate is made up.",
+  "currency": "JPY",
+  "window": { "from": "2026-11-20", "to": "2027-01-31" },
+  "holidays": { "country": "made up, none listed", "dates": [], "bank_closed": [] },
+  "accounts": [
+    { "id": "bank", "name": "Bank", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2026-11-20", "amount": 500000 } },
+    { "id": "cc", "name": "Card", "kind": "card", "currency": "JPY", "statement_close_day": null, "carries": true, "apr": 12,
+      "payment": { "day": 10, "from": "bank", "weekend_holiday": "move later", "min_rule": { "pct": 5, "floor": 3000 } },
+      "opening": { "date": "2026-11-20", "current": 100000, "note": "No statement typed; the close day is not sure." } }
+  ],
+  "income": [],
+  "bills": [],
+  "goals": [],
+  "landing_dates": { "cc": { "2026-12-10": "2026-12-10", "2027-01-10": "2027-01-11" } },
+  "interest": {
+    "cc": [
+      { "day": "2026-12-10", "on": 100000, "amount": 1000, "why": "100,000 x 12 / 100 / 12 = 1,000" },
+      { "day": "2027-01-11", "on": 105950, "amount": 1060, "why": "105,950 (95,950 after the December payment + 10,000 spent 15 Dec) x 12 / 100 / 12 = 1,059.5, rounded half up" } ]
+  },
+  "events": [
+    { "id": "p01", "date": "2026-12-10", "kind": "card_payment", "from": "bank", "card": "cc", "amount": 5050, "settles": "cc@2026-12-10" },
+    { "id": "p02", "date": "2026-12-15", "kind": "spend", "account": "cc", "amount": 10000, "note": "spent between two payment days" }
+  ],
+  "asks": [
+    { "id": "pmin-01", "date": "2026-11-20", "question": "card_due", "account": "cc", "expected": { "amount": 5050, "payment_date": "2026-12-10", "statement": "all owed" },
+      "why": "5,050 (5% of 101,000: the 100,000 owed plus the 1,000 interest added first on 10 Dec) = 5,050",
+      "note": "K2: the day's interest is added before the percent minimum is worked out. Before K2 the model asked 5% of 100,000: 5,000." },
+    { "id": "pmin-02", "date": "2026-11-20", "question": "due_before_next_pay",
+      "expected": { "items": [ { "item": "cc@2026-12-10", "lands": "2026-12-10", "amount": 5050 } ], "total": 5050 },
+      "why": "5,050 (Card, all owed: 5% of 101,000) = 5,050",
+      "note": "No fixed pay: due in the next 30 days (F13)." },
+    { "id": "pmin-03", "date": "2026-11-20", "question": "safe_to_spend", "account": "bank", "expected": 494950,
+      "why": "500,000 (Bank today) - 5,050 (Card, all owed, 10 Dec) = 494,950",
+      "note": "No fixed pay: the walk reaches 45 days ahead (4 Jan); the January payment is after it." },
+    { "id": "pmin-04", "date": "2026-12-11", "question": "owed_now", "account": "cc", "expected": 95950,
+      "why": "100,000 (owed at setup) + 1,000 (interest at the 10 Dec payment day) - 5,050 (paid 10 Dec) = 95,950" },
+    { "id": "pmin-05", "date": "2026-12-11", "question": "card_due", "account": "cc", "expected": { "amount": 4846, "payment_date": "2027-01-11", "statement": "all owed" },
+      "why": "4,846 (5% of 96,910: the 95,950 owed plus 960 interest on 11 Jan, 959.5 rounded half up; 4,845.5 to the nearest yen) = 4,846",
+      "note": "Before K2: 5% of 95,950, 4,798." },
+    { "id": "pmin-06", "date": "2026-12-16", "question": "card_due", "account": "cc", "expected": { "amount": 5351, "payment_date": "2027-01-11", "statement": "all owed" },
+      "why": "5,351 (5% of 107,010: the 105,950 owed after the 15 Dec spend plus 1,060 interest on 11 Jan, 1,059.5 rounded half up; 5,350.5 to the nearest yen) = 5,351",
+      "note": "K1: the interest is on everything owed before that day's payment, the 15 Dec spend included. Before K2: 5% of 105,950, 5,298." },
+    { "id": "pmin-07", "date": "2026-12-16", "question": "due_before_next_pay",
+      "expected": { "items": [ { "item": "cc@2027-01-10", "lands": "2027-01-11", "amount": 5351 } ], "total": 5351 },
+      "why": "5,351 (Card, all owed, due Sun 10 Jan, lands Mon 11 Jan) = 5,351",
+      "note": "The next 30 days run to 14 Jan." },
+    { "id": "pmin-08", "date": "2027-01-12", "question": "owed_now", "account": "cc", "expected": 107010,
+      "why": "95,950 (owed after the December payment) + 10,000 (spent 15 Dec) + 1,060 (interest at the 11 Jan payment day on 105,950, 1,059.5 rounded half up) = 107,010",
+      "note": "K1, the model's reading confirmed: the 15 Dec spend carries interest on the next payment day. On the other reading (only what was left from the payment day before) the interest would be 960: 106,910. The January payment has not been seen; the interest is added on its day all the same." }
+  ]
+}
