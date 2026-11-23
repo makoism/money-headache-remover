@@ -4,6 +4,19 @@ Written 2026-11-18 on branch `wip-38.31`. Read this whole file before touching a
 
 ## 0. Handoff (latest first)
 
+**2026-11-24 05:40 JST, MAIN 15: the build for Mako is READY (DECISIONS_ROUND2 BO).**
+- The build to publish is commit **5bf4d32** (app3, every gate green). Publish exactly that commit.
+- The push to main is HELD until Mako answers Coordinator 10 (session_01BFpKEWtR1vrLMuizJWTGpk) on whether his "private web address" choice covers a push of only the app3 files to main.
+- When he says go:
+  1. Branch from origin/main.
+  2. Check out wip/team/app3 from 5bf4d32 and run `bash wip/team/app3/publish3.sh <fresh random path>`. Never commit the path anywhere else.
+  3. Commit and push ONLY public/<path>/ to main.
+  4. Send Mako the link, and tell him to open it in Chrome while online.
+  5. His guide is at the top of app3/FOR_MAKO.md.
+- **Running:** the slice 6 lane on lane/slice6 only (the other lives, app3/SLICE6.md). It never pushes to wip-38.31, so the ready build stays frozen.
+- **Gates for app3:** app3/check3.sh, which includes the walk, the Tokyo morning and night walks, the reload tests in 4 time zones, and every amount box; engine/test/run_all.js; ref/run_scenarios.js; rules/run_rules.js.
+- **Owner questions:** app3/FOR_MAKO.md (feel and wording, help words, 5 cloud server changes, gate notes).
+
 **2026-11-23 22:45 JST, MAIN 15 state.**
 - **Built:** every app3 feature except art is on wip-38.31: setup, Home, Check your bank, Receipts, Plan, Statements, Settings with backup and the cloud copy, Ask, Reminders, offline use. check3 ALL GOOD, engine gates green.
 - **Real-page walks:**
