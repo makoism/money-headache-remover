@@ -27,6 +27,7 @@ step "the check-in writer (pure)"; run tests/checkin_write.test.js "CHECKIN WRIT
 step "act3, the one write door (pure)"; run tests/e3_act_unit.js "e3_act_unit: ALL PASS"
 step "the cloud copy's core, two devices on a local fake vault"; run tests/cloud3.test.js "cloud3: ALL PASS"
 step "statements, the reading half (pure)"; run tests/e3_stmt_read.js "e3_stmt_read: ALL PASS"
+step "statements, the writing half (pure): lines, matching, records"; run tests/e3_stmt_plan.js "e3_stmt_plan: ALL PASS"
 step "no money maths in screens"; run tests/no_maths.js "NO MATHS PASS"
 [ "$(pgrep -fc check3.sh)" -le 1 ] && pkill -f chrome-linux64/chrome 2>/dev/null   # leftover test browsers, only when no other lane is checking (it killed their tests)
 step "the try book"; run tests/e3_try.js "e3_try: ALL PASS"

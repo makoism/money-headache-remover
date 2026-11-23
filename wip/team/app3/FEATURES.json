@@ -13,6 +13,7 @@
   { "name": "act3, the one write door: named actions with ids, told, at, by; remove and Undo by gone marks; Undo keeps later changes", "test": "tests/e3_act_unit.js", "passes": true },
   { "name": "Cloud copy core: code to key under its own id (E3), only ciphertext sent, two devices join, same record changed on both asked and kept (AW7), refused write joined again (AW5), newer shape refused", "test": "tests/cloud3.test.js", "passes": true },
   { "name": "Statements read: rows with posting dates, card statements, Japanese dates and files, the pasted-answer checker", "test": "tests/e3_stmt_read.js", "passes": true },
+  { "name": "Statements written: imp: lines with posting dates, matched to typed spends and expected items by the frozen rules (engine/match.js), card payments once, card statements as statement records, BC4 lines, duplicates once", "test": "tests/e3_stmt_plan.js", "passes": true },
   { "name": "Setup, short (setup3)", "test": "tests/e3_setup.js", "passes": false }
  ]
 }

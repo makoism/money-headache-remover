@@ -1,0 +1,120 @@
+#!/usr/bin/env node
+/* Statements, the writing half, pure (app3/src/stmt3_plan.js), on the made-up Mako book (one bank, Card A and Card B
+   paid on the 10th and 11th, close days not sure). Every statement and amount here is made up.
+   Shown as on 16 Dec 2026: Mako reads his bank (20 Nov to 15 Dec) and Card A (16 Nov to 15 Dec) at once. He had typed a
+   450 coffee on Card A, on a budget line. */
+'use strict';
+const fs = require('fs'), path = require('path');
+let bad = 0, n = 0;
+const ck = (name, ok, extra) => { n++; console.log((ok ? 'PASS ' : 'FAIL ') + name + (ok ? '' : ' ' + String(extra === undefined ? '' : extra).slice(0, 500))); if (!ok) bad++; };
+const old = new Function(fs.readFileSync(path.join(__dirname, '../../stmt.js'), 'utf8') + '\nreturn { stmtCleanRows, stmtNorm, stmtNumbers, STMT_CATS };')();
+const R = require('../src/stmt3_read.js'); R.use(old);
+const P = require('../src/stmt3_plan.js'); P.use(old);
+const L = require('../../engine/lookahead.js'), I = require('../../engine/ids.js');
+const TODAY = '2026-12-16';
+const book0 = JSON.parse(fs.readFileSync(path.join(__dirname, '../fixtures/mako_madeup_book.json'), 'utf8'));
+const acc = name => book0.accounts.find(a => a.name === name).id, sch = name => book0.schedules.find(s => s.name === name).id;
+const BANK = acc('Main bank'), CA = acc('Card A'), CB = acc('Card B');
+const COFFEE = 'k7m2qa-q8w2e4r6t1-3', FOOD = 'k7m2qa-q8w2e4r6t1-1';
+const book = JSON.parse(JSON.stringify(book0));
+book.events.push({ id: COFFEE, k: 'spend', acct: CA, date: '2026-11-22', a: 450, line: FOOD, note: 'coffee', told: '2026-11-22T08:10+09:00', at: '2026-11-22T08:10+09:00' });
+
+const bankRead = R.cleanRead({ account: 'Main bank', kind: 'bank', currency: 'JPY', period: { from: '2026-11-20', to: '2026-12-15' }, rows: [
+  { date: '2026-11-26', text: 'DENKI POWER CO', amount: 7400, dir: 'out' },
+  { date: '2026-11-27', text: 'RENT HOUSE', amount: 72000, dir: 'out' },
+  { date: '2026-11-27', text: 'NET HIKARI', amount: 5200, dir: 'out' },
+  { date: '2026-12-01', text: 'SUPER MARKET', amount: 2480, dir: 'out' },
+  { date: '2026-12-10', text: 'SALARY MAIN JOB', amount: 180000, dir: 'in' },
+  { date: '2026-12-10', text: 'SIDE WORK', amount: 58000, dir: 'in' },
+  { date: '2026-12-10', text: 'CARD A PAYMENT', amount: 54450, dir: 'out' },
+  { date: '2026-12-11', text: 'CARD B PAYMENT', amount: 23000, dir: 'out' }
+] }, 'bank.csv', TODAY);
+const cardRead = R.cleanRead({ account: 'Card A', kind: 'card', currency: 'JPY', period: { from: '2026-11-16', to: '2026-12-15' },
+  statement: { close: '2026-12-15', due: '2027-01-12', total: 2930 }, rows: [
+    { date: '2026-11-22', posted: '2026-11-24', text: 'CAFE MORI', amount: 450, dir: 'out' },
+    { date: '2026-12-03', text: 'BOOKS', amount: 2930, dir: 'out' },
+    { date: '2026-12-10', text: 'PAYMENT THANK YOU', amount: 54450, dir: 'in' }
+  ] }, 'cardA.pdf', TODAY);
+const cats = {};
+for (const [t, c] of [['DENKI POWER CO', 'util'], ['RENT HOUSE', 'rent'], ['NET HIKARI', 'net'], ['SUPER MARKET', 'food'], ['SALARY MAIN JOB', 'pay'], ['SIDE WORK', 'other_income'],
+  ['CARD A PAYMENT', 'card_payment'], ['CARD B PAYMENT', 'card_payment'], ['CAFE MORI', 'food'], ['BOOKS', 'play'], ['PAYMENT THANK YOU', 'card_payment']]) cats[R.key(t)] = c;
+
+// the card read is given first; banks are read first anyway
+const p = P.plan(book, [cardRead, bankRead], { today: TODAY, assign: [CA, BANK], cats });
+const line = (acct, date, a, dir) => p.lines.find(l => l.acct === acct && l.date === date && l.a === a && l.dir === dir);
+const occ = (name, due) => sch(name) + '@' + due;
+ck('every row became a line', p.lines.length === 11, p.lines.length);
+ck('line ids are imp:<account>:<date>:<amount>:<in|out>:<n> [AP3]', line(BANK, '2026-11-27', 72000, 'out').id === 'imp:' + BANK + ':2026-11-27:72000:out:1');
+ck('rent settles the rent item, by the frozen rules', line(BANK, '2026-11-27', 72000, 'out').status === 'settles' && line(BANK, '2026-11-27', 72000, 'out').settles[0] === occ('Rent', '2026-11-27'), JSON.stringify(line(BANK, '2026-11-27', 72000, 'out')));
+ck('power and internet settle theirs', line(BANK, '2026-11-26', 7400, 'out').settles[0] === occ('Power', '2026-11-26') && line(BANK, '2026-11-27', 5200, 'out').settles[0] === occ('Internet', '2026-11-27'));
+ck('the main pay settles the main job', line(BANK, '2026-12-10', 180000, 'in').settles[0] === occ('Main job', '2026-12-10'));
+ck('58,000 of side work is not the 60,000 expected (no vary): a new line, the item stays to tick [A6]', line(BANK, '2026-12-10', 58000, 'in').status === 'new');
+const pa = line(BANK, '2026-12-10', 54450, 'out'), pb = line(BANK, '2026-12-11', 23000, 'out');
+ck('the bank\'s card payments are repays to the right card', pa.k === 'repay' && pa.to === CA && pb.k === 'repay' && pb.to === CB, JSON.stringify([pa.to, pb.to]));
+ck('and settle each card\'s payment item', pa.settles[0] === CA + '@2026-12-10' && pb.settles[0] === CB + '@2026-12-11', JSON.stringify([pa.settles, pb.settles]));
+const cafe = line(CA, '2026-11-22', 450, 'out');
+ck('the card\'s coffee replaces the typed coffee', cafe.status === 'typed' && cafe.typed === COFFEE, JSON.stringify(cafe));
+ck('the card keeps its posting date beside the buy date', cafe.posted === '2026-11-24' && cafe.date === '2026-11-22');
+const thanks = line(CA, '2026-12-10', 54450, 'in');
+ck('the card\'s "payment received" meets the bank\'s payment line: one payment, not two [Q1]', thanks.status === 'meets' && thanks.meets === pa.id && thanks.metImport, JSON.stringify(thanks));
+ck('the counts', JSON.stringify(p.counts) === JSON.stringify({ read: 11, repeat: 0, typed: 1, settles: 6, meets: 1, new: 3 }), JSON.stringify(p.counts));
+ck('the card statement is found', p.statements.length === 1 && p.statements[0].a === 2930 && p.statements[0].close === '2026-12-15');
+const m = p.merchants.find(x => x.key === R.key('BOOKS'));
+ck('merchants with their rows and totals (for tapping a merchant)', m && m.rows.length === 1 && m.outA === 2930 && m.cat === 'play');
+
+/* ---- the records ---- */
+const TOLD = '2026-12-16T09:00+09:00';
+const out = P.records(book, p, { told: TOLD, grp: 'k7m2qa-z9x8c7v6b5-1' });
+const ev = id => out.events.find(e => e.id === id);
+ck('one record per line, plus the statement and its owed figure', out.events.length === 13, out.events.length);
+const c = ev(cafe.id);
+ck('[BC4] the coffee keeps the typed line, so it stays on Food', c.line === FOOD);
+ck('[O1] and the typed record\'s told', c.told === '2026-11-22T08:10+09:00');
+ck('[H1] buy date and posting date', c.date === '2026-11-22' && c.posted === '2026-11-24');
+ck('src says statement, its file, line and dates, and the account it came from [AS4]', c.src.type === 'statement' && c.src.file === 'cardA.pdf' && c.src.from === '2026-11-16' && c.src.acct === CA);
+ck('the typed coffee itself is not removed here (the look ahead replaces it each time)', book.events.find(e => e.id === COFFEE) && !book.events.find(e => e.id === COFFEE).gone);
+const r = ev(pa.id);
+ck('the bank payment is a repay from the bank to Card A, settling its item', r.k === 'repay' && r.acct === BANK && r.acct2 === CA && r.settles[0].s === CA && r.settles[0].due === '2026-12-10');
+const th = ev(thanks.id);
+ck('the card side of the same payment is kept gone, by the bank line (a repeat is then known)', th.gone && th.goneBy === pa.id && th.k === 'repay' && th.acct2 === CA);
+const st = out.events.filter(e => e.k === 'check');
+ck('the card statement: a stmt check and the owed figure on its close day, in one group', st.length === 2 && st[0].stmt && st[0].stmtDate === '2026-12-15' && st[0].stmtPay === '2027-01-12' && st[1].a === 2930 && st[0].grp === st[1].grp && !st[1].stmt);
+ck('the review ticks the card payments it read, as a check-in record naming them [S2, U2]', out.checkins.length === 1 && out.checkins[0].settled.join() === [pa.id, pb.id].join() && out.checkins[0].figures.length === 0, JSON.stringify(out.checkins));
+ck('no undefined fields are written', out.events.every(e => Object.values(e).every(v => v !== undefined)));
+
+/* ---- what the engine makes of it ---- */
+const after = JSON.parse(JSON.stringify(book)); after.events = after.events.concat(out.events); after.checkins = (after.checkins || []).concat(out.checkins);
+let res; try { res = L.lookahead(after, TODAY); } catch (e) { res = { threw: e.message }; }
+ck('the look ahead runs on the book with the statements in', !res.threw, res.threw);
+const ns = ((res.notSeenYet || {}).items || []).map(o => o.item);
+ck('rent, power and internet are no longer "not seen yet"', ![occ('Rent', '2026-11-27'), occ('Power', '2026-11-26'), occ('Internet', '2026-11-27')].some(x => ns.includes(x)), ns.join(','));
+const tc = ((res.checkIn || {}).toConfirm || []).map(o => o.item);
+ck('the main pay and both card payments need no ticking; the side pay still does', !tc.includes(occ('Main job', '2026-12-10')) && !tc.includes(CA + '@2026-12-10') && !tc.includes(CB + '@2026-12-11') && tc.includes(occ('Side job', '2026-12-10')), tc.join(','));
+const before = L.lookahead(book, TODAY);
+ck('the coffee counts once on Card A (typed and read are one)', res.cards && res.cards[CA] && typeof res.cards[CA].owedNow === 'number', JSON.stringify(res.cards && res.cards[CA]).slice(0, 300));
+ck('Card A owes the statement\'s 3,380 now (paid on the 10th, then the cafe and the books)', res.cards[CA].owedNow === 2930, res.cards[CA].owedNow + ' (before ' + before.cards[CA].owedNow + ')');
+
+/* ---- duplicates once ---- */
+const p2 = P.plan(after, [bankRead, cardRead], { today: TODAY, assign: [BANK, CA], cats });
+ck('reading the same files again adds nothing', p2.counts.repeat === 11 && P.records(after, p2, { told: TOLD }).events.length === 0, JSON.stringify(p2.counts));
+const undone = JSON.parse(JSON.stringify(after)); undone.events.forEach(e => { if (e.id === cafe.id) { e.gone = '2026-12-16'; e.goneBy = 'k7m2qa-z9x8c7v6b5-2'; } });
+ck('a line taken back with Undo is offered again', P.plan(undone, [cardRead], { today: TODAY, assign: [CA], cats }).lines.find(l => l.id === cafe.id).status !== 'repeat');
+const p3 = P.plan(book, [bankRead, bankRead], { today: TODAY, assign: [BANK, BANK], cats });
+ck('the same file twice in one go: its lines once', p3.counts.repeat === 8 && p3.lines.filter(l => l.status !== 'repeat').length === 8, JSON.stringify(p3.counts));
+const twoCoffees = R.cleanRead({ kind: 'card', rows: [{ date: '2026-12-02', text: 'CAFE', amount: 450, dir: 'out' }, { date: '2026-12-02', text: 'CAFE', amount: 450, dir: 'out' }] }, 'c.csv', TODAY);
+const p4 = P.plan(book, [twoCoffees], { today: TODAY, assign: [CB], cats: {} });
+ck('two real coffees of the same amount on one day are two lines (:1 and :2)', p4.lines.map(l => l.id.split(':').pop()).join() === '1,2' && p4.counts.new === 2, JSON.stringify(p4.lines.map(l => l.id)));
+const refd = R.cleanRead({ kind: 'bank', rows: [{ date: '2026-12-02', text: 'X', amount: 1, dir: 'out', ref: 'TX 88/12' }] }, 'r.csv', TODAY);
+ck('a printed reference names the line, written %XX [AP3]', P.plan(book, [refd], { today: TODAY, assign: [BANK] }).lines[0].id === 'imp:' + BANK + ':ref:TX%2088%2F12');
+
+/* ---- categories and setup hints ---- */
+const kc = P.catsToKeep(p, { [R.key('BOOKS')]: true }, TOLD);
+ck('categories to remember, by shop, marked when the person chose them', kc['k:' + R.key('BOOKS')].src === 'person' && kc['k:' + R.key('RENT HOUSE')].v === 'rent');
+ck('known categories are read back from imports.cats', P.knownCats({ imports: { cats: kc } })[R.key('RENT HOUSE')] === 'rent');
+const full = R.cleanRead({ kind: 'bank', period: { from: '2026-10-01', to: '2026-11-30' }, closing_balance: 286000, rows: ['2026-10', '2026-11'].map(m => [
+  { date: m + '-10', text: 'SALARY MAIN JOB', amount: 180000, dir: 'in' }, { date: m + '-27', text: 'RENT HOUSE', amount: 72000, dir: 'out' }]).flat() }, 'two_months.csv', TODAY);
+const h = P.setupHints([full], cats, 'JPY', TODAY);
+ck('setup hints come from the old reader\'s own sums: pay, rent', h.pay && h.pay.a === 180000 && h.bills.rent === 72000 && h.bank.a === 286000 && h.bank.date === '2026-11-30', JSON.stringify(h));
+
+console.log(bad ? `e3_stmt_plan: ${bad} FAIL of ${n}` : `e3_stmt_plan: ALL PASS (${n})`);
+process.exit(bad ? 1 : 0);
