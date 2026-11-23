@@ -74,3 +74,10 @@ Exact steps and figures are in each test file's comments.
 - Lesson 4: only SLICE6.md items. Anything else found goes to app3/FOR_MAKO.md "For Mako's run" or the list.
 - Record-order addendum: every walk step reloads and compares every figure (sameAfterReload, as e3_walk.js).
 - qc-foundation: this lane has no way to start an agent; the coordinator runs qc-foundation on this plan and at the end.
+
+## Status (end of the lane)
+Done, each with its test in check3: build_book none, year and months (77df7f8); setup for the other lives (1278c6b,
+items 2 and 3 together, as SLICE6.md lists setup as one item); Money in (0764817); no fixed pay on Home and Plan with
+life C (8380f8c); rhythm words (463f76c); a pay rhythm change asking about each line (5730692); the yearly nudge
+(a284d4a); pay day in two steps (a0f352f); life A (4ee4e81); life B and the per-bank figure after the cards (23c41eb).
+Setup offers every 1, 2 or 4 weeks (not 3). The per-bank figure needed no code: the engine already gave it per bank.

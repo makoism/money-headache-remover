@@ -102,3 +102,11 @@ One help piece serves every "?", so changing a line there changes it everywhere.
 - A goal with a date says "next due 30 Jun". "By 30 Jun" may read better.
 - When plan lines alone need more than the bank can spare, there is no warning, only "nothing safe to spend".
 - The month-end "keep it or put it toward a goal" question from the old app doesn't exist in app3. Wanted?
+
+## Slice 6, the other lives (lane/slice6, 24 Nov JST): listed, not built
+- Setup now asks how often pay lands (a day, two days a month, every 1, 2 or 4 weeks, or no fixed pay), the country, and more accounts (a second bank, cash, an e-wallet). The words are drafts for your copy pass.
+- A line added in the pay period that holds the setup day counts its share from the setup day, not the day it was added (rule I4): Sam's Groceries added a day after setup counted 11 days, not 10. Recommendation: count from the day it was added.
+- The nudge for a yearly cost ("Set aside about $80 each pay to have $480 ready by 1 Mar") goes away once a goal of the same name exists. A goal is not linked to its bill (that would be a saved-data change).
+- With no fixed pay, Home shows "Lasts about N weeks at this rate" even with no budget lines; then it counts bills only.
+- A second bank with bills and no pay into it goes below zero in the look ahead (Lia's Bank B). Home warns; it does not suggest moving money from the other bank. Should it?
+- Pay day in two steps reads "Today: ¥286,000 (Main bank today) + ¥180,000 (Main job 10 Dec) ... = ¥472,000 at the end of the day. Safe to spend counts on this pay coming in today".
