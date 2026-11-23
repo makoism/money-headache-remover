@@ -52,6 +52,12 @@ function rcCounted3() {
   }
   return BurrowEngine.lookahead.countOnce(E3.book, rcOnce3.res);
 }
+/* [walk 4] a statement row that stands for typed records shows their notes beside its own words: "SUPER (groceries)" */
+function rcNote3(e) {
+  const away = (rcOnce3.res && rcOnce3.res.dropped) || {};
+  const typed = e.src && e.src.type === 'statement' ? ((E3.book && E3.book.events) || []).filter(t => t && t.note && away[t.id] === e.id && t.note !== e.note).map(t => t.note) : [];
+  return [e.note || '', typed.length ? '(' + typed.join(', ') + ')' : ''].filter(Boolean).join(' ');
+}
 function rcRows3() {
   return rcCounted3().filter(e => rcLive3(e) && rcKnown3(e) && !e.of && !(e.settles && e.settles.length)
     && (e.k === 'spend' || e.k === 'transfer' || (e.k === 'in' && e.sub === 'refund')));
@@ -225,13 +231,13 @@ function rcList3() {
   const host = $('#rcList'); if (!host) return;
   const q = RC3.search.trim().toLowerCase(), yr = E3.today().slice(0, 4);
   const per = q ? null : rcPeriod3();
-  const text = e => [rcWhat3(e), E3.nameOf(e.acct), e.note || '', money3(e.a, E3.curOf(e.acct)), String(e.a), day3(e.date, 'any')].join(' ').toLowerCase();
+  const text = e => [rcWhat3(e), E3.nameOf(e.acct), rcNote3(e), money3(e.a, E3.curOf(e.acct)), String(e.a), day3(e.date, 'any')].join(' ').toLowerCase();
   const rows = rcRows3().filter(e => (q ? text(e).includes(q) : !per || (e.date >= per.start && e.date <= per.end)))
     .sort((x, y) => (x.date !== y.date ? (x.date < y.date ? 1 : -1) : String(x.told) < String(y.told) ? 1 : -1));
   const head = q ? `<p class="a3-sub" data-fig="rc-period" data-search="1">Searching everything</p>`
     : per ? `<div class="a3-pernav"><button type="button" class="a3-btn" id="rcOlder"${per.older ? '' : ' disabled'}>Earlier</button><p class="a3-mid a3-per" data-fig="rc-period" data-start="${esc3(per.start)}" data-end="${esc3(per.end)}">${esc3(SN.periodLabel(per.start, per.end))}</p><button type="button" class="a3-btn" id="rcNewer"${per.newer ? '' : ' disabled'}>Later</button></div>${rcSpent3(per)}`
     : `<p class="a3-sub" data-fig="rc-period">Everything</p>`;
-  const li = rows.map(e => `<li data-rc="${esc3(e.id)}" data-k="${esc3(e.k)}"><button type="button" class="a3-rcrow" aria-label="Change ${esc3(rcWhat3(e))}, ${esc3(money3(e.a, E3.curOf(e.acct)))}"><span>${esc3(rcWhat3(e))}<br><span class="when">${esc3(day3(e.date, yr))}, ${esc3(E3.nameOf(e.acct))}${e.note ? ', ' + esc3(e.note) : ''}</span></span><span class="amt${e.k === 'in' ? ' a3-in-amt' : ''}">${e.k === 'in' ? 'back ' : ''}${money3(e.a, E3.curOf(e.acct))}</span></button></li>`).join('');
+  const li = rows.map(e => `<li data-rc="${esc3(e.id)}" data-k="${esc3(e.k)}"><button type="button" class="a3-rcrow" aria-label="Change ${esc3(rcWhat3(e))}, ${esc3(money3(e.a, E3.curOf(e.acct)))}"><span>${esc3(rcWhat3(e))}<br><span class="when">${esc3(day3(e.date, yr))}, ${esc3(E3.nameOf(e.acct))}${rcNote3(e) ? ', ' + esc3(rcNote3(e)) : ''}</span></span><span class="amt${e.k === 'in' ? ' a3-in-amt' : ''}">${e.k === 'in' ? 'back ' : ''}${money3(e.a, E3.curOf(e.acct))}</span></button></li>`).join('');
   host.innerHTML = `<h2>What you logged</h2>
     <div class="a3-field"><label for="rcSearch">Search</label><input class="a3-in a3-text" type="search" id="rcSearch" autocomplete="off" value="${esc3(RC3.search)}" placeholder="A note, a line, an amount"></div>
     ${head}${rows.length ? `<ul class="a3-rows a3-rclist">${li}</ul>` : `<p class="a3-sub">${q ? 'Nothing matches' : 'Nothing logged in this stretch'}</p>`}`;

@@ -7023,6 +7023,10 @@ RULES
   function records(book, p, opts) {
     const o = opts || {}, skip = o.skip || {};
     const kept = {}; for (const e of book.events || []) if (e && !e.gone) kept[e.id] = e;
+    // [walk 4] a line waiting for an answer (which card, or a move?) is never dropped quietly: nothing is written until
+    // every question is answered or the person unticks that line
+    const waiting = p.lines.filter(l => (l.status === 'pick' || l.status === 'askmove') && !skip[l.id]);
+    if (waiting.length) throw new Error(waiting.length + (waiting.length === 1 ? ' line is' : ' lines are') + ' waiting for an answer');
     const events = [], settled = [];
     for (const l of p.lines) {
       if (l.status === 'repeat' || l.status === 'pick' || l.status === 'askmove' || skip[l.id]) continue;
@@ -8053,6 +8057,12 @@ function rcCounted3() {
   }
   return BurrowEngine.lookahead.countOnce(E3.book, rcOnce3.res);
 }
+/* [walk 4] a statement row that stands for typed records shows their notes beside its own words: "SUPER (groceries)" */
+function rcNote3(e) {
+  const away = (rcOnce3.res && rcOnce3.res.dropped) || {};
+  const typed = e.src && e.src.type === 'statement' ? ((E3.book && E3.book.events) || []).filter(t => t && t.note && away[t.id] === e.id && t.note !== e.note).map(t => t.note) : [];
+  return [e.note || '', typed.length ? '(' + typed.join(', ') + ')' : ''].filter(Boolean).join(' ');
+}
 function rcRows3() {
   return rcCounted3().filter(e => rcLive3(e) && rcKnown3(e) && !e.of && !(e.settles && e.settles.length)
     && (e.k === 'spend' || e.k === 'transfer' || (e.k === 'in' && e.sub === 'refund')));
@@ -8226,13 +8236,13 @@ function rcList3() {
   const host = $('#rcList'); if (!host) return;
   const q = RC3.search.trim().toLowerCase(), yr = E3.today().slice(0, 4);
   const per = q ? null : rcPeriod3();
-  const text = e => [rcWhat3(e), E3.nameOf(e.acct), e.note || '', money3(e.a, E3.curOf(e.acct)), String(e.a), day3(e.date, 'any')].join(' ').toLowerCase();
+  const text = e => [rcWhat3(e), E3.nameOf(e.acct), rcNote3(e), money3(e.a, E3.curOf(e.acct)), String(e.a), day3(e.date, 'any')].join(' ').toLowerCase();
   const rows = rcRows3().filter(e => (q ? text(e).includes(q) : !per || (e.date >= per.start && e.date <= per.end)))
     .sort((x, y) => (x.date !== y.date ? (x.date < y.date ? 1 : -1) : String(x.told) < String(y.told) ? 1 : -1));
   const head = q ? `<p class="a3-sub" data-fig="rc-period" data-search="1">Searching everything</p>`
     : per ? `<div class="a3-pernav"><button type="button" class="a3-btn" id="rcOlder"${per.older ? '' : ' disabled'}>Earlier</button><p class="a3-mid a3-per" data-fig="rc-period" data-start="${esc3(per.start)}" data-end="${esc3(per.end)}">${esc3(SN.periodLabel(per.start, per.end))}</p><button type="button" class="a3-btn" id="rcNewer"${per.newer ? '' : ' disabled'}>Later</button></div>${rcSpent3(per)}`
     : `<p class="a3-sub" data-fig="rc-period">Everything</p>`;
-  const li = rows.map(e => `<li data-rc="${esc3(e.id)}" data-k="${esc3(e.k)}"><button type="button" class="a3-rcrow" aria-label="Change ${esc3(rcWhat3(e))}, ${esc3(money3(e.a, E3.curOf(e.acct)))}"><span>${esc3(rcWhat3(e))}<br><span class="when">${esc3(day3(e.date, yr))}, ${esc3(E3.nameOf(e.acct))}${e.note ? ', ' + esc3(e.note) : ''}</span></span><span class="amt${e.k === 'in' ? ' a3-in-amt' : ''}">${e.k === 'in' ? 'back ' : ''}${money3(e.a, E3.curOf(e.acct))}</span></button></li>`).join('');
+  const li = rows.map(e => `<li data-rc="${esc3(e.id)}" data-k="${esc3(e.k)}"><button type="button" class="a3-rcrow" aria-label="Change ${esc3(rcWhat3(e))}, ${esc3(money3(e.a, E3.curOf(e.acct)))}"><span>${esc3(rcWhat3(e))}<br><span class="when">${esc3(day3(e.date, yr))}, ${esc3(E3.nameOf(e.acct))}${rcNote3(e) ? ', ' + esc3(rcNote3(e)) : ''}</span></span><span class="amt${e.k === 'in' ? ' a3-in-amt' : ''}">${e.k === 'in' ? 'back ' : ''}${money3(e.a, E3.curOf(e.acct))}</span></button></li>`).join('');
   host.innerHTML = `<h2>What you logged</h2>
     <div class="a3-field"><label for="rcSearch">Search</label><input class="a3-in a3-text" type="search" id="rcSearch" autocomplete="off" value="${esc3(RC3.search)}" placeholder="A note, a line, an amount"></div>
     ${head}${rows.length ? `<ul class="a3-rows a3-rclist">${li}</ul>` : `<p class="a3-sub">${q ? 'Nothing matches' : 'Nothing logged in this stretch'}</p>`}`;
@@ -8301,11 +8311,14 @@ function renderPlan3() {
   const scheds = (book.schedules || []).filter(s => plLive3(s) && view[s.id]);
   /* [BJ5] what has landed and is not ticked off comes first, then the next one */
   const owing = { late: 'late', notSeen: 'not seen yet', unticked: 'not ticked off yet' };
-  const owingWords = v => (v.outstanding || []).map(o => `due ${esc3(day3(o.land, yr))}, ${owing[o.state]}, `).join('');
-  const nextWords = v => `${owingWords(v)}${v.next ? `next ${esc3(day3(v.next.land, yr))}` : v.ends ? `ended ${esc3(day3(v.ends, yr))}` : 'nothing coming'}`;
+  /* [walk 4] each outstanding one with its own amount, and then the next with its own when they differ in time */
+  const owingWords = (v, cur) => (v.outstanding || []).map(o => `due ${esc3(day3(o.land, yr))}, ${owing[o.state]}, ${money3(o.amount, cur || home)}, `).join('');
+  const nextWords = (v, cur) => `${owingWords(v, cur)}${v.next ? `next ${esc3(day3(v.next.land, yr))}${(v.outstanding || []).length ? ', ' + money3(v.next.amount, cur || home) : ''}` : v.ends ? `ended ${esc3(day3(v.ends, yr))}` : 'nothing coming'}`;
+  /* the row's figure: the first outstanding one's own amount (scheduleView outstanding[].amount), else the next one's */
+  const rowAmount = v => ((v.outstanding || []).length ? v.outstanding[0].amount : v.next ? v.next.amount : v.amount);
   const ruleWords = v => (v.rule && v.rule.every === 'month' ? 'day ' + v.rule.days.join(' and ') + ' each month' : v.rule && v.rule.every === 'weeks' ? 'every ' + (v.rule.n === 1 ? 'week' : v.rule.n + ' weeks') : 'no fixed day');
-  const pays = scheds.filter(s => s.kind === 'income').map(s => plRow3(`data-pay="${esc3(s.id)}"`, `${esc3(s.name)}<br><span class="when">${ruleWords(view[s.id])}, ${nextWords(view[s.id])}</span>`, plFig3('schedules.*.next.amount', view[s.id].next ? view[s.id].next.amount : view[s.id].amount, s.cur)));
-  const bills = scheds.filter(s => s.kind === 'bill').map(s => plRow3(`data-bill="${esc3(s.id)}"`, `${esc3(s.name)}<br><span class="when">${ruleWords(view[s.id])}, ${nextWords(view[s.id])}${view[s.id].ends && view[s.id].next ? ', last on ' + esc3(day3(view[s.id].ends, yr)) : ''}</span>`, plFig3('schedules.*.next.amount', view[s.id].next ? view[s.id].next.amount : view[s.id].amount, s.cur)));
+  const pays = scheds.filter(s => s.kind === 'income').map(s => plRow3(`data-pay="${esc3(s.id)}"`, `${esc3(s.name)}<br><span class="when">${ruleWords(view[s.id])}, ${nextWords(view[s.id], s.cur)}</span>`, plFig3((view[s.id].outstanding || []).length ? 'schedules.*.outstanding.0.amount' : 'schedules.*.next.amount', rowAmount(view[s.id]), s.cur)));
+  const bills = scheds.filter(s => s.kind === 'bill').map(s => plRow3(`data-bill="${esc3(s.id)}"`, `${esc3(s.name)}<br><span class="when">${ruleWords(view[s.id])}, ${nextWords(view[s.id], s.cur)}${view[s.id].ends && view[s.id].next ? ', last on ' + esc3(day3(view[s.id].ends, yr)) : ''}</span>`, plFig3((view[s.id].outstanding || []).length ? 'schedules.*.outstanding.0.amount' : 'schedules.*.next.amount', rowAmount(view[s.id]), s.cur)));
   out.push(`<section class="a3-card" data-card="plan-bills"><h2>Pay and bills</h2>
     ${pays.length ? `<ul class="a3-rows a3-rclist">${pays.join('')}</ul>` : ''}
     ${bills.length ? `<ul class="a3-rows a3-rclist">${bills.join('')}</ul>` : '<p class="a3-sub">No bills yet</p>'}
@@ -9500,7 +9513,9 @@ function stmt3Review() {
   /* [BJ4] money sent out that names none of the person's accounts: a move to one of them, or a spend? */
   const asks = p.lines.filter(l => l.status === 'askmove').map(l => `<div class="a3-field" data-askline="${esc3(l.id)}"><label for="a3mv-${esc3(l.id)}">${esc3(l.text)}, ${esc3(day3(l.date, yr))}, ${money3(l.a, cur(l.acct))}</label>
       <select class="a3-in a3-sel" id="a3mv-${esc3(l.id)}" data-move="${esc3(l.id)}"><option value="">Choose</option>${l.accts.map(id => `<option value="${esc3(id)}">Yes, to ${esc3(E3.nameOf(id))}</option>`).join('')}<option value="no">No, it went to someone else</option></select></div>`).join('');
-  const c = p.counts, adding = p.lines.filter(l => l.status !== 'repeat' && l.status !== 'pick' && l.status !== 'askmove' && !stmt3.skip[l.id]).length;
+  /* [walk 4] while a question is open nothing is added, so no line is ever left out without the person knowing */
+  const c = p.counts, open = p.lines.some(l => (l.status === 'pick' || l.status === 'askmove') && !stmt3.skip[l.id]);
+  const adding = open ? 0 : p.lines.filter(l => l.status !== 'repeat' && !stmt3.skip[l.id]).length;
   const said = [c.settles ? c.settles + ' are bills, pay or card payments you expected' : '', c.typed ? `${c.typed} ${c.typed === 1 ? 'is one you typed' : 'are ones you typed'}` : '',
     c.meets ? c.meets + ' read twice, from your bank and your card' : '', c.repeat ? c.repeat + ' already here, left out' : '', c.pick ? `${c.pick} ${c.pick === 1 ? 'card payment needs' : 'card payments need'} you to say which card` : '', c.askmove ? `${c.askmove} sent out: ${c.askmove === 1 ? 'is it' : 'are they'} a move to your own account?` : ''].filter(Boolean);
   const sheet = stmt3Show(`<h1 id="a3StmtT">What was read</h1>
@@ -9511,7 +9526,7 @@ function stmt3Review() {
     ${sts ? `<section class="a3-card"><h2>Card statements</h2>${sts}</section>` : ''}
     <section class="a3-card"><h2>Shops and categories</h2><p class="a3-sub">Tap a shop to see its lines. Untick a line to leave it out</p>${shops}</section>
     <p class="a3-err" id="a3StmtErr"></p>
-    <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3StmtAdd" ${adding ? '' : 'disabled'}>${adding ? 'Add ' + adding + (adding === 1 ? ' line' : ' lines') : c.pick || c.askmove ? 'Answer the question above' : 'Nothing new to add'}</button><button type="button" class="a3-btn" id="a3StmtBack">Back</button></div>`);
+    <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3StmtAdd" ${adding ? '' : 'disabled'}>${adding ? 'Add ' + adding + (adding === 1 ? ' line' : ' lines') : open ? 'Answer the question above' : 'Nothing new to add'}</button><button type="button" class="a3-btn" id="a3StmtBack">Back</button></div>`);
   sheet.querySelectorAll('[data-mx]').forEach(b => b.addEventListener('click', () => {
     const ul = sheet.querySelector(`[data-rowsof="${CSS.escape(b.dataset.mx)}"]`); ul.hidden = !ul.hidden; b.setAttribute('aria-expanded', String(!ul.hidden));
   }));
