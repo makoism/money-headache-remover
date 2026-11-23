@@ -2,11 +2,13 @@
 // phone [D8, sweep2_platform 3]. Fails above the budget. The times are printed so a slow drift shows.
 'use strict';
 
+// Measured on the build machine (23 Nov 2026): first save about 3.0 s, open and load about 0.5 s, one tap about
+// 13 ms (slowest 25 ms). The budgets leave room for a slower machine, not for a change that makes it slower in kind.
 const BUDGET = {
-  firstSave: 20000,   // the whole copy written once (the move, or a backup restore)
-  openLoad: 2500,     // opening the store and reading all of it at start-up
-  tapSave: 120,       // one spend typed: the save, median of 20 taps
-  tapSaveMax: 400,    // the slowest of those 20
+  firstSave: 10000,   // the whole copy written once (the move, or a backup restore)
+  openLoad: 2000,     // opening the store and reading all of it at start-up
+  tapSave: 80,        // one spend typed: the save, median of 20 taps
+  tapSaveMax: 300,    // the slowest of those 20
 };
 
 async function slow(page, rate) {

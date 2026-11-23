@@ -33,6 +33,13 @@ assert.eq = (got, want, what) => {
   if (a !== b) throw new Error(what + ': want ' + b.slice(0, 400) + ', got ' + a.slice(0, 400));
 };
 
+// The same data whatever the order of object keys (a copy read back from IndexedDB lists its fields in another order).
+const canon = x => JSON.stringify(x, (k, v) => (v && typeof v === 'object' && !Array.isArray(v) ? Object.keys(v).sort().reduce((o, key) => { o[key] = v[key]; return o; }, {}) : v));
+assert.same = (got, want, what) => {
+  const a = canon(got), b = canon(want);
+  if (a !== b) throw new Error(what + ': want ' + b.slice(0, 400) + ', got ' + a.slice(0, 400));
+};
+
 async function main() {
   const only = process.argv.slice(2);
   const files = fs.readdirSync(__dirname).filter(f => /^t_.*\.js$/.test(f)).sort()

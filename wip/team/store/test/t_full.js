@@ -1,19 +1,26 @@
 // Storage full, and a store the browser cleared while the app was open or closed.
 'use strict';
 
-async function quota(t, page, bytes) {
-  const s = await page.context().newCDPSession(page);
-  const origin = t.url.replace(/\/$/, '');
-  await s.send('Storage.overrideQuotaForOrigin', bytes == null ? { origin } : { origin, quotaSize: bytes });
-  return s;
-}
+// The browser's space running out. Chromium's own quota override (CDP Storage.overrideQuotaForOrigin) is accepted
+// but has no effect in Playwright's contexts (checked: estimate() still says 10 GB), so the page stands in for it:
+// a write that would pass the limit is refused with the browser's own QuotaExceededError, as IndexedDB does.
+const SMALL_DISK = () => {
+  window.__room = Infinity;
+  const put = IDBObjectStore.prototype.put;
+  IDBObjectStore.prototype.put = function (v, k) {
+    const tx = this.transaction;
+    tx.__bytes = (tx.__bytes || 0) + JSON.stringify(v).length * 2;
+    if (tx.__bytes > window.__room) throw new DOMException('The quota has been exceeded.', 'QuotaExceededError');
+    return k === undefined ? put.call(this, v) : put.call(this, v, k);
+  };
+};
 
 module.exports = [
   { name: 'storage full: the save says so, nothing half written, what was saved before is whole, and it saves once there is room', run: async t => {
     const ctx = await t.context();
-    const p = await t.page(ctx);
+    const p = await t.page(ctx, pg => pg.addInitScript(SMALL_DISK));
     await p.evaluate(async () => { window.S = await window.BurrowStore.open(); await window.S.load(); window.C = window.makeCopy(100); await window.S.save(window.C); });
-    await quota(t, p, 1024 * 1024);   // 1 MB for the whole site
+    await p.evaluate(() => { window.__room = 1024 * 1024; });   // about 1 MB left
     const r = await p.evaluate(async () => {
       window.C.events = window.C.events.concat(window.makeEvents(30000, { ses: 'impbigfile' }));   // a big import
       const s = await window.S.save(window.C);
@@ -25,7 +32,7 @@ module.exports = [
     t.assert.eq(await other.evaluate(async () => { const l = await (await window.BurrowStore.open()).load(); return [l.copy.events.length, l.copy.rev > 0]; }),
       [100, true], 'the store still holds the last whole save');
     await other.close();
-    await quota(t, p, null);   // room again
+    await p.evaluate(() => { window.__room = Infinity; });   // room again
     const r2 = await p.evaluate(async () => { const s = await window.S.save(window.C); return [s.ok, s.events]; });
     t.assert.eq(r2, [true, 30000], 'the unsaved records are written once there is room');
   } },

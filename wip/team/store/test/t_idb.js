@@ -43,7 +43,7 @@ module.exports = [
     t.assert(saved.c.rev > 0 && saved.c.v === 3, 'rev and v set on the copy', saved.c);
     const b = await t.page(ctx);
     const back = await b.evaluate(async () => { const s = await window.BurrowStore.open(); return s.load(); });
-    t.assert.eq(sortEv(back.copy), sortEv(saved.c), 'same copy back');
+    t.assert.same(sortEv(back.copy), sortEv(saved.c), 'same copy back');
     const raw = await b.evaluate(RAW);
     t.assert.eq(raw.stores, ['book', 'device', 'events', 'kept'], 'the four stores [SCHEMA_V3 1]');
     t.assert(!('events' in raw.book) && !('keptVersions' in raw.book) && !('rev' in raw.book), 'the book holds no events, kept versions or rev', Object.keys(raw.book));
