@@ -55,6 +55,15 @@ function refuse(msg) { throw new Refused(msg); }
 function oracle(sc, asOfStr, opts) {
   opts = opts || {};
   const units = opts.units || 'written'; // 'written' (SCHEMA_V3 8, units rules) or 'plain' (L q8: 52 / n pays a year)
+  // Switches that copy another reading, used only to sort differences into classes (fuzz_vs_ref.js --as-ref):
+  //   placeFloor false: a place may go below nothing (H7 says it never does)
+  //   currentMonthly true: the period running now gets the whole monthly amount (the opening one shared by days left), whatever the pay rhythm
+  //     (SCHEMA_V3 8 units and I4: every period gets its own amount, monthly x 12 / the pays in that year)
+  //   plannedToday false: no planned spending for a period whose pay is due today and not in yet (SCHEMA.md 10.3 step 2 counts it)
+  //   plannedLate false: none either for a period whose late pay is still counted today [H8] (SCHEMA.md 10.3 step 2 counts it)
+  //   creditWaits true: a credit statement waits for its own payment day before it is carried (H3 carries it to the next statement)
+  const placeFloor = opts.placeFloor !== false, currentMonthly = !!opts.currentMonthly, plannedToday = opts.plannedToday !== false;
+  const plannedLate = opts.plannedLate !== false, creditWaits = !!opts.creditWaits;
   const cur = sc.currency;
   const D = decsOf(cur);
   const M = (x) => Math.round(Number(x) * Math.pow(10, D));
@@ -199,7 +208,13 @@ function oracle(sc, asOfStr, opts) {
   // The opening with no time covers its whole day [README H files, SCHEMA_V3 13].
   const insideOpening = (e, a) => e.d <= a.open;
   // Same day: `told` decides when both have a time, else the order in the file [H1, README H files].
-  const toldBefore = (e, c) => (e.told && e.told.length > 10 && c.told && c.told.length > 10 ? e.told < c.told : e.i < c.i);
+  // A record with no `told` was heard of on its date. Told on a later day than the check: after it.
+  const toldOf = (x) => x.told || x.date;
+  const toldBefore = (e, c) => {
+    const te = toldOf(e), tc = toldOf(c);
+    if (te.slice(0, 10) !== tc.slice(0, 10)) return te.slice(0, 10) < tc.slice(0, 10);
+    return te.length > 10 && tc.length > 10 ? te < tc : e.i < c.i;
+  };
   const insideCheck = (e, c) => e.d < c.d || (e.d === c.d && toldBefore(e, c));
 
   const money = {};
@@ -250,7 +265,7 @@ function oracle(sc, asOfStr, opts) {
     } else if (e.kind === 'spend' && e.goal) {
       if (e.d <= accts[e.account].open) continue;
       // A place never holds less than nothing: paying past it takes the rest from the account's other money [H7].
-      goals[e.goal].kept -= Math.min(goals[e.goal].kept, e.amt);
+      goals[e.goal].kept -= placeFloor ? Math.min(goals[e.goal].kept, e.amt) : e.amt;
     }
   }
 
@@ -277,7 +292,7 @@ function oracle(sc, asOfStr, opts) {
   // known pay of the stream, on the day it landed (early or late) [F8].
   const starts = [];
   {
-    const before = occs(P, pOpen - 400, pOpen).filter((o) => o.due <= pOpen || o.land <= pOpen);
+    const before = occs(P, pOpen - 400, pOpen + 12).filter((o) => o.due <= pOpen || o.land <= pOpen);
     const lastIn = before.sort((x, y) => x.land - y.land || x.due - y.due).pop();
     if (lastIn && !settledBy[lastIn.name]) starts.push({ day: Math.min(lastIn.land, pOpen), occ: lastIn, opening: true });
     for (const e of evs) {
@@ -321,9 +336,9 @@ function oracle(sc, asOfStr, opts) {
     const yearDues = rhythm(P.sch, dn(y + '-01-01'), dn(y + '-12-31'));
     const n = yearDues.length;
     if (units === 'plain') {
-      // L q8: the reference keeps a plain form, 52 / n pays a year, each period rounded on its own (rounding not written; down assumed).
+      // L q8: the reference keeps a plain form, 52 / n pays a year, each period rounded on its own (rounding not written; to the nearest unit, as the fuzz found).
       const perYear = P.sch.frequency === 'weekly' ? 52 : 52 / P.sch.n;
-      return Math.floor((monthly * 12) / perYear);
+      return Math.round((monthly * 12) / perYear);
     }
     const total = monthly * 12;
     const base = Math.floor(total / n);
@@ -334,9 +349,10 @@ function oracle(sc, asOfStr, opts) {
   }
 
   // The current period's amounts: the opening's split for the opening period [B2, I4, J4], else the units rule.
-  function periodBudget(start) {
+  function periodBudget(start, forGainTest) {
     const res = { lines: {}, free: 0 };
-    const full = (x) => periodAmount(x, start.occ);
+    const full = currentMonthly && !forGainTest ? (x) => x : (x) => periodAmount(x, start.occ);
+    const fullOpen = full;
     if (!start.opening) {
       for (const l of lines) res.lines[l.id] = full(l.amt);
       if (free) res.free = full(free.amt);
@@ -351,13 +367,13 @@ function oracle(sc, asOfStr, opts) {
     let leftoverNum = 0; // lines' rounding leftovers, in units of 1/Dd minor unit
     for (const l of lines) {
       if (split.lines && split.lines[l.id] !== undefined) { res.lines[l.id] = M(split.lines[l.id]); continue; }
-      const num = full(l.amt) * d;
+      const num = fullOpen(l.amt) * d;
       res.lines[l.id] = Math.floor(num / Dd);
       leftoverNum += num - res.lines[l.id] * Dd;
     }
     if (free) {
       if (split.free !== undefined) res.free = M(split.free); // typed: it stands; leftovers stay in Waiting [J4]
-      else res.free = Math.floor((full(free.amt) * d + leftoverNum) / Dd); // own share plus the leftovers, rounded down [I4]
+      else res.free = Math.floor((fullOpen(free.amt) * d + leftoverNum) / Dd); // own share plus the leftovers, rounded down [I4]
     }
     return res;
   }
@@ -383,7 +399,7 @@ function oracle(sc, asOfStr, opts) {
     for (const f of money[id].fillers) {
       // A large gain is held, never placed, until answered [O, X4].
       if (f.amt < 0) {
-        const pf = periodBudget(starts.filter((s) => s.day <= f.to).pop() || curStart).free;
+        const pf = periodBudget(starts.filter((s) => s.day <= f.to).pop() || curStart, true).free;
         if (-f.amt > pf || -f.amt * 5 > f.app) continue;
       }
       // the part of the stretch in the current period
@@ -489,7 +505,11 @@ function oracle(sc, asOfStr, opts) {
         if (s.carried) continue;
         // after the ask, an unsettled item is paid in the walk; only a settled remainder carries
         const passed = c <= T ? s.land <= c : (s.settled && s.land <= c);
-        if (s.rem < 0 || (s.rem > 0 && passed)) { carry += s.rem; s.carried = true; s.carriedInto = st; s.rem = 0; }
+        if ((s.rem < 0 && (!creditWaits || c > T || s.land <= c)) || (s.rem > 0 && passed)) {
+          // an unpaid item keeps asking what it held; the newer item asks only the rest [I3]
+          if (!s.settled && s.item && s.rem > 0) s.itemCap = s.rem;
+          carry += s.rem; s.carried = true; s.carriedInto = st; s.rem = 0;
+        }
       }
       st.amt = openBal + carry;
       st.rem = st.amt;
@@ -510,9 +530,17 @@ function oracle(sc, asOfStr, opts) {
   function cardItems(cid) {
     const c = cards[cid];
     const res = [];
+    for (const s of c.stmts) s.used = 0;
+    const head = (s) => { while (s.carried) s = s.carriedInto; return s; };
     for (const s of c.stmts) {
       if (!s.item || s.settled) continue;
-      const amount = s.future ? s.rem : s.rem;
+      let amount;
+      if (s.carried) {
+        if (!s.itemCap) continue;
+        const h = head(s);
+        amount = Math.max(0, Math.min(s.itemCap, h.rem - h.used)); // what the older one holds
+        h.used += amount;
+      } else amount = s.rem - s.used; // what the older ones do not already hold
       if (amount <= 0) continue;
       res.push({ name: s.name, due: s.due, land: s.land, amt: amount, closed: !s.future, close: s.close, card: cid });
     }
@@ -523,13 +551,15 @@ function oracle(sc, asOfStr, opts) {
   // Horizon: the later of the second next pay that starts a period and today + 45 days [G1].
   const H = Math.max(expPays.length >= 2 ? expPays[1].land : T + 45, T + 45);
   const futureStarts = []; // expected pays of the stream within the horizon: planned spending of that period
-  for (const o of occs(P, T - 62, H)) {
+  for (const o of occs(P, T - 62, H + 12)) {
     if (isSettled(o, pOpen)) continue;
     let day;
     if (o.land >= T) day = o.land;
     else if (windowEnd(o.land, pWin) >= T) day = T; // late, expected: counted today [H8]
     else continue;
     if (day > H) continue;
+    if (!plannedToday && day === T && o.land === T) continue;
+    if (!plannedLate && day === T && o.land < T) continue;
     futureStarts.push({ day, occ: o });
   }
 
@@ -541,7 +571,7 @@ function oracle(sc, asOfStr, opts) {
     for (const s of scheds) {
       if (s.acct !== id) continue;
       const win = a.postingDays;
-      for (const o of occs(s, Math.max(a.open - 400, T - 400), H)) {
+      for (const o of occs(s, Math.max(a.open - 400, T - 400), H + 12)) {
         if (isSettled(o, a.open)) continue;
         if (s.dir === 'in') {
           if (o.land >= T) items.push({ day: o.land, order: 0, amt: s.amt, what: o.name });
@@ -564,7 +594,7 @@ function oracle(sc, asOfStr, opts) {
     }
     // today: goals kept in it, and what is left of this period's budget lines on it [B1]
     let start = money[id].bank;
-    for (const g of Object.values(goals)) if (g.keptIn === id) start -= g.kept;
+    for (const g of Object.values(goals)) if (g.keptIn === id) start -= Math.max(0, g.kept);
     for (const l of lines) if (reserveAcct(l.acct) === id) start -= lineLeft[l.id];
     let bal = start, lowest = start, lowestDay = T;
     items.sort((x, y) => x.day - y.day || x.order - y.order);
@@ -599,7 +629,7 @@ function oracle(sc, asOfStr, opts) {
     const stop = expPays[0].land; // up to the day before the next pay (the late pay while it is late)
     for (const s of scheds) {
       if (s.dir !== 'out') continue;
-      for (const o of occs(s, T - 12, stop)) {
+      for (const o of occs(s, T - 12, stop + 12)) {
         if (isSettled(o, accts[s.acct].open)) continue;
         if (o.land >= T && o.land < stop) dueItems.push({ item: o.name, lands: o.land, due: o.due, amount: s.amt });
       }

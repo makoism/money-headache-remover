@@ -91,9 +91,9 @@ function genLife(seed, opts) {
     const closeBefore = (day) => { let [y, m] = ymd(day); for (;;) { const c = dayIn(y, m, cd); if (c < day) return c; m -= 1; if (m < 1) { m = 12; y -= 1; } } };
     const dueOf = (c) => { const [y, m] = ymd(c); return dayIn(y, m + pm, payDay); };
     if (closeBefore(S + 1) === S) { /* set up on a close day: keep it, the opening holds that close */ }
-    const C0 = closeBefore(S); // strictly before the setup day
+    const C0 = closeBefore(S + 1); // the last close on or before the setup day
     const D0 = dueOf(C0), L0 = shift(D0, card.payment.weekend_holiday);
-    const since = amt(R.int(0, 60) * 1000, true);
+    const since = C0 === S ? 0 : amt(R.int(0, 60) * 1000, true); // set up on a close day: nothing posted since
     const g = { card, closeAfter, dueOf, lines: [], payRule: card.payment.weekend_holiday, stmts: [] };
     if (pm === 2 || R.chance(0.15)) {
       card.opening.current = since; // no last statement typed [X6]
@@ -148,7 +148,7 @@ function genLife(seed, opts) {
   let plan = null;
   const lineIds = [];
   if (R.chance(opts.planShare === undefined ? 0.5 : opts.planShare)) {
-    plan = { lines: [], free: { per: 'month', amount: amt(R.int(30, 90) * 1000) } };
+    plan = { lines: [], free: { per: 'month', amount: amt(R.int(60, 160) * 1000) } };
     for (const nm of ['Food', 'Transport'].slice(0, R.int(0, 2))) { const id = nid(); plan.lines.push({ id, name: nm, per: 'month', amount: amt(R.int(10, 60) * 1000) }); lineIds.push(id); }
     const r = R();
     if (r < 0.3) bank.opening.split = { free: Number((plan.free.amount * R.int(2, 10) / 10).toFixed(dec)) };
@@ -210,12 +210,12 @@ function genLife(seed, opts) {
       else if (r < 0.55 && cards.length) {
         const c = R.pick(cards);
         const e = Object.assign({ kind: 'spend', account: c.card.id, amount: amt(R.int(5, 300) * 100, true) }, line ? { line } : {});
-        if (R.chance(0.25)) e.posted = ds(d + R.int(1, 3));
+        if (R.chance(0.25)) { const p = d + R.int(1, 3); e.posted = ds(p); e._told = p; } // a posted date is known once it posts (read from the statement)
         add(d, e);
       } else if (r < 0.7 && cash) add(d, Object.assign({ kind: 'spend', account: cash.id, amount: amt(R.int(3, 40) * 100) }, line ? { line } : {}));
       else if (r < 0.8 && ew) add(d, Object.assign({ kind: 'spend', account: ew.id, amount: amt(R.int(3, 60) * 100, true) }, line ? { line } : {}));
     }
-    if (R.chance(0.03) && cards.length) { const c = R.pick(cards); const e = { kind: 'refund', account: c.card.id, amount: amt(R.int(5, 200) * 100, true) }; if (plan && R.chance(0.3)) e.line = lineFor(); if (R.chance(0.3)) e.posted = ds(d + R.int(0, 2)); add(d, e); }
+    if (R.chance(0.03) && cards.length) { const c = R.pick(cards); const e = { kind: 'refund', account: c.card.id, amount: amt(R.int(5, 200) * 100, true) }; if (plan && R.chance(0.3)) e.line = lineFor(); if (R.chance(0.3)) { const p = d + R.int(0, 2); e.posted = ds(p); e._told = p; } add(d, e); }
     if (R.chance(0.02)) { const e = { kind: 'refund', account: bank.id, amount: amt(R.int(5, 100) * 100, true) }; if (plan && R.chance(0.4)) e.line = lineFor(); add(d, e); }
     if (R.chance(0.02)) add(d, { kind: 'money_in', account: R.pick(moneyAccts.filter((a) => a !== sav)).id, amount: amt(R.int(1, 30) * 1000) });
     if (cash && R.chance(0.08)) add(d, { kind: 'transfer', from: R.chance(0.8) || !ew ? bank.id : ew.id, to: cash.id, amount: amt(R.int(5, 30) * 1000) });
@@ -314,6 +314,8 @@ function genLife(seed, opts) {
     else if (late && r < 0.2) day = st.land + R.int(1, 4);
     if (day <= curDay) day = curDay + 1; // never on a day already written
     pending.push({ day, e: { kind: 'card_payment', from: g.card.payment.from, card: g.card.id, amount: a, settles: g.card.id + '@' + ds(st.due) } });
+    // a card paid from the e-wallet: the person tops the e-wallet up from the bank first
+    if (g.card.payment.from !== bank.id && a > 0) pending.push({ day: Math.max(curDay + 1, day - 1), e: { kind: 'transfer', from: bank.id, to: g.card.payment.from, amount: a } });
     return a;
   }
 

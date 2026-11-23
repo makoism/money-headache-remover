@@ -17,6 +17,16 @@ const N = Number(arg('--seeds', 2000));
 const FROM = Number(arg('--from', 1));
 const ONE = arg('--seed', null);
 const units = arg('--units', 'written');
+// --as-ref units,placeFloor,currentMonthly,plannedToday,plannedLate,creditWaits: let the checker copy the reference's reading on
+// those points, so the differences that are left belong to the other classes (DIFFERENCES.md).
+const asRef = (arg('--as-ref', '') || '').split(',').filter(Boolean);
+const OPTS = { units };
+if (asRef.includes('placeFloor')) OPTS.placeFloor = false;
+if (asRef.includes('currentMonthly')) OPTS.currentMonthly = true;
+if (asRef.includes('plannedToday')) OPTS.plannedToday = false;
+if (asRef.includes('plannedLate')) OPTS.plannedLate = false;
+if (asRef.includes('creditWaits')) OPTS.creditWaits = true;
+if (asRef.includes('units')) OPTS.units = 'plain';
 const outFile = arg('--out', null);
 const verbose = argv.includes('-v');
 
@@ -25,7 +35,7 @@ const near = (a, b) => typeof a === 'number' && typeof b === 'number' ? Math.abs
 function compare(sc, day) {
   const diffs = [];
   let o, r;
-  try { o = oracle(sc, day, { units }); } catch (e) {
+  try { o = oracle(sc, day, OPTS); } catch (e) {
     if (e instanceof Refused) return { refused: e.message };
     return { diffs: [{ field: 'checker threw', mine: e.message, ref: null }] };
   }
@@ -76,7 +86,7 @@ for (const seed of seeds) {
   } else agreeSeeds += 1;
 }
 if (outFile) fs.writeFileSync(outFile, JSON.stringify(report, null, 1));
-console.log(`fuzz (${units} units): ${seeds.length} seeds, ${asks} asks (${refusedAsks} refused by the checker)`);
+console.log(`fuzz (${OPTS.units} units${asRef.length ? ', as the reference on ' + asRef.join(', ') : ''}): ${seeds.length} seeds, ${asks} asks (${refusedAsks} refused by the checker)`);
 console.log(`seeds that agree on every ask: ${agreeSeeds}; seeds with a difference: ${diffSeeds}`);
 console.log('differences by figure:', JSON.stringify(byField));
 process.exit(diffSeeds ? 1 : 0);
