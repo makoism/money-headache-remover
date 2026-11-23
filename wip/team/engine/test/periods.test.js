@@ -130,4 +130,14 @@ t('Free to spend set for the first time on 15 Jan: no period before it has a Fre
   eq(r.past.map(p => p.free), [null]);
   eq(r.current.free.amount, 50000);   // set first in the period running since 25 Dec: that period has it
 });
+t('scheduleView lists an outstanding occurrence (late, not seen or unticked) before the next one [BJ5]', () => {
+  const { scheduleView } = require('../periods.js');
+  const b = base(x => { x.schedules.push({ id: 'phone', kind: 'bill', name: 'Phone', acct: 'bank', cur: 'JPY', shift: 'none', rules: [{ rule: { every: 'month', days: [2] } }], steps: [{ amount: 4800 }] }); });
+  const v = scheduleView(b, '2026-12-20').phone;
+  eq(v.outstanding, [{ due: '2026-12-02', land: '2026-12-02', amount: 4800, state: 'notSeen' }]);
+  eq(v.next.due, '2027-01-02');
+  const v2 = scheduleView(b, '2026-12-03').phone;   // inside its posting window: late
+  eq(v2.outstanding.map(o => o.state), ['late']);
+  eq(scheduleView(b, '2026-12-20').rent.outstanding, []);
+});
 done('periods.test.js');

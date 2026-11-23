@@ -63,13 +63,24 @@
      scheduleView(book, asOf) -> { <schedule id>: { kind, amount (the usual amount in force on the day), rule (the rule
        in force), next: { due, land, amount } or null (the first occurrence landing or due on or after the day that no record dated by then settles),
        lastNamed: the latest due date a record names (a settle, an `amounts` key, a period start or end), or null,
-       changeFrom: the first day a change may start [X8]: the day itself, or the day after lastNamed when that is later } } */
-  function scheduleView(book, asOf) {
+       changeFrom: the first day a change may start [X8]: the day itself, or the day after lastNamed when that is later,
+       outstanding: [{ due, land, amount, state: 'late'|'notSeen'|'unticked' }] what has landed and is not settled,
+       oldest first, listed before `next` [BJ5] } }   (opts3: the look ahead's opts) */
+  function scheduleView(book, asOf, opts3) {
     const S = node ? require('./schedules.js') : E.schedules, D = node ? require('./dates.js') : E.dates;
     const today = D.dayNum(asOf), out = {};
     const acct = {}; for (const a of book.accounts || []) if (a && !a.gone) acct[a.id] = a;
     const country = L.fieldValue((book.home || {}).country) || null;
     const named = {}, done = new Set();
+    // [BJ5] what has landed and is not settled, by the look ahead: not seen (past its posting window), late (inside
+    // it) or unticked (left at a check-in, or due today); listed before the next one
+    const r = LA.lookahead(book, asOf, opts3 || {});
+    const notSeen = new Set(r.notSeenYet.items.map(i => i.item)), late = new Set(r.mayStillPost.map(i => i.item));
+    const open = {};
+    for (const o of r.checkIn.toConfirm.concat(r.checkIn.apart || [])) {
+      const sid = I.scheduleOf(o.item), due = (I.occurrence(o.item) || {}).due;
+      (open[sid] = open[sid] || []).push({ due, land: o.lands, amount: o.amount, state: notSeen.has(o.item) ? 'notSeen' : late.has(o.item) ? 'late' : 'unticked', id: o.item });
+    }
     const name = (sid, due) => { if (sid && due && (!named[sid] || due > named[sid])) named[sid] = due; };
     for (const e of book.events || []) {
       if (!e || e.gone) continue;
@@ -80,11 +91,13 @@
       if (!s || s.gone) continue;
       for (const k of Object.keys(s.amounts || {})) if (S.keyLive(s.amounts, k)) name(s.id, k);
       const cal = S.calendar((acct[s.acct] && acct[s.acct].country) || country);
-      const occ = S.occurrences(s, cal, today, today + 400).find(o => !done.has(o.id)) || null;
+      const outstanding = (open[s.id] || []).sort((x, y) => (x.land < y.land ? -1 : 1));
+      const occ = S.occurrences(s, cal, today, today + 400).find(o => !done.has(o.id) && !outstanding.some(x => x.id === o.id)) || null;
       const rules = (s.rules || []).filter(x => x && !x.gone);
       let rule = null; rules.forEach((x, i) => { if (i === 0 || x.from == null || D.dayNum(x.from) <= today) rule = x.rule; });
       const last = named[s.id] || null, after = last ? D.dayNum(last) + 1 : -Infinity;
       out[s.id] = { kind: s.kind, amount: S.stepOn(s, today), rule, ends: s.ends || null,
+        outstanding: outstanding.map(x => ({ due: x.due, land: x.land, amount: x.amount, state: x.state })),
         next: occ ? { due: D.dayStr(occ.due), land: D.dayStr(occ.land), amount: occ.amount } : null,
         lastNamed: last, changeFrom: D.dayStr(Math.max(today, after)) };
     }
