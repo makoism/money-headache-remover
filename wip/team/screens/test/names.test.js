@@ -3,7 +3,10 @@
 const assert = require('assert');
 const { test, run } = require('./harness');
 const names = require('../names.js');
-const { lookahead } = require('../../foundation_review/ref/lookahead_ref.js');
+/* the one engine (engine/lookahead.js) on the scenario files, turned into saved books by the engine's converter */
+const { lookahead: engineLookahead } = require('../../engine/lookahead.js');
+const { convert } = require('../../engine/test/scenario_to_book.js');
+const lookahead = (sc, d) => { const { book, opts } = convert(sc); return engineLookahead(book, d, opts); };
 
 const keys = Object.keys(names.NAMES);
 const STATES = ['decided', 'in use', 'for Mako'];
@@ -82,7 +85,7 @@ test('check() catches a screen that puts a label on a figure it does not name', 
 /* every figure the table names is a field the engine really returns, in at least one made-up situation; the ones the
    engine does not return yet are marked engine: false and listed, so nobody wires a screen to a field that is not there */
 test('every figure with engine: true is in the engine result; the missing ones are listed', () => {
-  const results = [['mako_shape', '2026-11-25'], ['freelancer', '2027-02-04'], ['goal_removed', '2027-01-08'], ['loans_and_carried', '2026-12-26']]
+  const results = [['mako_shape', '2026-11-25'], ['freelancer', '2027-02-04'], ['goal_removed', '2027-01-08'], ['loans_and_carried', '2026-12-26'], ['opening_free_typed', '2026-12-05']]
     .map(([f, d]) => lookahead(require('../../foundation_review/scenarios/' + f + '.json'), d, {}));
   const strict = r => p => { const seg = p.split('.'); let o = r; for (const s of seg) { if (o == null) return false; if (s === '*') { const v = Object.values(o).find(x => x && typeof x === 'object'); if (!v) return false; o = v; } else o = o[s]; } return o !== undefined; };
   for (const k of keys) {
@@ -93,7 +96,8 @@ test('every figure with engine: true is in the engine result; the missing ones a
       else assert.ok(found, `${k}: ${f} is not in any engine result`);
     }
   }
-  assert.deepStrictEqual(names.notInEngine().sort(), ['freeToSpendLeft', 'period']);
+  assert.deepStrictEqual(names.notInEngine().sort(), []);
+  assert.deepStrictEqual(names.NAMES.freeToSpendLeft.figures, ['period.free.left']);
 });
 
 test('a day reads "10 Nov", a period "10 Nov to 9 Dec"', () => {

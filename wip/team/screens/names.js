@@ -45,10 +45,10 @@
       source: 'MAKO_RUN 2.2 (one word for short)',
     },
     freeToSpendLeft: {
-      label: 'Free to spend left', figures: ['freeToSpend.left'], state: 'for Mako', engine: false,
+      label: 'Free to spend left', figures: ['period.free.left'], state: 'for Mako',
       choices: ['Free to spend left', 'Left to spend'],
       source: 'COPY_QC8_FOR_MAKO one word per thing (four names today); MAKO_RUN 2.5',
-      note: 'the engine reads plan.free.left as the cap on safe to spend but does not return it; the screens need it returned',
+      note: 'the engine returns it as res.period.free.left (the cap on safe to spend)',
     },
     notPlacedYet: {
       label: 'Not placed yet', figures: ['toPlace.*.amount'], state: 'decided',
@@ -113,10 +113,10 @@
       source: 'DECISIONS_ROUND2 A2 (expected items since the last check-in, ticked by default)',
     },
     period: {
-      label: 'This pay period', figures: ['period.start', 'period.end'], state: 'for Mako', engine: false,
+      label: 'This pay period', figures: ['period.start', 'period.end'], state: 'for Mako',
       choices: ['This pay period', 'This period', 'Until next pay'],
       source: 'LESSONS lesson 1 (periods run pay to pay); QC_ROLES glossary "This month" no longer fits a pay period',
-      note: 'written with periodLabel, "10 Nov to 9 Dec"; the engine works out period starts but does not return them yet',
+      note: 'written with periodLabel, "10 Nov to 9 Dec", from res.period',
     },
   };
 
