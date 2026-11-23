@@ -131,3 +131,7 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
 .a3-ask-try .a3-link { margin-left: 0; text-align: left; }
 .a3-ask-figs li { display: grid; grid-template-columns: 1fr auto auto; gap: 12px; }
 .a3-ask-head { color: var(--ink2); font-size: var(--t-cap); }
+/* Reminders (ask lane) */
+.a3-rem-go { display: flex; gap: 14px; white-space: nowrap; }
+.a3-rem-go a { color: var(--ink); min-height: 44px; display: inline-flex; align-items: center; }
+#a3RemBefore { width: 100%; max-width: 16em; }

@@ -25,6 +25,7 @@
   { "name": "Works as a plain file: first screen offers the made-up numbers, with a day box to step through the days", "test": "tests/e3_file.js", "passes": true },
   { "name": "Ask, pure: a short summary of the engine's figures (refs, never ids, notes, shops or single spends), the reply checked into steps, a preview from the engine, Apply through act3, Undo all", "test": "tests/ask3_core.test.js", "passes": true },
   { "name": "Ask on the page: a question box, the line on what is sent and the exact summary, answers in plain words, proposed changes as ticked steps with before and after, Apply through ACT3 with Undo, the relay or the viewer's Claude", "test": "tests/e3_ask.js", "passes": true },
+  { "name": "Reminders on the page: check-ins the day after pay and mid period, bills a chosen number of days before, a time, the calendar file made on the device, Google and Outlook links, nothing sent or saved", "test": "tests/e3_remind.js", "passes": true },
   { "name": "Reminders, pure: check-in days (after pay, mid period) and bill days from the engine's calendar, the calendar file, Google and Outlook links, words only", "test": "tests/remind3.test.js", "passes": true },
   { "name": "Setup, short (setup3): bank today, pay with a second income, cards with a close day or not sure, bills, the minimum; through build_book and the store", "test": "tests/e3_setup.js", "passes": true }
  ]

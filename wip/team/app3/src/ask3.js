@@ -170,5 +170,5 @@ ${chk.dropped.length ? `<p class="a3-sub" data-ask="dropped">Left out because th
 }
 
 document.addEventListener('click', e => { if (e.target.closest && e.target.closest('#a3AskGo')) openAsk3(); });
-document.addEventListener('click', e => { if (ASK3.open && e.target.closest && e.target.closest('#a3SetGo')) closeAsk3(); }, true);   // Settings over Ask: Ask closes first
+document.addEventListener('click', e => { if (ASK3.open && e.target.closest && e.target.closest('#a3SetGo, #a3RemGo')) closeAsk3(); }, true);   // another sheet over Ask: Ask closes first
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && ASK3.open) closeAsk3(); });
