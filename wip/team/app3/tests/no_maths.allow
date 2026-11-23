@@ -1,0 +1,7 @@
+# file :: exact snippet :: the reason (never a money figure). Keep this short.
+e3.js :: d.getMonth() + 1 :: today's date as YYYY-MM-DD (the clock counts months from 0); a date, not money
+e3.js :: -d.getTimezoneOffset() :: the device's offset for a record's told time; a clock, not money
+e3.js :: Math.abs(off) :: the device's offset written as +09:00; a clock, not money
+e3.js :: Math.floor(a / 60) :: the offset's hours; a clock, not money
+e3.js :: a % 60 :: the offset's minutes; a clock, not money
+e3.js :: s += abc[Math.floor(Math.random() * abc.length)] :: a random device part for ids until lane C's store keeps one; not money

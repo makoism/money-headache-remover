@@ -1,0 +1,277 @@
+{
+ "v": 3,
+ "home": {
+  "curs": [
+   {
+    "from": "1970-01-01",
+    "cur": "JPY"
+   }
+  ],
+  "country": {
+   "v": "JP"
+  },
+  "mode": {
+   "v": "track"
+  },
+  "main": {
+   "v": {
+    "acct": "k7m2qa-f3n8p1x6wd-1",
+    "min": null
+   }
+  }
+ },
+ "people": [],
+ "accounts": [
+  {
+   "id": "k7m2qa-f3n8p1x6wd-1",
+   "name": "Main bank",
+   "type": "bank",
+   "cur": "JPY",
+   "owner": null,
+   "minBank": null
+  },
+  {
+   "id": "k7m2qa-f3n8p1x6wd-2",
+   "name": "Card A",
+   "type": "card",
+   "cur": "JPY",
+   "owner": null,
+   "minBank": null,
+   "inFull": true,
+   "cutDay": null,
+   "payDay": 10,
+   "payMonths": 1,
+   "shift": "after",
+   "payFrom": "k7m2qa-f3n8p1x6wd-1"
+  },
+  {
+   "id": "k7m2qa-f3n8p1x6wd-3",
+   "name": "Card B",
+   "type": "card",
+   "cur": "JPY",
+   "owner": null,
+   "minBank": null,
+   "inFull": true,
+   "cutDay": null,
+   "payDay": 11,
+   "payMonths": 1,
+   "shift": "before",
+   "payFrom": "k7m2qa-f3n8p1x6wd-1"
+  }
+ ],
+ "places": [],
+ "schedules": [
+  {
+   "id": "k7m2qa-f3n8p1x6wd-4",
+   "kind": "income",
+   "name": "Main job",
+   "acct": "k7m2qa-f3n8p1x6wd-1",
+   "cur": "JPY",
+   "shift": "after",
+   "rules": [
+    {
+     "from": null,
+     "rule": {
+      "every": "month",
+      "days": [
+       10
+      ]
+     }
+    }
+   ],
+   "steps": [
+    {
+     "from": null,
+     "amount": 180000
+    }
+   ],
+   "startsPeriod": true
+  },
+  {
+   "id": "k7m2qa-f3n8p1x6wd-5",
+   "kind": "income",
+   "name": "Side job",
+   "acct": "k7m2qa-f3n8p1x6wd-1",
+   "cur": "JPY",
+   "shift": "after",
+   "rules": [
+    {
+     "from": null,
+     "rule": {
+      "every": "month",
+      "days": [
+       10
+      ]
+     }
+    }
+   ],
+   "steps": [
+    {
+     "from": null,
+     "amount": 60000
+    }
+   ]
+  },
+  {
+   "id": "k7m2qa-f3n8p1x6wd-6",
+   "kind": "bill",
+   "name": "Rent",
+   "acct": "k7m2qa-f3n8p1x6wd-1",
+   "cur": "JPY",
+   "shift": "after",
+   "rules": [
+    {
+     "from": null,
+     "rule": {
+      "every": "month",
+      "days": [
+       27
+      ]
+     }
+    }
+   ],
+   "steps": [
+    {
+     "from": null,
+     "amount": 72000
+    }
+   ]
+  },
+  {
+   "id": "k7m2qa-f3n8p1x6wd-7",
+   "kind": "bill",
+   "name": "Power",
+   "acct": "k7m2qa-f3n8p1x6wd-1",
+   "cur": "JPY",
+   "shift": "after",
+   "rules": [
+    {
+     "from": null,
+     "rule": {
+      "every": "month",
+      "days": [
+       26
+      ]
+     }
+    }
+   ],
+   "steps": [
+    {
+     "from": null,
+     "amount": 7400
+    }
+   ]
+  },
+  {
+   "id": "k7m2qa-f3n8p1x6wd-8",
+   "kind": "bill",
+   "name": "Phone",
+   "acct": "k7m2qa-f3n8p1x6wd-1",
+   "cur": "JPY",
+   "shift": "after",
+   "rules": [
+    {
+     "from": null,
+     "rule": {
+      "every": "month",
+      "days": [
+       20
+      ]
+     }
+    }
+   ],
+   "steps": [
+    {
+     "from": null,
+     "amount": 4800
+    }
+   ]
+  },
+  {
+   "id": "k7m2qa-f3n8p1x6wd-9",
+   "kind": "bill",
+   "name": "Internet",
+   "acct": "k7m2qa-f3n8p1x6wd-1",
+   "cur": "JPY",
+   "shift": "after",
+   "rules": [
+    {
+     "from": null,
+     "rule": {
+      "every": "month",
+      "days": [
+       27
+      ]
+     }
+    }
+   ],
+   "steps": [
+    {
+     "from": null,
+     "amount": 5200
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "id": "k7m2qa-f3n8p1x6wd-10",
+   "k": "open",
+   "acct": "k7m2qa-f3n8p1x6wd-1",
+   "date": "2026-11-20",
+   "a": 286000,
+   "told": "2026-11-20T24:00",
+   "grp": "setup"
+  },
+  {
+   "id": "k7m2qa-f3n8p1x6wd-11",
+   "k": "check",
+   "acct": "k7m2qa-f3n8p1x6wd-1",
+   "date": "2026-11-20",
+   "a": 286000,
+   "told": "2026-11-20T24:00",
+   "grp": "setup"
+  },
+  {
+   "id": "k7m2qa-f3n8p1x6wd-12",
+   "k": "open",
+   "acct": "k7m2qa-f3n8p1x6wd-2",
+   "date": "2026-11-20",
+   "a": 54000,
+   "told": "2026-11-20T24:00",
+   "grp": "setup"
+  },
+  {
+   "id": "k7m2qa-f3n8p1x6wd-13",
+   "k": "check",
+   "acct": "k7m2qa-f3n8p1x6wd-2",
+   "date": "2026-11-20",
+   "a": 54000,
+   "told": "2026-11-20T24:00",
+   "grp": "setup"
+  },
+  {
+   "id": "k7m2qa-f3n8p1x6wd-14",
+   "k": "open",
+   "acct": "k7m2qa-f3n8p1x6wd-3",
+   "date": "2026-11-20",
+   "a": 23000,
+   "told": "2026-11-20T24:00",
+   "grp": "setup"
+  },
+  {
+   "id": "k7m2qa-f3n8p1x6wd-15",
+   "k": "check",
+   "acct": "k7m2qa-f3n8p1x6wd-3",
+   "date": "2026-11-20",
+   "a": 23000,
+   "told": "2026-11-20T24:00",
+   "grp": "setup"
+  }
+ ],
+ "checkins": [],
+ "plan": {
+  "shares": [],
+  "budgets": []
+ }
+}
