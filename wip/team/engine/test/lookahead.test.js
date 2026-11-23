@@ -102,4 +102,17 @@ t("a filler's place is the check-in's fillerPlace for that account, that check-i
   eq(r.accounts.bank.headroom, 393000 - 25000);
   eq(r.safeToSpend.headline, 48000);
 });
+// [AU4, AU5] A pay that starts a period, counted on its day or late but still counted, takes that period's budget
+// lines and Free to spend with it. Rent 300,000 on the 25th too.
+const withRent = () => base(x => { x.schedules.push({ id: 'rent', kind: 'bill', name: 'Rent', acct: 'bank', cur: 'JPY', shift: 'none', rules: [{ rule: { every: 'month', days: [25] } }], steps: [{ amount: 300000 }] }); });
+t('a pay due today and not ticked brings its period\'s lines and Free to spend [AU4]', () => {
+  const r = run(withRent(), '2026-12-25');
+  // 400,000 - 30,000 food left; 25 Dec: + 250,000 pay - 300,000 rent - 30,000 food - 50,000 free = 240,000;
+  // 25 Jan: + 250,000 - 300,000 - 30,000 - 50,000 = 110,000
+  eq(r.accounts.bank.lowest, 110000);
+});
+t('a late pay still counted brings its period\'s lines and Free to spend [AU5, H8]', () => {
+  const r = run(withRent(), '2026-12-28');
+  eq(r.accounts.bank.lowest, 110000);
+});
 done('lookahead');

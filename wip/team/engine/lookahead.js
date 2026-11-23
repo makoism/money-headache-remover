@@ -695,7 +695,7 @@
       const occ = occOn(started, today);
       const o = occ && pays.find(p => p.id === occ);
       const start = started !== null ? started : o ? o.land : null;
-      const next = nextPays.filter(p => p.land > today)[0];
+      const next = nextPays.slice().sort((x, z) => x.land - z.land)[0];   // [AU4, AU5] a pay counted today or late ends it
       const end = next ? next.land : start !== null ? start + 30 : null;
       return { started, occ, start, end };
     }
@@ -868,10 +868,12 @@
       if (planLeft.free && planLeft.free.acct === id) lines.push(planLeft.free);
       if (!lines.length) return list;
       if (periodStream) {
-        const starts = nextPays.filter(p => p.land > today);
+        // [AU4, AU5] every pay the walk counts (due today, or late and still expected) brings its period's lines, on the
+        // day the walk counts the pay
+        const starts = nextPays.slice().sort((x, z) => x.land - z.land);
         starts.forEach((p, i) => {
           const end = starts[i + 1] ? starts[i + 1].land : p.land + 30;
-          for (const l of lines) list.push({ land: p.land, amount: perPeriod({ per: l.per, amount: periodAmount(l.src, p.land, p.id) }, p.land, end, p.id), label: l.name + ' for the period from ' + short(p.land) });
+          for (const l of lines) list.push({ land: Math.max(p.land, today), amount: perPeriod({ per: l.per, amount: periodAmount(l.src, p.land, p.id) }, p.land, end, p.id), label: l.name + ' for the period from ' + short(p.land) });
         });
       } else {
         // [B4, M9, M10] no fixed pay: by day. A monthly amount x 12 / the year's days a day, rounded down, the rest of each
