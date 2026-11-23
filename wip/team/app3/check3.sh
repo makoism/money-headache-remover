@@ -62,6 +62,9 @@ step "Reminders on the page (check-ins and bills, the calendar file, Google and 
 step "the cloud copy, two devices through the page (local fake vault)"; run tests/e3_cloud.js "e3_cloud: ALL PASS"
 step "the service worker (precache, offline, 3 s timeout, a new build)"; run tests/e3_sw.js "e3_sw: ALL PASS"
 
+step "walk/ holds only its README and the kept walks v1 to v4 (the gate is tests/e3_walk.js)"
+WALK=$(ls -A walk | sort | tr '\n' ' '); [ "$WALK" = "README.md v1 v2 v3 v4 " ] && echo "walk: tidy" || { echo "walk/ is not tidy: $WALK"; BAD=1; }
+
 step "FEATURES.json (a feature marked passing must have its test green in this run)"
 node -e "
 const fs=require('fs');const F=JSON.parse(fs.readFileSync('FEATURES.json','utf8'));const R=Object.fromEntries(fs.readFileSync('$RESULTS','utf8').trim().split('\n').filter(Boolean).map(l=>l.split(' ')));
