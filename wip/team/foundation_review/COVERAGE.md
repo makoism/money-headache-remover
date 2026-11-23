@@ -1,6 +1,6 @@
-# Coverage of the foundation (after decisions T to AF, 23 Nov 2026)
+# Coverage of the foundation (after decisions T to AG, 23 Nov 2026)
 
-The coverage grid of final_review_3.md, updated (LESSONS lesson 3: count coverage, do not sample). Rows are kinds of record and the shapes they live in; columns are the situations that change a record's effect. Every applicable cell names the asks (scenarios/*.json, run by `node foundation_review/ref/run_scenarios.js`) or cases (rules/*.json, run by `node foundation_review/rules/run_rules.js`) that cover it. All of them pass: 698 of 698 asks, 516 of 516 cases (after AE and AF: 6 asks in a new scenario file, 31 cases added and 20 re-worked (3 of them only reworded), the row "keyed overrides" and the column R; see "Decisions AE and AF" at the end; after AB and AC: 20 asks in 4 new scenario files, 34 cases added and 15 re-worked, the columns L and B and the rows `pendingMove` and `frozen`; see "Decisions AB and AC" at the end; after AA: 3 asks in a new scenario file and 12 move cases; after W and X: 78 asks and 32 cases added, in 19 new scenario files, one ask in fee_place and a new rules file `rules/edits.json`; after Y and Z: 15 asks in 4 new scenario files, 11 rules cases and 24 move cases, and the move row; see "Decisions W and X" and "Decisions Y and Z" at the end). The move cases (`rules/move.json`) are counted in the 516.
+The coverage grid of final_review_3.md, updated (LESSONS lesson 3: count coverage, do not sample). Rows are kinds of record and the shapes they live in; columns are the situations that change a record's effect. Every applicable cell names the asks (scenarios/*.json, run by `node foundation_review/ref/run_scenarios.js`) or cases (rules/*.json, run by `node foundation_review/rules/run_rules.js`) that cover it. All of them pass: 698 of 698 asks, 522 of 522 cases (after AG: 6 cases added and 3 re-worked, no new row or column; see "Decision AG" at the end; after AE and AF: 6 asks in a new scenario file, 31 cases added and 20 re-worked (3 of them only reworded), the row "keyed overrides" and the column R; see "Decisions AE and AF" at the end; after AB and AC: 20 asks in 4 new scenario files, 34 cases added and 15 re-worked, the columns L and B and the rows `pendingMove` and `frozen`; see "Decisions AB and AC" at the end; after AA: 3 asks in a new scenario file and 12 move cases; after W and X: 78 asks and 32 cases added, in 19 new scenario files, one ask in fee_place and a new rules file `rules/edits.json`; after Y and Z: 15 asks in 4 new scenario files, 11 rules cases and 24 move cases, and the move row; see "Decisions W and X" and "Decisions Y and Z" at the end). The move cases (`rules/move.json`) are counted in the 522.
 
 Columns: C check day, O opening, W posting window, P period start, X other currency, D two devices, U undo/redo, E edited after settled, S imported/typed/self-logged, Z closed account, and, added after confirm_review_1 (decision X): M the move run on two devices (the phone and the desktop each move the same 38.31 copy), Y years after setup (an ask ten years out, X7), T a time with an offset (the start and end of a day in the device's offset, X9); and, added after confirm_review_2 (decisions AB and AC): L a second device moving days later, after real use on the first (AB1), and B setup between a statement's close and its payment day, for cards, pay-later and loans (AB3); and, added after confirm_review_3 (decision AE5): R restore, an older backup restored while the cloud copy is on (the D4 clock, every list, held marks, a 38.31-format backup after the move).
 
@@ -38,6 +38,7 @@ Marks: **c** covered before this round; **n** newly covered (in the first ten co
 | Changed by AA (no new row or column; cells of the move row and the not-yet row covered again by AA's cases and asks) | 0 |
 | Changed by AD (no new row or column; cells of the move, `pendingMove`, card, loan and period-end rows covered again by AD's cases and asks) | 0 |
 | Changed by AE and AF in the old cells (none uncovered; the `pendingMove` L cell re-covered by AE2's cases, the card B cell by AE6's) | 0 |
+| Changed by AG (no new row or column; AG's cases add to the `pendingMove` and keyed overrides R cells and the keyed overrides P cell) | 0 |
 | **Applicable and covered, all passing** | **289** (289 of 289) |
 | Applicable and uncovered | 0 |
 
@@ -408,6 +409,7 @@ Marks: **c** covered before this round; **n** newly covered (in the first ten co
 - D two devices (n): rules mv-95 (one device answers, the other has not: the written entries are `gone` with the answer's `at`, the other's live copy gives way), mv-96 (both answer: one draw, one answer, AB rows)
 - M the move run on two devices (n): rules mv-95, mv-96
 - L a second move days later (n): rules mv-98, mv-99 (November's answer waits on both and is one record; the phone kept its entries for what it wrote at its move marked `gone`, so the desktop's waiting copies of them are dropped, AD5); a waiting entry applied later, once, its records and keys judged by their own `at`: mv-106 to mv-110 (AE2; AD5's first sentence withdrawn)
+- R restore (n): rules mg-111 (what waited at the backup waits again); mv-117, mv-118 (answered again after the restore: written with the D4 clock, the key wins, AG1), mg-120 (and wins at the merge)
 - (AC2, no column of its own) a loan receipt waiting for the loan question: rules mv-91 to mv-93
 - not applicable: C, O, W, X, U, E, S, Z, Y, T, B (an entry holds a 38.31 amount or answer waiting for a day; it moves no account and is in the home currency)
 
@@ -419,13 +421,13 @@ Marks: **c** covered before this round; **n** newly covered (in the first ten co
 
 ### keyed overrides (`amounts`, `once`, `extraSteps`) (a new row: confirm_review_3 found it missing)
 - C check day (c): one_occurrence_amount amt-01 to amt-05 (an occurrence's own amount on the check-in list and in safe to spend)
-- P period start (c): rules units-75 to units-77 (a `once` keyed by the pay that starts the period, T1); mv-88 (spread over the periods starting in the month)
+- P period start (c): rules units-75 to units-77 (a `once` keyed by the pay that starts the period, T1); mv-88 (spread over the periods starting in the month); mv-119, mv-120 (weekly: five and four periods, the five-pay month noted, AG2)
 - D two devices (n): rules mg-100 (December pay 0 survives a rename), mg-101 (two Food keys), mg-102 (two `extraSteps` entries), mg-103 (the same key: the newer; a removed key stays removed), mg-104 (`plan.shares` keys), mg-106 (same `at`: removed wins, then the larger `by`), mg-108 (a key held on arrival, its own mark); the reviewer's e1
 - U undo/redo (n): rules mg-105 (a key removed and put back wins over the removal)
 - E edited after settled (c): rules ed-04 (an `amounts` key is a named occurrence, X8), ed-06 (a `once` key)
 - M the move run on two devices (n): rules mg-107 (the phone answers the pay day and writes the waiting key; the desktop's rename keeps it), mg-117 (a key edited after one device applied the entry wins over the other's later apply)
 - L a second move days later (n): rules mv-116 (a key edited on the phone survives the desktop moving the same copy days later)
-- R restore (n): rules mg-111 (the key an answer wrote, removed by the restore), mg-113 (each key and `extraSteps` entry, key by key; the merge keeps it)
+- R restore (n): rules mg-111 (the key an answer wrote, removed by the restore), mg-113 (each key and `extraSteps` entry, key by key; the merge keeps it); mv-117, mv-118, mg-120 (the key written again after the restore wins, AG1)
 - not applicable: O, W, X, S, Z, Y, T, B (a keyed override is typed or moved, in its record's currency, on no account of its own, and is no opening, import or statement)
 
 ### restore (R) (a new column: confirm_review_3 found only mg-96 and mg-97)
@@ -433,7 +435,7 @@ Every row's R cell, with the case that covers it (all in `rules/merge.json`; eac
 - open: mg-118 (the moved opening), mg-119 (an opening with `notYet`). check: mg-118. in / pay: mg-110 (`set:pay@2026-11-25`), mg-119. refund: mg-119. spend (c): mg-96, mg-97; mg-112 (a held mark), mg-118 (a moved receipt).
 - transfer, repay, borrow, convert, adjust: mg-119. move between places: mg-110 (`mv:draw:once.2027-01`), mg-119 (a move and `rm:trip`). filler, skip (`skip:`), periodStart (`ps:`): mg-119. set: settle: mg-110. period-end answer (`pe:`): mg-110. rm: / to place, closing (`close:`): mg-119.
 - income schedules (c, n): mg-96, mg-97 (steps); mg-109 (the D4 clock), mg-111 (`rules` and `amounts`), mg-113, mg-118. bill schedules: mg-119. budget lines: mg-113. goals / places: mg-119. card, cash and e-wallet: mg-119. loan / pay-later: mg-113 (`extraSteps`).
-- fee record (`fee:`): mg-119. not yet at setup: mg-119. move: mg-118 (a 38.31-format backup restored after the move, moved and stamped with the restore). `pendingMove`, frozen: mg-111. keyed overrides: mg-111, mg-113. Shared `ui` keys (no row of their own): mg-98, mg-99, mg-114 to mg-116.
+- fee record (`fee:`): mg-119. not yet at setup: mg-119. move: mg-118 (a 38.31-format backup restored after the move, moved and stamped with the restore). `pendingMove`, frozen: mg-111; `pendingMove` answered again after it: mv-117, mv-118, mg-120 (AG1). keyed overrides: mg-111, mg-113, mg-120. Shared `ui` keys (no row of their own): mg-98, mg-99, mg-114 to mg-116.
 - not applicable: hand / Wallet mode (stage 2, T7).
 
 ## What was wrong (the X cells) and the decision that fixed it
@@ -613,4 +615,16 @@ Run first, before the references changed (task 1): rules 471 of 514 cases (43 fa
 | AF3 (mg-q13): `gone` per `ui` key; a restore removes keys not in the backup | rules mg-114 to mg-116 | all three (the key came back; mg-116: `gone` read as a ui key) |
 | mg-109's input names the device's `lastSeen`: the D4 clock holds a now more than a day past the newest `at` seen [L merge q8], so the restore uses the device's own, not the copy's newest | rules mg-109 | (an input fix after the first run; mg-96 to mg-99 would otherwise have been held at 18 Nov) |
 
-Questions AE and AF do not answer (no case depends on them; `rules/move.json` `open`): mv-q56 (a backup restored after its waiting entry was applied: answering the day again writes nothing, the restore's removal of the key winning on the same `at`), mv-q57 (AE4 and weekly pay's five-pay months).
+Questions AE and AF do not answer (no case depends on them; `rules/move.json` `open`): mv-q56 (a backup restored after its waiting entry was applied: answering the day again writes nothing, the restore's removal of the key winning on the same `at`), mv-q57 (AE4 and weekly pay's five-pay months). AG answers both (below).
+
+## Decision AG, and where each part is tested
+
+Run first, before the reference changed: rules 514 of 522 cases (8 failed, all move) and scenarios 698 of 698 asks (no ask added: both parts are the move's and the merge's, outside the model). After the change to `rules/move_ref.js`: 522 of 522 cases, 698 of 698 asks.
+
+| Part | Asks or cases | Failed first |
+|---|---|---|
+| AG1 (mv-q56): every write made now uses the D4 clock; a waiting entry a restore brought back, answered again, writes strictly newer than the restore | rules mv-117 (answered at 10:00 after the 09:00 restore), mv-118 (the clock behind the restore: 09:00:00.001), mg-120 (the merge with the cloud copy holding the removal) | mv-117, mv-118 (the key kept the restore's `at` and stayed removed; mv-118 also stamped the answer 08:50, older than the restore). mg-120 passed first: the merge already takes the newer key once it is written |
+| AG2 (mv-q57): the note for any month with more pays than usual; the list `morePays` | rules mv-119 (weekly, five pays in January: pay, Food and Free to spend noted), mv-120 (weekly, four pays in February: none), mv-121 (a bill answered weekly, five payments in April); mv-111 to mv-113 re-worked for the name | mv-119 to mv-121 (no note: only three counted; the spreads already held), mv-111 to mv-113 (the old name only) |
+| AG: the AE and AF helper's readings confirmed | (as in "Decisions AE and AF") | none (already so) |
+
+Questions AG does not answer: none is open in `rules/*.json`. One reading to confirm (SCHEMA_V3 section 14): AG1 is read to reach what an entry writes only when a restore brought the entry back; read for every entry, mg-117's edited 120,000 would lose to a stale 0 applied later on the other device.
