@@ -14,7 +14,9 @@
    Amounts are whole minor units of the home currency. `shift` is 'before', 'after' or 'none' (the weekend and holiday
    rule). The first bank is the main one unless another says `main`. Each account opens with one `open` and one `check`
    on the setup day, written together [B6, B7, H1]; a card's opening is what it owes now. A close day "not sure" is saved
-   as none: each payment is then all that is owed [H4]. The main bank's minimum lives in home.main with its currency
+   as none: each payment is then all that is owed [H4]. [BL6] `askedStatements` gives, for each card key set up after
+   its close day and before that statement's payment day, { closed, payment } (YYYY-MM-DD, the payment after the weekend
+   rule); the card's answer `statement` (how much of `owed` was on that statement) is saved as its own `stmt` check. The main bank's minimum lives in home.main with its currency
    [AN3]; skipped means none [M1]. Wrong answers are refused, never guessed. */
 (function (root) {
   'use strict';
@@ -63,6 +65,16 @@
       opening(x.id, whole(b.amount, b.name));
     }
     const acctOf = key => { if (!ids[key]) throw new Error('no account ' + key); return ids[key]; };
+    // [BL6] the statement closed last (on or before the setup day) and its payment day after the weekend rule, when the
+    // setup day falls after that close and before that payment day; else null
+    const askedStatements = {};
+    const statementGap = card => {
+      const d0 = D.dayNum(day), [y, mo] = D.ymOf(d0), here = D.dayIn(y, mo, card.cutDay);
+      const closed = here <= d0 ? here : D.dayIn(y, mo - 1, card.cutDay);
+      const [cy, cm] = D.ymOf(closed), cal = S.calendar(ans.country || 'XX');
+      const land = cal.shift(D.dayIn(cy, cm + card.payMonths, card.payDay), card.shift);
+      return closed < d0 && d0 < land ? { closed: D.dayStr(closed), payment: D.dayStr(land) } : null;
+    };
     for (const c of ans.cards || []) {
       const notSure = c.closeDay == null || c.closeDay === 'not sure';
       const x = stamp({ id: idFor(c.key), name: c.name, type: 'card', cur, owner: null, inFull: c.inFull !== false,
@@ -71,6 +83,15 @@
       if (book.accounts.find(a => a.id === x.payFrom).type === 'card') throw new Error(c.name + ' is paid from a card');
       book.accounts.push(x);
       opening(x.id, whole(c.owed, c.name + ' owed'));
+      // [BL6, AB3, J5] set up after a close and before that statement's payment day: setup asks how much was on it; the
+      // answer is its own check with `stmt: true`, due on the coming payment day (0: nothing on it, so it is paid)
+      const gap = notSure ? null : statementGap(x);
+      if (gap) askedStatements[c.key] = gap;
+      if (c.statement != null) {
+        if (!gap) throw new Error(c.name + ': a statement figure is asked only between its close day and its payment day');
+        const a = whole(c.statement, c.name + "'s statement");
+        book.events.push(stamp({ id: newId(), k: 'check', acct: x.id, date: day, a, stmt: true, stmtDate: gap.closed, paid: a === 0, grp }));
+      }
     }
     book.home = { curs: [{ from: '1970-01-01', cur, at, by }], country: field(ans.country || 'XX'), mode: field('track'),
       main: field({ acct: ids[main.key], min: main.min != null ? { a: whole(main.min, 'the minimum'), cur } : null }) };
@@ -122,7 +143,7 @@
         check.notYet = (check.notYet || []).concat(names);
       }
     }
-    return { book, ids, asked };
+    return { book, ids, asked, askedStatements };
   }
   const api = { buildBook, PAY_NEEDS_AMOUNT };
   if (node) module.exports = api;

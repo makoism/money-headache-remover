@@ -69,8 +69,11 @@ function openSetup3() {
       <div class="a3-field"><label for="s3-${k}-p">Day of the month it is paid from your bank</label><select class="a3-in a3-sel" id="s3-${k}-p" data-f="payDay">${dayOptions3('10')}</select></div>
       <div class="a3-field"><label for="s3-${k}-s">When that day is a weekend or holiday, it comes out</label><select class="a3-in a3-sel" id="s3-${k}-s" data-f="shift">${shiftOptions3(SHIFT3.out, 'after')}</select></div>
       <div class="a3-field"><label for="s3-${k}-c">Day its statement closes</label><select class="a3-in a3-sel" id="s3-${k}-c" data-f="closeDay" aria-describedby="s3-${k}-ch">${dayOptions3('not sure', [['last', 'the last day'], ['not sure', 'not sure']])}</select>
-        <p class="a3-sub" id="s3-${k}-ch" data-hint="closeDay">Spends after this day go on the next payment</p></div></div>`);
-    bindMoney3($(`#s3-${k}-o`));
+        <p class="a3-sub" id="s3-${k}-ch" data-hint="closeDay">Spends after this day go on the next payment</p></div>
+      <div class="a3-field" data-q="stmt" hidden><label for="s3-${k}-st">How much of it was on the statement that closed?</label><input class="a3-in" id="s3-${k}-st" data-f="statement" data-money data-optional aria-describedby="s3-${k}-sth">
+        <p class="a3-sub" id="s3-${k}-sth" data-hint="stmt"></p></div></div>`);
+    bindMoney3($(`#s3-${k}-o`)); bindMoney3($(`#s3-${k}-st`));
+    askTaken3();
   });
   $('#s3AddBill').addEventListener('click', () => {
     setup3.bills++; const k = 'bill' + setup3.bills;
@@ -117,9 +120,13 @@ function answers3(strict) {
     });
     $$('#a3Setup [data-row^=card]').forEach(row => {
       const name = text(row.querySelector('[data-f=name]'), 'Card'), cd = row.querySelector('[data-f=closeDay]').value;
-      ans.cards.push({ key: row.dataset.row, name, owed: need(row.querySelector('[data-f=owed]'), `Type what is on ${name} now, or 0`),
+      const owed = need(row.querySelector('[data-f=owed]'), `Type what is on ${name} now, or 0`);
+      /* [BL6] asked only between the close and its payment day (askTaken3 shows it); blank: all of it was on that statement */
+      const q = row.querySelector('[data-q=stmt]'), st = row.querySelector('[data-f=statement]');
+      const statement = strict && q && !q.hidden ? (st.value.trim() ? need(st, `Type how much of ${name} was on the statement, or leave it blank`) : owed) : undefined;
+      ans.cards.push({ key: row.dataset.row, name, owed,
         payDay: Number(row.querySelector('[data-f=payDay]').value), closeDay: cd === 'not sure' || cd === 'last' ? cd : Number(cd),
-        payFrom: 'bank1', shift: row.querySelector('[data-f=shift]').value });
+        payFrom: 'bank1', shift: row.querySelector('[data-f=shift]').value, ...(statement !== undefined ? { statement } : {}) });
     });
     $$('#a3Setup [data-row^=bill]').forEach(row => {
       const name = text(row.querySelector('[data-f=name]'), 'Bill');
@@ -135,9 +142,17 @@ function answers3(strict) {
    names the bill and its own day: "Did the Rent of 27 Oct leave your bank?" */
 function askTaken3() {
   if (!setup3) return;
-  let asked = {};
-  try { asked = BurrowEngine.build.buildBook(answers3(false), { newId: BurrowEngine.ids.idMaker('draft0') }).asked || {}; } catch (e) { asked = {}; }
+  let asked = {}, stmts = {};
+  try { const d = BurrowEngine.build.buildBook(answers3(false), { newId: BurrowEngine.ids.idMaker('draft0') }); asked = d.asked || {}; stmts = d.askedStatements || {}; } catch (e) { asked = {}; }
   const yr = (E3.today() || '').slice(0, 4);
+  /* [BL6] a card set up after its close and before that statement's payment day: how much was on that statement */
+  $$('#a3Setup [data-row^=card]').forEach(row => {
+    const q = row.querySelector('[data-q=stmt]'), g = stmts[row.dataset.row];
+    q.hidden = !g;
+    if (!g) return;
+    q.querySelector('label').textContent = `How much of it was on the statement that closed on ${day3(g.closed, yr)}?`;
+    q.querySelector('[data-hint=stmt]').textContent = `That part comes out on ${day3(g.payment, yr)}, the rest with a later payment. Leave it blank if you are not sure: then all of it comes out on ${day3(g.payment, yr)}`;
+  });
   $$('#a3Setup [data-row^=bill]').forEach(row => {
     const q = row.querySelector('[data-q=takenOut]'), days = asked[row.dataset.row];
     q.hidden = !days;

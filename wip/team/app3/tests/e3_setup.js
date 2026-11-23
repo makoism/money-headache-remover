@@ -68,5 +68,33 @@ const typeIn = async (p, sel, v) => { await p.click(sel, { clickCount: 3 }); awa
   ck('the old app\'s copies are byte for byte the same', old.ls === T.OLD_TEXT && old.idb === T.OLD_IDB);
   ck('no page errors', errs.length === 0, errs.join(' | '));
   await b.close();
+  /* [BL6] US dollars, set up Mon 23 Nov: Visa $300.10 on it now, closes on the 20th, paid on the 5th (the working day after
+     a weekend). Set up between the 20 Nov close and its payment, setup asks how much was on that statement; $250 typed.
+     5 Dec is a Saturday, so the $250 comes out Mon 7 Dec; the other $50.10 comes out on 5 Jan with the next statement. */
+  {
+    const prof2 = require('fs').mkdtempSync(require('os').tmpdir() + '/a3setup6-');
+    const o = await T.open({ profile: prof2 }), q = o.p;
+    await q.goto(T.URL0 + '?today=2026-11-23'); await T.w(400);
+    await q.click('#a3SetupGo'); await T.w(300);
+    await q.select('#s3Cur', 'USD');
+    await typeIn(q, '#s3Bank', '1234.56'); await typeIn(q, '#s3PayAmt', '2500'); await q.select('#s3PayDay', '10');
+    await q.click('#s3AddCard'); await T.w(100);
+    const r = '[data-row=card1] ';
+    await typeIn(q, r + '[data-f=name]', 'Visa'); await typeIn(q, r + '[data-f=owed]', '300.10'); await q.select(r + '[data-f=payDay]', '5');
+    ck('BL6: not asked while the close day is not sure', await q.$eval(r + '[data-q=stmt]', e => e.hidden));
+    await q.select(r + '[data-f=closeDay]', '20'); await T.w(200);
+    const ask = await q.$eval(r + '[data-q=stmt]', e => ({ hidden: e.hidden, label: e.querySelector('label').textContent, hint: e.querySelector('[data-hint=stmt]').textContent }));
+    ck('BL6: asks how much was on the statement that closed on 20 Nov', !ask.hidden && ask.label === 'How much of it was on the statement that closed on 20 Nov?', JSON.stringify(ask));
+    ck('BL6: says when that part comes out', /comes out on 7 Dec/.test(ask.hint), ask.hint);
+    await typeIn(q, r + '[data-f=statement]', '250');
+    await q.click('#a3SetupSave'); await T.w(700);
+    ck('BL6: saved', await q.$eval('#a3Setup', e => e.hidden), await q.$eval('#a3SetupErr', e => e.textContent).catch(() => ''));
+    const line = (await q.$eval('[data-cardid] .when', e => e.textContent)).replace(/⁠/g, '');
+    ck('BL6: Home says $250.00 comes out on 7 Dec', /\$250\.00 comes out on 7 Dec/.test(line), line);
+    const due = (await q.$eval('[data-card=due]', e => e.textContent)).replace(/⁠/g, '');
+    ck('BL6: the $250.00 is due before next pay', /Visa/.test(due) && /\$250\.00/.test(due), due);
+    ck('BL6: no page errors', o.errs.length === 0, o.errs.join(' | '));
+    await o.b.close();
+  }
   T.done('e3_setup');
 })().catch(e => { console.log('FAIL crashed ' + e.stack); process.exit(1); });

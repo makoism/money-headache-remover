@@ -111,4 +111,36 @@ t('setup asks only about bills landing after the last pay and on or before the s
   a.bills.forEach(x => { x.takenOut = false; });
   eq(B.buildBook(a, { newId }).asked, { phone: ['2026-11-20'], club: ['2026-11-16'] });
 });
+// [BL6, AB3, J5] a card with a known close day, set up between that close and its payment day: setup asks how much of what
+// is on it was on the statement just closed; that part is due on the coming payment day, the rest on the next one.
+// Made-up US dollars: set up Mon 23 Nov 2026, Visa $300.10 on it, closes on the 20th, paid on the 5th (the working day
+// after a weekend), $250 on the statement closed 20 Nov. 5 Dec is a Saturday, so it comes out Mon 7 Dec; the other
+// $50.10 is in the statement closing 20 Dec, out Tue 5 Jan 2027.
+const usCard = (day, closeDay, more) => Object.assign({ day, told: day + 'T09:00-05:00', country: 'US', currency: 'USD',
+  banks: [{ key: 'chk', name: 'Checking', amount: 123456 }],
+  pays: [{ key: 'pay', name: 'Pay', bank: 'chk', amount: 250000, day: 1, shift: 'none', startsPeriod: true }],
+  cards: [Object.assign({ key: 'visa', name: 'Visa', owed: 30010, payDay: 5, closeDay, payFrom: 'chk', shift: 'after' }, more || {})] });
+t('a card set up between its close and its payment day: setup is told which statement to ask about [BL6]', () => {
+  eq(B.buildBook(usCard('2026-11-23', 20), { newId }).askedStatements, { visa: { closed: '2026-11-20', payment: '2026-12-07' } });
+  // not asked: close day not sure, set up on the close day, or after the payment day
+  eq(B.buildBook(usCard('2026-11-23', 'not sure'), { newId }).askedStatements, {});
+  eq(B.buildBook(usCard('2026-11-20', 20), { newId }).askedStatements, {});
+  eq(B.buildBook(usCard('2026-12-08', 20), { newId }).askedStatements, {});
+});
+t('the statement figure is written as its own dated check: $250 out on 7 Dec, the rest on 5 Jan [BL6, J5]', () => {
+  const r = B.buildBook(usCard('2026-11-23', 20, { statement: 25000 }), { newId });
+  const visa = r.ids.visa, evs = r.book.events.filter(e => e.acct === visa);
+  eq(evs.map(e => [e.k, e.a, e.stmt || false, e.stmtDate, e.paid]), [['open', 30010, false, undefined, undefined], ['check', 30010, false, undefined, undefined], ['check', 25000, true, '2026-11-20', false]]);
+  ok(evs.every(e => e.grp === evs[0].grp), 'one setup group');
+  const c = lookahead(r.book, '2026-11-23').cards[visa];
+  eq([c.owedNow, c.next.amount, c.next.payment_date], [30010, 25000, '2026-12-07']);
+  const c2 = lookahead(r.book, '2026-12-08').cards[visa];   // 7 Dec not ticked: overdue; the rest comes next
+  eq([c2.overdue.map(o => [o.amount, o.payment_date]), c2.next.amount, c2.next.payment_date], [[[25000, '2026-12-07']], 5010, '2027-01-05']);
+  // nothing on that statement (0): no payment on 7 Dec, all of it next time
+  const z = B.buildBook(usCard('2026-11-23', 20, { statement: 0 }), { newId });
+  const cz = lookahead(z.book, '2026-11-23').cards[z.ids.visa];
+  eq([cz.next.amount, cz.next.payment_date], [30010, '2027-01-05']);
+  // a statement figure for a card not in that gap is refused, not guessed
+  assert.throws(() => B.buildBook(usCard('2026-12-08', 20, { statement: 25000 }), { newId }), /statement/);
+});
 done('build_book');
