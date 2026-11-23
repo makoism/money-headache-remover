@@ -4,6 +4,23 @@ Written 2026-11-18 on branch `wip-38.31`. Read this whole file before touching a
 
 ## 0. Handoff (latest first)
 
+**2026-11-23 19:45 JST, MAIN 15: NEW WAY OF WORKING (LESSONS lesson 4, DECISIONS_ROUND2 AX to BE).** The new app is its own page, wip/team/app3/, built on the new engine (wip/team/engine/), with storage (store/) and the shared screen pieces (screens/). The old app stays frozen as a fallback. Mako has no old data (BE): version one starts empty, and the move is not wired.
+**Green on wip-38.31:**
+- engine 779/779 asks, and 2,000 seeds against the checker with 0 differences
+- rules 817/817
+- store 38/38
+- screens 85
+- app3/check3.sh ALL GOOD
+**Running lanes (each merges itself after its gate; if a push is refused, it pushes lane/<name> and MAIN merges):**
+- slice1: setup3, the Home fixes, a plain-file try page with a day picker
+- plan
+- receipts, with app3/src/act3.js as the write door and Undo
+- statements, with engine/match.js
+- backup, cloud and settings, with engine/sync.js
+**Targets (JST):** try file to Mako tonight; usable slice 1 on Tue 24 Nov around midday; all features except art and 3D on 1 to 3 Dec. After that: the assistant and reminders, then the other pay patterns (slice 6).
+**Gates:** app3/check3.sh plus engine/test/run_all.js, ref/run_scenarios.js and rules/run_rules.js. The old ./check.sh runs once on a quiet machine before anything reaches Mako (BB1).
+**Mako, 23 Nov:** keep messages SHORT, ask only real questions, give full context in the question.
+
 **2026-11-23 morning JST, MAIN 15: FOUNDATION REVIEW (QC rounds paused).** Mako: the engine plans in calendar months from a balance fixed on the 1st; people are paid on any day and in many cycles. "Ensure any fundamental things that would set us back are addressed in this round." His own shape (DECISIONS 19 Nov: pay on the 10th, cards paid 10th and 11th) already said the month follows pay day; it was filed as a team feature (A6/Q6) and never built.
 **Done:** wip/team/foundation_review/code_inventory.md (18 calendar-month assumptions, file:line; estimate 95 to 135 h full, 35 to 45 h phase 1), premortem.md (window ends Oct 2028 and drops dates outside it; two truths for the bank; cloud ids; no version refusal; receipts cap 5,000; currency as a symbol; debts rounded on load; process gap). New standing reviewer .claude/agents/qc-foundation.md (runs on every plan before building and every QC round).
 **Running:** three read-only reviews: life walks (salaried), life walks (irregular, shared, cash), real banking behaviour. Save each into foundation_review/. A quiet check.sh full on 6ed02e3 (scratchpad full3.txt) from before the pause.
