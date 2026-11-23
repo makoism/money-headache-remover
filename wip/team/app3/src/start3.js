@@ -17,8 +17,24 @@ document.addEventListener('click', e => { const b = e.target.closest('[data-tab]
 function tryBand3() {
   const t = $('#a3Try'); t.hidden = false;
   t.innerHTML = `<span>Made-up numbers shaped like a real month. Nothing you do here is saved</span>
-    <label class="a3-day">Show the page as on <input type="date" id="a3Day" value="${esc3(E3.today())}"></label>`;
+    <label class="a3-day">Show the page as on <input type="date" id="a3Day" value="${esc3(E3.today())}"></label>
+    <button type="button" class="a3-btn" id="a3TryOut">Set up with my own numbers</button>`;
   $('#a3Day').addEventListener('change', e => { E3.setToday(e.target.value); if (!$('#a3Check').hidden) closeCheck3(); renderHome3(); });
+  $('#a3TryOut').addEventListener('click', leaveTry3);
+}
+/* out of the made-up numbers: nothing of them is written; this device's own book shows when it keeps one, else setup */
+async function leaveTry3() {
+  if (SET3.open) closeSet3();
+  if (REM3.open) closeRem3();
+  if (ASK3.open) closeAsk3();
+  if (!$('#a3Stmt').hidden) stmt3Close();
+  showTab3('home');
+  if (typeof PL3 === 'object') PL3.form = null;
+  if (typeof RC3 === 'object') { RC3.edit = null; RC3.last = null; }
+  const t = $('#a3Try'); t.hidden = true; t.innerHTML = '';
+  await E3.leaveTry();
+  renderHome3();
+  if (!E3.book) openSetup3();
 }
 (async () => {
   try { $('#a3Pix').innerHTML = pix('sprout', 2); } catch (e) { /* art is a nicety */ }

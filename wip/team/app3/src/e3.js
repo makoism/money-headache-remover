@@ -38,6 +38,17 @@ const E3 = (() => {
   function setToday(d) { if (/^\d{4}-\d{2}-\d{2}$/.test(d || '')) dayShown = d; }
   /* the first screen's "See it with made-up numbers first": a try book in memory, nothing written */
   function useTry(name) { if (!TRY_BOOKS[name]) return false; book = JSON.parse(JSON.stringify(TRY_BOOKS[name])); mode = 'try'; return true; }
+  /* the try band's "Set up with my own numbers": the try book is dropped (it was never written) and this device's own
+     book is read, when it keeps one. Gives the mode after: 'kept' shows that book, 'none' is the caller's cue for setup */
+  async function leaveTry() {
+    if (mode !== 'try') return mode;
+    Q.delete('try');
+    try { const u = new URL(location.href); u.searchParams.delete('try'); history.replaceState(history.state, '', u.href); } catch (e) { /* the address keeps it: a reload shows the try book again */ }
+    tryIds = null; dayShown = null; book = null; mode = 'none';
+    if (!store) return (await load(), mode);
+    try { const r = await store.load(); readOnly = !!r.readOnly; if (!r.empty && r.copy) { book = r.copy; mode = 'kept'; } } catch (e) { /* nothing kept: setup */ }
+    return mode;
+  }
   async function load() {
     const t = Q.get('try');
     if (t && TRY_BOOKS[t]) { book = JSON.parse(JSON.stringify(TRY_BOOKS[t])); mode = 'try'; return; }
@@ -149,6 +160,6 @@ const E3 = (() => {
   }
   /* is a the day before b (two YYYY-MM-DD days) */
   const dayBefore = (a, b) => BurrowEngine.dates.dayNum(b) - BurrowEngine.dates.dayNum(a) === 1;
-  return { today, setToday, useTry, start, told, dayBefore, newId, load, view, nameOf, occName, curOf, home, put, replace, rec, onSaved: f => savedFns.push(f),
+  return { today, setToday, useTry, leaveTry, start, told, dayBefore, newId, load, view, nameOf, occName, curOf, home, put, replace, rec, onSaved: f => savedFns.push(f),
     get book() { return book; }, get mode() { return mode; } };
 })();
