@@ -1,21 +1,26 @@
-# Coverage of the foundation (after decisions T to AA, 23 Nov 2026)
+# Coverage of the foundation (after decisions T to AC, 23 Nov 2026)
 
-The coverage grid of final_review_3.md, updated (LESSONS lesson 3: count coverage, do not sample). Rows are kinds of record and the shapes they live in; columns are the situations that change a record's effect. Every applicable cell names the asks (scenarios/*.json, run by `node foundation_review/ref/run_scenarios.js`) or cases (rules/*.json, run by `node foundation_review/rules/run_rules.js`) that cover it. All of them pass: 667 of 667 asks, 433 of 433 cases (after AA: 3 asks in a new scenario file and 12 move cases; after W and X: 78 asks and 32 cases added, in 19 new scenario files, one ask in fee_place and a new rules file `rules/edits.json`; after Y and Z: 15 asks in 4 new scenario files, 11 rules cases and 24 move cases, and the move row; see "Decisions W and X" and "Decisions Y and Z" at the end). The move cases (`rules/move.json`) are counted in the 433.
+The coverage grid of final_review_3.md, updated (LESSONS lesson 3: count coverage, do not sample). Rows are kinds of record and the shapes they live in; columns are the situations that change a record's effect. Every applicable cell names the asks (scenarios/*.json, run by `node foundation_review/ref/run_scenarios.js`) or cases (rules/*.json, run by `node foundation_review/rules/run_rules.js`) that cover it. All of them pass: 687 of 687 asks, 467 of 467 cases (after AB and AC: 20 asks in 4 new scenario files, 34 cases added and 15 re-worked, the columns L and B and the rows `pendingMove` and `frozen`; see "Decisions AB and AC" at the end; after AA: 3 asks in a new scenario file and 12 move cases; after W and X: 78 asks and 32 cases added, in 19 new scenario files, one ask in fee_place and a new rules file `rules/edits.json`; after Y and Z: 15 asks in 4 new scenario files, 11 rules cases and 24 move cases, and the move row; see "Decisions W and X" and "Decisions Y and Z" at the end). The move cases (`rules/move.json`) are counted in the 467.
 
-Columns: C check day, O opening, W posting window, P period start, X other currency, D two devices, U undo/redo, E edited after settled, S imported/typed/self-logged, Z closed account, and, added after confirm_review_1 (decision X): M the move run on two devices (the phone and the desktop each move the same 38.31 copy), Y years after setup (an ask ten years out, X7), T a time with an offset (the start and end of a day in the device's offset, X9).
+Columns: C check day, O opening, W posting window, P period start, X other currency, D two devices, U undo/redo, E edited after settled, S imported/typed/self-logged, Z closed account, and, added after confirm_review_1 (decision X): M the move run on two devices (the phone and the desktop each move the same 38.31 copy), Y years after setup (an ask ten years out, X7), T a time with an offset (the start and end of a day in the device's offset, X9); and, added after confirm_review_2 (decisions AB and AC): L a second device moving days later, after real use on the first (AB1), and B setup between a statement's close and its payment day, for cards, pay-later and loans (AB3).
 
-Rows added after Y and Z: **move**, the move of a saved copy from 38.31, 38.28 or the 25.0 to 38.26 builds (`rules/move.json`), as a record kind of its own: what it writes in each situation.
+Rows added after Y and Z: **move**, the move of a saved copy from 38.31, 38.28 or the 25.0 to 38.26 builds (`rules/move.json`), as a record kind of its own: what it writes in each situation. Rows added after AB: **`pendingMove`** (what waits on a moved copy, records `mv:pend:<field path>`) and **`frozen`** (each device's raw 38.31 text, `mv:frozen:<by>`, formerly the shared `frozen3831`).
 
-Marks: **c** covered before this round; **n** newly covered (in the first ten columns, by T to V: it was "u", uncovered and sound by working, or "X", uncovered and wrong, and the cell says which; in the columns M, Y, T and the two new rows, by W and X); **f (X..)** a false cover confirm_review_1 found, now really covered by the decision named; **-** not applicable; **s2** stage 2 (decision T7 took Wallet mode and `hand` out of version one).
+Marks: **c** covered before this round; **n** newly covered (in the first ten columns, by T to V: it was "u", uncovered and sound by working, or "X", uncovered and wrong, and the cell says which; in the columns M, Y, T and the two new rows, by W and X); **f (X..)** a false cover confirm_review_1 found, now really covered by the decision named (**f (AB..)** one confirm_review_2 found); **-** not applicable; **s2** stage 2 (decision T7 took Wallet mode and `hand` out of version one).
 
 ## Counts
 
 | | Cells |
 |---|---|
-| All cells (29 rows x 13 columns) | 377 |
-| Not applicable | 149 |
+| All cells (31 rows x 15 columns) | 465 |
+| Not applicable | 212 |
 | Stage 2 (hand and Wallet mode, T7) | 2 |
-| **Applicable** | **226** |
+| **Applicable** | **251** |
+| New after confirm_review_2: the columns L and B (58 cells, 18 applicable) and the rows `pendingMove` and `frozen` (30 cells, 7 applicable) | 25 |
+| of which covered by new cases and asks (n) | 25 |
+| False covers confirm_review_2 found, now really covered (move M and D, AB1; card O, AB3; not yet S, AB4) | 4 |
+| Near misses confirm_review_2 found, now really covered (in / pay T by ny-04; move U by mv-97; period-end M and budget lines M by the AB2 cases) | 4 |
+| Applicable after AA (29 rows x 13 columns) | 226 |
 | New after Y and Z: the move row (10 applicable, 3 not applicable) | 10 |
 | of which covered by cases written for Y and Z | 8 |
 | of which uncovered until this round, now covered by new cases (Y ten years out, T a device west of UTC) | 2 |
@@ -26,44 +31,46 @@ Marks: **c** covered before this round; **n** newly covered (in the first ten co
 | of which covered by new asks and cases (n) | 47 |
 | False covers confirm_review_1 found, now really covered (check C, card O, in / pay E, income E, rm: D) | 5 |
 | Changed by AA (no new row or column; cells of the move row and the not-yet row covered again by AA's cases and asks) | 0 |
-| **Applicable and covered, all passing** | **226** (226 of 226) |
+| **Applicable and covered, all passing** | **251** (251 of 251) |
 | Applicable and uncovered | 0 |
 
 **Counts after V** (kept for the record): 260 cells, 93 not applicable, 2 stage 2, 165 applicable, all covered. **A note on final_review_3's numbers.** final_review_3.md says 260 cells, 171 applicable, 129 covered, 24 uncovered and sound, 18 wrong. Its own table, counted cell by cell, holds 128 c, 22 u, 17 X and 93 -, so 167 applicable; the "(X: wallet)" note on the last row is the eighteenth wrong item but not a cell of its own. This file counts the table. Wallet mode is stage 2 now (T7), so the note and the two `hand` cells are out of version one: 165 applicable cells.
 
 ## The grid
 
-| Row | C | O | W | P | X | D | U | E | S | Z | M | Y | T |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| open | c | c | c | c | c | - | n (u) | - | c | c | n | - | n |
-| check | c, f (X4) | c | c | n (X) | c | n (u) | c | n (u) | c | c | n | n | n |
-| in / pay | c | c | c | c | c | c | n (X) | c, f (X8) | c | n (u) | - | n | n |
-| refund | c | - | c | n (u) | n (u) | - | - | - | c | n (u) | - | n | n |
-| spend | c | c | c | c | n (X) | c | c | c | c | n (u) | n | n | n |
-| transfer | c | n (u) | c | - | c | n (u) | - | - | c | c | - | - | n |
-| repay | c | c | c | - | c | c | - | - | c | c | - | n | n |
-| borrow | c | - | n (u) | - | - | - | - | - | c | - | - | n | n |
-| convert | n (u) | - | - | - | c | - | - | - | n (u) | - | - | - | n |
-| adjust | n (X) | - | - | - | - | - | - | - | - | - | - | - | n |
-| hand / Wallet mode | s2 | - | - | s2 | - | - | - | - | - | - | - | - | - |
-| move between places | n (X) | c | - | c | - | c | n (u) | - | - | c | - | - | - |
-| filler | c | - | c | n (X) | - | - | - | - | - | - | - | - | - |
-| skip | c | - | - | n (u) | - | c | c | - | c | - | - | n | - |
-| set: settle | c | c | c | c | c | c | c | n (u) | c | c | - | n | n |
-| periodStart | c | - | c | n (X) | - | n (X) | c | - | - | - | - | - | - |
-| period-end answer | c | - | - | n (X) | - | c | c | n (X) | c | - | n | - | - |
-| rm: / to place | c | - | - | c | - | c, f (X5) | c | - | - | c | - | - | - |
-| closing | c | c | - | - | - | c | - | - | - | n (u) | - | - | - |
-| income schedules, every rule | c | c | c | c | c | c | - | c, f (X8) | c | c | n | n | - |
-| bill / transfer / auto schedules | c | c | c | c | n (u) | c | c | c | c | n (X) | n | n | - |
-| budget lines | n (X) | c | - | n (X) | n (X) | c | - | n (u) | c | n (u) | n | n | - |
-| goals / places | c | c | - | c | n (u) | c | c | - | - | c | n | n | - |
-| card | c | c, f (X6) | c | c | c | c | c | c | c | c | n | n | n |
-| loan / pay-later | c | c | - | - | n (u) | c | - | - | c | c | n | n | n |
-| cash, e-wallet, wallet, investment, owedToYou | c | c | c | - | c | - | - | - | c | c | n | - | n |
-| fee record (`fee:<transfer id>`) | - | - | c | n | c | n | c | - | c | - | - | - | - |
-| not yet at setup (`notYet`) | n | n | n | n | n | - | - | - | n | - | - | - | - |
-| move (an old copy moved) | n | n | - | n | n | n | n | - | n | - | n | n | n |
+| Row | C | O | W | P | X | D | U | E | S | Z | M | Y | T | L | B |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| open | c | c | c | c | c | - | n (u) | - | c | c | n | - | n | n | n |
+| check | c, f (X4) | c | c | n (X) | c | n (u) | c | n (u) | c | c | n | n | n | n | n |
+| in / pay | c | c | c | c | c | c | n (X) | c, f (X8) | c | n (u) | - | n | n | - | - |
+| refund | c | - | c | n (u) | n (u) | - | - | - | c | n (u) | - | n | n | - | - |
+| spend | c | c | c | c | n (X) | c | c | c | c | n (u) | n | n | n | n | - |
+| transfer | c | n (u) | c | - | c | n (u) | - | - | c | c | - | - | n | - | - |
+| repay | c | c | c | - | c | c | - | - | c | c | - | n | n | n | - |
+| borrow | c | - | n (u) | - | - | - | - | - | c | - | - | n | n | - | - |
+| convert | n (u) | - | - | - | c | - | - | - | n (u) | - | - | - | n | - | - |
+| adjust | n (X) | - | - | - | - | - | - | - | - | - | - | - | n | - | - |
+| hand / Wallet mode | s2 | - | - | s2 | - | - | - | - | - | - | - | - | - | - | - |
+| move between places | n (X) | c | - | c | - | c | n (u) | - | - | c | - | - | - | n | - |
+| filler | c | - | c | n (X) | - | - | - | - | - | - | - | - | - | - | - |
+| skip | c | - | - | n (u) | - | c | c | - | c | - | - | n | - | - | - |
+| set: settle | c | c | c | c | c | c | c | n (u) | c | c | - | n | n | - | - |
+| periodStart | c | - | c | n (X) | - | n (X) | c | - | - | - | - | - | - | - | - |
+| period-end answer | c | - | - | n (X) | - | c | c | n (X) | c | - | n | - | - | n | - |
+| rm: / to place | c | - | - | c | - | c, f (X5) | c | - | - | c | - | - | - | - | - |
+| closing | c | c | - | - | - | c | - | - | - | n (u) | - | - | - | - | - |
+| income schedules, every rule | c | c | c | c | c | c | - | c, f (X8) | c | c | n | n | - | n | - |
+| bill / transfer / auto schedules | c | c | c | c | n (u) | c | c | c | c | n (X) | n | n | - | n | - |
+| budget lines | n (X) | c | - | n (X) | n (X) | c | - | n (u) | c | n (u) | n | n | - | n | - |
+| goals / places | c | c | - | c | n (u) | c | c | - | - | c | n | n | - | n | - |
+| card | c | c, f (X6), f (AB3) | c | c | c | c | c | c | c | c | n | n | n | n | n |
+| loan / pay-later | c | c | - | - | n (u) | c | - | - | c | c | n | n | n | n | n |
+| cash, e-wallet, wallet, investment, owedToYou | c | c | c | - | c | - | - | - | c | c | n | - | n | n | - |
+| fee record (`fee:<transfer id>`) | - | - | c | n | c | n | c | - | c | - | - | - | - | - | - |
+| not yet at setup (`notYet`) | n | n | n | n | n | - | - | - | n, f (AB4) | - | - | - | - | - | - |
+| move (an old copy moved) | n | n | - | n | n | n, f (AB1) | n | - | n | - | n, f (AB1) | n | n | n | - |
+| pending move (`pendingMove`) | - | - | - | n | - | n | - | - | - | - | n | - | - | n | - |
+| frozen text (`mv:frozen:<by>`) | - | - | - | - | - | n | - | - | - | - | n | - | - | n | - |
 
 ## Every applicable cell and what covers it
 
@@ -76,8 +83,10 @@ Marks: **c** covered before this round; **n** newly covered (in the first ten co
 - U undo/redo (n, was u): rules mg-75
 - S imported/typed/self-logged (c): moved_records moved-01; moved_figure_no_time mfig-01; moved_bank_now bnow-01
 - Z closed account (c): account_closed close-03
-- M the move run on two devices (n): rules mg-85 (`mv:open:bank`)
+- M the move run on two devices (n): rules mg-85 (`mv:open:cfg`)
 - T a time with an offset (n): day_offset_west west-01 (the opening day's end at -05:00); day_offset_kinds kinds-01 to kinds-05
+- L a second move days later (n): rules mv-82, mv-83 (the moved opening carries its copy's last save as `at`, Mon 23 Nov 20:00, on both devices, AB1), mv-85 (the copy saved later wins an opening nobody edited)
+- B set up between close and payment day (n): card_between_close_pay cbp-04 (the card opens with the unpaid October statement and November so far, AB3); loan_between_stmt_pay lbs-03
 
 ### check
 - C check day (c, a false cover fixed by X4): same_day_order order-02 to order-04; a large gain held until answered: gain_held gh-01 to gh-04, gain_answered ga-01, ga-02, gain_pay_day gpd-01 to gpd-03
@@ -90,9 +99,11 @@ Marks: **c** covered before this round; **n** newly covered (in the first ten co
 - E edited after settled (n, was u): grid_two_phones_check g2p-04, g2p-05
 - S imported/typed/self-logged (c): import_after_check iac-01 to iac-10
 - Z closed account (c): account_closed close-03; closing_write_off woff-02
-- M the move run on two devices (n): rules mg-85 (`mv:check:bank`)
+- M the move run on two devices (n): rules mg-85 (`mv:check:cfg.bankStart`)
 - Y years after setup (n): far_years fy-03 (a check in 2036)
 - T a time with an offset (n): day_offsets off-01; day_offset_kinds kinds-01
+- L a second move days later (n): rules mv-98, mv-99 (the 23 Nov bank figure corrected on the phone stays 185,000 when the desktop moves on 1 Dec, AB1)
+- B set up between close and payment day (n): rules ed-13 to ed-16 (the statement check setup saves: yes, no with its amount, don't know holding everything owed; not asked after the payment day, AB3); card_between_close_pay cbp-03, cbp-06
 
 ### in / pay
 - C check day (c): late_pay late-08; settle_ticked tick-03
@@ -106,7 +117,7 @@ Marks: **c** covered before this round; **n** newly covered (in the first ten co
 - S imported/typed/self-logged (c): import_rules imp-02, imp-04, imp-09
 - Z closed account (n, was u): closed_reopened cr-04
 - Y years after setup (n): far_years fy-03, fy-10 (a pay ticked in 2036 starts the period)
-- T a time with an offset (n): day_offset_kinds kinds-01 (`set:pay@` with a date only)
+- T a time with an offset (n): notyet_opening ny-04 (`set:pay@2027-06-25` ticked at a check-in, told with a time and no offset, read in the device's offset; confirm_review_2 found that kinds-01's date-only `told` on a `set:` record is one the engine never writes)
 
 ### refund
 - C check day (c): card_statements stmt-02, stmt-03; line_on_card line-04, line-05
@@ -129,9 +140,10 @@ Marks: **c** covered before this round; **n** newly covered (in the first ten co
 - E edited after settled (c): rules mg-07, mg-12
 - S imported/typed/self-logged (c): import_rules imp-01, imp-02; split_auto_est split-01; import_after_check iac-01
 - Z closed account (n, was u): closed_reopened cr-05
-- M the move run on two devices (n): rules mg-85 (`mv:spend:<receipt id>`)
+- M the move run on two devices (n): rules mg-85 (`mv:rc:<receipt id>`)
 - Y years after setup (n): far_years fy-04, fy-09 (food on the card in 2036)
 - T a time with an offset (n): day_offsets off-01 (a moved receipt and a typed spend with a date only, a time with no offset); day_offset_west west-01
+- L a second move days later (n): rules mv-82, mv-83 (a receipt removed on the phone stays removed), mv-84, mv-85 (a receipt only the desktop's later copy held is added), mv-97 (removed, then put back with an Undo, AB1, H6)
 
 ### transfer
 - C check day (c): import_two_sided two-04, two-05
@@ -153,6 +165,8 @@ Marks: **c** covered before this round; **n** newly covered (in the first ten co
 - Z closed account (c): rules acc-08, acc-11
 - Y years after setup (n): far_years fy-01, fy-04 (paid in 2029, nothing carried to 2036)
 - T a time with an offset (n): day_offset_kinds kinds-04
+- L a second move days later (n): rules mv-98, mv-99 (the moved loan receipt, a repay on the car loan, keeps the note typed on the phone, AB1)
+- (AC2, AC6, no column of its own) a loan receipt waiting for "which loan is this": rules mv-91 to mv-93
 
 ### borrow
 - C check day (c): card_out out-01
@@ -183,6 +197,8 @@ Marks: **c** covered before this round; **n** newly covered (in the first ten co
 - U undo/redo (n, was u): place_moves_adjust pma-01 (the move back undone)
 - Z closed account (c): rules acc-12, acc-13
 
+- L a second move days later (n): rules mv-98, mv-99 (the moved Emergency fund draw, `mv:draw:once.2026-12`, lowered on the phone, stays 12,000, AB1)
+- (AC4, AB rows, no column of its own) the draw goes to Waiting; its built id makes one record when two devices apply it: rules mv-72, mv-95, mv-96
 ### filler
 - C check day (c): same_day_order order-04; avail_check avail-02; filler_spending fs-01, fs-02
 - W posting window (c): avail_check avail-07; pending_hold hold-02, hold-03, hold-05, hold-07
@@ -225,6 +241,8 @@ Marks: **c** covered before this round; **n** newly covered (in the first ten co
 - E edited after settled (n, was X): period_end_fixed pef-01 to pef-03; rules pe-50, pe-51
 - S imported/typed/self-logged (c): rules pe-38, pe-39, pe-44 to pe-47
 - M the move run on two devices (n): rules mg-85 (38.31 `ui.sweep` as `pe:<occurrence>:<place>`); rules pe-60, pe-61 (its occurrence)
+- M, continued (AB2): a month-end answer for a period not ended at the move waits and the period's own question still comes: rules mv-52, mv-89 (pay twice a month); a moved answer larger than its place holds is capped: rules pe-62 to pe-65; one naming a removed goal goes to Waiting to place: rules mv-90, pe-66 (AC8)
+- L a second move days later (n): rules mv-98, mv-99 (September's moved answer, changed on the phone to 1,500, stays)
 
 ### rm: / to place
 - C check day (c): goal_removed gone-02
@@ -249,8 +267,9 @@ Marks: **c** covered before this round; **n** newly covered (in the first ten co
 - E edited after settled (c, a false cover fixed by X8): pay_day_moves move-01 to move-04; rules ed-01 to ed-07; pay_day_offer offer-01 to offer-03
 - S imported/typed/self-logged (c): import_rules imp-08, imp-09
 - Z closed account (c): close_main_bank cmb-05; rules acc-18, acc-19
-- M the move run on two devices (n): rules mg-84 (`mv:schedule:pay`)
+- M the move run on two devices (n): rules mg-84 (`mv:pay:steps.a`); moved pay `per: 'month'` with a one-month amount spread over the month's pays (AB2, AC1): rules mv-87, mv-88
 - Y years after setup (n): far_years fy-11
+- L a second move days later (n): rules mv-82, mv-83 (the pay day answered on the phone keeps its rule, AB1)
 
 ### bill / transfer / auto schedules
 - C check day (c): mako_shape mako-12
@@ -265,6 +284,7 @@ Marks: **c** covered before this round; **n** newly covered (in the first ten co
 - Z closed account (n, was X): account_closed close-01, close-05; bill_on_card boc-01 to boc-05 (paid by card, the X); closing the main bank moves its bills (V): close_main_bank_bills cmbb-01 to cmbb-05; rules acc-18, acc-19
 - M the move run on two devices (n): rules mg-84 (a bill and a self-logged spend)
 - Y years after setup (n): far_years fy-08, fy-12 (rent and a yearly tax in 2036)
+- L a second move days later (n): rules mv-82, mv-83 (rent's day answered on the phone keeps its rule, AB1)
 - (X watch, no column of its own) one occurrence changed, `amounts`: one_occurrence_amount amt-01 to amt-05; a bill that ends with its money redirected, `ends` and `redirect`: bill_ends_redirect red-01 to red-04
 - (W1, no column of its own) closing the main bank moves the transfers out and in and the self-logged spends tied to it: rules acc-20, acc-21
 
@@ -277,8 +297,9 @@ Marks: **c** covered before this round; **n** newly covered (in the first ten co
 - E edited after settled (n, was u): plan_change pc-01 to pc-03; a change made on a period's first day (V): plan_change_first_day pcf-01 to pcf-03
 - S imported/typed/self-logged (c): line_on_card line-01 to line-05
 - Z closed account (n, was u): close_main_bank cmb-02, cmb-03; rules acc-18
-- M the move run on two devices (n): rules mg-84 (`mv:budget:food`); a 38.31 one-month amount to the first period starting in that month: rules units-78 to units-80
+- M the move run on two devices (n): rules mg-84 (`mv:line:food`); a 38.31 one-month amount replaces the month's total, spread over the periods starting in that month (AB2): rules units-79, units-80, units-82 to units-84, mv-73, mv-88 (units-78 and units-81 key it)
 - Y years after setup (n): far_years fy-09, fy-10
+- L a second move days later (n): rules mv-98, mv-99 (Food renamed on the phone stays renamed, AB1)
 
 ### goals / places
 - C check day (c): mako_shape mako-02
@@ -291,13 +312,14 @@ Marks: **c** covered before this round; **n** newly covered (in the first ten co
 - Z closed account (c): rules acc-12, acc-13
 - M the move run on two devices (n): rules mg-84 (`mv:place:g1`); where each goal's money is, asked by the move: goal_money_elsewhere gme-01 to gme-04
 - Y years after setup (n): far_years fy-12 (a refill place next due in 2037)
+- L a second move days later (n): rules mv-82 to mv-85 (the trip raised to 350,000 on the phone stays, AB1)
 - (X watch, no column of its own) a pay-off place, `pays`: payoff_place pays-01 to pays-03
 - (W3, no column of its own) a goal's own account in the home currency only: rules ed-08 to ed-10
 - (W, no column of its own) an account that backs a goal is not spent from: goal_account_spend gas-01, gas-02
 
 ### card
 - C check day (c): mako_shape mako-15
-- O opening (c, a false cover fixed by X6): two_month_opening tmo-01 to tmo-07; a known close day and no typed last statement: card_no_statement cns-01 to cns-05
+- O opening (c, a false cover fixed by X6): two_month_opening tmo-01 to tmo-07; a known close day and no typed last statement: card_no_statement cns-01 to cns-05; set up between the close and its payment day, a false cover fixed by AB3: card_between_close_pay cbp-01 to cbp-10
 - W posting window (c): import_rules imp-10, imp-11
 - P period start (c): card_statements stmt-04; mako_shape mako-24
 - X other currency (c): other_currency_card fx-01 to fx-04
@@ -306,9 +328,11 @@ Marks: **c** covered before this round; **n** newly covered (in the first ten co
 - E edited after settled (c): rules mg-07
 - S imported/typed/self-logged (c): import_rules imp-06, imp-10; bill_on_card boc-03
 - Z closed account (c): rules acc-08, acc-11; card_out out-06, out-07
-- M the move run on two devices (n): rules mg-84 (`mv:account:c1`)
+- M the move run on two devices (n): rules mg-84 (`mv:card:c1`)
 - Y years after setup (n): far_years fy-01, fy-02, fy-04, fy-05 (a close day in 2029 and 2036; a not-sure card in 2036)
 - T a time with an offset (n): day_offset_kinds kinds-04
+- L a second move days later (n): rules mv-98, mv-99 (the moved card's payment day changed on the phone stays, AB1)
+- B set up between close and payment day (n): card_between_close_pay cbp-01 to cbp-10 (yes, no and don't know); rules ed-13 to ed-16
 - (W2, no column of its own) a card payment in another currency listed apart: owed_other_currency_lists oocl-01 to oocl-03, oocl-05
 
 ### loan / pay-later
@@ -318,9 +342,12 @@ Marks: **c** covered before this round; **n** newly covered (in the first ten co
 - D two devices (c): rules mg-06
 - S imported/typed/self-logged (c): borrow_and_plans plan-01, plan-04
 - Z closed account (c): rules acc-09
-- M the move run on two devices (n): rules mg-84 (`mv:account:d1`)
+- M the move run on two devices (n): rules mg-84 (`mv:debt:d1`)
 - Y years after setup (n): far_years fy-06 to fy-08
 - T a time with an offset (n): day_offset_kinds kinds-05
+- L a second move days later (n): rules mv-98, mv-99 (the moved loan's rate set on the phone stays, AB1)
+- B set up between statement and payment day (n): loan_between_stmt_pay lbs-01 to lbs-04 (a loan answered yes and no, a pay-later answered yes, AB3)
+- (AC5, AC7, AC3, no column of its own) a one-month amount is that month's whole payment: loan_one_month_amount loma-01 to loma-03; the loan line's: rules mv-94; a made loan until its terms are answered: rules mv-15, mv-49
 - (W2, V2) a loan payment in another currency listed apart, and skipped in the walk: owed_other_currency_lists oocl-01, oocl-03, oocl-04, oocl-05
 
 ### cash, e-wallet, wallet, investment, owedToYou
@@ -330,8 +357,9 @@ Marks: **c** covered before this round; **n** newly covered (in the first ten co
 - X other currency (c): freelancer freelance-04, freelance-19
 - S imported/typed/self-logged (c): weekly weekly-08
 - Z closed account (c): closing_write_off woff-02, woff-04
-- M the move run on two devices (n): rules mg-84 (`mv:account:cash`)
+- M the move run on two devices (n): rules mg-84 (`mv:acct:cash`)
 - T a time with an offset (n): day_offset_kinds kinds-02, kinds-03
+- L a second move days later (n): rules mv-98, mv-99 (the moved PayPay wallet renamed on the phone stays, AB1)
 
 ### fee record (`fee:<transfer id>`) (a new row: confirm_review_1 found it missing)
 - W posting window (c): rough_transfer rough-03, rough-06 (a statement line meets a rough side and the fee is written)
@@ -340,7 +368,7 @@ Marks: **c** covered before this round; **n** newly covered (in the first ten co
 - D two devices (n): rules mg-80, mg-82, mg-83, mg-86 (`fee:<transfer id>`: two phones ticking one top-up write one fee record)
 - U undo/redo (c): fee_record_gone frg-01 to frg-04
 - S imported/typed/self-logged (c): fees fee-03, fee-04 (a schedule's fee, typed); rough_transfer rough-03 (from a statement line)
-- not applicable: C, O, E, Z (a fee record moves no account [S5 fix], so no check, opening or closing holds it; its amount follows its transfer); M (38.31 has no fees), Y, T
+- not applicable: C, O, E, Z (a fee record moves no account [S5 fix], so no check, opening or closing holds it; its amount follows its transfer); M (38.31 has no fees), Y, T, L, B
 
 ### not yet at setup (`notYet`) (a new row: confirm_review_1 found it missing)
 - C check day (n): notyet_opening ny-03; notyet_bill nyb-02 (each is on the first check-in list)
@@ -348,22 +376,38 @@ Marks: **c** covered before this round; **n** newly covered (in the first ten co
 - W posting window (n): notyet_bill nyb-01 (a bill due the day before setup, late and still inside its window); notyet_window_past nwp-01 (Z2); notyet_import_late nil-02 (AA14: a line three weeks past the window settles the item)
 - P period start (n): notyet_opening ny-02, ny-05 (the pay due on the setup day starts the period when it lands)
 - X other currency (n): notyet_bill nyb-02, nyb-04 (pay in dollars not in yet: listed apart)
-- S imported/typed/self-logged (n): notyet_bill nyb-03 (a statement line settling it stays outside the opening); notyet_import_late nil-01 to nil-03 (AA14: a matching statement line at any later date settles it, one of another amount does not)
+- S imported/typed/self-logged (n, a false cover fixed by AB4): notyet_bill nyb-03 (a statement line settling it stays outside the opening); notyet_line_before nlb-01, nlb-03 (a line dated before the setup day, imported or typed, still comes after the opening, AB4); notyet_import_late nil-01 to nil-03 (AA14: a matching statement line at any later date settles it, one of another amount does not)
 - setup's questions, a pay due that day first: rules ed-11, ed-12
-- not applicable: D, U, E, Z (setup writes the opening once, on one device; nothing is settled or closed before it); M (38.31 has no such answer), Y, T
+- not applicable: D, U, E, Z (setup writes the opening once, on one device; nothing is settled or closed before it); M (38.31 has no such answer), Y, T, L (the move writes no `notYet`), B (a card's statement is not a pay or bill item)
 
 ### move (an old copy moved) (a new row after Y and Z: the move is a record kind of its own)
 - C check day (n): rules mv-02 to mv-06, mv-47, mv-48 (each bank figure a dated check, told at the end of its day or the last save, Y1, Y22); mv-78 (the last save the later of the second copy's `t` and the `rev` time, AA10); moved_bank_now, moved_figure_no_time
 - O opening (n): rules mv-02, mv-15, mv-45, mv-59, mv-81 (the oldest figure opens the bank, goal money in its split or another account's opening, a bank or an e-wallet, Y17, Z3, AA13); mv-80 (a made loan's rate and minimum, AA12); goal_money_unanswered gmu-01 to gmu-04 (Z3); moved_records moved-01
 - P period start (n): rules mv-29, mv-46 (the salary stream starts periods, the others not, Y2); mv-33 (a budget line's, a share's and a goal's one-month amount keyed by the period's pay, AA6); mv-52 (month-end answers named by the period's pay, Y8, AA3); mv-72 (written when the pay day is answered after the move, AA5); mv-73 (pay every two weeks: the first pay in the month, the period holding the month's last day, AA4); units-78 to units-81 (Z5)
 - X other currency (n): rules mv-22 to mv-25 (the currency asked before any amount is converted), mv-64 (too many decimals rounded and flagged, Y23)
-- D two devices (n): rules mv-41, mv-42, mv-67 (Y12, Y28); mg-84, mg-85
-- U undo/redo (n): rules mv-27 (38.31's Undo copies are not moved, D2); a moved record taken back is marked `gone` like any built id (section 0): mg-91
+- D two devices (n, a false cover fixed by AB1): rules mv-41, mv-67 (Y12, Y28); mg-84, mg-85; the moved records carry the copy's last save, and a device that finds a moved copy in the cloud takes it: mv-42, mv-82 to mv-86
+- U undo/redo (n): rules mv-27 (38.31's Undo copies are not moved, D2); mv-97 (a moved receipt removed and put back with an Undo before a second device moves, AB1, H6; confirm_review_2 found that mg-91 only checks an id)
 - S imported/typed/self-logged (n): rules mv-07, mv-70 (typed receipts, AA1), mv-08, mv-28, mv-60 (imported accounts, Y18), mv-20 (self-logged spends), mv-62, mv-75, mv-76 (Y20, AA7)
-- M the move run on two devices (n): rules mv-41, mv-42, mv-67; moved_ids mvid-01 to mvid-03 (the model reads moved ids)
+- M the move run on two devices (n, a false cover fixed by AB1: its two moves were an hour apart with no use between): rules mv-41, mv-42, mv-67, mv-86 (each device's frozen text kept), mv-95, mv-96 (`pendingMove` on two devices); moved_ids mvid-01 to mvid-03 (the model reads moved ids)
 - Y years after setup (n, uncovered until this round): rules mv-68 (steps and items ten years out move as they are); mv-74 (a weekly pay's share of a monthly total through a year of 53 pays, AA4)
 - T a time with an offset (n, partly uncovered until this round): rules mv-02, mv-07 (+09:00), mv-69 (a moving device at -05:00)
-- not applicable: W (the move writes no import line, so no posting window); E (the move settles nothing; X8 applies to moved schedules as to any, rules ed-01 to ed-07); Z (38.31 has no closed accounts)
+- L a second move days later (n): rules mv-82 to mv-85 (d1: cloud on and off, the same and a newer 38.31 copy), mv-97 to mv-99 (every kind of moved record)
+- P, continued (AB2): moved pay per month; a one-month amount spread over the month's pays or periods: mv-87, mv-88; a month-end answer for a period not ended at the move waits: mv-52, mv-89
+- not applicable: B (the move sets up no card statement: a moved card or debt has its close day "not sure", Y9); W (the move writes no import line, so no posting window); E (the move settles nothing; X8 applies to moved schedules as to any, rules ed-01 to ed-07); Z (38.31 has no closed accounts)
+
+### pending move (`pendingMove`) (a new row: confirm_review_2 found it missing)
+- P period start (n): rules mv-52, mv-89 (a month-end answer waits for a period not ended at the move, AB2); mv-71, mv-72 (what waits is keyed by the period's pay once its day is answered)
+- D two devices (n): rules mv-95 (one device answers, the other has not: the written entries are `gone` with the answer's `at`, the other's live copy gives way), mv-96 (both answer: one draw, one answer, AB rows)
+- M the move run on two devices (n): rules mv-95, mv-96
+- L a second move days later (n): rules mv-98, mv-99 (November's answer waits on both and is one record; the desktop's entries for what the phone wrote at its move are kept: open question mv-q54)
+- (AC2, no column of its own) a loan receipt waiting for the loan question: rules mv-91 to mv-93
+- not applicable: C, O, W, X, U, E, S, Z, Y, T, B (an entry holds a 38.31 amount or answer waiting for a day; it moves no account and is in the home currency)
+
+### frozen text (`mv:frozen:<by>`) (a new row: confirm_review_2 found `frozen3831` missing)
+- D two devices (n): rules mv-86 (two different 38.31 copies: both kept, one record per device, AB1)
+- M the move run on two devices (n): rules mv-86
+- L a second move days later (n): rules mv-82, mv-83 (`mv:frozen:phn001` and `mv:frozen:dsk001` both kept, cloud on and off), mv-98, mv-99
+- not applicable: every other column (read only; never written again after the move, O)
 
 ## What was wrong (the X cells) and the decision that fixed it
 
@@ -478,3 +522,31 @@ Run first, before the references changed: rules 415 of 433 cases (the 18 move ca
 | AA12: the loans the move makes ask rate and minimum | rules mv-15, mv-49, mv-80 | all three (no question) |
 | AA13: "another account" a bank or an e-wallet | rules mv-59, mv-81 | none (the reference took the type from the answer) |
 | AA14: a not-yet item past its window settled by a matching line at any later date | notyet_import_late nil-01 to nil-03 | nil-02 (345,200: the line stayed unmatched and the insurance was still expected) |
+
+## Decisions AB and AC, and where each part is tested
+
+Run first, before the references changed (task 1): rules 421 of 464 cases (43 failed) and scenarios 678 of 687 asks (9 failed). After the changes to `rules/move_ref.js`, `rules/units_ref.js`, `rules/period_end_ref.js`, `rules/merge_ref.js`, `rules/edits_ref.js` and `ref/lookahead_ref.js`: 464 of 464 cases and 687 of 687 asks. Writing this grid then added mv-97 to mv-99 (the column L for every kind of moved record, and the move row's U) and re-stamped a record written from a waiting entry like any moved record (mv-72, mv-92, mv-93, mv-96 re-worked by hand): 467 of 467 cases.
+
+| Part | Asks or cases | Failed first |
+|---|---|---|
+| AB (M1): the minimum asked once, box empty; the move keeps a typed one, drops an automatic one | rules ed-17, ed-18, mv-09, mv-10 | ed-17, ed-18 (no question); mv-09, mv-10 passed (the reference already did this) |
+| AB1: a moved record's `at` is the copy's last save; a device that finds a moved copy in the cloud takes it; `mv:frozen:<by>` | rules mv-42, mv-82 to mv-86; later mv-97 to mv-99 | mv-42 (1,000: the later move won), mv-82 to mv-85 (no question `move_later`), mv-86 (no `frozen` records) |
+| AB2, AC1: moved pay `per: 'month'`; a one-month amount spread; a period not ended waits | rules mv-29, mv-33, mv-46, mv-52, mv-73, mv-87 to mv-89; units-79, units-80, units-82 to units-84 | all of them (no `per`; the first pay or period took the whole amount; January's answer written for a period not ended; no question `once_spread`) |
+| AB3: "Is the last statement paid?" | card_between_close_pay cbp-01 to cbp-10; loan_between_stmt_pay lbs-01 to lbs-04; rules ed-13 to ed-16 | cbp-06, cbp-07, cbp-08 (don't know: 50,000 on 27 Dec, open), lbs-01, lbs-02 (the payments made before setup asked again: 50,000 and 250,000), ed-13 to ed-16 (no question). cbp-01 to cbp-05 passed first: a typed statement, paid or not, already worked; cbp-09, cbp-10, lbs-03, lbs-04 passed too |
+| AB4: a line settling a `notYet` occurrence after the opening, whatever its date | notyet_line_before nlb-01 to nlb-03 | nlb-01 (200,000), nlb-03 (50,000) |
+| AB rows: `pendingMove` entries are records; the draw's built id | rules mv-71, mv-72, mv-95, mv-96 | all four (no ids; `mv:move:once.<ym>.draw`) |
+| AB watch: restoring an older backup with the cloud on | rules mg-96, mg-97 | both (no question) |
+| AB watch: a moved month-end answer capped | rules pe-62 to pe-65 | pe-62, pe-63 (refused); pe-64, pe-65 passed first |
+| AC2: a loan receipt waits for the loan question | rules mv-91 to mv-93 | all three (a repay with no loan, `held`) |
+| AC3: a made loan holds rate 0 and the old payment, asked | rules mv-15, mv-49 | both (no `apr`) |
+| AC4: the draw to Waiting, where that period's plan places it | rules mv-72 | mv-72 |
+| AC5: a debt's one-month amount is the whole payment | loan_one_month_amount loma-01 to loma-03 | loma-01, loma-02 (25,000: the usual payment and its extra); loma-03 passed first |
+| AC6: "(moved: loan line removed)" on the receipt's note | rules mv-75, mv-76, mv-93 | all three |
+| AC7: `once[ym].bill:loan` to the matched loan's payment | rules mv-94 | mv-94 (listed) |
+| AC8: a month-end answer naming a removed goal to Waiting as "to place" | rules mv-90, pe-66 | both (listed; no `toPlace`) |
+| confirm_review_2 d1 | rules mv-82, mv-83 | both |
+| confirm_review_2 d2 | notyet_line_before nlb-01, nlb-02 (d2-01, d2-02; the reviewer's own file now passes too) | nlb-01 |
+| confirm_review_2 d3 | card_between_close_pay cbp-03, cbp-06, cbp-07, cbp-08 (d3-03, d3-01, d3-02, with the setup answer saved; the reviewer's file has no answer, so it still reads X6) | cbp-06, cbp-07, cbp-08 |
+| confirm_review_2 d4 | none needed: the reviewer found its one failed ask was a counting error (26 Jun to 23 Jul is 27 days, which the model gives) | not run |
+
+Questions AB and AC do not answer (no case depends on them; `rules/*.json` `open`): mv-q50 to mv-q54, ed-q1, ed-q2, mg-q12. SCHEMA_V3 section 14 lists each with what the references do.
