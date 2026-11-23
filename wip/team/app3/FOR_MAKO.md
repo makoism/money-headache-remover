@@ -1,4 +1,36 @@
-# app3: for Mako's run (23 Nov night JST)
+# app3: for Mako
+
+## Starting with your real numbers (one page)
+
+**Before you start**
+- Open the private link in Chrome itself, not inside another app, and while online. After the first open it also works offline.
+- Pick a quiet moment just after a pay day if you can. The fewer bills between your last pay and today, the fewer questions.
+- Have your bank app open. Your card apps help too.
+
+**Setup (about 5 minutes)**
+1. **What does your bank show today?** Type the number your bank app shows right now. Don't adjust it.
+2. **Pay:** the 10th, the amount, and the second income on the same day. Choose what happens when the 10th is a weekend or holiday (the working day before, for most Japanese salaries).
+3. **Cards:** for each card, what is on it now, the payment day (10th and 11th), and the close day. Leave the close day as "not sure" if you don't know it. The app then counts everything on the card as due on the next payment day, which is the safe side.
+4. **Bills:** each with its amount and due day. For any bill due since your last pay, it asks "Has it gone out of your bank yet?". Look at your bank app before you answer.
+5. **Keep at least:** leave it blank for none, or type the lowest your bank should ever go.
+
+**After setup**
+- Home shows safe to spend until your next pay, with the sum behind it. If a number looks wrong, the sum shows where it came from.
+- Log a spend in Receipts. Only the amount is needed.
+- **Check your bank** whenever you like, and at least after each pay day. Untick anything that hasn't gone through yet, then type what the bank shows. Something you untick stays on the list until it lands.
+- In Settings, **save a backup file** after setup and after each check-in for the first weeks. Keep the cloud copy off, or on one device only, until the server changes below are approved.
+- Statements: Add statements on Home. Answer every question it asks before Add.
+
+**If something looks wrong:** take a screenshot and send it. Don't fix numbers by hand. The walk tests mean a wrong figure is a bug we want to see.
+
+---
+
+## Bank comparison
+The old comparison (STEP8_COMPARE.md) checked what changes for someone moving their 38.28 data to a new build. You have no data in the old app (BE), so nothing moves and there is nothing to compare. In its place, the real-page walk (app3/tests/e3_walk.js, in every check) compares the new app's bank and safe-to-spend figures with hand-worked figures for your shape, every step from setup on 24 Nov to 15 Feb (71 checks; walk 4 report in app3/walk/README.md). All match.
+
+---
+
+## For Mako's run (23 Nov night JST)
 
 Every item already has a working default. None of them block using the app.
 
