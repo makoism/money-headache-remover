@@ -80,6 +80,8 @@ const E3 = (() => {
     if (!ok) book = before;
     return ok;
   }
-  return { today, told, newId: () => idMaker(), load, view, nameOf, occName, curOf, home, write,
+  /* is a the day before b (two YYYY-MM-DD days) */
+  const dayBefore = (a, b) => BurrowEngine.dates.dayNum(b) - BurrowEngine.dates.dayNum(a) === 1;
+  return { today, told, dayBefore, newId: () => idMaker(), load, view, nameOf, occName, curOf, home, write,
     get book() { return book; }, get mode() { return mode; } };
 })();

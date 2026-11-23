@@ -28,7 +28,12 @@ const DAYS = ['2026-11-23', '2026-12-09', '2026-12-10', '2026-12-11', '2026-12-1
     ck(day + ' due before next pay', r.dueBeforeNextPay.items.length ? dt.length === 1 && dt[0].amt === r.dueBeforeNextPay.total : dt.length === 0, JSON.stringify(dt) + ' vs ' + r.dueBeforeNextPay.total);
     const owed = one('owed');
     ck(day + ' each card', owed.length === Object.keys(r.cards).length && Object.keys(r.cards).every((id, i) => owed[i].amt === r.cards[id].owedNow), JSON.stringify(owed));
-    ck(day + ' all the money after the cards', one('aftercards')[0] && one('aftercards')[0].amt === r.total.afterCards);
+    ck(day + ' no second figure beside safe to spend (no "bank after the cards")', !(await p.$('[data-figure="total.afterCards"]')) && !/after the cards/i.test(await p.$eval('#a3Home', e => e.textContent)));
+    if (day === '2026-11-23') {
+      const lines = await p.$$eval('[data-cardid] .when', es => es.map(e => e.textContent));
+      ck(day + ' card A comes out the day pay lands', lines[0] === 'Comes out on 10 Dec, the day your pay lands', lines[0]);
+      ck(day + ' card B comes out the day after', lines[1] === 'Comes out on 11 Dec', lines[1]);
+    }
     const shown = await p.evaluate(() => [...document.querySelectorAll('[data-amt]')].every(e => e.textContent.replace(/[^\d]/g, '') === String(Math.abs(Number(e.dataset.amt)))));
     ck(day + ' every amount written is the amount it stands for', shown);
     const audit = await p.evaluate(() => BurrowScreens.provenance.audit(document.getElementById('a3Home')));
