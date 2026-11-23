@@ -5,7 +5,7 @@
   "notes": [
     "Every amount is made up. Amounts in a saved copy are major units with up to two decimals (every build); the moved records hold whole minor units [section 0]; an amount with more decimals than its currency is rounded half up and flagged in `rounded` [Y23].",
     "Question `move`: `copy` is the saved copy as an object, or `raw` the stored text itself (the move reads the raw text, never a cleaned copy [O]). `idb` is the IndexedDB second copy (`{ rev, t }`, `t` the moment of its save, a time or ms); `now` is the move's own moment, with the moving device's offset (X9), which is also `offset` unless given. The copy's last save is the later of `idb.t` and the stored `rev` when it is a time, either alone, else `now` [Y13, AA10]; its day is \"the copy's last saved day\" [H9, K3]. The move month is the calendar month of `now` [Y21]. `answers` holds the answers to the move's questions: `cur` (the currency code), `loanLine` (a plan.debts id, or `drop`), `pay` (`{ a, b, side }`: each a rule, SCHEMA_V3 5, any rhythm [AA4]), `billDay` (by 38.31 line id, a rule), `debtDay` (by debt id, or the field path of a loan the move made: the payment day), `goalMoney` (by goal id: `bank`, or `{ name, type }` for another account, type `bank` or `ewallet` [AA13]), `loanTerms` (by the id of a loan the move made: `{ apr, min }` or `dontKnow` [AA12]). `make.receipts` adds that many plain receipts to the copy (test help, so mv-35 can hold 5,002 receipts).",
-    "The answer is the moved copy: `v`, `home`, `people`, `accounts`, `places`, `schedules`, `events`, `plan` (`shares`, `budgets`, `limits`), `imports`, `ui` (the shared screen answers), `device` (`look`, `tour`, `opens`), `asks` (the move's questions, `minBank` when a minimum is dropped as automatic [AD1], each answered one with its `answer`), `unplaced` (every saved field with no target, kept in frozen3831 or on the shared ui as 11.1 says, which the move test lists [11.1]), `pendingMove` (kept on the copy [AA5]: each one-month amount and month-end answer whose pay, bill or payment day is not answered yet, a month-end answer for a period not ended at the move [AB2], and a receipt on bill:loan while the loan question waits [AC2]; each a record `{ id: 'mv:pend:<field path>', field, waits, to, ... }` [AB rows], written when what it waits for is answered and then kept marked `gone`; what the move itself writes, or an answer given at the move settles, is kept marked `gone` on the move day [AD5]), `zero` (the move summary of what is not moved: lines and pay amounts that are 0 every month [Y25], and the loan line's one-month amounts when the line is dropped [AD2]), `rounded` [Y23], `morePays` (the 38.31 fields whose one-month amount is spread over a month with more pays or payments than usual: three every two weeks, five weekly [AE4, AG2]), `sample`, `saved` (the copy's last save) and `frozen3831` (the raw text; the stored copy keeps it as the record `mv:frozen:<by>` in `frozen` [AB1]). `show` picks parts (`frozenIds` lists the `frozen` records' ids, `pendingMoveIds` the entries still waiting) (`plan.limits` picks one part of plan; `tally` counts the spends and adds them up; `ids` lists every record id; `payAmounts` gives each pay's amount on the days `payAt` names [AA4]); `pick` gives single fields as \"list id field\"; `omit` leaves a field out everywhere. Records carry `told` only on events; `at` and `by` are written by `move_two` and `move_later` (the copy's last save [AB1]) and by `move_answer` on what an answer changed (`answeredAt`). `move_two` with `cloud` and `move_later` with `cloud`: the desktop finds the phone's moved copy in the cloud and takes it, adding only the ids it lacks [AB1]; without, both copies meet in the merge.",
+    "The answer is the moved copy: `v`, `home`, `people`, `accounts`, `places`, `schedules`, `events`, `plan` (`shares`, `budgets`, `limits`: the `ceiling` with its currency and `per` [AL5], `aims`), `imports`, `ui` (the shared screen answers); `home` holds `curs` and `main: { acct, min }`, the main bank and its minimum as one value [AL3]. The stored copy (`move_two`, `move_later`) holds `home`, the shared `ui`, `plan.limits` and `imports.cats` as field values `{ v, at, by }` [AL1], `device` (`look`, `tour`, `opens`), `asks` (the move's questions, `minBank` when a minimum is dropped as automatic [AD1], each answered one with its `answer`), `unplaced` (every saved field with no target, kept in frozen3831 or on the shared ui as 11.1 says, which the move test lists [11.1]), `pendingMove` (kept on the copy [AA5]: each one-month amount and month-end answer whose pay, bill or payment day is not answered yet, a month-end answer for a period not ended at the move [AB2], and a receipt on bill:loan while the loan question waits [AC2]; each a record `{ id: 'mv:pend:<field path>', field, waits, to, ... }` [AB rows], written when what it waits for is answered and then kept marked `gone`; what the move itself writes, or an answer given at the move settles, is kept marked `gone` on the move day [AD5]), `zero` (the move summary of what is not moved: lines and pay amounts that are 0 every month [Y25], and the loan line's one-month amounts when the line is dropped [AD2]), `rounded` [Y23], `morePays` (the 38.31 fields whose one-month amount is spread over a month with more pays or payments than usual: three every two weeks, five weekly [AE4, AG2]), `sample`, `saved` (the copy's last save) and `frozen3831` (the raw text; the stored copy keeps it as the record `mv:frozen:<by>` in `frozen` [AB1]). `show` picks parts (`frozenIds` lists the `frozen` records' ids, `pendingMoveIds` the entries still waiting) (`plan.limits` picks one part of plan; `tally` counts the spends and adds them up; `ids` lists every record id; `payAmounts` gives each pay's amount on the days `payAt` names [AA4]); `pick` gives single fields as \"list id field\"; `omit` leaves a field out everywhere. Records carry `told` only on events; `at` and `by` are written by `move_two` and `move_later` (the copy's last save [AB1]) and by `move_answer` on what an answer changed (`answeredAt`). `move_two` with `cloud` and `move_later` with `cloud`: the desktop finds the phone's moved copy in the cloud and takes it, adding only the ids it lacks [AB1]; without, both copies meet in the merge.",
     "Ids [X1, Y28, Z]: `mv:<kind>:<38.31 id, key or field path>` with the kinds of MOVE_FIELDS.md section 7: acct, card, debt, place, bill, line, pay, auto, item, share, person, open, check, rc, and `move` for the Emergency fund draw's move out of its place (`mv:move:once.<month>.draw`, AA6, a reading). A month-end answer is the period-end record `pe:<occurrence>:free` [Y8].",
     "The opening [B6, B7, 11.1]: the oldest bank figure (bankStart or bankNow; on the same day bankNow [Y22]) opens the bank with an `open` and a `check` on its day; a newer figure is a later `check`. A figure's day with no time is told at the end of that day, or at the copy's last save when that is earlier [Y1]. The opening day is that figure's day, else the copy's last saved day. Goal money kept in the bank is the open's `split` [B6]; the rest of the split (budget lines and Free to spend left, Waiting) is the opening's own question [B2, I4] and is not written by the move.",
     "Question `move_two` [X1, Y12]: `phone` and `desktop` each hold a `move` input plus `by` (the device part). Each device moves its own copy and stamps every record with `told` (events keep their own), `at` (its `now`) and `by`; the two moved copies are merged with rules/merge_ref.js.",
@@ -100,8 +100,10 @@
               "cur": "JPY"
             }
           ],
-          "minBank": null,
-          "mainBank": "mv:acct:cfg"
+          "main": {
+            "acct": "mv:acct:cfg",
+            "min": null
+          }
         },
         "accounts": [
           {
@@ -131,12 +133,13 @@
           }
         ]
       },
-      "why": "The only bank figure, 300,000 typed on Sun 22 Nov (`bankAt`), is the oldest, so it opens the bank: an `open` and a `check` the same day [11.1, B6, B7], on an account named \"Bank\" [Y26] that is the main bank [Y18]; the home currency starts that day [O6]. bankAt is a day with no time, so both are told at the end of Sun 22 Nov in the moving device's offset (+09:00), which is earlier than the copy's last save, Tue 24 Nov 08:00 [Y1, X9]. Ids: `mv:open:cfg`, `mv:check:cfg.bankStart` (a field path, Y28).",
+      "why": "The only bank figure, 300,000 typed on Sun 22 Nov (`bankAt`), is the oldest, so it opens the bank: an `open` and a `check` the same day [11.1, B6, B7], on an account named \"Bank\" [Y26] that is the main bank [Y18]; the home currency starts that day [O6]. bankAt is a day with no time, so both are told at the end of Sun 22 Nov in the moving device's offset (+09:00), which is earlier than the copy's last save, Tue 24 Nov 08:00 [Y1, X9]. Ids: `mv:open:cfg`, `mv:check:cfg.bankStart` (a field path, Y28). The main bank and its minimum are one value, `home.main: { acct, min }` [AL3].",
       "decisions": [
         "11.1",
         "B6",
         "B7",
-        "O6"
+        "O6",
+        "AL3"
       ]
     },
     {
@@ -631,21 +634,24 @@
               "cur": "JPY"
             }
           ],
-          "minBank": {
-            "a": 50000,
-            "cur": "JPY",
-            "asked": true
-          },
-          "mainBank": null
+          "main": {
+            "acct": null,
+            "min": {
+              "a": 50000,
+              "cur": "JPY",
+              "asked": true
+            }
+          }
         }
       },
-      "why": "cfg.minBank 50,000 with no ui.minAuto, in a copy last saved on Tue 24 Nov (the second copy's `t`) with no `rev` count: a 38.31 build from 20 Nov on. It deletes ui.minAuto when the person types a minimum, but never adds it to a minimum an earlier build filled in, so the origin cannot be told (mv-q55). The move asks, showing the old figure [AF1]; until answered the engine uses the safe side (section 11): the 50,000 is held, in its currency [O6], marked as asked. No bank figure: no main bank. A copy from a build before 20 Nov is mv-100 and mv-101 [AD1]; answered, mv-114 and mv-115.",
+      "why": "cfg.minBank 50,000 with no ui.minAuto, in a copy last saved on Tue 24 Nov (the second copy's `t`) with no `rev` count: a 38.31 build from 20 Nov on. It deletes ui.minAuto when the person types a minimum, but never adds it to a minimum an earlier build filled in, so the origin cannot be told (mv-q55). The move asks, showing the old figure [AF1]; until answered the engine uses the safe side (section 11): the 50,000 is held, in its currency [O6], marked as asked. No bank figure: no main bank. A copy from a build before 20 Nov is mv-100 and mv-101 [AD1]; answered, mv-114 and mv-115. The main bank and its minimum are one value, `home.main: { acct, min }` [AL3].",
       "decisions": [
         "AF1",
         "11.1",
         "O6",
         "AB",
-        "AD1"
+        "AD1",
+        "AL3"
       ]
     },
     {
@@ -687,8 +693,10 @@
               "cur": "JPY"
             }
           ],
-          "minBank": null,
-          "mainBank": null
+          "main": {
+            "acct": null,
+            "min": null
+          }
         },
         "ui": {
           "done": {
@@ -699,17 +707,18 @@
         },
         "unplaced": []
       },
-      "why": "cfg.minBank equals ui.minAuto, so the app set it (a tenth of the pay), nobody chose it: dropped, `home.minBank` is null [11.1, MAKO M1]. ui.minAuto itself goes nowhere and is not listed. AB confirms Mako's answer: an automatic minimum is dropped; setup asks \"Keep at least ___ in your bank?\" with the box empty (rules/edits.json ed-17).",
+      "why": "cfg.minBank equals ui.minAuto, so the app set it (a tenth of the pay), nobody chose it: dropped, the minimum in `home.main` is null [AL3] [11.1, MAKO M1]. ui.minAuto itself goes nowhere and is not listed. AB confirms Mako's answer: an automatic minimum is dropped; setup asks \"Keep at least ___ in your bank?\" with the box empty (rules/edits.json ed-17).",
       "decisions": [
         "11.1",
         "M1",
-        "AB"
+        "AB",
+        "AL3"
       ]
     },
     {
       "id": "mv-11",
       "question": "move",
-      "title": "ceiling and aims become plan.limits; planFrom is not moved",
+      "title": "ceiling and aims become plan.limits, the ceiling a monthly amount with its currency; planFrom is not moved",
       "input": {
         "copy": {
           "v": 1,
@@ -742,19 +751,24 @@
       },
       "expected": {
         "plan.limits": {
-          "ceiling": 120000,
+          "ceiling": {
+            "a": 120000,
+            "cur": "JPY",
+            "per": "month"
+          },
           "aims": {
             "nec": 0.5,
             "play": 0.2
-          },
-          "cur": "JPY"
+          }
         },
         "unplaced": []
       },
-      "why": "cfg.ceiling and cfg.aims are `plan.limits` with its currency [11.1, O6]; aims are shares, not amounts, so they are not converted. cfg.planFrom is not needed (periods come from pay) and stays in `frozen3831` only, so it is not listed [11.1].",
+      "why": "cfg.ceiling is \"the most you want to spend in a month\": `plan.limits.ceiling` is that amount with its currency and `per: 'month'` [11.1, O6, AL5], so no reader takes it for another stretch of time (Lesson 1). cfg.aims are shares, not amounts: `aims`, not converted and with no currency. cfg.planFrom is not needed (periods come from pay) and stays in `frozen3831` only, so it is not listed [11.1]. The stored copy holds each as a field value `{ v, at, by }` (mv-125) [AL1].",
       "decisions": [
         "11.1",
-        "O6"
+        "O6",
+        "AL5",
+        "AL1"
       ]
     },
     {
@@ -1995,8 +2009,10 @@
               "cur": "PHP"
             }
           ],
-          "minBank": null,
-          "mainBank": "mv:acct:cfg"
+          "main": {
+            "acct": "mv:acct:cfg",
+            "min": null
+          }
         },
         "events": [
           {
@@ -2037,10 +2053,11 @@
           }
         ]
       },
-      "why": "Answered PHP: 2 decimals, so 15,000.50 is 1,500,050 and 120.25 is 12,025 in minor units [section 0, L units q1]; the answered question is recorded. The receipt's note is empty, so it has none [Y14]; `other` is Free to spend with line `other` [Y20].",
+      "why": "Answered PHP: 2 decimals, so 15,000.50 is 1,500,050 and 120.25 is 12,025 in minor units [section 0, L units q1]; the answered question is recorded. The receipt's note is empty, so it has none [Y14]; `other` is Free to spend with line `other` [Y20]. The main bank and its minimum are one value, `home.main: { acct, min }` [AL3].",
       "decisions": [
         "O",
-        "L"
+        "L",
+        "AL3"
       ]
     },
     {
@@ -2082,8 +2099,10 @@
               "cur": "PHP"
             }
           ],
-          "minBank": null,
-          "mainBank": "mv:acct:cfg"
+          "main": {
+            "acct": "mv:acct:cfg",
+            "min": null
+          }
         },
         "events": [
           {
@@ -2105,9 +2124,10 @@
         ],
         "asks": []
       },
-      "why": "The copy holds ₱ and was set up from the peso sample, so pesos were chosen [O, units-65]: PHP, 8,000.00 is 800,000.",
+      "why": "The copy holds ₱ and was set up from the peso sample, so pesos were chosen [O, units-65]: PHP, 8,000.00 is 800,000. The main bank and its minimum are one value, `home.main: { acct, min }` [AL3].",
       "decisions": [
-        "O"
+        "O",
+        "AL3"
       ]
     },
     {
@@ -3436,8 +3456,10 @@
               "cur": "JPY"
             }
           ],
-          "minBank": null,
-          "mainBank": null
+          "main": {
+            "acct": null,
+            "min": null
+          }
         },
         "accounts": [],
         "places": [],
@@ -3448,9 +3470,10 @@
         },
         "sample": true
       },
-      "why": "Bills and goals are not done yet, so the app still shows the sample (every build's rule): its lines, goals, minimum and ceiling are sample data and are never moved as real [requirements 1c, 11.1]. The currency still starts the home currency. The copy has no receipt, card or bank figure (those move as real even while the sample shows, Y16: mv-59).",
+      "why": "Bills and goals are not done yet, so the app still shows the sample (every build's rule): its lines, goals, minimum and ceiling are sample data and are never moved as real [requirements 1c, 11.1]. The currency still starts the home currency. The copy has no receipt, card or bank figure (those move as real even while the sample shows, Y16: mv-59). The main bank and its minimum are one value, `home.main: { acct, min }` [AL3].",
       "decisions": [
-        "11.1"
+        "11.1",
+        "AL3"
       ]
     },
     {
@@ -4226,8 +4249,10 @@
               "cur": "JPY"
             }
           ],
-          "minBank": null,
-          "mainBank": "mv:acct:cfg"
+          "main": {
+            "acct": "mv:acct:cfg",
+            "min": null
+          }
         },
         "places": [
           {
@@ -4327,13 +4352,14 @@
         ],
         "unplaced": []
       },
-      "why": "The oldest builds save the same fields less the later ones (no receipt `s`, no ui.sweep, no debts, recurring or cards, whole goal amounts; MOVE_FIELDS.md), so the same rules apply: the 150,000 bankStart with no day opens the bank on the last saved day with the Emergency fund's 40,000 in its split [H9, B6]; the 30,000 minimum has no ui.minAuto and `rev` 9 is a count, so a build before 20 Nov saved it: treated as automatic and dropped, and the minimum is asked anyway [AD1]; Food 30,000 (its step) is a budget line; \"Play money\" (the old name of Free to spend) is the `free` share, 12,000, with the fund's monthly 5,000; the cinema receipt is in Free to spend, its note \"cinema\" unchanged [Y14]. The fund has money, so the move asks where it is [Y17].",
+      "why": "The oldest builds save the same fields less the later ones (no receipt `s`, no ui.sweep, no debts, recurring or cards, whole goal amounts; MOVE_FIELDS.md), so the same rules apply: the 150,000 bankStart with no day opens the bank on the last saved day with the Emergency fund's 40,000 in its split [H9, B6]; the 30,000 minimum has no ui.minAuto and `rev` 9 is a count, so a build before 20 Nov saved it: treated as automatic and dropped, and the minimum is asked anyway [AD1]; Food 30,000 (its step) is a budget line; \"Play money\" (the old name of Free to spend) is the `free` share, 12,000, with the fund's monthly 5,000; the cinema receipt is in Free to spend, its note \"cinema\" unchanged [Y14]. The fund has money, so the move asks where it is [Y17]. The main bank and its minimum are one value, `home.main: { acct, min }` [AL3].",
       "decisions": [
         "11.1",
         "E1",
         "H9",
         "B6",
-        "AD1"
+        "AD1",
+        "AL3"
       ]
     },
     {
@@ -5601,8 +5627,10 @@
               "cur": "JPY"
             }
           ],
-          "minBank": null,
-          "mainBank": "mv:acct:cfg"
+          "main": {
+            "acct": "mv:acct:cfg",
+            "min": null
+          }
         },
         "accounts": [
           {
@@ -5677,7 +5705,10 @@
         },
         "sample": true
       },
-      "why": "Bills and goals are not done, so the sample still shows: its plan (the Food line) and the minimum are sample values and never move [Y16, requirements 1c]. The bank figure, the card and the receipt were typed by the person, so they move as real [Y16]. The receipt names the sample's Food line, which is not moved, so it has no line."
+      "why": "Bills and goals are not done, so the sample still shows: its plan (the Food line) and the minimum are sample values and never move [Y16, requirements 1c]. The bank figure, the card and the receipt were typed by the person, so they move as real [Y16]. The receipt names the sample's Food line, which is not moved, so it has no line. The main bank and its minimum are one value, `home.main: { acct, min }` [AL3].",
+      "decisions": [
+        "AL3"
+      ]
     },
     {
       "id": "mv-59",
@@ -5899,8 +5930,10 @@
               "cur": "JPY"
             }
           ],
-          "minBank": null,
-          "mainBank": "mv:acct:cfg"
+          "main": {
+            "acct": "mv:acct:cfg",
+            "min": null
+          }
         },
         "accounts": [
           {
@@ -5933,7 +5966,10 @@
           }
         ]
       },
-      "why": "The account of the typed bank figure is the main bank, named \"Bank\" [Y18, Y26]; the imported accounts keep their names; PayPay (kind `wallet`) is an `ewallet`, and \"Cash jar\" is named as cash, so it is `cash` [Y18]."
+      "why": "The account of the typed bank figure is the main bank, named \"Bank\" [Y18, Y26]; the imported accounts keep their names; PayPay (kind `wallet`) is an `ewallet`, and \"Cash jar\" is named as cash, so it is `cash` [Y18]. The main bank and its minimum are one value, `home.main: { acct, min }` [AL3].",
+      "decisions": [
+        "AL3"
+      ]
     },
     {
       "id": "mv-61",
@@ -5970,8 +6006,10 @@
               "cur": "JPY"
             }
           ],
-          "minBank": null,
-          "mainBank": null
+          "main": {
+            "acct": null,
+            "min": null
+          }
         },
         "accounts": [],
         "asks": [
@@ -5984,7 +6022,10 @@
           }
         ]
       },
-      "why": "No bankStart and no bankNow: no bank account is opened and the first check-in asks for the bank figure; safe to spend shows nothing until then [Y19]."
+      "why": "No bankStart and no bankNow: no bank account is opened and the first check-in asks for the bank figure; safe to spend shows nothing until then [Y19]. The main bank and its minimum are one value, `home.main: { acct, min }` [AL3].",
+      "decisions": [
+        "AL3"
+      ]
     },
     {
       "id": "mv-62",
@@ -12430,8 +12471,10 @@
               "cur": "JPY"
             }
           ],
-          "minBank": null,
-          "mainBank": null
+          "main": {
+            "acct": null,
+            "min": null
+          }
         },
         "asks": [
           {
@@ -12446,12 +12489,13 @@
           }
         ]
       },
-      "why": "`rev` 57 is a count, so the copy was saved by a build older than 38.31 (38.28 or a 25.0 build); those builds filled in cfg.minBank themselves, a tenth of pay, without writing ui.minAuto. A minimum saved by a build before 20 Nov with no ui.minAuto is treated as automatic and dropped (Mako: no minimum without the person choosing it) [AD1]: `home.minBank` is null, and the minimum is asked anyway, \"Keep at least ___ in your bank?\" with the box empty [AD1, AB, MAKO M1]. The copy's last save is the second copy's `t`, Sun 22 Nov (the count is not a time), so the home currency is from 22 Nov [Y13]. \"¥\" asks the currency [O]; no bank figure asks one [Y19].",
+      "why": "`rev` 57 is a count, so the copy was saved by a build older than 38.31 (38.28 or a 25.0 build); those builds filled in cfg.minBank themselves, a tenth of pay, without writing ui.minAuto. A minimum saved by a build before 20 Nov with no ui.minAuto is treated as automatic and dropped (Mako: no minimum without the person choosing it) [AD1]: the minimum in `home.main` is null [AL3], and the minimum is asked anyway, \"Keep at least ___ in your bank?\" with the box empty [AD1, AB, MAKO M1]. The copy's last save is the second copy's `t`, Sun 22 Nov (the count is not a time), so the home currency is from 22 Nov [Y13]. \"¥\" asks the currency [O]; no bank figure asks one [Y19].",
       "decisions": [
         "AD1",
         "AB",
         "MAKO M1",
-        "Y13"
+        "Y13",
+        "AL3"
       ]
     },
     {
@@ -12493,8 +12537,10 @@
               "cur": "JPY"
             }
           ],
-          "minBank": null,
-          "mainBank": null
+          "main": {
+            "acct": null,
+            "min": null
+          }
         },
         "asks": [
           {
@@ -12509,11 +12555,12 @@
           }
         ]
       },
-      "why": "`rev` 1,794,963,600,000 is a time: Wed 18 Nov 2026 10:00 +09:00 (20,775 days x 86,400,000 = 1,794,960,000,000, plus 1 hour = 3,600,000; 10:00 +09:00 is 01:00 UTC). There is no second copy, so that is the copy's last save [Y13, AA10]: saved by a 38.31 build before 20 Nov, which did not write ui.minAuto. Its 30,000 with no ui.minAuto is treated as automatic and dropped, and the minimum is asked [AD1].",
+      "why": "`rev` 1,794,963,600,000 is a time: Wed 18 Nov 2026 10:00 +09:00 (20,775 days x 86,400,000 = 1,794,960,000,000, plus 1 hour = 3,600,000; 10:00 +09:00 is 01:00 UTC). There is no second copy, so that is the copy's last save [Y13, AA10]: saved by a 38.31 build before 20 Nov, which did not write ui.minAuto. Its 30,000 with no ui.minAuto is treated as automatic and dropped, and the minimum is asked [AD1]. The main bank and its minimum are one value, `home.main: { acct, min }` [AL3].",
       "decisions": [
         "AD1",
         "Y13",
-        "AA10"
+        "AA10",
+        "AL3"
       ]
     },
     {
@@ -12555,12 +12602,14 @@
               "cur": "JPY"
             }
           ],
-          "minBank": {
-            "a": 30000,
-            "cur": "JPY",
-            "asked": true
-          },
-          "mainBank": null
+          "main": {
+            "acct": null,
+            "min": {
+              "a": 30000,
+              "cur": "JPY",
+              "asked": true
+            }
+          }
         },
         "asks": [
           {
@@ -12576,12 +12625,13 @@
           }
         ]
       },
-      "why": "`rev` 1,795,309,200,000 is Sun 22 Nov 2026 10:00 +09:00 (1,794,963,600,000 + 4 days x 86,400,000 = 345,600,000). 38.31 writes ui.minAuto with a minimum it fills in and deletes it when the person types one, but a minimum an earlier build filled in has none either, so no ui.minAuto here cannot tell typed from automatic (mv-q55). The move asks, showing the old figure, \"Keep at least 30,000 in your bank?\" [AF1]; until answered the 30,000 is held (the safe side, section 11), marked as asked.",
+      "why": "`rev` 1,795,309,200,000 is Sun 22 Nov 2026 10:00 +09:00 (1,794,963,600,000 + 4 days x 86,400,000 = 345,600,000). 38.31 writes ui.minAuto with a minimum it fills in and deletes it when the person types one, but a minimum an earlier build filled in has none either, so no ui.minAuto here cannot tell typed from automatic (mv-q55). The move asks, showing the old figure, \"Keep at least 30,000 in your bank?\" [AF1]; until answered the 30,000 is held (the safe side, section 11), marked as asked. The main bank and its minimum are one value, `home.main: { acct, min }` [AL3].",
       "decisions": [
         "AF1",
         "AD1",
         "AB",
-        "MAKO M1"
+        "MAKO M1",
+        "AL3"
       ]
     },
     {
@@ -14115,11 +14165,13 @@
               "cur": "JPY"
             }
           ],
-          "minBank": {
-            "a": 30000,
-            "cur": "JPY"
-          },
-          "mainBank": null
+          "main": {
+            "acct": null,
+            "min": {
+              "a": 30000,
+              "cur": "JPY"
+            }
+          }
         },
         "asks": [
           {
@@ -14136,11 +14188,12 @@
           }
         ]
       },
-      "why": "The copy of mv-102: last saved Sun 22 Nov by 38.31, cfg.minBank 30,000 and no ui.minAuto. 38.31 never adds ui.minAuto to a minimum an earlier build filled in, so this one may be typed or automatic: its origin cannot be told (mv-q55). The move asks, showing the old figure, \"Keep at least 30,000 in your bank?\" [AF1]. Answered keep: `home.minBank` 30,000 in yen.",
+      "why": "The copy of mv-102: last saved Sun 22 Nov by 38.31, cfg.minBank 30,000 and no ui.minAuto. 38.31 never adds ui.minAuto to a minimum an earlier build filled in, so this one may be typed or automatic: its origin cannot be told (mv-q55). The move asks, showing the old figure, \"Keep at least 30,000 in your bank?\" [AF1]. Answered keep: the minimum in `home.main` is 30,000 in yen [AL3].",
       "decisions": [
         "AF1",
         "AD1",
-        "MAKO M1"
+        "MAKO M1",
+        "AL3"
       ]
     },
     {
@@ -14186,8 +14239,10 @@
               "cur": "JPY"
             }
           ],
-          "minBank": null,
-          "mainBank": null
+          "main": {
+            "acct": null,
+            "min": null
+          }
         },
         "asks": [
           {
@@ -14204,10 +14259,11 @@
           }
         ]
       },
-      "why": "As mv-114, answered by clearing the box: no minimum [AF1, MAKO M1: skipping means no minimum]. The 30,000 is not kept silently.",
+      "why": "As mv-114, answered by clearing the box: no minimum [AF1, MAKO M1: skipping means no minimum]. The 30,000 is not kept silently. The main bank and its minimum are one value, `home.main: { acct, min }` [AL3].",
       "decisions": [
         "AF1",
-        "MAKO M1"
+        "MAKO M1",
+        "AL3"
       ]
     },
     {
@@ -15402,9 +15458,12 @@
             "record": "home",
             "at": "2026-11-25T08:00:00.000+09:00",
             "set": {
-              "minBank": {
-                "a": 30000,
-                "cur": "JPY"
+              "main": {
+                "acct": "mv:acct:cfg",
+                "min": {
+                  "a": 30000,
+                  "cur": "JPY"
+                }
               },
               "country": "JP"
             }
@@ -15480,11 +15539,8 @@
         "cloud": true,
         "show": [
           "home.curs",
-          "home.minBank",
-          "home.country",
-          "home.mainBank",
-          "home.at",
-          "home.by"
+          "home.main",
+          "home.country"
         ]
       },
       "expected": {
@@ -15496,30 +15552,32 @@
             "by": "phn001"
           }
         ],
-        "home.minBank": {
-          "a": 30000,
-          "cur": "JPY"
+        "home.main": {
+          "v": {
+            "acct": "mv:acct:cfg",
+            "min": {
+              "a": 30000,
+              "cur": "JPY"
+            }
+          },
+          "at": "2026-11-25T08:00:00.000+09:00",
+          "by": "phn001"
         },
-        "home.country": "JP",
-        "home.mainBank": "mv:acct:cfg",
-        "home.at": {
-          "minBank": "2026-11-25T08:00:00.000+09:00",
-          "mainBank": "2026-11-23T20:00:00.000+09:00",
-          "country": "2026-11-25T08:00:00.000+09:00"
-        },
-        "home.by": {
-          "minBank": "phn001",
-          "mainBank": "phn001",
-          "country": "phn001"
+        "home.country": {
+          "v": "JP",
+          "at": "2026-11-25T08:00:00.000+09:00",
+          "by": "phn001"
         }
       },
-      "why": "The phone moves the 38.31 copy (last saved Mon 23 Nov 20:00) on Tue 24 Nov: each field of `home` and its yen entry (from the first bank figure, Sun 22 Nov) carry the copy's last save, 23 Nov 20:00, and phn001 [AB1, AK1]. On Wed 25 Nov 08:00 it sets \"Keep at least 30,000 in your bank?\" and the country, Japan: `home.at.minBank` and `home.at.country` 25 Nov 08:00 [AK1]. On Tue 1 Dec the desktop, holding the same 38.31 copy, finds the phone's moved copy in the cloud and takes it, adding only the ids it lacks; `home` is the cloud's [AB1, AJ3]. So the minimum stays 30,000.",
+      "why": "The phone moves the 38.31 copy (last saved Mon 23 Nov 20:00) on Tue 24 Nov: `home.main` (the moved bank, no minimum) and the yen entry (from the first bank figure, Sun 22 Nov) carry the copy's last save, 23 Nov 20:00, and phn001 [AB1, AL1]. On Wed 25 Nov 08:00 it sets \"Keep at least 30,000 in your bank?\" and the country, Japan: `main` (the moved bank with 30,000 [AL3]) and `country` are field values with `at` 25 Nov 08:00 [AK1, AL1]. On Tue 1 Dec the desktop, holding the same 38.31 copy, finds the phone's moved copy in the cloud and takes it, adding only the ids it lacks; `home` is the cloud's [AB1, AJ3]. So the minimum stays 30,000.",
       "decisions": [
         "AK1",
         "AJ3",
         "AB1",
         "AA10",
-        "D4"
+        "D4",
+        "AL1",
+        "AL3"
       ]
     },
     {
@@ -15599,9 +15657,12 @@
             "record": "home",
             "at": "2026-11-25T08:00:00.000+09:00",
             "set": {
-              "minBank": {
-                "a": 30000,
-                "cur": "JPY"
+              "main": {
+                "acct": "mv:acct:cfg",
+                "min": {
+                  "a": 30000,
+                  "cur": "JPY"
+                }
               },
               "country": "JP"
             }
@@ -15677,11 +15738,8 @@
         "cloud": false,
         "show": [
           "home.curs",
-          "home.minBank",
-          "home.country",
-          "home.mainBank",
-          "home.at",
-          "home.by"
+          "home.main",
+          "home.country"
         ]
       },
       "expected": {
@@ -15693,30 +15751,807 @@
             "by": "phn001"
           }
         ],
-        "home.minBank": {
-          "a": 30000,
-          "cur": "JPY"
+        "home.main": {
+          "v": {
+            "acct": "mv:acct:cfg",
+            "min": {
+              "a": 30000,
+              "cur": "JPY"
+            }
+          },
+          "at": "2026-11-25T08:00:00.000+09:00",
+          "by": "phn001"
         },
-        "home.country": "JP",
-        "home.mainBank": "mv:acct:cfg",
-        "home.at": {
-          "minBank": "2026-11-25T08:00:00.000+09:00",
-          "mainBank": "2026-11-23T20:00:00.000+09:00",
-          "country": "2026-11-25T08:00:00.000+09:00"
-        },
-        "home.by": {
-          "minBank": "phn001",
-          "mainBank": "phn001",
-          "country": "phn001"
+        "home.country": {
+          "v": "JP",
+          "at": "2026-11-25T08:00:00.000+09:00",
+          "by": "phn001"
         }
       },
-      "why": "As mv-123, but the desktop moved on its own and the copies meet in the merge. The desktop's moved `home` carries the copy's last save, Mon 23 Nov 20:00, in every field and its yen entry [AA10, AB1], by dsk001. Field by field [AK1]: the minimum and the country are the phone's 25 Nov 08:00 against the desktop's 23 Nov 20:00 (the desktop has no country), so 30,000 and JP; the main bank and the yen entry tie on 23 Nov 20:00 with the same value, and the larger `by`, phn001, is kept [L merge q1]. The minimum stays 30,000.",
+      "why": "As mv-123, but the desktop moved on its own and the copies meet in the merge. The desktop's moved `home` carries the copy's last save, Mon 23 Nov 20:00, in `main` and its yen entry [AA10, AB1], by dsk001. Field by field [AK1, AL1]: `main` is the phone's 25 Nov 08:00 (the moved bank, 30,000) against the desktop's 23 Nov 20:00 (the moved bank, no minimum), so 30,000; the country is only on the phone, JP; the yen entry ties on 23 Nov 20:00 with the same value, and the larger `by`, phn001, is kept [L merge q1]. The minimum stays 30,000.",
       "decisions": [
         "AK1",
         "AJ3",
         "AB1",
         "AA10",
         "D4",
+        "L merge q1",
+        "AL1",
+        "AL3"
+      ]
+    },
+    {
+      "id": "mv-125",
+      "question": "move_later",
+      "title": "AL1, AL3, AL4, AL5: the stored move writes `home`, the shared `ui`, `imports.cats` and `plan.limits` as field values",
+      "input": {
+        "phone": {
+          "copy": {
+            "v": 1,
+            "cfg": {
+              "bankStart": 200000,
+              "bankAt": "2026-11-22",
+              "minBank": 30000,
+              "ceiling": 120000,
+              "aims": {
+                "play": 0.1
+              }
+            },
+            "ui": {
+              "cur": "¥",
+              "preset": "¥",
+              "done": {
+                "pay": true,
+                "bills": true,
+                "goals": true
+              },
+              "minAuto": 20000,
+              "cats": {
+                "SEVEN ELEVEN": "bill:food"
+              },
+              "sb": [
+                "food"
+              ]
+            },
+            "steps": {
+              "a": [
+                {
+                  "from": "2026-11",
+                  "v": 250000
+                }
+              ]
+            },
+            "plan": {
+              "lines": [
+                {
+                  "id": "rent",
+                  "key": "bill:rent",
+                  "jar": "nec",
+                  "name": "Rent or mortgage",
+                  "def": 80000
+                }
+              ],
+              "goals": [
+                {
+                  "id": "trip",
+                  "name": "Trip",
+                  "target": 300000,
+                  "start": 100000,
+                  "due": "2027-06"
+                }
+              ]
+            },
+            "receipts": [
+              {
+                "id": "r1",
+                "d": "2026-11-21",
+                "a": 5000,
+                "c": "other",
+                "cn": "Other",
+                "n": "typed twice"
+              }
+            ]
+          },
+          "answers": {
+            "cur": "JPY",
+            "goalMoney": {
+              "trip": "bank"
+            }
+          },
+          "now": "2026-11-24T09:00:00.000+09:00",
+          "by": "phn001",
+          "idb": {
+            "t": "2026-11-23T20:00:00.000+09:00"
+          }
+        },
+        "edits": [],
+        "desktop": {
+          "copy": {
+            "v": 1,
+            "cfg": {
+              "bankStart": 200000,
+              "bankAt": "2026-11-22",
+              "minBank": 30000,
+              "ceiling": 120000,
+              "aims": {
+                "play": 0.1
+              }
+            },
+            "ui": {
+              "cur": "¥",
+              "preset": "¥",
+              "done": {
+                "pay": true,
+                "bills": true,
+                "goals": true
+              },
+              "minAuto": 20000,
+              "cats": {
+                "SEVEN ELEVEN": "bill:food"
+              },
+              "sb": [
+                "food"
+              ]
+            },
+            "steps": {
+              "a": [
+                {
+                  "from": "2026-11",
+                  "v": 250000
+                }
+              ]
+            },
+            "plan": {
+              "lines": [
+                {
+                  "id": "rent",
+                  "key": "bill:rent",
+                  "jar": "nec",
+                  "name": "Rent or mortgage",
+                  "def": 80000
+                }
+              ],
+              "goals": [
+                {
+                  "id": "trip",
+                  "name": "Trip",
+                  "target": 300000,
+                  "start": 100000,
+                  "due": "2027-06"
+                }
+              ]
+            },
+            "receipts": [
+              {
+                "id": "r1",
+                "d": "2026-11-21",
+                "a": 5000,
+                "c": "other",
+                "cn": "Other",
+                "n": "typed twice"
+              }
+            ]
+          },
+          "answers": {
+            "cur": "JPY",
+            "goalMoney": {
+              "trip": "bank"
+            }
+          },
+          "now": "2026-11-24T09:00:00.000+09:00",
+          "by": "phn001",
+          "idb": {
+            "t": "2026-11-23T20:00:00.000+09:00"
+          }
+        },
+        "cloud": true,
+        "show": [
+          "home",
+          "ui",
+          "imports",
+          "plan.limits"
+        ]
+      },
+      "expected": {
+        "home": {
+          "curs": [
+            {
+              "from": "2026-11-22",
+              "cur": "JPY",
+              "at": "2026-11-23T20:00:00.000+09:00",
+              "by": "phn001"
+            }
+          ],
+          "main": {
+            "v": {
+              "acct": "mv:acct:cfg",
+              "min": {
+                "a": 30000,
+                "cur": "JPY"
+              }
+            },
+            "at": "2026-11-23T20:00:00.000+09:00",
+            "by": "phn001"
+          }
+        },
+        "ui": {
+          "done": {
+            "v": {
+              "pay": true,
+              "bills": true,
+              "goals": true
+            },
+            "at": "2026-11-23T20:00:00.000+09:00",
+            "by": "phn001"
+          },
+          "sb": {
+            "v": [
+              "food"
+            ],
+            "at": "2026-11-23T20:00:00.000+09:00",
+            "by": "phn001"
+          }
+        },
+        "imports": {
+          "cats": {
+            "SEVEN ELEVEN": {
+              "v": "bill:food",
+              "at": "2026-11-23T20:00:00.000+09:00",
+              "by": "phn001"
+            }
+          }
+        },
+        "plan.limits": {
+          "ceiling": {
+            "v": {
+              "a": 120000,
+              "cur": "JPY",
+              "per": "month"
+            },
+            "at": "2026-11-23T20:00:00.000+09:00",
+            "by": "phn001"
+          },
+          "aims": {
+            "v": {
+              "play": 0.1
+            },
+            "at": "2026-11-23T20:00:00.000+09:00",
+            "by": "phn001"
+          }
+        }
+      },
+      "why": "The copy of mv-123 (last saved Mon 23 Nov 20:00), with a typed minimum of 30,000 (ui.minAuto 20,000 differs, so the person typed it [11.1, AD1]), a ceiling of 120,000 a month, aims of 10% play, a taught shop and the screen answer `sb`. The phone moves it on Tue 24 Nov and the desktop takes the cloud copy [AB1]. Every record of separately edited fields is stored as field values `{ v, at, by }`, each stamped with the copy's last save and phn001 [AL1, AB1]: `home.main` holds the moved bank and its 30,000 as one value [AL3]; each shared `ui` key (`done`, `sb`) its value; each `imports.cats` shop its category [AL4]; `plan.limits.ceiling` 120,000 yen a month with `per` [AL5] and `aims` the shares. The yen entry of `home.curs` is an entry with its own `at` and `by` [AJ3]. No separate `at`, `by` or `held` maps remain [AL1].",
+      "decisions": [
+        "AL1",
+        "AL3",
+        "AL4",
+        "AL5",
+        "AB1",
+        "AD1",
+        "11.1"
+      ]
+    },
+    {
+      "id": "mv-126",
+      "question": "move_later",
+      "title": "AL1, AB1: a screen answer, a shop lesson and the ceiling changed on the phone after its move stay when the desktop moves a week later, the cloud on (grid: shared ui, imports.cats, plan.limits x a second move days later)",
+      "input": {
+        "phone": {
+          "copy": {
+            "v": 1,
+            "cfg": {
+              "bankStart": 200000,
+              "bankAt": "2026-11-22",
+              "minBank": 30000,
+              "ceiling": 120000,
+              "aims": {
+                "play": 0.1
+              }
+            },
+            "ui": {
+              "cur": "¥",
+              "preset": "¥",
+              "done": {
+                "pay": true,
+                "bills": true,
+                "goals": true
+              },
+              "minAuto": 20000,
+              "cats": {
+                "SEVEN ELEVEN": "bill:food"
+              },
+              "sb": [
+                "food"
+              ]
+            },
+            "steps": {
+              "a": [
+                {
+                  "from": "2026-11",
+                  "v": 250000
+                }
+              ]
+            },
+            "plan": {
+              "lines": [
+                {
+                  "id": "rent",
+                  "key": "bill:rent",
+                  "jar": "nec",
+                  "name": "Rent or mortgage",
+                  "def": 80000
+                }
+              ],
+              "goals": [
+                {
+                  "id": "trip",
+                  "name": "Trip",
+                  "target": 300000,
+                  "start": 100000,
+                  "due": "2027-06"
+                }
+              ]
+            },
+            "receipts": [
+              {
+                "id": "r1",
+                "d": "2026-11-21",
+                "a": 5000,
+                "c": "other",
+                "cn": "Other",
+                "n": "typed twice"
+              }
+            ]
+          },
+          "answers": {
+            "cur": "JPY",
+            "goalMoney": {
+              "trip": "bank"
+            }
+          },
+          "now": "2026-11-24T09:00:00.000+09:00",
+          "by": "phn001",
+          "idb": {
+            "t": "2026-11-23T20:00:00.000+09:00"
+          }
+        },
+        "edits": [
+          {
+            "record": "ui",
+            "at": "2026-11-25T08:00:00.000+09:00",
+            "set": {
+              "sb": [
+                "food",
+                "fun"
+              ]
+            }
+          },
+          {
+            "record": "imports.cats",
+            "at": "2026-11-25T08:05:00.000+09:00",
+            "set": {
+              "LAWSON": "bill:food"
+            }
+          },
+          {
+            "record": "plan.limits",
+            "at": "2026-11-25T08:10:00.000+09:00",
+            "set": {
+              "ceiling": {
+                "a": 100000,
+                "cur": "JPY",
+                "per": "month"
+              }
+            }
+          }
+        ],
+        "desktop": {
+          "copy": {
+            "v": 1,
+            "cfg": {
+              "bankStart": 200000,
+              "bankAt": "2026-11-22",
+              "minBank": 30000,
+              "ceiling": 120000,
+              "aims": {
+                "play": 0.1
+              }
+            },
+            "ui": {
+              "cur": "¥",
+              "preset": "¥",
+              "done": {
+                "pay": true,
+                "bills": true,
+                "goals": true
+              },
+              "minAuto": 20000,
+              "cats": {
+                "SEVEN ELEVEN": "bill:food"
+              },
+              "sb": [
+                "food"
+              ]
+            },
+            "steps": {
+              "a": [
+                {
+                  "from": "2026-11",
+                  "v": 250000
+                }
+              ]
+            },
+            "plan": {
+              "lines": [
+                {
+                  "id": "rent",
+                  "key": "bill:rent",
+                  "jar": "nec",
+                  "name": "Rent or mortgage",
+                  "def": 80000
+                }
+              ],
+              "goals": [
+                {
+                  "id": "trip",
+                  "name": "Trip",
+                  "target": 300000,
+                  "start": 100000,
+                  "due": "2027-06"
+                }
+              ]
+            },
+            "receipts": [
+              {
+                "id": "r1",
+                "d": "2026-11-21",
+                "a": 5000,
+                "c": "other",
+                "cn": "Other",
+                "n": "typed twice"
+              }
+            ]
+          },
+          "answers": {
+            "cur": "JPY",
+            "goalMoney": {
+              "trip": "bank"
+            }
+          },
+          "now": "2026-12-01T21:00:00.000+09:00",
+          "by": "dsk001",
+          "idb": {
+            "t": "2026-11-23T20:00:00.000+09:00"
+          }
+        },
+        "cloud": true,
+        "show": [
+          "ui",
+          "imports",
+          "plan.limits"
+        ]
+      },
+      "expected": {
+        "ui": {
+          "done": {
+            "v": {
+              "pay": true,
+              "bills": true,
+              "goals": true
+            },
+            "at": "2026-11-23T20:00:00.000+09:00",
+            "by": "phn001"
+          },
+          "sb": {
+            "v": [
+              "food",
+              "fun"
+            ],
+            "at": "2026-11-25T08:00:00.000+09:00",
+            "by": "phn001"
+          }
+        },
+        "imports": {
+          "cats": {
+            "SEVEN ELEVEN": {
+              "v": "bill:food",
+              "at": "2026-11-23T20:00:00.000+09:00",
+              "by": "phn001"
+            },
+            "LAWSON": {
+              "v": "bill:food",
+              "at": "2026-11-25T08:05:00.000+09:00",
+              "by": "phn001"
+            }
+          }
+        },
+        "plan.limits": {
+          "ceiling": {
+            "v": {
+              "a": 100000,
+              "cur": "JPY",
+              "per": "month"
+            },
+            "at": "2026-11-25T08:10:00.000+09:00",
+            "by": "phn001"
+          },
+          "aims": {
+            "v": {
+              "play": 0.1
+            },
+            "at": "2026-11-23T20:00:00.000+09:00",
+            "by": "phn001"
+          }
+        }
+      },
+      "why": "The copy of mv-125 (last saved Mon 23 Nov 20:00). The phone moves it on Tue 24 Nov: every field value carries 23 Nov 20:00 and phn001 [AB1, AL1]. On Wed 25 Nov it adds the screen answer `sb` \"fun\" (08:00), files \"LAWSON\" under food (08:05) and lowers the ceiling to 100,000 a month (08:10). On Tue 1 Dec the desktop moves the same 38.31 copy, finds the phone's moved copy in the cloud and takes it [AB1]: `ui`, `imports` and `plan.limits` are the cloud's, so all three edits stay.",
+      "decisions": [
+        "AL1",
+        "AL4",
+        "AL5",
+        "AB1"
+      ]
+    },
+    {
+      "id": "mv-127",
+      "question": "move_later",
+      "title": "AL1, AB1: as mv-126 with the cloud off: the two moved copies meet in the merge, field by field",
+      "input": {
+        "phone": {
+          "copy": {
+            "v": 1,
+            "cfg": {
+              "bankStart": 200000,
+              "bankAt": "2026-11-22",
+              "minBank": 30000,
+              "ceiling": 120000,
+              "aims": {
+                "play": 0.1
+              }
+            },
+            "ui": {
+              "cur": "¥",
+              "preset": "¥",
+              "done": {
+                "pay": true,
+                "bills": true,
+                "goals": true
+              },
+              "minAuto": 20000,
+              "cats": {
+                "SEVEN ELEVEN": "bill:food"
+              },
+              "sb": [
+                "food"
+              ]
+            },
+            "steps": {
+              "a": [
+                {
+                  "from": "2026-11",
+                  "v": 250000
+                }
+              ]
+            },
+            "plan": {
+              "lines": [
+                {
+                  "id": "rent",
+                  "key": "bill:rent",
+                  "jar": "nec",
+                  "name": "Rent or mortgage",
+                  "def": 80000
+                }
+              ],
+              "goals": [
+                {
+                  "id": "trip",
+                  "name": "Trip",
+                  "target": 300000,
+                  "start": 100000,
+                  "due": "2027-06"
+                }
+              ]
+            },
+            "receipts": [
+              {
+                "id": "r1",
+                "d": "2026-11-21",
+                "a": 5000,
+                "c": "other",
+                "cn": "Other",
+                "n": "typed twice"
+              }
+            ]
+          },
+          "answers": {
+            "cur": "JPY",
+            "goalMoney": {
+              "trip": "bank"
+            }
+          },
+          "now": "2026-11-24T09:00:00.000+09:00",
+          "by": "phn001",
+          "idb": {
+            "t": "2026-11-23T20:00:00.000+09:00"
+          }
+        },
+        "edits": [
+          {
+            "record": "ui",
+            "at": "2026-11-25T08:00:00.000+09:00",
+            "set": {
+              "sb": [
+                "food",
+                "fun"
+              ]
+            }
+          },
+          {
+            "record": "imports.cats",
+            "at": "2026-11-25T08:05:00.000+09:00",
+            "set": {
+              "LAWSON": "bill:food"
+            }
+          },
+          {
+            "record": "plan.limits",
+            "at": "2026-11-25T08:10:00.000+09:00",
+            "set": {
+              "ceiling": {
+                "a": 100000,
+                "cur": "JPY",
+                "per": "month"
+              }
+            }
+          }
+        ],
+        "desktop": {
+          "copy": {
+            "v": 1,
+            "cfg": {
+              "bankStart": 200000,
+              "bankAt": "2026-11-22",
+              "minBank": 30000,
+              "ceiling": 120000,
+              "aims": {
+                "play": 0.1
+              }
+            },
+            "ui": {
+              "cur": "¥",
+              "preset": "¥",
+              "done": {
+                "pay": true,
+                "bills": true,
+                "goals": true
+              },
+              "minAuto": 20000,
+              "cats": {
+                "SEVEN ELEVEN": "bill:food"
+              },
+              "sb": [
+                "food"
+              ]
+            },
+            "steps": {
+              "a": [
+                {
+                  "from": "2026-11",
+                  "v": 250000
+                }
+              ]
+            },
+            "plan": {
+              "lines": [
+                {
+                  "id": "rent",
+                  "key": "bill:rent",
+                  "jar": "nec",
+                  "name": "Rent or mortgage",
+                  "def": 80000
+                }
+              ],
+              "goals": [
+                {
+                  "id": "trip",
+                  "name": "Trip",
+                  "target": 300000,
+                  "start": 100000,
+                  "due": "2027-06"
+                }
+              ]
+            },
+            "receipts": [
+              {
+                "id": "r1",
+                "d": "2026-11-21",
+                "a": 5000,
+                "c": "other",
+                "cn": "Other",
+                "n": "typed twice"
+              }
+            ]
+          },
+          "answers": {
+            "cur": "JPY",
+            "goalMoney": {
+              "trip": "bank"
+            }
+          },
+          "now": "2026-12-01T21:00:00.000+09:00",
+          "by": "dsk001",
+          "idb": {
+            "t": "2026-11-23T20:00:00.000+09:00"
+          }
+        },
+        "cloud": false,
+        "show": [
+          "ui",
+          "imports",
+          "plan.limits"
+        ]
+      },
+      "expected": {
+        "ui": {
+          "done": {
+            "v": {
+              "pay": true,
+              "bills": true,
+              "goals": true
+            },
+            "at": "2026-11-23T20:00:00.000+09:00",
+            "by": "phn001"
+          },
+          "sb": {
+            "v": [
+              "food",
+              "fun"
+            ],
+            "at": "2026-11-25T08:00:00.000+09:00",
+            "by": "phn001"
+          }
+        },
+        "imports": {
+          "cats": {
+            "SEVEN ELEVEN": {
+              "v": "bill:food",
+              "at": "2026-11-23T20:00:00.000+09:00",
+              "by": "phn001"
+            },
+            "LAWSON": {
+              "v": "bill:food",
+              "at": "2026-11-25T08:05:00.000+09:00",
+              "by": "phn001"
+            }
+          }
+        },
+        "plan.limits": {
+          "ceiling": {
+            "v": {
+              "a": 100000,
+              "cur": "JPY",
+              "per": "month"
+            },
+            "at": "2026-11-25T08:10:00.000+09:00",
+            "by": "phn001"
+          },
+          "aims": {
+            "v": {
+              "play": 0.1
+            },
+            "at": "2026-11-23T20:00:00.000+09:00",
+            "by": "phn001"
+          }
+        }
+      },
+      "why": "As mv-126, but the desktop moves on its own and the copies meet in the merge. Its moved field values carry the copy's last save, 23 Nov 20:00, by dsk001 [AB1, AA10]. Field by field [AL1]: `sb`, \"LAWSON\" and the ceiling are the phone's 25 Nov edits, newer; `done`, \"SEVEN ELEVEN\" and the aims tie on 23 Nov 20:00 with the same value, and the larger `by`, phn001, is kept [L merge q1]. So the result is mv-126's.",
+      "decisions": [
+        "AL1",
+        "AL4",
+        "AL5",
+        "AB1",
+        "AA10",
         "L merge q1"
       ]
     }

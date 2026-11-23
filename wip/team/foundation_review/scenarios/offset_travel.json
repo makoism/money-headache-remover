@@ -1,0 +1,113 @@
+{
+  "life": "offset_travel",
+  "title": "A phone whose offset changes: set up in Tokyo, used in Honolulu; dates stay in the writer's own calendar (AL watch)",
+  "story": "A couple, one shared copy. Set up Thu 10 Dec 2026 in Tokyo, pay day: the bank holds 400,000, of which Free to spend 60,000 (typed). Pay of 300,000 on the 10th (moved earlier). Tess's phone was set up in Tokyo and flies with her to Honolulu (-10:00, 19 hours behind Tokyo). Mon 14 Dec: Jun, in Tokyo, checks in at 10:00 Tokyo time (01:00 UTC): 380,000. Tess logs two spends from the bank on Free to spend in Honolulu: 2,000 at 16:00 on Sun 13 Dec Honolulu time (02:00 UTC 14 Dec, 11:00 Tokyo, an hour after the check), dated 13 Dec in her own calendar; and 3,000 at 08:00 on Mon 14 Dec Honolulu time (18:00 UTC 14 Dec, 03:00 Tokyo on 15 Dec), dated 14 Dec. Tess's phone writes each time in its own offset, which changed with the flight; every time is compared as a moment and each date is in her own calendar [AL watch]. Every amount is made up.",
+  "currency": "JPY",
+  "window": {
+    "from": "2026-12-10",
+    "to": "2027-01-10"
+  },
+  "holidays": {
+    "country": "none",
+    "dates": [],
+    "bank_closed": []
+  },
+  "main_bank": "b",
+  "accounts": [
+    {
+      "id": "b",
+      "name": "Bank",
+      "kind": "bank",
+      "currency": "JPY",
+      "minimum": 0,
+      "opening": {
+        "date": "2026-12-10",
+        "amount": 400000,
+        "split": {
+          "free": 60000
+        }
+      }
+    }
+  ],
+  "income": [
+    {
+      "id": "pay",
+      "name": "Pay",
+      "account": "b",
+      "amount": 300000,
+      "schedule": {
+        "frequency": "monthly",
+        "day": 10
+      },
+      "weekend_holiday": "move earlier",
+      "starts_period": true
+    }
+  ],
+  "bills": [],
+  "goals": [],
+  "plan": {
+    "free": {
+      "per": "month",
+      "amount": 60000
+    }
+  },
+  "events": [
+    {
+      "id": "s1",
+      "date": "2026-12-13",
+      "told": "2026-12-13T16:00-10:00",
+      "kind": "spend",
+      "account": "b",
+      "amount": 2000,
+      "line": "free",
+      "note": "Tess, Honolulu: 11:00 on 14 Dec in Tokyo, after the check, dated 13 Dec in her calendar"
+    },
+    {
+      "id": "c1",
+      "date": "2026-12-14",
+      "told": "2026-12-14T10:00+09:00",
+      "kind": "check",
+      "account": "b",
+      "amount": 380000,
+      "note": "Jun, Tokyo"
+    },
+    {
+      "id": "s2",
+      "date": "2026-12-14",
+      "told": "2026-12-14T08:00-10:00",
+      "kind": "spend",
+      "account": "b",
+      "amount": 3000,
+      "line": "free",
+      "note": "Tess, Honolulu: 03:00 on 15 Dec in Tokyo"
+    }
+  ],
+  "asks": [
+    {
+      "id": "ot-01",
+      "date": "2026-12-15",
+      "question": "bank_today",
+      "account": "b",
+      "expected": 377000,
+      "why": "380,000 (Jun's check, Mon 14 Dec 10:00 Tokyo, 01:00 UTC) - 3,000 (Tess's spend dated 14 Dec, the check's day, told 18:00 UTC: after the check, taken off) = 377,000",
+      "note": "The 2,000 is dated Sun 13 Dec in Tess's own calendar, before the check's day, so it counts as inside the check though it was told an hour after it (02:00 UTC) [section 7.1, AL watch: dates stay in the writer's own calendar]. The bank really holds 375,000 until the next check finds the 2,000. Left as the AL watch decided it; written down for Mako's run (COVERAGE, Decision AL)."
+    },
+    {
+      "id": "ot-02",
+      "date": "2026-12-15",
+      "question": "not_explained",
+      "account": "b",
+      "on": "2026-12-14",
+      "expected": 18000,
+      "why": "400,000 (opening, Thu 10 Dec; the pay of 10 Dec is in it) - 380,000 (check, Mon 14 Dec) - 2,000 (Tess's spend dated 13 Dec, read as inside the check) = 18,000"
+    },
+    {
+      "id": "ot-03",
+      "date": "2026-12-15",
+      "question": "headline",
+      "expected": 37000,
+      "why": "60,000 (Free to spend at the opening) - 18,000 (the filler of Mon 14 Dec) - 2,000 (13 Dec) - 3,000 (14 Dec) = 37,000",
+      "note": "Each spend is counted once, whatever its offset; the 2,000 is counted as spending, though it was not taken off the bank figure (ot-01)."
+    }
+  ]
+}
