@@ -83,7 +83,7 @@ function renderPlan3() {
     return plRow3(`data-owed="${esc3(a.id)}"`, `${esc3(a.name)}<br><span class="when">${days}</span>${od}${nx}`, `<span data-fig="owed-now">${plFig3(a.type === 'card' ? 'cards.*.owedNow' : 'owed.*.owedNow', k.owedNow, a.cur)}</span><br><span class="when">${esc3(label3('owed')).toLowerCase()}</span>`);
   }).filter(Boolean);
   out.push(`<section class="a3-card" data-card="plan-owed"><h2>Cards and loans</h2>${owedRows.length ? `<ul class="a3-rows a3-rclist">${owedRows.join('')}</ul>` : '<p class="a3-sub">No cards or loans</p>'}
-    <div class="a3-actions"><button type="button" class="a3-btn" id="plAddLoan">Add a loan</button></div></section>`);
+    <div class="a3-actions"><button type="button" class="a3-btn" id="plAddCard">Add a card</button><button type="button" class="a3-btn" id="plAddLoan">Add a loan</button></div></section>`);
   /* pay periods gone by */
   const past = per.past.map(q => {
     const ln = q.lines.filter(l => l.amount || l.spent).map(l => `<li><span>${esc3(l.name)}</span><span class="amt">${plFig3('periods.*.lines.*.spent', l.spent)} <span class="when">spent of ${plFig3('periods.*.lines.*.start', l.start)}</span></span></li>`).join('');
@@ -102,6 +102,7 @@ function renderPlan3() {
   on('#plSetFree', () => plLineForm3('free'));
   on('#plAddBill', () => plBillForm3(null));
   on('#plAddGoal', () => plGoalForm3(null));
+  on('#plAddCard', () => plCardForm3());
   on('#plAddLoan', () => plLoanForm3());
   host.querySelectorAll('[data-line]').forEach(b => b.addEventListener('click', () => plLineForm3(b.dataset.line)));
   host.querySelectorAll('[data-bill]').forEach(b => b.addEventListener('click', () => plBillForm3(b.dataset.bill)));
@@ -226,6 +227,16 @@ function plOwedForm3(id) {
   plForm3(a.name, fields, [{ label: 'Save', solid: true, step: v => ['changeOwed', w => PLAN3W.changeOwed(w, id, card ? { name: v.name, payDay: v.payDay, cutDay: v.cutDay } : { name: v.name, payDay: v.payDay, amount: v.amount }), a.name + ' changed'] }]
     .concat(card ? [] : [{ label: 'Close this loan', step: () => ['closeLoan', w => PLAN3W.closeLoan(w, id), a.name + ' closed'] }]),
     card ? '' : 'A loan closes once it is paid off');
+}
+/* a card after setup (QC F1): the same questions setup asks, written through ACT3 */
+function plCardForm3() {
+  const closes = [{ v: 'not sure', name: 'Not sure' }, { v: 'last', name: 'The last day' }].concat('1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31'.split(' ').map(d => ({ v: d, name: d })));
+  plForm3('Add a card', [{ key: 'name', label: 'Name', kind: 'text', hint: 'Like Visa' }, { key: 'owed', label: 'What is on it now', kind: 'amount', hint: 'Type 0 if nothing is on it' },
+    { key: 'payDay', label: 'Day of the month it is paid from your bank', kind: 'day' },
+    { key: 'cutDay', label: 'Day its statement closes', kind: 'pick', options: closes, value: 'not sure', hint: 'If you are not sure, all that is on it is due on each payment day' },
+    { key: 'shift', label: 'When that day is a weekend or holiday, it comes out', kind: 'pick', options: [{ v: 'after', name: 'the working day after' }, { v: 'before', name: 'the working day before' }], value: 'after' }],
+  [{ label: 'Add', solid: true, step: v => ['addCard', w => PLAN3W.addCard(w, { name: v.name, owed: v.owed, payDay: v.payDay, cutDay: v.cutDay === 'not sure' || v.cutDay === 'last' ? v.cutDay : Number(v.cutDay), shift: v.shift }), 'Card added'] }],
+  'It is paid in full from your main bank. Its payment counts in what is due before next pay');
 }
 function plLoanForm3() {
   plForm3('Add a loan', [{ key: 'name', label: 'Name', kind: 'text', hint: 'Like Car loan' }, { key: 'owed', label: 'Still owed today', kind: 'amount' },

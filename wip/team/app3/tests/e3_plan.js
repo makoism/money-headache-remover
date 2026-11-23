@@ -133,6 +133,18 @@ const view = bk => T.L.lookahead(bk, DAY);
   bk = await saved(p); r = view(bk);
   const loan = bk.accounts.find(a => a.name === 'Car loan');
   ck('the loan owns its payment day; owed and next payment are the engine\'s', !!loan && loan.type === 'loan' && await amt(p, `#a3Plan [data-owed="${loan.id}"] [data-fig=owed-now]`) === r.owed[loan.id].owedNow && /Next payment ¥25,000 on 27 Nov/.test(await p.$eval(`#a3Plan [data-owed="${loan.id}"]`, e => e.textContent)));
+  /* a card after setup (QC F1): Cards and loans offers "Add a card" beside "Add a loan" */
+  ck('Cards and loans offers Add a card', /Add a card/.test(await p.$eval('[data-card=plan-owed]', e => e.textContent)));
+  await p.click('#plAddCard'); await T.w(200);
+  const asks = await p.$$eval('[data-card=plan-form] label', ls => ls.map(l => l.textContent));
+  ck('it asks the name, what is on it now, the payment day, the close day or not sure, and the weekend rule', JSON.stringify(asks) === JSON.stringify(['Name', 'What is on it now', 'Day of the month it is paid from your bank', 'Day its statement closes', 'When that day is a weekend or holiday, it comes out']), JSON.stringify(asks));
+  await fill(p, { name: 'Card C', owed: '12000', payDay: '27' }); await save(p);
+  bk = await saved(p); r = view(bk);
+  const cardC = bk.accounts.find(a => a.name === 'Card C');
+  ck('Card C is saved through act3: a card paid in full from the main bank, close day not sure, moved after a weekend', !!cardC && cardC.type === 'card' && cardC.payFrom === BANK && cardC.cutDay === null && cardC.shift === 'after' && cardC.payDay === 27 && !!cardC.grp, JSON.stringify(cardC));
+  ck('its owed and next payment are the engine\'s: all 12,000 on 27 Nov', r.cards[cardC.id].owedNow === 12000 && r.cards[cardC.id].next.amount === 12000 && /27 Nov/.test(await p.$eval(`#a3Plan [data-owed="${cardC.id}"]`, e => e.textContent)), await p.$eval(`#a3Plan [data-owed="${cardC.id}"]`, e => e.textContent));
+  await p.click('#a3Msg .burrow-msg button'); await T.w(400);
+  ck('Undo from the bar takes Card C away', !(await saved(p)).accounts.some(a => a.name === 'Card C' && !a.gone) && !(await p.$(`#a3Plan [data-owed="${cardC.id}"]`)));
   await p.click(`#a3Plan [data-owed="${CARD_A}"]`); await T.w(200);
   await fill(p, { cutDay: '25' }); await save(p);
   ck('Card A now closes on day 25', /closes on day 25/.test(await p.$eval(`#a3Plan [data-owed="${CARD_A}"]`, e => e.textContent)) && (await saved(p)).accounts.find(a => a.id === CARD_A).cutDay === 25);

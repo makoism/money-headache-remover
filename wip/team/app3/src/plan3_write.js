@@ -9,7 +9,8 @@
        ending a bill sets `ends` (nothing is due after it) and never ends before an occurrence a record names [X8];
      - a goal is a place kept in the bank by default, or in its own account [Mako 23 Nov, V1]; setting money aside is a
        `move` into it (and for its own account, a `transfer` there first);
-     - a loan is an account that owns its payment day [B5, E6], opened with what is owed today.
+     - a loan is an account that owns its payment day [B5, E6], opened with what is owed today; a card added after
+       setup is the same shape setup writes, opened with what is on it today (QC F1).
    Plain browser JavaScript; in node, require('./plan3_write.js'). */
 (function (root) {
   'use strict';
@@ -211,6 +212,23 @@
     w.add('events', { k: 'check', acct: id, date: w.today, a: owed });
     return id;
   }
+  /* a card added after setup (QC F1), the same shape setup writes (engine/build_book.js): it owns its payment day, is
+     paid in full from the main bank, and opens with what is on it today; close day null is "not sure" (all that is owed
+     is due on each payment day) [H4] */
+  const SHIFTS = { after: 1, before: 1, none: 1 };
+  function addCard(w, x) {
+    const name = nameOk(x.name), d = dayOfMonth(x.payDay);
+    if (!(Number.isInteger(x.owed) && x.owed >= 0)) bad('Type what is on it now, zero or more');
+    const cutDay = x.cutDay == null || x.cutDay === '' || x.cutDay === 'not sure' ? null : x.cutDay === 'last' ? 'last' : dayOfMonth(x.cutDay);
+    const shift = x.shift == null ? 'after' : x.shift;
+    if (!SHIFTS[shift]) bad('Pick what happens on a weekend or holiday');
+    const payFrom = x.payFrom || mainOf(w);
+    sameName((w.book.accounts || []), name);
+    const id = w.add('accounts', { name, type: 'card', cur: home(w), owner: null, inFull: true, cutDay, payDay: d, payMonths: 1, shift, payFrom });
+    w.add('events', { k: 'open', acct: id, date: w.today, a: x.owed });
+    w.add('events', { k: 'check', acct: id, date: w.today, a: x.owed });
+    return id;
+  }
   function changeOwed(w, id, x) {
     const a = find(w, 'accounts', id), ch = {};
     if (a.type !== 'loan' && a.type !== 'card') bad('That is not a card or a loan');
@@ -223,7 +241,7 @@
     return id;
   }
 
-  const api = { addLine, changeLine, endLine, setFree, addBill, changeBill, changeOnce, endBill, addGoal, changeGoal, setAside, takeOut, addLoan, changeOwed, closeLoan };
+  const api = { addLine, changeLine, endLine, setFree, addBill, changeBill, changeOnce, endBill, addGoal, changeGoal, setAside, takeOut, addLoan, addCard, changeOwed, closeLoan };
   if (node) module.exports = api;
   else root.PLAN3W = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

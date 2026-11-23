@@ -154,6 +154,25 @@ const stamped = (r, step) => { ok(I.isOrdinary(r.id), 'ordinary id ' + r.id); eq
     const c = await h.go('changeOwed', a.id, { amount: 30000 }); ok(c.ok, JSON.stringify(c));
     eq(view(h.book).owed[a.id].next.amount, 30000);
   });
+  await t('a card added after setup (QC F1): an account that owns its payment day, opened with what is on it now, close day or not sure, weekend rule', async () => {
+    const h = setup(), r0 = view(h.book);
+    const r = await h.go('addCard', { name: ' Card C ', owed: 12000, payDay: 27, cutDay: null, shift: 'after' }); ok(r.ok, JSON.stringify(r));
+    const a = h.book.accounts.slice(-1)[0]; stamped(a, r.step);
+    eq([a.name, a.type, a.cur, a.payDay, a.cutDay, a.shift, a.payFrom, a.inFull, a.payMonths], ['Card C', 'card', 'JPY', 27, null, 'after', BANK, true, 1]);
+    const opens = h.book.events.filter(e => e.acct === a.id).map(e => [e.k, e.date, e.a]);
+    eq(opens, [['open', DAY, 12000], ['check', DAY, 12000]], 'opened and checked with what is on it today');
+    const v = view(h.book);
+    // not sure of the close day: all that is on it, 12,000, comes out on Fri 27 Nov, before the next pay on 10 Dec
+    eq([v.cards[a.id].owedNow, v.cards[a.id].next.amount, v.cards[a.id].next.payment_date], [12000, 12000, '2026-11-27']);
+    ok(v.dueBeforeNextPay.items.some(o => o.item === a.id + '@2026-11-27'), 'due before next pay');
+    eq(v.safeToSpend.headline, r0.safeToSpend.headline - 12000, 'safe to spend takes it off');
+    const r2 = await h.go('addCard', { name: 'Card D', owed: 0, payDay: 5, cutDay: 'last', shift: 'before' }); ok(r2.ok, JSON.stringify(r2));
+    eq([h.book.accounts.slice(-1)[0].cutDay, h.book.accounts.slice(-1)[0].shift], ['last', 'before']);
+    for (const [x, why] of [[{ name: 'card c', owed: 1, payDay: 5 }, /already/], [{ name: 'E', owed: -1, payDay: 5 }, /zero/], [{ name: 'E', owed: 1, payDay: 0 }, /day/],
+      [{ name: 'E', owed: 1, payDay: 5, cutDay: 40 }, /day/], [{ name: 'E', owed: 1, payDay: 5, shift: 'sideways' }, /weekend/], [{ name: '', owed: 1, payDay: 5 }, /name/]]) {
+      const b = await h.go('addCard', x); ok(!b.ok && why.test(b.text), JSON.stringify(x) + ' ' + JSON.stringify(b));
+    }
+  });
   await t('a card\'s payment day and close day change on its record; the engine still reads the book', async () => {
     const h = setup();
     let r = await h.go('changeOwed', CARD_A, { payDay: 12, cutDay: 25 }); ok(r.ok, JSON.stringify(r));
