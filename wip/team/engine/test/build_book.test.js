@@ -75,6 +75,10 @@ t('wrong answers are refused, not guessed', () => {
   bad(a => { a.banks.push({ key: 'bank', name: 'Again', amount: 1 }); });   // a key used twice
   bad(a => { a.pays.forEach(p => { p.startsPeriod = true; }); });           // two pays starting periods
 });
+t('a pay of 0 is refused with words: a pay that exists always has an amount [BL1]', () => {
+  const a = clone(ANSWERS); a.pays[0].amount = 0;
+  assert.throws(() => B.buildBook(a, { newId }), /^Error: A pay needs an amount\. No fixed pay comes later$/);
+});
 t('the builder does not change the answers it is given', () => {
   const a = clone(ANSWERS); B.buildBook(a, { newId }); assert.deepStrictEqual(a, ANSWERS);
 });

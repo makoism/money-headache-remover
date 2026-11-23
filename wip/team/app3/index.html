@@ -3789,6 +3789,7 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
 
   const SHIFTS = { before: 1, after: 1, none: 1 };
   const BANK_TYPES = { bank: 1, cash: 1, ewallet: 1, wallet: 1 };
+  const PAY_NEEDS_AMOUNT = 'A pay needs an amount. No fixed pay comes later';
   function buildBook(ans, opts) {
     const newId = opts.newId, by = opts.by || String(newId()).split('-')[0];
     const day = ans.day, told = ans.told, at = ans.told, cur = ans.currency;
@@ -3855,6 +3856,8 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
     };
     if ((ans.pays || []).filter(p => p.startsPeriod).length > 1) throw new Error('only one pay starts the period');
     for (const p of ans.pays || []) {
+      // [BL1] a pay that exists always has an amount (no fixed pay comes in slice 6), so its check-in item can be ticked
+      if (p.amount === 0) throw new Error(PAY_NEEDS_AMOUNT);
       book.schedules.push(stamp({ id: idFor(p.key), kind: 'income', name: p.name, acct: acctOf(p.bank), cur, shift: shift(p.shift, p.name),
         rules: [{ from: null, rule: ruleOf(p, p.name) }], steps: [{ from: null, amount: whole(p.amount, p.name) }],
         ...(p.startsPeriod ? { startsPeriod: true } : {}) }));
@@ -3886,7 +3889,7 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
     }
     return { book, ids, asked };
   }
-  const api = { buildBook };
+  const api = { buildBook, PAY_NEEDS_AMOUNT };
   if (node) module.exports = api;
   else (root.BurrowEngine = root.BurrowEngine || {}).build = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
@@ -7796,6 +7799,7 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
   const PE = node ? require('../../engine/periods.js') : root.BurrowEngine.periods;
   const G = node ? require('../../engine/ledger.js') : root.BurrowEngine.ledger;
   const bad = text => { throw new A3.Bad(text); };
+  const PAY_NEEDS_AMOUNT = (node ? require('../../engine/build_book.js') : root.BurrowEngine.build).PAY_NEEDS_AMOUNT;
   const live = x => x && !x.gone;
   const DAY = /^\d{4}-\d{2}-\d{2}$/;
   const amountOk = (a, what) => { if (!Number.isInteger(a) || !(a > 0)) bad('Type ' + what + ' above zero'); return a; };
@@ -7874,6 +7878,7 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
     const ch = {};
     if (x.name != null && x.name !== s.name) { ch.name = nameOk(x.name); sameName(A3.listOf(w.book, 'schedules').filter(y => y.kind === s.kind), ch.name, id); }
     const from = x.from || v.changeFrom;
+    if (s.kind === 'income' && x.amount === 0) bad(PAY_NEEDS_AMOUNT);   // [BL1] a pay always has an amount
     if ((x.amount != null && x.amount !== v.amount) || (x.day != null && !(v.rule && v.rule.every === 'month' && v.rule.days.length === 1 && v.rule.days[0] === x.day))) {
       if (!DAY.test(from)) bad('Pick the day the change starts');
       if (from < v.changeFrom) bad('The change can start on ' + v.changeFrom + ' at the earliest: an earlier one is already paid or noted');
@@ -8900,7 +8905,10 @@ function answers3(strict) {
     const day = Number($('#s3PayDay').value), shift = $('#s3PayShift').value;
     $$('#a3Setup [data-row^=pay]').forEach((row, i) => {
       const name = text(row.querySelector('[data-f=name]'), 'Pay');
-      ans.pays.push({ key: row.dataset.row, name, bank: 'bank1', amount: need(row.querySelector('[data-f=amount]'), `Type how much ${name} is`), day, shift, startsPeriod: i === 0 });
+      /* [BL1] a pay of 0 is refused with build_book's own words; a draft counts a pay not typed yet as some amount */
+      const box = row.querySelector('[data-f=amount]'), amount = need(box, `Type how much ${name} is`);
+      if (amount === 0 && strict) { err.textContent = BurrowEngine.build.PAY_NEEDS_AMOUNT; box.focus(); throw new Error('asked'); }
+      ans.pays.push({ key: row.dataset.row, name, bank: 'bank1', amount: amount || 1, day, shift, startsPeriod: i === 0 });
     });
     $$('#a3Setup [data-row^=card]').forEach(row => {
       const name = text(row.querySelector('[data-f=name]'), 'Card'), cd = row.querySelector('[data-f=closeDay]').value;

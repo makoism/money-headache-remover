@@ -110,7 +110,10 @@ function answers3(strict) {
     const day = Number($('#s3PayDay').value), shift = $('#s3PayShift').value;
     $$('#a3Setup [data-row^=pay]').forEach((row, i) => {
       const name = text(row.querySelector('[data-f=name]'), 'Pay');
-      ans.pays.push({ key: row.dataset.row, name, bank: 'bank1', amount: need(row.querySelector('[data-f=amount]'), `Type how much ${name} is`), day, shift, startsPeriod: i === 0 });
+      /* [BL1] a pay of 0 is refused with build_book's own words; a draft counts a pay not typed yet as some amount */
+      const box = row.querySelector('[data-f=amount]'), amount = need(box, `Type how much ${name} is`);
+      if (amount === 0 && strict) { err.textContent = BurrowEngine.build.PAY_NEEDS_AMOUNT; box.focus(); throw new Error('asked'); }
+      ans.pays.push({ key: row.dataset.row, name, bank: 'bank1', amount: amount || 1, day, shift, startsPeriod: i === 0 });
     });
     $$('#a3Setup [data-row^=card]').forEach(row => {
       const name = text(row.querySelector('[data-f=name]'), 'Card'), cd = row.querySelector('[data-f=closeDay]').value;

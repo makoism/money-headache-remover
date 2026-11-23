@@ -24,6 +24,7 @@
 
   const SHIFTS = { before: 1, after: 1, none: 1 };
   const BANK_TYPES = { bank: 1, cash: 1, ewallet: 1, wallet: 1 };
+  const PAY_NEEDS_AMOUNT = 'A pay needs an amount. No fixed pay comes later';
   function buildBook(ans, opts) {
     const newId = opts.newId, by = opts.by || String(newId()).split('-')[0];
     const day = ans.day, told = ans.told, at = ans.told, cur = ans.currency;
@@ -90,6 +91,8 @@
     };
     if ((ans.pays || []).filter(p => p.startsPeriod).length > 1) throw new Error('only one pay starts the period');
     for (const p of ans.pays || []) {
+      // [BL1] a pay that exists always has an amount (no fixed pay comes in slice 6), so its check-in item can be ticked
+      if (p.amount === 0) throw new Error(PAY_NEEDS_AMOUNT);
       book.schedules.push(stamp({ id: idFor(p.key), kind: 'income', name: p.name, acct: acctOf(p.bank), cur, shift: shift(p.shift, p.name),
         rules: [{ from: null, rule: ruleOf(p, p.name) }], steps: [{ from: null, amount: whole(p.amount, p.name) }],
         ...(p.startsPeriod ? { startsPeriod: true } : {}) }));
@@ -121,7 +124,7 @@
     }
     return { book, ids, asked };
   }
-  const api = { buildBook };
+  const api = { buildBook, PAY_NEEDS_AMOUNT };
   if (node) module.exports = api;
   else (root.BurrowEngine = root.BurrowEngine || {}).build = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

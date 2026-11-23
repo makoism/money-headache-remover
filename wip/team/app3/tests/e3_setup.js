@@ -24,6 +24,10 @@ const typeIn = async (p, sel, v) => { await p.click(sel, { clickCount: 3 }); awa
   ck('a missing bank figure is refused with words', /bank/i.test(await p.$eval('#a3SetupErr', e => e.textContent)) && !(await p.$eval('#a3Setup', e => e.hidden)));
   await typeIn(p, '#s3Bank', '286000');
   await p.select('#s3PayDay', '10'); await p.select('#s3PayShift', 'after');
+  /* [BL1] a pay of 0 is refused with words and saves nothing */
+  await typeIn(p, '#s3PayAmt', '0'); await p.click('#a3SetupSave'); await T.w(300);
+  ck('a pay of 0 is refused with words', (await p.$eval('#a3SetupErr', e => e.textContent)) === 'A pay needs an amount. No fixed pay comes later' && !(await p.$eval('#a3Setup', e => e.hidden)), await p.$eval('#a3SetupErr', e => e.textContent));
+  ck('the pay box is the one asked about', await p.evaluate(() => document.activeElement && document.activeElement.id === 's3PayAmt'));
   await typeIn(p, '#s3PayAmt', '180000'); await typeIn(p, '#s3PayName', 'Main job');
   await p.click('#s3AddPay'); await T.w(100);
   await typeIn(p, '[data-row=pay2] [data-f=name]', 'Side job'); await typeIn(p, '[data-row=pay2] [data-f=amount]', '60000');

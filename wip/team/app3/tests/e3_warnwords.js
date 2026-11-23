@@ -58,8 +58,9 @@ async function warns(bk, day) {
      E. [B1] Pay 0, 100,000, Rent on the 28th: 40,000 on 28 Nov, -20,000 on 28 Dec; no pay brings anything. */
   const jpBook = (bank, pay, rentDay) => B.buildBook({ day: '2026-11-23', told: '2026-11-23T09:00+09:00', country: 'JP', currency: 'JPY',
     banks: [{ key: 'b', name: 'Main bank', amount: bank }],
-    pays: [{ key: 'pay', name: 'Pay', bank: 'b', amount: pay, day: 25, shift: 'none', startsPeriod: true }],
+    pays: [{ key: 'pay', name: 'Pay', bank: 'b', amount: pay || 1, day: 25, shift: 'none', startsPeriod: true }],
     bills: [{ key: 'rent', name: 'Rent', from: 'b', amount: 60000, day: rentDay, shift: 'none' }] }, { newId: I.idMaker('b1home', () => 0.5) }).book;
+  const jpBook0 = (bank, pay, rentDay) => { const bk = jpBook(bank, pay, rentDay); if (!pay) bk.schedules.find(x => x.kind === 'income').steps[0].amount = 0; return bk; };   // [BL1] setup refuses a pay of 0; a book written before that still reads
   {
     const { out, status, short, errs } = await warns(jpBook(30000, 50000, 24), '2026-11-23');
     ck('D: short by the first day under and how much then, before the pay', short === 'Short by ¥30,000 on 24 Nov, before the pay on 25 Nov', short);
@@ -71,7 +72,7 @@ async function warns(bk, day) {
     ck('D: no page errors', errs.length === 0, errs.join(' | '));
   }
   {
-    const { short, all, errs } = await warns(jpBook(100000, 0, 28), '2026-11-23');
+    const { short, all, errs } = await warns(jpBook0(100000, 0, 28), '2026-11-23');
     ck('E: pay 0, short on its day with no pay named', short === 'Short by ¥20,000 on 28 Dec', short);
     ck('E: never "before then" or "before the pay"', !/before then|before the pay/.test(all), (all.match(/.{30}before.{30}/) || [])[0]);
     ck('E: no page errors', errs.length === 0, errs.join(' | '));

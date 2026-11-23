@@ -162,15 +162,16 @@ const ctxOf = h => ({ book: h.book, today: DAY });
   const B = require(E + 'build_book.js');
   const jp = (bank, pay, rentDay) => B.buildBook({ day: '2026-11-23', told: '2026-11-23T09:00+09:00', country: 'JP', currency: 'JPY',
     banks: [{ key: 'b', name: 'Main bank', amount: bank }],
-    pays: [{ key: 'pay', name: 'Pay', bank: 'b', amount: pay, day: 25, shift: 'none', startsPeriod: true }],
+    pays: [{ key: 'pay', name: 'Pay', bank: 'b', amount: pay || 1, day: 25, shift: 'none', startsPeriod: true }],
     bills: [{ key: 'rent', name: 'Rent', from: 'b', amount: 60000, day: rentDay, shift: 'none' }] }, { newId: I.idMaker('b1ask0', () => 0.5) }).book;
+  const jpBook0 = (bank, pay, rentDay) => { const bk = jp(bank, pay, rentDay); if (!pay) bk.schedules.find(x => x.kind === 'income').steps[0].amount = 0; return bk; };   // [BL1] setup refuses a pay of 0; a book written before that still reads
   await t('the summary names the first day short and how much then, and the lower point later with its own day [B1]', async () => {
     const s = K.summary(jp(30000, 50000, 24), '2026-11-23').text;
     ok(s.includes('Short by ¥30,000 on 24 Nov, before the pay on 25 Nov. Later on it goes ¥40,000 below zero on 24 Dec.'), s);
     ok(!s.includes('before then'), 'no "before then"');
   });
   await t('the summary with pay 0 never says short before a pay that brings nothing [B1]', async () => {
-    const s = K.summary(jp(100000, 0, 28), '2026-11-23').text;
+    const s = K.summary(jpBook0(100000, 0, 28), '2026-11-23').text;
     ok(s.includes('Short by ¥20,000 on 28 Dec.'), s);
     ok(!/before the pay|before then/.test(s), s);
   });

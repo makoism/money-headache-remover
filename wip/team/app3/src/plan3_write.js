@@ -20,6 +20,7 @@
   const PE = node ? require('../../engine/periods.js') : root.BurrowEngine.periods;
   const G = node ? require('../../engine/ledger.js') : root.BurrowEngine.ledger;
   const bad = text => { throw new A3.Bad(text); };
+  const PAY_NEEDS_AMOUNT = (node ? require('../../engine/build_book.js') : root.BurrowEngine.build).PAY_NEEDS_AMOUNT;
   const live = x => x && !x.gone;
   const DAY = /^\d{4}-\d{2}-\d{2}$/;
   const amountOk = (a, what) => { if (!Number.isInteger(a) || !(a > 0)) bad('Type ' + what + ' above zero'); return a; };
@@ -98,6 +99,7 @@
     const ch = {};
     if (x.name != null && x.name !== s.name) { ch.name = nameOk(x.name); sameName(A3.listOf(w.book, 'schedules').filter(y => y.kind === s.kind), ch.name, id); }
     const from = x.from || v.changeFrom;
+    if (s.kind === 'income' && x.amount === 0) bad(PAY_NEEDS_AMOUNT);   // [BL1] a pay always has an amount
     if ((x.amount != null && x.amount !== v.amount) || (x.day != null && !(v.rule && v.rule.every === 'month' && v.rule.days.length === 1 && v.rule.days[0] === x.day))) {
       if (!DAY.test(from)) bad('Pick the day the change starts');
       if (from < v.changeFrom) bad('The change can start on ' + v.changeFrom + ' at the earliest: an earlier one is already paid or noted');
