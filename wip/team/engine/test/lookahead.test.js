@@ -286,6 +286,16 @@ t('what a bank can still set aside: today\'s figure less what is already set asi
   eq([a.bank.bank, a.bank.setAside, a.bank.canSetAside], [397000, 25000, 372000]);
   eq([a.old.setAside, a.old.canSetAside], [0, 0]);
 });
+t('a card paid more than it owed is in credit, never owed [BL5]', () => {
+  const b = base(x => {
+    x.accounts.push({ id: 'visa', name: 'Visa', type: 'card', cur: 'JPY', inFull: true, cutDay: null, payDay: 24, payMonths: 1, shift: 'none', payFrom: 'bank' });
+    x.events.push({ id: 'ov', k: 'open', acct: 'visa', date: '2026-12-01', a: 30000, told: '2026-12-01T10:00' + TZ, grp: 's' }, { id: 'cv', k: 'check', acct: 'visa', date: '2026-12-01', a: 30000, told: '2026-12-01T10:00' + TZ, grp: 's' });
+    x.events.push({ id: 'rp', k: 'repay', acct: 'bank', acct2: 'visa', a: 31500, a2: 31500, date: '2026-12-24', settles: [{ s: 'visa', due: '2026-12-24' }], told: '2026-12-25T09:00' + TZ });
+  });
+  const c = run(b, '2026-12-25').cards.visa;
+  eq([c.owedNow, c.credit], [-1500, 1500]);
+  eq(run(b, '2026-12-02').cards.visa.credit, 0);
+});
 // [F4 for payments, H8, AU] a card or loan payment past its day and not ticked is late (inside the paying bank's posting
 // window) or not seen; it is never the "next payment" with a past date
 t('a card payment past its day and not ticked: late, then not seen, never the next payment', () => {

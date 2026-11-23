@@ -3134,7 +3134,8 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
     }
     for (const id in cards) {
       const k = cards[id];
-      res.cards[id] = { owedNow: k.owedNow, next: k.next, overdue: k.overdue, statements: k.statements.map(s => ({ closed: s.closed != null ? dayStr(s.closed) : undefined, amount: s.amount, payment: dayStr(s.land), paid: s.paid })), fillers: k.fillers };
+      // [BL5] a card paid more than it owed is in credit by that much (credit 0 otherwise)
+      res.cards[id] = { owedNow: k.owedNow, credit: Math.max(0, -k.owedNow), next: k.next, overdue: k.overdue, statements: k.statements.map(s => ({ closed: s.closed != null ? dayStr(s.closed) : undefined, amount: s.amount, payment: dayStr(s.land), paid: s.paid })), fillers: k.fillers };
       if (acct[k.payFrom] && cur(id) !== cur(k.payFrom)) res.warnings.push({ account: k.payFrom, card: id, code: 'card_other_currency', text: `${acct[id].name} (${cur(id)}) is paid from ${acct[k.payFrom].name} (${cur(k.payFrom)}): it is not taken off safe to spend until it is paid` });   // [H5]
     }
     for (const id in loans) {
@@ -4086,6 +4087,10 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
     owed: {
       label: 'Still owed', figures: ['cards.*.owedNow', 'owed.*.owedNow'], state: 'decided',
       source: 'QC_ROLES shared glossary (paid off, still owed); DECISIONS_ROUND2 F18, F19',
+    },
+    inCredit: {
+      label: 'In credit', figures: ['cards.*.credit'], state: 'decided',
+      source: 'DECISIONS_ROUND2 BL5 (a card paid more than it owed shows "in credit ¥1,500", never as owed)',
     },
     nextPayment: {
       label: 'Next payment', figures: ['cards.*.next.amount', 'owed.*.next.amount'], state: 'for Mako',
@@ -8223,7 +8228,9 @@ function drawHome3() {
       const od = (k.overdue || [])[0];
       const when = nx && nx.amount ? `${what} on ${esc3(day3(nx.payment_date, yr))}${besidePay3(nx.payment_date, land, yr)}`
         : od ? `${fig3('cards.*.overdue.*.amount', od.amount, cur)} was due ${esc3(day3(od.payment_date, yr))}, not ticked off yet` : 'Nothing to pay yet';
-      return `<li data-cardid="${esc3(id)}"><span>${esc3(E3.nameOf(id))}<br><span class="when">${when}</span></span><span class="amt" data-fig="owed">${fig3('cards.*.owedNow', k.owedNow, cur)}</span></li>`;
+      /* [BL5] paid more than it owed: in credit by the engine's figure, never as owed with a minus */
+      const amt = k.credit ? `<span data-fig="credit">${esc3(label3('inCredit').toLowerCase())} ${fig3('cards.*.credit', k.credit, cur)}</span>` : `<span data-fig="owed">${fig3('cards.*.owedNow', k.owedNow, cur)}</span>`;
+      return `<li data-cardid="${esc3(id)}"><span>${esc3(E3.nameOf(id))}<br><span class="when">${when}</span></span><span class="amt">${amt}</span></li>`;
     }).join('');
     out.push(`<section class="a3-card" data-card="cards"><h2>${esc3(label3('owed'))} on your cards</h2><ul class="a3-rows">${rows}${afterCards3(r, yr)}</ul></section>`);
   }
@@ -8749,7 +8756,8 @@ function drawPlan3() {
       : `paid on day ${esc3(a.payDay)} from ${esc3(E3.nameOf(a.payFrom))}`;
     const nx = k.next && k.next.amount ? `<br><span class="when">${esc3(label3('nextPayment'))} ${plFig3(a.type === 'card' ? 'cards.*.next.amount' : 'owed.*.next.amount', k.next.amount, a.cur)} on ${esc3(day3(k.next.payment_date, yr))}</span>` : '';
     const od = (k.overdue || []).map(o => `<br><span class="a3-late" data-fig="overdue" data-state="${esc3(o.state)}">${overdueWords3(o, a.cur, yr, a.type === 'card' ? 'cards.*.overdue.*.amount' : 'owed.*.overdue.*.amount')}</span>`).join('');
-    return plRow3(`data-owed="${esc3(a.id)}"`, `${esc3(a.name)}<br><span class="when">${days}</span>${od}${nx}`, `<span data-fig="owed-now">${plFig3(a.type === 'card' ? 'cards.*.owedNow' : 'owed.*.owedNow', k.owedNow, a.cur)}</span><br><span class="when">${esc3(label3('owed')).toLowerCase()}</span>`);
+    return plRow3(`data-owed="${esc3(a.id)}"`, `${esc3(a.name)}<br><span class="when">${days}</span>${od}${nx}`, k.credit ? `<span data-fig="credit">${esc3(label3('inCredit')).toLowerCase()} ${plFig3('cards.*.credit', k.credit, a.cur)}</span>`   /* [BL5] never as owed */
+      : `<span data-fig="owed-now">${plFig3(a.type === 'card' ? 'cards.*.owedNow' : 'owed.*.owedNow', k.owedNow, a.cur)}</span><br><span class="when">${esc3(label3('owed')).toLowerCase()}</span>`);
   }).filter(Boolean);
   out.push(`<section class="a3-card" data-card="plan-owed"><h2>Cards and loans</h2>${owedRows.length ? `<ul class="a3-rows a3-rclist">${owedRows.join('')}</ul>` : '<p class="a3-sub">No cards or loans</p>'}
     <div class="a3-actions"><button type="button" class="a3-btn" id="plAddCard">Add a card</button><button type="button" class="a3-btn" id="plAddLoan">Add a loan</button></div></section>`);

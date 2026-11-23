@@ -66,6 +66,10 @@
       label: 'Still owed', figures: ['cards.*.owedNow', 'owed.*.owedNow'], state: 'decided',
       source: 'QC_ROLES shared glossary (paid off, still owed); DECISIONS_ROUND2 F18, F19',
     },
+    inCredit: {
+      label: 'In credit', figures: ['cards.*.credit'], state: 'decided',
+      source: 'DECISIONS_ROUND2 BL5 (a card paid more than it owed shows "in credit ¥1,500", never as owed)',
+    },
     nextPayment: {
       label: 'Next payment', figures: ['cards.*.next.amount', 'owed.*.next.amount'], state: 'for Mako',
       choices: ['Next payment', 'To pay next'], source: 'SCHEMA_V3 section 12 (each card\'s and loan\'s next payment)',

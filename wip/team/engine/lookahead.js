@@ -1152,7 +1152,8 @@
     }
     for (const id in cards) {
       const k = cards[id];
-      res.cards[id] = { owedNow: k.owedNow, next: k.next, overdue: k.overdue, statements: k.statements.map(s => ({ closed: s.closed != null ? dayStr(s.closed) : undefined, amount: s.amount, payment: dayStr(s.land), paid: s.paid })), fillers: k.fillers };
+      // [BL5] a card paid more than it owed is in credit by that much (credit 0 otherwise)
+      res.cards[id] = { owedNow: k.owedNow, credit: Math.max(0, -k.owedNow), next: k.next, overdue: k.overdue, statements: k.statements.map(s => ({ closed: s.closed != null ? dayStr(s.closed) : undefined, amount: s.amount, payment: dayStr(s.land), paid: s.paid })), fillers: k.fillers };
       if (acct[k.payFrom] && cur(id) !== cur(k.payFrom)) res.warnings.push({ account: k.payFrom, card: id, code: 'card_other_currency', text: `${acct[id].name} (${cur(id)}) is paid from ${acct[k.payFrom].name} (${cur(k.payFrom)}): it is not taken off safe to spend until it is paid` });   // [H5]
     }
     for (const id in loans) {
