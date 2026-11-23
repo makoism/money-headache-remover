@@ -9,7 +9,7 @@
 'use strict';
 const T = require('./lib3.js');
 const { ck } = T;
-const W = require('../src/checkin_write.js'), I = require('../../engine/ids.js');
+const W = require('../../engine/checkin.js'), I = require('../../engine/ids.js');
 const DAY = '2026-12-10';
 async function walk(p, bk) {
   await p.click('#a3CheckGo'); await T.w(300);

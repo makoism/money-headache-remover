@@ -23,7 +23,7 @@ elif [ -n "$NEW" ]; then echo "NEW ENGINE FAILURES:"; echo "$NEW"; BAD=1; else e
 step "the shared screen pieces (screens/test/run_all.sh)"
 OUT=$(bash ../screens/test/run_all.sh 2>&1); echo "$OUT" | tail -1; echo "$OUT" | tail -1 | grep -q "every file passed" || { echo "SCREENS TESTS FAILED"; BAD=1; }
 
-step "the check-in writer (pure)"; run tests/checkin_write.test.js "CHECKIN WRITE PASS"
+step "the try book through the engine check-in writer"; run tests/checkin_book.test.js "CHECKIN BOOK PASS"
 step "no money maths in screens"; run tests/no_maths.js "NO MATHS PASS"
 pkill -f chrome-linux64/chrome 2>/dev/null
 step "the try book"; run tests/e3_try.js "e3_try: ALL PASS"

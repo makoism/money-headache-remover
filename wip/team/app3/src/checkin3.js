@@ -48,7 +48,7 @@ async function saveCheck3() {
     if (v === null) { err.textContent = `Type the amount for ${E3.occName(o.item)}`; row.querySelector('[data-amt]').focus(); return; }
     ticked.push(o.item); if (v !== o.amount) amounts[o.item] = v;
   }
-  const out = CHECKIN3.checkIn(E3.book, { day: check3.day, told: E3.told(), newId: E3.newId, figures, ticked, unticked: [], amounts, expected, lands });
+  const out = BurrowEngine.checkin.checkIn(E3.book, { day: check3.day, told: E3.told(), newId: E3.newId, figures, ticked, unticked: [], amounts, expected, lands });
   const ok = await E3.write(out);
   if (!ok) { err.textContent = 'This could not be saved on this device. Nothing changed'; return; }
   closeCheck3(); renderHome3();
