@@ -133,3 +133,14 @@ P4. When the pay rhythm changes mid-year, each rule gets its own months: monthly
 P5. Spending found later never comes out of money kept for the next period; the person picks at the check-in where it comes from (Waiting or this period's Free to spend).
 P6. An account is closed only when its final figure is zero or moved out by a transfer the closing asks for; its schedules end on the closing date.
 The O helper's readings are confirmed.
+
+## Q. Decisions from final_review_2.md
+Q1. An import line that meets one side of a two-sided record (transfer, repay, borrow, convert) attaches to it: it sets that side's posted date and source (`posted2`, `src2` for the second side) and never replaces the record. A transfer out of an account matches that account's money-out line; into an account, its money-in line.
+Q2. `a2` is kept whenever what arrived differs from what left, in any currency. The difference is a fee: a spend from the sending account, on the line `fees` (place Free to spend unless the person picks one). Transfer schedules may carry `fee`.
+Q3. A card instalment buy is saved on its own pay-later account with `of: <card id>`; the card is due only the part posted each month. An account's plans are a list (`plans: [ ... ]`). A borrow or a spend on a loan or pay-later account raises what is owed there.
+Q4. Money in another currency than its account (`in` with a schedule `cur` that differs) is not counted in the walk until stage 2, with a warning; `in` keeps the original amount in `a2`.
+Q5. Removing a self-logged spend writes `skip:<occurrence>`, so the occurrence is "did not happen" and is not logged again on any device.
+Q6. Across one import, the line nearest the expected day settles an item, then the nearest amount. A later import in the same check-in stretch with a nearer line moves the settle.
+Q7. Built ids also for `rm:<place>` (a removed goal's move to Waiting) and `close:<account>` (the closing transfer or write-off).
+Watch decided: a repay may have no paying account (paid by someone else); P2's answer record with `moves` replaces "move events" in SCHEMA_V3 6.2 and 7.4 and place balances read it; closing may write off a balance that cannot be moved, as a spend.
+Stage 2 (no field now, unknown fields are kept): two holders of one card matched by sum; a travel spend's original amount `orig`.
