@@ -27,7 +27,9 @@ const { oracle, Refused } = require(path.join(dir, 'oracle_v2.js'));
 const N = Number(arg('--seeds', 2000)), FROM = Number(arg('--from', 1)), ONE = arg('--seed', null);
 const outFile = arg('--out', null), verbose = argv.includes('-v');
 // --checker-opts placeFloor=false,plannedToday=false,...: switch a reading in the checker, to sort differences by cause
-const COPTS = { units: 'written' };
+// [AU2] a place may go below nothing: the checker on lane/checker-b still floors it at nothing (H7), so the run uses its
+// `placeFloor: false` switch by default
+const COPTS = { units: 'written', placeFloor: false };
 for (const kv of (arg('--checker-opts', '') || '').split(',').filter(Boolean)) { const [k, v] = kv.split('='); COPTS[k] = v === 'true' ? true : v === 'false' ? false : v; }
 const near = (a, b) => (typeof a === 'number' && typeof b === 'number' ? Math.abs(a - b) < 1e-6 : a === b);
 
@@ -48,7 +50,9 @@ function compare(sc, day) {
     if (!near(o.accounts[id].headroom, M(ra.headroom))) diffs.push({ field: 'safe_to_spend', account: id, checker: o.accounts[id].headroom, engine: M(ra.headroom), checkerLowest: o.accounts[id].lowestDay, engineLowest: ra.lowestDay, engineWhy: ra.why });
   }
   if (!near(o.headline, M(r.safeToSpend.headline))) diffs.push({ field: 'headline', checker: o.headline, engine: M(r.safeToSpend.headline), checkerFree: o.freeLeft });
-  const od = o.daysToNextPay || {}, rd = r.daysToNextPay || {};
+  // [WIRING_PLAN F4] days to next pay is never below zero (newer than the checker, which counts a late pay's days back)
+  const od = Object.assign({}, o.daysToNextPay || {}), rd = r.daysToNextPay || {};
+  if (typeof od.days === 'number') od.days = Math.max(0, od.days);
   if (od.days !== rd.days || od.next_pay !== rd.next_pay || od.item !== rd.item || !!od.late !== !!rd.late) diffs.push({ field: 'days_to_next_pay', checker: od, engine: { days: rd.days, next_pay: rd.next_pay, item: rd.item, late: rd.late } });
   const key = x => x.item + ' ' + x.lands + ' ' + Number(x.amount).toFixed(2);
   const om = o.dueBeforeNextPay.items.map(key).sort(), rm = (r.dueBeforeNextPay.items || []).map(x => key(Object.assign({}, x, { amount: M(x.amount) }))).sort();
