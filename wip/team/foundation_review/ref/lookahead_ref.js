@@ -8,8 +8,8 @@
 // seen yet, each card's and loan's next payment, the places' money, total, and
 // the check-in list and fillers.
 //
-// It follows DECISIONS_ROUND2.md sections A, B, F, G and H (H wins over anything
-// earlier). Where a line below carries a tag like [H3] or [B9], that decision is
+// It follows DECISIONS_ROUND2.md sections A, B, F, G, H and I (I wins over
+// anything earlier, then H). Where a line below carries a tag like [H3] or [B9], that decision is
 // the reason for it. Plain code, no dependencies, every amount in whole minor
 // units, every date a whole day number (D8). It is a reference for the engine
 // and for tests, never loaded by the app.
@@ -45,6 +45,13 @@ function short(n) { const d = new Date(n * MS); return d.getUTCDate() + ' ' + MO
 
 // ---------- amounts ----------
 function minor(x, cur) { return Math.round(x * Math.pow(10, DIGITS[cur] === undefined ? 2 : DIGITS[cur])); }
+// [I2] Interest for one month on a balance: balance x yearly rate (percent) / 12, rounded half up to
+// the minor unit. Nothing on a balance at or below zero. Whole-number maths, so x.5 always goes up.
+function interestOn(bal, apr) {
+  if (!apr || bal <= 0) return 0;
+  const k = BigInt(Math.round(apr * 10000)), den = 1200n * 10000n;
+  return Number((2n * BigInt(bal) * k + den) / (2n * den));
+}
 function fmt(n, cur) {
   const d = DIGITS[cur] === undefined ? 2 : DIGITS[cur];
   const neg = n < 0; n = Math.abs(n);
@@ -157,10 +164,12 @@ function lookahead(sc, asOf, opts = {}) {
   // `told` is when the app first heard of a record (a date, or a date and a time; null: never). It orders
   // records on the same day; with no time, records keep the order they are listed in. Every amount is
   // turned into minor units here: `a` in the currency of the side it leaves, `a2` of the side it reaches [H5].
+  // [I5] A record moved from 38.31 is told at its own time when it has one, else at the copy's last save;
+  // records on one day keep the old list order (the order in the file).
   const events = [];
   (sc.events || []).forEach((e, i) => {
     if (e.told === null) return;
-    const key = String(e.told || e.date);
+    const key = String(e.told || (e.moved ? e.own_time || sc.moved_copy.saved : e.date));
     if (dayNum(key) > knownTo || dayNum(e.date) > knownTo) return;
     const x = Object.assign({}, e, { day: dayNum(e.date), key, idx: i });
     const side = e.account || e.from;
@@ -229,7 +238,10 @@ function lookahead(sc, asOf, opts = {}) {
   };
   // [H1] Is event e already inside a check (or the opening) of account id? Events dated before the check's
   // day are; on its day, those the app heard of before it. A bank line with a posting date counts by that date.
+  // [I1] An "available" bank check already has pending debits off: every event dated on or before its day
+  // is inside it. A "current" check, and one that does not say, follows the H1 rule above.
   function inside(e, c, id) {
+    if (c.avail === 'available') return e.day <= c.day;
     const d = e.posted && e.account === id && !isOwed(id) ? dayNum(e.posted) : e.day;
     if (d !== c.day) return d < c.day;
     return e.key < c.key || (e.key === c.key && e.idx < c.idx);
@@ -244,10 +256,13 @@ function lookahead(sc, asOf, opts = {}) {
     for (const c of checks) {
       // [A3] the filler is worked out every time: what the events say minus what the check shows.
       // [H1] Two check-ins on one day: the later one's stretch starts at the earlier one.
-      const computed = base.amount + moves.filter(e => inside(e, c, id) && !inside(e, base, id)).reduce((t, e) => t + delta(e, id), 0);
+      // [I1] An event can be inside an earlier available check and not yet inside a later current one
+      // (a debit not posted yet): it is added back, so it is not lost.
+      const computed = base.amount + moves.filter(e => inside(e, c, id) && !inside(e, base, id)).reduce((t, e) => t + delta(e, id), 0)
+        - moves.filter(e => inside(e, base, id) && !inside(e, c, id)).reduce((t, e) => t + delta(e, id), 0);
       const amount = m(c.amount, id);
       fillers.push(makeFiller(id, c.day > base.day ? base.day + 1 : c.day, c.day, computed - amount));
-      base = { day: c.day, key: c.key, idx: c.idx, amount };
+      base = { day: c.day, key: c.key, idx: c.idx, avail: c.avail, amount };
     }
     const bank = base.amount + moves.filter(e => !inside(e, base, id)).reduce((t, e) => t + delta(e, id), 0);
     return { bank, asOfDay: base.day, fillers };
@@ -291,17 +306,64 @@ function lookahead(sc, asOf, opts = {}) {
         const posted = e.posted && dayNum(e.posted) <= knownTo ? dayNum(e.posted) : e.day;
         lines.push({ day: posted, amount: e.kind === 'spend' ? e.a : -e.a });   // [F5] a refund lowers the cycle it posts in
       }
-      if ((e.kind === 'card_payment' && e.card === id) || (e.kind === 'repay' && e.to === id)) payments.push({ day: e.day, amount: e.a2 });   // [H5] what arrived
+      if ((e.kind === 'card_payment' && e.card === id) || (e.kind === 'repay' && e.to === id)) payments.push({ day: e.day, amount: e.a2, settles: [].concat(e.settles || []) });   // [H5] what arrived
     }
-    // [H3] Owed at the end of a day: what was carried at the opening, plus every line, less every payment.
-    // A statement is that figure at its close: what was carried over, less payments and refunds since the
-    // last close, plus the lines in the cycle.
-    const owedAt = day => carried0 + lines.filter(l => l.day <= day).reduce((t, l) => t + l.amount, 0)
-      - payments.filter(p => p.day <= day).reduce((t, p) => t + p.amount, 0);
     const sClose = st ? dayNum(st.closed) : null;
     const closes = [];
     if (!notSure) { const [y, mo] = ymOf(sClose); for (let k = 1; k < 30; k++) closes.push(dayIn(y, mo + k, c.statement_close_day)); }   // [F6] a close day never moves
-    const stmtAmount = cl => cl === sClose ? m(st.amount, id) : owedAt(cl);
+
+    // [H3, I2, I3] The statements, worked out close by close up to `last`, with what each still holds on `upTo`.
+    // A statement is what was carried over, plus interest on it, plus the lines in the cycle, less payments
+    // and refunds since the last close. Carried over is only what is left of statements whose payment day
+    // has come by this close [I3]: a statement still waiting for its payment day stays on its own and is
+    // never folded into the next one. Interest is added at the close on what is carried over, x apr / 12,
+    // rounded half up [I2]. A payment goes to the statement it settles (or the one that statement was
+    // carried into), then to the oldest statement still owing, then to the open cycle; so a statement still
+    // waiting keeps its own payment too. With one payment a month and the payment day before the next
+    // close, this is exactly H3.
+    function statementsTo(last, upTo) {
+      const list = [];
+      if (notSure) return { list, open: 0 };
+      list.push(Object.assign(payAfterClose(sClose), { close: sClose, amount: m(st.amount, id), left: carried0, interest: 0, into: null }));
+      const evs = lines.map(l => ({ day: l.day, line: l.amount })).concat(payments.map(p => ({ day: p.day, pay: p.amount, settles: p.settles })))
+        .sort((x, z) => x.day - z.day);
+      let open = 0, i = 0;
+      const apply = until => {
+        for (; i < evs.length && evs[i].day <= until; i++) {
+          const ev = evs[i];
+          if (ev.line != null) { open += ev.line; continue; }
+          let left = ev.pay;
+          const named = ev.settles.map(sid => list.find(b => b.id === sid)).filter(Boolean).map(b => { while (b.into) b = b.into; return b; });
+          for (const b of named.concat(list)) {
+            if (left <= 0) break;
+            if (b.into || b.left <= 0) continue;
+            const take = Math.min(left, b.left);
+            b.left -= take; left -= take;
+          }
+          open -= left;
+        }
+      };
+      for (const cl of closes) {
+        if (cl > last) break;
+        apply(cl);
+        const folding = list.filter(b => !b.into && b.land <= cl);
+        const carried = folding.reduce((t, b) => t + b.left, 0);
+        const interest = interestOn(carried, c.apr);
+        const amount = carried + interest + open;
+        const nb = Object.assign(payAfterClose(cl), { close: cl, amount, left: amount, interest, into: null });
+        for (const b of folding) { b.into = nb; b.leftAtFold = b.left; b.left = 0; }
+        list.push(nb);
+        open = 0;
+      }
+      apply(upTo);
+      return { list, open };
+    }
+    // [H3, I2] Owed at the end of a day: what was carried at the opening, plus every line and the interest
+    // added at each close by then, less every payment.
+    const interestTo = day => statementsTo(day, day).list.reduce((t, b) => t + b.interest, 0);
+    const owedAt = day => carried0 + lines.filter(l => l.day <= day).reduce((t, l) => t + l.amount, 0)
+      - payments.filter(p => p.day <= day).reduce((t, p) => t + p.amount, 0) + (notSure ? 0 : interestTo(day));
+    const stmtAmount = cl => { const b = statementsTo(cl, cl).list.find(x => x.close === cl); return b ? b.amount : owedAt(cl); };
     // A card check sets the statement it names and what is owed now; the gaps are its fillers [A3].
     const fillers = [];
     for (const e of live().filter(x => x.kind === 'card_check' && x.account === id)) {
@@ -320,36 +382,54 @@ function lookahead(sc, asOf, opts = {}) {
     const owedNow = owedAt(knownTo) + lines.filter(l => l.day > knownTo).reduce((t, l) => t + l.amount, 0);
 
     // The points where something fell due: each closed statement, or with the close day not sure, each
-    // payment day gone by (everything owed then is due) [H4]. Then the next one, still to come.
+    // payment day gone by (everything owed then is due, so each one holds the one before) [H4]. Then the
+    // next one, still to come. `basis` is what a point still holds: for a statement carried into a later
+    // one, what it held when it was carried.
     const points = [];
     let nextPoint = null;
     if (!notSure) {
-      for (const cl of [sClose, ...closes]) {
-        if (cl > knownTo) { nextPoint = Object.assign(payAfterClose(cl), { closes: cl }); break; }
-        const p = payAfterClose(cl);
-        points.push(Object.assign(p, { closed: cl, amount: stmtAmount(cl), paid: cl === sClose ? (st.paid || !!settledBy[p.id]) : !!settledBy[p.id] }));
-      }
+      const S = statementsTo(knownTo, knownTo);
+      for (const b of S.list) points.push(Object.assign(b, { closed: b.close, basis: b.into ? b.leftAtFold : b.left,
+        paid: b.close === sClose ? (st.paid || !!settledBy[b.id]) : !!settledBy[b.id] }));
+      const nc = closes.find(cl => cl > knownTo);
+      if (nc != null) nextPoint = Object.assign(payAfterClose(nc), { closes: nc });
     } else {
       const [y, mo] = ymOf(openDay(id));
       for (let k = 0; k < 40 && !nextPoint; k++) {
         const p = payOf(dayIn(y, mo + k, pay.day));
         if (p.land <= openDay(id) || p.due <= openDay(id)) continue;   // inside the opening
-        if (p.land < today) points.push(Object.assign(p, { amount: owedAt(p.land), paid: !!settledBy[p.id] }));
-        else if (!settledBy[p.id]) nextPoint = p;
+        if (p.land < today) {
+          const prev = points[points.length - 1];
+          const pt = Object.assign(p, { amount: owedAt(p.land), paid: !!settledBy[p.id], into: null, left: owedAt(p.land) });
+          pt.basis = pt.amount;
+          if (prev) prev.into = pt;
+          points.push(pt);
+        } else if (!settledBy[p.id]) nextPoint = p;
       }
     }
-    // [H3] Each unpaid point asks only what an older unpaid one does not already hold, so nothing counts twice.
-    // A statement at or below zero is a credit carried on: nothing is due and no item is made.
+    // [H3, I6] Each unpaid point asks only what an older unpaid one carried into it does not already ask,
+    // so nothing counts twice. A statement at or below zero is a credit carried on: nothing is due and no
+    // item is made.
     const unpaid = [];
-    let held = 0;
+    for (const p of points) p.held = 0;
+    let stillAsked = 0, projCarried = 0;
     for (const p of points) {
-      if (p.paid || p.amount <= 0) { held = 0; continue; }
-      const part = c.carries ? planned(p.amount, p.due) : Math.max(0, p.amount - held);
-      held = c.carries ? held + part : p.amount;
-      unpaid.push(Object.assign(p, { part, asks: c.carries ? part : p.amount }));
+      const item = !p.paid && p.basis > 0;
+      if (item) {
+        p.part = c.carries ? planned(p.amount, p.due) : Math.max(0, p.basis - p.held);
+        p.asks = c.carries ? p.part : p.basis;
+        unpaid.push(p);
+      }
+      const asked = !item ? 0 : c.carries ? p.part + p.held : p.basis;
+      if (p.into) p.into.held += asked;
+      else {
+        stillAsked += asked;
+        // [I2] what will be carried into the next close once the asked payments are made, for its interest
+        if (!notSure && nextPoint && p.land <= nextPoint.closes) projCarried += p.left - asked;
+      }
     }
     const label = notSure ? 'all owed' : null;
-    const rest = Math.max(0, owedNow - held);
+    const rest = Math.max(0, owedNow - stillAsked + (nextPoint && !notSure ? interestOn(projCarried, c.apr) : 0));
     const nextAmount = nextPoint ? planned(rest, nextPoint.due) : 0;
     // What comes off the paying account, and when: each unpaid point on its payment day, the rest on the
     // next payment day [F14]. Close day not sure: everything owed on the next payment day [H4].
@@ -367,18 +447,35 @@ function lookahead(sc, asOf, opts = {}) {
   // ----- loans and pay-later: an owed account that owns its payment [B5, E6, F19, H7] -----
   // Each month on its payment day: the usual amount (or what the minimum rule asks on what is owed),
   // plus any planned extra, never more than what is still owed.
+  // [I2] On each payment day, interest is added first on what was owed before that day's payment
+  // (owed x apr / 12, rounded half up), then the payment is asked on what is owed. Payment days gone by
+  // add it to what is owed now, paid or not; payment days to come add it in the look ahead.
   function loanInfo(id) {
     const a = acct[id], pay = a.payment, c = cur(id), open = openingOf(id);
-    const paid = live().filter(e => e.kind === 'repay' && e.to === id && !inside(e, open, id)).reduce((t, e) => t + e.a2, 0);
-    const owedNow = m(a.opening.owed, id) - paid;
-    const loanItems = [];
-    let left = owedNow;
+    const repays = live().filter(e => e.kind === 'repay' && e.to === id && !inside(e, open, id)).sort((x, z) => x.day - z.day);
+    const days = [];
     const [y, mo] = ymOf(openDay(id));
-    for (let k = 0; left > 0; k++) {
+    for (let k = 0; ; k++) {
       const due = dayIn(y, mo + k, pay.day);
       if (due > farEnd) break;
-      const land = cal.shift(due, pay.weekend_holiday), iid = id + '@' + dayStr(due);
-      if (land <= openDay(id) || due <= openDay(id) || settledBy[iid]) continue;
+      const land = cal.shift(due, pay.weekend_holiday);
+      if (land <= openDay(id) || due <= openDay(id)) continue;
+      days.push({ due, land, iid: id + '@' + dayStr(due) });
+    }
+    let owed = m(a.opening.owed, id), r = 0;
+    for (const d of days) {
+      if (d.land > knownTo) break;
+      while (r < repays.length && repays[r].day < d.land) owed -= repays[r++].a2;
+      owed += interestOn(owed, a.apr);
+    }
+    while (r < repays.length) owed -= repays[r++].a2;
+    const owedNow = owed;
+    const loanItems = [];
+    let left = owedNow;
+    for (const { due, land, iid } of days) {
+      if (left <= 0) break;
+      if (land > knownTo) left += interestOn(left, a.apr);
+      if (settledBy[iid]) continue;
       const amt = Math.min(left, (pay.amount != null ? minor(pay.amount, c) : minPay(pay.min_rule, left, c)) + extraOn(pay.extra_steps, due, c));
       left -= amt;
       loanItems.push({ id: iid, sid: id, kind: 'loan', acct: pay.from, card: id, due, land, amount: amt, settled: false, name: a.name });
@@ -428,11 +525,34 @@ function lookahead(sc, asOf, opts = {}) {
     if (!sc.plan) return {};
     const started = live().filter(e => e.kind === 'pay_in' && periodStream && [].concat(e.settles || []).some(s => s.startsWith(periodStream.id + '@'))).map(e => e.day);
     const lastPay = started.length ? Math.max(...started) : null;
+    // [B2, I4] What the opening holds for a line or Free to spend: what the split names, else a share by
+    // days left: the days from the setup day to the period's last day, both counted, over the period's days.
+    // Each line is rounded down to the minor unit; what that leaves goes to Free to spend, which is then
+    // rounded down too. With no period (no fixed pay) the whole amount, as before [B4].
+    const opening = {};
+    function openingShares(acctId) {
+      if (opening[acctId]) return opening[acctId];
+      const split = acct[acctId].opening.split || {}, od = openDay(acctId), out = { lines: {}, free: null };
+      const before = pays.filter(o => o.land <= od).sort((x, z) => x.land - z.land), after = pays.filter(o => o.land > od).sort((x, z) => x.land - z.land);
+      const share = before.length && after.length ? { d: after[0].land - od, D: after[0].land - before[before.length - 1].land } : null;
+      let leftOver = 0;   // in minor units x D: what rounding down the lines left
+      for (const l of (sc.plan.lines || []).filter(x => x.account === acctId)) {
+        const typed = (split.lines || {})[l.id], amount = m(l.amount, acctId);
+        if (typed != null) out.lines[l.id] = m(typed, acctId);
+        else if (share) { out.lines[l.id] = Math.floor(amount * share.d / share.D); leftOver += amount * share.d - out.lines[l.id] * share.D; }
+        else out.lines[l.id] = amount;
+      }
+      const f = sc.plan.free;
+      if (f && f.account === acctId) {
+        const amount = m(f.amount, acctId);
+        out.free = split.free != null ? m(split.free, acctId) : share ? Math.floor((amount * share.d + leftOver) / share.D) : amount;
+      }
+      return (opening[acctId] = out);
+    }
     const leftOf = (lineId, acctId, amount) => {
-      const split = (acct[acctId].opening.split || {});
-      const atOpening = lineId === 'free' ? split.free : (split.lines || {})[lineId];
+      const atOpening = lineId === 'free' ? openingShares(acctId).free : openingShares(acctId).lines[lineId];
       const fromOpening = lastPay === null || lastPay <= openDay(acctId);
-      const start = fromOpening ? (atOpening != null ? m(atOpening, acctId) : amount) : amount;
+      const start = fromOpening ? (atOpening != null ? atOpening : amount) : amount;
       const open = openingOf(acctId);
       const spent = live().filter(e => e.kind === 'spend' && e.line === lineId && e.account === acctId && !inside(e, open, acctId) && (fromOpening || e.day >= lastPay)).reduce((t, e) => t + e.a, 0);
       return start - spent;
