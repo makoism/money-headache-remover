@@ -167,15 +167,104 @@
       "decisions": [ "D4" ]
     },
     {
-      "id": "mg-16", "question": "merge",
-      "title": "A single record (`home`): the newer `at` wins",
+      "id": "mg-16",
+      "question": "merge",
+      "title": "AK1: the minimum edited on two devices: the newer `at` of that field wins",
       "input": {
-        "mine": { "home": { "cur": "JPY", "minBank": 20000, "at": "2026-11-21T10:00:00.000+09:00" } },
-        "theirs": { "home": { "cur": "JPY", "minBank": null, "at": "2026-11-21T10:05:00.000+09:00" } }
+        "mine": {
+          "home": {
+            "curs": [
+              {
+                "from": "2026-11-01",
+                "cur": "JPY",
+                "at": "2026-11-21T09:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ],
+            "country": "JP",
+            "mode": "track",
+            "minBank": {
+              "a": 20000,
+              "cur": "JPY"
+            },
+            "mainBank": "k7qzpa-m2xq7ab9zt-2",
+            "at": {
+              "country": "2026-11-21T09:00:00.000+09:00",
+              "mode": "2026-11-21T09:00:00.000+09:00",
+              "minBank": "2026-11-21T10:00:00.000+09:00",
+              "mainBank": "2026-11-21T09:00:00.000+09:00"
+            },
+            "by": {
+              "country": "phn001",
+              "mode": "phn001",
+              "minBank": "phn001",
+              "mainBank": "phn001"
+            }
+          }
+        },
+        "theirs": {
+          "home": {
+            "curs": [
+              {
+                "from": "2026-11-01",
+                "cur": "JPY",
+                "at": "2026-11-21T09:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ],
+            "country": "JP",
+            "mode": "track",
+            "minBank": null,
+            "mainBank": "k7qzpa-m2xq7ab9zt-2",
+            "at": {
+              "country": "2026-11-21T09:00:00.000+09:00",
+              "mode": "2026-11-21T09:00:00.000+09:00",
+              "minBank": "2026-11-21T10:05:00.000+09:00",
+              "mainBank": "2026-11-21T09:00:00.000+09:00"
+            },
+            "by": {
+              "country": "phn001",
+              "mode": "phn001",
+              "minBank": "dsk001",
+              "mainBank": "phn001"
+            }
+          }
+        }
       },
-      "expected": { "home": { "cur": "JPY", "minBank": null, "at": "2026-11-21T10:05:00.000+09:00" } },
-      "why": "Single records carry `at` (section 0) and merge the same way: 10:05 is newer, so minBank is null (no minimum).",
-      "decisions": [ "D4" ]
+      "expected": {
+        "home": {
+          "curs": [
+            {
+              "from": "2026-11-01",
+              "cur": "JPY",
+              "at": "2026-11-21T09:00:00.000+09:00",
+              "by": "phn001"
+            }
+          ],
+          "country": "JP",
+          "mode": "track",
+          "minBank": null,
+          "mainBank": "k7qzpa-m2xq7ab9zt-2",
+          "at": {
+            "country": "2026-11-21T09:00:00.000+09:00",
+            "mode": "2026-11-21T09:00:00.000+09:00",
+            "minBank": "2026-11-21T10:05:00.000+09:00",
+            "mainBank": "2026-11-21T09:00:00.000+09:00"
+          },
+          "by": {
+            "country": "phn001",
+            "mode": "phn001",
+            "minBank": "dsk001",
+            "mainBank": "phn001"
+          }
+        }
+      },
+      "why": "Setup on the phone, Sat 21 Nov 09:00, wrote every field of `home`. At 10:00 the phone sets \"Keep at least 20,000\"; at 10:05 the desktop, which has not seen it, clears the minimum (no minimum). Each field of `home` carries its own `at` and `by` in `home.at` and `home.by`, like the shared `ui` keys [AK1, L merge q6, M5]: the minimum is 10:00 against 10:05, so it is null (no minimum), `at` 10:05, `by` dsk001. The other fields were not touched and keep 09:00 and phn001 [D4].",
+      "decisions": [
+        "AK1",
+        "D4",
+        "M5"
+      ]
     },
     {
       "id": "mg-17", "question": "merge",
@@ -13762,7 +13851,7 @@
     {
       "id": "mg-197",
       "question": "merge",
-      "title": "AJ3: the home currency added on the phone and the country set on the desktop: both stay (confirm_review_5 h2)",
+      "title": "AJ3, AK1: the home currency added on the phone and the country set on the desktop: both stay (confirm_review_5 h2)",
       "input": {
         "mine": {
           "home": {
@@ -13787,8 +13876,18 @@
               "cur": "JPY"
             },
             "mainBank": "k7qzpa-m2xq7ab9zt-2",
-            "at": "2026-11-24T10:00:00.000+09:00",
-            "by": "phn001"
+            "at": {
+              "country": "2026-11-24T09:00:00.000+09:00",
+              "mode": "2026-11-24T09:00:00.000+09:00",
+              "minBank": "2026-11-24T09:00:00.000+09:00",
+              "mainBank": "2026-11-24T09:00:00.000+09:00"
+            },
+            "by": {
+              "country": "phn001",
+              "mode": "phn001",
+              "minBank": "phn001",
+              "mainBank": "phn001"
+            }
           }
         },
         "theirs": {
@@ -13808,8 +13907,18 @@
               "cur": "JPY"
             },
             "mainBank": "k7qzpa-m2xq7ab9zt-2",
-            "at": "2026-11-24T11:00:00.000+09:00",
-            "by": "dsk001"
+            "at": {
+              "country": "2026-11-24T11:00:00.000+09:00",
+              "mode": "2026-11-24T09:00:00.000+09:00",
+              "minBank": "2026-11-24T09:00:00.000+09:00",
+              "mainBank": "2026-11-24T09:00:00.000+09:00"
+            },
+            "by": {
+              "country": "dsk001",
+              "mode": "phn001",
+              "minBank": "phn001",
+              "mainBank": "phn001"
+            }
           }
         }
       },
@@ -13836,12 +13945,23 @@
             "cur": "JPY"
           },
           "mainBank": "k7qzpa-m2xq7ab9zt-2",
-          "at": "2026-11-24T11:00:00.000+09:00",
-          "by": "dsk001"
+          "at": {
+            "country": "2026-11-24T11:00:00.000+09:00",
+            "mode": "2026-11-24T09:00:00.000+09:00",
+            "minBank": "2026-11-24T09:00:00.000+09:00",
+            "mainBank": "2026-11-24T09:00:00.000+09:00"
+          },
+          "by": {
+            "country": "dsk001",
+            "mode": "phn001",
+            "minBank": "phn001",
+            "mainBank": "phn001"
+          }
         }
       },
-      "why": "The person is moving home to the Philippines in April. On Tue 24 Nov the phone, offline, adds pesos from 1 Apr 2027 (10:00); the desktop, which has not seen it, sets the country to PH (11:00). `home` is a single record: 11:00 wins, so the country is PH [D4]. `home.curs` merges by `from`, each entry by its own `at` (SCHEMA_V3 2.1) [AJ3, AI2]: yen from 1 Nov and pesos from 1 Apr both stay, so the home currency changes in April. Taken whole from the newer `home`, only yen was left.",
+      "why": "The person is moving home to the Philippines in April. Setup wrote `home` on Tue 24 Nov 09:00 (yen, JP). At 10:00 the phone, offline, adds pesos from 1 Apr 2027: a new `curs` entry, no field changed. At 11:00 the desktop, which has not seen it, sets the country to PH: `home.at.country` 11:00, `by` dsk001 [AK1]. `curs` merges by `from`, each entry by its own `at` [AJ3, AI2]: yen from 1 Nov and pesos from 1 Apr both stay. Each field by its own `at`: the country is PH (11:00 against 09:00); the mode, the minimum (20,000) and the main bank keep 09:00 [AK1].",
       "decisions": [
+        "AK1",
         "AJ3",
         "AI2",
         "O6",
@@ -13851,7 +13971,7 @@
     {
       "id": "mg-198",
       "question": "merge",
-      "title": "AJ3: the minimum changed on the phone and the main bank on the desktop: `home` is one record, the newer wins whole",
+      "title": "AK1: the minimum changed on the phone and the main bank on the desktop: both kept",
       "input": {
         "mine": {
           "home": {
@@ -13870,8 +13990,18 @@
               "cur": "JPY"
             },
             "mainBank": "k7qzpa-m2xq7ab9zt-2",
-            "at": "2026-11-24T10:00:00.000+09:00",
-            "by": "phn001"
+            "at": {
+              "country": "2026-11-24T09:00:00.000+09:00",
+              "mode": "2026-11-24T09:00:00.000+09:00",
+              "minBank": "2026-11-24T10:00:00.000+09:00",
+              "mainBank": "2026-11-24T09:00:00.000+09:00"
+            },
+            "by": {
+              "country": "phn001",
+              "mode": "phn001",
+              "minBank": "phn001",
+              "mainBank": "phn001"
+            }
           }
         },
         "theirs": {
@@ -13891,8 +14021,18 @@
               "cur": "JPY"
             },
             "mainBank": "dsk001-w3e5r7t9y1-2",
-            "at": "2026-11-24T11:00:00.000+09:00",
-            "by": "dsk001"
+            "at": {
+              "country": "2026-11-24T09:00:00.000+09:00",
+              "mode": "2026-11-24T09:00:00.000+09:00",
+              "minBank": "2026-11-24T09:00:00.000+09:00",
+              "mainBank": "2026-11-24T11:00:00.000+09:00"
+            },
+            "by": {
+              "country": "phn001",
+              "mode": "phn001",
+              "minBank": "phn001",
+              "mainBank": "dsk001"
+            }
           }
         }
       },
@@ -13909,17 +14049,28 @@
           "country": "JP",
           "mode": "track",
           "minBank": {
-            "a": 20000,
+            "a": 30000,
             "cur": "JPY"
           },
           "mainBank": "dsk001-w3e5r7t9y1-2",
-          "at": "2026-11-24T11:00:00.000+09:00",
-          "by": "dsk001"
+          "at": {
+            "country": "2026-11-24T09:00:00.000+09:00",
+            "mode": "2026-11-24T09:00:00.000+09:00",
+            "minBank": "2026-11-24T10:00:00.000+09:00",
+            "mainBank": "2026-11-24T11:00:00.000+09:00"
+          },
+          "by": {
+            "country": "phn001",
+            "mode": "phn001",
+            "minBank": "phn001",
+            "mainBank": "dsk001"
+          }
         }
       },
-      "why": "`home` is a single record with one `at` (SCHEMA_V3 section 0): its plain fields come with the newer copy, as every record's do (mg-16) [D4]. The desktop's 11:00 wins, so the main bank is the new one and the minimum stays 20,000: the phone's 30,000 of 10:00 is lost, as a second device's edit of any other field of one record is. Only `curs`, an entry list, merges entry by entry [AJ3]. Whether `home`'s fields should merge one by one, each with its own `at`, like the shared `ui` keys, is a question for Mako's run (AJ3 does not say); until then the rule of section 0 stands.",
+      "why": "Setup wrote `home` on Tue 24 Nov 09:00: minimum 20,000, the old main bank. At 10:00 the phone, offline, raises the minimum to 30,000; at 11:00 the desktop, which has not seen it, makes the new account the main bank. Field by field [AK1]: minBank is the phone's 10:00 against the desktop's 09:00, so 30,000 (phn001); mainBank is the desktop's 11:00 against the phone's 09:00, so the new account (dsk001); country and mode are 09:00 on both. Both edits stay: the new main bank must keep 30,000. Before AK1 `home` was one record and the desktop's 11:00 took every field, so the phone's 30,000 was lost and only 20,000 was kept.",
       "decisions": [
-        "AJ3",
+        "AK1",
+        "L merge q6",
         "D4"
       ]
     },
@@ -13951,8 +14102,18 @@
               "cur": "JPY"
             },
             "mainBank": "k7qzpa-m2xq7ab9zt-2",
-            "at": "2026-11-24T10:00:00.000+09:00",
-            "by": "phn001"
+            "at": {
+              "country": "2026-11-24T09:00:00.000+09:00",
+              "mode": "2026-11-24T09:00:00.000+09:00",
+              "minBank": "2026-11-24T09:00:00.000+09:00",
+              "mainBank": "2026-11-24T09:00:00.000+09:00"
+            },
+            "by": {
+              "country": "phn001",
+              "mode": "phn001",
+              "minBank": "phn001",
+              "mainBank": "phn001"
+            }
           }
         },
         "theirs": {
@@ -13978,8 +14139,18 @@
               "cur": "JPY"
             },
             "mainBank": "k7qzpa-m2xq7ab9zt-2",
-            "at": "2026-11-24T11:00:00.000+09:00",
-            "by": "dsk001"
+            "at": {
+              "country": "2026-11-24T09:00:00.000+09:00",
+              "mode": "2026-11-24T09:00:00.000+09:00",
+              "minBank": "2026-11-24T09:00:00.000+09:00",
+              "mainBank": "2026-11-24T09:00:00.000+09:00"
+            },
+            "by": {
+              "country": "phn001",
+              "mode": "phn001",
+              "minBank": "phn001",
+              "mainBank": "phn001"
+            }
           }
         }
       },
@@ -14006,12 +14177,23 @@
             "cur": "JPY"
           },
           "mainBank": "k7qzpa-m2xq7ab9zt-2",
-          "at": "2026-11-24T11:00:00.000+09:00",
-          "by": "dsk001"
+          "at": {
+            "country": "2026-11-24T09:00:00.000+09:00",
+            "mode": "2026-11-24T09:00:00.000+09:00",
+            "minBank": "2026-11-24T09:00:00.000+09:00",
+            "mainBank": "2026-11-24T09:00:00.000+09:00"
+          },
+          "by": {
+            "country": "phn001",
+            "mode": "phn001",
+            "minBank": "phn001",
+            "mainBank": "phn001"
+          }
         }
       },
-      "why": "Both entries are from 1 Apr 2027, so they are one entry [AJ3]: the desktop's 11:00 (dollars) beats the phone's 10:00 (pesos), as two edits of one `steps` entry [L merge q2, D4].",
+      "why": "Both entries are from 1 Apr 2027, so they are one entry [AJ3]: the desktop's 11:00 (dollars) beats the phone's 10:00 (pesos), as two edits of one `steps` entry [L merge q2, D4]. No field of `home` changed: every field keeps 09:00 [AK1].",
       "decisions": [
+        "AK1",
         "AJ3",
         "L merge q2",
         "D4"
@@ -14039,8 +14221,18 @@
               "cur": "JPY"
             },
             "mainBank": "k7qzpa-m2xq7ab9zt-2",
-            "at": "2026-11-24T09:00:00.000+09:00",
-            "by": "phn001"
+            "at": {
+              "country": "2026-11-24T09:00:00.000+09:00",
+              "mode": "2026-11-24T09:00:00.000+09:00",
+              "minBank": "2026-11-24T09:00:00.000+09:00",
+              "mainBank": "2026-11-24T09:00:00.000+09:00"
+            },
+            "by": {
+              "country": "phn001",
+              "mode": "phn001",
+              "minBank": "phn001",
+              "mainBank": "phn001"
+            }
           }
         },
         "theirs": {
@@ -14066,8 +14258,18 @@
               "cur": "JPY"
             },
             "mainBank": "k7qzpa-m2xq7ab9zt-2",
-            "at": "2026-11-26T10:00:00.000+09:00",
-            "by": "fst001"
+            "at": {
+              "country": "2026-11-26T10:00:00.000+09:00",
+              "mode": "2026-11-24T09:00:00.000+09:00",
+              "minBank": "2026-11-24T09:00:00.000+09:00",
+              "mainBank": "2026-11-24T09:00:00.000+09:00"
+            },
+            "by": {
+              "country": "fst001",
+              "mode": "phn001",
+              "minBank": "phn001",
+              "mainBank": "phn001"
+            }
           }
         },
         "lastSeen": "2026-11-24T09:00:00.000+09:00",
@@ -14101,18 +14303,31 @@
               "cur": "JPY"
             },
             "mainBank": "k7qzpa-m2xq7ab9zt-2",
-            "at": "2026-11-24T10:00:00.001+09:00",
-            "by": "fst001",
+            "at": {
+              "country": "2026-11-24T10:00:00.001+09:00",
+              "mode": "2026-11-24T09:00:00.000+09:00",
+              "minBank": "2026-11-24T09:00:00.000+09:00",
+              "mainBank": "2026-11-24T09:00:00.000+09:00"
+            },
+            "by": {
+              "country": "fst001",
+              "mode": "phn001",
+              "minBank": "phn001",
+              "mainBank": "phn001"
+            },
             "held": {
-              "came": "2026-11-26T10:00:00.000+09:00",
-              "at": "2026-11-24T10:00:00.001+09:00"
+              "country": {
+                "came": "2026-11-26T10:00:00.000+09:00",
+                "at": "2026-11-24T10:00:00.001+09:00"
+              }
             }
           }
         },
         "warn": true
       },
-      "why": "A tablet whose clock is two days fast writes `home` (country PH, pesos from April) at \"Thu 26 Nov 10:00\". The phone receives it at its own now, Tue 24 Nov 10:00: both `at`s are more than a day ahead, so each is held at that now plus 1 ms, 10:00:00.001, marked `held` with what it came with, and the warning is shown [M4, N1, AI1]. The yen entry (24 Nov 09:00) is not ahead and is left as it is. Then the merge: the held 10:00:00.001 beats the phone's 09:00, so PH and the peso entry are kept [AJ3, D4].",
+      "why": "A tablet whose clock is two days fast sets the country to PH and adds pesos from April at \"Thu 26 Nov 10:00\". The phone receives it at its own now, Tue 24 Nov 10:00: the country's `at` and the peso entry's `at` are more than a day ahead, so each is held at that now plus 1 ms, 10:00:00.001, marked `held` with what it came with (for a field, in `home.held`, as for a `ui` key), and the warning is shown [M4, N1, AI1, AK1]. The yen entry and the other fields (24 Nov 09:00) are not ahead and are left as they are. Then the merge: the held 10:00:00.001 beats the phone's 09:00, so PH and the peso entry are kept [AJ3, AK1, D4].",
       "decisions": [
+        "AK1",
         "AJ3",
         "AI1",
         "M4",
@@ -14149,8 +14364,18 @@
               "cur": "JPY"
             },
             "mainBank": "k7qzpa-m2xq7ab9zt-2",
-            "at": "2026-11-24T10:05:00.000+09:00",
-            "by": "phn001"
+            "at": {
+              "country": "2026-11-24T09:00:00.000+09:00",
+              "mode": "2026-11-24T09:00:00.000+09:00",
+              "minBank": "2026-11-24T09:00:00.000+09:00",
+              "mainBank": "2026-11-24T09:00:00.000+09:00"
+            },
+            "by": {
+              "country": "phn001",
+              "mode": "phn001",
+              "minBank": "phn001",
+              "mainBank": "phn001"
+            }
           }
         },
         "theirs": {
@@ -14176,8 +14401,18 @@
               "cur": "JPY"
             },
             "mainBank": "k7qzpa-m2xq7ab9zt-2",
-            "at": "2026-11-24T10:00:00.000+09:00",
-            "by": "phn001"
+            "at": {
+              "country": "2026-11-24T09:00:00.000+09:00",
+              "mode": "2026-11-24T09:00:00.000+09:00",
+              "minBank": "2026-11-24T09:00:00.000+09:00",
+              "mainBank": "2026-11-24T09:00:00.000+09:00"
+            },
+            "by": {
+              "country": "phn001",
+              "mode": "phn001",
+              "minBank": "phn001",
+              "mainBank": "phn001"
+            }
           }
         }
       },
@@ -14205,12 +14440,23 @@
             "cur": "JPY"
           },
           "mainBank": "k7qzpa-m2xq7ab9zt-2",
-          "at": "2026-11-24T10:05:00.000+09:00",
-          "by": "phn001"
+          "at": {
+            "country": "2026-11-24T09:00:00.000+09:00",
+            "mode": "2026-11-24T09:00:00.000+09:00",
+            "minBank": "2026-11-24T09:00:00.000+09:00",
+            "mainBank": "2026-11-24T09:00:00.000+09:00"
+          },
+          "by": {
+            "country": "phn001",
+            "mode": "phn001",
+            "minBank": "phn001",
+            "mainBank": "phn001"
+          }
         }
       },
-      "why": "The phone adds pesos from April at 10:00 and the copy reaches the desktop; at 10:05 the person taps Undo: the entry stays with `gone` and the Undo's `at` [M3, H6]. The desktop still holds it alive at 10:00. The entry's 10:05 removal is newer, so it stays removed and the home currency stays yen [AJ3].",
+      "why": "The phone adds pesos from April at 10:00 and the copy reaches the desktop; at 10:05 the person taps Undo: the entry stays with `gone` and the Undo's `at` [M3, H6]. The desktop still holds it alive at 10:00. The entry's 10:05 removal is newer, so it stays removed and the home currency stays yen [AJ3]. No field of `home` changed: every field keeps 09:00 [AK1].",
       "decisions": [
+        "AK1",
         "AJ3",
         "M3",
         "H6"
@@ -14244,8 +14490,18 @@
               "cur": "JPY"
             },
             "mainBank": "k7qzpa-m2xq7ab9zt-2",
-            "at": "2026-11-24T10:10:00.000+09:00",
-            "by": "phn001"
+            "at": {
+              "country": "2026-11-24T09:00:00.000+09:00",
+              "mode": "2026-11-24T09:00:00.000+09:00",
+              "minBank": "2026-11-24T09:00:00.000+09:00",
+              "mainBank": "2026-11-24T09:00:00.000+09:00"
+            },
+            "by": {
+              "country": "phn001",
+              "mode": "phn001",
+              "minBank": "phn001",
+              "mainBank": "phn001"
+            }
           }
         },
         "theirs": {
@@ -14272,8 +14528,18 @@
               "cur": "JPY"
             },
             "mainBank": "k7qzpa-m2xq7ab9zt-2",
-            "at": "2026-11-24T10:05:00.000+09:00",
-            "by": "phn001"
+            "at": {
+              "country": "2026-11-24T09:00:00.000+09:00",
+              "mode": "2026-11-24T09:00:00.000+09:00",
+              "minBank": "2026-11-24T09:00:00.000+09:00",
+              "mainBank": "2026-11-24T09:00:00.000+09:00"
+            },
+            "by": {
+              "country": "phn001",
+              "mode": "phn001",
+              "minBank": "phn001",
+              "mainBank": "phn001"
+            }
           }
         }
       },
@@ -14300,12 +14566,23 @@
             "cur": "JPY"
           },
           "mainBank": "k7qzpa-m2xq7ab9zt-2",
-          "at": "2026-11-24T10:10:00.000+09:00",
-          "by": "phn001"
+          "at": {
+            "country": "2026-11-24T09:00:00.000+09:00",
+            "mode": "2026-11-24T09:00:00.000+09:00",
+            "minBank": "2026-11-24T09:00:00.000+09:00",
+            "mainBank": "2026-11-24T09:00:00.000+09:00"
+          },
+          "by": {
+            "country": "phn001",
+            "mode": "phn001",
+            "minBank": "phn001",
+            "mainBank": "phn001"
+          }
         }
       },
-      "why": "After the Undo of 10:05 reached the desktop, the person taps Redo at 10:10: the entry is written again with no `gone` and a newer `at`. A Redo wins over the Undo it reverses [H6]: pesos from April are back on both [AJ3].",
+      "why": "After the Undo of 10:05 reached the desktop, the person taps Redo at 10:10: the entry is written again with no `gone` and a newer `at`. A Redo wins over the Undo it reverses [H6]: pesos from April are back on both [AJ3]. No field of `home` changed: every field keeps 09:00 [AK1].",
       "decisions": [
+        "AK1",
         "AJ3",
         "H6",
         "M3"
@@ -14333,8 +14610,18 @@
               "cur": "JPY"
             },
             "mainBank": "k7qzpa-m2xq7ab9zt-2",
-            "at": "2026-11-24T10:05:00.000+09:00",
-            "by": "phn001"
+            "at": {
+              "country": "2026-11-24T09:00:00.000+09:00",
+              "mode": "2026-11-24T09:00:00.000+09:00",
+              "minBank": "2026-11-24T10:05:00.000+09:00",
+              "mainBank": "2026-11-24T09:00:00.000+09:00"
+            },
+            "by": {
+              "country": "phn001",
+              "mode": "phn001",
+              "minBank": "phn001",
+              "mainBank": "phn001"
+            }
           }
         },
         "theirs": {
@@ -14354,8 +14641,18 @@
               "cur": "JPY"
             },
             "mainBank": "k7qzpa-m2xq7ab9zt-2",
-            "at": "2026-11-24T10:00:00.000+09:00",
-            "by": "phn001"
+            "at": {
+              "country": "2026-11-24T09:00:00.000+09:00",
+              "mode": "2026-11-24T09:00:00.000+09:00",
+              "minBank": "2026-11-24T10:00:00.000+09:00",
+              "mainBank": "2026-11-24T09:00:00.000+09:00"
+            },
+            "by": {
+              "country": "phn001",
+              "mode": "phn001",
+              "minBank": "phn001",
+              "mainBank": "phn001"
+            }
           }
         }
       },
@@ -14376,12 +14673,23 @@
             "cur": "JPY"
           },
           "mainBank": "k7qzpa-m2xq7ab9zt-2",
-          "at": "2026-11-24T10:05:00.000+09:00",
-          "by": "phn001"
+          "at": {
+            "country": "2026-11-24T09:00:00.000+09:00",
+            "mode": "2026-11-24T09:00:00.000+09:00",
+            "minBank": "2026-11-24T10:05:00.000+09:00",
+            "mainBank": "2026-11-24T09:00:00.000+09:00"
+          },
+          "by": {
+            "country": "phn001",
+            "mode": "phn001",
+            "minBank": "phn001",
+            "mainBank": "phn001"
+          }
         }
       },
-      "why": "The phone raises the minimum to 30,000 at 10:00 and the copy reaches the desktop; at 10:05 the person taps Undo, which writes `home` again with the earlier 20,000 and a new `at` (a field of a single record has no `gone`: Undo is an edit back). 10:05 is newer, so the desktop takes 20,000 too [AJ3, H6, D4].",
+      "why": "The phone raises the minimum to 30,000 at 10:00 and the copy reaches the desktop; at 10:05 the person taps Undo, which writes the minimum again with the earlier 20,000 and a new `at` for that field (Undo of a field is an edit back, not a `gone`). `home.at.minBank` 10:05 is newer than 10:00, so the desktop takes 20,000 too; the other fields keep 09:00 [AK1, H6, D4].",
       "decisions": [
+        "AK1",
         "AJ3",
         "H6",
         "D4"
@@ -14415,8 +14723,18 @@
               "cur": "JPY"
             },
             "mainBank": "dsk001-w3e5r7t9y1-2",
-            "at": "2026-11-24T11:00:00.000+09:00",
-            "by": "dsk001"
+            "at": {
+              "country": "2026-11-24T11:00:00.000+09:00",
+              "mode": "2026-11-24T09:00:00.000+09:00",
+              "minBank": "2026-11-24T11:00:00.000+09:00",
+              "mainBank": "2026-11-24T11:00:00.000+09:00"
+            },
+            "by": {
+              "country": "dsk001",
+              "mode": "phn001",
+              "minBank": "dsk001",
+              "mainBank": "dsk001"
+            }
           }
         },
         "backup": {
@@ -14436,8 +14754,18 @@
               "cur": "JPY"
             },
             "mainBank": "k7qzpa-m2xq7ab9zt-2",
-            "at": "2026-11-22T10:00:00.000+09:00",
-            "by": "phn001"
+            "at": {
+              "country": "2026-11-22T10:00:00.000+09:00",
+              "mode": "2026-11-22T10:00:00.000+09:00",
+              "minBank": "2026-11-22T10:00:00.000+09:00",
+              "mainBank": "2026-11-22T10:00:00.000+09:00"
+            },
+            "by": {
+              "country": "phn001",
+              "mode": "phn001",
+              "minBank": "phn001",
+              "mainBank": "phn001"
+            }
           }
         },
         "now": "2026-11-25T09:00:00.000+09:00",
@@ -14471,16 +14799,28 @@
             "cur": "JPY"
           },
           "mainBank": "k7qzpa-m2xq7ab9zt-2",
-          "at": "2026-11-25T09:00:00.000+09:00",
-          "by": "phn001"
+          "at": {
+            "country": "2026-11-25T09:00:00.000+09:00",
+            "mode": "2026-11-25T09:00:00.000+09:00",
+            "minBank": "2026-11-25T09:00:00.000+09:00",
+            "mainBank": "2026-11-25T09:00:00.000+09:00"
+          },
+          "by": {
+            "country": "phn001",
+            "mode": "phn001",
+            "minBank": "phn001",
+            "mainBank": "phn001"
+          }
         }
       },
-      "why": "The backup is of Sun 22 Nov: country JP, minimum 20,000, the old main bank, yen only. Since then pesos from April were added (24 Nov 10:00) and the desktop set PH, 30,000 and the new main bank (11:00). On Wed 25 Nov 09:00 the phone restores the backup with the cloud on: the restore's `at` is the later of 25 Nov 09:00 and 24 Nov 11:00:00.001, so 09:00 [D4, AE5]. `home` takes the backup's fields with that `at` and `by` [AB watch]; `curs` is an entry list, so the backup's yen entry gets the new `at` and the peso entry, not in the backup, is removed by its own `gone` (25 Nov) [AJ3, M3].",
+      "why": "The backup is of Sun 22 Nov: country JP, minimum 20,000, the old main bank, yen only, every field at 22 Nov 10:00. Since then pesos from April were added (24 Nov 10:00) and the desktop set PH, 30,000 and the new main bank (11:00). On Wed 25 Nov 09:00 the phone restores the backup with the cloud on: the restore's `at` is the later of 25 Nov 09:00 and 24 Nov 11:00:00.001, so 09:00 [D4, AE5]. Each field of `home` takes the backup's value with that `at` and `by` in `home.at` and `home.by`, as the shared `ui` keys do [AK1, AD8]; every field is in the backup, so none is removed [AF3]. `curs` is an entry list: the backup's yen entry gets the new `at` and the peso entry, not in the backup, is removed by its own `gone` (25 Nov) [AJ3, M3].",
       "decisions": [
+        "AK1",
         "AJ3",
+        "AD8",
         "AE5",
-        "AB watch",
-        "M3"
+        "M3",
+        "D4"
       ]
     },
     {
@@ -14511,8 +14851,18 @@
               "cur": "JPY"
             },
             "mainBank": "dsk001-w3e5r7t9y1-2",
-            "at": "2026-11-24T11:00:00.000+09:00",
-            "by": "dsk001"
+            "at": {
+              "country": "2026-11-24T11:00:00.000+09:00",
+              "mode": "2026-11-24T09:00:00.000+09:00",
+              "minBank": "2026-11-24T11:00:00.000+09:00",
+              "mainBank": "2026-11-24T11:00:00.000+09:00"
+            },
+            "by": {
+              "country": "dsk001",
+              "mode": "phn001",
+              "minBank": "dsk001",
+              "mainBank": "dsk001"
+            }
           }
         },
         "backup": {
@@ -14532,8 +14882,18 @@
               "cur": "JPY"
             },
             "mainBank": "k7qzpa-m2xq7ab9zt-2",
-            "at": "2026-11-22T10:00:00.000+09:00",
-            "by": "phn001"
+            "at": {
+              "country": "2026-11-22T10:00:00.000+09:00",
+              "mode": "2026-11-22T10:00:00.000+09:00",
+              "minBank": "2026-11-22T10:00:00.000+09:00",
+              "mainBank": "2026-11-22T10:00:00.000+09:00"
+            },
+            "by": {
+              "country": "phn001",
+              "mode": "phn001",
+              "minBank": "phn001",
+              "mainBank": "phn001"
+            }
           }
         },
         "now": "2026-11-25T09:00:00.000+09:00",
@@ -14562,8 +14922,18 @@
               "cur": "JPY"
             },
             "mainBank": "dsk001-w3e5r7t9y1-2",
-            "at": "2026-11-24T11:00:00.000+09:00",
-            "by": "dsk001"
+            "at": {
+              "country": "2026-11-24T11:00:00.000+09:00",
+              "mode": "2026-11-24T09:00:00.000+09:00",
+              "minBank": "2026-11-24T11:00:00.000+09:00",
+              "mainBank": "2026-11-24T11:00:00.000+09:00"
+            },
+            "by": {
+              "country": "dsk001",
+              "mode": "phn001",
+              "minBank": "dsk001",
+              "mainBank": "dsk001"
+            }
           }
         }
       },
@@ -14592,8 +14962,18 @@
               "cur": "JPY"
             },
             "mainBank": "k7qzpa-m2xq7ab9zt-2",
-            "at": "2026-11-25T09:00:00.000+09:00",
-            "by": "phn001"
+            "at": {
+              "country": "2026-11-25T09:00:00.000+09:00",
+              "mode": "2026-11-25T09:00:00.000+09:00",
+              "minBank": "2026-11-25T09:00:00.000+09:00",
+              "mainBank": "2026-11-25T09:00:00.000+09:00"
+            },
+            "by": {
+              "country": "phn001",
+              "mode": "phn001",
+              "minBank": "phn001",
+              "mainBank": "phn001"
+            }
           }
         },
         "theirs_first": {
@@ -14620,13 +15000,24 @@
               "cur": "JPY"
             },
             "mainBank": "k7qzpa-m2xq7ab9zt-2",
-            "at": "2026-11-25T09:00:00.000+09:00",
-            "by": "phn001"
+            "at": {
+              "country": "2026-11-25T09:00:00.000+09:00",
+              "mode": "2026-11-25T09:00:00.000+09:00",
+              "minBank": "2026-11-25T09:00:00.000+09:00",
+              "mainBank": "2026-11-25T09:00:00.000+09:00"
+            },
+            "by": {
+              "country": "phn001",
+              "mode": "phn001",
+              "minBank": "phn001",
+              "mainBank": "phn001"
+            }
           }
         }
       },
-      "why": "The cloud still holds `home` as it was at 24 Nov 11:00. The restore's 25 Nov 09:00 is newer, so its fields win; the yen entry's new `at` and the peso entry's removal are newer than the cloud's 24 Nov 09:00 and 10:00, so pesos do not come back [AJ3, AE5, M3].",
+      "why": "The cloud still holds `home` as it was at 24 Nov 11:00. Every field the restore wrote has `at` 25 Nov 09:00, newer than the cloud's 09:00 and 11:00 for the same field, so each keeps the restored value [AK1]; the yen entry's new `at` and the peso entry's removal are newer than the cloud's 24 Nov 09:00 and 10:00, so pesos do not come back [AJ3, AE5, M3].",
       "decisions": [
+        "AK1",
         "AJ3",
         "AE5",
         "M3"
@@ -14661,8 +15052,18 @@
             "mode": "track",
             "minBank": null,
             "mainBank": "k7qzpa-m2xq7ab9zt-2",
-            "at": "2026-11-01T09:00:00.000+09:00",
-            "by": "phn001"
+            "at": {
+              "country": "2026-11-01T09:00:00.000+09:00",
+              "mode": "2026-11-01T09:00:00.000+09:00",
+              "minBank": "2026-11-01T09:00:00.000+09:00",
+              "mainBank": "2026-11-01T09:00:00.000+09:00"
+            },
+            "by": {
+              "country": "phn001",
+              "mode": "phn001",
+              "minBank": "phn001",
+              "mainBank": "phn001"
+            }
           }
         },
         "steps": [
@@ -14746,11 +15147,22 @@
           "cur": "JPY"
         },
         "mainBank": "dsk001-w3e5r7t9y1-2",
-        "at": "2027-01-08T12:00:00.000+09:00",
-        "by": "phn001"
+        "at": {
+          "country": "2026-11-01T09:00:00.000+09:00",
+          "mode": "2026-11-01T09:00:00.000+09:00",
+          "minBank": "2026-11-24T12:00:00.000+09:00",
+          "mainBank": "2027-01-08T12:00:00.000+09:00"
+        },
+        "by": {
+          "country": "phn001",
+          "mode": "phn001",
+          "minBank": "phn001",
+          "mainBank": "phn001"
+        }
       },
-      "why": "Both devices were last used Sun 1 Nov 21:00. On Wed 11 Nov 10:00 the desktop adds pesos from April: the entry and `home` take its own clock, 11 Nov 10:00 [AH1]. The phone, unopened for 23 days, raises the minimum to 30,000 on Tue 24 Nov 12:00 without having seen that: `at` 24 Nov 12:00, its own clock, never held for the gap [AH1]. They sync within minutes, so nothing is held [M4]: `home` is the phone's (newer), and `curs` merges by `from`, so the desktop's peso entry stays [AJ3]. The phone, unopened for 45 days, is opened on Fri 8 Jan 2027: D8 asks the date first (mg-122), the person confirms, and the new main bank is written at 8 Jan 12:00, so the desktop ends with it, the 30,000 minimum and both currency entries.",
+      "why": "Both devices were last used Sun 1 Nov 21:00; setup wrote every field of `home` at 1 Nov 09:00. On Wed 11 Nov 10:00 the desktop adds pesos from April: the entry takes its own clock, 11 Nov 10:00 [AH1]; no field changes. The phone, unopened for 23 days, raises the minimum to 30,000 on Tue 24 Nov 12:00 without having seen that: `home.at.minBank` 24 Nov 12:00, its own clock, never held for the gap [AH1, AK1]. They sync within minutes, so nothing is held [M4]: the minimum is the phone's, and `curs` merges by `from`, so the desktop's peso entry stays [AJ3]. The phone, unopened for 45 days, is opened on Fri 8 Jan 2027: D8 asks the date first (mg-122), the person confirms, and the new main bank is written at 8 Jan 12:00, so the desktop ends with it, the 30,000 minimum (24 Nov), country and mode from 1 Nov, and both currency entries.",
       "decisions": [
+        "AK1",
         "AJ3",
         "AH1",
         "D8",
@@ -14996,6 +15408,400 @@
         "N1",
         "N2",
         "H1"
+      ]
+    },
+    {
+      "id": "mg-210",
+      "question": "merge",
+      "title": "AK1: the mode set on the phone, the country on the desktop and the minimum on both: each field by its own `at`",
+      "input": {
+        "mine": {
+          "home": {
+            "curs": [
+              {
+                "from": "2026-11-01",
+                "cur": "JPY",
+                "at": "2026-11-24T09:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ],
+            "country": "JP",
+            "mode": "wallet",
+            "minBank": {
+              "a": 30000,
+              "cur": "JPY"
+            },
+            "mainBank": "k7qzpa-m2xq7ab9zt-2",
+            "at": {
+              "country": "2026-11-24T09:00:00.000+09:00",
+              "mode": "2026-11-24T20:00:00.000+09:00",
+              "minBank": "2026-11-24T20:10:00.000+09:00",
+              "mainBank": "2026-11-24T09:00:00.000+09:00"
+            },
+            "by": {
+              "country": "phn001",
+              "mode": "phn001",
+              "minBank": "phn001",
+              "mainBank": "phn001"
+            }
+          }
+        },
+        "theirs": {
+          "home": {
+            "curs": [
+              {
+                "from": "2026-11-01",
+                "cur": "JPY",
+                "at": "2026-11-24T09:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ],
+            "country": "PH",
+            "mode": "track",
+            "minBank": {
+              "a": 25000,
+              "cur": "JPY"
+            },
+            "mainBank": "k7qzpa-m2xq7ab9zt-2",
+            "at": {
+              "country": "2026-11-24T20:05:00.000+09:00",
+              "mode": "2026-11-24T09:00:00.000+09:00",
+              "minBank": "2026-11-24T20:15:00.000+09:00",
+              "mainBank": "2026-11-24T09:00:00.000+09:00"
+            },
+            "by": {
+              "country": "dsk001",
+              "mode": "phn001",
+              "minBank": "dsk001",
+              "mainBank": "phn001"
+            }
+          }
+        }
+      },
+      "expected": {
+        "home": {
+          "curs": [
+            {
+              "from": "2026-11-01",
+              "cur": "JPY",
+              "at": "2026-11-24T09:00:00.000+09:00",
+              "by": "phn001"
+            }
+          ],
+          "country": "PH",
+          "mode": "wallet",
+          "minBank": {
+            "a": 25000,
+            "cur": "JPY"
+          },
+          "mainBank": "k7qzpa-m2xq7ab9zt-2",
+          "at": {
+            "country": "2026-11-24T20:05:00.000+09:00",
+            "mode": "2026-11-24T20:00:00.000+09:00",
+            "minBank": "2026-11-24T20:15:00.000+09:00",
+            "mainBank": "2026-11-24T09:00:00.000+09:00"
+          },
+          "by": {
+            "country": "dsk001",
+            "mode": "phn001",
+            "minBank": "dsk001",
+            "mainBank": "phn001"
+          }
+        }
+      },
+      "why": "Tue 24 Nov evening, both devices offline after setup at 09:00. The phone switches to handing Free to spend out of the accounts (`mode` wallet, 20:00) and sets the minimum to 30,000 (20:10); the desktop sets the country to PH (20:05) and the minimum to 25,000 (20:15). Field by field [AK1]: mode wallet (20:00 against 09:00), country PH (20:05 against 09:00), minimum 25,000 (20:15 against 20:10), main bank 09:00 on both. Each field keeps the `by` of the device that won it [M5].",
+      "decisions": [
+        "AK1",
+        "D4",
+        "M5"
+      ]
+    },
+    {
+      "id": "mg-211",
+      "question": "merge_symmetric",
+      "title": "AK1: `home` merged either way round gives the same copy, a field tied on `at` included",
+      "input": {
+        "mine": {
+          "home": {
+            "curs": [
+              {
+                "from": "2026-11-01",
+                "cur": "JPY",
+                "at": "2026-11-24T09:00:00.000+09:00",
+                "by": "phn001"
+              },
+              {
+                "from": "2027-04-01",
+                "cur": "PHP",
+                "at": "2026-11-24T10:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ],
+            "country": "JP",
+            "mode": "track",
+            "minBank": {
+              "a": 30000,
+              "cur": "JPY"
+            },
+            "mainBank": "k7qzpa-m2xq7ab9zt-2",
+            "at": {
+              "country": "2026-11-24T09:00:00.000+09:00",
+              "mode": "2026-11-24T09:00:00.000+09:00",
+              "minBank": "2026-11-24T10:00:00.000+09:00",
+              "mainBank": "2026-11-24T09:00:00.000+09:00"
+            },
+            "by": {
+              "country": "phn001",
+              "mode": "phn001",
+              "minBank": "phn001",
+              "mainBank": "phn001"
+            }
+          }
+        },
+        "theirs": {
+          "home": {
+            "curs": [
+              {
+                "from": "2026-11-01",
+                "cur": "JPY",
+                "at": "2026-11-24T09:00:00.000+09:00",
+                "by": "phn001"
+              },
+              {
+                "from": "2027-04-01",
+                "cur": "USD",
+                "at": "2026-11-24T11:00:00.000+09:00",
+                "by": "dsk001"
+              }
+            ],
+            "country": "JP",
+            "mode": "track",
+            "minBank": {
+              "a": 20000,
+              "cur": "JPY"
+            },
+            "mainBank": "dsk001-w3e5r7t9y1-2",
+            "at": {
+              "country": "2026-11-24T09:00:00.000+09:00",
+              "mode": "2026-11-24T09:00:00.000+09:00",
+              "minBank": "2026-11-24T10:00:00.000+09:00",
+              "mainBank": "2026-11-24T11:00:00.000+09:00"
+            },
+            "by": {
+              "country": "phn001",
+              "mode": "phn001",
+              "minBank": "dsk001",
+              "mainBank": "dsk001"
+            }
+          }
+        }
+      },
+      "expected": true,
+      "why": "The phone raises the minimum to 30,000 at 10:00 and adds pesos from April; the desktop, its clock showing the same 10:00, writes the minimum 20,000, and at 11:00 makes the new account the main bank and adds dollars from April. The minimum ties on `at`, so the larger `by` wins, phn001 (30,000) [L merge q1, M5]; the April entry is the desktop's (11:00); the main bank the desktop's. Phone into desktop and desktop into phone give the same copy [AK1].",
+      "decisions": [
+        "AK1",
+        "M5",
+        "L merge q1"
+      ]
+    },
+    {
+      "id": "mg-212",
+      "question": "restore_merge",
+      "title": "AK1: a minimum set on the desktop after the phone's restore stays; the restored fields stay too",
+      "input": {
+        "current": {
+          "home": {
+            "curs": [
+              {
+                "from": "2026-11-01",
+                "cur": "JPY",
+                "at": "2026-11-24T09:00:00.000+09:00",
+                "by": "phn001"
+              },
+              {
+                "from": "2027-04-01",
+                "cur": "PHP",
+                "at": "2026-11-24T10:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ],
+            "country": "PH",
+            "mode": "track",
+            "minBank": {
+              "a": 30000,
+              "cur": "JPY"
+            },
+            "mainBank": "dsk001-w3e5r7t9y1-2",
+            "at": {
+              "country": "2026-11-24T11:00:00.000+09:00",
+              "mode": "2026-11-24T09:00:00.000+09:00",
+              "minBank": "2026-11-24T11:00:00.000+09:00",
+              "mainBank": "2026-11-24T11:00:00.000+09:00"
+            },
+            "by": {
+              "country": "dsk001",
+              "mode": "phn001",
+              "minBank": "dsk001",
+              "mainBank": "dsk001"
+            }
+          }
+        },
+        "backup": {
+          "home": {
+            "curs": [
+              {
+                "from": "2026-11-01",
+                "cur": "JPY",
+                "at": "2026-11-22T10:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ],
+            "country": "JP",
+            "mode": "track",
+            "minBank": {
+              "a": 20000,
+              "cur": "JPY"
+            },
+            "mainBank": "k7qzpa-m2xq7ab9zt-2",
+            "at": {
+              "country": "2026-11-22T10:00:00.000+09:00",
+              "mode": "2026-11-22T10:00:00.000+09:00",
+              "minBank": "2026-11-22T10:00:00.000+09:00",
+              "mainBank": "2026-11-22T10:00:00.000+09:00"
+            },
+            "by": {
+              "country": "phn001",
+              "mode": "phn001",
+              "minBank": "phn001",
+              "mainBank": "phn001"
+            }
+          }
+        },
+        "now": "2026-11-25T09:00:00.000+09:00",
+        "by": "phn001",
+        "lastSeen": "2026-11-24T11:00:00.000+09:00",
+        "cloud": {
+          "home": {
+            "curs": [
+              {
+                "from": "2026-11-01",
+                "cur": "JPY",
+                "at": "2026-11-24T09:00:00.000+09:00",
+                "by": "phn001"
+              },
+              {
+                "from": "2027-04-01",
+                "cur": "PHP",
+                "at": "2026-11-24T10:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ],
+            "country": "PH",
+            "mode": "track",
+            "minBank": {
+              "a": 50000,
+              "cur": "JPY"
+            },
+            "mainBank": "dsk001-w3e5r7t9y1-2",
+            "at": {
+              "country": "2026-11-24T11:00:00.000+09:00",
+              "mode": "2026-11-24T09:00:00.000+09:00",
+              "minBank": "2026-11-25T09:30:00.000+09:00",
+              "mainBank": "2026-11-24T11:00:00.000+09:00"
+            },
+            "by": {
+              "country": "dsk001",
+              "mode": "phn001",
+              "minBank": "dsk001",
+              "mainBank": "dsk001"
+            }
+          }
+        }
+      },
+      "expected": {
+        "mine_first": {
+          "home": {
+            "curs": [
+              {
+                "from": "2026-11-01",
+                "cur": "JPY",
+                "at": "2026-11-25T09:00:00.000+09:00",
+                "by": "phn001"
+              },
+              {
+                "from": "2027-04-01",
+                "cur": "PHP",
+                "at": "2026-11-25T09:00:00.000+09:00",
+                "by": "phn001",
+                "gone": "2026-11-25"
+              }
+            ],
+            "country": "JP",
+            "mode": "track",
+            "minBank": {
+              "a": 50000,
+              "cur": "JPY"
+            },
+            "mainBank": "k7qzpa-m2xq7ab9zt-2",
+            "at": {
+              "country": "2026-11-25T09:00:00.000+09:00",
+              "mode": "2026-11-25T09:00:00.000+09:00",
+              "minBank": "2026-11-25T09:30:00.000+09:00",
+              "mainBank": "2026-11-25T09:00:00.000+09:00"
+            },
+            "by": {
+              "country": "phn001",
+              "mode": "phn001",
+              "minBank": "dsk001",
+              "mainBank": "phn001"
+            }
+          }
+        },
+        "theirs_first": {
+          "home": {
+            "curs": [
+              {
+                "from": "2026-11-01",
+                "cur": "JPY",
+                "at": "2026-11-25T09:00:00.000+09:00",
+                "by": "phn001"
+              },
+              {
+                "from": "2027-04-01",
+                "cur": "PHP",
+                "at": "2026-11-25T09:00:00.000+09:00",
+                "by": "phn001",
+                "gone": "2026-11-25"
+              }
+            ],
+            "country": "JP",
+            "mode": "track",
+            "minBank": {
+              "a": 50000,
+              "cur": "JPY"
+            },
+            "mainBank": "k7qzpa-m2xq7ab9zt-2",
+            "at": {
+              "country": "2026-11-25T09:00:00.000+09:00",
+              "mode": "2026-11-25T09:00:00.000+09:00",
+              "minBank": "2026-11-25T09:30:00.000+09:00",
+              "mainBank": "2026-11-25T09:00:00.000+09:00"
+            },
+            "by": {
+              "country": "phn001",
+              "mode": "phn001",
+              "minBank": "dsk001",
+              "mainBank": "phn001"
+            }
+          }
+        }
+      },
+      "why": "As mg-204, the phone restores the 22 Nov backup on Wed 25 Nov 09:00, writing every field with `at` 25 Nov 09:00. At 09:30, before the phone's copy reaches it, the desktop raises the minimum to 50,000 (it still holds 24 Nov's copy: PH, the new main bank). Field by field [AK1]: the minimum is the desktop's 09:30 against the restore's 09:00, so 50,000 stays; country, mode and main bank are the restore's 09:00 against the desktop's 24 Nov 11:00 and 09:00, so JP and the old main bank are back. `curs` as mg-205. As one record, the desktop's 09:30 would have undone the whole restore.",
+      "decisions": [
+        "AK1",
+        "AE5",
+        "AD8",
+        "M3"
       ]
     }
   ],

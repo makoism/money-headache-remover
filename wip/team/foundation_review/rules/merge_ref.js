@@ -210,6 +210,17 @@ function mergeUi(a, b) {
   }
   return out;
 }
+// [AK1] A record whose fields each carry their own `at` and `by` (`home`: `at` and `by` are maps by field name, beside
+// `held` and `gone`), merged like the shared `ui` keys, field by field; its entry lists (`home.curs`) merge entry by
+// entry, found by shape [AJ3, AI2]. Found by shape too: a record whose `at` is a map.
+const fieldsRecord = x => isMap(x) && isMap(x.at);
+function mergeFields(a, b) {
+  const lists = entryFields(a, b), names = lists.map(([k]) => k);
+  const strip = x => Object.fromEntries(Object.entries(x).filter(([k]) => !names.includes(k)));
+  const out = mergeUi(strip(a), strip(b));
+  for (const [k, key] of lists) out[k] = mergeEntries(a[k] || [], b[k] || [], key);
+  return out;
+}
 // Union of every list by id [D4]; single records with `at` by newest `at`; `plan` holds both kinds.
 function merge(mine, theirs, top = true) {
   const out = {};
@@ -220,6 +231,7 @@ function merge(mine, theirs, top = true) {
     else if (Array.isArray(a) || Array.isArray(b)) out[k] = mergeList(a, b);
     else if (k === 'plan') out[k] = merge(a, b, false);
     else if (k === 'ui' && a && b && typeof a === 'object') out[k] = mergeUi(a, b);
+    else if (isMap(a) && isMap(b) && (fieldsRecord(a) || fieldsRecord(b))) out[k] = mergeFields(a, b);   // [AK1] home
     else if (a && b && typeof a === 'object' && a.at && b.at) out[k] = pick(a, b);
     else out[k] = a;   // no `at` to compare
   }
@@ -240,7 +252,11 @@ function newestAt(copy) {
   let best = null;
   (function walk(x) {
     if (Array.isArray(x)) return x.forEach(walk);
-    if (x && typeof x === 'object') { if (typeof x.at === 'string' && (!best || ms(x.at) > ms(best))) best = x.at; Object.values(x).forEach(walk); }
+    if (x && typeof x === 'object') {
+      // [AK1] a field-by-field record (`home`, the shared `ui`) holds its `at`s in a map
+      for (const t of typeof x.at === 'string' ? [x.at] : isMap(x.at) ? Object.values(x.at) : []) if (typeof t === 'string' && (!best || ms(t) > ms(best))) best = t;
+      Object.values(x).forEach(walk);
+    }
   })(copy);
   return best;
 }
@@ -272,13 +288,15 @@ function holdArriving(copy, lastSeen, mine, now) {
     if (Array.isArray(x)) return x.forEach(v => walk(v, twin(m, v)));
     if (!x || typeof x !== 'object') return;
     m = m && typeof m === 'object' ? m : undefined;
-    if (key === 'ui' && x.at && typeof x.at === 'object') {
+    if (isMap(x.at)) {   // the shared `ui` keys and [AK1] `home`'s fields: each `at` held on its own, marked in `held`
       const marks = (m && m.held) || {};
       for (const k of Object.keys(x.at)) {
         const mark = marks[k], t = x.at[k];
         if (mark && sameMoment(t, mark.came)) { x.at[k] = mark.at; (x.held = x.held || {})[k] = mark; }
         else if (ahead(t)) { x.at[k] = cap(t); (x.held = x.held || {})[k] = { came: t, at: x.at[k] }; }
       }
+      if (key === 'ui') return;
+      for (const [k, v] of Object.entries(x)) if (!['at', 'by', 'held', 'gone'].includes(k)) walk(v, m && m[k], k);   // [AJ3] `home.curs` entries
       return;
     }
     if (typeof x.at === 'string') holdAt(x, m && m.held);
@@ -313,7 +331,10 @@ function devices({ devices: devs, copy, steps, show }) {
     const d = st[s.on], at = nextAt(s.now, d.lastSeen);
     const by = d.id ? { by: d.id } : {};
     if (s.edit.record) {   // [AJ3] a single record (`home`): its fields, or an entry of one of its entry lists (`curs`, by `from`)
-      const rec = d.copy[s.edit.record] = Object.assign({}, d.copy[s.edit.record], s.edit.set, by, { at });   // no `told`: single records have none
+      // [AK1] each field set gets its own `at` and `by` in `home.at` and `home.by`; no `told`: single records have none
+      const old = d.copy[s.edit.record] || {}, rec = d.copy[s.edit.record] = Object.assign({}, old, s.edit.set);
+      rec.at = Object.assign({}, old.at); rec.by = Object.assign({}, old.by);
+      for (const k of Object.keys(s.edit.set || {})) { rec.at[k] = at; if (d.id) rec.by[k] = d.id; }
       const e = s.edit.entry;
       if (e) {
         const list = (rec[e.list] || []).slice(), j = list.findIndex(x => x.from === e.from);
@@ -358,15 +379,33 @@ function restore({ current, backup, now, by, lastSeen, answers }) {
   const at = nextAt(now, seen), day = String(now).slice(0, 10), stamp = { at, by };
   if (isOldFormat(backup)) backup = require('./move_ref').movedBackup({ copy: backup, answers, now, by, at });
   const earliest = (...t) => t.filter(Boolean).sort((a, b) => ms(a) - ms(b))[0];
+  const restoreEntries = (rk, ck, key) => {
+    const mine = (rk || []).map(e => Object.assign({}, e, stamp));
+    const newer = (ck || []).filter(e => !(rk || []).some(b => b[key] === e[key])).map(e => Object.assign({}, e, { gone: e.gone || day }, stamp));
+    return mine.concat(newer).sort((x, y) => (x[key] < y[key] ? -1 : x[key] > y[key] ? 1 : 0));
+  };
+  // [AD8, AF3] The shared `ui` keys, and [AK1] `home`'s fields: the backup's values, each with a new `at` and `by`; a key
+  // not in the backup keeps its value and is removed by its own `gone`. [AJ3] `home`'s entry lists as any record's.
+  const restoreFields = (b, a, lists) => {
+    const META = ['at', 'by', 'held', 'gone'], names = lists.map(([x]) => x);
+    const keys = Object.keys(b).filter(x => !META.includes(x) && !names.includes(x));
+    const extra = Object.keys(a || {}).filter(x => !META.includes(x) && !names.includes(x) && !keys.includes(x));
+    const o = Object.assign({}, b);
+    for (const x of extra) o[x] = a[x];
+    const all = keys.concat(extra);
+    o.at = Object.fromEntries(all.map(x => [x, at])); o.by = Object.fromEntries(all.map(x => [x, by]));
+    const gone = Object.assign({}, b.gone); for (const x of extra) gone[x] = ((a && a.gone) || {})[x] || day;
+    if (Object.keys(gone).length) o.gone = gone; else delete o.gone;
+    const held = Object.assign({}, b.held, (a && a.held) || {}); for (const x of Object.keys(held)) if (!all.includes(x)) delete held[x];
+    if (Object.keys(held).length) o.held = held; else delete o.held;
+    for (const [k, key] of lists) o[k] = restoreEntries(b[k], a && a[k], key);
+    return o;
+  };
   const restoreRecord = (r, c) => {
     const o = Object.assign({}, r, stamp);
     const told = earliest(r.told, c && c.told); if (told) o.told = told;
     const mark = (c && c.held) || r.held; if (mark) o.held = mark;
-    for (const [k, key] of entryFields(r, c)) {   // [AI2, AJ2] every entry list, found by its shape, by `from` or `id`
-      const mine = (r[k] || []).map(e => Object.assign({}, e, stamp));
-      const newer = ((c && c[k]) || []).filter(e => !(r[k] || []).some(b => b[key] === e[key])).map(e => Object.assign({}, e, { gone: e.gone || day }, stamp));
-      o[k] = mine.concat(newer).sort((x, y) => (x[key] < y[key] ? -1 : x[key] > y[key] ? 1 : 0));
-    }
+    for (const [k, key] of entryFields(r, c)) o[k] = restoreEntries(r[k], c && c[k], key);   // [AI2, AJ2] found by shape, by `from` or `id`
     for (const k of keyedFields(r, c)) {   // [AE1, AH5] every keyed map, found by its shape
       const bk = r[k] || {}, ck = (c && c[k]) || {}, m = {};
       for (const key of Object.keys(bk)) m[key] = Object.assign({}, bk[key], stamp);
@@ -387,20 +426,9 @@ function restore({ current, backup, now, by, lastSeen, answers }) {
       const a = (cur || {})[k], b = (bak || {})[k];
       if (Array.isArray(a) || Array.isArray(b)) out[k] = restoreList(a, b);
       else if (k === 'plan') out[k] = walk(a, b);
-      else if (b && typeof b === 'object' && typeof b.at === 'string') out[k] = restoreRecord(b, a);   // home, plan.limits
-      else if (k === 'ui' && b && typeof b === 'object') {   // [AD8] the backup's values, each with a new `at` and `by`; [AF3] the rest `gone`
-        const META = ['at', 'by', 'held', 'gone'], keys = Object.keys(b).filter(x => !META.includes(x));
-        const extra = Object.keys(a || {}).filter(x => !META.includes(x) && !keys.includes(x));
-        const o = Object.assign({}, b);
-        for (const x of extra) o[x] = a[x];
-        const all = keys.concat(extra);
-        o.at = Object.fromEntries(all.map(x => [x, at])); o.by = Object.fromEntries(all.map(x => [x, by]));
-        const gone = Object.assign({}, b.gone); for (const x of extra) gone[x] = ((a && a.gone) || {})[x] || day;
-        if (Object.keys(gone).length) o.gone = gone; else delete o.gone;
-        const held = Object.assign({}, b.held, (a && a.held) || {}); for (const x of Object.keys(held)) if (!all.includes(x)) delete held[x];
-        if (Object.keys(held).length) o.held = held; else delete o.held;
-        out[k] = o;
-      }
+      else if (b && typeof b === 'object' && typeof b.at === 'string') out[k] = restoreRecord(b, a);   // plan.limits
+      else if (k === 'ui' && b && typeof b === 'object') out[k] = restoreFields(b, a, []);   // [AD8, AF3]
+      else if (fieldsRecord(b)) out[k] = restoreFields(b, a, entryFields(b, a));   // [AK1] home, field by field; [AJ3] its `curs`
       else if (b !== undefined) out[k] = b;   // the rest: the backup's as it is
     }
     return out;

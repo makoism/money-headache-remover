@@ -15328,7 +15328,7 @@
     {
       "id": "mv-123",
       "question": "move_later",
-      "title": "AJ3, AB1: the minimum set on the phone after its move stays when the desktop moves days later, the cloud on (grid: home x a second move days later)",
+      "title": "AJ3, AK1, AB1: the minimum set on the phone after its move stays when the desktop moves days later, the cloud on (grid: home x a second move days later)",
       "input": {
         "phone": {
           "copy": {
@@ -15479,23 +15479,43 @@
         },
         "cloud": true,
         "show": [
+          "home.curs",
           "home.minBank",
           "home.country",
+          "home.mainBank",
           "home.at",
           "home.by"
         ]
       },
       "expected": {
+        "home.curs": [
+          {
+            "from": "2026-11-22",
+            "cur": "JPY",
+            "at": "2026-11-23T20:00:00.000+09:00",
+            "by": "phn001"
+          }
+        ],
         "home.minBank": {
           "a": 30000,
           "cur": "JPY"
         },
         "home.country": "JP",
-        "home.at": "2026-11-25T08:00:00.000+09:00",
-        "home.by": "phn001"
+        "home.mainBank": "mv:acct:cfg",
+        "home.at": {
+          "minBank": "2026-11-25T08:00:00.000+09:00",
+          "mainBank": "2026-11-23T20:00:00.000+09:00",
+          "country": "2026-11-25T08:00:00.000+09:00"
+        },
+        "home.by": {
+          "minBank": "phn001",
+          "mainBank": "phn001",
+          "country": "phn001"
+        }
       },
-      "why": "The phone moves the 38.31 copy (last saved Mon 23 Nov 20:00) on Tue 24 Nov and on Wed 25 Nov 08:00 sets \"Keep at least 30,000 in your bank?\" and the country, Japan: `home` gets `at` 25 Nov 08:00 and `by` phn001. On Tue 1 Dec the desktop, holding the same 38.31 copy, finds the phone's moved copy in the cloud and takes it, adding only the ids it lacks; `home` is the cloud's [AB1, AJ3]. So the minimum stays 30,000.",
+      "why": "The phone moves the 38.31 copy (last saved Mon 23 Nov 20:00) on Tue 24 Nov: each field of `home` and its yen entry (from the first bank figure, Sun 22 Nov) carry the copy's last save, 23 Nov 20:00, and phn001 [AB1, AK1]. On Wed 25 Nov 08:00 it sets \"Keep at least 30,000 in your bank?\" and the country, Japan: `home.at.minBank` and `home.at.country` 25 Nov 08:00 [AK1]. On Tue 1 Dec the desktop, holding the same 38.31 copy, finds the phone's moved copy in the cloud and takes it, adding only the ids it lacks; `home` is the cloud's [AB1, AJ3]. So the minimum stays 30,000.",
       "decisions": [
+        "AK1",
         "AJ3",
         "AB1",
         "AA10",
@@ -15505,7 +15525,7 @@
     {
       "id": "mv-124",
       "question": "move_later",
-      "title": "AJ3, AB1: the minimum set on the phone after its move stays when the desktop moves days later, the cloud off (grid: home x a second move days later)",
+      "title": "AJ3, AK1, AB1: the minimum set on the phone after its move stays when the desktop moves days later, the cloud off (grid: home x a second move days later)",
       "input": {
         "phone": {
           "copy": {
@@ -15656,27 +15676,48 @@
         },
         "cloud": false,
         "show": [
+          "home.curs",
           "home.minBank",
           "home.country",
+          "home.mainBank",
           "home.at",
           "home.by"
         ]
       },
       "expected": {
+        "home.curs": [
+          {
+            "from": "2026-11-22",
+            "cur": "JPY",
+            "at": "2026-11-23T20:00:00.000+09:00",
+            "by": "phn001"
+          }
+        ],
         "home.minBank": {
           "a": 30000,
           "cur": "JPY"
         },
         "home.country": "JP",
-        "home.at": "2026-11-25T08:00:00.000+09:00",
-        "home.by": "phn001"
+        "home.mainBank": "mv:acct:cfg",
+        "home.at": {
+          "minBank": "2026-11-25T08:00:00.000+09:00",
+          "mainBank": "2026-11-23T20:00:00.000+09:00",
+          "country": "2026-11-25T08:00:00.000+09:00"
+        },
+        "home.by": {
+          "minBank": "phn001",
+          "mainBank": "phn001",
+          "country": "phn001"
+        }
       },
-      "why": "As mv-123, but the desktop moved on its own and the copies meet in the merge. The desktop's moved `home` carries the copy's last save, Mon 23 Nov 20:00 [AA10, AB1]; the phone's carries its edit of Wed 25 Nov 08:00, newer, so the phone's `home` wins [D4, AJ3]: the minimum stays 30,000.",
+      "why": "As mv-123, but the desktop moved on its own and the copies meet in the merge. The desktop's moved `home` carries the copy's last save, Mon 23 Nov 20:00, in every field and its yen entry [AA10, AB1], by dsk001. Field by field [AK1]: the minimum and the country are the phone's 25 Nov 08:00 against the desktop's 23 Nov 20:00 (the desktop has no country), so 30,000 and JP; the main bank and the yen entry tie on 23 Nov 20:00 with the same value, and the larger `by`, phn001, is kept [L merge q1]. The minimum stays 30,000.",
       "decisions": [
+        "AK1",
         "AJ3",
         "AB1",
         "AA10",
-        "D4"
+        "D4",
+        "L merge q1"
       ]
     }
   ],

@@ -156,14 +156,22 @@
       "expected": {
         "refused": true,
         "latest": "pay@2027-03-10",
-        "offer": "2027-03-11"
+        "offer": "2027-03-11",
+        "once": [
+          "pay@2027-03-10"
+        ],
+        "amountsOffer": [
+          "move",
+          "remove"
+        ]
       },
-      "why": "A budget line's `once` is keyed pay@2027-03-10 [T1]; a change from 1 Mar would leave it naming nothing [X8]. The key is in the AE1 shape, `{ amount, at, by }` [AE1, AH3].",
+      "why": "A budget line's `once` is keyed pay@2027-03-10 [T1]; a change from 1 Mar would leave it naming nothing [X8]. The key is in the AE1 shape, `{ amount, at, by }` [AE1, AH3]. Nothing that cannot move is in the way (the settled pay is 10 Feb), so the key is offered to move or remove [AK3]; no new rule is given, so no day to move it to is named.",
       "decisions": [
         "X8",
         "T1",
         "B8",
-        "AH3"
+        "AH3",
+        "AK3"
       ]
     },
     {
@@ -818,13 +826,21 @@
       "expected": {
         "refused": true,
         "latest": "mv:pay:steps.a@2027-01-25",
-        "offer": "2027-01-26"
+        "offer": "2027-01-26",
+        "once": [
+          "mv:pay:steps.a@2027-01-25"
+        ],
+        "amountsOffer": [
+          "move",
+          "remove"
+        ]
       },
-      "why": "Food's 70,000 for January is `once` keyed by the moved pay that starts that period, `mv:pay:steps.a@2027-01-25` [AA6, AE1]. A change from 1 Jan is refused [X8, AH2]: 26 Jan offered.",
+      "why": "Food's 70,000 for January is `once` keyed by the moved pay that starts that period, `mv:pay:steps.a@2027-01-25` [AA6, AE1]. A change from 1 Jan is refused [X8, AH2]: 26 Jan offered. Nothing settled or answered is in the way, so the key is offered to move or remove, with the moved id as written [AK3].",
       "decisions": [
         "AH2",
         "X8",
-        "AE1"
+        "AE1",
+        "AK3"
       ]
     },
     {
@@ -1068,7 +1084,7 @@
     {
       "id": "ed-39",
       "question": "change_from",
-      "title": "AJ1: a one-period override keyed by the person's own pay counts",
+      "title": "AJ1, AK3: a one-period override keyed by the person's own pay counts, and is offered to move or remove",
       "input": {
         "schedule": "k7qzpa-m2xq7ab9zt-41",
         "wanted": "2027-03-01",
@@ -1086,10 +1102,18 @@
       "expected": {
         "refused": true,
         "latest": "k7qzpa-m2xq7ab9zt-41@2027-03-25",
-        "offer": "2027-03-26"
+        "offer": "2027-03-26",
+        "once": [
+          "k7qzpa-m2xq7ab9zt-41@2027-03-25"
+        ],
+        "amountsOffer": [
+          "move",
+          "remove"
+        ]
       },
-      "why": "A budget line's `once` key names the period by the pay that starts it, 25 Mar [B8, T1], read with an ordinary id [AJ1]. 1 Mar is before it: refused, offering Fri 26 Mar [X8]. A `once` key is not the pay's own amount, so nothing is offered to move [AJ5].",
+      "why": "A budget line's `once` key names the period by the pay that starts it, 25 Mar [B8, T1], read with an ordinary id [AJ1]. 1 Mar is before it: refused, offering Fri 26 Mar [X8]. Nothing that cannot move is in the way (the settled pay is 25 Feb), so the key is offered to move or remove like a one-off amount of the pay [AK3, AJ5]. No new rule is given here, so no day to move it to is named.",
       "decisions": [
+        "AK3",
         "AJ1",
         "X8",
         "AJ5"
@@ -1125,7 +1149,7 @@
           "remove"
         ]
       },
-      "why": "December's pay was set to 400,000 with a bonus (a one-off `amounts` key, not settled). The person changes jobs: the new employer pays on the 10th from 1 Dec. The key names 25 Dec, on or after 1 Dec, so the change alone is refused, offering Sat 26 Dec [X8]. The only thing in the way is a future one-off amount of the pay itself, so the edit also offers to move that amount (to an occurrence of the new pay day) or remove it [AJ5]; either one lets the change start on 1 Dec. Refusing only, the person could not enter the new pay day.",
+      "why": "December's pay was set to 400,000 with a bonus (a one-off `amounts` key, not settled). The person changes jobs: the new employer pays on the 10th from 1 Dec. The key names 25 Dec, on or after 1 Dec, so the change alone is refused, offering Sat 26 Dec [X8]. The only thing in the way is a future one-off amount of the pay itself, so the edit also offers to move that amount (to the new pay day's first occurrence in December, ed-45 [AK2]) or remove it [AJ5]; either one lets the change start on 1 Dec. Refusing only, the person could not enter the new pay day.",
       "decisions": [
         "AJ5",
         "X8",
@@ -1278,7 +1302,370 @@
         "X8",
         "T1"
       ]
+    },
+    {
+      "id": "ed-45",
+      "question": "change_from",
+      "title": "AK2: the December bonus moves to the new pay day's first occurrence in December, Thu 10 Dec",
+      "input": {
+        "schedule": "k7qzpa-m2xq7ab9zt-41",
+        "wanted": "2026-12-01",
+        "rule": {
+          "every": "month",
+          "days": [
+            10
+          ]
+        },
+        "settles": [
+          "k7qzpa-m2xq7ab9zt-41@2026-11-25"
+        ],
+        "amounts": {
+          "2026-12-25": {
+            "at": "2026-11-24T10:00:00.000+09:00",
+            "by": "phn001",
+            "amount": 400000
+          }
+        }
+      },
+      "expected": {
+        "refused": true,
+        "latest": "k7qzpa-m2xq7ab9zt-41@2026-12-25",
+        "offer": "2026-12-26",
+        "amounts": [
+          "2026-12-25"
+        ],
+        "amountsOffer": [
+          "move",
+          "remove"
+        ],
+        "moveTo": {
+          "2026-12-25": "2026-12-10"
+        }
+      },
+      "why": "As ed-40: December's pay was set to 400,000 with a bonus, and the new employer pays on the 10th from Tue 1 Dec. The new rule's occurrences in December on or after 1 Dec are 10 Dec only, so \"move\" puts the 400,000 on Thu 10 Dec [AK2]. December then has one pay, 400,000 on 10 Dec, where it had 400,000 on 25 Dec: the month's income is the same, 15 days sooner. The settled 25 Nov pay is untouched.",
+      "decisions": [
+        "AK2",
+        "AJ5",
+        "X8"
+      ]
+    },
+    {
+      "id": "ed-46",
+      "question": "change_from",
+      "title": "AK2: two one-off amounts each move within their own month",
+      "input": {
+        "schedule": "k7qzpa-m2xq7ab9zt-41",
+        "wanted": "2026-12-01",
+        "rule": {
+          "every": "month",
+          "days": [
+            10
+          ]
+        },
+        "settles": [
+          "k7qzpa-m2xq7ab9zt-41@2026-11-25"
+        ],
+        "amounts": {
+          "2027-01-25": {
+            "at": "2026-11-24T10:00:00.000+09:00",
+            "by": "phn001",
+            "amount": 0
+          },
+          "2026-12-25": {
+            "at": "2026-11-24T10:00:00.000+09:00",
+            "by": "phn001",
+            "amount": 400000
+          }
+        }
+      },
+      "expected": {
+        "refused": true,
+        "latest": "k7qzpa-m2xq7ab9zt-41@2027-01-25",
+        "offer": "2027-01-26",
+        "amounts": [
+          "2026-12-25",
+          "2027-01-25"
+        ],
+        "amountsOffer": [
+          "move",
+          "remove"
+        ],
+        "moveTo": {
+          "2026-12-25": "2026-12-10",
+          "2027-01-25": "2027-01-10"
+        }
+      },
+      "why": "As ed-42: a December bonus (400,000) and January's unpaid leave (0). With the new pay day the 10th from 1 Dec, each moves to the first occurrence of the new rule in its own month [AK2]: the bonus to Thu 10 Dec, the 0 to Sun 10 Jan (named by its due date before any move for the weekend [H2]). December gets 400,000, January 0 from this pay, as before the change.",
+      "decisions": [
+        "AK2",
+        "AJ5",
+        "H2"
+      ]
+    },
+    {
+      "id": "ed-47",
+      "question": "change_from",
+      "title": "AK2: every other Friday: each amount goes to the first Friday pay of its month, not the nearest",
+      "input": {
+        "schedule": "k7qzpa-m2xq7ab9zt-41",
+        "wanted": "2026-12-01",
+        "rule": {
+          "every": "weeks",
+          "n": 2,
+          "from": "2026-12-04"
+        },
+        "settles": [
+          "k7qzpa-m2xq7ab9zt-41@2026-11-25"
+        ],
+        "amounts": {
+          "2026-12-25": {
+            "at": "2026-11-24T10:00:00.000+09:00",
+            "by": "phn001",
+            "amount": 400000
+          },
+          "2027-01-25": {
+            "at": "2026-11-24T10:00:00.000+09:00",
+            "by": "phn001",
+            "amount": 0
+          }
+        }
+      },
+      "expected": {
+        "refused": true,
+        "latest": "k7qzpa-m2xq7ab9zt-41@2027-01-25",
+        "offer": "2027-01-26",
+        "amounts": [
+          "2026-12-25",
+          "2027-01-25"
+        ],
+        "amountsOffer": [
+          "move",
+          "remove"
+        ],
+        "moveTo": {
+          "2026-12-25": "2026-12-04",
+          "2027-01-25": "2027-01-01"
+        }
+      },
+      "why": "The new employer pays every other Friday from Fri 4 Dec: 4 Dec, 18 Dec, 1 Jan, 15 Jan, 29 Jan (4 + 14 = 18; 18 + 14 = 32, so 1 Jan; 15; 29). The bonus of 25 Dec goes to the first occurrence in December, 4 Dec, though 18 Dec is nearer to 25 Dec [AK2]; the 0 of 25 Jan goes to 1 Jan (named by its due date before the New Year move [H2]), though 29 Jan is nearer. December: 400,000 on 4 Dec plus the usual pay on 18 Dec; January: 0 on 1 Jan, the usual on 15 and 29 Jan.",
+      "decisions": [
+        "AK2",
+        "AJ5",
+        "H2"
+      ]
+    },
+    {
+      "id": "ed-48",
+      "question": "change_from",
+      "title": "AK3: a budget line's and the share's `once` keys named by the December pay move with the bonus",
+      "input": {
+        "schedule": "k7qzpa-m2xq7ab9zt-41",
+        "wanted": "2026-12-01",
+        "rule": {
+          "every": "month",
+          "days": [
+            10
+          ]
+        },
+        "settles": [
+          "k7qzpa-m2xq7ab9zt-41@2026-11-25"
+        ],
+        "amounts": {
+          "2026-12-25": {
+            "at": "2026-11-24T10:00:00.000+09:00",
+            "by": "phn001",
+            "amount": 400000
+          }
+        },
+        "once": [
+          {
+            "k7qzpa-m2xq7ab9zt-41@2026-12-25": {
+              "at": "2026-11-24T10:05:00.000+09:00",
+              "by": "phn001",
+              "amount": 60000
+            }
+          },
+          {
+            "k7qzpa-m2xq7ab9zt-41@2026-12-25": {
+              "at": "2026-11-24T10:10:00.000+09:00",
+              "by": "phn001",
+              "free": 30000
+            }
+          }
+        ]
+      },
+      "expected": {
+        "refused": true,
+        "latest": "k7qzpa-m2xq7ab9zt-41@2026-12-25",
+        "offer": "2026-12-26",
+        "amounts": [
+          "2026-12-25"
+        ],
+        "once": [
+          "k7qzpa-m2xq7ab9zt-41@2026-12-25"
+        ],
+        "amountsOffer": [
+          "move",
+          "remove"
+        ],
+        "moveTo": {
+          "2026-12-25": "2026-12-10",
+          "k7qzpa-m2xq7ab9zt-41@2026-12-25": "k7qzpa-m2xq7ab9zt-41@2026-12-10"
+        }
+      },
+      "why": "With the December bonus the person set Food to 60,000 for the period of the 25 Dec pay (a budget line's `once` key) and 30,000 more for Free to spend (the share's `once` key) for Christmas. All three are named by the 25 Dec pay, none settled [AK3, AJ5]. With the new pay day the 10th from 1 Dec, \"move\" puts the bonus on 10 Dec and both keys on the period that pay starts, `k7qzpa-m2xq7ab9zt-41@2026-12-10` [AK2, AK3]: that period gets the 400,000, Food 60,000 and the extra 30,000, as the 25 Dec one would have. \"Remove\" takes all three away.",
+      "decisions": [
+        "AK3",
+        "AK2",
+        "AJ5",
+        "B8",
+        "T1"
+      ]
+    },
+    {
+      "id": "ed-49",
+      "question": "change_from",
+      "title": "AK3: a share's `once` key alone is offered, and moves to the first Friday pay of December",
+      "input": {
+        "schedule": "k7qzpa-m2xq7ab9zt-41",
+        "wanted": "2026-12-01",
+        "rule": {
+          "every": "weeks",
+          "n": 2,
+          "from": "2026-12-04"
+        },
+        "settles": [
+          "k7qzpa-m2xq7ab9zt-41@2026-11-25"
+        ],
+        "once": {
+          "k7qzpa-m2xq7ab9zt-41@2026-12-25": {
+            "at": "2026-11-24T10:00:00.000+09:00",
+            "by": "phn001",
+            "give": 20000
+          }
+        }
+      },
+      "expected": {
+        "refused": true,
+        "latest": "k7qzpa-m2xq7ab9zt-41@2026-12-25",
+        "offer": "2026-12-26",
+        "once": [
+          "k7qzpa-m2xq7ab9zt-41@2026-12-25"
+        ],
+        "amountsOffer": [
+          "move",
+          "remove"
+        ],
+        "moveTo": {
+          "k7qzpa-m2xq7ab9zt-41@2026-12-25": "k7qzpa-m2xq7ab9zt-41@2026-12-04"
+        }
+      },
+      "why": "The person gives 20,000 more in the period of the 25 Dec pay (the share's `once` key, `give`). The new employer pays every other Friday from 4 Dec. The key is the only thing in the way: refused, offering Sat 26 Dec, and offered to move or remove [AK3]; \"move\" puts it on the first occurrence in December, Fri 4 Dec [AK2], so the period from 4 Dec gives 20,000 more.",
+      "decisions": [
+        "AK3",
+        "AK2",
+        "X8"
+      ]
+    },
+    {
+      "id": "ed-50",
+      "question": "change_from",
+      "title": "AK3: a `once` key named by a pay whose period was already answered: only refused",
+      "input": {
+        "schedule": "k7qzpa-m2xq7ab9zt-41",
+        "wanted": "2026-12-01",
+        "rule": {
+          "every": "month",
+          "days": [
+            10
+          ]
+        },
+        "settles": [
+          "k7qzpa-m2xq7ab9zt-41@2026-11-25"
+        ],
+        "once": {
+          "k7qzpa-m2xq7ab9zt-41@2026-12-25": {
+            "at": "2026-11-24T10:00:00.000+09:00",
+            "by": "phn001",
+            "amount": 60000
+          }
+        },
+        "pe": [
+          "pe:k7qzpa-m2xq7ab9zt-41@2026-12-25:free"
+        ]
+      },
+      "expected": {
+        "refused": true,
+        "latest": "k7qzpa-m2xq7ab9zt-41@2026-12-25",
+        "offer": "2026-12-26"
+      },
+      "why": "The 25 Dec pay names an answered period-end (`pe:`), which cannot be moved, so moving the Food key would not free the day: only the refusal and its offer [X8, AK3, as AJ5 in ed-44].",
+      "decisions": [
+        "AK3",
+        "X8",
+        "T1"
+      ]
+    },
+    {
+      "id": "ed-51",
+      "question": "change_from",
+      "title": "AK3: a removed `once` key names nothing and is not offered; the bonus still is",
+      "input": {
+        "schedule": "k7qzpa-m2xq7ab9zt-41",
+        "wanted": "2026-12-01",
+        "rule": {
+          "every": "month",
+          "days": [
+            10
+          ]
+        },
+        "settles": [
+          "k7qzpa-m2xq7ab9zt-41@2026-11-25"
+        ],
+        "amounts": {
+          "2026-12-25": {
+            "at": "2026-11-24T10:00:00.000+09:00",
+            "by": "phn001",
+            "amount": 400000
+          }
+        },
+        "once": {
+          "k7qzpa-m2xq7ab9zt-41@2026-12-25": {
+            "at": "2026-11-24T11:00:00.000+09:00",
+            "by": "phn001",
+            "amount": 60000,
+            "gone": "2026-11-24"
+          }
+        }
+      },
+      "expected": {
+        "refused": true,
+        "latest": "k7qzpa-m2xq7ab9zt-41@2026-12-25",
+        "offer": "2026-12-26",
+        "amounts": [
+          "2026-12-25"
+        ],
+        "amountsOffer": [
+          "move",
+          "remove"
+        ],
+        "moveTo": {
+          "2026-12-25": "2026-12-10"
+        }
+      },
+      "why": "The Food key for the 25 Dec period was removed at 11:00 (`gone`), so it names nothing [AH3]: only the bonus is in the way and only the bonus is offered, to Thu 10 Dec [AK2].",
+      "decisions": [
+        "AK3",
+        "AH3",
+        "AK2"
+      ]
     }
   ],
-  "open": []
+  "open": [
+    {
+      "id": "ed-q1",
+      "question": "AK2 when the new rule has no occurrence in the amount's month on or after the change (the new job starts on Tue 15 Dec, its pay on the 10th, so the first new pay is 10 Jan, and the December bonus was keyed 25 Dec). Move it to the next month's first occurrence (10 Jan), only offer remove, or something else? Also: two amounts or keys of one month moving to the same occurrence (a pay twice a month changed to once a month): add them, or ask?",
+      "ref_does": "`moveTo` gives null for that amount, so it can only be removed; two that land on one occurrence are both mapped to it and nothing is added up."
+    }
+  ]
 }

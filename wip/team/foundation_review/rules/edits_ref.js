@@ -16,19 +16,36 @@ const { dayNum, dayStr } = require('./dates');
 // wanted day, a December bonus), the edit also offers to move or remove those amounts (`amounts`, by date, and
 // `amountsOffer`), so a new employer's pay day can still be entered. A settle, a `once` key, a `pe:` or `ps:` record on
 // or after the wanted day cannot be moved: then the refusal and its day are all that is offered.
+// [AK3] A budget line's or a share's `once` key named by the pay is offered the same way (`once`, the occurrence names,
+// each once however many lines and shares hold it). `once` may be one map or a list of maps, one per line or share.
+// [AK2] With the new rule given (`rule`, from the wanted day), "move" takes each offered amount or key to the new rule's
+// first occurrence in the same month (`moveTo`, old name to new name). A month with no occurrence of the new rule on or
+// after the wanted day gives null: that amount can only be removed (a question for Mako's run, edits.json ed-q1).
 const { occurrence } = require('./ids');
+const { duesIn } = require('./move_ref');
 const liveKeys = map => Object.keys(map || {}).filter(k => !(map[k] && typeof map[k] === 'object' && map[k].gone));
-function changeFrom({ schedule, wanted, settles, once, amounts, pe, ps }) {
+function changeFrom({ schedule, wanted, rule, settles, once, amounts, pe, ps }) {
   const own = names => names.map(occurrence).filter(o => o && o.schedule === schedule).map(o => o.due);
-  const fixed = own([].concat(settles || [], liveKeys(once),
+  const fixed = own([].concat(settles || [],
     (pe || []).map(id => String(id).replace(/^pe:/, '')), (ps || []).map(id => String(id).replace(/^ps:/, ''))));
+  const onceDue = [...new Set(own([].concat(...[].concat(once || []).map(liveKeys))))];   // [AK3]
   const oneOff = liveKeys(amounts);
-  const due = fixed.concat(oneOff).sort();
+  const due = fixed.concat(onceDue, oneOff).sort();
   const latest = due[due.length - 1];
   if (!latest || dayNum(wanted) > dayNum(latest)) return { ok: true };
   const out = { refused: true, latest: schedule + '@' + latest, offer: dayStr(dayNum(latest) + 1) };
   const inWay = d => dayNum(d) >= dayNum(wanted);
-  if (!fixed.some(inWay)) Object.assign(out, { amounts: oneOff.filter(inWay).sort(), amountsOffer: ['move', 'remove'] });   // [AJ5]
+  if (fixed.some(inWay)) return out;
+  const am = oneOff.filter(inWay).sort(), on = onceDue.filter(inWay).sort();
+  if (am.length) out.amounts = am;   // [AJ5]
+  if (on.length) out.once = on.map(d => schedule + '@' + d);   // [AK3]
+  out.amountsOffer = ['move', 'remove'];
+  if (rule) {   // [AK2] the new rule's first occurrence in the same month, on or after the wanted day
+    const to = d => duesIn(rule, d.slice(0, 7)).find(x => dayNum(x) >= dayNum(wanted)) || null;
+    out.moveTo = {};
+    for (const d of am) out.moveTo[d] = to(d);
+    for (const d of on) { const t = to(d); out.moveTo[schedule + '@' + d] = t && schedule + '@' + t; }
+  }
   return out;
 }
 

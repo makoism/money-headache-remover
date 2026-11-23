@@ -690,7 +690,10 @@ function stamp(m, now, by, saved) {
   for (const k of ['people', 'accounts', 'places', 'schedules', 'events', 'frozen', 'pendingMove']) m[k] = (m[k] || []).map(rec);
   m.plan.shares = m.plan.shares.map(rec); m.plan.budgets = m.plan.budgets.map(rec);
   if (m.plan.limits) Object.assign(m.plan.limits, { at: saved, by });
-  Object.assign(m.home, { at: saved, by });
+  // [AK1] each field of `home` carries its own `at` and `by` (maps by field name, as `ui`); [AJ3] each `curs` entry its own
+  const fields = Object.keys(m.home).filter(k => k !== 'curs');
+  m.home.curs = (m.home.curs || []).map(e => Object.assign({}, e, { at: e.at || saved, by: e.by || by }));
+  m.home.at = Object.fromEntries(fields.map(k => [k, saved])); m.home.by = Object.fromEntries(fields.map(k => [k, by]));
   m.ui.at = {}; m.ui.by = {}; for (const k of Object.keys(m.ui)) if (k !== 'at' && k !== 'by') { m.ui.at[k] = saved; m.ui.by[k] = by; }
   m.rev = Date.parse(now); m.at = now;
   return m;
@@ -731,7 +734,10 @@ function moveLater({ phone, edits, desktop, cloud }) {
     // [AJ3] an edit of a single record (`home`) names it by `record`
     const r = e.record ? (p[e.record] = p[e.record] || {}) : listOf(p, e.list.split('.')).find(x => x.id === e.id);
     for (const k of e.unset || []) delete r[k];   // an Undo of a removal: the record again, with a newer `at` [H6]
-    Object.assign(r, e.set, { at: e.at, by: phone.by });
+    if (e.record) {   // [AK1] each field set takes the edit's `at` and `by` in `home.at` and `home.by`
+      Object.assign(r, e.set); r.at = Object.assign({}, r.at); r.by = Object.assign({}, r.by);
+      for (const k of Object.keys(e.set || {})) { r.at[k] = e.at; r.by[k] = phone.by; }
+    } else Object.assign(r, e.set, { at: e.at, by: phone.by });
   }
   const d = stored(desktop);
   return cloud ? adopt(p, d) : merge(p, d);
@@ -757,6 +763,7 @@ function newestAt(x, best) {
   if (Array.isArray(x)) for (const v of x) best = newestAt(v, best);
   else if (isMap(x)) for (const [k, v] of Object.entries(x)) {
     if (k === 'at' && typeof v === 'string' && !Number.isNaN(Date.parse(v)) && (!best || Date.parse(v) > Date.parse(best))) best = v;
+    else if (k === 'at' && isMap(v)) best = newestAt(Object.values(v).map(t => ({ at: t })), best);   // [AK1] `home.at`, `ui.at`
     else best = newestAt(v, best);
   }
   return best;
@@ -834,4 +841,4 @@ function ask(question, input) {
   throw new Error('unknown question ' + question);
 }
 
-module.exports = { ask, move, moveTwo, moveAnswer, moveLater, applyWaiting, adopt, stamp, lastSave, movedBackup };
+module.exports = { ask, move, moveTwo, moveAnswer, moveLater, applyWaiting, adopt, stamp, lastSave, movedBackup, duesIn };
