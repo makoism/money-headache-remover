@@ -8,8 +8,9 @@
 // seen yet, each card's and loan's next payment, the places' money, total, and
 // the check-in list and fillers.
 //
-// It follows DECISIONS_ROUND2.md sections A, B, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W and X (X and W win over anything earlier, then V, then U and T,
-// then S, then R and Q, then P, then O, then N, then M, then L and K, then J, then I, then H). Where a line below carries a tag like [H3] or [B9], that decision is
+// It follows DECISIONS_ROUND2.md sections A to AS (AS and AR win over anything earlier, then AP, and so on back to H, as
+// SCHEMA_V3 says). The units rules for amounts per period (rules/units_ref.js: H9, L units, M9, M10, N3, N4, P4, R2) are in
+// the walk too [AS]. Where a line below carries a tag like [H3] or [B9], that decision is
 // the reason for it. Plain code, one dependency (the shared id reader, rules/ids.js [AJ1]), every amount in whole minor
 // units, every date a whole day number (D8). It is a reference for the engine
 // and for tests, never loaded by the app.
@@ -172,7 +173,9 @@ function occurrences(s, kind, cal, from, to, cur, sc) {
   const out = [];
   parts.forEach((p, i) => {
     const until = parts[i + 1] ? parts[i + 1].from : Infinity;
-    const start = p.rule.from ? Math.min(from, dayNum(p.rule.from)) : Math.max(from, p.from);
+    // [AS10] `count` counts from the schedule's first occurrence (its `from`), in every rule, before the window too, so a
+    // change of day after the first occurrence never restarts the count.
+    const start = count && first > -Infinity ? Math.min(from, first) : p.rule.from ? Math.min(from, dayNum(p.rule.from)) : Math.max(from, p.from);
     for (const { due, key } of dueDays(p.rule, start, to, cal)) {
       if (due < p.from || due >= until || due < first || due > ends || (count && out.length >= count)) continue;
       const one = keyAmount(s.amounts, dayStr(due));   // [AE1, AH3] a removed key is not read
@@ -492,7 +495,7 @@ function lookahead(sc, asOf, opts = {}) {
   // with answers keeps its end: a moved settle or a corrected date never moves it); else the day the money that
   // settles the occurrence lands. Once a period's end is fixed, the late pay settles its occurrence and starts no
   // new period.
-  const psOf = {}, peEnd = {};
+  const psOf = {}, peEnd = {}, startOcc = {};   // startOcc: the pay occurrence that names the period starting on a day [T1]
   for (const e of live()) {
     if (e.kind === 'period_start' && e.day <= knownTo) psOf[String(e.id).slice(3)] = e.day;
     // `pe:<occurrence>:<place>`; the occurrence may name a moved schedule and the place a moved place [X1, Y28]
@@ -502,8 +505,22 @@ function lookahead(sc, asOf, opts = {}) {
   pays.slice().sort((x, y) => x.due - y.due).forEach((o, i, list) => {
     const prev = list[i - 1], s = settledBy[o.id];
     const d = psOf[o.id] != null ? psOf[o.id] : prev && peEnd[prev.id] != null ? peEnd[prev.id] + 1 : s && startsPeriod(s) ? s.day : null;
-    if (d !== null && d <= knownTo) periodStartDays.push(d);
+    if (d !== null && d <= knownTo) { periodStartDays.push(d); startOcc[d] = o; }
   });
+
+  // [T1, N3] The period a day is in: named by the pay occurrence that started it (a period start on or before the day), else
+  // the period stream's latest pay landing on or before it. It ends where the next pay of the stream lands (by due date);
+  // with none, 30 days on.
+  const paysByDue = pays.slice().sort((x, y) => x.due - y.due);
+  function periodAt(day) {
+    const ds = periodStartDays.filter(d => d <= day);
+    let o, start;
+    if (ds.length) { start = Math.max(...ds); o = startOcc[start]; }
+    else { o = pays.filter(p => p.land <= day).sort((x, y) => x.land - y.land).pop(); start = o ? o.land : null; }
+    if (!o) return null;
+    const n = paysByDue[paysByDue.indexOf(o) + 1];
+    return { occ: o, start, end: n ? n.land : start + 30 };
+  }
 
   // ----- bank today per account [A1, B7, H1] -----
   const delta = (e, id) => {
@@ -535,6 +552,9 @@ function lookahead(sc, asOf, opts = {}) {
   function inside(e, c, id) {
     // [AB4] A line that settles an occurrence in the opening's `notYet` comes after the opening, whatever its date.
     if (c.opening && notGoneOut(e, id)) return false;
+    // [AP1] A closing's final check holds everything dated on or before the closing day, whatever its `told`; the closing's
+    // own records (`close:<account>`, `close:<account>:<n>`) come after it.
+    if (c.closing && e.day <= c.day) return !isCloseRecord(e, id);
     const d = dayFor(e, c, id);
     if (d > c.day) return false;
     // [AN4] the end of its date in its writer's offset, at or before the check's moment: inside
@@ -566,6 +586,7 @@ function lookahead(sc, asOf, opts = {}) {
     if (j === null && same.length && m(same[0].bal, id) - delta(same[0], id) === fig) j = -1;
     return j === null ? null : same.indexOf(e) <= j;
   }
+  const isCloseRecord = (e, id) => String(e.id) === 'close:' + id || String(e.id).startsWith('close:' + id + ':');   // [Q7, S3]
   const notGoneOut = (e, id) => [].concat(e.settles || []).some(x => notYetOf(id).includes(x));   // [F20, X3]
   // [J2] A moved bank figure with no time of its own is told at the copy's last save.
   const openingOf = id => {
@@ -585,6 +606,7 @@ function lookahead(sc, asOf, opts = {}) {
     const fillers = [];
     let lastGap = null;
     for (const c of checks) {
+      if (closedOn(id) !== null && c.day === closedOn(id)) c.closing = true;   // [AP1] the closing's final check
       // [A3] the filler is worked out every time: what the events say minus what the check shows.
       // [H1] Two check-ins on one day: the later one's stretch starts at the earlier one.
       // [I1] An event can be inside an earlier available check and not yet inside a later current one
@@ -595,7 +617,7 @@ function lookahead(sc, asOf, opts = {}) {
       // [T2] the place picked; [X4] what the app had, the gain and the gain question's state, for `heldGain`
       fillers.push(Object.assign(makeFiller(id, c.day > base.day ? base.day + 1 : c.day, c.day, computed - amount), c.filler_place ? { place: c.filler_place } : {},
         { had: computed, gain: amount - computed, answer: c.gain || null }));
-      base = { day: c.day, key: c.key, idx: c.idx, avail: c.avail, moved: c.moved, amount };
+      base = { day: c.day, key: c.key, idx: c.idx, avail: c.avail, moved: c.moved, closing: c.closing, amount };
       lastGap = { day: c.day, had: computed, gain: amount - computed, answer: c.gain || null };
     }
     const bank = base.amount + moves.filter(e => !inside(e, base, id)).reduce((t, e) => t + delta(e, id), 0);
@@ -643,7 +665,8 @@ function lookahead(sc, asOf, opts = {}) {
     const payments = [];
     for (const e of live()) {
       if (inside(e, open, id)) continue;
-      if (e.account === id && (e.kind === 'spend' || e.kind === 'refund') && !isFeeRecord(e)) {
+      // [AS7] Money in on a card lowers what is owed, refund or not (only a refund gives back to a line).
+      if (e.account === id && (e.kind === 'spend' || e.kind === 'refund' || e.kind === 'money_in') && !isFeeRecord(e)) {
         const posted = e.posted && dayNum(e.posted) <= knownTo ? dayNum(e.posted) : e.day;
         lines.push({ day: posted, amount: e.kind === 'spend' ? e.a : -e.a });   // [F5] a refund lowers the cycle it posts in
       }
@@ -862,7 +885,7 @@ function lookahead(sc, asOf, opts = {}) {
       if (inside(e, open, id)) continue;
       if ((e.kind === 'borrow' || e.kind === 'transfer') && e.from === id) changes.push({ day: e.day, d: e.a });
       if (e.kind === 'spend' && e.account === id && !isFeeRecord(e)) changes.push({ day: e.day, d: e.a });
-      if (e.kind === 'refund' && e.account === id) changes.push({ day: e.day, d: -e.a });
+      if ((e.kind === 'refund' || e.kind === 'money_in') && e.account === id) changes.push({ day: e.day, d: -e.a });   // [AS7]
       if ((e.kind === 'repay' && e.to === id) || (e.kind === 'card_payment' && e.card === id)) changes.push({ day: e.day, d: -e.a2 });
     }
     const parts = planParts(a);
@@ -937,9 +960,9 @@ function lookahead(sc, asOf, opts = {}) {
   function freePeriodAmount() {
     const f = sc.plan && sc.plan.free;
     if (!periodStream || !f) return null;
-    const fid = moneyAcct(lineAcct(f)), started = periodStartDays.length ? Math.max(...periodStartDays) : null;
-    const coming = nextPays.filter(p => p.land > today);
-    return perPeriod({ per: f.per, amount: m(amountFor(f, started), fid) }, coming[0] ? coming[0].land : today, coming[1] ? coming[1].land : (coming[0] ? coming[0].land : today) + 30);
+    const fid = moneyAcct(lineAcct(f)), cp = periodAt(today);
+    if (!cp) return m(lineAmount(f, null, null, 'free'), fid);
+    return perPeriod({ per: f.per, amount: m(lineAmount(f, cp.start, cp.occ.id, 'free'), fid) }, cp.start, cp.end, cp.occ);
   }
   const largeGain = (id, g) => {
     if (!g || g.gain <= 0 || acct[id].kind === 'investment') return false;
@@ -968,7 +991,9 @@ function lookahead(sc, asOf, opts = {}) {
     for (const e of live()) {
       if (e.kind === 'set_aside' && e.goal === g.id && !gaveWay.has(e.id)) amt += m(e.amount, g.kept_in);
       if ((e.kind === 'spend' || e.kind === 'bill_paid') && fromPlace(e) === g.id && (!isFeeRecord(e) || isFee(e))) amt -= e.a;   // [H7] paying from a place; [S5] a fee only while its transfer is live
-      if (e.kind === 'set_aside' && fromPlaceOf(e) === g.id) amt -= m(e.amount, g.kept_in);   // [T7] a move out of a place lowers it
+      // [T7] a move out of a place lowers it; [P1, Q7] the removal's own move to Waiting (`rm:<place>`, toPlace) is the money
+      // to place, so it leaves the place's money where P1 counts it
+      if (e.kind === 'set_aside' && fromPlaceOf(e) === g.id && String(e.id) !== 'rm:' + g.id) amt -= m(e.amount, g.kept_in);
       if (e.kind === 'adjust' && e.goal === g.id) amt += e.a;   // [T7] an accepted difference naming this place
       // [P2, Q watch] A period-end answer is one record per place holding its moves: a move to this place fills
       // it; the answer of this place gives what it moves elsewhere (a move to itself is "keep it here").
@@ -1025,6 +1050,20 @@ function lookahead(sc, asOf, opts = {}) {
     for (const ch of (x.changes || []).slice().sort((p, q) => dayNum(p.made) - dayNum(q.made))) if (start !== null && start !== undefined && dayNum(ch.made) <= start) a = ch.amount;
     return a;
   }
+  // [B8, T1, AE1, AO4, AK3] A period's own amount for a line or Free to spend: a live `once` key named by the occurrence of the
+  // pay that starts the period (a removed key is not read), else the amount in force. [AR1] Until the person picks add or
+  // replace, a `once` amount waiting for that period (`pendingMove`, `to: 'once'`, naming the line, or `share` for Free to
+  // spend, AS8) counts on the safe side: the larger, so more is kept for the line.
+  function lineAmount(x, start, occ, lineId) {
+    let a = amountFor(x, start);
+    const k = occ ? keyLive(x.once, occ) : null;
+    if (k) a = k.amount;
+    if (occ) for (const w of sc.pendingMove || []) {
+      if (!w || w.gone || w.waits !== 'pick' || w.to !== 'once' || w.key !== occ || typeof w.a !== 'number') continue;
+      if (lineId === 'free' ? (w.share || w.line === 'free') : w.line === lineId) a = Math.max(a, w.a);
+    }
+    return a;
+  }
   const plan = opts.plan || planNow();
   function planNow() {
     if (!sc.plan) return {};
@@ -1041,15 +1080,19 @@ function lookahead(sc, asOf, opts = {}) {
       const before = pays.filter(o => o.land <= od).sort((x, z) => x.land - z.land), after = pays.filter(o => o.land > od).sort((x, z) => x.land - z.land);
       const share = before.length && after.length ? { d: after[0].land - od, D: after[0].land - before[before.length - 1].land } : null;
       let leftOver = 0;   // in minor units x D: what rounding down the lines left
+      // [B8, H9, N3] the period holding the opening gets its own amount for the line (its `once` key, the units rules), and
+      // the opening holds the share of it by days left
+      const pb = before.length ? before[before.length - 1] : null;
+      const periodAmt = (x, lineId) => (pb && after.length ? perPeriod({ per: x.per, amount: m(lineAmount(x, null, pb.id, lineId), acctId) }, pb.land, after[0].land, pb) : m(x.amount, acctId));
       for (const l of (sc.plan.lines || []).filter(x => moneyAcct(lineAcct(x)) === acctId)) {   // [O4] a card's line: its paying account's split
-        const typed = (split.lines || {})[l.id], amount = m(l.amount, acctId);
+        const typed = (split.lines || {})[l.id], amount = periodAmt(l, l.id);
         if (typed != null) out.lines[l.id] = m(typed, acctId);
         else if (share) { out.lines[l.id] = Math.floor(amount * share.d / share.D); leftOver += amount * share.d - out.lines[l.id] * share.D; }
         else out.lines[l.id] = amount;
       }
       const f = sc.plan.free;
       if (f && moneyAcct(lineAcct(f)) === acctId) {
-        const amount = m(f.amount, acctId);
+        const amount = periodAmt(f, 'free');
         out.free = split.free != null ? m(split.free, acctId) : share ? Math.floor((amount * share.d + leftOver) / share.D) : amount;
       }
       return (opening[acctId] = out);
@@ -1104,9 +1147,12 @@ function lookahead(sc, asOf, opts = {}) {
       const adjusted = live().filter(e => e.kind === 'adjust' && !e.goal && acct[e.account] && cur(e.account) === cur(acctId) && inPeriod(e, e.account)).reduce((t, e) => t + e.a, 0);
       return start - spent - fees + placed + adjusted;
     };
-    const lines = (sc.plan.lines || []).map(l => { const id = moneyAcct(lineAcct(l)), a = m(amountFor(l, lastPay), id); return { name: l.name, acct: id, per: l.per, amount: a, left: leftOf(l.id, id, a), src: l }; });
-    const f = sc.plan.free, fid = f && moneyAcct(lineAcct(f)), fa = f && m(amountFor(f, lastPay), fid);
-    const free = f && { name: 'Free to spend', acct: fid, per: f.per, amount: fa, left: leftOf('free', fid, fa), src: f };
+    // [B8, H9, N3, AR1] This period's amount: its `once` key or waiting amount, by the units rules for its pay and its days.
+    const cp = periodStream ? periodAt(today) : null;
+    const nowAmt = (x, lineId, id) => (cp ? perPeriod({ per: x.per, amount: m(lineAmount(x, lastPay, cp.occ.id, lineId), id) }, cp.start, cp.end, cp.occ) : m(amountFor(x, lastPay), id));
+    const lines = (sc.plan.lines || []).map(l => { const id = moneyAcct(lineAcct(l)), a = nowAmt(l, l.id, id); return { id: l.id, name: l.name, acct: id, per: l.per, amount: a, left: leftOf(l.id, id, a), src: l }; });
+    const f = sc.plan.free, fid = f && moneyAcct(lineAcct(f)), fa = f && nowAmt(f, 'free', fid);
+    const free = f && { id: 'free', name: 'Free to spend', acct: fid, per: f.per, amount: fa, left: leftOf('free', fid, fa), src: f };
     return { lines, free };
   }
 
@@ -1125,11 +1171,49 @@ function lookahead(sc, asOf, opts = {}) {
   res.horizon = dayStr(horizon);
 
   // ----- planned spending of later periods (10.3 step 2, [B1, B3, B4]) -----
-  // Units (SCHEMA 8, H9: 26 or 27 pays a year) are in their own test file; this is the plain form.
-  function perPeriod(x, startDay, endDay) {
-    if (x.per === 'week') return Math.round(x.amount * (endDay - startDay) / 7);
-    if (x.per === 'month' && periodStream && periodStream.schedule.frequency !== 'monthly') return Math.round(x.amount * 12 / paysAYear(periodStream));
+  // The units rules (SCHEMA 8, rules/units.json, which test them on their own) [B8, H9, L units q3 to q6, N3, P4, R2]:
+  // `per: 'week'` gets the period's days x the amount / 7, rounded down (a rate, it need not add up to a year); `per: 'month'`
+  // gets the monthly amount x 12 over the year's pays, by the pay that starts the period (the year of its due date before
+  // any move), the leftover minor units on the year's earliest pays, so a year of 26 or 27 pays adds up; a pay rule that
+  // changes during the year covers only its own months, spread over its own pays [P4]; a change on a day other than the
+  // 1st leaves that month to the rule in force on its first day [R2]. One pay a month on one day: the amount itself.
+  function perPeriod(x, startDay, endDay, o) {
+    if (x.per === 'week') return Math.floor(x.amount * (endDay - startDay) / 7);
+    if (x.per === 'month' && periodStream && o) return perPayOf(x.amount, o.due);
     return x.amount;
+  }
+  function perPayOf(monthly, due) {
+    const s = periodStream, cal0 = calOf(s.account);
+    const parts = [{ from: -Infinity, rule: s.schedule }].concat((s.changes || []).map(c => ({ from: dayNum(c.from), rule: c.schedule }))).sort((a, b) => a.from - b.from);
+    if (parts.length === 1 && s.schedule.frequency === 'monthly' && !(s.schedule.days && s.schedule.days.length > 1)) return monthly;
+    const [y] = ymOf(due), jan1 = dayIn(y, 1, 1), next = dayIn(y + 1, 1, 1);
+    const monthOf = n => { const [yy, mm] = ymOf(n); return yy * 12 + mm - 1; };
+    const firstMonth = n => monthOf(n) + (dayStr(n).slice(8) === '01' ? 0 : 1);   // [R2]
+    for (let i = 0; i < parts.length; i++) {
+      const start = Math.max(parts[i].from, jan1), end = Math.min(parts[i + 1] ? parts[i + 1].from : Infinity, next);
+      if (start >= end || due < start || due >= end) continue;
+      const months = (end === next ? monthOf(next) : firstMonth(end)) - (start === jan1 ? monthOf(jan1) : firstMonth(start));
+      const dues = dueDaysInYear(parts[i].rule, y, cal0).filter(d => d >= start && d < end);
+      const k = dues.indexOf(due);
+      if (k < 0 || months <= 0) return 0;
+      const T = monthly * months, base = Math.floor(T / dues.length), extra = T - base * dues.length;
+      return base + (k < extra ? 1 : 0);   // [L units q4] the leftover units on the earliest pays
+    }
+    return monthly;
+  }
+  // [L units q3, q5] Every due date (before any move) of a rule in a calendar year, counted by its rhythm over the whole
+  // year, back from its first date too.
+  function dueDaysInYear(r, y, cal0) {
+    const jan1 = dayIn(y, 1, 1), dec31 = dayIn(y, 12, 31);
+    let rr = r;
+    if ((r.frequency === 'every_n_weeks' || r.frequency === 'weekly') && r.from) {
+      const step = 7 * (r.n || 1), d0 = dayNum(r.from);
+      rr = Object.assign({}, r, { from: dayStr(d0 - Math.floor((d0 - jan1) / step) * step) });
+    } else if (r.frequency === 'every_n_months') {
+      const [fy, fm] = ymOf(dayNum(r.from)), k = Math.floor(((fy * 12 + fm) - (y * 12 + 1)) / r.n);
+      rr = Object.assign({}, r, { from: dayStr(dayIn(fy, fm - k * r.n, 1)) });
+    }
+    return dueDays(rr, jan1, dec31, cal0).map(x => x.due).filter(d => d >= jan1 && d <= dec31).sort((a, b) => a - b);
   }
   function plannedFor(id) {
     const list = [];
@@ -1140,16 +1224,27 @@ function lookahead(sc, asOf, opts = {}) {
       const starts = nextPays.filter(p => p.land > today);
       starts.forEach((p, i) => {
         const end = starts[i + 1] ? starts[i + 1].land : p.land + 30;
-        for (const l of lines) list.push({ land: p.land, amount: perPeriod(l.src ? { per: l.per, amount: m(amountFor(l.src, p.land), id) } : l, p.land, end), label: l.name + ' for the period from ' + short(p.land) });
+        for (const l of lines) list.push({ land: p.land, amount: perPeriod(l.src ? { per: l.per, amount: m(lineAmount(l.src, p.land, p.id, l.id), id) } : l, p.land, end, p), label: l.name + ' for the period from ' + short(p.land) });
       });
     } else {
-      // [B4] no fixed pay: a monthly amount spread by day, whole units, carried so nothing is lost
+      // [B4, M10, L units q7] No fixed pay: a monthly amount by day, monthly x 12 / the year's days (365 or 366) each day,
+      // rounded down; the month's last day takes the rest of that month's share (monthly x 12 x its days / the year's days,
+      // rounded down); nothing carries to the next month. [M9, N4, AS9] A weekly amount: a seventh each day, rounded down, the
+      // rest on the seventh day of each week, the weeks counted from the day the line started (its `from`, default the day
+      // its account was set up); nothing before that day.
       for (const l of lines) {
-        const perDay = (l.per === 'week' ? l.amount * 52 : l.amount * 12) / 365;
-        let carried = 0;
+        const lineFrom = l.src && l.src.from ? dayNum(l.src.from) : openDay(l.acct);
         for (let d = today + 1; d <= today + LATER_ON_DAYS; d++) {
-          const want = Math.round(perDay * (d - today)) - carried;
-          carried += want;
+          let want;
+          if (l.per === 'week') {
+            if (d < lineFrom) continue;
+            const daily = Math.floor(l.amount / 7);
+            want = (d - lineFrom) % 7 === 6 ? l.amount - 6 * daily : daily;
+          } else {
+            const [y, mo] = ymOf(d), yearDays = dayIn(y + 1, 1, 1) - dayIn(y, 1, 1), T = l.amount * 12, daily = Math.floor(T / yearDays);
+            const monthDays = dayIn(y, mo + 1, 1) - dayIn(y, mo, 1);
+            want = d === dayIn(y, mo, 'last') ? Math.floor(T * monthDays / yearDays) - daily * (monthDays - 1) : daily;
+          }
           if (want) list.push({ land: d, amount: want, label: l.name + ' (by day)' });
         }
       }
@@ -1217,16 +1312,30 @@ function lookahead(sc, asOf, opts = {}) {
     return { lowest: low, lowestDay: lowDay, headroom: low - minimum, why, firstBelowZero, belowBal };
   }
 
+  // [AN3, AL3, AS11] The main bank's minimum lives in home.main (`main_minimum`, with its own currency; else the account's
+  // `minimum`). It must be in the main bank's currency: a minimum in another currency is asked about, never converted (F11),
+  // and is not used until the person types it again.
+  const mainMin = sc.main_minimum;
+  function minimumOf(id) {
+    if (!(mainMin && id === sc.main_bank)) return m(acct[id].minimum || 0, id);
+    if (mainMin.currency === cur(id)) return m(mainMin.amount, id);
+    res.warnings.push({ account: id, code: 'minimum_other_currency', text: `The minimum for ${acct[id].name} is in ${mainMin.currency}, but ${acct[id].name} is in ${cur(id)}: what is the minimum in ${cur(id)}?` });
+    return 0;
+  }
   const backsGoal = id => (sc.goals || []).some(g => g.kept_in === id && g.mode === 'own_account' && !(g.removed && dayNum(g.removed) <= knownTo));
-  // [T watch] Money into a closed account after its closing day reopens it, with a notice. Its schedules stay ended.
-  const reopened = id => closedOn(id) !== null && live().some(e => e.day > closedOn(id) && delta(e, id) > 0);
+  // [T watch] A closed account that is reopened gets a notice. Its schedules stay ended.
+  // [AP1, AR3, which replace AO6's "a figure other than zero"] One reopen rule: any event or check dated after the closing day
+  // that reaches the account reopens it, money in or out, a check whatever its figure. A record on the closing day reopens
+  // nothing (the closing's check holds it).
+  const touches = (e, id) => e.account === id || e.from === id || reachOf(e) === id;
+  const reopened = id => closedOn(id) !== null && live().some(e => e.day > closedOn(id) && touches(e, id));
   for (const id in banks) {
     // [P6] An account is closed only when its final figure is zero or moved out by the transfer the closing
     // asks for; a closed account holds nothing, has no minimum and is not counted in safe to spend.
     const closed = closedOn(id) !== null && !reopened(id);
     if (reopened(id)) res.warnings.push({ account: id, code: 'reopened', text: `${acct[id].name} was closed; money came into it, so it is open again` });
     if (closed && banks[id].bank !== 0) throw new Error(`${acct[id].name} is closed with ${fmt(banks[id].bank, cur(id))} in it: a closing is refused unless its figure is zero or moved out [P6]`);
-    const a = acct[id], minimum = closed ? 0 : m(a.minimum || 0, id);
+    const a = acct[id], minimum = closed ? 0 : minimumOf(id);
     const w = walk(id, horizon, minimum);
     const r = res.accounts[id] = {
       bank: banks[id].bank, asOf: dayStr(banks[id].asOfDay), ageDays: today - banks[id].asOfDay,   // [A1, F24]
@@ -1342,14 +1451,6 @@ function planParts(a) {
 // [S6] An item in another currency than its account (pay in dollars into a yen bank) carries that currency.
 function itemOut(o) { return { item: o.id, lands: dayStr(o.land), amount: o.amount, account: o.acct, statement: o.kind === 'card' ? o.statement : undefined, currency: o.otherCur ? o.currency : undefined }; }
 function groupBy(list, k) { const g = {}; for (const x of list) (g[x[k]] = g[x[k]] || []).push(x.id); return g; }
-function paysAYear(s) {
-  const f = s.schedule.frequency;
-  if (f === 'weekly') return 52;
-  if (f === 'every_n_weeks') return 52 / s.schedule.n;
-  if (f === 'monthly') return 12 * (s.schedule.days || [1]).length;
-  if (f === 'every_n_months') return 12 / s.schedule.n;
-  return 12;
-}
 // The walk as a sum a person can check: "312,000 (bank today) - 100,000 (trip) ... = 17,000".
 function whyText(parts, result, cur) {
   const terms = parts.filter(p => p.amount !== 0 || p.label === 'minimum').map((p, i) => {

@@ -313,6 +313,19 @@ function checkFile(fp) {
     if ((g.kind === 'payoff') !== (g.pays !== undefined) || (g.pays !== undefined && !(acc[g.pays] && ['card', 'loan', 'paylater'].includes(acc[g.pays].kind)))) bad(file, `goal ${g.id}`, 'a payoff place names the card, loan or pay-later account it pays (pays), and only a payoff place does');
     if (g.pays !== undefined && ((g.opening && g.opening.amount) || (s.accounts || []).some(a => ((a.opening.split || {}).goals || {})[g.id] != null))) bad(file, `goal ${g.id}`, 'a payoff place is never opened as savings: no opening and no split');
   }
+  // [B8, T1, AE1] A plan line's or Free to spend's `once`: { <occurrence of the pay that starts the period>: keyed override };
+  // [AS9] a line's `from` is a date. [AR1, AS8] A `pendingMove` entry for a `once` names its line, or `share` for Free to spend.
+  const periodStreamOcc = o => { const mm = String(o).match(OCC_WHOLE); return !!mm && (s.income || []).some(x => x.id === mm[1] && x.starts_period); };
+  const planEntries = ((s.plan || {}).lines || []).map(l => [l.id, l]).concat((s.plan || {}).free ? [['free', s.plan.free]] : []);
+  for (const [lid, l] of planEntries) {
+    for (const [k, v] of Object.entries(l.once || {})) if (!periodStreamOcc(k) || !keyedOk(v)) bad(file, `plan ${lid}`, 'once is { <occurrence of the period stream>: { amount, at, by, gone } } [B8, T1, AE1]');
+    if (l.from !== undefined && !isDate(l.from)) bad(file, `plan ${lid}`, 'from is the day the line started, a date [AS9]');
+  }
+  for (const pm of s.pendingMove || []) if (pm.to === 'once' && !(pm.waits === 'pick' && periodStreamOcc(pm.key) && typeof pm.a === 'number'
+    && (pm.share === 'free' || planEntries.some(([lid]) => lid === pm.line && lid !== 'free')))) bad(file, `pendingMove ${pm.id}`, 'a waiting once amount needs waits pick, key (an occurrence of the period stream), a, and line or share: free [AR1, AS8]');
+  // [AN3, AS11] The main bank's minimum as saved in home.main, with its own currency.
+  if (s.main_minimum !== undefined && !(s.main_minimum && typeof s.main_minimum.amount === 'number' && s.main_minimum.currency in DIGITS && s.main_bank in acc
+    && decimalsOk(s.main_minimum.amount, DIGITS[s.main_minimum.currency]) && acc[s.main_bank].minimum === 0)) bad(file, 'main_minimum', '{ amount, currency } for the main bank, whose own minimum is then 0 [AN3, AS11]');
   // [X3] The opening's `not_yet`: occurrences of this file's pay and bills due from the last pay to the setup day.
   for (const a of s.accounts || []) for (const o of (a.opening || {}).not_yet || []) {
     const mm = String(o).match(OCC_WHOLE);   // a moved schedule too [X1, Y28], an ordinary one [AJ1]
