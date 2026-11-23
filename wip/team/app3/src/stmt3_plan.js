@@ -57,7 +57,28 @@
   }
 
   /* one read into its lines: the line id, the kind of record, the account money leaves and the one it reaches */
-  function linesOf(book, read, acct, cats, cardFor, expected) {
+  const MS = 86400000;
+  const dayNum = s => { const [y, m, d] = String(s).slice(0, 10).split('-').map(Number); return Math.round(Date.UTC(y, m - 1, d) / MS); };
+  const flat = s => String(s || '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '');
+  /* the card a bank's card payment line pays (MAIN 15). With close days "not sure" each card's item asks everything owed,
+     so the amount rarely tells. In order: the person's choice for this line, the card they chose before for this shop,
+     the only card, the card named in the line's words, the card whose payment day is nearest (within 5 days, one card
+     nearer than the rest), the one card expecting this amount. Otherwise { cards } and the review asks: nothing is guessed. */
+  function cardOfLine(cards, acct, l, o, expected) {
+    if (o.cardFor && o.cardFor[l.id] && cards.some(c => c.id === o.cardFor[l.id])) return { to: o.cardFor[l.id], chosen: true };
+    if (o.cardOf && o.cardOf[l.key] && cards.some(c => c.id === o.cardOf[l.key])) return { to: o.cardOf[l.key] };
+    if (cards.length === 1) return { to: cards[0].id };
+    const t = flat(l.text), named = cards.filter(c => flat(c.name) && t.includes(flat(c.name)));
+    if (named.length === 1) return { to: named[0].id };
+    const pool = named.length ? named : cards;
+    const items = c => expected.filter(x => x.acct === acct.id && E.ids.scheduleOf(x.item) === c.id);
+    const near = pool.map(c => ({ c, g: Math.min(Infinity, ...items(c).map(x => Math.abs(dayNum(x.lands) - dayNum(l.date)))) })).filter(x => x.g <= 5).sort((x, y) => x.g - y.g);
+    if (near.length === 1 || (near.length > 1 && near[0].g < near[1].g)) return { to: near[0].c.id };
+    const amt = pool.filter(c => items(c).some(x => x.a === l.a));
+    if (amt.length === 1) return { to: amt[0].id };
+    return { cards: pool.map(c => c.id) };
+  }
+  function linesOf(book, read, acct, cats, o, expected) {
     const cur = acct.cur, seen = {}, cards = liveAccts(book).filter(a => isCard(a) && a.payFrom === acct.id);
     return read.rows.map((r, i) => {
       const a = E.units.minorOf(r.a, cur), cat = catOf(cats, r);
@@ -71,10 +92,9 @@
         if (cat === 'card_payment' || cat === 'transfer_in') Object.assign(l, { k: 'repay', from: acct.payFrom || null, to: acct.id, side: 2 });
         else l.sub = 'refund';
       } else if (!isCard(acct) && r.dir === 'out' && cat === 'card_payment' && cards.length) {
-        // the card it pays: the person's choice, else the only one, else the one expected to take this amount, else the first
-        const exp = cards.find(c => expected.some(o => o.acct === acct.id && o.a === a && E.ids.scheduleOf(o.item) === c.id));
-        const to = (cardFor && cardFor[id]) || (cards.length === 1 ? cards[0].id : exp ? exp.id : cards[0].id);
-        Object.assign(l, { k: 'repay', from: acct.id, to, side: 1, acct2: to });
+        const c = cardOfLine(cards, acct, l, o, expected);
+        if (c.to) Object.assign(l, { k: 'repay', from: acct.id, to: c.to, side: 1, acct2: c.to }, c.chosen ? { chosen: true } : {});
+        else Object.assign(l, { k: 'repay', from: acct.id, to: null, side: 1, status: 'pick', cards: c.cards });
       }
       return l;
     });
@@ -96,7 +116,7 @@
     // A line the person took back (Undo) is offered again, and put back when kept.
     const kept0 = {}; for (const e of book.events || []) if (e) kept0[e.id] = e;
     const have = new Set(Object.values(kept0).filter(e => !e.gone || (e.goneBy && kept0[e.goneBy])).map(e => e.id));
-    const byRead = order.map(x => ({ read: x.r, acct: x.acct, idx: x.i, lines: linesOf(book, x.r, x.acct, cats, o.cardFor, expected) }));
+    const byRead = order.map(x => ({ read: x.r, acct: x.acct, idx: x.i, lines: linesOf(book, x.r, x.acct, cats, o, expected) }));
     const all = [].concat(...byRead.map(g => g.lines));
     // a line whose id is already kept is a repeat; within this batch, the first of two equal ids is kept (two files of one account)
     const first = {}; for (const l of all) { if (have.has(l.id)) l.status = 'repeat'; else if (first[l.id]) l.status = 'repeat'; else first[l.id] = l; }
@@ -126,6 +146,15 @@
       if (replaced[l.id]) { l.status = 'typed'; l.typed = replaced[l.id]; }
       else l.status = l.settles.length ? 'settles' : 'new';
     }
+    // [MAIN 15] a card payment line that settled nothing settles its card's nearest unsettled item (within 10 days):
+    // the item asks everything owed, so the amount is not the test; the card's own statements take what was paid.
+    const taken = new Set([].concat(...res.lines.filter(x => !x.gone).map(x => x.settles || [])));
+    for (const l of all) {
+      if (l.status !== 'new' || l.k !== 'repay' || l.side !== 1 || !l.to) continue;
+      const best = expected.filter(x => E.ids.scheduleOf(x.item) === l.to && x.acct === l.from && !taken.has(x.item))
+        .map(x => ({ x, g: Math.abs(dayNum(x.lands) - dayNum(l.date)) })).filter(y => y.g <= 10).sort((p1, p2) => p1.g - p2.g || (p1.x.lands < p2.x.lands ? -1 : 1))[0];
+      if (best) { l.settles = [best.x.item]; l.status = 'settles'; taken.add(best.x.item); }
+    }
     const statements = [];
     for (const g of byRead) {
       const st = g.read.statement;
@@ -142,7 +171,7 @@
     }
     const count = s => all.filter(l => l.status === s).length;
     return { today, lines: all, statements, merchants: Object.values(merchants).sort((x, y) => (y.inA + y.outA) - (x.inA + x.outA)),
-      counts: { read: all.length, repeat: count('repeat'), typed: count('typed'), settles: count('settles'), meets: count('meets'), new: count('new') },
+      counts: { read: all.length, repeat: count('repeat'), typed: count('typed'), settles: count('settles'), meets: count('meets'), new: count('new'), pick: count('pick') },
       reads: byRead.map(g => ({ idx: g.idx, file: g.read.file, acct: g.acct.id, from: g.read.from, to: g.read.to, rows: g.lines.length, notes: g.read.notes || [] })) };
   }
 
@@ -152,7 +181,7 @@
     const kept = {}; for (const e of book.events || []) if (e && !e.gone) kept[e.id] = e;
     const events = [], settled = [];
     for (const l of p.lines) {
-      if (l.status === 'repeat' || skip[l.id]) continue;
+      if (l.status === 'repeat' || l.status === 'pick' || skip[l.id]) continue;
       const src = { type: 'statement', file: l.file, line: l.line, acct: l.acct };
       const read = p.reads.find(r => r.file === l.file && r.acct === l.acct);
       if (read && read.from) { src.from = read.from; src.to = read.to; }
@@ -195,7 +224,17 @@
   /* [BC4 cats] the categories to remember, by shop: { 'k:<key>': { v, src, at } } (SCHEMA_V3 2.1 imports.cats) */
   function catsToKeep(p, changed, at) {
     const out = {};
-    for (const m of p.merchants) out['k:' + m.key] = { v: m.cat, src: changed && changed[m.key] ? 'person' : 'reader', at };
+    for (const m of p.merchants) {
+      out['k:' + m.key] = { v: m.cat, src: changed && changed[m.key] ? 'person' : 'reader', at };
+      const ch = p.lines.find(l => l.key === m.key && l.chosen);   // the card the person chose for this shop's payments
+      if (ch) out['k:' + m.key].card = ch.to;
+    }
+    return out;
+  }
+  /* the cards the person chose before, by shop key */
+  function knownCards(book) {
+    const c = (book.imports && book.imports.cats) || {}, out = {};
+    for (const k of Object.keys(c)) if (c[k] && !c[k].gone && c[k].card && k.startsWith('k:')) out[k.slice(2)] = c[k].card;
     return out;
   }
   /* the categories the book already knows, by merchant key */
@@ -213,7 +252,7 @@
     return { bank: d.balance !== null ? { a: m(d.balance), date: d.balanceDate } : null, pay: d.pay !== null ? { a: m(d.pay), how: d.how } : null, bills, cards: d.card !== null ? m(d.card) : null };
   }
 
-  const api = { plan, records, catsToKeep, knownCats, setupHints, expectedOf, use };
+  const api = { plan, records, catsToKeep, knownCats, knownCards, setupHints, expectedOf, use };
   if (node) module.exports = api;
   else root.STMT3P = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

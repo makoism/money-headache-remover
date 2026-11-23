@@ -120,3 +120,6 @@ After lesson 1, the team set out to make sure nothing fundamental could set us b
 - A day of work with nothing new that Mako can open.
 - The same rule edited in more than two files.
 - A review round whose findings are mostly about a later stage.
+
+### Addendum to lessons 3 and 4 (23 Nov night): the real-page walk found what 779 asks missed
+The engine passed 779 hand-worked asks, 817 rule cases and 2,000 checker seeds. One reviewer then walked Mako's month through the real page (setup, spends, check-ins, a late pay, an import, a backup) and found three faults that would have shown him wrong money in his first month: an item unticked at a check-in could never be ticked again, safe to spend while a pay was late fell to the bank figure, and a card payment from a statement went onto the wrong card. Every ask and checker case started from a fresh book on one day; nobody chained days the way a person does. From now on, the walk scripts in app3/walk/ are a permanent gate (AZ4), and every slice ends with a walk through the real page.

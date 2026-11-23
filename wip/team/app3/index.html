@@ -1379,12 +1379,33 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
 .a3-tabs[hidden] { display: none; }
 .a3-q { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--hair); }
 .a3-q .a3-rows li { align-items: center; }
+/* Ask (ask lane) */
+.a3-link + .a3-link { margin-left: 0; }
+.a3-ask-sent summary { cursor: pointer; font-size: var(--t-sm); color: var(--ink2); min-height: 44px; display: flex; align-items: center; }
+.a3-ask-sent pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: var(--t-cap); color: var(--ink2); background: var(--track); border-radius: var(--r-box); padding: 12px; margin: 0; max-height: 40vh; overflow: auto; }
+.a3-ask-log { display: flex; flex-direction: column; gap: 10px; }
+.a3-ask-log:empty { display: none; }
+.a3-ask-me, .a3-ask-ai { margin: 0; padding: 10px 14px; border-radius: var(--r-ctl); font-size: var(--t-sm); white-space: pre-wrap; overflow-wrap: anywhere; max-width: 92%; }
+.a3-ask-me { align-self: flex-end; background: var(--acc-tint2); }
+.a3-ask-ai { align-self: flex-start; background: var(--card); box-shadow: inset 0 0 0 1px var(--hair); }
+.a3-ask-wait { color: var(--ink2); }
+.a3-ask-label { font-weight: 600; display: block; margin-bottom: 6px; }
+.a3-ask-in { min-height: 88px; padding: 10px 14px; resize: vertical; text-align: left; }
+.a3-ask-try { display: flex; flex-direction: column; align-items: flex-start; margin-top: 8px; }
+.a3-ask-try .a3-link { margin-left: 0; text-align: left; }
+.a3-ask-figs li { display: grid; grid-template-columns: 1fr auto auto; gap: 12px; }
+.a3-ask-head { color: var(--ink2); font-size: var(--t-cap); }
+/* Reminders (ask lane) */
+.a3-rem-go { display: flex; gap: 14px; white-space: nowrap; }
+.a3-rem-go a { color: var(--ink); min-height: 44px; display: inline-flex; align-items: center; }
+#a3RemBefore { width: 100%; max-width: 16em; }
+.a3-sel[data-pick] { max-width: 100%; width: 100%; }
 </style>
 </head>
 <body>
 <main class="a3" id="a3">
   <header class="a3-top">
-    <p class="a3-brand"><span id="a3Pix"></span>the burrow<button type="button" class="a3-link" id="a3SetGo">Settings</button></p>
+    <p class="a3-brand"><span id="a3Pix"></span>the burrow<button type="button" class="a3-link" id="a3SetGo">Settings</button><button type="button" class="a3-link" id="a3RemGo">Reminders</button><button type="button" class="a3-link" id="a3AskGo">Ask</button></p>
     <div class="a3-try" id="a3Try" hidden></div>
   </header>
   <nav class="a3-tabs" aria-label="Pages"><button type="button" data-tab="home" aria-current="page">Home</button><button type="button" data-tab="receipts">Receipts</button><button type="button" data-tab="plan">Plan</button></nav>
@@ -1396,6 +1417,8 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
   <div id="a3Plan" data-panel="plan" hidden></div>
   <section class="a3-sheet" id="a3Set" role="dialog" aria-modal="true" aria-labelledby="a3SetT" hidden></section>
   <section class="a3-sheet" id="a3Setup" role="dialog" aria-modal="true" aria-labelledby="a3SetupT" hidden></section>
+  <section class="a3-sheet" id="a3Ask" role="dialog" aria-modal="true" aria-labelledby="a3AskT" hidden></section>
+  <section class="a3-sheet" id="a3Rem" role="dialog" aria-modal="true" aria-labelledby="a3RemT" hidden></section>
   <section class="a3-sheet" id="a3Check" role="dialog" aria-modal="true" aria-labelledby="a3CheckT" hidden></section>
 </main>
 <script>
@@ -6733,7 +6756,28 @@ RULES
   }
 
   /* one read into its lines: the line id, the kind of record, the account money leaves and the one it reaches */
-  function linesOf(book, read, acct, cats, cardFor, expected) {
+  const MS = 86400000;
+  const dayNum = s => { const [y, m, d] = String(s).slice(0, 10).split('-').map(Number); return Math.round(Date.UTC(y, m - 1, d) / MS); };
+  const flat = s => String(s || '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '');
+  /* the card a bank's card payment line pays (MAIN 15). With close days "not sure" each card's item asks everything owed,
+     so the amount rarely tells. In order: the person's choice for this line, the card they chose before for this shop,
+     the only card, the card named in the line's words, the card whose payment day is nearest (within 5 days, one card
+     nearer than the rest), the one card expecting this amount. Otherwise { cards } and the review asks: nothing is guessed. */
+  function cardOfLine(cards, acct, l, o, expected) {
+    if (o.cardFor && o.cardFor[l.id] && cards.some(c => c.id === o.cardFor[l.id])) return { to: o.cardFor[l.id], chosen: true };
+    if (o.cardOf && o.cardOf[l.key] && cards.some(c => c.id === o.cardOf[l.key])) return { to: o.cardOf[l.key] };
+    if (cards.length === 1) return { to: cards[0].id };
+    const t = flat(l.text), named = cards.filter(c => flat(c.name) && t.includes(flat(c.name)));
+    if (named.length === 1) return { to: named[0].id };
+    const pool = named.length ? named : cards;
+    const items = c => expected.filter(x => x.acct === acct.id && E.ids.scheduleOf(x.item) === c.id);
+    const near = pool.map(c => ({ c, g: Math.min(Infinity, ...items(c).map(x => Math.abs(dayNum(x.lands) - dayNum(l.date)))) })).filter(x => x.g <= 5).sort((x, y) => x.g - y.g);
+    if (near.length === 1 || (near.length > 1 && near[0].g < near[1].g)) return { to: near[0].c.id };
+    const amt = pool.filter(c => items(c).some(x => x.a === l.a));
+    if (amt.length === 1) return { to: amt[0].id };
+    return { cards: pool.map(c => c.id) };
+  }
+  function linesOf(book, read, acct, cats, o, expected) {
     const cur = acct.cur, seen = {}, cards = liveAccts(book).filter(a => isCard(a) && a.payFrom === acct.id);
     return read.rows.map((r, i) => {
       const a = E.units.minorOf(r.a, cur), cat = catOf(cats, r);
@@ -6747,10 +6791,9 @@ RULES
         if (cat === 'card_payment' || cat === 'transfer_in') Object.assign(l, { k: 'repay', from: acct.payFrom || null, to: acct.id, side: 2 });
         else l.sub = 'refund';
       } else if (!isCard(acct) && r.dir === 'out' && cat === 'card_payment' && cards.length) {
-        // the card it pays: the person's choice, else the only one, else the one expected to take this amount, else the first
-        const exp = cards.find(c => expected.some(o => o.acct === acct.id && o.a === a && E.ids.scheduleOf(o.item) === c.id));
-        const to = (cardFor && cardFor[id]) || (cards.length === 1 ? cards[0].id : exp ? exp.id : cards[0].id);
-        Object.assign(l, { k: 'repay', from: acct.id, to, side: 1, acct2: to });
+        const c = cardOfLine(cards, acct, l, o, expected);
+        if (c.to) Object.assign(l, { k: 'repay', from: acct.id, to: c.to, side: 1, acct2: c.to }, c.chosen ? { chosen: true } : {});
+        else Object.assign(l, { k: 'repay', from: acct.id, to: null, side: 1, status: 'pick', cards: c.cards });
       }
       return l;
     });
@@ -6772,7 +6815,7 @@ RULES
     // A line the person took back (Undo) is offered again, and put back when kept.
     const kept0 = {}; for (const e of book.events || []) if (e) kept0[e.id] = e;
     const have = new Set(Object.values(kept0).filter(e => !e.gone || (e.goneBy && kept0[e.goneBy])).map(e => e.id));
-    const byRead = order.map(x => ({ read: x.r, acct: x.acct, idx: x.i, lines: linesOf(book, x.r, x.acct, cats, o.cardFor, expected) }));
+    const byRead = order.map(x => ({ read: x.r, acct: x.acct, idx: x.i, lines: linesOf(book, x.r, x.acct, cats, o, expected) }));
     const all = [].concat(...byRead.map(g => g.lines));
     // a line whose id is already kept is a repeat; within this batch, the first of two equal ids is kept (two files of one account)
     const first = {}; for (const l of all) { if (have.has(l.id)) l.status = 'repeat'; else if (first[l.id]) l.status = 'repeat'; else first[l.id] = l; }
@@ -6802,6 +6845,15 @@ RULES
       if (replaced[l.id]) { l.status = 'typed'; l.typed = replaced[l.id]; }
       else l.status = l.settles.length ? 'settles' : 'new';
     }
+    // [MAIN 15] a card payment line that settled nothing settles its card's nearest unsettled item (within 10 days):
+    // the item asks everything owed, so the amount is not the test; the card's own statements take what was paid.
+    const taken = new Set([].concat(...res.lines.filter(x => !x.gone).map(x => x.settles || [])));
+    for (const l of all) {
+      if (l.status !== 'new' || l.k !== 'repay' || l.side !== 1 || !l.to) continue;
+      const best = expected.filter(x => E.ids.scheduleOf(x.item) === l.to && x.acct === l.from && !taken.has(x.item))
+        .map(x => ({ x, g: Math.abs(dayNum(x.lands) - dayNum(l.date)) })).filter(y => y.g <= 10).sort((p1, p2) => p1.g - p2.g || (p1.x.lands < p2.x.lands ? -1 : 1))[0];
+      if (best) { l.settles = [best.x.item]; l.status = 'settles'; taken.add(best.x.item); }
+    }
     const statements = [];
     for (const g of byRead) {
       const st = g.read.statement;
@@ -6818,7 +6870,7 @@ RULES
     }
     const count = s => all.filter(l => l.status === s).length;
     return { today, lines: all, statements, merchants: Object.values(merchants).sort((x, y) => (y.inA + y.outA) - (x.inA + x.outA)),
-      counts: { read: all.length, repeat: count('repeat'), typed: count('typed'), settles: count('settles'), meets: count('meets'), new: count('new') },
+      counts: { read: all.length, repeat: count('repeat'), typed: count('typed'), settles: count('settles'), meets: count('meets'), new: count('new'), pick: count('pick') },
       reads: byRead.map(g => ({ idx: g.idx, file: g.read.file, acct: g.acct.id, from: g.read.from, to: g.read.to, rows: g.lines.length, notes: g.read.notes || [] })) };
   }
 
@@ -6828,7 +6880,7 @@ RULES
     const kept = {}; for (const e of book.events || []) if (e && !e.gone) kept[e.id] = e;
     const events = [], settled = [];
     for (const l of p.lines) {
-      if (l.status === 'repeat' || skip[l.id]) continue;
+      if (l.status === 'repeat' || l.status === 'pick' || skip[l.id]) continue;
       const src = { type: 'statement', file: l.file, line: l.line, acct: l.acct };
       const read = p.reads.find(r => r.file === l.file && r.acct === l.acct);
       if (read && read.from) { src.from = read.from; src.to = read.to; }
@@ -6871,7 +6923,17 @@ RULES
   /* [BC4 cats] the categories to remember, by shop: { 'k:<key>': { v, src, at } } (SCHEMA_V3 2.1 imports.cats) */
   function catsToKeep(p, changed, at) {
     const out = {};
-    for (const m of p.merchants) out['k:' + m.key] = { v: m.cat, src: changed && changed[m.key] ? 'person' : 'reader', at };
+    for (const m of p.merchants) {
+      out['k:' + m.key] = { v: m.cat, src: changed && changed[m.key] ? 'person' : 'reader', at };
+      const ch = p.lines.find(l => l.key === m.key && l.chosen);   // the card the person chose for this shop's payments
+      if (ch) out['k:' + m.key].card = ch.to;
+    }
+    return out;
+  }
+  /* the cards the person chose before, by shop key */
+  function knownCards(book) {
+    const c = (book.imports && book.imports.cats) || {}, out = {};
+    for (const k of Object.keys(c)) if (c[k] && !c[k].gone && c[k].card && k.startsWith('k:')) out[k.slice(2)] = c[k].card;
     return out;
   }
   /* the categories the book already knows, by merchant key */
@@ -6889,7 +6951,7 @@ RULES
     return { bank: d.balance !== null ? { a: m(d.balance), date: d.balanceDate } : null, pay: d.pay !== null ? { a: m(d.pay), how: d.how } : null, bills, cards: d.card !== null ? m(d.card) : null };
   }
 
-  const api = { plan, records, catsToKeep, knownCats, setupHints, expectedOf, use };
+  const api = { plan, records, catsToKeep, knownCats, knownCards, setupHints, expectedOf, use };
   if (node) module.exports = api;
   else root.STMT3P = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
@@ -9085,7 +9147,7 @@ let stmt3 = null;
 function stmt3Accts() { return (E3.book.accounts || []).filter(a => a && !a.gone && !a.closed && (a.type === 'bank' || a.type === 'card')); }
 function stmt3Start(opts) {
   if (!E3.book) { msg3('Set up first'); return; }
-  stmt3 = { files: {}, reads: [], assign: [], changed: {}, skip: {}, setup: opts || null };
+  stmt3 = { files: {}, reads: [], assign: [], changed: {}, skip: {}, cardFor: {}, setup: opts || null };
   stmt3Pick();
 }
 function stmt3Show(html) {
@@ -9181,11 +9243,12 @@ function stmt3Got(reads, assign) {
 /* ---- step 2: the review ---- */
 function stmt3Plan() {
   const cats = Object.assign(STMT3P.knownCats(E3.book), stmt3.changed);
-  stmt3.plan = STMT3P.plan(E3.book, stmt3.reads, { today: E3.today(), assign: stmt3.assign, cats });
+  stmt3.plan = STMT3P.plan(E3.book, stmt3.reads, { today: E3.today(), assign: stmt3.assign, cats, cardFor: stmt3.cardFor, cardOf: STMT3P.knownCards(E3.book) });
   return stmt3.plan;
 }
 function stmt3Tag(l, yr) {
   if (l.status === 'repeat') return 'already here';
+  if (l.status === 'pick') return 'a card payment: which card is asked at the top';
   if (l.status === 'typed') { const t = E3.book.events.find(e => e.id === l.typed); return 'you typed this' + (t ? ' on ' + day3(t.date, yr) : ''); }
   if (l.status === 'meets') return l.metImport ? 'the same payment as the line from your bank' : 'the payment you ticked';
   const pays = l.k === 'repay' ? 'pays ' + E3.nameOf(l.to) : '';
@@ -9209,21 +9272,26 @@ function stmt3Review() {
         <label><input type="checkbox" data-skip="${esc3(l.id)}" ${l.status === 'repeat' ? 'disabled' : stmt3.skip[l.id] ? '' : 'checked'}>
         <span>${esc3(day3(l.date, yr))}${l.posted ? ', posted ' + esc3(day3(l.posted, yr)) : ''}<br><span class="when">${esc3(E3.nameOf(l.acct))}${stmt3Tag(l, yr) ? '. ' + esc3(stmt3Tag(l, yr)) : ''}</span></span></label>
         <span class="amt">${l.dir === 'in' ? '+' : ''}${money3(l.a, cur(l.acct))}</span></li>`).join('')}</ul></div>`).join('');
-  const c = p.counts, adding = p.lines.filter(l => l.status !== 'repeat' && !stmt3.skip[l.id]).length;
+  /* [MAIN 15] a card payment the page could not tie to one card: the person says which; nothing is guessed */
+  const picks = p.lines.filter(l => l.status === 'pick').map(l => `<div class="a3-field" data-pickline="${esc3(l.id)}"><label for="a3pk-${esc3(l.id)}">${esc3(l.text)}, ${esc3(day3(l.date, yr))}, ${money3(l.a, cur(l.acct))}</label>
+      <select class="a3-in a3-sel" id="a3pk-${esc3(l.id)}" data-pick="${esc3(l.id)}"><option value="">Choose the card</option>${l.cards.map(id => `<option value="${esc3(id)}">${esc3(E3.nameOf(id))}</option>`).join('')}</select></div>`).join('');
+  const c = p.counts, adding = p.lines.filter(l => l.status !== 'repeat' && l.status !== 'pick' && !stmt3.skip[l.id]).length;
   const said = [c.settles ? c.settles + ' are bills, pay or card payments you expected' : '', c.typed ? `${c.typed} ${c.typed === 1 ? 'is one you typed' : 'are ones you typed'}` : '',
-    c.meets ? c.meets + ' read twice, from your bank and your card' : '', c.repeat ? c.repeat + ' already here, left out' : ''].filter(Boolean);
+    c.meets ? c.meets + ' read twice, from your bank and your card' : '', c.repeat ? c.repeat + ' already here, left out' : '', c.pick ? `${c.pick} ${c.pick === 1 ? 'card payment needs' : 'card payments need'} you to say which card` : ''].filter(Boolean);
   const sheet = stmt3Show(`<h1 id="a3StmtT">What was read</h1>
     <section class="a3-card"><h2>${c.read} ${c.read === 1 ? 'line' : 'lines'}</h2><p class="a3-sub" data-fig="stmtsum">${esc3(said.join('. ') || 'All new')}</p>
       <ul class="a3-rows">${readRows}</ul></section>
+    ${picks ? `<section class="a3-card" id="a3StmtPicks"><h2>Which card does this pay?</h2><p class="a3-sub">These left your bank as a card payment, and more than one card could be the one. It is added once you choose</p>${picks}</section>` : ''}
     ${sts ? `<section class="a3-card"><h2>Card statements</h2>${sts}</section>` : ''}
     <section class="a3-card"><h2>Shops and categories</h2><p class="a3-sub">Tap a shop to see its lines. Untick a line to leave it out</p>${shops}</section>
     <p class="a3-err" id="a3StmtErr"></p>
-    <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3StmtAdd" ${adding ? '' : 'disabled'}>${adding ? 'Add ' + adding + (adding === 1 ? ' line' : ' lines') : 'Nothing new to add'}</button><button type="button" class="a3-btn" id="a3StmtBack">Back</button></div>`);
+    <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3StmtAdd" ${adding ? '' : 'disabled'}>${adding ? 'Add ' + adding + (adding === 1 ? ' line' : ' lines') : c.pick ? 'Choose the card above' : 'Nothing new to add'}</button><button type="button" class="a3-btn" id="a3StmtBack">Back</button></div>`);
   sheet.querySelectorAll('[data-mx]').forEach(b => b.addEventListener('click', () => {
     const ul = sheet.querySelector(`[data-rowsof="${CSS.escape(b.dataset.mx)}"]`); ul.hidden = !ul.hidden; b.setAttribute('aria-expanded', String(!ul.hidden));
   }));
   sheet.querySelectorAll('[data-cat]').forEach(s => s.addEventListener('change', () => { stmt3.changed[s.dataset.cat] = s.value; stmt3Again(); }));
   sheet.querySelectorAll('[data-readacct]').forEach(s => s.addEventListener('change', () => { stmt3.assign[+s.dataset.readacct] = s.value; stmt3Again(); }));
+  sheet.querySelectorAll('[data-pick]').forEach(x => x.addEventListener('change', () => { if (x.value) { stmt3.cardFor[x.dataset.pick] = x.value; stmt3Again(); } }));
   sheet.querySelectorAll('[data-skip]').forEach(x => x.addEventListener('change', () => { if (x.checked) delete stmt3.skip[x.dataset.skip]; else stmt3.skip[x.dataset.skip] = true; stmt3Again(); }));
   $('#a3StmtBack').addEventListener('click', stmt3Pick);
   $('#a3StmtAdd').addEventListener('click', stmt3Add);
@@ -9260,6 +9328,602 @@ function stmt3Bar() {
   try { new MutationObserver(stmt3Bar).observe($('#a3Home'), { childList: true, attributes: true, attributeFilter: ['hidden'] }); } catch (e) { /* the bar stays as it is */ }
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#a3Stmt').hidden) stmt3Close(); });
 })();
+/* ---------- ask3_core: Ask, the pure half (DECISIONS_ROUND2 E8; the old app's ui4a.js assistant, rebuilt on the new engine) ----------
+   A question goes to the AI with a short summary of the engine's figures for today. The AI answers in plain words and
+   may propose changes from a fixed list; it never writes. The page shows each proposed change as a ticked step with the
+   engine's figures before and after, and only the person's Apply carries them out, through act3 (the one write door),
+   with Undo. Nothing here works out money: every figure is the engine's, written with screens/money.js.
+     K.summary(book, today) -> { text, refs }   the figures in plain words; records are named by short refs (A1 an
+         account you can spend from, L1 a budget line, G1 a goal), never by their ids; no notes, no shops, no single spends
+     K.request(summaryText, question, turns) -> { prompt, name, description, schema }   one fixed-shape job for the AI
+     K.check(raw, refs, { book, today }) -> { answer, steps, dropped }   the reply checked; each step { text, kind, args, ref }
+     K.preview(book, steps, { today, told, newId }) -> { ok, rows: [{ key, label, before, after }], view } or { ok: false, text }
+         the steps run on a copy through its own act3, so the figures after are the engine's for the book they would make
+     K.apply(door, steps) -> { ok, steps } or { ok: false, text }   each step one act3 step (quiet); a refused one takes
+         back the ones before it.  K.undoAll(door, steps) takes all of them back, the last first.
+   Plain browser JavaScript; in node, require('./ask3_core.js'). */
+(function (root) {
+  'use strict';
+  const node = typeof module === 'object' && module.exports;
+  const E = node ? null : root.BurrowEngine;
+  const LA = node ? require('../../engine/lookahead.js') : E.lookahead;
+  const I = node ? require('../../engine/ids.js') : E.ids;
+  const G = node ? require('../../engine/ledger.js') : E.ledger;
+  const SM = node ? require('../../screens/money.js') : root.BurrowScreens.money;
+  const SN = node ? require('../../screens/names.js') : root.BurrowScreens.names;
+  const A3 = node ? require('./act3.js') : root.BurrowAct3;
+  const PW = () => (node ? require('./plan3_write.js') : root.PLAN3W);
+  const MAX = 4, TURNS = 4;
+  const SPEND_FROM = { bank: 1, cash: 1, ewallet: 1, wallet: 1, card: 1, paylater: 1 };
+  const DAY = /^\d{4}-\d{2}-\d{2}$/;
+  const live = x => x && !x.gone;
+  const clone = x => JSON.parse(JSON.stringify(x));
+  const day = (s, today) => SN.dayLabel(s, !!today && s.slice(0, 4) !== today.slice(0, 4));
+
+  /* ---- what is sent: the engine's figures for today, in plain words ---- */
+  function summary(book, today) {
+    const r = LA.lookahead(book, today), home = G.homeOn(book, today);
+    const m = (minor, cur) => SM.format(minor, cur || home);
+    const accts = (book.accounts || []).filter(a => live(a) && !a.closed);
+    const name = id => { const a = accts.find(x => x.id === id) || (book.accounts || []).find(x => x && x.id === id); if (a) return a.name; const s = (book.schedules || []).find(x => x && x.id === id); return s ? s.name : 'one of your records'; };
+    const occName = item => { const o = I.occurrence(item); return name(o ? o.schedule : item); };
+    const refs = {}, out = [];
+    out.push(`Today is ${SN.dayLabel(today, true)}. Currency: ${home}. Amounts are written as the app writes them.`);
+    const p = r.period, np = r.daysToNextPay || {};
+    if (p && p.start && p.end) out.push(`This pay period: ${SN.periodLabel(p.start, p.end)}.`);
+    if (np.next_pay) {
+      const st = p && p.nextPay ? p.nextPay.state : null;
+      out.push(`Next pay: ${day(np.next_pay, today)}${st === 'late' || np.late ? ', late' : st === 'notSeen' ? ', not seen in the bank yet' : ', in ' + np.days + ' days'}.`);
+    } else out.push('No pay day is set.');
+    out.push(`Safe to spend until next pay: ${m(r.safeToSpend.headline)}.` + (r.safeToSpend.shortfall ? ` Short by ${m(r.safeToSpend.shortfall)} before then.` : ''));
+    const rows = [];
+    let k = 0;
+    for (const a of accts.filter(x => SPEND_FROM[x.type])) {
+      const ref = 'A' + (++k); refs[ref] = a.id;
+      const fig = r.accounts[a.id];
+      rows.push(`${ref} | ${a.name} | ${a.type} | ` + (fig ? `${m(fig.bank, fig.currency)} today, checked ${fig.ageDays === 0 ? 'today' : fig.ageDays === 1 ? 'yesterday' : fig.ageDays + ' days ago'}` : 'see cards'));
+    }
+    out.push('Accounts you can spend from (ref | name | kind | bank today):\n' + rows.join('\n'));
+    for (const id of Object.keys(r.accounts)) if (r.accounts[id].spendFrom && r.accounts[id].why) out.push(`How safe to spend is worked out for ${name(id)}: ${r.accounts[id].why}`);
+    const lines = (p && p.lines) || [];
+    if (lines.length) {
+      out.push('Budget lines this pay period (ref | name | amount | left):\n' + lines.map((l, i) => { const ref = 'L' + (i + 1); refs[ref] = l.id; return `${ref} | ${l.name} | ${m(l.amount)} | ${m(l.left)} left`; }).join('\n'));
+    } else out.push('Budget lines: none yet.');
+    out.push(p && p.free ? `Free to spend this pay period: ${m(p.free.amount)}, ${m(p.free.left)} left.` : 'Free to spend: not set yet.');
+    const goals = (book.places || []).filter(g => live(g) && g.kind === 'goal');
+    if (goals.length) {
+      out.push('Goals (ref | name | set aside | date | pace):\n' + goals.map((g, i) => {
+        const ref = 'G' + (i + 1), f = r.places[g.id] || {}; refs[ref] = g.id;
+        return `${ref} | ${g.name} | ${m(f.kept || 0)} set aside${f.target != null ? ' of ' + m(f.target) : ''}` + (f.due ? ` | by ${day(f.due, today)}` : ' | no date') + (f.perPeriod != null ? ` | ${m(f.perPeriod)} each pay period to get there` : '');
+      }).join('\n'));
+    } else out.push('Goals: none yet.');
+    const due = r.dueBeforeNextPay;
+    out.push(due.items.length ? `Due before next pay: ${due.items.map(o => `${occName(o.item)} ${day(o.lands, today)} ${m(o.amount, o.currency)}`).join('; ')}. Together ${m(due.total)}.` : 'Nothing is due before next pay.');
+    if (r.notSeenYet.items.length) out.push(`Due and not ticked off yet: ${r.notSeenYet.items.map(o => `${occName(o.item)} ${day(o.lands, today)} ${m(o.amount, o.currency)}`).join('; ')}.`);
+    const cards = Object.keys(r.cards);
+    if (cards.length) out.push('Cards (name | owed | next payment):\n' + cards.map(id => { const c = r.cards[id], nx = c.next; return `${name(id)} | ${m(c.owedNow, (accts.find(a => a.id === id) || {}).cur)} owed | ` + (nx && nx.amount ? `next payment ${m(nx.amount)} on ${day(nx.payment_date, today)}` : 'nothing to pay yet') + ((c.overdue || []).length ? ' | a payment is overdue' : ''); }).join('\n'));
+    const owed = Object.keys(r.owed || {});
+    if (owed.length) out.push('Loans (name | owed): ' + owed.map(id => `${name(id)} | ${m(r.owed[id].owedNow != null ? r.owed[id].owedNow : 0)}`).join('; ') + '.');
+    for (const w of (r.warnings || []).concat(r.laterOn || [])) if (w && w.text) out.push('Note: ' + w.text);
+    return { text: out.join('\n'), refs };
+  }
+
+  /* ---- the job for the AI ---- */
+  const ACTIONS = ['log_spend', 'change_line', 'set_free', 'set_aside'];
+  const SCHEMA = { type: 'object', properties: {
+    answer: { type: 'string', description: 'The reply to the person, in plain words.' },
+    actions: { type: 'array', description: 'Changes to propose, or an empty list.', items: { type: 'object', properties: {
+      do: { type: 'string', enum: ACTIONS },
+      amount: { type: 'number', description: 'A plain number in the currency, no symbol.' },
+      line: { type: 'string', description: 'A budget line ref like L1.' }, goal: { type: 'string', description: 'A goal ref like G1.' },
+      account: { type: 'string', description: 'An account ref like A1.' }, date: { type: 'string', description: 'YYYY-MM-DD, today or before.' },
+      note: { type: 'string', description: 'A few words.' }, when: { type: 'string', enum: ['now', 'next', 'once'] } }, required: ['do'] } } },
+    required: ['answer', 'actions'] };
+  const GUIDE = `You answer questions inside The Burrow, a money app the person has open right now. The FIGURES below are worked out by the app for today and are exact. Use them. Don't work out new totals of your own beyond a simple comparison.
+
+How to answer: plain words and short sentences, like a friend who is good with money talking. Usually under 80 words. Plain text: no headings, no bold, no tables, no exclamation marks, no greeting, no praise. Say the number and the day. If the figures don't say, say so in a few words instead of guessing. You are not a licensed adviser: for investments, loans or taxes, say so in one line.
+
+You never change anything yourself. When the person says they spent something, or asks to change a budget line, Free to spend, or to set money aside for a goal, put the change in actions. The app shows it to them and nothing changes until they tap Apply. For a "what if", propose the change: they see the before and after and can say no. No action when nothing should change. At most ${MAX} actions. Use only the refs in the FIGURES (A1, L1, G1). Amounts are plain numbers in the currency, without the symbol.
+Actions:
+- log_spend {amount, line?, account?, date?, note?}: money already spent. line is an L ref (left out: Free to spend). account is an A ref (left out: the main bank). date is YYYY-MM-DD, today or before (left out: today). note is a few words.
+- change_line {line, amount, when?}: a budget line's amount each pay period. when: now (this pay period on, the default), next (from the next pay period), once (this pay period only).
+- set_free {amount, when?}: Free to spend each pay period, the same when.
+- set_aside {goal, amount}: money set aside for a goal today.`;
+  function request(text, question, turns) {
+    const past = (turns || []).slice(-TURNS).map(x => `Person: ${x.q}\nYou: ${x.a}`).join('\n');
+    const prompt = `${GUIDE}\n\nFIGURES\n${text}` + (past ? `\n\nEARLIER IN THIS CHAT\n${past}` : '') + `\n\nTHE QUESTION\n${question}`;
+    return { prompt, name: 'money_answer', description: 'The answer to the person, and any changes proposed for them to apply.', schema: SCHEMA };
+  }
+
+  /* ---- the reply, checked ---- */
+  const WHEN = { now: 'from this pay period', next: 'from the next pay period', once: 'for this pay period only' };
+  function check(raw, refs, ctx) {
+    const book = ctx.book, today = ctx.today, home = G.homeOn(book, today), r = LA.lookahead(book, today);
+    const m = (minor, cur) => SM.format(minor, cur || home);
+    const answer = String((raw && raw.answer) || '').replace(/[\u0000-\u0008\u000b-\u001f]/g, ' ').replace(/\*\*/g, '').trim().slice(0, 1500);
+    const list = Array.isArray(raw && raw.actions) ? raw.actions : [];
+    const steps = [], dropped = [];
+    const refOf = (v, letter) => (typeof v === 'string' && v.charAt(0) === letter && refs[v] ? refs[v] : null);
+    const amountOf = (v, cur, zero) => { if (typeof v !== 'number' && typeof v !== 'string') return null; const p = SM.parse(String(v), cur || home); return p.ok && (zero ? p.minor >= 0 : p.minor > 0) ? p.minor : null; };
+    const acctName = id => ((book.accounts || []).find(a => a && a.id === id) || {}).name;
+    const lineOf = id => ((r.period && r.period.lines) || []).find(l => l.id === id);
+    const mainAcct = (G.fieldValue((book.home || {}).main) || {}).acct;
+    for (const a of list) {
+      const what = a && typeof a === 'object' ? String(a.do || '') : '';
+      if (steps.length >= MAX) { dropped.push((what || 'a change') + ': more than ' + MAX + ' at a time'); continue; }
+      if (what === 'log_spend') {
+        const acct = a.account != null ? refOf(a.account, 'A') : (mainAcct && Object.values(refs).includes(mainAcct) ? mainAcct : refs.A1);
+        const cur = acct && ((book.accounts || []).find(x => x.id === acct) || {}).cur;
+        const amt = amountOf(a.amount, cur);
+        const line = a.line == null || a.line === '' ? 'free' : refOf(a.line, 'L');
+        const date = a.date == null || a.date === '' ? today : DAY.test(String(a.date)) && a.date <= today ? a.date : null;
+        if (!acct || amt == null || !line || !date) { dropped.push('a spend I could not read'); continue; }
+        const note = typeof a.note === 'string' && a.note.trim() ? a.note.replace(/\s+/g, ' ').trim().slice(0, 60) : undefined;
+        const ln = line === 'free' ? 'Free to spend' : (lineOf(line) || {}).name;
+        steps.push({ kind: 'logSpend', ref: line === 'free' ? null : a.line, args: [{ date, a: amt, acct, line, note }],
+          text: `Log a spend of ${m(amt, cur)} on ${ln} from ${acctName(acct)}, ${date === today ? 'today' : day(date, today)}${note ? ' (' + note + ')' : ''}` });
+      } else if (what === 'change_line') {
+        const id = refOf(a.line, 'L'), l = id && lineOf(id), amt = amountOf(a.amount, home, true), when = WHEN[a.when] ? a.when : 'now';
+        if (!l || amt == null) { dropped.push('a change to a line I could not read'); continue; }
+        steps.push({ kind: 'changeLine', ref: a.line, args: [id, { amount: amt, when }], text: `${l.name}: ${m(l.amount)} to ${m(amt)} each pay period, ${WHEN[when]}` });
+      } else if (what === 'set_free') {
+        const amt = amountOf(a.amount, home, true), when = WHEN[a.when] ? a.when : 'now', f = r.period && r.period.free;
+        if (amt == null) { dropped.push('a change to Free to spend I could not read'); continue; }
+        steps.push({ kind: 'setFree', ref: null, args: [{ amount: amt, when }], text: `Free to spend: ${f ? m(f.amount) + ' to ' : ''}${m(amt)} each pay period, ${WHEN[when]}` });
+      } else if (what === 'set_aside') {
+        const id = refOf(a.goal, 'G'), g = id && (book.places || []).find(x => x.id === id), amt = amountOf(a.amount, home);
+        if (!g || amt == null) { dropped.push('money for a goal I could not read'); continue; }
+        steps.push({ kind: 'setAside', ref: a.goal, args: [id, { amount: amt }], text: `Set aside ${m(amt)} for ${g.name}, today` });
+      } else dropped.push(what ? 'a change Ask can\'t make (' + what.slice(0, 30) + ')' : 'a change I could not read');
+    }
+    return { answer, steps, dropped };
+  }
+
+  /* ---- running the steps through a door (act3) ---- */
+  function runOne(door, s, opts) {
+    if (s.kind === 'logSpend') return door.logSpend(s.args[0], opts);
+    return door.run('Ask: ' + s.text, w => PW()[s.kind](w, ...s.args), opts);
+  }
+  async function undoAll(door, done) {
+    for (const st of done.slice().reverse()) {
+      const u = await door.undo(st.id, { quiet: true });
+      if (!u.ok) return { ok: false, text: u.text };
+    }
+    return { ok: true };
+  }
+  async function apply(door, steps) {
+    const done = [];
+    for (const s of steps) {
+      const res = await runOne(door, s, { quiet: true });
+      if (!res.ok) { await undoAll(door, done); return { ok: false, text: s.text + ': ' + res.text }; }
+      done.push(res.step);
+    }
+    return { ok: true, steps: done };
+  }
+  async function preview(book, steps, o) {
+    let b = clone(book);
+    const door = A3.make({ book: () => b, put: async x => { b = x; return true; }, told: o.told, newId: o.newId, today: () => o.today, check: x => LA.lookahead(x, o.today) });
+    const res = await apply(door, steps);
+    if (!res.ok) return res;
+    const r0 = LA.lookahead(book, o.today), r1 = LA.lookahead(b, o.today);
+    const rows = [{ key: 'safe', label: SN.label('safeToSpend'), before: r0.safeToSpend.headline, after: r1.safeToSpend.headline }];
+    const f0 = r0.period && r0.period.free, f1 = r1.period && r1.period.free;
+    if (f0 || f1) rows.push({ key: 'free', label: 'Free to spend left', before: f0 ? f0.left : null, after: f1 ? f1.left : null });
+    const seen = {};
+    for (const s of steps) {
+      if (!s.ref || seen[s.ref]) continue;
+      seen[s.ref] = 1;
+      if (s.ref.charAt(0) === 'L') {
+        const id = s.kind === 'changeLine' ? s.args[0] : s.args[0].line, at = r => ((r.period && r.period.lines) || []).find(l => l.id === id);
+        const l0 = at(r0), l1 = at(r1);
+        rows.push({ key: 'line:' + s.ref, label: (l0 || l1 || {}).name + ' left', before: l0 ? l0.left : null, after: l1 ? l1.left : null });
+      } else if (s.ref.charAt(0) === 'G') {
+        const id = s.args[0], g = (book.places || []).find(x => x.id === id);
+        rows.push({ key: 'goal:' + s.ref, label: g.name + ' set aside', before: (r0.places[id] || {}).kept || 0, after: (r1.places[id] || {}).kept || 0 });
+      }
+    }
+    return { ok: true, rows, view: r1 };
+  }
+
+  const api = { summary, request, check, preview, apply, undoAll, SCHEMA, MAX };
+  if (node) module.exports = api;
+  else root.ASK3C = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+/* ---------- Ask (DECISIONS_ROUND2 E8; the old app's Ask chat, ui46.js and ui4a.js, on the new engine) ----------
+   A question box. Each question goes to the AI with a short summary of today's figures from the engine
+   (ASK3C.summary: names and short refs, never a record id, a note, a shop or a single spend), through the same route
+   as Add statements (STMT3_AI.connect: the site's relay, or the viewer's own Claude). Nothing is sent until the person
+   taps Ask, and "See what is sent" shows the exact summary. The answer comes back in a fixed shape: words, and changes
+   the AI proposes from a short list. Each change is a ticked step with the engine's figures before and after
+   (ASK3C.preview); only Apply carries them out, through ACT3 (the one write door), with Undo. The AI never writes.
+   This file chooses, writes and places; it never adds, takes away or rounds. */
+const ASK3 = { open: false, was: null, turns: [], busy: false, anon: null, route: null };
+const ASK3_WORDS = {
+  what: 'Your question and a short summary of today\'s figures go to Claude, the AI made by Anthropic: through this page\'s own server when it is opened from its own address, or through your own Claude account inside Claude. Your notes, shops and single spends are never sent. Nothing changes until you tap Apply.',
+  relay: 'Your question and a short summary of today\'s figures go to Claude, the AI made by Anthropic, through this page\'s own server. Your notes, shops and single spends are never sent. Nothing changes until you tap Apply.',
+  claude: 'Your question and a short summary of today\'s figures go to Claude through your own Claude account. Your notes, shops and single spends are never sent. Nothing changes until you tap Apply.',
+  none: 'The AI can\'t be reached from this copy of the page. Open it from its own address, or inside Claude.'
+};
+const ASK3_TRY = ['How much can I spend before pay day?', 'What is due before next pay?', 'I spent 1,200 on lunch today'];
+
+function openAsk3() {
+  if (ASK3.open) return;
+  if (!E3.book) { msg3('Set up first'); return; }
+  ASK3.open = true;
+  const sheet = $('#a3Ask');
+  sheet.innerHTML = `<div class="a3-sheet-in">
+    <h1 id="a3AskT">Ask</h1>
+    <div class="a3-card" data-card="ask-what"><p class="a3-next" id="a3AskWhat">${esc3(ASK3.route ? ASK3_WORDS[ASK3.route] : ASK3_WORDS.what)}</p>
+      <details class="a3-ask-sent"><summary>See what is sent</summary><pre id="a3AskSent"></pre></details></div>
+    <div class="a3-ask-log" id="a3AskLog" aria-live="polite"></div>
+    <div class="a3-card" data-card="ask-in">
+      <label class="a3-ask-label" for="a3AskIn">Your question</label>
+      <textarea class="a3-in a3-text a3-ask-in" id="a3AskIn" rows="3" maxlength="500"></textarea>
+      <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3AskSend">Ask</button><button type="button" class="a3-btn" id="a3AskClose">Close</button></div>
+      <div class="a3-ask-try">${ASK3_TRY.map(q => `<button type="button" class="a3-link" data-asktry="${esc3(q)}">${esc3(q)}</button>`).join('')}</div>
+    </div></div>`;
+  ASK3.was = [...document.querySelectorAll('[data-panel], .a3-tabs, #a3Check, #a3StmtBar, #a3Stmt, #a3Set, #a3Setup, #a3Rem')].map(el => [el, el.hidden]);
+  ASK3.was.forEach(([el]) => { el.hidden = true; }); sheet.hidden = false;
+  ask3Log();
+  $('#a3AskSent').textContent = ask3Summary().text;
+  $('#a3AskSend').addEventListener('click', () => ask3Send());
+  $('#a3AskClose').addEventListener('click', closeAsk3);
+  $('#a3AskIn').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); ask3Send(); } });
+  for (const b of sheet.querySelectorAll('[data-asktry]')) b.addEventListener('click', () => { $('#a3AskIn').value = b.dataset.asktry; ask3Send(); });
+  scrollTo(0, 0); $('#a3AskIn').focus();
+}
+function closeAsk3() {
+  if (!ASK3.open) return;
+  ASK3.open = false;
+  $('#a3Ask').hidden = true; $('#a3Ask').innerHTML = '';
+  (ASK3.was || []).forEach(([el, h]) => { el.hidden = h; }); ASK3.was = null;
+  const b = $('#a3AskGo'); if (b) b.focus();
+}
+const ask3Summary = () => ASK3C.summary(E3.book, E3.today());
+/* the chat so far: each question and answer (the cards with changes are not kept when the sheet closes) */
+function ask3Log() {
+  $('#a3AskLog').innerHTML = ASK3.turns.map(t => `${t.applied ? '' : `<p class="a3-ask-me">${esc3(t.q)}</p>`}<p class="a3-ask-ai">${esc3(t.a)}</p>`).join('');
+}
+function ask3Bubble(cls, text) {
+  const p = document.createElement('p'); p.className = cls; p.textContent = text; $('#a3AskLog').appendChild(p); return p;
+}
+
+/* ---- the AI route: the same two ways as Add statements (STMT3_AI.connect) ---- */
+function ask3Anon() {
+  if (ASK3.anon) return ASK3.anon;
+  const abc = 'abcdefghijklmnopqrstuvwxyz0123456789'; let s = '';
+  for (const b of crypto.getRandomValues(new Uint8Array(16))) s += abc[b % abc.length];
+  return (ASK3.anon = s);
+}
+async function ask3Relay(base, rq) {
+  const body = { v: 1, anon: ask3Anon(), invite: '', tier: 'default', max_tokens: 2000, effort: 'low',
+    tools: [{ name: rq.name, description: rq.description, input_schema: rq.schema }], tool_choice: { type: 'auto' },
+    messages: [{ role: 'user', content: [{ type: 'text', text: rq.prompt + `\n\nAnswer by calling the ${rq.name} tool once.` }] }] };
+  let r;
+  try { r = await fetch(base + '/api/ai', { method: 'POST', headers: { 'content-type': 'application/json', 'x-app': 'mhr2000' }, body: JSON.stringify(body) }); }
+  catch (e) { throw new Error('no connection. Check the internet and try again'); }
+  if (r.status === 429) throw new Error('too many questions right now, try again in a minute');
+  if (!r.ok) throw new Error('the AI did not answer (' + r.status + ')');
+  const res = await r.json();
+  const use = (res.content || []).find(b => b.type === 'tool_use' && b.name === rq.name);
+  if (use && use.input && typeof use.input === 'object') return use.input;
+  const text = (res.content || []).filter(b => b.type === 'text').map(b => b.text).join('').trim();
+  if (text) return { answer: text, actions: [] };
+  throw new Error('no answer came back');
+}
+async function ask3Claude(fn, rq) {
+  if (typeof fn.form === 'function') return fn.form(rq.prompt, { name: rq.name, description: rq.description, schema: rq.schema, maxTokens: 2000 });
+  if (typeof fn.json === 'function') return fn.json(rq.prompt + '\n\nReply with ONLY one JSON object with these properties: ' + JSON.stringify(rq.schema.properties));
+  const r = await fn([{ role: 'user', content: rq.prompt }], { cache: false, modelTier: 'default' });
+  return { answer: String((r && r.text) || ''), actions: [] };
+}
+
+async function ask3Send() {
+  const box = $('#a3AskIn'), q = box.value.trim();
+  if (ASK3.busy) return;
+  if (!q) { box.focus(); return; }
+  ASK3.busy = true; $('#a3AskSend').disabled = true;
+  box.value = '';
+  ask3Bubble('a3-ask-me', q);
+  const bot = ask3Bubble('a3-ask-ai a3-ask-wait', 'Working');
+  try {
+    const S = ask3Summary();
+    $('#a3AskSent').textContent = S.text;
+    const route = await STMT3_AI.connect();
+    ASK3.route = route.how || 'none';
+    $('#a3AskWhat').textContent = ASK3_WORDS[ASK3.route];
+    if (!route.how) throw new Error(ASK3_WORDS.none);
+    const rq = ASK3C.request(S.text, q, ASK3.turns);
+    const raw = route.how === 'relay' ? await ask3Relay(route.base, rq) : await ask3Claude(route.fn, rq);
+    const chk = ASK3C.check(raw, S.refs, { book: E3.book, today: E3.today() });
+    bot.classList.remove('a3-ask-wait');
+    bot.textContent = chk.answer || (chk.steps.length ? 'Here is a change you can apply' : 'No answer came back. Ask it another way');
+    ASK3.turns.push({ q, a: bot.textContent });
+    if (chk.steps.length || chk.dropped.length) await ask3Card(chk);
+  } catch (e) {
+    bot.classList.remove('a3-ask-wait'); bot.classList.add('a3-bad');
+    const m = String((e && e.message) || e);
+    bot.textContent = m === ASK3_WORDS.none ? m : 'That didn\'t go through: ' + m + '. Your question is back in the box';
+    box.value = q;
+  }
+  ASK3.busy = false; $('#a3AskSend').disabled = false;
+}
+
+/* ---- a proposed change: ticked steps, the engine's figures before and after, Apply, Not now, Undo ---- */
+async function ask3Card(chk) {
+  const card = document.createElement('div');
+  card.className = 'a3-card a3-ask-card'; card.dataset.card = 'ask-change';
+  const cur = E3.home();
+  const steps = chk.steps.map(s => Object.assign({ on: true }, s));
+  card.innerHTML = `${steps.length ? `<h2>Proposed change</h2>
+    <div class="a3-ask-steps">${steps.map((s, i) => `<label class="a3-check"><input type="checkbox" data-askstep="${i}" checked> <span>${esc3(s.text)}</span></label>`).join('')}</div>
+    <ul class="a3-rows a3-ask-figs" data-ask="figs"></ul>
+    <p class="a3-err" data-ask="err" role="status"></p>
+    <div class="a3-actions" data-ask="foot"><button type="button" class="a3-btn solid" data-ask="apply">Apply</button><button type="button" class="a3-btn" data-ask="skip">Not now</button></div>` : ''}
+${chk.dropped.length ? `<p class="a3-sub" data-ask="dropped">Left out because the app could not read them: ${esc3(chk.dropped.join('; '))}</p>` : ''}`;
+  $('#a3AskLog').appendChild(card);
+  if (!steps.length) return;
+  const $c = s => card.querySelector(`[data-ask="${s}"]`);
+  const on = () => steps.filter(s => s.on);
+  async function paint() {
+    const list = on();
+    $c('apply').textContent = list.length > 1 ? `Apply ${list.length} changes` : 'Apply';
+    $c('apply').disabled = !list.length;
+    if (!list.length) { $c('figs').innerHTML = ''; $c('err').textContent = ''; return; }
+    const p = await ASK3C.preview(E3.book, list, { today: E3.today(), told: () => E3.told(), newId: () => E3.newId() });
+    if (!p.ok) { $c('figs').innerHTML = ''; $c('err').textContent = p.text; $c('apply').disabled = true; return; }
+    $c('err').textContent = '';
+    $c('figs').innerHTML = `<li class="a3-ask-head"><span></span><span>Now</span><span>After</span></li>` + p.rows.map(r => `<li data-askfig="${esc3(r.key)}"><span>${esc3(r.label)}</span>`
+      + `<span class="amt">${r.before == null ? '' : fig3('ask.before', r.before, cur)}</span><span class="amt">${r.after == null ? '' : fig3('ask.after', r.after, cur)}</span></li>`).join('');
+    const P = BurrowScreens.provenance;   // the figures after are worked out by the engine for a book not kept yet
+    $c('figs').querySelectorAll('[data-figure]').forEach(el => P.stamp(el, P.mark(Number(el.dataset.amt), E3.mode === 'try' ? 'sample' : 'worked')));
+  }
+  card.addEventListener('change', e => { const c = e.target.closest('[data-askstep]'); if (!c) return; steps[+c.dataset.askstep].on = c.checked; paint(); });
+  $c('skip').addEventListener('click', () => { card.querySelectorAll('input').forEach(i => { i.disabled = true; }); $c('foot').innerHTML = '<p class="a3-sub">Not applied</p>'; $c('figs').innerHTML = ''; });
+  $c('apply').addEventListener('click', async () => {
+    const list = on(); if (!list.length) return;
+    $c('apply').disabled = true;
+    const res = await ASK3C.apply(ACT3, list);
+    if (!res.ok) { $c('err').textContent = res.text + '. Nothing changed'; $c('apply').disabled = false; return; }
+    card.querySelectorAll('input').forEach(i => { i.disabled = true; });
+    const undo = async () => {
+      const u = await ASK3C.undoAll(ACT3, res.steps);
+      if (u.ok) ASK3.turns.push({ q: '', a: 'Taken back: ' + list.map(s => s.text).join('; '), applied: true });
+      if (card.isConnected) $c('foot').innerHTML = `<p class="a3-sub" data-ask="undone">${u.ok ? 'Taken back' : esc3(u.text)}</p>`;
+      MSG3.post({ kind: 'toast', key: 'act3', text: u.ok ? 'Undone' : u.text });
+    };
+    $c('foot').innerHTML = '<p class="a3-sub" data-ask="applied">Applied</p><button type="button" class="a3-btn" data-ask="undo">Undo</button>';
+    $c('undo').addEventListener('click', undo);
+    MSG3.post({ kind: 'undo', key: 'act3', text: list.length > 1 ? `${list.length} changes from Ask` : list[0].text, action: { label: 'Undo', run: undo } });
+    ASK3.turns.push({ q: '(I applied the change)', a: 'Applied: ' + list.map(s => s.text).join('; '), applied: true });
+  });
+  await paint();
+}
+
+document.addEventListener('click', e => { if (e.target.closest && e.target.closest('#a3AskGo')) openAsk3(); });
+document.addEventListener('click', e => { if (ASK3.open && e.target.closest && e.target.closest('#a3SetGo, #a3RemGo')) closeAsk3(); }, true);   // another sheet over Ask: Ask closes first
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && ASK3.open) closeAsk3(); });
+/* ---------- remind3: reminders in the phone's own calendar, the pure half (the old app's model.js helpers, ported) ----------
+   Check-in reminders on the day after each pay lands and in the middle of each pay period, and bill reminders a chosen
+   number of days before each bill leaves the bank. The days are the engine's own (engine/schedules.js occurrences on the
+   country's calendar), so a pay moved by a weekend or a holiday moves its check-in too. Nothing is sent anywhere: the
+   page makes a calendar file (.ics) to open, or a Google or Outlook link the person taps. The events carry words only,
+   never an amount.
+     R.checkins(book, today, { afterPay, mid, months }) -> { items: [{ day, kind: 'afterPay' | 'mid' }], repeat: { afterPay, mid }, why }
+     R.bills(book, today, { before, months, only }) -> [{ id, name, kind: 'bill', items: [{ day, lands }], repeat }]
+     R.events({ checkins, bills, time }) -> [{ uid, kind, day, time, title, details, rrule }]   one per reminder day
+     R.ics(events, { now }) -> the calendar file's text; R.gcal(event), R.outlook(event) -> a link for one event
+   `repeat` is a calendar repeat rule (RRULE) when the pay or bill keeps a plain rhythm (a fixed day each month, every n
+   weeks), for Google's link; the calendar file holds each dated day instead, which is exact. Old helpers: model.js
+   reminderTimesFor, rruleOf, gcalUrl, outlookUrl, icsText (they took Date objects; these take 'YYYY-MM-DD').
+   Plain browser JavaScript; in node, require('./remind3.js'). Dates only, never money. */
+(function (root) {
+  'use strict';
+  const node = typeof module === 'object' && module.exports;
+  const D = node ? require('../../engine/dates.js') : root.BurrowEngine.dates;
+  const S = node ? require('../../engine/schedules.js') : root.BurrowEngine.schedules;
+  const G = node ? require('../../engine/ledger.js') : root.BurrowEngine.ledger;
+  const DAY_CODES = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
+  const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const pad2 = n => String(n).padStart(2, '0');
+  const live = x => x && !x.gone;
+  const ruleNow = (s, today) => { let r = null; (s.rules || []).filter(live).forEach((x, i) => { if (i === 0 || x.from == null || x.from <= today) r = x.rule; }); return r; };
+  function calOf(book, s) {
+    const a = (book.accounts || []).find(x => x && x.id === s.acct);
+    return S.calendar((a && a.country) || G.fieldValue((book.home || {}).country) || null);
+  }
+  const endOf = (today, months) => D.dayNum(addMonthsStr(today, months));
+  function addMonthsStr(day, k) {   // the same day k months on, kept inside the month
+    const y = +day.slice(0, 4), m = +day.slice(5, 7) - 1 + k, yy = y + Math.floor(m / 12), mm = (m % 12) + 1;
+    return yy + '-' + pad2(mm) + '-' + pad2(Math.min(+day.slice(8, 10), D.daysInMonth(yy, mm)));
+  }
+
+  /* the repeat rule of a day that follows a rule, `shift` days later (for Google's link), or null */
+  function repeatOf(rule, firstDay, shift) {
+    if (!rule || !firstDay) return null;
+    if (rule.every === 'month' && (rule.days || [rule.day]).length === 1) {
+      const d = +firstDay.slice(8, 10);
+      return d <= 28 ? 'FREQ=MONTHLY;BYMONTHDAY=' + d : null;
+    }
+    if (rule.every === 'weeks') return 'FREQ=WEEKLY;' + ((rule.n || 1) > 1 ? 'INTERVAL=' + rule.n + ';' : '') + 'BYDAY=' + DAY_CODES[D.weekday(D.dayNum(firstDay))];
+    return null;
+  }
+
+  function checkins(book, today, o) {
+    o = Object.assign({ afterPay: true, mid: true, months: 12 }, o || {});
+    const pay = (book.schedules || []).find(s => live(s) && s.kind === 'income' && s.startsPeriod && !s.ends);
+    const rule = pay && ruleNow(pay, today);
+    if (!pay || !rule || rule.every === 'none') return { items: [], repeat: { afterPay: null, mid: null }, why: 'There is no pay day set, so there are no pay periods to remind you in. Set your pay day in Plan first' };
+    const t = D.dayNum(today), end = endOf(today, o.months);
+    const lands = [...new Set(S.occurrences(pay, calOf(book, pay), t - 70, end + 70).map(x => x.land))].sort((a, b) => a - b);
+    const items = [];
+    lands.forEach((l, i) => {
+      if (o.afterPay) items.push({ n: l + 1, kind: 'afterPay' });
+      const next = lands[i + 1];
+      if (o.mid && next != null) items.push({ n: l + Math.floor((next - l) / 2), kind: 'mid' });
+    });
+    const out = items.filter(x => x.n >= t && x.n <= end).sort((a, b) => a.n - b.n).map(x => ({ day: D.dayStr(x.n), kind: x.kind }));
+    const first = k => (out.find(x => x.kind === k) || {}).day;
+    return { items: out, repeat: { afterPay: o.afterPay ? repeatOf(rule, first('afterPay')) : null, mid: o.mid ? repeatOf(rule, first('mid')) : null }, why: '' };
+  }
+
+  function bills(book, today, o) {
+    o = Object.assign({ before: 2, months: 12 }, o || {});
+    const t = D.dayNum(today), end = endOf(today, o.months), before = Math.max(0, Math.min(14, o.before | 0));
+    return (book.schedules || []).filter(s => live(s) && s.kind === 'bill' && (!o.only || o.only.includes(s.id))).map(s => {
+      const rule = ruleNow(s, today);
+      const items = S.occurrences(s, calOf(book, s), t, end + 31).map(x => ({ n: x.land - before, lands: D.dayStr(x.land) }))
+        .filter(x => x.n >= t && x.n <= end).map(x => ({ day: D.dayStr(x.n), lands: x.lands }));
+      let repeat = null;
+      if (rule && rule.every === 'month' && (rule.days || [rule.day]).length === 1 && typeof (rule.days || [rule.day])[0] === 'number') {
+        const d = (rule.days || [rule.day])[0] - before;
+        repeat = d >= 1 && d <= 28 ? 'FREQ=MONTHLY;BYMONTHDAY=' + d : null;
+      }
+      return { id: s.id, name: s.name, kind: 'bill', items, repeat };
+    }).filter(x => x.items.length);
+  }
+
+  const label = day => +day.slice(8, 10) + ' ' + MON[+day.slice(5, 7) - 1];
+  const WORDS = {
+    afterPay: { title: 'Check your bank: pay day has passed', details: 'Open the burrow and tap Check your bank. Tick what has gone out and type what your bank app shows today.' },
+    mid: { title: 'Check your bank: middle of the pay period', details: 'Open the burrow and tap Check your bank. Tick what has gone out and type what your bank app shows today.' }
+  };
+  function events(o) {
+    const time = o.time || '09:00', out = [];
+    const c = o.checkins || { items: [], repeat: {} };
+    for (const x of c.items) out.push({ uid: 'burrow-' + x.kind + '-' + x.day, kind: x.kind, day: x.day, time, title: WORDS[x.kind].title, details: WORDS[x.kind].details, rrule: (c.repeat || {})[x.kind] || null });
+    (o.bills || []).forEach((b, i) => {
+      for (const x of b.items) out.push({ uid: 'burrow-bill-' + i + '-' + x.day, kind: 'bill', day: x.day, time, title: b.name + ' is due on ' + label(x.lands),
+        details: b.name + ' leaves the bank on ' + label(x.lands) + '. Open the burrow to see what is due before next pay.', rrule: b.repeat });
+    });
+    return out.sort((a, b) => (a.day < b.day ? -1 : a.day > b.day ? 1 : 0));
+  }
+
+  /* ---- the old app's helpers, on day strings ---- */
+  function clockParts(time) { const m = /^(\d{1,2}):(\d{2})$/.exec(time || ''); return m ? { h: Math.min(23, +m[1]), mi: Math.min(59, +m[2]) } : { h: 9, mi: 0 }; }
+  function times(e) {
+    const c = clockParts(e.time), start = c.h * 60 + c.mi, end = Math.min(start + 30, 24 * 60 - 1), d = e.day.replace(/-/g, '');
+    const stamp = mins => d + 'T' + pad2(Math.floor(mins / 60)) + pad2(mins % 60) + '00';
+    return { start: stamp(start), end: stamp(end) };
+  }
+  const enc = encodeURIComponent;
+  function gcal(e) {
+    const t = times(e);
+    return 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=' + enc(e.title) + '&details=' + enc(e.details) + '&dates=' + t.start + '/' + t.end + (e.rrule ? '&recur=' + enc('RRULE:' + e.rrule) : '');
+  }
+  function outlook(e) {
+    const t = times(e), iso = s => s.slice(0, 4) + '-' + s.slice(4, 6) + '-' + s.slice(6, 8) + 'T' + s.slice(9, 11) + ':' + s.slice(11, 13) + ':' + s.slice(13, 15);
+    return 'https://outlook.live.com/calendar/0/deeplink/compose?path=' + enc('/calendar/action/compose') + '&rru=addevent&subject=' + enc(e.title) + '&body=' + enc(e.details) + '&startdt=' + iso(t.start) + '&enddt=' + iso(t.end);
+  }
+  const icsEsc = s => String(s).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
+  const bytes = ch => unescape(encodeURIComponent(ch)).length;
+  /* a calendar line may be at most 75 bytes, so long lines wrap by bytes, never in the middle of a character */
+  const fold = l => { let out = '', n = 0; for (const ch of l) { const b = bytes(ch); if (n + b > 72) { out += '\r\n '; n = 1; } out += ch; n += b; } return out; };
+  function ics(list, o) {
+    const now = new Date((o && o.now) || Date.now());
+    const z = now.getUTCFullYear() + pad2(now.getUTCMonth() + 1) + pad2(now.getUTCDate()) + 'T' + pad2(now.getUTCHours()) + pad2(now.getUTCMinutes()) + pad2(now.getUTCSeconds()) + 'Z';
+    const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//The Burrow//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH'];
+    for (const e of list) {
+      const t = times(e);
+      lines.push('BEGIN:VEVENT', 'UID:' + e.uid + '@burrow', 'DTSTAMP:' + z, 'DTSTART:' + t.start, 'DTEND:' + t.end, 'SUMMARY:' + icsEsc(e.title), 'DESCRIPTION:' + icsEsc(e.details),
+        'BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:' + icsEsc(e.title), 'TRIGGER:PT0M', 'END:VALARM', 'END:VEVENT');
+    }
+    lines.push('END:VCALENDAR');
+    return lines.map(fold).join('\r\n') + '\r\n';
+  }
+
+  const api = { checkins, bills, events, ics, gcal, outlook, times };
+  if (node) module.exports = api;
+  else root.REMIND3 = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+/* ---------- Reminders (the old app's Reminder card, model.js and its screen, on the new engine) ----------
+   Check-in reminders on chosen days (the day after pay lands and the middle of each pay period, both by default) and
+   bill reminders a chosen number of days before each bill leaves the bank, put in the phone's own calendar: a calendar
+   file (.ics, every dated reminder for the next year, made on this device and opened by the calendar app), or a Google
+   or Outlook link. Nothing is sent anywhere by this page and nothing is saved: the choices start fresh each time. The
+   events carry words only, never an amount. The days are REMIND3's (src/remind3.js), from the engine's calendars.
+   This file chooses, writes and places; it never adds, takes away or rounds. */
+const REM3 = { open: false, was: null, afterPay: true, mid: true, before: 2, time: '09:00', off: {} };
+const REM3_BEFORE = [[0, 'On the day'], [1, '1 day before'], [2, '2 days before'], [3, '3 days before'], [5, '5 days before'], [7, 'A week before']];
+const REM3_KIND = { afterPay: 'After pay lands', mid: 'Middle of the pay period' };
+
+function rem3Data() {
+  const day = E3.today();
+  const checkins = REMIND3.checkins(E3.book, day, { afterPay: REM3.afterPay, mid: REM3.mid });
+  const all = REMIND3.bills(E3.book, day, { before: REM3.before });
+  const bills = all.filter(b => !REM3.off[b.id]);
+  return { day, checkins, all, bills, events: REMIND3.events({ checkins, bills, time: REM3.time }) };
+}
+function openRem3() {
+  if (REM3.open) return;
+  if (!E3.book) { msg3('Set up first'); return; }
+  REM3.open = true;
+  const sheet = $('#a3Rem');
+  sheet.innerHTML = `<div class="a3-sheet-in">
+    <h1 id="a3RemT">Reminders</h1>
+    <div class="a3-card" data-card="rem-check"><h2>Check your bank</h2>
+      <p class="a3-next">A reminder to open the app and check your bank. It keeps safe to spend true.</p>
+      <label class="a3-check"><input type="checkbox" id="a3RemAfter"${REM3.afterPay ? ' checked' : ''}> The day after pay lands</label>
+      <label class="a3-check"><input type="checkbox" id="a3RemMid"${REM3.mid ? ' checked' : ''}> The middle of each pay period</label>
+      <p class="a3-sub" id="a3RemNext" data-rem="next"></p></div>
+    <div class="a3-card" data-card="rem-bills"><h2>Bills</h2>
+      <div class="a3-field"><label for="a3RemBefore">Remind me</label>
+        <select class="a3-in a3-sel" id="a3RemBefore">${REM3_BEFORE.map(([v, t]) => `<option value="${v}"${v === REM3.before ? ' selected' : ''}>${esc3(t)}</option>`).join('')}</select></div>
+      <div id="a3RemBills"></div></div>
+    <div class="a3-card" data-card="rem-time"><div class="a3-field"><label for="a3RemTime">At</label>
+      <input class="a3-in a3-text" type="time" id="a3RemTime" value="${esc3(REM3.time)}"></div></div>
+    <div class="a3-card" data-card="rem-add"><h2>Add to your calendar</h2>
+      <p class="a3-next" data-rem="what">Nothing is sent anywhere. The calendar file is made on this phone and your calendar app opens it. The reminders say what is due, never an amount.</p>
+      <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3RemIcs">Save the calendar file</button></div>
+      <p class="a3-sub" id="a3RemCount"></p>
+      <p class="a3-sub">Google Calendar repeats each one. Outlook adds the next one only. The calendar file has every one for the next year, moved for weekends and holidays.</p>
+      <ul class="a3-rows" id="a3RemLinks"></ul></div>
+    <div class="a3-actions"><button type="button" class="a3-btn" id="a3RemClose">Close</button></div>
+  </div>`;
+  REM3.was = [...document.querySelectorAll('[data-panel], .a3-tabs, #a3Check, #a3StmtBar, #a3Stmt, #a3Set, #a3Setup, #a3Ask')].map(el => [el, el.hidden]);
+  REM3.was.forEach(([el]) => { el.hidden = true; }); sheet.hidden = false;
+  $('#a3RemAfter').addEventListener('change', e => { REM3.afterPay = e.target.checked; rem3Paint(); });
+  $('#a3RemMid').addEventListener('change', e => { REM3.mid = e.target.checked; rem3Paint(); });
+  $('#a3RemBefore').addEventListener('change', e => { REM3.before = Number(e.target.value); rem3Paint(); });
+  $('#a3RemTime').addEventListener('change', e => { REM3.time = e.target.value || '09:00'; rem3Paint(); });
+  $('#a3RemBills').addEventListener('change', e => { const c = e.target.closest('[data-rembill]'); if (!c) return; REM3.off[c.dataset.rembill] = !c.checked; rem3Paint(); });
+  $('#a3RemIcs').addEventListener('click', rem3Save);
+  $('#a3RemClose').addEventListener('click', closeRem3);
+  rem3Paint(); scrollTo(0, 0); $('#a3RemAfter').focus();
+}
+function closeRem3() {
+  if (!REM3.open) return;
+  REM3.open = false;
+  $('#a3Rem').hidden = true; $('#a3Rem').innerHTML = '';
+  (REM3.was || []).forEach(([el, h]) => { el.hidden = h; }); REM3.was = null;
+  const b = $('#a3RemGo'); if (b) b.focus();
+}
+function rem3Paint() {
+  const d = rem3Data(), yr = d.day.slice(0, 4);
+  const c = d.checkins;
+  $('#a3RemNext').textContent = c.why ? c.why : c.items.length ? 'Next: ' + c.items.slice(0, 3).map(x => day3(x.day, yr)).join(', ') : 'Pick a day above for check-in reminders';
+  $('#a3RemBills').innerHTML = d.all.length ? d.all.map(b => `<label class="a3-check" data-rembillrow="${esc3(b.id)}"><input type="checkbox" data-rembill="${esc3(b.id)}"${REM3.off[b.id] ? '' : ' checked'}> <span>${esc3(b.name)}<br><span class="a3-sub">next reminder ${esc3(day3(b.items[0].day, yr))}, due ${esc3(day3(b.items[0].lands, yr))}</span></span></label>`).join('')
+    : '<p class="a3-sub">No bills with a day in your plan</p>';
+  $('#a3RemCount').textContent = d.events.length ? `${d.events.length} reminders in the file` : 'Nothing picked yet';
+  $('#a3RemIcs').disabled = !d.events.length;
+  const series = [];
+  for (const k of ['afterPay', 'mid']) { const e = d.events.find(x => x.kind === k); if (e) series.push({ key: k, name: 'Check your bank: ' + REM3_KIND[k].toLowerCase(), e }); }
+  for (const b of d.bills) { const e = d.events.find(x => x.kind === 'bill' && x.title.indexOf(b.name + ' is due') === 0); if (e) series.push({ key: 'bill:' + b.id, name: b.name, e }); }
+  $('#a3RemLinks').innerHTML = series.map(s => `<li data-remlink="${esc3(s.key)}"><span>${esc3(s.name)}</span><span class="a3-rem-go"><a href="${esc3(REMIND3.gcal(s.e))}" target="_blank" rel="noopener" data-rem="google">Google</a> <a href="${esc3(REMIND3.outlook(s.e))}" target="_blank" rel="noopener" data-rem="outlook">Outlook</a></span></li>`).join('');
+}
+function rem3Save() {
+  const d = rem3Data();
+  if (!d.events.length) return;
+  const blob = new Blob([REMIND3.ics(d.events, { now: new Date().toISOString() })], { type: 'text/calendar' });
+  const url = URL.createObjectURL(blob), a = document.createElement('a');
+  a.href = url; a.download = 'burrow-reminders.ics'; a.hidden = true;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+  msg3('Calendar file saved. Open it to add the reminders');
+}
+document.addEventListener('click', e => { if (e.target.closest && e.target.closest('#a3RemGo')) openRem3(); });
+document.addEventListener('click', e => { if (REM3.open && e.target.closest && e.target.closest('#a3SetGo, #a3AskGo')) closeRem3(); }, true);   // another sheet over Reminders: Reminders closes first
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && REM3.open) closeRem3(); });
 })();
 </script>
 </body>

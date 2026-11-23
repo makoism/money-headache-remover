@@ -57,7 +57,7 @@ ck('the card\'s coffee replaces the typed coffee', cafe.status === 'typed' && ca
 ck('the card keeps its posting date beside the buy date', cafe.posted === '2026-11-24' && cafe.date === '2026-11-22');
 const thanks = line(CA, '2026-12-10', 54450, 'in');
 ck('the card\'s "payment received" meets the bank\'s payment line: one payment, not two [Q1]', thanks.status === 'meets' && thanks.meets === pa.id && thanks.metImport, JSON.stringify(thanks));
-ck('the counts', JSON.stringify(p.counts) === JSON.stringify({ read: 11, repeat: 0, typed: 1, settles: 6, meets: 1, new: 3 }), JSON.stringify(p.counts));
+ck('the counts', JSON.stringify(p.counts) === JSON.stringify({ read: 11, repeat: 0, typed: 1, settles: 6, meets: 1, new: 3, pick: 0 }), JSON.stringify(p.counts));
 ck('the card statement is found', p.statements.length === 1 && p.statements[0].a === 2930 && p.statements[0].close === '2026-12-15');
 const m = p.merchants.find(x => x.key === R.key('BOOKS'));
 ck('merchants with their rows and totals (for tapping a merchant)', m && m.rows.length === 1 && m.outA === 2930 && m.cat === 'play');
@@ -119,5 +119,40 @@ const full = R.cleanRead({ kind: 'bank', period: { from: '2026-10-01', to: '2026
 const h = P.setupHints([full], cats, 'JPY', TODAY);
 ck('setup hints come from the old reader\'s own sums: pay, rent', h.pay && h.pay.a === 180000 && h.bills.rent === 72000 && h.bank.a === 286000 && h.bank.date === '2026-11-30', JSON.stringify(h));
 
+
+/* ---- which card a bank's card payment pays (MAIN 15, the real-page walk: "CARD B PAYMENT 23,000" went onto Card A) ----
+   With close days "not sure", each card's item asks everything owed, so the amount almost never matches. The line's own
+   words (the card's name) come first, then the payment day, then the amount; when two or more cards are still possible,
+   nothing is guessed: the review asks. Shown as on 20 Dec: Card B's item of 11 Dec is overdue. */
+{
+  const D2 = '2026-12-20';
+  const bk = JSON.parse(JSON.stringify(book0));
+  bk.events.push({ id: 'k7m2qa-q8w2e4r6t1-7', k: 'spend', acct: CB, date: '2026-11-25', a: 1000, note: 'lunch', told: '2026-11-25T12:30+09:00', at: '2026-11-25T12:30+09:00' });
+  const itemB = L.lookahead(bk, D2).checkIn.toConfirm.find(o => o.item === CB + '@2026-12-11');
+  ck('the case: Card B\'s item of 11 Dec is still to tick on 20 Dec and asks more than the 23,000 paid', itemB && itemB.amount !== 23000, JSON.stringify(itemB));
+  const pay = (text, date, a) => R.cleanRead({ kind: 'bank', rows: [{ date, text, amount: a, dir: 'out', cat: 'card_payment' }] }, 'b.csv', D2);
+  const one = (rd, o) => P.plan(bk, [rd], Object.assign({ today: D2, assign: [BANK], cats: {} }, o || {})).lines[0];
+  const lb = one(pay('CARD B PAYMENT', '2026-12-14', 23000));
+  ck('"CARD B PAYMENT 23,000" pays Card B, by its name', lb.k === 'repay' && lb.to === CB, JSON.stringify(lb));
+  ck('and settles Card B\'s overdue item', JSON.stringify(lb.settles) === JSON.stringify([CB + '@2026-12-11']), JSON.stringify(lb.settles));
+  const outB = P.records(bk, P.plan(bk, [pay('CARD B PAYMENT', '2026-12-14', 23000)], { today: D2, assign: [BANK], cats: {} }), { told: D2 + 'T09:00+09:00' });
+  const afterB = JSON.parse(JSON.stringify(bk)); afterB.events = afterB.events.concat(outB.events); afterB.checkins = (afterB.checkins || []).concat(outB.checkins);
+  const rB = L.lookahead(afterB, D2), tcB = rB.checkIn.toConfirm.map(o => o.item);
+  ck('the engine then has Card B\'s 11 Dec item settled, and Card A\'s untouched', !tcB.includes(CB + '@2026-12-11') && tcB.includes(CA + '@2026-12-10'), tcB.join(','));
+  ck('Card A owes what it did; Card B owes the 1,000 not paid plus what came after', rB.cards[CA].owedNow === L.lookahead(bk, D2).cards[CA].owedNow && rB.cards[CB].owedNow === L.lookahead(bk, D2).cards[CB].owedNow - 23000, JSON.stringify([rB.cards[CA].owedNow, rB.cards[CB].owedNow]));
+  const la = one(pay('CARD A PAYMENT', '2026-12-14', 23000));
+  ck('the same amount named Card A pays Card A', la.to === CA);
+  const byDay = one(pay('JCB', '2026-12-11', 23000));
+  ck('no name: the card whose payment day it is (Card B on the 11th)', byDay.to === CB, JSON.stringify(byDay));
+  const tie = one(pay('JCB', '2026-12-21', 5));
+  ck('no name, no nearer day, no amount: nothing is guessed, the review asks', tie.status === 'pick' && !tie.to && tie.cards.slice().sort().join() === [CA, CB].sort().join(), JSON.stringify(tie));
+  const tp = P.plan(bk, [pay('JCB', '2026-12-21', 5)], { today: D2, assign: [BANK], cats: {} });
+  ck('a line waiting for its card is not written, and is counted', P.records(bk, tp, { told: D2 }).events.length === 0 && tp.counts.pick === 1);
+  const chosen = one(pay('JCB', '2026-12-21', 5), { cardFor: { [tie.id]: CB } });
+  ck('the person\'s choice wins', chosen.to === CB && chosen.status !== 'pick');
+  const kept = P.catsToKeep(P.plan(bk, [pay('JCB', '2026-12-21', 5)], { today: D2, assign: [BANK], cats: {}, cardFor: { [tie.id]: CB } }), {}, D2);
+  ck('the choice is remembered for the shop, and used next time', kept['k:' + R.key('JCB')].card === CB
+    && one(pay('JCB', '2026-12-22', 7), { cardOf: P.knownCards({ imports: { cats: kept } }) }).to === CB);
+}
 console.log(bad ? `e3_stmt_plan: ${bad} FAIL of ${n}` : `e3_stmt_plan: ALL PASS (${n})`);
 process.exit(bad ? 1 : 0);

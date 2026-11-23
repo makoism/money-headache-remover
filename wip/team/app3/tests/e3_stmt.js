@@ -114,6 +114,15 @@ async function pick(p) {
   await p.click('#a3StmtCheck'); await T.w(300);
   ck('a good paste goes to the review, on the account it names', /1 line/.test(await p.$eval('#a3Stmt h2', e => e.textContent)) && (await p.$eval('[data-readacct]', e => e.value)) === CB);
   await T.shot(p, 'stmt_paste_review');
+  /* [MAIN 15] a card payment that names no card, far from both payment days: the review asks, nothing is guessed */
+  await p.click('#a3StmtBack'); await T.w(150);
+  await p.$eval('#a3StmtAny', e => { e.open = true; });
+  await p.$eval('#a3StmtPaste', (e, v) => { e.value = v; }, JSON.stringify({ statements: [{ account: 'Main bank', kind: 'bank', rows: [{ date: '2026-11-30', text: 'JCB', amount: 23000, dir: 'out', cat: 'card_payment' }] }] }));
+  await p.click('#a3StmtCheck'); await T.w(300);
+  ck('the review asks which card, and Add leaves the line out until then', !!(await p.$('[data-pick]')) && (await p.$eval('#a3StmtAdd', e => e.disabled && e.textContent)) === 'Choose the card above');
+  await T.shot(p, 'stmt_which_card');
+  await p.select('[data-pick]', CB); await T.w(300);
+  ck('once Card B is chosen the line can be added, as a payment to Card B', !(await p.$('[data-pick]')) && (await p.$eval('#a3StmtAdd', e => e.textContent)) === 'Add 1 line');
   ck('no outside requests on the Claude route', requests.length === 0, requests.join(' '));
   ck('no page errors', errs.length === 0, errs.join(' | '));
   await b.close();

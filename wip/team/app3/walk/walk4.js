@@ -1,0 +1,20 @@
+const L = require('./lib.js'); const { go, home, w } = L;
+(async () => {
+  const c = await L.ctx(process.argv[2]); const p = c.pages()[0] || await c.newPage();
+  const errs = []; p.on('pageerror', e => errs.push(e.message)); p.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
+  const show = async t => console.log('\n## ' + t + '\n' + (await home(p)));
+  await go(p, '2026-12-12'); console.log(await L.spend(p, 12000, 'Card A', { note: 'gift' }));
+  await go(p, '2026-12-15'); console.log(await L.spend(p, 4000, 'Main bank', { note: 'food' }));
+  await go(p, '2026-12-24'); console.log(await L.spend(p, 9000, 'Card B', { note: 'xmas' }));
+  await show('24 Dec');
+  await go(p, '2027-01-07'); await show('7 Jan');
+  await go(p, '2027-01-08'); await show('8 Jan');
+  await go(p, '2027-01-11'); await show('11 Jan before check');
+  const r = await L.checkin(p, 328000, { 'Card B 11 Dec': 23000, 'Card B 8 Jan': 14000 }, ['Main job']);
+  console.log(JSON.stringify(r.list.map(x => x.text + ' = ' + x.amt)), r.err);
+  await show('11 Jan after check, main pay late');
+  await p.reload(); await w(500); await show('11 Jan after reload');
+  await go(p, '2027-01-12'); await show('12 Jan');
+  console.log('ERR', errs);
+  await c.close();
+})().catch(e => { console.log('CRASH', e); process.exit(1); });

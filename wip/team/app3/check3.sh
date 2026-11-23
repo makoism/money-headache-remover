@@ -35,6 +35,7 @@ step "statements, the reading half (pure)"; run tests/e3_stmt_read.js "e3_stmt_r
 step "statements, the writing half (pure): lines, matching, records"; run tests/e3_stmt_plan.js "e3_stmt_plan: ALL PASS"
 step "the Plan tab's steps (pure)"; run tests/plan3_write.test.js "plan3_write: ALL PASS"
 step "the backup file's core"; run tests/backup3.test.js "backup3: ALL PASS"
+step "Ask, the pure half (the summary sent, the reply checked, steps through act3, Undo)"; run tests/ask3_core.test.js "ask3_core: ALL PASS"
 step "reminders, the pure half (days from the engine's calendar, the calendar file, Google and Outlook links)"; run tests/remind3.test.js "remind3: ALL PASS"
 step "no money maths in screens"; run tests/no_maths.js "NO MATHS PASS"
 [ "$(pgrep -fc check3.sh)" -le 1 ] && pkill -f chrome-linux64/chrome 2>/dev/null   # leftover test browsers, only when no other lane is checking (it killed their tests)
@@ -51,6 +52,8 @@ step "guard (idle CPU, long tasks, outside requests, errors)"; run tests/guard3.
 step "offline load"; run tests/offline.js "offline: ALL PASS"
 step "two tabs on one device"; run tests/e3_tabs.js "e3_tabs: ALL PASS"
 step "Settings and the backup file"; run tests/e3_backup.js "e3_backup: ALL PASS"
+step "Ask on the page (recorded replies: the viewer's Claude and the relay)"; run tests/e3_ask.js "e3_ask: ALL PASS"
+step "Reminders on the page (check-ins and bills, the calendar file, Google and Outlook, nothing sent)"; run tests/e3_remind.js "e3_remind: ALL PASS"
 step "the cloud copy, two devices through the page (local fake vault)"; run tests/e3_cloud.js "e3_cloud: ALL PASS"
 step "the service worker (precache, offline, 3 s timeout, a new build)"; run tests/e3_sw.js "e3_sw: ALL PASS"
 

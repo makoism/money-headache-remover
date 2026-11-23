@@ -115,3 +115,24 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
 .a3-tabs[hidden] { display: none; }
 .a3-q { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--hair); }
 .a3-q .a3-rows li { align-items: center; }
+/* Ask (ask lane) */
+.a3-link + .a3-link { margin-left: 0; }
+.a3-ask-sent summary { cursor: pointer; font-size: var(--t-sm); color: var(--ink2); min-height: 44px; display: flex; align-items: center; }
+.a3-ask-sent pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: var(--t-cap); color: var(--ink2); background: var(--track); border-radius: var(--r-box); padding: 12px; margin: 0; max-height: 40vh; overflow: auto; }
+.a3-ask-log { display: flex; flex-direction: column; gap: 10px; }
+.a3-ask-log:empty { display: none; }
+.a3-ask-me, .a3-ask-ai { margin: 0; padding: 10px 14px; border-radius: var(--r-ctl); font-size: var(--t-sm); white-space: pre-wrap; overflow-wrap: anywhere; max-width: 92%; }
+.a3-ask-me { align-self: flex-end; background: var(--acc-tint2); }
+.a3-ask-ai { align-self: flex-start; background: var(--card); box-shadow: inset 0 0 0 1px var(--hair); }
+.a3-ask-wait { color: var(--ink2); }
+.a3-ask-label { font-weight: 600; display: block; margin-bottom: 6px; }
+.a3-ask-in { min-height: 88px; padding: 10px 14px; resize: vertical; text-align: left; }
+.a3-ask-try { display: flex; flex-direction: column; align-items: flex-start; margin-top: 8px; }
+.a3-ask-try .a3-link { margin-left: 0; text-align: left; }
+.a3-ask-figs li { display: grid; grid-template-columns: 1fr auto auto; gap: 12px; }
+.a3-ask-head { color: var(--ink2); font-size: var(--t-cap); }
+/* Reminders (ask lane) */
+.a3-rem-go { display: flex; gap: 14px; white-space: nowrap; }
+.a3-rem-go a { color: var(--ink); min-height: 44px; display: inline-flex; align-items: center; }
+#a3RemBefore { width: 100%; max-width: 16em; }
+.a3-sel[data-pick] { max-width: 100%; width: 100%; }
