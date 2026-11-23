@@ -165,6 +165,9 @@ function drawHome3() {
     /* [north star F3] Add a card opens Plan's own add-card form (planOpen3), never a second form */
     out.push(`<section class="a3-card" data-card="cards"><h2>${esc3(label3('owed'))} on your cards</h2>${cardIds.length ? `<ul class="a3-rows">${rows}${afterCards3(r, yr)}</ul>` : '<p class="a3-sub">No cards yet</p>'}<div class="a3-actions"><button type="button" class="a3-btn" id="a3AddCardGo">Add a card</button></div></section>`);
   }
+  /* [north star F2] goals: one row each, what is set aside and its target (the engine's places); a tap opens it on Plan */
+  const goals = ((E3.book && E3.book.places) || []).filter(g => g && !g.gone && g.kind === 'goal' && r.places && r.places[g.id]);
+  if (goals.length) out.push(`<section class="a3-card" data-card="goals"><h2>Goals</h2><ul class="a3-rows">${goals.map(g => `<li><button type="button" class="a3-rcrow" data-homegoal="${esc3(g.id)}"><span>${esc3(g.name)}</span><span class="amt"><span data-fig="goal-kept">${fig3('places.*.kept', r.places[g.id].kept, g.cur || home)}</span> of ${fig3('places.*.target', g.target, g.cur || home)}</span></button></li>`).join('')}</ul></section>`);
   /* overdue card and loan payments: past their day and not ticked, never dropped from the page [F4, H8, BF2] (plan lane) */
   const od = [].concat(...[['cards', r.cards], ['owed', r.owed || {}]].map(([k, m]) => Object.keys(m).map(id => (m[id].overdue || []).map(o =>
     `<li data-fig="overdue" data-owed="${esc3(id)}" data-state="${esc3(o.state)}"><span>${esc3(E3.nameOf(id))}<br><span class="when">${overdueWords3(o, E3.curOf(id), yr, k + '.*.overdue.*.amount')}</span></span></li>`))));
@@ -185,6 +188,7 @@ function drawHome3() {
   const P = BurrowScreens.provenance;
   host.querySelectorAll('[data-figure]').forEach(el => P.stamp(el, P.mark(Number(el.dataset.amt), origin === 'sample' ? 'sample' : el.dataset.figure === 'accounts.*.bank' ? 'typed' : 'worked')));
   /* [north star F1] no Free to spend yet: the prompt opens Plan's own Set Free to spend form */
+  host.querySelectorAll('[data-homegoal]').forEach(el => el.addEventListener('click', () => planOpen3('goal', el.dataset.homegoal)));
   $('#a3AddCardGo').addEventListener('click', () => planOpen3('card'));
   if ($('#a3FreeGo')) $('#a3FreeGo').addEventListener('click', () => planOpen3('free'));
   $('#a3CheckGo').addEventListener('click', openCheck3);
