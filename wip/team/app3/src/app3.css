@@ -135,3 +135,4 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
 .a3-rem-go { display: flex; gap: 14px; white-space: nowrap; }
 .a3-rem-go a { color: var(--ink); min-height: 44px; display: inline-flex; align-items: center; }
 #a3RemBefore { width: 100%; max-width: 16em; }
+.a3-sel[data-pick] { max-width: 100%; width: 100%; }

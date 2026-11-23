@@ -1399,6 +1399,7 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
 .a3-rem-go { display: flex; gap: 14px; white-space: nowrap; }
 .a3-rem-go a { color: var(--ink); min-height: 44px; display: inline-flex; align-items: center; }
 #a3RemBefore { width: 100%; max-width: 16em; }
+.a3-sel[data-pick] { max-width: 100%; width: 100%; }
 </style>
 </head>
 <body>
@@ -6755,7 +6756,28 @@ RULES
   }
 
   /* one read into its lines: the line id, the kind of record, the account money leaves and the one it reaches */
-  function linesOf(book, read, acct, cats, cardFor, expected) {
+  const MS = 86400000;
+  const dayNum = s => { const [y, m, d] = String(s).slice(0, 10).split('-').map(Number); return Math.round(Date.UTC(y, m - 1, d) / MS); };
+  const flat = s => String(s || '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '');
+  /* the card a bank's card payment line pays (MAIN 15). With close days "not sure" each card's item asks everything owed,
+     so the amount rarely tells. In order: the person's choice for this line, the card they chose before for this shop,
+     the only card, the card named in the line's words, the card whose payment day is nearest (within 5 days, one card
+     nearer than the rest), the one card expecting this amount. Otherwise { cards } and the review asks: nothing is guessed. */
+  function cardOfLine(cards, acct, l, o, expected) {
+    if (o.cardFor && o.cardFor[l.id] && cards.some(c => c.id === o.cardFor[l.id])) return { to: o.cardFor[l.id], chosen: true };
+    if (o.cardOf && o.cardOf[l.key] && cards.some(c => c.id === o.cardOf[l.key])) return { to: o.cardOf[l.key] };
+    if (cards.length === 1) return { to: cards[0].id };
+    const t = flat(l.text), named = cards.filter(c => flat(c.name) && t.includes(flat(c.name)));
+    if (named.length === 1) return { to: named[0].id };
+    const pool = named.length ? named : cards;
+    const items = c => expected.filter(x => x.acct === acct.id && E.ids.scheduleOf(x.item) === c.id);
+    const near = pool.map(c => ({ c, g: Math.min(Infinity, ...items(c).map(x => Math.abs(dayNum(x.lands) - dayNum(l.date)))) })).filter(x => x.g <= 5).sort((x, y) => x.g - y.g);
+    if (near.length === 1 || (near.length > 1 && near[0].g < near[1].g)) return { to: near[0].c.id };
+    const amt = pool.filter(c => items(c).some(x => x.a === l.a));
+    if (amt.length === 1) return { to: amt[0].id };
+    return { cards: pool.map(c => c.id) };
+  }
+  function linesOf(book, read, acct, cats, o, expected) {
     const cur = acct.cur, seen = {}, cards = liveAccts(book).filter(a => isCard(a) && a.payFrom === acct.id);
     return read.rows.map((r, i) => {
       const a = E.units.minorOf(r.a, cur), cat = catOf(cats, r);
@@ -6769,10 +6791,9 @@ RULES
         if (cat === 'card_payment' || cat === 'transfer_in') Object.assign(l, { k: 'repay', from: acct.payFrom || null, to: acct.id, side: 2 });
         else l.sub = 'refund';
       } else if (!isCard(acct) && r.dir === 'out' && cat === 'card_payment' && cards.length) {
-        // the card it pays: the person's choice, else the only one, else the one expected to take this amount, else the first
-        const exp = cards.find(c => expected.some(o => o.acct === acct.id && o.a === a && E.ids.scheduleOf(o.item) === c.id));
-        const to = (cardFor && cardFor[id]) || (cards.length === 1 ? cards[0].id : exp ? exp.id : cards[0].id);
-        Object.assign(l, { k: 'repay', from: acct.id, to, side: 1, acct2: to });
+        const c = cardOfLine(cards, acct, l, o, expected);
+        if (c.to) Object.assign(l, { k: 'repay', from: acct.id, to: c.to, side: 1, acct2: c.to }, c.chosen ? { chosen: true } : {});
+        else Object.assign(l, { k: 'repay', from: acct.id, to: null, side: 1, status: 'pick', cards: c.cards });
       }
       return l;
     });
@@ -6794,7 +6815,7 @@ RULES
     // A line the person took back (Undo) is offered again, and put back when kept.
     const kept0 = {}; for (const e of book.events || []) if (e) kept0[e.id] = e;
     const have = new Set(Object.values(kept0).filter(e => !e.gone || (e.goneBy && kept0[e.goneBy])).map(e => e.id));
-    const byRead = order.map(x => ({ read: x.r, acct: x.acct, idx: x.i, lines: linesOf(book, x.r, x.acct, cats, o.cardFor, expected) }));
+    const byRead = order.map(x => ({ read: x.r, acct: x.acct, idx: x.i, lines: linesOf(book, x.r, x.acct, cats, o, expected) }));
     const all = [].concat(...byRead.map(g => g.lines));
     // a line whose id is already kept is a repeat; within this batch, the first of two equal ids is kept (two files of one account)
     const first = {}; for (const l of all) { if (have.has(l.id)) l.status = 'repeat'; else if (first[l.id]) l.status = 'repeat'; else first[l.id] = l; }
@@ -6824,6 +6845,15 @@ RULES
       if (replaced[l.id]) { l.status = 'typed'; l.typed = replaced[l.id]; }
       else l.status = l.settles.length ? 'settles' : 'new';
     }
+    // [MAIN 15] a card payment line that settled nothing settles its card's nearest unsettled item (within 10 days):
+    // the item asks everything owed, so the amount is not the test; the card's own statements take what was paid.
+    const taken = new Set([].concat(...res.lines.filter(x => !x.gone).map(x => x.settles || [])));
+    for (const l of all) {
+      if (l.status !== 'new' || l.k !== 'repay' || l.side !== 1 || !l.to) continue;
+      const best = expected.filter(x => E.ids.scheduleOf(x.item) === l.to && x.acct === l.from && !taken.has(x.item))
+        .map(x => ({ x, g: Math.abs(dayNum(x.lands) - dayNum(l.date)) })).filter(y => y.g <= 10).sort((p1, p2) => p1.g - p2.g || (p1.x.lands < p2.x.lands ? -1 : 1))[0];
+      if (best) { l.settles = [best.x.item]; l.status = 'settles'; taken.add(best.x.item); }
+    }
     const statements = [];
     for (const g of byRead) {
       const st = g.read.statement;
@@ -6840,7 +6870,7 @@ RULES
     }
     const count = s => all.filter(l => l.status === s).length;
     return { today, lines: all, statements, merchants: Object.values(merchants).sort((x, y) => (y.inA + y.outA) - (x.inA + x.outA)),
-      counts: { read: all.length, repeat: count('repeat'), typed: count('typed'), settles: count('settles'), meets: count('meets'), new: count('new') },
+      counts: { read: all.length, repeat: count('repeat'), typed: count('typed'), settles: count('settles'), meets: count('meets'), new: count('new'), pick: count('pick') },
       reads: byRead.map(g => ({ idx: g.idx, file: g.read.file, acct: g.acct.id, from: g.read.from, to: g.read.to, rows: g.lines.length, notes: g.read.notes || [] })) };
   }
 
@@ -6850,7 +6880,7 @@ RULES
     const kept = {}; for (const e of book.events || []) if (e && !e.gone) kept[e.id] = e;
     const events = [], settled = [];
     for (const l of p.lines) {
-      if (l.status === 'repeat' || skip[l.id]) continue;
+      if (l.status === 'repeat' || l.status === 'pick' || skip[l.id]) continue;
       const src = { type: 'statement', file: l.file, line: l.line, acct: l.acct };
       const read = p.reads.find(r => r.file === l.file && r.acct === l.acct);
       if (read && read.from) { src.from = read.from; src.to = read.to; }
@@ -6893,7 +6923,17 @@ RULES
   /* [BC4 cats] the categories to remember, by shop: { 'k:<key>': { v, src, at } } (SCHEMA_V3 2.1 imports.cats) */
   function catsToKeep(p, changed, at) {
     const out = {};
-    for (const m of p.merchants) out['k:' + m.key] = { v: m.cat, src: changed && changed[m.key] ? 'person' : 'reader', at };
+    for (const m of p.merchants) {
+      out['k:' + m.key] = { v: m.cat, src: changed && changed[m.key] ? 'person' : 'reader', at };
+      const ch = p.lines.find(l => l.key === m.key && l.chosen);   // the card the person chose for this shop's payments
+      if (ch) out['k:' + m.key].card = ch.to;
+    }
+    return out;
+  }
+  /* the cards the person chose before, by shop key */
+  function knownCards(book) {
+    const c = (book.imports && book.imports.cats) || {}, out = {};
+    for (const k of Object.keys(c)) if (c[k] && !c[k].gone && c[k].card && k.startsWith('k:')) out[k.slice(2)] = c[k].card;
     return out;
   }
   /* the categories the book already knows, by merchant key */
@@ -6911,7 +6951,7 @@ RULES
     return { bank: d.balance !== null ? { a: m(d.balance), date: d.balanceDate } : null, pay: d.pay !== null ? { a: m(d.pay), how: d.how } : null, bills, cards: d.card !== null ? m(d.card) : null };
   }
 
-  const api = { plan, records, catsToKeep, knownCats, setupHints, expectedOf, use };
+  const api = { plan, records, catsToKeep, knownCats, knownCards, setupHints, expectedOf, use };
   if (node) module.exports = api;
   else root.STMT3P = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
@@ -9070,7 +9110,7 @@ let stmt3 = null;
 function stmt3Accts() { return (E3.book.accounts || []).filter(a => a && !a.gone && !a.closed && (a.type === 'bank' || a.type === 'card')); }
 function stmt3Start(opts) {
   if (!E3.book) { msg3('Set up first'); return; }
-  stmt3 = { files: {}, reads: [], assign: [], changed: {}, skip: {}, setup: opts || null };
+  stmt3 = { files: {}, reads: [], assign: [], changed: {}, skip: {}, cardFor: {}, setup: opts || null };
   stmt3Pick();
 }
 function stmt3Show(html) {
@@ -9166,11 +9206,12 @@ function stmt3Got(reads, assign) {
 /* ---- step 2: the review ---- */
 function stmt3Plan() {
   const cats = Object.assign(STMT3P.knownCats(E3.book), stmt3.changed);
-  stmt3.plan = STMT3P.plan(E3.book, stmt3.reads, { today: E3.today(), assign: stmt3.assign, cats });
+  stmt3.plan = STMT3P.plan(E3.book, stmt3.reads, { today: E3.today(), assign: stmt3.assign, cats, cardFor: stmt3.cardFor, cardOf: STMT3P.knownCards(E3.book) });
   return stmt3.plan;
 }
 function stmt3Tag(l, yr) {
   if (l.status === 'repeat') return 'already here';
+  if (l.status === 'pick') return 'a card payment: which card is asked at the top';
   if (l.status === 'typed') { const t = E3.book.events.find(e => e.id === l.typed); return 'you typed this' + (t ? ' on ' + day3(t.date, yr) : ''); }
   if (l.status === 'meets') return l.metImport ? 'the same payment as the line from your bank' : 'the payment you ticked';
   const pays = l.k === 'repay' ? 'pays ' + E3.nameOf(l.to) : '';
@@ -9194,21 +9235,26 @@ function stmt3Review() {
         <label><input type="checkbox" data-skip="${esc3(l.id)}" ${l.status === 'repeat' ? 'disabled' : stmt3.skip[l.id] ? '' : 'checked'}>
         <span>${esc3(day3(l.date, yr))}${l.posted ? ', posted ' + esc3(day3(l.posted, yr)) : ''}<br><span class="when">${esc3(E3.nameOf(l.acct))}${stmt3Tag(l, yr) ? '. ' + esc3(stmt3Tag(l, yr)) : ''}</span></span></label>
         <span class="amt">${l.dir === 'in' ? '+' : ''}${money3(l.a, cur(l.acct))}</span></li>`).join('')}</ul></div>`).join('');
-  const c = p.counts, adding = p.lines.filter(l => l.status !== 'repeat' && !stmt3.skip[l.id]).length;
+  /* [MAIN 15] a card payment the page could not tie to one card: the person says which; nothing is guessed */
+  const picks = p.lines.filter(l => l.status === 'pick').map(l => `<div class="a3-field" data-pickline="${esc3(l.id)}"><label for="a3pk-${esc3(l.id)}">${esc3(l.text)}, ${esc3(day3(l.date, yr))}, ${money3(l.a, cur(l.acct))}</label>
+      <select class="a3-in a3-sel" id="a3pk-${esc3(l.id)}" data-pick="${esc3(l.id)}"><option value="">Choose the card</option>${l.cards.map(id => `<option value="${esc3(id)}">${esc3(E3.nameOf(id))}</option>`).join('')}</select></div>`).join('');
+  const c = p.counts, adding = p.lines.filter(l => l.status !== 'repeat' && l.status !== 'pick' && !stmt3.skip[l.id]).length;
   const said = [c.settles ? c.settles + ' are bills, pay or card payments you expected' : '', c.typed ? `${c.typed} ${c.typed === 1 ? 'is one you typed' : 'are ones you typed'}` : '',
-    c.meets ? c.meets + ' read twice, from your bank and your card' : '', c.repeat ? c.repeat + ' already here, left out' : ''].filter(Boolean);
+    c.meets ? c.meets + ' read twice, from your bank and your card' : '', c.repeat ? c.repeat + ' already here, left out' : '', c.pick ? `${c.pick} ${c.pick === 1 ? 'card payment needs' : 'card payments need'} you to say which card` : ''].filter(Boolean);
   const sheet = stmt3Show(`<h1 id="a3StmtT">What was read</h1>
     <section class="a3-card"><h2>${c.read} ${c.read === 1 ? 'line' : 'lines'}</h2><p class="a3-sub" data-fig="stmtsum">${esc3(said.join('. ') || 'All new')}</p>
       <ul class="a3-rows">${readRows}</ul></section>
+    ${picks ? `<section class="a3-card" id="a3StmtPicks"><h2>Which card does this pay?</h2><p class="a3-sub">These left your bank as a card payment, and more than one card could be the one. It is added once you choose</p>${picks}</section>` : ''}
     ${sts ? `<section class="a3-card"><h2>Card statements</h2>${sts}</section>` : ''}
     <section class="a3-card"><h2>Shops and categories</h2><p class="a3-sub">Tap a shop to see its lines. Untick a line to leave it out</p>${shops}</section>
     <p class="a3-err" id="a3StmtErr"></p>
-    <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3StmtAdd" ${adding ? '' : 'disabled'}>${adding ? 'Add ' + adding + (adding === 1 ? ' line' : ' lines') : 'Nothing new to add'}</button><button type="button" class="a3-btn" id="a3StmtBack">Back</button></div>`);
+    <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3StmtAdd" ${adding ? '' : 'disabled'}>${adding ? 'Add ' + adding + (adding === 1 ? ' line' : ' lines') : c.pick ? 'Choose the card above' : 'Nothing new to add'}</button><button type="button" class="a3-btn" id="a3StmtBack">Back</button></div>`);
   sheet.querySelectorAll('[data-mx]').forEach(b => b.addEventListener('click', () => {
     const ul = sheet.querySelector(`[data-rowsof="${CSS.escape(b.dataset.mx)}"]`); ul.hidden = !ul.hidden; b.setAttribute('aria-expanded', String(!ul.hidden));
   }));
   sheet.querySelectorAll('[data-cat]').forEach(s => s.addEventListener('change', () => { stmt3.changed[s.dataset.cat] = s.value; stmt3Again(); }));
   sheet.querySelectorAll('[data-readacct]').forEach(s => s.addEventListener('change', () => { stmt3.assign[+s.dataset.readacct] = s.value; stmt3Again(); }));
+  sheet.querySelectorAll('[data-pick]').forEach(x => x.addEventListener('change', () => { if (x.value) { stmt3.cardFor[x.dataset.pick] = x.value; stmt3Again(); } }));
   sheet.querySelectorAll('[data-skip]').forEach(x => x.addEventListener('change', () => { if (x.checked) delete stmt3.skip[x.dataset.skip]; else stmt3.skip[x.dataset.skip] = true; stmt3Again(); }));
   $('#a3StmtBack').addEventListener('click', stmt3Pick);
   $('#a3StmtAdd').addEventListener('click', stmt3Add);
