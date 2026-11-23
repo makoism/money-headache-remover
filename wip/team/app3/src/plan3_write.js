@@ -43,17 +43,18 @@
   }
   /* when: 'now' (this pay period and after), 'next' (from the next pay period), 'once' (this pay period only) */
   function changeLine(w, id, x) {
-    const l = find(w, 'budgets', id), a = x.amount === 0 ? 0 : amountOk(x.amount, 'an amount'), p = period(w);
+    const l = find(w, 'budgets', id), a = x.amount == null || x.amount === 0 ? x.amount : amountOk(x.amount, 'an amount'), p = period(w);
     const ch = {};
     if (x.name != null && x.name !== l.name) { ch.name = nameOk(x.name); sameName(A3.listOf(w.book, 'budgets'), ch.name, id); }
     /* 'now' is a step from today (the next periods) and a once key for this one: the engine reads a step only from a
        period start it has recorded, and the period holding the setup day has none */
-    if (x.when === 'once' || x.when === 'now') {
+    if (a == null) { if (!ch.name) bad('Nothing changed'); }
+    else if (x.when === 'once' || x.when === 'now') {
       if (!p.startsWith) bad('This pay period has no pay to name it by yet. Change it from the next one');
       ch.once = Object.assign({}, l.once || {}, { [p.startsWith]: { amount: a } });
     }
-    if (x.when === 'now' || x.when === 'next') ch.steps = (l.steps || []).concat([{ from: w.today, amount: a }]);
-    else if (x.when !== 'once' && !ch.name) bad('Pick when the change starts');
+    if (a != null && (x.when === 'now' || x.when === 'next')) ch.steps = (l.steps || []).concat([{ from: w.today, amount: a }]);
+    else if (a != null && x.when !== 'once') bad('Pick when the change starts');
     const r = w.edit('budgets', id, ch);
     if (ch.steps) stampNew(r, 'steps');
     if (ch.once) Object.assign(r.once[p.startsWith], { at: r.at, by: r.by });

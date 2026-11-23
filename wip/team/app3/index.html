@@ -1352,6 +1352,14 @@ html { scroll-padding-top: 72px; }
 details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
 #a3StmtBar[hidden], .a3-stmt-rows[hidden] { display: none; }
 .a3-tick2 > span:not(.amt) { display: flex; flex-direction: column; }
+/* Plan (plan lane) */
+#a3Plan[hidden] { display: none; }
+#a3Plan { display: flex; flex-direction: column; gap: var(--gap-card); }
+.a3-goal meter { display: block; width: 100%; height: 10px; margin-top: 6px; accent-color: var(--accent); }
+.a3-goal > span:first-child { flex: 1; min-width: 0; }
+.a3-past { border-bottom: 1px solid var(--hair); padding: 8px 0; }
+.a3-past summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; font-weight: 600; }
+.a3-past summary:focus-visible { outline: 3px solid var(--acc-ring); outline-offset: 2px; }
 </style>
 </head>
 <body>
@@ -1360,12 +1368,13 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
     <p class="a3-brand"><span id="a3Pix"></span>the burrow</p>
     <p class="a3-try" id="a3Try" hidden></p>
   </header>
-  <nav class="a3-tabs" aria-label="Pages"><button type="button" data-tab="home" aria-current="page">Home</button><button type="button" data-tab="receipts">Receipts</button></nav>
+  <nav class="a3-tabs" aria-label="Pages"><button type="button" data-tab="home" aria-current="page">Home</button><button type="button" data-tab="receipts">Receipts</button><button type="button" data-tab="plan">Plan</button></nav>
   <div class="a3-msg" id="a3Msg"></div>
   <div id="a3Home" data-panel="home" aria-live="polite"></div>
   <div id="a3Rc" data-panel="receipts" hidden></div>
   <div class="a3-actions" id="a3StmtBar" hidden><button type="button" class="a3-btn" id="a3StmtGo">Add statements</button></div>
   <section class="a3-sheet" id="a3Stmt" role="dialog" aria-modal="true" aria-labelledby="a3StmtT" hidden></section>
+  <div id="a3Plan" data-panel="plan" hidden></div>
   <section class="a3-sheet" id="a3Check" role="dialog" aria-modal="true" aria-labelledby="a3CheckT" hidden></section>
 </main>
 <script>
@@ -5699,17 +5708,18 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
   }
   /* when: 'now' (this pay period and after), 'next' (from the next pay period), 'once' (this pay period only) */
   function changeLine(w, id, x) {
-    const l = find(w, 'budgets', id), a = x.amount === 0 ? 0 : amountOk(x.amount, 'an amount'), p = period(w);
+    const l = find(w, 'budgets', id), a = x.amount == null || x.amount === 0 ? x.amount : amountOk(x.amount, 'an amount'), p = period(w);
     const ch = {};
     if (x.name != null && x.name !== l.name) { ch.name = nameOk(x.name); sameName(A3.listOf(w.book, 'budgets'), ch.name, id); }
     /* 'now' is a step from today (the next periods) and a once key for this one: the engine reads a step only from a
        period start it has recorded, and the period holding the setup day has none */
-    if (x.when === 'once' || x.when === 'now') {
+    if (a == null) { if (!ch.name) bad('Nothing changed'); }
+    else if (x.when === 'once' || x.when === 'now') {
       if (!p.startsWith) bad('This pay period has no pay to name it by yet. Change it from the next one');
       ch.once = Object.assign({}, l.once || {}, { [p.startsWith]: { amount: a } });
     }
-    if (x.when === 'now' || x.when === 'next') ch.steps = (l.steps || []).concat([{ from: w.today, amount: a }]);
-    else if (x.when !== 'once' && !ch.name) bad('Pick when the change starts');
+    if (a != null && (x.when === 'now' || x.when === 'next')) ch.steps = (l.steps || []).concat([{ from: w.today, amount: a }]);
+    else if (a != null && x.when !== 'once') bad('Pick when the change starts');
     const r = w.edit('budgets', id, ch);
     if (ch.steps) stampNew(r, 'steps');
     if (ch.once) Object.assign(r.once[p.startsWith], { at: r.at, by: r.by });
@@ -6233,6 +6243,227 @@ if (ACT3) ACT3.onChange((step, opts) => {
   try { renderHome3(); } catch (e) { /* Home draws itself next time */ }
   renderRc3();
 });
+/* ---------- Plan (the plan lane; old app: ui1.js to ui3.js, ui7.js, rebuilt on the new engine, pay to pay) ----------
+   This pay period by its dates with each budget line and Free to spend (what it started with and what is left), bills
+   with their days (add, change from a date, end), goals kept in the bank or in their own account (set money aside,
+   progress, target date), cards and loans with their payment days (each owns its payment [E6]), and the pay periods
+   gone by, built from what happened (engine/periods.js). Every figure is the engine's; every write is one step through
+   ACT3 (src/act3.js, its Undo bar) using the steps in src/plan3_write.js. This file chooses, writes and places; it never
+   adds, takes away or rounds (tests: no_maths.js, e3_plan.js). */
+const PL3 = { form: null };
+const plLive3 = x => x && !x.gone;
+const plWords3 = { once: 'This pay period only', now: 'This pay period and after', next: 'From the next pay period' };
+
+function plFig3(path, minor, cur) { return fig3(path, minor, cur || E3.home()); }
+function plRow3(attrs, left, right) {
+  return `<li><button type="button" class="a3-rcrow" ${attrs}><span>${left}</span><span class="amt">${right}</span></button></li>`;
+}
+function plAccounts3(kinds) { return ((E3.book && E3.book.accounts) || []).filter(a => plLive3(a) && kinds[a.type] && !a.closed); }
+
+function renderPlan3() {
+  const host = $('#a3Plan');
+  if (!host || host.hidden) return;
+  if (PL3.form) return;   // a form is open: it draws itself
+  if (!E3.book) { host.innerHTML = '<section class="a3-card"><h2>Nothing here yet</h2><p class="a3-sub">Set up first. Your plan shows here after that</p></section>'; return; }
+  const day = E3.today(), yr = day.slice(0, 4), home = E3.home(), book = E3.book;
+  let r, view, per;
+  try { r = E3.view(day); view = BurrowEngine.periods.scheduleView(book, day); per = BurrowEngine.periods.periods(book, day); } catch (e) {
+    host.innerHTML = `<section class="a3-card"><h2>The plan could not be worked out</h2><p class="a3-warn a3-bad">${esc3(e.message)}</p></section>`; return;
+  }
+  const out = [];
+  /* this pay period */
+  const p = r.period;
+  if (!p) out.push('<section class="a3-card" data-card="plan-period"><h2>Your plan</h2><p class="a3-sub">Your plan runs from one pay to the next. Add a pay day first</p></section>');
+  else {
+    const lines = p.lines.filter(l => !(l.amount === 0 && l.left === 0)).map(l => {
+      const rec = ((book.plan || {}).budgets || []).find(x => x.id === l.id) || {};
+      const ends = rec.ends ? `<br><span class="when">Ends after this pay period</span>` : '';
+      return plRow3(`data-line="${esc3(l.id)}"`, `${esc3(l.name)}${ends}`, `<span data-fig="line-left">${plFig3('period.lines.*.left', l.left)}</span> <span class="when">left of <span data-fig="line-amount">${plFig3('period.lines.*.amount', l.amount)}</span></span>`);
+    });
+    const free = p.free ? plRow3('data-line="free"', esc3(label3('freeToSpendLeft')), `<span data-fig="free-left">${plFig3('period.free.left', p.free.left)}</span> <span class="when">of <span data-fig="free-amount">${plFig3('period.free.amount', p.free.amount)}</span></span>`) : '';
+    out.push(`<section class="a3-card" data-card="plan-period"><h2>${esc3(label3('period'))}</h2>
+      <p class="a3-mid" data-fig="plan-period" data-start="${esc3(p.start)}" data-end="${esc3(p.end)}">${esc3(SN.periodLabel(p.start, p.end))}</p>
+      ${lines.length || free ? `<ul class="a3-rows a3-rclist">${lines.join('')}${free}</ul>` : '<p class="a3-sub">No budget lines yet. A line keeps money for one thing, like food, each pay period</p>'}
+      <div class="a3-actions"><button type="button" class="a3-btn" id="plAddLine">Add a line</button>${p.free ? '' : '<button type="button" class="a3-btn" id="plSetFree">Set Free to spend</button>'}</div></section>`);
+  }
+  /* pay and bills */
+  const scheds = (book.schedules || []).filter(s => plLive3(s) && view[s.id]);
+  const nextWords = v => (v.next ? `next ${esc3(day3(v.next.land, yr))}` : v.ends ? `ended ${esc3(day3(v.ends, yr))}` : 'nothing coming');
+  const ruleWords = v => (v.rule && v.rule.every === 'month' ? 'day ' + v.rule.days.join(' and ') + ' each month' : v.rule && v.rule.every === 'weeks' ? 'every ' + (v.rule.n === 1 ? 'week' : v.rule.n + ' weeks') : 'no fixed day');
+  const pays = scheds.filter(s => s.kind === 'income').map(s => `<li data-pay="${esc3(s.id)}"><span>${esc3(s.name)}<br><span class="when">${ruleWords(view[s.id])}, ${nextWords(view[s.id])}</span></span><span class="amt">${plFig3('schedules.*.amount', view[s.id].amount, s.cur)}</span></li>`);
+  const bills = scheds.filter(s => s.kind === 'bill').map(s => plRow3(`data-bill="${esc3(s.id)}"`, `${esc3(s.name)}<br><span class="when">${ruleWords(view[s.id])}, ${nextWords(view[s.id])}${view[s.id].ends && view[s.id].next ? ', last on ' + esc3(day3(view[s.id].ends, yr)) : ''}</span>`, plFig3('schedules.*.amount', view[s.id].amount, s.cur)));
+  out.push(`<section class="a3-card" data-card="plan-bills"><h2>Pay and bills</h2>
+    ${pays.length ? `<ul class="a3-rows">${pays.join('')}</ul>` : ''}
+    ${bills.length ? `<ul class="a3-rows a3-rclist">${bills.join('')}</ul>` : '<p class="a3-sub">No bills yet</p>'}
+    <div class="a3-actions"><button type="button" class="a3-btn" id="plAddBill">Add a bill</button></div></section>`);
+  /* goals */
+  const goals = (book.places || []).filter(g => plLive3(g) && g.kind === 'goal' && r.places[g.id]).map(g => {
+    const kept = r.places[g.id].kept, where = g.keptIn && g.keptIn.mode === 'ownAccount' ? 'in ' + esc3(E3.nameOf(g.keptIn.acct)) : 'kept in your bank';
+    const due = g.due ? `, ${esc3(label3('placeDue')).toLowerCase()} ${esc3(day3(g.due, yr))}` : '';
+    return `<li><button type="button" class="a3-rcrow a3-goal" data-goal="${esc3(g.id)}"><span>${esc3(g.name)}<br><span class="when">${where}${due}</span>
+      <meter min="0" max="${esc3(g.target)}" value="${esc3(kept)}" aria-label="${esc3(g.name)}: set aside so far"></meter></span>
+      <span class="amt"><span data-fig="goal-kept">${plFig3('places.*.kept', kept, g.cur)}</span><br><span class="when">of ${plFig3('places.*.target', g.target, g.cur)}</span></span></button></li>`;
+  });
+  out.push(`<section class="a3-card" data-card="plan-goals"><h2>Goals</h2>${goals.length ? `<ul class="a3-rows a3-rclist">${goals.join('')}</ul>` : '<p class="a3-sub">No goals yet. A goal is money set aside for something, kept in your bank or in an account of its own</p>'}
+    <div class="a3-actions"><button type="button" class="a3-btn" id="plAddGoal">Add a goal</button></div></section>`);
+  /* cards and loans */
+  const owedRows = plAccounts3({ card: 1, loan: 1 }).map(a => {
+    const k = a.type === 'card' ? r.cards[a.id] : r.owed[a.id];
+    if (!k) return '';
+    const days = a.type === 'card' ? `paid on day ${esc3(a.payDay)} from ${esc3(E3.nameOf(a.payFrom))}, ${a.cutDay == null ? 'close day not sure' : 'closes on day ' + esc3(a.cutDay)}`
+      : `paid on day ${esc3(a.payDay)} from ${esc3(E3.nameOf(a.payFrom))}`;
+    const nx = k.next && k.next.amount ? `<br><span class="when">${esc3(label3('nextPayment'))} ${plFig3(a.type === 'card' ? 'cards.*.next.amount' : 'owed.*.next.amount', k.next.amount, a.cur)} on ${esc3(day3(k.next.payment_date, yr))}</span>` : '';
+    return plRow3(`data-owed="${esc3(a.id)}"`, `${esc3(a.name)}<br><span class="when">${days}</span>${nx}`, `<span data-fig="owed-now">${plFig3(a.type === 'card' ? 'cards.*.owedNow' : 'owed.*.owedNow', k.owedNow, a.cur)}</span><br><span class="when">${esc3(label3('owed')).toLowerCase()}</span>`);
+  }).filter(Boolean);
+  out.push(`<section class="a3-card" data-card="plan-owed"><h2>Cards and loans</h2>${owedRows.length ? `<ul class="a3-rows a3-rclist">${owedRows.join('')}</ul>` : '<p class="a3-sub">No cards or loans</p>'}
+    <div class="a3-actions"><button type="button" class="a3-btn" id="plAddLoan">Add a loan</button></div></section>`);
+  /* pay periods gone by */
+  const past = per.past.map(q => {
+    const ln = q.lines.filter(l => l.amount || l.spent).map(l => `<li><span>${esc3(l.name)}</span><span class="amt">${plFig3('periods.*.lines.*.spent', l.spent)} <span class="when">spent of ${plFig3('periods.*.lines.*.start', l.start)}</span></span></li>`).join('');
+    const fr = q.free ? `<li><span>Free to spend</span><span class="amt">${plFig3('periods.*.free.spent', q.free.spent)} <span class="when">spent of ${plFig3('periods.*.free.start', q.free.start)}</span></span></li>` : '';
+    const tot = (name, x, path) => `<li><span>${name}</span><span class="amt">${plFig3(path, x.total)}</span></li>`;
+    return `<details class="a3-past" data-past="${esc3(q.start)}"><summary>${esc3(SN.periodLabel(q.start, q.end))}</summary><ul class="a3-rows">${ln}${fr}
+      ${tot('Money in', q.moneyIn, 'periods.*.moneyIn.total')}${tot('Bills paid', q.billsPaid, 'periods.*.billsPaid.total')}${tot('Card payments', q.cardPayments, 'periods.*.cardPayments.total')}</ul></details>`;
+  });
+  out.push(`<section class="a3-card" data-card="plan-past"><h2>Pay periods gone by</h2>${past.length ? past.join('') : '<p class="a3-sub">None yet. When your next pay is ticked off, this pay period shows here with what was spent</p>'}</section>`);
+  host.setAttribute('data-origin', E3.mode === 'try' ? 'sample' : 'typed');
+  host.innerHTML = out.join('');
+  const P = BurrowScreens.provenance, origin = E3.mode === 'try' ? 'sample' : null;
+  host.querySelectorAll('[data-figure]').forEach(el => P.stamp(el, P.mark(Number(el.dataset.amt), origin || (/(amount|target|start)$/.test(el.dataset.figure) ? 'typed' : 'worked'))));
+  const on = (sel, fn) => { const el = $(sel); if (el) el.addEventListener('click', fn); };
+  on('#plAddLine', () => plLineForm3(null));
+  on('#plSetFree', () => plLineForm3('free'));
+  on('#plAddBill', () => plBillForm3(null));
+  on('#plAddGoal', () => plGoalForm3(null));
+  on('#plAddLoan', () => plLoanForm3());
+  host.querySelectorAll('[data-line]').forEach(b => b.addEventListener('click', () => plLineForm3(b.dataset.line)));
+  host.querySelectorAll('[data-bill]').forEach(b => b.addEventListener('click', () => plBillForm3(b.dataset.bill)));
+  host.querySelectorAll('[data-goal]').forEach(b => b.addEventListener('click', () => plGoalForm3(b.dataset.goal)));
+  host.querySelectorAll('[data-owed]').forEach(b => b.addEventListener('click', () => plOwedForm3(b.dataset.owed)));
+}
+
+/* ---- one form at a time, in the Plan panel: fields, then buttons, each button one ACT3 step ----
+   field: { key, label, kind: 'text'|'amount'|'day'|'date'|'pick', value, options: [{ v, name }], hint, optional }
+   button: { label, solid, step: vals => [label, w => ..., undo words] } */
+function plForm3(title, fields, buttons, note) {
+  const host = $('#a3Plan'), cur = E3.home();
+  PL3.form = { title };
+  const input = f => {
+    const id = 'pl-' + f.key, v = f.value == null ? '' : f.value;
+    if (f.kind === 'pick') return `<select class="a3-in a3-sel" id="${id}">${f.options.map(o => `<option value="${esc3(o.v)}"${o.v === v ? ' selected' : ''}>${esc3(o.name)}</option>`).join('')}</select>`;
+    if (f.kind === 'amount') return `<input class="a3-in" id="${id}" type="text" inputmode="decimal" autocomplete="off" value="${v === '' ? '' : SM.toInput(v, cur)}" placeholder="${esc3(SM.symbol(cur).trim())}">`;
+    if (f.kind === 'day') return `<input class="a3-in" id="${id}" type="number" inputmode="numeric" min="1" max="31" value="${esc3(v)}">`;
+    if (f.kind === 'date') return `<input class="a3-in a3-date" id="${id}" type="date" value="${esc3(v)}">`;
+    return `<input class="a3-in a3-text" id="${id}" type="text" autocomplete="off" maxlength="60" value="${esc3(v)}">`;
+  };
+  host.innerHTML = `<section class="a3-card" data-card="plan-form"><h2>${esc3(title)}</h2>${note ? `<p class="a3-sub">${note}</p>` : ''}
+    ${fields.map(f => `<div class="a3-field"><label for="pl-${f.key}">${esc3(f.label)}</label>${input(f)}${f.hint ? `<p class="a3-sub">${esc3(f.hint)}</p>` : ''}</div>`).join('')}
+    <p class="a3-err" id="plErr" role="alert"></p>
+    <div class="a3-actions">${buttons.map((b, i) => `<button type="button" class="a3-btn${b.solid ? ' solid' : ''}" data-plbtn="${i}">${esc3(b.label)}</button>`).join('')}<button type="button" class="a3-btn" id="plBack">Back</button></div></section>`;
+  for (const f of fields) if (f.kind === 'amount') BurrowScreens.inputs.bind($('#pl-' + f.key), { kind: 'amount', code: cur, optional: true });
+  const read = () => {
+    const vals = {};
+    for (const f of fields) {
+      const el = $('#pl-' + f.key), t = el.value.trim();
+      if (f.kind === 'amount') {
+        if (!t) vals[f.key] = f.optional ? null : undefined;
+        else { const v = typed3(t, cur); if (v === null) return { bad: `Type ${f.label.toLowerCase()} as an amount`, el }; vals[f.key] = v; }
+      } else if (f.kind === 'day') vals[f.key] = t ? Number(t) : null;
+      else vals[f.key] = t;
+    }
+    return { vals };
+  };
+  host.querySelectorAll('[data-plbtn]').forEach(btn => btn.addEventListener('click', async () => {
+    const got = read(), err = $('#plErr');
+    if (got.bad) { err.textContent = got.bad; got.el.focus(); return; }
+    const [label, fn, undo] = buttons[Number(btn.dataset.plbtn)].step(got.vals);
+    const res = await ACT3.run(label, fn, { undo });
+    if (!res.ok) { err.textContent = res.text; return; }
+    plClose3();
+  }));
+  $('#plBack').addEventListener('click', plClose3);
+  scrollTo(0, 0);
+  const first = host.querySelector('input, select'); if (first) first.focus();
+}
+function plClose3() { PL3.form = null; renderPlan3(); }
+function plWhen3(value) {
+  return { key: 'when', label: 'When', kind: 'pick', value: value || 'next', options: ['next', 'now', 'once'].map(v => ({ v, name: plWords3[v] })) };
+}
+
+/* a budget line, or Free to spend ('free'); id null adds a line */
+function plLineForm3(id) {
+  const book = E3.book, p = E3.view(E3.today()).period;
+  if (id === 'free') {
+    const has = !!(p && p.free);
+    plForm3('Free to spend', [{ key: 'amount', label: 'Each pay period', kind: 'amount', value: has ? p.free.amount : null }].concat(has ? [plWhen3('next')] : []),
+      [{ label: 'Save', solid: true, step: v => ['setFree', w => PLAN3W.setFree(w, { amount: v.amount, when: v.when }), 'Free to spend changed'] }],
+      'Free to spend is money for anything, with no line of its own');
+    return;
+  }
+  if (!id) {
+    plForm3('Add a line', [{ key: 'name', label: 'Name', kind: 'text', hint: 'Like Food or Transport' }, { key: 'amount', label: 'Each pay period', kind: 'amount' }],
+      [{ label: 'Add', solid: true, step: v => ['addLine', w => PLAN3W.addLine(w, { name: v.name, amount: v.amount }), 'Line added'] }],
+      'It starts in this pay period');
+    return;
+  }
+  const rec = ((book.plan || {}).budgets || []).find(x => x.id === id), l = p.lines.find(x => x.id === id);
+  plForm3(rec.name, [{ key: 'name', label: 'Name', kind: 'text', value: rec.name }, { key: 'amount', label: 'Each pay period', kind: 'amount', value: l ? l.amount : null }, plWhen3('next')],
+    [{ label: 'Save', solid: true, step: v => ['changeLine', w => PLAN3W.changeLine(w, id, { name: v.name, amount: l && v.amount === l.amount ? null : v.amount, when: v.when }), 'Line changed'] },
+     { label: 'End this line', step: () => ['endLine', w => PLAN3W.endLine(w, id), rec.name + ' ends after this pay period'] }],
+    'A change never changes a pay period gone by');
+}
+/* a bill; id null adds one */
+function plBillForm3(id) {
+  const book = E3.book, accts = plAccounts3({ bank: 1, cash: 1, ewallet: 1, wallet: 1, card: 1 }).map(a => ({ v: a.id, name: a.name }));
+  if (!id) {
+    plForm3('Add a bill', [{ key: 'name', label: 'Name', kind: 'text', hint: 'Like Rent or Phone' }, { key: 'amount', label: 'Amount', kind: 'amount' },
+      { key: 'day', label: 'Day of the month it is due', kind: 'day' }, { key: 'acct', label: 'Paid from', kind: 'pick', options: accts, value: (accts[0] || {}).v }],
+    [{ label: 'Add', solid: true, step: v => ['addBill', w => PLAN3W.addBill(w, { name: v.name, amount: v.amount, day: v.day, acct: v.acct }), 'Bill added'] }],
+    'It is due from today on. On a weekend or holiday it moves to the next working day');
+    return;
+  }
+  const s = book.schedules.find(x => x.id === id), v0 = BurrowEngine.periods.scheduleView(book, E3.today())[id];
+  const day = v0.rule && v0.rule.every === 'month' && v0.rule.days.length === 1 ? v0.rule.days[0] : null;
+  plForm3(s.name, [{ key: 'name', label: 'Name', kind: 'text', value: s.name }, { key: 'amount', label: 'Amount', kind: 'amount', value: v0.amount },
+    { key: 'day', label: 'Day of the month it is due', kind: 'day', value: day }, { key: 'from', label: 'Changes from', kind: 'date', value: v0.changeFrom, hint: 'Earlier ones stay as they were' }],
+  [{ label: 'Save', solid: true, step: v => ['changeBill', w => PLAN3W.changeBill(w, id, { name: v.name, amount: v.amount, day: v.day, from: v.from }), 'Bill changed'] },
+   { label: 'End this bill', step: v => ['endBill', w => PLAN3W.endBill(w, id, { last: v.from }), s.name + ' ends'] }],
+  `End this bill: nothing is due after the day in "Changes from"`);
+}
+/* a goal; id null adds one */
+function plGoalForm3(id) {
+  const book = E3.book;
+  if (!id) {
+    plForm3('Add a goal', [{ key: 'name', label: 'Name', kind: 'text', hint: 'Like Trip or New laptop' }, { key: 'target', label: 'Goal amount', kind: 'amount' },
+      { key: 'due', label: 'Target date', kind: 'date', hint: 'Leave it empty for no date' },
+      { key: 'mode', label: 'Where the money is kept', kind: 'pick', value: 'inBank', options: [{ v: 'inBank', name: 'In my bank, set aside' }, { v: 'ownAccount', name: 'In an account of its own' }] }],
+    [{ label: 'Add', solid: true, step: v => ['addGoal', w => PLAN3W.addGoal(w, { name: v.name, target: v.target, due: v.due || null, mode: v.mode }), 'Goal added'] }]);
+    return;
+  }
+  const g = book.places.find(x => x.id === id);
+  plForm3(g.name, [{ key: 'amount', label: 'Set aside now', kind: 'amount', optional: true, hint: g.keptIn && g.keptIn.mode === 'ownAccount' ? 'It moves from your bank into ' + E3.nameOf(g.keptIn.acct) : 'It stays in your bank, kept apart from safe to spend' },
+    { key: 'name', label: 'Name', kind: 'text', value: g.name }, { key: 'target', label: 'Goal amount', kind: 'amount', value: g.target }, { key: 'due', label: 'Target date', kind: 'date', value: g.due || '' }],
+  [{ label: 'Set aside', solid: true, step: v => ['setAside', w => PLAN3W.setAside(w, id, { amount: v.amount }), 'Set aside for ' + g.name] },
+   { label: 'Save changes', step: v => ['changeGoal', w => PLAN3W.changeGoal(w, id, { name: v.name, target: v.target, due: v.due }), 'Goal changed'] }]);
+}
+/* a card's or a loan's days and payment */
+function plOwedForm3(id) {
+  const a = E3.book.accounts.find(x => x.id === id), card = a.type === 'card';
+  const fields = [{ key: 'name', label: 'Name', kind: 'text', value: a.name }, { key: 'payDay', label: 'Day of the month it is paid', kind: 'day', value: a.payDay }];
+  if (card) fields.push({ key: 'cutDay', label: 'Day the statement closes', kind: 'day', value: a.cutDay, hint: 'Leave it empty if you are not sure: then all that is owed is due on each payment day' });
+  else fields.push({ key: 'amount', label: 'Usual payment', kind: 'amount', value: a.amount });
+  plForm3(a.name, fields, [{ label: 'Save', solid: true, step: v => ['changeOwed', w => PLAN3W.changeOwed(w, id, card ? { name: v.name, payDay: v.payDay, cutDay: v.cutDay } : { name: v.name, payDay: v.payDay, amount: v.amount }), a.name + ' changed'] }]);
+}
+function plLoanForm3() {
+  plForm3('Add a loan', [{ key: 'name', label: 'Name', kind: 'text', hint: 'Like Car loan' }, { key: 'owed', label: 'Still owed today', kind: 'amount' },
+    { key: 'amount', label: 'Usual payment', kind: 'amount' }, { key: 'payDay', label: 'Day of the month it is paid', kind: 'day' }],
+  [{ label: 'Add', solid: true, step: v => ['addLoan', w => PLAN3W.addLoan(w, { name: v.name, owed: v.owed, amount: v.amount, payDay: v.payDay }), 'Loan added'] }],
+  'It is paid from your main bank. Its payment counts in what is due before next pay');
+}
+
+/* the tab, and drawing again after every saved write or Undo */
+document.addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (b) { if (b.dataset.tab !== 'plan') PL3.form = null; else setTimeout(renderPlan3, 0); } });
+if (ACT3) ACT3.onChange(() => { if (!PL3.form) renderPlan3(); });
 /* ---------- start ---------- */
 (async () => {
   try { $('#a3Pix').innerHTML = pix('sprout', 2); } catch (e) { /* art is a nicety */ }

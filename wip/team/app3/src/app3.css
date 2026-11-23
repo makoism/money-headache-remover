@@ -88,3 +88,11 @@ html { scroll-padding-top: 72px; }
 details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
 #a3StmtBar[hidden], .a3-stmt-rows[hidden] { display: none; }
 .a3-tick2 > span:not(.amt) { display: flex; flex-direction: column; }
+/* Plan (plan lane) */
+#a3Plan[hidden] { display: none; }
+#a3Plan { display: flex; flex-direction: column; gap: var(--gap-card); }
+.a3-goal meter { display: block; width: 100%; height: 10px; margin-top: 6px; accent-color: var(--accent); }
+.a3-goal > span:first-child { flex: 1; min-width: 0; }
+.a3-past { border-bottom: 1px solid var(--hair); padding: 8px 0; }
+.a3-past summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; font-weight: 600; }
+.a3-past summary:focus-visible { outline: 3px solid var(--acc-ring); outline-offset: 2px; }

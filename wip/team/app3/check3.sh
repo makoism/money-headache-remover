@@ -37,6 +37,7 @@ step "Check your bank"; run tests/e3_checkin.js "e3_checkin: ALL PASS"
 step "Add statements (the AI route, any AI, review, Add, duplicates once, the relay)"; run tests/e3_stmt.js "e3_stmt: ALL PASS"
 step "the period by its dates"; run tests/e3_period.js "e3_period: ALL PASS"
 step "Receipts"; run tests/e3_receipts.js "e3_receipts: ALL PASS"
+step "the Plan tab"; run tests/e3_plan.js "e3_plan: ALL PASS"
 step "guard (idle CPU, long tasks, outside requests, errors)"; run tests/guard3.js "guard3: ALL PASS"
 step "offline load"; run tests/offline.js "offline: ALL PASS"
 
