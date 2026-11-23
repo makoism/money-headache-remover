@@ -56,7 +56,10 @@ function convert(sc) {
   book.home.mode = { v: 'track' };
   const mainId = sc.main_bank || null;
   const main = mainId && acctOf[mainId];
-  book.home.main = { v: { acct: mainId, min: main && main.minimum ? { a: mn(main.minimum, main.currency), cur: main.currency } : null } };
+  // [AN3, AS11] the main bank's minimum lives in home.main with its own currency; a file may name it apart (`main_minimum`)
+  const mm = sc.main_minimum;
+  book.home.main = { v: { acct: mainId, min: mm ? { a: mn(mm.amount, mm.currency), cur: mm.currency }
+    : main && main.minimum ? { a: mn(main.minimum, main.currency), cur: main.currency } : null } };
 
   const opening = [];   // the open events and checks setup wrote, listed before everything else
   for (const a of sc.accounts) {
@@ -160,19 +163,28 @@ function convert(sc) {
   }
 
   // [AN5] what waits for add or replace, in minor units of its schedule's currency
-  if (sc.pendingMove) book.pendingMove = sc.pendingMove.map(p => Object.assign({}, p, typeof p.a === 'number' && p.schedule ? { a: mn(p.a, schedCurOf(p.schedule)) } : {}));
+  // [AO4] a waiting `once` amount is in the minor units of its budget line's or share's currency
+  const planCurOf = p => { const l = ((sc.plan && sc.plan.lines) || []).find(y => y.id === p.line); return cur((l && l.account) || (sc.plan && sc.plan.free && sc.plan.free.account) || mainId); };
+  if (sc.pendingMove) book.pendingMove = sc.pendingMove.map(p => Object.assign({}, p,
+    typeof p.a === 'number' && p.schedule ? { a: mn(p.a, schedCurOf(p.schedule)) }
+      : typeof p.a === 'number' && p.to === 'once' ? { a: mn(p.a, planCurOf(p)) } : {}));
 
   // ----- the plan [B1, B2, O4, T watch] -----
+  // [B8, T1, AE1] `once` keys: each entry keeps its at, by and gone; the amount is in minor units under the field the
+  // saved shape names (`amount` on a budget line, `free` on a share)
+  const onceOf = (o, field, c) => { const out = {}; for (const k in o) { const v = o[k]; const x = Object.assign({}, v); delete x.amount; x[field] = mn(v.amount, c); out[k] = x; } return out; };
   if (sc.plan) {
     for (const l of sc.plan.lines || []) {
       const c = cur(l.account || mainId);
       book.plan.budgets.push({ id: l.id, name: l.name, cur: c, acct: l.account || null, per: l.per,
-        steps: [{ from: null, amount: mn(l.amount, c) }].concat((l.changes || []).map(ch => ({ from: ch.made, amount: mn(ch.amount, c) }))) });
+        steps: [{ from: null, amount: mn(l.amount, c) }].concat((l.changes || []).map(ch => ({ from: ch.made, amount: mn(ch.amount, c) }))),
+        ...(l.from ? { from: l.from } : {}), ...(l.once ? { once: onceOf(l.once, 'amount', c) } : {}) });
     }
     const f = sc.plan.free;
     if (f) {
       const c = cur(f.account || mainId);
-      book.plan.shares.push({ id: 'share:1', from: null, cur: c, acct: f.account || null, per: { free: f.per }, free: mn(f.amount, c) });
+      book.plan.shares.push(Object.assign({ id: 'share:1', from: null, cur: c, acct: f.account || null, per: { free: f.per }, free: mn(f.amount, c) },
+        f.once ? { once: onceOf(f.once, 'free', c) } : {}));
       (f.changes || []).forEach((ch, i) => book.plan.shares.push({ id: 'share:' + (i + 2), from: ch.made, cur: c, acct: f.account || null, per: { free: f.per }, free: mn(ch.amount, c) }));
     }
   }
@@ -245,6 +257,7 @@ function convert(sc) {
         const g = (sc.goals || []).find(y => y.id === (e.goal || e.from_place));
         Object.assign(x, { k: 'move', place: e.from_place || 'waiting', place2: e.goal || 'waiting', a: A(e.amount, g ? g.kept_in : mainId) });
         if (e.to_place_of) x.placed = 'rm:' + e.to_place_of;
+        if (/^rm:/.test(e.id) && e.from_place) x.toPlace = true;   // [P1, Q7] the removal's own move to Waiting
         break;
       }
       case 'place_money':
